@@ -11,7 +11,7 @@ import {
 } from "./commands.js";
 import { buildChain } from "./chain.js";
 import { judgeConfigPath, judgeDbPath, loadConfig } from "./config.js";
-import { openDb } from "./db.js";
+import { openDb, pruneDecisionDetails } from "./db.js";
 import { AGENT_CLI_BINARIES, isOnPath, resolveAgentClis } from "./detect.js";
 import { makeClaudeCliProvider } from "./providers/claude-cli.js";
 import { makeCodexCliProvider } from "./providers/codex-cli.js";
@@ -29,6 +29,11 @@ const exec = promisify(execFile);
 const dbPath = judgeDbPath();
 fs.mkdirSync(path.dirname(dbPath), { recursive: true });
 const db = openDb(dbPath);
+try {
+  pruneDecisionDetails(db, new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString());
+} catch {
+  /* retention is best-effort */
+}
 const config = loadConfig(judgeConfigPath());
 
 async function readStdin(): Promise<string> {
@@ -69,6 +74,7 @@ const providers: Provider[] = [
   makeJevProvider({ fetch: (...args) => fetch(...args), apiKey: () => readApiKey({ env: process.env, readKeychain }) }),
 ];
 
+const sessionId = process.env.AW_SESSION_ID;
 const [, , cmd, ...rest] = process.argv;
 
 async function main(): Promise<{ exitCode: number; stdout: string; stderr?: string }> {
@@ -117,10 +123,10 @@ async function main(): Promise<{ exitCode: number; stdout: string; stderr?: stri
       // subcommand instead of the generic runQuestion envelope — each carries
       // a field (chosenIndex, reasons) that rides in a provider's `extra`
       // rather than evaluate()'s typed Decision<O> (review fix #2).
-      if (cmd === "ui-element-repair") return runUiElementRepairCli(input, { db, config, providers, chain });
-      if (cmd === "visual-critique") return runVisualCritiqueCli(input, { db, config, providers, chain });
-      if (cmd === "ask-check") return runAskCheckCli(input, { db, config, providers, chain });
-      return runQuestion(cmd, input, { db, config, providers, chain });
+      if (cmd === "ui-element-repair") return runUiElementRepairCli(input, { db, config, providers, chain, sessionId });
+      if (cmd === "visual-critique") return runVisualCritiqueCli(input, { db, config, providers, chain, sessionId });
+      if (cmd === "ask-check") return runAskCheckCli(input, { db, config, providers, chain, sessionId });
+      return runQuestion(cmd, input, { db, config, providers, chain, sessionId });
     }
   }
 }

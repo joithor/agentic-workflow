@@ -1,9 +1,10 @@
 import crypto from "node:crypto";
 
-import { recordDecision, recordFailure, type Db, type DecisionOutcome, type SkippedProvider } from "./db.js";
+import { recordDecision, recordDecisionDetails, recordFailure, type Agreement, type Db, type DecisionOutcome, type SkippedProvider } from "./db.js";
 import type { JudgeConfig } from "./config.js";
 import { providersFor, DEFAULT_CHAIN, type ChainSpec } from "./chain.js";
 import { toRef, type QuestionModule } from "./question.js";
+import { capText, INPUT_CAP, redactSecrets } from "./redact.js";
 import type { Decision, Provider } from "./types.js";
 
 export interface EvaluateDeps {
@@ -13,6 +14,7 @@ export interface EvaluateDeps {
   chain?: ChainSpec;
   now?: () => Date;
   randomId?: () => string;
+  sessionId?: string;
 }
 
 export type EvaluateOutcome<O extends string> = Decision<O> | { escalate: true; reason_code: string };
@@ -41,6 +43,23 @@ export async function evaluate<I, O extends string>(
   const id = deps.randomId?.() ?? crypto.randomUUID();
   const ts = (deps.now?.() ?? new Date()).toISOString();
 
+  // Best-effort: details never change the outcome (fails open). Redact the
+  // full serialization first, then cap, so a secret cut at the cap boundary
+  // cannot survive. input_digest hashes the unredacted input separately.
+  const recordDetails = (
+    digestInput: unknown, probabilities: Record<string, number> | null = null,
+    rulesOpinion: string | null = null, agreement: Agreement | null = null,
+  ): void => {
+    try {
+      recordDecisionDetails(deps.db, {
+        id, input_json: capText(redactSecrets(JSON.stringify(digestInput)), INPUT_CAP),
+        probabilities, rules_opinion: rulesOpinion, agreement, session_id: deps.sessionId ?? null,
+      });
+    } catch {
+      /* details are best-effort */
+    }
+  };
+
   const recordRow = (
     outcome: DecisionOutcome, reasonCode: string, provider: Provider["name"] | "none", decision: O | null,
     confidence: number, latencyMs: number, chainPosition: number, skipped: SkippedProvider[], digestInput: unknown,
@@ -52,6 +71,7 @@ export async function evaluate<I, O extends string>(
         input_digest: crypto.createHash("sha256").update(JSON.stringify(digestInput)).digest("hex").slice(0, 16),
         undone_at: null, chain_position: chainPosition, skipped, outcome,
       });
+      recordDetails(digestInput);
     } catch {
       // Storage fails open: the outcome still stands, and the miss itself is
       // a judge failure a healthy system should surface (spec: Visibility).

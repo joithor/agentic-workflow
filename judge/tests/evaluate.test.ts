@@ -1,9 +1,10 @@
+import crypto from "node:crypto";
 import { z } from "zod";
 import { describe, expect, it } from "vitest";
 
 import { evaluate } from "../src/evaluate.js";
 import type { QuestionModule } from "../src/question.js";
-import { openDb, getDecision } from "../src/db.js";
+import { openDb, getDecision, getDecisionDetails } from "../src/db.js";
 import { DEFAULT_CONFIG } from "../src/config.js";
 import { DEFAULT_CHAIN } from "../src/chain.js";
 import { fakeProvider } from "./helpers.js";
@@ -235,5 +236,45 @@ describe("evaluate", () => {
       chain_position: 2,
       skipped: [{ provider: "jev", reason: "unavailable" }, { provider: "claude-cli", reason: "failed" }],
     });
+  });
+
+  const decidedJev = (): ReturnType<typeof fakeProvider<Output>> =>
+    fakeProvider<Output>("jev", ["message-meta"], { status: "decided", decision: "send", confidence: 0.9, reason_code: "jev" });
+  const jevChain = { classes: { "message-meta": ["jev" as const] } };
+
+  it("stores the redacted, capped input in decision_details and leaves input_digest on the unredacted input (RF-1, RF-3)", async () => {
+    const db = openDb(":memory:");
+    const input = { text: "token sk-ant-api03-abcdefghijklmnopqrstuvwxyz012345 here" };
+    const out = await evaluate(question(), input, { db, config: DEFAULT_CONFIG, providers: [decidedJev()], chain: jevChain, randomId: () => "id1" });
+    expect("escalate" in out).toBe(false);
+    expect(getDecisionDetails(db, "id1")?.input_json).toBe('{"text":"token [REDACTED] here"}');
+    const expectedDigest = crypto.createHash("sha256").update(JSON.stringify(input)).digest("hex").slice(0, 16);
+    expect(getDecision(db, "id1")?.input_digest).toBe(expectedDigest);
+  });
+
+  it("redacts before capping so a secret cut at the cap boundary cannot survive", async () => {
+    const db = openDb(":memory:");
+    const secret = "sk-ant-api03-abcdefghijklmnopqrstuvwxyz012345";
+    // '{"text":"' is 9 chars; capping first would cut the secret at 10 chars,
+    // too short to match any pattern. Redact-first leaves nothing to leak.
+    const text = `${"z".repeat(16000 - 9 - 1 - 10)} ${secret} ${"y".repeat(100)}`;
+    await evaluate(question(), { text }, { db, config: DEFAULT_CONFIG, providers: [decidedJev()], chain: jevChain, randomId: () => "id3" });
+    const stored = getDecisionDetails(db, "id3")?.input_json ?? "";
+    expect(stored).not.toContain("sk-ant");
+    expect(stored).toMatch(/\[truncated \d+ chars\]$/);
+  });
+
+  it("records the session id from deps alongside the details", async () => {
+    const db = openDb(":memory:");
+    await evaluate(question(), { text: "hi" }, { db, config: DEFAULT_CONFIG, providers: [decidedJev()], chain: jevChain, randomId: () => "id4", sessionId: "s1" });
+    expect(getDecisionDetails(db, "id4")?.session_id).toBe("s1");
+  });
+
+  it("still returns the decision when the details write throws", async () => {
+    const db = openDb(":memory:");
+    db.exec("DROP TABLE decision_details");
+    const out = await evaluate(question(), { text: "hi" }, { db, config: DEFAULT_CONFIG, providers: [decidedJev()], chain: jevChain, randomId: () => "id2" });
+    expect(out).toMatchObject({ decision: "send", id: "id2" });
+    expect(getDecision(db, "id2")?.decision).toBe("send");
   });
 });

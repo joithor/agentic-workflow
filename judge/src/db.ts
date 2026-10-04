@@ -43,6 +43,30 @@ CREATE TABLE IF NOT EXISTS briefs (
 CREATE INDEX IF NOT EXISTS briefs_agent_id ON briefs(agent_id);
 CREATE INDEX IF NOT EXISTS briefs_dispatch_name ON briefs(dispatch_name, agent_id, saved_at);
 CREATE INDEX IF NOT EXISTS briefs_dispatch_lookup ON briefs(session_id, prompt_id, subagent_type, agent_id, saved_at);
+CREATE TABLE IF NOT EXISTS decision_details (
+  id TEXT PRIMARY KEY,
+  input_json TEXT NOT NULL,
+  probabilities TEXT,
+  rules_opinion TEXT,
+  agreement TEXT,
+  session_id TEXT
+);
+CREATE TABLE IF NOT EXISTS eval_items (
+  id TEXT PRIMARY KEY,
+  question TEXT NOT NULL,
+  input_json TEXT NOT NULL,
+  source TEXT NOT NULL UNIQUE,
+  model_decision TEXT,
+  created_at TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS eval_items_question ON eval_items(question, created_at);
+CREATE TABLE IF NOT EXISTS labels (
+  item_id TEXT NOT NULL,
+  source TEXT NOT NULL,
+  label TEXT NOT NULL,
+  labeled_at TEXT NOT NULL,
+  PRIMARY KEY (item_id, source)
+);
 `;
 
 export interface BriefRow {
@@ -172,4 +196,110 @@ export function getDecision(db: Db, id: string): DecisionRow | undefined {
 
 export function recordUndo(db: Db, id: string, at: string): void {
   db.prepare("UPDATE decisions SET undone_at = ? WHERE id = ?").run(at, id);
+}
+
+export type Agreement = "agreed" | "overrode" | "undecided";
+
+export interface DecisionDetailsRow {
+  id: string;
+  input_json: string;
+  probabilities: Record<string, number> | null;
+  rules_opinion: string | null;
+  agreement: Agreement | null;
+  session_id?: string | null;
+}
+
+export function recordDecisionDetails(db: Db, row: DecisionDetailsRow): void {
+  db.prepare(
+    `INSERT OR REPLACE INTO decision_details (id, input_json, probabilities, rules_opinion, agreement, session_id)
+     VALUES (@id, @input_json, @probabilities, @rules_opinion, @agreement, @session_id)`,
+  ).run({ ...row, session_id: row.session_id ?? null, probabilities: row.probabilities === null ? null : JSON.stringify(row.probabilities) });
+}
+
+export function getDecisionDetails(db: Db, id: string): DecisionDetailsRow | undefined {
+  const row = db.prepare("SELECT * FROM decision_details WHERE id = ?").get(id) as (Omit<DecisionDetailsRow, "probabilities"> & { probabilities: string | null }) | undefined;
+  if (row === undefined) return undefined;
+  return { ...row, probabilities: row.probabilities === null ? null : (JSON.parse(row.probabilities) as Record<string, number>) };
+}
+
+export function pruneDecisionDetails(db: Db, beforeIso: string): number {
+  return db.prepare("DELETE FROM decision_details WHERE id IN (SELECT id FROM decisions WHERE ts < ?)").run(beforeIso).changes;
+}
+
+export interface EvalItemRow {
+  id: string;
+  question: string;
+  input_json: string;
+  source: string;
+  model_decision: string | null;
+  created_at: string;
+}
+
+export function upsertEvalItem(db: Db, row: EvalItemRow): boolean {
+  return db.prepare(
+    `INSERT OR IGNORE INTO eval_items (id, question, input_json, source, model_decision, created_at)
+     VALUES (@id, @question, @input_json, @source, @model_decision, @created_at)`,
+  ).run(row).changes === 1;
+}
+
+export type LabelSource = "outcome" | "adjudicator" | "override";
+const PRECEDENCE: Record<LabelSource, number> = { override: 0, outcome: 1, adjudicator: 2 };
+
+export function recordLabel(db: Db, itemId: string, label: string, at: string, source: LabelSource = "override"): void {
+  db.prepare("INSERT OR REPLACE INTO labels (item_id, source, label, labeled_at) VALUES (?, ?, ?, ?)").run(itemId, source, label, at);
+}
+
+// The WHERE clause is built in one place so a later optional filter (for
+// example an exclude list) extends `unlabeledFilter` instead of duplicating
+// the query.
+function unlabeledFilter(question: string | undefined, source: LabelSource | undefined): { join: string; where: string; params: string[] } {
+  const params: string[] = [];
+  let join = "LEFT JOIN labels l ON l.item_id = e.id";
+  if (source !== undefined) {
+    join += " AND l.source = ?";
+    params.push(source);
+  }
+  const clauses = ["l.item_id IS NULL"];
+  if (question !== undefined) {
+    clauses.push("e.question = ?");
+    params.push(question);
+  }
+  return { join, where: clauses.join(" AND "), params };
+}
+
+export function nextUnlabeled(db: Db, question?: string, source?: LabelSource): EvalItemRow | undefined {
+  const { join, where, params } = unlabeledFilter(question, source);
+  return db.prepare(`SELECT e.* FROM eval_items e ${join} WHERE ${where} ORDER BY e.created_at ASC, e.id ASC LIMIT 1`).get(...params) as EvalItemRow | undefined;
+}
+
+export function labeledItems(db: Db, question: string, source: LabelSource | "any" = "any"): Array<EvalItemRow & { label: string; label_source: LabelSource }> {
+  const rows = db.prepare(
+    `SELECT e.*, l.label, l.source AS label_source FROM eval_items e JOIN labels l ON l.item_id = e.id
+     WHERE e.question = ? AND l.label != 'skip' ${source === "any" ? "" : "AND l.source = ?"} ORDER BY e.created_at ASC, e.id ASC`,
+  ).all(...(source === "any" ? [question] : [question, source])) as Array<EvalItemRow & { label: string; label_source: LabelSource }>;
+  const best = new Map<string, (typeof rows)[number]>();
+  for (const r of rows) {
+    const cur = best.get(r.id);
+    if (cur === undefined || PRECEDENCE[r.label_source] < PRECEDENCE[cur.label_source]) best.set(r.id, r);
+  }
+  return [...best.values()];
+}
+
+export function labelAgreement(db: Db, question: string): { shared: number; agreed: number } {
+  const row = db.prepare(
+    `SELECT COUNT(*) AS shared, SUM(CASE WHEN o.label = a.label THEN 1 ELSE 0 END) AS agreed
+     FROM eval_items e JOIN labels o ON o.item_id = e.id AND o.source = 'outcome' AND o.label != 'skip'
+     JOIN labels a ON a.item_id = e.id AND a.source = 'adjudicator' AND a.label != 'skip' WHERE e.question = ?`,
+  ).get(question) as { shared: number; agreed: number | null };
+  return { shared: row.shared, agreed: row.agreed ?? 0 };
+}
+
+export function labelCounts(db: Db): Array<{ question: string; items: number; labeled: number; skipped: number }> {
+  return db.prepare(
+    `SELECT e.question AS question, COUNT(*) AS items,
+            SUM(CASE WHEN EXISTS (SELECT 1 FROM labels l WHERE l.item_id = e.id AND l.label != 'skip') THEN 1 ELSE 0 END) AS labeled,
+            SUM(CASE WHEN NOT EXISTS (SELECT 1 FROM labels l WHERE l.item_id = e.id AND l.label != 'skip')
+                      AND EXISTS (SELECT 1 FROM labels l WHERE l.item_id = e.id AND l.label = 'skip') THEN 1 ELSE 0 END) AS skipped
+     FROM eval_items e GROUP BY e.question ORDER BY e.question`,
+  ).all() as Array<{ question: string; items: number; labeled: number; skipped: number }>;
 }
