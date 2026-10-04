@@ -3,11 +3,28 @@ import os from "node:os";
 import path from "node:path";
 
 import { isAgentCliName } from "./detect.js";
-import type { AgentCliName } from "./types.js";
+import type { AgentCliName, ProviderName } from "./types.js";
 
 export interface JudgeQuestionConfig {
   enabled: boolean;
   threshold: number;
+  // Restricts and orders the provider chain for this question, e.g. ["jev", "rules"].
+  providers?: ProviderName[];
+}
+
+function isProviderName(v: unknown): v is ProviderName {
+  return v === "rules" || v === "jev" || isAgentCliName(v);
+}
+
+function parseQuestions(raw: Record<string, unknown>): Record<string, JudgeQuestionConfig> {
+  const out: Record<string, JudgeQuestionConfig> = {};
+  for (const [name, entry] of Object.entries(raw)) {
+    const providers = (entry as { providers?: unknown } | null)?.providers;
+    out[name] = Array.isArray(providers)
+      ? { ...(entry as JudgeQuestionConfig), providers: providers.filter(isProviderName) }
+      : (entry as JudgeQuestionConfig);
+  }
+  return out;
 }
 
 // Optional provider selection (config.json "providers"):
@@ -71,7 +88,7 @@ export function loadConfig(file: string, defaults: JudgeConfig = DEFAULT_CONFIG)
     const { questions: rawQuestions, providers: rawProviders } = raw as { questions?: unknown; providers?: unknown };
     const questions = rawQuestions === undefined ? {} : rawQuestions;
     if (typeof questions !== "object" || questions === null || Array.isArray(questions)) return defaults;
-    const merged: JudgeConfig = { questions: { ...defaults.questions, ...(questions as Record<string, JudgeQuestionConfig>) } };
+    const merged: JudgeConfig = { questions: { ...defaults.questions, ...parseQuestions(questions as Record<string, unknown>) } };
     const providers = parseProviders(rawProviders);
     return providers === undefined ? merged : { ...merged, providers };
   } catch {

@@ -34,6 +34,8 @@ export const wakeGate: QuestionModule<WakeGateInput, WakeGateOutput> = {
     `Classify it as one of: "send" (a result, failure, blocker, question, or plan change — deliver immediately), ` +
     `"batch" (progress with nothing to act on — queue it), or "drop" (a pure ack with no content). ` +
     `Respond with only the JSON {"decision": "send"|"batch"|"drop"}.`,
+  // Unsure: deliver, as before judge existed.
+  fallbackRules: () => "send",
   preRules: (input) => {
     const trimmed = input.text.trim();
     if (ACK_JSON.test(trimmed)) return "drop";

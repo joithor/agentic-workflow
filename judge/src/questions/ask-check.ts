@@ -27,6 +27,8 @@ export const askCheck: QuestionModule<AskCheckInput, "continue" | "ask"> = {
     if (DENY_KEYWORDS.test(input.transcriptTail)) return "ask";
     return null;
   },
+  // Unsure: stopping to ask is always safe.
+  fallbackRules: () => "ask",
   prompt: (input) =>
     [
       "Transcript tail (the agent's last turn):",

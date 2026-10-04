@@ -1,6 +1,6 @@
 import crypto from "node:crypto";
 import { z } from "zod";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
 import { evaluate } from "../src/evaluate.js";
 import type { QuestionModule } from "../src/question.js";
@@ -295,5 +295,89 @@ describe("evaluate", () => {
     const out = await evaluate(question(), { text: "hi" }, { db, config: DEFAULT_CONFIG, providers: [decidedJev()], chain: jevChain, randomId: () => "id2" });
     expect(out).toMatchObject({ decision: "send", id: "id2" });
     expect(getDecision(db, "id2")?.decision).toBe("send");
+  });
+
+  describe("undecided answers", () => {
+    const below = { status: "decided", decision: "batch", confidence: 0.55, reason_code: "jev", probabilities: { send: 0.3, batch: 0.55, drop: 0.15 } } as const;
+    const failureCount = (db: ReturnType<typeof openDb>): number => (db.prepare("SELECT COUNT(*) n FROM failures").get() as { n: number }).n;
+
+    it("settles with fallbackRules when a provider is below threshold, without calling the slower provider", async () => {
+      const db = openDb(":memory:");
+      const slow = vi.fn();
+      const q = question({ threshold: 0.8, fallbackRules: () => "send" });
+      const out = await evaluate(q, { text: "hi" }, {
+        db, config: DEFAULT_CONFIG, randomId: () => "u1",
+        providers: [fakeProvider<Output>("jev", ["message-meta"], below), { name: "claude-cli", classes: new Set(["message-meta"]), decide: slow }],
+        chain: { classes: { "message-meta": ["jev", "claude-cli"] } },
+      });
+      expect(out).toMatchObject({ decision: "send", model: "rules", reason_code: "fallback-after-undecided" });
+      expect(slow).not.toHaveBeenCalled();
+      expect(getDecision(db, "u1")).toMatchObject({ provider: "rules", skipped: [{ provider: "jev", reason: "below_threshold" }] });
+      expect(getDecisionDetails(db, "u1")).toMatchObject({ agreement: "undecided" });
+      expect(getDecisionDetails(db, "u1")?.probabilities).toEqual(below.probabilities);
+      expect(failureCount(db)).toBe(0);
+    });
+
+    it("continues the chain when fallbackRules return null, keeping the undecided probabilities", async () => {
+      const db = openDb(":memory:");
+      const q = question({ threshold: 0.8, fallbackRules: () => null });
+      const cli = fakeProvider<Output>("claude-cli", ["message-meta"], { status: "decided", decision: "drop", confidence: 0.9, reason_code: "model" });
+      const out = await evaluate(q, { text: "hi" }, {
+        db, config: DEFAULT_CONFIG, randomId: () => "u2",
+        providers: [fakeProvider<Output>("jev", ["message-meta"], below), cli],
+        chain: { classes: { "message-meta": ["jev", "claude-cli"] } },
+      });
+      expect(out).toMatchObject({ decision: "drop", model: "claude-cli" });
+      expect(getDecisionDetails(db, "u2")?.probabilities).toEqual(below.probabilities);
+    });
+
+    it("prefers the settling provider's own probabilities over an earlier undecided answer", async () => {
+      const db = openDb(":memory:");
+      const second = fakeProvider<Output>("claude-cli", ["message-meta"], { status: "decided", decision: "drop", confidence: 0.9, reason_code: "m", probabilities: { drop: 0.9 } });
+      await evaluate(question({ threshold: 0.8 }), { text: "hi" }, {
+        db, config: DEFAULT_CONFIG, randomId: () => "u3",
+        providers: [fakeProvider<Output>("jev", ["message-meta"], below), second],
+        chain: { classes: { "message-meta": ["jev", "claude-cli"] } },
+      });
+      expect(getDecisionDetails(db, "u3")?.probabilities).toEqual({ drop: 0.9 });
+    });
+
+    it("records the undecided probabilities when the whole chain escalates, and no failures row", async () => {
+      const db = openDb(":memory:");
+      const out = await evaluate(question({ threshold: 0.8 }), { text: "hi" }, {
+        db, config: DEFAULT_CONFIG, randomId: () => "u4",
+        providers: [fakeProvider<Output>("jev", ["message-meta"], below)],
+        chain: { classes: { "message-meta": ["jev"] } },
+      });
+      expect(out).toEqual({ escalate: true, reason_code: "below-threshold" });
+      expect(getDecisionDetails(db, "u4")?.probabilities).toEqual(below.probabilities);
+      expect(failureCount(db)).toBe(0);
+    });
+
+    it("keeps an undecided answer without probabilities from clobbering earlier ones", async () => {
+      const db = openDb(":memory:");
+      const bare = fakeProvider<Output>("claude-cli", ["message-meta"], { status: "decided", decision: "send", confidence: 0.1, reason_code: "m" });
+      await evaluate(question({ threshold: 0.8 }), { text: "hi" }, {
+        db, config: DEFAULT_CONFIG, randomId: () => "u5",
+        providers: [fakeProvider<Output>("jev", ["message-meta"], below), bare],
+        chain: { classes: { "message-meta": ["jev", "claude-cli"] } },
+      });
+      expect(getDecisionDetails(db, "u5")?.probabilities).toEqual(below.probabilities);
+    });
+
+    it("restricts and reorders the chain to a question's configured providers", async () => {
+      const db = openDb(":memory:");
+      const cli = vi.fn();
+      const out = await evaluate(question(), { text: "hi" }, {
+        db, config: { questions: { "wake-gate": { enabled: true, threshold: 0.7, providers: ["jev", "rules"] } } },
+        providers: [
+          fakeProvider<Output>("jev", ["message-meta"], { status: "unavailable", reason_code: "no-api-key" }),
+          { name: "claude-cli", classes: new Set(["message-meta"]), decide: cli } as Provider,
+        ],
+        chain: { classes: { "message-meta": ["jev", "claude-cli", "rules"] } },
+      });
+      expect(cli).not.toHaveBeenCalled();
+      expect(out).toMatchObject({ escalate: true });
+    });
   });
 });

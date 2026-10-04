@@ -11,6 +11,9 @@ export interface QuestionModule<I, O extends string> {
   contentClass: ContentClass;
   timeBudgetMs: number;
   preRules?: (input: I) => O | null;
+  // Cheap rule-based answer used only when a model answered below threshold
+  // (distinct from preRules, which run before any model).
+  fallbackRules?: (input: I) => O | null;
   extraProperties?: Readonly<Record<string, JsonSchemaFragment>>;
   // What each output means, for the adjudicator (and, from Task 5, Jev).
   criteria?: Readonly<Record<O, string>>;
