@@ -281,4 +281,31 @@ describe("claude-cli provider — shared CLI contract additions", () => {
     expect(pair(await argvOf({}, imgQ, img))).toEqual(["haiku", "low"]);
     expect(pair(await argvOf({ model: "opus", effort: "high" }, imgQ, img))).toEqual(["opus", "high"]);
   });
+  it("keeps thinking off on the default path but lets a non-default effort think (env and argv)", async () => {
+    const ok = { code: 0, timedOut: false, stdout: JSON.stringify({ structured_output: { decision: "send" } }) };
+    const q: QuestionRef<"send"> = { name: "q", outputs: ["send"], prompt: "p", contentClass: "message-meta" };
+    const imgQ: QuestionRef<"send"> = { ...q, contentClass: "image" };
+    const img = { afterScreenshot: "a.png", baselineScreenshot: null, evidenceDir: "/tmp/r" };
+    const observe = async (deps: { model?: string; effort?: string }, question: QuestionRef<"send">, input: unknown): Promise<{ settings: string; env: NodeJS.ProcessEnv }> => {
+      const spawn = vi.fn().mockResolvedValue(ok);
+      await makeClaudeCliProvider({ spawn, tmpDirFactory: () => "/tmp/x", ...deps }).decide(question, input, 1000);
+      const [args, opts] = spawn.mock.calls[0] as [string[], { env: NodeJS.ProcessEnv }];
+      return { settings: args[args.indexOf("--settings") + 1] as string, env: opts.env };
+    };
+    const saved = process.env.MAX_THINKING_TOKENS;
+    delete process.env.MAX_THINKING_TOKENS;
+    try {
+      for (const [question, input] of [[q, {}], [imgQ, img]] as const) {
+        const fast = await observe({}, question, input);
+        expect(fast.settings).toBe('{"disableAllHooks":true,"alwaysThinkingEnabled":false}');
+        expect(fast.env.MAX_THINKING_TOKENS).toBe("0");
+        const think = await observe({ model: "opus", effort: "high" }, question, input);
+        expect(think.settings).toBe('{"disableAllHooks":true}');
+        expect(think.env.MAX_THINKING_TOKENS).toBeUndefined();
+        expect(think.env.AW_JUDGE_CHILD).toBe("1");
+      }
+    } finally {
+      if (saved !== undefined) process.env.MAX_THINKING_TOKENS = saved;
+    }
+  });
 });
