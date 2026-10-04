@@ -12,6 +12,8 @@ export interface QuestionModule<I, O extends string> {
   timeBudgetMs: number;
   preRules?: (input: I) => O | null;
   extraProperties?: Readonly<Record<string, JsonSchemaFragment>>;
+  // What each output means, for the adjudicator (and, from Task 5, Jev).
+  criteria?: Readonly<Record<O, string>>;
 }
 
 export function toRef<I, O extends string>(q: QuestionModule<I, O>, input: I): QuestionRef<O> {

@@ -265,4 +265,20 @@ describe("claude-cli provider — shared CLI contract additions", () => {
     expect(schemaOf(0).properties.reasons).toEqual(declared);
     expect(schemaOf(1).properties.reasons).toEqual({ type: "array", items: { type: "string" } });
   });
+  it("defaults to haiku/low and honours model and effort overrides in both text and image argv", async () => {
+    const ok = { code: 0, timedOut: false, stdout: JSON.stringify({ structured_output: { decision: "send" } }) };
+    const argvOf = async (deps: { model?: string; effort?: string }, q: QuestionRef<"send">, input: unknown): Promise<string[]> => {
+      const spawn = vi.fn().mockResolvedValue(ok);
+      await makeClaudeCliProvider({ spawn, tmpDirFactory: () => "/tmp/x", ...deps }).decide(q, input, 1000);
+      return (spawn.mock.calls[0] as [string[]])[0];
+    };
+    const textQ: QuestionRef<"send"> = { name: "q", outputs: ["send"], prompt: "p", contentClass: "message-meta" };
+    const imgQ: QuestionRef<"send"> = { ...textQ, contentClass: "image" };
+    const img = { afterScreenshot: "a.png", baselineScreenshot: null, evidenceDir: "/tmp/r" };
+    const pair = (a: string[]): string[] => [a[a.indexOf("--model") + 1] as string, a[a.indexOf("--effort") + 1] as string];
+    expect(pair(await argvOf({}, textQ, {}))).toEqual(["haiku", "low"]);
+    expect(pair(await argvOf({ model: "opus", effort: "high" }, textQ, {}))).toEqual(["opus", "high"]);
+    expect(pair(await argvOf({}, imgQ, img))).toEqual(["haiku", "low"]);
+    expect(pair(await argvOf({ model: "opus", effort: "high" }, imgQ, img))).toEqual(["opus", "high"]);
+  });
 });

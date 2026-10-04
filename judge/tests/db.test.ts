@@ -243,4 +243,12 @@ describe("decision_details + eval tables", () => {
     expect(nextUnlabeled(db, "q", "adjudicator")?.id).toBe("a");
     expect(nextUnlabeled(db, "q", "outcome")).toBeUndefined();
   });
+
+  it("nextUnlabeled can exclude item ids", () => {
+    const db = openDb(":memory:");
+    for (const id of ["a", "b"]) upsertEvalItem(db, { id, question: "q", input_json: "{}", source: `decision:${id}`, model_decision: null, created_at: `2026-10-01T00:00:0${id === "a" ? 0 : 1}.000Z` });
+    expect(nextUnlabeled(db, "q", "adjudicator", new Set(["a"]))?.id).toBe("b");
+    expect(nextUnlabeled(db, "q", "adjudicator", new Set())?.id).toBe("a");
+    expect(nextUnlabeled(db, "q", "adjudicator", new Set(["a", "b"]))).toBeUndefined();
+  });
 });

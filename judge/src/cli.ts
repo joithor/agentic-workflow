@@ -9,9 +9,12 @@ import {
   runApprove, runAskCheckCli, runBriefGet, runBriefMapByDispatch, runBriefMapByName, runBriefSave, runBriefSetAgentId,
   runConfigGet, runConfigSet, runHealth, runQuestion, runUiElementRepairCli, runUndo, runVisualCritiqueCli, runWhy,
 } from "./commands.js";
+import { adjudicate } from "./adjudicate.js";
 import { buildChain } from "./chain.js";
 import { judgeConfigPath, judgeDbPath, loadConfig } from "./config.js";
 import { openDb, pruneDecisionDetails } from "./db.js";
+import { runLabelImport, runLabelSet, runLabelStatus } from "./label.js";
+import { runOutcomeLabels } from "./outcomes.js";
 import { AGENT_CLI_BINARIES, isOnPath, resolveAgentClis } from "./detect.js";
 import { makeClaudeCliProvider } from "./providers/claude-cli.js";
 import { makeCodexCliProvider } from "./providers/codex-cli.js";
@@ -77,6 +80,11 @@ const providers: Provider[] = [
 const sessionId = process.env.AW_SESSION_ID;
 const [, , cmd, ...rest] = process.argv;
 
+function flag(name: string): string | undefined {
+  const i = rest.indexOf(name);
+  return i === -1 ? undefined : rest[i + 1];
+}
+
 async function main(): Promise<{ exitCode: number; stdout: string; stderr?: string }> {
   switch (cmd) {
     case "undo":
@@ -91,6 +99,32 @@ async function main(): Promise<{ exitCode: number; stdout: string; stderr?: stri
       if (rest[0] === "get") return runConfigGet();
       if (rest[0] === "set") return runConfigSet(rest[1] ?? "", rest[2] as "enabled" | "threshold", rest[3] ?? "");
       return { exitCode: 1, stdout: "", stderr: "usage: judge config get|set <question> <enabled|threshold> <value>" };
+    }
+    case "label": {
+      const sub = rest[0];
+      if (sub === "import") {
+        const days = Number.parseInt((flag("--since") ?? "14d").replace(/d$/, ""), 10);
+        const sinceIso = new Date(Date.now() - (Number.isFinite(days) ? days : 14) * 24 * 60 * 60 * 1000).toISOString();
+        return runLabelImport(db, { question: flag("--question"), sinceIso }, () => new Date());
+      }
+      if (sub === "outcomes") {
+        const r = runOutcomeLabels(db, { projectsDir: path.join(os.homedir(), ".claude", "projects"), now: () => new Date() });
+        return { exitCode: 0, stdout: JSON.stringify(r) };
+      }
+      if (sub === "set") return runLabelSet(db, rest[1] ?? "", rest[2] ?? "", () => new Date());
+      if (sub === "status") return runLabelStatus(db);
+      return { exitCode: 1, stdout: "", stderr: "usage: judge label import|outcomes|set <itemId> <label|skip>|status" };
+    }
+    case "adjudicate": {
+      if (!isOnPath(AGENT_CLI_BINARIES["claude-cli"], process.env)) return { exitCode: 1, stdout: "", stderr: "claude CLI not found on PATH" };
+      const provider = makeClaudeCliProvider({ tmpDirFactory, spawn: makeExecSpawn(AGENT_CLI_BINARIES["claude-cli"]), model: "opus", effort: "high" });
+      const limit = Number.parseInt(flag("--limit") ?? "60", 10);
+      try {
+        const r = await adjudicate(db, rest[0] ?? "", { provider, limit: Number.isFinite(limit) ? limit : 60, now: () => new Date() });
+        return { exitCode: 0, stdout: JSON.stringify(r) };
+      } catch (e) {
+        return { exitCode: 1, stdout: "", stderr: (e as Error).message };
+      }
     }
     case "brief": {
       const sub = rest[0];

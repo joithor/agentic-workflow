@@ -40,6 +40,7 @@ export interface QuestionRef<O extends string> {
   // reasons). Providers with schema-constrained output (codex-cli's strict
   // mode) can only return fields declared here; they ride back as `extra`.
   extraProperties?: Readonly<Record<string, JsonSchemaFragment>>;
+  criteria?: Readonly<Record<string, string>>;
 }
 
 export interface Provider {

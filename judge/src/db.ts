@@ -242,6 +242,10 @@ export function upsertEvalItem(db: Db, row: EvalItemRow): boolean {
   ).run(row).changes === 1;
 }
 
+export function getEvalItem(db: Db, id: string): EvalItemRow | undefined {
+  return db.prepare("SELECT * FROM eval_items WHERE id = ?").get(id) as EvalItemRow | undefined;
+}
+
 export type LabelSource = "outcome" | "adjudicator" | "override";
 const PRECEDENCE: Record<LabelSource, number> = { override: 0, outcome: 1, adjudicator: 2 };
 
@@ -249,10 +253,9 @@ export function recordLabel(db: Db, itemId: string, label: string, at: string, s
   db.prepare("INSERT OR REPLACE INTO labels (item_id, source, label, labeled_at) VALUES (?, ?, ?, ?)").run(itemId, source, label, at);
 }
 
-// The WHERE clause is built in one place so a later optional filter (for
-// example an exclude list) extends `unlabeledFilter` instead of duplicating
-// the query.
-function unlabeledFilter(question: string | undefined, source: LabelSource | undefined): { join: string; where: string; params: string[] } {
+// The WHERE clause is built in one place so every optional filter extends
+// `unlabeledFilter` instead of duplicating the query.
+function unlabeledFilter(question: string | undefined, source: LabelSource | undefined, exclude: ReadonlySet<string> | undefined): { join: string; where: string; params: string[] } {
   const params: string[] = [];
   let join = "LEFT JOIN labels l ON l.item_id = e.id";
   if (source !== undefined) {
@@ -264,11 +267,15 @@ function unlabeledFilter(question: string | undefined, source: LabelSource | und
     clauses.push("e.question = ?");
     params.push(question);
   }
+  if (exclude !== undefined && exclude.size > 0) {
+    clauses.push(`e.id NOT IN (${[...exclude].map(() => "?").join(", ")})`);
+    params.push(...exclude);
+  }
   return { join, where: clauses.join(" AND "), params };
 }
 
-export function nextUnlabeled(db: Db, question?: string, source?: LabelSource): EvalItemRow | undefined {
-  const { join, where, params } = unlabeledFilter(question, source);
+export function nextUnlabeled(db: Db, question?: string, source?: LabelSource, exclude?: ReadonlySet<string>): EvalItemRow | undefined {
+  const { join, where, params } = unlabeledFilter(question, source, exclude);
   return db.prepare(`SELECT e.* FROM eval_items e ${join} WHERE ${where} ORDER BY e.created_at ASC, e.id ASC LIMIT 1`).get(...params) as EvalItemRow | undefined;
 }
 

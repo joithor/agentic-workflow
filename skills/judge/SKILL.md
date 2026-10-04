@@ -33,6 +33,20 @@ ticket brief verbatim, the root cause, and a check that failed before and passes
 reported problem resolved (`resolved | partial | unresolved`, threshold 0.8)? A failed after-run or a
 check that never reproduced the bug is `unresolved` without a model call; an empty brief escalates.
 
+## Labels (automatic)
+
+No one labels data by hand. Labels come from what happened next and from a stronger model:
+
+1. `judge label import [--question q] [--since 14d]` turns stored decisions into eval items.
+2. `judge label outcomes` (free) labels `ask-check` items from Joi's next real prompt in the session transcript.
+3. `judge adjudicate <question> --limit 60` (costs Opus tokens: about 3 runs x 3k tokens per item) asks
+   `claude -p --model opus --effort high` three times per item and stores a label only on a 2-of-3
+   in-enum majority. It never sees the judge's own decision. Run it in the background; labels are
+   written per item, so a re-run continues where it stopped.
+4. `judge label status` shows coverage and how often the outcome and Opus labels agree.
+
+`judge label set <itemId> <label|skip>` is an optional override; no one is expected to label by hand.
+
 ## When to reach for this
 
 - the user sees a `judge` fallback notice (`systemMessage` text starting `judge: "<question>"

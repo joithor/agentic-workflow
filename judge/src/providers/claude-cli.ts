@@ -41,7 +41,7 @@ function parseEnvelope<O extends string>(stdout: string): ProviderResult<O> {
  * temp cwd so the child never inherits this repo's project context. Sets
  * AW_JUDGE_CHILD=1 so every aw:* hook exits 0 immediately (recursion guard).
  */
-export function makeClaudeCliProvider(deps: { spawn: Spawn; tmpDirFactory: () => string }): Provider {
+export function makeClaudeCliProvider(deps: { spawn: Spawn; tmpDirFactory: () => string; model?: string; effort?: string }): Provider {
   const run = async <O extends string>(args: string[], cwd: string, budgetMs: number): Promise<ProviderResult<O>> => {
     let raw: SpawnResult;
     try {
@@ -70,7 +70,7 @@ export function makeClaudeCliProvider(deps: { spawn: Spawn; tmpDirFactory: () =>
         const props = schema.properties as Record<string, unknown>;
         const imgSchema = { ...schema, properties: { ...props, reasons: props.reasons ?? { type: "array", items: { type: "string" } } } };
         return run<O>([
-          "-p", "--model", "haiku", "--effort", "low", "--no-session-persistence",
+          "-p", "--model", deps.model ?? "haiku", "--effort", deps.effort ?? "low", "--no-session-persistence",
           "--strict-mcp-config", "--mcp-config", '{"mcpServers":{}}',
           "--settings", '{"disableAllHooks":true,"alwaysThinkingEnabled":false}',
           "--disable-slash-commands",
@@ -84,8 +84,8 @@ export function makeClaudeCliProvider(deps: { spawn: Spawn; tmpDirFactory: () =>
 
       return run<O>([
         "-p",
-        "--model", "haiku",
-        "--effort", "low",
+        "--model", deps.model ?? "haiku",
+        "--effort", deps.effort ?? "low",
         "--no-session-persistence",
         "--strict-mcp-config",
         "--mcp-config", '{"mcpServers":{}}',
