@@ -7,6 +7,7 @@ setup_fake_judge() {
   local bin_dir decision; bin_dir="$(mktemp -d)"; decision="$1"
   cat > "$bin_dir/judge" <<EOF
 #!/usr/bin/env bash
+printf '%s' "\${AW_SESSION_ID:-}" > "$bin_dir/session-id"
 echo '{"decision":"$decision","confidence":0.9,"model":"claude-cli","reason_code":"model","id":"fixed-id"}'
 EOF
   chmod +x "$bin_dir/judge"
@@ -22,6 +23,7 @@ test_send_is_allowed_unmodified() {
   local bin_dir out outbox; bin_dir="$(setup_fake_judge send)"; outbox="$(mktemp -d)"
   out="$(run_hook '{"session_id":"s1","agent_type":"builder-a","tool_input":{"to":"main","message":"done: PR #100 merged"}}' "$bin_dir" "$outbox")"
   echo "$out" | jq -e '.hookSpecificOutput.permissionDecision == "allow"' > /dev/null || { echo "FAIL: expected allow, got $out"; exit 1; }
+  [ "$(cat "$bin_dir/session-id")" = "s1" ] || { echo "FAIL: wake-gate must see AW_SESSION_ID=s1, got '$(cat "$bin_dir/session-id")'"; exit 1; }
   echo "PASS: test_send_is_allowed_unmodified"
 }
 

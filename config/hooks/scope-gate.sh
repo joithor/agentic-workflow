@@ -43,7 +43,7 @@ PROOF_COMMAND="$PROMPT_TEXT"
 
 JUDGE_INPUT="$(jq -nc --arg t "$AGENT_TYPE" --arg g "$GOAL" --arg a "$ACCEPTANCE" --arg p "$PROOF_COMMAND" --argjson si "$SKILL_INTERNAL" \
   '{agentType: $t, goal: $g, acceptanceCriteria: $a, proofCommand: $p, skillInternal: $si}')"
-JUDGE_OUT="$(printf '%s' "$JUDGE_INPUT" | judge brief-scope 2>/dev/null)" || allow
+JUDGE_OUT="$(printf '%s' "$JUDGE_INPUT" | AW_SESSION_ID="$SESSION_ID" judge brief-scope 2>/dev/null)" || allow
 DECISION="$(printf '%s' "$JUDGE_OUT" | jq -r '.decision // empty' 2>/dev/null)" || allow
 [ -n "$DECISION" ] || allow
 
