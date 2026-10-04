@@ -27,7 +27,7 @@ if [[ -z "$(docker images -q "${IMAGE}" 2>/dev/null)" ]]; then
   exit 1
 fi
 
-mkdir -p "${REPO_PATH}/.serena/cache" "${REPO_PATH}/.serena/logs" "${REPO_PATH}/.serena/memory"
+mkdir -p "${REPO_PATH}/.serena/cache" "${REPO_PATH}/.serena/logs" "${REPO_PATH}/.serena/memory" "${REPO_PATH}/.serena/memories"
 
 # ---------------------------------------------------------------------------
 # Swift LSP bridge: sourcekit-lsp runs on the macOS host; the container talks
@@ -127,6 +127,7 @@ DOCKER_OPTS=(
   "-v" "${REPO_PATH}/.serena/cache:/workspaces/projects/${REPO_NAME}/.serena/cache"
   "-v" "${REPO_PATH}/.serena/logs:/workspaces/projects/${REPO_NAME}/.serena/logs"
   "-v" "${REPO_PATH}/.serena/memory:/workspaces/projects/${REPO_NAME}/.serena/memory"
+  "-v" "${REPO_PATH}/.serena/memories:/workspaces/projects/${REPO_NAME}/.serena/memories"   # Serena >= 1.7 path
 )
 if [ -n "${SOCKET_PATH}" ]; then
   DOCKER_OPTS+=("-v" "${SOCKET_PATH}:/tmp/sourcekit-lsp.sock")

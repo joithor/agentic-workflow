@@ -28,7 +28,7 @@ project_name: agentic-workflow
 # When using multiple languages, the first language server that supports a given file will be used for that file.
 # The first language is the default language and the respective language server will be used as a fallback.
 # Note that when using the JetBrains backend, language servers are not used and this list is correspondingly ignored.
-languages:
+language_servers:
 - typescript
 
 # whether the project is in read-only mode
@@ -169,3 +169,12 @@ ignored_memory_patterns: []
 # Have a look at the docstring of the constructors of the LS implementations within solidlsp (e.g., for C# or PHP) to see which options are available.
 # No documentation on options means no options are available.
 ls_specific_settings: {}
+
+# Fields added by Serena's newer config schema. Without them Serena tries to
+# re-save this file on startup, which fails on the read-only repo mount.
+added_modes:
+ls_workspace_folders:
+- .
+ls_additional_workspace_folders: []
+activation_command:
+activation_command_timeout: 180.0
