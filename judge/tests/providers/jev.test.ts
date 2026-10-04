@@ -50,7 +50,13 @@ describe("jev provider", () => {
   it("parses a decided answer within the enum", async () => {
     const fetch = vi.fn().mockResolvedValue({ status: 200, json: async () => ({ answers: { decision: { type: "choice", choice: "batch", confidence: 0.8 } } }) });
     const provider = makeJevProvider({ fetch, apiKey: async () => "k" });
-    expect(await provider.decide(question, {}, 1000)).toEqual({ status: "decided", decision: "batch", confidence: 0.8, reason_code: "jev" });
+    expect(await provider.decide(question, {}, 1000)).toEqual({ status: "decided", decision: "batch", confidence: 0.8, reason_code: "jev", probabilities: {} });
+  });
+
+  it("returns Jev's probability distribution with the decision", async () => {
+    const fetch = vi.fn().mockResolvedValue({ status: 200, json: async () => ({ answers: { decision: { type: "choice", choice: "send", probabilities: { send: 0.7, batch: 0.2, drop: 0.1 }, confidence: 0.7 } } }) });
+    const provider = makeJevProvider({ fetch, apiKey: async () => "k" });
+    expect(await provider.decide(question, {}, 1000)).toEqual({ status: "decided", decision: "send", confidence: 0.7, reason_code: "jev", probabilities: { send: 0.7, batch: 0.2, drop: 0.1 } });
   });
 
   it("is an error on a response status below 200", async () => {
@@ -80,7 +86,7 @@ describe("jev provider", () => {
   it("defaults confidence to 1 when the response omits it", async () => {
     const fetch = vi.fn().mockResolvedValue({ status: 200, json: async () => ({ answers: { decision: { type: "choice", choice: "send" } } }) });
     const provider = makeJevProvider({ fetch, apiKey: async () => "k" });
-    expect(await provider.decide(question, {}, 1000)).toEqual({ status: "decided", decision: "send", confidence: 1, reason_code: "jev" });
+    expect(await provider.decide(question, {}, 1000)).toEqual({ status: "decided", decision: "send", confidence: 1, reason_code: "jev", probabilities: {} });
   });
 
   it("is a network error, not a timeout, for a DOMException whose name isn't AbortError", async () => {

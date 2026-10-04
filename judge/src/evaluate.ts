@@ -64,6 +64,7 @@ export async function evaluate<I, O extends string>(
   const recordRow = (
     outcome: DecisionOutcome, reasonCode: string, provider: Provider["name"] | "none", decision: O | null,
     confidence: number, latencyMs: number, chainPosition: number, skipped: SkippedProvider[], digestInput: unknown,
+    probabilities: Record<string, number> | null = null,
   ): void => {
     try {
       recordDecision(deps.db, {
@@ -72,7 +73,7 @@ export async function evaluate<I, O extends string>(
         input_digest: crypto.createHash("sha256").update(JSON.stringify(digestInput)).digest("hex").slice(0, 16),
         undone_at: null, chain_position: chainPosition, skipped, outcome,
       });
-      recordDetails(digestInput);
+      recordDetails(digestInput, probabilities);
     } catch {
       // Storage fails open: the outcome still stands, and the miss itself is
       // a judge failure a healthy system should surface (spec: Visibility).
@@ -100,8 +101,9 @@ export async function evaluate<I, O extends string>(
   const settle = (
     decision: O, confidence: number, model: Provider["name"], reasonCode: string,
     latencyMs: number, chainPosition: number, skipped: SkippedProvider[], extra?: Record<string, unknown>,
+    probabilities?: Record<string, number>,
   ): Decision<O> => {
-    recordRow("decided", reasonCode, model, decision, confidence, latencyMs, chainPosition, skipped, input);
+    recordRow("decided", reasonCode, model, decision, confidence, latencyMs, chainPosition, skipped, input, probabilities ?? null);
     return extra === undefined ? { decision, confidence, model, reason_code: reasonCode, id } : { decision, confidence, model, reason_code: reasonCode, id, extra };
   };
 
@@ -151,7 +153,7 @@ export async function evaluate<I, O extends string>(
       lastReason = "below-threshold";
       continue;
     }
-    return settle(result.decision, result.confidence, provider.name, result.reason_code, latencyMs, i, skipped, result.extra);
+    return settle(result.decision, result.confidence, provider.name, result.reason_code, latencyMs, i, skipped, result.extra, result.probabilities);
   }
 
   return escalate(lastReason, hadRealFailure(skipped) ? "failed" : "escalated", skipped);

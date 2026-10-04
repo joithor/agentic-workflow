@@ -252,6 +252,13 @@ describe("evaluate", () => {
     expect(getDecision(db, "id1")?.input_digest).toBe(expectedDigest);
   });
 
+  it("stores the provider's probability distribution in decision_details", async () => {
+    const db = openDb(":memory:");
+    const jev = fakeProvider<Output>("jev", ["message-meta"], { status: "decided", decision: "send", confidence: 0.9, reason_code: "jev", probabilities: { send: 0.9, batch: 0.1 } });
+    await evaluate(question(), { text: "hi" }, { db, config: DEFAULT_CONFIG, providers: [jev], chain: jevChain, randomId: () => "idp" });
+    expect(getDecisionDetails(db, "idp")?.probabilities).toEqual({ send: 0.9, batch: 0.1 });
+  });
+
   it.each([["\n"], ["\t"]])("redacts a secret that follows an escaped whitespace char inside a string value (%j)", async (ws) => {
     const db = openDb(":memory:");
     const input = { text: `KEY=${ws}sk-ant-api03-abcdefghijklmnopqrstuvwxyz012345${ws}AKIAABCDEFGHIJKLMNOP` };
