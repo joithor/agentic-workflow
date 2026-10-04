@@ -252,6 +252,18 @@ describe("evaluate", () => {
     expect(getDecision(db, "id1")?.input_digest).toBe(expectedDigest);
   });
 
+  it.each([["\n"], ["\t"]])("redacts a secret that follows an escaped whitespace char inside a string value (%j)", async (ws) => {
+    const db = openDb(":memory:");
+    const input = { text: `KEY=${ws}sk-ant-api03-abcdefghijklmnopqrstuvwxyz012345${ws}AKIAABCDEFGHIJKLMNOP` };
+    await evaluate(question(), input, { db, config: DEFAULT_CONFIG, providers: [decidedJev()], chain: jevChain, randomId: () => "idws" });
+    const stored = getDecisionDetails(db, "idws")?.input_json ?? "";
+    expect(stored).not.toContain("sk-ant");
+    expect(stored).not.toContain("AKIA");
+    expect(JSON.parse(stored)).toEqual({ text: `KEY=${ws}[REDACTED]${ws}[REDACTED]` });
+    const expectedDigest = crypto.createHash("sha256").update(JSON.stringify(input)).digest("hex").slice(0, 16);
+    expect(getDecision(db, "idws")?.input_digest).toBe(expectedDigest);
+  });
+
   it("redacts before capping so a secret cut at the cap boundary cannot survive", async () => {
     const db = openDb(":memory:");
     const secret = "sk-ant-api03-abcdefghijklmnopqrstuvwxyz012345";

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { capJson, capText, redactSecrets } from "../src/redact.js";
+import { capJson, capText, redactDeep, redactSecrets } from "../src/redact.js";
 
 describe("redactSecrets (RF-1)", () => {
   it.each([
@@ -28,6 +28,16 @@ describe("capJson", () => {
     const out = capJson({ text: "x".repeat(50) }, 20);
     expect(out.startsWith('{"text":"xxxxxxxxxx')).toBe(true);
     expect(out).toMatch(/\[truncated \d+ chars\]$/);
+  });
+});
+
+describe("redactDeep", () => {
+  it("redacts strings, nested arrays/objects and keys, and passes primitives through", () => {
+    const secret = "sk-ant-api03-abcdefghijklmnopqrstuvwxyz012345";
+    expect(redactDeep({ a: [`x ${secret}`, 1, null, true], [secret]: { b: secret } })).toEqual({
+      a: ["x [REDACTED]", 1, null, true],
+      "[REDACTED]": { b: "[REDACTED]" },
+    });
   });
 });
 

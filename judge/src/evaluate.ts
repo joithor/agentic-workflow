@@ -4,7 +4,7 @@ import { recordDecision, recordDecisionDetails, recordFailure, type Agreement, t
 import type { JudgeConfig } from "./config.js";
 import { providersFor, DEFAULT_CHAIN, type ChainSpec } from "./chain.js";
 import { toRef, type QuestionModule } from "./question.js";
-import { capText, INPUT_CAP, redactSecrets } from "./redact.js";
+import { capText, INPUT_CAP, redactDeep } from "./redact.js";
 import type { Decision, Provider } from "./types.js";
 
 export interface EvaluateDeps {
@@ -44,7 +44,8 @@ export async function evaluate<I, O extends string>(
   const ts = (deps.now?.() ?? new Date()).toISOString();
 
   // Best-effort: details never change the outcome (fails open). Redact the
-  // full serialization first, then cap, so a secret cut at the cap boundary
+  // parsed values first (not the serialization: an escaped newline hides the
+  // word boundary), then serialize, then cap, so a secret cut at the cap boundary
   // cannot survive. input_digest hashes the unredacted input separately.
   const recordDetails = (
     digestInput: unknown, probabilities: Record<string, number> | null = null,
@@ -52,7 +53,7 @@ export async function evaluate<I, O extends string>(
   ): void => {
     try {
       recordDecisionDetails(deps.db, {
-        id, input_json: capText(redactSecrets(JSON.stringify(digestInput)), INPUT_CAP),
+        id, input_json: capText(JSON.stringify(redactDeep(digestInput)), INPUT_CAP),
         probabilities, rules_opinion: rulesOpinion, agreement, session_id: deps.sessionId ?? null,
       });
     } catch {

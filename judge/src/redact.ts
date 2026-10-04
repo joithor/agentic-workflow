@@ -17,7 +17,19 @@ export function redactSecrets(text: string): string {
   return PATTERNS.reduce((acc, re) => acc.replace(re, "[REDACTED]"), text);
 }
 
-// Callers that store untrusted text must redact first, then cap: a secret cut
+// Redact string values (and object keys) before serializing: in serialized
+// JSON a newline or tab is a backslash plus a letter, which hides the word
+// boundary the patterns anchor on.
+export function redactDeep(value: unknown): unknown {
+  if (typeof value === "string") return redactSecrets(value);
+  if (Array.isArray(value)) return value.map(redactDeep);
+  if (value !== null && typeof value === "object") {
+    return Object.fromEntries(Object.entries(value).map(([k, v]) => [redactSecrets(k), redactDeep(v)]));
+  }
+  return value;
+}
+
+// Callers that store untrusted input must redact (redactDeep) first, then cap: a secret cut
 // at the cap boundary would no longer match its pattern.
 export function capText(text: string, maxChars: number): string {
   if (text.length <= maxChars) return text;
