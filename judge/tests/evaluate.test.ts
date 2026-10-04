@@ -365,6 +365,18 @@ describe("evaluate", () => {
       expect(getDecisionDetails(db, "u2")?.probabilities).toEqual(below.probabilities);
     });
 
+    it("treats a throwing fallbackRules as no fallback and continues the chain", async () => {
+      const db = openDb(":memory:");
+      const q = question({ threshold: 0.8, fallbackRules: () => { throw new Error("boom"); } });
+      const cli = fakeProvider<Output>("claude-cli", ["message-meta"], { status: "decided", decision: "drop", confidence: 0.9, reason_code: "model" });
+      const out = await evaluate(q, { text: "hi" }, {
+        db, config: DEFAULT_CONFIG, randomId: () => "u3",
+        providers: [fakeProvider<Output>("jev", ["message-meta"], below), cli],
+        chain: { classes: { "message-meta": ["jev", "claude-cli"] } },
+      });
+      expect(out).toMatchObject({ decision: "drop", model: "claude-cli" });
+    });
+
     it("prefers the settling provider's own probabilities over an earlier undecided answer", async () => {
       const db = openDb(":memory:");
       const second = fakeProvider<Output>("claude-cli", ["message-meta"], { status: "decided", decision: "drop", confidence: 0.9, reason_code: "m", probabilities: { drop: 0.9 } });

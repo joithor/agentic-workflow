@@ -35,6 +35,16 @@ function hadRealFailure(skipped: readonly SkippedProvider[]): boolean {
   return skipped.some((s) => s.reason === "failed" || s.reason === "timeout");
 }
 
+// Fallback rules are advisory: a throwing rule behaves like "no opinion" and
+// must never escape evaluate() (fails open).
+function safeFallback<I, O extends string>(question: QuestionModule<I, O>, input: I): O | null {
+  try {
+    return question.fallbackRules?.(input) ?? null;
+  } catch {
+    return null;
+  }
+}
+
 export async function evaluate<I, O extends string>(
   question: QuestionModule<I, O>,
   rawInput: unknown,
@@ -165,18 +175,13 @@ export async function evaluate<I, O extends string>(
       skipped.push({ provider: provider.name, reason: "below_threshold" });
       lastReason = "below-threshold";
       undecidedProbs = result.probabilities ?? undecidedProbs;
-      const fallback = question.fallbackRules?.(input) ?? null;
+      const fallback = safeFallback(question, input);
       if (fallback !== null) return settle(fallback, 1, "rules", "fallback-after-undecided", latencyMs, i, skipped, undefined, undecidedProbs, "undecided");
       continue;
     }
     // What the fallback rules would have said: telemetry only, so a throwing
     // rule must never change or break the model's decision.
-    let opinion: O | null = null;
-    try {
-      opinion = question.fallbackRules?.(input) ?? null;
-    } catch {
-      opinion = null;
-    }
+    const opinion = safeFallback(question, input);
     const agreement = opinion === null ? undefined : opinion === result.decision ? "agreed" : "overrode";
     return settle(
       result.decision, result.confidence, provider.name, result.reason_code, latencyMs, i, skipped, result.extra,
