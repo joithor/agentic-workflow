@@ -301,6 +301,15 @@ export function labelAgreement(db: Db, question: string): { shared: number; agre
   return { shared: row.shared, agreed: row.agreed ?? 0 };
 }
 
+// Items carrying both an outcome and an adjudicator label (neither skipped).
+export function sharedLabels(db: Db, question: string): Array<{ itemId: string; outcome: string; adjudicator: string }> {
+  return db.prepare(
+    `SELECT e.id AS itemId, o.label AS outcome, a.label AS adjudicator
+     FROM eval_items e JOIN labels o ON o.item_id = e.id AND o.source = 'outcome' AND o.label != 'skip'
+     JOIN labels a ON a.item_id = e.id AND a.source = 'adjudicator' AND a.label != 'skip' WHERE e.question = ? ORDER BY e.created_at ASC, e.id ASC`,
+  ).all(question) as Array<{ itemId: string; outcome: string; adjudicator: string }>;
+}
+
 export function labelCounts(db: Db): Array<{ question: string; items: number; labeled: number; skipped: number }> {
   return db.prepare(
     `SELECT e.question AS question, COUNT(*) AS items,

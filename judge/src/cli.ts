@@ -11,8 +11,9 @@ import {
 } from "./commands.js";
 import { adjudicate } from "./adjudicate.js";
 import { buildChain } from "./chain.js";
-import { judgeConfigPath, judgeDbPath, loadConfig } from "./config.js";
+import { judgeConfigPath, judgeDbPath, judgeStateDir, loadConfig } from "./config.js";
 import { openDb, pruneDecisionDetails } from "./db.js";
+import { makeRecorder, readReplay, runEval, writeEvalReport } from "./eval.js";
 import { runLabelImport, runLabelSet, runLabelStatus } from "./label.js";
 import { runOutcomeLabels } from "./outcomes.js";
 import { AGENT_CLI_BINARIES, isOnPath, resolveAgentClis } from "./detect.js";
@@ -125,6 +126,25 @@ async function main(): Promise<{ exitCode: number; stdout: string; stderr?: stri
       } catch (e) {
         return { exitCode: 1, stdout: "", stderr: (e as Error).message };
       }
+    }
+    case "eval": {
+      const q = rest[0] ?? "";
+      const providerName = flag("--provider") ?? "jev";
+      const provider = providers.find((p) => p.name === providerName && p.name !== "rules");
+      if (provider === undefined) return { exitCode: 1, stdout: "", stderr: `provider not available: ${providerName}` };
+      const labels = flag("--labels") ?? "any";
+      if (labels !== "any" && labels !== "outcome" && labels !== "adjudicator" && labels !== "override") return { exitCode: 1, stdout: "", stderr: "--labels must be outcome, adjudicator, override or any" };
+      const recordFile = flag("--record");
+      const replayFile = flag("--replay");
+      let replay;
+      try {
+        replay = replayFile === undefined ? undefined : readReplay(replayFile);
+      } catch (e) {
+        return { exitCode: 1, stdout: "", stderr: `cannot read replay file: ${(e as Error).message}` };
+      }
+      const r = await runEval(db, { question: q, provider, variant: flag("--variant") ?? "as-is", labels, record: recordFile === undefined ? undefined : makeRecorder(recordFile), replay });
+      if (r.report !== undefined) writeEvalReport(path.join(judgeStateDir(), "judge", "evals"), r.report, Date.now());
+      return r;
     }
     case "brief": {
       const sub = rest[0];
