@@ -65,6 +65,7 @@ export async function evaluate<I, O extends string>(
     outcome: DecisionOutcome, reasonCode: string, provider: Provider["name"] | "none", decision: O | null,
     confidence: number, latencyMs: number, chainPosition: number, skipped: SkippedProvider[], digestInput: unknown,
     probabilities: Record<string, number> | null = null, agreement: Agreement | null = null,
+    rulesOpinion: string | null = null,
   ): void => {
     try {
       recordDecision(deps.db, {
@@ -73,7 +74,7 @@ export async function evaluate<I, O extends string>(
         input_digest: crypto.createHash("sha256").update(JSON.stringify(digestInput)).digest("hex").slice(0, 16),
         undone_at: null, chain_position: chainPosition, skipped, outcome,
       });
-      recordDetails(digestInput, probabilities, null, agreement);
+      recordDetails(digestInput, probabilities, rulesOpinion, agreement);
     } catch {
       // Storage fails open: the outcome still stands, and the miss itself is
       // a judge failure a healthy system should surface (spec: Visibility).
@@ -104,9 +105,9 @@ export async function evaluate<I, O extends string>(
   const settle = (
     decision: O, confidence: number, model: Provider["name"], reasonCode: string,
     latencyMs: number, chainPosition: number, skipped: SkippedProvider[], extra?: Record<string, unknown>,
-    probabilities?: Record<string, number>, agreement?: Agreement,
+    probabilities?: Record<string, number>, agreement?: Agreement, rulesOpinion?: string,
   ): Decision<O> => {
-    recordRow("decided", reasonCode, model, decision, confidence, latencyMs, chainPosition, skipped, input, probabilities ?? null, agreement ?? null);
+    recordRow("decided", reasonCode, model, decision, confidence, latencyMs, chainPosition, skipped, input, probabilities ?? null, agreement ?? null, rulesOpinion ?? null);
     return extra === undefined ? { decision, confidence, model, reason_code: reasonCode, id } : { decision, confidence, model, reason_code: reasonCode, id, extra };
   };
 
@@ -168,7 +169,19 @@ export async function evaluate<I, O extends string>(
       if (fallback !== null) return settle(fallback, 1, "rules", "fallback-after-undecided", latencyMs, i, skipped, undefined, undecidedProbs, "undecided");
       continue;
     }
-    return settle(result.decision, result.confidence, provider.name, result.reason_code, latencyMs, i, skipped, result.extra, result.probabilities ?? undecidedProbs);
+    // What the fallback rules would have said: telemetry only, so a throwing
+    // rule must never change or break the model's decision.
+    let opinion: O | null = null;
+    try {
+      opinion = question.fallbackRules?.(input) ?? null;
+    } catch {
+      opinion = null;
+    }
+    const agreement = opinion === null ? undefined : opinion === result.decision ? "agreed" : "overrode";
+    return settle(
+      result.decision, result.confidence, provider.name, result.reason_code, latencyMs, i, skipped, result.extra,
+      result.probabilities ?? undecidedProbs, agreement, opinion ?? undefined,
+    );
   }
 
   return escalate(lastReason, hadRealFailure(skipped) ? "failed" : "escalated", skipped, undecidedProbs ?? null);

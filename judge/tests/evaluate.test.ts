@@ -297,6 +297,40 @@ describe("evaluate", () => {
     expect(getDecision(db, "id2")?.decision).toBe("send");
   });
 
+  describe("rules agreement telemetry", () => {
+    const run = async (fallbackRules: QuestionModule<Input, Output>["fallbackRules"], answer: Output, id: string) => {
+      const db = openDb(":memory:");
+      const q = question(fallbackRules === undefined ? {} : { fallbackRules });
+      const out = await evaluate(q, { text: "hi" }, {
+        db, config: DEFAULT_CONFIG, randomId: () => id,
+        providers: [fakeProvider<Output>("jev", ["message-meta"], { status: "decided", decision: answer, confidence: 0.9, reason_code: "jev" })],
+        chain: { classes: { "message-meta": ["jev"] } },
+      });
+      return { out, details: getDecisionDetails(db, id) };
+    };
+
+    it("records overrode when the model disagrees with the rules", async () => {
+      const { details } = await run(() => "send", "batch", "r1");
+      expect(details).toMatchObject({ rules_opinion: "send", agreement: "overrode" });
+    });
+
+    it("records agreed when the model matches the rules", async () => {
+      const { details } = await run(() => "send", "send", "r2");
+      expect(details).toMatchObject({ rules_opinion: "send", agreement: "agreed" });
+    });
+
+    it("records null opinion and agreement without fallbackRules or when they return null", async () => {
+      expect((await run(undefined, "send", "r3")).details).toMatchObject({ rules_opinion: null, agreement: null });
+      expect((await run(() => null, "send", "r4")).details).toMatchObject({ rules_opinion: null, agreement: null });
+    });
+
+    it("fails open: a throwing fallbackRules never changes the decision", async () => {
+      const { out, details } = await run(() => { throw new Error("boom"); }, "batch", "r5");
+      expect(out).toMatchObject({ decision: "batch", model: "jev" });
+      expect(details).toMatchObject({ rules_opinion: null, agreement: null });
+    });
+  });
+
   describe("undecided answers", () => {
     const below = { status: "decided", decision: "batch", confidence: 0.55, reason_code: "jev", probabilities: { send: 0.3, batch: 0.55, drop: 0.15 } } as const;
     const failureCount = (db: ReturnType<typeof openDb>): number => (db.prepare("SELECT COUNT(*) n FROM failures").get() as { n: number }).n;
