@@ -16,6 +16,11 @@ export const visualCritique: QuestionModule<VisualCritiqueInput, "looks-right" |
   name: "visual-critique",
   inputSchema: VisualCritiqueInputSchema,
   outputs: ["looks-right", "looks-off", "sloppy"],
+  criteria: {
+    "looks-right": "alignment, spacing, hierarchy and weight look right and match the reference",
+    "looks-off": "there are specific visual problems compared with the reference or expectations",
+    sloppy: "the page looks careless, with pervasive alignment, spacing or hierarchy problems",
+  },
   contentClass: "image",
   timeBudgetMs: 20000,
   threshold: 0.5,

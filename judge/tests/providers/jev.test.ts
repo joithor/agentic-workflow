@@ -1,6 +1,8 @@
 import { describe, expect, it, vi } from "vitest";
 
 import { makeJevProvider } from "../../src/providers/jev.js";
+import { toRef } from "../../src/question.js";
+import { wakeGate } from "../../src/questions/wake-gate.js";
 import type { QuestionRef } from "../../src/types.js";
 
 const question: QuestionRef<"send" | "batch" | "drop"> = {
@@ -11,6 +13,22 @@ describe("jev provider", () => {
   it("covers every text class, not image (F2: vendor review cleared company-code classes 2026-09-28; Jev is text-only)", () => {
     const provider = makeJevProvider({ fetch: vi.fn(), apiKey: async () => "k" });
     expect(provider.classes).toEqual(new Set(["message-meta", "code", "diff", "brief", "transcript"]));
+  });
+
+  it("sends each option's description as Jev criteria, falling back to the option name", async () => {
+    const fetch = vi.fn().mockResolvedValue({ status: 200, json: async () => ({ answers: { decision: { type: "choice", choice: "send", confidence: 0.9 } } }) });
+    const provider = makeJevProvider({ fetch, apiKey: async () => "k" });
+    await provider.decide({ ...question, criteria: { send: "deliver now", batch: "queue for later" } }, {}, 1000);
+    const body = JSON.parse((fetch.mock.calls[0] as [string, { body: string }])[1].body) as { questions: { decision: { criteria: Record<string, string> } } };
+    expect(body.questions.decision.criteria).toEqual({ send: "deliver now", batch: "queue for later", drop: "drop" });
+  });
+
+  it("sends a real question module's descriptions in the request body", async () => {
+    const fetch = vi.fn().mockResolvedValue({ status: 200, json: async () => ({ answers: { decision: { type: "choice", choice: "send", confidence: 0.9 } } }) });
+    const provider = makeJevProvider({ fetch, apiKey: async () => "k" });
+    await provider.decide(toRef(wakeGate, { text: "hello there", senderKind: "teammate" }), {}, 1000);
+    const body = JSON.parse((fetch.mock.calls[0] as [string, { body: string }])[1].body) as { questions: { decision: { criteria: Record<string, string> } } };
+    expect(body.questions.decision.criteria).toEqual(wakeGate.criteria);
   });
 
   it("is unavailable, not an error, with no API key (RF-2)", async () => {

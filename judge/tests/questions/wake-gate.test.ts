@@ -3,6 +3,10 @@ import { describe, expect, it } from "vitest";
 import { wakeGate } from "../../src/questions/wake-gate.js";
 
 describe("wakeGate", () => {
+  it("describes every output in criteria", () => {
+    expect(Object.keys(wakeGate.criteria ?? {})).toEqual([...wakeGate.outputs]);
+  });
+
   it("declares message-meta as its content class", () => {
     expect(wakeGate.contentClass).toBe("message-meta");
   });

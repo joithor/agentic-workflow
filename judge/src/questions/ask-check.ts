@@ -16,6 +16,10 @@ export const askCheck: QuestionModule<AskCheckInput, "continue" | "ask"> = {
   name: "ask-check",
   inputSchema: AskCheckInputSchema,
   outputs: ["continue", "ask"],
+  criteria: {
+    continue: "the next step was already authorized by the dispatch brief or plan",
+    ask: "the next step needs the user's input first",
+  },
   contentClass: "transcript",
   timeBudgetMs: 10000,
   threshold: 0.6,

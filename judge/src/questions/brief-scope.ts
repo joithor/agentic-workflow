@@ -23,6 +23,11 @@ export const briefScope: QuestionModule<BriefScopeInput, "ready" | "missing" | "
   name: "brief-scope",
   inputSchema: BriefScopeInputSchema,
   outputs: ["ready", "missing", "needs_design"],
+  criteria: {
+    ready: "the brief is concrete and checkable",
+    missing: "a required field is present but too vague to act on",
+    needs_design: "a design decision is needed before this can be scoped at all",
+  },
   contentClass: "brief",
   timeBudgetMs: 10000,
   threshold: 0.6,

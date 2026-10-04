@@ -8,6 +8,10 @@ import { uiElementRepair } from "../../src/questions/ui-element-repair.js";
 import { fakeProvider } from "../helpers.js";
 
 describe("uiElementRepair", () => {
+  it("describes every output in criteria", () => {
+    expect(Object.keys(uiElementRepair.criteria ?? {})).toEqual([...uiElementRepair.outputs]);
+  });
+
   it("decides no-good-candidate with zero model calls when there are no candidates (RF-3, pre-rule)", async () => {
     const db = openDb(":memory:");
     const called: string[] = [];
@@ -67,5 +71,9 @@ describe("uiElementRepair — extra response field", () => {
     expect(uiElementRepair.extraProperties).toEqual({ chosenIndex: { type: "integer" } });
     const ref = toRef(uiElementRepair, { brokenSelector: "#x", step: "click", candidates: [] });
     expect(ref.extraProperties).toEqual({ chosenIndex: { type: "integer" } });
+  });
+
+  it("toRef carries criteria", () => {
+    expect(toRef(uiElementRepair, { brokenSelector: "#x", step: "click", candidates: [] }).criteria).toEqual(uiElementRepair.criteria);
   });
 });

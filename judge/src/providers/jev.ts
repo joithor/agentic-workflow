@@ -12,7 +12,7 @@ export function makeJevProvider(deps: { fetch: Fetch; apiKey: () => Promise<stri
     classes: new Set(["message-meta", "code", "diff", "brief", "transcript"]),
     decide: async <O extends string>(question: QuestionRef<O>, input: unknown, budgetMs: number): Promise<ProviderResult<O>> => {
       const criteria: Record<string, string> = {};
-      for (const option of question.outputs) criteria[option] = option;
+      for (const option of question.outputs) criteria[option] = question.criteria?.[option] ?? option;
       const out = await callJev(deps, input, { [QUESTION_KEY]: { type: "choice", instructions: question.prompt, criteria } }, budgetMs);
       if (out.status !== "ok") return out;
       const result = out.answers[QUESTION_KEY] as NonNullable<(typeof out.answers)[string]>;

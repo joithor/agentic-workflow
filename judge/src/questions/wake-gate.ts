@@ -18,6 +18,11 @@ export const wakeGate: QuestionModule<WakeGateInput, WakeGateOutput> = {
   name: "wake-gate",
   inputSchema: WakeGateInputSchema,
   outputs: ["send", "batch", "drop"],
+  criteria: {
+    send: "a result, failure, blocker, question, or plan change that should be delivered immediately",
+    batch: "progress with nothing to act on, to be queued",
+    drop: "a pure acknowledgement with no content",
+  },
   contentClass: "message-meta",
   threshold: 0.7,
   // claude-cli-class questions default to a 10s budget: a real (non-scratch)

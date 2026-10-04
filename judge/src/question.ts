@@ -18,5 +18,6 @@ export interface QuestionModule<I, O extends string> {
 
 export function toRef<I, O extends string>(q: QuestionModule<I, O>, input: I): QuestionRef<O> {
   const ref: QuestionRef<O> = { name: q.name, outputs: q.outputs, prompt: q.prompt(input), contentClass: q.contentClass };
-  return q.extraProperties === undefined ? ref : { ...ref, extraProperties: q.extraProperties };
+  const withExtra = q.extraProperties === undefined ? ref : { ...ref, extraProperties: q.extraProperties };
+  return q.criteria === undefined ? withExtra : { ...withExtra, criteria: q.criteria };
 }

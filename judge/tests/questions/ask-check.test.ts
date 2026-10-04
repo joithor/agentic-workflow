@@ -22,6 +22,10 @@ describe("askCheck", () => {
     },
   );
 
+  it("describes every output in criteria", () => {
+    expect(Object.keys(askCheck.criteria ?? {})).toEqual([...askCheck.outputs]);
+  });
+
   it("asks the model chain when nothing on the deny list is mentioned", async () => {
     const db = openDb(":memory:");
     const cli = fakeProvider("claude-cli", ["transcript"], { status: "decided", decision: "continue", confidence: 0.9, reason_code: "model" });

@@ -12,6 +12,11 @@ export const ruleCheck: QuestionModule<RuleCheckInput, "violated" | "fine" | "n/
   name: "rule-check",
   inputSchema: RuleCheckInputSchema,
   outputs: ["violated", "fine", "n/a"],
+  criteria: {
+    violated: "the diff hunk breaks the rule",
+    fine: "the diff hunk follows the rule",
+    "n/a": "the rule does not apply to this hunk at all",
+  },
   contentClass: "diff",
   timeBudgetMs: 10000,
   threshold: 0.6,
