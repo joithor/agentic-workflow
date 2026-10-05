@@ -46,6 +46,12 @@ describe("callJev", () => {
     });
   });
 
+  it("rejects an inherited property name as a choice", async () => {
+    const fetch = ok({ answers: { kind: { type: "choice", choice: "constructor", probabilities: {}, confidence: 1 } }, usage: { input_tokens: 1, output_tokens: 1 } });
+    const out = await callJev({ fetch, apiKey: async () => "k" }, "s", { kind: questions.kind as never }, 1000);
+    expect(out.status === "ok" && out.answers).toEqual({ kind: { ok: false, reason_code: "unparseable-result" } });
+  });
+
   it("refuses >255 choice options or >10 score levels before calling fetch", async () => {
     const fetch = vi.fn();
     const many = Object.fromEntries(Array.from({ length: 256 }, (_, i) => [`o${i}`, `o${i}`]));

@@ -107,6 +107,19 @@ describe("evaluate", () => {
     expect(result).toEqual({ escalate: true, reason_code: "question-disabled" });
   });
 
+  it("runs the default chain when a question's providers value was malformed in config.json", async () => {
+    const fs = await import("node:fs");
+    const os = await import("node:os");
+    const path = await import("node:path");
+    const { loadConfig } = await import("../src/config.js");
+    const file = path.join(fs.mkdtempSync(path.join(os.tmpdir(), "judge-cfg-")), "config.json");
+    fs.writeFileSync(file, JSON.stringify({ questions: { "wake-gate": { enabled: true, threshold: 0.7, providers: "jev" } } }));
+    const db = openDb(":memory:");
+    const cli = fakeProvider<Output>("claude-cli", ["message-meta"], { status: "decided", decision: "send", confidence: 0.9, reason_code: "ok" });
+    const result = await evaluate(question(), { text: "hmm" }, { db, config: loadConfig(file), providers: [cli] });
+    expect(result).toMatchObject({ decision: "send" });
+  });
+
   it("rejects input that fails the question's Zod schema before any provider runs", async () => {
     const db = openDb(":memory:");
     const q = question();

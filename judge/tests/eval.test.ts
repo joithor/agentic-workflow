@@ -127,6 +127,26 @@ describe("per-source reporting", () => {
     expect(out.report?.sourceWarning).toBeUndefined();
   });
 
+  it("replay scores against the db labels of the current --labels source, counting only items labeled in it", async () => {
+    const db = twoSources(["batch", "batch"]);
+    upsertEvalItem(db, { id: "solo", question: "wake-gate", input_json: INPUT, source: "decision:solo", model_decision: "send", created_at: "2026-10-01T00:00:09.000Z" });
+    recordLabel(db, "solo", "send", "2026-10-02T00:00:00.000Z", "outcome");
+    // Rows were recorded against stale labels ("send"); adjudicator says "batch".
+    const replay: EvalResult[] = ["i0", "i1", "solo"].map((itemId) => ({ itemId, label: "send", result: decided("send", 0.9), latencyMs: 1 }));
+    const out = await runEval(db, { question: "wake-gate", provider: send(), variant: "as-is", labels: "adjudicator", replay });
+    expect(out.report).toMatchObject({ n: 2, accuracy: 0, labelSource: "adjudicator" });
+  });
+
+  it("replay counts a duplicated itemId once, last row winning", async () => {
+    const db = twoSources(["batch"]);
+    const replay: EvalResult[] = [
+      { itemId: "i0", label: "batch", result: decided("send", 0.9), latencyMs: 1 },
+      { itemId: "i0", label: "batch", result: decided("batch", 0.9), latencyMs: 1 },
+    ];
+    const out = await runEval(db, { question: "wake-gate", provider: send(), variant: "as-is", labels: "adjudicator", replay });
+    expect(out.report).toMatchObject({ n: 1, accuracy: 1 });
+  });
+
   it("records the requested label source and omits per-source when replay covers no shared item", async () => {
     const out = await runEval(twoSources(["send"]), { question: "wake-gate", provider: send(), variant: "as-is", labels: "outcome", replay: [{ itemId: "other", label: "send", result: decided("send", 0.9), latencyMs: 1 }] });
     expect(out.report?.labelSource).toBe("outcome");

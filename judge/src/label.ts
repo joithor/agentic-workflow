@@ -12,23 +12,30 @@ export function runLabelImport(db: Db, opts: { question?: string; sinceIso: stri
      WHERE d.outcome = 'decided' AND d.ts >= ? ${opts.question === undefined ? "" : "AND d.question = ?"} ORDER BY d.ts ASC, d.id ASC`,
   ).all(...(opts.question === undefined ? [opts.sinceIso] : [opts.sinceIso, opts.question])) as Array<{ id: string; question: string; decision: string | null; input_json: string }>;
   let imported = 0;
+  let skippedUnparsable = 0;
   for (const r of rows) {
     const q = QUESTIONS[r.question];
-    if (q === undefined || !parses(q.inputSchema.safeParse.bind(q.inputSchema), r.input_json)) continue;
+    if (q === undefined) continue;
+    const parsed = parseJson(r.input_json);
+    if (!parsed.ok) {
+      skippedUnparsable++;
+      continue;
+    }
+    if (!q.inputSchema.safeParse(parsed.value).success) continue;
     const added = upsertEvalItem(db, {
       id: `item-${r.id}`, question: r.question, input_json: r.input_json, source: `decision:${r.id}`,
       model_decision: r.decision, created_at: now().toISOString(),
     });
     if (added) imported++;
   }
-  return { exitCode: 0, stdout: JSON.stringify({ imported }) };
+  return { exitCode: 0, stdout: JSON.stringify({ imported, skipped_unparsable: skippedUnparsable }) };
 }
 
-function parses(safeParse: (v: unknown) => { success: boolean }, json: string): boolean {
+function parseJson(json: string): { ok: true; value: unknown } | { ok: false } {
   try {
-    return safeParse(JSON.parse(json)).success;
+    return { ok: true, value: JSON.parse(json) };
   } catch {
-    return false;
+    return { ok: false };
   }
 }
 

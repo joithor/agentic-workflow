@@ -25,19 +25,27 @@ describe("runLabelImport", () => {
     seed(db, dec("trunc"), '{"text":"cut off');
     seed(db, dec("bad"), '{"nope":1}');
     const opts = { sinceIso: "2026-10-01T00:00:00.000Z" };
-    expect(runLabelImport(db, opts, now)).toEqual({ exitCode: 0, stdout: '{"imported":1}' });
-    expect(runLabelImport(db, opts, now).stdout).toBe('{"imported":0}');
+    expect(runLabelImport(db, opts, now)).toEqual({ exitCode: 0, stdout: '{"imported":1,"skipped_unparsable":1}' });
+    expect(runLabelImport(db, opts, now).stdout).toBe('{"imported":0,"skipped_unparsable":1}');
     const row = db.prepare("SELECT * FROM eval_items").all() as Array<{ source: string; model_decision: string }>;
     expect(row).toHaveLength(1);
     expect(row[0]).toMatchObject({ source: "decision:ok", model_decision: "batch" });
+  });
+
+  it("counts inputs that are not valid JSON (e.g. truncated at the cap) as skipped_unparsable", () => {
+    const db = openDb(":memory:");
+    seed(db, dec("trunc"), '{"text":"cut off');
+    seed(db, dec("bad"), '{"nope":1}');
+    seed(db, dec("ok"));
+    expect(runLabelImport(db, { sinceIso: "2026-10-01T00:00:00.000Z" }, now).stdout).toBe('{"imported":1,"skipped_unparsable":1}');
   });
 
   it("filters by question", () => {
     const db = openDb(":memory:");
     seed(db, dec("w"));
     seed(db, dec("a", { question: "ask-check", decision: "ask" }), '{"transcriptTail":"x"}');
-    expect(runLabelImport(db, { sinceIso: "2026-10-01T00:00:00.000Z", question: "wake-gate" }, now).stdout).toBe('{"imported":1}');
-    expect(runLabelImport(db, { sinceIso: "2026-10-01T00:00:00.000Z" }, now).stdout).toBe('{"imported":1}');
+    expect(runLabelImport(db, { sinceIso: "2026-10-01T00:00:00.000Z", question: "wake-gate" }, now).stdout).toBe('{"imported":1,"skipped_unparsable":0}');
+    expect(runLabelImport(db, { sinceIso: "2026-10-01T00:00:00.000Z" }, now).stdout).toBe('{"imported":1,"skipped_unparsable":0}');
   });
 });
 

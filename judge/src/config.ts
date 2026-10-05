@@ -20,9 +20,16 @@ function parseQuestions(raw: Record<string, unknown>): Record<string, JudgeQuest
   const out: Record<string, JudgeQuestionConfig> = {};
   for (const [name, entry] of Object.entries(raw)) {
     const providers = (entry as { providers?: unknown } | null)?.providers;
-    out[name] = Array.isArray(providers)
-      ? { ...(entry as JudgeQuestionConfig), providers: providers.filter(isProviderName) }
-      : (entry as JudgeQuestionConfig);
+    const named = Array.isArray(providers) ? providers.filter(isProviderName) : [];
+    if (named.length > 0) {
+      out[name] = { ...(entry as JudgeQuestionConfig), providers: named };
+    } else if (providers !== undefined) {
+      // Not an array, or filtered to nothing: treat as unset (default chain).
+      const { providers: _dropped, ...rest } = entry as JudgeQuestionConfig;
+      out[name] = rest;
+    } else {
+      out[name] = entry as JudgeQuestionConfig;
+    }
   }
   return out;
 }

@@ -122,7 +122,12 @@ export async function runEval(
 
   let results: EvalResult[];
   if (opts.replay !== undefined) {
-    results = [...opts.replay];
+    // Last row per item wins; labels always come from the db for the current source.
+    const latest = new Map(opts.replay.map((r) => [r.itemId, r] as const));
+    results = items.flatMap((item) => {
+      const row = latest.get(item.id);
+      return row === undefined ? [] : [{ ...row, label: item.label }];
+    });
   } else {
     results = [];
     for (const item of items) {

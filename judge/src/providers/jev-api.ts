@@ -44,7 +44,7 @@ function parseAnswer(q: JevQuestion, raw: unknown): JevQuestionResult {
   if (a.type !== q.type) return bad;
   if (q.type === "noul") return isNum(a.noul) ? { ok: true, answer: { type: "noul", noul: a.noul } } : bad;
   if (q.type === "choice") {
-    if (typeof a.choice !== "string" || !(a.choice in q.criteria)) return bad;
+    if (typeof a.choice !== "string" || !Object.hasOwn(q.criteria, a.choice)) return bad;
     return { ok: true, answer: { type: "choice", choice: a.choice, probabilities: isProbs(a.probabilities) ? a.probabilities : {}, confidence: isNum(a.confidence) ? a.confidence : 1 } };
   }
   if (!isNum(a.score)) return bad;
