@@ -29,7 +29,7 @@ Assign `PORT` explicitly at the top of **every** bash block (shell state does no
 1. **Dashboard reachability:**
    ```bash
    PORT="${PRISM_DASHBOARD_PORT:-7180}"   # replace with the --port value if one was given
-   curl -fsS --max-time 3 "http://localhost:$PORT/health"
+   curl -fsS --max-time 3 -o /dev/null "http://localhost:$PORT/"
    ```
    Capture exit code and body. Report ✓ on 0, ✗ on non-zero.
 
