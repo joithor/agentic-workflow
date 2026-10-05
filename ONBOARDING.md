@@ -178,7 +178,7 @@ Each of these checks whether the repo is web or iOS and routes to the matching `
 /specToProvenPR ~/.agentic-workflow/<repo-slug>/plans/<feature>/plan.md
 ```
 
-This splits the spec into stages. For each stage it plans, implements, proves the result in the running app, and loops on review until there are no findings. Only then does it open a PR. If you stop partway, run `/specToProvenPR` with no argument to pick up from `stages.md`.
+This splits the spec into stages. For each stage it plans, implements, tests the result by hand in the running app, proves it with an evidence pack, and gathers UI evidence when the stage changes the web UI. Only then does it open a draft PR and loop on review until there are no findings. If you stop partway, run `/specToProvenPR` with no argument to pick up from `stages.md`.
 
 If you'd rather build it yourself, just work normally and run `/verify-app auto` to check your change in the running app. It uses Playwright for web and the simulator for iOS, and writes an evidence pack.
 

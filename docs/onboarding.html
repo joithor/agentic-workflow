@@ -567,7 +567,7 @@
       cmds: () => [`${cmd("design-language")} https://example.com`, `${cmd("design-shotgun")} reports  # optional: 4–6 variants`, `${cmd("design-mockup")} reports-page`, `${cmd("design-implement")} reports-page`, `${cmd("design-verify")} reports-page`] },
     { name: "Build", icon: icon('<path d="M16 18l6-6-6-6M8 6l-6 6 6 6"/>'),
       title: "Build it and prove it works",
-      body: "<code>specToProvenPR</code> splits the spec into stages. For each stage it plans, implements, proves the result in the running app, and loops on review until there are no findings. Only then does it open a PR. If you'd rather build it yourself, run <code>verify-app auto</code> to check your change in the real app and get an evidence pack.",
+      body: "<code>specToProvenPR</code> splits the spec into stages. For each stage it plans, implements, tests the result by hand in the running app, proves it with an evidence pack, and gathers UI evidence when the stage changes the web UI. Only then does it open a draft PR and loop on review until there are no findings. If you'd rather build it yourself, run <code>verify-app auto</code> to check your change in the real app and get an evidence pack.",
       you: "Approve each stage's plan. Run it with no argument to pick up where it stopped.",
       cmds: () => [`${cmd("specToProvenPR")} ~/.agentic-workflow/<repo>/plans/<feature>/plan.md`, `${cmd("verify-app")} auto`] },
     { name: "Review", icon: icon('<circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/>'),
