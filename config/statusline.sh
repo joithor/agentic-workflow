@@ -83,34 +83,38 @@ judge_segment() {
 
 # Background refresh of the cache file $1 for session $2 (cwd $3). Never prints; atomic write.
 live_refresh() {
-  local cache="$1" sid="$2" cwd="$3" lock="$1.lock" bin snap="" hs hf tmp
+  local cache="$1" sid="$2" cwd="$3" lock="$1.lock" bin snap="" hs hf tmp now
   mkdir -p "$(dirname "$cache")" 2>/dev/null || return 0
   # One refresher at a time; a lock older than a minute belongs to a dead refresher.
   find "$lock" -maxdepth 0 -mmin +1 -exec rmdir {} \; 2>/dev/null
   mkdir "$lock" 2>/dev/null || return 0
   bin="$(find_bin scorer)" && snap="$("$bin" live --session "$sid" ${cwd:+--cwd "$cwd"} --json 2>/dev/null)"
+  tmp="$cache.$$.tmp"
+  now="$(date +%s)"
   if [ -n "$snap" ] && echo "$snap" | jq -e '.v == 1 and (.usage.calls | type == "number")' >/dev/null 2>&1; then
     read -r hs hf <<<"$(judge_health)"
-    tmp="$cache.$$.tmp"
-    if echo "$snap" | jq --argjson at "$(date +%s)" --arg hs "$hs" --argjson hf "${hf:-0}" '{
+    case "$hf" in ''|*[!0-9]*) hf=0 ;; esac
+    echo "$snap" | jq --argjson at "$now" --arg hs "$hs" --argjson hf "$hf" '{
          at: $at,
          calls: .usage.calls,
          over200k: .usage.callsOver200k,
          judgeCalls: (if .judge.state == "ok" then .judge.calls else null end),
          judge: $hs,
-         failures: $hf }' >"$tmp" 2>/dev/null; then
-      mv -f "$tmp" "$cache"
-    else
-      rm "$tmp" 2>/dev/null
-    fi
+         failures: $hf }' >"$tmp" 2>/dev/null
   fi
+  # Failure: keep any earlier numbers but stamp a new `at`, so the next refresh waits a full TTL.
+  if [ ! -s "$tmp" ]; then
+    { [ -f "$cache" ] && jq --argjson at "$now" '.at = $at' "$cache" 2>/dev/null; } >"$tmp" 2>/dev/null
+    [ -s "$tmp" ] || printf '{"at":%s}\n' "$now" >"$tmp"
+  fi
+  mv -f "$tmp" "$cache" 2>/dev/null
   rmdir "$lock" 2>/dev/null
   return 0
 }
 
 # Prints the Live column text for session $1 (cwd $2); `--` whenever there is nothing to show.
 live_text() {
-  local sid="$1" cwd="$2" cache now age
+  local sid="$1" cwd="$2" cache now age text
   # The id becomes part of a path: accept only plain file-name characters.
   [[ "$sid" =~ ^[A-Za-z0-9._-]+$ ]] || { echo "--"; return; }
   find_bin scorer >/dev/null || { echo "--"; return; }
@@ -131,7 +135,9 @@ live_text() {
     ( live_refresh "$cache" "$sid" "$cwd" </dev/null >/dev/null 2>&1 & )
   fi
   case "$L_CALLS$L_OVER" in ''|*[!0-9]*) echo "--"; return ;; esac
-  echo "$L_CALLS calls · $L_OVER >200k · $(judge_segment "$L_JUDGE" "$L_JCALLS")"
+  text="$L_CALLS calls · $L_OVER >200k · $(judge_segment "$L_JUDGE" "$L_JCALLS")"
+  [ "${#text}" -gt "$LIVE_W" ] && text="${text:0:$((LIVE_W - 1))}…"
+  echo "$text"
 }
 
 # Tier selection: Live (36 wide) outranks Lines, so it shows from 141 columns up.

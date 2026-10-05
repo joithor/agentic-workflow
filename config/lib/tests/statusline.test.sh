@@ -124,6 +124,37 @@ assert_not_contains "$nos" "calls" "missing scorer: no counts"
 sleep 1
 [ ! -f "$CACHE" ] && ok "missing scorer: no cache written" || bad "missing scorer: cache appeared"
 
+# --- negative caching: a failing scorer is not re-run on every render ---
+mkdir -p "$TMP/failbin"
+printf '#!/usr/bin/env bash\necho "$*" >>"$FAKE_LOG"\nexit 1\n' >"$TMP/failbin/scorer"
+cp "$TMP/bin/judge" "$TMP/failbin/judge"
+chmod +x "$TMP/failbin/scorer" "$TMP/failbin/judge"
+rm "$CACHE" 2>/dev/null; : >"$FAKE_LOG"
+run 200 "$SID" "$TMP/failbin:$STRICT_PATH" >/dev/null
+deadline=$(( $(now) + 10 ))
+while [ "$(now)" -lt "$deadline" ] && [ ! -f "$CACHE" ]; do sleep 0.2; done
+sleep 0.5
+[ -f "$CACHE" ] && ok "failed refresh writes a stub cache" || bad "no stub cache after failure"
+fail2="$(run 200 "$SID" "$TMP/failbin:$STRICT_PATH")"
+sleep 1
+assert_contains "$(sed -n 2p <<<"$fail2")" "│ --" "stub renders --"
+[ "$(wc -l <"$FAKE_LOG" | tr -d ' ')" = 1 ] && ok "second render within TTL does not call scorer again" || bad "scorer invoked $(wc -l <"$FAKE_LOG") times"
+
+# --- non-numeric failures24h still renders ---
+printf '#!/usr/bin/env bash\necho '"'"'{"status":"degraded","failures24h":"lots"}'"'"'\n' >"$TMP/bin/judge"
+rm "$CACHE"
+run 200 "$SID" >/dev/null
+deadline=$(( $(now) + 10 ))
+while [ "$(now)" -lt "$deadline" ] && ! grep -q '"calls": 500' "$CACHE" 2>/dev/null; do sleep 0.2; done
+assert_contains "$(run 200 "$SID")" "500 calls · 7 >200k · judge ⚠ 4" "non-numeric failures24h: still renders"
+printf '#!/usr/bin/env bash\necho '"'"'{"status":"ok","failures24h":0}'"'"'\n' >"$TMP/bin/judge"
+
+# --- long values are cut to the column width ---
+write_cache "$(now)" 12345 3512 123 degraded
+long="$(sed -n 2p <<<"$(run 200 "$SID")")"
+assert_contains "$long" "12345 calls · 3512 >200k · judge ⚠ …" "long value truncated to 36 chars"
+assert_not_contains "$long" "judge ⚠ 123" "long value does not overflow"
+
 # --- hostile session ids never reach a path or the scorer ---
 : >"$FAKE_LOG"
 for hostile in '../../evil' 'a/b' '$(touch pwned)' 'x y' ''; do
