@@ -130,6 +130,7 @@ describe("resolutionCheck", () => {
   it("caps the diff with a visible marker (RF-1)", () => {
     const prompt = resolutionCheck.prompt({ ...base, diff: "x".repeat(DIFF_CAP + 10) });
     expect(prompt).toContain("[truncated 10 chars]");
+    expect(prompt).not.toContain("x".repeat(DIFF_CAP + 1));
   });
 
   it("keeps the old prompt and input digest byte-identical when no diff is given", () => {

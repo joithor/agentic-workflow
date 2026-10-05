@@ -39,3 +39,43 @@ export function capText(text: string, maxChars: number): string {
 export function capJson(value: unknown, maxChars: number): string {
   return capText(JSON.stringify(value), maxChars);
 }
+
+type Slot = { holder: Record<string, unknown> | unknown[]; key: string | number };
+
+function stringSlots(value: unknown, out: Slot[]): void {
+  if (Array.isArray(value)) {
+    value.forEach((v, i) => (typeof v === "string" ? out.push({ holder: value, key: i }) : stringSlots(v, out)));
+  } else if (value !== null && typeof value === "object") {
+    const rec = value as Record<string, unknown>;
+    for (const k of Object.keys(rec)) {
+      if (typeof rec[k] === "string") out.push({ holder: rec, key: k });
+      else stringSlots(rec[k], out);
+    }
+  }
+}
+
+const SHRINK_FLOOR = 64;
+
+// Like capJson, but the result always parses as JSON: instead of slicing the
+// serialization, the longest string values are shortened (each gets its own
+// "[truncated N chars]" marker) until the whole thing fits. Redact first.
+export function capJsonValue(value: unknown, maxChars: number): string {
+  let text = JSON.stringify(value);
+  if (text.length <= maxChars) return text;
+  const work = structuredClone(value);
+  while (text.length > maxChars) {
+    const slots: Slot[] = [];
+    stringSlots(work, slots);
+    const at = (s: Slot): string => (s.holder as Record<string | number, string>)[s.key];
+    const longest = slots.reduce<Slot | null>((best, s) => (best === null || at(s).length > at(best).length ? s : best), null);
+    if (longest === null || at(longest).length <= SHRINK_FLOOR) {
+      // Nothing left to shorten (e.g. a huge array of numbers): keep a valid stub.
+      return JSON.stringify({ truncated: capText(text, Math.max(0, maxChars - 80)) });
+    }
+    const current = at(longest);
+    const keep = Math.max(0, current.length - (text.length - maxChars) - SHRINK_FLOOR);
+    (longest.holder as Record<string | number, string>)[longest.key] = capText(current, keep);
+    text = JSON.stringify(work);
+  }
+  return text;
+}

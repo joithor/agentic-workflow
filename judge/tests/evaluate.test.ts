@@ -293,7 +293,26 @@ describe("evaluate", () => {
     await evaluate(question(), { text }, { db, config: DEFAULT_CONFIG, providers: [decidedJev()], chain: jevChain, randomId: () => "id3" });
     const stored = getDecisionDetails(db, "id3")?.input_json ?? "";
     expect(stored).not.toContain("sk-ant");
-    expect(stored).toMatch(/\[truncated \d+ chars\]$/);
+    expect(JSON.parse(stored).text).toMatch(/\[truncated \d+ chars\]$/);
+    expect(stored.length).toBeLessThanOrEqual(16000);
+  });
+
+  it("stores an oversize resolution-check diff as valid JSON with a marker, digest unchanged (B4)", async () => {
+    const db = openDb(":memory:");
+    const input = { brief: "b", diff: "+line\n".repeat(10000) };
+    await evaluate(question(), input, { db, config: DEFAULT_CONFIG, providers: [decidedJev()], chain: jevChain, randomId: () => "idbig" });
+    const stored = JSON.parse(getDecisionDetails(db, "idbig")?.input_json ?? "") as { brief: string; diff: string };
+    expect(stored.brief).toBe("b");
+    expect(stored.diff).toMatch(/\[truncated \d+ chars\]$/);
+    expect(getDecision(db, "idbig")?.input_digest).toBe(crypto.createHash("sha256").update(JSON.stringify(input)).digest("hex").slice(0, 16));
+  });
+
+  it("still stores valid JSON when an oversize input has no long strings", async () => {
+    const db = openDb(":memory:");
+    await evaluate(question(), { nums: Array.from({ length: 20000 }, (_, i) => i) }, { db, config: DEFAULT_CONFIG, providers: [decidedJev()], chain: jevChain, randomId: () => "idnum" });
+    const stored = getDecisionDetails(db, "idnum")?.input_json ?? "";
+    expect(stored.length).toBeLessThanOrEqual(16000);
+    expect(JSON.parse(stored)).toHaveProperty("truncated");
   });
 
   it("records the session id from deps alongside the details", async () => {

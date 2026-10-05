@@ -4,7 +4,7 @@ import { recordDecision, recordDecisionDetails, recordFailure, type Agreement, t
 import type { JudgeConfig } from "./config.js";
 import { providersFor, DEFAULT_CHAIN, type ChainSpec } from "./chain.js";
 import { toRef, type QuestionModule } from "./question.js";
-import { capText, INPUT_CAP, redactDeep } from "./redact.js";
+import { capJsonValue, INPUT_CAP, redactDeep } from "./redact.js";
 import type { Decision, Provider } from "./types.js";
 
 export interface EvaluateDeps {
@@ -63,7 +63,7 @@ export async function evaluate<I, O extends string>(
   ): void => {
     try {
       recordDecisionDetails(deps.db, {
-        id, input_json: capText(JSON.stringify(redactDeep(digestInput)), INPUT_CAP),
+        id, input_json: capJsonValue(redactDeep(digestInput), INPUT_CAP),
         probabilities, rules_opinion: rulesOpinion, agreement, session_id: deps.sessionId ?? null,
       });
     } catch {
