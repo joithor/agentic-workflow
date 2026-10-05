@@ -60,3 +60,26 @@ Task 6 is not built.
 - Labels are heavily imbalanced: progressing is 86% (outcome) and 92% (adjudicator) of items. On outcome labels Jev's overall accuracy (73–74%) is below the majority-class baseline, so a decisive-only gate is the only way this judge could add value.
 - claude-cli (`full`) is almost always decisive (98%) but only 73.5% accurate on decisive answers, at about 6.8 s p50 versus about 180 ms for Jev.
 - Data: 437 turns imported from 14 days of transcripts, 420 outcome-labeled, 120 adjudicated by Opus (2-of-3, 0 splits, 360 Opus calls). Each Jev variant ran once over each label source; the claude-cli reference ran once.
+
+### Shared-population view (information only)
+
+Recomputed from the recorded runs (`~/.agentic-workflow/judge/evals/tp-<variant>-outcome.jsonl` and `tp-<variant>-adj.jsonl`), restricted to the 112 turn-progress items that carry both an outcome and an adjudicator label (read-only query of `eval_items`/`labels`), collapsed to progressing vs everything else (stalled). Decisive means decided with confidence >= 0.7 (the question's threshold).
+
+| variant | source | n | decisive rate | accuracy-on-decisive |
+|---|---|---|---|---|
+| diff-only | outcome | 112 | 35.7% (40) | 87.5% |
+| diff-only | adjudicator | 112 | 33.9% (38) | 94.7% |
+| problem+diff | outcome | 112 | 63.4% (71) | 85.9% |
+| problem+diff | adjudicator | 112 | 65.2% (73) | 95.9% |
+| full | outcome | 112 | 56.2% (63) | 87.3% |
+| full | adjudicator | 112 | 57.1% (64) | 95.3% |
+
+On these shared turns `problem+diff` clears every bar on both sources (decisive >= 60%, accuracy-on-decisive >= 80%, and more than 10 points over `diff-only`). The no-go comes from the 308 outcome-only turns (420 outcome-labeled minus these 112), where `problem+diff` is only 51.7% decisive. The rule was fixed before any data as "per label source", so the verdict stands. A pre-registered shared-population re-run is the way to revisit it.
+
+### Variance
+
+The same variant on the same 112 shared turns gives different numbers in the outcome run than in the adjudicator run: `problem+diff` decisive 63.4% vs 65.2%, `full` 56.2% vs 57.1%, `diff-only` 35.7% vs 33.9%. Each cell is a single run, so differences of a few points are noise.
+
+### Follow-up
+
+The resolution-check verdict is deferred: re-run `stat` vs `full` once stored inputs exist, otherwise drop the `diff` field.
