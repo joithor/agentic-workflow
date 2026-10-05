@@ -33,7 +33,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "SHELL_PID=$(cat \"$HOME/.claude/shell_pid\" 2>/dev/null); [ -n \"$SHELL_PID\" ] && kill -WINCH \"$SHELL_PID\" 2>/dev/null; sleep 0.05; true"
+            "command": "p=$PPID; for i in 1 2 3 4 5 6 7 8; do o=$(ps -o ppid=,tty= -p $p 2>/dev/null); set -- $o; t=$2; case $t in \"\"|\"??\"|-) p=$1;; *) f=\"$HOME/.claude/shell_pid.d/$t\"; [ -f \"$f\" ] && kill -WINCH \"$(cat \"$f\")\" 2>/dev/null; break;; esac; done; sleep 0.05; true"
           }
         ]
       }
@@ -44,7 +44,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "SHELL_PID=$(cat \"$HOME/.claude/shell_pid\" 2>/dev/null); [ -n \"$SHELL_PID\" ] && kill -WINCH \"$SHELL_PID\" 2>/dev/null; true"
+            "command": "p=$PPID; for i in 1 2 3 4 5 6 7 8; do o=$(ps -o ppid=,tty= -p $p 2>/dev/null); set -- $o; t=$2; case $t in \"\"|\"??\"|-) p=$1;; *) f=\"$HOME/.claude/shell_pid.d/$t\"; [ -f \"$f\" ] && kill -WINCH \"$(cat \"$f\")\" 2>/dev/null; break;; esac; done; true"
           }
         ]
       },

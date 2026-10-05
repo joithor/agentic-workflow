@@ -53,10 +53,80 @@ input() { # session id
 run() { # cols session-id [PATH]
   echo "$2" >/dev/null
   echo "$1" >"$HOME/.claude/terminal_width"
-  input "$2" | PATH="${3:-$TMP/bin:$STRICT_PATH}" bash "$SCRIPT"
+  input "$2" | AW_STATUSLINE_TTY="${AW_STATUSLINE_TTY-}" PATH="${3:-$TMP/bin:$STRICT_PATH}" bash "$SCRIPT"
 }
 
 echo "statusline Live column tests"
+
+# --- width source: own terminal first; per-tty files, no shared state between windows ---
+# Stub tty size lookup: "ttysA" is 200 columns, "ttysB" is 90, anything else has no size.
+export TTY_COLS_STUB='case "$1" in ttysA) echo 200;; ttysB) echo 90;; esac'
+mkdir -p "$HOME/.claude/terminal_width.d"
+wrun() { # tty [debug]  (SID-based so the Live refresh stays quiet)
+  input "$SID" | AW_STATUSLINE_DEBUG="${2:-}" AW_STATUSLINE_TTY="$1" AW_STATUSLINE_TTY_COLS_CMD="$TTY_COLS_STUB" \
+    PATH="$TMP/bin:$STRICT_PATH" bash "$SCRIPT" 2>&1
+}
+echo 40 >"$HOME/.claude/terminal_width"          # stale legacy global
+echo 40 >"$HOME/.claude/terminal_width.d/ttysA"  # stale per-tty file
+w=$(wrun ttysA 1)
+assert_contains "$w" "width: 200 (source: ancestor-tty)" "own tty width wins over stale files"
+assert_contains "$w" "Live" "stale narrow files ignored: Live shown"
+echo 120 >"$HOME/.claude/terminal_width.d/ttysZ"
+w=$(wrun ttysZ 1)
+assert_contains "$w" "width: 120 (source: terminal_width.d)" "tty without size: falls back to its own terminal_width.d file"
+rm "$HOME/.claude/terminal_width.d/ttysZ"
+w=$(wrun ttysZ 1)
+assert_not_contains "$w" "terminal_width-legacy" "tty with no size and no file never reads the global file"
+echo 120 >"$HOME/.claude/terminal_width"
+w=$(wrun "" 1)
+assert_contains "$w" "width: 120 (source: terminal_width-legacy)" "no ancestor tty at all: legacy global file"
+assert_not_contains "$(wrun ttysA)" "statusline width:" "debug output is off by default"
+
+# --- two concurrent sessions, different ttys, each renders its own tier ---
+echo 200 >"$HOME/.claude/terminal_width.d/ttysB"   # a file for B must not leak into A or vice versa
+wrun ttysA >"$TMP/outA" & wrun ttysB >"$TMP/outB" &
+wait
+outA=$(cat "$TMP/outA"); outB=$(cat "$TMP/outB")
+assert_contains "$outA" "Live" "session A (200 cols) has the Live column"
+assert_not_contains "$outB" "Live" "session B (90 cols) is narrow, even with a 200 file for its tty"
+echo 50 >"$HOME/.claude/terminal_width.d/ttysA"
+outA2=$(wrun ttysA); outB2=$(wrun ttysB)
+[ "$outA2" = "$outA" ] && [ "$outB2" = "$outB" ] && ok "writes to one tty's file change neither session" || bad "cross-session leak"
+: >"$FAKE_LOG"
+
+# --- shell-integration template must not write from tool shells / non-tty ---
+SI="$TMP/si.sh"
+sed -n "/^ *cat > \"\$si_tmp\" << 'SHELL_EOF'/,/^SHELL_EOF/p" "$ROOT/providers/claude/install.sh" | sed '1d;$d' >"$SI"
+[ -s "$SI" ] && ok "shell integration template extracted" || bad "shell integration template not found"
+rm -f "$HOME"/.claude/terminal_width "$HOME"/.claude/terminal_width.d/* "$HOME"/.claude/shell_pid.d/* 2>/dev/null
+rmdir "$HOME/.claude/terminal_width.d" "$HOME/.claude/shell_pid.d" 2>/dev/null
+CLAUDECODE=1 COLUMNS=97 bash -i -c ". $SI" >/dev/null 2>&1 </dev/null
+COLUMNS=97 bash -c ". $SI" >/dev/null 2>&1 </dev/null
+COLUMNS=97 bash -i -c ". $SI" >/dev/null 2>&1 </dev/null
+[ ! -e "$HOME/.claude/terminal_width.d" ] && [ ! -e "$HOME/.claude/terminal_width" ] \
+  && ok "shell integration: CLAUDECODE / non-interactive / no tty write nothing" || bad "shell integration wrote without a tty or under CLAUDECODE"
+if command -v python3 >/dev/null 2>&1; then
+  # Real pty, interactive shell: writes only terminal_width.d/<tty>, never the global file.
+  ptyrun() { env "$@" python3 - "$SI" <<'PY' >/dev/null 2>&1 || true
+import os, pty, sys
+pid, fd = pty.fork()
+if pid == 0:
+    os.execvp("bash", ["bash", "-i", "-c", ". " + sys.argv[1]])
+try:
+    while os.read(fd, 1024):
+        pass
+except OSError:
+    pass
+os.waitpid(pid, 0)
+PY
+  }
+  ptyrun CLAUDECODE=1
+  [ ! -e "$HOME/.claude/terminal_width.d" ] && ok "shell integration: interactive pty under CLAUDECODE=1 writes nothing" || bad "pty + CLAUDECODE=1 wrote a width file"
+  unset CLAUDECODE; ptyrun COLUMNS=150
+  n=$(ls "$HOME/.claude/terminal_width.d" 2>/dev/null | wc -l | tr -d ' ')
+  [ "$n" = 1 ] && [ ! -e "$HOME/.claude/terminal_width" ] && [ "$(cat "$HOME"/.claude/terminal_width.d/* 2>/dev/null)" = 150 ] \
+    && ok "shell integration: interactive pty writes terminal_width.d/<tty> only" || bad "interactive pty: $n per-tty files"
+fi
 
 # --- WIDE and MEDIUM show Live from a fresh cache; NARROW hides it ---
 write_cache "$(now)" 1289 351 12 ok
@@ -197,10 +267,10 @@ sleep 1
 
 # --- empty stdin still prints the placeholder header, Live included at WIDE ---
 echo 200 >"$HOME/.claude/terminal_width"
-empty="$(echo '' | PATH="$TMP/bin:$STRICT_PATH" bash "$SCRIPT")"
+empty="$(echo '' | AW_STATUSLINE_TTY= PATH="$TMP/bin:$STRICT_PATH" bash "$SCRIPT")"
 assert_contains "$empty" "Lines     │ Live" "fallback WIDE: Live header present"
 echo 90 >"$HOME/.claude/terminal_width"
-empty="$(echo '' | PATH="$TMP/bin:$STRICT_PATH" bash "$SCRIPT")"
+empty="$(echo '' | AW_STATUSLINE_TTY= PATH="$TMP/bin:$STRICT_PATH" bash "$SCRIPT")"
 assert_not_contains "$empty" "Live" "fallback NARROW: no Live"
 
 echo ""
