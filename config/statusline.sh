@@ -5,12 +5,14 @@
 # Spec: docs/superpowers/specs/2026-03-21-statusline-config-design.md
 #
 # Column priority (left → right, leftmost always survive tier drops):
-#   5h Usage | 7d Usage | Context | Model | Branch | Cost | Time | Cache | API | Lines
+#   5h Usage | 7d Usage | Context | Model | Branch | Cost | Time | Cache | API | Lines | Live
 #
 # Width detection: ~/.claude/terminal_width (shell-integration.sh) → stty /dev/tty → $COLUMNS → 200
 # Tiers (total visible chars, approx):
-#   ≥116: FULL      — all columns, branch×15, full ctx bar
-#   ≥101: MEDIUM    — no Lines, branch×12, full ctx bar
+#   ≥156: FULL+Live   — all columns plus Live, branch×15, full ctx bar
+#   ≥141: MEDIUM+Live — no Lines, plus Live (Live outranks Lines), branch×12
+#   ≥116: FULL      — all columns except Live, branch×15, full ctx bar
+#   ≥101: MEDIUM    — no Lines/Live, branch×12, full ctx bar
 #   ≥78:  NARROW    — no Lines/Cache/API, 7d % only (no reset), narrow ctx, branch×12
 #   ≥65:  COMPACT   — 5h % only (no reset), narrow ctx, model, branch×10, cost, time (64 chars)
 #   <65:  COMPACT-S — same as COMPACT but drops Time column (54 chars)
@@ -38,42 +40,134 @@ if [ -z "$COLS" ] || ! [ "$COLS" -gt 0 ] 2>/dev/null; then
 fi
 : "${COLS:=200}"
 
-# --- Judge segment (cheap-agent-harness Plan 2) ---
-# `judge ✓` healthy, `judge ⚠ n failures` degraded, `judge ✗ down` missing/erroring.
-# Shells out to `judge health` rather than reading decisions.sqlite directly, so
-# every judge-health consumer (this, the SessionStart hook, the scorer report)
-# agrees by construction.
-judge_segment() {
-  if ! command -v judge &>/dev/null; then
-    echo "judge ✗ down"
-    return
-  fi
-  local out status failures
-  out="$(judge health 2>/dev/null)" || { echo "judge ✗ down"; return; }
+# --- Live column (scorer live snapshot + judge health) ---
+# `1289 calls · 351 >200k · judge ✓ 12`. The statusline runs often and must never wait
+# on scorer or judge, so it only READS a per-session cache and, when that is older than
+# the TTL, starts a detached background refresh and prints the cached value right away.
+LIVE_W=36                                    # visible width of the Live column
+LIVE_TTL="${AW_STATUSLINE_LIVE_TTL:-15}"     # seconds before the cache is refreshed
+STATE_DIR="${AW_STATE_DIR:-$HOME/.agentic-workflow}"
+
+# Finds an aw CLI: PATH first, then the installer's directory.
+find_bin() {
+  command -v "$1" 2>/dev/null && return 0
+  [ -x "$HOME/.local/bin/$1" ] && echo "$HOME/.local/bin/$1"
+}
+
+# Health of the judge as `<ok|degraded|down> <failures24h>`. Shells out to `judge health`
+# rather than reading decisions.sqlite directly, so every judge-health consumer (this, the
+# SessionStart hook, the scorer report) agrees by construction. Only the background refresh
+# calls this; the statusline itself reads the cached result.
+judge_health() {
+  local bin out status failures
+  bin="$(find_bin judge)" || { echo "down 0"; return; }
+  out="$("$bin" health 2>/dev/null)" || { echo "down 0"; return; }
   status="$(echo "$out" | jq -r '.status // empty' 2>/dev/null)"
   failures="$(echo "$out" | jq -r '.failures24h // 0' 2>/dev/null)"
   case "$status" in
-    ok) echo "judge ✓" ;;
-    degraded) echo "judge ⚠ $failures failures" ;;
-    *) echo "judge ✗ down" ;;
+    ok|degraded) echo "$status ${failures:-0}" ;;
+    *) echo "down 0" ;;
   esac
 }
 
+# `judge ✓ 12` / `judge ⚠ 12` / `judge ✗ 12`. Args: status, this session's judge call count ("" = unknown).
+judge_segment() {
+  local glyph
+  case "$1" in
+    ok) glyph="✓" ;;
+    degraded) glyph="⚠" ;;
+    *) glyph="✗" ;;
+  esac
+  echo "judge $glyph${2:+ $2}"
+}
+
+# Background refresh of the cache file $1 for session $2 (cwd $3). Never prints; atomic write.
+live_refresh() {
+  local cache="$1" sid="$2" cwd="$3" lock="$1.lock" bin snap="" hs hf tmp
+  mkdir -p "$(dirname "$cache")" 2>/dev/null || return 0
+  # One refresher at a time; a lock older than a minute belongs to a dead refresher.
+  find "$lock" -maxdepth 0 -mmin +1 -exec rmdir {} \; 2>/dev/null
+  mkdir "$lock" 2>/dev/null || return 0
+  bin="$(find_bin scorer)" && snap="$("$bin" live --session "$sid" ${cwd:+--cwd "$cwd"} --json 2>/dev/null)"
+  if [ -n "$snap" ] && echo "$snap" | jq -e '.v == 1 and (.usage.calls | type == "number")' >/dev/null 2>&1; then
+    read -r hs hf <<<"$(judge_health)"
+    tmp="$cache.$$.tmp"
+    if echo "$snap" | jq --argjson at "$(date +%s)" --arg hs "$hs" --argjson hf "${hf:-0}" '{
+         at: $at,
+         calls: .usage.calls,
+         over200k: .usage.callsOver200k,
+         judgeCalls: (if .judge.state == "ok" then .judge.calls else null end),
+         judge: $hs,
+         failures: $hf }' >"$tmp" 2>/dev/null; then
+      mv -f "$tmp" "$cache"
+    else
+      rm "$tmp" 2>/dev/null
+    fi
+  fi
+  rmdir "$lock" 2>/dev/null
+  return 0
+}
+
+# Prints the Live column text for session $1 (cwd $2); `--` whenever there is nothing to show.
+live_text() {
+  local sid="$1" cwd="$2" cache now age
+  # The id becomes part of a path: accept only plain file-name characters.
+  [[ "$sid" =~ ^[A-Za-z0-9._-]+$ ]] || { echo "--"; return; }
+  find_bin scorer >/dev/null || { echo "--"; return; }
+  cache="$STATE_DIR/scorer/live/$sid.statusline.json"
+  L_AT=""; L_CALLS=""; L_OVER=""; L_JCALLS=""; L_JUDGE=""
+  if [ -f "$cache" ]; then
+    eval "$(jq -r '
+      "L_AT=\(.at // "" | tostring | @sh)",
+      "L_CALLS=\(.calls // "" | tostring | @sh)",
+      "L_OVER=\(.over200k // "" | tostring | @sh)",
+      "L_JCALLS=\(.judgeCalls // "" | tostring | @sh)",
+      "L_JUDGE=\(.judge // "" | tostring | @sh)"' "$cache" 2>/dev/null)"
+  fi
+  now=$(date +%s)
+  case "$L_AT" in ''|*[!0-9]*) age=999999 ;; *) age=$((now - L_AT)) ;; esac
+  if [ "$age" -ge "$LIVE_TTL" ] 2>/dev/null; then
+    # Detached with no inherited stdio, so the host does not wait on it either.
+    ( live_refresh "$cache" "$sid" "$cwd" </dev/null >/dev/null 2>&1 & )
+  fi
+  case "$L_CALLS$L_OVER" in ''|*[!0-9]*) echo "--"; return ;; esac
+  echo "$L_CALLS calls · $L_OVER >200k · $(judge_segment "$L_JUDGE" "$L_JCALLS")"
+}
+
+# Tier selection: Live (36 wide) outranks Lines, so it shows from 141 columns up.
+if [ "$COLS" -ge 156 ] 2>/dev/null; then TIER=full-live
+elif [ "$COLS" -ge 141 ] 2>/dev/null; then TIER=medium-live
+elif [ "$COLS" -ge 116 ] 2>/dev/null; then TIER=full
+elif [ "$COLS" -ge 101 ] 2>/dev/null; then TIER=medium
+elif [ "$COLS" -ge 78 ] 2>/dev/null; then TIER=narrow
+elif [ "$COLS" -ge 65 ] 2>/dev/null; then TIER=compact
+else TIER=compact-s
+fi
+LIVE_HDR_SUF="$(printf ' │ %-*s' "$LIVE_W" Live)"
+
 # Fallback for empty or invalid input
 if [ -z "$INPUT" ] || ! echo "$INPUT" | jq empty 2>/dev/null; then
-  if [ "$COLS" -ge 116 ] 2>/dev/null; then
-    printf '%b\n' '\033[2m5h Usage  │ 7d Usage  │ Context         │ Model      │ Branch          │ Cost    │ Time    │ Cache │ API  │ Lines    \033[0m'
-    printf '%b\n' '--        │ --        │ ░░░░░░░░░░ --   │ --         │ --              │ --      │ --      │ --    │ --   │ --       '
-  elif [ "$COLS" -ge 101 ] 2>/dev/null; then
-    printf '%b\n' '\033[2m5h Usage  │ 7d Usage  │ Context         │ Model      │ Branch       │ Cost    │ Time    │ Cache │ API  \033[0m'
-    printf '%b\n' '--        │ --        │ ░░░░░░░░░░ --   │ --         │ --           │ --      │ --      │ --    │ --   '
-  elif [ "$COLS" -ge 78 ] 2>/dev/null; then
+  LIVE_DASH="$(printf ' │ %-*s' "$LIVE_W" '--')"
+  case "$TIER" in
+  full-live|full)
+    L_H=""; L_V=""; [ "$TIER" = full-live ] && { L_H="$LIVE_HDR_SUF"; L_V="$LIVE_DASH"; }
+    printf '%b\n' "\033[2m5h Usage  │ 7d Usage  │ Context         │ Model      │ Branch          │ Cost    │ Time    │ Cache │ API  │ Lines    ${L_H}\033[0m"
+    printf '%b\n' "--        │ --        │ ░░░░░░░░░░ --   │ --         │ --              │ --      │ --      │ --    │ --   │ --       ${L_V}"
+    ;;
+  medium-live|medium)
+    L_H=""; L_V=""; [ "$TIER" = medium-live ] && { L_H="$LIVE_HDR_SUF"; L_V="$LIVE_DASH"; }
+    printf '%b\n' "\033[2m5h Usage  │ 7d Usage  │ Context         │ Model      │ Branch       │ Cost    │ Time    │ Cache │ API  ${L_H}\033[0m"
+    printf '%b\n' "--        │ --        │ ░░░░░░░░░░ --   │ --         │ --           │ --      │ --      │ --    │ --   ${L_V}"
+    ;;
+  narrow)
     printf '%b\n' '\033[2m5h Usage  │ 7d    │ Context    │ Model      │ Branch       │ Cost    │ Time    \033[0m'
     printf '%b\n' '--        │ --    │ ░░░░░ --   │ --         │ --           │ --      │ --      '
-  else
+    ;;
+  *)
     printf '%b\n' '\033[2m5h    │ Context    │ Model      │ Branch     │ Cost    │ Time    \033[0m'
     printf '%b\n' '--    │ ░░░░░ --   │ --         │ --         │ --      │ --      '
-  fi
+    ;;
+  esac
   exit 0
 fi
 
@@ -84,6 +178,8 @@ fi
 eval "$(echo "$INPUT" | jq -r '
   "MODEL=\(.model.display_name // "--" | ltrimstr("Claude ") | .[0:10] | @sh)",
   "DIR=\(.workspace.current_dir // "" | @sh)",
+  "SESSION_ID=\(.session_id // "" | @sh)",
+  "LIVE_CWD=\(.workspace.current_dir // .cwd // "" | @sh)",
   "CTX_PCT=\(.context_window.used_percentage // "" | tostring | @sh)",
   "BAR_FILL=\(if (.context_window.used_percentage // 0) > 0 then
       ((.context_window.used_percentage / 10) | round |
@@ -244,25 +340,31 @@ fi
 #   NARROW:  9+5+10+10+12+7+7       = 60 content + 6×3 sep = 78
 #   COMPACT: 5+10+10+10+7+7         = 49 content + 5×3 sep = 64
 
-if [ "$COLS" -ge 116 ] 2>/dev/null; then
-  # FULL: all columns, branch×15, full ctx bar
+LIVE_H=""; LIVE_V=""
+case "$TIER" in full-live|medium-live)
+  LIVE_H="$LIVE_HDR_SUF"
+  LIVE_V="$(printf ' │ %-*s' "$LIVE_W" "$(live_text "$SESSION_ID" "$LIVE_CWD")")"
+esac
+
+if [ "$TIER" = full-live ] || [ "$TIER" = full ]; then
+  # FULL: all columns, branch×15, full ctx bar (+ Live from 156 columns)
   if $HAS_RATE; then
-    printf '%b\n' "\033[2m5h Usage  │ 7d Usage  │ Context         │ Model      │ Branch          │ Cost    │ Time    │ Cache │ API  │ Lines    \033[0m"
-    printf '%b\n' "${USAGE5H} │ ${USAGE7D} │ ${CTX_FULL} │ $(printf '%-10s' "$MODEL") │ $(printf '%-15s' "$BRANCH15") │ $(printf '%-7s' "$COST_FMT") │ $(printf '%-7s' "$TIME_FMT") │ $(printf '%-5s' "$CACHE_FMT") │ $(printf '%-4s' "$API_FMT") │ $(printf '%-9s' "$LINES_FMT")"
+    printf '%b\n' "\033[2m5h Usage  │ 7d Usage  │ Context         │ Model      │ Branch          │ Cost    │ Time    │ Cache │ API  │ Lines    ${LIVE_H}\033[0m"
+    printf '%b\n' "${USAGE5H} │ ${USAGE7D} │ ${CTX_FULL} │ $(printf '%-10s' "$MODEL") │ $(printf '%-15s' "$BRANCH15") │ $(printf '%-7s' "$COST_FMT") │ $(printf '%-7s' "$TIME_FMT") │ $(printf '%-5s' "$CACHE_FMT") │ $(printf '%-4s' "$API_FMT") │ $(printf '%-9s' "$LINES_FMT")${LIVE_V}"
   else
-    printf '%b\n' "\033[2mContext         │ Model      │ Branch          │ Cost    │ Time    │ Cache │ API  │ Lines    \033[0m"
-    printf '%b\n' "${CTX_FULL} │ $(printf '%-10s' "$MODEL") │ $(printf '%-15s' "$BRANCH15") │ $(printf '%-7s' "$COST_FMT") │ $(printf '%-7s' "$TIME_FMT") │ $(printf '%-5s' "$CACHE_FMT") │ $(printf '%-4s' "$API_FMT") │ $(printf '%-9s' "$LINES_FMT")"
+    printf '%b\n' "\033[2mContext         │ Model      │ Branch          │ Cost    │ Time    │ Cache │ API  │ Lines    ${LIVE_H}\033[0m"
+    printf '%b\n' "${CTX_FULL} │ $(printf '%-10s' "$MODEL") │ $(printf '%-15s' "$BRANCH15") │ $(printf '%-7s' "$COST_FMT") │ $(printf '%-7s' "$TIME_FMT") │ $(printf '%-5s' "$CACHE_FMT") │ $(printf '%-4s' "$API_FMT") │ $(printf '%-9s' "$LINES_FMT")${LIVE_V}"
   fi
-elif [ "$COLS" -ge 101 ] 2>/dev/null; then
-  # MEDIUM: no Lines, branch×12, full ctx bar
+elif [ "$TIER" = medium-live ] || [ "$TIER" = medium ]; then
+  # MEDIUM: no Lines, branch×12, full ctx bar (+ Live from 141 columns)
   if $HAS_RATE; then
-    printf '%b\n' "\033[2m5h Usage  │ 7d Usage  │ Context         │ Model      │ Branch       │ Cost    │ Time    │ Cache │ API  \033[0m"
-    printf '%b\n' "${USAGE5H} │ ${USAGE7D} │ ${CTX_FULL} │ $(printf '%-10s' "$MODEL") │ $(printf '%-12s' "$BRANCH12") │ $(printf '%-7s' "$COST_FMT") │ $(printf '%-7s' "$TIME_FMT") │ $(printf '%-5s' "$CACHE_FMT") │ $(printf '%-4s' "$API_FMT")"
+    printf '%b\n' "\033[2m5h Usage  │ 7d Usage  │ Context         │ Model      │ Branch       │ Cost    │ Time    │ Cache │ API  ${LIVE_H}\033[0m"
+    printf '%b\n' "${USAGE5H} │ ${USAGE7D} │ ${CTX_FULL} │ $(printf '%-10s' "$MODEL") │ $(printf '%-12s' "$BRANCH12") │ $(printf '%-7s' "$COST_FMT") │ $(printf '%-7s' "$TIME_FMT") │ $(printf '%-5s' "$CACHE_FMT") │ $(printf '%-4s' "$API_FMT")${LIVE_V}"
   else
-    printf '%b\n' "\033[2mContext         │ Model      │ Branch       │ Cost    │ Time    │ Cache │ API  \033[0m"
-    printf '%b\n' "${CTX_FULL} │ $(printf '%-10s' "$MODEL") │ $(printf '%-12s' "$BRANCH12") │ $(printf '%-7s' "$COST_FMT") │ $(printf '%-7s' "$TIME_FMT") │ $(printf '%-5s' "$CACHE_FMT") │ $(printf '%-4s' "$API_FMT")"
+    printf '%b\n' "\033[2mContext         │ Model      │ Branch       │ Cost    │ Time    │ Cache │ API  ${LIVE_H}\033[0m"
+    printf '%b\n' "${CTX_FULL} │ $(printf '%-10s' "$MODEL") │ $(printf '%-12s' "$BRANCH12") │ $(printf '%-7s' "$COST_FMT") │ $(printf '%-7s' "$TIME_FMT") │ $(printf '%-5s' "$CACHE_FMT") │ $(printf '%-4s' "$API_FMT")${LIVE_V}"
   fi
-elif [ "$COLS" -ge 78 ] 2>/dev/null; then
+elif [ "$TIER" = narrow ]; then
   # NARROW: no Lines/Cache/API, 7d % only (no reset day), narrow ctx bar, branch×12
   if $HAS_RATE; then
     printf '%b\n' "\033[2m5h Usage  │ 7d    │ Context    │ Model      │ Branch       │ Cost    │ Time    \033[0m"
