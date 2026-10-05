@@ -72,6 +72,22 @@ if ! printf '%s' "$CLAIM_TEXT" | grep -qiE '\b(done|complete|finished|ready for 
   exit 0
 fi
 
+# Prompt sorter requirement (Plan C): the sorter judged this session's work to
+# touch the UI and wrote requirements.uiEvidence into <sid>.sort.json. A done
+# claim must then mention UI evidence. stop_hook_active already exited above,
+# so this can block at most once per stop, never loop. SESSION_ID is only used
+# as a file name when it matches the same character set the sorter enforces.
+if printf '%s' "$SESSION_ID" | grep -qE '^[A-Za-z0-9._-]{1,80}$' && [ "${SESSION_ID#*..}" = "$SESSION_ID" ]; then
+  SORT_FILE="$SESSIONS_DIR/$SESSION_ID.sort.json"
+  if [ -f "$SORT_FILE" ] && [ "$(jq -r '.requirements.uiEvidence // false' "$SORT_FILE" 2>/dev/null)" = "true" ]; then
+    if ! printf '%s' "$CLAIM_TEXT" | grep -qiE '(screenshot|ui-evidence|playwright|verify-web|verify-ios|snapshot_ui|\.png\b)'; then
+      echo "This session changes the UI (judged from your prompt). Show UI evidence (a screenshot, a Playwright/ui-evidence run or an iOS snapshot) before claiming done." >&2
+      exit 2
+    fi
+    jq 'del(.requirements.uiEvidence)' "$SORT_FILE" > "$SORT_FILE.tmp" 2>/dev/null && mv "$SORT_FILE.tmp" "$SORT_FILE" || rm -f "$SORT_FILE.tmp"
+  fi
+fi
+
 BRIEF_JSON="$(judge brief get "task:$SESSION_ID" 2>/dev/null || true)"
 
 if [ -z "$BRIEF_JSON" ]; then
