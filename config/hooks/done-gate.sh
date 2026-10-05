@@ -67,6 +67,7 @@ if ! printf '%s' "$CLAIM_TEXT" | grep -qiE '\b(done|complete|finished|ready for 
   if [ "$ASK_RC" -eq 2 ] && [ -n "$SESSION_ID" ]; then
     mkdir -p "$SESSIONS_DIR"
     jq -nc --arg ts "$(date -u +%Y-%m-%dT%H:%M:%SZ)" '{auto_continued_at: $ts}' > "$SESSIONS_DIR/$SESSION_ID.json" 2>/dev/null || true
+    echo "Next step already authorized by the brief or plan — continuing without asking." >&2
     exit 2
   fi
   exit 0
