@@ -7,8 +7,11 @@ import type { QuestionModule } from "../question.js";
 // always "ask", regardless of what a model provider would have said.
 // A bare "push" is deliberately NOT listed: pushing a feature branch is routine
 // and the model decides whether it was authorized; pushes to the base branch
-// stay blocked by block-push-main.sh, and "force push" still forces "ask".
-const DENY_KEYWORDS = /\b(merge|delete|force-push|force push)\b/i;
+// stay blocked by block-push-main.sh. Force pushes still always "ask", in
+// prose ("force push", "force-pushed") and in flag form (-f, --force,
+// --force-with-lease, +refspec), which no other hook covers completely.
+const DENY_KEYWORDS =
+  /\b(?:merge|delete|force[- ]?push(?:ed|es|ing)?)\b|\bpush\b[^\n]*?(?:\s-f\b|\s--force(?:-with-lease)?\b|\s\+[\w./-]+)/i;
 
 export const AskCheckInputSchema = z.object({
   transcriptTail: z.string(),

@@ -11,7 +11,17 @@ describe("askCheck", () => {
     expect(askCheck.fallbackRules?.({ transcriptTail: "anything" })).toBe("ask");
   });
 
-  it.each(["merge the PR", "delete the file", "force-push to main", "force push to main"])(
+  it.each([
+    "merge the PR",
+    "delete the file",
+    "force-push to main",
+    "force push to main",
+    "force-pushed the branch",
+    "git push --force",
+    "git push -f origin x",
+    "git push --force-with-lease",
+    "git push origin +feat/x",
+  ])(
     "is 'ask', with zero model calls, when the next step mentions %s (deterministic deny-list pre-rule, never overridable by a model)",
     async (transcriptTail) => {
       const db = openDb(":memory:");
@@ -30,10 +40,10 @@ describe("askCheck", () => {
     expect(Object.keys(askCheck.criteria ?? {})).toEqual([...askCheck.outputs]);
   });
 
-  it("does not pre-rule to ask when the next step only mentions pushing a branch (the model decides)", async () => {
+  it.each(["push the branch", "git push -u fork feat/x"])("does not pre-rule to ask for a plain push (%s): the model decides", async (transcriptTail) => {
     const db = openDb(":memory:");
     const cli = fakeProvider("claude-cli", ["transcript"], { status: "decided", decision: "continue", confidence: 0.9, reason_code: "model" });
-    const result = await evaluate(askCheck, { transcriptTail: "push the branch" }, { db, config: DEFAULT_CONFIG, providers: [cli] });
+    const result = await evaluate(askCheck, { transcriptTail }, { db, config: DEFAULT_CONFIG, providers: [cli] });
     expect(result).toMatchObject({ decision: "continue" });
     expect(result).not.toMatchObject({ model: "rules" });
   });
