@@ -74,7 +74,7 @@ Recomputed from the recorded runs (`~/.agentic-workflow/judge/evals/tp-<variant>
 | full | outcome | 112 | 56.2% (63) | 87.3% |
 | full | adjudicator | 112 | 57.1% (64) | 95.3% |
 
-On these shared turns `problem+diff` clears every bar on both sources (decisive >= 60%, accuracy-on-decisive >= 80%, and more than 10 points over `diff-only`). The no-go comes from the 308 outcome-only turns (420 outcome-labeled minus these 112), where `problem+diff` is only 51.7% decisive. The rule was fixed before any data as "per label source", so the verdict stands. A pre-registered shared-population re-run is the way to revisit it.
+On these shared turns `problem+diff` clears every bar on both sources (decisive >= 60%, accuracy-on-decisive >= 80%, and more than 10 points over `diff-only`). The no-go comes from the 308 outcome-only turns (420 outcome-labeled minus these 112), where `problem+diff` is only 47.4% decisive (146/308; 51.7% across all 420). The rule was fixed before any data as "per label source", so the verdict stands. A pre-registered shared-population re-run is the way to revisit it.
 
 ### Variance
 
