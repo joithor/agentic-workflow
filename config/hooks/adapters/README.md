@@ -55,6 +55,7 @@ the `aw:*` entries.
 | `subagent-start-map.sh` | SubagentStart | SubagentStart (`turn_id`→`prompt_id`, the same value scope-gate saved) | not needed: `subagentStart` gives scope-gate the dispatch's `tool_call_id` directly |
 | `external-write-guard.sh` | PreToolUse `.*` | PreToolUse `.*` | `beforeShellExecution` (gh pr merge / comment / review) + `beforeMCPExecution` (tool renamed `mcp__<server>__<tool>`) |
 | `turn-origin.sh` | UserPromptSubmit | UserPromptSubmit | `beforeSubmitPrompt` → `{continue: true}` |
+| `prompt-sort.sh` | UserPromptSubmit (`scripts/install-judge.sh`, timeout 3s) | UserPromptSubmit: the adapter forwards plain stdout as developer context | **unmapped**: `beforeSubmitPrompt` output is `{continue: true}` only, it cannot carry context |
 | `send-gate.sh` | PreToolUse `SendMessage` | **unmapped**: nothing flushes the outbox before idle (no TeammateIdle), and `send_message`'s argument shape can't be checked against real input yet | **unmapped**: no teammate message tool |
 | `record-teammate-name.sh` | PreToolUse `Agent` | **unmapped** (only consumed by wake gating) | **unmapped** |
 | `outbox-flush.sh` | TeammateIdle | **unmapped**: no TeammateIdle event | **unmapped**: no TeammateIdle event |

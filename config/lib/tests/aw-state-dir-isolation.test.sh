@@ -25,7 +25,7 @@ test_hooks_write_only_under_aw_state_dir() {
 
   # Run every state-touching hook once, feeding harmless/empty stdin so each
   # exits fast on its fail-open path rather than blocking on a real gate.
-  for hook in context-guard external-write-guard probe-log turn-origin \
+  for hook in context-guard external-write-guard probe-log turn-origin prompt-sort \
               record-teammate-name subagent-start-map send-gate outbox-flush done-gate; do
     local script="$ROOT/config/hooks/$hook.sh"
     [ -f "$script" ] || { echo "FAIL: missing hook script $script"; exit 1; }

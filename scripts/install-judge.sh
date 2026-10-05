@@ -9,6 +9,9 @@
 #   install-judge.sh --hook-only  install the SessionStart health hook only
 #   --provider claude|codex|cursor  which host gets the hook (default claude)
 #
+# Also installs the prompt-sort UserPromptSubmit hook (Claude and Codex; Cursor's
+# beforeSubmitPrompt cannot inject context). Opt out with AW_NO_PROMPT_SORT=1.
+#
 # setup.sh runs --build-only in its shared phase and --hook-only --provider X
 # from providers/<X>/install.sh, so each hook lands only for selected
 # providers (Claude: after ~/.claude/settings.json has been seeded). Codex and
@@ -61,10 +64,24 @@ if [ "$DO_HOOK" = "1" ] && [ "$AW_PROVIDER" != "claude" ]; then
   esac
   if [ "${AW_DRY_RUN:-0}" = "1" ]; then
     echo "  [dry-run] would install judge-health ($EVENT) for $AW_PROVIDER in $AW_HOOKS_CONFIG"
+    if [ "$AW_PROVIDER" = "codex" ] && [ "${AW_NO_PROMPT_SORT:-0}" != "1" ]; then
+      echo "  [dry-run] would install prompt-sort (UserPromptSubmit) for codex"
+    fi
   else
     aw_hooks_stage
     aw_hook_set "$EVENT" aw:judge-health judge-health.sh
     echo "  judge: $EVENT health hook installed for $AW_PROVIDER in $AW_HOOKS_CONFIG"
+    if [ "${AW_NO_PROMPT_SORT:-0}" != "1" ]; then
+      case "$AW_PROVIDER" in
+        codex)
+          aw_hook_set UserPromptSubmit aw:prompt-sort prompt-sort.sh "" 3
+          echo "  judge: UserPromptSubmit prompt-sort hook installed for codex"
+          ;;
+        cursor)
+          aw_unsupported prompt-sort "beforeSubmitPrompt cannot inject context"
+          ;;
+      esac
+    fi
   fi
 elif [ "$DO_HOOK" = "1" ]; then
   SETTINGS_FILE="${CLAUDE_SETTINGS_FILE:-$HOME/.claude/settings.json}"
@@ -77,6 +94,13 @@ elif [ "$DO_HOOK" = "1" ]; then
   ENTRY=$(jq -nc --arg c "$HOOKS_DIR/judge-health.sh # aw:judge-health" '{hooks:[{type:"command",command:$c}]}')
   merge_hook "$SETTINGS_FILE" SessionStart aw:judge-health "$ENTRY"
   echo "  judge: SessionStart health hook installed"
+  if [ "${AW_NO_PROMPT_SORT:-0}" != "1" ]; then
+    cp "$SCRIPT_DIR/config/hooks/prompt-sort.sh" "$HOOKS_DIR/prompt-sort.sh"
+    chmod +x "$HOOKS_DIR/prompt-sort.sh"
+    SORT_ENTRY=$(jq -nc --arg c "$HOOKS_DIR/prompt-sort.sh # aw:prompt-sort" '{hooks:[{type:"command",command:$c,timeout:3}]}')
+    merge_hook "$SETTINGS_FILE" UserPromptSubmit aw:prompt-sort "$SORT_ENTRY"
+    echo "  judge: UserPromptSubmit prompt-sort hook installed (shadow mode: records, injects nothing until a scaffold switch is on)"
+  fi
   # Wake gating (lever 1A: send-gate, record-teammate-name, outbox-flush) is
   # a separate, explicitly-approved install — scripts/install-wake-gating.sh
   # — never turned on as a side effect of installing judge itself (the user
