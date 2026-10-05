@@ -221,3 +221,83 @@ describe("prompt-sort axis evals (RF-6)", () => {
     expect(out.report).toMatchObject({ n: 1, decided: 0, accuracy: 0 });
   });
 });
+
+describe("context variants", () => {
+  const rc = { brief: "b", expected: "e", actual: "a", rootCause: "rc", checkKind: "test", checkSummary: "s", beforePassed: false, afterPassed: true, diffStat: "1 file", diff: "+x" };
+  it("strips resolution-check context progressively", () => {
+    const v = VARIANTS["resolution-check"] as NonNullable<(typeof VARIANTS)[string]>;
+    expect(v["brief-only"]?.(rc)).toEqual({ ...rc, rootCause: "", diffStat: "", diff: undefined });
+    expect(v["brief+cause"]?.(rc)).toEqual({ ...rc, diffStat: "", diff: undefined });
+    expect(v.stat?.(rc)).toEqual({ ...rc, diff: undefined });
+    expect(v.full?.(rc)).toEqual(rc);
+    expect(v.stat?.(null)).toEqual({ diff: undefined });
+  });
+
+  it("marks a full-variant item without a diff as undecidable rather than silently using the stat", () => {
+    const { diff: _omit, ...noDiff } = rc;
+    expect((VARIANTS["resolution-check"]?.full as (i: unknown) => unknown)(noDiff)).toEqual({ ...noDiff, diff: "", __requiresDiff: true });
+  });
+
+  it("strips turn-progress context progressively", () => {
+    const tp = { problem: "p", acceptanceCriteria: "ac", turnDiff: "+x", priorDiffStat: "1 file", signals: "tests: failed" };
+    const v = VARIANTS["turn-progress"] as NonNullable<(typeof VARIANTS)[string]>;
+    expect(v["diff-only"]?.(tp)).toEqual({ ...tp, problem: "(not given)", acceptanceCriteria: "" });
+    expect(v["problem+diff"]?.(tp)).toEqual({ ...tp, acceptanceCriteria: "", priorDiffStat: "", signals: "" });
+    expect(v.full?.(tp)).toEqual(tp);
+  });
+
+  const rcDb = () => {
+    const db = openDb(":memory:");
+    const items: Array<[string, Record<string, unknown>]> = [["d1", rc], ["n1", (({ diff: _d, ...r }) => r)(rc)]];
+    items.forEach(([id, input], i) => {
+      upsertEvalItem(db, { id, question: "resolution-check", input_json: JSON.stringify(input), source: `decision:${id}`, model_decision: null, created_at: `2026-10-01T00:00:0${i}.000Z` });
+      recordLabel(db, id, "resolved", "2026-10-02T00:00:00.000Z", "outcome");
+    });
+    return db;
+  };
+
+  it("B5: stat and full score the same population, only items with a stored diff", async () => {
+    const seen: unknown[] = [];
+    const provider = fakeProvider("jev", ["brief", "diff"], (_q, input) => { seen.push(input); return decided("resolved", 1); });
+    for (const variant of ["stat", "full"]) {
+      const out = await runEval(rcDb(), { question: "resolution-check", provider, variant, labels: "outcome" });
+      expect(out.report).toMatchObject({ n: 1, decided: 1, accuracy: 1 });
+    }
+    expect(seen).toHaveLength(2);
+    // Variants that do not use the diff still score every item.
+    const brief = await runEval(rcDb(), { question: "resolution-check", provider, variant: "brief-only", labels: "outcome" });
+    expect(brief.report).toMatchObject({ n: 2 });
+  });
+});
+
+describe("--collapse", () => {
+  const db = () => {
+    const d = openDb(":memory:");
+    upsertEvalItem(d, { id: "i1", question: "wake-gate", input_json: INPUT, source: "decision:a", model_decision: null, created_at: "2026-10-01T00:00:00.000Z" });
+    recordLabel(d, "i1", "off-target", "2026-10-02T00:00:00.000Z", "outcome");
+    recordLabel(d, "i1", "stalled", "2026-10-02T00:00:00.000Z", "adjudicator");
+    return d;
+  };
+  const prov = () => fakeProvider("jev", ["message-meta"], decided("stalled", 1));
+
+  it("folds every label but the positive one into stalled, in results, per-source scores and agreement", async () => {
+    const plain = await runEval(db(), { question: "wake-gate", provider: prov(), variant: "as-is" });
+    expect(plain.report?.perSource?.agreement).toEqual({ shared: 1, agreed: 0, rate: 0 });
+    expect(plain.report?.perSource?.outcome).toMatchObject({ accuracy: 0 });
+    const out = await runEval(db(), { question: "wake-gate", provider: prov(), variant: "as-is", collapse: "progressing" });
+    expect(out.report).toMatchObject({ accuracy: 1 });
+    expect(out.report?.perSource?.agreement).toEqual({ shared: 1, agreed: 1, rate: 1 });
+    expect(out.report?.perSource?.outcome).toMatchObject({ accuracy: 1 });
+    expect(out.report?.perSource?.adjudicator).toMatchObject({ accuracy: 1 });
+  });
+
+  it("keeps the positive label and collapses on replay too", async () => {
+    const d = openDb(":memory:");
+    upsertEvalItem(d, { id: "p1", question: "wake-gate", input_json: INPUT, source: "decision:p", model_decision: null, created_at: "2026-10-01T00:00:00.000Z" });
+    recordLabel(d, "p1", "progressing", "2026-10-02T00:00:00.000Z");
+    const replay = [{ itemId: "p1", label: "x", result: decided("progressing", 1), latencyMs: 1 }];
+    expect((await runEval(d, { question: "wake-gate", provider: prov(), variant: "as-is", collapse: "progressing", replay })).report).toMatchObject({ accuracy: 1 });
+    const wrong = [{ itemId: "p1", label: "x", result: decided("off-target", 1), latencyMs: 1 }];
+    expect((await runEval(d, { question: "wake-gate", provider: prov(), variant: "as-is", collapse: "progressing", replay: wrong })).report).toMatchObject({ accuracy: 0 });
+  });
+});

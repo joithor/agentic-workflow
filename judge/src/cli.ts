@@ -154,7 +154,7 @@ async function main(): Promise<{ exitCode: number; stdout: string; stderr?: stri
       } catch (e) {
         return { exitCode: 1, stdout: "", stderr: `cannot read replay file: ${(e as Error).message}` };
       }
-      const r = await runEval(db, { question: q, provider, variant: flag("--variant") ?? "as-is", labels, record: recordFile === undefined ? undefined : makeRecorder(recordFile), replay });
+      const r = await runEval(db, { question: q, provider, variant: flag("--variant") ?? "as-is", labels, collapse: flag("--collapse"), record: recordFile === undefined ? undefined : makeRecorder(recordFile), replay });
       if (r.report !== undefined) writeEvalReport(path.join(judgeStateDir(), "judge", "evals"), r.report, Date.now());
       return r;
     }

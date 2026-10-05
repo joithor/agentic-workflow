@@ -6,7 +6,7 @@ import fs from "node:fs";
 import path from "node:path";
 
 import { QUESTIONS } from "./commands.js";
-import { ALL_AXES, AXIS_COLLAPSE, collapseLabel, sortQuestionName } from "./prompt-sort/axes.js";
+import { ALL_AXES, collapseLabel, sortQuestionName } from "./prompt-sort/axes.js";
 import { labeledItems, sharedLabels, type Db, type LabelSource } from "./db.js";
 import { toRef } from "./question.js";
 import type { Provider, ProviderResult } from "./types.js";
@@ -45,16 +45,43 @@ for (const axis of ALL_AXES) {
   VARIANTS[sortQuestionName(axis)] = { heuristic: withMode("heuristic"), blend: withMode("blend"), "judge-only": withMode("judge-only") };
 }
 
+// Resolution-check and turn-progress context variants: each is a pure transform
+// of the stored input (more or less context for the same labeled question).
+type Obj = Record<string, unknown>;
+const asObj = (i: unknown): Obj => (typeof i === "object" && i !== null ? (i as Obj) : {});
+
+VARIANTS["resolution-check"] = {
+  "brief-only": (i) => ({ ...asObj(i), rootCause: "", diffStat: "", diff: undefined }),
+  "brief+cause": (i) => ({ ...asObj(i), diffStat: "", diff: undefined }),
+  stat: (i) => ({ ...asObj(i), diff: undefined }),
+  full: (i) => (typeof asObj(i).diff === "string" ? asObj(i) : { ...asObj(i), diff: "", __requiresDiff: true }),
+};
+VARIANTS["turn-progress"] = {
+  "diff-only": (i) => ({ ...asObj(i), problem: "(not given)", acceptanceCriteria: "" }),
+  "problem+diff": (i) => ({ ...asObj(i), acceptanceCriteria: "", priorDiffStat: "", signals: "" }),
+  full: (i) => asObj(i),
+};
+
+// The full-vs-stat comparison must score the same items, so both variants run
+// only over items that stored a diff (items without one are excluded, not
+// counted as invalid input in one variant only).
+const DIFF_VARIANTS: Record<string, readonly string[]> = { "resolution-check": ["stat", "full"] };
+const hasStoredDiff = (inputJson: string): boolean => typeof asObj(JSON.parse(inputJson)).diff === "string";
+
 // One label space per axis question: outcome labels are coarse, adjudicator
-// labels fine (RF-6). Applied to labels and decided predictions alike, in the
-// overall score and in the per-source scores (withSources).
-const collapsing = (question: string): boolean => AXIS_COLLAPSE[question] !== undefined;
-function collapseResults(question: string, results: EvalResult[]): EvalResult[] {
-  if (!collapsing(question)) return results;
+// labels fine (RF-6). `collapse` (--collapse) then folds everything but the
+// named positive label into "stalled". Applied to labels and decided predictions
+// alike, in the overall score and in the per-source scores (withSources).
+type LabelMap = (label: string) => string;
+const labelMapper = (question: string, collapse: string | undefined): LabelMap => (label) => {
+  const axis = collapseLabel(question, label);
+  return collapse === undefined ? axis : axis === collapse ? collapse : "stalled";
+};
+function collapseResults(map: LabelMap, results: EvalResult[]): EvalResult[] {
   return results.map((r) => ({
     ...r,
-    label: collapseLabel(question, r.label),
-    result: r.result.status === "decided" ? { ...r.result, decision: collapseLabel(question, r.result.decision) } : r.result,
+    label: map(r.label),
+    result: r.result.status === "decided" ? { ...r.result, decision: map(r.result.decision) } : r.result,
   }));
 }
 
@@ -117,8 +144,8 @@ export function renderEvalReport(r: EvalReport): string {
   return lines.join("\n");
 }
 
-function withSources(db: Db, base: EvalReport, results: readonly EvalResult[], threshold: number): EvalReport {
-  const shared = sharedLabels(db, base.question).map((s) => ({ ...s, outcome: collapseLabel(base.question, s.outcome), adjudicator: collapseLabel(base.question, s.adjudicator) }));
+function withSources(db: Db, base: EvalReport, results: readonly EvalResult[], threshold: number, map: LabelMap): EvalReport {
+  const shared = sharedLabels(db, base.question).map((s) => ({ ...s, outcome: map(s.outcome), adjudicator: map(s.adjudicator) }));
   const byId = new Map(shared.map((s) => [s.itemId, s]));
   const scored = results.filter((r) => byId.has(r.itemId));
   if (scored.length === 0) return base;
@@ -133,14 +160,15 @@ function withSources(db: Db, base: EvalReport, results: readonly EvalResult[], t
 
 export async function runEval(
   db: Db,
-  opts: { question: string; provider: Provider; variant: string; labels?: LabelSource | "any"; record?: (line: string) => void; replay?: readonly EvalResult[] },
+  opts: { question: string; provider: Provider; variant: string; labels?: LabelSource | "any"; collapse?: string; record?: (line: string) => void; replay?: readonly EvalResult[] },
 ): Promise<{ exitCode: number; stdout: string; stderr?: string; report?: EvalReport }> {
   const question = QUESTIONS[opts.question];
   if (question === undefined) return { exitCode: 1, stdout: "", stderr: `unknown question: ${opts.question}` };
   const variant: Variant | undefined = opts.variant === "as-is" ? (i) => i : VARIANTS[opts.question]?.[opts.variant];
   if (variant === undefined) return { exitCode: 1, stdout: "", stderr: `unknown variant for ${opts.question}: ${opts.variant}` };
   const labels = opts.labels ?? "any";
-  const items = labeledItems(db, opts.question, labels);
+  const diffOnly = DIFF_VARIANTS[opts.question]?.includes(opts.variant) === true;
+  const items = labeledItems(db, opts.question, labels).filter((item) => !diffOnly || hasStoredDiff(item.input_json));
   if (items.length === 0) return { exitCode: 1, stdout: "", stderr: `no labeled items for ${opts.question} (run: judge label import, judge label outcomes, judge adjudicate ${opts.question})` };
 
   let results: EvalResult[];
@@ -164,9 +192,10 @@ export async function runEval(
       opts.record?.(JSON.stringify(row));
     }
   }
-  results = collapseResults(opts.question, results);
+  const map = labelMapper(opts.question, opts.collapse);
+  results = collapseResults(map, results);
   const base = scoreEval(opts.question, opts.provider.name, opts.variant, question.threshold, results, labels);
-  const report = withSources(db, base, results, question.threshold);
+  const report = withSources(db, base, results, question.threshold, map);
   return { exitCode: 0, stdout: JSON.stringify(report), report };
 }
 
