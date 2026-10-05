@@ -6,6 +6,7 @@ import { promisify } from "node:util";
 import { parseArgs } from "./args.js";
 import { estimateCurrentContextTokens } from "./context-tokens.js";
 import { makeGhLookup } from "./pr-state.js";
+import { renderLive, runLive } from "./live.js";
 import { runProbe } from "./probe/run-probe.js";
 import { resolveJudgeDbPath, runReport } from "./run.js";
 
@@ -13,11 +14,19 @@ const exec = promisify(execFile);
 const parsed = parseArgs(process.argv.slice(2), new Date(), os.homedir());
 if (!parsed.ok) {
   console.error(`scorer: ${parsed.error}`);
-  console.error("usage: scorer [probe] [--since 7d|12h|ISO] [--provider claude|codex|cursor|all] [--projects-dir DIR] [--codex-dir DIR] [--cursor-dir DIR] [--state-dir DIR] [--no-pr-lookup]");
+  console.error("usage: scorer live --session ID [--cwd DIR] [--window TOKENS] [--json] | scorer [probe] [--since 7d|12h|ISO] [--provider claude|codex|cursor|all] [--projects-dir DIR] [--codex-dir DIR] [--cursor-dir DIR] [--state-dir DIR] [--no-pr-lookup]");
   process.exit(1);
 }
 if (parsed.options.command === "probe") {
   process.stdout.write(runProbe(parsed.options.stateDir));
+} else if (parsed.options.command === "live") {
+  // Fail silent for the mod: any error is a bare exit 1 with nothing on stdout.
+  try {
+    const snapshot = runLive(parsed.options);
+    process.stdout.write(parsed.options.json ? `${JSON.stringify(snapshot)}\n` : renderLive(snapshot));
+  } catch {
+    process.exit(1);
+  }
 } else if (parsed.options.command === "context-tokens") {
   const tokens = estimateCurrentContextTokens(parsed.options.contextTokensPath as string);
   process.stdout.write(tokens === null ? "null" : String(tokens));
