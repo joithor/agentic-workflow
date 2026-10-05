@@ -171,10 +171,13 @@ test_ask_check_continue_exits_2_and_writes_auto_continued_at() {
   transcript="$(mktemp)"
   write_transcript_with_assistant_text "$transcript" "still working on the next step"
   set +e
-  PATH="$bin_dir:$PATH" AW_JUDGE_SESSIONS_DIR="$sessions_dir" bash "$HOOK" <<< "$(jq -nc --arg t "$transcript" '{transcript_path:$t, session_id:"s1"}')"
+  local err_file
+  err_file="$(mktemp)"
+  PATH="$bin_dir:$PATH" AW_JUDGE_SESSIONS_DIR="$sessions_dir" bash "$HOOK" <<< "$(jq -nc --arg t "$transcript" '{transcript_path:$t, session_id:"s1"}')" 2> "$err_file"
   rc=$?
   set -e
   [ "$rc" -eq 2 ] || { echo "FAIL: expected exit 2 when ask-check says continue, got $rc"; exit 1; }
+  [ "$(cat "$err_file")" = "Next step already authorized by the brief or plan — continuing without asking." ] || { echo "FAIL: expected continue reason on stderr, got '$(cat "$err_file")'"; exit 1; }
   jq -e '.auto_continued_at' "$sessions_dir/s1.json" > /dev/null || { echo "FAIL: expected auto_continued_at to be written"; exit 1; }
   [ "$(cat "$bin_dir/session-id")" = "s1" ] || { echo "FAIL: ask-check must see AW_SESSION_ID=s1, got '$(cat "$bin_dir/session-id")'"; exit 1; }
   echo "PASS: test_ask_check_continue_exits_2_and_writes_auto_continued_at"
