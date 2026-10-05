@@ -1,6 +1,5 @@
 // Pure pieces of the refresh loop. register.tsx owns every `$` call.
 
-export const TIMER_MS = 10_000
 export const MIN_GAP_MS = 2_000
 export const RUN_TIMEOUT_MS = 5_000
 /** The first refresh has no snapshot to fall back on; a cold ingest of a long session needs longer. */

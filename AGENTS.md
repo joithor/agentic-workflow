@@ -40,7 +40,7 @@ agentic-workflow/
 ├── providers/     # Per-provider installers (claude, codex, cursor)
 ├── mcp-bridge/    # MCP bridge + REST API (Fastify, SQLite)
 ├── scorer/        # Daily cost/involvement report from provider session transcripts
-├── mods/          # Claude Code mods (in-process function hooks): aw-live pane + band. Claude-only
+├── mods/          # Claude Code mods (in-process function hooks): aw-live /live pane. Claude-only
 ├── planning/      # Project documentation
 ├── .agents/rules/ # Glob-scoped domain rules (.claude/rules and .cursor/rules link here)
 ├── .serena/       # Serena LSP project configuration

@@ -1,16 +1,17 @@
 // aw-live: the scorer's numbers for THIS session, live inside Claude Code.
-// `/live` toggles a pane; a one-line band above the prompt shows the headline.
+// `/live` toggles a pane (`/live status` answers in text). The headline numbers
+// live in the statusline's Live column (config/statusline.sh), not here.
 // Every number comes from `scorer live --json` (one short Node process, never
 // in-process). A refresh never blocks a hook and every failure is silent: the
-// band just keeps its last good value.
+// pane just keeps its last good value.
 
 import { atom, read, update } from 'claude-code'
 import type { EngineInterface, Register } from 'claude-code'
 
 import type { HostUsage, LiveSnapshot, LiveStatus } from '../types'
-import { bandText, paneSections, statusText } from './lib/format'
+import { paneSections, statusText } from './lib/format'
 import type { Tone } from './lib/format'
-import { TIMER_MS, binCandidates, isDue, liveArgs, runTimeout } from './lib/refresh'
+import { binCandidates, isDue, liveArgs, runTimeout } from './lib/refresh'
 import { parseSnapshot } from './lib/snapshot'
 
 const PANE = 'aw-live'
@@ -73,7 +74,7 @@ const runRefresh = async ($: EngineInterface, force: boolean): Promise<void> => 
     if (parsed !== null) await update($, snapshot, () => parsed)
     ok = parsed !== null
   } catch {
-    // fail silent: the band keeps its last good value
+    // fail silent: the pane keeps its last good value
   } finally {
     const at = now
     if (at !== null) await update($, status, (): LiveStatus => ({ ok, at })).catch(() => undefined)
@@ -93,10 +94,6 @@ export const register: Register = on => {
   on('session.start', async ($, e, next) => {
     try {
       await $.command.register({ name: 'live', description: 'Toggle the live scorer pane (context, cost, judge, gates)' })
-      $.clock.every(TIMER_MS, () => {
-        void refresh($, false)
-      })
-      void refresh($, true)
     } catch {
       // a host error must not stop session start
     }
@@ -105,9 +102,12 @@ export const register: Register = on => {
 
   on('turn.complete', async ($, e, next) => {
     try {
-      $.clock.after(0, () => {
-        void refresh($, false)
-      })
+      // Only an open pane shows the numbers; /live refreshes on open, so a closed pane costs nothing.
+      if ((await $.ui.panes()).some(pane => pane.id === PANE)) {
+        $.clock.after(0, () => {
+          void refresh($, false)
+        })
+      }
     } catch {
       // a host error must not stop the turn
     }
@@ -134,24 +134,6 @@ export const register: Register = on => {
       // a host error: leave the pane as it is
     }
     return {}
-  })
-
-  on('ui.render', { component: 'AbovePrompt' }, async ($, e, next) => {
-    try {
-      if (e.props.hasSurvey) return next(e)
-      const s = await read($, snapshot)
-      if (s === null) return next(e)
-      const text = bandText(s, await read($, host), e.props.bodyColumns)
-      if (text === null) return next(e)
-      const { Box, Text } = $.ui.resolve(e)
-      return (
-        <Box>
-          <Text color={TONE_COLOR.dim} wrap="truncate-end">{text}</Text>
-        </Box>
-      )
-    } catch {
-      return next(e)
-    }
   })
 
   on('ui.render', { component: 'Pane', requestId: PANE }, async ($, e, next) => {

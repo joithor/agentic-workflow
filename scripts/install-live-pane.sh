@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Install the aw-live Claude Code mod: a /live pane and a one-line band that show the
+# Install the aw-live Claude Code mod: a /live pane that shows the
 # scorer's numbers for the current session (context, cost, judge, gates, wakes).
 #
 # Claude Code only. Mods are in-process function hooks of Claude Code; Codex and Cursor have

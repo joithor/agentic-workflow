@@ -1,4 +1,4 @@
-// Pure formatting for the band and the pane. No `$` in here.
+// Pure formatting for the pane and `/live status`. No `$` in here.
 
 import type { HostUsage, LiveSnapshot } from '../../types'
 
@@ -13,9 +13,6 @@ export const fmtTokens = (n: number): string => {
   if (n >= 1_000) return `${Math.round(n / 1_000)}k`
   return String(n)
 }
-
-export const cut = (text: string, width: number): string =>
-  text.length > width ? `${text.slice(0, Math.max(0, width - 1))}…` : text
 
 /** `▓▓▓▓░░░░░░` for a percent; empty cells when unknown. */
 export const bar = (percent: number | null, width: number): string => {
@@ -32,28 +29,6 @@ export const providerShare = (byProvider: Readonly<Record<string, number>>): str
   const entries = Object.entries(byProvider).sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
   const total = entries.reduce((sum, [, n]) => sum + n, 0)
   return entries.slice(0, 2).map(([name, n]) => `${name} ${Math.round((n / total) * 100)}%`).join(' · ')
-}
-
-const gatesFired = (s: LiveSnapshot): number =>
-  s.judge.state === 'ok' ? Object.values(s.judge.gates).reduce((sum, g) => sum + g.fired, 0) : 0
-
-/** One dim line above the prompt; null when there is nothing worth a row. */
-export const bandText = (s: LiveSnapshot, host: HostUsage | null, columns: number): string | null => {
-  if (!s.transcript.found && host === null) return null
-  const parts: string[] = []
-  const percent = contextPercent(s, host)
-  if (percent !== null) parts.push(`ctx ${Math.round(percent)}%`)
-  if (host?.usd != null) parts.push(`$${host.usd.toFixed(2)}`)
-  parts.push(`${s.usage.calls} calls`)
-  if (s.usage.callsOver200k > 0) parts.push(`${s.usage.callsOver200k} >200k`)
-  if (s.judge.state === 'ok') {
-    parts.push(s.judge.undecided > 0 ? `judge ${s.judge.calls} (${s.judge.undecided} unsure)` : `judge ${s.judge.calls}`)
-  }
-  const fired = gatesFired(s)
-  if (fired > 0) parts.push(`gates ${fired}`)
-  if (s.wakes.queuedNow > 0) parts.push(`${s.wakes.queuedNow} queued`)
-  if (s.ingest.readErrors > 0) parts.push('stale')
-  return cut(`live · ${parts.join(' · ')}`, columns)
 }
 
 const GATE_ORDER = ['scope-gate', 'done-gate', 'send-gate'] as const
@@ -120,12 +95,12 @@ export const paneSections = (s: LiveSnapshot, host: HostUsage | null): Section[]
   return sections
 }
 
-/** The `/live status` answer: the band line, then every pane row as plain text. */
+/** The `/live status` answer: every pane row as plain text. */
 export const statusText = (s: LiveSnapshot | null, host: HostUsage | null): string => {
   if (s === null) return 'aw-live: no numbers yet (is scorer installed? scripts/install-scorer.sh)'
   const lines = paneSections(s, host).flatMap(section => [
     `${section.title}`,
     ...section.rows.map(row => `  ${row.label.padEnd(14)}${row.value}`),
   ])
-  return [bandText(s, host, 200) ?? 'live', ...lines].join('\n')
+  return lines.join('\n')
 }

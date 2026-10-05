@@ -64,6 +64,6 @@ imported from Claude (listed in `~/.codex/external_agent_session_imports.json`) 
 aren't counted twice.
 
 **Mods.** `mods/aw-live` is a Claude Code mod (in-process function hooks, `claude plugin test`). It shows
-this session's `scorer live` numbers in a `/live` pane and a band. Mods have no Codex or Cursor
+this session's `scorer live` numbers in a `/live` pane. The headline numbers (calls, >200k, judge) are the Live column of `config/statusline.sh`, which calls the same `scorer live --json`. Mods have no Codex or Cursor
 equivalent, so `scripts/install-live-pane.sh --provider codex|cursor` prints a skip note and writes
 nothing. Install: `scripts/install-live-pane.sh` (a folder marketplace named `agentic-workflow-mods`).

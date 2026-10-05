@@ -3,7 +3,7 @@ import { expect, test } from 'claude-code/testing'
 import type { LiveSnapshot } from '../../types'
 import { MIN_GAP_MS, RUN_TIMEOUT_FIRST_MS, RUN_TIMEOUT_MS, binCandidates, isDue, liveArgs, runTimeout } from '../lib/refresh'
 import { parseSnapshot } from '../lib/snapshot'
-import { bandText, bar, contextPercent, cut, fmtTokens, paneSections, providerShare, statusText } from '../lib/format'
+import { bar, contextPercent, fmtTokens, paneSections, providerShare, statusText } from '../lib/format'
 import { SAMPLE_JSON } from './fixtures/sample'
 
 const sample = (): LiveSnapshot => JSON.parse(SAMPLE_JSON) as LiveSnapshot
@@ -29,8 +29,6 @@ test('number formatting', () => {
   expect(bar(42, 10)).toBe('▓▓▓▓░░░░░░')
   expect(bar(null, 4)).toBe('░░░░')
   expect(bar(250, 4)).toBe('▓▓▓▓')
-  expect(cut('abcdef', 4)).toBe('abc…')
-  expect(cut('abc', 4)).toBe('abc')
   expect(providerShare({ jev: 10, rules: 2, 'claude-cli': 1 })).toBe('jev 77% · rules 15%')
   expect(providerShare({})).toBe('')
 })
@@ -39,25 +37,6 @@ test('the host percent wins over the transcript estimate', () => {
   expect(contextPercent(sample(), HOST)).toBe(44)
   expect(contextPercent(sample(), null)).toBe(42)
   expect(contextPercent(sample(), { usd: null, percent: null, window: null })).toBe(42)
-})
-
-test('band text: headline numbers, quiet parts omitted', () => {
-  expect(bandText(sample(), HOST, 200)).toBe('live · ctx 44% · $1.84 · 31 calls · 2 >200k · judge 12 (3 unsure) · gates 12 · 2 queued')
-  const quiet: LiveSnapshot = { ...sample(), usage: { ...sample().usage, callsOver200k: 0 }, judge: { state: 'none' }, wakes: { queuedNow: 0 } }
-  expect(bandText(quiet, null, 200)).toBe('live · ctx 42% · 31 calls')
-  expect(bandText(sample(), HOST, 20)).toHaveLength(20)
-})
-
-test('band text: judge without unsure answers; nothing to say without a transcript or host', () => {
-  const s = sample()
-  if (s.judge.state !== 'ok') throw new Error('fixture')
-  const calm: LiveSnapshot = { ...s, judge: { ...s.judge, undecided: 0 } }
-  expect(bandText(calm, null, 200)).toContain('judge 12 ·')
-  const none: LiveSnapshot = { ...s, transcript: { found: false, files: 0 }, context: { tokens: null, window: 200000, percent: null } }
-  expect(bandText(none, null, 200)).toBeNull()
-  expect(bandText(none, HOST, 200)).toContain('ctx 44%')
-  const noPercent: LiveSnapshot = { ...none, usage: { ...none.usage, calls: 0, callsOver200k: 0 }, judge: { state: 'none' }, wakes: { queuedNow: 0 } }
-  expect(bandText(noPercent, { usd: null, percent: null, window: null }, 200)).toBe('live · 0 calls')
 })
 
 test('pane sections for an ok judge, an unscoped judge and no judge', () => {
@@ -111,20 +90,18 @@ test('refresh helpers', () => {
   expect(isDue(1000, 1000 + MIN_GAP_MS)).toBe(true)
 })
 
-test('status text: band line, then each section; a hint when there are no numbers', () => {
+test('status text: each section; a hint when there are no numbers', () => {
   const text = statusText(sample(), HOST)
-  expect(text.split('\n')[0]).toBe('live · ctx 44% · $1.84 · 31 calls · 2 >200k · judge 12 (3 unsure) · gates 12 · 2 queued')
-  expect(text).toContain('\ncontext\n  window        44% ▓▓▓▓░░░░░░')
+  expect(text.split('\n')[0]).toBe('context')
+  expect(text).toContain('context\n  window        44% ▓▓▓▓░░░░░░')
   expect(text).toContain('  done-gate     5 · continue 4 · ask 1 · p50 350 ms')
   expect(statusText(null, null)).toContain('scripts/install-scorer.sh')
   const bare: LiveSnapshot = { ...sample(), transcript: { found: false, files: 0 }, context: { tokens: null, window: 200000, percent: null } }
-  expect(statusText(bare, null).split('\n')[0]).toBe('live')
+  expect(statusText(bare, null).split('\n')[0]).toBe('context')
 })
 
-test('read errors show a stale warning in the band and the pane', () => {
+test('read errors show a stale warning in the pane', () => {
   const stale: LiveSnapshot = { ...sample(), ingest: { newLines: 0, ms: 5, readErrors: 2 } }
-  expect(bandText(stale, HOST, 200)).toMatch(/ · stale$/)
-  expect(bandText(sample(), HOST, 200)).not.toContain('stale')
   const warning = paneSections(stale, HOST)[1]?.rows.find(r => r.label === 'warning')
   expect(warning).toEqual({ label: 'warning', value: 'stale: 2 transcript read errors', tone: 'warn' })
   const one: LiveSnapshot = { ...sample(), ingest: { newLines: 0, ms: 5, readErrors: 1 } }
