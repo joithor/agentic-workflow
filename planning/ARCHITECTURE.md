@@ -205,7 +205,7 @@ agentic-workflow/
 │   └── SKILL.md                         #   audits 17 Pivot-pattern docs, generates missing
 ├── config/                              # Configuration archive (Claude Code settings, MCP config, hooks)
 │   ├── settings.json                    #   model, plugins, permissions, statusLine command, PreToolUse + SessionStart hook registrations
-│   ├── statusline.sh                    #   adaptive two-line statusline (5 tiers: FULL/MEDIUM/NARROW/COMPACT/COMPACT-S)
+│   ├── statusline.sh                    #   adaptive two-line statusline (5 tiers: FULL/MEDIUM/NARROW/COMPACT/COMPACT-S; FULL and MEDIUM end with a `Live` column)
 │   ├── mcp.json                         #   MCP server registrations (xcodebuildmcp)
 │   └── hooks/                           #   Canonical hook scripts (Claude protocol), installed per provider
 │       ├── adapters/                    #     codex.sh, cursor.sh — normalize provider hook stdin/exit codes
@@ -470,7 +470,7 @@ Archived configuration for replication across machines. `settings.json`, the sta
 figures: it ingests only that session's transcripts into `~/.agentic-workflow/scorer/live/<session>.sqlite`
 (never `scorer.sqlite`), reads the judge database read-only, and shares its SQL and statistics with the
 daily report (`CTX`, `OVER_200K`, `percentile`, `summarizeDecisions`). The `aw-live` mod (`mods/aw-live/`)
-renders it inside Claude Code.
+renders it in a `/live` pane (and `/live status`) inside Claude Code. `config/statusline.sh` shows the headline in its `Live` column (wide and medium tiers: `calls · >200k · judge`), reading a per-session cache `~/.agentic-workflow/scorer/live/<session>.statusline.json` (15 s TTL) that a detached background `scorer live --json` refreshes, so the statusline never waits on scorer or judge. Judge health (`judge health`) is cached the same way.
 
 ## Key Rules
 
