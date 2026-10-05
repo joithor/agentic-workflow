@@ -141,7 +141,45 @@ case \"\$1 \$2\" in \"plugin $step\"|\"plugin marketplace\") [ \"\$2 \$3\" = \"$
   echo "PASS: test_a_failing_claude_write_warns_and_exits_zero"
 }
 
+test_non_json_list_output_is_treated_as_nothing_registered_and_exits_zero() {
+  new_world
+  mv "$BIN/claude" "$BIN/claude.real"
+  cat > "$BIN/claude" <<'WRAP'
+#!/usr/bin/env bash
+case "$1 $2 $3" in
+  "plugin marketplace list"|"plugin list --json") echo "No marketplaces configured"; exit 0 ;;
+esac
+exec "$(dirname "${BASH_SOURCE[0]}")/claude.real" "$@"
+WRAP
+  chmod +x "$BIN/claude"
+  local out rc=0
+  out="$(bash "$INSTALL" 2>&1)" || rc=$?
+  [ "$rc" = "0" ] || fail "non-JSON list output exited $rc: $out"
+  grep -qx "plugin marketplace add $ROOT/mods --scope user" "$LOG" || fail "did not register the marketplace: $(cat "$LOG")"
+  rc=0
+  out="$(bash "$INSTALL" --uninstall 2>&1)" || rc=$?
+  [ "$rc" = "0" ] || fail "non-JSON list output on uninstall exited $rc: $out"
+  echo "PASS: test_non_json_list_output_is_treated_as_nothing_registered_and_exits_zero"
+}
+
+test_missing_jq_is_a_noted_skip_with_exit_zero() {
+  new_world
+  # A PATH holding the stub claude plus the basic tools the installer needs, but no jq.
+  local tools="$BIN/tools" t; mkdir -p "$tools"
+  for t in bash dirname cat mkdir uname tr sed grep head cut sort date env printf; do
+    if command -v "$t" > /dev/null; then ln -sf "$(command -v "$t")" "$tools/$t"; fi
+  done
+  local out rc=0
+  out="$(PATH="$BIN:$tools" bash "$INSTALL" 2>&1)" || rc=$?
+  [ "$rc" = "0" ] || fail "missing jq exited $rc: $out"
+  echo "$out" | grep -q "jq is not on PATH" || fail "no jq note: $out"
+  [ "$(writes)" = "0" ] || fail "wrote without jq: $(cat "$LOG")"
+  echo "PASS: test_missing_jq_is_a_noted_skip_with_exit_zero"
+}
+
 test_fresh_install_adds_the_marketplace_then_the_plugin_at_user_scope
+test_non_json_list_output_is_treated_as_nothing_registered_and_exits_zero
+test_missing_jq_is_a_noted_skip_with_exit_zero
 test_a_failing_claude_write_warns_and_exits_zero
 test_second_run_changes_nothing
 test_dry_run_writes_nothing_and_says_what_it_would_do

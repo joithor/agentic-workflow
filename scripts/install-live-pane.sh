@@ -57,13 +57,20 @@ if ! command -v claude >/dev/null 2>&1; then
   exit 0
 fi
 
+# The marketplace/plugin state is read with jq; without it nothing below can be decided safely.
+if ! command -v jq >/dev/null 2>&1; then
+  echo "  live-pane: skipped, jq is not on PATH (install jq, then re-run scripts/install-live-pane.sh)"
+  exit 0
+fi
+
 # Field names observed from claude 2.1.289: `plugin list --json` rows have `.id`;
 # `plugin marketplace list --json` rows have `.name` and `.installLocation`.
 marketplaces="$(claude plugin marketplace list --json 2>/dev/null || echo '[]')"
 plugins="$(claude plugin list --json 2>/dev/null || echo '[]')"
-has_plugin() { printf '%s' "$plugins" | jq -e --arg id "$PLUGIN_ID" 'any(.[]?; .id == $id)' >/dev/null 2>&1; }
+has_plugin() { printf '%s' "$plugins" | jq -e --arg id "$PLUGIN_ID" 'any(.[]?; .id == $id)' >/dev/null 2>&1 || return 1; }
+# Non-JSON output (e.g. "No marketplaces configured") reads as "none"; never a non-zero exit.
 marketplace_location() {
-  printf '%s' "$marketplaces" | jq -r --arg n "$MARKETPLACE" '[.[]? | select(.name == $n) | (.installLocation // .path // "")] | first // empty' 2>/dev/null
+  printf '%s' "$marketplaces" | jq -r --arg n "$MARKETPLACE" '[.[]? | select(.name == $n) | (.installLocation // .path // "")] | first // empty' 2>/dev/null || true
 }
 
 if [ "$UNINSTALL" = "1" ]; then

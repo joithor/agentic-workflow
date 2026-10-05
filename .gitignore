@@ -24,3 +24,4 @@ coverage/
 
 # Claude Code lays the function-hooks API types into a mod it loads
 mods/*/.claude-plugin/types/
+mods/*/tsconfig.json
