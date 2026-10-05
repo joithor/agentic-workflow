@@ -152,8 +152,38 @@ printf '#!/usr/bin/env bash\necho '"'"'{"status":"ok","failures24h":0}'"'"'\n' >
 # --- long values are cut to the column width ---
 write_cache "$(now)" 12345 3512 123 degraded
 long="$(sed -n 2p <<<"$(run 200 "$SID")")"
-assert_contains "$long" "12345 calls · 3512 >200k · judge ⚠ …" "long value truncated to 36 chars"
+assert_contains "$long" "12345 calls · 3512 >200k · judge ⚠ " "long value drops the judge count first"
 assert_not_contains "$long" "judge ⚠ 123" "long value does not overflow"
+assert_not_contains "$long" "…" "dropping the count needs no cut"
+write_cache "$(now)" 12345678 987654 123 degraded
+assert_contains "$(sed -n 2p <<<"$(run 200 "$SID")")" "12345678 c · 987654 >200k · judge ⚠ " "then calls shortens to c"
+write_cache "$(now)" 123456789 9876543 123 degraded
+cut="$(sed -n 2p <<<"$(run 200 "$SID")")"
+assert_contains "$cut" "…" "only then is the value cut"
+echo "$cut" | iconv -f UTF-8 -t UTF-8 >/dev/null 2>&1 && ok "cut value is valid UTF-8" || bad "cut value is invalid UTF-8"
+
+# --- multibyte: widths are characters, under the C locale and a UTF-8 one ---
+vw() { printf '%s' "$1" | LC_ALL=C tr -d '\200-\277' | wc -c | tr -d ' '; }
+for loc in C en_US.UTF-8; do
+  write_cache "$(now)" 1346 370 6 degraded
+  out="$(LC_ALL=$loc run 200 "$SID")"
+  echo "$out" | iconv -f UTF-8 -t UTF-8 >/dev/null 2>&1 && ok "[$loc] output is valid UTF-8" || bad "[$loc] invalid UTF-8"
+  assert_contains "$out" "1346 calls · 370 >200k · judge ⚠ 6" "[$loc] full value renders untruncated"
+  h="$(sed 's/\x1b\[[0-9;]*m//g' <<<"$out" | sed -n 1p)"; v="$(sed 's/\x1b\[[0-9;]*m//g' <<<"$out" | sed -n 2p)"
+  lh="${h##*│ }"; lv="${v##*│ }"
+  [ "$(vw "$lh")" = "$(vw "$lv")" ] && ok "[$loc] Live header and value have the same visible width" || bad "[$loc] widths differ: $(vw "$lh") vs $(vw "$lv")"
+  [ "$(vw "$h")" = "$(vw "$v")" ] && ok "[$loc] whole header and value rows align" || bad "[$loc] rows differ: $(vw "$h") vs $(vw "$v")"
+  write_cache "$(now)" 123456789 9876543 123 degraded
+  echo "$(LC_ALL=$loc run 200 "$SID")" | iconv -f UTF-8 -t UTF-8 >/dev/null 2>&1 && ok "[$loc] cut value is valid UTF-8" || bad "[$loc] cut invalid UTF-8"
+done
+
+# --- first render has no numbers, the next one does ---
+rm "$CACHE" 2>/dev/null
+first="$(LC_ALL=C run 200 "$SID")"
+assert_contains "$(sed -n 2p <<<"$first")" "│ --" "first render without cache shows --"
+deadline=$(( $(now) + 10 ))
+while [ "$(now)" -lt "$deadline" ] && ! grep -q '"calls": 500' "$CACHE" 2>/dev/null; do sleep 0.2; done
+assert_contains "$(LC_ALL=C run 200 "$SID")" "500 calls · 7 >200k · judge ✓ 4" "next render shows numbers"
 
 # --- hostile session ids never reach a path or the scorer ---
 : >"$FAKE_LOG"
