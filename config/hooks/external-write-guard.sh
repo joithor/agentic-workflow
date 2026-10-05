@@ -2,7 +2,8 @@
 # aw:external-write-guard — PreToolUse hook matching gh pr
 # merge|comment|review, Linear save_*/create_*/delete_*, and Slack send_*
 # tools. Pushing a feature branch and opening a PR are deliberately NOT
-# matched (pushes to the base branch stay blocked by block-push-main.sh). Denies "needs the user" only when the current turn began with an
+# matched (pushes to the base branch stay blocked by block-push-main.sh).
+# Denies "needs the user" only when the current turn began with an
 # auto-continue (Task 4's turn-state); allows otherwise. Deterministic
 # pre-rules only — a model never decides this (repo-wide rule).
 # Per RF-5: any tool call reaching this hook that isn't actually one of the
