@@ -5,6 +5,19 @@ import { summarizeDecisions } from "./judge-stats.js";
 
 export type JudgeDb = Database.Database;
 
+export interface AxisReportRow {
+  axis: string;
+  agreed: number;
+  overrode: number;
+  undecided: number;
+}
+
+export interface ScaffoldReportRow {
+  id: string;
+  wouldFire: number;
+  fired: number;
+}
+
 export interface JudgeReportRow {
   question: string;
   decisions: number;
@@ -19,6 +32,8 @@ export interface JudgeReportRow {
   overrode: number;
   p50LatencyMs: number;
   byProvider: Record<string, number>;
+  axes?: AxisReportRow[];
+  scaffolds?: ScaffoldReportRow[];
 }
 
 interface DecisionAggRow extends DecisionFacts {
@@ -26,10 +41,46 @@ interface DecisionAggRow extends DecisionFacts {
   skipped: string;
 }
 
+function hasTable(db: JudgeDb, name: string): boolean {
+  return db.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name=?").get(name) !== undefined;
+}
+
+function axisRows(db: JudgeDb, sinceIso: string): AxisReportRow[] {
+  if (!hasTable(db, "prompt_sort_axes")) return [];
+  return db
+    .prepare(
+      `SELECT a.axis AS axis,
+              SUM(CASE WHEN a.status = 'agreed' THEN 1 ELSE 0 END) AS agreed,
+              SUM(CASE WHEN a.status = 'overrode' THEN 1 ELSE 0 END) AS overrode,
+              SUM(CASE WHEN a.status = 'undecided' THEN 1 ELSE 0 END) AS undecided
+       FROM prompt_sort_axes a JOIN decisions d ON d.id = a.decision_id
+       WHERE d.ts >= ? GROUP BY a.axis ORDER BY a.axis`,
+    )
+    .all(sinceIso) as AxisReportRow[];
+}
+
+function scaffoldRows(db: JudgeDb, sinceIso: string): ScaffoldReportRow[] {
+  if (!hasTable(db, "prompt_sort_runs")) return [];
+  const rows = db
+    .prepare("SELECT r.would_fire AS would, r.fired AS fired FROM prompt_sort_runs r JOIN decisions d ON d.id = r.decision_id WHERE d.ts >= ?")
+    .all(sinceIso) as Array<{ would: string; fired: string }>;
+  const counts = new Map<string, ScaffoldReportRow>();
+  const bump = (id: string, key: "wouldFire" | "fired"): void => {
+    const row = counts.get(id) ?? { id, wouldFire: 0, fired: 0 };
+    row[key]++;
+    counts.set(id, row);
+  };
+  for (const r of rows) {
+    for (const id of JSON.parse(r.would) as string[]) bump(id, "wouldFire");
+    for (const id of JSON.parse(r.fired) as string[]) bump(id, "fired");
+  }
+  return [...counts.values()].sort((a, b) => a.id.localeCompare(b.id));
+}
+
 export function judgeSection(db: JudgeDb, sinceIso: string): JudgeReportRow[] {
   const questions = db.prepare("SELECT DISTINCT question FROM decisions WHERE ts >= ? ORDER BY question").all(sinceIso) as Array<{ question: string }>;
   // An older judge db has no decision_details (RF-2): agreement counts are 0.
-  const hasDetails = db.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='decision_details'").get() !== undefined;
+  const hasDetails = hasTable(db, "decision_details");
   return questions.map(({ question }) => {
     // Every row in the window, whatever its outcome; summarizeDecisions (shared with the live
     // pane) decides which rows count toward each figure. decision_details is left-joined so
@@ -68,6 +119,7 @@ export function judgeSection(db: JudgeDb, sinceIso: string): JudgeReportRow[] {
       overrode: summary.overrode,
       p50LatencyMs: summary.p50LatencyMs,
       byProvider: summary.byProvider,
+      ...(question === "prompt-sort" ? { axes: axisRows(db, sinceIso), scaffolds: scaffoldRows(db, sinceIso) } : {}),
     };
   });
 }
@@ -82,5 +134,19 @@ export function renderJudgeSection(rows: JudgeReportRow[]): string {
   const body = rows
     .map((r) => `| ${r.question} | ${r.decisions} | ${r.undos} | ${(r.errorRate * 100).toFixed(1)}% | ${r.failures} | ${r.escalations} | ${r.fallbacks} | ${r.undecided} | ${r.agreed} | ${r.overrode} | ${r.p50LatencyMs} | ${r.p95LatencyMs} | ${providers(r)} |`)
     .join("\n");
-  return `${header}${body}\n`;
+  const sorter = rows.find((r) => r.axes !== undefined && r.axes.length > 0);
+  const sub = sorter === undefined ? "" : [
+    "",
+    "### Prompt sorter",
+    "",
+    "| Axis | Judge agreed with heuristic | Judge overrode heuristic | Undecided (heuristic used) |",
+    "|---|---|---|---|",
+    ...(sorter.axes as AxisReportRow[]).map((a) => `| ${a.axis} | ${a.agreed} | ${a.overrode} | ${a.undecided} |`),
+    "",
+    "| Scaffold | Would fire | Fired |",
+    "|---|---|---|",
+    ...(sorter.scaffolds as ScaffoldReportRow[]).map((s) => `| ${s.id} | ${s.wouldFire} | ${s.fired} |`),
+    "",
+  ].join("\n");
+  return `${header}${body}\n${sub}`;
 }

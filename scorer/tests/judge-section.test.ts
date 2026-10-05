@@ -130,3 +130,53 @@ describe("renderJudgeSection", () => {
     expect(renderJudgeSection([])).toBe("## Judge\n\nNo judge decisions recorded yet.\n");
   });
 });
+
+describe("prompt-sort telemetry", () => {
+  const ts = "2026-10-03T00:00:00.000Z";
+  function sortRow(db: ReturnType<typeof openDb>, id: string, latency: number, axes: Array<[string, string]>, run: { would: string[]; fired: string[] }) {
+    recordDecision(db, { id, ts, question: "prompt-sort", content_class: "brief", provider: "jev", decision: "small", confidence: 0.9, reason_code: "sorted", latency_ms: latency, input_digest: "x", undone_at: null, chain_position: 0, skipped: [], outcome: "decided" });
+    recordDecisionDetails(db, { id, input_json: "{}", probabilities: null, rules_opinion: null, agreement: "agreed" });
+    for (const [axis, status] of axes) {
+      db.prepare("INSERT INTO prompt_sort_axes (decision_id, axis, value, heuristic, source, status, probability, confidence) VALUES (?, ?, 'true', 'true', 'judge', ?, NULL, NULL)").run(id, axis, status);
+    }
+    db.prepare("INSERT INTO prompt_sort_runs (decision_id, mode, reason, would_fire, fired, suppressed) VALUES (?, 'blend', 'sorted', ?, ?, '[]')").run(id, JSON.stringify(run.would), JSON.stringify(run.fired));
+  }
+
+  it("adds per-axis agreed/overrode/undecided counts and per-scaffold would-fire/fired counts to the prompt-sort row only", () => {
+    const db = openDb(":memory:");
+    sortRow(db, "a", 300, [["is_task", "agreed"], ["touches_ui", "overrode"]], { would: ["ui-evidence"], fired: [] });
+    sortRow(db, "b", 500, [["is_task", "agreed"], ["touches_ui", "undecided"]], { would: ["ui-evidence", "bugfix"], fired: ["bugfix"] });
+    recordDecision(db, { id: "w", ts, question: "wake-gate", content_class: "message-meta", provider: "jev", decision: "send", confidence: 1, reason_code: "jev", latency_ms: 1, input_digest: "x", undone_at: null, chain_position: 0, skipped: [], outcome: "decided" });
+    const rows = judgeSection(db, "2026-10-01T00:00:00.000Z");
+    const sort = rows.find((r) => r.question === "prompt-sort");
+    expect(sort).toMatchObject({ decisions: 2 });
+    expect(sort?.axes).toEqual([
+      { axis: "is_task", agreed: 2, overrode: 0, undecided: 0 },
+      { axis: "touches_ui", agreed: 0, overrode: 1, undecided: 1 },
+    ]);
+    expect(sort?.scaffolds).toEqual([{ id: "bugfix", wouldFire: 1, fired: 1 }, { id: "ui-evidence", wouldFire: 2, fired: 0 }]);
+    expect(rows.find((r) => r.question === "wake-gate")?.axes).toBeUndefined();
+    const md = renderJudgeSection(rows);
+    expect(md).toContain("### Prompt sorter");
+    expect(md).toContain("| touches_ui | 0 | 1 | 1 |");
+    expect(md).toContain("| ui-evidence | 2 | 0 |");
+  });
+
+  it("renders without the sorter tables on an old judge db (RF-2 of Plan A)", () => {
+    const db = openDb(":memory:");
+    sortRow(db, "a", 300, [["is_task", "agreed"]], { would: [], fired: [] });
+    db.exec("DROP TABLE prompt_sort_axes; DROP TABLE prompt_sort_runs;");
+    const sort = judgeSection(db, "2026-10-01T00:00:00.000Z").find((r) => r.question === "prompt-sort");
+    expect(sort?.axes).toEqual([]);
+    expect(sort?.scaffolds).toEqual([]);
+    expect(renderJudgeSection([sort as NonNullable<typeof sort>])).not.toContain("### Prompt sorter");
+  });
+
+  it("still reports the prompt-sort row when decision_details is also missing", () => {
+    const db = openDb(":memory:");
+    sortRow(db, "a", 300, [["is_task", "agreed"]], { would: [], fired: [] });
+    db.exec("DROP TABLE decision_details; DROP TABLE prompt_sort_axes; DROP TABLE prompt_sort_runs;");
+    const sort = judgeSection(db, "2026-10-01T00:00:00.000Z").find((r) => r.question === "prompt-sort");
+    expect(sort).toMatchObject({ decisions: 1, agreed: 0, axes: [], scaffolds: [] });
+  });
+});
