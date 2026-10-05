@@ -466,6 +466,12 @@ Archived configuration for replication across machines. `settings.json`, the sta
 
 `scorer/` reads agent transcripts through pluggable per-provider transcript sources, selected with `--provider`. The sources cover Claude Code (`~/.claude/projects/<project>/<session>.jsonl`, plus `<session>/subagents/agent-<id>.jsonl` with its `.meta.json`), Codex (`~/.codex/sessions/YYYY/MM/DD/rollout-*.jsonl`), and Cursor (`~/.cursor/projects/<proj>/agent-transcripts/`). Transcripts are read incrementally, tracking a byte offset per file in `~/.agentic-workflow/scorer/scorer.sqlite`. API calls are deduplicated by `message.id`. User lines are classified into the user's prompts, continues, corrections, interrupts and teammate wakes. PR links are checked against `gh` for merge state. A daily launchd job writes `reports/<date>.md` and `.json`. When the transcript format changes, the report shows only an "unknown format" warning and the CLI exits 3. `scorer probe` summarizes the hook-input probe logs in `~/.agentic-workflow/probe/`.
 
+`scorer live --session <id> [--cwd DIR] [--json]` is the per-session, incremental view of the same
+figures: it ingests only that session's transcripts into `~/.agentic-workflow/scorer/live/<session>.sqlite`
+(never `scorer.sqlite`), reads the judge database read-only, and shares its SQL and statistics with the
+daily report (`CTX`, `OVER_200K`, `percentile`, `summarizeDecisions`). The `aw-live` mod (`mods/aw-live/`)
+renders it inside Claude Code.
+
 ## Key Rules
 
 1. **Skills are stateless Markdown.** Each skill is a SKILL.md with YAML frontmatter (`name`, `description`, `allowed-tools`, `disable-model-invocation`). The Markdown body is the prompt, and the host agent (Claude Code, Codex, or Cursor) executes it step by step. Skill text names capabilities, not provider tools. No runtime code, no build step.
