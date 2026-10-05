@@ -17,6 +17,7 @@ import { openDb, pruneDecisionDetails } from "./db.js";
 import { makeRecorder, readReplay, runEval, writeEvalReport } from "./eval.js";
 import { runLabelImport, runLabelSet, runLabelStatus } from "./label.js";
 import { runOutcomeLabels } from "./outcomes.js";
+import { runImportTurns } from "./turn-import.js";
 import { AGENT_CLI_BINARIES, isOnPath, resolveAgentClis } from "./detect.js";
 import { makeClaudeCliProvider } from "./providers/claude-cli.js";
 import { makeCodexCliProvider } from "./providers/codex-cli.js";
@@ -140,6 +141,7 @@ async function main(): Promise<{ exitCode: number; stdout: string; stderr?: stri
       }
     }
     case "eval": {
+      if (rest[0] === "import-turns") return runImportTurns(db, rest.slice(1), () => new Date());
       const q = rest[0] ?? "";
       const providerName = flag("--provider") ?? "jev";
       const provider = providers.find((p) => p.name === providerName && p.name !== "rules");
