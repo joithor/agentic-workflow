@@ -5,7 +5,7 @@
 # stdout, and their exit code is ignored.
 
 PORT="${PRISM_DASHBOARD_PORT:-7180}"
-if ! curl -fsS --max-time 2 "http://localhost:$PORT/health" >/dev/null 2>&1; then
+if ! curl -fsS --max-time 2 "http://localhost:$PORT/" >/dev/null 2>&1; then
   echo "⚠ prism-mcp dashboard unreachable at :$PORT — run /prismStatus for details"
 fi
 exit 0

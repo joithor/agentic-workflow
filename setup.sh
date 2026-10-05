@@ -580,7 +580,7 @@ else
 fi
 
 # --- MCP server catalog (registered with every selected provider) ---
-PRISM_VERSION="5.1.0"          # pin: bump here when upgrading
+PRISM_VERSION="20.21.17"       # pin: bump here when upgrading (5.1.0 hung on MCP initialize)
 XCODEBUILDMCP_VERSION="2.3.0"  # pin: bump here when upgrading (keep config/mcp.json in sync)
 
 AW_MCP_SERVERS="$(jq -nc \
