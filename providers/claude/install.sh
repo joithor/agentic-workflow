@@ -37,11 +37,23 @@ claude_install_settings() {
   echo "  statusline script installed"
 
   [ -f "$settings" ] || return 0
-  aw_dry && { echo "  [dry-run] would merge statusLine + WINCH Stop/PreToolUse hooks into $settings if absent"; return 0; }
-
-  # Per-window WINCH: walk up to this session's own tty, signal only the shell that wrote
-  # ~/.claude/shell_pid.d/<tty>. No shared pid file between windows.
+  # Resize hooks are owned, tagged entries ("# aw:winch"): installed no matter what other
+  # Stop/PreToolUse hooks exist, replaced in place on re-run, never touching other hooks.
+  # Migration: the old untagged form read the global $HOME/.claude/shell_pid file, which the
+  # shell integration no longer writes; those commands (and only those) are removed.
+  # shellcheck source=../../config/lib/merge-hook.sh
+  source "$TOOLKIT_DIR/config/lib/merge-hook.sh"
+  # Per-window: walks up to this session's own tty and signals only the shell that wrote
+  # ~/.claude/shell_pid.d/<tty>. No pid file is shared between windows.
   local WINCH_CMD='p=$PPID; for i in 1 2 3 4 5 6 7 8; do o=$(ps -o ppid=,tty= -p $p 2>/dev/null); set -- $o; t=$2; case $t in ""|"??"|-) p=$1;; *) f="$HOME/.claude/shell_pid.d/$t"; [ -f "$f" ] && kill -WINCH "$(cat "$f")" 2>/dev/null; break;; esac; done; '
+  local legacy_jq='[.hooks.Stop[]?, .hooks.PreToolUse[]? | .hooks[]? | (.command // "") | select(contains("$HOME/.claude/shell_pid\"") and (contains("# aw:") | not))] | length'
+  local legacy_n
+  legacy_n=$(jq "$legacy_jq" "$settings" 2>/dev/null || echo 0)
+  if aw_dry; then
+    echo "  [dry-run] would merge statusLine into $settings if absent"
+    echo "  [dry-run] would migrate $legacy_n legacy global-shell_pid resize hook(s) and set per-tty '# aw:winch' hooks on Stop + PreToolUse"
+    return 0
+  fi
 
   # Add statusLine key if absent (use has() so null values are not re-merged)
   if ! jq -e 'has("statusLine")' "$settings" &>/dev/null; then
@@ -50,23 +62,22 @@ claude_install_settings() {
     echo "  statusLine config added to existing settings.json"
   fi
 
-  # Merge Stop hook (statusline width refresh) if not already present
-  if ! jq -e 'has("hooks") and (.hooks | has("Stop"))' "$settings" &>/dev/null; then
-    local stop_hook
-    stop_hook=$(jq -n --arg c "$WINCH_CMD sleep 0.05; true" '[{hooks:[{type:"command",command:$c}]}]')
-    jq --argjson stop "$stop_hook" '.hooks.Stop = $stop' \
+  if [ "$legacy_n" -gt 0 ]; then
+    jq 'def legacy: (.command // "") | (contains("$HOME/.claude/shell_pid\"") and (contains("# aw:") | not));
+        reduce ("Stop","PreToolUse") as $e (.;
+          if .hooks[$e] then
+            .hooks[$e] = [ .hooks[$e][] | .hooks = [ (.hooks // [])[] | select(legacy | not) ] | select(.hooks | length > 0) ]
+            | if (.hooks[$e] | length) == 0 then .hooks |= del(.[$e]) else . end
+          else . end)' \
       "$settings" > "$settings.tmp" && mv "$settings.tmp" "$settings"
-    echo "  hooks.Stop added to existing settings.json"
+    echo "  resize hooks: migrated $legacy_n legacy global-shell_pid hook(s)"
   fi
-
-  # Merge PreToolUse hook (statusline width refresh) if not already present
-  if ! jq -e 'has("hooks") and (.hooks | has("PreToolUse"))' "$settings" &>/dev/null; then
-    local ptu_hook
-    ptu_hook=$(jq -n --arg c "$WINCH_CMD true" '[{matcher:".*",hooks:[{type:"command",command:$c}]}]')
-    jq --argjson ptu "$ptu_hook" '.hooks.PreToolUse = $ptu' \
-      "$settings" > "$settings.tmp" && mv "$settings.tmp" "$settings"
-    echo "  hooks.PreToolUse added to existing settings.json"
-  fi
+  local stop_hook ptu_hook
+  stop_hook=$(jq -n --arg c "$WINCH_CMD sleep 0.05; true # aw:winch" '{hooks:[{type:"command",command:$c}]}')
+  ptu_hook=$(jq -n --arg c "$WINCH_CMD true # aw:winch" '{matcher:".*",hooks:[{type:"command",command:$c}]}')
+  merge_hook "$settings" Stop aw:winch "$stop_hook" || return 1
+  merge_hook "$settings" PreToolUse aw:winch "$ptu_hook" || return 1
+  echo "  hooks.Stop / hooks.PreToolUse: per-tty resize hooks set (aw:winch)"
 }
 
 claude_install_shell_integration() {

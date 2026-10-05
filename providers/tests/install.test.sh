@@ -194,6 +194,38 @@ test_real_skill_packages_are_the_ones_with_package_json() {
   echo "PASS: test_real_skill_packages_are_the_ones_with_package_json"
 }
 
+test_resize_hooks_migrate_to_tagged_per_tty_entries() {
+  setup_env
+  local f="$HOME/.claude/settings.json" before after out
+  mkdir -p "$HOME/.claude"
+  cat >"$f" <<'JSON'
+{"hooks":{
+ "Stop":[{"hooks":[{"type":"command","command":"~/.claude/hooks/done-gate.sh"}]},
+         {"hooks":[{"type":"command","command":"SHELL_PID=$(cat \"$HOME/.claude/shell_pid\" 2>/dev/null); [ -n \"$SHELL_PID\" ] && kill -WINCH \"$SHELL_PID\" 2>/dev/null; sleep 0.05; true"}]}],
+ "PreToolUse":[{"matcher":"Bash","hooks":[{"type":"command","command":"~/.claude/hooks/scope-gate.sh"}]},
+               {"matcher":".*","hooks":[{"type":"command","command":"SHELL_PID=$(cat \"$HOME/.claude/shell_pid\" 2>/dev/null); [ -n \"$SHELL_PID\" ] && kill -WINCH \"$SHELL_PID\" 2>/dev/null; true"}]}]},
+ "statusLine":{"type":"command","command":"x"}}
+JSON
+  out="$(AW_DRY_RUN=1 claude_install_settings 2>&1)"
+  echo "$out" | grep -q "would migrate 2 legacy" || fail "dry-run should announce the migration: $out"
+  [ "$(jq '[.. | .command? // empty | select(contains("shell_pid\""))] | length' "$f")" = 2 ] || fail "dry-run changed settings.json"
+  claude_install_settings >/dev/null 2>&1 || fail "install failed"
+  [ "$(jq '[.. | .command? // empty | select(contains("$HOME/.claude/shell_pid\""))] | length' "$f")" = 0 ] || fail "legacy commands remain"
+  for e in Stop PreToolUse; do
+    [ "$(jq --arg e "$e" '[.hooks[$e][].hooks[] | select(.command | endswith("# aw:winch"))] | length' "$f")" = 1 ] || fail "$e: expected exactly one aw:winch hook"
+  done
+  jq -e '.hooks.Stop | any(.[].hooks[]; .command == "~/.claude/hooks/done-gate.sh")' "$f" >/dev/null || fail "done-gate removed"
+  jq -e '.hooks.PreToolUse | any(.[].hooks[]; .command == "~/.claude/hooks/scope-gate.sh")' "$f" >/dev/null || fail "scope-gate removed"
+  [ "$(jq '.hooks.Stop | length' "$f")" = 2 ] && [ "$(jq '.hooks.PreToolUse | length' "$f")" = 2 ] || fail "unexpected group count"
+  jq -e '.hooks.Stop[].hooks[] | select(.command | endswith("# aw:winch")) | .command | contains("shell_pid.d")' "$f" >/dev/null || fail "winch hook is not per-tty"
+  before="$(cat "$f")"
+  claude_install_settings >/dev/null 2>&1 || fail "second install failed"
+  after="$(cat "$f")"
+  [ "$before" = "$after" ] || fail "second install changed settings.json"
+  teardown_env
+  echo "PASS: test_resize_hooks_migrate_to_tagged_per_tty_entries"
+}
+
 test_links_managed_and_bootstrap_then_is_idempotent
 test_refreshes_legacy_link_and_removes_deprecated
 test_foreign_collision_is_kept_when_stdin_closed
@@ -205,3 +237,4 @@ test_dry_run_writes_nothing
 test_agents_render_per_provider
 test_builds_skill_packages_and_warns_on_failure
 test_real_skill_packages_are_the_ones_with_package_json
+test_resize_hooks_migrate_to_tagged_per_tty_entries
