@@ -27,6 +27,12 @@ const TONE_COLOR: Record<Tone, string | undefined> = { ok: '#7ec699', warn: '#d4
 let lastAt: number | null = null
 let running: Promise<void> | null = null
 
+/** Test seam: forget the refresh bookkeeping so each test starts cold. */
+export const resetForTests = (): void => {
+  lastAt = null
+  running = null
+}
+
 /** Runs scorer by argv, trying each candidate path; null on any failure. */
 const runScorer = async ($: EngineInterface, args: string[], timeoutMs: number): Promise<string | null> => {
   const names = binCandidates(await $.env.get('HOME'), 'scorer', await $.env.get('AW_SCORER_BIN'))

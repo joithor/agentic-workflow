@@ -2,6 +2,7 @@ import { expect, mock, test } from 'claude-code/testing'
 import type { Engine } from 'claude-code/testing'
 import type { On } from 'claude-code'
 
+import { resetForTests } from '../register'
 import { SAMPLE_JSON } from './fixtures/sample'
 
 const SURFACES = ['terminal', 'desktop'] as const
@@ -18,6 +19,8 @@ type Reply = { exitCode: number; stdout: string }
 const sessionId = { current: 'session-1' }
 
 const world = (on: On, reply: (argv: string[]) => Reply | 'cannot-start', env?: Record<string, string>) => {
+  resetForTests()
+  sessionId.current = 'session-1'
   const runs: Run[] = []
   const opened: string[] = []
   const closed: string[] = []
@@ -194,7 +197,6 @@ test('a /clear gives the session a new id and the next refresh asks for that one
   await clock.advance(10_000)
   expect(runs.at(-1)?.argv).toContain('session-2')
   expect(runs[0]?.argv).toContain('session-1')
-  sessionId.current = 'session-1'
 })
 
 test('a refresh that arrives while another runs joins it: one process, not two (RF-3)', async ($, on) => {
@@ -206,12 +208,11 @@ test('a refresh that arrives while another runs joins it: one process, not two (
 })
 
 test('no session id yet means no refresh and no crash', async ($, on) => {
-  sessionId.current = ''
   const { runs, clock } = world(on, () => ok(SAMPLE_JSON))
+  sessionId.current = ''
   await start($)
   await clock.settle()
   expect(runs).toEqual([])
-  sessionId.current = 'session-1'
 })
 test('the first refresh gets the long timeout, later ones the short one', async ($, on) => {
   const { runs, clock } = world(on, () => ok(SAMPLE_JSON))
@@ -222,11 +223,35 @@ test('the first refresh gets the long timeout, later ones the short one', async 
   expect(runs.at(-1)?.timeoutMs).toBe(5_000)
 })
 
-test('a malformed payload (judge ok without gates) never throws and the band stays quiet', async ($, on) => {
-  const bad = JSON.stringify({ ...JSON.parse(SAMPLE_JSON), judge: { state: 'ok' } })
-  world(on, () => ok(bad))
+test('a failed or garbage refresh keeps the last good snapshot (band still shows the headline)', async ($, on) => {
+  let calls = 0
+  const { clock } = world(on, () => {
+    calls += 1
+    if (calls === 1) return ok(SAMPLE_JSON)
+    return calls === 2 ? ok('garbage') : { exitCode: 1, stdout: '' }
+  })
+  await start($)
+  await clock.settle()
+  await clock.advance(10_000)
+  await clock.advance(10_000)
+  expect(calls).toBeGreaterThanOrEqual(3)
+  const ui = await band($, 'terminal')
+  expect((await ui.find({ type: 'Text' }))?.text).toContain('live · ctx 44%')
+  await ui.unmount()
+})
+
+// Passes parseSnapshot (it checks only the judge state) but makes formatting throw.
+const NO_GATES = JSON.stringify({ ...JSON.parse(SAMPLE_JSON), judge: { state: 'ok' } })
+
+test('a payload that parses but breaks formatting never throws out of a hook', async ($, on) => {
+  world(on, () => ok(NO_GATES))
   await start($)
   const ui = await band($, 'terminal')
   expect(await ui.find({ type: 'Text' })).toBeUndefined()
   await ui.unmount()
+  const p = await pane($, 'terminal')
+  expect(await p.find({ type: 'Text' })).toBeUndefined()
+  await p.unmount()
+  const answer = await $.command.run({ ...CMD, args: 'status' })
+  expect(answer.text).toContain('scripts/install-scorer.sh')
 })
