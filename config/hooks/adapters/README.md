@@ -53,7 +53,7 @@ the `aw:*` entries.
 | `done-gate-annotate.sh` | PostToolUse `Agent` | **unmapped**: `spawn_agent` returns at once with an agent id. The result comes later through `wait_agent`, with no link back to the brief | **unmapped**: `subagentStop` has no dispatch id to look up the brief, and it can't annotate the parent's tool result |
 | `scope-gate.sh` | PreToolUse `Agent` | PreToolUse `^(Agent\|spawn_agent)$`: `message`→`prompt`, `agent_type`→`subagent_type`, `task_name`→`name`/`description`, `turn_id`→`prompt_id` | `subagentStart` (can block): `task`→`prompt`, `tool_call_id`→`tool_use_id` |
 | `subagent-start-map.sh` | SubagentStart | SubagentStart (`turn_id`→`prompt_id`, the same value scope-gate saved) | not needed: `subagentStart` gives scope-gate the dispatch's `tool_call_id` directly |
-| `external-write-guard.sh` | PreToolUse `.*` | PreToolUse `.*` | `beforeShellExecution` (git push / gh pr) + `beforeMCPExecution` (tool renamed `mcp__<server>__<tool>`) |
+| `external-write-guard.sh` | PreToolUse `.*` | PreToolUse `.*` | `beforeShellExecution` (gh pr merge / comment / review) + `beforeMCPExecution` (tool renamed `mcp__<server>__<tool>`) |
 | `turn-origin.sh` | UserPromptSubmit | UserPromptSubmit | `beforeSubmitPrompt` → `{continue: true}` |
 | `send-gate.sh` | PreToolUse `SendMessage` | **unmapped**: nothing flushes the outbox before idle (no TeammateIdle), and `send_message`'s argument shape can't be checked against real input yet | **unmapped**: no teammate message tool |
 | `record-teammate-name.sh` | PreToolUse `Agent` | **unmapped** (only consumed by wake gating) | **unmapped** |
