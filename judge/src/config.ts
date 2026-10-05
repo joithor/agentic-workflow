@@ -3,6 +3,7 @@ import os from "node:os";
 import path from "node:path";
 
 import { isAgentCliName } from "./detect.js";
+import { SCAFFOLD_IDS, type ScaffoldId } from "./prompt-sort/scaffolds.js";
 import type { AgentCliName, ProviderName } from "./types.js";
 
 export interface JudgeQuestionConfig {
@@ -47,6 +48,7 @@ export interface JudgeProvidersConfig {
 export interface JudgeConfig {
   questions: Record<string, JudgeQuestionConfig>;
   providers?: JudgeProvidersConfig;
+  promptSort?: PromptSortOverrides;
 }
 
 export const DEFAULT_CONFIG: JudgeConfig = {
@@ -88,16 +90,70 @@ function parseProviders(raw: unknown): JudgeProvidersConfig | undefined {
   return Object.keys(parsed).length > 0 ? parsed : undefined;
 }
 
+export interface PromptSortOverrides {
+  enabled?: boolean;
+  budgetMs?: number;
+  cooldownPrompts?: number;
+  scaffolds?: Partial<Record<ScaffoldId, boolean>>;
+}
+export interface PromptSortConfig {
+  enabled: boolean;
+  budgetMs: number;
+  cooldownPrompts: number;
+  scaffolds: Record<ScaffoldId, boolean>;
+}
+
+// Shadow mode: the sorter records every prompt; no scaffold is injected until a
+// switch is turned on (Task 10 flips them from eval results).
+export const DEFAULT_PROMPT_SORT: PromptSortConfig = {
+  enabled: true,
+  budgetMs: 1000,
+  cooldownPrompts: 5,
+  scaffolds: { brief: false, bugfix: false, "ui-evidence": false, "plan-first": false },
+};
+
+const MIN_BUDGET_MS = 200;
+const MAX_BUDGET_MS = 1400;
+
+function parsePromptSort(raw: unknown): PromptSortOverrides | undefined {
+  if (typeof raw !== "object" || raw === null || Array.isArray(raw)) return undefined;
+  const { enabled, budgetMs, cooldownPrompts, scaffolds } = raw as Record<string, unknown>;
+  const parsed: PromptSortOverrides = {};
+  if (typeof enabled === "boolean") parsed.enabled = enabled;
+  if (typeof budgetMs === "number" && Number.isFinite(budgetMs)) parsed.budgetMs = Math.min(MAX_BUDGET_MS, Math.max(MIN_BUDGET_MS, budgetMs));
+  if (typeof cooldownPrompts === "number" && Number.isFinite(cooldownPrompts) && cooldownPrompts >= 0) parsed.cooldownPrompts = cooldownPrompts;
+  if (typeof scaffolds === "object" && scaffolds !== null && !Array.isArray(scaffolds)) {
+    const s: Partial<Record<ScaffoldId, boolean>> = {};
+    for (const id of SCAFFOLD_IDS) {
+      const v = (scaffolds as Record<string, unknown>)[id];
+      if (typeof v === "boolean") s[id] = v;
+    }
+    parsed.scaffolds = s;
+  }
+  return parsed;
+}
+
+export function resolvePromptSort(config: JudgeConfig): PromptSortConfig {
+  const o = config.promptSort ?? {};
+  return {
+    enabled: o.enabled ?? DEFAULT_PROMPT_SORT.enabled,
+    budgetMs: o.budgetMs ?? DEFAULT_PROMPT_SORT.budgetMs,
+    cooldownPrompts: o.cooldownPrompts ?? DEFAULT_PROMPT_SORT.cooldownPrompts,
+    scaffolds: { ...DEFAULT_PROMPT_SORT.scaffolds, ...(o.scaffolds ?? {}) },
+  };
+}
+
 export function loadConfig(file: string, defaults: JudgeConfig = DEFAULT_CONFIG): JudgeConfig {
   try {
     const raw: unknown = JSON.parse(fs.readFileSync(file, "utf8"));
     if (typeof raw !== "object" || raw === null) return defaults;
-    const { questions: rawQuestions, providers: rawProviders } = raw as { questions?: unknown; providers?: unknown };
+    const { questions: rawQuestions, providers: rawProviders, promptSort: rawPromptSort } = raw as { questions?: unknown; providers?: unknown; promptSort?: unknown };
     const questions = rawQuestions === undefined ? {} : rawQuestions;
     if (typeof questions !== "object" || questions === null || Array.isArray(questions)) return defaults;
     const merged: JudgeConfig = { questions: { ...defaults.questions, ...parseQuestions(questions as Record<string, unknown>) } };
     const providers = parseProviders(rawProviders);
-    return providers === undefined ? merged : { ...merged, providers };
+    const promptSort = parsePromptSort(rawPromptSort);
+    return { ...merged, ...(providers === undefined ? {} : { providers }), ...(promptSort === undefined ? {} : { promptSort }) };
   } catch {
     return defaults;
   }

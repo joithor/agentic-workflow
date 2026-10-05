@@ -4,7 +4,7 @@ import path from "node:path";
 
 import { describe, expect, it } from "vitest";
 
-import { configPath, DEFAULT_CONFIG, judgeConfigPath, judgeDbPath, judgeStateDir, loadConfig } from "../src/config.js";
+import { configPath, DEFAULT_CONFIG, judgeConfigPath, judgeDbPath, judgeStateDir, loadConfig, resolvePromptSort, DEFAULT_PROMPT_SORT } from "../src/config.js";
 
 describe("configPath", () => {
   it("defaults under the given home", () => {
@@ -146,5 +146,32 @@ describe("loadConfig — providers block", () => {
 
   it("an empty agentClis list is kept (explicitly no agent CLIs)", () => {
     expect(loadConfig(write({ providers: { agentClis: [] } })).providers).toEqual({ agentClis: [] });
+  });
+});
+
+describe("promptSort config", () => {
+  const writeCfg = (obj: unknown): string => {
+    const file = path.join(fs.mkdtempSync(path.join(os.tmpdir(), "cfg-")), "config.json");
+    fs.writeFileSync(file, JSON.stringify(obj));
+    return file;
+  };
+
+  it("defaults to shadow mode: enabled, every scaffold off", () => {
+    expect(resolvePromptSort(DEFAULT_CONFIG)).toEqual(DEFAULT_PROMPT_SORT);
+    expect(DEFAULT_PROMPT_SORT).toEqual({ enabled: true, budgetMs: 1000, cooldownPrompts: 5, scaffolds: { brief: false, bugfix: false, "ui-evidence": false, "plan-first": false } });
+    expect(loadConfig(writeCfg({ questions: {} })).promptSort).toBeUndefined();
+  });
+
+  it("merges a partial block over the defaults, drops wrong types and unknown scaffold ids, clamps the budget", () => {
+    const cfg = loadConfig(writeCfg({ questions: {}, promptSort: { enabled: false, budgetMs: 5000, cooldownPrompts: "x", scaffolds: { brief: true, bogus: true, bugfix: "yes" } } }));
+    expect(resolvePromptSort(cfg)).toEqual({ enabled: false, budgetMs: 1400, cooldownPrompts: 5, scaffolds: { brief: true, bugfix: false, "ui-evidence": false, "plan-first": false } });
+    expect(resolvePromptSort(loadConfig(writeCfg({ questions: {}, promptSort: { budgetMs: 10 } }))).budgetMs).toBe(200);
+    expect(loadConfig(writeCfg({ questions: {}, promptSort: 7 })).promptSort).toBeUndefined();
+  });
+
+  it("keeps a non-negative cooldown (0 disables it) and drops a negative one", () => {
+    expect(resolvePromptSort(loadConfig(writeCfg({ questions: {}, promptSort: { cooldownPrompts: 0 } }))).cooldownPrompts).toBe(0);
+    expect(resolvePromptSort(loadConfig(writeCfg({ questions: {}, promptSort: { cooldownPrompts: -2 } }))).cooldownPrompts).toBe(5);
+    expect(resolvePromptSort(loadConfig(writeCfg({ questions: {}, promptSort: { scaffolds: [] } }))).scaffolds).toEqual(DEFAULT_PROMPT_SORT.scaffolds);
   });
 });
