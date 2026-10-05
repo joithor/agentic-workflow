@@ -29,18 +29,18 @@ export const ResolutionCheckInputSchema = z.object({
 });
 export type ResolutionCheckInput = z.infer<typeof ResolutionCheckInputSchema>;
 
-function capped(text: string, cap: number): string {
+export function capped(text: string, cap: number): string {
   if (text.length <= cap) return text;
   return `${text.slice(0, cap)}\n[truncated ${text.length - cap} chars]`;
 }
 
 // Ticket and diff text are untrusted: a "</brief>" or "</diff>" inside it must
 // not close the delimiter early and let the rest pose as trusted fields.
-export const neutralizeUntrusted = (text: string): string => text.replace(/<(\/?)(brief|diff)/gi, "<$1$2-text");
+export const neutralizeUntrusted = (text: string): string => text.replace(/<(\/?)(brief|diff|problem)/gi, "<$1$2-text");
 
 // The other free-text fields sit on labeled lines; collapsing their newlines
 // stops one from starting a fake "trusted" line of its own.
-const oneLine = (text: string): string => capped(text, FIELD_CAP).replace(/\s*[\r\n\u2028\u2029]\s*/g, " ");
+export const oneLine = (text: string): string => capped(text, FIELD_CAP).replace(/\s*[\r\n\u2028\u2029]\s*/g, " ");
 
 // Second opinion for /bugFixOrchestrator: the hard check (same ui-evidence
 // script or regression test, failing before and passing after) is the gate;
