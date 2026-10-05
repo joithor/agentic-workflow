@@ -155,6 +155,10 @@ async function main(): Promise<{ exitCode: number; stdout: string; stderr?: stri
         db, config, configFile: judgeConfigPath(), stateDir: judgeStateDir(),
         jev: { fetch: (...args) => fetch(...args), apiKey: () => readApiKey({ env: process.env, readKeychain }) },
         readStdin,
+        projectsDir: path.join(os.homedir(), ".claude", "projects"),
+        adjudicator: isOnPath(AGENT_CLI_BINARIES["claude-cli"], process.env)
+          ? () => makeClaudeCliProvider({ tmpDirFactory, spawn: makeExecSpawn(AGENT_CLI_BINARIES["claude-cli"]), model: "opus", effort: "high" })
+          : null,
       });
     }
     case "brief": {

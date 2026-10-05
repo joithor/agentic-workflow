@@ -10,6 +10,7 @@ import {
   getBriefByToolUseId, getDecision, mapToolUseIdToAgentId, recordUndo, saveBrief, type Db,
 } from "./db.js";
 import type { QuestionModule } from "./question.js";
+import { AXIS_QUESTIONS } from "./prompt-sort/eval-questions.js";
 import { askCheck } from "./questions/ask-check.js";
 import { briefScope } from "./questions/brief-scope.js";
 import { resolutionCheck } from "./questions/resolution-check.js";
@@ -27,6 +28,7 @@ export const QUESTIONS: Record<string, QuestionModule<any, any>> = {
   "rule-check": ruleCheck,
   "ask-check": askCheck,
   "resolution-check": resolutionCheck,
+  ...AXIS_QUESTIONS,
 };
 
 export interface RunDeps extends Omit<EvaluateDeps, "config"> {
