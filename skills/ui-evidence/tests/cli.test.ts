@@ -37,6 +37,37 @@ describe("cli main", () => {
     }
   });
 
+  describe("host override", () => {
+    const clickScript = (target: string) => JSON.stringify({ route: "/", role: "staff", viewports: ["desktop"], steps: [{ action: "click", target, expectedState: { kind: "testid-visible", testId: target } }] });
+
+    it("passes a preview host to the runner only with --allow-preview-host", async () => {
+      const run = vi.fn().mockResolvedValue(summary("passed"));
+      const { d } = deps({ run });
+      expect(await main(["s.json", "r", "--host", "https://pr-5.vitalize.build", "--allow-preview-host"], d)).toBe(0);
+      expect(run).toHaveBeenCalledWith(expect.anything(), "r", undefined, expect.objectContaining({ host: "https://pr-5.vitalize.build" }));
+    });
+
+    it("refuses prod/dev hosts and a missing opt-in before running", async () => {
+      const run = vi.fn();
+      for (const argv of [["s.json", "r", "--host", "https://app.vitalize.build", "--allow-preview-host"], ["s.json", "r", "--host", "https://pr-5.vitalize.build"]]) {
+        const { d, err } = deps({ run });
+        expect(await main(argv, d)).toBe(1);
+        expect(err[0]).toBeDefined();
+      }
+      expect(run).not.toHaveBeenCalled();
+    });
+
+    it("is read-only on a host override unless --allow-writes; localhost keeps its steps", async () => {
+      const run = vi.fn().mockResolvedValue(summary("passed"));
+      const host = ["--host", "https://pr-5.vitalize.build", "--allow-preview-host"];
+      const refused = deps({ run, readFile: () => clickScript("save-button") });
+      expect(await main(["s.json", "r", ...host], refused.d)).toBe(1);
+      expect(refused.err[0]).toContain("--allow-writes");
+      expect(await main(["s.json", "r", ...host, "--allow-writes"], deps({ run, readFile: () => clickScript("save-button") }).d)).toBe(0);
+      expect(await main(["s.json", "r"], deps({ run, readFile: () => clickScript("save-button") }).d)).toBe(0);
+    });
+  });
+
   it("exits 1 when the script file is unreadable or not JSON", async () => {
     const unreadable = deps({ readFile: () => { throw new Error("ENOENT"); } });
     expect(await main(["s.json", "r"], unreadable.d)).toBe(1);

@@ -1,0 +1,78 @@
+{
+  "route": "/admin-hospital-configuration?hospitalId=1&healthSystemId=1&tab=info",
+  "ready": {
+    "text": "Hours for Lunch"
+  },
+  "designNode": "<figma file key>:<node id>",
+  "frames": [
+    {
+      "name": "A-empty",
+      "designPng": "figma/node1-empty.png",
+      "designRegion": {
+        "x": 328,
+        "y": 234,
+        "w": 652,
+        "h": 386
+      },
+      "anchor": {
+        "text": "Schedule Day"
+      },
+      "formValues": [
+        {
+          "css": "input[name='name']",
+          "value": "Orange Coast Medical Center"
+        }
+      ],
+      "expectBoxes": [
+        {
+          "target": {
+            "text": "Schedule Day"
+          },
+          "expected": {
+            "h": 142
+          }
+        }
+      ],
+      "knownDifferences": [
+        "Hospital name typed to match the mockup, not saved"
+      ]
+    },
+    {
+      "name": "C-popover",
+      "designPng": "figma/node3-tooltip.png",
+      "designRegion": {
+        "x": 602,
+        "y": 418,
+        "w": 400,
+        "h": 312
+      },
+      "anchor": {
+        "text": "A coverage pattern splits"
+      },
+      "steps": [
+        {
+          "action": "click",
+          "target": "coverage-pattern-info-trigger",
+          "expectedState": {
+            "kind": "text-visible",
+            "text": "Six blocks of 4 hours."
+          }
+        }
+      ],
+      "expectBoxes": [
+        {
+          "target": {
+            "text": "A coverage pattern splits"
+          },
+          "relativeTo": {
+            "text": "Schedule Day"
+          },
+          "expected": {
+            "x": 274,
+            "y": 184
+          }
+        }
+      ]
+    }
+  ]
+}

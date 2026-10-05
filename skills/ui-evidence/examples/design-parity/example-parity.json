@@ -1,0 +1,169 @@
+{
+  "runId": "frn-4241-example",
+  "host": "http://localhost:3000",
+  "provenance": "seeded",
+  "appBuild": null,
+  "designNode": null,
+  "viewport": {
+    "w": 1512,
+    "h": 982
+  },
+  "frames": {
+    "A-empty": {
+      "designRegion": {
+        "x": 328,
+        "y": 234,
+        "w": 652,
+        "h": 386
+      },
+      "implementationOrigin": {
+        "x": 324,
+        "y": 257
+      },
+      "anchorBox": {
+        "x": 324,
+        "y": 257,
+        "w": 652,
+        "h": 386
+      },
+      "anchorOffset": {
+        "x": 0,
+        "y": 0
+      },
+      "sizeDelta": {
+        "w": 0,
+        "h": 0
+      },
+      "diffPixels": 2295,
+      "total": 251672,
+      "diffPercent": 0.91,
+      "threshold": 0.1,
+      "includeAA": false,
+      "boxChecks": [],
+      "knownDifferences": [],
+      "files": {
+        "design": "A-empty-design.png",
+        "implementation": "A-empty-implementation.png",
+        "diff": "A-empty-diff.png",
+        "sideBySide": "A-empty-side-by-side.png"
+      }
+    },
+    "A2-column": {
+      "designRegion": {
+        "x": 328,
+        "y": 152,
+        "w": 652,
+        "h": 830
+      },
+      "implementationOrigin": {
+        "x": 324,
+        "y": 175
+      },
+      "anchorBox": {
+        "x": 324,
+        "y": 175,
+        "w": 652,
+        "h": 830
+      },
+      "anchorOffset": {
+        "x": 0,
+        "y": 0
+      },
+      "sizeDelta": {
+        "w": 0,
+        "h": 0
+      },
+      "diffPixels": 4203,
+      "total": 541160,
+      "diffPercent": 0.78,
+      "threshold": 0.1,
+      "includeAA": false,
+      "boxChecks": [],
+      "knownDifferences": [],
+      "files": {
+        "design": "A2-column-design.png",
+        "implementation": "A2-column-implementation.png",
+        "diff": "A2-column-diff.png",
+        "sideBySide": "A2-column-side-by-side.png"
+      }
+    },
+    "B-filled-expanded": {
+      "designRegion": {
+        "x": 328,
+        "y": 234,
+        "w": 652,
+        "h": 662
+      },
+      "implementationOrigin": {
+        "x": 324,
+        "y": 257
+      },
+      "anchorBox": {
+        "x": 324,
+        "y": 257,
+        "w": 652,
+        "h": 662
+      },
+      "anchorOffset": {
+        "x": 0,
+        "y": 0
+      },
+      "sizeDelta": {
+        "w": 0,
+        "h": 0
+      },
+      "diffPixels": 1962,
+      "total": 431624,
+      "diffPercent": 0.45,
+      "threshold": 0.1,
+      "includeAA": false,
+      "boxChecks": [],
+      "knownDifferences": [],
+      "files": {
+        "design": "B-filled-expanded-design.png",
+        "implementation": "B-filled-expanded-implementation.png",
+        "diff": "B-filled-expanded-diff.png",
+        "sideBySide": "B-filled-expanded-side-by-side.png"
+      }
+    },
+    "C-popover": {
+      "designRegion": {
+        "x": 602,
+        "y": 418,
+        "w": 400,
+        "h": 312
+      },
+      "implementationOrigin": {
+        "x": 598,
+        "y": 441
+      },
+      "anchorBox": {
+        "x": 598,
+        "y": 441,
+        "w": 400,
+        "h": 312
+      },
+      "anchorOffset": {
+        "x": 0,
+        "y": 0
+      },
+      "sizeDelta": {
+        "w": 0,
+        "h": 0
+      },
+      "diffPixels": 1258,
+      "total": 124800,
+      "diffPercent": 1.01,
+      "threshold": 0.1,
+      "includeAA": false,
+      "boxChecks": [],
+      "knownDifferences": [],
+      "files": {
+        "design": "C-popover-design.png",
+        "implementation": "C-popover-implementation.png",
+        "diff": "C-popover-diff.png",
+        "sideBySide": "C-popover-side-by-side.png"
+      }
+    }
+  }
+}
