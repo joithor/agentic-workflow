@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { openDb, recordDecision, recordFailure, recordUndo } from "../../judge/src/db.js";
+import { openDb, recordDecision, recordDecisionDetails, recordFailure, recordUndo } from "../../judge/src/db.js";
 import { judgeSection, renderJudgeSection } from "../src/judge-section.js";
 
 describe("judgeSection", () => {
@@ -24,7 +24,7 @@ describe("judgeSection", () => {
 
     const rows = judgeSection(db, "2026-09-26T00:00:00.000Z");
     expect(rows).toEqual([
-      { question: "wake-gate", decisions: 5, undos: 1, errorRate: 0.2, failures: 1, fallbacks: 1, p95LatencyMs: 100, escalations: 0 },
+      { question: "wake-gate", decisions: 5, undos: 1, errorRate: 0.2, failures: 1, fallbacks: 1, p95LatencyMs: 100, escalations: 0, undecided: 0, agreed: 0, overrode: 0, p50LatencyMs: 30, byProvider: { "claude-cli": 5 } },
     ]);
   });
 
@@ -38,7 +38,7 @@ describe("judgeSection", () => {
     });
     const rows = judgeSection(db, "2026-09-26T00:00:00.000Z");
     expect(rows).toEqual([
-      { question: "wake-gate", decisions: 1, undos: 0, errorRate: 0, failures: 0, fallbacks: 1, p95LatencyMs: 50, escalations: 0 },
+      { question: "wake-gate", decisions: 1, undos: 0, errorRate: 0, failures: 0, fallbacks: 1, p95LatencyMs: 50, escalations: 0, undecided: 0, agreed: 0, overrode: 0, p50LatencyMs: 50, byProvider: { "claude-cli": 1 } },
     ]);
   });
 
@@ -64,7 +64,7 @@ describe("judgeSection", () => {
     });
     const rows = judgeSection(db, "2026-09-26T00:00:00.000Z");
     expect(rows).toEqual([
-      { question: "wake-gate", decisions: 1, undos: 0, errorRate: 0, failures: 0, fallbacks: 0, p95LatencyMs: 50, escalations: 2 },
+      { question: "wake-gate", decisions: 1, undos: 0, errorRate: 0, failures: 0, fallbacks: 0, p95LatencyMs: 50, escalations: 2, undecided: 0, agreed: 0, overrode: 0, p50LatencyMs: 50, byProvider: { "claude-cli": 1 } },
     ]);
   });
 
@@ -77,8 +77,32 @@ describe("judgeSection", () => {
     });
     const rows = judgeSection(db, "2026-09-26T00:00:00.000Z");
     expect(rows).toEqual([
-      { question: "wake-gate", decisions: 0, undos: 0, errorRate: 0, failures: 0, fallbacks: 0, p95LatencyMs: 0, escalations: 1 },
+      { question: "wake-gate", decisions: 0, undos: 0, errorRate: 0, failures: 0, fallbacks: 0, p95LatencyMs: 0, escalations: 1, undecided: 0, agreed: 0, overrode: 0, p50LatencyMs: 0, byProvider: {} },
     ]);
+  });
+
+  it("adds undecided/agreed/overrode counts, p50 latency and per-provider share from decision_details", () => {
+    const db = openDb(":memory:");
+    const ts = "2026-10-03T00:00:00.000Z";
+    const row = (id: string, provider: string, latency: number) => ({
+      id, ts, question: "wake-gate", content_class: "message-meta", provider, decision: "send", confidence: 0.9,
+      reason_code: provider, latency_ms: latency, input_digest: "x", undone_at: null, chain_position: 0, skipped: [], outcome: "decided" as const,
+    });
+    recordDecision(db, row("a", "jev", 300));
+    recordDecision(db, row("b", "jev", 400));
+    recordDecision(db, row("c", "rules", 0));
+    recordDecisionDetails(db, { id: "a", input_json: "{}", probabilities: null, rules_opinion: "send", agreement: "agreed" });
+    recordDecisionDetails(db, { id: "b", input_json: "{}", probabilities: null, rules_opinion: "send", agreement: "overrode" });
+    recordDecisionDetails(db, { id: "c", input_json: "{}", probabilities: null, rules_opinion: null, agreement: "undecided" });
+    const [r] = judgeSection(db, "2026-10-01T00:00:00.000Z");
+    expect(r).toMatchObject({ undecided: 1, agreed: 1, overrode: 1, p50LatencyMs: 300, byProvider: { jev: 2, rules: 1 } });
+  });
+
+  it("renders when the judge db predates decision_details (RF-2)", () => {
+    const db = openDb(":memory:");
+    db.exec("DROP TABLE decision_details");
+    recordDecision(db, { id: "a", ts: "2026-10-03T00:00:00.000Z", question: "q", content_class: "brief", provider: "jev", decision: "x", confidence: 1, reason_code: "jev", latency_ms: 1, input_digest: "x", undone_at: null, chain_position: 0, skipped: [], outcome: "decided" });
+    expect(judgeSection(db, "2026-10-01T00:00:00.000Z")[0]).toMatchObject({ undecided: 0, agreed: 0, overrode: 0 });
   });
 
   it("excludes decisions before the since timestamp", () => {
@@ -94,10 +118,12 @@ describe("judgeSection", () => {
 
 describe("renderJudgeSection", () => {
   it("renders a markdown table with the section leading with Judge", () => {
-    const md = renderJudgeSection([{ question: "wake-gate", decisions: 5, undos: 1, errorRate: 0.2, failures: 1, fallbacks: 1, p95LatencyMs: 100, escalations: 0 }]);
+    const md = renderJudgeSection([{ question: "wake-gate", decisions: 5, undos: 1, errorRate: 0.2, failures: 1, fallbacks: 1, p95LatencyMs: 100, escalations: 0, undecided: 0, agreed: 0, overrode: 0, p50LatencyMs: 30, byProvider: { jev: 2, rules: 1 } }]);
     expect(md.startsWith("## Judge")).toBe(true);
     expect(md).toContain("wake-gate");
     expect(md).toContain("100");
+    expect(md).toContain("| Undecided | Agreed | Overrode | p50 (ms) | p95 latency (ms) | Providers |");
+    expect(md).toContain("jev 2 · rules 1");
   });
 
   it("renders a placeholder line with no rows", () => {

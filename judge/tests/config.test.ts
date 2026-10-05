@@ -57,6 +57,32 @@ describe("loadConfig", () => {
     expect(loadConfig(file)).toEqual({ questions: { "wake-gate": { enabled: false, threshold: 0.9 } } });
   });
 
+  it("keeps a question's providers list and drops unknown names; leaves non-object entries alone", () => {
+    const file = path.join(fs.mkdtempSync(path.join(os.tmpdir(), "judge-cfg-")), "config.json");
+    fs.writeFileSync(file, JSON.stringify({ questions: {
+      a: { enabled: true, threshold: 0.7, providers: ["jev", "rules"] },
+      b: { enabled: true, threshold: 0.7, providers: ["jev", "bogus"] },
+      c: null,
+    } }));
+    const q = loadConfig(file).questions;
+    expect(q.a?.providers).toEqual(["jev", "rules"]);
+    expect(q.b?.providers).toEqual(["jev"]);
+    expect(q.c).toBeNull();
+  });
+
+  it("treats a non-array or fully-filtered providers value as unset", () => {
+    const file = path.join(fs.mkdtempSync(path.join(os.tmpdir(), "judge-cfg-")), "config.json");
+    fs.writeFileSync(file, JSON.stringify({ questions: {
+      s: { enabled: true, threshold: 0.7, providers: "jev" },
+      o: { enabled: true, threshold: 0.7, providers: {} },
+      e: { enabled: true, threshold: 0.7, providers: ["jev-api"] },
+    } }));
+    const q = loadConfig(file).questions;
+    expect(q.s).toEqual({ enabled: true, threshold: 0.7 });
+    expect(q.o).toEqual({ enabled: true, threshold: 0.7 });
+    expect(q.e).toEqual({ enabled: true, threshold: 0.7 });
+  });
+
   it("merges a file that overrides only one of two default questions, keeping the other default intact", () => {
     const withTwoDefaults = { questions: { "wake-gate": { enabled: true, threshold: 0.7 }, "other-q": { enabled: true, threshold: 0.5 } } };
     const file = path.join(fs.mkdtempSync(path.join(os.tmpdir(), "judge-cfg-")), "config.json");

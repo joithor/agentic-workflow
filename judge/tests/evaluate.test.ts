@@ -1,9 +1,10 @@
+import crypto from "node:crypto";
 import { z } from "zod";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
 import { evaluate } from "../src/evaluate.js";
 import type { QuestionModule } from "../src/question.js";
-import { openDb, getDecision } from "../src/db.js";
+import { openDb, getDecision, getDecisionDetails } from "../src/db.js";
 import { DEFAULT_CONFIG } from "../src/config.js";
 import { DEFAULT_CHAIN } from "../src/chain.js";
 import { fakeProvider } from "./helpers.js";
@@ -104,6 +105,19 @@ describe("evaluate", () => {
     });
     const result = await evaluate(q, { text: "hmm" }, { db, config, providers: [cli] });
     expect(result).toEqual({ escalate: true, reason_code: "question-disabled" });
+  });
+
+  it("runs the default chain when a question's providers value was malformed in config.json", async () => {
+    const fs = await import("node:fs");
+    const os = await import("node:os");
+    const path = await import("node:path");
+    const { loadConfig } = await import("../src/config.js");
+    const file = path.join(fs.mkdtempSync(path.join(os.tmpdir(), "judge-cfg-")), "config.json");
+    fs.writeFileSync(file, JSON.stringify({ questions: { "wake-gate": { enabled: true, threshold: 0.7, providers: "jev" } } }));
+    const db = openDb(":memory:");
+    const cli = fakeProvider<Output>("claude-cli", ["message-meta"], { status: "decided", decision: "send", confidence: 0.9, reason_code: "ok" });
+    const result = await evaluate(question(), { text: "hmm" }, { db, config: loadConfig(file), providers: [cli] });
+    expect(result).toMatchObject({ decision: "send" });
   });
 
   it("rejects input that fails the question's Zod schema before any provider runs", async () => {
@@ -234,6 +248,195 @@ describe("evaluate", () => {
     expect(getDecision(db, "rules-id")).toMatchObject({
       chain_position: 2,
       skipped: [{ provider: "jev", reason: "unavailable" }, { provider: "claude-cli", reason: "failed" }],
+    });
+  });
+
+  const decidedJev = (): ReturnType<typeof fakeProvider<Output>> =>
+    fakeProvider<Output>("jev", ["message-meta"], { status: "decided", decision: "send", confidence: 0.9, reason_code: "jev" });
+  const jevChain = { classes: { "message-meta": ["jev" as const] } };
+
+  it("stores the redacted, capped input in decision_details and leaves input_digest on the unredacted input (RF-1, RF-3)", async () => {
+    const db = openDb(":memory:");
+    const input = { text: "token sk-ant-api03-abcdefghijklmnopqrstuvwxyz012345 here" };
+    const out = await evaluate(question(), input, { db, config: DEFAULT_CONFIG, providers: [decidedJev()], chain: jevChain, randomId: () => "id1" });
+    expect("escalate" in out).toBe(false);
+    expect(getDecisionDetails(db, "id1")?.input_json).toBe('{"text":"token [REDACTED] here"}');
+    const expectedDigest = crypto.createHash("sha256").update(JSON.stringify(input)).digest("hex").slice(0, 16);
+    expect(getDecision(db, "id1")?.input_digest).toBe(expectedDigest);
+  });
+
+  it("stores the provider's probability distribution in decision_details", async () => {
+    const db = openDb(":memory:");
+    const jev = fakeProvider<Output>("jev", ["message-meta"], { status: "decided", decision: "send", confidence: 0.9, reason_code: "jev", probabilities: { send: 0.9, batch: 0.1 } });
+    await evaluate(question(), { text: "hi" }, { db, config: DEFAULT_CONFIG, providers: [jev], chain: jevChain, randomId: () => "idp" });
+    expect(getDecisionDetails(db, "idp")?.probabilities).toEqual({ send: 0.9, batch: 0.1 });
+  });
+
+  it.each([["\n"], ["\t"]])("redacts a secret that follows an escaped whitespace char inside a string value (%j)", async (ws) => {
+    const db = openDb(":memory:");
+    const input = { text: `KEY=${ws}sk-ant-api03-abcdefghijklmnopqrstuvwxyz012345${ws}AKIAABCDEFGHIJKLMNOP` };
+    await evaluate(question(), input, { db, config: DEFAULT_CONFIG, providers: [decidedJev()], chain: jevChain, randomId: () => "idws" });
+    const stored = getDecisionDetails(db, "idws")?.input_json ?? "";
+    expect(stored).not.toContain("sk-ant");
+    expect(stored).not.toContain("AKIA");
+    expect(JSON.parse(stored)).toEqual({ text: `KEY=${ws}[REDACTED]${ws}[REDACTED]` });
+    const expectedDigest = crypto.createHash("sha256").update(JSON.stringify(input)).digest("hex").slice(0, 16);
+    expect(getDecision(db, "idws")?.input_digest).toBe(expectedDigest);
+  });
+
+  it("redacts before capping so a secret cut at the cap boundary cannot survive", async () => {
+    const db = openDb(":memory:");
+    const secret = "sk-ant-api03-abcdefghijklmnopqrstuvwxyz012345";
+    // '{"text":"' is 9 chars; capping first would cut the secret at 10 chars,
+    // too short to match any pattern. Redact-first leaves nothing to leak.
+    const text = `${"z".repeat(16000 - 9 - 1 - 10)} ${secret} ${"y".repeat(100)}`;
+    await evaluate(question(), { text }, { db, config: DEFAULT_CONFIG, providers: [decidedJev()], chain: jevChain, randomId: () => "id3" });
+    const stored = getDecisionDetails(db, "id3")?.input_json ?? "";
+    expect(stored).not.toContain("sk-ant");
+    expect(stored).toMatch(/\[truncated \d+ chars\]$/);
+  });
+
+  it("records the session id from deps alongside the details", async () => {
+    const db = openDb(":memory:");
+    await evaluate(question(), { text: "hi" }, { db, config: DEFAULT_CONFIG, providers: [decidedJev()], chain: jevChain, randomId: () => "id4", sessionId: "s1" });
+    expect(getDecisionDetails(db, "id4")?.session_id).toBe("s1");
+  });
+
+  it("still returns the decision when the details write throws", async () => {
+    const db = openDb(":memory:");
+    db.exec("DROP TABLE decision_details");
+    const out = await evaluate(question(), { text: "hi" }, { db, config: DEFAULT_CONFIG, providers: [decidedJev()], chain: jevChain, randomId: () => "id2" });
+    expect(out).toMatchObject({ decision: "send", id: "id2" });
+    expect(getDecision(db, "id2")?.decision).toBe("send");
+  });
+
+  describe("rules agreement telemetry", () => {
+    const run = async (fallbackRules: QuestionModule<Input, Output>["fallbackRules"], answer: Output, id: string) => {
+      const db = openDb(":memory:");
+      const q = question(fallbackRules === undefined ? {} : { fallbackRules });
+      const out = await evaluate(q, { text: "hi" }, {
+        db, config: DEFAULT_CONFIG, randomId: () => id,
+        providers: [fakeProvider<Output>("jev", ["message-meta"], { status: "decided", decision: answer, confidence: 0.9, reason_code: "jev" })],
+        chain: { classes: { "message-meta": ["jev"] } },
+      });
+      return { out, details: getDecisionDetails(db, id) };
+    };
+
+    it("records overrode when the model disagrees with the rules", async () => {
+      const { details } = await run(() => "send", "batch", "r1");
+      expect(details).toMatchObject({ rules_opinion: "send", agreement: "overrode" });
+    });
+
+    it("records agreed when the model matches the rules", async () => {
+      const { details } = await run(() => "send", "send", "r2");
+      expect(details).toMatchObject({ rules_opinion: "send", agreement: "agreed" });
+    });
+
+    it("records null opinion and agreement without fallbackRules or when they return null", async () => {
+      expect((await run(undefined, "send", "r3")).details).toMatchObject({ rules_opinion: null, agreement: null });
+      expect((await run(() => null, "send", "r4")).details).toMatchObject({ rules_opinion: null, agreement: null });
+    });
+
+    it("fails open: a throwing fallbackRules never changes the decision", async () => {
+      const { out, details } = await run(() => { throw new Error("boom"); }, "batch", "r5");
+      expect(out).toMatchObject({ decision: "batch", model: "jev" });
+      expect(details).toMatchObject({ rules_opinion: null, agreement: null });
+    });
+  });
+
+  describe("undecided answers", () => {
+    const below = { status: "decided", decision: "batch", confidence: 0.55, reason_code: "jev", probabilities: { send: 0.3, batch: 0.55, drop: 0.15 } } as const;
+    const failureCount = (db: ReturnType<typeof openDb>): number => (db.prepare("SELECT COUNT(*) n FROM failures").get() as { n: number }).n;
+
+    it("settles with fallbackRules when a provider is below threshold, without calling the slower provider", async () => {
+      const db = openDb(":memory:");
+      const slow = vi.fn();
+      const q = question({ threshold: 0.8, fallbackRules: () => "send" });
+      const out = await evaluate(q, { text: "hi" }, {
+        db, config: DEFAULT_CONFIG, randomId: () => "u1",
+        providers: [fakeProvider<Output>("jev", ["message-meta"], below), { name: "claude-cli", classes: new Set(["message-meta"]), decide: slow }],
+        chain: { classes: { "message-meta": ["jev", "claude-cli"] } },
+      });
+      expect(out).toMatchObject({ decision: "send", model: "rules", reason_code: "fallback-after-undecided" });
+      expect(slow).not.toHaveBeenCalled();
+      expect(getDecision(db, "u1")).toMatchObject({ provider: "rules", skipped: [{ provider: "jev", reason: "below_threshold" }] });
+      expect(getDecisionDetails(db, "u1")).toMatchObject({ agreement: "undecided" });
+      expect(getDecisionDetails(db, "u1")?.probabilities).toEqual(below.probabilities);
+      expect(failureCount(db)).toBe(0);
+    });
+
+    it("continues the chain when fallbackRules return null, keeping the undecided probabilities", async () => {
+      const db = openDb(":memory:");
+      const q = question({ threshold: 0.8, fallbackRules: () => null });
+      const cli = fakeProvider<Output>("claude-cli", ["message-meta"], { status: "decided", decision: "drop", confidence: 0.9, reason_code: "model" });
+      const out = await evaluate(q, { text: "hi" }, {
+        db, config: DEFAULT_CONFIG, randomId: () => "u2",
+        providers: [fakeProvider<Output>("jev", ["message-meta"], below), cli],
+        chain: { classes: { "message-meta": ["jev", "claude-cli"] } },
+      });
+      expect(out).toMatchObject({ decision: "drop", model: "claude-cli" });
+      expect(getDecisionDetails(db, "u2")?.probabilities).toEqual(below.probabilities);
+    });
+
+    it("treats a throwing fallbackRules as no fallback and continues the chain", async () => {
+      const db = openDb(":memory:");
+      const q = question({ threshold: 0.8, fallbackRules: () => { throw new Error("boom"); } });
+      const cli = fakeProvider<Output>("claude-cli", ["message-meta"], { status: "decided", decision: "drop", confidence: 0.9, reason_code: "model" });
+      const out = await evaluate(q, { text: "hi" }, {
+        db, config: DEFAULT_CONFIG, randomId: () => "u3",
+        providers: [fakeProvider<Output>("jev", ["message-meta"], below), cli],
+        chain: { classes: { "message-meta": ["jev", "claude-cli"] } },
+      });
+      expect(out).toMatchObject({ decision: "drop", model: "claude-cli" });
+    });
+
+    it("prefers the settling provider's own probabilities over an earlier undecided answer", async () => {
+      const db = openDb(":memory:");
+      const second = fakeProvider<Output>("claude-cli", ["message-meta"], { status: "decided", decision: "drop", confidence: 0.9, reason_code: "m", probabilities: { drop: 0.9 } });
+      await evaluate(question({ threshold: 0.8 }), { text: "hi" }, {
+        db, config: DEFAULT_CONFIG, randomId: () => "u3",
+        providers: [fakeProvider<Output>("jev", ["message-meta"], below), second],
+        chain: { classes: { "message-meta": ["jev", "claude-cli"] } },
+      });
+      expect(getDecisionDetails(db, "u3")?.probabilities).toEqual({ drop: 0.9 });
+    });
+
+    it("records the undecided probabilities when the whole chain escalates, and no failures row", async () => {
+      const db = openDb(":memory:");
+      const out = await evaluate(question({ threshold: 0.8 }), { text: "hi" }, {
+        db, config: DEFAULT_CONFIG, randomId: () => "u4",
+        providers: [fakeProvider<Output>("jev", ["message-meta"], below)],
+        chain: { classes: { "message-meta": ["jev"] } },
+      });
+      expect(out).toEqual({ escalate: true, reason_code: "below-threshold" });
+      expect(getDecisionDetails(db, "u4")?.probabilities).toEqual(below.probabilities);
+      expect(failureCount(db)).toBe(0);
+    });
+
+    it("keeps an undecided answer without probabilities from clobbering earlier ones", async () => {
+      const db = openDb(":memory:");
+      const bare = fakeProvider<Output>("claude-cli", ["message-meta"], { status: "decided", decision: "send", confidence: 0.1, reason_code: "m" });
+      await evaluate(question({ threshold: 0.8 }), { text: "hi" }, {
+        db, config: DEFAULT_CONFIG, randomId: () => "u5",
+        providers: [fakeProvider<Output>("jev", ["message-meta"], below), bare],
+        chain: { classes: { "message-meta": ["jev", "claude-cli"] } },
+      });
+      expect(getDecisionDetails(db, "u5")?.probabilities).toEqual(below.probabilities);
+    });
+
+    it("restricts and reorders the chain to a question's configured providers", async () => {
+      const db = openDb(":memory:");
+      const cli = vi.fn();
+      const out = await evaluate(question(), { text: "hi" }, {
+        db, config: { questions: { "wake-gate": { enabled: true, threshold: 0.7, providers: ["jev", "rules"] } } },
+        providers: [
+          fakeProvider<Output>("jev", ["message-meta"], { status: "unavailable", reason_code: "no-api-key" }),
+          { name: "claude-cli", classes: new Set(["message-meta"]), decide: cli } as Provider,
+        ],
+        chain: { classes: { "message-meta": ["jev", "claude-cli", "rules"] } },
+      });
+      expect(cli).not.toHaveBeenCalled();
+      expect(out).toMatchObject({ escalate: true });
     });
   });
 });

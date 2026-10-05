@@ -16,6 +16,10 @@ export const askCheck: QuestionModule<AskCheckInput, "continue" | "ask"> = {
   name: "ask-check",
   inputSchema: AskCheckInputSchema,
   outputs: ["continue", "ask"],
+  criteria: {
+    continue: "the next step was already authorized by the dispatch brief or plan",
+    ask: "the next step needs the user's input first",
+  },
   contentClass: "transcript",
   timeBudgetMs: 10000,
   threshold: 0.6,
@@ -23,6 +27,8 @@ export const askCheck: QuestionModule<AskCheckInput, "continue" | "ask"> = {
     if (DENY_KEYWORDS.test(input.transcriptTail)) return "ask";
     return null;
   },
+  // Unsure: stopping to ask is always safe.
+  fallbackRules: () => "ask",
   prompt: (input) =>
     [
       "Transcript tail (the agent's last turn):",

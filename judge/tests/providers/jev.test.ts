@@ -1,6 +1,8 @@
 import { describe, expect, it, vi } from "vitest";
 
 import { makeJevProvider } from "../../src/providers/jev.js";
+import { toRef } from "../../src/question.js";
+import { wakeGate } from "../../src/questions/wake-gate.js";
 import type { QuestionRef } from "../../src/types.js";
 
 const question: QuestionRef<"send" | "batch" | "drop"> = {
@@ -11,6 +13,22 @@ describe("jev provider", () => {
   it("covers every text class, not image (F2: vendor review cleared company-code classes 2026-09-28; Jev is text-only)", () => {
     const provider = makeJevProvider({ fetch: vi.fn(), apiKey: async () => "k" });
     expect(provider.classes).toEqual(new Set(["message-meta", "code", "diff", "brief", "transcript"]));
+  });
+
+  it("sends each option's description as Jev criteria, falling back to the option name", async () => {
+    const fetch = vi.fn().mockResolvedValue({ status: 200, json: async () => ({ answers: { decision: { type: "choice", choice: "send", confidence: 0.9 } } }) });
+    const provider = makeJevProvider({ fetch, apiKey: async () => "k" });
+    await provider.decide({ ...question, criteria: { send: "deliver now", batch: "queue for later" } }, {}, 1000);
+    const body = JSON.parse((fetch.mock.calls[0] as [string, { body: string }])[1].body) as { questions: { decision: { criteria: Record<string, string> } } };
+    expect(body.questions.decision.criteria).toEqual({ send: "deliver now", batch: "queue for later", drop: "drop" });
+  });
+
+  it("sends a real question module's descriptions in the request body", async () => {
+    const fetch = vi.fn().mockResolvedValue({ status: 200, json: async () => ({ answers: { decision: { type: "choice", choice: "send", confidence: 0.9 } } }) });
+    const provider = makeJevProvider({ fetch, apiKey: async () => "k" });
+    await provider.decide(toRef(wakeGate, { text: "hello there", senderKind: "teammate" }), {}, 1000);
+    const body = JSON.parse((fetch.mock.calls[0] as [string, { body: string }])[1].body) as { questions: { decision: { criteria: Record<string, string> } } };
+    expect(body.questions.decision.criteria).toEqual(wakeGate.criteria);
   });
 
   it("is unavailable, not an error, with no API key (RF-2)", async () => {
@@ -50,7 +68,13 @@ describe("jev provider", () => {
   it("parses a decided answer within the enum", async () => {
     const fetch = vi.fn().mockResolvedValue({ status: 200, json: async () => ({ answers: { decision: { type: "choice", choice: "batch", confidence: 0.8 } } }) });
     const provider = makeJevProvider({ fetch, apiKey: async () => "k" });
-    expect(await provider.decide(question, {}, 1000)).toEqual({ status: "decided", decision: "batch", confidence: 0.8, reason_code: "jev" });
+    expect(await provider.decide(question, {}, 1000)).toEqual({ status: "decided", decision: "batch", confidence: 0.8, reason_code: "jev", probabilities: {} });
+  });
+
+  it("returns Jev's probability distribution with the decision", async () => {
+    const fetch = vi.fn().mockResolvedValue({ status: 200, json: async () => ({ answers: { decision: { type: "choice", choice: "send", probabilities: { send: 0.7, batch: 0.2, drop: 0.1 }, confidence: 0.7 } } }) });
+    const provider = makeJevProvider({ fetch, apiKey: async () => "k" });
+    expect(await provider.decide(question, {}, 1000)).toEqual({ status: "decided", decision: "send", confidence: 0.7, reason_code: "jev", probabilities: { send: 0.7, batch: 0.2, drop: 0.1 } });
   });
 
   it("is an error on a response status below 200", async () => {
@@ -80,7 +104,7 @@ describe("jev provider", () => {
   it("defaults confidence to 1 when the response omits it", async () => {
     const fetch = vi.fn().mockResolvedValue({ status: 200, json: async () => ({ answers: { decision: { type: "choice", choice: "send" } } }) });
     const provider = makeJevProvider({ fetch, apiKey: async () => "k" });
-    expect(await provider.decide(question, {}, 1000)).toEqual({ status: "decided", decision: "send", confidence: 1, reason_code: "jev" });
+    expect(await provider.decide(question, {}, 1000)).toEqual({ status: "decided", decision: "send", confidence: 1, reason_code: "jev", probabilities: {} });
   });
 
   it("is a network error, not a timeout, for a DOMException whose name isn't AbortError", async () => {

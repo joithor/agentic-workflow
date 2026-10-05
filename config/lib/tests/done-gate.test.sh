@@ -153,6 +153,7 @@ setup_fake_judge_ask_check() {
 #!/usr/bin/env bash
 if [ "\$1" = "ask-check" ]; then
   cat > /dev/null
+  printf '%s' "\${AW_SESSION_ID:-}" > "$bin_dir/session-id"
   exit $rc
 fi
 if [ "\$1" = "brief" ] && [ "\$2" = "get" ]; then
@@ -175,6 +176,7 @@ test_ask_check_continue_exits_2_and_writes_auto_continued_at() {
   set -e
   [ "$rc" -eq 2 ] || { echo "FAIL: expected exit 2 when ask-check says continue, got $rc"; exit 1; }
   jq -e '.auto_continued_at' "$sessions_dir/s1.json" > /dev/null || { echo "FAIL: expected auto_continued_at to be written"; exit 1; }
+  [ "$(cat "$bin_dir/session-id")" = "s1" ] || { echo "FAIL: ask-check must see AW_SESSION_ID=s1, got '$(cat "$bin_dir/session-id")'"; exit 1; }
   echo "PASS: test_ask_check_continue_exits_2_and_writes_auto_continued_at"
 }
 

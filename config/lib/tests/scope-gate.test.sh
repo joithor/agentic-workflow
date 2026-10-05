@@ -9,6 +9,7 @@ setup_fake_judge() {
 #!/usr/bin/env bash
 if [ "\$1" = "brief-scope" ]; then
   cat > /dev/null
+  printf '%s' "\${AW_SESSION_ID:-}" > "$bin_dir/session-id"
   echo '{"decision":"$decision","confidence":0.9,"model":"claude-cli","reason_code":"model","id":"fixed-id"}'
 elif [ "\$1" = "brief" ] && [ "\$2" = "save" ]; then
   cat > "$bin_dir/last-save.json"
@@ -31,6 +32,7 @@ test_ready_allows_and_saves_the_brief() {
   echo "$out" | jq -e '.hookSpecificOutput.permissionDecision == "allow"' > /dev/null || { echo "FAIL: expected allow for ready, got $out"; exit 1; }
   [ -f "$bin_dir/last-save.json" ] || { echo "FAIL: expected judge brief save to be called"; exit 1; }
   jq -e '.toolUseId == "tu1"' "$bin_dir/last-save.json" > /dev/null || { echo "FAIL: expected the saved brief to carry tool_use_id"; exit 1; }
+  [ "$(cat "$bin_dir/session-id")" = "s1" ] || { echo "FAIL: brief-scope must see AW_SESSION_ID=s1, got '$(cat "$bin_dir/session-id")'"; exit 1; }
   echo "PASS: test_ready_allows_and_saves_the_brief"
 }
 

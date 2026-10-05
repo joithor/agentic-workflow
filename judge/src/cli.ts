@@ -9,9 +9,13 @@ import {
   runApprove, runAskCheckCli, runBriefGet, runBriefMapByDispatch, runBriefMapByName, runBriefSave, runBriefSetAgentId,
   runConfigGet, runConfigSet, runHealth, runQuestion, runUiElementRepairCli, runUndo, runVisualCritiqueCli, runWhy,
 } from "./commands.js";
+import { adjudicate } from "./adjudicate.js";
 import { buildChain } from "./chain.js";
-import { judgeConfigPath, judgeDbPath, loadConfig } from "./config.js";
-import { openDb } from "./db.js";
+import { judgeConfigPath, judgeDbPath, judgeStateDir, loadConfig } from "./config.js";
+import { openDb, pruneDecisionDetails } from "./db.js";
+import { makeRecorder, readReplay, runEval, writeEvalReport } from "./eval.js";
+import { runLabelImport, runLabelSet, runLabelStatus } from "./label.js";
+import { runOutcomeLabels } from "./outcomes.js";
 import { AGENT_CLI_BINARIES, isOnPath, resolveAgentClis } from "./detect.js";
 import { makeClaudeCliProvider } from "./providers/claude-cli.js";
 import { makeCodexCliProvider } from "./providers/codex-cli.js";
@@ -29,6 +33,11 @@ const exec = promisify(execFile);
 const dbPath = judgeDbPath();
 fs.mkdirSync(path.dirname(dbPath), { recursive: true });
 const db = openDb(dbPath);
+try {
+  pruneDecisionDetails(db, new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString());
+} catch {
+  /* retention is best-effort */
+}
 const config = loadConfig(judgeConfigPath());
 
 async function readStdin(): Promise<string> {
@@ -69,7 +78,13 @@ const providers: Provider[] = [
   makeJevProvider({ fetch: (...args) => fetch(...args), apiKey: () => readApiKey({ env: process.env, readKeychain }) }),
 ];
 
+const sessionId = process.env.AW_SESSION_ID;
 const [, , cmd, ...rest] = process.argv;
+
+function flag(name: string): string | undefined {
+  const i = rest.indexOf(name);
+  return i === -1 ? undefined : rest[i + 1];
+}
 
 async function main(): Promise<{ exitCode: number; stdout: string; stderr?: string }> {
   switch (cmd) {
@@ -85,6 +100,51 @@ async function main(): Promise<{ exitCode: number; stdout: string; stderr?: stri
       if (rest[0] === "get") return runConfigGet();
       if (rest[0] === "set") return runConfigSet(rest[1] ?? "", rest[2] as "enabled" | "threshold", rest[3] ?? "");
       return { exitCode: 1, stdout: "", stderr: "usage: judge config get|set <question> <enabled|threshold> <value>" };
+    }
+    case "label": {
+      const sub = rest[0];
+      if (sub === "import") {
+        const days = Number.parseInt((flag("--since") ?? "14d").replace(/d$/, ""), 10);
+        const sinceIso = new Date(Date.now() - (Number.isFinite(days) ? days : 14) * 24 * 60 * 60 * 1000).toISOString();
+        return runLabelImport(db, { question: flag("--question"), sinceIso }, () => new Date());
+      }
+      if (sub === "outcomes") {
+        const r = runOutcomeLabels(db, { projectsDir: path.join(os.homedir(), ".claude", "projects"), now: () => new Date() });
+        return { exitCode: 0, stdout: JSON.stringify(r) };
+      }
+      if (sub === "set") return runLabelSet(db, rest[1] ?? "", rest[2] ?? "", () => new Date());
+      if (sub === "status") return runLabelStatus(db);
+      return { exitCode: 1, stdout: "", stderr: "usage: judge label import|outcomes|set <itemId> <label|skip>|status" };
+    }
+    case "adjudicate": {
+      if (!isOnPath(AGENT_CLI_BINARIES["claude-cli"], process.env)) return { exitCode: 1, stdout: "", stderr: "claude CLI not found on PATH" };
+      const provider = makeClaudeCliProvider({ tmpDirFactory, spawn: makeExecSpawn(AGENT_CLI_BINARIES["claude-cli"]), model: "opus", effort: "high" });
+      const limit = Number.parseInt(flag("--limit") ?? "60", 10);
+      try {
+        const r = await adjudicate(db, rest[0] ?? "", { provider, limit: Number.isFinite(limit) ? limit : 60, now: () => new Date() });
+        return { exitCode: 0, stdout: JSON.stringify(r) };
+      } catch (e) {
+        return { exitCode: 1, stdout: "", stderr: (e as Error).message };
+      }
+    }
+    case "eval": {
+      const q = rest[0] ?? "";
+      const providerName = flag("--provider") ?? "jev";
+      const provider = providers.find((p) => p.name === providerName && p.name !== "rules");
+      if (provider === undefined) return { exitCode: 1, stdout: "", stderr: `provider not available: ${providerName}` };
+      const labels = flag("--labels") ?? "any";
+      if (labels !== "any" && labels !== "outcome" && labels !== "adjudicator" && labels !== "override") return { exitCode: 1, stdout: "", stderr: "--labels must be outcome, adjudicator, override or any" };
+      const recordFile = flag("--record");
+      const replayFile = flag("--replay");
+      let replay;
+      try {
+        replay = replayFile === undefined ? undefined : readReplay(replayFile);
+      } catch (e) {
+        return { exitCode: 1, stdout: "", stderr: `cannot read replay file: ${(e as Error).message}` };
+      }
+      const r = await runEval(db, { question: q, provider, variant: flag("--variant") ?? "as-is", labels, record: recordFile === undefined ? undefined : makeRecorder(recordFile), replay });
+      if (r.report !== undefined) writeEvalReport(path.join(judgeStateDir(), "judge", "evals"), r.report, Date.now());
+      return r;
     }
     case "brief": {
       const sub = rest[0];
@@ -117,10 +177,10 @@ async function main(): Promise<{ exitCode: number; stdout: string; stderr?: stri
       // subcommand instead of the generic runQuestion envelope — each carries
       // a field (chosenIndex, reasons) that rides in a provider's `extra`
       // rather than evaluate()'s typed Decision<O> (review fix #2).
-      if (cmd === "ui-element-repair") return runUiElementRepairCli(input, { db, config, providers, chain });
-      if (cmd === "visual-critique") return runVisualCritiqueCli(input, { db, config, providers, chain });
-      if (cmd === "ask-check") return runAskCheckCli(input, { db, config, providers, chain });
-      return runQuestion(cmd, input, { db, config, providers, chain });
+      if (cmd === "ui-element-repair") return runUiElementRepairCli(input, { db, config, providers, chain, sessionId });
+      if (cmd === "visual-critique") return runVisualCritiqueCli(input, { db, config, providers, chain, sessionId });
+      if (cmd === "ask-check") return runAskCheckCli(input, { db, config, providers, chain, sessionId });
+      return runQuestion(cmd, input, { db, config, providers, chain, sessionId });
     }
   }
 }

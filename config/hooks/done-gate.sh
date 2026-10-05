@@ -61,7 +61,7 @@ if ! printf '%s' "$CLAIM_TEXT" | grep -qiE '\b(done|complete|finished|ready for 
   # stop), exit 0 means "ask" (a real stop is fine).
   ASK_INPUT="$(jq -nc --arg t "$CLAIM_TEXT" '{transcriptTail: $t}')"
   set +e
-  printf '%s' "$ASK_INPUT" | judge ask-check > /dev/null 2>&1
+  printf '%s' "$ASK_INPUT" | AW_SESSION_ID="$SESSION_ID" judge ask-check > /dev/null 2>&1
   ASK_RC=$?
   set -e
   if [ "$ASK_RC" -eq 2 ] && [ -n "$SESSION_ID" ]; then

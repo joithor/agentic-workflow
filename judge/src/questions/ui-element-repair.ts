@@ -43,6 +43,10 @@ export const uiElementRepair: QuestionModule<UiElementRepairInput, "repaired" | 
   name: "ui-element-repair",
   inputSchema: UiElementRepairInputSchema,
   outputs: ["repaired", "no-good-candidate"],
+  criteria: {
+    repaired: "one candidate element clearly matches the failed step's intent",
+    "no-good-candidate": "no candidate element clearly matches the step, so do not guess",
+  },
   contentClass: "code",
   timeBudgetMs: 10000,
   threshold: 0.6,

@@ -7,6 +7,10 @@ import { briefScope } from "../../src/questions/brief-scope.js";
 import { fakeProvider } from "../helpers.js";
 
 describe("briefScope", () => {
+  it("describes every output in criteria", () => {
+    expect(Object.keys(briefScope.criteria ?? {})).toEqual([...briefScope.outputs]);
+  });
+
   it("is missing, with zero model calls, when acceptanceCriteria is empty (RF-1, pre-rule)", async () => {
     const db = openDb(":memory:");
     const called: string[] = [];

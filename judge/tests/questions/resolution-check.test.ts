@@ -26,6 +26,10 @@ const mustNotCall = () =>
   });
 
 describe("resolutionCheck", () => {
+  it("describes every output in criteria", () => {
+    expect(Object.keys(resolutionCheck.criteria ?? {})).toEqual([...resolutionCheck.outputs]);
+  });
+
   it("is unresolved, with zero model calls, when the after-run failed (pre-rule)", async () => {
     const result = await evaluate(resolutionCheck, { ...base, afterPassed: false }, { db: openDb(":memory:"), config: DEFAULT_CONFIG, providers: [mustNotCall()] });
     expect(result).toMatchObject({ decision: "unresolved", model: "rules" });

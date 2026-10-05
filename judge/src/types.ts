@@ -24,7 +24,7 @@ export type ProviderResult<O extends string> =
   // reasons) — never part of evaluate()'s typed Decision<O> contract, but
   // threaded through so a dedicated thin CLI subcommand can surface it
   // without evaluate() itself gaining a new shape.
-  | { status: "decided"; decision: O; confidence: number; reason_code: string; extra?: Record<string, unknown> }
+  | { status: "decided"; decision: O; confidence: number; reason_code: string; extra?: Record<string, unknown>; probabilities?: Record<string, number> }
   | { status: "unavailable"; reason_code: string }
   | { status: "error"; reason_code: string };
 
@@ -40,6 +40,7 @@ export interface QuestionRef<O extends string> {
   // reasons). Providers with schema-constrained output (codex-cli's strict
   // mode) can only return fields declared here; they ride back as `extra`.
   extraProperties?: Readonly<Record<string, JsonSchemaFragment>>;
+  criteria?: Readonly<Record<string, string>>;
 }
 
 export interface Provider {

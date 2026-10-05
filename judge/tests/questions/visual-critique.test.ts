@@ -9,6 +9,10 @@ import { visualCritique } from "../../src/questions/visual-critique.js";
 import { fakeProvider } from "../helpers.js";
 
 describe("visualCritique", () => {
+  it("describes every output in criteria", () => {
+    expect(Object.keys(visualCritique.criteria ?? {})).toEqual([...visualCritique.outputs]);
+  });
+
   it("has no pre-rule — every input reaches the model (this is a judgment call, not a deterministic check)", async () => {
     const db = openDb(":memory:");
     const cli = fakeProvider("claude-cli", ["image"], { status: "decided", decision: "looks-right", confidence: 0.9, reason_code: "model" });

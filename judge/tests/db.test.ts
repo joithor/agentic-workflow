@@ -4,6 +4,8 @@ import {
   findUnmappedBriefByTeammateName, findUnmappedBriefBySubagentDispatch,
   getBriefByAgentId, getBriefByToolUseId, getDecision, mapToolUseIdToAgentId, openDb,
   recordDecision, recordFailure, recordUndo, saveBrief,
+  getDecisionDetails, labelAgreement, labelCounts, labeledItems, nextUnlabeled,
+  pruneDecisionDetails, recordDecisionDetails, recordLabel, upsertEvalItem,
 } from "../src/db.js";
 import { tmpDb } from "./helpers.js";
 
@@ -11,7 +13,7 @@ describe("openDb", () => {
   it("creates every table", () => {
     const db = openDb(":memory:");
     const tables = (db.prepare("SELECT name FROM sqlite_master WHERE type = 'table' ORDER BY name").all() as Array<{ name: string }>).map((r) => r.name);
-    expect(tables).toEqual(["briefs", "decisions", "failures"]);
+    expect(tables).toEqual(["briefs", "decision_details", "decisions", "eval_items", "failures", "labels"]);
   });
 
   it("sets WAL and busy_timeout on a real file", () => {
@@ -161,5 +163,92 @@ describe("brief store", () => {
     saveBrief(db, { toolUseId: "tu4", sessionId: "s1", promptId: "p1", dispatchName: "builder-a", subagentType: "general-purpose", goal: "x", acceptanceCriteria: "x", proofCommand: "x", savedAt: "2026-09-27T00:00:00.000Z" });
     mapToolUseIdToAgentId(db, "tu4", "agent-1");
     expect(findUnmappedBriefByTeammateName(db, "builder-a")).toBeUndefined();
+  });
+});
+
+describe("decision_details + eval tables", () => {
+  const decision = (id: string, ts: string) => ({
+    id, ts, question: "wake-gate", content_class: "message-meta", provider: "jev" as const, decision: "send", confidence: 0.9,
+    reason_code: "jev", latency_ms: 300, input_digest: "d", undone_at: null, chain_position: 0, skipped: [], outcome: "decided" as const,
+  });
+
+  it("creates the new tables on an existing db without touching decisions rows (RF-2)", () => {
+    const file = tmpDb();
+    const first = openDb(file);
+    recordDecision(first, decision("a", "2026-10-01T00:00:00.000Z"));
+    first.close();
+    const reopened = openDb(file);
+    expect(getDecision(reopened, "a")?.decision).toBe("send");
+    recordDecisionDetails(reopened, { id: "a", input_json: "{}", probabilities: { send: 0.9, batch: 0.1 }, rules_opinion: null, agreement: null });
+    expect(getDecisionDetails(reopened, "a")).toEqual({ id: "a", input_json: "{}", probabilities: { send: 0.9, batch: 0.1 }, rules_opinion: null, agreement: null, session_id: null });
+  });
+
+  it("returns undefined for missing details and round-trips null probabilities and a session id", () => {
+    const db = openDb(":memory:");
+    expect(getDecisionDetails(db, "nope")).toBeUndefined();
+    recordDecisionDetails(db, { id: "x", input_json: "{}", probabilities: null, rules_opinion: "send", agreement: "agreed", session_id: "s1" });
+    expect(getDecisionDetails(db, "x")).toEqual({ id: "x", input_json: "{}", probabilities: null, rules_opinion: "send", agreement: "agreed", session_id: "s1" });
+  });
+
+  it("prunes details of decisions older than the cutoff", () => {
+    const db = openDb(":memory:");
+    recordDecision(db, decision("old", "2026-08-01T00:00:00.000Z"));
+    recordDecision(db, decision("new", "2026-10-01T00:00:00.000Z"));
+    for (const id of ["old", "new"]) recordDecisionDetails(db, { id, input_json: "{}", probabilities: null, rules_opinion: null, agreement: null });
+    expect(pruneDecisionDetails(db, "2026-09-01T00:00:00.000Z")).toBe(1);
+    expect(getDecisionDetails(db, "old")).toBeUndefined();
+    expect(getDecisionDetails(db, "new")).toBeDefined();
+  });
+
+  it("upserts eval items once per source, serves the oldest unlabeled, and lists labeled ones without skips", () => {
+    const db = openDb(":memory:");
+    const item = (id: string, source: string, created_at: string) => ({ id, question: "wake-gate", input_json: "{}", source, model_decision: "send", created_at });
+    expect(upsertEvalItem(db, item("i1", "decision:a", "2026-10-01T00:00:00.000Z"))).toBe(true);
+    expect(upsertEvalItem(db, item("i1b", "decision:a", "2026-10-02T00:00:00.000Z"))).toBe(false);
+    upsertEvalItem(db, item("i2", "decision:b", "2026-10-02T00:00:00.000Z"));
+    upsertEvalItem(db, item("i3", "decision:c", "2026-10-03T00:00:00.000Z"));
+    expect(nextUnlabeled(db, "wake-gate")?.id).toBe("i1");
+    recordLabel(db, "i1", "batch", "2026-10-04T00:00:00.000Z");
+    recordLabel(db, "i2", "skip", "2026-10-04T00:00:00.000Z");
+    expect(nextUnlabeled(db)?.id).toBe("i3");
+    expect(nextUnlabeled(db, "other")).toBeUndefined();
+    expect(labeledItems(db, "wake-gate").map((r) => [r.id, r.label])).toEqual([["i1", "batch"]]);
+    expect(labelCounts(db)).toEqual([{ question: "wake-gate", items: 3, labeled: 1, skipped: 1 }]);
+  });
+
+  it("keeps one label per source, applies override > outcome > adjudicator precedence, and measures agreement", () => {
+    const db = openDb(":memory:");
+    for (const id of ["a", "b"]) upsertEvalItem(db, { id, question: "ask-check", input_json: "{}", source: `decision:${id}`, model_decision: "continue", created_at: "2026-10-01T00:00:00.000Z" });
+    recordLabel(db, "a", "ask", "t", "adjudicator");
+    recordLabel(db, "a", "continue", "t", "outcome");
+    recordLabel(db, "b", "ask", "t", "adjudicator");
+    recordLabel(db, "b", "ask", "t", "outcome");
+    expect(labeledItems(db, "ask-check").map((r) => [r.id, r.label, r.label_source])).toEqual([["a", "continue", "outcome"], ["b", "ask", "outcome"]]);
+    expect(labeledItems(db, "ask-check", "adjudicator").map((r) => r.label)).toEqual(["ask", "ask"]);
+    recordLabel(db, "a", "ask", "t", "override");
+    expect(labeledItems(db, "ask-check")[0]).toMatchObject({ label: "ask", label_source: "override" });
+    expect(labelAgreement(db, "ask-check")).toEqual({ shared: 2, agreed: 1 });
+    expect(nextUnlabeled(db, "ask-check", "adjudicator")).toBeUndefined();
+  });
+
+  it("reports zero agreement when no item has both outcome and adjudicator labels", () => {
+    const db = openDb(":memory:");
+    expect(labelAgreement(db, "ask-check")).toEqual({ shared: 0, agreed: 0 });
+  });
+
+  it("nextUnlabeled with a source ignores labels from other sources", () => {
+    const db = openDb(":memory:");
+    upsertEvalItem(db, { id: "a", question: "q", input_json: "{}", source: "s", model_decision: null, created_at: "t" });
+    recordLabel(db, "a", "x", "t", "outcome");
+    expect(nextUnlabeled(db, "q", "adjudicator")?.id).toBe("a");
+    expect(nextUnlabeled(db, "q", "outcome")).toBeUndefined();
+  });
+
+  it("nextUnlabeled can exclude item ids", () => {
+    const db = openDb(":memory:");
+    for (const id of ["a", "b"]) upsertEvalItem(db, { id, question: "q", input_json: "{}", source: `decision:${id}`, model_decision: null, created_at: `2026-10-01T00:00:0${id === "a" ? 0 : 1}.000Z` });
+    expect(nextUnlabeled(db, "q", "adjudicator", new Set(["a"]))?.id).toBe("b");
+    expect(nextUnlabeled(db, "q", "adjudicator", new Set())?.id).toBe("a");
+    expect(nextUnlabeled(db, "q", "adjudicator", new Set(["a", "b"]))).toBeUndefined();
   });
 });

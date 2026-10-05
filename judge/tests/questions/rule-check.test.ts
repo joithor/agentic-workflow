@@ -7,6 +7,10 @@ import { ruleCheck } from "../../src/questions/rule-check.js";
 import { fakeProvider } from "../helpers.js";
 
 describe("ruleCheck", () => {
+  it("describes every output in criteria", () => {
+    expect(Object.keys(ruleCheck.criteria ?? {})).toEqual([...ruleCheck.outputs]);
+  });
+
   it("is n/a, with zero model calls, for an empty hunk (pre-rule)", async () => {
     const db = openDb(":memory:");
     const called: string[] = [];

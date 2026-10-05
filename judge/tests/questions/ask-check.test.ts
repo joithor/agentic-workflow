@@ -7,6 +7,10 @@ import { askCheck } from "../../src/questions/ask-check.js";
 import { fakeProvider } from "../helpers.js";
 
 describe("askCheck", () => {
+  it("settles an undecided answer by asking (stopping is always safe)", () => {
+    expect(askCheck.fallbackRules?.({ transcriptTail: "anything" })).toBe("ask");
+  });
+
   it.each(["push the branch", "merge the PR", "delete the file", "force-push to main", "force push to main"])(
     "is 'ask', with zero model calls, when the next step mentions %s (deterministic deny-list pre-rule, never overridable by a model)",
     async (transcriptTail) => {
@@ -21,6 +25,10 @@ describe("askCheck", () => {
       expect(called).toEqual([]);
     },
   );
+
+  it("describes every output in criteria", () => {
+    expect(Object.keys(askCheck.criteria ?? {})).toEqual([...askCheck.outputs]);
+  });
 
   it("asks the model chain when nothing on the deny list is mentioned", async () => {
     const db = openDb(":memory:");

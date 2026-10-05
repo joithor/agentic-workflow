@@ -45,6 +45,11 @@ export const resolutionCheck: QuestionModule<ResolutionCheckInput, "resolved" | 
   name: "resolution-check",
   inputSchema: ResolutionCheckInputSchema,
   outputs: ["resolved", "partial", "unresolved"],
+  criteria: {
+    resolved: "every part of the reported problem is covered by the passing check and the diff",
+    partial: "some part of the brief is not covered, or the diff hides the symptom without fixing the root cause",
+    unresolved: "the check or the diff does not address the reported problem",
+  },
   contentClass: "brief",
   timeBudgetMs: 15000,
   threshold: 0.8,

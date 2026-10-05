@@ -41,11 +41,16 @@ function parseEnvelope<O extends string>(stdout: string): ProviderResult<O> {
  * temp cwd so the child never inherits this repo's project context. Sets
  * AW_JUDGE_CHILD=1 so every aw:* hook exits 0 immediately (recursion guard).
  */
-export function makeClaudeCliProvider(deps: { spawn: Spawn; tmpDirFactory: () => string }): Provider {
+export function makeClaudeCliProvider(deps: { spawn: Spawn; tmpDirFactory: () => string; model?: string; effort?: string }): Provider {
+  // The default (hook-chain) path is fast: thinking off. A caller that asks
+  // for a non-default effort (the adjudicator's opus/high) wants the model to
+  // actually think, so neither the env cap nor alwaysThinkingEnabled:false apply.
+  const fast = deps.effort === undefined || deps.effort === "low";
+  const settings = fast ? '{"disableAllHooks":true,"alwaysThinkingEnabled":false}' : '{"disableAllHooks":true}';
   const run = async <O extends string>(args: string[], cwd: string, budgetMs: number): Promise<ProviderResult<O>> => {
     let raw: SpawnResult;
     try {
-      raw = await deps.spawn(args, { cwd, env: childEnv({ MAX_THINKING_TOKENS: "0" }), timeoutMs: budgetMs });
+      raw = await deps.spawn(args, { cwd, env: childEnv(fast ? { MAX_THINKING_TOKENS: "0" } : {}), timeoutMs: budgetMs });
     } catch {
       return { status: "error", reason_code: "spawn-failed" };
     }
@@ -70,9 +75,9 @@ export function makeClaudeCliProvider(deps: { spawn: Spawn; tmpDirFactory: () =>
         const props = schema.properties as Record<string, unknown>;
         const imgSchema = { ...schema, properties: { ...props, reasons: props.reasons ?? { type: "array", items: { type: "string" } } } };
         return run<O>([
-          "-p", "--model", "haiku", "--effort", "low", "--no-session-persistence",
+          "-p", "--model", deps.model ?? "haiku", "--effort", deps.effort ?? "low", "--no-session-persistence",
           "--strict-mcp-config", "--mcp-config", '{"mcpServers":{}}',
-          "--settings", '{"disableAllHooks":true,"alwaysThinkingEnabled":false}',
+          "--settings", settings,
           "--disable-slash-commands",
           "--tools", "Read", "--allowedTools", "Read(./**)",
           "--json-schema", JSON.stringify(imgSchema),
@@ -84,12 +89,12 @@ export function makeClaudeCliProvider(deps: { spawn: Spawn; tmpDirFactory: () =>
 
       return run<O>([
         "-p",
-        "--model", "haiku",
-        "--effort", "low",
+        "--model", deps.model ?? "haiku",
+        "--effort", deps.effort ?? "low",
         "--no-session-persistence",
         "--strict-mcp-config",
         "--mcp-config", '{"mcpServers":{}}',
-        "--settings", '{"disableAllHooks":true,"alwaysThinkingEnabled":false}',
+        "--settings", settings,
         "--disable-slash-commands",
         "--tools", "",
         "--system-prompt", question.prompt,
