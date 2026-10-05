@@ -56,6 +56,23 @@ describe("runPromptSort", () => {
     expect(readSortState(file).requirements).toEqual({});
   });
 
+  it("keeps the UI requirement on a heuristic-only non-UI run (Jev outage), RF-4", async () => {
+    const d = make({ jev: jevDeps(vi.fn().mockRejectedValue(new DOMException("aborted", "AbortError"))) });
+    const file = sortStatePath(d.stateDir, "s1") as string;
+    writeSortState(file, { prompts: 3, lastFired: {}, requirements: { uiEvidence: true } });
+    const r = out(await runPromptSort({ prompt: "Update the shift export script", sessionId: "s1" }, d));
+    expect(r).toMatchObject({ mode: "heuristic-only" });
+    expect(readSortState(file).requirements).toEqual({ uiEvidence: true });
+  });
+
+  it("keeps the UI requirement when a judge-seen non-UI prompt names a workflow, RF-4", async () => {
+    const d = make({ jev: jevDeps(jevFetch(jevBody({ touches_ui: noul(0.05) }))) });
+    const file = sortStatePath(d.stateDir, "s1") as string;
+    writeSortState(file, { prompts: 3, lastFired: {}, requirements: { uiEvidence: true } });
+    await runPromptSort({ prompt: "Use /rootCause on the shift export script", sessionId: "s1" }, d);
+    expect(readSortState(file).requirements).toEqual({ uiEvidence: true });
+  });
+
   it("keeps the UI requirement across a prompt that is not a task", async () => {
     const d = make({ jev: jevDeps(jevFetch(jevBody({ is_task: noul(0.05), touches_ui: noul(0.05) }))) });
     const file = sortStatePath(d.stateDir, "s1") as string;

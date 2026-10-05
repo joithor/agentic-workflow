@@ -12,7 +12,7 @@ import type { JevDeps } from "../providers/jev-api.js";
 import { ALL_AXES, axisLabel } from "./axes.js";
 import { NAMES_WORKFLOW, buildContext, planScaffolds } from "./scaffolds.js";
 import { emptyState, readSortState, sortStatePath, writeSortState } from "./session-state.js";
-import { sortPrompt } from "./sort.js";
+import { sortPrompt, type SortOutcome } from "./sort.js";
 import { recordPromptSort } from "./store.js";
 import { tier1Skip } from "./tier1.js";
 
@@ -23,6 +23,12 @@ export interface PromptSortDeps {
   now?: () => Date; randomId?: () => string; clock?: () => number;
 }
 export interface CmdResult { exitCode: number; stdout: string; stderr?: string }
+
+// RF-4: only a non-UI task follow-up the judge actually saw clears the requirement;
+// a heuristic-only run (Jev outage) or a workflow-named prompt never does.
+const clearsUiRequirement = (outcome: SortOutcome, namesWorkflow: boolean): boolean =>
+  !namesWorkflow && outcome.mode === "blend" && outcome.values.is_task && !outcome.values.touches_ui &&
+  outcome.axes.some((a) => a.axis === "touches_ui" && a.source === "judge");
 
 const done = (body: unknown): CmdResult => ({ exitCode: 0, stdout: JSON.stringify(body) });
 
@@ -73,7 +79,7 @@ export async function runPromptSort(raw: unknown, deps: PromptSortDeps): Promise
       for (const f of fired) lastFired[f] = promptIndex;
       let requirements = { ...state.requirements };
       if (plan.requirementUi) requirements = { uiEvidence: true };
-      else if (outcome.values.is_task && !outcome.values.touches_ui) requirements = {};
+      else if (clearsUiRequirement(outcome, NAMES_WORKFLOW.test(prompt))) requirements = {};
       writeSortState(stateFile, { prompts: promptIndex, lastFired, requirements });
     } catch {
       // a state file we cannot write only costs us the cooldown
