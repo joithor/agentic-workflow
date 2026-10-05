@@ -33,6 +33,8 @@ export const resetForTests = (): void => {
   running = null
 }
 
+const isTimeout = (err: unknown): boolean => /time/i.test(err instanceof Error ? err.message : String(err))
+
 /** Runs scorer by argv, trying each candidate path; null on any failure. */
 const runScorer = async ($: EngineInterface, args: string[], timeoutMs: number): Promise<string | null> => {
   const names = binCandidates(await $.env.get('HOME'), 'scorer', await $.env.get('AW_SCORER_BIN'))
@@ -41,19 +43,22 @@ const runScorer = async ($: EngineInterface, args: string[], timeoutMs: number):
       const r = await $.process.run([name, ...args], { timeoutMs })
       if (r.exitCode === 0) return r.stdout
       return null
-    } catch {
-      // not runnable at this path: try the next candidate
+    } catch (err) {
+      // A timeout means the binary exists but is slow: do not stack another wait on it.
+      if (isTimeout(err)) return null
+      // otherwise not runnable at this path: try the next candidate
     }
   }
   return null
 }
 
 const runRefresh = async ($: EngineInterface, force: boolean): Promise<void> => {
-  const now = await $.clock.now()
-  if (!force && !isDue(lastAt, now)) return
-  lastAt = now
+  let now: number | null = null
   let ok = false
   try {
+    now = await $.clock.now()
+    if (!force && !isDue(lastAt, now)) return
+    lastAt = now
     const sessionId = await $.session.id()
     if (sessionId === '') return
     const [cwd, usage] = await Promise.all([$.session.cwd(), $.session.usage()])
@@ -70,7 +75,8 @@ const runRefresh = async ($: EngineInterface, force: boolean): Promise<void> => 
   } catch {
     // fail silent: the band keeps its last good value
   } finally {
-    await update($, status, (): LiveStatus => ({ ok, at: now })).catch(() => undefined)
+    const at = now
+    if (at !== null) await update($, status, (): LiveStatus => ({ ok, at })).catch(() => undefined)
   }
 }
 
@@ -85,18 +91,26 @@ const refresh = ($: EngineInterface, force: boolean): Promise<void> => {
 
 export const register: Register = on => {
   on('session.start', async ($, e, next) => {
-    await $.command.register({ name: 'live', description: 'Toggle the live scorer pane (context, cost, judge, gates)' })
-    $.clock.every(TIMER_MS, () => {
-      void refresh($, false)
-    })
-    void refresh($, true)
+    try {
+      await $.command.register({ name: 'live', description: 'Toggle the live scorer pane (context, cost, judge, gates)' })
+      $.clock.every(TIMER_MS, () => {
+        void refresh($, false)
+      })
+      void refresh($, true)
+    } catch {
+      // a host error must not stop session start
+    }
     return next(e)
   })
 
   on('turn.complete', async ($, e, next) => {
-    $.clock.after(0, () => {
-      void refresh($, false)
-    })
+    try {
+      $.clock.after(0, () => {
+        void refresh($, false)
+      })
+    } catch {
+      // a host error must not stop the turn
+    }
     return next(e)
   })
 
@@ -109,18 +123,22 @@ export const register: Register = on => {
         return { text: 'aw-live: no numbers yet (is scorer installed? scripts/install-scorer.sh)' }
       }
     }
-    if ((await $.ui.panes()).some(pane => pane.id === PANE)) {
-      await $.ui.close({ id: PANE })
-      return {}
+    try {
+      if ((await $.ui.panes()).some(pane => pane.id === PANE)) {
+        await $.ui.close({ id: PANE })
+        return {}
+      }
+      await refresh($, true)
+      await $.ui.open({ id: PANE, title: TITLE, focus: true, closeOnEscape: true, columns: PANE_COLUMNS })
+    } catch {
+      // a host error: leave the pane as it is
     }
-    await refresh($, true)
-    await $.ui.open({ id: PANE, title: TITLE, focus: true, closeOnEscape: true, columns: PANE_COLUMNS })
     return {}
   })
 
   on('ui.render', { component: 'AbovePrompt' }, async ($, e, next) => {
-    if (e.props.hasSurvey) return next(e)
     try {
+      if (e.props.hasSurvey) return next(e)
       const s = await read($, snapshot)
       if (s === null) return next(e)
       const text = bandText(s, await read($, host), e.props.bodyColumns)
@@ -137,8 +155,8 @@ export const register: Register = on => {
   })
 
   on('ui.render', { component: 'Pane', requestId: PANE }, async ($, e, next) => {
-    const { Box, Text, Button } = $.ui.resolve(e)
     try {
+      const { Box, Text, Button } = $.ui.resolve(e)
       const s = await read($, snapshot)
       if (s === null) {
         return (

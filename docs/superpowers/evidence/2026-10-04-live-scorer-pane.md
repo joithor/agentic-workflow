@@ -7,7 +7,7 @@
 - Proof D (judge scoping, three seeded decisions for the session): output below. Rows from other sessions excluded: yes. I then seeded two more rows (one for another session id, one with a null session id); the `judge` and `scope-gate` rows did not change (`calls 3 ...`, `scope-gate 1 · ready 1 · p50 400 ms`).
 - Proof E (pane drawn in a real interactive session, pty, cwd = main checkout, read-only): obtained. Harness: `captured 18017 chars; missing: none; window meter shown: True`, `exit=0`. The harness asserts the literal strings `Toggle the live scorer pane`, `cost`, `calls`, `over 200k`, `queued now`, `context guard`, and a `window NN%` + bar-glyph match. I read the capture and saw the lines quoted below.
 - Findings: hook latency is not observable from a mod in this build (classic hooks did not fire under `claude -p --plugin-dir`; `tool.call` times tool and hooks together). Shown instead: per-gate p50 from `decisions.latency_ms`. The override-label hotkeys were dropped by ruling, so nothing here expects them.
-- Not proven here: the install into Joi's real `~/.claude` (run `scripts/install-live-pane.sh --provider claude` from the main checkout after merge); override labels against a real labelable decision.
+- Not proven here: the install into Joi's real `~/.claude` (run `scripts/install-live-pane.sh --provider claude` from the main checkout after merge).
 
 ## Proof C output
 

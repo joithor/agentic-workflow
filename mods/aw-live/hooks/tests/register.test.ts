@@ -15,10 +15,18 @@ const CMD = {
 type Run = { argv: string[]; timeoutMs?: number }
 type Reply = { exitCode: number; stdout: string }
 
+// A host whose clock rejects: now() is refused, timers never fire.
+const brokenClock = (on: On): ReturnType<typeof mock.clock> => {
+  on('clock.now', () => ({ deny: 'clock down' }))
+  on('clock.after', () => ({ value: undefined }))
+  on('clock.every', () => ({ value: undefined }))
+  return { settle: async () => undefined, advance: async () => undefined } as unknown as ReturnType<typeof mock.clock>
+}
+
 // The world beneath the plugin: a fixed session, a fake usage, and a scripted process.run.
 const sessionId = { current: 'session-1' }
 
-const world = (on: On, reply: (argv: string[]) => Reply | 'cannot-start', env?: Record<string, string>) => {
+const world = (on: On, reply: (argv: string[]) => Reply | 'cannot-start' | 'timeout', env?: Record<string, string>, broken: string[] = []) => {
   resetForTests()
   sessionId.current = 'session-1'
   const runs: Run[] = []
@@ -32,18 +40,21 @@ const world = (on: On, reply: (argv: string[]) => Reply | 'cannot-start', env?: 
     value: { startedAt: 0, context: { window: 1_000_000, percent: 44, tokens: 440_000 }, rateLimits: [], cost: { usd: 1.839 } },
   }))
   mock.env(on, { HOME: '/home/me', ...(env ?? {}) })
-  const clock = mock.clock(on, { now: 1_700_000_000_000 })
+  const clock = broken.includes('clock.now') ? brokenClock(on) : mock.clock(on, { now: 1_700_000_000_000 })
   on('process.run', (_$, e) => {
     runs.push({ argv: [...e.argv], timeoutMs: e.init?.timeoutMs })
     const r = reply([...e.argv])
+    if (r === 'timeout') return { deny: 'timed out after 30000ms' }
     if (r === 'cannot-start') return { deny: 'ENOENT' }
     return { value: { ...r, stderr: '', isStdoutTruncated: false, isStderrTruncated: false } }
   })
   on('ui.toast', (_$, e) => { toasts.push(e.text); return { value: undefined } })
   on('ui.open', (_$, e) => { opened.push(e.id); isOpen = true; return { value: { isPlaced: true } } })
   on('ui.close', (_$, e) => { closed.push(e.id); isOpen = false; return { value: undefined } })
-  on('ui.panes', () => ({ value: isOpen ? [{ id: 'aw-live', title: 'Live scorer', isShown: true, isFocused: false, isPlaced: true }] : [] }))
-  on('command.register', (_$, e) => ({ value: { command: e.name } }))
+  if (broken.includes('ui.panes')) on('ui.panes', () => ({ deny: 'ui down' }))
+  else on('ui.panes', () => ({ value: isOpen ? [{ id: 'aw-live', title: 'Live scorer', isShown: true, isFocused: false, isPlaced: true }] : [] }))
+  if (broken.includes('command.register')) on('command.register', () => ({ deny: 'register down' }))
+  else on('command.register', (_$, e) => ({ value: { command: e.name } }))
   on('session.start', (_$, e) => ({ cwd: e.cwd }))
   on('turn.complete', (_$, e) => ({ text: e.answer }))
   on('ui.render', { component: 'AbovePrompt' }, () => ({ type: 'engine', ref: 0 }))
@@ -254,4 +265,24 @@ test('a payload that parses but breaks formatting never throws out of a hook', a
   await p.unmount()
   const answer = await $.command.run({ ...CMD, args: 'status' })
   expect(answer.text).toContain('scripts/install-scorer.sh')
+})
+
+test('a clock that rejects never escapes a refresh or /live status', async ($, on) => {
+  world(on, () => ok(SAMPLE_JSON), undefined, ['clock.now'])
+  await start($)
+  const answer = await $.command.run({ ...CMD, args: 'status' })
+  expect(answer.text).toContain('scripts/install-scorer.sh')
+})
+
+test('host calls that throw inside the hooks fall through instead of throwing', async ($, on) => {
+  world(on, () => ok(SAMPLE_JSON), undefined, ['ui.panes', 'command.register'])
+  await start($)
+  expect(await $.command.run(CMD)).toEqual({})
+})
+
+test('a timed-out candidate is not followed by another wait', async ($, on) => {
+  const { runs, clock } = world(on, () => 'timeout')
+  await start($)
+  await clock.settle()
+  expect(runs.length).toBe(1)
 })
