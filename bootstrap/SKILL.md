@@ -453,7 +453,7 @@ After generating docs and repo instructions, configure Serena LSP for the repo.
 - C#: `*.csproj` or `*.cs` → detected but **excluded from languages list** (see below)
 - Swift: `*.swift` or `Package.swift` → detected but **excluded from languages list** (see below)
 
-**Language exclusions:** Do NOT add `swift` or `csharp` to the `languages:` list in the generated config:
+**Language exclusions:** Do NOT add `swift` or `csharp` to the `language_servers:` list in the generated config:
 - `swift` — sourcekit-lsp is a macOS binary; Serena runs in a Linux Docker container. Swift LSP requires the separate `serena-local:latest-swift` image and host-side socket bridge. Add manually after running `BUILD_SWIFT=1 ./setup.sh`.
 - `csharp` — requires the `-csharp` image variant. Add manually after running `BUILD_CSHARP=1 ./setup.sh`.
 
@@ -473,7 +473,7 @@ If `RULES_OK=false`, print:
 REPO_NAME="$(basename "$(pwd)")"
 ```
 
-**Write `.serena/project.yml`** with detected `languages` and audited `ignored_paths`:
+**Write `.serena/project.yml`** with detected `language_servers` (Serena >= 1.7 renamed `languages`; an old or incomplete file makes Serena try to re-save it, which crashes on the read-only repo mount) and audited `ignored_paths`:
 
 ```yaml
 # Serena project configuration for <repo-name>
@@ -481,7 +481,7 @@ REPO_NAME="$(basename "$(pwd)")"
 
 project_name: <REPO_NAME>
 
-languages:
+language_servers:
 - <detected-language-1>
 - <detected-language-2>  # if applicable
 # swift omitted: sourcekit-lsp requires macOS; add after running BUILD_SWIFT=1 ./setup.sh
@@ -502,6 +502,12 @@ excluded_tools:
 - execute_shell_command
 
 initial_prompt: ""
+added_modes:
+ls_workspace_folders:
+- .
+ls_additional_workspace_folders: []
+activation_command:
+activation_command_timeout: 180.0
 ```
 
 **Append to `.gitignore`** (idempotent — check before writing):
@@ -510,6 +516,7 @@ initial_prompt: ""
 .serena/cache/
 .serena/logs/
 .serena/memory/
+.serena/memories/
 .serena/*.log
 ```
 

@@ -16,6 +16,7 @@ coverage/
 .serena/cache/
 .serena/logs/
 .serena/memory/
+.serena/memories/
 .serena/*.log
 
 # Claude Code machine-specific settings (absolute paths, allow rules)
