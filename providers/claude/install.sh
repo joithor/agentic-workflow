@@ -39,6 +39,10 @@ claude_install_settings() {
   [ -f "$settings" ] || return 0
   aw_dry && { echo "  [dry-run] would merge statusLine + WINCH Stop/PreToolUse hooks into $settings if absent"; return 0; }
 
+  # Per-window WINCH: walk up to this session's own tty, signal only the shell that wrote
+  # ~/.claude/shell_pid.d/<tty>. No shared pid file between windows.
+  local WINCH_CMD='p=$PPID; for i in 1 2 3 4 5 6 7 8; do o=$(ps -o ppid=,tty= -p $p 2>/dev/null); set -- $o; t=$2; case $t in ""|"??"|-) p=$1;; *) f="$HOME/.claude/shell_pid.d/$t"; [ -f "$f" ] && kill -WINCH "$(cat "$f")" 2>/dev/null; break;; esac; done; '
+
   # Add statusLine key if absent (use has() so null values are not re-merged)
   if ! jq -e 'has("statusLine")' "$settings" &>/dev/null; then
     jq '. + {"statusLine": {"type": "command", "command": "~/.claude/statusline.sh"}}' \
@@ -48,7 +52,8 @@ claude_install_settings() {
 
   # Merge Stop hook (statusline width refresh) if not already present
   if ! jq -e 'has("hooks") and (.hooks | has("Stop"))' "$settings" &>/dev/null; then
-    local stop_hook='[{"hooks":[{"type":"command","command":"SHELL_PID=$(cat \"$HOME/.claude/shell_pid\" 2>/dev/null); [ -n \"$SHELL_PID\" ] && kill -WINCH \"$SHELL_PID\" 2>/dev/null; sleep 0.05; true"}]}]'
+    local stop_hook
+    stop_hook=$(jq -n --arg c "$WINCH_CMD sleep 0.05; true" '[{hooks:[{type:"command",command:$c}]}]')
     jq --argjson stop "$stop_hook" '.hooks.Stop = $stop' \
       "$settings" > "$settings.tmp" && mv "$settings.tmp" "$settings"
     echo "  hooks.Stop added to existing settings.json"
@@ -56,7 +61,8 @@ claude_install_settings() {
 
   # Merge PreToolUse hook (statusline width refresh) if not already present
   if ! jq -e 'has("hooks") and (.hooks | has("PreToolUse"))' "$settings" &>/dev/null; then
-    local ptu_hook='[{"matcher":".*","hooks":[{"type":"command","command":"SHELL_PID=$(cat \"$HOME/.claude/shell_pid\" 2>/dev/null); [ -n \"$SHELL_PID\" ] && kill -WINCH \"$SHELL_PID\" 2>/dev/null; true"}]}]'
+    local ptu_hook
+    ptu_hook=$(jq -n --arg c "$WINCH_CMD true" '[{matcher:".*",hooks:[{type:"command",command:$c}]}]')
     jq --argjson ptu "$ptu_hook" '.hooks.PreToolUse = $ptu' \
       "$settings" > "$settings.tmp" && mv "$settings.tmp" "$settings"
     echo "  hooks.PreToolUse added to existing settings.json"
@@ -75,23 +81,28 @@ claude_install_shell_integration() {
   si_tmp="$(mktemp)"
   cat > "$si_tmp" << 'SHELL_EOF'
 # Claude Code shell integration — written by Agentic Workflow setup.sh
-# Keeps ~/.claude/terminal_width updated so statusline.sh can read the actual
-# terminal width. Claude Code subprocesses cannot access /dev/tty or $COLUMNS,
-# so the interactive shell (which always has the correct value) writes it here.
-#
-# Also writes ~/.claude/shell_pid so Claude Code hooks can send SIGWINCH to
-# this shell, triggering a width update mid-session when the window is resized.
-# When zsh receives SIGWINCH it calls ioctl(TIOCGWINSZ) on its terminal and
-# updates $COLUMNS before running the WINCH trap — so $COLUMNS is always current.
+# Records THIS terminal's width in ~/.claude/terminal_width.d/<tty> (e.g. ttys003) and
+# this shell's pid in ~/.claude/shell_pid.d/<tty>, so statusline.sh and the Claude Code
+# hooks of a session running in this terminal can find them. Everything is keyed by tty:
+# nothing is shared between windows. statusline.sh normally reads the tty size directly and
+# uses this file only as a fallback. Only an interactive shell attached to a tty writes, and
+# never a Claude Code tool shell (CLAUDECODE is set; its COLUMNS/tput values are bogus).
+# When zsh/bash receive SIGWINCH they refresh $COLUMNS (ioctl TIOCGWINSZ) before the trap.
 
 _claude_update_width() {
-  # Write our PID so hooks can find and signal us
-  printf '%s\n' "$$" > "$HOME/.claude/shell_pid"
-  # Use $COLUMNS (updated by zsh/bash via ioctl on SIGWINCH) as primary source.
-  # tput cols fallback covers environments where $COLUMNS isn't set.
-  local width="${COLUMNS:-$(tput cols 2>/dev/null)}"
+  case $- in *i*) ;; *) return 0 ;; esac
+  [ -t 1 ] || return 0
+  [ -z "${CLAUDECODE:-}" ] || return 0
+  local tty width
+  tty=$(basename "$(tty 2>/dev/null)")
+  case "$tty" in ""|"not a tty"|"not") return 0 ;; esac
+  mkdir -p "$HOME/.claude/terminal_width.d" "$HOME/.claude/shell_pid.d" 2>/dev/null
+  printf '%s\n' "$$" > "$HOME/.claude/shell_pid.d/$tty"
+  # $COLUMNS (kept current by the shell) first; tput cols when it is unset.
+  width="${COLUMNS:-$(tput cols 2>/dev/null)}"
   [ -n "$width" ] && [ "$width" -gt 0 ] 2>/dev/null && \
-    printf '%s\n' "$width" > "$HOME/.claude/terminal_width"
+    printf '%s\n' "$width" > "$HOME/.claude/terminal_width.d/$tty"
+  return 0
 }
 
 if [ -n "$ZSH_VERSION" ]; then
@@ -126,14 +137,6 @@ SHELL_EOF
       echo "  Already in $rc"
     fi
   done
-
-  # Initialize the width file from the parent terminal (a non-interactive
-  # subshell has no $COLUMNS, so read /dev/tty directly via stty).
-  local width
-  width=$(stty size </dev/tty 2>/dev/null | awk '{print $2}')
-  width="${width:-${COLUMNS:-80}}"
-  printf '%s\n' "$width" > "$CLAUDE_DIR/terminal_width"
-  echo "  terminal_width initialized: $width cols"
 
   if [ -n "$added" ]; then
     echo ""

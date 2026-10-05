@@ -266,9 +266,9 @@ A TypeScript MCP server for bidirectional multi-agent communication across any m
 | COMPACT | 65 cols | 5h % only; narrow context bar; branch up to 10 chars |
 | COMPACT-S | < 65 cols | Same as COMPACT but drops Time column |
 
-The statusline reads the terminal width from `~/.claude/terminal_width`. The shell integration writes that file on every prompt and on `SIGWINCH`. It's the only reliable source, because Claude Code runs the statusline in a subprocess where `/dev/tty` is inaccessible and `$COLUMNS` is 0.
+The statusline reads the size of the tty its own Claude Code process is attached to (found by walking up the process tree), so every window gets its own width and no state is shared between windows. When that read fails it falls back to `~/.claude/terminal_width.d/<tty>`, written by the shell integration from interactive terminals only (never from Claude Code tool shells). `AW_STATUSLINE_DEBUG=1` prints the width source to stderr.
 
-`setup.sh` installs the **shell integration** to `~/.claude/shell-integration.sh` and sources it from `~/.zshrc` / `~/.bashrc`. It keeps `~/.claude/terminal_width` current and writes `~/.claude/shell_pid`, so resize events reach the statusline mid-session via `SIGWINCH`.
+`setup.sh` installs the **shell integration** to `~/.claude/shell-integration.sh` and sources it from `~/.zshrc` / `~/.bashrc`. It keeps `~/.claude/terminal_width.d/<tty>` current and writes `~/.claude/shell_pid.d/<tty>`, so the hooks of a session can send `SIGWINCH` to the shell on its own tty.
 
 ## Testing
 

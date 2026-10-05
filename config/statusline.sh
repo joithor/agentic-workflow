@@ -7,7 +7,7 @@
 # Column priority (left → right, leftmost always survive tier drops):
 #   5h Usage | 7d Usage | Context | Model | Branch | Cost | Time | Cache | API | Lines | Live
 #
-# Width detection: ~/.claude/terminal_width (shell-integration.sh) → stty /dev/tty → $COLUMNS → 200
+# Width detection: ancestor process tty → terminal_width.d/<tty> → (no tty) legacy terminal_width → stty → $COLUMNS → 200
 # Tiers (total visible chars, approx):
 #   ≥156: FULL+Live   — all columns plus Live, branch×15, full ctx bar
 #   ≥141: MEDIUM+Live — no Lines, plus Live (Live outranks Lines), branch×12
@@ -19,26 +19,60 @@
 
 INPUT=$(cat)
 
-# Brief pause so the shell's WINCH trap has time to write terminal_width before
-# we read it. Claude Code re-renders the statusline immediately on SIGWINCH;
-# without this sleep the file may still hold the pre-resize value.
-sleep 0.05
+# Width detection, first match wins (AW_STATUSLINE_DEBUG=1 prints the source to stderr).
+# Everything is per window: several Claude Code sessions run at once and share no state.
+#   1. ancestor-tty: size of the controlling tty of the nearest ancestor process that has one,
+#      i.e. the terminal THIS Claude Code session runs in.
+#   2. terminal_width.d/<tty>: that same tty's file from shell-integration.sh.
+#   3. no ancestor tty at all: legacy global ~/.claude/terminal_width (old installs only;
+#      the shell integration no longer writes it), then stty </dev/tty, $COLUMNS, 200.
+# Test overrides: AW_STATUSLINE_TTY (tty name, empty = none) replaces the ancestor lookup;
+# AW_STATUSLINE_TTY_COLS_CMD (run with the tty name as $1) replaces the stty size read.
+ancestor_tty() {
+  local pid=$PPID hop tty out
+  for hop in 1 2 3 4 5 6 7 8; do
+    [ -n "$pid" ] && [ "$pid" -gt 1 ] 2>/dev/null || return 1
+    out=$(ps -o ppid=,tty= -p "$pid" 2>/dev/null) || return 1
+    tty=$(awk '{print $2}' <<<"$out")
+    if [ -n "$tty" ] && [ "$tty" != "??" ] && [ "$tty" != "-" ]; then
+      printf '%s' "$tty"
+      return 0
+    fi
+    pid=$(awk '{print $1}' <<<"$out")
+  done
+  return 1
+}
+tty_cols() { # tty name -> columns
+  if [ -n "${AW_STATUSLINE_TTY_COLS_CMD+x}" ]; then
+    sh -c "$AW_STATUSLINE_TTY_COLS_CMD" _ "$1" 2>/dev/null
+  elif [ "$(uname)" = "Darwin" ]; then
+    stty -f "/dev/$1" size 2>/dev/null | awk '{print $2}'
+  else
+    stty -F "/dev/$1" size 2>/dev/null | awk '{print $2}'
+  fi
+}
+valid_cols() { [ -n "$1" ] && [ "$1" -gt 0 ] 2>/dev/null; }
 
-# Width detection: read ~/.claude/terminal_width (written by shell-integration.sh
-# on every prompt and on SIGWINCH resize). This is the only reliable source because
-# Claude Code runs the statusline in a subprocess where /dev/tty is inaccessible,
-# $COLUMNS is 0, and tput cols returns the internal PTY default (80), not the
-# actual window width. The interactive shell always has the correct $COLUMNS.
-COLS=$(cat "$HOME/.claude/terminal_width" 2>/dev/null)
-# Fallbacks for first run before shell integration is active
-if [ -z "$COLS" ] || ! [ "$COLS" -gt 0 ] 2>/dev/null; then
-  TERM_SIZE=$(stty size </dev/tty 2>/dev/null)
-  [ -n "$TERM_SIZE" ] && COLS=$(echo "$TERM_SIZE" | awk '{print $2}')
+COLS=""; COLS_SRC=""
+if [ -n "${AW_STATUSLINE_TTY+x}" ]; then ATTY=$AW_STATUSLINE_TTY; else ATTY=$(ancestor_tty); fi
+if [ -n "$ATTY" ]; then
+  COLS=$(tty_cols "$ATTY"); COLS_SRC=ancestor-tty
+  if ! valid_cols "$COLS"; then
+    # Brief pause so the shell's WINCH trap can write this tty's file after a resize
+    # (Claude Code re-renders immediately); only this fallback needs it.
+    sleep 0.05
+    COLS=$(cat "$HOME/.claude/terminal_width.d/$ATTY" 2>/dev/null); COLS_SRC=terminal_width.d
+  fi
+else
+  COLS=$(cat "$HOME/.claude/terminal_width" 2>/dev/null); COLS_SRC=terminal_width-legacy
 fi
-if [ -z "$COLS" ] || ! [ "$COLS" -gt 0 ] 2>/dev/null; then
-  COLS=${COLUMNS:-}
+if ! valid_cols "$COLS"; then
+  COLS_SRC=stty-dev-tty
+  COLS=$({ stty size </dev/tty; } 2>/dev/null | awk '{print $2}')
 fi
-: "${COLS:=200}"
+if ! valid_cols "$COLS"; then COLS_SRC=COLUMNS; COLS=${COLUMNS:-}; fi
+if ! valid_cols "$COLS"; then COLS_SRC=default; COLS=200; fi
+[ -n "${AW_STATUSLINE_DEBUG:-}" ] && echo "statusline width: $COLS (source: $COLS_SRC)" >&2
 
 # --- Live column (scorer live snapshot + judge health) ---
 # `1289 calls · 351 >200k · judge ✓ 12`. The statusline runs often and must never wait
