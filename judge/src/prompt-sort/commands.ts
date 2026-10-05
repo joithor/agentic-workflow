@@ -1,15 +1,18 @@
 // judge/src/prompt-sort/commands.ts
 // `judge prompt-sort <sub>` dispatcher. No subcommand = sort one prompt from
-// stdin (the hook's path). Eval-side subcommands: import, outcomes, adjudicate.
+// stdin (the hook's path). Eval-side subcommands: import, outcomes, adjudicate, eval, promote.
 import fs from "node:fs";
+import path from "node:path";
 
 import type { JudgeConfig } from "../config.js";
 import { getDecision, getDecisionDetails, type Db } from "../db.js";
 import type { JevDeps } from "../providers/jev-api.js";
 import type { Provider } from "../types.js";
 import { adjudicateSort } from "./adjudicate.js";
+import { renderSortEval, runSortEval, type SortEvalResult } from "./eval-run.js";
 import { importSortItems } from "./import.js";
 import { runSortOutcomeLabels } from "./outcomes.js";
+import { applyPromotion, decidePromotion } from "./promote.js";
 import { runPromptSort, type CmdResult } from "./run.js";
 import { runScaffoldSwitch } from "./scaffold-switch.js";
 import { promptSortAxesFor, promptSortRunFor } from "./store.js";
@@ -18,7 +21,7 @@ export { runScaffoldSwitch } from "./scaffold-switch.js";
 
 export interface PromptSortCliDeps {
   db: Db; config: JudgeConfig; configFile: string; stateDir: string; jev: JevDeps | null;
-  projectsDir: string; adjudicator: (() => Provider) | null;
+  projectsDir: string; evalsDir: string; adjudicator: (() => Provider) | null;
   readStdin: () => Promise<string>; now?: () => Date; randomId?: () => string; clock?: () => number;
 }
 
@@ -60,6 +63,22 @@ export async function runPromptSortCommand(args: string[], deps: PromptSortCliDe
       if (deps.adjudicator === null) return { exitCode: 1, stdout: "", stderr: "claude CLI not found on PATH (the adjudicator needs it)" };
       const limit = Number(/--limit\s+(\d+)/.exec(rest.join(" "))?.[1] ?? "80");
       return { exitCode: 0, stdout: JSON.stringify(await adjudicateSort(deps.db, { provider: deps.adjudicator(), limit, now: deps.now ?? (() => new Date()) })) };
+    }
+    case "eval": {
+      const result = await runSortEval(deps.db, { sortDeps: { jev: deps.jev, budgetMs: 5000 }, now: deps.now ?? (() => new Date()) });
+      const stamp = result.ranAt.replace(/[:.]/g, "-");
+      fs.mkdirSync(deps.evalsDir, { recursive: true });
+      fs.writeFileSync(path.join(deps.evalsDir, `prompt-sort-${stamp}.json`), JSON.stringify(result, null, 2));
+      fs.writeFileSync(path.join(deps.evalsDir, `prompt-sort-${stamp}.md`), renderSortEval(result));
+      return { exitCode: 0, stdout: JSON.stringify(result) };
+    }
+    case "promote": {
+      const files = fs.existsSync(deps.evalsDir) ? fs.readdirSync(deps.evalsDir).filter((f) => /^prompt-sort-.*\.json$/.test(f)).sort() : [];
+      const latest = files[files.length - 1];
+      if (latest === undefined) return { exitCode: 1, stdout: "", stderr: "no prompt-sort eval found (run: judge prompt-sort eval)" };
+      const verdicts = decidePromotion(JSON.parse(fs.readFileSync(path.join(deps.evalsDir, latest), "utf8")) as SortEvalResult);
+      const turnedOn = rest.includes("--apply") ? applyPromotion(deps.configFile, verdicts) : [];
+      return { exitCode: 0, stdout: JSON.stringify({ evalFile: latest, verdicts, turnedOn }) };
     }
     case "why":
       return runPromptSortWhy(deps.db, rest[0] ?? "");

@@ -5,9 +5,10 @@ import path from "node:path";
 import { describe, expect, it } from "vitest";
 
 import { DEFAULT_CONFIG, loadConfig, resolvePromptSort } from "../../src/config.js";
-import { labeledItems, openDb } from "../../src/db.js";
+import { labeledItems, openDb, recordLabel, upsertEvalItem } from "../../src/db.js";
 import { fakeProvider } from "../helpers.js";
 import { runPromptSortCommand, type PromptSortCliDeps } from "../../src/prompt-sort/commands.js";
+import { renderSortEval } from "../../src/prompt-sort/eval-run.js";
 import { deps as jevDeps, jevBody, jevFetch } from "./fixtures.js";
 
 function make(over: Partial<PromptSortCliDeps> = {}): PromptSortCliDeps {
@@ -15,7 +16,7 @@ function make(over: Partial<PromptSortCliDeps> = {}): PromptSortCliDeps {
   return {
     db: openDb(":memory:"), config: DEFAULT_CONFIG, configFile: path.join(dir, "judge", "config.json"), stateDir: dir,
     jev: jevDeps(jevFetch(jevBody())), readStdin: async () => JSON.stringify({ prompt: "Fix the login button crash", sessionId: "s1" }),
-    now: () => new Date("2026-10-04T10:00:00.000Z"), randomId: () => "d1", projectsDir: dir, adjudicator: null, ...over,
+    now: () => new Date("2026-10-04T10:00:00.000Z"), randomId: () => "d1", projectsDir: dir, evalsDir: fs.mkdtempSync(path.join(os.tmpdir(), "evals-")), adjudicator: null, ...over,
   };
 }
 
@@ -109,5 +110,49 @@ describe("runPromptSortCommand", () => {
 
   it("rejects an unknown subcommand", async () => {
     expect(await runPromptSortCommand(["bogus"], make())).toMatchObject({ exitCode: 1, stderr: "unknown prompt-sort subcommand: bogus" });
+  });
+
+  it("eval writes the json and markdown files into evalsDir and prints the json", async () => {
+    const d = make();
+    upsertEvalItem(d.db, { id: "i1", question: "prompt-sort:touches_ui", input_json: JSON.stringify({ prompt: "Update the shift export script" }), source: "decision:p1:touches_ui", model_decision: null, created_at: "2026-10-01T00:00:00.000Z" });
+    recordLabel(d.db, "i1", "no", "2026-10-01T00:00:00.000Z", "adjudicator");
+    const r = await runPromptSortCommand(["eval"], d);
+    expect(r.exitCode).toBe(0);
+    const printed = JSON.parse(r.stdout);
+    expect(printed.ranAt).toBe("2026-10-04T10:00:00.000Z");
+    const jsonFile = path.join(d.evalsDir, "prompt-sort-2026-10-04T10-00-00-000Z.json");
+    expect(JSON.parse(fs.readFileSync(jsonFile, "utf8"))).toEqual(printed);
+    expect(fs.readFileSync(jsonFile.replace(/\.json$/, ".md"), "utf8")).toContain("| Axis | Source |");
+  });
+
+  it("eval defaults the clock to now", async () => {
+    const r = await runPromptSortCommand(["eval"], make({ now: undefined }));
+    expect(JSON.parse(r.stdout).summaries).toEqual([]);
+  });
+
+  it("promote with no eval file exits 1, whether the dir is missing or empty", async () => {
+    const msg = "no prompt-sort eval found (run: judge prompt-sort eval)";
+    const d = make();
+    expect(await runPromptSortCommand(["promote"], { ...d, evalsDir: path.join(d.evalsDir, "missing") })).toMatchObject({ exitCode: 1, stderr: msg });
+    expect(await runPromptSortCommand(["promote"], d)).toMatchObject({ exitCode: 1, stderr: msg });
+  });
+
+  it("promote reads the newest eval file; --apply flips only the go scaffolds", async () => {
+    const d = make();
+    const sum = (source: "adjudicator" | "outcome", n: number) => ({ axis: "touches_ui", source, n, heuristic: { accuracy: 0.5, ppv: 0.5 }, blend: { accuracy: 0.9, ppv: 0.9 } });
+    const passing = { ranAt: "2026-10-04T00:00:00.000Z", summaries: [sum("adjudicator", 80), sum("outcome", 50)], agreement: [{ axis: "touches_ui", shared: 30, agreed: 28 }] };
+    fs.writeFileSync(path.join(d.evalsDir, "prompt-sort-2026-10-03T00-00-00-000Z.json"), JSON.stringify({ ranAt: "old", summaries: [], agreement: [] }));
+    fs.writeFileSync(path.join(d.evalsDir, "prompt-sort-2026-10-04T00-00-00-000Z.json"), JSON.stringify(passing));
+    fs.writeFileSync(path.join(d.evalsDir, "prompt-sort-2026-10-04T00-00-00-000Z.md"), "ignored");
+
+    const dry = JSON.parse((await runPromptSortCommand(["promote"], d)).stdout);
+    expect(dry.evalFile).toBe("prompt-sort-2026-10-04T00-00-00-000Z.json");
+    expect(dry.turnedOn).toEqual([]);
+    expect(dry.verdicts.find((v: { scaffold: string }) => v.scaffold === "ui-evidence").go).toBe(true);
+    expect(fs.existsSync(d.configFile)).toBe(false);
+
+    const applied = JSON.parse((await runPromptSortCommand(["promote", "--apply"], d)).stdout);
+    expect(applied.turnedOn).toEqual(["ui-evidence"]);
+    expect(resolvePromptSort(loadConfig(d.configFile)).scaffolds).toEqual({ brief: false, bugfix: false, "ui-evidence": true, "plan-first": false });
   });
 });

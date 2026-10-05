@@ -156,6 +156,7 @@ async function main(): Promise<{ exitCode: number; stdout: string; stderr?: stri
         jev: { fetch: (...args) => fetch(...args), apiKey: () => readApiKey({ env: process.env, readKeychain }) },
         readStdin,
         projectsDir: path.join(os.homedir(), ".claude", "projects"),
+        evalsDir: path.join(judgeStateDir(), "judge", "evals"),
         adjudicator: isOnPath(AGENT_CLI_BINARIES["claude-cli"], process.env)
           ? () => makeClaudeCliProvider({ tmpDirFactory, spawn: makeExecSpawn(AGENT_CLI_BINARIES["claude-cli"]), model: "opus", effort: "high" })
           : null,
