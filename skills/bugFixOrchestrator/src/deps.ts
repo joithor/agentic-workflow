@@ -45,7 +45,7 @@ const siblingUiEvidence = (): string => path.resolve(path.dirname(fileURLToPath(
 export function realDeps(judgeBin = "judge"): Deps {
   return {
     now: () => new Date(),
-    git: (cwd, args) => execFileSync("git", ["-C", cwd, ...args], { encoding: "utf8", stdio: ["ignore", "pipe", "pipe"] }).trim(),
+    git: (cwd, args) => execFileSync("git", ["-C", cwd, ...args], { encoding: "utf8", stdio: ["ignore", "pipe", "pipe"], maxBuffer: 64 * 1024 * 1024 }).trim(),
     sha256: (file) => createHash("sha256").update(fs.readFileSync(file)).digest("hex"),
     run: (argv, cwd, logFile) => {
       const fd = fs.openSync(logFile, "w");

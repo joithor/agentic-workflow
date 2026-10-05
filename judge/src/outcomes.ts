@@ -11,14 +11,22 @@ export interface RealPrompt { ts: string; text: string }
 const SIX_HOURS_MS = 6 * 60 * 60 * 1000;
 const INTERRUPT = "[Request interrupted by user";
 const CORRECTION = /^\s*(no\b|nope|wait\b|stop\b|don'?t\b|actually\b|that'?s (wrong|not)|not what|undo|revert)/i;
+const COMPACTION_SUMMARY = "This session is being continued from a previous conversation";
 const BARE_CONTINUE = /^\s*(continue|keep going|go on|go ahead|proceed|yes|yep|y|ok|okay|do it|carry on)[\s.!]*$/i;
 
-function promptText(content: unknown): string | null {
+export function promptText(content: unknown): string | null {
   if (typeof content === "string") return content;
   if (!Array.isArray(content)) return null;
   if (content.some((b) => (b as { type?: unknown }).type === "tool_result")) return null;
   const texts = content.filter((b) => (b as { type?: unknown }).type === "text").map((b) => String((b as { text?: unknown }).text ?? ""));
   return texts.length === 0 ? null : texts.join("\n");
+}
+
+// Machine text is not a real prompt: system reminders, command wrappers and
+// the summary Claude Code injects after a compaction.
+export function isRealPromptText(text: string): boolean {
+  const t = text.trimStart();
+  return !t.startsWith("<") && !t.startsWith(COMPACTION_SUMMARY);
 }
 
 export function realPrompts(jsonl: string): RealPrompt[] {
@@ -33,7 +41,7 @@ export function realPrompts(jsonl: string): RealPrompt[] {
     }
     if (row.type !== "user" || typeof row.timestamp !== "string") continue;
     const text = promptText(row.message?.content);
-    if (text === null || text.trimStart().startsWith("<")) continue;
+    if (text === null || !isRealPromptText(text)) continue;
     out.push({ ts: row.timestamp, text });
   }
   return out;

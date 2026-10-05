@@ -16,6 +16,18 @@ describe("realPrompts", () => {
     ]);
   });
 
+  it("excludes a compaction-summary prompt, so the ask-check labeler never reads it as the next reply", () => {
+    const summary = "This session is being continued from a previous conversation that ran out of context.";
+    const lines = [
+      { type: "user", timestamp: "2026-10-03T10:00:00.000Z", message: { content: "do it" } },
+      { type: "user", timestamp: "2026-10-03T10:05:00.000Z", message: { content: summary } },
+      { type: "user", timestamp: "2026-10-03T10:06:00.000Z", message: { content: [{ type: "text", text: `  ${summary}` }] } },
+    ].map((l) => JSON.stringify(l)).join("\n");
+    const prompts = realPrompts(lines);
+    expect(prompts).toEqual([{ ts: "2026-10-03T10:00:00.000Z", text: "do it" }]);
+    expect(askCheckOutcome("continue", "2026-10-03T10:01:00.000Z", prompts)).toBeNull();
+  });
+
   it("skips non-user lines, missing timestamps and non-text content", () => {
     const lines = [
       { type: "assistant", timestamp: "2026-10-03T10:00:00.000Z", message: { content: "hi" } },

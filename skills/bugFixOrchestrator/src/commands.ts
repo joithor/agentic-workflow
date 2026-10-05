@@ -389,10 +389,23 @@ export function runUi(dir: string, checkPath: string, cwd: string, deps: Deps): 
 
 const firstLine = (text: string): string => text.trim().split("\n")[0];
 
+/** Bound on the stored diff FIELD, so a runaway diff can't bloat judge-<id>.json; the cut is inside the string, so the JSON stays valid. */
+export const DIFF_FIELD_CAP = 200_000;
+
+function fullDiff(deps: Deps, cwd: string, base: string, commit: string): string | undefined {
+  let diff: string;
+  try {
+    diff = deps.git(cwd, ["diff", base, commit, "--", ".", ":(exclude)package-lock.json", ":(exclude)**/dist/**"]);
+  } catch {
+    return undefined;
+  }
+  return diff.length <= DIFF_FIELD_CAP ? diff : `${diff.slice(0, DIFF_FIELD_CAP)}\n[truncated ${diff.length - DIFF_FIELD_CAP} chars]`;
+}
+
 /**
  * Asks judge resolution-check exactly once per candidate, on an input the
  * helper builds from state (ticket text verbatim, the snapshotted root cause,
- * a description of the frozen check, the diff stat), and records that
+ * a description of the frozen check, the diff stat and full diff), and records that
  * decision. The agent never picks among decisions, so a verdict can't be
  * re-rolled.
  */
@@ -421,6 +434,9 @@ export function judgeCandidate(dir: string, candidateId: string, deps: Deps): Re
       beforePassed: false,
       afterPassed: true,
       diffStat: deps.git(candidate.cwd, ["diff", "--stat", base, candidate.commit]),
+      // Full diff (RF-1: lockfiles and build output excluded; judge caps what it prompts with).
+      // Omitted when git fails, so judging fails open to the stat-only question.
+      diff: fullDiff(deps, candidate.cwd, base, candidate.commit),
     };
     const text = JSON.stringify(input);
     const judgeInputDigest = createHash("sha256").update(text).digest("hex").slice(0, 16);

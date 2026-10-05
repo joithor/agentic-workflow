@@ -194,14 +194,38 @@ describe("judge (input built from state)", { timeout: 30_000 }, () => {
     out(run("judge", "c1"));
     const text = fs.readFileSync(path.join(state, "judge-c1.json"), "utf8");
     const input = JSON.parse(text) as Record<string, unknown>;
-    expect(Object.keys(input)).toEqual(["brief", "expected", "actual", "rootCause", "checkKind", "checkSummary", "beforePassed", "afterPassed", "diffStat"]);
+    expect(Object.keys(input)).toEqual(["brief", "expected", "actual", "rootCause", "checkKind", "checkSummary", "beforePassed", "afterPassed", "diffStat", "diff"]);
     expect(input).toMatchObject({
       brief: TICKET.brief, rootCause: "updateProfile() omits phone.", checkKind: "test",
       checkSummary: "the regression test check.sh, run as `sh check.sh`", beforePassed: false, afterPassed: true,
       diffStat: git(repo, "diff", "--stat", base, commit),
+      diff: git(repo, "diff", base, commit, "--", ".", ":(exclude)package-lock.json", ":(exclude)**/dist/**"),
     });
+    expect(input.diff).toContain("+ok");
     const candidate = readState().candidates[0];
     expect(candidate.judgeInputDigest).toBe(createHash("sha256").update(text).digest("hex").slice(0, 16));
     expect(candidate.judge).toMatchObject({ decisionId: "d1", decision: "resolved" });
+  });
+
+  const isFullDiff = (args: string[]) => args.includes("--") && !args.includes("--stat");
+
+  it("caps the diff field, not the serialized JSON, so the stored input stays valid JSON (B4)", () => {
+    evaluated();
+    out(run("record-run", "c1", "--evidence", passingRun()));
+    const huge = `${"+x\n".repeat(150_000)}`;
+    const capDeps: Deps = { ...deps, git: (cwd, args) => (isFullDiff(args) ? huge : deps.git(cwd, args)) };
+    expect(main(["--state", state, "judge", "c1"], capDeps).exitCode).toBe(0);
+    const input = JSON.parse(fs.readFileSync(path.join(state, "judge-c1.json"), "utf8")) as { diff: string };
+    expect(input.diff.length).toBeLessThan(huge.length);
+    expect(input.diff).toMatch(/\n\[truncated \d+ chars\]$/);
+  });
+
+  it("fails open when the full diff cannot be read: judge still gets the stat-only input (B4)", () => {
+    evaluated();
+    out(run("record-run", "c1", "--evidence", passingRun()));
+    const failDeps: Deps = { ...deps, git: (cwd, args) => { if (isFullDiff(args)) throw new Error("maxBuffer exceeded"); return deps.git(cwd, args); } };
+    expect(main(["--state", state, "judge", "c1"], failDeps).exitCode).toBe(0);
+    const input = JSON.parse(fs.readFileSync(path.join(state, "judge-c1.json"), "utf8")) as Record<string, unknown>;
+    expect(Object.keys(input)).toEqual(["brief", "expected", "actual", "rootCause", "checkKind", "checkSummary", "beforePassed", "afterPassed", "diffStat"]);
   });
 });
