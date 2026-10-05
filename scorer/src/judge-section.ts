@@ -71,8 +71,16 @@ function scaffoldRows(db: JudgeDb, sinceIso: string): ScaffoldReportRow[] {
     counts.set(id, row);
   };
   for (const r of rows) {
-    for (const id of JSON.parse(r.would) as string[]) bump(id, "wouldFire");
-    for (const id of JSON.parse(r.fired) as string[]) bump(id, "fired");
+    let would: string[];
+    let fired: string[];
+    try {
+      would = JSON.parse(r.would) as string[];
+      fired = JSON.parse(r.fired) as string[];
+    } catch {
+      continue; // a corrupt row must not take the whole report down
+    }
+    for (const id of would) bump(id, "wouldFire");
+    for (const id of fired) bump(id, "fired");
   }
   return [...counts.values()].sort((a, b) => a.id.localeCompare(b.id));
 }

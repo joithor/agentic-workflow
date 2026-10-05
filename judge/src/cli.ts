@@ -11,7 +11,7 @@ import {
 } from "./commands.js";
 import { adjudicate } from "./adjudicate.js";
 import { buildChain } from "./chain.js";
-import { judgeConfigPath, judgeDbPath, judgeStateDir, loadConfig } from "./config.js";
+import { judgeConfigPath, judgeDbPath, judgeStateDir, loadConfig, HOOK_KILL_MS } from "./config.js";
 import { runPromptSortCommand } from "./prompt-sort/commands.js";
 import { openDb, pruneDecisionDetails } from "./db.js";
 import { makeRecorder, readReplay, runEval, writeEvalReport } from "./eval.js";
@@ -33,7 +33,18 @@ const exec = promisify(execFile);
 // HOME (and its real agent-CLI logins) for everything else.
 const dbPath = judgeDbPath();
 fs.mkdirSync(path.dirname(dbPath), { recursive: true });
-const db = openDb(dbPath);
+// The hook path (`judge prompt-sort` with no subcommand) fails open: a db that
+// will not open must never hold up or fail a prompt.
+const isHookSort = process.argv[2] === "prompt-sort" && process.argv.length === 3;
+function openDbOrExit(): ReturnType<typeof openDb> {
+  try {
+    return openDb(dbPath);
+  } catch (e) {
+    if (isHookSort) process.exit(0);
+    throw e;
+  }
+}
+const db = openDbOrExit();
 try {
   pruneDecisionDetails(db, new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString());
 } catch {
@@ -150,9 +161,11 @@ async function main(): Promise<{ exitCode: number; stdout: string; stderr?: stri
     case "prompt-sort": {
       // Hard stop for the hook's path (no subcommand): fail open with no output
       // rather than ever hold up a prompt. Eval-side subcommands run unbounded.
-      if (rest.length === 0) setTimeout(() => process.exit(0), 1500).unref();
+      const hookBudget = Number(process.env.AW_PROMPT_SORT_BUDGET_MS);
+      const hookBudgetMs = Number.isInteger(hookBudget) && hookBudget > 0 ? hookBudget : HOOK_KILL_MS;
+      if (rest.length === 0) setTimeout(() => process.exit(0), hookBudgetMs).unref();
       return runPromptSortCommand(rest, {
-        db, config, configFile: judgeConfigPath(), stateDir: judgeStateDir(),
+        db, config, configFile: judgeConfigPath(), stateDir: judgeStateDir(), hookBudgetMs,
         jev: { fetch: (...args) => fetch(...args), apiKey: () => readApiKey({ env: process.env, readKeychain }) },
         readStdin,
         projectsDir: path.join(os.homedir(), ".claude", "projects"),

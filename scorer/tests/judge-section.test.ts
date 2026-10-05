@@ -142,6 +142,15 @@ describe("prompt-sort telemetry", () => {
     db.prepare("INSERT INTO prompt_sort_runs (decision_id, mode, reason, would_fire, fired, suppressed) VALUES (?, 'blend', 'sorted', ?, ?, '[]')").run(id, JSON.stringify(run.would), JSON.stringify(run.fired));
   }
 
+  it("skips a prompt_sort_runs row whose would_fire or fired JSON is corrupt", () => {
+    const db = openDb(":memory:");
+    sortRow(db, "good", 300, [["is_task", "agreed"]], { would: ["bugfix"], fired: [] });
+    sortRow(db, "bad", 300, [["is_task", "agreed"]], { would: ["bugfix"], fired: [] });
+    db.prepare("UPDATE prompt_sort_runs SET fired = 'not json' WHERE decision_id = 'bad'").run();
+    const sort = judgeSection(db, "2026-10-01T00:00:00.000Z").find((r) => r.question === "prompt-sort");
+    expect(sort?.scaffolds).toEqual([{ id: "bugfix", wouldFire: 1, fired: 0 }]);
+  });
+
   it("adds per-axis agreed/overrode/undecided counts and per-scaffold would-fire/fired counts to the prompt-sort row only", () => {
     const db = openDb(":memory:");
     sortRow(db, "a", 300, [["is_task", "agreed"], ["touches_ui", "overrode"]], { would: ["ui-evidence"], fired: [] });

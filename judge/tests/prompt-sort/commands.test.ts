@@ -2,7 +2,7 @@
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { DEFAULT_CONFIG, loadConfig, resolvePromptSort } from "../../src/config.js";
 import { labeledItems, openDb, recordLabel, upsertEvalItem } from "../../src/db.js";
@@ -20,7 +20,30 @@ function make(over: Partial<PromptSortCliDeps> = {}): PromptSortCliDeps {
   };
 }
 
+afterEach(() => vi.useRealTimers());
+
 describe("runPromptSortCommand", () => {
+  it("parses --limit and --since in both space and = forms", async () => {
+    const reply = { status: "decided" as const, decision: "ok", confidence: 1, reason_code: "claude-cli", extra: { is_task: "yes", complexity: "small" } };
+    for (const flag of [["--limit", "1"], ["--limit=1"]]) {
+      const d = make({ adjudicator: () => fakeProvider("claude-cli", ["brief"], reply as never) });
+      await runPromptSortCommand([], d);
+      await runPromptSortCommand([], { ...d, randomId: () => "d2" });
+      await runPromptSortCommand(["import"], d);
+      expect(JSON.parse((await runPromptSortCommand(["adjudicate", ...flag], d)).stdout)).toMatchObject({ prompts: 1 });
+    }
+    const importedWith = async (args: string[]) => {
+      const old = make({ randomId: () => "old", now: () => new Date("2026-09-01T10:00:00.000Z") });
+      await runPromptSortCommand([], old);
+      const at = { ...old, now: () => new Date("2026-10-04T10:00:00.000Z") };
+      return (JSON.parse((await runPromptSortCommand(["import", ...args], at)).stdout) as { imported: number }).imported;
+    };
+    expect(await importedWith(["--since", "60d"])).toBeGreaterThan(0);
+    expect(await importedWith(["--since=60d"])).toBeGreaterThan(0);
+    expect(await importedWith(["--since", "1d"])).toBe(0);
+    expect(await importedWith(["--since=1d"])).toBe(0);
+  });
+
   it("with no subcommand reads stdin JSON and sorts", async () => {
     const r = await runPromptSortCommand([], make());
     expect(r.exitCode).toBe(0);
@@ -88,6 +111,8 @@ describe("runPromptSortCommand", () => {
     const missing = make({ projectsDir: "/nonexistent/projects" });
     expect(await runPromptSortCommand(["outcomes"], missing)).toMatchObject({ exitCode: 1, stderr: "no transcripts at /nonexistent/projects" });
     const d = make();
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-10-05T10:00:00.000Z"));
     expect(JSON.parse((await runPromptSortCommand(["outcomes"], d)).stdout)).toEqual({ labeled: 0, noSignal: 0, pending: 0 });
     // With a real transcript the default clock is used and the positive label lands.
     fs.mkdirSync(path.join(d.projectsDir, "-repo"));

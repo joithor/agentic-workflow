@@ -113,7 +113,16 @@ export const DEFAULT_PROMPT_SORT: PromptSortConfig = {
 };
 
 const MIN_BUDGET_MS = 200;
-const MAX_BUDGET_MS = 1400;
+// The hook kills the judge at HOOK_KILL_MS; node startup + the keychain lookup
+// happen before the Jev timeout starts, so the Jev timeout must leave room.
+export const HOOK_KILL_MS = 1500;
+export const STARTUP_ALLOWANCE_MS = 450;
+const MAX_BUDGET_MS = HOOK_KILL_MS - STARTUP_ALLOWANCE_MS;
+const MIN_JEV_TIMEOUT_MS = 50;
+
+export function jevTimeoutMs(budgetMs: number, killMs: number = HOOK_KILL_MS): number {
+  return Math.max(MIN_JEV_TIMEOUT_MS, Math.min(budgetMs, killMs - STARTUP_ALLOWANCE_MS));
+}
 
 function parsePromptSort(raw: unknown): PromptSortOverrides | undefined {
   if (typeof raw !== "object" || raw === null || Array.isArray(raw)) return undefined;

@@ -164,7 +164,7 @@ describe("promptSort config", () => {
 
   it("merges a partial block over the defaults, drops wrong types and unknown scaffold ids, clamps the budget", () => {
     const cfg = loadConfig(writeCfg({ questions: {}, promptSort: { enabled: false, budgetMs: 5000, cooldownPrompts: "x", scaffolds: { brief: true, bogus: true, bugfix: "yes" } } }));
-    expect(resolvePromptSort(cfg)).toEqual({ enabled: false, budgetMs: 1400, cooldownPrompts: 5, scaffolds: { brief: true, bugfix: false, "ui-evidence": false, "plan-first": false } });
+    expect(resolvePromptSort(cfg)).toEqual({ enabled: false, budgetMs: 1050, cooldownPrompts: 5, scaffolds: { brief: true, bugfix: false, "ui-evidence": false, "plan-first": false } });
     expect(resolvePromptSort(loadConfig(writeCfg({ questions: {}, promptSort: { budgetMs: 10 } }))).budgetMs).toBe(200);
     expect(loadConfig(writeCfg({ questions: {}, promptSort: 7 })).promptSort).toBeUndefined();
   });

@@ -46,7 +46,8 @@ describe("heuristicSort", () => {
 
 describe("heuristicSort edge branches", () => {
   it("rates a medium-weight verb as small and does not treat punctuation as a question starter", () => {
-    expect(heuristicSort("improve the readme").complexity).toBe("small");
+    expect(heuristicSort("modify the readme").complexity).toBe("small");
+    expect(heuristicSort("modify the readme").is_task).toBe(true);
     expect(heuristicSort("!!").is_task).toBe(false);
   });
 

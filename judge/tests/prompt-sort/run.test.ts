@@ -4,7 +4,7 @@ import os from "node:os";
 import path from "node:path";
 import { describe, expect, it, vi } from "vitest";
 
-import { DEFAULT_CONFIG, type JudgeConfig } from "../../src/config.js";
+import { DEFAULT_CONFIG, jevTimeoutMs, type JudgeConfig } from "../../src/config.js";
 import { getDecision, openDb } from "../../src/db.js";
 import { runPromptSort, type PromptSortDeps } from "../../src/prompt-sort/run.js";
 import { readSortState, sortStatePath, writeSortState } from "../../src/prompt-sort/session-state.js";
@@ -19,6 +19,35 @@ const make = (over: Partial<PromptSortDeps> = {}): PromptSortDeps => ({
 });
 const out = (r: { stdout: string }) => JSON.parse(r.stdout) as Record<string, unknown>;
 const failureRows = (d: PromptSortDeps) => d.db.prepare("SELECT question, provider, reason_code FROM failures").all();
+
+describe("runPromptSort fail-open and budget", () => {
+  it("returns exit 0 and a skip envelope when a dependency throws unexpectedly", async () => {
+    const d = make({ randomId: () => { throw new Error("boom"); } });
+    const r = await runPromptSort({ prompt: PROMPT }, d);
+    expect(r.exitCode).toBe(0);
+    expect(out(r)).toEqual({ skipped: "error" });
+  });
+
+  it("caps the Jev timeout so it fits inside the hook kill budget", () => {
+    expect(jevTimeoutMs(1000)).toBe(1000);
+    expect(jevTimeoutMs(1050)).toBe(1050);
+    expect(jevTimeoutMs(5000)).toBe(1050);
+    expect(jevTimeoutMs(1000, 1200)).toBe(750);
+    expect(jevTimeoutMs(1000, 300)).toBe(50);
+  });
+
+  it("passes the capped timeout to the Jev call", async () => {
+    const timeouts: number[] = [];
+    const real = globalThis.setTimeout;
+    const spy = vi.spyOn(globalThis, "setTimeout").mockImplementation(((fn: () => void, ms?: number) => { timeouts.push(ms ?? 0); return real(fn, 0); }) as never);
+    try {
+      await runPromptSort({ prompt: PROMPT }, make({ hookBudgetMs: 1200 }));
+    } finally {
+      spy.mockRestore();
+    }
+    expect(timeouts).toContain(750);
+  });
+});
 
 describe("runPromptSort", () => {
   it("shadow mode (default config): records the decision, reports would-fire, injects nothing", async () => {

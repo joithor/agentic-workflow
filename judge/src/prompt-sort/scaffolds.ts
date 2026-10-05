@@ -88,12 +88,13 @@ export function planScaffolds(input: PlanInput): PlanOutput {
       out.suppressed.push({ id: s.id, reason: "switch-off" });
       continue;
     }
-    // The done-gate requirement outlives the text's cooldown.
     // A prompt that names a workflow is never scaffolded (RF-3, C8).
     if (input.namesWorkflow) {
       out.suppressed.push({ id: s.id, reason: "already-named" });
       continue;
     }
+    // The done-gate requirement outlives the text's cooldown (it is set below, before the cooldown check).
+    // It does not apply to workflow-named prompts: those return above, so they never set it.
     if (s.requirement === "uiEvidence") out.requirementUi = true;
     if (input.values.wants_loop && (s.id === "brief" || s.id === "plan-first")) {
       out.suppressed.push({ id: s.id, reason: "loop-requested" });

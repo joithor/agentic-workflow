@@ -22,7 +22,7 @@ export { runScaffoldSwitch } from "./scaffold-switch.js";
 export interface PromptSortCliDeps {
   db: Db; config: JudgeConfig; configFile: string; stateDir: string; jev: JevDeps | null;
   projectsDir: string; evalsDir: string; adjudicator: (() => Provider) | null;
-  readStdin: () => Promise<string>; now?: () => Date; randomId?: () => string; clock?: () => number;
+  readStdin: () => Promise<string>; now?: () => Date; randomId?: () => string; clock?: () => number; hookBudgetMs?: number;
 }
 
 export function runPromptSortWhy(db: Db, id: string): CmdResult {
@@ -46,12 +46,12 @@ export async function runPromptSortCommand(args: string[], deps: PromptSortCliDe
       } catch {
         return { exitCode: 1, stdout: "", stderr: "input is not valid JSON" };
       }
-      return runPromptSort(input, { db: deps.db, config: deps.config, jev: deps.jev, stateDir: deps.stateDir, now: deps.now, randomId: deps.randomId, clock: deps.clock });
+      return runPromptSort(input, { db: deps.db, config: deps.config, jev: deps.jev, stateDir: deps.stateDir, now: deps.now, randomId: deps.randomId, clock: deps.clock, hookBudgetMs: deps.hookBudgetMs });
     }
     case "scaffold":
       return runScaffoldSwitch(rest[0] ?? "", rest[1] ?? "", deps.configFile);
     case "import": {
-      const days = Number(/--since\s+(\d+)d/.exec(rest.join(" "))?.[1] ?? "14");
+      const days = Number(/--since[=\s]+(\d+)d/.exec(rest.join(" "))?.[1] ?? "14");
       const sinceIso = new Date((deps.now?.() ?? new Date()).getTime() - days * 86400000).toISOString();
       return { exitCode: 0, stdout: JSON.stringify(importSortItems(deps.db, { sinceIso })) };
     }
@@ -61,7 +61,7 @@ export async function runPromptSortCommand(args: string[], deps: PromptSortCliDe
     }
     case "adjudicate": {
       if (deps.adjudicator === null) return { exitCode: 1, stdout: "", stderr: "claude CLI not found on PATH (the adjudicator needs it)" };
-      const limit = Number(/--limit\s+(\d+)/.exec(rest.join(" "))?.[1] ?? "80");
+      const limit = Number(/--limit[=\s]+(\d+)/.exec(rest.join(" "))?.[1] ?? "80");
       return { exitCode: 0, stdout: JSON.stringify(await adjudicateSort(deps.db, { provider: deps.adjudicator(), limit, now: deps.now ?? (() => new Date()) })) };
     }
     case "eval": {

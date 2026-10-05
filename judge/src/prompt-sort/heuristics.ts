@@ -18,7 +18,7 @@ const CONFIRMATION_MAX_WORDS = 6;
 const TASK_VERBS = [
   "add", "create", "build", "implement", "refactor", "fix", "update", "change", "improve", "enhance",
   "redesign", "migrate", "integrate", "optimize", "rewrite", "replace", "remove", "delete", "write",
-  "design", "develop", "extend", "generate", "configure", "set up", "clean up",
+  "design", "develop", "extend", "modify", "generate", "configure", "set up", "clean up",
 ];
 const VAGUE_SCOPE = [
   "the app", "the system", "the api", "the codebase", "the platform", "the backend", "the frontend", "the ui",

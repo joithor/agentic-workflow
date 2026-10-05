@@ -6,7 +6,7 @@ import crypto from "node:crypto";
 
 import { z } from "zod";
 
-import { resolvePromptSort, type JudgeConfig } from "../config.js";
+import { jevTimeoutMs, resolvePromptSort, type JudgeConfig } from "../config.js";
 import { recordFailure, type Db } from "../db.js";
 import type { JevDeps } from "../providers/jev-api.js";
 import { ALL_AXES, axisLabel } from "./axes.js";
@@ -21,6 +21,8 @@ export const PromptSortInputSchema = z.object({ prompt: z.string(), sessionId: z
 export interface PromptSortDeps {
   db: Db; config: JudgeConfig; jev: JevDeps | null; stateDir: string;
   now?: () => Date; randomId?: () => string; clock?: () => number;
+  /** The hook's kill budget; the Jev timeout is derived from it. */
+  hookBudgetMs?: number;
 }
 export interface CmdResult { exitCode: number; stdout: string; stderr?: string }
 
@@ -35,15 +37,24 @@ const done = (body: unknown): CmdResult => ({ exitCode: 0, stdout: JSON.stringif
 export async function runPromptSort(raw: unknown, deps: PromptSortDeps): Promise<CmdResult> {
   const parsed = PromptSortInputSchema.safeParse(raw);
   if (!parsed.success) return { exitCode: 1, stdout: "", stderr: "invalid prompt-sort input" };
-  const { prompt } = parsed.data;
-  const sessionId = parsed.data.sessionId === "" ? undefined : parsed.data.sessionId;
+  try {
+    return await sortAndRecord(parsed.data, deps);
+  } catch {
+    // fail open: an unexpected throw must never turn into a non-zero exit
+    return done({ skipped: "error" });
+  }
+}
+
+async function sortAndRecord(input: z.infer<typeof PromptSortInputSchema>, deps: PromptSortDeps): Promise<CmdResult> {
+  const { prompt } = input;
+  const sessionId = input.sessionId === "" ? undefined : input.sessionId;
 
   const skip = tier1Skip(prompt);
   if (skip !== null) return done({ skipped: skip });
   const cfg = resolvePromptSort(deps.config);
   if (!cfg.enabled || deps.config.questions["prompt-sort"]?.enabled === false) return done({ skipped: "disabled" });
 
-  const outcome = await sortPrompt(prompt, { jev: deps.jev, budgetMs: cfg.budgetMs, clock: deps.clock });
+  const outcome = await sortPrompt(prompt, { jev: deps.jev, budgetMs: jevTimeoutMs(cfg.budgetMs, deps.hookBudgetMs), clock: deps.clock });
 
   const stateFile = sessionId === undefined ? null : sortStatePath(deps.stateDir, sessionId);
   const state = stateFile === null ? emptyState() : readSortState(stateFile);
