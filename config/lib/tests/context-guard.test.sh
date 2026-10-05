@@ -194,7 +194,7 @@ test_fire_appends_one_line_to_fires_jsonl_non_fire_appends_nothing() {
   [ -f "$cfg/fires.jsonl" ] || { echo "FAIL: expected fires.jsonl to be created on a fire"; exit 1; }
   local n; n="$(wc -l < "$cfg/fires.jsonl" | tr -d ' ')"
   [ "$n" -eq 1 ] || { echo "FAIL: expected exactly one fires.jsonl line, got $n"; exit 1; }
-  jq -e '.tokens == 255000 and .agentId == "a1"' "$cfg/fires.jsonl" > /dev/null || { echo "FAIL: fires.jsonl line shape wrong: $(cat "$cfg/fires.jsonl")"; exit 1; }
+  jq -e '.tokens == 255000 and .agentId == "a1" and .sessionId == "s1"' "$cfg/fires.jsonl" > /dev/null || { echo "FAIL: fires.jsonl line shape wrong: $(cat "$cfg/fires.jsonl")"; exit 1; }
 
   local cfg2 state2 transcript2
   cfg2="$(mktemp -d)"; state2="$(mktemp -d)"

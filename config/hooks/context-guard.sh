@@ -124,8 +124,8 @@ fi
 case "$TOKENS" in ('' | *[!0-9]*) exit 0 ;; esac
 [ "$TOKENS" -ge "$THRESHOLD" ] || exit 0
 
-jq -nc --arg ts "$(date -u +%Y-%m-%dT%H:%M:%SZ)" --arg agent "$AGENT_ID" --argjson tokens "$TOKENS" \
-  '{"ts": $ts, "agentId": (if $agent == "" then null else $agent end), "tokens": $tokens}' \
+jq -nc --arg ts "$(date -u +%Y-%m-%dT%H:%M:%SZ)" --arg agent "$AGENT_ID" --arg sid "$SESSION_ID" --argjson tokens "$TOKENS" \
+  '{"ts": $ts, "agentId": (if $agent == "" then null else $agent end), "sessionId": $sid, "tokens": $tokens}' \
   >> "$CONFIG_DIR/fires.jsonl" 2>/dev/null || true
 
 DIGESTS_DIR="${AW_STATE_DIR:-$HOME/.agentic-workflow}/digests"
