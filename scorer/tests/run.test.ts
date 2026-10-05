@@ -6,7 +6,7 @@ import { describe, expect, it } from "vitest";
 
 import { openDb as openJudgeDb, recordDecision } from "../../judge/src/db.js";
 import type { CliOptions } from "../src/args.js";
-import { resolveJudgeDbPath, resolveProviders, runReport, transcriptRoot } from "../src/run.js";
+import { resolveJudgeDbPath, resolveProviders, resolveStateDir, runReport, transcriptRoot } from "../src/run.js";
 import { assistant, prLink, tmpDir, user, writeLines } from "./helpers.js";
 
 const NOW = new Date("2026-09-26T12:00:00.000Z");
@@ -156,6 +156,31 @@ describe("resolveJudgeDbPath", () => {
       if (original === undefined) delete process.env.AW_STATE_DIR;
       else process.env.AW_STATE_DIR = original;
     }
+  });
+});
+
+describe("resolveStateDir", () => {
+  const base: CliOptions = {
+    command: "report", since: NOW, until: NOW, projectsDir: "/p", stateDir: "/default/state", stateDirExplicit: false, prLookup: true, contextTokensPath: null,
+  };
+
+  function withEnv(value: string | undefined, fn: () => void): void {
+    const original = process.env.AW_STATE_DIR;
+    if (value === undefined) delete process.env.AW_STATE_DIR;
+    else process.env.AW_STATE_DIR = value;
+    try {
+      fn();
+    } finally {
+      if (original === undefined) delete process.env.AW_STATE_DIR;
+      else process.env.AW_STATE_DIR = original;
+    }
+  }
+
+  it("is the explicit --state-dir, else AW_STATE_DIR, else the default; an empty AW_STATE_DIR counts as unset", () => {
+    withEnv("/env/state", () => expect(resolveStateDir({ ...base, stateDir: "/x", stateDirExplicit: true })).toBe("/x"));
+    withEnv("/env/state", () => expect(resolveStateDir(base)).toBe("/env/state"));
+    withEnv("", () => expect(resolveStateDir(base)).toBe("/default/state"));
+    withEnv(undefined, () => expect(resolveStateDir(base)).toBe("/default/state"));
   });
 });
 

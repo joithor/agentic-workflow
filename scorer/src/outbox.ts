@@ -15,7 +15,7 @@ const OutboxItemSchema = z.object({ ts: z.string(), agentType: z.string().nullab
 // Non-destructive: only ever reads. Must never race send-gate.sh's own
 // lock-guarded read/clear of these same files, so no write, truncate, or
 // lock acquisition happens here.
-function countValidLines(file: string): number {
+export function countValidLines(file: string): number {
   if (!fs.existsSync(file)) return 0;
   return fs.readFileSync(file, "utf8").split("\n").filter((line) => {
     if (line.trim() === "") return false;
@@ -34,4 +34,11 @@ export function readOutboxState(dir: string): OutboxState {
     .filter((f) => f.endsWith(".jsonl") && f !== "expired.jsonl")
     .reduce((sum, f) => sum + countValidLines(path.join(dir, f)), 0);
   return { queuedNow, expiredEver: countValidLines(expiredFile) };
+}
+
+// Items queued for ONE session: its own <sessionId>.jsonl. The reserved id "expired" and any
+// id that is a path are never a session, so they count 0 (live must not count expired wakes).
+export function queuedForSession(dir: string, sessionId: string): number {
+  if (sessionId === "expired" || sessionId.includes("/") || sessionId.includes("..")) return 0;
+  return countValidLines(path.join(dir, `${sessionId}.jsonl`));
 }

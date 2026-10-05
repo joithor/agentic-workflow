@@ -7,9 +7,10 @@ export interface ContextGuardFire {
   ts: string;
   agentId: string | null;
   tokens: number;
+  sessionId?: string;
 }
 
-const FireLineSchema = z.object({ ts: z.string(), agentId: z.string().nullable(), tokens: z.number() });
+const FireLineSchema = z.object({ ts: z.string(), agentId: z.string().nullable(), tokens: z.number(), sessionId: z.string().optional() });
 
 // Mirrors probe/analyze.ts's readProbeDir shape (JSONL, tolerate unparseable
 // lines, empty when the source is missing) — but this reads one fixed file
@@ -27,4 +28,9 @@ export function readFiresLog(dir: string): ContextGuardFire[] {
       return [];
     }
   });
+}
+
+// Fires written before the hook recorded a session id carry none and match no session.
+export function firesForSession(fires: readonly ContextGuardFire[], sessionId: string): ContextGuardFire[] {
+  return fires.filter((f) => f.sessionId === sessionId);
 }

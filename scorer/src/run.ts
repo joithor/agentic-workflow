@@ -50,14 +50,14 @@ function defaultJudgeDbPath(): string {
 // alone regardless of --state-dir, so `scorer --state-dir $SB/state` (with
 // AW_STATE_DIR unset) silently read the real ~/.agentic-workflow/judge
 // instead of $SB/state/judge.
-export function resolveJudgeDbPath(options: CliOptions): string {
+export function resolveStateDir(options: CliOptions): string {
   const override = process.env.AW_STATE_DIR;
-  const stateDir = options.stateDirExplicit
-    ? options.stateDir
-    : override !== undefined && override !== ""
-      ? override
-      : options.stateDir;
-  return path.join(stateDir, "judge", "decisions.sqlite");
+  if (options.stateDirExplicit) return options.stateDir;
+  return override !== undefined && override !== "" ? override : options.stateDir;
+}
+
+export function resolveJudgeDbPath(options: CliOptions): string {
+  return path.join(resolveStateDir(options), "judge", "decisions.sqlite");
 }
 
 function readJudgeRows(sinceIso: string, dbPathOverride?: string): JudgeReportRow[] {

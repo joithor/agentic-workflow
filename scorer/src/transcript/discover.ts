@@ -27,6 +27,21 @@ export function discoverFiles(projectsDir: string): TranscriptFile[] {
   return out;
 }
 
+// One session's files without scanning every project: the caller tries the project named by
+// the cwd first; with no `project`, every project directory is checked.
+export function discoverSession(projectsDir: string, sessionId: string, project?: string): TranscriptFile[] {
+  for (const candidate of project === undefined ? dirs(projectsDir) : [project]) {
+    const projDir = path.join(projectsDir, candidate);
+    const main = path.join(projDir, `${sessionId}.jsonl`);
+    if (!fs.existsSync(main)) continue;
+    return [
+      { provider: "claude", path: main, project: candidate, sessionId, agentId: "main", agentType: "main", isMain: true },
+      ...subagents(projDir, candidate, sessionId),
+    ];
+  }
+  return [];
+}
+
 function dirs(dir: string): string[] {
   if (!fs.existsSync(dir)) return [];
   return fs.readdirSync(dir, { withFileTypes: true }).filter((e) => e.isDirectory()).map((e) => e.name);

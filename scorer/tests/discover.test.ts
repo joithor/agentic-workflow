@@ -2,7 +2,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
 
-import { discoverFiles } from "../src/transcript/discover.js";
+import { discoverFiles, discoverSession } from "../src/transcript/discover.js";
 import { tmpDir } from "./helpers.js";
 
 describe("discoverFiles", () => {
@@ -48,5 +48,38 @@ describe("discoverFiles", () => {
 
   it("returns nothing for a missing directory", () => {
     expect(discoverFiles(path.join(tmpDir(), "nope"))).toEqual([]);
+  });
+});
+
+describe("discoverSession", () => {
+  function layout(): { root: string; proj: string } {
+    const root = tmpDir();
+    const proj = path.join(root, "-Users-dev-acme-web-app");
+    fs.mkdirSync(path.join(proj, "s1", "subagents"), { recursive: true });
+    fs.writeFileSync(path.join(proj, "s1.jsonl"), "");
+    fs.writeFileSync(path.join(proj, "s1", "subagents", "agent-a1.jsonl"), "");
+    fs.writeFileSync(path.join(proj, "s1", "subagents", "agent-a1.meta.json"), JSON.stringify({ agentType: "Explore" }));
+    fs.writeFileSync(path.join(proj, "s2.jsonl"), "");
+    return { root, proj };
+  }
+
+  it("finds the main file and its subagents in the hinted project, touching no other session", () => {
+    const { root, proj } = layout();
+    expect(discoverSession(root, "s1", "-Users-dev-acme-web-app")).toEqual([
+      { provider: "claude", path: path.join(proj, "s1.jsonl"), project: "-Users-dev-acme-web-app", sessionId: "s1", agentId: "main", agentType: "main", isMain: true },
+      { provider: "claude", path: path.join(proj, "s1", "subagents", "agent-a1.jsonl"), project: "-Users-dev-acme-web-app", sessionId: "s1", agentId: "a1", agentType: "Explore", isMain: false },
+    ]);
+  });
+
+  it("scans every project when no hint is given, and finds nothing for an unknown session", () => {
+    const { root } = layout();
+    expect(discoverSession(root, "s2").map((f) => f.sessionId)).toEqual(["s2"]);
+    expect(discoverSession(root, "nope")).toEqual([]);
+  });
+
+  it("returns nothing when the hinted project does not hold the session, or the projects dir is missing", () => {
+    const { root } = layout();
+    expect(discoverSession(root, "s1", "-some-other-project")).toEqual([]);
+    expect(discoverSession(path.join(root, "missing"), "s1")).toEqual([]);
   });
 });
