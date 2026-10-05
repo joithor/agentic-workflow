@@ -1,7 +1,9 @@
 #!/usr/bin/env bash
-# aw:external-write-guard — PreToolUse hook matching git push, gh
-# pr create|merge|comment|review, Linear save_*/create_*/delete_*, and Slack
-# send_* tools. Denies "needs the user" only when the current turn began with an
+# aw:external-write-guard — PreToolUse hook matching gh pr
+# merge|comment|review, Linear save_*/create_*/delete_*, and Slack send_*
+# tools. Pushing a feature branch and opening a PR are deliberately NOT
+# matched (pushes to the base branch stay blocked by block-push-main.sh).
+# Denies "needs the user" only when the current turn began with an
 # auto-continue (Task 4's turn-state); allows otherwise. Deterministic
 # pre-rules only — a model never decides this (repo-wide rule).
 # Per RF-5: any tool call reaching this hook that isn't actually one of the
@@ -33,8 +35,7 @@ is_matched_external_write() {
   case "$TOOL_NAME" in
     Bash)
       case "$COMMAND" in
-        *"git push"*) return 0 ;;
-        *"gh pr create"*|*"gh pr merge"*|*"gh pr comment"*|*"gh pr review"*) return 0 ;;
+        *"gh pr merge"*|*"gh pr comment"*|*"gh pr review"*) return 0 ;;
         *) return 1 ;;
       esac
       ;;
@@ -60,7 +61,7 @@ SESSION_FILE="$SESSIONS_DIR/$SESSION_ID.json"
 if [ -n "$SESSION_ID" ] && [ -f "$SESSION_FILE" ]; then
   AUTO_CONTINUED_AT="$(jq -r '.auto_continued_at // empty' "$SESSION_FILE" 2>/dev/null || true)"
   if [ -n "$AUTO_CONTINUED_AT" ]; then
-    deny "This turn auto-continued without the user — external writes (push/merge/PR/Linear/Slack) need the user's own turn first."
+    deny "This turn auto-continued without the user — external writes (merge/PR comments/reviews/Linear/Slack) need the user's own turn first."
   fi
 fi
 

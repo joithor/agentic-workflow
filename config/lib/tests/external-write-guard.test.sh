@@ -9,23 +9,59 @@ write_session_with_auto_continue() {
   echo '{"auto_continued_at":"2026-09-27T00:00:00Z"}' > "$dir/$session.json"
 }
 
-test_auto_continued_plus_git_push_denies() {
+run_guard() { # $1 sessions_dir, $2 command
+  AW_JUDGE_SESSIONS_DIR="$1" bash "$HOOK" <<< "$(jq -nc --arg c "$2" '{session_id:"s1",tool_name:"Bash",tool_input:{command:$c}}')"
+}
+
+test_auto_continued_plus_feature_branch_push_allows() {
   local sessions_dir out
   sessions_dir="$(mktemp -d)"
   write_session_with_auto_continue "$sessions_dir" "s1"
-  out="$(AW_JUDGE_SESSIONS_DIR="$sessions_dir" bash "$HOOK" <<< '{"session_id":"s1","tool_name":"Bash","tool_input":{"command":"git push origin main"}}')"
-  echo "$out" | jq -e '.hookSpecificOutput.permissionDecision == "deny"' > /dev/null \
-    || { echo "FAIL: expected deny when auto_continued_at is set + git push, got $out"; exit 1; }
-  echo "PASS: test_auto_continued_plus_git_push_denies"
+  out="$(run_guard "$sessions_dir" 'git push origin feat/x')"
+  echo "$out" | jq -e '.hookSpecificOutput.permissionDecision == "allow"' > /dev/null \
+    || { echo "FAIL: expected allow for a branch push after auto-continue, got $out"; exit 1; }
+  echo "PASS: test_auto_continued_plus_feature_branch_push_allows"
 }
 
-test_no_auto_continue_plus_git_push_allows() {
+test_auto_continued_plus_gh_pr_create_allows() {
   local sessions_dir out
   sessions_dir="$(mktemp -d)"
-  out="$(AW_JUDGE_SESSIONS_DIR="$sessions_dir" bash "$HOOK" <<< '{"session_id":"s1","tool_name":"Bash","tool_input":{"command":"git push origin main"}}')"
+  write_session_with_auto_continue "$sessions_dir" "s1"
+  out="$(run_guard "$sessions_dir" 'gh pr create --title t --body b')"
+  echo "$out" | jq -e '.hookSpecificOutput.permissionDecision == "allow"' > /dev/null \
+    || { echo "FAIL: expected allow for gh pr create after auto-continue, got $out"; exit 1; }
+  echo "PASS: test_auto_continued_plus_gh_pr_create_allows"
+}
+
+test_no_auto_continue_plus_gh_pr_merge_allows() {
+  local sessions_dir out
+  sessions_dir="$(mktemp -d)"
+  out="$(run_guard "$sessions_dir" 'gh pr merge 123')"
   echo "$out" | jq -e '.hookSpecificOutput.permissionDecision == "allow"' > /dev/null \
     || { echo "FAIL: expected allow when auto_continued_at is unset, got $out"; exit 1; }
-  echo "PASS: test_no_auto_continue_plus_git_push_allows"
+  echo "PASS: test_no_auto_continue_plus_gh_pr_merge_allows"
+}
+
+test_gh_pr_comment_and_review_are_gated() {
+  local sessions_dir out c
+  sessions_dir="$(mktemp -d)"
+  write_session_with_auto_continue "$sessions_dir" "s1"
+  for c in 'gh pr comment 1 -b hi' 'gh pr review 1 --approve'; do
+    out="$(run_guard "$sessions_dir" "$c")"
+    echo "$out" | jq -e '.hookSpecificOutput.permissionDecision == "deny"' > /dev/null \
+      || { echo "FAIL: expected '$c' to be gated, got $out"; exit 1; }
+  done
+  echo "PASS: test_gh_pr_comment_and_review_are_gated"
+}
+
+test_deny_reason_does_not_mention_push() {
+  local sessions_dir out
+  sessions_dir="$(mktemp -d)"
+  write_session_with_auto_continue "$sessions_dir" "s1"
+  out="$(run_guard "$sessions_dir" 'gh pr merge 123')"
+  echo "$out" | jq -e '.hookSpecificOutput.permissionDecisionReason | test("push"; "i") | not' > /dev/null \
+    || { echo "FAIL: deny reason must not mention push, got $out"; exit 1; }
+  echo "PASS: test_deny_reason_does_not_mention_push"
 }
 
 test_auto_continued_but_unmatched_tool_always_allows_rf5() {
@@ -76,13 +112,10 @@ test_aw_judge_child_gets_explicit_allow() {
   echo "PASS: test_aw_judge_child_gets_explicit_allow"
 }
 
-# Builds the risky "git <push-word> ... <main-word>" command text at runtime
-# (never as a literal in this file) so a repo-level safety hook scanning
-# this session's own tool-call text never mistakes a TEST FIXTURE for a
-# real push-to-main attempt.
+# A matched (gated) command, so the fallback tests prove the state-file
+# handling rather than a trivially allowed command.
 risky_command_text() {
-  local w1="p""ush" w2="ma""in"
-  printf 'git %s origin %s' "$w1" "$w2"
+  printf 'gh pr merge 123'
 }
 
 test_corrupt_session_file_falls_back_to_allow() {
@@ -114,8 +147,11 @@ test_guard_never_invokes_judge() {
   echo "PASS: test_guard_never_invokes_judge"
 }
 
-test_auto_continued_plus_git_push_denies
-test_no_auto_continue_plus_git_push_allows
+test_auto_continued_plus_feature_branch_push_allows
+test_auto_continued_plus_gh_pr_create_allows
+test_no_auto_continue_plus_gh_pr_merge_allows
+test_gh_pr_comment_and_review_are_gated
+test_deny_reason_does_not_mention_push
 test_auto_continued_but_unmatched_tool_always_allows_rf5
 test_linear_save_is_matched_and_gated
 test_slack_send_is_matched_and_gated
