@@ -8,6 +8,7 @@ export interface RunStep {
   screenshot: string;
 }
 
+import { isLocalHost } from "./host-guard.js";
 import type { PlanningMeta } from "./script-schema.js";
 import type { ModelInvocation } from "./usage.js";
 
@@ -28,6 +29,8 @@ export interface RunSummary {
   ts?: string;
   pr?: string;
   route?: string;
+  /** Host the run executed against; a non-local host is never treated as seeded data. */
+  host?: string;
   /** The `--app-build` commit this run executed against; null when not given. */
   appBuild?: string | null;
   /** sha256 of the script file the run executed; null when not given. */
@@ -84,25 +87,27 @@ function renderComment(summary: RunSummary, note: string | null, urls: Record<st
 export async function publishEvidence(deps: PublishDeps, summary: RunSummary): Promise<PublishResult> {
   const localPaths = summary.steps.map((s) => s.screenshot);
   const artifactUrls: Record<string, string> = {};
+  // A run against a preview host (customer extract) can't be vouched for by the local DB check.
+  const provenance: "seeded" | "unknown" = isLocalHost(summary.host) ? deps.provenance : "unknown";
 
   const okToPublish = await deps.ask(
-    `Publish UI evidence for run ${deps.runId}? ${deps.provenance === "seeded" ? "DB provenance: seeded (Linear upload allowed)." : "DB provenance: unknown (Linear upload will be skipped; evidence stays local)."}`,
+    `Publish UI evidence for run ${deps.runId}? ${provenance === "seeded" ? "DB provenance: seeded (Linear upload allowed)." : "DB provenance: unknown (Linear upload will be skipped; evidence stays local)."}`,
   );
   if (!okToPublish) return { linearUploaded: false, prCommentPosted: false, localPaths, artifactUrls };
 
   let linearUploaded = false;
   let uploadNote: string | null = null;
-  if (deps.provenance === "seeded" && deps.linearIssueId !== null) {
+  if (provenance === "seeded" && deps.linearIssueId !== null) {
     const results = await Promise.all(localPaths.map((p) => deps.uploadToLinear(p, deps.linearIssueId as string)));
     const failed = results.find((r) => "error" in r);
     linearUploaded = failed === undefined;
     if (failed !== undefined) uploadNote = `Linear upload failed (${failed.error}) — local paths only; will retry on next push.`;
-  } else if (deps.provenance === "unknown") {
+  } else if (provenance === "unknown") {
     uploadNote = "DB provenance unknown — evidence kept local only, not uploaded to Linear.";
   }
 
   // Same gate as Linear: only seeded/known-safe data ever leaves the machine.
-  if (deps.provenance === "seeded" && deps.uploadArtifact !== undefined) {
+  if (provenance === "seeded" && deps.uploadArtifact !== undefined) {
     for (const p of [...localPaths, ...evidencePaths(summary)]) {
       const res = await deps.uploadArtifact(p);
       if ("url" in res) artifactUrls[p] = res.url;

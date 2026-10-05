@@ -1,5 +1,19 @@
-// Process entry point — excluded from unit coverage; all logic is in cli.ts.
+// Process entry point — excluded from unit coverage; all logic is in cli.ts and parity-cli.ts.
+import fs from "node:fs";
+
 import { main, realDeps } from "./cli.js";
+import { parityMain } from "./parity-cli.js";
+import { runParity } from "./parity-run.js";
 import { runScript } from "./run-script.js";
 
-process.exitCode = await main(process.argv.slice(2), realDeps(runScript));
+const argv = process.argv.slice(2);
+process.exitCode =
+  argv[0] === "parity" || argv[0] === "parity-plan"
+    ? await parityMain(argv, {
+        run: runParity,
+        readFile: (f) => fs.readFileSync(f, "utf8"),
+        sizeOf: (f) => fs.statSync(f).size,
+        out: (l) => console.log(l),
+        err: (l) => console.error(l),
+      })
+    : await main(argv, realDeps(runScript));

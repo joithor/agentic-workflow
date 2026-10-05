@@ -19,7 +19,7 @@ import { hashJson, loadManifest, saveManifest, type CacheContext } from "./verdi
 import { runVisualCritique } from "./visual-critique.js";
 import { decideVisual } from "./visual-gate.js";
 
-const HOST = "http://localhost:3000"; // never dev/prod — hardcoded, no override
+const HOST = "http://localhost:3000"; // default; a non-local host only arrives via the guarded --host flag (host-guard.ts)
 export const VISUAL_PROMPT_VERSION = "visual-critique/v1";
 
 export interface RunOptions {
@@ -136,6 +136,7 @@ export async function runScript(script: UiScript, runDir: string, mainBaselineSc
     runId,
     ts: new Date().toISOString(),
     route: script.route,
+    host,
     appBuild: opts.appBuild ?? null,
     scriptSha256: opts.scriptSha256 ?? null,
     ...(script.planning?.pr !== undefined ? { pr: script.planning.pr } : {}),

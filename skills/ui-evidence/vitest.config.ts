@@ -8,9 +8,10 @@ export default defineConfig({
       provider: "v8",
       include: ["src/**/*.ts"],
       // run-script.ts is a real Playwright driver — not unit-testable without
-      // a real browser, matching judge/src/cli.ts's precedent (Global
+      // a real browser (parity-run.ts likewise: tests/browser/parity-run.browser.test.ts
+      // drives it against a local page), matching judge/src/cli.ts's precedent (Global
       // Constraints).
-      exclude: ["src/run-script.ts", "src/step-exec.ts", "src/bin.ts", "src/pixelmatch.d.ts"],
+      exclude: ["src/run-script.ts", "src/parity-run.ts", "src/step-exec.ts", "src/bin.ts", "src/pixelmatch.d.ts"],
       thresholds: { lines: 100, functions: 100, branches: 100, statements: 100 },
     },
   },
