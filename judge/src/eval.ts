@@ -54,7 +54,7 @@ VARIANTS["resolution-check"] = {
   "brief-only": (i) => ({ ...asObj(i), rootCause: "", diffStat: "", diff: undefined }),
   "brief+cause": (i) => ({ ...asObj(i), diffStat: "", diff: undefined }),
   stat: (i) => ({ ...asObj(i), diff: undefined }),
-  full: (i) => (typeof asObj(i).diff === "string" ? asObj(i) : { ...asObj(i), diff: "", __requiresDiff: true }),
+  full: (i) => asObj(i),
 };
 VARIANTS["turn-progress"] = {
   "diff-only": (i) => ({ ...asObj(i), problem: "(not given)", acceptanceCriteria: "" }),
@@ -166,6 +166,10 @@ export async function runEval(
   if (question === undefined) return { exitCode: 1, stdout: "", stderr: `unknown question: ${opts.question}` };
   const variant: Variant | undefined = opts.variant === "as-is" ? (i) => i : VARIANTS[opts.question]?.[opts.variant];
   if (variant === undefined) return { exitCode: 1, stdout: "", stderr: `unknown variant for ${opts.question}: ${opts.variant}` };
+  if (opts.collapse !== undefined) {
+    const valid = [...new Set(question.outputs.flatMap((o) => [o, collapseLabel(opts.question, o)]))];
+    if (!valid.includes(opts.collapse)) return { exitCode: 1, stdout: "", stderr: `--collapse must be one of: ${valid.join(", ")} (got ${opts.collapse})` };
+  }
   const labels = opts.labels ?? "any";
   const diffOnly = DIFF_VARIANTS[opts.question]?.includes(opts.variant) === true;
   const items = labeledItems(db, opts.question, labels).filter((item) => !diffOnly || hasStoredDiff(item.input_json));

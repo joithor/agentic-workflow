@@ -157,6 +157,13 @@ describe("survival / turnOutcome", () => {
   });
 });
 
+describe("whitespace-only prompts", () => {
+  it("do not start a turn", () => {
+    const lines = [user("s", "   \n "), user("s", "real"), edit("s", "Write", { file_path: "/a.ts", content: "x" })].join("\n");
+    expect(parseTurns(lines).map((x) => x.prompt)).toEqual(["real"]);
+  });
+});
+
 describe("runImportTurns", () => {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), "turns-"));
   const fresh = path.join(dir, "fresh.jsonl");
@@ -168,8 +175,8 @@ describe("runImportTurns", () => {
   fs.utimesSync(fresh, now(), now());
 
   it("sums over files and filters by mtime with --since", () => {
-    expect(runImportTurns(openDb(":memory:"), [fresh, old], now)).toEqual({ exitCode: 0, stdout: '{"imported":2,"skipped":2}' });
-    expect(runImportTurns(openDb(":memory:"), [fresh, old, "--since", "14d"], now)).toEqual({ exitCode: 0, stdout: '{"imported":1,"skipped":1}' });
+    expect(runImportTurns(openDb(":memory:"), [fresh, old], now)).toEqual({ exitCode: 0, stdout: '{"imported":2,"skipped":2,"unreadable":0}' });
+    expect(runImportTurns(openDb(":memory:"), [fresh, old, "--since", "14d"], now)).toEqual({ exitCode: 0, stdout: '{"imported":1,"skipped":1,"unreadable":0}' });
   });
 
   it("rejects bad usage and unreadable files", () => {
@@ -177,6 +184,16 @@ describe("runImportTurns", () => {
     expect(runImportTurns(db, [], now).exitCode).toBe(1);
     expect(runImportTurns(db, [fresh, "--since", "soon"], now).stderr).toContain("--since");
     expect(runImportTurns(db, [fresh, "--since"], now).exitCode).toBe(1);
-    expect(runImportTurns(db, [path.join(dir, "missing.jsonl")], now).stderr).toContain("cannot read");
+  });
+
+  it("skips unreadable files and counts them instead of aborting", () => {
+    const out = runImportTurns(openDb(":memory:"), [path.join(dir, "missing.jsonl"), dir, fresh], now);
+    expect(out).toEqual({ exitCode: 0, stdout: '{"imported":1,"skipped":1,"unreadable":2}' });
+  });
+
+  it("lets a database error surface instead of calling the file unreadable", () => {
+    const db = openDb(":memory:");
+    db.close();
+    expect(() => runImportTurns(db, [fresh], now)).toThrow();
   });
 });

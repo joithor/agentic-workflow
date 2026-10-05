@@ -54,7 +54,7 @@ function parseSessions(jsonl: string): { turns: Turn[]; ends: Map<string, number
     if (!Number.isNaN(ts)) ends.set(sessionId, Math.max(ends.get(sessionId) ?? 0, ts));
     if (row.type === "user") {
       const text = promptText(row.message?.content);
-      if (text === null || !isRealPromptText(text)) continue;
+      if (text === null || text.trim() === "" || !isRealPromptText(text)) continue;
       const index = counts.get(sessionId) ?? 0;
       counts.set(sessionId, index + 1);
       const turn: Turn = { sessionId, index, prompt: text, edits: [] };
@@ -155,16 +155,20 @@ export function runImportTurns(db: Db, args: readonly string[], now: () => Date)
     } else files.push(args[i]);
   }
   if (files.length === 0) return { exitCode: 1, stdout: "", stderr: "usage: judge eval import-turns <transcript.jsonl>... [--since 14d]" };
-  const total = { imported: 0, skipped: 0 };
+  const total = { imported: 0, skipped: 0, unreadable: 0 };
   for (const file of files) {
+    let text: string;
     try {
       if (sinceMs !== undefined && now().getTime() - fs.statSync(file).mtimeMs > sinceMs) continue;
-      const r = importTurns(db, fs.readFileSync(file, "utf8"), now);
-      total.imported += r.imported;
-      total.skipped += r.skipped;
-    } catch (e) {
-      return { exitCode: 1, stdout: "", stderr: `cannot read ${file}: ${(e as Error).message}` };
+      text = fs.readFileSync(file, "utf8");
+    } catch {
+      total.unreadable++;
+      continue;
     }
+    // Outside the try: a database error must surface as itself, not as an unreadable file.
+    const r = importTurns(db, text, now);
+    total.imported += r.imported;
+    total.skipped += r.skipped;
   }
   return { exitCode: 0, stdout: JSON.stringify(total) };
 }

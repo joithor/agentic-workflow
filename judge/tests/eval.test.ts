@@ -233,11 +233,6 @@ describe("context variants", () => {
     expect(v.stat?.(null)).toEqual({ diff: undefined });
   });
 
-  it("marks a full-variant item without a diff as undecidable rather than silently using the stat", () => {
-    const { diff: _omit, ...noDiff } = rc;
-    expect((VARIANTS["resolution-check"]?.full as (i: unknown) => unknown)(noDiff)).toEqual({ ...noDiff, diff: "", __requiresDiff: true });
-  });
-
   it("strips turn-progress context progressively", () => {
     const tp = { problem: "p", acceptanceCriteria: "ac", turnDiff: "+x", priorDiffStat: "1 file", signals: "tests: failed" };
     const v = VARIANTS["turn-progress"] as NonNullable<(typeof VARIANTS)[string]>;
@@ -284,20 +279,30 @@ describe("--collapse", () => {
     const plain = await runEval(db(), { question: "wake-gate", provider: prov(), variant: "as-is" });
     expect(plain.report?.perSource?.agreement).toEqual({ shared: 1, agreed: 0, rate: 0 });
     expect(plain.report?.perSource?.outcome).toMatchObject({ accuracy: 0 });
-    const out = await runEval(db(), { question: "wake-gate", provider: prov(), variant: "as-is", collapse: "progressing" });
+    const out = await runEval(db(), { question: "wake-gate", provider: prov(), variant: "as-is", collapse: "send" });
     expect(out.report).toMatchObject({ accuracy: 1 });
     expect(out.report?.perSource?.agreement).toEqual({ shared: 1, agreed: 1, rate: 1 });
     expect(out.report?.perSource?.outcome).toMatchObject({ accuracy: 1 });
     expect(out.report?.perSource?.adjudicator).toMatchObject({ accuracy: 1 });
   });
 
+  it("rejects a --collapse label the question does not output, before scoring", async () => {
+    const out = await runEval(db(), { question: "wake-gate", provider: prov(), variant: "as-is", collapse: "progressing" });
+    expect(out).toEqual({ exitCode: 1, stdout: "", stderr: "--collapse must be one of: send, batch, drop (got progressing)" });
+  });
+
+  it("accepts a collapsed axis label for prompt-sort questions", async () => {
+    const out = await runEval(db(), { question: "prompt-sort:complexity", provider: prov(), variant: "as-is", collapse: "large" });
+    expect(out.stderr ?? "").not.toContain("--collapse");
+  });
+
   it("keeps the positive label and collapses on replay too", async () => {
     const d = openDb(":memory:");
     upsertEvalItem(d, { id: "p1", question: "wake-gate", input_json: INPUT, source: "decision:p", model_decision: null, created_at: "2026-10-01T00:00:00.000Z" });
-    recordLabel(d, "p1", "progressing", "2026-10-02T00:00:00.000Z");
-    const replay = [{ itemId: "p1", label: "x", result: decided("progressing", 1), latencyMs: 1 }];
-    expect((await runEval(d, { question: "wake-gate", provider: prov(), variant: "as-is", collapse: "progressing", replay })).report).toMatchObject({ accuracy: 1 });
-    const wrong = [{ itemId: "p1", label: "x", result: decided("off-target", 1), latencyMs: 1 }];
-    expect((await runEval(d, { question: "wake-gate", provider: prov(), variant: "as-is", collapse: "progressing", replay: wrong })).report).toMatchObject({ accuracy: 0 });
+    recordLabel(d, "p1", "send", "2026-10-02T00:00:00.000Z");
+    const replay = [{ itemId: "p1", label: "x", result: decided("send", 1), latencyMs: 1 }];
+    expect((await runEval(d, { question: "wake-gate", provider: prov(), variant: "as-is", collapse: "send", replay })).report).toMatchObject({ accuracy: 1 });
+    const wrong = [{ itemId: "p1", label: "x", result: decided("drop", 1), latencyMs: 1 }];
+    expect((await runEval(d, { question: "wake-gate", provider: prov(), variant: "as-is", collapse: "send", replay: wrong })).report).toMatchObject({ accuracy: 0 });
   });
 });
