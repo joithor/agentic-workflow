@@ -49,6 +49,9 @@ run() {
   fi
 }
 
+# This lever is optional: a failed claude call must never abort setup.sh for every provider.
+soft_fail() { echo "  WARN: live-pane: claude $1 failed (non-fatal); live pane not installed"; exit 0; }
+
 if ! command -v claude >/dev/null 2>&1; then
   echo "  live-pane: skipped, the claude CLI is not on PATH"
   exit 0
@@ -65,13 +68,13 @@ marketplace_location() {
 
 if [ "$UNINSTALL" = "1" ]; then
   if has_plugin; then
-    run claude plugin uninstall "$PLUGIN_ID" --scope user
+    run claude plugin uninstall "$PLUGIN_ID" --scope user || soft_fail "plugin uninstall"
     echo "  live-pane: $PLUGIN_ID uninstalled"
   else
     echo "  live-pane: $PLUGIN_ID was not installed"
   fi
   if [ -n "$(marketplace_location)" ]; then
-    run claude plugin marketplace remove "$MARKETPLACE"
+    run claude plugin marketplace remove "$MARKETPLACE" || soft_fail "marketplace remove"
     echo "  live-pane: marketplace $MARKETPLACE removed"
   fi
   exit 0
@@ -88,17 +91,17 @@ if [ "$location" = "$MODS_DIR" ]; then
 else
   # Absent, or registered from another checkout: (re)register this one.
   if [ -n "$location" ]; then
-    run claude plugin marketplace remove "$MARKETPLACE"
+    run claude plugin marketplace remove "$MARKETPLACE" || soft_fail "marketplace remove"
     plugins='[]' # removing a marketplace takes its plugins with it
   fi
-  run claude plugin marketplace add "$MODS_DIR" --scope user
+  run claude plugin marketplace add "$MODS_DIR" --scope user || soft_fail "marketplace add"
   echo "  live-pane: marketplace $MARKETPLACE -> $MODS_DIR"
 fi
 
 if has_plugin; then
   echo "  live-pane: $PLUGIN_ID already installed (read from $MODS_DIR/aw-live; /reload-plugins picks up edits)"
 else
-  run claude plugin install "$PLUGIN_ID" --scope user
+  run claude plugin install "$PLUGIN_ID" --scope user || soft_fail "plugin install"
   if [ "$DRY" = "1" ]; then echo "  live-pane: $PLUGIN_ID would be installed"; else echo "  live-pane: $PLUGIN_ID installed"; fi
 fi
 

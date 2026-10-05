@@ -122,7 +122,27 @@ test_warns_when_scorer_has_no_live_command_and_stays_quiet_when_it_does() {
   echo "PASS: test_warns_when_scorer_has_no_live_command_and_stays_quiet_when_it_does"
 }
 
+test_a_failing_claude_write_warns_and_exits_zero() {
+  local step
+  for step in "marketplace add" "install" "uninstall"; do
+    new_world
+    sed -i.bak "2i\\
+case \"\$1 \$2\" in \"plugin $step\"|\"plugin marketplace\") [ \"\$2 \$3\" = \"$step\" ] || [ \"\$2\" = \"$step\" ] && exit 1 ;; esac" "$BIN/claude"
+    local out rc=0
+    if [ "$step" = "uninstall" ]; then
+      echo "[{\"id\": \"$ID\"}]" > "$STATE/plugins.json"
+      out="$(bash "$INSTALL" --uninstall)" || rc=$?
+    else
+      out="$(bash "$INSTALL")" || rc=$?
+    fi
+    [ "$rc" = "0" ] || fail "$step failure exited $rc: $out"
+    echo "$out" | grep -q "WARN: live-pane: claude .* failed (non-fatal)" || fail "$step: no WARN: $out"
+  done
+  echo "PASS: test_a_failing_claude_write_warns_and_exits_zero"
+}
+
 test_fresh_install_adds_the_marketplace_then_the_plugin_at_user_scope
+test_a_failing_claude_write_warns_and_exits_zero
 test_second_run_changes_nothing
 test_dry_run_writes_nothing_and_says_what_it_would_do
 test_a_marketplace_registered_from_another_checkout_is_moved_here
