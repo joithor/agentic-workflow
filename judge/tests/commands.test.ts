@@ -339,7 +339,7 @@ describe("runAskCheckCli", () => {
   it("exits 0 for an 'ask' decision (deny-list pre-rule)", async () => {
     const db = openDb(":memory:");
     const cli = fakeProvider("claude-cli", ["transcript"], { status: "decided", decision: "continue", confidence: 0.9, reason_code: "model" });
-    const result = await runAskCheckCli({ transcriptTail: "about to push the branch" }, { db, config: DEFAULT_CONFIG, providers: [cli] });
+    const result = await runAskCheckCli({ transcriptTail: "about to merge the PR" }, { db, config: DEFAULT_CONFIG, providers: [cli] });
     expect(result.exitCode).toBe(0);
     expect(JSON.parse(result.stdout)).toMatchObject({ decision: "ask" });
   });

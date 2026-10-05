@@ -5,7 +5,10 @@ import type { QuestionModule } from "../question.js";
 // Deterministic deny list (repo-wide rule: a model never overrides the
 // safety-relevant layer). Any next-step text mentioning one of these is
 // always "ask", regardless of what a model provider would have said.
-const DENY_KEYWORDS = /\b(push|merge|delete|force-push|force push)\b/i;
+// A bare "push" is deliberately NOT listed: pushing a feature branch is routine
+// and the model decides whether it was authorized; pushes to the base branch
+// stay blocked by block-push-main.sh, and "force push" still forces "ask".
+const DENY_KEYWORDS = /\b(merge|delete|force-push|force push)\b/i;
 
 export const AskCheckInputSchema = z.object({
   transcriptTail: z.string(),
