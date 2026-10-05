@@ -70,6 +70,23 @@ No one labels data by hand. Labels come from what happened next and from a stron
   `rules`) without waiting on a slower provider. `resolution-check`, `brief-scope` and `rule-check`
   have no safe default, so they keep walking the chain and escalate.
 
+## Prompt sorter (shadow mode)
+
+`config/hooks/prompt-sort.sh` (`UserPromptSubmit`) sorts every real prompt with ONE batched Jev
+request: task? loop? complexity, ambiguity, scope/limits/approach/verification defined, bug report?
+UI? research? Each axis uses Jev only when decisive (a yes/no outside 0.4-0.6, a score at confidence
+>= 0.4); otherwise a keyword heuristic answers. One `prompt-sort` decision row per prompt, with the
+per-axis answers in `prompt_sort_axes`. Skipped without a call: machine text, slash commands,
+confirmations.
+
+- `judge prompt-sort why <decision-id>` — the decision, its 11 axes (value, heuristic, source,
+  agreed/overrode/undecided) and which scaffolds would have fired.
+- `judge prompt-sort scaffold <brief|bugfix|ui-evidence|plan-first> <on|off>` — a scaffold switch.
+  All ship OFF; do not turn one on until `judge prompt-sort promote` says go.
+- `judge config set prompt-sort enabled false` — turns the sorter off entirely (no Jev call).
+- `promptSort` in `config.json`: `enabled`, `budgetMs` (200-1400, default 1000), `cooldownPrompts`
+  (default 5), `scaffolds`.
+
 ## What this skill does not cover
 
 - Installing or updating `judge` itself — see `scripts/install-judge.sh` (`--provider

@@ -12,6 +12,7 @@ import {
 import { adjudicate } from "./adjudicate.js";
 import { buildChain } from "./chain.js";
 import { judgeConfigPath, judgeDbPath, judgeStateDir, loadConfig } from "./config.js";
+import { runPromptSortCommand } from "./prompt-sort/commands.js";
 import { openDb, pruneDecisionDetails } from "./db.js";
 import { makeRecorder, readReplay, runEval, writeEvalReport } from "./eval.js";
 import { runLabelImport, runLabelSet, runLabelStatus } from "./label.js";
@@ -145,6 +146,16 @@ async function main(): Promise<{ exitCode: number; stdout: string; stderr?: stri
       const r = await runEval(db, { question: q, provider, variant: flag("--variant") ?? "as-is", labels, record: recordFile === undefined ? undefined : makeRecorder(recordFile), replay });
       if (r.report !== undefined) writeEvalReport(path.join(judgeStateDir(), "judge", "evals"), r.report, Date.now());
       return r;
+    }
+    case "prompt-sort": {
+      // Hard stop for the hook's path (no subcommand): fail open with no output
+      // rather than ever hold up a prompt. Eval-side subcommands run unbounded.
+      if (rest.length === 0) setTimeout(() => process.exit(0), 1500).unref();
+      return runPromptSortCommand(rest, {
+        db, config, configFile: judgeConfigPath(), stateDir: judgeStateDir(),
+        jev: { fetch: (...args) => fetch(...args), apiKey: () => readApiKey({ env: process.env, readKeychain }) },
+        readStdin,
+      });
     }
     case "brief": {
       const sub = rest[0];

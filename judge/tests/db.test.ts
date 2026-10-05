@@ -13,7 +13,7 @@ describe("openDb", () => {
   it("creates every table", () => {
     const db = openDb(":memory:");
     const tables = (db.prepare("SELECT name FROM sqlite_master WHERE type = 'table' ORDER BY name").all() as Array<{ name: string }>).map((r) => r.name);
-    expect(tables).toEqual(["briefs", "decision_details", "decisions", "eval_items", "failures", "labels"]);
+    expect(tables).toEqual(["briefs", "decision_details", "decisions", "eval_items", "failures", "labels", "prompt_sort_axes", "prompt_sort_runs"]);
   });
 
   it("sets WAL and busy_timeout on a real file", () => {
@@ -250,5 +250,19 @@ describe("decision_details + eval tables", () => {
     expect(nextUnlabeled(db, "q", "adjudicator", new Set(["a"]))?.id).toBe("b");
     expect(nextUnlabeled(db, "q", "adjudicator", new Set())?.id).toBe("a");
     expect(nextUnlabeled(db, "q", "adjudicator", new Set(["a", "b"]))).toBeUndefined();
+  });
+});
+
+describe("prompt-sort tables", () => {
+  it("are created on an existing db without touching decisions rows, and are queryable", () => {
+    const file = tmpDb();
+    const first = openDb(file);
+    recordDecision(first, { id: "a", ts: "2026-10-01T00:00:00.000Z", question: "wake-gate", content_class: "message-meta", provider: "jev", decision: "send", confidence: 0.9, reason_code: "jev", latency_ms: 300, input_digest: "d", undone_at: null, chain_position: 0, skipped: [], outcome: "decided" });
+    first.close();
+    const db = openDb(file);
+    expect(getDecision(db, "a")?.decision).toBe("send");
+    db.prepare("INSERT INTO prompt_sort_axes (decision_id, axis, value, heuristic, source, status, probability, confidence) VALUES ('a','is_task','true','true','judge','agreed',0.9,NULL)").run();
+    db.prepare("INSERT INTO prompt_sort_runs (decision_id, mode, reason) VALUES ('a','blend','sorted')").run();
+    expect((db.prepare("SELECT would_fire FROM prompt_sort_runs WHERE decision_id='a'").get() as { would_fire: string }).would_fire).toBe("[]");
   });
 });

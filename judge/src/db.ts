@@ -67,6 +67,26 @@ CREATE TABLE IF NOT EXISTS labels (
   labeled_at TEXT NOT NULL,
   PRIMARY KEY (item_id, source)
 );
+CREATE TABLE IF NOT EXISTS prompt_sort_axes (
+  decision_id TEXT NOT NULL,
+  axis TEXT NOT NULL,
+  value TEXT NOT NULL,
+  heuristic TEXT NOT NULL,
+  source TEXT NOT NULL,
+  status TEXT NOT NULL,
+  probability REAL,
+  confidence REAL,
+  PRIMARY KEY (decision_id, axis)
+);
+CREATE INDEX IF NOT EXISTS prompt_sort_axes_axis ON prompt_sort_axes(axis, status);
+CREATE TABLE IF NOT EXISTS prompt_sort_runs (
+  decision_id TEXT PRIMARY KEY,
+  mode TEXT NOT NULL,
+  reason TEXT NOT NULL,
+  would_fire TEXT NOT NULL DEFAULT '[]',
+  fired TEXT NOT NULL DEFAULT '[]',
+  suppressed TEXT NOT NULL DEFAULT '[]'
+);
 `;
 
 export interface BriefRow {
