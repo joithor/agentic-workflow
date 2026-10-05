@@ -49,7 +49,10 @@ export interface Metrics {
   wakeGating: { queuedNow: number; expiredEver: number };
 }
 
-const CTX = "(input + cache_read + cache_creation)";
+// Shared with the live path (live-snapshot.ts): one definition of "context size of a call".
+export const CTX = "(input + cache_read + cache_creation)";
+export const OVER_200K = 200_000;
+export const OVER_400K = 400_000;
 // Bound as @p (a JSON array), never interpolated.
 const IN_PROVIDERS = "provider IN (SELECT value FROM json_each(@p))";
 
@@ -83,9 +86,9 @@ export function computeMetrics(db: Db, since: Date, until: Date, firesLog: Conte
     SELECT COUNT(*) AS calls,
       COALESCE(SUM(${CTX}), 0) AS ctx,
       COALESCE(SUM(output), 0) AS out,
-      COALESCE(SUM(CASE WHEN ${CTX} > 200000 THEN ${CTX} ELSE 0 END), 0) AS ctx200,
-      COALESCE(SUM(CASE WHEN ${CTX} > 400000 THEN ${CTX} ELSE 0 END), 0) AS ctx400,
-      COALESCE(SUM(CASE WHEN ${CTX} > 200000 THEN 1 ELSE 0 END), 0) AS n200
+      COALESCE(SUM(CASE WHEN ${CTX} > ${OVER_200K} THEN ${CTX} ELSE 0 END), 0) AS ctx200,
+      COALESCE(SUM(CASE WHEN ${CTX} > ${OVER_400K} THEN ${CTX} ELSE 0 END), 0) AS ctx400,
+      COALESCE(SUM(CASE WHEN ${CTX} > ${OVER_200K} THEN 1 ELSE 0 END), 0) AS n200
     FROM calls WHERE ts >= @s AND ts < @u AND ${IN_PROVIDERS}`).get(w) as { calls: number; ctx: number; out: number; ctx200: number; ctx400: number; n200: number };
 
   const agents = db.prepare(`

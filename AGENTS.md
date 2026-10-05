@@ -40,6 +40,7 @@ agentic-workflow/
 ├── providers/     # Per-provider installers (claude, codex, cursor)
 ├── mcp-bridge/    # MCP bridge + REST API (Fastify, SQLite)
 ├── scorer/        # Daily cost/involvement report from provider session transcripts
+├── mods/          # Claude Code mods (in-process function hooks): aw-live pane + band. Claude-only
 ├── planning/      # Project documentation
 ├── .agents/rules/ # Glob-scoped domain rules (.claude/rules and .cursor/rules link here)
 ├── .serena/       # Serena LSP project configuration
@@ -56,7 +57,9 @@ cd scorer && npm test                   # Vitest
 cd judge && npm test                    # Vitest
 (cd skills/ui-evidence && npm test)     # Vitest (skill package; includes a real-browser test)
 (cd skills/bugFixOrchestrator && npm test)  # Vitest (bugfix-state CLI)
+claude plugin validate mods/aw-live && claude plugin test mods/aw-live  # the aw-live mod (needs claude >= 2.1.289)
 scorer --since 7d [--provider claude|codex|cursor|all]  # Report to ~/.agentic-workflow/scorer/reports/
+scorer live --session <id> [--cwd DIR] [--json]  # This session's numbers (the aw-live mod calls it)
 scorer probe                            # Summarize the hook-input probe
 
 # Rules (edit .agents/rules/, then regenerate)
@@ -93,7 +96,7 @@ After installing for Codex, open `codex` and run `/hooks` to trust the `aw:*` ho
 
 Before merging any PR:
 1. `npm run typecheck` passes with zero errors in `mcp-bridge`, `scorer`, `judge`, `skills/ui-evidence`, and `skills/bugFixOrchestrator`
-2. `npm test` passes in `mcp-bridge`, `scorer`, `judge`, `skills/ui-evidence`, and `skills/bugFixOrchestrator`, and every bash test listed above passes
+2. `npm test` passes in `mcp-bridge`, `scorer`, `judge`, `skills/ui-evidence`, and `skills/bugFixOrchestrator`, every bash test listed above passes, and `claude plugin validate mods/aw-live` and `claude plugin test mods/aw-live` pass
 3. `scripts/sync-rules.sh --check` passes (rule links and Rules Index match `.agents/rules/`)
 4. `./setup.sh --providers claude,codex,cursor --dry-run` runs cleanly
 5. No `/* v8 ignore */` annotations in source files (prohibited — write the test instead)

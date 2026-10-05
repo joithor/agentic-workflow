@@ -368,11 +368,11 @@ aw_mcp_register_cli() {
 # Cheap-agent-harness lever hooks for one provider. Each scripts/install-*.sh
 # takes --provider (default claude) and no-ops with a note where a lever is
 # unsupported on that provider.
-AW_LEVER_INSTALLERS="install-wake-gating install-context-guard install-scope-gate install-done-gate install-external-write-guard"
+AW_LEVER_INSTALLERS="install-wake-gating install-context-guard install-scope-gate install-done-gate install-external-write-guard install-live-pane"
 aw_install_levers() {
   local provider="$1" inst
   echo ""
-  echo "=== Installing lever hooks for $provider (wake gating 1A, context-guard 2B, evaluator gates 3) ==="
+  echo "=== Installing lever hooks for $provider (wake gating 1A, context-guard 2B, evaluator gates 3, live pane) ==="
   for inst in $AW_LEVER_INSTALLERS; do
     if aw_dry; then
       echo "  [dry-run] would run scripts/$inst.sh --provider $provider"

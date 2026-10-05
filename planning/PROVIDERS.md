@@ -36,6 +36,7 @@ relying on them; record corrections here.
 | Installer | `setup.sh --providers claude,codex,cursor [--dry-run]` (default: detect installed CLIs) | `providers/<name>/install.sh` + `install-hooks.sh`; levers via `scripts/install-*.sh --provider <name>` |
 | Judge | `judge/src/providers/` | `claude-cli`, `codex-cli`, `cursor-cli` (+ `rules`, `jev`) |
 | Scorer | `scorer/src/transcript/` | One transcript source per provider (`--provider claude\|codex\|cursor\|all`) |
+| Live pane | `mods/aw-live` (a Claude Code mod) + `scorer live` | Claude only. Codex and Cursor keep the statusline segments and the daily report |
 
 ## Notes
 
@@ -61,3 +62,8 @@ reads every provider whose transcript dir exists. Override the dirs with `--proj
 involvement-only because its transcripts carry no token or cost data. Codex rollouts that were
 imported from Claude (listed in `~/.codex/external_agent_session_imports.json`) are skipped so they
 aren't counted twice.
+
+**Mods.** `mods/aw-live` is a Claude Code mod (in-process function hooks, `claude plugin test`). It shows
+this session's `scorer live` numbers in a `/live` pane and a band. Mods have no Codex or Cursor
+equivalent, so `scripts/install-live-pane.sh --provider codex|cursor` prints a skip note and writes
+nothing. Install: `scripts/install-live-pane.sh` (a folder marketplace named `agentic-workflow-mods`).

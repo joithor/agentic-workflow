@@ -21,3 +21,7 @@ coverage/
 
 # Claude Code machine-specific settings (absolute paths, allow rules)
 .claude/settings.local.json
+
+# Claude Code lays the function-hooks API types into a mod it loads
+mods/*/.claude-plugin/types/
+mods/*/tsconfig.json

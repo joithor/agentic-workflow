@@ -4,7 +4,7 @@ import type { ProviderName } from "./transcript/source.js";
 import { isProviderName, PROVIDERS } from "./transcript/source.js";
 
 export interface CliOptions {
-  command: "report" | "probe" | "context-tokens";
+  command: "report" | "probe" | "context-tokens" | "live";
   since: Date;
   until: Date;
   projectsDir: string; // Claude Code transcripts
@@ -21,6 +21,12 @@ export interface CliOptions {
   stateDirExplicit: boolean;
   prLookup: boolean;
   contextTokensPath: string | null;
+  // `scorer live`: one session's numbers. The window is the model's context window
+  // (the host knows it; 200k is the fallback), so percent-of-window is right on any model.
+  liveSession: string | null;
+  liveCwd: string | null;
+  liveWindow: number;
+  json: boolean;
 }
 
 type ParseResult = { ok: true; options: CliOptions } | { ok: false; error: string };
@@ -40,6 +46,10 @@ export function parseArgs(argv: string[], now: Date, home: string): ParseResult 
     stateDirExplicit: false,
     prLookup: true,
     contextTokensPath: null,
+    liveSession: null,
+    liveCwd: null,
+    liveWindow: 200_000,
+    json: false,
   };
   const args = [...argv];
   while (args.length > 0) {
@@ -52,6 +62,8 @@ export function parseArgs(argv: string[], now: Date, home: string): ParseResult 
       options.contextTokensPath = value;
       continue;
     }
+    if (arg === "live") { options.command = "live"; continue; }
+    if (arg === "--json") { options.json = true; continue; }
     if (arg === "--no-pr-lookup") { options.prLookup = false; continue; }
     if (!VALUE_FLAGS.has(arg)) return { ok: false, error: `unknown argument: ${arg}` };
     const value = args.shift();
@@ -65,16 +77,29 @@ export function parseArgs(argv: string[], now: Date, home: string): ParseResult 
       options.providers = providers;
     }
     if (arg === "--state-dir") { options.stateDir = value; options.stateDirExplicit = true; }
+    if (arg === "--session") {
+      // The id becomes part of file paths (live db, outbox file), so it must be a plain token.
+      if (!SESSION_ID.test(value)) return { ok: false, error: `--session must be letters, digits, '.', '_' or '-': ${value}` };
+      options.liveSession = value;
+    }
+    if (arg === "--cwd") options.liveCwd = value;
+    if (arg === "--window") {
+      const window = Number(value);
+      if (!Number.isInteger(window) || window <= 0) return { ok: false, error: `--window must be a positive integer: ${value}` };
+      options.liveWindow = window;
+    }
     if (arg === "--since") {
       const since = parseSince(value, now);
       if (typeof since === "string") return { ok: false, error: since };
       options.since = since;
     }
   }
+  if (options.command === "live" && options.liveSession === null) return { ok: false, error: "live needs --session <id>" };
   return { ok: true, options };
 }
 
-const VALUE_FLAGS: ReadonlySet<string> = new Set(["--since", "--projects-dir", "--codex-dir", "--cursor-dir", "--state-dir", "--provider"]);
+const VALUE_FLAGS: ReadonlySet<string> = new Set(["--since", "--projects-dir", "--codex-dir", "--cursor-dir", "--state-dir", "--provider", "--session", "--cwd", "--window"]);
+const SESSION_ID = /^[A-Za-z0-9._-]+$/;
 
 // "all" | "claude" | "codex,cursor" …
 function parseProviders(value: string): ProviderName[] | string {

@@ -11,7 +11,7 @@ describe("parseArgs", () => {
       command: "report", since: new Date("2026-09-25T12:00:00.000Z"), until: NOW,
       projectsDir: "/home/j/.claude/projects", codexSessionsDir: "/home/j/.codex/sessions", cursorProjectsDir: "/home/j/.cursor/projects",
       providers: null, stateDir: "/home/j/.agentic-workflow", stateDirExplicit: false, prLookup: true,
-      contextTokensPath: null,
+      contextTokensPath: null, liveSession: null, liveCwd: null, liveWindow: 200_000, json: false,
     } });
   });
 
@@ -41,6 +41,13 @@ describe("parseArgs", () => {
     expect(r).toEqual({ ok: true, options: expect.objectContaining({ command: "context-tokens", contextTokensPath: "/tmp/t.jsonl" }) });
   });
 
+  it("accepts the live command with its flags", () => {
+    const r = parseArgs(["live", "--session", "abc-123_4.5", "--cwd", "/repo", "--window", "1000000", "--json", "--state-dir", "/s"], NOW, HOME);
+    expect(r).toEqual({ ok: true, options: expect.objectContaining({
+      command: "live", liveSession: "abc-123_4.5", liveCwd: "/repo", liveWindow: 1_000_000, json: true, stateDir: "/s", stateDirExplicit: true,
+    }) });
+  });
+
   it("accepts --provider (single, list, all) and per-provider directories", () => {
     const one = parseArgs(["--provider", "codex", "--codex-dir", "/c", "--cursor-dir", "/k"], NOW, HOME);
     expect(one).toEqual({ ok: true, options: expect.objectContaining({ providers: ["codex"], codexSessionsDir: "/c", cursorProjectsDir: "/k" }) });
@@ -59,6 +66,15 @@ describe("parseArgs", () => {
     [["--bogus"], "unknown argument: --bogus"],
     [["--projects-dir"], "--projects-dir needs a value"],
     [["context-tokens"], "context-tokens needs a path"],
+    [["live"], "live needs --session <id>"],
+    [["live", "--session"], "--session needs a value"],
+    [["live", "--session", "../etc/passwd"], "--session must be letters, digits, '.', '_' or '-': ../etc/passwd"],
+    [["live", "--session", "a b"], "--session must be letters, digits, '.', '_' or '-': a b"],
+    [["live", "--session", "s1", "--window", "0"], "--window must be a positive integer: 0"],
+    [["live", "--session", "s1", "--window", "big"], "--window must be a positive integer: big"],
+    [["live", "--session", "s1", "--window", "1.5"], "--window must be a positive integer: 1.5"],
+    [["live", "--session", "a/b"], "--session must be letters, digits, '.', '_' or '-': a/b"],
+    [["live", "--session", ""], "--session must be letters, digits, '.', '_' or '-': "],
   ])("rejects %j", (argv, error) => {
     expect(parseArgs(argv, NOW, HOME)).toEqual({ ok: false, error });
   });

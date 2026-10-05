@@ -4,7 +4,7 @@ import path from "node:path";
 
 import { describe, expect, it } from "vitest";
 
-import { readOutboxState } from "../src/outbox.js";
+import { queuedForSession, readOutboxState } from "../src/outbox.js";
 
 function writeFixture(dir: string, name: string, lines: string[]): void {
   fs.mkdirSync(dir, { recursive: true });
@@ -55,5 +55,29 @@ describe("readOutboxState", () => {
     writeFixture(dir, "s1.jsonl", [JSON.stringify({ ts: "2026-09-27T00:00:00Z", agentType: "a", text: "ok" })]);
     fs.writeFileSync(path.join(dir, "s1.jsonl.lock"), "");
     expect(readOutboxState(dir)).toEqual({ queuedNow: 1, expiredEver: 0 });
+  });
+});
+
+describe("queuedForSession", () => {
+  it("counts only that session's valid queued lines, never another session's or expired.jsonl", () => {
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), "outbox-"));
+    const item = JSON.stringify({ ts: "2026-09-27T00:00:00Z", agentType: null, text: "progress" });
+    writeFixture(dir, "s1.jsonl", [item, "not json", item]);
+    writeFixture(dir, "s2.jsonl", [item]);
+    writeFixture(dir, "expired.jsonl", [item]);
+    expect(queuedForSession(dir, "s1")).toBe(2);
+    expect(queuedForSession(dir, "expired")).toBe(0);
+    expect(queuedForSession(dir, "missing")).toBe(0);
+    expect(queuedForSession(path.join(dir, "nope"), "s1")).toBe(0);
+  });
+
+  it("returns 0 for an id that is a path", () => {
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), "outbox-"));
+    const item = JSON.stringify({ ts: "2026-09-27T00:00:00Z", agentType: null, text: "progress" });
+    writeFixture(dir, "s1.jsonl", [item]);
+    writeFixture(path.join(dir, "sub"), "s1.jsonl", [item]);
+    expect(queuedForSession(dir, "sub/s1")).toBe(0);
+    expect(queuedForSession(path.join(dir, "sub"), "../s1")).toBe(0);
+    expect(queuedForSession(dir, "..")).toBe(0);
   });
 });
