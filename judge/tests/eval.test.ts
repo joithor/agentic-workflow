@@ -170,3 +170,54 @@ describe("file helpers", () => {
     expect(fs.readFileSync(file, "utf8")).toContain("# judge eval: wake-gate / jev / as-is");
   });
 });
+
+describe("prompt-sort axis evals (RF-6)", () => {
+  function sortDb() {
+    const db = openDb(":memory:");
+    upsertEvalItem(db, { id: "c1", question: "prompt-sort:complexity", input_json: '{"prompt":"rewrite the whole thing"}', source: "decision:a:complexity", model_decision: null, created_at: "2026-10-01T00:00:00.000Z" });
+    recordLabel(db, "c1", "large", "2026-10-02T00:00:00.000Z", "outcome");
+    return db;
+  }
+
+  it("scores a fine prediction against a coarse outcome label in the collapsed space", async () => {
+    const out = await runEval(sortDb(), { question: "prompt-sort:complexity", provider: fakeProvider("jev", ["brief"], decided("large", 1)), variant: "blend", labels: "outcome" });
+    expect(out.report).toMatchObject({ n: 1, accuracy: 1 });
+    const wrong = await runEval(sortDb(), { question: "prompt-sort:complexity", provider: fakeProvider("jev", ["brief"], decided("substantial", 1)), variant: "blend", labels: "outcome" });
+    expect(wrong.report).toMatchObject({ accuracy: 0 });
+  });
+
+  it("passes the variant as the input's mode and rejects unknown variants", async () => {
+    let seen: unknown;
+    const provider = fakeProvider("jev", ["brief"], (_q, input) => { seen = input; return decided("large", 1); });
+    await runEval(sortDb(), { question: "prompt-sort:complexity", provider, variant: "heuristic", labels: "outcome" });
+    expect(seen).toMatchObject({ mode: "heuristic" });
+    expect((await runEval(sortDb(), { question: "prompt-sort:complexity", provider, variant: "nope" })).exitCode).toBe(1);
+    expect(VARIANTS["prompt-sort:ambiguity"]?.["judge-only"]?.(null)).toEqual({ mode: "judge-only" });
+  });
+
+  it("collapses on replay too", async () => {
+    const out = await runEval(sortDb(), { question: "prompt-sort:complexity", provider: fakeProvider("jev", ["brief"], decided("x", 1)), variant: "blend", labels: "outcome", replay: [{ itemId: "c1", label: "large", result: decided("large", 1), latencyMs: 1 }] });
+    expect(out.report).toMatchObject({ accuracy: 1 });
+  });
+
+  it("C1: the collapse survives withSources (per-source scores and agreement use collapsed labels)", async () => {
+    const db = openDb(":memory:");
+    for (const [id, outcome, adjudicator] of [["c1", "not-large", "small"], ["c2", "large", "large"]] as const) {
+      upsertEvalItem(db, { id, question: "prompt-sort:complexity", input_json: '{"prompt":"x y z"}', source: `decision:${id}:complexity`, model_decision: null, created_at: "2026-10-01T00:00:00.000Z" });
+      recordLabel(db, id, outcome, "2026-10-02T00:00:00.000Z", "outcome");
+      recordLabel(db, id, adjudicator, "2026-10-02T00:00:00.000Z", "adjudicator");
+    }
+    // Fine prediction "trivial" collapses to not-large: right for c1, wrong for c2.
+    const out = await runEval(db, { question: "prompt-sort:complexity", provider: fakeProvider("jev", ["brief"], decided("trivial", 1)), variant: "blend" });
+    const per = out.report?.perSource;
+    expect(per?.agreement).toEqual({ shared: 2, agreed: 2, rate: 1 });
+    expect(per?.outcome).toMatchObject({ n: 2, accuracy: 0.5 });
+    expect(per?.adjudicator).toMatchObject({ n: 2, accuracy: 0.5 });
+    expect(out.report?.sourceWarning).toBeUndefined();
+  });
+
+  it("leaves unavailable results uncollapsed", async () => {
+    const out = await runEval(sortDb(), { question: "prompt-sort:complexity", provider: fakeProvider("jev", ["brief"], { status: "unavailable", reason_code: "jev-unavailable" }), variant: "blend", labels: "outcome" });
+    expect(out.report).toMatchObject({ n: 1, decided: 0, accuracy: 0 });
+  });
+});

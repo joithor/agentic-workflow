@@ -242,6 +242,95 @@ test_judge_missing_from_path_on_non_done_claim_still_fails_open() {
   echo "PASS: test_judge_missing_from_path_on_non_done_claim_still_fails_open"
 }
 
+write_ui_requirement() { # write_ui_requirement <sessions-dir> <sid> <json>
+  mkdir -p "$1"; printf '%s' "$3" > "$1/$2.sort.json"
+}
+
+test_ui_requirement_blocks_a_done_claim_without_ui_evidence() {
+  local bin transcript sessions rc err
+  bin="$(setup_fake_judge)"; transcript="$(mktemp)"; sessions="$(mktemp -d)"
+  write_transcript_with_assistant_text "$transcript" "Done — ran npm test, everything passed."
+  write_ui_requirement "$sessions" s1 '{"prompts":1,"lastFired":{},"requirements":{"uiEvidence":true}}'
+  set +e
+  err="$(PATH="$bin:$PATH" AW_JUDGE_SESSIONS_DIR="$sessions" bash "$HOOK" <<< "$(jq -nc --arg t "$transcript" '{transcript_path:$t, session_id:"s1"}')" 2>&1 >/dev/null)"
+  rc=$?
+  set -e
+  [ "$rc" -eq 2 ] || { echo "FAIL: expected exit 2 without UI evidence, got $rc"; exit 1; }
+  echo "$err" | grep -qi "UI evidence" || { echo "FAIL: stderr must say UI evidence is required, got: $err"; exit 1; }
+  jq -e '.requirements.uiEvidence' "$sessions/s1.sort.json" > /dev/null || { echo "FAIL: the requirement must stay until evidence is shown"; exit 1; }
+  echo "PASS: test_ui_requirement_blocks_a_done_claim_without_ui_evidence"
+}
+
+test_ui_requirement_is_satisfied_once_and_then_cleared() {
+  local bin transcript sessions rc
+  bin="$(setup_fake_judge)"; transcript="$(mktemp)"; sessions="$(mktemp -d)"
+  write_transcript_with_assistant_text "$transcript" "Done — screenshot saved at /tmp/after.png, and npm test passed."
+  write_ui_requirement "$sessions" s1 '{"prompts":1,"lastFired":{},"requirements":{"uiEvidence":true}}'
+  set +e
+  PATH="$bin:$PATH" AW_JUDGE_SESSIONS_DIR="$sessions" bash "$HOOK" <<< "$(jq -nc --arg t "$transcript" '{transcript_path:$t, session_id:"s1"}')" > /dev/null 2>&1
+  rc=$?
+  set -e
+  [ "$rc" -eq 0 ] || { echo "FAIL: expected exit 0 when a screenshot is mentioned, got $rc"; exit 1; }
+  [ "$(jq -r '.requirements.uiEvidence // "gone"' "$sessions/s1.sort.json")" = "gone" ] || { echo "FAIL: a satisfied requirement must be cleared"; exit 1; }
+  echo "PASS: test_ui_requirement_is_satisfied_once_and_then_cleared"
+}
+
+test_ui_requirement_never_affects_a_non_done_claim_or_a_stop_hook_active_rerun() {
+  local bin transcript sessions rc
+  bin="$(setup_fake_judge)"; transcript="$(mktemp)"; sessions="$(mktemp -d)"
+  write_ui_requirement "$sessions" s1 '{"prompts":1,"lastFired":{},"requirements":{"uiEvidence":true}}'
+  write_transcript_with_assistant_text "$transcript" "still working on the layout"
+  set +e
+  PATH="$bin:$PATH" AW_JUDGE_SESSIONS_DIR="$sessions" bash "$HOOK" <<< "$(jq -nc --arg t "$transcript" '{transcript_path:$t, session_id:"s1"}')" > /dev/null 2>&1
+  rc=$?
+  set -e
+  [ "$rc" -eq 0 ] || { echo "FAIL: a non-done claim must not be blocked by the UI requirement, got $rc"; exit 1; }
+  write_transcript_with_assistant_text "$transcript" "Done — all green."
+  set +e
+  PATH="$bin:$PATH" AW_JUDGE_SESSIONS_DIR="$sessions" bash "$HOOK" <<< "$(jq -nc --arg t "$transcript" '{transcript_path:$t, session_id:"s1", stop_hook_active:true}')" > /dev/null 2>&1
+  rc=$?
+  set -e
+  [ "$rc" -eq 0 ] || { echo "FAIL: stop_hook_active must always exit 0 (no loop), got $rc"; exit 1; }
+  echo "PASS: test_ui_requirement_never_affects_a_non_done_claim_or_a_stop_hook_active_rerun"
+}
+
+test_hostile_session_id_never_reads_outside_the_sessions_dir_rf4() {
+  local bin transcript sessions rc outer
+  bin="$(setup_fake_judge)"; transcript="$(mktemp)"; outer="$(mktemp -d)"; sessions="$outer/sessions"
+  mkdir -p "$sessions"
+  printf '%s' '{"requirements":{"uiEvidence":true}}' > "$outer/evil.sort.json"
+  write_transcript_with_assistant_text "$transcript" "Done — ran npm test, everything passed."
+  set +e
+  PATH="$bin:$PATH" AW_JUDGE_SESSIONS_DIR="$sessions" bash "$HOOK" <<< "$(jq -nc --arg t "$transcript" '{transcript_path:$t, session_id:"../evil"}')" > /dev/null 2>&1
+  rc=$?
+  set -e
+  [ "$rc" -eq 0 ] || { echo "FAIL: RF-4 a path-traversal session id must be ignored by the UI check, got exit $rc"; exit 1; }
+  echo "PASS: test_hostile_session_id_never_reads_outside_the_sessions_dir_rf4"
+}
+
+test_absent_or_corrupt_sort_file_changes_nothing() {
+  local bin transcript sessions rc
+  bin="$(setup_fake_judge)"; transcript="$(mktemp)"; sessions="$(mktemp -d)"
+  write_transcript_with_assistant_text "$transcript" "Done — ran npm test, everything passed."
+  set +e
+  PATH="$bin:$PATH" AW_JUDGE_SESSIONS_DIR="$sessions" bash "$HOOK" <<< "$(jq -nc --arg t "$transcript" '{transcript_path:$t, session_id:"s1"}')" > /dev/null 2>&1
+  rc=$?
+  set -e
+  [ "$rc" -eq 0 ] || { echo "FAIL: no sort file must leave done-gate unchanged, got $rc"; exit 1; }
+  write_ui_requirement "$sessions" s1 'not json'
+  set +e
+  PATH="$bin:$PATH" AW_JUDGE_SESSIONS_DIR="$sessions" bash "$HOOK" <<< "$(jq -nc --arg t "$transcript" '{transcript_path:$t, session_id:"s1"}')" > /dev/null 2>&1
+  rc=$?
+  set -e
+  [ "$rc" -eq 0 ] || { echo "FAIL: a corrupt sort file must be ignored, got $rc"; exit 1; }
+  echo "PASS: test_absent_or_corrupt_sort_file_changes_nothing"
+}
+
 test_judge_missing_from_path_on_done_claim_still_fails_open
 test_judge_nonzero_garbage_stdout_on_done_claim_still_fails_open
 test_judge_missing_from_path_on_non_done_claim_still_fails_open
+test_ui_requirement_blocks_a_done_claim_without_ui_evidence
+test_ui_requirement_is_satisfied_once_and_then_cleared
+test_ui_requirement_never_affects_a_non_done_claim_or_a_stop_hook_active_rerun
+test_hostile_session_id_never_reads_outside_the_sessions_dir_rf4
+test_absent_or_corrupt_sort_file_changes_nothing

@@ -6,6 +6,7 @@ import fs from "node:fs";
 import path from "node:path";
 
 import { QUESTIONS } from "./commands.js";
+import { ALL_AXES, AXIS_COLLAPSE, collapseLabel, sortQuestionName } from "./prompt-sort/axes.js";
 import { labeledItems, sharedLabels, type Db, type LabelSource } from "./db.js";
 import { toRef } from "./question.js";
 import type { Provider, ProviderResult } from "./types.js";
@@ -34,6 +35,28 @@ export const SOURCE_WARNING = "label sources disagree on >30% of shared items â€
 // this in by key (Plan C: prompt-sort axes; Plan B: resolution-check and
 // turn-progress); "as-is" is always available.
 export const VARIANTS: Record<string, Record<string, Variant>> = {};
+
+// prompt-sort axis questions: the variant selects which sorter policy answers.
+// The input stays a valid SortEvalInput; only `mode` changes (eval-provider.ts).
+// These variants are exercised through `judge prompt-sort eval` (which supplies
+// makeSortEvalProvider); the generic `judge eval` provider chain cannot answer them.
+for (const axis of ALL_AXES) {
+  const withMode = (mode: "heuristic" | "blend" | "judge-only"): Variant => (i) => ({ ...(typeof i === "object" && i !== null ? (i as Record<string, unknown>) : {}), mode });
+  VARIANTS[sortQuestionName(axis)] = { heuristic: withMode("heuristic"), blend: withMode("blend"), "judge-only": withMode("judge-only") };
+}
+
+// One label space per axis question: outcome labels are coarse, adjudicator
+// labels fine (RF-6). Applied to labels and decided predictions alike, in the
+// overall score and in the per-source scores (withSources).
+const collapsing = (question: string): boolean => AXIS_COLLAPSE[question] !== undefined;
+function collapseResults(question: string, results: EvalResult[]): EvalResult[] {
+  if (!collapsing(question)) return results;
+  return results.map((r) => ({
+    ...r,
+    label: collapseLabel(question, r.label),
+    result: r.result.status === "decided" ? { ...r.result, decision: collapseLabel(question, r.result.decision) } : r.result,
+  }));
+}
 
 const ratio = (a: number, b: number): number => (b === 0 ? 0 : a / b);
 
@@ -95,7 +118,7 @@ export function renderEvalReport(r: EvalReport): string {
 }
 
 function withSources(db: Db, base: EvalReport, results: readonly EvalResult[], threshold: number): EvalReport {
-  const shared = sharedLabels(db, base.question);
+  const shared = sharedLabels(db, base.question).map((s) => ({ ...s, outcome: collapseLabel(base.question, s.outcome), adjudicator: collapseLabel(base.question, s.adjudicator) }));
   const byId = new Map(shared.map((s) => [s.itemId, s]));
   const scored = results.filter((r) => byId.has(r.itemId));
   if (scored.length === 0) return base;
@@ -141,6 +164,7 @@ export async function runEval(
       opts.record?.(JSON.stringify(row));
     }
   }
+  results = collapseResults(opts.question, results);
   const base = scoreEval(opts.question, opts.provider.name, opts.variant, question.threshold, results, labels);
   const report = withSources(db, base, results, question.threshold);
   return { exitCode: 0, stdout: JSON.stringify(report), report };
