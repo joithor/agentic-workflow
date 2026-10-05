@@ -48,6 +48,36 @@ LIVE_W=36                                    # visible width of the Live column
 LIVE_TTL="${AW_STATUSLINE_LIVE_TTL:-15}"     # seconds before the cache is refreshed
 STATE_DIR="${AW_STATE_DIR:-$HOME/.agentic-workflow}"
 
+# Width in CHARACTERS, whatever the locale. bash 3.2 and printf count bytes in the C locale
+# (what Claude Code gives the statusline), so count bytes minus UTF-8 continuation bytes.
+vwidth() { printf '%s' "$1" | LC_ALL=C tr -d '\200-\277' | wc -c | tr -d ' '; }
+
+# Pads $1 with spaces to $2 characters (no cut; wider input is returned as is).
+vpad() {
+  local n=$(( $2 - $(vwidth "$1") ))
+  printf '%s' "$1"
+  [ "$n" -gt 0 ] && printf '%*s' "$n" ''
+  return 0
+}
+
+# Cuts $1 to at most $2 characters, never inside a multibyte sequence.
+vcut() {
+  local s="$1" max="$2" i=0 chars=0 b
+  local -a bytes
+  # shellcheck disable=SC2207
+  bytes=($(printf '%s' "$s" | LC_ALL=C od -An -v -tu1))
+  while [ "$i" -lt "${#bytes[@]}" ]; do
+    b=${bytes[$i]}
+    # a byte 128-191 continues the previous character; any other byte starts a new one
+    if [ "$b" -lt 128 ] || [ "$b" -ge 192 ]; then
+      [ "$chars" -ge "$max" ] && break
+      chars=$((chars + 1))
+    fi
+    i=$((i + 1))
+  done
+  printf '%s' "$s" | LC_ALL=C head -c "$i"
+}
+
 # Finds an aw CLI: PATH first, then the installer's directory.
 find_bin() {
   command -v "$1" 2>/dev/null && return 0
@@ -135,8 +165,18 @@ live_text() {
     ( live_refresh "$cache" "$sid" "$cwd" </dev/null >/dev/null 2>&1 & )
   fi
   case "$L_CALLS$L_OVER" in ''|*[!0-9]*) echo "--"; return ;; esac
+  # Too wide: drop the judge call count, then shorten `calls` to `c`, and only then cut
+  # (on a character boundary). Widths are counted in characters, not bytes.
   text="$L_CALLS calls · $L_OVER >200k · $(judge_segment "$L_JUDGE" "$L_JCALLS")"
-  [ "${#text}" -gt "$LIVE_W" ] && text="${text:0:$((LIVE_W - 1))}…"
+  if [ "$(vwidth "$text")" -gt "$LIVE_W" ]; then
+    text="$L_CALLS calls · $L_OVER >200k · $(judge_segment "$L_JUDGE" "")"
+  fi
+  if [ "$(vwidth "$text")" -gt "$LIVE_W" ]; then
+    text="$L_CALLS c · $L_OVER >200k · $(judge_segment "$L_JUDGE" "")"
+  fi
+  if [ "$(vwidth "$text")" -gt "$LIVE_W" ]; then
+    text="$(vcut "$text" "$((LIVE_W - 1))")…"
+  fi
   echo "$text"
 }
 
@@ -149,11 +189,11 @@ elif [ "$COLS" -ge 78 ] 2>/dev/null; then TIER=narrow
 elif [ "$COLS" -ge 65 ] 2>/dev/null; then TIER=compact
 else TIER=compact-s
 fi
-LIVE_HDR_SUF="$(printf ' │ %-*s' "$LIVE_W" Live)"
+LIVE_HDR_SUF=" │ $(vpad Live "$LIVE_W")"
 
 # Fallback for empty or invalid input
 if [ -z "$INPUT" ] || ! echo "$INPUT" | jq empty 2>/dev/null; then
-  LIVE_DASH="$(printf ' │ %-*s' "$LIVE_W" '--')"
+  LIVE_DASH=" │ $(vpad -- "$LIVE_W")"
   case "$TIER" in
   full-live|full)
     L_H=""; L_V=""; [ "$TIER" = full-live ] && { L_H="$LIVE_HDR_SUF"; L_V="$LIVE_DASH"; }
@@ -227,8 +267,9 @@ BRANCH12="$BRANCH"; [ "${#BRANCH}" -gt 12 ] && BRANCH12="${BRANCH:0:9}..."
 BRANCH10="$BRANCH"; [ "${#BRANCH}" -gt 10 ] && BRANCH10="${BRANCH:0:7}..."
 
 # --- Context bar and color ---
-BARS="██████████"
-SPACES="░░░░░░░░░░"
+# Repeats the character $1 $2 times. Built by repetition, never by slicing a string of
+# glyphs: bash counts bytes in the C locale and would cut █ and ░ mid-sequence.
+rep() { local out="" i=0; while [ "$i" -lt "$2" ]; do out="$out$1"; i=$((i + 1)); done; printf '%s' "$out"; }
 BAR_FILL=${BAR_FILL:-0}; [ "$BAR_FILL" = "null" ] && BAR_FILL=0
 BAR_FILL5=${BAR_FILL5:-0}; [ "$BAR_FILL5" = "null" ] && BAR_FILL5=0
 
@@ -242,9 +283,9 @@ fi
 # %-4s pads "0%" → "0%  ", "76%" → "76% ", "100%" → "100%" — fixed column width
 CTX_PCT_FMT=$(printf '%-4s' "${CTX_INT}%")
 # Full (bar=10): 10 + 1 + 4 = 15 visible chars
-CTX_FULL="${CTX_COLOR}${BARS:0:$BAR_FILL}${SPACES:0:$((10 - BAR_FILL))}\033[0m ${CTX_PCT_FMT}"
+CTX_FULL="${CTX_COLOR}$(rep █ "$BAR_FILL")$(rep ░ "$((10 - BAR_FILL))")\033[0m ${CTX_PCT_FMT}"
 # Narrow (bar=5): 5 + 1 + 4 = 10 visible chars
-CTX_NARROW="${CTX_COLOR}${BARS:0:$BAR_FILL5}${SPACES:0:$((5 - BAR_FILL5))}\033[0m ${CTX_PCT_FMT}"
+CTX_NARROW="${CTX_COLOR}$(rep █ "$BAR_FILL5")$(rep ░ "$((5 - BAR_FILL5))")\033[0m ${CTX_PCT_FMT}"
 
 # --- Cost ---
 COST_FMT=$(printf '$%.2f' "${COST:-0}" 2>/dev/null || echo '$0.00')
@@ -349,7 +390,7 @@ fi
 LIVE_H=""; LIVE_V=""
 case "$TIER" in full-live|medium-live)
   LIVE_H="$LIVE_HDR_SUF"
-  LIVE_V="$(printf ' │ %-*s' "$LIVE_W" "$(live_text "$SESSION_ID" "$LIVE_CWD")")"
+  LIVE_V=" │ $(vpad "$(live_text "$SESSION_ID" "$LIVE_CWD")" "$LIVE_W")"
 esac
 
 if [ "$TIER" = full-live ] || [ "$TIER" = full ]; then
