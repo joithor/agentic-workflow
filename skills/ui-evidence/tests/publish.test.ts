@@ -25,6 +25,24 @@ describe("publishEvidence", () => {
     expect(result.localPaths).toContain("/tmp/1.png");
   });
 
+  it("never treats a run against a preview host as seeded, whatever the caller says", async () => {
+    const uploadToLinear = vi.fn();
+    const uploadArtifact = vi.fn();
+    const postPrComment = vi.fn().mockResolvedValue(true);
+    const ask = vi.fn().mockResolvedValue(true);
+    const result = await publishEvidence({ runId: "r1", localDir: "/tmp/r1", provenance: "seeded", linearIssueId: "ISS-1", uploadToLinear, uploadArtifact, postPrComment, ask }, { ...summary, host: "https://pr-9.vitalize.build" });
+    expect(uploadToLinear).not.toHaveBeenCalled();
+    expect(uploadArtifact).not.toHaveBeenCalled();
+    expect(ask.mock.calls[0]?.[0]).toContain("unknown");
+    expect(result.linearUploaded).toBe(false);
+  });
+
+  it("still treats a localhost run as seeded", async () => {
+    const uploadToLinear = vi.fn().mockResolvedValue({ url: "u" });
+    const result = await publishEvidence({ runId: "r1", localDir: "/tmp/r1", provenance: "seeded", linearIssueId: "ISS-1", uploadToLinear, postPrComment: vi.fn().mockResolvedValue(true), ask: vi.fn().mockResolvedValue(true) }, { ...summary, host: "http://127.0.0.1:3000" });
+    expect(result.linearUploaded).toBe(true);
+  });
+
   it("skips every live action when the user says no to ask", async () => {
     const uploadToLinear = vi.fn();
     const postPrComment = vi.fn();

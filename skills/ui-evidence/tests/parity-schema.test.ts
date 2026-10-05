@@ -29,6 +29,18 @@ describe("parseDesignManifest", () => {
   ])("rejects %s", (_n, raw) => {
     expect(parseDesignManifest(raw)).toHaveProperty("error");
   });
+  it.each([
+    ["a misspelt frame key (expectBox)", { ...base, frames: [{ ...frame("A"), expectBox: [{ target: { testId: "t" }, expected: { w: 1 } }] }] }],
+    ["a misspelt manifest key", { ...base, settleMS: 5 }],
+    ["a misspelt box expectation key", { ...base, frames: [{ ...frame("A"), expectBoxes: [{ target: { testId: "t" }, expected: { w: 1 }, tolerence: 2 }] }] }],
+    ["a misspelt expected axis", { ...base, frames: [{ ...frame("A"), expectBoxes: [{ target: { testId: "t" }, expected: { width: 1 } }] }] }],
+    ["a misspelt design region key", { ...base, frames: [{ ...frame("A"), designRegion: { x: 1, y: 2, w: 3, h: 4, z: 1 } }] }],
+    ["a misspelt anchorOffset key", { ...base, frames: [{ ...frame("A"), anchorOffset: { x: 1, y: 2, z: 3 } }] }],
+    ["a misspelt viewport key", { ...base, viewport: { w: 1, h: 1, dpr: 2 } }],
+    ["a misspelt login key", { ...base, login: { emailEnv: "E", passwordEnv: "P", emailSelector: "a", passwordSelector: "b", submitSelector: "c", loginpath: "/x" } }],
+  ])("rejects %s instead of silently dropping the check", (_n, raw) => {
+    expect(parseDesignManifest(raw)).toHaveProperty("error");
+  });
   it("rejects duplicate frame names, which would overwrite each other's PNGs", () => {
     expect(parseDesignManifest({ ...base, frames: [frame("A"), frame("A")] })).toEqual({ error: 'duplicate frame name "A"' });
   });

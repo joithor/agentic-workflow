@@ -46,6 +46,14 @@ describe("executeStep expected-state assertion", () => {
     expect(await executeStep(page, { action: "expect-visible", target: "Schedule", expectedState: { kind: "testid-visible", testId: "noop" } }, fixture.host, never, T)).toBe("passed");
   });
 
+  it("marks a goto whose target would rewrite the host broken, without navigating", async () => {
+    const before = page.url();
+    for (const target of ["@evil.example/x", "//evil.example/x", "evil.example"]) {
+      expect(await executeStep(page, { action: "goto", target, expectedState: { kind: "url-path", path: "/" } }, fixture.host, never, T)).toBe("broken");
+    }
+    expect(page.url()).toBe(before);
+  });
+
   it("marks a goto to an unreachable page and a missing expect-visible target broken (no repair for those)", async () => {
     expect(await executeStep(page, { action: "expect-visible", target: "Nope", expectedState: saved }, fixture.host, never, T)).toBe("broken");
   });

@@ -44,26 +44,67 @@ export function redact(text: string, secrets: string[]): string {
   return secrets.filter((s) => s.length > 0).reduce((acc, s) => acc.split(s).join("[redacted]"), text);
 }
 
-const WRITE_WORDS = new Set(["save", "submit", "update", "delete", "remove", "create", "confirm", "publish", "send", "apply", "approve", "post", "add"]);
+const WRITE_WORDS = new Set([
+  "save", "submit", "update", "delete", "remove", "create", "confirm", "publish", "send", "apply", "approve", "post", "add",
+  "invite", "archive", "deactivate", "activate", "enable", "disable", "cancel", "reset", "assign", "import", "upload", "complete",
+  "finish", "accept", "reject", "sync", "release", "merge", "logout", "signout", "register",
+]);
+// "savebutton", "deleteBtn": a write word fused with a generic control suffix.
+const CONTROL_SUFFIXES = new Set(["btn", "button", "link", "action"]);
+
+function isWriteWord(token: string): boolean {
+  if (WRITE_WORDS.has(token)) return true;
+  return [...WRITE_WORDS].some((w) => token.startsWith(w) && CONTROL_SUFFIXES.has(token.slice(w.length)));
+}
 
 /** Splits camelCase and separators into lower-case words: "updateHospital-btn" -> update, hospital, btn. */
 function words(target: string): string[] {
   return target.replace(/([a-z0-9])([A-Z])/g, "$1 $2").toLowerCase().split(/[^a-z0-9]+/).filter((w) => w.length > 0);
 }
 
-/** Click steps whose target reads like a save/submit/update control. */
-export function findWriteSteps(steps: ScriptStep[]): Array<{ index: number; target: string }> {
-  return steps.flatMap((s, index) => (s.action === "click" && words(s.target).some((w) => WRITE_WORDS.has(w)) ? [{ index, target: s.target }] : []));
+/** A goto target is a path on the vetted host: one leading slash, no scheme-relative `//` and no backslash. */
+export function isSameOriginPath(target: string): boolean {
+  return target.startsWith("/") && !target.startsWith("//") && !target.includes("\\");
 }
 
+/** Best-effort: click steps (and goto paths) whose words read like a save/submit/update/delete control. */
+export function findWriteSteps(steps: ScriptStep[]): Array<{ index: number; target: string }> {
+  return steps.flatMap((s, index) => {
+    const label = s.action === "click" ? s.target : s.action === "goto" ? (s.target.split("?")[0] as string) : null;
+    return label !== null && words(label).some(isWriteWord) ? [{ index, target: s.target }] : [];
+  });
+}
+
+/**
+ * The goto origin check always applies (a target like `@app.vitalize.build/x` would leave the vetted
+ * host); the write-word check is skipped under --allow-writes.
+ */
 export function guardWrites(steps: ScriptStep[], allowWrites: boolean): { ok: true } | { ok: false; error: string } {
+  const offOrigin = steps.flatMap((s, index) => (s.action === "goto" && !isSameOriginPath(s.target) ? [`#${index + 1} goto ${s.target}`] : []));
+  if (offOrigin.length > 0) return { ok: false, error: `goto targets must be paths on the host (start with a single "/"): ${offOrigin.join(", ")}` };
   const writes = allowWrites ? [] : findWriteSteps(steps);
-  return writes.length === 0 ? { ok: true } : { ok: false, error: `refusing write-looking steps without --allow-writes: ${writes.map((w) => `#${w.index + 1} click ${w.target}`).join(", ")}` };
+  return writes.length === 0 ? { ok: true } : { ok: false, error: `refusing write-looking steps without --allow-writes: ${writes.map((w) => `#${w.index + 1} ${steps[w.index]?.action} ${w.target}`).join(", ")}` };
+}
+
+/** True for a request that would navigate the browser away from the vetted host. */
+export function isOffOriginNavigation(host: string, url: string, isNavigation: boolean): boolean {
+  return isNavigation && !url.startsWith("about:") && new URL(url).origin !== new URL(host).origin;
 }
 
 export type Provenance = "seeded" | "scrubbed" | "unknown";
 
-/** A preview is a scrubbed customer extract; a local run is only as safe as its DB check says. */
-export function provenanceFor(kind: "local" | "preview", dbProvenance: "seeded" | "unknown"): Provenance {
-  return kind === "preview" ? "scrubbed" : dbProvenance;
+/**
+ * A preview is a scrubbed customer extract, but an explicit `unknown` stays `unknown` (the caller
+ * asked for the data to stay local). A local run is only as safe as its DB check says.
+ */
+export function provenanceFor(kind: "local" | "preview", dbProvenance: "seeded" | "unknown" | undefined): Provenance {
+  if (kind === "preview") return dbProvenance === "unknown" ? "unknown" : "scrubbed";
+  return dbProvenance ?? "unknown";
+}
+
+/** Runs against anything but this machine never count as seeded data. */
+export function isLocalHost(host: string | undefined): boolean {
+  if (host === undefined) return true;
+  const { hostname } = new URL(host);
+  return hostname === "localhost" || hostname === "127.0.0.1";
 }

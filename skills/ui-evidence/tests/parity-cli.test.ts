@@ -56,9 +56,9 @@ describe("parity", () => {
     expect(err).toEqual(["geometry: A testId:card: w 1 != 2"]);
   });
 
-  it("exits 2 with the message when the run throws", async () => {
+  it("exits 4 (distinct from a geometry failure) with the message when the run throws", async () => {
     const { d, err } = deps({ run: async () => { throw new Error("anchor not found"); } });
-    expect(await parityMain(["parity", "m.json", "r"], d)).toBe(2);
+    expect(await parityMain(["parity", "m.json", "r"], d)).toBe(4);
     expect(err[0]).toBe("parity run failed: anchor not found");
   });
 
@@ -99,6 +99,9 @@ describe("parity", () => {
     expect(await parityMain(["parity", "m.json", "r"], writes.d)).toBe(1);
     expect(writes.err[0]).toContain("--allow-writes");
     expect(run).not.toHaveBeenCalled();
+    const escape = deps({ run, readFile: () => manifest([{ action: "goto", target: "@app.vitalize.build/admin", expectedState: { kind: "url-path", path: "/" } }]) });
+    expect(await parityMain(["parity", "m.json", "r", "--allow-writes"], escape.d)).toBe(1);
+    expect(escape.err[0]).toContain("goto targets must be paths");
     const allowed = deps({ readFile: () => manifest([click("update-hospital-button")]) });
     expect(await parityMain(["parity", "m.json", "r", "--allow-writes"], allowed.d)).toBe(0);
   });

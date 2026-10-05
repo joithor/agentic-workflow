@@ -35,7 +35,8 @@
       ],
       "knownDifferences": [
         "Hospital name typed to match the mockup, not saved"
-      ]
+      ],
+      "designNode": "<figma node id of this frame>"
     },
     {
       "name": "C-popover",
@@ -72,7 +73,12 @@
             "y": 184
           }
         }
-      ]
+      ],
+      "designNode": "<figma node id of this frame>"
     }
-  ]
+  ],
+  "viewport": {
+    "w": 1512,
+    "h": 1100
+  }
 }

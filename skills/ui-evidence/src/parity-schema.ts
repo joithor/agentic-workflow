@@ -3,15 +3,15 @@ import { z } from "zod";
 import { ScriptStepSchema } from "./script-schema.js";
 
 const SelectorSchema = z.union([z.object({ testId: z.string().min(1) }).strict(), z.object({ text: z.string().min(1) }).strict()]);
-const BoxSchema = z.object({ x: z.number().int().nonnegative(), y: z.number().int().nonnegative(), w: z.number().int().positive(), h: z.number().int().positive() });
-const PointSchema = z.object({ x: z.number(), y: z.number() });
+const BoxSchema = z.object({ x: z.number().int().nonnegative(), y: z.number().int().nonnegative(), w: z.number().int().positive(), h: z.number().int().positive() }).strict();
+const PointSchema = z.object({ x: z.number(), y: z.number() }).strict();
 
 const BoxExpectationSchema = z.object({
   target: SelectorSchema,
   relativeTo: SelectorSchema.optional(),
-  expected: z.object({ w: z.number().optional(), h: z.number().optional(), x: z.number().optional(), y: z.number().optional() }).refine((e) => Object.keys(e).length > 0, "expected needs at least one of w/h/x/y"),
+  expected: z.object({ w: z.number().optional(), h: z.number().optional(), x: z.number().optional(), y: z.number().optional() }).strict().refine((e) => Object.keys(e).length > 0, "expected needs at least one of w/h/x/y"),
   tolerance: z.number().nonnegative().optional(),
-});
+}).strict();
 
 // Typed into the form so the page matches the design's sample data. Never saved:
 // there is no submit step in a frame.
@@ -37,13 +37,14 @@ const FrameSchema = z.object({
   knownDifferences: z.array(z.string().min(1)).optional(),
   /** Figma node id or URL, quoted in Linear subtitles. */
   designNode: z.string().optional(),
-});
+}).strict();
 
+// Every object below is strict: a misspelt key (`expectBox`) must fail the parse, never silently drop an assertion.
 export const DesignManifestSchema = z.object({
   route: z.string().startsWith("/"),
   /** Must already be visible once the route has loaded — proves the page is past its spinner. */
   ready: SelectorSchema,
-  viewport: z.object({ w: z.number().int().positive(), h: z.number().int().positive() }).default({ w: 1512, h: 982 }),
+  viewport: z.object({ w: z.number().int().positive(), h: z.number().int().positive() }).strict().default({ w: 1512, h: 982 }),
   /** How long to wait for `ready`, a frame's `waitFor` and its anchor. */
   timeoutMs: z.number().int().positive().default(60_000),
   settleMs: z.number().int().nonnegative().default(600),
@@ -65,9 +66,10 @@ export const DesignManifestSchema = z.object({
       /** Sign-in is done once the URL path no longer contains this. */
       loginPath: z.string().default("/login"),
     })
+    .strict()
     .optional(),
   frames: z.array(FrameSchema).min(1),
-});
+}).strict();
 export type DesignManifest = z.infer<typeof DesignManifestSchema>;
 export type DesignFrame = DesignManifest["frames"][number];
 

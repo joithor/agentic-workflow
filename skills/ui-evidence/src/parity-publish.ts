@@ -46,11 +46,11 @@ export function attachmentTitle(frame: string): string {
   return `${ATTACHMENT_PREFIX}${frame} (Figma | implementation | diff)`;
 }
 
-export function attachmentSubtitle(s: ParitySummary, frame: string, designNode: string | null): string {
+export function attachmentSubtitle(s: ParitySummary, frame: string): string {
   const e = s.frames[frame] as ParityEntry;
   const known = e.knownDifferences.length > 0 ? `known differences: ${e.knownDifferences.join("; ")}` : "no known differences";
   const text = [
-    `design node ${designNode ?? "unspecified"}`,
+    `design node ${e.designNode ?? s.designNode ?? "unspecified"}`,
     `build ${s.appBuild ?? "unverified"}`,
     `viewport ${s.viewport.w}x${s.viewport.h}`,
     `diff ${e.diffPercent}% (${e.diffPixels}/${e.total} px)`,
@@ -59,8 +59,8 @@ export function attachmentSubtitle(s: ParitySummary, frame: string, designNode: 
   return text.length > SUBTITLE_MAX ? `${text.slice(0, SUBTITLE_MAX - 1)}…` : text;
 }
 
-/** One side-by-side attachment per frame. `frameNodes` maps a frame to its own design node when it has one. */
-export function buildAttachmentPlan(s: ParitySummary, runDir: string, sizeOf: (file: string) => number, frameNodes: Record<string, string> = {}): PlannedAttachment[] {
+/** One side-by-side attachment per frame; a frame's own `designNode` wins over the manifest's. */
+export function buildAttachmentPlan(s: ParitySummary, runDir: string, sizeOf: (file: string) => number): PlannedAttachment[] {
   return Object.keys(s.frames).map((frame) => {
     const e = s.frames[frame] as ParityEntry;
     const file = path.join(runDir, e.files.sideBySide);
@@ -71,7 +71,7 @@ export function buildAttachmentPlan(s: ParitySummary, runDir: string, sizeOf: (f
       contentType: "image/png",
       size: sizeOf(file),
       title: attachmentTitle(frame),
-      subtitle: attachmentSubtitle(s, frame, frameNodes[frame] ?? s.designNode),
+      subtitle: attachmentSubtitle(s, frame),
       expectation: `${frame}: left = design, middle = implementation, right = diff; settled (no fade-in), no focus ring, ${e.diffPercent}% differing`,
     };
   });

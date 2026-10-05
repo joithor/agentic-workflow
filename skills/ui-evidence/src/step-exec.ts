@@ -3,6 +3,7 @@
 // (tests/browser/), not by unit coverage.
 import type { Page } from "playwright";
 
+import { isSameOriginPath } from "./host-guard.js";
 import { assertExpectedState } from "./expected-state.js";
 import { candidateFits, resolveCandidate, type Candidate, type RepairProposal } from "./repair.js";
 import { describeExpectedState, type ScriptStep } from "./script-schema.js";
@@ -16,6 +17,8 @@ export type RepairFn = (brokenSelector: string, step: string, candidates: Candid
 
 export async function performAction(page: Page, step: ScriptStep, host: string, timeout = 5000): Promise<void> {
   if (step.action === "goto") {
+    // Defence in depth behind guardWrites: never let a target rewrite the host (`@evil.com`, `//evil.com`).
+    if (!isSameOriginPath(step.target)) throw new Error(`goto target must be a path on the host: ${step.target}`);
     await page.goto(`${host}${step.target}`);
   } else if (step.action === "click") {
     await page.getByTestId(step.target).click({ timeout });

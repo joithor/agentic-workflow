@@ -4,6 +4,8 @@ import path from "node:path";
 
 import { describe, expect, it } from "vitest";
 
+import { guardWrites } from "../src/host-guard.js";
+import { viewportShortfall } from "../src/parity.js";
 import { buildAttachmentPlan, renderLinearComment, type ParitySummary } from "../src/parity-publish.js";
 import { parseDesignManifest } from "../src/parity-schema.js";
 
@@ -11,8 +13,15 @@ const dir = path.join(import.meta.dirname, "..", "examples", "design-parity");
 const read = (f: string): unknown => JSON.parse(fs.readFileSync(path.join(dir, f), "utf8"));
 
 describe("design-parity worked example", () => {
-  it("manifest parses and has write-free steps", () => {
-    expect(parseDesignManifest(read("example-manifest.json"))).not.toHaveProperty("error");
+  it("manifest parses, is write-free and every frame fits its viewport", () => {
+    const m = parseDesignManifest(read("example-manifest.json"));
+    if ("error" in m) throw new Error(m.error);
+    expect(guardWrites(m.frames.flatMap((f) => f.steps ?? []), false)).toEqual({ ok: true });
+    for (const f of m.frames) expect(f.designRegion.y + f.designRegion.h).toBeLessThanOrEqual(m.viewport.h);
+  });
+  it("parity.json frames fit the recorded viewport (the driver would have thrown otherwise)", () => {
+    const s = read("example-parity.json") as ParitySummary;
+    for (const e of Object.values(s.frames)) expect(viewportShortfall({ ...e.implementationOrigin, w: e.designRegion.w, h: e.designRegion.h }, s.viewport)).toBeNull();
   });
   it("parity.json plans one titled Linear attachment per state", () => {
     const s = read("example-parity.json") as ParitySummary;

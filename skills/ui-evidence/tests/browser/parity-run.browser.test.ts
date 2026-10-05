@@ -18,16 +18,26 @@ const PAGE = `<!doctype html><html><body style="margin:0;font:16px sans-serif">
   <span id="msg">Closed</span>
   <button data-testid="toggle" onclick="document.getElementById('msg').textContent='Open all day'">Toggle</button>
   <input data-testid="name" value="x" />
-</div></body></html>`;
+</div>
+<button data-testid="corner-save" style="position:fixed;right:0;bottom:0;width:60px;height:60px" onclick="fetch('/saved')">Save</button>
+<a data-testid="leave" href="__AWAY__/away">leave</a></body></html>`;
 const VIEWPORT = { w: 600, h: 400 };
 const REGION = { x: 40, y: 30, w: 202, h: 102 }; // 200x100 content + 1px border each side
 
 let host: string;
 let close: () => Promise<void>;
+let awayHits = 0;
+let savedHits = 0;
+let closeAway: () => Promise<void>;
 let tmp: string;
 
 beforeAll(async () => {
-  const server = http.createServer((_q, r) => { r.setHeader("content-type", "text/html"); r.end(PAGE); });
+  // A second origin standing in for "anywhere else": it counts every request that reaches it.
+  const away = http.createServer((_q, r) => { awayHits++; r.end("away"); });
+  await new Promise<void>((res) => away.listen(0, "127.0.0.1", res));
+  const awayUrl = `http://localhost:${(away.address() as { port: number }).port}`;
+  closeAway = () => new Promise((r) => away.close(() => r()));
+  const server = http.createServer((q, r) => { if (q.url === "/saved") savedHits++; r.setHeader("content-type", "text/html"); r.end(PAGE.replace("__AWAY__", awayUrl)); });
   await new Promise<void>((res) => server.listen(0, "127.0.0.1", res));
   host = `http://127.0.0.1:${(server.address() as { port: number }).port}`;
   close = () => new Promise((r) => server.close(() => r()));
@@ -35,6 +45,7 @@ beforeAll(async () => {
 });
 afterAll(async () => {
   await close();
+  await closeAway();
   fs.rmSync(tmp, { recursive: true, force: true });
 });
 
@@ -121,6 +132,31 @@ describe("runParity", () => {
     const step = { action: "click", target: "toggle", expectedState: { kind: "text-visible", text: "never shown" } };
     await expect(runParity(manifest({ frames: [{ ...frame, steps: [step] }] }), path.join(tmp, "r2"), opts())).rejects.toThrow(/step 1 \(click toggle\) failed/);
     await expect(runParity(manifest({ ready: { text: "Nope" }, frames: [frame] }), path.join(tmp, "r3"), opts())).rejects.toThrow();
+  });
+
+  it("explains how big the viewport must be when a region runs past it, and leaves no stale parity.json", async () => {
+    const a = await designPng("a5.png", false);
+    const dir = path.join(tmp, "run-short");
+    fs.mkdirSync(dir, { recursive: true });
+    fs.writeFileSync(path.join(dir, "parity.json"), '{"stale":true}');
+    const tall = { x: 40, y: 30, w: 202, h: 102 };
+    await expect(runParity(manifest({ viewport: { w: 600, h: 100 }, frames: [{ name: "T", designPng: a, designRegion: tall, anchor: { testId: "card" } }] }), dir, opts())).rejects.toThrow(/needs a viewport of at least 600x132, manifest viewport is 600x100/);
+    expect(fs.existsSync(path.join(dir, "parity.json"))).toBe(false);
+  });
+
+  it("skips the neutral click when the corner holds a control (a fixed Save button is never pressed)", async () => {
+    const a = await designPng("a6.png", false); // the helper's own corner click may press Save; reset after
+    savedHits = 0;
+    await runParity(manifest({ frames: [{ name: "N", designPng: a, designRegion: REGION, anchor: { testId: "card" } }] }), path.join(tmp, "run-neutral"), opts());
+    expect(savedHits).toBe(0);
+  });
+
+  it("aborts a navigation off the vetted host", async () => {
+    const a = await designPng("a7.png", false);
+    const step = { action: "click", target: "leave", expectedState: { kind: "testid-visible", testId: "leave" } };
+    // The click navigates to another origin; the lock aborts it, so the page errors and the step fails — and nothing reaches that origin.
+    await expect(runParity(manifest({ frames: [{ name: "O", designPng: a, designRegion: REGION, anchor: { testId: "card" }, steps: [step] }] }), path.join(tmp, "run-lock"), opts())).rejects.toThrow(/step 1 \(click leave\) failed/);
+    expect(awayHits).toBe(0);
   });
 
   it("refuses to start without credentials in the environment and never echoes values", async () => {

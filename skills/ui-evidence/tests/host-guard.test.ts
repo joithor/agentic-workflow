@@ -1,8 +1,9 @@
 import { describe, expect, it } from "vitest";
 
-import { DEFAULT_HOST, findWriteSteps, guardWrites, provenanceFor, readCredentials, redact, resolveHost } from "../src/host-guard.js";
+import { DEFAULT_HOST, findWriteSteps, guardWrites, isLocalHost, isOffOriginNavigation, isSameOriginPath, provenanceFor, readCredentials, redact, resolveHost } from "../src/host-guard.js";
 import type { ScriptStep } from "../src/script-schema.js";
 
+const goto = (target: string): ScriptStep => ({ action: "goto", target, expectedState: { kind: "url-path", path: "/" } });
 const click = (target: string): ScriptStep => ({ action: "click", target, expectedState: { kind: "testid-visible", testId: target } });
 
 describe("resolveHost", () => {
@@ -73,10 +74,50 @@ describe("write guard", () => {
   });
 });
 
+describe("goto origin guard", () => {
+  it("accepts a single-slash path and rejects anything that could rewrite the host", () => {
+    expect(isSameOriginPath("/admin?x=1")).toBe(true);
+    expect(isSameOriginPath("/a@b.com")).toBe(true);
+    for (const bad of ["@app.vitalize.build/admin", ".evil.com", "//evil.com", "/\\evil.com", "https://evil.com", ""]) expect(isSameOriginPath(bad)).toBe(false);
+  });
+  it("guardWrites refuses off-origin goto targets even with --allow-writes", () => {
+    const steps = [goto("/ok"), goto("@app.vitalize.build/admin")];
+    expect(guardWrites(steps, true)).toEqual({ ok: false, error: 'goto targets must be paths on the host (start with a single "/"): #2 goto @app.vitalize.build/admin' });
+    expect(guardWrites(steps, false).ok).toBe(false);
+  });
+  it("flags a goto to a mutating path, ignoring the query string", () => {
+    expect(findWriteSteps([goto("/hospital/1/delete"), goto("/admin?action=save"), goto("/admin-hospital-configuration?tab=info")])).toEqual([{ index: 0, target: "/hospital/1/delete" }]);
+    expect(guardWrites([goto("/hospital/1/delete")], false)).toEqual({ ok: false, error: "refusing write-looking steps without --allow-writes: #1 goto /hospital/1/delete" });
+  });
+  it("detects off-origin navigations only", () => {
+    const host = "https://pr-1.vitalize.build";
+    expect(isOffOriginNavigation(host, "https://pr-1.vitalize.build/x", true)).toBe(false);
+    expect(isOffOriginNavigation(host, "https://app.vitalize.build/x", true)).toBe(true);
+    expect(isOffOriginNavigation(host, "https://cdn.example.com/a.js", false)).toBe(false);
+    expect(isOffOriginNavigation(host, "about:blank", true)).toBe(false);
+  });
+});
+
+describe("expanded write words", () => {
+  it("catches verbs beyond save/submit and control-suffixed ids", () => {
+    const targets = ["invite-user", "archive-hospital", "reset-password", "cancel-shift", "logout", "saveBtn", "delete-button", "SAVEBUTTON", "btn-save", "import-link"];
+    expect(findWriteSteps(targets.map(click)).map((s) => s.target)).toEqual(targets);
+  });
+  it("still leaves read-only controls and look-alike words alone", () => {
+    expect(findWriteSteps(["savings-summary", "address-line", "postal-code", "assignee-filter"].map(click))).toEqual([]);
+  });
+});
+
 describe("provenanceFor", () => {
-  it("treats a preview as scrubbed and a local run as its DB check", () => {
-    expect(provenanceFor("preview", "unknown")).toBe("scrubbed");
+  it("treats a preview as scrubbed, keeps an explicit unknown, and a local run as its DB check", () => {
+    expect(provenanceFor("preview", undefined)).toBe("scrubbed");
+    expect(provenanceFor("preview", "seeded")).toBe("scrubbed");
+    expect(provenanceFor("preview", "unknown")).toBe("unknown");
     expect(provenanceFor("local", "seeded")).toBe("seeded");
     expect(provenanceFor("local", "unknown")).toBe("unknown");
+    expect(provenanceFor("local", undefined)).toBe("unknown");
+  });
+  it("only localhost counts as a local host", () => {
+    expect([isLocalHost(undefined), isLocalHost("http://localhost:3000"), isLocalHost("http://127.0.0.1:4000"), isLocalHost("https://pr-1.vitalize.build")]).toEqual([true, true, true, false]);
   });
 });

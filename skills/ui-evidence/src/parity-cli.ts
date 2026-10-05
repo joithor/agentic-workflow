@@ -1,7 +1,7 @@
 // CLI: ui-evidence parity <manifest.json> <run-dir> [--host https://pr-<n>.vitalize.build --allow-preview-host]
 //                         [--allow-writes] [--app-build sha] [--db-provenance seeded|unknown]
 //      ui-evidence parity-plan <run-dir> [--reviewed file,file]
-// parity exit: 0 all geometry checks passed, 1 bad usage/manifest/guard, 2 run error or a geometry check failed.
+// parity exit: 0 all geometry checks passed, 1 bad usage/manifest/guard, 2 a geometry check failed, 4 the run itself errored.
 import { guardWrites, resolveHost } from "./host-guard.js";
 import { failedBoxChecks } from "./parity.js";
 import { parseDesignManifest, type DesignManifest } from "./parity-schema.js";
@@ -65,7 +65,7 @@ export async function parityMain(argv: string[], deps: ParityDeps): Promise<numb
     });
   } catch (e) {
     deps.err(`parity run failed: ${(e as Error).message}`);
-    return 2;
+    return 4;
   }
   deps.out(JSON.stringify(summary));
   const failures = failedBoxChecks(summary.frames);

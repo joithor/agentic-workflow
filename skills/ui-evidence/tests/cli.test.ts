@@ -52,7 +52,7 @@ describe("cli main", () => {
       for (const argv of [["s.json", "r", "--host", "https://app.vitalize.build", "--allow-preview-host"], ["s.json", "r", "--host", "https://pr-5.vitalize.build"]]) {
         const { d, err } = deps({ run });
         expect(await main(argv, d)).toBe(1);
-        expect(err[0]).toBeDefined();
+        expect(err[0]).toMatch(/not a pr-<n>\.vitalize\.build preview host|needs --allow-preview-host/);
       }
       expect(run).not.toHaveBeenCalled();
     });

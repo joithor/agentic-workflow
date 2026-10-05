@@ -1,7 +1,7 @@
 import { PNG } from "pngjs";
 import { describe, expect, it } from "vitest";
 
-import { buildParityEntry, checkBoxes, compareRegion, cropRegion, failedBoxChecks, implementationRegion, selectorKey, sideBySide } from "../src/parity.js";
+import { buildParityEntry, checkBoxes, compareRegion, cropRegion, failedBoxChecks, implementationRegion, selectorKey, sideBySide, viewportShortfall } from "../src/parity.js";
 
 function solid(w: number, h: number, rgb: [number, number, number]): PNG {
   const p = new PNG({ width: w, height: h });
@@ -38,6 +38,14 @@ describe("implementationRegion", () => {
   });
   it("applies the anchor offset", () => {
     expect(implementationRegion({ x: 324, y: 257, w: 1, h: 1 }, { x: 0, y: 0, w: 10, h: 20 }, { x: 0, y: -82 })).toEqual({ x: 324, y: 175, w: 10, h: 20 });
+  });
+});
+
+describe("viewportShortfall", () => {
+  it("is null when the region fits and names the needed viewport when it does not", () => {
+    expect(viewportShortfall({ x: 324, y: 175, w: 652, h: 830 }, { w: 1512, h: 1100 })).toBeNull();
+    expect(viewportShortfall({ x: 324, y: 175, w: 652, h: 830 }, { w: 1512, h: 982 })).toEqual({ w: 1512, h: 1005 });
+    expect(viewportShortfall({ x: 1000, y: 0, w: 600, h: 10 }, { w: 1512, h: 982 })).toEqual({ w: 1600, h: 982 });
   });
 });
 
@@ -128,6 +136,14 @@ describe("parity entries", () => {
 
   it("records origin, size delta and the explained difference", () => {
     expect(entry(true)).toMatchObject({ implementationOrigin: { x: 324, y: 257 }, sizeDelta: { w: 0, h: 4 }, diffPercent: 0.91, knownDifferences: ["heading copy"], files });
+  });
+  it("rounds a fractional size delta and records the frame's design node", () => {
+    const e = buildParityEntry({
+      designRegion: { x: 0, y: 0, w: 652, h: 386 }, anchorBox: { x: 0, y: 0, w: 651.6, h: 386 }, anchorOffset: { x: 0, y: 0 },
+      comparison: { diffPixels: 0, total: 1, diffPercent: 0 }, threshold: 0.1, includeAA: false, boxChecks: [], knownDifferences: [], files, designNode: "9:9",
+    });
+    expect(e.sizeDelta).toEqual({ w: -0.4, h: 0 });
+    expect(e.designNode).toBe("9:9");
   });
   it("lists failed geometry checks per frame", () => {
     expect(failedBoxChecks({ A: entry(true), B: entry(false) })).toEqual([{ frame: "B", check: expect.objectContaining({ failure: "boom" }) }]);

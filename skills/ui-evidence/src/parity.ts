@@ -39,6 +39,15 @@ export function implementationRegion(anchorBox: Box, designRegion: Box, offset: 
   return { x: Math.round(anchorBox.x + offset.x), y: Math.round(anchorBox.y + offset.y), w: designRegion.w, h: designRegion.h };
 }
 
+/** Extra viewport needed for `region` to be captured in full, or null when it already fits. */
+export function viewportShortfall(region: Box, viewport: { w: number; h: number }): { w: number; h: number } | null {
+  const w = region.x + region.w;
+  const h = region.y + region.h;
+  return w > viewport.w || h > viewport.h ? { w: Math.max(w, viewport.w), h: Math.max(h, viewport.h) } : null;
+}
+
+const round2 = (n: number): number => Math.round(n * 100) / 100;
+
 export function compareRegion(design: PNG, implementation: PNG, opts: CompareOptions = {}): RegionComparison {
   if (design.width !== implementation.width || design.height !== implementation.height) {
     throw new RangeError(`size mismatch: design ${design.width}x${design.height} vs implementation ${implementation.width}x${implementation.height}`);
@@ -133,6 +142,8 @@ export interface ParityEntry {
   /** Intentional differences that explain a non-zero diff; carried into Linear and PR text. */
   knownDifferences: string[];
   files: { design: string; implementation: string; diff: string; sideBySide: string };
+  /** Figma node (or URL) this frame was compared with; quoted in the Linear subtitle. */
+  designNode?: string;
 }
 
 export function buildParityEntry(input: {
@@ -145,6 +156,7 @@ export function buildParityEntry(input: {
   boxChecks: BoxCheck[];
   knownDifferences: string[];
   files: ParityEntry["files"];
+  designNode?: string;
 }): ParityEntry {
   const origin = implementationRegion(input.anchorBox, input.designRegion, input.anchorOffset);
   return {
@@ -152,13 +164,14 @@ export function buildParityEntry(input: {
     implementationOrigin: { x: origin.x, y: origin.y },
     anchorBox: input.anchorBox,
     anchorOffset: input.anchorOffset,
-    sizeDelta: { w: input.anchorBox.w - input.designRegion.w, h: input.anchorBox.h - input.designRegion.h },
+    sizeDelta: { w: round2(input.anchorBox.w - input.designRegion.w), h: round2(input.anchorBox.h - input.designRegion.h) },
     ...input.comparison,
     threshold: input.threshold,
     includeAA: input.includeAA,
     boxChecks: input.boxChecks,
     knownDifferences: input.knownDifferences,
     files: input.files,
+    ...(input.designNode !== undefined ? { designNode: input.designNode } : {}),
   };
 }
 

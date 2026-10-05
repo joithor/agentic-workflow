@@ -9,7 +9,7 @@ import path from "node:path";
 import { chromium, type Locator, type Page } from "playwright";
 import { PNG } from "pngjs";
 
-import { provenanceFor, readCredentials, redact } from "./host-guard.js";
+import { isOffOriginNavigation, provenanceFor, readCredentials, redact } from "./host-guard.js";
 import {
   buildParityEntry,
   checkBoxes,
@@ -18,6 +18,7 @@ import {
   implementationRegion,
   selectorKey,
   sideBySide,
+  viewportShortfall,
   type ParityEntry,
   type Selector,
 } from "./parity.js";
@@ -37,6 +38,7 @@ export interface ParityRunOptions {
 }
 
 const MEASURE_TIMEOUT_MS = 5_000;
+const round2 = (n: number): number => Math.round(n * 100) / 100;
 const locate = (page: Page, s: Selector): Locator => ("testId" in s ? page.getByTestId(s.testId) : page.getByText(s.text).locator("visible=true")).first();
 
 async function settle(page: Page, ms: number): Promise<void> {
@@ -49,7 +51,10 @@ async function prepareCapture(page: Page, m: DesignManifest): Promise<void> {
   await settle(page, m.settleMs);
   await page.evaluate(() => (document.activeElement as HTMLElement | null)?.blur());
   const click = m.neutralClick === undefined ? { x: m.viewport.w - 22, y: m.viewport.h - 22 } : m.neutralClick;
-  if (click !== false) await page.mouse.click(click.x, click.y);
+  // Never click a control: a sticky Save bar or floating action button can sit in the corner.
+  if (click !== false && !(await page.evaluate(({ x, y }) => !!document.elementFromPoint(x, y)?.closest("button, a, input, select, textarea, label, summary, [role], [onclick], [tabindex]"), click))) {
+    await page.mouse.click(click.x, click.y);
+  }
   await page.evaluate(() => {
     window.scrollTo(0, 0);
     document.querySelectorAll("*").forEach((e) => {
@@ -75,7 +80,7 @@ async function measure(page: Page, selectors: Selector[], timeout: number): Prom
   const out = new Map<string, Box | null>();
   for (const s of selectors) {
     const b = await locate(page, s).boundingBox({ timeout }).catch(() => null);
-    out.set(selectorKey(s), b === null ? null : { x: b.x, y: b.y, w: b.width, h: b.height });
+    out.set(selectorKey(s), b === null ? null : { x: round2(b.x), y: round2(b.y), w: round2(b.width), h: round2(b.height) });
   }
   return out;
 }
@@ -94,9 +99,12 @@ async function runFrame(page: Page, m: DesignManifest, f: DesignFrame, host: str
   const anchorBox = measured.get(selectorKey(f.anchor)) ?? null;
   if (anchorBox === null) throw new Error(`frame ${f.name}: anchor ${selectorKey(f.anchor)} not found`);
 
+  const offset = f.anchorOffset ?? { x: 0, y: 0 };
+  // The screenshot is the viewport; a region that runs past it can't be cropped, so say how big the viewport must be.
+  const need = viewportShortfall(implementationRegion(anchorBox, f.designRegion, offset), m.viewport);
+  if (need !== null) throw new Error(`frame ${f.name}: the region needs a viewport of at least ${need.w}x${need.h}, manifest viewport is ${m.viewport.w}x${m.viewport.h}`);
   const fullPath = path.join(runDir, `${f.name}-full.png`);
   await page.screenshot({ path: fullPath });
-  const offset = f.anchorOffset ?? { x: 0, y: 0 };
   const design = cropRegion(PNG.sync.read(fs.readFileSync(f.designPng)), f.designRegion);
   const implementation = cropRegion(PNG.sync.read(fs.readFileSync(fullPath)), implementationRegion(anchorBox, f.designRegion, offset));
   const comparison = compareRegion(design, implementation, { threshold: m.threshold, includeAA: m.includeAA });
@@ -118,11 +126,14 @@ async function runFrame(page: Page, m: DesignManifest, f: DesignFrame, host: str
     boxChecks: checkBoxes(f.expectBoxes ?? [], (s) => measured.get(selectorKey(s)) ?? null),
     knownDifferences: f.knownDifferences ?? [],
     files,
+    ...(f.designNode !== undefined ? { designNode: f.designNode } : {}),
   });
 }
 
 export async function runParity(m: DesignManifest, runDir: string, opts: ParityRunOptions): Promise<ParitySummary> {
   fs.mkdirSync(runDir, { recursive: true });
+  // A failed run must not leave an earlier run's summary for parity-plan to publish.
+  fs.rmSync(path.join(runDir, "parity.json"), { force: true });
   let creds: { email: string; password: string } | null = null;
   if (m.login !== undefined) {
     const c = readCredentials(process.env, m.login.emailEnv, m.login.passwordEnv);
@@ -138,6 +149,8 @@ export async function runParity(m: DesignManifest, runDir: string, opts: ParityR
   });
   try {
     const context = await browser.newContext({ viewport: { width: m.viewport.w, height: m.viewport.h }, deviceScaleFactor: 1, userAgent: desktopChromeUserAgent(browser.version()) });
+    // The session is signed in: never let a redirect or injected link navigate it off the vetted host.
+    await context.route("**/*", (route) => (isOffOriginNavigation(opts.host, route.request().url(), route.request().isNavigationRequest()) ? route.abort() : route.continue()));
     const page = await context.newPage();
     const frames: Record<string, ParityEntry> = {};
     try {
@@ -152,7 +165,7 @@ export async function runParity(m: DesignManifest, runDir: string, opts: ParityR
     const summary: ParitySummary = {
       runId: path.basename(runDir),
       host: opts.host,
-      provenance: provenanceFor(opts.hostKind, opts.dbProvenance ?? "unknown"),
+      provenance: provenanceFor(opts.hostKind, opts.dbProvenance),
       appBuild: opts.appBuild ?? null,
       designNode: m.designNode ?? null,
       viewport: m.viewport,

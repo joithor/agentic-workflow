@@ -37,20 +37,20 @@ describe("provenance policy", () => {
 describe("attachment plan", () => {
   it("titles and subtitles carry node, build, viewport, diff and known differences", () => {
     expect(attachmentTitle("A-empty")).toBe("Pixel diff: A-empty (Figma | implementation | diff)");
-    expect(attachmentSubtitle(summary(), "A", "12:34")).toBe("design node 12:34 · build abc1234 · viewport 1512x982 · diff 9% (9/100 px) · known differences: copy; data");
+    expect(attachmentSubtitle(summary(), "A")).toBe("design node 12:34 · build abc1234 · viewport 1512x982 · diff 9% (9/100 px) · known differences: copy; data");
   });
   it("never claims a build or node it was not given, and says when nothing differs on purpose", () => {
     const s = summary({ appBuild: null, designNode: null, frames: { A: entry() } });
-    expect(attachmentSubtitle(s, "A", null)).toBe("design node unspecified · build unverified · viewport 1512x982 · diff 9% (9/100 px) · no known differences");
+    expect(attachmentSubtitle(s, "A")).toBe("design node unspecified · build unverified · viewport 1512x982 · diff 9% (9/100 px) · no known differences");
   });
   it("caps an over-long subtitle", () => {
     const s = summary({ frames: { A: entry({ known: ["x".repeat(600)] }) } });
-    const sub = attachmentSubtitle(s, "A", null);
+    const sub = attachmentSubtitle(s, "A");
     expect(sub).toHaveLength(500);
     expect(sub.endsWith("…")).toBe(true);
   });
   it("plans one side-by-side upload per frame with size and a review expectation", () => {
-    const [p] = buildAttachmentPlan(summary(), "/runs/r1", () => 1234, { A: "99:1" });
+    const [p] = buildAttachmentPlan(summary({ frames: { A: { ...entry(), designNode: "99:1" } } }), "/runs/r1", () => 1234);
     expect(p).toMatchObject({ frame: "A", file: "/runs/r1/A-side-by-side.png", filename: "A-side-by-side.png", contentType: "image/png", size: 1234, title: "Pixel diff: A (Figma | implementation | diff)" });
     expect(p?.subtitle).toContain("design node 99:1");
     expect(p?.expectation).toContain("no focus ring");
