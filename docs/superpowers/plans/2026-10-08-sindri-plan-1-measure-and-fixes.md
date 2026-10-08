@@ -443,7 +443,7 @@ git commit -m "feat: judge --providers allowlist (rules always kept as last reso
   - `type PatternName = "ship_recipe" | "ci_conflicts" | "push_only" | "evidence_env" | "image_turn" | "handoff" | "restate" | "rigor" | "scope_surface" | "dispatch"` (`image_turn` counts `[Image #N]` attachments, not defects)
   - `countPatterns(turns: Iterable<HumanTurn>): Record<PatternName, { turns: number; sessions: number }>`
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 Create `scorer/tests/audit-human-turns.test.ts`:
 
@@ -583,12 +583,12 @@ describe("countPatterns", () => {
 });
 ```
 
-- [ ] **Step 2: Run the tests to verify they fail**
+- [x] **Step 2: Run the tests to verify they fail**
 
 Run: `cd scorer && npx vitest run tests/audit-human-turns.test.ts tests/audit-patterns.test.ts`
 Expected: FAIL, with modules `../src/audit/human-turns.js` and `../src/audit/patterns.js` not found.
 
-- [ ] **Step 3: Implement**
+- [x] **Step 3: Implement**
 
 Create `scorer/src/audit/human-turns.ts`:
 
@@ -748,12 +748,12 @@ export function countPatterns(turns: Iterable<HumanTurn>): Record<PatternName, {
 }
 ```
 
-- [ ] **Step 4: Run the tests**
+- [x] **Step 4: Run the tests**
 
 Run: `cd scorer && npx vitest run tests/audit-human-turns.test.ts tests/audit-patterns.test.ts`
 Expected: PASS (all cases).
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add scorer/src/audit/human-turns.ts scorer/src/audit/patterns.ts scorer/tests/audit-human-turns.test.ts scorer/tests/audit-patterns.test.ts
