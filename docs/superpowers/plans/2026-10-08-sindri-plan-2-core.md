@@ -986,6 +986,8 @@ git commit -m "feat: sindri scrubber for secrets and identifier shapes"
 
 ### Task 3: Ledger (SQLite, migrations, fencing epoch)
 
+> Amendment (build): the ledger test "the loser of a race applies nothing" exercised no race, so it is renamed "migrates idempotently" (assertions kept); Interfaces now list `migrateWith`, `ItemRow` and `EventRow` (the test imports them); the ERD `state` comment reads `open | done | removed` because `markMissing` writes `removed`; Step 4 runs `npm run typecheck` before `test:coverage` (S7).
+
 **Files:**
 - Create: `sindri/src/ledger/db.ts`, `sindri/src/ledger/items.ts`
 - Modify: `sindri/src/errors.ts` (add `SND-LEDGER-001`, `SND-LOCK-003`)
@@ -998,6 +1000,7 @@ git commit -m "feat: sindri scrubber for secrets and identifier shapes"
   - `type Ledger = Database.Database`; `LEDGER_SCHEMA_VERSION = 1`.
   - `openLedger(file: string): Ledger` (WAL, `foreign_keys`, `busy_timeout`, migrations; file 0600, dir 0700); `openMemoryLedger(): Ledger`; `ledgerPath(stateDirPath: string): string`.
   - `schemaVersion(db): number`; `currentEpoch(db): number`; `bumpEpoch(db): number`; `withEpoch<T>(db, epoch: number, fn: () => T): T` (throws `SND-LOCK-003` when `epoch` isn't current, without running `fn`).
+  - `migrateWith(db, file: string | null, migrations: readonly string[]): void` (injectable list so the backup path is testable).
 - Produces (`ledger/items.ts`):
   - `interface ObservedItem { id: string; source: string; title: string; state: "open" | "done"; size: string | null; sizedBy: string | null; ambiguity: string | null; stepsDone: number; stepsTotal: number; contentHash: string }`.
   - `interface WriteCtx { epoch: number; tickId: string; now: Date; scrubber: Scrubber }`.
@@ -1005,8 +1008,9 @@ git commit -m "feat: sindri scrubber for secrets and identifier shapes"
   - `markMissing(db, ctx, source, seen: ReadonlySet<string>): number` — closes items of `source` absent from a full scan as state `removed`, with a `removed` event.
   - `listItems(db, filter?: { state?: "open" | "done" }): ItemRow[]`; `listEvents(db, filter: { itemId?: string; since?: Date; limit?: number }): EventRow[]`.
   - `getCursor(db, source): string | null`; `setCursor(db, source, cursor, now: Date): void`.
+  - `interface ItemRow` and `interface EventRow` (snake_case column rows returned by `listItems` / `listEvents`).
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 `sindri/tests/ledger.test.ts`:
 
@@ -1143,12 +1147,12 @@ describe("ledger items", () => {
 });
 ```
 
-- [ ] **Step 2: Run the tests to verify they fail**
+- [x] **Step 2: Run the tests to verify they fail**
 
 Run: `cd sindri && npx vitest run tests/ledger.test.ts`
 Expected: FAIL with `Failed to load url ../src/ledger/db.js`.
 
-- [ ] **Step 3: Implement**
+- [x] **Step 3: Implement**
 
 `sindri/src/ledger/db.ts`:
 
@@ -1471,12 +1475,12 @@ erDiagram
 Every write runs inside `withEpoch(db, epoch, …)`, an `IMMEDIATE` transaction that rejects a stale epoch (`SND-LOCK-003`, spec §9.1).
 ````
 
-- [ ] **Step 4: Run the tests**
+- [x] **Step 4: Run the tests**
 
 Run: `cd sindri && npm run gen && npx vitest run && npm run test:coverage`
 Expected: all tests PASS; coverage 100% (add a test for any branch the report names; never annotate).
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add sindri/src/ledger sindri/src/errors.ts sindri/tests/ledger.test.ts docs/sindri/errors.md planning/ERD.md
