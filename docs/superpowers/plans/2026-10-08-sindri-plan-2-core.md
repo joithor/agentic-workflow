@@ -10,7 +10,7 @@
 
 **Spec:** `docs/superpowers/specs/2026-10-07-sindri-design.md`. This plan implements, from §13 step 1, "Profile schema and tooling, lock and fencing, scrubber", plus the §13.3 ladder rows for Plan 2: profile + ledger + lock + CLI skeleton, the scrubber pre-commit, and the `plan-file` tracker with `sindri observe`. Sections used: §5.1, §5.2, §8.4, §8.7, §9.1, §9.4, §10.3, §11.1, §11.2, §11.3, §11.5, §13.3, §14.
 
-**Depends on:** Plan 1 merged and switched on (its Task 6 evidence posted). Nothing in this plan imports Plan 1 code.
+**Depends on:** Plan 1 merged and switched on (its Task 7 "Turn it on" evidence posted). Nothing in this plan imports Plan 1 code.
 
 **Later plans build on this one:**
 - Plan 3 (host code index) adds `index` keys to the profile, `sindri repo add`, `sindri index …` and the shape signals.

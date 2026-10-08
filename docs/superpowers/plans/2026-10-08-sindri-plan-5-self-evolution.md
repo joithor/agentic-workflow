@@ -5296,7 +5296,7 @@ git commit -m "feat: sindri reflect port over merged PRs and their sessions"
   - `Correction { ref; session; day; text; labels: CorrectionLabel[] }` and `labelTurns(turns, o: { runner; model; budget }): Promise<Labeled>` with `Labeled { corrections; labeled; counts; labelErrors; incomplete; notes }`. It labels batches of 20 turns through `askModel` (`role: "label"`, `models.scoping`, a Zod-validated answer that must label each id of the batch exactly once, `none` alone). Each turn is fenced as `<untrusted>` and the standard safety line leads the input. A batch whose answer fails validation (or whose call fails) is retried once and then counted in `labelErrors` (batches, not turns); it never aborts the run. `budget.exhausted()` is checked before each batch: the loop stops with the partial result and `incomplete: true`. `labeled` counts turns that received a valid label set (including `none`); `counts` counts turns per correction label (a turn with two labels counts under both).
   - `Cluster { label; items: Correction[] }` and `clusterCorrections(cs): Cluster[]` — corrections are grouped by their **first label in `CORRECTION_LABELS` order** (the primary label), then single-link clustered within each group over keyword sets (Jaccard >= 0.3 of `keywordsOf(text, 8)`), kept only with at least two members from at least two sessions on at least two days (spec §7.4 detection). Clusters come out in label order. Every correction keeps all its labels.
   - `correct(o): Promise<{ proposals: Proposal[]; dropped; incomplete; notes }>` — one call per cluster (at most 5) through `askModel`; each answer is validated item by item. The input gives the model the class label (`Class label: wrong_approach_process`) and every correction's labels (`labels="…"` on its fence). The `correct` prompt (Task 5) says what the labels suggest: process classes usually want a `rule`, `doc` or `skill` change, design classes a `prompt` or `skill` change, and the highest level that works still decides. There is no hard-coded routing.
-  - `sindri evolve correct [--since 7d] [--json]` — labels the newest `evolve.maxCorrectTurns` human turns, clusters the corrections, saves the proposals (source `correct:<ISO year>-W<week>`, skipped when that week already ran, including a week that proposed nothing) and prints `Correct: labeled 400 turns: 31 design, 52 process, 9 restate, 14 scope (0 label errors); 3 repeated-correction classes, 2 proposals (2 code).`
+  - `sindri evolve correct [--since 7d] [--json]` — labels the newest `evolve.maxCorrectTurns` human turns, clusters the corrections, saves the proposals (source `correct:<ISO year>-W<week>`, skipped when that week already ran, including a week that proposed nothing and a clean labeling pass that found no repeated class, the latter per `--since` window) and prints `Correct: labeled 400 turns: 31 design, 52 process, 9 restate, 14 scope (0 label errors); 3 repeated-correction classes, 2 proposals (2 code).`
   - Cost: about 20 `label` calls per run at the default cap (400 turns in batches of 20; sonnet), roughly 100 000 to 200 000 tokens at the cap with long turns and far less with short ones, plus at most 5 proposal calls. The default `evolve.maxTokensPerJob` of 600 000 covers it; at the maximum cap of 2000 turns (100 calls) a run can stop early with an `incomplete` partial result.
 
 - [ ] **Step 1: Write the failing tests**
@@ -5615,6 +5615,11 @@ describe("sindri evolve correct", () => {
     const nones = await ready(script(["none"]));
     expect((await correctCommand([], nones.fx.ctx)).stdout).toBe(`No repeated corrections in sessions of ${nones.fx.repo} since 2026-10-01: ${LABELED(2, 0, 0)}.\nNext: sindri evolve correct --since 30d\n`);
     expect(nones.io.calls).toHaveLength(1);
+    // A finished pass that found nothing is remembered for the week and window: a rerun spends no tokens, a wider window does.
+    expect((await correctCommand([], nones.fx.ctx)).stdout).toBe("Already ran for 2026-W41 (nothing was proposed).\nNext: sindri evolve proposals\n");
+    expect(nones.io.calls).toHaveLength(1);
+    expect((await correctCommand(["--since", "30d"], nones.fx.ctx)).stdout).toBe(`No repeated corrections in sessions of ${nones.fx.repo} since 2026-09-08: ${LABELED(2, 0, 0)}.\nNext: sindri evolve correct --since 30d\n`);
+    expect(nones.io.calls).toHaveLength(2);
     nones.fx.close();
 
     const broken = await ready((call) => (call.role === "label" ? { nope: 1 } : answer));
@@ -5667,7 +5672,7 @@ describe("sindri evolve correct", () => {
 });
 ```
 
-(Dates: the fixture clock is 2026-10-08T12:00:00Z (ISO week 41); `since` is 2026-10-01T12:00Z; the two corrections are on 2026-10-05 and 2026-10-06. `sessions` differ (two files) and `days` differ, and the keyword sets overlap well above 0.3 (the same strings the cluster test uses), so one `wrong_approach_process` cluster results when the stub labels both turns that way. With `maxCorrectTurns: 1` only the newest turn (the 2026-10-06 one, line 1 of `6f66b2e1`) is sent, so nothing can cluster. In the last case there are 22 turns: the newest 20 go in the first batch, which spends the whole `maxTokensPerJob` of 2 (the stub's usage is 1 input plus 1 output token), so batch 2 is never sent and the result is partial with exit code 1; because no clusters formed, there is no audit marker, so the week can be rerun. The proposal's `Invalid` text is Zod's default regex-failure message for `artifact`.)
+(Dates: the fixture clock is 2026-10-08T12:00:00Z (ISO week 41); `since` is 2026-10-01T12:00Z; the two corrections are on 2026-10-05 and 2026-10-06. `sessions` differ (two files) and `days` differ, and the keyword sets overlap well above 0.3 (the same strings the cluster test uses), so one `wrong_approach_process` cluster results when the stub labels both turns that way. With `maxCorrectTurns: 1` only the newest turn (the 2026-10-06 one, line 1 of `6f66b2e1`) is sent, so nothing can cluster. In the last case there are 22 turns: the newest 20 go in the first batch, which spends the whole `maxTokensPerJob` of 2 (the stub's usage is 1 input plus 1 output token), so batch 2 is never sent and the result is partial with exit code 1; because labeling was cut short, there is no audit marker, so the week can be rerun. The proposal's `Invalid` text is Zod's default regex-failure message for `artifact`.)
 
 - [ ] **Step 2: Run the tests to verify they fail**
 
@@ -5956,8 +5961,11 @@ export async function correctCommand(args: string[], ctx: EvolveCtx): Promise<Co
   const day = since.toISOString().slice(0, 10);
   const w = isoWeek(ctx.deps.now());
   const key = `${w.year}-W${String(w.week).padStart(2, "0")}`;
+  // A finished labeling pass is remembered per ISO week and --since window, so a rerun (the weekly job
+  // rerun after another step failed, or a second manual run) doesn't pay for the same labels again.
+  const mark = `${key} ${values.since ?? "7d"}`;
   const ids = (ctx.db.prepare("SELECT id FROM proposals WHERE source = ? ORDER BY id").all(`correct:${key}`) as { id: string }[]).map((r) => r.id);
-  const marked = ctx.db.prepare("SELECT 1 FROM evolve_audit WHERE verb = 'correct' AND detail = ? LIMIT 1").get(key) !== undefined;
+  const marked = ctx.db.prepare("SELECT 1 FROM evolve_audit WHERE verb = 'correct' AND detail = ? LIMIT 1").get(mark) !== undefined;
   if (ids.length > 0 || marked) {
     const what = ids.length > 0 ? `: ${ids.join(", ")}` : " (nothing was proposed)";
     return success(`Already ran for ${key}${what}.\nNext: sindri evolve proposals`, { week: key, alreadyRan: true, ids }, json);
@@ -5973,6 +5981,8 @@ export async function correctCommand(args: string[], ctx: EvolveCtx): Promise<Co
   const stats = { turns: labeled.labeled, design: n.wrong_approach_design, process: n.wrong_approach_process, restate: n.restate, scope: n.scope_surface, labelErrors: labeled.labelErrors, incomplete: labeled.incomplete };
   const clusters = clusterCorrections(labeled.corrections);
   if (clusters.length === 0) {
+    // Labeling finished cleanly and found nothing repeated: remember it. A cut-short or errored pass is not remembered, so it can be retried.
+    if (turns.length > 0 && !labeled.incomplete && labeled.labelErrors === 0) await ctx.writeRetry((epoch) => audit(ctx.db, ctx.deps, "correct", mark, epoch));
     const partial = labeled.incomplete ? [`Partial result: ${labeled.notes.join("; ")}`] : [];
     const next = labeled.incomplete ? BUDGET_NEXT : "sindri evolve correct --since 30d";
     return success(
@@ -5992,7 +6002,7 @@ export async function correctCommand(args: string[], ctx: EvolveCtx): Promise<Co
       const t = classifyTier(p, registry, extra);
       return { title: p.title, tier: t.tier, outcome: saveProposal(ctx.db, p, `correct:${key}`, t.tier, epoch, ctx.deps.now()) };
     });
-    if (!incomplete) audit(ctx.db, ctx.deps, "correct", key, epoch);
+    if (!incomplete) audit(ctx.db, ctx.deps, "correct", mark, epoch);
     return out;
   });
   const noun = (c: number, one: string, many: string): string => `${c} ${c === 1 ? one : many}`;
@@ -6010,7 +6020,7 @@ export async function correctCommand(args: string[], ctx: EvolveCtx): Promise<Co
 }
 ```
 
-Trace for the first test: the stub labels both turns `wrong_approach_process` (first call, `role: "label"`, `sonnet`), they cluster (two sessions, two days), and the proposal call (`draft`, `opus`) returns the valid proposal, tier `code`: `Correct: labeled 2 turns: 0 design, 2 process, 0 restate, 0 scope (0 label errors); 1 repeated-correction class, 1 proposal (1 code).`, then `  <id>  code      Lint for test-vs-hook edits` (`code` padded to 8, plus the two-space separator), then `Next: sindri evolve show <id>`. For the "bad" model answer: `{ title: "Bad one", artifact: "nope" }` fails `ProposalSchema` at `artifact` (the regex's default message is `Invalid`), so `dropped` has one entry and `saved` is empty: `…; 1 repeated-correction class, 0 proposals (0 code).`, the `dropped:` line, and `Next: sindri evolve proposals`. The week is marked in the audit table, so a rerun reports `Already ran for 2026-W41 (nothing was proposed).` An empty labeling result (nothing to label, every turn `none`, or a label error that left no corrections) prints the `No repeated corrections …: labeled …` line and does not mark the week.
+Trace for the first test: the stub labels both turns `wrong_approach_process` (first call, `role: "label"`, `sonnet`), they cluster (two sessions, two days), and the proposal call (`draft`, `opus`) returns the valid proposal, tier `code`: `Correct: labeled 2 turns: 0 design, 2 process, 0 restate, 0 scope (0 label errors); 1 repeated-correction class, 1 proposal (1 code).`, then `  <id>  code      Lint for test-vs-hook edits` (`code` padded to 8, plus the two-space separator), then `Next: sindri evolve show <id>`. For the "bad" model answer: `{ title: "Bad one", artifact: "nope" }` fails `ProposalSchema` at `artifact` (the regex's default message is `Invalid`), so `dropped` has one entry and `saved` is empty: `…; 1 repeated-correction class, 0 proposals (0 code).`, the `dropped:` line, and `Next: sindri evolve proposals`. The week is marked in the audit table, so a rerun reports `Already ran for 2026-W41 (nothing was proposed).` An empty result prints the `No repeated corrections …: labeled …` line. When labeling finished cleanly over at least one turn (every turn `none`, or no repeated class), the week and `--since` window are marked, so a rerun says `Already ran` and spends nothing, and a wider window runs again. Nothing to label, a label error and a budget stop leave the week unmarked so they can be retried.
 
 Register in `sindri/src/evolve/commands.ts`: import `correctCommand` from `./cmd/correct.js` and add `correct: correctCommand` to `SUBCOMMANDS`.
 
@@ -7919,7 +7929,7 @@ git commit -m "feat: sindri stable and next channels, and check --at"
   4. `check --changed` (skipped when the working tree has uncommitted changes: an unattended suite run must match a commit);
   5. `stage` (the unattended step; it never writes into the repo).
 
-  Model cost per weekly run: `correct` labels the newest 400 human turns (`evolve.maxCorrectTurns`) in about 20 sonnet `label` calls (batches of 20), roughly 100 000 to 200 000 tokens at the cap and far less with short turns, plus at most 5 proposal calls; `telemetry` and each `reflect` add their own calls. Each step has its own `evolve.maxTokensPerJob` (600 000), so one step cannot starve another, and a step that hits it stops with a partial result (`attn`).
+  Model cost per weekly run: `correct` labels the newest 400 human turns (`evolve.maxCorrectTurns`) in about 20 sonnet `label` calls (batches of 20), roughly 100 000 to 200 000 tokens at the cap and far less with short turns, plus at most 5 proposal calls; `telemetry` and each `reflect` add their own calls. A rerun of `weekly` in the same week doesn't pay for labels again when the first pass finished cleanly (the week and `--since 7d` window are marked); only a cut-short, errored or proposal-failed pass is redone. Each step has its own `evolve.maxTokensPerJob` (600 000), so one step cannot starve another, and a step that hits it stops with a partial result (`attn`).
 
   It prints one line per step (`ok`, `attn` or `FAIL` first), one summary line and the next command, and exits 1 if any step wasn't `ok`. Publishing stays a builder's explicit verb. The launchd job runs it on Mondays at 07:30.
 
