@@ -60,7 +60,7 @@ STUB
   chmod +x "$SCRATCH/stub/launchctl"
   [ "$(PATH="$SCRATCH/stub:$PATH" command -v launchctl)" = "$SCRATCH/stub/launchctl" ] || { echo "FAIL: stub launchctl is not first on PATH"; exit 1; }
   RUN_RC=0
-  RUN_OUT="$(HOME="$SCRATCH/home" PATH="$SCRATCH/stub:$PATH" AW_SKIP_BUILD=1 CLAUDE_LOCAL_BIN="${2:-$SCRATCH/bin}" bash "$ROOT/scripts/install-sindri.sh" 2>&1)" || RUN_RC=$?
+  RUN_OUT="$(AW_SKIP_LAUNCHD=0 HOME="$SCRATCH/home" PATH="$SCRATCH/stub:$PATH" AW_SKIP_BUILD=1 CLAUDE_LOCAL_BIN="${2:-$SCRATCH/bin}" bash "$ROOT/scripts/install-sindri.sh" 2>&1)" || RUN_RC=$?
 }
 
 skip_unless_darwin() {
@@ -90,6 +90,7 @@ test_launchd_bootstrap_failure_warns_and_continues() {
   run_launchd_install fail
   [ "$RUN_RC" = 0 ] || { echo "FAIL: installer exited $RUN_RC on bootstrap failure: $RUN_OUT"; exit 1; }
   grep -q 'WARN: could not load com.agentic-workflow.sindri-observe; run: launchctl bootstrap gui/' <<<"$RUN_OUT" || { echo "FAIL: WARN line missing: $RUN_OUT"; exit 1; }
+  ! grep -q 'hourly observe (launchd' <<<"$RUN_OUT" || { echo "FAIL: success line printed after a failed load"; exit 1; }
   [ "$(grep -c '^bootstrap' "$STUB_LOG")" = 2 ] || { echo "FAIL: bootstrap not retried once"; exit 1; }
   echo "PASS: test_launchd_bootstrap_failure_warns_and_continues"
 }
@@ -98,6 +99,7 @@ test_launchd_refuses_unsafe_bin_path() {
   skip_unless_darwin test_launchd_refuses_unsafe_bin_path && return 0
   run_launchd_install ok "$TMP/un&safe/bin"
   [ "$RUN_RC" != 0 ] || { echo "FAIL: installer accepted a bin dir containing &"; exit 1; }
+  [ ! -e "$TMP/un&safe/bin/sindri" ] || { echo "FAIL: wrapper written for unsafe path"; exit 1; }
   [ ! -e "$SCRATCH/home/Library/LaunchAgents/com.agentic-workflow.sindri-observe.plist" ] || { echo "FAIL: plist written for unsafe path"; exit 1; }
   echo "PASS: test_launchd_refuses_unsafe_bin_path"
 }
