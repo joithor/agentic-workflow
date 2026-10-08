@@ -135,20 +135,20 @@ describe("resolveSecret", () => {
 
   it("refuses unreadable, empty, world-readable or malformed pointers without echoing values", async () => {
     const d = makeDeps({ env: {} });
-    await expect(resolveSecret("env:NOPE", d, runner(0, ""))).rejects.toThrow(/SND-SECRET-001|not set/);
+    await expect(resolveSecret("env:NOPE", d, runner(0, ""))).rejects.toMatchObject({ code: "SND-SECRET-001" });
     const loose = path.join(tempDir(), "t");
     fs.writeFileSync(loose, "tok", { mode: 0o644 });
     fs.chmodSync(loose, 0o644);
-    await expect(resolveSecret(`file:${loose}`, d, runner(0, ""))).rejects.toThrow(/SND-SECRET-002|readable by others/);
+    await expect(resolveSecret(`file:${loose}`, d, runner(0, ""))).rejects.toMatchObject({ code: "SND-SECRET-002" });
     const empty = path.join(tempDir(), "e");
     fs.writeFileSync(empty, "  \n", { mode: 0o600 });
     await expect(resolveSecret(`file:${empty}`, d, runner(0, ""))).rejects.toThrow(/file is empty/);
-    await expect(resolveSecret("file:/no/such/file", d, runner(0, ""))).rejects.toThrow(/SND-SECRET-001/);
-    await expect(resolveSecret("keychain:linear/me", d, runner(44, ""))).rejects.toThrow(/SND-SECRET-001/);
-    await expect(resolveSecret("keychain:noslash", d, runner(0, "x"))).rejects.toThrow(/SND-SECRET-001/);
+    await expect(resolveSecret("file:/no/such/file", d, runner(0, ""))).rejects.toMatchObject({ code: "SND-SECRET-001" });
+    await expect(resolveSecret("keychain:linear/me", d, runner(44, ""))).rejects.toMatchObject({ code: "SND-SECRET-001" });
+    await expect(resolveSecret("keychain:noslash", d, runner(0, "x"))).rejects.toMatchObject({ code: "SND-SECRET-001" });
     await expect(resolveSecret("keychain:linear/", d, runner(0, "x"))).rejects.toThrow(/keychain:service\/account/);
-    await expect(resolveSecret("op:Work/Linear", d, runner(1, ""))).rejects.toThrow(/SND-SECRET-001/);
-    await expect(resolveSecret("vault:x", d, runner(0, "x"))).rejects.toThrow(/SND-SECRET-001/);
+    await expect(resolveSecret("op:Work/Linear", d, runner(1, ""))).rejects.toMatchObject({ code: "SND-SECRET-001" });
+    await expect(resolveSecret("vault:x", d, runner(0, "x"))).rejects.toMatchObject({ code: "SND-SECRET-001" });
   });
 });
 ```
@@ -968,6 +968,8 @@ export function codeSource(deps: Deps, repos: string[], o: { allowAsOf?: boolean
         const db = openIndexReadOnly(indexPath(deps, repo));
         if (db === null) continue;
         const syms = allSymbols(db);
+        // SymbolRow carries no body (Plan 3 keeps bodies for embeddings); read them here.
+        const bodies = new Map((db.prepare("SELECT id, body FROM symbols").all() as { id: number; body: string }[]).map((r) => [r.id, r.body]));
         db.close();
         const score = (s: SymbolRow): number => words(s.name).filter((w) => q.keywords.some((k) => k.startsWith(w) || w.startsWith(k))).length;
         const matched = syms.filter((s) => s.kind !== "class" && score(s) >= Math.min(2, q.keywords.length)).sort((a, b) => score(b) - score(a));
@@ -976,7 +978,7 @@ export function codeSource(deps: Deps, repos: string[], o: { allowAsOf?: boolean
         for (const s of picked.sort((a, b) => a.file.localeCompare(b.file) || a.startLine - b.startLine)) {
           out.push({
             ref: `code:${repo}/${s.file}:${s.startLine}`, kind: "code", title: `${s.name}${s.signature}`,
-            text: clean(s.body.slice(0, 600)), author: null, createdAt: null, trust: "untrusted",
+            text: clean((bodies.get(s.id) ?? "").slice(0, 600)), author: null, createdAt: null, trust: "untrusted",
           });
         }
       }
@@ -2112,9 +2114,8 @@ function findCycle(ws: Workstream[]): string[] | null {
     if (state.get(w.id) === "visiting") return [...stack.slice(stack.indexOf(w.id)), w.id];
     state.set(w.id, "visiting");
     stack.push(w.id);
-    for (const d of w.dependsOn) {
-      const next = byId.get(d);
-      if (next === undefined) continue;
+    // Unknown ids are reported by checkMap separately; only known workstreams are walked.
+    for (const next of w.dependsOn.flatMap((d) => byId.get(d) ?? [])) {
       const c = visit(next);
       if (c !== null) return c;
     }
@@ -3512,7 +3513,7 @@ git commit -m "feat: sindri scope command"
 - Produces (`backtest.ts`):
   - `PASS_BAR = { recall: 0.6, precision: 0.6 }`.
   - `parseWindow(s: string | undefined): number` — `<n>d` or `<n>h`, default `1d`.
-  - `splitProject(p: LinearProject, windowMs: number): { cut: Date; brief: SourceRecord; early: LinearIssue[]; later: LinearIssue[] }` — `cut = createdAt + window`; the brief is the project name, description and every issue created at or before `cut`; `later` is every issue created after `cut`. The two never overlap (Review Focus 4).
+  - `splitProject(p: LinearProject, windowMs: number): { cut: Date; brief: SourceRecord; early: LinearIssue[]; later: LinearIssue[] }` — `cut = createdAt + window`; the brief is the project name and description only (early issues are served to the full run by the as-of Linear source, so the brief-only baseline is meaningful); `later` is every issue created after `cut`. The two never overlap (Review Focus 4).
   - `judgeRecall(map, later, o: { runner; model; progress }): Promise<RecallJudged>` — batches of 20 issues; **every batch is judged twice, the second time with the issue order reversed**. An issue is `covered` only if both runs say so and the surface they cite exists in the map (the first run's surface if it exists, else the second's); runs that disagree are `unstable` (counted as not covered); an issue a run doesn't answer, or both runs rejecting it, is `missed`. A batch the adjudicator can't judge (a model error, a bad answer) goes to `unjudged` with a reason and the next batch still runs; a budget refusal stops and puts every remaining issue in `unjudged`. Issue text is fenced as untrusted.
   - `judgeSupport(map, issues, o): Promise<SupportJudged>` — the same two-run rule for precision: a surface is `supported` when both runs say some issue in the batch is about it and that issue exists in the batch; the union over batches decides.
   - `measureMap(map, { early, later }, o): Promise<Measured>` — `recall = covered / later` (null if any later issue was unjudged), `precision = supported surfaces / surfaces` judged against early and later issues together (null if any issue was unjudged).
@@ -3566,12 +3567,11 @@ const cov = (n: number, covered: boolean, surface = "S1") => ({ issue: `ABC-${n}
 const sup = (surface: string, supported: boolean, issueId = "") => ({ surface, supported, issue: supported ? issueId : "" });
 
 describe("splitProject (Review Focus 4)", () => {
-  it("puts early issues in the brief and later ones in the test set, with no overlap", () => {
+  it("keeps the brief to the project's own words, early issues as a source, later ones as the test set", () => {
     const s = splitProject(project, parseWindow("1d"));
     expect(s.cut.toISOString()).toBe("2026-01-02T00:00:00.000Z");
-    expect(s.brief.text).toContain("New shift times\n\nLet units define shift times.");
-    expect(s.brief.text).toContain("ABC-1: Issue 1");
-    expect(s.brief.text).toContain("ABC-2: Issue 2");
+    expect(s.brief.text).toBe("New shift times\n\nLet units define shift times.");
+    expect(s.brief.text).not.toContain("ABC-1");
     expect(s.early.map((i) => i.identifier)).toEqual(["ABC-1", "ABC-2"]);
     expect(s.later.map((i) => i.identifier)).toEqual(["ABC-3", "ABC-4"]);
     expect(parseWindow(undefined)).toBe(86_400_000);
@@ -3976,7 +3976,9 @@ export function splitProject(p: LinearProject, windowMs: number): { cut: Date; b
   const cut = new Date(Date.parse(p.createdAt) + windowMs);
   const early = p.issues.filter((i) => Date.parse(i.createdAt) <= cut.getTime());
   const later = p.issues.filter((i) => Date.parse(i.createdAt) > cut.getTime());
-  const text = [p.name, "", p.description, "", ...early.map((i) => `${i.identifier}: ${i.title}\n${i.description}`)].join("\n");
+  // The brief is the project's own words only. Early issues reach the full run as Linear source
+  // records, so the brief-only baseline really is the brief alone (round-2 product N1).
+  const text = [p.name, "", p.description].join("\n");
   return { cut, early, later, brief: { ref: `linear-project:${p.id}@${cut.toISOString()}`, kind: "brief", title: p.name, text, author: null, createdAt: p.createdAt, trust: "untrusted" } };
 }
 
