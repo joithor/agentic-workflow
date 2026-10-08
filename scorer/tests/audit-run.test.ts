@@ -45,6 +45,14 @@ describe("runAudit", () => {
     expect(fs.existsSync(path.join(c.out, "calibration.json"))).toBe(true);
   });
 
+  it("tightens an existing human-turns.jsonl to owner-only before writing", async () => {
+    const c = corpus({ "s1.jsonl": [u("push", "2026-10-05T00:00:00Z")] });
+    const file = path.join(c.out, "human-turns.jsonl");
+    fs.writeFileSync(file, "", { mode: 0o644 });
+    await run(c);
+    expect(fs.statSync(file).mode & 0o777).toBe(0o600);
+  });
+
   it("writes human-turns.jsonl, summary.json and baseline.md for sessions after --since", async () => {
     const projects = fs.mkdtempSync(path.join(os.tmpdir(), "proj-"));
     const out = fs.mkdtempSync(path.join(os.tmpdir(), "out-"));

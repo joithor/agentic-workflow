@@ -49,9 +49,17 @@ export function sampleTurns(turns: readonly HumanTurn[], n: number): HumanTurn[]
     .map((x) => x.t);
 }
 
-// Turn text is data. Break any tag that could close or reopen a fence.
+// The text the labeler sees. Calibration tests patterns against this same text, not the full turn.
+export function labelerText(text: string): string {
+  return text.slice(0, TEXT_MAX);
+}
+
+// Turn text is data. Break any tag that could close or reopen a fence, however it is spelled: ASCII or
+// fullwidth bracket or an html entity, then optional whitespace or zero-width characters, an optional slash, the tag name.
+const GAP = "[\\s\\u200B-\\u200D\\uFEFF]*";
+const TAG_START = new RegExp(`(?:<|\\uFF1C|&lt;)${GAP}/?${GAP}(?:untrusted|assistant_tail|human_turn)`, "gi");
 function fence(text: string): string {
-  return text.replace(/<\/?\s*(?:untrusted|assistant_tail|human_turn)/gi, "[tag]");
+  return text.replace(TAG_START, "[tag]");
 }
 
 export function buildPrompt(batch: readonly LabelItem[]): string {
@@ -64,7 +72,7 @@ export function buildPrompt(batch: readonly LabelItem[]): string {
         fence(b.prevAssistantTail.slice(-TAIL_MAX)),
         "</assistant_tail>",
         "<human_turn>",
-        fence(b.text.slice(0, TEXT_MAX)),
+        fence(labelerText(b.text)),
         "</human_turn>",
         "</untrusted>",
       ].join("\n"),
@@ -80,6 +88,8 @@ export function buildPrompt(batch: readonly LabelItem[]): string {
     "Answer with JSON: one entry per message id, each with its labels.",
     "",
     turns,
+    "",
+    UNTRUSTED_NOTICE,
   ].join("\n");
 }
 
@@ -122,29 +132,47 @@ export function parseBatchOutput(raw: unknown, ids: readonly string[]): Map<stri
   return out;
 }
 
-async function labelBatch(batch: readonly LabelItem[], runner: LabelRunner): Promise<Map<string, LabelName[]> | null> {
+const ERROR_MAX = 300;
+
+function describeError(e: unknown): string {
+  const message = e instanceof Error ? e.message : String(e);
+  return message.slice(0, ERROR_MAX);
+}
+
+type BatchResult = { labels: Map<string, LabelName[]> } | { error: string };
+
+async function labelBatch(batch: readonly LabelItem[], runner: LabelRunner): Promise<BatchResult> {
   const ids = batch.map((b) => b.id);
   const prompt = buildPrompt(batch);
   const schema = outputJsonSchema(ids);
+  let error = "";
   for (let attempt = 0; attempt < 2; attempt += 1) {
     try {
-      return parseBatchOutput(await runner(prompt, schema), ids);
-    } catch {
+      return { labels: parseBatchOutput(await runner(prompt, schema), ids) };
+    } catch (e) {
       // A bad or failed answer is retried once; after that the batch is counted, not fatal.
+      error = describeError(e);
     }
   }
-  return null;
+  return { error };
 }
 
 // One call at a time (one heavy job at a time). A batch that fails twice is counted in labelErrors
-// and its items stay unlabeled; the rest still run.
-export async function labelItems(items: readonly LabelItem[], runner: LabelRunner): Promise<{ labels: Map<string, LabelName[]>; labelErrors: number }> {
+// (its last error kept in errors) and its items stay unlabeled; the rest still run. If the first two
+// batches both fail, the cause is systemic (missing CLI, not logged in, changed envelope), so the run
+// aborts with that error instead of burning every remaining call. The message never contains turn text.
+export async function labelItems(
+  items: readonly LabelItem[],
+  runner: LabelRunner,
+): Promise<{ labels: Map<string, LabelName[]>; labelErrors: number; errors: string[] }> {
   const labels = new Map<string, LabelName[]>();
-  let labelErrors = 0;
+  const errors: string[] = [];
   for (let i = 0; i < items.length; i += BATCH_SIZE) {
     const got = await labelBatch(items.slice(i, i + BATCH_SIZE), runner);
-    if (got === null) labelErrors += 1;
-    else for (const [id, l] of got) labels.set(id, l);
+    if ("error" in got) {
+      errors.push(got.error);
+      if (i === BATCH_SIZE && errors.length === 2) throw new Error(`labeling aborted: the first two batches failed (last error: ${got.error})`);
+    } else for (const [id, l] of got.labels) labels.set(id, l);
   }
-  return { labels, labelErrors };
+  return { labels, labelErrors: errors.length, errors };
 }

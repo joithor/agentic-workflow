@@ -19,7 +19,7 @@ const USAGE = [
   "",
   "audit --label N (default 0 = off, fully offline) has a model label N sampled human turns to calibrate the regex patterns",
   "and measure wrong-approach corrections. It sends the text of those turns (and the tail of the preceding assistant message)",
-  "to the model provider your Claude Code login already uses, one `claude -p` call per 20 turns plus ceil(K/20) repeat calls.",
+  "to the model provider your Claude Code login already uses, one `claude -p` call per 20 turns plus ceil(K/20) repeat calls (up to 2x with retries).",
   "Everything is written under --out (default ~/.agentic-workflow/audit); never commit labels.jsonl or human-turns.jsonl.",
 ].join("\n");
 

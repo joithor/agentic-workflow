@@ -116,3 +116,10 @@ describe("repeatAgreement", () => {
     expect(r.agreement.rigor).toBeNull();
   });
 });
+
+describe("calibrate on the labeled text", () => {
+  it("does not count a pattern that matches only after character 1500", () => {
+    const rows = calibrate([mk(`${"x ".repeat(750)}are you sure`, ["none"]), mk("are you sure", ["rigor"])]);
+    expect(rows.find((r) => r.pattern === "rigor")).toMatchObject({ tp: 1, fp: 0, fn: 0 });
+  });
+});

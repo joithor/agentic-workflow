@@ -46,8 +46,14 @@ node scorer/dist/cli.js audit --since 60d --label 400 --label-repeat 50 --label-
 
 - **Sample.** `--label n` takes n deduped typed turns, ordered by sha256 of `session:index` (uniform and reproducible).
   `--label 0` (the default) skips labeling, so the plain audit stays offline and free.
-- **Labeler.** `claude -p` with no tools, no MCP servers and no session file, in batches of 20 turns. Turn text is fenced
-  as untrusted data, the output is schema-validated, and a bad batch is retried once, then counted in `labelErrors`.
+- **Labeler.** `claude -p --safe-mode` with no tools, no MCP servers and no session file, in batches of 20 turns.
+  `--safe-mode` means no hooks, CLAUDE.md, MCP servers or plugins see the turn text. The child gets only PATH, HOME, USER
+  and the Claude auth variables; proxy and custom-CA variables (`HTTPS_PROXY`, `NODE_EXTRA_CA_CERTS` and the like) are
+  not passed, so behind a proxy or custom CA the calls fail. Turn text is fenced as untrusted data (tag spellings with
+  spaces, zero-width characters, fullwidth brackets and html entities are neutralized, and the rule is repeated after
+  the last fence), the output is schema-validated, and a bad batch is retried once, then counted in `labelErrors`. If
+  the first two batches both fail (missing CLI, not logged in), the run aborts with that error. Calibration tests the
+  patterns against the same first 1,500 characters the labeler saw.
   Labels: `wrong_approach_design`, `wrong_approach_process`, `defect_report`, `restate`, `rigor`, `scope_surface`,
   `ship_recipe`, `handoff`, `none` (exclusive).
 - **Repeat.** `--label-repeat k` (default 50) relabels the first k sampled turns with batches in reverse order and reports
@@ -69,4 +75,4 @@ model provider Claude Code already uses (your local `claude` login). The same no
 All outputs stay under `~/.agentic-workflow/audit`. Never commit `labels.jsonl` or `human-turns.jsonl`; PR comments
 carry aggregate numbers only.
 
-**Cost.** n = 400 is 20 labeler calls (400 / 20) plus 3 repeat calls (50 / 20, rounded up), 23 in all.
+**Cost.** n = 400 is 20 labeler calls (400 / 20) plus 3 repeat calls (50 / 20, rounded up), 23 in all (up to 2x with retries).

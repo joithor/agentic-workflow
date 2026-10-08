@@ -36,7 +36,9 @@ export async function runAudit(opts: { projectsDir: string; since: Date; outDir:
   const items = opts.itemsFile === null ? null : readItems(opts.itemsFile);
   fs.mkdirSync(opts.outDir, { recursive: true, mode: 0o700 });
   // Verbatim human turns can hold pasted secrets: owner-only, like every file in the audit directory.
-  const turnsOut = fs.createWriteStream(path.join(opts.outDir, "human-turns.jsonl"), { mode: 0o600 });
+  const turnsFile = path.join(opts.outDir, "human-turns.jsonl");
+  if (fs.existsSync(turnsFile)) fs.chmodSync(turnsFile, 0o600); // the stream's mode only applies on create: tighten before any write
+  const turnsOut = fs.createWriteStream(turnsFile, { mode: 0o600 });
   const all: HumanTurn[] = [];
   const perSession: { session: string; items: string[]; total: number; cacheRead: number }[] = [];
   let sessions = 0;

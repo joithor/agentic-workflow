@@ -53,6 +53,14 @@ describe("runLabeling", () => {
     expect(fs.statSync(path.join(out, "labels.jsonl")).mode & 0o777).toBe(0o600);
   });
 
+  it("calibrates against the 1500 characters the labeler saw", async () => {
+    const out = fs.mkdtempSync(path.join(os.tmpdir(), "label-"));
+    const runner: LabelRunner = async (prompt) => ({ labels: idsIn(prompt).map((id) => ({ id, labels: ["none"] })) });
+    const t = { ...turn(0), text: `${"x ".repeat(750)}are you sure` };
+    const report = await runLabeling([t], 1, { n: 1, repeat: 0, model: "sonnet", runner, windowDays: 30 }, out);
+    expect(report.calibration.find((c) => c.pattern === "rigor")).toMatchObject({ tp: 0, fp: 0, fn: 0 });
+  });
+
   it("is reproducible: the same corpus yields the same sampled keys", async () => {
     const run = async (): Promise<string[]> => {
       const out = fs.mkdtempSync(path.join(os.tmpdir(), "label-"));

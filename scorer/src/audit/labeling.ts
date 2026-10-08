@@ -79,8 +79,9 @@ export async function runLabeling(turns: readonly HumanTurn[], totalTurns: numbe
   };
   fs.mkdirSync(outDir, { recursive: true });
   // labels.jsonl holds keys and labels only (no turn text); it still stays local and is never committed.
-  fs.writeFileSync(path.join(outDir, "labels.jsonl"), lines.length === 0 ? "" : `${lines.join("\n")}\n`, { mode: 0o600 });
-  fs.chmodSync(path.join(outDir, "labels.jsonl"), 0o600); // writeFileSync's mode only applies when the file is created
+  const labelsFile = path.join(outDir, "labels.jsonl");
+  if (fs.existsSync(labelsFile)) fs.chmodSync(labelsFile, 0o600); // writeFileSync's mode only applies on create: tighten before any write
+  fs.writeFileSync(labelsFile, lines.length === 0 ? "" : `${lines.join("\n")}\n`, { mode: 0o600 });
   fs.writeFileSync(path.join(outDir, "calibration.json"), `${JSON.stringify(report, null, 2)}\n`);
   return report;
 }

@@ -1,5 +1,5 @@
 import type { LabelName } from "./labels.js";
-import { LABELS } from "./labels.js";
+import { labelerText, LABELS } from "./labels.js";
 import type { PatternName } from "./patterns.js";
 import { PATTERNS } from "./patterns.js";
 import type { Interval } from "./stats.js";
@@ -47,7 +47,7 @@ export function calibrate(labeled: readonly LabeledTurn[]): PatternCalibration[]
     let fp = 0;
     let fn = 0;
     for (const t of labeled) {
-      const predicted = PATTERNS[pattern].test(t.text);
+      const predicted = PATTERNS[pattern].test(labelerText(t.text));
       const actual = t.labels.includes(label);
       if (predicted && actual) tp += 1;
       else if (predicted) fp += 1;
