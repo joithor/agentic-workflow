@@ -19,7 +19,7 @@ export interface AuditSummary {
   interrupts: number;
   duplicates: number;
   patterns: Record<PatternName, { turns: number; sessions: number }>;
-  usage: { items: number; medianTokens: number; p75Tokens: number };
+  usage: { items: number; medianTokens: number; p75Tokens: number; medianCacheRead: number; p75CacheRead: number };
   autoStart: { eligible: number; total: number; share: number } | null;
 }
 
@@ -35,37 +35,49 @@ export async function runAudit(opts: { projectsDir: string; since: Date; outDir:
   // Verbatim human turns can hold pasted secrets: owner-only, like every file in the audit directory.
   const turnsOut = fs.createWriteStream(path.join(opts.outDir, "human-turns.jsonl"), { mode: 0o600 });
   const all: HumanTurn[] = [];
-  const perSession: { session: string; items: string[]; total: number }[] = [];
+  const perSession: { session: string; items: string[]; total: number; cacheRead: number }[] = [];
   let sessions = 0;
   // Resume and fork copy earlier human turns into the new transcript with the same timestamp. One Set
   // across all files; the copy lands in whichever file is read second (discoverFiles order), which does
   // not change the counts. Turns with an empty ts are never deduped.
   const seen = new Set<string>();
   let duplicates = 0;
-  for (const file of discoverFiles(opts.projectsDir)) {
-    if (!file.isMain) continue;
-    if (fs.statSync(file.path).mtime < opts.since) continue;
-    const turns: HumanTurn[] = [];
-    for await (const t of extractHumanTurns({ path: file.path, project: file.project, sessionId: file.sessionId })) {
-      if (t.ts !== "" && new Date(t.ts) < opts.since) continue;
-      if (t.ts !== "") {
-        const key = `${t.ts}\u0000${t.text}`;
-        if (seen.has(key)) {
-          duplicates += 1;
-          continue;
+  // A write failure (full disk, unwritable path) must reject runAudit, not crash on an unhandled 'error'.
+  const written = new Promise<void>((resolve, reject) => {
+    turnsOut.on("error", reject);
+    turnsOut.on("finish", resolve);
+  });
+  written.catch(() => undefined);
+  try {
+    for (const file of discoverFiles(opts.projectsDir)) {
+      if (!file.isMain) continue;
+      if (fs.statSync(file.path).mtime < opts.since) continue;
+      const turns: HumanTurn[] = [];
+      for await (const t of extractHumanTurns({ path: file.path, project: file.project, sessionId: file.sessionId })) {
+        if (t.ts !== "" && new Date(t.ts) < opts.since) continue;
+        if (t.ts !== "") {
+          const key = `${t.ts}\u0000${t.text}`;
+          if (seen.has(key)) {
+            duplicates += 1;
+            continue;
+          }
+          seen.add(key);
         }
-        seen.add(key);
+        turns.push(t);
+        turnsOut.write(`${JSON.stringify(t)}\n`);
       }
-      turns.push(t);
-      turnsOut.write(`${JSON.stringify(t)}\n`);
+      if (turns.length === 0) continue;
+      sessions += 1;
+      all.push(...turns);
+      const tok = await sessionTokenTotals(file.path);
+      perSession.push({ session: file.sessionId, items: itemIdsForSession(turns, opts.itemPattern), total: tok.input + tok.cacheCreation + tok.output, cacheRead: tok.cacheRead });
     }
-    if (turns.length === 0) continue;
-    sessions += 1;
-    all.push(...turns);
-    const tok = await sessionTokenTotals(file.path);
-    perSession.push({ session: file.sessionId, items: itemIdsForSession(turns, opts.itemPattern), total: tok.input + tok.cacheRead + tok.cacheCreation + tok.output });
+    turnsOut.end();
+    await written;
+  } catch (e) {
+    turnsOut.destroy();
+    throw e;
   }
-  await new Promise<void>((resolve) => turnsOut.end(resolve));
   const usage = summarizeItemUsage(perSession);
   const summary: AuditSummary = {
     sessions,
@@ -74,7 +86,7 @@ export async function runAudit(opts: { projectsDir: string; since: Date; outDir:
     interrupts: all.filter((t) => t.kind === "interrupt").length,
     duplicates,
     patterns: countPatterns(all),
-    usage: { items: usage.items, medianTokens: usage.medianTokens, p75Tokens: usage.p75Tokens },
+    usage: { items: usage.items, medianTokens: usage.medianTokens, p75Tokens: usage.p75Tokens, medianCacheRead: usage.medianCacheRead, p75CacheRead: usage.p75CacheRead },
     autoStart: items === null ? null : autoStartShare(items, opts.maxSize),
   };
   fs.writeFileSync(path.join(opts.outDir, "summary.json"), `${JSON.stringify(summary, null, 2)}\n`);
@@ -99,7 +111,11 @@ function renderBaseline(s: AuditSummary, opts: { since: Date; maxSize: Size }): 
     ``,
     `Shares of typed turns: ${(Object.keys(s.patterns) as PatternName[]).map((n) => `${n} ${pct(s.patterns[n].turns)}%`).join(", ")}.`,
     ``,
-    `Tokens per item: ${s.usage.items} items, median ${Math.round(s.usage.medianTokens)}, p75 ${Math.round(s.usage.p75Tokens)}.`,
+    `Fresh tokens per item (input + cache writes + output): ${s.usage.items} items, median ${Math.round(s.usage.medianTokens)}, p75 ${Math.round(s.usage.p75Tokens)}.`,
+    ``,
+    `Cache-read tokens per item: median ${Math.round(s.usage.medianCacheRead)}, p75 ${Math.round(s.usage.p75CacheRead)}.`,
+    ``,
+    `Both are a proxy for subscription quota, not the quota itself. Cache reads grow with session length, so they are reported apart from fresh tokens.`,
     ``,
     `Auto-start share: ${auto}.`,
     ``,

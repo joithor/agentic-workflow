@@ -15,7 +15,7 @@ const exec = promisify(execFile);
 const parsed = parseArgs(process.argv.slice(2), new Date(), os.homedir());
 if (!parsed.ok) {
   console.error(`scorer: ${parsed.error}`);
-  console.error("usage: scorer live --session ID [--cwd DIR] [--window TOKENS] [--json] | scorer [probe] [--since 7d|12h|ISO] [--provider claude|codex|cursor|all] [--projects-dir DIR] [--codex-dir DIR] [--cursor-dir DIR] [--state-dir DIR] [--no-pr-lookup] | scorer audit [--since 60d] [--out DIR] [--item-pattern RE] [--items FILE] [--max-size XS|S|M|L|XL]");
+  console.error("usage: scorer live --session ID [--cwd DIR] [--window TOKENS] [--json] | scorer [probe] [--since 7d|12h|ISO] [--provider claude|codex|cursor|all] [--projects-dir DIR] [--codex-dir DIR] [--cursor-dir DIR] [--state-dir DIR] [--no-pr-lookup] | scorer audit [--since 60d; default 1d] [--out DIR] [--item-pattern RE] [--items FILE] [--max-size XS|S|M|L|XL]");
   process.exit(1);
 }
 if (parsed.options.command === "probe") {

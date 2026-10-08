@@ -777,7 +777,7 @@ git commit -m "feat: scorer audit human-turn extraction and direction-pattern co
 - Produces:
   - `sessionTokenTotals(path: string): Promise<{ input: number; cacheRead: number; cacheCreation: number; output: number }>`. It deduplicates assistant records by `message.id`, because Claude Code writes one line per content block with the same usage.
   - `itemIdsForSession(turns: readonly HumanTurn[], pattern: RegExp): string[]`: ids mentioned in the session's human turns, in first-seen order.
-  - `summarizeItemUsage(perSession: { session: string; items: string[]; total: number }[]): { items: number; medianTokens: number; p75Tokens: number; byItem: Record<string, number> }`. A session's tokens are split evenly across the items it mentions.
+  - `summarizeItemUsage(perSession: { session: string; items: string[]; total: number; cacheRead: number }[]): { items: number; medianTokens: number; p75Tokens: number; medianCacheRead: number; p75CacheRead: number; byItem: Record<string, number> }`. A session's tokens are split evenly across the items it mentions. `total` is fresh tokens (input + cache writes + output), the quota proxy behind `medianTokens`/`p75Tokens`; `cacheRead` is split the same way and reported apart.
   - `interface ItemRecord { id: string; size?: "XS" | "S" | "M" | "L" | "XL"; ambiguous?: boolean; authorsTrusted?: boolean }`
   - `autoStartShare(items: readonly ItemRecord[], maxSize: ItemRecord["size"]): { eligible: number; total: number; share: number }`
 
@@ -821,12 +821,12 @@ describe("itemIdsForSession", () => {
 describe("summarizeItemUsage", () => {
   it("splits a session's tokens across its items and reports median and p75", () => {
     const s = summarizeItemUsage([
-      { session: "a", items: ["X-1"], total: 100 },
-      { session: "b", items: ["X-2", "X-3"], total: 200 },
-      { session: "c", items: [], total: 999 },
+      { session: "a", items: ["X-1"], total: 100, cacheRead: 1000 },
+      { session: "b", items: ["X-2", "X-3"], total: 200, cacheRead: 2000 },
+      { session: "c", items: [], total: 999, cacheRead: 999 },
     ]);
     expect(s.byItem).toEqual({ "X-1": 100, "X-2": 100, "X-3": 100 });
-    expect(s).toMatchObject({ items: 3, medianTokens: 100, p75Tokens: 100 });
+    expect(s).toMatchObject({ items: 3, medianTokens: 100, p75Tokens: 100, medianCacheRead: 1000, p75CacheRead: 1000 });
   });
 });
 ```
@@ -907,15 +907,20 @@ function quantile(sorted: readonly number[], q: number): number {
   return sorted[i];
 }
 
-export function summarizeItemUsage(perSession: { session: string; items: string[]; total: number }[]): { items: number; medianTokens: number; p75Tokens: number; byItem: Record<string, number> } {
+export function summarizeItemUsage(perSession: { session: string; items: string[]; total: number; cacheRead: number }[]): { items: number; medianTokens: number; p75Tokens: number; medianCacheRead: number; p75CacheRead: number; byItem: Record<string, number> } {
   const byItem: Record<string, number> = {};
+  const cacheByItem: Record<string, number> = {};
   for (const s of perSession) {
     if (s.items.length === 0) continue;
-    const share = s.total / s.items.length;
-    for (const id of s.items) byItem[id] = (byItem[id] ?? 0) + share;
+    for (const id of s.items) {
+      byItem[id] = (byItem[id] ?? 0) + s.total / s.items.length;
+      cacheByItem[id] = (cacheByItem[id] ?? 0) + s.cacheRead / s.items.length;
+    }
   }
-  const values = Object.values(byItem).sort((a, b) => a - b);
-  return { items: values.length, medianTokens: quantile(values, 0.5), p75Tokens: quantile(values, 0.75), byItem };
+  const sorted = (m: Record<string, number>): number[] => Object.values(m).sort((a, b) => a - b);
+  const fresh = sorted(byItem);
+  const cache = sorted(cacheByItem);
+  return { items: fresh.length, medianTokens: quantile(fresh, 0.5), p75Tokens: quantile(fresh, 0.75), medianCacheRead: quantile(cache, 0.5), p75CacheRead: quantile(cache, 0.75), byItem };
 }
 ```
 
@@ -960,6 +965,8 @@ git commit -m "feat: scorer audit per-item token usage and auto-start share"
 
 ### Task 5: `scorer audit` command, outputs and docs
 
+> Amendment (build): (1) the per-item figure is fresh tokens (input + cache writes + output); cache reads dominated the sum and measured session length, so they are `usage.medianCacheRead`/`p75CacheRead`, reported apart in baseline.md. `summarizeItemUsage` takes `cacheRead` per session (Task 4 text updated). (2) The unreachable `?? "schema mismatch"` fallback in `readItems` is dropped (100% branch coverage). (3) The turn-file stream has an `error` handler and is destroyed if the loop throws, so write failures reject `runAudit`. (4) The README and usage text state that `--since` defaults to 1d.
+
 **Files:**
 - Create: `scorer/src/audit/run-audit.ts`, `scripts/transcript-audit/README.md`
 - Modify: `scorer/src/args.ts` (command union, flags), `scorer/src/cli.ts` (dispatch), `AGENTS.md` (Commands block)
@@ -969,7 +976,7 @@ git commit -m "feat: scorer audit per-item token usage and auto-start share"
 - Consumes: `discoverFiles(projectsDir)` from `scorer/src/transcript/discover.ts`; Tasks 3–4 exports.
 - Produces:
   - `runAudit(opts: { projectsDir: string; since: Date; outDir: string; itemPattern: RegExp; itemsFile: string | null; maxSize: Size }): Promise<AuditSummary>`. It keeps one `Set` of `` `${ts}\u0000${text}` `` across all files. A turn whose key was already seen is skipped (not written, not counted) and counted in `duplicates`. A turn with an empty `ts` is never deduped.
-  - `interface AuditSummary { sessions: number; turns: number; commands: number; interrupts: number; duplicates: number; patterns: Record<PatternName, { turns: number; sessions: number }>; usage: { items: number; medianTokens: number; p75Tokens: number }; autoStart: { eligible: number; total: number; share: number } | null }`
+  - `interface AuditSummary { sessions: number; turns: number; commands: number; interrupts: number; duplicates: number; patterns: Record<PatternName, { turns: number; sessions: number }>; usage: { items: number; medianTokens: number; p75Tokens: number; medianCacheRead: number; p75CacheRead: number }; autoStart: { eligible: number; total: number; share: number } | null }`
   - Files written to `outDir`: `human-turns.jsonl`, `summary.json`, `baseline.md` (prints `duplicates`). Task 6 adds the optional label outputs.
   - `CliOptions` gains `command: "audit"`, plus `auditOut: string`, `itemPattern: string`, `itemsFile: string | null`, `maxSize: Size`.
 
@@ -1082,6 +1089,56 @@ describe("runAudit", () => {
     fs.writeFileSync(items, JSON.stringify([{ size: "XS" }]));
     await expect(runAudit({ projectsDir: projects, since: new Date(0), outDir: out, itemPattern: /X-\d+/, itemsFile: items, maxSize: "XS" })).rejects.toThrow(/items file/);
   });
+
+  it("skips old files, old turns, subagent files and sessions with no turns left", async () => {
+    const c = corpus({
+      "old.jsonl": [u("push", "2026-10-05T00:00:00Z")],
+      "mixed.jsonl": [u("early", "2026-09-01T00:00:00Z"), u("late", "2026-10-05T00:00:00Z")],
+      "empty.jsonl": [u("early", "2026-09-01T00:00:00Z")],
+    });
+    fs.utimesSync(path.join(c.projects, "repo", "old.jsonl"), new Date("2026-09-01"), new Date("2026-09-01"));
+    const sub = path.join(c.projects, "repo", "mixed", "subagents");
+    fs.mkdirSync(sub, { recursive: true });
+    fs.writeFileSync(path.join(sub, "agent-a1.jsonl"), JSON.stringify(u("sub", "2026-10-05T00:00:00Z")));
+    expect(await run(c)).toMatchObject({ sessions: 1, turns: 1 });
+  });
+
+  it("renders zero shares for an empty corpus", async () => {
+    const c = corpus({});
+    expect(await run(c)).toMatchObject({ sessions: 0, turns: 0, autoStart: null });
+    expect(fs.readFileSync(path.join(c.out, "baseline.md"), "utf8")).toContain("push_only 0.0%");
+  });
+
+  it("reports fresh tokens as the primary per-item figure and cache reads separately", async () => {
+    const c = corpus({
+      "s1.jsonl": [
+        { type: "assistant", message: { id: "m1", usage: { input_tokens: 10, cache_creation_input_tokens: 5, output_tokens: 5, cache_read_input_tokens: 1_000_000 } } },
+        u("work on X-1", "2026-10-05T00:00:00Z"),
+      ],
+    });
+    const s = await run(c);
+    expect(s.usage).toMatchObject({ items: 1, medianTokens: 20, p75Tokens: 20, medianCacheRead: 1_000_000, p75CacheRead: 1_000_000 });
+    const md = fs.readFileSync(path.join(c.out, "baseline.md"), "utf8");
+    expect(md).toContain("Fresh tokens per item (input + cache writes + output)");
+    expect(md).toContain("Cache-read tokens per item");
+    expect(md).toContain("proxy for subscription quota");
+  });
+
+  it("rejects when the turn file cannot be written", async () => {
+    const c = corpus({ "s1.jsonl": [u("push", "2026-10-05T00:00:00Z")] });
+    // human-turns.jsonl is a directory, so the write stream errors.
+    fs.mkdirSync(path.join(c.out, "human-turns.jsonl"));
+    await expect(run(c)).rejects.toThrow();
+  });
+
+  it("closes the turn file and rethrows when reading a transcript fails", async () => {
+    const c = corpus({ "s1.jsonl": [u("push", "2026-10-05T00:00:00Z")] });
+    // An unreadable transcript: statSync passes, reading it throws.
+    const bad = path.join(c.projects, "repo", "bad.jsonl");
+    fs.writeFileSync(bad, "{}");
+    fs.chmodSync(bad, 0o000);
+    await expect(run(c)).rejects.toThrow();
+  });
 });
 ```
 
@@ -1116,13 +1173,13 @@ export interface AuditSummary {
   interrupts: number;
   duplicates: number;
   patterns: Record<PatternName, { turns: number; sessions: number }>;
-  usage: { items: number; medianTokens: number; p75Tokens: number };
+  usage: { items: number; medianTokens: number; p75Tokens: number; medianCacheRead: number; p75CacheRead: number };
   autoStart: { eligible: number; total: number; share: number } | null;
 }
 
 function readItems(file: string): ItemRecord[] {
   const parsed = z.array(ItemRecordSchema).safeParse(JSON.parse(fs.readFileSync(file, "utf8")));
-  if (!parsed.success) throw new Error(`items file ${file} is invalid: ${parsed.error.issues[0]?.message ?? "schema mismatch"}`);
+  if (!parsed.success) throw new Error(`items file ${file} is invalid: ${parsed.error.issues[0].message}`);
   return parsed.data;
 }
 
@@ -1132,37 +1189,49 @@ export async function runAudit(opts: { projectsDir: string; since: Date; outDir:
   // Verbatim human turns can hold pasted secrets: owner-only, like every file in the audit directory.
   const turnsOut = fs.createWriteStream(path.join(opts.outDir, "human-turns.jsonl"), { mode: 0o600 });
   const all: HumanTurn[] = [];
-  const perSession: { session: string; items: string[]; total: number }[] = [];
+  const perSession: { session: string; items: string[]; total: number; cacheRead: number }[] = [];
   let sessions = 0;
   // Resume and fork copy earlier human turns into the new transcript with the same timestamp. One Set
   // across all files; the copy lands in whichever file is read second (discoverFiles order), which does
   // not change the counts. Turns with an empty ts are never deduped.
   const seen = new Set<string>();
   let duplicates = 0;
-  for (const file of discoverFiles(opts.projectsDir)) {
-    if (!file.isMain) continue;
-    if (fs.statSync(file.path).mtime < opts.since) continue;
-    const turns: HumanTurn[] = [];
-    for await (const t of extractHumanTurns({ path: file.path, project: file.project, sessionId: file.sessionId })) {
-      if (t.ts !== "" && new Date(t.ts) < opts.since) continue;
-      if (t.ts !== "") {
-        const key = `${t.ts}\u0000${t.text}`;
-        if (seen.has(key)) {
-          duplicates += 1;
-          continue;
+  // A write failure (full disk, unwritable path) must reject runAudit, not crash on an unhandled 'error'.
+  const written = new Promise<void>((resolve, reject) => {
+    turnsOut.on("error", reject);
+    turnsOut.on("finish", resolve);
+  });
+  written.catch(() => undefined);
+  try {
+    for (const file of discoverFiles(opts.projectsDir)) {
+      if (!file.isMain) continue;
+      if (fs.statSync(file.path).mtime < opts.since) continue;
+      const turns: HumanTurn[] = [];
+      for await (const t of extractHumanTurns({ path: file.path, project: file.project, sessionId: file.sessionId })) {
+        if (t.ts !== "" && new Date(t.ts) < opts.since) continue;
+        if (t.ts !== "") {
+          const key = `${t.ts}\u0000${t.text}`;
+          if (seen.has(key)) {
+            duplicates += 1;
+            continue;
+          }
+          seen.add(key);
         }
-        seen.add(key);
+        turns.push(t);
+        turnsOut.write(`${JSON.stringify(t)}\n`);
       }
-      turns.push(t);
-      turnsOut.write(`${JSON.stringify(t)}\n`);
+      if (turns.length === 0) continue;
+      sessions += 1;
+      all.push(...turns);
+      const tok = await sessionTokenTotals(file.path);
+      perSession.push({ session: file.sessionId, items: itemIdsForSession(turns, opts.itemPattern), total: tok.input + tok.cacheCreation + tok.output, cacheRead: tok.cacheRead });
     }
-    if (turns.length === 0) continue;
-    sessions += 1;
-    all.push(...turns);
-    const tok = await sessionTokenTotals(file.path);
-    perSession.push({ session: file.sessionId, items: itemIdsForSession(turns, opts.itemPattern), total: tok.input + tok.cacheRead + tok.cacheCreation + tok.output });
+    turnsOut.end();
+    await written;
+  } catch (e) {
+    turnsOut.destroy();
+    throw e;
   }
-  await new Promise<void>((resolve) => turnsOut.end(resolve));
   const usage = summarizeItemUsage(perSession);
   const summary: AuditSummary = {
     sessions,
@@ -1171,7 +1240,7 @@ export async function runAudit(opts: { projectsDir: string; since: Date; outDir:
     interrupts: all.filter((t) => t.kind === "interrupt").length,
     duplicates,
     patterns: countPatterns(all),
-    usage: { items: usage.items, medianTokens: usage.medianTokens, p75Tokens: usage.p75Tokens },
+    usage: { items: usage.items, medianTokens: usage.medianTokens, p75Tokens: usage.p75Tokens, medianCacheRead: usage.medianCacheRead, p75CacheRead: usage.p75CacheRead },
     autoStart: items === null ? null : autoStartShare(items, opts.maxSize),
   };
   fs.writeFileSync(path.join(opts.outDir, "summary.json"), `${JSON.stringify(summary, null, 2)}\n`);
@@ -1196,7 +1265,11 @@ function renderBaseline(s: AuditSummary, opts: { since: Date; maxSize: Size }): 
     ``,
     `Shares of typed turns: ${(Object.keys(s.patterns) as PatternName[]).map((n) => `${n} ${pct(s.patterns[n].turns)}%`).join(", ")}.`,
     ``,
-    `Tokens per item: ${s.usage.items} items, median ${Math.round(s.usage.medianTokens)}, p75 ${Math.round(s.usage.p75Tokens)}.`,
+    `Fresh tokens per item (input + cache writes + output): ${s.usage.items} items, median ${Math.round(s.usage.medianTokens)}, p75 ${Math.round(s.usage.p75Tokens)}.`,
+    ``,
+    `Cache-read tokens per item: median ${Math.round(s.usage.medianCacheRead)}, p75 ${Math.round(s.usage.p75CacheRead)}.`,
+    ``,
+    `Both are a proxy for subscription quota, not the quota itself. Cache reads grow with session length, so they are reported apart from fresh tokens.`,
     ``,
     `Auto-start share: ${auto}.`,
     ``,
@@ -1243,7 +1316,7 @@ In `scorer/src/cli.ts`, add `import { runAudit } from "./audit/run-audit.js";` a
   }
 ```
 
-Also extend the usage string in `cli.ts` with `| scorer audit [--since 60d] [--out DIR] [--item-pattern RE] [--items FILE] [--max-size XS|S|M|L|XL]`.
+Also extend the usage string in `cli.ts` with `| scorer audit [--since 60d; default 1d] [--out DIR] [--item-pattern RE] [--items FILE] [--max-size XS|S|M|L|XL]`.
 
 Create `scripts/transcript-audit/README.md`:
 
@@ -1253,6 +1326,35 @@ Create `scripts/transcript-audit/README.md`:
 Measures where human turns go across Claude Code transcripts and sets the baselines for Sindri's
 success metrics (spec §2, §13 step 0).
 
+```bash
+(cd scorer && npm run build)
+node scorer/dist/cli.js audit --since 60d                 # → ~/.agentic-workflow/audit/
+node scorer/dist/cli.js audit --since 60d --items items.json --max-size XS
+```
+
+`--since` defaults to `1d`; pass `60d` (or an ISO date) for a baseline window.
+
+Outputs in `--out` (default `~/.agentic-workflow/audit/`):
+
+| File | Content |
+|---|---|
+| `human-turns.jsonl` | One record per human turn (`HumanTurn`): text, active skills, guard/compaction state, whether code was edited earlier in the session (`editsBefore`), context tokens, the preceding assistant message tail |
+| `summary.json` | Session/turn counts, copied turns skipped (`duplicates`), per-pattern floor counts, fresh and cache-read tokens per item, auto-start share |
+| `baseline.md` | Human-readable baseline table |
+
+`items.json` (optional) is an array of `{ id, size?, ambiguous?, authorsTrusted? }`, from any tracker export or
+triage output. Missing fields count as not eligible.
+
+Resumed and forked sessions copy earlier human turns into the new transcript with the same timestamp. The audit
+keeps one set of `(timestamp, text)` keys across all files and skips repeats (reported as `duplicates`). Turns with
+no timestamp are never deduped.
+
+Tokens per item split each session's usage evenly across the items it mentions. The primary figure is fresh
+tokens (input + cache writes + output); cache-read tokens are reported separately because they grow with session
+length. Both are a proxy for subscription quota, not the quota itself.
+
+Patterns are deterministic floor counts, not labels, until calibrated with `--label` (below, added by the
+calibration task). `image_turn` counts `[Image #N]` attachments, not defects.
 ```bash
 (cd scorer && npm run build)
 node scorer/dist/cli.js audit --since 60d                 # → ~/.agentic-workflow/audit/
@@ -1281,7 +1383,7 @@ calibration task). `image_turn` counts `[Image #N]` attachments, not defects.
 In `AGENTS.md`, under the `# TypeScript packages` commands block, after the `scorer probe` line, add:
 
 ```bash
-scorer audit [--since 60d] [--items FILE] [--max-size XS]   # Human-turn baseline → ~/.agentic-workflow/audit/
+scorer audit [--since 60d; default 1d] [--items FILE] [--max-size XS]   # Human-turn baseline → ~/.agentic-workflow/audit/
 ```
 
 - [x] **Step 4: Run the scorer suite and typecheck**
@@ -2466,7 +2568,7 @@ Modify `scorer/src/cli.ts`. Add `import { makeClaudeRunner } from "./audit/claud
 const USAGE = [
   "usage: scorer live --session ID [--cwd DIR] [--window TOKENS] [--json]",
   "       scorer [probe] [--since 7d|12h|ISO] [--provider claude|codex|cursor|all] [--projects-dir DIR] [--codex-dir DIR] [--cursor-dir DIR] [--state-dir DIR] [--no-pr-lookup]",
-  "       scorer audit [--since 60d] [--out DIR] [--item-pattern RE] [--items FILE] [--max-size XS|S|M|L|XL] [--label N] [--label-repeat K] [--label-model MODEL]",
+  "       scorer audit [--since 60d; default 1d] [--out DIR] [--item-pattern RE] [--items FILE] [--max-size XS|S|M|L|XL] [--label N] [--label-repeat K] [--label-model MODEL]",
   "",
   "audit --label N (default 0 = off, fully offline) has a model label N sampled human turns to calibrate the regex patterns",
   "and measure wrong-approach corrections. It sends the text of those turns (and the tail of the preceding assistant message)",
@@ -2539,7 +2641,7 @@ carry aggregate numbers only.
 In `AGENTS.md`, replace the `scorer audit` line from Task 5 with:
 
 ```bash
-scorer audit [--since 60d] [--items FILE] [--max-size XS] [--label N]   # Human-turn baseline → ~/.agentic-workflow/audit/; --label sends sampled turn text to your Claude login's provider
+scorer audit [--since 60d; default 1d] [--items FILE] [--max-size XS] [--label N]   # Human-turn baseline → ~/.agentic-workflow/audit/; --label sends sampled turn text to your Claude login's provider
 ```
 
 - [ ] **Step 4: Run the scorer suite and typecheck**

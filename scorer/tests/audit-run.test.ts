@@ -78,6 +78,7 @@ describe("runAudit", () => {
     fs.writeFileSync(items, JSON.stringify([{ size: "XS" }]));
     await expect(runAudit({ projectsDir: projects, since: new Date(0), outDir: out, itemPattern: /X-\d+/, itemsFile: items, maxSize: "XS" })).rejects.toThrow(/items file/);
   });
+
   it("skips old files, old turns, subagent files and sessions with no turns left", async () => {
     const c = corpus({
       "old.jsonl": [u("push", "2026-10-05T00:00:00Z")],
@@ -90,9 +91,41 @@ describe("runAudit", () => {
     fs.writeFileSync(path.join(sub, "agent-a1.jsonl"), JSON.stringify(u("sub", "2026-10-05T00:00:00Z")));
     expect(await run(c)).toMatchObject({ sessions: 1, turns: 1 });
   });
+
   it("renders zero shares for an empty corpus", async () => {
     const c = corpus({});
     expect(await run(c)).toMatchObject({ sessions: 0, turns: 0, autoStart: null });
     expect(fs.readFileSync(path.join(c.out, "baseline.md"), "utf8")).toContain("push_only 0.0%");
+  });
+
+  it("reports fresh tokens as the primary per-item figure and cache reads separately", async () => {
+    const c = corpus({
+      "s1.jsonl": [
+        { type: "assistant", message: { id: "m1", usage: { input_tokens: 10, cache_creation_input_tokens: 5, output_tokens: 5, cache_read_input_tokens: 1_000_000 } } },
+        u("work on X-1", "2026-10-05T00:00:00Z"),
+      ],
+    });
+    const s = await run(c);
+    expect(s.usage).toMatchObject({ items: 1, medianTokens: 20, p75Tokens: 20, medianCacheRead: 1_000_000, p75CacheRead: 1_000_000 });
+    const md = fs.readFileSync(path.join(c.out, "baseline.md"), "utf8");
+    expect(md).toContain("Fresh tokens per item (input + cache writes + output)");
+    expect(md).toContain("Cache-read tokens per item");
+    expect(md).toContain("proxy for subscription quota");
+  });
+
+  it("rejects when the turn file cannot be written", async () => {
+    const c = corpus({ "s1.jsonl": [u("push", "2026-10-05T00:00:00Z")] });
+    // human-turns.jsonl is a directory, so the write stream errors.
+    fs.mkdirSync(path.join(c.out, "human-turns.jsonl"));
+    await expect(run(c)).rejects.toThrow();
+  });
+
+  it("closes the turn file and rethrows when reading a transcript fails", async () => {
+    const c = corpus({ "s1.jsonl": [u("push", "2026-10-05T00:00:00Z")] });
+    // An unreadable transcript: statSync passes, reading it throws.
+    const bad = path.join(c.projects, "repo", "bad.jsonl");
+    fs.writeFileSync(bad, "{}");
+    fs.chmodSync(bad, 0o000);
+    await expect(run(c)).rejects.toThrow();
   });
 });

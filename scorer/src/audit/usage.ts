@@ -41,13 +41,20 @@ function quantile(sorted: readonly number[], q: number): number {
   return sorted[i];
 }
 
-export function summarizeItemUsage(perSession: { session: string; items: string[]; total: number }[]): { items: number; medianTokens: number; p75Tokens: number; byItem: Record<string, number> } {
+// `total` is fresh tokens (input + cache writes + output), the quota proxy; cache reads track session length
+// and are split the same way but reported apart.
+export function summarizeItemUsage(perSession: { session: string; items: string[]; total: number; cacheRead: number }[]): { items: number; medianTokens: number; p75Tokens: number; medianCacheRead: number; p75CacheRead: number; byItem: Record<string, number> } {
   const byItem: Record<string, number> = {};
+  const cacheByItem: Record<string, number> = {};
   for (const s of perSession) {
     if (s.items.length === 0) continue;
-    const share = s.total / s.items.length;
-    for (const id of s.items) byItem[id] = (byItem[id] ?? 0) + share;
+    for (const id of s.items) {
+      byItem[id] = (byItem[id] ?? 0) + s.total / s.items.length;
+      cacheByItem[id] = (cacheByItem[id] ?? 0) + s.cacheRead / s.items.length;
+    }
   }
-  const values = Object.values(byItem).sort((a, b) => a - b);
-  return { items: values.length, medianTokens: quantile(values, 0.5), p75Tokens: quantile(values, 0.75), byItem };
+  const sorted = (m: Record<string, number>): number[] => Object.values(m).sort((a, b) => a - b);
+  const fresh = sorted(byItem);
+  const cache = sorted(cacheByItem);
+  return { items: fresh.length, medianTokens: quantile(fresh, 0.5), p75Tokens: quantile(fresh, 0.75), medianCacheRead: quantile(cache, 0.5), p75CacheRead: quantile(cache, 0.75), byItem };
 }

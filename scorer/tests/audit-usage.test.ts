@@ -53,16 +53,16 @@ describe("itemIdsForSession", () => {
 describe("summarizeItemUsage", () => {
   it("splits a session's tokens across its items and reports median and p75", () => {
     const s = summarizeItemUsage([
-      { session: "a", items: ["X-1"], total: 100 },
-      { session: "b", items: ["X-2", "X-3"], total: 200 },
-      { session: "c", items: [], total: 999 },
+      { session: "a", items: ["X-1"], total: 100, cacheRead: 1000 },
+      { session: "b", items: ["X-2", "X-3"], total: 200, cacheRead: 2000 },
+      { session: "c", items: [], total: 999, cacheRead: 999 },
     ]);
     expect(s.byItem).toEqual({ "X-1": 100, "X-2": 100, "X-3": 100 });
-    expect(s).toMatchObject({ items: 3, medianTokens: 100, p75Tokens: 100 });
+    expect(s).toMatchObject({ items: 3, medianTokens: 100, p75Tokens: 100, medianCacheRead: 1000, p75CacheRead: 1000 });
   });
 
   it("accumulates an item across sessions and returns zeros when there are no items", () => {
-    expect(summarizeItemUsage([{ session: "a", items: ["X-1"], total: 10 }, { session: "b", items: ["X-1"], total: 5 }]).byItem).toEqual({ "X-1": 15 });
-    expect(summarizeItemUsage([])).toEqual({ items: 0, medianTokens: 0, p75Tokens: 0, byItem: {} });
+    expect(summarizeItemUsage([{ session: "a", items: ["X-1"], total: 10, cacheRead: 0 }, { session: "b", items: ["X-1"], total: 5, cacheRead: 0 }]).byItem).toEqual({ "X-1": 15 });
+    expect(summarizeItemUsage([])).toEqual({ items: 0, medianTokens: 0, p75Tokens: 0, medianCacheRead: 0, p75CacheRead: 0, byItem: {} });
   });
 });
