@@ -1,6 +1,7 @@
 import { createRequire } from "node:module";
 
 import type { Deps } from "./deps.js";
+import { doctorCommand } from "./doctor/doctor.js";
 import { ledgerCommand, observeCommand } from "./observe/observe.js";
 import { profileCommand } from "./profile/commands.js";
 import { failure, success, type CommandResult } from "./output.js";
@@ -37,6 +38,7 @@ export const COMMANDS: Record<string, CommandDef> = {
     usage: "Usage: sindri scrub < text | sindri scrub --staged [--json] | sindri scrub --install-pre-commit [--repo PATH]",
     run: scrubCommand,
   },
+  doctor: { summary: "Health checks, one line each: ok / warn / fail plus a fix", usage: "Usage: sindri doctor [--json]", run: doctorCommand },
   ledger: { summary: "Show ledger events", usage: "Usage: sindri ledger [--item ID] [--since 7d|12h] [--json]", run: ledgerCommand },
 };
 

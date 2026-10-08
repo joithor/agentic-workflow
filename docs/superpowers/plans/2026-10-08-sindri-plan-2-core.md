@@ -5276,6 +5276,8 @@ git commit -m "feat: sindri scrub command and secret-scan pre-commit hook"
 
 ### Task 10: `sindri doctor` (spec §11.5, the checks that exist in Plan 2)
 
+> Amendment (build): (S3) added tests for the `isExecutable` true arm, the non-SindriError ledger arm, the partial-budget `unset` arms and the `doctorCommand` catch; (m12) the node check requires `>= 20.11` to match `engines`; (m19) doctor is read-only: it opens the ledger with better-sqlite3 `{ readonly: true, fileMustExist: true }` instead of `openLedger` (no migrate, backup or chmod), raises SND-LEDGER-001 itself for a newer schema, and treats an unreadable ledger as unapproved in `profile-approved`.
+
 **Files:**
 - Create: `sindri/src/doctor/doctor.ts`
 - Modify: `sindri/src/main.ts` (register `doctor`)
@@ -5288,7 +5290,7 @@ git commit -m "feat: sindri scrub command and secret-scan pre-commit hook"
   - `runChecks(deps: Deps, nodeVersion?: string): Promise<Check[]>`. The order is `node`, `state-dir`, `boot-id`, `ledger`, `lock`, `profile`, then `profile-approved`, `active-host`, `budget` and `pre-commit:<repo>`; those last four appear only when the profile is valid.
   - `doctorCommand: Command` — one line per check (`ok` / `warn` / `fail`, name, detail), then an indented `fix:` line for non-ok checks; exit 2 on any fail, else 1 on any warn, else 0.
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 `sindri/tests/doctor.test.ts`:
 
@@ -5409,12 +5411,12 @@ describe("sindri doctor", () => {
 });
 ```
 
-- [ ] **Step 2: Run the tests to verify they fail**
+- [x] **Step 2: Run the tests to verify they fail**
 
 Run: `cd sindri && npx vitest run tests/doctor.test.ts`
 Expected: FAIL with `Failed to load url ../src/doctor/doctor.js`.
 
-- [ ] **Step 3: Implement**
+- [x] **Step 3: Implement**
 
 `sindri/src/doctor/doctor.ts`:
 
@@ -5570,12 +5572,12 @@ import { doctorCommand } from "./doctor/doctor.js";
   doctor: { summary: "Health checks, one line each: ok / warn / fail plus a fix", usage: "Usage: sindri doctor [--json]", run: doctorCommand },
 ```
 
-- [ ] **Step 4: Run the tests**
+- [x] **Step 4: Run the tests**
 
 Run: `cd sindri && npx vitest run && npm run typecheck && npm run test:coverage`
 Expected: all tests PASS; no type errors; 100% coverage (add a test for any branch the report names).
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add sindri/src sindri/tests

@@ -1,0 +1,158 @@
+import { execFileSync } from "node:child_process";
+import fs from "node:fs";
+import path from "node:path";
+import Database from "better-sqlite3";
+import { describe, expect, it } from "vitest";
+
+import { stateDir, type Deps } from "../src/deps.js";
+import { runChecks } from "../src/doctor/doctor.js";
+import { runCli } from "../src/main.js";
+import { fakeSystem, makeDeps, tempDir } from "./helpers.js";
+
+const byName = async (deps: Deps, node = "22.10.0") => Object.fromEntries((await runChecks(deps, node)).map((c) => [c.name, c]));
+
+async function ring0Deps(): Promise<Deps> {
+  const root = tempDir("sindri-doc-");
+  fs.mkdirSync(path.join(root, "docs/superpowers/plans"), { recursive: true });
+  execFileSync("git", ["init", "-q"], { cwd: root });
+  const d = makeDeps({ cwd: root });
+  await runCli(["profile", "init", "--ring0"], d);
+  return d;
+}
+
+describe("sindri doctor", () => {
+  it("on a fresh machine: warns about the missing state dir and profile, nothing fails", async () => {
+    const d = makeDeps();
+    const c = await byName(d);
+    expect(c.node.status).toBe("ok");
+    expect(c["state-dir"]).toMatchObject({ status: "warn", detail: "not created yet" });
+    expect(c.ledger).toMatchObject({ status: "ok", detail: "no ledger yet" });
+    expect(c.lock).toMatchObject({ status: "ok", detail: "free" });
+    expect(c.profile).toMatchObject({ status: "warn", fix: "sindri profile init --ring0 (or sindri profile init)" });
+    expect(c["profile-approved"]).toBeUndefined();
+    const r = await runCli(["doctor"], d);
+    expect(r.exitCode).toBe(1);
+    expect(r.stdout).toMatch(/^ok {3}node/m);
+    expect(r.stdout).toMatch(/^warn state-dir/m);
+  });
+
+  it("is all ok after ring-0 init, approve and pre-commit install (spec §13.3 evidence)", async () => {
+    const d = await ring0Deps();
+    const hash = JSON.parse((await runCli(["profile", "approve", "--json"], d)).stdout).hash as string;
+    await runCli(["profile", "approve", hash], { ...d, isTTY: true, prompt: async () => hash.slice(0, 6) });
+    await runCli(["scrub", "--install-pre-commit"], d);
+    const r = await runCli(["doctor"], d);
+    expect(r.stdout).not.toMatch(/^(warn|fail)/m);
+    expect(r.exitCode).toBe(0);
+    const c = await byName(d);
+    expect(c.budget.detail).toBe("unset (not enforced before rollout step 3a)");
+    expect(Object.keys(c).some((k) => k.startsWith("pre-commit:"))).toBe(true);
+  });
+
+  it("warns on an unapproved profile, a missing hook and another active host; a set budget is ok", async () => {
+    const d = await ring0Deps();
+    const file = path.join(d.env.AW_STATE_DIR as string, "profile", "profile.yaml");
+    fs.appendFileSync(file, "budget:\n  perItem: 1000\n  perDay: 5000\n");
+    const c = await byName({ ...d, system: fakeSystem({ hostname: () => "other" }) });
+    expect(c["profile-approved"].status).toBe("warn");
+    expect(c["active-host"]).toMatchObject({ status: "warn", detail: "this host is other; hosts.active is test-host" });
+    expect(c.budget).toMatchObject({ status: "ok", detail: "perItem 1000, perDay 5000 tokens" });
+    const hook = Object.entries(c).find(([k]) => k.startsWith("pre-commit:"))?.[1];
+    expect(hook?.status).toBe("warn");
+  });
+
+  it("warns when the installed hook points at a CLI that is gone", async () => {
+    const d = await ring0Deps();
+    await runCli(["scrub", "--install-pre-commit"], { ...d, env: { ...d.env, SINDRI_BIN: "/nonexistent/sindri" } });
+    const hook = Object.entries(await byName(d)).find(([k]) => k.startsWith("pre-commit:"))?.[1];
+    expect(hook).toMatchObject({ status: "warn" });
+    expect(hook?.detail).toContain("/nonexistent/sindri, which is missing");
+  });
+
+  it("fails on an old node, a network state dir, an invalid profile and a newer ledger", async () => {
+    const d = makeDeps({ system: fakeSystem({ isLocalDisk: () => false, bootId: () => null }) });
+    fs.mkdirSync(stateDir(d), { recursive: true });
+    const raw = new Database(path.join(stateDir(d), "ledger.db"));
+    raw.pragma("user_version = 99");
+    raw.close();
+    fs.mkdirSync(path.join(d.env.AW_STATE_DIR as string, "profile"), { recursive: true });
+    fs.writeFileSync(path.join(d.env.AW_STATE_DIR as string, "profile", "profile.yaml"), "bogus: 1\n");
+    const c = await byName(d, "18.19.0");
+    expect(c.node.status).toBe("fail");
+    expect(c["state-dir"]).toMatchObject({ status: "fail", detail: "on a network filesystem" });
+    expect(c["boot-id"]).toMatchObject({ status: "ok", detail: "unreadable; stale-lock checks use pids only" });
+    expect(c.ledger.status).toBe("fail");
+    expect(c.ledger.detail).toContain("SND-LEDGER-001");
+    expect(c.profile.status).toBe("fail");
+    expect((await runCli(["doctor", "--json"], d)).exitCode).toBe(2);
+  });
+
+  it("warns on loose permissions, an unknown disk type, a stale lock and leftovers", async () => {
+    const d = makeDeps({ system: fakeSystem({ isLocalDisk: () => null, pidAlive: () => false }) });
+    const dir = stateDir(d);
+    fs.mkdirSync(path.join(dir, "sindri.lock"), { recursive: true });
+    fs.chmodSync(dir, 0o755);
+    fs.writeFileSync(path.join(dir, "sindri.lock", "owner.json"), JSON.stringify({ pid: 9, pidStartTime: null, host: "test-host", bootId: "boot-1", startedAt: "t", epoch: 1 }));
+    fs.mkdirSync(path.join(dir, "sindri.lock.stale-x"));
+    const c = await byName(d);
+    expect(c["state-dir"]).toMatchObject({ status: "warn", detail: "mode 755 (want 700); can't tell if it is on local disk" });
+    expect(c.lock.status).toBe("warn");
+    expect(c.lock.detail).toContain("stale lock from test-host/9");
+    expect(c.lock.detail).toContain("leftovers: sindri.lock.stale-x");
+  });
+
+  it("reports a held lock, and a stale lock without leftovers, as ok", async () => {
+    const d = makeDeps();
+    const dir = stateDir(d);
+    fs.mkdirSync(path.join(dir, "sindri.lock"), { recursive: true });
+    fs.chmodSync(dir, 0o700);
+    fs.writeFileSync(path.join(dir, "sindri.lock", "owner.json"), JSON.stringify({ pid: 9, pidStartTime: "start-9", host: "test-host", bootId: "boot-1", startedAt: "t", epoch: 1 }));
+    expect((await byName(d)).lock).toMatchObject({ status: "ok", detail: "held by test-host/9 since t" });
+    const stale = await byName({ ...d, system: fakeSystem({ pidAlive: () => false }) });
+    expect(stale.lock).toMatchObject({ status: "ok", detail: "stale lock from test-host/9; the next run takes it over" });
+  });
+});
+
+describe("sindri doctor coverage paths", () => {
+  it("reports an executable hook binary as ok", async () => {
+    const d = await ring0Deps();
+    await runCli(["scrub", "--install-pre-commit"], { ...d, env: { ...d.env, SINDRI_BIN: process.execPath } });
+    const hook = Object.entries(await byName(d)).find(([k]) => k.startsWith("pre-commit:"))?.[1];
+    expect(hook?.status).toBe("ok");
+    expect(hook?.detail).toContain(process.execPath);
+  });
+
+  it("fails on an unreadable ledger with no error code, and does not touch it", async () => {
+    const d = await ring0Deps();
+    const file = path.join(stateDir(d), "ledger.db");
+    fs.mkdirSync(stateDir(d), { recursive: true });
+    fs.writeFileSync(file, "not a db");
+    const c = await byName(d);
+    expect(c.ledger.status).toBe("fail");
+    expect(c.ledger.detail).not.toMatch(/^SND-/);
+    expect(c["profile-approved"].status).toBe("warn");
+    expect(fs.readFileSync(file, "utf8")).toBe("not a db");
+  });
+
+  it("prints unset for the missing half of a partial budget", async () => {
+    const d = await ring0Deps();
+    const file = path.join(d.env.AW_STATE_DIR as string, "profile", "profile.yaml");
+    const base = fs.readFileSync(file, "utf8");
+    fs.writeFileSync(file, `${base}budget:\n  perItem: 1000\n`);
+    expect((await byName(d)).budget.detail).toBe("perItem 1000, perDay unset tokens");
+    fs.writeFileSync(file, `${base}budget:\n  perDay: 5000\n`);
+    expect((await byName(d)).budget.detail).toBe("perItem unset, perDay 5000 tokens");
+  });
+
+  it("reports an unknown flag as SND-CLI-002", async () => {
+    const r = await runCli(["doctor", "--nope"], makeDeps());
+    expect(r.exitCode).toBe(2);
+    expect(r.stderr + r.stdout).toContain("SND-CLI-002");
+  });
+
+  it("flags node 20.10 as too old and 20.11 as fine", async () => {
+    const d = makeDeps();
+    expect((await byName(d, "20.10.0")).node.status).toBe("fail");
+    expect((await byName(d, "20.11.0")).node.status).toBe("ok");
+  });
+});
