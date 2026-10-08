@@ -34,11 +34,11 @@ export function hookBinary(hookText: string): string | null {
   return /^SINDRI='((?:[^']|'\\'')*)'$/m.exec(hookText)?.[1].replace(/'\\''/g, "'") ?? null;
 }
 
+// git resolves core.hooksPath itself (relative values against the top level, ~ expansion),
+// and does so from any subdirectory; --path-format=absolute needs git 2.31+.
 export async function preCommitPath(git: GitRunner, repoPath: string): Promise<string | null> {
-  const hooksPath = await git.run(["config", "--get", "core.hooksPath"], repoPath);
-  if (hooksPath.ok && hooksPath.stdout.trim() !== "") return path.resolve(repoPath, hooksPath.stdout.trim(), "pre-commit");
-  const gitPath = await git.run(["rev-parse", "--git-path", "hooks/pre-commit"], repoPath);
-  return gitPath.ok ? path.resolve(repoPath, gitPath.stdout.trim()) : null;
+  const gitPath = await git.run(["rev-parse", "--path-format=absolute", "--git-path", "hooks/pre-commit"], repoPath);
+  return gitPath.ok ? gitPath.stdout.trim() : null;
 }
 
 export interface AddedFile {

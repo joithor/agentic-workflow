@@ -122,12 +122,25 @@ describe("sindri scrub --install-pre-commit", () => {
     expect((await runCli(["scrub", "--install-pre-commit"], deps)).stderr).toContain("SND-SCRUB-003");
   });
 
+  it("resolves a relative core.hooksPath against the top level from a subdirectory, and defaults to .git/hooks", async () => {
+    const root = repo();
+    const sub = path.join(root, "pkg", "deep");
+    fs.mkdirSync(sub, { recursive: true });
+    const fallback = await runCli(["scrub", "--install-pre-commit"], makeDeps({ cwd: sub }));
+    expect(fs.realpathSync(fallback.stdout.match(/at (.*)\.\n/)?.[1] as string)).toBe(fs.realpathSync(path.join(root, ".git/hooks/pre-commit")));
+    execFileSync("git", ["config", "core.hooksPath", ".githooks"], { cwd: root });
+    await runCli(["scrub", "--install-pre-commit"], makeDeps({ cwd: sub }));
+    expect(fs.existsSync(path.join(root, ".githooks", "pre-commit"))).toBe(true);
+    expect(fs.existsSync(path.join(sub, ".githooks"))).toBe(false);
+  });
+
   it("honors core.hooksPath and --repo, and refuses outside git", async () => {
     const root = repo();
     execFileSync("git", ["config", "core.hooksPath", ".githooks"], { cwd: root });
-    expect(await preCommitPath(realGitRunner(), root)).toBe(path.join(root, ".githooks", "pre-commit"));
+    const real = fs.realpathSync(root); // git reports symlink-resolved paths (macOS /var -> /private/var)
+    expect(await preCommitPath(realGitRunner(), root)).toBe(path.join(real, ".githooks", "pre-commit"));
     const r = await runCli(["scrub", "--install-pre-commit", "--repo", root], makeDeps());
-    expect(r.stdout).toContain(path.join(root, ".githooks", "pre-commit"));
+    expect(r.stdout).toContain(path.join(real, ".githooks", "pre-commit"));
     expect((await runCli(["scrub", "--install-pre-commit"], makeDeps({ cwd: tempDir() }))).stderr).toContain("SND-PROFILE-009");
   });
 });

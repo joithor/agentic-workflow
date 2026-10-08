@@ -4864,6 +4864,8 @@ git commit -m "feat: sindri observe and ledger commands"
 
 ### Task 9: `sindri scrub` and the secret-scan pre-commit hook
 
+> Amendment (build): `preCommitPath` resolves the hook only through `git rev-parse --path-format=absolute --git-path hooks/pre-commit`. The plan resolved `core.hooksPath` by hand against the current directory, which put the hook where git never runs it when installing from a subdirectory or with a `~` path. Git returns symlink-resolved absolute paths.
+
 `sindri scrub --install-pre-commit` is ladder row 5 (spec §13.3). From then on, no build session can commit a secret-shaped string to this public repo. The hook is a pattern guard, not a security boundary: it calls the CLI by absolute path and refuses the commit when it can't run, and `git commit --no-verify` bypasses it on purpose (a human decision, recorded in the commit message).
 
 **Files:**
