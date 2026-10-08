@@ -781,7 +781,7 @@ git commit -m "feat: scorer audit human-turn extraction and direction-pattern co
   - `interface ItemRecord { id: string; size?: "XS" | "S" | "M" | "L" | "XL"; ambiguous?: boolean; authorsTrusted?: boolean }`
   - `autoStartShare(items: readonly ItemRecord[], maxSize: ItemRecord["size"]): { eligible: number; total: number; share: number }`
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 Create `scorer/tests/audit-usage.test.ts`:
 
@@ -856,12 +856,12 @@ describe("autoStartShare", () => {
 });
 ```
 
-- [ ] **Step 2: Run the tests to verify they fail**
+- [x] **Step 2: Run the tests to verify they fail**
 
 Run: `cd scorer && npx vitest run tests/audit-usage.test.ts tests/audit-items.test.ts`
 Expected: FAIL (modules not found).
 
-- [ ] **Step 3: Implement**
+- [x] **Step 3: Implement**
 
 Create `scorer/src/audit/usage.ts`:
 
@@ -944,12 +944,12 @@ export function autoStartShare(items: readonly ItemRecord[], maxSize: Size | und
 }
 ```
 
-- [ ] **Step 4: Run the tests**
+- [x] **Step 4: Run the tests**
 
 Run: `cd scorer && npx vitest run tests/audit-usage.test.ts tests/audit-items.test.ts`
 Expected: PASS.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add scorer/src/audit/usage.ts scorer/src/audit/items.ts scorer/tests/audit-usage.test.ts scorer/tests/audit-items.test.ts
