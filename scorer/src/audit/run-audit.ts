@@ -32,13 +32,17 @@ function readItems(file: string): ItemRecord[] {
   return parsed.data;
 }
 
-export async function runAudit(opts: { projectsDir: string; since: Date; outDir: string; itemPattern: RegExp; itemsFile: string | null; maxSize: Size; label?: LabelOptions | undefined }): Promise<AuditSummary> {
+export async function runAudit(opts: { projectsDir: string; since: Date; outDir: string; itemPattern: RegExp; itemsFile: string | null; maxSize: Size; label?: LabelOptions | undefined; turnsFile?: boolean | undefined }): Promise<AuditSummary> {
   const items = opts.itemsFile === null ? null : readItems(opts.itemsFile);
   fs.mkdirSync(opts.outDir, { recursive: true, mode: 0o700 });
   // Verbatim human turns can hold pasted secrets: owner-only, like every file in the audit directory.
+  // turnsFile: false (the weekly job) keeps no verbatim copy at all; labeling still reads the turns in memory.
   const turnsFile = path.join(opts.outDir, "human-turns.jsonl");
-  if (fs.existsSync(turnsFile)) fs.chmodSync(turnsFile, 0o600); // the stream's mode only applies on create: tighten before any write
-  const turnsOut = fs.createWriteStream(turnsFile, { mode: 0o600 });
+  let turnsOut: fs.WriteStream | null = null;
+  if (opts.turnsFile !== false) {
+    if (fs.existsSync(turnsFile)) fs.chmodSync(turnsFile, 0o600); // the stream's mode only applies on create: tighten before any write
+    turnsOut = fs.createWriteStream(turnsFile, { mode: 0o600 });
+  }
   const all: HumanTurn[] = [];
   const perSession: { session: string; items: string[]; total: number; cacheRead: number }[] = [];
   let sessions = 0;
@@ -48,9 +52,14 @@ export async function runAudit(opts: { projectsDir: string; since: Date; outDir:
   const seen = new Set<string>();
   let duplicates = 0;
   // A write failure (full disk, unwritable path) must reject runAudit, not crash on an unhandled 'error'.
+  const stream = turnsOut;
   const written = new Promise<void>((resolve, reject) => {
-    turnsOut.on("error", reject);
-    turnsOut.on("finish", resolve);
+    if (stream === null) {
+      resolve();
+      return;
+    }
+    stream.on("error", reject);
+    stream.on("finish", resolve);
   });
   written.catch(() => undefined);
   try {
@@ -69,7 +78,7 @@ export async function runAudit(opts: { projectsDir: string; since: Date; outDir:
           seen.add(key);
         }
         turns.push(t);
-        turnsOut.write(`${JSON.stringify(t)}\n`);
+        stream?.write(`${JSON.stringify(t)}\n`);
       }
       if (turns.length === 0) continue;
       sessions += 1;
@@ -77,10 +86,10 @@ export async function runAudit(opts: { projectsDir: string; since: Date; outDir:
       const tok = await sessionTokenTotals(file.path);
       perSession.push({ session: file.sessionId, items: itemIdsForSession(turns, opts.itemPattern), total: tok.input + tok.cacheCreation + tok.output, cacheRead: tok.cacheRead });
     }
-    turnsOut.end();
+    stream?.end();
     await written;
   } catch (e) {
-    turnsOut.destroy();
+    stream?.destroy();
     throw e;
   }
   const usage = summarizeItemUsage(perSession);

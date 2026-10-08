@@ -8,7 +8,7 @@
   <array>
     <string>/bin/bash</string>
     <string>-lc</string>
-    <string>__HOME__/.local/bin/scorer audit --since 7d --label 0 --out __HOME__/.agentic-workflow/audit/weekly/$(date +%F)</string>
+    <string>__HOME__/.local/bin/scorer audit --since 7d --label 0 --no-turns-file --out __HOME__/.agentic-workflow/audit/weekly/$(date +%F)</string>
   </array>
   <key>StartCalendarInterval</key>
   <dict>

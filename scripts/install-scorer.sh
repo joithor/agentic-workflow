@@ -39,7 +39,7 @@ EOF
     echo "  scorer: AW_SKIP_LAUNCHD=1, skipping launchd registration (sandbox/test mode)"
   else
     echo "  scorer: add a daily cron entry yourself: 30 8 * * * $BIN_DIR/scorer"
-    echo "  scorer: add a weekly cron entry yourself: 45 8 * * 1 $BIN_DIR/scorer audit --since 7d --label 0 --out $HOME/.agentic-workflow/audit/weekly/\$(date +%F)"
+    echo "  scorer: add a weekly cron entry yourself: 45 8 * * 1 $BIN_DIR/scorer audit --since 7d --label 0 --no-turns-file --out $HOME/.agentic-workflow/audit/weekly/\$(date +%F)"
   fi
 else
   echo "  scorer: package.json not found, skipping"

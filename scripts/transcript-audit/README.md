@@ -11,6 +11,8 @@ node scorer/dist/cli.js audit --since 60d --items items.json --max-size XS
 
 `--since` defaults to `1d`; pass `60d` (or an ISO date) for a baseline window.
 
+`--no-turns-file` skips `human-turns.jsonl`, so `summary.json` and `baseline.md` are written but no verbatim turn copy is kept. The weekly job runs with it. It combines with `--label N`: labeling reads the turns in memory. A `human-turns.jsonl` left by an earlier run in the same `--out` is not deleted.
+
 Outputs in `--out` (default `~/.agentic-workflow/audit/`):
 
 | File | Content |

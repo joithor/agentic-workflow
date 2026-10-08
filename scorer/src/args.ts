@@ -36,6 +36,8 @@ export interface CliOptions {
   label: number;
   labelRepeat: number;
   labelModel: string;
+  // false (--no-turns-file): `audit` writes no human-turns.jsonl (the weekly job keeps no verbatim copies).
+  turnsFile: boolean;
   help: boolean;
 }
 
@@ -67,6 +69,7 @@ export function parseArgs(argv: string[], now: Date, home: string): ParseResult 
     label: 0,
     labelRepeat: 50,
     labelModel: "sonnet",
+    turnsFile: true,
     help: false,
   };
   const args = [...argv];
@@ -85,6 +88,7 @@ export function parseArgs(argv: string[], now: Date, home: string): ParseResult 
     if (arg === "--help" || arg === "-h") { options.help = true; continue; }
     if (arg === "--json") { options.json = true; continue; }
     if (arg === "--no-pr-lookup") { options.prLookup = false; continue; }
+    if (arg === "--no-turns-file") { options.turnsFile = false; continue; }
     if (!VALUE_FLAGS.has(arg)) return { ok: false, error: `unknown argument: ${arg}` };
     const value = args.shift();
     if (value === undefined) return { ok: false, error: `${arg} needs a value` };

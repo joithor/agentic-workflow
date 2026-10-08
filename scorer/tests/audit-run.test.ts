@@ -45,6 +45,25 @@ describe("runAudit", () => {
     expect(fs.existsSync(path.join(c.out, "calibration.json"))).toBe(true);
   });
 
+  it("with turnsFile false, writes summary.json and baseline.md but no human-turns.jsonl", async () => {
+    const c = corpus({ "s1.jsonl": [u("push", "2026-10-05T00:00:00Z"), u("again", "2026-10-05T00:01:00Z")] });
+    const s = await runAudit({ projectsDir: c.projects, since: new Date("2026-10-01T00:00:00Z"), outDir: c.out, itemPattern: /X-\d+/, itemsFile: null, maxSize: "XS", turnsFile: false });
+    expect(s).toMatchObject({ sessions: 1, turns: 2 });
+    expect(fs.existsSync(path.join(c.out, "summary.json"))).toBe(true);
+    expect(fs.existsSync(path.join(c.out, "baseline.md"))).toBe(true);
+    expect(fs.existsSync(path.join(c.out, "human-turns.jsonl"))).toBe(false);
+  });
+
+  it("with turnsFile false, labeling still reads the turns in memory", async () => {
+    const turns = Array.from({ length: 12 }, (_, i) => u(`are you sure about step ${i}`, `2026-10-05T00:${String(i).padStart(2, "0")}:00Z`));
+    const c = corpus({ "s1.jsonl": turns });
+    const runner: LabelRunner = async (prompt) => ({ labels: [...prompt.matchAll(/<untrusted id="(t\d+)">/g)].map((m) => ({ id: m[1], labels: ["rigor"] })) });
+    const s = await runAudit({ projectsDir: c.projects, since: new Date("2026-10-01T00:00:00Z"), outDir: c.out, itemPattern: /X-\d+/, itemsFile: null, maxSize: "XS", turnsFile: false, label: { n: 12, repeat: 0, model: "sonnet", runner, windowDays: 30 } });
+    expect(s.labeling).toMatchObject({ sampled: 12, labeled: 12 });
+    expect(fs.existsSync(path.join(c.out, "labels.jsonl"))).toBe(true);
+    expect(fs.existsSync(path.join(c.out, "human-turns.jsonl"))).toBe(false);
+  });
+
   it("tightens an existing human-turns.jsonl to owner-only before writing", async () => {
     const c = corpus({ "s1.jsonl": [u("push", "2026-10-05T00:00:00Z")] });
     const file = path.join(c.out, "human-turns.jsonl");

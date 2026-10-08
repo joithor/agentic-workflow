@@ -966,7 +966,7 @@ git commit -m "feat: scorer audit per-item token usage and auto-start share"
 
 ### Task 5: `scorer audit` command, outputs and docs
 
-> Amendment (build): (1) the per-item figure is fresh tokens (input + cache writes + output); cache reads dominated the sum and measured session length, so they are `usage.medianCacheRead`/`p75CacheRead`, reported apart in baseline.md. `summarizeItemUsage` takes `cacheRead` per session (Task 4 text updated). (2) The unreachable `?? "schema mismatch"` fallback in `readItems` is dropped (100% branch coverage). (3) The turn-file stream has an `error` handler and is destroyed if the loop throws, so write failures reject `runAudit`. (4) The README and usage text state that `--since` defaults to 1d.
+> Amendment (build): (1) the per-item figure is fresh tokens (input + cache writes + output); cache reads dominated the sum and measured session length, so they are `usage.medianCacheRead`/`p75CacheRead`, reported apart in baseline.md. `summarizeItemUsage` takes `cacheRead` per session (Task 4 text updated). (2) The unreachable `?? "schema mismatch"` fallback in `readItems` is dropped (100% branch coverage). (3) The turn-file stream has an `error` handler and is destroyed if the loop throws, so write failures reject `runAudit`. (4) The README and usage text state that `--since` defaults to 1d. (5) Final review: `scorer audit --no-turns-file` (`CliOptions.turnsFile`, default true; `runAudit` option `turnsFile`) writes `summary.json` and `baseline.md` but no `human-turns.jsonl`, and combines with `--label` (labeling reads turns in memory). Usage text and the README document it.
 
 **Files:**
 - Create: `scorer/src/audit/run-audit.ts`, `scripts/transcript-audit/README.md`
@@ -2911,7 +2911,7 @@ git commit -m "feat: scorer audit --label (model-labeled pattern calibration and
 ---
 
 ### Task 7: Turn it on (bootstrapping ladder, spec §13.3)
-> Amendment (build): the installer loop iterates over full plist filenames (`PLIST_NAME`) rather than a bare `NAME`, so the literal `com.agentic-workflow.scorer-audit.plist` that the Step 1 test greps for appears in `install-scorer.sh`. The cron hint escapes `$(date +%F)` (`\$(date +%F)`) so the printed cron line expands the date at run time, not install time.
+> Amendment (build): the installer loop iterates over full plist filenames (`PLIST_NAME`) rather than a bare `NAME`, so the literal `com.agentic-workflow.scorer-audit.plist` that the Step 1 test greps for appears in `install-scorer.sh`. The cron hint escapes `$(date +%F)` (`\$(date +%F)`) so the printed cron line expands the date at run time, not install time. Final review: the weekly job command (launchd plist, cron hint, and the install test's expected string) includes `--no-turns-file`, so the weekly job keeps no verbatim turn copies.
 
 
 Plan 1's pieces start working on the rest of the Sindri build as soon as this PR merges. This task adds the
@@ -3059,6 +3059,7 @@ Post all of that as a comment on the Plan 1 PR. From this point the Plan 2 build
 fixed done-gate, and their steering turns are measured weekly. That's ladder rows 1–3 in spec §13.3.
 
 ## Done criteria for this plan
+> Deferred to Plan 2 (build): the audit does not yet count done-gate blocks, so spec §13's done-gate success signal ("false-positive rate in the next weekly audit drops to ~0") is not measured yet.
 - Merge gate (AGENTS.md) green for `judge` and `scorer`: `npm run typecheck` + `npm test` in each. The done-gate bash tests pass.
 - `scorer audit --since 60d --label 400` produces `baseline.md` with pattern calibration and the wrong-approach section on the real corpus, and the aggregate numbers are recorded in the PR.
 - Every new test from Review Focus 1–9 is present and passing.

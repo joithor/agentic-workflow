@@ -11,7 +11,7 @@ test_plist_exists_and_is_valid() {
 }
 
 test_plist_runs_weekly_audit_into_dated_dir() {
-  grep -q 'scorer audit --since 7d --label 0 --out __HOME__/.agentic-workflow/audit/weekly/$(date +%F)' "$PLIST" || { echo "FAIL: audit command missing"; exit 1; }
+  grep -q 'scorer audit --since 7d --label 0 --no-turns-file --out __HOME__/.agentic-workflow/audit/weekly/$(date +%F)' "$PLIST" || { echo "FAIL: audit command missing"; exit 1; }
   grep -q '<key>Weekday</key>' "$PLIST" || { echo "FAIL: not weekly"; exit 1; }
   echo "PASS: test_plist_runs_weekly_audit_into_dated_dir"
 }
