@@ -1,6 +1,16 @@
 # Conductor — design
 
-Status: draft for review, revision 6 · 2026-10-08
+Status: draft for review, revision 7 · 2026-10-08
+Revision 7:
+- adds the self-evolution loop with self-adopt and approval tiers (§7.4)
+- moves the scoping harness to the front (§7.5, rollout step 1)
+- adds dogfooding (§7.6) and prior art and reuse (§16)
+- fixes round-6 W3–W7
+- turns W1, W2 and W8 into spike criteria (§13.1)
+
+The working name "conductor" collides with conductor.build and will be renamed.
+
+Revision 6 history:
 Revision 6 addresses `/autoplan` round 5 (V1–V9, M1–M8): two-phase verification with a separate
 reproduce sandbox, a write shim for bugFixOrchestrator, clone from the mirror, hardened spool ingestion,
 subscription auth, a container debug path, image onboarding, effort sizing and a spike fallback.
@@ -45,6 +55,10 @@ It learns from its own steering so recurring corrections become rules.
 - Remove orchestration babysitting (cited pack injected at start and re-injected on compaction).
 - Every judgment step proves it is complete before handing off.
 - Evolve: recurring human steering becomes a proposed, backtested, typed rule change.
+- **Scope projects at creation:** surfaces, implications and workstreams found up front, proven by
+  backtest (§7.5).
+- **Improve itself:** skills, prompts, recipes and thresholds (native and adopted) are evaluated and
+  evolved automatically; human input only for protected surfaces and merges (§7.4).
 - Keep the codebase simple as it grows: deterministic checks for reinvention, second-case
   generalization and size/complexity, judged only on a shortlist (§6.2).
 - Generic core; workplace and repo specifics live in a separate private profile repo.
@@ -101,6 +115,8 @@ It learns from its own steering so recurring corrections become rules.
     conductor action, never because an agent chose to call a tool. MCP is for reading data only. Hooks
     enforce *patterns*. The *security boundary* is the session OS user, server-side protections, and
     conductor-side re-verification (§5.3).
+11. **Self-evolution stays inside its tier.** Automatic adoption never touches protected surfaces,
+    never edits its own eval suite, and every adoption can be reverted automatically (§7.4).
 
 ## 4. v1 scope
 
@@ -483,28 +499,105 @@ release: for level = bottom … top:
 done:    stack fully reviewed; the human merges
 ```
 
-### 7.4 Eval loop (daily; proposal-only in v1)
-- **Corpus:** human-origin turns only. Provenance comes from `turn-origin.sh` and the
-  UserPromptSubmit/`isMeta` markers. Tool results and Source text are excluded (H10). The corpus is
-  scrubbed (§8.4).
-- **Detection:** the same correction or instruction across ≥ `eval.minSessions` (default 3) distinct
-  sessions on ≥ 2 distinct days.
-- **Rule schema (typed, not prose):** only these kinds:
-  - add or modify an evidence recipe step
-  - add a ship recipe step
-  - add a reviewer account
-  - adjust the size rubric
-  - add a pack section requirement
-  - add a `reuse-hint` (prefer existing symbol X for purpose Y), from the shape trend (§6.2)
-- **Forbidden fields:** allowlist, `trustedAuthors`, hosts, secret pointers, notifier and scheduler
-  config, hook config, budgets. Rules can never change these.
-- **Backtest (directional only; not counterfactual):** gated on ≥ 30 completed items. Uses an older-70% /
-  newer-30% holdout and outcome labels
-  (merged without rework, steering turns, reverts, escalations).
-- **Approval:** `conductor rules show <id>` displays the semantic diff, the exact source turns and the
-  backtest. `approve` writes a signed commit to the profile repo; `reject` records a label the eval loop
-  learns from.
-- **Auto-revert:** a rule whose metric regresses over the next 20 items is reverted (with notification).
+### 7.4 Self-evolution loop (skills, prompts, recipes, thresholds)
+The harness improves its own parts with little to no human input. That includes every skill it adopts,
+native or ported (§16). Human approval is reserved for **protected surfaces** and for **merging code**.
+
+**Managed artifacts.** Everything that shapes agent behavior is registered in an artifact registry in the
+ledger. Each entry has an id, a version, a source (`native`, `vendored:<pack>@<rev>` or
+`overlay:<profile>`), an owner Step, and an **eval suite**. Registered artifacts:
+- skills (including ported pstack, continual-learning, advisor and cursor-team-kit skills)
+- Step prompts and verifier rubrics
+- evidence, ship and environment recipes
+- the size rubric and shape thresholds
+- direction-check prompts
+- hook denial and shim messages
+
+**Proposal sources** (all automatic):
+
+| Source | Produces |
+|---|---|
+| Recurring human steering (≥ `eval.minSessions` sessions on ≥ 2 days, human-origin turns only) | A typed rule or recipe change, as before |
+| Per-item **reflect** (pstack `/reflect`, ported), run after every completed item | A skill or prompt edit that captures what worked |
+| History **correct** (pstack `/correct`, ported), weekly | A fix at the highest level that works, for repeated mistakes |
+| Verifier and direction-check overturn patterns | A rubric or threshold edit |
+| A new upstream revision of a vendored pack | An upgrade proposal |
+| The reuse map's gaps (§16) | A port proposal |
+
+**Evaluation** (no hand labels, invariant 9). A proposal is a variant of an artifact. It must win both
+evaluations:
+1. **Offline blinded comparison** on a frozen replay corpus drawn from the ledger.
+   - The current version and the variant each run on the same past inputs.
+   - A judge question compares the two outputs **blind**. The judge runs on a different model from the
+     generator.
+   - Outcome proxies score the results: the deterministic Step checks pass, and the later human
+     correction or rework on that item would have been avoided.
+   - Pass bar: win rate ≥ 0.6 over ≥ 20 comparisons with a lower confidence bound > 0.5.
+   - 30% of the corpus is a **sealed holdout** that is never used to generate proposals.
+2. **Online shadow A/B:** the variant runs in shadow next to the current version on ≥ 10 live items, and
+   no outcome metric regresses.
+
+**Adoption tiers:**
+
+| Tier | Covers | Adoption |
+|---|---|---|
+| **Self-adopt** | Skills, prompts, rubrics, recipes, thresholds, messages, rules of the §7.4 typed kinds, vendored-pack upgrades | **Automatic** on passing both evaluations: a canary on 25% of items for one week, then 100%. Lands as a signed commit to the profile overlay (`overlay/skills/…`), effective immediately. Shown in the daily digest as `fyi`. |
+| **Approval** | Protected surfaces: tool allowlist, `trustedAuthors`/`trustedBots`, hosts, secret pointers, egress allowlist, hook configuration and safety hooks, budgets and quota reserve, notifier/scheduler config, scrubber patterns (they may only be *added* to automatically) | needs-approval with the diff, source turns and evaluation results |
+| **Code** | Anything in the core repo (generic improvements to native skills, conductor code) | The conductor opens a PR to the core repo **as a normal work item** (dogfooding, §7.6). The human merges. Until the merge, the overlay version is in effect. |
+
+**Guardrails:**
+- At most 3 adoptions per artifact per week, and at most 10 per week in total.
+- **Auto-revert:** any outcome metric regressing over the next 20 items after adoption reverts the change
+  and records it as a failed variant.
+- **Tier brake:** if more than half of the self-adopted changes in a 30-day window are reverted, the
+  self-adopt tier pauses (everything goes to approval) until the human resumes it.
+- Variants can't modify their own eval suite. Eval-suite changes are approval-tier.
+- `conductor evolve status | history | revert <id> | pause | resume` exposes all of it, and the
+  dashboard's Today view lists adoptions and reverts.
+
+### 7.5 Scoping harness (front of the rollout)
+The problem that started this design: projects like a multi-surface "new shift times" rollout sprawl
+because surfaces and implications are found during implementation, not at creation. The scoping harness
+runs **host-side**, early (rollout step 1). It needs no containers, because it reads no session-authored
+code.
+
+- **Command:** `conductor scope <project | brief file | tracker project URL> [--backtest]`
+- **Inputs** (through Source adapters, read-only):
+  - the project brief and docs
+  - existing tracker issues and comments
+  - linked chat threads
+  - the code index (structure, call graph via graphify, embeddings) for the affected modules
+  - prior steered transcripts on the same area
+  - the notes dir (vault)
+- **Output:** a cited **scope map**.
+  - **Surfaces:** every UI, API, job, data and integration touchpoint, each with an evidence citation
+    (code symbol, doc or ticket).
+  - **Implications:** data migration, permissions, reporting, notifications, mobile, feature flags.
+  - **Workstreams** with dependencies.
+  - **Acceptance checks** per surface.
+  - **Open product questions,** batched for the human.
+- **Verification loop (Step contract):**
+  1. Deterministic checks: every surface cites a source; the dependency graph is acyclic.
+  2. An adversarial **missing-surface** pass using graph neighbors and embedding recall over the index,
+     repeated until no new surface appears (round cap).
+  3. A Scoping direction check (§6.1).
+- **Delivery:** the scope map is written to the notes dir and attached to the tracker project as a
+  document. Creating issues from it is needs-approval in v1, then self-adopt once the backtest bar is met
+  for that project type.
+- **Backtest** (the proof): `--backtest` runs scoping on a project's **original brief** as of its creation
+  date, then measures **recall** of the surfaces behind the issues filed later.
+  - The first backtest target is the project that motivated this design.
+  - Recall becomes the scoping harness's eval-suite metric, and the self-evolution loop improves it
+    (§7.4).
+
+### 7.6 Dogfooding
+The harness's own backlog goes through the harness as ordinary work items in the core repo's tracker:
+- reuse ports (§16)
+- eval findings
+- hook fixes (for example the done-gate false positives)
+- code-tier proposals from §7.4
+
+They are scoped, built in assist mode, verified, and opened as PRs. The human merges.
 
 ## 8. Safety boundary
 Required before `mode: auto-small` can be enabled. `doctor` refuses `auto-small` until every check in
@@ -556,6 +649,7 @@ the container.
 | `$AW_STATE_DIR/conductor/sessions/<id>/spool/` | `/spool` | rw | Heartbeats, positions, hook decision log, outgoing `git bundle` (§8.5). The host treats all of it as untrusted data. |
 | *(container volume)* | `/workspace/src` | rw | `git clone --reference /mirror --dissociate /mirror` then `checkout <base SHA>` (V3). The mount of `/workspace/base` is for reading only. |
 | *(container volume)* | `node_modules`, build output | rw | Fast IO; never bind-mounted |
+| *(per-item persistent volume)* | `/state` (`$AW_DIR`, candidate branches) | rw | Survives relaunch (W5); deleted when the item completes or is abandoned |
 
 - Directory zones (I4):
   - **conductor-private:** HMAC key, ledger, mirrors' config. Never mounted.
@@ -568,9 +662,13 @@ the container.
     `.idea`, `.envrc`, `.git*`, no executables) to `$AW_STATE_DIR/conductor/view/<item>/`.
   - The copy uses `O_NOFOLLOW`, regular files only, and per-file and total size caps.
   - `conductor view ITEM` opens it in the editor's restricted mode.
-- **Spool ingestion (V4):** the host reads `/spool` only through the conductor's spool reader:
+- **Spool ingestion (V4, W7):** the host never walks session paths. The conductor copies the spool out
+  with `tar` streamed from a short-lived helper container inside the VM, which archives regular files
+  only and refuses symlinks. The archive is then read by the conductor's spool reader:
   - a separate low-privilege process
-  - `O_NOFOLLOW`, regular files only (FIFOs, sockets, devices and symlinks rejected), non-blocking opens
+  - archive entries validated (no absolute paths, no `..`, regular files only; FIFOs, sockets, devices
+    and symlinks rejected)
+  - every transcript and WIP export passes the scrubber (W3)
   - per-file and per-session size quotas
   - JSON-schema validation
 
@@ -580,9 +678,18 @@ the container.
 - **No write tokens in the container.** The session commits locally. Pushing is conductor-mediated (§8.5).
 - **Model access uses subscription login (V6):**
   - `claude setup-token` is run once on the host. The long-lived token is stored conductor-private.
-  - Each container receives it at start as `CLAUDE_CODE_OAUTH_TOKEN` from `/conductor` (read-only).
-  - Because the token is inside the container, the **model proxy** is the only egress to Anthropic and
-    is the control point (M3):
+  - **The real token never enters a container (W1).** Containers get `ANTHROPIC_BASE_URL` pointing at
+    the model proxy and a per-session dummy credential. The proxy swaps in the subscription bearer per
+    request, so `docker inspect`, transcripts and pane previews contain no real token. This is validated
+    by the spike (§13.1). The fallback is API-key mode, with the key also injected only by the proxy.
+  - **Rotation and revocation:** `conductor auth rotate` re-runs `setup-token` and swaps the proxy's
+    bearer with no container restart. `conductor auth revoke` stops the proxy forwarding immediately.
+  - **Quota (W2):**
+    - The proxy tracks subscription usage. `quota.reserveForHuman` (default 30% of the observed window
+      limit) is held back for the human's own sessions.
+    - Rate-limit responses put sessions into `quota-exhausted` (a known wait, not a stall) and pause
+      new starts.
+  - The **model proxy** is the only egress to Anthropic and is the control point (M3):
     - per-session proxy credentials, so each request is attributed to a session
     - a fixed upstream (`api.anthropic.com`), with model and endpoint allowlists from `providers.allowed`
     - token and turn budgets enforced from response usage
@@ -615,12 +722,13 @@ the container.
 - tmux runs **inside** each container, with its own socket. Sessions can't reach each other's panes, and
   the host doesn't need tmux.
 - `conductor attach ITEM` runs `docker exec -it <ctr> tmux attach` and records the attach.
-- Human-origin turns are authenticated as follows. `conductor attach` starts `docker exec` from the
-  host, as the human's OS user, with a per-attach random client tag set in the tmux client environment.
-  The `UserPromptSubmit` hook asks tmux for the client that submitted the input and checks the tag
-  against `/conductor/attach.json`. That file is written by the conductor and read-only to the session.
-  Input with no tagged client attached (for example `send-keys` from inside the container) is not
-  human.
+- **In-pane input is advisory (W6).** tmux can't attribute input to a client, so in-pane input is never
+  treated as an authenticated human decision.
+  - Input typed while a conductor-recorded attach is open is classified `takeover`. That is the safe
+    direction: it pauses automation.
+  - Approvals, answers, decisions and handbacks come **only** from host-side verbs (`answer`, `decide`,
+    `approve`, `handback`), which the host OS user authenticates.
+  - The eval corpus counts only host-verified human input (M5).
 - Answers outside a session go through `conductor answer` / `decide`, which the host OS user
   authenticates.
 
@@ -691,8 +799,12 @@ and dropped capabilities.
 - **Path guard:** a diff that touches profile-declared protected paths (CI and workflow config, hooks,
   auth, lockfiles, the profile itself) parks the item for approval.
 - **Conductor-mediated push with two-phase verification (I2, I3, V1, V5):**
-  1. **Export.** When the session finishes a commit series, its hooks write
-     `git bundle create /spool/out.bundle <base>..HEAD`.
+  1. **Export (W4).** Export is triggered by the **Step completion event**, not by Stop. For the bug
+     worker, that is bugFixOrchestrator's state reaching `resolved`. The conductor's hook bundles the
+     **winning candidate branch** named in the worker's state file:
+     `git bundle create /spool/out.bundle <base>..<winning-branch>`. Opening the PR, the review loop and
+     undraft belong to the separate **Ship** Step (§7.3), matching the skill's own "do not open a PR;
+     suggest /shipRelease" contract.
   2. **Snapshot.** The conductor's spool reader (§8.2) copies the bundle **once** into conductor-private
      storage. It accepts regular files only, uses `O_NOFOLLOW`, and enforces a size cap
      (`verify.maxBundleMB`, default 200). It records the bundle's SHA-256, and every later step uses only
@@ -703,7 +815,8 @@ and dropped capabilities.
        `core.hooksPath=/dev/null`, and no attributes or filters.
      - It enforces pack size and object-count limits and a timeout.
      - It runs only conductor-owned, deterministic checks: `git fsck --strict`, path guard, diff caps,
-       shape checks (index snapshot, read-only), and protected-path rules.
+       shape checks (index snapshot, read-only), protected-path rules, and a **secret/PHI scrubber pass
+       over the diff and every new blob**. A hit parks the item with needs-approval (W3).
      - Its verdict is a signed JSON written by the verifier binary, which comes from the conductor image,
        not the repo.
   4. **Transfer.** On a phase-1 pass, the conductor runs `git fetch <bundle copy>` into its mirror, with
@@ -782,7 +895,10 @@ The conductor implements its own lock in TypeScript. The bash helpers in `config
 - **Relaunch is kill-before-relaunch:**
   1. Kill the pane.
   2. Confirm it's gone.
-  3. Relaunch a container from the last exported bundle (or the base, if none exists) on the same claim ref.
+  3. Relaunch a container on the same claim ref, reattaching the item's **persistent volume** (W5),
+     which holds `$AW_DIR` (the worker's state such as `bugfix/<slug>/state.json`) and its candidate
+     branches. WIP bundles include every candidate branch. Restored WIP passes the phase-1 checks
+     before the session resumes (M6).
   - After 2 relaunches the item is parked.
 - **Sleep:** when the tick sees a wall-clock jump larger than its interval, it extends every lease by the
   gap before evaluating them.
@@ -1153,79 +1269,72 @@ environment:
    - Measure the share of the last 60 days of in-scope items that would have been XS, clear and trusted.
      - If it is at least 10%, keep `autoStartMaxSize: XS`.
      - If it is under 10%, pilot `S` with 100% verification, or skip auto-small and stay in `assist`.
-1. **Prerequisites:**
-   - **Hook probe:** a scripted live probe confirms the §5.3 semantics table on the installed Claude Code
-     version. It becomes `doctor`'s probe suite, and a version bump re-runs it.
-   - **Container spike (go/no-go):** criteria and fallback in §13.1.
-   - `conductor setup-host`, the model and egress proxy, the lock broker, all supervised by launchd with
-     stable socket paths that survive restarts (M6).
-   - The judge `--providers` flag (M2).
-   - The `cdt-hook` wrapper and the Stop pattern gate.
-   - Fix done-gate bare-word false positives for non-conductor sessions.
-   - Bridge hardening in `mcp-bridge` code (`origin:true` is in `src/index.ts` today).
-   - Profile schema and tooling.
-   - Lock and fencing.
-   - Scrubber.
-   - Bridge hardening, if the bridge mirror is enabled.
-2. **Shadow:**
-   - `conductor observe` gives zero-config value on day one.
-   - **Historical replay** (Q1): the shape signals run over the last 200 merged PRs per repo, to seed
-     thresholds and to measure how often reinvention or duplication actually occurred (P1).
-   - The dashboard and badge are available from this step.
-   - Then shadow mode on the real profile: triage and pack jobs run tool-less, the code index is built
-     (structure, embeddings, graphify), and no sessions start.
-   - Exit when per-class routing agreement is at least 90% over at least 30 items.
-3a. **Assist, patterns:**
-   - `conductor start`, packs and re-injection, turn classification, the tool gate, the Stop pattern
-     gate, the ship state machine, notifications.
-   - Approach and Drift direction checks run in **shadow**.
-   - Shape signals are computed and recorded but don't refuse commits yet, for threshold calibration on
-     real commits.
-3b. **Assist, shape enforcement:** once **each layer** reaches a precision of at least 0.7 over at least
-   30 signals on real commits (a layer that hasn't reached it enforces with its threshold raised one
-   notch and is flagged in `doctor`) (M1):
-   - All index layers enforce (structure, clones, dependencies, embeddings, graphify).
-   - The Shape direction check enforces in the same step.
-   - The conductor-side verifier is authoritative for every push.
-4. **Auto-small:** enabled when `doctor` passes §8 and the step-2 threshold holds.
-   - Direction checks move to `enforce` per checkpoint once they reach the §6.1 precision bar.
-5. **Scoping proposals:**
-   - Scoping and Scope-expansion direction checks run, plus graph and embedding candidate recall
-     for surface discovery.
-   - Piloted on one project the human leads, and backtested on the project's original brief for recall of
-     the issues filed later.
-6. **Eval loop:** proposal-only, once there are ≥ 30 completed items.
-   - At most 2 proposals per week.
-   - Each proposal must win a shadow A/B (rule applied in shadow vs not, over at least 10 items) before
-     approval is requested (M6).
-   - Index providers (graph on/off, embeddings on/off) are evaluated the same way.
+   - Measure **subscription quota per item** on a sample of manual sessions (W2).
+1. **Host foundation, scoping first:**
+   - Profile schema and tooling, lock and fencing, scrubber, judge `--providers` flag, done-gate fix
+     (dogfooded, §7.6).
+   - **Reuse ports, phase 1** (§16): the skills scoping and evidence need first.
+   - Code index on the host: structure, clones, dependencies, local embeddings, graphify.
+   - **Scoping harness** (§7.5), with `--backtest` on the motivating project.
+     **First value: scope maps, plus a measured recall number.**
+   - Self-evolution loop (§7.4) for the scoping harness and the ported skills, offline blinded eval only.
+2. **Shadow, plus the container spike in parallel:**
+   - `conductor observe`, shadow triage and packs, historical replay, dashboard (Sessions, Waiting) and
+     badge.
+   - **Container spike (go/no-go),** with criteria and fallback in §13.1. It runs as one heavy job at a
+     time.
+   - Exit when per-class routing agreement is at least 90% over at least 30 items **and** the spike's
+     verdict is in.
+3a. **Assist, patterns:** `conductor start`, packs and re-injection, turn classification, the tool gate,
+   the Stop pattern gate, the worker → ship Steps, the write shim, two-phase verify, notifications.
+   - Approach and Drift direction checks run in shadow.
+   - Shape signals are recorded only.
+   - It runs in containers if the spike passed, otherwise on the host with no auto-start (§13.1).
+   - The self-evolution loop adds the online shadow A/B.
+3b. **Assist, shape enforcement:** once each index layer reaches a precision of at least 0.7 over at
+   least 30 signals on real commits:
+   - All index layers enforce.
+   - The Shape direction check enforces.
+   - The conductor-side verifier is authoritative.
+4. **Auto-small:** requires a container isolation pass, `doctor` passing §8, the step-2 threshold, and
+   confirmed plan terms for unattended subscription use (or API-key mode) (W2).
+5. **Scoping in the loop:** Scoping and Scope-expansion direction checks enforce. Issue creation from scope
+   maps moves to self-adopt once a project type meets its backtest bar.
+6. **Self-evolution, full:** the self-adopt tier runs across all artifacts (§7.4).
 
 ### 13.1 Effort sizing and spike fallback (V9)
 These are rough, for one builder with agent help. Every step ends with a usable increment.
 
 | Step | Contents | Size | First value delivered |
 |---|---|---|---|
-| 0 | Audit scripts, baselines, XS share | S (2–3 days) | Measured targets |
-| 1 | Hook probe; container spike (go/no-go); setup-host; key proxy; lock broker; done-gate fix; profile tooling; lock/fencing; scrubber; judge `--providers`; bridge hardening | L (2–3 weeks) | `doctor` and `observe` work |
-| 2 | Shadow triage and packs; index build (structure, clones, deps, embeddings, graphify); historical replay; dashboard (Sessions, Waiting) and badge | M (1–2 weeks) | **Dashboard shows what the conductor would do; replay report** |
-| 3a | `conductor start`, packs and re-injection, ship state machine, write shim, two-phase verify, notifications, shadow direction checks | L (2–3 weeks) | **Copy-paste dispatch, retyped ship direction and handoffs gone** |
-| 3b | Shape enforcement, Shape direction check | M (1 week) | Enforced code-shape checks |
+| 0 | Audit scripts, baselines, XS share, quota per item | S (2–3 days) | Measured targets |
+| 1 | Profile tooling, lock and fencing, scrubber, judge flag, done-gate fix; reuse ports phase 1; host code index; **scoping harness + backtest**; offline self-evolution | L (2–3 weeks) | **Scope maps and a recall number on the motivating project** |
+| 2 | Shadow triage and packs, replay, dashboard and badge; **container spike** in parallel | M (1–2 weeks) | Dashboard of what the conductor would do; spike verdict |
+| 3a | Start, packs, worker → ship, write shim, two-phase verify, notifications, shadow direction checks | L (2–3 weeks) | **Copy-paste dispatch, retyped ship direction and handoffs gone** |
+| 3b | Shape enforcement | M (1 week) | Enforced code-shape checks |
 | 4 | Auto-small | S | Unattended XS items |
-| 5 | Scoping proposals | M | Project-level scoping |
-| 6 | Eval loop | M | Self-improving rules |
+| 5 | Scoping direction checks enforce; issue creation | S | Self-scoped projects |
+| 6 | Full self-evolution | M | The harness improves itself |
 
-**If the container spike fails** (step 1 go/no-go):
-- Steps 2 and 3a proceed **on the host**. Sessions run in host tmux as the human, with no auto-start.
-  Shadow and assist are cleared without isolation, as long as the live view stays off and the
-  conductor never fetches bundles on the host.
-- Steps 3b and later wait for a working isolation mechanism (a container runtime on another host, or a
-  Linux cloud box).
-- The spike's criteria:
-  1. interactive Claude Code in a container with the subscription token
-  2. attach from Warp
-  3. bundle export and two-phase verify on one real item
-  4. warm start under 60 s on the web-app image
-  5. a 4-session fleet stable for 24 h within the VM limit
+**Container spike: pass/fail criteria (W1, W2, W8 added).** Every one must pass:
+1. Interactive Claude Code runs in a container with **no real token inside it**. The container has
+   `ANTHROPIC_BASE_URL` pointing at the model proxy and a per-session dummy credential. The proxy swaps in
+   the subscription bearer per request (W1). If subscription auth can't work through a base-URL proxy,
+   the fallback is API-key mode for containers.
+2. The model/egress proxy and the lock broker run as **sidecar containers** on the internal network, and
+   the host conductor reaches them over one authenticated TCP channel. No host unix socket is
+   bind-mounted (W8).
+3. Attach from Warp works.
+4. Bundle export and two-phase verify work on one real item.
+5. Warm start is under 60 s on the web-app image.
+6. A 4-session fleet stays stable for 24 h within the VM limit.
+7. Quota use per item is measured, along with the effect on the human's own sessions under the
+   `quota.reserveForHuman` share (W2).
+
+**If the spike fails:**
+- Steps 3a and earlier proceed **on the host** with no auto-start. Shadow and assist are cleared without
+  isolation, provided the live view stays off and the conductor never fetches bundles on the host.
+- Step 4 waits for a working isolation mechanism (another runtime or a Linux cloud box).
 
 ### 13.2 Checkpoints by step
 | Checkpoint | 2 | 3a | 3b | 4 | 5 |
@@ -1357,6 +1466,28 @@ These are rough, for one builder with agent help. Every step ends with a usable 
 - Claims are namespaced by user (`cdt/<user>/<item>`, §9.4), so two humans on the same tracker
   never claim each other's items. Their scopes come from their own profiles.
 - Shared recipes can be copied between profile repos. A shared team profile layer is out of scope for v1.
+
+## 16. Prior art and reuse
+The harness reuses existing work wherever it can. Every adopted piece becomes a **managed artifact** in
+the self-evolution loop (§7.4), so it is evaluated and evolved like native code. The detailed port map,
+with licenses, Cursor-only dependencies and effort, lives in `plans/conductor/reuse-map.md`. A summary:
+
+| Source | Used for | Spec part |
+|---|---|---|
+| pstack (cursor/plugins): `/why`, `/create-verification-skill`, `/interrogate`, `/reflect`, `/correct`, `/automate-me`, babysit/shipping playbooks, `eval` (blinded), benny pack | Multi-source evidence; project verification skills; diff interrogation; self-evolution proposal sources; ship recipe; blinded eval | §6, §6.1, §7.3, §7.4, evidence recipes |
+| continual-learning (cursor/plugins) | Transcript → AGENTS.md learnings | §7.4 proposal source |
+| advisor (cursor/plugins) | Consult a stronger model before major decisions and before "done" | §6.1 challenger prompts |
+| orchestrate, thermos, cursor-team-kit (cursor/plugins) | Planner/worker/verifier patterns; review rubrics; CI and ship workflows | §6, §7.3, review lens |
+| Cyrus | Linear issue → Claude Code session → PR | Tracker intake reference |
+| Dagger container-use | Per-agent container plus branch environments | `Sandbox` adapter candidate (its environment layer only; the agent never drives it through MCP tools, invariant 10) |
+| Conductor (conductor.build) | Multi-agent dashboard UX | §10.5 reference; also the reason for the rename |
+
+**Porting rules:**
+- Licenses are checked per plugin before vendoring.
+- Cursor-only capabilities (cloud agents, canvases, `.mdc` rules) map through
+  `skills/_shared/capabilities.md`, or the skill is reference-only.
+- Vendored packs follow the existing external-pack fetch pattern (pinned revisions), with
+  workplace-neutral wording.
 
 ## Appendix: audit method
 - Extract every non-machine human turn from `~/.claude/projects/**/*.jsonl` (excluding sidechains, tool
