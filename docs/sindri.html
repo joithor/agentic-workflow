@@ -89,6 +89,13 @@
   .legend { display: flex; flex-wrap: wrap; gap: 14px; font-size: 13px; color: var(--ink-2); margin: 0 0 14px; }
   .legend i { display: inline-block; width: 12px; height: 12px; border-radius: 3px; margin-right: 6px; vertical-align: -1px; }
   .callout { border-left: 4px solid var(--warn); background: var(--warn-soft); padding: 12px 16px; border-radius: 8px; margin-top: 14px; }
+  details.plan { background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); padding: 14px 18px; margin: 0 0 10px; }
+  details.plan > summary { cursor: pointer; font-weight: 700; list-style-position: inside; }
+  details.plan > summary .pill { margin-right: 8px; }
+  details.plan[open] > summary { margin-bottom: 10px; }
+  ol.tasks { padding-left: 22px; margin: 0 0 14px; }
+  ol.tasks li { margin: 0 0 6px; color: var(--ink-2); font-size: 15px; }
+  ol.tasks li b { color: var(--ink); }
   footer { color: var(--ink-3); font-size: 13px; border-top: 1px solid var(--line); padding-top: 18px; }
   @media (max-width: 900px) {
     .layout { grid-template-columns: 1fr; gap: 0; padding: 0 16px; }
@@ -111,7 +118,7 @@
   <div class="brand">Sindri <span>· why and what</span></div>
   <div class="links">
     <a href="superpowers/specs/2026-10-07-sindri-design.md">Spec</a>
-    <a href="superpowers/plans/2026-10-08-sindri-plan-1-measure-and-fixes.md">Plan 1</a>
+    <a href="#plans">Plans 1–5</a>
   </div>
 </div>
 <div class="layout">
@@ -125,6 +132,7 @@
     <li><a href="#safety">Safety layers</a></li>
     <li><a href="#evolve">Self-evolution</a></li>
     <li><a href="#ladder">Bootstrapping ladder</a></li>
+    <li><a href="#plans">Plan walkthroughs</a></li>
     <li><a href="#rollout">Rollout and effort</a></li>
     <li><a href="#reviews">How the design was vetted</a></li>
     <li><a href="#decisions">Decisions</a></li>
@@ -265,7 +273,7 @@
 <section id="evolve">
   <div class="kicker">07 · Self-evolution</div>
   <h2>It gets better without asking, inside guardrails</h2>
-  <p class="sub">The whole toolkit repo, plus every adopted skill, is a managed artifact. Proposals must win a blinded offline comparison and a shadow A/B. Labels come from outcomes, never from hand labeling.</p>
+  <p class="sub">The whole toolkit repo, plus every adopted skill, is a managed artifact. Proposals must win a blinded offline comparison and a shadow A/B. Labels come from outcomes or a model adjudicator, never from hand labeling.</p>
   <div class="grid g3">
     <div class="panel"><span class="pill ok">self-adopt</span><h3 style="margin-top:8px">Automatic</h3><p class="muted">Skills, prompts, rubrics, recipes, thresholds. Canary on 25% of items, then 100%. Auto-revert on regression, and a tier brake if too many revert.</p></div>
     <div class="panel"><span class="pill warn">approval</span><h3 style="margin-top:8px">Needs the human</h3><p class="muted">Protected surfaces: allowlists, trust lists, hooks, budgets, eval suites, egress.</p></div>
@@ -289,7 +297,7 @@
   <p class="sub">Each piece switches on the moment its plan merges and starts doing its job on the rest of the build. It runs first on this repo (ring 0, whose backlog is the plan docs, read by a <code>plan-file</code> tracker), then on workplace repos (ring 1). Every plan ends with a "Turn it on" task.</p>
   <div class="legend"><span><i style="background:var(--accent)"></i>Step 0–1 foundation</span><span><i style="background:var(--ok)"></i>Scope and evolve</span><span><i style="background:var(--violet)"></i>Shadow and assist</span><span><i style="background:var(--warn)"></i>Enforce and autonomy</span></div>
   <div class="ladder">
-    <div class="rung"><div class="when">Plan 1</div><div class="card"><b>done-gate claim detection · judge <code>--providers</code> · <code>scorer audit</code></b><span class="does">No more false "claiming done" blocks in build sessions. Steering turns per merged Sindri PR are measured weekly, the ladder's own metric.</span><div class="cmd">install-done-gate.sh · install-scorer.sh · scorer audit --since 60d</div></div></div>
+    <div class="rung"><div class="when">Plan 1</div><div class="card"><b>done-gate claim detection · judge <code>--providers</code> · <code>scorer audit</code></b><span class="does">No more false "claiming done" blocks in build sessions. Steering turns per merged Sindri PR are measured weekly, the ladder's own metric.</span><div class="cmd">install-done-gate.sh · install-scorer.sh · scorer audit --since 60d --label 400</div></div></div>
     <div class="rung"><div class="when">Plan 2</div><div class="card"><b>Profile · ledger · lock · scrubber · <code>plan-file</code> tracker · <code>observe</code></b><span class="does">Every build session is recorded. The scrubber guards this public repo as pre-commit. The rest of Sindri becomes a live backlog.</span><div class="cmd">sindri profile init --ring0 · sindri scrub --install-pre-commit · sindri observe</div></div></div>
     <div class="rung"><div class="when">Plan 3</div><div class="card"><b>Code index, shape signals record-only</b><span class="does">Calibrates shape thresholds on Sindri's own commits and flags reinvention while Plans 4–5 are built.</span><div class="cmd">sindri repo add . · sindri index build</div></div></div>
     <div class="rung r1"><div class="when">Plan 4</div><div class="card"><b>Scoping harness plus backtest</b><span class="does">Scopes every later Sindri plan before it's written. The plan writer starts from the scope map.</span><div class="cmd">sindri scope &lt;spec&gt; --section 13 · --backtest</div></div></div>
@@ -301,8 +309,124 @@
   <div class="callout"><b>Rules:</b> a piece not switched on within a day of merging becomes a work item. No plan is started by hand if earlier pieces could start it. Ring 1 waits for a clean run on ring 0.</div>
 </section>
 
+<section id="plans">
+  <div class="kicker">09 · Plan walkthroughs</div>
+  <h2>Five plans, each ending in "Turn it on"</h2>
+  <p class="sub">Step 0 and step 1 are split into five implementation plans. Each one is a TDD task list with full code, reviewed by five lenses until no HIGH finding remained. Open a plan to see what each task builds, what switches on at the end, and what still needs a human.</p>
+
+  <div class="panel scroll" style="margin-bottom:14px">
+    <table>
+      <tr><th>Plan</th><th>Tasks</th><th>HIGH findings by review round</th><th>Verdict</th></tr>
+      <tr><td><b>1</b> Measure + fixes</td><td>7</td><td>merged in #65; amended after a teammate's audit run (4 lenses, all HIGHs fixed)</td><td><span class="pill ok">PASS</span></td></tr>
+      <tr><td><b>2</b> Core</td><td>12</td><td>14 → 3 → 0</td><td><span class="pill ok">PASS</span></td></tr>
+      <tr><td><b>3</b> Code index</td><td>13</td><td>~14 (product blocked) → 2 → 0</td><td><span class="pill ok">PASS</span></td></tr>
+      <tr><td><b>4</b> Scoping harness</td><td>11</td><td>~15 → 3 → 0</td><td><span class="pill ok">PASS</span></td></tr>
+      <tr><td><b>5</b> Self-evolution</td><td>14</td><td>~25 → 3 → 0, then 1 → 0 after the audit feedback</td><td><span class="pill ok">PASS</span></td></tr>
+    </table>
+  </div>
+
+  <details class="plan" open>
+    <summary><span class="pill">Plan 1</span> Measure, then fix what blocks the build <span class="muted">· step 0 + two step-1 fixes</span></summary>
+    <p>Before building anything, measure where human turns go, and fix the two things that would get in the way of building Sindri with agents.</p>
+    <ol class="tasks">
+      <li><b>done-gate claim detection.</b> The Stop hook stops firing on questions, negations, tables and code ("not done yet" is not a claim).</li>
+      <li><b>judge <code>--providers</code>.</b> Callers can pin which providers a judge question may use; an unknown or empty list is a usage error.</li>
+      <li><b>Human-turn extraction.</b> Streams every transcript and keeps only real human turns, with skills active, guard and compaction state, and whether code had been edited yet.</li>
+      <li><b>Token usage per item.</b> The quota baseline, and the share of items that would have been small, clear and trusted enough to auto-start.</li>
+      <li><b><code>scorer audit</code>.</b> Writes <code>human-turns.jsonl</code>, <code>summary.json</code> and <code>baseline.md</code>. Turns copied into resumed or forked sessions are counted once.</li>
+      <li><b><code>scorer audit --label 400</code>.</b> A model labels a fixed sample of turns. Each regex pattern gets a measured precision and recall; only patterns that clear the bar may feed a metric. It also measures wrong-approach corrections, split into design and process.</li>
+      <li><b>Turn it on.</b> Reinstall the done-gate, add the weekly audit job (unlabeled, free), run the labeled baseline once and post the aggregate numbers.</li>
+    </ol>
+    <div class="grid g2">
+      <div class="panel"><h3>What changes for you</h3><p class="muted">No false "claiming done" blocks. A baseline you can set targets from, with honest error bars on the pattern counts.</p></div>
+      <div class="panel"><h3>Decision it feeds</h3><p class="muted">If design corrections after code average under 8 per 30 days, Approach and Drift direction checks are not built in step 3a. The effort goes to the biggest process sources instead.</p></div>
+    </div>
+  </details>
+
+  <details class="plan">
+    <summary><span class="pill">Plan 2</span> Core: the package everything else stands on</summary>
+    <p>Creates the <code>sindri/</code> package and switches it on for this repo, so the remaining plans become a tracked backlog guarded by a secret scan.</p>
+    <ol class="tasks">
+      <li><b>Scaffold.</b> CLI, error registry with generated docs, one output contract for text and <code>--json</code>.</li>
+      <li><b>Scrubber.</b> Finds secrets without ever storing their values.</li>
+      <li><b>Ledger.</b> SQLite in WAL mode, append-only migrations, a fencing epoch so a stale run can't write.</li>
+      <li><b>Tick lock.</b> One Sindri at a time, with safe takeover of a dead lock.</li>
+      <li><b>Profile.</b> Strict schema, <code>profile.yaml</code> plus one file per repo, <code>explain</code> output.</li>
+      <li><b>Profile commands.</b> <code>init</code>, <code>validate</code>, <code>migrate</code>, and <code>approve</code>, which needs a terminal and a typed confirmation.</li>
+      <li><b>Trackers.</b> A contract every tracker must pass, and the <code>plan-file</code> tracker that reads <code>### Task N</code> and checkboxes.</li>
+      <li><b><code>observe</code> and <code>ledger</code>.</b> Sizes items, says what's next, and records it.</li>
+      <li><b><code>scrub</code> and the pre-commit hook.</b> Fails closed: if the scanner can't run, the commit is blocked.</li>
+      <li><b><code>doctor</code>.</b> Checks the install with a fix for every failure.</li>
+      <li><b>Installer and docs.</b> <code>install-sindri.sh</code>, <code>setup.sh --with-sindri</code>, spec amendments.</li>
+      <li><b>Turn it on.</b> Ring-0 profile, the pre-commit guard (rehearsed in a scratch repo first), an hourly <code>observe</code>.</li>
+    </ol>
+    <div class="panel"><h3>Needs you</h3><p class="muted"><code>sindri profile approve</code> at a terminal. Nothing approves a profile unattended.</p></div>
+  </details>
+
+  <details class="plan">
+    <summary><span class="pill">Plan 3</span> Code index: know what already exists</summary>
+    <p>A per-repo index that answers "does this already exist?" deterministically first, with models only on the shortlist. Shape signals are recorded, not enforced, and each one is later labeled by what happened to the code.</p>
+    <ol class="tasks">
+      <li><b>Foundations.</b> Profile keys, ledger v2, injected I/O, the shared heavy-job lock.</li>
+      <li><b>File inventory.</b> Tracked files filtered by globs.</li>
+      <li><b>Structure.</b> TypeScript compiler API: symbols, normalized AST hash, complexity, callees.</li>
+      <li><b>Clones.</b> MinHash signatures and LSH bands for near-duplicates.</li>
+      <li><b>Index build.</b> Incremental builds, the dependency layer with purpose tags, <code>index build|status</code>.</li>
+      <li><b>Embeddings.</b> Ollama on loopback only; cloud models are refused.</li>
+      <li><b>Graph.</b> graphify in a network-less sandbox that fails closed.</li>
+      <li><b>Queries.</b> Staged overlay, shape signals, <code>index query</code>.</li>
+      <li><b>Record at commit.</b> <code>sindri shape --record</code> in pre-commit, never blocking; a spool feeds the ledger.</li>
+      <li><b>Outcome labels.</b> <code>shape reconcile</code> checks the default branch: was the flagged code acted on, kept, or dropped? That gives precision without hand labels.</li>
+      <li><b>Setup.</b> <code>repo add</code>, <code>index setup</code>, doctor checks.</li>
+      <li><b>Docs and spec amendments.</b></li>
+      <li><b>Turn it on.</b> Index this repo; hourly quick builds keep it fresh.</li>
+    </ol>
+  </details>
+
+  <details class="plan">
+    <summary><span class="pill ok">Plan 4</span> Scoping harness: find every surface up front</summary>
+    <p><code>sindri scope</code> turns a brief into a cited scope map: surfaces, implications, workstreams, acceptance checks and open questions. <code>--backtest</code> proves it on a past project.</p>
+    <ol class="tasks">
+      <li><b>Foundations.</b> Profile keys, secret pointers (never secrets in the profile), ledger v3 with a model-call audit table.</li>
+      <li><b>Sources.</b> Files, notes, transcripts (off by default), with untrusted text stripped on ingest.</li>
+      <li><b>Linear.</b> Read-only, and able to read a project as it was on a past date.</li>
+      <li><b>Model runner.</b> <code>claude -p</code> with a provider allowlist, egress scrub, environment allowlist and metering.</li>
+      <li><b>Scope map.</b> Schema, deterministic checks, neutralized Markdown.</li>
+      <li><b>Evidence pack.</b> Every claim cites a source.</li>
+      <li><b>The Scoping Step.</b> Draft, check, revise, then a challenger looks for missing surfaces.</li>
+      <li><b><code>sindri scope</code>.</b> <code>--dry-run</code>, <code>--sources</code>, and a refusal to write maps inside this public repo.</li>
+      <li><b>Backtest.</b> Scope from the original brief only, then measure recall and precision against the issues filed later, against a brief-only baseline, with a pass bar.</li>
+      <li><b>Docs and spec amendments.</b></li>
+      <li><b>Turn it on.</b> Backtest the motivating project; scope the next plan before it's written.</li>
+    </ol>
+    <div class="panel"><h3>Needs you</h3><p class="muted">A read-only Linear key, the URL of the project to backtest, and <code>profile approve</code> after adding them.</p></div>
+  </details>
+
+  <details class="plan">
+    <summary><span class="pill violet">Plan 5</span> Self-evolution: the toolkit proposes its own fixes</summary>
+    <p>Every skill, hook, rule and prompt in the toolkit becomes an artifact with an eval suite. Sindri proposes changes from evidence, compares prompt variants blind on a sealed holdout, and routes each proposal by tier. Nothing grades its own work.</p>
+    <ol class="tasks">
+      <li><b>Registry.</b> Ledger v4, the artifact registry, <code>evolve init|status</code>.</li>
+      <li><b>Eval suites.</b> <code>evolve check</code> wires each module to its existing tests.</li>
+      <li><b>Proposals.</b> Typed, tiered (self-adopt, approval, code), deduped, capped, with merge tracking.</li>
+      <li><b>Hook telemetry.</b> Finds hook fires in transcripts and has a model judge how many were false positives.</li>
+      <li><b>Prompts and corpus.</b> Hash-bound overlays and a replay corpus with a sealed ~30% holdout.</li>
+      <li><b>Blinding.</b> pstack's eval rules: a leak linter, label shuffle, position swap.</li>
+      <li><b><code>evolve compare</code>.</b> Pairwise on the holdout; a variant wins only on the Wilson lower bound.</li>
+      <li><b><code>reflect</code>.</b> Reviews a merged PR and proposes improvements to the tools that built it.</li>
+      <li><b><code>correct</code>.</b> A model labels recent human turns (design, process, restate, scope), groups repeated corrections, and proposes the highest-level fix.</li>
+      <li><b>Stage, publish, adopt.</b> The weekly job stages; you publish. A privacy gate holds back anything with a workplace term.</li>
+      <li><b>Channels.</b> Stable and next; promote only after the suite passes at that commit; rollback.</li>
+      <li><b>Weekly job.</b> Telemetry, reflect, correct, check, stage. Each step's failure is reported, the rest still run.</li>
+      <li><b>Skills, docs and spec amendments.</b></li>
+      <li><b>Turn it on.</b> Register the toolkit, run the first weekly pass.</li>
+    </ol>
+    <div class="panel"><h3>Needs you</h3><p class="muted"><code>privacy.denyTerms</code>: the workplace words to keep out of this public repo. <code>publish</code> refuses to run with an empty list.</p></div>
+  </details>
+</section>
+
 <section id="rollout">
-  <div class="kicker">09 · Rollout and effort</div>
+  <div class="kicker">10 · Rollout and effort</div>
   <h2>Value arrives early, not at the end</h2>
   <div class="panel scroll">
     <table>
@@ -319,7 +443,7 @@
 </section>
 
 <section id="reviews">
-  <div class="kicker">10 · How the design was vetted</div>
+  <div class="kicker">11 · How the design was vetted</div>
   <h2>Six rounds, five lenses each</h2>
   <p class="sub">Product, architecture, design, devex and security reviewed every revision. HIGH findings converged as each new subsystem was hardened. Design and devex pass; the remaining HIGHs are container mechanics that the spike decides.</p>
   <div class="panel">
@@ -339,7 +463,7 @@
 </section>
 
 <section id="decisions">
-  <div class="kicker">11 · Decisions</div>
+  <div class="kicker">12 · Decisions</div>
   <h2>Settled choices</h2>
   <div class="panel scroll">
     <table>
