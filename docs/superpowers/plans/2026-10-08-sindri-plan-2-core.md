@@ -5839,6 +5839,8 @@ git commit -m "docs: sindri installer, setup opt-in, merge gate and spec amendme
 
 ### Task 12: Turn it on (bootstrapping ladder, spec §13.3 rows 4–6)
 
+> Amendment (build): Steps 1–5 shipped in a follow-up PR after #69 merged (they were meant to run on the #69 branch before merge).
+
 Plan 2's pieces start working on the rest of the Sindri build once this PR merges. Steps 1–5 run on the PR branch. Steps 6–8 run **after merge**. Step 7 is the one step that needs Joi: approving the profile at a terminal (spec §8.7). The evidence is posted as a PR comment.
 
 **Files:**
@@ -5849,7 +5851,7 @@ Plan 2's pieces start working on the rest of the Sindri build once this PR merge
 - Consumes: the `sindri` CLI (Tasks 1–11).
 - Produces: an hourly `sindri observe` (launchd `com.agentic-workflow.sindri-observe`), so the ledger tracks plan-task state without anyone remembering to run it (product review C4); `scripts/sindri-guard-proof.sh`, which proves the pre-commit guard in a throwaway repo, never in this public one.
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 Append to `scripts/tests/install-sindri.test.sh`, before the list of test calls at the bottom, and add both names to that list:
 
@@ -5873,12 +5875,12 @@ test_guard_proof_uses_a_scratch_repo() {
 }
 ```
 
-- [ ] **Step 2: Run them to verify they fail**
+- [x] **Step 2: Run them to verify they fail**
 
 Run: `bash scripts/tests/install-sindri.test.sh`
 Expected: three `PASS` lines from Task 11, then `FAIL: …/com.agentic-workflow.sindri-observe.plist missing`.
 
-- [ ] **Step 3: Implement**
+- [x] **Step 3: Implement**
 
 `config/launchd/com.agentic-workflow.sindri-observe.plist`:
 
@@ -5948,12 +5950,12 @@ fi
 echo "PASS: the pre-commit hook refused the fixture (SND-SCRUB-002)"
 ```
 
-- [ ] **Step 4: Run the tests**
+- [x] **Step 4: Run the tests**
 
 Run: `bash scripts/tests/install-sindri.test.sh`
 Expected: five `PASS` lines.
 
-- [ ] **Step 5: Rehearse on the PR branch with a scratch state dir, then commit**
+- [x] **Step 5: Rehearse on the PR branch with a scratch state dir, then commit**
 
 ```bash
 AW_SKIP_LAUNCHD=1 scripts/install-sindri.sh
