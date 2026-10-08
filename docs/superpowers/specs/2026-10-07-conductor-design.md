@@ -1,6 +1,11 @@
 # Conductor — design
 
-Status: draft for review, revision 5 · 2026-10-08
+Status: draft for review, revision 6 · 2026-10-08
+Revision 6 addresses `/autoplan` round 5 (V1–V9, M1–M8): two-phase verification with a separate
+reproduce sandbox, a write shim for bugFixOrchestrator, clone from the mirror, hardened spool ingestion,
+subscription auth, a container debug path, image onboarding, effort sizing and a spike fallback.
+
+Revision 5 history:
 Revision 5 addresses `/autoplan` round 4: sessions run in containers (§8.2) with conductor-mediated
 push (§8.5); the environment is an adapter; a dashboard and menu-bar badge (§10.5); calibration fixes.
 
@@ -58,10 +63,10 @@ It learns from its own steering so recurring corrections become rules.
 | Copy-paste dispatches of auto-start-eligible items | ledger vs transcripts | 0 |
 | Interrupting notifications per merged PR | ledger | ≤ 2 |
 | Auto-started PRs reworked or reverted | GitHub + ledger | ≤ the rate for human-started PRs |
-| Model cost per merged PR | ledger | within `budget.perItem` |
+| Model tokens per merged PR (subscription) | proxy usage log | within `budget.perItem` |
 | Human "wrong path" corrections per merged PR | transcript classifier | −50% (direction checks should catch these first) |
 | Clone count and duplication ratio on files conductor sessions touched | code index | flat or falling |
-| Transcript-classifier accuracy | adjudicated sample of 100 turns per month | ≥ 0.85, reported in `shadow report` |
+| Transcript-classifier accuracy | outcome-labeled turns (a later human correction or rework marks a miss; no hand labels) | ≥ 0.85, reported in `shadow report` |
 
 ### Kill criteria
 - **Auto-start:** if after 4 weeks human turns per merged PR is down less than 20%, or the rework rate of
@@ -90,7 +95,8 @@ It learns from its own steering so recurring corrections become rules.
    fails closed, and is not disableable from inside a session (§8.1).
 7. **Untrusted text is data, never instructions** (§8.3).
 8. **No secrets in packs, ledger, logs, notifications or eval corpus** (§8.4).
-9. **No human hand-labeling.** The eval loop labels from outcomes and adjudicators only.
+9. **No human hand-labeling.** Labels come from outcomes only: merged without rework, reverted, a human
+   correction in a later turn, CI results. A `proceed` written by an agent is never a label on its own (M5).
 10. **Hooks enforce; agents don't opt in.** Every required check fires on a hook event, a git hook, or a
     conductor action, never because an agent chose to call a tool. MCP is for reading data only. Hooks
     enforce *patterns*. The *security boundary* is the session OS user, server-side protections, and
@@ -235,8 +241,9 @@ produce → deterministic checks → verifier → pass ── yes ─► ledger 
   `jev → agent CLI → rules`. A below-threshold result escalates.
 - **Verifiers** are judge questions first. When the chain escalates, a separate refutation job runs; the
   producer never verifies itself.
-- **Budgets:** each Step has `maxRounds` and a cost cap. Each item has `budget.perItem`, and the host has
-  `budget.perDay` with a circuit breaker that pauses auto-start (C8).
+- **Budgets** are measured in **tokens and turns** (subscription auth). Each Step has `maxRounds` and a
+  token cap. Each item has `budget.perItem` (tokens). The host has `budget.perDay` (tokens), plus a
+  circuit breaker that pauses auto-start when the proxy sees subscription rate-limit responses (C8).
 
 | Step | Runs as | Deterministic checks | Verifier |
 |---|---|---|---|
@@ -338,7 +345,7 @@ human runs `conductor decide <item>` to see both positions and choose.
 - Other checkpoints move to `enforce` once shadow shows precision of at least `direction.minPrecision`
   (default 0.6) over at least 20 checks.
 - **Caps:** per checkpoint, `direction.maxPerItem.<checkpoint>` (default 3 each; Shape 5), `direction.maxPerDay` (default 40), a per-check budget
-  (`direction.maxCostPerCheck` default $0.50, `direction.maxMinutesPerCheck` default 30,
+  (`direction.maxTokensPerCheck` default 150k, `direction.maxMinutesPerCheck` default 30,
   `direction.deliveryTimeout` default 15 min → escalate), plus `budget.perItem` (M9).
 - **Kill criteria** need at least 30 checks per checkpoint before they can fire (M9).
 - **Kill criterion:** a checkpoint whose `revise` verdicts don't reduce rework compared to shadow over 30
@@ -504,8 +511,8 @@ Required before `mode: auto-small` can be enabled. `doctor` refuses `auto-small`
 §8.1–8.7 passes.
 
 ### 8.1 Conductor tool gate (H1, H6, M12)
-- A PreToolUse hook active only when the Launcher-set `AW_CONDUCTOR_SESSION=<cdt-id>` is present. The hook
-  reads the session's policy from a conductor-owned file, not from env the session can change.
+- A PreToolUse hook that exists only in the session image (§5.3). It reads the session's policy from
+  `/conductor/policy.json` (read-only mount), never from env.
 - **Default deny.** It allows only the profile allowlist, with argument constraints. Examples:
   - comment only on the claimed item, at most one per milestone
   - status/labels only on the claimed item
@@ -547,7 +554,7 @@ the container.
 | Code index snapshot | `/index` | ro | Shape checks |
 | `$AW_STATE_DIR/conductor/sessions/<id>/ro/` (pack, policy, inbox, delivery nonces) | `/conductor` | ro | The conductor writes it; the session reads it |
 | `$AW_STATE_DIR/conductor/sessions/<id>/spool/` | `/spool` | rw | Heartbeats, positions, hook decision log, outgoing `git bundle` (§8.5). The host treats all of it as untrusted data. |
-| *(container volume)* | `/workspace/src` | rw | `git clone --shared /workspace/base` at start: seconds, no network, own `.git` |
+| *(container volume)* | `/workspace/src` | rw | `git clone --reference /mirror --dissociate /mirror` then `checkout <base SHA>` (V3). The mount of `/workspace/base` is for reading only. |
 | *(container volume)* | `node_modules`, build output | rw | Fast IO; never bind-mounted |
 
 - Directory zones (I4):
@@ -556,19 +563,42 @@ the container.
   - **session-writable:** `/spool` and the volumes.
 - **No shared gitdir (I1):** the session's `.git` lives in its own volume. Nothing the session writes can
   end up in a git dir the human's shell or editor reads.
-- **Optional live view:** the conductor rsyncs `/workspace/src` working files, **excluding `.git`** and
-  executable git metadata, to `$AW_STATE_DIR/conductor/view/<item>/` for read-only viewing in an editor.
+- **Live view, off by default (V4):** `view.enabled: false`. When enabled:
+  - The conductor's spool reader copies only an allowlist of source file types (no dotfiles, no `.vscode`,
+    `.idea`, `.envrc`, `.git*`, no executables) to `$AW_STATE_DIR/conductor/view/<item>/`.
+  - The copy uses `O_NOFOLLOW`, regular files only, and per-file and total size caps.
+  - `conductor view ITEM` opens it in the editor's restricted mode.
+- **Spool ingestion (V4):** the host reads `/spool` only through the conductor's spool reader:
+  - a separate low-privilege process
+  - `O_NOFOLLOW`, regular files only (FIFOs, sockets, devices and symlinks rejected), non-blocking opens
+  - per-file and per-session size quotas
+  - JSON-schema validation
+
+  Anything else is quarantined and logged as `CND-SANDBOX-2xx`.
 
 **Credentials (I3):**
 - **No write tokens in the container.** The session commits locally. Pushing is conductor-mediated (§8.5).
-- **Model access** goes through the conductor's **key proxy** (a loopback HTTP proxy bound into the
-  container network). It injects the API key per request, enforces `providers.allowed` and budgets, and
-  logs usage. The key never enters the container.
+- **Model access uses subscription login (V6):**
+  - `claude setup-token` is run once on the host. The long-lived token is stored conductor-private.
+  - Each container receives it at start as `CLAUDE_CODE_OAUTH_TOKEN` from `/conductor` (read-only).
+  - Because the token is inside the container, the **model proxy** is the only egress to Anthropic and
+    is the control point (M3):
+    - per-session proxy credentials, so each request is attributed to a session
+    - a fixed upstream (`api.anthropic.com`), with model and endpoint allowlists from `providers.allowed`
+    - token and turn budgets enforced from response usage
+    - full request logs
+  - The outward-write scrubber treats the OAuth token pattern as a secret, so it can't leave through
+    allowed writes.
+  - API-key mode (key injected by the proxy, never in the container) is a profile option for cloud boxes
+    and teammates.
 - **Data access:** read-only tracker and docs tokens, scoped per profile. MCP servers are configured
   inside the image with read scopes only.
-- **Egress allowlist:** the key proxy, the read-only data endpoints, package registries through the cache
-  proxy, and the profile's environment endpoints (e.g. preview hosts). Everything else is denied,
-  including the host's loopback services (Prism dashboard, bridge).
+- **Egress mechanism (M3):** session containers sit on an internal network with **no default route**.
+  - The only reachable host is the conductor's egress proxy. It forwards to: the model upstream, the
+    read-only data endpoints, package registries through the cache, and the profile's environment
+    endpoints.
+  - Everything else is denied, including the host's loopback services (Prism dashboard, bridge).
+  - Every denial is logged as `CND-PROXY-1xx`.
 - **Secrets for recipes** (e.g. a preview login): `conductor cred run <recipe>` runs host-side and passes a
   short-lived session cookie or token into `/conductor` for that recipe only. Long-lived secrets never
   enter the container.
@@ -585,8 +615,12 @@ the container.
 - tmux runs **inside** each container, with its own socket. Sessions can't reach each other's panes, and
   the host doesn't need tmux.
 - `conductor attach ITEM` runs `docker exec -it <ctr> tmux attach` and records the attach.
-- Human-origin turns are authenticated by the conductor seeing an attached client it opened. Input
-  arriving while no conductor-opened client is attached is not human.
+- Human-origin turns are authenticated as follows. `conductor attach` starts `docker exec` from the
+  host, as the human's OS user, with a per-attach random client tag set in the tmux client environment.
+  The `UserPromptSubmit` hook asks tmux for the client that submitted the input and checks the tag
+  against `/conductor/attach.json`. That file is written by the conductor and read-only to the session.
+  Input with no tagged client attached (for example `send-keys` from inside the container) is not
+  human.
 - Answers outside a session go through `conductor answer` / `decide`, which the host OS user
   authenticates.
 
@@ -598,9 +632,17 @@ the container.
 
 **Warm start:**
 - Images are keyed by `(repo, lockfile hash, toolchain)`. Rebuilding one is a heavy job.
-- Startup is: mirror fetch (host), base worktree (host), `clone --shared` and cache-backed install
+- Startup is: mirror fetch (host), base worktree (host), `clone --reference --dissociate` and cache-backed install
   (container).
-- Target: under 30 s to the first prompt on a warm image.
+- Target: under 60 s to the first prompt on a warm web-app image (measured in the spike).
+- **Uncommitted work survives relaunch (M6):** every 10 min, and on PreCompact, a hook writes a WIP
+  bundle (a stash commit) to the spool. Relaunch restores the latest one.
+- **VM sizing (M6):** `sandbox.vmMemory` defaults to `cap × session.memory + 4 GB` headroom. `doctor`
+  warns when the configured VM is smaller.
+- **Transcripts (M7):** the container's Claude transcripts are exported through the spool on Stop and on
+  relaunch, so the scorer and the eval loop see them.
+- **Bounded jobs** that read session code (scoping, challengers) run in short-lived containers from the
+  same image, never on the host (M7).
 
 **Escape surface:** container escape is out of scope for v1. The runtime's defaults apply, plus no
 privileged mode, no host network, no Docker socket mount, read-only root filesystem except the volumes,
@@ -648,25 +690,45 @@ and dropped capabilities.
   only through named profile recipes, and their output is marked sensitive and blocked from egress.
 - **Path guard:** a diff that touches profile-declared protected paths (CI and workflow config, hooks,
   auth, lockfiles, the profile itself) parks the item for approval.
-- **Conductor-mediated push (I2, I3):**
-  1. When the session finishes a commit series, the session image's Stop/commit hooks write
+- **Conductor-mediated push with two-phase verification (I2, I3, V1, V5):**
+  1. **Export.** When the session finishes a commit series, its hooks write
      `git bundle create /spool/out.bundle <base>..HEAD`.
-  2. The conductor never runs git on the session's tree. It verifies the bundle inside a **fresh
-     verifier container**: unprivileged, no network, no credentials. The verifier fetches the bundle into
-     a clean clone of the mirror and runs, on that exact head:
-     - `git fsck`
-     - the reproduce check
-     - the shape checks
-     - the path guard
-     - diff caps
-
-     Every conductor-side git call uses `-c core.hooksPath=/dev/null`, no attributes or filters, and
-     `safe.directory` scoped.
-  3. Only if the verifier passes does the conductor push the verified SHA from its own mirror, using its
-     write token, to `cdt/<user>/<item>`.
-- **Server side:** rulesets protect `cdt/*` refs (no force push, no direct push to protected branches),
-  and the profile documents them. `doctor` runs a **bypass probe**: from inside a session container, a
-  direct push and a direct API write must both fail.
+  2. **Snapshot.** The conductor's spool reader (§8.2) copies the bundle **once** into conductor-private
+     storage. It accepts regular files only, uses `O_NOFOLLOW`, and enforces a size cap
+     (`verify.maxBundleMB`, default 200). It records the bundle's SHA-256, and every later step uses only
+     that copy and that hash.
+  3. **Phase 1, trusted checks (before push).** These run in a **verifier container** that executes no
+     session code: unprivileged, no network, no credentials, read-only root.
+     - It fetches the bundle copy into a clean clone of the mirror with `transfer.fsckObjects=true`,
+       `core.hooksPath=/dev/null`, and no attributes or filters.
+     - It enforces pack size and object-count limits and a timeout.
+     - It runs only conductor-owned, deterministic checks: `git fsck --strict`, path guard, diff caps,
+       shape checks (index snapshot, read-only), and protected-path rules.
+     - Its verdict is a signed JSON written by the verifier binary, which comes from the conductor image,
+       not the repo.
+  4. **Transfer.** On a phase-1 pass, the conductor runs `git fetch <bundle copy>` into its mirror, with
+     the same hardening and the hash verified. It then pushes that exact SHA to `cdt/<user>/<item>` as a
+     **draft** PR.
+  5. **Phase 2, environment checks (after push, PR stays draft).**
+     - The repo's `Environment` adapter provisions an environment for the pushed SHA (for example a PR
+       preview).
+     - A separate **reproduce sandbox** runs the recorded reproduce check against that environment. It's a
+       container with network access only to the environment's endpoints, no credentials beyond the
+       environment's short-lived low-privilege test identity, and no access to the verifier or the ledger.
+       This is the only place session-authored test code runs.
+     - The conductor reads **only the sandbox's exit status and stdout cap**. Nothing the sandbox writes
+       can change a verdict file.
+     - The check must fail on the base (recorded once per item) and pass on the head. Flaky checks run 3
+       times; disagreement parks the item.
+  6. **Undraft gate.** The ship state machine may request undraft (needs-approval by default) only after
+     phase 1 passed, phase 2 passed, and the head SHA is unchanged since both.
+  - Repos with `Environment: none` run phase 2 in the reproduce sandbox with no network.
+  - A **forged-verdict probe** in `doctor` and the tests confirms that a bundle whose tests write a fake
+    "pass" file cannot produce a passing verdict.
+- **Server side:** rulesets protect `cdt/*` refs (no force push, no direct push to protected branches).
+  Configuring them requires **repo-admin** rights, a per-repo prerequisite that `conductor repo check`
+  detects (M8). `doctor` runs a **bypass probe**: from inside a session container, a direct push and a
+  direct API write must both fail.
 - **CI secrets:** environment-protected so `cdt/*` refs can't use them without approval.
 - **Undraft:** the undraft watch re-drafts within one tick interval. The remaining window is documented.
 
@@ -674,8 +736,8 @@ and dropped capabilities.
 - Session names are conductor-generated `cdt-<ulid>`, validated against `^cdt-[0-9a-z]{26}$` at both the
   Launcher and the Notifier.
 - Notification actions carry only `{kind, session_id | item_id}`. A local resolver turns that into an argv
-  array at click time, with no shell (`tmux attach -t <name>`; remote: `ssh -- <host> …` with the host
-  taken from the profile allowlist).
+  array at click time, with no shell: `docker exec -it <container> tmux attach`. Remote: `ssh -- <host>
+  conductor attach <item>`, with the host taken from the profile allowlist.
 - Titles and bodies carry the item id plus a scrubbed, length-limited title. No other item text goes into
   actions.
 
@@ -848,6 +910,41 @@ The `UserPromptSubmit` hook classifies every human turn in a conductor session:
 - **Live updates:** the dashboard polls the CLI JSON every 5 s. No websocket server is needed in v1.
 - **Accessibility:** states are shown as text, not color only. The previews are text, not images.
 
+**States and accessibility (M1, M4):**
+- **Landing view:** Waiting on you when it isn't empty, otherwise Sessions. Every item has a deep link
+  `/item/<id>`. An **All items** list (filterable by state) sits alongside the five views.
+- **Per view:**
+
+  | State | Behavior |
+  |---|---|
+  | Loading | Skeleton rows on the first load only |
+  | Empty | The same sentence as the CLI ("Nothing is waiting on you. 3 running, 1 queued.") |
+  | Error | Banner with the code and the CLI command that shows more |
+  | Stale | "updated Ns ago". After 3 failed polls: "conductor not responding: run `conductor doctor`" |
+  | Pane preview | Stale previews are greyed out with their age; `crashed`/`oom` show the last capture and the reason |
+- **Action races:** an action that hits `CND-ITEM-409` (already resolved elsewhere) shows "Already
+  handled" and refreshes.
+- **Token rotation:** the token is exchanged for an HttpOnly, SameSite=Strict cookie on first load and
+  removed from the URL. A 401 after rotation shows "run `conductor dashboard --url`".
+- **Headers:** a CSP of `default-src 'self'` (no inline scripts), and Origin plus Host checks on every
+  action.
+- **Pane previews:**
+  - rendered as plain text, after ANSI escape stripping, bidi and control-character stripping, and HTML
+    escaping
+  - never rendered as HTML
+  - kept inside `<untrusted>`-styled regions
+- **Accessibility:**
+  - Polling never moves focus, scroll position, or form input.
+  - Updates are announced through one polite `aria-live` region ("2 items now waiting on you").
+  - Every action is reachable by keyboard, in a visible tab order.
+  - State is shown as text (not color alone).
+  - Previews are labeled regions that can be skipped.
+- **Approve parity:** approve shows the same diff the CLI shows before confirming.
+- **Answer form:** the job-question answer form uses the §10.2 template.
+- **Attach over an ssh tunnel:** shows the exact command to run locally instead of opening Warp.
+- **Badge text form:** "3 running, 1 waiting" as the accessible title. Its states are `ok`, `paused`,
+  `stopped` and `stale (no update > 2 min)`.
+
 **Menu-bar badge** (macOS, `Badge` adapter, built-in: SwiftBar plugin):
 - Shows `▶ running · ⚑ waiting on you` counts, refreshed every 30 s from `conductor status --json`.
 - The dropdown lists waiting items. Clicking one opens the dashboard at that item.
@@ -935,13 +1032,26 @@ interface Badge    { publish(summary: StatusSummary): Promise<Result<void>> }
   (`index.embeddingModel`) are installed by `conductor index setup`. graphify is installed and pinned by
   the same command and run in its network-less sandbox. `doctor` verifies each.
 
-### 11.4 Migration from existing orchestrators (H19)
-- The v1 Worker session runs `/bugFixOrchestrator <item>` unchanged, for items of type bug.
-- Evidence keeps using `ui-evidence`. Profile evidence recipes are passed to the session as pack content.
-  Adding multi-source evidence to bugFixOrchestrator itself is a follow-up spec.
-- The conductor reads `$AW_DIR/bugfix/*/state.json` read-only for reconcile. It skips items that have a
-  bugfix state dir it did not create, so manual runs stay supported.
-- Cut-over to a native worker is a later spec. `/bugFixOrchestrator` is not deprecated in v1.
+### 11.4 Migration from existing orchestrators (H19, V2)
+- The v1 Worker session runs `/bugFixOrchestrator <item>` inside the container, unchanged, through a
+  **write shim** that is enforced by hooks, not by changing the skill.
+  - Its outward writes are intercepted by the session image's PreToolUse hooks: `git push`,
+    `gh pr create|edit|comment|ready`, tracker MCP write tools.
+  - Each intercepted call is **denied with a structured request** written to `/spool/requests/<n>.json`,
+    and the agent is told "queued as request R<n>; the conductor performs it after verification".
+  - The request records kind, target, body or ref, and evidence paths.
+  - The conductor executes requests through §8.1's allowlist and §8.5's verified push, in order. It
+    writes each result back to the inbox, delivered with the next `continue`.
+  - Requests outside the allowlist become needs-approval items.
+- bugFixOrchestrator's own state (`$AW_DIR/bugfix/<slug>/`) and `ui-evidence` output live in the
+  container volume.
+  - The conductor exports them through the spool on Stop, so `conductor why` and the ledger can read
+    them. They're reconciled read-only.
+  - Items that already have a host-side bugfix state dir from a manual run are skipped.
+- Profile evidence recipes are passed to the session as pack content. Adding multi-source evidence to
+  bugFixOrchestrator itself is a follow-up spec.
+- Cut-over to a native worker is a later spec. `/bugFixOrchestrator` is not deprecated, and manual host
+  runs stay supported.
 - A "When to use which" table (`/bugFixOrchestrator`, `/specToProvenPR`, `/autoplan`, conductor) goes in
   `docs/conductor/README.md` (L3).
 
@@ -970,6 +1080,61 @@ interface Badge    { publish(summary: StatusSummary): Promise<Result<void>> }
   - unacknowledged ATTENTION entries and the last `notify --test` time
   - direction-check mode per checkpoint, shadow precision, caps used today
 
+### 11.6 Session images and repo onboarding (V8)
+`repos/<repo>.yaml` declares the image:
+
+```yaml
+image:
+  base: node:22-bookworm            # or a team base image
+  toolchain: [bun@1.2, node@22]     # pinned
+  install: "bun install --frozen-lockfile"
+  lockfiles: [bun.lock]
+  extraPackages: [postgresql-client]
+session:
+  memory: 6g                        # per-repo override (M6); monorepo type-checks need more than 3 GB
+  cpus: 3
+environment:
+  type: preview                     # none | preview | shared-host | per-container
+  preview:                          # profile data, never core
+    requestLabel: "<label name>"
+    urlFrom: "pr-comment:<bot login>"   # or ci-output, deploy API
+    readyTimeoutMin: 20
+    testIdentity: "op:<vault>/<item>"   # low-privilege, short-lived via the broker
+```
+
+- **Image key** = hash of the base, toolchain, lockfiles, install command, conductor version, hook-set
+  version, Claude Code version and toolkit version. Any change rebuilds the image, as a heavy job.
+- **The image contains:** Claude Code, tmux, the toolkit and skills, the session hook set and the existing
+  safety hooks, Serena, the repo toolchain, and the preinstalled dependencies.
+- **`conductor repo check <repo>`** builds the image (or reuses it) and starts a throwaway container. It
+  verifies, in order:
+  1. Claude Code starts with the subscription token.
+  2. The hooks are registered.
+  3. The install is cached.
+  4. The Environment adapter can provision once (dry-run where the adapter supports it).
+  5. Rulesets are present on the remote (M8).
+  6. The bypass and forged-verdict probes fail as they should.
+
+  It prints one line per check with a fix command.
+- **`per-container` environments** declare services (`services: [postgres:16, redis:7]`) and need
+  `session.memory` of at least 8 g. `repo check` refuses a smaller setting with `CND-ENV-020`.
+- Worked examples live in `conductor/profile/examples/`: `preview` (web app with PR previews), `none`
+  (library), and `shared-host`.
+
+### 11.7 Container debugging (V7)
+| Command | Does |
+|---|---|
+| `conductor logs ITEM [--follow] [--hooks] [--proxy]` | Container stdout and stderr, hook decision log, proxy log for the session |
+| `conductor shell ITEM` | Opens a root-less debug shell in the container as the session user. Recorded as a takeover (§9.3), and blocked while the Stop gate is in `verifying`. |
+| `conductor inspect ITEM` | Container state, limits, OOM events, mounts, image key, environment handle, last bundle hash |
+| `conductor retain ITEM` / `release ITEM` | Keep a stopped container for debugging, or let it be reaped |
+
+- **States** (in `status`, the dashboard and `why`), in addition to §10.3's: `starting`, `crashed`
+  (non-zero exit), `oom` (killed for memory), `image-building`, `env-pending`, `env-failed`.
+- A `crashed` or `oom` container is kept for 24 h (`sandbox.retainFailedHours`) before reaping. The item
+  is parked with the code and `conductor logs ITEM` as its next action.
+- **Error areas added:** `SANDBOX`, `IMAGE`, `ENV`, `PROXY`, `HOOK`, `VERIFY`.
+
 ## 12. Portability
 | Concern | v1 (macOS) | Linux (seams in v1, built-ins later) |
 |---|---|---|
@@ -977,7 +1142,7 @@ interface Badge    { publish(summary: StatusSummary): Promise<Result<void>> }
 | Launcher | containers (OrbStack or Docker) with tmux inside | Docker or Podman with tmux inside (no VM) |
 | Notifier | macOS notification → ATTENTION file | ntfy (authenticated, high-entropy topic, M11), chat DM |
 | Boot id | `kern.bootsessionuuid` | `/proc/sys/kernel/random/boot_id` |
-| Claude auth | interactive login | headless auth runbook |
+| Claude auth | subscription token (`claude setup-token`) injected per container (§8.2) | same; API-key mode optional |
 | Hooks | — | Fix `context-guard.sh` to prefer `stat -c%s` on GNU (detect, don't guess); add hooks to the Linux test script |
 | Tests | local | `scripts/test-linux.sh` runs core and hook tests in an Ubuntu container (M22) |
 
@@ -991,9 +1156,9 @@ interface Badge    { publish(summary: StatusSummary): Promise<Result<void>> }
 1. **Prerequisites:**
    - **Hook probe:** a scripted live probe confirms the §5.3 semantics table on the installed Claude Code
      version. It becomes `doctor`'s probe suite, and a version bump re-runs it.
-   - **Container spike (go/no-go):** a session image runs interactive Claude Code through the key proxy;
-     attach from Warp works; the bundle export and verifier push path works; the warm start is under 30 s.
-   - `conductor setup-host`, the key proxy, the lock broker.
+   - **Container spike (go/no-go):** criteria and fallback in §13.1.
+   - `conductor setup-host`, the model and egress proxy, the lock broker, all supervised by launchd with
+     stable socket paths that survive restarts (M6).
    - The judge `--providers` flag (M2).
    - The `cdt-hook` wrapper and the Stop pattern gate.
    - Fix done-gate bare-word false positives for non-conductor sessions.
@@ -1034,6 +1199,42 @@ interface Badge    { publish(summary: StatusSummary): Promise<Result<void>> }
    - Each proposal must win a shadow A/B (rule applied in shadow vs not, over at least 10 items) before
      approval is requested (M6).
    - Index providers (graph on/off, embeddings on/off) are evaluated the same way.
+
+### 13.1 Effort sizing and spike fallback (V9)
+These are rough, for one builder with agent help. Every step ends with a usable increment.
+
+| Step | Contents | Size | First value delivered |
+|---|---|---|---|
+| 0 | Audit scripts, baselines, XS share | S (2–3 days) | Measured targets |
+| 1 | Hook probe; container spike (go/no-go); setup-host; key proxy; lock broker; done-gate fix; profile tooling; lock/fencing; scrubber; judge `--providers`; bridge hardening | L (2–3 weeks) | `doctor` and `observe` work |
+| 2 | Shadow triage and packs; index build (structure, clones, deps, embeddings, graphify); historical replay; dashboard (Sessions, Waiting) and badge | M (1–2 weeks) | **Dashboard shows what the conductor would do; replay report** |
+| 3a | `conductor start`, packs and re-injection, ship state machine, write shim, two-phase verify, notifications, shadow direction checks | L (2–3 weeks) | **Copy-paste dispatch, retyped ship direction and handoffs gone** |
+| 3b | Shape enforcement, Shape direction check | M (1 week) | Enforced code-shape checks |
+| 4 | Auto-small | S | Unattended XS items |
+| 5 | Scoping proposals | M | Project-level scoping |
+| 6 | Eval loop | M | Self-improving rules |
+
+**If the container spike fails** (step 1 go/no-go):
+- Steps 2 and 3a proceed **on the host**. Sessions run in host tmux as the human, with no auto-start.
+  Shadow and assist are cleared without isolation, as long as the live view stays off and the
+  conductor never fetches bundles on the host.
+- Steps 3b and later wait for a working isolation mechanism (a container runtime on another host, or a
+  Linux cloud box).
+- The spike's criteria:
+  1. interactive Claude Code in a container with the subscription token
+  2. attach from Warp
+  3. bundle export and two-phase verify on one real item
+  4. warm start under 60 s on the web-app image
+  5. a 4-session fleet stable for 24 h within the VM limit
+
+### 13.2 Checkpoints by step
+| Checkpoint | 2 | 3a | 3b | 4 | 5 |
+|---|---|---|---|---|---|
+| Approach | — | shadow | shadow | enforce when §6.1 bar met | enforce |
+| Drift | — | shadow | shadow | enforce when bar met | enforce |
+| Shape | replay only | record only | **enforce** | enforce | enforce |
+| Scoping | — | — | — | — | shadow → enforce |
+| Scope expansion | — | — | — | — | shadow → enforce |
 
 ## 14. Testing
 - **Unit tests** in Vitest with in-memory SQLite and fake adapters: tick, router, Step runner (pass,
@@ -1077,13 +1278,28 @@ interface Badge    { publish(summary: StatusSummary): Promise<Result<void>> }
 - **Live hook probe** (heavy, also in `doctor`): the §5.3 semantics table against the installed Claude
   Code version.
 - **Isolation:**
-  - from a session container, all of these fail: reading the HMAC key, the ledger or the API key;
+  - from a session container, all of these fail: reading the HMAC key or the ledger; reaching any host
+    other than the egress proxy;
     writing to `/conductor`, `/mirror` or `/workspace/base`; pushing to the remote; writing to the
     tracker; reaching host loopback services; attaching another session's tmux
   - a tampered spool entry is ignored
   - a bundle that fails verifier checks is never pushed, even when session-side checks passed or were
     skipped with `--no-verify`
   - the verifier runs no git hooks, filters or attributes from the bundle
+- **Two-phase verify:**
+  - a bundle modified after the snapshot is rejected (hash mismatch)
+  - a bundle whose tests write a fake pass file never yields a pass (forged-verdict probe)
+  - a pack bomb and an oversized bundle are refused within limits
+  - phase 2 runs only against the provisioned environment
+  - undraft is blocked unless both phases passed on the unchanged head
+- **Write shim:** each intercepted write (`git push`, `gh pr create/comment/ready`, tracker writes)
+  becomes exactly one spool request, is executed only through the allowlist, and has its result
+  delivered on the next `continue`.
+- **Spool reader:** symlinks, FIFOs, sockets, oversized files and schema-invalid JSON are quarantined;
+  the tick never blocks on a FIFO.
+- **Live view:** off by default; when on, dotfiles, `.vscode` and executables are never copied.
+- **Auth:** the subscription token reaches only the model upstream through the proxy; the scrubber
+  blocks the token pattern in outward writes.
 - **Containers:** CPU and memory limits hold; the heavy-lock lease expires for a killed container; the
   warm-start target is met on a warm image; `teardown-host` restores the manifest.
 - **Direction checks:**
@@ -1129,7 +1345,7 @@ interface Badge    { publish(summary: StatusSummary): Promise<Result<void>> }
 - `docs/conductor/errors.md`, generated from the code registry. A test fails when a code is used but not
   documented, or documented but unused (M8).
 - `docs/conductor/hooks.md`, `docs/conductor/index.md`, `docs/conductor/host-setup.md` (containers,
-  key proxy, teardown)
+  model/egress proxy, teardown)
 - `docs/conductor/linux.md` (with the Linux adapters)
 - ledger schema in `planning/ERD.md`
 - CLI in `planning/API_CONTRACT.md`
