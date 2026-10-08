@@ -2,12 +2,14 @@ import fs from "node:fs";
 import path from "node:path";
 
 import { parseFlags } from "../args.js";
-import type { Deps } from "../deps.js";
+import { stateDir, type Deps } from "../deps.js";
 import { SindriError } from "../errors.js";
 import type { GitRunner } from "../git.js";
 import type { Command } from "../main.js";
 import { failure, fromError, success, type CommandResult } from "../output.js";
-import { loadProfile, resolveProfileRoot } from "../profile/load.js";
+import { ledgerPath, readLedger } from "../ledger/db.js";
+import { approvalState } from "../profile/approve.js";
+import { loadProfile, resolveProfileRoot, type LoadedProfile } from "../profile/load.js";
 import { compileExtraPatterns, makeScrubber, type Scrubber } from "./scrub.js";
 
 export const PRE_COMMIT_MARKER = "# sindri-scrub-pre-commit v1";
@@ -102,13 +104,35 @@ export function hitsIn(f: AddedFile, scrubber: Scrubber): { file: string; line: 
   });
 }
 
+// The latest approved snapshot, or null when there is none (or no readable ledger).
+function approvedProfile(deps: Deps, liveHash: string): LoadedProfile | null {
+  const file = ledgerPath(stateDir(deps));
+  if (!fs.existsSync(file)) return null;
+  try {
+    const state = readLedger(file, (db) => approvalState(deps, db, liveHash));
+    return state.kind === "approved" || state.kind === "changed-since-approval" ? state.approved : null;
+  } catch {
+    return null;
+  }
+}
+
+// Spec §8.7: the patterns come from the latest approved snapshot, so an unapproved
+// edit can't change them. A profile never approved yet uses its live patterns. A
+// profile that neither loads nor has a snapshot refuses: never built-ins only.
 function scrubberFor(deps: Deps): { scrubber: Scrubber; warning: string } {
   const root = resolveProfileRoot(deps);
-  const loaded = root === null ? null : loadProfile(root);
-  if (loaded !== null && !loaded.ok) {
-    return { scrubber: makeScrubber(), warning: "warning: the profile is invalid, so only built-in patterns are used (sindri profile validate)\n" };
+  if (root === null) return { scrubber: makeScrubber(), warning: "" };
+  const live = loadProfile(root);
+  const approved = approvedProfile(deps, live.ok ? live.value.hash : "");
+  const use = approved ?? (live.ok ? live.value : null);
+  if (use === null) {
+    throw new SindriError("SND-PROFILE-001", `the profile at ${root} is invalid and has no approved snapshot, so its scrub patterns can't be used`, {
+      fix: "sindri profile validate, fix each listed key, then sindri profile approve",
+    });
   }
-  return { scrubber: makeScrubber(loaded === null ? [] : compileExtraPatterns(loaded.value.profile.scrub.extraPatterns)), warning: "" };
+  const drift = approved !== null && (!live.ok || live.value.hash !== approved.hash);
+  const warning = drift ? `note: using approved profile ${approved.hash.slice(0, 12)}; the live profile has unapproved changes (sindri profile approve)\n` : "";
+  return { scrubber: makeScrubber(compileExtraPatterns(use.profile.scrub.extraPatterns)), warning };
 }
 
 async function install(deps: Deps, repo: string | undefined, json: boolean): Promise<CommandResult> {
@@ -130,7 +154,12 @@ async function staged(deps: Deps, json: boolean): Promise<CommandResult> {
   // "Binary files differ" with no lines, hiding a secret from the scan.
   const args = ["-c", "core.quotePath=false", "diff", "--cached", "--unified=0", "--no-color", "--no-ext-diff", "--text", "--no-textconv", "-M", "--diff-filter=d"];
   const diff = await deps.git.run(args, deps.cwd);
-  if (!diff.ok) throw new SindriError("SND-SCRUB-004", `${deps.cwd} is not inside a git repo`);
+  if (!diff.ok) {
+    // Outside a repo, git diff falls back to --no-index and its error says nothing useful.
+    const inRepo = await deps.git.run(["rev-parse", "--git-dir"], deps.cwd);
+    if (!inRepo.ok) throw new SindriError("SND-SCRUB-004", `${deps.cwd} is not inside a git repo`);
+    throw new SindriError("SND-SCRUB-005", "git diff --cached failed, so the staged changes were not scanned", { details: diff.stderr.trim().split("\n") });
+  }
   const { scrubber, warning } = scrubberFor(deps);
   const hits = parseAddedLines(diff.stdout).flatMap((f) => hitsIn(f, scrubber));
   if (hits.length === 0) return { ...success("No secrets in staged changes.", { hits }, json), stderr: warning };

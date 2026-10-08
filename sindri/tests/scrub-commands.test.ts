@@ -7,7 +7,7 @@ import { runCli } from "../src/main.js";
 import { hitsIn, hookBinary, parseAddedLines, preCommitHook, preCommitPath, PRE_COMMIT_MARKER } from "../src/scrub/commands.js";
 import { makeScrubber } from "../src/scrub/scrub.js";
 import { realGitRunner } from "../src/git-real.js";
-import { makeDeps, tempDir } from "./helpers.js";
+import { fakeGit, makeDeps, tempDir } from "./helpers.js";
 
 function repo(): string {
   const root = tempDir("sindri-scrub-");
@@ -79,15 +79,51 @@ describe("sindri scrub --staged", () => {
     expect(r.stderr).toContain("b.txt:4 aws-access-key");
   });
 
-  it("warns when an invalid profile means only built-in patterns are used", async () => {
+  it("refuses (exit 2) when the profile is invalid and has no approved snapshot, never falling back to built-ins", async () => {
     const root = repo();
     stage(root, "ok.txt", "fine\n");
     const deps = makeDeps({ cwd: root });
     await runCli(["profile", "init"], deps);
     fs.appendFileSync(path.join(deps.env.AW_STATE_DIR as string, "profile", "profile.yaml"), "\nbogus: 1\n");
     const r = await runCli(["scrub", "--staged"], deps);
-    expect(r.exitCode).toBe(0);
-    expect(r.stderr).toContain("only built-in patterns are used");
+    expect(r.exitCode).toBe(2);
+    expect(r.stderr).toContain("SND-PROFILE-001 the profile at");
+    expect(r.stderr).toContain("has no approved snapshot");
+  });
+
+  it("uses the approved snapshot's patterns, so an unapproved edit can't drop or break them", async () => {
+    const root = repo();
+    stage(root, "ids.txt", "EMP-123456\n");
+    const deps = makeDeps({ cwd: root });
+    await runCli(["profile", "init"], deps);
+    const file = path.join(deps.env.AW_STATE_DIR as string, "profile", "profile.yaml");
+    const original = fs.readFileSync(file, "utf8");
+    fs.appendFileSync(file, '\nscrub:\n  extraPatterns:\n    - kind: employee-id\n      regex: "\\\\bEMP-\\\\d{6}\\\\b"\n');
+    const hash = JSON.parse((await runCli(["profile", "approve", "--json"], deps)).stdout).hash as string;
+    const ok = await runCli(["profile", "approve", hash], { ...deps, isTTY: true, prompt: async () => hash.slice(0, 6) });
+    expect(ok.exitCode).toBe(0);
+    const ledger = path.join(deps.env.AW_STATE_DIR as string, "sindri", "ledger.db");
+    const beside = (): string[] => fs.readdirSync(path.dirname(ledger)).filter((n) => n.startsWith("ledger.db"));
+    const before = beside();
+    // Unapproved edit that drops the pattern: the approved one still applies.
+    fs.writeFileSync(file, original);
+    const dropped = await runCli(["scrub", "--staged"], deps);
+    expect(dropped.exitCode).toBe(1);
+    expect(dropped.stderr).toContain("ids.txt:1 employee-id");
+    expect(dropped.stderr).toContain(`note: using approved profile ${hash.slice(0, 12)}; the live profile has unapproved changes`);
+    // Unapproved edit that breaks the profile: still the approved patterns.
+    fs.appendFileSync(file, "\nbogus: 1\n");
+    const broken = await runCli(["scrub", "--staged"], deps);
+    expect(broken.exitCode).toBe(1);
+    expect(broken.stderr).toContain("ids.txt:1 employee-id");
+    expect(beside()).toEqual(before);
+  });
+
+  it("reports a git failure other than 'not a repo' with git's stderr (SND-SCRUB-005)", async () => {
+    const r = await runCli(["scrub", "--staged"], makeDeps({ git: fakeGit({ "rev-parse --git-dir": { ok: true, stdout: ".git\n" } }) }));
+    expect(r.exitCode).toBe(2);
+    expect(r.stderr).toContain("SND-SCRUB-005 git diff --cached failed");
+    expect(r.stderr).toContain("unexpected git call: -c core.quotePath=false diff --cached");
   });
 
   it("uses the profile's extra patterns when a profile loads", async () => {

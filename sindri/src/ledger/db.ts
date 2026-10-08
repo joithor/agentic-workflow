@@ -92,6 +92,21 @@ export function openLedger(file: string): Ledger {
   return db;
 }
 
+// Reads an existing ledger and leaves no files beside it (doctor, scrub). A
+// readonly connection to a WAL ledger whose -wal file is gone creates -wal and
+// -shm and can't remove them. This connection is query_only, so it writes
+// nothing, and as the last connection it removes them on close. No migration,
+// backup or chmod.
+export function readLedger<T>(file: string, fn: (db: Ledger) => T): T {
+  const db = new Database(file, { fileMustExist: true });
+  try {
+    db.pragma("query_only = ON");
+    return fn(db);
+  } finally {
+    db.close();
+  }
+}
+
 export function openMemoryLedger(): Ledger {
   const db = new Database(":memory:");
   db.pragma("foreign_keys = ON");
