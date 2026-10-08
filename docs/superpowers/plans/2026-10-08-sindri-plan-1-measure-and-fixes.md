@@ -68,6 +68,8 @@ Later plans cover the rest of step 1:
 ---
 
 ### Task 1: done-gate claim detection (fixes false positives)
+> Amendment (build): sentence-level '?' drop, negation only before the claim word, noun+complete and bullet forms — review found false negatives in the original heuristic.
+
 
 **Files:**
 - Modify: `config/hooks/done-gate.sh:57` (the `if ! printf '%s' "$CLAIM_TEXT" | grep -qiE '\b(done|complete|finished|ready for review|merged|shipped)\b'` line)
@@ -125,6 +127,30 @@ test_real_claim_with_evidence_passes() {
   [ "$(claim_rc 'Done — ran npm test and all 42 tests passed.')" -eq 0 ] || { echo "FAIL: evidenced claim blocked"; exit 1; }
   echo "PASS: test_real_claim_with_evidence_passes"
 }
+
+test_claim_before_a_question_still_blocks() {
+  [ "$(claim_rc 'All done. Should I open the PR?')" -eq 2 ] || { echo "FAIL: claim followed by a question not blocked"; exit 1; }
+  echo "PASS: test_claim_before_a_question_still_blocks"
+}
+
+test_negation_after_claim_word_still_blocks() {
+  [ "$(claim_rc 'Done, no issues found.')" -eq 2 ] || { echo "FAIL: 'Done, no issues found.' not blocked"; exit 1; }
+  [ "$(claim_rc 'Done — all tests pass, no failures.')" -eq 2 ] || { echo "FAIL: trailing 'no failures' not blocked"; exit 1; }
+  [ "$(claim_rc 'The work is finished, not merged.')" -eq 2 ] || { echo "FAIL: 'finished, not merged' not blocked"; exit 1; }
+  echo "PASS: test_negation_after_claim_word_still_blocks"
+}
+
+test_noun_plus_complete_and_bullet_forms_still_block() {
+  [ "$(claim_rc 'Task complete.')" -eq 2 ] || { echo "FAIL: 'Task complete.' not blocked"; exit 1; }
+  [ "$(claim_rc 'Implementation complete; tests pass.')" -eq 2 ] || { echo "FAIL: 'Implementation complete; tests pass.' not blocked"; exit 1; }
+  [ "$(claim_rc '- Ready for review')" -eq 2 ] || { echo "FAIL: bullet 'Ready for review' not blocked"; exit 1; }
+  echo "PASS: test_noun_plus_complete_and_bullet_forms_still_block"
+}
+
+test_question_plus_trailing_negation_is_not_a_claim() {
+  [ "$(claim_rc 'Should I mark it done? Nothing is finished yet.')" -eq 0 ] || { echo "FAIL: question + negated claim treated as claim"; exit 1; }
+  echo "PASS: test_question_plus_trailing_negation_is_not_a_claim"
+}
 ```
 
 - [x] **Step 2: Run the tests to verify they fail**
@@ -139,24 +165,46 @@ In `config/hooks/done-gate.sh`, define the function before the `SESSION_ID=` lin
 
 ```bash
 # A done claim is an assertion of completion, not any occurrence of a claim word.
-# Ignored: fenced code, table rows, lines ending in '?', and sentences whose claim
-# word is negated (not/n't/nothing/no/yet). Deterministic: grep/sed only.
+# Ignored: fenced code and table rows. Sentences are split first, so a question
+# ends at its own '?' ('All done. Should I open the PR?' still claims). A negation
+# cancels a claim only when it appears before the claim word in the same sentence
+# ('Nothing is done yet.' is no claim; 'Done, no issues found.' still claims).
+# Deterministic: awk only (BSD awk, POSIX classes, no \b). \047 is a single quote.
 is_done_claim() {
-  local text="$1" body
-  body="$(printf '%s\n' "$text" \
-    | awk 'BEGIN{f=0} /^[[:space:]]*```/{f=!f; next} !f' \
-    | grep -v -E '^[[:space:]]*\|' \
-    | grep -v -E '\?[[:space:]]*$' || true)"
-  [ -n "$body" ] || return 1
-  # Split into sentences, one per line (awk, not sed: BSD sed has no \n in replacements).
-  body="$(printf '%s\n' "$body" | awk '{gsub(/[.!;:][[:space:]]+/, "&\n"); print}')"
-  # Drop sentences with a negation anywhere before the claim word.
-  body="$(printf '%s\n' "$body" | grep -v -iE "(\bnot\b|n't\b|\bnothing\b|\bno\b|\byet\b)" || true)"
-  [ -n "$body" ] || return 1
-  printf '%s\n' "$body" | grep -qiE \
-    -e '^[[:space:]]*(done|finished|shipped|merged)\b' \
-    -e "\b(is|are|it's|it is|now|all|everything('s| is)?)[[:space:]]+(now[[:space:]]+)?(done|complete|completed|finished|merged|shipped|ready for review)\b" \
-    -e "\b(i|we)('ve| have)?[[:space:]]+(finished|completed|shipped|merged)\b"
+  printf '%s\n' "$1" | awk '
+    BEGIN {
+      NEG = "[^[:alpha:]](not|nothing|no|yet|never|none)[^[:alpha:]]|n\047t"
+      START = "^[[:space:]]*([-*+]|[0-9]+[.)])?[[:space:]]*(done|finished|shipped|merged|ready for review)[^[:alpha:]\047]"
+      B = "[^[:alpha:]\047]"
+      DONE = "(done|complete|completed|finished|merged|shipped|ready for review)"
+      PAIR = "(((is|are|was|were|all|everything|now)|(it\047s|it is))[[:space:]]+(now[[:space:]]+)?" DONE "|(i|we)(\047ve|[[:space:]]+have)?[[:space:]]+(finished|completed|shipped|merged))"
+      NOUN = "[[:alpha:]]+[[:space:]]+(complete|completed|finished)[.!;:,[:space:]]*$"
+      MID = B "(" PAIR B "|" NOUN ")"
+    }
+    function is_claim(s,   t, rest, acc, pre) {
+      if (s ~ /\?[[:space:]]*$/) return 0
+      t = " " s " "
+      if (t ~ START) return 1
+      rest = t; acc = ""
+      while (match(rest, MID)) {
+        pre = acc substr(rest, 1, RSTART - 1)
+        if ((" " pre " ") !~ NEG) return 1
+        acc = acc substr(rest, 1, RSTART + RLENGTH - 1)
+        rest = substr(rest, RSTART + RLENGTH)
+      }
+      return 0
+    }
+    /^[[:space:]]*```/ { f = !f; next }
+    f { next }
+    /^[[:space:]]*\|/ { next }
+    {
+      line = tolower($0)
+      gsub(/[.!?;:,][[:space:]]*/, "&\n", line)
+      n = split(line, sent, "\n")
+      for (i = 1; i <= n; i++) if (is_claim(sent[i])) found = 1
+    }
+    END { exit (found ? 0 : 1) }
+  '
 }
 ```
 

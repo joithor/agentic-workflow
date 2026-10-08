@@ -52,24 +52,46 @@ CLAIM_TEXT="$(printf '%s' "$LAST_ASSISTANT_LINE" | jq -r '
 fi
 
 # A done claim is an assertion of completion, not any occurrence of a claim word.
-# Ignored: fenced code, table rows, lines ending in '?', and sentences whose claim
-# word is negated (not/n't/nothing/no/yet). Deterministic: grep/sed only.
+# Ignored: fenced code and table rows. Sentences are split first, so a question
+# ends at its own '?' ('All done. Should I open the PR?' still claims). A negation
+# cancels a claim only when it appears before the claim word in the same sentence
+# ('Nothing is done yet.' is no claim; 'Done, no issues found.' still claims).
+# Deterministic: awk only (BSD awk, POSIX classes, no \b). \047 is a single quote.
 is_done_claim() {
-  local text="$1" body
-  body="$(printf '%s\n' "$text" \
-    | awk 'BEGIN{f=0} /^[[:space:]]*```/{f=!f; next} !f' \
-    | grep -v -E '^[[:space:]]*\|' \
-    | grep -v -E '\?[[:space:]]*$' || true)"
-  [ -n "$body" ] || return 1
-  # Split into sentences, one per line (awk, not sed: BSD sed has no \n in replacements).
-  body="$(printf '%s\n' "$body" | awk '{gsub(/[.!;:][[:space:]]+/, "&\n"); print}')"
-  # Drop sentences with a negation anywhere before the claim word.
-  body="$(printf '%s\n' "$body" | grep -v -iE "(\bnot\b|n't\b|\bnothing\b|\bno\b|\byet\b)" || true)"
-  [ -n "$body" ] || return 1
-  printf '%s\n' "$body" | grep -qiE \
-    -e '^[[:space:]]*(done|finished|shipped|merged)\b' \
-    -e "\b(is|are|it's|it is|now|all|everything('s| is)?)[[:space:]]+(now[[:space:]]+)?(done|complete|completed|finished|merged|shipped|ready for review)\b" \
-    -e "\b(i|we)('ve| have)?[[:space:]]+(finished|completed|shipped|merged)\b"
+  printf '%s\n' "$1" | awk '
+    BEGIN {
+      NEG = "[^[:alpha:]](not|nothing|no|yet|never|none)[^[:alpha:]]|n\047t"
+      START = "^[[:space:]]*([-*+]|[0-9]+[.)])?[[:space:]]*(done|finished|shipped|merged|ready for review)[^[:alpha:]\047]"
+      B = "[^[:alpha:]\047]"
+      DONE = "(done|complete|completed|finished|merged|shipped|ready for review)"
+      PAIR = "(((is|are|was|were|all|everything|now)|(it\047s|it is))[[:space:]]+(now[[:space:]]+)?" DONE "|(i|we)(\047ve|[[:space:]]+have)?[[:space:]]+(finished|completed|shipped|merged))"
+      NOUN = "[[:alpha:]]+[[:space:]]+(complete|completed|finished)[.!;:,[:space:]]*$"
+      MID = B "(" PAIR B "|" NOUN ")"
+    }
+    function is_claim(s,   t, rest, acc, pre) {
+      if (s ~ /\?[[:space:]]*$/) return 0
+      t = " " s " "
+      if (t ~ START) return 1
+      rest = t; acc = ""
+      while (match(rest, MID)) {
+        pre = acc substr(rest, 1, RSTART - 1)
+        if ((" " pre " ") !~ NEG) return 1
+        acc = acc substr(rest, 1, RSTART + RLENGTH - 1)
+        rest = substr(rest, RSTART + RLENGTH)
+      }
+      return 0
+    }
+    /^[[:space:]]*```/ { f = !f; next }
+    f { next }
+    /^[[:space:]]*\|/ { next }
+    {
+      line = tolower($0)
+      gsub(/[.!?;:,][[:space:]]*/, "&\n", line)
+      n = split(line, sent, "\n")
+      for (i = 1; i <= n; i++) if (is_claim(sent[i])) found = 1
+    }
+    END { exit (found ? 0 : 1) }
+  '
 }
 
 SESSION_ID="$(printf '%s' "$INPUT" | jq -r '.session_id // empty')"

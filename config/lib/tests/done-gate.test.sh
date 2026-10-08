@@ -182,6 +182,30 @@ test_real_claim_with_evidence_passes() {
   echo "PASS: test_real_claim_with_evidence_passes"
 }
 
+test_claim_before_a_question_still_blocks() {
+  [ "$(claim_rc 'All done. Should I open the PR?')" -eq 2 ] || { echo "FAIL: claim followed by a question not blocked"; exit 1; }
+  echo "PASS: test_claim_before_a_question_still_blocks"
+}
+
+test_negation_after_claim_word_still_blocks() {
+  [ "$(claim_rc 'Done, no issues found.')" -eq 2 ] || { echo "FAIL: 'Done, no issues found.' not blocked"; exit 1; }
+  [ "$(claim_rc 'Done — all tests pass, no failures.')" -eq 2 ] || { echo "FAIL: trailing 'no failures' not blocked"; exit 1; }
+  [ "$(claim_rc 'The work is finished, not merged.')" -eq 2 ] || { echo "FAIL: 'finished, not merged' not blocked"; exit 1; }
+  echo "PASS: test_negation_after_claim_word_still_blocks"
+}
+
+test_noun_plus_complete_and_bullet_forms_still_block() {
+  [ "$(claim_rc 'Task complete.')" -eq 2 ] || { echo "FAIL: 'Task complete.' not blocked"; exit 1; }
+  [ "$(claim_rc 'Implementation complete; tests pass.')" -eq 2 ] || { echo "FAIL: 'Implementation complete; tests pass.' not blocked"; exit 1; }
+  [ "$(claim_rc '- Ready for review')" -eq 2 ] || { echo "FAIL: bullet 'Ready for review' not blocked"; exit 1; }
+  echo "PASS: test_noun_plus_complete_and_bullet_forms_still_block"
+}
+
+test_question_plus_trailing_negation_is_not_a_claim() {
+  [ "$(claim_rc 'Should I mark it done? Nothing is finished yet.')" -eq 0 ] || { echo "FAIL: question + negated claim treated as claim"; exit 1; }
+  echo "PASS: test_question_plus_trailing_negation_is_not_a_claim"
+}
+
 test_stop_hook_active_always_exits_0_rf3
 test_not_a_done_claim_exits_0
 test_no_brief_found_falls_back_to_any_evidence_check_rf2
@@ -195,6 +219,10 @@ test_negated_claim_is_not_a_claim
 test_claim_word_in_table_or_code_is_not_a_claim
 test_real_claims_without_evidence_still_block
 test_real_claim_with_evidence_passes
+test_claim_before_a_question_still_blocks
+test_negation_after_claim_word_still_blocks
+test_noun_plus_complete_and_bullet_forms_still_block
+test_question_plus_trailing_negation_is_not_a_claim
 echo "All done-gate tests passed."
 
 setup_fake_judge_ask_check() {
