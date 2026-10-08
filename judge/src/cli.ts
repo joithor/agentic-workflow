@@ -11,7 +11,7 @@ import {
 } from "./commands.js";
 import { adjudicate } from "./adjudicate.js";
 import { buildChain, restrictChain } from "./chain.js";
-import { adjudicateRefusal, gatePromptSortDeps, parseProvidersAllowlist } from "./providers-flag.js";
+import { adjudicateRefusal, evalProviderRefusal, gatePromptSortDeps, parseProvidersAllowlist } from "./providers-flag.js";
 import { judgeConfigPath, judgeDbPath, judgeStateDir, loadConfig, HOOK_KILL_MS } from "./config.js";
 import { runPromptSortCommand } from "./prompt-sort/commands.js";
 import { openDb, pruneDecisionDetails } from "./db.js";
@@ -154,6 +154,8 @@ async function main(): Promise<{ exitCode: number; stdout: string; stderr?: stri
       if (rest[0] === "import-turns") return runImportTurns(db, rest.slice(1), () => new Date());
       const q = rest[0] ?? "";
       const providerName = flag("--provider") ?? "jev";
+      const evalRefused = evalProviderRefusal(allowedProviders, providerName);
+      if (evalRefused !== null) return evalRefused;
       const provider = providers.find((p) => p.name === providerName && p.name !== "rules");
       if (provider === undefined) return { exitCode: 1, stdout: "", stderr: `provider not available: ${providerName}` };
       const labels = flag("--labels") ?? "any";

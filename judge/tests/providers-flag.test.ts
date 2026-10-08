@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { adjudicateRefusal, gatePromptSortDeps, isProviderAllowed, parseProvidersAllowlist } from "../src/providers-flag.js";
+import { adjudicateRefusal, evalProviderRefusal, gatePromptSortDeps, isProviderAllowed, parseProvidersAllowlist } from "../src/providers-flag.js";
 
 describe("parseProvidersAllowlist", () => {
   it("returns null allowlist and untouched argv when neither flag nor env is set", () => {
@@ -72,5 +72,21 @@ describe("provider allowlist gating outside the evaluate chain", () => {
   it("adjudicate is not refused when claude-cli is allowed or no allowlist is set", () => {
     expect(adjudicateRefusal(null)).toBeNull();
     expect(adjudicateRefusal(["claude-cli"])).toBeNull();
+  });
+
+  it("eval refuses with usage exit 64 when the chosen provider is not allowed", () => {
+    const r = evalProviderRefusal(["rules"], "jev");
+    expect(r).toMatchObject({ exitCode: 64, stdout: "" });
+    expect(r?.stderr).toContain("jev");
+    expect(evalProviderRefusal(["claude-cli"], "codex-cli")?.exitCode).toBe(64);
+  });
+
+  it("eval is not refused when the provider is allowed or no allowlist is set", () => {
+    expect(evalProviderRefusal(null, "jev")).toBeNull();
+    expect(evalProviderRefusal(["jev"], "jev")).toBeNull();
+  });
+
+  it("eval leaves unknown provider names to the not-available path", () => {
+    expect(evalProviderRefusal(["claude-cli"], "nope")).toBeNull();
   });
 });
