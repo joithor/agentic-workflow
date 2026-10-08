@@ -95,6 +95,14 @@ describe("plan-file tracker", () => {
     expect(b1.ok && String(b1.value.meta.contentHash)).toMatch(/^[0-9a-f]{64}$/);
   });
 
+  it("skips directories whose names look like plan files", async () => {
+    const root = repo();
+    fs.mkdirSync(path.join(root, "docs/superpowers/plans/dir.md"));
+    const t = makePlanFileTracker({ repoPath: root, glob: GLOB, include: ["*"], git: realGitRunner() });
+    const scan = await t.scan({ includeDone: true });
+    expect(scan.ok && scan.value.items.map((i) => i.id)).toEqual(["2026-01-01-plan-a.t1", "2026-01-01-plan-a.t2", "2026-01-02-plan-b.t1", "2026-01-02-plan-b.t2"]);
+  });
+
   it("parses one git log for the whole plan directory", () => {
     const out = "\x1enew@example.com\t2026-02-02T00:00:00Z\n\nplans/a.md\n\x1eold@example.com\t2026-01-01T00:00:00Z\n\nplans/a.md\nplans/b.md\n";
     const h = parseGitHistory(out);

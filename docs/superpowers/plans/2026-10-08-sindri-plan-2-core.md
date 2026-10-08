@@ -3556,6 +3556,8 @@ git commit -m "feat: sindri profile init, validate, explain, migrate and approve
 ### Task 7: Tracker interface, contract tests, fake tracker and the `plan-file` tracker (spec §11.2)
 
 > Amendment (build): the `*-plan-b` include-case test now also asserts the scan result is `[]` (m10b); removed a duplicated comment above `wildcard`. `trackerContractTests` lives in `sindri/tests/contract/` (spec amendment 7).
+>
+> Amendment (build): fix round 1 added `~~~`, mixed-character, longer-closer and shorter-inner fence tests, and a separate `include: ["*"]` test that really reaches the `isFile()` guard (verified it fails with the guard removed).
 
 **Files:**
 - Create: `sindri/src/adapters/types.ts`, `sindri/tests/contract/tracker-contract.ts`, `sindri/src/adapters/fake-tracker.ts`, `sindri/src/adapters/plan-file/parse.ts`, `sindri/src/adapters/plan-file/tracker.ts`, `sindri/src/adapters/registry.ts`

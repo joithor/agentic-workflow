@@ -76,3 +76,39 @@ describe("parsePlan (Review Focus 3)", () => {
     expect(open.tasks.map((t) => t.number)).toEqual([1]);
   });
 });
+
+describe("parsePlan fence variants (Review Focus 3)", () => {
+  const BT = "`".repeat(3);
+  const BT4 = "`".repeat(4);
+  const doc = (...body: string[]): ReturnType<typeof parsePlan> => parsePlan(["# T", "### Task 1: Real", "- [ ] **Step 1: real**", ...body, "### Task 2: After", "- [x] **Step 1: after**"].join("\n"));
+  const expectOnlyRealTasks = (plan: ReturnType<typeof parsePlan>): void => {
+    expect(plan.tasks.map((t) => [t.number, t.stepsDone, t.stepsTotal])).toEqual([[1, 0, 1], [2, 1, 1]]);
+  };
+
+  it("treats a ~~~ fence as code", () => {
+    const plan = doc("~~~", "### Task 9: fenced", "- [ ] **Step 1: fenced**", "~~~");
+    expectOnlyRealTasks(plan);
+    expect(plan.tasks[0].codeLines).toBe(2);
+  });
+
+  it("keeps a ``` fence inside a ~~~ fence as code, and the reverse", () => {
+    const tildeOuter = doc("~~~", BT, "### Task 9: fenced", "- [ ] **Step 1: fenced**", BT, "- [ ] **Step 2: still fenced**", "~~~");
+    expectOnlyRealTasks(tildeOuter);
+    expect(tildeOuter.tasks[0].codeLines).toBe(5);
+    const backtickOuter = doc(BT, "~~~", "### Task 9: fenced", "- [ ] **Step 1: fenced**", "~~~", "- [ ] **Step 2: still fenced**", BT);
+    expectOnlyRealTasks(backtickOuter);
+    expect(backtickOuter.tasks[0].codeLines).toBe(5);
+  });
+
+  it("closes a fence with a longer closer", () => {
+    const plan = doc(BT, "### Task 9: fenced", "- [ ] **Step 1: fenced**", BT4, "- [ ] **Step 2: real, after the fence**");
+    expect(plan.tasks.map((t) => [t.number, t.stepsDone, t.stepsTotal])).toEqual([[1, 0, 2], [2, 1, 1]]);
+    expect(plan.tasks[0].codeLines).toBe(2);
+  });
+
+  it("does not let a shorter inner fence close the outer one", () => {
+    const plan = doc(BT4, BT, "### Task 9: fenced", BT, "- [ ] **Step 1: still fenced**", BT4);
+    expectOnlyRealTasks(plan);
+    expect(plan.tasks[0].codeLines).toBe(4);
+  });
+});
