@@ -4526,7 +4526,7 @@ export async function compare(args: string[], ctx: EvolveCtx): Promise<CommandRe
     });
   } catch (e) {
     // SND-EVOLVE-009 (judge = drafter) or anything unexpected: don't strand the proposal in `evaluating`.
-    await ctx.writeRetry((epoch) => setStatus(ctx.db, id, "proposed", epoch, ctx.deps.now()));
+    await ctx.writeRetry((epoch) => setStatus(ctx.db, id, stored.status, epoch, ctx.deps.now()));
     throw e;
   }
   const line = lineFor(result, budgetLimit);
@@ -4544,7 +4544,7 @@ export async function compare(args: string[], ctx: EvolveCtx): Promise<CommandRe
 }
 ```
 
-A comparison that throws (the judge model equals the drafter, or anything unexpected) resets the proposal from `evaluating` to `proposed` before rethrowing, so a rerun isn't blocked by a stale status.
+A comparison that throws (the judge model equals the drafter, or anything unexpected) restores the proposal's earlier status (`proposed` on a first comparison, `won` or `lost` on a `--rerun`) before rethrowing, so a rerun isn't blocked by a stale `evaluating` and a `won` proposal can still be adopted.
 
 Trace for the stored-result tests: after the first run, `prev` is `{ run: 1, verdict: "won" }`; the second call prints `Stored result (run 1): …` plus the once-only sentence and `Next: sindri evolve adopt <id>`. `--rerun` computes `run = 2`, writes new rows, and sets the status again. The JSON call (no `--rerun`) returns the run-2 summary with `stored: true`. For `insufficient-corpus` the status maps to the proposal status `insufficient-corpus` and no verdict row blocks a later call, so after the corpus grows the same proposal is compared without `--rerun` and wins. The leaky and clause cases set the proposal `lost`. For the "stops" test the proposal's status is set to `evaluating` first and then to `insufficient-corpus` (an incomplete run is retryable).
 
@@ -5869,7 +5869,7 @@ describe("sindri evolve publish (the explicit half; Review Focus 6)", () => {
   });
 
   it("holds back proposals that mention a private term, an email address or a home path, without echoing them", async () => {
-    const { fx, save } = await ready({ extraYaml: `${DENY}evolve:\n  maxOpenProposals: 2\n` });
+    const { fx, save } = await ready({ extraYaml: `${DENY}evolve:\n  maxOpenProposals: 4\n` });
     const ok = save("A clean proposal");
     const term = save("Acme Care scheduling fix");
     const mail = save("Another proposal", { rationale: "Ask joi@example.com about it." });
@@ -5895,7 +5895,7 @@ describe("sindri evolve publish (the explicit half; Review Focus 6)", () => {
     expect(text).not.toMatch(/Acme|joi@example|\/Users\/joi/);
     expect([ok, term, mail, home].map((id) => getProposal(fx.ctx.db, id)?.status)).toEqual(["published", "held", "held", "held"]);
     expect(fs.existsSync(stagedFile(fx.deps, term))).toBe(true); // a held proposal keeps its preview
-    // Held proposals leave the cap (2): only the published one is in flight, so a new proposal still stages.
+    // All four fit the cap (4) and stage. Held proposals then leave it: only the published one is in flight, so a new proposal still stages (it would not if the three held ones counted).
     expect(inFlightCount(fx.ctx.db)).toBe(1);
     const later = save("A later proposal");
     expect((await stage([], fx.ctx)).stdout).toContain("Staged 1 proposal(s)");
