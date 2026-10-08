@@ -4895,18 +4895,21 @@ Row 7's point is calibration, and calibration needs to know what happened to the
 - Test: `sindri/tests/shape-reconcile.test.ts`, `sindri/tests/shape.test.ts` (replace one report test)
 
 **Interfaces:**
-- Consumes: ledger v2 outcome columns (Task 1); `ShapeRun.tree`, `Signal.name/astHash` (Tasks 8 and 9); `openIndexReadOnly`, `indexPath`, `depRows` (Task 5); `withEpoch` (Plan 2); `GitRunner` through `deps.git`.
+- Consumes: ledger v2 outcome columns (Task 1); `ShapeRun.tree`, `Signal.name/astHash` (Tasks 8 and 9); `readManifestDeps` (Task 5); `typescriptParser` (Task 3); `withEpoch` (Plan 2); `GitRunner` through `deps.git`.
 - Produces (`reconcile.ts`): `reconcileShape(db: Ledger, deps: Deps, loaded: LoadedProfile, epoch: number): Promise<{ linked: number; labeled: number }>` — call inside the tick lock with the epoch it was acquired under; the git work happens first and the ledger writes go through `withEpoch`.
   1. **Link.** For runs with `commit_sha` null and a `tree`, run `git log --all --format='%H %T' --since=<the oldest such run's ts minus 1 day>` in the repo and map each run's tree to the commit that has it (the oldest such commit if several). A run older than 7 days with no match gets outcome `dropped` on all its signals (the commit was never made, or was amended). A repo that isn't in the approved profile, or where git fails, is skipped.
   2. **Label.** For each signal with outcome null whose run has a `commit_sha` and is at least `shape.outcomeDays` (default 14) old:
-     - the commit is not an ancestor of the repo's `defaultBranch` (`git merge-base --is-ancestor`): `dropped`. If the default branch doesn't resolve, the repo's signals stay unlabeled.
-     - `reinvented:dependency`: `kept` if the dependency (same manifest `at`, same `name`) is still in the current index's `deps`, else `acted-on`.
-     - other symbol signals (`reinvented:exact|name|embedding|graph`, `generalize:near-clone`, `simpler:complexity`): look in the current index for a symbol with the same `name` in the same file (taken from `at`): `kept` if one has an equal `ast_hash`, else `acted-on`. A signal with no `name` is `n/a`. With no index for the repo, these stay unlabeled.
-     - `simpler:diff-size` and `simpler:exports`: `n/a`.
+     - Everything is read from the **default branch's content**, never from the working tree or the index (round-2 N1). The tip is `origin/<defaultBranch>` after a best-effort `git fetch`, falling back to the local branch. If neither resolves, the signals stay unlabeled.
+     - `simpler:diff-size`, `simpler:exports`, or a signal with no `name`: `n/a`.
+     - If the flagged `name` never appeared in that file on the default branch since the run (`git log <tip> --since=<run−1d> -S<name> -- <file>` is empty): `dropped`. Content-based, so squash and rebase merges count as merged (round-2 N2).
+     - `reinvented:dependency`: `kept` if the manifest at the tip still lists the dependency, else `acted-on`.
+     - Other symbol signals: parse the file at the tip; `kept` if a symbol with that name has the recorded `ast_hash`, else `acted-on`.
 - Produces (`shape.ts`): `shape report` reconciles after ingesting, and prints `TYPE | SIGNALS | LABELED | ACTED-ON | KEPT | PRECISION | TOWARD 3b`. LABELED is acted-on plus kept; PRECISION is acted-on / LABELED; TOWARD 3b reads `12/30 labeled; bar 0.70`, or `ready` once labeled >= 30 and precision >= 0.7. It also prints how many runs deferred the embeddings layer. `--json` adds `types` and `layers` (the same numbers per type and per layer).
 - Produces (`observe.ts`): `observe` reconciles right after it records, inside the same tick lock.
 
 - [ ] **Step 1: Write the failing tests**
+
+The labeling reads the default branch's content (round-2 fix). So the fixtures commit merged changes onto the repo's default branch: set `defaultBranch` in the fixture repo file to the branch `git init` created (`git symbolic-ref --short HEAD`). Unmerged changes are left on a side branch. Add one case that runs reconcile while a different branch is checked out, and expect the same labels. Add another where the change lands through a squash commit (a new sha with the same content), and expect `kept`/`acted-on`, not `dropped`.
 
 `sindri/tests/shape-reconcile.test.ts` (temp git repos; the clock is advanced 15 days with `deps.now`):
 
@@ -5130,8 +5133,8 @@ Expected: FAIL with `Failed to load url ../src/index/reconcile.js`.
 import type { Deps } from "../deps.js";
 import { withEpoch, type Ledger } from "../ledger/db.js";
 import type { LoadedProfile } from "../profile/load.js";
-import { depRows, indexPath, openIndexReadOnly, type IndexDb } from "./db.js";
-import type { DepRow } from "./deps-layer.js";
+import { readManifestDeps } from "./deps-layer.js";
+import { typescriptParser } from "./parse-ts.js";
 
 const DAY = 86_400_000;
 
@@ -5153,28 +5156,6 @@ interface Due {
   repo: string;
   commit_sha: string;
   ts: string;
-}
-
-interface IndexView {
-  symbols: Map<string, string[]>;
-  deps: DepRow[];
-}
-
-// What the current index says now: the symbols (file#name -> AST hashes) and the dependencies.
-function viewOf(db: IndexDb): IndexView {
-  const rows = db.prepare("SELECT file, name, group_concat(ast_hash) AS hashes FROM symbols GROUP BY file, name").all() as { file: string; name: string; hashes: string }[];
-  return { symbols: new Map(rows.map((r) => [`${r.file}#${r.name}`, r.hashes.split(",")])), deps: depRows(db) };
-}
-
-// The outcome proxy (spec amendment 6): the flagged code is still there unchanged (kept), or it
-// was changed or removed (acted-on). null: it can't be decided yet.
-function labelOf(s: Due, view: IndexView | null): Outcome | null {
-  if (s.type === "simpler:diff-size" || s.type === "simpler:exports") return "n/a";
-  if (view === null) return null;
-  if (s.name === null) return "n/a";
-  if (s.type === "reinvented:dependency") return view.deps.some((d) => d.manifest === s.at && d.name === s.name) ? "kept" : "acted-on";
-  const hashes = view.symbols.get(`${s.at.slice(0, s.at.lastIndexOf(":"))}#${s.name}`) ?? [];
-  return s.ast_hash !== null && hashes.includes(s.ast_hash) ? "kept" : "acted-on";
 }
 
 // Step 1: link each run to the commit that was actually made, by tree hash.
@@ -5212,7 +5193,12 @@ async function linkRuns(db: Ledger, deps: Deps, loaded: LoadedProfile, epoch: nu
   return { linked: links.length, dropped };
 }
 
-// Step 2: label each signal whose commit is old enough.
+// Step 2: label each signal whose run is old enough. The outcome is read from the default
+// branch's own content (`git show <tip>:<file>`), never from the checked-out working tree or the
+// index, so it is right whatever branch the checkout is on (arch r2 N1). Merging is recognised by
+// content (`git log -S<name>` on the branch), not by ancestry, so squash and rebase merges count
+// (arch r2 N2). The branch tip prefers origin/<branch> after a best-effort fetch, so a stale
+// local branch can't mislabel.
 async function labelSignals(db: Ledger, deps: Deps, loaded: LoadedProfile, epoch: number, now: Date): Promise<number> {
   const cutoff = now.getTime() - loaded.profile.shape.outcomeDays * DAY;
   const due = (
@@ -5226,21 +5212,41 @@ async function labelSignals(db: Ledger, deps: Deps, loaded: LoadedProfile, epoch
   for (const [repo, signals] of byRepo) {
     const cfg = loaded.repos[repo];
     if (cfg === undefined) continue;
-    // Without a default branch to compare against, "never merged" can't be told from "not yet fetched".
-    const branch = await deps.git.run(["rev-parse", "--verify", "--quiet", `${cfg.defaultBranch}^{commit}`], cfg.path);
-    if (!branch.ok) continue;
-    const idx = openIndexReadOnly(indexPath(deps, repo));
-    const view = idx === null ? null : viewOf(idx);
-    idx?.close();
-    const merged = new Map<string, boolean>();
-    for (const s of signals) {
-      let isMerged = merged.get(s.commit_sha);
-      if (isMerged === undefined) {
-        isMerged = (await deps.git.run(["merge-base", "--is-ancestor", s.commit_sha, cfg.defaultBranch], cfg.path)).ok;
-        merged.set(s.commit_sha, isMerged);
+    await deps.git.run(["fetch", "--quiet", "origin", cfg.defaultBranch], cfg.path);
+    const remote = await deps.git.run(["rev-parse", "--verify", "--quiet", `refs/remotes/origin/${cfg.defaultBranch}^{commit}`], cfg.path);
+    const local = remote.ok ? remote : await deps.git.run(["rev-parse", "--verify", "--quiet", `${cfg.defaultBranch}^{commit}`], cfg.path);
+    // Without a default branch to read, nothing can be decided yet: leave the signals unlabeled.
+    if (!local.ok) continue;
+    const tip = local.stdout.trim();
+    const shown = new Map<string, string | null>();
+    const fileAt = async (rel: string): Promise<string | null> => {
+      if (!shown.has(rel)) {
+        const r = await deps.git.run(["show", `${tip}:${rel}`], cfg.path);
+        shown.set(rel, r.ok ? r.stdout : null);
       }
-      const outcome = isMerged ? labelOf(s, view) : "dropped";
-      if (outcome !== null) labels.push({ seq: s.seq, outcome });
+      return shown.get(rel) ?? null;
+    };
+    for (const s of signals) {
+      if (s.type === "simpler:diff-size" || s.type === "simpler:exports" || s.name === null) {
+        labels.push({ seq: s.seq, outcome: "n/a" });
+        continue;
+      }
+      const file = s.type === "reinvented:dependency" ? s.at : s.at.slice(0, s.at.lastIndexOf(":"));
+      const since = Math.floor((Date.parse(s.ts) - DAY) / 1000);
+      const reached = await deps.git.run(["log", tip, `--since=${since}`, `-S${s.name}`, "--format=%H", "--", file], cfg.path);
+      if (!reached.ok) continue;
+      if (reached.stdout.trim() === "") {
+        // The flagged name never reached the default branch within outcomeDays: the change was dropped.
+        labels.push({ seq: s.seq, outcome: "dropped" });
+        continue;
+      }
+      const text = await fileAt(file);
+      if (s.type === "reinvented:dependency") {
+        labels.push({ seq: s.seq, outcome: text !== null && readManifestDeps(file, text).some((d) => d.name === s.name) ? "kept" : "acted-on" });
+        continue;
+      }
+      const syms = text === null ? [] : await Promise.resolve(typescriptParser.parse(file, text));
+      labels.push({ seq: s.seq, outcome: syms.some((x) => x.name === s.name && x.astHash === s.ast_hash) ? "kept" : "acted-on" });
     }
   }
   withEpoch(db, epoch, () => {
