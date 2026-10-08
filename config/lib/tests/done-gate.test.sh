@@ -226,6 +226,33 @@ test_terse_noun_complete_with_tail_is_a_claim() {
   echo "PASS: test_terse_noun_complete_with_tail_is_a_claim"
 }
 
+test_markdown_decorated_claims_still_block() {
+  local c
+  while IFS= read -r c; do
+    [ "$(claim_rc "$c")" -eq 2 ] || { echo "FAIL: markdown-decorated claim not blocked: $c"; exit 1; }
+  done <<'CLAIMS'
+**Done.** Tests pass.
+**Done** — all three tasks landed.
+- **Done**: migration
+**Finished.**
+**Shipped.**
+✅ Done
+## Done
+> Done.
+PR merged.
+The fix has been merged.
+The migration has been completed.
+CLAIMS
+  echo "PASS: test_markdown_decorated_claims_still_block"
+}
+
+test_decorated_non_claims_stay_inert() {
+  [ "$(claim_rc '**Not done yet.**')" -eq 0 ] || { echo "FAIL: '**Not done yet.**' treated as claim"; exit 1; }
+  [ "$(claim_rc '`done`')" -eq 0 ] || { echo "FAIL: inline-code done treated as claim"; exit 1; }
+  [ "$(claim_rc 'The fix has not been merged.')" -eq 0 ] || { echo "FAIL: 'has not been merged' treated as claim"; exit 1; }
+  echo "PASS: test_decorated_non_claims_stay_inert"
+}
+
 test_stop_hook_active_always_exits_0_rf3
 test_not_a_done_claim_exits_0
 test_no_brief_found_falls_back_to_any_evidence_check_rf2
@@ -429,6 +456,8 @@ test_absent_or_corrupt_sort_file_changes_nothing() {
   echo "PASS: test_absent_or_corrupt_sort_file_changes_nothing"
 }
 
+test_markdown_decorated_claims_still_block
+test_decorated_non_claims_stay_inert
 test_judge_missing_from_path_on_done_claim_still_fails_open
 test_judge_nonzero_garbage_stdout_on_done_claim_still_fails_open
 test_judge_missing_from_path_on_non_done_claim_still_fails_open

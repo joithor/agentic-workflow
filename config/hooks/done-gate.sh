@@ -52,7 +52,8 @@ CLAIM_TEXT="$(printf '%s' "$LAST_ASSISTANT_LINE" | jq -r '
 fi
 
 # A done claim is an assertion of completion, not any occurrence of a claim word.
-# Ignored: fenced code and table rows. Sentences are split first, so a question
+# Ignored: fenced code and table rows. Markdown emphasis/heading/quote marks and
+# leading emoji are stripped first ('**Done.**', '## Done', '> Done.'); backticks stay. Sentences are split first, so a question
 # ends at its own '?' ('All done. Should I open the PR?' still claims). A negation
 # cancels a claim only when it appears before the claim word in the same sentence,
 # including any word the noun pattern consumed ('It is not finished.' is no claim;
@@ -65,8 +66,8 @@ is_done_claim() {
       START = "^[[:space:]]*([-*+]|[0-9]+[.)])?[[:space:]]*(done|finished|shipped|merged|ready for review)[^[:alpha:]\047]"
       B = "[^[:alpha:]\047]"
       DONE = "(done|complete|completed|finished|merged|shipped|ready for review)"
-      PAIR = "(((is|are|was|were|all|everything|now)|(it\047s|it is))[[:space:]]+(now[[:space:]]+)?" DONE "|(i|we)(\047ve|[[:space:]]+have)?[[:space:]]+(finished|completed|shipped|merged))"
-      NOUN = "[[:alpha:]]+[[:space:]]+(complete|completed|finished|ready for review)([[:space:]]*,|[.!;:]?[[:space:]]*$)"
+      PAIR = "(((is|are|was|were|all|everything|now)|(it\047s|it is))[[:space:]]+(now[[:space:]]+)?" DONE "|(i|we)(\047ve|[[:space:]]+have)?[[:space:]]+(finished|completed|shipped|merged)|(has|have)[[:space:]]+been[[:space:]]+(merged|shipped|completed|finished))"
+      NOUN = "[[:alpha:]]+[[:space:]]+(complete|completed|finished|merged|shipped|ready for review)([[:space:]]*,|[.!;:]?[[:space:]]*$)"
       MID = B "(" PAIR B "|" NOUN ")"
     }
     function is_claim(s,   t, rest, acc, pre, m) {
@@ -88,6 +89,10 @@ is_done_claim() {
     /^[[:space:]]*\|/ { next }
     {
       line = tolower($0)
+      # Markdown decoration (emphasis, headings, quote marks, leading bullets and
+      # emoji) is not part of the claim; backticks are kept so inline code stays inert.
+      gsub(/[*_#]/, " ", line)
+      sub(/^[^[:alnum:]`]*/, "", line)
       gsub(/[.!?;:][[:space:]]*/, "&\n", line)
       n = split(line, sent, "\n")
       for (i = 1; i <= n; i++) if (is_claim(sent[i])) found = 1

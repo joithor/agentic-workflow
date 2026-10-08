@@ -68,7 +68,7 @@ Later plans cover the rest of step 1:
 ---
 
 ### Task 1: done-gate claim detection (fixes false positives)
-> Amendment (build): sentence-level '?' drop, negation only before the claim word, noun+complete and bullet forms — review found false negatives in the original heuristic.
+> Amendment (build): sentence-level '?' drop, negation only before the claim word, noun+complete and bullet forms — review found false negatives in the original heuristic. Final review: markdown decoration (`*`, `_`, `#`, leading `>`, bullets and emoji) is stripped before sentence splitting while backticks stay (so `**Done.**`, `## Done`, `> Done.` and `✅ Done` claim and inline code stays inert); `merged|shipped` joined the NOUN form and `has|have been merged|shipped|completed|finished` joined PAIR.
 
 
 **Files:**
