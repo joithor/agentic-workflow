@@ -34,7 +34,7 @@ Later plans cover the rest of step 1:
 4. **`--providers` naming an unknown provider or listing none.** It must exit with a usage error, not silently fall back to the full chain. Pinned in Task 2.
 5. **Huge transcript corpora.** The audit streams files line by line and never loads a whole file into memory. Pinned in Task 3 (large-file test).
 6. **Resumed and forked copies.** The same turn (same timestamp and text) in two session files is counted once; the same text at a different timestamp, and any turn with an empty timestamp, is never deduped. Pinned in Task 5.
-7. **Labeler hygiene.** Turn text is untrusted data (fenced, tags neutralized), the child is spawned with `execFile` (no shell), a timeout, an env allowlist, no tools, no MCP servers and no session file, and its output is Zod-validated with one retry. Pinned in Task 6.
+7. **Labeler hygiene.** Turn text is untrusted data (fenced, tags neutralized), the child is spawned with `execFile` (no shell), a timeout, an env allowlist, no tools, no MCP servers, no session file and no hooks or CLAUDE.md (`--safe-mode`, so the user's own hooks never see turn text), run from a private temp directory, and its output is Zod-validated with one retry. Pinned in Task 6.
 8. **Pattern gating.** A pattern is `metric-grade` only with both Wilson lower bounds at least 0.6 and at least 10 positives; everything else is `floor only`. `image_turn` counts image attachments, not defects. Pinned in Task 6.
 9. **Privacy.** Labeling sends turn text to the host's own model provider only when `--label > 0`; outputs stay under `~/.agentic-workflow/audit`; `labels.jsonl` and `human-turns.jsonl` are never committed or posted, and the PR comment carries aggregates only. Pinned in Task 6 (README, `--help`) and Task 7.
 
@@ -995,6 +995,12 @@ describe("runAudit", () => {
     expect(await run(c)).toMatchObject({ turns: 2, duplicates: 0 });
   });
 
+  it("writes the verbatim turn file readable by the owner only", async () => {
+    const c = corpus({ "s1.jsonl": [u("push", "2026-10-05T00:00:00Z")] });
+    await run(c);
+    expect(fs.statSync(path.join(c.out, "human-turns.jsonl")).mode & 0o077).toBe(0);
+  });
+
   it("rejects a malformed items file with a clear error", async () => {
     const projects = fs.mkdtempSync(path.join(os.tmpdir(), "proj-"));
     const out = fs.mkdtempSync(path.join(os.tmpdir(), "out-"));
@@ -1048,8 +1054,9 @@ function readItems(file: string): ItemRecord[] {
 
 export async function runAudit(opts: { projectsDir: string; since: Date; outDir: string; itemPattern: RegExp; itemsFile: string | null; maxSize: Size }): Promise<AuditSummary> {
   const items = opts.itemsFile === null ? null : readItems(opts.itemsFile);
-  fs.mkdirSync(opts.outDir, { recursive: true });
-  const turnsOut = fs.createWriteStream(path.join(opts.outDir, "human-turns.jsonl"));
+  fs.mkdirSync(opts.outDir, { recursive: true, mode: 0o700 });
+  // Verbatim human turns can hold pasted secrets: owner-only, like every file in the audit directory.
+  const turnsOut = fs.createWriteStream(path.join(opts.outDir, "human-turns.jsonl"), { mode: 0o600 });
   const all: HumanTurn[] = [];
   const perSession: { session: string; items: string[]; total: number }[] = [];
   let sessions = 0;
@@ -1258,9 +1265,10 @@ happen, so the spec's step-0 decision rule (§13) can be applied.
   - Files written to `outDir` only when `--label > 0`: `labels.jsonl` (one line per label: `{ key, labels, model, pass }`) and `calibration.json` (aggregate numbers, no turn text).
 
 **Privacy:** labeling sends the text of the sampled turns (and the tail of the preceding assistant message) to the
-model provider Claude Code already uses (the local `claude` login). The plain audit stays offline and free
-(`--label 0`). Everything is written under `--out` (`~/.agentic-workflow/audit`) and nothing from `labels.jsonl`
-or `human-turns.jsonl` is ever committed or posted.
+model provider Claude Code already uses (the local `claude` login), through `claude -p --safe-mode`, so none of the
+user's hooks, MCP servers or CLAUDE.md see it. The plain audit stays offline and free (`--label 0`). Everything is
+written under `--out` (`~/.agentic-workflow/audit`), `human-turns.jsonl` and `labels.jsonl` owner-only (0600), and
+nothing from them is ever committed or posted.
 
 - [ ] **Step 1: Write the failing tests**
 
@@ -1455,9 +1463,9 @@ import { childEnv, claudeArgs, execClaude, extractStructured, makeClaudeRunner }
 const BASE = { timeout: 10_000, env: { PATH: process.env.PATH ?? "" }, maxBuffer: 1_000_000, cwd: os.tmpdir() };
 
 describe("claudeArgs", () => {
-  it("runs print mode with JSON output, the schema and model, no tools, no MCP servers and no session file", () => {
+  it("runs print mode with JSON output, the schema and model, no tools, no MCP servers, no session file and no hooks or CLAUDE.md (safe mode)", () => {
     expect(claudeArgs("sonnet", { type: "object" })).toEqual([
-      "-p", "--output-format", "json", "--json-schema", '{"type":"object"}', "--model", "sonnet", "--tools", "", "--strict-mcp-config", "--no-session-persistence",
+      "-p", "--output-format", "json", "--json-schema", '{"type":"object"}', "--model", "sonnet", "--tools", "", "--strict-mcp-config", "--no-session-persistence", "--safe-mode",
     ]);
   });
 });
@@ -1600,10 +1608,10 @@ describe("estimateWrongApproach", () => {
     expect(e.decision).toBe("deliverable");
   });
 
-  it("applies the decision rule: under 8 design corrections after code per 30 days means shadow-only", () => {
+  it("applies the decision rule: under 8 design corrections after code per 30 days means not-a-deliverable", () => {
     const e = estimateWrongApproach(sample, 50, 60);
     expect(e.design.afterCode.per30Days).toBeCloseTo(2.5, 6);
-    expect(e.decision).toBe("shadow-only");
+    expect(e.decision).toBe("not-a-deliverable");
     expect(e.straddlesThreshold).toBe(true); // the upper bound (about 10) is above 8
   });
 
@@ -1645,7 +1653,7 @@ import { describe, expect, it } from "vitest";
 
 import type { HumanTurn } from "../src/audit/human-turns.js";
 import type { LabelRunner } from "../src/audit/labels.js";
-import { renderLabeling, runLabeling } from "../src/audit/labeling.js";
+import { observedWindowDays, renderLabeling, runLabeling } from "../src/audit/labeling.js";
 
 const turn = (i: number): HumanTurn => ({
   project: "p", session: `s${i % 4}`, ts: `2026-10-05T00:${String(i).padStart(2, "0")}:00Z`, index: i, kind: "turn", text: `are you sure about step ${i}`,
@@ -1700,6 +1708,28 @@ describe("runLabeling", () => {
     const report = await runLabeling(Array.from({ length: 5 }, (_, i) => turn(i)), 5, { n: 5, repeat: 0, model: "sonnet", runner, windowDays: 30 }, out);
     expect(report).toMatchObject({ sampled: 5, labeled: 0, labelErrors: 1 });
     expect(report.wrongApproach.decision).toBe("no-data");
+  });
+});
+
+describe("observedWindowDays", () => {
+  const at = (iso: string): HumanTurn => ({ ...turn(1), ts: iso });
+
+  it("uses the span the turns cover when it is shorter than the nominal window", () => {
+    expect(observedWindowDays([at("2026-10-01T00:00:00Z"), at("2026-10-11T00:00:00Z"), at("2026-10-05T00:00:00Z")], 90)).toBeCloseTo(10, 6);
+  });
+
+  it("caps at the nominal window, floors at one day and ignores empty timestamps", () => {
+    expect(observedWindowDays([at("2026-10-01T00:00:00Z"), at("2026-10-30T00:00:00Z")], 7)).toBe(7);
+    expect(observedWindowDays([at("2026-10-01T00:00:00Z"), at("2026-10-01T00:05:00Z"), at("")], 30)).toBe(1);
+    expect(observedWindowDays([at("")], 30)).toBe(30);
+  });
+
+  it("feeds the per-30-day estimate: a 10-day corpus under --since 90d is not divided by 90", async () => {
+    const out = fs.mkdtempSync(path.join(os.tmpdir(), "label-"));
+    const runner: LabelRunner = async (prompt) => ({ labels: idsIn(prompt).map((id) => ({ id, labels: ["none"] })) });
+    const turns = Array.from({ length: 11 }, (_, i) => ({ ...turn(i), ts: `2026-10-${String(1 + i).padStart(2, "0")}T00:00:00Z` }));
+    const report = await runLabeling(turns, 11, { n: 11, repeat: 0, model: "sonnet", runner, windowDays: 90 }, out);
+    expect(report.wrongApproach.windowDays).toBeCloseTo(10, 6);
   });
 });
 
@@ -1967,7 +1997,9 @@ Create `scorer/src/audit/claude-runner.ts`:
 
 ```ts
 import { execFile } from "node:child_process";
+import fs from "node:fs";
 import os from "node:os";
+import path from "node:path";
 
 import type { LabelRunner } from "./labels.js";
 
@@ -1993,10 +2025,13 @@ export function childEnv(env: NodeJS.ProcessEnv): NodeJS.ProcessEnv {
 
 // Print mode, JSON envelope, schema-constrained output, no tools, no MCP servers, and no session file
 // (so the labeler's own prompts never land in ~/.claude/projects and get audited as human turns).
-// Verify these flags once against `claude --help` (free: it makes no model call). claudeArgs is pinned by a test,
-// so change the code and the test together if a flag differs on the installed version.
+// --safe-mode turns off hooks, CLAUDE.md, skills and plugins while auth keeps working. Without it the user's
+// UserPromptSubmit hooks (judge sorting, probe logging, memory servers) would receive the turn text and could
+// forward it to other providers or write it to logs. --bare is not usable: it never reads the OAuth login.
+// All flags were checked against `claude --help` on 2.1.294 (free: no model call). claudeArgs is pinned by a
+// test, so change the code and the test together if a flag differs on the installed version.
 export function claudeArgs(model: string, schema: object): string[] {
-  return ["-p", "--output-format", "json", "--json-schema", JSON.stringify(schema), "--model", model, "--tools", "", "--strict-mcp-config", "--no-session-persistence"];
+  return ["-p", "--output-format", "json", "--json-schema", JSON.stringify(schema), "--model", model, "--tools", "", "--strict-mcp-config", "--no-session-persistence", "--safe-mode"];
 }
 
 // `--output-format json` wraps the answer in an envelope. With --json-schema the parsed object is in
@@ -2023,8 +2058,10 @@ export const execClaude: ExecFn = (file, args, opts, input) =>
 export function makeClaudeRunner(opts: { model: string; timeoutMs?: number; env?: NodeJS.ProcessEnv; exec?: ExecFn }): LabelRunner {
   const exec = opts.exec ?? execClaude;
   const env = childEnv(opts.env ?? process.env);
+  // A fresh private directory, never the shared temp root: no other user's .claude/ or CLAUDE.md can be picked up.
+  const cwd = fs.mkdtempSync(path.join(os.tmpdir(), "audit-label-"));
   return async (prompt, schema) => {
-    const stdout = await exec("claude", claudeArgs(opts.model, schema), { timeout: opts.timeoutMs ?? 180_000, env, maxBuffer: 20_000_000, cwd: os.tmpdir() }, prompt);
+    const stdout = await exec("claude", claudeArgs(opts.model, schema), { timeout: opts.timeoutMs ?? 180_000, env, maxBuffer: 20_000_000, cwd }, prompt);
     return extractStructured(stdout);
   };
 }
@@ -2116,7 +2153,7 @@ export interface WrongApproachEstimate {
   windowDays: number;
   design: WrongApproachKind;
   process: WrongApproachKind;
-  decision: "shadow-only" | "deliverable" | "no-data";
+  decision: "not-a-deliverable" | "deliverable" | "no-data";
   straddlesThreshold: boolean;
 }
 
@@ -2148,7 +2185,7 @@ export function estimateWrongApproach(labeled: readonly LabeledTurn[], totalTurn
   };
   const design = kind("wrong_approach_design");
   const after = design.afterCode;
-  const decision = n === 0 ? "no-data" : after.per30Days < DESIGN_CORRECTIONS_PER_30_DAYS ? "shadow-only" : "deliverable";
+  const decision = n === 0 ? "no-data" : after.per30Days < DESIGN_CORRECTIONS_PER_30_DAYS ? "not-a-deliverable" : "deliverable";
   return {
     sampled: n,
     totalTurns,
@@ -2197,7 +2234,7 @@ export interface LabelOptions {
   repeat: number;
   model: string;
   runner: LabelRunner;
-  windowDays: number;
+  windowDays: number; // nominal --since window; runLabeling caps it at the span the turns actually cover
 }
 
 export interface LabelingReport {
@@ -2212,7 +2249,25 @@ export interface LabelingReport {
 }
 
 // totalTurns is the number of deduped typed turns, so sample rates scale to the whole corpus.
+// opts.windowDays is the nominal --since window. Transcripts are pruned (Claude Code keeps about 30 days by
+// default), so --since 90d can reach past the oldest surviving turn; dividing by the nominal window would
+// understate the per-30-day rate and push the decision rule toward "not-a-deliverable". Use the span the turns
+// actually cover, capped at the nominal window and floored at one day.
+export function observedWindowDays(turns: readonly HumanTurn[], nominalDays: number): number {
+  let min = Infinity;
+  let max = -Infinity;
+  for (const t of turns) {
+    const ms = Date.parse(t.ts);
+    if (!Number.isFinite(ms)) continue;
+    if (ms < min) min = ms;
+    if (ms > max) max = ms;
+  }
+  if (min === Infinity) return nominalDays;
+  return Math.min(nominalDays, Math.max(1, (max - min) / 86_400_000));
+}
+
 export async function runLabeling(turns: readonly HumanTurn[], totalTurns: number, opts: LabelOptions, outDir: string): Promise<LabelingReport> {
+  const windowDays = observedWindowDays(turns, opts.windowDays);
   const sample = sampleTurns(turns, opts.n);
   const items: LabelItem[] = sample.map((t, i) => ({ id: `t${i}`, prevAssistantTail: t.prevAssistantTail, text: t.text }));
   const first = await labelItems(items, opts.runner);
@@ -2240,12 +2295,12 @@ export async function runLabeling(turns: readonly HumanTurn[], totalTurns: numbe
     labeled: labeled.length,
     labelErrors: first.labelErrors + second.labelErrors,
     calibration: calibrate(labeled),
-    wrongApproach: estimateWrongApproach(labeled, totalTurns, opts.windowDays),
+    wrongApproach: estimateWrongApproach(labeled, totalTurns, windowDays),
     repeat: { requested: repeatItems.length, ...repeatAgreement(first.labels, second.labels) },
   };
   fs.mkdirSync(outDir, { recursive: true });
   // labels.jsonl holds keys and labels only (no turn text); it still stays local and is never committed.
-  fs.writeFileSync(path.join(outDir, "labels.jsonl"), lines.length === 0 ? "" : `${lines.join("\n")}\n`);
+  fs.writeFileSync(path.join(outDir, "labels.jsonl"), lines.length === 0 ? "" : `${lines.join("\n")}\n`, { mode: 0o600 });
   fs.writeFileSync(path.join(outDir, "calibration.json"), `${JSON.stringify(report, null, 2)}\n`);
   return report;
 }
@@ -2267,13 +2322,13 @@ export function renderLabeling(report: LabelingReport | null): string[] {
   const verdict =
     wa.decision === "no-data"
       ? "No labeled turns, so no decision."
-      : wa.decision === "shadow-only"
-        ? `Design corrections after code average ${wa.design.afterCode.per30Days.toFixed(1)} per 30 days (under ${DESIGN_CORRECTIONS_PER_30_DAYS}): Approach and Drift direction checks are not a step-3a deliverable and stay shadow-only.`
+      : wa.decision === "not-a-deliverable"
+        ? `Design corrections after code average ${wa.design.afterCode.per30Days.toFixed(1)} per 30 days (under ${DESIGN_CORRECTIONS_PER_30_DAYS}): Approach and Drift direction checks are not a step-3a deliverable (not built, not even in shadow).`
         : `Design corrections after code average ${wa.design.afterCode.per30Days.toFixed(1)} per 30 days (at least ${DESIGN_CORRECTIONS_PER_30_DAYS}): Approach and Drift direction checks stay a step-3a deliverable.`;
   return [
     "## Pattern calibration",
     "",
-    `Labeled ${report.labeled} of ${report.sampled} sampled turns with ${report.model} (${report.labelErrors} failed batches). A pattern is metric-grade only when precision and recall both have a 95% Wilson lower bound of at least 0.6 and the label has at least 10 positives; the rest are floor counts.`,
+    `Labeled ${report.labeled} of ${report.sampled} sampled turns with ${report.model} (${report.labelErrors} failed batches). A pattern is metric-grade only when precision and recall both have a 95% Wilson lower bound of at least 0.6 and the label has at least 10 positives; the rest are floor counts. Precision and recall measure agreement with the model labeler, not ground truth.`,
     "",
     "| pattern | label | positives | TP | FP | FN | precision | recall | status |",
     "|---|---|---|---|---|---|---|---|---|",
@@ -2291,7 +2346,7 @@ export function renderLabeling(report: LabelingReport | null): string[] {
     wrongApproachRow("design", wa.design),
     wrongApproachRow("process", wa.process),
     "",
-    `${verdict}${wa.straddlesThreshold ? ` The 95% interval straddles ${DESIGN_CORRECTIONS_PER_30_DAYS}: re-check monthly.` : ""}`,
+    `${verdict}${wa.straddlesThreshold ? ` The 95% interval straddles ${DESIGN_CORRECTIONS_PER_30_DAYS}, so this decision is provisional: re-run with a larger --label (a value above the turn count labels every typed turn) before acting, and re-check monthly.` : ""}`,
     "",
   ];
 }
@@ -2393,7 +2448,7 @@ node scorer/dist/cli.js audit --since 60d --label 400 --label-repeat 50 --label-
 - **Wrong-approach corrections.** Design and process counts in the sample, their share of turns with a Wilson interval,
   scaled to all deduped turns, restricted to turns after code was written (`editsBefore`), and per 30 days. The spec's
   step-0 decision rule reads the design number: under 8 per 30 days after code means Approach and Drift direction checks
-  stay shadow-only.
+  are not built in 3a (not even in shadow).
 
 Extra outputs: `labels.jsonl` (turn key, labels, model, pass) and `calibration.json`; `baseline.md` gains the
 "Pattern calibration" and "Wrong-approach corrections" sections. Without `--label`, `baseline.md` says
@@ -2571,7 +2626,8 @@ Expected:
 
 The labeled run sends the 400 sampled turns to the model provider your Claude Code login already uses (see the
 README). Post **aggregate numbers only**: the tables from `baseline.md`, the `metric-grade` / `floor only` verdicts,
-the repeat-agreement line and the decision-rule line. Never post, attach or commit `labels.jsonl`,
+the repeat-agreement line and the decision-rule line. If the decision line says the interval straddles 8, re-run with a
+larger `--label` (for example `--label 1500`, which costs about 75 labeler calls) and post that result instead. Never post, attach or commit `labels.jsonl`,
 `human-turns.jsonl` or any turn text.
 
 Post all of that as a comment on the Plan 1 PR. From this point the Plan 2 build sessions run with the
@@ -2580,5 +2636,5 @@ fixed done-gate, and their steering turns are measured weekly. That's ladder row
 ## Done criteria for this plan
 - Merge gate (AGENTS.md) green for `judge` and `scorer`: `npm run typecheck` + `npm test` in each. The done-gate bash tests pass.
 - `scorer audit --since 60d --label 400` produces `baseline.md` with pattern calibration and the wrong-approach section on the real corpus, and the aggregate numbers are recorded in the PR.
-- Every new test from Review Focus 1–8 is present and passing.
-- **Switched on (Task 7, Step 6):** the live done-gate is reinstalled, the weekly (unlabeled) audit job is loaded, and the labeled baseline, calibration table and wrong-approach numbers are recorded as an aggregate-only PR comment. The decision-rule outcome (whether Approach and Drift direction checks stay shadow-only) is recorded in the same comment. Plan 2 must not start until this evidence is posted (spec §13.3 rules).
+- Every new test from Review Focus 1–9 is present and passing.
+- **Switched on (Task 7, Step 6):** the live done-gate is reinstalled, the weekly (unlabeled) audit job is loaded, and the labeled baseline, calibration table and wrong-approach numbers are recorded as an aggregate-only PR comment. The decision-rule outcome (whether Approach and Drift direction checks are built in 3a) is recorded in the same comment. Plan 2 must not start until this evidence is posted (spec §13.3 rules).

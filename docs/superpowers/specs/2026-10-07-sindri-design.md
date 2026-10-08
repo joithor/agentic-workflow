@@ -80,7 +80,7 @@ It learns from its own steering so recurring corrections become rules.
 | Interrupting notifications per merged PR | ledger | ≤ 2 |
 | Auto-started PRs reworked or reverted | GitHub + ledger | ≤ the rate for human-started PRs |
 | Model tokens per merged PR (subscription) | proxy usage log | within `budget.perItem` |
-| Human "wrong path" **design** corrections after code was written, per merged PR | adjudicator labeler calibrated in step 0 (`wrong_approach_design`, turns with `editsBefore`) | −50% (direction checks should catch these first) |
+| Human "wrong path" **design** corrections after code was written, per merged PR | adjudicator labeler calibrated in step 0 (`wrong_approach_design`, turns with `editsBefore`) | −50% (direction checks should catch these first). Applies only when the step-0 decision rule makes Approach and Drift checks a deliverable; otherwise tracked, no target |
 | Human "wrong path" **process** corrections (CI vs local, which doc or tool, step order), per merged PR | adjudicator labeler (`wrong_approach_process`) | Tracked; no −50% target. Addressed by recipes, not direction checks |
 | Clone count and duplication ratio on files sindri sessions touched | code index | flat or falling |
 | Transcript-classifier accuracy | outcome-labeled turns and the step-0 adjudicator sample (a later human correction or rework marks a miss; no hand labels) | ≥ 0.85, reported in `shadow report` |
@@ -1326,10 +1326,14 @@ environment:
      least 0.6 and the label has at least 10 positives. Others stay floor counts.
    - **Measure wrong-approach corrections** from the builder's own transcripts: design vs process, after
      code was written (`editsBefore`), per 30 days.
-   - **Decision rule:** if design wrong-approach corrections after code average under 8 per 30 days,
-     Approach and Drift direction checks are not a step-3a deliverable. They stay shadow-only, and step 3a
-     effort goes to the largest process-correction and shipping-direction sources instead. Re-check
-     monthly from the weekly audit's labeled run (or a monthly `--label` run).
+   - **Decision rule:** if design wrong-approach corrections after code average under 8 per 30 days
+     (point estimate; the audit also prints a 95% interval),
+     Approach and Drift direction checks are not a step-3a deliverable: they are not built in 3a, even in
+     shadow, and step 3a effort goes to the largest process-correction and shipping-direction sources
+     instead. If the interval straddles 8, the decision is provisional and the audit is re-run with a larger
+     `--label` (a value above the turn count labels every typed turn). Re-check monthly with a manual
+     `scorer audit --since 30d --label 400` (the weekly job stays unlabeled, so it is free and offline). If
+     a later check reaches 8 or more, the checks are added in shadow first (§6.1).
    - Record baselines and **set the §2 targets from them**.
    - Measure the share of the last 60 days of in-scope items that would have been XS, clear and trusted.
      - If it is at least 10%, keep `autoStartMaxSize: XS`.
@@ -1356,7 +1360,8 @@ environment:
 3a. **Assist, patterns:** `sindri start`, packs and re-injection, turn classification, the tool gate,
    the Stop pattern gate, the worker → ship Steps, the write shim, two-phase verify, notifications.
    - Approach and Drift direction checks run in shadow, and are a deliverable only if the step-0 decision rule
-     says design corrections are frequent enough (otherwise they stay shadow-only).
+     says design corrections are frequent enough. Otherwise they are not built in 3a, and the Approach and
+     Drift rows of §13.2 read "—" in the 3a column until a monthly re-check passes the rule.
    - Shape signals are recorded only.
    - It runs in containers if the spike passed, otherwise on the host with no auto-start (§13.1).
    - The self-evolution loop adds the online shadow A/B.
@@ -1379,7 +1384,7 @@ These are rough, for one builder with agent help. Every step ends with a usable 
 | 0 | Audit scripts, baselines, XS share, quota per item | S (2–3 days) | Measured targets |
 | 1 | Profile tooling, lock and fencing, scrubber, judge flag, done-gate fix; reuse ports phase 1; host code index; **scoping harness + backtest**; offline self-evolution | L (2–3 weeks) | **Scope maps and a recall number on the motivating project** |
 | 2 | Shadow triage and packs, replay, dashboard and badge; **container spike** in parallel | M (1–2 weeks) | Dashboard of what the sindri would do; spike verdict |
-| 3a | Start, packs, worker → ship, write shim, two-phase verify, notifications, shadow direction checks | L (2–3 weeks) | **Copy-paste dispatch, retyped ship direction and handoffs gone** |
+| 3a | Start, packs, worker → ship, write shim, two-phase verify, notifications, shadow direction checks (only if the step-0 rule makes them a deliverable) | L (2–3 weeks) | **Copy-paste dispatch, retyped ship direction and handoffs gone** |
 | 3b | Shape enforcement | M (1 week) | Enforced code-shape checks |
 | 4 | Auto-small | S | Unattended XS items |
 | 5 | Scoping direction checks enforce; issue creation | S | Self-scoped projects |
@@ -1431,7 +1436,7 @@ toolkit needs no tracker account to build itself. The adapter ships in Plan 2.
 |---|---|---|---|---|---|
 | done-gate claim detection (P1 T1) | P1 merges | `scripts/install-done-gate.sh --provider claude` (reinstalls the hook copy in `~/.claude/hooks/`) | The `done-gate` false-positive rate in the next weekly audit drops to ~0 | Stops false "Claiming done" blocks in every builder session from then on | Same hook, immediately |
 | `judge --providers` (P1 T2) | P1 merges | none; used by callers | `judge --providers jev why <id>` works | Lets P2+ direction checks and verifiers pin providers (Anthropic + Jev) | Same |
-| `scorer audit` (P1 T3–T5) | P1 merges | `scorer audit --since 60d` once (baselines); then weekly via the scorer launchd job (`--since 7d`) | `~/.agentic-workflow/audit/baseline.md`; weekly `summary.json` | **Measures the build itself:** steering turns per merged Sindri PR are the first metric the ladder must move down | Baselines for workplace repos |
+| `scorer audit` (P1 T3–T7) | P1 merges | `scorer audit --since 60d --label 400` once (baselines, calibration and the step-0 decision); then weekly and unlabeled via the scorer launchd job (`--since 7d --label 0`) | `~/.agentic-workflow/audit/baseline.md`; weekly `summary.json` | **Measures the build itself:** steering turns per merged Sindri PR are the first metric the ladder must move down | Baselines for workplace repos |
 | Profile + ledger + lock + CLI skeleton (P2) | P2 merges | `sindri profile init --ring0` (toolkit profile, `mode: shadow`); `sindri doctor` | `doctor` all `ok`; ledger file exists | Every later build session is recorded in the ledger (items = plan tasks) | `sindri profile init` in the private profile repo |
 | Scrubber (P2) | P2 merges | `sindri scrub --install-pre-commit` in this repo | A committed fixture secret is refused | **Guards this public repo:** no workplace details or secrets land in commits from any build session | Pre-commit in workplace repos where wanted |
 | `plan-file` tracker + `sindri observe` (P2) | P2 merges | `sindri observe` against ring 0 | Lists the remaining plan tasks with sizes | Gives a live, ordered backlog of the rest of Sindri | `observe` on the real tracker |
