@@ -10,7 +10,8 @@ import {
   runConfigGet, runConfigSet, runHealth, runQuestion, runUiElementRepairCli, runUndo, runVisualCritiqueCli, runWhy,
 } from "./commands.js";
 import { adjudicate } from "./adjudicate.js";
-import { buildChain } from "./chain.js";
+import { buildChain, restrictChain } from "./chain.js";
+import { adjudicateRefusal, evalProviderRefusal, gatePromptSortDeps, parseProvidersAllowlist } from "./providers-flag.js";
 import { judgeConfigPath, judgeDbPath, judgeStateDir, loadConfig, HOOK_KILL_MS } from "./config.js";
 import { runPromptSortCommand } from "./prompt-sort/commands.js";
 import { openDb, pruneDecisionDetails } from "./db.js";
@@ -83,7 +84,14 @@ const agentClis = resolveAgentClis({
   awProvider: process.env.AW_PROVIDER,
   configured: config.providers?.agentClis,
 });
-const chain = buildChain({ agentClis, jev: config.providers?.jev ?? true });
+const allowlist = parseProvidersAllowlist(process.argv, process.env);
+if (!allowlist.ok) {
+  console.error(`judge: ${allowlist.error}`);
+  process.exit(64);
+}
+const fullChain = buildChain({ agentClis, jev: config.providers?.jev ?? true });
+const allowedProviders = allowlist.allowed;
+const chain = allowedProviders === null ? fullChain : restrictChain(fullChain, allowedProviders);
 
 const providers: Provider[] = [
   makeRulesProvider(),
@@ -92,7 +100,7 @@ const providers: Provider[] = [
 ];
 
 const sessionId = process.env.AW_SESSION_ID;
-const [, , cmd, ...rest] = process.argv;
+const [, , cmd, ...rest] = allowlist.argv;
 
 function flag(name: string): string | undefined {
   const i = rest.indexOf(name);
@@ -130,6 +138,8 @@ async function main(): Promise<{ exitCode: number; stdout: string; stderr?: stri
       return { exitCode: 1, stdout: "", stderr: "usage: judge label import|outcomes|set <itemId> <label|skip>|status" };
     }
     case "adjudicate": {
+      const refused = adjudicateRefusal(allowedProviders);
+      if (refused !== null) return refused;
       if (!isOnPath(AGENT_CLI_BINARIES["claude-cli"], process.env)) return { exitCode: 1, stdout: "", stderr: "claude CLI not found on PATH" };
       const provider = makeClaudeCliProvider({ tmpDirFactory, spawn: makeExecSpawn(AGENT_CLI_BINARIES["claude-cli"]), model: "opus", effort: "high" });
       const limit = Number.parseInt(flag("--limit") ?? "60", 10);
@@ -144,6 +154,8 @@ async function main(): Promise<{ exitCode: number; stdout: string; stderr?: stri
       if (rest[0] === "import-turns") return runImportTurns(db, rest.slice(1), () => new Date());
       const q = rest[0] ?? "";
       const providerName = flag("--provider") ?? "jev";
+      const evalRefused = evalProviderRefusal(allowedProviders, providerName);
+      if (evalRefused !== null) return evalRefused;
       const provider = providers.find((p) => p.name === providerName && p.name !== "rules");
       if (provider === undefined) return { exitCode: 1, stdout: "", stderr: `provider not available: ${providerName}` };
       const labels = flag("--labels") ?? "any";
@@ -166,15 +178,20 @@ async function main(): Promise<{ exitCode: number; stdout: string; stderr?: stri
       const hookBudget = Number(process.env.AW_PROMPT_SORT_BUDGET_MS);
       const hookBudgetMs = Number.isInteger(hookBudget) && hookBudget > 0 ? hookBudget : HOOK_KILL_MS;
       if (rest.length === 0) setTimeout(() => process.exit(0), hookBudgetMs).unref();
+      const gated = gatePromptSortDeps(
+        allowedProviders,
+        { fetch: (...args: Parameters<typeof fetch>) => fetch(...args), apiKey: () => readApiKey({ env: process.env, readKeychain }) },
+        isOnPath(AGENT_CLI_BINARIES["claude-cli"], process.env)
+          ? () => makeClaudeCliProvider({ tmpDirFactory, spawn: makeExecSpawn(AGENT_CLI_BINARIES["claude-cli"]), model: "opus", effort: "high" })
+          : null,
+      );
       return runPromptSortCommand(rest, {
         db, config, configFile: judgeConfigPath(), stateDir: judgeStateDir(), hookBudgetMs,
-        jev: { fetch: (...args) => fetch(...args), apiKey: () => readApiKey({ env: process.env, readKeychain }) },
+        jev: gated.jev,
         readStdin,
         projectsDir: path.join(os.homedir(), ".claude", "projects"),
         evalsDir: path.join(judgeStateDir(), "judge", "evals"),
-        adjudicator: isOnPath(AGENT_CLI_BINARIES["claude-cli"], process.env)
-          ? () => makeClaudeCliProvider({ tmpDirFactory, spawn: makeExecSpawn(AGENT_CLI_BINARIES["claude-cli"]), model: "opus", effort: "high" })
-          : null,
+        adjudicator: gated.adjudicator,
       });
     }
     case "brief": {

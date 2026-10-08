@@ -61,3 +61,19 @@ describe("buildChain", () => {
     expect(candidates.map((p) => p.name)).toEqual(["cursor-cli", "codex-cli"]);
   });
 });
+
+describe("restrictChain", () => {
+  it("keeps only allowed providers per class, always keeping rules as the last resort", async () => {
+    const { buildChain, restrictChain } = await import("../src/chain.js");
+    const chain = buildChain({ agentClis: ["claude-cli", "codex-cli"], jev: true });
+    const restricted = restrictChain(chain, ["jev", "claude-cli"]);
+    expect(restricted.classes.code).toEqual(["jev", "claude-cli", "rules"]);
+    expect(restricted.classes.image).toEqual(["claude-cli", "rules"]);
+  });
+
+  it("leaves rules alone when the allowlist excludes every model provider", async () => {
+    const { buildChain, restrictChain } = await import("../src/chain.js");
+    const restricted = restrictChain(buildChain({ agentClis: ["codex-cli"], jev: true }), ["claude-cli"]);
+    expect(restricted.classes.code).toEqual(["rules"]);
+  });
+});

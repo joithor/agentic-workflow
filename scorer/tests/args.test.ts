@@ -6,12 +6,31 @@ const NOW = new Date("2026-09-26T12:00:00.000Z");
 const HOME = "/home/j";
 
 describe("parseArgs", () => {
+  it("parses the audit command with defaults", () => {
+    const r = parseArgs(["audit"], NOW, HOME);
+    expect(r.ok && r.options.command).toBe("audit");
+    expect(r.ok && r.options.auditOut).toBe("/home/j/.agentic-workflow/audit");
+    expect(r.ok && r.options.itemPattern).toBe("[A-Z][A-Z0-9]{1,9}-\\d+");
+    expect(r.ok && r.options.maxSize).toBe("XS");
+  });
+
+  it("parses the audit flags", () => {
+    const r = parseArgs(["audit", "--out", "/o", "--items", "/i.json", "--item-pattern", "X-\\d+", "--max-size", "M"], NOW, HOME);
+    expect(r.ok && [r.options.auditOut, r.options.itemsFile, r.options.itemPattern, r.options.maxSize]).toEqual(["/o", "/i.json", "X-\\d+", "M"]);
+  });
+
+  it("rejects an invalid --max-size and an invalid --item-pattern", () => {
+    expect(parseArgs(["audit", "--max-size", "XXL"], NOW, HOME).ok).toBe(false);
+    expect(parseArgs(["audit", "--item-pattern", "("], NOW, HOME).ok).toBe(false);
+  });
   it("defaults to a one-day report", () => {
     expect(parseArgs([], NOW, HOME)).toEqual({ ok: true, options: {
       command: "report", since: new Date("2026-09-25T12:00:00.000Z"), until: NOW,
       projectsDir: "/home/j/.claude/projects", codexSessionsDir: "/home/j/.codex/sessions", cursorProjectsDir: "/home/j/.cursor/projects",
       providers: null, stateDir: "/home/j/.agentic-workflow", stateDirExplicit: false, prLookup: true,
       contextTokensPath: null, liveSession: null, liveCwd: null, liveWindow: 200_000, json: false,
+      auditOut: "/home/j/.agentic-workflow/audit", itemPattern: "[A-Z][A-Z0-9]{1,9}-\\d+", itemsFile: null, maxSize: "XS",
+      label: 0, labelRepeat: 50, labelModel: "sonnet", turnsFile: true, help: false,
     } });
   });
 
@@ -78,4 +97,46 @@ describe("parseArgs", () => {
   ])("rejects %j", (argv, error) => {
     expect(parseArgs(argv, NOW, HOME)).toEqual({ ok: false, error });
   });
+});
+
+it("parses --label, --label-repeat and --label-model", () => {
+  const r = parseArgs(["audit", "--label", "400", "--label-repeat", "0", "--label-model", "opus"], NOW, HOME);
+  expect(r.ok && [r.options.label, r.options.labelRepeat, r.options.labelModel]).toEqual([400, 0, "opus"]);
+});
+
+it("parses --no-turns-file and keeps the turn file on by default", () => {
+  const off = parseArgs(["audit", "--no-turns-file"], NOW, HOME);
+  expect(off.ok && off.options.turnsFile).toBe(false);
+  const on = parseArgs(["audit"], NOW, HOME);
+  expect(on.ok && on.options.turnsFile).toBe(true);
+});
+
+it("allows --no-turns-file together with --label", () => {
+  const r = parseArgs(["audit", "--no-turns-file", "--label", "50"], NOW, HOME);
+  expect(r.ok && [r.options.turnsFile, r.options.label]).toEqual([false, 50]);
+});
+
+it("keeps labeling off by default", () => {
+  const r = parseArgs(["audit"], NOW, HOME);
+  expect(r.ok && [r.options.label, r.options.labelRepeat, r.options.labelModel]).toEqual([0, 50, "sonnet"]);
+});
+
+it.each([
+  ["--label", "-1"],
+  ["--label", "1.5"],
+  ["--label", "abc"],
+  ["--label", ""],
+  ["--label-repeat", "-2"],
+  ["--label-repeat", "2.5"],
+  ["--label-model", "--tools"],
+  ["--label-model", "sonnet; rm"],
+])("rejects %s %s", (flag, value) => {
+  expect(parseArgs(["audit", flag, value], NOW, HOME).ok).toBe(false);
+});
+
+it("accepts --help and -h", () => {
+  const long = parseArgs(["--help"], NOW, HOME);
+  expect(long.ok && long.options.help).toBe(true);
+  const short = parseArgs(["audit", "-h"], NOW, HOME);
+  expect(short.ok && short.options.help).toBe(true);
 });
