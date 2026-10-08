@@ -1,6 +1,8 @@
 # Conductor — design
 
-Status: draft for review, revision 3 · 2026-10-07
+Status: draft for review, revision 4 · 2026-10-07
+Revision 4 addresses `/autoplan` round 3 (T1–T6, M1–M10): hook semantics grounded in the Claude Code
+docs, a sandboxed session user, enforced shape checks with defined outcomes, and an offline index.
 Revision 2 addressed `/autoplan` round 1 (21 HIGH). Revision 3 addresses round 2 (7 HIGH, R1–R7, and M1–M15,
 L1–L2 in `plans/conductor/consolidated-review.md`). It also adds hook-enforced checks (§5.3) and code-shape
 checks with a code index (§6.2).
@@ -84,8 +86,10 @@ It learns from its own steering so recurring corrections become rules.
 7. **Untrusted text is data, never instructions** (§8.3).
 8. **No secrets in packs, ledger, logs, notifications or eval corpus** (§8.4).
 9. **No human hand-labeling.** The eval loop labels from outcomes and adjudicators only.
-10. **Hooks enforce; agents don't opt in.** Every required check fires on a hook event or a conductor
-    action, never because an agent chose to call a tool. MCP is for reading data only (§5.3).
+10. **Hooks enforce; agents don't opt in.** Every required check fires on a hook event, a git hook, or a
+    conductor action, never because an agent chose to call a tool. MCP is for reading data only. Hooks
+    enforce *patterns*. The *security boundary* is the session OS user, server-side protections, and
+    conductor-side re-verification (§5.3).
 
 ## 4. v1 scope
 
@@ -144,27 +148,73 @@ The tick never waits on a model. It reads job results from the ledger on the nex
 - Ledger files and the state dir are mode 0700, outside any session's working tree. Conductor sessions run
   with a gate that denies writes under `$AW_STATE_DIR/conductor/` (STRIDE tampering).
 
-### 5.3 Enforcement model: hooks, not tools
+### 5.3 Enforcement model: hooks force patterns, the sandbox enforces security
 **Principle:** every check that must happen is fired by a hook event or by the conductor. No check
-depends on an agent choosing to call a tool. MCP servers are for **reading data** (tracker, docs, code
-navigation). They are never the trigger for a check, a gate, or a hand-off. An agent can't skip, delay, or
-forget a check, because it never decides whether one runs.
+depends on an agent choosing to call a tool. MCP servers are for **reading data**.
 
-| Hook event | What it enforces in a conductor session | Blocking? |
+There are two layers, with different jobs:
+- **Hooks enforce behavior patterns** on a cooperative agent: checkpoints, shape checks, pack injection,
+  turn classification. This is what removes the human steering.
+- **The security boundary does not depend on hooks:**
+  - a dedicated OS user for sessions
+  - conductor state readable only by the conductor user
+  - server-side branch protection
+  - conductor-side re-verification of the pushed head (§6, §8.5)
+
+  A hook that fails open costs a missed nudge. It never costs a breach.
+
+**Grounded hook semantics** (Claude Code docs, checked 2026-10-07; rollout step 1 confirms them with a live
+probe, and the probe suite becomes a `doctor` check):
+
+| Fact | Consequence |
+|---|---|
+| Only exit 2 or `permissionDecision:"deny"` blocks a tool call. Other non-zero exits, timeouts (default 600 s) and a missing command **fail open** | Every conductor hook runs through `cdt-hook`, a small static wrapper that traps all errors and timeouts (its own budget is shorter than the hook timeout) and emits an explicit deny with `CND-HOOK-9xx`. `doctor` probes every hook. |
+| `continue:false` with `stopReason` ends the turn, and Claude sees the reason | Checkpoints end the turn cleanly instead of looping on denials |
+| A Stop block (`decision:"block"`) is capped at 8 consecutive continuations; `stop_hook_active` marks a re-entry | Stop is a **pattern** gate only. It blocks when the Step's required artifacts are missing (at most twice per chain). Known waits (`awaiting-direction`, `awaiting-human`) are always allowed to stop. Completion is verified **conductor-side after Stop**, never inside the hook. |
+| `UserPromptSubmit` can add `additionalContext` and can block | Inbox delivery and turn classification |
+| Managed-settings hooks merge with all other levels and can't be removed below managed; `allowManagedHooksOnly` locks other hooks out | Conductor hooks are registered in **managed settings**. They're active for every user on the box but are no-ops unless the process runs as the conductor session user. |
+| Folder trust is keyed to the repo root; worktrees inherit it | `conductor repo add` trusts each repo once. Worktrees never prompt. |
+
+**Identifying a conductor session:** sessions run as the dedicated OS user `cdt` (Linux: a system user;
+macOS: a standard hidden user). Hooks check `id -un`, which a session can't change. An env var alone is
+never trusted, which closes the `env -u` bypass (T2).
+
+**Hook map:**
+
+| Event (matcher) | Enforces | Effect on violation |
 |---|---|---|
-| `SessionStart` (startup) | Inject the pack's Task, Acceptance and Evidence plan; register the session; write the spool heartbeat | — |
-| `SessionStart` (compact / resume) | Re-inject Task and Acceptance plus the pack pointer (§7.2) | — |
-| `UserPromptSubmit` | Classify the turn by origin: `answer` (replies to a pending question), `takeover` (unsolicited human input), `conductor` (the fixed `continue` token). For `continue`, inject any pending verdict or answer from the session inbox as additional context (§6.1 delivery). A human correction raises a drift signal. | — |
-| `PreToolUse` (all tools) | Conductor tool gate: default deny, profile allowlist, argument constraints (§8.1) | yes |
-| `PreToolUse` (first `Edit`/`Write` to a non-test source file in a work item) | **Approach checkpoint:** if no `proceed` verdict exists for the current approach, deny with `CND-DIR-010 awaiting direction check <id>`, and the conductor opens the check (§6.1). The session ends its turn; the verdict arrives on the next `continue`. | yes |
-| `PreToolUse` (`Bash` matching `git commit`) | **Shape checks** on the staged diff against the code index (§6.2). A signal denies the commit with the evidence and opens a shape direction check. | yes |
-| `PostToolUse` | Heartbeat spool; drift signals (test-failure streaks, files outside the predicted set, repeated verifier reasons); scrub-on-read for tool output that goes back into context (§8.4) | — |
-| `Stop` | Conductor-mode done-gate: the session may stop only if the ledger shows its Step's completion checks passed, or the item is parked or awaiting a human. It replaces the regex done-gate in conductor sessions (M11). | yes |
-| `PreCompact` | Checkpoint the Step state to the ledger spool before compaction | — |
+| `SessionStart` (startup) | Inject the pack's Task, Acceptance and Evidence plan; register; heartbeat | — |
+| `SessionStart` (compact, resume, fork) | Re-inject Task and Acceptance plus the pack pointer | — |
+| `UserPromptSubmit` | Turn classification (`answer` / `takeover` / `conductor`). On a verified delivery token (§6.1), inject the inbox. A human correction raises a drift signal. | Block a forged delivery token (`CND-DIR-030`) |
+| `PreToolUse` (all tools) | Conductor tool gate (§8.1) | Deny `CND-GATE-1xx` |
+| `PostToolUse` (all tools) | **Edit detection by worktree diff, not by tool name:** after any tool call, the hook compares `git diff --stat` against the last snapshot. The first change to a non-test source file without a `proceed` verdict fires the Approach checkpoint. This catches Edit, Write, `sed -i`, `tee`, scripts and codegen. | `continue:false`, `stopReason: CND-DIR-010 awaiting direction check <id>`. The changes stay in the worktree; the verdict decides keep or revert. |
+| `PreToolUse` (`Bash`) plus a git `pre-commit` hook in the worktree | **Shape checks** (§6.2). The git hook catches every commit form (`-a`, `-C`, aliases, scripts); the PreToolUse matcher only produces a better message. | Commit refused with evidence; Shape direction check opened |
+| git `pre-push` hook in the worktree, plus the gate on push | Path guard, diff caps, shape re-check on the exact push range (§8.5) | Push refused (`CND-GATE-140`) |
+| `PostToolUse` | Heartbeat spool; drift signals; scrub tool output going back into context | — |
+| `Stop` | Pattern gate as described above | Block at most twice, then allow and record `CND-HOOK-210` |
+| `PreCompact` | Checkpoint Step state to the spool | — |
 
-**Hook test rule:** every row has a test that drives the hook with a recorded payload and asserts the
-decision. A hook that errors in conductor mode denies (fails closed). Outside conductor sessions, the
-existing hooks behave exactly as today.
+The git hooks live in the worktree's `.git/hooks`, which belongs to the conductor user (§8.2), so the
+session can't edit them.
+
+**Debuggability (T4):**
+- Every hook decision is appended to `$AW_STATE_DIR/conductor/hooks/<session>.jsonl` with event, matcher,
+  input hash, decision, code and duration.
+- `conductor hook log <item>` shows the decisions for an item.
+- `conductor hook replay <log-id>` re-runs a recorded decision.
+- `conductor hook test <event> <fixture.json>` runs a hook against a fixture.
+- Codes separate the cause: `1xx` policy, `2xx` pattern, `9xx` crash or timeout.
+- The deny text always includes the code, a one-line reason and `conductor why <item>`.
+- **Kill switches:** `hooks.<name>.enabled` per hook in the profile. Changing one requires
+  `profile approve` and is shown in `status` as a degraded mode. The gate and the Stop pattern gate can't be
+  switched off.
+
+**Coexistence (T1d):**
+- In a `cdt` session, the existing `config/hooks/*` safety hooks still run. Hooks merge, and the
+  safety hooks only add denials.
+- The existing `done-gate.sh` and `scope-gate.sh` exit early when `id -un` is `cdt`, because the
+  conductor's Stop pattern gate and gate replace them.
+- Outside `cdt` sessions, nothing changes.
 
 ## 6. The Step contract
 
@@ -217,7 +267,14 @@ XS-clear items skip Approach unless a drift signal fires.
   - **proposer turn:** from the session's own checkpoint output, which the hook spools as `position.json`
   - **challenger turn:** a stdin/stdout job, read-only code tools, no network
 - The conductor writes every turn itself, with a fixed role (`proposer | challenger | arbiter`), the check
-  id, the epoch, and an HMAC keyed by a conductor secret.
+  id, the epoch, and an HMAC keyed by a conductor secret. Each MAC covers the previous turn's MAC, so the
+  turns form a chain.
+- **Key custody (M3):** the key lives in the conductor user's keychain (macOS) or a 0400 file owned by the
+  conductor user (Linux). The `cdt` session user can't read it. The key rotates on every epoch change.
+- **Position authorship (M2):** the proposer's `position.json` is captured by the PostToolUse hook from the
+  session's checkpoint output, stamped with the session id and turn id, and signed by the conductor on
+  ingest. The session never signs anything.
+- **Leg timeouts (M2):** position 10 min, challenge 5 min, reply 10 min, verdict 2 min. A timeout escalates.
 - **The MCP bridge is the record of each dialogue,** not its transport. Every turn is mirrored to a bridge
   conversation (UUID = check id) for audit and for `conductor why`.
 - **Bridge hardening, required when the bridge is enabled:**
@@ -243,8 +300,12 @@ requested → position → challenge(n) → reply(n) → verdict → delivered
 **Delivery into the session (R2):**
 1. The verdict (or the human's decision) is written to the session's inbox file. The file is owned by the
    conductor and is read-only to the session.
-2. The conductor sends the fixed `continue` token.
-3. The `UserPromptSubmit` hook injects the inbox contents as additional context.
+2. The conductor sends `continue cdt-tok:<nonce>` through `send-keys`. The nonce is single-use, bound to
+   the check id and the session, and signed into the inbox file.
+3. The `UserPromptSubmit` hook verifies the nonce against the inbox (match, unused, unexpired), injects
+   the inbox contents as additional context, marks the nonce used, and writes a delivery ack to the spool.
+   A prompt that carries a bad or reused nonce is blocked (`CND-DIR-030`). A prompt with no nonce is
+   classified as human (§9.3).
 4. For a `revise` verdict, the text is synthesized by conductor code from the verdict's agreed objections,
    as a structured list. Raw thread text never becomes instructions.
 
@@ -256,6 +317,9 @@ human runs `conductor decide <item>` to see both positions and choose.
 - The profile's `providers.allowed` defaults to Anthropic only.
 - Diversity comes from a **different Claude model** than the proposer's (e.g. proposer Sonnet, challenger
   Opus), plus **Jev** as the arbiter's first classifier (already vendor-reviewed for code in judge).
+- The arbiter is restricted as well. The conductor calls `judge --providers <profile list>`, a new judge
+  CLI flag that limits the chain (M1). Without the flag judge would fall through to any installed agent
+  CLI.
 - Other providers (Codex, Cursor CLI, others) are opt-in per provider. They receive a bounded bundle:
   scrubbed, sensitive paths denied, non-agentic mode. Every provider call writes an audit row.
 - If no distinct challenger model is available, the check is skipped and recorded as `skipped:no-diverse-model`.
@@ -264,10 +328,13 @@ human runs `conductor decide <item>` to see both positions and choose.
 **Proof before trust (R5):**
 - Checks start in `direction.mode: shadow`: they run and record verdicts but don't block. The ledger
   compares them against later human "wrong path" corrections and rework.
-- They move to `enforce` per checkpoint once shadow shows precision of at least `direction.minPrecision`
+- **Exception:** the **Shape** checkpoint enforces from rollout step 3b, because enforced shape checks
+  (§6.2) depend on it to resolve a refused commit.
+- Other checkpoints move to `enforce` once shadow shows precision of at least `direction.minPrecision`
   (default 0.6) over at least 20 checks.
-- **Caps:** `direction.maxPerItem` (default 3), `direction.maxPerDay` (default 40), plus each check's cost
-  counted against `budget.perItem`.
+- **Caps:** `direction.maxPerItem` (default 3), `direction.maxPerDay` (default 40), a per-check budget
+  (`direction.maxCostPerCheck`, `direction.maxMinutesPerCheck` default 30), plus `budget.perItem` (M9).
+- **Kill criteria** need at least 30 checks per checkpoint before they can fire (M9).
 - **Kill criterion:** a checkpoint whose `revise` verdicts don't reduce rework compared to shadow over 30
   items goes back to shadow.
 
@@ -278,55 +345,78 @@ Four questions keep a codebase healthy as it grows:
 - Now that there are two cases, should this be generalized?
 - Have we reinvented something that already exists?
 
-In a small codebase a reviewer answers them by eye. At scale they must be **deterministically
-evaluable**. Deterministic signals produce evidence, and models judge only the shortlist.
+At scale they must be **deterministically evaluable**: deterministic signals produce evidence, and models
+judge only the shortlist. **All index layers enforce from the first enforcing rollout step (3b).** That's
+an explicit decision, taken over a shadow-first alternative. Every enforced outcome is defined, so nothing
+can deadlock.
 
-**Code index** (per repo, behind an `Index` adapter, rebuilt incrementally on merges to main, stored in
-`$AW_STATE_DIR/conductor/index/<repo>.db`):
+**Code index** (per repo, behind an `Index` adapter, stored in `$AW_STATE_DIR/conductor/index/<repo>.db`,
+owned by the conductor user):
 
-| Layer | Content | Built-in |
+| Layer | Content | Built with |
 |---|---|---|
 | Structure | Symbols (name, signature, kind, file, exported, callers) | tree-sitter; LSP (Serena) when available |
-| Clones | Normalized AST hashes per function and block (identifiers and literals abstracted), and token shingles | core |
+| Clones | Normalized AST hashes per function and block (identifiers and literals abstracted), plus MinHash/LSH over token shingles (no pairwise comparison) | core |
 | Dependencies | Package manifests, plus internal utility modules marked by profile globs | core |
-| Embeddings | Function-level vectors from a **local** model (Ollama, through Prism when available). No code leaves the machine. | core, `index.embeddings: local` |
+| Embeddings | Function-level vectors from a **local** model | Ollama directly, or Prism with `cloud_fallback:false` and `route_guard:local` |
 | Graph | Module and call graph, cross-file relationships, surface clusters | **graphify** adapter (`index.graph: graphify`) |
 
-- **Graphify as a provider:** it is one source of candidates. It feeds the Reinvention and Scoping checks
-  (surface discovery) and is evaluated arm-vs-arm by the eval loop (graph on vs off). It stays enabled only
-  where it measurably improves outcomes. A prior trial found a code graph did not beat plain search for
-  agent *navigation*; here it is used for *candidate recall*, and that use has to earn its place too.
-- **Embeddings and graph neighbors** only ever produce candidates. A candidate becomes a signal only when a
-  deterministic check confirms it, or when the shape direction check judges it.
+**Offline guarantee (T5):**
+- Indexing never sends code off the machine. Embedding calls go only to a loopback endpoint.
+- The graphify adapter runs with network access denied (sandbox profile, or a network-less namespace on
+  Linux) and fails closed if it attempts egress.
+- `doctor` verifies all three: the loopback endpoint, the Prism flags, and the graphify sandbox.
+- **Inputs:** tracked files only (respecting `.gitignore`), excluding the profile's `index.denyPaths`
+  (secrets, fixtures containing PHI, generated code). Symlinks aren't followed. Per-file and total size
+  caps apply.
 
-**Signals** (computed by the `PreToolUse git commit` hook on the staged diff; deterministic, profile
-thresholds):
+**Freshness and branches (M5):**
+- The main index is rebuilt incrementally on merges to main. Builds take the heavy-job lock.
+- Each worktree gets a **per-worktree overlay** built from its own diff, so checks see in-flight changes.
+- Every derived artifact carries a version stamp (indexer version, model id, graphify version, commit
+  SHA). A stamp mismatch triggers a rebuild.
+
+**Graphify as a provider:** it is one source of candidates for the Reinvention and Scoping checks.
+- A prior trial found a code graph did not beat plain search for agent *navigation*. Here it is used for
+  *candidate recall* and enforces from day one by decision.
+- The eval loop still measures it arm-vs-arm and reports whether it earns its cost.
+- **Kill criterion:** a layer whose candidates are overturned (`proceed` with reason) more than 80% of the
+  time over 30 signals is demoted, through a rule proposal, not automatically.
+
+**Signals** (computed at commit by the git `pre-commit` hook, and re-computed conductor-side on the pushed
+range; profile thresholds, calibrated in shadow mode (rollout step 2) before step 3b enforces):
 
 | Question | Signal | Default threshold |
 |---|---|---|
-| Reinvented? | A new symbol's AST hash matches an existing one; signature and name similarity ≥ t; an embedding neighbor ≥ e **and** an AST similarity ≥ a; a new dependency overlapping an existing one by purpose tag | t 0.85, e 0.9, a 0.6 |
-| Generalize at the second case? | A near-clone between new code and existing code (≥ N tokens, Jaccard ≥ s) | N 60, s 0.8 |
+| Reinvented? | A new symbol's AST hash matches an existing one; signature and name similarity ≥ t; an embedding neighbor ≥ e **and** an AST similarity ≥ a; a graph neighbor with an overlapping call set; a new dependency overlapping an existing one by purpose tag | t 0.85, e 0.9, a 0.6 |
+| Generalize at the second case? | A near-clone between new code and existing code (≥ N tokens, MinHash Jaccard ≥ s) | N 60, s 0.8 |
 | Simpler? | Changed lines over the size budget (XS 80, S 250, M 600); cyclomatic complexity delta above the limit; new files, exports, interfaces, flags or config keys above the size class's allowance | per size class |
-| More elegant? | No direct signal. Covered by the three rows above plus the shape direction check | — |
+| More elegant? | No direct signal. Covered by the three rows above plus the Shape direction check | — |
 
-**Flow:**
-1. A signal denies the commit.
-2. The session gets the evidence ("`formatShiftWindow` in your diff is an 87% AST match for
-   `shared/time/formatWindow.ts:12`").
-3. The conductor opens a **shape** direction check (§6.1).
-4. Outcomes:
-   - `revise`: reuse or generalize.
-   - `proceed`: the new code is kept, with a recorded reason. The pair `(new symbol, existing symbol)`
-     isn't flagged again.
-   - `escalate`: the human decides.
+**Enforced outcomes (T3), every one of which ends:**
+
+| Situation | Commit | Then |
+|---|---|---|
+| Signal fires, check budget available | Refused with evidence | Shape direction check opens; the session ends its turn (`awaiting-direction`); the verdict is delivered: `revise` (reuse or generalize), `proceed` (keep, reason recorded), or `escalate` (`decide` item) |
+| Signal fires, `direction.maxPerItem` exhausted or no diverse model available | Allowed, with a `shape-unresolved` trailer | PR gets the `shape-unresolved` label; needs-approval to the human; the ship state machine won't undraft until it's resolved |
+| Index missing, stale beyond `index.maxAgeHours`, or failing | Allowed, with an `index-unavailable` trailer | Conductor rebuilds; the conductor-side re-check runs on the push range once the rebuild finishes; a failure there → needs-approval |
+| Check exceeds the 2 s commit budget | Allowed, with a `shape-deferred` trailer | The conductor-side check on push is authoritative and refuses the push if it signals |
+
+The Shape direction check ships in the **same** rollout step as shape enforcement (§13, step 3b).
+
+**Evidence format (M8):**
+- Each signal names its type, value and threshold, both locations as `path:line`, the index age and the
+  providers involved.
+- Repo-derived strings (symbol names, comments, snippets) are shown inside `<untrusted>` fences (M4).
+- A `proceed` reason is labeled `agent-written` with the session id, and the daily digest lists every
+  `proceed` that let code through.
+
+**Exemptions expire (M4):** a recorded `proceed` exempts the pair `(new symbol, existing symbol)` until
+either file changes, or for 30 days, whichever comes first.
 
 **Repo trend:** the eval loop tracks duplication ratio, clone count, average complexity and dependency
-count on main over time. A rising trend becomes a rule proposal (e.g. "reuse `formatWindow` for time
-ranges"). It never becomes free-text guidance.
-
-**Index freshness:** `doctor` reports index age. A check against a stale index (older than
-`index.maxAgeHours`, default 24) records the staleness on its signal, so stale results are never presented
-as current.
+count over time on the files conductor sessions touched (M9). A rising trend becomes a typed `reuse-hint`
+rule proposal (§7.4).
 
 ## 7. Flows
 
@@ -385,6 +475,7 @@ done:    stack fully reviewed; the human merges
   - add a reviewer account
   - adjust the size rubric
   - add a pack section requirement
+  - add a `reuse-hint` (prefer existing symbol X for purpose Y), from the shape trend (§6.2)
 - **Forbidden fields:** allowlist, `trustedAuthors`, hosts, secret pointers, notifier and scheduler
   config, hook config, budgets. Rules can never change these.
 - **Backtest (directional only; not counterfactual):** gated on ≥ 30 completed items. Uses an older-70% /
@@ -421,6 +512,19 @@ Required before `mode: auto-small` can be enabled. `doctor` refuses `auto-small`
   dialog.
 
 ### 8.2 Credentials and identity (M10, M15)
+- **Session OS user (T2):** sessions run as the dedicated user `cdt`. The conductor runs as the human's
+  user and owns these, all unreadable or unwritable by `cdt`:
+  - `$AW_STATE_DIR/conductor/` (ledger, policy, inbox, spool ingest, hook logs)
+  - the HMAC key
+  - managed settings
+  - each worktree's `.git/hooks`
+
+  `cdt` has write access only to its worktree, its spool file and its scratch dir. The spool is treated
+  as untrusted hints. Managed settings register the conductor hooks, which the session can't override
+  (§5.3).
+- **Conductor-side authority:** before any push is accepted and before any undraft, the conductor itself
+  re-runs the reproduce check, the shape checks, the path guard and diff caps on the exact head SHA,
+  under its own process. Session-side results are advisory.
 - Sessions start with a scrubbed env allowlist. They get no ssh-agent forwarding and no cloud profiles.
 - They get scoped tokens: GitHub (branch push and draft PRs only) and tracker (comment and status only).
 - Sessions use a separate git identity.
@@ -472,6 +576,11 @@ Required before `mode: auto-small` can be enabled. `doctor` refuses `auto-small`
   only through named profile recipes, and their output is marked sensitive and blocked from egress.
 - **Path guard:** a diff that touches profile-declared protected paths (CI and workflow config, hooks,
   auth, lockfiles, the profile itself) parks the item for approval.
+- **Before push, not after (M10):** the path guard, diff caps and shape re-check run in the worktree's
+  git `pre-push` hook (owned by the conductor user) and again conductor-side. CI secrets for preview and
+  admin are environment-protected so `cdt/*` refs can't use them without approval. The undraft watch
+  polls PR state on every tick and re-drafts within one tick interval; the remaining window is
+  documented.
 
 ### 8.6 Notifier action contract (H7)
 - Session names are conductor-generated `cdt-<ulid>`, validated against `^cdt-[0-9a-z]{26}$` at both the
@@ -538,8 +647,9 @@ The `UserPromptSubmit` hook classifies every human turn in a conductor session:
 | `conductor` | The fixed `continue` token from the conductor | Inbox delivery (§6.1) |
 
 - `conductor handback <item>` ends a takeover.
+- A takeover during an open direction check pauses that check (its leg timers stop). Handback resumes it.
 - **Timeout:** after `takeover.idleTimeout` (default 2 h) with no human input, the item gets a needs-answer
-  notification: "hand back ITEM?". It is never handed back silently.
+  notification: "hand back ITEM? (`conductor handback ITEM`)". It is never handed back silently.
 
 ### 9.4 Claims (M1)
 - v1 has one active host (`hosts.active`). Other hosts refuse to tick.
@@ -556,15 +666,17 @@ The `UserPromptSubmit` hook classifies every human turn in a conductor session:
 |---|---|---|---|
 | needs-answer | yes; **never overflows** (queued with a count) | `[repo] ITEM: question (n)` | `conductor attach ITEM` (in-session) or `conductor answer ITEM` (job) |
 | decide | yes; never overflows | `[repo] ITEM: direction check needs you` | `conductor decide ITEM` |
-| needs-approval | yes | `[repo] ITEM: approve <action>` | `conductor approve call:<id>` / `rule:<id>` / `profile:<hash>` |
+| needs-approval | yes; **never overflows** | `[repo] ITEM: approve <action>` | `conductor approve call:<id>` / `rule:<id>` / `profile:<hash>` |
 | parked | batched hourly | `[repo] ITEM: parked: <code>` | `conductor why ITEM` |
 | fyi | no | `[repo] ITEM: <milestone>` | — |
 | digest | no; at `notify.digestTimes` | `conductor: N waiting on you` | `conductor status` |
 
 - Notifications carry the item id, a scrubbed short title and the command as text (§8.6). They never carry
   item body text or debate content.
-- `notify.maxPerHour` (default 4) caps needs-approval, parked and fyi. Anything over the cap goes to the
-  digest.
+- `notify.maxPerHour` (default 4) caps parked and fyi; anything over goes to the digest.
+- needs-answer, decide and needs-approval never overflow. They're bounded by a **global interrupt ceiling**
+  `notify.maxInterruptsPerHour` (default 6). Above it, interrupts collapse into one "N items need you"
+  notification that lists ids, and the ATTENTION file gets every entry (M7).
 - Repeats of the same error code are deduplicated with a cool-down.
 - Direction-check escalations count toward `direction.maxPerItem`, not the hourly cap.
 - Voice: plain, first person ("I parked FRN-123 because the reproduce check passed on the base"), states
@@ -588,11 +700,14 @@ The `UserPromptSubmit` hook classifies every human turn in a conductor session:
 | `ledger [--item --step --since]` | Raw ledger query | — |
 | `start ITEM` | Manual dispatch | "Started ITEM in cdt-…; attach with `conductor attach ITEM`" |
 | `attach ITEM\|cdt-id [--print]` | Attach, or print the command; prints the tmux detach key | `CND-SESS-404 session ended; see conductor why ITEM` |
-| `answer` / `decide` / `approve` / `reject` / `snooze` | Human responses. Ids are typed (`call:`, `rule:`, `profile:`, `dir:`) | "Recorded. ITEM resumes on the next tick." |
-| `park` / `unpark ITEM [--hint]` | Park or resume with a hint | — |
-| `handback ITEM` | End a takeover | — |
-| `pause` / `resume` | Global kill switch (also `AW_CONDUCTOR_DISABLE=1`) | — |
-| `ack` | Clear the ATTENTION file after reading it | "Cleared 3 attention entries." |
+| `answer` / `approve` / `reject` / `snooze` | Human responses. Ids are typed (`call:`, `rule:`, `profile:`, `dir:`) | "Recorded. ITEM resumes on the next tick." / `CND-ITEM-409 nothing pending for ITEM` |
+| `decide ITEM [--pick a\|b\|other --note "..."]` | Shows the item's Task, the proposer position, the challenger objections and replies (untrusted strings fenced), the arbiter score and threshold, and a recommendation; records the pick | "No direction check is waiting on you for ITEM." |
+| `hook log\|replay\|test` | Hook decisions per item; re-run a recorded decision; run a hook on a fixture (§5.3) | "No hook decisions recorded for ITEM." |
+| `setup-host [--dry-run]` / `repo add <path>` / `index setup` | Host, repo and index setup (§11.3) | dry-run prints every change |
+| `park` / `unpark ITEM [--hint]` | Park or resume with a hint | "Parked ITEM." / `CND-ITEM-409 ITEM is not parked` |
+| `handback ITEM` | End a takeover | "ITEM handed back; resuming on the next tick." / `CND-SESS-409 ITEM is not taken over` |
+| `pause` / `resume` | Global kill switch (also `AW_CONDUCTOR_DISABLE=1`) | "Paused. Running sessions finish their current Step; nothing new starts." |
+| `ack [ITEM]` | Clear one item's ATTENTION entries, or all of them | "Cleared 3 attention entries." / "Nothing to acknowledge." |
 | `notify --test` | Send a test notification through every configured notifier | — |
 | `observe` | Zero-config read-only run on the example profile (M14) | — |
 | `doctor` | Health checks (§11.5) | — |
@@ -616,7 +731,8 @@ The `UserPromptSubmit` hook classifies every human turn in a conductor session:
   `status` output.
 - **ATTENTION file lifecycle:**
   - Every interrupting notification also appends a line (timestamp, kind, item, command).
-  - `conductor ack` clears it.
+  - An item's entries clear automatically when that item's pending question, decision or approval is
+    resolved. `conductor ack [ITEM]` clears the rest manually.
   - `status` and `doctor` show the count of unacknowledged entries.
 - **Delivery limit:** macOS can't confirm a notification was seen. `doctor` therefore reports the time of
   the last `notify --test` and the oldest unacknowledged ATTENTION entry, and states this limit plainly. It
@@ -674,6 +790,14 @@ interface Scheduler{ install(dry: boolean): Promise<Result<string>>; uninstall(d
 - **setup.sh:** `./setup.sh --with-conductor` is opt-in. It builds the package and runs the scheduler
   install, and it respects `--dry-run`, so the merge gate's setup dry-run stays clean.
 - **Profile root resolution:** `--profile` > `$AW_PROFILE_DIR` > the `$AW_STATE_DIR/profile` symlink.
+- **Session user and managed hooks:** `conductor setup-host [--dry-run]` creates the `cdt` user, sets
+  directory ownership, and installs the managed-settings hook block. It needs admin once, and prints
+  every change in dry-run.
+- **Repos:** `conductor repo add <path>` trusts the repo root once (worktrees inherit trust), installs
+  the worktree git hooks template, and queues the first index build.
+- **Index dependencies (M6):** tree-sitter grammars are bundled. Ollama and the embedding model
+  (`index.embeddingModel`) are installed by `conductor index setup`. graphify is installed and pinned by
+  the same command and run in its network-less sandbox. `doctor` verifies each.
 
 ### 11.4 Migration from existing orchestrators (H19)
 - The v1 Worker session runs `/bugFixOrchestrator <item>` unchanged, for items of type bug.
@@ -728,8 +852,12 @@ interface Scheduler{ install(dry: boolean): Promise<Result<string>>; uninstall(d
      - If it is at least 10%, keep `autoStartMaxSize: XS`.
      - If it is under 10%, pilot `S` with 100% verification, or skip auto-small and stay in `assist`.
 1. **Prerequisites:**
+   - **Hook probe:** a scripted live probe confirms the §5.3 semantics table on the installed Claude Code
+     version. It becomes `doctor`'s probe suite, and a version bump re-runs it.
+   - `conductor setup-host`: the `cdt` user, ownership and managed hooks.
+   - The `cdt-hook` wrapper and the Stop pattern gate.
    - Fix done-gate bare-word false positives for non-conductor sessions.
-   - The conductor-mode Stop hook (§5.3).
+   - Bridge hardening in `mcp-bridge` code (`origin:true` is in `src/index.ts` today).
    - Profile schema and tooling.
    - Lock and fencing.
    - Scrubber.
@@ -739,15 +867,20 @@ interface Scheduler{ install(dry: boolean): Promise<Result<string>>; uninstall(d
    - Then shadow mode on the real profile: triage and pack jobs run tool-less, the code index is built
      (structure, embeddings, graphify), and no sessions start.
    - Exit when per-class routing agreement is at least 90% over at least 30 items.
-3. **Assist:**
-   - `conductor start`, packs and re-injection, the ship state machine, notifications.
-   - The full §5.3 hook set.
-   - Shape checks enforced at commit. They're deterministic and their thresholds are tuned in shadow.
-   - Direction checks run in **shadow** for the Approach and Drift checkpoints only.
+3a. **Assist, patterns:**
+   - `conductor start`, packs and re-injection, turn classification, the tool gate, the Stop pattern
+     gate, the ship state machine, notifications.
+   - Approach and Drift direction checks run in **shadow**.
+   - Shape signals are computed and recorded but don't refuse commits yet, for threshold calibration on
+     real commits.
+3b. **Assist, shape enforcement:** once the thresholds are calibrated (≥ 50 commits recorded):
+   - All index layers enforce (structure, clones, dependencies, embeddings, graphify).
+   - The Shape direction check enforces in the same step.
+   - The pre-push and conductor-side re-checks become authoritative.
 4. **Auto-small:** enabled when `doctor` passes §8 and the step-2 threshold holds.
    - Direction checks move to `enforce` per checkpoint once they reach the §6.1 precision bar.
 5. **Scoping proposals:**
-   - Scoping, Scope-expansion and Shape direction checks run, plus graph and embedding candidate recall
+   - Scoping and Scope-expansion direction checks run, plus graph and embedding candidate recall
      for surface discovery.
    - Piloted on one project the human leads, and backtested on the project's original brief for recall of
      the issues filed later.
@@ -786,8 +919,22 @@ interface Scheduler{ install(dry: boolean): Promise<Result<string>>; uninstall(d
 - **Notifier:** an item title containing shell metacharacters never reaches argv; session-name validation
   rejects bad names.
 - **Scrubber:** fixtures for each secret and identifier pattern, at ingest, pack, ledger and egress.
-- **Hooks (§5.3):** every row is driven with a recorded payload and its decision asserted; a hook error in
-  conductor mode denies; outside conductor sessions behavior is unchanged.
+- **Hooks (§5.3):**
+  - every row is driven with a recorded payload and its decision asserted
+  - the `cdt-hook` wrapper turns a crash, a timeout, a non-2 exit, and a missing inner script into an
+    explicit deny with a `9xx` code
+  - `continue:false` ends the turn
+  - the Stop pattern gate blocks at most twice, then allows and records
+  - a non-`cdt` user leaves every conductor hook a no-op
+  - `env -u` of any conductor variable doesn't disable enforcement for `cdt`
+  - existing hooks are unchanged outside `cdt`
+  - edit detection fires on `sed -i`, `tee` and script writes, not only on Edit/Write
+  - the git pre-commit hook catches `commit -a`, `-C` and aliases
+- **Live hook probe** (heavy, also in `doctor`): the §5.3 semantics table against the installed Claude
+  Code version.
+- **Trust domain:** a `cdt` session can't read the HMAC key, can't write the ledger, policy, inbox,
+  managed settings or `.git/hooks`, and a tampered spool entry is ignored. Conductor-side re-verification
+  refuses a push whose head fails checks that passed session-side.
 - **Direction checks:**
   - each checkpoint fires from its hook or conductor trigger, never from an agent tool call
   - forged, unsigned or wrong-role turns are rejected
@@ -799,9 +946,16 @@ interface Scheduler{ install(dry: boolean): Promise<Result<string>>; uninstall(d
   - per-item and per-day caps
   - shadow mode never blocks
   - bridge down: checks run and the mirror back-fills
-- **Shape checks:** fixture repos with an exact clone, a renamed clone, a second-case near-clone, a
-  duplicate dependency and an over-budget diff each produce the right signal. Recorded `proceed` pairs are
-  not re-flagged. A stale index is labeled stale.
+- **Shape checks:**
+  - fixture repos with an exact clone, a renamed clone, a second-case near-clone, a duplicate dependency, a
+    graph-neighbor reinvention and an over-budget diff each produce the right signal
+  - each enforced-outcome row in §6.2 ends (cap exhausted, index unavailable, budget exceeded): no
+    deadlock
+  - an exemption expires on file change and after 30 days
+  - evidence fences untrusted strings
+- **Offline index:** with the network blocked, embeddings and graphify still build; with an egress attempt
+  injected, the graphify adapter fails closed; Prism flags are verified; denied paths and symlinks are
+  never read; the per-worktree overlay matches a full rebuild.
 - **Index:** `adapterContractTests` for structure, embeddings and the graphify adapter; incremental rebuild
   matches a full rebuild.
 - **Turn classification:** an answer to a pending question isn't takeover; unsolicited input is; the
