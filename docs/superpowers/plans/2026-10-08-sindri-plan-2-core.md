@@ -1491,6 +1491,8 @@ git commit -m "feat: sindri ledger with versioned migrations and fencing epoch"
 
 ### Task 4: Singleton tick lock with stale takeover (spec §9.1)
 
+> Amendment (build): S6 — spec §9.1 (M2) requires the taker to re-read the renamed owner file and confirm it is still the dead owner, putting the lock back on a mismatch. The plan's `takeOver` only checked before the rename (under a mutex that is force-cleared after 60 s), so a taker paused past that could move a new live owner's lock away. `takeOver` now re-reads `readOwner(stale)` after a successful rename, renames it back and returns `changed` on a mismatch (new test pins it). Also: test assertions inside `if (x.ok)` are preceded by `expect(x.ok)` (m10), and the real.test.ts comment says Task 6 (m3).
+
 **Files:**
 - Create: `sindri/src/system.ts`, `sindri/src/system-real.ts`, `sindri/src/lock/lock.ts`
 - Modify: `sindri/src/deps.ts` (add `system: SystemProbe`), `sindri/src/cli.ts` (pass `realSystemProbe()`), `sindri/tests/helpers.ts` (add `fakeSystem()` and `system` in `makeDeps`)
@@ -1509,7 +1511,7 @@ git commit -m "feat: sindri ledger with versioned migrations and fencing epoch"
   - `inspectLock(dir, sys, now): { state: "free" | "held" | "stale"; owner: LockOwner | null; leftovers: string[] }` (for `doctor`).
 - Produces (`tests/helpers.ts`): `fakeSystem(over?: Partial<SystemProbe>): SystemProbe` (host `test-host`, boot `boot-1`, pid 4242, every pid alive with start time `start-<pid>`, local disk).
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 Add to `sindri/tests/helpers.ts`:
 
@@ -1565,7 +1567,7 @@ describe("system parsers", () => {
 });
 ```
 
-`sindri/tests/real.test.ts` (smoke tests for the coverage-excluded real implementations; extended in Task 7):
+`sindri/tests/real.test.ts` (smoke tests for the coverage-excluded real implementations; extended in Task 6):
 
 ```ts
 import os from "node:os";
@@ -1835,12 +1837,12 @@ describe("inspectLock", () => {
 });
 ```
 
-- [ ] **Step 2: Run the tests to verify they fail**
+- [x] **Step 2: Run the tests to verify they fail**
 
 Run: `cd sindri && npx vitest run tests/lock.test.ts tests/system.test.ts tests/real.test.ts`
 Expected: FAIL with `Failed to load url ../src/lock/lock.js` (and `../src/system.js`, `../src/system-real.js`).
 
-- [ ] **Step 3: Implement**
+- [x] **Step 3: Implement**
 
 `sindri/src/system.ts`:
 
@@ -2135,7 +2137,7 @@ export function inspectLock(dir: string, sys: SystemProbe, now: () => Date): { s
 
 In `sindri/src/deps.ts`, add `import type { SystemProbe } from "./system.js";` and the field `system: SystemProbe;` to `Deps`. In `sindri/src/cli.ts`, add `import { realSystemProbe } from "./system-real.js";` and pass `system: realSystemProbe(),`.
 
-- [ ] **Step 4: Run the tests**
+- [x] **Step 4: Run the tests**
 
 Run: `cd sindri && npx vitest run && npm run typecheck`
 Expected: all tests PASS; no type errors.
@@ -2143,7 +2145,7 @@ Expected: all tests PASS; no type errors.
 Run: `cd sindri && npm run test:coverage`
 Expected: 100% on all four metrics. If a branch in `lock.ts` is reported uncovered, add the test for it; don't annotate.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add sindri/src/system.ts sindri/src/system-real.ts sindri/src/lock sindri/src/deps.ts sindri/src/cli.ts sindri/tests

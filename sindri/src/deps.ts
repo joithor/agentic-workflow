@@ -1,5 +1,7 @@
 import path from "node:path";
 
+import type { SystemProbe } from "./system.js";
+
 // Everything a command needs from the outside world. Commands never read
 // process.env, process.cwd() or the clock directly, so tests pass a fake.
 export interface Deps {
@@ -7,6 +9,7 @@ export interface Deps {
   cwd: string;
   home: string;
   now: () => Date;
+  system: SystemProbe;
 }
 
 // $AW_STATE_DIR, default ~/.agentic-workflow (shared with judge and scorer).

@@ -3,6 +3,7 @@ import os from "node:os";
 import path from "node:path";
 
 import type { Deps } from "../src/deps.js";
+import type { SystemProbe } from "../src/system.js";
 
 export function tempDir(prefix = "sindri-test-"): string {
   return fs.mkdtempSync(path.join(os.tmpdir(), prefix));
@@ -17,6 +18,21 @@ export function makeDeps(overrides: Partial<Deps> = {}): Deps {
     cwd: home,
     home,
     now: () => new Date("2026-10-08T12:00:00.000Z"),
+    system: fakeSystem(),
     ...overrides,
+  };
+}
+
+export function fakeSystem(over: Partial<SystemProbe> = {}): SystemProbe {
+  return {
+    platform: "darwin",
+    pid: 4242,
+    hostname: () => "test-host",
+    bootId: () => "boot-1",
+    pidAlive: () => true,
+    pidStartTime: (pid) => `start-${pid}`,
+    isLocalDisk: () => true,
+    username: () => "tester",
+    ...over,
   };
 }
