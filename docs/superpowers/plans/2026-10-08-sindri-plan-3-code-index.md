@@ -624,7 +624,7 @@ git commit -m "feat: sindri index and shape profile keys, ledger v2, heavy-job l
   - `inventory(git: GitRunner, repoPath: string, o: { denyPaths: readonly string[]; maxFileKB: number; maxTotalMB: number; select: (p: string) => boolean }): Promise<{ files: IndexedFile[]; skipped: { path: string; reason: SkipReason }[] }>` — tracked files only, sorted by path; throws `SND-INDEX-002` outside a git repo and `SND-INDEX-003` past `maxTotalMB`.
   - `isSourcePath(p: string): boolean` — `.ts .tsx .mts .cts .js .jsx .mjs .cjs`, not `.d.ts`; `isGraphInput(p: string): boolean` — the extensions graphify may read (source in the languages it parses, plus `.md`), so data files, configs and lockfiles never reach it.
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 `sindri/tests/globs.test.ts`:
 
@@ -747,12 +747,12 @@ describe("inventory (Review Focus 1)", () => {
 });
 ```
 
-- [ ] **Step 2: Run the tests to verify they fail**
+- [x] **Step 2: Run the tests to verify they fail**
 
 Run: `cd sindri && npx vitest run tests/globs.test.ts tests/files.test.ts`
 Expected: FAIL with `Failed to load url ../src/index/globs.js` (and `files.js`).
 
-- [ ] **Step 3: Implement**
+- [x] **Step 3: Implement**
 
 `sindri/src/index/globs.ts`:
 
@@ -876,12 +876,12 @@ Add to `ERRORS`:
   "SND-INDEX-003": { summary: "The index input is larger than index.maxTotalMB.", fix: "add generated or vendored paths to index.denyPaths, or raise index.maxTotalMB" },
 ```
 
-- [ ] **Step 4: Run the tests**
+- [x] **Step 4: Run the tests**
 
 Run: `cd sindri && npm run gen && npx vitest run && npm run typecheck && npm run test:coverage`
 Expected: all tests PASS; 100% coverage.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add sindri/src sindri/tests docs/sindri/errors.md

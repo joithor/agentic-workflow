@@ -1,0 +1,29 @@
+import { describe, expect, it } from "vitest";
+
+import { globToRegExp, matchesAny } from "../src/index/globs.js";
+
+describe("globToRegExp", () => {
+  it.each([
+    ["**/*.pem", "a/b/key.pem", true],
+    ["**/*.pem", "key.pem", true],
+    ["**/*.pem", "key.pem.txt", false],
+    [".env*", ".env.local", true],
+    [".env*", "app/.env", false],
+    ["**/.env*", "app/.env", true],
+    ["src/*.ts", "src/a.ts", true],
+    ["src/*.ts", "src/x/a.ts", false],
+    ["src/**", "src/x/y/z.ts", true],
+    ["**/secrets/**", "a/secrets/b/c.ts", true],
+    ["file?.ts", "file1.ts", true],
+    ["a+b.(c).ts", "a+b.(c).ts", true],
+    [".env*", ".ENV.local", true],
+    ["**/*.pem", "keys/KEY.PEM", true],
+  ])("%s vs %s → %s", (glob, p, want) => {
+    expect(globToRegExp(glob).test(p)).toBe(want);
+  });
+
+  it("matchesAny checks every glob", () => {
+    expect(matchesAny("x/key.pem", ["src/**", "**/*.pem"])).toBe(true);
+    expect(matchesAny("x/key.ts", [])).toBe(false);
+  });
+});

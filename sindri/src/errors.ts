@@ -37,6 +37,8 @@ export const ERRORS = {
   "SND-TRACKER-404": { summary: "The tracker has no such item.", fix: "Check the id with `sindri observe`." },
   "SND-TRACKER-405": { summary: "This tracker can't write.", fix: "The plan-file tracker is read-only; edit the plan file." },
   "SND-INDEX-001": { summary: "The heavy-job lock is busy.", fix: "wait for the holder to finish; `sindri doctor` shows it" },
+  "SND-INDEX-002": { summary: "The repo path is not a git repo.", fix: "check repos/<name>.yaml path, then sindri profile approve" },
+  "SND-INDEX-003": { summary: "The index input is larger than index.maxTotalMB.", fix: "add generated or vendored paths to index.denyPaths, or raise index.maxTotalMB" },
   "SND-CLI-900": { summary: "Unexpected internal error (a bug).", fix: "rerun with SINDRI_DEBUG=1 and report the output" },
 } as const satisfies Record<string, ErrorDef>;
 
