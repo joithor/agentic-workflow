@@ -113,7 +113,7 @@ It learns from its own steering so recurring corrections become rules.
    correction in a later turn, CI results. A `proceed` written by an agent is never a label on its own (M5).
 10. **Hooks enforce; agents don't opt in.** Every required check fires on a hook event, a git hook, or a
     conductor action, never because an agent chose to call a tool. MCP is for reading data only. Hooks
-    enforce *patterns*. The *security boundary* is the session OS user, server-side protections, and
+    enforce *patterns*. The *security boundary* is the session container, server-side protections, and
     conductor-side re-verification (§5.3).
 11. **Self-evolution stays inside its tier.** Automatic adoption never touches protected surfaces,
     never edits its own eval suite, and every adoption can be reverted automatically (§7.4).
