@@ -207,9 +207,12 @@ export const observeCommand: Command = async (args, deps) => {
 
 export function parseSince(s: string, now: Date): Date {
   const m = /^(\d+)([dh])$/.exec(s);
-  if (m === null) throw new SindriError("SND-CLI-002", `--since must look like 7d or 12h, got ${s}`, { fix: "sindri ledger --since 7d" });
-  return new Date(now.getTime() - Number(m[1]) * (m[2] === "d" ? 86_400_000 : 3_600_000));
+  const d = m === null ? null : new Date(now.getTime() - Number(m[1]) * (m[2] === "d" ? 86_400_000 : 3_600_000));
+  if (d === null || Number.isNaN(d.getTime())) throw new SindriError("SND-CLI-002", `--since must look like 7d or 12h, got ${s}`, { fix: "sindri ledger --since 7d" });
+  return d;
 }
+
+export const LEDGER_LIMIT = 1000;
 
 export const ledgerCommand: Command = async (args, deps) => {
   const json = args.includes("--json");
@@ -223,9 +226,12 @@ export const ledgerCommand: Command = async (args, deps) => {
       if (values.item !== undefined && db.prepare("SELECT 1 FROM items WHERE id = ?").get(values.item) === undefined) {
         throw new SindriError("SND-ITEM-404", `no such item: ${values.item}`);
       }
-      const rows = listEvents(db, { itemId: values.item, since });
+      // One extra row tells whether the newest LEDGER_LIMIT rows are all there is.
+      const fetched = listEvents(db, { itemId: values.item, since, limit: LEDGER_LIMIT + 1 });
+      const rows = fetched.slice(-LEDGER_LIMIT);
       const text = rows.length === 0 ? "No ledger rows match." : rows.map((r) => `${r.ts}  ${r.item_id}  ${r.kind}  ${r.detail}`).join("\n");
-      return success(text, rows, json);
+      const note = fetched.length > LEDGER_LIMIT ? `showing the newest ${LEDGER_LIMIT} events; narrow with --since or --item for older ones\n` : "";
+      return { ...success(text, rows, json), stderr: note };
     } finally {
       db.close();
     }

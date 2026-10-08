@@ -5,9 +5,10 @@ import { describe, expect, it } from "vitest";
 
 import { stateDir, type Deps } from "../src/deps.js";
 import { bumpEpoch, currentEpoch, ledgerPath, openLedger } from "../src/ledger/db.js";
-import { listEvents, listItems } from "../src/ledger/items.js";
+import { listEvents, listItems, upsertItem } from "../src/ledger/items.js";
+import { makeScrubber } from "../src/scrub/scrub.js";
 import { runCli } from "../src/main.js";
-import { parseSince, progressOf } from "../src/observe/observe.js";
+import { LEDGER_LIMIT, parseSince, progressOf } from "../src/observe/observe.js";
 import { fakeSystem, makeDeps, tempDir } from "./helpers.js";
 
 const PLAN = [
@@ -287,9 +288,33 @@ describe("sindri ledger", () => {
     expect((await runCli(["ledger", "--since", "soon"], deps)).stderr).toContain("SND-CLI-002");
   });
 
+  it("shows the newest events, and says so on stderr when older ones are cut", async () => {
+    const deps = makeDeps();
+    const db = openLedger(ledgerPath(stateDir(deps)));
+    const epoch = bumpEpoch(db);
+    db.transaction(() => {
+      for (let i = 0; i <= LEDGER_LIMIT; i++) {
+        const now = new Date(Date.UTC(2026, 9, 1) + i * 1000);
+        upsertItem(db, { epoch, tickId: "t", now, scrubber: makeScrubber() }, {
+          id: `p.t${i}`, source: "plan-file:r", title: "x", state: "open", size: null, sizedBy: null, ambiguity: null, stepsDone: 0, stepsTotal: 0, contentHash: "h",
+        });
+      }
+    })();
+    db.close();
+    const r = await runCli(["ledger", "--json"], deps);
+    const rows = JSON.parse(r.stdout) as { item_id: string }[];
+    expect(rows).toHaveLength(LEDGER_LIMIT);
+    expect(rows.at(-1)?.item_id).toBe(`p.t${LEDGER_LIMIT}`);
+    expect(rows[0].item_id).toBe("p.t1");
+    expect(r.stderr).toBe(`showing the newest ${LEDGER_LIMIT} events; narrow with --since or --item for older ones\n`);
+    expect((await runCli(["ledger", "--item", "p.t3"], deps)).stderr).toBe("");
+  });
+
   it("parseSince reads days and hours", () => {
     const now = new Date("2026-10-08T12:00:00Z");
     expect(parseSince("2d", now).toISOString()).toBe("2026-10-06T12:00:00.000Z");
     expect(parseSince("3h", now).toISOString()).toBe("2026-10-08T09:00:00.000Z");
+    // A number too big for a Date is an argument error, not a crash.
+    expect(() => parseSince("99999999999999d", now)).toThrow(/--since must look like/);
   });
 });

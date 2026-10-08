@@ -130,7 +130,7 @@ describe("ledger items", () => {
     });
     expect(withEpoch(db, 1, () => markMissing(db, ctx(db), "plan-file:r", new Set(["p.t1"])))).toBe(1);
     expect(withEpoch(db, 1, () => markMissing(db, ctx(db), "plan-file:r", new Set(["p.t1"])))).toBe(0);
-    expect(listItems(db).map((i) => [i.id, i.state])).toEqual([["p.t1", "open"], ["p.t2", "removed"], ["q.t1", "open"]]);
+    expect(listItems(db).map((i) => [i.id, i.state])).toEqual([["q.t1", "open"], ["p.t1", "open"], ["p.t2", "removed"]]);
     expect(listEvents(db, { itemId: "p.t2" }).map((e) => e.kind)).toEqual(["seen", "removed"]);
   });
 
@@ -150,10 +150,33 @@ describe("ledger items", () => {
     withEpoch(db, 1, () => upsertItem(db, ctx(db, "2026-10-01T00:00:00.000Z"), item({ id: "a.t1" })));
     withEpoch(db, 1, () => upsertItem(db, ctx(db, "2026-10-08T00:00:00.000Z"), item({ id: "a.t2" })));
     expect(listEvents(db, { since: new Date("2026-10-05T00:00:00.000Z") }).map((e) => e.item_id)).toEqual(["a.t2"]);
-    expect(listEvents(db, { limit: 1 })).toHaveLength(1);
+    // The limit keeps the newest events, returned oldest first.
+    expect(listEvents(db, { limit: 1 }).map((e) => e.item_id)).toEqual(["a.t2"]);
+    expect(listEvents(db, {}).map((e) => e.item_id)).toEqual(["a.t1", "a.t2"]);
     expect(getCursor(db, "plan-file")).toBeNull();
     setCursor(db, "plan-file", "c1", new Date("2026-10-08T00:00:00.000Z"));
     setCursor(db, "plan-file", "c2", new Date("2026-10-08T01:00:00.000Z"));
     expect(getCursor(db, "plan-file")).toBe("c2");
+  });
+});
+
+describe("ledger items are keyed by source and id (PR #69 review)", () => {
+  it("keeps the same id from two sources apart, and markMissing touches only its own source", () => {
+    const db = openMemoryLedger();
+    bumpEpoch(db);
+    withEpoch(db, 1, () => {
+      expect(upsertItem(db, ctx(db), item({ id: "plan.t1", source: "plan-file:a", title: "A's task" }))).toBe("new");
+      expect(upsertItem(db, ctx(db), item({ id: "plan.t1", source: "plan-file:b", title: "B's task" }))).toBe("new");
+      expect(upsertItem(db, ctx(db), item({ id: "plan.t1", source: "plan-file:b", title: "B's task", contentHash: "h2" }))).toBe("changed");
+    });
+    expect(listItems(db).map((i) => [i.source, i.id, i.title, i.content_hash])).toEqual([
+      ["plan-file:a", "plan.t1", "A's task", "h1"],
+      ["plan-file:b", "plan.t1", "B's task", "h2"],
+    ]);
+    expect(withEpoch(db, 1, () => markMissing(db, ctx(db), "plan-file:a", new Set()))).toBe(1);
+    expect(listItems(db).map((i) => [i.source, i.state])).toEqual([["plan-file:a", "removed"], ["plan-file:b", "open"]]);
+    expect(listEvents(db, { itemId: "plan.t1" }).map((e) => [e.source, e.kind])).toEqual([
+      ["plan-file:a", "seen"], ["plan-file:b", "seen"], ["plan-file:b", "changed"], ["plan-file:a", "removed"],
+    ]);
   });
 });

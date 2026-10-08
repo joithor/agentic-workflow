@@ -8,13 +8,14 @@ export type Ledger = Database.Database;
 
 // MIGRATIONS[i] moves the schema from version i to i+1 (PRAGMA user_version).
 // Append only. Never edit an entry that has shipped. planning/ERD.md mirrors it.
+// Item ids are unique only within a tracker source, so items are keyed by (source, id).
 const MIGRATIONS: readonly string[] = [
   `
   CREATE TABLE meta (key TEXT PRIMARY KEY, value TEXT NOT NULL);
   INSERT INTO meta (key, value) VALUES ('epoch', '0');
   CREATE TABLE items (
-    id TEXT PRIMARY KEY,
     source TEXT NOT NULL,
+    id TEXT NOT NULL,
     title TEXT NOT NULL,
     state TEXT NOT NULL,
     size TEXT,
@@ -25,16 +26,19 @@ const MIGRATIONS: readonly string[] = [
     content_hash TEXT NOT NULL,
     first_seen TEXT NOT NULL,
     last_seen TEXT NOT NULL,
-    epoch INTEGER NOT NULL
+    epoch INTEGER NOT NULL,
+    PRIMARY KEY (source, id)
   );
   CREATE TABLE item_events (
     seq INTEGER PRIMARY KEY AUTOINCREMENT,
-    item_id TEXT NOT NULL REFERENCES items(id),
+    source TEXT NOT NULL,
+    item_id TEXT NOT NULL,
     ts TEXT NOT NULL,
     kind TEXT NOT NULL,
     detail TEXT NOT NULL,
     epoch INTEGER NOT NULL,
-    tick_id TEXT NOT NULL
+    tick_id TEXT NOT NULL,
+    FOREIGN KEY (source, item_id) REFERENCES items(source, id)
   );
   CREATE INDEX item_events_item_ts ON item_events(item_id, ts);
   CREATE INDEX item_events_ts ON item_events(ts);

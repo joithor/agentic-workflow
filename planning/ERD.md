@@ -139,8 +139,8 @@ erDiagram
         TEXT value "NOT NULL"
     }
     items {
-        TEXT id PK "tracker item id"
-        TEXT source "NOT NULL, <tracker type>:<repo>, e.g. plan-file:<repo>"
+        TEXT source PK "NOT NULL, <tracker type>:<repo>, e.g. plan-file:<repo>"
+        TEXT id PK "tracker item id, unique only within its source"
         TEXT title "NOT NULL, scrubbed, <=200 chars"
         TEXT state "open | done | removed"
         TEXT size "XS..XL, NULLABLE"
@@ -155,6 +155,7 @@ erDiagram
     }
     item_events {
         INTEGER seq PK
+        TEXT source FK "with item_id, references items(source, id)"
         TEXT item_id FK
         TEXT ts "ISO-8601"
         TEXT kind "seen | changed | state-changed | removed"
@@ -174,5 +175,7 @@ erDiagram
     }
     items ||--o{ item_events : "has"
 ```
+
+Items are keyed by `(source, id)`: an item id is unique only within its tracker source, so two repos with a same-named plan file never share a row, and `markMissing` closes only its own source's items. `item_events` references that composite key.
 
 Every write runs inside `withEpoch(db, epoch, …)` or `fenced(db, epoch, …)`, an `IMMEDIATE` transaction that rejects a stale epoch (spec §9.1): `withEpoch` throws `SND-LOCK-003`, and `fenced` returns `{ ok: false }` so `observe` can stop as a no-op. Re-approving a profile deletes and re-inserts its `profile_approvals` row, so a rollback becomes the latest approval.
