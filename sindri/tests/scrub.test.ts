@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import { SindriError } from "../src/errors.js";
-import { compileExtraPatterns, makeScrubber } from "../src/scrub/scrub.js";
+import { compileExtraPatterns, makeScrubber, regexRisk } from "../src/scrub/scrub.js";
 
 const s = makeScrubber();
 const ASSIGNED = "g".repeat(12) + "1" + "g".repeat(11);
@@ -103,7 +103,10 @@ describe("scrubber", () => {
     expect(() => compileExtraPatterns([{ kind: "ok", regex: "a" }, { kind: "bad", regex: "(" }])).toThrow(SindriError);
     expect(() => compileExtraPatterns([{ kind: "redos", regex: "(a+)+$" }])).toThrow(/nested quantifier/);
     expect(() => compileExtraPatterns([{ kind: "redos", regex: "(\\w*){2,}" }])).toThrow(/nested quantifier/);
-    expect(() => compileExtraPatterns([{ kind: "alt", regex: "(a|aa)+$" }])).toThrow(/nested quantifier/);
+    expect(() => compileExtraPatterns([{ kind: "alt", regex: "(a|aa)+$" }])).toThrow(/quantified alternation/);
+    expect(() => compileExtraPatterns([{ kind: "redos", regex: "((a+))+$" }])).toThrow(/nested quantifier/);
+    expect(() => compileExtraPatterns([{ kind: "redos", regex: "\\w+\\w+\\w+!" }])).toThrow(/two unbounded quantifiers in a row/);
+    expect(() => compileExtraPatterns([{ kind: "redos", regex: "[a-z]+[a-z]+[a-z]+!" }])).toThrow(/two unbounded quantifiers in a row/);
     expect(() => compileExtraPatterns([{ kind: "empty", regex: "x*" }])).toThrow(/empty string/);
     expect(compileExtraPatterns([{ kind: "fine", regex: "(?:ab|cd)x" }])).toHaveLength(1);
     try {
@@ -112,5 +115,69 @@ describe("scrubber", () => {
       expect((e as SindriError).code).toBe("SND-SCRUB-001");
       expect((e as SindriError).message).toContain("scrub.extraPatterns[0]");
     }
+  });
+});
+
+describe("scrubber: PR #69 review", () => {
+  const V = ASSIGNED;
+  // AWS secret keys often have "/" before their first digit.
+  const AWS_SECRET = "wJalrXUtnFEMI/K" + "7MDENG/bPxRfiCY" + "EXAMPLEKEY";
+
+  it.each([
+    [`"api_` + `key": "${V}"`, V],
+    [`{"client` + `Secret":"${V}"}`, V],
+    [`access` + `Token=${V}`, V],
+    [`client` + `Secret = "${V}"`, V],
+    [`db` + `Password=${V}`, V],
+    [`X-API-` + `Key: ${V}`, V],
+    [`AWS_SECRET_ACCESS_` + `KEY=${AWS_SECRET}`, AWS_SECRET],
+    [`aws_secret_access_` + `key = ${AWS_SECRET}`, AWS_SECRET],
+  ])("redacts the secret-assignment shape %#", (input, secret) => {
+    expect(s.find(input).map((h) => h.kind)).toEqual(["secret-assignment"]);
+    expect(s.scrub(input).text).not.toContain(secret);
+  });
+
+  it("keeps identifiers that merely end in a secret word", () => {
+    const text = ["tokenizer: " + V, "password_hash: " + V, "const apiKey = process.env.API_KEY", "token = response.data.token"].join("\n");
+    expect(s.find(text)).toEqual([]);
+  });
+
+  it("stays linear on a long run with no digit", () => {
+    const start = Date.now();
+    s.find("token=".repeat(100_000));
+    expect(Date.now() - start).toBeLessThan(2000);
+  });
+
+  it("scans a crafted placeholder that holds a secret (R1), and stays idempotent", () => {
+    const aws = "AKIA" + "ABCDEFGHIJKLMNOP";
+    const gh = "ghp" + "_" + "c".repeat(36);
+    expect(s.find(`[REDACTED:${aws}]`).map((h) => h.kind)).toEqual(["aws-access-key"]);
+    expect(s.find(`[REDACTED:${gh}]`).map((h) => h.kind)).toEqual(["github-token"]);
+    const once = s.scrub(`[REDACTED:${aws}] and [REDACTED:${gh}]`).text;
+    expect(once).toBe("[REDACTED:[REDACTED:aws-access-key]] and [REDACTED:[REDACTED:github-token]]");
+    expect(s.scrub(once).text).toBe(once);
+    // A profile kind's placeholder is skipped too.
+    const extra = makeScrubber(compileExtraPatterns([{ kind: "emp-id", regex: "EMP-\\d{6}" }]));
+    expect(extra.scrub(extra.scrub("EMP-123456").text).text).toBe("[REDACTED:emp-id]");
+  });
+
+  it.each([
+    ["(a+)+", "a nested quantifier"],
+    ["((a+))+", "a nested quantifier"],
+    ["(?:(?:a*)){2,3}", "a nested quantifier"],
+    ["(?<n>a?)+", "a nested quantifier"],
+    ["(a|b)*", "a quantified alternation"],
+    ["((a|b))+", "a quantified alternation"],
+    ["\\w+\\w*", "two unbounded quantifiers in a row"],
+    ["[a-z]+?[^\\]x]{2,}", "two unbounded quantifiers in a row"],
+  ])("regexRisk refuses %s", (re, why) => {
+    expect(regexRisk(re)).toBe(why);
+  });
+
+  it.each([
+    "\\bEMP-\\d{6}\\b", "\\bMRN[\\s:#-]*\\d{6,10}\\b", "(?:ab|cd)x", "(a|b)?c", "(?:\\d{3})?-\\d+", "(?=x)a+", "(?<=x)a+", "(?<!x)(?!y)a",
+    "a+ b+", "x{0,1}y", "[]a]+", "a{2}", "x{,3}", "a)b", "(a",
+  ])("regexRisk allows %s", (re) => {
+    expect(regexRisk(re)).toBeNull();
   });
 });

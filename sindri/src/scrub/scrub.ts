@@ -20,10 +20,14 @@ function withFlags(re: RegExp): RegExp {
   return new RegExp(re.source, [...flags].join(""));
 }
 
-const PLACEHOLDER = /\[REDACTED:[A-Za-z0-9_.-]{1,64}\]/g;
+const escapeRe = (s: string): string => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 
 export function makeScrubber(extra: readonly ScrubPattern[] = []): Scrubber {
   const patterns = [...BUILTIN_PATTERNS, ...extra].map((p, order) => ({ ...p, re: withFlags(p.re), order }));
+  // Only a placeholder naming one of this scrubber's kinds is skipped, so a crafted
+  // "[REDACTED:<secret>]" is still scanned.
+  const kinds = [...new Set(patterns.map((p) => p.kind))].map(escapeRe).join("|");
+  const PLACEHOLDER = new RegExp(`\\[REDACTED:(?:${kinds})\\]`, "g");
 
   function find(text: string): ScrubHit[] {
     // Scrubbing is idempotent: a hit that lies inside one of our own
@@ -74,17 +78,94 @@ export function makeScrubber(extra: readonly ScrubPattern[] = []): Scrubber {
   return { find, scrub, scrubDeep };
 }
 
-// A quantified group that itself contains a quantifier, e.g. (a+)+ or (\w*)*,
-// can backtrack catastrophically. Profile patterns run on every record, so refuse them.
-const NESTED_QUANTIFIER = /\((?:[^()\\]|\\.)*[+*}](?:[^()\\]|\\.)*\)[+*{]/;
-// A quantified group with alternatives, e.g. (a|aa)+, can backtrack the same way.
-const QUANTIFIED_ALTERNATION = /\((?:[^()\\]|\\.)*\|(?:[^()\\]|\\.)*\)[+*{]/;
+// Patterns that can backtrack catastrophically. Profile patterns run on every
+// record, so refuse them. The walk follows nested groups at any depth:
+// - a repeated group whose content holds a quantifier, e.g. (a+)+ or ((a+))+
+// - a repeated group with alternatives, e.g. (a|aa)+
+// - two unbounded quantifiers in a row, e.g. \w+\w+! (polynomial backtracking)
+// A syntactic check can't be complete; it refuses the known shapes.
+export function regexRisk(src: string): string | null {
+  let i = 0;
+  let risk: string | null = null;
+  // "none", "once" (? or {0,1} / {1}), "bounded" ({n,m}), or "unbounded" (+ * {n,}).
+  const quantifier = (): "none" | "once" | "bounded" | "unbounded" => {
+    let q: "none" | "once" | "bounded" | "unbounded" = "none";
+    if (src[i] === "+" || src[i] === "*") {
+      q = "unbounded";
+      i++;
+    } else if (src[i] === "?") {
+      q = "once";
+      i++;
+    } else {
+      const m = /^\{(\d+)(,(\d*))?\}/.exec(src.slice(i));
+      if (m === null) return "none";
+      i += m[0].length;
+      const max = m[2] === undefined ? Number(m[1]) : m[3] === "" ? Infinity : Number(m[3]);
+      q = max === Infinity ? "unbounded" : max > 1 ? "bounded" : "once";
+    }
+    if (src[i] === "?") i++; // lazy
+    return q;
+  };
+  const sequence = (): { quantified: boolean; alternation: boolean } => {
+    let quantified = false;
+    let alternation = false;
+    let prevUnbounded = false;
+    while (i < src.length && src[i] !== ")") {
+      if (src[i] === "|") {
+        alternation = true;
+        prevUnbounded = false;
+        i++;
+        continue;
+      }
+      let inner = { quantified: false, alternation: false };
+      if (src[i] === "\\") {
+        i += 2;
+      } else if (src[i] === "[") {
+        i++;
+        if (src[i] === "^") i++;
+        if (src[i] === "]") i++;
+        while (i < src.length && src[i] !== "]") i += src[i] === "\\" ? 2 : 1;
+        i++;
+      } else if (src[i] === "(") {
+        i++;
+        if (src[i] === "?") {
+          i++;
+          if (src[i] === "<" && src[i + 1] !== "=" && src[i + 1] !== "!") {
+            while (i < src.length && src[i] !== ">") i++;
+          } else if (src[i] === "<") {
+            i++;
+          }
+          i++;
+        }
+        inner = sequence();
+        i++;
+      } else {
+        i++;
+      }
+      const q = quantifier();
+      const repeats = q === "bounded" || q === "unbounded";
+      if (repeats && inner.quantified) risk ??= "a nested quantifier";
+      if (repeats && inner.alternation) risk ??= "a quantified alternation";
+      if (q === "unbounded" && prevUnbounded) risk ??= "two unbounded quantifiers in a row";
+      prevUnbounded = q === "unbounded";
+      quantified ||= q !== "none" || inner.quantified;
+      alternation ||= !repeats && inner.alternation;
+    }
+    return { quantified, alternation };
+  };
+  while (i < src.length) {
+    sequence();
+    i++; // a stray ")": the RegExp compile reports it
+  }
+  return risk;
+}
 
 export function compileExtraPatterns(specs: readonly { kind: string; regex: string }[]): ScrubPattern[] {
   return specs.map((spec, i) => {
-    if (NESTED_QUANTIFIER.test(spec.regex) || QUANTIFIED_ALTERNATION.test(spec.regex)) {
-      throw new SindriError("SND-SCRUB-001", `scrub.extraPatterns[${i}] has a nested quantifier, which can hang the scrubber`, {
-        fix: "rewrite it without a quantified group that contains a quantifier",
+    const risk = regexRisk(spec.regex);
+    if (risk !== null) {
+      throw new SindriError("SND-SCRUB-001", `scrub.extraPatterns[${i}] has ${risk}, which can hang the scrubber`, {
+        fix: "rewrite it without a repeated group that holds a quantifier or |, and bound one of any two adjacent + or * (e.g. {1,64})",
       });
     }
     try {
