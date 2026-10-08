@@ -56,7 +56,8 @@ export function profileDiff(deps: Deps, db: Ledger, loaded: LoadedProfile): stri
   const oldFiles = oldRoot !== null && fs.existsSync(oldRoot) ? listRel(oldRoot) : [];
   for (const rel of [...new Set([...oldFiles, ...loaded.files])].sort()) {
     const before = oldRoot === null ? [] : read(path.join(oldRoot, rel));
-    const after = read(path.join(loaded.root, rel));
+    // The bytes that were validated and hashed, never a second read (no TOCTOU).
+    const after = loaded.bytes[rel] === undefined ? [] : loaded.bytes[rel].toString("utf8").split("\n");
     const changed = lineDiff(before, after).filter((l) => !l.startsWith("  "));
     if (changed.length > 0) out.push(`--- ${rel}`, ...changed);
   }

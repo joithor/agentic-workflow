@@ -177,3 +177,43 @@ describe("sizeRank", () => {
     expect(SIZES.map(sizeRank)).toEqual([0, 1, 2, 3, 4]);
   });
 });
+
+describe("loadProfile: PR #69 review", () => {
+  it("never reads inherited keys: a repo named constructor needs its own file", () => {
+    const dir = copyExample();
+    edit(dir, "profile.yaml", (t) => t.replace("repos:\n  - example", "repos:\n  - example\n  - constructor"));
+    expect(issuesOf(dir).map((i) => i.message)).toContain('repo "constructor" has no file repos/constructor.yaml');
+    const r = loadProfile(EXAMPLE);
+    if (!r.ok) throw new Error("example must load");
+    expect(explainKey(r.value, "toString")).toBeNull();
+    expect(explainKey(r.value, "hosts.constructor")).toBeNull();
+  });
+
+  it("reports a profile or repo file for a newer sindri as SND-PROFILE-005, before strict parsing", () => {
+    const dir = copyExample();
+    edit(dir, "profile.yaml", (t) => t.replace("schemaVersion: 1", "schemaVersion: 2") + "newKey: true\n");
+    expect(issuesOf(dir)).toEqual([{ file: "profile.yaml", keyPath: "schemaVersion", message: "schemaVersion 2 is newer than this sindri knows (1)", code: "SND-PROFILE-005" }]);
+    const repo = copyExample();
+    edit(repo, "repos/example.yaml", (t) => t.replace("schemaVersion: 1", "schemaVersion: 3"));
+    expect(issuesOf(repo).map((i) => [i.file, i.code])).toEqual([["repos/example.yaml", "SND-PROFILE-005"]]);
+  });
+
+  it("refuses a secret in a YAML comment, and never prints a secret quoted by a regex compile error", () => {
+    const token = "ghp" + "_" + "c".repeat(36);
+    const dir = copyExample();
+    edit(dir, "profile.yaml", (t) => `${t}# old token: ${token}\n`);
+    const comment = issuesOf(dir);
+    expect(comment).toHaveLength(1);
+    expect(comment[0]).toMatchObject({ file: "profile.yaml", keyPath: "" });
+    expect(comment[0].message).toMatch(/^line \d+ looks like a secret \(github-token\)$/);
+    const re = copyExample();
+    edit(re, "profile.yaml", (t) => `${t}scrub:\n  extraPatterns:\n    - kind: bad\n      regex: "(${"Q".repeat(4)}"\n`);
+    const compile = issuesOf(re).find((i) => i.keyPath === "scrub.extraPatterns");
+    expect(compile?.message).toContain("does not compile");
+    // The same path with a secret inside the broken regex: the message is scrubbed.
+    const leak = copyExample();
+    edit(leak, "profile.yaml", (t) => `${t}scrub:\n  extraPatterns:\n    - kind: bad\n      regex: "(${token}"\n`);
+    const messages = issuesOf(leak).map((i) => i.message).join("\n");
+    expect(messages).not.toContain(token);
+  });
+});

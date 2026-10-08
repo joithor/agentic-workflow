@@ -6,7 +6,7 @@ import YAML from "yaml";
 import type { Deps } from "../src/deps.js";
 import { runCli } from "../src/main.js";
 import { sanitizeName } from "../src/profile/commands.js";
-import { approvalState, approveProfile, snapshotDir } from "../src/profile/approve.js";
+import { approvalState, approveProfile, profileDiff, snapshotDir } from "../src/profile/approve.js";
 import { loadProfile } from "../src/profile/load.js";
 import { ledgerPath, openLedger } from "../src/ledger/db.js";
 import { fakeGit, makeDeps, tempDir } from "./helpers.js";
@@ -287,5 +287,46 @@ describe("coverage of fallbacks and snapshot edge cases", () => {
     fs.appendFileSync(path.join(profileDir(d), "profile.yaml"), "# touch\n");
     const r = await runCli(["profile", "approve"], d);
     expect(r.stdout).toContain("--- repos/example.yaml");
+  });
+});
+
+describe("sindri profile: PR #69 review", () => {
+  it("explain rejects inherited names as keys and repos", async () => {
+    const d = deps();
+    await runCli(["profile", "init"], d);
+    for (const key of ["toString", "constructor"]) expect((await runCli(["profile", "explain", key], d)).stderr).toContain("SND-PROFILE-003");
+    for (const repo of ["constructor", "toString"]) expect((await runCli(["profile", "explain", "mode", "--repo", repo], d)).stderr).toContain("SND-PROFILE-004");
+  });
+
+  it("validate and every profile-loading command say SND-PROFILE-005 for a newer profile", async () => {
+    const d = deps();
+    await runCli(["profile", "init"], d);
+    const file = path.join(profileDir(d), "profile.yaml");
+    fs.writeFileSync(file, fs.readFileSync(file, "utf8").replace("schemaVersion: 1", "schemaVersion: 2"));
+    const v = await runCli(["profile", "validate"], d);
+    expect(v.exitCode).toBe(2);
+    expect(v.stderr).toContain("SND-PROFILE-005 the profile was written for a newer sindri:");
+    expect(v.stderr).toContain("profile.yaml: schemaVersion: schemaVersion 2 is newer than this sindri knows (1)");
+    for (const cmd of [["profile", "explain", "mode"], ["profile", "approve"], ["observe"]]) {
+      expect((await runCli(cmd, d)).stderr).toContain("SND-PROFILE-005 profile.yaml: schemaVersion 2 is newer");
+    }
+  });
+
+  it("the approval diff shows the bytes that were validated, not a second read (no TOCTOU)", async () => {
+    const d = deps();
+    await runCli(["profile", "init"], d);
+    const file = path.join(profileDir(d), "profile.yaml");
+    fs.appendFileSync(file, "# validated\n");
+    const loaded = loadProfile(profileDir(d));
+    if (!loaded.ok) throw new Error("profile must load");
+    fs.writeFileSync(file, fs.readFileSync(file, "utf8").replace("# validated", "# swapped"));
+    const db = openLedger(ledgerPath(path.join(d.env.AW_STATE_DIR as string, "sindri")));
+    try {
+      const diff = profileDiff(d, db, loaded.value);
+      expect(diff).toContain("+ # validated");
+      expect(diff.join("\n")).not.toContain("swapped");
+    } finally {
+      db.close();
+    }
   });
 });

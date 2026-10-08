@@ -1,9 +1,10 @@
 import type { LoadedProfile } from "./load.js";
 
+// Own keys only: "toString" or "constructor" is never a profile key.
 function get(value: unknown, segs: string[]): unknown {
   let cur = value;
   for (const s of segs) {
-    if (cur === null || typeof cur !== "object" || !(s in cur)) return undefined;
+    if (cur === null || typeof cur !== "object" || !Object.hasOwn(cur, s)) return undefined;
     cur = (cur as Record<string, unknown>)[s];
   }
   return cur;

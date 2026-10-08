@@ -6,13 +6,15 @@ import type { ZodError } from "zod";
 
 import { awStateDir, type Deps } from "../deps.js";
 import { compileExtraPatterns, makeScrubber } from "../scrub/scrub.js";
-import { ProfileSchema, RepoSchema, type Profile, type RepoConfig } from "./schema.js";
+import { PROFILE_SCHEMA_VERSION, ProfileSchema, RepoSchema, type Profile, type RepoConfig } from "./schema.js";
 
 export interface ProfileIssue {
   file: string;
   keyPath: string;
   message: string;
   hint?: string;
+  // Set when the issue has its own error code (a profile for a newer sindri).
+  code?: "SND-PROFILE-005";
 }
 
 export interface LoadedProfile {
@@ -79,6 +81,28 @@ function secretValueIssues(file: string, value: unknown, keyPath: string[] = [])
   return [];
 }
 
+// Secrets outside parsed values (a YAML comment such as "# old token: ...") would
+// otherwise be printed by approve's diff and copied into the snapshot.
+function rawSecretIssues(file: string, buf: Buffer): ProfileIssue[] {
+  const text = buf.toString("utf8");
+  return scrubber.find(text).map((hit) => ({
+    file,
+    keyPath: "",
+    message: `line ${text.slice(0, hit.start).split("\n").length} looks like a secret (${hit.kind})`,
+    hint: "remove it (comments too); use a pointer such as env:NAME for real values",
+  }));
+}
+
+// A file for a newer sindri fails fast with its own code, before strict parsing
+// reports every new key as unrecognized.
+function newerIssues(files: [string, unknown][]): ProfileIssue[] {
+  return files.flatMap(([file, raw]) => {
+    const v = raw !== null && typeof raw === "object" ? (raw as { schemaVersion?: unknown }).schemaVersion : undefined;
+    if (typeof v !== "number" || v <= PROFILE_SCHEMA_VERSION) return [];
+    return [{ file, keyPath: "schemaVersion", message: `schemaVersion ${v} is newer than this sindri knows (${PROFILE_SCHEMA_VERSION})`, code: "SND-PROFILE-005" as const }];
+  });
+}
+
 function hashOf(files: string[], bytes: Record<string, Buffer>): string {
   const h = createHash("sha256");
   for (const rel of files) h.update(rel).update("\0").update(bytes[rel]).update("\0");
@@ -92,7 +116,7 @@ export function profileHash(root: string, files: string[]): string {
 function crossCheck(p: Profile, rawRepos: Record<string, unknown>): ProfileIssue[] {
   const issues: ProfileIssue[] = [];
   for (const repo of p.repos) {
-    if (!(repo in rawRepos)) issues.push({ file: "profile.yaml", keyPath: "repos", message: `repo "${repo}" has no file repos/${repo}.yaml` });
+    if (!Object.hasOwn(rawRepos, repo)) issues.push({ file: "profile.yaml", keyPath: "repos", message: `repo "${repo}" has no file repos/${repo}.yaml` });
   }
   for (const repo of Object.keys(rawRepos)) {
     if (!p.repos.includes(repo)) {
@@ -105,7 +129,8 @@ function crossCheck(p: Profile, rawRepos: Record<string, unknown>): ProfileIssue
   try {
     compileExtraPatterns(p.scrub.extraPatterns);
   } catch (e) {
-    issues.push({ file: "profile.yaml", keyPath: "scrub.extraPatterns", message: (e as Error).message });
+    // A regex that doesn't compile is quoted in V8's message: scrub it.
+    issues.push({ file: "profile.yaml", keyPath: "scrub.extraPatterns", message: scrubber.scrub((e as Error).message).text });
   }
   return issues;
 }
@@ -119,6 +144,8 @@ export function loadProfile(root: string): { ok: true; value: LoadedProfile } | 
   const rawRepos: Record<string, unknown> = {};
   for (const f of repoFiles) rawRepos[f.slice(0, -".yaml".length)] = readYaml(root, `repos/${f}`, issues, bytes);
   if (issues.length > 0) return { ok: false, issues };
+  const newer = newerIssues([["profile.yaml", rawProfile], ...Object.entries(rawRepos).map(([repo, raw]): [string, unknown] => [`repos/${repo}.yaml`, raw])]);
+  if (newer.length > 0) return { ok: false, issues: newer };
 
   const parsed = ProfileSchema.safeParse(rawProfile);
   if (!parsed.success) issues.push(...zodIssues("profile.yaml", parsed.error));
@@ -133,8 +160,10 @@ export function loadProfile(root: string): { ok: true; value: LoadedProfile } | 
       repos[repo] = r.data;
     }
   }
-  issues.push(...secretValueIssues("profile.yaml", rawProfile));
-  for (const [repo, raw] of Object.entries(rawRepos)) issues.push(...secretValueIssues(`repos/${repo}.yaml`, raw));
+  for (const [file, raw] of [["profile.yaml", rawProfile], ...Object.entries(rawRepos).map(([repo, r]): [string, unknown] => [`repos/${repo}.yaml`, r])] as [string, unknown][]) {
+    const valueIssues = secretValueIssues(file, raw);
+    issues.push(...(valueIssues.length > 0 ? valueIssues : rawSecretIssues(file, bytes[file])));
+  }
   if (!parsed.success) return { ok: false, issues };
   issues.push(...crossCheck(parsed.data, rawRepos));
   if (issues.length > 0) return { ok: false, issues };

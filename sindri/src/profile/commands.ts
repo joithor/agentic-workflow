@@ -26,7 +26,11 @@ export function requireProfile(deps: Deps, flag?: string): LoadedProfile {
   const root = resolveProfileRoot(deps, flag);
   if (root === null) throw new SindriError("SND-PROFILE-002", "no profile found");
   const r = loadProfile(root);
-  if (!r.ok) throw new SindriError("SND-PROFILE-001", `profile at ${root} has ${r.issues.length} issue(s); run \`sindri profile validate\``);
+  if (!r.ok) {
+    const newer = r.issues.find((i) => i.code === "SND-PROFILE-005");
+    if (newer !== undefined) throw new SindriError("SND-PROFILE-005", `${newer.file}: ${newer.message}`);
+    throw new SindriError("SND-PROFILE-001", `profile at ${root} has ${r.issues.length} issue(s); run \`sindri profile validate\``);
+  }
   return r.value;
 }
 
@@ -106,6 +110,7 @@ function validate(args: string[], deps: Deps): CommandResult {
   const r = loadProfile(root);
   if (r.ok) return success(`Profile valid. (${root}, hash ${r.value.hash.slice(0, 12)})`, { ok: true, root, hash: r.value.hash }, json);
   const details = r.issues.map((i) => `${i.file}${i.keyPath ? `: ${i.keyPath}` : ""}: ${i.message}${i.hint ? ` (fix: ${i.hint})` : ""}`);
+  if (r.issues.some((i) => i.code === "SND-PROFILE-005")) return failure("SND-PROFILE-005", "the profile was written for a newer sindri:", json, { details });
   return failure("SND-PROFILE-001", `profile has ${r.issues.length} issue(s):`, json, { details, fix: "edit each listed key, then sindri profile validate" });
 }
 
@@ -114,7 +119,7 @@ function explain(args: string[], deps: Deps): CommandResult {
   const key = positionals[0];
   if (key === undefined) throw new SindriError("SND-CLI-002", "usage: sindri profile explain <key> [--repo <name>]");
   const loaded = requireProfile(deps, values.profile);
-  if (values.repo !== undefined && !(values.repo in loaded.repos)) throw new SindriError("SND-PROFILE-004", `no repo named ${values.repo}`);
+  if (values.repo !== undefined && !Object.hasOwn(loaded.repos, values.repo)) throw new SindriError("SND-PROFILE-004", `no repo named ${values.repo}`);
   const r = explainKey(loaded, key, values.repo);
   if (r === null) throw new SindriError("SND-PROFILE-003", `no profile key ${key}`);
   return success(`${r.key} = ${JSON.stringify(r.value)}  (from ${r.source})`, r, values.json === true);
