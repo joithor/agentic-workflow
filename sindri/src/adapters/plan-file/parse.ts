@@ -9,7 +9,9 @@ export interface PlanTask {
   hasFilesBlock: boolean;
 }
 
-const FENCE = /^\s*(`{3,}|~{3,})/;
+// CommonMark: a fence starts the line (up to 3 spaces of indent), and a backtick
+// fence's info string has no backtick, so "```code``` and text" is inline code.
+const FENCE = /^ {0,3}(`{3,}(?![^`]*`)|~{3,})/;
 const TASK = /^### Task (\d+):\s*(.+)$/;
 const STEP = /^\s*- \[( |x|X)\] /;
 const FILE_LINE = /^- (?:Create|Modify|Test)(?: \([^)]*\))?:\s*(.+)$/;
@@ -17,6 +19,7 @@ const FILE_LINE = /^- (?:Create|Modify|Test)(?: \([^)]*\))?:\s*(.+)$/;
 // Plan markdown → tasks. Anything inside a fenced block (``` or ~~~, any length,
 // closed only by a bare fence of the same char and at least the same length) is
 // code: never a task heading and never a step (Review Focus 3).
+// CRLF files and a leading BOM parse the same as LF files.
 export function parsePlan(md: string): { title: string; tasks: PlanTask[] } {
   let title = "";
   let fence: string | null = null;
@@ -27,7 +30,7 @@ export function parsePlan(md: string): { title: string; tasks: PlanTask[] } {
     if (cur !== null) tasks.push({ ...cur.task, body: cur.lines.join("\n").trim() });
     cur = null;
   };
-  for (const line of md.split("\n")) {
+  for (const line of md.replace(/^\uFEFF/, "").split(/\r?\n/)) {
     const f = FENCE.exec(line);
     if (fence !== null) {
       const closes = f !== null && f[1][0] === fence[0] && f[1].length >= fence.length && line.trim() === f[1];

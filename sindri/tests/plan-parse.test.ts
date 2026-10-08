@@ -112,3 +112,20 @@ describe("parsePlan fence variants (Review Focus 3)", () => {
     expect(plan.tasks[0].codeLines).toBe(4);
   });
 });
+
+describe("parsePlan line endings and inline code (PR #69 review)", () => {
+  const BT = "`".repeat(3);
+
+  it("parses a CRLF plan, with a leading BOM, the same as an LF plan", () => {
+    const lf = ["# T", "### Task 1: A", "- [x] **Step 1: one**", BT, "code", BT, "### Task 2: B", "- [ ] **Step 1: two**"];
+    const crlf = parsePlan("﻿" + lf.join("\r\n"));
+    expect(crlf).toEqual(parsePlan(lf.join("\n")));
+    expect(crlf.title).toBe("T");
+    expect(crlf.tasks.map((t) => [t.number, t.title, t.stepsDone, t.stepsTotal, t.codeLines])).toEqual([[1, "A", 1, 1, 1], [2, "B", 0, 1, 0]]);
+  });
+
+  it("does not open a fence for inline triple backticks or a fence indented 4+ spaces", () => {
+    const plan = parsePlan(["# T", "### Task 1: A", `${BT}code${BT} and text`, "### Task 2: B", `    ${BT}`, "### Task 3: C", "   " + BT, "### Task 9: fenced", "   " + BT].join("\n"));
+    expect(plan.tasks.map((t) => [t.number, t.codeLines])).toEqual([[1, 0], [2, 0], [3, 1]]);
+  });
+});
