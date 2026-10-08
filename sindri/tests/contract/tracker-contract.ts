@@ -5,6 +5,8 @@ import type { Result, Tracker } from "../../src/adapters/types.js";
 export interface TrackerFixture {
   tracker: Tracker;
   touch(id: string): Promise<void>;
+  // Makes the tracker's source unreachable (for plan-file: delete the plan dir).
+  removeSource(): Promise<void>;
 }
 
 const outcome = (r: Result<void>): string => (r.ok ? "ok" : `${r.error.kind}:${r.error.code}`);
@@ -50,6 +52,19 @@ export function trackerContractTests(name: string, make: () => Promise<TrackerFi
       await touch(target);
       const next = await tracker.scan({ includeDone: false }, first.value.cursor);
       expect(next.ok && next.value.items.map((i) => i.id)).toContain(target);
+    });
+
+    it("a missing source is a fatal error, never an empty backlog", async () => {
+      const { tracker, removeSource } = await make();
+      const first = await tracker.scan({ includeDone: true });
+      if (!first.ok) throw new Error(first.error.message);
+      await removeSource();
+      const scan = await tracker.scan({ includeDone: true }, first.value.cursor);
+      expect(scan.ok).toBe(false);
+      if (!scan.ok) expect(scan.error).toMatchObject({ kind: "fatal", code: "SND-TRACKER-001" });
+      const read = await tracker.read(first.value.items[0].id);
+      expect(read.ok).toBe(false);
+      if (!read.ok) expect(read.error.kind).toBe("fatal");
     });
 
     it("writes are idempotent: the same call twice has the same outcome", async () => {

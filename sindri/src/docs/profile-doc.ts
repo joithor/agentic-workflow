@@ -1,6 +1,7 @@
 import { zodToJsonSchema } from "zod-to-json-schema";
 
 import { ProfileSchema, RepoSchema } from "../profile/schema.js";
+import { cell } from "./markdown.js";
 
 export interface JsonSchemaNode {
   type?: string;
@@ -36,8 +37,8 @@ function typeOf(n: JsonSchemaNode): string {
 export function renderKeyRows(schema: JsonSchemaNode): string[] {
   const required = new Set(schema.required ?? []);
   return Object.entries(schema.properties ?? {}).map(([key, n]) => {
-    const def = n.default === undefined ? "" : `\`${JSON.stringify(n.default)}\``;
-    return `| \`${key}\` | ${typeOf(n)} | ${required.has(key) ? "yes" : "no"} | ${def} | ${n.description ?? ""} |`;
+    const def = n.default === undefined ? "" : cell(`\`${JSON.stringify(n.default)}\``);
+    return `| \`${key}\` | ${typeOf(n)} | ${required.has(key) ? "yes" : "no"} | ${def} | ${cell(n.description ?? "")} |`;
   });
 }
 
@@ -57,7 +58,7 @@ export function renderProfileDoc(): string {
     ...header,
     ...renderKeyRows(toJson(ProfileSchema, "")),
     "",
-    "## repos/<name>.yaml",
+    "## `repos/<name>.yaml`",
     "",
     ...header,
     ...renderKeyRows(toJson(RepoSchema, "")),

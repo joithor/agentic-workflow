@@ -2,9 +2,11 @@ import { err, ok, type Result, type StatusKind, type Tracker, type WorkItem } fr
 
 // In-memory Tracker for tests in this and later plans. Writes are recorded once
 // per idempotency key.
-export function makeFakeTracker(seed: WorkItem[]): Tracker & { touch(id: string): void; writes: string[] } {
+export function makeFakeTracker(seed: WorkItem[]): Tracker & { touch(id: string): void; removeSource(): void; writes: string[] } {
   const items = new Map(seed.map((i) => [i.id, { item: { ...i }, version: 1 }]));
   let version = 1;
+  let gone = false;
+  const missing = <T>(): Result<T> => err({ kind: "fatal", code: "SND-TRACKER-001", message: "fake source removed" });
   const writes: string[] = [];
   const notFound = <T>(id: string): Result<T> => err({ kind: "not-found", code: "SND-TRACKER-404", message: `no item ${id}` });
   const record = (id: string, entry: string): Result<void> => {
@@ -18,7 +20,11 @@ export function makeFakeTracker(seed: WorkItem[]): Tracker & { touch(id: string)
       const e = items.get(id);
       if (e !== undefined) e.version = ++version;
     },
+    removeSource() {
+      gone = true;
+    },
     async scan(scope, cursor) {
+      if (gone) return missing();
       const since = Number(cursor ?? "0");
       const refs = [...items.values()]
         .filter((e) => (scope.includeDone || e.item.state === "open") && e.version > since)
@@ -26,6 +32,7 @@ export function makeFakeTracker(seed: WorkItem[]): Tracker & { touch(id: string)
       return ok({ items: refs, cursor: String(version) });
     },
     async read(id) {
+      if (gone) return missing();
       const e = items.get(id);
       return e === undefined ? notFound(id) : ok({ ...e.item });
     },

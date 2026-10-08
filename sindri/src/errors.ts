@@ -27,8 +27,10 @@ export const ERRORS = {
   "SND-SCRUB-001": { summary: "A profile scrub pattern does not compile.", fix: "Fix the regex at the named scrub.extraPatterns index, then run `sindri profile validate`." },
   "SND-SCRUB-002": { summary: "Staged changes contain likely secrets.", fix: "remove them (use a secret pointer or an env var); for a false positive, commit with --no-verify and say why" },
   "SND-SCRUB-003": { summary: "A different pre-commit hook is already installed.", fix: "Add `sindri scrub --staged || exit 1` to that hook by hand." },
+  "SND-SCRUB-004": { summary: "`scrub --staged` or `--install-pre-commit` ran outside a git repo.", fix: "cd into the repo first, or pass --repo PATH to --install-pre-commit." },
   "SND-LEDGER-001": { summary: "The ledger was written by a newer sindri.", fix: "Upgrade sindri (`scripts/install-sindri.sh` from the latest main), then rerun." },
   "SND-LOCK-003": { summary: "This run's fencing epoch is stale; another run took over.", fix: "Nothing to do; the newer run continues. Check `sindri doctor` if this repeats." },
+  "SND-TRACKER-001": { summary: "The tracker's source is missing (for plan-file: the repo path or plan dir).", fix: "Restore that directory, or fix `path` in repos/<name>.yaml and run `sindri profile approve`." },
   "SND-TRACKER-404": { summary: "The tracker has no such item.", fix: "Check the id with `sindri observe`." },
   "SND-TRACKER-405": { summary: "This tracker can't write.", fix: "The plan-file tracker is read-only; edit the plan file." },
   "SND-CLI-900": { summary: "Unexpected internal error (a bug).", fix: "rerun with SINDRI_DEBUG=1 and report the output" },
@@ -39,14 +41,17 @@ export type ErrorCode = keyof typeof ERRORS;
 export class SindriError extends Error {
   readonly fix?: string;
   readonly details: string[];
+  // 1 when the human can fix it and rerun (spec §10.3 "attention"); default 2.
+  readonly exitCode?: 1 | 2;
   constructor(
     readonly code: ErrorCode,
     message: string,
-    more: { fix?: string; details?: string[] } = {},
+    more: { fix?: string; details?: string[]; exitCode?: 1 | 2 } = {},
   ) {
     super(message);
     this.name = "SindriError";
     this.fix = more.fix;
     this.details = more.details ?? [];
+    this.exitCode = more.exitCode;
   }
 }

@@ -52,6 +52,22 @@ describe("runCli", () => {
     }
   });
 
+  it("scrubs secrets out of SND-CLI-900 text and its debug stack (invariant 8)", async () => {
+    const secret = "AKIA" + "ABCDEFGHIJKLMNOP";
+    COMMANDS.boom = { summary: "test only", usage: "Usage: sindri boom", run: async () => { throw new Error(`bad key ${secret}`); } };
+    try {
+      for (const env of [{}, { SINDRI_DEBUG: "1" }]) {
+        for (const flags of [[], ["--json"]]) {
+          const r = await runCli(["boom", ...flags], makeDeps({ env }));
+          expect(r.stdout + r.stderr).not.toContain(secret);
+          expect(r.stdout + r.stderr).toContain("bad key [REDACTED:aws-access-key]");
+        }
+      }
+    } finally {
+      delete COMMANDS.boom;
+    }
+  });
+
   it("stateDir honors AW_STATE_DIR and falls back to ~/.agentic-workflow", () => {
     expect(stateDir(makeDeps({ env: { AW_STATE_DIR: "/x" } }))).toBe("/x/sindri");
     expect(stateDir(makeDeps({ env: {}, home: "/h" }))).toBe("/h/.agentic-workflow/sindri");

@@ -114,7 +114,7 @@ function scrubberFor(deps: Deps): { scrubber: Scrubber; warning: string } {
 async function install(deps: Deps, repo: string | undefined, json: boolean): Promise<CommandResult> {
   const repoPath = path.resolve(deps.cwd, repo ?? ".");
   const hook = await preCommitPath(deps.git, repoPath);
-  if (hook === null) throw new SindriError("SND-PROFILE-009", `${repoPath} is not inside a git repo`);
+  if (hook === null) throw new SindriError("SND-SCRUB-004", `${repoPath} is not inside a git repo`);
   if (fs.existsSync(hook) && !fs.readFileSync(hook, "utf8").includes(PRE_COMMIT_MARKER)) {
     throw new SindriError("SND-SCRUB-003", `${hook} already exists and is not sindri's`);
   }
@@ -130,7 +130,7 @@ async function staged(deps: Deps, json: boolean): Promise<CommandResult> {
   // "Binary files differ" with no lines, hiding a secret from the scan.
   const args = ["-c", "core.quotePath=false", "diff", "--cached", "--unified=0", "--no-color", "--no-ext-diff", "--text", "--no-textconv", "-M", "--diff-filter=d"];
   const diff = await deps.git.run(args, deps.cwd);
-  if (!diff.ok) throw new SindriError("SND-PROFILE-009", `${deps.cwd} is not inside a git repo`);
+  if (!diff.ok) throw new SindriError("SND-SCRUB-004", `${deps.cwd} is not inside a git repo`);
   const { scrubber, warning } = scrubberFor(deps);
   const hits = parseAddedLines(diff.stdout).flatMap((f) => hitsIn(f, scrubber));
   if (hits.length === 0) return { ...success("No secrets in staged changes.", { hits }, json), stderr: warning };
@@ -149,7 +149,10 @@ export const scrubCommand: Command = async (args, deps) => {
     if (values.staged === true) return await staged(deps, json);
     const { scrubber, warning } = scrubberFor(deps);
     const out = scrubber.scrub(await deps.stdin());
-    return { exitCode: 0, stdout: out.text, stderr: warning + (out.hits.length > 0 ? `scrubbed ${out.hits.length} hit(s)\n` : "") };
+    const stderr = warning + (out.hits.length > 0 ? `scrubbed ${out.hits.length} hit(s)\n` : "");
+    // A filter: the text passes through as-is; --json wraps it with the hits.
+    if (json) return { ...success("", { text: out.text, hits: out.hits }, true), stderr };
+    return { exitCode: 0, stdout: out.text, stderr };
   } catch (e) {
     return fromError(e, json);
   }

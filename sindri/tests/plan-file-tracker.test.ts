@@ -39,6 +39,7 @@ trackerContractTests("plan-file", async () => {
       const file = path.join(root, "docs/superpowers/plans", `${id.split(".t")[0]}.md`);
       fs.writeFileSync(file, fs.readFileSync(file, "utf8").replace("later", "later, edited"));
     },
+    removeSource: async () => fs.rmSync(path.join(root, "docs/superpowers/plans"), { recursive: true }),
   };
 });
 
@@ -112,10 +113,13 @@ describe("plan-file tracker", () => {
     expect(wildcard("a.md").test("aXmd")).toBe(false);
   });
 
-  it("is empty when the plan dir doesn't exist", async () => {
-    const t = makePlanFileTracker({ repoPath: tempDir(), glob: GLOB, include: ["*"], git: fakeGit({}) });
-    const scan = await t.scan({ includeDone: true });
-    expect(scan.ok && scan.value.items).toEqual([]);
+  it("is a typed error, naming what is missing, when the plan dir or repo path doesn't exist", async () => {
+    const root = tempDir();
+    const noDir = await makePlanFileTracker({ repoPath: root, glob: GLOB, include: ["*"], git: fakeGit({}) }).scan({ includeDone: true });
+    expect(noDir).toEqual({ ok: false, error: { kind: "fatal", code: "SND-TRACKER-001", message: `plan dir not found: ${path.join(root, "docs/superpowers/plans")}` } });
+    const gone = path.join(root, "moved");
+    const noRepo = await makePlanFileTracker({ repoPath: gone, glob: GLOB, include: ["*"], git: fakeGit({}) }).read("x.t1");
+    expect(noRepo).toEqual({ ok: false, error: { kind: "fatal", code: "SND-TRACKER-001", message: `repo path not found: ${gone}` } });
   });
 
   it("makeTracker builds the profile's tracker", async () => {

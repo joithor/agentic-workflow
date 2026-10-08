@@ -10,7 +10,7 @@ const item = (id: string, state: "open" | "done" = "open"): WorkItem => ({
 
 trackerContractTests("fake", async () => {
   const t = makeFakeTracker([item("F-1"), item("F-2", "done")]);
-  return { tracker: t, touch: async (id) => t.touch(id) };
+  return { tracker: t, touch: async (id) => t.touch(id), removeSource: async () => t.removeSource() };
 });
 
 describe("fake tracker", () => {

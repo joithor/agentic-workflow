@@ -10,7 +10,7 @@ import { LEDGER_SCHEMA_VERSION, ledgerPath, schemaVersion } from "../ledger/db.j
 import { inspectLock } from "../lock/lock.js";
 import type { Command } from "../main.js";
 import { fromError, success, type ExitCode } from "../output.js";
-import { isApproved } from "../profile/approve.js";
+import { approvalProblem, approvalState, type ApprovalState } from "../profile/approve.js";
 import { loadProfile, resolveProfileRoot, type LoadedProfile } from "../profile/load.js";
 import { hookBinary, preCommitPath, PRE_COMMIT_MARKER } from "../scrub/commands.js";
 
@@ -80,18 +80,17 @@ function lockCheck(deps: Deps): Check {
 
 function approvedCheck(deps: Deps, loaded: LoadedProfile): Check {
   const file = ledgerPath(stateDir(deps));
-  let approved = false;
+  let state: ApprovalState = { kind: "never-approved" };
   if (fs.existsSync(file)) {
     try {
-      approved = withReadonlyLedger(file, (db) => isApproved(db, loaded.hash));
+      state = withReadonlyLedger(file, (db) => approvalState(deps, db, loaded.hash));
     } catch {
-      approved = false; // an unreadable ledger is reported by the ledger check
+      // The ledger check reports why the ledger can't be read.
+      return { name: "profile-approved", status: "warn", detail: "can't read approvals from the ledger (see the ledger check)", fix: "fix the ledger check first, then rerun sindri doctor" };
     }
   }
-  const short = loaded.hash.slice(0, 12);
-  return approved
-    ? { name: "profile-approved", status: "ok", detail: short }
-    : { name: "profile-approved", status: "warn", detail: `${short} is not approved`, fix: "sindri profile approve" };
+  if (state.kind === "approved") return { name: "profile-approved", status: "ok", detail: loaded.hash.slice(0, 12) };
+  return { name: "profile-approved", status: "warn", detail: approvalProblem(state, loaded.hash), fix: "sindri profile approve" };
 }
 
 async function profileChecks(deps: Deps, loaded: LoadedProfile): Promise<Check[]> {

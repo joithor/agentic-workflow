@@ -10,12 +10,10 @@ export function snapshotDir(deps: Deps, hash: string): string {
   return path.join(stateDir(deps), "profile-approved", hash);
 }
 
-export function isApproved(db: Ledger, hash: string): boolean {
-  return db.prepare("SELECT 1 FROM profile_approvals WHERE hash = ?").get(hash) !== undefined;
-}
-
+// The latest approval is the one inserted last: approveProfile re-inserts on every
+// approval, so a rollback moves to the end whatever the wall clock says.
 export function lastApproved(db: Ledger): { hash: string; approved_at: string } | null {
-  const row = db.prepare("SELECT hash, approved_at FROM profile_approvals ORDER BY approved_at DESC, rowid DESC LIMIT 1").get() as
+  const row = db.prepare("SELECT hash, approved_at FROM profile_approvals ORDER BY rowid DESC LIMIT 1").get() as
     | { hash: string; approved_at: string }
     | undefined;
   return row ?? null;
@@ -81,19 +79,41 @@ export function approveProfile(deps: Deps, db: Ledger, loaded: LoadedProfile): v
   if (profileHash(dest, loaded.files) !== loaded.hash) {
     throw new SindriError("SND-PROFILE-006", "the approval snapshot doesn't match what was validated", { fix: "sindri profile approve" });
   }
-  // Re-approving an earlier profile (a rollback) makes it the latest approval again.
-  db.prepare(
-    "INSERT INTO profile_approvals (hash, approved_at, approved_by) VALUES (?, ?, ?) ON CONFLICT(hash) DO UPDATE SET approved_at = excluded.approved_at, approved_by = excluded.approved_by",
-  ).run(
+  // Re-approving an earlier profile (a rollback) makes it the latest approval again:
+  // delete and re-insert, so its rowid is the newest.
+  db.prepare("DELETE FROM profile_approvals WHERE hash = ?").run(loaded.hash);
+  db.prepare("INSERT INTO profile_approvals (hash, approved_at, approved_by) VALUES (?, ?, ?)").run(
     loaded.hash, deps.now().toISOString(), deps.system.username(),
   );
 }
 
-// Spec §8.7: a profile change takes effect only once approved, so runtime
-// commands load the last approved snapshot, not the live files.
-export function approvedProfile(deps: Deps, db: Ledger): LoadedProfile | null {
+// The one meaning of "approved" (spec §8.7, plan amendment 8), shared by
+// `profile approve`, `doctor` and `observe`. A profile change takes effect only
+// once approved: runtime commands load the latest approval's snapshot, never the
+// live files, and the live profile is approved only when it is that snapshot.
+export type ApprovalState =
+  | { kind: "approved"; approved: LoadedProfile }
+  | { kind: "never-approved" }
+  | { kind: "changed-since-approval"; approved: LoadedProfile }
+  | { kind: "snapshot-missing"; hash: string };
+
+export function approvalState(deps: Deps, db: Ledger, liveHash: string): ApprovalState {
   const last = lastApproved(db);
-  if (last === null) return null;
+  if (last === null) return { kind: "never-approved" };
   const r = loadProfile(snapshotDir(deps, last.hash));
-  return r.ok && r.value.hash === last.hash ? r.value : null;
+  if (!r.ok || r.value.hash !== last.hash) return { kind: "snapshot-missing", hash: last.hash };
+  return { kind: r.value.hash === liveHash ? "approved" : "changed-since-approval", approved: r.value };
+}
+
+// One sentence per state that isn't "approved", naming the next step.
+export function approvalProblem(state: Exclude<ApprovalState, { kind: "approved" }>, liveHash: string): string {
+  const live = liveHash.slice(0, 12);
+  switch (state.kind) {
+    case "never-approved":
+      return `profile ${live} has never been approved`;
+    case "changed-since-approval":
+      return `the live profile ${live} differs from the approved profile ${state.approved.hash.slice(0, 12)}, which runs use`;
+    case "snapshot-missing":
+      return `the snapshot of approved profile ${state.hash.slice(0, 12)} is missing or invalid; re-approve`;
+  }
 }

@@ -103,7 +103,7 @@ describe("sindri scrub --staged", () => {
 
   it("fails outside a git repo", async () => {
     const r = await runCli(["scrub", "--staged"], makeDeps({ cwd: tempDir() }));
-    expect(r.stderr).toContain("SND-PROFILE-009");
+    expect(r.stderr).toContain("SND-SCRUB-004");
   });
 });
 
@@ -141,7 +141,7 @@ describe("sindri scrub --install-pre-commit", () => {
     expect(await preCommitPath(realGitRunner(), root)).toBe(path.join(real, ".githooks", "pre-commit"));
     const r = await runCli(["scrub", "--install-pre-commit", "--repo", root], makeDeps());
     expect(r.stdout).toContain(path.join(real, ".githooks", "pre-commit"));
-    expect((await runCli(["scrub", "--install-pre-commit"], makeDeps({ cwd: tempDir() }))).stderr).toContain("SND-PROFILE-009");
+    expect((await runCli(["scrub", "--install-pre-commit"], makeDeps({ cwd: tempDir() }))).stderr).toContain("SND-SCRUB-004");
   });
 });
 
@@ -182,5 +182,13 @@ describe("sindri scrub (stdin)", () => {
     expect(r.stderr).toBe("scrubbed 1 hit(s)\n");
     const none = await runCli(["scrub"], makeDeps({ stdin: async () => "plain\n" }));
     expect(none).toEqual({ exitCode: 0, stdout: "plain\n", stderr: "" });
+  });
+
+  it("--json prints the scrubbed text and the hits (kinds and offsets only)", async () => {
+    const secret = "ghp" + "_" + "q".repeat(36);
+    const r = await runCli(["scrub", "--json"], makeDeps({ stdin: async () => `token ${secret}\n` }));
+    expect(r.exitCode).toBe(0);
+    expect(r.stdout).not.toContain(secret);
+    expect(JSON.parse(r.stdout)).toEqual({ text: "token [REDACTED:github-token]\n", hits: [{ kind: "github-token", start: 6, end: 46 }] });
   });
 });

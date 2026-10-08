@@ -114,6 +114,17 @@ describe("sindri doctor", () => {
   });
 });
 
+describe("sindri doctor fix hints clear their warning", () => {
+  it("state-dir: the suggested `sindri profile init` creates the state dir (mode 700)", async () => {
+    const d = makeDeps();
+    const before = await byName(d);
+    expect(before["state-dir"]).toMatchObject({ status: "warn", detail: "not created yet", fix: "sindri profile init --ring0 (or sindri profile init)" });
+    await runCli(["profile", "init"], d);
+    expect((await byName(d))["state-dir"]).toMatchObject({ status: "ok", detail: stateDir(d) });
+    expect(fs.statSync(stateDir(d)).mode & 0o777).toBe(0o700);
+  });
+});
+
 describe("sindri doctor coverage paths", () => {
   it("reports an executable hook binary as ok", async () => {
     const d = await ring0Deps();

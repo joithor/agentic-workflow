@@ -10,7 +10,7 @@ import { ledgerPath, openLedger, withEpoch } from "../ledger/db.js";
 import { acquireTickLock } from "../lock/lock.js";
 import type { Command } from "../main.js";
 import { failure, fromError, success, type CommandResult } from "../output.js";
-import { approveProfile, isApproved, profileDiff } from "./approve.js";
+import { approvalProblem, approvalState, approveProfile, profileDiff } from "./approve.js";
 import { explainKey } from "./explain.js";
 import { loadProfile, resolveProfileRoot, type LoadedProfile } from "./load.js";
 import { PROFILE_SCHEMA_VERSION } from "./schema.js";
@@ -81,6 +81,8 @@ async function init(args: string[], deps: Deps): Promise<CommandResult> {
     // "wx": never write through a symlink or over a file we didn't just remove.
     fs.writeFileSync(target, text, { flag: "wx", mode: 0o600 });
   }
+  // The state dir (spec §5.2) exists from init on, so doctor's state-dir check passes.
+  fs.mkdirSync(stateDir(deps), { recursive: true, mode: 0o700 });
   const notes: string[] = [];
   if (dir !== link) {
     const st = fs.lstatSync(link, { throwIfNoEntry: false });
@@ -150,10 +152,13 @@ async function approve(args: string[], deps: Deps): Promise<CommandResult> {
   try {
     const want = positionals[0];
     if (want === undefined) {
-      if (isApproved(db, loaded.hash)) return success(`Profile ${short} is approved.`, { hash: loaded.hash, approved: true }, json);
+      const state = approvalState(deps, db, loaded.hash);
+      if (state.kind === "approved") return success(`Profile ${short} is approved.`, { hash: loaded.hash, approved: true, state: state.kind }, json);
+      const approvedHash = state.kind === "never-approved" ? null : state.kind === "snapshot-missing" ? state.hash : state.approved.hash;
+      const problem = approvalProblem(state, loaded.hash);
       const diff = profileDiff(deps, db, loaded);
-      const text = [`Profile ${short} is not approved. Changes since the last approval:`, ...diff, "", `To approve: sindri profile approve ${short}`].join("\n");
-      return success(text, { hash: loaded.hash, approved: false, diff }, json, 1);
+      const text = [`${problem[0].toUpperCase()}${problem.slice(1)}. Changes since the last approval:`, ...diff, "", `To approve: sindri profile approve ${short}`].join("\n");
+      return success(text, { hash: loaded.hash, approved: false, state: state.kind, approvedHash, diff }, json, 1);
     }
     if (want.length < 12) throw new SindriError("SND-CLI-002", "give at least 12 characters of the profile hash", { fix: `sindri profile approve ${short}` });
     if (!loaded.hash.startsWith(want)) {

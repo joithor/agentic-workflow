@@ -1,11 +1,10 @@
 import { ERRORS } from "../errors.js";
-
-const esc = (s: string): string => s.replace(/\|/g, "\\|");
+import { cell } from "./markdown.js";
 
 export function renderErrorsDoc(): string {
   const rows = Object.entries(ERRORS)
     .sort(([a], [b]) => a.localeCompare(b))
-    .map(([code, d]) => `| \`${code}\` | ${esc(d.summary)} | ${esc(d.fix)} |`);
+    .map(([code, d]) => `| \`${code}\` | ${cell(d.summary)} | ${cell(d.fix)} |`);
   return [
     "# Sindri error codes",
     "",

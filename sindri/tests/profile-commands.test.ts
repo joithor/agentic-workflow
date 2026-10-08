@@ -6,7 +6,7 @@ import YAML from "yaml";
 import type { Deps } from "../src/deps.js";
 import { runCli } from "../src/main.js";
 import { sanitizeName } from "../src/profile/commands.js";
-import { approveProfile, approvedProfile, snapshotDir } from "../src/profile/approve.js";
+import { approvalState, approveProfile, snapshotDir } from "../src/profile/approve.js";
 import { loadProfile } from "../src/profile/load.js";
 import { ledgerPath, openLedger } from "../src/ledger/db.js";
 import { fakeGit, makeDeps, tempDir } from "./helpers.js";
@@ -216,7 +216,7 @@ describe("profile approve (spec §8.7)", () => {
     fs.writeFileSync(file, original);
     expect(await approve()).toBe(a);
     const db = openLedger(ledgerPath(path.join(d.env.AW_STATE_DIR as string, "sindri")));
-    expect(approvedProfile(d, db)?.hash).toBe(a);
+    expect(approvalState(d, db, a)).toMatchObject({ kind: "approved", approved: { hash: a } });
     db.close();
   });
 
@@ -261,18 +261,18 @@ describe("coverage of fallbacks and snapshot edge cases", () => {
     }
   });
 
-  it("approvedProfile is null with no approval and when the snapshot is gone", async () => {
+  it("approvalState: never approved, approved, then snapshot missing once the snapshot is gone", async () => {
     const d = deps();
     await runCli(["profile", "init"], d);
     const stateRoot = path.join(d.env.AW_STATE_DIR as string, "sindri");
     const db = openLedger(ledgerPath(stateRoot));
     try {
-      expect(approvedProfile(d, db)).toBeNull();
       const hash = JSON.parse((await runCli(["profile", "approve", "--json"], d)).stdout).hash as string;
+      expect(approvalState(d, db, hash)).toEqual({ kind: "never-approved" });
       await runCli(["profile", "approve", hash.slice(0, 12)], { ...d, isTTY: true, prompt: async () => hash.slice(0, 6) });
-      expect(approvedProfile(d, db)?.hash).toBe(hash);
+      expect(approvalState(d, db, hash)).toMatchObject({ kind: "approved", approved: { hash } });
       fs.rmSync(snapshotDir(d, hash), { recursive: true });
-      expect(approvedProfile(d, db)).toBeNull();
+      expect(approvalState(d, db, hash)).toEqual({ kind: "snapshot-missing", hash });
     } finally {
       db.close();
     }

@@ -43,6 +43,18 @@ describe("scrubber", () => {
     );
   });
 
+  it("is idempotent: its own placeholder is never a hit (M9)", () => {
+    const inputs = [...CASES.map(([input]) => input), CASES.map(([input]) => input).join("\n"), "https://" + "user:" + "[REDACTED:credentialed-url]" + "@example.com/x"];
+    for (const input of inputs) {
+      const once = s.scrub(input).text;
+      expect(s.find(once)).toEqual([]);
+      expect(s.scrub(once).text).toBe(once);
+    }
+    // A real secret beside a placeholder, before or after it, is still found.
+    expect(s.find("[REDACTED:jwt] " + "AKIA" + "ABCDEFGHIJKLMNOP").map((h) => h.kind)).toEqual(["aws-access-key"]);
+    expect(s.find("AKIA" + "ABCDEFGHIJKLMNOP" + " [REDACTED:jwt]").map((h) => h.kind)).toEqual(["aws-access-key"]);
+  });
+
   it("stays linear on an unterminated private-key header", () => {
     const text = ("-----BEGIN " + "PRIVATE KEY-----\n").repeat(2000);
     expect(s.find(text)).toEqual([]);

@@ -6,6 +6,7 @@ import { ledgerCommand, observeCommand } from "./observe/observe.js";
 import { profileCommand } from "./profile/commands.js";
 import { failure, success, type CommandResult } from "./output.js";
 import { scrubCommand } from "./scrub/commands.js";
+import { makeScrubber } from "./scrub/scrub.js";
 
 export type Command = (args: string[], deps: Deps) => Promise<CommandResult>;
 
@@ -35,7 +36,7 @@ export const COMMANDS: Record<string, CommandDef> = {
   },
   scrub: {
     summary: "Scrub stdin, check staged changes, or install the secret-scan pre-commit hook",
-    usage: "Usage: sindri scrub < text | sindri scrub --staged [--json] | sindri scrub --install-pre-commit [--repo PATH]",
+    usage: "Usage: sindri scrub [--json] < text | sindri scrub --staged [--json] | sindri scrub --install-pre-commit [--repo PATH]",
     run: scrubCommand,
   },
   doctor: { summary: "Health checks, one line each: ok / warn / fail plus a fix", usage: "Usage: sindri doctor [--json]", run: doctorCommand },
@@ -66,8 +67,11 @@ export async function runCli(argv: string[], deps: Deps): Promise<CommandResult>
     return await command.run(rest, deps);
   } catch (e) {
     // Commands render SindriErrors themselves; anything reaching here is a bug.
-    const message = e instanceof Error ? e.message : String(e);
-    const details = deps.env.SINDRI_DEBUG === "1" && e instanceof Error ? (e.stack ?? "").split("\n") : [];
+    // Invariant 8: no secrets in output (launchd logs stderr). Built-in patterns
+    // only: the profile may be what broke.
+    const { scrub } = makeScrubber();
+    const message = scrub(e instanceof Error ? e.message : String(e)).text;
+    const details = deps.env.SINDRI_DEBUG === "1" && e instanceof Error ? scrub(e.stack ?? "").text.split("\n") : [];
     return failure("SND-CLI-900", `unexpected error: ${message}`, json, { details });
   }
 }

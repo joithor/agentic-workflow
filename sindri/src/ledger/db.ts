@@ -115,13 +115,19 @@ export function bumpEpoch(db: Ledger): number {
 }
 
 // Fencing (spec §9.1): every write carries the epoch the writer acquired the
-// lock under. A writer whose epoch is no longer current has been taken over.
-export function withEpoch<T>(db: Ledger, epoch: number, fn: () => T): T {
+// lock under. A writer whose epoch is no longer current has been taken over:
+// `fenced` then runs nothing and says so; `withEpoch` throws SND-LOCK-003.
+export function fenced<T>(db: Ledger, epoch: number, fn: () => T): { ok: true; value: T } | { ok: false; current: number } {
   return db
     .transaction(() => {
       const cur = currentEpoch(db);
-      if (cur !== epoch) throw new SindriError("SND-LOCK-003", `stale epoch ${epoch} (current ${cur}); another tick took over`);
-      return fn();
+      return cur === epoch ? { ok: true as const, value: fn() } : { ok: false as const, current: cur };
     })
     .immediate();
+}
+
+export function withEpoch<T>(db: Ledger, epoch: number, fn: () => T): T {
+  const r = fenced(db, epoch, fn);
+  if (!r.ok) throw new SindriError("SND-LOCK-003", `stale epoch ${epoch} (current ${r.current}); another tick took over`);
+  return r.value;
 }

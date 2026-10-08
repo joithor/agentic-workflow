@@ -57,7 +57,6 @@ export function makePlanFileTracker(o: { repoPath: string; glob: string; include
   let cache: { key: string; items: Entry[] } | null = null;
 
   function planFiles(): { name: string; key: string }[] {
-    if (!fs.existsSync(dir)) return [];
     return fs
       .readdirSync(dir, { withFileTypes: true })
       .filter((e) => e.isFile() && e.name.endsWith(".md") && matchers.some((m) => m.test(e.name)))
@@ -67,10 +66,16 @@ export function makePlanFileTracker(o: { repoPath: string; glob: string; include
       .sort((a, b) => a.name.localeCompare(b.name));
   }
 
-  async function all(): Promise<Entry[]> {
+  // A missing repo path or plan dir is an error, never an empty backlog: an empty
+  // scan would make observe mark every item removed.
+  async function all(): Promise<Result<Entry[]>> {
+    if (!fs.existsSync(dir)) {
+      const what = fs.existsSync(o.repoPath) ? `plan dir not found: ${dir}` : `repo path not found: ${o.repoPath}`;
+      return err({ kind: "fatal", code: "SND-TRACKER-001", message: what });
+    }
     const files = planFiles();
     const key = files.map((f) => f.key).join("|");
-    if (cache !== null && cache.key === key) return cache.items;
+    if (cache !== null && cache.key === key) return ok(cache.items);
     const log = await o.git.run(["log", "--format=%x1e%ae%x09%cI", "--name-only", "--", relDir], o.repoPath);
     const history = log.ok ? parseGitHistory(log.stdout) : new Map<string, { authors: string[]; date: string }>();
     const out: Entry[] = [];
@@ -108,13 +113,15 @@ export function makePlanFileTracker(o: { repoPath: string; glob: string; include
       }
     }
     cache = { key, items: out };
-    return out;
+    return ok(out);
   }
 
   return {
     async scan(scope, cursor) {
       const prev = decodeCursor(cursor);
-      const items = await all();
+      const r = await all();
+      if (!r.ok) return err(r.error);
+      const items = r.value;
       const changed = items
         .filter((x) => (scope.includeDone || x.item.state === "open") && prev[x.item.id] !== x.hash)
         .map((x) => ({ id: x.item.id, updatedAt: x.item.updatedAt }));
@@ -122,7 +129,9 @@ export function makePlanFileTracker(o: { repoPath: string; glob: string; include
       return ok({ items: changed, cursor: next });
     },
     async read(id) {
-      const found = (await all()).find((x) => x.item.id === id);
+      const r = await all();
+      if (!r.ok) return err(r.error);
+      const found = r.value.find((x) => x.item.id === id);
       return found === undefined ? err({ kind: "not-found", code: "SND-TRACKER-404", message: `no plan task ${id}` }) : ok(found.item);
     },
     comment: async () => READ_ONLY(),

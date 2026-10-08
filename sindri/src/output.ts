@@ -35,6 +35,6 @@ export function failure(
 }
 
 export function fromError(e: unknown, json: boolean): CommandResult {
-  if (e instanceof SindriError) return failure(e.code, e.message, json, { fix: e.fix, details: e.details });
+  if (e instanceof SindriError) return failure(e.code, e.message, json, { fix: e.fix, details: e.details, exitCode: e.exitCode });
   throw e;
 }

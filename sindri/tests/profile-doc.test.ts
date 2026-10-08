@@ -2,6 +2,8 @@ import fs from "node:fs";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
 
+import { renderErrorsDoc } from "../src/docs/errors-doc.js";
+import { cell } from "../src/docs/markdown.js";
 import { renderKeyRows, renderProfileDoc, renderSchemas } from "../src/docs/profile-doc.js";
 
 const ROOT = path.resolve(import.meta.dirname, "../..");
@@ -39,5 +41,18 @@ describe("generated profile docs (run: cd sindri && npm run gen)", () => {
       "| `f` | any[] | no |  |  |",
     ]);
     expect(renderKeyRows({})).toEqual([]);
+  });
+
+  it("escapes <…> and | in table cells so GitHub renders them (M2)", () => {
+    expect(cell("sindri/<user>/<item> a|b and `x <y> | z`")).toBe("sindri/&lt;user&gt;/&lt;item&gt; a\\|b and `x <y> \\| z`");
+    expect(renderKeyRows({ properties: { k: { type: "string", default: "a|b", description: "repos/<name>.yaml" } } })).toEqual([
+      "| `k` | string | no | `\"a\\|b\"` | repos/&lt;name&gt;.yaml |",
+    ]);
+    const doc = renderProfileDoc();
+    expect(doc).toContain("## `repos/<name>.yaml`");
+    expect(doc).toContain("sindri/&lt;user&gt;/&lt;item&gt;");
+    expect(doc).not.toContain("sindri/<user>");
+    expect(renderErrorsDoc()).toContain("--profile &lt;dir&gt;");
+    expect(renderErrorsDoc()).toContain("`sindri profile approve <hash>`");
   });
 });

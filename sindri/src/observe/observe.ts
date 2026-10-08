@@ -8,12 +8,12 @@ import { parseFlags } from "../args.js";
 import { stateDir, type Deps } from "../deps.js";
 import { SindriError } from "../errors.js";
 import { ulid } from "../ids.js";
-import { ledgerPath, openLedger, withEpoch, type Ledger } from "../ledger/db.js";
+import { fenced, ledgerPath, openLedger, type Ledger } from "../ledger/db.js";
 import { listEvents, markMissing, setCursor, upsertItem } from "../ledger/items.js";
 import { acquireTickLock } from "../lock/lock.js";
 import type { Command } from "../main.js";
 import { fromError, success, type CommandResult } from "../output.js";
-import { approvedProfile } from "../profile/approve.js";
+import { approvalProblem, approvalState } from "../profile/approve.js";
 import { requireProfile, ring0Files } from "../profile/commands.js";
 import { loadProfile, resolveProfileRoot, type LoadedProfile } from "../profile/load.js";
 import { compileExtraPatterns, makeScrubber } from "../scrub/scrub.js";
@@ -66,7 +66,10 @@ function unwrapProfile(r: ReturnType<typeof loadProfile>): LoadedProfile {
 
 async function readAll(loaded: LoadedProfile, deps: Deps): Promise<Snapshot> {
   const tracker = makeTracker(loaded, deps);
-  const scan = unwrap(await tracker.scan({ includeDone: true }));
+  const scanned = await tracker.scan({ includeDone: true });
+  // No scan, no record: an empty result here would mark every item removed.
+  if (!scanned.ok) throw new SindriError(scanned.error.code, `${scanned.error.message}; nothing was recorded`, { exitCode: 1 });
+  const scan = scanned.value;
   const items: WorkItem[] = [];
   for (const ref of scan.items) items.push(unwrap(await tracker.read(ref.id)));
   items.sort((a, b) => Number(a.meta.order) - Number(b.meta.order));
@@ -76,12 +79,15 @@ async function readAll(loaded: LoadedProfile, deps: Deps): Promise<Snapshot> {
 const sourceOf = (loaded: LoadedProfile): string => `${loaded.profile.tracker.type}:${loaded.profile.tracker.repo}`;
 
 // Call while holding the tick lock, with the epoch it was acquired under.
-function record(db: Ledger, deps: Deps, loaded: LoadedProfile, snap: Snapshot, epoch: number): { new: number; changed: number; removed: number } {
+type Counts = { new: number; changed: number; removed: number };
+
+// Not ok when the run was fenced out: then nothing is written.
+function record(db: Ledger, deps: Deps, loaded: LoadedProfile, snap: Snapshot, epoch: number): ReturnType<typeof fenced<Counts>> {
   const scrubber = makeScrubber(compileExtraPatterns(loaded.profile.scrub.extraPatterns));
   const ctx = { epoch, tickId: ulid(deps.now()), now: deps.now(), scrubber };
   const source = sourceOf(loaded);
-  return withEpoch(db, epoch, () => {
-    const counts = { new: 0, changed: 0, removed: 0 };
+  return fenced(db, epoch, () => {
+    const counts: Counts = { new: 0, changed: 0, removed: 0 };
     for (const item of snap.items) {
       const a = assess(item, loaded.profile);
       const outcome = upsertItem(db, ctx, {
@@ -106,13 +112,15 @@ function table(rows: ObserveRow[]): string[] {
 }
 
 function report(
-  loaded: LoadedProfile, snap: Snapshot, recorded: { new: number; changed: number; removed: number } | null, note: string, attention: boolean, json: boolean,
+  loaded: LoadedProfile, snap: Snapshot, recorded: Counts | null, note: string, attention: boolean, json: boolean,
 ): CommandResult {
   const scrubber = makeScrubber(compileExtraPatterns(loaded.profile.scrub.extraPatterns));
   const next = nextPerPlan(snap.items);
+  // Same precedence as `profile explain --repo`: the tracker repo's overrides win.
+  const limit = loaded.repos[loaded.profile.tracker.repo].overrides.autoStartMaxSize ?? loaded.profile.autoStartMaxSize;
   const rows: ObserveRow[] = snap.items.map((i) => {
     const a: Assessment = assess(i, loaded.profile);
-    const blocker = startBlocker(i, a, next.has(i.id), loaded.profile.autoStartMaxSize);
+    const blocker = startBlocker(i, a, next.has(i.id), limit);
     return {
       id: i.id, title: scrubber.scrub(i.title).text, state: i.state, size: a.size ?? "?", ambiguity: a.ambiguity, trusted: a.trusted,
       next: next.has(i.id), steps: `${String(i.meta.stepsDone)}/${String(i.meta.stepsTotal)}`, wouldStart: blocker === null, blocker,
@@ -145,13 +153,14 @@ export const observeCommand: Command = async (args, deps) => {
     const live = requireProfile(deps, values.profile);
     const db = openLedger(ledgerPath(stateDir(deps)));
     try {
-      // Spec §8.7: runtime uses the last approved snapshot, never unapproved edits.
-      const approved = approvedProfile(deps, db);
-      if (approved === null) {
-        const note = `Not recorded: profile ${live.hash.slice(0, 12)} is not approved (run \`sindri profile approve\`).`;
+      // Spec §8.7: runtime uses the latest approved snapshot, never unapproved edits.
+      const state = approvalState(deps, db, live.hash);
+      if (state.kind === "never-approved" || state.kind === "snapshot-missing") {
+        const note = `Not recorded: ${approvalProblem(state, live.hash)} (sindri profile approve).`;
         return report(live, await readAll(live, deps), null, note, true, json);
       }
-      const drift = approved.hash === live.hash ? "" : ` Using approved profile ${approved.hash.slice(0, 12)}; the live profile has unapproved changes (sindri profile approve).`;
+      const approved = state.approved;
+      const drift = state.kind === "approved" ? "" : ` Using approved profile ${approved.hash.slice(0, 12)}; the live profile has unapproved changes (sindri profile approve).`;
       const host = deps.system.hostname();
       const active = approved.profile.hosts.active;
       if (values["no-record"] === true) return report(approved, await readAll(approved, deps), null, `Not recorded: --no-record.${drift}`, drift !== "", json);
@@ -165,7 +174,13 @@ export const observeCommand: Command = async (args, deps) => {
       }
       try {
         const snap = await readAll(approved, deps); // inside the lock: no older snapshot can overwrite a newer one
-        const counts = record(db, deps, approved, snap, lock.owner.epoch);
+        const written = record(db, deps, approved, snap, lock.owner.epoch);
+        if (!written.ok) {
+          // Spec §9.1: a run that was taken over (fenced out) simply stops.
+          const r = report(approved, snap, null, `Not recorded: another run took over.${drift}`, drift !== "", json);
+          return { ...r, stderr: `no-op: stale epoch ${lock.owner.epoch} (current ${written.current}); another run took over\n` };
+        }
+        const counts = written.value;
         const note = `Recorded ${counts.new} new, ${counts.changed} changed, ${counts.removed} removed in the ledger.${drift}`;
         return report(approved, snap, counts, note, drift !== "", json);
       } finally {

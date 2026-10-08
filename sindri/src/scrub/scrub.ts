@@ -20,17 +20,23 @@ function withFlags(re: RegExp): RegExp {
   return new RegExp(re.source, [...flags].join(""));
 }
 
+const PLACEHOLDER = /\[REDACTED:[A-Za-z0-9_.-]{1,64}\]/g;
+
 export function makeScrubber(extra: readonly ScrubPattern[] = []): Scrubber {
   const patterns = [...BUILTIN_PATTERNS, ...extra].map((p, order) => ({ ...p, re: withFlags(p.re), order }));
 
   function find(text: string): ScrubHit[] {
+    // Scrubbing is idempotent: a hit that lies inside one of our own
+    // [REDACTED:kind] placeholders is not a secret.
+    const placeholders = [...text.matchAll(PLACEHOLDER)].map((m) => [m.index as number, (m.index as number) + m[0].length]);
+    const inPlaceholder = (start: number, end: number): boolean => placeholders.some(([a, b]) => start >= a && end <= b);
     const raw: (ScrubHit & { order: number })[] = [];
     for (const p of patterns) {
       for (const m of text.matchAll(p.re)) {
         const start = m.index as number; // typed number | undefined before TS 5.9 lib typings
         const group = p.valueGroup === undefined ? undefined : m.indices?.[p.valueGroup];
         const span = group ?? [start, start + m[0].length];
-        raw.push({ kind: p.kind, start: span[0], end: span[1], order: p.order });
+        if (!inPlaceholder(span[0], span[1])) raw.push({ kind: p.kind, start: span[0], end: span[1], order: p.order });
       }
     }
     raw.sort((a, b) => a.start - b.start || a.order - b.order);
