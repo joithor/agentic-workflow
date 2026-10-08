@@ -93,32 +93,34 @@ function describe(owner: LockOwner | null): string {
 
 // Exclusive takeover: only the process that creates sindri.lock.takeover (mkdir is
 // atomic) may move a dead owner's lock aside, so two takers can never both win.
-// A takeover dir older than 60 s belongs to a taker that crashed; it is cleared.
-function takeOver(o: LockOptions, lockPath: string, holder: LockOwner | null): "done" | "busy" | "changed" {
+// The mutex holds its taker's owner.json: it is cleared only when that taker is
+// provably dead (an unreadable one after 60 s), never just for its age, and a taker
+// removes it only while it is still its own.
+type Takeover = { kind: "done" | "busy" | "changed" } | { kind: "stuck"; stale: string };
+
+function takeOver(o: LockOptions, lockPath: string, holder: LockOwner | null, me: LockOwner): Takeover {
   const mutex = path.join(o.dir, `${LOCK}.takeover`);
   try {
     fs.mkdirSync(mutex);
   } catch (e) {
     if ((e as NodeJS.ErrnoException).code !== "EEXIST") throw e;
     const age = ageMs(mutex, o.now);
-    if (age !== null && age > UNREADABLE_GRACE_MS) fs.rmSync(mutex, { recursive: true, force: true });
-    return "busy";
+    if (age !== null && provablyDead(readOwner(mutex), age, o.sys)) fs.rmSync(mutex, { recursive: true, force: true });
+    return { kind: "busy" };
   }
   try {
-    if (!sameOwner(readOwner(lockPath), holder)) return "changed";
+    writeOwner(mutex, me);
+    if (!sameOwner(readOwner(lockPath), holder)) return { kind: "changed" };
     const stale = path.join(o.dir, `${LOCK}.stale-${ulid(o.now())}`);
     if (tryRename(lockPath, stale)) {
-      // Spec §9.1 (M2): confirm the renamed lock is still the dead owner's. A taker that
-      // paused past the mutex's 60 s expiry may have moved a new live owner's lock.
-      if (!sameOwner(readOwner(stale), holder)) {
-        tryRename(stale, lockPath);
-        return "changed";
-      }
+      // Spec §9.1 (M2): confirm the renamed lock is still the dead owner's. If not,
+      // put it back and stop; if it can't go back, leave it where it is and say so.
+      if (!sameOwner(readOwner(stale), holder)) return tryRename(stale, lockPath) ? { kind: "changed" } : { kind: "stuck", stale };
       fs.rmSync(stale, { recursive: true, force: true });
     }
-    return "done";
+    return { kind: "done" };
   } finally {
-    fs.rmSync(mutex, { recursive: true, force: true });
+    if (sameOwner(readOwner(mutex), me)) fs.rmSync(mutex, { recursive: true, force: true });
   }
 }
 
@@ -167,7 +169,13 @@ export function acquireTickLock(o: LockOptions): LockResult {
       const age = ageMs(lockPath, o.now);
       if (age === null) continue; // released in between: try again
       if (!provablyDead(holder, age, o.sys)) return { ok: false, heldBy: holder, detail: describe(holder) };
-      if (takeOver(o, lockPath, holder) === "busy") return { ok: false, heldBy: holder, detail: "another run is taking over a stale lock" };
+      const t = takeOver(o, lockPath, holder, me);
+      if (t.kind === "busy") return { ok: false, heldBy: holder, detail: "another run is taking over a stale lock" };
+      // Spec §9.1 M2: the lock changed hands mid-takeover, so this run is a no-op.
+      if (t.kind === "changed") return { ok: false, heldBy: readOwner(lockPath), detail: "the lock changed hands during the takeover; left it to its new owner" };
+      if (t.kind === "stuck") {
+        return { ok: false, heldBy: readOwner(t.stale), detail: `moved a live lock aside and could not restore it; it is at ${t.stale}` };
+      }
     }
     return { ok: false, heldBy: readOwner(lockPath), detail: "lost the takeover race" };
   } finally {

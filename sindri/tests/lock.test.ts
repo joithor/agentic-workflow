@@ -149,6 +149,83 @@ describe("acquireTickLock", () => {
     expect(currentEpoch(db)).toBe(0);
   });
 
+  it("exits as a no-op when the lock changed hands mid-takeover, even if the new owner is dead too (M2)", () => {
+    const dir = tempDir();
+    const lock = plantOwner(dir, {});
+    const db = openMemoryLedger();
+    const real = fs.renameSync;
+    vi.spyOn(fs, "renameSync").mockImplementation((from, to) => {
+      if (String(from) === lock && String(to).includes(".stale-")) {
+        fs.writeFileSync(path.join(lock, "owner.json"), JSON.stringify({ pid: 3333, pidStartTime: "start-3333", host: "test-host", bootId: "boot-1", startedAt: "new", epoch: 9 }));
+      }
+      real(from, to);
+    });
+    // Looping would take over 3333's (dead) lock on the next pass; M2 says exit.
+    const r = acquireTickLock({ dir, db, sys: fakeSystem({ pidAlive: (p) => p !== 999 && p !== 3333 }), now });
+    expect(r.ok).toBe(false);
+    if (!r.ok) expect(r.detail).toBe("the lock changed hands during the takeover; left it to its new owner");
+    expect(JSON.parse(fs.readFileSync(path.join(lock, "owner.json"), "utf8")).pid).toBe(3333);
+    expect(currentEpoch(db)).toBe(0);
+    expect(fs.existsSync(path.join(dir, "sindri.lock.takeover"))).toBe(false);
+  });
+
+  it("reports a no-op, and leaves the moved lock in place, when the put-back target is occupied", () => {
+    const dir = tempDir();
+    const lock = plantOwner(dir, {});
+    const db = openMemoryLedger();
+    const real = fs.renameSync;
+    vi.spyOn(fs, "renameSync").mockImplementation((from, to) => {
+      if (String(from) === lock && String(to).includes(".stale-")) {
+        fs.writeFileSync(path.join(lock, "owner.json"), JSON.stringify({ pid: 3333, pidStartTime: "start-3333", host: "test-host", bootId: "boot-1", startedAt: "new", epoch: 9 }));
+      }
+      if (String(from).includes(".stale-") && String(to) === lock) plantOwner(dir, { pid: 7777, startedAt: "e" }); // acquirer E got in between
+      real(from, to);
+    });
+    const r = acquireTickLock({ dir, db, sys: fakeSystem({ pidAlive: (p) => p !== 999 }), now });
+    expect(r.ok).toBe(false);
+    const stale = fs.readdirSync(dir).filter((n) => n.includes(".stale-"));
+    expect(stale).toHaveLength(1);
+    if (!r.ok) {
+      expect(r.detail).toBe(`moved a live lock aside and could not restore it; it is at ${path.join(dir, stale[0])}`);
+      expect(r.heldBy?.pid).toBe(3333);
+    }
+    expect(JSON.parse(fs.readFileSync(path.join(dir, stale[0], "owner.json"), "utf8")).pid).toBe(3333);
+    expect(JSON.parse(fs.readFileSync(path.join(lock, "owner.json"), "utf8")).pid).toBe(7777);
+    expect(currentEpoch(db)).toBe(0);
+    expect(inspectLock(dir, fakeSystem(), now).leftovers).toEqual(stale);
+  });
+
+  it("never clears a takeover mutex whose taker is alive, however old", () => {
+    const dir = tempDir();
+    plantOwner(dir, {});
+    const mutex = plantOwner(path.join(dir, "m"), { pid: 6000, pidStartTime: "start-6000", startedAt: "taker" });
+    fs.renameSync(mutex, path.join(dir, "sindri.lock.takeover"));
+    const old = new Date(Date.now() - 600_000);
+    fs.utimesSync(path.join(dir, "sindri.lock.takeover"), old, old);
+    const r = acquireTickLock({ dir, db: openMemoryLedger(), sys: fakeSystem({ pidAlive: (p) => p !== 999 }), now: () => new Date() });
+    expect(r.ok).toBe(false);
+    if (!r.ok) expect(r.detail).toBe("another run is taking over a stale lock");
+    expect(fs.existsSync(path.join(dir, "sindri.lock.takeover", "owner.json"))).toBe(true);
+    // Once that taker is provably dead, its mutex is cleared.
+    const sys = fakeSystem({ pidAlive: (p) => p !== 999 && p !== 6000 });
+    expect(acquireTickLock({ dir, db: openMemoryLedger(), sys, now: () => new Date() }).ok).toBe(false);
+    expect(fs.existsSync(path.join(dir, "sindri.lock.takeover"))).toBe(false);
+  });
+
+  it("removes the takeover mutex only while it is still its own", () => {
+    const dir = tempDir();
+    const lock = plantOwner(dir, {});
+    const mutex = path.join(dir, "sindri.lock.takeover");
+    const real = fs.renameSync;
+    vi.spyOn(fs, "renameSync").mockImplementation((from, to) => {
+      // Another taker replaced our mutex while we paused.
+      if (String(from) === lock && String(to).includes(".stale-")) fs.writeFileSync(path.join(mutex, "owner.json"), JSON.stringify({ pid: 8888, pidStartTime: null, host: "test-host", bootId: null, startedAt: "c", epoch: 0 }));
+      real(from, to);
+    });
+    expect(acquireTickLock({ dir, db: openMemoryLedger(), sys: fakeSystem({ pidAlive: (p) => p !== 999 }), now }).ok).toBe(true);
+    expect(JSON.parse(fs.readFileSync(path.join(mutex, "owner.json"), "utf8")).pid).toBe(8888);
+  });
+
   it("rethrows an unexpected error creating the takeover mutex", () => {
     const dir = tempDir();
     plantOwner(dir, {});
