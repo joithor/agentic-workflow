@@ -56,64 +56,77 @@ export function makePlanFileTracker(o: { repoPath: string; glob: string; include
   const matchers = o.include.map(wildcard);
   let cache: { key: string; items: Entry[] } | null = null;
 
-  function planFiles(): { name: string; key: string }[] {
+  function planFiles(): { name: string; key: string; size: number }[] {
     return fs
       .readdirSync(dir, { withFileTypes: true })
       .filter((e) => e.isFile() && e.name.endsWith(".md") && matchers.some((m) => m.test(e.name)))
       .map((e) => ({ name: e.name, st: fs.statSync(path.join(dir, e.name)) }))
-      .filter((f) => f.st.size <= MAX_PLAN_BYTES)
-      .map((f) => ({ name: f.name, key: `${f.name}:${f.st.size}:${f.st.mtimeMs}` }))
+      .map((f) => ({ name: f.name, size: f.st.size, key: `${f.name}:${f.st.size}:${f.st.mtimeMs}` }))
       .sort((a, b) => a.name.localeCompare(b.name));
   }
 
-  // A missing repo path or plan dir is an error, never an empty backlog: an empty
-  // scan would make observe mark every item removed.
+  // A missing repo path or plan dir, an unreadable one, a plan dir with no matching
+  // plan file, or a plan file too big to read is an error, never an empty backlog:
+  // an empty scan would make observe mark every item removed.
   async function all(): Promise<Result<Entry[]>> {
     if (!fs.existsSync(dir)) {
       const what = fs.existsSync(o.repoPath) ? `plan dir not found: ${dir}` : `repo path not found: ${o.repoPath}`;
       return err({ kind: "fatal", code: "SND-TRACKER-001", message: what });
     }
-    const files = planFiles();
-    const key = files.map((f) => f.key).join("|");
-    if (cache !== null && cache.key === key) return ok(cache.items);
-    const log = await o.git.run(["log", "--format=%x1e%ae%x09%cI", "--name-only", "--", relDir], o.repoPath);
-    const history = log.ok ? parseGitHistory(log.stdout) : new Map<string, { authors: string[]; date: string }>();
-    const out: Entry[] = [];
-    for (const [fileIndex, { name }] of files.entries()) {
-      const rel = path.join(relDir, name);
-      const plan = parsePlan(fs.readFileSync(path.join(dir, name), "utf8"));
-      const h = history.get(rel);
-      const authors: Author[] = (h?.authors ?? []).map((id, i, all) => ({ id, role: i === all.length - 1 ? "creator" : "editor" }));
-      const date = h?.date ?? fs.statSync(path.join(dir, name)).mtime.toISOString();
-      for (const t of plan.tasks) {
-        const hash = createHash("sha256").update(`${t.title}\0${t.body}`).digest("hex");
-        out.push({
-          hash,
-          item: {
-            id: planItemId(name, t.number),
-            title: `Task ${t.number}: ${t.title} (${plan.title})`,
-            body: t.body,
-            url: `${rel}#task-${t.number}`,
-            state: t.stepsTotal > 0 && t.stepsDone === t.stepsTotal ? "done" : "open",
-            authors,
-            updatedAt: date,
-            meta: {
-              plan: path.basename(name, ".md"),
-              task: t.number,
-              order: fileIndex * 1000 + t.number,
-              stepsDone: t.stepsDone,
-              stepsTotal: t.stepsTotal,
-              files: t.files.length,
-              codeLines: t.codeLines,
-              hasFilesBlock: t.hasFilesBlock ? 1 : 0,
-              contentHash: hash,
-            },
-          },
-        });
+    try {
+      const files = planFiles();
+      if (files.length === 0) {
+        return err({ kind: "fatal", code: "SND-TRACKER-002", message: `no plan file in ${dir} matches include ${o.include.join(", ")}` });
       }
+      const big = files.filter((f) => f.size > MAX_PLAN_BYTES).map((f) => f.name);
+      if (big.length > 0) return err({ kind: "fatal", code: "SND-TRACKER-003", message: `plan file over 2 MiB: ${big.join(", ")}` });
+      const key = files.map((f) => f.key).join("|");
+      if (cache !== null && cache.key === key) return ok(cache.items);
+      const log = await o.git.run(["log", "--format=%x1e%ae%x09%cI", "--name-only", "--", relDir], o.repoPath);
+      const history = log.ok ? parseGitHistory(log.stdout) : new Map<string, { authors: string[]; date: string }>();
+      const out: Entry[] = [];
+      for (const [fileIndex, { name }] of files.entries()) {
+        const rel = path.join(relDir, name);
+        const plan = parsePlan(fs.readFileSync(path.join(dir, name), "utf8"));
+        const h = history.get(rel);
+        const authors: Author[] = (h?.authors ?? []).map((id, i, all) => ({ id, role: i === all.length - 1 ? "creator" : "editor" }));
+        const date = h?.date ?? fs.statSync(path.join(dir, name)).mtime.toISOString();
+        // A repeated "### Task N:" gets its own id (<file>.tN-2, -3, ...), never a shared one.
+        const seen = new Map<number, number>();
+        for (const t of plan.tasks) {
+          const n = (seen.get(t.number) ?? 0) + 1;
+          seen.set(t.number, n);
+          const hash = createHash("sha256").update(`${t.title}\0${t.body}`).digest("hex");
+          out.push({
+            hash,
+            item: {
+              id: n === 1 ? planItemId(name, t.number) : `${planItemId(name, t.number)}-${n}`,
+              title: `Task ${t.number}: ${t.title} (${plan.title})`,
+              body: t.body,
+              url: `${rel}#task-${t.number}`,
+              state: t.stepsTotal > 0 && t.stepsDone === t.stepsTotal ? "done" : "open",
+              authors,
+              updatedAt: date,
+              order: fileIndex * 1000 + t.number,
+              steps: { done: t.stepsDone, total: t.stepsTotal },
+              contentHash: hash,
+              meta: {
+                plan: path.basename(name, ".md"),
+                task: t.number,
+                files: t.files.length,
+                codeLines: t.codeLines,
+                hasFilesBlock: t.hasFilesBlock ? 1 : 0,
+              },
+            },
+          });
+        }
+      }
+      cache = { key, items: out };
+      return ok(out);
+    } catch (e) {
+      // Adapters never throw for expected failures (types.ts): a race, ENOTDIR or EACCES.
+      return err({ kind: "fatal", code: "SND-TRACKER-001", message: `can't read plan dir ${dir}: ${(e as Error).message}` });
     }
-    cache = { key, items: out };
-    return ok(out);
   }
 
   return {

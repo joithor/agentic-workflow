@@ -55,7 +55,9 @@ describe("plan-file tracker", () => {
       url: "docs/superpowers/plans/2026-01-01-plan-a.md#task-1",
       state: "done",
       authors: [{ id: "tester@example.com", role: "creator" }],
-      meta: { plan: "2026-01-01-plan-a", task: 1, order: 1, stepsDone: 1, stepsTotal: 1, files: 1, codeLines: 1, hasFilesBlock: 1 },
+      order: 1,
+      steps: { done: 1, total: 1 },
+      meta: { plan: "2026-01-01-plan-a", task: 1, files: 1, codeLines: 1, hasFilesBlock: 1 },
     });
     const open = await t.scan({ includeDone: false });
     expect(open.ok && open.value.items).toHaveLength(3);
@@ -83,8 +85,9 @@ describe("plan-file tracker", () => {
     fs.appendFileSync(plan, "\n");
     execFileSync("git", ["-c", "user.name=E", "-c", "user.email=editor@example.com", "commit", "-qam", "edit"], { cwd: root });
     const t = makePlanFileTracker({ repoPath: root, glob: GLOB, include: ["*-plan-b"], git: realGitRunner() });
+    // R2: a plan dir with no matching plan file is an error, never an empty backlog.
     const none = await t.scan({ includeDone: true });
-    expect(none.ok && none.value.items).toEqual([]);
+    expect(none).toEqual({ ok: false, error: { kind: "fatal", code: "SND-TRACKER-002", message: `no plan file in ${path.join(root, "docs/superpowers/plans")} matches include *-plan-b` } });
     const only = makePlanFileTracker({ repoPath: root, glob: GLOB, include: ["*-plan-b.md"], git: realGitRunner() });
     const scan = await only.scan({ includeDone: true });
     expect(scan.ok && scan.value.items.map((i) => i.id)).toEqual(["2026-01-02-plan-b.t1", "2026-01-02-plan-b.t2"]);
@@ -93,7 +96,7 @@ describe("plan-file tracker", () => {
       { id: "editor@example.com", role: "editor" },
       { id: "tester@example.com", role: "creator" },
     ]);
-    expect(b1.ok && String(b1.value.meta.contentHash)).toMatch(/^[0-9a-f]{64}$/);
+    expect(b1.ok && b1.value.contentHash).toMatch(/^[0-9a-f]{64}$/);
   });
 
   it("skips directories whose names look like plan files", async () => {
@@ -120,6 +123,30 @@ describe("plan-file tracker", () => {
     const gone = path.join(root, "moved");
     const noRepo = await makePlanFileTracker({ repoPath: gone, glob: GLOB, include: ["*"], git: fakeGit({}) }).read("x.t1");
     expect(noRepo).toEqual({ ok: false, error: { kind: "fatal", code: "SND-TRACKER-001", message: `repo path not found: ${gone}` } });
+  });
+
+  it("is a typed error, not a throw, when the plan dir can't be read or a plan file is too big", async () => {
+    const root = tempDir();
+    fs.mkdirSync(path.join(root, "docs/superpowers"), { recursive: true });
+    fs.writeFileSync(path.join(root, "docs/superpowers/plans"), "a file, not a dir");
+    const notDir = await makePlanFileTracker({ repoPath: root, glob: GLOB, include: ["*"], git: fakeGit({}) }).scan({ includeDone: true });
+    expect(notDir.ok === false && notDir.error).toMatchObject({ kind: "fatal", code: "SND-TRACKER-001" });
+    expect(notDir.ok === false && notDir.error.message).toMatch(/^can't read plan dir .*ENOTDIR/);
+    const big = repo();
+    fs.writeFileSync(path.join(big, "docs/superpowers/plans/2026-01-03-huge.md"), "x".repeat(2 * 1024 * 1024 + 1));
+    const tooBig = await makePlanFileTracker({ repoPath: big, glob: GLOB, include: ["*"], git: fakeGit({}) }).scan({ includeDone: true });
+    expect(tooBig).toEqual({ ok: false, error: { kind: "fatal", code: "SND-TRACKER-003", message: "plan file over 2 MiB: 2026-01-03-huge.md" } });
+  });
+
+  it("gives a repeated task number its own id", async () => {
+    const root = tempDir();
+    fs.mkdirSync(path.join(root, "docs/superpowers/plans"), { recursive: true });
+    fs.writeFileSync(path.join(root, "docs/superpowers/plans/p.md"), "# P\n### Task 1: A\n## Phase 2\n### Task 1: B\n### Task 1: C\n");
+    const t = makePlanFileTracker({ repoPath: root, glob: GLOB, include: ["*"], git: fakeGit({}) });
+    const scan = await t.scan({ includeDone: true });
+    expect(scan.ok && scan.value.items.map((i) => i.id)).toEqual(["p.t1", "p.t1-2", "p.t1-3"]);
+    const second = await t.read("p.t1-2");
+    expect(second.ok && second.value.title).toBe("Task 1: B (P)");
   });
 
   it("makeTracker builds the profile's tracker", async () => {

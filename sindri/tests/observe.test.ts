@@ -7,7 +7,7 @@ import { stateDir, type Deps } from "../src/deps.js";
 import { bumpEpoch, currentEpoch, ledgerPath, openLedger } from "../src/ledger/db.js";
 import { listEvents, listItems } from "../src/ledger/items.js";
 import { runCli } from "../src/main.js";
-import { parseSince } from "../src/observe/observe.js";
+import { parseSince, progressOf } from "../src/observe/observe.js";
 import { fakeSystem, makeDeps, tempDir } from "./helpers.js";
 
 const PLAN = [
@@ -130,7 +130,9 @@ describe("sindri observe", () => {
     expect(r.exitCode).toBe(0);
     expect(r.stderr).toBe("no-op: locked by test-host/1 since t0\n");
     expect(r.stdout).toContain("Not recorded: another run holds the lock.");
-    expect(ledgerState(deps)).toEqual(before);
+    const after = ledgerState(deps);
+    expect(after?.items).toEqual(before?.items);
+    expect(after?.events).toEqual(before?.events);
     expect(before).toMatchObject({ items: [], events: [] });
   });
 
@@ -141,7 +143,9 @@ describe("sindri observe", () => {
     const r = await runCli(["observe"], { ...deps, system: fakeSystem({ hostname: () => "laptop-2" }) });
     expect(r.exitCode).toBe(1);
     expect(r.stdout).toContain("Not recorded: this host (laptop-2) is not hosts.active (test-host).");
-    expect(ledgerState(deps)).toEqual(before);
+    const after = ledgerState(deps);
+    expect(after?.items).toEqual(before?.items);
+    expect(after?.events).toEqual(before?.events);
     expect(before).toMatchObject({ items: [], events: [] });
   });
 
@@ -152,7 +156,9 @@ describe("sindri observe", () => {
     const r = await runCli(["observe", "--no-record"], deps);
     expect(r.exitCode).toBe(0);
     expect(r.stdout).toContain("Not recorded: --no-record.");
-    expect(ledgerState(deps)).toEqual(before);
+    const after = ledgerState(deps);
+    expect(after?.items).toEqual(before?.items);
+    expect(after?.events).toEqual(before?.events);
     expect(before).toMatchObject({ items: [], events: [] });
   });
 
@@ -175,6 +181,31 @@ describe("sindri observe", () => {
     expect(after?.events.some((e) => (e as { kind: string }).kind === "removed")).toBe(false);
     const json = JSON.parse((await runCli(["observe", "--json"], deps)).stdout);
     expect(json.error.code).toBe("SND-TRACKER-001");
+  });
+
+  it("refuses to record when no plan file matches (R2): no removed events, ledger untouched, exit 1", async () => {
+    const root = planRepo();
+    const deps = await ring0(root);
+    await approve(deps);
+    expect((await runCli(["observe"], deps)).stdout).toContain("Recorded 2 new");
+    const before = ledgerState(deps);
+    fs.rmSync(path.join(root, PLAN_FILE));
+    const r = await runCli(["observe"], deps);
+    expect(r.exitCode).toBe(1);
+    expect(r.stderr).toContain("SND-TRACKER-002 no plan file in");
+    expect(r.stderr).toContain("nothing was recorded");
+    const after = ledgerState(deps);
+    expect(after?.items).toEqual(before?.items);
+    expect(after?.events).toEqual(before?.events);
+  });
+
+  it("defaults a tracker's missing optional fields instead of recording NaN", () => {
+    const bare = { id: "x", title: "T", body: "B", url: "", state: "open" as const, authors: [], updatedAt: "", meta: {} };
+    const p = progressOf(bare);
+    expect(p.stepsDone).toBe(0);
+    expect(p.stepsTotal).toBe(0);
+    expect(p.contentHash).toMatch(/^[0-9a-f]{64}$/);
+    expect(progressOf({ ...bare, steps: { done: 1, total: 2 }, contentHash: "h" })).toEqual({ stepsDone: 1, stepsTotal: 2, contentHash: "h" });
   });
 
   it("is a no-op (exit 0, no-op: on stderr) when another run takes over mid-run", async () => {

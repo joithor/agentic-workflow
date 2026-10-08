@@ -34,6 +34,14 @@ export function trackerContractTests(name: string, make: () => Promise<TrackerFi
         const r = await tracker.read(ref.id);
         expect(r.ok && r.value.id).toBe(ref.id);
         expect(r.ok && Array.isArray(r.value.authors)).toBe(true);
+        // The optional typed fields observe uses, when a tracker sets them, are well-formed.
+        if (!r.ok) continue;
+        if (r.value.order !== undefined) expect(Number.isFinite(r.value.order)).toBe(true);
+        if (r.value.steps !== undefined) {
+          expect(Number.isInteger(r.value.steps.done) && Number.isInteger(r.value.steps.total)).toBe(true);
+          expect(r.value.steps.done).toBeLessThanOrEqual(r.value.steps.total);
+        }
+        if (r.value.contentHash !== undefined) expect(r.value.contentHash).not.toBe("");
       }
     });
 

@@ -23,8 +23,11 @@ export interface Assessment {
 
 const num = (item: WorkItem, key: string): number => Number(item.meta[key] ?? 0);
 
+// Items without an order sort after ordered ones, never as NaN.
+export const orderOf = (item: WorkItem): number => item.order ?? Number.MAX_SAFE_INTEGER;
+
 export function assess(item: WorkItem, profile: Profile): Assessment {
-  const clear = num(item, "hasFilesBlock") === 1 && num(item, "codeLines") > 0 && num(item, "stepsTotal") > 0;
+  const clear = num(item, "hasFilesBlock") === 1 && num(item, "codeLines") > 0 && (item.steps?.total ?? 0) > 0;
   const sizable = num(item, "hasFilesBlock") === 1 || num(item, "codeLines") > 0;
   return {
     size: sizable ? sizeByRules(num(item, "files"), num(item, "codeLines")) : null,
@@ -43,7 +46,7 @@ export function nextPerPlan(items: WorkItem[]): Set<string> {
     if (item.state !== "open") continue;
     const plan = String(item.meta.plan ?? item.id);
     const seen = first.get(plan);
-    if (seen === undefined || num(item, "order") < num(seen, "order")) first.set(plan, item);
+    if (seen === undefined || orderOf(item) < orderOf(seen)) first.set(plan, item);
   }
   return new Set([...first.values()].map((i) => i.id));
 }

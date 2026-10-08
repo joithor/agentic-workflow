@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import type { WorkItem } from "../src/adapters/types.js";
-import { assess, nextPerPlan, sizeByRules, startBlocker } from "../src/observe/size.js";
+import { assess, nextPerPlan, orderOf, sizeByRules, startBlocker } from "../src/observe/size.js";
 import { ProfileSchema } from "../src/profile/schema.js";
 
 const profile = ProfileSchema.parse({
@@ -20,7 +20,7 @@ describe("rule-based sizing", () => {
   });
 
   it("assesses size, ambiguity and trust from meta and authors", () => {
-    const full = item("a.t1", { files: 1, codeLines: 10, stepsTotal: 3, hasFilesBlock: 1 });
+    const full = item("a.t1", { files: 1, codeLines: 10, hasFilesBlock: 1 }, { steps: { done: 0, total: 3 } });
     expect(assess(full, profile)).toEqual({ size: "XS", sizedBy: "rules", ambiguity: "none", trusted: true });
     expect(assess(item("a.t2", {}), profile)).toEqual({ size: null, sizedBy: "rules", ambiguity: "unknown", trusted: true });
     expect(assess(item("a.t5", { codeLines: 300 }), profile).size).toBe("M");
@@ -30,13 +30,17 @@ describe("rule-based sizing", () => {
 
   it("finds the first open task of each plan", () => {
     const items = [
-      item("a.t2", { plan: "a", order: 2 }),
-      item("a.t1", { plan: "a", order: 1 }, { state: "done" }),
-      item("a.t3", { plan: "a", order: 3 }),
-      item("b.t1", { plan: "b", order: 1001 }),
+      item("a.t2", { plan: "a" }, { order: 2 }),
+      item("a.t1", { plan: "a" }, { state: "done", order: 1 }),
+      item("a.t3", { plan: "a" }, { order: 3 }),
+      item("b.t1", { plan: "b" }, { order: 1001 }),
       item("loose", {}),
+      // No order (a tracker without one): sorts after ordered items, never NaN.
+      item("c.t9", { plan: "c" }),
+      item("c.t1", { plan: "c" }, { order: 5 }),
     ];
-    expect([...nextPerPlan(items)].sort()).toEqual(["a.t2", "b.t1", "loose"]);
+    expect([...nextPerPlan(items)].sort()).toEqual(["a.t2", "b.t1", "c.t1", "loose"]);
+    expect(orderOf(item("x", {}))).toBe(Number.MAX_SAFE_INTEGER);
   });
 
   it("names why auto-small would not start an item", () => {

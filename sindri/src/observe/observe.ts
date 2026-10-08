@@ -1,3 +1,4 @@
+import { createHash } from "node:crypto";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
@@ -17,7 +18,7 @@ import { approvalProblem, approvalState } from "../profile/approve.js";
 import { requireProfile, ring0Files } from "../profile/commands.js";
 import { loadProfile, resolveProfileRoot, type LoadedProfile } from "../profile/load.js";
 import { compileExtraPatterns, makeScrubber } from "../scrub/scrub.js";
-import { assess, nextPerPlan, startBlocker, type Assessment } from "./size.js";
+import { assess, nextPerPlan, orderOf, startBlocker, type Assessment } from "./size.js";
 
 export interface ObserveRow {
   id: string;
@@ -72,8 +73,17 @@ async function readAll(loaded: LoadedProfile, deps: Deps): Promise<Snapshot> {
   const scan = scanned.value;
   const items: WorkItem[] = [];
   for (const ref of scan.items) items.push(unwrap(await tracker.read(ref.id)));
-  items.sort((a, b) => Number(a.meta.order) - Number(b.meta.order));
+  items.sort((a, b) => orderOf(a) - orderOf(b));
   return { items, cursor: scan.cursor };
+}
+
+// The Tracker contract's optional fields, with defaults for a tracker without them.
+export function progressOf(item: WorkItem): { stepsDone: number; stepsTotal: number; contentHash: string } {
+  return {
+    stepsDone: item.steps?.done ?? 0,
+    stepsTotal: item.steps?.total ?? 0,
+    contentHash: item.contentHash ?? createHash("sha256").update(`${item.title}\0${item.body}`).digest("hex"),
+  };
 }
 
 const sourceOf = (loaded: LoadedProfile): string => `${loaded.profile.tracker.type}:${loaded.profile.tracker.repo}`;
@@ -90,10 +100,10 @@ function record(db: Ledger, deps: Deps, loaded: LoadedProfile, snap: Snapshot, e
     const counts: Counts = { new: 0, changed: 0, removed: 0 };
     for (const item of snap.items) {
       const a = assess(item, loaded.profile);
+      const p = progressOf(item);
       const outcome = upsertItem(db, ctx, {
         id: item.id, source, title: item.title, state: item.state, size: a.size, sizedBy: a.size === null ? null : a.sizedBy,
-        ambiguity: a.ambiguity, stepsDone: Number(item.meta.stepsDone), stepsTotal: Number(item.meta.stepsTotal),
-        contentHash: `${String(item.meta.contentHash)}:${item.state}`,
+        ambiguity: a.ambiguity, stepsDone: p.stepsDone, stepsTotal: p.stepsTotal, contentHash: `${p.contentHash}:${item.state}`,
       });
       if (outcome !== "same") counts[outcome]++;
     }
@@ -121,9 +131,10 @@ function report(
   const rows: ObserveRow[] = snap.items.map((i) => {
     const a: Assessment = assess(i, loaded.profile);
     const blocker = startBlocker(i, a, next.has(i.id), limit);
+    const p = progressOf(i);
     return {
       id: i.id, title: scrubber.scrub(i.title).text, state: i.state, size: a.size ?? "?", ambiguity: a.ambiguity, trusted: a.trusted,
-      next: next.has(i.id), steps: `${String(i.meta.stepsDone)}/${String(i.meta.stepsTotal)}`, wouldStart: blocker === null, blocker,
+      next: next.has(i.id), steps: `${p.stepsDone}/${p.stepsTotal}`, wouldStart: blocker === null, blocker,
     };
   });
   const open = rows.filter((r) => r.state === "open");

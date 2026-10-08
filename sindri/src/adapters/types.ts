@@ -30,6 +30,13 @@ export interface WorkItem {
   state: "open" | "done";
   authors: Author[];
   updatedAt: string;
+  // Optional, typed fields observe uses when a tracker has them (spec §11.2).
+  // Missing: items sort after ordered ones, steps count 0/0, and observe hashes
+  // title and body as the content hash.
+  order?: number;
+  steps?: { done: number; total: number };
+  contentHash?: string;
+  // Tracker-specific facts (plan-file: plan, task, files, codeLines, hasFilesBlock).
   meta: Record<string, string | number>;
 }
 
