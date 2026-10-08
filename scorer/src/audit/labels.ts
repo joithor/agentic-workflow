@@ -118,26 +118,40 @@ export function outputJsonSchema(ids: readonly string[]): object {
 
 const OutputSchema = z.object({ labels: z.array(z.object({ id: z.string(), labels: z.array(z.enum(LABELS)).min(1) })) });
 
+// An error whose message is a fixed string we wrote, so it is safe to print and to write into reports.
+// Anything the model produced (or a library echoing it, like JSON.parse or zod) stays out of the message;
+// the original may ride along as `cause`, which is never printed.
+export class LabelerError extends Error {
+  constructor(reason: string, cause?: unknown) {
+    super(reason, cause === undefined ? undefined : { cause });
+    this.name = "LabelerError";
+  }
+}
+
 export function parseBatchOutput(raw: unknown, ids: readonly string[]): Map<string, LabelName[]> {
-  const parsed = OutputSchema.parse(raw);
+  const result = OutputSchema.safeParse(raw);
+  if (!result.success) throw new LabelerError("answer does not match the schema", result.error);
+  const parsed = result.data;
   const expected = new Set(ids);
   const out = new Map<string, LabelName[]>();
   for (const entry of parsed.labels) {
-    if (!expected.has(entry.id)) throw new Error(`unknown id ${entry.id}`);
-    if (out.has(entry.id)) throw new Error(`duplicate id ${entry.id}`);
+    if (!expected.has(entry.id)) throw new LabelerError("answer has an unknown id");
+    if (out.has(entry.id)) throw new LabelerError("answer repeats an id");
     const labels = [...new Set(entry.labels)];
-    if (labels.includes("none") && labels.length > 1) throw new Error(`none must be exclusive for ${entry.id}`);
+    if (labels.includes("none") && labels.length > 1) throw new LabelerError("answer combines none with another label");
     out.set(entry.id, labels);
   }
-  if (out.size !== expected.size) throw new Error("answer is missing ids");
+  if (out.size !== expected.size) throw new LabelerError("answer is missing ids");
   return out;
 }
 
 const ERROR_MAX = 300;
 
+// Error class and a short reason only. A LabelerError carries a fixed reason; any other error is reported by
+// its class, never its message, because a message can quote model output (JSON.parse and zod both do).
 function describeError(e: unknown): string {
-  const message = e instanceof Error ? e.message : String(e);
-  return message.slice(0, ERROR_MAX);
+  const text = e instanceof LabelerError ? `LabelerError: ${e.message}` : e instanceof Error ? e.name : "non-Error value thrown";
+  return text.slice(0, ERROR_MAX);
 }
 
 type BatchResult = { labels: Map<string, LabelName[]> } | { error: string };

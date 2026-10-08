@@ -5,6 +5,7 @@ import path from "node:path";
 import { describe, expect, it } from "vitest";
 
 import type { ExecFn } from "../src/audit/claude-runner.js";
+import { LabelerError } from "../src/audit/labels.js";
 import { childEnv, claudeArgs, execClaude, extractStructured, makeClaudeRunner } from "../src/audit/claude-runner.js";
 
 const BASE = { timeout: 10_000, env: { PATH: process.env.PATH ?? "" }, maxBuffer: 1_000_000, cwd: os.tmpdir() };
@@ -35,9 +36,9 @@ describe("extractStructured", () => {
 
   it("throws on non-JSON, error envelopes and unparseable results", () => {
     expect(() => extractStructured("not json")).toThrow();
-    expect(() => extractStructured(JSON.stringify({ is_error: true, result: "boom" }))).toThrow(/boom/);
+    expect(() => extractStructured(JSON.stringify({ is_error: true, result: "boom" }))).toThrow("claude reported an error");
     expect(() => extractStructured(JSON.stringify({ result: "plain prose" }))).toThrow();
-    expect(() => extractStructured(JSON.stringify({ is_error: true }))).toThrow(/unknown/);
+    expect(() => extractStructured(JSON.stringify({ is_error: true }))).toThrow("claude reported an error");
     expect(() => extractStructured(JSON.stringify({}))).toThrow(/no structured_output or result/);
   });
 });
@@ -91,5 +92,52 @@ describe("makeClaudeRunner", () => {
     const out = (await makeClaudeRunner({ model: "sonnet", env: { PATH: bin } })("p", {})) as { cwd: string };
     expect(out.cwd).not.toBe(fs.realpathSync(process.cwd()));
     expect(path.basename(out.cwd)).toMatch(/^audit-label-/);
+  });
+});
+
+describe("claude failures never echo model output", () => {
+  const SENTINEL = "SENTINEL_TURN_TEXT_9f3";
+  const messageOf = (fn: () => unknown): string => {
+    try {
+      fn();
+    } catch (e) {
+      expect(e).toBeInstanceOf(LabelerError);
+      return (e as Error).message;
+    }
+    return "";
+  };
+
+  it("a result that is not valid JSON gives a fixed reason and keeps the original only as cause", () => {
+    let caught: unknown;
+    try {
+      extractStructured(JSON.stringify({ result: `${SENTINEL} is prose, not JSON` }));
+    } catch (e) {
+      caught = e;
+    }
+    expect(caught).toBeInstanceOf(LabelerError);
+    expect((caught as Error).message).toBe("claude result was not valid JSON");
+    expect((caught as Error).cause).toBeInstanceOf(SyntaxError);
+  });
+
+  it("an envelope that is not valid JSON gives a fixed reason", () => {
+    expect(messageOf(() => extractStructured(`${SENTINEL} not json`))).toBe("claude output was not valid JSON");
+  });
+
+  it("an is_error envelope does not repeat its result text", () => {
+    expect(messageOf(() => extractStructured(JSON.stringify({ is_error: true, result: SENTINEL })))).toBe("claude reported an error");
+  });
+
+  it.each([
+    ["ENOENT", { code: "ENOENT" }, "claude CLI not found"],
+    ["a timeout", { killed: true, signal: "SIGTERM" }, "claude timed out"],
+    ["a non-zero exit", { code: 1 }, "claude exited with code 1"],
+    ["anything else", {}, "claude could not be run"],
+  ])("maps an exec failure (%s) to a fixed reason without its stderr", async (_name, extra, reason) => {
+    const exec: ExecFn = async () => {
+      throw Object.assign(new Error(`Command failed: claude\n${SENTINEL}`), extra);
+    };
+    const err = await makeClaudeRunner({ model: "sonnet", exec })("p", {}).catch((e: unknown) => e as Error);
+    expect(err).toBeInstanceOf(LabelerError);
+    expect((err as Error).message).toBe(reason);
   });
 });

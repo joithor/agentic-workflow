@@ -5,7 +5,10 @@ import path from "node:path";
 import { describe, expect, it } from "vitest";
 
 import type { HumanTurn } from "../src/audit/human-turns.js";
+import type { ExecFn } from "../src/audit/claude-runner.js";
+import { makeClaudeRunner } from "../src/audit/claude-runner.js";
 import type { LabelRunner } from "../src/audit/labels.js";
+import { LabelerError } from "../src/audit/labels.js";
 import type { LabelingReport } from "../src/audit/labeling.js";
 import { observedWindowDays, renderLabeling, runLabeling } from "../src/audit/labeling.js";
 
@@ -66,7 +69,7 @@ describe("runLabeling", () => {
     let call = 0;
     const runner: LabelRunner = async (prompt) => {
       call += 1;
-      if (call > 2) throw new Error("claude: session expired");
+      if (call > 2) throw new LabelerError("claude: session expired");
       return { labels: idsIn(prompt).map((id) => ({ id, labels: ["rigor"] })) };
     };
     const report = await runLabeling(Array.from({ length: 60 }, (_, i) => turn(i)), 60, { n: 40, repeat: 40, model: "sonnet", runner, windowDays: 30 }, out);
@@ -82,7 +85,7 @@ describe("runLabeling", () => {
   it("still aborts when the first pass fails its first two batches", async () => {
     const out = fs.mkdtempSync(path.join(os.tmpdir(), "label-"));
     const runner: LabelRunner = async () => {
-      throw new Error("no login");
+      throw new LabelerError("no login");
     };
     await expect(runLabeling(Array.from({ length: 60 }, (_, i) => turn(i)), 60, { n: 40, repeat: 0, model: "sonnet", runner, windowDays: 30 }, out)).rejects.toThrow(/no login/);
   });
@@ -164,5 +167,36 @@ describe("renderLabeling", () => {
     const text = renderLabeling({ ...report, wrongApproach: { ...report.wrongApproach, decision: "not-a-deliverable", straddlesThreshold: true } }).join("\n");
     expect(text).toContain("are not a step-3a deliverable");
     expect(text).toContain("provisional");
+  });
+
+  describe("parse failures never leak model output", () => {
+    const SENTINEL = "SENTINEL_TURN_TEXT_9f3";
+    const allText = (dir: string): string => fs.readdirSync(dir).map((f) => fs.readFileSync(path.join(dir, f), "utf8")).join("\n");
+
+    it("a first-pass abort on unparseable claude output carries no sentinel", async () => {
+      const out = fs.mkdtempSync(path.join(os.tmpdir(), "label-"));
+      const exec: ExecFn = async () => JSON.stringify({ result: `${SENTINEL} (the model quoted the turn)` });
+      const runner = makeClaudeRunner({ model: "sonnet", exec });
+      const err = await runLabeling(Array.from({ length: 60 }, (_, i) => turn(i)), 60, { n: 40, repeat: 0, model: "sonnet", runner, windowDays: 30 }, out).catch((e: unknown) => e as Error);
+      expect((err as Error).message).toContain("claude result was not valid JSON");
+      expect((err as Error).message).not.toContain(SENTINEL);
+      expect(allText(out)).not.toContain(SENTINEL);
+    });
+
+    it("a repeat-pass abort keeps the sentinel out of the report, the rendered baseline and calibration.json", async () => {
+      const out = fs.mkdtempSync(path.join(os.tmpdir(), "label-"));
+      let call = 0;
+      const exec: ExecFn = async (_f, _a, _o, prompt) => {
+        call += 1;
+        if (call > 2) return JSON.stringify({ result: `${SENTINEL} ${prompt.slice(0, 40)}` });
+        return JSON.stringify({ structured_output: { labels: idsIn(prompt).map((id) => ({ id, labels: ["rigor"] })) } });
+      };
+      const runner = makeClaudeRunner({ model: "sonnet", exec });
+      const report = await runLabeling(Array.from({ length: 60 }, (_, i) => turn(i)), 60, { n: 40, repeat: 40, model: "sonnet", runner, windowDays: 30 }, out);
+      expect(report.repeat.abort).toContain("claude result was not valid JSON");
+      expect(JSON.stringify(report)).not.toContain(SENTINEL);
+      expect(renderLabeling(report).join("\n")).not.toContain(SENTINEL);
+      expect(allText(out)).not.toContain(SENTINEL);
+    });
   });
 });

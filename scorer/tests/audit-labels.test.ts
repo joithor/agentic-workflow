@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 
 import type { HumanTurn } from "../src/audit/human-turns.js";
 import type { LabelItem, LabelRunner } from "../src/audit/labels.js";
-import { BATCH_SIZE, buildPrompt, labelerText, labelItems, LABELS, outputJsonSchema, parseBatchOutput, sampleTurns, turnKey, UNTRUSTED_NOTICE } from "../src/audit/labels.js";
+import { BATCH_SIZE, buildPrompt, labelerText, labelItems, LabelerError, LABELS, outputJsonSchema, parseBatchOutput, sampleTurns, turnKey, UNTRUSTED_NOTICE } from "../src/audit/labels.js";
 
 const turn = (session: string, index: number, kind: HumanTurn["kind"] = "turn"): HumanTurn => ({
   project: "p", session, ts: "t", index, kind, text: `text ${session}:${index}`, skills: [], guardFiredBefore: false, compactedBefore: false, editsBefore: false, contextTokens: 0, prevAssistantTail: "",
@@ -185,19 +185,19 @@ describe("labelItems", () => {
     const runner: LabelRunner = async (prompt, schema) => {
       if (idsIn(prompt).includes("t0")) {
         n += 1;
-        throw new Error(`down ${n}`);
+        throw new LabelerError(`down ${n}`);
       }
       return answerAll("none")(prompt, schema);
     };
     const r = await labelItems(Array.from({ length: 25 }, (_, i) => item(i)), runner);
-    expect(r.errors).toEqual(["down 2"]);
+    expect(r.errors).toEqual(["LabelerError: down 2"]);
   });
 
   it("aborts with the underlying error when the first two batches both fail, without turn text", async () => {
     let calls = 0;
     const runner: LabelRunner = async () => {
       calls += 1;
-      throw new Error("claude: not logged in");
+      throw new LabelerError("claude: not logged in");
     };
     const items = Array.from({ length: 100 }, (_, i) => item(i, `secret text ${i}`));
     const err = await labelItems(items, runner).catch((e: unknown) => e as Error);
@@ -224,5 +224,47 @@ describe("labelItems", () => {
     };
     const err = await labelItems(Array.from({ length: 40 }, (_, i) => item(i)), runner).catch((e: unknown) => e as Error);
     expect((err as Error).message.length).toBeLessThan(500);
+  });
+});
+
+describe("error messages never carry model output or turn text", () => {
+  const SENTINEL = "SENTINEL_TURN_TEXT_9f3";
+
+  it.each([
+    ["an unknown label value", { labels: [{ id: "t0", labels: [SENTINEL] }, { id: "t1", labels: ["none"] }] }],
+    ["an unknown id", { labels: [{ id: "t0", labels: ["none"] }, { id: "t1", labels: ["none"] }, { id: SENTINEL, labels: ["none"] }] }],
+    ["a duplicate id", { labels: [{ id: "t0", labels: ["none"] }, { id: "t0", labels: ["rigor"] }, { id: "t1", labels: ["none"] }] }],
+    ["none combined with another label", { labels: [{ id: "t0", labels: ["none", "rigor"] }, { id: "t1", labels: ["none"] }] }],
+    ["a wrong shape that quotes text", { answer: SENTINEL }],
+  ])("parseBatchOutput rejects %s without echoing it", (_name, raw) => {
+    const err = (() => {
+      try {
+        parseBatchOutput(raw, ["t0", "t1"]);
+        return null;
+      } catch (e) {
+        return e as Error;
+      }
+    })();
+    expect(err).toBeInstanceOf(LabelerError);
+    expect(err?.message).not.toContain(SENTINEL);
+    expect(err?.message).not.toContain("t0");
+  });
+
+  it("reports an arbitrary thrown error by class only", async () => {
+    const runner: LabelRunner = async () => {
+      throw new SyntaxError(`Unexpected token 'x', "${SENTINEL}" is not valid JSON`);
+    };
+    const err = await labelItems(Array.from({ length: 40 }, (_, i) => item(i)), runner).catch((e: unknown) => e as Error);
+    expect((err as Error).message).not.toContain(SENTINEL);
+    expect((err as Error).message).toContain("SyntaxError");
+  });
+
+  it("keeps a LabelerError reason (a fixed string we wrote) in the error list", async () => {
+    const runner: LabelRunner = async (prompt, schema) => {
+      if (idsIn(prompt).includes("t0")) throw new LabelerError("claude CLI not found");
+      return answerAll("none")(prompt, schema);
+    };
+    const r = await labelItems(Array.from({ length: 25 }, (_, i) => item(i)), runner);
+    expect(r.errors).toEqual(["LabelerError: claude CLI not found"]);
   });
 });

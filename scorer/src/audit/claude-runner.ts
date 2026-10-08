@@ -3,7 +3,7 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 
-import type { LabelRunner } from "./labels.js";
+import { LabelerError, type LabelRunner } from "./labels.js";
 
 export interface ExecOptions {
   timeout: number;
@@ -39,11 +39,31 @@ export function claudeArgs(model: string, schema: object): string[] {
 // `--output-format json` wraps the answer in an envelope. With --json-schema the parsed object is in
 // `structured_output`; otherwise the model's text is in `result`.
 export function extractStructured(stdout: string): unknown {
-  const envelope = JSON.parse(stdout) as { is_error?: unknown; result?: unknown; structured_output?: unknown };
-  if (envelope.is_error === true) throw new Error(`claude reported an error: ${typeof envelope.result === "string" ? envelope.result : "unknown"}`);
+  let envelope: { is_error?: unknown; result?: unknown; structured_output?: unknown };
+  try {
+    envelope = JSON.parse(stdout) as typeof envelope;
+  } catch (e) {
+    throw new LabelerError("claude output was not valid JSON", e);
+  }
+  if (envelope.is_error === true) throw new LabelerError("claude reported an error");
   if (typeof envelope.structured_output === "object" && envelope.structured_output !== null) return envelope.structured_output;
-  if (typeof envelope.result === "string") return JSON.parse(envelope.result);
-  throw new Error("claude output has no structured_output or result");
+  if (typeof envelope.result === "string") {
+    try {
+      return JSON.parse(envelope.result);
+    } catch (e) {
+      throw new LabelerError("claude result was not valid JSON", e);
+    }
+  }
+  throw new LabelerError("claude output has no structured_output or result");
+}
+
+// A failed spawn becomes a fixed reason: the raw error carries the command line and stderr.
+function execFailure(e: unknown): LabelerError {
+  const err = e as { code?: unknown; killed?: unknown };
+  if (err.code === "ENOENT") return new LabelerError("claude CLI not found", e);
+  if (err.killed === true) return new LabelerError("claude timed out", e);
+  if (typeof err.code === "number") return new LabelerError(`claude exited with code ${err.code}`, e);
+  return new LabelerError("claude could not be run", e);
 }
 
 // execFile, never a shell. The prompt goes on stdin so its size never hits the argv limit.
@@ -63,7 +83,12 @@ export function makeClaudeRunner(opts: { model: string; timeoutMs?: number; env?
   // A fresh private directory, never the shared temp root: no other user's .claude/ or CLAUDE.md can be picked up.
   const cwd = fs.mkdtempSync(path.join(os.tmpdir(), "audit-label-"));
   return async (prompt, schema) => {
-    const stdout = await exec("claude", claudeArgs(opts.model, schema), { timeout: opts.timeoutMs ?? 180_000, env, maxBuffer: 20_000_000, cwd }, prompt);
+    let stdout: string;
+    try {
+      stdout = await exec("claude", claudeArgs(opts.model, schema), { timeout: opts.timeoutMs ?? 180_000, env, maxBuffer: 20_000_000, cwd }, prompt);
+    } catch (e) {
+      throw execFailure(e);
+    }
     return extractStructured(stdout);
   };
 }
