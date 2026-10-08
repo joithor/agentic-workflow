@@ -33,6 +33,10 @@ export interface CliOptions {
   itemPattern: string;
   itemsFile: string | null;
   maxSize: Size;
+  label: number;
+  labelRepeat: number;
+  labelModel: string;
+  help: boolean;
 }
 
 type ParseResult = { ok: true; options: CliOptions } | { ok: false; error: string };
@@ -60,6 +64,10 @@ export function parseArgs(argv: string[], now: Date, home: string): ParseResult 
     itemPattern: "[A-Z][A-Z0-9]{1,9}-\\d+",
     itemsFile: null,
     maxSize: "XS",
+    label: 0,
+    labelRepeat: 50,
+    labelModel: "sonnet",
+    help: false,
   };
   const args = [...argv];
   while (args.length > 0) {
@@ -74,6 +82,7 @@ export function parseArgs(argv: string[], now: Date, home: string): ParseResult 
     }
     if (arg === "live") { options.command = "live"; continue; }
     if (arg === "audit") { options.command = "audit"; continue; }
+    if (arg === "--help" || arg === "-h") { options.help = true; continue; }
     if (arg === "--json") { options.json = true; continue; }
     if (arg === "--no-pr-lookup") { options.prLookup = false; continue; }
     if (!VALUE_FLAGS.has(arg)) return { ok: false, error: `unknown argument: ${arg}` };
@@ -113,6 +122,16 @@ export function parseArgs(argv: string[], now: Date, home: string): ParseResult 
       if (!(SIZES as readonly string[]).includes(value)) return { ok: false, error: `--max-size must be ${SIZES.join("|")}: ${value}` };
       options.maxSize = value as Size;
     }
+    if (arg === "--label" || arg === "--label-repeat") {
+      const count = Number(value);
+      if (!/^\d+$/.test(value) || !Number.isSafeInteger(count)) return { ok: false, error: `${arg} must be a non-negative integer: ${value}` };
+      if (arg === "--label") options.label = count;
+      else options.labelRepeat = count;
+    }
+    if (arg === "--label-model") {
+      if (!/^[A-Za-z0-9][A-Za-z0-9._:[\]-]*$/.test(value)) return { ok: false, error: `--label-model must be a model name or alias: ${value}` };
+      options.labelModel = value;
+    }
     if (arg === "--since") {
       const since = parseSince(value, now);
       if (typeof since === "string") return { ok: false, error: since };
@@ -123,7 +142,7 @@ export function parseArgs(argv: string[], now: Date, home: string): ParseResult 
   return { ok: true, options };
 }
 
-const VALUE_FLAGS: ReadonlySet<string> = new Set(["--since", "--projects-dir", "--codex-dir", "--cursor-dir", "--state-dir", "--provider", "--session", "--cwd", "--window", "--out", "--item-pattern", "--items", "--max-size"]);
+const VALUE_FLAGS: ReadonlySet<string> = new Set(["--since", "--projects-dir", "--codex-dir", "--cursor-dir", "--state-dir", "--provider", "--session", "--cwd", "--window", "--out", "--item-pattern", "--items", "--max-size", "--label", "--label-repeat", "--label-model"]);
 const SESSION_ID = /^[A-Za-z0-9._-]+$/;
 
 // "all" | "claude" | "codex,cursor" …

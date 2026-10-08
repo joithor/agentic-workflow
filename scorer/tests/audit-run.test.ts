@@ -4,6 +4,7 @@ import path from "node:path";
 
 import { describe, expect, it } from "vitest";
 
+import type { LabelRunner } from "../src/audit/labels.js";
 import { runAudit } from "../src/audit/run-audit.js";
 
 const u = (text: string, timestamp?: string) => ({ type: "user", ...(timestamp === undefined ? {} : { timestamp }), message: { content: text } });
@@ -21,6 +22,29 @@ const run = (c: { projects: string; out: string }) =>
   runAudit({ projectsDir: c.projects, since: new Date("2026-10-01T00:00:00Z"), outDir: c.out, itemPattern: /X-\d+/, itemsFile: null, maxSize: "XS" });
 
 describe("runAudit", () => {
+  it("without --label, says patterns are uncalibrated and writes no labels", async () => {
+    const c = corpus({ "s1.jsonl": [u("push", "2026-10-05T00:00:00Z")] });
+    const s = await run(c);
+    expect(s.labeling).toBeNull();
+    expect(fs.readFileSync(path.join(c.out, "baseline.md"), "utf8")).toContain("Patterns are uncalibrated floor counts; run with --label 400 to calibrate.");
+    expect(fs.existsSync(path.join(c.out, "labels.jsonl"))).toBe(false);
+  });
+
+  it("with --label, labels a deduped sample and adds the calibration and wrong-approach sections", async () => {
+    const turns = Array.from({ length: 12 }, (_, i) => u(`are you sure about step ${i}`, `2026-10-05T00:${String(i).padStart(2, "0")}:00Z`));
+    const c = corpus({ "s1.jsonl": turns, "s2.jsonl": turns }); // s2 is a resumed copy of s1
+    const runner: LabelRunner = async (prompt) => ({ labels: [...prompt.matchAll(/<untrusted id="(t\d+)">/g)].map((m) => ({ id: m[1], labels: ["rigor"] })) });
+    const s = await runAudit({ projectsDir: c.projects, since: new Date("2026-10-01T00:00:00Z"), outDir: c.out, itemPattern: /X-\d+/, itemsFile: null, maxSize: "XS", label: { n: 12, repeat: 0, model: "sonnet", runner, windowDays: 30 } });
+    expect(s).toMatchObject({ turns: 12, duplicates: 12, labeling: { sampled: 12, labeled: 12, labelErrors: 0 } });
+    const md = fs.readFileSync(path.join(c.out, "baseline.md"), "utf8");
+    expect(md).toContain("## Pattern calibration");
+    expect(md).toContain("## Wrong-approach corrections");
+    expect(md).toContain("metric-grade");
+    expect(md).not.toContain("uncalibrated");
+    expect(fs.readFileSync(path.join(c.out, "labels.jsonl"), "utf8").trim().split("\n")).toHaveLength(12);
+    expect(fs.existsSync(path.join(c.out, "calibration.json"))).toBe(true);
+  });
+
   it("writes human-turns.jsonl, summary.json and baseline.md for sessions after --since", async () => {
     const projects = fs.mkdtempSync(path.join(os.tmpdir(), "proj-"));
     const out = fs.mkdtempSync(path.join(os.tmpdir(), "out-"));

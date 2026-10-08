@@ -6,6 +6,8 @@ import { z } from "zod";
 import { discoverFiles } from "../transcript/discover.js";
 import type { HumanTurn } from "./human-turns.js";
 import { extractHumanTurns } from "./human-turns.js";
+import type { LabelingReport, LabelOptions } from "./labeling.js";
+import { renderLabeling, runLabeling } from "./labeling.js";
 import type { ItemRecord, Size } from "./items.js";
 import { autoStartShare, ItemRecordSchema } from "./items.js";
 import type { PatternName } from "./patterns.js";
@@ -21,6 +23,7 @@ export interface AuditSummary {
   patterns: Record<PatternName, { turns: number; sessions: number }>;
   usage: { items: number; medianTokens: number; p75Tokens: number; medianCacheRead: number; p75CacheRead: number };
   autoStart: { eligible: number; total: number; share: number } | null;
+  labeling: LabelingReport | null;
 }
 
 function readItems(file: string): ItemRecord[] {
@@ -29,7 +32,7 @@ function readItems(file: string): ItemRecord[] {
   return parsed.data;
 }
 
-export async function runAudit(opts: { projectsDir: string; since: Date; outDir: string; itemPattern: RegExp; itemsFile: string | null; maxSize: Size }): Promise<AuditSummary> {
+export async function runAudit(opts: { projectsDir: string; since: Date; outDir: string; itemPattern: RegExp; itemsFile: string | null; maxSize: Size; label?: LabelOptions | undefined }): Promise<AuditSummary> {
   const items = opts.itemsFile === null ? null : readItems(opts.itemsFile);
   fs.mkdirSync(opts.outDir, { recursive: true, mode: 0o700 });
   // Verbatim human turns can hold pasted secrets: owner-only, like every file in the audit directory.
@@ -88,7 +91,11 @@ export async function runAudit(opts: { projectsDir: string; since: Date; outDir:
     patterns: countPatterns(all),
     usage: { items: usage.items, medianTokens: usage.medianTokens, p75Tokens: usage.p75Tokens, medianCacheRead: usage.medianCacheRead, p75CacheRead: usage.p75CacheRead },
     autoStart: items === null ? null : autoStartShare(items, opts.maxSize),
+    labeling: null,
   };
+  if (opts.label !== undefined && opts.label.n > 0) {
+    summary.labeling = await runLabeling(all, summary.turns, opts.label, opts.outDir);
+  }
   fs.writeFileSync(path.join(opts.outDir, "summary.json"), `${JSON.stringify(summary, null, 2)}\n`);
   fs.writeFileSync(path.join(opts.outDir, "baseline.md"), renderBaseline(summary, opts));
   return summary;
@@ -119,5 +126,6 @@ function renderBaseline(s: AuditSummary, opts: { since: Date; maxSize: Size }): 
     ``,
     `Auto-start share: ${auto}.`,
     ``,
+    ...renderLabeling(s.labeling),
   ].join("\n");
 }

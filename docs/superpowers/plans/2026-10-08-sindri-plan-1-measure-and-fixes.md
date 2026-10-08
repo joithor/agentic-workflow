@@ -1407,6 +1407,7 @@ git commit -m "feat: scorer audit command (Sindri step 0 baselines)"
 
 ### Task 6: `scorer audit --label`: model-labeled calibration and wrong-approach measurement
 
+> Amendment (build): `cli.ts` prints the `--help` text from the same `USAGE` constant; `labels.ts` sort comparator has no equal-hash branch; `labeling.ts` also `chmod`s `labels.jsonl` to 0600 (writeFileSync mode applies only on create); extra tests added for 100% coverage.
 A second user ran the spec's audit method on their own transcripts and had a model label every turn. Their
 regexes had low recall (a correction pattern caught 5 of 45 wrong-approach corrections) and the image pattern
 had low precision (22 real defects in 80 hits). So no pattern may feed a metric until it is checked against
@@ -1446,7 +1447,7 @@ user's hooks, MCP servers or CLAUDE.md see it. The plain audit stays offline and
 written under `--out` (`~/.agentic-workflow/audit`), `human-turns.jsonl` and `labels.jsonl` owner-only (0600), and
 nothing from them is ever committed or posted.
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 Create `scorer/tests/audit-stats.test.ts`:
 
@@ -1983,12 +1984,12 @@ it("accepts --help and -h", () => {
 });
 ```
 
-- [ ] **Step 2: Run the tests to verify they fail**
+- [x] **Step 2: Run the tests to verify they fail**
 
 Run: `cd scorer && npx vitest run tests/audit-stats.test.ts tests/audit-labels.test.ts tests/audit-claude-runner.test.ts tests/audit-calibrate.test.ts tests/audit-labeling.test.ts tests/audit-run.test.ts tests/args.test.ts`
 Expected: FAIL. The new modules are missing, and `--label` is an unknown argument.
 
-- [ ] **Step 3: Implement**
+- [x] **Step 3: Implement**
 
 Create `scorer/src/audit/stats.ts`:
 
@@ -2644,17 +2645,17 @@ In `AGENTS.md`, replace the `scorer audit` line from Task 5 with:
 scorer audit [--since 60d; default 1d] [--items FILE] [--max-size XS] [--label N]   # Human-turn baseline → ~/.agentic-workflow/audit/; --label sends sampled turn text to your Claude login's provider
 ```
 
-- [ ] **Step 4: Run the scorer suite and typecheck**
+- [x] **Step 4: Run the scorer suite and typecheck**
 
 Run: `cd scorer && npm run typecheck && npm test`
 Expected: typecheck clean; all tests pass, including the new stats, labels, runner, calibration, labeling, args and run cases.
 
-- [ ] **Step 5: Check the offline path and the help text (no model calls)**
+- [x] **Step 5: Check the offline path and the help text (no model calls)**
 
 Run: `(cd scorer && npm run build) && node scorer/dist/cli.js audit --since 7d --out "$(mktemp -d)" && node scorer/dist/cli.js audit --help | grep -c "model provider your Claude Code login"`
 Expected: the audit prints its summary line and writes no `labels.jsonl`; the grep prints `1`. The real labeled run happens once, in Task 7.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add scorer/src/audit/stats.ts scorer/src/audit/labels.ts scorer/src/audit/claude-runner.ts scorer/src/audit/calibrate.ts scorer/src/audit/labeling.ts scorer/src/audit/run-audit.ts scorer/src/args.ts scorer/src/cli.ts scorer/tests/audit-stats.test.ts scorer/tests/audit-labels.test.ts scorer/tests/audit-claude-runner.test.ts scorer/tests/audit-calibrate.test.ts scorer/tests/audit-labeling.test.ts scorer/tests/audit-run.test.ts scorer/tests/args.test.ts scripts/transcript-audit/README.md AGENTS.md

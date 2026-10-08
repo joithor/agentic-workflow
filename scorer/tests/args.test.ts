@@ -30,6 +30,7 @@ describe("parseArgs", () => {
       providers: null, stateDir: "/home/j/.agentic-workflow", stateDirExplicit: false, prLookup: true,
       contextTokensPath: null, liveSession: null, liveCwd: null, liveWindow: 200_000, json: false,
       auditOut: "/home/j/.agentic-workflow/audit", itemPattern: "[A-Z][A-Z0-9]{1,9}-\\d+", itemsFile: null, maxSize: "XS",
+      label: 0, labelRepeat: 50, labelModel: "sonnet", help: false,
     } });
   });
 
@@ -96,4 +97,34 @@ describe("parseArgs", () => {
   ])("rejects %j", (argv, error) => {
     expect(parseArgs(argv, NOW, HOME)).toEqual({ ok: false, error });
   });
+});
+
+it("parses --label, --label-repeat and --label-model", () => {
+  const r = parseArgs(["audit", "--label", "400", "--label-repeat", "0", "--label-model", "opus"], NOW, HOME);
+  expect(r.ok && [r.options.label, r.options.labelRepeat, r.options.labelModel]).toEqual([400, 0, "opus"]);
+});
+
+it("keeps labeling off by default", () => {
+  const r = parseArgs(["audit"], NOW, HOME);
+  expect(r.ok && [r.options.label, r.options.labelRepeat, r.options.labelModel]).toEqual([0, 50, "sonnet"]);
+});
+
+it.each([
+  ["--label", "-1"],
+  ["--label", "1.5"],
+  ["--label", "abc"],
+  ["--label", ""],
+  ["--label-repeat", "-2"],
+  ["--label-repeat", "2.5"],
+  ["--label-model", "--tools"],
+  ["--label-model", "sonnet; rm"],
+])("rejects %s %s", (flag, value) => {
+  expect(parseArgs(["audit", flag, value], NOW, HOME).ok).toBe(false);
+});
+
+it("accepts --help and -h", () => {
+  const long = parseArgs(["--help"], NOW, HOME);
+  expect(long.ok && long.options.help).toBe(true);
+  const short = parseArgs(["audit", "-h"], NOW, HOME);
+  expect(short.ok && short.options.help).toBe(true);
 });
