@@ -55,9 +55,10 @@ export function labelerText(text: string): string {
 }
 
 // Turn text is data. Break any tag that could close or reopen a fence, however it is spelled: ASCII or
-// fullwidth bracket or an html entity, then optional whitespace or zero-width characters, an optional slash, the tag name.
-const GAP = "[\\s\\u200B-\\u200D\\uFEFF]*";
-const TAG_START = new RegExp(`(?:<|\\uFF1C|&lt;)${GAP}/?${GAP}(?:untrusted|assistant_tail|human_turn)`, "gi");
+// fullwidth bracket or an html entity (named or numeric), then optional whitespace or format characters (\p{Cf}: zero-width, soft hyphen, word joiner...), an optional slash, the tag name.
+const GAP = "[\\s\\p{Cf}]*";
+const OPENER = "(?:<|\\uFF1C|&lt;|&#0*60;|&#x0*3c;)";
+const TAG_START = new RegExp(`${OPENER}${GAP}/?${GAP}(?:untrusted|assistant_tail|human_turn)`, "giu");
 function fence(text: string): string {
   return text.replace(TAG_START, "[tag]");
 }

@@ -30,7 +30,7 @@ describe("runLabeling", () => {
     expect(calls.map((c) => c.length)).toEqual([20, 5, 5]); // 25 sampled in 2 batches, then 5 repeated in 1
     expect(calls[2]).toEqual(["t4", "t3", "t2", "t1", "t0"]); // second pass runs in reverse order
     expect(report).toMatchObject({ model: "sonnet", requested: 25, sampled: 25, labeled: 25, labelErrors: 0 });
-    expect(report.repeat).toMatchObject({ requested: 5, compared: 5 });
+    expect(report.repeat).toMatchObject({ requested: 5, compared: 5, abort: null });
     expect(report.repeat.agreement.rigor).toBe(1);
     expect(report.calibration.find((c) => c.pattern === "rigor")).toMatchObject({ tp: 25, fp: 0, fn: 0 });
 
@@ -59,6 +59,32 @@ describe("runLabeling", () => {
     const t = { ...turn(0), text: `${"x ".repeat(750)}are you sure` };
     const report = await runLabeling([t], 1, { n: 1, repeat: 0, model: "sonnet", runner, windowDays: 30 }, out);
     expect(report.calibration.find((c) => c.pattern === "rigor")).toMatchObject({ tp: 0, fp: 0, fn: 0 });
+  });
+
+  it("keeps the first-pass outputs and reports the repeat as not compared when the repeat pass aborts", async () => {
+    const out = fs.mkdtempSync(path.join(os.tmpdir(), "label-"));
+    let call = 0;
+    const runner: LabelRunner = async (prompt) => {
+      call += 1;
+      if (call > 2) throw new Error("claude: session expired");
+      return { labels: idsIn(prompt).map((id) => ({ id, labels: ["rigor"] })) };
+    };
+    const report = await runLabeling(Array.from({ length: 60 }, (_, i) => turn(i)), 60, { n: 40, repeat: 40, model: "sonnet", runner, windowDays: 30 }, out);
+    expect(report).toMatchObject({ sampled: 40, labeled: 40, labelErrors: 2 });
+    expect(report.repeat).toMatchObject({ requested: 40, compared: 0, abort: expect.stringContaining("claude: session expired") });
+    expect(report.repeat.agreement.rigor).toBeNull();
+    expect(renderLabeling(report).join("\n")).toContain("The repeat pass aborted and is not compared: labeling aborted");
+    expect(fs.readFileSync(path.join(out, "labels.jsonl"), "utf8").trim().split("\n")).toHaveLength(40);
+    const cal = JSON.parse(fs.readFileSync(path.join(out, "calibration.json"), "utf8")) as { repeat: { abort: string } };
+    expect(cal.repeat.abort).toContain("session expired");
+  });
+
+  it("still aborts when the first pass fails its first two batches", async () => {
+    const out = fs.mkdtempSync(path.join(os.tmpdir(), "label-"));
+    const runner: LabelRunner = async () => {
+      throw new Error("no login");
+    };
+    await expect(runLabeling(Array.from({ length: 60 }, (_, i) => turn(i)), 60, { n: 40, repeat: 0, model: "sonnet", runner, windowDays: 30 }, out)).rejects.toThrow(/no login/);
   });
 
   it("is reproducible: the same corpus yields the same sampled keys", async () => {

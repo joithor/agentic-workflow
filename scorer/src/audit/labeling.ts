@@ -24,7 +24,7 @@ export interface LabelingReport {
   labelErrors: number;
   calibration: PatternCalibration[];
   wrongApproach: WrongApproachEstimate;
-  repeat: { requested: number; compared: number; agreement: Record<LabelName, number | null> };
+  repeat: { requested: number; compared: number; agreement: Record<LabelName, number | null>; abort: string | null };
 }
 
 // totalTurns is the number of deduped typed turns, so sample rates scale to the whole corpus.
@@ -52,7 +52,17 @@ export async function runLabeling(turns: readonly HumanTurn[], totalTurns: numbe
   const first = await labelItems(items, opts.runner);
   // Second pass over the first k sampled turns, batches in reverse order, to measure labeler stability.
   const repeatItems = items.slice(0, Math.min(opts.repeat, items.length)).reverse();
-  const second = repeatItems.length > 0 ? await labelItems(repeatItems, opts.runner) : { labels: new Map<string, LabelName[]>(), labelErrors: 0 };
+  // The repeat pass may hit the fail-fast abort. That must not lose the first pass: record it and carry on.
+  let second = { labels: new Map<string, LabelName[]>(), labelErrors: 0 };
+  let repeatAbort: string | null = null;
+  if (repeatItems.length > 0) {
+    try {
+      second = await labelItems(repeatItems, opts.runner);
+    } catch (e) {
+      repeatAbort = (e as Error).message;
+      second = { labels: new Map(), labelErrors: 2 }; // the two batches that failed before the abort
+    }
+  }
 
   const labeled: LabeledTurn[] = [];
   const lines: string[] = [];
@@ -75,7 +85,7 @@ export async function runLabeling(turns: readonly HumanTurn[], totalTurns: numbe
     labelErrors: first.labelErrors + second.labelErrors,
     calibration: calibrate(labeled),
     wrongApproach: estimateWrongApproach(labeled, totalTurns, windowDays),
-    repeat: { requested: repeatItems.length, ...repeatAgreement(first.labels, second.labels) },
+    repeat: { requested: repeatItems.length, ...repeatAgreement(first.labels, second.labels), abort: repeatAbort },
   };
   fs.mkdirSync(outDir, { recursive: true });
   // labels.jsonl holds keys and labels only (no turn text); it still stays local and is never committed.
@@ -116,7 +126,7 @@ export function renderLabeling(report: LabelingReport | null): string[] {
     ...report.calibration.map((c) => `| ${c.pattern} | ${c.label} | ${c.positives} | ${c.tp} | ${c.fp} | ${c.fn} | ${withLower(c.precision)} | ${withLower(c.recall)} | ${c.status} |`),
     "",
     `Patterns without a label (ci_conflicts, push_only, evidence_env, dispatch) stay floor counts.`,
-    `Labeler stability: ${report.repeat.compared} turns relabeled in reverse batch order. Raw agreement per label: ${agreement}.`,
+    `Labeler stability: ${report.repeat.compared} turns relabeled in reverse batch order. Raw agreement per label: ${agreement}.${report.repeat.abort === null ? "" : ` The repeat pass aborted and is not compared: ${report.repeat.abort}.`}`,
     "",
     "## Wrong-approach corrections",
     "",
