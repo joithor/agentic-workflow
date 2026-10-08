@@ -1,6 +1,7 @@
 import { createRequire } from "node:module";
 
 import type { Deps } from "./deps.js";
+import { profileCommand } from "./profile/commands.js";
 import { failure, success, type CommandResult } from "./output.js";
 
 export type Command = (args: string[], deps: Deps) => Promise<CommandResult>;
@@ -11,8 +12,20 @@ export interface CommandDef {
   run: Command;
 }
 
-// Later tasks register their commands here.
-export const COMMANDS: Record<string, CommandDef> = {};
+export const COMMANDS: Record<string, CommandDef> = {
+  profile: {
+    summary: "init | validate | explain <key> | migrate | approve [hash]",
+    usage: [
+      "Usage:",
+      "  sindri profile init [--ring0 [--plans <pattern>]...] [--dir DIR] [--force]",
+      "  sindri profile validate [--profile DIR] [--json]",
+      "  sindri profile explain <key> [--repo NAME] [--profile DIR] [--json]",
+      "  sindri profile migrate [--dry-run] [--profile DIR] [--json]",
+      "  sindri profile approve [<hash>] [--profile DIR] [--json]   (approving needs an interactive terminal)",
+    ].join("\n"),
+    run: profileCommand,
+  },
+};
 
 function version(): string {
   const require = createRequire(import.meta.url);

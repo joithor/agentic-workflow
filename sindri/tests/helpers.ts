@@ -3,6 +3,8 @@ import os from "node:os";
 import path from "node:path";
 
 import type { Deps } from "../src/deps.js";
+import type { GitResult, GitRunner } from "../src/git.js";
+import { realGitRunner } from "../src/git-real.js";
 import type { SystemProbe } from "../src/system.js";
 
 export function tempDir(prefix = "sindri-test-"): string {
@@ -19,6 +21,9 @@ export function makeDeps(overrides: Partial<Deps> = {}): Deps {
     home,
     now: () => new Date("2026-10-08T12:00:00.000Z"),
     system: fakeSystem(),
+    git: realGitRunner(),
+    isTTY: false,
+    prompt: async () => "",
     ...overrides,
   };
 }
@@ -34,5 +39,11 @@ export function fakeSystem(over: Partial<SystemProbe> = {}): SystemProbe {
     isLocalDisk: () => true,
     username: () => "tester",
     ...over,
+  };
+}
+
+export function fakeGit(answers: Record<string, GitResult>): GitRunner {
+  return {
+    run: async (args) => answers[args.join(" ")] ?? { ok: false, stderr: `unexpected git call: ${args.join(" ")}` },
   };
 }

@@ -2810,9 +2810,11 @@ git commit -m "feat: sindri profile schema, loader, explain and generated refere
 
 ### Task 6: `sindri profile init | validate | explain | migrate | approve`
 
+> Amendment (build): B1 + m4. Step 4's coverage run could not reach 100% as written, so `profile-commands.test.ts` gains four tests: `init` with no `USER` (falls back to `me`), `approveProfile` throwing `SND-PROFILE-006` on a hash mismatch, `approvedProfile` returning `null` with no approval and after the snapshot dir is removed, and the diff treating a removed snapshot `repos` dir as empty. The Files list for `deps.ts` also names the `isTTY` and `prompt` fields Step 3 adds. S7: gen, typecheck and test:coverage ran once each, serially, before the commit.
+
 **Files:**
 - Create: `sindri/src/git.ts`, `sindri/src/git-real.ts`, `sindri/src/profile/approve.ts`, `sindri/src/profile/commands.ts`, `sindri/src/args.ts`
-- Modify: `sindri/src/deps.ts` (add `git: GitRunner`), `sindri/src/cli.ts` (pass `realGitRunner()`), `sindri/src/main.ts` (register `profile`), `sindri/src/errors.ts`, `sindri/tests/helpers.ts` (add `fakeGit()`, `git` in `makeDeps`), `sindri/tests/real.test.ts`
+- Modify: `sindri/src/deps.ts` (add `git: GitRunner`, `isTTY: boolean` and `prompt`), `sindri/src/cli.ts` (pass `realGitRunner()`), `sindri/src/main.ts` (register `profile`), `sindri/src/errors.ts`, `sindri/tests/helpers.ts` (add `fakeGit()`, `git` in `makeDeps`), `sindri/tests/real.test.ts`
 - Test: `sindri/tests/profile-commands.test.ts`, `sindri/tests/approve.test.ts`
 
 **Interfaces:**
@@ -2825,7 +2827,7 @@ git commit -m "feat: sindri profile schema, loader, explain and generated refere
   - `commands.ts`: `profileCommand: Command`; `requireProfile(deps, flag?: string): LoadedProfile` (throws `SND-PROFILE-002` when no profile is found, `SND-PROFILE-001` when it's invalid); `sanitizeName(s: string): string`.
   - `tests/helpers.ts`: `fakeGit(answers: Record<string, GitResult>): GitRunner` (keyed by `args.join(" ")`; an unknown call returns `{ ok: false, stderr: "unexpected git call: …" }`).
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 Add to `sindri/tests/helpers.ts`:
 
@@ -3117,12 +3119,12 @@ describe("profile approve (spec §8.7)", () => {
 });
 ```
 
-- [ ] **Step 2: Run the tests to verify they fail**
+- [x] **Step 2: Run the tests to verify they fail**
 
 Run: `cd sindri && npx vitest run tests/profile-commands.test.ts tests/approve.test.ts`
 Expected: FAIL with `Failed to load url ../src/profile/commands.js` (and `../src/profile/approve.js`).
 
-- [ ] **Step 3: Implement**
+- [x] **Step 3: Implement**
 
 `sindri/src/git.ts`:
 
@@ -3537,12 +3539,12 @@ Add to `ERRORS`:
   "SND-LOCK-001": { summary: "Another sindri run holds the lock.", fix: "wait a moment and rerun; `sindri doctor` shows the holder" },
 ```
 
-- [ ] **Step 4: Run the tests**
+- [x] **Step 4: Run the tests**
 
 Run: `cd sindri && npm run gen && npx vitest run && npm run typecheck && npm run test:coverage`
 Expected: all tests PASS; no type errors.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add sindri/src sindri/tests docs/sindri/errors.md
