@@ -202,7 +202,7 @@ describe("scope profile keys", () => {
   });
 
   it("adds scope_runs and model_calls in ledger v3", () => {
-    expect(LEDGER_SCHEMA_VERSION).toBe(3);
+    expect(LEDGER_SCHEMA_VERSION).toBeGreaterThanOrEqual(3); // later plans append migrations
     const db = openMemoryLedger();
     const names = (db.prepare("SELECT name FROM sqlite_master WHERE type = 'table' AND name IN ('scope_runs', 'model_calls') ORDER BY name").all() as { name: string }[]).map((r) => r.name);
     expect(names).toEqual(["model_calls", "scope_runs"]);
@@ -364,7 +364,7 @@ Add to `ERRORS`:
 
 - [ ] **Step 4: Run the tests**
 
-Run: `cd sindri && grep -rn "LEDGER_SCHEMA_VERSION\|schemaVersion" tests | grep -v "scope-profile"` first. Plan 3's `index-profile` test hard-codes `toBe(2)`: change it to `toBeGreaterThanOrEqual(2)`, and fix any other literal the grep shows. Then:
+Run: `cd sindri && grep -rn "LEDGER_SCHEMA_VERSION\|schemaVersion" tests | grep -v "scope-profile"` first. Plan 3's `index-profile` test hard-codes `toBe(2)`: change it to `toBeGreaterThanOrEqual(2)`, and change any other exact-version assertion the grep shows to a `toBeGreaterThanOrEqual` on the version it needs (a later plan appends further migrations). Then:
 
 Run: `cd sindri && npm run gen && npm run typecheck && npm run test:coverage`
 Expected: all tests PASS; coverage 100% on the files touched.
