@@ -105,6 +105,9 @@ describe("sindri scrub --staged", () => {
     const ledger = path.join(deps.env.AW_STATE_DIR as string, "sindri", "ledger.db");
     const beside = (): string[] => fs.readdirSync(path.dirname(ledger)).filter((n) => n.startsWith("ledger.db"));
     const before = beside();
+    const approved = await runCli(["scrub", "--staged"], deps);
+    expect(approved.stderr).toContain("ids.txt:1 employee-id");
+    expect(approved.stderr).not.toContain("note:");
     // Unapproved edit that drops the pattern: the approved one still applies.
     fs.writeFileSync(file, original);
     const dropped = await runCli(["scrub", "--staged"], deps);
@@ -117,6 +120,18 @@ describe("sindri scrub --staged", () => {
     expect(broken.exitCode).toBe(1);
     expect(broken.stderr).toContain("ids.txt:1 employee-id");
     expect(beside()).toEqual(before);
+  });
+
+  it("uses the live profile when the ledger can't be read", async () => {
+    const root = repo();
+    stage(root, "ids.txt", "EMP-123456\n");
+    const deps = makeDeps({ cwd: root });
+    await runCli(["profile", "init"], deps);
+    fs.appendFileSync(path.join(deps.env.AW_STATE_DIR as string, "profile", "profile.yaml"), '\nscrub:\n  extraPatterns:\n    - kind: employee-id\n      regex: "EMP-\\\\d{6}"\n');
+    fs.writeFileSync(path.join(deps.env.AW_STATE_DIR as string, "sindri", "ledger.db"), "not a db");
+    const r = await runCli(["scrub", "--staged"], deps);
+    expect(r.exitCode).toBe(1);
+    expect(r.stderr).toContain("ids.txt:1 employee-id");
   });
 
   it("reports a git failure other than 'not a repo' with git's stderr (SND-SCRUB-005)", async () => {
@@ -133,6 +148,7 @@ describe("sindri scrub --staged", () => {
     await runCli(["profile", "init"], deps);
     const file = path.join(deps.env.AW_STATE_DIR as string, "profile", "profile.yaml");
     fs.appendFileSync(file, '\nscrub:\n  extraPatterns:\n    - kind: employee-id\n      regex: "\\\\bEMP-\\\\d{6}\\\\b"\n');
+    await runCli(["profile", "approve"], deps); // creates the ledger; nothing approved yet, so the live patterns apply
     const r = await runCli(["scrub", "--staged"], deps);
     expect(r.stderr).toContain("ids.txt:1 employee-id");
   });

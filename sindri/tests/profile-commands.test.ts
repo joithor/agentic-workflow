@@ -325,6 +325,12 @@ describe("sindri profile: PR #69 review", () => {
       const diff = profileDiff(d, db, loaded.value);
       expect(diff).toContain("+ # validated");
       expect(diff.join("\n")).not.toContain("swapped");
+      // A file the approved snapshot has but the loaded profile doesn't shows as removed.
+      approveProfile(d, db, loaded.value);
+      const fewer = { ...loaded.value, files: ["profile.yaml"], bytes: { "profile.yaml": loaded.value.bytes["profile.yaml"] } };
+      const removed = profileDiff(d, db, fewer);
+      expect(removed[0]).toBe("--- repos/example.yaml");
+      expect(removed.slice(1).every((l) => l.startsWith("- "))).toBe(true);
     } finally {
       db.close();
     }

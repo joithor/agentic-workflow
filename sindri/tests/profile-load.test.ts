@@ -196,6 +196,10 @@ describe("loadProfile: PR #69 review", () => {
     const repo = copyExample();
     edit(repo, "repos/example.yaml", (t) => t.replace("schemaVersion: 1", "schemaVersion: 3"));
     expect(issuesOf(repo).map((i) => [i.file, i.code])).toEqual([["repos/example.yaml", "SND-PROFILE-005"]]);
+    // A scalar file has no schemaVersion: the schema reports it instead.
+    const scalar = copyExample();
+    fs.writeFileSync(path.join(scalar, "profile.yaml"), "42\n");
+    expect(issuesOf(scalar).some((i) => i.code === undefined && i.file === "profile.yaml")).toBe(true);
   });
 
   it("refuses a secret in a YAML comment, and never prints a secret quoted by a regex compile error", () => {

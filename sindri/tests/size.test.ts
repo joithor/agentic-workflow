@@ -22,6 +22,7 @@ describe("rule-based sizing", () => {
   it("assesses size, ambiguity and trust from meta and authors", () => {
     const full = item("a.t1", { files: 1, codeLines: 10, hasFilesBlock: 1 }, { steps: { done: 0, total: 3 } });
     expect(assess(full, profile)).toEqual({ size: "XS", sizedBy: "rules", ambiguity: "none", trusted: true });
+    expect(assess(item("a.t6", { files: 1, codeLines: 10, hasFilesBlock: 1 }), profile).ambiguity).toBe("unknown"); // no steps
     expect(assess(item("a.t2", {}), profile)).toEqual({ size: null, sizedBy: "rules", ambiguity: "unknown", trusted: true });
     expect(assess(item("a.t5", { codeLines: 300 }), profile).size).toBe("M");
     expect(assess(item("a.t3", {}, { authors: [] }), profile).trusted).toBe(false);
