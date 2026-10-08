@@ -122,7 +122,7 @@ These are the smallest changes that make the spec buildable as written. Each one
   - `renderErrorsDoc(): string`.
   - Test helper `makeDeps(overrides?: Partial<Deps>): Deps` in `tests/helpers.ts`, with a fresh temp `AW_STATE_DIR`.
 
-- [ ] **Step 1: Create the package scaffold**
+- [x] **Step 1: Create the package scaffold**
 
 `sindri/package.json`:
 
@@ -211,7 +211,7 @@ export default defineConfig({
 Run: `cd sindri && npm install`
 Expected: `added N packages` and a new `sindri/package-lock.json`.
 
-- [ ] **Step 2: Write the failing tests**
+- [x] **Step 2: Write the failing tests**
 
 `sindri/tests/helpers.ts`:
 
@@ -422,12 +422,12 @@ describe("runCli", () => {
 });
 ```
 
-- [ ] **Step 3: Run the tests to verify they fail**
+- [x] **Step 3: Run the tests to verify they fail**
 
 Run: `cd sindri && npx vitest run`
 Expected: FAIL, every file with `Failed to load url ../src/errors.js` (or the matching module).
 
-- [ ] **Step 4: Implement**
+- [x] **Step 4: Implement**
 
 `sindri/src/errors.ts`:
 
@@ -670,7 +670,7 @@ function write(rel: string, text: string): void {
 write("docs/sindri/errors.md", renderErrorsDoc());
 ```
 
-- [ ] **Step 5: Generate the doc and run the tests**
+- [x] **Step 5: Generate the doc and run the tests**
 
 Run: `cd sindri && npm run gen && npx vitest run`
 Expected: `wrote docs/sindri/errors.md`, then all tests in `errors`, `output`, `ids` and `main` PASS.
@@ -678,7 +678,7 @@ Expected: `wrote docs/sindri/errors.md`, then all tests in `errors`, `output`, `
 Run: `cd sindri && npm run typecheck && npm run test:coverage`
 Expected: no type errors; coverage 100% on all four metrics.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add sindri/package.json sindri/package-lock.json sindri/tsconfig.json sindri/tsconfig.test.json sindri/vitest.config.ts sindri/src sindri/tests docs/sindri/errors.md
