@@ -405,7 +405,7 @@ git commit -m "feat: sindri secret pointers, scope profile keys and ledger v3"
   - `sanitizeIngest(text: string): string` — spec §8.3: strips HTML comments, `<img>` tags, control characters (except tab and newline), zero-width and bidi characters; replaces base64-like runs over 200 characters with `[blob]`; reduces Markdown images and links to remote URLs to their text. `scrubText(text)` — scrub secrets. `clean(text)` — `scrubText(sanitizeIngest(text))`, the one call every source uses on every text.
   - `escapeMarkup(s)` (`& < > "`), `fence(kind, text)` — `<untrusted kind="…">…</untrusted>` with the body escaped (`& < >`), and `displayRef(ref)` — the reference as shown to a person (`notes:` and `transcript:` and `file:` references lose directories).
   - `class RefTable { add(r): string /* "R<n>", deduplicated by ref */; get(id); ids(); entries(); pack(maxChars) }`. `pack` renders each record as `<untrusted id="R3" kind="issue" ref="linear:ABC-1" author="…">…</untrusted>`, with `<`, `>`, `&` and `"` in all values and text escaped (so source text can never close a fence). **R1 (the brief) is never trimmed below `min(its length, maxChars / 2)`; the other records share the rest.**
-- Produces (sources), each returning cleaned records: `fileSource(path)` (one record, `trust: "trusted"`); `notesSource(dir)` (`.md` files with ≥ 2 keyword hits, best first, skipping dotfiles, symlinks and generated `scope-*.md` / `backtest-*.md` maps; returns nothing when `asOf` is set, spec amendment 4); `transcriptsSource(dir, caps?)` (human user turns from Claude Code `*.jsonl` files with ≥ 2 keyword hits, up to `asOf`, reading at most 2 MB per file and 50 MB per run; `trust: "untrusted"`); `codeSource(deps, repos, o?)` (indexed symbols whose name words match keywords, plus the symbols they call; `trust: "untrusted"`; returns nothing when there are no keywords, and nothing when `asOf` is set unless created with `{ allowAsOf: true }`).
+- Produces (sources), each returning cleaned records: `fileSource(path)` (one record, `trust: "trusted"`); `notesSource(dir)` (`.md` files with ≥ 2 keyword hits, best first, skipping dotfiles, symlinks and generated `scope-*.md` / `backtest-*.md` maps; returns nothing when `asOf` is set, spec amendment 4); `transcriptsSource(dir, caps?)` (human user turns from Claude Code `*.jsonl` files with ≥ 2 keyword hits, up to `asOf`, reading at most 2 MB per file and 50 MB per run; a turn whose (timestamp, whitespace-normalized text) already appeared in an earlier file of the same scan is skipped, because resumed and forked sessions copy earlier lines into the new file, and turns without a timestamp are never skipped; `trust: "untrusted"`); `codeSource(deps, repos, o?)` (indexed symbols whose name words match keywords, plus the symbols they call; `trust: "untrusted"`; returns nothing when there are no keywords, and nothing when `asOf` is set unless created with `{ allowAsOf: true }`).
 
 - [ ] **Step 1: Write the failing tests**
 
@@ -592,6 +592,20 @@ describe("local sources (Review Focus 5: stripped and scrubbed at fetch)", () =>
     expect(early.ok && early.value.map((r) => r.ref)).toEqual(["transcript:s1.jsonl#1"]);
     const none = await transcriptsSource(path.join(dir, "missing")).find(q(["shift", "times"]));
     expect(none.ok && none.value).toEqual([]);
+  });
+
+  it("transcripts: a turn copied into a later (forked or resumed) file is returned once; the same text at another time is a new turn", async () => {
+    const dir = tempDir();
+    const copied = turn("shift times copied into the fork", "2026-01-01T00:00:00Z");
+    fs.writeFileSync(path.join(dir, "a.jsonl"), `${copied}\n${turn("shift times undated copy")}\n`);
+    fs.writeFileSync(path.join(dir, "b.jsonl"), `${copied}\n${turn("shift  times\ncopied into the fork", "2026-01-02T00:00:00Z")}\n${turn("shift times undated copy")}\n${turn("shift times copied into the fork", "2026-01-01T00:00:00Z")}\n`);
+    const r = await transcriptsSource(dir).find(q(["shift", "times"]));
+    expect(r.ok && r.value.map((x) => [x.ref, x.createdAt])).toEqual([
+      ["transcript:a.jsonl#1", "2026-01-01T00:00:00Z"],
+      ["transcript:a.jsonl#2", null],
+      ["transcript:b.jsonl#2", "2026-01-02T00:00:00Z"],
+      ["transcript:b.jsonl#3", null],
+    ]);
   });
 
   it("transcripts: caps the bytes read per file and per run", async () => {
@@ -925,20 +939,28 @@ export function transcriptsSource(dir: string, caps: { perFile: number; perRun: 
       const files: string[] = [];
       jsonlFiles(dir, dir, files);
       const found: (SourceRecord & { hits: number })[] = [];
+      const seen = new Set<string>(); // (timestamp, text) of turns in earlier files: forks and resumes copy lines
       let total = 0;
       for (const rel of files.sort()) {
         if (total >= caps.perRun) break;
         const text = readCapped(path.join(dir, rel), caps.perFile);
         total += Buffer.byteLength(text);
         const name = path.basename(rel);
+        const own: string[] = [];
         text.split("\n").forEach((line, i) => {
           const t = humanTurn(line);
           if (t === null) return;
+          if (t.ts !== "") {
+            const key = `${t.ts}\u0000${t.text.replace(/\s+/g, " ").trim()}`;
+            if (seen.has(key)) return;
+            own.push(key);
+          }
           if (q.asOf !== null && !(Date.parse(t.ts) <= q.asOf.getTime())) return;
           const hits = keywordHits(t.text, q.keywords);
           if (hits < 2) return;
           found.push({ ref: `transcript:${name}#${i + 1}`, kind: "transcript", title: `${name} turn ${i + 1}`, text: clean(t.text.slice(0, CAP)), author: "human", createdAt: t.ts || null, trust: "untrusted", hits });
         });
+        for (const k of own) seen.add(k);
       }
       return ok(found.sort((a, b) => b.hits - a.hits || a.ref.localeCompare(b.ref)).slice(0, q.limit).map(({ hits: _h, ...r }) => r));
     },
