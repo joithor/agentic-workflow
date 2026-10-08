@@ -3555,6 +3555,8 @@ git commit -m "feat: sindri profile init, validate, explain, migrate and approve
 
 ### Task 7: Tracker interface, contract tests, fake tracker and the `plan-file` tracker (spec §11.2)
 
+> Amendment (build): the `*-plan-b` include-case test now also asserts the scan result is `[]` (m10b); removed a duplicated comment above `wildcard`. `trackerContractTests` lives in `sindri/tests/contract/` (spec amendment 7).
+
 **Files:**
 - Create: `sindri/src/adapters/types.ts`, `sindri/tests/contract/tracker-contract.ts`, `sindri/src/adapters/fake-tracker.ts`, `sindri/src/adapters/plan-file/parse.ts`, `sindri/src/adapters/plan-file/tracker.ts`, `sindri/src/adapters/registry.ts`
 - Modify: `sindri/src/errors.ts` (add `SND-TRACKER-404`, `SND-TRACKER-405`)
@@ -3588,7 +3590,7 @@ git commit -m "feat: sindri profile init, validate, explain, migrate and approve
 - Produces (`plan-file/tracker.ts`): `makePlanFileTracker(o: { repoPath: string; glob: string; include: string[]; git: GitRunner }): Tracker`; `planItemId(file: string, task: number): string` → `<plan basename without .md>.t<N>`; `parseGitHistory(out: string): Map<string, { authors: string[]; date: string }>`; `wildcard(pattern: string): RegExp`. `meta` keys: `plan`, `task`, `order`, `stepsDone`, `stepsTotal`, `files`, `codeLines`, `hasFilesBlock` (0/1), `contentHash` (sha256 of the task's title and body). Plan files are parsed once per tracker instance (memoized by name, size and mtime), and authors and dates come from one `git log` over the plan directory, not two per file.
 - Produces (`registry.ts`): `makeTracker(loaded: LoadedProfile, deps: Deps): Tracker`.
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 `sindri/tests/plan-parse.test.ts`:
 
@@ -3842,12 +3844,12 @@ describe("plan-file tracker", () => {
 });
 ```
 
-- [ ] **Step 2: Run the tests to verify they fail**
+- [x] **Step 2: Run the tests to verify they fail**
 
 Run: `cd sindri && npx vitest run tests/plan-parse.test.ts tests/fake-tracker.test.ts tests/plan-file-tracker.test.ts`
 Expected: FAIL with `Failed to load url ../src/adapters/...`.
 
-- [ ] **Step 3: Implement**
+- [x] **Step 3: Implement**
 
 `sindri/src/adapters/types.ts`:
 
@@ -4264,12 +4266,12 @@ Add to `ERRORS`:
   "SND-TRACKER-405": { summary: "This tracker can't write.", fix: "The plan-file tracker is read-only; edit the plan file." },
 ```
 
-- [ ] **Step 4: Run the tests**
+- [x] **Step 4: Run the tests**
 
 Run: `cd sindri && npm run gen && npx vitest run && npm run typecheck && npm run test:coverage`
 Expected: all tests PASS, including both `Tracker contract: fake` and `Tracker contract: plan-file` blocks.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add sindri/src/adapters sindri/src/errors.ts sindri/tests docs/sindri/errors.md

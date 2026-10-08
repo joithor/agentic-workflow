@@ -22,3 +22,5 @@ Generated from `sindri/src/errors.ts` by `cd sindri && npm run gen`. Do not edit
 | `SND-PROFILE-010` | Approving a profile needs an interactive terminal. | run `sindri profile approve <hash>` yourself, in a terminal |
 | `SND-PROFILE-011` | The approval was not confirmed. | rerun and type the first 6 characters of the hash |
 | `SND-SCRUB-001` | A profile scrub pattern does not compile. | Fix the regex at the named scrub.extraPatterns index, then run `sindri profile validate`. |
+| `SND-TRACKER-404` | The tracker has no such item. | Check the id with `sindri observe`. |
+| `SND-TRACKER-405` | This tracker can't write. | The plan-file tracker is read-only; edit the plan file. |
