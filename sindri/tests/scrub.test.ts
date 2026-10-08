@@ -79,6 +79,9 @@ describe("scrubber", () => {
       "token: short",
       "token: SecretPointerSchema,",
       "apiKey: config.providers.anthropic.key",
+      "refreshToken: RefreshTokenSchemaV2,",
+      "const token = generateToken256Bits();",
+      "apiKey: makeKey(config2),",
     ].join("\n");
     expect(s.find(text)).toEqual([]);
     expect(s.scrub(text).text).toBe(text);
@@ -126,19 +129,22 @@ describe("scrubber: PR #69 review", () => {
   it.each([
     [`"api_` + `key": "${V}"`, V],
     [`{"client` + `Secret":"${V}"}`, V],
-    [`access` + `Token=${V}`, V],
+    // Quoted since PR #69 run 2: an unquoted code-style value no longer counts.
+    [`access` + `Token="${V}"`, V],
     [`client` + `Secret = "${V}"`, V],
-    [`db` + `Password=${V}`, V],
+    [`db` + `Password='${V}'`, V], // quoted (run 2 ruling)
     [`X-API-` + `Key: ${V}`, V],
     [`AWS_SECRET_ACCESS_` + `KEY=${AWS_SECRET}`, AWS_SECRET],
-    [`aws_secret_access_` + `key = ${AWS_SECRET}`, AWS_SECRET],
+    [`aws_secret_access_` + `key = "${AWS_SECRET}"`, AWS_SECRET], // quoted (run 2 ruling)
+    [`export X_` + `TOKEN=${V}`, V],
+    [`x-auth-` + `token: ${V}`, V],
   ])("redacts the secret-assignment shape %#", (input, secret) => {
     expect(s.find(input).map((h) => h.kind)).toEqual(["secret-assignment"]);
     expect(s.scrub(input).text).not.toContain(secret);
   });
 
   it("keeps identifiers that merely end in a secret word", () => {
-    const text = ["tokenizer: " + V, "password_hash: " + V, "const apiKey = process.env.API_KEY", "token = response.data.token"].join("\n");
+    const text = ["access" + "Token=" + V, "tokenizer: " + V, "password_hash: " + V, "const apiKey = process.env.API_KEY", "token = response.data.token"].join("\n");
     expect(s.find(text)).toEqual([]);
   });
 
