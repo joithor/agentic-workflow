@@ -617,6 +617,7 @@ describe("local sources (Review Focus 5: stripped and scrubbed at fetch)", () =>
     const r = await codeSource(d, ["r"]).find(q(["shift", "times"]));
     expect(r.ok && r.value.map((x) => x.ref)).toEqual(["code:r/src/shift.ts:1", "code:r/src/shift.ts:2"]);
     expect(r.ok && r.value[0].trust).toBe("untrusted");
+    expect(r.ok && r.value[0].text).toContain("return validateTimes(t)");
     const noWords = await codeSource(d, ["r"]).find(q([]));
     expect(noWords.ok && noWords.value).toEqual([]);
     const backtest = await codeSource(d, ["r"]).find(q(["shift"], new Date()));
@@ -968,17 +969,18 @@ export function codeSource(deps: Deps, repos: string[], o: { allowAsOf?: boolean
         const db = openIndexReadOnly(indexPath(deps, repo));
         if (db === null) continue;
         const syms = allSymbols(db);
-        // SymbolRow carries no body (Plan 3 keeps bodies for embeddings); read them here.
-        const bodies = new Map((db.prepare("SELECT id, body FROM symbols").all() as { id: number; body: string }[]).map((r) => [r.id, r.body]));
-        db.close();
         const score = (s: SymbolRow): number => words(s.name).filter((w) => q.keywords.some((k) => k.startsWith(w) || w.startsWith(k))).length;
         const matched = syms.filter((s) => s.kind !== "class" && score(s) >= Math.min(2, q.keywords.length)).sort((a, b) => score(b) - score(a));
         const called = new Set(matched.flatMap((s) => s.callees));
         const picked = [...matched, ...syms.filter((s) => called.has(s.name) && !matched.includes(s))].slice(0, q.limit);
+        // SymbolRow carries no body (Plan 3 keeps bodies for embeddings), so read only the picked ones here.
+        const bodyOf = db.prepare("SELECT body FROM symbols WHERE id = ?");
+        const bodies = new Map(picked.map((s) => [s.id, (bodyOf.get(s.id) as { body: string }).body]));
+        db.close();
         for (const s of picked.sort((a, b) => a.file.localeCompare(b.file) || a.startLine - b.startLine)) {
           out.push({
             ref: `code:${repo}/${s.file}:${s.startLine}`, kind: "code", title: `${s.name}${s.signature}`,
-            text: clean((bodies.get(s.id) ?? "").slice(0, 600)), author: null, createdAt: null, trust: "untrusted",
+            text: clean((bodies.get(s.id) as string).slice(0, 600)), author: null, createdAt: null, trust: "untrusted",
           });
         }
       }
@@ -3545,7 +3547,7 @@ import type { GraphqlFetch, LinearIssue, LinearProject } from "../src/scope/sour
 import { fakeSystem, tempDir } from "./helpers.js";
 import { approvedScopeDeps, scriptedIo, scriptedRunner } from "./scope-fixtures.js";
 
-const issue = (n: number, createdAt: string): LinearIssue => ({ identifier: `ABC-${n}`, title: `Issue ${n}`, description: `about ${n}`, createdAt, url: "u", creator: null, comments: [] });
+const issue = (n: number, createdAt: string): LinearIssue => ({ identifier: `ABC-${n}`, title: `Issue ${n}`, description: `shift times, part ${n}`, createdAt, url: "u", creator: null, comments: [] });
 const issues = (n: number): LinearIssue[] => Array.from({ length: n }, (_, i) => issue(i + 1, "2026-02-01T00:00:00Z"));
 const ref = (n: number) => ({ issue: `ABC-${n}`, title: `Issue ${n}` });
 const project: LinearProject = {
@@ -3840,7 +3842,10 @@ describe("sindri scope --backtest", () => {
     expect(r.stdout).toContain('Backtest of "New shift times": recall 0.50 (1 of 2 later issues covered; small sample), precision 1.00 (1 of 1 surfaces supported by some project issue); brief-only baseline recall 0.00, precision 0.00. Pass bar: NOT PASSED.');
     expect(r.stderr).toBe("");
     expect(io.inputs[0]).not.toContain("ABC-3");
-    expect(io.inputs[0]).toContain("ABC-1: Issue 1");
+    // The early issues arrive as as-of Linear source records (they share the brief's keywords), not inside the brief.
+    expect(io.inputs[0]).toContain('ref="linear:ABC-1"');
+    expect(io.inputs[0]).toContain('ref="linear:ABC-2"');
+    expect(io.inputs[0]).not.toContain('ref="linear:ABC-3"');
     expect(io.inputs[6]).not.toContain('ref="linear:');
     expect(io.lines).toEqual(expect.arrayContaining(["scoping the brief with every source…", "scoping the brief alone (baseline)…"]));
     const report = fs.readFileSync(path.join(out, "backtest-new-shift-times-2026-10-08.md"), "utf8");
@@ -4454,7 +4459,7 @@ A run that hits a token budget, the round cap, or a model failure is written as 
 
 ## Backtest: how to read the numbers
 
-`--backtest` replays a past Linear project. The brief is the project's name, description and the issues filed within `--window` (default 1 day) of its creation. The test set is every issue filed after that. A third model (`models.adjudicator`) judges, twice per batch with the order reversed; only answers on which both runs agree count.
+`--backtest` replays a past Linear project. The brief is the project's name and description. Issues filed within `--window` (default 1 day) of its creation reach the full run as as-of Linear records (those sharing the brief's keywords), and the baseline never sees them. The test set is every issue filed after the window. A third model (`models.adjudicator`) judges, twice per batch with the order reversed; only answers on which both runs agree count.
 
 - **Recall** = later issues the map covers / later issues. Did the map anticipate the work?
 - **Precision** = map surfaces that some project issue (early or later) supports / surfaces. A map that lists everything gets high recall and low precision.
