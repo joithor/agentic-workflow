@@ -2342,26 +2342,40 @@ export function outputJsonSchema(ids: readonly string[]): object {
 
 const OutputSchema = z.object({ labels: z.array(z.object({ id: z.string(), labels: z.array(z.enum(LABELS)).min(1) })) });
 
+// An error whose message is a fixed string we wrote, so it is safe to print and to write into reports.
+// Anything the model produced (or a library echoing it, like JSON.parse or zod) stays out of the message;
+// the original may ride along as `cause`, which is never printed.
+export class LabelerError extends Error {
+  constructor(reason: string, cause?: unknown) {
+    super(reason, cause === undefined ? undefined : { cause });
+    this.name = "LabelerError";
+  }
+}
+
 export function parseBatchOutput(raw: unknown, ids: readonly string[]): Map<string, LabelName[]> {
-  const parsed = OutputSchema.parse(raw);
+  const result = OutputSchema.safeParse(raw);
+  if (!result.success) throw new LabelerError("answer does not match the schema", result.error);
+  const parsed = result.data;
   const expected = new Set(ids);
   const out = new Map<string, LabelName[]>();
   for (const entry of parsed.labels) {
-    if (!expected.has(entry.id)) throw new Error(`unknown id ${entry.id}`);
-    if (out.has(entry.id)) throw new Error(`duplicate id ${entry.id}`);
+    if (!expected.has(entry.id)) throw new LabelerError("answer has an unknown id");
+    if (out.has(entry.id)) throw new LabelerError("answer repeats an id");
     const labels = [...new Set(entry.labels)];
-    if (labels.includes("none") && labels.length > 1) throw new Error(`none must be exclusive for ${entry.id}`);
+    if (labels.includes("none") && labels.length > 1) throw new LabelerError("answer combines none with another label");
     out.set(entry.id, labels);
   }
-  if (out.size !== expected.size) throw new Error("answer is missing ids");
+  if (out.size !== expected.size) throw new LabelerError("answer is missing ids");
   return out;
 }
 
 const ERROR_MAX = 300;
 
+// Error class and a short reason only. A LabelerError carries a fixed reason; any other error is reported by
+// its class, never its message, because a message can quote model output (JSON.parse and zod both do).
 function describeError(e: unknown): string {
-  const message = e instanceof Error ? e.message : String(e);
-  return message.slice(0, ERROR_MAX);
+  const text = e instanceof LabelerError ? `LabelerError: ${e.message}` : e instanceof Error ? e.name : "non-Error value thrown";
+  return text.slice(0, ERROR_MAX);
 }
 
 type BatchResult = { labels: Map<string, LabelName[]> } | { error: string };
@@ -2411,7 +2425,7 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 
-import type { LabelRunner } from "./labels.js";
+import { LabelerError, type LabelRunner } from "./labels.js";
 
 export interface ExecOptions {
   timeout: number;
@@ -2447,11 +2461,31 @@ export function claudeArgs(model: string, schema: object): string[] {
 // `--output-format json` wraps the answer in an envelope. With --json-schema the parsed object is in
 // `structured_output`; otherwise the model's text is in `result`.
 export function extractStructured(stdout: string): unknown {
-  const envelope = JSON.parse(stdout) as { is_error?: unknown; result?: unknown; structured_output?: unknown };
-  if (envelope.is_error === true) throw new Error(`claude reported an error: ${typeof envelope.result === "string" ? envelope.result : "unknown"}`);
+  let envelope: { is_error?: unknown; result?: unknown; structured_output?: unknown };
+  try {
+    envelope = JSON.parse(stdout) as typeof envelope;
+  } catch (e) {
+    throw new LabelerError("claude output was not valid JSON", e);
+  }
+  if (envelope.is_error === true) throw new LabelerError("claude reported an error");
   if (typeof envelope.structured_output === "object" && envelope.structured_output !== null) return envelope.structured_output;
-  if (typeof envelope.result === "string") return JSON.parse(envelope.result);
-  throw new Error("claude output has no structured_output or result");
+  if (typeof envelope.result === "string") {
+    try {
+      return JSON.parse(envelope.result);
+    } catch (e) {
+      throw new LabelerError("claude result was not valid JSON", e);
+    }
+  }
+  throw new LabelerError("claude output has no structured_output or result");
+}
+
+// A failed spawn becomes a fixed reason: the raw error carries the command line and stderr.
+function execFailure(e: unknown): LabelerError {
+  const err = e as { code?: unknown; killed?: unknown };
+  if (err.code === "ENOENT") return new LabelerError("claude CLI not found", e);
+  if (err.killed === true) return new LabelerError("claude timed out", e);
+  if (typeof err.code === "number") return new LabelerError(`claude exited with code ${err.code}`, e);
+  return new LabelerError("claude could not be run", e);
 }
 
 // execFile, never a shell. The prompt goes on stdin so its size never hits the argv limit.
@@ -2471,7 +2505,12 @@ export function makeClaudeRunner(opts: { model: string; timeoutMs?: number; env?
   // A fresh private directory, never the shared temp root: no other user's .claude/ or CLAUDE.md can be picked up.
   const cwd = fs.mkdtempSync(path.join(os.tmpdir(), "audit-label-"));
   return async (prompt, schema) => {
-    const stdout = await exec("claude", claudeArgs(opts.model, schema), { timeout: opts.timeoutMs ?? 180_000, env, maxBuffer: 20_000_000, cwd }, prompt);
+    let stdout: string;
+    try {
+      stdout = await exec("claude", claudeArgs(opts.model, schema), { timeout: opts.timeoutMs ?? 180_000, env, maxBuffer: 20_000_000, cwd }, prompt);
+    } catch (e) {
+      throw execFailure(e);
+    }
     return extractStructured(stdout);
   };
 }
