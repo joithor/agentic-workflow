@@ -72,6 +72,7 @@ bash providers/tests/install.test.sh
 bash scripts/tests/sync-rules.test.sh
 bash scripts/tests/probe.test.sh
 bash scripts/tests/find-duplicate-skills.test.sh
+bash scripts/tests/install-scorer-audit.test.sh
 bash config/hooks/tests/codex-adapter.test.sh
 bash config/hooks/tests/cursor-adapter.test.sh
 bash config/hooks/tests/provider-install-hooks.test.sh

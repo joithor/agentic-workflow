@@ -26,17 +26,20 @@ EOF
 
   if [ "$(uname)" = "Darwin" ] && [ "${AW_SKIP_LAUNCHD:-}" != "1" ]; then
     LAUNCH_AGENTS_DIR="${AW_LAUNCH_AGENTS_DIR:-$HOME/Library/LaunchAgents}"
-    PLIST_SRC="$SCRIPT_DIR/config/launchd/com.agentic-workflow.scorer.plist"
-    PLIST_DST="$LAUNCH_AGENTS_DIR/com.agentic-workflow.scorer.plist"
     mkdir -p "$LAUNCH_AGENTS_DIR" "${AW_STATE_DIR:-$HOME/.agentic-workflow}/scorer"
-    sed "s|__HOME__|$HOME|g" "$PLIST_SRC" > "$PLIST_DST"
-    launchctl bootout "gui/$(id -u)" "$PLIST_DST" 2>/dev/null || true
-    launchctl bootstrap "gui/$(id -u)" "$PLIST_DST"
-    echo "  scorer: daily report scheduled at 08:30 (launchd)"
+    for PLIST_NAME in com.agentic-workflow.scorer.plist com.agentic-workflow.scorer-audit.plist; do
+      PLIST_SRC="$SCRIPT_DIR/config/launchd/$PLIST_NAME"
+      PLIST_DST="$LAUNCH_AGENTS_DIR/$PLIST_NAME"
+      sed "s|__HOME__|$HOME|g" "$PLIST_SRC" > "$PLIST_DST"
+      launchctl bootout "gui/$(id -u)" "$PLIST_DST" 2>/dev/null || true
+      launchctl bootstrap "gui/$(id -u)" "$PLIST_DST"
+    done
+    echo "  scorer: daily report at 08:30 and weekly audit Mondays 08:45 (launchd)"
   elif [ "${AW_SKIP_LAUNCHD:-}" = "1" ]; then
     echo "  scorer: AW_SKIP_LAUNCHD=1, skipping launchd registration (sandbox/test mode)"
   else
     echo "  scorer: add a daily cron entry yourself: 30 8 * * * $BIN_DIR/scorer"
+    echo "  scorer: add a weekly cron entry yourself: 45 8 * * 1 $BIN_DIR/scorer audit --since 7d --label 0 --out $HOME/.agentic-workflow/audit/weekly/\$(date +%F)"
   fi
 else
   echo "  scorer: package.json not found, skipping"

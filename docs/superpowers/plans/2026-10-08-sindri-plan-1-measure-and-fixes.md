@@ -2910,6 +2910,8 @@ git commit -m "feat: scorer audit --label (model-labeled pattern calibration and
 ---
 
 ### Task 7: Turn it on (bootstrapping ladder, spec §13.3)
+> Amendment (build): the installer loop iterates over full plist filenames (`PLIST_NAME`) rather than a bare `NAME`, so the literal `com.agentic-workflow.scorer-audit.plist` that the Step 1 test greps for appears in `install-scorer.sh`. The cron hint escapes `$(date +%F)` (`\$(date +%F)`) so the printed cron line expands the date at run time, not install time.
+
 
 Plan 1's pieces start working on the rest of the Sindri build as soon as this PR merges. This task adds the
 one missing switch, a weekly audit, and records the switch-on evidence. Steps 1–5 run on the PR branch.
@@ -2925,7 +2927,7 @@ Step 6 runs **after merge** and its output is posted as a PR comment.
 - Consumes: the `scorer audit` command (Tasks 5 and 6).
 - Produces: a weekly unlabeled job writing `~/.agentic-workflow/audit/weekly/<YYYY-MM-DD>/`. Later plans' "Turn it on" tasks read it to show steering turns per merged Sindri PR going down.
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 Create `scripts/tests/install-scorer-audit.test.sh`:
 
@@ -2958,12 +2960,12 @@ test_plist_runs_weekly_audit_into_dated_dir
 test_installer_installs_both_plists
 ```
 
-- [ ] **Step 2: Run it to verify it fails**
+- [x] **Step 2: Run it to verify it fails**
 
 Run: `bash scripts/tests/install-scorer-audit.test.sh`
 Expected: `FAIL: …/com.agentic-workflow.scorer-audit.plist missing`
 
-- [ ] **Step 3: Implement**
+- [x] **Step 3: Implement**
 
 Create `config/launchd/com.agentic-workflow.scorer-audit.plist`:
 
@@ -3001,9 +3003,9 @@ In `scripts/install-scorer.sh`, replace the single-plist block inside the `Darwi
 plists, keeping the existing `bootout`/`bootstrap` calls and messages:
 
 ```bash
-    for NAME in com.agentic-workflow.scorer com.agentic-workflow.scorer-audit; do
-      PLIST_SRC="$SCRIPT_DIR/config/launchd/$NAME.plist"
-      PLIST_DST="$LAUNCH_AGENTS_DIR/$NAME.plist"
+    for PLIST_NAME in com.agentic-workflow.scorer.plist com.agentic-workflow.scorer-audit.plist; do
+      PLIST_SRC="$SCRIPT_DIR/config/launchd/$PLIST_NAME"
+      PLIST_DST="$LAUNCH_AGENTS_DIR/$PLIST_NAME"
       sed "s|__HOME__|$HOME|g" "$PLIST_SRC" > "$PLIST_DST"
       launchctl bootout "gui/$(id -u)" "$PLIST_DST" 2>/dev/null || true
       launchctl bootstrap "gui/$(id -u)" "$PLIST_DST"
@@ -3017,12 +3019,12 @@ In the non-Darwin `else` branch, extend the cron hint with:
 
 In `AGENTS.md`'s bash test list, add `bash scripts/tests/install-scorer-audit.test.sh`.
 
-- [ ] **Step 4: Run the tests**
+- [x] **Step 4: Run the tests**
 
 Run: `bash scripts/tests/install-scorer-audit.test.sh && ./setup.sh --providers claude,codex,cursor --dry-run > /dev/null && echo SETUP_DRY_RUN_OK`
 Expected: three `PASS` lines, then `SETUP_DRY_RUN_OK`.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add config/launchd/com.agentic-workflow.scorer-audit.plist scripts/install-scorer.sh scripts/tests/install-scorer-audit.test.sh AGENTS.md
