@@ -5,6 +5,7 @@ import Database from "better-sqlite3";
 import { describe, expect, it } from "vitest";
 
 import { stateDir, type Deps } from "../src/deps.js";
+import { LEDGER_SCHEMA_VERSION } from "../src/ledger/db.js";
 import { runChecks } from "../src/doctor/doctor.js";
 import { runCli } from "../src/main.js";
 import { fakeSystem, makeDeps, tempDir } from "./helpers.js";
@@ -154,5 +155,44 @@ describe("sindri doctor coverage paths", () => {
     const d = makeDeps();
     expect((await byName(d, "20.10.0")).node.status).toBe("fail");
     expect((await byName(d, "20.11.0")).node.status).toBe("ok");
+  });
+});
+
+describe("sindri doctor lock and read-only guarantees", () => {
+  it("names an unreadable lock owner without a since clause", async () => {
+    const d = makeDeps();
+    const dir = stateDir(d);
+    fs.mkdirSync(path.join(dir, "sindri.lock"), { recursive: true });
+    fs.chmodSync(dir, 0o700);
+    fs.writeFileSync(path.join(dir, "sindri.lock", "owner.json"), "{not json");
+    const lock = (await byName(d)).lock;
+    expect(lock.status).toBe("ok");
+    expect(lock.detail).toMatch(/unreadable owner/);
+    expect(lock.detail).not.toContain("since");
+    expect(lock.detail).not.toContain("undefined");
+  });
+
+  it("does not migrate, back up, chmod or leave files beside a valid older ledger (m19)", async () => {
+    const d = makeDeps();
+    const dir = stateDir(d);
+    fs.mkdirSync(dir, { recursive: true });
+    fs.chmodSync(dir, 0o700);
+    const file = path.join(dir, "ledger.db");
+    const raw = new Database(file);
+    raw.pragma("journal_mode = DELETE");
+    raw.exec("CREATE TABLE meta (key TEXT PRIMARY KEY, value TEXT NOT NULL)");
+    raw.pragma("user_version = 1");
+    raw.close();
+    fs.chmodSync(file, 0o644);
+    const before = fs.readdirSync(dir).sort();
+    const r = await runCli(["doctor"], d);
+    expect(r.stdout).toMatch(/^ok {3}ledger/m);
+    const check = Object.fromEntries((await runChecks(d, "22.10.0")).map((c) => [c.name, c]));
+    expect(check.ledger.detail).toBe(`schema v1 of ${LEDGER_SCHEMA_VERSION}`);
+    expect(fs.statSync(file).mode & 0o777).toBe(0o644);
+    expect(fs.readdirSync(dir).sort()).toEqual(before);
+    const db = new Database(file, { readonly: true });
+    expect(db.pragma("user_version", { simple: true })).toBe(1);
+    db.close();
   });
 });

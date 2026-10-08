@@ -70,7 +70,7 @@ function lockCheck(deps: Deps): Check {
   const dir = stateDir(deps);
   const l = inspectLock(dir, deps.system, deps.now);
   const who = l.owner === null ? "an unreadable owner" : `${l.owner.host}/${l.owner.pid}`;
-  const state = { free: "free", held: `held by ${who} since ${l.owner?.startedAt}`, stale: `stale lock from ${who}; the next run takes it over` }[l.state];
+  const state = { free: "free", held: l.owner === null ? `held by ${who}` : `held by ${who} since ${l.owner.startedAt}`, stale: `stale lock from ${who}; the next run takes it over` }[l.state];
   const detail = l.leftovers.length > 0 ? `${state}; leftovers: ${l.leftovers.join(", ")}` : state;
   // A stale lock alone needs nothing: the next run takes it over. Leftover dirs
   // from a crashed takeover need removing; that is safe.
