@@ -39,12 +39,26 @@ echo "  sindri: CLI at $BIN_DIR/sindri"
 # Hourly `sindri observe` keeps the ledger's plan-task state current (macOS only;
 # AW_SKIP_LAUNCHD=1 skips it, which the tests use).
 if [ "$(uname -s)" = "Darwin" ] && [ "${AW_SKIP_LAUNCHD:-0}" != "1" ]; then
+  # The substituted values land in a sed script and an XML plist; refuse characters that break either.
+  case "$HOME$BIN_DIR" in
+    *[\|\&\\\<\>]*) echo "ERROR: \$HOME and the bin dir must not contain | & \\ < > (got HOME=$HOME, bin=$BIN_DIR)" >&2; exit 2 ;;
+  esac
   LAUNCH_AGENTS_DIR="$HOME/Library/LaunchAgents"
   NAME=com.agentic-workflow.sindri-observe
-  mkdir -p "$LAUNCH_AGENTS_DIR" "${AW_STATE_DIR:-$HOME/.agentic-workflow}/sindri"
-  sed -e "s|__HOME__|$HOME|g" -e "s|__BIN__|$BIN_DIR|g" "$SCRIPT_DIR/config/launchd/$NAME.plist" > "$LAUNCH_AGENTS_DIR/$NAME.plist"
-  launchctl bootout "gui/$(id -u)" "$LAUNCH_AGENTS_DIR/$NAME.plist" 2>/dev/null || true
-  launchctl bootstrap "gui/$(id -u)" "$LAUNCH_AGENTS_DIR/$NAME.plist"
+  PLIST="$LAUNCH_AGENTS_DIR/$NAME.plist"
+  # launchd does not pass AW_STATE_DIR, so the hourly job and its log use the default state dir.
+  SINDRI_STATE="$HOME/.agentic-workflow/sindri"
+  mkdir -p "$LAUNCH_AGENTS_DIR"
+  mkdir -p -m 700 "$SINDRI_STATE"
+  chmod 700 "$SINDRI_STATE"
+  sed -e "s|__HOME__|$HOME|g" -e "s|__BIN__|$BIN_DIR|g" "$SCRIPT_DIR/config/launchd/$NAME.plist" > "$PLIST"
+  launchctl bootout "gui/$(id -u)/$NAME" 2>/dev/null || true
+  if ! launchctl bootstrap "gui/$(id -u)" "$PLIST" 2>/dev/null; then
+    sleep 1
+    if ! launchctl bootstrap "gui/$(id -u)" "$PLIST"; then
+      echo "  WARN: could not load $NAME; run: launchctl bootstrap gui/$(id -u) $PLIST"
+    fi
+  fi
   echo "  sindri: hourly observe (launchd $NAME)"
 fi
 case ":$PATH:" in *":$BIN_DIR:"*) ;; *) echo "  WARN: $BIN_DIR is not on PATH" ;; esac
