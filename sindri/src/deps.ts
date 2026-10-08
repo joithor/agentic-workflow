@@ -14,6 +14,7 @@ export interface Deps {
   git: GitRunner;
   isTTY: boolean;
   prompt: (question: string) => Promise<string>;
+  stdin: () => Promise<string>;
 }
 
 // $AW_STATE_DIR, default ~/.agentic-workflow (shared with judge and scorer).

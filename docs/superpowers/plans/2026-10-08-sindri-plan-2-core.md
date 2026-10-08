@@ -4879,7 +4879,7 @@ git commit -m "feat: sindri observe and ledger commands"
   - `interface AddedFile { file: string; lines: { line: number; text: string }[] }`; `parseAddedLines(diff: string): AddedFile[]` — hunk-counted, so added text starting with `++ ` is still scanned; `hitsIn(f: AddedFile, scrubber): { file; line; kind }[]` — scans a file's additions as one text (multi-line keys) and maps hits to lines.
   - `scrubCommand: Command`: `sindri scrub` (stdin → scrubbed stdout), `sindri scrub --staged` (exit 1 with `path:line kind` per hit, never the value), `sindri scrub --install-pre-commit [--repo PATH]`.
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 Add `stdin: async () => "",` to the object `makeDeps` returns in `sindri/tests/helpers.ts`.
 
@@ -5061,12 +5061,12 @@ describe("sindri scrub (stdin)", () => {
 });
 ```
 
-- [ ] **Step 2: Run the tests to verify they fail**
+- [x] **Step 2: Run the tests to verify they fail**
 
 Run: `cd sindri && npx vitest run tests/scrub-commands.test.ts`
 Expected: FAIL with `Failed to load url ../src/scrub/commands.js`.
 
-- [ ] **Step 3: Implement**
+- [x] **Step 3: Implement**
 
 `sindri/src/scrub/commands.ts`:
 
@@ -5258,12 +5258,12 @@ Add to `ERRORS`:
   "SND-SCRUB-003": { summary: "A different pre-commit hook is already installed.", fix: "Add `sindri scrub --staged || exit 1` to that hook by hand." },
 ```
 
-- [ ] **Step 4: Run the tests**
+- [x] **Step 4: Run the tests**
 
 Run: `cd sindri && npm run gen && npx vitest run && npm run typecheck && npm run test:coverage`
 Expected: all tests PASS; no type errors.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add sindri/src sindri/tests docs/sindri/errors.md

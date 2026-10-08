@@ -4,6 +4,7 @@ import type { Deps } from "./deps.js";
 import { ledgerCommand, observeCommand } from "./observe/observe.js";
 import { profileCommand } from "./profile/commands.js";
 import { failure, success, type CommandResult } from "./output.js";
+import { scrubCommand } from "./scrub/commands.js";
 
 export type Command = (args: string[], deps: Deps) => Promise<CommandResult>;
 
@@ -30,6 +31,11 @@ export const COMMANDS: Record<string, CommandDef> = {
     summary: "List the backlog with sizes and what would start; record it when approved",
     usage: "Usage: sindri observe [--no-record] [--profile DIR] [--json]",
     run: observeCommand,
+  },
+  scrub: {
+    summary: "Scrub stdin, check staged changes, or install the secret-scan pre-commit hook",
+    usage: "Usage: sindri scrub < text | sindri scrub --staged [--json] | sindri scrub --install-pre-commit [--repo PATH]",
+    run: scrubCommand,
   },
   ledger: { summary: "Show ledger events", usage: "Usage: sindri ledger [--item ID] [--since 7d|12h] [--json]", run: ledgerCommand },
 };

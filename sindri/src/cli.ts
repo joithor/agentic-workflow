@@ -22,6 +22,11 @@ const result = await runCli(process.argv.slice(2), {
       rl.close();
     }
   },
+  stdin: async () => {
+    const chunks: Buffer[] = [];
+    for await (const chunk of process.stdin) chunks.push(chunk as Buffer);
+    return Buffer.concat(chunks).toString("utf8");
+  },
 });
 process.stdout.write(result.stdout);
 process.stderr.write(result.stderr);

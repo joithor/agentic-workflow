@@ -24,6 +24,7 @@ export function makeDeps(overrides: Partial<Deps> = {}): Deps {
     git: realGitRunner(),
     isTTY: false,
     prompt: async () => "",
+    stdin: async () => "",
     ...overrides,
   };
 }
