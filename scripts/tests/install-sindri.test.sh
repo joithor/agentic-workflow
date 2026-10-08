@@ -27,6 +27,26 @@ test_setup_has_opt_in_flag() {
   echo "PASS: test_setup_has_opt_in_flag"
 }
 
+test_observe_job_is_hourly() {
+  local plist="$ROOT/config/launchd/com.agentic-workflow.sindri-observe.plist"
+  [ -f "$plist" ] || { echo "FAIL: $plist missing"; exit 1; }
+  if command -v plutil >/dev/null 2>&1; then plutil -lint "$plist" >/dev/null || { echo "FAIL: plist invalid"; exit 1; }; fi
+  grep -q '<string>__BIN__/sindri</string>' "$plist" || { echo "FAIL: observe command missing"; exit 1; }
+  grep -q '<integer>3600</integer>' "$plist" || { echo "FAIL: not hourly"; exit 1; }
+  grep -q 'com.agentic-workflow.sindri-observe.plist' "$ROOT/scripts/install-sindri.sh" || { echo "FAIL: installer does not install the job"; exit 1; }
+  echo "PASS: test_observe_job_is_hourly"
+}
+
+test_guard_proof_uses_a_scratch_repo() {
+  local proof="$ROOT/scripts/sindri-guard-proof.sh"
+  [ -x "$proof" ] || { echo "FAIL: $proof missing or not executable"; exit 1; }
+  grep -q 'mktemp -d' "$proof" || { echo "FAIL: proof does not use a scratch repo"; exit 1; }
+  grep -q 'GIT_CONFIG_GLOBAL=/dev/null' "$proof" || { echo "FAIL: proof inherits global git config"; exit 1; }
+  echo "PASS: test_guard_proof_uses_a_scratch_repo"
+}
+
 test_dry_run_writes_nothing
 test_wrapper_execs_the_built_cli
 test_setup_has_opt_in_flag
+test_observe_job_is_hourly
+test_guard_proof_uses_a_scratch_repo

@@ -4,7 +4,8 @@
 #   install-sindri.sh                 npm ci + build, then write the wrapper
 #   AW_DRY_RUN=1 install-sindri.sh    print what would happen, write nothing
 #   AW_SKIP_BUILD=1 install-sindri.sh write the wrapper only (tests; dist/ already built)
-#   CLAUDE_LOCAL_BIN=DIR              where the wrapper goes (default ~/.local/bin)
+#   AW_SKIP_LAUNCHD=1 install-sindri.sh skip the hourly observe launchd job (macOS; tests)
+#   CLAUDE_LOCAL_BIN=DIR             where the wrapper goes (default ~/.local/bin)
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
@@ -17,6 +18,7 @@ echo "Installing sindri..."
 if [ "${AW_DRY_RUN:-0}" = "1" ]; then
   echo "  [dry-run] would run npm ci && npm run build in $SINDRI_DIR"
   echo "  [dry-run] would write $BIN_DIR/sindri"
+  echo "  [dry-run] would install launchd job com.agentic-workflow.sindri-observe.plist (macOS)"
   exit 0
 fi
 
@@ -34,4 +36,15 @@ exec "$NODE_BIN" "$SINDRI_DIR/dist/cli.js" "\$@"
 EOF
 chmod +x "$BIN_DIR/sindri"
 echo "  sindri: CLI at $BIN_DIR/sindri"
+# Hourly `sindri observe` keeps the ledger's plan-task state current (macOS only;
+# AW_SKIP_LAUNCHD=1 skips it, which the tests use).
+if [ "$(uname -s)" = "Darwin" ] && [ "${AW_SKIP_LAUNCHD:-0}" != "1" ]; then
+  LAUNCH_AGENTS_DIR="$HOME/Library/LaunchAgents"
+  NAME=com.agentic-workflow.sindri-observe
+  mkdir -p "$LAUNCH_AGENTS_DIR" "${AW_STATE_DIR:-$HOME/.agentic-workflow}/sindri"
+  sed -e "s|__HOME__|$HOME|g" -e "s|__BIN__|$BIN_DIR|g" "$SCRIPT_DIR/config/launchd/$NAME.plist" > "$LAUNCH_AGENTS_DIR/$NAME.plist"
+  launchctl bootout "gui/$(id -u)" "$LAUNCH_AGENTS_DIR/$NAME.plist" 2>/dev/null || true
+  launchctl bootstrap "gui/$(id -u)" "$LAUNCH_AGENTS_DIR/$NAME.plist"
+  echo "  sindri: hourly observe (launchd $NAME)"
+fi
 case ":$PATH:" in *":$BIN_DIR:"*) ;; *) echo "  WARN: $BIN_DIR is not on PATH" ;; esac

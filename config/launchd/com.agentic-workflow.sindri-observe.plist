@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>Label</key>
+  <string>com.agentic-workflow.sindri-observe</string>
+  <key>ProgramArguments</key>
+  <array>
+    <string>__BIN__/sindri</string>
+    <string>observe</string>
+  </array>
+  <key>StartInterval</key>
+  <integer>3600</integer>
+  <key>StandardOutPath</key>
+  <string>__HOME__/.agentic-workflow/sindri/observe-launchd.log</string>
+  <key>StandardErrorPath</key>
+  <string>__HOME__/.agentic-workflow/sindri/observe-launchd.log</string>
+</dict>
+</plist>
