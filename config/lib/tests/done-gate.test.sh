@@ -206,6 +206,16 @@ test_question_plus_trailing_negation_is_not_a_claim() {
   echo "PASS: test_question_plus_trailing_negation_is_not_a_claim"
 }
 
+test_negated_predicate_is_not_a_claim() {
+  local s
+  for s in 'It is not finished.' 'The migration is not complete.' 'This is not complete.' \
+           'The task was never finished.' 'Still not finished.' 'No, it is not finished.' \
+           'Nothing, in short, is done.' "It's not finished."; do
+    [ "$(claim_rc "$s")" -eq 0 ] || { echo "FAIL: negated predicate treated as claim: $s"; exit 1; }
+  done
+  echo "PASS: test_negated_predicate_is_not_a_claim"
+}
+
 test_stop_hook_active_always_exits_0_rf3
 test_not_a_done_claim_exits_0
 test_no_brief_found_falls_back_to_any_evidence_check_rf2
@@ -223,6 +233,7 @@ test_claim_before_a_question_still_blocks
 test_negation_after_claim_word_still_blocks
 test_noun_plus_complete_and_bullet_forms_still_block
 test_question_plus_trailing_negation_is_not_a_claim
+test_negated_predicate_is_not_a_claim
 echo "All done-gate tests passed."
 
 setup_fake_judge_ask_check() {

@@ -151,6 +151,16 @@ test_question_plus_trailing_negation_is_not_a_claim() {
   [ "$(claim_rc 'Should I mark it done? Nothing is finished yet.')" -eq 0 ] || { echo "FAIL: question + negated claim treated as claim"; exit 1; }
   echo "PASS: test_question_plus_trailing_negation_is_not_a_claim"
 }
+
+test_negated_predicate_is_not_a_claim() {
+  local s
+  for s in 'It is not finished.' 'The migration is not complete.' 'This is not complete.' \
+           'The task was never finished.' 'Still not finished.' 'No, it is not finished.' \
+           'Nothing, in short, is done.' "It's not finished."; do
+    [ "$(claim_rc "$s")" -eq 0 ] || { echo "FAIL: negated predicate treated as claim: $s"; exit 1; }
+  done
+  echo "PASS: test_negated_predicate_is_not_a_claim"
+}
 ```
 
 - [x] **Step 2: Run the tests to verify they fail**
@@ -167,8 +177,9 @@ In `config/hooks/done-gate.sh`, define the function before the `SESSION_ID=` lin
 # A done claim is an assertion of completion, not any occurrence of a claim word.
 # Ignored: fenced code and table rows. Sentences are split first, so a question
 # ends at its own '?' ('All done. Should I open the PR?' still claims). A negation
-# cancels a claim only when it appears before the claim word in the same sentence
-# ('Nothing is done yet.' is no claim; 'Done, no issues found.' still claims).
+# cancels a claim only when it appears before the claim word in the same sentence,
+# including any word the noun pattern consumed ('It is not finished.' is no claim;
+# 'Nothing, in short, is done.' is no claim; 'Done, no issues found.' still claims).
 # Deterministic: awk only (BSD awk, POSIX classes, no \b). \047 is a single quote.
 is_done_claim() {
   printf '%s\n' "$1" | awk '
@@ -181,14 +192,15 @@ is_done_claim() {
       NOUN = "[[:alpha:]]+[[:space:]]+(complete|completed|finished)[.!;:,[:space:]]*$"
       MID = B "(" PAIR B "|" NOUN ")"
     }
-    function is_claim(s,   t, rest, acc, pre) {
+    function is_claim(s,   t, rest, acc, pre, m) {
       if (s ~ /\?[[:space:]]*$/) return 0
       t = " " s " "
       if (t ~ START) return 1
       rest = t; acc = ""
       while (match(rest, MID)) {
         pre = acc substr(rest, 1, RSTART - 1)
-        if ((" " pre " ") !~ NEG) return 1
+        m = substr(rest, RSTART, RLENGTH)
+        if ((" " pre " " m) !~ NEG) return 1
         acc = acc substr(rest, 1, RSTART + RLENGTH - 1)
         rest = substr(rest, RSTART + RLENGTH)
       }
@@ -199,7 +211,7 @@ is_done_claim() {
     /^[[:space:]]*\|/ { next }
     {
       line = tolower($0)
-      gsub(/[.!?;:,][[:space:]]*/, "&\n", line)
+      gsub(/[.!?;:][[:space:]]*/, "&\n", line)
       n = split(line, sent, "\n")
       for (i = 1; i <= n; i++) if (is_claim(sent[i])) found = 1
     }
