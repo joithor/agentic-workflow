@@ -5981,7 +5981,7 @@ git add config/launchd/com.agentic-workflow.sindri-observe.plist scripts/install
 git commit -m "feat: hourly sindri observe and the pre-commit guard proof"
 ```
 
-- [ ] **Step 6: After merge, the builder switches on (from the updated `main`)**
+- [x] **Step 6: After merge, the builder switches on (from the updated `main`)**
 
 First tick every completed step in Plan 1 and Plan 2's plan files and commit that as `docs: tick completed Sindri plan 1-2 steps`. When a plan has fully shipped, tick all of its steps with `sed -i.bak 's/^- \[ \] \*\*Step/- [x] **Step/' <plan file>` (then delete the `.bak` file); when it has only partly shipped, tick by hand. The `plan-file` tracker reads the boxes, so unticked shipped work would show as open. Then run:
 
@@ -5992,7 +5992,7 @@ sindri profile validate
 sindri profile approve          # prints the hash and the diff for Joi
 ```
 
-- [ ] **Step 7: Joi approves the profile at a terminal (the one human step)**
+- [x] **Step 7: Joi approves the profile at a terminal (the one human step)**
 
 ```bash
 sindri profile approve <hash>   # type the first 6 characters of the hash when asked
@@ -6000,7 +6000,7 @@ sindri profile approve <hash>   # type the first 6 characters of the hash when a
 
 Expected: `Approved profile <hash>. It takes effect on the next run.`
 
-- [ ] **Step 8: The builder finishes the switch-on and posts the evidence**
+- [x] **Step 8: The builder finishes the switch-on and posts the evidence**
 
 ```bash
 sindri scrub --install-pre-commit
@@ -6025,4 +6025,4 @@ Post the output of Steps 7 and 8 as a comment on the Plan 2 PR. From then on:
 - Merge gate (AGENTS.md) green for `sindri`: `npm run typecheck` (source and tests) and `npm run test:coverage` (100%), `bash scripts/tests/install-sindri.test.sh`, `scripts/sync-rules.sh --check`, `./setup.sh --providers claude,codex,cursor --dry-run`.
 - Every Review Focus item (1–5) has its pinned test passing.
 - `docs/sindri/errors.md`, `docs/sindri/profile.md` and `sindri/schema/*.json` match their generators (enforced by tests).
-- **Switched on (Task 12):** after merge, Joi approved the profile at a terminal, `doctor` is all `ok`, the ring-0 backlog is recorded and refreshed hourly, the guard proof passed in a scratch repo, and the evidence is posted on the PR. Plan 3 must not start until it is (spec §13.3 rules).
+- **Switched on (Task 12):** after merge, Joi approved the profile at a terminal, `doctor` is all `ok`, the ring-0 backlog is recorded and refreshed hourly, the guard proof passed in a scratch repo, and the evidence is posted on the PR. Plan 3 must not start until it is (spec §13.3 rules). **Done 2026-10-08:** profile `46a2e049d455` approved, evidence at https://github.com/joi-fairshare/agentic-workflow/pull/69#issuecomment-6071163348.
