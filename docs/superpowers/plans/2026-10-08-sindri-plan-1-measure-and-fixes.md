@@ -272,7 +272,7 @@ git commit -m "fix: done-gate detects completion claims, not bare claim words (q
   - `parseProvidersAllowlist(argv: readonly string[], env: NodeJS.ProcessEnv): { ok: true; allowed: ProviderName[] | null; argv: string[] } | { ok: false; error: string }`
 - Later plans: Sindri calls `judge --providers jev,claude-cli <cmd> ...`.
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 Append to `judge/tests/chain.test.ts`:
 
@@ -330,12 +330,12 @@ describe("parseProvidersAllowlist", () => {
 });
 ```
 
-- [ ] **Step 2: Run the tests to verify they fail**
+- [x] **Step 2: Run the tests to verify they fail**
 
 Run: `cd judge && npx vitest run tests/chain.test.ts tests/providers-flag.test.ts`
 Expected: FAIL. `restrictChain` is not exported, and `../src/providers-flag.js` can't be resolved.
 
-- [ ] **Step 3: Implement**
+- [x] **Step 3: Implement**
 
 Append to `judge/src/chain.ts`:
 
@@ -414,12 +414,12 @@ Leave the `isHookSort` line (`cli.ts:39`) unchanged. It runs before the chain is
 
 In `judge/src/config.ts:15`, change `function isProviderName` to `export function isProviderName`.
 
-- [ ] **Step 4: Run the judge suite and typecheck**
+- [x] **Step 4: Run the judge suite and typecheck**
 
 Run: `cd judge && npm run typecheck && npm test`
 Expected: typecheck clean; all tests pass, including the 7 new ones.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add judge/src/chain.ts judge/src/config.ts judge/src/providers-flag.ts judge/src/cli.ts judge/tests/chain.test.ts judge/tests/providers-flag.test.ts

@@ -46,3 +46,16 @@ export function providersFor(spec: ChainSpec, cls: ContentClass, all: readonly P
     .map((name) => all.find((p) => p.name === name))
     .filter((p): p is Provider => p !== undefined && p.classes.has(cls));
 }
+
+/**
+ * Limit a chain to an allowlist of providers (spec §6.1: providers.allowed).
+ * "rules" is local and deterministic, so it is always kept as the last resort.
+ */
+export function restrictChain(spec: ChainSpec, allowed: readonly ProviderName[]): ChainSpec {
+  const keep = new Set<ProviderName>([...allowed, "rules"]);
+  const classes: Partial<Record<ContentClass, readonly ProviderName[]>> = {};
+  for (const [cls, names] of Object.entries(spec.classes) as [ContentClass, readonly ProviderName[]][]) {
+    classes[cls] = names.filter((n) => keep.has(n));
+  }
+  return { classes };
+}

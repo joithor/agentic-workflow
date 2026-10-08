@@ -13,7 +13,7 @@ export interface JudgeQuestionConfig {
   providers?: ProviderName[];
 }
 
-function isProviderName(v: unknown): v is ProviderName {
+export function isProviderName(v: unknown): v is ProviderName {
   return v === "rules" || v === "jev" || isAgentCliName(v);
 }
 

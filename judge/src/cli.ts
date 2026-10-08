@@ -10,7 +10,8 @@ import {
   runConfigGet, runConfigSet, runHealth, runQuestion, runUiElementRepairCli, runUndo, runVisualCritiqueCli, runWhy,
 } from "./commands.js";
 import { adjudicate } from "./adjudicate.js";
-import { buildChain } from "./chain.js";
+import { buildChain, restrictChain } from "./chain.js";
+import { parseProvidersAllowlist } from "./providers-flag.js";
 import { judgeConfigPath, judgeDbPath, judgeStateDir, loadConfig, HOOK_KILL_MS } from "./config.js";
 import { runPromptSortCommand } from "./prompt-sort/commands.js";
 import { openDb, pruneDecisionDetails } from "./db.js";
@@ -83,7 +84,13 @@ const agentClis = resolveAgentClis({
   awProvider: process.env.AW_PROVIDER,
   configured: config.providers?.agentClis,
 });
-const chain = buildChain({ agentClis, jev: config.providers?.jev ?? true });
+const allowlist = parseProvidersAllowlist(process.argv, process.env);
+if (!allowlist.ok) {
+  console.error(`judge: ${allowlist.error}`);
+  process.exit(64);
+}
+const fullChain = buildChain({ agentClis, jev: config.providers?.jev ?? true });
+const chain = allowlist.allowed === null ? fullChain : restrictChain(fullChain, allowlist.allowed);
 
 const providers: Provider[] = [
   makeRulesProvider(),
@@ -92,7 +99,7 @@ const providers: Provider[] = [
 ];
 
 const sessionId = process.env.AW_SESSION_ID;
-const [, , cmd, ...rest] = process.argv;
+const [, , cmd, ...rest] = allowlist.argv;
 
 function flag(name: string): string | undefined {
   const i = rest.indexOf(name);
