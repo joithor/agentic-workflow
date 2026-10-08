@@ -4284,6 +4284,8 @@ git commit -m "feat: sindri tracker contract, fake tracker and plan-file tracker
 
 ### Task 8: `sindri observe` and `sindri ledger`
 
+> Amendment (build): removed the unreachable `|| a.id.localeCompare(b.id)` sort tie-breaker in `readAll` (order keys never tie) and added a test reaching the `unwrapProfile` failure path (empty hostname gives SND-PROFILE-001); the Interfaces block now lists `approvedProfile` and `markMissing` in place of `isApproved`.
+
 `observe` lists the backlog with rule-based sizes and what auto-small *would* start. When the profile is approved and this is the active host, it also records every item in the ledger under the tick lock. It is the ring-0 backlog view (spec §13.3) and the first writer that uses the lock and fencing.
 
 **Files:**
@@ -4292,7 +4294,7 @@ git commit -m "feat: sindri tracker contract, fake tracker and plan-file tracker
 - Test: `sindri/tests/size.test.ts`, `sindri/tests/observe.test.ts`
 
 **Interfaces:**
-- Consumes: `Tracker`, `WorkItem` (Task 7); `makeTracker` (Task 7); `requireProfile`, `ring0Files` (Task 6); `isApproved` (Task 6); `acquireTickLock` (Task 4); `openLedger`, `withEpoch`, `upsertItem`, `listEvents`, `setCursor` (Task 3); `makeScrubber`, `compileExtraPatterns` (Task 2); `sizeRank`, `Size`, `Profile` (Task 5); `ulid` (Task 1).
+- Consumes: `Tracker`, `WorkItem` (Task 7); `makeTracker` (Task 7); `requireProfile`, `ring0Files` (Task 6); `approvedProfile` (Task 6); `markMissing` (Task 3); `acquireTickLock` (Task 4); `openLedger`, `withEpoch`, `upsertItem`, `listEvents`, `setCursor` (Task 3); `makeScrubber`, `compileExtraPatterns` (Task 2); `sizeRank`, `Size`, `Profile` (Task 5); `ulid` (Task 1).
 - Produces (`size.ts`):
   - `sizeByRules(files: number, codeLines: number): Size` — XS ≤ 1 file and ≤ 40 code lines; S ≤ 3 and ≤ 200; M ≤ 6 and ≤ 500; L ≤ 10 and ≤ 1000; else XL.
   - `interface Assessment { size: Size | null; sizedBy: "rules"; ambiguity: "none" | "unknown"; trusted: boolean }` (`null` = unsized: no Files block and no code).
@@ -4302,7 +4304,7 @@ git commit -m "feat: sindri tracker contract, fake tracker and plan-file tracker
 - Produces (`observe.ts`): `observeCommand: Command`, `ledgerCommand: Command`; `interface ObserveRow { id; title (scrubbed); state; size ("?" when unsized); ambiguity; trusted; next; steps: string; wouldStart; blocker }`; `parseSince(s: string, now: Date): Date` (`<N>d` or `<N>h`).
 - Behavior (spec amendment 6): with no profile, `observe` reads the current repo through a throwaway ring-0 profile and records nothing. With a profile, it uses the **last approved snapshot** (spec §8.7), takes the tick lock **before** reading, records under the epoch, closes removed tasks, and exits `1` when it could not record for a reason the human can fix (unapproved profile, unapproved live edits, not the active host). The source key is `<tracker type>:<repo>`.
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 `sindri/tests/size.test.ts`:
 
@@ -4378,8 +4380,8 @@ import { parseSince } from "../src/observe/observe.js";
 import { fakeSystem, makeDeps, tempDir } from "./helpers.js";
 
 const PLAN = [
-  "# Plan A", "", "### Task 1: Small", "", "**Files:**", "- Create: `a.ts`", "", "- [ ] **Step 1: x**", "", "```ts", "x", "```", "",
-  "### Task 2: Later", "", "- [ ] **Step 1: y**", "",
+  "# Plan A", "", "### Task 1: Small", "", "**Files:**", "- Create: `a.ts`", "", "- [x] **Step 1: x**", "", "```ts", "x", "```", "",
+  "### Task 2: Later", "", "- [x] **Step 1: y**", "",
 ].join("\n");
 
 const PLAN_FILE = "docs/superpowers/plans/2026-01-01-plan-a.md";
@@ -4451,7 +4453,7 @@ describe("sindri observe", () => {
     const deps = await ring0(root);
     await approve(deps);
     await runCli(["observe"], deps);
-    fs.writeFileSync(path.join(root, PLAN_FILE), PLAN.replace(/### Task 2[\s\S]*$/, "").replace("- [ ] **Step 1: x**", "- [x] **Step 1: x**"));
+    fs.writeFileSync(path.join(root, PLAN_FILE), PLAN.replace(/### Task 2[\s\S]*$/, "").replace("- [x] **Step 1: x**", "- [x] **Step 1: x**"));
     const r = await runCli(["observe"], deps);
     expect(r.stdout).toContain("No open items.");
     expect(r.stdout).toContain("Recorded 0 new, 1 changed, 1 removed in the ledger.");
@@ -4539,12 +4541,12 @@ describe("sindri ledger", () => {
 });
 ```
 
-- [ ] **Step 2: Run the tests to verify they fail**
+- [x] **Step 2: Run the tests to verify they fail**
 
 Run: `cd sindri && npx vitest run tests/size.test.ts tests/observe.test.ts`
 Expected: FAIL with `Failed to load url ../src/observe/size.js` (and `observe.js`).
 
-- [ ] **Step 3: Implement**
+- [x] **Step 3: Implement**
 
 `sindri/src/observe/size.ts`:
 
@@ -4846,12 +4848,12 @@ Add to `ERRORS`:
   "SND-ITEM-404": { summary: "No such item in the ledger.", fix: "Run `sindri observe` to list items." },
 ```
 
-- [ ] **Step 4: Run the tests**
+- [x] **Step 4: Run the tests**
 
 Run: `cd sindri && npm run gen && npx vitest run && npm run typecheck && npm run test:coverage`
 Expected: all tests PASS; no type errors; 100% coverage. Add a test for any branch the coverage report names; don't annotate.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add sindri/src sindri/tests docs/sindri/errors.md

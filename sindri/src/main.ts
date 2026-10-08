@@ -1,6 +1,7 @@
 import { createRequire } from "node:module";
 
 import type { Deps } from "./deps.js";
+import { ledgerCommand, observeCommand } from "./observe/observe.js";
 import { profileCommand } from "./profile/commands.js";
 import { failure, success, type CommandResult } from "./output.js";
 
@@ -25,6 +26,12 @@ export const COMMANDS: Record<string, CommandDef> = {
     ].join("\n"),
     run: profileCommand,
   },
+  observe: {
+    summary: "List the backlog with sizes and what would start; record it when approved",
+    usage: "Usage: sindri observe [--no-record] [--profile DIR] [--json]",
+    run: observeCommand,
+  },
+  ledger: { summary: "Show ledger events", usage: "Usage: sindri ledger [--item ID] [--since 7d|12h] [--json]", run: ledgerCommand },
 };
 
 function version(): string {

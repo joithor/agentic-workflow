@@ -38,7 +38,7 @@ function genericFiles(user: string, host: string): Record<string, string> {
   return { "profile.yaml": profile, "repos/example.yaml": fs.readFileSync(path.join(EXAMPLE_DIR, "repos/example.yaml"), "utf8") };
 }
 
-async function ring0Files(deps: Deps, user: string, host: string, include: string[] = ["*"]): Promise<Record<string, string>> {
+export async function ring0Files(deps: Deps, user: string, host: string, include: string[] = ["*"]): Promise<Record<string, string>> {
   const top = await deps.git.run(["rev-parse", "--show-toplevel"], deps.cwd);
   if (!top.ok) throw new SindriError("SND-PROFILE-009", `${deps.cwd} is not inside a git repo`);
   const root = top.stdout.trim();

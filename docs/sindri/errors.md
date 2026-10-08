@@ -7,6 +7,7 @@ Generated from `sindri/src/errors.ts` by `cd sindri && npm run gen`. Do not edit
 | `SND-CLI-001` | Unknown command. | sindri help |
 | `SND-CLI-002` | Invalid arguments for this command. | Run `sindri help` and check the command's flags. |
 | `SND-CLI-900` | Unexpected internal error (a bug). | rerun with SINDRI_DEBUG=1 and report the output |
+| `SND-ITEM-404` | No such item in the ledger. | Run `sindri observe` to list items. |
 | `SND-LEDGER-001` | The ledger was written by a newer sindri. | Upgrade sindri (`scripts/install-sindri.sh` from the latest main), then rerun. |
 | `SND-LOCK-001` | Another sindri run holds the lock. | wait a moment and rerun; `sindri doctor` shows the holder |
 | `SND-LOCK-003` | This run's fencing epoch is stale; another run took over. | Nothing to do; the newer run continues. Check `sindri doctor` if this repeats. |
