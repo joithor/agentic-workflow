@@ -2156,6 +2156,8 @@ git commit -m "feat: sindri singleton tick lock with stale takeover and fencing"
 
 ### Task 5: Profile schema, loader, explain and generated docs (spec §11.1)
 
+> Amendment (build): `secretValueIssues` (and `zodIssues`) now run the reported keyPath through the scrubber, because a key name can itself carry a secret-shaped string; added a test that a secret-shaped key name is redacted and neither the key nor the value appears in the output (m16).
+
 **Files:**
 - Create: `sindri/src/profile/schema.ts`, `sindri/src/profile/load.ts`, `sindri/src/profile/explain.ts`, `sindri/src/docs/profile-doc.ts`
 - Create: `sindri/profile/examples/generic/profile.yaml`, `sindri/profile/examples/generic/repos/example.yaml`
@@ -2177,7 +2179,7 @@ git commit -m "feat: sindri singleton tick lock with stale takeover and fencing"
 - Produces (`explain.ts`): `explainKey(loaded, key: string, repo?: string): { key: string; value: unknown; source: string } | null`.
 - Produces (`profile-doc.ts`): `renderSchemas(): { profile: string; repo: string }`; `renderProfileDoc(): string`; `renderKeyRows(schema: JsonSchemaNode): string[]`.
 
-- [ ] **Step 1: Create the example profile**
+- [x] **Step 1: Create the example profile**
 
 `sindri/profile/examples/generic/profile.yaml`:
 
@@ -2213,7 +2215,7 @@ protectedPaths:         # a diff touching these parks for approval (spec §8.5)
   - .github/**
 ```
 
-- [ ] **Step 2: Write the failing tests**
+- [x] **Step 2: Write the failing tests**
 
 `sindri/tests/profile-load.test.ts`:
 
@@ -2435,12 +2437,12 @@ describe("generated profile docs (run: cd sindri && npm run gen)", () => {
 });
 ```
 
-- [ ] **Step 3: Run the tests to verify they fail**
+- [x] **Step 3: Run the tests to verify they fail**
 
 Run: `cd sindri && npx vitest run tests/profile-load.test.ts tests/profile-doc.test.ts`
 Expected: FAIL with `Failed to load url ../src/profile/load.js` (and `../src/docs/profile-doc.js`).
 
-- [ ] **Step 4: Implement**
+- [x] **Step 4: Implement**
 
 `sindri/src/profile/schema.ts`:
 
@@ -2792,12 +2794,12 @@ write("docs/sindri/profile.md", renderProfileDoc());
 
 (Move the new `import` line to the top of the file with the other imports.)
 
-- [ ] **Step 5: Generate and run the tests**
+- [x] **Step 5: Generate and run the tests**
 
 Run: `cd sindri && npm run gen && npx vitest run && npm run typecheck && npm run test:coverage`
 Expected: `wrote` lines for `errors.md`, both schema files and `profile.md`; all tests PASS; no type errors.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add sindri/src/profile sindri/src/docs sindri/src/gen.ts sindri/profile sindri/schema sindri/tests docs/sindri/profile.md

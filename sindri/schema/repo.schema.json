@@ -1,0 +1,60 @@
+{
+  "type": "object",
+  "properties": {
+    "schemaVersion": {
+      "type": "number",
+      "const": 1,
+      "description": "Profile format version"
+    },
+    "name": {
+      "type": "string",
+      "pattern": "^[a-z0-9][a-z0-9-]{0,38}$",
+      "description": "Must match the file name repos/<name>.yaml"
+    },
+    "path": {
+      "type": "string",
+      "description": "Absolute path of the local checkout"
+    },
+    "defaultBranch": {
+      "type": "string",
+      "minLength": 1,
+      "default": "main",
+      "description": "Base branch for claims and indexes"
+    },
+    "protectedPaths": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      },
+      "default": [],
+      "description": "Globs; a diff touching one parks for approval (spec §8.5)"
+    },
+    "overrides": {
+      "type": "object",
+      "properties": {
+        "autoStartMaxSize": {
+          "type": "string",
+          "enum": [
+            "XS",
+            "S",
+            "M",
+            "L",
+            "XL"
+          ]
+        }
+      },
+      "additionalProperties": false,
+      "default": {},
+      "description": "Per-repo values that win over profile.yaml"
+    }
+  },
+  "required": [
+    "schemaVersion",
+    "name",
+    "path"
+  ],
+  "additionalProperties": false,
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "description": "Sindri repos/<name>.yaml"
+}

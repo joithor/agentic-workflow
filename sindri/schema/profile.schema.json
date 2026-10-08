@@ -1,0 +1,210 @@
+{
+  "type": "object",
+  "properties": {
+    "schemaVersion": {
+      "type": "number",
+      "const": 1,
+      "description": "Profile format version"
+    },
+    "mode": {
+      "type": "string",
+      "enum": [
+        "shadow",
+        "assist",
+        "auto-small"
+      ],
+      "default": "shadow",
+      "description": "What sindri may do on its own (spec §7.1)"
+    },
+    "user": {
+      "type": "string",
+      "pattern": "^[a-z0-9][a-z0-9-]{0,38}$",
+      "description": "Namespace for claim refs sindri/<user>/<item> (spec §9.4)"
+    },
+    "hosts": {
+      "type": "object",
+      "properties": {
+        "active": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "required": [
+        "active"
+      ],
+      "additionalProperties": false,
+      "description": "hosts.active: the one host allowed to run ticks"
+    },
+    "tracker": {
+      "anyOf": [
+        {
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": "string",
+              "const": "plan-file"
+            },
+            "repo": {
+              "type": "string",
+              "pattern": "^[a-z0-9][a-z0-9-]{0,38}$",
+              "description": "Repo (from repos) whose plan files are the backlog"
+            },
+            "glob": {
+              "type": "string",
+              "pattern": "^[^*]+\\/\\*\\.md$",
+              "default": "docs/superpowers/plans/*.md"
+            },
+            "include": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "pattern": "^[A-Za-z0-9*._-]+$"
+              },
+              "minItems": 1,
+              "default": [
+                "*"
+              ],
+              "description": "Plan file names to read, with * wildcards, e.g. *-sindri-plan-*"
+            }
+          },
+          "required": [
+            "type",
+            "repo"
+          ],
+          "additionalProperties": false
+        }
+      ],
+      "description": "Where work items come from. Plan 2 ships type: plan-file"
+    },
+    "repos": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "pattern": "^[a-z0-9][a-z0-9-]{0,38}$"
+      },
+      "minItems": 1,
+      "description": "Repo names; each needs repos/<name>.yaml"
+    },
+    "trustedAuthors": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      },
+      "default": [],
+      "description": "Author ids whose items may auto-start (spec §8.3). For plan-file these are git author emails, which anyone can forge; signed commits are required before auto-small"
+    },
+    "trustedBots": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      },
+      "default": [],
+      "description": "Bot ids whose review comments feed fix rounds"
+    },
+    "providers": {
+      "type": "object",
+      "properties": {
+        "allowed": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": [
+              "anthropic",
+              "jev",
+              "openai",
+              "cursor"
+            ]
+          },
+          "minItems": 1,
+          "default": [
+            "anthropic",
+            "jev"
+          ]
+        }
+      },
+      "additionalProperties": false,
+      "default": {},
+      "description": "providers.allowed: model providers sindri may call (spec §6.1)"
+    },
+    "budget": {
+      "type": "object",
+      "properties": {
+        "perItem": {
+          "type": "integer",
+          "exclusiveMinimum": 0
+        },
+        "perDay": {
+          "type": "integer",
+          "exclusiveMinimum": 0
+        }
+      },
+      "additionalProperties": false,
+      "default": {},
+      "description": "Token budgets; unset until rollout step 3a enforces them"
+    },
+    "autoStartMaxSize": {
+      "type": "string",
+      "enum": [
+        "XS",
+        "S",
+        "M",
+        "L",
+        "XL"
+      ],
+      "default": "XS",
+      "description": "Largest size auto-small may start"
+    },
+    "selfMerge": {
+      "type": "string",
+      "enum": [
+        "human",
+        "auto"
+      ],
+      "default": "human",
+      "description": "Who merges toolkit PRs (spec §7.7); protected modules always wait for the human"
+    },
+    "scrub": {
+      "type": "object",
+      "properties": {
+        "extraPatterns": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "kind": {
+                "type": "string",
+                "pattern": "^[a-z][a-z0-9-]{1,30}$"
+              },
+              "regex": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 200
+              }
+            },
+            "required": [
+              "kind",
+              "regex"
+            ],
+            "additionalProperties": false
+          },
+          "default": []
+        }
+      },
+      "additionalProperties": false,
+      "default": {},
+      "description": "scrub.extraPatterns: extra secret shapes, added to the built-ins (never removes one)"
+    }
+  },
+  "required": [
+    "schemaVersion",
+    "user",
+    "hosts",
+    "tracker",
+    "repos"
+  ],
+  "additionalProperties": false,
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "description": "Sindri profile.yaml"
+}
