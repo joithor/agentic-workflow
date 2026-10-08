@@ -1,4 +1,4 @@
-# Conductor — design
+# Sindri — design
 
 Status: draft for review, revision 7 · 2026-10-08
 Revision 7:
@@ -8,7 +8,7 @@ Revision 7:
 - fixes round-6 W3–W7
 - turns W1, W2 and W8 into spike criteria (§13.1)
 
-The working name "conductor" collides with conductor.build and will be renamed.
+Renamed from the working name "conductor" (it collides with Conductor.build) to **Sindri**, the dwarf smith who forged Draupnir, the ring that multiplies itself.
 
 Revision 6 history:
 Revision 6 addresses `/autoplan` round 5 (V1–V9, M1–M8): two-phase verification with a separate
@@ -16,14 +16,14 @@ reproduce sandbox, a write shim for bugFixOrchestrator, clone from the mirror, h
 subscription auth, a container debug path, image onboarding, effort sizing and a spike fallback.
 
 Revision 5 history:
-Revision 5 addresses `/autoplan` round 4: sessions run in containers (§8.2) with conductor-mediated
+Revision 5 addresses `/autoplan` round 4: sessions run in containers (§8.2) with sindri-mediated
 push (§8.5); the environment is an adapter; a dashboard and menu-bar badge (§10.5); calibration fixes.
 
 Revision 4 history:
 Revision 4 addresses `/autoplan` round 3 (T1–T6, M1–M10): hook semantics grounded in the Claude Code
 docs, a sandboxed session user, enforced shape checks with defined outcomes, and an offline index.
 Revision 2 addressed `/autoplan` round 1 (21 HIGH). Revision 3 addresses round 2 (7 HIGH, R1–R7, and M1–M15,
-L1–L2 in `plans/conductor/consolidated-review.md`). It also adds hook-enforced checks (§5.3) and code-shape
+L1–L2 in `plans/sindri/consolidated-review.md`). It also adds hook-enforced checks (§5.3) and code-shape
 checks with a code index (§6.2).
 
 ## 1. Why
@@ -43,7 +43,7 @@ human's effort goes mostly to the least judgment-heavy parts of agent work:
 | QA direction | ~4% |
 | Evidence and environment recipes (near-verbatim repeats) | ~3% |
 
-The conductor is a local, always-on system that picks up work, sizes it, starts sessions with a cited
+The sindri is a local, always-on system that picks up work, sizes it, starts sessions with a cited
 context pack, keeps them on track, ships them through a fixed recipe, and asks the human only when it has to.
 It learns from its own steering so recurring corrections become rules.
 
@@ -51,13 +51,13 @@ It learns from its own steering so recurring corrections become rules.
 
 ### Goals
 - Remove copy-paste dispatch (manual start in one command, then auto-start for small clear work).
-- Remove retyped shipping direction (the ship recipe is data, executed by the conductor).
+- Remove retyped shipping direction (the ship recipe is data, executed by the sindri).
 - Remove orchestration babysitting (cited pack injected at start and re-injected on compaction).
 - Every judgment step proves it is complete before handing off.
 - Evolve: recurring human steering becomes a proposed, backtested, typed rule change.
 - **Scope projects at creation:** surfaces, implications and workstreams found up front, proven by
   backtest (§7.5).
-- **Improve itself:** the whole toolkit repo (skills, hooks, judge, scorer, bridge, the conductor itself,
+- **Improve itself:** the whole toolkit repo (skills, hooks, judge, scorer, bridge, the sindri itself,
   installers, docs) plus adopted skills, prompts, recipes and thresholds are evaluated and evolved
   automatically. Human input is needed only for protected surfaces and, by default, merges (§7.4, §7.7).
 - Keep the codebase simple as it grows: deterministic checks for reinvention, second-case
@@ -66,7 +66,7 @@ It learns from its own steering so recurring corrections become rules.
 
 ### Non-goals
 - Merging. The human always merges.
-- Answering product questions. The conductor batches and contextualizes them; it never answers them.
+- Answering product questions. The sindri batches and contextualizes them; it never answers them.
 - Multi-host scheduling in v1.
 
 ### Success metrics (baselines and final targets set in rollout step 0; figures below are starting proposals)
@@ -80,14 +80,14 @@ It learns from its own steering so recurring corrections become rules.
 | Auto-started PRs reworked or reverted | GitHub + ledger | ≤ the rate for human-started PRs |
 | Model tokens per merged PR (subscription) | proxy usage log | within `budget.perItem` |
 | Human "wrong path" corrections per merged PR | transcript classifier | −50% (direction checks should catch these first) |
-| Clone count and duplication ratio on files conductor sessions touched | code index | flat or falling |
+| Clone count and duplication ratio on files sindri sessions touched | code index | flat or falling |
 | Transcript-classifier accuracy | outcome-labeled turns (a later human correction or rework marks a miss; no hand labels) | ≥ 0.85, reported in `shadow report` |
 
 ### Kill criteria
 - **Auto-start:** if after 4 weeks human turns per merged PR is down less than 20%, or the rework rate of
   auto-started PRs exceeds that of human-started PRs **of the same size class** (minimum 20 auto-started
   PRs before this fires), auto-start is turned off (`mode: assist`). The
-  conductor keeps running manual start, packs and the ship recipe.
+  sindri keeps running manual start, packs and the ship recipe.
 - **Eval loop:** if fewer than half of approved rules hold their backtested gain over the next 20 items,
   proposals stop.
 - **Direction checks:** per checkpoint, see §6.1 (back to shadow when `revise` doesn't reduce rework).
@@ -96,26 +96,26 @@ It learns from its own steering so recurring corrections become rules.
 
 ## 3. Invariants
 
-1. **One conductor at a time** per host, fenced (§9.1). Across hosts, v1 runs one active host and treats
+1. **One sindri at a time** per host, fenced (§9.1). Across hosts, v1 runs one active host and treats
    cross-host exclusion as best-effort with duplicate-tolerant outcomes (§9.4).
 2. **Nothing long-lived holds a model.** The tick is short deterministic code; model work runs in bounded
    jobs and sessions that end.
-3. **No step grades itself.** Verifiers are separate; the conductor runs the worker's reproduce check
+3. **No step grades itself.** Verifiers are separate; the sindri runs the worker's reproduce check
    itself (§6). **No path goes unchallenged:** approach, scoping, drift, shape and
    scope-expansion checkpoints get a direction check on a different model before more effort is
    committed (§6.1).
 4. **Escalate, never guess.** Below-threshold decisions and exhausted loops notify and park.
 5. **One heavy job at a time per host.** The session cap is a ceiling on sessions, not heavy jobs.
-6. **Deny by default inside conductor sessions.** A conductor gate enforces the profile allowlist,
+6. **Deny by default inside sindri sessions.** A sindri gate enforces the profile allowlist,
    fails closed, and is not disableable from inside a session (§8.1).
 7. **Untrusted text is data, never instructions** (§8.3).
 8. **No secrets in packs, ledger, logs, notifications or eval corpus** (§8.4).
 9. **No human hand-labeling.** Labels come from outcomes only: merged without rework, reverted, a human
    correction in a later turn, CI results. A `proceed` written by an agent is never a label on its own (M5).
 10. **Hooks enforce; agents don't opt in.** Every required check fires on a hook event, a git hook, or a
-    conductor action, never because an agent chose to call a tool. MCP is for reading data only. Hooks
+    sindri action, never because an agent chose to call a tool. MCP is for reading data only. Hooks
     enforce *patterns*. The *security boundary* is the session container, server-side protections, and
-    conductor-side re-verification (§5.3).
+    sindri-side re-verification (§5.3).
 11. **Self-evolution stays inside its tier.** Automatic adoption never touches protected surfaces, never
     edits the eval suite that judges it, is always evaluated by the stable channel, and every adoption
     can be reverted automatically (§7.4, §7.7).
@@ -132,7 +132,7 @@ It learns from its own steering so recurring corrections become rules.
 | Worker wraps existing `/bugFixOrchestrator` | New native worker |
 | Ship state machine for single PRs and stacks | — |
 | Eval loop: proposal-only on evidence and ship recipes | Free-form rule discovery |
-| Direction checks, conductor-relayed, bridge as audit mirror; shadow first (§6.1) | Human participating live in a thread; non-Anthropic challengers by default |
+| Direction checks, sindri-relayed, bridge as audit mirror; shadow first (§6.1) | Human participating live in a thread; non-Anthropic challengers by default |
 | Code index: structure, clones, dependencies, local embeddings, graphify graph; shape checks at commit (§6.2) | Cross-repo index |
 
 Linux is a design constraint in v1 (no OS assumptions in core, per-OS boot-id, hook portability fixes,
@@ -141,7 +141,7 @@ Linux container test script) but its built-in adapters ship later (§12).
 ## 5. Architecture
 
 ```
-launchd ─► conductor tick  (short, deterministic; singleton lock + fencing epoch §9.1)
+launchd ─► sindri tick  (short, deterministic; singleton lock + fencing epoch §9.1)
              ├─ reconcile: ledger ⇄ Launcher.list() ⇄ job/session liveness (§9.2)
              ├─ Tracker.scan(scope, cursor)        → changed work items
              ├─ spawn bounded jobs (detached, own lease, own budget):
@@ -157,28 +157,28 @@ The tick never waits on a model. It reads job results from the ledger on the nex
 ### 5.1 Core packages (in this repo)
 | Path | Responsibility |
 |---|---|
-| `conductor/` | Tick, queue, cap, fencing, job runner, Step runner, ship state machine, ledger, CLI |
-| `conductor/adapters/` | Interfaces, built-ins (§11.2), `adapterContractTests()` |
-| `conductor/profile/` | Zod schema, JSON Schema export, validator, migrator, example profile, scaffolder |
-| `conductor/gate/` | Conductor-mode PreToolUse gate, outward-write filter, path guard (§8) |
-| `conductor/scrub/` | Secret/PHI scrubber used at ingest, pack write, ledger write, eval corpus |
+| `sindri/` | Tick, queue, cap, fencing, job runner, Step runner, ship state machine, ledger, CLI |
+| `sindri/adapters/` | Interfaces, built-ins (§11.2), `adapterContractTests()` |
+| `sindri/profile/` | Zod schema, JSON Schema export, validator, migrator, example profile, scaffolder |
+| `sindri/gate/` | Sindri-mode PreToolUse gate, outward-write filter, path guard (§8) |
+| `sindri/scrub/` | Secret/PHI scrubber used at ingest, pack write, ledger write, eval corpus |
 | `judge/src/questions/` | New questions (size, ambiguity, pack-probe, independence, step-complete, direction-verdict), called through the `judge` CLI |
-| `conductor/index/` | Code index builders, `Index` adapter, graphify adapter, shape signals (§6.2) |
+| `sindri/index/` | Code index builders, `Index` adapter, graphify adapter, shape signals (§6.2) |
 | `mcp-bridge/` | Audit mirror for direction-check threads. Hardened: token auth, no CORS, Host check, ack-based unread, size caps, retention (§6.1) |
-| `config/hooks/` | The conductor-mode hook set in §5.3: injection, gate, checkpoints, shape checks, turn classification, Stop gate, heartbeat |
+| `config/hooks/` | The sindri-mode hook set in §5.3: injection, gate, checkpoints, shape checks, turn classification, Stop gate, heartbeat |
 
 ### 5.2 Storage (M7)
-- The conductor owns `$AW_STATE_DIR/conductor/ledger.db` (SQLite, WAL). It is the only writer.
-- Hooks never write to the DB. They append events to `$AW_STATE_DIR/conductor/spool/<session>.jsonl`, and
+- The sindri owns `$AW_STATE_DIR/sindri/ledger.db` (SQLite, WAL). It is the only writer.
+- Hooks never write to the DB. They append events to `$AW_STATE_DIR/sindri/spool/<session>.jsonl`, and
   the tick ingests them.
 - Judge decisions are referenced by judge's decision id. Score, threshold and reason code are **copied**
   into the ledger row, because judge prunes decision details after 30 days (L1, L5).
 - The schema lives in `planning/ERD.md` with versioned migrations. `doctor` detects schema skew (M19).
-- Ledger files and the state dir are mode 0700, outside any session's working tree. Conductor sessions run
-  with a gate that denies writes under `$AW_STATE_DIR/conductor/` (STRIDE tampering).
+- Ledger files and the state dir are mode 0700, outside any session's working tree. Sindri sessions run
+  with a gate that denies writes under `$AW_STATE_DIR/sindri/` (STRIDE tampering).
 
 ### 5.3 Enforcement model: hooks force patterns, the sandbox enforces security
-**Principle:** every check that must happen is fired by a hook event or by the conductor. No check
+**Principle:** every check that must happen is fired by a hook event or by the sindri. No check
 depends on an agent choosing to call a tool. MCP servers are for **reading data**.
 
 There are two layers, with different jobs:
@@ -186,9 +186,9 @@ There are two layers, with different jobs:
   turn classification. This is what removes the human steering.
 - **The security boundary does not depend on hooks:**
   - a dedicated OS user for sessions
-  - conductor state readable only by the conductor user
+  - sindri state readable only by the sindri user
   - server-side branch protection
-  - conductor-side re-verification of the pushed head (§6, §8.5)
+  - sindri-side re-verification of the pushed head (§6, §8.5)
 
   A hook that fails open costs a missed nudge. It never costs a breach.
 
@@ -197,14 +197,14 @@ probe, and the probe suite becomes a `doctor` check):
 
 | Fact | Consequence |
 |---|---|
-| Only exit 2 or `permissionDecision:"deny"` blocks a tool call. Other non-zero exits, timeouts (default 600 s) and a missing command **fail open** | Every conductor hook runs through `cdt-hook`, a small static wrapper that traps all errors and timeouts (its own budget is shorter than the hook timeout) and emits an explicit deny with `CND-HOOK-9xx`. `doctor` probes every hook. |
+| Only exit 2 or `permissionDecision:"deny"` blocks a tool call. Other non-zero exits, timeouts (default 600 s) and a missing command **fail open** | Every sindri hook runs through `sindri-hook`, a small static wrapper that traps all errors and timeouts (its own budget is shorter than the hook timeout) and emits an explicit deny with `SND-HOOK-9xx`. `doctor` probes every hook. |
 | `continue:false` with `stopReason` ends the turn, and Claude sees the reason | Checkpoints end the turn cleanly instead of looping on denials |
-| A Stop block (`decision:"block"`) is capped at 8 consecutive continuations; `stop_hook_active` marks a re-entry | Stop is a **pattern** gate only. It blocks when the Step's required artifacts are missing (at most twice per chain). Known waits (`awaiting-direction`, `awaiting-human`) are always allowed to stop. Completion is verified **conductor-side after Stop**, never inside the hook. |
+| A Stop block (`decision:"block"`) is capped at 8 consecutive continuations; `stop_hook_active` marks a re-entry | Stop is a **pattern** gate only. It blocks when the Step's required artifacts are missing (at most twice per chain). Known waits (`awaiting-direction`, `awaiting-human`) are always allowed to stop. Completion is verified **sindri-side after Stop**, never inside the hook. |
 | `UserPromptSubmit` can add `additionalContext` and can block | Inbox delivery and turn classification |
-| Managed-settings hooks merge with all other levels and can't be removed below managed | Conductor hooks ship in the **session image's root-owned managed settings**. The session runs as an unprivileged container user and can't change them. The host's own Claude sessions get no conductor hooks. |
+| Managed-settings hooks merge with all other levels and can't be removed below managed | Sindri hooks ship in the **session image's root-owned managed settings**. The session runs as an unprivileged container user and can't change them. The host's own Claude sessions get no sindri hooks. |
 | `-p` and SDK sessions skip the trust dialog; interactive sessions need the folder trusted | The image pre-accepts trust for `/workspace/src` in the container user's config at build time |
 
-**Identifying a conductor session:** the container *is* the session. Conductor hooks exist only in the
+**Identifying a sindri session:** the container *is* the session. Sindri hooks exist only in the
 session image, so there's no identity check to bypass, and no `env -u` path (T2).
 
 **Hook map:**
@@ -213,26 +213,26 @@ session image, so there's no identity check to bypass, and no `env -u` path (T2)
 |---|---|---|
 | `SessionStart` (startup) | Inject the pack's Task, Acceptance and Evidence plan; register; heartbeat | — |
 | `SessionStart` (compact, resume, fork) | Re-inject Task and Acceptance plus the pack pointer | — |
-| `UserPromptSubmit` | Turn classification (`answer` / `takeover` / `conductor`). On a verified delivery token (§6.1), inject the inbox. A human correction raises a drift signal. | Block a forged delivery token (`CND-DIR-030`) |
-| `PreToolUse` (all tools) | Conductor tool gate (§8.1) | Deny `CND-GATE-1xx` |
-| `PostToolUse` (all tools) | **Edit detection by working-tree state, not by tool name:** after any tool call, the hook compares `git status --porcelain --untracked-files=all` plus content hashes against the last snapshot, so untracked files count too (M6). The first change to a non-test source file without a `proceed` verdict fires the Approach checkpoint. This catches Edit, Write, `sed -i`, `tee`, scripts and codegen. | `continue:false`, `stopReason: CND-DIR-010 awaiting direction check <id>`. The changes stay in `/workspace/src`; the verdict decides keep or revert. |
-| `PreToolUse` (`Bash`) plus a git `pre-commit` hook set via the image's system git config | **Shape checks** (§6.2), as **pattern** enforcement. The git hook catches the common commit forms; `--no-verify` doesn't matter, because the conductor-side verifier re-runs the same checks on the bundle before anything is pushed (§8.5). | Commit refused with evidence and `continue:false` (M6); Shape direction check opened |
-| Session export (Stop and commit hooks write `/spool/out.bundle`) | Hand-off for conductor-mediated push (§8.5) | — |
+| `UserPromptSubmit` | Turn classification (`answer` / `takeover` / `sindri`). On a verified delivery token (§6.1), inject the inbox. A human correction raises a drift signal. | Block a forged delivery token (`SND-DIR-030`) |
+| `PreToolUse` (all tools) | Sindri tool gate (§8.1) | Deny `SND-GATE-1xx` |
+| `PostToolUse` (all tools) | **Edit detection by working-tree state, not by tool name:** after any tool call, the hook compares `git status --porcelain --untracked-files=all` plus content hashes against the last snapshot, so untracked files count too (M6). The first change to a non-test source file without a `proceed` verdict fires the Approach checkpoint. This catches Edit, Write, `sed -i`, `tee`, scripts and codegen. | `continue:false`, `stopReason: SND-DIR-010 awaiting direction check <id>`. The changes stay in `/workspace/src`; the verdict decides keep or revert. |
+| `PreToolUse` (`Bash`) plus a git `pre-commit` hook set via the image's system git config | **Shape checks** (§6.2), as **pattern** enforcement. The git hook catches the common commit forms; `--no-verify` doesn't matter, because the sindri-side verifier re-runs the same checks on the bundle before anything is pushed (§8.5). | Commit refused with evidence and `continue:false` (M6); Shape direction check opened |
+| Session export (Stop and commit hooks write `/spool/out.bundle`) | Hand-off for sindri-mediated push (§8.5) | — |
 | `PostToolUse` | Heartbeat spool; drift signals; scrub tool output going back into context | — |
-| `Stop` | Pattern gate as described above | Block at most twice, then allow and record `CND-HOOK-210` |
+| `Stop` | Pattern gate as described above | Block at most twice, then allow and record `SND-HOOK-210` |
 | `PreCompact` | Checkpoint Step state to the spool | — |
 
 Session-side git hooks are a convenience for fast feedback, not a control. The authority is the
-conductor's verifier container (§8.5).
+sindri's verifier container (§8.5).
 
 **Debuggability (T4):**
-- Every hook decision is appended to `$AW_STATE_DIR/conductor/hooks/<session>.jsonl` with event, matcher,
+- Every hook decision is appended to `$AW_STATE_DIR/sindri/hooks/<session>.jsonl` with event, matcher,
   input hash, decision, code and duration.
-- `conductor hook log <item>` shows the decisions for an item.
-- `conductor hook replay <log-id>` re-runs a recorded decision.
-- `conductor hook test <event> <fixture.json>` runs a hook against a fixture.
+- `sindri hook log <item>` shows the decisions for an item.
+- `sindri hook replay <log-id>` re-runs a recorded decision.
+- `sindri hook test <event> <fixture.json>` runs a hook against a fixture.
 - Codes separate the cause: `1xx` policy, `2xx` pattern, `9xx` crash or timeout.
-- The deny text always includes the code, a one-line reason and `conductor why <item>`.
+- The deny text always includes the code, a one-line reason and `sindri why <item>`.
 - **Kill switches:** `hooks.<name>.enabled` per hook in the profile. Changing one requires
   `profile approve` and is shown in `status` as a degraded mode. The gate and the Stop pattern gate can't be
   switched off.
@@ -240,7 +240,7 @@ conductor's verifier container (§8.5).
 **Coexistence (T1d):**
 - The session image includes the existing `config/hooks/*` safety hooks. Hooks merge, and the safety
   hooks only add denials.
-- The image omits `done-gate.sh` and `scope-gate.sh`, because the conductor's Stop pattern gate and tool
+- The image omits `done-gate.sh` and `scope-gate.sh`, because the sindri's Stop pattern gate and tool
   gate replace them.
 - On the host, nothing changes.
 
@@ -266,10 +266,10 @@ produce → deterministic checks → verifier → pass ── yes ─► ledger 
 | Step | Runs as | Deterministic checks | Verifier |
 |---|---|---|---|
 | Triage | tool-less job | Schema-valid; every in-scope item has `{size, ambiguity, missingInfo[], sources[]}`; size in the profile vocabulary (L2) | Judge re-sizes **100% of auto-start candidates** and a sample of the rest (M14) |
-| Context pack | tool-less job (fetching is done by conductor code through Source adapters) | Every claim cites a source ref; required sections present (§8.3); scrubber passes; size within limit | Judge pack-probe: a fresh job answers N probe questions from the pack alone |
+| Context pack | tool-less job (fetching is done by sindri code through Source adapters) | Every claim cites a source ref; required sections present (§8.3); scrubber passes; size within limit | Judge pack-probe: a fresh job answers N probe questions from the pack alone |
 | Scoping | job with read-only code tools | Every surface maps to a workstream; dependency graph acyclic; independence checked against predicted file sets | Adversarial "missing surface" job until no new surface or the round cap |
-| Worker | tmux session (`/bugFixOrchestrator` in v1) | **The conductor re-runs the recorded reproduce check itself** in a fresh **verifier container** from the exported bundle (§8.5): it must fail on the base and pass on the head. Flaky handling: 3 runs, majority wins, and disagreement parks the item (M2). Path guard (§8.5) and shape checks (§6.2) pass. | Judge resolution-check against the original item text |
-| Ship | conductor code | Reviewer threads resolved and CI green, read from the Reviewer adapter and CI, never from agent output | — |
+| Worker | tmux session (`/bugFixOrchestrator` in v1) | **The sindri re-runs the recorded reproduce check itself** in a fresh **verifier container** from the exported bundle (§8.5): it must fail on the base and pass on the head. Flaky handling: 3 runs, majority wins, and disagreement parks the item (M2). Path guard (§8.5) and shape checks (§6.2) pass. | Judge resolution-check against the original item text |
+| Ship | sindri code | Reviewer threads resolved and CI green, read from the Reviewer adapter and CI, never from agent output | — |
 | Eval proposal | job | Typed rule schema; forbidden fields untouched (§7.4) | Holdout backtest (directional), then a shadow A/B win before approval (§13 step 6) |
 
 ### 6.1 Direction checks ("is this the right path?")
@@ -279,34 +279,34 @@ fix, why are we not doing it", "that's a messy workaround, not the fix we want",
 that branch?". A direction check is a short, structured dialogue between models before more effort is
 committed.
 
-**Checkpoints:** each one is fired by a hook (§5.3) or by the conductor. None is fired by the agent.
+**Checkpoints:** each one is fired by a hook (§5.3) or by the sindri. None is fired by the agent.
 
 | Checkpoint | Fired by | Question |
 |---|---|---|
 | Approach | `PreToolUse` on the first non-test source edit | Does this solve the item as written? Does it match the stated fix? Is there a simpler or more correct path? |
-| Scoping | Conductor, before a scoping proposal goes to the human | Are these the right workstreams? Is anything here solving the wrong problem? |
-| Drift | Conductor, on any drift signal: 2 failed fix rounds, the same verifier reason twice, a diff outside the predicted file set, a human correction, elapsed time more than 2× estimate | Keep going, change approach, or stop and ask? |
+| Scoping | Sindri, before a scoping proposal goes to the human | Are these the right workstreams? Is anything here solving the wrong problem? |
+| Drift | Sindri, on any drift signal: 2 failed fix rounds, the same verifier reason twice, a diff outside the predicted file set, a human correction, elapsed time more than 2× estimate | Keep going, change approach, or stop and ask? |
 | Shape | `PreToolUse` on `git commit` when a shape signal fires (§6.2) | Reuse, generalize, or keep the new code (with a reason)? |
-| Scope expansion | Conductor, when a session's diff or notes propose new items or a widened change | Is this necessary for this item, or a separate item? |
+| Scope expansion | Sindri, when a session's diff or notes propose new items or a widened change | Is this necessary for this item, or a separate item? |
 
 XS-clear items skip Approach unless a drift signal fires.
 
-**Transport: the conductor relays every turn (R1, R2, R4).**
-- Participants never talk to each other directly. The conductor runs each turn as a bounded job:
+**Transport: the sindri relays every turn (R1, R2, R4).**
+- Participants never talk to each other directly. The sindri runs each turn as a bounded job:
   - **proposer turn:** from the session's own checkpoint output, which the hook spools as `position.json`
   - **challenger turn:** a stdin/stdout job, read-only code tools, no network
-- The conductor writes every turn itself, with a fixed role (`proposer | challenger | arbiter`), the check
-  id, the epoch, and an HMAC keyed by a conductor secret. Each MAC covers the previous turn's MAC, so the
+- The sindri writes every turn itself, with a fixed role (`proposer | challenger | arbiter`), the check
+  id, the epoch, and an HMAC keyed by a sindri secret. Each MAC covers the previous turn's MAC, so the
   turns form a chain.
 - **Key custody (M3):** the key lives in the human's keychain (macOS) or a 0400 file in the
-  conductor-private zone (Linux). It is never mounted into any container. It rotates on every epoch
+  sindri-private zone (Linux). It is never mounted into any container. It rotates on every epoch
   change, and the previous key stays valid until every check opened under it has closed (M6).
 - **Position authorship (M2):** the proposer's `position.json` is captured by the PostToolUse hook from the
-  session's checkpoint output, stamped with the session id and turn id, and signed by the conductor on
+  session's checkpoint output, stamped with the session id and turn id, and signed by the sindri on
   ingest. The session never signs anything.
 - **Leg timeouts (M2):** position 10 min, challenge 5 min, reply 10 min, verdict 2 min. A timeout escalates.
 - **The MCP bridge is the record of each dialogue,** not its transport. Every turn is mirrored to a bridge
-  conversation (UUID = check id) for audit and for `conductor why`.
+  conversation (UUID = check id) for audit and for `sindri why`.
 - **Bridge hardening, required when the bridge is enabled:**
   - token auth on every route
   - CORS off and a Host-header check
@@ -329,25 +329,25 @@ requested → position → challenge(n) → reply(n) → verdict → delivered
 
 **Delivery into the session (R2):**
 1. The verdict (or the human's decision) is written to the session's inbox file. The file is owned by the
-   conductor and is read-only to the session.
-2. The conductor sends `continue cdt-tok:<nonce>` through `send-keys`. The nonce is single-use, bound to
+   sindri and is read-only to the session.
+2. The sindri sends `continue snd-tok:<nonce>` through `send-keys`. The nonce is single-use, bound to
    the check id and the session, and signed into the inbox file.
 3. The `UserPromptSubmit` hook verifies the nonce against the inbox (match, unused, unexpired), injects
    the inbox contents as additional context, marks the nonce used, and writes a delivery ack to the spool.
-   A prompt that carries a bad or reused nonce is blocked (`CND-DIR-030`). A prompt with no nonce is
+   A prompt that carries a bad or reused nonce is blocked (`SND-DIR-030`). A prompt with no nonce is
    classified as human (§9.3).
-4. For a `revise` verdict, the text is synthesized by conductor code from the verdict's agreed objections,
+4. For a `revise` verdict, the text is synthesized by sindri code from the verdict's agreed objections,
    as a structured list. Raw thread text never becomes instructions.
 
 **Decision:** a judge question `direction-verdict` (`proceed | revise | escalate`) reads the HMAC-verified
 turns only. Below threshold, the result is `escalate`. Escalation creates a `decide` item (§10.1). The
-human runs `conductor decide <item>` to see both positions and choose.
+human runs `sindri decide <item>` to see both positions and choose.
 
 **Providers and egress (R3):**
 - The profile's `providers.allowed` defaults to Anthropic only.
 - Diversity comes from a **different Claude model** than the proposer's (e.g. proposer Sonnet, challenger
   Opus), plus **Jev** as the arbiter's first classifier (already vendor-reviewed for code in judge).
-- The arbiter is restricted as well. The conductor calls `judge --providers <profile list>`, a new judge
+- The arbiter is restricted as well. The sindri calls `judge --providers <profile list>`, a new judge
   CLI flag that limits the chain (M1). Without the flag judge would fall through to any installed agent
   CLI.
 - Other providers (Codex, Cursor CLI, others) are opt-in per provider. They receive a bounded bundle:
@@ -381,8 +381,8 @@ judge only the shortlist. **All index layers enforce from the first enforcing ro
 an explicit decision, taken over a shadow-first alternative. Every enforced outcome is defined, so nothing
 can deadlock.
 
-**Code index** (per repo, behind an `Index` adapter, stored in `$AW_STATE_DIR/conductor/index/<repo>.db`,
-owned by the conductor user):
+**Code index** (per repo, behind an `Index` adapter, stored in `$AW_STATE_DIR/sindri/index/<repo>.db`,
+owned by the sindri user):
 
 | Layer | Content | Built with |
 |---|---|---|
@@ -418,7 +418,7 @@ owned by the conductor user):
 - **Single-layer failure:** only that layer's checks take the `index-unavailable` outcome. The other
   layers still enforce.
 
-**Signals** (computed at commit by the git `pre-commit` hook, and re-computed conductor-side on the pushed
+**Signals** (computed at commit by the git `pre-commit` hook, and re-computed sindri-side on the pushed
 range; profile thresholds, seeded by a historical replay over past merged PRs in rollout step 2, then calibrated **per layer** on
 real commits in step 3a (Q1, M1):
 
@@ -435,8 +435,8 @@ real commits in step 3a (Q1, M1):
 |---|---|---|
 | Signal fires, check budget available | Refused with evidence | Shape direction check opens; the session ends its turn (`awaiting-direction`); the verdict is delivered: `revise` (reuse or generalize), `proceed` (keep, reason recorded), or `escalate` (`decide` item) |
 | Signal fires, `direction.maxPerItem` exhausted or no diverse model available | Allowed, with a `shape-unresolved` trailer | PR gets the `shape-unresolved` label; needs-approval to the human; the ship state machine won't undraft until it's resolved |
-| Index missing, stale beyond `index.maxAgeHours`, or failing | Allowed, with an `index-unavailable` trailer | Conductor rebuilds; the conductor-side re-check runs on the push range once the rebuild finishes; a failure there → needs-approval |
-| Check exceeds the 2 s commit budget | Allowed, with a `shape-deferred` trailer | The conductor-side check on push is authoritative and refuses the push if it signals |
+| Index missing, stale beyond `index.maxAgeHours`, or failing | Allowed, with an `index-unavailable` trailer | Sindri rebuilds; the sindri-side re-check runs on the push range once the rebuild finishes; a failure there → needs-approval |
+| Check exceeds the 2 s commit budget | Allowed, with a `shape-deferred` trailer | The sindri-side check on push is authoritative and refuses the push if it signals |
 
 The Shape direction check ships in the **same** rollout step as shape enforcement (§13, step 3b).
 
@@ -451,7 +451,7 @@ The Shape direction check ships in the **same** rollout step as shape enforcemen
 either file changes, or for 30 days, whichever comes first.
 
 **Repo trend:** the eval loop tracks duplication ratio, clone count, average complexity and dependency
-count over time on the files conductor sessions touched (M9). A rising trend becomes a typed `reuse-hint`
+count over time on the files sindri sessions touched (M9). A rising trend becomes a typed `reuse-hint`
 rule proposal (§7.4).
 
 ## 7. Flows
@@ -464,7 +464,7 @@ rule proposal (§7.4).
 | Condition | Route |
 |---|---|
 | `mode: shadow` | Record only. No session starts. |
-| `mode: assist` | The item is listed in `status` as startable. The human runs `conductor start <item>`. |
+| `mode: assist` | The item is listed in `status` as startable. The human runs `sindri start <item>`. |
 | `mode: auto-small`, size ≤ `autoStartMaxSize` (default `XS`), ambiguity `none`, all authors trusted (§8.3), budget available | Auto-start a worker session. |
 | Otherwise | Scoping queue. In v1 the scoping output is a proposal the human approves before workstreams start. |
 
@@ -473,19 +473,19 @@ rule proposal (§7.4).
 5. Questions are batched per item and sent as one needs-answer notification (§10).
 
 ### 7.2 Sessions
-- `conductor start <item>` (manual) and auto-start both go through the Launcher. A session gets:
-  - a conductor-generated name `cdt-<ulid>` (§8.6)
+- `sindri start <item>` (manual) and auto-start both go through the Launcher. A session gets:
+  - a sindri-generated name `snd-<ulid>` (§8.6)
   - its own container (§8.2) with `/workspace/src` cloned from the read-only base, on the local branch
-    for the claim ref `cdt/<user>/<item>` (§9.4); trust pre-accepted in the image (M5)
+    for the claim ref `sindri/<user>/<item>` (§9.4); trust pre-accepted in the image (M5)
   - an environment from the repo's `Environment` adapter (§11.2), for example a PR preview, shared host
     services or a per-container stack
   - a settings overlay: normal permission mode (never bypass), the profile tool allowlist, and the
-    conductor gate registered (§8.1)
+    sindri gate registered (§8.1)
   - a scrubbed environment and scoped tokens (§8.2)
   - its pack path, injected at SessionStart
 - **Re-injection (M9):** on SessionStart for `compact` and `resume`, a hook injects the pack's Task and
   Acceptance sections plus a pointer to the full pack. This replaces the context guard's digest nudge for
-  conductor sessions.
+  sindri sessions.
 - Sessions end when their Step completes. A session past `session.maxAgeHours` (default 8) or
   `session.maxContextTokens` is checkpointed and relaunched from pack plus checkpoint.
 
@@ -545,7 +545,7 @@ evaluations:
 |---|---|---|
 | **Self-adopt** | Skills, prompts, rubrics, recipes, thresholds, messages, rules of the §7.4 typed kinds, vendored-pack upgrades | **Automatic** on passing both evaluations: a canary on 25% of items for one week, then 100%. Lands as a signed commit to the profile overlay (`overlay/skills/…`), effective immediately. Shown in the daily digest as `fyi`. |
 | **Approval** | Protected surfaces: tool allowlist, `trustedAuthors`/`trustedBots`, hosts, secret pointers, egress allowlist, hook configuration and safety hooks, budgets and quota reserve, notifier/scheduler config, scrubber patterns (they may only be *added* to automatically) | needs-approval with the diff, source turns and evaluation results |
-| **Code** | Anything in the core repo (generic improvements to native skills, conductor code) | The conductor opens a PR to the core repo **as a normal work item** (dogfooding, §7.6). The human merges. Until the merge, the overlay version is in effect. |
+| **Code** | Anything in the core repo (generic improvements to native skills, sindri code) | The sindri opens a PR to the core repo **as a normal work item** (dogfooding, §7.6). The human merges. Until the merge, the overlay version is in effect. |
 
 **Guardrails:**
 - At most 3 adoptions per artifact per week, and at most 10 per week in total.
@@ -554,7 +554,7 @@ evaluations:
 - **Tier brake:** if more than half of the self-adopted changes in a 30-day window are reverted, the
   self-adopt tier pauses (everything goes to approval) until the human resumes it.
 - Variants can't modify their own eval suite. Eval-suite changes are approval-tier.
-- `conductor evolve status | history | revert <id> | pause | resume` exposes all of it, and the
+- `sindri evolve status | history | revert <id> | pause | resume` exposes all of it, and the
   dashboard's Today view lists adoptions and reverts.
 
 ### 7.5 Scoping harness (front of the rollout)
@@ -563,7 +563,7 @@ because surfaces and implications are found during implementation, not at creati
 runs **host-side**, early (rollout step 1). It needs no containers, because it reads no session-authored
 code.
 
-- **Command:** `conductor scope <project | brief file | tracker project URL> [--backtest]`
+- **Command:** `sindri scope <project | brief file | tracker project URL> [--backtest]`
 - **Inputs** (through Source adapters, read-only):
   - the project brief and docs
   - existing tracker issues and comments
@@ -606,7 +606,7 @@ The **entire toolkit repo** (this repo) is registered in the artifact registry, 
 covers:
 - skills and the shared skill text
 - hooks and adapters
-- `judge`, `scorer`, `mcp-bridge`, `conductor` itself
+- `judge`, `scorer`, `mcp-bridge`, `sindri` itself
 - provider installers and `setup.sh`
 - rules, planning docs, mods
 - the external-pack pins
@@ -620,7 +620,7 @@ Every module gets an eval suite and telemetry, and its improvements come from th
 | Hooks | Recorded-payload suites; **false-positive and false-negative rates** computed from all sessions' transcripts (e.g. a gate firing on a turn that made no claim) | Hook decision logs across host and container sessions |
 | `judge` questions | judge's existing eval harness; escalation and override rates | Decisions followed by human reversal |
 | `scorer` | Report accuracy against recomputed ledgers | Discrepancies, failed parses |
-| `conductor` | Unit, contract and heavy suites; ledger invariants; replayed ticks | Stalls, parks, relaunches, budget breaches |
+| `sindri` | Unit, contract and heavy suites; ledger invariants; replayed ticks | Stalls, parks, relaunches, budget breaches |
 | Installers / `setup.sh` | `setup.sh --dry-run` on all providers; bash tests | Install failures in `doctor` reports |
 | Docs and rules | Link and freshness checks; `sync-rules.sh --check`; agent answer accuracy on doc-derived probe questions | Questions agents ask that the docs should have answered |
 
@@ -642,7 +642,7 @@ Every module gets an eval suite and telemetry, and its improvements come from th
 **Merge policy for this repo:** the profile's `selfMerge` key decides who merges promoted toolkit PRs that
 touch no protected module.
 - `human` (default): every PR waits for the human, batched into one daily review digest.
-- `auto`: the conductor merges once all gates pass.
+- `auto`: the sindri merges once all gates pass.
 
 Protected modules always wait for the human.
 
@@ -650,9 +650,9 @@ Protected modules always wait for the human.
 Required before `mode: auto-small` can be enabled. `doctor` refuses `auto-small` until every check in
 §8.1–8.7 passes.
 
-### 8.1 Conductor tool gate (H1, H6, M12)
+### 8.1 Sindri tool gate (H1, H6, M12)
 - A PreToolUse hook that exists only in the session image (§5.3). It reads the session's policy from
-  `/conductor/policy.json` (read-only mount), never from env.
+  `/sindri/policy.json` (read-only mount), never from env.
 - **Default deny.** It allows only the profile allowlist, with argument constraints. Examples:
   - comment only on the claimed item, at most one per milestone
   - status/labels only on the claimed item
@@ -661,12 +661,12 @@ Required before `mode: auto-small` can be enabled. `doctor` refuses `auto-small`
 - **MCP tools are allowed by exact name only.** Unknown or new tools are denied (M4).
 - **Real controls live server-side:** branch protection and rulesets on the remote (no push to protected
   branches, no force push). The gate is the in-session layer. Because tokens can't express "draft only",
-  the conductor watches PR state and re-drafts plus alerts on any undraft it didn't approve.
+  the sindri watches PR state and re-drafts plus alerts on any undraft it didn't approve.
 - **Always denied**, with no allowlist entry possible in v1: undraft, merge, close/cancel items, create
   items, chat posts, `gh api` writes, workflow triggers, prod-mutating MCP tools, `kubectl`/exec tools.
 - **Fails closed:** a parse error or missing policy means deny. `AW_JUDGE_CHILD` and other env flags are
-  ignored in conductor mode.
-- A denied call returns a typed reason. The conductor parks the item with that reason and sends a
+  ignored in sindri mode.
+- A denied call returns a typed reason. The sindri parks the item with that reason and sends a
   needs-approval notification. The session never sits on a permission prompt.
 - `send-keys` sends only the fixed `continue` token, and only when the pane is not showing a permission
   dialog.
@@ -688,30 +688,30 @@ the container.
 
 | Host path | Container path | Mode | Purpose |
 |---|---|---|---|
-| Conductor-owned bare mirror, `$AW_STATE_DIR/conductor/mirrors/<repo>.git` (fetched every tick) | `/mirror` | ro | Object store |
-| Conductor-created checkout of the base ref (a `git worktree` of the mirror) | `/workspace/base` | ro | Exact starting tree |
+| Sindri-owned bare mirror, `$AW_STATE_DIR/sindri/mirrors/<repo>.git` (fetched every tick) | `/mirror` | ro | Object store |
+| Sindri-created checkout of the base ref (a `git worktree` of the mirror) | `/workspace/base` | ro | Exact starting tree |
 | Package and toolchain caches | `/cache` | ro | Installs become cache copies |
 | Code index snapshot | `/index` | ro | Shape checks |
-| `$AW_STATE_DIR/conductor/sessions/<id>/ro/` (pack, policy, inbox, delivery nonces) | `/conductor` | ro | The conductor writes it; the session reads it |
-| `$AW_STATE_DIR/conductor/sessions/<id>/spool/` | `/spool` | rw | Heartbeats, positions, hook decision log, outgoing `git bundle` (§8.5). The host treats all of it as untrusted data. |
+| `$AW_STATE_DIR/sindri/sessions/<id>/ro/` (pack, policy, inbox, delivery nonces) | `/sindri` | ro | The sindri writes it; the session reads it |
+| `$AW_STATE_DIR/sindri/sessions/<id>/spool/` | `/spool` | rw | Heartbeats, positions, hook decision log, outgoing `git bundle` (§8.5). The host treats all of it as untrusted data. |
 | *(container volume)* | `/workspace/src` | rw | `git clone --reference /mirror --dissociate /mirror` then `checkout <base SHA>` (V3). The mount of `/workspace/base` is for reading only. |
 | *(container volume)* | `node_modules`, build output | rw | Fast IO; never bind-mounted |
 | *(per-item persistent volume)* | `/state` (`$AW_DIR`, candidate branches) | rw | Survives relaunch (W5); deleted when the item completes or is abandoned |
 
 - Directory zones (I4):
-  - **conductor-private:** HMAC key, ledger, mirrors' config. Never mounted.
-  - **shared read-only:** `/conductor`, `/mirror`, `/workspace/base`, `/cache`, `/index`.
+  - **sindri-private:** HMAC key, ledger, mirrors' config. Never mounted.
+  - **shared read-only:** `/sindri`, `/mirror`, `/workspace/base`, `/cache`, `/index`.
   - **session-writable:** `/spool` and the volumes.
 - **No shared gitdir (I1):** the session's `.git` lives in its own volume. Nothing the session writes can
   end up in a git dir the human's shell or editor reads.
 - **Live view, off by default (V4):** `view.enabled: false`. When enabled:
-  - The conductor's spool reader copies only an allowlist of source file types (no dotfiles, no `.vscode`,
-    `.idea`, `.envrc`, `.git*`, no executables) to `$AW_STATE_DIR/conductor/view/<item>/`.
+  - The sindri's spool reader copies only an allowlist of source file types (no dotfiles, no `.vscode`,
+    `.idea`, `.envrc`, `.git*`, no executables) to `$AW_STATE_DIR/sindri/view/<item>/`.
   - The copy uses `O_NOFOLLOW`, regular files only, and per-file and total size caps.
-  - `conductor view ITEM` opens it in the editor's restricted mode.
-- **Spool ingestion (V4, W7):** the host never walks session paths. The conductor copies the spool out
+  - `sindri view ITEM` opens it in the editor's restricted mode.
+- **Spool ingestion (V4, W7):** the host never walks session paths. The sindri copies the spool out
   with `tar` streamed from a short-lived helper container inside the VM, which archives regular files
-  only and refuses symlinks. The archive is then read by the conductor's spool reader:
+  only and refuses symlinks. The archive is then read by the sindri's spool reader:
   - a separate low-privilege process
   - archive entries validated (no absolute paths, no `..`, regular files only; FIFOs, sockets, devices
     and symlinks rejected)
@@ -719,18 +719,18 @@ the container.
   - per-file and per-session size quotas
   - JSON-schema validation
 
-  Anything else is quarantined and logged as `CND-SANDBOX-2xx`.
+  Anything else is quarantined and logged as `SND-SANDBOX-2xx`.
 
 **Credentials (I3):**
-- **No write tokens in the container.** The session commits locally. Pushing is conductor-mediated (§8.5).
+- **No write tokens in the container.** The session commits locally. Pushing is sindri-mediated (§8.5).
 - **Model access uses subscription login (V6):**
-  - `claude setup-token` is run once on the host. The long-lived token is stored conductor-private.
+  - `claude setup-token` is run once on the host. The long-lived token is stored sindri-private.
   - **The real token never enters a container (W1).** Containers get `ANTHROPIC_BASE_URL` pointing at
     the model proxy and a per-session dummy credential. The proxy swaps in the subscription bearer per
     request, so `docker inspect`, transcripts and pane previews contain no real token. This is validated
     by the spike (§13.1). The fallback is API-key mode, with the key also injected only by the proxy.
-  - **Rotation and revocation:** `conductor auth rotate` re-runs `setup-token` and swaps the proxy's
-    bearer with no container restart. `conductor auth revoke` stops the proxy forwarding immediately.
+  - **Rotation and revocation:** `sindri auth rotate` re-runs `setup-token` and swaps the proxy's
+    bearer with no container restart. `sindri auth revoke` stops the proxy forwarding immediately.
   - **Quota (W2):**
     - The proxy tracks subscription usage. `quota.reserveForHuman` (default 30% of the observed window
       limit) is held back for the human's own sessions.
@@ -748,39 +748,39 @@ the container.
 - **Data access:** read-only tracker and docs tokens, scoped per profile. MCP servers are configured
   inside the image with read scopes only.
 - **Egress mechanism (M3):** session containers sit on an internal network with **no default route**.
-  - The only reachable host is the conductor's egress proxy. It forwards to: the model upstream, the
+  - The only reachable host is the sindri's egress proxy. It forwards to: the model upstream, the
     read-only data endpoints, package registries through the cache, and the profile's environment
     endpoints.
   - Everything else is denied, including the host's loopback services (Prism dashboard, bridge).
-  - Every denial is logged as `CND-PROXY-1xx`.
-- **Secrets for recipes** (e.g. a preview login): `conductor cred run <recipe>` runs host-side and passes a
-  short-lived session cookie or token into `/conductor` for that recipe only. Long-lived secrets never
+  - Every denial is logged as `SND-PROXY-1xx`.
+- **Secrets for recipes** (e.g. a preview login): `sindri cred run <recipe>` runs host-side and passes a
+  short-lived session cookie or token into `/sindri` for that recipe only. Long-lived secrets never
   enter the container.
 
 **Identity:**
-- The container is the conductor session. Conductor hooks ship only in the session image's
+- The container is the sindri session. Sindri hooks ship only in the session image's
   **root-owned managed settings** (`/etc/claude-code/managed-settings.json`), and Claude runs as an
   unprivileged user that can't modify them.
-- The host's own Claude sessions get no conductor hooks at all, so there's nothing to no-op.
-- Writes the conductor makes to trackers and GitHub use bot identities when the profile provides them, or
-  carry a "via conductor" footer.
+- The host's own Claude sessions get no sindri hooks at all, so there's nothing to no-op.
+- Writes the sindri makes to trackers and GitHub use bot identities when the profile provides them, or
+  carry a "via sindri" footer.
 
 **tmux and attach (M3):**
 - tmux runs **inside** each container, with its own socket. Sessions can't reach each other's panes, and
   the host doesn't need tmux.
-- `conductor attach ITEM` runs `docker exec -it <ctr> tmux attach` and records the attach.
+- `sindri attach ITEM` runs `docker exec -it <ctr> tmux attach` and records the attach.
 - **In-pane input is advisory (W6).** tmux can't attribute input to a client, so in-pane input is never
   treated as an authenticated human decision.
-  - Input typed while a conductor-recorded attach is open is classified `takeover`. That is the safe
+  - Input typed while a sindri-recorded attach is open is classified `takeover`. That is the safe
     direction: it pauses automation.
   - Approvals, answers, decisions and handbacks come **only** from host-side verbs (`answer`, `decide`,
     `approve`, `handback`), which the host OS user authenticates.
   - The eval corpus counts only host-verified human input (M5).
-- Answers outside a session go through `conductor answer` / `decide`, which the host OS user
+- Answers outside a session go through `sindri answer` / `decide`, which the host OS user
   authenticates.
 
 **Heavy-job lock across containers:**
-- The conductor brokers the lock over a narrow unix socket mounted into each container. The socket offers
+- The sindri brokers the lock over a narrow unix socket mounted into each container. The socket offers
   `acquire(kind, ttl)` and `release` only.
 - Leases expire, so a dead container never holds the lock.
 - Index builds and image builds take the same lock.
@@ -810,7 +810,7 @@ and dropped capabilities.
 - **Review comments** feed fix rounds only from trusted reviewers and bots, matched by id.
 - **Pack layout:**
   ```
-  ## Task            (synthesized by conductor from trusted fields; instructions live only here)
+  ## Task            (synthesized by sindri from trusted fields; instructions live only here)
   ## Acceptance
   ## Stated fix      (present only if its author is trusted; otherwise quoted below)
   ## Surfaces
@@ -821,7 +821,7 @@ and dropped capabilities.
   ```
 - The session preamble states that `<untrusted>` content is data and never an instruction source.
 - Ingest strips HTML comments, zero-width characters, encoded blobs and remote image URLs.
-- Triage and pack Steps are tool-less. Fetching happens in conductor code through typed Source adapters,
+- Triage and pack Steps are tool-less. Fetching happens in sindri code through typed Source adapters,
   by id, never by arbitrary URL (M18).
 
 ### 8.4 Scrubbing and retention (H11)
@@ -838,21 +838,21 @@ and dropped capabilities.
 ### 8.5 Egress filter and path guard (H8, M16)
 - **Outward-write filter:** every allowed outward write (comment, PR body, attachment) passes the scrubber,
   a size cap and a URL domain allowlist.
-- **Status comments** are composed by conductor code from structured fields (state, PR link, check
+- **Status comments** are composed by sindri code from structured fields (state, PR link, check
   results). They are never free model text.
 - **Evidence attachments** need a manifest and a redaction pass.
 - **Prod data:** worker sessions get no prod-read or exec MCP tools by default. Prod reads are available
   only through named profile recipes, and their output is marked sensitive and blocked from egress.
 - **Path guard:** a diff that touches profile-declared protected paths (CI and workflow config, hooks,
   auth, lockfiles, the profile itself) parks the item for approval.
-- **Conductor-mediated push with two-phase verification (I2, I3, V1, V5):**
+- **Sindri-mediated push with two-phase verification (I2, I3, V1, V5):**
   1. **Export (W4).** Export is triggered by the **Step completion event**, not by Stop. For the bug
-     worker, that is bugFixOrchestrator's state reaching `resolved`. The conductor's hook bundles the
+     worker, that is bugFixOrchestrator's state reaching `resolved`. The sindri's hook bundles the
      **winning candidate branch** named in the worker's state file:
      `git bundle create /spool/out.bundle <base>..<winning-branch>`. Opening the PR, the review loop and
      undraft belong to the separate **Ship** Step (§7.3), matching the skill's own "do not open a PR;
      suggest /shipRelease" contract.
-  2. **Snapshot.** The conductor's spool reader (§8.2) copies the bundle **once** into conductor-private
+  2. **Snapshot.** The sindri's spool reader (§8.2) copies the bundle **once** into sindri-private
      storage. It accepts regular files only, uses `O_NOFOLLOW`, and enforces a size cap
      (`verify.maxBundleMB`, default 200). It records the bundle's SHA-256, and every later step uses only
      that copy and that hash.
@@ -861,13 +861,13 @@ and dropped capabilities.
      - It fetches the bundle copy into a clean clone of the mirror with `transfer.fsckObjects=true`,
        `core.hooksPath=/dev/null`, and no attributes or filters.
      - It enforces pack size and object-count limits and a timeout.
-     - It runs only conductor-owned, deterministic checks: `git fsck --strict`, path guard, diff caps,
+     - It runs only sindri-owned, deterministic checks: `git fsck --strict`, path guard, diff caps,
        shape checks (index snapshot, read-only), protected-path rules, and a **secret/PHI scrubber pass
        over the diff and every new blob**. A hit parks the item with needs-approval (W3).
-     - Its verdict is a signed JSON written by the verifier binary, which comes from the conductor image,
+     - Its verdict is a signed JSON written by the verifier binary, which comes from the sindri image,
        not the repo.
-  4. **Transfer.** On a phase-1 pass, the conductor runs `git fetch <bundle copy>` into its mirror, with
-     the same hardening and the hash verified. It then pushes that exact SHA to `cdt/<user>/<item>` as a
+  4. **Transfer.** On a phase-1 pass, the sindri runs `git fetch <bundle copy>` into its mirror, with
+     the same hardening and the hash verified. It then pushes that exact SHA to `sindri/<user>/<item>` as a
      **draft** PR.
   5. **Phase 2, environment checks (after push, PR stays draft).**
      - The repo's `Environment` adapter provisions an environment for the pushed SHA (for example a PR
@@ -876,7 +876,7 @@ and dropped capabilities.
        container with network access only to the environment's endpoints, no credentials beyond the
        environment's short-lived low-privilege test identity, and no access to the verifier or the ledger.
        This is the only place session-authored test code runs.
-     - The conductor reads **only the sandbox's exit status and stdout cap**. Nothing the sandbox writes
+     - The sindri reads **only the sandbox's exit status and stdout cap**. Nothing the sandbox writes
        can change a verdict file.
      - The check must fail on the base (recorded once per item) and pass on the head. Flaky checks run 3
        times; disagreement parks the item.
@@ -885,42 +885,42 @@ and dropped capabilities.
   - Repos with `Environment: none` run phase 2 in the reproduce sandbox with no network.
   - A **forged-verdict probe** in `doctor` and the tests confirms that a bundle whose tests write a fake
     "pass" file cannot produce a passing verdict.
-- **Server side:** rulesets protect `cdt/*` refs (no force push, no direct push to protected branches).
-  Configuring them requires **repo-admin** rights, a per-repo prerequisite that `conductor repo check`
+- **Server side:** rulesets protect `sindri/*` refs (no force push, no direct push to protected branches).
+  Configuring them requires **repo-admin** rights, a per-repo prerequisite that `sindri repo check`
   detects (M8). `doctor` runs a **bypass probe**: from inside a session container, a direct push and a
   direct API write must both fail.
-- **CI secrets:** environment-protected so `cdt/*` refs can't use them without approval.
+- **CI secrets:** environment-protected so `sindri/*` refs can't use them without approval.
 - **Undraft:** the undraft watch re-drafts within one tick interval. The remaining window is documented.
 
 ### 8.6 Notifier action contract (H7)
-- Session names are conductor-generated `cdt-<ulid>`, validated against `^cdt-[0-9a-z]{26}$` at both the
+- Session names are sindri-generated `snd-<ulid>`, validated against `^snd-[0-9a-z]{26}$` at both the
   Launcher and the Notifier.
 - Notification actions carry only `{kind, session_id | item_id}`. A local resolver turns that into an argv
   array at click time, with no shell: `docker exec -it <container> tmux attach`. Remote: `ssh -- <host>
-  conductor attach <item>`, with the host taken from the profile allowlist.
+  sindri attach <item>`, with the host taken from the profile allowlist.
 - Titles and bodies carry the item id plus a scrubbed, length-limited title. No other item text goes into
   actions.
 
 ### 8.7 Audit log and profile integrity (M13, M17)
-- **Audit log:** an append-only log under `$AW_STATE_DIR/conductor/audit/` records every allowed and
+- **Audit log:** an append-only log under `$AW_STATE_DIR/sindri/audit/` records every allowed and
   denied gated call (tool, args hash, item, session, profile hash). There are per-item rate limits, and a
   spike in denied calls raises an alert.
 - **Profile integrity:** each session pins the profile commit hash in the ledger. A profile change takes
-  effect only after `conductor profile approve <hash>`. Recipes are validated against a command schema.
+  effect only after `sindri profile approve <hash>`. Recipes are validated against a command schema.
 
 ## 9. Runtime correctness
 
 ### 9.1 Singleton tick with fencing (H3)
-The conductor implements its own lock in TypeScript. The bash helpers in `config/lib/locks.sh` and
+The sindri implements its own lock in TypeScript. The bash helpers in `config/lib/locks.sh` and
 `skills/ui-evidence/scripts/lib/locks.sh` are unchanged, and the heavy-job lock stays canonical there (L1).
 
 - **Acquire:**
   1. Create `lock.tmp-<pid>/owner.json` holding `{pid, pidStartTime, host, bootId, startedAt, epoch}`.
-  2. Rename it to `conductor.lock`.
-  - The rename is atomic, and it fails if `conductor.lock` exists, because that directory is never empty.
+  2. Rename it to `sindri.lock`.
+  - The rename is atomic, and it fails if `sindri.lock` exists, because that directory is never empty.
 - **Stale takeover:** if the owner is provably dead (same host, same `bootId`, pid not alive, or a
   different `bootId`, or a live pid whose start time differs from `pidStartTime`, meaning the pid was
-  reused), rename `conductor.lock` → `conductor.lock.stale-<ulid>`. Only one taker wins that rename. The
+  reused), rename `sindri.lock` → `sindri.lock.stale-<ulid>`. Only one taker wins that rename. The
   winner re-reads the renamed owner file and confirms it is still the dead owner before acquiring. A
   mismatch puts it back and exits (M2).
 - **Fencing:** acquiring increments `epoch` in the ledger in a `BEGIN IMMEDIATE` transaction. Every ledger
@@ -951,25 +951,25 @@ The conductor implements its own lock in TypeScript. The bash helpers in `config
   gap before evaluating them.
 
 ### 9.3 Answers, takeover and handback (R6)
-The `UserPromptSubmit` hook classifies every human turn in a conductor session:
+The `UserPromptSubmit` hook classifies every human turn in a sindri session:
 
 | Turn | Condition | Effect |
 |---|---|---|
 | `answer` | A question is pending for this session | Recorded as the answer. The session continues. No takeover. |
 | `takeover` | No question is pending (unsolicited input) | Session → `taken-over`: no reaping, no `send-keys`, lease paused, `status` shows `with you`. Also raises a drift signal. |
-| `conductor` | The fixed `continue` token from the conductor | Inbox delivery (§6.1) |
+| `sindri` | The fixed `continue` token from the sindri | Inbox delivery (§6.1) |
 
-- `conductor handback <item>` ends a takeover.
+- `sindri handback <item>` ends a takeover.
 - A takeover during an open direction check pauses that check (its leg timers stop). Handback resumes it.
 - **Timeout:** after `takeover.idleTimeout` (default 2 h) with no human input, the item gets a needs-answer
-  notification: "hand back ITEM? (`conductor handback ITEM`)". It is never handed back silently.
+  notification: "hand back ITEM? (`sindri handback ITEM`)". It is never handed back silently.
 
 ### 9.4 Claims (M1)
 - v1 has one active host (`hosts.active`). Other hosts refuse to tick.
-- **The atomic claim is one deterministic ref**, `cdt/<user>/<item>`. It is created with a create-only ref
+- **The atomic claim is one deterministic ref**, `sindri/<user>/<item>`. It is created with a create-only ref
   update that fails if the ref exists. A relaunch reuses the same ref, and nothing else creates it. The
   same naming is used everywhere (§7.2, §15).
-- Tracker markers are advisory, and are trusted only when written by the conductor's identity.
+- Tracker markers are advisory, and are trusted only when written by the sindri's identity.
 - Cross-host exclusion is best-effort. The ref makes duplicates fail fast.
 
 ## 10. Human-facing surfaces
@@ -977,12 +977,12 @@ The `UserPromptSubmit` hook classifies every human turn in a conductor session:
 ### 10.1 Notification taxonomy and budget
 | Kind | Interrupts | Title pattern | Action (as text) |
 |---|---|---|---|
-| needs-answer | yes; **never overflows** (queued with a count) | `[repo] ITEM: question (n)` | `conductor attach ITEM` (in-session) or `conductor answer ITEM` (job) |
-| decide | yes; never overflows | `[repo] ITEM: direction check needs you` | `conductor decide ITEM` |
-| needs-approval | yes; **never overflows** | `[repo] ITEM: approve <action>` | `conductor approve call:<id>` / `rule:<id>` / `profile:<hash>` |
-| parked | batched hourly | `[repo] ITEM: parked: <code>` | `conductor why ITEM` |
+| needs-answer | yes; **never overflows** (queued with a count) | `[repo] ITEM: question (n)` | `sindri attach ITEM` (in-session) or `sindri answer ITEM` (job) |
+| decide | yes; never overflows | `[repo] ITEM: direction check needs you` | `sindri decide ITEM` |
+| needs-approval | yes; **never overflows** | `[repo] ITEM: approve <action>` | `sindri approve call:<id>` / `rule:<id>` / `profile:<hash>` |
+| parked | batched hourly | `[repo] ITEM: parked: <code>` | `sindri why ITEM` |
 | fyi | no | `[repo] ITEM: <milestone>` | — |
-| digest | no; at `notify.digestTimes` | `conductor: N waiting on you` | `conductor status` |
+| digest | no; at `notify.digestTimes` | `sindri: N waiting on you` | `sindri status` |
 
 - Notifications carry the item id, a scrubbed short title and the command as text (§8.6). They never carry
   item body text or debate content.
@@ -1000,28 +1000,28 @@ The `UserPromptSubmit` hook classifies every human turn in a conductor session:
 2. Reminder after `questions.remindAfter` (default 4 h).
 3. Auto-park after `questions.parkAfter` (default 24 h).
 
-- `conductor snooze ITEM <dur>` delays a question.
+- `sindri snooze ITEM <dur>` delays a question.
 - Questions inside a session are answered in the session. The hook records them as `answer`, not takeover.
-- Questions from jobs are answered with `conductor answer ITEM`, which opens `$EDITOR` with the template:
+- Questions from jobs are answered with `sindri answer ITEM`, which opens `$EDITOR` with the template:
   item, what's already decided, the question, options with a recommended default, sources.
 
 ### 10.3 CLI
 | Command | Purpose | Empty / error text examples |
 |---|---|---|
 | `status` | Grouped: waiting on you, with you, parked, running, queued. Columns: item, title, step, round/cap, age, next action | "Nothing is waiting on you. 3 running, 1 queued." |
-| `why ITEM` | Triage verdict, router inputs, Step rounds, direction-check threads and verdicts, shape signals with evidence, judge scores and thresholds, denials | `CND-ITEM-404 no such item: ITEM` |
+| `why ITEM` | Triage verdict, router inputs, Step rounds, direction-check threads and verdicts, shape signals with evidence, judge scores and thresholds, denials | `SND-ITEM-404 no such item: ITEM` |
 | `ledger [--item --step --since]` | Raw ledger query | "No ledger rows match." |
-| `start ITEM` | Manual dispatch | "Started ITEM in cdt-…; attach with `conductor attach ITEM`" |
-| `attach ITEM\|cdt-id [--print]` | Attach, or print the command; prints the tmux detach key | `CND-SESS-404 session ended; see conductor why ITEM` |
-| `answer` / `approve` / `reject` / `snooze` | Human responses. Ids are typed (`call:`, `rule:`, `profile:`, `dir:`) | "Recorded. ITEM resumes on the next tick." / `CND-ITEM-409 nothing pending for ITEM` |
+| `start ITEM` | Manual dispatch | "Started ITEM in snd-…; attach with `sindri attach ITEM`" |
+| `attach ITEM\|snd-id [--print]` | Attach, or print the command; prints the tmux detach key | `SND-SESS-404 session ended; see sindri why ITEM` |
+| `answer` / `approve` / `reject` / `snooze` | Human responses. Ids are typed (`call:`, `rule:`, `profile:`, `dir:`) | "Recorded. ITEM resumes on the next tick." / `SND-ITEM-409 nothing pending for ITEM` |
 | `decide ITEM [--pick a\|b\|other --note "..."]` | Shows the item's Task, the proposer position, the challenger objections and replies (untrusted strings fenced), the arbiter score and threshold, and a recommendation; records the pick | "No direction check is waiting on you for ITEM." |
 | `hook log\|replay\|test` | Hook decisions per item; re-run a recorded decision; run a hook on a fixture (§5.3) | "No hook decisions recorded for ITEM." |
 | `setup-host [--dry-run]` / `teardown-host` / `repo add <path>` / `index setup` / `image build <repo>` | Host, repo, index and session-image setup (§11.3) | dry-run prints every change; `teardown-host` reverses the manifest |
 | `dashboard [--url]` | Start the dashboard, or print its tokened URL (§10.5) | — |
 | `open ITEM` / `view ITEM` | Fetch the pushed branch into a host worktree / open the read-only live working files | — |
-| `park` / `unpark ITEM [--hint]` | Park or resume with a hint | "Parked ITEM." / `CND-ITEM-409 ITEM is not parked` |
-| `handback ITEM` | End a takeover | "ITEM handed back; resuming on the next tick." / `CND-SESS-409 ITEM is not taken over` |
-| `pause` / `resume` | Global kill switch (also `AW_CONDUCTOR_DISABLE=1`) | "Paused. Running sessions finish their current Step; nothing new starts." |
+| `park` / `unpark ITEM [--hint]` | Park or resume with a hint | "Parked ITEM." / `SND-ITEM-409 ITEM is not parked` |
+| `handback ITEM` | End a takeover | "ITEM handed back; resuming on the next tick." / `SND-SESS-409 ITEM is not taken over` |
+| `pause` / `resume` | Global kill switch (also `AW_SINDRI_DISABLE=1`) | "Paused. Running sessions finish their current Step; nothing new starts." |
 | `ack [ITEM]` | Clear one item's ATTENTION entries, or all of them | "Cleared 3 attention entries." / "Nothing to acknowledge." |
 | `notify --test` | Send a test notification through every configured notifier | "Sent via macOS; wrote ATTENTION entry. (macOS can't confirm you saw it.)" |
 | `observe` | Zero-config read-only run on the example profile (M14) | "Observed N items; would have started M. Nothing was changed." |
@@ -1029,7 +1029,7 @@ The `UserPromptSubmit` hook classifies every human turn in a conductor session:
 | `tick [--dry-run]` | One tick, or print every action | "no-op: <reason>" on stderr when nothing to do |
 | `shadow report` | Routing, direction-check and shape agreement per class, plus classifier accuracy | "Not enough shadow data yet (n/30)." |
 | `rules show\|approve\|reject` | Eval-loop proposals | "No proposals pending." |
-| `index build\|status\|query` | Code index (§6.2) | `CND-INDEX-404 no index for <repo>; run conductor repo add` |
+| `index build\|status\|query` | Code index (§6.2) | `SND-INDEX-404 no index for <repo>; run sindri repo add` |
 | `profile init\|validate\|explain\|migrate\|approve` | Profile tooling. `approve` shows the diff first | validate: "Profile valid." / errors with file, key path, fix |
 | `scheduler install\|uninstall\|status [--dry-run]` | Scheduler | dry-run prints the unit/plist |
 
@@ -1038,7 +1038,7 @@ The `UserPromptSubmit` hook classifies every human turn in a conductor session:
 - `--json` on every read command.
 - `NO_COLOR` and non-TTY output are honored.
 - Exit codes: `0` ok, `1` attention needed, `2` error.
-- Errors carry stable codes `CND-<AREA>-<NNN>`, with the areas seeded in `docs/conductor/errors.md`: PROFILE,
+- Errors carry stable codes `SND-<AREA>-<NNN>`, with the areas seeded in `docs/sindri/errors.md`: PROFILE,
   LOCK, SESS, ITEM, GATE, DIR, SHAPE, INDEX, BRIDGE, NOTIFY, BUDGET.
 
 ### 10.4 Silent-failure floor (R7)
@@ -1047,16 +1047,16 @@ The `UserPromptSubmit` hook classifies every human turn in a conductor session:
 - **ATTENTION file lifecycle:**
   - Every interrupting notification also appends a line (timestamp, kind, item, command).
   - An item's entries clear automatically when that item's pending question, decision or approval is
-    resolved. `conductor ack [ITEM]` clears the rest manually.
+    resolved. `sindri ack [ITEM]` clears the rest manually.
   - `status` and `doctor` show the count of unacknowledged entries.
 - **Delivery limit:** macOS can't confirm a notification was seen. `doctor` therefore reports the time of
   the last `notify --test` and the oldest unacknowledged ATTENTION entry, and states this limit plainly. It
   doesn't claim delivery.
 
 ### 10.5 Dashboard and menu-bar badge
-**Web dashboard** (`conductor dashboard`):
-- Served by the conductor on `127.0.0.1` with a random token in the URL (rotated on restart, printed by
-  `conductor dashboard --url`).
+**Web dashboard** (`sindri dashboard`):
+- Served by the sindri on `127.0.0.1` with a random token in the URL (rotated on restart, printed by
+  `sindri dashboard --url`).
 - No CORS, Host-header check, CSRF token on actions.
 - Works over an ssh tunnel to a cloud box unchanged.
 - It's a thin layer over the CLI's `--json` outputs. Actions call the same verbs, so there's no second
@@ -1066,7 +1066,7 @@ The `UserPromptSubmit` hook classifies every human turn in a conductor session:
 |---|---|---|
 | **Sessions** | Per item: title, step, state (`running` / `awaiting-direction` / `with you` / `verifying` / `parked`), round/cap, age, container CPU and memory against its limit, and a **live read-only pane preview** (`tmux capture-pane` snapshot every 5 s, scrubbed, untrusted strings escaped) | Attach (opens Warp via the §8.6 resolver), park, unpark, pause |
 | **Waiting on you** | needs-answer, decide and needs-approval items, oldest first | answer, decide (both positions side by side), approve, reject |
-| **Item** | The `conductor why` view: triage, pack sources, direction-check threads, shape evidence, verifier rounds, hook decisions, ledger timeline | open the pushed branch, view the live working files (`view/<item>/`) |
+| **Item** | The `sindri why` view: triage, pack sources, direction-check threads, shape evidence, verifier rounds, hook decisions, ledger timeline | open the pushed branch, view the live working files (`view/<item>/`) |
 | **Fleet** | VM ceiling and use, heavy-job lock holder and queue, index age per repo, environment status per repo | pause / resume all |
 | **Today** | Cost against budget, notifications sent and suppressed, ATTENTION entries, direction-check and shape-check counts | ack |
 
@@ -1083,12 +1083,12 @@ The `UserPromptSubmit` hook classifies every human turn in a conductor session:
   | Loading | Skeleton rows on the first load only |
   | Empty | The same sentence as the CLI ("Nothing is waiting on you. 3 running, 1 queued.") |
   | Error | Banner with the code and the CLI command that shows more |
-  | Stale | "updated Ns ago". After 3 failed polls: "conductor not responding: run `conductor doctor`" |
+  | Stale | "updated Ns ago". After 3 failed polls: "sindri not responding: run `sindri doctor`" |
   | Pane preview | Stale previews are greyed out with their age; `crashed`/`oom` show the last capture and the reason |
-- **Action races:** an action that hits `CND-ITEM-409` (already resolved elsewhere) shows "Already
+- **Action races:** an action that hits `SND-ITEM-409` (already resolved elsewhere) shows "Already
   handled" and refreshes.
 - **Token rotation:** the token is exchanged for an HttpOnly, SameSite=Strict cookie on first load and
-  removed from the URL. A 401 after rotation shows "run `conductor dashboard --url`".
+  removed from the URL. A 401 after rotation shows "run `sindri dashboard --url`".
 - **Headers:** a CSP of `default-src 'self'` (no inline scripts), and Origin plus Host checks on every
   action.
 - **Pane previews:**
@@ -1109,7 +1109,7 @@ The `UserPromptSubmit` hook classifies every human turn in a conductor session:
   `stopped` and `stale (no update > 2 min)`.
 
 **Menu-bar badge** (macOS, `Badge` adapter, built-in: SwiftBar plugin):
-- Shows `▶ running · ⚑ waiting on you` counts, refreshed every 30 s from `conductor status --json`.
+- Shows `▶ running · ⚑ waiting on you` counts, refreshed every 30 s from `sindri status --json`.
 - The dropdown lists waiting items. Clicking one opens the dashboard at that item.
 - No actions run from the menu bar itself.
 - Linux has no built-in badge; the dashboard and notifications cover it.
@@ -1120,14 +1120,14 @@ The `UserPromptSubmit` hook classifies every human turn in a conductor session:
 - **Format:**
   - `profile.yaml` (workplace) and `repos/<repo>.yaml` (per repo), both carrying `schemaVersion`.
   - Defined in Zod, exported as JSON Schema for editor autocomplete.
-  - Example profile at `conductor/profile/examples/generic/`.
+  - Example profile at `sindri/profile/examples/generic/`.
 - **Tooling:**
-  - `conductor profile init` scaffolds a profile in `mode: shadow`.
-  - `conductor profile validate [--json]` runs by hand and in the profile repo's pre-commit. Errors give
+  - `sindri profile init` scaffolds a profile in `mode: shadow`.
+  - `sindri profile validate [--json]` runs by hand and in the profile repo's pre-commit. Errors give
     file, key path, expected type and a fix hint.
-  - `conductor profile migrate --dry-run` handles schema upgrades. Deprecated keys warn for one minor
+  - `sindri profile migrate --dry-run` handles schema upgrades. Deprecated keys warn for one minor
     version before they halt.
-- **Precedence:** repo file > profile file > core default. `conductor profile explain <key>` shows the
+- **Precedence:** repo file > profile file > core default. `sindri profile explain <key>` shows the
   effective value and where it came from.
 - **Data only:** the profile contains no code in v1. Adapters live in core.
 - **Secret pointers:** schemes are `env:`, `file:`, `keychain:`, `op:`. The validator rejects values that
@@ -1173,26 +1173,26 @@ interface Badge    { publish(summary: StatusSummary): Promise<Result<void>> }
   fake adapter must pass it.
 
 ### 11.3 Setup (H18)
-- **Scheduler:** `conductor scheduler install [--dry-run]` writes the launchd plist; `--dry-run` prints it.
+- **Scheduler:** `sindri scheduler install [--dry-run]` writes the launchd plist; `--dry-run` prints it.
   Re-running is idempotent.
-- **setup.sh:** `./setup.sh --with-conductor` is opt-in. It builds the package and runs the scheduler
+- **setup.sh:** `./setup.sh --with-sindri` is opt-in. It builds the package and runs the scheduler
   install, and it respects `--dry-run`, so the merge gate's setup dry-run stays clean.
 - **Profile root resolution:** `--profile` > `$AW_PROFILE_DIR` > the `$AW_STATE_DIR/profile` symlink.
-- **Host:** `conductor setup-host [--dry-run]`:
+- **Host:** `sindri setup-host [--dry-run]`:
   - checks or installs the container runtime
   - sizes the VM (`sandbox.vmMemory`)
-  - creates the conductor state zones
+  - creates the sindri state zones
   - starts the key proxy and the heavy-lock broker
   - installs the dashboard and badge
-  - writes a **manifest** of every change; `conductor teardown-host` reverses it
+  - writes a **manifest** of every change; `sindri teardown-host` reverses it
   - needs no admin rights and no new OS users (I5)
-- **Session images:** `conductor image build <repo>` builds the repo's image. It contains the toolkit,
+- **Session images:** `sindri image build <repo>` builds the repo's image. It contains the toolkit,
   skills, the session hook set, the existing safety hooks, Claude Code, tmux and the repo toolchain, and
   it is keyed by lockfile hash. Rebuilding one is a heavy job.
-- **Repos:** `conductor repo add <path>` creates the bare mirror, records the repo in the profile, and
+- **Repos:** `sindri repo add <path>` creates the bare mirror, records the repo in the profile, and
   queues the first index and image builds.
 - **Index dependencies (M6):** tree-sitter grammars are bundled. Ollama and the embedding model
-  (`index.embeddingModel`) are installed by `conductor index setup`. graphify is installed and pinned by
+  (`index.embeddingModel`) are installed by `sindri index setup`. graphify is installed and pinned by
   the same command and run in its network-less sandbox. `doctor` verifies each.
 
 ### 11.4 Migration from existing orchestrators (H19, V2)
@@ -1201,26 +1201,26 @@ interface Badge    { publish(summary: StatusSummary): Promise<Result<void>> }
   - Its outward writes are intercepted by the session image's PreToolUse hooks: `git push`,
     `gh pr create|edit|comment|ready`, tracker MCP write tools.
   - Each intercepted call is **denied with a structured request** written to `/spool/requests/<n>.json`,
-    and the agent is told "queued as request R<n>; the conductor performs it after verification".
+    and the agent is told "queued as request R<n>; the sindri performs it after verification".
   - The request records kind, target, body or ref, and evidence paths.
-  - The conductor executes requests through §8.1's allowlist and §8.5's verified push, in order. It
+  - The sindri executes requests through §8.1's allowlist and §8.5's verified push, in order. It
     writes each result back to the inbox, delivered with the next `continue`.
   - Requests outside the allowlist become needs-approval items.
 - bugFixOrchestrator's own state (`$AW_DIR/bugfix/<slug>/`) and `ui-evidence` output live in the
   container volume.
-  - The conductor exports them through the spool on Stop, so `conductor why` and the ledger can read
+  - The sindri exports them through the spool on Stop, so `sindri why` and the ledger can read
     them. They're reconciled read-only.
   - Items that already have a host-side bugfix state dir from a manual run are skipped.
 - Profile evidence recipes are passed to the session as pack content. Adding multi-source evidence to
   bugFixOrchestrator itself is a follow-up spec.
 - Cut-over to a native worker is a later spec. `/bugFixOrchestrator` is not deprecated, and manual host
   runs stay supported.
-- A "When to use which" table (`/bugFixOrchestrator`, `/specToProvenPR`, `/autoplan`, conductor) goes in
-  `docs/conductor/README.md` (L3).
+- A "When to use which" table (`/bugFixOrchestrator`, `/specToProvenPR`, `/autoplan`, sindri) goes in
+  `docs/sindri/README.md` (L3).
 
 ### 11.5 Debug surface (H20)
 - **Ids:** every ledger row, job and session carries `tickId` and `epoch`.
-- **Logs:** `$AW_STATE_DIR/conductor/logs/tick-YYYYMMDD.jsonl`, rotated after 14 days.
+- **Logs:** `$AW_STATE_DIR/sindri/logs/tick-YYYYMMDD.jsonl`, rotated after 14 days.
 - **`doctor` checks:**
   - lock holder and stale locks
   - epoch sanity
@@ -1231,7 +1231,7 @@ interface Badge    { publish(summary: StatusSummary): Promise<Result<void>> }
   - the bypass probe (§8.5) fails as it should
   - secret pointers resolve (without printing them)
   - notifier test send
-  - conductor gate registered and failing closed (a deliberate denied probe)
+  - sindri gate registered and failing closed (a deliberate denied probe)
   - state dir on local disk
   - boot-id readable
   - ledger schema version
@@ -1265,11 +1265,11 @@ environment:
     testIdentity: "op:<vault>/<item>"   # low-privilege, short-lived via the broker
 ```
 
-- **Image key** = hash of the base, toolchain, lockfiles, install command, conductor version, hook-set
+- **Image key** = hash of the base, toolchain, lockfiles, install command, sindri version, hook-set
   version, Claude Code version and toolkit version. Any change rebuilds the image, as a heavy job.
 - **The image contains:** Claude Code, tmux, the toolkit and skills, the session hook set and the existing
   safety hooks, Serena, the repo toolchain, and the preinstalled dependencies.
-- **`conductor repo check <repo>`** builds the image (or reuses it) and starts a throwaway container. It
+- **`sindri repo check <repo>`** builds the image (or reuses it) and starts a throwaway container. It
   verifies, in order:
   1. Claude Code starts with the subscription token.
   2. The hooks are registered.
@@ -1280,22 +1280,22 @@ environment:
 
   It prints one line per check with a fix command.
 - **`per-container` environments** declare services (`services: [postgres:16, redis:7]`) and need
-  `session.memory` of at least 8 g. `repo check` refuses a smaller setting with `CND-ENV-020`.
-- Worked examples live in `conductor/profile/examples/`: `preview` (web app with PR previews), `none`
+  `session.memory` of at least 8 g. `repo check` refuses a smaller setting with `SND-ENV-020`.
+- Worked examples live in `sindri/profile/examples/`: `preview` (web app with PR previews), `none`
   (library), and `shared-host`.
 
 ### 11.7 Container debugging (V7)
 | Command | Does |
 |---|---|
-| `conductor logs ITEM [--follow] [--hooks] [--proxy]` | Container stdout and stderr, hook decision log, proxy log for the session |
-| `conductor shell ITEM` | Opens a root-less debug shell in the container as the session user. Recorded as a takeover (§9.3), and blocked while the Stop gate is in `verifying`. |
-| `conductor inspect ITEM` | Container state, limits, OOM events, mounts, image key, environment handle, last bundle hash |
-| `conductor retain ITEM` / `release ITEM` | Keep a stopped container for debugging, or let it be reaped |
+| `sindri logs ITEM [--follow] [--hooks] [--proxy]` | Container stdout and stderr, hook decision log, proxy log for the session |
+| `sindri shell ITEM` | Opens a root-less debug shell in the container as the session user. Recorded as a takeover (§9.3), and blocked while the Stop gate is in `verifying`. |
+| `sindri inspect ITEM` | Container state, limits, OOM events, mounts, image key, environment handle, last bundle hash |
+| `sindri retain ITEM` / `release ITEM` | Keep a stopped container for debugging, or let it be reaped |
 
 - **States** (in `status`, the dashboard and `why`), in addition to §10.3's: `starting`, `crashed`
   (non-zero exit), `oom` (killed for memory), `image-building`, `env-pending`, `env-failed`.
 - A `crashed` or `oom` container is kept for 24 h (`sandbox.retainFailedHours`) before reaping. The item
-  is parked with the code and `conductor logs ITEM` as its next action.
+  is parked with the code and `sindri logs ITEM` as its next action.
 - **Error areas added:** `SANDBOX`, `IMAGE`, `ENV`, `PROXY`, `HOOK`, `VERIFY`.
 
 ## 12. Portability
@@ -1329,13 +1329,13 @@ environment:
      plus hook false-positive telemetry from every session's transcripts, and stable/next channels. The
      first self-proposals target known defects, for example done-gate's bare-word false positives.
 2. **Shadow, plus the container spike in parallel:**
-   - `conductor observe`, shadow triage and packs, historical replay, dashboard (Sessions, Waiting) and
+   - `sindri observe`, shadow triage and packs, historical replay, dashboard (Sessions, Waiting) and
      badge.
    - **Container spike (go/no-go),** with criteria and fallback in §13.1. It runs as one heavy job at a
      time.
    - Exit when per-class routing agreement is at least 90% over at least 30 items **and** the spike's
      verdict is in.
-3a. **Assist, patterns:** `conductor start`, packs and re-injection, turn classification, the tool gate,
+3a. **Assist, patterns:** `sindri start`, packs and re-injection, turn classification, the tool gate,
    the Stop pattern gate, the worker → ship Steps, the write shim, two-phase verify, notifications.
    - Approach and Drift direction checks run in shadow.
    - Shape signals are recorded only.
@@ -1345,7 +1345,7 @@ environment:
    least 30 signals on real commits:
    - All index layers enforce.
    - The Shape direction check enforces.
-   - The conductor-side verifier is authoritative.
+   - The sindri-side verifier is authoritative.
 4. **Auto-small:** requires a container isolation pass, `doctor` passing §8, the step-2 threshold, and
    confirmed plan terms for unattended subscription use (or API-key mode) (W2).
 5. **Scoping in the loop:** Scoping and Scope-expansion direction checks enforce. Issue creation from scope
@@ -1359,7 +1359,7 @@ These are rough, for one builder with agent help. Every step ends with a usable 
 |---|---|---|---|
 | 0 | Audit scripts, baselines, XS share, quota per item | S (2–3 days) | Measured targets |
 | 1 | Profile tooling, lock and fencing, scrubber, judge flag, done-gate fix; reuse ports phase 1; host code index; **scoping harness + backtest**; offline self-evolution | L (2–3 weeks) | **Scope maps and a recall number on the motivating project** |
-| 2 | Shadow triage and packs, replay, dashboard and badge; **container spike** in parallel | M (1–2 weeks) | Dashboard of what the conductor would do; spike verdict |
+| 2 | Shadow triage and packs, replay, dashboard and badge; **container spike** in parallel | M (1–2 weeks) | Dashboard of what the sindri would do; spike verdict |
 | 3a | Start, packs, worker → ship, write shim, two-phase verify, notifications, shadow direction checks | L (2–3 weeks) | **Copy-paste dispatch, retyped ship direction and handoffs gone** |
 | 3b | Shape enforcement | M (1 week) | Enforced code-shape checks |
 | 4 | Auto-small | S | Unattended XS items |
@@ -1372,7 +1372,7 @@ These are rough, for one builder with agent help. Every step ends with a usable 
    the subscription bearer per request (W1). If subscription auth can't work through a base-URL proxy,
    the fallback is API-key mode for containers.
 2. The model/egress proxy and the lock broker run as **sidecar containers** on the internal network, and
-   the host conductor reaches them over one authenticated TCP channel. No host unix socket is
+   the host sindri reaches them over one authenticated TCP channel. No host unix socket is
    bind-mounted (W8).
 3. Attach from Warp works.
 4. Bundle export and two-phase verify work on one real item.
@@ -1383,7 +1383,7 @@ These are rough, for one builder with agent help. Every step ends with a usable 
 
 **If the spike fails:**
 - Steps 3a and earlier proceed **on the host** with no auto-start. Shadow and assist are cleared without
-  isolation, provided the live view stays off and the conductor never fetches bundles on the host.
+  isolation, provided the live view stays off and the sindri never fetches bundles on the host.
 - Step 4 waits for a working isolation mechanism (another runtime or a Linux cloud box).
 
 ### 13.2 Checkpoints by step
@@ -1426,11 +1426,11 @@ These are rough, for one builder with agent help. Every step ends with a usable 
 - **Scrubber:** fixtures for each secret and identifier pattern, at ingest, pack, ledger and egress.
 - **Hooks (§5.3):**
   - every row is driven with a recorded payload and its decision asserted
-  - the `cdt-hook` wrapper turns a crash, a timeout, a non-2 exit, and a missing inner script into an
+  - the `sindri-hook` wrapper turns a crash, a timeout, a non-2 exit, and a missing inner script into an
     explicit deny with a `9xx` code
   - `continue:false` ends the turn
   - the Stop pattern gate blocks at most twice, then allows and records
-  - host Claude sessions have no conductor hooks
+  - host Claude sessions have no sindri hooks
   - the container user can't modify the managed settings
   - edit detection fires on `sed -i`, `tee` and script writes, not only on Edit/Write
   - the git pre-commit hook catches `commit -a`, `-C` and aliases; `--no-verify` is caught by the verifier
@@ -1439,7 +1439,7 @@ These are rough, for one builder with agent help. Every step ends with a usable 
 - **Isolation:**
   - from a session container, all of these fail: reading the HMAC key or the ledger; reaching any host
     other than the egress proxy;
-    writing to `/conductor`, `/mirror` or `/workspace/base`; pushing to the remote; writing to the
+    writing to `/sindri`, `/mirror` or `/workspace/base`; pushing to the remote; writing to the
     tracker; reaching host loopback services; attaching another session's tmux
   - a tampered spool entry is ignored
   - a bundle that fails verifier checks is never pushed, even when session-side checks passed or were
@@ -1462,7 +1462,7 @@ These are rough, for one builder with agent help. Every step ends with a usable 
 - **Containers:** CPU and memory limits hold; the heavy-lock lease expires for a killed container; the
   warm-start target is met on a warm image; `teardown-host` restores the manifest.
 - **Direction checks:**
-  - each checkpoint fires from its hook or conductor trigger, never from an agent tool call
+  - each checkpoint fires from its hook or sindri trigger, never from an agent tool call
   - forged, unsigned or wrong-role turns are rejected
   - the arbiter reads only HMAC-verified turns
   - verdict delivery through the inbox and `continue`
@@ -1493,34 +1493,34 @@ These are rough, for one builder with agent help. Every step ends with a usable 
 - **Adapters:** `adapterContractTests` for every built-in and fake.
 - **Real-process tests** (tmux, macOS notifier, the unattended e2e) are tagged `heavy` and excluded from
   the default `npm test`. They are a merge-gate item, run serially (`npm run test:heavy`), per the
-  one-heavy-job rule. `scripts/test-linux.sh` is also a merge-gate item for changes under `conductor/`
+  one-heavy-job rule. `scripts/test-linux.sh` is also a merge-gate item for changes under `sindri/`
   and `config/hooks/` (M15).
-- **Merge gate:** add `conductor` to the AGENTS.md typecheck and test lists.
+- **Merge gate:** add `sindri` to the AGENTS.md typecheck and test lists.
 
 ### Docs deliverables (M19)
-- `docs/conductor/README.md` (including "when to use which")
-- `docs/conductor/profile.md` (reference generated from the schema)
-- `docs/conductor/adapters.md`
-- `docs/conductor/errors.md`, generated from the code registry. A test fails when a code is used but not
+- `docs/sindri/README.md` (including "when to use which")
+- `docs/sindri/profile.md` (reference generated from the schema)
+- `docs/sindri/adapters.md`
+- `docs/sindri/errors.md`, generated from the code registry. A test fails when a code is used but not
   documented, or documented but unused (M8).
-- `docs/conductor/hooks.md`, `docs/conductor/index.md`, `docs/conductor/host-setup.md` (containers,
+- `docs/sindri/hooks.md`, `docs/sindri/index.md`, `docs/sindri/host-setup.md` (containers,
   model/egress proxy, teardown)
-- `docs/conductor/linux.md` (with the Linux adapters)
+- `docs/sindri/linux.md` (with the Linux adapters)
 - ledger schema in `planning/ERD.md`
 - CLI in `planning/API_CONTRACT.md`
 - updates to `planning/ARCHITECTURE.md` and `planning/TESTING.md`
 
 ## 15. Second user (M4)
-- A teammate runs `conductor profile init` from the generic example and gets their own state dir and
+- A teammate runs `sindri profile init` from the generic example and gets their own state dir and
   ledger.
-- Claims are namespaced by user (`cdt/<user>/<item>`, §9.4), so two humans on the same tracker
+- Claims are namespaced by user (`sindri/<user>/<item>`, §9.4), so two humans on the same tracker
   never claim each other's items. Their scopes come from their own profiles.
 - Shared recipes can be copied between profile repos. A shared team profile layer is out of scope for v1.
 
 ## 16. Prior art and reuse
 The harness reuses existing work wherever it can. Every adopted piece becomes a **managed artifact** in the
 self-evolution loop (§7.4, §7.7), pinned by commit and content hash and evaluated like native code. The full
-port map is in `plans/conductor/reuse-map.md` (reuse spike, 2026-10-08).
+port map is in `plans/sindri/reuse-map.md` (reuse spike, 2026-10-08).
 
 | Priority | Source (license) | Port as | Spec part |
 |---|---|---|---|
@@ -1546,7 +1546,7 @@ port map is in `plans/conductor/reuse-map.md` (reuse spike, 2026-10-08).
 | Cursor construct | Becomes |
 |---|---|
 | `pstack-models.mdc` model map | Profile `models.roles`, Anthropic-only by default (Grok defaults removed) |
-| Cursor `Task` subagents | Bounded conductor jobs |
+| Cursor `Task` subagents | Bounded sindri jobs |
 | `AskQuestion` | needs-answer notification |
 | `agent-transcripts/` | `~/.claude/projects`, human-origin turns only |
 
