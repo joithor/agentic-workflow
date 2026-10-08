@@ -4,6 +4,7 @@
 # Usage:
 #   ./setup.sh [--providers claude,codex,cursor] [--dry-run]
 #   ./setup.sh --install-agents [--providers ...] [--dry-run]
+#   ./setup.sh [--providers ...] --with-sindri   # also build and install the sindri CLI (opt-in)
 #   ./setup.sh --profile <web-app|ios|personal> --target <dir> [--dry-run]
 #
 # --providers defaults to every provider whose CLI is installed
@@ -23,7 +24,7 @@ CLAUDE_DIR="$HOME/.claude"
 ALL_PROVIDERS="claude codex cursor"
 
 usage() {
-  sed -n '2,16p' "$0" | sed 's/^# \{0,1\}//'
+  sed -n '2,17p' "$0" | sed 's/^# \{0,1\}//'
 }
 
 # Check for jq (required by the installer and the statusline at runtime)
@@ -135,12 +136,14 @@ fi
 MODE="install"
 PROVIDERS_ARG=""
 AW_DRY_RUN=0
+WITH_SINDRI=0
 while [ $# -gt 0 ]; do
   case "$1" in
     --providers) PROVIDERS_ARG="${2:-}"; shift 2 || { echo "--providers needs a value"; exit 1; } ;;
     --providers=*) PROVIDERS_ARG="${1#--providers=}"; shift ;;
     --install-agents) MODE="agents"; shift ;;
     --dry-run) AW_DRY_RUN=1; shift ;;
+    --with-sindri) WITH_SINDRI=1; shift ;;
     -h|--help) usage; exit 0 ;;
     *) echo "unknown option: $1"; echo ""; usage; exit 1 ;;
   esac
@@ -263,6 +266,15 @@ if aw_dry; then
 else
   "$SCRIPT_DIR/scripts/install-scorer.sh"
   bash "$SCRIPT_DIR/scripts/install-judge.sh" --build-only
+fi
+
+# --- Sindri (opt-in: ./setup.sh --with-sindri) ---
+if [ "$WITH_SINDRI" = "1" ]; then
+  if aw_dry; then
+    echo "  [dry-run] would run scripts/install-sindri.sh"
+  else
+    bash "$SCRIPT_DIR/scripts/install-sindri.sh"
+  fi
 fi
 
 # --- Skill packages (TypeScript helpers run by SKILL.md) ---

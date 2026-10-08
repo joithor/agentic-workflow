@@ -40,6 +40,8 @@ agentic-workflow/
 ├── providers/     # Per-provider installers (claude, codex, cursor)
 ├── mcp-bridge/    # MCP bridge + REST API (Fastify, SQLite)
 ├── scorer/        # Daily cost/involvement report from provider session transcripts
+├── judge/         # Cheap-agent-harness judge CLI (decisions, config, health)
+├── sindri/        # Sindri core: profile, ledger, lock, scrubber, plan-file tracker, observe, doctor (CLI)
 ├── mods/          # Claude Code mods (in-process function hooks): aw-live /live pane. Claude-only
 ├── planning/      # Project documentation
 ├── .agents/rules/ # Glob-scoped domain rules (.claude/rules and .cursor/rules link here)
@@ -55,6 +57,7 @@ agentic-workflow/
 cd mcp-bridge && npm test               # Vitest, in-memory SQLite
 cd scorer && npm test                   # Vitest
 cd judge && npm test                    # Vitest
+cd sindri && npm test                   # Vitest
 (cd skills/ui-evidence && npm test)     # Vitest (skill package; includes a real-browser test)
 (cd skills/bugFixOrchestrator && npm test)  # Vitest (bugfix-state CLI)
 claude plugin validate mods/aw-live && claude plugin test mods/aw-live  # the aw-live mod (needs claude >= 2.1.289)
@@ -73,6 +76,7 @@ bash scripts/tests/sync-rules.test.sh
 bash scripts/tests/probe.test.sh
 bash scripts/tests/find-duplicate-skills.test.sh
 bash scripts/tests/install-scorer-audit.test.sh
+bash scripts/tests/install-sindri.test.sh
 bash config/hooks/tests/codex-adapter.test.sh
 bash config/hooks/tests/cursor-adapter.test.sh
 bash config/hooks/tests/provider-install-hooks.test.sh
@@ -84,6 +88,9 @@ for t in config/lib/tests/*.test.sh; do bash "$t" || echo "FAILED: $t"; done  # 
 scripts/install-<lever>.sh --provider claude|codex|cursor
 scripts/probe.sh [--provider claude|codex|cursor] on|off|status
 scripts/install-scorer.sh               # Build scorer, install CLI + launchd job
+sindri doctor                           # Sindri health checks (ok / warn / fail + fix)
+sindri observe                          # Backlog with sizes; records to the ledger when the profile is approved
+scripts/install-sindri.sh               # Build sindri, install the CLI wrapper (or ./setup.sh --with-sindri)
 
 # Setup (from repo root)
 ./setup.sh --providers claude,codex,cursor --dry-run   # Print every change, write nothing
@@ -97,8 +104,8 @@ After installing for Codex, open `codex` and run `/hooks` to trust the `aw:*` ho
 ## Merge Gate
 
 Before merging any PR:
-1. `npm run typecheck` passes with zero errors in `mcp-bridge`, `scorer`, `judge`, `skills/ui-evidence`, and `skills/bugFixOrchestrator`
-2. `npm test` passes in `mcp-bridge`, `scorer`, `judge`, `skills/ui-evidence`, and `skills/bugFixOrchestrator`, every bash test listed above passes, and `claude plugin validate mods/aw-live` and `claude plugin test mods/aw-live` pass
+1. `npm run typecheck` passes with zero errors in `mcp-bridge`, `scorer`, `judge`, `sindri`, `skills/ui-evidence`, and `skills/bugFixOrchestrator`
+2. `npm test` passes in `mcp-bridge`, `scorer`, `judge`, `sindri`, `skills/ui-evidence`, and `skills/bugFixOrchestrator`, every bash test listed above passes, and `claude plugin validate mods/aw-live` and `claude plugin test mods/aw-live` pass
 3. `scripts/sync-rules.sh --check` passes (rule links and Rules Index match `.agents/rules/`)
 4. `./setup.sh --providers claude,codex,cursor --dry-run` runs cleanly
 5. No `/* v8 ignore */` annotations in source files (prohibited — write the test instead)

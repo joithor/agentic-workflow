@@ -30,6 +30,7 @@ These are the smallest changes that make the spec buildable as written. Each one
 7. **`adapterContractTests` (§11.2) lives under `sindri/tests/contract/`**, not in `src/`, as `trackerContractTests`. It is test code, and inside `src/` its guard branches can never be covered.
 8. **Runtime commands use the last approved profile snapshot** (§8.7 made precise): edits take effect only after `profile approve`, and `approve` needs an interactive terminal and a typed confirmation. That is friction and intent, not a boundary; the boundary is the session container from step 3a. The §8.7 audit log of gated calls arrives with the gate (step 3a).
 9. **Trust for `plan-file` items is the git author email**, which anyone can forge in a public repo. It only affects what `observe` *would* start in Plan 2. Before `auto-small` (step 4), trusted authorship must come from signed commits or tracker accounts.
+10. **The §13.3 Scrubber row is narrowed.** The scrubber guards secret- and identifier-shaped strings, and workplace prose still needs review. The secret-assignment pattern requires a digit (Task 2 amendment S1).
 
 ## Global Constraints
 
@@ -38,7 +39,7 @@ These are the smallest changes that make the spec buildable as written. Each one
 - 100% line, function, branch and statement coverage, enforced by `npm run test:coverage` (`.agents/rules/testing.md`). Each task's coverage run must show every line and branch of the files **that task created or changed** covered, by tests in that task. A branch only a later task can reach is covered by that later task's tests, and Task 11's merge-gate run must be 100% over the package. Coverage excludes only `src/cli.ts`, `src/gen.ts`, `src/system-real.ts` and `src/git-real.ts`, each a thin wiring file with a smoke test.
 - One heavy job at a time: run `npm test` and `npm run typecheck` once per commit, not per edit, and never two at once (global CLAUDE.md).
 - Core stays generic: no workplace names, labels, hosts or ticket prefixes in code, defaults or examples (spec §2 Goals, memory "generic core").
-- **Never write a full secret-shaped literal in any file.** Build test secrets at runtime by concatenation (`"AKIA" + "ABCDEFGHIJKLMNOP"`). From Task 10 on, the pre-commit scrubber refuses such literals, and this repo is public.
+- **Never write a full secret-shaped literal in any file.** Build test secrets at runtime by concatenation (`"AKIA" + "ABCDEFGHIJKLMNOP"`). From Task 12 Step 8 on, the pre-commit scrubber refuses such literals, and this repo is public.
 - State lives under `$AW_STATE_DIR/sindri/` (default `~/.agentic-workflow/sindri/`), mode 0700. The ledger is the only database and Sindri is its only writer (spec §5.2).
 - CLI output contract (spec §10.3): plain-text state words, `--json` on every read command, no color in Plan 2 (so `NO_COLOR` is trivially honored), exit codes `0` ok, `1` attention needed, `2` error, error codes `SND-<AREA>-<NNN>` registered in `sindri/src/errors.ts` and documented in the generated `docs/sindri/errors.md`.
 - Commit format: `type: short description`, atomic commits, attribution lines from the session (AGENTS.md Commit Conventions).
@@ -122,7 +123,7 @@ These are the smallest changes that make the spec buildable as written. Each one
   - `renderErrorsDoc(): string`.
   - Test helper `makeDeps(overrides?: Partial<Deps>): Deps` in `tests/helpers.ts`, with a fresh temp `AW_STATE_DIR`.
 
-- [ ] **Step 1: Create the package scaffold**
+- [x] **Step 1: Create the package scaffold**
 
 `sindri/package.json`:
 
@@ -211,7 +212,7 @@ export default defineConfig({
 Run: `cd sindri && npm install`
 Expected: `added N packages` and a new `sindri/package-lock.json`.
 
-- [ ] **Step 2: Write the failing tests**
+- [x] **Step 2: Write the failing tests**
 
 `sindri/tests/helpers.ts`:
 
@@ -422,12 +423,12 @@ describe("runCli", () => {
 });
 ```
 
-- [ ] **Step 3: Run the tests to verify they fail**
+- [x] **Step 3: Run the tests to verify they fail**
 
 Run: `cd sindri && npx vitest run`
 Expected: FAIL, every file with `Failed to load url ../src/errors.js` (or the matching module).
 
-- [ ] **Step 4: Implement**
+- [x] **Step 4: Implement**
 
 `sindri/src/errors.ts`:
 
@@ -670,7 +671,7 @@ function write(rel: string, text: string): void {
 write("docs/sindri/errors.md", renderErrorsDoc());
 ```
 
-- [ ] **Step 5: Generate the doc and run the tests**
+- [x] **Step 5: Generate the doc and run the tests**
 
 Run: `cd sindri && npm run gen && npx vitest run`
 Expected: `wrote docs/sindri/errors.md`, then all tests in `errors`, `output`, `ids` and `main` PASS.
@@ -678,7 +679,7 @@ Expected: `wrote docs/sindri/errors.md`, then all tests in `errors`, `output`, `
 Run: `cd sindri && npm run typecheck && npm run test:coverage`
 Expected: no type errors; coverage 100% on all four metrics.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add sindri/package.json sindri/package-lock.json sindri/tsconfig.json sindri/tsconfig.test.json sindri/vitest.config.ts sindri/src sindri/tests docs/sindri/errors.md
@@ -688,6 +689,10 @@ git commit -m "feat: sindri package scaffold, error registry and output contract
 ---
 
 ### Task 2: Scrubber
+
+> Amendment (build): S1. The `secret-assignment` value class `[A-Za-z0-9+/=_.,-]{20,}` matched ordinary identifiers such as `token: SecretPointerSchema,` and `apiKey: config.providers.anthropic.key`. It is now `(?=[A-Za-z_-]*\d)([A-Za-z0-9+/=_-]{20,})` (no `.` or `,`, at least one digit). The `GITHUB_TOKEN=` test value became `"g".repeat(12) + "1" + "g".repeat(11)` because the old all-letter value no longer counts as a secret; both identifier strings were added to the false-positive test.
+> Amendment (build): S7. Heavy checks (`npm run gen`, `npm run typecheck`, `npm run test:coverage`) ran once each, serially, before the commit.
+> Amendment (build): m11. The `<1000 ms` wall-clock assertion in the unterminated-private-key test was dropped; the behavioural assertion (`find(text)` returns `[]`) stays.
 
 The scrubber (spec §8.4) runs on every fetched record, every ledger free-text field and, later, every pack and egress. Hits record a kind and a span, never the matched value.
 
@@ -705,7 +710,7 @@ The scrubber (spec §8.4) runs on every fetched record, every ledger free-text f
   - `makeScrubber(extra?: readonly ScrubPattern[]): Scrubber`.
   - `compileExtraPatterns(specs: readonly { kind: string; regex: string }[]): ScrubPattern[]` — throws `SindriError("SND-SCRUB-001")` naming the index of a pattern that doesn't compile.
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 `sindri/tests/scrub.test.ts` (every secret is built by concatenation; never paste a whole one):
 
@@ -815,12 +820,12 @@ describe("scrubber", () => {
 });
 ```
 
-- [ ] **Step 2: Run the tests to verify they fail**
+- [x] **Step 2: Run the tests to verify they fail**
 
 Run: `cd sindri && npx vitest run tests/scrub.test.ts`
 Expected: FAIL with `Failed to load url ../src/scrub/scrub.js`.
 
-- [ ] **Step 3: Implement**
+- [x] **Step 3: Implement**
 
 `sindri/src/scrub/patterns.ts`:
 
@@ -966,12 +971,12 @@ Add to `ERRORS` in `sindri/src/errors.ts`:
   "SND-SCRUB-001": { summary: "A profile scrub pattern does not compile.", fix: "Fix the regex at the named scrub.extraPatterns index, then run `sindri profile validate`." },
 ```
 
-- [ ] **Step 4: Run the tests**
+- [x] **Step 4: Run the tests**
 
 Run: `cd sindri && npm run gen && npx vitest run`
 Expected: all tests PASS (including `errors.test.ts`, which now finds `SND-SCRUB-001` in `scrub.ts` and in the regenerated `errors.md`).
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add sindri/src/scrub sindri/src/errors.ts sindri/tests/scrub.test.ts docs/sindri/errors.md
@@ -981,6 +986,8 @@ git commit -m "feat: sindri scrubber for secrets and identifier shapes"
 ---
 
 ### Task 3: Ledger (SQLite, migrations, fencing epoch)
+
+> Amendment (build): the ledger test "the loser of a race applies nothing" exercised no race, so it is renamed "migrates idempotently" (assertions kept); Interfaces now list `migrateWith`, `ItemRow` and `EventRow` (the test imports them); the ERD `state` comment reads `open | done | removed` because `markMissing` writes `removed`; Step 4 runs `npm run typecheck` before `test:coverage` (S7).
 
 **Files:**
 - Create: `sindri/src/ledger/db.ts`, `sindri/src/ledger/items.ts`
@@ -994,6 +1001,7 @@ git commit -m "feat: sindri scrubber for secrets and identifier shapes"
   - `type Ledger = Database.Database`; `LEDGER_SCHEMA_VERSION = 1`.
   - `openLedger(file: string): Ledger` (WAL, `foreign_keys`, `busy_timeout`, migrations; file 0600, dir 0700); `openMemoryLedger(): Ledger`; `ledgerPath(stateDirPath: string): string`.
   - `schemaVersion(db): number`; `currentEpoch(db): number`; `bumpEpoch(db): number`; `withEpoch<T>(db, epoch: number, fn: () => T): T` (throws `SND-LOCK-003` when `epoch` isn't current, without running `fn`).
+  - `migrateWith(db, file: string | null, migrations: readonly string[]): void` (injectable list so the backup path is testable).
 - Produces (`ledger/items.ts`):
   - `interface ObservedItem { id: string; source: string; title: string; state: "open" | "done"; size: string | null; sizedBy: string | null; ambiguity: string | null; stepsDone: number; stepsTotal: number; contentHash: string }`.
   - `interface WriteCtx { epoch: number; tickId: string; now: Date; scrubber: Scrubber }`.
@@ -1001,8 +1009,9 @@ git commit -m "feat: sindri scrubber for secrets and identifier shapes"
   - `markMissing(db, ctx, source, seen: ReadonlySet<string>): number` — closes items of `source` absent from a full scan as state `removed`, with a `removed` event.
   - `listItems(db, filter?: { state?: "open" | "done" }): ItemRow[]`; `listEvents(db, filter: { itemId?: string; since?: Date; limit?: number }): EventRow[]`.
   - `getCursor(db, source): string | null`; `setCursor(db, source, cursor, now: Date): void`.
+  - `interface ItemRow` and `interface EventRow` (snake_case column rows returned by `listItems` / `listEvents`).
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 `sindri/tests/ledger.test.ts`:
 
@@ -1139,12 +1148,12 @@ describe("ledger items", () => {
 });
 ```
 
-- [ ] **Step 2: Run the tests to verify they fail**
+- [x] **Step 2: Run the tests to verify they fail**
 
 Run: `cd sindri && npx vitest run tests/ledger.test.ts`
 Expected: FAIL with `Failed to load url ../src/ledger/db.js`.
 
-- [ ] **Step 3: Implement**
+- [x] **Step 3: Implement**
 
 `sindri/src/ledger/db.ts`:
 
@@ -1467,12 +1476,12 @@ erDiagram
 Every write runs inside `withEpoch(db, epoch, …)`, an `IMMEDIATE` transaction that rejects a stale epoch (`SND-LOCK-003`, spec §9.1).
 ````
 
-- [ ] **Step 4: Run the tests**
+- [x] **Step 4: Run the tests**
 
 Run: `cd sindri && npm run gen && npx vitest run && npm run test:coverage`
 Expected: all tests PASS; coverage 100% (add a test for any branch the report names; never annotate).
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add sindri/src/ledger sindri/src/errors.ts sindri/tests/ledger.test.ts docs/sindri/errors.md planning/ERD.md
@@ -1482,6 +1491,8 @@ git commit -m "feat: sindri ledger with versioned migrations and fencing epoch"
 ---
 
 ### Task 4: Singleton tick lock with stale takeover (spec §9.1)
+
+> Amendment (build): S6 — spec §9.1 (M2) requires the taker to re-read the renamed owner file and confirm it is still the dead owner, putting the lock back on a mismatch. The plan's `takeOver` only checked before the rename (under a mutex that is force-cleared after 60 s), so a taker paused past that could move a new live owner's lock away. `takeOver` now re-reads `readOwner(stale)` after a successful rename, renames it back and returns `changed` on a mismatch (new test pins it). Also: test assertions inside `if (x.ok)` are preceded by `expect(x.ok)` (m10), and the real.test.ts comment says Task 6 (m3).
 
 **Files:**
 - Create: `sindri/src/system.ts`, `sindri/src/system-real.ts`, `sindri/src/lock/lock.ts`
@@ -1501,7 +1512,7 @@ git commit -m "feat: sindri ledger with versioned migrations and fencing epoch"
   - `inspectLock(dir, sys, now): { state: "free" | "held" | "stale"; owner: LockOwner | null; leftovers: string[] }` (for `doctor`).
 - Produces (`tests/helpers.ts`): `fakeSystem(over?: Partial<SystemProbe>): SystemProbe` (host `test-host`, boot `boot-1`, pid 4242, every pid alive with start time `start-<pid>`, local disk).
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 Add to `sindri/tests/helpers.ts`:
 
@@ -1557,7 +1568,7 @@ describe("system parsers", () => {
 });
 ```
 
-`sindri/tests/real.test.ts` (smoke tests for the coverage-excluded real implementations; extended in Task 7):
+`sindri/tests/real.test.ts` (smoke tests for the coverage-excluded real implementations; extended in Task 6):
 
 ```ts
 import os from "node:os";
@@ -1827,12 +1838,12 @@ describe("inspectLock", () => {
 });
 ```
 
-- [ ] **Step 2: Run the tests to verify they fail**
+- [x] **Step 2: Run the tests to verify they fail**
 
 Run: `cd sindri && npx vitest run tests/lock.test.ts tests/system.test.ts tests/real.test.ts`
 Expected: FAIL with `Failed to load url ../src/lock/lock.js` (and `../src/system.js`, `../src/system-real.js`).
 
-- [ ] **Step 3: Implement**
+- [x] **Step 3: Implement**
 
 `sindri/src/system.ts`:
 
@@ -2127,7 +2138,7 @@ export function inspectLock(dir: string, sys: SystemProbe, now: () => Date): { s
 
 In `sindri/src/deps.ts`, add `import type { SystemProbe } from "./system.js";` and the field `system: SystemProbe;` to `Deps`. In `sindri/src/cli.ts`, add `import { realSystemProbe } from "./system-real.js";` and pass `system: realSystemProbe(),`.
 
-- [ ] **Step 4: Run the tests**
+- [x] **Step 4: Run the tests**
 
 Run: `cd sindri && npx vitest run && npm run typecheck`
 Expected: all tests PASS; no type errors.
@@ -2135,7 +2146,7 @@ Expected: all tests PASS; no type errors.
 Run: `cd sindri && npm run test:coverage`
 Expected: 100% on all four metrics. If a branch in `lock.ts` is reported uncovered, add the test for it; don't annotate.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add sindri/src/system.ts sindri/src/system-real.ts sindri/src/lock sindri/src/deps.ts sindri/src/cli.ts sindri/tests
@@ -2145,6 +2156,8 @@ git commit -m "feat: sindri singleton tick lock with stale takeover and fencing"
 ---
 
 ### Task 5: Profile schema, loader, explain and generated docs (spec §11.1)
+
+> Amendment (build): `secretValueIssues` (and `zodIssues`) now run the reported keyPath through the scrubber, because a key name can itself carry a secret-shaped string; added a test that a secret-shaped key name is redacted and neither the key nor the value appears in the output (m16).
 
 **Files:**
 - Create: `sindri/src/profile/schema.ts`, `sindri/src/profile/load.ts`, `sindri/src/profile/explain.ts`, `sindri/src/docs/profile-doc.ts`
@@ -2167,7 +2180,7 @@ git commit -m "feat: sindri singleton tick lock with stale takeover and fencing"
 - Produces (`explain.ts`): `explainKey(loaded, key: string, repo?: string): { key: string; value: unknown; source: string } | null`.
 - Produces (`profile-doc.ts`): `renderSchemas(): { profile: string; repo: string }`; `renderProfileDoc(): string`; `renderKeyRows(schema: JsonSchemaNode): string[]`.
 
-- [ ] **Step 1: Create the example profile**
+- [x] **Step 1: Create the example profile**
 
 `sindri/profile/examples/generic/profile.yaml`:
 
@@ -2203,7 +2216,7 @@ protectedPaths:         # a diff touching these parks for approval (spec §8.5)
   - .github/**
 ```
 
-- [ ] **Step 2: Write the failing tests**
+- [x] **Step 2: Write the failing tests**
 
 `sindri/tests/profile-load.test.ts`:
 
@@ -2425,12 +2438,12 @@ describe("generated profile docs (run: cd sindri && npm run gen)", () => {
 });
 ```
 
-- [ ] **Step 3: Run the tests to verify they fail**
+- [x] **Step 3: Run the tests to verify they fail**
 
 Run: `cd sindri && npx vitest run tests/profile-load.test.ts tests/profile-doc.test.ts`
 Expected: FAIL with `Failed to load url ../src/profile/load.js` (and `../src/docs/profile-doc.js`).
 
-- [ ] **Step 4: Implement**
+- [x] **Step 4: Implement**
 
 `sindri/src/profile/schema.ts`:
 
@@ -2782,12 +2795,12 @@ write("docs/sindri/profile.md", renderProfileDoc());
 
 (Move the new `import` line to the top of the file with the other imports.)
 
-- [ ] **Step 5: Generate and run the tests**
+- [x] **Step 5: Generate and run the tests**
 
 Run: `cd sindri && npm run gen && npx vitest run && npm run typecheck && npm run test:coverage`
 Expected: `wrote` lines for `errors.md`, both schema files and `profile.md`; all tests PASS; no type errors.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add sindri/src/profile sindri/src/docs sindri/src/gen.ts sindri/profile sindri/schema sindri/tests docs/sindri/profile.md
@@ -2798,9 +2811,11 @@ git commit -m "feat: sindri profile schema, loader, explain and generated refere
 
 ### Task 6: `sindri profile init | validate | explain | migrate | approve`
 
+> Amendment (build): B1 + m4. Step 4's coverage run could not reach 100% as written, so `profile-commands.test.ts` gains four tests: `init` with no `USER` (falls back to `me`), `approveProfile` throwing `SND-PROFILE-006` on a hash mismatch, `approvedProfile` returning `null` with no approval and after the snapshot dir is removed, and the diff treating a removed snapshot `repos` dir as empty. The Files list for `deps.ts` also names the `isTTY` and `prompt` fields Step 3 adds. S7: gen, typecheck and test:coverage ran once each, serially, before the commit.
+
 **Files:**
 - Create: `sindri/src/git.ts`, `sindri/src/git-real.ts`, `sindri/src/profile/approve.ts`, `sindri/src/profile/commands.ts`, `sindri/src/args.ts`
-- Modify: `sindri/src/deps.ts` (add `git: GitRunner`), `sindri/src/cli.ts` (pass `realGitRunner()`), `sindri/src/main.ts` (register `profile`), `sindri/src/errors.ts`, `sindri/tests/helpers.ts` (add `fakeGit()`, `git` in `makeDeps`), `sindri/tests/real.test.ts`
+- Modify: `sindri/src/deps.ts` (add `git: GitRunner`, `isTTY: boolean` and `prompt`), `sindri/src/cli.ts` (pass `realGitRunner()`), `sindri/src/main.ts` (register `profile`), `sindri/src/errors.ts`, `sindri/tests/helpers.ts` (add `fakeGit()`, `git` in `makeDeps`), `sindri/tests/real.test.ts`
 - Test: `sindri/tests/profile-commands.test.ts`, `sindri/tests/approve.test.ts`
 
 **Interfaces:**
@@ -2813,7 +2828,7 @@ git commit -m "feat: sindri profile schema, loader, explain and generated refere
   - `commands.ts`: `profileCommand: Command`; `requireProfile(deps, flag?: string): LoadedProfile` (throws `SND-PROFILE-002` when no profile is found, `SND-PROFILE-001` when it's invalid); `sanitizeName(s: string): string`.
   - `tests/helpers.ts`: `fakeGit(answers: Record<string, GitResult>): GitRunner` (keyed by `args.join(" ")`; an unknown call returns `{ ok: false, stderr: "unexpected git call: …" }`).
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 Add to `sindri/tests/helpers.ts`:
 
@@ -3105,12 +3120,12 @@ describe("profile approve (spec §8.7)", () => {
 });
 ```
 
-- [ ] **Step 2: Run the tests to verify they fail**
+- [x] **Step 2: Run the tests to verify they fail**
 
 Run: `cd sindri && npx vitest run tests/profile-commands.test.ts tests/approve.test.ts`
 Expected: FAIL with `Failed to load url ../src/profile/commands.js` (and `../src/profile/approve.js`).
 
-- [ ] **Step 3: Implement**
+- [x] **Step 3: Implement**
 
 `sindri/src/git.ts`:
 
@@ -3525,12 +3540,12 @@ Add to `ERRORS`:
   "SND-LOCK-001": { summary: "Another sindri run holds the lock.", fix: "wait a moment and rerun; `sindri doctor` shows the holder" },
 ```
 
-- [ ] **Step 4: Run the tests**
+- [x] **Step 4: Run the tests**
 
 Run: `cd sindri && npm run gen && npx vitest run && npm run typecheck && npm run test:coverage`
 Expected: all tests PASS; no type errors.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add sindri/src sindri/tests docs/sindri/errors.md
@@ -3540,6 +3555,10 @@ git commit -m "feat: sindri profile init, validate, explain, migrate and approve
 ---
 
 ### Task 7: Tracker interface, contract tests, fake tracker and the `plan-file` tracker (spec §11.2)
+
+> Amendment (build): the `*-plan-b` include-case test now also asserts the scan result is `[]` (m10b); removed a duplicated comment above `wildcard`. `trackerContractTests` lives in `sindri/tests/contract/` (spec amendment 7).
+>
+> Amendment (build): fix round 1 added `~~~`, mixed-character, longer-closer and shorter-inner fence tests, and a separate `include: ["*"]` test that really reaches the `isFile()` guard (verified it fails with the guard removed).
 
 **Files:**
 - Create: `sindri/src/adapters/types.ts`, `sindri/tests/contract/tracker-contract.ts`, `sindri/src/adapters/fake-tracker.ts`, `sindri/src/adapters/plan-file/parse.ts`, `sindri/src/adapters/plan-file/tracker.ts`, `sindri/src/adapters/registry.ts`
@@ -3574,7 +3593,7 @@ git commit -m "feat: sindri profile init, validate, explain, migrate and approve
 - Produces (`plan-file/tracker.ts`): `makePlanFileTracker(o: { repoPath: string; glob: string; include: string[]; git: GitRunner }): Tracker`; `planItemId(file: string, task: number): string` → `<plan basename without .md>.t<N>`; `parseGitHistory(out: string): Map<string, { authors: string[]; date: string }>`; `wildcard(pattern: string): RegExp`. `meta` keys: `plan`, `task`, `order`, `stepsDone`, `stepsTotal`, `files`, `codeLines`, `hasFilesBlock` (0/1), `contentHash` (sha256 of the task's title and body). Plan files are parsed once per tracker instance (memoized by name, size and mtime), and authors and dates come from one `git log` over the plan directory, not two per file.
 - Produces (`registry.ts`): `makeTracker(loaded: LoadedProfile, deps: Deps): Tracker`.
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 `sindri/tests/plan-parse.test.ts`:
 
@@ -3828,12 +3847,12 @@ describe("plan-file tracker", () => {
 });
 ```
 
-- [ ] **Step 2: Run the tests to verify they fail**
+- [x] **Step 2: Run the tests to verify they fail**
 
 Run: `cd sindri && npx vitest run tests/plan-parse.test.ts tests/fake-tracker.test.ts tests/plan-file-tracker.test.ts`
 Expected: FAIL with `Failed to load url ../src/adapters/...`.
 
-- [ ] **Step 3: Implement**
+- [x] **Step 3: Implement**
 
 `sindri/src/adapters/types.ts`:
 
@@ -4250,12 +4269,12 @@ Add to `ERRORS`:
   "SND-TRACKER-405": { summary: "This tracker can't write.", fix: "The plan-file tracker is read-only; edit the plan file." },
 ```
 
-- [ ] **Step 4: Run the tests**
+- [x] **Step 4: Run the tests**
 
 Run: `cd sindri && npm run gen && npx vitest run && npm run typecheck && npm run test:coverage`
 Expected: all tests PASS, including both `Tracker contract: fake` and `Tracker contract: plan-file` blocks.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add sindri/src/adapters sindri/src/errors.ts sindri/tests docs/sindri/errors.md
@@ -4266,6 +4285,8 @@ git commit -m "feat: sindri tracker contract, fake tracker and plan-file tracker
 
 ### Task 8: `sindri observe` and `sindri ledger`
 
+> Amendment (build): removed the unreachable `|| a.id.localeCompare(b.id)` sort tie-breaker in `readAll` (order keys never tie) and added a test reaching the `unwrapProfile` failure path (empty hostname gives SND-PROFILE-001); the Interfaces block now lists `approvedProfile` and `markMissing` in place of `isApproved`.
+
 `observe` lists the backlog with rule-based sizes and what auto-small *would* start. When the profile is approved and this is the active host, it also records every item in the ledger under the tick lock. It is the ring-0 backlog view (spec §13.3) and the first writer that uses the lock and fencing.
 
 **Files:**
@@ -4274,7 +4295,7 @@ git commit -m "feat: sindri tracker contract, fake tracker and plan-file tracker
 - Test: `sindri/tests/size.test.ts`, `sindri/tests/observe.test.ts`
 
 **Interfaces:**
-- Consumes: `Tracker`, `WorkItem` (Task 7); `makeTracker` (Task 7); `requireProfile`, `ring0Files` (Task 6); `isApproved` (Task 6); `acquireTickLock` (Task 4); `openLedger`, `withEpoch`, `upsertItem`, `listEvents`, `setCursor` (Task 3); `makeScrubber`, `compileExtraPatterns` (Task 2); `sizeRank`, `Size`, `Profile` (Task 5); `ulid` (Task 1).
+- Consumes: `Tracker`, `WorkItem` (Task 7); `makeTracker` (Task 7); `requireProfile`, `ring0Files` (Task 6); `approvedProfile` (Task 6); `markMissing` (Task 3); `acquireTickLock` (Task 4); `openLedger`, `withEpoch`, `upsertItem`, `listEvents`, `setCursor` (Task 3); `makeScrubber`, `compileExtraPatterns` (Task 2); `sizeRank`, `Size`, `Profile` (Task 5); `ulid` (Task 1).
 - Produces (`size.ts`):
   - `sizeByRules(files: number, codeLines: number): Size` — XS ≤ 1 file and ≤ 40 code lines; S ≤ 3 and ≤ 200; M ≤ 6 and ≤ 500; L ≤ 10 and ≤ 1000; else XL.
   - `interface Assessment { size: Size | null; sizedBy: "rules"; ambiguity: "none" | "unknown"; trusted: boolean }` (`null` = unsized: no Files block and no code).
@@ -4284,7 +4305,7 @@ git commit -m "feat: sindri tracker contract, fake tracker and plan-file tracker
 - Produces (`observe.ts`): `observeCommand: Command`, `ledgerCommand: Command`; `interface ObserveRow { id; title (scrubbed); state; size ("?" when unsized); ambiguity; trusted; next; steps: string; wouldStart; blocker }`; `parseSince(s: string, now: Date): Date` (`<N>d` or `<N>h`).
 - Behavior (spec amendment 6): with no profile, `observe` reads the current repo through a throwaway ring-0 profile and records nothing. With a profile, it uses the **last approved snapshot** (spec §8.7), takes the tick lock **before** reading, records under the epoch, closes removed tasks, and exits `1` when it could not record for a reason the human can fix (unapproved profile, unapproved live edits, not the active host). The source key is `<tracker type>:<repo>`.
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 `sindri/tests/size.test.ts`:
 
@@ -4521,12 +4542,12 @@ describe("sindri ledger", () => {
 });
 ```
 
-- [ ] **Step 2: Run the tests to verify they fail**
+- [x] **Step 2: Run the tests to verify they fail**
 
 Run: `cd sindri && npx vitest run tests/size.test.ts tests/observe.test.ts`
 Expected: FAIL with `Failed to load url ../src/observe/size.js` (and `observe.js`).
 
-- [ ] **Step 3: Implement**
+- [x] **Step 3: Implement**
 
 `sindri/src/observe/size.ts`:
 
@@ -4828,12 +4849,12 @@ Add to `ERRORS`:
   "SND-ITEM-404": { summary: "No such item in the ledger.", fix: "Run `sindri observe` to list items." },
 ```
 
-- [ ] **Step 4: Run the tests**
+- [x] **Step 4: Run the tests**
 
 Run: `cd sindri && npm run gen && npx vitest run && npm run typecheck && npm run test:coverage`
 Expected: all tests PASS; no type errors; 100% coverage. Add a test for any branch the coverage report names; don't annotate.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add sindri/src sindri/tests docs/sindri/errors.md
@@ -4843,6 +4864,8 @@ git commit -m "feat: sindri observe and ledger commands"
 ---
 
 ### Task 9: `sindri scrub` and the secret-scan pre-commit hook
+
+> Amendment (build): `preCommitPath` resolves the hook only through `git rev-parse --path-format=absolute --git-path hooks/pre-commit`. The plan resolved `core.hooksPath` by hand against the current directory, which put the hook where git never runs it when installing from a subdirectory or with a `~` path. Git returns symlink-resolved absolute paths.
 
 `sindri scrub --install-pre-commit` is ladder row 5 (spec §13.3). From then on, no build session can commit a secret-shaped string to this public repo. The hook is a pattern guard, not a security boundary: it calls the CLI by absolute path and refuses the commit when it can't run, and `git commit --no-verify` bypasses it on purpose (a human decision, recorded in the commit message).
 
@@ -4859,7 +4882,7 @@ git commit -m "feat: sindri observe and ledger commands"
   - `interface AddedFile { file: string; lines: { line: number; text: string }[] }`; `parseAddedLines(diff: string): AddedFile[]` — hunk-counted, so added text starting with `++ ` is still scanned; `hitsIn(f: AddedFile, scrubber): { file; line; kind }[]` — scans a file's additions as one text (multi-line keys) and maps hits to lines.
   - `scrubCommand: Command`: `sindri scrub` (stdin → scrubbed stdout), `sindri scrub --staged` (exit 1 with `path:line kind` per hit, never the value), `sindri scrub --install-pre-commit [--repo PATH]`.
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 Add `stdin: async () => "",` to the object `makeDeps` returns in `sindri/tests/helpers.ts`.
 
@@ -5041,12 +5064,12 @@ describe("sindri scrub (stdin)", () => {
 });
 ```
 
-- [ ] **Step 2: Run the tests to verify they fail**
+- [x] **Step 2: Run the tests to verify they fail**
 
 Run: `cd sindri && npx vitest run tests/scrub-commands.test.ts`
 Expected: FAIL with `Failed to load url ../src/scrub/commands.js`.
 
-- [ ] **Step 3: Implement**
+- [x] **Step 3: Implement**
 
 `sindri/src/scrub/commands.ts`:
 
@@ -5238,12 +5261,12 @@ Add to `ERRORS`:
   "SND-SCRUB-003": { summary: "A different pre-commit hook is already installed.", fix: "Add `sindri scrub --staged || exit 1` to that hook by hand." },
 ```
 
-- [ ] **Step 4: Run the tests**
+- [x] **Step 4: Run the tests**
 
 Run: `cd sindri && npm run gen && npx vitest run && npm run typecheck && npm run test:coverage`
 Expected: all tests PASS; no type errors.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add sindri/src sindri/tests docs/sindri/errors.md
@@ -5253,6 +5276,8 @@ git commit -m "feat: sindri scrub command and secret-scan pre-commit hook"
 ---
 
 ### Task 10: `sindri doctor` (spec §11.5, the checks that exist in Plan 2)
+
+> Amendment (build): (S3) added tests for the `isExecutable` true arm, the non-SindriError ledger arm, the partial-budget `unset` arms and the `doctorCommand` catch; (m12) the node check requires `>= 20.11` to match `engines`; (m19) doctor is read-only: it opens the ledger with better-sqlite3 `{ readonly: true, fileMustExist: true }` instead of `openLedger` (no migrate, backup or chmod), raises SND-LEDGER-001 itself for a newer schema, and treats an unreadable ledger as unapproved in `profile-approved`.
 
 **Files:**
 - Create: `sindri/src/doctor/doctor.ts`
@@ -5266,7 +5291,7 @@ git commit -m "feat: sindri scrub command and secret-scan pre-commit hook"
   - `runChecks(deps: Deps, nodeVersion?: string): Promise<Check[]>`. The order is `node`, `state-dir`, `boot-id`, `ledger`, `lock`, `profile`, then `profile-approved`, `active-host`, `budget` and `pre-commit:<repo>`; those last four appear only when the profile is valid.
   - `doctorCommand: Command` — one line per check (`ok` / `warn` / `fail`, name, detail), then an indented `fix:` line for non-ok checks; exit 2 on any fail, else 1 on any warn, else 0.
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 `sindri/tests/doctor.test.ts`:
 
@@ -5387,12 +5412,12 @@ describe("sindri doctor", () => {
 });
 ```
 
-- [ ] **Step 2: Run the tests to verify they fail**
+- [x] **Step 2: Run the tests to verify they fail**
 
 Run: `cd sindri && npx vitest run tests/doctor.test.ts`
 Expected: FAIL with `Failed to load url ../src/doctor/doctor.js`.
 
-- [ ] **Step 3: Implement**
+- [x] **Step 3: Implement**
 
 `sindri/src/doctor/doctor.ts`:
 
@@ -5548,12 +5573,12 @@ import { doctorCommand } from "./doctor/doctor.js";
   doctor: { summary: "Health checks, one line each: ok / warn / fail plus a fix", usage: "Usage: sindri doctor [--json]", run: doctorCommand },
 ```
 
-- [ ] **Step 4: Run the tests**
+- [x] **Step 4: Run the tests**
 
 Run: `cd sindri && npx vitest run && npm run typecheck && npm run test:coverage`
 Expected: all tests PASS; no type errors; 100% coverage (add a test for any branch the report names).
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add sindri/src sindri/tests
@@ -5564,6 +5589,14 @@ git commit -m "feat: sindri doctor"
 
 ### Task 11: Installer, setup opt-in, docs, merge gate and spec amendments
 
+> Amendment (build): S4. Spec amendments 5 (§11.5 doctor, unset budget is `ok`), 7 (§11.2, `trackerContractTests` under `sindri/tests/contract/`) and 9 (§8.3, `plan-file` trust is a forgeable git author email) are edited into the spec too, and item 10 (the §13.3 Scrubber row narrowing) is added to "Spec amendments in this plan".
+> Amendment (build): m1. `setup.sh` `usage()` prints its header with `sed -n '2,17p'` (was `'2,16p'`) so the new `--with-sindri` header line does not push the last line out.
+> Amendment (build): m9. The testing.md row and the TESTING.md sentence say that only `src/system-real.ts` and `src/git-real.ts` are smoke-tested in `tests/real.test.ts`; `src/cli.ts` and `src/gen.ts` are thin wiring whose generated outputs are checked by tests.
+> Amendment (build): m18. The Global Constraints line now says the pre-commit scrubber refuses secret-shaped literals "From Task 12 Step 8 on", because the hook is switched on there.
+> Amendment (build): m14. The commit type is `feat:` because the commit adds an installer and a setup flag: `feat: sindri installer, setup opt-in, docs and spec amendments`.
+> Amendment (build): final-review fix wave: I1, I2, M1–M3, M6–M11 (see PR)
+> Amendment (build): PR #69 review fixes (see PR)
+
 **Files:**
 - Create: `scripts/install-sindri.sh`, `scripts/tests/install-sindri.test.sh`, `docs/sindri/README.md`
 - Modify: `setup.sh` (`--with-sindri`), `AGENTS.md`, `.agents/rules/testing.md`, `planning/TESTING.md`, `planning/ARCHITECTURE.md`, `planning/API_CONTRACT.md`, `docs/superpowers/specs/2026-10-07-sindri-design.md`
@@ -5572,7 +5605,7 @@ git commit -m "feat: sindri doctor"
 - Consumes: the built CLI (`sindri/dist/cli.js`) from Tasks 1–10.
 - Produces: `~/.local/bin/sindri` (or `$CLAUDE_LOCAL_BIN/sindri`); `./setup.sh --with-sindri`. Later plans' "Turn it on" tasks call `scripts/install-sindri.sh`.
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 `scripts/tests/install-sindri.test.sh`:
 
@@ -5611,12 +5644,12 @@ test_wrapper_execs_the_built_cli
 test_setup_has_opt_in_flag
 ```
 
-- [ ] **Step 2: Run it to verify it fails**
+- [x] **Step 2: Run it to verify it fails**
 
 Run: `bash scripts/tests/install-sindri.test.sh`
 Expected: `bash: …/scripts/install-sindri.sh: No such file or directory`, then the script exits non-zero.
 
-- [ ] **Step 3: Implement the installer and the setup flag**
+- [x] **Step 3: Implement the installer and the setup flag**
 
 `scripts/install-sindri.sh`:
 
@@ -5677,12 +5710,12 @@ if [ "$WITH_SINDRI" = "1" ]; then
 fi
 ```
 
-- [ ] **Step 4: Run the installer tests and the setup dry-run**
+- [x] **Step 4: Run the installer tests and the setup dry-run**
 
 Run: `bash scripts/tests/install-sindri.test.sh && ./setup.sh --providers claude,codex,cursor --dry-run > /dev/null && ./setup.sh --providers claude --with-sindri --dry-run | grep -q 'would run scripts/install-sindri.sh' && echo SETUP_OK`
 Expected: three `PASS` lines, then `SETUP_OK`.
 
-- [ ] **Step 5: Write `docs/sindri/README.md`**
+- [x] **Step 5: Write `docs/sindri/README.md`**
 
 ````markdown
 # Sindri
@@ -5743,7 +5776,7 @@ The `plan-file` tracker reads each `### Task N: …` heading as one item and its
 | Have work picked up, run and shipped for you | `sindri start` / auto-start (rollout step 3a and later; not built yet) |
 ````
 
-- [ ] **Step 6: Update AGENTS.md, testing docs, architecture, API contract and the spec**
+- [x] **Step 6: Update AGENTS.md, testing docs, architecture, API contract and the spec**
 
 `AGENTS.md`:
 - Directory Structure: add `├── sindri/       # Sindri core: profile, ledger, lock, scrubber, plan-file tracker, observe, doctor (CLI)` after the `judge` or `scorer` line (add a `judge/` line too if it is missing).
@@ -5780,7 +5813,7 @@ scripts/install-sindri.sh               # Build sindri, install the CLI wrapper 
 - §8.7: after "A profile change takes effect only after `sindri profile approve <hash>`", add "Runtime commands load the last approved snapshot; approving needs an interactive terminal and a typed confirmation."
 - §10.3 `observe` row: change the empty text to "Observed N items (M open); would start K. … Nothing outside the ledger changed." and note "records to the ledger when the profile is approved (exit 1 when it can't for a fixable reason)".
 
-- [ ] **Step 7: Run the whole merge gate for the touched packages, one job at a time**
+- [x] **Step 7: Run the whole merge gate for the touched packages, one job at a time**
 
 Run each command after the previous one finishes:
 
@@ -5795,7 +5828,7 @@ grep -rnw "any" sindri/src --include=*.ts | grep -E ':\s*any\b|<any>|as any' && 
 
 Expected: typecheck clean and coverage 100%; three `PASS` lines; `sync-rules` exits 0; `SETUP_DRY_RUN_OK`; `NO_V8_IGNORE`; `NO_ANY`.
 
-- [ ] **Step 8: Commit**
+- [x] **Step 8: Commit**
 
 ```bash
 git add scripts/install-sindri.sh scripts/tests/install-sindri.test.sh setup.sh docs/sindri/README.md AGENTS.md .agents/rules/testing.md planning docs/superpowers/specs/2026-10-07-sindri-design.md

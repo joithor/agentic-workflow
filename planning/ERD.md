@@ -127,3 +127,55 @@ Results are ordered by `last_activity DESC` and support `limit` / `offset` pagin
 - **Journal mode:** WAL (`PRAGMA journal_mode = WAL`)
 - **Foreign keys:** Enabled (`PRAGMA foreign_keys = ON`), though no FK constraints are currently defined
 - **Default path:** `bridge.db` in the process working directory
+
+## Sindri ledger
+
+`$AW_STATE_DIR/sindri/ledger.db` (SQLite, WAL, file 0600, dir 0700). Sindri is the only writer; hooks append to spool files instead (spec §5.2). The schema version is `PRAGMA user_version`; migrations live in `sindri/src/ledger/db.ts` and are append-only, run in one `IMMEDIATE` transaction, and copy the file to `ledger.db.bak-v<old>` first. A ledger newer than the running sindri is refused with `SND-LEDGER-001`.
+
+```mermaid
+erDiagram
+    meta {
+        TEXT key PK "epoch"
+        TEXT value "NOT NULL"
+    }
+    items {
+        TEXT source PK "NOT NULL, <tracker type>:<repo>, e.g. plan-file:<repo>"
+        TEXT id PK "tracker item id, unique only within its source"
+        TEXT title "NOT NULL, scrubbed, <=200 chars"
+        TEXT state "open | done | removed"
+        TEXT size "XS..XL, NULLABLE"
+        TEXT sized_by "rules | judge, NULLABLE"
+        TEXT ambiguity "none | unknown, NULLABLE"
+        INTEGER steps_done
+        INTEGER steps_total
+        TEXT content_hash "NOT NULL"
+        TEXT first_seen "ISO-8601"
+        TEXT last_seen "ISO-8601"
+        INTEGER epoch "fencing epoch of the last write"
+    }
+    item_events {
+        INTEGER seq PK
+        TEXT source FK "with item_id, references items(source, id)"
+        TEXT item_id FK
+        TEXT ts "ISO-8601"
+        TEXT kind "seen | changed | state-changed | removed"
+        TEXT detail "scrubbed JSON, <=2000 chars"
+        INTEGER epoch
+        TEXT tick_id "ulid of the run"
+    }
+    profile_approvals {
+        TEXT hash PK "sha256 of the approved bytes; the row inserted last (highest rowid) is the latest approval"
+        TEXT approved_at "ISO-8601"
+        TEXT approved_by "OS user"
+    }
+    cursors {
+        TEXT source PK "adapter:repo"
+        TEXT cursor
+        TEXT updated_at
+    }
+    items ||--o{ item_events : "has"
+```
+
+Items are keyed by `(source, id)`: an item id is unique only within its tracker source, so two repos with a same-named plan file never share a row, and `markMissing` closes only its own source's items. `item_events` references that composite key.
+
+Every write runs inside `withEpoch(db, epoch, …)` or `fenced(db, epoch, …)`, an `IMMEDIATE` transaction that rejects a stale epoch (spec §9.1): `withEpoch` throws `SND-LOCK-003`, and `fenced` returns `{ ok: false }` so `observe` can stop as a no-op. Re-approving a profile deletes and re-inserts its `profile_approvals` row, so a rollback becomes the latest approval.

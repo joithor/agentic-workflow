@@ -3076,7 +3076,7 @@ git add config/launchd/com.agentic-workflow.scorer-audit.plist scripts/install-s
 git commit -m "feat: weekly scorer audit job (Sindri bootstrapping ladder)"
 ```
 
-- [ ] **Step 6: Switch on after merge, then post the evidence as a PR comment**
+- [x] **Step 6: Switch on after merge, then post the evidence as a PR comment**
 
 Run on Joi's machine, after the PR merges, from the updated `main`:
 
