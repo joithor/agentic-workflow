@@ -91,6 +91,35 @@ describe("ledger items", () => {
     expect(JSON.parse(stateEvent.detail)).toEqual({ from: "open", to: "done" });
   });
 
+  it("rejects a real write under a stale epoch and leaves no item or event", () => {
+    const db = openMemoryLedger();
+    const old = bumpEpoch(db);
+    const stale = ctx(db);
+    bumpEpoch(db);
+    let caught: unknown;
+    try {
+      withEpoch(db, old, () => upsertItem(db, stale, item()));
+    } catch (e) {
+      caught = e;
+    }
+    expect((caught as SindriError).code).toBe("SND-LOCK-003");
+    expect(listItems(db)).toEqual([]);
+    expect(listEvents(db, {})).toEqual([]);
+  });
+
+  it("rolls back an upsert when the callback throws after it", () => {
+    const db = openMemoryLedger();
+    const epoch = bumpEpoch(db);
+    expect(() =>
+      withEpoch(db, epoch, () => {
+        upsertItem(db, ctx(db), item());
+        throw new Error("boom");
+      }),
+    ).toThrow("boom");
+    expect(listItems(db)).toEqual([]);
+    expect(listEvents(db, {})).toEqual([]);
+  });
+
   it("closes items a full scan no longer returns", () => {
     const db = openMemoryLedger();
     bumpEpoch(db);
