@@ -25,3 +25,25 @@ export function parseProvidersAllowlist(argv: readonly string[], env: NodeJS.Pro
   if (bad.length > 0) return { ok: false, error: `unknown provider(s): ${bad.join(", ")}` };
   return { ok: true, allowed: [...new Set(names as ProviderName[])], argv: rest };
 }
+
+// The allowlist gates every provider call, not just the evaluate chain:
+// prompt-sort (jev + its adjudicator) and adjudicate (claude-cli) call
+// providers directly. null means no allowlist, so everything is allowed.
+export function isProviderAllowed(allowed: readonly ProviderName[] | null, name: ProviderName): boolean {
+  return allowed === null || allowed.includes(name);
+}
+
+// prompt-sort: a provider outside the allowlist is dropped (jev -> its rules
+// path; adjudicator -> "needs the claude CLI" refusal).
+export function gatePromptSortDeps<J, A>(allowed: readonly ProviderName[] | null, jev: J | null, adjudicator: A | null): { jev: J | null; adjudicator: A | null } {
+  return {
+    jev: isProviderAllowed(allowed, "jev") ? jev : null,
+    adjudicator: isProviderAllowed(allowed, "claude-cli") ? adjudicator : null,
+  };
+}
+
+// adjudicate always uses claude-cli: refuse (usage error, exit 64) when excluded.
+export function adjudicateRefusal(allowed: readonly ProviderName[] | null): { exitCode: number; stdout: string; stderr: string } | null {
+  if (isProviderAllowed(allowed, "claude-cli")) return null;
+  return { exitCode: 64, stdout: "", stderr: "judge: adjudicate uses claude-cli, which is not in --providers / AW_JUDGE_PROVIDERS" };
+}

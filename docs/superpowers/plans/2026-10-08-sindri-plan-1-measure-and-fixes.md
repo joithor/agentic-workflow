@@ -257,6 +257,7 @@ git commit -m "fix: done-gate detects completion claims, not bare claim words (q
 ---
 
 ### Task 2: judge `--providers` allowlist
+> Amendment (build): final review found the allowlist only restricted the evaluate chain. `isProviderAllowed`, `gatePromptSortDeps` and `adjudicateRefusal` (in `providers-flag.ts`, unit-tested) now gate the direct calls: with an allowlist set, `prompt-sort` drops jev (falling back to its rules path) and its adjudicator unless `claude-cli` is allowed, and `adjudicate` exits 64 when `claude-cli` is not allowed. With no allowlist nothing changes.
 
 **Files:**
 - Modify: `judge/src/chain.ts` (add `restrictChain`)
