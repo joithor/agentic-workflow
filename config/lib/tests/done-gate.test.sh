@@ -137,6 +137,51 @@ test_done_claim_survives_over_1mb_of_trailing_hook_attachments() {
   echo "PASS: test_done_claim_survives_over_1mb_of_trailing_hook_attachments"
 }
 
+claim_rc() {
+  # Runs the hook on one assistant message with a fake judge (no brief), prints the exit code.
+  local text="$1" bin transcript rc
+  bin="$(setup_fake_judge)"; transcript="$(mktemp)"
+  write_transcript_with_assistant_text "$transcript" "$text"
+  set +e
+  PATH="$bin:$PATH" bash "$HOOK" <<< "$(jq -nc --arg t "$transcript" '{transcript_path:$t, session_id:"s1"}')" > /dev/null 2>&1
+  rc=$?
+  set -e
+  echo "$rc"
+}
+
+test_question_with_claim_word_is_not_a_claim() {
+  [ "$(claim_rc 'Should I mark it ready for review now?')" -eq 0 ] || { echo "FAIL: question treated as claim"; exit 1; }
+  echo "PASS: test_question_with_claim_word_is_not_a_claim"
+}
+
+test_negated_claim_is_not_a_claim() {
+  [ "$(claim_rc "I'm not claiming anything is finished; four reviews are still running.")" -eq 0 ] || { echo "FAIL: negation treated as claim"; exit 1; }
+  [ "$(claim_rc 'Nothing is done yet.')" -eq 0 ] || { echo "FAIL: 'Nothing is done yet' treated as claim"; exit 1; }
+  [ "$(claim_rc "It isn't complete.")" -eq 0 ] || { echo "FAIL: isn't complete treated as claim"; exit 1; }
+  echo "PASS: test_negated_claim_is_not_a_claim"
+}
+
+test_claim_word_in_table_or_code_is_not_a_claim() {
+  local table code
+  table=$'| Step | Status |\n|---|---|\n| undraft | ready for review |'
+  code=$'Example:\n```\necho done\n```\nWhich option do you want?'
+  [ "$(claim_rc "$table")" -eq 0 ] || { echo "FAIL: table cell treated as claim"; exit 1; }
+  [ "$(claim_rc "$code")" -eq 0 ] || { echo "FAIL: code fence treated as claim"; exit 1; }
+  echo "PASS: test_claim_word_in_table_or_code_is_not_a_claim"
+}
+
+test_real_claims_without_evidence_still_block() {
+  [ "$(claim_rc 'Done. The refactor is complete.')" -eq 2 ] || { echo "FAIL: real claim not blocked"; exit 1; }
+  [ "$(claim_rc "I've finished the migration.")" -eq 2 ] || { echo "FAIL: I've finished not blocked"; exit 1; }
+  [ "$(claim_rc 'The PR is ready for review.')" -eq 2 ] || { echo "FAIL: 'is ready for review' not blocked"; exit 1; }
+  echo "PASS: test_real_claims_without_evidence_still_block"
+}
+
+test_real_claim_with_evidence_passes() {
+  [ "$(claim_rc 'Done — ran npm test and all 42 tests passed.')" -eq 0 ] || { echo "FAIL: evidenced claim blocked"; exit 1; }
+  echo "PASS: test_real_claim_with_evidence_passes"
+}
+
 test_stop_hook_active_always_exits_0_rf3
 test_not_a_done_claim_exits_0
 test_no_brief_found_falls_back_to_any_evidence_check_rf2
@@ -145,6 +190,11 @@ test_done_claim_with_matching_brief_and_evidence_exits_0
 test_done_claim_not_matching_brief_acceptance_exits_2
 test_string_shaped_message_content_is_read_too
 test_done_claim_survives_over_1mb_of_trailing_hook_attachments
+test_question_with_claim_word_is_not_a_claim
+test_negated_claim_is_not_a_claim
+test_claim_word_in_table_or_code_is_not_a_claim
+test_real_claims_without_evidence_still_block
+test_real_claim_with_evidence_passes
 echo "All done-gate tests passed."
 
 setup_fake_judge_ask_check() {

@@ -51,10 +51,31 @@ CLAIM_TEXT="$(printf '%s' "$LAST_ASSISTANT_LINE" | jq -r '
 [ -n "$CLAIM_TEXT" ] || exit 0
 fi
 
+# A done claim is an assertion of completion, not any occurrence of a claim word.
+# Ignored: fenced code, table rows, lines ending in '?', and sentences whose claim
+# word is negated (not/n't/nothing/no/yet). Deterministic: grep/sed only.
+is_done_claim() {
+  local text="$1" body
+  body="$(printf '%s\n' "$text" \
+    | awk 'BEGIN{f=0} /^[[:space:]]*```/{f=!f; next} !f' \
+    | grep -v -E '^[[:space:]]*\|' \
+    | grep -v -E '\?[[:space:]]*$' || true)"
+  [ -n "$body" ] || return 1
+  # Split into sentences, one per line (awk, not sed: BSD sed has no \n in replacements).
+  body="$(printf '%s\n' "$body" | awk '{gsub(/[.!;:][[:space:]]+/, "&\n"); print}')"
+  # Drop sentences with a negation anywhere before the claim word.
+  body="$(printf '%s\n' "$body" | grep -v -iE "(\bnot\b|n't\b|\bnothing\b|\bno\b|\byet\b)" || true)"
+  [ -n "$body" ] || return 1
+  printf '%s\n' "$body" | grep -qiE \
+    -e '^[[:space:]]*(done|finished|shipped|merged)\b' \
+    -e "\b(is|are|it's|it is|now|all|everything('s| is)?)[[:space:]]+(now[[:space:]]+)?(done|complete|completed|finished|merged|shipped|ready for review)\b" \
+    -e "\b(i|we)('ve| have)?[[:space:]]+(finished|completed|shipped|merged)\b"
+}
+
 SESSION_ID="$(printf '%s' "$INPUT" | jq -r '.session_id // empty')"
 SESSIONS_DIR="${AW_JUDGE_SESSIONS_DIR:-${AW_STATE_DIR:-$HOME/.agentic-workflow}/judge/sessions}"
 
-if ! printf '%s' "$CLAIM_TEXT" | grep -qiE '\b(done|complete|finished|ready for review|merged|shipped)\b'; then
+if ! is_done_claim "$CLAIM_TEXT"; then
   # Not a done claim — ask whether auto-continue is already authorized
   # (Task 4, N2/R2). judge ask-check's own CLI contract is inverted from
   # every other subcommand here: exit 2 means "continue" (don't actually

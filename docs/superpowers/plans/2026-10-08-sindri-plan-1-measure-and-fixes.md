@@ -76,7 +76,7 @@ Later plans cover the rest of step 1:
 **Interfaces:**
 - Produces: bash function `is_done_claim <text>`. It returns 0 when the text claims completion and 1 otherwise. The hook calls it where the old regex was.
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 Append these functions to `config/lib/tests/done-gate.test.sh`, before the list of test invocations at the bottom of the file, and add their names to that list:
 
@@ -127,13 +127,13 @@ test_real_claim_with_evidence_passes() {
 }
 ```
 
-- [ ] **Step 2: Run the tests to verify they fail**
+- [x] **Step 2: Run the tests to verify they fail**
 
 Run: `bash config/lib/tests/done-gate.test.sh`
 
 Expected: FAIL at `test_question_with_claim_word_is_not_a_claim` (the current regex matches "ready for review" inside the question, so the hook exits 2).
 
-- [ ] **Step 3: Implement `is_done_claim`**
+- [x] **Step 3: Implement `is_done_claim`**
 
 In `config/hooks/done-gate.sh`, define the function before the `SESSION_ID=` line:
 
@@ -172,12 +172,12 @@ with:
 if ! is_done_claim "$CLAIM_TEXT"; then
 ```
 
-- [ ] **Step 4: Run all done-gate tests**
+- [x] **Step 4: Run all done-gate tests**
 
 Run: `bash config/lib/tests/done-gate.test.sh && bash config/lib/tests/done-gate-annotate.test.sh`
 Expected: every line `PASS: …`, exit 0. The existing tests (RF-2, RF-3, RF-4, the UI requirement tests) must still pass unchanged.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add config/hooks/done-gate.sh config/lib/tests/done-gate.test.sh
