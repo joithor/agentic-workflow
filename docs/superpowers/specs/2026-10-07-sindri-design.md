@@ -1160,6 +1160,8 @@ interface Environment { provision(item: WorkItem, change: ChangeRef | null): Pro
                         status(h: EnvHandle): Promise<Result<"pending" | "ready" | "failed">>; teardown(h: EnvHandle): Promise<Result<void>> }
 interface Badge    { publish(summary: StatusSummary): Promise<Result<void>> }
 ```
+- **`plan-file` Tracker (built-in):** reads `docs/superpowers/plans/*.md` task headings and checkboxes as work
+  items, so a repo can be built from its own plans with no tracker account (§13.3 ring 0).
 - **Selection:** the profile picks an adapter by `type:` (for example `tracker: { type: linear, ... }`).
   **`Environment` is chosen per repo** in `repos/<repo>.yaml`. Built-ins:
   - `none`
@@ -1394,6 +1396,41 @@ These are rough, for one builder with agent help. Every step ends with a usable 
 | Shape | replay only | record only | **enforce** | enforce | enforce |
 | Scoping | — | — | — | — | shadow → enforce |
 | Scope expansion | — | — | — | — | shadow → enforce |
+
+### 13.3 Bootstrapping ladder: when each piece switches on and starts building the rest
+Sindri builds Sindri. Every piece is switched on **as soon as its plan merges**, first on this toolkit repo
+(**ring 0**: the backlog of Sindri plans), then on the profile's workplace repos (**ring 1**). From the
+moment a piece is on, it does its job on the rest of the build, so later plans are built with progressively
+less human direction. Every plan ends with a **"Turn it on" task**:
+1. Run the switch-on command.
+2. Record the evidence in the PR.
+3. Use the piece on the next plan's work.
+
+**Ring 0 backlog:** the remaining plan files and their task checkboxes, read through a `plan-file`
+`Tracker` adapter. It is generic: it reads `docs/superpowers/plans/*.md` tasks as work items, so the
+toolkit needs no tracker account to build itself. The adapter ships in Plan 2.
+
+| Piece (plan) | Switch on when | Switch-on command (ring 0) | Evidence it's on | Starts doing for the rest of the build | Ring 1 |
+|---|---|---|---|---|---|
+| done-gate claim detection (P1 T1) | P1 merges | `scripts/install-done-gate.sh --provider claude` (reinstalls the hook copy in `~/.claude/hooks/`) | The `done-gate` false-positive rate in the next weekly audit drops to ~0 | Stops false "Claiming done" blocks in every builder session from then on | Same hook, immediately |
+| `judge --providers` (P1 T2) | P1 merges | none; used by callers | `judge --providers jev why <id>` works | Lets P2+ direction checks and verifiers pin providers (Anthropic + Jev) | Same |
+| `scorer audit` (P1 T3–T5) | P1 merges | `scorer audit --since 60d` once (baselines); then weekly via the scorer launchd job (`--since 7d`) | `~/.agentic-workflow/audit/baseline.md`; weekly `summary.json` | **Measures the build itself:** steering turns per merged Sindri PR are the first metric the ladder must move down | Baselines for workplace repos |
+| Profile + ledger + lock + CLI skeleton (P2) | P2 merges | `sindri profile init --ring0` (toolkit profile, `mode: shadow`); `sindri doctor` | `doctor` all `ok`; ledger file exists | Every later build session is recorded in the ledger (items = plan tasks) | `sindri profile init` in the private profile repo |
+| Scrubber (P2) | P2 merges | `sindri scrub --install-pre-commit` in this repo | A committed fixture secret is refused | **Guards this public repo:** no workplace details or secrets land in commits from any build session | Pre-commit in workplace repos where wanted |
+| `plan-file` tracker + `sindri observe` (P2) | P2 merges | `sindri observe` against ring 0 | Lists the remaining plan tasks with sizes | Gives a live, ordered backlog of the rest of Sindri | `observe` on the real tracker |
+| Code index, record-only shape signals (P3) | P3 merges | `sindri repo add .` then `sindri index build`; git pre-commit `sindri shape --record` | `index status` fresh; shape signals in the ledger for builder commits | **Calibrates shape thresholds on Sindri's own commits** from P4 onward; flags reinvention while P4/P5 are built | `repo add` for workplace repos (record-only) |
+| Scoping harness (P4) | P4 merges | `sindri scope docs/superpowers/specs/2026-10-07-sindri-design.md --section 13 --out docs/superpowers/scopes/` | Scope map file plus `--backtest` recall on the motivating project | **Scopes every later Sindri plan before it's written:** the plan writer starts from the scope map | Scope new workplace projects at creation |
+| Ported `reflect` / `correct` / `eval` + artifact registry (P5) | P5 merges | `sindri evolve init` (registry over the repo); `reflect` runs on every merged Sindri PR; `correct` weekly | Registry lists every module; first reflect proposal recorded | **The build improves its own tools:** proposals for the skills and hooks used to build Sindri arrive as PRs (human merges) | Same loop over ring-1 artifacts |
+| Shadow triage + dashboard/badge (step 2) | Step-2 plan merges | `sindri dashboard`; SwiftBar badge install | Dashboard shows ring-0 items and what Sindri would do | Visible queue for the remaining build | Shadow on the real tracker |
+| `sindri start`, packs, worker → ship, notifications (step 3a) | Step-3a plan merges | Remaining Sindri tasks are started with `sindri start <plan-task>` instead of pasted prompts | Next Sindri PR opened by the ship Step | **Sindri dispatches and ships its own remaining plans** (human starts, human merges) | Assist mode for workplace tickets |
+| Shape enforcement (3b) | Per-layer precision bar met on ring-0 commits | `profile: shape.enforce: true` for ring 0 | A refused commit with evidence | Enforces code shape on Sindri's own code first | After ring 0 holds for 2 weeks |
+| Auto-small (4) | Isolation pass + bars met | `mode: auto-small` for ring 0 | An XS ring-0 task goes from triage to draft PR unattended | Small Sindri fixes build themselves | After ring 0 holds for 2 weeks |
+| Self-evolution, full (6) | Step-6 bars met | `sindri evolve resume --tier self-adopt` | An adoption plus an auto-revert observed | The toolkit improves continuously | Same |
+
+**Rules:**
+- A piece that isn't switched on within one working day of its plan merging is a ring-0 work item of its own.
+- No later plan is started by hand if the pieces before it could start it.
+- Every ring-1 switch-on waits until the same piece has run on ring 0 for at least one plan's worth of work, with no open defects.
 
 ## 14. Testing
 - **Unit tests** in Vitest with in-memory SQLite and fake adapters: tick, router, Step runner (pass,

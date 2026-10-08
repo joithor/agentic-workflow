@@ -2,7 +2,7 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Ship Sindri rollout step 0 (measurement baselines) and the two standalone step-1 fixes that later plans depend on: done-gate false positives, and a judge `--providers` allowlist.
+**Goal:** Ship Sindri rollout step 0 (measurement baselines) and the two standalone step-1 fixes that later plans depend on (done-gate false positives, and a judge `--providers` allowlist), then **switch them on** so they start serving the rest of the build (spec §13.3 ladder, rows 1–3).
 
 **Architecture:** Measurement is a new `scorer audit` subcommand. It reuses scorer's transcript discovery and `classifyUserText` to extract human turns, count recurring-direction patterns, and compute per-item token usage. It writes JSONL, JSON and a Markdown baseline. The done-gate change replaces a bare-word regex with a small claim detector that ignores questions, negations, tables and code. The judge change adds a chain filter, so callers (later, Sindri) can restrict which providers a question may use.
 
@@ -1128,7 +1128,149 @@ git commit -m "feat: scorer audit command (Sindri step 0 baselines)"
 
 ---
 
+---
+
+### Task 6: Turn it on (bootstrapping ladder, spec §13.3)
+
+Plan 1's pieces start working on the rest of the Sindri build as soon as this PR merges. This task adds the
+one missing switch, a weekly audit, and records the switch-on evidence. Steps 1–5 run on the PR branch.
+Step 6 runs **after merge** and its output is posted as a PR comment.
+
+**Files:**
+- Create: `config/launchd/com.agentic-workflow.scorer-audit.plist`
+- Modify: `scripts/install-scorer.sh` (install both plists)
+- Test: `scripts/tests/install-scorer-audit.test.sh`
+- Modify: `AGENTS.md` (add the new bash test to the Commands list)
+
+**Interfaces:**
+- Consumes: the `scorer audit` command (Task 5).
+- Produces: a weekly job writing `~/.agentic-workflow/audit/weekly/<YYYY-MM-DD>/`. Later plans' "Turn it on" tasks read it to show steering turns per merged Sindri PR going down.
+
+- [ ] **Step 1: Write the failing test**
+
+Create `scripts/tests/install-scorer-audit.test.sh`:
+
+```bash
+#!/usr/bin/env bash
+set -euo pipefail
+DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+ROOT="$DIR/../.."
+PLIST="$ROOT/config/launchd/com.agentic-workflow.scorer-audit.plist"
+
+test_plist_exists_and_is_valid() {
+  [ -f "$PLIST" ] || { echo "FAIL: $PLIST missing"; exit 1; }
+  if command -v plutil >/dev/null 2>&1; then plutil -lint "$PLIST" >/dev/null || { echo "FAIL: plist invalid"; exit 1; }; fi
+  echo "PASS: test_plist_exists_and_is_valid"
+}
+
+test_plist_runs_weekly_audit_into_dated_dir() {
+  grep -q 'scorer audit --since 7d --out __HOME__/.agentic-workflow/audit/weekly/$(date +%F)' "$PLIST" || { echo "FAIL: audit command missing"; exit 1; }
+  grep -q '<key>Weekday</key>' "$PLIST" || { echo "FAIL: not weekly"; exit 1; }
+  echo "PASS: test_plist_runs_weekly_audit_into_dated_dir"
+}
+
+test_installer_installs_both_plists() {
+  grep -q 'com.agentic-workflow.scorer-audit.plist' "$ROOT/scripts/install-scorer.sh" || { echo "FAIL: installer does not install the audit plist"; exit 1; }
+  echo "PASS: test_installer_installs_both_plists"
+}
+
+test_plist_exists_and_is_valid
+test_plist_runs_weekly_audit_into_dated_dir
+test_installer_installs_both_plists
+```
+
+- [ ] **Step 2: Run it to verify it fails**
+
+Run: `bash scripts/tests/install-scorer-audit.test.sh`
+Expected: `FAIL: …/com.agentic-workflow.scorer-audit.plist missing`
+
+- [ ] **Step 3: Implement**
+
+Create `config/launchd/com.agentic-workflow.scorer-audit.plist`:
+
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>Label</key>
+  <string>com.agentic-workflow.scorer-audit</string>
+  <key>ProgramArguments</key>
+  <array>
+    <string>/bin/bash</string>
+    <string>-lc</string>
+    <string>__HOME__/.local/bin/scorer audit --since 7d --out __HOME__/.agentic-workflow/audit/weekly/$(date +%F)</string>
+  </array>
+  <key>StartCalendarInterval</key>
+  <dict>
+    <key>Weekday</key>
+    <integer>1</integer>
+    <key>Hour</key>
+    <integer>8</integer>
+    <key>Minute</key>
+    <integer>45</integer>
+  </dict>
+  <key>StandardOutPath</key>
+  <string>__HOME__/.agentic-workflow/scorer/audit-launchd.log</string>
+  <key>StandardErrorPath</key>
+  <string>__HOME__/.agentic-workflow/scorer/audit-launchd.log</string>
+</dict>
+</plist>
+```
+
+In `scripts/install-scorer.sh`, replace the single-plist block inside the `Darwin` branch with a loop over both
+plists, keeping the existing `bootout`/`bootstrap` calls and messages:
+
+```bash
+    for NAME in com.agentic-workflow.scorer com.agentic-workflow.scorer-audit; do
+      PLIST_SRC="$SCRIPT_DIR/config/launchd/$NAME.plist"
+      PLIST_DST="$LAUNCH_AGENTS_DIR/$NAME.plist"
+      sed "s|__HOME__|$HOME|g" "$PLIST_SRC" > "$PLIST_DST"
+      launchctl bootout "gui/$(id -u)" "$PLIST_DST" 2>/dev/null || true
+      launchctl bootstrap "gui/$(id -u)" "$PLIST_DST"
+    done
+    echo "  scorer: daily report at 08:30 and weekly audit Mondays 08:45 (launchd)"
+```
+
+Keep the `mkdir -p "$LAUNCH_AGENTS_DIR" "${AW_STATE_DIR:-$HOME/.agentic-workflow}/scorer"` line before the loop.
+In the non-Darwin `else` branch, extend the cron hint with:
+`45 8 * * 1 $BIN_DIR/scorer audit --since 7d --out $HOME/.agentic-workflow/audit/weekly/$(date +%F)`.
+
+In `AGENTS.md`'s bash test list, add `bash scripts/tests/install-scorer-audit.test.sh`.
+
+- [ ] **Step 4: Run the tests**
+
+Run: `bash scripts/tests/install-scorer-audit.test.sh && ./setup.sh --providers claude,codex,cursor --dry-run > /dev/null && echo SETUP_DRY_RUN_OK`
+Expected: three `PASS` lines, then `SETUP_DRY_RUN_OK`.
+
+- [ ] **Step 5: Commit**
+
+```bash
+git add config/launchd/com.agentic-workflow.scorer-audit.plist scripts/install-scorer.sh scripts/tests/install-scorer-audit.test.sh AGENTS.md
+git commit -m "feat: weekly scorer audit job (Sindri bootstrapping ladder)"
+```
+
+- [ ] **Step 6: Switch on after merge, then post the evidence as a PR comment**
+
+Run on Joi's machine, after the PR merges, from the updated `main`:
+
+```bash
+scripts/install-done-gate.sh --provider claude                 # live hook copy now has claim detection
+scripts/install-scorer.sh                                       # installs the CLI + daily + weekly jobs
+launchctl list | grep com.agentic-workflow.scorer-audit         # weekly job loaded
+scorer audit --since 60d && sed -n 1,25p ~/.agentic-workflow/audit/baseline.md
+```
+
+Expected:
+- `install-done-gate.sh` reports success.
+- `launchctl list` shows `com.agentic-workflow.scorer-audit`.
+- `baseline.md` holds the step-0 baseline table.
+
+Post all of that output as a comment on the Plan 1 PR. From this point the Plan 2 build sessions run with the
+fixed done-gate, and their steering turns are measured weekly. That's ladder rows 1–3 in spec §13.3.
+
 ## Done criteria for this plan
 - Merge gate (AGENTS.md) green for `judge` and `scorer`: `npm run typecheck` + `npm test` in each. The done-gate bash tests pass.
 - `scorer audit --since 60d` produces `baseline.md` on the real corpus, and the numbers are recorded in the PR.
 - Every new test from Review Focus 1–5 is present and passing.
+- **Switched on (Task 6, Step 6):** the live done-gate is reinstalled, the weekly audit job is loaded, and the baseline is recorded as a PR comment. Plan 2 must not start until this evidence is posted (spec §13.3 rules).
