@@ -1518,26 +1518,42 @@ These are rough, for one builder with agent help. Every step ends with a usable 
 - Shared recipes can be copied between profile repos. A shared team profile layer is out of scope for v1.
 
 ## 16. Prior art and reuse
-The harness reuses existing work wherever it can. Every adopted piece becomes a **managed artifact** in
-the self-evolution loop (§7.4), so it is evaluated and evolved like native code. The detailed port map,
-with licenses, Cursor-only dependencies and effort, lives in `plans/conductor/reuse-map.md`. A summary:
+The harness reuses existing work wherever it can. Every adopted piece becomes a **managed artifact** in the
+self-evolution loop (§7.4, §7.7), pinned by commit and content hash and evaluated like native code. The full
+port map is in `plans/conductor/reuse-map.md` (reuse spike, 2026-10-08).
 
-| Source | Used for | Spec part |
-|---|---|---|
-| pstack (cursor/plugins): `/why`, `/create-verification-skill`, `/interrogate`, `/reflect`, `/correct`, `/automate-me`, babysit/shipping playbooks, `eval` (blinded), benny pack | Multi-source evidence; project verification skills; diff interrogation; self-evolution proposal sources; ship recipe; blinded eval | §6, §6.1, §7.3, §7.4, evidence recipes |
-| continual-learning (cursor/plugins) | Transcript → AGENTS.md learnings | §7.4 proposal source |
-| advisor (cursor/plugins) | Consult a stronger model before major decisions and before "done" | §6.1 challenger prompts |
-| orchestrate, thermos, cursor-team-kit (cursor/plugins) | Planner/worker/verifier patterns; review rubrics; CI and ship workflows | §6, §7.3, review lens |
-| Cyrus | Linear issue → Claude Code session → PR | Tracker intake reference |
-| Dagger container-use | Per-agent container plus branch environments | `Sandbox` adapter candidate (its environment layer only; the agent never drives it through MCP tools, invariant 10) |
-| Conductor (conductor.build) | Multi-agent dashboard UX | §10.5 reference; also the reason for the rename |
+| Priority | Source (license) | Port as | Spec part |
+|---|---|---|---|
+| 1 | pstack `eval` plus `arena` blinding rules (MIT) | Native: leak linter, shuffled labels, a single pairwise judge with skill names hidden | §7.4 offline blinded evaluation |
+| 1 | pstack `correct` (MIT) | Native: its "fix at the highest level that works" ladder becomes a proposal source | §7.4 |
+| 1 | pstack `reflect` (MIT) | Native: three reviewers plus a synthesizer; its approval gate is replaced by the §7.4 tiers | §7.4 |
+| 2 | pstack `interrogate` (MIT) | Prompts become the challenger template | §6.1 |
+| 2 | pstack babysit/shipping playbooks (MIT) | Rules ported (frontier-only, flake classification, patch-id re-verify); the merge and landing steps are dropped because the human merges | §7.3 |
+| 2 | pstack `create-verification-skill`, `maintain-verification-skill` (MIT) | Native, feeding repo onboarding and evidence recipes | §11.6, evidence |
+| 2 | pstack `why` (MIT) | Native: multi-source evidence queries | evidence recipes (H6) |
+| 3 | pstack `tdd`, principles, `unslop`; `cli-for-agent`; cursor-team-kit `verify-this` and similar (MIT) | Pinned external pack, via the existing fetch pattern | skills |
+| 3 | thermos (MIT) | Prompts become judge questions and review rubrics | review lens |
+| 3 | agent-compatibility (license to be confirmed) | Advisory repo-readiness signal, run sandboxed and pinned | §11.6 |
+| ref | Cyrus (license inconsistent: the LICENSE file says Apache-2.0 boilerplate, package.json says MIT; ask the maintainers before copying any code) | Reference only: Linear tracker, fake-tracker test pattern, trust gate, egress proxy | `Tracker` adapter, §8.3 |
+| ref | orchestrate (MIT, needs the Cursor SDK) | Schemas as reference | §6 |
+| ref | Conductor (conductor.build) | UX reference | §10.5 |
+| skip | ralph-loop | A self-declared completion loop; breaks invariant 3 | — |
+| skip | swarm / arena runners / poteto-mode | Depend on Cursor `Task` subagents and on the agent choosing in-session; breaks invariant 10. Only the blinding rules are kept | — |
+| skip | container-use (Apache-2.0) | Its agent-facing MCP tools break invariant 10 and the interactive-session model | — |
 
-**Porting rules:**
-- Licenses are checked per plugin before vendoring.
-- Cursor-only capabilities (cloud agents, canvases, `.mdc` rules) map through
-  `skills/_shared/capabilities.md`, or the skill is reference-only.
-- Vendored packs follow the existing external-pack fetch pattern (pinned revisions), with
-  workplace-neutral wording.
+**Mapping Cursor constructs to Claude Code:**
+
+| Cursor construct | Becomes |
+|---|---|
+| `pstack-models.mdc` model map | Profile `models.roles`, Anthropic-only by default (Grok defaults removed) |
+| Cursor `Task` subagents | Bounded conductor jobs |
+| `AskQuestion` | needs-answer notification |
+| `agent-transcripts/` | `~/.claude/projects`, human-origin turns only |
+
+**Open items:**
+- Cyrus license.
+- A pin policy for fetched packs (commit plus content hash; upgrades go through §7.4 as `pack-upgrade` proposals).
+- agent-compatibility's license and its `npx @latest` network use (pin, don't float).
 
 ## Appendix: audit method
 - Extract every non-machine human turn from `~/.claude/projects/**/*.jsonl` (excluding sidechains, tool
