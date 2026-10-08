@@ -66,7 +66,7 @@ is_done_claim() {
       B = "[^[:alpha:]\047]"
       DONE = "(done|complete|completed|finished|merged|shipped|ready for review)"
       PAIR = "(((is|are|was|were|all|everything|now)|(it\047s|it is))[[:space:]]+(now[[:space:]]+)?" DONE "|(i|we)(\047ve|[[:space:]]+have)?[[:space:]]+(finished|completed|shipped|merged))"
-      NOUN = "[[:alpha:]]+[[:space:]]+(complete|completed|finished)[.!;:,[:space:]]*$"
+      NOUN = "[[:alpha:]]+[[:space:]]+(complete|completed|finished|ready for review)([[:space:]]*,|[.!;:]?[[:space:]]*$)"
       MID = B "(" PAIR B "|" NOUN ")"
     }
     function is_claim(s,   t, rest, acc, pre, m) {

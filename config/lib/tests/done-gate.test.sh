@@ -216,6 +216,16 @@ test_negated_predicate_is_not_a_claim() {
   echo "PASS: test_negated_predicate_is_not_a_claim"
 }
 
+test_terse_noun_complete_with_tail_is_a_claim() {
+  local s
+  for s in 'Refactor complete, tests pass.' 'Task complete, all tests pass.' \
+           'Implementation complete, tests pass' 'Refactor finished, 12 tests pass.' \
+           'Migration complete, not merged.'; do
+    [ "$(claim_rc "$s")" -eq 2 ] || { echo "FAIL: terse noun-complete claim not blocked: $s"; exit 1; }
+  done
+  echo "PASS: test_terse_noun_complete_with_tail_is_a_claim"
+}
+
 test_stop_hook_active_always_exits_0_rf3
 test_not_a_done_claim_exits_0
 test_no_brief_found_falls_back_to_any_evidence_check_rf2
@@ -234,6 +244,7 @@ test_negation_after_claim_word_still_blocks
 test_noun_plus_complete_and_bullet_forms_still_block
 test_question_plus_trailing_negation_is_not_a_claim
 test_negated_predicate_is_not_a_claim
+test_terse_noun_complete_with_tail_is_a_claim
 echo "All done-gate tests passed."
 
 setup_fake_judge_ask_check() {

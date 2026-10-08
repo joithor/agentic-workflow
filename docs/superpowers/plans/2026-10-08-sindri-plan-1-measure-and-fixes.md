@@ -161,6 +161,16 @@ test_negated_predicate_is_not_a_claim() {
   done
   echo "PASS: test_negated_predicate_is_not_a_claim"
 }
+
+test_terse_noun_complete_with_tail_is_a_claim() {
+  local s
+  for s in 'Refactor complete, tests pass.' 'Task complete, all tests pass.' \
+           'Implementation complete, tests pass' 'Refactor finished, 12 tests pass.' \
+           'Migration complete, not merged.'; do
+    [ "$(claim_rc "$s")" -eq 2 ] || { echo "FAIL: terse noun-complete claim not blocked: $s"; exit 1; }
+  done
+  echo "PASS: test_terse_noun_complete_with_tail_is_a_claim"
+}
 ```
 
 - [x] **Step 2: Run the tests to verify they fail**
@@ -189,7 +199,7 @@ is_done_claim() {
       B = "[^[:alpha:]\047]"
       DONE = "(done|complete|completed|finished|merged|shipped|ready for review)"
       PAIR = "(((is|are|was|were|all|everything|now)|(it\047s|it is))[[:space:]]+(now[[:space:]]+)?" DONE "|(i|we)(\047ve|[[:space:]]+have)?[[:space:]]+(finished|completed|shipped|merged))"
-      NOUN = "[[:alpha:]]+[[:space:]]+(complete|completed|finished)[.!;:,[:space:]]*$"
+      NOUN = "[[:alpha:]]+[[:space:]]+(complete|completed|finished|ready for review)([[:space:]]*,|[.!;:]?[[:space:]]*$)"
       MID = B "(" PAIR B "|" NOUN ")"
     }
     function is_claim(s,   t, rest, acc, pre, m) {
