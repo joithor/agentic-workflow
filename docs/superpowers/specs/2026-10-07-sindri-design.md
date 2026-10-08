@@ -7,6 +7,7 @@ Revision 7:
 - adds dogfooding (§7.6) and prior art and reuse (§16)
 - fixes round-6 W3–W7
 - turns W1, W2 and W8 into spike criteria (§13.1)
+- amendment (audit feedback): labels come from outcomes or a model adjudicator (invariant 9); regex patterns are floor counts until calibrated (§2, §13 step 0); resumed and forked transcript copies are deduped; "wrong path" splits into design and process, with a step-0 decision rule for direction checks
 
 Renamed from the working name "conductor" (it collides with Conductor.build) to **Sindri**, the dwarf smith who forged Draupnir, the ring that multiplies itself.
 
@@ -73,15 +74,16 @@ It learns from its own steering so recurring corrections become rules.
 | Metric | Source | Proposed target after 4 weeks of auto-start |
 |---|---|---|
 | Human turns per merged PR | transcripts + GitHub | −40% vs baseline |
-| Shipping-direction turns per merged PR | transcript classifier (the audit's patterns) | −75% |
-| Continuity turns (handoffs, "pick up", role corrections) per week | transcript classifier | −50% |
+| Shipping-direction turns per merged PR | adjudicator labeler calibrated in step 0 (regex patterns are floor counts; they feed a metric only when step-0 calibration marks them metric-grade) | −75% |
+| Continuity turns (handoffs, "pick up", role corrections) per week | adjudicator labeler calibrated in step 0 (patterns only when metric-grade) | −50% |
 | Copy-paste dispatches of auto-start-eligible items | ledger vs transcripts | 0 |
 | Interrupting notifications per merged PR | ledger | ≤ 2 |
 | Auto-started PRs reworked or reverted | GitHub + ledger | ≤ the rate for human-started PRs |
 | Model tokens per merged PR (subscription) | proxy usage log | within `budget.perItem` |
-| Human "wrong path" corrections per merged PR | transcript classifier | −50% (direction checks should catch these first) |
+| Human "wrong path" **design** corrections after code was written, per merged PR | adjudicator labeler calibrated in step 0 (`wrong_approach_design`, turns with `editsBefore`) | −50% (direction checks should catch these first). Applies only when the step-0 decision rule makes Approach and Drift checks a deliverable; otherwise tracked, no target |
+| Human "wrong path" **process** corrections (CI vs local, which doc or tool, step order), per merged PR | adjudicator labeler (`wrong_approach_process`) | Tracked; no −50% target. Addressed by recipes, not direction checks |
 | Clone count and duplication ratio on files sindri sessions touched | code index | flat or falling |
-| Transcript-classifier accuracy | outcome-labeled turns (a later human correction or rework marks a miss; no hand labels) | ≥ 0.85, reported in `shadow report` |
+| Transcript-classifier accuracy | outcome-labeled turns and the step-0 adjudicator sample (a later human correction or rework marks a miss; no hand labels) | ≥ 0.85, reported in `shadow report` |
 
 ### Kill criteria
 - **Auto-start:** if after 4 weeks human turns per merged PR is down less than 20%, or the rework rate of
@@ -110,8 +112,9 @@ It learns from its own steering so recurring corrections become rules.
    fails closed, and is not disableable from inside a session (§8.1).
 7. **Untrusted text is data, never instructions** (§8.3).
 8. **No secrets in packs, ledger, logs, notifications or eval corpus** (§8.4).
-9. **No human hand-labeling.** Labels come from outcomes only: merged without rework, reverted, a human
-   correction in a later turn, CI results. A `proceed` written by an agent is never a label on its own (M5).
+9. **No human hand-labeling.** Labels come from outcomes or a model adjudicator (never the builder or another
+   human by hand): merged without rework, reverted, a human
+   correction in a later turn, CI results, or a model labeler run with no tools. A `proceed` written by an agent is never a label on its own (M5).
 10. **Hooks enforce; agents don't opt in.** Every required check fires on a hook event, a git hook, or a
     sindri action, never because an agent chose to call a tool. MCP is for reading data only. Hooks
     enforce *patterns*. The *security boundary* is the session container, server-side protections, and
@@ -213,7 +216,7 @@ session image, so there's no identity check to bypass, and no `env -u` path (T2)
 |---|---|---|
 | `SessionStart` (startup) | Inject the pack's Task, Acceptance and Evidence plan; register; heartbeat | — |
 | `SessionStart` (compact, resume, fork) | Re-inject Task and Acceptance plus the pack pointer | — |
-| `UserPromptSubmit` | Turn classification (`answer` / `takeover` / `sindri`). On a verified delivery token (§6.1), inject the inbox. A human correction raises a drift signal. | Block a forged delivery token (`SND-DIR-030`) |
+| `UserPromptSubmit` | Turn classification (`answer` / `takeover` / `sindri`). On a verified delivery token (§6.1), inject the inbox. A human correction raises a drift signal, but only when the calibrated labeler or a metric-grade pattern says so (§13 step 0). | Block a forged delivery token (`SND-DIR-030`) |
 | `PreToolUse` (all tools) | Sindri tool gate (§8.1) | Deny `SND-GATE-1xx` |
 | `PostToolUse` (all tools) | **Edit detection by working-tree state, not by tool name:** after any tool call, the hook compares `git status --porcelain --untracked-files=all` plus content hashes against the last snapshot, so untracked files count too (M6). The first change to a non-test source file without a `proceed` verdict fires the Approach checkpoint. This catches Edit, Write, `sed -i`, `tee`, scripts and codegen. | `continue:false`, `stopReason: SND-DIR-010 awaiting direction check <id>`. The changes stay in `/workspace/src`; the verdict decides keep or revert. |
 | `PreToolUse` (`Bash`) plus a git `pre-commit` hook set via the image's system git config | **Shape checks** (§6.2), as **pattern** enforcement. The git hook catches the common commit forms; `--no-verify` doesn't matter, because the sindri-side verifier re-runs the same checks on the bundle before anything is pushed (§8.5). | Commit refused with evidence and `continue:false` (M6); Shape direction check opened |
@@ -285,7 +288,7 @@ committed.
 |---|---|---|
 | Approach | `PreToolUse` on the first non-test source edit | Does this solve the item as written? Does it match the stated fix? Is there a simpler or more correct path? |
 | Scoping | Sindri, before a scoping proposal goes to the human | Are these the right workstreams? Is anything here solving the wrong problem? |
-| Drift | Sindri, on any drift signal: 2 failed fix rounds, the same verifier reason twice, a diff outside the predicted file set, a human correction, elapsed time more than 2× estimate | Keep going, change approach, or stop and ask? |
+| Drift | Sindri, on any drift signal: 2 failed fix rounds, the same verifier reason twice, a diff outside the predicted file set, a human correction (calibrated labeler or metric-grade pattern only), elapsed time more than 2× estimate | Keep going, change approach, or stop and ask? |
 | Shape | `PreToolUse` on `git commit` when a shape signal fires (§6.2) | Reuse, generalize, or keep the new code (with a reason)? |
 | Scope expansion | Sindri, when a session's diff or notes propose new items or a widened change | Is this necessary for this item, or a separate item? |
 
@@ -515,7 +518,9 @@ ledger. Each entry has an id, a version, a source (`native`, `vendored:<pack>@<r
 - direction-check prompts
 - hook denial and shim messages
 
-**Proposal sources** (all automatic):
+**Proposal sources** (all automatic). Wherever reflect, correct and steering telemetry read transcripts,
+copied turns from resume and fork are deduped by (timestamp, text), and a "human correction" signal comes from
+the calibrated labeler or metric-grade patterns only (§13 step 0):
 
 | Source | Produces |
 |---|---|
@@ -1314,6 +1319,21 @@ environment:
 ## 13. Rollout
 0. **Measure and decide** (M3, M7, M14):
    - Turn the audit extraction into `scripts/transcript-audit/` (L4).
+   - **Dedupe resumed and forked copies.** Resume and fork copy earlier human turns into the new
+     transcript with the same timestamp; the audit keys turns on (timestamp, text) and counts each once.
+   - **Calibrate patterns against adjudicator labels** on a 400-turn sample (`scorer audit --label 400`).
+     A pattern is `metric-grade` only when its precision and recall both have a Wilson lower bound of at
+     least 0.6 and the label has at least 10 positives. Others stay floor counts.
+   - **Measure wrong-approach corrections** from the builder's own transcripts: design vs process, after
+     code was written (`editsBefore`), per 30 days.
+   - **Decision rule:** if design wrong-approach corrections after code average under 8 per 30 days
+     (point estimate; the audit also prints a 95% interval),
+     Approach and Drift direction checks are not a step-3a deliverable: they are not built in 3a, even in
+     shadow, and step 3a effort goes to the largest process-correction and shipping-direction sources
+     instead. If the interval straddles 8, the decision is provisional and the audit is re-run with a larger
+     `--label` (a value above the turn count labels every typed turn). Re-check monthly with a manual
+     `scorer audit --since 30d --label 400` (the weekly job stays unlabeled, so it is free and offline). If
+     a later check reaches 8 or more, the checks are added in shadow first (§6.1).
    - Record baselines and **set the §2 targets from them**.
    - Measure the share of the last 60 days of in-scope items that would have been XS, clear and trusted.
      - If it is at least 10%, keep `autoStartMaxSize: XS`.
@@ -1339,7 +1359,9 @@ environment:
      verdict is in.
 3a. **Assist, patterns:** `sindri start`, packs and re-injection, turn classification, the tool gate,
    the Stop pattern gate, the worker → ship Steps, the write shim, two-phase verify, notifications.
-   - Approach and Drift direction checks run in shadow.
+   - Approach and Drift direction checks run in shadow, and are a deliverable only if the step-0 decision rule
+     says design corrections are frequent enough. Otherwise they are not built in 3a, and the Approach and
+     Drift rows of §13.2 read "—" in the 3a column until a monthly re-check passes the rule.
    - Shape signals are recorded only.
    - It runs in containers if the spike passed, otherwise on the host with no auto-start (§13.1).
    - The self-evolution loop adds the online shadow A/B.
@@ -1362,7 +1384,7 @@ These are rough, for one builder with agent help. Every step ends with a usable 
 | 0 | Audit scripts, baselines, XS share, quota per item | S (2–3 days) | Measured targets |
 | 1 | Profile tooling, lock and fencing, scrubber, judge flag, done-gate fix; reuse ports phase 1; host code index; **scoping harness + backtest**; offline self-evolution | L (2–3 weeks) | **Scope maps and a recall number on the motivating project** |
 | 2 | Shadow triage and packs, replay, dashboard and badge; **container spike** in parallel | M (1–2 weeks) | Dashboard of what the sindri would do; spike verdict |
-| 3a | Start, packs, worker → ship, write shim, two-phase verify, notifications, shadow direction checks | L (2–3 weeks) | **Copy-paste dispatch, retyped ship direction and handoffs gone** |
+| 3a | Start, packs, worker → ship, write shim, two-phase verify, notifications, shadow direction checks (only if the step-0 rule makes them a deliverable) | L (2–3 weeks) | **Copy-paste dispatch, retyped ship direction and handoffs gone** |
 | 3b | Shape enforcement | M (1 week) | Enforced code-shape checks |
 | 4 | Auto-small | S | Unattended XS items |
 | 5 | Scoping direction checks enforce; issue creation | S | Self-scoped projects |
@@ -1414,7 +1436,7 @@ toolkit needs no tracker account to build itself. The adapter ships in Plan 2.
 |---|---|---|---|---|---|
 | done-gate claim detection (P1 T1) | P1 merges | `scripts/install-done-gate.sh --provider claude` (reinstalls the hook copy in `~/.claude/hooks/`) | The `done-gate` false-positive rate in the next weekly audit drops to ~0 | Stops false "Claiming done" blocks in every builder session from then on | Same hook, immediately |
 | `judge --providers` (P1 T2) | P1 merges | none; used by callers | `judge --providers jev why <id>` works | Lets P2+ direction checks and verifiers pin providers (Anthropic + Jev) | Same |
-| `scorer audit` (P1 T3–T5) | P1 merges | `scorer audit --since 60d` once (baselines); then weekly via the scorer launchd job (`--since 7d`) | `~/.agentic-workflow/audit/baseline.md`; weekly `summary.json` | **Measures the build itself:** steering turns per merged Sindri PR are the first metric the ladder must move down | Baselines for workplace repos |
+| `scorer audit` (P1 T3–T7) | P1 merges | `scorer audit --since 60d --label 400` once (baselines, calibration and the step-0 decision); then weekly and unlabeled via the scorer launchd job (`--since 7d --label 0`) | `~/.agentic-workflow/audit/baseline.md`; weekly `summary.json` | **Measures the build itself:** steering turns per merged Sindri PR are the first metric the ladder must move down | Baselines for workplace repos |
 | Profile + ledger + lock + CLI skeleton (P2) | P2 merges | `sindri profile init --ring0` (toolkit profile, `mode: shadow`); `sindri doctor` | `doctor` all `ok`; ledger file exists | Every later build session is recorded in the ledger (items = plan tasks) | `sindri profile init` in the private profile repo |
 | Scrubber (P2) | P2 merges | `sindri scrub --install-pre-commit` in this repo | A committed fixture secret is refused | **Guards this public repo:** no workplace details or secrets land in commits from any build session | Pre-commit in workplace repos where wanted |
 | `plan-file` tracker + `sindri observe` (P2) | P2 merges | `sindri observe` against ring 0 | Lists the remaining plan tasks with sizes | Gives a live, ordered backlog of the rest of Sindri | `observe` on the real tracker |
@@ -1596,6 +1618,13 @@ port map is in `plans/sindri/reuse-map.md` (reuse spike, 2026-10-08).
 - Extract every non-machine human turn from `~/.claude/projects/**/*.jsonl` (excluding sidechains, tool
   results, and injected text) with context: active skills, context-guard state, token count, and the
   preceding agent message.
-- Classify a stratified sample of 450 turns by reading them.
-- Floor counts across all turns using exact-phrase patterns.
+- Drop duplicate turns: resumed and forked sessions copy earlier human turns into the new transcript with
+  the same timestamp, so turns are keyed on (timestamp, text) and counted once.
+- A model adjudicator (run with no tools; its output is schema-validated) classifies a sample of turns. The
+  first pass was a stratified sample of 450 turns.
+- Floor counts across all turns using exact-phrase patterns. A later run on a second user's transcripts,
+  labeled by a model, showed low recall (a correction pattern caught 5 of 45 wrong-approach corrections) and
+  low precision for image attachments as defects (22 real of 80). Patterns are therefore calibrated against
+  adjudicator labels before any metric depends on them (§13 step 0), and the image pattern is named
+  `image_turn`.
 - Rollout step 0 moves the scripts into `scripts/transcript-audit/` so the audit can be reproduced.
