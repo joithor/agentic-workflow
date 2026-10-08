@@ -4380,8 +4380,8 @@ import { parseSince } from "../src/observe/observe.js";
 import { fakeSystem, makeDeps, tempDir } from "./helpers.js";
 
 const PLAN = [
-  "# Plan A", "", "### Task 1: Small", "", "**Files:**", "- Create: `a.ts`", "", "- [x] **Step 1: x**", "", "```ts", "x", "```", "",
-  "### Task 2: Later", "", "- [x] **Step 1: y**", "",
+  "# Plan A", "", "### Task 1: Small", "", "**Files:**", "- Create: `a.ts`", "", "- [ ] **Step 1: x**", "", "```ts", "x", "```", "",
+  "### Task 2: Later", "", "- [ ] **Step 1: y**", "",
 ].join("\n");
 
 const PLAN_FILE = "docs/superpowers/plans/2026-01-01-plan-a.md";
@@ -4453,7 +4453,7 @@ describe("sindri observe", () => {
     const deps = await ring0(root);
     await approve(deps);
     await runCli(["observe"], deps);
-    fs.writeFileSync(path.join(root, PLAN_FILE), PLAN.replace(/### Task 2[\s\S]*$/, "").replace("- [x] **Step 1: x**", "- [x] **Step 1: x**"));
+    fs.writeFileSync(path.join(root, PLAN_FILE), PLAN.replace(/### Task 2[\s\S]*$/, "").replace("- [ ] **Step 1: x**", "- [x] **Step 1: x**"));
     const r = await runCli(["observe"], deps);
     expect(r.stdout).toContain("No open items.");
     expect(r.stdout).toContain("Recorded 0 new, 1 changed, 1 removed in the ledger.");
