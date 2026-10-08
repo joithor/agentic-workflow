@@ -21,7 +21,7 @@ export function globToRegExp(glob: string): RegExp {
       re += c.replace(/[.+^${}()|[\]\\]/g, "\\$&");
     }
   }
-  return new RegExp(`^${re}$`, "i");
+  return new RegExp(`^${re}$`, "is");
 }
 
 export function matchesAny(p: string, globs: readonly string[]): boolean {

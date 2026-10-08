@@ -40,6 +40,8 @@ export async function inventory(
   const files: IndexedFile[] = [];
   const skipped: { path: string; reason: SkipReason }[] = [];
   let total = 0;
+  const cap = o.maxFileKB * 1024;
+  const root = fs.realpathSync(repoPath);
   for (const rel of [...new Set(ls.stdout.split("\0").filter((p) => p !== ""))].sort()) {
     if (!o.select(rel)) continue;
     if (matchesAny(rel, o.denyPaths)) {
@@ -49,21 +51,44 @@ export async function inventory(
     const full = path.join(repoPath, rel);
     const st = fs.lstatSync(full, { throwIfNoEntry: false });
     const reason: SkipReason | null =
-      st === undefined ? "unreadable" : st.isSymbolicLink() ? "symlink" : !st.isFile() ? "not-a-file" : st.size > o.maxFileKB * 1024 ? "too-large" : null;
+      st === undefined ? "unreadable" : st.isSymbolicLink() ? "symlink" : !st.isFile() ? "not-a-file" : st.size > cap ? "too-large" : null;
     if (reason !== null) {
       skipped.push({ path: rel, reason });
       continue;
     }
+    // O_NOFOLLOW guards only the last component: a symlinked parent directory must not lead outside the repo.
+    let parent: string;
+    try {
+      parent = fs.realpathSync(path.dirname(full));
+    } catch {
+      skipped.push({ path: rel, reason: "unreadable" });
+      continue;
+    }
+    if (parent !== root && !parent.startsWith(root + path.sep)) {
+      skipped.push({ path: rel, reason: "symlink" });
+      continue;
+    }
     let buf: Buffer;
+    let late: SkipReason | null = null;
     try {
       const fd = fs.openSync(full, fs.constants.O_RDONLY | fs.constants.O_NOFOLLOW);
       try {
-        buf = fs.readFileSync(fd);
+        const fst = fs.fstatSync(fd);
+        if (!fst.isFile()) late = "not-a-file";
+        else if (fst.size > cap) late = "too-large";
+        buf = Buffer.alloc(cap + 1);
+        const n = late === null ? fs.readSync(fd, buf, 0, cap + 1, 0) : 0;
+        if (late === null && n > cap) late = "too-large";
+        buf = buf.subarray(0, n);
       } finally {
         fs.closeSync(fd);
       }
     } catch {
       skipped.push({ path: rel, reason: "unreadable" });
+      continue;
+    }
+    if (late !== null) {
+      skipped.push({ path: rel, reason: late });
       continue;
     }
     total += buf.length;

@@ -18,6 +18,8 @@ describe("globToRegExp", () => {
     ["a+b.(c).ts", "a+b.(c).ts", true],
     [".env*", ".ENV.local", true],
     ["**/*.pem", "keys/KEY.PEM", true],
+    ["**/secrets/**", "a/secrets/x\ny.ts", true],
+    ["**/*.pem", "a\nb/key.pem", true],
   ])("%s vs %s → %s", (glob, p, want) => {
     expect(globToRegExp(glob).test(p)).toBe(want);
   });

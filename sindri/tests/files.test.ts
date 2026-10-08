@@ -62,6 +62,60 @@ describe("inventory (Review Focus 1)", () => {
     ]);
   });
 
+  it("skips a file under a symlinked parent directory that leads outside the repo", async () => {
+    const root = repo({ "d/x.ts": "1", "ok.ts": "2" });
+    const outside = tempDir("sindri-out-");
+    fs.writeFileSync(path.join(outside, "x.ts"), "leak");
+    fs.rmSync(path.join(root, "d"), { recursive: true });
+    fs.symlinkSync(outside, path.join(root, "d"));
+    const inv = await inventory(realGitRunner(), root, opts);
+    expect(inv.files.map((f) => f.path)).toEqual(["ok.ts"]);
+    expect(inv.skipped).toEqual([{ path: "d/x.ts", reason: "symlink" }]);
+  });
+
+  it("skips a file whose parent directory cannot be resolved", async () => {
+    const root = repo({ "a.ts": "1" });
+    const real = fs.realpathSync;
+    let calls = 0;
+    vi.spyOn(fs, "realpathSync").mockImplementation(((p: fs.PathLike) => {
+      if (calls++ === 0) return real(p);
+      throw new Error("gone");
+    }) as typeof fs.realpathSync);
+    const inv = await inventory(realGitRunner(), root, opts);
+    expect(inv.skipped).toEqual([{ path: "a.ts", reason: "unreadable" }]);
+  });
+
+  it("re-checks size and type on the open descriptor and bounds the read", async () => {
+    const root = repo({ "grew.ts": "1", "swapped.ts": "2", "grows-mid-read.ts": "3" });
+    const names = new Map<number, string>();
+    const realOpen = fs.openSync;
+    vi.spyOn(fs, "openSync").mockImplementation((p, flags, mode) => {
+      const fd = realOpen(p, flags, mode);
+      names.set(fd, String(p));
+      return fd;
+    });
+    const realF = fs.fstatSync;
+    vi.spyOn(fs, "fstatSync").mockImplementation(((fd: number) => {
+      const st = realF(fd);
+      const name = names.get(fd) ?? "";
+      if (name.endsWith("/grew.ts")) return Object.assign(Object.create(st), { size: 5000 });
+      if (name.endsWith("/swapped.ts")) return Object.assign(Object.create(st), { isFile: () => false });
+      return st;
+    }) as typeof fs.fstatSync);
+    const realR = fs.readSync;
+    vi.spyOn(fs, "readSync").mockImplementation(((fd: number, buf: Buffer, off: number, len: number, pos: number) => {
+      if ((names.get(fd) ?? "").endsWith("/grows-mid-read.ts")) return len;
+      return realR(fd, buf, off, len, pos);
+    }) as typeof fs.readSync);
+    const inv = await inventory(realGitRunner(), root, opts);
+    expect(inv.files).toEqual([]);
+    expect(inv.skipped).toEqual([
+      { path: "grew.ts", reason: "too-large" },
+      { path: "grows-mid-read.ts", reason: "too-large" },
+      { path: "swapped.ts", reason: "not-a-file" },
+    ]);
+  });
+
   it("stops past maxTotalMB and outside a git repo", async () => {
     const root = repo({ "a.ts": "x".repeat(900), "b.ts": "y".repeat(900) });
     const err = await inventory(realGitRunner(), root, { ...opts, maxTotalMB: 0.001 }).catch((e: unknown) => e);
