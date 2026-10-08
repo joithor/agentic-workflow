@@ -10,6 +10,7 @@ export interface ErrorDef {
 // more specific fix for one occurrence.
 export const ERRORS = {
   "SND-CLI-001": { summary: "Unknown command.", fix: "sindri help" },
+  "SND-SCRUB-001": { summary: "A profile scrub pattern does not compile.", fix: "Fix the regex at the named scrub.extraPatterns index, then run `sindri profile validate`." },
   "SND-CLI-900": { summary: "Unexpected internal error (a bug).", fix: "rerun with SINDRI_DEBUG=1 and report the output" },
 } as const satisfies Record<string, ErrorDef>;
 

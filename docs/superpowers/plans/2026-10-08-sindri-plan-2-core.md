@@ -689,6 +689,10 @@ git commit -m "feat: sindri package scaffold, error registry and output contract
 
 ### Task 2: Scrubber
 
+> Amendment (build): S1. The `secret-assignment` value class `[A-Za-z0-9+/=_.,-]{20,}` matched ordinary identifiers such as `token: SecretPointerSchema,` and `apiKey: config.providers.anthropic.key`. It is now `(?=[A-Za-z_-]*\d)([A-Za-z0-9+/=_-]{20,})` (no `.` or `,`, at least one digit). The `GITHUB_TOKEN=` test value became `"g".repeat(12) + "1" + "g".repeat(11)` because the old all-letter value no longer counts as a secret; both identifier strings were added to the false-positive test.
+> Amendment (build): S7. Heavy checks (`npm run gen`, `npm run typecheck`, `npm run test:coverage`) ran once each, serially, before the commit.
+> Amendment (build): m11. The `<1000 ms` wall-clock assertion in the unterminated-private-key test was dropped; the behavioural assertion (`find(text)` returns `[]`) stays.
+
 The scrubber (spec §8.4) runs on every fetched record, every ledger free-text field and, later, every pack and egress. Hits record a kind and a span, never the matched value.
 
 **Files:**
@@ -705,7 +709,7 @@ The scrubber (spec §8.4) runs on every fetched record, every ledger free-text f
   - `makeScrubber(extra?: readonly ScrubPattern[]): Scrubber`.
   - `compileExtraPatterns(specs: readonly { kind: string; regex: string }[]): ScrubPattern[]` — throws `SindriError("SND-SCRUB-001")` naming the index of a pattern that doesn't compile.
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 `sindri/tests/scrub.test.ts` (every secret is built by concatenation; never paste a whole one):
 
@@ -815,12 +819,12 @@ describe("scrubber", () => {
 });
 ```
 
-- [ ] **Step 2: Run the tests to verify they fail**
+- [x] **Step 2: Run the tests to verify they fail**
 
 Run: `cd sindri && npx vitest run tests/scrub.test.ts`
 Expected: FAIL with `Failed to load url ../src/scrub/scrub.js`.
 
-- [ ] **Step 3: Implement**
+- [x] **Step 3: Implement**
 
 `sindri/src/scrub/patterns.ts`:
 
@@ -966,12 +970,12 @@ Add to `ERRORS` in `sindri/src/errors.ts`:
   "SND-SCRUB-001": { summary: "A profile scrub pattern does not compile.", fix: "Fix the regex at the named scrub.extraPatterns index, then run `sindri profile validate`." },
 ```
 
-- [ ] **Step 4: Run the tests**
+- [x] **Step 4: Run the tests**
 
 Run: `cd sindri && npm run gen && npx vitest run`
 Expected: all tests PASS (including `errors.test.ts`, which now finds `SND-SCRUB-001` in `scrub.ts` and in the regenerated `errors.md`).
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add sindri/src/scrub sindri/src/errors.ts sindri/tests/scrub.test.ts docs/sindri/errors.md
