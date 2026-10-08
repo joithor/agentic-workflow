@@ -26,6 +26,10 @@ These are the smallest changes that make the spec buildable as written. Each one
 3. **The ledger records items, not build sessions, in Plan 2.** §13.3 said "every later build session is recorded in the ledger (items = plan tasks)". Linking sessions to items needs the spool and the tick (step 2). Plan 2 records every plan task and each state change on every `observe` run. The row is reworded to match.
 4. **The profile schema is strict and grows by plan.** Unknown keys are errors, so typos fail `validate`. Plan 2 defines only the keys that Plans 2–5 read. Later plans add keys in the same `schemaVersion: 1` (new optional keys are not a breaking change); renames or removals bump `schemaVersion` and add a migration.
 5. **`budget.perItem` and `budget.perDay` are optional in Plan 2.** Nothing enforces budgets before rollout step 3a, so `doctor` reports an unset budget as `ok` with "not enforced before step 3a".
+6. **`observe` (§10.3) works without a profile and records with one.** With no profile it reads the current repo through a throwaway ring-0 profile and records nothing ("zero-config, read-only"). With an approved profile it records items in the ledger under the tick lock, and its summary ends "Nothing outside the ledger changed." It exits `1` when it could not record for a reason the human can fix.
+7. **`adapterContractTests` (§11.2) lives under `sindri/tests/contract/`**, not in `src/`, as `trackerContractTests`. It is test code, and inside `src/` its guard branches can never be covered.
+8. **Runtime commands use the last approved profile snapshot** (§8.7 made precise): edits take effect only after `profile approve`, and `approve` needs an interactive terminal and a typed confirmation. That is friction and intent, not a boundary; the boundary is the session container from step 3a. The §8.7 audit log of gated calls arrives with the gate (step 3a).
+9. **Trust for `plan-file` items is the git author email**, which anyone can forge in a public repo. It only affects what `observe` *would* start in Plan 2. Before `auto-small` (step 4), trusted authorship must come from signed commits or tracker accounts.
 
 ## Global Constraints
 
@@ -38,8 +42,11 @@ These are the smallest changes that make the spec buildable as written. Each one
 - State lives under `$AW_STATE_DIR/sindri/` (default `~/.agentic-workflow/sindri/`), mode 0700. The ledger is the only database and Sindri is its only writer (spec §5.2).
 - CLI output contract (spec §10.3): plain-text state words, `--json` on every read command, no color in Plan 2 (so `NO_COLOR` is trivially honored), exit codes `0` ok, `1` attention needed, `2` error, error codes `SND-<AREA>-<NNN>` registered in `sindri/src/errors.ts` and documented in the generated `docs/sindri/errors.md`.
 - Commit format: `type: short description`, atomic commits, attribution lines from the session (AGENTS.md Commit Conventions).
+- Tick each step's checkbox (`- [x]`) in this plan file in the same commit that completes it. From Task 12 on, the `plan-file` tracker reads these boxes as the backlog's state.
 
 ## Review Focus
+
+(Round 1 of `/autoplan` added fixes for 14 HIGH findings; see `~/.agentic-workflow/<repo-slug>/plans/sindri-plan-2/consolidated-review.md`.)
 
 1. **A crashed `observe` leaves `sindri.lock` behind.** The next run must take it over when the owner is provably dead (dead pid, different boot id, reused pid, or an owner file that's unreadable and older than 60 s) and must respect a live owner. Pinned in Task 4.
 2. **Two ticks racing to take over the same stale lock.** Exactly one wins. The loser exits as a no-op and never writes the ledger. Pinned in Task 4 (rename race test) and Task 3 (stale-epoch write rejected).
@@ -80,7 +87,7 @@ These are the smallest changes that make the spec buildable as written. Each one
 | `sindri/src/git.ts` | `GitRunner` interface |
 | `sindri/src/git-real.ts` | Real `GitRunner` via `execFile` (coverage-excluded) |
 | `sindri/src/adapters/types.ts` | `Result`, `AdapterError`, `Tracker`, `WorkItem` |
-| `sindri/src/adapters/contract.ts` | `trackerContractTests()` (reusable Vitest helper) |
+| `sindri/tests/contract/tracker-contract.ts` | `trackerContractTests()` (reusable Vitest helper) |
 | `sindri/src/adapters/fake-tracker.ts` | In-memory `Tracker` for later plans' tests |
 | `sindri/src/adapters/plan-file/parse.ts` | Plan markdown → tasks |
 | `sindri/src/adapters/plan-file/tracker.ts` | `plan-file` `Tracker` |
@@ -100,18 +107,18 @@ These are the smallest changes that make the spec buildable as written. Each one
 ### Task 1: Package scaffold, error registry and output contract
 
 **Files:**
-- Create: `sindri/package.json`, `sindri/tsconfig.json`, `sindri/vitest.config.ts`
+- Create: `sindri/package.json`, `sindri/tsconfig.json`, `sindri/tsconfig.test.json`, `sindri/vitest.config.ts`, `sindri/tests/setup.ts`
 - Create: `sindri/src/errors.ts`, `sindri/src/output.ts`, `sindri/src/deps.ts`, `sindri/src/ids.ts`, `sindri/src/main.ts`, `sindri/src/cli.ts`, `sindri/src/gen.ts`, `sindri/src/docs/errors-doc.ts`
 - Create: `docs/sindri/errors.md` (generated)
 - Test: `sindri/tests/errors.test.ts`, `sindri/tests/output.test.ts`, `sindri/tests/ids.test.ts`, `sindri/tests/main.test.ts`, `sindri/tests/helpers.ts`
 
 **Interfaces:**
 - Produces:
-  - `ERRORS` (a `const` record `code → { summary, fix }`; each task registers the codes it uses, because the registry test fails on a registered-but-unused code), `type ErrorCode = keyof typeof ERRORS`, `class SindriError(code: ErrorCode, message: string)`.
-  - `type ExitCode = 0 | 1 | 2`; `interface CommandResult { exitCode: ExitCode; stdout: string; stderr: string }`; `success(text, data, json, exitCode?)`; `failure(code, message, json)`; `fromError(e, json)`.
+  - `ERRORS` (a `const` record `code → { summary, fix }`; each task registers the codes it uses, because the registry test fails on a registered-but-unused code), `type ErrorCode = keyof typeof ERRORS`, `class SindriError(code: ErrorCode, message: string, more?: { fix?: string; details?: string[] })`.
+  - `type ExitCode = 0 | 1 | 2`; `interface CommandResult { exitCode: ExitCode; stdout: string; stderr: string }`; `success(text, data, json, exitCode?)`; `failure(code, message, json, more?: { fix?: string; details?: string[]; exitCode?: ExitCode })` — **the only error renderer**: `CODE message`, one indented line per detail, then `  fix: …` (a command where one exists); JSON `{ ok: false, error: { code, message, fix, details } }`; `fromError(e, json)` (renders a `SindriError`, rethrows anything else).
   - `interface Deps { env; cwd; home; now(): Date }` (later tasks add fields); `awStateDir(deps): string` (`$AW_STATE_DIR`); `stateDir(deps): string` (`$AW_STATE_DIR/sindri`).
   - `ulid(now?: Date): string` — 26 lowercase Crockford base32 characters.
-  - `type Command = (args: string[], deps: Deps) => Promise<CommandResult>`; `COMMANDS: Record<string, { summary: string; run: Command }>`; `runCli(argv: string[], deps: Deps): Promise<CommandResult>`.
+  - `type Command = (args: string[], deps: Deps) => Promise<CommandResult>`; `interface CommandDef { summary: string; usage: string; run: Command }`; `COMMANDS: Record<string, CommandDef>`; `runCli(argv: string[], deps: Deps): Promise<CommandResult>` — handles `help`, `--version`, `<command> --help`, and catches any unexpected error as `SND-CLI-900` (exit 2; `SINDRI_DEBUG=1` adds the stack).
   - `renderErrorsDoc(): string`.
   - Test helper `makeDeps(overrides?: Partial<Deps>): Deps` in `tests/helpers.ts`, with a fresh temp `AW_STATE_DIR`.
 
@@ -133,7 +140,7 @@ These are the smallest changes that make the spec buildable as written. Each one
     "gen": "npm run build && node dist/gen.js",
     "test": "vitest run",
     "test:coverage": "vitest run --coverage",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit && tsc --noEmit -p tsconfig.test.json"
   },
   "engines": {
     "node": ">=20"
@@ -159,6 +166,26 @@ These are the smallest changes that make the spec buildable as written. Each one
 
 `sindri/tsconfig.json` is a copy of `judge/tsconfig.json` (same compiler options, `rootDir: src`, `outDir: dist`, excludes `tests`).
 
+`sindri/tsconfig.test.json` type-checks the tests too (judge's tests are never type-checked; these are):
+
+```json
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": { "noEmit": true, "rootDir": "." },
+  "include": ["src/**/*", "tests/**/*", "vitest.config.ts"],
+  "exclude": ["node_modules", "dist"]
+}
+```
+
+`sindri/tests/setup.ts` isolates every test from the developer's git config (a global `core.hooksPath`, `commit.gpgsign` or `user.email` would otherwise change results):
+
+```ts
+process.env.GIT_CONFIG_GLOBAL = "/dev/null";
+process.env.GIT_CONFIG_NOSYSTEM = "1";
+process.env.GIT_TERMINAL_PROMPT = "0";
+delete process.env.SINDRI_DEBUG;
+```
+
 `sindri/vitest.config.ts`:
 
 ```ts
@@ -168,6 +195,7 @@ export default defineConfig({
   test: {
     globals: false,
     testTimeout: 10_000,
+    setupFiles: ["tests/setup.ts"],
     coverage: {
       provider: "v8",
       include: ["src/**/*.ts"],
@@ -287,17 +315,24 @@ describe("output contract", () => {
     const text = failure("SND-CLI-001", "unknown command: frob", false);
     expect(text.exitCode).toBe(2);
     expect(text.stdout).toBe("");
-    expect(text.stderr).toBe("SND-CLI-001 unknown command: frob\n  fix: Run `sindri help` for the command list.\n");
+    expect(text.stderr).toBe("SND-CLI-001 unknown command: frob\n  fix: sindri help\n");
     const json = failure("SND-CLI-001", "unknown command: frob", true);
     expect(JSON.parse(json.stdout)).toEqual({
       ok: false,
-      error: { code: "SND-CLI-001", message: "unknown command: frob", fix: "Run `sindri help` for the command list." },
+      error: { code: "SND-CLI-001", message: "unknown command: frob", fix: "sindri help", details: [] },
     });
     expect(json.stderr).toBe("");
   });
 
+  it("failure takes details, a per-instance fix and an exit code", () => {
+    const r = failure("SND-CLI-001", "two problems", false, { details: ["a.yaml: x", "b.yaml: y"], fix: "edit a.yaml", exitCode: 1 });
+    expect(r).toEqual({ exitCode: 1, stdout: "", stderr: "SND-CLI-001 two problems\n  a.yaml: x\n  b.yaml: y\n  fix: edit a.yaml\n" });
+  });
+
   it("fromError renders a SindriError and rethrows anything else", () => {
     expect(fromError(new SindriError("SND-CLI-001", "bad"), false).stderr).toContain("SND-CLI-001 bad");
+    const withMore = fromError(new SindriError("SND-CLI-001", "bad", { fix: "do x", details: ["d1"] }), false);
+    expect(withMore.stderr).toBe("SND-CLI-001 bad\n  d1\n  fix: do x\n");
     expect(() => fromError(new Error("boom"), false)).toThrow("boom");
   });
 });
@@ -329,7 +364,7 @@ describe("ulid", () => {
 import { describe, expect, it } from "vitest";
 
 import { stateDir } from "../src/deps.js";
-import { runCli } from "../src/main.js";
+import { COMMANDS, runCli } from "../src/main.js";
 import { makeDeps } from "./helpers.js";
 
 describe("runCli", () => {
@@ -347,10 +382,30 @@ describe("runCli", () => {
     expect(r.stdout).toMatch(/^\d+\.\d+\.\d+\n$/);
   });
 
-  it("rejects an unknown command with SND-CLI-001 and exit 2", async () => {
-    const r = await runCli(["frob"], makeDeps());
-    expect(r.exitCode).toBe(2);
-    expect(r.stderr).toContain("SND-CLI-001 unknown command: frob");
+  it("rejects an unknown command with SND-CLI-001 and exit 2, including inherited names", async () => {
+    for (const name of ["frob", "constructor", "toString"]) {
+      const r = await runCli([name], makeDeps());
+      expect(r.exitCode).toBe(2);
+      expect(r.stderr).toContain(`SND-CLI-001 unknown command: ${name}`);
+    }
+  });
+
+  it("prints a command's usage for <command> --help, and turns a crash into SND-CLI-900", async () => {
+    COMMANDS.boom = { summary: "test only", usage: "Usage: sindri boom", run: async () => { throw new TypeError("kaboom"); } };
+    try {
+      expect(await runCli(["boom", "--help"], makeDeps())).toEqual({ exitCode: 0, stdout: "Usage: sindri boom\n", stderr: "" });
+      const crash = await runCli(["boom"], makeDeps());
+      expect(crash.exitCode).toBe(2);
+      expect(crash.stderr).toBe("SND-CLI-900 unexpected error: kaboom\n  fix: rerun with SINDRI_DEBUG=1 and report the output\n");
+      const debug = await runCli(["boom"], makeDeps({ env: { SINDRI_DEBUG: "1" } }));
+      expect(debug.stderr).toContain("TypeError: kaboom");
+      const json = JSON.parse((await runCli(["boom", "--json"], makeDeps())).stdout);
+      expect(json.error.code).toBe("SND-CLI-900");
+      COMMANDS.boom.run = async () => { throw "not an Error"; };
+      expect((await runCli(["boom"], makeDeps())).stderr).toContain("unexpected error: not an Error");
+    } finally {
+      delete COMMANDS.boom;
+    }
   });
 
   it("stateDir honors AW_STATE_DIR and falls back to ~/.agentic-workflow", () => {
@@ -378,19 +433,27 @@ export interface ErrorDef {
   readonly fix: string;
 }
 
+// `fix` is a command whenever one exists (spec §10.3); a SindriError may carry a
+// more specific fix for one occurrence.
 export const ERRORS = {
-  "SND-CLI-001": { summary: "Unknown command.", fix: "Run `sindri help` for the command list." },
+  "SND-CLI-001": { summary: "Unknown command.", fix: "sindri help" },
+  "SND-CLI-900": { summary: "Unexpected internal error (a bug).", fix: "rerun with SINDRI_DEBUG=1 and report the output" },
 } as const satisfies Record<string, ErrorDef>;
 
 export type ErrorCode = keyof typeof ERRORS;
 
 export class SindriError extends Error {
+  readonly fix?: string;
+  readonly details: string[];
   constructor(
     readonly code: ErrorCode,
     message: string,
+    more: { fix?: string; details?: string[] } = {},
   ) {
     super(message);
     this.name = "SindriError";
+    this.fix = more.fix;
+    this.details = more.details ?? [];
   }
 }
 ```
@@ -417,16 +480,25 @@ export function success(text: string, data: unknown, json: boolean, exitCode: Ex
   return { exitCode, stdout: json ? `${JSON.stringify(data, null, 2)}\n` : line(text), stderr: "" };
 }
 
-export function failure(code: ErrorCode, message: string, json: boolean): CommandResult {
-  const fix = ERRORS[code].fix;
+// The only error renderer: every command reports errors through it (spec §10.3).
+export function failure(
+  code: ErrorCode,
+  message: string,
+  json: boolean,
+  more: { fix?: string; details?: string[]; exitCode?: ExitCode } = {},
+): CommandResult {
+  const fix = more.fix ?? ERRORS[code].fix;
+  const details = more.details ?? [];
+  const exitCode = more.exitCode ?? 2;
   if (json) {
-    return { exitCode: 2, stdout: `${JSON.stringify({ ok: false, error: { code, message, fix } }, null, 2)}\n`, stderr: "" };
+    return { exitCode, stdout: `${JSON.stringify({ ok: false, error: { code, message, fix, details } }, null, 2)}\n`, stderr: "" };
   }
-  return { exitCode: 2, stdout: "", stderr: `${code} ${message}\n  fix: ${fix}\n` };
+  const lines = [`${code} ${message}`, ...details.map((d) => `  ${d}`), `  fix: ${fix}`];
+  return { exitCode, stdout: "", stderr: `${lines.join("\n")}\n` };
 }
 
 export function fromError(e: unknown, json: boolean): CommandResult {
-  if (e instanceof SindriError) return failure(e.code, e.message, json);
+  if (e instanceof SindriError) return failure(e.code, e.message, json, { fix: e.fix, details: e.details });
   throw e;
 }
 ```
@@ -488,8 +560,14 @@ import { failure, success, type CommandResult } from "./output.js";
 
 export type Command = (args: string[], deps: Deps) => Promise<CommandResult>;
 
+export interface CommandDef {
+  summary: string;
+  usage: string;
+  run: Command;
+}
+
 // Later tasks register their commands here.
-export const COMMANDS: Record<string, { summary: string; run: Command }> = {};
+export const COMMANDS: Record<string, CommandDef> = {};
 
 function version(): string {
   const require = createRequire(import.meta.url);
@@ -505,11 +583,20 @@ function help(): string {
 
 export async function runCli(argv: string[], deps: Deps): Promise<CommandResult> {
   const [name, ...rest] = argv;
+  const json = rest.includes("--json");
   if (name === undefined || name === "help" || name === "--help") return success(help(), null, false);
   if (name === "--version") return success(version(), null, false);
+  if (!Object.hasOwn(COMMANDS, name)) return failure("SND-CLI-001", `unknown command: ${name}`, json);
   const command = COMMANDS[name];
-  if (command === undefined) return failure("SND-CLI-001", `unknown command: ${name}`, rest.includes("--json"));
-  return command.run(rest, deps);
+  if (rest.includes("--help") || rest.includes("-h")) return success(command.usage, null, false);
+  try {
+    return await command.run(rest, deps);
+  } catch (e) {
+    // Commands render SindriErrors themselves; anything reaching here is a bug.
+    const message = e instanceof Error ? e.message : String(e);
+    const details = deps.env.SINDRI_DEBUG === "1" && e instanceof Error ? (e.stack ?? "").split("\n") : [];
+    return failure("SND-CLI-900", `unexpected error: ${message}`, json, { details });
+  }
 }
 ```
 
@@ -537,10 +624,12 @@ process.exitCode = result.exitCode;
 ```ts
 import { ERRORS } from "../errors.js";
 
+const esc = (s: string): string => s.replace(/\|/g, "\\|");
+
 export function renderErrorsDoc(): string {
   const rows = Object.entries(ERRORS)
     .sort(([a], [b]) => a.localeCompare(b))
-    .map(([code, d]) => `| \`${code}\` | ${d.summary} | ${d.fix} |`);
+    .map(([code, d]) => `| \`${code}\` | ${esc(d.summary)} | ${esc(d.fix)} |`);
   return [
     "# Sindri error codes",
     "",
@@ -585,7 +674,7 @@ Expected: no type errors; coverage 100% on all four metrics.
 - [ ] **Step 6: Commit**
 
 ```bash
-git add sindri/package.json sindri/package-lock.json sindri/tsconfig.json sindri/vitest.config.ts sindri/src sindri/tests docs/sindri/errors.md
+git add sindri/package.json sindri/package-lock.json sindri/tsconfig.json sindri/tsconfig.test.json sindri/vitest.config.ts sindri/src sindri/tests docs/sindri/errors.md
 git commit -m "feat: sindri package scaffold, error registry and output contract"
 ```
 
@@ -630,6 +719,8 @@ const CASES: [string, string, string][] = [
   ["gh " + "ghp" + "_" + "c".repeat(36), "github-token", "c".repeat(36)],
   ["pat " + "github" + "_pat_" + "d".repeat(30), "github-token", "d".repeat(30)],
   ["slack " + "xox" + "b-" + "1234567890-abcdef", "slack-token", "1234567890-abcdef"],
+  ["stripe " + "sk" + "_live_" + "s".repeat(24), "stripe-key", "s".repeat(24)],
+  ["google " + "AI" + "za" + "t".repeat(35), "google-api-key", "t".repeat(35)],
   ["linear " + "lin" + "_api_" + "e".repeat(40), "linear-key", "e".repeat(40)],
   ["jwt " + "eyJ" + "hbGciOiJIUzI1" + "." + "eyJzdWIiOiIx" + "." + "SflKxwRJSMeKKF2", "jwt", "SflKxwRJSMeKKF2"],
   ["Authorization: " + "Bearer " + "f".repeat(30), "bearer", "f".repeat(30)],
@@ -654,6 +745,13 @@ describe("scrubber", () => {
     expect(s.scrub("https://" + "user:" + "hunter2pass" + "@example.com/x").text).toBe(
       "https://user:[REDACTED:credentialed-url]@example.com/x",
     );
+  });
+
+  it("stays linear on an unterminated private-key header", () => {
+    const text = ("-----BEGIN " + "PRIVATE KEY-----\n").repeat(2000);
+    const t0 = Date.now();
+    expect(s.find(text)).toEqual([]);
+    expect(Date.now() - t0).toBeLessThan(1000);
   });
 
   it("reports one hit for overlapping matches, using the first pattern's kind", () => {
@@ -695,6 +793,9 @@ describe("scrubber", () => {
     expect(withExtra.scrub("id EMP-123456").text).toBe("id [REDACTED:employee-id]");
     expect(withExtra.find("AKIA" + "ABCDEFGHIJKLMNOP")[0].kind).toBe("aws-access-key");
     expect(() => compileExtraPatterns([{ kind: "ok", regex: "a" }, { kind: "bad", regex: "(" }])).toThrow(SindriError);
+    expect(() => compileExtraPatterns([{ kind: "redos", regex: "(a+)+$" }])).toThrow(/nested quantifier/);
+    expect(() => compileExtraPatterns([{ kind: "redos", regex: "(\\w*){2,}" }])).toThrow(/nested quantifier/);
+    expect(compileExtraPatterns([{ kind: "fine", regex: "(ab|cd)+" }])).toHaveLength(1);
     try {
       compileExtraPatterns([{ kind: "bad", regex: "(" }]);
     } catch (e) {
@@ -726,12 +827,15 @@ export interface ScrubPattern {
 }
 
 export const BUILTIN_PATTERNS: readonly ScrubPattern[] = [
-  { kind: "private-key", re: /-----BEGIN [A-Z ]*PRIVATE KEY-----[\s\S]*?-----END [A-Z ]*PRIVATE KEY-----/g },
+  // Bounded span: an unterminated BEGIN can't make the scan quadratic.
+  { kind: "private-key", re: /-----BEGIN [A-Z ]{0,40}PRIVATE KEY-----[\s\S]{0,16384}?-----END [A-Z ]{0,40}PRIVATE KEY-----/g },
   { kind: "anthropic-key", re: /\bsk-ant-[A-Za-z0-9_-]{20,}/g },
   { kind: "openai-key", re: /\bsk-(?:proj-)?[A-Za-z0-9_-]{20,}/g },
   { kind: "aws-access-key", re: /\bA(?:KIA|SIA)[0-9A-Z]{16}\b/g },
   { kind: "github-token", re: /\b(?:gh[pousr]_[A-Za-z0-9_]{30,}|github_pat_[A-Za-z0-9_]{22,})/g },
   { kind: "slack-token", re: /\bxox[abprs]-[A-Za-z0-9-]{10,}/g },
+  { kind: "stripe-key", re: /\b[sr]k_(?:live|test)_[A-Za-z0-9]{16,}/g },
+  { kind: "google-api-key", re: /\bAIza[0-9A-Za-z_-]{35}\b/g },
   { kind: "linear-key", re: /\blin_(?:api|oauth)_[A-Za-z0-9]{32,}/g },
   { kind: "jwt", re: /\beyJ[A-Za-z0-9_-]{8,}\.[A-Za-z0-9_-]{8,}\.[A-Za-z0-9_-]{8,}/g },
   { kind: "bearer", re: /\bBearer\s+([A-Za-z0-9._~+/=-]{20,})/gi, valueGroup: 1 },
@@ -778,7 +882,9 @@ export function makeScrubber(extra: readonly ScrubPattern[] = []): Scrubber {
     const raw: (ScrubHit & { order: number })[] = [];
     for (const p of patterns) {
       for (const m of text.matchAll(p.re)) {
-        const span = p.valueGroup !== undefined && m.indices?.[p.valueGroup] ? m.indices[p.valueGroup] : [m.index, m.index + m[0].length];
+        const start = m.index as number; // typed number | undefined before TS 5.9 lib typings
+        const group = p.valueGroup === undefined ? undefined : m.indices?.[p.valueGroup];
+        const span = group ?? [start, start + m[0].length];
         raw.push({ kind: p.kind, start: span[0], end: span[1], order: p.order });
       }
     }
@@ -817,8 +923,17 @@ export function makeScrubber(extra: readonly ScrubPattern[] = []): Scrubber {
   return { find, scrub, scrubDeep };
 }
 
+// A quantified group that itself contains a quantifier, e.g. (a+)+ or (\w*)*,
+// can backtrack catastrophically. Profile patterns run on every record, so refuse them.
+const NESTED_QUANTIFIER = /\((?:[^()\\]|\\.)*[+*}](?:[^()\\]|\\.)*\)[+*{]/;
+
 export function compileExtraPatterns(specs: readonly { kind: string; regex: string }[]): ScrubPattern[] {
   return specs.map((spec, i) => {
+    if (NESTED_QUANTIFIER.test(spec.regex)) {
+      throw new SindriError("SND-SCRUB-001", `scrub.extraPatterns[${i}] has a nested quantifier, which can hang the scrubber`, {
+        fix: "rewrite it without a quantified group that contains a quantifier",
+      });
+    }
     try {
       return { kind: spec.kind, re: new RegExp(spec.regex, "g") };
     } catch (e) {
@@ -866,6 +981,7 @@ git commit -m "feat: sindri scrubber for secrets and identifier shapes"
   - `interface ObservedItem { id: string; source: string; title: string; state: "open" | "done"; size: string | null; sizedBy: string | null; ambiguity: string | null; stepsDone: number; stepsTotal: number; contentHash: string }`.
   - `interface WriteCtx { epoch: number; tickId: string; now: Date; scrubber: Scrubber }`.
   - `upsertItem(db, ctx, item): "new" | "changed" | "same"` — call inside `withEpoch`.
+  - `markMissing(db, ctx, source, seen: ReadonlySet<string>): number` — closes items of `source` absent from a full scan as state `removed`, with a `removed` event.
   - `listItems(db, filter?: { state?: "open" | "done" }): ItemRow[]`; `listEvents(db, filter: { itemId?: string; since?: Date; limit?: number }): EventRow[]`.
   - `getCursor(db, source): string | null`; `setCursor(db, source, cursor, now: Date): void`.
 
@@ -881,9 +997,9 @@ import { describe, expect, it } from "vitest";
 
 import { SindriError } from "../src/errors.js";
 import {
-  bumpEpoch, currentEpoch, LEDGER_SCHEMA_VERSION, ledgerPath, openLedger, openMemoryLedger, schemaVersion, withEpoch,
+  bumpEpoch, currentEpoch, LEDGER_SCHEMA_VERSION, ledgerPath, migrateWith, openLedger, openMemoryLedger, schemaVersion, withEpoch,
 } from "../src/ledger/db.js";
-import { getCursor, listEvents, listItems, setCursor, upsertItem, type ObservedItem, type WriteCtx } from "../src/ledger/items.js";
+import { getCursor, listEvents, listItems, markMissing, setCursor, upsertItem, type ObservedItem, type WriteCtx } from "../src/ledger/items.js";
 import { makeScrubber } from "../src/scrub/scrub.js";
 import { tempDir } from "./helpers.js";
 
@@ -925,6 +1041,20 @@ describe("ledger db", () => {
     }
   });
 
+  it("backs up an existing ledger before migrating it, and the loser of a race applies nothing", () => {
+    const file = path.join(tempDir(), "ledger.db");
+    const db = new Database(file);
+    const steps = ["CREATE TABLE a (x INTEGER);", "CREATE TABLE b (y INTEGER);"];
+    migrateWith(db, file, steps.slice(0, 1));
+    expect(fs.existsSync(`${file}.bak-v1`)).toBe(false);
+    migrateWith(db, file, steps);
+    expect(fs.existsSync(`${file}.bak-v1`)).toBe(true);
+    expect(schemaVersion(db)).toBe(2);
+    migrateWith(db, file, steps);
+    expect(schemaVersion(db)).toBe(2);
+    db.close();
+  });
+
   it("bumps the epoch and rejects writes under a stale one (SND-LOCK-003)", () => {
     const db = openMemoryLedger();
     expect(currentEpoch(db)).toBe(0);
@@ -951,6 +1081,20 @@ describe("ledger items", () => {
     expect(listEvents(db, { itemId: "plan-x.t1" }).map((e) => e.kind)).toEqual(["seen", "changed", "state-changed"]);
     const stateEvent = listEvents(db, { itemId: "plan-x.t1" })[2];
     expect(JSON.parse(stateEvent.detail)).toEqual({ from: "open", to: "done" });
+  });
+
+  it("closes items a full scan no longer returns", () => {
+    const db = openMemoryLedger();
+    bumpEpoch(db);
+    withEpoch(db, 1, () => {
+      upsertItem(db, ctx(db), item({ id: "p.t1", source: "plan-file:r" }));
+      upsertItem(db, ctx(db), item({ id: "p.t2", source: "plan-file:r" }));
+      upsertItem(db, ctx(db), item({ id: "q.t1", source: "plan-file:other" }));
+    });
+    expect(withEpoch(db, 1, () => markMissing(db, ctx(db), "plan-file:r", new Set(["p.t1"])))).toBe(1);
+    expect(withEpoch(db, 1, () => markMissing(db, ctx(db), "plan-file:r", new Set(["p.t1"])))).toBe(0);
+    expect(listItems(db).map((i) => [i.id, i.state])).toEqual([["p.t1", "open"], ["p.t2", "removed"], ["q.t1", "open"]]);
+    expect(listEvents(db, { itemId: "p.t2" }).map((e) => e.kind)).toEqual(["seen", "removed"]);
   });
 
   it("scrubs and caps the stored title", () => {
@@ -1039,17 +1183,26 @@ export function schemaVersion(db: Ledger): number {
   return db.pragma("user_version", { simple: true }) as number;
 }
 
-function migrate(db: Ledger): void {
-  const current = schemaVersion(db);
-  if (current > LEDGER_SCHEMA_VERSION) {
-    throw new SindriError("SND-LEDGER-001", `ledger schema v${current} is newer than this sindri (v${LEDGER_SCHEMA_VERSION})`);
+// Exported with an injectable list so the backup path is testable before a
+// second real migration exists. Two openers racing: the IMMEDIATE transaction
+// re-reads the version, so the loser applies nothing.
+export function migrateWith(db: Ledger, file: string | null, migrations: readonly string[]): void {
+  const before = schemaVersion(db);
+  if (before > migrations.length) {
+    throw new SindriError("SND-LEDGER-001", `ledger schema v${before} is newer than this sindri (v${migrations.length})`);
   }
-  for (let v = current; v < LEDGER_SCHEMA_VERSION; v++) {
-    db.transaction(() => {
-      db.exec(MIGRATIONS[v]);
-      db.pragma(`user_version = ${v + 1}`);
-    })();
+  if (before > 0 && before < migrations.length && file !== null) {
+    db.pragma("wal_checkpoint(TRUNCATE)");
+    fs.copyFileSync(file, `${file}.bak-v${before}`);
   }
+  db.transaction(() => {
+    for (let v = schemaVersion(db); v < migrations.length; v++) db.exec(migrations[v]);
+    db.pragma(`user_version = ${migrations.length}`);
+  }).immediate();
+}
+
+function migrate(db: Ledger, file: string | null): void {
+  migrateWith(db, file, MIGRATIONS);
 }
 
 export function ledgerPath(stateDirPath: string): string {
@@ -1064,7 +1217,7 @@ export function openLedger(file: string): Ledger {
   db.pragma("foreign_keys = ON");
   db.pragma("busy_timeout = 5000");
   try {
-    migrate(db);
+    migrate(db, file);
   } catch (e) {
     db.close();
     throw e;
@@ -1076,7 +1229,7 @@ export function openLedger(file: string): Ledger {
 export function openMemoryLedger(): Ledger {
   const db = new Database(":memory:");
   db.pragma("foreign_keys = ON");
-  migrate(db);
+  migrate(db, null);
   return db;
 }
 
@@ -1198,6 +1351,18 @@ export function upsertItem(db: Ledger, ctx: WriteCtx, item: ObservedItem): "new"
   return "changed";
 }
 
+// Items a full scan no longer returns (a task deleted or renumbered) are closed
+// as "removed", so the ledger never shows ghosts as open work.
+export function markMissing(db: Ledger, ctx: WriteCtx, source: string, seen: ReadonlySet<string>): number {
+  const rows = db.prepare("SELECT id, state FROM items WHERE source = ? AND state != 'removed'").all(source) as { id: string; state: string }[];
+  const gone = rows.filter((r) => !seen.has(r.id));
+  for (const r of gone) {
+    db.prepare("UPDATE items SET state = 'removed', last_seen = ?, epoch = ? WHERE id = ?").run(ctx.now.toISOString(), ctx.epoch, r.id);
+    event(db, ctx, r.id, "removed", { from: r.state });
+  }
+  return gone.length;
+}
+
 export function listItems(db: Ledger, filter: { state?: "open" | "done" } = {}): ItemRow[] {
   if (filter.state !== undefined) return db.prepare("SELECT * FROM items WHERE state = ? ORDER BY id").all(filter.state) as ItemRow[];
   return db.prepare("SELECT * FROM items ORDER BY id").all() as ItemRow[];
@@ -1237,11 +1402,14 @@ Append to `planning/ERD.md`:
 ````markdown
 ## Sindri ledger
 
-`$AW_STATE_DIR/sindri/ledger.db` (SQLite, WAL, file 0600, dir 0700). Sindri is the only writer; hooks append to spool files instead (spec §5.2). The schema version is `PRAGMA user_version`; migrations live in `sindri/src/ledger/db.ts` and are append-only. A ledger newer than the running sindri is refused with `SND-LEDGER-001`.
+`$AW_STATE_DIR/sindri/ledger.db` (SQLite, WAL, file 0600, dir 0700). Sindri is the only writer; hooks append to spool files instead (spec §5.2). The schema version is `PRAGMA user_version`; migrations live in `sindri/src/ledger/db.ts` and are append-only, run in one `IMMEDIATE` transaction, and copy the file to `ledger.db.bak-v<old>` first. A ledger newer than the running sindri is refused with `SND-LEDGER-001`.
 
 ```mermaid
 erDiagram
-    meta { TEXT key PK "epoch" TEXT value "NOT NULL" }
+    meta {
+        TEXT key PK "epoch"
+        TEXT value "NOT NULL"
+    }
     items {
         TEXT id PK "tracker item id"
         TEXT source "NOT NULL, adapter type"
@@ -1261,13 +1429,21 @@ erDiagram
         INTEGER seq PK
         TEXT item_id FK
         TEXT ts "ISO-8601"
-        TEXT kind "seen | changed | state-changed"
+        TEXT kind "seen | changed | state-changed | removed"
         TEXT detail "scrubbed JSON, <=2000 chars"
         INTEGER epoch
         TEXT tick_id "ulid of the run"
     }
-    profile_approvals { TEXT hash PK TEXT approved_at TEXT approved_by }
-    cursors { TEXT source PK TEXT cursor TEXT updated_at }
+    profile_approvals {
+        TEXT hash PK "sha256 of the approved bytes"
+        TEXT approved_at "ISO-8601"
+        TEXT approved_by "OS user"
+    }
+    cursors {
+        TEXT source PK "adapter:repo"
+        TEXT cursor
+        TEXT updated_at
+    }
     items ||--o{ item_events : "has"
 ```
 
@@ -1276,8 +1452,8 @@ Every write runs inside `withEpoch(db, epoch, …)`, an `IMMEDIATE` transaction 
 
 - [ ] **Step 4: Run the tests**
 
-Run: `cd sindri && npm run gen && npx vitest run`
-Expected: all tests PASS.
+Run: `cd sindri && npm run gen && npx vitest run && npm run test:coverage`
+Expected: all tests PASS; coverage 100% (add a test for any branch the report names; never annotate).
 
 - [ ] **Step 5: Commit**
 
@@ -1298,7 +1474,7 @@ git commit -m "feat: sindri ledger with versioned migrations and fencing epoch"
 **Interfaces:**
 - Consumes: `Ledger`, `bumpEpoch`, `withEpoch` (Task 3); `ulid` (Task 1).
 - Produces (`system.ts`):
-  - `interface SystemProbe { readonly platform: NodeJS.Platform; readonly pid: number; hostname(): string; bootId(): string | null; pidAlive(pid: number): boolean; pidStartTime(pid: number): string | null; isLocalDisk(p: string): boolean | null }` (`null` = can't tell).
+  - `interface SystemProbe { readonly platform: NodeJS.Platform; readonly pid: number; hostname(): string; bootId(): string | null; pidAlive(pid: number): boolean; pidStartTime(pid: number): string | null; isLocalDisk(p: string): boolean | null; username(): string }` (`null` = can't tell; `username` is the OS user, used for `approved_by`).
   - `parseLinuxStartTime(stat: string): string | null`; `parseDarwinLocal(dfOut: string, mountOut: string): boolean | null`; `isRemoteFsType(type: string): boolean`.
 - Produces (`system-real.ts`): `realSystemProbe(): SystemProbe`.
 - Produces (`lock/lock.ts`):
@@ -1324,6 +1500,7 @@ export function fakeSystem(over: Partial<SystemProbe> = {}): SystemProbe {
     pidAlive: () => true,
     pidStartTime: (pid) => `start-${pid}`,
     isLocalDisk: () => true,
+    username: () => "tester",
     ...over,
   };
 }
@@ -1343,6 +1520,7 @@ describe("system parsers", () => {
     const stat = "1234 (my (odd) proc) S 1 1234 1234 0 -1 4194560 100 0 0 0 1 2 0 0 20 0 1 0 987654 1000 10";
     expect(parseLinuxStartTime(stat)).toBe("987654");
     expect(parseLinuxStartTime("garbage")).toBeNull();
+    expect(parseLinuxStartTime("1 (short) S 1")).toBeNull();
   });
 
   it("finds the mount for a df -P line and checks the local flag", () => {
@@ -1473,41 +1651,55 @@ describe("acquireTickLock", () => {
 
   it("the loser of a takeover race exits without the lock (Review Focus 2)", () => {
     const dir = tempDir();
-    const lock = plantOwner(dir, {});
-    const real = fs.renameSync;
-    let raced = false;
-    vi.spyOn(fs, "renameSync").mockImplementation((from, to) => {
-      if (!raced && String(to).includes(".stale-")) {
-        raced = true;
-        // Another taker wins first: it moves the stale lock away and installs itself.
-        real(lock, path.join(dir, "elsewhere"));
-        plantOwner(dir, { pid: 8888, startedAt: "winner" });
-        throw Object.assign(new Error("gone"), { code: "ENOENT" });
-      }
-      real(from, to);
-    });
-    const r = acquireTickLock({ dir, db: openMemoryLedger(), sys: fakeSystem({ pidAlive: (p) => p !== 999 }), now });
+    plantOwner(dir, {});
+    fs.mkdirSync(path.join(dir, "sindri.lock.takeover")); // another run is mid-takeover
+    const r = acquireTickLock({ dir, db: openMemoryLedger(), sys: fakeSystem({ pidAlive: (p) => p !== 999 }), now: () => new Date() });
     expect(r.ok).toBe(false);
-    if (!r.ok) expect(r.heldBy?.pid).toBe(8888);
+    if (!r.ok) expect(r.detail).toBe("another run is taking over a stale lock");
+    expect(fs.existsSync(path.join(dir, "sindri.lock", "owner.json"))).toBe(true);
   });
 
-  it("puts a lock back when it changed hands between the check and the rename", () => {
+  it("clears a takeover dir left by a crashed taker, then the next run succeeds", () => {
+    const dir = tempDir();
+    plantOwner(dir, {});
+    const mutex = path.join(dir, "sindri.lock.takeover");
+    fs.mkdirSync(mutex);
+    const old = new Date(Date.now() - 120_000);
+    fs.utimesSync(mutex, old, old);
+    const sys = fakeSystem({ pidAlive: (p) => p !== 999 });
+    expect(acquireTickLock({ dir, db: openMemoryLedger(), sys, now: () => new Date() }).ok).toBe(false);
+    expect(fs.existsSync(mutex)).toBe(false);
+    expect(acquireTickLock({ dir, db: openMemoryLedger(), sys, now: () => new Date() }).ok).toBe(true);
+  });
+
+  it("re-checks the owner under the takeover mutex and backs off when it changed", () => {
     const dir = tempDir();
     const lock = plantOwner(dir, {});
-    const real = fs.renameSync;
-    vi.spyOn(fs, "renameSync").mockImplementation((from, to) => {
-      if (String(to).includes(".stale-")) {
+    const real = fs.mkdirSync;
+    vi.spyOn(fs, "mkdirSync").mockImplementation((p, opts) => {
+      if (String(p).endsWith("sindri.lock.takeover")) {
         fs.writeFileSync(path.join(lock, "owner.json"), JSON.stringify({ pid: 3333, pidStartTime: "start-3333", host: "test-host", bootId: "boot-1", startedAt: "new", epoch: 9 }));
       }
-      real(from, to);
+      return real(p, opts);
     });
     const r = acquireTickLock({ dir, db: openMemoryLedger(), sys: fakeSystem({ pidAlive: (p) => p !== 999 }), now });
     expect(r.ok).toBe(false);
-    if (!r.ok) expect(r.detail).toBe("lock changed hands during takeover");
+    if (!r.ok) expect(r.heldBy?.pid).toBe(3333);
     expect(JSON.parse(fs.readFileSync(path.join(lock, "owner.json"), "utf8")).pid).toBe(3333);
   });
 
-  it("gives up after two lost takeover attempts", () => {
+  it("rethrows an unexpected error creating the takeover mutex", () => {
+    const dir = tempDir();
+    plantOwner(dir, {});
+    const real = fs.mkdirSync;
+    vi.spyOn(fs, "mkdirSync").mockImplementation((p, opts) => {
+      if (String(p).endsWith("sindri.lock.takeover")) throw Object.assign(new Error("denied"), { code: "EACCES" });
+      return real(p, opts);
+    });
+    expect(() => acquireTickLock({ dir, db: openMemoryLedger(), sys: fakeSystem({ pidAlive: (p) => p !== 999 }), now })).toThrow("denied");
+  });
+
+  it("gives up after three attempts that can't move the dead lock", () => {
     const dir = tempDir();
     plantOwner(dir, {});
     const real = fs.renameSync;
@@ -1534,6 +1726,35 @@ describe("acquireTickLock", () => {
       real(from, to);
     });
     expect(acquireTickLock({ dir, db: openMemoryLedger(), sys: fakeSystem(), now }).ok).toBe(true);
+  });
+
+  it("removes its lock if the epoch can't be bumped", () => {
+    const dir = tempDir();
+    const db = openMemoryLedger();
+    db.close();
+    expect(() => acquireTickLock({ dir, db, sys: fakeSystem(), now })).toThrow();
+    expect(fs.existsSync(path.join(dir, "sindri.lock"))).toBe(false);
+  });
+
+  it("release puts back a lock that turned out not to be its own", () => {
+    const dir = tempDir();
+    const a = acquireTickLock({ dir, db: openMemoryLedger(), sys: fakeSystem(), now });
+    const real = fs.renameSync;
+    vi.spyOn(fs, "renameSync").mockImplementation((from, to) => {
+      if (String(to).includes(".released-")) {
+        fs.writeFileSync(path.join(String(from), "owner.json"), JSON.stringify({ pid: 6666, pidStartTime: "start-6666", host: "test-host", bootId: "boot-1", startedAt: "x", epoch: 3 }));
+      }
+      real(from, to);
+    });
+    if (a.ok) a.release();
+    expect(JSON.parse(fs.readFileSync(path.join(dir, "sindri.lock", "owner.json"), "utf8")).pid).toBe(6666);
+  });
+
+  it("treats an unknown start time as no evidence (a live owner is kept)", () => {
+    const dir = tempDir();
+    plantOwner(dir, {});
+    const r = acquireTickLock({ dir, db: openMemoryLedger(), sys: fakeSystem({ pidStartTime: (p) => (p === 999 ? null : `start-${p}`) }), now });
+    expect(r.ok).toBe(false);
   });
 
   it("rethrows unexpected filesystem errors", () => {
@@ -1597,6 +1818,7 @@ export interface SystemProbe {
   pidAlive(pid: number): boolean;
   pidStartTime(pid: number): string | null;
   isLocalDisk(p: string): boolean | null;
+  username(): string;
 }
 
 // /proc/<pid>/stat: the command name (field 2) is in parens and may contain
@@ -1605,7 +1827,7 @@ export function parseLinuxStartTime(stat: string): string | null {
   const close = stat.lastIndexOf(")");
   if (close < 0) return null;
   const fields = stat.slice(close + 2).split(" ");
-  return fields[19] ?? null;
+  return fields.length > 19 ? fields[19] : null;
 }
 
 // macOS: `df -P <path>` names the mount point (last column of line 2);
@@ -1637,7 +1859,8 @@ import { isRemoteFsType, parseDarwinLocal, parseLinuxStartTime, type SystemProbe
 
 function run(cmd: string, args: string[]): string | null {
   try {
-    return execFileSync(cmd, args, { encoding: "utf8", stdio: ["ignore", "pipe", "ignore"] });
+    // C locale and UTC: `ps -o lstart=` must print the same string for every caller.
+    return execFileSync(cmd, args, { encoding: "utf8", stdio: ["ignore", "pipe", "ignore"], timeout: 5000, env: { ...process.env, LC_ALL: "C", TZ: "UTC" } });
   } catch {
     return null;
   }
@@ -1686,6 +1909,7 @@ export function realSystemProbe(): SystemProbe {
       const mounts = run("mount", []);
       return df === null || mounts === null ? null : parseDarwinLocal(df, mounts);
     },
+    username: () => os.userInfo().username,
   };
 }
 ```
@@ -1765,27 +1989,68 @@ function sameOwner(a: LockOwner | null, b: LockOwner | null): boolean {
   return a.pid === b.pid && a.host === b.host && a.startedAt === b.startedAt;
 }
 
-// Throws (ENOENT from statSync) if the lock vanished; callers retry.
-function provablyDead(owner: LockOwner | null, lockDir: string, sys: SystemProbe, now: () => Date): boolean {
-  if (owner === null) return now().getTime() - fs.statSync(lockDir).mtimeMs > UNREADABLE_GRACE_MS;
+function ageMs(p: string, now: () => Date): number | null {
+  const st = fs.statSync(p, { throwIfNoEntry: false });
+  return st === undefined ? null : now().getTime() - st.mtimeMs;
+}
+
+// "Provably dead" (spec §9.1). A probe that can't answer (null) never counts as
+// evidence: an unknown start time is not a reused pid.
+function provablyDead(owner: LockOwner | null, ageOfLock: number, sys: SystemProbe): boolean {
+  if (owner === null) return ageOfLock > UNREADABLE_GRACE_MS;
   if (owner.host !== sys.hostname()) return false; // v1: one active host; never steal another host's lock
   const boot = sys.bootId();
   if (owner.bootId !== null && boot !== null && owner.bootId !== boot) return true;
   if (!sys.pidAlive(owner.pid)) return true;
-  return owner.pidStartTime !== null && sys.pidStartTime(owner.pid) !== owner.pidStartTime;
+  const probe = sys.pidStartTime(owner.pid);
+  return owner.pidStartTime !== null && probe !== null && probe !== owner.pidStartTime;
 }
 
 function describe(owner: LockOwner | null): string {
   return owner === null ? "locked by an unreadable owner (taken over after 60 s)" : `locked by ${owner.host}/${owner.pid} since ${owner.startedAt}`;
 }
 
+// Exclusive takeover: only the process that creates sindri.lock.takeover (mkdir is
+// atomic) may move a dead owner's lock aside, so two takers can never both win.
+// A takeover dir older than 60 s belongs to a taker that crashed; it is cleared.
+function takeOver(o: LockOptions, lockPath: string, holder: LockOwner | null): "done" | "busy" | "changed" {
+  const mutex = path.join(o.dir, `${LOCK}.takeover`);
+  try {
+    fs.mkdirSync(mutex);
+  } catch (e) {
+    if ((e as NodeJS.ErrnoException).code !== "EEXIST") throw e;
+    const age = ageMs(mutex, o.now);
+    if (age !== null && age > UNREADABLE_GRACE_MS) fs.rmSync(mutex, { recursive: true, force: true });
+    return "busy";
+  }
+  try {
+    if (!sameOwner(readOwner(lockPath), holder)) return "changed";
+    const stale = path.join(o.dir, `${LOCK}.stale-${ulid(o.now())}`);
+    if (tryRename(lockPath, stale)) fs.rmSync(stale, { recursive: true, force: true });
+    return "done";
+  } finally {
+    fs.rmSync(mutex, { recursive: true, force: true });
+  }
+}
+
 function won(o: LockOptions, lockPath: string, me: LockOwner): LockResult {
-  const owner = { ...me, epoch: bumpEpoch(o.db) };
+  let owner: LockOwner;
+  try {
+    owner = { ...me, epoch: bumpEpoch(o.db) };
+  } catch (e) {
+    // Never leave a lock behind that no live process will release.
+    const gone = path.join(o.dir, `${LOCK}.released-${ulid(o.now())}`);
+    tryRename(lockPath, gone);
+    fs.rmSync(gone, { recursive: true, force: true });
+    throw e;
+  }
   writeOwner(lockPath, owner);
   const release = (): void => {
     if (!sameOwner(readOwner(lockPath), owner)) return;
     const gone = path.join(o.dir, `${LOCK}.released-${ulid(o.now())}`);
-    tryRename(lockPath, gone);
+    if (!tryRename(lockPath, gone)) return;
+    // Moved someone else's lock (we were taken over in between): put it back.
+    if (!sameOwner(readOwner(gone), owner)) tryRename(gone, lockPath);
     fs.rmSync(gone, { recursive: true, force: true });
   };
   return { ok: true, owner, release };
@@ -1806,25 +2071,14 @@ export function acquireTickLock(o: LockOptions): LockResult {
   fs.mkdirSync(tmp);
   writeOwner(tmp, me);
   try {
-    for (let attempt = 0; attempt < 2; attempt++) {
+    for (let attempt = 0; attempt < 3; attempt++) {
       // Atomic: rename fails while sindri.lock exists (it is never empty).
       if (tryRename(tmp, lockPath)) return won(o, lockPath, me);
       const holder = readOwner(lockPath);
-      let dead: boolean;
-      try {
-        dead = provablyDead(holder, lockPath, o.sys, o.now);
-      } catch {
-        continue; // the lock vanished: try again
-      }
-      if (!dead) return { ok: false, heldBy: holder, detail: describe(holder) };
-      // Only one taker wins this rename. The winner confirms it moved the dead owner.
-      const stale = path.join(o.dir, `${LOCK}.stale-${ulid(o.now())}`);
-      if (!tryRename(lockPath, stale)) continue;
-      if (!sameOwner(readOwner(stale), holder)) {
-        tryRename(stale, lockPath);
-        return { ok: false, heldBy: readOwner(lockPath), detail: "lock changed hands during takeover" };
-      }
-      fs.rmSync(stale, { recursive: true, force: true });
+      const age = ageMs(lockPath, o.now);
+      if (age === null) continue; // released in between: try again
+      if (!provablyDead(holder, age, o.sys)) return { ok: false, heldBy: holder, detail: describe(holder) };
+      if (takeOver(o, lockPath, holder) === "busy") return { ok: false, heldBy: holder, detail: "another run is taking over a stale lock" };
     }
     return { ok: false, heldBy: readOwner(lockPath), detail: "lost the takeover race" };
   } finally {
@@ -1836,9 +2090,10 @@ export function inspectLock(dir: string, sys: SystemProbe, now: () => Date): { s
   if (!fs.existsSync(dir)) return { state: "free", owner: null, leftovers: [] };
   const leftovers = fs.readdirSync(dir).filter((n) => n.startsWith(`${LOCK}.stale-`) || n.startsWith("lock.tmp-")).sort();
   const lockPath = path.join(dir, LOCK);
-  if (!fs.existsSync(lockPath)) return { state: "free", owner: null, leftovers };
   const owner = readOwner(lockPath);
-  return { state: provablyDead(owner, lockPath, sys, now) ? "stale" : "held", owner, leftovers };
+  const age = ageMs(lockPath, now);
+  if (age === null) return { state: "free", owner: null, leftovers };
+  return { state: provablyDead(owner, age, sys) ? "stale" : "held", owner, leftovers };
 }
 ```
 
@@ -1877,7 +2132,7 @@ git commit -m "feat: sindri singleton tick lock with stale takeover and fencing"
   - `ProfileSchema`, `type Profile`; `RepoSchema`, `type RepoConfig`; `PROFILE_SCHEMA_VERSION = 1`.
 - Produces (`load.ts`):
   - `interface ProfileIssue { file: string; keyPath: string; message: string; hint?: string }`.
-  - `interface LoadedProfile { root: string; profile: Profile; repos: Record<string, RepoConfig>; raw: { profile: unknown; repos: Record<string, unknown> }; files: string[]; hash: string }`.
+  - `interface LoadedProfile { root: string; profile: Profile; repos: Record<string, RepoConfig>; raw: { profile: unknown; repos: Record<string, unknown> }; files: string[]; bytes: Record<string, Buffer>; hash: string }` — `bytes` are the exact bytes validated; `hash` is computed from them.
   - `loadProfile(root: string): { ok: true; value: LoadedProfile } | { ok: false; issues: ProfileIssue[] }`.
   - `resolveProfileRoot(deps: Deps, flag?: string): string | null` (`--profile` > `$AW_PROFILE_DIR` > `$AW_STATE_DIR/profile` when it exists).
   - `profileHash(root: string, files: string[]): string` (sha256 hex over `path NUL bytes NUL` per file, in order).
@@ -1965,6 +2220,8 @@ describe("loadProfile", () => {
     expect(r.value.repos.example.defaultBranch).toBe("main");
     expect(r.value.files).toEqual(["profile.yaml", "repos/example.yaml"]);
     expect(r.value.hash).toMatch(/^[0-9a-f]{64}$/);
+    expect(r.value.hash).toBe(profileHash(EXAMPLE, r.value.files));
+    expect(Object.keys(r.value.bytes)).toEqual(["profile.yaml", "repos/example.yaml"]);
   });
 
   it("names the file and key path of a typo, with a hint", () => {
@@ -1995,6 +2252,23 @@ describe("loadProfile", () => {
     expect(JSON.stringify(issues)).not.toContain(secret);
   });
 
+  it("never echoes a secret pasted into an enum or as a key name (Review Focus 4)", () => {
+    const dir = copyExample();
+    const secret = "ghp" + "_" + "y".repeat(36);
+    edit(dir, "profile.yaml", (t) => t.replace("mode: shadow", `mode: ${secret}`) + `\n${secret}: 1\n`);
+    const issues = issuesOf(dir);
+    expect(issues.map((i) => i.keyPath)).toContain("mode");
+    expect(JSON.stringify(issues)).not.toContain(secret);
+  });
+
+  it("refuses a tracker glob that leaves the repo, and defaults include to every plan", () => {
+    const dir = copyExample();
+    edit(dir, "profile.yaml", (t) => t.replace("glob: docs/superpowers/plans/*.md", "glob: ../other/*.md"));
+    expect(issuesOf(dir)[0]).toMatchObject({ keyPath: "tracker.glob", message: "glob must stay inside the repo (no ..)" });
+    const ok = loadProfile(EXAMPLE);
+    expect(ok.ok && ok.value.profile.tracker.include).toEqual(["*"]);
+  });
+
   it("cross-checks repos, the tracker repo and file names", () => {
     const dir = copyExample();
     edit(dir, "profile.yaml", (t) => t.replace("repos:\n  - example", "repos:\n  - example\n  - other").replace("repo: example", "repo: missing"));
@@ -2013,7 +2287,7 @@ describe("loadProfile", () => {
     edit(dir, "profile.yaml", () => "mode: [unclosed\n");
     expect(issuesOf(dir)[0].message).toMatch(/^YAML: /);
     fs.rmSync(path.join(dir, "profile.yaml"));
-    expect(issuesOf(dir)[0]).toMatchObject({ file: "profile.yaml", message: "file not found", hint: "run `sindri profile init`" });
+    expect(issuesOf(dir)[0]).toMatchObject({ file: "profile.yaml", message: "file not found", hint: "sindri profile init" });
   });
 
   it("reports a scrub pattern that doesn't compile", () => {
@@ -2151,7 +2425,16 @@ const PlanFileTracker = z
   .object({
     type: z.literal("plan-file"),
     repo: name("tracker.repo").describe("Repo (from repos) whose plan files are the backlog"),
-    glob: z.string().regex(/^[^*]+\/\*\.md$/, "glob must look like <dir>/*.md").default("docs/superpowers/plans/*.md"),
+    glob: z
+      .string()
+      .regex(/^[^*]+\/\*\.md$/, "glob must look like <dir>/*.md")
+      .refine((g) => !g.split("/").includes(".."), "glob must stay inside the repo (no ..)")
+      .default("docs/superpowers/plans/*.md"),
+    include: z
+      .array(z.string().regex(/^[A-Za-z0-9*._-]+$/, "include patterns are file names with * wildcards"))
+      .min(1)
+      .default(["*"])
+      .describe("Plan file names to read, with * wildcards, e.g. *-sindri-plan-*"),
   })
   .strict();
 
@@ -2163,7 +2446,10 @@ export const ProfileSchema = z
     hosts: z.object({ active: z.string().min(1) }).strict().describe("hosts.active: the one host allowed to run ticks"),
     tracker: z.discriminatedUnion("type", [PlanFileTracker]).describe("Where work items come from. Plan 2 ships type: plan-file"),
     repos: z.array(name("repo")).min(1).describe("Repo names; each needs repos/<name>.yaml"),
-    trustedAuthors: z.array(z.string().min(1)).default([]).describe("Immutable author ids whose items may auto-start (spec §8.3)"),
+    trustedAuthors: z
+      .array(z.string().min(1))
+      .default([])
+      .describe("Author ids whose items may auto-start (spec §8.3). For plan-file these are git author emails, which anyone can forge; signed commits are required before auto-small"),
     trustedBots: z.array(z.string().min(1)).default([]).describe("Bot ids whose review comments feed fix rounds"),
     providers: z
       .object({ allowed: z.array(z.enum(["anthropic", "jev", "openai", "cursor"])).min(1).default(["anthropic", "jev"]) })
@@ -2231,6 +2517,9 @@ export interface LoadedProfile {
   repos: Record<string, RepoConfig>;
   raw: { profile: unknown; repos: Record<string, unknown> };
   files: string[];
+  // The exact bytes that were parsed and validated; the hash and any approval
+  // snapshot are made from these, never from a second read (no TOCTOU).
+  bytes: Record<string, Buffer>;
   hash: string;
 }
 
@@ -2241,27 +2530,31 @@ export function resolveProfileRoot(deps: Deps, flag?: string): string | null {
   return fs.existsSync(link) ? link : null;
 }
 
-function readYaml(root: string, rel: string, issues: ProfileIssue[]): unknown {
-  let text: string;
+function readYaml(root: string, rel: string, issues: ProfileIssue[], bytes: Record<string, Buffer>): unknown {
+  let buf: Buffer;
   try {
-    text = fs.readFileSync(path.join(root, rel), "utf8");
+    buf = fs.readFileSync(path.join(root, rel));
   } catch {
-    issues.push({ file: rel, keyPath: "", message: "file not found", hint: "run `sindri profile init`" });
+    issues.push({ file: rel, keyPath: "", message: "file not found", hint: "sindri profile init" });
     return undefined;
   }
-  const doc = YAML.parseDocument(text);
+  bytes[rel] = buf;
+  const doc = YAML.parseDocument(buf.toString("utf8"));
   for (const e of doc.errors) issues.push({ file: rel, keyPath: "", message: `YAML: ${e.message.split("\n")[0]}` });
   return doc.errors.length > 0 ? undefined : doc.toJS();
 }
 
+const scrubber = makeScrubber();
+
+// Zod messages can quote the offending value ("..., received 'ghp_...'") or key.
+// Drop the quoted value and scrub the rest, so validate never prints a secret.
 function zodIssues(file: string, error: ZodError): ProfileIssue[] {
   return error.issues.map((i) => {
-    const issue: ProfileIssue = { file, keyPath: i.path.join("."), message: i.message };
+    const message = scrubber.scrub(i.message.replace(/, received '[\s\S]*'$/, "")).text;
+    const issue: ProfileIssue = { file, keyPath: i.path.join("."), message };
     return i.code === "unrecognized_keys" ? { ...issue, hint: "remove the key or fix its spelling" } : issue;
   });
 }
-
-const scrubber = makeScrubber();
 
 // A profile holds pointers (env:, file:, keychain:, op:), never secret values.
 function secretValueIssues(file: string, value: unknown, keyPath: string[] = []): ProfileIssue[] {
@@ -2282,12 +2575,14 @@ function secretValueIssues(file: string, value: unknown, keyPath: string[] = [])
   return [];
 }
 
-export function profileHash(root: string, files: string[]): string {
+function hashOf(files: string[], bytes: Record<string, Buffer>): string {
   const h = createHash("sha256");
-  for (const rel of files) {
-    h.update(rel).update("\0").update(fs.readFileSync(path.join(root, rel))).update("\0");
-  }
+  for (const rel of files) h.update(rel).update("\0").update(bytes[rel]).update("\0");
   return h.digest("hex");
+}
+
+export function profileHash(root: string, files: string[]): string {
+  return hashOf(files, Object.fromEntries(files.map((rel) => [rel, fs.readFileSync(path.join(root, rel))])));
 }
 
 function crossCheck(p: Profile, rawRepos: Record<string, unknown>): ProfileIssue[] {
@@ -2313,11 +2608,12 @@ function crossCheck(p: Profile, rawRepos: Record<string, unknown>): ProfileIssue
 
 export function loadProfile(root: string): { ok: true; value: LoadedProfile } | { ok: false; issues: ProfileIssue[] } {
   const issues: ProfileIssue[] = [];
-  const rawProfile = readYaml(root, "profile.yaml", issues);
+  const bytes: Record<string, Buffer> = {};
+  const rawProfile = readYaml(root, "profile.yaml", issues, bytes);
   const repoDir = path.join(root, "repos");
   const repoFiles = fs.existsSync(repoDir) ? fs.readdirSync(repoDir).filter((n) => n.endsWith(".yaml")).sort() : [];
   const rawRepos: Record<string, unknown> = {};
-  for (const f of repoFiles) rawRepos[f.slice(0, -".yaml".length)] = readYaml(root, `repos/${f}`, issues);
+  for (const f of repoFiles) rawRepos[f.slice(0, -".yaml".length)] = readYaml(root, `repos/${f}`, issues, bytes);
   if (issues.length > 0) return { ok: false, issues };
 
   const parsed = ProfileSchema.safeParse(rawProfile);
@@ -2342,7 +2638,7 @@ export function loadProfile(root: string): { ok: true; value: LoadedProfile } | 
   const files = ["profile.yaml", ...repoFiles.map((f) => `repos/${f}`)];
   return {
     ok: true,
-    value: { root, profile: parsed.data, repos, raw: { profile: rawProfile, repos: rawRepos }, files, hash: profileHash(root, files) },
+    value: { root, profile: parsed.data, repos, raw: { profile: rawProfile, repos: rawRepos }, files, bytes, hash: hashOf(files, bytes) },
   };
 }
 ```
@@ -2460,7 +2756,7 @@ write("docs/sindri/profile.md", renderProfileDoc());
 
 - [ ] **Step 5: Generate and run the tests**
 
-Run: `cd sindri && npm run gen && npx vitest run && npm run typecheck`
+Run: `cd sindri && npm run gen && npx vitest run && npm run typecheck && npm run test:coverage`
 Expected: `wrote` lines for `errors.md`, both schema files and `profile.md`; all tests PASS; no type errors.
 
 - [ ] **Step 6: Commit**
@@ -2485,7 +2781,7 @@ git commit -m "feat: sindri profile schema, loader, explain and generated refere
   - `git.ts`: `type GitResult = { ok: true; stdout: string } | { ok: false; stderr: string }`; `interface GitRunner { run(args: string[], cwd: string): Promise<GitResult> }`.
   - `git-real.ts`: `realGitRunner(): GitRunner` (`execFile("git", …)`, 64 MB buffer).
   - `args.ts`: `parseFlags(args, options)` — `node:util` `parseArgs` in strict mode, throwing `SindriError("SND-CLI-002")` on a bad flag.
-  - `approve.ts`: `isApproved(db, hash): boolean`; `lastApproved(db): { hash: string; approved_at: string } | null`; `lineDiff(a: string[], b: string[]): string[]`; `profileDiff(deps, db, loaded): string[]`; `approveProfile(deps, db, loaded, approver: string): void`; `snapshotDir(deps, hash): string`.
+  - `approve.ts`: `isApproved(db, hash): boolean`; `lastApproved(db): { hash: string; approved_at: string } | null`; `lineDiff(a: string[], b: string[]): string[]`; `profileDiff(deps, db, loaded): string[]`; `approveProfile(deps, db, loaded): void` (snapshot from `loaded.bytes`, verified, `approved_by` = OS user; call inside `withEpoch`); `approvedProfile(deps, db): LoadedProfile | null` (the last approved snapshot, what runtime commands use); `snapshotDir(deps, hash): string`.
   - `commands.ts`: `profileCommand: Command`; `requireProfile(deps, flag?: string): LoadedProfile` (throws `SND-PROFILE-002` when no profile is found, `SND-PROFILE-001` when it's invalid); `sanitizeName(s: string): string`.
   - `tests/helpers.ts`: `fakeGit(answers: Record<string, GitResult>): GitRunner` (keyed by `args.join(" ")`; an unknown call returns `{ ok: false, stderr: "unexpected git call: …" }`).
 
@@ -2504,7 +2800,7 @@ export function fakeGit(answers: Record<string, GitResult>): GitRunner {
 }
 ```
 
-and add `git: realGitRunner(),` to the object `makeDeps` returns (before `...overrides`).
+and add `git: realGitRunner(), isTTY: false, prompt: async () => "",` to the object `makeDeps` returns (before `...overrides`).
 
 Add to `sindri/tests/real.test.ts`:
 
@@ -2544,6 +2840,7 @@ describe("lineDiff", () => {
 import fs from "node:fs";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
+import YAML from "yaml";
 
 import type { Deps } from "../src/deps.js";
 import { runCli } from "../src/main.js";
@@ -2596,6 +2893,19 @@ describe("profile init", () => {
     expect((await runCli(["profile", "init", "--force"], d)).exitCode).toBe(0);
   });
 
+  it("writes private files and never through a symlink", async () => {
+    const d = deps();
+    const decoy = path.join(tempDir(), "decoy.txt");
+    fs.writeFileSync(decoy, "original");
+    fs.mkdirSync(profileDir(d), { recursive: true });
+    fs.symlinkSync(decoy, path.join(profileDir(d), "profile.yaml"));
+    const r = await runCli(["profile", "init"], d);
+    expect(r.stderr).toContain("SND-PROFILE-007");
+    expect((await runCli(["profile", "init", "--force"], d)).exitCode).toBe(0);
+    expect(fs.readFileSync(decoy, "utf8")).toBe("original");
+    expect(fs.statSync(path.join(profileDir(d), "profile.yaml")).mode & 0o777).toBe(0o600);
+  });
+
   it("links $AW_STATE_DIR/profile to --dir, and says so when the link points elsewhere", async () => {
     const d = deps();
     const a = path.join(tempDir(), "a");
@@ -2605,12 +2915,15 @@ describe("profile init", () => {
     expect(fs.realpathSync(profileDir(d))).toBe(fs.realpathSync(a));
     const second = await runCli(["profile", "init", "--dir", b], d);
     expect(second.stdout).toContain("points elsewhere");
+    fs.rmSync(a, { recursive: true });
+    const dangling = await runCli(["profile", "init", "--dir", b, "--force"], d);
+    expect(dangling.stdout).toContain("points elsewhere");
   });
 
   it("--ring0 builds a plan-file profile for the current repo (spec §13.3)", async () => {
     const root = ring0Repo();
     const d = deps({ cwd: root, git: ring0Git(root, "me@example.com") });
-    const r = await runCli(["profile", "init", "--ring0", "--json"], d);
+    const r = await runCli(["profile", "init", "--ring0", "--plans", "*-sindri-plan-*", "--json"], d);
     expect(r.exitCode).toBe(0);
     const name = sanitizeName(path.basename(root));
     const repoText = fs.readFileSync(path.join(profileDir(d), "repos", `${name}.yaml`), "utf8");
@@ -2618,6 +2931,7 @@ describe("profile init", () => {
     const profileText = fs.readFileSync(path.join(profileDir(d), "profile.yaml"), "utf8");
     expect(profileText).toContain("type: plan-file");
     expect(profileText).toContain("- me@example.com");
+    expect((YAML.parse(profileText) as { tracker: { include: string[] } }).tracker.include).toEqual(["*-sindri-plan-*"]);
     expect((await runCli(["profile", "validate"], d)).exitCode).toBe(0);
   });
 
@@ -2694,9 +3008,13 @@ describe("profile approve (spec §8.7)", () => {
     const hash = JSON.parse((await runCli(["profile", "approve", "--json"], d)).stdout).hash as string;
     expect((await runCli(["profile", "approve", hash.slice(0, 6)], d)).stderr).toContain("SND-CLI-002");
     expect((await runCli(["profile", "approve", "0".repeat(12)], d)).stderr).toContain("SND-PROFILE-006");
-    const ok = await runCli(["profile", "approve", hash.slice(0, 12)], d);
+    expect((await runCli(["profile", "approve", hash.slice(0, 12)], d)).stderr).toContain("SND-PROFILE-010");
+    const human = { ...d, isTTY: true, prompt: async () => "nope" };
+    expect((await runCli(["profile", "approve", hash.slice(0, 12)], human)).stderr).toContain("SND-PROFILE-011");
+    const ok = await runCli(["profile", "approve", hash.slice(0, 12)], { ...human, prompt: async () => hash.slice(0, 6) });
     expect(ok.stdout).toBe(`Approved profile ${hash.slice(0, 12)}. It takes effect on the next run.\n`);
     expect(fs.existsSync(path.join(snapshotDir(d, hash), "profile.yaml"))).toBe(true);
+    expect(fs.statSync(path.join(snapshotDir(d, hash), "profile.yaml")).mode & 0o777).toBe(0o600);
     expect((await runCli(["profile", "approve"], d)).stdout).toBe(`Profile ${hash.slice(0, 12)} is approved.\n`);
     const file = path.join(profileDir(d), "profile.yaml");
     fs.writeFileSync(file, fs.readFileSync(file, "utf8").replace("selfMerge: human", "selfMerge: auto"));
@@ -2705,6 +3023,17 @@ describe("profile approve (spec §8.7)", () => {
     expect(changed.stdout).toContain("- selfMerge: human");
     expect(changed.stdout).toContain("+ selfMerge: auto");
     expect(changed.stdout).not.toContain("repos/example.yaml");
+  });
+
+  it("refuses to approve while another run holds the lock", async () => {
+    const d = deps();
+    await runCli(["profile", "init"], d);
+    const hash = JSON.parse((await runCli(["profile", "approve", "--json"], d)).stdout).hash as string;
+    const lock = path.join(d.env.AW_STATE_DIR as string, "sindri", "sindri.lock");
+    fs.mkdirSync(lock, { recursive: true });
+    fs.writeFileSync(path.join(lock, "owner.json"), JSON.stringify({ pid: 1, pidStartTime: "start-1", host: "test-host", bootId: "boot-1", startedAt: "t0", epoch: 1 }));
+    const r = await runCli(["profile", "approve", hash.slice(0, 12)], { ...d, isTTY: true, prompt: async () => hash.slice(0, 6) });
+    expect(r.stderr).toContain("SND-LOCK-001 locked by test-host/1 since t0");
   });
 
   it("rejects unknown subcommands and flags", async () => {
@@ -2743,7 +3072,8 @@ export function realGitRunner(): GitRunner {
   return {
     run: (args, cwd) =>
       new Promise<GitResult>((resolve) => {
-        execFile("git", args, { cwd, maxBuffer: 64 * 1024 * 1024, encoding: "utf8" }, (err, stdout, stderr) => {
+        const env = { ...process.env, LC_ALL: "C", GIT_TERMINAL_PROMPT: "0" };
+        execFile("git", args, { cwd, env, timeout: 60_000, maxBuffer: 64 * 1024 * 1024, encoding: "utf8" }, (err, stdout, stderr) => {
           resolve(err === null ? { ok: true, stdout } : { ok: false, stderr: stderr || err.message });
         });
       }),
@@ -2776,8 +3106,9 @@ import fs from "node:fs";
 import path from "node:path";
 
 import { stateDir, type Deps } from "../deps.js";
+import { SindriError } from "../errors.js";
 import type { Ledger } from "../ledger/db.js";
-import type { LoadedProfile } from "./load.js";
+import { loadProfile, profileHash, type LoadedProfile } from "./load.js";
 
 export function snapshotDir(deps: Deps, hash: string): string {
   return path.join(stateDir(deps), "profile-approved", hash);
@@ -2843,15 +3174,29 @@ function listRel(root: string): string[] {
   return ["profile.yaml", ...(fs.existsSync(repos) ? fs.readdirSync(repos).map((n) => `repos/${n}`) : [])];
 }
 
-export function approveProfile(deps: Deps, db: Ledger, loaded: LoadedProfile, approver: string): void {
+// Writes the snapshot from the exact bytes that were validated and hashed, checks
+// the snapshot hashes the same, then records the approval. Call inside withEpoch.
+export function approveProfile(deps: Deps, db: Ledger, loaded: LoadedProfile): void {
   const dest = snapshotDir(deps, loaded.hash);
   for (const rel of loaded.files) {
     fs.mkdirSync(path.dirname(path.join(dest, rel)), { recursive: true, mode: 0o700 });
-    fs.copyFileSync(path.join(loaded.root, rel), path.join(dest, rel));
+    fs.writeFileSync(path.join(dest, rel), loaded.bytes[rel], { mode: 0o600 });
+  }
+  if (profileHash(dest, loaded.files) !== loaded.hash) {
+    throw new SindriError("SND-PROFILE-006", "the approval snapshot doesn't match what was validated", { fix: "sindri profile approve" });
   }
   db.prepare("INSERT OR IGNORE INTO profile_approvals (hash, approved_at, approved_by) VALUES (?, ?, ?)").run(
-    loaded.hash, deps.now().toISOString(), approver,
+    loaded.hash, deps.now().toISOString(), deps.system.username(),
   );
+}
+
+// Spec §8.7: a profile change takes effect only once approved, so runtime
+// commands load the last approved snapshot, not the live files.
+export function approvedProfile(deps: Deps, db: Ledger): LoadedProfile | null {
+  const last = lastApproved(db);
+  if (last === null) return null;
+  const r = loadProfile(snapshotDir(deps, last.hash));
+  return r.ok && r.value.hash === last.hash ? r.value : null;
 }
 ```
 
@@ -2866,7 +3211,8 @@ import YAML from "yaml";
 import { parseFlags } from "../args.js";
 import { awStateDir, stateDir, type Deps } from "../deps.js";
 import { SindriError } from "../errors.js";
-import { ledgerPath, openLedger } from "../ledger/db.js";
+import { ledgerPath, openLedger, withEpoch } from "../ledger/db.js";
+import { acquireTickLock } from "../lock/lock.js";
 import type { Command } from "../main.js";
 import { failure, fromError, success, type CommandResult } from "../output.js";
 import { approveProfile, isApproved, profileDiff } from "./approve.js";
@@ -2897,7 +3243,7 @@ function genericFiles(user: string, host: string): Record<string, string> {
   return { "profile.yaml": profile, "repos/example.yaml": fs.readFileSync(path.join(EXAMPLE_DIR, "repos/example.yaml"), "utf8") };
 }
 
-async function ring0Files(deps: Deps, user: string, host: string): Promise<Record<string, string>> {
+async function ring0Files(deps: Deps, user: string, host: string, include: string[] = ["*"]): Promise<Record<string, string>> {
   const top = await deps.git.run(["rev-parse", "--show-toplevel"], deps.cwd);
   if (!top.ok) throw new SindriError("SND-PROFILE-009", `${deps.cwd} is not inside a git repo`);
   const root = top.stdout.trim();
@@ -2913,7 +3259,7 @@ async function ring0Files(deps: Deps, user: string, host: string): Promise<Recor
     mode: "shadow",
     user,
     hosts: { active: host },
-    tracker: { type: "plan-file", repo: name, glob: "docs/superpowers/plans/*.md" },
+    tracker: { type: "plan-file", repo: name, glob: "docs/superpowers/plans/*.md", include },
     repos: [name],
     trustedAuthors: trusted,
   };
@@ -2922,7 +3268,9 @@ async function ring0Files(deps: Deps, user: string, host: string): Promise<Recor
 }
 
 async function init(args: string[], deps: Deps): Promise<CommandResult> {
-  const { values } = parseFlags(args, { ring0: { type: "boolean" }, dir: { type: "string" }, force: { type: "boolean" }, json: { type: "boolean" } });
+  const { values } = parseFlags(args, {
+    ring0: { type: "boolean" }, plans: { type: "string", multiple: true }, dir: { type: "string" }, force: { type: "boolean" }, json: { type: "boolean" },
+  });
   const link = path.join(awStateDir(deps), "profile");
   const dir = values.dir === undefined ? link : path.resolve(deps.cwd, values.dir);
   if (fs.existsSync(path.join(dir, "profile.yaml")) && values.force !== true) {
@@ -2930,18 +3278,22 @@ async function init(args: string[], deps: Deps): Promise<CommandResult> {
   }
   const user = sanitizeName(deps.env.USER ?? "me");
   const host = deps.system.hostname();
-  const files = values.ring0 === true ? await ring0Files(deps, user, host) : genericFiles(user, host);
+  const files = values.ring0 === true ? await ring0Files(deps, user, host, values.plans ?? ["*"]) : genericFiles(user, host);
   for (const [rel, text] of Object.entries(files)) {
-    fs.mkdirSync(path.dirname(path.join(dir, rel)), { recursive: true });
-    fs.writeFileSync(path.join(dir, rel), text);
+    const target = path.join(dir, rel);
+    fs.mkdirSync(path.dirname(target), { recursive: true, mode: 0o700 });
+    if (values.force === true) fs.rmSync(target, { force: true });
+    // "wx": never write through a symlink or over a file we didn't just remove.
+    fs.writeFileSync(target, text, { flag: "wx", mode: 0o600 });
   }
   const notes: string[] = [];
   if (dir !== link) {
-    if (fs.lstatSync(link, { throwIfNoEntry: false }) === undefined) {
-      fs.mkdirSync(path.dirname(link), { recursive: true });
+    const st = fs.lstatSync(link, { throwIfNoEntry: false });
+    if (st === undefined) {
+      fs.mkdirSync(path.dirname(link), { recursive: true, mode: 0o700 });
       fs.symlinkSync(dir, link);
       notes.push(`Linked ${link} -> ${dir}`);
-    } else if (fs.realpathSync(link) !== fs.realpathSync(dir)) {
+    } else if (!st.isSymbolicLink() || path.resolve(path.dirname(link), fs.readlinkSync(link)) !== dir) {
       notes.push(`Note: ${link} points elsewhere; pass --profile ${dir} or set AW_PROFILE_DIR.`);
     }
   }
@@ -2995,7 +3347,7 @@ function migrate(args: string[], deps: Deps): CommandResult {
   return success(text, { schemaVersion: PROFILE_SCHEMA_VERSION, migrations: [] }, values.json === true);
 }
 
-function approve(args: string[], deps: Deps): CommandResult {
+async function approve(args: string[], deps: Deps): Promise<CommandResult> {
   const { values, positionals } = parseFlags(args, { profile: { type: "string" }, json: { type: "boolean" } });
   const json = values.json === true;
   const loaded = requireProfile(deps, values.profile);
@@ -3009,11 +3361,22 @@ function approve(args: string[], deps: Deps): CommandResult {
       const text = [`Profile ${short} is not approved. Changes since the last approval:`, ...diff, "", `To approve: sindri profile approve ${short}`].join("\n");
       return success(text, { hash: loaded.hash, approved: false, diff }, json, 1);
     }
-    if (want.length < 12) throw new SindriError("SND-CLI-002", "give at least 12 characters of the profile hash");
+    if (want.length < 12) throw new SindriError("SND-CLI-002", "give at least 12 characters of the profile hash", { fix: `sindri profile approve ${short}` });
     if (!loaded.hash.startsWith(want)) {
       throw new SindriError("SND-PROFILE-006", `${want} does not match the current profile (${short}); it changed since you viewed it`);
     }
-    approveProfile(deps, db, loaded, deps.env.USER ?? "unknown");
+    // Spec §8.7: approval is a human verb. An agent can still drive a pty, so this is
+    // friction plus intent, not a boundary; the session boundary arrives with step 3a.
+    if (!deps.isTTY) throw new SindriError("SND-PROFILE-010", "approving a profile needs an interactive terminal");
+    const answer = await deps.prompt(`Approve profile ${short}? Type its first 6 characters to confirm: `);
+    if (answer.trim() !== loaded.hash.slice(0, 6)) throw new SindriError("SND-PROFILE-011", "approval not confirmed");
+    const lock = acquireTickLock({ dir: stateDir(deps), db, sys: deps.system, now: deps.now });
+    if (!lock.ok) throw new SindriError("SND-LOCK-001", lock.detail);
+    try {
+      withEpoch(db, lock.owner.epoch, () => approveProfile(deps, db, loaded));
+    } finally {
+      lock.release();
+    }
     return success(`Approved profile ${short}. It takes effect on the next run.`, { hash: loaded.hash, approved: true }, json);
   } finally {
     db.close();
@@ -3034,7 +3397,7 @@ export const profileCommand: Command = async (args, deps) => {
       case "migrate":
         return migrate(rest, deps);
       case "approve":
-        return approve(rest, deps);
+        return await approve(rest, deps);
       default:
         return failure("SND-CLI-002", `unknown profile subcommand: ${sub ?? "(none)"}; use init, validate, explain, migrate or approve`, json);
     }
@@ -3050,11 +3413,35 @@ In `sindri/src/main.ts`, import `profileCommand` and register it:
 import { profileCommand } from "./profile/commands.js";
 
 export const COMMANDS: Record<string, { summary: string; run: Command }> = {
-  profile: { summary: "init | validate | explain <key> | migrate | approve [hash]", run: profileCommand },
+  profile: {
+    summary: "init | validate | explain <key> | migrate | approve [hash]",
+    usage: [
+      "Usage:",
+      "  sindri profile init [--ring0 [--plans <pattern>]...] [--dir DIR] [--force]",
+      "  sindri profile validate [--profile DIR] [--json]",
+      "  sindri profile explain <key> [--repo NAME] [--profile DIR] [--json]",
+      "  sindri profile migrate [--dry-run] [--profile DIR] [--json]",
+      "  sindri profile approve [<hash>] [--profile DIR] [--json]   (approving needs an interactive terminal)",
+    ].join("\n"),
+    run: profileCommand,
+  },
 };
 ```
 
-In `sindri/src/deps.ts`, add `import type { GitRunner } from "./git.js";` and the field `git: GitRunner;`. In `sindri/src/cli.ts`, add `import { realGitRunner } from "./git-real.js";` and pass `git: realGitRunner(),`.
+In `sindri/src/deps.ts`, add `import type { GitRunner } from "./git.js";` and the fields `git: GitRunner;`, `isTTY: boolean;` and `prompt: (question: string) => Promise<string>;`. In `sindri/src/cli.ts`, add `import { realGitRunner } from "./git-real.js";` and `import readline from "node:readline/promises";`, and pass:
+
+```ts
+  git: realGitRunner(),
+  isTTY: process.stdin.isTTY === true && process.stdout.isTTY === true,
+  prompt: async (question) => {
+    const rl = readline.createInterface({ input: process.stdin, output: process.stderr });
+    try {
+      return await rl.question(question);
+    } finally {
+      rl.close();
+    }
+  },
+```
 
 Add to `ERRORS`:
 
@@ -3069,11 +3456,14 @@ Add to `ERRORS`:
   "SND-PROFILE-007": { summary: "A profile already exists there.", fix: "Edit it, or pass --force to overwrite it." },
   "SND-PROFILE-008": { summary: "This repo has no plan files for --ring0.", fix: "Run --ring0 from a repo with docs/superpowers/plans, or run `sindri profile init` without it." },
   "SND-PROFILE-009": { summary: "Not inside a git repo.", fix: "cd into the repo first." },
+  "SND-PROFILE-010": { summary: "Approving a profile needs an interactive terminal.", fix: "run `sindri profile approve <hash>` yourself, in a terminal" },
+  "SND-PROFILE-011": { summary: "The approval was not confirmed.", fix: "rerun and type the first 6 characters of the hash" },
+  "SND-LOCK-001": { summary: "Another sindri run holds the lock.", fix: "wait a moment and rerun; `sindri doctor` shows the holder" },
 ```
 
 - [ ] **Step 4: Run the tests**
 
-Run: `cd sindri && npm run gen && npx vitest run && npm run typecheck`
+Run: `cd sindri && npm run gen && npx vitest run && npm run typecheck && npm run test:coverage`
 Expected: all tests PASS; no type errors.
 
 - [ ] **Step 5: Commit**
@@ -3088,7 +3478,7 @@ git commit -m "feat: sindri profile init, validate, explain, migrate and approve
 ### Task 7: Tracker interface, contract tests, fake tracker and the `plan-file` tracker (spec §11.2)
 
 **Files:**
-- Create: `sindri/src/adapters/types.ts`, `sindri/src/adapters/contract.ts`, `sindri/src/adapters/fake-tracker.ts`, `sindri/src/adapters/plan-file/parse.ts`, `sindri/src/adapters/plan-file/tracker.ts`, `sindri/src/adapters/registry.ts`
+- Create: `sindri/src/adapters/types.ts`, `sindri/tests/contract/tracker-contract.ts`, `sindri/src/adapters/fake-tracker.ts`, `sindri/src/adapters/plan-file/parse.ts`, `sindri/src/adapters/plan-file/tracker.ts`, `sindri/src/adapters/registry.ts`
 - Modify: `sindri/src/errors.ts` (add `SND-TRACKER-404`, `SND-TRACKER-405`)
 - Test: `sindri/tests/plan-parse.test.ts`, `sindri/tests/plan-file-tracker.test.ts`, `sindri/tests/fake-tracker.test.ts`
 
@@ -3113,10 +3503,11 @@ git commit -m "feat: sindri profile init, validate, explain, migrate and approve
   }
   ```
   (`comment` takes a plain `string` for now; §11.2's `TemplatedBody` arrives with the first adapter that writes, in the step-3a plan.)
-- Produces (`contract.ts`): `interface TrackerFixture { tracker: Tracker; touch(id: string): Promise<void> }`; `trackerContractTests(name: string, make: () => Promise<TrackerFixture>): void` (the fixture must hold at least one open item).
+- Produces (`tests/contract/tracker-contract.ts`): `interface TrackerFixture { tracker: Tracker; touch(id: string): Promise<void> }`; `trackerContractTests(name: string, make: () => Promise<TrackerFixture>): void` (the fixture must hold at least one open item). It lives under `tests/` (spec amendment 7): it is test code, and inside `src/` its guard branches could never be covered.
+- Produces (`adapters/types.ts`): `unwrap<T>(r: Result<T>): T` — returns the value or throws `SindriError(error.code, error.message)`, so callers have no error branch of their own.
 - Produces (`fake-tracker.ts`): `makeFakeTracker(seed: WorkItem[]): Tracker & { touch(id: string): void; writes: string[] }`.
 - Produces (`plan-file/parse.ts`): `interface PlanTask { number: number; title: string; body: string; stepsDone: number; stepsTotal: number; files: string[]; codeLines: number; hasFilesBlock: boolean }`; `parsePlan(md: string): { title: string; tasks: PlanTask[] }`.
-- Produces (`plan-file/tracker.ts`): `makePlanFileTracker(o: { repoPath: string; glob: string; git: GitRunner }): Tracker`; `planItemId(file: string, task: number): string` → `<plan basename without .md>.t<N>`. `meta` keys: `plan`, `task`, `order`, `stepsDone`, `stepsTotal`, `files`, `codeLines`, `hasFilesBlock` (0/1).
+- Produces (`plan-file/tracker.ts`): `makePlanFileTracker(o: { repoPath: string; glob: string; include: string[]; git: GitRunner }): Tracker`; `planItemId(file: string, task: number): string` → `<plan basename without .md>.t<N>`; `parseGitHistory(out: string): Map<string, { authors: string[]; date: string }>`; `wildcard(pattern: string): RegExp`. `meta` keys: `plan`, `task`, `order`, `stepsDone`, `stepsTotal`, `files`, `codeLines`, `hasFilesBlock` (0/1), `contentHash` (sha256 of the task's title and body). Plan files are parsed once per tracker instance (memoized by name, size and mtime), and authors and dates come from one `git log` over the plan directory, not two per file.
 - Produces (`registry.ts`): `makeTracker(loaded: LoadedProfile, deps: Deps): Tracker`.
 
 - [ ] **Step 1: Write the failing tests**
@@ -3209,9 +3600,9 @@ describe("parsePlan (Review Focus 3)", () => {
 ```ts
 import { describe, expect, it } from "vitest";
 
-import { trackerContractTests } from "../src/adapters/contract.js";
+import { trackerContractTests } from "./contract/tracker-contract.js";
 import { makeFakeTracker } from "../src/adapters/fake-tracker.js";
-import type { WorkItem } from "../src/adapters/types.js";
+import { unwrap, type WorkItem } from "../src/adapters/types.js";
 
 const item = (id: string, state: "open" | "done" = "open"): WorkItem => ({
   id, title: `Item ${id}`, body: "body", url: `fake:${id}`, state, authors: [{ id: "a@example.com", role: "creator" }], updatedAt: "2026-10-08T00:00:00Z", meta: {},
@@ -3235,6 +3626,12 @@ describe("fake tracker", () => {
     expect(t.writes).toEqual(["comment:F-1:k1", "attach:F-1:k2", "status:F-1:in-progress", "assign:F-1:self"]);
     expect((await t.comment("nope", "x", "k")).ok).toBe(false);
   });
+
+  it("unwrap returns values and throws typed errors", async () => {
+    const t = makeFakeTracker([item("F-1")]);
+    expect(unwrap(await t.read("F-1")).id).toBe("F-1");
+    expect(() => unwrap({ ok: false, error: { kind: "not-found", code: "SND-TRACKER-404", message: "no item nope" } })).toThrow("no item nope");
+  });
 });
 ```
 
@@ -3246,8 +3643,8 @@ import fs from "node:fs";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
 
-import { trackerContractTests } from "../src/adapters/contract.js";
-import { makePlanFileTracker, planItemId } from "../src/adapters/plan-file/tracker.js";
+import { trackerContractTests } from "./contract/tracker-contract.js";
+import { makePlanFileTracker, parseGitHistory, planItemId, wildcard } from "../src/adapters/plan-file/tracker.js";
 import { makeTracker } from "../src/adapters/registry.js";
 import { realGitRunner } from "../src/git-real.js";
 import { loadProfile } from "../src/profile/load.js";
@@ -3277,7 +3674,7 @@ const GLOB = "docs/superpowers/plans/*.md";
 trackerContractTests("plan-file", async () => {
   const root = repo();
   return {
-    tracker: makePlanFileTracker({ repoPath: root, glob: GLOB, git: realGitRunner() }),
+    tracker: makePlanFileTracker({ repoPath: root, glob: GLOB, include: ["*"], git: realGitRunner() }),
     touch: async (id) => {
       const file = path.join(root, "docs/superpowers/plans", `${id.split(".t")[0]}.md`);
       fs.writeFileSync(file, fs.readFileSync(file, "utf8").replace("later", "later, edited"));
@@ -3288,7 +3685,7 @@ trackerContractTests("plan-file", async () => {
 describe("plan-file tracker", () => {
   it("turns plan tasks into work items with authors, state and meta", async () => {
     const root = repo();
-    const t = makePlanFileTracker({ repoPath: root, glob: GLOB, git: realGitRunner() });
+    const t = makePlanFileTracker({ repoPath: root, glob: GLOB, include: ["*"], git: realGitRunner() });
     const scan = await t.scan({ includeDone: true });
     expect(scan.ok && scan.value.items.map((i) => i.id)).toEqual(["2026-01-01-plan-a.t1", "2026-01-01-plan-a.t2", "2026-01-02-plan-b.t1", "2026-01-02-plan-b.t2"]);
     const a1 = await t.read("2026-01-01-plan-a.t1");
@@ -3308,7 +3705,7 @@ describe("plan-file tracker", () => {
     const root = tempDir();
     fs.mkdirSync(path.join(root, "docs/superpowers/plans"), { recursive: true });
     fs.writeFileSync(path.join(root, "docs/superpowers/plans/p.md"), PLAN(1, false));
-    const t = makePlanFileTracker({ repoPath: root, glob: GLOB, git: fakeGit({}) });
+    const t = makePlanFileTracker({ repoPath: root, glob: GLOB, include: ["*"], git: fakeGit({}) });
     const r = await t.read("p.t1");
     expect(r.ok && r.value.authors).toEqual([]);
     expect(r.ok && r.value.updatedAt).toMatch(/^\d{4}-\d{2}-\d{2}T/);
@@ -3318,8 +3715,36 @@ describe("plan-file tracker", () => {
     }
   });
 
+  it("reads only included plan files, skips non-files, and marks editors", async () => {
+    const root = repo();
+    fs.mkdirSync(path.join(root, "docs/superpowers/plans/dir.md"));
+    const plan = path.join(root, "docs/superpowers/plans/2026-01-02-plan-b.md");
+    fs.appendFileSync(plan, "\n");
+    execFileSync("git", ["-c", "user.name=E", "-c", "user.email=editor@example.com", "commit", "-qam", "edit"], { cwd: root });
+    const t = makePlanFileTracker({ repoPath: root, glob: GLOB, include: ["*-plan-b"], git: realGitRunner() });
+    expect((await t.scan({ includeDone: true })).ok).toBe(true);
+    const only = makePlanFileTracker({ repoPath: root, glob: GLOB, include: ["*-plan-b.md"], git: realGitRunner() });
+    const scan = await only.scan({ includeDone: true });
+    expect(scan.ok && scan.value.items.map((i) => i.id)).toEqual(["2026-01-02-plan-b.t1", "2026-01-02-plan-b.t2"]);
+    const b1 = await only.read("2026-01-02-plan-b.t1");
+    expect(b1.ok && b1.value.authors).toEqual([
+      { id: "editor@example.com", role: "editor" },
+      { id: "tester@example.com", role: "creator" },
+    ]);
+    expect(b1.ok && String(b1.value.meta.contentHash)).toMatch(/^[0-9a-f]{64}$/);
+  });
+
+  it("parses one git log for the whole plan directory", () => {
+    const out = "\x1enew@example.com\t2026-02-02T00:00:00Z\n\nplans/a.md\n\x1eold@example.com\t2026-01-01T00:00:00Z\n\nplans/a.md\nplans/b.md\n";
+    const h = parseGitHistory(out);
+    expect(h.get("plans/a.md")).toEqual({ authors: ["new@example.com", "old@example.com"], date: "2026-02-02T00:00:00Z" });
+    expect(h.get("plans/b.md")).toEqual({ authors: ["old@example.com"], date: "2026-01-01T00:00:00Z" });
+    expect(wildcard("*-plan-*.md").test("2026-01-01-sindri-plan-2-core.md")).toBe(true);
+    expect(wildcard("a.md").test("aXmd")).toBe(false);
+  });
+
   it("is empty when the plan dir doesn't exist", async () => {
-    const t = makePlanFileTracker({ repoPath: tempDir(), glob: GLOB, git: fakeGit({}) });
+    const t = makePlanFileTracker({ repoPath: tempDir(), glob: GLOB, include: ["*"], git: fakeGit({}) });
     const scan = await t.scan({ includeDone: true });
     expect(scan.ok && scan.value.items).toEqual([]);
   });
@@ -3349,7 +3774,7 @@ Expected: FAIL with `Failed to load url ../src/adapters/...`.
 `sindri/src/adapters/types.ts`:
 
 ```ts
-import type { ErrorCode } from "../errors.js";
+import { SindriError, type ErrorCode } from "../errors.js";
 
 // Spec §11.2. Adapters never throw for expected failures; they return a typed error.
 export type AdapterError = { kind: "retryable" | "rate-limited" | "fatal" | "not-found"; code: ErrorCode; message: string; retryAfterMs?: number };
@@ -3357,6 +3782,11 @@ export type Result<T> = { ok: true; value: T } | { ok: false; error: AdapterErro
 
 export const ok = <T>(value: T): Result<T> => ({ ok: true, value });
 export const err = <T>(error: AdapterError): Result<T> => ({ ok: false, error });
+
+export function unwrap<T>(r: Result<T>): T {
+  if (r.ok) return r.value;
+  throw new SindriError(r.error.code, r.error.message);
+}
 
 export interface WorkItemRef {
   id: string;
@@ -3395,12 +3825,12 @@ export interface Tracker {
 }
 ```
 
-`sindri/src/adapters/contract.ts`:
+`sindri/tests/contract/tracker-contract.ts`:
 
 ```ts
 import { describe, expect, it } from "vitest";
 
-import type { Result, Tracker } from "./types.js";
+import type { Result, Tracker } from "../../src/adapters/types.js";
 
 export interface TrackerFixture {
   tracker: Tracker;
@@ -3623,30 +4053,62 @@ function decodeCursor(cursor: string | undefined): Record<string, string> {
 
 // Plan files as work items (spec §11.2): one item per "### Task N:" heading.
 // The cursor maps item id → content hash, so a rescan returns only changed tasks.
-export function makePlanFileTracker(o: { repoPath: string; glob: string; git: GitRunner }): Tracker {
+export function wildcard(pattern: string): RegExp {
+  return new RegExp(`^${pattern.replace(/[.+?^${}()|[\]\\]/g, "\\$&").replace(/\*/g, ".*")}$`);
+}
+
+// `git log --format=%x1e%ae%x09%cI --name-only` → per file: authors (newest
+// first) and the date of its newest commit.
+export function parseGitHistory(out: string): Map<string, { authors: string[]; date: string }> {
+  const files = new Map<string, { authors: string[]; date: string }>();
+  for (const record of out.split("\x1e").slice(1)) {
+    const [header, ...names] = record.split("\n");
+    const [email, date] = header.split("\t");
+    for (const name of names.filter((n) => n !== "")) {
+      const entry = files.get(name) ?? { authors: [], date };
+      if (!entry.authors.includes(email)) entry.authors.push(email);
+      files.set(name, entry);
+    }
+  }
+  return files;
+}
+
+const MAX_PLAN_BYTES = 2 * 1024 * 1024;
+
+type Entry = { item: WorkItem; hash: string };
+
+// Plan files as work items (spec §11.2): one item per "### Task N:" heading.
+// The cursor maps item id → content hash, so a rescan returns only changed tasks.
+export function makePlanFileTracker(o: { repoPath: string; glob: string; include: string[]; git: GitRunner }): Tracker {
   const relDir = path.dirname(o.glob);
   const dir = path.join(o.repoPath, relDir);
+  const matchers = o.include.map(wildcard);
+  let cache: { key: string; items: Entry[] } | null = null;
 
-  async function authorsOf(rel: string): Promise<Author[]> {
-    const r = await o.git.run(["log", "--format=%ae", "--", rel], o.repoPath);
-    const emails = r.ok ? [...new Set(r.stdout.split("\n").filter((l) => l !== ""))] : [];
-    return emails.map((id, i) => ({ id, role: i === emails.length - 1 ? "creator" : "editor" }));
+  function planFiles(): { name: string; key: string }[] {
+    if (!fs.existsSync(dir)) return [];
+    return fs
+      .readdirSync(dir, { withFileTypes: true })
+      .filter((e) => e.isFile() && e.name.endsWith(".md") && matchers.some((m) => m.test(e.name)))
+      .map((e) => ({ name: e.name, st: fs.statSync(path.join(dir, e.name)) }))
+      .filter((f) => f.st.size <= MAX_PLAN_BYTES)
+      .map((f) => ({ name: f.name, key: `${f.name}:${f.st.size}:${f.st.mtimeMs}` }))
+      .sort((a, b) => a.name.localeCompare(b.name));
   }
 
-  async function updatedAt(rel: string): Promise<string> {
-    const r = await o.git.run(["log", "-1", "--format=%cI", "--", rel], o.repoPath);
-    const date = r.ok ? r.stdout.trim() : "";
-    return date !== "" ? date : fs.statSync(path.join(o.repoPath, rel)).mtime.toISOString();
-  }
-
-  async function all(): Promise<{ item: WorkItem; hash: string }[]> {
-    const files = fs.existsSync(dir) ? fs.readdirSync(dir).filter((n) => n.endsWith(".md")).sort() : [];
-    const out: { item: WorkItem; hash: string }[] = [];
-    for (const [fileIndex, name] of files.entries()) {
+  async function all(): Promise<Entry[]> {
+    const files = planFiles();
+    const key = files.map((f) => f.key).join("|");
+    if (cache !== null && cache.key === key) return cache.items;
+    const log = await o.git.run(["log", "--format=%x1e%ae%x09%cI", "--name-only", "--", relDir], o.repoPath);
+    const history = log.ok ? parseGitHistory(log.stdout) : new Map<string, { authors: string[]; date: string }>();
+    const out: Entry[] = [];
+    for (const [fileIndex, { name }] of files.entries()) {
       const rel = path.join(relDir, name);
       const plan = parsePlan(fs.readFileSync(path.join(dir, name), "utf8"));
-      const authors = await authorsOf(rel);
-      const date = await updatedAt(rel);
+      const h = history.get(rel);
+      const authors: Author[] = (h?.authors ?? []).map((id, i, all) => ({ id, role: i === all.length - 1 ? "creator" : "editor" }));
+      const date = h?.date ?? fs.statSync(path.join(dir, name)).mtime.toISOString();
       for (const t of plan.tasks) {
         const hash = createHash("sha256").update(`${t.title}\0${t.body}`).digest("hex");
         out.push({
@@ -3668,11 +4130,13 @@ export function makePlanFileTracker(o: { repoPath: string; glob: string; git: Gi
               files: t.files.length,
               codeLines: t.codeLines,
               hasFilesBlock: t.hasFilesBlock ? 1 : 0,
+              contentHash: hash,
             },
           },
         });
       }
     }
+    cache = { key, items: out };
     return out;
   }
 
@@ -3709,7 +4173,7 @@ import type { Tracker } from "./types.js";
 // Static registry (spec §11.2): the profile picks an adapter by `type:`.
 export function makeTracker(loaded: LoadedProfile, deps: Deps): Tracker {
   const t = loaded.profile.tracker;
-  return makePlanFileTracker({ repoPath: loaded.repos[t.repo].path, glob: t.glob, git: deps.git });
+  return makePlanFileTracker({ repoPath: loaded.repos[t.repo].path, glob: t.glob, include: t.include, git: deps.git });
 }
 ```
 
@@ -3724,7 +4188,7 @@ Add to `ERRORS`:
 
 - [ ] **Step 4: Run the tests**
 
-Run: `cd sindri && npm run gen && npx vitest run && npm run typecheck`
+Run: `cd sindri && npm run gen && npx vitest run && npm run typecheck && npm run test:coverage`
 Expected: all tests PASS, including both `Tracker contract: fake` and `Tracker contract: plan-file` blocks.
 
 - [ ] **Step 5: Commit**
@@ -3749,11 +4213,12 @@ git commit -m "feat: sindri tracker contract, fake tracker and plan-file tracker
 - Consumes: `Tracker`, `WorkItem` (Task 7); `makeTracker` (Task 7); `requireProfile`, `ring0Files` (Task 6); `isApproved` (Task 6); `acquireTickLock` (Task 4); `openLedger`, `withEpoch`, `upsertItem`, `listEvents`, `setCursor` (Task 3); `makeScrubber`, `compileExtraPatterns` (Task 2); `sizeRank`, `Size`, `Profile` (Task 5); `ulid` (Task 1).
 - Produces (`size.ts`):
   - `sizeByRules(files: number, codeLines: number): Size` — XS ≤ 1 file and ≤ 40 code lines; S ≤ 3 and ≤ 200; M ≤ 6 and ≤ 500; L ≤ 10 and ≤ 1000; else XL.
-  - `interface Assessment { size: Size; sizedBy: "rules"; ambiguity: "none" | "unknown"; trusted: boolean }`.
+  - `interface Assessment { size: Size | null; sizedBy: "rules"; ambiguity: "none" | "unknown"; trusted: boolean }` (`null` = unsized: no Files block and no code).
   - `assess(item: WorkItem, profile: Profile): Assessment` — ambiguity is `none` only when the task has a Files block, code and steps.
   - `nextPerPlan(items: WorkItem[]): Set<string>` — the first open item (by `meta.order`) of each `meta.plan`.
-  - `wouldStart(item, a: Assessment, isNext: boolean, limit: Size): boolean`.
-- Produces (`observe.ts`): `observeCommand: Command`, `ledgerCommand: Command`; `interface ObserveRow { id; title; state; size; ambiguity; trusted; next; steps: string; wouldStart }`; `parseSince(s: string, now: Date): Date` (`<N>d` or `<N>h`).
+  - `startBlocker(item, a: Assessment, isNext: boolean, limit: Size): string | null` — the WOULD-START reason (`done`, `waits on earlier task`, `unsized`, `size > XS`, `unclear`, `untrusted author`), `null` when auto-small would start it.
+- Produces (`observe.ts`): `observeCommand: Command`, `ledgerCommand: Command`; `interface ObserveRow { id; title (scrubbed); state; size ("?" when unsized); ambiguity; trusted; next; steps: string; wouldStart; blocker }`; `parseSince(s: string, now: Date): Date` (`<N>d` or `<N>h`).
+- Behavior (spec amendment 6): with no profile, `observe` reads the current repo through a throwaway ring-0 profile and records nothing. With a profile, it uses the **last approved snapshot** (spec §8.7), takes the tick lock **before** reading, records under the epoch, closes removed tasks, and exits `1` when it could not record for a reason the human can fix (unapproved profile, unapproved live edits, not the active host). The source key is `<tracker type>:<repo>`.
 
 - [ ] **Step 1: Write the failing tests**
 
@@ -3763,7 +4228,7 @@ git commit -m "feat: sindri tracker contract, fake tracker and plan-file tracker
 import { describe, expect, it } from "vitest";
 
 import type { WorkItem } from "../src/adapters/types.js";
-import { assess, nextPerPlan, sizeByRules, wouldStart } from "../src/observe/size.js";
+import { assess, nextPerPlan, sizeByRules, startBlocker } from "../src/observe/size.js";
 import { ProfileSchema } from "../src/profile/schema.js";
 
 const profile = ProfileSchema.parse({
@@ -3781,10 +4246,11 @@ describe("rule-based sizing", () => {
     expect(sizeByRules(files, lines)).toBe(size);
   });
 
-  it("assesses ambiguity and trust from meta and authors", () => {
+  it("assesses size, ambiguity and trust from meta and authors", () => {
     const full = item("a.t1", { files: 1, codeLines: 10, stepsTotal: 3, hasFilesBlock: 1 });
     expect(assess(full, profile)).toEqual({ size: "XS", sizedBy: "rules", ambiguity: "none", trusted: true });
-    expect(assess(item("a.t2", {}), profile)).toEqual({ size: "XS", sizedBy: "rules", ambiguity: "unknown", trusted: true });
+    expect(assess(item("a.t2", {}), profile)).toEqual({ size: null, sizedBy: "rules", ambiguity: "unknown", trusted: true });
+    expect(assess(item("a.t5", { codeLines: 300 }), profile).size).toBe("M");
     expect(assess(item("a.t3", {}, { authors: [] }), profile).trusted).toBe(false);
     expect(assess(item("a.t4", {}, { authors: [{ id: "x@example.com", role: "editor" }] }), profile).trusted).toBe(false);
   });
@@ -3800,15 +4266,16 @@ describe("rule-based sizing", () => {
     expect([...nextPerPlan(items)].sort()).toEqual(["a.t2", "b.t1", "loose"]);
   });
 
-  it("would start only open, next, clear, trusted items within the size limit", () => {
+  it("names why auto-small would not start an item", () => {
     const a = { size: "XS" as const, sizedBy: "rules" as const, ambiguity: "none" as const, trusted: true };
     const open = item("x", {});
-    expect(wouldStart(open, a, true, "XS")).toBe(true);
-    expect(wouldStart(open, { ...a, size: "S" }, true, "XS")).toBe(false);
-    expect(wouldStart(open, a, false, "XS")).toBe(false);
-    expect(wouldStart(open, { ...a, ambiguity: "unknown" }, true, "XS")).toBe(false);
-    expect(wouldStart(open, { ...a, trusted: false }, true, "XS")).toBe(false);
-    expect(wouldStart({ ...open, state: "done" }, a, true, "XS")).toBe(false);
+    expect(startBlocker(open, a, true, "XS")).toBeNull();
+    expect(startBlocker({ ...open, state: "done" }, a, true, "XS")).toBe("done");
+    expect(startBlocker(open, a, false, "XS")).toBe("waits on earlier task");
+    expect(startBlocker(open, { ...a, size: null }, true, "XS")).toBe("unsized");
+    expect(startBlocker(open, { ...a, size: "S" }, true, "XS")).toBe("size > XS");
+    expect(startBlocker(open, { ...a, ambiguity: "unknown" }, true, "XS")).toBe("unclear");
+    expect(startBlocker(open, { ...a, trusted: false }, true, "XS")).toBe("untrusted author");
   });
 });
 ```
@@ -3833,10 +4300,12 @@ const PLAN = [
   "### Task 2: Later", "", "- [ ] **Step 1: y**", "",
 ].join("\n");
 
-function planRepo(): string {
+const PLAN_FILE = "docs/superpowers/plans/2026-01-01-plan-a.md";
+
+function planRepo(text = PLAN): string {
   const root = tempDir("sindri-obs-");
   fs.mkdirSync(path.join(root, "docs/superpowers/plans"), { recursive: true });
-  fs.writeFileSync(path.join(root, "docs/superpowers/plans/2026-01-01-plan-a.md"), PLAN);
+  fs.writeFileSync(path.join(root, PLAN_FILE), text);
   const g = (...a: string[]) => execFileSync("git", ["-c", "user.name=T", "-c", "user.email=me@example.com", ...a], { cwd: root, stdio: "ignore" });
   g("init", "-q");
   g("add", ".");
@@ -3845,10 +4314,8 @@ function planRepo(): string {
 }
 
 async function ring0(root: string): Promise<Deps> {
-  const d = makeDeps({ cwd: root });
-  const deps = { ...d, env: { ...d.env, USER: "me" } };
+  const deps = makeDeps({ cwd: root });
   await runCli(["profile", "init", "--ring0"], deps);
-  // the ring-0 profile trusts the git email from global config; pin it for the test
   const file = path.join(deps.env.AW_STATE_DIR as string, "profile", "profile.yaml");
   fs.writeFileSync(file, fs.readFileSync(file, "utf8").replace(/trustedAuthors:[\s\S]*$/, "trustedAuthors:\n  - me@example.com\n"));
   return deps;
@@ -3856,7 +4323,8 @@ async function ring0(root: string): Promise<Deps> {
 
 async function approve(deps: Deps): Promise<void> {
   const hash = JSON.parse((await runCli(["profile", "approve", "--json"], deps)).stdout).hash as string;
-  await runCli(["profile", "approve", hash], deps);
+  const r = await runCli(["profile", "approve", hash], { ...deps, isTTY: true, prompt: async () => hash.slice(0, 6) });
+  if (r.exitCode !== 0) throw new Error(r.stderr);
 }
 
 describe("sindri observe", () => {
@@ -3870,26 +4338,50 @@ describe("sindri observe", () => {
     expect(fs.existsSync(ledgerPath(stateDir(d)))).toBe(false);
   });
 
-  it("does not record until the profile is approved", async () => {
+  it("does not record until the profile is approved, and asks for attention (exit 1)", async () => {
     const deps = await ring0(planRepo());
     const r = await runCli(["observe"], deps);
-    expect(r.stdout).toContain("Not recorded: profile");
+    expect(r.exitCode).toBe(1);
     expect(r.stdout).toContain("is not approved");
   });
 
-  it("records items under the lock once approved, and reports what would start", async () => {
+  it("records items under the lock once approved, with a would-start reason per row", async () => {
     const deps = await ring0(planRepo());
     await approve(deps);
     const r = await runCli(["observe"], deps);
     expect(r.exitCode).toBe(0);
-    expect(r.stdout).toMatch(/2026-01-01-plan-a\.t1\s+XS\s+none\s+yes\s+yes\s+0\/1/);
-    expect(r.stdout).toContain("Observed 2 items (2 open); would have started 1.");
-    expect(r.stdout).toContain("Recorded 2 new, 0 changed in the ledger.");
+    expect(r.stdout).toMatch(/2026-01-01-plan-a\.t1\s+XS\s+none\s+yes\s+yes\s+0\/1\s+yes\s+Task 1: Small/);
+    expect(r.stdout).toMatch(/2026-01-01-plan-a\.t2\s+\?\s+unknown\s+yes\s+no\s+0\/1\s+waits on earlier task/);
+    expect(r.stdout).toContain("Observed 2 items (2 open); would start 1.");
+    expect(r.stdout).toContain("Next up: 2026-01-01-plan-a.t1");
+    expect(r.stdout).toContain("Recorded 2 new, 0 changed, 0 removed in the ledger.");
     const db = openLedger(ledgerPath(stateDir(deps)));
-    expect(listItems(db).map((i) => [i.id, i.size, i.epoch])).toEqual([["2026-01-01-plan-a.t1", "XS", 1], ["2026-01-01-plan-a.t2", "XS", 1]]);
+    expect(listItems(db).map((i) => [i.id, i.size, i.epoch])).toEqual([["2026-01-01-plan-a.t1", "XS", 1], ["2026-01-01-plan-a.t2", null, 1]]);
     db.close();
     const again = await runCli(["observe", "--json"], deps);
-    expect(JSON.parse(again.stdout)).toMatchObject({ observed: 2, open: 2, wouldStart: 1, recorded: { new: 0, changed: 0 } });
+    expect(JSON.parse(again.stdout)).toMatchObject({ observed: 2, open: 2, wouldStart: 1, nextUp: "2026-01-01-plan-a.t1", recorded: { new: 0, changed: 0, removed: 0 } });
+  });
+
+  it("records removed tasks and says when nothing is open", async () => {
+    const root = planRepo();
+    const deps = await ring0(root);
+    await approve(deps);
+    await runCli(["observe"], deps);
+    fs.writeFileSync(path.join(root, PLAN_FILE), PLAN.replace(/### Task 2[\s\S]*$/, "").replace("- [ ] **Step 1: x**", "- [x] **Step 1: x**"));
+    const r = await runCli(["observe"], deps);
+    expect(r.stdout).toContain("No open items.");
+    expect(r.stdout).toContain("Recorded 0 new, 1 changed, 1 removed in the ledger.");
+  });
+
+  it("uses the approved snapshot when the live profile has unapproved edits", async () => {
+    const deps = await ring0(planRepo());
+    await approve(deps);
+    const file = path.join(deps.env.AW_STATE_DIR as string, "profile", "profile.yaml");
+    fs.writeFileSync(file, fs.readFileSync(file, "utf8").replace("me@example.com", "someone@example.com"));
+    const r = await runCli(["observe"], deps);
+    expect(r.exitCode).toBe(1);
+    expect(r.stdout).toContain("Using approved profile");
+    expect(r.stdout).toContain("would start 1.");
   });
 
   it("is a no-op recorder when another run holds the lock", async () => {
@@ -3904,10 +4396,11 @@ describe("sindri observe", () => {
     expect(r.stdout).toContain("Not recorded: another run holds the lock.");
   });
 
-  it("does not record on a host that isn't hosts.active", async () => {
+  it("does not record on a host that isn't hosts.active (exit 1)", async () => {
     const deps = await ring0(planRepo());
     await approve(deps);
     const r = await runCli(["observe"], { ...deps, system: fakeSystem({ hostname: () => "laptop-2" }) });
+    expect(r.exitCode).toBe(1);
     expect(r.stdout).toContain("Not recorded: this host (laptop-2) is not hosts.active (test-host).");
   });
 
@@ -3915,6 +4408,7 @@ describe("sindri observe", () => {
     const deps = await ring0(planRepo());
     await approve(deps);
     const r = await runCli(["observe", "--no-record"], deps);
+    expect(r.exitCode).toBe(0);
     expect(r.stdout).toContain("Not recorded: --no-record.");
   });
 
@@ -3922,6 +4416,14 @@ describe("sindri observe", () => {
     const r = await runCli(["observe"], makeDeps({ cwd: tempDir() }));
     expect(r.exitCode).toBe(2);
     expect(r.stderr).toContain("SND-PROFILE-002");
+  });
+
+  it("scrubs secrets out of printed titles", async () => {
+    const secret = "AKIA" + "ABCDEFGHIJKLMNOP";
+    const root = planRepo(PLAN.replace("Task 1: Small", `Task 1: Rotate ${secret}`));
+    const r = await runCli(["observe"], makeDeps({ cwd: root }));
+    expect(r.stdout).not.toContain(secret);
+    expect(r.stdout).toContain("[REDACTED:aws-access-key]");
   });
 });
 
@@ -3974,7 +4476,7 @@ export function sizeByRules(files: number, codeLines: number): Size {
 }
 
 export interface Assessment {
-  size: Size;
+  size: Size | null; // null: the task has no Files block and no code, so rules can't size it
   sizedBy: "rules";
   ambiguity: "none" | "unknown";
   trusted: boolean;
@@ -3984,8 +4486,9 @@ const num = (item: WorkItem, key: string): number => Number(item.meta[key] ?? 0)
 
 export function assess(item: WorkItem, profile: Profile): Assessment {
   const clear = num(item, "hasFilesBlock") === 1 && num(item, "codeLines") > 0 && num(item, "stepsTotal") > 0;
+  const sizable = num(item, "hasFilesBlock") === 1 || num(item, "codeLines") > 0;
   return {
-    size: sizeByRules(num(item, "files"), num(item, "codeLines")),
+    size: sizable ? sizeByRules(num(item, "files"), num(item, "codeLines")) : null,
     sizedBy: "rules",
     ambiguity: clear ? "none" : "unknown",
     // Spec §8.3: every author must be trusted; an item with no known author is not.
@@ -4006,8 +4509,15 @@ export function nextPerPlan(items: WorkItem[]): Set<string> {
   return new Set([...first.values()].map((i) => i.id));
 }
 
-export function wouldStart(item: WorkItem, a: Assessment, isNext: boolean, limit: Size): boolean {
-  return item.state === "open" && isNext && a.ambiguity === "none" && a.trusted && sizeRank(a.size) <= sizeRank(limit);
+// Why auto-small would not start this item, or null when it would (shown as WOULD-START).
+export function startBlocker(item: WorkItem, a: Assessment, isNext: boolean, limit: Size): string | null {
+  if (item.state !== "open") return "done";
+  if (!isNext) return "waits on earlier task";
+  if (a.size === null) return "unsized";
+  if (sizeRank(a.size) > sizeRank(limit)) return `size > ${limit}`;
+  if (a.ambiguity !== "none") return "unclear";
+  if (!a.trusted) return "untrusted author";
+  return null;
 }
 ```
 
@@ -4019,21 +4529,21 @@ import os from "node:os";
 import path from "node:path";
 
 import { makeTracker } from "../adapters/registry.js";
-import type { WorkItem } from "../adapters/types.js";
+import { unwrap, type WorkItem } from "../adapters/types.js";
 import { parseFlags } from "../args.js";
 import { stateDir, type Deps } from "../deps.js";
 import { SindriError } from "../errors.js";
 import { ulid } from "../ids.js";
 import { ledgerPath, openLedger, withEpoch, type Ledger } from "../ledger/db.js";
-import { listEvents, setCursor, upsertItem } from "../ledger/items.js";
+import { listEvents, markMissing, setCursor, upsertItem } from "../ledger/items.js";
 import { acquireTickLock } from "../lock/lock.js";
 import type { Command } from "../main.js";
-import { fromError, success } from "../output.js";
-import { isApproved } from "../profile/approve.js";
+import { fromError, success, type CommandResult } from "../output.js";
+import { approvedProfile } from "../profile/approve.js";
 import { requireProfile, ring0Files } from "../profile/commands.js";
 import { loadProfile, resolveProfileRoot, type LoadedProfile } from "../profile/load.js";
 import { compileExtraPatterns, makeScrubber } from "../scrub/scrub.js";
-import { assess, nextPerPlan, wouldStart, type Assessment } from "./size.js";
+import { assess, nextPerPlan, startBlocker, type Assessment } from "./size.js";
 
 export interface ObserveRow {
   id: string;
@@ -4045,6 +4555,12 @@ export interface ObserveRow {
   next: boolean;
   steps: string;
   wouldStart: boolean;
+  blocker: string | null;
+}
+
+interface Snapshot {
+  items: WorkItem[];
+  cursor: string;
 }
 
 // No profile: observe the current repo through a throwaway ring-0 profile, never recording.
@@ -4053,66 +4569,93 @@ async function ephemeralProfile(deps: Deps): Promise<LoadedProfile> {
   try {
     files = await ring0Files(deps, "me", deps.system.hostname());
   } catch {
-    throw new SindriError("SND-PROFILE-002", "no profile found, and the current directory is not a repo with plan files");
+    throw new SindriError("SND-PROFILE-002", "no profile found, and the current directory is not a repo with plan files", {
+      fix: "sindri profile init --ring0 (from a repo with docs/superpowers/plans) or sindri profile init",
+    });
   }
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), "sindri-observe-"));
-  for (const [rel, text] of Object.entries(files)) {
-    fs.mkdirSync(path.dirname(path.join(dir, rel)), { recursive: true });
-    fs.writeFileSync(path.join(dir, rel), text);
-  }
-  const r = loadProfile(dir);
-  fs.rmSync(dir, { recursive: true, force: true });
-  if (!r.ok) throw new SindriError("SND-PROFILE-001", r.issues.map((i) => `${i.file}: ${i.message}`).join("; "));
-  return r.value;
-}
-
-async function readAll(loaded: LoadedProfile, deps: Deps): Promise<{ items: WorkItem[]; cursor: string }> {
-  const tracker = makeTracker(loaded, deps);
-  const scan = await tracker.scan({ includeDone: true });
-  if (!scan.ok) throw new SindriError(scan.error.code, scan.error.message);
-  const items: WorkItem[] = [];
-  for (const ref of scan.value.items) {
-    const r = await tracker.read(ref.id);
-    if (!r.ok) throw new SindriError(r.error.code, r.error.message);
-    items.push(r.value);
-  }
-  items.sort((a, b) => Number(a.meta.order ?? 0) - Number(b.meta.order ?? 0) || a.id.localeCompare(b.id));
-  return { items, cursor: scan.value.cursor };
-}
-
-function record(
-  db: Ledger, deps: Deps, loaded: LoadedProfile, items: WorkItem[], assessed: Map<string, Assessment>, cursor: string,
-): { new: number; changed: number } | string {
-  const lock = acquireTickLock({ dir: stateDir(deps), db, sys: deps.system, now: deps.now });
-  if (!lock.ok) return lock.detail;
   try {
-    const scrubber = makeScrubber(compileExtraPatterns(loaded.profile.scrub.extraPatterns));
-    const ctx = { epoch: lock.owner.epoch, tickId: ulid(deps.now()), now: deps.now(), scrubber };
-    const counts = { new: 0, changed: 0 };
-    withEpoch(db, lock.owner.epoch, () => {
-      for (const item of items) {
-        const a = assessed.get(item.id) as Assessment;
-        const outcome = upsertItem(db, ctx, {
-          id: item.id, source: loaded.profile.tracker.type, title: item.title, state: item.state, size: a.size, sizedBy: a.sizedBy,
-          ambiguity: a.ambiguity, stepsDone: Number(item.meta.stepsDone ?? 0), stepsTotal: Number(item.meta.stepsTotal ?? 0),
-          contentHash: `${item.updatedAt}:${item.body.length}:${item.title}:${item.state}:${String(item.meta.stepsDone ?? 0)}`,
-        });
-        if (outcome !== "same") counts[outcome]++;
-      }
-      setCursor(db, loaded.profile.tracker.type, cursor, deps.now());
-    });
-    return counts;
+    for (const [rel, text] of Object.entries(files)) {
+      fs.mkdirSync(path.dirname(path.join(dir, rel)), { recursive: true });
+      fs.writeFileSync(path.join(dir, rel), text);
+    }
+    return unwrapProfile(loadProfile(dir));
   } finally {
-    lock.release();
+    fs.rmSync(dir, { recursive: true, force: true });
   }
+}
+
+function unwrapProfile(r: ReturnType<typeof loadProfile>): LoadedProfile {
+  if (r.ok) return r.value;
+  throw new SindriError("SND-PROFILE-001", "the generated ring-0 profile is invalid", { details: r.issues.map((i) => `${i.file}: ${i.message}`) });
+}
+
+async function readAll(loaded: LoadedProfile, deps: Deps): Promise<Snapshot> {
+  const tracker = makeTracker(loaded, deps);
+  const scan = unwrap(await tracker.scan({ includeDone: true }));
+  const items: WorkItem[] = [];
+  for (const ref of scan.items) items.push(unwrap(await tracker.read(ref.id)));
+  items.sort((a, b) => Number(a.meta.order) - Number(b.meta.order) || a.id.localeCompare(b.id));
+  return { items, cursor: scan.cursor };
+}
+
+const sourceOf = (loaded: LoadedProfile): string => `${loaded.profile.tracker.type}:${loaded.profile.tracker.repo}`;
+
+// Call while holding the tick lock, with the epoch it was acquired under.
+function record(db: Ledger, deps: Deps, loaded: LoadedProfile, snap: Snapshot, epoch: number): { new: number; changed: number; removed: number } {
+  const scrubber = makeScrubber(compileExtraPatterns(loaded.profile.scrub.extraPatterns));
+  const ctx = { epoch, tickId: ulid(deps.now()), now: deps.now(), scrubber };
+  const source = sourceOf(loaded);
+  return withEpoch(db, epoch, () => {
+    const counts = { new: 0, changed: 0, removed: 0 };
+    for (const item of snap.items) {
+      const a = assess(item, loaded.profile);
+      const outcome = upsertItem(db, ctx, {
+        id: item.id, source, title: item.title, state: item.state, size: a.size, sizedBy: a.size === null ? null : a.sizedBy,
+        ambiguity: a.ambiguity, stepsDone: Number(item.meta.stepsDone), stepsTotal: Number(item.meta.stepsTotal),
+        contentHash: `${String(item.meta.contentHash)}:${item.state}`,
+      });
+      if (outcome !== "same") counts[outcome]++;
+    }
+    counts.removed = markMissing(db, ctx, source, new Set(snap.items.map((i) => i.id)));
+    setCursor(db, source, snap.cursor, deps.now());
+    return counts;
+  });
 }
 
 function table(rows: ObserveRow[]): string[] {
-  const head = ["ITEM", "SIZE", "AMBIGUITY", "TRUSTED", "NEXT", "STEPS", "TITLE"];
-  const cells = rows.map((r) => [r.id, r.size, r.ambiguity, r.trusted ? "yes" : "no", r.next ? "yes" : "no", r.steps, r.title.slice(0, 60)]);
+  const head = ["ITEM", "SIZE", "AMBIGUITY", "TRUSTED", "NEXT", "STEPS", "WOULD-START", "TITLE"];
+  const cells = rows.map((r) => [r.id, r.size, r.ambiguity, r.trusted ? "yes" : "no", r.next ? "yes" : "no", r.steps, r.blocker ?? "yes", r.title.slice(0, 60)]);
   const widths = head.map((h, i) => Math.max(h.length, ...cells.map((c) => c[i].length)));
-  const fmt = (c: string[]) => c.map((v, i) => (i === c.length - 1 ? v : v.padEnd(widths[i]))).join("  ");
+  const fmt = (c: string[]): string => c.map((v, i) => (i === c.length - 1 ? v : v.padEnd(widths[i]))).join("  ");
   return [fmt(head), ...cells.map(fmt)];
+}
+
+function report(
+  loaded: LoadedProfile, snap: Snapshot, recorded: { new: number; changed: number; removed: number } | null, note: string, attention: boolean, json: boolean,
+): CommandResult {
+  const scrubber = makeScrubber(compileExtraPatterns(loaded.profile.scrub.extraPatterns));
+  const next = nextPerPlan(snap.items);
+  const rows: ObserveRow[] = snap.items.map((i) => {
+    const a: Assessment = assess(i, loaded.profile);
+    const blocker = startBlocker(i, a, next.has(i.id), loaded.profile.autoStartMaxSize);
+    return {
+      id: i.id, title: scrubber.scrub(i.title).text, state: i.state, size: a.size ?? "?", ambiguity: a.ambiguity, trusted: a.trusted,
+      next: next.has(i.id), steps: `${String(i.meta.stepsDone)}/${String(i.meta.stepsTotal)}`, wouldStart: blocker === null, blocker,
+    };
+  });
+  const open = rows.filter((r) => r.state === "open");
+  const starts = rows.filter((r) => r.wouldStart).length;
+  const up = rows.find((r) => r.wouldStart) ?? rows.find((r) => r.next);
+  const lines = [
+    ...(open.length === 0 ? ["No open items."] : table(open)),
+    "",
+    `Observed ${rows.length} items (${open.length} open); would start ${starts}.`,
+    ...(up === undefined ? [] : [`Next up: ${up.id}`]),
+    `${note} Nothing outside the ledger changed.`,
+  ];
+  const data = { observed: rows.length, open: open.length, wouldStart: starts, nextUp: up?.id ?? null, recorded, note, items: rows };
+  return success(lines.join("\n"), data, json, attention ? 1 : 0);
 }
 
 export const observeCommand: Command = async (args, deps) => {
@@ -4120,50 +4663,42 @@ export const observeCommand: Command = async (args, deps) => {
   try {
     const { values } = parseFlags(args, { profile: { type: "string" }, json: { type: "boolean" }, "no-record": { type: "boolean" } });
     const root = resolveProfileRoot(deps, values.profile);
-    const loaded = root === null ? await ephemeralProfile(deps) : requireProfile(deps, values.profile);
-    const { items, cursor } = await readAll(loaded, deps);
-    const assessed = new Map(items.map((i) => [i.id, assess(i, loaded.profile)]));
-    const next = nextPerPlan(items);
-    const rows: ObserveRow[] = items.map((i) => {
-      const a = assessed.get(i.id) as Assessment;
-      return {
-        id: i.id, title: i.title, state: i.state, size: a.size, ambiguity: a.ambiguity, trusted: a.trusted, next: next.has(i.id),
-        steps: `${String(i.meta.stepsDone ?? 0)}/${String(i.meta.stepsTotal ?? 0)}`,
-        wouldStart: wouldStart(i, a, next.has(i.id), loaded.profile.autoStartMaxSize),
-      };
-    });
-    let recorded: { new: number; changed: number } | null = null;
-    let note: string;
-    let stderr = "";
-    const host = deps.system.hostname();
-    if (root === null) note = "Not recorded: no profile (run `sindri profile init --ring0` to keep a ledger).";
-    else if (values["no-record"] === true) note = "Not recorded: --no-record.";
-    else if (loaded.profile.hosts.active !== host) note = `Not recorded: this host (${host}) is not hosts.active (${loaded.profile.hosts.active}).`;
-    else {
-      const db = openLedger(ledgerPath(stateDir(deps)));
-      try {
-        if (!isApproved(db, loaded.hash)) {
-          note = `Not recorded: profile ${loaded.hash.slice(0, 12)} is not approved (run \`sindri profile approve\`).`;
-        } else {
-          const r = record(db, deps, loaded, items, assessed, cursor);
-          if (typeof r === "string") {
-            stderr = `no-op: ${r}\n`;
-            note = "Not recorded: another run holds the lock.";
-          } else {
-            recorded = r;
-            note = `Recorded ${r.new} new, ${r.changed} changed in the ledger.`;
-          }
-        }
-      } finally {
-        db.close();
-      }
+    if (root === null) {
+      const loaded = await ephemeralProfile(deps);
+      return report(loaded, await readAll(loaded, deps), null, "Not recorded: no profile (run `sindri profile init --ring0` to keep a ledger).", false, json);
     }
-    const open = rows.filter((r) => r.state === "open");
-    const starts = rows.filter((r) => r.wouldStart).length;
-    const summary = `Observed ${rows.length} items (${open.length} open); would have started ${starts}. ${note} Nothing outside the ledger changed.`;
-    const text = [...table(open), "", summary].join("\n");
-    const data = { observed: rows.length, open: open.length, wouldStart: starts, recorded, note, items: rows };
-    return { ...success(text, data, json), stderr };
+    const live = requireProfile(deps, values.profile);
+    const db = openLedger(ledgerPath(stateDir(deps)));
+    try {
+      // Spec §8.7: runtime uses the last approved snapshot, never unapproved edits.
+      const approved = approvedProfile(deps, db);
+      if (approved === null) {
+        const note = `Not recorded: profile ${live.hash.slice(0, 12)} is not approved (run \`sindri profile approve\`).`;
+        return report(live, await readAll(live, deps), null, note, true, json);
+      }
+      const drift = approved.hash === live.hash ? "" : ` Using approved profile ${approved.hash.slice(0, 12)}; the live profile has unapproved changes (sindri profile approve).`;
+      const host = deps.system.hostname();
+      const active = approved.profile.hosts.active;
+      if (values["no-record"] === true) return report(approved, await readAll(approved, deps), null, `Not recorded: --no-record.${drift}`, drift !== "", json);
+      if (active !== host) {
+        return report(approved, await readAll(approved, deps), null, `Not recorded: this host (${host}) is not hosts.active (${active}).${drift}`, true, json);
+      }
+      const lock = acquireTickLock({ dir: stateDir(deps), db, sys: deps.system, now: deps.now });
+      if (!lock.ok) {
+        const r = report(approved, await readAll(approved, deps), null, `Not recorded: another run holds the lock.${drift}`, drift !== "", json);
+        return { ...r, stderr: `no-op: ${lock.detail}\n` };
+      }
+      try {
+        const snap = await readAll(approved, deps); // inside the lock: no older snapshot can overwrite a newer one
+        const counts = record(db, deps, approved, snap, lock.owner.epoch);
+        const note = `Recorded ${counts.new} new, ${counts.changed} changed, ${counts.removed} removed in the ledger.${drift}`;
+        return report(approved, snap, counts, note, drift !== "", json);
+      } finally {
+        lock.release();
+      }
+    } finally {
+      db.close();
+    }
   } catch (e) {
     return fromError(e, json);
   }
@@ -4171,7 +4706,7 @@ export const observeCommand: Command = async (args, deps) => {
 
 export function parseSince(s: string, now: Date): Date {
   const m = /^(\d+)([dh])$/.exec(s);
-  if (m === null) throw new SindriError("SND-CLI-002", `--since must look like 7d or 12h, got ${s}`);
+  if (m === null) throw new SindriError("SND-CLI-002", `--since must look like 7d or 12h, got ${s}`, { fix: "sindri ledger --since 7d" });
   return new Date(now.getTime() - Number(m[1]) * (m[2] === "d" ? 86_400_000 : 3_600_000));
 }
 
@@ -4204,8 +4739,12 @@ Register in `sindri/src/main.ts`:
 ```ts
 import { ledgerCommand, observeCommand } from "./observe/observe.js";
 
-  observe: { summary: "List the backlog with sizes and what would start; record it when approved", run: observeCommand },
-  ledger: { summary: "Show ledger events [--item ID] [--since 7d]", run: ledgerCommand },
+  observe: {
+    summary: "List the backlog with sizes and what would start; record it when approved",
+    usage: "Usage: sindri observe [--no-record] [--profile DIR] [--json]",
+    run: observeCommand,
+  },
+  ledger: { summary: "Show ledger events", usage: "Usage: sindri ledger [--item ID] [--since 7d|12h] [--json]", run: ledgerCommand },
 ```
 
 Add to `ERRORS`:
@@ -4230,7 +4769,7 @@ git commit -m "feat: sindri observe and ledger commands"
 
 ### Task 9: `sindri scrub` and the secret-scan pre-commit hook
 
-`sindri scrub --install-pre-commit` is ladder row 5 (spec §13.3). From then on, no build session can commit a secret-shaped string to this public repo. The hook is a pattern guard, not a security boundary. It skips when `sindri` isn't on `PATH`, and `git commit --no-verify` bypasses it on purpose (a human decision, recorded in the commit message).
+`sindri scrub --install-pre-commit` is ladder row 5 (spec §13.3). From then on, no build session can commit a secret-shaped string to this public repo. The hook is a pattern guard, not a security boundary: it calls the CLI by absolute path and refuses the commit when it can't run, and `git commit --no-verify` bypasses it on purpose (a human decision, recorded in the commit message).
 
 **Files:**
 - Create: `sindri/src/scrub/commands.ts`
@@ -4240,9 +4779,9 @@ git commit -m "feat: sindri observe and ledger commands"
 **Interfaces:**
 - Consumes: `makeScrubber`, `compileExtraPatterns` (Task 2); `GitRunner` (Task 6); `resolveProfileRoot`, `loadProfile` (Task 5).
 - Produces:
-  - `PRE_COMMIT_MARKER = "# sindri-scrub-pre-commit v1"`; `PRE_COMMIT_HOOK: string`.
+  - `PRE_COMMIT_MARKER = "# sindri-scrub-pre-commit v1"`; `preCommitHook(bin: string): string` (calls `bin` — `$SINDRI_BIN`, which the installed wrapper exports, else `sindri` — and fails closed when it's missing); `hookBinary(hookText): string | null`.
   - `preCommitPath(git: GitRunner, repoPath: string): Promise<string | null>` — honors `core.hooksPath`, else `git rev-parse --git-path hooks/pre-commit`; `null` outside a git repo.
-  - `parseAddedLines(diff: string): { file: string; line: number; text: string }[]` — reads `git diff --cached --unified=0`.
+  - `interface AddedFile { file: string; lines: { line: number; text: string }[] }`; `parseAddedLines(diff: string): AddedFile[]` — hunk-counted, so added text starting with `++ ` is still scanned; `hitsIn(f: AddedFile, scrubber): { file; line; kind }[]` — scans a file's additions as one text (multi-line keys) and maps hits to lines.
   - `scrubCommand: Command`: `sindri scrub` (stdin → scrubbed stdout), `sindri scrub --staged` (exit 1 with `path:line kind` per hit, never the value), `sindri scrub --install-pre-commit [--repo PATH]`.
 
 - [ ] **Step 1: Write the failing tests**
@@ -4258,7 +4797,8 @@ import path from "node:path";
 import { describe, expect, it } from "vitest";
 
 import { runCli } from "../src/main.js";
-import { parseAddedLines, preCommitPath, PRE_COMMIT_MARKER } from "../src/scrub/commands.js";
+import { hitsIn, hookBinary, parseAddedLines, preCommitHook, preCommitPath, PRE_COMMIT_MARKER } from "../src/scrub/commands.js";
+import { makeScrubber } from "../src/scrub/scrub.js";
 import { realGitRunner } from "../src/git-real.js";
 import { makeDeps, tempDir } from "./helpers.js";
 
@@ -4275,16 +4815,22 @@ function stage(root: string, rel: string, text: string): void {
 }
 
 describe("parseAddedLines", () => {
-  it("maps added lines to their new line numbers", () => {
+  it("maps added lines to new line numbers by counting hunks (Review Focus: '++ ' text)", () => {
     const diff = [
-      "diff --git a/x.ts b/x.ts", "--- a/x.ts", "+++ b/x.ts", "@@ -1,0 +2,2 @@", "+one", "+two", "@@ -9 +11 @@", "-gone", "+eleven",
+      "diff --git a/x.ts b/x.ts", "--- a/x.ts", "+++ b/x.ts", "@@ -1,0 +2,3 @@", "+one", "+++ looks like a header", "+two",
+      "@@ -9 +12 @@", "-gone", "+twelve", "\\ No newline at end of file",
       "diff --git a/y b/y", "--- a/y", "+++ /dev/null", "@@ -1 +0,0 @@", "-bye",
+      "diff --git a/z b/z", "--- a/z", "+++ b/z", "@@ -1,2 +1,2 @@", " same", "-old", "+new",
     ].join("\n");
     expect(parseAddedLines(diff)).toEqual([
-      { file: "x.ts", line: 2, text: "one" },
-      { file: "x.ts", line: 3, text: "two" },
-      { file: "x.ts", line: 11, text: "eleven" },
+      { file: "x.ts", lines: [{ line: 2, text: "one" }, { line: 3, text: "++ looks like a header" }, { line: 4, text: "two" }, { line: 12, text: "twelve" }] },
+      { file: "z", lines: [{ line: 2, text: "new" }] },
     ]);
+  });
+
+  it("finds a private key split over added lines, at its first line", () => {
+    const f = { file: "k.pem", lines: [{ line: 1, text: "intro" }, { line: 2, text: "-----BEGIN " + "PRIVATE KEY-----" }, { line: 3, text: "MIIabc" }, { line: 4, text: "-----END PRIVATE KEY-----" }] };
+    expect(hitsIn(f, makeScrubber())).toEqual([{ file: "k.pem", line: 2, kind: "private-key" }]);
   });
 });
 
@@ -4302,7 +4848,28 @@ describe("sindri scrub --staged", () => {
     expect(r.stderr).toContain("  src/conf.ts:2 aws-access-key");
     expect(r.stderr).not.toContain(secret);
     const json = JSON.parse((await runCli(["scrub", "--staged", "--json"], makeDeps({ cwd: root }))).stdout);
-    expect(json.hits).toEqual([{ file: "src/conf.ts", line: 2, kind: "aws-access-key" }]);
+    expect(json.error).toMatchObject({ code: "SND-SCRUB-002", details: ["src/conf.ts:2 aws-access-key"] });
+  });
+
+  it("scans a renamed-and-edited file", async () => {
+    const root = repo();
+    stage(root, "a.txt", "line one\nline two\nline three\n");
+    execFileSync("git", ["-c", "user.name=T", "-c", "user.email=t@example.com", "commit", "-qm", "a"], { cwd: root });
+    execFileSync("git", ["mv", "a.txt", "b.txt"], { cwd: root });
+    stage(root, "b.txt", `line one\nline two\nline three\nkey ${"AKIA" + "ABCDEFGHIJKLMNOP"}\n`);
+    const r = await runCli(["scrub", "--staged"], makeDeps({ cwd: root }));
+    expect(r.stderr).toContain("b.txt:4 aws-access-key");
+  });
+
+  it("warns when an invalid profile means only built-in patterns are used", async () => {
+    const root = repo();
+    stage(root, "ok.txt", "fine\n");
+    const deps = makeDeps({ cwd: root });
+    await runCli(["profile", "init"], deps);
+    fs.appendFileSync(path.join(deps.env.AW_STATE_DIR as string, "profile", "profile.yaml"), "\nbogus: 1\n");
+    const r = await runCli(["scrub", "--staged"], deps);
+    expect(r.exitCode).toBe(0);
+    expect(r.stderr).toContain("only built-in patterns are used");
   });
 
   it("uses the profile's extra patterns when a profile loads", async () => {
@@ -4330,6 +4897,7 @@ describe("sindri scrub --install-pre-commit", () => {
     expect(r.exitCode).toBe(0);
     const hook = path.join(root, ".git/hooks/pre-commit");
     expect(fs.readFileSync(hook, "utf8")).toContain(PRE_COMMIT_MARKER);
+    expect(hookBinary(fs.readFileSync(hook, "utf8"))).toBe("sindri");
     expect(fs.statSync(hook).mode & 0o111).not.toBe(0);
     expect((await runCli(["scrub", "--install-pre-commit"], deps)).exitCode).toBe(0);
     fs.writeFileSync(hook, "#!/bin/sh\necho mine\n");
@@ -4343,6 +4911,35 @@ describe("sindri scrub --install-pre-commit", () => {
     const r = await runCli(["scrub", "--install-pre-commit", "--repo", root], makeDeps());
     expect(r.stdout).toContain(path.join(root, ".githooks", "pre-commit"));
     expect((await runCli(["scrub", "--install-pre-commit"], makeDeps({ cwd: tempDir() }))).stderr).toContain("SND-PROFILE-009");
+  });
+});
+
+describe("the installed hook", () => {
+  it("records the absolute CLI path it was installed with, quoting safely", () => {
+    expect(hookBinary(preCommitHook("/home/o'neil/.local/bin/sindri"))).toBe("/home/o'neil/.local/bin/sindri");
+    expect(hookBinary("#!/bin/sh\necho mine\n")).toBeNull();
+  });
+
+  it("fails closed when the CLI is missing (Review Focus: no silent skip)", () => {
+    const root = repo();
+    const hook = path.join(root, "hook.sh");
+    fs.writeFileSync(hook, preCommitHook(path.join(root, "no-such-sindri")));
+    let code = 0;
+    let err = "";
+    try {
+      execFileSync("sh", [hook], { cwd: root, stdio: ["ignore", "ignore", "pipe"] });
+    } catch (e) {
+      code = (e as { status: number }).status;
+      err = String((e as { stderr: Buffer }).stderr);
+    }
+    expect(code).toBe(1);
+    expect(err).toContain("refusing the commit");
+  });
+
+  it("installs with $SINDRI_BIN when the wrapper sets it", async () => {
+    const root = repo();
+    await runCli(["scrub", "--install-pre-commit"], makeDeps({ cwd: root, env: { SINDRI_BIN: "/opt/bin/sindri" } }));
+    expect(hookBinary(fs.readFileSync(path.join(root, ".git/hooks/pre-commit"), "utf8"))).toBe("/opt/bin/sindri");
   });
 });
 
@@ -4376,23 +4973,33 @@ import type { Deps } from "../deps.js";
 import { SindriError } from "../errors.js";
 import type { GitRunner } from "../git.js";
 import type { Command } from "../main.js";
-import { fromError, success, type CommandResult } from "../output.js";
+import { failure, fromError, success, type CommandResult } from "../output.js";
 import { loadProfile, resolveProfileRoot } from "../profile/load.js";
 import { compileExtraPatterns, makeScrubber, type Scrubber } from "./scrub.js";
 
 export const PRE_COMMIT_MARKER = "# sindri-scrub-pre-commit v1";
 
-export const PRE_COMMIT_HOOK = `#!/bin/sh
+// The hook calls the CLI by the absolute path it was installed from (GUI git
+// clients don't load ~/.local/bin into PATH) and fails closed when it's missing.
+// `git commit --no-verify` still bypasses it: a deliberate, visible human choice.
+export function preCommitHook(bin: string): string {
+  return `#!/bin/sh
 ${PRE_COMMIT_MARKER}
 # Refuses commits that add secret-shaped strings (spec §8.4).
-# Installed by \`sindri scrub --install-pre-commit\`. A pattern guard, not a boundary:
-# it skips when sindri is not on PATH, and \`git commit --no-verify\` bypasses it.
-if ! command -v sindri >/dev/null 2>&1; then
-  echo "sindri-scrub: sindri is not on PATH; secret scan skipped" >&2
-  exit 0
+# Installed by \`sindri scrub --install-pre-commit\`.
+SINDRI='${bin.replace(/'/g, "'\\''")}'
+if [ ! -x "$SINDRI" ] && ! command -v "$SINDRI" >/dev/null 2>&1; then
+  echo "sindri-scrub: $SINDRI not found, so the secret scan can't run; refusing the commit." >&2
+  echo "  fix: scripts/install-sindri.sh (or commit with --no-verify and say why)" >&2
+  exit 1
 fi
-exec sindri scrub --staged
+exec "$SINDRI" scrub --staged
 `;
+}
+
+export function hookBinary(hookText: string): string | null {
+  return /^SINDRI='((?:[^']|'\\'')*)'$/m.exec(hookText)?.[1].replace(/'\\''/g, "'") ?? null;
+}
 
 export async function preCommitPath(git: GitRunner, repoPath: string): Promise<string | null> {
   const hooksPath = await git.run(["config", "--get", "core.hooksPath"], repoPath);
@@ -4401,29 +5008,74 @@ export async function preCommitPath(git: GitRunner, repoPath: string): Promise<s
   return gitPath.ok ? path.resolve(repoPath, gitPath.stdout.trim()) : null;
 }
 
-export function parseAddedLines(diff: string): { file: string; line: number; text: string }[] {
-  const out: { file: string; line: number; text: string }[] = [];
-  let file: string | null = null;
-  let line = 0;
-  for (const l of diff.split("\n")) {
-    if (l.startsWith("+++ ")) {
-      file = l === "+++ /dev/null" ? null : l.slice("+++ b/".length);
-      continue;
-    }
-    const hunk = /^@@ -\S+ \+(\d+)/.exec(l);
-    if (hunk !== null) {
-      line = Number(hunk[1]);
-      continue;
-    }
-    if (l.startsWith("+") && file !== null) out.push({ file, line: line++, text: l.slice(1) });
-  }
-  return out;
+export interface AddedFile {
+  file: string;
+  lines: { line: number; text: string }[];
 }
 
-function scrubberFor(deps: Deps): Scrubber {
+// Reads `git diff --unified=0`. Inside a hunk, lines are counted from the hunk
+// header, so an added line whose text starts with "++ " is still an addition,
+// never mistaken for a "+++ " file header.
+export function parseAddedLines(diff: string): AddedFile[] {
+  const out: AddedFile[] = [];
+  let cur: AddedFile | null = null;
+  let newLine = 0;
+  let oldLeft = 0;
+  let newLeft = 0;
+  for (const l of diff.split("\n")) {
+    if (oldLeft > 0 || newLeft > 0) {
+      if (l.startsWith("+")) {
+        cur?.lines.push({ line: newLine, text: l.slice(1) });
+        newLine++;
+        newLeft--;
+      } else if (l.startsWith("-")) {
+        oldLeft--;
+      } else if (!l.startsWith("\\")) {
+        newLine++;
+        newLeft--;
+        oldLeft--;
+      }
+      continue;
+    }
+    if (l.startsWith("+++ ")) {
+      const f = l.slice(4);
+      cur = f === "/dev/null" ? null : { file: f.replace(/^b\//, ""), lines: [] };
+      if (cur !== null) out.push(cur);
+      continue;
+    }
+    const h = /^@@ -\d+(?:,(\d+))? \+(\d+)(?:,(\d+))? @@/.exec(l);
+    if (h !== null) {
+      oldLeft = h[1] === undefined ? 1 : Number(h[1]);
+      newLine = Number(h[2]);
+      newLeft = h[3] === undefined ? 1 : Number(h[3]);
+    }
+  }
+  return out.filter((f) => f.lines.length > 0);
+}
+
+// One file's additions are scanned as one text, so a secret split over lines
+// (a PEM private key) is still found; each hit maps back to its first line.
+export function hitsIn(f: AddedFile, scrubber: Scrubber): { file: string; line: number; kind: string }[] {
+  const starts: number[] = [];
+  let offset = 0;
+  for (const l of f.lines) {
+    starts.push(offset);
+    offset += l.text.length + 1;
+  }
+  return scrubber.find(f.lines.map((l) => l.text).join("\n")).map((h) => {
+    let i = starts.length - 1;
+    while (starts[i] > h.start) i--;
+    return { file: f.file, line: f.lines[i].line, kind: h.kind };
+  });
+}
+
+function scrubberFor(deps: Deps): { scrubber: Scrubber; warning: string } {
   const root = resolveProfileRoot(deps);
   const loaded = root === null ? null : loadProfile(root);
-  return makeScrubber(loaded?.ok === true ? compileExtraPatterns(loaded.value.profile.scrub.extraPatterns) : []);
+  if (loaded !== null && !loaded.ok) {
+    return { scrubber: makeScrubber(), warning: "warning: the profile is invalid, so only built-in patterns are used (sindri profile validate)\n" };
+  }
+  return { scrubber: makeScrubber(loaded === null ? [] : compileExtraPatterns(loaded.value.profile.scrub.extraPatterns)), warning: "" };
 }
 
 async function install(deps: Deps, repo: string | undefined, json: boolean): Promise<CommandResult> {
@@ -4434,21 +5086,24 @@ async function install(deps: Deps, repo: string | undefined, json: boolean): Pro
     throw new SindriError("SND-SCRUB-003", `${hook} already exists and is not sindri's`);
   }
   fs.mkdirSync(path.dirname(hook), { recursive: true });
-  fs.writeFileSync(hook, PRE_COMMIT_HOOK);
+  fs.writeFileSync(hook, preCommitHook(deps.env.SINDRI_BIN ?? "sindri"));
   fs.chmodSync(hook, 0o755);
   return success(`Installed the secret-scan pre-commit hook at ${hook}.`, { hook }, json);
 }
 
 async function staged(deps: Deps, json: boolean): Promise<CommandResult> {
-  const diff = await deps.git.run(["diff", "--cached", "--unified=0", "--no-color", "--no-ext-diff", "--diff-filter=AM"], deps.cwd);
+  // -M and --diff-filter=d: renamed, copied and type-changed files are scanned too.
+  const args = ["-c", "core.quotePath=false", "diff", "--cached", "--unified=0", "--no-color", "--no-ext-diff", "-M", "--diff-filter=d"];
+  const diff = await deps.git.run(args, deps.cwd);
   if (!diff.ok) throw new SindriError("SND-PROFILE-009", `${deps.cwd} is not inside a git repo`);
-  const scrubber = scrubberFor(deps);
-  const hits = parseAddedLines(diff.stdout).flatMap((a) => scrubber.find(a.text).map((h) => ({ file: a.file, line: a.line, kind: h.kind })));
-  if (hits.length === 0) return success("No secrets in staged changes.", { hits }, json);
-  if (json) return { exitCode: 1, stdout: `${JSON.stringify({ hits }, null, 2)}\n`, stderr: "" };
-  const lines = hits.map((h) => `  ${h.file}:${h.line} ${h.kind}`);
-  const fix = "  fix: remove them (use a secret pointer or an env var). For a false positive, commit with --no-verify and say why in the message.";
-  return { exitCode: 1, stdout: "", stderr: `SND-SCRUB-002 refused: ${hits.length} likely secret(s) in staged changes:\n${lines.join("\n")}\n${fix}\n` };
+  const { scrubber, warning } = scrubberFor(deps);
+  const hits = parseAddedLines(diff.stdout).flatMap((f) => hitsIn(f, scrubber));
+  if (hits.length === 0) return { ...success("No secrets in staged changes.", { hits }, json), stderr: warning };
+  const r = failure("SND-SCRUB-002", `refused: ${hits.length} likely secret(s) in staged changes:`, json, {
+    details: hits.map((h) => `${h.file}:${h.line} ${h.kind}`),
+    exitCode: 1,
+  });
+  return { ...r, stderr: warning + r.stderr };
 }
 
 export const scrubCommand: Command = async (args, deps) => {
@@ -4457,8 +5112,9 @@ export const scrubCommand: Command = async (args, deps) => {
     const { values } = parseFlags(args, { staged: { type: "boolean" }, "install-pre-commit": { type: "boolean" }, repo: { type: "string" }, json: { type: "boolean" } });
     if (values["install-pre-commit"] === true) return await install(deps, values.repo, json);
     if (values.staged === true) return await staged(deps, json);
-    const out = scrubberFor(deps).scrub(await deps.stdin());
-    return { exitCode: 0, stdout: out.text, stderr: out.hits.length > 0 ? `scrubbed ${out.hits.length} hit(s)\n` : "" };
+    const { scrubber, warning } = scrubberFor(deps);
+    const out = scrubber.scrub(await deps.stdin());
+    return { exitCode: 0, stdout: out.text, stderr: warning + (out.hits.length > 0 ? `scrubbed ${out.hits.length} hit(s)\n` : "") };
   } catch (e) {
     return fromError(e, json);
   }
@@ -4480,19 +5136,23 @@ Register in `sindri/src/main.ts`:
 ```ts
 import { scrubCommand } from "./scrub/commands.js";
 
-  scrub: { summary: "Scrub stdin, check staged changes (--staged), or --install-pre-commit", run: scrubCommand },
+  scrub: {
+    summary: "Scrub stdin, check staged changes, or install the secret-scan pre-commit hook",
+    usage: "Usage: sindri scrub < text | sindri scrub --staged [--json] | sindri scrub --install-pre-commit [--repo PATH]",
+    run: scrubCommand,
+  },
 ```
 
 Add to `ERRORS`:
 
 ```ts
-  "SND-SCRUB-002": { summary: "Staged changes contain likely secrets.", fix: "Remove them, or commit with --no-verify for a false positive and say why." },
+  "SND-SCRUB-002": { summary: "Staged changes contain likely secrets.", fix: "remove them (use a secret pointer or an env var); for a false positive, commit with --no-verify and say why" },
   "SND-SCRUB-003": { summary: "A different pre-commit hook is already installed.", fix: "Add `sindri scrub --staged || exit 1` to that hook by hand." },
 ```
 
 - [ ] **Step 4: Run the tests**
 
-Run: `cd sindri && npm run gen && npx vitest run && npm run typecheck`
+Run: `cd sindri && npm run gen && npx vitest run && npm run typecheck && npm run test:coverage`
 Expected: all tests PASS; no type errors.
 
 - [ ] **Step 5: Commit**
@@ -4564,7 +5224,7 @@ describe("sindri doctor", () => {
   it("is all ok after ring-0 init, approve and pre-commit install (spec §13.3 evidence)", async () => {
     const d = await ring0Deps();
     const hash = JSON.parse((await runCli(["profile", "approve", "--json"], d)).stdout).hash as string;
-    await runCli(["profile", "approve", hash], d);
+    await runCli(["profile", "approve", hash], { ...d, isTTY: true, prompt: async () => hash.slice(0, 6) });
     await runCli(["scrub", "--install-pre-commit"], d);
     const r = await runCli(["doctor"], d);
     expect(r.stdout).not.toMatch(/^(warn|fail)/m);
@@ -4586,6 +5246,14 @@ describe("sindri doctor", () => {
     expect(hook?.status).toBe("warn");
   });
 
+  it("warns when the installed hook points at a CLI that is gone", async () => {
+    const d = await ring0Deps();
+    await runCli(["scrub", "--install-pre-commit"], { ...d, env: { ...d.env, SINDRI_BIN: "/nonexistent/sindri" } });
+    const hook = Object.entries(await byName(d)).find(([k]) => k.startsWith("pre-commit:"))?.[1];
+    expect(hook).toMatchObject({ status: "warn" });
+    expect(hook?.detail).toContain("/nonexistent/sindri, which is missing");
+  });
+
   it("fails on an old node, a network state dir, an invalid profile and a newer ledger", async () => {
     const d = makeDeps({ system: fakeSystem({ isLocalDisk: () => false, bootId: () => null }) });
     fs.mkdirSync(stateDir(d), { recursive: true });
@@ -4597,7 +5265,7 @@ describe("sindri doctor", () => {
     const c = await byName(d, "18.19.0");
     expect(c.node.status).toBe("fail");
     expect(c["state-dir"]).toMatchObject({ status: "fail", detail: "on a network filesystem" });
-    expect(c["boot-id"].status).toBe("warn");
+    expect(c["boot-id"]).toMatchObject({ status: "ok", detail: "unreadable; stale-lock checks use pids only" });
     expect(c.ledger.status).toBe("fail");
     expect(c.ledger.detail).toContain("SND-LEDGER-001");
     expect(c.profile.status).toBe("fail");
@@ -4618,7 +5286,7 @@ describe("sindri doctor", () => {
     expect(c.lock.detail).toContain("leftovers: sindri.lock.stale-x");
   });
 
-  it("reports a held lock as ok, and a stale lock without leftovers needs no fix", async () => {
+  it("reports a held lock, and a stale lock without leftovers, as ok", async () => {
     const d = makeDeps();
     const dir = stateDir(d);
     fs.mkdirSync(path.join(dir, "sindri.lock"), { recursive: true });
@@ -4626,7 +5294,7 @@ describe("sindri doctor", () => {
     fs.writeFileSync(path.join(dir, "sindri.lock", "owner.json"), JSON.stringify({ pid: 9, pidStartTime: "start-9", host: "test-host", bootId: "boot-1", startedAt: "t", epoch: 1 }));
     expect((await byName(d)).lock).toMatchObject({ status: "ok", detail: "held by test-host/9 since t" });
     const stale = await byName({ ...d, system: fakeSystem({ pidAlive: () => false }) });
-    expect(stale.lock).toMatchObject({ status: "warn", fix: "none needed" });
+    expect(stale.lock).toMatchObject({ status: "ok", detail: "stale lock from test-host/9; the next run takes it over" });
   });
 });
 ```
@@ -4653,7 +5321,16 @@ import type { Command } from "../main.js";
 import { fromError, success, type ExitCode } from "../output.js";
 import { isApproved } from "../profile/approve.js";
 import { loadProfile, resolveProfileRoot, type LoadedProfile } from "../profile/load.js";
-import { preCommitPath, PRE_COMMIT_MARKER } from "../scrub/commands.js";
+import { hookBinary, preCommitPath, PRE_COMMIT_MARKER } from "../scrub/commands.js";
+
+function isExecutable(p: string): boolean {
+  try {
+    fs.accessSync(p, fs.constants.X_OK);
+    return true;
+  } catch {
+    return false;
+  }
+}
 
 export interface Check {
   name: string;
@@ -4695,10 +5372,10 @@ function lockCheck(deps: Deps): Check {
   const who = l.owner === null ? "an unreadable owner" : `${l.owner.host}/${l.owner.pid}`;
   const state = { free: "free", held: `held by ${who} since ${l.owner?.startedAt}`, stale: `stale lock from ${who}; the next run takes it over` }[l.state];
   const detail = l.leftovers.length > 0 ? `${state}; leftovers: ${l.leftovers.join(", ")}` : state;
-  if (l.state !== "stale" && l.leftovers.length === 0) return { name: "lock", status: "ok", detail };
-  // Leftovers are dirs a crashed takeover left behind; removing them is safe.
-  const fix = l.leftovers.length > 0 ? `remove ${l.leftovers.map((n) => path.join(dir, n)).join(" ")}` : "none needed";
-  return { name: "lock", status: "warn", detail, fix };
+  // A stale lock alone needs nothing: the next run takes it over. Leftover dirs
+  // from a crashed takeover need removing; that is safe.
+  if (l.leftovers.length === 0) return { name: "lock", status: "ok", detail };
+  return { name: "lock", status: "warn", detail, fix: `remove ${l.leftovers.map((n) => path.join(dir, n)).join(" ")} (left by a crashed run)` };
 }
 
 function approvedCheck(deps: Deps, loaded: LoadedProfile): Check {
@@ -4732,10 +5409,12 @@ async function profileChecks(deps: Deps, loaded: LoadedProfile): Promise<Check[]
   ];
   for (const [name, repo] of Object.entries(loaded.repos)) {
     const hook = await preCommitPath(deps.git, repo.path);
-    const installed = hook !== null && fs.existsSync(hook) && fs.readFileSync(hook, "utf8").includes(PRE_COMMIT_MARKER);
-    out.push(installed
-      ? { name: `pre-commit:${name}`, status: "ok", detail: hook }
-      : { name: `pre-commit:${name}`, status: "warn", detail: "secret-scan hook not installed", fix: `sindri scrub --install-pre-commit --repo ${repo.path}` });
+    const text = hook !== null && fs.existsSync(hook) ? fs.readFileSync(hook, "utf8") : "";
+    const bin = text.includes(PRE_COMMIT_MARKER) ? hookBinary(text) : null;
+    const fix = `sindri scrub --install-pre-commit --repo ${repo.path}`;
+    if (bin === null) out.push({ name: `pre-commit:${name}`, status: "warn", detail: "secret-scan hook not installed", fix });
+    else if (path.isAbsolute(bin) && !isExecutable(bin)) out.push({ name: `pre-commit:${name}`, status: "warn", detail: `hook calls ${bin}, which is missing, so every commit is refused`, fix: `scripts/install-sindri.sh, then ${fix}` });
+    else out.push({ name: `pre-commit:${name}`, status: "ok", detail: `${hook} → ${bin}` });
   }
   return out;
 }
@@ -4745,9 +5424,7 @@ export async function runChecks(deps: Deps, nodeVersion: string = process.versio
   const checks: Check[] = [
     major >= 20 ? { name: "node", status: "ok", detail: nodeVersion } : { name: "node", status: "fail", detail: `${nodeVersion} (need >= 20)`, fix: "install Node 20 or newer" },
     stateDirCheck(deps),
-    deps.system.bootId() === null
-      ? { name: "boot-id", status: "warn", detail: "unreadable; stale-lock detection falls back to pid checks", fix: "none needed" }
-      : { name: "boot-id", status: "ok", detail: "readable" },
+    { name: "boot-id", status: "ok", detail: deps.system.bootId() === null ? "unreadable; stale-lock checks use pids only" : "readable" },
     ledgerCheck(deps),
     lockCheck(deps),
   ];
@@ -4780,7 +5457,7 @@ Register in `sindri/src/main.ts`:
 ```ts
 import { doctorCommand } from "./doctor/doctor.js";
 
-  doctor: { summary: "Health checks, one line each: ok / warn / fail plus a fix", run: doctorCommand },
+  doctor: { summary: "Health checks, one line each: ok / warn / fail plus a fix", usage: "Usage: sindri doctor [--json]", run: doctorCommand },
 ```
 
 - [ ] **Step 4: Run the tests**
@@ -4822,15 +5499,16 @@ trap 'rm -rf "$TMP"' EXIT
 test_dry_run_writes_nothing() {
   local out
   out="$(AW_DRY_RUN=1 CLAUDE_LOCAL_BIN="$TMP/bin" bash "$ROOT/scripts/install-sindri.sh")"
-  printf '%s' "$out" | grep -q "\[dry-run\] would write $TMP/bin/sindri" || { echo "FAIL: dry-run line missing"; exit 1; }
+  grep -q "\[dry-run\] would write $TMP/bin/sindri" <<<"$out" || { echo "FAIL: dry-run line missing"; exit 1; }
   [ ! -e "$TMP/bin/sindri" ] || { echo "FAIL: dry-run wrote the wrapper"; exit 1; }
   echo "PASS: test_dry_run_writes_nothing"
 }
 
 test_wrapper_execs_the_built_cli() {
-  AW_SKIP_BUILD=1 CLAUDE_LOCAL_BIN="$TMP/bin" bash "$ROOT/scripts/install-sindri.sh" > /dev/null
+  AW_SKIP_BUILD=1 AW_SKIP_LAUNCHD=1 CLAUDE_LOCAL_BIN="$TMP/bin" bash "$ROOT/scripts/install-sindri.sh" > /dev/null
   [ -x "$TMP/bin/sindri" ] || { echo "FAIL: wrapper not executable"; exit 1; }
   grep -q 'exec node ".*/sindri/dist/cli.js" "\$@"' "$TMP/bin/sindri" || { echo "FAIL: wrapper does not exec dist/cli.js"; exit 1; }
+  grep -q "export SINDRI_BIN=\"$TMP/bin/sindri\"" "$TMP/bin/sindri" || { echo "FAIL: wrapper does not export SINDRI_BIN"; exit 1; }
   echo "PASS: test_wrapper_execs_the_built_cli"
 }
 
@@ -4883,6 +5561,8 @@ fi
 mkdir -p "$BIN_DIR"
 cat > "$BIN_DIR/sindri" <<EOF
 #!/usr/bin/env bash
+# SINDRI_BIN lets \`sindri scrub --install-pre-commit\` write this absolute path into the hook.
+export SINDRI_BIN="$BIN_DIR/sindri"
 exec node "$SINDRI_DIR/dist/cli.js" "\$@"
 EOF
 chmod +x "$BIN_DIR/sindri"
@@ -4924,7 +5604,7 @@ This package is being built in plans. What exists today (Plan 2):
 | Command | What it does |
 |---|---|
 | `sindri profile init [--ring0] [--dir DIR]` | Scaffold a profile in `mode: shadow`. `--ring0` makes one for the current repo, using its plan files as the backlog |
-| `sindri profile validate \| explain <key> \| migrate \| approve [hash]` | Check the profile, show where a value comes from, upgrade it, approve a change (changes take effect only once approved) |
+| `sindri profile validate \| explain <key> \| migrate \| approve [hash]` | Check the profile, show where a value comes from, upgrade it, approve a change. Changes take effect only once approved, and approving needs you at a terminal |
 | `sindri observe [--no-record]` | List open work with sizes and what auto-small would start. Records it in the ledger when the profile is approved and this is the active host |
 | `sindri ledger [--item ID] [--since 7d]` | Show recorded events |
 | `sindri scrub [--staged] [--install-pre-commit]` | Redact secrets from stdin, check staged changes, or install the pre-commit hook that refuses secret-shaped strings |
@@ -4936,10 +5616,10 @@ Every read command takes `--json`. Exit codes: `0` ok, `1` attention needed, `2`
 
 ```bash
 scripts/install-sindri.sh                 # or ./setup.sh --with-sindri
-sindri profile init --ring0               # profile for this repo, backlog = docs/superpowers/plans/*.md
+sindri profile init --ring0 --plans '*-sindri-plan-*'   # profile for this repo; backlog = the Sindri plans
 sindri profile validate
 sindri profile approve                    # shows the hash and what changed
-sindri profile approve <hash>
+sindri profile approve <hash>             # you, at a terminal: type the first 6 characters to confirm
 sindri scrub --install-pre-commit         # refuse secret-shaped strings in commits
 sindri doctor                             # expect every line ok
 sindri observe                            # the remaining Sindri plan tasks, in order
@@ -4957,6 +5637,10 @@ sindri observe                            # the remaining Sindri plan tasks, in 
 `$AW_STATE_DIR` defaults to `~/.agentic-workflow`.
 
 Not to be confused with `./setup.sh --profile <web-app|ios|personal>`, which applies a Claude Code settings profile to a repo. A Sindri profile is the `profile.yaml` described in `profile.md`.
+
+## Plan files as a backlog
+
+The `plan-file` tracker reads each `### Task N: …` heading as one item and its `- [ ]` / `- [x]` steps as progress. A task is done when every step is ticked. Code inside fenced blocks is ignored, so keep shell snippets fenced: an unfenced `# comment` line would end the task early.
 
 ## When to use which
 
@@ -5001,7 +5685,10 @@ scripts/install-sindri.sh               # Build sindri, install the CLI wrapper 
 - §10.3 Output contract: change the areas list to "PROFILE, LOCK, SESS, ITEM, GATE, DIR, SHAPE, INDEX, BRIDGE, NOTIFY, BUDGET, CLI, LEDGER, SCRUB, TRACKER".
 - §11.1: add the bullet "**Growth:** the schema is strict (unknown keys are errors). New optional keys join `schemaVersion: 1`; renames and removals bump it and add a migration (Plan 2 amendment)."
 - §13.3 ladder, row "Profile + ledger + lock + CLI skeleton (P2)": change "Every later build session is recorded in the ledger (items = plan tasks)" to "Every plan task and each change to it is recorded in the ledger on each `observe` run; sessions are linked to items from rollout step 2".
-- §13.3 ladder, row "`plan-file` tracker + `sindri observe` (P2)": change "Lists the remaining plan tasks with sizes" to "Lists the remaining plan tasks with rule-based sizes (model triage from step 2)".
+- §13.3 ladder, row "`plan-file` tracker + `sindri observe` (P2)": change "Lists the remaining plan tasks with sizes" to "Lists the remaining plan tasks with rule-based sizes (model triage from step 2)", and the switch-on command to `sindri profile init --ring0 --plans '*-sindri-plan-*'`, then `sindri observe` (hourly via launchd).
+- §13.3 ladder, row "Scrubber (P2)": change "no workplace details or secrets land in commits" to "no secret- or identifier-shaped strings land in commits (names and other workplace prose still need review)".
+- §8.7: after "A profile change takes effect only after `sindri profile approve <hash>`", add "Runtime commands load the last approved snapshot; approving needs an interactive terminal and a typed confirmation."
+- §10.3 `observe` row: change the empty text to "Observed N items (M open); would start K. … Nothing outside the ledger changed." and note "records to the ledger when the profile is approved (exit 1 when it can't for a fixable reason)".
 
 - [ ] **Step 7: Run the whole merge gate for the touched packages, one job at a time**
 
@@ -5029,58 +5716,183 @@ git commit -m "docs: sindri installer, setup opt-in, merge gate and spec amendme
 
 ### Task 12: Turn it on (bootstrapping ladder, spec §13.3 rows 4–6)
 
-Plan 2's pieces start working on the rest of the Sindri build once this PR merges. Step 1 runs on the PR branch. Steps 2–3 run **after merge**, and their output is posted as a PR comment.
+Plan 2's pieces start working on the rest of the Sindri build once this PR merges. Steps 1–5 run on the PR branch. Steps 6–8 run **after merge**. Step 7 is the one step that needs Joi: approving the profile at a terminal (spec §8.7). The evidence is posted as a PR comment.
 
-**Files:** none (switch-on only).
+**Files:**
+- Create: `config/launchd/com.agentic-workflow.sindri-observe.plist`, `scripts/sindri-guard-proof.sh`
+- Modify: `scripts/install-sindri.sh` (install the hourly job on macOS), `scripts/tests/install-sindri.test.sh`
 
-- [ ] **Step 1: Rehearse the switch-on on the PR branch with a scratch state dir**
+**Interfaces:**
+- Consumes: the `sindri` CLI (Tasks 1–11).
+- Produces: an hourly `sindri observe` (launchd `com.agentic-workflow.sindri-observe`), so the ledger tracks plan-task state without anyone remembering to run it (product review C4); `scripts/sindri-guard-proof.sh`, which proves the pre-commit guard in a throwaway repo, never in this public one.
+
+- [ ] **Step 1: Write the failing tests**
+
+Append to `scripts/tests/install-sindri.test.sh`, before the list of test calls at the bottom, and add both names to that list:
 
 ```bash
-scripts/install-sindri.sh
+test_observe_job_is_hourly() {
+  local plist="$ROOT/config/launchd/com.agentic-workflow.sindri-observe.plist"
+  [ -f "$plist" ] || { echo "FAIL: $plist missing"; exit 1; }
+  if command -v plutil >/dev/null 2>&1; then plutil -lint "$plist" >/dev/null || { echo "FAIL: plist invalid"; exit 1; }; fi
+  grep -q '__HOME__/.local/bin/sindri observe' "$plist" || { echo "FAIL: observe command missing"; exit 1; }
+  grep -q '<integer>3600</integer>' "$plist" || { echo "FAIL: not hourly"; exit 1; }
+  grep -q 'com.agentic-workflow.sindri-observe.plist' "$ROOT/scripts/install-sindri.sh" || { echo "FAIL: installer does not install the job"; exit 1; }
+  echo "PASS: test_observe_job_is_hourly"
+}
+
+test_guard_proof_uses_a_scratch_repo() {
+  local proof="$ROOT/scripts/sindri-guard-proof.sh"
+  [ -x "$proof" ] || { echo "FAIL: $proof missing or not executable"; exit 1; }
+  grep -q 'mktemp -d' "$proof" || { echo "FAIL: proof does not use a scratch repo"; exit 1; }
+  grep -q 'GIT_CONFIG_GLOBAL=/dev/null' "$proof" || { echo "FAIL: proof inherits global git config"; exit 1; }
+  echo "PASS: test_guard_proof_uses_a_scratch_repo"
+}
+```
+
+- [ ] **Step 2: Run them to verify they fail**
+
+Run: `bash scripts/tests/install-sindri.test.sh`
+Expected: three `PASS` lines from Task 11, then `FAIL: …/com.agentic-workflow.sindri-observe.plist missing`.
+
+- [ ] **Step 3: Implement**
+
+`config/launchd/com.agentic-workflow.sindri-observe.plist`:
+
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>Label</key>
+  <string>com.agentic-workflow.sindri-observe</string>
+  <key>ProgramArguments</key>
+  <array>
+    <string>/bin/bash</string>
+    <string>-lc</string>
+    <string>__HOME__/.local/bin/sindri observe</string>
+  </array>
+  <key>StartInterval</key>
+  <integer>3600</integer>
+  <key>StandardOutPath</key>
+  <string>__HOME__/.agentic-workflow/sindri/observe-launchd.log</string>
+  <key>StandardErrorPath</key>
+  <string>__HOME__/.agentic-workflow/sindri/observe-launchd.log</string>
+</dict>
+</plist>
+```
+
+In `scripts/install-sindri.sh`, after the `echo "  sindri: CLI at $BIN_DIR/sindri"` line, add:
+
+```bash
+# Hourly `sindri observe` keeps the ledger's plan-task state current (macOS only;
+# AW_SKIP_LAUNCHD=1 skips it, which the tests use).
+if [ "$(uname -s)" = "Darwin" ] && [ "${AW_SKIP_LAUNCHD:-0}" != "1" ]; then
+  LAUNCH_AGENTS_DIR="$HOME/Library/LaunchAgents"
+  NAME=com.agentic-workflow.sindri-observe
+  mkdir -p "$LAUNCH_AGENTS_DIR" "${AW_STATE_DIR:-$HOME/.agentic-workflow}/sindri"
+  sed "s|__HOME__|$HOME|g" "$SCRIPT_DIR/config/launchd/$NAME.plist" > "$LAUNCH_AGENTS_DIR/$NAME.plist"
+  launchctl bootout "gui/$(id -u)" "$LAUNCH_AGENTS_DIR/$NAME.plist" 2>/dev/null || true
+  launchctl bootstrap "gui/$(id -u)" "$LAUNCH_AGENTS_DIR/$NAME.plist"
+  echo "  sindri: hourly observe (launchd $NAME)"
+fi
+```
+
+Also add `echo "  [dry-run] would install launchd job com.agentic-workflow.sindri-observe.plist (macOS)"` to the dry-run branch, and in `test_wrapper_execs_the_built_cli` run the installer with `AW_SKIP_LAUNCHD=1` as well as `AW_SKIP_BUILD=1`.
+
+`scripts/sindri-guard-proof.sh` (mode 755):
+
+```bash
+#!/usr/bin/env bash
+# Proves the secret-scan pre-commit hook refuses a secret-shaped string. Runs in a
+# throwaway repo with the global git config ignored, so nothing touches this repo.
+set -euo pipefail
+export GIT_CONFIG_GLOBAL=/dev/null GIT_CONFIG_NOSYSTEM=1
+SCRATCH="$(mktemp -d)"
+trap 'rm -rf "$SCRATCH"' EXIT
+git -C "$SCRATCH" init -q
+sindri scrub --install-pre-commit --repo "$SCRATCH"
+printf 'k = "%s%s"\n' "AKIA" "ABCDEFGHIJKLMNOP" > "$SCRATCH/fixture.txt"
+git -C "$SCRATCH" add fixture.txt
+if git -C "$SCRATCH" -c user.name=proof -c user.email=proof@example.invalid commit -qm "must be refused"; then
+  echo "FAIL: the hook let a secret-shaped string through"
+  exit 1
+fi
+echo "PASS: the pre-commit hook refused the fixture"
+```
+
+- [ ] **Step 4: Run the tests**
+
+Run: `bash scripts/tests/install-sindri.test.sh`
+Expected: five `PASS` lines.
+
+- [ ] **Step 5: Rehearse on the PR branch with a scratch state dir, then commit**
+
+```bash
+AW_SKIP_LAUNCHD=1 scripts/install-sindri.sh
 export AW_STATE_DIR="$(mktemp -d)"
-sindri profile init --ring0
+sindri profile init --ring0 --plans '*-sindri-plan-*'
 sindri profile validate
-sindri profile approve "$(sindri profile approve --json | jq -r .hash)"
+sindri profile approve; echo "approve exit: $?"
 sindri doctor; echo "doctor exit: $?"
-sindri observe
+sindri observe; echo "observe exit: $?"
+scripts/sindri-guard-proof.sh
 unset AW_STATE_DIR
 ```
 
 Expected:
-- `doctor` prints `ok` for every line except `pre-commit:<repo>` (warn: not installed yet in the rehearsal), so `doctor exit: 1`.
-- `observe` lists this repo's open plan tasks (Plan 2's own tasks, and any later plan already written) and ends with `Recorded N new, 0 changed in the ledger.`
+- `profile approve` prints the hash and "No approved profile yet; every line is new.", then `approve exit: 1`.
+- `doctor` shows `warn profile-approved` and `warn pre-commit:<repo>` (not approved or installed in the rehearsal), then `doctor exit: 1`.
+- `observe` lists the open tasks of `*-sindri-plan-*` files, prints `Next up: <id>` and "Not recorded: profile … is not approved", then `observe exit: 1`.
+- `PASS: the pre-commit hook refused the fixture`.
 
-- [ ] **Step 2: Switch on for real, after merge, from the updated `main`**
+```bash
+git add config/launchd/com.agentic-workflow.sindri-observe.plist scripts/install-sindri.sh scripts/sindri-guard-proof.sh scripts/tests/install-sindri.test.sh
+git commit -m "feat: hourly sindri observe and the pre-commit guard proof"
+```
+
+- [ ] **Step 6: After merge, the builder switches on (from the updated `main`)**
+
+First tick every completed step in Plan 1 and Plan 2's plan files (`- [x]`) and commit that as `docs: tick completed Sindri plan 1-2 steps`. The `plan-file` tracker reads the boxes, so unticked shipped work would show as open. Then run:
 
 ```bash
 scripts/install-sindri.sh
-sindri profile init --ring0
-sindri profile approve "$(sindri profile approve --json | jq -r .hash)"
-sindri scrub --install-pre-commit
-sindri doctor
-sindri observe
+sindri profile init --ring0 --plans '*-sindri-plan-*'
+sindri profile validate
+sindri profile approve          # prints the hash and the diff for Joi
 ```
 
-Expected: `doctor` exits 0 with every line `ok`; `observe` prints the ring-0 backlog and `Recorded N new, 0 changed in the ledger.`
-
-- [ ] **Step 3: Prove the pre-commit guard, then post the evidence**
+- [ ] **Step 7: Joi approves the profile at a terminal (the one human step)**
 
 ```bash
-printf 'k = "%s%s"\n' "AKIA" "ABCDEFGHIJKLMNOP" > /tmp/sindri-fixture.txt
-cp /tmp/sindri-fixture.txt ./sindri-fixture.txt && git add sindri-fixture.txt
-git commit -m "test: must be refused" ; echo "commit exit: $?"
-git reset -q HEAD sindri-fixture.txt && rm sindri-fixture.txt
+sindri profile approve <hash>   # type the first 6 characters of the hash when asked
 ```
 
-Expected: the commit is refused (`commit exit: 1`), and the hook prints `SND-SCRUB-002 refused: 1 likely secret(s) in staged changes:` and `sindri-fixture.txt:1 aws-access-key`.
+Expected: `Approved profile <hash>. It takes effect on the next run.`
 
-Post the output of Steps 2 and 3 as a comment on the Plan 2 PR. From then on:
+- [ ] **Step 8: The builder finishes the switch-on and posts the evidence**
+
+```bash
+sindri scrub --install-pre-commit
+sindri doctor; echo "doctor exit: $?"
+sindri observe
+scripts/sindri-guard-proof.sh
+launchctl list | grep com.agentic-workflow.sindri-observe
+```
+
+Expected:
+- `doctor` prints `ok` on every line, then `doctor exit: 0`.
+- `observe` lists the open tasks of the remaining Sindri plans, prints `Next up: <id>` and `Recorded N new, 0 changed, 0 removed in the ledger.`
+- `PASS: the pre-commit hook refused the fixture`.
+- The launchd job is listed.
+
+Post the output of Steps 7 and 8 as a comment on the Plan 2 PR. From then on:
 - every build session in this repo commits through the secret scan (row 5);
-- the builder starts each later plan with `sindri observe` and works the task it marks `NEXT` (row 6);
-- every plan task's state is in the ledger (row 4).
+- the builder starts each later plan from `observe`'s `Next up:` line (row 6);
+- every plan task's state is in the ledger, updated hourly (row 4).
 
 ## Done criteria for this plan
-- Merge gate (AGENTS.md) green for `sindri`: `npm run typecheck` and `npm run test:coverage` (100%), `bash scripts/tests/install-sindri.test.sh`, `scripts/sync-rules.sh --check`, `./setup.sh --providers claude,codex,cursor --dry-run`.
+- Merge gate (AGENTS.md) green for `sindri`: `npm run typecheck` (source and tests) and `npm run test:coverage` (100%), `bash scripts/tests/install-sindri.test.sh`, `scripts/sync-rules.sh --check`, `./setup.sh --providers claude,codex,cursor --dry-run`.
 - Every Review Focus item (1–5) has its pinned test passing.
 - `docs/sindri/errors.md`, `docs/sindri/profile.md` and `sindri/schema/*.json` match their generators (enforced by tests).
-- **Switched on (Task 12):** after merge, `doctor` all `ok`, the ring-0 backlog is recorded, the pre-commit guard refused the fixture, and the evidence is posted on the PR. Plan 3 must not start until it is (spec §13.3 rules).
+- **Switched on (Task 12):** after merge, Joi approved the profile at a terminal, `doctor` is all `ok`, the ring-0 backlog is recorded and refreshed hourly, the guard proof passed in a scratch repo, and the evidence is posted on the PR. Plan 3 must not start until it is (spec §13.3 rules).
