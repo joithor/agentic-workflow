@@ -70,7 +70,9 @@ export async function* extractHumanTurns(file: { path: string; project: string; 
     if (line.includes(GUARD_MARK)) guard = true;
     let rec: { type?: unknown; isSidechain?: unknown; isMeta?: unknown; timestamp?: unknown; message?: { content?: unknown; usage?: Record<string, unknown> } };
     try {
-      rec = JSON.parse(line) as typeof rec;
+      const parsed: unknown = JSON.parse(line);
+      if (typeof parsed !== "object" || parsed === null || Array.isArray(parsed)) continue;
+      rec = parsed as typeof rec;
     } catch {
       continue;
     }

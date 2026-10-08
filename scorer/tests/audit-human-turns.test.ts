@@ -90,6 +90,7 @@ describe("extractHumanTurns", () => {
     const turns = await collect(writeJsonl(lines));
     expect(turns).toHaveLength(50_000);
   });
+
   it("tolerates unusual record shapes and omitted fields", async () => {
     const file = writeJsonl([
       { type: "user", message: { content: 42 } },
@@ -106,5 +107,12 @@ describe("extractHumanTurns", () => {
     expect(turns.map((t) => t.text)).toEqual(["from blocks", "/plain", "/plain again", "typed alongside"]);
     expect(turns[0]).toMatchObject({ ts: "", contextTokens: 0, editsBefore: false, skills: [] });
     expect(turns[2].skills).toEqual(["plain"]);
+  });
+
+  it("skips JSON lines that are not objects", async () => {
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), "audit-"));
+    const file = path.join(dir, "s1.jsonl");
+    fs.writeFileSync(file, [JSON.stringify(user("first")), "null", "42", '"str"', "[]", "true", JSON.stringify(user("second"))].join("\n") + "\n");
+    expect((await collect(file)).map((t) => t.text)).toEqual(["first", "second"]);
   });
 });
