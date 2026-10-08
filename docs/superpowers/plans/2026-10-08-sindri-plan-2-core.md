@@ -35,7 +35,7 @@ These are the smallest changes that make the spec buildable as written. Each one
 
 - Node >= 20, TypeScript 5.7 strict mode, ESM with Node16 module resolution (AGENTS.md Tech Stack).
 - No `any` types. No `/* v8 ignore */` annotations (AGENTS.md Merge Gate 5–6).
-- 100% line, function, branch and statement coverage, enforced by `npm run test:coverage` (`.agents/rules/testing.md`). Coverage excludes only `src/cli.ts`, `src/gen.ts`, `src/system-real.ts` and `src/git-real.ts`, each a thin wiring file with a smoke test.
+- 100% line, function, branch and statement coverage, enforced by `npm run test:coverage` (`.agents/rules/testing.md`). Each task's coverage run must show every line and branch of the files **that task created or changed** covered, by tests in that task. A branch only a later task can reach is covered by that later task's tests, and Task 11's merge-gate run must be 100% over the package. Coverage excludes only `src/cli.ts`, `src/gen.ts`, `src/system-real.ts` and `src/git-real.ts`, each a thin wiring file with a smoke test.
 - One heavy job at a time: run `npm test` and `npm run typecheck` once per commit, not per edit, and never two at once (global CLAUDE.md).
 - Core stays generic: no workplace names, labels, hosts or ticket prefixes in code, defaults or examples (spec §2 Goals, memory "generic core").
 - **Never write a full secret-shaped literal in any file.** Build test secrets at runtime by concatenation (`"AKIA" + "ABCDEFGHIJKLMNOP"`). From Task 10 on, the pre-commit scrubber refuses such literals, and this repo is public.
@@ -143,7 +143,7 @@ These are the smallest changes that make the spec buildable as written. Each one
     "typecheck": "tsc --noEmit && tsc --noEmit -p tsconfig.test.json"
   },
   "engines": {
-    "node": ">=20"
+    "node": ">=20.11"
   },
   "dependencies": {
     "better-sqlite3": "^13.0.3",
@@ -365,6 +365,7 @@ import { describe, expect, it } from "vitest";
 
 import { stateDir } from "../src/deps.js";
 import { COMMANDS, runCli } from "../src/main.js";
+import { success } from "../src/output.js";
 import { makeDeps } from "./helpers.js";
 
 describe("runCli", () => {
@@ -392,7 +393,10 @@ describe("runCli", () => {
 
   it("prints a command's usage for <command> --help, and turns a crash into SND-CLI-900", async () => {
     COMMANDS.boom = { summary: "test only", usage: "Usage: sindri boom", run: async () => { throw new TypeError("kaboom"); } };
+    COMMANDS.aaa = { summary: "also test only", usage: "Usage: sindri aaa", run: async () => success("ok", null, false) };
     try {
+      const listed = (await runCli(["help"], makeDeps())).stdout;
+      expect(listed.indexOf("aaa")).toBeLessThan(listed.indexOf("boom"));
       expect(await runCli(["boom", "--help"], makeDeps())).toEqual({ exitCode: 0, stdout: "Usage: sindri boom\n", stderr: "" });
       const crash = await runCli(["boom"], makeDeps());
       expect(crash.exitCode).toBe(2);
@@ -403,8 +407,11 @@ describe("runCli", () => {
       expect(json.error.code).toBe("SND-CLI-900");
       COMMANDS.boom.run = async () => { throw "not an Error"; };
       expect((await runCli(["boom"], makeDeps())).stderr).toContain("unexpected error: not an Error");
+      COMMANDS.boom.run = async () => { const e = new Error("no stack"); e.stack = undefined; throw e; };
+      expect((await runCli(["boom"], makeDeps({ env: { SINDRI_DEBUG: "1" } }))).stderr).toContain("unexpected error: no stack");
     } finally {
       delete COMMANDS.boom;
+      delete COMMANDS.aaa;
     }
   });
 
@@ -795,7 +802,9 @@ describe("scrubber", () => {
     expect(() => compileExtraPatterns([{ kind: "ok", regex: "a" }, { kind: "bad", regex: "(" }])).toThrow(SindriError);
     expect(() => compileExtraPatterns([{ kind: "redos", regex: "(a+)+$" }])).toThrow(/nested quantifier/);
     expect(() => compileExtraPatterns([{ kind: "redos", regex: "(\\w*){2,}" }])).toThrow(/nested quantifier/);
-    expect(compileExtraPatterns([{ kind: "fine", regex: "(ab|cd)+" }])).toHaveLength(1);
+    expect(() => compileExtraPatterns([{ kind: "alt", regex: "(a|aa)+$" }])).toThrow(/nested quantifier/);
+    expect(() => compileExtraPatterns([{ kind: "empty", regex: "x*" }])).toThrow(/empty string/);
+    expect(compileExtraPatterns([{ kind: "fine", regex: "(?:ab|cd)x" }])).toHaveLength(1);
     try {
       compileExtraPatterns([{ kind: "bad", regex: "(" }]);
     } catch (e) {
@@ -837,9 +846,9 @@ export const BUILTIN_PATTERNS: readonly ScrubPattern[] = [
   { kind: "stripe-key", re: /\b[sr]k_(?:live|test)_[A-Za-z0-9]{16,}/g },
   { kind: "google-api-key", re: /\bAIza[0-9A-Za-z_-]{35}\b/g },
   { kind: "linear-key", re: /\blin_(?:api|oauth)_[A-Za-z0-9]{32,}/g },
-  { kind: "jwt", re: /\beyJ[A-Za-z0-9_-]{8,}\.[A-Za-z0-9_-]{8,}\.[A-Za-z0-9_-]{8,}/g },
+  { kind: "jwt", re: /\beyJ[A-Za-z0-9_-]{8,4096}\.[A-Za-z0-9_-]{8,4096}\.[A-Za-z0-9_-]{8,4096}/g },
   { kind: "bearer", re: /\bBearer\s+([A-Za-z0-9._~+/=-]{20,})/gi, valueGroup: 1 },
-  { kind: "credentialed-url", re: /\b[a-z][a-z0-9+.-]*:\/\/[^\s/:@]+:([^\s/@]+)@/gi, valueGroup: 1 },
+  { kind: "credentialed-url", re: /\b[a-z][a-z0-9+.-]{0,30}:\/\/[^\s/:@]{1,256}:([^\s/@]{1,256})@/gi, valueGroup: 1 },
   {
     kind: "secret-assignment",
     re: /\b(?:[A-Za-z0-9]+_)*(?:API_?KEY|SECRET(?:_KEY)?|TOKEN|PASSWORD|PRIVATE_KEY|ACCESS_KEY)\s*[=:]\s*['"]?([A-Za-z0-9+/=_.,-]{20,})/gi,
@@ -926,17 +935,25 @@ export function makeScrubber(extra: readonly ScrubPattern[] = []): Scrubber {
 // A quantified group that itself contains a quantifier, e.g. (a+)+ or (\w*)*,
 // can backtrack catastrophically. Profile patterns run on every record, so refuse them.
 const NESTED_QUANTIFIER = /\((?:[^()\\]|\\.)*[+*}](?:[^()\\]|\\.)*\)[+*{]/;
+// A quantified group with alternatives, e.g. (a|aa)+, can backtrack the same way.
+const QUANTIFIED_ALTERNATION = /\((?:[^()\\]|\\.)*\|(?:[^()\\]|\\.)*\)[+*{]/;
 
 export function compileExtraPatterns(specs: readonly { kind: string; regex: string }[]): ScrubPattern[] {
   return specs.map((spec, i) => {
-    if (NESTED_QUANTIFIER.test(spec.regex)) {
+    if (NESTED_QUANTIFIER.test(spec.regex) || QUANTIFIED_ALTERNATION.test(spec.regex)) {
       throw new SindriError("SND-SCRUB-001", `scrub.extraPatterns[${i}] has a nested quantifier, which can hang the scrubber`, {
         fix: "rewrite it without a quantified group that contains a quantifier",
       });
     }
     try {
-      return { kind: spec.kind, re: new RegExp(spec.regex, "g") };
+      const re = new RegExp(spec.regex, "g");
+      if (re.test("")) {
+        throw new SindriError("SND-SCRUB-001", `scrub.extraPatterns[${i}] matches the empty string`, { fix: "make the pattern require at least one character" });
+      }
+      re.lastIndex = 0;
+      return { kind: spec.kind, re };
     } catch (e) {
+      if (e instanceof SindriError) throw e;
       throw new SindriError("SND-SCRUB-001", `scrub.extraPatterns[${i}] does not compile: ${(e as Error).message}`);
     }
   });
@@ -1748,6 +1765,17 @@ describe("acquireTickLock", () => {
     });
     if (a.ok) a.release();
     expect(JSON.parse(fs.readFileSync(path.join(dir, "sindri.lock", "owner.json"), "utf8")).pid).toBe(6666);
+  });
+
+  it("release is a no-op when its lock dir is already gone", () => {
+    const dir = tempDir();
+    const a = acquireTickLock({ dir, db: openMemoryLedger(), sys: fakeSystem(), now });
+    const real = fs.renameSync;
+    vi.spyOn(fs, "renameSync").mockImplementation((from, to) => {
+      if (String(to).includes(".released-")) throw Object.assign(new Error("gone"), { code: "ENOENT" });
+      real(from, to);
+    });
+    if (a.ok) expect(() => a.release()).not.toThrow();
   });
 
   it("treats an unknown start time as no evidence (a live owner is kept)", () => {
@@ -2845,7 +2873,8 @@ import YAML from "yaml";
 import type { Deps } from "../src/deps.js";
 import { runCli } from "../src/main.js";
 import { sanitizeName } from "../src/profile/commands.js";
-import { snapshotDir } from "../src/profile/approve.js";
+import { approvedProfile, snapshotDir } from "../src/profile/approve.js";
+import { ledgerPath, openLedger } from "../src/ledger/db.js";
 import { fakeGit, makeDeps, tempDir } from "./helpers.js";
 
 function deps(over: Partial<Deps> = {}): Deps {
@@ -2961,7 +2990,9 @@ describe("profile validate / explain / migrate", () => {
     expect(text.stderr).toContain("profile.yaml: Unrecognized key(s) in object: 'bogus' (fix: remove the key or fix its spelling)");
     const json = JSON.parse((await runCli(["profile", "validate", "--json"], d)).stdout);
     expect(json.ok).toBe(false);
-    expect(json.issues[0].file).toBe("profile.yaml");
+    expect(json.error.details[0]).toMatch(/^profile\.yaml/);
+    fs.writeFileSync(file, fs.readFileSync(file, "utf8").replace("bogus: 1", "").replace("mode: shadow", "mode: turbo"));
+    expect((await runCli(["profile", "validate"], d)).stderr).toMatch(/profile\.yaml: mode: Invalid enum value/);
   });
 
   it("explain shows value and source, and rejects unknown keys and repos", async () => {
@@ -2973,6 +3004,15 @@ describe("profile validate / explain / migrate", () => {
     expect((await runCli(["profile", "explain"], d)).stderr).toContain("SND-CLI-002");
     const json = JSON.parse((await runCli(["profile", "explain", "selfMerge", "--repo", "example", "--json"], d)).stdout);
     expect(json).toEqual({ key: "selfMerge", value: "human", source: "profile.yaml" });
+  });
+
+  it("explain and migrate say when there is no profile, and migrate copes with no repos dir", async () => {
+    const d = deps();
+    expect((await runCli(["profile", "explain", "mode"], d)).stderr).toContain("SND-PROFILE-002");
+    expect((await runCli(["profile", "migrate"], d)).stderr).toContain("SND-PROFILE-002");
+    await runCli(["profile", "init"], d);
+    fs.rmSync(path.join(profileDir(d), "repos"), { recursive: true });
+    expect((await runCli(["profile", "migrate"], d)).stdout).toContain("Nothing to migrate.");
   });
 
   it("validate on an invalid profile blocks explain with SND-PROFILE-001", async () => {
@@ -3023,6 +3063,27 @@ describe("profile approve (spec §8.7)", () => {
     expect(changed.stdout).toContain("- selfMerge: human");
     expect(changed.stdout).toContain("+ selfMerge: auto");
     expect(changed.stdout).not.toContain("repos/example.yaml");
+  });
+
+  it("rolls back by re-approving an earlier profile", async () => {
+    let t = Date.parse("2026-10-08T12:00:00Z");
+    const d = { ...deps(), now: () => new Date((t += 60_000)) };
+    await runCli(["profile", "init"], d);
+    const file = path.join(profileDir(d), "profile.yaml");
+    const approve = async () => {
+      const h = JSON.parse((await runCli(["profile", "approve", "--json"], d)).stdout).hash as string;
+      await runCli(["profile", "approve", h], { ...d, isTTY: true, prompt: async () => h.slice(0, 6) });
+      return h;
+    };
+    const a = await approve();
+    const original = fs.readFileSync(file, "utf8");
+    fs.writeFileSync(file, original.replace("selfMerge: human", "selfMerge: auto"));
+    await approve();
+    fs.writeFileSync(file, original);
+    expect(await approve()).toBe(a);
+    const db = openLedger(ledgerPath(path.join(d.env.AW_STATE_DIR as string, "sindri")));
+    expect(approvedProfile(d, db)?.hash).toBe(a);
+    db.close();
   });
 
   it("refuses to approve while another run holds the lock", async () => {
@@ -3185,7 +3246,10 @@ export function approveProfile(deps: Deps, db: Ledger, loaded: LoadedProfile): v
   if (profileHash(dest, loaded.files) !== loaded.hash) {
     throw new SindriError("SND-PROFILE-006", "the approval snapshot doesn't match what was validated", { fix: "sindri profile approve" });
   }
-  db.prepare("INSERT OR IGNORE INTO profile_approvals (hash, approved_at, approved_by) VALUES (?, ?, ?)").run(
+  // Re-approving an earlier profile (a rollback) makes it the latest approval again.
+  db.prepare(
+    "INSERT INTO profile_approvals (hash, approved_at, approved_by) VALUES (?, ?, ?) ON CONFLICT(hash) DO UPDATE SET approved_at = excluded.approved_at, approved_by = excluded.approved_by",
+  ).run(
     loaded.hash, deps.now().toISOString(), deps.system.username(),
   );
 }
@@ -3308,9 +3372,8 @@ function validate(args: string[], deps: Deps): CommandResult {
   if (root === null) throw new SindriError("SND-PROFILE-002", "no profile found");
   const r = loadProfile(root);
   if (r.ok) return success(`Profile valid. (${root}, hash ${r.value.hash.slice(0, 12)})`, { ok: true, root, hash: r.value.hash }, json);
-  if (json) return { exitCode: 2, stdout: `${JSON.stringify({ ok: false, root, issues: r.issues }, null, 2)}\n`, stderr: "" };
-  const lines = r.issues.map((i) => `  ${i.file}${i.keyPath ? `: ${i.keyPath}` : ""}: ${i.message}${i.hint ? ` (fix: ${i.hint})` : ""}`);
-  return { exitCode: 2, stdout: "", stderr: `SND-PROFILE-001 profile has ${r.issues.length} issue(s):\n${lines.join("\n")}\n` };
+  const details = r.issues.map((i) => `${i.file}${i.keyPath ? `: ${i.keyPath}` : ""}: ${i.message}${i.hint ? ` (fix: ${i.hint})` : ""}`);
+  return failure("SND-PROFILE-001", `profile has ${r.issues.length} issue(s):`, json, { details, fix: "edit each listed key, then sindri profile validate" });
 }
 
 function explain(args: string[], deps: Deps): CommandResult {
@@ -3368,7 +3431,8 @@ async function approve(args: string[], deps: Deps): Promise<CommandResult> {
     // Spec §8.7: approval is a human verb. An agent can still drive a pty, so this is
     // friction plus intent, not a boundary; the session boundary arrives with step 3a.
     if (!deps.isTTY) throw new SindriError("SND-PROFILE-010", "approving a profile needs an interactive terminal");
-    const answer = await deps.prompt(`Approve profile ${short}? Type its first 6 characters to confirm: `);
+    const diff = profileDiff(deps, db, loaded);
+    const answer = await deps.prompt(`${diff.join("\n")}\n\nApprove profile ${short}? Type its first 6 characters to confirm: `);
     if (answer.trim() !== loaded.hash.slice(0, 6)) throw new SindriError("SND-PROFILE-011", "approval not confirmed");
     const lock = acquireTickLock({ dir: stateDir(deps), db, sys: deps.system, now: deps.now });
     if (!lock.ok) throw new SindriError("SND-LOCK-001", lock.detail);
@@ -3412,7 +3476,7 @@ In `sindri/src/main.ts`, import `profileCommand` and register it:
 ```ts
 import { profileCommand } from "./profile/commands.js";
 
-export const COMMANDS: Record<string, { summary: string; run: Command }> = {
+export const COMMANDS: Record<string, CommandDef> = {
   profile: {
     summary: "init | validate | explain <key> | migrate | approve [hash]",
     usage: [
@@ -4289,7 +4353,7 @@ import path from "node:path";
 import { describe, expect, it } from "vitest";
 
 import { stateDir, type Deps } from "../src/deps.js";
-import { ledgerPath, openLedger } from "../src/ledger/db.js";
+import { currentEpoch, ledgerPath, openLedger } from "../src/ledger/db.js";
 import { listItems } from "../src/ledger/items.js";
 import { runCli } from "../src/main.js";
 import { parseSince } from "../src/observe/observe.js";
@@ -4356,7 +4420,9 @@ describe("sindri observe", () => {
     expect(r.stdout).toContain("Next up: 2026-01-01-plan-a.t1");
     expect(r.stdout).toContain("Recorded 2 new, 0 changed, 0 removed in the ledger.");
     const db = openLedger(ledgerPath(stateDir(deps)));
-    expect(listItems(db).map((i) => [i.id, i.size, i.epoch])).toEqual([["2026-01-01-plan-a.t1", "XS", 1], ["2026-01-01-plan-a.t2", null, 1]]);
+    const epoch = currentEpoch(db);
+    expect(epoch).toBe(2); // 1 = the approval, 2 = this observe run
+    expect(listItems(db).map((i) => [i.id, i.size, i.epoch])).toEqual([["2026-01-01-plan-a.t1", "XS", epoch], ["2026-01-01-plan-a.t2", null, epoch]]);
     db.close();
     const again = await runCli(["observe", "--json"], deps);
     expect(JSON.parse(again.stdout)).toMatchObject({ observed: 2, open: 2, wouldStart: 1, nextUp: "2026-01-01-plan-a.t1", recorded: { new: 0, changed: 0, removed: 0 } });
@@ -4428,6 +4494,12 @@ describe("sindri observe", () => {
 });
 
 describe("sindri ledger", () => {
+  it("says when there is no ledger yet, without creating one", async () => {
+    const d = makeDeps();
+    expect((await runCli(["ledger"], d)).stdout).toContain("No ledger yet");
+    expect(fs.existsSync(ledgerPath(stateDir(d)))).toBe(false);
+  });
+
   it("lists events with filters, and says so when nothing matches", async () => {
     const deps = await ring0(planRepo());
     await approve(deps);
@@ -4652,7 +4724,8 @@ function report(
     "",
     `Observed ${rows.length} items (${open.length} open); would start ${starts}.`,
     ...(up === undefined ? [] : [`Next up: ${up.id}`]),
-    `${note} Nothing outside the ledger changed.`,
+    note.trim(),
+    "Nothing outside the ledger changed.",
   ];
   const data = { observed: rows.length, open: open.length, wouldStart: starts, nextUp: up?.id ?? null, recorded, note, items: rows };
   return success(lines.join("\n"), data, json, attention ? 1 : 0);
@@ -4715,6 +4788,8 @@ export const ledgerCommand: Command = async (args, deps) => {
   try {
     const { values } = parseFlags(args, { item: { type: "string" }, since: { type: "string" }, json: { type: "boolean" } });
     const since = values.since === undefined ? undefined : parseSince(values.since, deps.now());
+    // A read never creates the ledger.
+    if (!fs.existsSync(ledgerPath(stateDir(deps)))) return success("No ledger yet (sindri observe records one once the profile is approved).", [], json);
     const db = openLedger(ledgerPath(stateDir(deps)));
     try {
       if (values.item !== undefined && db.prepare("SELECT 1 FROM items WHERE id = ?").get(values.item) === undefined) {
@@ -4849,6 +4924,17 @@ describe("sindri scrub --staged", () => {
     expect(r.stderr).not.toContain(secret);
     const json = JSON.parse((await runCli(["scrub", "--staged", "--json"], makeDeps({ cwd: root }))).stdout);
     expect(json.error).toMatchObject({ code: "SND-SCRUB-002", details: ["src/conf.ts:2 aws-access-key"] });
+  });
+
+  it("scans files git would show as binary (NUL bytes, -diff attribute)", async () => {
+    const root = repo();
+    const secret = "AKIA" + "ABCDEFGHIJKLMNOP";
+    stage(root, ".gitattributes", "*.dat -diff\n");
+    stage(root, "blob.dat", `k=${secret}\n`);
+    stage(root, "nul.txt", `\u0000\u0001 k=${secret}\n`);
+    const r = await runCli(["scrub", "--staged"], makeDeps({ cwd: root }));
+    expect(r.stderr).toContain("blob.dat:1 aws-access-key");
+    expect(r.stderr).toContain("nul.txt:1 aws-access-key");
   });
 
   it("scans a renamed-and-edited file", async () => {
@@ -5093,7 +5179,9 @@ async function install(deps: Deps, repo: string | undefined, json: boolean): Pro
 
 async function staged(deps: Deps, json: boolean): Promise<CommandResult> {
   // -M and --diff-filter=d: renamed, copied and type-changed files are scanned too.
-  const args = ["-c", "core.quotePath=false", "diff", "--cached", "--unified=0", "--no-color", "--no-ext-diff", "-M", "--diff-filter=d"];
+  // --text: binary-looking files and `-diff` attributes would otherwise print
+  // "Binary files differ" with no lines, hiding a secret from the scan.
+  const args = ["-c", "core.quotePath=false", "diff", "--cached", "--unified=0", "--no-color", "--no-ext-diff", "--text", "--no-textconv", "-M", "--diff-filter=d"];
   const diff = await deps.git.run(args, deps.cwd);
   if (!diff.ok) throw new SindriError("SND-PROFILE-009", `${deps.cwd} is not inside a git repo`);
   const { scrubber, warning } = scrubberFor(deps);
@@ -5507,7 +5595,7 @@ test_dry_run_writes_nothing() {
 test_wrapper_execs_the_built_cli() {
   AW_SKIP_BUILD=1 AW_SKIP_LAUNCHD=1 CLAUDE_LOCAL_BIN="$TMP/bin" bash "$ROOT/scripts/install-sindri.sh" > /dev/null
   [ -x "$TMP/bin/sindri" ] || { echo "FAIL: wrapper not executable"; exit 1; }
-  grep -q 'exec node ".*/sindri/dist/cli.js" "\$@"' "$TMP/bin/sindri" || { echo "FAIL: wrapper does not exec dist/cli.js"; exit 1; }
+  grep -q 'exec "/.*node" ".*/sindri/dist/cli.js" "\$@"' "$TMP/bin/sindri" || { echo "FAIL: wrapper does not exec dist/cli.js with an absolute node"; exit 1; }
   grep -q "export SINDRI_BIN=\"$TMP/bin/sindri\"" "$TMP/bin/sindri" || { echo "FAIL: wrapper does not export SINDRI_BIN"; exit 1; }
   echo "PASS: test_wrapper_execs_the_built_cli"
 }
@@ -5556,14 +5644,16 @@ if [ "${AW_DRY_RUN:-0}" = "1" ]; then
 fi
 
 if [ "${AW_SKIP_BUILD:-0}" != "1" ]; then
-  (cd "$SINDRI_DIR" && npm install && npm run build)
+  (cd "$SINDRI_DIR" && npm ci && npm run build)
 fi
+# Absolute node path: launchd and GUI git clients don't load shell profiles (nvm, Homebrew).
+NODE_BIN="$(command -v node)"
 mkdir -p "$BIN_DIR"
 cat > "$BIN_DIR/sindri" <<EOF
 #!/usr/bin/env bash
 # SINDRI_BIN lets \`sindri scrub --install-pre-commit\` write this absolute path into the hook.
 export SINDRI_BIN="$BIN_DIR/sindri"
-exec node "$SINDRI_DIR/dist/cli.js" "\$@"
+exec "$NODE_BIN" "$SINDRI_DIR/dist/cli.js" "\$@"
 EOF
 chmod +x "$BIN_DIR/sindri"
 echo "  sindri: CLI at $BIN_DIR/sindri"
@@ -5735,7 +5825,7 @@ test_observe_job_is_hourly() {
   local plist="$ROOT/config/launchd/com.agentic-workflow.sindri-observe.plist"
   [ -f "$plist" ] || { echo "FAIL: $plist missing"; exit 1; }
   if command -v plutil >/dev/null 2>&1; then plutil -lint "$plist" >/dev/null || { echo "FAIL: plist invalid"; exit 1; }; fi
-  grep -q '__HOME__/.local/bin/sindri observe' "$plist" || { echo "FAIL: observe command missing"; exit 1; }
+  grep -q '<string>__BIN__/sindri</string>' "$plist" || { echo "FAIL: observe command missing"; exit 1; }
   grep -q '<integer>3600</integer>' "$plist" || { echo "FAIL: not hourly"; exit 1; }
   grep -q 'com.agentic-workflow.sindri-observe.plist' "$ROOT/scripts/install-sindri.sh" || { echo "FAIL: installer does not install the job"; exit 1; }
   echo "PASS: test_observe_job_is_hourly"
@@ -5768,9 +5858,8 @@ Expected: three `PASS` lines from Task 11, then `FAIL: …/com.agentic-workflow.
   <string>com.agentic-workflow.sindri-observe</string>
   <key>ProgramArguments</key>
   <array>
-    <string>/bin/bash</string>
-    <string>-lc</string>
-    <string>__HOME__/.local/bin/sindri observe</string>
+    <string>__BIN__/sindri</string>
+    <string>observe</string>
   </array>
   <key>StartInterval</key>
   <integer>3600</integer>
@@ -5791,7 +5880,7 @@ if [ "$(uname -s)" = "Darwin" ] && [ "${AW_SKIP_LAUNCHD:-0}" != "1" ]; then
   LAUNCH_AGENTS_DIR="$HOME/Library/LaunchAgents"
   NAME=com.agentic-workflow.sindri-observe
   mkdir -p "$LAUNCH_AGENTS_DIR" "${AW_STATE_DIR:-$HOME/.agentic-workflow}/sindri"
-  sed "s|__HOME__|$HOME|g" "$SCRIPT_DIR/config/launchd/$NAME.plist" > "$LAUNCH_AGENTS_DIR/$NAME.plist"
+  sed -e "s|__HOME__|$HOME|g" -e "s|__BIN__|$BIN_DIR|g" "$SCRIPT_DIR/config/launchd/$NAME.plist" > "$LAUNCH_AGENTS_DIR/$NAME.plist"
   launchctl bootout "gui/$(id -u)" "$LAUNCH_AGENTS_DIR/$NAME.plist" 2>/dev/null || true
   launchctl bootstrap "gui/$(id -u)" "$LAUNCH_AGENTS_DIR/$NAME.plist"
   echo "  sindri: hourly observe (launchd $NAME)"
@@ -5814,11 +5903,16 @@ git -C "$SCRATCH" init -q
 sindri scrub --install-pre-commit --repo "$SCRATCH"
 printf 'k = "%s%s"\n' "AKIA" "ABCDEFGHIJKLMNOP" > "$SCRATCH/fixture.txt"
 git -C "$SCRATCH" add fixture.txt
-if git -C "$SCRATCH" -c user.name=proof -c user.email=proof@example.invalid commit -qm "must be refused"; then
+if out="$(git -C "$SCRATCH" -c user.name=proof -c user.email=proof@example.invalid commit -qm "must be refused" 2>&1)"; then
   echo "FAIL: the hook let a secret-shaped string through"
   exit 1
 fi
-echo "PASS: the pre-commit hook refused the fixture"
+if ! grep -q "SND-SCRUB-002" <<<"$out"; then
+  echo "FAIL: the commit was refused, but not by the secret scan:"
+  echo "$out"
+  exit 1
+fi
+echo "PASS: the pre-commit hook refused the fixture (SND-SCRUB-002)"
 ```
 
 - [ ] **Step 4: Run the tests**
@@ -5830,21 +5924,22 @@ Expected: five `PASS` lines.
 
 ```bash
 AW_SKIP_LAUNCHD=1 scripts/install-sindri.sh
-export AW_STATE_DIR="$(mktemp -d)"
-sindri profile init --ring0 --plans '*-sindri-plan-*'
-sindri profile validate
-sindri profile approve; echo "approve exit: $?"
-sindri doctor; echo "doctor exit: $?"
-sindri observe; echo "observe exit: $?"
-scripts/sindri-guard-proof.sh
-unset AW_STATE_DIR
+(
+  export AW_STATE_DIR="$(mktemp -d)"   # a subshell, so a failure can't leave it set
+  sindri profile init --ring0 --plans '*-sindri-plan-*'
+  sindri profile validate
+  sindri profile approve; echo "approve exit: $?"
+  sindri doctor; echo "doctor exit: $?"
+  sindri observe; echo "observe exit: $?"
+  scripts/sindri-guard-proof.sh
+)
 ```
 
 Expected:
 - `profile approve` prints the hash and "No approved profile yet; every line is new.", then `approve exit: 1`.
 - `doctor` shows `warn profile-approved` and `warn pre-commit:<repo>` (not approved or installed in the rehearsal), then `doctor exit: 1`.
 - `observe` lists the open tasks of `*-sindri-plan-*` files, prints `Next up: <id>` and "Not recorded: profile … is not approved", then `observe exit: 1`.
-- `PASS: the pre-commit hook refused the fixture`.
+- `PASS: the pre-commit hook refused the fixture (SND-SCRUB-002)`.
 
 ```bash
 git add config/launchd/com.agentic-workflow.sindri-observe.plist scripts/install-sindri.sh scripts/sindri-guard-proof.sh scripts/tests/install-sindri.test.sh
@@ -5853,7 +5948,7 @@ git commit -m "feat: hourly sindri observe and the pre-commit guard proof"
 
 - [ ] **Step 6: After merge, the builder switches on (from the updated `main`)**
 
-First tick every completed step in Plan 1 and Plan 2's plan files (`- [x]`) and commit that as `docs: tick completed Sindri plan 1-2 steps`. The `plan-file` tracker reads the boxes, so unticked shipped work would show as open. Then run:
+First tick every completed step in Plan 1 and Plan 2's plan files and commit that as `docs: tick completed Sindri plan 1-2 steps`. When a plan has fully shipped, tick all of its steps with `sed -i.bak 's/^- \[ \] \*\*Step/- [x] **Step/' <plan file>` (then delete the `.bak` file); when it has only partly shipped, tick by hand. The `plan-file` tracker reads the boxes, so unticked shipped work would show as open. Then run:
 
 ```bash
 scripts/install-sindri.sh
@@ -5883,7 +5978,7 @@ launchctl list | grep com.agentic-workflow.sindri-observe
 Expected:
 - `doctor` prints `ok` on every line, then `doctor exit: 0`.
 - `observe` lists the open tasks of the remaining Sindri plans, prints `Next up: <id>` and `Recorded N new, 0 changed, 0 removed in the ledger.`
-- `PASS: the pre-commit hook refused the fixture`.
+- `PASS: the pre-commit hook refused the fixture (SND-SCRUB-002)`.
 - The launchd job is listed.
 
 Post the output of Steps 7 and 8 as a comment on the Plan 2 PR. From then on:
