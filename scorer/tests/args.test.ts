@@ -6,12 +6,30 @@ const NOW = new Date("2026-09-26T12:00:00.000Z");
 const HOME = "/home/j";
 
 describe("parseArgs", () => {
+  it("parses the audit command with defaults", () => {
+    const r = parseArgs(["audit"], NOW, HOME);
+    expect(r.ok && r.options.command).toBe("audit");
+    expect(r.ok && r.options.auditOut).toBe("/home/j/.agentic-workflow/audit");
+    expect(r.ok && r.options.itemPattern).toBe("[A-Z][A-Z0-9]{1,9}-\\d+");
+    expect(r.ok && r.options.maxSize).toBe("XS");
+  });
+
+  it("parses the audit flags", () => {
+    const r = parseArgs(["audit", "--out", "/o", "--items", "/i.json", "--item-pattern", "X-\\d+", "--max-size", "M"], NOW, HOME);
+    expect(r.ok && [r.options.auditOut, r.options.itemsFile, r.options.itemPattern, r.options.maxSize]).toEqual(["/o", "/i.json", "X-\\d+", "M"]);
+  });
+
+  it("rejects an invalid --max-size and an invalid --item-pattern", () => {
+    expect(parseArgs(["audit", "--max-size", "XXL"], NOW, HOME).ok).toBe(false);
+    expect(parseArgs(["audit", "--item-pattern", "("], NOW, HOME).ok).toBe(false);
+  });
   it("defaults to a one-day report", () => {
     expect(parseArgs([], NOW, HOME)).toEqual({ ok: true, options: {
       command: "report", since: new Date("2026-09-25T12:00:00.000Z"), until: NOW,
       projectsDir: "/home/j/.claude/projects", codexSessionsDir: "/home/j/.codex/sessions", cursorProjectsDir: "/home/j/.cursor/projects",
       providers: null, stateDir: "/home/j/.agentic-workflow", stateDirExplicit: false, prLookup: true,
       contextTokensPath: null, liveSession: null, liveCwd: null, liveWindow: 200_000, json: false,
+      auditOut: "/home/j/.agentic-workflow/audit", itemPattern: "[A-Z][A-Z0-9]{1,9}-\\d+", itemsFile: null, maxSize: "XS",
     } });
   });
 

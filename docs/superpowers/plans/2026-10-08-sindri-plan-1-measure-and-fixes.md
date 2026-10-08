@@ -973,7 +973,7 @@ git commit -m "feat: scorer audit per-item token usage and auto-start share"
   - Files written to `outDir`: `human-turns.jsonl`, `summary.json`, `baseline.md` (prints `duplicates`). Task 6 adds the optional label outputs.
   - `CliOptions` gains `command: "audit"`, plus `auditOut: string`, `itemPattern: string`, `itemsFile: string | null`, `maxSize: Size`.
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 In `scorer/tests/args.test.ts`, the existing test `"defaults to a one-day report"` compares the full options object with `toEqual`. Add the four new defaults to its expected object:
 
@@ -1085,12 +1085,12 @@ describe("runAudit", () => {
 });
 ```
 
-- [ ] **Step 2: Run the tests to verify they fail**
+- [x] **Step 2: Run the tests to verify they fail**
 
 Run: `cd scorer && npx vitest run tests/audit-run.test.ts tests/args.test.ts`
 Expected: FAIL. `run-audit.js` is missing, and the `audit` command is unknown.
 
-- [ ] **Step 3: Implement**
+- [x] **Step 3: Implement**
 
 Create `scorer/src/audit/run-audit.ts`:
 
@@ -1284,17 +1284,17 @@ In `AGENTS.md`, under the `# TypeScript packages` commands block, after the `sco
 scorer audit [--since 60d] [--items FILE] [--max-size XS]   # Human-turn baseline → ~/.agentic-workflow/audit/
 ```
 
-- [ ] **Step 4: Run the scorer suite and typecheck**
+- [x] **Step 4: Run the scorer suite and typecheck**
 
 Run: `cd scorer && npm run typecheck && npm test`
 Expected: typecheck clean; all tests pass.
 
-- [ ] **Step 5: Run it against the real transcripts (evidence for the baseline)**
+- [x] **Step 5: Run it against the real transcripts (evidence for the baseline)**
 
 Run: `(cd scorer && npm run build) && node scorer/dist/cli.js audit --since 60d && sed -n 1,25p ~/.agentic-workflow/audit/baseline.md`
 Expected: a non-empty table. The `push_only` and `ship_recipe` counts should be of the same order as the spec's appendix (about 85 and 189 over one month). Record the printed numbers in the PR description; they are step 0's floor counts (calibrated in Task 6, labeled in Task 7).
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add scorer/src/audit/run-audit.ts scorer/src/args.ts scorer/src/cli.ts scorer/tests/audit-run.test.ts scorer/tests/args.test.ts scripts/transcript-audit/README.md AGENTS.md

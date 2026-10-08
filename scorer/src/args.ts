@@ -1,10 +1,12 @@
 import path from "node:path";
 
+import type { Size } from "./audit/items.js";
+import { SIZES } from "./audit/items.js";
 import type { ProviderName } from "./transcript/source.js";
 import { isProviderName, PROVIDERS } from "./transcript/source.js";
 
 export interface CliOptions {
-  command: "report" | "probe" | "context-tokens" | "live";
+  command: "report" | "probe" | "context-tokens" | "live" | "audit";
   since: Date;
   until: Date;
   projectsDir: string; // Claude Code transcripts
@@ -27,6 +29,10 @@ export interface CliOptions {
   liveCwd: string | null;
   liveWindow: number;
   json: boolean;
+  auditOut: string;
+  itemPattern: string;
+  itemsFile: string | null;
+  maxSize: Size;
 }
 
 type ParseResult = { ok: true; options: CliOptions } | { ok: false; error: string };
@@ -50,6 +56,10 @@ export function parseArgs(argv: string[], now: Date, home: string): ParseResult 
     liveCwd: null,
     liveWindow: 200_000,
     json: false,
+    auditOut: path.join(home, ".agentic-workflow", "audit"),
+    itemPattern: "[A-Z][A-Z0-9]{1,9}-\\d+",
+    itemsFile: null,
+    maxSize: "XS",
   };
   const args = [...argv];
   while (args.length > 0) {
@@ -63,6 +73,7 @@ export function parseArgs(argv: string[], now: Date, home: string): ParseResult 
       continue;
     }
     if (arg === "live") { options.command = "live"; continue; }
+    if (arg === "audit") { options.command = "audit"; continue; }
     if (arg === "--json") { options.json = true; continue; }
     if (arg === "--no-pr-lookup") { options.prLookup = false; continue; }
     if (!VALUE_FLAGS.has(arg)) return { ok: false, error: `unknown argument: ${arg}` };
@@ -88,6 +99,20 @@ export function parseArgs(argv: string[], now: Date, home: string): ParseResult 
       if (!Number.isInteger(window) || window <= 0) return { ok: false, error: `--window must be a positive integer: ${value}` };
       options.liveWindow = window;
     }
+    if (arg === "--out") options.auditOut = value;
+    if (arg === "--items") options.itemsFile = value;
+    if (arg === "--item-pattern") {
+      try {
+        new RegExp(value);
+      } catch {
+        return { ok: false, error: `--item-pattern is not a valid regular expression: ${value}` };
+      }
+      options.itemPattern = value;
+    }
+    if (arg === "--max-size") {
+      if (!(SIZES as readonly string[]).includes(value)) return { ok: false, error: `--max-size must be ${SIZES.join("|")}: ${value}` };
+      options.maxSize = value as Size;
+    }
     if (arg === "--since") {
       const since = parseSince(value, now);
       if (typeof since === "string") return { ok: false, error: since };
@@ -98,7 +123,7 @@ export function parseArgs(argv: string[], now: Date, home: string): ParseResult 
   return { ok: true, options };
 }
 
-const VALUE_FLAGS: ReadonlySet<string> = new Set(["--since", "--projects-dir", "--codex-dir", "--cursor-dir", "--state-dir", "--provider", "--session", "--cwd", "--window"]);
+const VALUE_FLAGS: ReadonlySet<string> = new Set(["--since", "--projects-dir", "--codex-dir", "--cursor-dir", "--state-dir", "--provider", "--session", "--cwd", "--window", "--out", "--item-pattern", "--items", "--max-size"]);
 const SESSION_ID = /^[A-Za-z0-9._-]+$/;
 
 // "all" | "claude" | "codex,cursor" …
