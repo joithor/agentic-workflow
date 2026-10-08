@@ -45,6 +45,13 @@ export const BUILTIN_PATTERNS: readonly ScrubPattern[] = [
     re: /(?<![A-Za-z0-9_-])(?:[A-Za-z0-9]+-)+(?:API-?KEY|SECRET|TOKEN|PASSWORD|ACCESS-?KEY|PRIVATE-?KEY):\s*(?=[A-Za-z0-9+/=_-]{0,255}?\d)([A-Za-z0-9+/=_-]{20,})/gi,
     valueGroup: 1,
   },
+  {
+    // ~/.aws/credentials (INI): at line start, these fixed keys take an unquoted value.
+    // Anchored to the line start, so code such as `const aws_session_token = ...` never matches.
+    kind: "secret-assignment",
+    re: /^[ \t]*(?:aws_secret_access_key|aws_session_token)[ \t]*[=:][ \t]*([A-Za-z0-9+/=]{16,})/gim,
+    valueGroup: 1,
+  },
   { kind: "ssn", re: /\b\d{3}-\d{2}-\d{4}\b/g },
   { kind: "mrn", re: /\bMRN[\s:#-]*(\d{6,10})\b/gi, valueGroup: 1 },
 ];

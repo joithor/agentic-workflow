@@ -82,6 +82,7 @@ describe("scrubber", () => {
       "refreshToken: RefreshTokenSchemaV2,",
       "const token = generateToken256Bits();",
       "apiKey: makeKey(config2),",
+      "const aws_session_" + "token = getToken();",
     ].join("\n");
     expect(s.find(text)).toEqual([]);
     expect(s.scrub(text).text).toBe(text);
@@ -136,6 +137,9 @@ describe("scrubber: PR #69 review", () => {
     [`X-API-` + `Key: ${V}`, V],
     [`AWS_SECRET_ACCESS_` + `KEY=${AWS_SECRET}`, AWS_SECRET],
     [`aws_secret_access_` + `key = "${AWS_SECRET}"`, AWS_SECRET], // quoted (run 2 ruling)
+    // ~/.aws/credentials INI lines: unquoted, lowercase, at line start.
+    [`[default]\naws_secret_access_` + `key = ${AWS_SECRET}`, AWS_SECRET],
+    [`  aws_session_` + `token=${AWS_SECRET}`, AWS_SECRET],
     [`export X_` + `TOKEN=${V}`, V],
     [`x-auth-` + `token: ${V}`, V],
   ])("redacts the secret-assignment shape %#", (input, secret) => {
