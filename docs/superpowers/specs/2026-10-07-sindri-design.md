@@ -812,6 +812,7 @@ and dropped capabilities.
 - `trustedAuthors` (immutable account ids) and `trustedBots` live in the profile. Rules can't change them.
 - **Auto-start requires** the item creator, last editor and all commenters to be trusted. Otherwise the
   item goes to `assist`.
+- **`plan-file` items:** trust is the git author email, which anyone can forge in a public repo. It only affects what `observe` would start. Before `auto-small` (step 4), trusted authorship must come from signed commits or tracker accounts.
 - **Review comments** feed fix rounds only from trusted reviewers and bots, matched by id.
 - **Pack layout:**
   ```
@@ -911,7 +912,7 @@ and dropped capabilities.
   denied gated call (tool, args hash, item, session, profile hash). There are per-item rate limits, and a
   spike in denied calls raises an alert.
 - **Profile integrity:** each session pins the profile commit hash in the ledger. A profile change takes
-  effect only after `sindri profile approve <hash>`. Recipes are validated against a command schema.
+  effect only after `sindri profile approve <hash>`. Runtime commands load the last approved snapshot; approving needs an interactive terminal and a typed confirmation. Recipes are validated against a command schema.
 
 ## 9. Runtime correctness
 
@@ -1029,7 +1030,7 @@ The `UserPromptSubmit` hook classifies every human turn in a sindri session:
 | `pause` / `resume` | Global kill switch (also `AW_SINDRI_DISABLE=1`) | "Paused. Running sessions finish their current Step; nothing new starts." |
 | `ack [ITEM]` | Clear one item's ATTENTION entries, or all of them | "Cleared 3 attention entries." / "Nothing to acknowledge." |
 | `notify --test` | Send a test notification through every configured notifier | "Sent via macOS; wrote ATTENTION entry. (macOS can't confirm you saw it.)" |
-| `observe` | Zero-config read-only run on the example profile (M14) | "Observed N items; would have started M. Nothing was changed." |
+| `observe` | Zero-config read-only run on the example profile (M14); records to the ledger when the profile is approved (exit 1 when it can't for a fixable reason) | "Observed N items (M open); would start K. … Nothing outside the ledger changed." |
 | `doctor` | Health checks (§11.5), one line per check: `ok` / `warn` / `fail` + fix command | exit 1 on any warn, 2 on any fail |
 | `tick [--dry-run]` | One tick, or print every action | "no-op: <reason>" on stderr when nothing to do |
 | `shadow report` | Routing, direction-check and shape agreement per class, plus classifier accuracy | "Not enough shadow data yet (n/30)." |
@@ -1044,7 +1045,7 @@ The `UserPromptSubmit` hook classifies every human turn in a sindri session:
 - `NO_COLOR` and non-TTY output are honored.
 - Exit codes: `0` ok, `1` attention needed, `2` error.
 - Errors carry stable codes `SND-<AREA>-<NNN>`, with the areas seeded in `docs/sindri/errors.md`: PROFILE,
-  LOCK, SESS, ITEM, GATE, DIR, SHAPE, INDEX, BRIDGE, NOTIFY, BUDGET.
+  LOCK, SESS, ITEM, GATE, DIR, SHAPE, INDEX, BRIDGE, NOTIFY, BUDGET, CLI, LEDGER, SCRUB, TRACKER.
 
 ### 10.4 Silent-failure floor (R7)
 - **Fallback chain:** macOS notification, then the `$AW_STATE_DIR/ATTENTION` file, then a banner in
@@ -1132,6 +1133,7 @@ The `UserPromptSubmit` hook classifies every human turn in a sindri session:
     file, key path, expected type and a fix hint.
   - `sindri profile migrate --dry-run` handles schema upgrades. Deprecated keys warn for one minor
     version before they halt.
+- **Growth:** the schema is strict (unknown keys are errors). New optional keys join `schemaVersion: 1`; renames and removals bump it and add a migration (Plan 2 amendment).
 - **Precedence:** repo file > profile file > core default. `sindri profile explain <key>` shows the
   effective value and where it came from.
 - **Data only:** the profile contains no code in v1. Adapters live in core.
@@ -1177,7 +1179,7 @@ interface Badge    { publish(summary: StatusSummary): Promise<Result<void>> }
   Labels, hosts and wait conditions are profile data; the core contains no workplace specifics.
 - **Registration:** a static registry in core.
 - **Contract tests:** `adapterContractTests(name, factory)` is a reusable Vitest helper. Every built-in and
-  fake adapter must pass it.
+  fake adapter must pass it. It lives under `sindri/tests/contract/` as test code (`trackerContractTests` for the Tracker), not in `src/`.
 
 ### 11.3 Setup (H18)
 - **Scheduler:** `sindri scheduler install [--dry-run]` writes the launchd plist; `--dry-run` prints it.
@@ -1242,7 +1244,7 @@ interface Badge    { publish(summary: StatusSummary): Promise<Result<void>> }
   - state dir on local disk
   - boot-id readable
   - ledger schema version
-  - budget headroom
+  - budget headroom (`budget.perItem` and `budget.perDay` are optional before rollout step 3a; an unset budget is reported `ok` with "not enforced before step 3a")
   - every §5.3 hook registered, each answering a recorded probe payload with the expected decision
   - code index age per repo, and which providers are enabled (structure, embeddings, graphify)
   - local embedding model reachable
@@ -1437,9 +1439,9 @@ toolkit needs no tracker account to build itself. The adapter ships in Plan 2.
 | done-gate claim detection (P1 T1) | P1 merges | `scripts/install-done-gate.sh --provider claude` (reinstalls the hook copy in `~/.claude/hooks/`) | The `done-gate` false-positive rate in the next weekly audit drops to ~0 | Stops false "Claiming done" blocks in every builder session from then on | Same hook, immediately |
 | `judge --providers` (P1 T2) | P1 merges | none; used by callers | `judge --providers jev why <id>` works | Lets P2+ direction checks and verifiers pin providers (Anthropic + Jev) | Same |
 | `scorer audit` (P1 T3–T7) | P1 merges | `scorer audit --since 60d --label 400` once (baselines, calibration and the step-0 decision); then weekly and unlabeled via the scorer launchd job (`--since 7d --label 0`) | `~/.agentic-workflow/audit/baseline.md`; weekly `summary.json` | **Measures the build itself:** steering turns per merged Sindri PR are the first metric the ladder must move down | Baselines for workplace repos |
-| Profile + ledger + lock + CLI skeleton (P2) | P2 merges | `sindri profile init --ring0` (toolkit profile, `mode: shadow`); `sindri doctor` | `doctor` all `ok`; ledger file exists | Every later build session is recorded in the ledger (items = plan tasks) | `sindri profile init` in the private profile repo |
-| Scrubber (P2) | P2 merges | `sindri scrub --install-pre-commit` in this repo | A committed fixture secret is refused | **Guards this public repo:** no workplace details or secrets land in commits from any build session | Pre-commit in workplace repos where wanted |
-| `plan-file` tracker + `sindri observe` (P2) | P2 merges | `sindri observe` against ring 0 | Lists the remaining plan tasks with sizes | Gives a live, ordered backlog of the rest of Sindri | `observe` on the real tracker |
+| Profile + ledger + lock + CLI skeleton (P2) | P2 merges | `sindri profile init --ring0` (toolkit profile, `mode: shadow`); `sindri doctor` | `doctor` all `ok`; ledger file exists | Every plan task and each change to it is recorded in the ledger on each `observe` run; sessions are linked to items from rollout step 2 | `sindri profile init` in the private profile repo |
+| Scrubber (P2) | P2 merges | `sindri scrub --install-pre-commit` in this repo | A committed fixture secret is refused | **Guards this public repo:** no secret- or identifier-shaped strings land in commits from any build session (names and other workplace prose still need review) | Pre-commit in workplace repos where wanted |
+| `plan-file` tracker + `sindri observe` (P2) | P2 merges | `sindri profile init --ring0 --plans '*-sindri-plan-*'`, then `sindri observe` (hourly via launchd) | Lists the remaining plan tasks with rule-based sizes (model triage from step 2) | Gives a live, ordered backlog of the rest of Sindri | `observe` on the real tracker |
 | Code index, record-only shape signals (P3) | P3 merges | `sindri repo add .` then `sindri index build`; git pre-commit `sindri shape --record` | `index status` fresh; shape signals in the ledger for builder commits | **Calibrates shape thresholds on Sindri's own commits** from P4 onward; flags reinvention while P4/P5 are built | `repo add` for workplace repos (record-only) |
 | Scoping harness (P4) | P4 merges | `sindri scope docs/superpowers/specs/2026-10-07-sindri-design.md --section 13 --out docs/superpowers/scopes/` | Scope map file plus `--backtest` recall on the motivating project | **Scopes every later Sindri plan before it's written:** the plan writer starts from the scope map | Scope new workplace projects at creation |
 | Ported `reflect` / `correct` / `eval` + artifact registry (P5) | P5 merges | `sindri evolve init` (registry over the repo); `reflect` runs on every merged Sindri PR; `correct` weekly | Registry lists every module; first reflect proposal recorded | **The build improves its own tools:** proposals for the skills and hooks used to build Sindri arrive as PRs (human merges) | Same loop over ring-1 artifacts |

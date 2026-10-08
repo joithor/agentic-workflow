@@ -472,6 +472,10 @@ figures: it ingests only that session's transcripts into `~/.agentic-workflow/sc
 daily report (`CTX`, `OVER_200K`, `percentile`, `summarizeDecisions`). The `aw-live` mod (`mods/aw-live/`)
 renders it in a `/live` pane (and `/live status`) inside Claude Code. `config/statusline.sh` shows the headline in its `Live` column (`calls · >200k · judge`, at 141 columns and up), reading a per-session cache `~/.agentic-workflow/scorer/live/<session>.statusline.json` (15 s TTL) that a detached background `scorer live --json` refreshes, so the statusline never waits on scorer or judge. Judge health (`judge health`) is cached the same way.
 
+## Sindri
+
+`sindri/` is the core of the always-on harness in `docs/superpowers/specs/2026-10-07-sindri-design.md`, built in plans. Plan 2 ships the profile (`profile.yaml` + `repos/<repo>.yaml`, Zod-validated, approved by hash), the ledger (`$AW_STATE_DIR/sindri/ledger.db`, SQLite WAL, sindri the only writer), the singleton lock with a fencing epoch, the scrubber, the `plan-file` tracker that reads plan task checkboxes as work items, and the `observe`, `ledger`, `scrub` and `doctor` commands. Every command is a function of `(args, deps)`. `deps` carries the environment, clock, `SystemProbe` and `GitRunner`, so the package is tested without spawning itself.
+
 ## Key Rules
 
 1. **Skills are stateless Markdown.** Each skill is a SKILL.md with YAML frontmatter (`name`, `description`, `allowed-tools`, `disable-model-invocation`). The Markdown body is the prompt, and the host agent (Claude Code, Codex, or Cursor) executes it step by step. Skill text names capabilities, not provider tools. No runtime code, no build step.

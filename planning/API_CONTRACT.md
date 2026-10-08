@@ -554,3 +554,13 @@ On error (task not found), returns an error text block: `"Error [NOT_FOUND]: Tas
 
 Same as `POST /tasks/report` -- inserts a status message and optionally updates the referenced task in a transaction.
 
+## Sindri CLI
+
+The `sindri` CLI is not an HTTP API. Its commands are listed in `docs/sindri/README.md`, and its error codes in `docs/sindri/errors.md`.
+
+Output contract:
+
+- State is reported in plain-text words (`ok`, `warn`, `fail`); no color is needed to read it.
+- Every read command takes `--json`.
+- Exit codes: `0` ok, `1` attention needed, `2` error.
+- Errors carry a stable code, `SND-<AREA>-<NNN>`.

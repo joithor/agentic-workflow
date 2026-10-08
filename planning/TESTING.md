@@ -10,16 +10,16 @@ The test suite uses **Vitest** with explicit imports (globals are disabled in th
 
 **`/* v8 ignore */` annotations are prohibited.** Never use `/* v8 ignore next */`, `/* v8 ignore start */`, or any v8 ignore variant to reach coverage targets. Coverage must be earned through real tests, not hidden with annotations.
 
-`mcp-bridge`, `scorer`, and `judge` each set 100% line/function/branch/statement thresholds in `vitest.config.ts`, so `npm run test:coverage` fails below 100%. Gaps are closed by writing the missing tests, not by ignoring lines.
+`mcp-bridge`, `scorer`, `judge`, and `sindri` each set 100% line/function/branch/statement thresholds in `vitest.config.ts`, so `npm run test:coverage` fails below 100%. Gaps are closed by writing the missing tests, not by ignoring lines.
 
-| Metric | Target (all three packages) |
+| Metric | Target (all four packages) |
 |--------|----------------------|
 | Statements | 100% (through real tests) |
 | Branches | 100% (through real tests) |
 | Functions | 100% (through real tests) |
 | Lines | 100% (through real tests) |
 
-Entry-point files are excluded from coverage collection: `mcp-bridge/src/index.ts` and `src/mcp.ts`, and `src/cli.ts` in `scorer` and `judge`.
+Entry-point files are excluded from coverage collection: `mcp-bridge/src/index.ts` and `src/mcp.ts`, and `src/cli.ts` in `scorer` and `judge`, and `src/cli.ts`, `src/gen.ts`, `src/system-real.ts` and `src/git-real.ts` in `sindri`.
 
 ## Test Locations
 

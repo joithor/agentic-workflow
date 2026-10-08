@@ -30,6 +30,7 @@ These are the smallest changes that make the spec buildable as written. Each one
 7. **`adapterContractTests` (§11.2) lives under `sindri/tests/contract/`**, not in `src/`, as `trackerContractTests`. It is test code, and inside `src/` its guard branches can never be covered.
 8. **Runtime commands use the last approved profile snapshot** (§8.7 made precise): edits take effect only after `profile approve`, and `approve` needs an interactive terminal and a typed confirmation. That is friction and intent, not a boundary; the boundary is the session container from step 3a. The §8.7 audit log of gated calls arrives with the gate (step 3a).
 9. **Trust for `plan-file` items is the git author email**, which anyone can forge in a public repo. It only affects what `observe` *would* start in Plan 2. Before `auto-small` (step 4), trusted authorship must come from signed commits or tracker accounts.
+10. **The §13.3 Scrubber row is narrowed.** The scrubber guards secret- and identifier-shaped strings, and workplace prose still needs review. The secret-assignment pattern requires a digit (Task 2 amendment S1).
 
 ## Global Constraints
 
@@ -38,7 +39,7 @@ These are the smallest changes that make the spec buildable as written. Each one
 - 100% line, function, branch and statement coverage, enforced by `npm run test:coverage` (`.agents/rules/testing.md`). Each task's coverage run must show every line and branch of the files **that task created or changed** covered, by tests in that task. A branch only a later task can reach is covered by that later task's tests, and Task 11's merge-gate run must be 100% over the package. Coverage excludes only `src/cli.ts`, `src/gen.ts`, `src/system-real.ts` and `src/git-real.ts`, each a thin wiring file with a smoke test.
 - One heavy job at a time: run `npm test` and `npm run typecheck` once per commit, not per edit, and never two at once (global CLAUDE.md).
 - Core stays generic: no workplace names, labels, hosts or ticket prefixes in code, defaults or examples (spec §2 Goals, memory "generic core").
-- **Never write a full secret-shaped literal in any file.** Build test secrets at runtime by concatenation (`"AKIA" + "ABCDEFGHIJKLMNOP"`). From Task 10 on, the pre-commit scrubber refuses such literals, and this repo is public.
+- **Never write a full secret-shaped literal in any file.** Build test secrets at runtime by concatenation (`"AKIA" + "ABCDEFGHIJKLMNOP"`). From Task 12 Step 8 on, the pre-commit scrubber refuses such literals, and this repo is public.
 - State lives under `$AW_STATE_DIR/sindri/` (default `~/.agentic-workflow/sindri/`), mode 0700. The ledger is the only database and Sindri is its only writer (spec §5.2).
 - CLI output contract (spec §10.3): plain-text state words, `--json` on every read command, no color in Plan 2 (so `NO_COLOR` is trivially honored), exit codes `0` ok, `1` attention needed, `2` error, error codes `SND-<AREA>-<NNN>` registered in `sindri/src/errors.ts` and documented in the generated `docs/sindri/errors.md`.
 - Commit format: `type: short description`, atomic commits, attribution lines from the session (AGENTS.md Commit Conventions).
@@ -5588,6 +5589,12 @@ git commit -m "feat: sindri doctor"
 
 ### Task 11: Installer, setup opt-in, docs, merge gate and spec amendments
 
+> Amendment (build): S4. Spec amendments 5 (§11.5 doctor, unset budget is `ok`), 7 (§11.2, `trackerContractTests` under `sindri/tests/contract/`) and 9 (§8.3, `plan-file` trust is a forgeable git author email) are edited into the spec too, and item 10 (the §13.3 Scrubber row narrowing) is added to "Spec amendments in this plan".
+> Amendment (build): m1. `setup.sh` `usage()` prints its header with `sed -n '2,17p'` (was `'2,16p'`) so the new `--with-sindri` header line does not push the last line out.
+> Amendment (build): m9. The testing.md row and the TESTING.md sentence say that only `src/system-real.ts` and `src/git-real.ts` are smoke-tested in `tests/real.test.ts`; `src/cli.ts` and `src/gen.ts` are thin wiring whose generated outputs are checked by tests.
+> Amendment (build): m18. The Global Constraints line now says the pre-commit scrubber refuses secret-shaped literals "From Task 12 Step 8 on", because the hook is switched on there.
+> Amendment (build): m14. The commit type is `feat:` because the commit adds an installer and a setup flag: `feat: sindri installer, setup opt-in, docs and spec amendments`.
+
 **Files:**
 - Create: `scripts/install-sindri.sh`, `scripts/tests/install-sindri.test.sh`, `docs/sindri/README.md`
 - Modify: `setup.sh` (`--with-sindri`), `AGENTS.md`, `.agents/rules/testing.md`, `planning/TESTING.md`, `planning/ARCHITECTURE.md`, `planning/API_CONTRACT.md`, `docs/superpowers/specs/2026-10-07-sindri-design.md`
@@ -5596,7 +5603,7 @@ git commit -m "feat: sindri doctor"
 - Consumes: the built CLI (`sindri/dist/cli.js`) from Tasks 1–10.
 - Produces: `~/.local/bin/sindri` (or `$CLAUDE_LOCAL_BIN/sindri`); `./setup.sh --with-sindri`. Later plans' "Turn it on" tasks call `scripts/install-sindri.sh`.
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 `scripts/tests/install-sindri.test.sh`:
 
@@ -5635,12 +5642,12 @@ test_wrapper_execs_the_built_cli
 test_setup_has_opt_in_flag
 ```
 
-- [ ] **Step 2: Run it to verify it fails**
+- [x] **Step 2: Run it to verify it fails**
 
 Run: `bash scripts/tests/install-sindri.test.sh`
 Expected: `bash: …/scripts/install-sindri.sh: No such file or directory`, then the script exits non-zero.
 
-- [ ] **Step 3: Implement the installer and the setup flag**
+- [x] **Step 3: Implement the installer and the setup flag**
 
 `scripts/install-sindri.sh`:
 
@@ -5701,12 +5708,12 @@ if [ "$WITH_SINDRI" = "1" ]; then
 fi
 ```
 
-- [ ] **Step 4: Run the installer tests and the setup dry-run**
+- [x] **Step 4: Run the installer tests and the setup dry-run**
 
 Run: `bash scripts/tests/install-sindri.test.sh && ./setup.sh --providers claude,codex,cursor --dry-run > /dev/null && ./setup.sh --providers claude --with-sindri --dry-run | grep -q 'would run scripts/install-sindri.sh' && echo SETUP_OK`
 Expected: three `PASS` lines, then `SETUP_OK`.
 
-- [ ] **Step 5: Write `docs/sindri/README.md`**
+- [x] **Step 5: Write `docs/sindri/README.md`**
 
 ````markdown
 # Sindri
@@ -5767,7 +5774,7 @@ The `plan-file` tracker reads each `### Task N: …` heading as one item and its
 | Have work picked up, run and shipped for you | `sindri start` / auto-start (rollout step 3a and later; not built yet) |
 ````
 
-- [ ] **Step 6: Update AGENTS.md, testing docs, architecture, API contract and the spec**
+- [x] **Step 6: Update AGENTS.md, testing docs, architecture, API contract and the spec**
 
 `AGENTS.md`:
 - Directory Structure: add `├── sindri/       # Sindri core: profile, ledger, lock, scrubber, plan-file tracker, observe, doctor (CLI)` after the `judge` or `scorer` line (add a `judge/` line too if it is missing).
@@ -5804,7 +5811,7 @@ scripts/install-sindri.sh               # Build sindri, install the CLI wrapper 
 - §8.7: after "A profile change takes effect only after `sindri profile approve <hash>`", add "Runtime commands load the last approved snapshot; approving needs an interactive terminal and a typed confirmation."
 - §10.3 `observe` row: change the empty text to "Observed N items (M open); would start K. … Nothing outside the ledger changed." and note "records to the ledger when the profile is approved (exit 1 when it can't for a fixable reason)".
 
-- [ ] **Step 7: Run the whole merge gate for the touched packages, one job at a time**
+- [x] **Step 7: Run the whole merge gate for the touched packages, one job at a time**
 
 Run each command after the previous one finishes:
 
@@ -5819,7 +5826,7 @@ grep -rnw "any" sindri/src --include=*.ts | grep -E ':\s*any\b|<any>|as any' && 
 
 Expected: typecheck clean and coverage 100%; three `PASS` lines; `sync-rules` exits 0; `SETUP_DRY_RUN_OK`; `NO_V8_IGNORE`; `NO_ANY`.
 
-- [ ] **Step 8: Commit**
+- [x] **Step 8: Commit**
 
 ```bash
 git add scripts/install-sindri.sh scripts/tests/install-sindri.test.sh setup.sh docs/sindri/README.md AGENTS.md .agents/rules/testing.md planning docs/superpowers/specs/2026-10-07-sindri-design.md
