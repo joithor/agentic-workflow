@@ -57,8 +57,9 @@ It learns from its own steering so recurring corrections become rules.
 - Evolve: recurring human steering becomes a proposed, backtested, typed rule change.
 - **Scope projects at creation:** surfaces, implications and workstreams found up front, proven by
   backtest (§7.5).
-- **Improve itself:** skills, prompts, recipes and thresholds (native and adopted) are evaluated and
-  evolved automatically; human input only for protected surfaces and merges (§7.4).
+- **Improve itself:** the whole toolkit repo (skills, hooks, judge, scorer, bridge, the conductor itself,
+  installers, docs) plus adopted skills, prompts, recipes and thresholds are evaluated and evolved
+  automatically. Human input is needed only for protected surfaces and, by default, merges (§7.4, §7.7).
 - Keep the codebase simple as it grows: deterministic checks for reinvention, second-case
   generalization and size/complexity, judged only on a shortlist (§6.2).
 - Generic core; workplace and repo specifics live in a separate private profile repo.
@@ -115,8 +116,9 @@ It learns from its own steering so recurring corrections become rules.
     conductor action, never because an agent chose to call a tool. MCP is for reading data only. Hooks
     enforce *patterns*. The *security boundary* is the session container, server-side protections, and
     conductor-side re-verification (§5.3).
-11. **Self-evolution stays inside its tier.** Automatic adoption never touches protected surfaces,
-    never edits its own eval suite, and every adoption can be reverted automatically (§7.4).
+11. **Self-evolution stays inside its tier.** Automatic adoption never touches protected surfaces, never
+    edits the eval suite that judges it, is always evaluated by the stable channel, and every adoption
+    can be reverted automatically (§7.4, §7.7).
 
 ## 4. v1 scope
 
@@ -598,6 +600,51 @@ The harness's own backlog goes through the harness as ordinary work items in the
 - code-tier proposals from §7.4
 
 They are scoped, built in assist mode, verified, and opened as PRs. The human merges.
+
+### 7.7 The toolkit repo as a managed artifact
+The **entire toolkit repo** (this repo) is registered in the artifact registry, at module granularity. That
+covers:
+- skills and the shared skill text
+- hooks and adapters
+- `judge`, `scorer`, `mcp-bridge`, `conductor` itself
+- provider installers and `setup.sh`
+- rules, planning docs, mods
+- the external-pack pins
+
+Every module gets an eval suite and telemetry, and its improvements come from the same proposal sources as
+§7.4.
+
+| Module class | Eval suite (outcome-labeled, no hand labels) | Telemetry that drives proposals |
+|---|---|---|
+| Skills (native, vendored, ported) | Blinded comparison on replayed items; the skill's own tests | Steering turns while the skill is active; reverts; verifier overturns |
+| Hooks | Recorded-payload suites; **false-positive and false-negative rates** computed from all sessions' transcripts (e.g. a gate firing on a turn that made no claim) | Hook decision logs across host and container sessions |
+| `judge` questions | judge's existing eval harness; escalation and override rates | Decisions followed by human reversal |
+| `scorer` | Report accuracy against recomputed ledgers | Discrepancies, failed parses |
+| `conductor` | Unit, contract and heavy suites; ledger invariants; replayed ticks | Stalls, parks, relaunches, budget breaches |
+| Installers / `setup.sh` | `setup.sh --dry-run` on all providers; bash tests | Install failures in `doctor` reports |
+| Docs and rules | Link and freshness checks; `sync-rules.sh --check`; agent answer accuracy on doc-derived probe questions | Questions agents ask that the docs should have answered |
+
+**How self-changes are applied safely:**
+- **Two channels.** The harness always runs from a pinned **stable** release of itself. Proposed changes
+  to the toolkit land on a **next** channel, built and evaluated *by the stable harness*. They are
+  promoted only after passing the merge gate, their module's eval suite, and a soak period (default 3
+  days of shadow use on `next` alongside `stable`).
+- **No self-certification.** A change can never modify the eval suite or telemetry that judges it in the
+  same proposal (invariant 11). The evaluator for a proposal is always the stable channel.
+- **Regression rollback.** If promotion regresses any module metric over the following 20 uses, `stable`
+  rolls back to the previous release automatically, and the change becomes a recorded failed variant.
+- **Protected modules** need human approval whatever the merge policy: the safety hooks, the tool gate and
+  allowlist code, the scrubber's removal paths, the self-evolution tier rules, eval suites, and installers'
+  permission and settings writes.
+- Every self-change is a work item processed by the harness itself (dogfooding, §7.6). It is scoped,
+  built, verified, and opened as a PR in this repo.
+
+**Merge policy for this repo:** the profile's `selfMerge` key decides who merges promoted toolkit PRs that
+touch no protected module.
+- `human` (default): every PR waits for the human, batched into one daily review digest.
+- `auto`: the conductor merges once all gates pass.
+
+Protected modules always wait for the human.
 
 ## 8. Safety boundary
 Required before `mode: auto-small` can be enabled. `doctor` refuses `auto-small` until every check in
@@ -1278,6 +1325,9 @@ environment:
    - **Scoping harness** (§7.5), with `--backtest` on the motivating project.
      **First value: scope maps, plus a measured recall number.**
    - Self-evolution loop (§7.4) for the scoping harness and the ported skills, offline blinded eval only.
+   - **Artifact registry over the whole toolkit repo** (§7.7): module eval suites wired to existing tests,
+     plus hook false-positive telemetry from every session's transcripts, and stable/next channels. The
+     first self-proposals target known defects, for example done-gate's bare-word false positives.
 2. **Shadow, plus the container spike in parallel:**
    - `conductor observe`, shadow triage and packs, historical replay, dashboard (Sessions, Waiting) and
      badge.
