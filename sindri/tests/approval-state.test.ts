@@ -8,7 +8,7 @@ import { runChecks } from "../src/doctor/doctor.js";
 import { ledgerPath, openLedger } from "../src/ledger/db.js";
 import { listItems } from "../src/ledger/items.js";
 import { runCli } from "../src/main.js";
-import { approvalState, snapshotDir } from "../src/profile/approve.js";
+import { approvalState, approvedProfile, snapshotDir } from "../src/profile/approve.js";
 import { requireProfile } from "../src/profile/commands.js";
 import { makeDeps, tempDir } from "./helpers.js";
 
@@ -154,5 +154,21 @@ describe("approval state (spec §8.7)", () => {
     const hash = await approveLive(deps);
     fs.appendFileSync(path.join(snapshotDir(deps, hash), "profile.yaml"), "# tampered\n");
     expect(state(deps)).toEqual({ kind: "snapshot-missing", hash });
+  });
+
+  it("approvedProfile is the latest approved snapshot, whether or not the live profile still matches it", async () => {
+    const { deps, file } = await setup();
+    const db = openLedger(ledgerPath(stateDir(deps)));
+    try {
+      expect(approvedProfile(deps, db)).toBeNull();
+      const hash = await approveLive(deps);
+      expect(approvedProfile(deps, db)?.hash).toBe(hash);
+      fs.appendFileSync(file, "# edited\n");
+      expect(approvedProfile(deps, db)?.hash).toBe(hash);
+      fs.rmSync(snapshotDir(deps, hash), { recursive: true });
+      expect(approvedProfile(deps, db)).toBeNull();
+    } finally {
+      db.close();
+    }
   });
 });

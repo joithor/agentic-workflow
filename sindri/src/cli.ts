@@ -22,6 +22,8 @@ const result = await runCli(process.argv.slice(2), {
       rl.close();
     }
   },
+  sleep: (ms) => new Promise((r) => setTimeout(r, ms)),
+  log: (line) => process.stderr.write(`${line}\n`),
   stdin: async () => {
     const chunks: Buffer[] = [];
     for await (const chunk of process.stdin) chunks.push(chunk as Buffer);

@@ -1,5 +1,7 @@
 import { z } from "zod";
 
+import { isLoopbackUrl } from "../index/loopback.js";
+
 // Spec §11.1. Strict: an unknown key is an error, so typos fail validate.
 // Later plans add optional keys in schemaVersion 1; renames bump the version.
 export const SIZES = ["XS", "S", "M", "L", "XL"] as const;
@@ -28,6 +30,63 @@ const PlanFileTracker = z
       .describe("Plan file names to read, with * wildcards, e.g. *-sindri-plan-*"),
   })
   .strict();
+
+const unit = z.number().min(0).max(1);
+const count = z.number().int().positive();
+const bySize = (d: Record<Size, number>) =>
+  z.object({ XS: count.default(d.XS), S: count.default(d.S), M: count.default(d.M), L: count.default(d.L), XL: count.default(d.XL) }).strict().default({});
+
+const DEFAULT_DENY = [
+  ".env*", "**/.env*", "**/*.pem", "**/*.key", "**/*.p12", "**/*.pfx", "**/id_rsa*", "**/*.tfstate", "**/*.tfvars",
+  "**/credentials*", "**/.npmrc", "**/.netrc", "**/secrets/**",
+];
+
+const IndexSchema = z
+  .object({
+    denyPaths: z.array(z.string().min(1)).default(DEFAULT_DENY)
+      .describe("Path globs the index never reads, case-insensitive (secrets, sensitive fixtures, generated code)"),
+    utilityGlobs: z.array(z.string().min(1)).default([]).describe("Globs of internal utility modules; their exports are reinvention candidates"),
+    maxFileKB: count.default(512),
+    maxTotalMB: count.default(200),
+    maxAgeHours: count.default(24).describe("An index older than this is stale (index status and doctor warn)"),
+    embeddings: z
+      .object({
+        enabled: z.boolean().default(true),
+        url: z.string().refine(isLoopbackUrl, "must be a loopback URL (127.0.0.1 or [::1], no credentials): the index never sends code off the machine").default("http://127.0.0.1:11434"),
+        model: z.string().min(1).refine((m) => !/cloud/i.test(m), "cloud models send code off the machine").default("nomic-embed-text"),
+      })
+      .strict()
+      .default({}),
+    graph: z.enum(["graphify", "none"]).default("graphify"),
+  })
+  .strict()
+  .default({})
+  .describe("Code index (spec §6.2)");
+
+const ShapeSchema = z
+  .object({
+    record: z.boolean().default(true).describe("Record shape signals at commit (record-only until rollout step 3b); false turns the hook step off"),
+    budgetMs: count.default(2000),
+    outcomeDays: count.default(14).describe("Days after a commit before its signals get an outcome label (kept, acted-on, dropped)"),
+    defaultSize: SizeSchema.default("S").describe("Size class used for diff budgets when a commit has no item"),
+    thresholds: z
+      .object({
+        nameSimilarity: unit.default(0.85),
+        embedding: unit.default(0.9),
+        embeddingAst: unit.default(0.6),
+        nearCloneTokens: count.default(60),
+        nearCloneJaccard: unit.default(0.8),
+        callOverlap: unit.default(0.5),
+        complexityDelta: count.default(10),
+      })
+      .strict()
+      .default({}),
+    sizeBudget: bySize({ XS: 80, S: 250, M: 600, L: 1200, XL: 2400 }).describe("Changed-line budget per size class"),
+    exportAllowance: bySize({ XS: 1, S: 3, M: 6, L: 10, XL: 20 }).describe("New exports allowed per size class"),
+  })
+  .strict()
+  .default({})
+  .describe("Shape signals (spec §6.2)");
 
 export const ProfileSchema = z
   .object({
@@ -63,6 +122,8 @@ export const ProfileSchema = z
       .strict()
       .default({})
       .describe("scrub.extraPatterns: extra secret shapes, added to the built-ins (never removes one)"),
+    index: IndexSchema,
+    shape: ShapeSchema,
   })
   .strict();
 
@@ -76,6 +137,7 @@ export const RepoSchema = z
     defaultBranch: z.string().min(1).default("main").describe("Base branch for claims and indexes"),
     protectedPaths: z.array(z.string().min(1)).default([]).describe("Globs; a diff touching one parks for approval (spec §8.5)"),
     overrides: z.object({ autoStartMaxSize: SizeSchema.optional() }).strict().default({}).describe("Per-repo values that win over profile.yaml"),
+    index: z.object({ denyPaths: z.array(z.string().min(1)).default([]) }).strict().default({}).describe("index.denyPaths for this repo, added to the profile's"),
   })
   .strict();
 

@@ -8,7 +8,7 @@ import type { GitRunner } from "../git.js";
 import type { Command } from "../main.js";
 import { failure, fromError, success, type CommandResult } from "../output.js";
 import { ledgerPath, readLedger } from "../ledger/db.js";
-import { approvalState } from "../profile/approve.js";
+import { approvedProfile } from "../profile/approve.js";
 import { loadProfile, resolveProfileRoot, type LoadedProfile } from "../profile/load.js";
 import { compileExtraPatterns, makeScrubber, type Scrubber } from "./scrub.js";
 
@@ -105,12 +105,11 @@ export function hitsIn(f: AddedFile, scrubber: Scrubber): { file: string; line: 
 }
 
 // The latest approved snapshot, or null when there is none (or no readable ledger).
-function approvedProfile(deps: Deps, liveHash: string): LoadedProfile | null {
+function approvedSnapshot(deps: Deps): LoadedProfile | null {
   const file = ledgerPath(stateDir(deps));
   if (!fs.existsSync(file)) return null;
   try {
-    const state = readLedger(file, (db) => approvalState(deps, db, liveHash));
-    return state.kind === "approved" || state.kind === "changed-since-approval" ? state.approved : null;
+    return readLedger(file, (db) => approvedProfile(deps, db));
   } catch {
     return null;
   }
@@ -123,7 +122,7 @@ function scrubberFor(deps: Deps): { scrubber: Scrubber; warning: string } {
   const root = resolveProfileRoot(deps);
   if (root === null) return { scrubber: makeScrubber(), warning: "" };
   const live = loadProfile(root);
-  const approved = approvedProfile(deps, live.ok ? live.value.hash : "");
+  const approved = approvedSnapshot(deps);
   const use = approved ?? (live.ok ? live.value : null);
   if (use === null) {
     throw new SindriError("SND-PROFILE-001", `the profile at ${root} is invalid and has no approved snapshot, so its scrub patterns can't be used`, {

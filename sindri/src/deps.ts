@@ -15,6 +15,8 @@ export interface Deps {
   isTTY: boolean;
   prompt: (question: string) => Promise<string>;
   stdin: () => Promise<string>;
+  sleep: (ms: number) => Promise<void>;
+  log: (line: string) => void;
 }
 
 // $AW_STATE_DIR, default ~/.agentic-workflow (shared with judge and scorer).

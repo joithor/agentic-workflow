@@ -110,7 +110,7 @@ Each is also edited into the spec in Task 12.
   - `io.ts` types: `FetchLike`, `ProcessRunner`, `IndexProbes`, `IndexIo` (Step 3).
   - `withHeavyLock<T>(deps, kind: string, timeoutMs: number, fn: () => Promise<T>): Promise<T>` — throws `SND-INDEX-001` when busy after `timeoutMs`, reclaims a lock whose holder pid is dead on this host (logged, and recorded in the new holder's `reclaimed` field), logs `waiting for the heavy-job lock (...)` once; `heavyLockState(stateRoot: string, now: () => Date): { held: boolean; holder: HeavyHolder | null; ageMs: number | null }`; `heavyLockDir(stateRoot): string`. `HeavyHolder = { kind; pid; host; startedAt; reclaimed: string | null }`.
 
-- [ ] **Step 0: Preflight Plan 2's names**
+- [x] **Step 0: Preflight Plan 2's names**
 
 This plan builds on Plan 2's exact names. Check them before writing anything:
 
@@ -120,7 +120,7 @@ cd sindri && for s in "export function openLedger" "export function migrateWith"
 
 Expected: only `preflight done`. A `MISSING:` line means Plan 2 shipped under a different name: stop, list the mismatches, and amend this plan before going on.
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 In `sindri/tests/helpers.ts`, add `sleep: async () => undefined, log: () => undefined,` to the object `makeDeps` returns (before `...overrides`). Those two spots (`makeDeps` and `cli.ts`) are the only places that build a whole `Deps`; every other test spreads `makeDeps()`. `npm run typecheck` flags any other.
 
@@ -318,12 +318,12 @@ describe("heavy-job lock", () => {
 });
 ```
 
-- [ ] **Step 2: Run the tests to verify they fail**
+- [x] **Step 2: Run the tests to verify they fail**
 
 Run: `cd sindri && npx vitest run tests/index-profile.test.ts tests/heavy-lock.test.ts`
 Expected: FAIL with `Failed to load url ../src/index/loopback.js` (and `../src/index/heavy-lock.js`).
 
-- [ ] **Step 3: Implement**
+- [x] **Step 3: Implement**
 
 `sindri/src/index/io.ts` (types only: every command takes its machine access through these, so tests inject fakes):
 
@@ -594,12 +594,12 @@ Add to `ERRORS`:
   "SND-INDEX-001": { summary: "The heavy-job lock is busy.", fix: "wait for the holder to finish; `sindri doctor` shows it" },
 ```
 
-- [ ] **Step 4: Run the tests**
+- [x] **Step 4: Run the tests**
 
 Run: `cd sindri && npm run gen && npx vitest run && npm run typecheck && npm run test:coverage`
 Expected: all tests PASS (Plan 2's `profile-doc` test passes after `npm run gen` regenerates `profile.md` and the schemas); 100% coverage.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add sindri/src sindri/tests sindri/schema docs/sindri

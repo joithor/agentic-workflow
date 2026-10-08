@@ -45,6 +45,40 @@ const MIGRATIONS: readonly string[] = [
   CREATE TABLE profile_approvals (hash TEXT PRIMARY KEY, approved_at TEXT NOT NULL, approved_by TEXT NOT NULL);
   CREATE TABLE cursors (source TEXT PRIMARY KEY, cursor TEXT NOT NULL, updated_at TEXT NOT NULL);
   `,
+  `
+  CREATE TABLE shape_runs (
+    run_id TEXT PRIMARY KEY,
+    repo TEXT NOT NULL,
+    ts TEXT NOT NULL,
+    head TEXT,
+    tree TEXT,
+    commit_sha TEXT,
+    elapsed_ms INTEGER NOT NULL,
+    index_age_ms INTEGER,
+    providers TEXT NOT NULL,
+    deferred TEXT NOT NULL,
+    signal_count INTEGER NOT NULL,
+    epoch INTEGER NOT NULL
+  );
+  CREATE TABLE shape_signals (
+    seq INTEGER PRIMARY KEY AUTOINCREMENT,
+    run_id TEXT NOT NULL REFERENCES shape_runs(run_id),
+    type TEXT NOT NULL,
+    layer TEXT NOT NULL,
+    value REAL NOT NULL,
+    threshold REAL NOT NULL,
+    at TEXT NOT NULL,
+    existing TEXT,
+    detail TEXT NOT NULL,
+    name TEXT,
+    ast_hash TEXT,
+    outcome TEXT,
+    labeled_at TEXT,
+    epoch INTEGER NOT NULL
+  );
+  CREATE INDEX shape_signals_type ON shape_signals(type);
+  CREATE INDEX shape_signals_run ON shape_signals(run_id);
+  `,
 ];
 
 export const LEDGER_SCHEMA_VERSION = MIGRATIONS.length;
@@ -109,6 +143,21 @@ export function readLedger<T>(file: string, fn: (db: Ledger) => T): T {
   } finally {
     db.close();
   }
+}
+
+// The pre-commit hook's open (spec §5.2: hooks never write the ledger): no migration, no
+// WAL switch. Not `readonly: true`: that creates -wal/-shm beside a WAL ledger and can't
+// remove them (see readLedger); query_only writes nothing. A missing file or a schema
+// version this build doesn't know is null.
+export function openLedgerReadOnly(file: string): Ledger | null {
+  if (!fs.existsSync(file)) return null;
+  const db = new Database(file, { fileMustExist: true });
+  db.pragma("query_only = ON");
+  if (schemaVersion(db) !== LEDGER_SCHEMA_VERSION) {
+    db.close();
+    return null;
+  }
+  return db;
 }
 
 export function openMemoryLedger(): Ledger {

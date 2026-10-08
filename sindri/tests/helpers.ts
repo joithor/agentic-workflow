@@ -25,6 +25,8 @@ export function makeDeps(overrides: Partial<Deps> = {}): Deps {
     isTTY: false,
     prompt: async () => "",
     stdin: async () => "",
+    sleep: async () => undefined,
+    log: () => undefined,
     ...overrides,
   };
 }

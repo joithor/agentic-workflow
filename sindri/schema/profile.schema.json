@@ -195,6 +195,239 @@
       "additionalProperties": false,
       "default": {},
       "description": "scrub.extraPatterns: extra secret shapes, added to the built-ins (never removes one)"
+    },
+    "index": {
+      "type": "object",
+      "properties": {
+        "denyPaths": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "default": [
+            ".env*",
+            "**/.env*",
+            "**/*.pem",
+            "**/*.key",
+            "**/*.p12",
+            "**/*.pfx",
+            "**/id_rsa*",
+            "**/*.tfstate",
+            "**/*.tfvars",
+            "**/credentials*",
+            "**/.npmrc",
+            "**/.netrc",
+            "**/secrets/**"
+          ],
+          "description": "Path globs the index never reads, case-insensitive (secrets, sensitive fixtures, generated code)"
+        },
+        "utilityGlobs": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "default": [],
+          "description": "Globs of internal utility modules; their exports are reinvention candidates"
+        },
+        "maxFileKB": {
+          "type": "integer",
+          "exclusiveMinimum": 0,
+          "default": 512
+        },
+        "maxTotalMB": {
+          "type": "integer",
+          "exclusiveMinimum": 0,
+          "default": 200
+        },
+        "maxAgeHours": {
+          "type": "integer",
+          "exclusiveMinimum": 0,
+          "default": 24,
+          "description": "An index older than this is stale (index status and doctor warn)"
+        },
+        "embeddings": {
+          "type": "object",
+          "properties": {
+            "enabled": {
+              "type": "boolean",
+              "default": true
+            },
+            "url": {
+              "type": "string",
+              "default": "http://127.0.0.1:11434"
+            },
+            "model": {
+              "type": "string",
+              "minLength": 1,
+              "default": "nomic-embed-text"
+            }
+          },
+          "additionalProperties": false,
+          "default": {}
+        },
+        "graph": {
+          "type": "string",
+          "enum": [
+            "graphify",
+            "none"
+          ],
+          "default": "graphify"
+        }
+      },
+      "additionalProperties": false,
+      "default": {},
+      "description": "Code index (spec §6.2)"
+    },
+    "shape": {
+      "type": "object",
+      "properties": {
+        "record": {
+          "type": "boolean",
+          "default": true,
+          "description": "Record shape signals at commit (record-only until rollout step 3b); false turns the hook step off"
+        },
+        "budgetMs": {
+          "type": "integer",
+          "exclusiveMinimum": 0,
+          "default": 2000
+        },
+        "outcomeDays": {
+          "type": "integer",
+          "exclusiveMinimum": 0,
+          "default": 14,
+          "description": "Days after a commit before its signals get an outcome label (kept, acted-on, dropped)"
+        },
+        "defaultSize": {
+          "type": "string",
+          "enum": [
+            "XS",
+            "S",
+            "M",
+            "L",
+            "XL"
+          ],
+          "default": "S",
+          "description": "Size class used for diff budgets when a commit has no item"
+        },
+        "thresholds": {
+          "type": "object",
+          "properties": {
+            "nameSimilarity": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1,
+              "default": 0.85
+            },
+            "embedding": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1,
+              "default": 0.9
+            },
+            "embeddingAst": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1,
+              "default": 0.6
+            },
+            "nearCloneTokens": {
+              "type": "integer",
+              "exclusiveMinimum": 0,
+              "default": 60
+            },
+            "nearCloneJaccard": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1,
+              "default": 0.8
+            },
+            "callOverlap": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1,
+              "default": 0.5
+            },
+            "complexityDelta": {
+              "type": "integer",
+              "exclusiveMinimum": 0,
+              "default": 10
+            }
+          },
+          "additionalProperties": false,
+          "default": {}
+        },
+        "sizeBudget": {
+          "type": "object",
+          "properties": {
+            "XS": {
+              "type": "integer",
+              "exclusiveMinimum": 0,
+              "default": 80
+            },
+            "S": {
+              "type": "integer",
+              "exclusiveMinimum": 0,
+              "default": 250
+            },
+            "M": {
+              "type": "integer",
+              "exclusiveMinimum": 0,
+              "default": 600
+            },
+            "L": {
+              "type": "integer",
+              "exclusiveMinimum": 0,
+              "default": 1200
+            },
+            "XL": {
+              "type": "integer",
+              "exclusiveMinimum": 0,
+              "default": 2400
+            }
+          },
+          "additionalProperties": false,
+          "default": {},
+          "description": "Changed-line budget per size class"
+        },
+        "exportAllowance": {
+          "type": "object",
+          "properties": {
+            "XS": {
+              "type": "integer",
+              "exclusiveMinimum": 0,
+              "default": 1
+            },
+            "S": {
+              "type": "integer",
+              "exclusiveMinimum": 0,
+              "default": 3
+            },
+            "M": {
+              "type": "integer",
+              "exclusiveMinimum": 0,
+              "default": 6
+            },
+            "L": {
+              "type": "integer",
+              "exclusiveMinimum": 0,
+              "default": 10
+            },
+            "XL": {
+              "type": "integer",
+              "exclusiveMinimum": 0,
+              "default": 20
+            }
+          },
+          "additionalProperties": false,
+          "default": {},
+          "description": "New exports allowed per size class"
+        }
+      },
+      "additionalProperties": false,
+      "default": {},
+      "description": "Shape signals (spec §6.2)"
     }
   },
   "required": [
