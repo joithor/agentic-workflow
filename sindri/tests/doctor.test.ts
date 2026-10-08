@@ -183,27 +183,30 @@ describe("sindri doctor lock and read-only guarantees", () => {
     expect(lock.detail).not.toContain("undefined");
   });
 
-  it("does not migrate, back up, chmod or leave files beside a valid older ledger (m19)", async () => {
-    const d = makeDeps();
+  it("does not migrate, back up, chmod or leave files beside a valid older WAL ledger (m19)", async () => {
+    const d = await ring0Deps();
     const dir = stateDir(d);
     fs.mkdirSync(dir, { recursive: true });
     fs.chmodSync(dir, 0o700);
     const file = path.join(dir, "ledger.db");
+    // Like a real ledger: WAL mode, last writer closed cleanly (no -wal or -shm left).
     const raw = new Database(file);
-    raw.pragma("journal_mode = DELETE");
+    raw.pragma("journal_mode = WAL");
     raw.exec("CREATE TABLE meta (key TEXT PRIMARY KEY, value TEXT NOT NULL)");
+    raw.exec("CREATE TABLE profile_approvals (hash TEXT PRIMARY KEY, approved_at TEXT NOT NULL, approved_by TEXT NOT NULL)");
     raw.pragma("user_version = 1");
     raw.close();
     fs.chmodSync(file, 0o644);
     const before = fs.readdirSync(dir).sort();
+    expect(before.filter((n) => n.startsWith("ledger.db"))).toEqual(["ledger.db"]);
+    const bytes = fs.readFileSync(file);
     const r = await runCli(["doctor"], d);
     expect(r.stdout).toMatch(/^ok {3}ledger/m);
     const check = Object.fromEntries((await runChecks(d, "22.10.0")).map((c) => [c.name, c]));
     expect(check.ledger.detail).toBe(`schema v1 of ${LEDGER_SCHEMA_VERSION}`);
+    expect(check["profile-approved"].detail).toContain("has never been approved");
     expect(fs.statSync(file).mode & 0o777).toBe(0o644);
     expect(fs.readdirSync(dir).sort()).toEqual(before);
-    const db = new Database(file, { readonly: true });
-    expect(db.pragma("user_version", { simple: true })).toBe(1);
-    db.close();
+    expect(fs.readFileSync(file).equals(bytes)).toBe(true);
   });
 });

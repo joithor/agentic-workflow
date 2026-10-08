@@ -86,6 +86,19 @@ describe("approval state (spec §8.7)", () => {
     expect(v.observe.stdout).toContain(`Using approved profile ${short}`);
   });
 
+  it("doctor's profile-content checks read the approved snapshot, and say so, after an unapproved edit", async () => {
+    const { deps, file } = await setup();
+    const before = Object.fromEntries((await runChecks(deps, "22.10.0")).map((c) => [c.name, c]));
+    expect(before["profile-in-use"].detail).toBe("live profile (nothing approved yet); the checks below read it");
+    const approved = await approveLive(deps);
+    fs.writeFileSync(file, fs.readFileSync(file, "utf8").replace(/active: test-host/, "active: elsewhere") + "budget:\n  perItem: 7\n");
+    const c = Object.fromEntries((await runChecks(deps, "22.10.0")).map((c) => [c.name, c]));
+    expect(c["profile-approved"].status).toBe("warn");
+    expect(c["profile-in-use"].detail).toBe(`approved profile ${approved.slice(0, 12)}; the checks below read it`);
+    expect(c["active-host"]).toMatchObject({ status: "ok", detail: "test-host" });
+    expect(c.budget.detail).toBe("unset (not enforced before rollout step 3a)");
+  });
+
   it("a rollback re-approves an earlier hash, and all three commands then agree", async () => {
     const { deps, file } = await setup();
     const original = fs.readFileSync(file, "utf8");

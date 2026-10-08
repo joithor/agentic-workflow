@@ -1,12 +1,10 @@
 import fs from "node:fs";
 import path from "node:path";
 
-import Database from "better-sqlite3";
-
 import { parseFlags } from "../args.js";
 import { stateDir, type Deps } from "../deps.js";
 import { SindriError } from "../errors.js";
-import { LEDGER_SCHEMA_VERSION, ledgerPath, schemaVersion } from "../ledger/db.js";
+import { LEDGER_SCHEMA_VERSION, ledgerPath, readLedger, schemaVersion } from "../ledger/db.js";
 import { inspectLock } from "../lock/lock.js";
 import type { Command } from "../main.js";
 import { fromError, success, type ExitCode } from "../output.js";
@@ -43,21 +41,12 @@ function stateDirCheck(deps: Deps): Check {
   return { name: "state-dir", status: "warn", detail: problems.join("; "), fix: `chmod 700 ${dir}` };
 }
 
-// Doctor is read-only: no migration, backup or chmod, so it never opens the ledger through openLedger.
-function withReadonlyLedger<T>(file: string, fn: (db: Database.Database) => T): T {
-  const db = new Database(file, { readonly: true, fileMustExist: true });
-  try {
-    return fn(db);
-  } finally {
-    db.close();
-  }
-}
-
 function ledgerCheck(deps: Deps): Check {
   const file = ledgerPath(stateDir(deps));
   if (!fs.existsSync(file)) return { name: "ledger", status: "ok", detail: "no ledger yet" };
   try {
-    const v = withReadonlyLedger(file, schemaVersion);
+    // Doctor is read-only: readLedger never migrates, backs up, chmods or leaves files.
+    const v = readLedger(file, schemaVersion);
     if (v > LEDGER_SCHEMA_VERSION) throw new SindriError("SND-LEDGER-001", `ledger schema v${v} is newer than this sindri (v${LEDGER_SCHEMA_VERSION})`);
     return { name: "ledger", status: "ok", detail: `schema v${v} of ${LEDGER_SCHEMA_VERSION}` };
   } catch (e) {
@@ -78,27 +67,38 @@ function lockCheck(deps: Deps): Check {
   return { name: "lock", status: "warn", detail, fix: `remove ${l.leftovers.map((n) => path.join(dir, n)).join(" ")} (left by a crashed run)` };
 }
 
-function approvedCheck(deps: Deps, loaded: LoadedProfile): Check {
+function approvedCheck(deps: Deps, loaded: LoadedProfile): { check: Check; state: ApprovalState | null } {
   const file = ledgerPath(stateDir(deps));
   let state: ApprovalState = { kind: "never-approved" };
   if (fs.existsSync(file)) {
     try {
-      state = withReadonlyLedger(file, (db) => approvalState(deps, db, loaded.hash));
+      state = readLedger(file, (db) => approvalState(deps, db, loaded.hash));
     } catch {
       // The ledger check reports why the ledger can't be read.
-      return { name: "profile-approved", status: "warn", detail: "can't read approvals from the ledger (see the ledger check)", fix: "fix the ledger check first, then rerun sindri doctor" };
+      const check: Check = { name: "profile-approved", status: "warn", detail: "can't read approvals from the ledger (see the ledger check)", fix: "fix the ledger check first, then rerun sindri doctor" };
+      return { check, state: null };
     }
   }
-  if (state.kind === "approved") return { name: "profile-approved", status: "ok", detail: loaded.hash.slice(0, 12) };
-  return { name: "profile-approved", status: "warn", detail: approvalProblem(state, loaded.hash), fix: "sindri profile approve" };
+  if (state.kind === "approved") return { check: { name: "profile-approved", status: "ok", detail: loaded.hash.slice(0, 12) }, state };
+  return { check: { name: "profile-approved", status: "warn", detail: approvalProblem(state, loaded.hash), fix: "sindri profile approve" }, state };
 }
 
 async function profileChecks(deps: Deps, loaded: LoadedProfile): Promise<Check[]> {
+  const { check, state } = approvedCheck(deps, loaded);
+  // Spec §8.7: runs use the approved snapshot, so the checks below read it when there
+  // is one; the live profile only when nothing usable is approved yet.
+  const snapshot = state?.kind === "approved" || state?.kind === "changed-since-approval" ? state.approved : null;
+  const used = snapshot ?? loaded;
   const host = deps.system.hostname();
-  const active = loaded.profile.hosts.active;
-  const b = loaded.profile.budget;
+  const active = used.profile.hosts.active;
+  const b = used.profile.budget;
   const out: Check[] = [
-    approvedCheck(deps, loaded),
+    check,
+    {
+      name: "profile-in-use",
+      status: "ok",
+      detail: snapshot === null ? "live profile (nothing approved yet); the checks below read it" : `approved profile ${snapshot.hash.slice(0, 12)}; the checks below read it`,
+    },
     active === host
       ? { name: "active-host", status: "ok", detail: host }
       : { name: "active-host", status: "warn", detail: `this host is ${host}; hosts.active is ${active}`, fix: "edit hosts.active, then sindri profile approve" },
@@ -108,7 +108,7 @@ async function profileChecks(deps: Deps, loaded: LoadedProfile): Promise<Check[]
       detail: b.perItem === undefined && b.perDay === undefined ? "unset (not enforced before rollout step 3a)" : `perItem ${b.perItem ?? "unset"}, perDay ${b.perDay ?? "unset"} tokens`,
     },
   ];
-  for (const [name, repo] of Object.entries(loaded.repos)) {
+  for (const [name, repo] of Object.entries(used.repos)) {
     const hook = await preCommitPath(deps.git, repo.path);
     const text = hook !== null && fs.existsSync(hook) ? fs.readFileSync(hook, "utf8") : "";
     const bin = text.includes(PRE_COMMIT_MARKER) ? hookBinary(text) : null;
