@@ -253,6 +253,82 @@ test_decorated_non_claims_stay_inert() {
   echo "PASS: test_decorated_non_claims_stay_inert"
 }
 
+# Guard tests: each text below is a real claim the moment its guard is removed
+# (verified by deleting the guard), so it fails if the guard goes.
+test_question_guard_is_load_bearing() {
+  local s
+  for s in 'Is everything complete?' 'Is it all done?' 'Are we all finished? Tell me.'; do
+    [ "$(claim_rc "$s")" -eq 0 ] || { echo "FAIL: question treated as claim: $s"; exit 1; }
+  done
+  echo "PASS: test_question_guard_is_load_bearing"
+}
+
+test_table_guard_is_load_bearing() {
+  local table
+  table=$'| Step | Status |\n|---|---|\n| lint | all done |\n| tests | everything finished |'
+  [ "$(claim_rc "$table")" -eq 0 ] || { echo "FAIL: table row claim word treated as claim"; exit 1; }
+  [ "$(claim_rc $'| status | all done |\nThe refactor is complete.')" -eq 2 ] || { echo "FAIL: claim after a table not blocked"; exit 1; }
+  echo "PASS: test_table_guard_is_load_bearing"
+}
+
+test_fence_guard_is_load_bearing() {
+  local s
+  s=$'Sample output:\n```\nThe refactor is complete.\n```\nWhich option do you want?'
+  [ "$(claim_rc "$s")" -eq 0 ] || { echo "FAIL: claim inside a code fence treated as claim"; exit 1; }
+  s=$'Still working on it.\n```\nDone.\n```'
+  [ "$(claim_rc "$s")" -eq 0 ] || { echo "FAIL: 'Done.' inside a code fence treated as claim"; exit 1; }
+  s=$'```\necho hi\n```\nThe refactor is complete.'
+  [ "$(claim_rc "$s")" -eq 2 ] || { echo "FAIL: claim after a closed code fence not blocked"; exit 1; }
+  echo "PASS: test_fence_guard_is_load_bearing"
+}
+
+test_mid_sentence_markdown_decoration_is_stripped() {
+  local s
+  for s in 'The fix is _done_.' 'The fix is **done**.' 'The migration is *finished*.'; do
+    [ "$(claim_rc "$s")" -eq 2 ] || { echo "FAIL: decorated mid-sentence claim not blocked: $s"; exit 1; }
+  done
+  [ "$(claim_rc 'It is **not** finished.')" -eq 0 ] || { echo "FAIL: decorated negation treated as claim"; exit 1; }
+  echo "PASS: test_mid_sentence_markdown_decoration_is_stripped"
+}
+
+test_negation_is_scoped_to_the_claims_clause() {
+  local s
+  for s in 'I did not finish the tests, but the refactor is complete.' \
+           'All tests pass, no failures, and the work is done.' \
+           'The old API is not used anymore, and the migration is complete.' \
+           'There are no blockers, and everything is finished.' \
+           'Nothing is broken, and it is done.' \
+           'I did not touch the schema - the refactor is complete.' \
+           $'I did not touch the schema \xe2\x80\x94 the refactor is complete.' \
+           'Nothing failed, so the work is done.'; do
+    [ "$(claim_rc "$s")" -eq 2 ] || { echo "FAIL: independent claim after a negated clause not blocked: $s"; exit 1; }
+  done
+  echo "PASS: test_negation_is_scoped_to_the_claims_clause"
+}
+
+test_negation_in_the_claims_own_clause_still_cancels() {
+  local s
+  for s in 'Nothing, in short, is done.' 'No, it is not finished.' \
+           "I'm not claiming anything is finished; four reviews are still running." \
+           'Tests pass, but the refactor is not complete.' \
+           'The tests pass, and the migration is not finished.' \
+           'Reviews are running - nothing is done.'; do
+    [ "$(claim_rc "$s")" -eq 0 ] || { echo "FAIL: negated claim treated as claim: $s"; exit 1; }
+  done
+  echo "PASS: test_negation_in_the_claims_own_clause_still_cancels"
+}
+
+test_first_person_done_forms_are_claims() {
+  local s
+  for s in "I'm done." "I am done." "We're done." "We are done" "I'm finished." "I am finished with the migration." "We're all done."; do
+    [ "$(claim_rc "$s")" -eq 2 ] || { echo "FAIL: first-person completion not blocked: $s"; exit 1; }
+  done
+  for s in "I'm not done." "I'm done?" "I'm not done yet." "We're not finished." "I am not finished yet."; do
+    [ "$(claim_rc "$s")" -eq 0 ] || { echo "FAIL: first-person non-claim treated as claim: $s"; exit 1; }
+  done
+  echo "PASS: test_first_person_done_forms_are_claims"
+}
+
 test_stop_hook_active_always_exits_0_rf3
 test_not_a_done_claim_exits_0
 test_no_brief_found_falls_back_to_any_evidence_check_rf2
@@ -272,6 +348,13 @@ test_noun_plus_complete_and_bullet_forms_still_block
 test_question_plus_trailing_negation_is_not_a_claim
 test_negated_predicate_is_not_a_claim
 test_terse_noun_complete_with_tail_is_a_claim
+test_question_guard_is_load_bearing
+test_table_guard_is_load_bearing
+test_fence_guard_is_load_bearing
+test_mid_sentence_markdown_decoration_is_stripped
+test_negation_is_scoped_to_the_claims_clause
+test_negation_in_the_claims_own_clause_still_cancels
+test_first_person_done_forms_are_claims
 echo "All done-gate tests passed."
 
 setup_fake_judge_ask_check() {

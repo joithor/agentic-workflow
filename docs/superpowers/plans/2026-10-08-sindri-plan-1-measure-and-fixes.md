@@ -68,7 +68,7 @@ Later plans cover the rest of step 1:
 ---
 
 ### Task 1: done-gate claim detection (fixes false positives)
-> Amendment (build): sentence-level '?' drop, negation only before the claim word, noun+complete and bullet forms — review found false negatives in the original heuristic. Final review: markdown decoration (`*`, `_`, `#`, leading `>`, bullets and emoji) is stripped before sentence splitting while backticks stay (so `**Done.**`, `## Done`, `> Done.` and `✅ Done` claim and inline code stays inert); `merged|shipped` joined the NOUN form and `has|have been merged|shipped|completed|finished` joined PAIR.
+> Amendment (build): sentence-level '?' drop, negation only before the claim word, noun+complete and bullet forms — review found false negatives in the original heuristic. Final review: markdown decoration (`*`, `_`, `#`, leading `>`, bullets and emoji) is stripped before sentence splitting while backticks stay (so `**Done.**`, `## Done`, `> Done.` and `✅ Done` claim and inline code stays inert); `merged|shipped` joined the NOUN form and `has|have been merged|shipped|completed|finished` joined PAIR. Review round 2: negation is scoped to the claim's clause (clauses end at `, and`, `, but`, `, so`, ` - `, an em dash, or a sentence mark; bare commas do not split, so `Nothing, in short, is done.` stays a non-claim); PAIR accepts `I'm|I am|we're|we are [all|now] done|finished`; the question, table, fence and decoration guards each have a test that fails when the guard is deleted.
 
 
 **Files:**
@@ -187,7 +187,7 @@ In `config/hooks/done-gate.sh`, define the function before the `SESSION_ID=` lin
 # A done claim is an assertion of completion, not any occurrence of a claim word.
 # Ignored: fenced code and table rows. Sentences are split first, so a question
 # ends at its own '?' ('All done. Should I open the PR?' still claims). A negation
-# cancels a claim only when it appears before the claim word in the same sentence,
+# cancels a claim only when it appears before the claim word in the same clause,
 # including any word the noun pattern consumed ('It is not finished.' is no claim;
 # 'Nothing, in short, is done.' is no claim; 'Done, no issues found.' still claims).
 # Deterministic: awk only (BSD awk, POSIX classes, no \b). \047 is a single quote.
@@ -198,19 +198,24 @@ is_done_claim() {
       START = "^[[:space:]]*([-*+]|[0-9]+[.)])?[[:space:]]*(done|finished|shipped|merged|ready for review)[^[:alpha:]\047]"
       B = "[^[:alpha:]\047]"
       DONE = "(done|complete|completed|finished|merged|shipped|ready for review)"
-      PAIR = "(((is|are|was|were|all|everything|now)|(it\047s|it is))[[:space:]]+(now[[:space:]]+)?" DONE "|(i|we)(\047ve|[[:space:]]+have)?[[:space:]]+(finished|completed|shipped|merged))"
+      PAIR = "(((is|are|was|were|all|everything|now)|(it\047s|it is))[[:space:]]+(now[[:space:]]+)?" DONE "|(i|we)(\047ve|[[:space:]]+have)?[[:space:]]+(finished|completed|shipped|merged)|(i|we)(\047m|[[:space:]]+am|\047re|[[:space:]]+are)[[:space:]]+(all[[:space:]]+|now[[:space:]]+)?(done|finished))"
       NOUN = "[[:alpha:]]+[[:space:]]+(complete|completed|finished|ready for review)([[:space:]]*,|[.!;:]?[[:space:]]*$)"
       MID = B "(" PAIR B "|" NOUN ")"
+      SEP = "\001"
+      CLAUSE = ",[[:space:]]+(and|but|so)[[:space:]]|[[:space:]]+(-|\342\200\224)[[:space:]]+"
     }
-    function is_claim(s,   t, rest, acc, pre, m) {
+    function is_claim(s,   t, rest, acc, pre, m, seg) {
       if (s ~ /\?[[:space:]]*$/) return 0
       t = " " s " "
+      gsub(CLAUSE, SEP " ", t)
       if (t ~ START) return 1
       rest = t; acc = ""
       while (match(rest, MID)) {
         pre = acc substr(rest, 1, RSTART - 1)
         m = substr(rest, RSTART, RLENGTH)
-        if ((" " pre " " m) !~ NEG) return 1
+        seg = " " pre " " m
+        sub("^.*" SEP, "", seg)
+        if (seg !~ NEG) return 1
         acc = acc substr(rest, 1, RSTART + RLENGTH - 1)
         rest = substr(rest, RSTART + RLENGTH)
       }

@@ -55,8 +55,9 @@ fi
 # Ignored: fenced code and table rows. Markdown emphasis/heading/quote marks and
 # leading emoji are stripped first ('**Done.**', '## Done', '> Done.'); backticks stay. Sentences are split first, so a question
 # ends at its own '?' ('All done. Should I open the PR?' still claims). A negation
-# cancels a claim only when it appears before the claim word in the same sentence,
-# including any word the noun pattern consumed ('It is not finished.' is no claim;
+# cancels a claim only when it appears before the claim word in the same clause
+# (clauses end at a sentence mark or at ', and' / ', but' / ', so' / ' - ' / an em
+# dash; bare commas do not split), including any word the noun pattern consumed ('It is not finished.' is no claim;
 # 'Nothing, in short, is done.' is no claim; 'Done, no issues found.' still claims).
 # Deterministic: awk only (BSD awk, POSIX classes, no \b). \047 is a single quote.
 is_done_claim() {
@@ -66,19 +67,26 @@ is_done_claim() {
       START = "^[[:space:]]*([-*+]|[0-9]+[.)])?[[:space:]]*(done|finished|shipped|merged|ready for review)[^[:alpha:]\047]"
       B = "[^[:alpha:]\047]"
       DONE = "(done|complete|completed|finished|merged|shipped|ready for review)"
-      PAIR = "(((is|are|was|were|all|everything|now)|(it\047s|it is))[[:space:]]+(now[[:space:]]+)?" DONE "|(i|we)(\047ve|[[:space:]]+have)?[[:space:]]+(finished|completed|shipped|merged)|(has|have)[[:space:]]+been[[:space:]]+(merged|shipped|completed|finished))"
+      PAIR = "(((is|are|was|were|all|everything|now)|(it\047s|it is))[[:space:]]+(now[[:space:]]+)?" DONE "|(i|we)(\047ve|[[:space:]]+have)?[[:space:]]+(finished|completed|shipped|merged)|(has|have)[[:space:]]+been[[:space:]]+(merged|shipped|completed|finished)|(i|we)(\047m|[[:space:]]+am|\047re|[[:space:]]+are)[[:space:]]+(all[[:space:]]+|now[[:space:]]+)?(done|finished))"
       NOUN = "[[:alpha:]]+[[:space:]]+(complete|completed|finished|merged|shipped|ready for review)([[:space:]]*,|[.!;:]?[[:space:]]*$)"
       MID = B "(" PAIR B "|" NOUN ")"
+      SEP = "\001"
+      CLAUSE = ",[[:space:]]+(and|but|so)[[:space:]]|[[:space:]]+(-|\342\200\224)[[:space:]]+"
     }
-    function is_claim(s,   t, rest, acc, pre, m) {
+    function is_claim(s,   t, rest, acc, pre, m, seg) {
       if (s ~ /\?[[:space:]]*$/) return 0
       t = " " s " "
+      # Clause boundaries (", and", ", but", ", so", " - ", an em dash) become SEP
+      # so a negation only cancels a claim in its own clause. Bare commas do not split.
+      gsub(CLAUSE, SEP " ", t)
       if (t ~ START) return 1
       rest = t; acc = ""
       while (match(rest, MID)) {
         pre = acc substr(rest, 1, RSTART - 1)
         m = substr(rest, RSTART, RLENGTH)
-        if ((" " pre " " m) !~ NEG) return 1
+        seg = " " pre " " m
+        sub("^.*" SEP, "", seg)
+        if (seg !~ NEG) return 1
         acc = acc substr(rest, 1, RSTART + RLENGTH - 1)
         rest = substr(rest, RSTART + RLENGTH)
       }
