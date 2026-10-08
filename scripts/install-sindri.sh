@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Build sindri and install the ~/.local/bin/sindri CLI wrapper (matches install-judge.sh).
 #
-#   install-sindri.sh                 npm install + build, then write the wrapper
+#   install-sindri.sh                 npm ci + build, then write the wrapper
 #   AW_DRY_RUN=1 install-sindri.sh    print what would happen, write nothing
 #   AW_SKIP_BUILD=1 install-sindri.sh write the wrapper only (tests; dist/ already built)
 #   CLAUDE_LOCAL_BIN=DIR              where the wrapper goes (default ~/.local/bin)
@@ -15,7 +15,7 @@ echo ""
 echo "Installing sindri..."
 
 if [ "${AW_DRY_RUN:-0}" = "1" ]; then
-  echo "  [dry-run] would run npm install && npm run build in $SINDRI_DIR"
+  echo "  [dry-run] would run npm ci && npm run build in $SINDRI_DIR"
   echo "  [dry-run] would write $BIN_DIR/sindri"
   exit 0
 fi

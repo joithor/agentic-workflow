@@ -5594,6 +5594,7 @@ git commit -m "feat: sindri doctor"
 > Amendment (build): m9. The testing.md row and the TESTING.md sentence say that only `src/system-real.ts` and `src/git-real.ts` are smoke-tested in `tests/real.test.ts`; `src/cli.ts` and `src/gen.ts` are thin wiring whose generated outputs are checked by tests.
 > Amendment (build): m18. The Global Constraints line now says the pre-commit scrubber refuses secret-shaped literals "From Task 12 Step 8 on", because the hook is switched on there.
 > Amendment (build): m14. The commit type is `feat:` because the commit adds an installer and a setup flag: `feat: sindri installer, setup opt-in, docs and spec amendments`.
+> Amendment (build): final-review fix wave: I1, I2, M1–M3, M6–M11 (see PR)
 
 **Files:**
 - Create: `scripts/install-sindri.sh`, `scripts/tests/install-sindri.test.sh`, `docs/sindri/README.md`

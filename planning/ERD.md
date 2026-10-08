@@ -140,7 +140,7 @@ erDiagram
     }
     items {
         TEXT id PK "tracker item id"
-        TEXT source "NOT NULL, adapter type"
+        TEXT source "NOT NULL, <tracker type>:<repo>, e.g. plan-file:<repo>"
         TEXT title "NOT NULL, scrubbed, <=200 chars"
         TEXT state "open | done | removed"
         TEXT size "XS..XL, NULLABLE"
@@ -163,7 +163,7 @@ erDiagram
         TEXT tick_id "ulid of the run"
     }
     profile_approvals {
-        TEXT hash PK "sha256 of the approved bytes"
+        TEXT hash PK "sha256 of the approved bytes; the row inserted last (highest rowid) is the latest approval"
         TEXT approved_at "ISO-8601"
         TEXT approved_by "OS user"
     }
@@ -175,4 +175,4 @@ erDiagram
     items ||--o{ item_events : "has"
 ```
 
-Every write runs inside `withEpoch(db, epoch, …)`, an `IMMEDIATE` transaction that rejects a stale epoch (`SND-LOCK-003`, spec §9.1).
+Every write runs inside `withEpoch(db, epoch, …)` or `fenced(db, epoch, …)`, an `IMMEDIATE` transaction that rejects a stale epoch (spec §9.1): `withEpoch` throws `SND-LOCK-003`, and `fenced` returns `{ ok: false }` so `observe` can stop as a no-op. Re-approving a profile deletes and re-inserts its `profile_approvals` row, so a rollback becomes the latest approval.

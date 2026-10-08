@@ -101,6 +101,6 @@ Bash suites live in `config/**/tests/`, `scripts/tests/`, and `providers/tests/`
 - mcp-bridge: 99 tests across 14 test files
 - scorer: 235 tests across 20 test files
 - judge: 261 tests across 22 test files
-- sindri: 197 tests across 20 test files
+- sindri: 212 tests across 21 test files
 
 Any PR that reduces these counts needs explicit justification.
