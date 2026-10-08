@@ -2916,7 +2916,7 @@ git commit -m "feat: scorer audit --label (model-labeled pattern calibration and
 ---
 
 ### Task 7: Turn it on (bootstrapping ladder, spec §13.3)
-> Amendment (build): the installer loop iterates over full plist filenames (`PLIST_NAME`) rather than a bare `NAME`, so the literal `com.agentic-workflow.scorer-audit.plist` that the Step 1 test greps for appears in `install-scorer.sh`. The cron hint escapes `$(date +%F)` (`\$(date +%F)`) so the printed cron line expands the date at run time, not install time. Final review: the weekly job command (launchd plist, cron hint, and the install test's expected string) includes `--no-turns-file`, so the weekly job keeps no verbatim turn copies.
+> Amendment (build): the installer loop iterates over full plist filenames (`PLIST_NAME`) rather than a bare `NAME`, so the literal `com.agentic-workflow.scorer-audit.plist` that the Step 1 test greps for appears in `install-scorer.sh`. The cron hint escapes `$(date +%F)` (`\$(date +%F)`) so the printed cron line expands the date at run time, not install time. Final review: the weekly job command (launchd plist, cron hint, and the install test's expected string) includes `--no-turns-file`, so the weekly job keeps no verbatim turn copies. Review round 2: the printed cron hint escapes the percent sign as `\%F` (an unescaped `%` ends a crontab command); the launchd plist keeps `%F`.
 
 
 Plan 1's pieces start working on the rest of the Sindri build as soon as this PR merges. This task adds the

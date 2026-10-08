@@ -21,6 +21,15 @@ test_installer_installs_both_plists() {
   echo "PASS: test_installer_installs_both_plists"
 }
 
+test_cron_hint_escapes_percent() {
+  # An unescaped % in a crontab line ends the command; the hint must print \% so a pasted entry works.
+  # The echo in install-scorer.sh holds the text \$(date +\\%F); it prints $(date +\%F).
+  grep -F 'weekly cron entry' "$ROOT/scripts/install-scorer.sh" | grep -qF '\$(date +\\%F)"' || { echo "FAIL: cron hint does not escape % as \\%"; exit 1; }
+  if grep -F 'weekly cron entry' "$ROOT/scripts/install-scorer.sh" | grep -qF '+%F'; then echo "FAIL: cron hint still has an unescaped %F"; exit 1; fi
+  echo "PASS: test_cron_hint_escapes_percent"
+}
+
 test_plist_exists_and_is_valid
 test_plist_runs_weekly_audit_into_dated_dir
 test_installer_installs_both_plists
+test_cron_hint_escapes_percent
