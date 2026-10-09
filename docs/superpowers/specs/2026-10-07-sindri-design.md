@@ -791,7 +791,7 @@ the container.
   `acquire(kind, ttl)` and `release` only.
 - Leases expire, so a dead container never holds the lock.
 - Index builds and image builds take the same lock.
-- Host side: a `mkdir` lock at `${AW_HEAVY_JOB_LOCK:-$AW_STATE_DIR/locks/heavy-job.lock}`, the same primitive and path as `config/lib/locks.sh` and `ui-evidence`, with the holder record (`<lockdir>.holder.json`) beside it so the lock dir stays empty for `rmdir`; a holder whose pid is dead on this host is reclaimed.
+- Host side: a `mkdir` lock at `${AW_HEAVY_JOB_LOCK:-$AW_STATE_DIR/locks/heavy-job.lock}`, the same primitive and path as `config/lib/locks.sh` and `ui-evidence`, with the holder record (`<lockdir>.holder.json`) beside it so the lock dir stays empty for `rmdir`; a holder that is dead on this host (its pid is gone, or its record names another boot id) is reclaimed. Only the waiter that creates the `<lockdir>.reclaim` mutex may reclaim; it re-checks the holder inside the mutex, moves the dir aside by rename, and keeps the mutex until its own dir and holder record exist, so two waiters can never both enter. A holder record older than the lock dir is a leftover and is never reclaimed on.
 
 **Warm start:**
 - Images are keyed by `(repo, lockfile hash, toolchain)`. Rebuilding one is a heavy job.

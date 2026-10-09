@@ -296,13 +296,13 @@ describe("doctor index checks", () => {
       hold(1, { kind: "index-build", pid: 7, host: "other", startedAt: "t" });
       expect(await lock()).toMatchObject({ status: "ok", detail: "held by index-build" });
       hold(7, null);
-      expect(await lock()).toMatchObject({ status: "warn", detail: "held for over 6 h", fix: `if that process is gone: rmdir ${dir}` });
+      expect(await lock()).toMatchObject({ status: "warn", detail: "held for over 6 h", fix: `if that process is gone: rmdir ${dir} && rm -f ${holderFile}` });
       hold(7, { kind: "index-build", pid: 7, host: "other", startedAt: "t" });
       expect((await lock()).detail).toBe("held for over 6 h by index-build (pid 7)");
       fs.rmSync(holderFile, { force: true });
       fs.rmdirSync(dir);
     }
-    expect(fs.existsSync(heavyLockDir(awStateDir(base)))).toBe(false);
+    expect(fs.existsSync(heavyLockDir(awStateDir(base), base.env))).toBe(false);
   });
 
   it("warns when Node would route loopback embedding traffic through an env proxy", async () => {

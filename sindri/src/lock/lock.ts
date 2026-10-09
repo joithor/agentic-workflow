@@ -54,7 +54,7 @@ function writeOwner(lockDir: string, owner: LockOwner): void {
 }
 
 // false when the target exists (or the source vanished): the caller re-checks.
-function tryRename(from: string, to: string): boolean {
+export function tryRename(from: string, to: string): boolean {
   try {
     fs.renameSync(from, to);
     return true;

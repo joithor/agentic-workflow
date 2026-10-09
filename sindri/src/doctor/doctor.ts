@@ -191,7 +191,9 @@ async function indexChecks(deps: Deps, loaded: LoadedProfile, probes: IndexProbe
   const who = heavy.holder === null ? "" : ` by ${heavy.holder.kind} (pid ${heavy.holder.pid})`;
   if (!heavy.held) out.push({ name: "heavy-lock", status: "ok", detail: "free" });
   else if (heavy.ageMs !== null && heavy.ageMs > 6 * 3_600_000) {
-    out.push({ name: "heavy-lock", status: "warn", detail: `held for over 6 h${who}`, fix: `if that process is gone: rmdir ${heavyLockDir(awStateDir(deps), deps.env)}` });
+    // Remove the holder record too: left beside a lock dir, it would name a later locks.sh lock's holder.
+    const dir = heavyLockDir(awStateDir(deps), deps.env);
+    out.push({ name: "heavy-lock", status: "warn", detail: `held for over 6 h${who}`, fix: `if that process is gone: rmdir ${dir} && rm -f ${dir}.holder.json` });
   } else out.push({ name: "heavy-lock", status: "ok", detail: `held${heavy.holder === null ? " by an unknown job" : ` by ${heavy.holder.kind}`}` });
   return out;
 }
