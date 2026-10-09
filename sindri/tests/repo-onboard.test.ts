@@ -9,6 +9,7 @@ import type { GitRunner } from "../src/git.js";
 import { withHeavyLock } from "../src/index/heavy-lock.js";
 import { indexPath } from "../src/index/db.js";
 import { templateDir } from "../src/index/onboard.js";
+import { ERRORS, SindriError } from "../src/errors.js";
 import { ledgerPath } from "../src/ledger/db.js";
 import { runCli } from "../src/main.js";
 import { PRE_COMMIT_MARKER, TEMPLATE_MARKER, preCommitHook } from "../src/scrub/commands.js";
@@ -130,15 +131,16 @@ describe("sindri repo onboard", () => {
     fs.writeFileSync(foreign, "#!/bin/sh\n. \"$(dirname \"$0\")/h\"\n");
     await runCli(["repo", "onboard", target, "--name", "web", "--no-build"], d);
     await approve(d);
-    const r = await runCli(["repo", "onboard", target, "--name", "web", "--no-build", "--json"], d);
+    // The lines carry the installed binary, quoted, like the real hook (GUI git clients have no ~/.local/bin).
+    const r = await runCli(["repo", "onboard", target, "--name", "web", "--no-build", "--json"], { ...d, env: { ...d.env, SINDRI_BIN: "/opt/aw bin/sindri" } });
     expect(r.exitCode).toBe(2);
     const step = stepList(r.stdout).find((s) => s.name === "pre-commit");
     expect(step?.status).toBe("fail");
     expect(step?.detail).toContain("SND-SCRUB-003");
     const common = git(target, "rev-parse", "--path-format=absolute", "--git-common-dir").trim();
     expect(step?.fix).toContain("${XDG_CONFIG_HOME:-~/.config}/husky/init.sh");
-    expect(step?.fix).toContain("sindri scrub --staged || exit 1");
-    expect(step?.fix).toContain("sindri shape --record --staged || true");
+    expect(step?.fix).toContain("'/opt/aw bin/sindri' scrub --staged || exit 1");
+    expect(step?.fix).toContain("'/opt/aw bin/sindri' shape --record --staged || true");
     expect(step?.fix).toContain("git rev-parse --path-format=absolute --git-common-dir");
     expect(step?.fix).toContain(common);
     expect(step?.fix).toContain("never sets core.hooksPath");
@@ -151,6 +153,26 @@ describe("sindri repo onboard", () => {
     await approve(d);
     const p = stepList((await runCli(["repo", "onboard", plain, "--name", "lib", "--no-build", "--json"], d)).stdout).find((s) => s.name === "pre-commit");
     expect(p?.fix).not.toContain("husky");
+    // A core.hooksPath that isn't husky's keeps the generic fix; husky's shim text elsewhere still counts.
+    const other = gitRepo({ "d.ts": "1" });
+    git(other, "config", "core.hooksPath", ".githooks");
+    fs.mkdirSync(path.join(other, ".githooks"));
+    fs.writeFileSync(path.join(other, ".githooks", "pre-commit"), "#!/bin/sh\necho theirs\n");
+    await runCli(["repo", "onboard", other, "--name", "other", "--no-build"], d);
+    await approve(d);
+    const o = stepList((await runCli(["repo", "onboard", other, "--name", "other", "--no-build", "--json"], d)).stdout).find((s) => s.name === "pre-commit");
+    expect(o?.status).toBe("fail");
+    expect(o?.fix).toBe(ERRORS["SND-SCRUB-003"].fix);
+    fs.writeFileSync(path.join(other, ".githooks", "pre-commit"), "#!/usr/bin/env sh\n. \"$(dirname -- \"$0\")/_/husky.sh\"\n");
+    const h = stepList((await runCli(["repo", "onboard", other, "--name", "other", "--no-build", "--json"], d)).stdout).find((s) => s.name === "pre-commit");
+    expect(h?.fix).toContain("husky/init.sh");
+    // husky v4 writes its shim into .git/hooks (no core.hooksPath): nothing to route, the generic fix.
+    const v4 = gitRepo({ "e.ts": "1" });
+    fs.writeFileSync(hookOf(v4), "#!/bin/sh\n# husky\n. \"$(dirname \"$0\")/husky.sh\"\n");
+    await runCli(["repo", "onboard", v4, "--name", "v4", "--no-build"], d);
+    await approve(d);
+    const f = stepList((await runCli(["repo", "onboard", v4, "--name", "v4", "--no-build", "--json"], d)).stdout).find((s) => s.name === "pre-commit");
+    expect(f?.fix).toBe(ERRORS["SND-SCRUB-003"].fix);
   });
 });
 
@@ -169,6 +191,10 @@ describe("sindri repo status", () => {
     expect(n.stdout.trim().split("\n")).toHaveLength(1);
     expect(n.stdout).toContain("sindri repo onboard");
     expect(fs.readFileSync(ledgerPath(stateDir(d)))).toEqual(before); // never writes the ledger
+    const listing = fs.readdirSync(stateDir(d)).sort();
+    expect(listing.filter((f) => f.endsWith("-wal") || f.endsWith("-shm"))).toEqual([]);
+    await runCli(["repo", "status", target], d);
+    expect(fs.readdirSync(stateDir(d)).sort()).toEqual(listing); // no -wal/-shm left beside the ledger
     expect((await runCli(["repo", "status", target], d)).exitCode).toBe(1);
     await runCli(["repo", "onboard", target, "--name", "web"], d);
     expect((await nudge(d, target)).stdout).toContain("waiting for approval");
@@ -226,6 +252,14 @@ describe("sindri repo status", () => {
     expect(r.exitCode).toBe(2);
     const n = await runCli(["repo", "status", target, "--nudge"], d);
     expect(n).toEqual({ exitCode: 0, stdout: "", stderr: "" });
+  });
+
+  it("a sindri error with exit code 1 is still exit 2 (exit 1 means only: not onboarded)", async () => {
+    const d = await approvedIndexDeps(ring0Repo({ "a.ts": "1" }));
+    const throwing: GitRunner = { run: async () => { throw new SindriError("SND-PROFILE-015", "planted", { exitCode: 1 }); } };
+    const r = await runCli(["repo", "status", "--json"], { ...d, git: throwing });
+    expect(r.exitCode).toBe(2);
+    expect(r.stdout).toContain("SND-PROFILE-015");
   });
 
   it("with no live profile left, a repo outside the approved one is not onboarded (no pending name); a vanished repo path is skipped", async () => {
@@ -347,6 +381,9 @@ describe("index commands and a repo that was added but not approved", () => {
     const skipped = r.stdout.split("\n").filter((l) => l.startsWith("skipped (in the live profile, not approved yet)"));
     expect(skipped).toEqual(["skipped (in the live profile, not approved yet): demo-app, demo-lib; run sindri profile approve"]);
     expect(fs.existsSync(indexPath(d, "demo-app"))).toBe(false);
+    const j = JSON.parse((await runCli(["index", "build", "--json"], d)).stdout) as { reports: { repo: string }[]; unapproved: string[] };
+    expect(j.unapproved).toEqual(["demo-app", "demo-lib"]);
+    expect(j.reports).toHaveLength(1);
     // After approval the line goes away and both are built.
     await approve(d);
     const after = await runCli(["index", "build"], d);

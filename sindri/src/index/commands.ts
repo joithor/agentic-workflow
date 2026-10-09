@@ -108,7 +108,7 @@ async function build(args: string[], deps: Deps, io: IndexIo): Promise<CommandRe
   const pending = values.repo === undefined ? unapprovedRepos(deps, loaded) : [];
   if (pending.length > 0) lines.push(`skipped (in the live profile, not approved yet): ${pending.join(", ")}; run sindri profile approve`);
   const text = lines.join("\n");
-  return success(text, reports, values.json === true);
+  return success(text, { reports, unapproved: pending }, values.json === true);
 }
 
 function age(ms: number): string {

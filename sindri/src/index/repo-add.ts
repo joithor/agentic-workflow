@@ -89,10 +89,15 @@ export const repoCommand: Command = async (args, deps) => {
           return quiet("");
         }
       }
-      // 0 onboarded, 1 not; an error is 2 (a SindriError through fromError, anything else SND-CLI-900),
-      // so the template hook can tell "not onboarded" from "could not tell".
-      const s = await repoState(deps, positionals[0] ?? ".");
-      return success(statusText(s), s, values.json === true, s.kind === "onboarded" ? 0 : 1);
+      // 0 onboarded, 1 not; every error is 2 (a SindriError here whatever its own exit code, anything
+      // else SND-CLI-900), so the template hook can tell "not onboarded" from "could not tell".
+      try {
+        const s = await repoState(deps, positionals[0] ?? ".");
+        return success(statusText(s), s, values.json === true, s.kind === "onboarded" ? 0 : 1);
+      } catch (e) {
+        if (!(e instanceof SindriError)) throw e;
+        return failure(e.code, e.message, values.json === true, { fix: e.fix, details: e.details, exitCode: 2 });
+      }
     }
     if (sub !== "add") return failure("SND-CLI-002", `unknown repo subcommand: ${sub ?? "(none)"}; use add, onboard or status`, json, { fix: "sindri repo --help" });
     const { values, positionals } = parseFlags(rest, { name: { type: "string" }, json: { type: "boolean" } });
