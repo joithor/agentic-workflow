@@ -111,17 +111,36 @@ describe("compareScopeDraft", () => {
     expect(ties).toMatchObject({ status: "inconclusive", wins: 0, losses: 0, ties: 22, winRate: 0, lower: 0 });
   });
 
-  it("an arm's output that leaks the test loses for the variant and ties for the current arm, unless the task itself said it", async () => {
-    const leakyDraft = (arm: string) => fake({ draft: (c) => map(c.system.includes("BETTER") ? "better" : "plain", c.system.includes(arm) ? "this is the better variant" : "") });
-    const variantLeaks = await compareScopeDraft(opts(holdout22, BETTER, leakyDraft("BETTER")));
+  it("compares arm output differentially on arm-identity terms: shared wording is judged, a one-sided leak loses that arm", async () => {
+    const draftWith = (variantDetail: string, currentDetail: string) =>
+      fake({ draft: (c) => (c.system.includes("BETTER") ? map("better", variantDetail) : map("plain", currentDetail)) });
+    const shared = await compareScopeDraft(opts(holdout22, BETTER, draftWith("enforce access control", "enforce access control")));
+    expect(shared).toMatchObject({ status: "won", wins: 22 });
+    expect(shared.perItem[0].verdict).toBe("variant");
+    const control = await compareScopeDraft(opts(holdout22, BETTER, draftWith("add a comparison scoring step for the control", "")));
+    expect(control.perItem[0].verdict).toBe("variant"); // bare meta words in an output are not leaks
+    const variantLeaks = await compareScopeDraft(opts(holdout22, BETTER, draftWith("the improved variant map", "")));
     expect(variantLeaks).toMatchObject({ status: "lost", wins: 0, losses: 22 });
     expect(variantLeaks.perItem[0].verdict).toBe("variant-leaked");
-    const currentLeaks = await compareScopeDraft(opts(holdout22, BETTER, leakyDraft("plain")));
-    expect(currentLeaks).toMatchObject({ status: "inconclusive", wins: 0, losses: 0, ties: 22 });
+    const currentLeaks = await compareScopeDraft(opts(holdout22, BETTER, draftWith("", "the BASELINE map")));
+    expect(currentLeaks).toMatchObject({ status: "won", wins: 22, losses: 0 });
     expect(currentLeaks.perItem[0].verdict).toBe("current-leaked");
-    // The brief says "variant" itself, so an output that repeats it isn't a leak.
+    const both = await compareScopeDraft(opts(holdout22, BETTER, draftWith("a candidate map", "the treatment map")));
+    expect(both).toMatchObject({ status: "inconclusive", ties: 22 });
+    expect(both.perItem[0].verdict).toBe("both-leaked");
+    // Material the task itself carried is not a leak, and a leak is scored even when the other arm's checks fail.
     const said = holdoutIds.slice(0, 22).map((id) => item(id, "support a variant of the form"));
-    expect((await compareScopeDraft(opts(said, BETTER, leakyDraft("BETTER")))).status).toBe("won");
+    expect((await compareScopeDraft(opts(said, BETTER, draftWith("the improved variant map", "")))).status).toBe("won");
+    const brokenCurrent = fake({ draft: (c) => (c.system.includes("BETTER") ? map("better", "version A is better") : { ...map("plain"), workstreams: [] }) });
+    expect((await compareScopeDraft(opts(holdout22, BETTER, brokenCurrent))).perItem[0].verdict).toBe("variant-leaked");
+  });
+
+  it("an output that copies a holdout title is a leak for that arm unless the brief carried it", async () => {
+    const titled = [item(holdoutIds[0], "brief", "Quarterly staffing overhaul"), ...holdoutIds.slice(1, 22).map((id) => item(id))];
+    const runner = fake({ draft: (c) => (c.system.includes("BETTER") ? map("better", "see Quarterly Staffing Overhaul") : map("plain", "")) });
+    const r = await compareScopeDraft(opts(titled, BETTER, runner));
+    expect(r.perItem.filter((p) => p.verdict === "variant-leaked").map((p) => p.id)).toEqual(holdoutIds.slice(1, 22));
+    expect(r.perItem[0].verdict).toBe("variant");
   });
 
   it("shows the judge no path or label that names the arms, and seeds the label order from the item and the variant", async () => {
@@ -160,26 +179,101 @@ describe("compareScopeDraft", () => {
     ]);
   });
 
-  it("treats a malformed draft or judge answer as a tie for that item, charged to the budget, without ending the run", async () => {
+  it("scores a failure on the variant arm only as a loss, on the current arm only or on both as a tie, charged to the budget", async () => {
     const budget = new Budget(1e9);
     const badDraft = fake({
       draft: (c) => {
-        if (c.input.includes("junk")) throw new ModelAnswerError("not a map", { inputTokens: 7, outputTokens: 0 });
-        if (c.input.includes("vonly") && c.system.includes("BETTER")) throw new ModelAnswerError("not a map either", { inputTokens: 7, outputTokens: 0 });
-        return map(c.system.includes("BETTER") ? "better" : "plain");
+        const v = c.system.includes("BETTER");
+        if (c.input.includes("both")) throw new ModelAnswerError("both failed", { inputTokens: 7, outputTokens: 0 });
+        if (c.input.includes("vonly") && v) throw new ModelAnswerError("variant failed", { inputTokens: 7, outputTokens: 0 });
+        if (c.input.includes("conly") && !v) throw new ModelAnswerError("current failed", { inputTokens: 7, outputTokens: 0 });
+        if (c.input.includes("vthrow") && v) throw new Error("variant exploded");
+        return map(v ? "better" : "plain");
       },
     });
-    const items = [item(holdoutIds[0], "junk"), item(holdoutIds[1], "vonly"), ...holdoutIds.slice(2, 22).map((id) => item(id))];
+    const items = [item(holdoutIds[0], "both"), item(holdoutIds[1], "vonly"), item(holdoutIds[2], "conly"), item(holdoutIds[3], "vthrow"), ...holdoutIds.slice(4, 44).map((id) => item(id))];
     const r = await compareScopeDraft({ ...opts(items, BETTER, badDraft), budget });
-    expect(r).toMatchObject({ status: "won", n: 22, wins: 20, ties: 2, errors: 2 });
-    expect(r.perItem.slice(0, 2)).toMatchObject([{ verdict: "tie", reason: "not a map" }, { verdict: "tie", reason: "not a map either" }]);
-    // 7 for the first failed draft; 2 + 7 for the second item (current draft, failed variant draft); 20 items x (2 drafts + 2 judge calls) at 2 tokens each
-    expect(budget.used).toBe(7 + 9 + 20 * 8);
+    expect(r.perItem.slice(0, 4)).toMatchObject([
+      { verdict: "tie", reason: "both failed" }, { verdict: "variant-errored", reason: "variant failed" },
+      { verdict: "tie", reason: "current failed" }, { verdict: "variant-errored", reason: "variant exploded" },
+    ]);
+    expect(r).toMatchObject({ n: 44, wins: 40, losses: 2, ties: 2, errors: 4 });
+    expect(r.status).toBe("won"); // 4 of 44 errors is under 10%
+    // both=7+7, vonly=2+7, conly=7+2, vthrow=2+0 (thrown), then 40 x 8
+    expect(budget.used).toBe(14 + 9 + 9 + 2 + 40 * 8);
+  });
+
+  it("is inconclusive when more than 10% of the holdout errored, whatever the win rate (selective abstention)", async () => {
+    const abstain = fake({ draft: (c) => { if (c.input.includes("abstain") && c.system.includes("BETTER")) throw new ModelAnswerError("no map", usage); return map(c.system.includes("BETTER") ? "better" : "plain"); } });
+    const many = [...holdoutIds.slice(0, 12).map((id) => item(id, "abstain")), ...holdoutIds.slice(12, 22).map((id) => item(id))];
+    const r = await compareScopeDraft(opts(many, BETTER, abstain));
+    expect(r).toMatchObject({ status: "inconclusive", wins: 10, losses: 12, errors: 12 });
+    const three = [...holdoutIds.slice(0, 3).map((id) => item(id, "boom")), ...holdoutIds.slice(3, 22).map((id) => item(id))];
+    const boom = fake({ draft: (c) => { if (c.input.includes("boom")) throw new Error("boom"); return map(c.system.includes("BETTER") ? "better" : "plain"); } });
+    expect(await compareScopeDraft(opts(three, BETTER, boom))).toMatchObject({ status: "inconclusive", errors: 3, wins: 19 });
+    const two = [...holdoutIds.slice(0, 2).map((id) => item(id, "boom")), ...holdoutIds.slice(2, 22).map((id) => item(id))];
+    expect((await compareScopeDraft(opts(two, BETTER, boom))).status).toBe("won");
+  });
+
+  it("treats a malformed judge answer as a tie for that item without ending the run", async () => {
     let n = 0;
     const badJudge = fake({ judgeFails: () => { if (n++ === 0) throw new ModelAnswerError("not a verdict", { inputTokens: 1, outputTokens: 1 }); } });
     const j = await compareScopeDraft(opts(holdout22, BETTER, badJudge));
     expect(j).toMatchObject({ status: "won", n: 22, wins: 21, ties: 1, errors: 1 });
     expect(j.perItem[0]).toMatchObject({ verdict: "tie", reason: "not a verdict" });
+    let m = 0;
+    const crashing = fake({ judgeFails: () => { if (m++ === 0) throw new Error("judge exploded"); } });
+    const c = await compareScopeDraft(opts(holdout22, BETTER, crashing));
+    expect(c.perItem[0]).toEqual({ id: holdout22[0].id, verdict: "tie", reason: "judge exploded" });
+    expect(c.status).toBe("won");
+    let k = 0;
+    const odd = fake({ judgeFails: () => { if (k++ === 0) throw "judge string"; } });
+    expect((await compareScopeDraft(opts(holdout22, BETTER, odd))).perItem[0].reason).toBe("judge string");
+  });
+
+  describe("the bar, exactly", () => {
+    const pool = Array.from({ length: 5000 }, (_, i) => `bar-${i}`).filter(isHoldout);
+    // `win` items are preferred for the variant, `lose` for the plain arm, `tie` is a tie.
+    const judged = (win: number, lose: number, tie: number): ReplayItem[] =>
+      [...Array(win).fill("win"), ...Array(lose).fill("lose"), ...Array(tie).fill("tie")].map((t, i) => item(pool[i], t));
+    const runner = fake({
+      judge: (input) => {
+        const task = /<untrusted id="task">(\w+)</.exec(input)?.[1];
+        const a = input.indexOf('id="output-A"');
+        const b = input.indexOf('id="output-B"');
+        const better = input.indexOf("better") > a && input.indexOf("better") < b ? "A" : "B";
+        const plain = better === "A" ? "B" : "A";
+        return task === "win" ? better : task === "lose" ? plain : "tie";
+      },
+    });
+    const run = (win: number, lose: number, tie: number) => compareScopeDraft(opts(judged(win, lose, tie), BETTER, runner));
+
+    it("needs 20 holdout items: 19 is insufficient-corpus, 20 is evaluated", async () => {
+      expect((await run(19, 0, 0)).status).toBe("insufficient-corpus");
+      expect((await run(20, 0, 0)).status).toBe("won");
+    });
+    it("needs 10 decided pairs: 9 is inconclusive, 10 is evaluated", async () => {
+      expect((await run(9, 0, 11)).status).toBe("inconclusive");
+      expect((await run(10, 0, 10)).status).toBe("won");
+    });
+    it("needs a Wilson lower bound above 0.5: 9 of 10 wins, 8 of 10 loses", async () => {
+      const nine = await run(9, 1, 10);
+      expect(nine.status).toBe("won");
+      expect(nine.lower).toBeCloseTo(0.596, 2);
+      const eight = await run(8, 2, 10);
+      expect(eight.status).toBe("lost");
+      expect(eight.lower).toBeCloseTo(0.49, 2);
+    });
+    it("passes a win rate of exactly 0.6 when the bound allows it, and fails 59 of 100", async () => {
+      const sixty = await run(60, 40, 0);
+      expect(sixty).toMatchObject({ status: "won", winRate: 0.6 });
+      expect(sixty.lower).toBeCloseTo(0.502, 2);
+      expect((await run(59, 41, 0)).status).toBe("lost");
+      // A rate under 0.6 fails even when the bound clears 0.5.
+      const big = await run(175, 125, 0);
+      expect(big.lower).toBeGreaterThan(0.5);
+      expect(big.status).toBe("lost");
+    });
   });
 
   it("stops without a verdict when the budget runs out between items, inside the judge, or before the second draft", async () => {

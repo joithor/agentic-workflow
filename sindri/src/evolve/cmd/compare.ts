@@ -77,12 +77,18 @@ export async function compare(args: string[], ctx: EvolveCtx): Promise<CommandRe
     const text = [`Stored result (run ${prev.run}): ${line}`, "A proposal is compared once; pass --rerun to compare again (the rerun is recorded).", `Next: ${nextFor(prev.verdict, id)}`].join("\n");
     return success(text, { id, status: prev.verdict, run: prev.run, line, stored: true }, json);
   }
-  const run = prev === undefined ? 1 : prev.run + 1;
   const budgetLimit = ctx.loaded.profile.evolve.maxTokensPerCompare;
   const corpus = readCorpus(ctx.deps, "scope.draft").items;
   const total = split(corpus).holdout.length;
   // No tick lock is held while the models run: each ledger write below takes it only for its own batch.
-  await ctx.writeRetry((epoch) => setStatus(ctx.db, id, "evaluating", epoch, ctx.deps.now()));
+  // The run number is taken, and recorded as a `running` row, inside the write that sets `evaluating`, so two
+  // comparisons that overlap can't share one. A crashed run leaves its row; the next run numbers after it.
+  const run = await ctx.writeRetry((epoch) => {
+    const next = (ctx.db.prepare("SELECT COALESCE(MAX(run), 0) + 1 AS n FROM comparisons WHERE proposal_id = ?").get(id) as { n: number }).n;
+    ctx.db.prepare("INSERT INTO comparisons (proposal_id, run, item_id, verdict, detail, ts, epoch) VALUES (?, ?, '*', 'running', '{}', ?, ?)").run(id, next, ctx.deps.now().toISOString(), epoch);
+    setStatus(ctx.db, id, "evaluating", epoch, ctx.deps.now());
+    return next;
+  });
   let result: CompareResult;
   try {
     result = await compareScopeDraft({

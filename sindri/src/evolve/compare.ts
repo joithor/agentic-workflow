@@ -13,9 +13,11 @@ import { defaultPrompt, hasSafetyClause } from "./prompts.js";
 import { wilsonLower } from "./stats.js";
 
 export type CompareStatus = "won" | "lost" | "inconclusive" | "insufficient-corpus" | "leaky-variant" | "missing-safety-clause" | "incomplete";
-// `variant-leaked` is a loss for the variant arm (a variant must not be able to turn a lost item into a
-// tie by leaking). `current-leaked` is a tie: the variant cannot cause it, so it must not earn a win.
-export type ItemVerdict = Preference | "variant-failed-checks" | "current-failed-checks" | "variant-leaked" | "current-leaked";
+// An arm whose output carries an arm-identity term the other arm lacks (and the task never said) loses
+// the item: `variant-leaked` is a loss, `current-leaked` a win. Both arms leaking is a tie (`both-leaked`).
+// A failure on the variant arm alone is a loss (`variant-errored`) so a variant can't abstain on items it
+// would lose; a failure on the current arm alone, or on both, is a tie.
+export type ItemVerdict = Preference | "variant-failed-checks" | "current-failed-checks" | "variant-leaked" | "current-leaked" | "both-leaked" | "variant-errored";
 
 export interface CompareResult {
   status: CompareStatus;
@@ -69,19 +71,29 @@ async function draftWith(item: ReplayItem, system: string, o: Gen): Promise<Mapp
   return { kind: "map", ok: checkMap(a.value, refs).length === 0, json: JSON.stringify(a.value) };
 }
 
-async function draftBoth(item: ReplayItem, o: { current: string; variant: string }, gen: Gen): Promise<Failed | { kind: "pair"; cur: Mapped; vari: Mapped }> {
-  const cur = await draftWith(item, o.current, gen);
-  if (cur.kind === "failed") return cur;
-  const vari = await draftWith(item, o.variant, gen);
-  return vari.kind === "failed" ? vari : { kind: "pair", cur, vari };
+// A draft that throws is a failed draft too, so the failing arm is always known.
+async function tryDraft(item: ReplayItem, system: string, o: Gen): Promise<Mapped | Failed> {
+  try {
+    return await draftWith(item, system, o);
+  } catch (e) {
+    return { kind: "failed", why: e instanceof Error ? e.message : String(e) };
+  }
 }
 
 const empty = (status: CompareStatus, leaks: string[], n = 0): CompareResult => ({ status, n, wins: 0, losses: 0, ties: 0, errors: 0, winRate: 0, lower: 0, leaks, perItem: [] });
 
-// Meta words a scope map says that nothing it was given said first.
-function outputLeaks(json: string, given: Set<string>): string[] {
-  return lintLeaks(json).filter((f) => !given.has(f));
+// Arm-identity terms only: words that would tell the judge which output is the variant. Bare words such as
+// control or comparison are ordinary in a scope map and are not checked here.
+const ARM_TERMS = /\b(?:variant|baseline|candidate|treatment)\b|\bcontrol (?:arm|group)\b|\b(?:arm|version) [ab]\b/gi;
+
+function armFindings(text: string, titles: readonly string[]): Set<string> {
+  const found = new Set((text.match(ARM_TERMS) ?? []).map((t) => t.toLowerCase()));
+  for (const f of lintLeaks(text, titles)) if (f.startsWith("holdout-title:")) found.add(f);
+  return found;
 }
+
+// What one arm's output says that the other arm's output and the given material do not.
+const onlyIn = (mine: Set<string>, other: Set<string>, given: Set<string>): boolean => [...mine].some((f) => !other.has(f) && !given.has(f));
 
 export async function compareScopeDraft(o: {
   items: ReplayItem[]; current: string; variant: string; runner: ModelRunner; models: { scoping: string; judge: string };
@@ -104,20 +116,26 @@ export async function compareScopeDraft(o: {
       break;
     }
     try {
-      const d = await draftBoth(item, o, gen);
-      if (d.kind === "failed") {
+      const cur = await tryDraft(item, o.current, gen);
+      const vari = await tryDraft(item, o.variant, gen);
+      if (cur.kind === "failed" || vari.kind === "failed") {
         if (o.budget.exhausted()) {
           incomplete = true;
           break;
         }
-        perItem.push({ id: item.id, verdict: "tie", reason: d.why });
+        if (cur.kind === "failed") perItem.push({ id: item.id, verdict: "tie", reason: cur.why });
+        else perItem.push({ id: item.id, verdict: "variant-errored", reason: (vari as Failed).why });
       } else {
-        const { cur, vari } = d;
-        const given = new Set(lintLeaks([item.brief, ...item.records].map((r) => `${r.title}\n${r.text}`).join("\n")));
-        if (outputLeaks(vari.json, given).length > 0) perItem.push({ id: item.id, verdict: "variant-leaked" });
+        const given = armFindings([item.brief, ...item.records].map((r) => `${r.title}\n${r.text}`).join("\n"), titles);
+        const mine = armFindings(vari.json, titles);
+        const theirs = armFindings(cur.json, titles);
+        const vLeak = onlyIn(mine, theirs, given);
+        const cLeak = onlyIn(theirs, mine, given);
+        if (vLeak && cLeak) perItem.push({ id: item.id, verdict: "both-leaked" });
+        else if (vLeak) perItem.push({ id: item.id, verdict: "variant-leaked" });
+        else if (cLeak) perItem.push({ id: item.id, verdict: "current-leaked" });
         else if (!vari.ok) perItem.push({ id: item.id, verdict: "variant-failed-checks" });
         else if (!cur.ok) perItem.push({ id: item.id, verdict: "current-failed-checks" });
-        else if (outputLeaks(cur.json, given).length > 0) perItem.push({ id: item.id, verdict: "current-leaked" });
         else {
           // The seed binds the label order to the item and the variant, so a variant can't be tuned to an item's order.
           const j = await judgePair({ runner: o.runner, model: o.models.judge, budget: o.budget, task: item.brief.text, current: cur.json, variant: vari.json, seed: `${item.id}:${variantHash}` });
@@ -134,8 +152,8 @@ export async function compareScopeDraft(o: {
     }
     o.onProgress?.(perItem.length, holdout.length);
   }
-  const wins = perItem.filter((p) => p.verdict === "variant" || p.verdict === "current-failed-checks").length;
-  const losses = perItem.filter((p) => p.verdict === "current" || p.verdict === "variant-failed-checks" || p.verdict === "variant-leaked").length;
+  const wins = perItem.filter((p) => p.verdict === "variant" || p.verdict === "current-failed-checks" || p.verdict === "current-leaked").length;
+  const losses = perItem.filter((p) => p.verdict === "current" || p.verdict === "variant-failed-checks" || p.verdict === "variant-leaked" || p.verdict === "variant-errored").length;
   const ties = perItem.length - wins - losses;
   const decided = wins + losses;
   const winRate = decided === 0 ? 0 : wins / decided;
@@ -143,7 +161,7 @@ export async function compareScopeDraft(o: {
   const errors = perItem.filter((p) => p.reason !== undefined).length;
   let status: CompareStatus = "lost";
   if (incomplete) status = "incomplete";
-  else if (decided < MIN_DECIDED) status = "inconclusive";
+  else if (errors * 10 > holdout.length || decided < MIN_DECIDED) status = "inconclusive";
   else if (winRate >= 0.6 && lower > 0.5) status = "won";
   return { status, n: perItem.length, wins, losses, ties, errors, winRate, lower, leaks: [], perItem };
 }

@@ -174,4 +174,19 @@ describe("sindri evolve compare", () => {
     expect(fx.ctx.db.prepare("SELECT COUNT(*) AS c FROM comparisons").get()).toEqual({ c: 0 });
     fx.close();
   });
+
+  it("gives two interleaved comparisons of one proposal different run numbers", async () => {
+    const { fx, save } = await ready(22);
+    const id = save();
+    let release: () => void = () => undefined;
+    const gate = new Promise<void>((r) => { release = r; });
+    const inner = fx.ctx.io.runner(fx.ctx.loaded, undefined as never);
+    const gated = { ...fx.ctx, io: { ...fx.ctx.io, runner: () => ({ run: async <T,>(c: Parameters<typeof inner.run<T>>[0]) => { await gate; return inner.run(c); } }) } };
+    const first = compare([id, "--json"], gated);
+    const second = compare([id, "--json"], gated);
+    release();
+    const runs = (await Promise.all([first, second])).map((r) => (JSON.parse(r.stdout) as { run: number }).run).sort();
+    expect(runs).toEqual([1, 2]);
+    fx.close();
+  });
 });
