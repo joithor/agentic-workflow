@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 
 import { compare } from "../src/evolve/cmd/compare.js";
+import { show } from "../src/evolve/cmd/proposals.js";
+import { init } from "../src/evolve/cmd/registry.js";
 import { isHoldout, saveReplay, type ReplayItem } from "../src/evolve/corpus.js";
 import { ProposalSchema, getProposal, saveProposal, setStatus, type ProposalStatus } from "../src/evolve/proposals.js";
 import { SOURCES_CLAUSE } from "../src/evolve/prompts.js";
@@ -118,7 +120,7 @@ describe("sindri evolve compare", () => {
     const id = save();
     const r = await compare([id], fx.ctx);
     expect(r.exitCode).toBe(0);
-    expect(r.stdout).toBe(`lost: 0 of 21 decided pairs (win rate 0.00, lower bound 0.00) on 22 holdout items; 1 ties. 1 item(s) errored and count as ties.\nNext: sindri evolve reject ${id} --reason "lost the comparison"\n`);
+    expect(r.stdout).toBe(`lost: 0 of 21 decided pairs (win rate 0.00, lower bound 0.00) on 22 holdout items; 1 ties. 1 item(s) errored (a failure on the variant alone counts as a loss, any other as a tie).\nNext: sindri evolve reject ${id} --reason "lost the comparison"\n`);
     expect(status(fx, id)).toBe("lost");
     expect(fx.ctx.db.prepare("SELECT detail FROM comparisons WHERE proposal_id = ? AND item_id = ?").get(id, holdoutIds[0])).toEqual({ detail: '{"reason":"model exploded"}' });
     fx.ctx.db.prepare("UPDATE comparisons SET verdict = 'incomplete' WHERE proposal_id = ? AND item_id = '*'").run(id); // as if the last run had stopped early
@@ -175,7 +177,7 @@ describe("sindri evolve compare", () => {
     fx.close();
   });
 
-  it("gives two interleaved comparisons of one proposal different run numbers", async () => {
+  it("refuses a second plain compare while one is running, numbers overlapping --rerun runs apart, and judges 'latest' by run number", async () => {
     const { fx, save } = await ready(22);
     const id = save();
     let release: () => void = () => undefined;
@@ -183,10 +185,66 @@ describe("sindri evolve compare", () => {
     const inner = fx.ctx.io.runner(fx.ctx.loaded, undefined as never);
     const gated = { ...fx.ctx, io: { ...fx.ctx.io, runner: () => ({ run: async <T,>(c: Parameters<typeof inner.run<T>>[0]) => { await gate; return inner.run(c); } }) } };
     const first = compare([id, "--json"], gated);
-    const second = compare([id, "--json"], gated);
+    await expect(compare([id], gated)).rejects.toThrow(/already running \(run 1\)/);
+    const second = compare([id, "--rerun", "--json"], gated);
     release();
     const runs = (await Promise.all([first, second])).map((r) => (JSON.parse(r.stdout) as { run: number }).run).sort();
     expect(runs).toEqual([1, 2]);
+    // A slow run 1 that finishes after run 2 started doesn't make run 1 the latest.
+    const other = save({ title: "Another draft prompt" });
+    const row = (run: number, verdict: string, detail: string) =>
+      fx.ctx.db.prepare("INSERT INTO comparisons (proposal_id, run, item_id, verdict, detail, ts, epoch) VALUES (?, ?, '*', ?, ?, 't', 1)").run(other, run, verdict, detail);
+    row(2, "running", "{}");
+    row(1, "won", JSON.stringify({ line: "won: late" }));
+    await expect(compare([other], fx.ctx)).rejects.toThrow(/already running \(run 2\)/);
+    fx.close();
+  });
+
+  it("shows a proposal during a comparison and after a failed one, instead of failing on the running row", async () => {
+    const { fx, save } = await ready(22);
+    await init([], fx.ctx);
+    const id = save();
+    fx.ctx.db.prepare("INSERT INTO comparisons (proposal_id, run, item_id, verdict, detail, ts, epoch) VALUES (?, 1, '*', 'running', '{}', 't', 1)").run(id);
+    expect((await show([id], fx.ctx)).stdout).toContain("A comparison is running (run 1)");
+    fx.ctx.db.prepare("DELETE FROM comparisons").run();
+    const m = fx.ctx.loaded.profile.models;
+    const sameJudge = { ...fx.ctx, loaded: { ...fx.ctx.loaded, profile: { ...fx.ctx.loaded.profile, models: { ...m, adjudicator: m.scoping } } } };
+    await expect(compare([id], sameJudge)).rejects.toThrow(/judge model must differ/);
+    const shown = (await show([id], fx.ctx)).stdout;
+    expect(shown).toContain("Comparison (run 1): errored: the judge model must differ");
+    expect(shown).not.toContain("is running");
+    expect((await compare([id], fx.ctx)).exitCode).toBe(0); // an errored run doesn't block the next
+    fx.close();
+  });
+
+  it("scrubs the message of a failed comparison before storing it", async () => {
+    const { fx, save } = await ready(22);
+    const secret = "AKIA" + "ABCDEFGHIJKLMNOP";
+    const id = save();
+    const boom = { ...fx.ctx, io: { ...fx.ctx.io, runner: () => { throw new Error(`no runner ${secret}`); } } };
+    await expect(compare([id], boom)).rejects.toThrow();
+    const row = fx.ctx.db.prepare("SELECT detail FROM comparisons WHERE proposal_id = ? AND verdict = 'errored'").get(id) as { detail: string };
+    expect(row.detail).not.toContain(secret);
+    fx.close();
+  });
+
+  it("names the cause of an inconclusive result: too many errors, too few decided pairs, or both", async () => {
+    const items = [...holdoutIds.slice(0, 3).map((id) => item(id, "boom")), ...holdoutIds.slice(3, 22).map((id) => item(id))];
+    const errs = await ready(0, { io: scriptedEvolveIo(script), items });
+    const r = await compare([errs.save()], errs.fx.ctx);
+    expect(r.stdout).toContain("inconclusive: 3 of 22 items errored, more than 10%; 3 ties. 3 item(s) errored");
+    errs.fx.close();
+    const both = await ready(0, { io: scriptedEvolveIo((c) => (c.model === "sonnet" ? script(c) : { winner: "tie", reasons: [] })), items });
+    expect((await compare([both.save()], both.fx.ctx)).stdout).toContain("inconclusive: 3 of 22 items errored, more than 10%; only 0 of 22 pairs were decided (need 10); 22 ties.");
+    both.fx.close();
+  });
+
+  it("records a failure that isn't an Error object", async () => {
+    const { fx, save } = await ready(22);
+    const id = save();
+    const odd = { ...fx.ctx, io: { ...fx.ctx.io, runner: () => { throw "plain string"; } } };
+    await expect(compare([id], odd)).rejects.toBe("plain string");
+    expect(fx.ctx.db.prepare("SELECT detail FROM comparisons WHERE proposal_id = ? AND verdict = 'errored'").get(id)).toEqual({ detail: '{"line":"errored: plain string"}' });
     fx.close();
   });
 });

@@ -152,12 +152,21 @@ export function inFlightCount(db: Ledger): number {
 
 const SummaryDetail = z.object({ line: z.string() });
 
-// The newest comparison summary row (item_id '*'), written by `evolve compare`.
+// The latest finished comparison (item_id '*'): the highest run number, not the last row to finish, and never
+// a `running` marker, which carries no summary.
 export function latestComparison(db: Ledger, id: string): { run: number; status: string; line: string } | null {
-  const r = db.prepare("SELECT run, verdict, detail FROM comparisons WHERE proposal_id = ? AND item_id = '*' ORDER BY seq DESC LIMIT 1").get(id) as
+  const r = db.prepare("SELECT run, verdict, detail FROM comparisons WHERE proposal_id = ? AND item_id = '*' AND verdict != 'running' ORDER BY run DESC, seq DESC LIMIT 1").get(id) as
     | { run: number; verdict: string; detail: string }
     | undefined;
   return r === undefined ? null : { run: r.run, status: r.verdict, line: SummaryDetail.parse(JSON.parse(r.detail)).line };
+}
+
+// The run number of a comparison that has started and not closed (no summary row after its `running` marker), or null.
+export function runningComparison(db: Ledger, id: string): number | null {
+  const r = db.prepare(
+    "SELECT run FROM comparisons m WHERE proposal_id = ? AND item_id = '*' AND verdict = 'running' AND NOT EXISTS (SELECT 1 FROM comparisons c WHERE c.proposal_id = m.proposal_id AND c.run = m.run AND c.item_id = '*' AND c.verdict != 'running') ORDER BY run DESC LIMIT 1",
+  ).get(id) as { run: number } | undefined;
+  return r === undefined ? null : r.run;
 }
 
 // pr:<n> and transcript:<session-prefix>#<line> only: no project directory names, no free text.

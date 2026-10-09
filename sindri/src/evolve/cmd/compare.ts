@@ -3,7 +3,7 @@ import { SindriError } from "../../errors.js";
 import { success, type CommandResult } from "../../output.js";
 import { profileScrubber } from "../../scope/commands.js";
 import { Budget } from "../../scope/model.js";
-import { compareScopeDraft, MIN_DECIDED, MIN_ITEMS, type CompareResult, type CompareStatus } from "../compare.js";
+import { compareScopeDraft, MIN_DECIDED, MIN_ITEMS, tooManyErrors, type CompareResult, type CompareStatus } from "../compare.js";
 import { readCorpus, split } from "../corpus.js";
 import type { EvolveCtx } from "../ctx.js";
 import { loadPrompt } from "../overlay.js";
@@ -28,13 +28,16 @@ const proposalStatusFor = (s: CompareStatus, before: ProposalStatus): ProposalSt
 
 function lineFor(r: CompareResult, budget: number): string {
   const rate = `win rate ${r.winRate.toFixed(2)}, lower bound ${r.lower.toFixed(2)}`;
-  const tail = r.errors > 0 ? ` ${r.errors} item(s) errored and count as ties.` : "";
+  const tail = r.errors > 0 ? ` ${r.errors} item(s) errored (a failure on the variant alone counts as a loss, any other as a tie).` : "";
   switch (r.status) {
     case "won":
     case "lost":
       return `${r.status}: ${r.wins} of ${r.wins + r.losses} decided pairs (${rate}) on ${r.n} holdout items; ${r.ties} ties.${tail}`;
     case "inconclusive":
-      return `inconclusive: only ${r.wins + r.losses} of ${r.n} pairs were decided (need ${MIN_DECIDED}); ${r.ties} ties.${tail}`;
+      return `inconclusive: ${[
+        ...(tooManyErrors(r.errors, r.n) ? [`${r.errors} of ${r.n} items errored, more than 10%`] : []),
+        ...(r.wins + r.losses < MIN_DECIDED ? [`only ${r.wins + r.losses} of ${r.n} pairs were decided (need ${MIN_DECIDED})`] : []),
+      ].join("; ")}; ${r.ties} ties.${tail}`;
     case "insufficient-corpus":
       return `insufficient-corpus: ${r.n} holdout items, need ${MIN_ITEMS}. About ${Math.ceil(((MIN_ITEMS - r.n) * 10) / 3)} more scope runs would add the missing ${MIN_ITEMS - r.n}.`;
     case "leaky-variant":
@@ -68,27 +71,32 @@ export async function compare(args: string[], ctx: EvolveCtx): Promise<CommandRe
   if (stored.proposal.change.type !== "replace-prompt" || stored.artifact !== "prompt:scope.draft") {
     throw new SindriError("SND-EVOLVE-002", `no offline comparison for ${stored.artifact} yet (spec amendment 4)`);
   }
-  if (!COMPARABLE.includes(stored.status)) throw new SindriError("SND-EVOLVE-016", `proposal ${id} is ${stored.status}; it is not compared again`);
-  const prev = ctx.db.prepare("SELECT run, verdict, detail FROM comparisons WHERE proposal_id = ? AND item_id = '*' ORDER BY seq DESC LIMIT 1").get(id) as
-    | { run: number; verdict: CompareStatus; detail: string }
-    | undefined;
-  if (prev !== undefined && VERDICTS.includes(prev.verdict) && values.rerun !== true) {
-    const line = (JSON.parse(prev.detail) as { line: string }).line;
-    const text = [`Stored result (run ${prev.run}): ${line}`, "A proposal is compared once; pass --rerun to compare again (the rerun is recorded).", `Next: ${nextFor(prev.verdict, id)}`].join("\n");
-    return success(text, { id, status: prev.verdict, run: prev.run, line, stored: true }, json);
-  }
   const budgetLimit = ctx.loaded.profile.evolve.maxTokensPerCompare;
   const corpus = readCorpus(ctx.deps, "scope.draft").items;
   const total = split(corpus).holdout.length;
-  // No tick lock is held while the models run: each ledger write below takes it only for its own batch.
-  // The run number is taken, and recorded as a `running` row, inside the write that sets `evaluating`, so two
-  // comparisons that overlap can't share one. A crashed run leaves its row; the next run numbers after it.
-  const run = await ctx.writeRetry((epoch) => {
+  // No tick lock is held while the models run: each ledger write takes it only for its own batch. The status
+  // check, the compared-once check, the run number and the `running` marker all happen in ONE write, so two
+  // overlapping comparisons can't both pass the check or share a run number. "Latest" is the highest run number.
+  const start = await ctx.writeRetry((epoch) => {
+    const now = (ctx.db.prepare("SELECT status FROM proposals WHERE id = ?").get(id) as { status: ProposalStatus }).status;
+    if (!COMPARABLE.includes(now)) throw new SindriError("SND-EVOLVE-016", `proposal ${id} is ${now}; it is not compared again`);
+    const prev = ctx.db.prepare("SELECT run, verdict, detail FROM comparisons WHERE proposal_id = ? AND item_id = '*' ORDER BY run DESC, seq DESC LIMIT 1").get(id) as
+      | { run: number; verdict: string; detail: string }
+      | undefined;
+    if (values.rerun !== true && prev !== undefined) {
+      if (prev.verdict === "running") throw new SindriError("SND-EVOLVE-016", `a comparison of ${id} is already running (run ${prev.run}); pass --rerun to start another`);
+      if (VERDICTS.includes(prev.verdict as CompareStatus)) return { kind: "stored" as const, run: prev.run, verdict: prev.verdict as CompareStatus, line: (JSON.parse(prev.detail) as { line: string }).line };
+    }
     const next = (ctx.db.prepare("SELECT COALESCE(MAX(run), 0) + 1 AS n FROM comparisons WHERE proposal_id = ?").get(id) as { n: number }).n;
     ctx.db.prepare("INSERT INTO comparisons (proposal_id, run, item_id, verdict, detail, ts, epoch) VALUES (?, ?, '*', 'running', '{}', ?, ?)").run(id, next, ctx.deps.now().toISOString(), epoch);
     setStatus(ctx.db, id, "evaluating", epoch, ctx.deps.now());
-    return next;
+    return { kind: "go" as const, run: next, before: now };
   });
+  if (start.kind === "stored") {
+    const text = [`Stored result (run ${start.run}): ${start.line}`, "A proposal is compared once; pass --rerun to compare again (the rerun is recorded).", `Next: ${nextFor(start.verdict, id)}`].join("\n");
+    return success(text, { id, status: start.verdict, run: start.run, line: start.line, stored: true }, json);
+  }
+  const { run, before } = start;
   let result: CompareResult;
   try {
     result = await compareScopeDraft({
@@ -99,7 +107,13 @@ export async function compare(args: string[], ctx: EvolveCtx): Promise<CommandRe
     });
   } catch (e) {
     // SND-EVOLVE-009 (judge = drafter) or anything unexpected: don't strand the proposal in `evaluating`.
-    await ctx.writeRetry((epoch) => setStatus(ctx.db, id, stored.status === "evaluating" ? "proposed" : stored.status, epoch, ctx.deps.now()));
+    // Close the run with an `errored` row so a crash never leaves a dangling `running` marker.
+    const message = profileScrubber(ctx.loaded).scrub(e instanceof Error ? e.message : String(e)).text;
+    await ctx.writeRetry((epoch) => {
+      ctx.db.prepare("INSERT INTO comparisons (proposal_id, run, item_id, verdict, detail, ts, epoch) VALUES (?, ?, '*', 'errored', ?, ?, ?)")
+        .run(id, run, JSON.stringify({ line: `errored: ${message}` }), ctx.deps.now().toISOString(), epoch);
+      setStatus(ctx.db, id, before === "evaluating" ? "proposed" : before, epoch, ctx.deps.now());
+    });
     throw e;
   }
   const line = lineFor(result, budgetLimit);
@@ -110,7 +124,7 @@ export async function compare(args: string[], ctx: EvolveCtx): Promise<CommandRe
     }
     const summary = { status: result.status, n: result.n, wins: result.wins, losses: result.losses, ties: result.ties, errors: result.errors, winRate: result.winRate, lower: result.lower, leaks: result.leaks, line };
     ctx.db.prepare("INSERT INTO comparisons (proposal_id, run, item_id, verdict, detail, ts, epoch) VALUES (?, ?, '*', ?, ?, ?, ?)").run(id, run, result.status, JSON.stringify(summary), ts, epoch);
-    setStatus(ctx.db, id, proposalStatusFor(result.status, stored.status), epoch, ctx.deps.now());
+    setStatus(ctx.db, id, proposalStatusFor(result.status, before), epoch, ctx.deps.now());
   });
   const decisive = result.status === "won" || result.status === "lost";
   return success(`${line}\nNext: ${nextFor(result.status, id)}`, { id, run, ...result, line, stored: false }, json, decisive ? 0 : 1);

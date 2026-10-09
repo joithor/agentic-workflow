@@ -6,7 +6,7 @@ import { success, type CommandResult } from "../../output.js";
 import { audit } from "../audit.js";
 import { repoConfig, type EvolveCtx } from "../ctx.js";
 import {
-  classifyTier, getProposal, latestComparison, listProposals, nextFor, owns, reduceEvidence, setStatus, stagedFile, STATUSES, TERMINAL, type ProposalStatus,
+  classifyTier, getProposal, latestComparison, listProposals, nextFor, owns, reduceEvidence, runningComparison, setStatus, stagedFile, STATUSES, TERMINAL, type ProposalStatus,
 } from "../proposals.js";
 import { isAddedTestAllowed, isProtectedPath, loadRegistry } from "../registry.js";
 import { excerptFor, transcriptsDir } from "../transcripts.js";
@@ -41,6 +41,7 @@ export async function show(args: string[], ctx: EvolveCtx): Promise<CommandResul
   const tierText = now.tier === s.tier ? `${s.tier} (${now.why})` : `${s.tier} (recomputed: ${now.tier}, ${now.why})`;
   const ev = reduceEvidence(p.evidence);
   const cmp = latestComparison(ctx.db, id);
+  const running = runningComparison(ctx.db, id);
   const indent = (t: string): string => t.split("\n").map((l) => `  ${l}`).join("\n");
   const dir = transcriptsDir(ctx);
   const excerpts = ev.refs.flatMap((r) => {
@@ -57,6 +58,7 @@ export async function show(args: string[], ctx: EvolveCtx): Promise<CommandResul
     `Evidence: ${ev.refs.length > 0 ? ev.refs.join(", ") : "none recorded"}${ev.withheld > 0 ? ` (${ev.withheld} reference(s) withheld)` : ""}`,
     ...(excerpts.length > 0 ? ["Excerpts:", ...excerpts] : []),
     ...(cmp === null ? [] : [`Comparison (run ${cmp.run}): ${cmp.line}`]),
+    ...(running === null ? [] : [`A comparison is running (run ${running}).`]),
     `Next: ${nextFor(s)}`,
   ];
   return success(lines.join("\n"), { ...s, recomputed: now, evidence: ev.refs, comparison: cmp }, values.json === true);

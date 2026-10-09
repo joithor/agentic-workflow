@@ -231,6 +231,13 @@ describe("compareScopeDraft", () => {
     expect((await compareScopeDraft(opts(holdout22, BETTER, odd))).perItem[0].reason).toBe("judge string");
   });
 
+  it("draws the error line at exactly 10% of the holdout: 2 of 20 is evaluated, 3 of 20 is inconclusive", async () => {
+    const boom = fake({ draft: (c) => { if (c.input.includes("boom")) throw new Error("boom"); return map(c.system.includes("BETTER") ? "better" : "plain"); } });
+    const twenty = (bad: number) => [...holdoutIds.slice(0, bad).map((id) => item(id, "boom")), ...holdoutIds.slice(bad, 20).map((id) => item(id))];
+    expect(await compareScopeDraft(opts(twenty(2), BETTER, boom))).toMatchObject({ status: "won", errors: 2 });
+    expect(await compareScopeDraft(opts(twenty(3), BETTER, boom))).toMatchObject({ status: "inconclusive", errors: 3 });
+  });
+
   describe("the bar, exactly", () => {
     const pool = Array.from({ length: 5000 }, (_, i) => `bar-${i}`).filter(isHoldout);
     // `win` items are preferred for the variant, `lose` for the plain arm, `tie` is a tie.

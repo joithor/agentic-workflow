@@ -35,6 +35,8 @@ export interface CompareResult {
 export const MIN_ITEMS = 20;
 export const MIN_DECIDED = 10;
 const MIN_TITLE = 12;
+// More than 10% of the holdout errored: whatever the win rate, the run decides nothing.
+export const tooManyErrors = (errors: number, holdout: number): boolean => errors * 10 > holdout;
 
 interface Gen {
   runner: ModelRunner;
@@ -161,7 +163,7 @@ export async function compareScopeDraft(o: {
   const errors = perItem.filter((p) => p.reason !== undefined).length;
   let status: CompareStatus = "lost";
   if (incomplete) status = "incomplete";
-  else if (errors * 10 > holdout.length || decided < MIN_DECIDED) status = "inconclusive";
+  else if (tooManyErrors(errors, holdout.length) || decided < MIN_DECIDED) status = "inconclusive";
   else if (winRate >= 0.6 && lower > 0.5) status = "won";
   return { status, n: perItem.length, wins, losses, ties, errors, winRate, lower, leaks: [], perItem };
 }
