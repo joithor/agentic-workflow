@@ -133,33 +133,49 @@ function realPath(p: string): string {
 const refuse = (dir: string, why: string): SindriError =>
   new SindriError("SND-SCOPE-025", `refusing to write ${path.basename(dir)} inside a git worktree: ${why}`);
 
+// The nearest directory at or above `p` that holds a `.git` entry (a directory, or a
+// file for a linked worktree or submodule), or null.
+function dotGitHolder(p: string): string | null {
+  let cur = p;
+  while (!fs.existsSync(path.join(cur, ".git"))) {
+    if (path.dirname(cur) === cur) return null;
+    cur = path.dirname(cur);
+  }
+  return cur;
+}
+
 // Spec amendment 8: a map built from notes, transcripts or tracker text must not land
 // in a git worktree (it may be public). Only a file brief and the code index are safe there,
-// and then only the code of the profile repo that holds the output directory (another
-// repo's code must not land in this one). Answers the repos the code source may read.
+// and then only the code of the profile repo whose root is that worktree's top level (another
+// repo's code must not land in this one). It fails closed: a git error other than "not a git
+// repository", or a `.git` entry above --out, counts as inside a worktree. Answers the repos
+// the code source may read.
 export async function guardOutput(deps: Deps, loaded: LoadedProfile, dir: string, only: Set<SourceName> | null, linear: boolean): Promise<string[]> {
   const all = Object.keys(loaded.repos).sort();
   const at = realPath(dir);
-  const r = await deps.git.run(["rev-parse", "--is-inside-work-tree"], nearestExisting(at));
-  if (!(r.ok && r.stdout.trim() === "true")) return all;
+  const holder = dotGitHolder(at);
+  const r = await deps.git.run(["rev-parse", "--show-toplevel"], nearestExisting(at), { foreign: true });
+  const outside = !r.ok && holder === null && /not a git repository/i.test(r.stderr);
+  if (outside) return all;
   if (only === null || linear || ![...only].every((n) => n === "file" || n === "code")) {
     throw refuse(dir, "the map may carry notes, transcripts or tracker text");
   }
   if (!only.has("code")) return [];
-  const holder = all
-    .map((name) => ({ name, root: realPath(loaded.repos[name].path) }))
-    .sort((a, b) => b.root.length - a.root.length)
-    .find((x) => at === x.root || at.startsWith(`${x.root}${path.sep}`));
-  if (holder === undefined) throw refuse(dir, "no profile repo holds it, so the code source would carry another repo's code");
-  return [holder.name];
+  const top = r.ok ? realPath(r.stdout.trim()) : holder;
+  const repo = all.find((name) => realPath(loaded.repos[name].path) === top);
+  if (repo === undefined) throw refuse(dir, "it is not the top level of a profile repo, so the code source would carry another repo's code");
+  return [repo];
 }
 
 // Files 0600 in a 0700 directory (spec §8.4); scrubbed once more with the profile's scrubber on the way out.
 // Only `dir` is ever written: the file name is a slug, never model text.
 export function writeOut(dir: string, base: string, md: string, json: unknown, scrubber: Scrubber): string {
   fs.mkdirSync(dir, { recursive: true, mode: 0o700 });
-  let file = path.join(dir, `${base}.md`);
-  for (let n = 2; fs.existsSync(file); n++) file = path.join(dir, `${base}-${n}.md`);
+  // Neither name may exist: a taken .json must not leave an orphan .md beside it.
+  const free = (b: string): boolean => !fs.existsSync(path.join(dir, `${b}.md`)) && !fs.existsSync(path.join(dir, `${b}.json`));
+  let name = base;
+  for (let n = 2; !free(name); n++) name = `${base}-${n}`;
+  const file = path.join(dir, `${name}.md`);
   fs.writeFileSync(file, scrubber.scrub(md).text, { flag: "wx", mode: 0o600 });
   fs.writeFileSync(file.replace(/\.md$/, ".json"), scrubber.scrub(`${JSON.stringify(scrubber.scrubDeep(json), null, 2)}\n`).text, { flag: "wx", mode: 0o600 });
   return file;
@@ -327,7 +343,16 @@ export function makeScopeCommand(io: ScopeIo): Command {
       const md = map === null ? renderIncomplete(brief.title, meta) : renderMap(map, evidence.refs, meta);
       const file = writeOut(out, `scope-${slug(brief.title)}-${deps.now().toISOString().slice(0, 10)}`, md, { ...meta, subject: label, map, counts: evidence.counts }, scrubber);
       const n = map === null ? { surfaces: 0, workstreams: 0, questions: 0 } : { surfaces: map.surfaces.length, workstreams: map.workstreams.length, questions: map.questions.length };
-      const recorded = recordRun(deps, { runId, subject: label, mode: "scope", status: result.status, rounds: result.rounds, surfaces: n.surfaces, recall: null, precision: null, baselineRecall: null, baselinePrecision: null, leaky: false, tokens: result.tokens, outPath: file }, audit);
+      let recorded: boolean;
+      try {
+        recorded = recordRun(deps, { runId, subject: label, mode: "scope", status: result.status, rounds: result.rounds, surfaces: n.surfaces, recall: null, precision: null, baselineRecall: null, baselinePrecision: null, leaky: false, tokens: result.tokens, outPath: file }, audit);
+      } catch (e) {
+        // The map is on disk: say where before the error, so the run isn't lost.
+        const wrote = `wrote ${file} and ${file.replace(/\.md$/, ".json")}; the run was not recorded`;
+        const err = e instanceof SindriError ? e : new SindriError("SND-CLI-900", `could not record the run: ${scrubber.scrub((e as Error).message).text}`);
+        const f = failure(err.code, err.message, json, { fix: err.fix, details: [...err.details, wrote], exitCode: err.exitCode });
+        return json ? f : { ...f, stdout: `Wrote ${file}.\n` };
+      }
       const next =
         result.status === "incomplete"
           ? "Rerun after raising scope.maxRounds or scope.maxTokensPerRun in the profile (then sindri profile approve), or fix the reasons above."

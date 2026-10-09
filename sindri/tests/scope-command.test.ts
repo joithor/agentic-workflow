@@ -9,8 +9,9 @@ import { acquireTickLock } from "../src/lock/lock.js";
 import { extractSection, makeScopeCommand, recordRun, writeOut } from "../src/scope/commands.js";
 import type { ScopeMap } from "../src/scope/map.js";
 import type { GraphqlFetch } from "../src/scope/sources/linear.js";
+import { ModelJobError } from "../src/scope/model.js";
 import { compileExtraPatterns, makeScrubber, type Scrubber } from "../src/scrub/scrub.js";
-import { fakeSystem, git, gitRepo, makeDeps, tempDir } from "./helpers.js";
+import { fakeGit, fakeSystem, git, gitRepo, makeDeps, tempDir } from "./helpers.js";
 import { ring0Name } from "./index-fixtures.js";
 import { approvedScopeDeps, scriptedIo } from "./scope-fixtures.js";
 
@@ -330,5 +331,126 @@ describe("the code source inside a worktree", () => {
     const fileOnly = await scoped(path.join(stranger, "scopes"), "file");
     expect(fileOnly.r.exitCode).toBe(0);
     expect(fileOnly.input).not.toContain('kind="code"');
+  });
+});
+
+describe("the public-repo guard fails closed", () => {
+  const NOT_A_REPO = { ok: false as const, stderr: "fatal: not a git repository (or any of the parent directories): .git\n", code: 128 };
+
+  it("refuses notes when git can't answer (dubious ownership, git missing), but allows --sources file,code outside any repo", async () => {
+    const d = await approvedScopeDeps();
+    const f = briefFile();
+    const cases = [
+      { ok: false as const, stderr: "fatal: detected dubious ownership in repository at '/x'\n", code: 128 },
+      { ok: false as const, stderr: "spawn git ENOENT" },
+    ];
+    for (const answer of cases) {
+      const gd = { ...d, git: fakeGit({ "rev-parse --show-toplevel": answer }) };
+      const out = path.join(tempDir(), "maps");
+      expect((await makeScopeCommand(scriptedIo([]))([f, "--out", out, "--sources", "file,notes"], gd)).stderr).toContain("SND-SCOPE-025");
+      expect((await makeScopeCommand(scriptedIo([]))([f, "--out", out, "--sources", "file,code"], gd)).stderr).toContain("SND-SCOPE-025");
+      expect(fs.existsSync(out)).toBe(false);
+      expect((await makeScopeCommand(scriptedIo([MAP, NONE]))([f, "--out", out, "--sources", "file"], gd)).exitCode).toBe(0);
+    }
+    const plain = { ...d, git: fakeGit({ "rev-parse --show-toplevel": NOT_A_REPO }) };
+    expect((await makeScopeCommand(scriptedIo([MAP, NONE]))([f, "--out", tempDir()], plain)).exitCode).toBe(0);
+  });
+
+  it("treats a .git directory or file found walking up from --out as a worktree, and refuses inside a .git dir", async () => {
+    const d = await approvedScopeDeps();
+    const f = briefFile();
+    const plain = { ...d, git: fakeGit({ "rev-parse --show-toplevel": NOT_A_REPO }) };
+    const withDir = tempDir();
+    fs.mkdirSync(path.join(withDir, ".git"));
+    const withFile = tempDir();
+    fs.writeFileSync(path.join(withFile, ".git"), "gitdir: /elsewhere\n");
+    for (const root of [withDir, withFile]) {
+      expect((await makeScopeCommand(scriptedIo([]))([f, "--out", path.join(root, "a", "b")], plain)).stderr).toContain("SND-SCOPE-025");
+      expect((await makeScopeCommand(scriptedIo([]))([f, "--out", path.join(root, "a"), "--sources", "file,code"], plain)).stderr).toContain("SND-SCOPE-025");
+    }
+    expect((await makeScopeCommand(scriptedIo([]))([f, "--out", path.join(d.cwd, ".git", "maps")], d)).stderr).toContain("SND-SCOPE-025");
+  });
+
+  it("refuses --sources file,code in a non-profile repo nested inside a profile repo", async () => {
+    const d = await approvedScopeDeps();
+    const nested = path.join(d.cwd, "vendor", "inner");
+    fs.mkdirSync(nested, { recursive: true });
+    git(nested, "init", "-q", "-b", "main");
+    const r = await makeScopeCommand(scriptedIo([MAP, NONE]))([briefFile(), "--out", path.join(nested, "maps"), "--sources", "file,code"], d);
+    expect(r.stderr).toContain("SND-SCOPE-025");
+  });
+
+  it("follows a symlinked --out into a worktree and refuses", async () => {
+    const d = await approvedScopeDeps();
+    const link = path.join(tempDir(), "link");
+    fs.symlinkSync(d.cwd, link);
+    expect((await makeScopeCommand(scriptedIo([]))([briefFile(), "--out", path.join(link, "maps")], d)).stderr).toContain("SND-SCOPE-025");
+    expect(fs.existsSync(path.join(d.cwd, "maps"))).toBe(false);
+  });
+});
+
+describe("writing and recording", () => {
+  it("writeOut never leaves an orphan .md when only the .json name is taken", () => {
+    const dir = tempDir();
+    fs.writeFileSync(path.join(dir, "scope-x.json"), "{}");
+    const file = writeOut(dir, "scope-x", "# x\n", {}, makeScrubber());
+    expect(path.basename(file)).toBe("scope-x-2.md");
+    expect(fs.readdirSync(dir).sort()).toEqual(["scope-x-2.json", "scope-x-2.md", "scope-x.json"]);
+  });
+
+  it("prints the written file, then the error, when the run can't be recorded", async () => {
+    const d = await approvedScopeDeps();
+    const db = openLedger(ledgerPath(stateDir(d)));
+    db.pragma("user_version = 99");
+    db.close();
+    const out = tempDir();
+    const r = await makeScopeCommand(scriptedIo([MAP, NONE]))([briefFile(), "--out", out], d);
+    expect(r.exitCode).toBe(2);
+    expect(r.stdout).toContain(`Wrote ${path.join(out, "scope-shift-times-2026-10-08.md")}`);
+    expect(r.stderr).toContain("SND-LEDGER-001");
+    expect(fs.readdirSync(out)).toHaveLength(2);
+    const j = await makeScopeCommand(scriptedIo([MAP, NONE]))([briefFile(), "--out", out, "--json"], d);
+    expect(JSON.parse(j.stdout).error.details.join("\n")).toContain("scope-shift-times-2026-10-08-2.md");
+    const broken = await approvedScopeDeps();
+    const bdb = openLedger(ledgerPath(stateDir(broken)));
+    bdb.exec("DROP TABLE model_calls; DROP TABLE scope_runs;");
+    bdb.close();
+    const b = await makeScopeCommand(scriptedIo([MAP, NONE]))([briefFile(), "--out", out], broken);
+    expect(b.stdout).toContain("scope-shift-times-2026-10-08-3.md");
+    expect(b.stderr).toContain("SND-CLI-900 could not record the run: no such table: scope_runs");
+  });
+
+  it("a failing, is_error or over-budget model still writes the file and records an incomplete run with its model calls", async () => {
+    const usage = { inputTokens: 40, outputTokens: 15 };
+    const cases: { answers: unknown[]; extra: string; calls: number }[] = [
+      { answers: [new Error("claude exited 1")], extra: "", calls: 0 },
+      { answers: [new ModelJobError("model job reported an error: overloaded", usage)], extra: "", calls: 1 },
+      { answers: [{ ...MAP, workstreams: [] }, MAP], extra: "scope:\n  maxTokensPerRun: 55\n", calls: 1 },
+    ];
+    for (const c of cases) {
+      const d = await approvedScopeDeps("", c.extra);
+      const out = tempDir();
+      const r = await makeScopeCommand(scriptedIo(c.answers))([briefFile(), "--out", out], d);
+      expect(r.exitCode).toBe(1);
+      expect(fs.readdirSync(out)).toHaveLength(2);
+      expect(rows(d, "SELECT status FROM scope_runs")).toEqual([{ status: "incomplete" }]);
+      expect(rows(d, "SELECT COUNT(*) AS n FROM model_calls")).toEqual([{ n: c.calls }]);
+    }
+  });
+
+  it("never writes the Linear token to stdout, the map files or the ledger", async () => {
+    const token = "lin_" + "api_" + "Zq7Kx2Wm9Rt4Yp6Ln3Bv8Hc5Jd1Fs0Ga";
+    const d = await approvedScopeDeps("  linear:\n    token: env:LINEAR_TOKEN\n");
+    const fetchFor: GraphqlFetch = async (_u, init) => {
+      const q = JSON.parse(init.body) as { query: string };
+      if (q.query.includes("projects(")) return { ok: true, status: 200, json: async () => ({ data: { projects: { nodes: [{ id: "p1", name: "Shift times", description: "shift times", createdAt: "2026-01-01T00:00:00Z", url: "u" }] } } }) };
+      return { ok: true, status: 200, json: async () => ({ data: { project: { issues: { pageInfo: { hasNextPage: false, endCursor: null }, nodes: [] } } } }) };
+    };
+    const out = tempDir();
+    const r = await makeScopeCommand(scriptedIo([MAP, NONE], fetchFor))(["linear:abc", "--out", out], { ...d, env: { ...d.env, LINEAR_TOKEN: token } });
+    expect(r.exitCode).toBe(0);
+    const files = fs.readdirSync(out).map((n) => fs.readFileSync(path.join(out, n), "utf8")).join("\n");
+    const ledger = JSON.stringify([rows(d, "SELECT * FROM scope_runs"), rows(d, "SELECT * FROM model_calls")]);
+    for (const text of [r.stdout, r.stderr, files, ledger]) expect(text).not.toContain(token.slice(8));
   });
 });
