@@ -24,7 +24,7 @@ export const PROTECTED_PATHS: readonly string[] = [
   "config/hooks/adapters/", "config/lib/", "config/settings.json",
   "providers/", "setup.sh", "scripts/install-",
   "sindri/src/scrub/", "sindri/src/gate/", "sindri/src/scope/model.ts", "sindri/src/secrets.ts", "sindri/src/lock/", "sindri/src/profile/approve.ts", "sindri/src/ledger/db.ts",
-  "agents.md", ".agents/rules/", ".github/", "skills/_shared/", "planning/testing.md",
+  "agents.md", "claude.md", ".claude/", ".cursor/", ".agents/rules/", ".github/", "skills/_shared/", "planning/testing.md",
 ];
 
 // Invariant 11: the machinery that judges a proposal. Edits to it never self-adopt.
@@ -107,8 +107,8 @@ export async function discover(
 
   const adapters = under("config/hooks/adapters/");
   if (adapters.length > 0) {
-    const test = "config/hooks/tests/codex-adapter.test.sh";
-    add("hook:adapters", "hook", has(test) ? [...adapters, test] : adapters, "config/hooks/adapters/", has(test) ? { argv: ["bash", test], cwd: "." } : null);
+    const tests = ["config/hooks/tests/codex-adapter.test.sh", "config/hooks/tests/cursor-adapter.test.sh"].filter(has);
+    add("hook:adapters", "hook", [...adapters, ...tests], "config/hooks/adapters/", tests.length === 0 ? null : { argv: ["bash", "-c", tests.map((t) => `bash ${t}`).join(" && ")], cwd: "." });
   }
 
   for (const pkg of ["judge", "scorer", "mcp-bridge", "sindri"].filter((p) => has(`${p}/package.json`))) {
@@ -129,10 +129,15 @@ export async function discover(
   for (const rule of tracked.filter((p) => /^\.agents\/rules\/[^/]+\.md$/.test(p))) add(`rule:${path.basename(rule, ".md")}`, "rule", [rule], null, ruleSuite);
   for (const doc of tracked.filter((p) => /^planning\/[^/]+\.md$/.test(p))) add(`doc:${path.basename(doc, ".md").toLowerCase()}`, "doc", [doc], null, null);
 
-  for (const mod of [...new Set(under("mods/").map((p) => p.split("/")[1]))]) add(`mod:${mod}`, "mod", under(`mods/${mod}/`), `mods/${mod}/`, { argv: ["claude", "plugin", "test", `mods/${mod}`], cwd: "." });
+  for (const mod of [...new Set(under("mods/").filter((p) => p.split("/").length > 2).map((p) => p.split("/")[1]))]) add(`mod:${mod}`, "mod", under(`mods/${mod}/`), `mods/${mod}/`, { argv: ["claude", "plugin", "test", `mods/${mod}`], cwd: "." });
   if (has("EXTERNAL_PINS.env")) add("pack-pin:external", "pack-pin", ["EXTERNAL_PINS.env"], null, null);
 
   for (const p of prompts) out.push({ id: `prompt:${p.id}`, kind: "prompt", paths: [], root: null, hash: hashFiles(repoPath, [], p.text), protected: false, suite: null });
+  const ids = new Set<string>();
+  for (const a of out) {
+    if (ids.has(a.id)) throw new SindriError("SND-EVOLVE-001", `duplicate artifact id ${a.id}`);
+    ids.add(a.id);
+  }
   return out.sort((a, b) => (a.id < b.id ? -1 : 1)); // code-point order: stable across locales; ids are unique
 }
 

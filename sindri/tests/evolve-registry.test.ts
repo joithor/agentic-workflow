@@ -35,6 +35,8 @@ const FILES = {
   "bootstrap/SKILL.md": "---\nname: bootstrap\n---\n",
   "config/hooks/adapters/codex.sh": "#!/bin/sh\n",
   "config/hooks/tests/codex-adapter.test.sh": "#!/bin/sh\n",
+  "config/hooks/tests/cursor-adapter.test.sh": "#!/bin/sh\n",
+  "mods/README.md": "# mods\n",
   "scripts/install-sindri.sh": "#!/bin/sh\n",
   "scripts/tests/install-sindri.test.sh": "#!/bin/sh\n",
 };
@@ -68,8 +70,8 @@ describe("artifact registry (spec §7.7)", () => {
     expect(by["doc:skills-preamble"].paths).toEqual(["skills/_design-preamble.md", "skills/_preamble.md"]);
     expect(by["skill:bootstrap"]).toMatchObject({ root: "bootstrap/", suite: null, protected: false, paths: ["bootstrap/SKILL.md"] });
     expect(by["hook:adapters"]).toMatchObject({
-      protected: true, root: "config/hooks/adapters/", suite: { argv: ["bash", "config/hooks/tests/codex-adapter.test.sh"], cwd: "." },
-      paths: ["config/hooks/adapters/codex.sh", "config/hooks/tests/codex-adapter.test.sh"],
+      protected: true, root: "config/hooks/adapters/", suite: { argv: ["bash", "-c", "bash config/hooks/tests/codex-adapter.test.sh && bash config/hooks/tests/cursor-adapter.test.sh"], cwd: "." },
+      paths: ["config/hooks/adapters/codex.sh", "config/hooks/tests/codex-adapter.test.sh", "config/hooks/tests/cursor-adapter.test.sh"],
     });
     expect(by["installer:sindri"]).toMatchObject({
       protected: true, paths: ["scripts/install-sindri.sh"], suite: { argv: ["bash", "scripts/tests/install-sindri.test.sh"], cwd: "." },
@@ -114,8 +116,14 @@ describe("artifact registry (spec §7.7)", () => {
     expect(a[0].paths).toEqual(["skills/review/SKILL.md"]);
   });
 
+  it("refuses two artifacts with the same id", async () => {
+    // A hook named like the adapters directory's artifact collides with hook:adapters.
+    const root = gitRepo({ "config/hooks/adapters.sh": "#!/bin/sh\n", "config/hooks/adapters/x.sh": "#!/bin/sh\n" });
+    await expect(discover(realGitRunner(), root, [])).rejects.toMatchObject({ code: "SND-EVOLVE-001" });
+  });
+
   it("refuses a directory that isn't a readable git repo", async () => {
-    await expect(discover({ run: async () => ({ ok: false, stderr: "fatal" }) }, "/nope", [])).rejects.toThrow(/SND-EVOLVE-001|not a readable git repository/);
+    await expect(discover({ run: async () => ({ ok: false, stderr: "fatal" }) }, "/nope", [])).rejects.toMatchObject({ code: "SND-EVOLVE-001" });
   });
 });
 
@@ -133,7 +141,7 @@ describe("path rules (Review Focus 4)", () => {
       "scripts/install-sindri.sh", "scripts/sync-rules.sh", "AGENTS.md", ".agents/rules/testing.md", "sindri/tests/anything.ts",
       "skills/ui-evidence/tests/x.ts", "judge/vitest.config.ts", "sindri/package.json", "sindri/src/scope/map.ts", "sindri/src/scope/gather.ts",
       "config/hooks/tests/foo.test.sh", "./sindri//src/evolve/blind.ts", "Sindri/Src/Evolve/Blind.ts", "sindri/src/secrets.ts",
-      "sindri/src/profile/approve.ts", "config/lib/x.sh", "skills/_shared/capabilities.md", "sindri/src/lock/lock.ts",
+      "sindri/src/profile/approve.ts", "CLAUDE.md", ".claude/rules/testing.md", ".cursor/rules/testing.mdc", "config/lib/x.sh", "skills/_shared/capabilities.md", "sindri/src/lock/lock.ts",
     ]) expect(isProtectedPath(p), p).toBe(true);
     for (const invalid of ["../x", "/etc/passwd", "a\nb", "a/../b", "", "dir/"]) expect(isProtectedPath(invalid), invalid).toBe(true);
     for (const p of ["skills/review/SKILL.md", "sindri/src/observe/observe.ts", "config/hooks/git-context.sh", "planning/ARCHITECTURE.md", "sindri/src/scope/run.ts"]) {

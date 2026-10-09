@@ -549,6 +549,7 @@
         }
       },
       "additionalProperties": false,
+      "description": "Self-evolution budgets and limits (sindri evolve)",
       "default": {}
     },
     "privacy": {
@@ -567,6 +568,7 @@
         }
       },
       "additionalProperties": false,
+      "description": "Privacy gate for published proposal tasks",
       "default": {}
     },
     "scope": {

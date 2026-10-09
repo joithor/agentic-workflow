@@ -45,9 +45,9 @@ describe("evolve and privacy profile keys", () => {
   });
 
   it("accepts deny terms and PR authors, and refuses unknown or malformed keys", () => {
-    const ok = ProfileSchema.parse({ ...base, privacy: { denyTerms: ["Acme Care"] }, evolve: { maxOpenProposals: 3, prAuthors: ["joi-t"] } });
+    const ok = ProfileSchema.parse({ ...base, privacy: { denyTerms: ["Acme Care"] }, evolve: { maxOpenProposals: 3, prAuthors: ["dev-1"] } });
     expect(ok.privacy.denyTerms).toEqual(["Acme Care"]);
-    expect(ok.evolve.prAuthors).toEqual(["joi-t"]);
+    expect(ok.evolve.prAuthors).toEqual(["dev-1"]);
     expect(ProfileSchema.safeParse({ ...base, privacy: { denyTerms: ["a"] } }).success).toBe(false);
     expect(ProfileSchema.safeParse({ ...base, privacy: { other: 1 } }).success).toBe(false);
     expect(ProfileSchema.safeParse({ ...base, evolve: { maxOpenProposals: 0 } }).success).toBe(false);

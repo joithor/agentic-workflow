@@ -159,6 +159,7 @@ const EvolveSchema = z
     prAuthors: z.array(z.string().regex(/^[A-Za-z0-9-]{1,39}$/, "must be a GitHub login")).default([]).describe("GitHub logins whose merged PRs reflect may read; empty means only the authenticated gh user"),
   })
   .strict()
+  .describe("Self-evolution budgets and limits (sindri evolve)")
   .default({});
 
 const PrivacySchema = z
@@ -170,6 +171,7 @@ const PrivacySchema = z
       .describe("Workplace words that must never appear in a published proposal task (whole words, case-insensitive). Changing this list needs profile approval"),
   })
   .strict()
+  .describe("Privacy gate for published proposal tasks")
   .default({});
 
 export const ProfileSchema = z

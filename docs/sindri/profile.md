@@ -27,8 +27,8 @@ A changed profile takes effect only after `sindri profile approve <hash>` (spec 
 | `shape` | object | no | `{}` | Shape signals (spec §6.2) |
 | `sources` | object | no | `{}` |  |
 | `models` | object | no | `{}` |  |
-| `evolve` | object | no | `{}` |  |
-| `privacy` | object | no | `{}` |  |
+| `evolve` | object | no | `{}` | Self-evolution budgets and limits (sindri evolve) |
+| `privacy` | object | no | `{}` | Privacy gate for published proposal tasks |
 | `scope` | object | no | `{}` |  |
 
 ## `repos/<name>.yaml`
