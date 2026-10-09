@@ -66,9 +66,13 @@ export const ERRORS = {
   "SND-INDEX-008": { summary: "graphify is missing, failed or wrote no usable graph.", fix: "if graphify or its sandbox is missing: sindri index setup; if graph.json is over the cap: raise index.graphMaxMB (max 512); then sindri index build" },
   "SND-EVOLVE-001": { summary: "The toolkit repo couldn't be read as a git repository.", fix: "check the ring-0 repo's path in repos/<name>.yaml, then sindri profile approve" },
   "SND-EVOLVE-002": { summary: "No offline comparison exists for that artifact yet.", fix: "only the scope.draft prompt can be compared in this release (spec amendment 4)" },
+  "SND-EVOLVE-003": { summary: "A pull request couldn't be read with gh.", fix: "check the PR number and `gh auth status`" },
   "SND-EVOLVE-008": { summary: "No artifact in the registry has that id.", fix: "sindri evolve status lists the registered artifacts; sindri evolve init refreshes the registry" },
   "SND-EVOLVE-009": { summary: "The judge model must differ from the model that wrote the outputs.", fix: "set models.adjudicator to a different model than models.scoping, then sindri profile approve" },
   "SND-EVOLVE-010": { summary: "The artifact registry is empty.", fix: "sindri evolve init" },
+  "SND-EVOLVE-011": { summary: "The toolkit repo has no GitHub remote called origin.", fix: "git remote add origin <github url> in the toolkit repo" },
+  "SND-EVOLVE-012": { summary: "That pull request can't be reflected on.", fix: "reflect only reads merged PRs by an allowed author (evolve.prAuthors)" },
+  "SND-EVOLVE-013": { summary: "gh returned a reply in an unexpected shape.", fix: "update gh, then rerun" },
   "SND-EVOLVE-016": { summary: "That proposal's status doesn't allow a comparison.", fix: "sindri evolve show <id> prints its status; a rejected, adopted, merged or staged proposal is never compared again" },
   "SND-CLI-900": { summary: "Unexpected internal error (a bug).", fix: "rerun with SINDRI_DEBUG=1 and report the output" },
 } as const satisfies Record<string, ErrorDef>;

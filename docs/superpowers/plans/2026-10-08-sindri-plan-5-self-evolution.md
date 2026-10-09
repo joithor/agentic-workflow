@@ -4670,7 +4670,7 @@ git commit -m "feat: sindri offline blinded comparison on the sealed holdout"
   - `sindri evolve reflect --pr <n> [--json]` — skips a PR already reflected on (proposals with source `reflect:pr-<n>`, or a recorded audit row when nothing was proposed), saves each accepted proposal with its tier, and prints `Reflected on PR #12: 2 accepted (1 code, 1 approval), 1 rejected, 3 backlog.`
   - Errors `SND-EVOLVE-003` (gh failed), `011` (no GitHub remote), `012` (PR not merged or author not allowed), `013` (gh reply in an unexpected shape).
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 `sindri/tests/evolve-github.test.ts`:
 
@@ -5001,12 +5001,12 @@ describe("sindri evolve reflect", () => {
 
 Trace for the first command test: the PR is merged by `joi-t`; the allowed list is empty in the profile, so `gh api user` supplies `joi-t`. `ghRepoOf` reads the `origin` remote added in `ready`. The transcript lines carry `gitBranch: "feat/x"` and `cwd: fx.repo`, so `branchTranscript` finds two turns, `transcript:5e55a1d0#1` (human) and `#2` (assistant). Reviewers run on `models.scoping` (`sonnet`) and the synthesizer on `models.challenger` (`opus`). `hook:done-gate` is protected through the profile glob, so its proposal is `approval`; `skill:review` is `code`. The summary orders tier counts `code`, `approval`, `self-adopt`; the per-proposal lines follow the accepted order (the skill first); the tier column is padded to 8 characters and followed by two spaces, so `code` is followed by six spaces and `approval` by two. In the repeated-proposal test, PR 13's synthesizer returns the same proposal, so `saveProposal` reports `duplicate`: the line gains ` (already proposed)`, no new proposal was saved, so the next command is `sindri evolve proposals`. A PR that produced nothing records an audit marker, so a rerun says `(nothing was proposed)`; a partial run records none.
 
-- [ ] **Step 2: Run the tests to verify they fail**
+- [x] **Step 2: Run the tests to verify they fail**
 
 Run: `cd sindri && npx vitest run tests/evolve-github.test.ts tests/evolve-reflect.test.ts tests/evolve-reflect-cmd.test.ts`
 Expected: FAIL with `Failed to load url ../src/evolve/github.js`.
 
-- [ ] **Step 3: Implement**
+- [x] **Step 3: Implement**
 
 Add to `ERRORS`:
 
@@ -5266,12 +5266,12 @@ Trace for the line format: `  ${id}  ${tier.padEnd(8)}  ${title}`: for `code` th
 
 Register in `sindri/src/evolve/commands.ts`: import `reflectCommand` from `./cmd/reflect.js` and add `reflect: reflectCommand` to `SUBCOMMANDS`.
 
-- [ ] **Step 4: Run the tests**
+- [x] **Step 4: Run the tests**
 
 Run: `cd sindri && npm run gen && npx vitest run && npm run typecheck && npm run test:coverage`
 Expected: all tests PASS; coverage 100% on the files this task touches.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add sindri/src sindri/tests docs/sindri
