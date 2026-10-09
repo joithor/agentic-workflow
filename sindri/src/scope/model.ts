@@ -134,7 +134,11 @@ interface Envelope {
 
 // The only path from sindri code to a model (spec §6.1 providers, §8.4 egress
 // scrub). A bounded job: no tools, no MCP servers, hooks off, fresh empty cwd,
-// structured output against a JSON schema. Same invocation judge uses.
+// structured output against a JSON schema. `--setting-sources ""` loads no user,
+// project or local settings and no CLAUDE.md, so a settings `env` block can't
+// re-inject a base URL childEnv dropped and unscrubbed memory never reaches the
+// model. Managed (policy) settings still apply. `--bare` would do the same but
+// refuses the subscription login (API key only).
 export function makeClaudeRunner(o: {
   spawn: Spawner;
   providers: readonly string[];
@@ -154,7 +158,7 @@ export function makeClaudeRunner(o: {
     async run<T>(call: ModelCall<T>) {
       const argv = [
         "claude", "-p", "--model", call.model, "--effort", o.effort, "--no-session-persistence", "--strict-mcp-config", "--mcp-config", '{"mcpServers":{}}',
-        "--settings", '{"disableAllHooks":true}', "--disable-slash-commands", "--tools", "",
+        "--setting-sources", "", "--settings", '{"disableAllHooks":true}', "--disable-slash-commands", "--tools", "",
         "--system-prompt", scrub(call.system), "--json-schema", JSON.stringify(cliSchema(call.schema)), "--output-format", "json",
       ];
       const cwd = o.makeDir();

@@ -53,6 +53,16 @@ describe("Claude model runner", () => {
     expect(r.removed).toEqual([cwd]);
   });
 
+  it("isolates the child from user, project and local settings and CLAUDE.md (empty --setting-sources)", async () => {
+    const s = spawner({ stdout: envelope({ n: 3 }) });
+    await runner(s).run(call);
+    const { argv } = s.calls[0];
+    const i = argv.indexOf("--setting-sources");
+    expect(i).toBeGreaterThan(0);
+    expect(argv[i + 1]).toBe("");
+    expect(argv).not.toContain("--bare");
+  });
+
   it("falls back to parsing .result, and treats missing usage fields as zero", async () => {
     const withResult = spawner({ stdout: JSON.stringify({ result: '{"n":4}', usage: { input_tokens: 1, output_tokens: 1 } }) });
     expect(await runner(withResult).run(call)).toEqual({ value: { n: 4 }, usage: { inputTokens: 1, outputTokens: 1 } });
