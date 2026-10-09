@@ -10,7 +10,7 @@ export default defineConfig({
       include: ["src/**/*.ts"],
       // Thin wiring files: process entry, doc generator, and the real host probe (its answers
       // depend on the OS, so one platform's branches never run; smoke test in tests/real.test.ts).
-      exclude: ["src/cli.ts", "src/gen.ts", "src/system-real.ts"],
+      exclude: ["src/cli.ts", "src/gen.ts", "src/system-real.ts", "src/scope/model-real.ts"],
       thresholds: { lines: 100, functions: 100, branches: 100, statements: 100 },
     },
   },

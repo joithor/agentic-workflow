@@ -33,6 +33,10 @@ Generated from `sindri/src/errors.ts` by `cd sindri && npm run gen`. Do not edit
 | `SND-PROFILE-012` | No profile has been approved yet. | sindri profile approve |
 | `SND-PROFILE-013` | That repo name is already used for another path or file. | pass --name &lt;another name&gt; |
 | `SND-PROFILE-014` | That repo name is not valid. | use lowercase letters, digits and dashes (max 39) |
+| `SND-SCOPE-001` | No allowed provider can run scoping. | add anthropic to providers.allowed, then sindri profile approve |
+| `SND-SCOPE-002` | A model job failed, timed out or returned junk. | rerun; the message carries the CLI's own error. If it repeats, run `claude -p hello` to check the CLI and its login |
+| `SND-SCOPE-004` | The model's answer didn't match the required shape. | rerun; the next round gets the reasons. Persistent: try another models.scoping |
+| `SND-SCOPE-005` | The run's token budget is used up. | raise scope.maxTokensPerRun (or maxTokensPerBacktest) in the profile, then sindri profile approve |
 | `SND-SCOPE-010` | Linear rejected the token. | check sources.linear.token points at a valid read-only Linear API key |
 | `SND-SCOPE-011` | Linear could not be read. | check the project URL and your network, then rerun; the message carries Linear's own error text |
 | `SND-SCOPE-020` | The brief file can't be read. | check the path you passed to sindri scope |

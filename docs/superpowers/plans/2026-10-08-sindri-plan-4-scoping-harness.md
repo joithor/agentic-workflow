@@ -1402,7 +1402,7 @@ git commit -m "feat: sindri read-only Linear source for scoping"
   - `type Outcome<T>` and `tryRun(runner, call): Promise<Outcome<T>>` — turns the thrown errors into `{ kind: "ok" | "schema" | "stop" }`, so the loops that call a model share one error policy.
 - Produces (`model-real.ts`): `realSpawner(): Spawner` (`child_process.spawn`, stdin piped, SIGKILL on timeout, a missing binary or a closed stdin gives code 127 instead of a crash).
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 `sindri/tests/scope-model.test.ts`:
 
@@ -1624,12 +1624,12 @@ describe.skipIf(process.env.SINDRI_HEAVY !== "1")("real claude -p (heavy: one re
 });
 ```
 
-- [ ] **Step 2: Run the tests to verify they fail**
+- [x] **Step 2: Run the tests to verify they fail**
 
 Run: `cd sindri && npx vitest run tests/scope-model.test.ts tests/real.test.ts`
 Expected: FAIL with `Failed to load url ../src/scope/model.js` (and `model-real.js`).
 
-- [ ] **Step 3: Implement**
+- [x] **Step 3: Implement**
 
 `sindri/src/scope/model.ts`:
 
@@ -1873,12 +1873,12 @@ Add `"src/scope/model-real.ts"` to the coverage `exclude` list in `sindri/vitest
   "SND-SCOPE-005": { summary: "The run's token budget is used up.", fix: "raise scope.maxTokensPerRun (or maxTokensPerBacktest) in the profile, then sindri profile approve" },
 ```
 
-- [ ] **Step 4: Run the tests**
+- [x] **Step 4: Run the tests**
 
 Run: `cd sindri && npm run gen && npm run typecheck && npm run test:coverage`
 Expected: all tests PASS (the heavy file is skipped); coverage 100% on the files this task touches.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add sindri/src sindri/tests sindri/vitest.config.ts sindri/package.json docs/sindri/errors.md
