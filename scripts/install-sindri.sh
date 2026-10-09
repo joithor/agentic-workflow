@@ -114,21 +114,34 @@ write_wrapper() { # name cli
   mv -f "$tmp" "$target"
 }
 
-record_channel() { # state channel sha dest
-  local js
-  js="$(mktemp)"
-  cat > "$js" <<'NODE'
+# channels.json is a plain object with "stable" and "next", each null or an entry with a sha and a dir.
+# A missing file is a first install; anything else that doesn't fit is refused, never overwritten.
+CHANNELS_JS='
 const fs = require("node:fs");
-const [file, channel, sha, dir] = process.argv.slice(2);
-let cur = { stable: null, next: null };
-try {
-  cur = JSON.parse(fs.readFileSync(file, "utf8"));
-} catch (e) {
-  if (e.code !== "ENOENT") {
-    console.error("channels.json is unreadable: " + e.message);
-    process.exit(1);
+const isEntry = (e) => e === null || (typeof e === "object" && !Array.isArray(e) && typeof e.sha === "string" && typeof e.dir === "string");
+function readChannels(file) {
+  let c;
+  try {
+    c = JSON.parse(fs.readFileSync(file, "utf8"));
+  } catch (e) {
+    if (e.code === "ENOENT") return { stable: null, next: null };
+    fail("channels.json is unreadable: " + e.message);
   }
+  if (c === null || typeof c !== "object" || Array.isArray(c) || !("stable" in c) || !("next" in c) || !isEntry(c.stable) || !isEntry(c.next)) {
+    fail("channels.json is unreadable: it is not an object with stable and next entries");
+  }
+  return c;
 }
+function fail(why) {
+  console.error(why + "; repair or restore channels.json (a copy of the last good one, or fix the entry by hand) and run the install again");
+  process.exit(1);
+}
+'
+
+record_channel() { # state channel sha dest
+  node -e "$CHANNELS_JS"'
+const [file, channel, sha, dir] = process.argv.slice(1);
+const cur = readChannels(file);
 const entry = { sha, dir, installedAt: new Date().toISOString() };
 if (channel === "stable") {
   cur.stable = { ...entry, previous: cur.stable ? { sha: cur.stable.sha, dir: cur.stable.dir, installedAt: cur.stable.installedAt } : null };
@@ -137,21 +150,12 @@ if (channel === "stable") {
 }
 const tmp = file + ".tmp-" + process.pid;
 fs.writeFileSync(tmp, JSON.stringify(cur, null, 2), { mode: 0o600 });
-fs.renameSync(tmp, file);
-NODE
-  node "$js" "$1/channels.json" "$2" "$3" "$4"
-  rm -f "$js"
+fs.renameSync(tmp, file);' "$1/channels.json" "$2" "$3" "$4"
 }
 
-# Prints "yes" or "no": does channels.json already name a stable build? A corrupt file refuses.
+# Prints "yes" or "no": does channels.json already name a stable build? A bad file exits 1.
 has_stable() { # state
-  node -e '
-const fs = require("node:fs");
-let c = { stable: null };
-try { c = JSON.parse(fs.readFileSync(process.argv[1], "utf8")); } catch (e) {
-  if (e.code !== "ENOENT") { console.error("channels.json is unreadable: " + e.message); process.exit(1); }
-}
-process.stdout.write(c !== null && typeof c === "object" && c.stable ? "yes" : "no");' "$1/channels.json"
+  node -e "$CHANNELS_JS"'process.stdout.write(readChannels(process.argv[1]).stable ? "yes" : "no");' "$1/channels.json"
 }
 
 # Only merged code runs on a channel: the ref must be an ancestor of refs/remotes/origin/<default
@@ -161,23 +165,27 @@ DEST_CLEANUP=""
 cleanup_dest() { if [ -n "$DEST_CLEANUP" ]; then rm -rf "$DEST_CLEANUP"; fi; }
 
 install_channel() {
-  local state="${AW_STATE_DIR:-$HOME/.agentic-workflow}/sindri" default_branch sha dest wrapper remote_ref
+  local state="${AW_STATE_DIR:-$HOME/.agentic-workflow}/sindri" default_branch sha dest wrapper remote_ref remote_tip stable_state
   default_branch="$(git -C "$SRC_REPO" symbolic-ref --short refs/remotes/origin/HEAD 2>/dev/null | sed 's|^origin/||' || true)"
   default_branch="${default_branch:-main}"
   case "$default_branch" in
     *[!A-Za-z0-9._/-]*|-*) echo "refusing: the default branch name '$default_branch' has unexpected characters" >&2; exit 1 ;;
   esac
   remote_ref="refs/remotes/origin/$default_branch"
-  git -C "$SRC_REPO" rev-parse --verify --quiet "$remote_ref^{commit}" > /dev/null || { echo "refusing: no $remote_ref in $SRC_REPO (run git fetch origin first)" >&2; exit 1; }
+  # show-ref --verify matches the exact refname only (rev-parse would fall back to a tag or branch of that name).
+  remote_tip="$(git -C "$SRC_REPO" show-ref --verify --hash "$remote_ref" 2>/dev/null || true)"
+  [ -n "$remote_tip" ] || { echo "refusing: no $remote_ref in $SRC_REPO (run git fetch origin first)" >&2; exit 1; }
   sha="$(git -C "$SRC_REPO" rev-parse --verify --end-of-options "${REF:-HEAD}^{commit}")" || { echo "refusing: ${REF:-HEAD} is not a commit in $SRC_REPO" >&2; exit 1; }
-  if ! git -C "$SRC_REPO" merge-base --is-ancestor "$sha" "$remote_ref" 2>/dev/null; then
+  if ! git -C "$SRC_REPO" merge-base --is-ancestor "$sha" "$remote_tip" 2>/dev/null; then
     echo "refusing: $sha is not an ancestor of $remote_ref (only merged code runs on a channel)" >&2
     exit 1
   fi
   dest="$state/channels/$CHANNEL/$sha"
   wrapper="sindri"
   [ "$CHANNEL" = "next" ] && wrapper="sindri-next"
-  if [ "$CHANNEL" = "stable" ] && [ "$(has_stable "$state")" = "yes" ]; then
+  # Check the state file before anything is built (a bad one refuses here, not after a full build).
+  stable_state="$(has_stable "$state")" || exit 1
+  if [ "$CHANNEL" = "stable" ] && [ "$stable_state" = "yes" ]; then
     echo "refusing: a stable build already exists; change stable with: sindri channel promote <sha> (it checks the soak and the suite, and asks you to confirm)" >&2
     exit 1
   fi

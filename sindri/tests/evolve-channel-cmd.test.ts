@@ -119,6 +119,21 @@ describe("sindri channel promote (Review Focus: human-only, protected paths show
     wrong.fx.close();
   });
 
+  it("refuses a sha that is already stable, so the real rollback target is never overwritten", async () => {
+    const t = await ready({ tty: "bbbbbbbb" });
+    const dirA = t.mk("stable", A);
+    const dirB = t.mk("stable", B);
+    writeChannels(t.deps, { stable: { ...entry(B, dirB), previous: entry(A, dirA) }, next: entry(B, t.mk("next", B)) });
+    t.record(B);
+    const r = await t.run(["promote", B]);
+    expect(r.exitCode).not.toBe(0);
+    expect(r.stderr).toContain(`SND-EVOLVE-005 ${B} is already stable`);
+    expect(t.asked).toEqual([]);
+    expect(readChannels(t.deps).stable).toMatchObject({ sha: B, previous: { sha: A } });
+    expect(t.fx.ctx.db.prepare("SELECT verb FROM evolve_audit").all()).toEqual([]);
+    t.fx.close();
+  });
+
   it("shows the protected paths that changed since stable, then promotes and records it", async () => {
     const t = await ready({ tty: "bbbbbbbb", git: protectedDiff });
     const dirA = t.mk("stable", A);

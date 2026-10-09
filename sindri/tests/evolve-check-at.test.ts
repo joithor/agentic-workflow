@@ -9,6 +9,7 @@ import { init } from "../src/evolve/cmd/registry.js";
 import { status } from "../src/evolve/cmd/status.js";
 import type { GitResult } from "../src/git.js";
 import { evolveFixture, fakeProc, git, scriptedEvolveIo, withDeps } from "./evolve-fixtures.js";
+import { tempDir } from "./helpers.js";
 
 const SHA = "d".repeat(40);
 
@@ -23,7 +24,8 @@ function fakeGit(events: string[], over: (args: string[]) => GitResult | null = 
       events.push(`git ${args.slice(0, 2).join(" ")}`);
       const r = over(args);
       if (r !== null) return r;
-      if (args[0] === "worktree" && args[1] === "add") fs.mkdirSync(path.join(args[3] as string, "sindri"), { recursive: true });
+      const at = args.indexOf("add");
+      if (args.includes("worktree") && at !== -1) fs.mkdirSync(path.join(args[at + 2] as string, "sindri"), { recursive: true });
       return { ok: true, stdout: "" };
     },
   };
@@ -55,14 +57,15 @@ describe("sindri evolve check --at", () => {
     const r = await check(["package:sindri", "--at", SHA], ctx);
     expect(r.exitCode).toBe(0);
     expect(r.stdout).toMatch(new RegExp(`^ok   package:sindri at dddddddd \\(\\d+\\.\\d s\\)\\nNext: sindri channel promote ${SHA}\\n$`));
-    const add = g.calls[0].args;
-    const wt = add[3] as string;
-    expect(add).toEqual(["worktree", "add", "--detach", wt, SHA]);
+    const add = g.calls[2].args;
+    const wt = add[5] as string;
+    // The user's post-checkout hook and other hooks must not run for the temporary checkout.
+    expect(add).toEqual(["-c", "core.hooksPath=/dev/null", "worktree", "add", "--detach", wt, SHA]);
     expect(path.dirname(path.dirname(wt))).toBe(path.join(stateDir(fx.deps), "tmp"));
-    expect(g.calls.map((c) => c.args.slice(0, 2))).toEqual([["worktree", "add"], ["worktree", "remove"], ["worktree", "prune"]]);
-    expect(g.calls[1].args).toEqual(["worktree", "remove", "--force", wt]);
+    expect(g.calls.map((c) => c.args.filter((a) => !a.startsWith("-") && a !== "core.hooksPath=/dev/null").slice(0, 2))).toEqual([["worktree", "list"], ["worktree", "prune"], ["worktree", "add"], ["worktree", "remove"], ["worktree", "prune"]]);
+    expect(g.calls[3].args).toEqual(["worktree", "remove", "--force", wt]);
     expect(g.calls.every((c) => c.cwd === fx.repo && c.foreign === true)).toBe(true);
-    expect(events).toEqual(["git worktree add", "suite", "git worktree remove", "git worktree prune"]);
+    expect(events).toEqual(["git worktree list", "git worktree prune", "git -c core.hooksPath=/dev/null", "suite", "git worktree remove", "git worktree prune"]);
     expect(proc.calls).toEqual([{ argv: ["env", "-i", `HOME=${fx.deps.home}`, "npm", "test"], cwd: path.join(wt, "sindri") }]);
     expect(seen).toEqual({ cwd: path.join(wt, "sindri"), link: path.join(wt, "sindri", "node_modules"), linkTarget: path.join(dir, "node_modules") });
     expect(fs.existsSync(path.dirname(wt))).toBe(false);
@@ -103,14 +106,15 @@ describe("sindri evolve check --at", () => {
     const failing = await ready(() => { events.push("suite"); return { code: 1, stdout: "boom" }; });
     const g1 = fakeGit(events);
     expect((await check(["--at", SHA], withDeps(failing.fx.ctx, { git: g1 }))).exitCode).toBe(1);
-    expect(events).toEqual(["git worktree add", "suite", "git worktree remove", "git worktree prune"]);
+    expect(events).toEqual(["git worktree list", "git worktree prune", "git -c core.hooksPath=/dev/null", "suite", "git worktree remove", "git worktree prune"]);
     failing.fx.close();
 
     const logs: string[] = [];
     const throwing = await ready(() => { throw new Error("runner died"); });
     const g2 = fakeGit([], (args) => (args[1] === "remove" ? { ok: false, stderr: "cannot remove" } : args[1] === "prune" ? ({ ok: false, stderr: "" } as GitResult) : null));
+    const sub = (g: ReturnType<typeof fakeGit>) => g.calls.map((c) => c.args.filter((a) => a === "list" || a === "add" || a === "remove" || a === "prune")[0]);
     await expect(check(["--at", SHA], withDeps(throwing.fx.ctx, { git: g2, log: (m) => logs.push(m) }))).rejects.toThrow(/runner died/);
-    expect(g2.calls.map((c) => c.args[1])).toEqual(["add", "remove", "prune"]);
+    expect(sub(g2)).toEqual(["list", "prune", "add", "remove", "prune"]);
     expect(logs.join("\n")).toMatch(/could not remove the temporary worktree.*cannot remove/);
     expect(logs.join("\n")).toMatch(/could not prune/);
     throwing.fx.close();
@@ -122,6 +126,71 @@ describe("sindri evolve check --at", () => {
     expect((await check(["--at", SHA], withDeps(ok.fx.ctx, { git: g3, log: (m) => logs2.push(m) }))).exitCode).toBe(0);
     expect(logs2.join("\n")).toMatch(/git gone/);
     ok.fx.close();
+  });
+
+  it("first removes leftover worktrees under its own temp root, and leaves any other worktree alone", async () => {
+    const { fx } = await ready();
+    const root = path.join(stateDir(fx.deps), "tmp");
+    fs.mkdirSync(root, { recursive: true });
+    const real = fs.realpathSync(root);
+    const mine = path.join(real, "check-at-old", "wt");
+    const porcelain = [fx.repo, mine, `${real}x/check-at-near/wt`, "/elsewhere/wt", real].map((w) => `worktree ${w}\nHEAD ${"1".repeat(40)}\ndetached\n`).join("\n");
+    const logs: string[] = [];
+    const g = fakeGit([], (args) => (args.includes("list") ? { ok: true, stdout: porcelain } : args[1] === "remove" && args.includes(mine) ? { ok: false, stderr: "locked" } : null));
+    const ctx = withDeps(fx.ctx, { git: g, log: (m) => logs.push(m) });
+    expect((await check(["--at", SHA], ctx)).exitCode).toBe(0);
+    const verbs = g.calls.map((c) => c.args.filter((a) => ["list", "add", "remove", "prune"].includes(a))[0]);
+    expect(verbs).toEqual(["list", "remove", "prune", "add", "remove", "prune"]);
+    expect(g.calls[0].args).toEqual(["worktree", "list", "--porcelain"]);
+    expect(g.calls[1].args).toEqual(["worktree", "remove", "--force", mine]);
+    expect(g.calls.every((c) => c.cwd === fx.repo && c.foreign === true)).toBe(true);
+    // The leftover that git would not remove is logged and the run goes on.
+    expect(logs.join("\n")).toMatch(/could not remove a leftover worktree.*locked/);
+    fx.close();
+  });
+
+  it("logs, and goes on, when the leftover list can't be read", async () => {
+    const { fx } = await ready();
+    const logs: string[] = [];
+    const g = fakeGit([], (args) => (args.includes("list") ? { ok: false, stderr: "not a repo" } : null));
+    expect((await check(["--at", SHA], withDeps(fx.ctx, { git: g, log: (m) => logs.push(m) }))).exitCode).toBe(0);
+    expect(logs.join("\n")).toMatch(/could not list worktrees.*not a repo/);
+    expect(g.calls.map((c) => c.args.filter((a) => ["list", "add", "remove", "prune"].includes(a))[0])).toEqual(["list", "prune", "add", "remove", "prune"]);
+    fx.close();
+  });
+
+  it("removes a real leftover worktree under its temp root, never one elsewhere, and never runs the repo's post-checkout hook", async () => {
+    const seen: string[] = [];
+    const proc = fakeProc((argv, cwd) => { seen.push(cwd); return {}; });
+    const fx = await evolveFixture({ files: { "sindri/package.json": "{}" }, io: scriptedEvolveIo(() => null, proc) });
+    await init([], fx.ctx);
+    const head = git(fx.repo, "rev-parse", "HEAD").trim();
+    const dir = path.join(channelsRoot(fx.deps), "next", head);
+    fs.mkdirSync(path.join(dir, "dist"), { recursive: true });
+    fs.writeFileSync(path.join(dir, "dist", "cli.js"), "x");
+    fs.mkdirSync(path.join(dir, "node_modules"));
+    writeChannels(fx.deps, { stable: null, next: { sha: head, dir, installedAt: "2026-10-01T00:00:00Z" } });
+    const marker = path.join(tempDir(), "hook-ran");
+    const hook = path.join(fx.repo, ".git", "hooks", "post-checkout");
+    fs.mkdirSync(path.dirname(hook), { recursive: true });
+    fs.writeFileSync(hook, `#!/bin/sh\necho fired >> '${marker}'\n`, { mode: 0o755 });
+    // A worktree left by a crashed run (under the temp root), and a user's own worktree elsewhere.
+    const root = path.join(stateDir(fx.deps), "tmp");
+    const leftover = path.join(root, "check-at-crashed", "wt");
+    fs.mkdirSync(path.dirname(leftover), { recursive: true });
+    const other = path.join(tempDir(), "mine");
+    git(fx.repo, "-c", "core.hooksPath=/dev/null", "worktree", "add", "--detach", leftover, head);
+    git(fx.repo, "-c", "core.hooksPath=/dev/null", "worktree", "add", "--detach", other, head);
+    expect(git(fx.repo, "worktree", "list", "--porcelain").match(/^worktree /gm)).toHaveLength(3);
+    expect((await check(["--at", head], fx.ctx)).exitCode).toBe(0);
+    const listed = git(fx.repo, "worktree", "list", "--porcelain");
+    expect(listed.match(/^worktree /gm)).toHaveLength(2);
+    expect(listed).toContain(fs.realpathSync(other));
+    expect(fs.existsSync(leftover)).toBe(false);
+    expect(fs.existsSync(other)).toBe(true);
+    expect(fs.existsSync(marker)).toBe(false);
+    expect(seen).toHaveLength(1);
+    fx.close();
   });
 
   it("refuses a build without node_modules before creating any worktree", async () => {
@@ -136,10 +205,10 @@ describe("sindri evolve check --at", () => {
 
   it("gives a clear error and runs no suite when the worktree can't be created (unknown sha)", async () => {
     const { fx, proc } = await ready();
-    const g = fakeGit([], (args) => (args[1] === "add" ? { ok: false, stderr: "fatal: invalid reference" } : null));
+    const g = fakeGit([], (args) => (args.includes("add") ? { ok: false, stderr: "fatal: invalid reference" } : null));
     await expect(check(["--at", SHA], withDeps(fx.ctx, { git: g }))).rejects.toThrow(/could not check out dddddddd.*invalid reference/);
     expect(proc.calls).toEqual([]);
-    expect(g.calls.map((c) => c.args[1])).toEqual(["add", "remove", "prune"]);
+    expect(g.calls.map((c) => c.args.filter((a) => ["list", "add", "remove", "prune"].includes(a))[0])).toEqual(["list", "prune", "add", "remove", "prune"]);
     expect(fx.ctx.db.prepare("SELECT COUNT(*) AS n FROM suite_runs").get()).toEqual({ n: 0 });
     fx.close();
   });

@@ -2,6 +2,7 @@ import fs from "node:fs";
 import path from "node:path";
 
 import { stateDir } from "../../deps.js";
+import type { GitResult } from "../../git.js";
 import { SindriError } from "../../errors.js";
 import { success, type CommandResult } from "../../output.js";
 import { buildProblem, readChannels } from "../channel.js";
@@ -16,25 +17,41 @@ import { runSuite } from "../suites.js";
 async function inWorktree<T>(ctx: EvolveCtx, sha: string, modules: string, fn: (cwdBase: string) => Promise<T>): Promise<T> {
   const tmpRoot = path.join(stateDir(ctx.deps), "tmp");
   fs.mkdirSync(tmpRoot, { recursive: true, mode: 0o700 });
+  const git = (args: string[]) => ctx.deps.git.run(args, ctx.repo, { foreign: true });
+  // Best effort: a failure is logged, never thrown, so a cleanup problem can't hide the suite's result.
+  const tryGit = async (what: string, args: string[]): Promise<GitResult | null> => {
+    try {
+      const r = await git(args);
+      if (!r.ok) ctx.deps.log(`could not ${what}: ${r.stderr.trim()}`);
+      return r;
+    } catch (e) {
+      ctx.deps.log(`could not ${what}: ${(e as Error).message}`);
+      return null;
+    }
+  };
+  await removeLeftovers(fs.realpathSync(tmpRoot), tryGit);
   const holder = fs.mkdtempSync(path.join(tmpRoot, "check-at-"));
   const wt = path.join(holder, "wt");
-  const git = (args: string[]) => ctx.deps.git.run(args, ctx.repo, { foreign: true });
   try {
-    const added = await git(["worktree", "add", "--detach", wt, sha]);
+    // hooksPath off: the user's post-checkout hook (and any other) must not run for this checkout.
+    const added = await git(["-c", "core.hooksPath=/dev/null", "worktree", "add", "--detach", wt, sha]);
     if (!added.ok) throw new SindriError("SND-EVOLVE-005", `could not check out ${sha.slice(0, 8)} in a temporary worktree: ${added.stderr.trim()}`, { fix: "git fetch origin, then retry" });
     fs.symlinkSync(modules, path.join(wt, "sindri", "node_modules"), "dir");
     return await fn(wt);
   } finally {
-    for (const [what, args] of [["remove the temporary worktree", ["worktree", "remove", "--force", wt]], ["prune worktrees", ["worktree", "prune"]]] as const) {
-      try {
-        const r = await git([...args]);
-        if (!r.ok) ctx.deps.log(`could not ${what}: ${r.stderr.trim()}`);
-      } catch (e) {
-        ctx.deps.log(`could not ${what}: ${(e as Error).message}`);
-      }
-    }
+    await tryGit("remove the temporary worktree", ["worktree", "remove", "--force", wt]);
+    await tryGit("prune worktrees", ["worktree", "prune"]);
     fs.rmSync(holder, { recursive: true, force: true });
   }
+}
+
+// A crashed or interrupted run can leave a registered worktree that `prune` keeps (its directory
+// still exists). Remove those, and only those under this command's own temp root.
+async function removeLeftovers(root: string, tryGit: (what: string, args: string[]) => Promise<GitResult | null>): Promise<void> {
+  const listed = await tryGit("list worktrees", ["worktree", "list", "--porcelain"]);
+  const paths = listed !== null && listed.ok ? listed.stdout.split("\n").filter((l) => l.startsWith("worktree ")).map((l) => l.slice("worktree ".length)) : [];
+  for (const p of paths.filter((x) => x.startsWith(`${root}${path.sep}`))) await tryGit("remove a leftover worktree", ["worktree", "remove", "--force", p]);
+  await tryGit("prune worktrees", ["worktree", "prune"]);
 }
 
 // The suite, run inside a channel build, bound to that sha: what `channel promote` requires.

@@ -319,6 +319,67 @@ test_channel_ref_must_be_in_remote_tracking_main() {
   echo "PASS: test_channel_ref_must_be_in_remote_tracking_main"
 }
 
+test_channel_look_alike_refs_cannot_stand_in_for_a_missing_remote_ref() {
+  make_scratch_repo
+  local out
+  git -C "$SRC" update-ref -d refs/remotes/origin/main
+  # A tag whose name is the full remote ref, on the unmerged commit.
+  git -C "$SRC" tag refs/remotes/origin/main "$UNMERGED"
+  if out="$(channel_install next "$UNMERGED" 2>&1)"; then echo "FAIL: a tag named refs/remotes/origin/main bypassed the check"; exit 1; fi
+  grep -q "no refs/remotes/origin/main" <<<"$out" || { echo "FAIL: wrong refusal (tag): $out"; exit 1; }
+  git -C "$SRC" tag -d refs/remotes/origin/main > /dev/null
+  # A branch with that name.
+  git -C "$SRC" update-ref refs/heads/refs/remotes/origin/main "$UNMERGED"
+  if out="$(channel_install next "$UNMERGED" 2>&1)"; then echo "FAIL: a branch named refs/remotes/origin/main bypassed the check"; exit 1; fi
+  grep -q "no refs/remotes/origin/main" <<<"$out" || { echo "FAIL: wrong refusal (branch): $out"; exit 1; }
+  [ ! -e "$TMP/state/sindri/channels/next/$UNMERGED" ] || { echo "FAIL: build dir exists"; exit 1; }
+  echo "PASS: test_channel_look_alike_refs_cannot_stand_in_for_a_missing_remote_ref"
+}
+
+test_channel_wrong_shaped_state_refuses_before_the_build() {
+  make_scratch_repo
+  local shim="$TMP/npm-shim" out content
+  mkdir -p "$shim" "$TMP/state/sindri"
+  printf '#!/bin/sh\necho built >> "%s/calls"\nexit 0\n' "$shim" > "$shim/npm"
+  chmod +x "$shim/npm"
+  for content in '{ not json' '[]' '{}' '{"stable": 5, "next": null}' 'null'; do
+    for channel in stable next; do
+      printf '%s' "$content" > "$TMP/state/sindri/channels.json"
+      : > "$shim/calls"
+      if out="$(PATH="$shim:$PATH" AW_SINDRI_SRC="$SRC" AW_SKIP_LAUNCHD=1 AW_STATE_DIR="$TMP/state" CLAUDE_LOCAL_BIN="$TMP/bin" bash "$ROOT/scripts/install-sindri.sh" --channel "$channel" --ref "$MERGED2" 2>&1)"; then echo "FAIL: '$content' was accepted on $channel"; exit 1; fi
+      grep -q "repair or restore channels.json" <<<"$out" || { echo "FAIL: '$content' ($channel): no repair hint: $out"; exit 1; }
+      if grep -qi "delete" <<<"$out"; then echo "FAIL: '$content' ($channel): the message says delete: $out"; exit 1; fi
+      [ ! -s "$shim/calls" ] || { echo "FAIL: '$content' ($channel): the build ran before the refusal"; exit 1; }
+      [ ! -e "$TMP/state/sindri/channels/$channel/$MERGED2" ] && [ ! -e "$TMP/bin/sindri" ] && [ ! -e "$TMP/bin/sindri-next" ] || { echo "FAIL: '$content' ($channel): something was written"; exit 1; }
+      [ "$(cat "$TMP/state/sindri/channels.json")" = "$content" ] || { echo "FAIL: '$content' ($channel): channels.json was changed"; exit 1; }
+    done
+  done
+  echo "PASS: test_channel_wrong_shaped_state_refuses_before_the_build"
+}
+
+test_channel_missing_state_is_a_first_install() {
+  make_scratch_repo
+  channel_install stable "$MERGED1" > /dev/null || { echo "FAIL: a first stable install was refused"; exit 1; }
+  [ "$("$TMP/bin/sindri" yo)" = "channel-ok yo" ] || { echo "FAIL: first stable install did not run"; exit 1; }
+  echo "PASS: test_channel_missing_state_is_a_first_install"
+}
+
+test_channel_record_refuses_state_that_turns_wrong_shaped_during_the_build() {
+  make_scratch_repo
+  channel_install next "$MERGED1" > /dev/null
+  local shim="$TMP/npm-shim" out before
+  before="$(cat "$TMP/bin/sindri-next")"
+  mkdir -p "$shim"
+  # The build "damages" channels.json after the pre-flight check passed.
+  printf '#!/bin/sh\nprintf "[]" > "%s/state/sindri/channels.json"\nexit 0\n' "$TMP" > "$shim/npm"
+  chmod +x "$shim/npm"
+  if out="$(PATH="$shim:$PATH" AW_SINDRI_SRC="$SRC" AW_SKIP_LAUNCHD=1 AW_STATE_DIR="$TMP/state" CLAUDE_LOCAL_BIN="$TMP/bin" bash "$ROOT/scripts/install-sindri.sh" --channel next --ref "$MERGED2" 2>&1)"; then echo "FAIL: record_channel wrote into a wrong-shaped file"; exit 1; fi
+  grep -q "repair or restore channels.json" <<<"$out" || { echo "FAIL: wrong refusal: $out"; exit 1; }
+  [ "$(cat "$TMP/state/sindri/channels.json")" = "[]" ] || { echo "FAIL: channels.json was rewritten"; exit 1; }
+  [ "$(cat "$TMP/bin/sindri-next")" = "$before" ] || { echo "FAIL: the wrapper was switched"; exit 1; }
+  echo "PASS: test_channel_record_refuses_state_that_turns_wrong_shaped_during_the_build"
+}
+
 test_channel_failed_build_does_not_block_a_retry() {
   make_scratch_repo
   local out shim="$TMP/npm-shim"
@@ -400,3 +461,7 @@ test_channel_failed_build_does_not_block_a_retry
 test_channel_refuses_a_symlink_in_the_archive
 test_channel_corrupt_state_leaves_the_wrapper_alone
 test_channel_refuses_a_directory_at_the_wrapper_path
+test_channel_look_alike_refs_cannot_stand_in_for_a_missing_remote_ref
+test_channel_wrong_shaped_state_refuses_before_the_build
+test_channel_missing_state_is_a_first_install
+test_channel_record_refuses_state_that_turns_wrong_shaped_during_the_build

@@ -35,7 +35,7 @@ export function readChannels(deps: Deps): ChannelState {
   }
   const r = Channels.safeParse(parseJson(text));
   if (!r.success) {
-    throw new SindriError("SND-EVOLVE-005", `channels.json is corrupt: ${r.error.issues[0].message}`, { fix: "restore it from a backup, or delete it and reinstall with scripts/install-sindri.sh --channel next --ref <sha>" });
+    throw new SindriError("SND-EVOLVE-005", `channels.json is corrupt: ${r.error.issues[0].message}`, { fix: "repair or restore channels.json from a backup, then rerun the command" });
   }
   return r.data;
 }
@@ -64,6 +64,7 @@ export function buildProblem(deps: Deps, e: ChannelEntry): string | null {
 export function canPromote(c: ChannelState, sha: string, suiteOk: boolean, now: Date): { ok: boolean; why: string; next: string } {
   if (c.next === null) return { ok: false, why: "nothing is installed on next", next: "scripts/install-sindri.sh --channel next --ref <sha>" };
   if (c.next.sha !== sha) return { ok: false, why: `${sha} is not what next runs (${c.next.sha})`, next: `sindri channel promote ${c.next.sha}` };
+  if (c.stable !== null && c.stable.sha === sha) return { ok: false, why: `${sha} is already stable`, next: "sindri channel status" };
   const days = Math.floor((now.getTime() - Date.parse(c.next.installedAt)) / 86_400_000);
   if (days < SOAK_DAYS) return { ok: false, why: `next has soaked ${days} of ${SOAK_DAYS} days`, next: "sindri channel status (after the soak)" };
   if (!suiteOk) {
