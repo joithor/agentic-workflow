@@ -392,14 +392,14 @@ owned by the sindri user):
 | Structure | Symbols (name, signature, kind, file, exported, callers) | TypeScript compiler API for TS/JS (v1); tree-sitter grammars for other languages in a later plan; LSP (Serena) when available |
 | Clones | Normalized AST hashes per function and block (identifiers and literals abstracted), plus MinHash/LSH over token shingles (no pairwise comparison) | core |
 | Dependencies | Package manifests, plus internal utility modules marked by profile globs | core |
-| Embeddings | Function-level vectors from a **local** model | Ollama on loopback (`index.embeddings.url` must be the IP literal `127.0.0.1` or `[::1]`; redirects and cloud models are refused), or Prism with `cloud_fallback:false` and `route_guard:local` |
+| Embeddings | Function-level vectors from a **local** model | Ollama on loopback (`index.embeddings.url` must be the IP literal `127.0.0.1` or `[::1]`; redirects and cloud models are refused). A Prism route with `cloud_fallback:false` and `route_guard:local` is not built (a later plan) |
 | Graph | Module and call graph, cross-file relationships, surface clusters | **graphify** adapter (`index.graph: graphify`) |
 
 **Offline guarantee (T5):**
 - Indexing never sends code off the machine. Embedding calls go only to a loopback endpoint.
 - The graphify adapter runs with network access denied (sandbox profile, or a network-less namespace on
   Linux) and fails closed if it attempts egress.
-- `doctor` verifies all three: the loopback endpoint, the Prism flags, and the graphify sandbox.
+- `doctor` verifies all three: the loopback endpoint, the graphify sandbox, and (once that route is built) the Prism flags.
 - **Inputs:** tracked files only (respecting `.gitignore`), excluding the profile's `index.denyPaths`
   (secrets, fixtures containing PHI, generated code). Symlinks aren't followed. Per-file and total size
   caps apply.
@@ -424,8 +424,12 @@ owned by the sindri user):
   layers still enforce.
 
 **Signals** (computed at commit by the git `pre-commit` hook, and re-computed sindri-side on the pushed
-range; until rollout step 3b, signals are recorded only: the pre-commit hook opens the ledger read-only, writes them to the spool and never blocks. Each run records the staged tree hash; once its commit is 14 days old each signal is labeled kept, acted-on, dropped or n/a, and per-layer precision (acted-on over acted-on plus kept) is the 3b bar. This is an outcome proxy, not a human label; profile thresholds, seeded by a historical replay over past merged PRs in rollout step 2, then calibrated **per layer** on
-real commits in step 3a (Q1, M1):
+range) use profile thresholds, seeded by a historical replay over past merged PRs in rollout step 2, then
+calibrated **per layer** on real commits in step 3a (Q1, M1). Until rollout step 3b, signals are recorded
+only: the pre-commit hook opens the ledger read-only, writes them to the spool and never blocks. Each run
+records the staged tree hash; once its commit is 14 days old each signal is labeled kept, acted-on, dropped
+or n/a, and per-layer precision (acted-on over acted-on plus kept) is the 3b bar. This is an outcome proxy,
+not a human label.
 
 | Question | Signal | Default threshold |
 |---|---|---|
@@ -791,7 +795,7 @@ the container.
   `acquire(kind, ttl)` and `release` only.
 - Leases expire, so a dead container never holds the lock.
 - Index builds and image builds take the same lock.
-- Host side: a `mkdir` lock at `${AW_HEAVY_JOB_LOCK:-$AW_STATE_DIR/locks/heavy-job.lock}`, the same primitive and path as `config/lib/locks.sh` and `ui-evidence`, with the holder record (`<lockdir>.holder.json`) beside it so the lock dir stays empty for `rmdir`; a holder that is dead on this host (its pid is gone, or its record names another boot id) is reclaimed. Only the waiter that creates the `<lockdir>.reclaim` mutex may reclaim; it re-checks the holder inside the mutex, moves the dir aside by rename, and keeps the mutex until its own dir and holder record exist, so two waiters can never both enter. A holder record older than the lock dir is a leftover and is never reclaimed on.
+- Host side: a `mkdir` lock at `${AW_HEAVY_JOB_LOCK:-$AW_STATE_DIR/locks/heavy-job.lock}`, the same `mkdir` primitive as `config/lib/locks.sh` and the same default path as ui-evidence's heavy-job lock (`skills/ui-evidence/scripts/lib/locks.sh`), with the holder record (`<lockdir>.holder.json`) beside it so the lock dir stays empty for `rmdir`; a holder that is dead on this host (its pid is gone, or its record names another boot id) is reclaimed. Only the waiter that creates the `<lockdir>.reclaim` mutex may reclaim; it re-checks the holder inside the mutex, moves the dir aside by rename, and keeps the mutex until its own dir and holder record exist, so two waiters can never both enter. A holder record older than the lock dir is a leftover and is never reclaimed on.
 
 **Warm start:**
 - Images are keyed by `(repo, lockfile hash, toolchain)`. Rebuilding one is a heavy job.
@@ -1038,7 +1042,7 @@ The `UserPromptSubmit` hook classifies every human turn in a sindri session:
 | `tick [--dry-run]` | One tick, or print every action | "no-op: <reason>" on stderr when nothing to do |
 | `shadow report` | Routing, direction-check and shape agreement per class, plus classifier accuracy | "Not enough shadow data yet (n/30)." |
 | `rules show\|approve\|reject` | Eval-loop proposals | "No proposals pending." |
-| `index build\|status\|query` | Code index (§6.2). `index status` lists every repo; a missing index is a row and exit 1, not an `SND-INDEX-404` abort. `index query` still uses `SND-INDEX-404` | `SND-INDEX-404 no index for <repo>; run sindri repo add` |
+| `index build\|status\|query` | Code index (§6.2). `index status` lists every repo; a missing index is a row and exit 1, not an `SND-INDEX-404` abort. `index query` still uses `SND-INDEX-404` | `SND-INDEX-404 no index for <repo>; run sindri index build --repo <repo>` |
 | `repo add <path>` | Edits the profile only (then `profile approve`); each full `index build` creates or refreshes the mirror | — |
 | `profile init\|validate\|explain\|migrate\|approve` | Profile tooling. `approve` shows the diff first | validate: "Profile valid." / errors with file, key path, fix |
 | `scheduler install\|uninstall\|status [--dry-run]` | Scheduler | dry-run prints the unit/plist |

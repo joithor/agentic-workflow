@@ -74,7 +74,7 @@ Each recorded run keeps `git write-tree` of the staged index. `observe` and `sha
 | `kept` | the flagged symbol (same file, same name, same AST) or dependency is still there |
 | `acted-on` | it was changed or removed |
 | `dropped` | the commit was never made, was amended, or never reached the default branch |
-| `n/a` | diff size and export count have no flagged symbol |
+| `n/a` | diff size and export count have no flagged symbol, and a symbol signal with no recorded name or AST hash can't be matched to any version |
 
 `sindri shape report` prints, per type, `SIGNALS | LABELED | ACTED-ON | KEPT | PRECISION | TOWARD 3b`. Precision is `acted-on / (acted-on + kept)`, and 3b wants at least 30 labeled signals and precision at least 0.70 per layer (`ready`). Known measurement effects:
 
@@ -94,7 +94,7 @@ This is an **outcome proxy, not a human label**: code is changed for other reaso
 | `embeddings unavailable (Ollama not answering …)` | Ollama is down or the model is missing | start Ollama, `sindri index setup` |
 | `graph unavailable (…)` | graphify missing, wrong version or failed | `sindri index setup`, then `sindri index build --full` |
 | `embeddings pending` / `graph pending` | only quick builds have run | `sindri index build` |
-| `uv: command not found` during `index setup` | `uv` is missing; `./setup.sh --with-sindri` installs it with Homebrew (`brew install uv`) when it can, and warns otherwise | `brew install uv` or see the uv install docs, then `sindri index setup` |
+| `uv is not installed` (the `graphify` step of `index setup`) | `uv` is missing; `./setup.sh --with-sindri` installs it with Homebrew (`brew install uv`) when it can, and warns otherwise | `brew install uv` or see the uv install docs, then `sindri index setup` |
 | `SND-INDEX-008` (graphify output not usable) | the graphify test fixture (`sindri/tests/fixtures/graphify/graph.json`) is synthetic until the switch-on re-records it from a real sandboxed run, so key names may need a fix then | re-record the fixture from the pinned graphify and fix `parseGraphJson` if a key differs |
 | `SND-INDEX-001` / `heavy-lock held` | another heavy job (a test run, another build) holds the lock | wait; a lock whose holder is dead on this host (pid gone, or recorded on another boot) is reclaimed automatically; otherwise run the fix `sindri doctor` prints: `rmdir ${AW_HEAVY_JOB_LOCK:-$AW_STATE_DIR/locks/heavy-job.lock}` and delete the `.holder.json` file beside it |
 | `sindri-shape: skipped (no index; …)` in a commit | the hook found no index for this repo | `sindri index build` |
