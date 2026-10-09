@@ -1885,7 +1885,7 @@ git add sindri/src sindri/tests sindri/vitest.config.ts sindri/package.json docs
 git commit -m "feat: sindri model runner for bounded scoping jobs"
 ```
 
-- [ ] **Step 6: One real call (heavy, once)**
+- [x] **Step 6: One real call (heavy, once)**
 
 This is the only task that talks to the real CLI before Task 12. It proves the flags, the stdin prompt, the Zod-derived schema and the envelope parsing against the real thing, before Tasks 5 to 9 build on fake envelopes.
 

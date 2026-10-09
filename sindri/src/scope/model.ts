@@ -1,5 +1,5 @@
 import { SindriError } from "../errors.js";
-import type { Scrubber } from "../scrub/scrub.js";
+import { makeScrubber, type Scrubber } from "../scrub/scrub.js";
 
 export type Spawner = (
   argv: string[],
@@ -32,6 +32,13 @@ export class ModelAnswerError extends SindriError {
   }
 }
 
+// A CLI-reported error (is_error). The call still cost tokens, so it carries them.
+export class ModelJobError extends SindriError {
+  constructor(message: string, readonly usage: ModelUsage) {
+    super("SND-SCOPE-002", message);
+  }
+}
+
 export class Budget {
   used = 0;
   constructor(private readonly limit: number) {}
@@ -54,7 +61,10 @@ export interface ModelAuditRow {
 }
 
 // One budget and one audit trail for every model call of a run. The check is
-// before the call; the charge is after it, and a parse failure is charged too.
+// before the call; the charge is after it. Every call that reported usage writes
+// exactly one audit row and is charged, a failed parse or is_error reply included.
+// A call that reported none (timeout, non-zero exit, spawn failure, unreadable
+// output) cost nothing we can see: no charge and no audit row.
 export function meteredRunner(inner: ModelRunner, o: { budget: Budget; audit: ModelAuditRow[]; tag?: string }): ModelRunner {
   return {
     async run<T>(call: ModelCall<T>) {
@@ -68,7 +78,7 @@ export function meteredRunner(inner: ModelRunner, o: { budget: Budget; audit: Mo
         charge(r.usage);
         return r;
       } catch (e) {
-        if (e instanceof ModelAnswerError) charge(e.usage);
+        if (e instanceof ModelAnswerError || e instanceof ModelJobError) charge(e.usage);
         throw e;
       }
     },
@@ -82,13 +92,13 @@ export type Outcome<T> =
 
 // The error policy every model loop shares: a bad answer is a round with a
 // reason; a refused budget, a timeout or a CLI failure stops the loop.
-export async function tryRun<T>(runner: ModelRunner, call: ModelCall<T>): Promise<Outcome<T>> {
+export async function tryRun<T>(runner: ModelRunner, call: ModelCall<T>, scrubber: Scrubber = makeScrubber()): Promise<Outcome<T>> {
   try {
     return { kind: "ok", value: (await runner.run(call)).value };
   } catch (err) {
     if (err instanceof SindriError && err.code === "SND-SCOPE-004") return { kind: "schema", reason: err.message };
     if (err instanceof SindriError && err.code === "SND-SCOPE-005") return { kind: "stop", reason: "token budget exhausted", budget: true };
-    return { kind: "stop", reason: (err as Error).message, budget: false };
+    return { kind: "stop", reason: scrubber.scrub((err as Error).message).text, budget: false };
   }
 }
 
@@ -167,21 +177,22 @@ export function makeClaudeRunner(o: {
       }
       if (typeof parsed !== "object" || parsed === null) throw notJson();
       const env = parsed as Envelope;
+      const u = env.usage ?? {};
+      const count = (n: unknown): number => (typeof n === "number" && Number.isFinite(n) && n >= 0 ? n : 0);
+      const usage = {
+        inputTokens: count(u.input_tokens) + count(u.cache_read_input_tokens) + count(u.cache_creation_input_tokens),
+        outputTokens: count(u.output_tokens),
+      };
       if (env.is_error === true) {
         const text = scrub(typeof env.result === "string" ? env.result : "").slice(0, 300);
-        throw new SindriError("SND-SCOPE-002", `model job reported an error: ${text === "" ? "no message" : text}`);
+        throw new ModelJobError(`model job reported an error: ${text === "" ? "no message" : text}`, usage);
       }
       let answer: unknown;
       try {
         answer = env.structured_output ?? JSON.parse(String(env.result));
       } catch {
-        throw notJson();
+        throw new ModelAnswerError("the model's answer wasn't JSON", usage);
       }
-      const u = env.usage ?? {};
-      const usage = {
-        inputTokens: (u.input_tokens ?? 0) + (u.cache_read_input_tokens ?? 0) + (u.cache_creation_input_tokens ?? 0),
-        outputTokens: u.output_tokens ?? 0,
-      };
       try {
         return { value: call.parse(answer), usage };
       } catch (e) {

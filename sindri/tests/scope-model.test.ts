@@ -80,7 +80,7 @@ describe("Claude model runner", () => {
     const withStderr = await runner(spawner({ code: 1, stderr: `\nauth failed ${secret}\nmore\n` })).run(call).catch((e: unknown) => e);
     expect((withStderr as SindriError).message).toBe("model job failed (claude exited 1): auth failed [REDACTED:aws-access-key]");
     await expect(runner(spawner({ timedOut: true, code: 137 })).run(call)).rejects.toThrow("model job timed out after 1000 ms");
-    for (const stdout of ["not json", "null", "42", JSON.stringify({ result: "prose" }), "{}"]) {
+    for (const stdout of ["not json", "null", "42"]) {
       await expect(runner(spawner({ stdout })).run(call)).rejects.toThrow("model job returned output that isn't JSON");
     }
     const flagged = await runner(spawner({ stdout: JSON.stringify({ is_error: true, result: `Credit balance is too low ${secret}`, usage: {} }) })).run(call).catch((e: unknown) => e);
@@ -116,6 +116,28 @@ describe("Claude model runner", () => {
     expect(s.calls[0].argv[s.calls[0].argv.indexOf("--system-prompt") + 1]).toBe("sys [REDACTED:internal-id]");
   });
 
+  it("charges tokens a reply cost even when its answer is prose, missing, or the CLI flagged an error", async () => {
+    const usage = { input_tokens: 7, output_tokens: 3 };
+    for (const body of [{ result: "prose", usage }, { usage }]) {
+      const e = await runner(spawner({ stdout: JSON.stringify(body) })).run(call).catch((x: unknown) => x);
+      expect(e).toBeInstanceOf(ModelAnswerError);
+      expect((e as ModelAnswerError).usage).toEqual({ inputTokens: 7, outputTokens: 3 });
+    }
+    const flagged = await runner(spawner({ stdout: JSON.stringify({ is_error: true, result: "boom", usage }) })).run(call).catch((x: unknown) => x);
+    expect((flagged as SindriError).code).toBe("SND-SCOPE-002");
+    expect((flagged as SindriError & { usage: unknown }).usage).toEqual({ inputTokens: 7, outputTokens: 3 });
+    const budget = new Budget(1000);
+    const audit: ModelAuditRow[] = [];
+    const metered = meteredRunner(runner(spawner({ stdout: JSON.stringify({ is_error: true, usage }) })), { budget, audit });
+    await expect(metered.run(call)).rejects.toThrow("model job reported an error");
+    expect([budget.used, audit.length]).toEqual([10, 1]);
+  });
+
+  it("clamps junk usage numbers to zero so the budget can't go NaN", async () => {
+    const stdout = JSON.stringify({ structured_output: { n: 1 }, usage: { input_tokens: "9", output_tokens: -4, cache_read_input_tokens: 1e999, cache_creation_input_tokens: 2 } });
+    expect((await runner(spawner({ stdout })).run(call)).usage).toEqual({ inputTokens: 2, outputTokens: 0 });
+  });
+
   it("removes its scratch directory even when the spawn itself fails", async () => {
     const r = runner((async () => { throw new Error("spawn failed"); }) as Spawner);
     await expect(r.run(call)).rejects.toThrow("spawn failed");
@@ -135,6 +157,7 @@ describe("tryRun", () => {
     expect(await tryRun(failing(new SindriError("SND-SCOPE-005", "token budget exhausted")), call)).toEqual({ kind: "stop", reason: "token budget exhausted", budget: true });
     expect(await tryRun(failing(new SindriError("SND-SCOPE-002", "model job timed out after 1000 ms")), call)).toEqual({ kind: "stop", reason: "model job timed out after 1000 ms", budget: false });
     expect(await tryRun(failing(new Error("boom")), call)).toEqual({ kind: "stop", reason: "boom", budget: false });
+    expect(await tryRun(failing(new Error(`spawn ${secret}`)), call)).toEqual({ kind: "stop", reason: "spawn [REDACTED:aws-access-key]", budget: false });
   });
 });
 
