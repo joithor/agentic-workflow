@@ -7,16 +7,14 @@ import { audit } from "../audit.js";
 import { lintVariant } from "../blind.js";
 import { holdoutTitles } from "../corpus.js";
 import type { EvolveCtx } from "../ctx.js";
+import { escapeInvisible } from "../invisible.js";
 import { loadPrompt, sha256 } from "../overlay.js";
 import { defaultPrompt, hasSafetyClause, PROMPT_IDS, type PromptId } from "../prompts.js";
 import { comparisonRuns, getProposal, latestComparison, runningComparison, setStatus } from "../proposals.js";
 
 const refuse = (why: string): SindriError => new SindriError("SND-EVOLVE-004", why);
 
-// Visible escapes for controls, DEL, line separators, bidi controls and zero-width characters, so a variant
-// can't erase, overwrite or reorder the lines the approver is reading.
-const UNSAFE = /[\u0000-\u001F\u007F-\u009F\u00AD\u200B-\u200F\u2028\u2029\u202A-\u202E\u2060-\u206F\uFEFF]/g;
-const visible = (s: string): string => s.replace(UNSAFE, (c) => `\\u{${(c.codePointAt(0) as number).toString(16).toUpperCase().padStart(4, "0")}}`);
+const TAB: ReadonlySet<string> = new Set(["\t"]);
 
 interface Gate { promptId: PromptId; text: string; cmp: { run: number; line: string } }
 
@@ -48,9 +46,9 @@ export async function adopt(args: string[], ctx: EvolveCtx): Promise<CommandResu
   const { promptId, text, cmp } = gate(ctx, id);
   if (!ctx.deps.isTTY) throw new SindriError("SND-EVOLVE-006", "adopting a prompt needs an interactive terminal");
   const sha = sha256(text);
-  const diff = lineDiff(loadPrompt(ctx.deps, promptId).split("\n"), text.split("\n")).map(visible);
+  const diff = lineDiff(loadPrompt(ctx.deps, promptId).split("\n"), text.split("\n")).map((l) => escapeInvisible(l, TAB));
   const answer = await ctx.deps.prompt([
-    `Adopt this variant for ${promptId}?`, ...diff, "", `Comparison: ${visible(cmp.line)}`,
+    `Adopt this variant for ${promptId}?`, ...diff, "", `Comparison: ${escapeInvisible(cmp.line)}`,
     `Comparison runs so far: ${comparisonRuns(ctx.db, id)} (a variant that kept rerunning until it won is not evidence; check the history in sindri evolve show)`,
     `Type the first 8 characters of the variant's sha256 (${sha.slice(0, 8)}) to confirm: `,
   ].join("\n"));

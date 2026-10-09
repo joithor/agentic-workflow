@@ -205,6 +205,21 @@ describe("sindri evolve adopt: the diff is safe to read (Task 10 fix round 1, I3
   });
 });
 
+describe("sindri evolve adopt: astral and format invisibles (Task 10 fix round 2, I4)", () => {
+  it("shows tag characters, variation selectors and U+061C as visible escapes", async () => {
+    const { fx, tty, asked, save, answerWith } = await ready();
+    const text = `${VARIANT}\nhid\u{E0041}den \ufe0f vs \u{E0100} alm \u061c end\n\ttabbed`;
+    const id = save("Smuggling variant", text, "won");
+    answerWith(sha8(text));
+    await adopt([id], tty);
+    const q = asked[0];
+    expect(q).not.toMatch(/[\u{E0000}-\u{E007F}\u{E0100}-\u{E01EF}\ufe00-\ufe0f\u061c]/u);
+    expect(q).toContain("\ttabbed");
+    for (const esc of ["hid\\u{E0041}den", "\\u{FE0F}", "\\u{E0100}", "\\u{061C}"]) expect(q, esc).toContain(esc);
+    fx.close();
+  });
+});
+
 describe("sindri evolve adopt: holdout titles and the overlay directory (Task 10 fix round 1, m10 + m12)", () => {
   const holdoutId = Array.from({ length: 600 }, (_, i) => `item-${i}`).find(isHoldout) as string;
   const it1: ReplayItem = {

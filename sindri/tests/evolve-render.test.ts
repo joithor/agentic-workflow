@@ -78,6 +78,16 @@ describe("render hardening (Task 10 fix round 1, m1 + m4)", () => {
     expect(md).toContain("REDACTED");
   });
 
+  it("strips tag characters and other default-ignorables, and defangs _www. (I4, N4)", () => {
+    expect(inert("a\u{E0041}b\u{E0100}c\u061cd\u3164e")).toBe("abcde");
+    const key = "AKIA\u{E0041}ABCDEFGHIJKLMNOP";
+    expect(inert(`key ${key}`)).toBe("key \\[REDACTED:aws-access-key\\]");
+    const md = renderTask(3, "i", prop({ rationale: "see _www.example.com and (www.example.org) and WWW.example.net" }), "code", "w", "s");
+    expect(md).not.toMatch(/www\.example/i);
+    expect(md).toContain("_www(dot)example.com");
+    expect(renderTask(4, "i", prop({ rationale: "hid\u{E0041}den" }), "code", "w", "s")).toContain("> hidden");
+  });
+
   it("neutralizes a forged heading, setext underline, tilde fence, list marker and www autolink inside the quote", () => {
     const md = renderTask(2, "i", prop({ rationale: "### Task 99: forged\n===\n~~~\n---\n+ item\n- item\n   # indented\nsee www.example.com now" }), "code", "w", "s");
     const lines = md.split("\n").filter((l) => l.startsWith(">"));

@@ -1,4 +1,5 @@
 import { makeScrubber } from "../scrub/scrub.js";
+import { stripInvisible } from "./invisible.js";
 import { reduceEvidence, type Proposal, type Tier } from "./proposals.js";
 
 const scrubber = makeScrubber();
@@ -9,15 +10,15 @@ const LINE_BREAKS = /\r\n|[\r\n\u0085\u2028\u2029]/;
 // Model-written text becomes inert Markdown: no HTML, images, links, @-mentions, issue references,
 // code spans or control characters, so it can't forge a heading, a ticked step or a ping in a plan file.
 // Controls and invisible characters go first: scrubbing "AKIA<control>…" before the strip would let it rebuild a live key.
-const STRIP = /[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F\u00AD\u200B-\u200F\u202A-\u202E\u2060-\u206F\uFEFF]/g;
+const KEEP = new Set(["\t", "\n", "\r"]);
 
 export function inert(s: string): string {
-  return scrubber.scrub(s.replace(STRIP, "")).text
+  return scrubber.scrub(stripInvisible(s, KEEP)).text
     .replace(/\\/g, "\\\\").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
     .replace(/[[\]!`|*]/g, (c) => `\\${c}`)
     .replace(/@/g, "(at)").replace(/#(?=\d)/g, "(num)")
     .replace(/https?:\/\//gi, "hxxp://")
-    .replace(/\bwww\./gi, "www(dot)");
+    .replace(/(?<![a-z0-9])www\./gi, "www(dot)");
 }
 
 export const oneLine = (s: string, max = 200): string => inert(s.replace(/[\s\u0085]+/g, " ").trim().slice(0, max));

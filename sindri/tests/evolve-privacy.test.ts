@@ -47,15 +47,32 @@ describe("privacyProblem: hidden and look-alike spellings (Task 10 fix round 1, 
     expect(privacyProblem("the Acmeville\ndepot", ["Acme"])).toBeNull();
   });
 
-  it("holds lowercase /users/<name>, C:\\Users\\<name> and ~/ paths", () => {
+  it("holds only an absolute home directory with a user segment (I5)", () => {
     const PATHS = "contains an email address or a home directory path";
-    expect(privacyProblem("see /users/joi/x.ts", [])).toBe(PATHS);
-    expect(privacyProblem("see /HOME/builder/x.ts", [])).toBe(PATHS);
-    expect(privacyProblem("see C:\\Users\\joi\\x.ts", [])).toBe(PATHS);
-    expect(privacyProblem("see c:\\\\users\\\\joi", [])).toBe(PATHS);
-    expect(privacyProblem("see ~/notes/x.md", [])).toBe(PATHS);
-    expect(privacyProblem("run (~/bin/tool)", [])).toBe(PATHS);
-    expect(privacyProblem("a ~ b and src/x~/y", [])).toBeNull();
+    const table: [string, string | null][] = [
+      ["/Users/alice/x", PATHS], ["see /home/bob/.ssh", PATHS], ["(/Users/alice/x)", PATHS], ["\"/home/x/y\"", PATHS],
+      ["see C:\\Users\\joi\\x.ts", PATHS], ["see c:\\\\users\\\\joi", PATHS],
+      ["~/.claude/settings.json", null], ["~/.agentic-workflow/scorer", null], ["src/api/users/x.ts", null], ["app/home/page.tsx", null],
+      ["/users/me", null], ["github.com/users/foo", null], ["/users/:id", null], ["GET /users/{id}", null], ["a ~ b and src/x~/y", null],
+    ];
+    for (const [text, want] of table) expect(privacyProblem(text, []), text).toBe(want);
+  });
+
+  it("strips tag characters, variation selectors and U+061C, and holds a term with one inside (I4)", () => {
+    expect(privacyProblem("at Ac\u{E0041}me today", ["Acme"])).toBe(HELD);
+    expect(privacyProblem("at Acme today", ["Ac\u{E0041}me"])).toBe(HELD);
+    expect(privacyProblem("at Ac\u{E0100}me\u061c today", ["Acme"])).toBe(HELD);
+    expect(privacyProblem("at Ac\ufe0fme", ["Acme"])).toBe(HELD);
+  });
+
+  it("matches across combining marks and Turkish dotted and dotless i (m3)", () => {
+    expect(privacyProblem("a Cafe\u0301 here", ["Caf\u00e9"])).toBe(HELD);
+    expect(privacyProblem("a Caf\u00e9 here", ["Cafe"])).toBe(HELD);
+    expect(privacyProblem("at A\u0332cme", ["Acme"])).toBe(HELD);
+    expect(privacyProblem("at Acme", ["A\u0332cme"])).toBe(HELD);
+    expect(privacyProblem("at A\u0130cmE", ["Aicme"])).toBe(HELD);
+    expect(privacyProblem("at A\u0131cme", ["Aicme"])).toBe(HELD);
+    expect(privacyProblem("at Acme", ["A\u0130cme"])).toBeNull();
   });
 });
 
