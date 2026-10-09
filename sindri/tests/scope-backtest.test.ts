@@ -342,6 +342,7 @@ describe("sindri scope --backtest", () => {
       { role: "adjudicate", n: 4 }, { role: "baseline:adjudicate", n: 4 }, { role: "baseline:challenge", n: 1 },
       { role: "baseline:draft", n: 1 }, { role: "challenge", n: 1 }, { role: "draft", n: 1 },
     ]);
+    expect(rows(d, "SELECT DISTINCT step FROM model_calls")).toEqual([{ step: "backtest" }]);
     const runs = await makeScopeCommand(scriptedIo([]))(["runs"], d);
     expect(runs.stdout).toBe("2026-10-08T12:00:00.000Z backtest complete surfaces=1 recall=0.50 precision=1.00 backtest-new-shift-times-2026-10-08.md\n");
   });

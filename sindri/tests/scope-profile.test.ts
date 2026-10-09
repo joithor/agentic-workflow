@@ -51,4 +51,15 @@ describe("scope profile keys", () => {
     const cols = (db.prepare("PRAGMA table_info(scope_runs)").all() as { name: string }[]).map((c) => c.name);
     expect(cols).toEqual(expect.arrayContaining(["recall", "precision", "baseline_recall", "baseline_precision", "leaky", "out_path"]));
   });
+
+  it("model_calls audits any step: no foreign key to scope_runs, a step column defaulting to scope", () => {
+    const db = openMemoryLedger();
+    expect(db.pragma("foreign_keys", { simple: true })).toBe(1);
+    expect(db.prepare("PRAGMA foreign_key_list(model_calls)").all()).toEqual([]);
+    const step = (db.prepare("PRAGMA table_info(model_calls)").all() as { name: string; notnull: number; dflt_value: string | null }[]).find((c) => c.name === "step");
+    expect(step).toMatchObject({ notnull: 1, dflt_value: "'scope'" });
+    db.prepare("INSERT INTO model_calls (run_id, step, seq, role, model, input_tokens, output_tokens) VALUES ('no-scope-run', 'triage', 1, 'r', 'm', 1, 1)").run();
+    db.prepare("INSERT INTO model_calls (run_id, seq, role, model, input_tokens, output_tokens) VALUES ('other', 1, 'r', 'm', 1, 1)").run();
+    expect(db.prepare("SELECT run_id, step FROM model_calls ORDER BY run_id").all()).toEqual([{ run_id: "no-scope-run", step: "triage" }, { run_id: "other", step: "scope" }]);
+  });
 });

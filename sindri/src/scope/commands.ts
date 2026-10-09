@@ -212,7 +212,7 @@ export function missLine(runId: string, calls: ModelAuditRow[], file: string): s
   return `Not recorded: run ${runId} spent ${tokens} tokens over ${calls.length} model calls; the lock stayed held for ${RECORD_LOCK_WAIT.totalMs / 1000} s. The files are kept: ${file} and ${file.replace(/\.md$/, ".json")}.\n`;
 }
 
-// One scope_runs row and one model_calls row per call, under the tick lock. False when the lock
+// One scope_runs row and one model_calls row per call (step = the run's mode), under the tick lock. False when the lock
 // stays held for RECORD_LOCK_WAIT.totalMs.
 export async function recordRun(deps: Deps, row: RunRow, calls: ModelAuditRow[]): Promise<boolean> {
   const db = openLedger(ledgerPath(stateDir(deps)));
@@ -230,8 +230,8 @@ export async function recordRun(deps: Deps, row: RunRow, calls: ModelAuditRow[])
         db.prepare(
           "INSERT INTO scope_runs (run_id, subject, mode, ts, status, rounds, surfaces, recall, precision, baseline_recall, baseline_precision, leaky, tokens, out_path, epoch) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
         ).run(row.runId, row.subject, row.mode, deps.now().toISOString(), row.status, row.rounds, row.surfaces, row.recall, row.precision, row.baselineRecall, row.baselinePrecision, row.leaky ? 1 : 0, row.tokens, row.outPath, owner.epoch);
-        const insert = db.prepare("INSERT INTO model_calls (run_id, seq, role, model, input_tokens, output_tokens) VALUES (?, ?, ?, ?, ?, ?)");
-        calls.forEach((c, i) => insert.run(row.runId, i + 1, c.role, c.model, c.inputTokens, c.outputTokens));
+        const insert = db.prepare("INSERT INTO model_calls (run_id, step, seq, role, model, input_tokens, output_tokens) VALUES (?, ?, ?, ?, ?, ?, ?)");
+        calls.forEach((c, i) => insert.run(row.runId, row.mode, i + 1, c.role, c.model, c.inputTokens, c.outputTokens));
       });
       return true;
     } finally {

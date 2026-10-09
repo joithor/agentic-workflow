@@ -125,6 +125,8 @@ describe("ledger migration v3", () => {
     expect(db.prepare("SELECT run_id FROM shape_runs").pluck().all()).toEqual(["r1"]);
     expect(db.prepare("SELECT COUNT(*) AS n FROM scope_runs").get()).toEqual({ n: 0 });
     expect(db.prepare("SELECT COUNT(*) AS n FROM model_calls").get()).toEqual({ n: 0 });
+    expect(db.prepare("PRAGMA foreign_key_list(model_calls)").all()).toEqual([]);
+    expect((db.prepare("PRAGMA table_info(model_calls)").all() as { name: string }[]).map((c) => c.name)).toEqual(["run_id", "step", "seq", "role", "model", "input_tokens", "output_tokens"]);
     expect(fs.existsSync(`${file}.bak-v2`)).toBe(true);
     db.close();
   });

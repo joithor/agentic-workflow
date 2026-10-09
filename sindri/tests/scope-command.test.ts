@@ -65,8 +65,8 @@ describe("sindri scope <file>", () => {
     expect(fs.readFileSync(path.join(out, md), "utf8")).toContain("# Scope map: Shift times");
     const saved = JSON.parse(fs.readFileSync(path.join(out, md.replace(".md", ".json")), "utf8"));
     expect(saved).toMatchObject({ status: "complete", subject: "brief.md", counts: { code: 0 } });
-    expect(rows(d, "SELECT role, model, input_tokens AS i, output_tokens AS o FROM model_calls ORDER BY seq")).toEqual([
-      { role: "draft", model: "sonnet", i: 50, o: 5 }, { role: "challenge", model: "opus", i: 50, o: 5 },
+    expect(rows(d, "SELECT step, role, model, input_tokens AS i, output_tokens AS o FROM model_calls ORDER BY seq")).toEqual([
+      { step: "scope", role: "draft", model: "sonnet", i: 50, o: 5 }, { step: "scope", role: "challenge", model: "opus", i: 50, o: 5 },
     ]);
     const again = await makeScopeCommand(scriptedIo([MAP, NONE]))([briefFile(), "--out", out], d);
     expect(again.stdout).toContain("scope-shift-times-2026-10-08-2.md");

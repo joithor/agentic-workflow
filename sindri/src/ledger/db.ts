@@ -103,7 +103,8 @@ const MIGRATIONS: readonly string[] = [
     epoch INTEGER NOT NULL
   );
   CREATE TABLE model_calls (
-    run_id TEXT NOT NULL REFERENCES scope_runs(run_id),
+    run_id TEXT NOT NULL,
+    step TEXT NOT NULL DEFAULT 'scope',
     seq INTEGER NOT NULL,
     role TEXT NOT NULL,
     model TEXT NOT NULL,

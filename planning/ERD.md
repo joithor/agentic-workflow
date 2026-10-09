@@ -223,7 +223,8 @@ erDiagram
         INTEGER epoch "NOT NULL"
     }
     model_calls {
-        TEXT run_id PK "references scope_runs(run_id)"
+        TEXT run_id PK "correlation id, no foreign key (any Step's run)"
+        TEXT step "NOT NULL DEFAULT 'scope': scope | backtest, later triage, reflect, ..."
         INTEGER seq PK "with run_id"
         TEXT role "NOT NULL, e.g. scoping | challenger | adjudicator"
         TEXT model "NOT NULL"
@@ -232,7 +233,7 @@ erDiagram
     }
     items ||--o{ item_events : "has"
     shape_runs ||--o{ shape_signals : "records"
-    scope_runs ||--o{ model_calls : "audits"
+    scope_runs ||..o{ model_calls : "audits (by run_id, not enforced)"
 ```
 
 Items are keyed by `(source, id)`: an item id is unique only within its tracker source, so two repos with a same-named plan file never share a row, and `markMissing` closes only its own source's items. `item_events` references that composite key.
@@ -241,7 +242,7 @@ Every write runs inside `withEpoch(db, epoch, …)` or `fenced(db, epoch, …)`,
 
 Ledger v2 adds `shape_runs` and `shape_signals` (record-only shape signals; outcomes are labeled by tree reconcile once a commit is `shape.outcomeDays` old). The v1 to v2 migration keeps all rows and leaves `ledger.db.bak-v1`. Indexes: `shape_runs_pending (commit_sha, closed_at, ts)` for the runs waiting for a commit, `shape_runs_tree (repo, tree, parser, ts, run_id)` for the one-run-per-staged-tree rule, and `shape_signals_type`, `shape_signals_run`.
 
-Ledger v3 adds `scope_runs` (one row per `sindri scope` run or backtest) and `model_calls` (one row per model call, keyed by `(run_id, seq)`, written in the same transaction as the run's row). The v2 to v3 migration keeps all rows and leaves `ledger.db.bak-v2`.
+Ledger v3 adds `scope_runs` (one row per `sindri scope` run or backtest) and `model_calls` (one row per model call, keyed by `(run_id, seq)`, written in the same transaction as the run's row). `model_calls` audits every Step, not only scoping: `run_id` is a plain correlation id with no foreign key to `scope_runs` (a later Step such as triage or reflect has no `scope_runs` parent), and `step` names the Step that made the call (`scope` or `backtest` today; the column defaults to `scope`). The v2 to v3 migration keeps all rows and leaves `ledger.db.bak-v2`.
 
 ## Sindri code index
 
