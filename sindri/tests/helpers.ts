@@ -1,3 +1,4 @@
+import { execFileSync } from "node:child_process";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
@@ -49,4 +50,27 @@ export function fakeGit(answers: Record<string, GitResult>): GitRunner {
   return {
     run: async (args) => answers[args.join(" ")] ?? { ok: false, stderr: `unexpected git call: ${args.join(" ")}` },
   };
+}
+
+export const COMMIT_DATE = "2026-10-08T12:00:00+00:00";
+
+// git with a fixed author and commit date: tree hashes and `git log --since` stay deterministic.
+export function git(cwd: string, ...args: string[]): string {
+  return execFileSync("git", ["-c", "user.name=Tester", "-c", "user.email=tester@example.com", ...args], {
+    cwd,
+    encoding: "utf8",
+    env: { ...process.env, GIT_AUTHOR_DATE: COMMIT_DATE, GIT_COMMITTER_DATE: COMMIT_DATE },
+  });
+}
+
+export function gitRepo(files: Record<string, string>): string {
+  const root = tempDir("sindri-repo-");
+  for (const [rel, text] of Object.entries(files)) {
+    fs.mkdirSync(path.dirname(path.join(root, rel)), { recursive: true });
+    fs.writeFileSync(path.join(root, rel), text);
+  }
+  git(root, "init", "-q", "-b", "main");
+  git(root, "add", "-A");
+  git(root, "commit", "-qm", "init", "--allow-empty");
+  return root;
 }

@@ -25,6 +25,7 @@ Generated from `sindri/src/errors.ts` by `cd sindri && npm run gen`. Do not edit
 | `SND-PROFILE-009` | Not inside a git repo. | cd into the repo first. |
 | `SND-PROFILE-010` | Approving a profile needs an interactive terminal. | run `sindri profile approve <hash>` yourself, in a terminal |
 | `SND-PROFILE-011` | The approval was not confirmed. | rerun and type the first 6 characters of the hash |
+| `SND-PROFILE-012` | No profile has been approved yet. | sindri profile approve |
 | `SND-SCRUB-001` | A profile scrub pattern does not compile. | Fix the regex at the named scrub.extraPatterns index, then run `sindri profile validate`. |
 | `SND-SCRUB-002` | Staged changes contain likely secrets. | remove them (use a secret pointer or an env var); for a false positive, commit with --no-verify and say why |
 | `SND-SCRUB-003` | A different pre-commit hook is already installed. | Add `sindri scrub --staged \|\| exit 1` to that hook by hand. |

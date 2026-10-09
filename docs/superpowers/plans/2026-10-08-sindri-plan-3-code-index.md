@@ -1391,7 +1391,7 @@ git commit -m "feat: sindri MinHash signatures and LSH bands"
 - Produces (`tests/helpers.ts`): `git(cwd, ...args): string` (fixed author, committer date `2026-10-08T12:00:00+00:00`); `gitRepo(files): string` — a temp repo, branch `main`, with those files committed.
 - Produces (`tests/index-fixtures.ts`): `OFF`, `fakeIndexIo(over?)`, `ring0Repo(files)`, `approvedIndexDeps(root, o?)`, `ring0Name(d)`, `profileFor(root, o?)`, `BODY(name, extra?)`, `METHOD(cls, key)`, `failingGit(...needles)`, `embedFetch(vec?)`.
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 In `sindri/tests/helpers.ts`, add (the file already imports `fs` and `path`):
 
@@ -1915,12 +1915,12 @@ describe("real index I/O (smoke)", () => {
 });
 ```
 
-- [ ] **Step 2: Run the tests to verify they fail**
+- [x] **Step 2: Run the tests to verify they fail**
 
 Run: `cd sindri && npx vitest run tests/deps-layer.test.ts tests/index-db.test.ts tests/index-build.test.ts tests/real.test.ts`
 Expected: FAIL with `Failed to load url ../src/index/deps-layer.js` (and `db.js`, `build.js`, `sandbox-real.js`).
 
-- [ ] **Step 3: Implement**
+- [x] **Step 3: Implement**
 
 `sindri/src/index/deps-layer.ts`:
 
@@ -2533,12 +2533,12 @@ Add to `ERRORS`:
 
 `files.indexed` counts every inventoried file (sources and manifests); `changed` and `removed` count source files. The mirror is created or refreshed by full builds before the index build; a `--quick` build skips it.
 
-- [ ] **Step 4: Run the tests**
+- [x] **Step 4: Run the tests**
 
 Run: `cd sindri && npm run gen && npx vitest run && npm run typecheck && npm run test:coverage`
 Expected: all tests PASS; 100% coverage (`sandbox-real.ts` is excluded and covered by its smoke tests).
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add sindri/src sindri/tests sindri/vitest.config.ts docs/sindri/errors.md

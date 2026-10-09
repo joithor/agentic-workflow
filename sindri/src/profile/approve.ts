@@ -113,6 +113,12 @@ export function approvedProfile(deps: Deps, db: Ledger): LoadedProfile | null {
   return state.kind === "approved" || state.kind === "changed-since-approval" ? state.approved : null;
 }
 
+export function requireApprovedProfile(deps: Deps, db: Ledger): LoadedProfile {
+  const p = approvedProfile(deps, db);
+  if (p === null) throw new SindriError("SND-PROFILE-012", "no approved profile", { fix: "sindri profile approve" });
+  return p;
+}
+
 // One sentence per state that isn't "approved", naming the next step.
 export function approvalProblem(state: Exclude<ApprovalState, { kind: "approved" }>, liveHash: string): string {
   const live = liveHash.slice(0, 12);
