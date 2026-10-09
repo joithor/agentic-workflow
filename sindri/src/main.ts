@@ -5,6 +5,7 @@ import { doctorCommand } from "./doctor/doctor.js";
 import { makeChannelCommand } from "./evolve/cmd/channel.js";
 import { evolveUsage, makeEvolveCommand } from "./evolve/commands.js";
 import { makeIndexCommand } from "./index/commands.js";
+import { LEDGER_SCHEMA_VERSION } from "./ledger/db.js";
 import { realProcessRunner } from "./index/sandbox-real.js";
 import { repoCommand } from "./index/repo-add.js";
 import { makeShapeCommand } from "./index/shape.js";
@@ -115,6 +116,7 @@ export async function runCli(argv: string[], deps: Deps): Promise<CommandResult>
   const json = rest.includes("--json");
   if (name === undefined || name === "help" || name === "--help") return success(help(), null, false);
   if (name === "--version") return success(version(), null, false);
+  if (name === "--schema-version") return success(String(LEDGER_SCHEMA_VERSION), null, false); // the channel installer records it per build
   if (!Object.hasOwn(COMMANDS, name)) return failure("SND-CLI-001", `unknown command: ${name}`, json);
   const command = COMMANDS[name];
   if (rest.includes("--help") || rest.includes("-h")) return success(command.usage, null, false);

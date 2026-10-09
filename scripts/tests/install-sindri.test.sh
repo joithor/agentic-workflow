@@ -210,7 +210,8 @@ make_scratch_repo() {
   git -C "$work" checkout -q -b main
   mkdir -p "$work/sindri/dist"
   echo '{ "name": "sindri-test" }' > "$work/sindri/package.json"
-  echo 'process.stdout.write("channel-ok " + process.argv.slice(2).join(" "));' > "$work/sindri/dist/cli.js"
+  # --schema-version answers like the real cli: the ledger schema this build supports.
+  echo 'const a = process.argv.slice(2); process.stdout.write(a[0] === "--schema-version" ? "7\n" : "channel-ok " + a.join(" "));' > "$work/sindri/dist/cli.js"
   git -C "$work" add -A
   git -C "$work" -c user.name=t -c user.email=t@example.com commit -qm "merged one"
   MERGED1="$(git -C "$work" rev-parse HEAD)"
@@ -256,6 +257,7 @@ test_channel_install_writes_wrapper_and_state() {
   [ "$(mode_of "$TMP/state/sindri")" = "700" ] || { echo "FAIL: channel state dir is not 0700"; exit 1; }
   [ "$("$TMP/bin/sindri-next" hi)" = "channel-ok hi" ] || { echo "FAIL: sindri-next did not run the build"; exit 1; }
   node -e 'const c = JSON.parse(require("node:fs").readFileSync(process.argv[1], "utf8")); if (c.next.sha !== process.argv[2] || c.stable !== null) process.exit(1);' "$TMP/state/sindri/channels.json" "$MERGED2" || { echo "FAIL: channels.json wrong"; exit 1; }
+  node -e 'const c = JSON.parse(require("node:fs").readFileSync(process.argv[1], "utf8")); if (c.next.schema !== 7) { console.error("schema:", c.next.schema); process.exit(1); }' "$TMP/state/sindri/channels.json" || { echo "FAIL: channels.json does not record the build's ledger schema"; exit 1; }
   if out="$(channel_install next "$MERGED2" 2>&1)"; then echo "FAIL: reinstall over an existing build was allowed"; exit 1; fi
   grep -q "already exists" <<<"$out" || { echo "FAIL: wrong refusal: $out"; exit 1; }
   echo "PASS: test_channel_install_writes_wrapper_and_state"

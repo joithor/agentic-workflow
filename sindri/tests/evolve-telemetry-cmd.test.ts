@@ -5,8 +5,8 @@ import { describe, expect, it } from "vitest";
 import { init } from "../src/evolve/cmd/registry.js";
 import { telemetry } from "../src/evolve/cmd/telemetry.js";
 import { SindriError } from "../src/errors.js";
-import { saveProposal, setStatus, type Proposal } from "../src/evolve/proposals.js";
-import { scriptedEvolveIo, evolveFixture, type EvolveFixture } from "./evolve-fixtures.js";
+import { saveProposal, type Proposal } from "../src/evolve/proposals.js";
+import { scriptedEvolveIo, evolveFixture, type EvolveFixture, setStatus } from "./evolve-fixtures.js";
 
 const FILES = { "config/hooks/done-gate.sh": "#!/bin/sh\n", "config/lib/tests/done-gate.test.sh": "#!/bin/sh\n" };
 const pad = (n: number): string => String(n).padStart(2, "0");
@@ -103,13 +103,13 @@ describe("sindri evolve telemetry", () => {
     fx.close();
   });
 
-  it("stores a fire the adjudicator labelled nothing for with no label, and counts it in no rate", async () => {
+  it("stores nothing for a fire the adjudicator labelled nothing for, and counts it in no rate", async () => {
     const fx = await evolveFixture({ files: FILES, io: scriptedEvolveIo(() => ({ results: [] })) });
     await init([], fx.ctx);
     writeFires(fx, 12);
     const r = await telemetry([], fx.ctx);
     expect(r.stdout).toContain("done-gate: 12 fire(s) since 2026-10-01; 0 labelled sample(s), 0 unwarranted; not enough samples yet (0/10)");
-    expect(fx.ctx.db.prepare("SELECT COUNT(*) AS c FROM hook_samples WHERE warranted IS NULL").get()).toEqual({ c: 12 });
+    expect(fx.ctx.db.prepare("SELECT COUNT(*) AS c FROM hook_samples").get()).toEqual({ c: 0 });
     fx.close();
   });
 
@@ -165,7 +165,35 @@ describe("sindri evolve telemetry", () => {
     writeFires(fx, 3);
     const r = await telemetry([], fx.ctx);
     expect(r.exitCode).toBe(0);
-    expect(r.stdout).toContain("1 adjudicator answer(s) were malformed and dropped; those fires have no label.");
+    expect(r.stdout).toContain("1 adjudicator answer(s) were malformed and dropped; those fires stay unlabelled and are adjudicated again on the next run.");
+    fx.close();
+  });
+
+  it("leaves a dropped answer unsampled, so the next run adjudicates that fire again", async () => {
+    let bad = true;
+    const fx = await evolveFixture({
+      files: FILES,
+      io: scriptedEvolveIo((call) => ({ results: [...call.input.matchAll(/<untrusted id="([^"]+)"/g)].map((m, i) => ({ ref: m[1], warranted: false, reason: bad && i === 0 ? "x".repeat(600) : "ok" })) })),
+    });
+    await init([], fx.ctx);
+    writeFires(fx, 3);
+    await telemetry([], fx.ctx);
+    expect(fx.ctx.db.prepare("SELECT COUNT(*) AS c FROM hook_samples").get()).toEqual({ c: 2 });
+    bad = false;
+    const again = await telemetry([], fx.ctx);
+    expect(again.stdout).not.toContain("malformed");
+    expect(fx.ctx.db.prepare("SELECT COUNT(*) AS c, SUM(warranted IS NULL) AS nulls FROM hook_samples").get()).toEqual({ c: 3, nulls: 0 });
+    fx.close();
+  });
+
+  it("re-adjudicates a NULL sample left by an earlier run, and never counts it toward the bar", async () => {
+    const fx = await ready();
+    writeFires(fx, 12);
+    await telemetry([], fx.ctx);
+    fx.ctx.db.prepare("UPDATE hook_samples SET warranted = NULL WHERE rowid IN (SELECT rowid FROM hook_samples LIMIT 3)").run();
+    const out = (await telemetry([], fx.ctx)).stdout;
+    expect(fx.ctx.db.prepare("SELECT COUNT(*) AS c, SUM(warranted IS NULL) AS nulls FROM hook_samples").get()).toEqual({ c: 12, nulls: 0 });
+    expect(out).toContain("12 labelled sample(s)");
     fx.close();
   });
 

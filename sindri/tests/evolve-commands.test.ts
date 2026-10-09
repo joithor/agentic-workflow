@@ -11,7 +11,7 @@ import { acquireTickLock } from "../src/lock/lock.js";
 import { stateDir } from "../src/deps.js";
 import { COMMANDS } from "../src/main.js";
 import { makeDeps } from "./helpers.js";
-import { evolveFixture, scriptedEvolveIo, withDeps } from "./evolve-fixtures.js";
+import { evolveFixture, git, scriptedEvolveIo, withDeps } from "./evolve-fixtures.js";
 
 const FILES = {
   "config/hooks/done-gate.sh": "#!/bin/sh\n",
@@ -62,6 +62,27 @@ describe("sindri evolve init and status", () => {
     const stale = await status([], fx.ctx);
     expect(stale.exitCode).toBe(1);
     expect(stale.stdout).toContain(`${"stale".padEnd(8)} hook:done-gate  protected`);
+    fx.close();
+  });
+
+  it("shows an artifact as stale when its file changed after init, without re-running init", async () => {
+    const fx = await evolveFixture({ files: FILES });
+    await init([], fx.ctx);
+    const hash = (fx.ctx.db.prepare("SELECT hash FROM artifacts WHERE id = 'hook:done-gate'").get() as { hash: string }).hash;
+    fx.ctx.db.prepare("INSERT INTO suite_runs (artifact_id, hash, head, dirty, ok, exit_code, ms, ts, epoch) VALUES ('hook:done-gate', ?, NULL, 0, 1, 0, 1, 't', 1)").run(hash);
+    expect((await status([], fx.ctx)).stdout).toContain(`${"ok".padEnd(8)} hook:done-gate`);
+    fs.writeFileSync(path.join(fx.repo, "config/hooks/done-gate.sh"), "#!/bin/sh\necho changed\n");
+    const stale = await status([], fx.ctx);
+    expect(stale.exitCode).toBe(1);
+    expect(stale.stdout).toContain(`${"stale".padEnd(8)} hook:done-gate`);
+    fx.close();
+  });
+
+  it("keeps showing an artifact whose files were deleted since init, on its stored hash", async () => {
+    const fx = await evolveFixture({ files: FILES });
+    await init([], fx.ctx);
+    git(fx.repo, "rm", "-q", "skills/review/SKILL.md");
+    expect((await status([], fx.ctx)).stdout).toContain(`${"no-suite".padEnd(8)} skill:review`);
     fx.close();
   });
 

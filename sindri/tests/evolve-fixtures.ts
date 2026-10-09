@@ -6,7 +6,8 @@ import { stateDir, type Deps } from "../src/deps.js";
 import { SindriError } from "../src/errors.js";
 import { writers, type EvolveCtx, type EvolveIo } from "../src/evolve/ctx.js";
 import type { ProcessRunner } from "../src/index/io.js";
-import { ledgerPath, openLedger } from "../src/ledger/db.js";
+import { STATUSES, transition, type ProposalStatus } from "../src/evolve/proposals.js";
+import { ledgerPath, openLedger, type Ledger } from "../src/ledger/db.js";
 import { runCli } from "../src/main.js";
 import { requireApprovedProfile } from "../src/profile/approve.js";
 import type { ModelCall, ModelRunner } from "../src/scope/model.js";
@@ -111,3 +112,6 @@ export function withDeps(ctx: EvolveCtx, over: Partial<Deps>): EvolveCtx {
   const deps = { ...ctx.deps, ...over };
   return { ...ctx, deps, ...writers(deps, ctx.db) };
 }
+
+// Unconditional status change for arranging fixtures; commands move a status only through `transition`.
+export const setStatus = (db: Ledger, id: string, status: ProposalStatus, epoch: number, now: Date): boolean => transition(db, id, STATUSES, status, epoch, now);

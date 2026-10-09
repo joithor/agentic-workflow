@@ -76,3 +76,30 @@ describe("privacyProblem: hidden and look-alike spellings (Task 10 fix round 1, 
   });
 });
 
+describe("privacyProblem: file URLs, lowercase homes and Claude's encoded project directories (sec-3)", () => {
+  const PATHS = "contains an email address or a home directory path";
+
+  it("holds a home path behind a file:// prefix", () => {
+    expect(privacyProblem("see file:///Users/joi/work/acme-api/x.ts", [])).toBe(PATHS);
+    expect(privacyProblem("see file:///home/builder/x.ts", [])).toBe(PATHS);
+    expect(privacyProblem("see https://example.com/Users/page", [])).toBeNull();
+  });
+
+  it("holds a lowercase or upper-case /users/<name>/ when <name> is the current OS user, and only then", () => {
+    expect(privacyProblem("at /users/joi/work/x.ts", [], "joi")).toBe(PATHS);
+    expect(privacyProblem("at /USERS/Joi/x", [], "joi")).toBe(PATHS);
+    expect(privacyProblem("at /home/joi", [], "joi")).toBe(PATHS);
+    expect(privacyProblem("at /users/joi/work/x.ts", [], "alice")).toBeNull();
+    expect(privacyProblem("at /users/joi/work/x.ts", [])).toBeNull();
+    expect(privacyProblem("GET /users/joiner/profile", [], "joi")).toBeNull();
+    expect(privacyProblem("at github.com/users/joi", [], "joi")).toBeNull();
+  });
+
+  it("holds Claude's -Users-<name>- project directory encoding, generically, and lowercase for the current OS user", () => {
+    expect(privacyProblem("~/.claude/projects/-Users-joi-personal-agentic-workflow/5e55a1d0.jsonl", [])).toBe(PATHS);
+    expect(privacyProblem("see -Users-someone.else-app/x", [])).toBe(PATHS);
+    expect(privacyProblem("see -users-joi-app/x", [], "joi")).toBe(PATHS);
+    expect(privacyProblem("see -users-joi-app/x", [])).toBeNull();
+    expect(privacyProblem("a plain -Users- list and the Users-guide", [])).toBeNull();
+  });
+});

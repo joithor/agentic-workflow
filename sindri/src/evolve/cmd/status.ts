@@ -1,7 +1,8 @@
 import { parseFlags } from "../../args.js";
 import { success, type CommandResult } from "../../output.js";
-import type { EvolveCtx } from "../ctx.js";
+import { repoConfig, type EvolveCtx } from "../ctx.js";
 import { isHoldout, readCorpus } from "../corpus.js";
+import { loadRegistry, withCurrentHashes } from "../registry.js";
 import { markMerged } from "../stage.js";
 import { STATUSES, type ProposalStatus } from "../proposals.js";
 
@@ -42,8 +43,11 @@ const ROWS = `
   FROM artifacts a WHERE a.removed_at IS NULL ORDER BY a.id`;
 
 export async function artifactSection(ctx: EvolveCtx): Promise<Section> {
-  const rows = ctx.db.prepare(ROWS).all() as Row[];
-  if (rows.length === 0) return { lines: ["No artifacts registered yet."], data: { artifacts: [] }, attention: false, next: "sindri evolve init" };
+  const stored = ctx.db.prepare(ROWS).all() as Row[];
+  if (stored.length === 0) return { lines: ["No artifacts registered yet."], data: { artifacts: [] }, attention: false, next: "sindri evolve init" };
+  // The files as they are now, not as `evolve init` last saw them.
+  const current: Record<string, string> = Object.fromEntries((await withCurrentHashes(ctx.deps.git, ctx.repo, ctx.prompts(), repoConfig(ctx.loaded).protectedPaths, loadRegistry(ctx.db))).map((a) => [a.id, a.hash]));
+  const rows = stored.map((r) => ({ ...r, hash: current[r.id] })); // both lists hold exactly the live artifacts
   const items = rows.map((r) => ({ id: r.id, kind: r.kind, state: stateOf(r), protected: r.protected === 1, openProposals: r.open }));
   const lines = items.map((i) => `${i.state.padEnd(8)} ${i.id}${i.protected ? "  protected" : ""}${i.openProposals > 0 ? `  ${i.openProposals} open proposal(s)` : ""}`);
   const failing = items.filter((i) => i.state === "FAIL").map((i) => i.id);

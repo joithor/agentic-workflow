@@ -5,6 +5,7 @@ import { describe, expect, it } from "vitest";
 
 import { binDir, buildProblem, canPromote, channelsRoot, promote, readChannels, rollback, wrapperTarget, wrapperText, writeChannels, writeWrapper, type ChannelState } from "../src/evolve/channel.js";
 import { stateDir } from "../src/deps.js";
+import { LEDGER_SCHEMA_VERSION } from "../src/ledger/db.js";
 import { fakeProc } from "./evolve-fixtures.js";
 import { makeDeps, tempDir } from "./helpers.js";
 
@@ -12,7 +13,8 @@ const A = "a".repeat(40);
 const B = "b".repeat(40);
 const C = "c".repeat(40);
 const DAY = 86_400_000;
-const entry = (sha: string, dir: string, at = "2026-10-01T00:00:00Z") => ({ sha, dir, installedAt: at });
+const SCHEMA = LEDGER_SCHEMA_VERSION;
+const entry = (sha: string, dir: string, at = "2026-10-01T00:00:00Z", schema?: number) => ({ sha, dir, installedAt: at, ...(schema === undefined ? {} : { schema }) });
 
 function deps(bin = tempDir()) {
   const d = makeDeps();
@@ -80,6 +82,15 @@ describe("canPromote (spec §7.7)", () => {
     expect(canPromote(state(1), B, true, now)).toEqual({ ok: false, why: "next has soaked 1 of 3 days", next: "sindri channel status (after the soak)" });
     expect(canPromote(state(null), B, true, now)).toEqual({ ok: false, why: "nothing is installed on next", next: "scripts/install-sindri.sh --channel next --ref <sha>" });
   });
+
+  it("fails closed when installedAt is not a date: no soak can be proven, so nothing promotes", () => {
+    for (const bad of ["", "yesterday", "2026-13-45"]) {
+      const c: ChannelState = { stable: null, next: entry(B, "/y", bad) };
+      const r = canPromote(c, B, true, now);
+      expect(r.ok).toBe(false);
+      expect(r.why).toBe(`next has no readable install time (${JSON.stringify(bad)}), so its soak can't be checked`);
+    }
+  });
 });
 
 describe("the wrapper", () => {
@@ -119,18 +130,18 @@ describe("promote and rollback", () => {
     const d = deps();
     const dirA = build(d, "stable", A);
     const dirB = build(d, "next", B);
-    writeChannels(d, { stable: { ...entry(A, dirA), previous: null }, next: entry(B, dirB) });
+    writeChannels(d, { stable: { ...entry(A, dirA, undefined, SCHEMA), previous: null }, next: entry(B, dirB, undefined, SCHEMA) });
     const smoke = fakeProc(() => ({}));
     const after = await promote(d, smoke, B, now);
     expect(smoke.calls).toEqual([{ argv: [process.execPath, path.join(dirB, "dist", "cli.js"), "--version"], cwd: dirB }]);
-    expect(after.stable).toEqual({ sha: B, dir: dirB, installedAt: now.toISOString(), previous: entry(A, dirA) });
+    expect(after.stable).toEqual({ sha: B, dir: dirB, installedAt: now.toISOString(), schema: SCHEMA, previous: entry(A, dirA, undefined, SCHEMA) });
     expect(readChannels(d)).toEqual(after);
     expect(wrapperTarget(d)).toBe(path.join(dirB, "dist", "cli.js"));
-    const back = await rollback(d, smoke, now);
-    expect(back.stable).toEqual({ sha: A, dir: dirA, installedAt: now.toISOString(), previous: null });
+    const back = await rollback(d, smoke, now, SCHEMA);
+    expect(back.stable).toEqual({ sha: A, dir: dirA, installedAt: now.toISOString(), schema: SCHEMA, previous: null });
     expect(wrapperTarget(d)).toBe(path.join(dirA, "dist", "cli.js"));
     // The build we rolled back from is not remembered: a second rollback refuses, going forward needs promote.
-    await expect(rollback(d, smoke, now)).rejects.toThrow(/no previous stable build/);
+    await expect(rollback(d, smoke, now, SCHEMA)).rejects.toThrow(/no previous stable build/);
     expect(readChannels(d).stable?.sha).toBe(A);
   });
 
@@ -159,13 +170,39 @@ describe("promote and rollback", () => {
     await expect(promote(d, fakeProc(() => ({})), B, now)).rejects.toThrow(/is not what next runs/);
   });
 
+  it("keeps a previous build without a recorded schema as it was, so a later rollback can refuse it", async () => {
+    const d = deps();
+    const dirA = build(d, "stable", A);
+    const dirB = build(d, "next", B);
+    writeChannels(d, { stable: { ...entry(A, dirA), previous: null }, next: entry(B, dirB, undefined, SCHEMA) });
+    const after = await promote(d, fakeProc(() => ({})), B, now);
+    expect(after.stable?.previous).toEqual(entry(A, dirA));
+    await expect(rollback(d, fakeProc(() => ({})), now, SCHEMA)).rejects.toThrow(/no recorded ledger schema/);
+  });
+
   it("refuses to roll back without a previous build, or when that build is gone", async () => {
     const d = deps();
-    await expect(rollback(d, fakeProc(() => ({})), now)).rejects.toThrow(/no previous stable build/);
+    await expect(rollback(d, fakeProc(() => ({})), now, SCHEMA)).rejects.toThrow(/no previous stable build/);
     const dirA = build(d, "stable", A);
     writeChannels(d, { stable: { ...entry(B, dirA), previous: null }, next: null });
-    await expect(rollback(d, fakeProc(() => ({})), now)).rejects.toThrow(/no previous stable build/);
-    writeChannels(d, { stable: { ...entry(B, dirA), previous: entry(A, path.join(channelsRoot(d), "stable", "gone")) }, next: null });
-    await expect(rollback(d, fakeProc(() => ({})), now)).rejects.toThrow(/doesn't exist/);
+    await expect(rollback(d, fakeProc(() => ({})), now, SCHEMA)).rejects.toThrow(/no previous stable build/);
+    writeChannels(d, { stable: { ...entry(B, dirA), previous: entry(A, path.join(channelsRoot(d), "stable", "gone"), undefined, SCHEMA) }, next: null });
+    await expect(rollback(d, fakeProc(() => ({})), now, SCHEMA)).rejects.toThrow(/doesn't exist/);
+  });
+
+  it("refuses to roll back to a build whose ledger schema is older than the current ledger, or unknown, and says why", async () => {
+    const d = deps();
+    const dirA = build(d, "stable", A);
+    const dirB = build(d, "stable", B);
+    const proc = fakeProc(() => ({}));
+    writeChannels(d, { stable: { ...entry(B, dirB, undefined, SCHEMA + 1), previous: entry(A, dirA, undefined, SCHEMA) }, next: null });
+    await expect(rollback(d, proc, now, SCHEMA + 1)).rejects.toThrow(`aaaaaaaa understands ledger schema v${SCHEMA}, but the ledger is at v${SCHEMA + 1}`);
+    writeChannels(d, { stable: { ...entry(B, dirB, undefined, SCHEMA), previous: entry(A, dirA) }, next: null });
+    await expect(rollback(d, proc, now, SCHEMA)).rejects.toThrow(/aaaaaaaa has no recorded ledger schema/);
+    expect(proc.calls).toHaveLength(0);
+    expect(wrapperTarget(d)).toBeNull();
+    // An equal or newer schema is fine.
+    writeChannels(d, { stable: { ...entry(B, dirB, undefined, SCHEMA), previous: entry(A, dirA, undefined, SCHEMA + 2) }, next: null });
+    expect((await rollback(d, proc, now, SCHEMA)).stable?.sha).toBe(A);
   });
 });

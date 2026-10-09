@@ -2,7 +2,7 @@ import { parseFlags } from "../../args.js";
 import { SindriError } from "../../errors.js";
 import { success, type CommandResult } from "../../output.js";
 import { lineDiff } from "../../profile/approve.js";
-import { removeOverlay, writeOverlay } from "../adopt.js";
+import { removeOverlay, restoreOverlay, snapshotOverlay, writeOverlay } from "../adopt.js";
 import { audit } from "../audit.js";
 import { lintVariant } from "../blind.js";
 import { holdoutTitles } from "../corpus.js";
@@ -10,7 +10,7 @@ import type { EvolveCtx } from "../ctx.js";
 import { escapeInvisible } from "../invisible.js";
 import { loadPrompt, sha256 } from "../overlay.js";
 import { defaultPrompt, hasSafetyClause, PROMPT_IDS, type PromptId } from "../prompts.js";
-import { comparisonRuns, getProposal, latestComparison, runningComparison, setStatus } from "../proposals.js";
+import { comparisonRuns, getProposal, latestComparison, runningComparison, transition } from "../proposals.js";
 import { profileScrubber } from "../../scope/commands.js";
 
 const refuse = (why: string): SindriError => new SindriError("SND-EVOLVE-004", why);
@@ -54,19 +54,25 @@ export async function adopt(args: string[], ctx: EvolveCtx): Promise<CommandResu
     `Type the first 8 characters of the variant's sha256 (${sha.slice(0, 8)}) to confirm: `,
   ].join("\n"));
   if (answer.trim() !== sha.slice(0, 8)) throw new SindriError("SND-EVOLVE-007", "the confirmation didn't match");
-  const written = ctx.write((epoch) => {
-    // The prompt can wait for minutes: re-check everything that was true when it was shown.
-    const now = gate(ctx, id);
-    if (now.cmp.run !== cmp.run || sha256(now.text) !== sha) {
-      throw refuse(`the proposal changed while you were confirming (shown run ${cmp.run}, now run ${now.cmp.run}${sha256(now.text) === sha ? "" : "; the variant text differs"}); nothing was written`);
-    }
-    const w = writeOverlay(ctx.deps, promptId, text);
-    ctx.db.prepare("INSERT INTO adoptions (prompt_id, proposal_id, sha256, adopted_at, adopted_by, epoch) VALUES (?, ?, ?, ?, ?, ?)")
-      .run(promptId, id, w.sha, ctx.deps.now().toISOString(), ctx.deps.system.username(), epoch);
-    setStatus(ctx.db, id, "adopted", epoch, ctx.deps.now());
-    audit(ctx.db, ctx.deps, "adopt", `${id} -> ${promptId} sha256 ${w.sha.slice(0, 16)}`, epoch, profileScrubber(ctx.loaded));
-    return w;
-  });
+  const before = snapshotOverlay(ctx.deps, promptId);
+  let written: { file: string; sha: string };
+  try {
+    written = ctx.write((epoch) => {
+      // The prompt can wait for minutes: re-check everything that was true when it was shown.
+      const now = gate(ctx, id);
+      if (now.cmp.run !== cmp.run || sha256(now.text) !== sha) {
+        throw refuse(`the proposal changed while you were confirming (shown run ${cmp.run}, now run ${now.cmp.run}${sha256(now.text) === sha ? "" : "; the variant text differs"}); nothing was written`);
+      }
+      ctx.db.prepare("INSERT INTO adoptions (prompt_id, proposal_id, sha256, adopted_at, adopted_by, epoch) VALUES (?, ?, ?, ?, ?, ?)")
+        .run(promptId, id, sha, ctx.deps.now().toISOString(), ctx.deps.system.username(), epoch);
+      transition(ctx.db, id, ["won"], "adopted", epoch, ctx.deps.now()); // gate() just re-read "won" under this lock
+      audit(ctx.db, ctx.deps, "adopt", `${id} -> ${promptId} sha256 ${sha.slice(0, 16)}`, epoch, profileScrubber(ctx.loaded));
+      return writeOverlay(ctx.deps, promptId, text); // the rename is the last step: nothing above can leave an unrecorded file
+    });
+  } catch (e) {
+    restoreOverlay(ctx.deps, promptId, before); // a failure at or after the rename (the commit, the epoch fence) must not lose the previous overlay
+    throw e;
+  }
   return success(`Adopted ${id}: wrote ${written.file} (sha256 ${sha.slice(0, 8)}). It takes effect on the next sindri scope run.\nNext: sindri evolve status`, { id, prompt: promptId, file: written.file, sha256: written.sha }, values.json === true);
 }
 

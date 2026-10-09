@@ -8,6 +8,7 @@ import type { Budget, ModelRunner } from "../scope/model.js";
 import { escapeMarkup } from "../scope/source.js";
 import { askModel } from "./ask.js";
 import { mentionsHoldout } from "./corpus.js";
+import { stripInvisible, WHITESPACE } from "./invisible.js";
 
 // Port of pstack's eval playbook + arena blinding rules (MIT, © 2026 Lauren Tan).
 export const META_WORDS: readonly string[] = [
@@ -24,12 +25,32 @@ const OVERRIDES: readonly RegExp[] = [
   /\binstead of\b[^.]{0,30}?\b(?:safety|clause|rules?|above|previous)\b/i,
 ];
 
-const metaFindings = (text: string): string[] => {
+// The nouns that address whoever scores the output, matched as whole words. "judgment", "evaluate", "evaluating" and
+// "review" are ordinary instructions and stay quiet; a reviewer is addressed only through the appeals below.
+const META_STEMS = /(?<![a-z0-9])(?:judges?|evaluators?|graders?|grading|rubrics?)(?![a-z0-9])/g;
+
+// Direct appeals to the reader of the output. Each needs the appeal itself, so "prefer this approach over a rewrite",
+// "prefer it" about a surface, "note to self" and "review the code" stay quiet.
+const APPEALS: readonly RegExp[] = [
+  /\b(?:prefer|choose|pick|select|favou?r)\s+(?:this|me)\s*(?:[.!;,:)]|$)/im,
+  /\bnotes?\s+to\s+(?:the\s+)?(?:judge|reviewer|evaluator|grader|reader|scorer)s?\b/i,
+  /\b(?:judge|reviewer|evaluator|grader)\s+note\b/i,
+  /\b(?:this|mine|me|it)\s+(?:\w+\s+)?is\s+(?:the\s+)?(?:stronger|better|best)\s+of\s+the\s+two\b/i,
+];
+
+// Invisibles are stripped and width/compatibility forms folded first, so "ju\u200Bdge" and fullwidth letters are seen as written.
+const metaFindings = (raw: string): string[] => {
+  const text = stripInvisible(raw.normalize("NFKC"), WHITESPACE);
   const lower = text.toLowerCase();
   const found = META_WORDS.filter((w) => new RegExp(`(^|[^a-z0-9])${escapeRe(w)}([^a-z0-9]|$)`).test(lower));
+  for (const m of lower.matchAll(META_STEMS)) if (!found.includes(m[0])) found.push(m[0]);
   for (const re of OVERRIDES) {
     const m = re.exec(text);
     if (m) found.push(`override:${m[0].toLowerCase().replace(/\s+/g, " ")}`);
+  }
+  for (const re of APPEALS) {
+    const m = re.exec(text);
+    if (m) found.push(`appeal:${m[0].toLowerCase().replace(/\s+/g, " ").trim()}`);
   }
   return found;
 };

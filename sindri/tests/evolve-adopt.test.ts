@@ -7,9 +7,9 @@ import { describe, expect, it } from "vitest";
 import { adopt, revert } from "../src/evolve/cmd/adopt.js";
 import { inspectOverlay, loadPrompt, overlayFile } from "../src/evolve/overlay.js";
 import { defaultPrompt, SOURCES_CLAUSE } from "../src/evolve/prompts.js";
-import { getProposal, ProposalSchema, saveProposal, setStatus, type ProposalStatus } from "../src/evolve/proposals.js";
+import { getProposal, ProposalSchema, saveProposal, type ProposalStatus } from "../src/evolve/proposals.js";
 import { isHoldout, saveReplay, type ReplayItem } from "../src/evolve/corpus.js";
-import { evolveFixture, withDeps, type EvolveFixture } from "./evolve-fixtures.js";
+import { evolveFixture, withDeps, type EvolveFixture, setStatus } from "./evolve-fixtures.js";
 
 const VARIANT = `${SOURCES_CLAUSE}\nBETTER draft prompt.`;
 const sha8 = (t: string): string => createHash("sha256").update(t).digest("hex").slice(0, 8);
@@ -52,6 +52,37 @@ describe("sindri evolve adopt (Review Focus 7)", () => {
       { prompt_id: "scope.draft", proposal_id: id, sha256: createHash("sha256").update(VARIANT).digest("hex"), adopted_by: fx.deps.system.username() },
     ]);
     expect(fx.ctx.db.prepare("SELECT verb FROM evolve_audit").all()).toEqual([{ verb: "adopt" }]);
+    fx.close();
+  });
+
+  it("keeps the previously adopted overlay when the ledger write fails (the rename is the last step)", async () => {
+    const { fx, tty, save, answerWith } = await ready();
+    const a = save("Better draft prompt", VARIANT, "won");
+    await adopt([a], tty);
+    const second = `${VARIANT}\nEven BETTER.`;
+    const b = save("Even better prompt", second, "won");
+    fx.ctx.db.exec("CREATE TRIGGER no_adoptions BEFORE INSERT ON adoptions BEGIN SELECT RAISE(ABORT, 'disk full'); END");
+    answerWith(sha8(second));
+    await expect(adopt([b], tty)).rejects.toThrow(/disk full/);
+    expect(loadPrompt(fx.deps, "scope.draft")).toBe(VARIANT);
+    expect(inspectOverlay(fx.deps, "scope.draft").state).toBe("active"); // still the variant the latest adoption row names
+    expect(getProposal(fx.ctx.db, b)?.status).toBe("won");
+    fx.close();
+  });
+
+  it("restores the previous overlay (or removes the new one) when the write fails after the rename", async () => {
+    const { fx, tty, save, answerWith } = await ready();
+    const failing = { ...tty, write: <T>(fn: (epoch: number) => T): T => { fx.ctx.write(fn); throw new Error("commit failed"); } };
+    const a = save("Better draft prompt", VARIANT, "won");
+    await expect(adopt([a], failing)).rejects.toThrow(/commit failed/);
+    expect(fs.existsSync(overlayFile(fx.deps, "scope.draft"))).toBe(false);
+    fx.ctx.write((epoch) => setStatus(fx.ctx.db, a, "won", epoch, fx.deps.now())); // the fake commit above did persist the row
+    await adopt([a], tty);
+    const second = `${VARIANT}\nEven BETTER.`;
+    const b = save("Even better prompt", second, "won");
+    answerWith(sha8(second));
+    await expect(adopt([b], failing)).rejects.toThrow(/commit failed/);
+    expect(fs.readFileSync(overlayFile(fx.deps, "scope.draft"), "utf8")).toBe(VARIANT);
     fx.close();
   });
 

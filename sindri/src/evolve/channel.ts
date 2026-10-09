@@ -8,7 +8,9 @@ import { ulid } from "../ids.js";
 import type { ProcessRunner } from "../index/io.js";
 
 const Sha = z.string().regex(/^[0-9a-f]{40}$/);
-const Entry = z.object({ sha: Sha, dir: z.string().min(1), installedAt: z.string() });
+// schema: the ledger schema version the build supports, recorded by the installer. A build without one (installed
+// before it was recorded) can't be proven safe to roll back to.
+const Entry = z.object({ sha: Sha, dir: z.string().min(1), installedAt: z.string(), schema: z.number().int().positive().optional() });
 const Channels = z.object({ stable: Entry.extend({ previous: Entry.nullable() }).nullable(), next: Entry.nullable() });
 export type ChannelEntry = z.infer<typeof Entry>;
 export type ChannelState = z.infer<typeof Channels>;
@@ -66,6 +68,7 @@ export function canPromote(c: ChannelState, sha: string, suiteOk: boolean, now: 
   if (c.next.sha !== sha) return { ok: false, why: `${sha} is not what next runs (${c.next.sha})`, next: `sindri channel promote ${c.next.sha}` };
   if (c.stable !== null && c.stable.sha === sha) return { ok: false, why: `${sha} is already stable`, next: "sindri channel status" };
   const days = Math.floor((now.getTime() - Date.parse(c.next.installedAt)) / 86_400_000);
+  if (!Number.isFinite(days)) return { ok: false, why: `next has no readable install time (${JSON.stringify(c.next.installedAt)}), so its soak can't be checked`, next: "scripts/install-sindri.sh --channel next --ref <sha>" };
   if (days < SOAK_DAYS) return { ok: false, why: `next has soaked ${days} of ${SOAK_DAYS} days`, next: "sindri channel status (after the soak)" };
   if (!suiteOk) {
     const cmd = `sindri evolve check package:sindri --at ${sha}`;
@@ -103,7 +106,7 @@ export function wrapperTarget(deps: Deps): string | null {
 }
 
 const cliOf = (e: ChannelEntry): string => path.join(e.dir, "dist", "cli.js");
-const plain = (e: ChannelEntry): ChannelEntry => ({ sha: e.sha, dir: e.dir, installedAt: e.installedAt });
+const plain = (e: ChannelEntry): ChannelEntry => ({ sha: e.sha, dir: e.dir, installedAt: e.installedAt, ...(e.schema === undefined ? {} : { schema: e.schema }) });
 
 async function ensureRunnable(deps: Deps, run: ProcessRunner, e: ChannelEntry): Promise<void> {
   const problem = buildProblem(deps, e);
@@ -122,12 +125,24 @@ export async function promote(deps: Deps, run: ProcessRunner, sha: string, now: 
   return state;
 }
 
+// Rolling back to a build older than the ledger leaves a sindri that refuses the ledger (SND-LEDGER-001), including
+// the commands needed to go forward again. Refuse it, naming the way out.
+export function rollbackProblem(prev: ChannelEntry, currentSchema: number): string | null {
+  const name = prev.sha.slice(0, 8);
+  if (prev.schema === undefined) {
+    return `${name} has no recorded ledger schema (it was installed before schemas were recorded), so it can't be proven to open the current ledger (v${currentSchema})`;
+  }
+  return prev.schema < currentSchema ? `${name} understands ledger schema v${prev.schema}, but the ledger is at v${currentSchema}; a rollback would leave sindri unable to open it` : null;
+}
+
 // The build we roll back from is not kept as `previous`: a second rollback refuses, and going forward again needs promote.
-export async function rollback(deps: Deps, run: ProcessRunner, now: Date): Promise<ChannelState> {
+export async function rollback(deps: Deps, run: ProcessRunner, now: Date, currentSchema: number): Promise<ChannelState> {
   const c = readChannels(deps);
   const stable = c.stable;
   if (stable === null || stable.previous === null) throw new SindriError("SND-EVOLVE-005", "there is no previous stable build to roll back to");
   const prev = stable.previous;
+  const problem = rollbackProblem(prev, currentSchema);
+  if (problem !== null) throw new SindriError("SND-EVOLVE-005", problem, { fix: "reinstall a build with a recorded schema: scripts/install-sindri.sh --channel next --ref <sha>, then sindri channel promote <sha>" });
   await ensureRunnable(deps, run, prev);
   writeWrapper(deps, cliOf(prev));
   const state: ChannelState = { ...c, stable: { ...prev, installedAt: now.toISOString(), previous: null } };

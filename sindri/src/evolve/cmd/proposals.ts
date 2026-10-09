@@ -4,9 +4,10 @@ import { parseFlags } from "../../args.js";
 import { SindriError } from "../../errors.js";
 import { success, type CommandResult } from "../../output.js";
 import { audit } from "../audit.js";
+import { terminalSafe } from "../invisible.js";
 import { repoConfig, type EvolveCtx } from "../ctx.js";
 import {
-  classifyTier, getProposal, latestComparison, listProposals, nextFor, owns, reduceEvidence, runningComparison, setStatus, stagedFile, STATUSES, TERMINAL, type ProposalStatus,
+  classifyTier, getProposal, latestComparison, listProposals, nextFor, owns, reduceEvidence, runningComparison, stagedFile, STATUSES, TERMINAL, transition, OPEN, type ProposalStatus,
 } from "../proposals.js";
 import { isAddedTestAllowed, isProtectedPath, loadRegistry } from "../registry.js";
 import { excerptFor, transcriptsDir } from "../transcripts.js";
@@ -28,7 +29,7 @@ export async function proposals(args: string[], ctx: EvolveCtx): Promise<Command
   } else {
     text = [...rows.map((r) => `${r.status.padEnd(19)} ${r.tier.padEnd(10)} ${r.id}  ${r.artifact}: ${r.title}  (${ageDays(r.createdAt, now)}d)`), `Next: sindri evolve show ${rows[0].id}`].join("\n");
   }
-  return success(text, { proposals: rows.map((r) => ({ ...r, ageDays: ageDays(r.createdAt, now) })) }, values.json === true);
+  return success(terminalSafe(text), { proposals: rows.map((r) => ({ ...r, ageDays: ageDays(r.createdAt, now) })) }, values.json === true);
 }
 
 export async function show(args: string[], ctx: EvolveCtx): Promise<CommandResult> {
@@ -62,7 +63,7 @@ export async function show(args: string[], ctx: EvolveCtx): Promise<CommandResul
     ...(running === null ? [] : [`A comparison is running (run ${running}).`]),
     `Next: ${nextFor(s)}`,
   ];
-  return success(lines.join("\n"), { ...s, recomputed: now, evidence: ev.refs, comparison: cmp, running }, values.json === true);
+  return success(terminalSafe(lines.join("\n")), { ...s, recomputed: now, evidence: ev.refs, comparison: cmp, running }, values.json === true);
 }
 
 export async function reject(args: string[], ctx: EvolveCtx): Promise<CommandResult> {
@@ -72,11 +73,13 @@ export async function reject(args: string[], ctx: EvolveCtx): Promise<CommandRes
   if (id === undefined || reason === "") throw new SindriError("SND-CLI-002", 'usage: sindri evolve reject <id> --reason "why"');
   const s = getProposal(ctx.db, id);
   if (s === null) throw new SindriError("SND-EVOLVE-008", `no such proposal: ${id}`);
-  if (TERMINAL.includes(s.status)) return success(`Proposal ${id} is already ${s.status}; nothing to do.\nNext: sindri evolve proposals`, { id, status: s.status }, values.json === true);
-  ctx.write((epoch) => {
-    setStatus(ctx.db, id, "rejected", epoch, ctx.deps.now());
+  // The status is decided inside the write: a terminal status another terminal committed since the read above stays.
+  const was = ctx.write((epoch) => {
+    if (!transition(ctx.db, id, OPEN, "rejected", epoch, ctx.deps.now())) return (ctx.db.prepare("SELECT status FROM proposals WHERE id = ?").get(id) as { status: ProposalStatus }).status;
     audit(ctx.db, ctx.deps, "reject", `${id}: ${reason}`, epoch, profileScrubber(ctx.loaded));
+    return null;
   });
+  if (was !== null) return success(`Proposal ${id} is already ${was}; nothing to do.\nNext: sindri evolve proposals`, { id, status: was }, values.json === true);
   fs.rmSync(stagedFile(ctx.deps, id), { force: true });
   return success(`Rejected ${id}. The same proposal won't be saved again.\nNext: sindri evolve proposals`, { id, status: "rejected" }, values.json === true);
 }

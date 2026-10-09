@@ -1,6 +1,7 @@
 import { parseFlags } from "../../args.js";
 import { success, type CommandResult } from "../../output.js";
 import type { EvolveCtx } from "../ctx.js";
+import { terminalSafe } from "../invisible.js";
 import { publishProposals, stageProposals } from "../stage.js";
 
 export async function stage(args: string[], ctx: EvolveCtx): Promise<CommandResult> {
@@ -37,11 +38,11 @@ export async function publish(args: string[], ctx: EvolveCtx): Promise<CommandRe
   ];
   const heldNote = r.held.length > 0 ? `; ${r.held.length} held back` : "";
   if (r.published.length === 0 && r.held.length === 0) return success("Nothing is staged.\nNext: sindri evolve stage", { ...r }, json);
-  if (r.published.length === 0) return success([`Nothing to publish: ${r.held.length} held back.`, ...heldLines, ...heldHelp].join("\n"), { ...r }, json, 1);
+  if (r.published.length === 0) return success(terminalSafe([`Nothing to publish: ${r.held.length} held back.`, ...heldLines, ...heldHelp].join("\n")), { ...r }, json, 1);
   const range = `tasks ${r.first}-${r.first + r.published.length - 1}`;
   const commands = ["Next: review the diff, then commit it:", `  git add ${r.relFile}`, `  git commit -m "docs: sindri proposals, week of ${r.monday}"`];
   const lines = r.dryRun
     ? [`Would publish ${r.published.length} proposal(s) as ${range} in ${r.relFile} (dry run; nothing was written)${heldNote}.`, ...heldLines, ...warning]
     : [`Published ${r.published.length} proposal(s) as ${range} in ${r.relFile}${heldNote}.`, ...heldLines, ...warning, ...commands, ...heldHelp];
-  return success(lines.join("\n"), { ...r }, json, r.held.length > 0 ? 1 : 0);
+  return success(terminalSafe(lines.join("\n")), { ...r }, json, r.held.length > 0 ? 1 : 0);
 }

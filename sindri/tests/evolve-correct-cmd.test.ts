@@ -103,6 +103,14 @@ describe("sindri evolve correct", () => {
     capped.fx.close();
   });
 
+  it("escapes control characters in a dropped proposal's title, which is not schema-validated", async () => {
+    const { fx } = await ready(script(["wrong_approach_process"], { proposal: { title: "Bad \u001b[2Kone", artifact: "nope" } }));
+    const r = await correctCommand([], fx.ctx);
+    expect(r.stdout).not.toMatch(/[\u0000-\u0008\u000B-\u001F\u007F-\u009F]/);
+    expect(r.stdout).toContain("dropped: Bad \\u{001B}[2Kone (invalid proposal");
+    fx.close();
+  });
+
   it("remembers a week that proposed nothing", async () => {
     const { fx } = await ready(script(["wrong_approach_process"], { proposal: { title: "Bad one", artifact: "nope" } }));
     const bad = await correctCommand([], fx.ctx);

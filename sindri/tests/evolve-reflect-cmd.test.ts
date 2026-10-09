@@ -58,6 +58,14 @@ describe("sindri evolve reflect", () => {
     fx.close();
   });
 
+  it("escapes control characters in a model-written title before it reaches the terminal", async () => {
+    const { fx } = await ready(synthesis([proposal("skill:review", "Review must run \u001b]52;c;Zm9v\u0007 the suite", ["skills/review/SKILL.md"])]));
+    const r = await reflectCommand(["--pr", "12"], fx.ctx);
+    expect(r.stdout).not.toMatch(/[\u0000-\u0008\u000B-\u001F\u007F-\u009F]/);
+    expect(r.stdout).toContain("Review must run \\u{001B}]52;c;Zm9v\\u{0007} the suite");
+    fx.close();
+  });
+
   it("notes a repeated proposal as already proposed, and remembers a PR that produced nothing", async () => {
     const dupe = synthesis([proposal("skill:review", "Review must run the suite", ["skills/review/SKILL.md"])]);
     const { fx } = await ready(dupe);

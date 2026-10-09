@@ -6,9 +6,9 @@ import { compare } from "../src/evolve/cmd/compare.js";
 import { show } from "../src/evolve/cmd/proposals.js";
 import { init } from "../src/evolve/cmd/registry.js";
 import { isHoldout, saveReplay, type ReplayItem } from "../src/evolve/corpus.js";
-import { ProposalSchema, getProposal, runningComparison, saveProposal, setStatus, type ProposalStatus } from "../src/evolve/proposals.js";
+import { ProposalSchema, getProposal, runningComparison, saveProposal, type ProposalStatus } from "../src/evolve/proposals.js";
 import { SOURCES_CLAUSE } from "../src/evolve/prompts.js";
-import { evolveFixture, scriptedEvolveIo, withDeps, type EvolveFixture, type ScriptedEvolveIo } from "./evolve-fixtures.js";
+import { evolveFixture, scriptedEvolveIo, withDeps, type EvolveFixture, type ScriptedEvolveIo, setStatus } from "./evolve-fixtures.js";
 
 const map = (title: string) => ({
   subject: "B", surfaces: [{ id: "S1", kind: "ui", title, detail: "", citations: ["R1"] }], implications: [],
@@ -58,6 +58,15 @@ async function ready(count: number, o: { extraYaml?: string; io?: ScriptedEvolve
 }
 
 describe("sindri evolve compare", () => {
+  it("fails on a stored summary row without a line, as show does, instead of printing undefined", async () => {
+    const { fx, save } = await ready(22);
+    const id = save();
+    await compare([id], fx.ctx);
+    fx.ctx.db.prepare("UPDATE comparisons SET detail = '{}' WHERE proposal_id = ? AND item_id = '*' AND verdict != 'running'").run(id);
+    await expect(compare([id], fx.ctx)).rejects.toThrow();
+    fx.close();
+  });
+
   it("compares once, stores the result and the rows, and prints the stored result on a second call", async () => {
     const { fx, save, calls } = await ready(22);
     const id = save();
