@@ -6945,7 +6945,7 @@ git commit -m "feat: sindri stage, publish, adopt and revert"
   - `sindri evolve check package:sindri --at <sha>` — runs the package's suite inside that channel build (`next` or `stable`) and records the row with `head = <sha>` and `dirty = 0`, which is what `promote` requires.
   - Error `SND-EVOLVE-005`.
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 `sindri/tests/evolve-channel.test.ts`:
 
@@ -7453,12 +7453,12 @@ test_channel_rejects_bad_arguments() {
 
 Each test starts from a fresh `make_scratch_repo`, which clears the previous test's directories; the existing `trap 'rm -rf "$TMP"' EXIT` cleans up at the end. Add all six function names to the list of calls at the bottom of the file.
 
-- [ ] **Step 2: Run the tests to verify they fail**
+- [x] **Step 2: Run the tests to verify they fail**
 
 Run: `cd sindri && npx vitest run tests/evolve-channel.test.ts tests/evolve-channel-cmd.test.ts tests/evolve-check-at.test.ts && cd .. && bash scripts/tests/install-sindri.test.sh`
 Expected: FAIL with `Failed to load url ../src/evolve/channel.js`, then a failing `test_channel_dry_run_writes_nothing` (the installer rejects `--channel`).
 
-- [ ] **Step 3: Implement**
+- [x] **Step 3: Implement**
 
 Add to `ERRORS`:
 
@@ -7899,12 +7899,12 @@ fi
 
 (The `echo "Installing sindri..."` banner and the in-place build stay below this block, unchanged. `git rev-parse --verify --end-of-options` needs git 2.24 or newer. The `sed` in `shq` turns each `'` into `'\''`: inside double quotes `\\\\` reaches `sed` as `\\`, which `sed` reads as one literal backslash.) The test file's `make_scratch_repo` deletes its working directories first (add `rm -rf "$TMP/src" "$TMP/origin.git" "$TMP/state" "$TMP/bin" "$TMP/b'in"` as its first line).
 
-- [ ] **Step 4: Run the tests**
+- [x] **Step 4: Run the tests**
 
 Run: `cd sindri && npm run gen && npx vitest run && npm run typecheck && npm run test:coverage && cd .. && bash scripts/tests/install-sindri.test.sh`
 Expected: all tests PASS; coverage 100% on the files this task touches; every installer test PASS.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add sindri/src sindri/tests scripts/install-sindri.sh scripts/tests/install-sindri.test.sh docs/sindri

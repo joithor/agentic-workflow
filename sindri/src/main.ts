@@ -2,8 +2,10 @@ import { createRequire } from "node:module";
 
 import type { Deps } from "./deps.js";
 import { doctorCommand } from "./doctor/doctor.js";
+import { makeChannelCommand } from "./evolve/cmd/channel.js";
 import { evolveUsage, makeEvolveCommand } from "./evolve/commands.js";
 import { makeIndexCommand } from "./index/commands.js";
+import { realProcessRunner } from "./index/sandbox-real.js";
 import { repoCommand } from "./index/repo-add.js";
 import { makeShapeCommand } from "./index/shape.js";
 import { ledgerCommand, observeCommand } from "./observe/observe.js";
@@ -87,6 +89,11 @@ export const COMMANDS: Record<string, CommandDef> = {
     summary: "Artifact registry, eval suites, proposals and offline comparisons (self-evolution)",
     usage: evolveUsage(),
     run: makeEvolveCommand(realScopeIo()),
+  },
+  channel: {
+    summary: "Stable and next install channels for sindri itself: status, promote, rollback",
+    usage: "Usage: sindri channel status | promote <sha> | rollback   (each takes --json)",
+    run: makeChannelCommand({ process: realProcessRunner() }),
   },
   ledger: { summary: "Show ledger events", usage: "Usage: sindri ledger [--item ID] [--since 7d|12h] [--json]", run: ledgerCommand },
 };

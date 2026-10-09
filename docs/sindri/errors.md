@@ -11,6 +11,7 @@ Generated from `sindri/src/errors.ts` by `cd sindri && npm run gen`. Do not edit
 | `SND-EVOLVE-002` | No offline comparison exists for that artifact yet. | only the scope.draft prompt can be compared in this release (spec amendment 4) |
 | `SND-EVOLVE-003` | A pull request couldn't be read with gh. | check the PR number and `gh auth status` |
 | `SND-EVOLVE-004` | That proposal can't be adopted. | sindri evolve show &lt;id&gt; says what is missing: a won comparison, the safety clause, or a clean leak check |
+| `SND-EVOLVE-005` | That channel change isn't allowed yet. | sindri channel status shows why and what to run |
 | `SND-EVOLVE-006` | That action needs an interactive terminal. | run it yourself in a terminal |
 | `SND-EVOLVE-007` | The confirmation didn't match. | rerun and type the characters shown |
 | `SND-EVOLVE-008` | No artifact in the registry has that id. | sindri evolve status lists the registered artifacts; sindri evolve init refreshes the registry |

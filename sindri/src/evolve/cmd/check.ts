@@ -4,6 +4,7 @@ import { success, type CommandResult } from "../../output.js";
 import type { EvolveCtx } from "../ctx.js";
 import { loadRegistry, type Artifact } from "../registry.js";
 import { runSuite } from "../suites.js";
+import { checkAt } from "./check-at.js";
 
 export type WithSuite = Artifact & { suite: NonNullable<Artifact["suite"]> };
 const hasSuite = (a: Artifact): a is WithSuite => a.suite !== null;
@@ -29,8 +30,9 @@ export function groupBySuite(list: WithSuite[]): WithSuite[][] {
 }
 
 export async function check(args: string[], ctx: EvolveCtx): Promise<CommandResult> {
-  const { values, positionals } = parseFlags(args, { changed: { type: "boolean" }, list: { type: "boolean" }, json: { type: "boolean" } });
+  const { values, positionals } = parseFlags(args, { changed: { type: "boolean" }, list: { type: "boolean" }, at: { type: "string" }, json: { type: "boolean" } });
   const json = values.json === true;
+  if (values.at !== undefined) return checkAt(values.at, positionals, ctx, json);
   const registry = loadRegistry(ctx.db);
   if (registry.length === 0) throw new SindriError("SND-EVOLVE-010", "the artifact registry is empty");
   const unknown = positionals.filter((id) => !registry.some((a) => a.id === id));

@@ -68,6 +68,7 @@ export const ERRORS = {
   "SND-EVOLVE-002": { summary: "No offline comparison exists for that artifact yet.", fix: "only the scope.draft prompt can be compared in this release (spec amendment 4)" },
   "SND-EVOLVE-003": { summary: "A pull request couldn't be read with gh.", fix: "check the PR number and `gh auth status`" },
   "SND-EVOLVE-004": { summary: "That proposal can't be adopted.", fix: "sindri evolve show <id> says what is missing: a won comparison, the safety clause, or a clean leak check" },
+  "SND-EVOLVE-005": { summary: "That channel change isn't allowed yet.", fix: "sindri channel status shows why and what to run" },
   "SND-EVOLVE-006": { summary: "That action needs an interactive terminal.", fix: "run it yourself in a terminal" },
   "SND-EVOLVE-007": { summary: "The confirmation didn't match.", fix: "rerun and type the characters shown" },
   "SND-EVOLVE-008": { summary: "No artifact in the registry has that id.", fix: "sindri evolve status lists the registered artifacts; sindri evolve init refreshes the registry" },

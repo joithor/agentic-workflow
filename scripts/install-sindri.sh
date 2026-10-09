@@ -10,6 +10,11 @@
 #                                     install only the SessionStart nudge (aw:sindri-nudge) for
 #                                     that host (default claude); AW_DRY_RUN=1 prints it. A plain
 #                                     install never installs the nudge: it prints the hint.
+#   install-sindri.sh --channel stable|next [--ref <sha>]
+#                                     build a merged ref (default HEAD; must be an ancestor of
+#                                     origin/<default branch>) into $AW_STATE_DIR/sindri/channels/
+#                                     <channel>/<sha>/ and point sindri (stable) or sindri-next at it.
+#                                     AW_SINDRI_SRC=DIR picks the source repo (tests).
 #
 # The git template hook is a separate, explicit opt-in (it changes global git config):
 # `sindri repo onboard --template`. This script only prints that as a hint.
@@ -23,11 +28,31 @@ source "$SCRIPT_DIR/config/hooks/adapters/install-lib.sh"
 aw_parse_provider_args "$@" || exit 1
 set -- ${AW_ARGS[@]+"${AW_ARGS[@]}"}
 
-case "${1:-}" in
-  --hook-only) HOOK_ONLY=1 ;;
-  "") HOOK_ONLY=0 ;;
-  *) echo "usage: install-sindri.sh [--hook-only [--provider claude|codex|cursor]]" >&2; exit 1 ;;
+SRC_REPO="${AW_SINDRI_SRC:-$SCRIPT_DIR}"
+USAGE="usage: install-sindri.sh [--hook-only [--provider claude|codex|cursor]] | [--channel stable|next [--ref <sha>]]"
+HOOK_ONLY=0
+CHANNEL=""
+REF=""
+while [ $# -gt 0 ]; do
+  case "$1" in
+    --hook-only) HOOK_ONLY=1; shift ;;
+    --channel) [ $# -ge 2 ] || { echo "$USAGE" >&2; exit 1; }; CHANNEL="$2"; shift 2 ;;
+    --ref) [ $# -ge 2 ] || { echo "$USAGE" >&2; exit 1; }; REF="$2"; shift 2 ;;
+    *) echo "$USAGE" >&2; exit 1 ;;
+  esac
+done
+case "$CHANNEL" in
+  ""|stable|next) ;;
+  *) echo "--channel must be stable or next" >&2; exit 1 ;;
 esac
+if [ -z "$CHANNEL" ] && [ -n "$REF" ]; then
+  echo "--ref only makes sense with --channel" >&2
+  exit 1
+fi
+if [ "$HOOK_ONLY" = "1" ] && [ -n "$CHANNEL" ]; then
+  echo "$USAGE" >&2
+  exit 1
+fi
 
 # The nudge is silent until sindri is installed, so it may land before or after the build.
 if [ "$HOOK_ONLY" = "1" ]; then
@@ -50,6 +75,98 @@ if [ "$HOOK_ONLY" = "1" ]; then
     aw_hook_set "$EVENT" aw:sindri-nudge sindri-nudge.sh
     echo "  sindri: $EVENT nudge installed for $AW_PROVIDER in $AW_HOOKS_CONFIG"
   fi
+  exit 0
+fi
+
+# Single-quote a string for the shell, escaping embedded quotes.
+shq() { printf "'%s'" "$(printf '%s' "$1" | sed "s/'/'\\\\''/g")"; }
+
+# A wrapper is written to a temp file in the same directory and renamed into place: a symlink at
+# the destination is replaced, never written through.
+write_wrapper() { # name cli
+  local target="$BIN_DIR/$1" tmp
+  mkdir -p "$BIN_DIR"
+  tmp="$(mktemp "$BIN_DIR/.$1.XXXXXX")"
+  {
+    echo '#!/usr/bin/env bash'
+    echo "export SINDRI_BIN=$(shq "$target")"
+    echo "exec $(shq "$(command -v node)") $(shq "$2") \"\$@\""
+  } > "$tmp"
+  chmod 755 "$tmp"
+  mv -f "$tmp" "$target"
+}
+
+record_channel() { # state channel sha dest
+  local js
+  js="$(mktemp)"
+  cat > "$js" <<'NODE'
+const fs = require("node:fs");
+const [file, channel, sha, dir] = process.argv.slice(2);
+let cur = { stable: null, next: null };
+try {
+  cur = JSON.parse(fs.readFileSync(file, "utf8"));
+} catch (e) {
+  if (e.code !== "ENOENT") {
+    console.error("channels.json is unreadable: " + e.message);
+    process.exit(1);
+  }
+}
+const entry = { sha, dir, installedAt: new Date().toISOString() };
+if (channel === "stable") {
+  cur.stable = { ...entry, previous: cur.stable ? { sha: cur.stable.sha, dir: cur.stable.dir, installedAt: cur.stable.installedAt } : null };
+} else {
+  cur.next = entry;
+}
+const tmp = file + ".tmp-" + process.pid;
+fs.writeFileSync(tmp, JSON.stringify(cur, null, 2), { mode: 0o600 });
+fs.renameSync(tmp, file);
+NODE
+  node "$js" "$1/channels.json" "$2" "$3" "$4"
+  rm -f "$js"
+}
+
+# Only merged code runs on a channel: the ref must be an ancestor of origin/<default branch>.
+install_channel() {
+  local state="${AW_STATE_DIR:-$HOME/.agentic-workflow}/sindri" default_branch sha dest wrapper
+  default_branch="$(git -C "$SRC_REPO" symbolic-ref --short refs/remotes/origin/HEAD 2>/dev/null | sed 's|^origin/||' || true)"
+  default_branch="${default_branch:-main}"
+  sha="$(git -C "$SRC_REPO" rev-parse --verify --end-of-options "${REF:-HEAD}^{commit}")" || { echo "refusing: ${REF:-HEAD} is not a commit in $SRC_REPO" >&2; exit 1; }
+  if ! git -C "$SRC_REPO" merge-base --is-ancestor "$sha" "origin/$default_branch" 2>/dev/null; then
+    echo "refusing: $sha is not an ancestor of origin/$default_branch (only merged code runs on a channel)" >&2
+    exit 1
+  fi
+  dest="$state/channels/$CHANNEL/$sha"
+  wrapper="sindri"
+  [ "$CHANNEL" = "next" ] && wrapper="sindri-next"
+  if [ -e "$dest" ]; then
+    echo "refusing: $dest already exists (channel builds are immutable)" >&2
+    exit 1
+  fi
+  if [ "${AW_DRY_RUN:-0}" = "1" ]; then
+    echo "  [dry-run] would build sindri at $sha into $dest"
+    echo "  [dry-run] would write $BIN_DIR/$wrapper"
+    return
+  fi
+  mkdir -p -m 700 "$state"
+  chmod 700 "$state"
+  mkdir -p "$dest"
+  git -C "$SRC_REPO" archive "$sha" sindri | tar -x -C "$dest" --strip-components=1 --no-same-owner
+  if [ -n "$(find "$dest" -type l)" ]; then
+    rm -rf "$dest"
+    echo "refusing: the archive at $sha contains symlinks" >&2
+    exit 1
+  fi
+  if [ "${AW_SKIP_BUILD:-0}" != "1" ]; then
+    # Install scripts from the ref don't run; only better-sqlite3's native build does.
+    (cd "$dest" && npm ci --ignore-scripts && npm rebuild better-sqlite3 && npm run build)
+  fi
+  write_wrapper "$wrapper" "$dest/dist/cli.js"
+  record_channel "$state" "$CHANNEL" "$sha" "$dest"
+  echo "  sindri: $CHANNEL channel at $sha ($BIN_DIR/$wrapper)"
+}
+
+if [ -n "$CHANNEL" ]; then
+  install_channel
   exit 0
 fi
 

@@ -183,6 +183,89 @@ test_nudge_hook_per_provider() {
   echo "PASS: test_nudge_hook_per_provider"
 }
 
+# A scratch source repo with an origin: two merged commits on main and one unmerged commit on a branch.
+make_scratch_repo() {
+  local work="$TMP/src" origin="$TMP/origin.git"
+  rm -rf "$work" "$origin" "$TMP/state" "$TMP/bin" "$TMP/b'in"
+  git init -q --bare "$origin"
+  git init -q "$work"
+  git -C "$work" checkout -q -b main
+  mkdir -p "$work/sindri/dist"
+  echo '{ "name": "sindri-test" }' > "$work/sindri/package.json"
+  echo 'process.stdout.write("channel-ok " + process.argv.slice(2).join(" "));' > "$work/sindri/dist/cli.js"
+  git -C "$work" add -A
+  git -C "$work" -c user.name=t -c user.email=t@example.com commit -qm "merged one"
+  MERGED1="$(git -C "$work" rev-parse HEAD)"
+  echo one > "$work/sindri/extra.txt"
+  git -C "$work" add -A
+  git -C "$work" -c user.name=t -c user.email=t@example.com commit -qm "merged two"
+  MERGED2="$(git -C "$work" rev-parse HEAD)"
+  git -C "$work" remote add origin "$origin"
+  git -C "$work" push -q origin main
+  git -C "$work" checkout -q -b feature
+  echo two > "$work/sindri/more.txt"
+  git -C "$work" add -A
+  git -C "$work" -c user.name=t -c user.email=t@example.com commit -qm "unmerged"
+  UNMERGED="$(git -C "$work" rev-parse HEAD)"
+  SRC="$work"
+}
+
+channel_install() { # channel ref [extra env assignments are inherited]
+  AW_SINDRI_SRC="$SRC" AW_SKIP_BUILD=1 AW_SKIP_LAUNCHD=1 AW_STATE_DIR="$TMP/state" CLAUDE_LOCAL_BIN="${BIN:-$TMP/bin}" bash "$ROOT/scripts/install-sindri.sh" --channel "$1" --ref "$2"
+}
+
+test_channel_dry_run_writes_nothing() {
+  make_scratch_repo
+  local out
+  out="$(AW_DRY_RUN=1 AW_SINDRI_SRC="$SRC" AW_STATE_DIR="$TMP/state" CLAUDE_LOCAL_BIN="$TMP/bin" bash "$ROOT/scripts/install-sindri.sh" --channel next --ref "$MERGED2")"
+  grep -q "\[dry-run\] would build sindri at $MERGED2 into $TMP/state/sindri/channels/next/$MERGED2" <<<"$out" || { echo "FAIL: dry-run build line missing"; exit 1; }
+  grep -q "\[dry-run\] would write $TMP/bin/sindri-next" <<<"$out" || { echo "FAIL: dry-run wrapper line missing"; exit 1; }
+  [ ! -e "$TMP/state/sindri/channels" ] && [ ! -e "$TMP/bin/sindri-next" ] || { echo "FAIL: dry-run wrote something"; exit 1; }
+  echo "PASS: test_channel_dry_run_writes_nothing"
+}
+
+test_channel_refuses_unmerged_ref() {
+  make_scratch_repo
+  if out="$(channel_install next "$UNMERGED" 2>&1)"; then echo "FAIL: an unmerged ref was installed"; exit 1; fi
+  grep -q "is not an ancestor of origin/main" <<<"$out" || { echo "FAIL: wrong refusal: $out"; exit 1; }
+  [ ! -e "$TMP/state/sindri/channels/next/$UNMERGED" ] || { echo "FAIL: build dir exists"; exit 1; }
+  echo "PASS: test_channel_refuses_unmerged_ref"
+}
+
+test_channel_install_writes_wrapper_and_state() {
+  make_scratch_repo
+  channel_install next "$MERGED2" > /dev/null
+  [ "$(stat -f '%Lp' "$TMP/state/sindri" 2>/dev/null || stat -c '%a' "$TMP/state/sindri")" = "700" ] || { echo "FAIL: channel state dir is not 0700"; exit 1; }
+  [ "$("$TMP/bin/sindri-next" hi)" = "channel-ok hi" ] || { echo "FAIL: sindri-next did not run the build"; exit 1; }
+  node -e 'const c = JSON.parse(require("node:fs").readFileSync(process.argv[1], "utf8")); if (c.next.sha !== process.argv[2] || c.stable !== null) process.exit(1);' "$TMP/state/sindri/channels.json" "$MERGED2" || { echo "FAIL: channels.json wrong"; exit 1; }
+  if out="$(channel_install next "$MERGED2" 2>&1)"; then echo "FAIL: reinstall over an existing build was allowed"; exit 1; fi
+  grep -q "already exists" <<<"$out" || { echo "FAIL: wrong refusal: $out"; exit 1; }
+  echo "PASS: test_channel_install_writes_wrapper_and_state"
+}
+
+test_channel_stable_remembers_previous() {
+  make_scratch_repo
+  channel_install stable "$MERGED1" > /dev/null
+  channel_install stable "$MERGED2" > /dev/null
+  node -e 'const c = JSON.parse(require("node:fs").readFileSync(process.argv[1], "utf8")); if (c.stable.sha !== process.argv[2] || c.stable.previous.sha !== process.argv[3]) process.exit(1);' "$TMP/state/sindri/channels.json" "$MERGED2" "$MERGED1" || { echo "FAIL: previous not recorded"; exit 1; }
+  [ "$("$TMP/bin/sindri" yo)" = "channel-ok yo" ] || { echo "FAIL: stable wrapper broken"; exit 1; }
+  echo "PASS: test_channel_stable_remembers_previous"
+}
+
+test_channel_wrapper_quotes_paths() {
+  make_scratch_repo
+  BIN="$TMP/b'in" channel_install next "$MERGED1" > /dev/null
+  [ "$("$TMP/b'in/sindri-next" quoted)" = "channel-ok quoted" ] || { echo "FAIL: wrapper broke on a quote in the path"; exit 1; }
+  echo "PASS: test_channel_wrapper_quotes_paths"
+}
+
+test_channel_rejects_bad_arguments() {
+  if bash "$ROOT/scripts/install-sindri.sh" --channel nope 2>/dev/null; then echo "FAIL: --channel nope accepted"; exit 1; fi
+  if bash "$ROOT/scripts/install-sindri.sh" --ref abc 2>/dev/null; then echo "FAIL: --ref without --channel accepted"; exit 1; fi
+  if bash "$ROOT/scripts/install-sindri.sh" --bogus 2>/dev/null; then echo "FAIL: unknown option accepted"; exit 1; fi
+  echo "PASS: test_channel_rejects_bad_arguments"
+}
+
 test_dry_run_writes_nothing
 test_wrapper_execs_the_built_cli
 test_setup_has_opt_in_flag
@@ -194,3 +277,9 @@ test_launchd_refuses_unsafe_bin_path
 test_index_jobs
 test_launchd_installs_every_job
 test_nudge_hook_per_provider
+test_channel_dry_run_writes_nothing
+test_channel_refuses_unmerged_ref
+test_channel_install_writes_wrapper_and_state
+test_channel_stable_remembers_previous
+test_channel_wrapper_quotes_paths
+test_channel_rejects_bad_arguments
