@@ -3,7 +3,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
 
-import { LEDGER_SCHEMA_VERSION, openLedger, openLedgerReadOnly, openMemoryLedger } from "../src/ledger/db.js";
+import { LEDGER_SCHEMA_VERSION, ledgerFileVersion, openLedger, openLedgerReadOnly, openMemoryLedger } from "../src/ledger/db.js";
 import { tempDir } from "./helpers.js";
 import { isLoopbackUrl } from "../src/index/loopback.js";
 import { DEFAULT_DENY_PATHS, denyPathsFor, ProfileSchema, RepoSchema } from "../src/profile/schema.js";
@@ -94,6 +94,15 @@ describe("ledger migration v2", () => {
     expect(db.prepare("SELECT COUNT(*) AS n FROM shape_runs").get()).toEqual({ n: 0 });
     expect(fs.existsSync(`${file}.bak-v1`)).toBe(true);
     db.close();
+  });
+});
+
+describe("ledgerFileVersion", () => {
+  it("is null for a missing file and the stored version otherwise", () => {
+    const file = path.join(tempDir(), "ledger.db");
+    expect(ledgerFileVersion(file)).toBeNull();
+    openLedger(file).close();
+    expect(ledgerFileVersion(file)).toBe(LEDGER_SCHEMA_VERSION);
   });
 });
 

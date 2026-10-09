@@ -5,7 +5,7 @@ import { parseFlags } from "../args.js";
 import { stateDir, type Deps } from "../deps.js";
 import { SindriError } from "../errors.js";
 import { ulid } from "../ids.js";
-import { ledgerPath, openLedger, openLedgerReadOnly, readLedger, schemaVersion, type Ledger } from "../ledger/db.js";
+import { ledgerFileVersion, ledgerPath, LEDGER_SCHEMA_VERSION, openLedger, openLedgerReadOnly, readLedger, schemaVersion, type Ledger } from "../ledger/db.js";
 import { acquireTickLock } from "../lock/lock.js";
 import type { Command } from "../main.js";
 import { failure, fromError, success, type CommandResult } from "../output.js";
@@ -45,8 +45,12 @@ type Recorded = { written: string | null; note: string };
 // never writes the ledger (it opens it read-only, with no migration).
 export async function recordStaged(deps: Deps, io: Pick<IndexIo, "fetch">, o: { repo?: string; size?: Size }): Promise<Recorded> {
   const started = deps.now().getTime();
-  const ledger = openLedgerReadOnly(ledgerPath(stateDir(deps)));
-  if (ledger === null) return { written: null, note: "skipped (no approved profile)" };
+  const file = ledgerPath(stateDir(deps));
+  const ledger = openLedgerReadOnly(file);
+  if (ledger === null) {
+    const v = ledgerFileVersion(file);
+    return { written: null, note: v === null ? "skipped (no approved profile)" : `skipped (ledger schema v${v}, expected v${LEDGER_SCHEMA_VERSION}; run sindri shape reconcile)` };
+  }
   let loaded: LoadedProfile | null;
   try {
     loaded = approvedProfile(deps, ledger);
