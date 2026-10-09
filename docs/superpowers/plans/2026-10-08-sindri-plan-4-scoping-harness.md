@@ -420,7 +420,7 @@ git commit -m "feat: sindri secret pointers, scope profile keys and ledger v3"
   - `class RefTable { add(r): string /* "R<n>", deduplicated by ref */; get(id); ids(); entries(); pack(maxChars) }`. `pack` renders each record as `<untrusted id="R3" kind="issue" ref="linear:ABC-1" author="…">…</untrusted>`, with `<`, `>`, `&` and `"` in all values and text escaped (so source text can never close a fence). **R1 (the brief) is never trimmed below `min(its length, maxChars / 2)`; the other records share the rest.**
 - Produces (sources), each returning cleaned records: `fileSource(path)` (one record, `trust: "trusted"`); `notesSource(dir)` (`.md` files with ≥ 2 keyword hits, best first, skipping dotfiles, symlinks and generated `scope-*.md` / `backtest-*.md` maps; returns nothing when `asOf` is set, spec amendment 4); `transcriptsSource(dir, caps?)` (human user turns from Claude Code `*.jsonl` files with ≥ 2 keyword hits, up to `asOf`, reading at most 2 MB per file and 50 MB per run; a turn whose (timestamp, whitespace-normalized text) already appeared in an earlier file of the same scan is skipped, because resumed and forked sessions copy earlier lines into the new file, and turns without a timestamp are never skipped; `trust: "untrusted"`); `codeSource(deps, repos, o?)` (indexed symbols whose name words match keywords, plus the symbols they call; `trust: "untrusted"`; returns nothing when there are no keywords, and nothing when `asOf` is set unless created with `{ allowAsOf: true }`).
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 `sindri/tests/scope-source.test.ts`:
 
@@ -687,12 +687,12 @@ export async function buildIndexForTest(d: Deps, name: string, files: Record<str
 }
 ```
 
-- [ ] **Step 2: Run the tests to verify they fail**
+- [x] **Step 2: Run the tests to verify they fail**
 
 Run: `cd sindri && npx vitest run tests/scope-source.test.ts tests/scope-local-sources.test.ts`
 Expected: FAIL with `Failed to load url ../src/scope/source.js` (and the source modules).
 
-- [ ] **Step 3: Implement**
+- [x] **Step 3: Implement**
 
 `sindri/src/scope/source.ts`:
 
@@ -1033,12 +1033,12 @@ Add to `ERRORS`:
 
 Note on `code.ts` cost: `allSymbols` loads every symbol of a repo per run. That is bounded by Plan 3's `index.maxTotalMB`, so it is accepted here; a keyword-filtered query is Plan 3 work.
 
-- [ ] **Step 4: Run the tests**
+- [x] **Step 4: Run the tests**
 
 Run: `cd sindri && npm run gen && npm run typecheck && npm run test:coverage`
 Expected: all tests PASS; coverage 100% on the files this task touches.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add sindri/src/scope sindri/src/errors.ts sindri/tests docs/sindri/errors.md
