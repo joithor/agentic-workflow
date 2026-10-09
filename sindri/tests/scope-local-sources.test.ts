@@ -148,6 +148,14 @@ describe("local sources (Review Focus 5: stripped and scrubbed at fetch)", () =>
     ]);
   });
 
+  it("transcripts: a null, number, string, array or null-message JSONL line is skipped, never throws", async () => {
+    const dir = tempDir();
+    const odd = ["null", "42", '"x"', "[]", "true", JSON.stringify({ type: "user", message: null })];
+    fs.writeFileSync(path.join(dir, "odd.jsonl"), `${odd.join("\n")}\n${turn("shift times survives", "2026-01-01T00:00:00Z")}\n`);
+    const r = await transcriptsSource(dir).find(q(["shift", "times"]));
+    expect(r.ok && r.value.map((x) => x.ref)).toEqual(["transcript:odd.jsonl#7"]);
+  });
+
   it("transcripts: caps the bytes read per file and per run", async () => {
     const dir = tempDir();
     const first = turn("shift times first", "2026-01-01T00:00:00Z");

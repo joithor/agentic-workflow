@@ -49,6 +49,8 @@ function humanTurn(line: string): { text: string; ts: string } | null {
   } catch {
     return null;
   }
+  // JSON.parse("null") succeeds; a scalar or array line is not a turn.
+  if (typeof v !== "object" || v === null || Array.isArray(v)) return null;
   const o = v as { type?: unknown; timestamp?: unknown; message?: { role?: unknown; content?: unknown } };
   if (o.type !== "user" || o.message?.role !== "user" || typeof o.message.content !== "string") return null;
   if (o.message.content.trimStart().startsWith("<")) return null;
