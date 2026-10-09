@@ -20,24 +20,45 @@ export function isSindriHook(text: string): boolean {
   return text.split("\n").some((l) => l === PRE_COMMIT_MARKER || LEGACY_MARKERS.includes(l));
 }
 
+export const TEMPLATE_MARKER = "# sindri-template: a no-op until this repo is in the approved profile";
+
 // The hook calls the CLI by the absolute path it was installed from (GUI git
 // clients don't load ~/.local/bin into PATH) and fails closed when it's missing.
 // `git commit --no-verify` still bypasses it: a deliberate, visible human choice.
-export function preCommitHook(bin: string): string {
-  return `#!/bin/sh
-${PRE_COMMIT_MARKER}
-# Refuses commits that add secret-shaped strings (spec §8.4), then records shape signals (spec §6.2).
-# Installed by \`sindri scrub --install-pre-commit\`.
-SINDRI='${bin.replace(/'/g, "'\\''")}'
-if [ ! -x "$SINDRI" ] && ! command -v "$SINDRI" >/dev/null 2>&1; then
+// The template copy (git init and clone copy it from init.templateDir) stays a no-op until
+// `sindri repo onboard` replaces it with the full hook, so it never blocks a repo nobody
+// onboarded. `repo status` exits 0 (onboarded), 1 (not) or 2 (it failed): a failure is one
+// stderr line and still never blocks the commit.
+export function preCommitHook(bin: string, o: { template?: boolean } = {}): string {
+  const gate = o.template === true
+    ? `${TEMPLATE_MARKER}
+if [ ! -x "$SINDRI" ] && ! command -v "$SINDRI" >/dev/null 2>&1; then exit 0; fi
+"$SINDRI" repo status >/dev/null 2>&1
+case $? in
+  0) ;;
+  1) exit 0 ;;
+  *) echo "sindri: repo status failed; secret scan skipped" >&2; exit 0 ;;
+esac
+`
+    : `if [ ! -x "$SINDRI" ] && ! command -v "$SINDRI" >/dev/null 2>&1; then
   echo "sindri-scrub: $SINDRI not found, so the secret scan can't run; refusing the commit." >&2
   echo "  fix: scripts/install-sindri.sh (or commit with --no-verify and say why)" >&2
   exit 1
 fi
-"$SINDRI" scrub --staged || exit 1
+`;
+  return `#!/bin/sh
+${PRE_COMMIT_MARKER}
+# Refuses commits that add secret-shaped strings (spec §8.4), then records shape signals (spec §6.2).
+# Installed by \`${o.template === true ? "sindri repo onboard --template" : "sindri scrub --install-pre-commit"}\`.
+SINDRI='${bin.replace(/'/g, "'\\''")}'
+${gate}"$SINDRI" scrub --staged || exit 1
 # Record-only shape signals (spec §6.2): never blocks the commit.
 "$SINDRI" shape --record --staged || true
 `;
+}
+
+export function isTemplateHook(text: string): boolean {
+  return text.split("\n").includes(TEMPLATE_MARKER);
 }
 
 export function hookBinary(hookText: string): string | null {
@@ -142,16 +163,38 @@ function scrubberFor(deps: Deps): { scrubber: Scrubber; warning: string } {
   return { scrubber: makeScrubber(compileExtraPatterns(use.profile.scrub.extraPatterns)), warning };
 }
 
-async function install(deps: Deps, repo: string | undefined, json: boolean): Promise<CommandResult> {
-  const repoPath = path.resolve(deps.cwd, repo ?? ".");
+// A foreign hook reached through core.hooksPath (husky and the like) is never edited, and
+// core.hooksPath is never set. Husky sources ${XDG_CONFIG_HOME:-~/.config}/husky/init.sh before
+// every hook, so the local-only route is the two lines there, guarded to this repo.
+async function foreignHookFix(deps: Deps, repoPath: string, hook: string): Promise<string | undefined> {
+  const hooksPath = await deps.git.run(["config", "--get", "core.hooksPath"], repoPath);
+  const common = await deps.git.run(["rev-parse", "--path-format=absolute", "--git-common-dir"], repoPath);
+  if (!hooksPath.ok || !common.ok) return undefined;
+  const dir = common.stdout.trim();
+  const q = (s: string): string => `'${s.replace(/'/g, "'\\''")}'`;
+  return `core.hooksPath (${hooksPath.stdout.trim()}) makes ${hook} this repo's hook; sindri never edits it and never sets core.hooksPath. ` +
+    `Local-only route (husky): add to \${XDG_CONFIG_HOME:-~/.config}/husky/init.sh: ` +
+    `if [ "$(basename "$0")" = pre-commit ] && [ "$(git rev-parse --path-format=absolute --git-common-dir)" = ${q(dir)} ]; then sindri scrub --staged || exit 1; sindri shape --record --staged || true; fi`;
+}
+
+// Replaces any sindri hook (v1, v2 or the template copy); refuses a foreign one.
+export async function installPreCommit(deps: Deps, repoPath: string): Promise<{ hook: string; changed: boolean }> {
   const hook = await preCommitPath(deps.git, repoPath);
   if (hook === null) throw new SindriError("SND-SCRUB-004", `${repoPath} is not inside a git repo`);
-  if (fs.existsSync(hook) && !isSindriHook(fs.readFileSync(hook, "utf8"))) {
-    throw new SindriError("SND-SCRUB-003", `${hook} already exists and is not sindri's`);
+  const text = preCommitHook(deps.env.SINDRI_BIN ?? "sindri");
+  const old = fs.existsSync(hook) ? fs.readFileSync(hook, "utf8") : null;
+  if (old !== null && !isSindriHook(old)) {
+    throw new SindriError("SND-SCRUB-003", `${hook} already exists and is not sindri's`, { fix: await foreignHookFix(deps, repoPath, hook) });
   }
+  if (old === text) return { hook, changed: false };
   fs.mkdirSync(path.dirname(hook), { recursive: true });
-  fs.writeFileSync(hook, preCommitHook(deps.env.SINDRI_BIN ?? "sindri"));
+  fs.writeFileSync(hook, text);
   fs.chmodSync(hook, 0o755);
+  return { hook, changed: true };
+}
+
+async function install(deps: Deps, repo: string | undefined, json: boolean): Promise<CommandResult> {
+  const { hook } = await installPreCommit(deps, path.resolve(deps.cwd, repo ?? "."));
   return success(`Installed the secret-scan pre-commit hook at ${hook}.`, { hook }, json);
 }
 

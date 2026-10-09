@@ -7,9 +7,11 @@ import type { Deps } from "../deps.js";
 import { SindriError } from "../errors.js";
 import { ulid } from "../ids.js";
 import type { Command } from "../main.js";
-import { failure, fromError, success } from "../output.js";
+import { failure, fromError, success, type CommandResult } from "../output.js";
 import { requireProfile, sanitizeName } from "../profile/commands.js";
 import { PROFILE_SCHEMA_VERSION } from "../profile/schema.js";
+import { renderSteps } from "./commands.js";
+import { installTemplate, nudgeLine, onboard, repoState } from "./onboard.js";
 
 // Edits the LIVE profile; the change takes effect after `sindri profile approve` (spec §8.7).
 // The mirror is not created here: every full `sindri index build` creates or refreshes it.
@@ -55,11 +57,44 @@ export async function repoAdd(deps: Deps, target: string, name?: string): Promis
   return { name: repoName, path: repoPath, added: true };
 }
 
+function statusText(s: Awaited<ReturnType<typeof repoState>>): string {
+  if (s.kind === "onboarded") return `${s.name} is onboarded.`;
+  if (s.kind === "outside-git") return "Not inside a git repo.";
+  return nudgeLine(s) || "No approved profile yet: sindri profile init, then sindri profile approve.";
+}
+
 export const repoCommand: Command = async (args, deps) => {
   const [sub, ...rest] = args;
   const json = rest.includes("--json");
   try {
-    if (sub !== "add") return failure("SND-CLI-002", `unknown repo subcommand: ${sub ?? "(none)"}; use add`, json, { fix: "sindri repo --help" });
+    if (sub === "onboard") {
+      const { values, positionals } = parseFlags(rest, { name: { type: "string" }, "no-build": { type: "boolean" }, template: { type: "boolean" }, json: { type: "boolean" } });
+      if (values.template === true) {
+        if (positionals.length > 0 || values.name !== undefined) throw new SindriError("SND-CLI-002", "--template takes no path or --name", { fix: "sindri repo onboard --template" });
+        const step = await installTemplate(deps);
+        return success(renderSteps([step]), { steps: [step] }, values.json === true);
+      }
+      const r = await onboard(deps, positionals[0] ?? ".", { name: values.name, build: values["no-build"] !== true });
+      return success(renderSteps(r.steps), r, values.json === true, r.exitCode);
+    }
+    if (sub === "status") {
+      const { values, positionals } = parseFlags(rest, { nudge: { type: "boolean" }, json: { type: "boolean" } });
+      if (values.nudge === true) {
+        // Never fails and never blocks a session: any error is silence, and silence is no output at all
+        // (success("") would print a bare newline).
+        const quiet = (text: string): CommandResult => ({ exitCode: 0, stdout: text === "" ? "" : `${text}\n`, stderr: "" });
+        try {
+          return quiet(nudgeLine(await repoState(deps, positionals[0] ?? ".")));
+        } catch {
+          return quiet("");
+        }
+      }
+      // 0 onboarded, 1 not; an error is 2 (a SindriError through fromError, anything else SND-CLI-900),
+      // so the template hook can tell "not onboarded" from "could not tell".
+      const s = await repoState(deps, positionals[0] ?? ".");
+      return success(statusText(s), s, values.json === true, s.kind === "onboarded" ? 0 : 1);
+    }
+    if (sub !== "add") return failure("SND-CLI-002", `unknown repo subcommand: ${sub ?? "(none)"}; use add, onboard or status`, json, { fix: "sindri repo --help" });
     const { values, positionals } = parseFlags(rest, { name: { type: "string" }, json: { type: "boolean" } });
     const target = positionals[0];
     if (target === undefined) throw new SindriError("SND-CLI-002", "repo add needs a path", { fix: "sindri repo add <path> [--name NAME]" });

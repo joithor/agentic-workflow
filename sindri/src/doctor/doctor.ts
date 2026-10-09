@@ -17,7 +17,7 @@ import { fromError, success, type ExitCode } from "../output.js";
 import { approvalProblem, approvalState, type ApprovalState } from "../profile/approve.js";
 import { loadProfile, resolveProfileRoot, type LoadedProfile } from "../profile/load.js";
 import { spoolDir } from "../index/spool.js";
-import { hookBinary, isSindriHook, PRE_COMMIT_MARKER, preCommitPath } from "../scrub/commands.js";
+import { hookBinary, isSindriHook, isTemplateHook, PRE_COMMIT_MARKER, preCommitPath } from "../scrub/commands.js";
 
 const lines = (text: string): string[] => text.split("\n");
 
@@ -122,8 +122,18 @@ async function profileChecks(deps: Deps, loaded: LoadedProfile): Promise<{ check
     const text = hook !== null && fs.existsSync(hook) ? fs.readFileSync(hook, "utf8") : "";
     const bin = isSindriHook(text) ? hookBinary(text) : null;
     const fix = `sindri scrub --install-pre-commit --repo ${repo.path}`;
+    const missing = bin !== null && path.isAbsolute(bin) && !isExecutable(bin);
     if (bin === null) out.push({ name: `pre-commit:${name}`, status: "warn", detail: "secret-scan hook not installed", fix });
-    else if (path.isAbsolute(bin) && !isExecutable(bin)) out.push({ name: `pre-commit:${name}`, status: "warn", detail: `hook calls ${bin}, which is missing, so every commit is refused`, fix: `scripts/install-sindri.sh, then ${fix}` });
+    // The template copy (git init.templateDir) never refuses a commit: a missing binary or a failed
+    // `repo status` skips the scan. `repo onboard` replaces it with the full hook, which fails closed.
+    else if (isTemplateHook(text)) {
+      const onboardFix = `sindri repo onboard ${repo.path}`;
+      out.push(
+        missing
+          ? { name: `pre-commit:${name}`, status: "warn", detail: `template hook calls ${bin}, which is missing, so the secret scan is skipped`, fix: `scripts/install-sindri.sh, then ${onboardFix}` }
+          : { name: `pre-commit:${name}`, status: "warn", detail: "template copy: it skips the secret scan if sindri goes missing or repo status fails", fix: onboardFix },
+      );
+    } else if (missing) out.push({ name: `pre-commit:${name}`, status: "warn", detail: `hook calls ${bin}, which is missing, so every commit is refused`, fix: `scripts/install-sindri.sh, then ${fix}` });
     // A v1 hook (Plan 2) runs the secret scan only; a hand-merged v2 hook may lack the shape step.
     else if (!lines(text).includes(PRE_COMMIT_MARKER)) out.push({ name: `pre-commit:${name}`, status: "warn", detail: "hook is v1: secret scan only, no shape recording", fix });
     else if (used.profile.shape.record && !lines(text).some((l) => l.startsWith('"$SINDRI" shape --record'))) {

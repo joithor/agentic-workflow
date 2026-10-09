@@ -4471,7 +4471,7 @@ Plan 3 gave each piece of onboarding its own command: `repo add`, `profile appro
   - `config/hooks/sindri-nudge.sh` (`# aw:sindri-nudge`), a SessionStart hook. It is silent unless `sindri repo status --nudge` prints a line. It is killed after `AW_SINDRI_NUDGE_BUDGET_MS` (default 1500), always exits 0, and skips `AW_JUDGE_CHILD` and `AW_SINDRI_CHILD` sessions.
   - `scripts/install-sindri.sh --hook-only --provider claude|codex|cursor` installs the nudge for that provider (Codex and Cursor go through their adapters), and `AW_DRY_RUN=1` prints it.
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 `sindri/tests/repo-onboard.test.ts`:
 
@@ -4750,12 +4750,12 @@ test_nudge_hook_per_provider() {
 
 Add `test_nudge_hook_per_provider` to the file's list of calls at the bottom.
 
-- [ ] **Step 2: Run them to verify they fail**
+- [x] **Step 2: Run them to verify they fail**
 
 Run: `cd sindri && npx vitest run tests/repo-onboard.test.ts; cd .. && bash config/hooks/tests/sindri-nudge.test.sh; bash scripts/tests/install-sindri.test.sh`
 Expected: FAIL. `src/index/onboard.js` and `TEMPLATE_MARKER` don't exist, the hook script is missing, and `--hook-only` is not handled.
 
-- [ ] **Step 3: Implement**
+- [x] **Step 3: Implement**
 
 In `sindri/src/scrub/commands.ts`, replace `preCommitHook` and `install` with:
 
@@ -5059,12 +5059,12 @@ Docs that belong with the hook (the rule says to document a new hook where it is
 - `config/hooks/adapters/README.md`: add a row `` | `sindri-nudge.sh` | SessionStart (`install-sindri.sh --hook-only`) | SessionStart (`--provider codex`) | `sessionStart` → `additional_context` (`--provider cursor`) | ``.
 - `AGENTS.md`: add `bash config/hooks/tests/sindri-nudge.test.sh` to the bash tests in Commands. In the `config/` directory comment, name the nudge hook. Add `sindri repo onboard [<path>]` to the sindri commands.
 
-- [ ] **Step 4: Run the tests**
+- [x] **Step 4: Run the tests**
 
 Run: `cd sindri && npm run gen && npm run typecheck && npm run test:coverage && cd .. && bash config/hooks/tests/sindri-nudge.test.sh && bash scripts/tests/install-sindri.test.sh && bash config/hooks/tests/provider-install-hooks.test.sh && scripts/sync-rules.sh --check`
 Expected: all PASS; coverage 100% on the files touched; `sync-rules` exits 0. Run them one after another, never two at once. If coverage shows an uncovered branch, add the smallest test that drives it. Examples: a `.git/hooks` that is a regular file (the hook write then throws a non-sindri error, which must propagate), a `~/`-relative `init.templateDir` that points at sindri's own dir, a profile repo whose path no longer exists (the `realOrSelf` fallback), or a `repo status --nudge` whose git call throws. Never add an ignore comment.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add sindri/src sindri/tests docs/sindri/errors.md config/hooks scripts providers .agents/rules/hooks.md AGENTS.md
@@ -5079,7 +5079,7 @@ The next steps fix a misleading error found in use. Running `sindri repo add <pa
   - `unapprovedRepos(deps, approved): string[]` in `index/commands.ts`: repos the live profile lists that the approved snapshot doesn't, sorted. It reads the live profile only (`resolveProfileRoot` and `loadProfile`), and an invalid or missing live profile gives `[]`.
   - `reposOf(deps, loaded, only)`: a `--repo` naming a live-but-unapproved repo throws `SND-PROFILE-015`. This applies to every caller (`index build`, `index status`, `index query`). `index build` without `--repo` prints one more line when that list is non-empty: `skipped (in the live profile, not approved yet): <a>, <b>; run sindri profile approve`.
 
-- [ ] **Step 6: Write the failing test**
+- [x] **Step 6: Write the failing test**
 
 Append to `sindri/tests/repo-onboard.test.ts`:
 
@@ -5124,12 +5124,12 @@ describe("index commands and a repo that was added but not approved", () => {
 });
 ```
 
-- [ ] **Step 7: Run it to verify it fails**
+- [x] **Step 7: Run it to verify it fails**
 
 Run: `cd sindri && npx vitest run tests/repo-onboard.test.ts -t "not approved"`
 Expected: FAIL. The first test gets `SND-PROFILE-004` with exit 2, and the second finds no `skipped` line.
 
-- [ ] **Step 8: Implement**
+- [x] **Step 8: Implement**
 
 In `sindri/src/index/commands.ts` (import `loadProfile` and `resolveProfileRoot` from `../profile/load.js`):
 
@@ -5174,12 +5174,12 @@ Add to `ERRORS`:
 
 In `docs/sindri/index.md`, add a troubleshooting row: `` | `SND-PROFILE-015 <name> is in the live profile but not approved yet` | `repo add` ran, `profile approve` didn't | `sindri profile approve`, then rerun | ``.
 
-- [ ] **Step 9: Run the tests**
+- [x] **Step 9: Run the tests**
 
 Run: `cd sindri && npm run gen && npm run typecheck && npm run test:coverage`
 Expected: all PASS, including the Plan 3 `index-build`, `index-profile` and `repo-add` tests, unchanged; coverage 100% on the files touched.
 
-- [ ] **Step 10: Commit**
+- [x] **Step 10: Commit**
 
 ```bash
 git add sindri/src sindri/tests docs/sindri

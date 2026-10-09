@@ -186,6 +186,14 @@ claude_install_hooks() {
   else
     bash "$TOOLKIT_DIR/scripts/install-judge.sh" --hook-only
   fi
+  # sindri's SessionStart nudge (setup.sh --with-sindri).
+  if [ "${WITH_SINDRI:-0}" = "1" ]; then
+    if aw_dry; then
+      echo "  [dry-run] would run scripts/install-sindri.sh --hook-only (sindri-nudge)"
+    else
+      bash "$TOOLKIT_DIR/scripts/install-sindri.sh" --hook-only
+    fi
+  fi
   aw_install_levers claude
 }
 

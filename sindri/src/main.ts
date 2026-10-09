@@ -57,8 +57,14 @@ export const COMMANDS: Record<string, CommandDef> = {
     run: (args, deps) => makeIndexCommand(deps.io)(args, deps),
   },
   repo: {
-    summary: "Add a repo to the profile (then sindri profile approve)",
-    usage: "Usage:\n  sindri repo add <path> [--name NAME] [--json]",
+    summary: "Add, onboard or check a repo (then sindri profile approve)",
+    usage: [
+      "Usage:",
+      "  sindri repo add <path> [--name NAME] [--json]",
+      "  sindri repo onboard [<path>] [--name NAME] [--no-build] [--json]   (exit 1: approval pending)",
+      "  sindri repo onboard --template [--json]                            (git init.templateDir hook; opt-in)",
+      "  sindri repo status [<path>] [--nudge] [--json]                     (exit 1 when not onboarded; --nudge always 0)",
+    ].join("\n"),
     run: repoCommand,
   },
   shape: {

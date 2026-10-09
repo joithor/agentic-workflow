@@ -33,6 +33,7 @@ Generated from `sindri/src/errors.ts` by `cd sindri && npm run gen`. Do not edit
 | `SND-PROFILE-012` | No profile has been approved yet. | sindri profile approve |
 | `SND-PROFILE-013` | That repo name is already used for another path or file. | pass --name &lt;another name&gt; |
 | `SND-PROFILE-014` | That repo name is not valid. | use lowercase letters, digits and dashes (max 39) |
+| `SND-PROFILE-015` | That repo is in the live profile but not approved yet. | run `sindri profile approve`, review the diff, then approve it at a terminal (or `sindri repo onboard`, which prints both commands) |
 | `SND-SCOPE-001` | No allowed provider can run scoping. | add anthropic to providers.allowed, then sindri profile approve |
 | `SND-SCOPE-002` | A model job failed, timed out or returned junk. | rerun; the message carries the CLI's own error. If it repeats, run `claude -p hello` to check the CLI and its login |
 | `SND-SCOPE-004` | The model's answer didn't match the required shape. | rerun; the next round gets the reasons. Persistent: try another models.scoping |
@@ -50,6 +51,7 @@ Generated from `sindri/src/errors.ts` by `cd sindri && npm run gen`. Do not edit
 | `SND-SCRUB-003` | A different pre-commit hook is already installed. | Add both lines to that hook by hand, in this order: `sindri scrub --staged \|\| exit 1` then `sindri shape --record --staged \|\| true`. |
 | `SND-SCRUB-004` | `scrub --staged` or `--install-pre-commit` ran outside a git repo. | cd into the repo first, or pass --repo PATH to --install-pre-commit. |
 | `SND-SCRUB-005` | `git diff --cached` failed, so `scrub --staged` could not scan the staged changes. | Fix the git error shown in the details, then retry the commit. |
+| `SND-SCRUB-006` | git's init.templateDir is set to a directory sindri does not own, or could not be read or set. | copy the named hook into that template dir's hooks/ yourself, or `git config --global --unset init.templateDir` and rerun `sindri repo onboard --template` |
 | `SND-SECRET-001` | A secret pointer could not be resolved. | check the pointer in the profile and that the secret exists (env var, file, keychain item or 1Password item) |
 | `SND-SECRET-002` | A secret file is readable by other users. | chmod 600 &lt;file&gt; |
 | `SND-TRACKER-001` | The tracker's source is missing or unreadable (for plan-file: the repo path or plan dir). | Restore that directory, or fix `path` in repos/&lt;name&gt;.yaml and run `sindri profile approve`. |

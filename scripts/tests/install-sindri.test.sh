@@ -153,6 +153,36 @@ test_launchd_installs_every_job() {
   echo "PASS: test_launchd_installs_every_job"
 }
 
+test_nudge_hook_per_provider() {
+  local out settings home="$TMP/nudge-home"
+  mkdir -p "$home"
+  out="$(HOME="$home" AW_DRY_RUN=1 bash "$ROOT/scripts/install-sindri.sh" --hook-only --provider codex)"
+  grep -q "would install sindri-nudge (SessionStart) for codex" <<<"$out" || { echo "FAIL: codex dry-run line missing"; exit 1; }
+  out="$(HOME="$home" AW_DRY_RUN=1 bash "$ROOT/scripts/install-sindri.sh" --hook-only --provider cursor)"
+  grep -q "would install sindri-nudge (sessionStart) for cursor" <<<"$out" || { echo "FAIL: cursor dry-run line missing"; exit 1; }
+  out="$(HOME="$home" AW_DRY_RUN=1 bash "$ROOT/scripts/install-sindri.sh" --hook-only)"
+  grep -q "would install sindri-nudge (SessionStart) for claude" <<<"$out" || { echo "FAIL: claude dry-run line missing"; exit 1; }
+  [ -z "$(ls -A "$home")" ] || { echo "FAIL: dry-run wrote under HOME"; exit 1; }
+  settings="$TMP/settings.json"; echo '{}' > "$settings"
+  HOME="$home" CLAUDE_SETTINGS_FILE="$settings" CLAUDE_HOOKS_DIR="$TMP/hooks" bash "$ROOT/scripts/install-sindri.sh" --hook-only > /dev/null
+  [ "$(jq '[.hooks.SessionStart[].hooks[].command | select(test("# aw:sindri-nudge$"))] | length' "$settings")" = "1" ] || { echo "FAIL: claude SessionStart entry missing"; exit 1; }
+  [ -x "$TMP/hooks/sindri-nudge.sh" ] || { echo "FAIL: claude hook script not copied"; exit 1; }
+  HOME="$home" CLAUDE_SETTINGS_FILE="$settings" CLAUDE_HOOKS_DIR="$TMP/hooks" bash "$ROOT/scripts/install-sindri.sh" --hook-only > /dev/null
+  [ "$(jq '[.hooks.SessionStart[].hooks[].command | select(test("# aw:sindri-nudge$"))] | length' "$settings")" = "1" ] || { echo "FAIL: reinstall duplicated the entry"; exit 1; }
+  local codex="$TMP/codex-hooks.json" cursor="$TMP/cursor-hooks.json"
+  HOME="$home" CODEX_HOOKS_FILE="$codex" AW_HOOKS_DIR="$TMP/aw-hooks" bash "$ROOT/scripts/install-sindri.sh" --hook-only --provider codex > /dev/null
+  [ "$(jq '[.hooks.SessionStart[].hooks[].command | select(test("adapters/codex.sh .*sindri-nudge.sh # aw:sindri-nudge$"))] | length' "$codex")" = "1" ] || { echo "FAIL: codex SessionStart entry missing"; exit 1; }
+  HOME="$home" CURSOR_HOOKS_FILE="$cursor" AW_HOOKS_DIR="$TMP/aw-hooks" bash "$ROOT/scripts/install-sindri.sh" --hook-only --provider cursor > /dev/null
+  [ "$(jq '[.hooks.sessionStart[].command | select(test("adapters/cursor.sh .*sindri-nudge.sh # aw:sindri-nudge$"))] | length' "$cursor")" = "1" ] || { echo "FAIL: cursor sessionStart entry missing"; exit 1; }
+  # A plain install prints the hints and installs no hook (only --hook-only does).
+  out="$(HOME="$home" AW_SKIP_BUILD=1 AW_SKIP_LAUNCHD=1 CLAUDE_LOCAL_BIN="$TMP/bin" bash "$ROOT/scripts/install-sindri.sh")"
+  grep -q "sindri repo onboard --template" <<<"$out" || { echo "FAIL: template hint missing"; exit 1; }
+  grep -q "install-sindri.sh --hook-only" <<<"$out" || { echo "FAIL: nudge hint missing"; exit 1; }
+  [ ! -e "$home/.claude" ] || { echo "FAIL: plain install wrote ~/.claude"; exit 1; }
+  if HOME="$home" bash "$ROOT/scripts/install-sindri.sh" --frob > /dev/null 2>&1; then echo "FAIL: unknown flag accepted"; exit 1; fi
+  echo "PASS: test_nudge_hook_per_provider"
+}
+
 test_dry_run_writes_nothing
 test_wrapper_execs_the_built_cli
 test_setup_has_opt_in_flag
@@ -163,3 +193,4 @@ test_launchd_bootstrap_failure_warns_and_continues
 test_launchd_refuses_unsafe_bin_path
 test_index_jobs
 test_launchd_installs_every_job
+test_nudge_hook_per_provider
