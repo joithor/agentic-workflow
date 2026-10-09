@@ -20,8 +20,11 @@ async function baseIndex(files: Record<string, string>, embedder: Embedder | nul
   return db;
 }
 
+// Tests that aren't about the budget never reach the deadline.
+const NO_DEADLINE = { deadline: Number.POSITIVE_INFINITY, now: () => 0 };
+
 const run = (base: IndexDb, changes: { path: string; text: string | null }[], addedLines = 5, embed: Parameters<typeof computeSignals>[0]["embed"] = null) =>
-  computeSignals({ base, overlay: buildOverlay(changes, addedLines), t, sizeBudget: 250, exportAllowance: 3, embed });
+  computeSignals({ base, overlay: buildOverlay(changes, addedLines), t, sizeBudget: 250, exportAllowance: 3, embed, budget: NO_DEADLINE });
 
 describe("shape signals", () => {
   it("stops comparing candidates at the deadline (a timer can't preempt synchronous work), deferring the unfinished layers", async () => {
@@ -30,11 +33,23 @@ describe("shape signals", () => {
     const all = await computeSignals({ base, overlay: buildOverlay(changes, 5), t, sizeBudget: 250, exportAllowance: 3, embed: null, budget: { deadline: 100, now: () => 0 } });
     expect(all.signals.filter((s) => s.type === "reinvented:exact")).toHaveLength(2);
     expect(all.deferred).toEqual([]);
-    // The clock passes the deadline after the first candidate: the second is never compared.
+    // The clock passes the deadline after the first candidate (checks: after loading the index,
+    // then before each candidate): the second is never compared.
     let calls = 0;
-    const cut = await computeSignals({ base, overlay: buildOverlay(changes, 5), t, sizeBudget: 250, exportAllowance: 3, embed: null, budget: { deadline: 100, now: () => (calls++ === 0 ? 0 : 200) } });
+    const cut = await computeSignals({ base, overlay: buildOverlay(changes, 5), t, sizeBudget: 250, exportAllowance: 3, embed: null, budget: { deadline: 100, now: () => (calls++ < 2 ? 0 : 200) } });
     expect(cut.signals.filter((s) => s.type === "reinvented:exact").map((s) => s.name)).toEqual(["first"]);
     expect(cut.deferred).toEqual(["clones", "structure", "graph"]);
+  });
+
+  it("checks the budget right after loading the index, before any comparison, and defers embeddings with the rest", async () => {
+    const base = await baseIndex({ "src/util/text.ts": BODY("clip") });
+    const embedder: Embedder = { model: "m", embed: async () => { throw new Error("must not be called"); } };
+    const r = await computeSignals({
+      base, overlay: buildOverlay([{ path: "src/a.ts", text: BODY("first") }], 5), t, sizeBudget: 250, exportAllowance: 3,
+      embed: { embedder, deadline: 100, now: () => 200 }, budget: { deadline: 100, now: () => 200 },
+    });
+    expect(r.signals.filter((s) => s.type === "reinvented:exact")).toEqual([]);
+    expect(r.deferred).toEqual(["clones", "structure", "graph", "embeddings"]);
   });
 
   it("flags an exact clone of an exported function in another file, with the flagged name and hash", async () => {
@@ -211,7 +226,7 @@ describe("shape signals: renames", () => {
     const pure = await stagedChanges(realGitRunner(), root, { denyPaths: [], maxFileKB: 512 });
     expect(pure.renames).toEqual(new Map([["src/new.ts", "src/old.ts"]]));
     const overlay = (c: typeof pure) => buildOverlay(c.changes, c.addedLines, c.renames);
-    const input = { base, t, sizeBudget: 250, exportAllowance: 3, embed: null };
+    const input = { base, t, sizeBudget: 250, exportAllowance: 3, embed: null, budget: NO_DEADLINE };
     expect(await computeSignals({ ...input, overlay: overlay(pure) })).toEqual({ signals: [], deferred: [] });
     const edited = { ...pure, changes: pure.changes.map((c) => (c.path === "src/new.ts" ? { ...c, text: mod("// note\n") } : c)) };
     expect(await computeSignals({ ...input, overlay: overlay(edited) })).toEqual({ signals: [], deferred: [] });

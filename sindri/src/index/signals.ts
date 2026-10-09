@@ -79,14 +79,20 @@ export async function computeSignals(i: {
   sizeBudget: number;
   exportAllowance: number;
   embed: { embedder: Embedder; deadline: number; now: () => number } | null;
-  // The commit budget. The hook's timer can't fire while this synchronous work holds the
-  // thread, so the candidate loops check the clock themselves and stop at the deadline.
-  budget?: { deadline: number; now: () => number };
+  // The commit budget (required: the hook is the caller). Its timer can't fire while this
+  // synchronous work holds the thread, so the work checks the clock itself: after loading the
+  // index, before each candidate, and before each embedding comparison.
+  budget: { deadline: number; now: () => number };
 }): Promise<{ signals: Signal[]; deferred: Layer[] }> {
   const { base, overlay, t } = i;
   const signals: Signal[] = [];
   const deferred: Layer[] = [];
-  const over = (): boolean => i.budget !== undefined && i.budget.now() > i.budget.deadline;
+  const over = (): boolean => i.budget.now() > i.budget.deadline;
+  // Every layer not yet compared when the budget runs out.
+  const cut = (): void => {
+    deferred.push("clones", "structure", "graph");
+    if (i.embed !== null) deferred.push("embeddings");
+  };
   const baseAll = allSymbols(base);
   // Symbols of files this commit doesn't touch (a renamed file's old path counts as touched).
   const stable = baseAll.filter((s) => !overlay.changedPaths.has(s.file));
@@ -98,10 +104,14 @@ export async function computeSignals(i: {
   const prior = (s: { file: string; name: string }): SymbolRow | undefined => before.get(`${overlay.renamedFrom.get(s.file) ?? s.file}#${s.name}`);
   const fresh = overlay.symbols.filter((s) => prior(s)?.astHash !== s.astHash);
   const candidates = fresh.filter((s) => s.kind !== "class" && s.tokens.length >= MIN_TOKENS);
+  // Loading every symbol is O(repo): it alone can use up the budget.
+  let stopped = over();
+  if (stopped) cut();
 
-  for (const s of candidates) {
+  for (const s of stopped ? [] : candidates) {
     if (over()) {
-      deferred.push("clones", "structure", "graph");
+      cut();
+      stopped = true;
       break;
     }
     const exact = symbolsByAstHash(base, s.astHash).find((b) => unchanged(b) && b.name !== s.name);
@@ -137,7 +147,7 @@ export async function computeSignals(i: {
     }
   }
 
-  if (i.embed !== null && candidates.length > 0 && !deferred.includes("clones")) {
+  if (i.embed !== null && candidates.length > 0 && !stopped) {
     const ready = layers(base).some((l) => l.layer === "embeddings" && l.status === "ok");
     const left = i.embed.deadline - i.embed.now();
     let vectors: Float32Array[] | null = null;
@@ -160,18 +170,20 @@ export async function computeSignals(i: {
       deferred.push("embeddings");
     } else {
       const found: Float32Array[] = vectors;
-      // Only stable symbols' vectors are decoded: a changed file's old vectors never match.
-      const vecs = embeddingRows(base, i.embed.embedder.model).flatMap((r) => {
+      // Only stable symbols' vectors are used (a changed file's old vectors never match), and each
+      // is decoded on first use, inside the budgeted loop.
+      const rows = embeddingRows(base, i.embed.embedder.model).flatMap((r) => {
         const b = stableById.get(r.symbolId);
-        return b === undefined ? [] : [{ b, v: decodeVec(r.vector) }];
+        return b === undefined ? [] : [{ b, raw: r.vector, v: null as Float32Array | null }];
       });
+      const vec = (r: (typeof rows)[number]): Float32Array => (r.v ??= decodeVec(r.raw));
       for (const [k, s] of candidates.entries()) {
         if (over()) {
           deferred.push("embeddings");
           break;
         }
-        const best = vecs
-          .map(({ b, v }) => ({ b, c: cosine(found[k], v) }))
+        const best = rows
+          .map((r) => ({ b: r.b, c: cosine(found[k], vec(r)) }))
           .filter(({ b, c }) => c >= t.embedding && estimateJaccard(s.minhash, b.minhash) >= t.embeddingAst)
           .sort((x, y) => y.c - x.c)[0];
         if (best !== undefined) {

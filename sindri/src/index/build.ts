@@ -118,10 +118,11 @@ async function embedLayer(db: IndexDb, embedder: Embedder | null, now: Date, lim
   const stamp = `${embedder.model}@${INDEXER_VERSION}`;
   const previous = stampOf(db, "embeddings");
   if (previous !== stamp) db.exec("DELETE FROM embeddings");
-  const todo = db
-    .prepare("SELECT s.id, s.name, s.signature, s.body FROM symbols s LEFT JOIN embeddings e ON e.symbol_id = s.id WHERE e.symbol_id IS NULL AND s.kind != 'class' ORDER BY s.id")
-    .all() as { id: number; name: string; signature: string; body: string }[];
-  const batch = todo.slice(0, limit);
+  // The cap is applied in SQL: only this build's bodies are read, never every un-embedded one.
+  const missing = "FROM symbols s LEFT JOIN embeddings e ON e.symbol_id = s.id WHERE e.symbol_id IS NULL AND s.kind != 'class'";
+  const remaining = (db.prepare(`SELECT COUNT(*) AS n ${missing}`).get() as { n: number }).n;
+  const batch = db.prepare(`SELECT s.id, s.name, s.signature, s.body ${missing} ORDER BY s.id LIMIT ?`).all(limit) as { id: number; name: string; signature: string; body: string }[];
+  const insert = db.prepare("INSERT OR REPLACE INTO embeddings (symbol_id, model, vector) VALUES (?, ?, ?)");
   let done = 0;
   try {
     // One request's vectors are written as they arrive: a failure keeps what was embedded, and
@@ -130,17 +131,17 @@ async function embedLayer(db: IndexDb, embedder: Embedder | null, now: Date, lim
       const chunk = batch.slice(i, i + EMBED_BATCH);
       const vectors = await embedder.embed(chunk.map(embeddingText));
       db.transaction(() => {
-        chunk.forEach((s, k) => db.prepare("INSERT OR REPLACE INTO embeddings (symbol_id, model, vector) VALUES (?, ?, ?)").run(s.id, embedder.model, encodeVec(vectors[k])));
+        chunk.forEach((s, k) => insert.run(s.id, embedder.model, encodeVec(vectors[k])));
       })();
       done += chunk.length;
     }
-    if (batch.length < todo.length) setLayer(db, "embeddings", stamp, "pending", `embedded ${done} of ${todo.length} symbols; the next build continues`, now);
+    if (batch.length < remaining) setLayer(db, "embeddings", stamp, "pending", `embedded ${done} of ${remaining} symbols; the next build continues`, now);
     else setLayer(db, "embeddings", stamp, "ok", `${embedder.model} on loopback`, now);
   } catch (e) {
     // The other layers stay usable; the next build retries (Review Focus 3). Vectors written
     // this build are this stamp's, so the stamp is kept and the next build doesn't drop them.
     const message = (e as Error).message;
-    setLayer(db, "embeddings", done === 0 ? (previous ?? "none") : stamp, "unavailable", done === 0 ? message : `embedded ${done} of ${todo.length} symbols, then: ${message}`, now);
+    setLayer(db, "embeddings", done === 0 ? (previous ?? "none") : stamp, "unavailable", done === 0 ? message : `embedded ${done} of ${remaining} symbols, then: ${message}`, now);
   }
 }
 

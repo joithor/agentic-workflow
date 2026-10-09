@@ -434,6 +434,23 @@ describe("embeddings layer", () => {
     expect(e.seen).toHaveLength(12);
   });
 
+  it("reads at most embedLimit symbol bodies per build, never every un-embedded one", async () => {
+    const many = Object.fromEntries(Array.from({ length: 12 }, (_, i) => [`src/f${i}.ts`, `export function f${i}(x: number) { return x + ${i}; }\n`]));
+    const d = makeDeps();
+    const p = profileFor(gitRepo(many));
+    const bodies: number[] = [];
+    const prepare = Database.prototype.prepare;
+    vi.spyOn(Database.prototype, "prepare").mockImplementation(function (this: Database.Database, source: string) {
+      const stmt = prepare.call(this, source);
+      if (!source.includes("s.body")) return stmt;
+      const all = stmt.all.bind(stmt);
+      return Object.assign(stmt, { all: (limit: number) => { const rows = all(limit); bodies.push(rows.length); return rows; } });
+    } as typeof Database.prototype.prepare);
+    const r = await buildIndex(d, p, "r", { full: false, embedLimit: 5 }, { embedder: fakeEmbedder(), graph: null });
+    expect(r.layers.embeddings.detail).toBe("embedded 5 of 12 symbols; the next build continues");
+    expect(bodies).toEqual([5]);
+  });
+
   it("is unavailable, not stampless, on a first build whose embedder fails", async () => {
     const root = gitRepo(FILES);
     const broken: Embedder = { model: "m1", embed: async () => { throw new Error("embedding server unreachable: down"); } };
