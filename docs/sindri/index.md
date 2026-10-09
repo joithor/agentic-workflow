@@ -89,7 +89,7 @@ This is an **outcome proxy, not a human label**: code is changed for other reaso
 | `index status` or `doctor` says | Meaning | Fix |
 |---|---|---|
 | `no index` | never built | `sindri index build --repo <repo>` |
-| `stale` | older than `index.maxAgeHours` | `sindri index build`; if the launchd job should have run, read `~/.agentic-workflow/sindri/index-launchd.log` |
+| `stale` | older than `index.maxAgeHours` | `sindri index build`; if the launchd job should have run, read `~/.agentic-workflow/sindri/index-quick-launchd.log` (hourly quick build) or `~/.agentic-workflow/sindri/index-launchd.log` (nightly full build) |
 | `never built` | an empty index file | `sindri index build --repo <repo>` |
 | `embeddings unavailable (Ollama not answering …)` | Ollama is down or the model is missing | start Ollama, `sindri index setup` |
 | `graph unavailable (…)` | graphify missing, wrong version or failed | `sindri index setup`, then `sindri index build --full` |
