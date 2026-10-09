@@ -414,7 +414,7 @@ describe("embeddings layer", () => {
     let calls = 0;
     const flaky: Embedder = { model: "m1", embed: async (texts) => { if (++calls === 2) throw new Error("embedding server unreachable: restarted"); return texts.map(() => new Float32Array([1, 0])); } };
     const r = await buildIndex(d, p, "r", { full: false }, { embedder: flaky, graph: null });
-    expect(r.layers.embeddings).toEqual({ status: "unavailable", detail: "embedded 32 of 40 symbols, then: embedding server unreachable: restarted" });
+    expect(r.layers.embeddings).toEqual({ status: "unavailable", detail: "32 of 40 symbols embedded (32 this build), then: embedding server unreachable: restarted" });
     const after = fakeEmbedder();
     const r2 = await buildIndex(d, p, "r", { full: false }, { embedder: after, graph: null });
     expect(after.seen).toHaveLength(8);
@@ -427,9 +427,10 @@ describe("embeddings layer", () => {
     const p = profileFor(gitRepo(many));
     const e = fakeEmbedder();
     const r = await buildIndex(d, p, "r", { full: false, embedLimit: 5 }, { embedder: e, graph: null });
-    expect(r.layers.embeddings).toEqual({ status: "pending", detail: "embedded 5 of 12 symbols; the next build continues" });
+    expect(r.layers.embeddings).toEqual({ status: "pending", detail: "5 of 12 symbols embedded (5 this build); the next build continues" });
     expect(e.seen).toHaveLength(5);
-    await buildIndex(d, p, "r", { full: false, embedLimit: 5 }, { embedder: e, graph: null });
+    const second = await buildIndex(d, p, "r", { full: false, embedLimit: 5 }, { embedder: e, graph: null });
+    expect(second.layers.embeddings.detail).toBe("10 of 12 symbols embedded (5 this build); the next build continues");
     expect((await buildIndex(d, p, "r", { full: false, embedLimit: 5 }, { embedder: e, graph: null })).layers.embeddings.status).toBe("ok");
     expect(e.seen).toHaveLength(12);
   });
@@ -447,7 +448,7 @@ describe("embeddings layer", () => {
       return Object.assign(stmt, { all: (limit: number) => { const rows = all(limit); bodies.push(rows.length); return rows; } });
     } as typeof Database.prototype.prepare);
     const r = await buildIndex(d, p, "r", { full: false, embedLimit: 5 }, { embedder: fakeEmbedder(), graph: null });
-    expect(r.layers.embeddings.detail).toBe("embedded 5 of 12 symbols; the next build continues");
+    expect(r.layers.embeddings.detail).toBe("5 of 12 symbols embedded (5 this build); the next build continues");
     expect(bodies).toEqual([5]);
   });
 
