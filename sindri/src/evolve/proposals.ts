@@ -57,7 +57,7 @@ export function parseEach(items: readonly unknown[]): { ok: Proposal[]; dropped:
   return { ok, dropped };
 }
 
-const owns = (a: Artifact, f: string): boolean => a.paths.includes(f) || (a.root !== null && f.startsWith(a.root));
+export const owns = (a: Artifact, f: string): boolean => a.paths.includes(f) || (a.root !== null && f.startsWith(a.root));
 
 // Spec §7.4 tiers + invariant 11 (no self-certification). Fails closed: anything unknown is approval, and a
 // proposal may only touch files its own artifact owns. Paths are re-normalized here so an unvalidated
@@ -82,19 +82,20 @@ export function classifyTier(p: Proposal, artifacts: readonly Artifact[], extraP
 }
 
 const scrubber = makeScrubber();
-export const normTitle = (t: string): string => t.toLowerCase().replace(/\s+/g, " ").trim();
+// NFKC, lower case, whitespace to one space, then only letters, digits and spaces: punctuation and zero-width variants dedupe.
+export const normTitle = (t: string): string => t.normalize("NFKC").toLowerCase().replace(/\s+/g, " ").replace(/[^\p{L}\p{N} ]/gu, "").replace(/ +/g, " ").trim();
 
 export type SaveOutcome = { kind: "saved" | "duplicate" | "previously-rejected"; id: string };
 
 export function saveProposal(db: Ledger, p: Proposal, source: string, tier: Tier, epoch: number, now: Date): SaveOutcome {
   const clean = scrubber.scrubDeep(p);
   const norm = normTitle(clean.title);
-  const prior = db.prepare("SELECT id, status, body FROM proposals WHERE artifact_id = ? AND norm_title = ? ORDER BY created_at DESC, id DESC").all(p.artifact, norm) as { id: string; status: ProposalStatus; body: string }[];
+  const prior = db.prepare("SELECT id, status, body FROM proposals WHERE artifact_id = ? COLLATE NOCASE AND norm_title = ? ORDER BY created_at DESC, id DESC").all(p.artifact, norm) as { id: string; status: ProposalStatus; body: string }[];
   const open = prior.find((r) => !TERMINAL.includes(r.status));
   const ts = now.toISOString();
   if (open !== undefined) {
     const older = ProposalSchema.parse(JSON.parse(open.body));
-    const merged = { ...older, evidence: [...new Set([...older.evidence, ...clean.evidence])].slice(0, 20) };
+    const merged = { ...older, evidence: [...new Set([...older.evidence, ...clean.evidence])].slice(-20) };
     db.prepare("UPDATE proposals SET body = ?, updated_at = ?, epoch = ? WHERE id = ?").run(JSON.stringify(merged), ts, epoch, open.id);
     return { kind: "duplicate", id: open.id };
   }

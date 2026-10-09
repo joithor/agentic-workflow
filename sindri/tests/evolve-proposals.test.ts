@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { discover, isAddedTestAllowed } from "../src/evolve/registry.js";
+import { discover, isAddedTestAllowed, isEvalMachinery } from "../src/evolve/registry.js";
 import {
   classifyTier, findMerged, getProposal, inFlightCount, listProposals, parseEach, ProposalSchema, reduceEvidence, renderSaved, saveProposal, setStatus, setTier, type Proposal,
 } from "../src/evolve/proposals.js";
@@ -91,11 +91,21 @@ describe("classifyTier fails closed on disguised, aliased and unnormalizable pat
 });
 
 describe("isAddedTestAllowed", () => {
-  it("allows only a plain test file, never one under the machinery, a protected path or a custom glob", () => {
-    expect(isAddedTestAllowed("sindri/tests/new.test.ts")).toBe(true);
-    expect(isAddedTestAllowed("skills/x/tests/new.sh")).toBe(true);
-    for (const f of ["sindri/src/evolve/new.test.ts", "sindri/tests/package.json", ".claude/rules/new.test.ts", "sindri/src/observe/observe.ts", "a b.test.ts"]) expect(isAddedTestAllowed(f)).toBe(false);
-    expect(isAddedTestAllowed("sindri/tests/new.test.ts", ["sindri/tests/**"])).toBe(false);
+  const tracked = ["sindri/tests/helpers.ts", "sindri/tests/old.test.ts", "config/hooks/done-gate.sh"];
+  it("allows only a new, plain *.test.* or *.spec.* file that shadows nothing and can't become a suite", () => {
+    expect(isAddedTestAllowed("sindri/tests/new.test.ts", tracked)).toBe(true);
+    expect(isAddedTestAllowed("skills/x/tests/new.spec.ts", tracked)).toBe(true);
+    const no = (f: string, extra: string[] = []) => expect(isAddedTestAllowed(f, tracked, extra), f).toBe(false);
+    for (const f of ["sindri/tests/helpers.js", "sindri/tests/new.sh", "sindri/tests/old.test.js", "sindri/tests/heavy/new.test.ts", "mcp-bridge/tests/heavy/x.test.ts"]) no(f);
+    for (const f of ["config/hooks/tests/done-gate.test.sh", "config/lib/tests/x.test.sh", "scripts/tests/install-x.test.sh", "providers/tests/install.test.sh"]) no(f);
+    for (const f of ["sindri/src/evolve/new.test.ts", "sindri/tests/package.json", ".claude/rules/new.test.ts", "sindri/src/observe/observe.ts", "a b.test.ts"]) no(f);
+    no("sindri/tests/new.test.ts", ["sindri/tests/**"]);
+  });
+});
+
+describe("eval-machinery config files", () => {
+  it("covers every vitest config spelling, the workspace file, tsconfig.test.json and .npmrc", () => {
+    for (const f of ["vitest.workspace.ts", "sindri/vitest.config.mts", "sindri/vitest.config.js", "sindri/vitest.config.cjs", "sindri/tsconfig.test.json", ".npmrc", "sindri/.npmrc"]) expect(isEvalMachinery(f), f).toBe(true);
   });
 });
 
@@ -157,6 +167,25 @@ describe("proposal storage, dedupe and merge tracking", () => {
     setStatus(db, after.id, "merged", epoch, now);
     expect(saveProposal(db, prop({ title: "Another proposal title" }), "reflect:pr-5", "code", epoch, now).kind).toBe("saved");
     expect(inFlightCount(db)).toBe(0);
+  });
+
+  it("dedupes titles across punctuation, zero-width characters and case, and refuses a rejected one in any form", () => {
+    const { db, epoch } = setup();
+    const first = saveProposal(db, prop({ title: "Tighten review scope" }), "s", "code", epoch, now);
+    expect(saveProposal(db, prop({ title: "Tighten,  review scope!" }), "s", "code", epoch, now)).toEqual({ kind: "duplicate", id: first.id });
+    expect(saveProposal(db, prop({ title: "Tighten re\u200Bview scope" }), "s", "code", epoch, now)).toEqual({ kind: "duplicate", id: first.id });
+    expect(saveProposal(db, prop({ title: "\uFF34ighten review scope" }), "s", "code", epoch, now)).toEqual({ kind: "duplicate", id: first.id });
+    setStatus(db, first.id, "rejected", epoch, now);
+    expect(saveProposal(db, prop({ title: "Tighten re\u200Bview, scope." }), "s", "code", epoch, now)).toEqual({ kind: "previously-rejected", id: first.id });
+    expect(saveProposal(db, prop({ artifact: "skill:Review" }), "s", "code", epoch, now)).toEqual({ kind: "previously-rejected", id: first.id });
+  });
+
+  it("keeps the newest 20 evidence entries when merging a duplicate", () => {
+    const { db, epoch } = setup();
+    const refs = (from: number, to: number) => Array.from({ length: to - from + 1 }, (_, i) => `pr:${from + i}`);
+    const first = saveProposal(db, prop({ evidence: refs(1, 12) }), "s", "code", epoch, now);
+    saveProposal(db, prop({ evidence: refs(13, 21) }), "s", "code", epoch, now);
+    expect(getProposal(db, first.id)?.proposal.evidence).toEqual(refs(2, 21));
   });
 
   it("reduces evidence to stable, non-identifying references", () => {

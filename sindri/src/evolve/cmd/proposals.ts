@@ -6,7 +6,7 @@ import { success, type CommandResult } from "../../output.js";
 import { audit } from "../audit.js";
 import { repoConfig, type EvolveCtx } from "../ctx.js";
 import {
-  classifyTier, getProposal, latestComparison, listProposals, nextFor, reduceEvidence, setStatus, stagedFile, STATUSES, TERMINAL, type ProposalStatus,
+  classifyTier, getProposal, latestComparison, listProposals, nextFor, owns, reduceEvidence, setStatus, stagedFile, STATUSES, TERMINAL, type ProposalStatus,
 } from "../proposals.js";
 import { isAddedTestAllowed, isProtectedPath, loadRegistry } from "../registry.js";
 
@@ -81,16 +81,23 @@ export async function tier(args: string[], ctx: EvolveCtx): Promise<CommandResul
   const cfg = repoConfig(ctx.loaded);
   const base = values.base ?? cfg.defaultBranch;
   // --no-renames: a rename shows as a delete plus an add, so a moved protected file is still seen.
-  const diff = await ctx.deps.git.run(["diff", "--name-only", "--no-renames", `${base}...HEAD`], ctx.repo);
-  const addedDiff = await ctx.deps.git.run(["diff", "--name-only", "--no-renames", "--diff-filter=A", `${base}...HEAD`], ctx.repo);
-  if (!diff.ok || !addedDiff.ok) throw new SindriError("SND-EVOLVE-001", `couldn't diff against ${base}`);
+  const names = (extra: string[]) => ctx.deps.git.run(["diff", "--name-only", "--no-renames", ...extra, `${base}...HEAD`], ctx.repo);
+  const [diff, addedDiff, tree] = [await names([]), await names(["--diff-filter=A"]), await ctx.deps.git.run(["ls-tree", "-r", "--name-only", base], ctx.repo)];
+  if (!diff.ok || !addedDiff.ok || !tree.ok) throw new SindriError("SND-EVOLVE-001", `couldn't diff against ${base}`);
   const lines = (out: string): string[] => out.split("\n").filter((f) => f !== "");
   const files = lines(diff.stdout);
   const added = new Set(lines(addedDiff.stdout));
-  const hit = files.filter((f) => isProtectedPath(f, cfg.protectedPaths) && !(added.has(f) && isAddedTestAllowed(f, cfg.protectedPaths)));
-  const actual = hit.length > 0 || s.tier === "approval" ? "approval" : s.tier;
-  const protectedText = hit.length > 0 ? `${hit.length} protected: ${hit.slice(0, 5).join(", ")}` : "0 protected";
+  const tracked = lines(tree.stdout);
+  const hit = files.filter((f) => isProtectedPath(f, cfg.protectedPaths) && !(added.has(f) && isAddedTestAllowed(f, tracked, cfg.protectedPaths)));
+  // The same ownership rule classifyTier applies: a change outside the proposal's artifact is approval. An unknown artifact owns nothing.
+  const artifact = loadRegistry(ctx.db).find((a) => a.id === s.artifact);
+  const outside = files.filter((f) => !hit.includes(f) && (artifact === undefined || !owns(artifact, f)));
+  const actual = hit.length > 0 || outside.length > 0 || s.tier === "approval" ? "approval" : s.tier;
+  const protectedText = [
+    hit.length > 0 ? `${hit.length} protected: ${hit.slice(0, 5).join(", ")}` : "0 protected",
+    ...(outside.length > 0 ? [`${outside.length} outside ${s.artifact}: ${outside.slice(0, 5).join(", ")}`] : []),
+  ].join(", ");
   const stricter = actual === "approval" && s.tier !== "approval";
   const text = `Proposal ${id} declared ${s.tier}; the diff against ${base} touches ${files.length} file(s), ${protectedText}. Actual tier: ${actual}.\nNext: ${actual === "approval" ? "get the owner's approval before merging" : "open the PR"}`;
-  return success(text, { id, declared: s.tier, actual, files, protectedFiles: hit }, values.json === true, stricter ? 1 : 0);
+  return success(text, { id, declared: s.tier, actual, files, protectedFiles: hit, outsideFiles: outside }, values.json === true, stricter ? 1 : 0);
 }

@@ -15,6 +15,8 @@ const FILES = {
   "sindri/package.json": "{}",
   "sindri/src/observe/observe.ts": "export const a = 1;\n",
   "sindri/tests/existing.test.ts": "export {};\n",
+  "sindri/tests/helpers.ts": "export const h = 1;\n",
+  "sindri/src/scrub/patterns.ts": "export const b = 0;\n",
 };
 
 const prop = (over: Record<string, unknown> = {}): Proposal =>
@@ -198,6 +200,65 @@ describe("the proposals section of status", () => {
     expect(out).toContain("Proposals: 1 proposed");
     expect(out).not.toContain("Merge rate");
     expect(JSON.parse((await status(["--json"], fx.ctx)).stdout)).toMatchObject({ mergeRate: null });
+    fx.close();
+  });
+});
+
+describe("sindri evolve tier, hardened", () => {
+  const prBranch = async (files: Record<string, string>, over: Record<string, unknown> = { artifact: "package:sindri", kind: "code", change: { type: "describe", files: ["sindri/src/observe/observe.ts"], description: "d" } }) => {
+    const { fx, save } = await ready();
+    const id = save(over, "code");
+    git(fx.repo, "checkout", "-q", "-b", "feat");
+    for (const [f, text] of Object.entries(files)) {
+      fs.mkdirSync(path.dirname(path.join(fx.repo, f)), { recursive: true });
+      fs.writeFileSync(path.join(fx.repo, f), text);
+    }
+    git(fx.repo, "add", "-A");
+    git(fx.repo, "commit", "-q", "--allow-empty", "-m", "pr");
+    return { fx, id, out: async () => tier([id, "--base", "main"], fx.ctx) };
+  };
+
+  it("keeps added helpers, same-stem shadows, heavy tests and new suite files at approval", async () => {
+    for (const f of ["sindri/tests/helpers.js", "sindri/tests/existing.test.js", "sindri/tests/heavy/real.test.ts", "sindri/tests/notes.txt"]) {
+      const { fx, out } = await prBranch({ [f]: "x\n" });
+      const r = await out();
+      expect(r.exitCode, f).toBe(1);
+      expect(r.stdout, f).toContain(`1 protected: ${f}.`);
+      fx.close();
+    }
+    const ok = await prBranch({ "sindri/tests/fresh.test.ts": "x\n", "sindri/tests/fresh.spec.ts": "x\n" });
+    expect((await ok.out()).exitCode).toBe(0);
+    ok.fx.close();
+  });
+
+  it("refuses a PR that adds the suite of an artifact that has none", async () => {
+    const { fx, out } = await prBranch({ "config/hooks/tests/done-gate.test.sh": "exit 0\n" });
+    expect((await out()).exitCode).toBe(1);
+    fx.close();
+  });
+
+  it("applies the artifact-ownership rule: a changed path outside the artifact is approval", async () => {
+    const owned = await prBranch({ "skills/review/SKILL.md": "y\n", "judge/src/x.ts": "export {};\n" }, { artifact: "skill:review", kind: "skill-edit", change: { type: "describe", files: ["skills/review/SKILL.md"], description: "d" } });
+    const r = await owned.out();
+    expect(r.exitCode).toBe(1);
+    expect(r.stdout).toContain("0 protected, 1 outside skill:review: judge/src/x.ts. Actual tier: approval.");
+    owned.fx.close();
+    const ghost = await prBranch({ "sindri/src/observe/observe.ts": "export const a = 5;\n" }, { artifact: "skill:ghost", kind: "skill-edit", change: { type: "describe", files: ["skills/review/SKILL.md"], description: "d" } });
+    const g = await ghost.out();
+    expect(g.exitCode).toBe(1);
+    expect(g.stdout).toContain("1 outside skill:ghost: sindri/src/observe/observe.ts.");
+    ghost.fx.close();
+  });
+
+  it("sees a protected file or a test that was renamed away", async () => {
+    const { fx, id, out } = await prBranch({});
+    git(fx.repo, "mv", "sindri/src/scrub/patterns.ts", "sindri/src/observe/moved.ts");
+    git(fx.repo, "mv", "sindri/tests/existing.test.ts", "sindri/tests/renamed.test.ts");
+    git(fx.repo, "commit", "-qm", "renames");
+    const r = await out();
+    expect(r.exitCode).toBe(1);
+    expect(r.stdout).toContain("2 protected: sindri/src/scrub/patterns.ts, sindri/tests/existing.test.ts.");
+    expect(id).toBeTruthy();
     fx.close();
   });
 });

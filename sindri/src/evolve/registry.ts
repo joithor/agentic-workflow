@@ -32,7 +32,7 @@ export const EVAL_MACHINERY: readonly string[] = ["sindri/src/evolve/", "sindri/
 
 const TEST_PATH = /(^|\/)(tests?|__tests__)\//;
 const TEST_FILE = /\.(test|spec)\.[a-z]+$/;
-const EVAL_FILE = /(^|\/)(vitest\.config\.ts|package\.json|package-lock\.json)$/;
+const EVAL_FILE = /(^|\/)(vitest\.(config|workspace)\.[a-z]+|tsconfig\.test\.json|package\.json|package-lock\.json|\.npmrc)$/;
 
 // A repo-relative path a model may name: letters, digits, . _ - /, no .., no leading /, at most 200 characters.
 export function normalizeRepoPath(p: string): string | null {
@@ -64,14 +64,22 @@ export function isProtectedPath(p: string, extra: readonly string[] = []): boole
   return isEvalMachinery(n) || matches(PROTECTED_PATHS, n.toLowerCase()) || extra.some((g) => globMatch(g, n));
 }
 
+// The paths `discover` runs as an artifact's suite, whether or not the artifact has one yet: a PR must not
+// supply the test that judges its own change.
+const SUITE_PATH = /^(config\/hooks\/tests\/[^/]+\.test\.sh|config\/lib\/tests\/[^/]+\.test\.sh|scripts\/tests\/install-[^/]+\.test\.sh|providers\/tests\/install\.test\.sh)$/;
+const stemOf = (p: string): string => p.slice(0, p.length - path.posix.extname(p).length);
+
 // A test file the change ADDS can't weaken the existing suite, so it needn't wait for the owner (invariant 11 holds).
-// Only files that are protected solely for being tests qualify: a new test under the machinery or a protected path doesn't.
-export function isAddedTestAllowed(p: string, extra: readonly string[] = []): boolean {
+// Only a plain *.test.* / *.spec.* file qualifies, and only when it shadows no tracked file (a new helpers.js would
+// beat helpers.ts), is not a `heavy/` test (those run the real model), and cannot become an artifact's suite.
+export function isAddedTestAllowed(p: string, tracked: readonly string[], extra: readonly string[] = []): boolean {
   const n = normalizeRepoPath(p);
   if (n === null) return false;
   const lower = n.toLowerCase();
-  if (!TEST_PATH.test(lower) && !TEST_FILE.test(lower)) return false;
-  return !(matches(EVAL_MACHINERY, lower) || EVAL_FILE.test(lower) || matches(PROTECTED_PATHS, lower) || extra.some((g) => globMatch(g, n)));
+  if (!TEST_FILE.test(lower) || /(^|\/)heavy\//.test(lower) || SUITE_PATH.test(lower)) return false;
+  if (matches(EVAL_MACHINERY, lower) || EVAL_FILE.test(lower) || matches(PROTECTED_PATHS, lower) || extra.some((g) => globMatch(g, n))) return false;
+  const stem = stemOf(lower);
+  return !tracked.some((t) => stemOf(t.toLowerCase()) === stem);
 }
 
 // Kinds whose identity is the protected file itself. A package or skill is never protected as a whole.
