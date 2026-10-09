@@ -3924,7 +3924,7 @@ git commit -m "feat: sindri prompt artifacts, hash-bound overlay and replay corp
   - `type Preference = "current" | "variant" | "tie"`.
   - `judgePair(o): Promise<{ preference; reasons; incomplete }>` — two calls on the judge model, one per order, outputs fenced as `<untrusted id="output-A">` and `output-B`, escaped and sanitized; the judge never sees the words "current" or "variant". A preference counts only if both orders agree. The budget is checked before each call; an exhausted budget gives a tie marked `incomplete`.
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 `sindri/tests/evolve-blind.test.ts`:
 
@@ -4028,12 +4028,12 @@ describe("judgePair (Review Focus 2)", () => {
 });
 ```
 
-- [ ] **Step 2: Run the test to verify it fails**
+- [x] **Step 2: Run the test to verify it fails**
 
 Run: `cd sindri && npx vitest run tests/evolve-blind.test.ts`
 Expected: FAIL with `Failed to load url ../src/evolve/blind.js`.
 
-- [ ] **Step 3: Implement**
+- [x] **Step 3: Implement**
 
 `sindri/src/evolve/blind.ts`:
 
@@ -4116,12 +4116,12 @@ Trace for the sanitize lookbehind `(?<=^|[\s"'(=])`: in `see /Users/x/work/repo/
 
 Trace for the incomplete cases: `Budget(1)` after one spend is exhausted before call 1: `none.inputs` is empty. With a fresh `Budget(1)`, call 1 runs and spends 2 tokens, then `askModel` refuses call 2 with `token budget exhausted`; one input recorded. For the failed-call test the runner throws `SND-SCOPE-004`, which `askModel` converts to `{ ok: false, why: "bad verdict" }` .
 
-- [ ] **Step 4: Run the tests**
+- [x] **Step 4: Run the tests**
 
 Run: `cd sindri && npx vitest run && npm run typecheck && npm run test:coverage`
 Expected: all tests PASS; coverage 100% on `blind.ts`.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add sindri/src/evolve/blind.ts sindri/tests/evolve-blind.test.ts

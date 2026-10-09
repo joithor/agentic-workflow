@@ -41,7 +41,7 @@ export function normalizeRepoPath(p: string): string | null {
   return n === "." || n.endsWith("/") ? null : n;
 }
 
-const escapeRe = (s: string): string => s.replace(/[.+?^${}()|[\]\\]/g, "\\$&");
+export const escapeRe = (s: string): string => s.replace(/[.+?^${}()|[\]\\]/g, "\\$&");
 
 export function globMatch(glob: string, p: string): boolean {
   const re = glob.split("**").map((part) => part.split("*").map(escapeRe).join("[^/]*")).join(".*");
