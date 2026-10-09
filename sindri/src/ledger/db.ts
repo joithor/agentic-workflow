@@ -113,6 +113,39 @@ const MIGRATIONS: readonly string[] = [
     PRIMARY KEY (run_id, seq)
   );
   `,
+  `
+  CREATE TABLE artifacts (
+    id TEXT PRIMARY KEY, kind TEXT NOT NULL, paths TEXT NOT NULL, root TEXT, hash TEXT NOT NULL, protected INTEGER NOT NULL,
+    suite TEXT, first_seen TEXT NOT NULL, changed_at TEXT NOT NULL, removed_at TEXT, epoch INTEGER NOT NULL
+  );
+  CREATE TABLE suite_runs (
+    seq INTEGER PRIMARY KEY AUTOINCREMENT, artifact_id TEXT NOT NULL, hash TEXT NOT NULL, head TEXT, dirty INTEGER NOT NULL DEFAULT 0,
+    ok INTEGER NOT NULL, exit_code INTEGER NOT NULL, ms INTEGER NOT NULL, ts TEXT NOT NULL, epoch INTEGER NOT NULL
+  );
+  CREATE INDEX suite_runs_artifact ON suite_runs(artifact_id, seq);
+  CREATE TABLE proposals (
+    id TEXT PRIMARY KEY, artifact_id TEXT NOT NULL, source TEXT NOT NULL, kind TEXT NOT NULL, tier TEXT NOT NULL, status TEXT NOT NULL,
+    title TEXT NOT NULL, norm_title TEXT NOT NULL, body TEXT NOT NULL, created_at TEXT NOT NULL, updated_at TEXT NOT NULL, epoch INTEGER NOT NULL
+  );
+  CREATE INDEX proposals_dedupe ON proposals(artifact_id, norm_title);
+  CREATE INDEX proposals_source ON proposals(source);
+  CREATE TABLE comparisons (
+    seq INTEGER PRIMARY KEY AUTOINCREMENT, proposal_id TEXT NOT NULL, run INTEGER NOT NULL, item_id TEXT NOT NULL, verdict TEXT NOT NULL,
+    detail TEXT NOT NULL, ts TEXT NOT NULL, epoch INTEGER NOT NULL
+  );
+  CREATE INDEX comparisons_proposal ON comparisons(proposal_id, seq);
+  CREATE TABLE hook_samples (
+    seq INTEGER PRIMARY KEY AUTOINCREMENT, hook TEXT NOT NULL, ref TEXT NOT NULL UNIQUE, ts TEXT NOT NULL,
+    warranted INTEGER, reason TEXT NOT NULL, sampled_at TEXT NOT NULL, epoch INTEGER NOT NULL
+  );
+  CREATE TABLE adoptions (
+    seq INTEGER PRIMARY KEY AUTOINCREMENT, prompt_id TEXT NOT NULL, proposal_id TEXT NOT NULL, sha256 TEXT NOT NULL,
+    adopted_at TEXT NOT NULL, adopted_by TEXT NOT NULL, epoch INTEGER NOT NULL
+  );
+  CREATE TABLE evolve_audit (
+    seq INTEGER PRIMARY KEY AUTOINCREMENT, ts TEXT NOT NULL, verb TEXT NOT NULL, actor TEXT NOT NULL, detail TEXT NOT NULL, epoch INTEGER NOT NULL
+  );
+  `,
 ];
 
 export const LEDGER_SCHEMA_VERSION = MIGRATIONS.length;

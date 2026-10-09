@@ -77,7 +77,7 @@ describe("ledger migration v2", () => {
     const file = path.join(tempDir(), "ledger.db");
     const v1 = openLedger(file);
     v1.pragma("user_version = 1");
-    v1.exec("DROP TABLE model_calls; DROP TABLE scope_runs; DROP TABLE shape_signals; DROP TABLE shape_runs;");
+    v1.exec("DROP TABLE model_calls; DROP TABLE scope_runs; DROP TABLE shape_signals; DROP TABLE shape_runs; DROP TABLE artifacts; DROP TABLE suite_runs; DROP TABLE proposals; DROP TABLE comparisons; DROP TABLE hook_samples; DROP TABLE adoptions; DROP TABLE evolve_audit;");
     v1.close();
     const db = openLedger(file);
     expect(db.pragma("user_version", { simple: true })).toBe(LEDGER_SCHEMA_VERSION);
@@ -89,7 +89,7 @@ describe("ledger migration v2", () => {
     const file = path.join(tempDir(), "ledger.db");
     const v1 = openLedger(file);
     v1.pragma("user_version = 1");
-    v1.exec("DROP TABLE model_calls; DROP TABLE scope_runs; DROP TABLE shape_signals; DROP TABLE shape_runs;");
+    v1.exec("DROP TABLE model_calls; DROP TABLE scope_runs; DROP TABLE shape_signals; DROP TABLE shape_runs; DROP TABLE artifacts; DROP TABLE suite_runs; DROP TABLE proposals; DROP TABLE comparisons; DROP TABLE hook_samples; DROP TABLE adoptions; DROP TABLE evolve_audit;");
     v1.prepare(
       "INSERT INTO items (source, id, title, state, content_hash, first_seen, last_seen, epoch) VALUES ('s', 'i1', 'T', 'open', 'h', 't0', 't1', 0)",
     ).run();
@@ -108,7 +108,7 @@ describe("ledger migration v3", () => {
   it("migrates a real v2 ledger file, keeps its rows and backs it up", () => {
     const file = path.join(tempDir(), "ledger.db");
     const v2 = openLedger(file);
-    v2.exec("DROP TABLE model_calls; DROP TABLE scope_runs;");
+    v2.exec("DROP TABLE model_calls; DROP TABLE scope_runs; DROP TABLE artifacts; DROP TABLE suite_runs; DROP TABLE proposals; DROP TABLE comparisons; DROP TABLE hook_samples; DROP TABLE adoptions; DROP TABLE evolve_audit;");
     v2.pragma("user_version = 2");
     v2.prepare(
       "INSERT INTO items (source, id, title, state, content_hash, first_seen, last_seen, epoch) VALUES ('s', 'i1', 'T', 'open', 'h', 't0', 't1', 0)",

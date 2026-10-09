@@ -137,7 +137,7 @@ Each is also edited into the spec in Task 13.
   - `SUBCOMMANDS`, `evolveUsage()`, `makeEvolveCommand(io)`, `sindri evolve init [--json]`, `sindri evolve status [--json]`.
   - Test helpers in `evolve-fixtures.ts`: `evolveFixture`, `scriptedEvolveIo`, `answeringRunner`, `fakeProc`, `withDeps`, `git`.
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 `sindri/tests/evolve-fixtures.ts` (every later evolve test uses it):
 
@@ -604,12 +604,12 @@ describe("evolve context helpers", () => {
 
 Trace for `init`'s first output: the fixture's ring-0 profile has `protectedPaths: [".github/**", "config/hooks/**", "config/settings.json"]`, so `hook:done-gate` (paths `config/hooks/done-gate.sh` plus its test) is protected through the glob. `package:judge` and `skill:review` aren't. `skill:review` has no suite. That is 3 artifacts, 1 protected, 1 without a suite. The `mixed` status: `package:judge`'s last run failed on the current hash, so `FAIL`; `hook:done-gate`'s last non-`at:` run passed on the current hash, so `ok`. The empty fixture's repo has only a plan file, so `discover` returns `[]` and the init text uses the no-kinds form.
 
-- [ ] **Step 2: Run the tests to verify they fail**
+- [x] **Step 2: Run the tests to verify they fail**
 
 Run: `cd sindri && npx vitest run tests/evolve-profile.test.ts tests/evolve-registry.test.ts tests/evolve-commands.test.ts`
 Expected: FAIL with `Failed to load url ../src/evolve/registry.js` (and the profile test failing on the missing keys).
 
-- [ ] **Step 3: Implement**
+- [x] **Step 3: Implement**
 
 Append migration v4 to `MIGRATIONS` in `sindri/src/ledger/db.ts`:
 
@@ -1071,12 +1071,12 @@ import { realScopeIo } from "./scope/io-real.js";
   },
 ```
 
-- [ ] **Step 4: Run the tests**
+- [x] **Step 4: Run the tests**
 
 Run: `cd sindri && npm run gen && npx vitest run && npm run typecheck && npm run test:coverage`
 Expected: all tests PASS (Plan 3 and Plan 4 ledger-version assertions are `>=`; if one is still `toBe(<n>)`, change it to `toBeGreaterThanOrEqual(<n>)`); coverage 100% on the files this task touches.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add sindri/src sindri/tests sindri/schema docs/sindri
@@ -1099,7 +1099,7 @@ git commit -m "feat: sindri artifact registry and evolve command shell"
   - `runSuite(deps, run, base, a: { id: string; suite: { argv: string[]; cwd: string } }): Promise<{ ok: boolean; exitCode: number; ms: number; tail: string }>` — under the heavy lock (`kind: suite:<id>`, waits at most 10 minutes), timeout 30 min; `base` is the directory `suite.cwd` is relative to; `tail` is the scrubbed last 20 lines of output.
   - `sindri evolve check [<artifact-id>...] [--changed] [--list] [--json]`. `--changed` picks artifacts with a suite and no passing `suite_runs` row for their current hash. Artifacts that share one suite command (every `rule:*` runs `scripts/sync-rules.sh --check`) run once and get one row each. Each row records `head` (the repo's `HEAD`) and `dirty` (uncommitted changes), and is bound to the artifact's content hash. `--list` prints what would run. A progress line goes through `deps.log` before each suite. Task 11 adds `--at <sha>`.
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 `sindri/tests/evolve-suites.test.ts`:
 
@@ -1247,12 +1247,12 @@ describe("sindri evolve check", () => {
 
 Trace: the registry for `FILES` is `hook:done-gate` (suite `bash config/lib/tests/done-gate.test.sh`), `package:judge`, `rule:a` and `rule:b` (both `scripts/sync-rules.sh --check`, the same key), `skill:review` (none). Groups run in registry order: done-gate, judge, rules. The handler fails any argv containing `bash` (only done-gate's). The second `--changed` run skips judge and the rules (passing rows for their current hashes) and reruns only done-gate, so `proc.calls` goes from 3 to 4.
 
-- [ ] **Step 2: Run the tests to verify they fail**
+- [x] **Step 2: Run the tests to verify they fail**
 
 Run: `cd sindri && npx vitest run tests/evolve-suites.test.ts tests/evolve-check.test.ts`
 Expected: FAIL with `Failed to load url ../src/evolve/suites.js`.
 
-- [ ] **Step 3: Implement**
+- [x] **Step 3: Implement**
 
 `sindri/src/evolve/suites.ts`:
 
@@ -1384,12 +1384,12 @@ Add one more test to `evolve-check.test.ts` for branch (c):
   });
 ```
 
-- [ ] **Step 4: Run the tests**
+- [x] **Step 4: Run the tests**
 
 Run: `cd sindri && npx vitest run && npm run typecheck && npm run test:coverage`
 Expected: all tests PASS; coverage 100% on the files this task touches.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add sindri/src/evolve sindri/tests
@@ -1431,7 +1431,7 @@ git commit -m "feat: sindri evolve check runs module eval suites"
   - `sindri evolve proposals [--status s[,s]] [--all] [--json]`, `show <id>`, `reject <id> --reason "<why>"`, `tier <id> [--base <ref>]`.
   - A **Proposals** section in `evolve status`: counts by status, the in-flight count against the cap, and the merge rate. `status` marks a published proposal `merged` when the default branch's log mentions ``Proposal `<id>` ``.
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 `sindri/tests/evolve-proposals.test.ts`:
 
@@ -1774,12 +1774,12 @@ Trace for the status test: the four proposals are `published` ×2, `staged`, `pr
 
 Trace for `proposals` row format: `status.padEnd(19)` then a space, `tier.padEnd(10)` then a space. `"proposed"` padded to 19 is `proposed` plus 11 spaces, then one separator space, so the line starts `proposed            code       <id>`: that is `proposed` + 12 spaces, then `code` + 6 spaces + 1 separator = `code       ` (7 spaces after `code`). The expected string in the test has exactly that spacing. `staged` + 13 spaces, then `approval` + 2 spaces + 1 separator. Age is `(0d)`: created and read at the fixed clock.
 
-- [ ] **Step 2: Run the tests to verify they fail**
+- [x] **Step 2: Run the tests to verify they fail**
 
 Run: `cd sindri && npx vitest run tests/evolve-proposals.test.ts tests/evolve-proposals-cmd.test.ts`
 Expected: FAIL with `Failed to load url ../src/evolve/proposals.js`.
 
-- [ ] **Step 3: Implement**
+- [x] **Step 3: Implement**
 
 `sindri/src/evolve/audit.ts`:
 
@@ -2141,12 +2141,12 @@ Register in `sindri/src/evolve/commands.ts`: import `proposals`, `reject`, `show
 
 Add to `ERRORS` nothing new (Task 1 defined `SND-EVOLVE-008`).
 
-- [ ] **Step 4: Run the tests**
+- [x] **Step 4: Run the tests**
 
 Run: `cd sindri && npm run gen && npx vitest run && npm run typecheck && npm run test:coverage`
 Expected: all tests PASS; coverage 100% on the files this task touches.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add sindri/src/evolve sindri/tests docs/sindri
@@ -2174,7 +2174,7 @@ git commit -m "feat: sindri typed proposals, tiers, dedupe and merge tracking"
     A hook name that is merely mentioned (a tool result that reads the hook source, a quoted fire, an ordinary sentence) never counts. The done-gate's "Claiming done" block and its "Next step already authorized … continuing" message are both fires.
   - `sindri evolve telemetry [--since 7d] [--per-hook 20] [--json]` — stores adjudicated samples in `hook_samples` (unique by `ref`, so reruns don't re-adjudicate; a fire the adjudicator didn't label is stored with `warranted` NULL and counts in no rate). Prints one line per hook. A hook with at least 10 labelled samples and a Wilson lower bound on its unwarranted rate above 0.2 gets a `hook-fix` proposal (deduped by `saveProposal`).
 
-- [ ] **Step 1: Write the synthetic fixtures**
+- [x] **Step 1: Write the synthetic fixtures**
 
 The fixtures are **synthetic**. Never copy a real transcript line into the repo. To confirm the shapes against reality on your own machine, look at one real fire locally, for example `grep -m1 -h 'Stop hook feedback' ~/.claude/projects/<one project>/*.jsonl | head -c 600`, compare it with the lines below, and commit only these lines.
 
@@ -2205,7 +2205,7 @@ null
 {"type":"user","timestamp":"2026-10-01T11:00:01Z","cwd":"/example/other","message":{"role":"user","content":"Stop hook feedback:\n[/example/other/config/hooks/done-gate.sh # aw:done-gate]: Claiming done with no evidence mentioned."}}
 ```
 
-- [ ] **Step 2: Write the failing tests**
+- [x] **Step 2: Write the failing tests**
 
 `sindri/tests/evolve-stats.test.ts`:
 
@@ -2661,12 +2661,12 @@ describe("sindri evolve telemetry", () => {
 
 Trace for the main test: 12 fires at 10:00..10:11 on 2026-10-05, after the cutoff `2026-10-01T12:00:00Z` (the fixture clock is 2026-10-08T12:00:00Z minus 7 days). `perHook` is 20, so all 12 are sampled in two batches (10 and 2); the scripted runner labels every ref unwarranted. 12 labelled, 12 unwarranted, lower bound 0.76 > 0.2, so a proposal opens for `hook:done-gate` (registered by `init`; the profile's `config/hooks/**` glob makes the hook protected, hence tier `approval`). In "mostly warranted": `i % 5 !== 0` over each batch (the index restarts per call: batch 1 has i = 0..9, batch 2 has i = 0..1), so unwarranted are i = 0 and 5 in batch 1 and i = 0 in batch 2: 3 of 12 = 0.25. The Wilson lower bound for 3/12 is about 0.09 (below 0.2), so no proposal opens. In "partial result": `Budget(1)`: batch 1 spends 2 tokens, so batch 2 is refused, `skipped` = 12 - 10 = 2 and 10 samples are stored.
 
-- [ ] **Step 3: Run the tests to verify they fail**
+- [x] **Step 3: Run the tests to verify they fail**
 
 Run: `cd sindri && npx vitest run tests/evolve-stats.test.ts tests/evolve-transcripts.test.ts tests/evolve-telemetry.test.ts tests/evolve-telemetry-cmd.test.ts`
 Expected: FAIL with `Failed to load url ../src/evolve/ask.js` (and the other new modules).
 
-- [ ] **Step 4: Implement**
+- [x] **Step 4: Implement**
 
 `sindri/src/evolve/stats.ts`:
 
@@ -3111,12 +3111,12 @@ and insert `...(excerpts.length > 0 ? ["Excerpts:", ...excerpts] : []),` directl
 
 Register in `sindri/src/evolve/commands.ts`: `import { telemetry } from "./cmd/telemetry.js";` and add `telemetry` to `SUBCOMMANDS`.
 
-- [ ] **Step 5: Run the tests**
+- [x] **Step 5: Run the tests**
 
 Run: `cd sindri && npx vitest run && npm run typecheck && npm run test:coverage`
 Expected: all tests PASS; coverage 100% on the files this task touches.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add sindri/src/evolve sindri/tests
@@ -3129,7 +3129,7 @@ git commit -m "feat: sindri hook telemetry with adjudicated false-positive rates
 
 **Files:**
 - Create: `sindri/src/evolve/prompts.ts`, `sindri/src/evolve/overlay.ts`, `sindri/src/evolve/corpus.ts`
-- Modify (Plan 4's code, as exact diffs in Step 3; every Plan 4 parameter stays, the new ones are optional and trailing): `sindri/src/scope/gather.ts` (export `DRAFT_SYSTEM`; `draftPrompt`'s new fourth parameter `{ system? }`), `sindri/src/scope/run.ts` (export `CHALLENGER_SYSTEM`; `ScopeOptions.prompts`), `sindri/src/scope/commands.ts` (`scopeOnce`'s new eighth parameter `prompts`; `makeScopeCommand` loads them through `loadPrompt` and saves a replay item after `recordRun`), `sindri/src/doctor/doctor.ts` (an overlay check), `sindri/src/evolve/commands.ts` (`prompts: () => effectivePrompts(deps)`), `sindri/src/evolve/cmd/status.ts` (corpus section)
+- Modify (Plan 4's code, as exact diffs in Step 3; every Plan 4 parameter stays, the new ones are optional and trailing): `sindri/src/scope/gather.ts` (export `DRAFT_SYSTEM`; `draftPrompt`'s new fourth parameter `{ system? }`), `sindri/src/scope/run.ts` (export `CHALLENGER_SYSTEM`; `ScopeOptions.prompts`), `sindri/src/scope/commands.ts` (`scopeOnce`'s new ninth parameter `prompts`; `makeScopeCommand` loads them through `loadPrompt` and saves a replay item after `recordRun`), `sindri/src/doctor/doctor.ts` (an overlay check), `sindri/src/evolve/commands.ts` (`prompts: () => effectivePrompts(deps)`), `sindri/src/evolve/cmd/status.ts` (corpus section)
 - Test: `sindri/tests/evolve-prompts.test.ts`, `sindri/tests/evolve-corpus.test.ts`, plus additions to Plan 4's `scope-gather.test.ts`, `scope-run.test.ts`, `scope-command.test.ts`
 
 **Interfaces:**
@@ -3146,7 +3146,7 @@ git commit -m "feat: sindri hook telemetry with adjudicated false-positive rates
   - `corpusDir(deps)`, `saveReplay(deps, item): boolean` (scrubbed on write, 0600, exclusive create, appends `{ id, sha256, added_at }` to the append-only `manifest.jsonl`), `trySaveReplay` (never throws), `readCorpus(deps, artifact): { items; dropped }` and `loadCorpus` (drop any item whose file is missing from the manifest or whose hash doesn't match), `isHoldout(id)`, `split(items)`, `holdoutTitles(deps)`, `mentionsHoldout(text, titles)`.
   - A **Corpus** line in `evolve status`: items, holdout, and how many more are needed (about 3.3 scope runs per holdout item).
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 `sindri/tests/evolve-prompts.test.ts`:
 
@@ -3508,14 +3508,14 @@ Also extend `sindri/tests/evolve-commands.test.ts` with one test that the dispat
   });
 ```
 
-- [ ] **Step 2: Run the tests to verify they fail**
+- [x] **Step 2: Run the tests to verify they fail**
 
 Run: `cd sindri && npx vitest run tests/evolve-prompts.test.ts tests/evolve-corpus.test.ts`
 Expected: FAIL with `Failed to load url ../src/evolve/overlay.js`.
 
-- [ ] **Step 3: Implement**
+- [x] **Step 3: Implement**
 
-Edit Plan 4's three scope files as exact diffs. Each diff is written against Plan 4's final code, so every Plan 4 parameter stays (`draftPrompt`'s `fix?: Fix`, `scopeOnce`'s seven parameters) and the new ones are optional and trailing. Plan 4's other callers (`runBacktest`'s two `scopeOnce` calls, the challenger's `draftPrompt(e, o.maxPackChars).input`) need no change. The `| undefined` in the option types is for `exactOptionalPropertyTypes`.
+Edit Plan 4's three scope files as exact diffs. Each diff is written against Plan 4's final code, so every Plan 4 parameter stays (`draftPrompt`'s `fix?: Fix`, `scopeOnce`'s eight parameters, ending with `scrubber`) and the new ones are optional and trailing. Plan 4's other callers (`runBacktest`'s two `scopeOnce` calls, the challenger's `draftPrompt(e, o.maxPackChars).input`) need no change. The `| undefined` in the option types is for `exactOptionalPropertyTypes`.
 
 `sindri/src/scope/gather.ts`: rename `SYSTEM` and export it, append the injection-resistance clause as a new final line (Plan 4's last line, the one that explains the `checks` and `previous` blocks, stays), and add a fourth parameter. The fenced `input`, including the brief title staying out of the instructions, is untouched.
 
@@ -3562,7 +3562,7 @@ Edit Plan 4's three scope files as exact diffs. Each diff is written against Pla
 +    const send = (): Promise<Outcome<Missing>> => ask("challenge", o.models.challenger, o.prompts?.challenger ?? CHALLENGER_SYSTEM, input, missingSchema, (v) => Missing.parse(v));
 ```
 
-`sindri/src/scope/commands.ts`: `scopeOnce` gets an eighth optional parameter and passes it on; `makeScopeCommand` loads the overlay-or-built-in prompts (`loadPrompt` returns the built-in text when there is no valid adopted overlay, so behavior is unchanged until something is adopted) and saves the replay item after `recordRun`, under the run's own id.
+`sindri/src/scope/commands.ts`: `scopeOnce` gets a ninth optional parameter (`prompts`) and passes it on (the runner is built on its own line, so `prompts` is computed before it); `makeScopeCommand` loads the overlay-or-built-in prompts (`loadPrompt` returns the built-in text when there is no valid adopted overlay, so behavior is unchanged until something is adopted) and saves the replay item after `recordRun`, under the run's own id.
 
 ```diff
 -import { runScoping, type ScopeResult } from "./run.js";
@@ -3745,7 +3745,7 @@ export function evolveOverlayCheck(deps: Deps): { name: string; status: "ok" | "
 }
 ```
 
-Trace for the "unsafe" test where an oversized overlay is written: the file size is 70 000 bytes (> 65 536), so `unsafe` before the clause check. For the "doctor" test with mode `0o666` and no clause, the state is `unsafe` (the mode check precedes the clause check). `d3` has a 0600 file without the clause: state `no-clause`. For the symlinked directory (`d2`): `lstat` reports a symlink, `isDirectory()` is false, so `unsafe`. For the symlinked file: `openSync` with `O_NOFOLLOW` fails with `ELOOP` (not `ENOENT`), so `unsafe`. `latestAdoption` is `null` while no ledger file exists (`makeDeps()` has a fresh state dir), which gives `unadopted`; after the first `adopt()` call the ledger exists (the helper opens it, migrating to v4).
+Trace for the "unsafe" test where an oversized overlay is written: the file size is 70 000 bytes (> 65 536), so `unsafe` before the clause check. For the "doctor" test with mode `0o666` and no clause, the state is `unsafe` (the mode check precedes the clause check). `d3` has a 0600 file without the clause: state `no-clause`. For the symlinked directory (`d2`): `lstat` reports a symlink, `isDirectory()` is false, so `unsafe`. For the symlinked file: `openSync` with `O_NOFOLLOW` fails with `ELOOP` (not `ENOENT`), so `unsafe`. `latestAdoption` opens the ledger read-only (`readLedger`, so doctor never migrates, backs up or chmods it) and is `null` on any error, a newer schema included; it is also `null` while no ledger file exists (`makeDeps()` has a fresh state dir), which gives `unadopted`; after the first `adopt()` call the ledger exists (the helper opens it, migrating to v4).
 
 In `sindri/src/doctor/doctor.ts` import `evolveOverlayCheck` from `../evolve/overlay.js` and add `evolveOverlayCheck(deps),` to the `checks` array in `runChecks`, after `lockCheck(deps),`. (The new check type is structurally a `Check`.) Plan 2's doctor tests look checks up by name, so they keep passing, and the line is exercised whenever `runChecks` runs.
 
@@ -3872,7 +3872,7 @@ export function holdoutTitles(deps: Deps): string[] {
 export const mentionsHoldout = (text: string, titles: readonly string[]): boolean => titles.some((t) => text.toLowerCase().includes(t.toLowerCase()));
 ```
 
-In the manifest reader, a blank line fails `JSON.parse("")`, the `catch` skips it, and a line that parses but fails the schema (`not json`'s neighbour) is skipped by the `parsed.success` check. In the test, the manifest has valid lines for `good` and `tampered`; the appended `malformed` line carries the right hash (so the file passes the hash check, then fails `Item.parse` and is dropped); `unlisted.json` has no manifest line (dropped); a later duplicate line for `good` with a wrong hash is ignored because the first line wins. `tampered.json` had a word replaced so its hash no longer matches. The `holdoutTitles` test saves two holdout items (one with a 27-character title, one with an 11-character title) and one training item; only the long holdout title is returned.
+In the manifest reader, a blank line fails `JSON.parse("")`, the `catch` skips it, `not json` fails `JSON.parse` and is skipped, and a line that parses but fails the schema (`{ "id": 7 }`, which the test appends) is skipped by the `parsed.success` check. In the test, the manifest has valid lines for `good` and `tampered`; the appended `malformed` line carries the right hash (so the file passes the hash check, then fails `Item.parse` and is dropped); `unlisted.json` has no manifest line (dropped); a later duplicate line for `good` with a wrong hash is ignored because the first line wins. `tampered.json` had a word replaced so its hash no longer matches. The `holdoutTitles` test saves two holdout items (one with a 27-character title, one with an 11-character title) and one training item; only the long holdout title is returned.
 
 In `sindri/src/evolve/cmd/status.ts`, add the corpus section and register it (`SECTIONS = [artifactSection, proposalSection, corpusSection]`):
 
@@ -3894,12 +3894,12 @@ export async function corpusSection(ctx: EvolveCtx): Promise<Section> {
 
 (`Math.ceil(15 * 10 / 3)` is 50. In the status test a stray `stray.json` with no manifest line is flagged.)
 
-- [ ] **Step 4: Run the tests**
+- [x] **Step 4: Run the tests**
 
 Run: `cd sindri && npx vitest run tests/scope-*.test.ts` (Plan 4's scope tests, before and after this change: they must keep passing), then `npx vitest run && npm run typecheck && npm run test:coverage`.
 Expected: all tests PASS; coverage 100% on the files this task touches.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add sindri/src sindri/tests
@@ -3924,7 +3924,7 @@ git commit -m "feat: sindri prompt artifacts, hash-bound overlay and replay corp
   - `type Preference = "current" | "variant" | "tie"`.
   - `judgePair(o): Promise<{ preference; reasons; incomplete }>` — two calls on the judge model, one per order, outputs fenced as `<untrusted id="output-A">` and `output-B`, escaped and sanitized; the judge never sees the words "current" or "variant". A preference counts only if both orders agree. The budget is checked before each call; an exhausted budget gives a tie marked `incomplete`.
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 `sindri/tests/evolve-blind.test.ts`:
 
@@ -4028,12 +4028,12 @@ describe("judgePair (Review Focus 2)", () => {
 });
 ```
 
-- [ ] **Step 2: Run the test to verify it fails**
+- [x] **Step 2: Run the test to verify it fails**
 
 Run: `cd sindri && npx vitest run tests/evolve-blind.test.ts`
 Expected: FAIL with `Failed to load url ../src/evolve/blind.js`.
 
-- [ ] **Step 3: Implement**
+- [x] **Step 3: Implement**
 
 `sindri/src/evolve/blind.ts`:
 
@@ -4116,12 +4116,12 @@ Trace for the sanitize lookbehind `(?<=^|[\s"'(=])`: in `see /Users/x/work/repo/
 
 Trace for the incomplete cases: `Budget(1)` after one spend is exhausted before call 1: `none.inputs` is empty. With a fresh `Budget(1)`, call 1 runs and spends 2 tokens, then `askModel` refuses call 2 with `token budget exhausted`; one input recorded. For the failed-call test the runner throws `SND-SCOPE-004`, which `askModel` converts to `{ ok: false, why: "bad verdict" }` .
 
-- [ ] **Step 4: Run the tests**
+- [x] **Step 4: Run the tests**
 
 Run: `cd sindri && npx vitest run && npm run typecheck && npm run test:coverage`
 Expected: all tests PASS; coverage 100% on `blind.ts`.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add sindri/src/evolve/blind.ts sindri/tests/evolve-blind.test.ts
@@ -4150,7 +4150,7 @@ git commit -m "feat: sindri blinded pairwise judging (pstack eval and arena rule
   - Errors `SND-EVOLVE-002` (no offline comparison for that artifact yet) and `SND-EVOLVE-009`.
 - Expected cost: about 100 000 tokens per holdout item (two drafts at up to 35 000 input tokens, two judge calls at up to 15 000 each), so the default `evolve.maxTokensPerCompare` of 3 000 000 covers about 30 items.
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 `sindri/tests/evolve-compare.test.ts`:
 
@@ -4410,12 +4410,12 @@ describe("sindri evolve compare", () => {
 
 Trace for the rerun and JSON assertions: the first call runs 22 items and writes 22 item rows plus one summary row (`item_id = '*'`, run 1). The second call finds a stored verdict summary (`won`) and prints it without calling the model. `--rerun` records run 2. The `--json` call without `--rerun` returns the stored run-2 summary (`stored: true`, `run: 2`). The insufficient-corpus text: 5 holdout items, need 15 more, `Math.ceil(15 / 0.3)` is 50. The leaky text: the variant `The judge likes this.` contains `judge` only (no other meta words), so `leaks` is `["judge"]`. For the inconclusive fixture the drafter returns the same map for both prompts, so the judge sees equal outputs and always answers `tie`: 0 wins, 0 losses, 22 ties, decided 0 (< 10), status `inconclusive`, exit 1. For the budget stop: `maxTokensPerCompare: 8`, per-call usage 2, so item 1 uses all 8 tokens and item 2 is not started: `n` is 1.
 
-- [ ] **Step 2: Run the tests to verify they fail**
+- [x] **Step 2: Run the tests to verify they fail**
 
 Run: `cd sindri && npx vitest run tests/evolve-compare.test.ts tests/evolve-compare-cmd.test.ts`
 Expected: FAIL with `Failed to load url ../src/evolve/compare.js`.
 
-- [ ] **Step 3: Implement**
+- [x] **Step 3: Implement**
 
 Add to `ERRORS`:
 
@@ -4640,12 +4640,12 @@ Trace for the stored-result tests: after the first run, `prev` is `{ run: 1, ver
 
 Register in `sindri/src/evolve/commands.ts`: import `compare` from `./cmd/compare.js` and add it to `SUBCOMMANDS`.
 
-- [ ] **Step 4: Run the tests**
+- [x] **Step 4: Run the tests**
 
 Run: `cd sindri && npm run gen && npx vitest run && npm run typecheck && npm run test:coverage`
 Expected: all tests PASS; coverage 100% on the files this task touches.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add sindri/src sindri/tests docs/sindri
@@ -4670,7 +4670,7 @@ git commit -m "feat: sindri offline blinded comparison on the sealed holdout"
   - `sindri evolve reflect --pr <n> [--json]` — skips a PR already reflected on (proposals with source `reflect:pr-<n>`, or a recorded audit row when nothing was proposed), saves each accepted proposal with its tier, and prints `Reflected on PR #12: 2 accepted (1 code, 1 approval), 1 rejected, 3 backlog.`
   - Errors `SND-EVOLVE-003` (gh failed), `011` (no GitHub remote), `012` (PR not merged or author not allowed), `013` (gh reply in an unexpected shape).
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 `sindri/tests/evolve-github.test.ts`:
 
@@ -5001,12 +5001,12 @@ describe("sindri evolve reflect", () => {
 
 Trace for the first command test: the PR is merged by `joi-t`; the allowed list is empty in the profile, so `gh api user` supplies `joi-t`. `ghRepoOf` reads the `origin` remote added in `ready`. The transcript lines carry `gitBranch: "feat/x"` and `cwd: fx.repo`, so `branchTranscript` finds two turns, `transcript:5e55a1d0#1` (human) and `#2` (assistant). Reviewers run on `models.scoping` (`sonnet`) and the synthesizer on `models.challenger` (`opus`). `hook:done-gate` is protected through the profile glob, so its proposal is `approval`; `skill:review` is `code`. The summary orders tier counts `code`, `approval`, `self-adopt`; the per-proposal lines follow the accepted order (the skill first); the tier column is padded to 8 characters and followed by two spaces, so `code` is followed by six spaces and `approval` by two. In the repeated-proposal test, PR 13's synthesizer returns the same proposal, so `saveProposal` reports `duplicate`: the line gains ` (already proposed)`, no new proposal was saved, so the next command is `sindri evolve proposals`. A PR that produced nothing records an audit marker, so a rerun says `(nothing was proposed)`; a partial run records none.
 
-- [ ] **Step 2: Run the tests to verify they fail**
+- [x] **Step 2: Run the tests to verify they fail**
 
 Run: `cd sindri && npx vitest run tests/evolve-github.test.ts tests/evolve-reflect.test.ts tests/evolve-reflect-cmd.test.ts`
 Expected: FAIL with `Failed to load url ../src/evolve/github.js`.
 
-- [ ] **Step 3: Implement**
+- [x] **Step 3: Implement**
 
 Add to `ERRORS`:
 
@@ -5266,12 +5266,12 @@ Trace for the line format: `  ${id}  ${tier.padEnd(8)}  ${title}`: for `code` th
 
 Register in `sindri/src/evolve/commands.ts`: import `reflectCommand` from `./cmd/reflect.js` and add `reflect: reflectCommand` to `SUBCOMMANDS`.
 
-- [ ] **Step 4: Run the tests**
+- [x] **Step 4: Run the tests**
 
 Run: `cd sindri && npm run gen && npx vitest run && npm run typecheck && npm run test:coverage`
 Expected: all tests PASS; coverage 100% on the files this task touches.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add sindri/src sindri/tests docs/sindri
@@ -5299,7 +5299,7 @@ git commit -m "feat: sindri reflect port over merged PRs and their sessions"
   - `sindri evolve correct [--since 7d] [--json]` — labels the newest `evolve.maxCorrectTurns` human turns, clusters the corrections, saves the proposals (source `correct:<ISO year>-W<week>`, skipped when that week already ran, including a week that proposed nothing and a clean labeling pass that found no repeated class, the latter per `--since` window) and prints `Correct: labeled 400 turns: 31 design, 52 process, 9 restate, 14 scope (0 label errors); 3 repeated-correction classes, 2 proposals (2 code).`
   - Cost: about 20 `label` calls per run at the default cap (400 turns in batches of 20; sonnet), roughly 100 000 to 200 000 tokens at the cap with long turns and far less with short ones, plus at most 5 proposal calls. The default `evolve.maxTokensPerJob` of 600 000 covers it; at the maximum cap of 2000 turns (100 calls) a run can stop early with an `incomplete` partial result.
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 `sindri/tests/evolve-week.test.ts`:
 
@@ -5674,12 +5674,12 @@ describe("sindri evolve correct", () => {
 
 (Dates: the fixture clock is 2026-10-08T12:00:00Z (ISO week 41); `since` is 2026-10-01T12:00Z; the two corrections are on 2026-10-05 and 2026-10-06. `sessions` differ (two files) and `days` differ, and the keyword sets overlap well above 0.3 (the same strings the cluster test uses), so one `wrong_approach_process` cluster results when the stub labels both turns that way. With `maxCorrectTurns: 1` only the newest turn (the 2026-10-06 one, line 1 of `6f66b2e1`) is sent, so nothing can cluster. In the last case there are 22 turns: the newest 20 go in the first batch, which spends the whole `maxTokensPerJob` of 2 (the stub's usage is 1 input plus 1 output token), so batch 2 is never sent and the result is partial with exit code 1; because labeling was cut short, there is no audit marker, so the week can be rerun. The proposal's `Invalid` text is Zod's default regex-failure message for `artifact`.)
 
-- [ ] **Step 2: Run the tests to verify they fail**
+- [x] **Step 2: Run the tests to verify they fail**
 
 Run: `cd sindri && npx vitest run tests/evolve-week.test.ts tests/evolve-correct.test.ts tests/evolve-correct-cmd.test.ts`
 Expected: FAIL with `Failed to load url ../src/evolve/week.js`.
 
-- [ ] **Step 3: Implement**
+- [x] **Step 3: Implement**
 
 `sindri/src/evolve/week.ts`:
 
@@ -6024,12 +6024,12 @@ Trace for the first test: the stub labels both turns `wrong_approach_process` (f
 
 Register in `sindri/src/evolve/commands.ts`: import `correctCommand` from `./cmd/correct.js` and add `correct: correctCommand` to `SUBCOMMANDS`.
 
-- [ ] **Step 4: Run the tests**
+- [x] **Step 4: Run the tests**
 
 Run: `cd sindri && npx vitest run && npm run typecheck && npm run test:coverage`
 Expected: all tests PASS; coverage 100% on the files this task touches.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add sindri/src/evolve sindri/tests
@@ -6055,7 +6055,7 @@ git commit -m "feat: sindri correct port turns repeated corrections into proposa
   - `writeOverlay`, `sindri evolve adopt <id>` (a human verb: a terminal, the line diff and the comparison shown first, a typed confirmation bound to the variant's sha256; records the hash in `adoptions`), `sindri evolve revert <prompt-id>` (a terminal; deletes the overlay and records a revert row so an old file can't come back).
   - Errors `SND-EVOLVE-004` (can't be adopted), `006` (needs a terminal), `007` (confirmation didn't match), `014` (publish on the default branch), `015` (publish with no `privacy.denyTerms` and no `--no-privacy-terms`).
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 `sindri/tests/evolve-render.test.ts`:
 
@@ -6517,12 +6517,12 @@ describe("sindri evolve revert", () => {
 
 Trace for the adopt test: `defaultPrompt("scope.draft")` starts with `You scope a software project before work starts.`, which is a removed line in the diff against `VARIANT` (two lines, the clause then `BETTER draft prompt.`; the clause line is common, so it appears as context). The expected `- You scope …` and `+ BETTER draft prompt.` lines come from `lineDiff` (`- ` removed, `+ ` added, two-space context). After the revert the overlay file has no row to match and the `reverted` row is the latest, so the restored file is `unadopted`; the second `revert` removes that stray file and writes another revert row; the third finds no file at all. In the refusal table: the unconfirmed attempts leave no overlay. `save(VARIANT, "proposed")` has the `won` row too, but the status gate fires first (`this one is proposed`); the describe-change proposal on `skill:review` is `won` but not a prompt replacement (`this one is won`); the replace-prompt proposal on `skill:review` fails at the prompt-artifact check (`isn't a prompt artifact`); then no comparison row; then a `lost` row; then no clause; then a leak (`judge`).
 
-- [ ] **Step 2: Run the tests to verify they fail**
+- [x] **Step 2: Run the tests to verify they fail**
 
 Run: `cd sindri && npx vitest run tests/evolve-render.test.ts tests/evolve-privacy.test.ts tests/evolve-stage.test.ts tests/evolve-publish.test.ts tests/evolve-adopt.test.ts`
 Expected: FAIL with `Failed to load url ../src/evolve/render.js`.
 
-- [ ] **Step 3: Implement**
+- [x] **Step 3: Implement**
 
 Add to `ERRORS`:
 
@@ -6915,12 +6915,12 @@ Trace for `adopt` tests: the prompt text shown to the human is a diff, then the 
 
 Register in `sindri/src/evolve/commands.ts`: import `stage`, `publish` from `./cmd/stage.js` and `adopt`, `revert` from `./cmd/adopt.js`; add all four to `SUBCOMMANDS`.
 
-- [ ] **Step 4: Run the tests**
+- [x] **Step 4: Run the tests**
 
 Run: `cd sindri && npm run gen && npx vitest run && npm run typecheck && npm run test:coverage`
 Expected: all tests PASS; coverage 100% on the files this task touches.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add sindri/src sindri/tests docs/sindri
@@ -6945,7 +6945,7 @@ git commit -m "feat: sindri stage, publish, adopt and revert"
   - `sindri evolve check package:sindri --at <sha>` — runs the package's suite inside that channel build (`next` or `stable`) and records the row with `head = <sha>` and `dirty = 0`, which is what `promote` requires.
   - Error `SND-EVOLVE-005`.
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 `sindri/tests/evolve-channel.test.ts`:
 
@@ -7453,12 +7453,12 @@ test_channel_rejects_bad_arguments() {
 
 Each test starts from a fresh `make_scratch_repo`, which clears the previous test's directories; the existing `trap 'rm -rf "$TMP"' EXIT` cleans up at the end. Add all six function names to the list of calls at the bottom of the file.
 
-- [ ] **Step 2: Run the tests to verify they fail**
+- [x] **Step 2: Run the tests to verify they fail**
 
 Run: `cd sindri && npx vitest run tests/evolve-channel.test.ts tests/evolve-channel-cmd.test.ts tests/evolve-check-at.test.ts && cd .. && bash scripts/tests/install-sindri.test.sh`
 Expected: FAIL with `Failed to load url ../src/evolve/channel.js`, then a failing `test_channel_dry_run_writes_nothing` (the installer rejects `--channel`).
 
-- [ ] **Step 3: Implement**
+- [x] **Step 3: Implement**
 
 Add to `ERRORS`:
 
@@ -7899,12 +7899,12 @@ fi
 
 (The `echo "Installing sindri..."` banner and the in-place build stay below this block, unchanged. `git rev-parse --verify --end-of-options` needs git 2.24 or newer. The `sed` in `shq` turns each `'` into `'\''`: inside double quotes `\\\\` reaches `sed` as `\\`, which `sed` reads as one literal backslash.) The test file's `make_scratch_repo` deletes its working directories first (add `rm -rf "$TMP/src" "$TMP/origin.git" "$TMP/state" "$TMP/bin" "$TMP/b'in"` as its first line).
 
-- [ ] **Step 4: Run the tests**
+- [x] **Step 4: Run the tests**
 
 Run: `cd sindri && npm run gen && npx vitest run && npm run typecheck && npm run test:coverage && cd .. && bash scripts/tests/install-sindri.test.sh`
 Expected: all tests PASS; coverage 100% on the files this task touches; every installer test PASS.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add sindri/src sindri/tests scripts/install-sindri.sh scripts/tests/install-sindri.test.sh docs/sindri
@@ -7933,7 +7933,7 @@ git commit -m "feat: sindri stable and next channels, and check --at"
 
   It prints one line per step (`ok`, `attn` or `FAIL` first), one summary line and the next command, and exits 1 if any step wasn't `ok`. Publishing stays a builder's explicit verb. The launchd job runs it on Mondays at 07:30.
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 `sindri/tests/evolve-weekly.test.ts`:
 
@@ -8096,12 +8096,12 @@ test_evolve_job_is_weekly() {
 }
 ```
 
-- [ ] **Step 2: Run the tests to verify they fail**
+- [x] **Step 2: Run the tests to verify they fail**
 
 Run: `cd sindri && npx vitest run tests/evolve-weekly.test.ts && cd .. && bash scripts/tests/install-sindri.test.sh`
 Expected: FAIL with `Failed to load url ../src/evolve/cmd/weekly.js`, then `FAIL: …/com.agentic-workflow.sindri-evolve.plist missing`.
 
-- [ ] **Step 3: Implement**
+- [x] **Step 3: Implement**
 
 `sindri/src/evolve/cmd/weekly.ts`:
 
@@ -8268,12 +8268,12 @@ Then, in the launchd loop that Plans 2 and 3 left (`for NAME in com.agentic-work
 3. add `echo "  [dry-run] would install launchd job com.agentic-workflow.sindri-evolve.plist (macOS, Mondays 07:30)"` to the dry-run branch;
 4. extend the message to `"  sindri: hourly observe, daily index build, weekly evolve (Mondays 07:30) (launchd)"`, keeping whatever Plan 3 printed for its own jobs.
 
-- [ ] **Step 4: Run the tests**
+- [x] **Step 4: Run the tests**
 
 Run: `cd sindri && npx vitest run && npm run typecheck && npm run test:coverage && cd .. && bash scripts/tests/install-sindri.test.sh`
 Expected: all tests PASS; coverage 100% on the files this task touches; every installer test PASS.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add sindri/src sindri/tests config/launchd scripts/install-sindri.sh scripts/tests/install-sindri.test.sh
@@ -8287,7 +8287,7 @@ git commit -m "feat: weekly sindri evolve job"
 - Create: `skills/reflect/SKILL.md`, `skills/correct/SKILL.md`, `docs/sindri/evolve.md`
 - Modify: `setup.sh` (`MANAGED_SKILLS`), `skills/_preamble.md` (skill table), `docs/sindri/README.md`, `AGENTS.md`, `.agents/rules/testing.md`, `planning/ERD.md`, `planning/ARCHITECTURE.md`, `docs/superpowers/specs/2026-10-07-sindri-design.md`
 
-- [ ] **Step 1: Write the two skills**
+- [x] **Step 1: Write the two skills**
 
 Each `SKILL.md` follows `.agents/rules/skills.md`: frontmatter, the preamble reference, capabilities named rather than provider tools, and the pstack attribution.
 
@@ -8381,7 +8381,7 @@ grep -rn "48 native" AGENTS.md skills/_preamble.md .agents/rules planning docs R
 
 Replace `48 native` with `50 native` in each hit, and `All 48 native skills are present` (in `.agents/rules/skills.md`) with `All 50 native skills are present`. Then run `scripts/sync-rules.sh`.
 
-- [ ] **Step 2: Write `docs/sindri/evolve.md` and update the other docs**
+- [x] **Step 2: Write `docs/sindri/evolve.md` and update the other docs**
 
 `docs/sindri/evolve.md`:
 
@@ -8617,7 +8617,7 @@ Spec edits, in `docs/superpowers/specs/2026-10-07-sindri-design.md`:
   and add `SCOPE`, `SECRET` and `EVOLVE` to the error-area list in the Output contract (if Plan 4's edit already added the first two, add only `EVOLVE`).
 - **§13.3**, row "Ported `reflect` / `correct` / `eval` + artifact registry (P5)": change the switch-on cell to "`sindri evolve init`; `sindri evolve check --changed`; `sindri evolve reflect --pr <n>` on each merged Sindri PR (the weekly job does it for the last 7 days); `sindri evolve weekly` (Mondays 07:30, launchd); then `sindri evolve publish` on a branch" and the evidence cell to "Registry lists every module; first reflect run recorded; staged proposals published as plan tasks that `sindri observe` lists; `evolve status` reports the merge rate".
 
-- [ ] **Step 3: Run the merge gate, one job at a time**
+- [x] **Step 3: Run the merge gate, one job at a time**
 
 Run each command after the previous one finishes:
 
@@ -8633,7 +8633,7 @@ grep -rnE "hxxp|joi@|/Users/[a-z]" sindri/tests/fixtures && echo "FOUND private 
 
 Expected: no type errors; 100% coverage; installer tests PASS; `sync-rules` exits 0; `SETUP_DRY_RUN_OK`; `NO_V8_IGNORE`; `NO_ANY`; `FIXTURES_CLEAN` (the committed hook-fire fixtures are synthetic: they use `/example/...` paths only).
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add skills/reflect skills/correct skills/_preamble.md setup.sh docs/sindri AGENTS.md .agents/rules planning docs/superpowers/specs/2026-10-07-sindri-design.md

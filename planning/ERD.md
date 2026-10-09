@@ -234,6 +234,85 @@ erDiagram
     items ||--o{ item_events : "has"
     shape_runs ||--o{ shape_signals : "records"
     scope_runs ||..o{ model_calls : "audits (by run_id, not enforced)"
+    artifacts {
+        text id PK
+        text kind
+        text paths
+        text root
+        text hash
+        int protected
+        text suite
+        text first_seen
+        text changed_at
+        text removed_at
+        int epoch
+    }
+    suite_runs {
+        int seq PK
+        text artifact_id FK
+        text hash
+        text head
+        int dirty
+        int ok
+        int exit_code
+        int ms
+        text ts
+        int epoch
+    }
+    proposals {
+        text id PK
+        text artifact_id FK
+        text source
+        text kind
+        text tier
+        text status
+        text title
+        text norm_title
+        text body
+        text created_at
+        text updated_at
+        int epoch
+    }
+    comparisons {
+        int seq PK
+        text proposal_id FK
+        int run
+        text item_id
+        text verdict
+        text detail
+        text ts
+        int epoch
+    }
+    hook_samples {
+        int seq PK
+        text hook
+        text ref UK
+        text ts
+        int warranted
+        text reason
+        text sampled_at
+        int epoch
+    }
+    adoptions {
+        int seq PK
+        text prompt_id
+        text proposal_id
+        text sha256
+        text adopted_at
+        text adopted_by
+        int epoch
+    }
+    evolve_audit {
+        int seq PK
+        text ts
+        text verb
+        text actor
+        text detail
+        int epoch
+    }
+    artifacts ||--o{ suite_runs : "has runs"
+    artifacts ||--o{ proposals : "is changed by"
+    proposals ||--o{ comparisons : "is compared in"
 ```
 
 Items are keyed by `(source, id)`: an item id is unique only within its tracker source, so two repos with a same-named plan file never share a row, and `markMissing` closes only its own source's items. `item_events` references that composite key.
@@ -243,6 +322,8 @@ Every write runs inside `withEpoch(db, epoch, …)` or `fenced(db, epoch, …)`,
 Ledger v2 adds `shape_runs` and `shape_signals` (record-only shape signals; outcomes are labeled by tree reconcile once a commit is `shape.outcomeDays` old). The v1 to v2 migration keeps all rows and leaves `ledger.db.bak-v1`. Indexes: `shape_runs_pending (commit_sha, closed_at, ts)` for the runs waiting for a commit, `shape_runs_tree (repo, tree, parser, ts, run_id)` for the one-run-per-staged-tree rule, and `shape_signals_type`, `shape_signals_run`.
 
 Ledger v3 adds `scope_runs` (one row per `sindri scope` run or backtest) and `model_calls` (one row per model call, keyed by `(run_id, seq)`, written in the same transaction as the run's row). `model_calls` audits every Step, not only scoping: `run_id` is a plain correlation id with no foreign key to `scope_runs` (a later Step such as triage or reflect has no `scope_runs` parent), and `step` names the Step that made the call (`scope` or `backtest` today; the column defaults to `scope`). The v2 to v3 migration keeps all rows and leaves `ledger.db.bak-v2`.
+
+Ledger v4 adds the self-evolution tables (`artifacts`, `suite_runs`, `proposals`, `comparisons`, `hook_samples`, `adoptions`, `evolve_audit`; see `docs/sindri/evolve.md`). The relationships are logical: no foreign keys are declared. `comparisons` rows with `item_id = '*'` are run markers (`running`, `errored`) or the run's summary. `evolve_audit` also holds the markers that say a reflect or correct run completed. The v3 to v4 migration keeps all rows and leaves `ledger.db.bak-v3`. Evolve's model calls are not written to `model_calls`.
 
 ## Sindri code index
 

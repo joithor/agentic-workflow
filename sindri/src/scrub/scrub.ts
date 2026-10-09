@@ -20,7 +20,7 @@ function withFlags(re: RegExp): RegExp {
   return new RegExp(re.source, [...flags].join(""));
 }
 
-const escapeRe = (s: string): string => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+export const escapeRe = (s: string): string => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 
 export function makeScrubber(extra: readonly ScrubPattern[] = []): Scrubber {
   const patterns = [...BUILTIN_PATTERNS, ...extra].map((p, order) => ({ ...p, re: withFlags(p.re), order }));

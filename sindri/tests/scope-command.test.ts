@@ -1,3 +1,4 @@
+import { createHash } from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
@@ -6,10 +7,14 @@ import { stateDir } from "../src/deps.js";
 import { runCli } from "../src/main.js";
 import { ledgerFileVersion, ledgerPath, openLedger } from "../src/ledger/db.js";
 import { acquireTickLock } from "../src/lock/lock.js";
-import { extractSection, makeScopeCommand, recordRun, writeOut } from "../src/scope/commands.js";
+import { corpusDir, loadCorpus } from "../src/evolve/corpus.js";
+import { overlayDir, overlayFile } from "../src/evolve/overlay.js";
+import { SOURCES_CLAUSE } from "../src/evolve/prompts.js";
+import { extractSection, makeScopeCommand, recordRun, writeOut, type ScopeIo } from "../src/scope/commands.js";
 import type { ScopeMap } from "../src/scope/map.js";
 import type { GraphqlFetch } from "../src/scope/sources/linear.js";
-import { ModelJobError } from "../src/scope/model.js";
+import { CHALLENGER_SYSTEM } from "../src/scope/run.js";
+import { ModelJobError, type ModelCall } from "../src/scope/model.js";
 import { compileExtraPatterns, makeScrubber, type Scrubber } from "../src/scrub/scrub.js";
 import { fakeGit, fakeSystem, git, gitRepo, makeDeps, tempDir } from "./helpers.js";
 import { ring0Name } from "./index-fixtures.js";
@@ -496,5 +501,71 @@ describe("writing and recording", () => {
     const files = fs.readdirSync(out).map((n) => fs.readFileSync(path.join(out, n), "utf8")).join("\n");
     const ledger = JSON.stringify([rows(d, "SELECT * FROM scope_runs"), rows(d, "SELECT * FROM model_calls")]);
     for (const text of [r.stdout, r.stderr, files, ledger]) expect(text).not.toContain(token.slice(8));
+  });
+});
+
+describe("sindri scope and the evolve corpus", () => {
+  it("saves a replay item under the run's own id after each run, and still succeeds when it can't", async () => {
+    const d = await approvedScopeDeps();
+    const brief = path.join(tempDir(), "brief.md");
+    fs.writeFileSync(brief, "# Shift times\nAdd shift times to the scheduling editor.\n");
+    const cmd = makeScopeCommand(scriptedIo([MAP, NONE]));
+    const r = await cmd([brief, "--out", tempDir()], d);
+    expect(r.exitCode).toBe(0);
+    const items = loadCorpus(d, "scope.draft");
+    expect(items).toHaveLength(1);
+    expect(items[0].brief.title).toBe("Shift times");
+    expect(items[0].outcome).toEqual({ status: "complete", surfaces: 1, recall: null });
+    const runs = JSON.parse((await cmd(["runs", "--json"], d)).stdout) as { runId: string }[];
+    expect(items[0].id).toBe(runs[0].runId); // the replay lines up with the scope_runs row recordRun wrote
+    const blocked = await approvedScopeDeps();
+    fs.mkdirSync(path.dirname(corpusDir(blocked)), { recursive: true });
+    fs.writeFileSync(corpusDir(blocked), "a file where the directory should be");
+    const ok = await makeScopeCommand(scriptedIo([MAP, NONE]))([brief, "--out", tempDir()], blocked);
+    expect(ok.exitCode).toBe(0);
+    expect(ok.stdout).not.toContain("Not recorded in the ledger"); // recordRun still ran
+  });
+
+  it("saves no replay for a run the ledger never recorded (another run holds the lock)", async () => {
+    const d = await approvedScopeDeps();
+    const brief = path.join(tempDir(), "brief.md");
+    fs.writeFileSync(brief, BRIEF);
+    const held = openLedger(ledgerPath(stateDir(d)));
+    const lock = acquireTickLock({ dir: stateDir(d), db: held, sys: d.system, now: d.now });
+    expect(lock.ok).toBe(true);
+    try {
+      const r = await makeScopeCommand(scriptedIo([MAP, NONE]))([brief, "--out", tempDir()], d);
+      expect(r.stdout).toContain("Not recorded in the ledger");
+      expect(loadCorpus(d, "scope.draft")).toEqual([]);
+      expect(fs.existsSync(path.join(corpusDir(d), "scope.draft"))).toBe(false);
+    } finally {
+      if (lock.ok) lock.release();
+      held.close();
+    }
+  });
+
+  it("scopes with an adopted overlay prompt, and the built-in challenger prompt", async () => {
+    const d = await approvedScopeDeps();
+    const brief = path.join(tempDir(), "brief.md");
+    fs.writeFileSync(brief, "# Shift times\nAdd shift times to the scheduling editor.\n");
+    const text = `${SOURCES_CLAUSE}\nOVERLAY draft prompt`;
+    fs.mkdirSync(overlayDir(d), { recursive: true });
+    fs.writeFileSync(overlayFile(d, "scope.draft"), text, { mode: 0o600 });
+    const db = openLedger(ledgerPath(stateDir(d)));
+    db.prepare("INSERT INTO adoptions (prompt_id, proposal_id, sha256, adopted_at, adopted_by, epoch) VALUES ('scope.draft', 'p', ?, 't', 'me', 1)").run(createHash("sha256").update(text).digest("hex"));
+    db.close();
+    const answers: unknown[] = [MAP, NONE];
+    const systems: string[] = [];
+    const io: ScopeIo = {
+      ...scriptedIo([]), // keeps fetch, process and progress
+      runner: () => ({
+        async run<T>(call: ModelCall<T>) {
+          systems.push(call.system);
+          return { value: call.parse(answers.shift()), usage: { inputTokens: 1, outputTokens: 1 } };
+        },
+      }),
+    };
+    await makeScopeCommand(io)([brief, "--out", tempDir()], d);
+    expect(systems).toEqual([text, CHALLENGER_SYSTEM]);
   });
 });

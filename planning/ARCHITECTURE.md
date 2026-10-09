@@ -4,7 +4,7 @@
 
 Agentic Workflow (repo: `agentic-workflow`) is a portable, provider-agnostic workflow toolkit for AI coding agents. It supports **Claude Code**, **Codex**, and **Cursor** as equal hosts. The canonical core has these parts:
 
-- 48 native skills spanning the full development lifecycle (planning, design, review, debugging, QA, shipping, retrospectives)
+- 50 native skills spanning the full development lifecycle (planning, design, review, debugging, QA, shipping, retrospectives)
 - a documentation bootstrapper skill
 - canonical safety hooks
 - a TypeScript MCP bridge server for inter-agent coordination
@@ -479,6 +479,10 @@ renders it in a `/live` pane (and `/live status`) inside Claude Code. `config/st
 Plan 3 adds the code index (`sindri/src/index/`, doc: `docs/sindri/index.md`): one SQLite file per repo with five layers (structure, clones, deps, embeddings, graph) built from tracked files only. Code never leaves the machine: embeddings go to Ollama on a loopback IP literal, and graphify runs in a network-less sandbox on a snapshot of the tracked files. A build writes a temp copy and renames it, under the box-wide heavy-job lock (`${AW_HEAVY_JOB_LOCK:-$AW_STATE_DIR/locks/heavy-job.lock}`: the `mkdir` primitive of `config/lib/locks.sh`, at the default path ui-evidence's `skills/ui-evidence/scripts/lib/locks.sh` uses). An hourly quick build (structure, clones, deps) and a nightly full build run from launchd. The git pre-commit hook records shape signals through a spool: it opens the ledger read-only, never blocks, and the hourly `observe` ingests the spool. Outcome labels (kept, acted-on, dropped, n/a) come from reconciling each run's staged tree hash against the default branch after 14 days.
 
 Plan 4 adds the scoping harness (`sindri/src/scope/`, doc: `docs/sindri/scope.md`). `sindri scope` gathers evidence from query-based sources (the brief file, a notes dir, opt-in transcripts, Linear, and the code index); every record is stripped of HTML comments, hidden characters, encoded blobs and remote links, then scrubbed, and fenced as untrusted data. A model runner spawns `claude -p` with no tools and an allowlisted environment, and meters every call into the ledger's `model_calls` table under a per-run token budget. A drafter model proposes the scope map; deterministic checks (cited sources, every surface in a workstream, acyclic dependencies, acceptance checks) send failures back for a bounded number of rounds; a challenger on a different model hunts for missing surfaces until none is new. `--backtest` replays a past Linear project from its creation date: an adjudicator model, run twice with the order reversed, scores recall and precision against the issues filed later, a brief-only baseline gives the comparison, and a printed pass bar decides the result. The map is written with mode 0600; inside a git worktree only `--sources file,code` is allowed, and when git cannot answer the guard fails closed.
+
+### Self-evolution
+
+`sindri/src/evolve/` registers every module of this repo as an artifact with its existing tests as its eval suite, and turns three evidence sources (merged PRs, repeated corrections, adjudicated hook false positives) into typed proposals. Proposals are classified into tiers by path, failing closed, and reach the repo only as plan tasks that a builder publishes after a privacy check and a person merges. Prompt variants are compared offline, blind, on a sealed holdout, and adopted by a person into a hash-bound overlay. Evolve commands never hold the tick lock across model or suite work (`withLockedWrite`). See `docs/sindri/evolve.md`.
 
 ## Key Rules
 

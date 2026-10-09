@@ -568,6 +568,15 @@ evaluations:
 - `sindri evolve status | history | revert <id> | pause | resume` exposes all of it, and the
   dashboard's Today view lists adoptions and reverts.
 
+**Rollout step 1 (Plan 5) narrows this section as follows:**
+- **Adoption is manual.** A prompt variant that wins its offline comparison is marked `won`; `sindri evolve adopt <id>` (a terminal, the line diff shown first, a typed confirmation bound to the variant's sha256) installs it into the overlay and records its hash in the ledger. The loader uses an overlay only when its hash matches the latest adoption and it keeps the injection-resistance clause. The self-adopt tier, canary and auto-revert start at rollout step 6.
+- **Hook false-positive rates are adjudicated.** A fire is recognised only from the harness's own hook-feedback shapes; the adjudicator decides whether each sampled fire was warranted (by default `opus`, the same model as the challenger that drafts reflect and correct proposals, but hook-fix proposals are drafted from a template, so no proposal is judged by its own drafter); a `hook-fix` proposal needs at least 10 labelled samples and a Wilson lower bound above 0.2. The rate counts blocks only.
+- **Only the scoping draft prompt gets an offline comparison.** Other prompts and skills are evaluated through their module tests and telemetry until a corpus of PRs exists, and interactive skills need replayed agent sessions (step 3a).
+- **Evolve reads only this repo's sessions** (working directory under the toolkit repo), whatever `sources.transcripts.enabled` says. A line copied into a resumed or forked session counts once (deduped on timestamp and text).
+- **Corrections are model-labeled.** `correct` has a model (never the builder, never a hand label; invariant 9) label each human turn as a design correction, a process correction, a restated instruction, a missed surface, or none of those, instead of matching keywords: a regex caught 5 of 45 wrong-approach corrections, and about half of real corrections are about process. Process classes lean toward rule, doc or skill proposals and design classes toward prompt or skill proposals; the proposal prompt decides. The labeler is not calibrated against outcome labels yet (it replaces the "calibrated labeler" of the proposal-source preamble above).
+- **"Already ran" is the complete-run marker only.** `reflect` records `Already reflected on PR #n`, and `correct` records `Already ran for <week>`, only when a run finished within budget (and, for `correct`, without label errors). A partial run is retried next time; saving a proposal is deduplicated, so a rerun can't double it. This replaces the earlier rule that any saved proposal for the source meant "already ran".
+- **Not built in step 1:** the "at most 3 adoptions per artifact per week" limit, `sindri evolve history`, `pause` and `resume`, and automatic regression rollback. Adoptions are manual and rare, `sindri evolve revert <prompt-id>` and `sindri channel rollback` are the manual equivalents, and the tier brake arrives with the self-adopt tier.
+
 ### 7.5 Scoping harness (front of the rollout)
 The problem that started this design: projects like a multi-surface "new shift times" rollout sprawl
 because surfaces and implications are found during implementation, not at creation. The scoping harness
@@ -615,6 +624,7 @@ The harness's own backlog goes through the harness as ordinary work items in the
 - eval findings
 - hook fixes (for example the done-gate false positives)
 - code-tier proposals from §7.4
+- code- and approval-tier proposals are staged privately by the weekly job and published, on request and on a branch, as tasks in `docs/superpowers/plans/<week-monday>-sindri-plan-proposals.md` after a scrubber and privacy check (`privacy.denyTerms`); sindri never commits them
 
 They are scoped, built in assist mode, verified, and opened as PRs. The human merges.
 
@@ -646,6 +656,9 @@ Every module gets an eval suite and telemetry, and its improvements come from th
   to the toolkit land on a **next** channel, built and evaluated *by the stable harness*. They are
   promoted only after passing the merge gate, their module's eval suite, and a soak period (default 3
   days of shadow use on `next` alongside `stable`).
+  - Channels are install locations, not branches: `scripts/install-sindri.sh --channel next --ref <sha>` builds a merged commit into an immutable directory; `sindri channel promote <sha>` needs a passing `package:sindri` suite run at that sha, the soak, a smoke start and a typed confirmation; `rollback` needs the previous build to still exist.
+  - `sindri evolve check --at <sha>` runs the suite in a temporary detached worktree of the repo at that sha, removed afterwards.
+  - `--channel stable` only bootstraps the first stable build; every later stable change goes through `promote`, which refuses a sha that is already stable. `rollback` clears `previous`, so a second rollback refuses.
 - **No self-certification.** A change can never modify the eval suite or telemetry that judges it in the
   same proposal (invariant 11). The evaluator for a proposal is always the stable channel.
 - **Regression rollback.** If promotion regresses any module metric over the following 20 uses, `stable`
@@ -1049,6 +1062,8 @@ The `UserPromptSubmit` hook classifies every human turn in a sindri session:
 | `shadow report` | Routing, direction-check and shape agreement per class, plus classifier accuracy | "Not enough shadow data yet (n/30)." |
 | `rules show\|approve\|reject` | Eval-loop proposals | "No proposals pending." |
 | `index build\|status\|query` | Code index (§6.2). `index status` lists every repo; a missing index is a row and exit 1, not an `SND-INDEX-404` abort. `index query` still uses `SND-INDEX-404` | `SND-INDEX-404 no index for <repo>; run sindri index build --repo <repo>` |
+| `evolve init\|status\|check\|telemetry\|reflect\|correct\|proposals\|show\|reject\|tier\|compare\|stage\|publish\|adopt\|revert\|weekly` | Artifact registry, module eval suites, proposals and offline comparisons (§7.4, §7.7). `adopt`, `revert`, `channel promote` and `channel rollback` need a terminal | "No artifacts registered yet." / "Nothing to stage." / `SND-EVOLVE-006 adopting a prompt needs an interactive terminal` |
+| `channel status\|promote\|rollback` | Stable and next installs of sindri itself (§7.7) | "No channels recorded." / `SND-EVOLVE-005 next has soaked 1 of 3 days` |
 | `scope <brief.md \| linear:<project>> [--backtest --dry-run --sources]` / `scope runs` | Scoping and its backtest (§7.5); past runs | "No scope runs recorded." / `SND-SCOPE-025 refusing to write … inside a git worktree` |
 | `repo add <path>` | Edits the profile only (then `profile approve`); each full `index build` creates or refreshes the mirror | — |
 | `profile init\|validate\|explain\|migrate\|approve` | Profile tooling. `approve` shows the diff first | validate: "Profile valid." / errors with file, key path, fix |
@@ -1060,7 +1075,7 @@ The `UserPromptSubmit` hook classifies every human turn in a sindri session:
 - `NO_COLOR` and non-TTY output are honored.
 - Exit codes: `0` ok, `1` attention needed, `2` error.
 - Errors carry stable codes `SND-<AREA>-<NNN>`, with the areas seeded in `docs/sindri/errors.md`: PROFILE,
-  LOCK, SESS, ITEM, GATE, DIR, SHAPE, INDEX, BRIDGE, NOTIFY, BUDGET, CLI, LEDGER, SCRUB, TRACKER, SCOPE, SECRET.
+  LOCK, SESS, ITEM, GATE, DIR, SHAPE, INDEX, BRIDGE, NOTIFY, BUDGET, CLI, LEDGER, SCRUB, TRACKER, SCOPE, SECRET, EVOLVE.
 
 ### 10.4 Silent-failure floor (R7)
 - **Fallback chain:** macOS notification, then the `$AW_STATE_DIR/ATTENTION` file, then a banner in
@@ -1460,7 +1475,7 @@ toolkit needs no tracker account to build itself. The adapter ships in Plan 2.
 | `plan-file` tracker + `sindri observe` (P2) | P2 merges | `sindri profile init --ring0 --plans '*-sindri-plan-*'`, then `sindri observe` (hourly via launchd) | Lists the remaining plan tasks with rule-based sizes (model triage from step 2) | Gives a live, ordered backlog of the rest of Sindri | `observe` on the real tracker |
 | Code index, record-only shape signals (P3) | P3 merges | `sindri index setup && sindri index build`, `sindri repo add .`, `sindri scrub --install-pre-commit` (upgrades the hook to v2, which records shape signals), an hourly `sindri index build --quick` and a nightly full build (launchd); a degraded switch-on (embeddings or graph unavailable) is allowed and the PR evidence lists the layers that are down | `index status` fresh; shape signals in the ledger for builder commits | **Calibrates shape thresholds on Sindri's own commits** from P4 onward; flags reinvention while P4/P5 are built | `repo add` for workplace repos (record-only) |
 | Scoping harness (P4) | P4 merges | `sindri scope docs/superpowers/specs/2026-10-07-sindri-design.md --section 13 --sources file,code --out docs/superpowers/scopes/` | Scope map file plus `--backtest` recall on the motivating project | **Scopes every later Sindri plan before it's written:** the plan writer starts from the scope map | Scope new workplace projects at creation |
-| Ported `reflect` / `correct` / `eval` + artifact registry (P5) | P5 merges | `sindri evolve init` (registry over the repo); `reflect` runs on every merged Sindri PR; `correct` weekly | Registry lists every module; first reflect proposal recorded | **The build improves its own tools:** proposals for the skills and hooks used to build Sindri arrive as PRs (human merges) | Same loop over ring-1 artifacts |
+| Ported `reflect` / `correct` / `eval` + artifact registry (P5) | P5 merges | `sindri evolve init`; `sindri evolve check --changed`; `sindri evolve reflect --pr <n>` on each merged Sindri PR (the weekly job does it for the last 14 days); `sindri evolve weekly` (Mondays 07:30, launchd); then `sindri evolve publish` on a branch | Registry lists every module; first reflect run recorded; staged proposals published as plan tasks that `sindri observe` lists; `evolve status` reports the merge rate | **The build improves its own tools:** proposals for the skills and hooks used to build Sindri arrive as PRs (human merges) | Same loop over ring-1 artifacts |
 | Shadow triage + dashboard/badge (step 2) | Step-2 plan merges | `sindri dashboard`; SwiftBar badge install | Dashboard shows ring-0 items and what Sindri would do | Visible queue for the remaining build | Shadow on the real tracker |
 | `sindri start`, packs, worker → ship, notifications (step 3a) | Step-3a plan merges | Remaining Sindri tasks are started with `sindri start <plan-task>` instead of pasted prompts | Next Sindri PR opened by the ship Step | **Sindri dispatches and ships its own remaining plans** (human starts, human merges) | Assist mode for workplace tickets |
 | Shape enforcement (3b) | Per-layer precision bar met on ring-0 commits | `profile: shape.enforce: true` for ring 0 | A refused commit with evidence | Enforces code shape on Sindri's own code first | After ring 0 holds for 2 weeks |

@@ -1,6 +1,6 @@
 # AGENTS.md — Agentic Workflow
 
-> Agentic Workflow — provider-agnostic agent workflow toolkit for Claude Code, Codex, and Cursor: 48 native skills + 3 fetched external packs (impeccable, emil-design-eng, taste-skill), config archive, repo bootstrapper, MCP bridge for multi-agent communication, and token-efficiency tools (rtk + headroom).
+> Agentic Workflow — provider-agnostic agent workflow toolkit for Claude Code, Codex, and Cursor: 50 native skills + 3 fetched external packs (impeccable, emil-design-eng, taste-skill), config archive, repo bootstrapper, MCP bridge for multi-agent communication, and token-efficiency tools (rtk + headroom).
 
 Domain-specific rules live in `.agents/rules/` — one file per rule, the only copy. `.claude/rules` and `.cursor/rules/*.mdc` are symlinks to it (auto-loaded by Claude Code and Cursor), and `CLAUDE.md` is a symlink to this file. Codex reads the Rules Index at the bottom of this file. After adding or removing a rule, run `scripts/sync-rules.sh`.
 
@@ -34,7 +34,7 @@ Domain-specific rules live in `.agents/rules/` — one file per rule, the only c
 
 ```
 agentic-workflow/
-├── skills/        # 47 provider-neutral skills (linked into each provider's skills dir)
+├── skills/        # 49 provider-neutral skills (linked into each provider's skills dir)
 ├── bootstrap/     # /bootstrap skill — repo documentation generator
 ├── config/        # Settings, MCP config, statusline, safety hooks, sindri-nudge SessionStart hook (+ hooks/adapters/ per provider)
 ├── providers/     # Per-provider installers (claude, codex, cursor)
@@ -91,6 +91,11 @@ scripts/probe.sh [--provider claude|codex|cursor] on|off|status
 scripts/install-scorer.sh               # Build scorer, install CLI + launchd job
 sindri doctor                           # Sindri health checks (ok / warn / fail + fix)
 sindri index setup && sindri index build    # code index (Ollama + graphify, offline)
+sindri evolve init && sindri evolve check --changed   # registry + module eval suites (heavy: run alone)
+sindri evolve status                                   # artifacts, proposals, merge rate, corpus
+sindri evolve reflect --pr <n>                         # proposals from a merged PR
+sindri evolve weekly                                   # the Monday job (launchd runs it)
+sindri evolve publish                                  # staged proposals -> this week's plan file (on a branch)
 sindri repo onboard [<path>]            # add + approval check + pre-commit hook + first index build (never approves)
 sindri scope <brief.md> --out DIR            # cited scope map; --backtest linear:<project> for recall, precision and a baseline
 sindri shape report                      # record-only shape signals and their outcomes (read-only)
