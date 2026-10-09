@@ -33,6 +33,8 @@ export const ERRORS = {
   "SND-SCRUB-004": { summary: "`scrub --staged` or `--install-pre-commit` ran outside a git repo.", fix: "cd into the repo first, or pass --repo PATH to --install-pre-commit." },
   "SND-SCRUB-005": { summary: "`git diff --cached` failed, so `scrub --staged` could not scan the staged changes.", fix: "Fix the git error shown in the details, then retry the commit." },
   "SND-LEDGER-001": { summary: "The ledger was written by a newer sindri.", fix: "Upgrade sindri (`scripts/install-sindri.sh` from the latest main), then rerun." },
+  "SND-SECRET-001": { summary: "A secret pointer could not be resolved.", fix: "check the pointer in the profile and that the secret exists (env var, file, keychain item or 1Password item)" },
+  "SND-SECRET-002": { summary: "A secret file is readable by other users.", fix: "chmod 600 <file>" },
   "SND-LOCK-003": { summary: "This run's fencing epoch is stale; another run took over.", fix: "Nothing to do; the newer run continues. Check `sindri doctor` if this repeats." },
   "SND-TRACKER-001": { summary: "The tracker's source is missing or unreadable (for plan-file: the repo path or plan dir).", fix: "Restore that directory, or fix `path` in repos/<name>.yaml and run `sindri profile approve`." },
   "SND-TRACKER-002": { summary: "The tracker's source holds no items to read (for plan-file: no plan file matches tracker.include).", fix: "Fix tracker.include in profile.yaml (or restore the plan files), then run `sindri profile approve`." },

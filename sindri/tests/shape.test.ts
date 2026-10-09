@@ -10,7 +10,7 @@ import type { IndexIo } from "../src/index/io.js";
 import { parserId } from "../src/index/parse-ts.js";
 import { makeShapeCommand } from "../src/index/shape.js";
 import { spoolDir, writeShapeRun, type ShapeRun } from "../src/index/spool.js";
-import { ledgerPath, openLedger } from "../src/ledger/db.js";
+import { LEDGER_SCHEMA_VERSION, ledgerPath, openLedger } from "../src/ledger/db.js";
 import { acquireTickLock } from "../src/lock/lock.js";
 import { runCli } from "../src/main.js";
 import { approvedIndexDeps, BODY, embedFetch, failingGit, fakeIndexIo, OFF, ring0Name, ring0Repo } from "./index-fixtures.js";
@@ -162,7 +162,7 @@ describe("sindri shape --record --staged", () => {
     raw.pragma("user_version = 1");
     raw.close();
     const r = await record(d);
-    expect(r.stderr).toContain("sindri-shape: skipped (ledger schema v1, expected v2; run sindri shape reconcile)");
+    expect(r.stderr).toContain(`sindri-shape: skipped (ledger schema v1, expected v${LEDGER_SCHEMA_VERSION}; run sindri shape reconcile)`);
     expect(beside()).toEqual(listing);
     const check = new Database(file, { readonly: true });
     expect(check.pragma("user_version", { simple: true })).toBe(1);

@@ -96,6 +96,60 @@ const ShapeSchema = z
   .default({})
   .describe("Shape signals (spec §6.2)");
 
+export const LINEAR_API_URL = "https://api.linear.app/graphql";
+
+export const SecretPointerSchema = z
+  .string()
+  .regex(/^(env:[A-Za-z_][A-Za-z0-9_]*|file:\/\S+|keychain:[^/\s]+\/\S+|op:\S+\/\S+)$/, "must be a secret pointer: env:NAME, file:/path, keychain:service/account or op:vault/item/field");
+
+const ModelName = z
+  .string()
+  .regex(/^[A-Za-z0-9][A-Za-z0-9._:\[\]-]*$/, "must be a model alias or id: letters, digits and . _ : [ ] -, not starting with a dash");
+
+const SourcesSchema = z
+  .object({
+    notesDir: z.string().refine((p) => p.startsWith("/"), "must be an absolute path").optional().describe("Your notes (vault) dir; scoping searches it"),
+    transcripts: z
+      .object({ enabled: z.boolean().default(false), dir: z.string().default("~/.claude/projects") })
+      .strict()
+      .default({})
+      .describe("Opt-in: human turns from your Claude Code sessions. Turns from unrelated projects can reach the model, so leave it off unless you want that"),
+    linear: z
+      .object({ token: SecretPointerSchema, apiUrl: z.string().url().default(LINEAR_API_URL), allowCustomApiUrl: z.boolean().default(false) })
+      .strict()
+      .refine(
+        (l) => l.apiUrl.startsWith("https://") && (l.allowCustomApiUrl || l.apiUrl === LINEAR_API_URL),
+        `sources.linear.apiUrl must be ${LINEAR_API_URL}; any other host needs allowCustomApiUrl: true and must still be https`,
+      )
+      .optional()
+      .describe("Read-only Linear token for scoping and backtests"),
+  })
+  .strict()
+  .default({});
+
+const ModelsSchema = z
+  .object({
+    scoping: ModelName.default("sonnet"),
+    challenger: ModelName.default("opus"),
+    adjudicator: ModelName.default("opus"),
+    effort: z.enum(["low", "medium", "high", "xhigh", "max"]).default("medium"),
+    allowBaseUrl: z.boolean().default(false).describe("Let the claude child keep *_BASE_URL variables (they can reroute model traffic)"),
+  })
+  .strict()
+  .default({})
+  .refine((m) => m.challenger !== m.scoping && m.adjudicator !== m.scoping, "models.challenger and models.adjudicator must differ from models.scoping (spec §6.1)");
+
+const ScopeSchema = z
+  .object({
+    maxRounds: z.number().int().min(1).max(10).default(3),
+    maxTokensPerRun: z.number().int().positive().default(600_000),
+    maxTokensPerBacktest: z.number().int().positive().default(1_500_000),
+    maxRecords: z.number().int().positive().default(40),
+    maxPackChars: z.number().int().positive().default(120_000),
+  })
+  .strict()
+  .default({});
+
 export const ProfileSchema = z
   .object({
     schemaVersion: z.literal(PROFILE_SCHEMA_VERSION).describe("Profile format version"),
@@ -132,6 +186,9 @@ export const ProfileSchema = z
       .describe("scrub.extraPatterns: extra secret shapes, added to the built-ins (never removes one)"),
     index: IndexSchema,
     shape: ShapeSchema,
+    sources: SourcesSchema,
+    models: ModelsSchema,
+    scope: ScopeSchema,
   })
   .strict();
 

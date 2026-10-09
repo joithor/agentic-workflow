@@ -113,7 +113,7 @@ Each is also edited into the spec in Task 11.
   - `resolveSecret(pointer: string, deps: Deps, run: ProcessRunner): Promise<string>` — throws `SND-SECRET-001` (unresolvable, without echoing the pointer's target value) or `SND-SECRET-002` (a `file:` secret readable by group/other).
   - Ledger v3 tables `scope_runs` and `model_calls` (see Step 3).
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 `sindri/tests/secrets.test.ts`:
 
@@ -225,12 +225,12 @@ describe("scope profile keys", () => {
 });
 ```
 
-- [ ] **Step 2: Run the tests to verify they fail**
+- [x] **Step 2: Run the tests to verify they fail**
 
 Run: `cd sindri && npx vitest run tests/secrets.test.ts tests/scope-profile.test.ts`
 Expected: FAIL with `Failed to load url ../src/secrets.js`, and the profile tests failing on the missing keys.
 
-- [ ] **Step 3: Implement**
+- [x] **Step 3: Implement**
 
 `sindri/src/secrets.ts`:
 
@@ -375,14 +375,14 @@ Add to `ERRORS`:
   "SND-SECRET-002": { summary: "A secret file is readable by other users.", fix: "chmod 600 <file>" },
 ```
 
-- [ ] **Step 4: Run the tests**
+- [x] **Step 4: Run the tests**
 
 Run: `cd sindri && grep -rn "LEDGER_SCHEMA_VERSION\|schemaVersion" tests | grep -v "scope-profile"` first. Plan 3's `index-profile` test hard-codes `toBe(2)`: change it to `toBeGreaterThanOrEqual(2)`, and change any other exact-version assertion the grep shows to a `toBeGreaterThanOrEqual` on the version it needs (a later plan appends further migrations). Then:
 
 Run: `cd sindri && npm run gen && npm run typecheck && npm run test:coverage`
 Expected: all tests PASS; coverage 100% on the files touched.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add sindri/src sindri/tests sindri/schema docs/sindri

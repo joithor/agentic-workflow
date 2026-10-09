@@ -84,6 +84,34 @@ const MIGRATIONS: readonly string[] = [
   CREATE INDEX shape_signals_type ON shape_signals(type);
   CREATE INDEX shape_signals_run ON shape_signals(run_id);
   `,
+  `
+  CREATE TABLE scope_runs (
+    run_id TEXT PRIMARY KEY,
+    subject TEXT NOT NULL,
+    mode TEXT NOT NULL,
+    ts TEXT NOT NULL,
+    status TEXT NOT NULL,
+    rounds INTEGER NOT NULL,
+    surfaces INTEGER NOT NULL,
+    recall REAL,
+    precision REAL,
+    baseline_recall REAL,
+    baseline_precision REAL,
+    leaky INTEGER NOT NULL DEFAULT 0,
+    tokens INTEGER NOT NULL,
+    out_path TEXT NOT NULL,
+    epoch INTEGER NOT NULL
+  );
+  CREATE TABLE model_calls (
+    run_id TEXT NOT NULL REFERENCES scope_runs(run_id),
+    seq INTEGER NOT NULL,
+    role TEXT NOT NULL,
+    model TEXT NOT NULL,
+    input_tokens INTEGER NOT NULL,
+    output_tokens INTEGER NOT NULL,
+    PRIMARY KEY (run_id, seq)
+  );
+  `,
 ];
 
 export const LEDGER_SCHEMA_VERSION = MIGRATIONS.length;
