@@ -173,7 +173,7 @@ The tick never waits on a model. It reads job results from the ledger on the nex
 ### 5.2 Storage (M7)
 - The sindri owns `$AW_STATE_DIR/sindri/ledger.db` (SQLite, WAL). It is the only writer.
 - Hooks never write to the DB. They append events to `$AW_STATE_DIR/sindri/spool/<session>.jsonl`, and
-  the tick ingests them.
+  the tick ingests them. The pre-commit shape hook writes one file per run, `$AW_STATE_DIR/sindri/spool/shape-<runId>.json` (temp name, then rename), and the tick ingests it and deletes the file only after the ledger transaction commits.
 - Judge decisions are referenced by judge's decision id. Score, threshold and reason code are **copied**
   into the ledger row, because judge prunes decision details after 30 days (L1, L5).
 - The schema lives in `planning/ERD.md` with versioned migrations. `doctor` detects schema skew (M19).
@@ -389,10 +389,10 @@ owned by the sindri user):
 
 | Layer | Content | Built with |
 |---|---|---|
-| Structure | Symbols (name, signature, kind, file, exported, callers) | tree-sitter; LSP (Serena) when available |
+| Structure | Symbols (name, signature, kind, file, exported, callers) | TypeScript compiler API for TS/JS (v1); tree-sitter grammars for other languages in a later plan; LSP (Serena) when available |
 | Clones | Normalized AST hashes per function and block (identifiers and literals abstracted), plus MinHash/LSH over token shingles (no pairwise comparison) | core |
 | Dependencies | Package manifests, plus internal utility modules marked by profile globs | core |
-| Embeddings | Function-level vectors from a **local** model | Ollama directly, or Prism with `cloud_fallback:false` and `route_guard:local` |
+| Embeddings | Function-level vectors from a **local** model | Ollama on loopback (`index.embeddings.url` must be the IP literal `127.0.0.1` or `[::1]`; redirects and cloud models are refused), or Prism with `cloud_fallback:false` and `route_guard:local` |
 | Graph | Module and call graph, cross-file relationships, surface clusters | **graphify** adapter (`index.graph: graphify`) |
 
 **Offline guarantee (T5):**
@@ -403,10 +403,12 @@ owned by the sindri user):
 - **Inputs:** tracked files only (respecting `.gitignore`), excluding the profile's `index.denyPaths`
   (secrets, fixtures containing PHI, generated code). Symlinks aren't followed. Per-file and total size
   caps apply.
+- graphify runs on a snapshot of the tracked, non-denied source and docs files, never on the working tree; network denied, writes confined to the snapshot, credential directories hidden, environment cleaned. Everything else stays readable (residual risk). graphify is installed at an exact, 14-day-old pin with `uv --exclude-newer`.
 
 **Freshness and branches (M5):**
 - The main index is rebuilt incrementally on merges to main. Builds take the heavy-job lock.
 - Each worktree gets a **per-worktree overlay** built from its own diff, so checks see in-flight changes.
+- An hourly quick build (structure, clones, deps) and a nightly full build; both read the files as checked out, so keep the default branch checked out in the indexed checkout.
 - Every derived artifact carries a version stamp (indexer version, model id, graphify version, commit
   SHA). A stamp mismatch triggers a rebuild.
 
@@ -422,7 +424,7 @@ owned by the sindri user):
   layers still enforce.
 
 **Signals** (computed at commit by the git `pre-commit` hook, and re-computed sindri-side on the pushed
-range; profile thresholds, seeded by a historical replay over past merged PRs in rollout step 2, then calibrated **per layer** on
+range; until rollout step 3b, signals are recorded only: the pre-commit hook opens the ledger read-only, writes them to the spool and never blocks. Each run records the staged tree hash; once its commit is 14 days old each signal is labeled kept, acted-on, dropped or n/a, and per-layer precision (acted-on over acted-on plus kept) is the 3b bar. This is an outcome proxy, not a human label; profile thresholds, seeded by a historical replay over past merged PRs in rollout step 2, then calibrated **per layer** on
 real commits in step 3a (Q1, M1):
 
 | Question | Signal | Default threshold |
@@ -789,6 +791,7 @@ the container.
   `acquire(kind, ttl)` and `release` only.
 - Leases expire, so a dead container never holds the lock.
 - Index builds and image builds take the same lock.
+- Host side: a `mkdir` lock at `${AW_HEAVY_JOB_LOCK:-$AW_STATE_DIR/locks/heavy-job.lock}`, the same primitive and path as `config/lib/locks.sh` and `ui-evidence`, with the holder record (`<lockdir>.holder.json`) beside it so the lock dir stays empty for `rmdir`; a holder whose pid is dead on this host is reclaimed.
 
 **Warm start:**
 - Images are keyed by `(repo, lockfile hash, toolchain)`. Rebuilding one is a heavy job.
@@ -1035,7 +1038,8 @@ The `UserPromptSubmit` hook classifies every human turn in a sindri session:
 | `tick [--dry-run]` | One tick, or print every action | "no-op: <reason>" on stderr when nothing to do |
 | `shadow report` | Routing, direction-check and shape agreement per class, plus classifier accuracy | "Not enough shadow data yet (n/30)." |
 | `rules show\|approve\|reject` | Eval-loop proposals | "No proposals pending." |
-| `index build\|status\|query` | Code index (§6.2) | `SND-INDEX-404 no index for <repo>; run sindri repo add` |
+| `index build\|status\|query` | Code index (§6.2). `index status` lists every repo; a missing index is a row and exit 1, not an `SND-INDEX-404` abort. `index query` still uses `SND-INDEX-404` | `SND-INDEX-404 no index for <repo>; run sindri repo add` |
+| `repo add <path>` | Edits the profile only (then `profile approve`); each full `index build` creates or refreshes the mirror | — |
 | `profile init\|validate\|explain\|migrate\|approve` | Profile tooling. `approve` shows the diff first | validate: "Profile valid." / errors with file, key path, fix |
 | `scheduler install\|uninstall\|status [--dry-run]` | Scheduler | dry-run prints the unit/plist |
 
@@ -1198,10 +1202,9 @@ interface Badge    { publish(summary: StatusSummary): Promise<Result<void>> }
 - **Session images:** `sindri image build <repo>` builds the repo's image. It contains the toolkit,
   skills, the session hook set, the existing safety hooks, Claude Code, tmux and the repo toolchain, and
   it is keyed by lockfile hash. Rebuilding one is a heavy job.
-- **Repos:** `sindri repo add <path>` creates the bare mirror, records the repo in the profile, and
-  queues the first index and image builds.
-- **Index dependencies (M6):** tree-sitter grammars are bundled. Ollama and the embedding model
-  (`index.embeddingModel`) are installed by `sindri index setup`. graphify is installed and pinned by
+- **Repos:** `sindri repo add <path>` records the repo in the profile (it does not create the mirror). Every full `sindri index build` creates or refreshes the bare mirror at `$AW_STATE_DIR/sindri/mirrors/<repo>.git`; the first image build is queued later.
+- **Index dependencies (M6):** structure uses the TypeScript compiler API, not bundled tree-sitter grammars (other languages come later). Ollama and the embedding model
+  (`index.embeddings.{enabled,url,model}`) are checked and pulled by `sindri index setup`; `uv` is installed by `./setup.sh --with-sindri`. graphify is installed and pinned by
   the same command and run in its network-less sandbox. `doctor` verifies each.
 
 ### 11.4 Migration from existing orchestrators (H19, V2)
@@ -1442,7 +1445,7 @@ toolkit needs no tracker account to build itself. The adapter ships in Plan 2.
 | Profile + ledger + lock + CLI skeleton (P2) | P2 merges | `sindri profile init --ring0` (toolkit profile, `mode: shadow`); `sindri doctor` | `doctor` all `ok`; ledger file exists | Every plan task and each change to it is recorded in the ledger on each `observe` run; sessions are linked to items from rollout step 2 | `sindri profile init` in the private profile repo |
 | Scrubber (P2) | P2 merges | `sindri scrub --install-pre-commit` in this repo | A committed fixture secret is refused | **Guards this public repo:** no secret- or identifier-shaped strings land in commits from any build session (names and other workplace prose still need review) | Pre-commit in workplace repos where wanted |
 | `plan-file` tracker + `sindri observe` (P2) | P2 merges | `sindri profile init --ring0 --plans '*-sindri-plan-*'`, then `sindri observe` (hourly via launchd) | Lists the remaining plan tasks with rule-based sizes (model triage from step 2) | Gives a live, ordered backlog of the rest of Sindri | `observe` on the real tracker |
-| Code index, record-only shape signals (P3) | P3 merges | `sindri repo add .` then `sindri index build`; git pre-commit `sindri shape --record` | `index status` fresh; shape signals in the ledger for builder commits | **Calibrates shape thresholds on Sindri's own commits** from P4 onward; flags reinvention while P4/P5 are built | `repo add` for workplace repos (record-only) |
+| Code index, record-only shape signals (P3) | P3 merges | `sindri index setup && sindri index build`, `sindri repo add .`, `sindri scrub --install-pre-commit` (upgrades the hook to v2, which records shape signals), an hourly `sindri index build --quick` and a nightly full build (launchd); a degraded switch-on (embeddings or graph unavailable) is allowed and the PR evidence lists the layers that are down | `index status` fresh; shape signals in the ledger for builder commits | **Calibrates shape thresholds on Sindri's own commits** from P4 onward; flags reinvention while P4/P5 are built | `repo add` for workplace repos (record-only) |
 | Scoping harness (P4) | P4 merges | `sindri scope docs/superpowers/specs/2026-10-07-sindri-design.md --section 13 --out docs/superpowers/scopes/` | Scope map file plus `--backtest` recall on the motivating project | **Scopes every later Sindri plan before it's written:** the plan writer starts from the scope map | Scope new workplace projects at creation |
 | Ported `reflect` / `correct` / `eval` + artifact registry (P5) | P5 merges | `sindri evolve init` (registry over the repo); `reflect` runs on every merged Sindri PR; `correct` weekly | Registry lists every module; first reflect proposal recorded | **The build improves its own tools:** proposals for the skills and hooks used to build Sindri arrive as PRs (human merges) | Same loop over ring-1 artifacts |
 | Shadow triage + dashboard/badge (step 2) | Step-2 plan merges | `sindri dashboard`; SwiftBar badge install | Dashboard shows ring-0 items and what Sindri would do | Visible queue for the remaining build | Shadow on the real tracker |

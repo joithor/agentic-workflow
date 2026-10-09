@@ -19,7 +19,7 @@ Each is also edited into the spec in Task 12.
 1. **The structure layer parses TypeScript and JavaScript with the TypeScript compiler API, not tree-sitter.** Both ring-0 (this repo) and the first ring-1 repo are TypeScript. The compiler API is exact for them, ships with a dependency the repo already has, and needs no native or WASM grammars. Other languages get the graph layer through graphify, which does use tree-sitter. A tree-sitter `Parser` adapter for further languages is a later plan, behind the same `Parser` interface.
 2. **Embeddings call Ollama directly, and the egress control is more than a hostname check.** The Prism route (§6.2 "or Prism with `cloud_fallback:false`") is not built, which keeps one loopback endpoint to verify. The URL must be the IP literal `127.0.0.1` or `[::1]` (not `localhost`, which the resolver can override) with no credentials; requests set `redirect: "error"`; the profile refuses an embedding model whose name contains `cloud` (those models forward text to a remote service). Node's `fetch` ignores `HTTP(S)_PROXY` unless `NODE_USE_ENV_PROXY` is set, and `doctor` warns if it is. A loopback port that is really an SSH or port-forward tunnel is not "this machine"; that residual risk is documented, not detected.
 3. **The graphify layer runs on a snapshot of the tracked files as checked out** (the working tree, copied to a temp dir, minus `index.denyPaths`, and only source and docs extensions), never on the working tree itself, because graphify writes `graphify-out/` into the directory it reads.
-4. **The heavy-job lock is a `mkdir` lock at `$AW_STATE_DIR/locks/heavy`**, compatible with `config/lib/locks.sh` (same primitive, `rmdir` to release). The holder record (kind, pid, host, start time) sits beside it, so the lock dir stays empty for `rmdir`. A lock whose holder names a pid that is dead on this host is reclaimed, and the reclaim is recorded in the next holder's record.
+4. **The heavy-job lock is a `mkdir` lock at `${AW_HEAVY_JOB_LOCK:-$AW_STATE_DIR/locks/heavy-job.lock}`**, compatible with `config/lib/locks.sh` (same primitive, `rmdir` to release). The holder record (kind, pid, host, start time) sits beside it, so the lock dir stays empty for `rmdir`. A lock whose holder names a pid that is dead on this host is reclaimed, and the reclaim is recorded in the next holder's record.
 5. **Shape signals in this plan are record-only and use deterministic layers inside the 2 s commit budget.** The embedding check runs only if the model answers within the remaining budget (the request is aborted at the budget), otherwise it's recorded as `deferred`. The graph layer's reinvention check uses the call sets the TypeScript parser extracts (and graphify's edges for other languages). Nothing blocks a commit until rollout step 3b. The hook opens the ledger read-only and never migrates it.
 6. **Outcome labels are an outcome proxy, not human labels** (spec invariant 9: no hand labeling). Each run records `git write-tree` of the staged index; a reconcile step (in `observe` and `shape report`) maps the tree to the commit that was actually made, and once the commit is `shape.outcomeDays` (default 14) old labels each signal: `dropped` (the commit was never made, was amended, or never reached the default branch), `kept` (the flagged symbol or dependency is still there, unchanged), `acted-on` (it was later changed or removed), or `n/a` (diff size and export count have no flagged symbol). Precision per type and layer is `acted-on / (acted-on + kept)`: "the flagged code was later changed or removed" counts as the signal having been right. That is a proxy: code is also changed for unrelated reasons, and a signal can be right and ignored. The 3b bar (at least 30 labeled signals and precision at least 0.7 per layer) is read from `sindri shape report`.
 7. **Index freshness.** An hourly `sindri index build --quick` refreshes structure, clones and deps (they finish in seconds), and the nightly build refreshes everything. Both read the files as checked out (the working tree), so keep `main` checked out in the indexed checkout; the per-repo bare mirror (created or refreshed by every full `index build`) is the source for a later plan. Each shape run records the index age.
@@ -6109,7 +6109,7 @@ git commit -m "feat: sindri repo add, index setup and doctor index checks"
 - Consumes: everything in Tasks 1–11.
 - Produces: the index documentation and the amended spec. No code.
 
-- [ ] **Step 1: Write `docs/sindri/index.md`**
+- [x] **Step 1: Write `docs/sindri/index.md`**
 
 ````markdown
 # Sindri code index
@@ -6206,7 +6206,7 @@ Each recorded run keeps `git write-tree` of the staged index. `observe` and `sha
 | `sindri-shape: skipped (no index; …)` in a commit | the hook found no index for this repo | `sindri index build` |
 ````
 
-- [ ] **Step 2: Update the other docs and the spec**
+- [x] **Step 2: Update the other docs and the spec**
 
 - `docs/sindri/README.md`: add rows for `sindri index setup|build|status|query`, `sindri repo add`, and `sindri shape --record --staged | report`, and a line under "Where things live" for `$AW_STATE_DIR/sindri/index/<repo>.db`, `…/spool/` and `…/mirrors/<repo>.git`. Link `docs/sindri/index.md`.
 - `AGENTS.md` Commands: add `sindri index setup && sindri index build    # code index (Ollama + graphify, offline)` and `sindri shape report                      # record-only shape signals and their outcomes`.
@@ -6223,7 +6223,7 @@ Each recorded run keeps `git write-tree` of the staged index. `observe` and `sha
   - §10.3 CLI table: `sindri index status` lists every repo (a missing index is a row and exit 1, not an `SND-INDEX-404` abort; `index query` still uses `SND-INDEX-404`); `sindri repo add` edits the profile only, and each full `index build` creates or refreshes the mirror.
   - §13.3 row "Code index, record-only shape signals (P3)": the switch-on is `sindri index setup && sindri index build`, `sindri repo add .`, `sindri scrub --install-pre-commit` (upgrades the hook to v2, which records shape signals), an hourly `sindri index build --quick` and a nightly full build (launchd). A degraded switch-on (embeddings or graph unavailable) is allowed; the PR evidence lists the layers that are down.
 
-- [ ] **Step 3: Run the merge gate, one job at a time**
+- [x] **Step 3: Run the merge gate, one job at a time**
 
 ```bash
 cd sindri && npm run typecheck && npm run test:coverage && cd ..
@@ -6234,7 +6234,7 @@ scripts/sync-rules.sh --check
 
 Expected: no type errors; 100% coverage; installer tests PASS; `sync-rules` exits 0; `SETUP_DRY_RUN_OK`.
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add docs/sindri AGENTS.md .agents/rules/testing.md planning docs/superpowers/specs/2026-10-07-sindri-design.md

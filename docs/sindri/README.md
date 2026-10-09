@@ -2,7 +2,7 @@
 
 Sindri is a local, always-on harness that picks up work, sizes it, starts agent sessions with cited context, keeps them on track and ships them through a fixed recipe. It asks the human only when it has to. Design: `docs/superpowers/specs/2026-10-07-sindri-design.md`.
 
-This package is being built in plans. What exists today (Plan 2):
+This package is being built in plans. What exists today (Plans 2 and 3; the code index is documented in `index.md`):
 
 | Command | What it does |
 |---|---|
@@ -11,6 +11,9 @@ This package is being built in plans. What exists today (Plan 2):
 | `sindri observe [--no-record]` | List open work with sizes and what auto-small would start. Records it in the ledger when the profile is approved and this is the active host |
 | `sindri ledger [--item ID] [--since 7d]` | Show recorded events |
 | `sindri scrub [--staged] [--install-pre-commit [--repo PATH]]` | Redact secrets from stdin, check staged changes, or install the pre-commit hook that refuses secret-shaped strings (in the current repo, or the one `--repo` names) |
+| `sindri index setup \| build \| status \| query` | The code index: set up Ollama, graphify and the sandbox; build it; show its freshness and layers; look up a symbol's clones. See `index.md` |
+| `sindri repo add <path> [--name NAME]` | Add a repo to the profile (then `sindri profile approve`) |
+| `sindri shape --record --staged \| report` | Record shape signals for staged changes (the pre-commit hook runs this); report signals, outcomes and precision. Record-only: nothing blocks a commit |
 | `sindri doctor` | One line per health check, `ok` / `warn` / `fail`, each with a fix |
 
 Every read command takes `--json`. Exit codes: `0` ok, `1` attention needed, `2` error. Errors carry a stable code (`SND-<AREA>-<NNN>`); see `errors.md`.
@@ -35,6 +38,9 @@ sindri observe                            # the remaining Sindri plan tasks, in 
 | `$AW_STATE_DIR/sindri/ledger.db` | The ledger (SQLite, 0600). Schema in `planning/ERD.md` |
 | `$AW_STATE_DIR/sindri/sindri.lock/` | The singleton lock (spec §9.1) |
 | `$AW_STATE_DIR/sindri/profile-approved/<hash>/` | Snapshots of approved profiles. Runtime commands such as `observe` load the latest approval's snapshot, not the live files (spec §8.7); `approve` diffs against it |
+| `$AW_STATE_DIR/sindri/index/<repo>.db` | The code index, one per repo (rebuilt, never migrated). See `index.md` |
+| `$AW_STATE_DIR/sindri/spool/` | Shape-signal files the pre-commit hook writes; the hourly `observe` and `shape report` move them into the ledger |
+| `$AW_STATE_DIR/sindri/mirrors/<repo>.git` | Bare mirror of each indexed repo, made by `index build` (full history, 0700) |
 | `$AW_STATE_DIR/profile` | The profile, or a link to your private profile repo (`--profile` and `AW_PROFILE_DIR` override it) |
 
 `$AW_STATE_DIR` defaults to `~/.agentic-workflow`.
