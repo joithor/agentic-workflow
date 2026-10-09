@@ -47,6 +47,22 @@
       "additionalProperties": false,
       "default": {},
       "description": "Per-repo values that win over profile.yaml"
+    },
+    "index": {
+      "type": "object",
+      "properties": {
+        "denyPaths": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "default": []
+        }
+      },
+      "additionalProperties": false,
+      "default": {},
+      "description": "index.denyPaths for this repo, added to the profile's"
     }
   },
   "required": [

@@ -106,6 +106,19 @@ export function approvalState(deps: Deps, db: Ledger, liveHash: string): Approva
   return { kind: r.value.hash === liveHash ? "approved" : "changed-since-approval", approved: r.value };
 }
 
+// The latest approved snapshot, whether or not the live profile still matches it; null
+// when nothing was approved or its snapshot is missing or invalid.
+export function approvedProfile(deps: Deps, db: Ledger): LoadedProfile | null {
+  const state = approvalState(deps, db, "");
+  return state.kind === "approved" || state.kind === "changed-since-approval" ? state.approved : null;
+}
+
+export function requireApprovedProfile(deps: Deps, db: Ledger): LoadedProfile {
+  const p = approvedProfile(deps, db);
+  if (p === null) throw new SindriError("SND-PROFILE-012", "no approved profile", { fix: "sindri profile approve" });
+  return p;
+}
+
 // One sentence per state that isn't "approved", naming the next step.
 export function approvalProblem(state: Exclude<ApprovalState, { kind: "approved" }>, liveHash: string): string {
   const live = liveHash.slice(0, 12);

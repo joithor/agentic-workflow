@@ -173,9 +173,117 @@ erDiagram
         TEXT cursor
         TEXT updated_at
     }
+    shape_runs {
+        TEXT run_id PK "ulid"
+        TEXT repo "NOT NULL"
+        TEXT ts "ISO-8601"
+        TEXT head "HEAD at record time, NULLABLE"
+        TEXT tree "git write-tree of the staged index, NULLABLE"
+        TEXT commit_sha "set by reconcile once a commit with that tree is found, NULLABLE"
+        INTEGER elapsed_ms
+        INTEGER index_age_ms "NULLABLE"
+        TEXT providers "JSON: layer status at record time"
+        TEXT parser "parse-ts@<INDEXER_VERSION>+ts<typescript version> that computed the AST hashes"
+        TEXT deferred "JSON: checks skipped over the commit budget"
+        INTEGER signal_count
+        INTEGER epoch
+        TEXT closed_at "set when a run is still unlinked at shape.outcomeDays: never links later, NULLABLE"
+    }
+    shape_signals {
+        INTEGER seq PK
+        TEXT run_id FK "references shape_runs(run_id)"
+        TEXT type "e.g. reinvented:exact"
+        TEXT layer
+        REAL value
+        REAL threshold
+        TEXT at "file:line"
+        TEXT existing "the matching existing symbol, NULLABLE"
+        TEXT detail "scrubbed, names fenced as untrusted"
+        TEXT name "flagged symbol or dependency, NULLABLE"
+        TEXT ast_hash "flagged symbol hash, NULLABLE"
+        TEXT outcome "kept | acted-on | dropped | n/a, NULLABLE until labeled"
+        TEXT labeled_at "ISO-8601, NULLABLE"
+        INTEGER epoch
+    }
     items ||--o{ item_events : "has"
+    shape_runs ||--o{ shape_signals : "records"
 ```
 
 Items are keyed by `(source, id)`: an item id is unique only within its tracker source, so two repos with a same-named plan file never share a row, and `markMissing` closes only its own source's items. `item_events` references that composite key.
 
 Every write runs inside `withEpoch(db, epoch, …)` or `fenced(db, epoch, …)`, an `IMMEDIATE` transaction that rejects a stale epoch (spec §9.1): `withEpoch` throws `SND-LOCK-003`, and `fenced` returns `{ ok: false }` so `observe` can stop as a no-op. Re-approving a profile deletes and re-inserts its `profile_approvals` row, so a rollback becomes the latest approval.
+
+Ledger v2 adds `shape_runs` and `shape_signals` (record-only shape signals; outcomes are labeled by tree reconcile once a commit is `shape.outcomeDays` old). The v1 to v2 migration keeps all rows and leaves `ledger.db.bak-v1`. Indexes: `shape_runs_pending (commit_sha, closed_at, ts)` for the runs waiting for a commit, `shape_runs_tree (repo, tree, parser, ts, run_id)` for the one-run-per-staged-tree rule, and `shape_signals_type`, `shape_signals_run`.
+
+## Sindri code index
+
+`$AW_STATE_DIR/sindri/index/<repo>.db`, one SQLite file per repo (schema: `sindri/src/index/db.ts`). It is derived data: a different `user_version` is rebuilt, not migrated, and a build writes a temp copy and renames it over the old file.
+
+```mermaid
+erDiagram
+    meta {
+        TEXT key PK
+        TEXT value "NOT NULL"
+    }
+    layers {
+        TEXT layer PK "structure | clones | deps | embeddings | graph"
+        TEXT stamp "version stamp: indexer, model, graphify, commit"
+        TEXT status "ok | unavailable | disabled | pending"
+        TEXT detail "reason when not ok"
+        TEXT built_at "ISO-8601"
+    }
+    files {
+        TEXT path PK
+        TEXT hash "NOT NULL"
+        INTEGER size
+    }
+    symbols {
+        INTEGER id PK
+        TEXT file FK "references files(path)"
+        TEXT name
+        TEXT kind
+        INTEGER start_line
+        INTEGER end_line
+        INTEGER exported
+        INTEGER utility
+        TEXT signature
+        TEXT ast_hash "normalized AST hash"
+        INTEGER token_count
+        INTEGER complexity
+        TEXT callees "JSON"
+        BLOB minhash
+        TEXT body "scrubbed"
+    }
+    bands {
+        TEXT key "LSH band key"
+        INTEGER symbol_id FK "references symbols(id)"
+    }
+    deps {
+        TEXT manifest PK
+        TEXT name PK
+        TEXT version
+        TEXT kind
+        TEXT tags "purpose tags, JSON"
+    }
+    embeddings {
+        INTEGER symbol_id PK "references symbols(id)"
+        TEXT model
+        BLOB vector
+    }
+    graph_nodes {
+        TEXT id PK
+        TEXT file "NULLABLE"
+        TEXT name "NULLABLE"
+        INTEGER line "NULLABLE"
+    }
+    graph_edges {
+        TEXT src
+        TEXT dst
+        TEXT relation
+        TEXT confidence
+    }
+    files ||--o{ symbols : "contains"
+    symbols ||--o{ bands : "has"
+    symbols ||--o| embeddings : "has"
+    graph_nodes ||--o{ graph_edges : "src, dst"
+```

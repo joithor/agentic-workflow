@@ -2,6 +2,9 @@ import { createRequire } from "node:module";
 
 import type { Deps } from "./deps.js";
 import { doctorCommand } from "./doctor/doctor.js";
+import { makeIndexCommand } from "./index/commands.js";
+import { repoCommand } from "./index/repo-add.js";
+import { makeShapeCommand } from "./index/shape.js";
 import { ledgerCommand, observeCommand } from "./observe/observe.js";
 import { profileCommand } from "./profile/commands.js";
 import { failure, success, type CommandResult } from "./output.js";
@@ -40,6 +43,32 @@ export const COMMANDS: Record<string, CommandDef> = {
     run: scrubCommand,
   },
   doctor: { summary: "Health checks, one line each: ok / warn / fail plus a fix", usage: "Usage: sindri doctor [--json]", run: doctorCommand },
+  index: {
+    summary: "Build and inspect the per-repo code index",
+    usage: [
+      "Usage:",
+      "  sindri index build [--repo NAME] [--quick] [--full] [--json]",
+      "  sindri index status [--repo NAME] [--json]   (exit 1 when an index is missing or stale)",
+      "  sindri index query <name> [--repo NAME] [--json]",
+      "  sindri index setup [--dry-run] [--json]",
+    ].join("\n"),
+    run: (args, deps) => makeIndexCommand(deps.io)(args, deps),
+  },
+  repo: {
+    summary: "Add a repo to the profile (then sindri profile approve)",
+    usage: "Usage:\n  sindri repo add <path> [--name NAME] [--json]",
+    run: repoCommand,
+  },
+  shape: {
+    summary: "Record shape signals for staged changes (pre-commit), report them, or reconcile their outcomes",
+    usage: [
+      "Usage:",
+      "  sindri shape --record --staged [--repo NAME] [--size XS|S|M|L|XL]   (always exits 0)",
+      "  sindri shape report [--recent N] [--json]   (read-only)",
+      "  sindri shape reconcile [--json]   (ingest the spool and label outcomes; observe does this hourly)",
+    ].join("\n"),
+    run: (args, deps) => makeShapeCommand(deps.io)(args, deps),
+  },
   ledger: { summary: "Show ledger events", usage: "Usage: sindri ledger [--item ID] [--since 7d|12h] [--json]", run: ledgerCommand },
 };
 

@@ -1,0 +1,17 @@
+{
+  "directed": false,
+  "multigraph": false,
+  "graph": {},
+  "nodes": [
+    { "id": "a_ts", "label": "a.ts", "source_file": "/snapshot/a.ts", "source_location": "L1", "file_type": "code" },
+    { "id": "a_ts_a", "label": "a()", "source_file": "/snapshot/a.ts", "source_location": "L1", "file_type": "code" },
+    { "id": "b_ts", "label": "b.ts", "source_file": "/snapshot/b.ts", "source_location": "L1", "file_type": "code" },
+    { "id": "b_ts_b", "label": "b()", "source_file": "/snapshot/b.ts", "source_location": "L1", "file_type": "code" }
+  ],
+  "links": [
+    { "source": "a_ts", "target": "a_ts_a", "relation": "contains", "confidence": "EXTRACTED" },
+    { "source": "b_ts", "target": "b_ts_b", "relation": "contains", "confidence": "EXTRACTED" },
+    { "source": "a_ts_a", "target": "b_ts_b", "relation": "calls", "confidence": "EXTRACTED" },
+    { "source": "a_ts", "target": "b_ts", "relation": "imports", "confidence": "EXTRACTED" }
+  ]
+}

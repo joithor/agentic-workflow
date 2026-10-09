@@ -89,9 +89,13 @@ test_launchd_bootstrap_failure_warns_and_continues() {
   skip_unless_darwin test_launchd_bootstrap_failure_warns_and_continues && return 0
   run_launchd_install fail
   [ "$RUN_RC" = 0 ] || { echo "FAIL: installer exited $RUN_RC on bootstrap failure: $RUN_OUT"; exit 1; }
-  grep -q 'WARN: could not load com.agentic-workflow.sindri-observe; run: launchctl bootstrap gui/' <<<"$RUN_OUT" || { echo "FAIL: WARN line missing: $RUN_OUT"; exit 1; }
+  local name
+  for name in sindri-observe sindri-index-quick sindri-index; do
+    grep -q "WARN: could not load com.agentic-workflow.$name; run: launchctl bootstrap gui/" <<<"$RUN_OUT" || { echo "FAIL: WARN line missing for $name: $RUN_OUT"; exit 1; }
+  done
   ! grep -q 'hourly observe (launchd' <<<"$RUN_OUT" || { echo "FAIL: success line printed after a failed load"; exit 1; }
-  [ "$(grep -c '^bootstrap' "$STUB_LOG")" = 2 ] || { echo "FAIL: bootstrap not retried once"; exit 1; }
+  # Three jobs (observe, quick index, full index), each tried twice.
+  [ "$(grep -c '^bootstrap' "$STUB_LOG")" = 6 ] || { echo "FAIL: bootstrap not retried once per job"; exit 1; }
   echo "PASS: test_launchd_bootstrap_failure_warns_and_continues"
 }
 
@@ -104,6 +108,51 @@ test_launchd_refuses_unsafe_bin_path() {
   echo "PASS: test_launchd_refuses_unsafe_bin_path"
 }
 
+test_index_jobs() {
+  local launchd="$ROOT/config/launchd"
+  local name plist
+  for name in sindri-observe sindri-index sindri-index-quick; do
+    plist="$launchd/com.agentic-workflow.$name.plist"
+    [ -f "$plist" ] || { echo "FAIL: $plist missing"; exit 1; }
+    if command -v plutil >/dev/null 2>&1; then plutil -lint "$plist" >/dev/null || { echo "FAIL: $name plist invalid"; exit 1; }; fi
+    grep -q '<string>__BIN__/sindri</string>' "$plist" || { echo "FAIL: $name command missing"; exit 1; }
+    grep -q '<key>EnvironmentVariables</key>' "$plist" && grep -q '<string>__BIN__:__HOME__/.local/bin:/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin</string>' "$plist" || { echo "FAIL: $name has no PATH (launchd's default has no uv or Homebrew)"; exit 1; }
+    # Exact: "sindri-index" must not be satisfied by "sindri-index-quick".
+    grep -qE "com\.agentic-workflow\.$name(\||\.plist)" "$ROOT/scripts/install-sindri.sh" || { echo "FAIL: installer does not install $name"; exit 1; }
+    sed -e "s|__HOME__|/h|g" -e "s|__BIN__|/b|g" "$plist" | grep -q '__' && { echo "FAIL: $name has a placeholder the installer does not substitute"; exit 1; }
+  done
+  grep -q '<string>--quick</string>' "$launchd/com.agentic-workflow.sindri-index-quick.plist" && grep -q '<integer>3600</integer>' "$launchd/com.agentic-workflow.sindri-index-quick.plist" || { echo "FAIL: the quick job is not an hourly --quick build"; exit 1; }
+  grep -q '<key>Hour</key>' "$launchd/com.agentic-workflow.sindri-index.plist" || { echo "FAIL: the full build is not nightly"; exit 1; }
+  if grep -q -- '--quick' "$launchd/com.agentic-workflow.sindri-index.plist"; then echo "FAIL: the nightly build is quick"; exit 1; fi
+  # Heavy jobs run at background priority, so they never compete with the interactive session.
+  for name in sindri-index sindri-index-quick; do
+    plist="$launchd/com.agentic-workflow.$name.plist"
+    tr -d ' \n' < "$plist" | grep -q '<key>ProcessType</key><string>Background</string>' || { echo "FAIL: $name is not ProcessType Background"; exit 1; }
+    tr -d ' \n' < "$plist" | grep -q '<key>Nice</key><integer>10</integer>' || { echo "FAIL: $name is not Nice 10"; exit 1; }
+    tr -d ' \n' < "$plist" | grep -q '<key>LowPriorityIO</key><true/>' || { echo "FAIL: $name is not LowPriorityIO"; exit 1; }
+  done
+  # Each index job has its own log, so one job's failure isn't read as the other's.
+  [ "$(grep -c '<string>__HOME__/.agentic-workflow/sindri/index-quick-launchd.log</string>' "$launchd/com.agentic-workflow.sindri-index-quick.plist")" = 2 ] || { echo "FAIL: the quick job does not log to index-quick-launchd.log"; exit 1; }
+  [ "$(grep -c '<string>__HOME__/.agentic-workflow/sindri/index-launchd.log</string>' "$launchd/com.agentic-workflow.sindri-index.plist")" = 2 ] || { echo "FAIL: the nightly job does not log to index-launchd.log"; exit 1; }
+  echo "PASS: test_index_jobs"
+}
+
+test_launchd_installs_every_job() {
+  skip_unless_darwin test_launchd_installs_every_job && return 0
+  run_launchd_install ok
+  [ "$RUN_RC" = 0 ] || { echo "FAIL: installer exited $RUN_RC: $RUN_OUT"; exit 1; }
+  local name plist
+  for name in sindri-observe sindri-index-quick sindri-index; do
+    plist="$SCRATCH/home/Library/LaunchAgents/com.agentic-workflow.$name.plist"
+    [ -f "$plist" ] || { echo "FAIL: $name plist not written under scratch HOME"; exit 1; }
+    ! grep -qE '__HOME__|__BIN__' "$plist" || { echo "FAIL: $name plist has unsubstituted placeholders"; exit 1; }
+    grep -q "<string>$SCRATCH/bin:$SCRATCH/home/.local/bin:" "$plist" || { echo "FAIL: $name plist PATH not substituted"; exit 1; }
+    grep -q "^bootstrap gui/.*$plist\$" "$STUB_LOG" || { echo "FAIL: $name not bootstrapped"; exit 1; }
+    grep -q "launchd com.agentic-workflow.$name)" <<<"$RUN_OUT" || { echo "FAIL: no success line for $name"; exit 1; }
+  done
+  echo "PASS: test_launchd_installs_every_job"
+}
+
 test_dry_run_writes_nothing
 test_wrapper_execs_the_built_cli
 test_setup_has_opt_in_flag
@@ -112,3 +161,5 @@ test_guard_proof_uses_a_scratch_repo
 test_launchd_install_writes_and_loads_plist
 test_launchd_bootstrap_failure_warns_and_continues
 test_launchd_refuses_unsafe_bin_path
+test_index_jobs
+test_launchd_installs_every_job

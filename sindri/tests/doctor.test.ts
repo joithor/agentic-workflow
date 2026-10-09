@@ -4,13 +4,21 @@ import path from "node:path";
 import Database from "better-sqlite3";
 import { describe, expect, it } from "vitest";
 
-import { stateDir, type Deps } from "../src/deps.js";
+import { awStateDir, stateDir, type Deps } from "../src/deps.js";
 import { LEDGER_SCHEMA_VERSION } from "../src/ledger/db.js";
 import { runChecks } from "../src/doctor/doctor.js";
+import { makeIndexCommand } from "../src/index/commands.js";
+import { indexPath, openIndex } from "../src/index/db.js";
+import { heavyLockDir } from "../src/index/heavy-lock.js";
+import type { IndexProbes } from "../src/index/io.js";
+import { GRAPHIFY_PIN } from "../src/index/pins.js";
 import { runCli } from "../src/main.js";
 import { fakeSystem, makeDeps, tempDir } from "./helpers.js";
+import { approvedIndexDeps, BODY, fakeIndexIo, ring0Name, ring0Repo } from "./index-fixtures.js";
 
-const byName = async (deps: Deps, node = "22.10.0") => Object.fromEntries((await runChecks(deps, node)).map((c) => [c.name, c]));
+// Plan 2's tests never touch the machine's Ollama or graphify: nothing is installed, nothing answers.
+const offline: IndexProbes = { has: () => false, run: async () => ({ code: 127, stdout: "", stderr: "" }), getJson: async () => null };
+const byName = async (deps: Deps, node = "22.10.0") => Object.fromEntries((await runChecks(deps, node, offline)).map((c) => [c.name, c]));
 
 async function ring0Deps(): Promise<Deps> {
   const root = tempDir("sindri-doc-");
@@ -18,6 +26,7 @@ async function ring0Deps(): Promise<Deps> {
   execFileSync("git", ["init", "-q"], { cwd: root });
   const d = makeDeps({ cwd: root });
   await runCli(["profile", "init", "--ring0"], d);
+  fs.appendFileSync(path.join(d.env.AW_STATE_DIR as string, "profile", "profile.yaml"), "index:\n  embeddings:\n    enabled: false\n  graph: none\n");
   return d;
 }
 
@@ -42,6 +51,7 @@ describe("sindri doctor", () => {
     const hash = JSON.parse((await runCli(["profile", "approve", "--json"], d)).stdout).hash as string;
     await runCli(["profile", "approve", hash], { ...d, isTTY: true, prompt: async () => hash.slice(0, 6) });
     await runCli(["scrub", "--install-pre-commit"], d);
+    await makeIndexCommand(fakeIndexIo())(["build"], d);
     const r = await runCli(["doctor"], d);
     expect(r.stdout).not.toMatch(/^(warn|fail)/m);
     expect(r.exitCode).toBe(0);
@@ -134,6 +144,30 @@ describe("sindri doctor coverage paths", () => {
     expect(hook?.detail).toContain(process.execPath);
   });
 
+  it("warns on a v1 hook (secret scan only) and a v2 hook without the shape step, while shape.record is on", async () => {
+    const d = await ring0Deps();
+    await runCli(["scrub", "--install-pre-commit"], { ...d, env: { ...d.env, SINDRI_BIN: process.execPath } });
+    const file = path.join(d.cwd, ".git", "hooks", "pre-commit");
+    const v2 = fs.readFileSync(file, "utf8");
+    const hookCheck = async (deps: Deps) => Object.entries(await byName(deps)).find(([k]) => k.startsWith("pre-commit:"))?.[1];
+    fs.writeFileSync(file, v2.replace("# sindri-pre-commit v2", "# sindri-scrub-pre-commit v1").replace(/^"\$SINDRI" shape.*$/m, ""));
+    expect(await hookCheck(d)).toMatchObject({ status: "warn", detail: "hook is v1: secret scan only, no shape recording", fix: `sindri scrub --install-pre-commit --repo ${fs.realpathSync(d.cwd)}` });
+    fs.writeFileSync(file, v2.replace(/^"\$SINDRI" shape.*$/m, ""));
+    expect(await hookCheck(d)).toMatchObject({ status: "warn", detail: "hook doesn't run sindri shape --record (shape.record is on)" });
+    fs.appendFileSync(path.join(d.env.AW_STATE_DIR as string, "profile", "profile.yaml"), "shape:\n  record: false\n");
+    expect((await hookCheck(d))?.status).toBe("ok");
+  });
+
+  it("warns when shape runs wait in the spool's quarantine", async () => {
+    const d = await ring0Deps();
+    expect((await byName(d))["shape-spool"]).toBeUndefined();
+    const q = path.join(stateDir(d), "spool", "quarantine");
+    fs.mkdirSync(q, { recursive: true });
+    expect((await byName(d))["shape-spool"]).toBeUndefined();
+    fs.writeFileSync(path.join(q, "shape-x.json"), "{");
+    expect((await byName(d))["shape-spool"]).toMatchObject({ status: "warn", detail: `1 quarantined shape run(s) in ${q}`, fix: `inspect, then remove ${q}` });
+  });
+
   it("fails on an unreadable ledger with no error code, and does not touch it", async () => {
     const d = await ring0Deps();
     const file = path.join(stateDir(d), "ledger.db");
@@ -208,5 +242,116 @@ describe("sindri doctor lock and read-only guarantees", () => {
     expect(fs.statSync(file).mode & 0o777).toBe(0o644);
     expect(fs.readdirSync(dir).sort()).toEqual(before);
     expect(fs.readFileSync(file).equals(bytes)).toBe(true);
+  });
+});
+
+function probes(o: { models?: unknown; graphify?: string; graphifyCode?: number; has?: (b: string) => boolean } = {}): IndexProbes {
+  return {
+    has: o.has ?? (() => true),
+    getJson: async () => (o.models === undefined ? { models: [{ name: "nomic-embed-text:latest" }] } : o.models),
+    run: async () => ({ code: o.graphifyCode ?? 0, stdout: `graphify ${o.graphify ?? GRAPHIFY_PIN}\n`, stderr: "" }),
+  };
+}
+const checks = async (deps: Deps, p: IndexProbes) => Object.fromEntries((await runChecks(deps, "22.10.0", p)).map((c) => [c.name, c]));
+
+describe("doctor index checks", () => {
+  it("asks the probes on Deps, never the machine's, by default and through runCli", async () => {
+    const d = await approvedIndexDeps(ring0Repo({ "src/a.ts": "export const a = 1;\n" }), { index: "index:\n  utilityGlobs: []\n" });
+    const asked: string[] = [];
+    const none: IndexProbes = { ...offline, has: (b) => (asked.push(b), false) };
+    const byDefault = Object.fromEntries((await runChecks({ ...d, io: fakeIndexIo({ probes: none }) }, "22.10.0")).map((c) => [c.name, c]));
+    expect(byDefault.graphify).toMatchObject({ status: "warn", detail: "no network sandbox" });
+    expect(asked).toContain("/usr/bin/sandbox-exec");
+    const viaCli = JSON.parse((await runCli(["doctor", "--json"], { ...d, io: fakeIndexIo({ probes: probes() }) })).stdout) as { name: string; detail: string }[];
+    expect(viaCli.find((c) => c.name === "graphify")?.detail).toBe(`${GRAPHIFY_PIN}, sandboxed`);
+  });
+
+  it("warns on a missing index, and checks embeddings, graphify (exact pin, sandboxed) and the proxy", async () => {
+    const d = await approvedIndexDeps(ring0Repo({ "src/a.ts": "export const a = 1;\n" }), { index: "index:\n  utilityGlobs: []\n" });
+    const name = ring0Name(d);
+    const good = await checks(d, probes());
+    expect(good[`index:${name}`]).toMatchObject({ status: "warn", detail: "no index", fix: `sindri index build --repo ${name}` });
+    expect(good.embeddings).toMatchObject({ status: "ok", detail: "nomic-embed-text on http://127.0.0.1:11434" });
+    expect(good.graphify).toMatchObject({ status: "ok", detail: `${GRAPHIFY_PIN}, sandboxed` });
+    expect(good["embedding-proxy"]).toBeUndefined();
+    expect((await checks(d, probes({ models: null }))).embeddings).toMatchObject({ status: "warn", detail: "Ollama not answering on loopback", fix: "sindri index setup" });
+    expect((await checks(d, probes({ models: { models: [] } }))).embeddings).toMatchObject({ status: "warn", detail: "model nomic-embed-text not pulled" });
+    expect((await checks(d, probes({ has: (b) => b !== "graphify" }))).graphify).toMatchObject({ status: "warn", detail: `not installed at ${GRAPHIFY_PIN}`, fix: "sindri index setup" });
+    expect((await checks(d, probes({ graphifyCode: 1 }))).graphify.detail).toBe(`not installed at ${GRAPHIFY_PIN}`);
+    expect((await checks(d, probes({ graphify: "0.0.1" }))).graphify.detail).toBe(`not installed at ${GRAPHIFY_PIN} (found 0.0.1)`);
+    expect((await checks(d, probes({ graphify: `${GRAPHIFY_PIN}0` }))).graphify.detail).toBe(`not installed at ${GRAPHIFY_PIN} (found ${GRAPHIFY_PIN}0)`);
+    const noBox = await checks({ ...d, system: fakeSystem({ platform: "linux" }) }, probes({ has: (b) => !b.endsWith("/bwrap") }));
+    expect(noBox.graphify).toMatchObject({ status: "warn", detail: "no network sandbox" });
+    const proxied = await checks({ ...d, env: { ...d.env, NODE_USE_ENV_PROXY: "1" } }, probes());
+    expect(proxied["embedding-proxy"]).toMatchObject({ status: "warn", fix: "unset NODE_USE_ENV_PROXY for sindri" });
+  });
+
+  it("reports a built index as ok, a stale or never-built one, and layers that are unavailable or pending", async () => {
+    const d = await approvedIndexDeps(ring0Repo({ "src/a.ts": "export const a = 1;\n" }));
+    const name = ring0Name(d);
+    await makeIndexCommand(fakeIndexIo())(["build", "--repo", name], d);
+    const off = await checks(d, offline);
+    expect(off[`index:${name}`]).toMatchObject({ status: "ok", detail: "built 0 h ago" });
+    expect(off.embeddings).toMatchObject({ status: "ok", detail: "off (index.embeddings.enabled: false)" });
+    expect(off.graphify).toMatchObject({ status: "ok", detail: "off (index.graph: none)" });
+    const later = { ...d, now: () => new Date(d.now().getTime() + 48 * 3_600_000) };
+    expect((await checks(later, offline))[`index:${name}`]).toMatchObject({ status: "warn", detail: "stale (built 48 h ago)" });
+    fs.rmSync(indexPath(d, name));
+    openIndex(indexPath(d, name)).close();
+    expect((await checks(d, offline))[`index:${name}`]).toMatchObject({ status: "warn", detail: "never built" });
+
+    // A function, so there is a symbol to embed and the unreachable server makes the layer unavailable.
+    const on = await approvedIndexDeps(ring0Repo({ "src/a.ts": BODY("a") }), { index: "index:\n  graph: none\n" });
+    await makeIndexCommand(fakeIndexIo())(["build", "--repo", ring0Name(on)], on);
+    expect((await checks(on, offline))[`index:${ring0Name(on)}`]).toMatchObject({
+      status: "warn", detail: "embeddings unavailable: embedding server unreachable: connect ECONNREFUSED", fix: "sindri index setup",
+    });
+    await makeIndexCommand(fakeIndexIo())(["build", "--quick", "--full", "--repo", ring0Name(on)], on);
+    expect((await checks(on, offline))[`index:${ring0Name(on)}`].detail).toBe("embeddings pending: not built yet (sindri index build); graph pending: not built yet (sindri index build)");
+  });
+
+  it("reports the heavy-job lock: free, held, and stuck for over 6 hours", async () => {
+    const base = await approvedIndexDeps(ring0Repo({ "src/a.ts": "export const a = 1;\n" }));
+    // The default lock dir, then $AW_HEAVY_JOB_LOCK (the path config/lib/locks.sh callers share).
+    for (const d of [base, { ...base, env: { ...base.env, AW_HEAVY_JOB_LOCK: path.join(tempDir("sindri-heavy-"), "shared.lock") } }]) {
+      const dir = heavyLockDir(awStateDir(d), d.env);
+      const holderFile = `${dir}.holder.json`;
+      const hold = (age: number, holder: object | null): void => {
+        fs.rmSync(holderFile, { force: true });
+        fs.rmSync(dir, { recursive: true, force: true });
+        fs.mkdirSync(dir, { recursive: true });
+        const t = new Date(d.now().getTime() - age * 3_600_000);
+        fs.utimesSync(dir, t, t);
+        if (holder !== null) fs.writeFileSync(holderFile, JSON.stringify(holder));
+      };
+      const lock = async () => (await checks(d, offline))["heavy-lock"];
+      expect(await lock()).toMatchObject({ status: "ok", detail: "free" });
+      hold(1, null);
+      expect(await lock()).toMatchObject({ status: "ok", detail: "held by an unknown job" });
+      hold(1, { kind: "index-build", pid: 7, host: "other", startedAt: "t" });
+      expect(await lock()).toMatchObject({ status: "ok", detail: "held by index-build" });
+      hold(7, null);
+      expect(await lock()).toMatchObject({ status: "warn", detail: "held for over 6 h", fix: `if that process is gone: rmdir ${dir} && rm -f ${holderFile}` });
+      hold(7, { kind: "index-build", pid: 7, host: "other", startedAt: "t" });
+      expect((await lock()).detail).toBe("held for over 6 h by index-build (pid 7)");
+      fs.rmSync(holderFile, { force: true });
+      fs.rmdirSync(dir);
+    }
+    expect(fs.existsSync(heavyLockDir(awStateDir(base), base.env))).toBe(false);
+  });
+
+  it("warns when Node would route loopback embedding traffic through an env proxy", async () => {
+    const d = await approvedIndexDeps(ring0Repo({ "src/a.ts": "export const a = 1;\n" }), { index: "index:\n  graph: none\n" });
+    const proxy = async (env: NodeJS.ProcessEnv) => (await checks({ ...d, env: { ...d.env, ...env } }, probes()))["embedding-proxy"];
+    expect(await proxy({ NODE_USE_ENV_PROXY: "1" })).toMatchObject({
+      status: "warn", detail: "NODE_USE_ENV_PROXY is set, so Node may send the embedding request through a proxy", fix: "unset NODE_USE_ENV_PROXY for sindri",
+    });
+    expect(await proxy({ NODE_USE_ENV_PROXY: "1", HTTP_PROXY: "http://proxy.invalid:3128", https_proxy: "http://proxy.invalid:3128" })).toMatchObject({
+      status: "warn", detail: "NODE_USE_ENV_PROXY is set, so HTTP_PROXY, https_proxy then apply to loopback embedding traffic",
+    });
+    expect(await proxy({ NODE_OPTIONS: "--max-old-space-size=4096 --use-env-proxy", HTTPS_PROXY: "http://proxy.invalid:3128" })).toMatchObject({
+      status: "warn", detail: "NODE_OPTIONS has --use-env-proxy, so HTTPS_PROXY then apply to loopback embedding traffic", fix: "remove --use-env-proxy from NODE_OPTIONS for sindri",
+    });
+    expect(await proxy({ NODE_USE_ENV_PROXY: "", NODE_OPTIONS: "--max-old-space-size=4096", HTTP_PROXY: "http://proxy.invalid:3128" })).toBeUndefined();
   });
 });

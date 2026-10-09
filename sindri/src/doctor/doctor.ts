@@ -2,15 +2,23 @@ import fs from "node:fs";
 import path from "node:path";
 
 import { parseFlags } from "../args.js";
-import { stateDir, type Deps } from "../deps.js";
+import { awStateDir, stateDir, type Deps } from "../deps.js";
 import { SindriError } from "../errors.js";
+import { indexPath, layers, meta, openIndexReadOnly } from "../index/db.js";
+import { heavyLockDir, heavyLockState } from "../index/heavy-lock.js";
+import type { IndexProbes } from "../index/io.js";
+import { GRAPHIFY_PIN } from "../index/pins.js";
+import { hasModel, installedGraphify, sandboxedVersionArgv, tagsUrl } from "../index/setup.js";
 import { LEDGER_SCHEMA_VERSION, ledgerPath, readLedger, schemaVersion } from "../ledger/db.js";
 import { inspectLock } from "../lock/lock.js";
 import type { Command } from "../main.js";
 import { fromError, success, type ExitCode } from "../output.js";
 import { approvalProblem, approvalState, type ApprovalState } from "../profile/approve.js";
 import { loadProfile, resolveProfileRoot, type LoadedProfile } from "../profile/load.js";
-import { hookBinary, preCommitPath, PRE_COMMIT_MARKER } from "../scrub/commands.js";
+import { spoolDir } from "../index/spool.js";
+import { hookBinary, isSindriHook, PRE_COMMIT_MARKER, preCommitPath } from "../scrub/commands.js";
+
+const lines = (text: string): string[] => text.split("\n");
 
 function isExecutable(p: string): boolean {
   try {
@@ -83,7 +91,7 @@ function approvedCheck(deps: Deps, loaded: LoadedProfile): { check: Check; state
   return { check: { name: "profile-approved", status: "warn", detail: approvalProblem(state, loaded.hash), fix: "sindri profile approve" }, state };
 }
 
-async function profileChecks(deps: Deps, loaded: LoadedProfile): Promise<Check[]> {
+async function profileChecks(deps: Deps, loaded: LoadedProfile): Promise<{ checks: Check[]; used: LoadedProfile }> {
   const { check, state } = approvedCheck(deps, loaded);
   // Spec §8.7: runs use the approved snapshot, so the checks below read it when there
   // is one; the live profile only when nothing usable is approved yet.
@@ -111,16 +119,96 @@ async function profileChecks(deps: Deps, loaded: LoadedProfile): Promise<Check[]
   for (const [name, repo] of Object.entries(used.repos)) {
     const hook = await preCommitPath(deps.git, repo.path);
     const text = hook !== null && fs.existsSync(hook) ? fs.readFileSync(hook, "utf8") : "";
-    const bin = text.includes(PRE_COMMIT_MARKER) ? hookBinary(text) : null;
+    const bin = isSindriHook(text) ? hookBinary(text) : null;
     const fix = `sindri scrub --install-pre-commit --repo ${repo.path}`;
     if (bin === null) out.push({ name: `pre-commit:${name}`, status: "warn", detail: "secret-scan hook not installed", fix });
     else if (path.isAbsolute(bin) && !isExecutable(bin)) out.push({ name: `pre-commit:${name}`, status: "warn", detail: `hook calls ${bin}, which is missing, so every commit is refused`, fix: `scripts/install-sindri.sh, then ${fix}` });
-    else out.push({ name: `pre-commit:${name}`, status: "ok", detail: `${hook} → ${bin}` });
+    // A v1 hook (Plan 2) runs the secret scan only; a hand-merged v2 hook may lack the shape step.
+    else if (!lines(text).includes(PRE_COMMIT_MARKER)) out.push({ name: `pre-commit:${name}`, status: "warn", detail: "hook is v1: secret scan only, no shape recording", fix });
+    else if (used.profile.shape.record && !lines(text).some((l) => l.startsWith('"$SINDRI" shape --record'))) {
+      out.push({ name: `pre-commit:${name}`, status: "warn", detail: "hook doesn't run sindri shape --record (shape.record is on)", fix });
+    } else out.push({ name: `pre-commit:${name}`, status: "ok", detail: `${hook} → ${bin}` });
   }
+  // Spool files the ledger refused (unreadable or malformed) wait in quarantine/ for a look.
+  const quarantine = path.join(spoolDir(deps), "quarantine");
+  const held = fs.existsSync(quarantine) ? fs.readdirSync(quarantine).length : 0;
+  if (held > 0) out.push({ name: "shape-spool", status: "warn", detail: `${held} quarantined shape run(s) in ${quarantine}`, fix: `inspect, then remove ${quarantine}` });
+  return { checks: out, used };
+}
+
+const PROXY_VARS = ["HTTP_PROXY", "HTTPS_PROXY", "http_proxy", "https_proxy"] as const;
+
+// Node's fetch ignores HTTP(S)_PROXY unless NODE_USE_ENV_PROXY or --use-env-proxy turns that on;
+// then even the loopback embedding request can go through a proxy.
+function proxyCheck(env: NodeJS.ProcessEnv): Check | null {
+  const byVar = (env.NODE_USE_ENV_PROXY ?? "") !== "";
+  const byOption = (env.NODE_OPTIONS ?? "").split(/\s+/).includes("--use-env-proxy");
+  if (!byVar && !byOption) return null;
+  const source = byVar ? "NODE_USE_ENV_PROXY is set" : "NODE_OPTIONS has --use-env-proxy";
+  const proxies = PROXY_VARS.filter((k) => (env[k] ?? "") !== "");
+  const detail = proxies.length === 0 ? `${source}, so Node may send the embedding request through a proxy` : `${source}, so ${proxies.join(", ")} then apply to loopback embedding traffic`;
+  const fix = [...(byVar ? ["unset NODE_USE_ENV_PROXY"] : []), ...(byOption ? ["remove --use-env-proxy from NODE_OPTIONS"] : [])].join(" and ");
+  return { name: "embedding-proxy", status: "warn", detail, fix: `${fix} for sindri` };
+}
+
+async function indexChecks(deps: Deps, loaded: LoadedProfile, probes: IndexProbes): Promise<Check[]> {
+  const out: Check[] = [];
+  const ix = loaded.profile.index;
+  for (const repo of Object.keys(loaded.repos).sort()) {
+    const db = openIndexReadOnly(indexPath(deps, repo));
+    if (db === null) {
+      out.push({ name: `index:${repo}`, status: "warn", detail: "no index", fix: `sindri index build --repo ${repo}` });
+      continue;
+    }
+    const m = meta(db);
+    const down = layers(db).filter((l) => l.status === "unavailable" || l.status === "pending");
+    db.close();
+    const ageH = m.builtAt === null ? null : (deps.now().getTime() - Date.parse(m.builtAt)) / 3_600_000;
+    const rebuild = `sindri index build --repo ${repo}`;
+    if (ageH === null) out.push({ name: `index:${repo}`, status: "warn", detail: "never built", fix: rebuild });
+    else if (ageH > ix.maxAgeHours) out.push({ name: `index:${repo}`, status: "warn", detail: `stale (built ${Math.floor(ageH)} h ago)`, fix: rebuild });
+    else if (down.length > 0) out.push({ name: `index:${repo}`, status: "warn", detail: down.map((l) => `${l.layer} ${l.status}: ${l.detail}`).join("; "), fix: "sindri index setup" });
+    else out.push({ name: `index:${repo}`, status: "ok", detail: `built ${Math.floor(ageH)} h ago` });
+  }
+  if (!ix.embeddings.enabled) {
+    out.push({ name: "embeddings", status: "ok", detail: "off (index.embeddings.enabled: false)" });
+  } else {
+    const tags = await probes.getJson(tagsUrl(ix.embeddings.url), 2000);
+    out.push(
+      hasModel(tags, ix.embeddings.model)
+        ? { name: "embeddings", status: "ok", detail: `${ix.embeddings.model} on ${ix.embeddings.url}` }
+        : { name: "embeddings", status: "warn", detail: tags === null ? "Ollama not answering on loopback" : `model ${ix.embeddings.model} not pulled`, fix: "sindri index setup" },
+    );
+    const proxy = proxyCheck(deps.env);
+    if (proxy !== null) out.push(proxy);
+  }
+  if (ix.graph === "none") {
+    out.push({ name: "graphify", status: "ok", detail: "off (index.graph: none)" });
+  } else {
+    const boxed = sandboxedVersionArgv(deps.system.platform, probes, deps.home, deps.env.XDG_RUNTIME_DIR);
+    if (boxed === null) {
+      out.push({ name: "graphify", status: "warn", detail: "no network sandbox", fix: "sindri index setup" });
+    } else {
+      const version = await installedGraphify(probes, boxed);
+      out.push(
+        version === GRAPHIFY_PIN
+          ? { name: "graphify", status: "ok", detail: `${GRAPHIFY_PIN}, sandboxed` }
+          : { name: "graphify", status: "warn", detail: `not installed at ${GRAPHIFY_PIN}${version === null ? "" : ` (found ${version})`}`, fix: "sindri index setup" },
+      );
+    }
+  }
+  const heavy = heavyLockState(awStateDir(deps), deps.now, deps.env);
+  const who = heavy.holder === null ? "" : ` by ${heavy.holder.kind} (pid ${heavy.holder.pid})`;
+  if (!heavy.held) out.push({ name: "heavy-lock", status: "ok", detail: "free" });
+  else if (heavy.ageMs !== null && heavy.ageMs > 6 * 3_600_000) {
+    // Remove the holder record too: left beside a lock dir, it would name a later locks.sh lock's holder.
+    const dir = heavyLockDir(awStateDir(deps), deps.env);
+    out.push({ name: "heavy-lock", status: "warn", detail: `held for over 6 h${who}`, fix: `if that process is gone: rmdir ${dir} && rm -f ${dir}.holder.json` });
+  } else out.push({ name: "heavy-lock", status: "ok", detail: `held${heavy.holder === null ? " by an unknown job" : ` by ${heavy.holder.kind}`}` });
   return out;
 }
 
-export async function runChecks(deps: Deps, nodeVersion: string = process.versions.node): Promise<Check[]> {
+export async function runChecks(deps: Deps, nodeVersion: string = process.versions.node, probes: IndexProbes = deps.io.probes): Promise<Check[]> {
   const [major, minor] = nodeVersion.split(".").map(Number);
   const checks: Check[] = [
     major > 20 || (major === 20 && minor >= 11) ? { name: "node", status: "ok", detail: nodeVersion } : { name: "node", status: "fail", detail: `${nodeVersion} (need >= 20.11)`, fix: "install Node 20.11 or newer" },
@@ -133,7 +221,9 @@ export async function runChecks(deps: Deps, nodeVersion: string = process.versio
   if (root === null) return [...checks, { name: "profile", status: "warn", detail: "no profile", fix: INIT_FIX }];
   const r = loadProfile(root);
   if (!r.ok) return [...checks, { name: "profile", status: "fail", detail: `${r.issues.length} issue(s) in ${root}`, fix: "sindri profile validate" }];
-  return [...checks, { name: "profile", status: "ok", detail: root }, ...(await profileChecks(deps, r.value))];
+  const profile = await profileChecks(deps, r.value);
+  // Like the profile checks, the index checks read the approved profile when there is one.
+  return [...checks, { name: "profile", status: "ok", detail: root }, ...profile.checks, ...(await indexChecks(deps, profile.used, probes))];
 }
 
 export const doctorCommand: Command = async (args, deps) => {

@@ -19,11 +19,11 @@ Each is also edited into the spec in Task 12.
 1. **The structure layer parses TypeScript and JavaScript with the TypeScript compiler API, not tree-sitter.** Both ring-0 (this repo) and the first ring-1 repo are TypeScript. The compiler API is exact for them, ships with a dependency the repo already has, and needs no native or WASM grammars. Other languages get the graph layer through graphify, which does use tree-sitter. A tree-sitter `Parser` adapter for further languages is a later plan, behind the same `Parser` interface.
 2. **Embeddings call Ollama directly, and the egress control is more than a hostname check.** The Prism route (§6.2 "or Prism with `cloud_fallback:false`") is not built, which keeps one loopback endpoint to verify. The URL must be the IP literal `127.0.0.1` or `[::1]` (not `localhost`, which the resolver can override) with no credentials; requests set `redirect: "error"`; the profile refuses an embedding model whose name contains `cloud` (those models forward text to a remote service). Node's `fetch` ignores `HTTP(S)_PROXY` unless `NODE_USE_ENV_PROXY` is set, and `doctor` warns if it is. A loopback port that is really an SSH or port-forward tunnel is not "this machine"; that residual risk is documented, not detected.
 3. **The graphify layer runs on a snapshot of the tracked files as checked out** (the working tree, copied to a temp dir, minus `index.denyPaths`, and only source and docs extensions), never on the working tree itself, because graphify writes `graphify-out/` into the directory it reads.
-4. **The heavy-job lock is a `mkdir` lock at `$AW_STATE_DIR/locks/heavy`**, compatible with `config/lib/locks.sh` (same primitive, `rmdir` to release). The holder record (kind, pid, host, start time) sits beside it, so the lock dir stays empty for `rmdir`. A lock whose holder names a pid that is dead on this host is reclaimed, and the reclaim is recorded in the next holder's record.
+4. **The heavy-job lock is a `mkdir` lock at `${AW_HEAVY_JOB_LOCK:-$AW_STATE_DIR/locks/heavy-job.lock}`**, compatible with `config/lib/locks.sh` (same primitive, `rmdir` to release). The holder record (kind, pid, host, start time) sits beside it, so the lock dir stays empty for `rmdir`. A lock whose holder names a pid that is dead on this host is reclaimed, and the reclaim is recorded in the next holder's record.
 5. **Shape signals in this plan are record-only and use deterministic layers inside the 2 s commit budget.** The embedding check runs only if the model answers within the remaining budget (the request is aborted at the budget), otherwise it's recorded as `deferred`. The graph layer's reinvention check uses the call sets the TypeScript parser extracts (and graphify's edges for other languages). Nothing blocks a commit until rollout step 3b. The hook opens the ledger read-only and never migrates it.
 6. **Outcome labels are an outcome proxy, not human labels** (spec invariant 9: no hand labeling). Each run records `git write-tree` of the staged index; a reconcile step (in `observe` and `shape report`) maps the tree to the commit that was actually made, and once the commit is `shape.outcomeDays` (default 14) old labels each signal: `dropped` (the commit was never made, was amended, or never reached the default branch), `kept` (the flagged symbol or dependency is still there, unchanged), `acted-on` (it was later changed or removed), or `n/a` (diff size and export count have no flagged symbol). Precision per type and layer is `acted-on / (acted-on + kept)`: "the flagged code was later changed or removed" counts as the signal having been right. That is a proxy: code is also changed for unrelated reasons, and a signal can be right and ignored. The 3b bar (at least 30 labeled signals and precision at least 0.7 per layer) is read from `sindri shape report`.
 7. **Index freshness.** An hourly `sindri index build --quick` refreshes structure, clones and deps (they finish in seconds), and the nightly build refreshes everything. Both read the files as checked out (the working tree), so keep `main` checked out in the indexed checkout; the per-repo bare mirror (created or refreshed by every full `index build`) is the source for a later plan. Each shape run records the index age.
-8. **The graphify sandbox is network-deny plus filesystem lock-down, with a residual risk.** macOS: `(deny file-write*)` except the snapshot dir, the system temp dirs, `/dev` and `~/.cache`, and `(deny file-read*)` of `~/.ssh`, `~/.aws`, `~/.gnupg`, `~/.agentic-workflow` and `~/Library/Keychains`; Linux: a read-only root with the same dirs hidden behind tmpfs mounts. Everything else stays readable (the default allow-read): a compromised graphify could still read other files in the home directory and put them into `graph.json`. `graph.json` is size-capped and treated as untrusted. The process environment is cleared to `PATH`, `HOME`, `LANG` and `TMPDIR`. `graphify` is installed with `uv tool install graphifyy==<pin> --exclude-newer <the pin's upload date>`, which also age-gates transitive dependencies.
+8. **The graphify sandbox is network-deny plus filesystem lock-down, with a residual risk.** macOS: `(deny network*)`, `(deny lsopen)`, `(deny appleevent-send)` and `(deny mach-lookup (global-name "com.apple.coreservices.launchservicesd"))` (an `open URL` would start a browser outside the sandbox, beyond the network deny), `(deny file-write*)` except the snapshot dir, the system temp dirs, `/dev` and `~/.cache`, and `(deny file-read*)` of `~/.ssh`, `~/.aws`, `~/.gnupg`, `~/.agentic-workflow` and `~/Library/Keychains`; Linux: a read-only root with the same dirs hidden behind tmpfs mounts. Everything else stays readable (the default allow-read): a compromised graphify could still read other files in the home directory and put them into `graph.json`, and on macOS it can still reach the other mach services the default allow leaves open (securityd and the like). The profile names the home's real path (SBPL matches resolved paths). `graph.json` is size-capped and treated as untrusted. The process environment is cleared to `PATH`, `HOME`, `LANG` and `TMPDIR`. `graphify` is installed with `uv tool install graphifyy==<pin> --exclude-newer <the next 00:00Z after the last upload of the pin's files>`, which also age-gates transitive dependencies.
 9. **`sindri repo add` does not create the mirror.** It edits the live profile (atomically) and the `repos/<name>.yaml`; the change takes effect after `profile approve`. Every full `sindri index build` creates or refreshes the bare mirror of each approved repo at `$AW_STATE_DIR/sindri/mirrors/<name>.git`. A mirror holds the repo's full, unfiltered history (including deleted secrets and denied paths); it is mode 0700 and never mounted into a guest without a deny filter (decided before Plan 4 uses it). `index setup` reads the **approved** profile.
 10. **`sindri index status` lists every repo.** A repo with no index is a row (`<repo>: no index (sindri index build --repo <repo>)`), not an `SND-INDEX-404` abort; the command exits 1 if any repo is missing or stale. `SND-INDEX-404` remains for `index query`.
 11. **Switch-on may be degraded.** Row 7 switches on with structure, clones and deps `ok` and embeddings or graph `unavailable` (no Ollama, no uv, no sandbox); the PR evidence lists the layers that are down.
@@ -110,7 +110,7 @@ Each is also edited into the spec in Task 12.
   - `io.ts` types: `FetchLike`, `ProcessRunner`, `IndexProbes`, `IndexIo` (Step 3).
   - `withHeavyLock<T>(deps, kind: string, timeoutMs: number, fn: () => Promise<T>): Promise<T>` — throws `SND-INDEX-001` when busy after `timeoutMs`, reclaims a lock whose holder pid is dead on this host (logged, and recorded in the new holder's `reclaimed` field), logs `waiting for the heavy-job lock (...)` once; `heavyLockState(stateRoot: string, now: () => Date): { held: boolean; holder: HeavyHolder | null; ageMs: number | null }`; `heavyLockDir(stateRoot): string`. `HeavyHolder = { kind; pid; host; startedAt; reclaimed: string | null }`.
 
-- [ ] **Step 0: Preflight Plan 2's names**
+- [x] **Step 0: Preflight Plan 2's names**
 
 This plan builds on Plan 2's exact names. Check them before writing anything:
 
@@ -120,7 +120,7 @@ cd sindri && for s in "export function openLedger" "export function migrateWith"
 
 Expected: only `preflight done`. A `MISSING:` line means Plan 2 shipped under a different name: stop, list the mismatches, and amend this plan before going on.
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 In `sindri/tests/helpers.ts`, add `sleep: async () => undefined, log: () => undefined,` to the object `makeDeps` returns (before `...overrides`). Those two spots (`makeDeps` and `cli.ts`) are the only places that build a whole `Deps`; every other test spreads `makeDeps()`. `npm run typecheck` flags any other.
 
@@ -318,12 +318,12 @@ describe("heavy-job lock", () => {
 });
 ```
 
-- [ ] **Step 2: Run the tests to verify they fail**
+- [x] **Step 2: Run the tests to verify they fail**
 
 Run: `cd sindri && npx vitest run tests/index-profile.test.ts tests/heavy-lock.test.ts`
 Expected: FAIL with `Failed to load url ../src/index/loopback.js` (and `../src/index/heavy-lock.js`).
 
-- [ ] **Step 3: Implement**
+- [x] **Step 3: Implement**
 
 `sindri/src/index/io.ts` (types only: every command takes its machine access through these, so tests inject fakes):
 
@@ -594,12 +594,12 @@ Add to `ERRORS`:
   "SND-INDEX-001": { summary: "The heavy-job lock is busy.", fix: "wait for the holder to finish; `sindri doctor` shows it" },
 ```
 
-- [ ] **Step 4: Run the tests**
+- [x] **Step 4: Run the tests**
 
 Run: `cd sindri && npm run gen && npx vitest run && npm run typecheck && npm run test:coverage`
 Expected: all tests PASS (Plan 2's `profile-doc` test passes after `npm run gen` regenerates `profile.md` and the schemas); 100% coverage.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add sindri/src sindri/tests sindri/schema docs/sindri
@@ -624,7 +624,7 @@ git commit -m "feat: sindri index and shape profile keys, ledger v2, heavy-job l
   - `inventory(git: GitRunner, repoPath: string, o: { denyPaths: readonly string[]; maxFileKB: number; maxTotalMB: number; select: (p: string) => boolean }): Promise<{ files: IndexedFile[]; skipped: { path: string; reason: SkipReason }[] }>` — tracked files only, sorted by path; throws `SND-INDEX-002` outside a git repo and `SND-INDEX-003` past `maxTotalMB`.
   - `isSourcePath(p: string): boolean` — `.ts .tsx .mts .cts .js .jsx .mjs .cjs`, not `.d.ts`; `isGraphInput(p: string): boolean` — the extensions graphify may read (source in the languages it parses, plus `.md`), so data files, configs and lockfiles never reach it.
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 `sindri/tests/globs.test.ts`:
 
@@ -747,12 +747,12 @@ describe("inventory (Review Focus 1)", () => {
 });
 ```
 
-- [ ] **Step 2: Run the tests to verify they fail**
+- [x] **Step 2: Run the tests to verify they fail**
 
 Run: `cd sindri && npx vitest run tests/globs.test.ts tests/files.test.ts`
 Expected: FAIL with `Failed to load url ../src/index/globs.js` (and `files.js`).
 
-- [ ] **Step 3: Implement**
+- [x] **Step 3: Implement**
 
 `sindri/src/index/globs.ts`:
 
@@ -876,12 +876,12 @@ Add to `ERRORS`:
   "SND-INDEX-003": { summary: "The index input is larger than index.maxTotalMB.", fix: "add generated or vendored paths to index.denyPaths, or raise index.maxTotalMB" },
 ```
 
-- [ ] **Step 4: Run the tests**
+- [x] **Step 4: Run the tests**
 
 Run: `cd sindri && npm run gen && npx vitest run && npm run typecheck && npm run test:coverage`
 Expected: all tests PASS; 100% coverage.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add sindri/src sindri/tests docs/sindri/errors.md
@@ -919,7 +919,7 @@ git commit -m "feat: sindri index path globs and tracked-file inventory"
   ```
   Renaming identifiers or changing literals doesn't change `astHash`; changing structure does. That is what "clone" means in §6.2. The `typescript` module is loaded on the first `parse` call, not at import (`sindri --help`, `observe` and the hook's `scrub --staged` never pay for it).
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 In `sindri/package.json`, move `"typescript": "^5.7.0"` from `devDependencies` into `dependencies`, then run `cd sindri && npm install` (expected: `up to date` or `changed 0 packages`).
 
@@ -1026,12 +1026,12 @@ describe("typescriptParser", () => {
 });
 ```
 
-- [ ] **Step 2: Run the tests to verify they fail**
+- [x] **Step 2: Run the tests to verify they fail**
 
 Run: `cd sindri && npx vitest run tests/parse-ts.test.ts`
 Expected: FAIL with `Failed to load url ../src/index/parse-ts.js`.
 
-- [ ] **Step 3: Implement**
+- [x] **Step 3: Implement**
 
 `sindri/src/index/parse-ts.ts`:
 
@@ -1198,12 +1198,12 @@ describe("typescript is loaded lazily", () => {
 });
 ```
 
-- [ ] **Step 4: Run the tests**
+- [x] **Step 4: Run the tests**
 
 Run: `cd sindri && npx vitest run && npm run typecheck && npm run test:coverage`
 Expected: all tests PASS; 100% coverage. If a test's exact `complexity` or `startLine` differs, check the fixture's line count first (the template literal starts with a newline, so `add` is on line 4); don't loosen the assertion.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add sindri/package.json sindri/package-lock.json sindri/src/index/parse-ts.ts sindri/tests/parse-ts.test.ts sindri/tests/parse-ts-lazy.test.ts
@@ -1227,7 +1227,7 @@ git commit -m "feat: sindri TypeScript structure parser for the code index"
   - `estimateJaccard(a: Uint32Array, b: Uint32Array): number`; `jaccard(a: Set<string>, b: Set<string>): number` (exact).
   - `encodeSig(sig): Buffer` / `decodeSig(buf): Uint32Array` for SQLite blobs.
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 `sindri/tests/minhash.test.ts`:
 
@@ -1274,12 +1274,12 @@ describe("minhash", () => {
 });
 ```
 
-- [ ] **Step 2: Run the tests to verify they fail**
+- [x] **Step 2: Run the tests to verify they fail**
 
 Run: `cd sindri && npx vitest run tests/minhash.test.ts`
 Expected: FAIL with `Failed to load url ../src/index/minhash.js`.
 
-- [ ] **Step 3: Implement**
+- [x] **Step 3: Implement**
 
 `sindri/src/index/minhash.ts`:
 
@@ -1351,12 +1351,12 @@ export function decodeSig(buf: Buffer): Uint32Array {
 }
 ```
 
-- [ ] **Step 4: Run the tests**
+- [x] **Step 4: Run the tests**
 
 Run: `cd sindri && npx vitest run && npm run typecheck && npm run test:coverage`
 Expected: all tests PASS; 100% coverage.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add sindri/src/index/minhash.ts sindri/tests/minhash.test.ts
@@ -1391,7 +1391,7 @@ git commit -m "feat: sindri MinHash signatures and LSH bands"
 - Produces (`tests/helpers.ts`): `git(cwd, ...args): string` (fixed author, committer date `2026-10-08T12:00:00+00:00`); `gitRepo(files): string` — a temp repo, branch `main`, with those files committed.
 - Produces (`tests/index-fixtures.ts`): `OFF`, `fakeIndexIo(over?)`, `ring0Repo(files)`, `approvedIndexDeps(root, o?)`, `ring0Name(d)`, `profileFor(root, o?)`, `BODY(name, extra?)`, `METHOD(cls, key)`, `failingGit(...needles)`, `embedFetch(vec?)`.
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 In `sindri/tests/helpers.ts`, add (the file already imports `fs` and `path`):
 
@@ -1915,12 +1915,12 @@ describe("real index I/O (smoke)", () => {
 });
 ```
 
-- [ ] **Step 2: Run the tests to verify they fail**
+- [x] **Step 2: Run the tests to verify they fail**
 
 Run: `cd sindri && npx vitest run tests/deps-layer.test.ts tests/index-db.test.ts tests/index-build.test.ts tests/real.test.ts`
 Expected: FAIL with `Failed to load url ../src/index/deps-layer.js` (and `db.js`, `build.js`, `sandbox-real.js`).
 
-- [ ] **Step 3: Implement**
+- [x] **Step 3: Implement**
 
 `sindri/src/index/deps-layer.ts`:
 
@@ -2533,12 +2533,12 @@ Add to `ERRORS`:
 
 `files.indexed` counts every inventoried file (sources and manifests); `changed` and `removed` count source files. The mirror is created or refreshed by full builds before the index build; a `--quick` build skips it.
 
-- [ ] **Step 4: Run the tests**
+- [x] **Step 4: Run the tests**
 
 Run: `cd sindri && npm run gen && npx vitest run && npm run typecheck && npm run test:coverage`
 Expected: all tests PASS; 100% coverage (`sandbox-real.ts` is excluded and covered by its smoke tests).
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add sindri/src sindri/tests sindri/vitest.config.ts docs/sindri/errors.md
@@ -2563,7 +2563,7 @@ git commit -m "feat: sindri code index database, dependency layer, incremental b
 - Produces (`build.ts`): `Embedder` is now the real interface; the embeddings layer is `ok` (stamp `<model>@<INDEXER_VERSION>`), `disabled` (no embedder) or `unavailable` (with the error text). Only symbols without a vector for the current model are embedded; a model change re-embeds everything. Classes are not embedded. A `--quick` build never calls the embedder.
 - Produces (`commands.ts`): `embedderFor(loaded: LoadedProfile, io: IndexIo): Embedder | null`.
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 `sindri/tests/embed.test.ts`:
 
@@ -2723,12 +2723,12 @@ describe("embedderFor and the build command", () => {
 });
 ```
 
-- [ ] **Step 2: Run the tests to verify they fail**
+- [x] **Step 2: Run the tests to verify they fail**
 
 Run: `cd sindri && npx vitest run tests/embed.test.ts tests/index-build.test.ts`
 Expected: FAIL with `Failed to load url ../src/index/embed.js`.
 
-- [ ] **Step 3: Implement**
+- [x] **Step 3: Implement**
 
 `sindri/src/index/embed.ts`:
 
@@ -2865,12 +2865,12 @@ Add to `ERRORS`:
   "SND-INDEX-006": { summary: "The local embedding server failed.", fix: "sindri index setup (starts Ollama checks and pulls the model)" },
 ```
 
-- [ ] **Step 4: Run the tests**
+- [x] **Step 4: Run the tests**
 
 Run: `cd sindri && npm run gen && npx vitest run && npm run typecheck && npm run test:coverage`
 Expected: all tests PASS; 100% coverage.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add sindri/src sindri/tests docs/sindri/errors.md
@@ -2912,11 +2912,11 @@ Expected: a help text, and both flags listed. If the name or a flag is different
 Pick the pin deterministically: the newest release at least 14 days old (on Linux use `date -u -d '14 days ago' +%Y-%m-%dT%H:%M:%S` in place of the `-v-14d` form):
 
 ```bash
-read -r PIN PIN_DATE < <(curl -s https://pypi.org/pypi/graphifyy/json | jq -r --arg cut "$(date -u -v-14d +%Y-%m-%dT%H:%M:%S)" '.releases | to_entries | map(select((.value | length) > 0 and .value[0].upload_time_iso_8601 < $cut)) | sort_by(.value[0].upload_time_iso_8601) | last | "\(.key) \(.value[0].upload_time_iso_8601)"')
-echo "pin $PIN uploaded $PIN_DATE"
+read -r PIN PIN_DATE < <(curl -s https://pypi.org/pypi/graphifyy/json | jq -r --arg cut "$(date -u -v-14d +%Y-%m-%dT%H:%M:%S)" '.releases | to_entries | map(select((.value | length) > 0) | {key, last: (.value | max_by(.upload_time_iso_8601) | .upload_time_iso_8601)} | select(.last < $cut)) | sort_by(.last) | last | "\(.key) \(.last[0:10] + "T00:00:00Z" | fromdateiso8601 + 86400 | todateiso8601)"')
+echo "pin $PIN cutoff $PIN_DATE"
 ```
 
-Expected: one line such as `pin 0.4.2 uploaded 2026-09-01T10:15:30.123456Z`. Install exactly that release, with `--exclude-newer` so its transitive dependencies are age-gated to the same date, and check the CLI reports it:
+Expected: one line such as `pin 0.4.2 cutoff 2026-09-02T00:00:00Z`. The cutoff is the next 00:00Z after the release's **last** file upload (wheel or sdist): uv excludes files uploaded at or after `--exclude-newer`, so the first file's own upload time would exclude the pin itself. Install exactly that release, with `--exclude-newer` so its transitive dependencies are age-gated to the same date, and check the CLI reports it:
 
 ```bash
 uv tool install "graphifyy==$PIN" --exclude-newer "$PIN_DATE"
@@ -2939,7 +2939,7 @@ jq '{nodes: (.nodes | length), links: ((.links // .edges) | length), node_keys: 
 
 Expected: at least 2 nodes and 1 link. If graphify fails because the sandbox forbids a path it needs, stop and add that single path to the profile in Step 4 (and here); don't loosen the profile otherwise. Note the printed `node_keys` and `link_keys`. If a key that names the file, the symbol name, the line, the relation or the confidence is not already in `parseGraphJson`'s candidate lists (Step 4), add it there. Don't rename the fixture's keys. The fixture holds `/snapshot` in place of the temp path, so no machine-specific path is committed.
 
-- [ ] **Step 2: Write the failing tests**
+- [x] **Step 2: Write the failing tests**
 
 `sindri/tests/pins.test.ts`:
 
@@ -3207,12 +3207,12 @@ describe("graphFor and the build command", () => {
 });
 ```
 
-- [ ] **Step 3: Run the tests to verify they fail**
+- [x] **Step 3: Run the tests to verify they fail**
 
 Run: `cd sindri && npx vitest run tests/graph.test.ts tests/pins.test.ts tests/index-build.test.ts tests/real.test.ts`
 Expected: FAIL with `Failed to load url ../src/index/graph.js` (and `pins.js`).
 
-- [ ] **Step 4: Implement**
+- [x] **Step 4: Implement**
 
 `sindri/src/index/pins.ts`:
 
@@ -3420,12 +3420,12 @@ Add to `ERRORS`:
   "SND-INDEX-008": { summary: "graphify is missing, failed or wrote no usable graph.", fix: "sindri index setup, then sindri index build --full" },
 ```
 
-- [ ] **Step 5: Run the tests**
+- [x] **Step 5: Run the tests**
 
 Run: `cd sindri && npm run gen && npx vitest run && npm run typecheck && npm run test:coverage`
 Expected: all tests PASS (the sandbox smoke tests prove network, write and `~/.ssh` denial where a sandbox and network exist, and skip quietly where they don't); 100% coverage.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add sindri/package.json sindri/src sindri/tests docs/sindri/errors.md
@@ -3458,7 +3458,7 @@ git commit -m "feat: sindri graph layer via sandboxed graphify"
   - A symbol is a reinvention candidate only if it is not a class and has at least 20 tokens; base candidates are other files' symbols that are exported or under `index.utilityGlobs` (the things meant for reuse). Base symbols are loaded once into memory (no per-row queries).
 - Produces (`commands.ts`): `sindri index query <name> [--repo NAME] [--json]`.
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 `sindri/tests/overlay.test.ts`:
 
@@ -3732,12 +3732,12 @@ describe("sindri index query", () => {
 });
 ```
 
-- [ ] **Step 2: Run the tests to verify they fail**
+- [x] **Step 2: Run the tests to verify they fail**
 
 Run: `cd sindri && npx vitest run tests/overlay.test.ts tests/signals.test.ts tests/index-build.test.ts`
 Expected: FAIL with `Failed to load url ../src/index/overlay.js` (and `signals.js`).
 
-- [ ] **Step 3: Implement**
+- [x] **Step 3: Implement**
 
 `sindri/src/index/overlay.ts`:
 
@@ -4080,12 +4080,12 @@ function query(args: string[], deps: Deps): CommandResult {
 
 and in `makeIndexCommand`, before the unknown-subcommand `failure`, add `if (sub === "query") return query(rest, deps);`.
 
-- [ ] **Step 4: Run the tests**
+- [x] **Step 4: Run the tests**
 
 Run: `cd sindri && npx vitest run && npm run typecheck && npm run test:coverage`
 Expected: all tests PASS; 100% coverage. If a fixture misses a threshold by a hair (for example, the near-clone Jaccard), fix the fixture body so the case is unambiguous; never lower the default threshold to make a test pass.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add sindri/src/index sindri/tests
@@ -4113,7 +4113,7 @@ git commit -m "feat: sindri staged overlay, shape signals and index query"
   - `recordStaged(deps, io, o: { repo?: string; size?: Size }): Promise<{ written: string | null; note: string }>` — opens the ledger read-only, finds the profile repo by git common dir (so a linked worktree matches), and diffs the commit's own worktree.
 - Produces (`scrub/commands.ts`): hook v2 — marker `# sindri-pre-commit v2`; scrubs (and refuses on a hit), then runs `"$SINDRI" shape --record --staged || true`. `install` upgrades a v1 hook in place; `isSindriHook(text)` matches whole marker lines; `hookBinary` reads both versions.
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 `sindri/tests/spool.test.ts`:
 
@@ -4477,12 +4477,12 @@ describe("pre-commit hook v2", () => {
 });
 ```
 
-- [ ] **Step 2: Run the tests to verify they fail**
+- [x] **Step 2: Run the tests to verify they fail**
 
 Run: `cd sindri && npx vitest run tests/spool.test.ts tests/shape.test.ts tests/scrub-commands.test.ts`
 Expected: FAIL with `Failed to load url ../src/index/spool.js` (and `shape.js`), and the v2 hook tests failing on the marker.
 
-- [ ] **Step 3: Implement**
+- [x] **Step 3: Implement**
 
 `sindri/src/index/spool.ts`:
 
@@ -4871,12 +4871,12 @@ import { makeShapeCommand } from "./index/shape.js";
   },
 ```
 
-- [ ] **Step 4: Run the tests**
+- [x] **Step 4: Run the tests**
 
 Run: `cd sindri && npx vitest run && npm run typecheck && npm run test:coverage`
 Expected: all tests PASS; 100% coverage.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add sindri/src sindri/tests
@@ -4907,7 +4907,7 @@ Row 7's point is calibration, and calibration needs to know what happened to the
 - Produces (`shape.ts`): `shape report` reconciles after ingesting, and prints `TYPE | SIGNALS | LABELED | ACTED-ON | KEPT | PRECISION | TOWARD 3b`. LABELED is acted-on plus kept; PRECISION is acted-on / LABELED; TOWARD 3b reads `12/30 labeled; bar 0.70`, or `ready` once labeled >= 30 and precision >= 0.7. It also prints how many runs deferred the embeddings layer. `--json` adds `types` and `layers` (the same numbers per type and per layer).
 - Produces (`observe.ts`): `observe` reconciles right after it records, inside the same tick lock.
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 The labeling reads the default branch's content (round-2 fix), so the fixture builds a real history: the default branch (named by `git symbolic-ref --short HEAD`, which the test pins equal to the profile's `defaultBranch`) holds the merged changes; an unmerged change sits on a side branch (`feature`); a squash merge lands on the default branch as a new commit with the same content as a branch that is never merged (`squash-src`). The fixture leaves `feature` checked out, so every labeling test already runs with a different branch checked out; two more cases prove the labels do not move when the default branch is checked out with a dirty working tree, or when the local default branch is stale behind `origin/<default>`. No index is built: the labels must not need one.
 
@@ -5208,12 +5208,12 @@ Then, in `sindri/tests/shape.test.ts`, replace the test named `ingests the spool
   });
 ```
 
-- [ ] **Step 2: Run the tests to verify they fail**
+- [x] **Step 2: Run the tests to verify they fail**
 
 Run: `cd sindri && npx vitest run tests/shape-reconcile.test.ts tests/shape.test.ts`
 Expected: FAIL with `Failed to load url ../src/index/reconcile.js`.
 
-- [ ] **Step 3: Implement**
+- [x] **Step 3: Implement**
 
 `sindri/src/index/reconcile.ts`:
 
@@ -5449,12 +5449,12 @@ In `sindri/src/observe/observe.ts`, add `import { reconcileShape } from "../inde
         await reconcileShape(db, deps, approved, lock.owner.epoch);
 ```
 
-- [ ] **Step 4: Run the tests**
+- [x] **Step 4: Run the tests**
 
 Run: `cd sindri && npx vitest run && npm run typecheck && npm run test:coverage`
 Expected: all tests PASS; 100% coverage.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add sindri/src sindri/tests
@@ -5477,7 +5477,7 @@ git commit -m "feat: sindri shape outcome labels and per-type precision"
 - Produces (`commands.ts`): `sindri index setup [--dry-run] [--json]` — reads the **approved** profile (so an unapproved edit can't choose the model or the repos), exit 2 on any `fail`, 1 on any `warn`.
 - Produces (`doctor.ts`): `runChecks(deps, nodeVersion?, probes?: IndexProbes)` adds, after the Plan 2 checks: `index:<repo>` per repo, `embeddings`, `embedding-proxy` (only when `NODE_USE_ENV_PROXY=1`), `graphify`, `heavy-lock`.
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 `sindri/tests/index-setup.test.ts`:
 
@@ -5802,12 +5802,12 @@ describe("doctor index checks", () => {
 });
 ```
 
-- [ ] **Step 2: Run the tests to verify they fail**
+- [x] **Step 2: Run the tests to verify they fail**
 
 Run: `cd sindri && npx vitest run tests/index-setup.test.ts tests/repo-add.test.ts tests/doctor.test.ts`
 Expected: FAIL with `Failed to load url ../src/index/setup.js` (and `repo-add.js`).
 
-- [ ] **Step 3: Implement**
+- [x] **Step 3: Implement**
 
 `sindri/src/index/setup.ts`:
 
@@ -6085,12 +6085,12 @@ Add to `ERRORS`:
   "SND-PROFILE-014": { summary: "That repo name is not valid.", fix: "use lowercase letters, digits and dashes (max 39)" },
 ```
 
-- [ ] **Step 4: Run the tests**
+- [x] **Step 4: Run the tests**
 
 Run: `cd sindri && npm run gen && npx vitest run && npm run typecheck && npm run test:coverage`
 Expected: all tests PASS; 100% coverage.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add sindri/src sindri/tests docs/sindri/errors.md
@@ -6109,7 +6109,7 @@ git commit -m "feat: sindri repo add, index setup and doctor index checks"
 - Consumes: everything in Tasks 1–11.
 - Produces: the index documentation and the amended spec. No code.
 
-- [ ] **Step 1: Write `docs/sindri/index.md`**
+- [x] **Step 1: Write `docs/sindri/index.md`**
 
 ````markdown
 # Sindri code index
@@ -6206,7 +6206,7 @@ Each recorded run keeps `git write-tree` of the staged index. `observe` and `sha
 | `sindri-shape: skipped (no index; …)` in a commit | the hook found no index for this repo | `sindri index build` |
 ````
 
-- [ ] **Step 2: Update the other docs and the spec**
+- [x] **Step 2: Update the other docs and the spec**
 
 - `docs/sindri/README.md`: add rows for `sindri index setup|build|status|query`, `sindri repo add`, and `sindri shape --record --staged | report`, and a line under "Where things live" for `$AW_STATE_DIR/sindri/index/<repo>.db`, `…/spool/` and `…/mirrors/<repo>.git`. Link `docs/sindri/index.md`.
 - `AGENTS.md` Commands: add `sindri index setup && sindri index build    # code index (Ollama + graphify, offline)` and `sindri shape report                      # record-only shape signals and their outcomes`.
@@ -6223,7 +6223,7 @@ Each recorded run keeps `git write-tree` of the staged index. `observe` and `sha
   - §10.3 CLI table: `sindri index status` lists every repo (a missing index is a row and exit 1, not an `SND-INDEX-404` abort; `index query` still uses `SND-INDEX-404`); `sindri repo add` edits the profile only, and each full `index build` creates or refreshes the mirror.
   - §13.3 row "Code index, record-only shape signals (P3)": the switch-on is `sindri index setup && sindri index build`, `sindri repo add .`, `sindri scrub --install-pre-commit` (upgrades the hook to v2, which records shape signals), an hourly `sindri index build --quick` and a nightly full build (launchd). A degraded switch-on (embeddings or graph unavailable) is allowed; the PR evidence lists the layers that are down.
 
-- [ ] **Step 3: Run the merge gate, one job at a time**
+- [x] **Step 3: Run the merge gate, one job at a time**
 
 ```bash
 cd sindri && npm run typecheck && npm run test:coverage && cd ..
@@ -6234,7 +6234,7 @@ scripts/sync-rules.sh --check
 
 Expected: no type errors; 100% coverage; installer tests PASS; `sync-rules` exits 0; `SETUP_DRY_RUN_OK`.
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add docs/sindri AGENTS.md .agents/rules/testing.md planning docs/superpowers/specs/2026-10-07-sindri-design.md
@@ -6251,7 +6251,7 @@ From the merge on, every commit in this repo records shape signals against an in
 - Create: `config/launchd/com.agentic-workflow.sindri-index.plist`, `config/launchd/com.agentic-workflow.sindri-index-quick.plist`
 - Modify: `config/launchd/com.agentic-workflow.sindri-observe.plist` (Plan 2's; add `PATH`), `scripts/install-sindri.sh` (install the three jobs), `scripts/tests/install-sindri.test.sh`
 
-- [ ] **Step 1: Check the preconditions (builder, before writing anything)**
+- [x] **Step 1: Check the preconditions (builder, before writing anything)**
 
 ```bash
 for bin in git node curl; do command -v "$bin" >/dev/null || echo "MISSING (required): $bin"; done
@@ -6262,7 +6262,7 @@ curl -s -o /dev/null -w 'ollama: HTTP %{http_code}\n' --max-time 3 http://127.0.
 
 Expected: no `MISSING (required)` line; an `ollama: HTTP 200` line if the embeddings layer is going to be `ok`. Anything else is a known gap to record, not a blocker.
 
-- [ ] **Step 2: Write the failing test**
+- [x] **Step 2: Write the failing test**
 
 Append to `scripts/tests/install-sindri.test.sh` (and add it to the list of calls):
 
@@ -6286,12 +6286,12 @@ test_index_jobs() {
 }
 ```
 
-- [ ] **Step 3: Run it to verify it fails**
+- [x] **Step 3: Run it to verify it fails**
 
 Run: `bash scripts/tests/install-sindri.test.sh`
 Expected: the earlier tests PASS, then `FAIL: …/com.agentic-workflow.sindri-observe.plist has no PATH …` (Plan 2's plist has none yet).
 
-- [ ] **Step 4: Implement**
+- [x] **Step 4: Implement**
 
 `config/launchd/com.agentic-workflow.sindri-index.plist`:
 
@@ -6415,7 +6415,7 @@ and replace the dry-run line `echo "  [dry-run] would install launchd job com.ag
   done
 ```
 
-- [ ] **Step 5: Run the tests and commit**
+- [x] **Step 5: Run the tests and commit**
 
 Run: `bash scripts/tests/install-sindri.test.sh`
 Expected: every test PASS, including `test_index_jobs` and Plan 2's `test_observe_job_is_hourly`.

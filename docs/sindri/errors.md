@@ -7,6 +7,14 @@ Generated from `sindri/src/errors.ts` by `cd sindri && npm run gen`. Do not edit
 | `SND-CLI-001` | Unknown command. | sindri help |
 | `SND-CLI-002` | Invalid arguments for this command. | Run `sindri help` and check the command's flags. |
 | `SND-CLI-900` | Unexpected internal error (a bug). | rerun with SINDRI_DEBUG=1 and report the output |
+| `SND-INDEX-001` | The heavy-job lock is busy. | wait for the holder to finish; `sindri doctor` shows it |
+| `SND-INDEX-002` | The repo path is not a git repo. | check repos/&lt;name&gt;.yaml path, then sindri profile approve |
+| `SND-INDEX-003` | The index input is larger than index.maxTotalMB. | add generated or vendored paths to index.denyPaths, or raise index.maxTotalMB |
+| `SND-INDEX-005` | The embedding URL is not loopback. | set index.embeddings.url to http://127.0.0.1:11434 (or disable embeddings) |
+| `SND-INDEX-006` | The local embedding server failed. | sindri index setup (starts Ollama checks and pulls the model) |
+| `SND-INDEX-007` | No network sandbox is available for graphify. | macOS: sandbox-exec ships with the OS; Linux: install bubblewrap (bwrap), or set index.graph: none |
+| `SND-INDEX-008` | graphify is missing, failed or wrote no usable graph. | sindri index setup, then sindri index build --full |
+| `SND-INDEX-404` | No index has been built for this repo. | sindri index build --repo &lt;name&gt; |
 | `SND-ITEM-404` | No such item in the ledger. | Run `sindri observe` to list items. |
 | `SND-LEDGER-001` | The ledger was written by a newer sindri. | Upgrade sindri (`scripts/install-sindri.sh` from the latest main), then rerun. |
 | `SND-LOCK-001` | Another sindri run holds the lock. | wait a moment and rerun; `sindri doctor` shows the holder |
@@ -22,9 +30,12 @@ Generated from `sindri/src/errors.ts` by `cd sindri && npm run gen`. Do not edit
 | `SND-PROFILE-009` | Not inside a git repo. | cd into the repo first. |
 | `SND-PROFILE-010` | Approving a profile needs an interactive terminal. | run `sindri profile approve <hash>` yourself, in a terminal |
 | `SND-PROFILE-011` | The approval was not confirmed. | rerun and type the first 6 characters of the hash |
+| `SND-PROFILE-012` | No profile has been approved yet. | sindri profile approve |
+| `SND-PROFILE-013` | That repo name is already used for another path or file. | pass --name &lt;another name&gt; |
+| `SND-PROFILE-014` | That repo name is not valid. | use lowercase letters, digits and dashes (max 39) |
 | `SND-SCRUB-001` | A profile scrub pattern does not compile. | Fix the regex at the named scrub.extraPatterns index, then run `sindri profile validate`. |
 | `SND-SCRUB-002` | Staged changes contain likely secrets. | remove them (use a secret pointer or an env var); for a false positive, commit with --no-verify and say why |
-| `SND-SCRUB-003` | A different pre-commit hook is already installed. | Add `sindri scrub --staged \|\| exit 1` to that hook by hand. |
+| `SND-SCRUB-003` | A different pre-commit hook is already installed. | Add both lines to that hook by hand, in this order: `sindri scrub --staged \|\| exit 1` then `sindri shape --record --staged \|\| true`. |
 | `SND-SCRUB-004` | `scrub --staged` or `--install-pre-commit` ran outside a git repo. | cd into the repo first, or pass --repo PATH to --install-pre-commit. |
 | `SND-SCRUB-005` | `git diff --cached` failed, so `scrub --staged` could not scan the staged changes. | Fix the git error shown in the details, then retry the commit. |
 | `SND-TRACKER-001` | The tracker's source is missing or unreadable (for plan-file: the repo path or plan dir). | Restore that directory, or fix `path` in repos/&lt;name&gt;.yaml and run `sindri profile approve`. |

@@ -89,6 +89,9 @@ scripts/install-<lever>.sh --provider claude|codex|cursor
 scripts/probe.sh [--provider claude|codex|cursor] on|off|status
 scripts/install-scorer.sh               # Build scorer, install CLI + launchd job
 sindri doctor                           # Sindri health checks (ok / warn / fail + fix)
+sindri index setup && sindri index build    # code index (Ollama + graphify, offline)
+sindri shape report                      # record-only shape signals and their outcomes (read-only)
+sindri shape reconcile                   # move the spool into the ledger and label outcomes now (observe does it hourly)
 sindri observe                          # Backlog with sizes; records to the ledger when the profile is approved
 scripts/install-sindri.sh               # Build sindri, install the CLI wrapper (or ./setup.sh --with-sindri)
 

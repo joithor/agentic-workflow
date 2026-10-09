@@ -1,6 +1,7 @@
 import path from "node:path";
 
 import type { GitRunner } from "./git.js";
+import type { IndexIo } from "./index/io.js";
 import type { SystemProbe } from "./system.js";
 
 // Everything a command needs from the outside world. Commands never read
@@ -12,9 +13,13 @@ export interface Deps {
   now: () => Date;
   system: SystemProbe;
   git: GitRunner;
+  // Embedding fetch and the index probes (binaries, sandbox, Ollama). Real: index/sandbox-real.ts.
+  io: IndexIo;
   isTTY: boolean;
   prompt: (question: string) => Promise<string>;
   stdin: () => Promise<string>;
+  sleep: (ms: number) => Promise<void>;
+  log: (line: string) => void;
 }
 
 // $AW_STATE_DIR, default ~/.agentic-workflow (shared with judge and scorer).

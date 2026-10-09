@@ -275,6 +275,19 @@ if [ "$WITH_SINDRI" = "1" ]; then
   else
     bash "$SCRIPT_DIR/scripts/install-sindri.sh"
   fi
+  # uv installs graphify (the code index graph layer) at its pin: sindri index setup
+  if aw_dry; then
+    echo "  [dry-run] would install uv (brew) if missing"
+  elif command -v uv &>/dev/null; then
+    echo "  uv: already installed ($(uv --version 2>/dev/null || echo 'unknown version'))"
+  elif command -v brew &>/dev/null; then
+    echo "Installing uv (required for the sindri index graph layer)..."
+    brew install uv || echo "  WARN: uv install failed; the sindri index graph layer stays unavailable. Install uv (https://docs.astral.sh/uv/getting-started/installation/), then run: sindri index setup"
+  else
+    echo "WARN: 'uv' not found and Homebrew is not available; the sindri index graph layer stays unavailable."
+    echo "      Install uv, then run: sindri index setup"
+    echo "        https://docs.astral.sh/uv/getting-started/installation/"
+  fi
 fi
 
 # --- Skill packages (TypeScript helpers run by SKILL.md) ---

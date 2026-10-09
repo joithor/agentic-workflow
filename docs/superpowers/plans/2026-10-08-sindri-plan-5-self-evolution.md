@@ -8043,7 +8043,7 @@ describe("sindri evolve weekly", () => {
 
   it("skips everything while a heavy job holds the box-wide lock", async () => {
     const { fx, proc } = await ready();
-    fs.mkdirSync(heavyLockDir(awStateDir(fx.deps)), { recursive: true });
+    fs.mkdirSync(heavyLockDir(awStateDir(fx.deps), fx.deps.env), { recursive: true });
     const before = proc.calls.length;
     const r = await weekly([], fx.ctx);
     expect(r.exitCode).toBe(1);
@@ -8166,7 +8166,7 @@ async function checkStep(ctx: EvolveCtx): Promise<CommandResult> {
 export async function weekly(args: string[], ctx: EvolveCtx): Promise<CommandResult> {
   const { values } = parseFlags(args, { "dry-run": { type: "boolean" }, json: { type: "boolean" } });
   const json = values.json === true;
-  if (heavyLockState(awStateDir(ctx.deps), ctx.deps.now).held) {
+  if (heavyLockState(awStateDir(ctx.deps), ctx.deps.now, ctx.deps.env).held) {
     return success("Skipped: a heavy job holds the box-wide lock. Nothing ran.\nNext: rerun sindri evolve weekly later", { skipped: true }, json, 1);
   }
   if (values["dry-run"] === true) {
@@ -8204,7 +8204,7 @@ export async function weekly(args: string[], ctx: EvolveCtx): Promise<CommandRes
 }
 ```
 
-(`ExitCode` is `0 | 1 | 2`; `Math.max(worst, code) as ExitCode` is the one cast, narrowing a number the code knows is 0, 1 or 2.) Trace for the reflect step's `STATE[code]`: `reflectCommand` returns 0 for a clean reflection and 1 for a partial one; a throw is counted as 2 (`FAIL`). In the dry-run test, `gh pr list` runs (a read) and the PR 13 audit marker drops it. In the heavy-lock test the lock directory exists (`heavyLockDir(awStateDir(deps))`), so `heavyLockState(...).held` is true and nothing runs.
+(`ExitCode` is `0 | 1 | 2`; `Math.max(worst, code) as ExitCode` is the one cast, narrowing a number the code knows is 0, 1 or 2.) Trace for the reflect step's `STATE[code]`: `reflectCommand` returns 0 for a clean reflection and 1 for a partial one; a throw is counted as 2 (`FAIL`). In the dry-run test, `gh pr list` runs (a read) and the PR 13 audit marker drops it. In the heavy-lock test the lock directory exists (`heavyLockDir(awStateDir(deps), deps.env)`), so `heavyLockState(...).held` is true and nothing runs.
 
 Register in `sindri/src/evolve/commands.ts`: import `weekly` from `./cmd/weekly.js` and add it to `SUBCOMMANDS`.
 

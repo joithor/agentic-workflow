@@ -23,6 +23,8 @@ A changed profile takes effect only after `sindri profile approve <hash>` (spec 
 | `autoStartMaxSize` | `XS` \| `S` \| `M` \| `L` \| `XL` | no | `"XS"` | Largest size auto-small may start |
 | `selfMerge` | `human` \| `auto` | no | `"human"` | Who merges toolkit PRs (spec §7.7); protected modules always wait for the human |
 | `scrub` | object | no | `{}` | scrub.extraPatterns: extra secret shapes, added to the built-ins (never removes one) |
+| `index` | object | no | `{}` | Code index (spec §6.2) |
+| `shape` | object | no | `{}` | Shape signals (spec §6.2) |
 
 ## `repos/<name>.yaml`
 
@@ -34,3 +36,4 @@ A changed profile takes effect only after `sindri profile approve <hash>` (spec 
 | `defaultBranch` | string | no | `"main"` | Base branch for claims and indexes |
 | `protectedPaths` | string[] | no | `[]` | Globs; a diff touching one parks for approval (spec §8.5) |
 | `overrides` | object | no | `{}` | Per-repo values that win over profile.yaml |
+| `index` | object | no | `{}` | index.denyPaths for this repo, added to the profile's |
