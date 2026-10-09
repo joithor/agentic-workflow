@@ -26,6 +26,7 @@ describe("claude-cli provider", () => {
     expect(args).toEqual([
       "-p", "--model", "haiku", "--effort", "low", "--no-session-persistence",
       "--strict-mcp-config", "--mcp-config", '{"mcpServers":{}}',
+      "--setting-sources", "",
       "--settings", '{"disableAllHooks":true,"alwaysThinkingEnabled":false}',
       "--disable-slash-commands", "--tools", "",
       "--system-prompt", "Classify this message.",
@@ -142,6 +143,15 @@ describe("claude-cli provider — image branch (Task 5, review fix #5)", () => {
     expect(args[args.indexOf("--allowedTools") + 1]).toBe("Read(./**)");
     expect(opts.cwd).toBe("/tmp/run-42");
     expect(opts.timeoutMs).toBe(20000);
+  });
+
+  it("loads no user, project or local settings (--setting-sources \"\"), like the text branch", async () => {
+    const spawn = vi.fn().mockResolvedValue({ code: 0, timedOut: false, stdout: JSON.stringify({ structured_output: { decision: "looks-right" } }) });
+    const provider = makeClaudeCliProvider({ spawn, tmpDirFactory: () => "/tmp/x" });
+    await provider.decide(imageQuestion, { afterScreenshot: "a.png", baselineScreenshot: null, evidenceDir: "/tmp/r" }, 20000);
+    const [args] = spawn.mock.calls[0] as [string[]];
+    expect(args).toContain("--setting-sources");
+    expect(args[args.indexOf("--setting-sources") + 1]).toBe("");
   });
 
   it("does not use the --tools \"\" text-branch invocation for an image question", async () => {
