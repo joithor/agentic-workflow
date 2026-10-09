@@ -1,6 +1,6 @@
 # Sindri code index
 
-One index per repo at `$AW_STATE_DIR/sindri/index/<repo>.db`, built from tracked files only (`git ls-files`, minus `index.denyPaths`, matched case-insensitively; symlinks never followed). Spec: §6.2.
+One index per repo at `$AW_STATE_DIR/sindri/index/<repo>.db`, built from tracked files only (`git ls-files`, minus the built-in secret globs (`.env*`, `*.pem`, `**/secrets/**` and the like) and `index.denyPaths`, which adds to them and never replaces them, all matched case-insensitively; symlinks never followed). Spec: §6.2.
 
 ## First run
 

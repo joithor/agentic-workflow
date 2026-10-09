@@ -11,7 +11,7 @@ import type { Command } from "../main.js";
 import { failure, fromError, success, type CommandResult } from "../output.js";
 import { approvedProfile } from "../profile/approve.js";
 import type { LoadedProfile } from "../profile/load.js";
-import { SIZES, type Size } from "../profile/schema.js";
+import { denyPathsFor, SIZES, type Size } from "../profile/schema.js";
 import { makeScrubber } from "../scrub/scrub.js";
 import { embedderFor } from "./commands.js";
 import { indexPath, layers, meta, openIndexReadOnly, type Layer } from "./db.js";
@@ -84,7 +84,7 @@ async function measure(
     const shape = loaded.profile.shape;
     const now = (): number => deps.now().getTime();
     // Every step after this one starts only inside the budget; parsing stops at it too.
-    const { changes, addedLines, skipped, renames } = await stagedChanges(deps.git, worktree, { denyPaths: [...ix.denyPaths, ...cfg.index.denyPaths], maxFileKB: ix.maxFileKB });
+    const { changes, addedLines, skipped, renames } = await stagedChanges(deps.git, worktree, { denyPaths: denyPathsFor(ix, cfg.index), maxFileKB: ix.maxFileKB });
     const stop1 = overBudget();
     if (stop1 !== null) return stop1;
     const overlay = buildOverlay(changes, addedLines, renames, { at: started + shape.budgetMs, now });

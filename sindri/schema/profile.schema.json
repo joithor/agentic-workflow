@@ -205,22 +205,8 @@
             "type": "string",
             "minLength": 1
           },
-          "default": [
-            ".env*",
-            "**/.env*",
-            "**/*.pem",
-            "**/*.key",
-            "**/*.p12",
-            "**/*.pfx",
-            "**/id_rsa*",
-            "**/*.tfstate",
-            "**/*.tfvars",
-            "**/credentials*",
-            "**/.npmrc",
-            "**/.netrc",
-            "**/secrets/**"
-          ],
-          "description": "Path globs the index never reads, case-insensitive (secrets, sensitive fixtures, generated code)"
+          "default": [],
+          "description": "Path globs the index never reads, case-insensitive (sensitive fixtures, generated code), added to the built-in secret globs (.env*, *.pem, **/secrets/** and the like)"
         },
         "utilityGlobs": {
           "type": "array",

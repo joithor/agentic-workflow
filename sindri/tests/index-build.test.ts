@@ -57,6 +57,13 @@ describe("buildIndex", () => {
     db.close();
   });
 
+  it("still skips the built-in secret globs when the profile configures its own denyPaths (final review M2)", async () => {
+    const root = gitRepo(FILES);
+    const report = await buildIndex(makeDeps(), profileFor(root, { yaml: '  denyPaths:\n    - "src/b.ts"\n' }), "r", { full: false }, none);
+    // .env.local.ts (a built-in glob) and src/b.ts (the profile's) are both skipped.
+    expect(report.files).toEqual({ indexed: 3, changed: 2, removed: 0, skipped: 2 });
+  });
+
   it("rebuilds only changed files, drops removed ones, and --full rebuilds everything", async () => {
     const root = gitRepo(FILES);
     const d = makeDeps();

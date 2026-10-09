@@ -7,6 +7,7 @@ import type { Deps } from "../deps.js";
 import { SindriError } from "../errors.js";
 import { ulid } from "../ids.js";
 import type { LoadedProfile } from "../profile/load.js";
+import { denyPathsFor } from "../profile/schema.js";
 import { compileExtraPatterns, makeScrubber, type Scrubber } from "../scrub/scrub.js";
 import { type IndexDb, indexPath, type Layer, type LayerStatus, openIndex } from "./db.js";
 import { embeddingText, encodeVec, type Embedder } from "./embed.js";
@@ -175,7 +176,7 @@ export async function buildIndex(deps: Deps, loaded: LoadedProfile, repo: string
     const started = deps.now().getTime();
     // Inside the heavy-job lock: a clone of a big repo is heavy too.
     if (o.mirror === true) await refreshMirror(deps, repo, cfg.path);
-    const deny = [...ix.denyPaths, ...cfg.index.denyPaths];
+    const deny = denyPathsFor(ix, cfg.index);
     const inv = await inventory(deps.git, cfg.path, {
       denyPaths: deny,
       maxFileKB: ix.maxFileKB,

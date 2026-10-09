@@ -36,15 +36,17 @@ const count = z.number().int().positive();
 const bySize = (d: Record<Size, number>) =>
   z.object({ XS: count.default(d.XS), S: count.default(d.S), M: count.default(d.M), L: count.default(d.L), XL: count.default(d.XL) }).strict().default({});
 
-const DEFAULT_DENY = [
+// Always denied: index.denyPaths (profile and repo) add to these and never remove one, the way
+// scrub.extraPatterns adds to the built-in patterns.
+export const DEFAULT_DENY_PATHS: readonly string[] = [
   ".env*", "**/.env*", "**/*.pem", "**/*.key", "**/*.p12", "**/*.pfx", "**/id_rsa*", "**/*.tfstate", "**/*.tfvars",
   "**/credentials*", "**/.npmrc", "**/.netrc", "**/secrets/**",
 ];
 
 const IndexSchema = z
   .object({
-    denyPaths: z.array(z.string().min(1)).default(DEFAULT_DENY)
-      .describe("Path globs the index never reads, case-insensitive (secrets, sensitive fixtures, generated code)"),
+    denyPaths: z.array(z.string().min(1)).default([])
+      .describe("Path globs the index never reads, case-insensitive (sensitive fixtures, generated code), added to the built-in secret globs (.env*, *.pem, **/secrets/** and the like)"),
     utilityGlobs: z.array(z.string().min(1)).default([]).describe("Globs of internal utility modules; their exports are reinvention candidates"),
     maxFileKB: count.default(512),
     maxTotalMB: count.default(200),
@@ -62,6 +64,11 @@ const IndexSchema = z
   .strict()
   .default({})
   .describe("Code index (spec §6.2)");
+
+// Every glob the index skips for one repo: the built-ins, then the profile's, then the repo's.
+export const denyPathsFor = (ix: { denyPaths: readonly string[] }, repo: { denyPaths: readonly string[] }): string[] => [
+  ...DEFAULT_DENY_PATHS, ...ix.denyPaths, ...repo.denyPaths,
+];
 
 const ShapeSchema = z
   .object({
