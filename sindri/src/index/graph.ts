@@ -192,6 +192,10 @@ function inSnapshot(file: string, roots: string[]): string | null {
   return norm === "." || norm === ".." || norm.startsWith("../") || isReservedSnapshotPath(norm) ? null : norm;
 }
 
+// One message for the throw and one pattern for doctor, so they cannot drift apart.
+export const graphOverCap = (maxMB: number): string => `graphify wrote a graph.json over ${maxMB} MB (raise index.graphMaxMB, max 512)`;
+export const GRAPH_OVER_CAP = /^graphify wrote a graph\.json over \d+ MB \(raise index\.graphMaxMB/;
+
 const unusable = (): SindriError => new SindriError("SND-INDEX-008", "graphify wrote an unusable graph.json");
 
 // graph.json comes from the sandboxed process and is read unsandboxed: never through a
@@ -216,7 +220,7 @@ function readGraphFile(snapshotDir: string, maxMB: number): string {
   try {
     const f = fs.fstatSync(fd);
     if (!f.isFile()) throw unusable();
-    if (f.size > maxMB * 1024 * 1024) throw new SindriError("SND-INDEX-008", `graphify wrote a graph.json over ${maxMB} MB (raise index.graphMaxMB, max 512)`);
+    if (f.size > maxMB * 1024 * 1024) throw new SindriError("SND-INDEX-008", graphOverCap(maxMB));
     return fs.readFileSync(fd, "utf8");
   } finally {
     fs.closeSync(fd);

@@ -7,6 +7,7 @@ import { describe, expect, it } from "vitest";
 import { awStateDir, stateDir, type Deps } from "../src/deps.js";
 import { LEDGER_SCHEMA_VERSION } from "../src/ledger/db.js";
 import { runChecks } from "../src/doctor/doctor.js";
+import { makeGraphifyProvider } from "../src/index/graph.js";
 import { makeIndexCommand } from "../src/index/commands.js";
 import { indexPath, openIndex } from "../src/index/db.js";
 import { heavyLockDir } from "../src/index/heavy-lock.js";
@@ -320,7 +321,14 @@ describe("doctor index checks", () => {
       db.close();
     };
     const fixOf = async () => (await checks(d, offline))[`index:${name}`].fix;
-    setLayer("graph", "unavailable", "graphify wrote a graph.json over 256 MB (raise index.graphMaxMB, max 512)");
+    const snap = tempDir();
+    fs.mkdirSync(path.join(snap, "graphify-out"));
+    fs.writeFileSync(path.join(snap, "graphify-out", "graph.json"), "x".repeat(1024 * 1024 + 1));
+    const over = await Promise.resolve(makeGraphifyProvider({
+      bin: "graphify", version: "1", runner: { run: async () => ({ code: 0, stdout: "", stderr: "" }) }, platform: "darwin", has: () => true, home: tempDir(), maxGraphMB: 1,
+    }).build(snap)).then(() => "", (e: Error) => e.message);
+    expect(over).toMatch(/over 1 MB/);
+    setLayer("graph", "unavailable", over);
     expect(await fixOf()).toBe(`raise index.graphMaxMB in the profile (max 512), then sindri index build --repo ${name}`);
     setLayer("graph", "pending", "not built yet (the next build continues)");
     expect(await fixOf()).toBe(`sindri index build --repo ${name}`);

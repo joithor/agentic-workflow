@@ -5,6 +5,7 @@ import { parseFlags } from "../args.js";
 import { awStateDir, stateDir, type Deps } from "../deps.js";
 import { SindriError } from "../errors.js";
 import { indexPath, layers, meta, openIndexReadOnly } from "../index/db.js";
+import { GRAPH_OVER_CAP } from "../index/graph.js";
 import { heavyLockDir, heavyLockState } from "../index/heavy-lock.js";
 import type { IndexProbes } from "../index/io.js";
 import { GRAPHIFY_PIN } from "../index/pins.js";
@@ -155,7 +156,7 @@ function proxyCheck(env: NodeJS.ProcessEnv): Check | null {
 // a pending layer only needs the next build, anything else needs setup.
 function layerFix(l: { layer: string; status: string; detail: string }, repo: string): string {
   const build = `sindri index build --repo ${repo}`;
-  if (l.layer === "graph" && /graph\.json over \d+ MB/.test(l.detail)) return `raise index.graphMaxMB in the profile (max 512), then ${build}`;
+  if (l.layer === "graph" && GRAPH_OVER_CAP.test(l.detail)) return `raise index.graphMaxMB in the profile (max 512), then ${build}`;
   return l.status === "pending" ? build : "sindri index setup";
 }
 

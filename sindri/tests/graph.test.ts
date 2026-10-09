@@ -231,8 +231,7 @@ describe("graphify provider", () => {
 
   it("reads a graph.json just under the limit and rejects one just over it, naming the key", async () => {
     const mk = (r: ProcessRunner) => makeGraphifyProvider({ bin: "graphify", version: "1.2.3", runner: r, platform: "darwin", has: () => true, home: HOME, maxGraphMB: 1 });
-    const body = (bytes: number) => (snap: string) => {
-      void snap;
+    const body = (bytes: number) => () => {
       const head = '{"nodes":[{"id":"a"}],"links":[],"pad":"';
       return head + "x".repeat(bytes - head.length - 2) + '"}';
     };

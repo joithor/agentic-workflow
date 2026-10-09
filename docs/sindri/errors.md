@@ -13,7 +13,7 @@ Generated from `sindri/src/errors.ts` by `cd sindri && npm run gen`. Do not edit
 | `SND-INDEX-005` | The embedding URL is not loopback. | set index.embeddings.url to http://127.0.0.1:11434 (or disable embeddings) |
 | `SND-INDEX-006` | The local embedding server failed. | sindri index setup (starts Ollama checks and pulls the model) |
 | `SND-INDEX-007` | No network sandbox is available for graphify. | macOS: sandbox-exec ships with the OS; Linux: install bubblewrap (bwrap), or set index.graph: none |
-| `SND-INDEX-008` | graphify is missing, failed or wrote no usable graph. | sindri index setup, then sindri index build --full |
+| `SND-INDEX-008` | graphify is missing, failed or wrote no usable graph. | if graphify or its sandbox is missing: sindri index setup; if graph.json is over the cap: raise index.graphMaxMB (max 512); then sindri index build |
 | `SND-INDEX-404` | No index has been built for this repo. | sindri index build --repo &lt;name&gt; |
 | `SND-ITEM-404` | No such item in the ledger. | Run `sindri observe` to list items. |
 | `SND-LEDGER-001` | The ledger was written by a newer sindri. | Upgrade sindri (`scripts/install-sindri.sh` from the latest main), then rerun. |
