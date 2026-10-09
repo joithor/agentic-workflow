@@ -5331,7 +5331,7 @@ git commit -m "docs: sindri scoping and onboarding docs, ERD and spec amendments
 
 Scoping starts serving the build the day it merges. It scopes the rest of Sindri from the spec, so every later plan starts from a scope map (ring 0). It also produces the first value promised by rollout step 1: recall, precision and a baseline on the project that motivated the design (ring 1). It also onboards a second repo end to end, so every repo Joi works in gets the secret scan, shape signals and an index. Steps 1–2 run on the PR branch; steps 3–6 after merge. **At the start of this task, ask Joi for three things:** a read-only Linear API key (and a time to do the terminal-only approvals), the URL of the motivating project, and a second repo to onboard. The first two are needed for Step 4, the third for Step 6.
 
-- [ ] **Step 1: Smoke-test the real CLI path on the branch (one real scoping run, no private data)**
+- [x] **Step 1: Smoke-test the real CLI path on the branch (one real scoping run, no private data)**
 
 With the approved ring-0 profile (Plans 2–3 add no profile keys without defaults, so it stays approved; Task 1's keys all have defaults too). Note `claude --version` in the PR description.
 
@@ -5347,9 +5347,9 @@ sindri scope runs
 
 `--sources file` reads only the brief, so nothing private is sent. **Pass criterion:** `scope exit: 0` (`Scope map for "Hello scope": complete, …`), or `scope exit: 1` with reasons that are not model or schema errors (for example `token budget exhausted`); either way the last line before `runs` must be `SMOKE_PATH_OK`. A `model job` or `didn't match the schema` line means the real CLI or its schema is not working: run `claude -p hello`, fix with a test-pinned `fix:` commit, and rerun. The run must also appear in `sindri scope runs`.
 
-- [ ] **Step 2: Commit any fixes the smoke test needed**, as `fix: …` commits with a test that pins each one.
+- [x] **Step 2: Commit any fixes the smoke test needed**, as `fix: …` commits with a test that pins each one.
 
-- [ ] **Step 3: After merge, scope the rest of the Sindri build (ring 0, builder)**
+- [x] **Step 3: After merge, scope the rest of the Sindri build (ring 0, builder)**
 
 ```bash
 scripts/install-sindri.sh
@@ -5369,7 +5369,7 @@ grep -nE "/Users/|/home/" "$F" docs/superpowers/scopes/*.json || echo CLEAN
 
 If a `code:` reference names another repository, delete both files and rerun with a profile whose `repos` lists only this one. Then commit (`docs: scope map for the rest of the Sindri rollout`). From now on, the plan writer starts each later plan from this map (§13.3 row 8): Plan 5 is written against it.
 
-- [ ] **Step 4: Configure the backtest source (the one human step) and run it**
+- [x] **Step 4: Configure the backtest source (the one human step) and run it**
 
 Joi creates a **read-only** Linear API key (see `docs/sindri/scope.md`, Setup), stores it in the keychain, adds two keys to the private profile, and approves:
 
@@ -5391,7 +5391,7 @@ sindri scope --backtest "linear:<the motivating project's URL>" --out "$HOME/.ag
 
 Expected: the dry run prints `Sources it would read: linear N, code M.`; the backtest prints `Backtest of "<project>": recall 0.xx (k of n later issues covered…), precision 0.xx (…); brief-only baseline recall 0.xx, precision 0.xx. Pass bar: PASS|NOT PASSED.` and writes a report to `~/.agentic-workflow/scopes/`. Exit 0 means every step finished; either pass-bar result is a valid result (NOT PASSED is what Plan 5's loop starts from). Exit 1 prints why (a budget, a failed adjudication): read the report, raise `scope.maxTokensPerBacktest` or fix the cause, and rerun. If there are fewer than ten later issues the report says `small sample`; try `--window 3d` as a second reading.
 
-- [ ] **Step 5: Post the evidence**
+- [x] **Step 5: Post the evidence**
 
 Post on the Plan 4 PR:
 - the Step 3 summary line and the scope-map file path;
@@ -5399,7 +5399,7 @@ Post on the Plan 4 PR:
 
 This is rollout step 1's first value (spec §13.1): scope maps, plus measured recall, precision and a baseline. Those numbers are the scoping harness's eval-suite metrics, which Plan 5's self-evolution loop improves.
 
-- [ ] **Step 6: Onboard a second repo end to end (after merge; Joi approves at a terminal)**
+- [x] **Step 6: Onboard a second repo end to end (after merge; Joi approves at a terminal)**
 
 Install the nudge for every provider in use, then confirm it fires in the second repo (`$REPO`, from Joi) and is silent in this one:
 
