@@ -4,9 +4,10 @@ import { ok } from "../src/adapters/types.js";
 import { SindriError } from "../src/errors.js";
 import { gather } from "../src/scope/gather.js";
 import type { ScopeMap } from "../src/scope/map.js";
-import { Budget, meteredRunner, ModelAnswerError, type ModelCall, type ModelRunner } from "../src/scope/model.js";
+import { Budget, meteredRunner } from "../src/scope/model.js";
 import { runScoping } from "../src/scope/run.js";
 import type { SourceRecord } from "../src/scope/source.js";
+import { scriptedRunner } from "./scope-fixtures.js";
 
 const brief: SourceRecord = { ref: "file:b.md", kind: "brief", title: "Shift times", text: "shift times editor and api", author: null, createdAt: null, trust: "trusted" };
 const evidence = () => gather(brief, [{ name: "x", find: async () => ok([{ ref: "linear:A-1", kind: "issue", title: "api", text: "shift times api", author: "a", createdAt: null, trust: "untrusted" }]) }], { asOf: null, maxRecords: 5, progress: () => undefined });
@@ -21,27 +22,8 @@ const goodMap: ScopeMap = {
 const surface = (title: string, id = "S1", citations = ["R2"]) => ({ id, kind: "api" as const, title, detail: "", citations });
 const none = { missing: [], workstream: "" };
 
-// Scripted runner: answers in order; records each call. A bad answer costs 110 tokens, like a good one.
-function scripted(answers: unknown[]): ModelRunner & { calls: { role: string; model: string; input: string }[] } {
-  const calls: { role: string; model: string; input: string }[] = [];
-  return {
-    calls,
-    async run<T>(call: ModelCall<T>) {
-      calls.push({ role: call.role, model: call.model, input: call.input });
-      const a = answers.shift();
-      if (a instanceof Error) throw a;
-      const usage = { inputTokens: 100, outputTokens: 10 };
-      try {
-        return { value: call.parse(a), usage };
-      } catch (e) {
-        throw new ModelAnswerError(`the model's answer didn't match the schema: ${(e as Error).message.slice(0, 80)}`, usage);
-      }
-    },
-  };
-}
-
 function setup(answers: unknown[], limit = 1_000_000) {
-  const inner = scripted(answers);
+  const inner = scriptedRunner(answers, { inputTokens: 100, outputTokens: 10 });
   const budget = new Budget(limit);
   const lines: string[] = [];
   const opts = { runner: meteredRunner(inner, { budget, audit: [] }), models: { scoping: "sonnet", challenger: "opus" }, maxRounds: 3, budget, maxPackChars: 10_000, progress: (l: string) => { lines.push(l); } };

@@ -2827,7 +2827,7 @@ git commit -m "feat: sindri scoping step with checks, revision and missing-surfa
   - The output directory is `--out`, else `sources.notesDir`, else `SND-SCOPE-021`. A file subject that doesn't exist is `SND-SCOPE-020`; a missing `--section` is `SND-SCOPE-022`; `--section` with a Linear subject is refused (`SND-CLI-002`); `linear:` without `sources.linear` is `SND-SCOPE-024`.
   - Ledger rows carry a safe subject label (`brief.md`, `linear:<slug>`), never a path or URL.
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 Replace `sindri/tests/scope-fixtures.ts` with (the first two functions are unchanged):
 
@@ -3152,12 +3152,12 @@ describe("the ledger", () => {
 });
 ```
 
-- [ ] **Step 2: Run the test to verify it fails**
+- [x] **Step 2: Run the test to verify it fails**
 
 Run: `cd sindri && npx vitest run tests/scope-command.test.ts`
 Expected: FAIL with `Failed to load url ../src/scope/commands.js`.
 
-- [ ] **Step 3: Implement**
+- [x] **Step 3: Implement**
 
 `sindri/src/scope/commands.ts`:
 
@@ -3524,12 +3524,12 @@ Add to `ERRORS`:
   "SND-SCOPE-025": { summary: "Refusing to write a scope map into a git worktree.", fix: "use --sources file,code, or write outside the repo" },
 ```
 
-- [ ] **Step 4: Run the tests**
+- [x] **Step 4: Run the tests**
 
 Run: `cd sindri && npm run gen && npm run typecheck && npm run test:coverage`
 Expected: all tests PASS; coverage 100% on the files this task touches.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add sindri/src sindri/tests sindri/vitest.config.ts docs/sindri/errors.md

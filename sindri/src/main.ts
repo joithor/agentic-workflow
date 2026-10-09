@@ -6,8 +6,10 @@ import { makeIndexCommand } from "./index/commands.js";
 import { repoCommand } from "./index/repo-add.js";
 import { makeShapeCommand } from "./index/shape.js";
 import { ledgerCommand, observeCommand } from "./observe/observe.js";
-import { profileCommand } from "./profile/commands.js";
 import { failure, success, type CommandResult } from "./output.js";
+import { profileCommand } from "./profile/commands.js";
+import { makeScopeCommand } from "./scope/commands.js";
+import { realScopeIo } from "./scope/io-real.js";
 import { scrubCommand } from "./scrub/commands.js";
 import { makeScrubber } from "./scrub/scrub.js";
 
@@ -68,6 +70,11 @@ export const COMMANDS: Record<string, CommandDef> = {
       "  sindri shape reconcile [--json]   (ingest the spool and label outcomes; observe does this hourly)",
     ].join("\n"),
     run: (args, deps) => makeShapeCommand(deps.io)(args, deps),
+  },
+  scope: {
+    summary: "Scope a project into a cited map (surfaces, workstreams, questions); `scope runs` lists past runs",
+    usage: "Usage:\n  sindri scope <brief.md> [--section N] [--out DIR] [--sources LIST] [--dry-run] [--json]\n  sindri scope linear:<project-url> [--out DIR] [--sources LIST] [--dry-run] [--json]\n  sindri scope runs [--json]\n  --sources is a comma-separated list of file,notes,transcripts,linear,code. Inside a git worktree only --sources file,code is allowed.",
+    run: makeScopeCommand(realScopeIo()),
   },
   ledger: { summary: "Show ledger events", usage: "Usage: sindri ledger [--item ID] [--since 7d|12h] [--json]", run: ledgerCommand },
 };

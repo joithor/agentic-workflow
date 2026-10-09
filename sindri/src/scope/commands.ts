@@ -1,0 +1,351 @@
+import fs from "node:fs";
+import path from "node:path";
+
+import { unwrap } from "../adapters/types.js";
+import { parseFlags } from "../args.js";
+import { stateDir, type Deps } from "../deps.js";
+import { SindriError } from "../errors.js";
+import { ulid } from "../ids.js";
+import { approvedOrThrow } from "../index/commands.js";
+import type { ProcessRunner } from "../index/io.js";
+import { ledgerPath, openLedger, openLedgerReadOnly, withEpoch } from "../ledger/db.js";
+import { acquireTickLock } from "../lock/lock.js";
+import type { Command } from "../main.js";
+import { failure, fromError, success, type CommandResult } from "../output.js";
+import { requireApprovedProfile } from "../profile/approve.js";
+import type { LoadedProfile } from "../profile/load.js";
+import { compileExtraPatterns, makeScrubber, type Scrubber } from "../scrub/scrub.js";
+import { resolveSecret } from "../secrets.js";
+import { gather, type Evidence } from "./gather.js";
+import { renderIncomplete, renderMap, type RenderMeta } from "./map.js";
+import { Budget, meteredRunner, type ModelAuditRow, type ModelRunner } from "./model.js";
+import { runScoping, type ScopeResult } from "./run.js";
+import type { Source, SourceRecord } from "./source.js";
+import { codeSource } from "./sources/code.js";
+import { fileSource } from "./sources/file.js";
+import { fetchLinearProject, linearSource, projectSlug, type GraphqlFetch, type LinearProject } from "./sources/linear.js";
+import { notesSource } from "./sources/notes.js";
+import { TRANSCRIPT_CAPS, transcriptsSource } from "./sources/transcripts.js";
+
+// The scrubber is the profile's (built-in plus scrub.extraPatterns): the real runner
+// scrubs every prompt with it before it leaves the machine.
+export interface ScopeIo {
+  runner: (loaded: LoadedProfile, scrubber: Scrubber) => ModelRunner;
+  fetch: GraphqlFetch;
+  process: ProcessRunner;
+  progress: (line: string) => void;
+}
+
+export const SOURCE_NAMES = ["file", "notes", "transcripts", "linear", "code"] as const;
+export type SourceName = (typeof SOURCE_NAMES)[number];
+
+const USAGE =
+  "usage: sindri scope <brief.md | linear:<project-url>> [--section N] [--out DIR] [--sources LIST] [--dry-run] [--json]  |  sindri scope runs [--json]";
+
+export function extractSection(markdown: string, n: string): string | null {
+  const lines = markdown.split("\n");
+  const start = lines.findIndex((l) => l.startsWith(`## ${n}. `) || l.startsWith(`## ${n} `));
+  if (start < 0) return null;
+  const end = lines.findIndex((l, i) => i > start && l.startsWith("## "));
+  return lines.slice(start, end < 0 ? lines.length : end).join("\n").trimEnd();
+}
+
+export const slug = (s: string): string => s.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "").slice(0, 60) || "scope";
+
+export const isLinearSubject = (s: string): boolean => s.startsWith("linear:") || s.includes("linear.app/");
+
+// What the ledger and the --json output call the subject: never a path or a URL, and scrubbed.
+export const subjectLabel = (s: string, scrubber: Scrubber): string =>
+  scrubber.scrub(isLinearSubject(s) ? `linear:${projectSlug(s).replace(/[^A-Za-z0-9_-]+/g, "-")}` : path.basename(s)).text;
+
+export function formatCounts(counts: Record<string, number>): string {
+  const parts = Object.entries(counts).map(([k, v]) => `${k} ${v}`);
+  return parts.length === 0 ? "none" : parts.join(", ");
+}
+
+// null means "every source the profile configures".
+export function parseSources(list: string | undefined): Set<SourceName> | null {
+  if (list === undefined) return null;
+  const names = list.split(",").map((s) => s.trim()).filter((s) => s !== "");
+  const bad = names.filter((n) => !(SOURCE_NAMES as readonly string[]).includes(n));
+  if (bad.length > 0) throw new SindriError("SND-CLI-002", `--sources has unknown source ${bad.join(", ")}; choose from ${SOURCE_NAMES.join(", ")}`);
+  return new Set(names as SourceName[]);
+}
+
+// The profile's scrubber, built once per run and passed to every source, gather, the model and the output.
+export const profileScrubber = (loaded: LoadedProfile): Scrubber => makeScrubber(compileExtraPatterns(loaded.profile.scrub.extraPatterns));
+
+// A source the profile doesn't configure is never read, whatever --sources says.
+// The code source reads only `codeRepos` (see guardOutput).
+export function localSources(
+  deps: Deps,
+  loaded: LoadedProfile,
+  o: { withIndex: boolean; only: Set<SourceName> | null; codeRepos: string[]; scrubber: Scrubber },
+): Source[] {
+  const src = loaded.profile.sources;
+  const want = (n: SourceName): boolean => o.only === null || o.only.has(n);
+  const out: Source[] = [];
+  if (src.notesDir !== undefined && want("notes")) out.push(notesSource(src.notesDir, o.scrubber));
+  if (src.transcripts.enabled && want("transcripts")) out.push(transcriptsSource(src.transcripts.dir.replace(/^~(?=\/|$)/, deps.home), TRANSCRIPT_CAPS, o.scrubber));
+  if (want("code")) out.push(codeSource(deps, o.codeRepos, { allowAsOf: o.withIndex, scrubber: o.scrubber }));
+  return out;
+}
+
+// A dry run never creates or migrates the ledger: a missing ledger, or one at another
+// schema version, has approved nothing it can read. A real run records, so it may migrate later.
+export function loadApproved(deps: Deps, dryRun: boolean): LoadedProfile {
+  if (!dryRun) return approvedOrThrow(deps);
+  const db = openLedgerReadOnly(ledgerPath(stateDir(deps)));
+  if (db === null) throw new SindriError("SND-PROFILE-012", "no approved profile", { fix: "sindri profile approve" });
+  try {
+    return requireApprovedProfile(deps, db);
+  } finally {
+    db.close();
+  }
+}
+
+export async function loadLinear(deps: Deps, loaded: LoadedProfile, io: ScopeIo, ref: string, scrubber: Scrubber): Promise<LinearProject> {
+  const cfg = loaded.profile.sources.linear;
+  if (cfg === undefined) throw new SindriError("SND-SCOPE-024", "sources.linear is not configured", { fix: "add sources.linear.token (a secret pointer) to the profile, then sindri profile approve" });
+  const token = await resolveSecret(cfg.token, deps, io.process);
+  return unwrap(await fetchLinearProject({ apiUrl: cfg.apiUrl, token, fetch: io.fetch, ref, scrubber }));
+}
+
+// --out is resolved against the command's cwd, not the process's.
+export function outputDir(loaded: LoadedProfile, deps: Deps, flag: string | undefined): string {
+  const dir = flag === undefined ? loaded.profile.sources.notesDir : path.resolve(deps.cwd, flag);
+  if (dir === undefined) throw new SindriError("SND-SCOPE-021", "no output directory", { fix: "pass --out DIR or set sources.notesDir" });
+  return dir;
+}
+
+function nearestExisting(p: string): string {
+  let cur = p;
+  while (!fs.existsSync(cur)) cur = path.dirname(cur);
+  return cur;
+}
+
+// The path with symlinks resolved as far as it exists; the missing tail is kept as written.
+function realPath(p: string): string {
+  const base = nearestExisting(p);
+  return path.join(fs.realpathSync(base), path.relative(base, p));
+}
+
+const refuse = (dir: string, why: string): SindriError =>
+  new SindriError("SND-SCOPE-025", `refusing to write ${path.basename(dir)} inside a git worktree: ${why}`);
+
+// Spec amendment 8: a map built from notes, transcripts or tracker text must not land
+// in a git worktree (it may be public). Only a file brief and the code index are safe there,
+// and then only the code of the profile repo that holds the output directory (another
+// repo's code must not land in this one). Answers the repos the code source may read.
+export async function guardOutput(deps: Deps, loaded: LoadedProfile, dir: string, only: Set<SourceName> | null, linear: boolean): Promise<string[]> {
+  const all = Object.keys(loaded.repos).sort();
+  const at = realPath(dir);
+  const r = await deps.git.run(["rev-parse", "--is-inside-work-tree"], nearestExisting(at));
+  if (!(r.ok && r.stdout.trim() === "true")) return all;
+  if (only === null || linear || ![...only].every((n) => n === "file" || n === "code")) {
+    throw refuse(dir, "the map may carry notes, transcripts or tracker text");
+  }
+  if (!only.has("code")) return [];
+  const holder = all
+    .map((name) => ({ name, root: realPath(loaded.repos[name].path) }))
+    .sort((a, b) => b.root.length - a.root.length)
+    .find((x) => at === x.root || at.startsWith(`${x.root}${path.sep}`));
+  if (holder === undefined) throw refuse(dir, "no profile repo holds it, so the code source would carry another repo's code");
+  return [holder.name];
+}
+
+// Files 0600 in a 0700 directory (spec §8.4); scrubbed once more with the profile's scrubber on the way out.
+// Only `dir` is ever written: the file name is a slug, never model text.
+export function writeOut(dir: string, base: string, md: string, json: unknown, scrubber: Scrubber): string {
+  fs.mkdirSync(dir, { recursive: true, mode: 0o700 });
+  let file = path.join(dir, `${base}.md`);
+  for (let n = 2; fs.existsSync(file); n++) file = path.join(dir, `${base}-${n}.md`);
+  fs.writeFileSync(file, scrubber.scrub(md).text, { flag: "wx", mode: 0o600 });
+  fs.writeFileSync(file.replace(/\.md$/, ".json"), scrubber.scrub(`${JSON.stringify(scrubber.scrubDeep(json), null, 2)}\n`).text, { flag: "wx", mode: 0o600 });
+  return file;
+}
+
+export interface RunRow {
+  runId: string;
+  subject: string;
+  mode: "scope" | "backtest";
+  status: string;
+  rounds: number;
+  surfaces: number;
+  recall: number | null;
+  precision: number | null;
+  baselineRecall: number | null;
+  baselinePrecision: number | null;
+  leaky: boolean;
+  tokens: number;
+  outPath: string;
+}
+
+export const LEDGER_MISS = "Not recorded in the ledger: another run holds the lock.";
+
+// One scope_runs row and one model_calls row per call, under the tick lock. False when the lock is held.
+export function recordRun(deps: Deps, row: RunRow, calls: ModelAuditRow[]): boolean {
+  const db = openLedger(ledgerPath(stateDir(deps)));
+  try {
+    const lock = acquireTickLock({ dir: stateDir(deps), db, sys: deps.system, now: deps.now });
+    if (!lock.ok) return false;
+    try {
+      withEpoch(db, lock.owner.epoch, () => {
+        db.prepare(
+          "INSERT INTO scope_runs (run_id, subject, mode, ts, status, rounds, surfaces, recall, precision, baseline_recall, baseline_precision, leaky, tokens, out_path, epoch) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+        ).run(row.runId, row.subject, row.mode, deps.now().toISOString(), row.status, row.rounds, row.surfaces, row.recall, row.precision, row.baselineRecall, row.baselinePrecision, row.leaky ? 1 : 0, row.tokens, row.outPath, lock.owner.epoch);
+        const insert = db.prepare("INSERT INTO model_calls (run_id, seq, role, model, input_tokens, output_tokens) VALUES (?, ?, ?, ?, ?, ?)");
+        calls.forEach((c, i) => insert.run(row.runId, i + 1, c.role, c.model, c.inputTokens, c.outputTokens));
+      });
+      return true;
+    } finally {
+      lock.release();
+    }
+  } finally {
+    db.close();
+  }
+}
+
+export async function scopeOnce(
+  loaded: LoadedProfile,
+  io: ScopeIo,
+  brief: SourceRecord,
+  sources: Source[],
+  asOf: Date | null,
+  runner: ModelRunner,
+  budget: Budget,
+  scrubber: Scrubber,
+): Promise<{ result: ScopeResult; evidence: Evidence }> {
+  const evidence = await gather(brief, sources, { asOf, maxRecords: loaded.profile.scope.maxRecords, progress: io.progress, scrubber });
+  const result = await runScoping(evidence, {
+    runner,
+    models: loaded.profile.models,
+    maxRounds: loaded.profile.scope.maxRounds,
+    budget,
+    maxPackChars: loaded.profile.scope.maxPackChars,
+    progress: io.progress,
+  });
+  return { result, evidence };
+}
+
+interface RunsRow {
+  run_id: string;
+  ts: string;
+  mode: string;
+  status: string;
+  surfaces: number;
+  recall: number | null;
+  precision: number | null;
+  baseline_recall: number | null;
+  baseline_precision: number | null;
+  leaky: number;
+  out_path: string;
+}
+
+// Read-only: never creates or migrates the ledger. No ledger, or one at another schema version, has no runs to show.
+function scopeRuns(args: string[], deps: Deps): CommandResult {
+  const json = args.includes("--json");
+  parseFlags(args, { json: { type: "boolean" } });
+  const db = openLedgerReadOnly(ledgerPath(stateDir(deps)));
+  let found: RunsRow[] = [];
+  if (db !== null) {
+    try {
+      found = db.prepare(
+        "SELECT run_id, ts, mode, status, surfaces, recall, precision, baseline_recall, baseline_precision, leaky, out_path FROM scope_runs ORDER BY ts DESC, rowid DESC LIMIT 20",
+      ).all() as RunsRow[];
+    } finally {
+      db.close();
+    }
+  }
+  const data = found.map((r) => ({
+    runId: r.run_id, ts: r.ts, mode: r.mode, status: r.status, surfaces: r.surfaces, recall: r.recall, precision: r.precision,
+    baselineRecall: r.baseline_recall, baselinePrecision: r.baseline_precision, leaky: r.leaky === 1, file: path.basename(r.out_path),
+  }));
+  if (data.length === 0) return success("No scope runs recorded.", data, json);
+  const num = (v: number | null): string => (v === null ? "n/a" : v.toFixed(2));
+  const text = data.map((r) => `${r.ts} ${r.mode} ${r.status} surfaces=${r.surfaces} recall=${num(r.recall)} precision=${num(r.precision)}${r.leaky ? " leaky" : ""} ${r.file}`);
+  return success(text.join("\n"), data, json);
+}
+
+export function makeScopeCommand(io: ScopeIo): Command {
+  return async (args, deps) => {
+    const json = args.includes("--json");
+    try {
+      if (args[0] === "runs") return scopeRuns(args.slice(1), deps);
+      const { values, positionals } = parseFlags(args, {
+        section: { type: "string" }, out: { type: "string" }, json: { type: "boolean" }, sources: { type: "string" }, "dry-run": { type: "boolean" },
+      });
+      const subject = positionals[0];
+      if (subject === undefined) return failure("SND-CLI-002", USAGE, json);
+      const only = parseSources(values.sources);
+      const dryRun = values["dry-run"] === true;
+      const loaded = loadApproved(deps, dryRun);
+      const scrubber = profileScrubber(loaded);
+      const linear = isLinearSubject(subject);
+      if (linear && values.section !== undefined) throw new SindriError("SND-CLI-002", "--section applies to brief files, not Linear projects");
+      const out = dryRun ? null : outputDir(loaded, deps, values.out);
+      const codeRepos = out === null ? Object.keys(loaded.repos).sort() : await guardOutput(deps, loaded, out, only, linear);
+
+      let brief: SourceRecord;
+      const sources = localSources(deps, loaded, { withIndex: true, only, codeRepos, scrubber });
+      if (linear) {
+        const project = await loadLinear(deps, loaded, io, subject, scrubber);
+        brief = { ref: `linear-project:${projectSlug(subject)}`, kind: "brief", title: project.name, text: `${project.name}\n\n${project.description}`, author: null, createdAt: project.createdAt, trust: "untrusted" };
+        if (only === null || only.has("linear")) sources.unshift(linearSource(project));
+      } else {
+        brief = unwrap(await fileSource(path.resolve(deps.cwd, subject), scrubber).find({ keywords: [], asOf: null, limit: 1 }))[0];
+        if (values.section !== undefined) {
+          const part = extractSection(brief.text, values.section);
+          if (part === null) throw new SindriError("SND-SCOPE-022", `no section ${values.section} in ${path.basename(subject)}`, { fix: "check the heading number (## 13. …)" });
+          brief = { ...brief, text: part, title: part.split("\n")[0].replace(/^##\s*/, "") };
+        }
+      }
+
+      const s = loaded.profile.scope;
+      if (out === null) {
+        const evidence = await gather(brief, sources, { asOf: null, maxRecords: s.maxRecords, progress: io.progress, scrubber });
+        const m = loaded.profile.models;
+        const packChars = evidence.refs.pack(s.maxPackChars).length;
+        const text = [
+          `Dry run for "${brief.title}". No model was called and nothing was written.`,
+          `Sources it would read: ${formatCounts(evidence.counts)}.`,
+          `Pack: about ${packChars} characters (at most ${s.maxPackChars}). Models: draft ${m.scoping}, challenge ${m.challenger}; up to ${s.maxRounds} rounds each; budget ${s.maxTokensPerRun} tokens.`,
+        ];
+        return success(text.join("\n"), { dryRun: true, title: brief.title, counts: evidence.counts, notes: evidence.notes, packChars, models: { scoping: m.scoping, challenger: m.challenger }, maxRounds: s.maxRounds, maxTokensPerRun: s.maxTokensPerRun }, json);
+      }
+
+      const runId = ulid(deps.now());
+      const budget = new Budget(s.maxTokensPerRun);
+      const audit: ModelAuditRow[] = [];
+      const runner = meteredRunner(io.runner(loaded, scrubber), { budget, audit });
+      const { result, evidence } = await scopeOnce(loaded, io, brief, sources, null, runner, budget, scrubber);
+      // The model's text never passed a scrubber: scrub it before it is rendered or saved.
+      const map = result.map === null ? null : scrubber.scrubDeep(result.map);
+      const reasons = result.reasons.map((r) => scrubber.scrub(r).text);
+      const label = subjectLabel(subject, scrubber);
+      const meta: RenderMeta = { status: result.status, rounds: result.rounds, tokens: result.tokens, generatedAt: deps.now().toISOString(), reasons, notes: evidence.notes, added: result.added };
+      const md = map === null ? renderIncomplete(brief.title, meta) : renderMap(map, evidence.refs, meta);
+      const file = writeOut(out, `scope-${slug(brief.title)}-${deps.now().toISOString().slice(0, 10)}`, md, { ...meta, subject: label, map, counts: evidence.counts }, scrubber);
+      const n = map === null ? { surfaces: 0, workstreams: 0, questions: 0 } : { surfaces: map.surfaces.length, workstreams: map.workstreams.length, questions: map.questions.length };
+      const recorded = recordRun(deps, { runId, subject: label, mode: "scope", status: result.status, rounds: result.rounds, surfaces: n.surfaces, recall: null, precision: null, baselineRecall: null, baselinePrecision: null, leaky: false, tokens: result.tokens, outPath: file }, audit);
+      const next =
+        result.status === "incomplete"
+          ? "Rerun after raising scope.maxRounds or scope.maxTokensPerRun in the profile (then sindri profile approve), or fix the reasons above."
+          : n.questions > 0
+            ? `${n.questions} open questions need answers before issues are created (see "Open questions" in ${path.basename(file)}).`
+            : "No open questions.";
+      const lines = [
+        `Scope map for "${brief.title}": ${result.status}, ${n.surfaces} surfaces, ${n.workstreams} workstreams, ${n.questions} open questions (${result.rounds} rounds, ${result.tokens} tokens).`,
+        `Sources: ${formatCounts(evidence.counts)}.`,
+        `Wrote ${file}.`,
+        next,
+        ...(recorded ? [] : [LEDGER_MISS]),
+      ];
+      const why = [...evidence.notes.map((x) => `Note: ${x}`), ...(result.status === "incomplete" ? reasons.map((x) => `Why incomplete: ${x}`) : [])];
+      const res = success(lines.join("\n"), { file, ...meta, ...n, counts: evidence.counts, recorded }, json, result.status === "complete" ? 0 : 1);
+      return { ...res, stderr: json ? "" : why.map((x) => `${x}\n`).join("") };
+    } catch (e) {
+      return fromError(e, json);
+    }
+  };
+}

@@ -40,6 +40,10 @@ Generated from `sindri/src/errors.ts` by `cd sindri && npm run gen`. Do not edit
 | `SND-SCOPE-010` | Linear rejected the token. | check sources.linear.token points at a valid read-only Linear API key |
 | `SND-SCOPE-011` | Linear could not be read. | check the project URL and your network, then rerun; the message carries Linear's own error text |
 | `SND-SCOPE-020` | The brief file can't be read. | check the path you passed to sindri scope |
+| `SND-SCOPE-021` | No output directory for the scope map. | pass --out DIR or set sources.notesDir |
+| `SND-SCOPE-022` | That section isn't in the document. | check the heading number (## 13. …) |
+| `SND-SCOPE-024` | Linear isn't configured as a source. | add sources.linear.token (a secret pointer), then sindri profile approve |
+| `SND-SCOPE-025` | Refusing to write a scope map into a git worktree. | use --sources file,code, or write outside the repo |
 | `SND-SCRUB-001` | A profile scrub pattern does not compile. | Fix the regex at the named scrub.extraPatterns index, then run `sindri profile validate`. |
 | `SND-SCRUB-002` | Staged changes contain likely secrets. | remove them (use a secret pointer or an env var); for a false positive, commit with --no-verify and say why |
 | `SND-SCRUB-003` | A different pre-commit hook is already installed. | Add both lines to that hook by hand, in this order: `sindri scrub --staged \|\| exit 1` then `sindri shape --record --staged \|\| true`. |
