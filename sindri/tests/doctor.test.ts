@@ -144,6 +144,30 @@ describe("sindri doctor coverage paths", () => {
     expect(hook?.detail).toContain(process.execPath);
   });
 
+  it("warns on a v1 hook (secret scan only) and a v2 hook without the shape step, while shape.record is on", async () => {
+    const d = await ring0Deps();
+    await runCli(["scrub", "--install-pre-commit"], { ...d, env: { ...d.env, SINDRI_BIN: process.execPath } });
+    const file = path.join(d.cwd, ".git", "hooks", "pre-commit");
+    const v2 = fs.readFileSync(file, "utf8");
+    const hookCheck = async (deps: Deps) => Object.entries(await byName(deps)).find(([k]) => k.startsWith("pre-commit:"))?.[1];
+    fs.writeFileSync(file, v2.replace("# sindri-pre-commit v2", "# sindri-scrub-pre-commit v1").replace(/^"\$SINDRI" shape.*$/m, ""));
+    expect(await hookCheck(d)).toMatchObject({ status: "warn", detail: "hook is v1: secret scan only, no shape recording", fix: `sindri scrub --install-pre-commit --repo ${fs.realpathSync(d.cwd)}` });
+    fs.writeFileSync(file, v2.replace(/^"\$SINDRI" shape.*$/m, ""));
+    expect(await hookCheck(d)).toMatchObject({ status: "warn", detail: "hook doesn't run sindri shape --record (shape.record is on)" });
+    fs.appendFileSync(path.join(d.env.AW_STATE_DIR as string, "profile", "profile.yaml"), "shape:\n  record: false\n");
+    expect((await hookCheck(d))?.status).toBe("ok");
+  });
+
+  it("warns when shape runs wait in the spool's quarantine", async () => {
+    const d = await ring0Deps();
+    expect((await byName(d))["shape-spool"]).toBeUndefined();
+    const q = path.join(stateDir(d), "spool", "quarantine");
+    fs.mkdirSync(q, { recursive: true });
+    expect((await byName(d))["shape-spool"]).toBeUndefined();
+    fs.writeFileSync(path.join(q, "shape-x.json"), "{");
+    expect((await byName(d))["shape-spool"]).toMatchObject({ status: "warn", detail: `1 quarantined shape run(s) in ${q}`, fix: `inspect, then remove ${q}` });
+  });
+
   it("fails on an unreadable ledger with no error code, and does not touch it", async () => {
     const d = await ring0Deps();
     const file = path.join(stateDir(d), "ledger.db");
@@ -231,6 +255,17 @@ function probes(o: { models?: unknown; graphify?: string; graphifyCode?: number;
 const checks = async (deps: Deps, p: IndexProbes) => Object.fromEntries((await runChecks(deps, "22.10.0", p)).map((c) => [c.name, c]));
 
 describe("doctor index checks", () => {
+  it("asks the probes on Deps, never the machine's, by default and through runCli", async () => {
+    const d = await approvedIndexDeps(ring0Repo({ "src/a.ts": "export const a = 1;\n" }), { index: "index:\n  utilityGlobs: []\n" });
+    const asked: string[] = [];
+    const none: IndexProbes = { ...offline, has: (b) => (asked.push(b), false) };
+    const byDefault = Object.fromEntries((await runChecks({ ...d, io: fakeIndexIo({ probes: none }) }, "22.10.0")).map((c) => [c.name, c]));
+    expect(byDefault.graphify).toMatchObject({ status: "warn", detail: "no network sandbox" });
+    expect(asked).toContain("/usr/bin/sandbox-exec");
+    const viaCli = JSON.parse((await runCli(["doctor", "--json"], { ...d, io: fakeIndexIo({ probes: probes() }) })).stdout) as { name: string; detail: string }[];
+    expect(viaCli.find((c) => c.name === "graphify")?.detail).toBe(`${GRAPHIFY_PIN}, sandboxed`);
+  });
+
   it("warns on a missing index, and checks embeddings, graphify (exact pin, sandboxed) and the proxy", async () => {
     const d = await approvedIndexDeps(ring0Repo({ "src/a.ts": "export const a = 1;\n" }), { index: "index:\n  utilityGlobs: []\n" });
     const name = ring0Name(d);

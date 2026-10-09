@@ -8,7 +8,6 @@ import { indexPath, layers, meta, openIndexReadOnly } from "../index/db.js";
 import { heavyLockDir, heavyLockState } from "../index/heavy-lock.js";
 import type { IndexProbes } from "../index/io.js";
 import { GRAPHIFY_PIN } from "../index/pins.js";
-import { realIndexProbes } from "../index/sandbox-real.js";
 import { hasModel, installedGraphify, sandboxedVersionArgv, tagsUrl } from "../index/setup.js";
 import { LEDGER_SCHEMA_VERSION, ledgerPath, readLedger, schemaVersion } from "../ledger/db.js";
 import { inspectLock } from "../lock/lock.js";
@@ -16,7 +15,10 @@ import type { Command } from "../main.js";
 import { fromError, success, type ExitCode } from "../output.js";
 import { approvalProblem, approvalState, type ApprovalState } from "../profile/approve.js";
 import { loadProfile, resolveProfileRoot, type LoadedProfile } from "../profile/load.js";
-import { hookBinary, isSindriHook, preCommitPath } from "../scrub/commands.js";
+import { spoolDir } from "../index/spool.js";
+import { hookBinary, isSindriHook, PRE_COMMIT_MARKER, preCommitPath } from "../scrub/commands.js";
+
+const lines = (text: string): string[] => text.split("\n");
 
 function isExecutable(p: string): boolean {
   try {
@@ -121,8 +123,16 @@ async function profileChecks(deps: Deps, loaded: LoadedProfile): Promise<{ check
     const fix = `sindri scrub --install-pre-commit --repo ${repo.path}`;
     if (bin === null) out.push({ name: `pre-commit:${name}`, status: "warn", detail: "secret-scan hook not installed", fix });
     else if (path.isAbsolute(bin) && !isExecutable(bin)) out.push({ name: `pre-commit:${name}`, status: "warn", detail: `hook calls ${bin}, which is missing, so every commit is refused`, fix: `scripts/install-sindri.sh, then ${fix}` });
-    else out.push({ name: `pre-commit:${name}`, status: "ok", detail: `${hook} → ${bin}` });
+    // A v1 hook (Plan 2) runs the secret scan only; a hand-merged v2 hook may lack the shape step.
+    else if (!lines(text).includes(PRE_COMMIT_MARKER)) out.push({ name: `pre-commit:${name}`, status: "warn", detail: "hook is v1: secret scan only, no shape recording", fix });
+    else if (used.profile.shape.record && !lines(text).some((l) => l.startsWith('"$SINDRI" shape --record'))) {
+      out.push({ name: `pre-commit:${name}`, status: "warn", detail: "hook doesn't run sindri shape --record (shape.record is on)", fix });
+    } else out.push({ name: `pre-commit:${name}`, status: "ok", detail: `${hook} → ${bin}` });
   }
+  // Spool files the ledger refused (unreadable or malformed) wait in quarantine/ for a look.
+  const quarantine = path.join(spoolDir(deps), "quarantine");
+  const held = fs.existsSync(quarantine) ? fs.readdirSync(quarantine).length : 0;
+  if (held > 0) out.push({ name: "shape-spool", status: "warn", detail: `${held} quarantined shape run(s) in ${quarantine}`, fix: `inspect, then remove ${quarantine}` });
   return { checks: out, used };
 }
 
@@ -198,7 +208,7 @@ async function indexChecks(deps: Deps, loaded: LoadedProfile, probes: IndexProbe
   return out;
 }
 
-export async function runChecks(deps: Deps, nodeVersion: string = process.versions.node, probes: IndexProbes = realIndexProbes()): Promise<Check[]> {
+export async function runChecks(deps: Deps, nodeVersion: string = process.versions.node, probes: IndexProbes = deps.io.probes): Promise<Check[]> {
   const [major, minor] = nodeVersion.split(".").map(Number);
   const checks: Check[] = [
     major > 20 || (major === 20 && minor >= 11) ? { name: "node", status: "ok", detail: nodeVersion } : { name: "node", status: "fail", detail: `${nodeVersion} (need >= 20.11)`, fix: "install Node 20.11 or newer" },

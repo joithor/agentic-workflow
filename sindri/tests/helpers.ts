@@ -6,10 +6,22 @@ import path from "node:path";
 import type { Deps } from "../src/deps.js";
 import type { GitResult, GitRunner } from "../src/git.js";
 import { realGitRunner } from "../src/git-real.js";
+import type { IndexIo } from "../src/index/io.js";
 import type { SystemProbe } from "../src/system.js";
 
 export function tempDir(prefix = "sindri-test-"): string {
   return fs.mkdtempSync(path.join(os.tmpdir(), prefix));
+}
+
+// An IndexIo that behaves like a machine with nothing installed: Ollama refuses, no binaries.
+export function fakeIndexIo(over: Partial<IndexIo> = {}): IndexIo {
+  return {
+    fetch: async () => {
+      throw new Error("connect ECONNREFUSED");
+    },
+    probes: { has: () => false, run: async () => ({ code: 127, stdout: "", stderr: "not found" }), getJson: async () => null },
+    ...over,
+  };
 }
 
 // A Deps bag that never touches the real ~/.agentic-workflow: AW_STATE_DIR
@@ -23,6 +35,7 @@ export function makeDeps(overrides: Partial<Deps> = {}): Deps {
     now: () => new Date("2026-10-08T12:00:00.000Z"),
     system: fakeSystem(),
     git: realGitRunner(),
+    io: fakeIndexIo(),
     isTTY: false,
     prompt: async () => "",
     stdin: async () => "",

@@ -3,6 +3,7 @@ import os from "node:os";
 import readline from "node:readline/promises";
 
 import { realGitRunner } from "./git-real.js";
+import { realIndexIo } from "./index/sandbox-real.js";
 import { runCli } from "./main.js";
 import { realSystemProbe } from "./system-real.js";
 
@@ -13,6 +14,7 @@ const result = await runCli(process.argv.slice(2), {
   now: () => new Date(),
   system: realSystemProbe(),
   git: realGitRunner(),
+  io: realIndexIo(),
   isTTY: process.stdin.isTTY === true && process.stdout.isTTY === true,
   prompt: async (question) => {
     const rl = readline.createInterface({ input: process.stdin, output: process.stderr });

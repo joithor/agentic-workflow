@@ -5,24 +5,15 @@ import YAML from "yaml";
 import type { Deps } from "../src/deps.js";
 import type { GitRunner } from "../src/git.js";
 import { realGitRunner } from "../src/git-real.js";
-import type { FetchLike, IndexIo } from "../src/index/io.js";
+import type { FetchLike } from "../src/index/io.js";
 import { runCli } from "../src/main.js";
 import { loadProfile, type LoadedProfile } from "../src/profile/load.js";
 import { gitRepo, makeDeps, tempDir } from "./helpers.js";
 
+export { fakeIndexIo } from "./helpers.js";
+
 // CLI tests switch the network layers off, so nothing talks to Ollama or runs graphify.
 export const OFF = "index:\n  embeddings:\n    enabled: false\n  graph: none\n";
-
-// An IndexIo that behaves like a machine with nothing installed: Ollama refuses, no binaries.
-export function fakeIndexIo(over: Partial<IndexIo> = {}): IndexIo {
-  return {
-    fetch: async () => {
-      throw new Error("connect ECONNREFUSED");
-    },
-    probes: { has: () => false, run: async () => ({ code: 127, stdout: "", stderr: "not found" }), getJson: async () => null },
-    ...over,
-  };
-}
 
 // A temp repo that `profile init --ring0` accepts (it needs a plans directory).
 export const ring0Repo = (files: Record<string, string>): string => gitRepo({ ...files, "docs/superpowers/plans/p.md": "# P\n" });

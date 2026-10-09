@@ -3,9 +3,19 @@ import { describe, expect, it } from "vitest";
 import { stateDir } from "../src/deps.js";
 import { COMMANDS, runCli } from "../src/main.js";
 import { success } from "../src/output.js";
-import { makeDeps } from "./helpers.js";
+import { fakeIndexIo, makeDeps } from "./helpers.js";
+import { approvedIndexDeps, ring0Repo } from "./index-fixtures.js";
 
 describe("runCli", () => {
+  it("routes index and shape through the IndexIo on Deps (never the machine's)", async () => {
+    const d = await approvedIndexDeps(ring0Repo({ "a.ts": "export const a = 1;\n" }), { index: "index:\n  embeddings:\n    enabled: true\n  graph: none\n" });
+    const asked: string[] = [];
+    const io = fakeIndexIo({ probes: { has: (b) => (asked.push(b), false), run: async () => ({ code: 1, stdout: "", stderr: "" }), getJson: async () => null } });
+    expect((await runCli(["index", "setup"], { ...d, io })).stdout).toMatch(/^fail\s+ollama/m);
+    expect(asked).toEqual(["ollama"]);
+    expect((await runCli(["shape", "report"], { ...d, io })).exitCode).toBe(0);
+  });
+
   it("prints help for no args, help and --help", async () => {
     for (const argv of [[], ["help"], ["--help"]]) {
       const r = await runCli(argv, makeDeps());
