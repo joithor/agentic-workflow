@@ -165,8 +165,16 @@ export async function discover(
 export async function withCurrentHashes(
   git: GitRunner, repoPath: string, prompts: readonly { id: string; text: string }[], extraProtected: readonly string[], stored: readonly Artifact[],
 ): Promise<Artifact[]> {
+  return (await currentArtifacts(git, repoPath, prompts, extraProtected, stored)).artifacts;
+}
+
+// Same, and the ids of stored artifacts whose files discover no longer finds. Those keep their stored hash, paths and
+// suite, so check refuses them rather than run a stale suite and bind the result to an old hash.
+export async function currentArtifacts(
+  git: GitRunner, repoPath: string, prompts: readonly { id: string; text: string }[], extraProtected: readonly string[], stored: readonly Artifact[],
+): Promise<{ artifacts: Artifact[]; gone: string[] }> {
   const now = new Map((await discover(git, repoPath, prompts, extraProtected)).map((a) => [a.id, a.hash]));
-  return stored.map((a) => ({ ...a, hash: now.get(a.id) ?? a.hash }));
+  return { artifacts: stored.map((a) => ({ ...a, hash: now.get(a.id) ?? a.hash })), gone: stored.filter((a) => !now.has(a.id)).map((a) => a.id) };
 }
 
 export function saveRegistry(db: Ledger, artifacts: Artifact[], epoch: number, now: Date): { added: number; changed: number; removed: number } {

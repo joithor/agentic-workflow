@@ -150,9 +150,6 @@ export function transition(db: Ledger, id: string, from: readonly ProposalStatus
   return db.prepare(`UPDATE proposals SET status = ?, updated_at = ?, epoch = ? WHERE id = ? AND status IN (${marks})`).run(to, now.toISOString(), epoch, id, ...from).changes > 0;
 }
 
-// Unconditional: fixtures and tests only. Every command moves a status through `transition`.
-export const setStatus = (db: Ledger, id: string, status: ProposalStatus, epoch: number, now: Date): boolean => transition(db, id, STATUSES, status, epoch, now);
-
 export function setTier(db: Ledger, id: string, tier: Tier, epoch: number, now: Date): void {
   db.prepare("UPDATE proposals SET tier = ?, updated_at = ?, epoch = ? WHERE id = ?").run(tier, now.toISOString(), epoch, id);
 }

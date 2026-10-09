@@ -149,6 +149,15 @@ describe("sindri channel promote (Review Focus: human-only, protected paths show
     t.fx.close();
   });
 
+  it("advertises the rollback only when the build it would roll back to has a recorded schema", async () => {
+    const t = await ready({ tty: "bbbbbbbb" });
+    writeChannels(t.deps, { stable: { ...entry(A, t.mk("stable", A), undefined, null), previous: null }, next: entry(B, t.mk("next", B)) });
+    t.record(B);
+    const r = await t.run(["promote", B]);
+    expect(r.stdout).toBe("Promoted bbbbbbbb to stable. The previous build has no recorded ledger schema, so it can't be rolled back to.\nNext: sindri channel status\n");
+    t.fx.close();
+  });
+
   it("shows the protected paths that changed since stable, then promotes and records it", async () => {
     const t = await ready({ tty: "bbbbbbbb", git: protectedDiff });
     const dirA = t.mk("stable", A);
@@ -199,6 +208,7 @@ describe("sindri channel rollback", () => {
     expect((await t.run(["rollback"])).stderr).toContain("aaaaaaaa has no recorded ledger schema");
     expect(t.asked).toEqual([]);
     expect(readChannels(t.deps).stable?.sha).toBe(B);
+    expect((await t.run(["rollback"])).stderr).toContain("scripts/install-sindri.sh --channel next --ref <sha>");
     t.fx.close();
   });
 

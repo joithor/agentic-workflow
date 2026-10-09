@@ -7,8 +7,8 @@ import { makePlanFileTracker } from "../src/adapters/plan-file/tracker.js";
 import { parsePlan } from "../src/adapters/plan-file/parse.js";
 import { init } from "../src/evolve/cmd/registry.js";
 import { publish, stage } from "../src/evolve/cmd/stage.js";
-import { getProposal, inFlightCount, ProposalSchema, saveProposal, setStatus, stagedFile, type Tier } from "../src/evolve/proposals.js";
-import { evolveFixture, git, withDeps } from "./evolve-fixtures.js";
+import { getProposal, inFlightCount, ProposalSchema, saveProposal, stagedFile, type Tier } from "../src/evolve/proposals.js";
+import { evolveFixture, git, withDeps, setStatus } from "./evolve-fixtures.js";
 
 const FILES = { "config/hooks/done-gate.sh": "#!/bin/sh\n", "skills/review/SKILL.md": "x\n" };
 const DENY = "privacy:\n  denyTerms:\n    - Acme Care\n"; // every test but the N1 ones runs with a term list, as a real profile must

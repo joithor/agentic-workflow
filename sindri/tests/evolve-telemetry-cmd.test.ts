@@ -5,8 +5,8 @@ import { describe, expect, it } from "vitest";
 import { init } from "../src/evolve/cmd/registry.js";
 import { telemetry } from "../src/evolve/cmd/telemetry.js";
 import { SindriError } from "../src/errors.js";
-import { saveProposal, setStatus, type Proposal } from "../src/evolve/proposals.js";
-import { scriptedEvolveIo, evolveFixture, type EvolveFixture } from "./evolve-fixtures.js";
+import { saveProposal, type Proposal } from "../src/evolve/proposals.js";
+import { scriptedEvolveIo, evolveFixture, type EvolveFixture, setStatus } from "./evolve-fixtures.js";
 
 const FILES = { "config/hooks/done-gate.sh": "#!/bin/sh\n", "config/lib/tests/done-gate.test.sh": "#!/bin/sh\n" };
 const pad = (n: number): string => String(n).padStart(2, "0");

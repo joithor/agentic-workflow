@@ -25,16 +25,17 @@ const OVERRIDES: readonly RegExp[] = [
   /\binstead of\b[^.]{0,30}?\b(?:safety|clause|rules?|above|previous)\b/i,
 ];
 
-// Inflected forms of the words that address whoever scores the output, matched from a word boundary to the word's end.
-const META_STEMS = /(?<![a-z0-9])(?:judg|evaluat|grader|grading|rubric|reviewer)[a-z0-9]*/g;
+// The nouns that address whoever scores the output, matched as whole words. "judgment", "evaluate", "evaluating" and
+// "review" are ordinary instructions and stay quiet; a reviewer is addressed only through the appeals below.
+const META_STEMS = /(?<![a-z0-9])(?:judges?|evaluators?|graders?|grading|rubrics?)(?![a-z0-9])/g;
 
 // Direct appeals to the reader of the output. Each needs the appeal itself, so "prefer this approach over a rewrite",
-// "note to self" and "review the code" stay quiet.
+// "prefer it" about a surface, "note to self" and "review the code" stay quiet.
 const APPEALS: readonly RegExp[] = [
-  /\b(?:prefer|choose|pick|select|favou?r)\s+(?:this|me|it)\s*(?:[.!;,:)]|$)/im,
+  /\b(?:prefer|choose|pick|select|favou?r)\s+(?:this|me)\s*(?:[.!;,:)]|$)/im,
   /\bnotes?\s+to\s+(?:the\s+)?(?:judge|reviewer|evaluator|grader|reader|scorer)s?\b/i,
   /\b(?:judge|reviewer|evaluator|grader)\s+note\b/i,
-  /\b(?:stronger|better|best)\s+of\s+the\s+two\b/i,
+  /\b(?:this|mine|me|it)\s+(?:\w+\s+)?is\s+(?:the\s+)?(?:stronger|better|best)\s+of\s+the\s+two\b/i,
 ];
 
 // Invisibles are stripped and width/compatibility forms folded first, so "ju\u200Bdge" and fullwidth letters are seen as written.

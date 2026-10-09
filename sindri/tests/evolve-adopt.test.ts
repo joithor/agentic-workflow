@@ -7,9 +7,9 @@ import { describe, expect, it } from "vitest";
 import { adopt, revert } from "../src/evolve/cmd/adopt.js";
 import { inspectOverlay, loadPrompt, overlayFile } from "../src/evolve/overlay.js";
 import { defaultPrompt, SOURCES_CLAUSE } from "../src/evolve/prompts.js";
-import { getProposal, ProposalSchema, saveProposal, setStatus, type ProposalStatus } from "../src/evolve/proposals.js";
+import { getProposal, ProposalSchema, saveProposal, type ProposalStatus } from "../src/evolve/proposals.js";
 import { isHoldout, saveReplay, type ReplayItem } from "../src/evolve/corpus.js";
-import { evolveFixture, withDeps, type EvolveFixture } from "./evolve-fixtures.js";
+import { evolveFixture, withDeps, type EvolveFixture, setStatus } from "./evolve-fixtures.js";
 
 const VARIANT = `${SOURCES_CLAUSE}\nBETTER draft prompt.`;
 const sha8 = (t: string): string => createHash("sha256").update(t).digest("hex").slice(0, 8);

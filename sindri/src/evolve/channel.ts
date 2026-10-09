@@ -142,7 +142,7 @@ export async function rollback(deps: Deps, run: ProcessRunner, now: Date, curren
   if (stable === null || stable.previous === null) throw new SindriError("SND-EVOLVE-005", "there is no previous stable build to roll back to");
   const prev = stable.previous;
   const problem = rollbackProblem(prev, currentSchema);
-  if (problem !== null) throw new SindriError("SND-EVOLVE-005", problem, { fix: "reinstall a build that supports the current ledger: scripts/install-sindri.sh --channel next --ref <sha>, then sindri channel promote <sha>" });
+  if (problem !== null) throw new SindriError("SND-EVOLVE-005", problem, { fix: "reinstall a build with a recorded schema: scripts/install-sindri.sh --channel next --ref <sha>, then sindri channel promote <sha>" });
   await ensureRunnable(deps, run, prev);
   writeWrapper(deps, cliOf(prev));
   const state: ChannelState = { ...c, stable: { ...prev, installedAt: now.toISOString(), previous: null } };

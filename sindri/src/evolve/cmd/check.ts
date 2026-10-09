@@ -2,7 +2,7 @@ import { parseFlags } from "../../args.js";
 import { SindriError } from "../../errors.js";
 import { success, type CommandResult } from "../../output.js";
 import { repoConfig, type EvolveCtx } from "../ctx.js";
-import { loadRegistry, withCurrentHashes, type Artifact } from "../registry.js";
+import { loadRegistry, currentArtifacts, type Artifact } from "../registry.js";
 import { runSuite } from "../suites.js";
 import { checkAt } from "./check-at.js";
 import { profileScrubber } from "../../scope/commands.js";
@@ -36,10 +36,12 @@ export async function check(args: string[], ctx: EvolveCtx): Promise<CommandResu
   if (values.at !== undefined) return checkAt(values.at, positionals, ctx, json);
   const stored = loadRegistry(ctx.db);
   if (stored.length === 0) throw new SindriError("SND-EVOLVE-010", "the artifact registry is empty");
-  const registry = await withCurrentHashes(ctx.deps.git, ctx.repo, ctx.prompts(), repoConfig(ctx.loaded).protectedPaths, stored);
+  const { artifacts: registry, gone } = await currentArtifacts(ctx.deps.git, ctx.repo, ctx.prompts(), repoConfig(ctx.loaded).protectedPaths, stored);
   const unknown = positionals.filter((id) => !registry.some((a) => a.id === id));
   if (unknown.length > 0) throw new SindriError("SND-EVOLVE-008", `no such artifact: ${unknown.join(", ")}`);
   const picked = positionals.length > 0 ? registry.filter((a) => positionals.includes(a.id)) : registry;
+  const missing = picked.filter((a) => gone.includes(a.id)).map((a) => a.id);
+  if (missing.length > 0) throw new SindriError("SND-EVOLVE-008", `${missing.join(", ")} no longer exists in the repository; run sindri evolve init to refresh the registry`, { fix: "sindri evolve init" });
   const groups = groupBySuite(picked.filter(hasSuite).filter((a) => values.changed !== true || !passing(ctx, a)));
 
   if (groups.length === 0) {

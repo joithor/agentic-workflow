@@ -7,9 +7,9 @@ import { stateDir } from "../src/deps.js";
 import { init } from "../src/evolve/cmd/registry.js";
 import { acquireTickLock } from "../src/lock/lock.js";
 import { stage } from "../src/evolve/cmd/stage.js";
-import { getProposal, ProposalSchema, saveProposal, setStatus, stagedFile, type ProposalStatus, type Tier } from "../src/evolve/proposals.js";
+import { getProposal, ProposalSchema, saveProposal, stagedFile, type ProposalStatus, type Tier } from "../src/evolve/proposals.js";
 import { PROMPTS } from "../src/evolve/prompts.js";
-import { evolveFixture, git, withDeps } from "./evolve-fixtures.js";
+import { evolveFixture, git, withDeps, setStatus } from "./evolve-fixtures.js";
 
 const FILES = { "config/hooks/done-gate.sh": "#!/bin/sh\n", "skills/review/SKILL.md": "x\n", "sindri/package.json": "{}", "sindri/src/observe/observe.ts": "export const a = 1;\n" };
 

@@ -6,9 +6,9 @@ import { compare } from "../src/evolve/cmd/compare.js";
 import { show } from "../src/evolve/cmd/proposals.js";
 import { init } from "../src/evolve/cmd/registry.js";
 import { isHoldout, saveReplay, type ReplayItem } from "../src/evolve/corpus.js";
-import { ProposalSchema, getProposal, runningComparison, saveProposal, setStatus, type ProposalStatus } from "../src/evolve/proposals.js";
+import { ProposalSchema, getProposal, runningComparison, saveProposal, type ProposalStatus } from "../src/evolve/proposals.js";
 import { SOURCES_CLAUSE } from "../src/evolve/prompts.js";
-import { evolveFixture, scriptedEvolveIo, withDeps, type EvolveFixture, type ScriptedEvolveIo } from "./evolve-fixtures.js";
+import { evolveFixture, scriptedEvolveIo, withDeps, type EvolveFixture, type ScriptedEvolveIo, setStatus } from "./evolve-fixtures.js";
 
 const map = (title: string) => ({
   subject: "B", surfaces: [{ id: "S1", kind: "ui", title, detail: "", citations: ["R1"] }], implications: [],

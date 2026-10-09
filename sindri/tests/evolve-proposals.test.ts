@@ -1,12 +1,10 @@
 import { describe, expect, it } from "vitest";
 
 import { discover, isAddedTestAllowed, isEvalMachinery } from "../src/evolve/registry.js";
-import {
-  classifyTier, findMerged, getProposal, inFlightCount, listProposals, parseEach, ProposalSchema, reduceEvidence, renderSaved, saveProposal, setStatus, setTier, type Proposal,
-} from "../src/evolve/proposals.js";
+import { classifyTier, findMerged, getProposal, inFlightCount, listProposals, parseEach, ProposalSchema, reduceEvidence, renderSaved, saveProposal, setTier, type Proposal } from "../src/evolve/proposals.js";
 import { realGitRunner } from "../src/git-real.js";
 import { bumpEpoch, openMemoryLedger } from "../src/ledger/db.js";
-import { git } from "./evolve-fixtures.js";
+import { git, setStatus } from "./evolve-fixtures.js";
 import { gitRepo } from "./helpers.js";
 
 const FILES = {

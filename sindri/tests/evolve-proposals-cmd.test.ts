@@ -6,8 +6,8 @@ import { audit } from "../src/evolve/audit.js";
 import { proposals, reject, show, tier } from "../src/evolve/cmd/proposals.js";
 import { init } from "../src/evolve/cmd/registry.js";
 import { status } from "../src/evolve/cmd/status.js";
-import { ProposalSchema, saveProposal, setStatus, stagedFile, type Proposal, type ProposalStatus } from "../src/evolve/proposals.js";
-import { evolveFixture, git } from "./evolve-fixtures.js";
+import { ProposalSchema, saveProposal, stagedFile, type Proposal, type ProposalStatus } from "../src/evolve/proposals.js";
+import { evolveFixture, git, setStatus } from "./evolve-fixtures.js";
 
 const FILES = {
   "config/hooks/done-gate.sh": "#!/bin/sh\n",

@@ -75,7 +75,8 @@ const promoteSub: ChannelSub = async (args, ctx) => {
   const before = c.stable?.sha;
   await promote(ctx.deps, ctx.process, sha, ctx.deps.now());
   await withLockedWriteRetry(ctx.deps, ctx.db, (epoch) => audit(ctx.db, ctx.deps, "promote", `${sha} (previous ${before ?? "none"})`, epoch, profileScrubber(ctx.loaded)));
-  return success(`Promoted ${short(sha)} to stable. Roll back with: sindri channel rollback\nNext: sindri channel status`, { promoted: sha, previous: before ?? null }, values.json === true);
+  const hint = c.stable === null ? "" : c.stable.schema === undefined ? " The previous build has no recorded ledger schema, so it can't be rolled back to." : " Roll back with: sindri channel rollback";
+  return success(`Promoted ${short(sha)} to stable.${hint}\nNext: sindri channel status`, { promoted: sha, previous: before ?? null }, values.json === true);
 };
 
 const rollbackSub: ChannelSub = async (args, ctx) => {
@@ -83,7 +84,7 @@ const rollbackSub: ChannelSub = async (args, ctx) => {
   const prev = readChannels(ctx.deps).stable?.previous ?? null;
   if (prev === null) throw new SindriError("SND-EVOLVE-005", "there is no previous stable build to roll back to");
   const problem = rollbackProblem(prev, schemaVersion(ctx.db));
-  if (problem !== null) throw new SindriError("SND-EVOLVE-005", problem, { fix: "reinstall a build that supports the current ledger: scripts/install-sindri.sh --channel next --ref <sha>, then sindri channel promote <sha>" });
+  if (problem !== null) throw new SindriError("SND-EVOLVE-005", problem, { fix: "reinstall a build with a recorded schema: scripts/install-sindri.sh --channel next --ref <sha>, then sindri channel promote <sha>" });
   await confirmed(ctx, `Roll stable back to ${short(prev.sha)}?`, prev.sha);
   await rollback(ctx.deps, ctx.process, ctx.deps.now(), schemaVersion(ctx.db));
   await withLockedWriteRetry(ctx.deps, ctx.db, (epoch) => audit(ctx.db, ctx.deps, "rollback", `to ${prev.sha}`, epoch, profileScrubber(ctx.loaded)));

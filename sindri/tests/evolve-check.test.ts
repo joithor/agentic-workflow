@@ -110,6 +110,15 @@ describe("sindri evolve check", () => {
     fx.close();
   });
 
+  it("refuses an artifact whose files are gone, and names evolve init", async () => {
+    const { fx, proc } = await ready();
+    fs.rmSync(path.join(fx.repo, "judge/package.json"));
+    await expect(check(["package:judge"], fx.ctx)).rejects.toThrow(/package:judge.*no longer exists.*sindri evolve init/);
+    await expect(check(["--changed"], fx.ctx)).rejects.toThrow(/sindri evolve init/);
+    expect(proc.calls).toHaveLength(0);
+    fx.close();
+  });
+
   it("logs a progress line before each suite", async () => {
     const { fx } = await ready();
     const lines: string[] = [];
