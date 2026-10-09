@@ -12,7 +12,7 @@ export const overlayFile = (deps: Deps, id: PromptId): string => path.join(overl
 const MAX_BYTES = 65_536;
 export const sha256 = (s: string): string => createHash("sha256").update(s).digest("hex");
 
-export type OverlayState = "none" | "active" | "unsafe" | "unadopted" | "no-clause";
+export type OverlayState = "none" | "active" | "unsafe" | "unadopted" | "no-clause" | "unreadable";
 
 // Read-only (readLedger): doctor and every scope run call this, and neither may migrate, back up or
 // chmod the ledger. Any failure (no file, a newer or older schema, a locked file) means no adoption.
@@ -34,7 +34,12 @@ function latestAdoption(deps: Deps, id: PromptId): string | null {
 // adoptions row). Otherwise the built-in prompt is used and doctor warns.
 export function inspectOverlay(deps: Deps, id: PromptId): { state: OverlayState; text: string | null } {
   const none = { state: "none" as const, text: null };
-  const dir = fs.lstatSync(overlayDir(deps), { throwIfNoEntry: false });
+  let dir: fs.Stats | undefined;
+  try {
+    dir = fs.lstatSync(overlayDir(deps), { throwIfNoEntry: false });
+  } catch {
+    return { state: "unreadable", text: null }; // a parent without search permission: fall back to the built-in prompt
+  }
   if (dir === undefined) return none;
   if (!dir.isDirectory()) return { state: "unsafe", text: null };
   let fd: number;
@@ -59,16 +64,27 @@ export const loadPrompt = (deps: Deps, id: PromptId): string => inspectOverlay(d
 export const effectivePrompts = (deps: Deps): { id: PromptId; text: string }[] => PROMPT_IDS.map((id) => ({ id, text: loadPrompt(deps, id) }));
 
 const REASONS: Record<Exclude<OverlayState, "none" | "active">, string> = {
+  unreadable: "the overlay directory can't be read",
   unsafe: "the file is unsafe: not a plain private file in a real directory",
   unadopted: "its hash doesn't match the latest adoption",
   "no-clause": "it is missing the safety clause",
 };
 
+// Files in the overlay dir that aren't a known prompt's file: never read, but worth a warning (a typo'd or dropped-in name).
+function strayFiles(deps: Deps): string[] {
+  const known = new Set(PROMPT_IDS.map((id) => `${id}.txt`));
+  try {
+    return fs.readdirSync(overlayDir(deps)).filter((n) => !known.has(n)).sort();
+  } catch {
+    return [];
+  }
+}
+
 export function overlayProblems(deps: Deps): string[] {
-  return PROMPT_IDS.flatMap((id) => {
-    const s = inspectOverlay(deps, id).state;
-    return s === "none" || s === "active" ? [] : [`${id}: ignored (${REASONS[s]})`];
-  });
+  const states = PROMPT_IDS.map((id) => ({ id, state: inspectOverlay(deps, id).state }));
+  if (states.some((s) => s.state === "unreadable")) return ["overlay: ignored (the overlay directory can't be read)"];
+  const own = states.flatMap(({ id, state }) => (state === "none" || state === "active" ? [] : [`${id}: ignored (${REASONS[state]})`]));
+  return [...strayFiles(deps).map((n) => `${n}: ignored (not a known prompt file)`), ...own];
 }
 
 // Shaped like doctor's Check; doctor.ts adds it to its list.

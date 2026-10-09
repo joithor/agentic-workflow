@@ -83,12 +83,12 @@ export async function proposalSection(ctx: EvolveCtx): Promise<Section> {
 const MIN_HOLDOUT = 20;
 
 export async function corpusSection(ctx: EvolveCtx): Promise<Section> {
-  const { items, dropped } = readCorpus(ctx.deps, "scope.draft");
+  const { items, dropped, unverified } = readCorpus(ctx.deps, "scope.draft");
   if (items.length === 0 && dropped.length === 0) return { lines: [], data: {}, attention: false, next: null };
   const holdout = items.filter((i) => isHoldout(i.id)).length;
   const needed = Math.max(0, MIN_HOLDOUT - holdout);
   const first = `Corpus: ${items.length} items (${holdout} holdout); ${needed > 0 ? `${needed} more holdout items needed, about ${Math.ceil((needed * 10) / 3)} more scope runs (30% of runs join the holdout).` : "enough for a comparison."}`;
-  const lines = dropped.length > 0 ? [first, `Corpus check: ${dropped.length} item(s) failed the manifest check and are ignored.`] : [first];
+  const lines = dropped.length > 0 ? [first, `Corpus check: ${dropped.length} item(s) failed the manifest and ledger check and are ignored${unverified === null ? "" : ` (${unverified})`}.`] : [first];
   return { lines, data: { corpus: { items: items.length, holdout, needed, dropped: dropped.length } }, attention: dropped.length > 0, next: null };
 }
 

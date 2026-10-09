@@ -478,9 +478,10 @@ export function makeScopeCommand(io: ScopeIo): Command {
       } catch (e) {
         return unrecorded(e, file, scrubber, json);
       }
-      // The replay item shares the run's id with the scope_runs row recordRun just wrote. evidence.brief is the
-      // scrubbed brief (never the raw one). trySaveReplay never throws, so a full disk can't fail the run.
-      trySaveReplay(deps, {
+      // Only a recorded run joins the corpus: readCorpus checks each item against its scope_runs row, so a run
+      // the ledger never saw (the lock stayed held) would be dropped anyway. evidence.brief is the scrubbed
+      // brief, never the raw one; trySaveReplay never throws, so a full disk can't fail the run.
+      if (recorded) trySaveReplay(deps, {
         id: runId, artifact: "scope.draft", createdAt: deps.now().toISOString(), brief: evidence.brief,
         records: evidence.refs.entries().slice(1).map(([, r]) => r),
         outcome: { status: result.status, surfaces: n.surfaces, recall: null },

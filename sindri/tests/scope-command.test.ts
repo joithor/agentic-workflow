@@ -526,6 +526,24 @@ describe("sindri scope and the evolve corpus", () => {
     expect(ok.stdout).not.toContain("Not recorded in the ledger"); // recordRun still ran
   });
 
+  it("saves no replay for a run the ledger never recorded (another run holds the lock)", async () => {
+    const d = await approvedScopeDeps();
+    const brief = path.join(tempDir(), "brief.md");
+    fs.writeFileSync(brief, BRIEF);
+    const held = openLedger(ledgerPath(stateDir(d)));
+    const lock = acquireTickLock({ dir: stateDir(d), db: held, sys: d.system, now: d.now });
+    expect(lock.ok).toBe(true);
+    try {
+      const r = await makeScopeCommand(scriptedIo([MAP, NONE]))([brief, "--out", tempDir()], d);
+      expect(r.stdout).toContain("Not recorded in the ledger");
+      expect(loadCorpus(d, "scope.draft")).toEqual([]);
+      expect(fs.existsSync(path.join(corpusDir(d), "scope.draft"))).toBe(false);
+    } finally {
+      if (lock.ok) lock.release();
+      held.close();
+    }
+  });
+
   it("scopes with an adopted overlay prompt, and the built-in challenger prompt", async () => {
     const d = await approvedScopeDeps();
     const brief = path.join(tempDir(), "brief.md");

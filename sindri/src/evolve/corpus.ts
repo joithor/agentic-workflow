@@ -4,6 +4,7 @@ import path from "node:path";
 import { z } from "zod";
 
 import { stateDir, type Deps } from "../deps.js";
+import { ledgerPath, readLedger } from "../ledger/db.js";
 import { makeScrubber } from "../scrub/scrub.js";
 import type { SourceRecord } from "../scope/source.js";
 
@@ -32,6 +33,12 @@ const sha = (b: string | Buffer): string => createHash("sha256").update(b).diges
 export const corpusDir = (deps: Deps): string => path.join(stateDir(deps), "corpus");
 const artifactDir = (deps: Deps, artifact: ReplayItem["artifact"]): string => path.join(corpusDir(deps), artifact);
 
+function endsMidLine(file: string): boolean {
+  if (!fs.existsSync(file)) return false;
+  const b = fs.readFileSync(file);
+  return b.length > 0 && b[b.length - 1] !== 0x0a;
+}
+
 // Scrubbed on write, created exclusively (an id is never overwritten), and recorded in an
 // append-only manifest. loadCorpus ignores anything the manifest doesn't vouch for.
 export function saveReplay(deps: Deps, item: ReplayItem): boolean {
@@ -45,7 +52,15 @@ export function saveReplay(deps: Deps, item: ReplayItem): boolean {
     if ((e as NodeJS.ErrnoException).code === "EEXIST") return false;
     throw e;
   }
-  fs.appendFileSync(path.join(dir, "manifest.jsonl"), `${JSON.stringify({ id: parsed.id, sha256: sha(bytes), added_at: deps.now().toISOString() })}\n`, { mode: 0o600 });
+  const manifest = path.join(dir, "manifest.jsonl");
+  const line = JSON.stringify({ id: parsed.id, sha256: sha(bytes), added_at: deps.now().toISOString() });
+  try {
+    // A torn last line (no trailing newline) must not swallow this one.
+    fs.appendFileSync(manifest, `${endsMidLine(manifest) ? "\n" : ""}${line}\n`, { mode: 0o600 });
+  } catch (e) {
+    fs.rmSync(path.join(dir, `${parsed.id}.json`), { force: true }); // no orphan an unlisted file would be flagged for ever
+    throw e;
+  }
   return true;
 }
 
@@ -73,26 +88,43 @@ function readManifest(file: string): Map<string, string> {
   return out;
 }
 
-export function readCorpus(deps: Deps, artifact: ReplayItem["artifact"]): { items: ReplayItem[]; dropped: string[] } {
+// The run ids the ledger recorded, read-only; null when the ledger can't be read.
+function recordedRuns(deps: Deps): Set<string> | null {
+  const file = ledgerPath(stateDir(deps));
+  if (!fs.existsSync(file)) return null;
+  try {
+    return readLedger(file, (db) => new Set((db.prepare("SELECT run_id FROM scope_runs").all() as { run_id: string }[]).map((r) => r.run_id)));
+  } catch {
+    return null;
+  }
+}
+
+// An item counts only when the manifest vouches for its bytes, its content id is its filename, and the
+// ledger has a scope_runs row for that run (a manifest alone is no seal against a state-dir writer).
+// With no readable ledger nothing can be verified, so every item is dropped and `unverified` says why.
+export function readCorpus(deps: Deps, artifact: ReplayItem["artifact"]): { items: ReplayItem[]; dropped: string[]; unverified: string | null } {
   const dir = artifactDir(deps, artifact);
-  if (!fs.existsSync(dir)) return { items: [], dropped: [] };
+  if (!fs.existsSync(dir)) return { items: [], dropped: [], unverified: null };
+  const runs = recordedRuns(deps);
   const manifest = readManifest(path.join(dir, "manifest.jsonl"));
   const items: ReplayItem[] = [];
   const dropped: string[] = [];
   for (const n of fs.readdirSync(dir).filter((x) => x.endsWith(".json")).sort()) {
     const id = n.slice(0, -".json".length);
     const bytes = fs.readFileSync(path.join(dir, n));
-    if (manifest.get(id) !== sha(bytes)) {
+    if (runs === null || !runs.has(id) || manifest.get(id) !== sha(bytes)) {
       dropped.push(id);
       continue;
     }
     try {
-      items.push(Item.parse(JSON.parse(bytes.toString("utf8"))));
+      const parsed = Item.parse(JSON.parse(bytes.toString("utf8")));
+      if (parsed.id === id) items.push(parsed);
+      else dropped.push(id);
     } catch {
       dropped.push(id);
     }
   }
-  return { items, dropped };
+  return { items, dropped, unverified: runs === null && dropped.length > 0 ? "the ledger couldn't be read, so no corpus item can be verified against a recorded run" : null };
 }
 
 export const loadCorpus = (deps: Deps, artifact: ReplayItem["artifact"]): ReplayItem[] => readCorpus(deps, artifact).items;

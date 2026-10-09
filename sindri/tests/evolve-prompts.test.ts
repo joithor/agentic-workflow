@@ -154,3 +154,32 @@ describe("the overlay check never touches the ledger (doctor's contract)", () =>
     expect(loadPrompt(d, "scope.draft")).toBe(defaultPrompt("scope.draft"));
   });
 });
+
+describe("an unreadable overlay directory and stray files", () => {
+  it("reports an overlay directory it can't read, falls back to the built-in prompts, and never throws", () => {
+    const d = makeDeps();
+    writeOverlay(d, "scope.draft", `${SOURCES_CLAUSE}\nx`);
+    const parent = path.dirname(overlayDir(d));
+    fs.chmodSync(parent, 0o000);
+    try {
+      expect(inspectOverlay(d, "scope.draft").state).toBe("unreadable");
+      expect(loadPrompt(d, "scope.draft")).toBe(defaultPrompt("scope.draft"));
+      expect(effectivePrompts(d)).toHaveLength(7);
+      expect(overlayProblems(d)).toEqual(["overlay: ignored (the overlay directory can't be read)"]);
+      expect(evolveOverlayCheck(d).status).toBe("warn");
+    } finally {
+      fs.chmodSync(parent, 0o700);
+    }
+  });
+
+  it("reports files that aren't a known prompt id, and ignores them", () => {
+    const d = makeDeps();
+    writeOverlay(d, "scope.draft", `${SOURCES_CLAUSE}\nx`);
+    adopt(d, "scope.draft", `${SOURCES_CLAUSE}\nx`);
+    fs.writeFileSync(path.join(overlayDir(d), "scope.drafts.txt"), "misnamed");
+    fs.writeFileSync(path.join(overlayDir(d), "notes.md"), "stray");
+    expect(overlayProblems(d)).toEqual(["notes.md: ignored (not a known prompt file)", "scope.drafts.txt: ignored (not a known prompt file)"]);
+    expect(loadPrompt(d, "scope.draft")).toContain("x");
+    expect(evolveOverlayCheck(d).status).toBe("warn");
+  });
+});

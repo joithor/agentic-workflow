@@ -408,3 +408,19 @@ describe("doctor index checks", () => {
     expect(await proxy({ NODE_USE_ENV_PROXY: "", NODE_OPTIONS: "--max-old-space-size=4096", HTTP_PROXY: "http://proxy.invalid:3128" })).toBeUndefined();
   });
 });
+
+describe("doctor and the prompt overlay", () => {
+  it("lists the evolve-overlay check, and a stray overlay file turns it into a warning with exit 1", async () => {
+    const d = makeDeps();
+    expect((await byName(d))["evolve-overlay"]).toMatchObject({ status: "ok" });
+    const dir = path.join(awStateDir(d), "sindri", "overlay", "prompts");
+    fs.mkdirSync(dir, { recursive: true });
+    fs.writeFileSync(path.join(dir, "stray.txt"), "x");
+    const c = (await byName(d))["evolve-overlay"];
+    expect(c.status).toBe("warn");
+    expect(c.detail).toContain("stray.txt: ignored");
+    const r = await runCli(["doctor", "--json"], d);
+    expect((JSON.parse(r.stdout) as { name: string; status: string }[]).find((x) => x.name === "evolve-overlay")?.status).toBe("warn");
+    expect(r.exitCode).toBe(1);
+  });
+});
