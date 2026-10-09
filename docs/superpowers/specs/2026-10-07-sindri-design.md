@@ -403,7 +403,7 @@ owned by the sindri user):
 - **Inputs:** tracked files only (respecting `.gitignore`), excluding the profile's `index.denyPaths`
   (secrets, fixtures containing PHI, generated code). Symlinks aren't followed. Per-file and total size
   caps apply.
-- graphify runs on a snapshot of the tracked, non-denied source and docs files, never on the working tree; network denied, writes confined to the snapshot, credential directories hidden, environment cleaned. Everything else stays readable (residual risk). graphify is installed at an exact, 14-day-old pin with `uv --exclude-newer`.
+- graphify runs on a snapshot of the tracked, non-denied source and docs files, never on the working tree; network denied, LaunchServices opens and Apple events denied on macOS (an `open URL` would start a browser outside the sandbox), writes confined to the snapshot, credential directories hidden (by their real paths), environment cleaned. Everything else stays readable, and other macOS mach services (securityd and the like) stay reachable (residual risk). graphify is installed at an exact, 14-day-old pin with `uv --exclude-newer`.
 
 **Freshness and branches (M5):**
 - The main index is rebuilt incrementally on merges to main. Builds take the heavy-job lock.

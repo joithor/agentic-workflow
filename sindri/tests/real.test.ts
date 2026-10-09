@@ -115,6 +115,20 @@ describe("sandbox (smoke)", () => {
     expect((await run.run(wrapped, o)).code).not.toBe(0);
   });
 
+  it("denies LaunchServices opens (a browser launched outside the sandbox would carry data out)", async () => {
+    if (process.platform !== "darwin") return;
+    const run = realProcessRunner();
+    // `open -R /` exits 0 even when LaunchServices refuses it, so the probe is a background
+    // open of Finder (always running; -g keeps it in the background), shown to work outside first.
+    const open = ["/usr/bin/open", "-g", "-a", "Finder"];
+    const wrapped = box(open);
+    if (wrapped === null) return; // no sandbox-exec here: nothing to prove
+    if ((await run.run(open, o)).code !== 0) return; // no window server (headless): a sandboxed failure proves nothing
+    const r = await run.run(wrapped, o);
+    expect(r.code).not.toBe(0);
+    expect(r.stderr).toContain("-54");
+  });
+
   it("denies writes outside the snapshot and hides ~/.ssh", async () => {
     const run = realProcessRunner();
     // A fresh dir that is not writable in the sandbox (not a temp dir), never the real home.

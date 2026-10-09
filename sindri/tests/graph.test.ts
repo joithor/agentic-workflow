@@ -57,7 +57,7 @@ describe("sandboxArgv (Review Focus 4)", () => {
     expect(sandboxArgv("darwin", ["graphify", "x"], () => true, o)).toEqual([
       "sandbox-exec",
       "-p",
-      '(version 1)(allow default)(deny network*)(deny file-write*)(allow file-write* (subpath "/snap") (subpath "/private/var/folders") (subpath "/private/tmp") (subpath "/dev") (subpath "/home/u/.cache"))(deny file-read* (subpath "/home/u/.ssh") (subpath "/home/u/.aws") (subpath "/home/u/.gnupg") (subpath "/home/u/.agentic-workflow") (subpath "/home/u/Library/Keychains"))',
+      '(version 1)(allow default)(deny network*)(deny lsopen)(deny appleevent-send)(deny mach-lookup (global-name "com.apple.coreservices.launchservicesd"))(deny file-write*)(allow file-write* (subpath "/snap") (subpath "/private/var/folders") (subpath "/private/tmp") (subpath "/dev") (subpath "/home/u/.cache"))(deny file-read* (subpath "/home/u/.ssh") (subpath "/home/u/.aws") (subpath "/home/u/.gnupg") (subpath "/home/u/.agentic-workflow") (subpath "/home/u/Library/Keychains"))',
       "graphify",
       "x",
     ]);
@@ -82,6 +82,16 @@ describe("sandboxArgv (Review Focus 4)", () => {
     const argv = sandboxArgv("darwin", ["g"], () => true, { writable: ['/a"b\\c'], home: "/h", exists: () => true });
     expect(argv?.[2]).toContain('(subpath "/a\\"b\\\\c")');
     expect(sandboxArgv("darwin", ["g"], () => true, { writable: [], home: "/h", exists: () => true })?.[2]).toContain('(allow file-write* (subpath "/private/var/folders")');
+  });
+
+  it("names the home's real path in the macOS profile (a symlinked home would otherwise fail open)", () => {
+    const real = fs.realpathSync(tempDir("sindri-realhome-"));
+    const link = path.join(tempDir("sindri-linkhome-"), "home");
+    fs.symlinkSync(real, link);
+    const profile = sandboxArgv("darwin", ["g"], () => true, { writable: [], home: link, exists: () => true })?.[2];
+    expect(profile).toContain(`(subpath "${real}/.ssh")`);
+    expect(profile).toContain(`(subpath "${real}/.cache")`);
+    expect(profile).not.toContain(link);
   });
 });
 

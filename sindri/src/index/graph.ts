@@ -19,13 +19,27 @@ const MAX_GRAPH_BYTES = 32 * 1024 * 1024;
 const quote = (p: string): string => p.replace(/\\/g, "\\\\").replace(/"/g, '\\"');
 const subpath = (p: string): string => `(subpath "${quote(p)}")`;
 
-// macOS: no network; no writes except the snapshot, the system temp dirs, /dev and ~/.cache;
-// no reads of the credential dirs. Everything else stays readable (spec amendment 8: the
-// residual risk is documented). In SBPL the last matching rule wins, so the allow follows the deny.
+// macOS: no network, and no LaunchServices opens or Apple events (`open URL` would start a
+// browser outside the sandbox, so the network deny wouldn't apply to it); no writes except the
+// snapshot, the system temp dirs, /dev and ~/.cache; no reads of the credential dirs. Everything
+// else stays readable (spec amendment 8: the residual risk is documented). In SBPL the last
+// matching rule wins, so the allow follows the deny. SBPL matches resolved paths, so the
+// home is its real path: under a symlinked home the denies would otherwise match nothing.
+const LAUNCH_SERVICES = '(deny lsopen)(deny appleevent-send)(deny mach-lookup (global-name "com.apple.coreservices.launchservicesd"))';
+
+function realHome(home: string): string {
+  try {
+    return fs.realpathSync(home);
+  } catch {
+    return home;
+  }
+}
+
 function macProfile(o: { writable: string[]; home: string }): string {
-  const writes = [...o.writable.map(subpath), subpath("/private/var/folders"), subpath("/private/tmp"), subpath("/dev"), subpath(`${o.home}/.cache`)];
-  const hidden = [".ssh", ".aws", ".gnupg", ".agentic-workflow", "Library/Keychains"].map((d) => subpath(`${o.home}/${d}`));
-  return `(version 1)(allow default)(deny network*)(deny file-write*)(allow file-write* ${writes.join(" ")})(deny file-read* ${hidden.join(" ")})`;
+  const home = realHome(o.home);
+  const writes = [...o.writable.map(subpath), subpath("/private/var/folders"), subpath("/private/tmp"), subpath("/dev"), subpath(`${home}/.cache`)];
+  const hidden = [".ssh", ".aws", ".gnupg", ".agentic-workflow", "Library/Keychains"].map((d) => subpath(`${home}/${d}`));
+  return `(version 1)(allow default)(deny network*)${LAUNCH_SERVICES}(deny file-write*)(allow file-write* ${writes.join(" ")})(deny file-read* ${hidden.join(" ")})`;
 }
 
 // Spec §6.2: graphify runs with the network denied and the filesystem locked down, and fails
