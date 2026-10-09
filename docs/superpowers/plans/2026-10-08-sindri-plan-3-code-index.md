@@ -919,7 +919,7 @@ git commit -m "feat: sindri index path globs and tracked-file inventory"
   ```
   Renaming identifiers or changing literals doesn't change `astHash`; changing structure does. That is what "clone" means in §6.2. The `typescript` module is loaded on the first `parse` call, not at import (`sindri --help`, `observe` and the hook's `scrub --staged` never pay for it).
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 In `sindri/package.json`, move `"typescript": "^5.7.0"` from `devDependencies` into `dependencies`, then run `cd sindri && npm install` (expected: `up to date` or `changed 0 packages`).
 
@@ -1026,12 +1026,12 @@ describe("typescriptParser", () => {
 });
 ```
 
-- [ ] **Step 2: Run the tests to verify they fail**
+- [x] **Step 2: Run the tests to verify they fail**
 
 Run: `cd sindri && npx vitest run tests/parse-ts.test.ts`
 Expected: FAIL with `Failed to load url ../src/index/parse-ts.js`.
 
-- [ ] **Step 3: Implement**
+- [x] **Step 3: Implement**
 
 `sindri/src/index/parse-ts.ts`:
 
@@ -1198,12 +1198,12 @@ describe("typescript is loaded lazily", () => {
 });
 ```
 
-- [ ] **Step 4: Run the tests**
+- [x] **Step 4: Run the tests**
 
 Run: `cd sindri && npx vitest run && npm run typecheck && npm run test:coverage`
 Expected: all tests PASS; 100% coverage. If a test's exact `complexity` or `startLine` differs, check the fixture's line count first (the template literal starts with a newline, so `add` is on line 4); don't loosen the assertion.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add sindri/package.json sindri/package-lock.json sindri/src/index/parse-ts.ts sindri/tests/parse-ts.test.ts sindri/tests/parse-ts-lazy.test.ts
