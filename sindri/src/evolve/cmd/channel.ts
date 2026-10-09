@@ -4,13 +4,13 @@ import { parseFlags } from "../../args.js";
 import { stateDir, type Deps } from "../../deps.js";
 import { SindriError } from "../../errors.js";
 import type { ProcessRunner } from "../../index/io.js";
-import { ledgerPath, openLedger, type Ledger } from "../../ledger/db.js";
+import { ledgerPath, openLedger, schemaVersion, type Ledger } from "../../ledger/db.js";
 import type { Command } from "../../main.js";
 import { failure, fromError, success, type CommandResult } from "../../output.js";
 import { requireApprovedProfile } from "../../profile/approve.js";
 import type { LoadedProfile } from "../../profile/load.js";
 import { audit } from "../audit.js";
-import { canPromote, promote, readChannels, rollback, wrapperTarget } from "../channel.js";
+import { canPromote, promote, readChannels, rollback, rollbackProblem, wrapperTarget } from "../channel.js";
 import { repoConfig, ringZeroRepo, withLockedWriteRetry } from "../ctx.js";
 import { isProtectedPath } from "../registry.js";
 import { profileScrubber } from "../../scope/commands.js";
@@ -29,8 +29,9 @@ interface ChannelCtx {
 type ChannelSub = (args: string[], ctx: ChannelCtx) => Promise<CommandResult>;
 
 const short = (sha: string): string => sha.slice(0, 8);
+// The latest run at the sha decides, as in adopt: a later failing rerun withdraws an earlier pass.
 const suiteRunAt = (db: Ledger, sha: string): boolean =>
-  db.prepare("SELECT 1 FROM suite_runs WHERE artifact_id = 'package:sindri' AND ok = 1 AND head = ? AND hash = ? AND dirty = 0 LIMIT 1").get(sha, `at:${sha}`) !== undefined;
+  (db.prepare("SELECT ok FROM suite_runs WHERE artifact_id = 'package:sindri' AND head = ? AND hash = ? AND dirty = 0 ORDER BY seq DESC LIMIT 1").get(sha, `at:${sha}`) as { ok: number } | undefined)?.ok === 1;
 
 const status: ChannelSub = async (args, ctx) => {
   const { values } = parseFlags(args, { json: { type: "boolean" } });
@@ -81,8 +82,10 @@ const rollbackSub: ChannelSub = async (args, ctx) => {
   const { values } = parseFlags(args, { json: { type: "boolean" } });
   const prev = readChannels(ctx.deps).stable?.previous ?? null;
   if (prev === null) throw new SindriError("SND-EVOLVE-005", "there is no previous stable build to roll back to");
+  const problem = rollbackProblem(prev, schemaVersion(ctx.db));
+  if (problem !== null) throw new SindriError("SND-EVOLVE-005", problem, { fix: "reinstall a build that supports the current ledger: scripts/install-sindri.sh --channel next --ref <sha>, then sindri channel promote <sha>" });
   await confirmed(ctx, `Roll stable back to ${short(prev.sha)}?`, prev.sha);
-  await rollback(ctx.deps, ctx.process, ctx.deps.now());
+  await rollback(ctx.deps, ctx.process, ctx.deps.now(), schemaVersion(ctx.db));
   await withLockedWriteRetry(ctx.deps, ctx.db, (epoch) => audit(ctx.db, ctx.deps, "rollback", `to ${prev.sha}`, epoch, profileScrubber(ctx.loaded)));
   return success(`Rolled back to ${short(prev.sha)}. There is no previous build now; to go forward, promote a build from next.\nNext: sindri channel status`, { rolledBackTo: prev.sha }, values.json === true);
 };

@@ -55,6 +55,37 @@ describe("sindri evolve adopt (Review Focus 7)", () => {
     fx.close();
   });
 
+  it("keeps the previously adopted overlay when the ledger write fails (the rename is the last step)", async () => {
+    const { fx, tty, save, answerWith } = await ready();
+    const a = save("Better draft prompt", VARIANT, "won");
+    await adopt([a], tty);
+    const second = `${VARIANT}\nEven BETTER.`;
+    const b = save("Even better prompt", second, "won");
+    fx.ctx.db.exec("CREATE TRIGGER no_adoptions BEFORE INSERT ON adoptions BEGIN SELECT RAISE(ABORT, 'disk full'); END");
+    answerWith(sha8(second));
+    await expect(adopt([b], tty)).rejects.toThrow(/disk full/);
+    expect(loadPrompt(fx.deps, "scope.draft")).toBe(VARIANT);
+    expect(inspectOverlay(fx.deps, "scope.draft").state).toBe("active"); // still the variant the latest adoption row names
+    expect(getProposal(fx.ctx.db, b)?.status).toBe("won");
+    fx.close();
+  });
+
+  it("restores the previous overlay (or removes the new one) when the write fails after the rename", async () => {
+    const { fx, tty, save, answerWith } = await ready();
+    const failing = { ...tty, write: <T>(fn: (epoch: number) => T): T => { fx.ctx.write(fn); throw new Error("commit failed"); } };
+    const a = save("Better draft prompt", VARIANT, "won");
+    await expect(adopt([a], failing)).rejects.toThrow(/commit failed/);
+    expect(fs.existsSync(overlayFile(fx.deps, "scope.draft"))).toBe(false);
+    fx.ctx.write((epoch) => setStatus(fx.ctx.db, a, "won", epoch, fx.deps.now())); // the fake commit above did persist the row
+    await adopt([a], tty);
+    const second = `${VARIANT}\nEven BETTER.`;
+    const b = save("Even better prompt", second, "won");
+    answerWith(sha8(second));
+    await expect(adopt([b], failing)).rejects.toThrow(/commit failed/);
+    expect(fs.readFileSync(overlayFile(fx.deps, "scope.draft"), "utf8")).toBe(VARIANT);
+    fx.close();
+  });
+
   it("refuses without a terminal, a wrong confirmation, or anything that isn't a won comparison of a clean variant", async () => {
     const { fx, tty, save, answerWith } = await ready();
     const won = save("Better draft prompt", VARIANT, "won");

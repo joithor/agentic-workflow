@@ -6,6 +6,7 @@ import { Budget } from "../../scope/model.js";
 import { auditMarker } from "../audit.js";
 import { clusterCorrections, correct, findCandidateTurns, labelTurns } from "../correct.js";
 import { holdoutTitles } from "../corpus.js";
+import { terminalSafe } from "../invisible.js";
 import { repoConfig, type EvolveCtx } from "../ctx.js";
 import { loadPrompt } from "../overlay.js";
 import { classifyTier, renderSaved, saveProposal } from "../proposals.js";
@@ -49,7 +50,7 @@ export async function correctCommand(args: string[], ctx: EvolveCtx): Promise<Co
     const partial = labeled.incomplete ? [`Partial result: ${labeled.notes.join("; ")}`] : [];
     const next = labeled.incomplete ? BUDGET_NEXT : "sindri evolve correct --since 30d";
     return success(
-      [`No repeated corrections in sessions of ${ctx.repo} since ${day}: ${summary}.`, ...partial, `Next: ${next}`].join("\n"),
+      terminalSafe([`No repeated corrections in sessions of ${ctx.repo} since ${day}: ${summary}.`, ...partial, `Next: ${next}`].join("\n")),
       { week: key, labeled: stats, clusters: 0 }, json, labeled.incomplete ? 1 : 0,
     );
   }
@@ -76,5 +77,5 @@ export async function correctCommand(args: string[], ctx: EvolveCtx): Promise<Co
   const fresh = saved.find((s) => s.outcome.kind === "saved");
   const partial = incomplete ? [`Partial result: ${notes.join("; ")}`] : [];
   const next = incomplete ? (labeled.incomplete ? BUDGET_NEXT : "rerun sindri evolve correct once the cause above is fixed") : fresh === undefined ? "sindri evolve proposals" : `sindri evolve show ${fresh.outcome.id}`;
-  return success([head, ...lines, ...partial, `Next: ${next}`].join("\n"), { week: key, labeled: stats, clusters: clusters.length, proposals: saved, dropped: result.dropped, incomplete, notes }, json, incomplete ? 1 : 0);
+  return success(terminalSafe([head, ...lines, ...partial, `Next: ${next}`].join("\n")), { week: key, labeled: stats, clusters: clusters.length, proposals: saved, dropped: result.dropped, incomplete, notes }, json, incomplete ? 1 : 0);
 }

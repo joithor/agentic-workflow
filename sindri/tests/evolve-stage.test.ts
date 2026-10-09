@@ -3,11 +3,13 @@ import path from "node:path";
 import { describe, expect, it } from "vitest";
 
 import { parsePlan } from "../src/adapters/plan-file/parse.js";
+import { stateDir } from "../src/deps.js";
 import { init } from "../src/evolve/cmd/registry.js";
+import { acquireTickLock } from "../src/lock/lock.js";
 import { stage } from "../src/evolve/cmd/stage.js";
 import { getProposal, ProposalSchema, saveProposal, setStatus, stagedFile, type ProposalStatus, type Tier } from "../src/evolve/proposals.js";
 import { PROMPTS } from "../src/evolve/prompts.js";
-import { evolveFixture, git } from "./evolve-fixtures.js";
+import { evolveFixture, git, withDeps } from "./evolve-fixtures.js";
 
 const FILES = { "config/hooks/done-gate.sh": "#!/bin/sh\n", "skills/review/SKILL.md": "x\n", "sindri/package.json": "{}", "sindri/src/observe/observe.ts": "export const a = 1;\n" };
 
@@ -62,6 +64,37 @@ describe("sindri evolve stage (the unattended half; Review Focus 6)", () => {
     expect((await stage([], fx.ctx)).stdout).toBe("Nothing to stage.\nNext: sindri evolve proposals\n");
     save("Delta prompt text", { artifact: "prompt:scope.draft", kind: "prompt-edit", change: { type: "replace-prompt", text: "new" } }, "self-adopt");
     expect((await stage([], fx.ctx)).stdout).toBe("Nothing to stage; 1 prompt variant(s) wait for compare.\nNext: sindri evolve proposals\n");
+    fx.close();
+  });
+});
+
+describe("sindri evolve stage (guarded transitions)", () => {
+  // The weekly stage waits on the tick lock; while it sleeps, something else commits.
+  const heldLock = (fx: Awaited<ReturnType<typeof ready>>["fx"], whileWaiting: () => void) => {
+    const held = acquireTickLock({ dir: stateDir(fx.deps), db: fx.ctx.db, sys: fx.deps.system, now: fx.deps.now });
+    expect(held.ok).toBe(true);
+    return withDeps(fx.ctx, { sleep: async () => { if (held.ok) held.release(); whileWaiting(); } });
+  };
+
+  it("does not resurrect a proposal rejected while stage waited for the lock", async () => {
+    const { fx, save } = await ready();
+    const id = save("Alpha change here", {}, "code");
+    const ctx = heldLock(fx, () => void fx.ctx.write((epoch) => setStatus(fx.ctx.db, id, "rejected", epoch, fx.deps.now())));
+    const r = await stage([], ctx);
+    expect(getProposal(fx.ctx.db, id)?.status).toBe("rejected");
+    expect(fs.existsSync(stagedFile(fx.deps, id))).toBe(false);
+    expect(r.stdout).toBe("Nothing to stage.\nNext: sindri evolve proposals\n");
+    fx.close();
+  });
+
+  it("counts the cap under the lock: a proposal staged by an overlapping run uses the slot", async () => {
+    const { fx, save } = await ready(1);
+    const a = save("Alpha change here", {}, "code");
+    const b = save("Beta change here", {}, "code");
+    const ctx = heldLock(fx, () => void fx.ctx.write((epoch) => setStatus(fx.ctx.db, b, "staged", epoch, fx.deps.now())));
+    const r = await stage([], ctx);
+    expect(getProposal(fx.ctx.db, a)?.status).toBe("proposed");
+    expect(r.stdout).toContain("Cap reached: 1 proposals are staged or published");
     fx.close();
   });
 });

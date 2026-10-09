@@ -138,19 +138,22 @@ function fail(why) {
 }
 '
 
-record_channel() { # state channel sha dest
+# schema is the ledger schema version the build supports (its `--schema-version`); empty when the build
+# can't say, and then `sindri channel rollback` refuses to roll back to it.
+record_channel() { # state channel sha dest schema
   node -e "$CHANNELS_JS"'
-const [file, channel, sha, dir] = process.argv.slice(1);
+const [file, channel, sha, dir, schema] = process.argv.slice(1);
 const cur = readChannels(file);
-const entry = { sha, dir, installedAt: new Date().toISOString() };
+const entry = { sha, dir, installedAt: new Date().toISOString(), ...(/^[1-9][0-9]*$/.test(schema) ? { schema: Number(schema) } : {}) };
+const plain = (e) => ({ sha: e.sha, dir: e.dir, installedAt: e.installedAt, ...(e.schema === undefined ? {} : { schema: e.schema }) });
 if (channel === "stable") {
-  cur.stable = { ...entry, previous: cur.stable ? { sha: cur.stable.sha, dir: cur.stable.dir, installedAt: cur.stable.installedAt } : null };
+  cur.stable = { ...entry, previous: cur.stable ? plain(cur.stable) : null };
 } else {
   cur.next = entry;
 }
 const tmp = file + ".tmp-" + process.pid;
 fs.writeFileSync(tmp, JSON.stringify(cur, null, 2), { mode: 0o600 });
-fs.renameSync(tmp, file);' "$1/channels.json" "$2" "$3" "$4"
+fs.renameSync(tmp, file);' "$1/channels.json" "$2" "$3" "$4" "$5"
 }
 
 # Prints "yes" or "no": does channels.json already name a stable build? A bad file exits 1.
@@ -215,7 +218,7 @@ install_channel() {
     (cd "$dest" && npm ci --ignore-scripts && npm rebuild better-sqlite3 && npm run build)
   fi
   # Record first: if the state can't be written, the old wrapper stays and the new build is removed.
-  record_channel "$state" "$CHANNEL" "$sha" "$dest"
+  record_channel "$state" "$CHANNEL" "$sha" "$dest" "$(node "$dest/dist/cli.js" --schema-version 2>/dev/null || true)"
   DEST_CLEANUP=""
   write_wrapper "$wrapper" "$dest/dist/cli.js"
   echo "  sindri: $CHANNEL channel at $sha ($BIN_DIR/$wrapper)"

@@ -5,6 +5,7 @@ import { profileScrubber } from "../../scope/commands.js";
 import { Budget } from "../../scope/model.js";
 import { auditMarker } from "../audit.js";
 import { holdoutTitles } from "../corpus.js";
+import { terminalSafe } from "../invisible.js";
 import { repoConfig, type EvolveCtx } from "../ctx.js";
 import { allowedAuthors, ghRepoOf, prContext } from "../github.js";
 import { loadPrompt } from "../overlay.js";
@@ -60,5 +61,5 @@ export async function reflectCommand(args: string[], ctx: EvolveCtx, budget: Bud
   const fresh = saved.find((s) => s.outcome.kind === "saved");
   const partial = result.incomplete ? [`Partial result: ${result.notes.join("; ")}`] : [];
   const next = result.incomplete ? `rerun sindri evolve reflect --pr ${pr} once the cause above is fixed` : fresh === undefined ? "sindri evolve proposals" : `sindri evolve show ${fresh.outcome.id}`;
-  return success([head, ...lines, ...partial, `Next: ${next}`].join("\n"), { pr, accepted: saved, rejected: result.rejected, backlog: result.backlog, incomplete: result.incomplete, notes: result.notes }, json, result.incomplete ? 1 : 0);
+  return success(terminalSafe([head, ...lines, ...partial, `Next: ${next}`].join("\n")), { pr, accepted: saved, rejected: result.rejected, backlog: result.backlog, incomplete: result.incomplete, notes: result.notes }, json, result.incomplete ? 1 : 0);
 }

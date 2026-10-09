@@ -180,4 +180,21 @@ describe("saveRegistry and loadRegistry", () => {
     expect(again.find((x) => x.id === "skill:review")?.hash).toBe("f".repeat(64));
     expect(saveRegistry(db, a, epoch, now)).toEqual({ added: 1, changed: 1, removed: 0 });
   });
+
+  it("fails on a ledger row whose JSON columns or kind are malformed, instead of trusting a cast", () => {
+    const db = openMemoryLedger();
+    const epoch = bumpEpoch(db);
+    const put = (id: string, kind: string, paths: string, suite: string | null) =>
+      db.prepare("INSERT INTO artifacts (id, kind, paths, root, hash, protected, suite, first_seen, changed_at, removed_at, epoch) VALUES (?, ?, ?, NULL, 'h', 0, ?, 't', 't', NULL, ?)").run(id, kind, paths, suite, epoch);
+    put("hook:ok", "hook", '["a.sh"]', '{"argv":["bash","a.sh"],"cwd":"."}');
+    expect(loadRegistry(db)).toHaveLength(1);
+    put("hook:bad-suite", "hook", '["a.sh"]', '{"argv":"bash","cwd":"."}');
+    expect(() => loadRegistry(db)).toThrow();
+    db.prepare("DELETE FROM artifacts WHERE id = 'hook:bad-suite'").run();
+    put("hook:bad-paths", "hook", '{"a":1}', null);
+    expect(() => loadRegistry(db)).toThrow();
+    db.prepare("DELETE FROM artifacts WHERE id = 'hook:bad-paths'").run();
+    put("hook:bad-kind", "widget", "[]", null);
+    expect(() => loadRegistry(db)).toThrow();
+  });
 });

@@ -1,13 +1,15 @@
 import { createHash } from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
+import { z } from "zod";
 
 import { SindriError } from "../errors.js";
 import type { GitRunner } from "../git.js";
 import type { Ledger } from "../ledger/db.js";
 import { escapeRe } from "../scrub/scrub.js";
 
-export type ArtifactKind = "skill" | "hook" | "package" | "installer" | "rule" | "doc" | "mod" | "pack-pin" | "prompt";
+export const ARTIFACT_KINDS = ["skill", "hook", "package", "installer", "rule", "doc", "mod", "pack-pin", "prompt"] as const;
+export type ArtifactKind = (typeof ARTIFACT_KINDS)[number];
 
 export interface Artifact {
   id: string;
@@ -158,6 +160,15 @@ export async function discover(
   return out.sort((a, b) => (a.id < b.id ? -1 : 1)); // code-point order: stable across locales; ids are unique
 }
 
+// The stored artifacts with the hash of their files as they are NOW. The stored hash is only as fresh as the last
+// `evolve init`, so check and status bind and compare against this (discover's own hashing, not a second scheme).
+export async function withCurrentHashes(
+  git: GitRunner, repoPath: string, prompts: readonly { id: string; text: string }[], extraProtected: readonly string[], stored: readonly Artifact[],
+): Promise<Artifact[]> {
+  const now = new Map((await discover(git, repoPath, prompts, extraProtected)).map((a) => [a.id, a.hash]));
+  return stored.map((a) => ({ ...a, hash: now.get(a.id) ?? a.hash }));
+}
+
 export function saveRegistry(db: Ledger, artifacts: Artifact[], epoch: number, now: Date): { added: number; changed: number; removed: number } {
   const ts = now.toISOString();
   const counts = { added: 0, changed: 0, removed: 0 };
@@ -185,12 +196,17 @@ export function saveRegistry(db: Ledger, artifacts: Artifact[], epoch: number, n
   return counts;
 }
 
+// Every ledger read fails the same way on a malformed row: a Zod error, never a cast that lets `argv: undefined` through.
+const StoredRow = z.object({
+  id: z.string(), kind: z.enum(ARTIFACT_KINDS), paths: z.string(), root: z.string().nullable(), hash: z.string(), protected: z.number(), suite: z.string().nullable(),
+});
+const Paths = z.array(z.string());
+const Suite = z.object({ argv: z.array(z.string()), cwd: z.string() });
+
 export function loadRegistry(db: Ledger): Artifact[] {
-  const rows = db.prepare("SELECT id, kind, paths, root, hash, protected, suite FROM artifacts WHERE removed_at IS NULL ORDER BY id").all() as {
-    id: string; kind: ArtifactKind; paths: string; root: string | null; hash: string; protected: number; suite: string | null;
-  }[];
+  const rows = z.array(StoredRow).parse(db.prepare("SELECT id, kind, paths, root, hash, protected, suite FROM artifacts WHERE removed_at IS NULL ORDER BY id").all());
   return rows.map((r) => ({
-    id: r.id, kind: r.kind, paths: JSON.parse(r.paths) as string[], root: r.root, hash: r.hash, protected: r.protected === 1,
-    suite: r.suite === null ? null : (JSON.parse(r.suite) as Artifact["suite"]),
+    id: r.id, kind: r.kind, paths: Paths.parse(JSON.parse(r.paths)), root: r.root, hash: r.hash, protected: r.protected === 1,
+    suite: r.suite === null ? null : Suite.parse(JSON.parse(r.suite)),
   }));
 }

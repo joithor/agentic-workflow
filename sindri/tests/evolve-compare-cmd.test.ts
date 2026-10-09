@@ -58,6 +58,15 @@ async function ready(count: number, o: { extraYaml?: string; io?: ScriptedEvolve
 }
 
 describe("sindri evolve compare", () => {
+  it("fails on a stored summary row without a line, as show does, instead of printing undefined", async () => {
+    const { fx, save } = await ready(22);
+    const id = save();
+    await compare([id], fx.ctx);
+    fx.ctx.db.prepare("UPDATE comparisons SET detail = '{}' WHERE proposal_id = ? AND item_id = '*' AND verdict != 'running'").run(id);
+    await expect(compare([id], fx.ctx)).rejects.toThrow();
+    fx.close();
+  });
+
   it("compares once, stores the result and the rows, and prints the stored result on a second call", async () => {
     const { fx, save, calls } = await ready(22);
     const id = save();

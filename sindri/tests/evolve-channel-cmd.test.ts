@@ -3,6 +3,7 @@ import path from "node:path";
 import { describe, expect, it } from "vitest";
 
 import { stateDir } from "../src/deps.js";
+import { LEDGER_SCHEMA_VERSION } from "../src/ledger/db.js";
 import { acquireTickLock } from "../src/lock/lock.js";
 import { channelsRoot, readChannels, wrapperTarget, writeChannels, writeWrapper } from "../src/evolve/channel.js";
 import { makeChannelCommand } from "../src/evolve/cmd/channel.js";
@@ -12,7 +13,7 @@ import { makeDeps, tempDir } from "./helpers.js";
 
 const A = "a".repeat(40);
 const B = "b".repeat(40);
-const entry = (sha: string, dir: string, at = "2026-10-01T00:00:00Z") => ({ sha, dir, installedAt: at });
+const entry = (sha: string, dir: string, at = "2026-10-01T00:00:00Z", schema: number | null = LEDGER_SCHEMA_VERSION) => ({ sha, dir, installedAt: at, ...(schema === null ? {} : { schema }) });
 
 async function ready(o: { tty?: string | null; git?: GitRunner; bin?: string } = {}) {
   const fx = await evolveFixture();
@@ -35,8 +36,8 @@ async function ready(o: { tty?: string | null; git?: GitRunner; bin?: string } =
   };
   const proc = fakeProc(() => ({}));
   const run = (args: string[]) => makeChannelCommand({ process: proc })(args, deps);
-  const record = (sha: string) =>
-    fx.ctx.db.prepare("INSERT INTO suite_runs (artifact_id, hash, head, dirty, ok, exit_code, ms, ts, epoch) VALUES ('package:sindri', ?, ?, 0, 1, 0, 1, 't', 1)").run(`at:${sha}`, sha);
+  const record = (sha: string, ok = 1) =>
+    fx.ctx.db.prepare("INSERT INTO suite_runs (artifact_id, hash, head, dirty, ok, exit_code, ms, ts, epoch) VALUES ('package:sindri', ?, ?, 0, ?, 0, 1, 't', 1)").run(`at:${sha}`, sha, ok);
   return { fx, deps, asked, mk, run, record, proc };
 }
 
@@ -119,6 +120,20 @@ describe("sindri channel promote (Review Focus: human-only, protected paths show
     wrong.fx.close();
   });
 
+  it("uses the latest suite run at the sha: a later failing rerun withdraws an earlier pass", async () => {
+    const t = await ready({ tty: "bbbbbbbb" });
+    const dirA = t.mk("stable", A);
+    const dirB = t.mk("next", B);
+    writeChannels(t.deps, { stable: { ...entry(A, dirA), previous: null }, next: entry(B, dirB) });
+    t.record(B, 1);
+    t.record(B, 0);
+    expect((await t.run(["promote", B])).stderr).toContain(`SND-EVOLVE-005 no passing package:sindri suite run for ${B}`);
+    expect((await t.run(["status"])).stdout).toContain("no passing package:sindri suite run");
+    t.record(B, 1);
+    expect((await t.run(["promote", B])).exitCode).toBe(0);
+    t.fx.close();
+  });
+
   it("refuses a sha that is already stable, so the real rollback target is never overwritten", async () => {
     const t = await ready({ tty: "bbbbbbbb" });
     const dirA = t.mk("stable", A);
@@ -172,6 +187,21 @@ describe("sindri channel promote (Review Focus: human-only, protected paths show
 });
 
 describe("sindri channel rollback", () => {
+  it("refuses before asking when the previous build's ledger schema is older than the ledger or unrecorded", async () => {
+    const t = await ready({ tty: "aaaaaaaa" });
+    const dirA = t.mk("stable", A);
+    const dirB = t.mk("stable", B);
+    writeChannels(t.deps, { stable: { ...entry(B, dirB), previous: entry(A, dirA, undefined, LEDGER_SCHEMA_VERSION - 1) }, next: null });
+    const old = await t.run(["rollback"]);
+    expect(old.exitCode).not.toBe(0);
+    expect(old.stderr).toContain(`SND-EVOLVE-005 aaaaaaaa understands ledger schema v${LEDGER_SCHEMA_VERSION - 1}, but the ledger is at v${LEDGER_SCHEMA_VERSION}`);
+    writeChannels(t.deps, { stable: { ...entry(B, dirB), previous: entry(A, dirA, undefined, null) }, next: null });
+    expect((await t.run(["rollback"])).stderr).toContain("aaaaaaaa has no recorded ledger schema");
+    expect(t.asked).toEqual([]);
+    expect(readChannels(t.deps).stable?.sha).toBe(B);
+    t.fx.close();
+  });
+
   it("needs a terminal and a typed confirmation, then points stable back at the previous build", async () => {
     const t = await ready({ tty: null });
     const dirA = t.mk("stable", A);

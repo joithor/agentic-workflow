@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import { stateDir } from "../src/deps.js";
+import { LEDGER_SCHEMA_VERSION } from "../src/ledger/db.js";
 import { COMMANDS, runCli } from "../src/main.js";
 import { success } from "../src/output.js";
 import { fakeIndexIo, makeDeps } from "./helpers.js";
@@ -28,6 +29,12 @@ describe("runCli", () => {
   it("prints the version", async () => {
     const r = await runCli(["--version"], makeDeps());
     expect(r.stdout).toMatch(/^\d+\.\d+\.\d+\n$/);
+  });
+
+  it("prints the ledger schema version this build supports, for the channel installer to record", async () => {
+    const r = await runCli(["--schema-version"], makeDeps());
+    expect(r.exitCode).toBe(0);
+    expect(r.stdout).toBe(`${LEDGER_SCHEMA_VERSION}\n`);
   });
 
   it("rejects an unknown command with SND-CLI-001 and exit 2, including inherited names", async () => {

@@ -8,7 +8,7 @@ import { readCorpus, split } from "../corpus.js";
 import type { EvolveCtx } from "../ctx.js";
 import { loadPrompt } from "../overlay.js";
 import { SOURCES_CLAUSE } from "../prompts.js";
-import { getProposal, setStatus, type ProposalStatus } from "../proposals.js";
+import { getProposal, SummaryDetail, transition, type ProposalStatus } from "../proposals.js";
 
 // Results that are verdicts: a proposal is compared once unless --rerun. The rest can be rerun freely.
 const VERDICTS: readonly CompareStatus[] = ["won", "lost", "inconclusive"];
@@ -65,8 +65,7 @@ function nextFor(status: CompareStatus, id: string): string {
 // run and nothing else (reject, defer, a newer run) has changed the status since it was set to `evaluating`.
 function closeStatus(ctx: EvolveCtx, id: string, run: number, to: ProposalStatus, epoch: number): void {
   const newest = (ctx.db.prepare("SELECT MAX(run) AS r FROM comparisons WHERE proposal_id = ?").get(id) as { r: number }).r;
-  const now = (ctx.db.prepare("SELECT status FROM proposals WHERE id = ?").get(id) as { status: ProposalStatus }).status;
-  if (run === newest && now === "evaluating") setStatus(ctx.db, id, to, epoch, ctx.deps.now());
+  if (run === newest) transition(ctx.db, id, ["evaluating"], to, epoch, ctx.deps.now());
 }
 
 export async function compare(args: string[], ctx: EvolveCtx): Promise<CommandResult> {
@@ -93,7 +92,7 @@ export async function compare(args: string[], ctx: EvolveCtx): Promise<CommandRe
       | undefined;
     if (values.rerun !== true && prev !== undefined) {
       if (prev.verdict === "running") throw new SindriError("SND-EVOLVE-016", `a comparison of ${id} is already running (run ${prev.run}); pass --rerun to start another`);
-      if (VERDICTS.includes(prev.verdict as CompareStatus)) return { kind: "stored" as const, run: prev.run, verdict: prev.verdict as CompareStatus, line: (JSON.parse(prev.detail) as { line: string }).line };
+      if (VERDICTS.includes(prev.verdict as CompareStatus)) return { kind: "stored" as const, run: prev.run, verdict: prev.verdict as CompareStatus, line: SummaryDetail.parse(JSON.parse(prev.detail)).line };
     }
     const next = (ctx.db.prepare("SELECT COALESCE(MAX(run), 0) + 1 AS n FROM comparisons WHERE proposal_id = ?").get(id) as { n: number }).n;
     // A rerun supersedes every earlier run still open (a killed compare leaves its `running` marker behind, and
@@ -106,7 +105,7 @@ export async function compare(args: string[], ctx: EvolveCtx): Promise<CommandRe
         .run(id, o.run, JSON.stringify({ line: `superseded by run ${next}` }), ctx.deps.now().toISOString(), epoch);
     }
     ctx.db.prepare("INSERT INTO comparisons (proposal_id, run, item_id, verdict, detail, ts, epoch) VALUES (?, ?, '*', 'running', '{}', ?, ?)").run(id, next, ctx.deps.now().toISOString(), epoch);
-    setStatus(ctx.db, id, "evaluating", epoch, ctx.deps.now());
+    transition(ctx.db, id, COMPARABLE, "evaluating", epoch, ctx.deps.now()); // `now` was just read, in this write
     return { kind: "go" as const, run: next, before: now };
   });
   if (start.kind === "stored") {

@@ -5,6 +5,7 @@ import { stateDir, type Deps } from "../deps.js";
 import type { GitRunner } from "../git.js";
 import { ulid } from "../ids.js";
 import type { Ledger } from "../ledger/db.js";
+import { terminalSafe } from "./invisible.js";
 import { makeScrubber } from "../scrub/scrub.js";
 import { isEvalMachinery, isProtectedPath, normalizeRepoPath, type Artifact } from "./registry.js";
 
@@ -39,6 +40,7 @@ export type Tier = "self-adopt" | "approval" | "code";
 export type ProposalStatus = "proposed" | "evaluating" | "won" | "lost" | "insufficient-corpus" | "adopted" | "staged" | "held" | "published" | "merged" | "rejected";
 export const STATUSES: readonly ProposalStatus[] = ["proposed", "evaluating", "won", "lost", "insufficient-corpus", "adopted", "staged", "held", "published", "merged", "rejected"];
 export const TERMINAL: readonly ProposalStatus[] = ["rejected", "adopted", "lost", "merged"];
+export const OPEN: readonly ProposalStatus[] = STATUSES.filter((s) => !TERMINAL.includes(s));
 
 function titleOf(raw: unknown): string {
   const t = typeof raw === "object" && raw !== null ? (raw as { title?: unknown }).title : undefined;
@@ -140,9 +142,16 @@ export function listStored(db: Ledger, statuses: readonly ProposalStatus[]): Sto
   return ids.map((id) => getProposal(db, id)).filter((s): s is StoredProposal => s !== null);
 }
 
-export function setStatus(db: Ledger, id: string, status: ProposalStatus, epoch: number, now: Date): void {
-  db.prepare("UPDATE proposals SET status = ?, updated_at = ?, epoch = ? WHERE id = ?").run(status, now.toISOString(), epoch, id);
+// The one place a status changes: a compare-and-set. The UPDATE applies only while the proposal is still in one of
+// the `from` statuses, so a stale read (made before the lock, or before another terminal committed) can't resurrect
+// a rejected proposal or overwrite adopted. False means it did not apply; callers skip what depends on it.
+export function transition(db: Ledger, id: string, from: readonly ProposalStatus[], to: ProposalStatus, epoch: number, now: Date): boolean {
+  const marks = from.map(() => "?").join(",");
+  return db.prepare(`UPDATE proposals SET status = ?, updated_at = ?, epoch = ? WHERE id = ? AND status IN (${marks})`).run(to, now.toISOString(), epoch, id, ...from).changes > 0;
 }
+
+// Unconditional: fixtures and tests only. Every command moves a status through `transition`.
+export const setStatus = (db: Ledger, id: string, status: ProposalStatus, epoch: number, now: Date): boolean => transition(db, id, STATUSES, status, epoch, now);
 
 export function setTier(db: Ledger, id: string, tier: Tier, epoch: number, now: Date): void {
   db.prepare("UPDATE proposals SET tier = ?, updated_at = ?, epoch = ? WHERE id = ?").run(tier, now.toISOString(), epoch, id);
@@ -155,7 +164,7 @@ export function inFlightCount(db: Ledger): number {
   return (db.prepare("SELECT COUNT(*) AS c FROM proposals WHERE status IN ('staged', 'published')").get() as { c: number }).c;
 }
 
-const SummaryDetail = z.object({ line: z.string() });
+export const SummaryDetail = z.object({ line: z.string() });
 
 // The latest finished comparison (item_id '*'): the highest run number, not the last row to finish, and never
 // a `running` marker, which carries no summary.
@@ -223,6 +232,6 @@ const note = (o: SaveOutcome): string => (o.kind === "duplicate" ? " (already pr
 export function renderSaved(saved: readonly { title: string; tier: Tier; outcome: SaveOutcome }[]): { tiers: string[]; lines: string[] } {
   return {
     tiers: TIER_ORDER.map((t) => [t, saved.filter((s) => s.tier === t).length] as const).filter(([, n]) => n > 0).map(([t, n]) => `${n} ${t}`),
-    lines: saved.map((s) => `  ${s.outcome.id}  ${s.tier.padEnd(8)}  ${s.title}${note(s.outcome)}`),
+    lines: saved.map((s) => `  ${s.outcome.id}  ${s.tier.padEnd(8)}  ${terminalSafe(s.title)}${note(s.outcome)}`),
   };
 }

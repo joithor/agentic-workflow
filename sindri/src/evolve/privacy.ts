@@ -4,8 +4,12 @@ import { stripInvisible, WHITESPACE } from "./invisible.js";
 // Matching runs on a normalized copy, so a term can't be hidden behind a line break, a double space,
 // an NBSP, a zero-width or soft-hyphen character, a quote prefix, fullwidth letters or a decomposed accent.
 const EMAIL = /[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}/;
-// An absolute home directory with a user segment. Case-sensitive on purpose: "/users/me" and "github.com/users/foo" are routes, not homes.
-const HOME_UNIX = /(?<![A-Za-z0-9._/-])\/(?:Users|home)\/[A-Za-z0-9._-]+/;
+// An absolute home directory with a user segment, also behind a file:// prefix (the third slash is the path's own).
+// Case-sensitive on purpose: "/users/me" and "github.com/users/foo" are routes, not homes; the current OS user's own
+// name is held in any case (macOS paths are case-insensitive), below.
+const HOME_UNIX = /(?<![A-Za-z0-9._-])\/(?:Users|home)\/[A-Za-z0-9._-]+/;
+// Claude Code's project directory encoding of /Users/<name>/...: "-Users-<name>-...".
+const CLAUDE_DIR = /(?<![A-Za-z0-9])-Users-[A-Za-z0-9_.]+/;
 const HOME_WINDOWS = /[a-z]:\\+users\\+[a-z0-9._-]+/i;
 const escapeRe = (s: string): string => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 
@@ -20,10 +24,14 @@ export function normalizeForPrivacy(text: string): string {
     .trim();
 }
 
-export function privacyProblem(text: string, denyTerms: readonly string[]): string | null {
+// `osUser` is the current OS user (from the system seam): their home path is held in any case and in Claude's encoding.
+export function privacyProblem(text: string, denyTerms: readonly string[], osUser = ""): string | null {
   const t = normalizeForPrivacy(text);
+  const visible = visibleForm(text);
+  const me = osUser === "" ? null : escapeRe(osUser.normalize("NFKC"));
+  const mine = me === null ? false : new RegExp(`(?<![A-Za-z0-9._-])\\/(?:users|home)\\/${me}(?![A-Za-z0-9._-])|(?<![A-Za-z0-9])-(?:users|home)-${me}(?![A-Za-z0-9])`, "i").test(visible);
   for (const term of denyTerms.map(normalizeForPrivacy).filter((x) => x !== "")) {
     if (new RegExp(`(?<![a-z0-9])${escapeRe(term)}(?![a-z0-9])`).test(t)) return "contains a private term";
   }
-  return EMAIL.test(t) || HOME_UNIX.test(visibleForm(text)) || HOME_WINDOWS.test(t) ? "contains an email address or a home directory path" : null;
+  return EMAIL.test(t) || HOME_UNIX.test(visible) || CLAUDE_DIR.test(visible) || mine || HOME_WINDOWS.test(t) ? "contains an email address or a home directory path" : null;
 }

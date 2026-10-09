@@ -1,4 +1,5 @@
 import fs from "node:fs";
+import os from "node:os";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
 
@@ -6,7 +7,7 @@ import { makePlanFileTracker } from "../src/adapters/plan-file/tracker.js";
 import { parsePlan } from "../src/adapters/plan-file/parse.js";
 import { init } from "../src/evolve/cmd/registry.js";
 import { publish, stage } from "../src/evolve/cmd/stage.js";
-import { getProposal, inFlightCount, ProposalSchema, saveProposal, stagedFile, type Tier } from "../src/evolve/proposals.js";
+import { getProposal, inFlightCount, ProposalSchema, saveProposal, setStatus, stagedFile, type Tier } from "../src/evolve/proposals.js";
 import { evolveFixture, git, withDeps } from "./evolve-fixtures.js";
 
 const FILES = { "config/hooks/done-gate.sh": "#!/bin/sh\n", "skills/review/SKILL.md": "x\n" };
@@ -26,6 +27,71 @@ async function ready(o: { extraYaml?: string; plans?: string; branch?: string | 
       }), "reflect:pr-12", tier, epoch, new Date(Date.parse("2026-10-08T12:00:00Z") + n++ * 1000)).id);
   return { fx, save };
 }
+
+describe("sindri evolve publish (guarded transitions)", () => {
+  it("skips a proposal rejected after publish listed it, and numbers the rest without a gap", async () => {
+    const { fx, save } = await ready();
+    const a = save("Alpha change here");
+    const b = save("Beta change here");
+    await stage([], fx.ctx);
+    const racing = { ...fx.ctx, write: <T>(fn: (epoch: number) => T): T => { fx.ctx.write((epoch) => setStatus(fx.ctx.db, a, "rejected", epoch, fx.deps.now())); return fx.ctx.write(fn); } };
+    const r = await publish(["--json"], racing);
+    expect(getProposal(fx.ctx.db, a)?.status).toBe("rejected");
+    expect(getProposal(fx.ctx.db, b)?.status).toBe("published");
+    expect((JSON.parse(r.stdout) as { published: { id: string; n: number }[] }).published).toEqual([{ id: b, n: 1, tier: "code" }]);
+    const text = fs.readFileSync(path.join(fx.repo, REL), "utf8");
+    expect(text).not.toContain("Alpha change here");
+    expect(parsePlan(text).tasks.map((t) => [t.number, t.title])).toEqual([[1, "Beta change here"]]);
+    fx.close();
+  });
+});
+
+describe("sindri evolve publish (home paths of the current OS user)", () => {
+  it("holds a proposal that quotes a lowercase home path of the OS user from the system seam", async () => {
+    const { fx, save } = await ready();
+    const user = fx.deps.system.username();
+    const id = save("Alpha change here", { rationale: `See /users/${user}/work/notes.md for the repro.` });
+    await stage([], fx.ctx);
+    const r = await publish(["--json"], fx.ctx);
+    expect((JSON.parse(r.stdout) as { held: { id: string }[] }).held.map((h) => h.id)).toEqual([id]);
+    expect(getProposal(fx.ctx.db, id)?.status).toBe("held");
+    fx.close();
+  });
+});
+
+describe("sindri evolve publish (symlinks)", () => {
+  const outside = (name: string): string => {
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), "sindri-outside-"));
+    return path.join(dir, name);
+  };
+
+  it("refuses a plan file that is a symlink, writes nothing through it and leaves the proposals staged", async () => {
+    const { fx, save } = await ready();
+    const id = save("Alpha change here");
+    await stage([], fx.ctx);
+    const target = outside("victim.md");
+    fs.writeFileSync(target, "precious\n");
+    fs.symlinkSync(target, path.join(fx.repo, REL));
+    await expect(publish([], fx.ctx)).rejects.toThrow(/isn't a plain file/);
+    expect(fs.readFileSync(target, "utf8")).toBe("precious\n");
+    expect(getProposal(fx.ctx.db, id)?.status).toBe("staged");
+    fx.close();
+  });
+
+  it("refuses a plans directory that is a symlink, even with --dry-run", async () => {
+    const { fx, save } = await ready();
+    save("Alpha change here");
+    await stage([], fx.ctx);
+    const elsewhere = path.dirname(outside("x"));
+    const dir = path.join(fx.repo, "docs/superpowers/plans");
+    fs.renameSync(dir, `${dir}-real`);
+    fs.symlinkSync(elsewhere, dir);
+    await expect(publish([], fx.ctx)).rejects.toThrow(/docs\/superpowers\/plans isn't a plain directory/);
+    await expect(publish(["--dry-run"], fx.ctx)).rejects.toThrow(/isn't a plain directory/);
+    expect(fs.readdirSync(elsewhere)).toEqual([]);
+    fx.close();
+  });
+});
 
 describe("sindri evolve publish (the explicit half; Review Focus 6)", () => {
   it("scrubs, numbers and appends staged proposals to this week's plan file, marks them published, and prints the commit command", async () => {

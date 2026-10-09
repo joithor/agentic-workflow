@@ -33,3 +33,14 @@ export const removeOverlay = (deps: Deps, id: PromptId): boolean => {
   fs.rmSync(overlayFile(deps, id), { force: true });
   return present;
 };
+
+// The overlay file as it is now (null when there is none or it isn't a plain file), so a failed adoption can put it back.
+export function snapshotOverlay(deps: Deps, id: PromptId): string | null {
+  const st = fs.lstatSync(overlayFile(deps, id), { throwIfNoEntry: false });
+  return st?.isFile() === true ? fs.readFileSync(overlayFile(deps, id), "utf8") : null;
+}
+
+export function restoreOverlay(deps: Deps, id: PromptId, snapshot: string | null): void {
+  if (snapshot === null) removeOverlay(deps, id);
+  else writeOverlay(deps, id, snapshot);
+}

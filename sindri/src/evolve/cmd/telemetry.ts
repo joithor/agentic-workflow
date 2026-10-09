@@ -33,7 +33,8 @@ export async function telemetry(args: string[], ctx: EvolveCtx): Promise<Command
   // A fire is sampled once: by ref, and by (hook, ts), because a session resumed or forked into a
   // file that is scanned first has the same fire under a new ref (Review Focus 9). The ledger keeps no
   // message text, so the timestamp (to the millisecond in real transcripts) stands in for it.
-  const samples = ctx.db.prepare("SELECT hook, ref, ts FROM hook_samples").all() as { hook: string; ref: string; ts: string }[];
+  // A NULL sample (an answer the adjudicator never labelled) is unknown, not sampled: it is retried.
+  const samples = ctx.db.prepare("SELECT hook, ref, ts FROM hook_samples WHERE warranted IS NOT NULL").all() as { hook: string; ref: string; ts: string }[];
   const known = new Set(samples.flatMap((r) => [r.ref, `${r.hook}\u0000${r.ts}`]));
   const fresh = fires.filter((f) => !known.has(f.ref) && !known.has(`${f.hook}\u0000${f.ts}`) && f.ts > (mergedAt(f.hook) ?? ""));
   let stopped: { skipped: number; why: string } | null = null;
@@ -43,9 +44,11 @@ export async function telemetry(args: string[], ctx: EvolveCtx): Promise<Command
       runner: ctx.io.runner(ctx.loaded, profileScrubber(ctx.loaded)), model: ctx.loaded.profile.models.adjudicator, budget: new Budget(ctx.loaded.profile.evolve.maxTokensPerJob), perHook,
     });
     await ctx.writeRetry((epoch) => {
+      ctx.db.prepare("DELETE FROM hook_samples WHERE warranted IS NULL").run(); // left by earlier runs; the labels below replace them
       for (const l of adj.labels) {
+        if (l.warranted === null) continue; // dropped: stays unknown, so the next run adjudicates it again
         ctx.db.prepare("INSERT OR IGNORE INTO hook_samples (hook, ref, ts, warranted, reason, sampled_at, epoch) VALUES (?, ?, ?, ?, ?, ?, ?)")
-          .run(l.hook, l.ref, l.ts, l.warranted === null ? null : l.warranted ? 1 : 0, l.reason, ctx.deps.now().toISOString(), epoch);
+          .run(l.hook, l.ref, l.ts, l.warranted ? 1 : 0, l.reason, ctx.deps.now().toISOString(), epoch);
       }
     });
     dropped = adj.dropped;
@@ -53,10 +56,10 @@ export async function telemetry(args: string[], ctx: EvolveCtx): Promise<Command
   }
 
   const registry = loadRegistry(ctx.db);
-  const all = ctx.db.prepare("SELECT hook, ts, warranted FROM hook_samples").all() as { hook: string; ts: string; warranted: number | null }[];
+  const all = ctx.db.prepare("SELECT hook, ts, warranted FROM hook_samples WHERE warranted IS NOT NULL").all() as { hook: string; ts: string; warranted: number }[];
   const stats = [...new Set(all.map((r) => r.hook))].sort().map((hook) => {
     const at = mergedAt(hook);
-    const rows = all.filter((r) => r.hook === hook && r.warranted !== null && (at === null || r.ts > at));
+    const rows = all.filter((r) => r.hook === hook && (at === null || r.ts > at));
     return { hook, labelled: rows.length, unwarranted: rows.filter((r) => r.warranted === 0).length, since: at };
   });
   const hooks = [...new Set([...stats.map((s) => s.hook), ...fires.map((f) => f.hook)])].sort();
@@ -89,7 +92,7 @@ export async function telemetry(args: string[], ctx: EvolveCtx): Promise<Command
     lines.push(saved.kind === "saved" ? `  opened proposal ${saved.id} (${tier})` : `  already proposed (${saved.id})`);
     if (saved.kind === "saved") firstOpened ??= saved.id;
   }
-  if (dropped > 0) lines.push(`${dropped} adjudicator answer(s) were malformed and dropped; those fires have no label.`);
+  if (dropped > 0) lines.push(`${dropped} adjudicator answer(s) were malformed and dropped; those fires stay unlabelled and are adjudicated again on the next run.`);
   if (stopped !== null) lines.push(`Stopped early: ${stopped.why}; ${stopped.skipped} fire(s) were not adjudicated.`);
   const next = stopped !== null
     ? stopped.why === BUDGET_WHY

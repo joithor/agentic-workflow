@@ -126,6 +126,40 @@ describe("sindri evolve reject", () => {
   });
 });
 
+describe("terminal safety of model-written text (show and proposals)", () => {
+  const OSC52 = "\u001b]52;c;Zm9v\u0007";
+  const ANSI = "\u001b[2K\u001b[1A\u001b[31m";
+  const CSI8 = "\u009b31m";
+
+  it("escapes OSC 52, ANSI colour and C1 controls in every field of show, and in the proposals list", async () => {
+    const { fx, save } = await ready();
+    const id = save({ title: `Tighten docs ${OSC52}`, rationale: `Why ${ANSI}hidden\nsecond ${CSI8} line`, change: { type: "describe", files: ["skills/review/SKILL.md"], description: `Do it ${OSC52}\n\tindented` } });
+    const shown = await show([id], fx.ctx);
+    const list = await proposals([], fx.ctx);
+    for (const out of [shown.stdout, list.stdout]) {
+      expect(out).not.toMatch(/[\u0000-\u0008\u000B-\u001F\u007F-\u009F]/);
+      expect(out).toContain("\\u{001B}]52;c;Zm9v\\u{0007}");
+    }
+    expect(shown.stdout).toContain("\\u{001B}[2K\\u{001B}[1A\\u{001B}[31mhidden\n  second \\u{009B}31m line");
+    expect(shown.stdout).toContain("  \tindented"); // newline and tab are kept
+    fx.close();
+  });
+});
+
+describe("sindri evolve reject races (guarded transitions)", () => {
+  it("never overwrites a status another terminal committed between reject's read and its write (adopted stays adopted)", async () => {
+    const { fx, save } = await ready();
+    const id = save({}, "code", "won");
+    // Another terminal's adopt commits just before reject's write takes the lock.
+    const racing = { ...fx.ctx, write: <T>(fn: (epoch: number) => T): T => { fx.ctx.write((epoch) => setStatus(fx.ctx.db, id, "adopted", epoch, fx.deps.now())); return fx.ctx.write(fn); } };
+    const r = await reject([id, "--reason", "too late"], racing);
+    expect(r.stdout).toBe(`Proposal ${id} is already adopted; nothing to do.\nNext: sindri evolve proposals\n`);
+    expect(fx.ctx.db.prepare("SELECT status FROM proposals WHERE id = ?").get(id)).toEqual({ status: "adopted" });
+    expect(fx.ctx.db.prepare("SELECT verb FROM evolve_audit").all()).toEqual([]);
+    fx.close();
+  });
+});
+
 describe("sindri evolve reject with a profile scrub pattern", () => {
   it("redacts a scrub.extraPatterns match from the audit detail", async () => {
     const { fx, save } = await ready('scrub:\n  extraPatterns:\n    - kind: ticket\n      regex: "WRK-[0-9]{3,6}"\n');

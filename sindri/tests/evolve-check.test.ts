@@ -49,6 +49,22 @@ describe("sindri evolve check", () => {
     fx.close();
   });
 
+  it("hashes the files at check time: an edit after init re-runs --changed and binds each row to the content it ran on", async () => {
+    const { fx, proc } = await ready();
+    await check(["package:judge"], fx.ctx);
+    expect(proc.calls).toHaveLength(1);
+    fs.writeFileSync(path.join(fx.repo, "judge/package.json"), '{"edited":true}');
+    const again = await check(["package:judge", "--changed"], fx.ctx);
+    expect(again.stdout).toContain("Checked 1 suite(s)");
+    expect(proc.calls).toHaveLength(2);
+    const hashes = (fx.ctx.db.prepare("SELECT hash FROM suite_runs WHERE artifact_id = 'package:judge' ORDER BY seq").all() as { hash: string }[]).map((r) => r.hash);
+    expect(hashes[1]).not.toBe(hashes[0]);
+    // Unchanged since the second run: nothing to do.
+    expect((await check(["package:judge", "--changed"], fx.ctx)).stdout).toContain("Nothing to run");
+    expect(proc.calls).toHaveLength(2);
+    fx.close();
+  });
+
   it("prints what would run with --list, and reports nothing to run once everything passes", async () => {
     const { fx, proc } = await ready();
     const list = await check(["--list", "--changed"], fx.ctx);
@@ -84,9 +100,13 @@ describe("sindri evolve check", () => {
     const dirty = await check(["package:judge"], fx.ctx);
     expect(dirty.stdout).toContain("Note: the working tree has uncommitted changes; results are bound to the file hashes, not to HEAD.");
     expect(rows(fx).at(-1)).toMatchObject({ artifact_id: "package:judge", dirty: 1 });
-    const brokenGit: GitRunner = { run: async () => ({ ok: false, stderr: "fatal" }) };
+    // Hashing the files still needs ls-files; only HEAD and the dirty check are unreadable.
+    const brokenGit: GitRunner = { run: async (args, cwd) => (args[0] === "ls-files" ? fx.ctx.deps.git.run(args, cwd) : { ok: false, stderr: "fatal" }) };
     await check(["package:judge"], withDeps(fx.ctx, { git: brokenGit }));
     expect(rows(fx).at(-1)).toMatchObject({ dirty: 0, head: null });
+    // With no readable repository there is nothing to hash, so check refuses rather than bind a row to stale content.
+    const noGit: GitRunner = { run: async () => ({ ok: false, stderr: "fatal" }) };
+    await expect(check(["package:judge"], withDeps(fx.ctx, { git: noGit }))).rejects.toThrow(/not a readable git repository/);
     fx.close();
   });
 
