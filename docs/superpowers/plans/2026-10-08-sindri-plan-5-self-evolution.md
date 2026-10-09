@@ -1431,7 +1431,7 @@ git commit -m "feat: sindri evolve check runs module eval suites"
   - `sindri evolve proposals [--status s[,s]] [--all] [--json]`, `show <id>`, `reject <id> --reason "<why>"`, `tier <id> [--base <ref>]`.
   - A **Proposals** section in `evolve status`: counts by status, the in-flight count against the cap, and the merge rate. `status` marks a published proposal `merged` when the default branch's log mentions ``Proposal `<id>` ``.
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 `sindri/tests/evolve-proposals.test.ts`:
 
@@ -1774,12 +1774,12 @@ Trace for the status test: the four proposals are `published` ×2, `staged`, `pr
 
 Trace for `proposals` row format: `status.padEnd(19)` then a space, `tier.padEnd(10)` then a space. `"proposed"` padded to 19 is `proposed` plus 11 spaces, then one separator space, so the line starts `proposed            code       <id>`: that is `proposed` + 12 spaces, then `code` + 6 spaces + 1 separator = `code       ` (7 spaces after `code`). The expected string in the test has exactly that spacing. `staged` + 13 spaces, then `approval` + 2 spaces + 1 separator. Age is `(0d)`: created and read at the fixed clock.
 
-- [ ] **Step 2: Run the tests to verify they fail**
+- [x] **Step 2: Run the tests to verify they fail**
 
 Run: `cd sindri && npx vitest run tests/evolve-proposals.test.ts tests/evolve-proposals-cmd.test.ts`
 Expected: FAIL with `Failed to load url ../src/evolve/proposals.js`.
 
-- [ ] **Step 3: Implement**
+- [x] **Step 3: Implement**
 
 `sindri/src/evolve/audit.ts`:
 
@@ -2141,12 +2141,12 @@ Register in `sindri/src/evolve/commands.ts`: import `proposals`, `reject`, `show
 
 Add to `ERRORS` nothing new (Task 1 defined `SND-EVOLVE-008`).
 
-- [ ] **Step 4: Run the tests**
+- [x] **Step 4: Run the tests**
 
 Run: `cd sindri && npm run gen && npx vitest run && npm run typecheck && npm run test:coverage`
 Expected: all tests PASS; coverage 100% on the files this task touches.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add sindri/src/evolve sindri/tests docs/sindri

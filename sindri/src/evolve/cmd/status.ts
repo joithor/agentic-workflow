@@ -1,6 +1,7 @@
 import { parseFlags } from "../../args.js";
 import { success, type CommandResult } from "../../output.js";
-import type { EvolveCtx } from "../ctx.js";
+import { repoConfig, type EvolveCtx } from "../ctx.js";
+import { findMerged, setStatus, STATUSES, type ProposalStatus } from "../proposals.js";
 
 export interface Section {
   lines: string[];
@@ -51,8 +52,35 @@ export async function artifactSection(ctx: EvolveCtx): Promise<Section> {
   return { lines, data: { artifacts: items }, attention: failing.length > 0 || items.some((i) => i.state === "stale"), next };
 }
 
-// Later tasks add their sections here (proposals in Task 3, the corpus in Task 5).
-export const SECTIONS: SectionFn[] = [artifactSection];
+export async function proposalSection(ctx: EvolveCtx): Promise<Section> {
+  const ids = await findMerged(ctx.db, ctx.deps.git, ctx.repo, repoConfig(ctx.loaded).defaultBranch);
+  if (ids.length > 0) await ctx.writeRetry((epoch) => ids.forEach((id) => setStatus(ctx.db, id, "merged", epoch, ctx.deps.now())));
+  const counts = Object.fromEntries(STATUSES.map((s) => [s, 0])) as Record<ProposalStatus, number>;
+  for (const r of ctx.db.prepare("SELECT status, COUNT(*) AS c FROM proposals GROUP BY status").all() as { status: ProposalStatus; c: number }[]) counts[r.status] = r.c;
+  const cap = ctx.loaded.profile.evolve.maxOpenProposals;
+  const present = STATUSES.filter((s) => counts[s] > 0);
+  const inFlight = counts.staged + counts.published;
+  const shipped = counts.merged + counts.published;
+  const mergeRate = shipped === 0 ? null : counts.merged / shipped;
+  const lines =
+    present.length === 0
+      ? []
+      : [
+          `Proposals: ${present.map((s) => `${counts[s]} ${s}`).join(", ")}`,
+          `In flight: ${inFlight} of ${cap} (evolve.maxOpenProposals)`,
+          ...(mergeRate === null ? [] : [`Merge rate: ${counts.merged} of ${shipped} published proposals merged (${Math.round(mergeRate * 100)}%)`]),
+          ...(counts.held === 0 ? [] : [`Held: ${counts.held} proposal(s) withheld by publish's privacy gate; they don't count against the cap. Reject one with: sindri evolve reject <id> --reason "..."`]),
+        ];
+  return {
+    lines,
+    data: { proposals: Object.fromEntries(present.map((s) => [s, counts[s]])), inFlight, cap, mergeRate },
+    attention: false,
+    next: counts.held > 0 ? "sindri evolve proposals --status held" : counts.proposed > 0 ? "sindri evolve proposals --status proposed" : null,
+  };
+}
+
+// Later tasks add their sections here (the corpus in Task 5).
+export const SECTIONS: SectionFn[] = [artifactSection, proposalSection];
 
 export async function status(args: string[], ctx: EvolveCtx): Promise<CommandResult> {
   const { values } = parseFlags(args, { json: { type: "boolean" } });

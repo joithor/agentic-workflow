@@ -4,12 +4,13 @@ import type { Command } from "../main.js";
 import { failure, fromError } from "../output.js";
 import { requireApprovedProfile } from "../profile/approve.js";
 import { check } from "./cmd/check.js";
+import { proposals, reject, show, tier } from "./cmd/proposals.js";
 import { init } from "./cmd/registry.js";
 import { status } from "./cmd/status.js";
 import { ringZeroRepo, writers, type EvolveIo, type Sub } from "./ctx.js";
 
 // Later tasks add their subcommands here.
-export const SUBCOMMANDS: Record<string, Sub> = { check, init, status };
+export const SUBCOMMANDS: Record<string, Sub> = { check, init, proposals, reject, show, status, tier };
 
 export function evolveUsage(): string {
   return `Usage: sindri evolve ${Object.keys(SUBCOMMANDS).sort().join(" | ")}   (each takes --json)`;

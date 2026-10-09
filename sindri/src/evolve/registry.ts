@@ -64,6 +64,16 @@ export function isProtectedPath(p: string, extra: readonly string[] = []): boole
   return isEvalMachinery(n) || matches(PROTECTED_PATHS, n.toLowerCase()) || extra.some((g) => globMatch(g, n));
 }
 
+// A test file the change ADDS can't weaken the existing suite, so it needn't wait for the owner (invariant 11 holds).
+// Only files that are protected solely for being tests qualify: a new test under the machinery or a protected path doesn't.
+export function isAddedTestAllowed(p: string, extra: readonly string[] = []): boolean {
+  const n = normalizeRepoPath(p);
+  if (n === null) return false;
+  const lower = n.toLowerCase();
+  if (!TEST_PATH.test(lower) && !TEST_FILE.test(lower)) return false;
+  return !(matches(EVAL_MACHINERY, lower) || EVAL_FILE.test(lower) || matches(PROTECTED_PATHS, lower) || extra.some((g) => globMatch(g, n)));
+}
+
 // Kinds whose identity is the protected file itself. A package or skill is never protected as a whole.
 const WHOLE_ARTIFACT_KINDS: readonly ArtifactKind[] = ["hook", "installer", "rule"];
 const isSuiteFile = (p: string): boolean => TEST_PATH.test(p) || TEST_FILE.test(p);
