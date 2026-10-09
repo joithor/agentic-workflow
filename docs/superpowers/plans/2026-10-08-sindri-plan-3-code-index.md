@@ -4907,7 +4907,7 @@ Row 7's point is calibration, and calibration needs to know what happened to the
 - Produces (`shape.ts`): `shape report` reconciles after ingesting, and prints `TYPE | SIGNALS | LABELED | ACTED-ON | KEPT | PRECISION | TOWARD 3b`. LABELED is acted-on plus kept; PRECISION is acted-on / LABELED; TOWARD 3b reads `12/30 labeled; bar 0.70`, or `ready` once labeled >= 30 and precision >= 0.7. It also prints how many runs deferred the embeddings layer. `--json` adds `types` and `layers` (the same numbers per type and per layer).
 - Produces (`observe.ts`): `observe` reconciles right after it records, inside the same tick lock.
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 The labeling reads the default branch's content (round-2 fix), so the fixture builds a real history: the default branch (named by `git symbolic-ref --short HEAD`, which the test pins equal to the profile's `defaultBranch`) holds the merged changes; an unmerged change sits on a side branch (`feature`); a squash merge lands on the default branch as a new commit with the same content as a branch that is never merged (`squash-src`). The fixture leaves `feature` checked out, so every labeling test already runs with a different branch checked out; two more cases prove the labels do not move when the default branch is checked out with a dirty working tree, or when the local default branch is stale behind `origin/<default>`. No index is built: the labels must not need one.
 
@@ -5208,12 +5208,12 @@ Then, in `sindri/tests/shape.test.ts`, replace the test named `ingests the spool
   });
 ```
 
-- [ ] **Step 2: Run the tests to verify they fail**
+- [x] **Step 2: Run the tests to verify they fail**
 
 Run: `cd sindri && npx vitest run tests/shape-reconcile.test.ts tests/shape.test.ts`
 Expected: FAIL with `Failed to load url ../src/index/reconcile.js`.
 
-- [ ] **Step 3: Implement**
+- [x] **Step 3: Implement**
 
 `sindri/src/index/reconcile.ts`:
 
@@ -5449,12 +5449,12 @@ In `sindri/src/observe/observe.ts`, add `import { reconcileShape } from "../inde
         await reconcileShape(db, deps, approved, lock.owner.epoch);
 ```
 
-- [ ] **Step 4: Run the tests**
+- [x] **Step 4: Run the tests**
 
 Run: `cd sindri && npx vitest run && npm run typecheck && npm run test:coverage`
 Expected: all tests PASS; 100% coverage.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add sindri/src sindri/tests

@@ -228,15 +228,16 @@ describe("sindri shape report", () => {
     });
   };
 
-  it("ingests the spool, prints a headed table, and lists recent signals with their evidence", async () => {
+  it("ingests the spool, prints the per-type table with a header, and lists recent signals with their evidence", async () => {
     const { d, root } = await ready();
     stage(root, "src/feature.ts", BODY("shorten"));
     await record(d);
     diffRun(d);
     const r = await shape()(["report", "--recent", "2"], d);
     expect(r.stdout).toContain("Ingested 2 run(s), 2 signal(s).");
-    expect(r.stdout).toMatch(/^TYPE\s+SIGNALS\s+LAYER$/m);
-    expect(r.stdout).toMatch(/^reinvented:exact\s+1\s+clones$/m);
+    expect(r.stdout).toContain("Runs: 2 recorded; 0 deferred the embeddings layer.");
+    expect(r.stdout).toMatch(/^TYPE\s+SIGNALS\s+LABELED\s+ACTED-ON\s+KEPT\s+PRECISION\s+TOWARD 3b$/m);
+    expect(r.stdout).toMatch(/^reinvented:exact\s+1\s+0\s+0\s+0\s+n\/a\s+0\/30 labeled; bar 0\.70$/m);
     expect(r.stdout).toContain("simpler:diff-size  (diff) vs -  value 400/250  index age unknown  unlabeled");
     expect(r.stdout).toContain("reinvented:exact  src/feature.ts:1 vs src/util/text.ts:1  value 1/1  index 0 h old  unlabeled");
     expect(r.stdout).toContain("    <untrusted>shorten</untrusted> has the same structure as <untrusted>clip</untrusted>");

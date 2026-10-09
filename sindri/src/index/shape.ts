@@ -5,7 +5,7 @@ import { parseFlags } from "../args.js";
 import { stateDir, type Deps } from "../deps.js";
 import { SindriError } from "../errors.js";
 import { ulid } from "../ids.js";
-import { ledgerPath, openLedger, openLedgerReadOnly, withEpoch } from "../ledger/db.js";
+import { ledgerPath, openLedger, openLedgerReadOnly, withEpoch, type Ledger } from "../ledger/db.js";
 import { acquireTickLock } from "../lock/lock.js";
 import type { Command } from "../main.js";
 import { failure, fromError, success, type CommandResult } from "../output.js";
@@ -17,6 +17,7 @@ import { embedderFor } from "./commands.js";
 import { indexPath, layers, meta, openIndexReadOnly, type Layer } from "./db.js";
 import type { IndexIo } from "./io.js";
 import { buildOverlay, stagedChanges } from "./overlay.js";
+import { reconcileShape } from "./reconcile.js";
 import { computeSignals } from "./signals.js";
 import { ingestSpool, pruneSpool, writeShapeRun } from "./spool.js";
 
@@ -151,6 +152,37 @@ function evidence(r: RecentRow): string[] {
   return [`${r.type}  ${r.at} vs ${r.existing ?? "-"}  value ${r.value}/${r.threshold}  ${age}  ${r.outcome ?? "unlabeled"}`, `    ${r.detail}`];
 }
 
+const MIN_LABELED = 30;
+const BAR = 0.7;
+// Diff size and export count have no flagged symbol, so they can't be outcome-labeled.
+const NO_OUTCOME = new Set(["simpler:diff-size", "simpler:exports"]);
+
+interface Stat {
+  key: string;
+  signals: number;
+  acted: number;
+  kept: number;
+}
+
+function stats(db: Ledger, col: "type" | "layer"): Stat[] {
+  return db
+    .prepare(`SELECT ${col} AS key, COUNT(*) AS signals, COALESCE(SUM(outcome = 'acted-on'), 0) AS acted, COALESCE(SUM(outcome = 'kept'), 0) AS kept FROM shape_signals GROUP BY ${col} ORDER BY signals DESC, ${col}`)
+    .all() as Stat[];
+}
+
+// The outcome proxy (spec amendment 6): precision is acted-on / (acted-on + kept), where
+// "acted-on" means the flagged code was later changed or removed. It is not a human label.
+function summarize(s: Stat): { labeled: number; precision: number | null; toward: string } {
+  const labeled = s.acted + s.kept;
+  const precision = labeled === 0 ? null : s.acted / labeled;
+  const toward = NO_OUTCOME.has(s.key)
+    ? "n/a (no flagged symbol)"
+    : labeled >= MIN_LABELED && s.acted / labeled >= BAR
+      ? "ready"
+      : `${labeled}/${MIN_LABELED} labeled; bar ${BAR.toFixed(2)}`;
+  return { labeled, precision, toward };
+}
+
 async function report(args: string[], deps: Deps): Promise<CommandResult> {
   const { values } = parseFlags(args, { json: { type: "boolean" }, recent: { type: "string" } });
   const recentN = values.recent === undefined ? null : Number(values.recent);
@@ -161,28 +193,46 @@ async function report(args: string[], deps: Deps): Promise<CommandResult> {
   try {
     const lock = acquireTickLock({ dir: stateDir(deps), db, sys: deps.system, now: deps.now });
     let ingested = { runs: 0, signals: 0, quarantined: 0 };
+    let reconciled = { linked: 0, labeled: 0 };
     if (lock.ok) {
       try {
         ingested = withEpoch(db, lock.owner.epoch, () => ingestSpool(db, deps, lock.owner.epoch));
         pruneSpool(db, deps);
+        const loaded = approvedProfile(deps, db);
+        if (loaded !== null) reconciled = await reconcileShape(db, deps, loaded, lock.owner.epoch);
       } finally {
         lock.release();
       }
     }
-    const rows = db.prepare("SELECT type, layer, COUNT(*) AS n FROM shape_signals GROUP BY type, layer ORDER BY n DESC, type").all() as { type: string; layer: string; n: number }[];
-    const byType = Object.fromEntries(rows.map((r) => [r.type, r.n]));
+    const types = stats(db, "type");
+    const layerStats = stats(db, "layer");
+    const byType = Object.fromEntries(types.map((r) => [r.key, r.signals]));
+    const runs = db.prepare("SELECT COUNT(*) AS runs, COALESCE(SUM(deferred LIKE '%\"embeddings\"%'), 0) AS deferred FROM shape_runs").get() as { runs: number; deferred: number };
     const recent =
       recentN === null
         ? []
         : (db
             .prepare("SELECT s.type, s.at, s.existing, s.value, s.threshold, s.detail, s.outcome, r.index_age_ms FROM shape_signals s JOIN shape_runs r ON r.run_id = s.run_id ORDER BY s.seq DESC LIMIT ?")
             .all(recentN) as RecentRow[]);
+    const rows = types.map((s) => {
+      const x = summarize(s);
+      return [s.key, String(s.signals), String(x.labeled), String(s.acted), String(s.kept), x.precision === null ? "n/a" : x.precision.toFixed(2), x.toward];
+    });
     const lines = [
       `Ingested ${ingested.runs} run(s), ${ingested.signals} signal(s).${ingested.quarantined > 0 ? ` Quarantined ${ingested.quarantined} bad spool file(s).` : ""}${lock.ok ? "" : " (Another run holds the lock; showing what's already ingested.)"}`,
-      ...(rows.length === 0 ? ["No shape signals recorded yet."] : table(["TYPE", "SIGNALS", "LAYER"], rows.map((r) => [r.type, String(r.n), r.layer]))),
+      ...(reconciled.linked + reconciled.labeled === 0 ? [] : [`Reconciled: linked ${reconciled.linked} run(s) to commits, labeled ${reconciled.labeled} signal(s).`]),
+      ...(runs.runs === 0 ? [] : [`Runs: ${runs.runs} recorded; ${runs.deferred} deferred the embeddings layer.`]),
+      ...(types.length === 0 ? ["No shape signals recorded yet."] : table(["TYPE", "SIGNALS", "LABELED", "ACTED-ON", "KEPT", "PRECISION", "TOWARD 3b"], rows)),
+      "Precision is an outcome proxy, not a human label: acted-on means the flagged code was later changed or removed.",
       ...(recent.length === 0 ? [] : ["", "Recent signals:", ...recent.flatMap(evidence)]),
     ];
-    return success(lines.join("\n"), { ingested, byType, rows, recent }, values.json === true);
+    const data = {
+      ingested, reconciled, byType, runs,
+      types: types.map((s) => ({ ...s, ...summarize(s) })),
+      layers: layerStats.map((s) => ({ ...s, ...summarize(s) })),
+      recent,
+    };
+    return success(lines.join("\n"), data, values.json === true);
   } finally {
     db.close();
   }
