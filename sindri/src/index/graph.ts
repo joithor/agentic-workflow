@@ -17,7 +17,6 @@ export interface GraphProvider {
   build(snapshotDir: string): Promise<GraphData>;
 }
 
-const MAX_GRAPH_BYTES = 32 * 1024 * 1024;
 const quote = (p: string): string => p.replace(/\\/g, "\\\\").replace(/"/g, '\\"');
 const subpath = (p: string): string => `(subpath "${quote(p)}")`;
 
@@ -193,12 +192,16 @@ function inSnapshot(file: string, roots: string[]): string | null {
   return norm === "." || norm === ".." || norm.startsWith("../") || isReservedSnapshotPath(norm) ? null : norm;
 }
 
+// One message for the throw and one pattern for doctor, so they cannot drift apart.
+export const graphOverCap = (maxMB: number): string => `graphify wrote a graph.json over ${maxMB} MB (raise index.graphMaxMB, max 512)`;
+export const GRAPH_OVER_CAP = /^graphify wrote a graph\.json over \d+ MB \(raise index\.graphMaxMB/;
+
 const unusable = (): SindriError => new SindriError("SND-INDEX-008", "graphify wrote an unusable graph.json");
 
 // graph.json comes from the sandboxed process and is read unsandboxed: never through a
 // symlink (it could point at a file the sandbox hides), and only a regular file (a FIFO would
 // block forever, /dev/zero would read without end). O_NONBLOCK: opening a FIFO doesn't wait.
-function readGraphFile(snapshotDir: string): string {
+function readGraphFile(snapshotDir: string, maxMB: number): string {
   const dir = path.join(snapshotDir, "graphify-out");
   let st: fs.Stats;
   try {
@@ -217,7 +220,7 @@ function readGraphFile(snapshotDir: string): string {
   try {
     const f = fs.fstatSync(fd);
     if (!f.isFile()) throw unusable();
-    if (f.size > MAX_GRAPH_BYTES) throw new SindriError("SND-INDEX-008", "graphify wrote a graph.json over 32 MB");
+    if (f.size > maxMB * 1024 * 1024) throw new SindriError("SND-INDEX-008", graphOverCap(maxMB));
     return fs.readFileSync(fd, "utf8");
   } finally {
     fs.closeSync(fd);
@@ -234,6 +237,7 @@ export function makeGraphifyProvider(o: {
   has: (bin: string) => boolean;
   home: string;
   runtimeDir?: string;
+  maxGraphMB: number;
 }): GraphProvider {
   return {
     version: o.version,
@@ -252,7 +256,7 @@ export function makeGraphifyProvider(o: {
         const first = scrubber.scrub(r.stderr.split("\n")[0]).text;
         throw new SindriError("SND-INDEX-008", `graphify failed (exit ${r.code}): ${first}`);
       }
-      const g = parseGraphJson(readGraphFile(snapshotDir));
+      const g = parseGraphJson(readGraphFile(snapshotDir, o.maxGraphMB));
       return { ...g, nodes: g.nodes.map((n) => ({ ...n, file: n.file === null ? null : inSnapshot(n.file, [snapshotDir, real]) })) };
     },
   };

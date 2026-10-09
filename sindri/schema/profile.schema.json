@@ -260,6 +260,13 @@
             "none"
           ],
           "default": "graphify"
+        },
+        "graphMaxMB": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 512,
+          "default": 256,
+          "description": "Largest graphify graph.json the index reads, in MB (max 512, the V8 string limit); a bigger one leaves the graph layer unavailable"
         }
       },
       "additionalProperties": false,

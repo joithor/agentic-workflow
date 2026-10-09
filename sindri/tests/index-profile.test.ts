@@ -15,6 +15,7 @@ describe("index and shape profile keys", () => {
     const p = ProfileSchema.parse(base);
     expect(p.index.embeddings).toEqual({ enabled: true, url: "http://127.0.0.1:11434", model: "nomic-embed-text" });
     expect(p.index.graph).toBe("graphify");
+    expect(p.index.graphMaxMB).toBe(256);
     expect(p.index.denyPaths).toEqual([]);
     expect(DEFAULT_DENY_PATHS).toEqual(expect.arrayContaining(["**/*.pem", "**/*.p12", "**/id_rsa*", "**/.npmrc", "**/secrets/**"]));
     expect(p.shape.thresholds).toEqual({
@@ -24,6 +25,12 @@ describe("index and shape profile keys", () => {
     expect(p.shape.exportAllowance).toEqual({ XS: 1, S: 3, M: 6, L: 10, XL: 20 });
     expect(p.shape).toMatchObject({ record: true, budgetMs: 2000, outcomeDays: 14, defaultSize: "S" });
     expect(RepoSchema.parse({ schemaVersion: 1, name: "r", path: "/r" }).index).toEqual({ denyPaths: [] });
+  });
+
+  it("bounds index.graphMaxMB to an integer from 1 to 512", () => {
+    const parse = (graphMaxMB: unknown) => ProfileSchema.safeParse({ ...base, index: { graphMaxMB } }).success;
+    expect([1, 512, 256].map(parse)).toEqual([true, true, true]);
+    expect([0, 513, 1.5, "9"].map(parse)).toEqual([false, false, false, false]);
   });
 
   // Like scrub.extraPatterns: configured globs add to the built-in secret globs, never replace them.

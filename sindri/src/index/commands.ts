@@ -62,7 +62,7 @@ export function embedderOrUnavailable(loaded: LoadedProfile, io: IndexIo): Embed
 
 export function graphFor(loaded: LoadedProfile, deps: Deps, io: IndexIo): GraphProvider | null {
   if (loaded.profile.index.graph === "none") return null;
-  return makeGraphifyProvider({ bin: "graphify", version: GRAPHIFY_PIN, runner: { run: io.probes.run }, platform: deps.system.platform, has: io.probes.has, home: deps.home, runtimeDir: deps.env.XDG_RUNTIME_DIR });
+  return makeGraphifyProvider({ bin: "graphify", version: GRAPHIFY_PIN, runner: { run: io.probes.run }, platform: deps.system.platform, has: io.probes.has, home: deps.home, runtimeDir: deps.env.XDG_RUNTIME_DIR, maxGraphMB: loaded.profile.index.graphMaxMB });
 }
 
 async function build(args: string[], deps: Deps, io: IndexIo): Promise<CommandResult> {
