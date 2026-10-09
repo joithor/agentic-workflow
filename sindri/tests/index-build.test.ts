@@ -18,6 +18,9 @@ import { ledgerPath, openLedger } from "../src/ledger/db.js";
 import { stateDir } from "../src/deps.js";
 import Database from "better-sqlite3";
 
+// Tests run from sindri/ (import.meta trips the vi hoisting transform in this file).
+const INDEX_DOC = path.resolve(process.cwd(), "../docs/sindri/index.md");
+
 afterEach(() => vi.restoreAllMocks());
 
 const FILES = {
@@ -289,6 +292,19 @@ describe("sindri index build | status", () => {
     expect(status.stdout).toMatch(/built 0 min ago at [0-9a-f]{12}; structure ok/);
     const json = JSON.parse((await idx(["status", "--json"], d)).stdout);
     expect(json[0]).toMatchObject({ missing: false, stale: false, layers: { structure: { status: "ok" } } });
+  });
+
+  it("build --json is an object { reports, unapproved }, and docs/sindri/index.md documents that shape", async () => {
+    const root = ring0Repo(FILES);
+    const d = await approvedIndexDeps(root);
+    const j = JSON.parse((await idx(["build", "--json"], d)).stdout) as Record<string, unknown>;
+    expect(Object.keys(j).sort()).toEqual(["reports", "unapproved"]);
+    expect(j.unapproved).toEqual([]);
+    expect((j.reports as { repo: string }[]).map((r) => r.repo)).toEqual([ring0Name(d)]);
+    const one = JSON.parse((await idx(["build", "--json", "--repo", ring0Name(d)], d)).stdout) as Record<string, unknown>;
+    expect(one).toMatchObject({ unapproved: [], reports: [{ repo: ring0Name(d) }] });
+    const doc = fs.readFileSync(INDEX_DOC, "utf8");
+    expect(doc).toContain('`index build --json` prints `{ "reports": [...], "unapproved": [...] }`');
   });
 
   it("mirrors on full builds only", async () => {

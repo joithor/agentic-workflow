@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 
 import { runCli } from "../src/main.js";
 import { sanitizeName } from "../src/profile/commands.js";
-import { gitRepo, makeDeps } from "./helpers.js";
+import { git, gitRepo, makeDeps, tempDir } from "./helpers.js";
 
 describe("sindri repo add", () => {
   it("adds a repo to the live profile, keeps comments, asks for approval, creates no mirror, and is idempotent", async () => {
@@ -24,6 +24,47 @@ describe("sindri repo add", () => {
     expect(fs.readdirSync(path.join(state, "profile")).filter((n) => n.includes(".tmp"))).toEqual([]);
     expect((await runCli(["profile", "validate"], d)).exitCode).toBe(0);
     expect((await runCli(["repo", "add", target, "--name", "webapp"], d)).stdout).toContain("webapp is already in the profile.");
+  });
+
+  it("from a linked worktree, adds the main checkout and names it after that (final review I2)", async () => {
+    const d = makeDeps();
+    await runCli(["profile", "init"], d);
+    const target = gitRepo({ "a.ts": "1" });
+    const wt = path.join(tempDir(), "wt");
+    git(target, "worktree", "add", "-q", wt, "-b", "side");
+    fs.mkdirSync(path.join(wt, "sub"));
+    const r = JSON.parse((await runCli(["repo", "add", path.join(wt, "sub"), "--json"], d)).stdout) as { name: string; path: string };
+    expect(r).toMatchObject({ name: sanitizeName(path.basename(fs.realpathSync(target))), path: fs.realpathSync(target) });
+    expect((await runCli(["repo", "add", target], d)).stdout).toContain("is already in the profile.");
+  });
+
+  it("from a worktree of a bare repo or of a --separate-git-dir checkout, refuses (SND-PROFILE-016) and writes nothing", async () => {
+    const d = makeDeps();
+    await runCli(["profile", "init"], d);
+    const reposDir = path.join(d.env.AW_STATE_DIR as string, "profile", "repos");
+    const before = fs.readdirSync(reposDir);
+    const src = gitRepo({ "a.ts": "1" });
+    const bareParent = tempDir();
+    git(bareParent, "clone", "-q", "--bare", src, "app.git");
+    const bareWt = path.join(tempDir(), "bare-wt");
+    git(path.join(bareParent, "app.git"), "worktree", "add", "-q", bareWt, "-b", "side");
+    const main = path.join(tempDir(), "main");
+    const sep = path.join(tempDir(), "sep.git");
+    git(tempDir(), "init", "-q", "-b", "main", `--separate-git-dir=${sep}`, main);
+    fs.writeFileSync(path.join(main, "a.ts"), "1");
+    git(main, "add", "-A");
+    git(main, "commit", "-q", "-m", "init");
+    const sepWt = path.join(tempDir(), "sep-wt");
+    git(main, "worktree", "add", "-q", sepWt, "-b", "side");
+    for (const wt of [bareWt, sepWt]) {
+      const r = await runCli(["repo", "add", wt], d);
+      expect(r.exitCode).not.toBe(0);
+      expect(r.stderr).toContain("SND-PROFILE-016");
+      expect(r.stderr).toContain("pass the main checkout's path");
+    }
+    expect(fs.readdirSync(reposDir)).toEqual(before);
+    // The --separate-git-dir checkout itself is its own main checkout.
+    expect(JSON.parse((await runCli(["repo", "add", main, "--name", "sep-main", "--json"], d)).stdout)).toMatchObject({ path: fs.realpathSync(main) });
   });
 
   it("names a repo after its directory when no name is given", async () => {

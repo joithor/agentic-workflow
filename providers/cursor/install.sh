@@ -70,6 +70,10 @@ cursor_install_hooks() {
   fi
   # judge's SessionStart health hook (honors AW_DRY_RUN itself).
   AW_DRY_RUN="${AW_DRY_RUN:-0}" bash "$TOOLKIT_DIR/scripts/install-judge.sh" --hook-only --provider cursor
+  # sindri's SessionStart nudge (setup.sh --with-sindri; honors AW_DRY_RUN itself).
+  if [ "${WITH_SINDRI:-0}" = "1" ]; then
+    AW_DRY_RUN="${AW_DRY_RUN:-0}" bash "$TOOLKIT_DIR/scripts/install-sindri.sh" --hook-only --provider cursor
+  fi
 }
 
 cursor_install_agents() {

@@ -36,7 +36,7 @@ Domain-specific rules live in `.agents/rules/` — one file per rule, the only c
 agentic-workflow/
 ├── skills/        # 47 provider-neutral skills (linked into each provider's skills dir)
 ├── bootstrap/     # /bootstrap skill — repo documentation generator
-├── config/        # Settings, MCP config, statusline, safety hooks (+ hooks/adapters/ per provider)
+├── config/        # Settings, MCP config, statusline, safety hooks, sindri-nudge SessionStart hook (+ hooks/adapters/ per provider)
 ├── providers/     # Per-provider installers (claude, codex, cursor)
 ├── mcp-bridge/    # MCP bridge + REST API (Fastify, SQLite)
 ├── scorer/        # Daily cost/involvement report from provider session transcripts
@@ -82,6 +82,7 @@ bash config/hooks/tests/cursor-adapter.test.sh
 bash config/hooks/tests/provider-install-hooks.test.sh
 bash config/hooks/tests/probe-log.test.sh
 bash config/hooks/tests/judge-health.test.sh
+bash config/hooks/tests/sindri-nudge.test.sh
 for t in config/lib/tests/*.test.sh; do bash "$t" || echo "FAILED: $t"; done  # merge-hook, levers, installers
 
 # Levers and probe (default provider: claude)
@@ -90,6 +91,8 @@ scripts/probe.sh [--provider claude|codex|cursor] on|off|status
 scripts/install-scorer.sh               # Build scorer, install CLI + launchd job
 sindri doctor                           # Sindri health checks (ok / warn / fail + fix)
 sindri index setup && sindri index build    # code index (Ollama + graphify, offline)
+sindri repo onboard [<path>]            # add + approval check + pre-commit hook + first index build (never approves)
+sindri scope <brief.md> --out DIR            # cited scope map; --backtest linear:<project> for recall, precision and a baseline
 sindri shape report                      # record-only shape signals and their outcomes (read-only)
 sindri shape reconcile                   # move the spool into the ledger and label outcomes now (observe does it hourly)
 sindri observe                          # Backlog with sizes; records to the ledger when the profile is approved

@@ -6,8 +6,10 @@ import { makeIndexCommand } from "./index/commands.js";
 import { repoCommand } from "./index/repo-add.js";
 import { makeShapeCommand } from "./index/shape.js";
 import { ledgerCommand, observeCommand } from "./observe/observe.js";
-import { profileCommand } from "./profile/commands.js";
 import { failure, success, type CommandResult } from "./output.js";
+import { profileCommand } from "./profile/commands.js";
+import { makeScopeCommand } from "./scope/commands.js";
+import { realScopeIo } from "./scope/io-real.js";
 import { scrubCommand } from "./scrub/commands.js";
 import { makeScrubber } from "./scrub/scrub.js";
 
@@ -55,8 +57,14 @@ export const COMMANDS: Record<string, CommandDef> = {
     run: (args, deps) => makeIndexCommand(deps.io)(args, deps),
   },
   repo: {
-    summary: "Add a repo to the profile (then sindri profile approve)",
-    usage: "Usage:\n  sindri repo add <path> [--name NAME] [--json]",
+    summary: "Add, onboard or check a repo (then sindri profile approve)",
+    usage: [
+      "Usage:",
+      "  sindri repo add <path> [--name NAME] [--json]",
+      "  sindri repo onboard [<path>] [--name NAME] [--no-build] [--json]   (exit 1: approval pending)",
+      "  sindri repo onboard --template [--json]                            (git init.templateDir hook; opt-in)",
+      "  sindri repo status [<path>] [--nudge] [--json]                     (exit 1 when not onboarded; --nudge always 0)",
+    ].join("\n"),
     run: repoCommand,
   },
   shape: {
@@ -68,6 +76,11 @@ export const COMMANDS: Record<string, CommandDef> = {
       "  sindri shape reconcile [--json]   (ingest the spool and label outcomes; observe does this hourly)",
     ].join("\n"),
     run: (args, deps) => makeShapeCommand(deps.io)(args, deps),
+  },
+  scope: {
+    summary: "Scope a project into a cited map (surfaces, workstreams, questions); --backtest measures recall and precision against a baseline",
+    usage: "Usage:\n  sindri scope <brief.md> [--section N] [--out DIR] [--sources LIST] [--dry-run] [--json]\n  sindri scope linear:<project-url> [--out DIR] [--sources LIST] [--dry-run] [--json]\n  sindri scope --backtest linear:<project-url> [--window 1d] [--with-index] [--out DIR] [--sources LIST] [--json]\n  sindri scope runs [--json]\n  --sources is a comma-separated list of file,notes,transcripts,linear,code. Inside a git worktree only --sources file,code is allowed.",
+    run: makeScopeCommand(realScopeIo()),
   },
   ledger: { summary: "Show ledger events", usage: "Usage: sindri ledger [--item ID] [--since 7d|12h] [--json]", run: ledgerCommand },
 };

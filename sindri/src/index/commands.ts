@@ -7,7 +7,7 @@ import { ledgerPath, readLedger } from "../ledger/db.js";
 import type { Command } from "../main.js";
 import { failure, fromError, success, type CommandResult, type ExitCode } from "../output.js";
 import { requireApprovedProfile } from "../profile/approve.js";
-import type { LoadedProfile } from "../profile/load.js";
+import { loadProfile, resolveProfileRoot, type LoadedProfile } from "../profile/load.js";
 import { buildIndex, type BuildReport } from "./build.js";
 import { allSymbols, bandCandidates, indexPath, LAYERS, layers, meta, openIndexReadOnly, symbolsByAstHash } from "./db.js";
 import { makeOllamaEmbedder, type Embedder } from "./embed.js";
@@ -15,7 +15,7 @@ import { makeGraphifyProvider, type GraphProvider } from "./graph.js";
 import type { IndexIo } from "./io.js";
 import { bandKeys, estimateJaccard } from "./minhash.js";
 import { GRAPHIFY_PIN } from "./pins.js";
-import { runSetup } from "./setup.js";
+import { runSetup, type Step } from "./setup.js";
 
 // Read-only: index commands never create or migrate the ledger. A missing ledger is "nothing approved".
 export function approvedOrThrow(deps: Deps): LoadedProfile {
@@ -24,10 +24,31 @@ export function approvedOrThrow(deps: Deps): LoadedProfile {
   return readLedger(file, (db) => requireApprovedProfile(deps, db));
 }
 
-function reposOf(loaded: LoadedProfile, only: string | undefined): string[] {
+// Repos the live profile lists that the approved snapshot doesn't: `repo add` without
+// `profile approve`. Read-only; a missing or invalid live profile lists nothing.
+export function unapprovedRepos(deps: Deps, approved: LoadedProfile): string[] {
+  const root = resolveProfileRoot(deps);
+  const live = root === null ? null : loadProfile(root);
+  return live !== null && live.ok ? Object.keys(live.value.repos).filter((n) => !Object.hasOwn(approved.repos, n)).sort() : [];
+}
+
+function reposOf(deps: Deps, loaded: LoadedProfile, only: string | undefined): string[] {
   if (only === undefined) return Object.keys(loaded.repos).sort();
-  if (!(only in loaded.repos)) throw new SindriError("SND-PROFILE-004", `no repo named ${only}`);
+  if (!(only in loaded.repos)) {
+    if (unapprovedRepos(deps, loaded).includes(only)) {
+      throw new SindriError("SND-PROFILE-015", `${only} is in the live profile but not approved yet`, {
+        fix: "sindri profile approve (review the diff), then at a terminal: sindri profile approve <hash>; or sindri repo onboard, which prints both",
+        exitCode: 1,
+      });
+    }
+    throw new SindriError("SND-PROFILE-004", `no repo named ${only}`);
+  }
   return [only];
+}
+
+// One line per step (index setup, repo onboard): status, name, detail, then the fix.
+export function renderSteps(steps: Step[]): string {
+  return steps.map((s) => `${s.status.padEnd(5)} ${s.name}  ${s.detail}${s.fix === undefined ? "" : `\n     fix: ${s.fix}`}`).join("\n");
 }
 
 type LayerInfo = Record<string, { status: string; detail: string }>;
@@ -71,7 +92,7 @@ async function build(args: string[], deps: Deps, io: IndexIo): Promise<CommandRe
   const quick = values.quick === true;
   const reports: BuildReport[] = [];
   const lines: string[] = [];
-  for (const repo of reposOf(loaded, values.repo)) {
+  for (const repo of reposOf(deps, loaded, values.repo)) {
     deps.log(`building ${repo}${quick ? " (quick: structure, clones, deps)" : ""}; this takes the heavy-job lock`);
     try {
       // The hourly quick build tries the lock once: waiting is pointless (the next hour retries)
@@ -84,8 +105,10 @@ async function build(args: string[], deps: Deps, io: IndexIo): Promise<CommandRe
       lines.push(`${repo}: skipped (${e.message}); the next hourly run retries`);
     }
   }
+  const pending = values.repo === undefined ? unapprovedRepos(deps, loaded) : [];
+  if (pending.length > 0) lines.push(`skipped (in the live profile, not approved yet): ${pending.join(", ")}; run sindri profile approve`);
   const text = lines.join("\n");
-  return success(text, reports, values.json === true);
+  return success(text, { reports, unapproved: pending }, values.json === true);
 }
 
 function age(ms: number): string {
@@ -113,7 +136,7 @@ function statusLines(r: StatusRow): string[] {
 function status(args: string[], deps: Deps): CommandResult {
   const { values } = parseFlags(args, { repo: { type: "string" }, json: { type: "boolean" } });
   const loaded = approvedOrThrow(deps);
-  const rows = reposOf(loaded, values.repo).map((repo): StatusRow => {
+  const rows = reposOf(deps, loaded, values.repo).map((repo): StatusRow => {
     const db = openIndexReadOnly(indexPath(deps, repo));
     if (db === null) return { repo, missing: true, commit: "", builtAt: null, ageMs: null, stale: true, layers: {} };
     const m = meta(db);
@@ -142,7 +165,7 @@ function query(args: string[], deps: Deps): CommandResult {
   const minJaccard = loaded.profile.shape.thresholds.nearCloneJaccard;
   const rows: QueryRow[] = [];
   const lines: string[] = [];
-  for (const repo of reposOf(loaded, values.repo)) {
+  for (const repo of reposOf(deps, loaded, values.repo)) {
     const db = openIndexReadOnly(indexPath(deps, repo));
     if (db === null) throw new SindriError("SND-INDEX-404", `no index for ${repo}`, { fix: `sindri index build --repo ${repo}` });
     const all = allSymbols(db);
@@ -176,7 +199,7 @@ async function setup(args: string[], deps: Deps, io: IndexIo): Promise<CommandRe
   const { values } = parseFlags(args, { "dry-run": { type: "boolean" }, json: { type: "boolean" } });
   const approved = approvedOrThrow(deps);
   const { steps } = await runSetup(approved, io.probes, { dryRun: values["dry-run"] === true, platform: deps.system.platform, home: deps.home, runtimeDir: deps.env.XDG_RUNTIME_DIR, log: deps.log });
-  const text = steps.map((s) => `${s.status.padEnd(5)} ${s.name}  ${s.detail}${s.fix === undefined ? "" : `\n     fix: ${s.fix}`}`).join("\n");
+  const text = renderSteps(steps);
   const exit: ExitCode = steps.some((s) => s.status === "fail") ? 2 : steps.some((s) => s.status === "warn") ? 1 : 0;
   return success(text === "" ? "Nothing to set up: embeddings and the graph are off in the profile." : text, steps, values.json === true, exit);
 }

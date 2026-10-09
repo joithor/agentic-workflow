@@ -25,6 +25,9 @@ A changed profile takes effect only after `sindri profile approve <hash>` (spec 
 | `scrub` | object | no | `{}` | scrub.extraPatterns: extra secret shapes, added to the built-ins (never removes one) |
 | `index` | object | no | `{}` | Code index (spec §6.2) |
 | `shape` | object | no | `{}` | Shape signals (spec §6.2) |
+| `sources` | object | no | `{}` |  |
+| `models` | object | no | `{}` |  |
+| `scope` | object | no | `{}` |  |
 
 ## `repos/<name>.yaml`
 

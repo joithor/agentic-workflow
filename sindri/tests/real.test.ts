@@ -8,6 +8,7 @@ import { realGitRunner } from "../src/git-real.js";
 import { pathKind, PRIVATE_DIR, privateEnv, sandboxArgv } from "../src/index/graph.js";
 import { hasBinary, realIndexIo, realIndexProbes, realProcessRunner } from "../src/index/sandbox-real.js";
 import { realSystemProbe } from "../src/system-real.js";
+import { realSpawner } from "../src/scope/model-real.js";
 
 describe("realSystemProbe (smoke)", () => {
   it("answers for this process on this host", () => {
@@ -209,5 +210,18 @@ describe("sandbox (smoke)", () => {
   it.skipIf(noSandbox || !fs.existsSync(path.join(os.homedir(), ".ssh")))("hides ~/.ssh", async () => {
     const r = await realProcessRunner().run(box(["ls", "-A", path.join(os.homedir(), ".ssh")]) ?? [], o);
     expect(r.code !== 0 || r.stdout.trim() === "").toBe(true);
+  });
+});
+
+describe("realSpawner (smoke)", () => {
+  it("pipes stdin, and kills on timeout", async () => {
+    const run = realSpawner();
+    expect(await run(["cat"], { stdin: "hello", cwd: process.cwd(), timeoutMs: 5000, env: process.env })).toMatchObject({ code: 0, stdout: "hello", timedOut: false });
+    expect((await run(["sleep", "5"], { stdin: "", cwd: process.cwd(), timeoutMs: 200, env: process.env })).timedOut).toBe(true);
+  });
+
+  it("returns code 127 for a missing binary instead of crashing on the closed stdin", async () => {
+    const r = await realSpawner()(["sindri-no-such-binary"], { stdin: "hello", cwd: process.cwd(), timeoutMs: 5000, env: process.env });
+    expect(r).toMatchObject({ code: 127, timedOut: false });
   });
 });

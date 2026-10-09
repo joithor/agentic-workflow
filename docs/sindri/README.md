@@ -13,6 +13,11 @@ This package is being built in plans. What exists today (Plans 2 and 3; the code
 | `sindri scrub [--staged] [--install-pre-commit [--repo PATH]]` | Redact secrets from stdin, check staged changes, or install the pre-commit hook that refuses secret-shaped strings (in the current repo, or the one `--repo` names) |
 | `sindri index setup \| build \| status \| query` | The code index: set up Ollama, graphify and the sandbox; build it; show its freshness and layers; look up a symbol's clones. See `index.md` |
 | `sindri repo add <path> [--name NAME]` | Add a repo to the profile (then `sindri profile approve`) |
+| `sindri repo onboard [<path>] [--name NAME] [--no-build]` | Onboard a repo in one command: add it to the profile, stop for `sindri profile approve` (exit 1 until a human approves at a terminal), then install the pre-commit hook and build its index |
+| `sindri repo onboard --template` / `sindri repo status [<path>] [--nudge]` | Opt-in git template so new clones get the pre-commit hook (a no-op until the repo is approved); whether a repo is onboarded (the SessionStart nudge uses `--nudge`) |
+| `sindri scope <brief.md \| linear:<project>> [--section N] [--sources LIST] [--out DIR] [--dry-run]` | Turn a brief into a cited scope map: surfaces, implications, workstreams, acceptance checks, open questions. Inside a git worktree only `--sources file,code` is allowed. See `scope.md` |
+| `sindri scope --backtest linear:<project> [--window 1d] [--with-index]` | Replay a past project: recall, precision and a brief-only baseline against a pass bar |
+| `sindri scope runs [--json]` | The latest scoping runs: mode, status, surfaces, recall, precision, output file |
 | `sindri shape --record --staged \| report` | Record shape signals for staged changes (the pre-commit hook runs this); report signals, outcomes and precision. Record-only: nothing blocks a commit |
 | `sindri doctor` | One line per health check, `ok` / `warn` / `fail`, each with a fix |
 
@@ -26,7 +31,7 @@ sindri profile init --ring0 --plans '*-sindri-plan-*'   # profile for this repo;
 sindri profile validate
 sindri profile approve                    # shows the hash and what changed
 sindri profile approve <hash>             # you, at a terminal: type the first 6 characters to confirm
-sindri scrub --install-pre-commit         # refuse secret-shaped strings in commits
+sindri repo onboard .              # add, approve (at a terminal), hook, index
 sindri doctor                             # expect every line ok
 sindri observe                            # the remaining Sindri plan tasks, in order
 ```

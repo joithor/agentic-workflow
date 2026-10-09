@@ -67,7 +67,7 @@ describe("index and shape profile keys", () => {
 describe("ledger migration v2", () => {
   it("adds shape_runs and shape_signals with the outcome columns", () => {
     const db = openMemoryLedger();
-    expect(LEDGER_SCHEMA_VERSION).toBe(2);
+    expect(LEDGER_SCHEMA_VERSION).toBeGreaterThanOrEqual(2);
     const cols = (t: string) => (db.prepare(`PRAGMA table_info(${t})`).all() as { name: string }[]).map((c) => c.name);
     expect(cols("shape_runs")).toEqual(expect.arrayContaining(["tree", "commit_sha", "index_age_ms", "providers", "parser", "deferred"]));
     expect(cols("shape_signals")).toEqual(expect.arrayContaining(["name", "ast_hash", "outcome", "labeled_at"]));
@@ -77,10 +77,10 @@ describe("ledger migration v2", () => {
     const file = path.join(tempDir(), "ledger.db");
     const v1 = openLedger(file);
     v1.pragma("user_version = 1");
-    v1.exec("DROP TABLE shape_signals; DROP TABLE shape_runs;");
+    v1.exec("DROP TABLE model_calls; DROP TABLE scope_runs; DROP TABLE shape_signals; DROP TABLE shape_runs;");
     v1.close();
     const db = openLedger(file);
-    expect(db.pragma("user_version", { simple: true })).toBe(2);
+    expect(db.pragma("user_version", { simple: true })).toBe(LEDGER_SCHEMA_VERSION);
     expect(fs.existsSync(`${file}.bak-v1`)).toBe(true);
     db.close();
   });
@@ -89,7 +89,7 @@ describe("ledger migration v2", () => {
     const file = path.join(tempDir(), "ledger.db");
     const v1 = openLedger(file);
     v1.pragma("user_version = 1");
-    v1.exec("DROP TABLE shape_signals; DROP TABLE shape_runs;");
+    v1.exec("DROP TABLE model_calls; DROP TABLE scope_runs; DROP TABLE shape_signals; DROP TABLE shape_runs;");
     v1.prepare(
       "INSERT INTO items (source, id, title, state, content_hash, first_seen, last_seen, epoch) VALUES ('s', 'i1', 'T', 'open', 'h', 't0', 't1', 0)",
     ).run();
@@ -100,6 +100,34 @@ describe("ledger migration v2", () => {
     expect(db.prepare("SELECT item_id, kind FROM item_events").all()).toEqual([{ item_id: "i1", kind: "seen" }]);
     expect(db.prepare("SELECT COUNT(*) AS n FROM shape_runs").get()).toEqual({ n: 0 });
     expect(fs.existsSync(`${file}.bak-v1`)).toBe(true);
+    db.close();
+  });
+});
+
+describe("ledger migration v3", () => {
+  it("migrates a real v2 ledger file, keeps its rows and backs it up", () => {
+    const file = path.join(tempDir(), "ledger.db");
+    const v2 = openLedger(file);
+    v2.exec("DROP TABLE model_calls; DROP TABLE scope_runs;");
+    v2.pragma("user_version = 2");
+    v2.prepare(
+      "INSERT INTO items (source, id, title, state, content_hash, first_seen, last_seen, epoch) VALUES ('s', 'i1', 'T', 'open', 'h', 't0', 't1', 0)",
+    ).run();
+    v2.prepare("INSERT INTO item_events (source, item_id, ts, kind, detail, epoch, tick_id) VALUES ('s', 'i1', 't1', 'seen', '{}', 0, 'tick')").run();
+    v2.prepare(
+      "INSERT INTO shape_runs (run_id, repo, ts, elapsed_ms, providers, parser, deferred, signal_count, epoch) VALUES ('r1', 'repo', 't1', 5, 'p', 'ts', '[]', 0, 0)",
+    ).run();
+    v2.close();
+    const db = openLedger(file);
+    expect(db.pragma("user_version", { simple: true })).toBe(LEDGER_SCHEMA_VERSION);
+    expect(db.prepare("SELECT id FROM items").pluck().all()).toEqual(["i1"]);
+    expect(db.prepare("SELECT kind FROM item_events").pluck().all()).toEqual(["seen"]);
+    expect(db.prepare("SELECT run_id FROM shape_runs").pluck().all()).toEqual(["r1"]);
+    expect(db.prepare("SELECT COUNT(*) AS n FROM scope_runs").get()).toEqual({ n: 0 });
+    expect(db.prepare("SELECT COUNT(*) AS n FROM model_calls").get()).toEqual({ n: 0 });
+    expect(db.prepare("PRAGMA foreign_key_list(model_calls)").all()).toEqual([]);
+    expect((db.prepare("PRAGMA table_info(model_calls)").all() as { name: string }[]).map((c) => c.name)).toEqual(["run_id", "step", "seq", "role", "model", "input_tokens", "output_tokens"]);
+    expect(fs.existsSync(`${file}.bak-v2`)).toBe(true);
     db.close();
   });
 });

@@ -49,6 +49,7 @@ Put provider-specific parsing in the adapter, not the canonical hook. The one ex
 |------|---------|
 | `git-context.sh` | Current branch, last 5 commits, working tree status |
 | `prism-context.sh` | One-line warning if prism-mcp dashboard at `PRISM_DASHBOARD_PORT` (default 7180) is unreachable; silent on success |
+| `sindri-nudge.sh` | One line when the session's repo is not in the approved sindri profile; silent otherwise; bounded by `AW_SINDRI_NUDGE_BUDGET_MS` |
 
 `providers/claude/install-hooks.sh` also removes the SessionStart entry and `~/.claude/hooks/` copy of the retired `bridge-context.sh` hook left by older installs.
 
@@ -76,13 +77,14 @@ All hook scripts live in `config/hooks/`:
 | `rtk-rewrite.sh` | PreToolUse | `Bash` |
 | `git-context.sh` | SessionStart | — |
 | `prism-context.sh` | SessionStart | — |
+| `sindri-nudge.sh` | SessionStart | — |
 | `prompt-sort.sh` | UserPromptSubmit | — |
 
 Each provider's `install-hooks.sh` installs them by copying, not symlinking, so they survive repo moves. Claude Code's copies go to `~/.claude/hooks/`, and Codex and Cursor copies go to `~/.agentic-workflow/hooks/`. The script then registers the command in that provider's hook config, wrapped by the adapter for Codex and Cursor.
 
-**Lever hooks** (context-guard, done-gate, scope-gate, external-write-guard, wake gating, judge-health, prompt-sort) are installed by `scripts/install-*.sh --provider claude|codex|cursor`, with `claude` as the default. `setup.sh` runs them for each selected provider. A lever with no equivalent event on a provider prints `skipped for <provider>` and writes nothing. For example, context-guard is skipped on Cursor.
+**Lever hooks** (context-guard, done-gate, scope-gate, external-write-guard, wake gating, judge-health, prompt-sort, sindri-nudge) are installed by `scripts/install-*.sh --provider claude|codex|cursor`, with `claude` as the default. `setup.sh` runs them for each selected provider. A lever with no equivalent event on a provider prints `skipped for <provider>` and writes nothing. For example, context-guard is skipped on Cursor.
 
-Tests (all run under a temp `HOME`): `config/hooks/tests/{codex-adapter,cursor-adapter,provider-install-hooks,probe-log,judge-health}.test.sh`, plus `config/lib/tests/{prompt-sort,install-prompt-sort}.test.sh` (run through the `config/lib/tests/*.test.sh` glob).
+Tests (all run under a temp `HOME`): `config/hooks/tests/{codex-adapter,cursor-adapter,provider-install-hooks,probe-log,judge-health,sindri-nudge}.test.sh`, plus `config/lib/tests/{prompt-sort,install-prompt-sort}.test.sh` (run through the `config/lib/tests/*.test.sh` glob).
 
 ## Adding a New Hook
 
@@ -101,3 +103,5 @@ The steps below apply to **PreToolUse hooks**. SessionStart hooks have different
 `probe-log.sh <Event>` appends raw hook stdin to `~/.agentic-workflow/probe/<Event>.jsonl`. It prints nothing and always exits 0. `scripts/probe.sh on|off|status` installs and removes it on `UserPromptSubmit`, `Stop`, `SubagentStop`, `TeammateIdle`, `SubagentStart`, and `PreToolUse`/`PostToolUse` (matcher `Agent|SendMessage`). Every probe command ends in `# aw:probe`, and `config/lib/merge-hook.sh` only ever touches commands with its own tag. `scorer probe` summarizes the logs. `scripts/probe.sh --provider codex|cursor on|off|status` installs the Codex/Cursor equivalents (no TeammateIdle; Cursor entries use the adapter's `--raw` mode) and logs to `probe/<provider>/`.
 
 `prompt-sort.sh` (`# aw:prompt-sort`) is the prompt sorter's UserPromptSubmit hook. It sorts the real prompt with `judge prompt-sort` (one Jev request), prints a scaffold note only when a scaffold switch is on and fires, never prints skill names (Prism's `prism-route` hook owns skill routing), always exits 0, and kills the judge after `AW_PROMPT_SORT_BUDGET_MS` (default 1500). A non-zero exit or crash of the judge is swallowed. Skips machine text, slash commands and `AW_JUDGE_CHILD`. Install opt-out: `AW_NO_PROMPT_SORT=1`.
+
+`sindri-nudge.sh` (`# aw:sindri-nudge`) is installed only by `scripts/install-sindri.sh --hook-only --provider X` (`setup.sh --with-sindri` runs it per provider); a plain `install-sindri.sh` prints the hint. It runs `sindri repo status --nudge`, which reads the approved profile read-only and never writes the ledger, prints at most one line, kills the CLI after `AW_SINDRI_NUDGE_BUDGET_MS` (default 1500), always exits 0, and is silent outside git, without sindri, before any approval, for an onboarded repo (a linked worktree counts), on any error, and for `AW_JUDGE_CHILD` / `AW_SINDRI_CHILD` sessions.

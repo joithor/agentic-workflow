@@ -421,6 +421,127 @@
       "additionalProperties": false,
       "default": {},
       "description": "Shape signals (spec §6.2)"
+    },
+    "sources": {
+      "type": "object",
+      "properties": {
+        "notesDir": {
+          "type": "string",
+          "description": "Your notes (vault) dir; scoping searches it"
+        },
+        "transcripts": {
+          "type": "object",
+          "properties": {
+            "enabled": {
+              "type": "boolean",
+              "default": false
+            },
+            "dir": {
+              "type": "string",
+              "default": "~/.claude/projects"
+            }
+          },
+          "additionalProperties": false,
+          "default": {},
+          "description": "Opt-in: human turns from your Claude Code sessions. Turns from unrelated projects can reach the model, so leave it off unless you want that"
+        },
+        "linear": {
+          "type": "object",
+          "properties": {
+            "token": {
+              "type": "string",
+              "pattern": "^(env:[A-Za-z_][A-Za-z0-9_]*|file:\\/\\S+|keychain:[^/\\s]+\\/\\S+|op:\\S+\\/\\S+)$"
+            },
+            "apiUrl": {
+              "type": "string",
+              "format": "uri",
+              "default": "https://api.linear.app/graphql"
+            },
+            "allowCustomApiUrl": {
+              "type": "boolean",
+              "default": false
+            }
+          },
+          "required": [
+            "token"
+          ],
+          "additionalProperties": false,
+          "description": "Read-only Linear token for scoping and backtests"
+        }
+      },
+      "additionalProperties": false,
+      "default": {}
+    },
+    "models": {
+      "type": "object",
+      "properties": {
+        "scoping": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:\\[\\]-]*$",
+          "default": "sonnet"
+        },
+        "challenger": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:\\[\\]-]*$",
+          "default": "opus"
+        },
+        "adjudicator": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:\\[\\]-]*$",
+          "default": "opus"
+        },
+        "effort": {
+          "type": "string",
+          "enum": [
+            "low",
+            "medium",
+            "high",
+            "xhigh",
+            "max"
+          ],
+          "default": "medium"
+        },
+        "allowBaseUrl": {
+          "type": "boolean",
+          "default": false,
+          "description": "Let the claude child keep *_BASE_URL variables (they can reroute model traffic)"
+        }
+      },
+      "additionalProperties": false,
+      "default": {}
+    },
+    "scope": {
+      "type": "object",
+      "properties": {
+        "maxRounds": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 10,
+          "default": 3
+        },
+        "maxTokensPerRun": {
+          "type": "integer",
+          "exclusiveMinimum": 0,
+          "default": 600000
+        },
+        "maxTokensPerBacktest": {
+          "type": "integer",
+          "exclusiveMinimum": 0,
+          "default": 1500000
+        },
+        "maxRecords": {
+          "type": "integer",
+          "exclusiveMinimum": 0,
+          "default": 40
+        },
+        "maxPackChars": {
+          "type": "integer",
+          "exclusiveMinimum": 0,
+          "default": 120000
+        }
+      },
+      "additionalProperties": false,
+      "default": {}
     }
   },
   "required": [

@@ -14,6 +14,7 @@ import { heavyLockDir } from "../src/index/heavy-lock.js";
 import type { IndexProbes } from "../src/index/io.js";
 import { GRAPHIFY_PIN } from "../src/index/pins.js";
 import { runCli } from "../src/main.js";
+import { preCommitHook } from "../src/scrub/commands.js";
 import { fakeSystem, makeDeps, tempDir } from "./helpers.js";
 import { approvedIndexDeps, BODY, fakeIndexIo, ring0Name, ring0Repo } from "./index-fixtures.js";
 
@@ -137,6 +138,30 @@ describe("sindri doctor fix hints clear their warning", () => {
 });
 
 describe("sindri doctor coverage paths", () => {
+  it("reports a template-variant hook as skipping the scan (never as refusing every commit)", async () => {
+    const d = await ring0Deps();
+    const file = path.join(d.cwd, ".git", "hooks", "pre-commit");
+    fs.mkdirSync(path.dirname(file), { recursive: true });
+    const hookCheck = async () => Object.entries(await byName(d)).find(([k]) => k.startsWith("pre-commit:"))?.[1];
+    const repo = fs.realpathSync(d.cwd);
+    fs.writeFileSync(file, preCommitHook("/nonexistent/sindri", { template: true }));
+    const gone = await hookCheck();
+    expect(gone).toMatchObject({ status: "warn", detail: "template hook calls /nonexistent/sindri, which is missing, so the secret scan is skipped", fix: `scripts/install-sindri.sh, then sindri repo onboard ${repo}` });
+    expect(gone?.detail).not.toContain("every commit is refused");
+    fs.writeFileSync(file, preCommitHook(process.execPath, { template: true }));
+    expect(await hookCheck()).toMatchObject({ status: "warn", detail: "template copy: it skips the secret scan if sindri goes missing or repo status fails", fix: `sindri repo onboard ${repo}` });
+  });
+
+  it("never tells a core.hooksPath repo to run the installer (final review I1)", async () => {
+    const d = await ring0Deps();
+    execFileSync("git", ["config", "core.hooksPath", ".githooks"], { cwd: d.cwd });
+    const hook = Object.entries(await byName({ ...d, env: { ...d.env, SINDRI_BIN: "/opt/aw bin/sindri" } })).find(([k]) => k.startsWith("pre-commit:"))?.[1];
+    expect(hook).toMatchObject({ status: "warn", detail: "secret-scan hook not installed" });
+    expect(hook?.fix).not.toContain("--install-pre-commit");
+    expect(hook?.fix).toContain(`add these two lines to ${path.join(fs.realpathSync(d.cwd), ".githooks", "pre-commit")} yourself`);
+    expect(hook?.fix).toContain("'/opt/aw bin/sindri' scrub --staged || exit 1");
+  });
+
   it("reports an executable hook binary as ok", async () => {
     const d = await ring0Deps();
     await runCli(["scrub", "--install-pre-commit"], { ...d, env: { ...d.env, SINDRI_BIN: process.execPath } });

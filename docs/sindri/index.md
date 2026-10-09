@@ -9,9 +9,27 @@ sindri profile init --ring0 && sindri profile approve   # or: profile init, repo
 sindri index setup      # checks Ollama, pulls the embedding model, installs the pinned graphify with uv, probes the sandbox
 sindri index build      # full build; also creates the bare mirror at $AW_STATE_DIR/sindri/mirrors/<repo>.git
 sindri scrub --install-pre-commit   # hook v2: secret scan, then shape recording
+sindri repo onboard <path>             # repo add → approval (yours, at a terminal) → pre-commit hook → first index build; idempotent
 ```
 
 `index setup` reads the **approved** profile, so approve first. It needs Ollama (running, with the model), `uv`, and macOS `sandbox-exec` (or Linux `bwrap`). Without one of them that layer is `unavailable` and everything else works.
+
+### Onboarding a repo
+
+`sindri repo onboard <path>` runs four steps, in order, and prints one line for each, named as below:
+
+1. **repo-add**: put the repo in the live profile. Run from a linked worktree, it adds the main checkout (the parent of `git rev-parse --git-common-dir`), never the worktree path, which goes away when the worktree is removed. It checks that `<parent>/.git` is that common dir; a worktree of a bare repo, of a `--separate-git-dir` checkout or of a submodule has no such checkout and is refused (`SND-PROFILE-016`: pass the main checkout path). `repo status` applies the same check.
+2. **approval**: check that the approved profile lists the repo at that path. It never approves: until you run `sindri profile approve` at a terminal, it prints that command and exits 1.
+3. **pre-commit**: install the pre-commit hook (secret scan, then shape recording) in the repo's `.git/hooks`.
+4. **index-build**: the first `index build --repo`, with one try at the heavy-job lock.
+
+Each line is `ok` (the step passed), `done` (it did something just now), `skip` (it did not run: `needs approval`, or skipped on request such as `--no-build`), `warn` (it needs attention, for example the approval is pending, or the heavy-job lock was busy so the build is left for the nightly build) or `fail` (the step failed; the line carries the error code and the fix). Only a pending approval stops the later steps (they print `skip  needs approval`); a failed `pre-commit` step still runs `index-build`. An index-build error other than a busy lock stops the command with that error. The exit code is 2 if any step failed, 1 if any warned, else 0. Rerunning is safe.
+
+**core.hooksPath.** When `core.hooksPath` is set (in the repo or globally), that hooks directory is yours (often tracked, maybe public), so neither `sindri repo onboard` nor `sindri scrub --install-pre-commit` writes a hook there, not even into an empty one, and sindri never sets `core.hooksPath`. The step fails with `SND-SCRUB-003` and its fix gives the two lines, with the absolute, quoted path of the installed binary: for husky, add them to `${XDG_CONFIG_HOME:-~/.config}/husky/init.sh`, guarded to this repo by its `--git-common-dir`; otherwise add them to `<hooks dir>/pre-commit` yourself. `sindri doctor` gives the same fix for such a repo, never the installer.
+
+**The nudge.** A SessionStart hook (`aw:sindri-nudge`, installed for every provider by `./setup.sh --with-sindri`) runs `sindri repo status --nudge`, which is read-only and bounded, and names the current repo when it is not onboarded. To silence it, onboard the repo, or remove the `aw:sindri-nudge` entry from the host's hooks.
+
+**The template.** `sindri repo onboard --template` sets git's `init.templateDir` so new clones and `git init` get a pre-commit hook that does nothing until the repo is approved. It sets `init.templateDir` only when it is unset or already points at sindri's own template dir; one that points anywhere else is never overwritten (`SND-SCRUB-006`, with a copy command as the fix). It never touches `core.hooksPath`. For existing repos, `sindri repo onboard` or `sindri scrub --install-pre-commit` installs the full hook. Rerunning `git init` copies the template hook only where no `pre-commit` exists yet.
 
 ## Layers
 
@@ -41,6 +59,8 @@ sindri repo add <path> [--name NAME]    # profile entry (then sindri profile app
 sindri shape report [--recent N]        # read-only: signals by type, outcomes and precision; --recent lists signals with their evidence
 sindri shape reconcile                  # move the spool into the ledger and label outcomes now (observe does it hourly)
 ```
+
+`index build --json` prints `{ "reports": [...], "unapproved": [...] }`: `reports` is one build report per repo built (repo, commit, quick, files, symbols, layers, ms) and `unapproved` lists the repos in the live profile that are not approved yet and were skipped (always `[]` with `--repo`). **Breaking change:** before Plan 4 it printed the bare `reports` array; a script that parsed it reads `.reports` now.
 
 Embeddings: if the URL or model is refused (the profile schema normally catches this first), `index build` does not abort. The embeddings layer reports `unavailable` with the reason and the other layers build. A failed layer is `unavailable` with its reason; the other layers stay usable. Builds write a temp copy and rename it, so an interrupted build leaves the previous index in place.
 
@@ -99,7 +119,8 @@ This is an **outcome proxy, not a human label**: code is changed for other reaso
 | `uv is not installed` (the `graphify` step of `index setup`) | `uv` is missing; `./setup.sh --with-sindri` installs it with Homebrew (`brew install uv`) when it can, and warns otherwise | `brew install uv` or see the uv install docs, then `sindri index setup` |
 | `SND-INDEX-008` (graphify output not usable) | the graphify test fixture (`sindri/tests/fixtures/graphify/graph.json`) is synthetic until the switch-on re-records it from a real sandboxed run, so key names may need a fix then | re-record the fixture from the pinned graphify and fix `parseGraphJson` if a key differs |
 | `SND-INDEX-001` / `heavy-lock held` | another heavy job (a test run, another build) holds the lock; the message says for how long | wait; a lock whose holder is dead on this host (pid gone, or recorded on another boot) is reclaimed automatically, and so is any lock held over 6 h (a crashed `locks.sh` holder leaves no record, and a reused pid looks alive); otherwise run the fix `sindri doctor` prints: `rmdir ${AW_HEAVY_JOB_LOCK:-$AW_STATE_DIR/locks/heavy-job.lock}` and delete the `.holder.json` file beside it |
-| `hook is v1: secret scan only, no shape recording` (`pre-commit:<repo>`) | the Plan 2 hook is installed; it never records shape signals | `sindri scrub --install-pre-commit --repo <path>` |
+| `SND-PROFILE-015 <name> is in the live profile but not approved yet` | `repo add` ran, `profile approve` didn't | `sindri profile approve`, then rerun |
+| `hook is v1: secret scan only, no shape recording` (`pre-commit:<repo>`) | the Plan 2 hook is installed; it never records shape signals | `sindri scrub --install-pre-commit --repo <path>` (with `core.hooksPath` set, add the two lines by hand as the fix says; see Onboarding) |
 | `hook doesn't run sindri shape --record` | a hand-merged v2 hook lost the shape line while `shape.record` is on | reinstall it, or add the `"$SINDRI" shape --record --staged \|\| true` line back |
 | `N quarantined shape run(s)` (`shape-spool`) | spool files the ledger couldn't read were set aside | look at them, then delete the `quarantine/` dir |
 | `sindri-shape: skipped (no index; …)` in a commit | the hook found no index for this repo | `sindri index build` |

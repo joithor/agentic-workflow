@@ -33,11 +33,28 @@ Generated from `sindri/src/errors.ts` by `cd sindri && npm run gen`. Do not edit
 | `SND-PROFILE-012` | No profile has been approved yet. | sindri profile approve |
 | `SND-PROFILE-013` | That repo name is already used for another path or file. | pass --name &lt;another name&gt; |
 | `SND-PROFILE-014` | That repo name is not valid. | use lowercase letters, digits and dashes (max 39) |
+| `SND-PROFILE-015` | That repo is in the live profile but not approved yet. | run `sindri profile approve`, review the diff, then approve it at a terminal (or `sindri repo onboard`, which prints both commands) |
+| `SND-PROFILE-016` | This worktree has no main checkout to add (a bare repo, a separate git dir or a submodule). | pass the main checkout's path; a bare repo has no checkout to index |
+| `SND-SCOPE-001` | No allowed provider can run scoping. | add anthropic to providers.allowed, then sindri profile approve |
+| `SND-SCOPE-002` | A model job failed, timed out or returned junk. | rerun; the message carries the CLI's own error. If it repeats, run `claude -p hello` to check the CLI and its login |
+| `SND-SCOPE-004` | The model's answer didn't match the required shape. | rerun; the next round gets the reasons. Persistent: try another models.scoping |
+| `SND-SCOPE-005` | The run's token budget is used up. | raise scope.maxTokensPerRun (or maxTokensPerBacktest) in the profile, then sindri profile approve |
+| `SND-SCOPE-010` | Linear rejected the token. | check sources.linear.token points at a valid read-only Linear API key |
+| `SND-SCOPE-011` | Linear could not be read. | check the project URL and your network, then rerun; the message carries Linear's own error text |
+| `SND-SCOPE-020` | The brief file can't be read. | check the path you passed to sindri scope |
+| `SND-SCOPE-021` | No output directory for the scope map. | pass --out DIR or set sources.notesDir |
+| `SND-SCOPE-022` | That section isn't in the document. | check the heading number (## 13. …) |
+| `SND-SCOPE-023` | The project has no issues filed after its brief. | pick a project with later issues, or a shorter --window |
+| `SND-SCOPE-024` | Linear isn't configured as a source. | add sources.linear.token (a secret pointer), then sindri profile approve |
+| `SND-SCOPE-025` | Refusing to write a scope map into a git worktree. | use --sources file,code, or write outside the repo |
 | `SND-SCRUB-001` | A profile scrub pattern does not compile. | Fix the regex at the named scrub.extraPatterns index, then run `sindri profile validate`. |
 | `SND-SCRUB-002` | Staged changes contain likely secrets. | remove them (use a secret pointer or an env var); for a false positive, commit with --no-verify and say why |
-| `SND-SCRUB-003` | A different pre-commit hook is already installed. | Add both lines to that hook by hand, in this order: `sindri scrub --staged \|\| exit 1` then `sindri shape --record --staged \|\| true`. |
+| `SND-SCRUB-003` | A different pre-commit hook is already installed, or core.hooksPath points the hook at a directory sindri didn't create (it never writes there). | Add both lines to that hook by hand, in this order: `sindri scrub --staged \|\| exit 1` then `sindri shape --record --staged \|\| true`. |
 | `SND-SCRUB-004` | `scrub --staged` or `--install-pre-commit` ran outside a git repo. | cd into the repo first, or pass --repo PATH to --install-pre-commit. |
 | `SND-SCRUB-005` | `git diff --cached` failed, so `scrub --staged` could not scan the staged changes. | Fix the git error shown in the details, then retry the commit. |
+| `SND-SCRUB-006` | git's init.templateDir is set to a directory sindri does not own, or could not be read or set. | copy the named hook into that template dir's hooks/ yourself, or `git config --global --unset init.templateDir` and rerun `sindri repo onboard --template` |
+| `SND-SECRET-001` | A secret pointer could not be resolved. | check the pointer in the profile and that the secret exists (env var, file, keychain item or 1Password item) |
+| `SND-SECRET-002` | A secret file is readable by other users. | chmod 600 &lt;file&gt; |
 | `SND-TRACKER-001` | The tracker's source is missing or unreadable (for plan-file: the repo path or plan dir). | Restore that directory, or fix `path` in repos/&lt;name&gt;.yaml and run `sindri profile approve`. |
 | `SND-TRACKER-002` | The tracker's source holds no items to read (for plan-file: no plan file matches tracker.include). | Fix tracker.include in profile.yaml (or restore the plan files), then run `sindri profile approve`. |
 | `SND-TRACKER-003` | A plan file is too big to read (over 2 MiB). | Split the plan file into smaller plans. |

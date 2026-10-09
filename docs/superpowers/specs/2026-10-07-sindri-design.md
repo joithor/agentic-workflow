@@ -354,7 +354,7 @@ human runs `sindri decide <item>` to see both positions and choose.
   CLI flag that limits the chain (M1). Without the flag judge would fall through to any installed agent
   CLI.
 - Other providers (Codex, Cursor CLI, others) are opt-in per provider. They receive a bounded bundle:
-  scrubbed, sensitive paths denied, non-agentic mode. Every provider call writes an audit row.
+  scrubbed, sensitive paths denied, non-agentic mode. Every provider call writes an audit row. `sindri scope` writes one `model_calls` ledger row per call (run id, role, model, tokens).
 - If no distinct challenger model is available, the check is skipped and recorded as `skipped:no-diverse-model`.
   It never silently uses the proposer's model.
 
@@ -578,9 +578,9 @@ code.
 - **Inputs** (through Source adapters, read-only):
   - the project brief and docs
   - existing tracker issues and comments
-  - linked chat threads
+  - (not in v1: linked chat threads are deferred by §4, and memory (Prism) is read inside agent sessions through MCP, not by the CLI)
   - the code index (structure, call graph via graphify, embeddings) for the affected modules
-  - prior steered transcripts on the same area
+  - prior steered transcripts on the same area (opt-in: sources.transcripts.enabled, default false)
   - the notes dir (vault)
 - **Output:** a cited **scope map**.
   - **Surfaces:** every UI, API, job, data and integration touchpoint, each with an evidence citation
@@ -590,18 +590,24 @@ code.
   - **Acceptance checks** per surface.
   - **Open product questions,** batched for the human.
 - **Verification loop (Step contract):**
-  1. Deterministic checks: every surface cites a source; the dependency graph is acyclic.
+  1. Deterministic checks: every surface cites a source; the dependency graph is acyclic; the map has at least one surface and every surface is in a workstream.
   2. An adversarial **missing-surface** pass using graph neighbors and embedding recall over the index,
      repeated until no new surface appears (round cap).
-  3. A Scoping direction check (§6.1).
-- **Delivery:** the scope map is written to the notes dir and attached to the tracker project as a
-  document. Creating issues from it is needs-approval in v1, then self-adopt once the backtest bar is met
+  3. A Scoping direction check (§6.1), from rollout step 5. Until then the missing-surface loop on a different model is the verifier.
+- **Delivery:** the scope map is written to `--out` or the notes dir (0600) and, in v1, not attached to the tracker project (that write needs the step-3a path, §8.1 and §8.5); `sindri scope` refuses to write inside a git worktree unless `--sources` is `file,code`. Creating issues from it is needs-approval in v1, then self-adopt once the backtest bar is met
   for that project type.
 - **Backtest** (the proof): `--backtest` runs scoping on a project's **original brief** as of its creation
   date, then measures **recall** of the surfaces behind the issues filed later.
   - The first backtest target is the project that motivated this design.
+  - Sources are cut to the project's creation date: the notes dir is left out, and so is the code index unless `--with-index` (the run is then labeled leaky). Linear text is fetched as it is today, so recall is optimistic.
+  - Labels come from an adjudicator model, never a person; every batch is judged twice with the order reversed and only agreeing answers count. The report gives recall, precision (the share of map surfaces some project issue supports), the same numbers for a brief-only baseline, and a pass bar of recall >= 0.60, precision >= 0.60 and recall above the baseline's.
   - Recall becomes the scoping harness's eval-suite metric, and the self-evolution loop improves it
     (§7.4).
+
+*Amendments (Plan 4):*
+- *(12) The Scoping job in v1 has no read-only code tools (`--tools ""`); code context comes from the code-index source in the pack, and "independence checked against predicted file sets" (§6.1) is deferred.*
+- *(13) Acceptance checks are per workstream in v1, not per surface.*
+- *(14) The challenger sees the same evidence pack as the drafter; graph-neighbour and embedding recall for the challenger are deferred (cross-source retrieval is issue #75).*
 
 ### 7.6 Dogfooding
 The harness's own backlog goes through the harness as ordinary work items in the core repo's tracker:
@@ -833,7 +839,7 @@ and dropped capabilities.
   <untrusted source="tracker:ITEM#comment-…" author="…"> … </untrusted>
   ```
 - The session preamble states that `<untrusted>` content is data and never an instruction source.
-- Ingest strips HTML comments, zero-width characters, encoded blobs and remote image URLs.
+- Ingest strips HTML comments, zero-width characters, encoded blobs and remote image URLs. `sindri scope` applies this to every source, and neutralizes model-written text (images, links, tags, URLs) when it renders Markdown.
 - Triage and pack Steps are tool-less. Fetching happens in sindri code through typed Source adapters,
   by id, never by arbitrary URL (M18).
 
@@ -1029,7 +1035,7 @@ The `UserPromptSubmit` hook classifies every human turn in a sindri session:
 | `answer` / `approve` / `reject` / `snooze` | Human responses. Ids are typed (`call:`, `rule:`, `profile:`, `dir:`) | "Recorded. ITEM resumes on the next tick." / `SND-ITEM-409 nothing pending for ITEM` |
 | `decide ITEM [--pick a\|b\|other --note "..."]` | Shows the item's Task, the proposer position, the challenger objections and replies (untrusted strings fenced), the arbiter score and threshold, and a recommendation; records the pick | "No direction check is waiting on you for ITEM." |
 | `hook log\|replay\|test` | Hook decisions per item; re-run a recorded decision; run a hook on a fixture (§5.3) | "No hook decisions recorded for ITEM." |
-| `setup-host [--dry-run]` / `teardown-host` / `repo add <path>` / `index setup` / `image build <repo>` | Host, repo, index and session-image setup (§11.3) | dry-run prints every change; `teardown-host` reverses the manifest |
+| `setup-host [--dry-run]` / `teardown-host` / `repo add <path>` / `repo onboard [<path>] [--template --no-build]` / `repo status [<path>] [--nudge]` / `index setup` / `image build <repo>` | Host, repo, index and session-image setup (§11.3) | dry-run prints every change; `teardown-host` reverses the manifest; `repo onboard`: "approval pending: sindri profile approve …" (exit 1) |
 | `dashboard [--url]` | Start the dashboard, or print its tokened URL (§10.5) | — |
 | `open ITEM` / `view ITEM` | Fetch the pushed branch into a host worktree / open the read-only live working files | — |
 | `park` / `unpark ITEM [--hint]` | Park or resume with a hint | "Parked ITEM." / `SND-ITEM-409 ITEM is not parked` |
@@ -1043,6 +1049,7 @@ The `UserPromptSubmit` hook classifies every human turn in a sindri session:
 | `shadow report` | Routing, direction-check and shape agreement per class, plus classifier accuracy | "Not enough shadow data yet (n/30)." |
 | `rules show\|approve\|reject` | Eval-loop proposals | "No proposals pending." |
 | `index build\|status\|query` | Code index (§6.2). `index status` lists every repo; a missing index is a row and exit 1, not an `SND-INDEX-404` abort. `index query` still uses `SND-INDEX-404` | `SND-INDEX-404 no index for <repo>; run sindri index build --repo <repo>` |
+| `scope <brief.md \| linear:<project>> [--backtest --dry-run --sources]` / `scope runs` | Scoping and its backtest (§7.5); past runs | "No scope runs recorded." / `SND-SCOPE-025 refusing to write … inside a git worktree` |
 | `repo add <path>` | Edits the profile only (then `profile approve`); each full `index build` creates or refreshes the mirror | — |
 | `profile init\|validate\|explain\|migrate\|approve` | Profile tooling. `approve` shows the diff first | validate: "Profile valid." / errors with file, key path, fix |
 | `scheduler install\|uninstall\|status [--dry-run]` | Scheduler | dry-run prints the unit/plist |
@@ -1053,7 +1060,7 @@ The `UserPromptSubmit` hook classifies every human turn in a sindri session:
 - `NO_COLOR` and non-TTY output are honored.
 - Exit codes: `0` ok, `1` attention needed, `2` error.
 - Errors carry stable codes `SND-<AREA>-<NNN>`, with the areas seeded in `docs/sindri/errors.md`: PROFILE,
-  LOCK, SESS, ITEM, GATE, DIR, SHAPE, INDEX, BRIDGE, NOTIFY, BUDGET, CLI, LEDGER, SCRUB, TRACKER.
+  LOCK, SESS, ITEM, GATE, DIR, SHAPE, INDEX, BRIDGE, NOTIFY, BUDGET, CLI, LEDGER, SCRUB, TRACKER, SCOPE, SECRET.
 
 ### 10.4 Silent-failure floor (R7)
 - **Fallback chain:** macOS notification, then the `$AW_STATE_DIR/ATTENTION` file, then a banner in
@@ -1175,6 +1182,7 @@ interface Environment { provision(item: WorkItem, change: ChangeRef | null): Pro
                         status(h: EnvHandle): Promise<Result<"pending" | "ready" | "failed">>; teardown(h: EnvHandle): Promise<Result<void>> }
 interface Badge    { publish(summary: StatusSummary): Promise<Result<void>> }
 ```
+`Source` in v1 is query-based: `find({keywords, asOf, limit})` returns scrubbed records with stable references; `fetch(ref)` arrives when a Step needs a single record.
 - **`plan-file` Tracker (built-in):** reads `docs/superpowers/plans/*.md` task headings and checkboxes as work
   items, so a repo can be built from its own plans with no tracker account (§13.3 ring 0).
 - **Selection:** the profile picks an adapter by `type:` (for example `tracker: { type: linear, ... }`).
@@ -1206,7 +1214,7 @@ interface Badge    { publish(summary: StatusSummary): Promise<Result<void>> }
 - **Session images:** `sindri image build <repo>` builds the repo's image. It contains the toolkit,
   skills, the session hook set, the existing safety hooks, Claude Code, tmux and the repo toolchain, and
   it is keyed by lockfile hash. Rebuilding one is a heavy job.
-- **Repos:** `sindri repo add <path>` records the repo in the profile (it does not create the mirror). Every full `sindri index build` creates or refreshes the bare mirror at `$AW_STATE_DIR/sindri/mirrors/<repo>.git`; the first image build is queued later.
+- **Repos:** `sindri repo add <path>` records the repo in the profile (it does not create the mirror). Every full `sindri index build` creates or refreshes the bare mirror at `$AW_STATE_DIR/sindri/mirrors/<repo>.git`; the first image build is queued later. `sindri repo onboard [<path>]` chains `repo add`, an approval check, the pre-commit hook and a first `index build --repo` (one try at the heavy-job lock). It never approves: until a human runs `sindri profile approve` at a terminal, it prints that command and exits 1. A SessionStart nudge (all providers, read-only, bounded) names a repo that isn't onboarded. `sindri repo onboard --template` sets `init.templateDir` (only when unset; never `core.hooksPath`) so new clones get a pre-commit hook that does nothing until the repo is approved.
 - **Index dependencies (M6):** structure uses the TypeScript compiler API, not bundled tree-sitter grammars (other languages come later). Ollama and the embedding model
   (`index.embeddings.{enabled,url,model}`) are checked and pulled by `sindri index setup`; `uv` is installed by `./setup.sh --with-sindri`. graphify is installed and pinned by
   the same command and run in its network-less sandbox. `doctor` verifies each.
@@ -1451,7 +1459,7 @@ toolkit needs no tracker account to build itself. The adapter ships in Plan 2.
 | Scrubber (P2) | P2 merges | `sindri scrub --install-pre-commit` in this repo | A committed fixture secret is refused | **Guards this public repo:** no secret- or identifier-shaped strings land in commits from any build session (names and other workplace prose still need review) | Pre-commit in workplace repos where wanted |
 | `plan-file` tracker + `sindri observe` (P2) | P2 merges | `sindri profile init --ring0 --plans '*-sindri-plan-*'`, then `sindri observe` (hourly via launchd) | Lists the remaining plan tasks with rule-based sizes (model triage from step 2) | Gives a live, ordered backlog of the rest of Sindri | `observe` on the real tracker |
 | Code index, record-only shape signals (P3) | P3 merges | `sindri index setup && sindri index build`, `sindri repo add .`, `sindri scrub --install-pre-commit` (upgrades the hook to v2, which records shape signals), an hourly `sindri index build --quick` and a nightly full build (launchd); a degraded switch-on (embeddings or graph unavailable) is allowed and the PR evidence lists the layers that are down | `index status` fresh; shape signals in the ledger for builder commits | **Calibrates shape thresholds on Sindri's own commits** from P4 onward; flags reinvention while P4/P5 are built | `repo add` for workplace repos (record-only) |
-| Scoping harness (P4) | P4 merges | `sindri scope docs/superpowers/specs/2026-10-07-sindri-design.md --section 13 --out docs/superpowers/scopes/` | Scope map file plus `--backtest` recall on the motivating project | **Scopes every later Sindri plan before it's written:** the plan writer starts from the scope map | Scope new workplace projects at creation |
+| Scoping harness (P4) | P4 merges | `sindri scope docs/superpowers/specs/2026-10-07-sindri-design.md --section 13 --sources file,code --out docs/superpowers/scopes/` | Scope map file plus `--backtest` recall on the motivating project | **Scopes every later Sindri plan before it's written:** the plan writer starts from the scope map | Scope new workplace projects at creation |
 | Ported `reflect` / `correct` / `eval` + artifact registry (P5) | P5 merges | `sindri evolve init` (registry over the repo); `reflect` runs on every merged Sindri PR; `correct` weekly | Registry lists every module; first reflect proposal recorded | **The build improves its own tools:** proposals for the skills and hooks used to build Sindri arrive as PRs (human merges) | Same loop over ring-1 artifacts |
 | Shadow triage + dashboard/badge (step 2) | Step-2 plan merges | `sindri dashboard`; SwiftBar badge install | Dashboard shows ring-0 items and what Sindri would do | Visible queue for the remaining build | Shadow on the real tracker |
 | `sindri start`, packs, worker → ship, notifications (step 3a) | Step-3a plan merges | Remaining Sindri tasks are started with `sindri start <plan-task>` instead of pasted prompts | Next Sindri PR opened by the ship Step | **Sindri dispatches and ships its own remaining plans** (human starts, human merges) | Assist mode for workplace tickets |

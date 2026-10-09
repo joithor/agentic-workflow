@@ -10,6 +10,7 @@
     "build": "tsc",
     "gen": "npm run build && node dist/gen.js",
     "test": "vitest run",
+    "test:heavy": "SINDRI_HEAVY=1 vitest run tests/heavy",
     "test:coverage": "vitest run --coverage",
     "typecheck": "tsc --noEmit && tsc --noEmit -p tsconfig.test.json"
   },
