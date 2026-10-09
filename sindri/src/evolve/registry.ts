@@ -2,6 +2,7 @@ import { createHash } from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
 
+import { escapeRe } from "../scrub/scrub.js";
 import { SindriError } from "../errors.js";
 import type { GitRunner } from "../git.js";
 import type { Ledger } from "../ledger/db.js";
@@ -40,8 +41,6 @@ export function normalizeRepoPath(p: string): string | null {
   const n = path.posix.normalize(p);
   return n === "." || n.endsWith("/") ? null : n;
 }
-
-export const escapeRe = (s: string): string => s.replace(/[.+?^${}()|[\]\\]/g, "\\$&");
 
 export function globMatch(glob: string, p: string): boolean {
   const re = glob.split("**").map((part) => part.split("*").map(escapeRe).join("[^/]*")).join(".*");
