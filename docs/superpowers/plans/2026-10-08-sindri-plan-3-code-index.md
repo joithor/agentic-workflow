@@ -5477,7 +5477,7 @@ git commit -m "feat: sindri shape outcome labels and per-type precision"
 - Produces (`commands.ts`): `sindri index setup [--dry-run] [--json]` — reads the **approved** profile (so an unapproved edit can't choose the model or the repos), exit 2 on any `fail`, 1 on any `warn`.
 - Produces (`doctor.ts`): `runChecks(deps, nodeVersion?, probes?: IndexProbes)` adds, after the Plan 2 checks: `index:<repo>` per repo, `embeddings`, `embedding-proxy` (only when `NODE_USE_ENV_PROXY=1`), `graphify`, `heavy-lock`.
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 `sindri/tests/index-setup.test.ts`:
 
@@ -5802,12 +5802,12 @@ describe("doctor index checks", () => {
 });
 ```
 
-- [ ] **Step 2: Run the tests to verify they fail**
+- [x] **Step 2: Run the tests to verify they fail**
 
 Run: `cd sindri && npx vitest run tests/index-setup.test.ts tests/repo-add.test.ts tests/doctor.test.ts`
 Expected: FAIL with `Failed to load url ../src/index/setup.js` (and `repo-add.js`).
 
-- [ ] **Step 3: Implement**
+- [x] **Step 3: Implement**
 
 `sindri/src/index/setup.ts`:
 
@@ -6085,12 +6085,12 @@ Add to `ERRORS`:
   "SND-PROFILE-014": { summary: "That repo name is not valid.", fix: "use lowercase letters, digits and dashes (max 39)" },
 ```
 
-- [ ] **Step 4: Run the tests**
+- [x] **Step 4: Run the tests**
 
 Run: `cd sindri && npm run gen && npx vitest run && npm run typecheck && npm run test:coverage`
 Expected: all tests PASS; 100% coverage.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add sindri/src sindri/tests docs/sindri/errors.md

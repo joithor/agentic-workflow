@@ -24,6 +24,8 @@ export const ERRORS = {
   "SND-PROFILE-010": { summary: "Approving a profile needs an interactive terminal.", fix: "run `sindri profile approve <hash>` yourself, in a terminal" },
   "SND-PROFILE-011": { summary: "The approval was not confirmed.", fix: "rerun and type the first 6 characters of the hash" },
   "SND-PROFILE-012": { summary: "No profile has been approved yet.", fix: "sindri profile approve" },
+  "SND-PROFILE-013": { summary: "That repo name is already used for another path or file.", fix: "pass --name <another name>" },
+  "SND-PROFILE-014": { summary: "That repo name is not valid.", fix: "use lowercase letters, digits and dashes (max 39)" },
   "SND-LOCK-001": { summary: "Another sindri run holds the lock.", fix: "wait a moment and rerun; `sindri doctor` shows the holder" },
   "SND-SCRUB-001": { summary: "A profile scrub pattern does not compile.", fix: "Fix the regex at the named scrub.extraPatterns index, then run `sindri profile validate`." },
   "SND-SCRUB-002": { summary: "Staged changes contain likely secrets.", fix: "remove them (use a secret pointer or an env var); for a false positive, commit with --no-verify and say why" },

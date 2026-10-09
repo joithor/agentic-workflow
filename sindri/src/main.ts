@@ -3,6 +3,7 @@ import { createRequire } from "node:module";
 import type { Deps } from "./deps.js";
 import { doctorCommand } from "./doctor/doctor.js";
 import { makeIndexCommand } from "./index/commands.js";
+import { repoCommand } from "./index/repo-add.js";
 import { realIndexIo } from "./index/sandbox-real.js";
 import { makeShapeCommand } from "./index/shape.js";
 import { ledgerCommand, observeCommand } from "./observe/observe.js";
@@ -53,6 +54,11 @@ export const COMMANDS: Record<string, CommandDef> = {
       "  sindri index setup [--dry-run] [--json]",
     ].join("\n"),
     run: makeIndexCommand(realIndexIo()),
+  },
+  repo: {
+    summary: "Add a repo to the profile (then sindri profile approve)",
+    usage: "Usage:\n  sindri repo add <path> [--name NAME] [--json]",
+    run: repoCommand,
   },
   shape: {
     summary: "Record shape signals for staged changes (pre-commit), or report them",

@@ -31,6 +31,8 @@ Generated from `sindri/src/errors.ts` by `cd sindri && npm run gen`. Do not edit
 | `SND-PROFILE-010` | Approving a profile needs an interactive terminal. | run `sindri profile approve <hash>` yourself, in a terminal |
 | `SND-PROFILE-011` | The approval was not confirmed. | rerun and type the first 6 characters of the hash |
 | `SND-PROFILE-012` | No profile has been approved yet. | sindri profile approve |
+| `SND-PROFILE-013` | That repo name is already used for another path or file. | pass --name &lt;another name&gt; |
+| `SND-PROFILE-014` | That repo name is not valid. | use lowercase letters, digits and dashes (max 39) |
 | `SND-SCRUB-001` | A profile scrub pattern does not compile. | Fix the regex at the named scrub.extraPatterns index, then run `sindri profile validate`. |
 | `SND-SCRUB-002` | Staged changes contain likely secrets. | remove them (use a secret pointer or an env var); for a false positive, commit with --no-verify and say why |
 | `SND-SCRUB-003` | A different pre-commit hook is already installed. | Add both lines to that hook by hand, in this order: `sindri scrub --staged \|\| exit 1` then `sindri shape --record --staged \|\| true`. |

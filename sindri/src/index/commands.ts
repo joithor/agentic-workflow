@@ -5,7 +5,7 @@ import { stateDir, type Deps } from "../deps.js";
 import { SindriError } from "../errors.js";
 import { ledgerPath, readLedger } from "../ledger/db.js";
 import type { Command } from "../main.js";
-import { failure, fromError, success, type CommandResult } from "../output.js";
+import { failure, fromError, success, type CommandResult, type ExitCode } from "../output.js";
 import { requireApprovedProfile } from "../profile/approve.js";
 import type { LoadedProfile } from "../profile/load.js";
 import { buildIndex, type BuildReport } from "./build.js";
@@ -15,6 +15,7 @@ import { makeGraphifyProvider, type GraphProvider } from "./graph.js";
 import type { IndexIo } from "./io.js";
 import { bandKeys, estimateJaccard } from "./minhash.js";
 import { GRAPHIFY_PIN } from "./pins.js";
+import { runSetup } from "./setup.js";
 
 // Read-only: index commands never create or migrate the ledger. A missing ledger is "nothing approved".
 export function approvedOrThrow(deps: Deps): LoadedProfile {
@@ -162,6 +163,16 @@ function query(args: string[], deps: Deps): CommandResult {
   return success(lines.join("\n"), rows, values.json === true);
 }
 
+// Reads the APPROVED profile: an unapproved edit can't choose which model is pulled or which repos are indexed.
+async function setup(args: string[], deps: Deps, io: IndexIo): Promise<CommandResult> {
+  const { values } = parseFlags(args, { "dry-run": { type: "boolean" }, json: { type: "boolean" } });
+  const approved = approvedOrThrow(deps);
+  const { steps } = await runSetup(approved, io.probes, { dryRun: values["dry-run"] === true, platform: deps.system.platform, home: deps.home, log: deps.log });
+  const text = steps.map((s) => `${s.status.padEnd(5)} ${s.name}  ${s.detail}${s.fix === undefined ? "" : `\n     fix: ${s.fix}`}`).join("\n");
+  const exit: ExitCode = steps.some((s) => s.status === "fail") ? 2 : steps.some((s) => s.status === "warn") ? 1 : 0;
+  return success(text === "" ? "Nothing to set up: embeddings and the graph are off in the profile." : text, steps, values.json === true, exit);
+}
+
 export function makeIndexCommand(io: IndexIo): Command {
   return async (args, deps) => {
     const [sub, ...rest] = args;
@@ -170,6 +181,7 @@ export function makeIndexCommand(io: IndexIo): Command {
       if (sub === "build") return await build(rest, deps, io);
       if (sub === "status") return status(rest, deps);
       if (sub === "query") return query(rest, deps);
+      if (sub === "setup") return await setup(rest, deps, io);
       return failure("SND-CLI-002", `unknown index subcommand: ${sub ?? "(none)"}; use build, status, query or setup`, json, { fix: "sindri index --help" });
     } catch (e) {
       return fromError(e, json);
