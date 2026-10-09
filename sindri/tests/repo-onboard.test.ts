@@ -269,6 +269,19 @@ describe("sindri repo status", () => {
     expect((await runCli(["repo", "status", wt], d)).exitCode).toBe(0);
   });
 
+  it("a worktree of a bare repo that sits inside an onboarded checkout is not counted as that checkout", async () => {
+    const d = await approvedIndexDeps(ring0Repo({ "a.ts": "1" }));
+    const target = gitRepo({ "b.ts": "1" });
+    await runCli(["repo", "onboard", target, "--name", "web", "--no-build"], d);
+    await approve(d);
+    // dirname(<target>/inner.git) is the onboarded checkout, but <target>/.git is not that common dir.
+    git(target, "clone", "-q", "--bare", target, "inner.git");
+    const wt = path.join(tempDir(), "wt");
+    git(path.join(target, "inner.git"), "worktree", "add", "-q", wt, "-b", "side");
+    const r = await runCli(["repo", "status", wt, "--json"], d);
+    expect(JSON.parse(r.stdout)).toMatchObject({ kind: "not-onboarded" });
+  });
+
   it("reads approval from a ledger at an older schema version (an upgrade never silently skips the gate)", async () => {
     const d = await approvedIndexDeps(ring0Repo({ "a.ts": "1" }));
     const raw = new Database(ledgerPath(stateDir(d)));

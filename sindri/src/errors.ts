@@ -27,6 +27,7 @@ export const ERRORS = {
   "SND-PROFILE-013": { summary: "That repo name is already used for another path or file.", fix: "pass --name <another name>" },
   "SND-PROFILE-014": { summary: "That repo name is not valid.", fix: "use lowercase letters, digits and dashes (max 39)" },
   "SND-PROFILE-015": { summary: "That repo is in the live profile but not approved yet.", fix: "run `sindri profile approve`, review the diff, then approve it at a terminal (or `sindri repo onboard`, which prints both commands)" },
+  "SND-PROFILE-016": { summary: "This worktree has no main checkout to add (a bare repo, a separate git dir or a submodule).", fix: "pass the main checkout's path; a bare repo has no checkout to index" },
   "SND-LOCK-001": { summary: "Another sindri run holds the lock.", fix: "wait a moment and rerun; `sindri doctor` shows the holder" },
   "SND-SCRUB-001": { summary: "A profile scrub pattern does not compile.", fix: "Fix the regex at the named scrub.extraPatterns index, then run `sindri profile validate`." },
   "SND-SCRUB-002": { summary: "Staged changes contain likely secrets.", fix: "remove them (use a secret pointer or an env var); for a false positive, commit with --no-verify and say why" },

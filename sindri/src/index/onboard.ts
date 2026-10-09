@@ -12,7 +12,7 @@ import { installPreCommit, preCommitHook } from "../scrub/commands.js";
 import { buildIndex } from "./build.js";
 import { embedderOrUnavailable, graphFor } from "./commands.js";
 import { indexPath } from "./db.js";
-import { repoAdd } from "./repo-add.js";
+import { mainCheckout, repoAdd } from "./repo-add.js";
 import type { Step } from "./setup.js";
 
 export type RepoState =
@@ -44,13 +44,15 @@ function readApproved(deps: Deps): LoadedProfile | null {
   return readLedger(file, (db) => approvedProfile(deps, db));
 }
 
-// The repo's top level and its main checkout (a linked worktree's --git-common-dir is <main>/.git).
+// The repo's top level and its main checkout (mainCheckout: none for a worktree of a bare repo,
+// a separate git dir or a submodule, so such a worktree never matches a profile repo by accident).
 export async function repoState(deps: Deps, target: string): Promise<RepoState> {
-  const r = await deps.git.run(["rev-parse", "--path-format=absolute", "--show-toplevel", "--git-common-dir"], path.resolve(deps.cwd, target), { timeoutMs: 5_000 });
+  const r = await deps.git.run(["rev-parse", "--path-format=absolute", "--show-toplevel", "--git-dir", "--git-common-dir"], path.resolve(deps.cwd, target), { timeoutMs: 5_000 });
   if (!r.ok) return { kind: "outside-git" };
-  const [top, common] = r.stdout.trim().split("\n");
+  const [top, gitDir, common] = r.stdout.trim().split("\n");
   const repoPath = realOrSelf(top);
-  const candidates = [repoPath, realOrSelf(path.dirname(common))];
+  const main = mainCheckout(top, gitDir, common);
+  const candidates = main === null ? [repoPath] : [repoPath, main];
   const approved = readApproved(deps);
   if (approved === null) return { kind: "no-approved-profile", path: repoPath };
   const name = nameFor(approved, candidates);

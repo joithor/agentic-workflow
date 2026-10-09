@@ -18,7 +18,7 @@ sindri repo onboard <path>             # repo add → approval (yours, at a term
 
 `sindri repo onboard <path>` runs four steps, in order, and prints one line for each, named as below:
 
-1. **repo-add**: put the repo in the live profile. Run from a linked worktree, it adds the main checkout (the parent of `git rev-parse --git-common-dir`), never the worktree path, which goes away when the worktree is removed.
+1. **repo-add**: put the repo in the live profile. Run from a linked worktree, it adds the main checkout (the parent of `git rev-parse --git-common-dir`), never the worktree path, which goes away when the worktree is removed. It checks that `<parent>/.git` is that common dir; a worktree of a bare repo, of a `--separate-git-dir` checkout or of a submodule has no such checkout and is refused (`SND-PROFILE-016`: pass the main checkout path). `repo status` applies the same check.
 2. **approval**: check that the approved profile lists the repo at that path. It never approves: until you run `sindri profile approve` at a terminal, it prints that command and exits 1.
 3. **pre-commit**: install the pre-commit hook (secret scan, then shape recording) in the repo's `.git/hooks`.
 4. **index-build**: the first `index build --repo`, with one try at the heavy-job lock.

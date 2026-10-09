@@ -13,16 +13,41 @@ import { PROFILE_SCHEMA_VERSION } from "../profile/schema.js";
 import { renderSteps } from "./commands.js";
 import { installTemplate, nudgeLine, onboard, repoState } from "./onboard.js";
 
+// The main checkout of the repo at `top`. A main checkout's git dir is its common dir (a
+// --separate-git-dir or submodule checkout included). A linked worktree's main checkout is
+// dirname(common) only when <that dir>/.git is the common dir itself; a worktree of a bare repo,
+// of a --separate-git-dir checkout or of a submodule has none there, so it is null.
+export function mainCheckout(top: string, gitDir: string, common: string): string | null {
+  const real = (p: string): string => {
+    try {
+      return fs.realpathSync(p);
+    } catch {
+      return p; // a missing <dir>/.git stays a path that matches no common dir
+    }
+  };
+  const commonReal = real(common);
+  if (real(gitDir) === commonReal) return real(top);
+  const candidate = path.dirname(common);
+  return real(path.join(candidate, ".git")) === commonReal ? real(candidate) : null;
+}
+
 // Edits the LIVE profile; the change takes effect after `sindri profile approve` (spec §8.7).
 // The mirror is not created here: every full `sindri index build` creates or refreshes it.
 // From a linked worktree (its git dir differs from the common dir, <main>/.git) it adds the main
 // checkout, as repoState matches it: a worktree is ephemeral, and its path breaks once it is removed.
+// A worktree with no main checkout (see mainCheckout) is refused, never recorded under a wrong path.
 export async function repoAdd(deps: Deps, target: string, name?: string): Promise<{ name: string; path: string; added: boolean }> {
   const loaded = requireProfile(deps);
   const r = await deps.git.run(["rev-parse", "--path-format=absolute", "--show-toplevel", "--git-dir", "--git-common-dir"], path.resolve(deps.cwd, target));
   if (!r.ok) throw new SindriError("SND-PROFILE-009", `${target} is not inside a git repo`);
   const [top, gitDir, common] = r.stdout.trim().split("\n");
-  const repoPath = fs.realpathSync(gitDir === common ? top : path.dirname(common));
+  const main = mainCheckout(top, gitDir, common);
+  if (main === null) {
+    throw new SindriError("SND-PROFILE-016", `${target} is a linked worktree whose main checkout can't be found (its git common dir ${common} is not <checkout>/.git)`, {
+      fix: "pass the main checkout's path; a bare repo has no checkout to index",
+    });
+  }
+  const repoPath = main;
   const repoName = sanitizeName(name ?? path.basename(repoPath));
   // --name becomes a file name and a directory name: it must already be what sanitizing makes of it.
   if (name !== undefined && repoName !== name) {
