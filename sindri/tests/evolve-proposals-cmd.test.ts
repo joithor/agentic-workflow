@@ -84,6 +84,16 @@ describe("sindri evolve show", () => {
     fx.close();
   });
 
+  it("prints scrubbed excerpts for transcript evidence", async () => {
+    const { fx, save } = await ready();
+    fs.writeFileSync(path.join(fx.transcripts, "5e55a1d0-1111.jsonl"), `${JSON.stringify({ type: "user", cwd: fx.repo, message: { content: "please do not delete the fixtures" } })}\n`);
+    const id = save({ evidence: ["pr:12", "transcript:5e55a1d0#1", "transcript:ffffffff#1"] });
+    const out = (await show([id], fx.ctx)).stdout;
+    expect(out).toContain('Excerpts:\n  transcript:5e55a1d0#1: "please do not delete the fixtures"');
+    expect(out).not.toContain("transcript:ffffffff#1: ");
+    fx.close();
+  });
+
   it("suggests the next command for each status", async () => {
     const { fx, save } = await ready();
     const cases: [ProposalStatus, string][] = [

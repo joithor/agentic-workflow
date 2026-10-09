@@ -9,6 +9,7 @@ import {
   classifyTier, getProposal, latestComparison, listProposals, nextFor, owns, reduceEvidence, setStatus, stagedFile, STATUSES, TERMINAL, type ProposalStatus,
 } from "../proposals.js";
 import { isAddedTestAllowed, isProtectedPath, loadRegistry } from "../registry.js";
+import { excerptFor, transcriptsDir } from "../transcripts.js";
 
 const ageDays = (iso: string, now: Date): number => Math.max(0, Math.floor((now.getTime() - Date.parse(iso)) / 86_400_000));
 
@@ -41,6 +42,11 @@ export async function show(args: string[], ctx: EvolveCtx): Promise<CommandResul
   const ev = reduceEvidence(p.evidence);
   const cmp = latestComparison(ctx.db, id);
   const indent = (t: string): string => t.split("\n").map((l) => `  ${l}`).join("\n");
+  const dir = transcriptsDir(ctx);
+  const excerpts = ev.refs.flatMap((r) => {
+    const e = excerptFor(dir, r);
+    return e === null ? [] : [`  ${r}: "${e}"`];
+  });
   const lines = [
     `Proposal ${id}: ${p.title}`,
     `Status: ${s.status}   Tier: ${tierText}   Source: ${s.source}`,
@@ -49,6 +55,7 @@ export async function show(args: string[], ctx: EvolveCtx): Promise<CommandResul
     `Why:\n${indent(p.rationale)}`,
     ...(p.change.type === "describe" ? [`Change:\n${indent(p.change.description)}`] : []),
     `Evidence: ${ev.refs.length > 0 ? ev.refs.join(", ") : "none recorded"}${ev.withheld > 0 ? ` (${ev.withheld} reference(s) withheld)` : ""}`,
+    ...(excerpts.length > 0 ? ["Excerpts:", ...excerpts] : []),
     ...(cmp === null ? [] : [`Comparison (run ${cmp.run}): ${cmp.line}`]),
     `Next: ${nextFor(s)}`,
   ];

@@ -2174,7 +2174,7 @@ git commit -m "feat: sindri typed proposals, tiers, dedupe and merge tracking"
     A hook name that is merely mentioned (a tool result that reads the hook source, a quoted fire, an ordinary sentence) never counts. The done-gate's "Claiming done" block and its "Next step already authorized … continuing" message are both fires.
   - `sindri evolve telemetry [--since 7d] [--per-hook 20] [--json]` — stores adjudicated samples in `hook_samples` (unique by `ref`, so reruns don't re-adjudicate; a fire the adjudicator didn't label is stored with `warranted` NULL and counts in no rate). Prints one line per hook. A hook with at least 10 labelled samples and a Wilson lower bound on its unwarranted rate above 0.2 gets a `hook-fix` proposal (deduped by `saveProposal`).
 
-- [ ] **Step 1: Write the synthetic fixtures**
+- [x] **Step 1: Write the synthetic fixtures**
 
 The fixtures are **synthetic**. Never copy a real transcript line into the repo. To confirm the shapes against reality on your own machine, look at one real fire locally, for example `grep -m1 -h 'Stop hook feedback' ~/.claude/projects/<one project>/*.jsonl | head -c 600`, compare it with the lines below, and commit only these lines.
 
@@ -2205,7 +2205,7 @@ null
 {"type":"user","timestamp":"2026-10-01T11:00:01Z","cwd":"/example/other","message":{"role":"user","content":"Stop hook feedback:\n[/example/other/config/hooks/done-gate.sh # aw:done-gate]: Claiming done with no evidence mentioned."}}
 ```
 
-- [ ] **Step 2: Write the failing tests**
+- [x] **Step 2: Write the failing tests**
 
 `sindri/tests/evolve-stats.test.ts`:
 
@@ -2661,12 +2661,12 @@ describe("sindri evolve telemetry", () => {
 
 Trace for the main test: 12 fires at 10:00..10:11 on 2026-10-05, after the cutoff `2026-10-01T12:00:00Z` (the fixture clock is 2026-10-08T12:00:00Z minus 7 days). `perHook` is 20, so all 12 are sampled in two batches (10 and 2); the scripted runner labels every ref unwarranted. 12 labelled, 12 unwarranted, lower bound 0.76 > 0.2, so a proposal opens for `hook:done-gate` (registered by `init`; the profile's `config/hooks/**` glob makes the hook protected, hence tier `approval`). In "mostly warranted": `i % 5 !== 0` over each batch (the index restarts per call: batch 1 has i = 0..9, batch 2 has i = 0..1), so unwarranted are i = 0 and 5 in batch 1 and i = 0 in batch 2: 3 of 12 = 0.25. The Wilson lower bound for 3/12 is about 0.09 (below 0.2), so no proposal opens. In "partial result": `Budget(1)`: batch 1 spends 2 tokens, so batch 2 is refused, `skipped` = 12 - 10 = 2 and 10 samples are stored.
 
-- [ ] **Step 3: Run the tests to verify they fail**
+- [x] **Step 3: Run the tests to verify they fail**
 
 Run: `cd sindri && npx vitest run tests/evolve-stats.test.ts tests/evolve-transcripts.test.ts tests/evolve-telemetry.test.ts tests/evolve-telemetry-cmd.test.ts`
 Expected: FAIL with `Failed to load url ../src/evolve/ask.js` (and the other new modules).
 
-- [ ] **Step 4: Implement**
+- [x] **Step 4: Implement**
 
 `sindri/src/evolve/stats.ts`:
 
@@ -3111,12 +3111,12 @@ and insert `...(excerpts.length > 0 ? ["Excerpts:", ...excerpts] : []),` directl
 
 Register in `sindri/src/evolve/commands.ts`: `import { telemetry } from "./cmd/telemetry.js";` and add `telemetry` to `SUBCOMMANDS`.
 
-- [ ] **Step 5: Run the tests**
+- [x] **Step 5: Run the tests**
 
 Run: `cd sindri && npx vitest run && npm run typecheck && npm run test:coverage`
 Expected: all tests PASS; coverage 100% on the files this task touches.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add sindri/src/evolve sindri/tests
