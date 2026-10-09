@@ -17,6 +17,8 @@ export interface ShapeRun {
   elapsedMs: number;
   indexAgeMs: number | null;
   providers: { embedder: string | null; graph: string | null };
+  // parserId() of the hook that computed the signals' AST hashes.
+  parser: string;
   deferred: string[];
   signals: Signal[];
 }
@@ -34,6 +36,7 @@ const RunSchema = z
     elapsedMs: z.number().int().nonnegative(),
     indexAgeMs: z.number().int().nullable(),
     providers: z.object({ embedder: z.string().max(80).nullable(), graph: z.string().max(80).nullable() }).strict(),
+    parser: z.string().max(80),
     deferred: z.array(z.string().max(32)).max(8),
     signals: z
       .array(
@@ -114,8 +117,8 @@ export function ingestSpool(db: Ledger, deps: Deps, epoch: number): { runs: numb
     // INSERT OR IGNORE on the run id: a replayed file inserts nothing, signals included.
     const inserted = db.transaction((): boolean => {
       const res = db
-        .prepare("INSERT OR IGNORE INTO shape_runs (run_id, repo, ts, head, tree, commit_sha, elapsed_ms, index_age_ms, providers, deferred, signal_count, epoch) VALUES (?, ?, ?, ?, ?, NULL, ?, ?, ?, ?, ?, ?)")
-        .run(run.runId, run.repo, run.ts, run.head, run.tree, run.elapsedMs, run.indexAgeMs, JSON.stringify(run.providers), JSON.stringify(run.deferred), run.signals.length, epoch);
+        .prepare("INSERT OR IGNORE INTO shape_runs (run_id, repo, ts, head, tree, commit_sha, elapsed_ms, index_age_ms, providers, parser, deferred, signal_count, epoch) VALUES (?, ?, ?, ?, ?, NULL, ?, ?, ?, ?, ?, ?, ?)")
+        .run(run.runId, run.repo, run.ts, run.head, run.tree, run.elapsedMs, run.indexAgeMs, JSON.stringify(run.providers), clean(run.parser), JSON.stringify(run.deferred), run.signals.length, epoch);
       if (res.changes === 0) return false;
       for (const s of run.signals) {
         db.prepare("INSERT INTO shape_signals (run_id, type, layer, value, threshold, at, existing, detail, name, ast_hash, epoch) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)").run(

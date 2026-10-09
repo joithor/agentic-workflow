@@ -183,6 +183,7 @@ erDiagram
         INTEGER elapsed_ms
         INTEGER index_age_ms "NULLABLE"
         TEXT providers "JSON: layer status at record time"
+        TEXT parser "parse-ts@<INDEXER_VERSION>+ts<typescript version> that computed the AST hashes"
         TEXT deferred "JSON: checks skipped over the commit budget"
         INTEGER signal_count
         INTEGER epoch

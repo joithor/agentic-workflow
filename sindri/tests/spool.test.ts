@@ -13,7 +13,7 @@ const sig: Signal = {
 };
 const run = (over: Partial<ShapeRun> = {}): ShapeRun => ({
   runId: "01k0000000000000000000000a", repo: "r", ts: "2026-10-08T12:00:00.000Z", head: "a".repeat(40), tree: "b".repeat(40), elapsedMs: 40,
-  indexAgeMs: 3_600_000, providers: { embedder: null, graph: null }, deferred: ["embeddings"], signals: [sig], ...over,
+  indexAgeMs: 3_600_000, providers: { embedder: null, graph: null }, parser: "parse-ts@1+ts5.9.3", deferred: ["embeddings"], signals: [sig], ...over,
 });
 
 describe("shape spool", () => {
@@ -29,8 +29,8 @@ describe("shape spool", () => {
     expect(db.prepare("SELECT type, layer, at, existing, name, ast_hash, outcome, epoch FROM shape_signals").all()).toEqual([
       { type: "reinvented:exact", layer: "clones", at: "src/a.ts:1", existing: "src/b.ts:1", name: "a", ast_hash: "a".repeat(64), outcome: null, epoch },
     ]);
-    expect(db.prepare("SELECT repo, deferred, signal_count, tree, commit_sha, index_age_ms, providers FROM shape_runs").get()).toEqual({
-      repo: "r", deferred: '["embeddings"]', signal_count: 1, tree: "b".repeat(40), commit_sha: null, index_age_ms: 3_600_000, providers: '{"embedder":null,"graph":null}',
+    expect(db.prepare("SELECT repo, deferred, signal_count, tree, commit_sha, index_age_ms, providers, parser FROM shape_runs").get()).toEqual({
+      repo: "r", deferred: '["embeddings"]', signal_count: 1, tree: "b".repeat(40), commit_sha: null, index_age_ms: 3_600_000, providers: '{"embedder":null,"graph":null}', parser: "parse-ts@1+ts5.9.3",
     });
   });
 
@@ -58,12 +58,16 @@ describe("shape spool", () => {
     fs.mkdirSync(path.join(spoolDir(d), "shape-dir.json"));
     writeShapeRun(d, run({ runId: "01k0000000000000000000000c", signals: [{ ...sig, type: "bogus" as unknown as SignalType }] }));
     writeShapeRun(d, run({ runId: "01k0000000000000000000000d", repo: "../x" }));
+    // A run that doesn't say which parser made its hashes can't be reconciled.
+    const noParser: Record<string, unknown> = { ...run({ runId: "01k0000000000000000000000e" }) };
+    delete noParser.parser;
+    fs.writeFileSync(path.join(spoolDir(d), "shape-01k0000000000000000000000e.json"), JSON.stringify(noParser));
     writeShapeRun(d, run({ runId: "01k0000000000000000000000b" }));
     const db = openMemoryLedger();
     const epoch = bumpEpoch(db);
-    expect(ingestSpool(db, d, epoch)).toEqual({ runs: 1, signals: 1, quarantined: 7 });
+    expect(ingestSpool(db, d, epoch)).toEqual({ runs: 1, signals: 1, quarantined: 8 });
     expect(fs.readdirSync(path.join(spoolDir(d), "quarantine")).sort()).toEqual([
-      "shape-01k0000000000000000000000c.json", "shape-01k0000000000000000000000d.json", "shape-bad.json", "shape-dir.json", "shape-garbage.json", "shape-huge.json", "shape-link.json",
+      "shape-01k0000000000000000000000c.json", "shape-01k0000000000000000000000d.json", "shape-01k0000000000000000000000e.json", "shape-bad.json", "shape-dir.json", "shape-garbage.json", "shape-huge.json", "shape-link.json",
     ]);
   });
 

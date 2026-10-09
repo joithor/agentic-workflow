@@ -17,6 +17,7 @@ import { embedderFor } from "./commands.js";
 import { indexPath, layers, meta, openIndexReadOnly, type Layer } from "./db.js";
 import type { IndexIo } from "./io.js";
 import { buildOverlay, stagedChanges } from "./overlay.js";
+import { parserId } from "./parse-ts.js";
 import { reconcileShape } from "./reconcile.js";
 import { computeSignals } from "./signals.js";
 import { ingestSpool, pruneSpool, writeShapeRun } from "./spool.js";
@@ -116,6 +117,7 @@ async function measure(
       elapsedMs: deps.now().getTime() - started,
       indexAgeMs: built === null ? null : started - Date.parse(built),
       providers: { embedder: stamp("embeddings"), graph: stamp("graph") },
+      parser: parserId(),
       deferred,
       signals,
     });

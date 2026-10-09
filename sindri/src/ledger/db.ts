@@ -56,6 +56,7 @@ const MIGRATIONS: readonly string[] = [
     elapsed_ms INTEGER NOT NULL,
     index_age_ms INTEGER,
     providers TEXT NOT NULL,
+    parser TEXT NOT NULL,
     deferred TEXT NOT NULL,
     signal_count INTEGER NOT NULL,
     epoch INTEGER NOT NULL

@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 
-import { typescriptParser } from "../src/index/parse-ts.js";
+import ts from "typescript";
+
+import { INDEXER_VERSION, parserId, typescriptParser } from "../src/index/parse-ts.js";
 
 const SRC = `
 import { helper } from "./helper";
@@ -140,5 +142,13 @@ class C { #q() { return this.#q(); } }
       expect(hash(`async function f(a) { return a; }`)).not.toBe(hash(`function f(a) { return a; }`));
       expect(typescriptParser.parse("h.ts", `declare class D { }`)[0].astHash).toBe(typescriptParser.parse("h.ts", `class D { }`)[0].astHash);
     });
+  });
+});
+
+describe("parserId", () => {
+  // AST hashes come from SyntaxKind names, which a TypeScript upgrade can change: every recorded
+  // hash carries the parser that made it.
+  it("names the indexer version and the TypeScript version", () => {
+    expect(parserId()).toBe(`parse-ts@${INDEXER_VERSION}+ts${ts.version}`);
   });
 });

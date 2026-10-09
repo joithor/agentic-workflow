@@ -55,7 +55,7 @@ describe("ledger migration v2", () => {
     const db = openMemoryLedger();
     expect(LEDGER_SCHEMA_VERSION).toBe(2);
     const cols = (t: string) => (db.prepare(`PRAGMA table_info(${t})`).all() as { name: string }[]).map((c) => c.name);
-    expect(cols("shape_runs")).toEqual(expect.arrayContaining(["tree", "commit_sha", "index_age_ms", "providers", "deferred"]));
+    expect(cols("shape_runs")).toEqual(expect.arrayContaining(["tree", "commit_sha", "index_age_ms", "providers", "parser", "deferred"]));
     expect(cols("shape_signals")).toEqual(expect.arrayContaining(["name", "ast_hash", "outcome", "labeled_at"]));
   });
 

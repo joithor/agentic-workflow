@@ -7,7 +7,9 @@ const loaded = (): boolean =>
 
 describe("typescript is loaded lazily", () => {
   it("not at import, and only on the first parse", async () => {
-    const { typescriptParser } = await import("../src/index/parse-ts.js");
+    const { parserId, typescriptParser } = await import("../src/index/parse-ts.js");
+    expect(loaded()).toBe(false);
+    expect(parserId()).toMatch(/^parse-ts@\d+\+ts\d+\.\d+/);
     expect(loaded()).toBe(false);
     expect(typescriptParser.supports("a.ts")).toBe(true);
     expect(loaded()).toBe(false);

@@ -2,7 +2,7 @@ import type { Deps } from "../deps.js";
 import { withEpoch, type Ledger } from "../ledger/db.js";
 import type { LoadedProfile } from "../profile/load.js";
 import { readManifestDeps } from "./deps-layer.js";
-import { typescriptParser } from "./parse-ts.js";
+import { parserId, typescriptParser } from "./parse-ts.js";
 
 const DAY = 86_400_000;
 // Every call is about a profile repo, never the caller's own, so git's hook-exported repository
@@ -74,13 +74,15 @@ async function linkRuns(db: Ledger, deps: Deps, loaded: LoadedProfile, epoch: nu
 // index, so it is right whatever branch the checkout is on (arch r2 N1). Merging is recognised by
 // ancestry or, failing that, by content (a version of the file on the branch holding the flagged
 // code), so squash and rebase merges count (arch r2 N2). The branch tip prefers origin/<branch>
-// after a best-effort fetch, so a stale local branch can't mislabel.
+// after a best-effort fetch, so a stale local branch can't mislabel. Only runs recorded by this
+// parser are labeled: another parser's hashes can't be compared with this one's (a TypeScript or
+// INDEXER_VERSION bump), so those runs stay unlabeled rather than reading as acted-on.
 async function labelSignals(db: Ledger, deps: Deps, loaded: LoadedProfile, epoch: number, now: Date): Promise<number> {
   const cutoff = now.getTime() - loaded.profile.shape.outcomeDays * DAY;
   const due = (
     db
-      .prepare("SELECT s.seq, s.type, s.at, s.name, s.ast_hash, r.repo, r.commit_sha, r.ts FROM shape_signals s JOIN shape_runs r ON r.run_id = s.run_id WHERE s.outcome IS NULL AND r.commit_sha IS NOT NULL ORDER BY s.seq")
-      .all() as Due[]
+      .prepare("SELECT s.seq, s.type, s.at, s.name, s.ast_hash, r.repo, r.commit_sha, r.ts FROM shape_signals s JOIN shape_runs r ON r.run_id = s.run_id WHERE s.outcome IS NULL AND r.commit_sha IS NOT NULL AND r.parser = ? ORDER BY s.seq")
+      .all(parserId()) as Due[]
   ).filter((s) => Date.parse(s.ts) <= cutoff);
   const byRepo = new Map<string, Due[]>();
   for (const s of due) byRepo.set(s.repo, [...(byRepo.get(s.repo) ?? []), s]);

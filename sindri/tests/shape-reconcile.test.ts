@@ -6,7 +6,7 @@ import { describe, expect, it } from "vitest";
 import { stateDir, type Deps } from "../src/deps.js";
 import { makeIndexCommand } from "../src/index/commands.js";
 import { indexPath } from "../src/index/db.js";
-import { typescriptParser } from "../src/index/parse-ts.js";
+import { parserId, typescriptParser } from "../src/index/parse-ts.js";
 import { FETCH_ENV, reconcileShape } from "../src/index/reconcile.js";
 import { makeShapeCommand } from "../src/index/shape.js";
 import { bumpEpoch, ledgerPath, openLedger, type Ledger } from "../src/ledger/db.js";
@@ -22,10 +22,10 @@ const TS = "2026-10-08T12:00:00.000Z"; // the fixed commit date of every test co
 const later = (d: Deps, days: number): Deps => ({ ...d, now: () => new Date(Date.parse(TS) + days * 86_400_000) });
 
 interface Sig { type: string; at: string; name: string | null; hash: string | null; outcome?: string }
-function insertRun(db: Ledger, o: { id: string; repo: string; tree: string | null; sha?: string; ts?: string; deferred?: string; signals: Sig[] }): void {
+function insertRun(db: Ledger, o: { id: string; repo: string; tree: string | null; sha?: string; ts?: string; deferred?: string; parser?: string; signals: Sig[] }): void {
   db.prepare(
-    "INSERT INTO shape_runs (run_id, repo, ts, head, tree, commit_sha, elapsed_ms, index_age_ms, providers, deferred, signal_count, epoch) VALUES (?, ?, ?, NULL, ?, ?, 0, NULL, '{}', ?, ?, 1)",
-  ).run(o.id, o.repo, o.ts ?? TS, o.tree, o.sha ?? null, o.deferred ?? "[]", o.signals.length);
+    "INSERT INTO shape_runs (run_id, repo, ts, head, tree, commit_sha, elapsed_ms, index_age_ms, providers, parser, deferred, signal_count, epoch) VALUES (?, ?, ?, NULL, ?, ?, 0, NULL, '{}', ?, ?, ?, 1)",
+  ).run(o.id, o.repo, o.ts ?? TS, o.tree, o.sha ?? null, o.parser ?? parserId(), o.deferred ?? "[]", o.signals.length);
   for (const s of o.signals) {
     db.prepare("INSERT INTO shape_signals (run_id, type, layer, value, threshold, at, existing, detail, name, ast_hash, outcome, epoch) VALUES (?, ?, 'clones', 1, 1, ?, NULL, 'd', ?, ?, ?, 1)").run(
       o.id, s.type, s.at, s.name, s.hash, s.outcome ?? null,
@@ -438,6 +438,18 @@ describe("reconcileShape: reached the default branch, judged by content (Task 10
     x.commitOn(4, "rewrite");
     expect(await reconcileShape(x.db, later(x.d, 16), x.loaded, bumpEpoch(x.db))).toEqual({ linked: 0, labeled: 1 });
     expect(outcomes(x.db)).toEqual({ "run-mv|reinvented:exact|shorten": "acted-on" });
+    x.db.close();
+  });
+
+  // Final review I4: a hash from another parser (a TypeScript or INDEXER_VERSION bump) can't be
+  // compared with this one's, so that run is left unlabeled rather than mass-labeled acted-on.
+  it("leaves a run recorded by another parser unlabeled, and labels the same run from this parser", async () => {
+    const x = await dated();
+    const tree = git(x.root, "rev-parse", "HEAD^{tree}").trim();
+    const signals = [{ type: "reinvented:exact", at: "src/feature.ts:1", name: "shorten", hash: hashOf("src/feature.ts", "shorten") }];
+    insertRun(x.db, { id: "run-old", repo: x.name, tree, parser: "parse-ts@0+ts5.0.0", signals });
+    insertRun(x.db, { id: "run-now", repo: x.name, tree, signals });
+    expect(await labelOn(x, 2, 16)).toEqual({ "run-old|reinvented:exact|shorten": null, "run-now|reinvented:exact|shorten": "kept" });
     x.db.close();
   });
 

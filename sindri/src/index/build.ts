@@ -17,16 +17,15 @@ import { matchesAny } from "./globs.js";
 import { withHeavyLock } from "./heavy-lock.js";
 import { refreshMirror } from "./mirror.js";
 import { bandKeys, encodeSig, SHINGLE, signature } from "./minhash.js";
-import { typescriptParser } from "./parse-ts.js";
+import { INDEXER_VERSION, parserId, typescriptParser } from "./parse-ts.js";
 
-// Bump when parsing or hashing changes: every structure/clone row is rebuilt.
-export const INDEXER_VERSION = "1";
-// The stamp includes the utility globs: they decide each symbol's `utility` flag, so
+// The stamp names the parser (indexer and TypeScript versions): a new one re-parses every file.
+// It also includes the utility globs: they decide each symbol's `utility` flag, so
 // changing them must re-parse unchanged files.
 // It also includes scrub.extraPatterns: they decide what stored bodies redact, so a new pattern
 // must reach the bodies of unchanged files.
 const structureStamp = (utilityGlobs: readonly string[], extraPatterns: readonly { kind: string; regex: string }[]): string =>
-  `parse-ts@${INDEXER_VERSION}+${createHash("sha256").update(JSON.stringify([utilityGlobs, extraPatterns])).digest("hex").slice(0, 8)}`;
+  `${parserId()}+${createHash("sha256").update(JSON.stringify([utilityGlobs, extraPatterns])).digest("hex").slice(0, 8)}`;
 
 export type { Embedder } from "./embed.js";
 export type { GraphProvider } from "./graph.js";

@@ -26,6 +26,16 @@ export interface Parser {
 
 const TEXT_CAP = 4000;
 
+// Bump when parsing or hashing changes: every structure/clone row is rebuilt.
+export const INDEXER_VERSION = "1";
+
+// The parser's identity, recorded with every AST hash it makes (the structure stamp, each shape
+// run). Hashes are built from SyntaxKind names, which a TypeScript upgrade can rename, so hashes
+// from different parsers never compare. The version is read from the package.json of the same
+// typescript the lazy loader loads, so asking for it never loads the compiler.
+export const parserId = (): string =>
+  `parse-ts@${INDEXER_VERSION}+ts${(createRequire(import.meta.url)("typescript/package.json") as { version: string }).version}`;
+
 // `typescript` is about 9 MB and costs a few hundred ms to load, so it is loaded on the
 // first parse: `sindri --help`, `observe` and the hook's `scrub --staged` never pay for it.
 interface Kit {

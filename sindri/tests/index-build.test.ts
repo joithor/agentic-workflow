@@ -10,6 +10,7 @@ import type { GraphProvider } from "../src/index/graph.js";
 import { GRAPHIFY_PIN } from "../src/index/pins.js";
 import { allSymbols, bandCandidates, depRows, embeddingRows, graphEdges, indexPath, layers, meta, openIndex, openIndexReadOnly, symbolsByAstHash } from "../src/index/db.js";
 import { mirrorPath, refreshMirror } from "../src/index/mirror.js";
+import { parserId } from "../src/index/parse-ts.js";
 import { runCli } from "../src/main.js";
 import { approvedIndexDeps, BODY, embedFetch, fakeIndexIo, profileFor, ring0Name, ring0Repo } from "./index-fixtures.js";
 import { fakeSystem, git, gitRepo, makeDeps, tempDir } from "./helpers.js";
@@ -51,6 +52,8 @@ describe("buildIndex", () => {
     expect(bandCandidates(db, [])).toEqual([]);
     expect(meta(db).commit).toMatch(/^[0-9a-f]{40}$/);
     expect(layers(db).map((l) => l.layer).sort()).toEqual(["clones", "deps", "embeddings", "graph", "structure"]);
+    // A TypeScript upgrade re-parses unchanged files: the structure stamp names the parser.
+    expect(layers(db).find((l) => l.layer === "structure")?.stamp).toMatch(new RegExp(`^${parserId().replace(/[.+]/g, "\\$&")}\\+[0-9a-f]{8}$`));
     db.close();
   });
 

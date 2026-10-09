@@ -7,6 +7,7 @@ import { stateDir, type Deps } from "../src/deps.js";
 import { makeIndexCommand } from "../src/index/commands.js";
 import { indexPath, openIndex } from "../src/index/db.js";
 import type { IndexIo } from "../src/index/io.js";
+import { parserId } from "../src/index/parse-ts.js";
 import { makeShapeCommand } from "../src/index/shape.js";
 import { spoolDir, writeShapeRun, type ShapeRun } from "../src/index/spool.js";
 import { ledgerPath, openLedger } from "../src/ledger/db.js";
@@ -45,7 +46,7 @@ describe("sindri shape --record --staged", () => {
     expect(r.stderr).toBe("sindri-shape: 1 signal(s) recorded (reinvented:exact); record-only, the commit proceeds. See: sindri shape report --recent 1\n");
     const [run] = spooled(d);
     expect(run.signals[0]).toMatchObject({ type: "reinvented:exact", at: "src/feature.ts:1", existing: "src/util/text.ts:1", name: "shorten" });
-    expect(run).toMatchObject({ repo: ring0Name(d), tree: git(root, "write-tree").trim(), head: git(root, "rev-parse", "HEAD").trim(), indexAgeMs: 0, providers: { embedder: null, graph: null }, deferred: [] });
+    expect(run).toMatchObject({ repo: ring0Name(d), tree: git(root, "write-tree").trim(), head: git(root, "rev-parse", "HEAD").trim(), indexAgeMs: 0, providers: { embedder: null, graph: null }, parser: parserId(), deferred: [] });
   });
 
   it("records from a linked worktree: matches the profile repo by git common dir and diffs that worktree", async () => {
@@ -223,7 +224,7 @@ describe("sindri shape report", () => {
   const diffRun = (d: Deps): void => {
     writeShapeRun(d, {
       runId: "01k0000000000000000000000z", repo: ring0Name(d), ts: "2026-10-08T12:00:00.000Z", head: null, tree: null, elapsedMs: 5, indexAgeMs: null,
-      providers: { embedder: null, graph: null }, deferred: [],
+      providers: { embedder: null, graph: null }, parser: parserId(), deferred: [],
       signals: [{ type: "simpler:diff-size", layer: "structure", value: 400, threshold: 250, at: "(diff)", existing: null, detail: "400 added lines; the size budget is 250", name: null, astHash: null }],
     });
   };
