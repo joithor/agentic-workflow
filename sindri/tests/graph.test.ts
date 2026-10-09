@@ -44,11 +44,14 @@ describe("parseGraphJson", () => {
     for (const text of ["not json", "null", "[]", "3"]) expect(() => parseGraphJson(text)).toThrow(SindriError);
     expect(() => parseGraphJson("null")).toThrow("graphify wrote an unexpected graph.json");
     expect(() => parseGraphJson("not json")).toThrow("graphify wrote invalid JSON");
+    for (const g of [{ nodes: [null] }, { nodes: [{ id: "a" }, [1]] }, { links: [1] }, { edges: ["x"] }]) {
+      expect(() => parseGraphJson(JSON.stringify(g))).toThrow("graphify wrote an unexpected graph.json");
+    }
   });
 });
 
 describe("sandboxArgv (Review Focus 4)", () => {
-  const o = { writable: ["/snap"], home: HOME };
+  const o = { writable: ["/snap"], home: HOME, exists: () => true };
 
   it("wraps the command in a network-denying, filesystem-locked sandbox, or refuses", () => {
     expect(sandboxArgv("darwin", ["graphify", "x"], () => true, o)).toEqual([
@@ -60,23 +63,30 @@ describe("sandboxArgv (Review Focus 4)", () => {
     ]);
     expect(sandboxArgv("linux", ["graphify", "x"], () => true, o)).toEqual([
       "bwrap", "--ro-bind", "/", "/", "--dev", "/dev", "--proc", "/proc", "--tmpfs", "/tmp", "--bind", "/snap", "/snap",
+      "--bind", "/home/u/.cache", "/home/u/.cache",
       "--tmpfs", "/home/u/.ssh", "--tmpfs", "/home/u/.aws", "--tmpfs", "/home/u/.gnupg", "--tmpfs", "/home/u/.agentic-workflow",
       "--unshare-net", "--unshare-pid", "--die-with-parent", "graphify", "x",
     ]);
+    // bwrap can't mount over a missing dir on the read-only root: only existing credential dirs are hidden.
+    expect(sandboxArgv("linux", ["graphify", "x"], () => true, { ...o, exists: (p) => p === "/home/u/.ssh" })).toEqual([
+      "bwrap", "--ro-bind", "/", "/", "--dev", "/dev", "--proc", "/proc", "--tmpfs", "/tmp", "--bind", "/snap", "/snap",
+      "--tmpfs", "/home/u/.ssh", "--unshare-net", "--unshare-pid", "--die-with-parent", "graphify", "x",
+    ]);
+    expect(sandboxArgv("darwin", ["g"], () => true, { ...o, exists: () => false })?.[2]).toBe(sandboxArgv("darwin", ["g"], () => true, o)?.[2]);
     expect(sandboxArgv("linux", ["graphify"], () => false, o)).toBeNull();
     expect(sandboxArgv("darwin", ["graphify"], () => false, o)).toBeNull();
     expect(sandboxArgv("win32", ["graphify"], () => true, o)).toBeNull();
   });
 
   it("escapes quotes and backslashes in paths, and allows no writable path beyond temp when none is given", () => {
-    const argv = sandboxArgv("darwin", ["g"], () => true, { writable: ['/a"b\\c'], home: "/h" });
+    const argv = sandboxArgv("darwin", ["g"], () => true, { writable: ['/a"b\\c'], home: "/h", exists: () => true });
     expect(argv?.[2]).toContain('(subpath "/a\\"b\\\\c")');
-    expect(sandboxArgv("darwin", ["g"], () => true, { writable: [], home: "/h" })?.[2]).toContain('(allow file-write* (subpath "/private/var/folders")');
+    expect(sandboxArgv("darwin", ["g"], () => true, { writable: [], home: "/h", exists: () => true })?.[2]).toContain('(allow file-write* (subpath "/private/var/folders")');
   });
 });
 
 describe("graphify provider", () => {
-  function runner(code: number, write: boolean | number): ProcessRunner & { argv: string[][]; opts: { cwd: string; cleanEnv?: boolean }[] } {
+  function runner(code: number, write: boolean | number | ((snap: string) => string)): ProcessRunner & { argv: string[][]; opts: { cwd: string; cleanEnv?: boolean }[] } {
     const argv: string[][] = [];
     const opts: { cwd: string; cleanEnv?: boolean }[] = [];
     return {
@@ -87,7 +97,7 @@ describe("graphify provider", () => {
         opts.push(o);
         if (write !== false) {
           fs.mkdirSync(path.join(o.cwd, "graphify-out"), { recursive: true });
-          const body = typeof write === "number" ? "x".repeat(write) : JSON.stringify({ nodes: [{ id: "a" }], links: [] });
+          const body = typeof write === "function" ? write(o.cwd) : typeof write === "number" ? "x".repeat(write) : JSON.stringify({ nodes: [{ id: "a" }], links: [] });
           fs.writeFileSync(path.join(o.cwd, "graphify-out", "graph.json"), body);
         }
         return { code, stdout: "", stderr: code === 0 ? "" : "Traceback: boom\nmore" };
@@ -108,6 +118,19 @@ describe("graphify provider", () => {
     expect(argv.slice(3)).toEqual(["graphify", "extract", snap, "--code-only", "--no-viz"]);
     expect(r.opts[0]).toMatchObject({ cwd: snap, cleanEnv: true });
     expect(p.version).toBe("1.2.3");
+  });
+
+  it("stores node files relative to the snapshot root; a path outside it is null", async () => {
+    const files = (snap: string) => [`${snap}/src/a.ts`, `${fs.realpathSync(snap)}/src/b.ts`, "docs/r.md", "/src/c.ts", "/etc/passwd", "../up.ts", snap, `${snap}/../x.ts`];
+    const r = runner(0, (snap) => JSON.stringify({ nodes: files(snap).map((f, i) => ({ id: i, source_file: f })) }));
+    const g = await make(r, "darwin", () => true).build(tempDir());
+    expect(g.nodes.map((n) => n.file)).toEqual(["src/a.ts", "src/b.ts", "docs/r.md", null, null, null, null, null]);
+  });
+
+  it("reads the recorded fixture through the provider, with paths relative to the snapshot", async () => {
+    const fixture = fs.readFileSync(FIXTURE, "utf8");
+    const g = await make(runner(0, (snap) => fixture.replaceAll("/snapshot", snap)), "darwin", () => true).build(tempDir());
+    expect([...new Set(g.nodes.map((n) => n.file))].sort()).toEqual(["a.ts", "b.ts"]);
   });
 
   it("fails closed without a sandbox, without graphify, on a failed run, and on a missing or huge graph.json", async () => {

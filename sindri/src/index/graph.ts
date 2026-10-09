@@ -30,13 +30,20 @@ function macProfile(o: { writable: string[]; home: string }): string {
 
 // Spec §6.2: graphify runs with the network denied and the filesystem locked down, and fails
 // closed without a sandbox.
-export function sandboxArgv(platform: NodeJS.Platform, argv: string[], has: (bin: string) => boolean, o: { writable: string[]; home: string }): string[] | null {
+// `exists` (Linux only; macOS denies by path whether or not it exists): bwrap can't mount over a missing dir on the read-only root, so only the
+// credential dirs that exist are hidden (a missing one holds no secrets, and the root stays
+// read-only), and ~/.cache is writable when it exists (parity with macOS).
+export function sandboxArgv(
+  platform: NodeJS.Platform, argv: string[], has: (bin: string) => boolean, o: { writable: string[]; home: string; exists: (p: string) => boolean },
+): string[] | null {
   if (platform === "darwin" && has("sandbox-exec")) return ["sandbox-exec", "-p", macProfile(o), ...argv];
   if (platform === "linux" && has("bwrap")) {
+    const cache = `${o.home}/.cache`;
     return [
       "bwrap", "--ro-bind", "/", "/", "--dev", "/dev", "--proc", "/proc", "--tmpfs", "/tmp",
       ...o.writable.flatMap((w) => ["--bind", w, w]),
-      ...[".ssh", ".aws", ".gnupg", ".agentic-workflow"].flatMap((d) => ["--tmpfs", `${o.home}/${d}`]),
+      ...(o.exists(cache) ? ["--bind", cache, cache] : []),
+      ...[".ssh", ".aws", ".gnupg", ".agentic-workflow"].map((d) => `${o.home}/${d}`).filter(o.exists).flatMap((d) => ["--tmpfs", d]),
       "--unshare-net", "--unshare-pid", "--die-with-parent",
       ...argv,
     ];
@@ -45,6 +52,7 @@ export function sandboxArgv(platform: NodeJS.Platform, argv: string[], has: (bin
 }
 
 type Obj = Record<string, unknown>;
+const isObj = (v: unknown): v is Obj => v !== null && typeof v === "object" && !Array.isArray(v);
 const str = (o: Obj, keys: string[]): string | null => {
   for (const k of keys) if (typeof o[k] === "string" || typeof o[k] === "number") return String(o[k]);
   return null;
@@ -70,22 +78,38 @@ export function parseGraphJson(text: string): GraphData {
   }
   if (parsed === null || typeof parsed !== "object" || Array.isArray(parsed)) throw new SindriError("SND-INDEX-008", "graphify wrote an unexpected graph.json");
   const json = parsed as Obj;
-  const nodes = (Array.isArray(json.nodes) ? json.nodes : []) as Obj[];
-  const links = (Array.isArray(json.links) ? json.links : Array.isArray(json.edges) ? json.edges : []) as Obj[];
+  const nodes: unknown[] = Array.isArray(json.nodes) ? json.nodes : [];
+  const links: unknown[] = Array.isArray(json.links) ? json.links : Array.isArray(json.edges) ? json.edges : [];
+  if (![...nodes, ...links].every(isObj)) throw new SindriError("SND-INDEX-008", "graphify wrote an unexpected graph.json");
   return {
-    nodes: nodes.map((n) => ({
+    nodes: (nodes as Obj[]).map((n) => ({
       id: String(n.id),
       file: str(n, ["source_file", "file", "path", "filepath"]),
       name: str(n, ["label", "name", "qualname"]),
       line: lineOf(n),
     })),
-    edges: links.map((l) => ({
+    edges: (links as Obj[]).map((l) => ({
       src: String(l.source),
       dst: String(l.target),
       relation: str(l, ["relation", "type", "label", "kind"]) ?? "related",
       confidence: str(l, ["confidence"]) ?? "UNKNOWN",
     })),
   };
+}
+
+// graphify writes absolute paths into the temp snapshot, which is deleted after the build:
+// store them relative to the snapshot root; a path outside it is null.
+function inSnapshot(file: string, roots: string[]): string | null {
+  let rel = file;
+  for (const root of roots) {
+    if (file.startsWith(`${root}/`)) {
+      rel = file.slice(root.length);
+      break;
+    }
+  }
+  if (rel === file && path.isAbsolute(file)) return null;
+  const norm = path.posix.normalize(rel.replace(/^\/+/, ""));
+  return norm === "." || norm === ".." || norm.startsWith("../") ? null : norm;
 }
 
 const scrubber = makeScrubber();
@@ -102,7 +126,8 @@ export function makeGraphifyProvider(o: {
     version: o.version,
     async build(snapshotDir) {
       if (!o.has(o.bin)) throw new SindriError("SND-INDEX-008", `${o.bin} is not installed (sindri index setup)`);
-      const argv = sandboxArgv(o.platform, [o.bin, "extract", snapshotDir, "--code-only", "--no-viz"], o.has, { writable: [fs.realpathSync(snapshotDir)], home: o.home });
+      const real = fs.realpathSync(snapshotDir);
+      const argv = sandboxArgv(o.platform, [o.bin, "extract", snapshotDir, "--code-only", "--no-viz"], o.has, { writable: [real], home: o.home, exists: fs.existsSync });
       if (argv === null) {
         throw new SindriError("SND-INDEX-007", "no network sandbox available (sandbox-exec on macOS, bwrap on Linux); graphify never runs unsandboxed");
       }
@@ -114,7 +139,8 @@ export function makeGraphifyProvider(o: {
       const out = path.join(snapshotDir, "graphify-out", "graph.json");
       if (!fs.existsSync(out)) throw new SindriError("SND-INDEX-008", "graphify wrote no graph.json");
       if (fs.statSync(out).size > MAX_GRAPH_BYTES) throw new SindriError("SND-INDEX-008", "graphify wrote a graph.json over 32 MB");
-      return parseGraphJson(fs.readFileSync(out, "utf8"));
+      const g = parseGraphJson(fs.readFileSync(out, "utf8"));
+      return { ...g, nodes: g.nodes.map((n) => ({ ...n, file: n.file === null ? null : inSnapshot(n.file, [snapshotDir, real]) })) };
     },
   };
 }

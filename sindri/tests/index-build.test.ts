@@ -577,3 +577,42 @@ describe("graph layer fails closed (Review Focus 4)", () => {
     expect(detail).not.toContain(secret);
   });
 });
+
+describe("graph layer inputs and stored paths", () => {
+  it("reruns graphify for a docs-only change, and not for a package.json-only change", async () => {
+    const root = gitRepo({ ...FILES, "docs/readme.md": "# r\n" });
+    const d = makeDeps();
+    const p = profileFor(root);
+    const g = fakeGraph();
+    await buildIndex(d, p, "r", { full: false }, { embedder: null, graph: g });
+    fs.writeFileSync(path.join(root, "package.json"), JSON.stringify({ dependencies: { dayjs: "^2" } }));
+    await buildIndex(d, p, "r", { full: false }, { embedder: null, graph: g });
+    expect(g.snapshots).toHaveLength(1);
+    fs.writeFileSync(path.join(root, "docs/readme.md"), "# r2\n");
+    await buildIndex(d, p, "r", { full: false }, { embedder: null, graph: g });
+    expect(g.snapshots).toHaveLength(2);
+  });
+
+  it("stores graphify's absolute snapshot paths relative to the repo root", async () => {
+    const p = profileFor(gitRepo(FILES));
+    const d = makeDeps();
+    const io = fakeIndexIo({
+      probes: {
+        has: () => true,
+        getJson: async () => null,
+        run: async (argv) => {
+          const snap = argv[argv.indexOf("extract") + 1];
+          fs.mkdirSync(path.join(snap, "graphify-out"), { recursive: true });
+          const nodes = [{ id: "a", source_file: `${snap}/src/a.ts`, label: "add" }, { id: "b", source_file: `${fs.realpathSync(snap)}/src/b.ts`, label: "sum" }, { id: "x", source_file: "/elsewhere/x.ts" }];
+          fs.writeFileSync(path.join(snap, "graphify-out", "graph.json"), JSON.stringify({ nodes, links: [] }));
+          return { code: 0, stdout: "", stderr: "" };
+        },
+      },
+    });
+    const r = await buildIndex(d, p, "r", { full: false }, { embedder: null, graph: graphFor(p, d, io) });
+    expect(r.layers.graph.status).toBe("ok");
+    const db = openIndexReadOnly(indexPath(d, "r"));
+    expect(db?.prepare("SELECT id, file FROM graph_nodes ORDER BY id").all()).toEqual([{ id: "a", file: "src/a.ts" }, { id: "b", file: "src/b.ts" }, { id: "x", file: null }]);
+    db?.close();
+  });
+});

@@ -129,21 +129,25 @@ async function embedLayer(db: IndexDb, embedder: Embedder | null, now: Date): Pr
 }
 
 async function graphLayer(
-  db: IndexDb, provider: GraphProvider | null, deps: Deps, repoPath: string, deny: string[], digest: string, ix: LoadedProfile["profile"]["index"], now: Date,
+  db: IndexDb, provider: GraphProvider | null, deps: Deps, repoPath: string, deny: string[], ix: LoadedProfile["profile"]["index"], now: Date,
 ): Promise<void> {
   if (provider === null) {
     setLayer(db, "graph", "none", "disabled", "no graph provider configured", now);
     return;
   }
   const stamp = `graphify@${provider.version}`;
-  const hasGraph = (db.prepare("SELECT COUNT(*) AS n FROM graph_nodes").get() as { n: number }).n > 0;
-  const stored = (db.prepare("SELECT value FROM meta WHERE key = 'graph_digest'").get() as { value: string } | undefined)?.value;
-  if (stored === digest && stampOf(db, "graph") === stamp && hasGraph) return;
-  // Snapshot of tracked, non-denied source and docs files: graphify writes graphify-out/ into the
-  // directory it reads, so it never runs on the working tree (spec amendment 3).
-  const snap = fs.mkdtempSync(path.join(os.tmpdir(), "sindri-graph-"));
+  let snap: string | null = null;
   try {
+    // Tracked, non-denied source and docs files. The digest covers exactly these, so a
+    // docs-only change reruns graphify and a package.json-only change does not.
     const inv = await inventory(deps.git, repoPath, { denyPaths: deny, maxFileKB: ix.maxFileKB, maxTotalMB: ix.maxTotalMB, select: isGraphInput });
+    const digest = createHash("sha256").update(inv.files.map((f) => `${f.path}:${f.hash}`).join("\n")).digest("hex");
+    const hasGraph = (db.prepare("SELECT COUNT(*) AS n FROM graph_nodes").get() as { n: number }).n > 0;
+    const stored = (db.prepare("SELECT value FROM meta WHERE key = 'graph_digest'").get() as { value: string } | undefined)?.value;
+    if (stored === digest && stampOf(db, "graph") === stamp && hasGraph) return;
+    // A snapshot: graphify writes graphify-out/ into the directory it reads, so it never runs
+    // on the working tree (spec amendment 3).
+    snap = fs.mkdtempSync(path.join(os.tmpdir(), "sindri-graph-"));
     for (const f of inv.files) {
       fs.mkdirSync(path.dirname(path.join(snap, f.path)), { recursive: true });
       fs.writeFileSync(path.join(snap, f.path), f.text);
@@ -159,7 +163,7 @@ async function graphLayer(
   } catch (e) {
     setLayer(db, "graph", stampOf(db, "graph") ?? "none", "unavailable", (e as Error).message, now);
   } finally {
-    fs.rmSync(snap, { recursive: true, force: true });
+    if (snap !== null) fs.rmSync(snap, { recursive: true, force: true });
   }
 }
 
@@ -179,7 +183,6 @@ export async function buildIndex(deps: Deps, loaded: LoadedProfile, repo: string
       maxTotalMB: ix.maxTotalMB,
       select: (p) => isSourcePath(p) || p === "package.json" || p.endsWith("/package.json"),
     });
-    const digest = createHash("sha256").update(inv.files.map((f) => `${f.path}:${f.hash}`).join("\n")).digest("hex");
     const live = indexPath(deps, repo);
     fs.mkdirSync(path.dirname(live), { recursive: true, mode: 0o700 });
     sweepTmp(deps, live);
@@ -204,7 +207,7 @@ export async function buildIndex(deps: Deps, loaded: LoadedProfile, repo: string
         }
       } else {
         await embedLayer(db, providers.embedder, now);
-        await graphLayer(db, providers.graph, deps, cfg.path, deny, digest, ix, now);
+        await graphLayer(db, providers.graph, deps, cfg.path, deny, ix, now);
       }
       const head = await deps.git.run(["rev-parse", "HEAD"], cfg.path);
       const commit = head.ok ? head.stdout.trim() : null;

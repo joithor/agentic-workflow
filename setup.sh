@@ -282,7 +282,7 @@ if [ "$WITH_SINDRI" = "1" ]; then
     echo "  uv: already installed ($(uv --version 2>/dev/null || echo 'unknown version'))"
   elif command -v brew &>/dev/null; then
     echo "Installing uv (required for the sindri index graph layer)..."
-    brew install uv
+    brew install uv || echo "  WARN: uv install failed; the sindri index graph layer stays unavailable. Install uv (https://docs.astral.sh/uv/getting-started/installation/), then run: sindri index setup"
   else
     echo "WARN: 'uv' not found and Homebrew is not available; the sindri index graph layer stays unavailable."
     echo "      Install uv, then run: sindri index setup"

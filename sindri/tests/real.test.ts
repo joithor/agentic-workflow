@@ -80,7 +80,7 @@ describe("real index I/O (smoke)", () => {
 
 describe("sandbox (smoke)", () => {
   const o = { cwd: process.cwd(), timeoutMs: 15_000 };
-  const box = (argv: string[]) => sandboxArgv(process.platform, argv, hasBinary, { writable: [], home: os.homedir() });
+  const box = (argv: string[]) => sandboxArgv(process.platform, argv, hasBinary, { writable: [], home: os.homedir(), exists: fs.existsSync });
 
   it("denies the network, once the same request is shown to succeed outside the sandbox", async () => {
     const run = realProcessRunner();

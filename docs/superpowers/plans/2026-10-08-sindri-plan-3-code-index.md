@@ -2898,7 +2898,7 @@ git commit -m "feat: sindri embeddings layer on a loopback-only Ollama"
 - Produces (`build.ts`): the graph layer runs on a **snapshot** of tracked, non-denied source and docs files written to a temp dir (spec amendment 3), only when the inputs' digest changed, the stamp changed, or there is no graph yet (so a `--quick` build that absorbed a change doesn't hide it from the next full build); `ok` (stamp `graphify@<version>`), `disabled` or `unavailable`.
 - Produces (`commands.ts`): `graphFor(loaded: LoadedProfile, deps: Deps, io: IndexIo): GraphProvider | null`.
 
-- [x] **Step 1: Install graphify at an age-gated pin, and record a real `graph.json` fixture**
+- [ ] **Step 1: Install graphify at an age-gated pin, and record a real `graph.json` fixture**
 
 `graphifyy` is a Python package; install it with `uv` (required, no `pipx` path). First confirm the package name and the flags this plan builds on:
 
