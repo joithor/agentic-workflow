@@ -37,6 +37,9 @@ Each is also edited into the spec in Task 11.
 9. **Error areas `SCOPE` and `SECRET`** join the §10.3 area list.
 10. **Model-call audit (§6.1, §8.5).** A `model_calls` ledger table records one row per model call (run id, role, model, tokens), written with the run's `scope_runs` row.
 11. **Repo onboarding (§10.3, §11.3).** `sindri repo onboard [<path>]` chains `repo add`, an approval check, the pre-commit hook and a first `index build --repo` (one try at the heavy-job lock). It never approves: while the repo is not in the approved profile, it prints the exact `sindri profile approve` commands and exits 1, because approving a profile change stays a deliberate human step at a terminal (§8.7, invariant 10). `sindri repo status [<path>] [--nudge]` is read-only (no ledger migration or write, no lock) and drives a SessionStart nudge on Claude Code, Codex and Cursor. `sindri repo onboard --template` sets git's `init.templateDir`, only when it is unset, to a sindri-owned template. Its pre-commit hook does nothing until the repo is in the approved profile. `core.hooksPath` is never used, and another tool's template dir is never written.
+12. **The Scoping job has no read-only code tools in v1** (`--tools ""`). Code context comes from the code-index source in the pack, and "independence checked against predicted file sets" (§6.1) is deferred.
+13. **Acceptance checks are per workstream in v1, not per surface.**
+14. **The challenger sees the same evidence pack as the drafter.** Graph-neighbour and embedding recall for the challenger are deferred (see issue #75 for cross-source retrieval).
 
 ## Global Constraints
 
@@ -5194,7 +5197,7 @@ git commit -m "fix: sindri index commands name a repo that is added but not appr
 - Create: `docs/sindri/scope.md`
 - Modify: `docs/sindri/README.md`, `docs/sindri/index.md`, `AGENTS.md`, `.agents/rules/testing.md`, `planning/ERD.md`, `planning/ARCHITECTURE.md`, `docs/superpowers/specs/2026-10-07-sindri-design.md`
 
-- [ ] **Step 1: Write `docs/sindri/scope.md`**
+- [x] **Step 1: Write `docs/sindri/scope.md`**
 
 ````markdown
 # Scoping with Sindri
@@ -5277,7 +5280,7 @@ sources:
 `SND-SCOPE-0xx` and `SND-SECRET-0xx` codes are listed with their fixes in [errors.md](errors.md). Common ones: `SND-SCOPE-002` (the `claude` CLI failed; the message carries its first error line, run `claude -p hello`), `SND-SCOPE-005` (the token budget is used up), `SND-SCOPE-011` (Linear's own error text is in the message), `SND-SCOPE-025` (use `--sources file,code`, or write outside the repo).
 ````
 
-- [ ] **Step 2: Update the other docs and the spec**
+- [x] **Step 2: Update the other docs and the spec**
 
 - `docs/sindri/README.md`: add `sindri scope …` rows (see usage above, including `scope runs`) and a link to `scope.md`. Add the rows `` | `sindri repo onboard [<path>] [--name NAME] [--no-build]` | Onboard a repo in one command: add it to the profile, stop for `sindri profile approve` (exit 1 until a human approves at a terminal), then install the pre-commit hook and build its index | `` and `` | `sindri repo onboard --template` / `sindri repo status [<path>] [--nudge]` | Opt-in git template so new clones get the pre-commit hook (a no-op until the repo is approved); whether a repo is onboarded (the SessionStart nudge uses `--nudge`) | ``. In the quick-start block, replace `sindri scrub --install-pre-commit` with `sindri repo onboard .              # add, approve (at a terminal), hook, index`.
 - `docs/sindri/index.md`: in the setup block, add `sindri repo onboard <path>             # repo add → approval (yours, at a terminal) → pre-commit hook → first index build; idempotent`. Under it, add a short **Onboarding a repo** section with the four steps and their `ok/done/skip/warn/fail` meanings. It covers the nudge (which hosts show it and how to silence it: onboard the repo, or remove the `aw:sindri-nudge` entry) and the template (`sindri repo onboard --template`; it is never set when `init.templateDir` is already yours; new clones and `git init` get a hook that does nothing until the repo is approved). For existing repos, `sindri repo onboard` or `sindri scrub --install-pre-commit` installs the full hook. Rerunning `git init` copies the template hook only where no `pre-commit` exists yet.
@@ -5301,7 +5304,7 @@ sources:
   - §11.3 **Repos** bullet: append `` `sindri repo onboard [<path>]` chains `repo add`, an approval check, the pre-commit hook and a first `index build --repo` (one try at the heavy-job lock). It never approves: until a human runs `sindri profile approve` at a terminal, it prints that command and exits 1. A SessionStart nudge (all providers, read-only, bounded) names a repo that isn't onboarded. `sindri repo onboard --template` sets `init.templateDir` (only when unset; never `core.hooksPath`) so new clones get a pre-commit hook that does nothing until the repo is approved. ``
   - §11.2: after the `Tracker` interface add: `` `Source` in v1 is query-based: `find({keywords, asOf, limit})` returns scrubbed records with stable references; `fetch(ref)` arrives when a Step needs a single record. ``
 
-- [ ] **Step 3: Run the merge gate, one job at a time**
+- [x] **Step 3: Run the merge gate, one job at a time**
 
 ```bash
 cd sindri && npm run typecheck && npm run test:coverage && cd ..
@@ -5315,7 +5318,7 @@ scripts/sync-rules.sh --check
 
 Expected: no type errors; 100% coverage; installer and hook tests PASS; `sync-rules` exits 0; `SETUP_DRY_RUN_OK`.
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add docs/sindri AGENTS.md .agents/rules/testing.md planning docs/superpowers/specs/2026-10-07-sindri-design.md

@@ -92,6 +92,7 @@ scripts/install-scorer.sh               # Build scorer, install CLI + launchd jo
 sindri doctor                           # Sindri health checks (ok / warn / fail + fix)
 sindri index setup && sindri index build    # code index (Ollama + graphify, offline)
 sindri repo onboard [<path>]            # add + approval check + pre-commit hook + first index build (never approves)
+sindri scope <brief.md> --out DIR            # cited scope map; --backtest linear:<project> for recall, precision and a baseline
 sindri shape report                      # record-only shape signals and their outcomes (read-only)
 sindri shape reconcile                   # move the spool into the ledger and label outcomes now (observe does it hourly)
 sindri observe                          # Backlog with sizes; records to the ledger when the profile is approved

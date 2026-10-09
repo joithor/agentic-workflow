@@ -205,8 +205,34 @@ erDiagram
         TEXT labeled_at "ISO-8601, NULLABLE"
         INTEGER epoch
     }
+    scope_runs {
+        TEXT run_id PK "ulid"
+        TEXT subject "NOT NULL, the brief file or linear:<project>"
+        TEXT mode "NOT NULL, scope | backtest"
+        TEXT ts "NOT NULL, ISO-8601"
+        TEXT status "NOT NULL, e.g. complete | incomplete"
+        INTEGER rounds "NOT NULL"
+        INTEGER surfaces "NOT NULL"
+        REAL recall "NULLABLE, backtest only"
+        REAL precision "NULLABLE, backtest only"
+        REAL baseline_recall "NULLABLE"
+        REAL baseline_precision "NULLABLE"
+        INTEGER leaky "NOT NULL, 1 when the code index was used in a backtest"
+        INTEGER tokens "NOT NULL"
+        TEXT out_path "NOT NULL"
+        INTEGER epoch "NOT NULL"
+    }
+    model_calls {
+        TEXT run_id PK "references scope_runs(run_id)"
+        INTEGER seq PK "with run_id"
+        TEXT role "NOT NULL, e.g. scoping | challenger | adjudicator"
+        TEXT model "NOT NULL"
+        INTEGER input_tokens "NOT NULL"
+        INTEGER output_tokens "NOT NULL"
+    }
     items ||--o{ item_events : "has"
     shape_runs ||--o{ shape_signals : "records"
+    scope_runs ||--o{ model_calls : "audits"
 ```
 
 Items are keyed by `(source, id)`: an item id is unique only within its tracker source, so two repos with a same-named plan file never share a row, and `markMissing` closes only its own source's items. `item_events` references that composite key.
@@ -214,6 +240,8 @@ Items are keyed by `(source, id)`: an item id is unique only within its tracker 
 Every write runs inside `withEpoch(db, epoch, …)` or `fenced(db, epoch, …)`, an `IMMEDIATE` transaction that rejects a stale epoch (spec §9.1): `withEpoch` throws `SND-LOCK-003`, and `fenced` returns `{ ok: false }` so `observe` can stop as a no-op. Re-approving a profile deletes and re-inserts its `profile_approvals` row, so a rollback becomes the latest approval.
 
 Ledger v2 adds `shape_runs` and `shape_signals` (record-only shape signals; outcomes are labeled by tree reconcile once a commit is `shape.outcomeDays` old). The v1 to v2 migration keeps all rows and leaves `ledger.db.bak-v1`. Indexes: `shape_runs_pending (commit_sha, closed_at, ts)` for the runs waiting for a commit, `shape_runs_tree (repo, tree, parser, ts, run_id)` for the one-run-per-staged-tree rule, and `shape_signals_type`, `shape_signals_run`.
+
+Ledger v3 adds `scope_runs` (one row per `sindri scope` run or backtest) and `model_calls` (one row per model call, keyed by `(run_id, seq)`, written in the same transaction as the run's row). The v2 to v3 migration keeps all rows and leaves `ledger.db.bak-v2`.
 
 ## Sindri code index
 

@@ -9,9 +9,25 @@ sindri profile init --ring0 && sindri profile approve   # or: profile init, repo
 sindri index setup      # checks Ollama, pulls the embedding model, installs the pinned graphify with uv, probes the sandbox
 sindri index build      # full build; also creates the bare mirror at $AW_STATE_DIR/sindri/mirrors/<repo>.git
 sindri scrub --install-pre-commit   # hook v2: secret scan, then shape recording
+sindri repo onboard <path>             # repo add → approval (yours, at a terminal) → pre-commit hook → first index build; idempotent
 ```
 
 `index setup` reads the **approved** profile, so approve first. It needs Ollama (running, with the model), `uv`, and macOS `sandbox-exec` (or Linux `bwrap`). Without one of them that layer is `unavailable` and everything else works.
+
+### Onboarding a repo
+
+`sindri repo onboard <path>` runs four steps, in order, and prints one line for each:
+
+1. **add**: put the repo in the profile.
+2. **approval**: check that the approved profile lists the repo. It never approves: until you run `sindri profile approve` at a terminal, it prints that command and exits 1.
+3. **hook**: install the pre-commit hook (secret scan, then shape recording).
+4. **index**: the first `index build --repo`, with one try at the heavy-job lock.
+
+Each line is `ok` (the step passed), `done` (it did something just now), `skip` (nothing to do, or it was skipped on request such as `--no-build`), `warn` (it needs attention but does not stop the rest; for example the heavy-job lock was busy, so the build is left for the hourly job) or `fail` (the step failed; later steps that depend on it do not run). Rerunning is safe.
+
+**The nudge.** A SessionStart hook (`aw:sindri-nudge`, installed for every provider by `./setup.sh --with-sindri`) runs `sindri repo status --nudge`, which is read-only and bounded, and names the current repo when it is not onboarded. To silence it, onboard the repo, or remove the `aw:sindri-nudge` entry from the host's hooks.
+
+**The template.** `sindri repo onboard --template` sets git's `init.templateDir` so new clones and `git init` get a pre-commit hook that does nothing until the repo is approved. It is never set when `init.templateDir` is already yours, and it never touches `core.hooksPath`. For existing repos, `sindri repo onboard` or `sindri scrub --install-pre-commit` installs the full hook. Rerunning `git init` copies the template hook only where no `pre-commit` exists yet.
 
 ## Layers
 
