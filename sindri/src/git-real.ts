@@ -13,7 +13,8 @@ export function realGitRunner(): GitRunner {
         if (o?.foreign === true) for (const v of REPO_VARS) delete env[v];
         Object.assign(env, o?.env);
         execFile("git", args, { cwd, env, timeout: 60_000, maxBuffer: 64 * 1024 * 1024, encoding: "utf8" }, (err, stdout, stderr) => {
-          resolve(err === null ? { ok: true, stdout } : { ok: false, stderr: stderr || err.message });
+          if (err === null) resolve({ ok: true, stdout });
+          else resolve(typeof err.code === "number" ? { ok: false, stderr: stderr || err.message, code: err.code } : { ok: false, stderr: stderr || err.message });
         });
       }),
   };

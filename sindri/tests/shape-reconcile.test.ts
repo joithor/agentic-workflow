@@ -403,6 +403,44 @@ describe("reconcileShape: reached the default branch, judged by content (Task 10
     x.db.close();
   });
 
+  // Merged, then renamed or moved on the default branch: still there, so kept (final review I3).
+  it("labels a merged symbol kept after its file is renamed or the symbol moves to another file", async () => {
+    for (const move of [
+      (x: Awaited<ReturnType<typeof dated>>) => git(x.root, "mv", "src/feature.ts", "src/renamed.ts"),
+      (x: Awaited<ReturnType<typeof dated>>) => {
+        fs.rmSync(path.join(x.root, "src/feature.ts"));
+        // The name also appears in a doc and in a same-name symbol of another shape: neither holds it.
+        x.put("docs/notes.md", "shorten is now in src/lib/strings.ts\n");
+        x.put("src/other.ts", BODY("shorten", "out.reverse();"));
+        x.put("src/lib/strings.ts", BODY("shorten"));
+      },
+    ]) {
+      const x = await dated();
+      const tree = git(x.root, "rev-parse", "HEAD^{tree}").trim();
+      insertRun(x.db, { id: "run-mv", repo: x.name, tree, signals: [{ type: "reinvented:exact", at: "src/feature.ts:1", name: "shorten", hash: hashOf("src/feature.ts", "shorten") }] });
+      move(x);
+      x.commitOn(3, "move shorten");
+      expect(await labelOn(x, 2, 16)).toEqual({ "run-mv|reinvented:exact|shorten": "kept" });
+      x.db.close();
+    }
+  });
+
+  it("labels acted-on when no file at the tip holds the symbol, and leaves it unlabeled when git grep fails", async () => {
+    const x = await dated();
+    const tree = git(x.root, "rev-parse", "HEAD^{tree}").trim();
+    insertRun(x.db, { id: "run-mv", repo: x.name, tree, signals: [{ type: "reinvented:exact", at: "src/feature.ts:1", name: "shorten", hash: hashOf("src/feature.ts", "shorten") }] });
+    git(x.root, "mv", "src/feature.ts", "src/renamed.ts");
+    x.commitOn(3, "rename");
+    await reconcileShape(x.db, later(x.d, 2), x.loaded, bumpEpoch(x.db));
+    expect(await reconcileShape(x.db, { ...later(x.d, 16), git: failingGit("grep") }, x.loaded, bumpEpoch(x.db))).toEqual({ linked: 0, labeled: 0 });
+    expect(outcomes(x.db)).toEqual({ "run-mv|reinvented:exact|shorten": null });
+    x.put("src/renamed.ts", BODY("shorten", "out.reverse();"));
+    x.commitOn(4, "rewrite");
+    expect(await reconcileShape(x.db, later(x.d, 16), x.loaded, bumpEpoch(x.db))).toEqual({ linked: 0, labeled: 1 });
+    expect(outcomes(x.db)).toEqual({ "run-mv|reinvented:exact|shorten": "acted-on" });
+    x.db.close();
+  });
+
   it("drops a never-merged signal even when the default branch adds a name that contains it", async () => {
     const x = await dated();
     const branch = git(x.root, "symbolic-ref", "--short", "HEAD").trim();

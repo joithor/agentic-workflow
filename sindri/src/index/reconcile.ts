@@ -121,11 +121,11 @@ async function labelSignals(db: Ledger, deps: Deps, loaded: LoadedProfile, epoch
       const file = s.type === "reinvented:dependency" || colon === -1 ? s.at : s.at.slice(0, colon);
       // Whether this version of the file holds the flagged code: the dependency, or a symbol with
       // the flagged name and the recorded ast hash.
-      const holds = (text: string | null): boolean =>
+      const holds = (at: string, text: string | null): boolean =>
         text !== null &&
         (s.type === "reinvented:dependency"
-          ? readManifestDeps(file, text).some((d) => d.name === name)
-          : typescriptParser.parse(file, text).some((x) => x.name === name && x.astHash === s.ast_hash));
+          ? readManifestDeps(at, text).some((d) => d.name === name)
+          : typescriptParser.supports(at) && typescriptParser.parse(at, text).some((x) => x.name === name && x.astHash === s.ast_hash));
       // Reached the default branch: the run's commit is on it, or (a squash or rebase merge) some
       // version of the file on it since the run holds the flagged code. Judged by content, never by
       // `-S<name>` counts, which miss in-place edits and match substrings (Task 10 ruling).
@@ -135,15 +135,32 @@ async function labelSignals(db: Ledger, deps: Deps, loaded: LoadedProfile, epoch
         const versions = await deps.git.run(["log", tip, `--since=${since}`, "--format=%H", "--", file], cfg.path, FOREIGN);
         if (!versions.ok) continue;
         for (const sha of versions.stdout.split("\n").filter((x) => x !== "")) {
-          if (holds(await fileAt(sha, file))) {
+          if (holds(file, await fileAt(sha, file))) {
             reached = true;
             break;
           }
         }
       }
       // Never reached the default branch: the change was dropped.
-      if (!reached) labels.push({ seq: s.seq, outcome: "dropped" });
-      else labels.push({ seq: s.seq, outcome: holds(await fileAt(tip, file)) ? "kept" : "acted-on" });
+      if (!reached) {
+        labels.push({ seq: s.seq, outcome: "dropped" });
+        continue;
+      }
+      let kept = holds(file, await fileAt(tip, file));
+      if (!kept) {
+        // Renamed or moved on the default branch since: kept if any file at the tip holds the same
+        // name and hash. git grep exits 1 for no match; any other failure leaves it unlabeled.
+        const hits = await deps.git.run(["grep", "-l", "-w", "-F", "-e", name, tip, "--"], cfg.path, FOREIGN);
+        if (!hits.ok && hits.code !== 1) continue;
+        for (const hit of hits.ok ? hits.stdout.split("\n").filter((x) => x !== "") : []) {
+          const other = hit.slice(tip.length + 1); // "<tip>:<path>"
+          if (other !== file && holds(other, await fileAt(tip, other))) {
+            kept = true;
+            break;
+          }
+        }
+      }
+      labels.push({ seq: s.seq, outcome: kept ? "kept" : "acted-on" });
     }
   }
   withEpoch(db, epoch, () => {

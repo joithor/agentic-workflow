@@ -28,6 +28,11 @@ describe("realGitRunner (smoke)", () => {
     expect(ok.ok && ok.stdout).toMatch(/^git version /);
     const bad = await git.run(["no-such-subcommand"], process.cwd());
     expect(bad.ok).toBe(false);
+    // The exit status rides along: `git grep` exits 1 for "no match", other failures differently.
+    const none = await git.run(["grep", "-l", "-F", "-e", "sindri-no-such-text-" + "xyz", "HEAD", "--"], process.cwd());
+    expect(none.ok ? null : none.code).toBe(1);
+    const badRev = await git.run(["grep", "-l", "-F", "-e", "x", "no-such-rev", "--"], process.cwd());
+    expect(badRev.ok ? null : badRev.code).toBe(128);
   });
 
   it("clears git's repository variables for a call about another repo", async () => {

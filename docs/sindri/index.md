@@ -76,10 +76,10 @@ Each recorded run keeps `git write-tree` of the staged index. `observe` and `sha
 | `dropped` | the commit was never made, was amended, or never reached the default branch |
 | `n/a` | diff size and export count have no flagged symbol |
 
-`sindri shape report` prints, per type, `SIGNALS | LABELED | ACTED-ON | KEPT | PRECISION | TOWARD 3b`. Precision is `acted-on / (acted-on + kept)`, and 3b wants at least 30 labeled signals and precision at least 0.70 per layer (`ready`). Two known measurement effects:
+`sindri shape report` prints, per type, `SIGNALS | LABELED | ACTED-ON | KEPT | PRECISION | TOWARD 3b`. Precision is `acted-on / (acted-on + kept)`, and 3b wants at least 30 labeled signals and precision at least 0.70 per layer (`ready`). Known measurement effects:
 
 - With squash merges, a signal whose flagged code was reworked later in the same PR has no version with the recorded hash on the default branch, so it is labeled `dropped` and excluded from precision. Measured precision is therefore biased **low** (conservative for the 3b bar). Recovering those signals needs PR data, which a later plan adds.
-- A file renamed on the default branch after the merge reads as `acted-on` although the code was kept, which slightly **inflates** precision.
+- A file renamed on the default branch after the merge, or a symbol moved to another file, still reads as `kept`: when the original path no longer holds it, every file at the tip that mentions the name (`git grep -w`) is parsed for the same name and AST hash. If that search fails, the signal stays unlabeled until the next run.
 
 This is an **outcome proxy, not a human label**: code is changed for other reasons too, and a correct signal can be ignored. It exists so thresholds can be tuned without anyone hand-labeling (spec invariant 9).
 

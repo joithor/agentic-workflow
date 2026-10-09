@@ -1,4 +1,5 @@
-export type GitResult = { ok: true; stdout: string } | { ok: false; stderr: string };
+// code: git's exit status, when it ran and exited (`git grep` exits 1 for "no match").
+export type GitResult = { ok: true; stdout: string } | { ok: false; stderr: string; code?: number };
 
 export interface GitRunner {
   // foreign: the call is about another repo, so git's repository variables (GIT_DIR,
