@@ -14,8 +14,7 @@
 #                                     build a merged ref (default HEAD; must be an ancestor of
 #                                     origin/<default branch>) into $AW_STATE_DIR/sindri/channels/
 #                                     <channel>/<sha>/ and point sindri (stable) or sindri-next at it.
-#                                     AW_SINDRI_SRC=DIR picks the source repo (tests);
-#                                     AW_SINDRI_BUILD_CMD='...' replaces the build step (tests).
+#                                     AW_SINDRI_SRC=DIR picks the source repo (tests).
 #                                     --channel stable only bootstraps: once a stable exists, a
 #                                     stable change goes through `sindri channel promote <sha>`.
 #
@@ -203,9 +202,7 @@ install_channel() {
     echo "refusing: the archive at $sha contains symlinks" >&2
     exit 1
   fi
-  if [ -n "${AW_SINDRI_BUILD_CMD:-}" ]; then
-    (cd "$dest" && bash -c "$AW_SINDRI_BUILD_CMD")
-  elif [ "${AW_SKIP_BUILD:-0}" != "1" ]; then
+  if [ "${AW_SKIP_BUILD:-0}" != "1" ]; then
     # Install scripts from the ref don't run; only better-sqlite3's native build does.
     (cd "$dest" && npm ci --ignore-scripts && npm rebuild better-sqlite3 && npm run build)
   fi

@@ -321,11 +321,20 @@ test_channel_ref_must_be_in_remote_tracking_main() {
 
 test_channel_failed_build_does_not_block_a_retry() {
   make_scratch_repo
-  local out
-  if out="$(AW_SINDRI_SRC="$SRC" AW_SINDRI_BUILD_CMD='exit 7' AW_SKIP_LAUNCHD=1 AW_STATE_DIR="$TMP/state" CLAUDE_LOCAL_BIN="$TMP/bin" bash "$ROOT/scripts/install-sindri.sh" --channel next --ref "$MERGED2" 2>&1)"; then echo "FAIL: a failing build was accepted"; exit 1; fi
+  local out shim="$TMP/npm-shim"
+  mkdir -p "$shim"
+  : > "$shim/calls"
+  # A failing npm: it leaves a half-built node_modules, logs the call, and exits 7.
+  printf '#!/bin/sh\necho "$@" >> "%s/calls"\nmkdir -p node_modules\nexit 7\n' "$shim" > "$shim/npm"
+  chmod +x "$shim/npm"
+  if out="$(PATH="$shim:$PATH" AW_SINDRI_SRC="$SRC" AW_SKIP_LAUNCHD=1 AW_STATE_DIR="$TMP/state" CLAUDE_LOCAL_BIN="$TMP/bin" bash "$ROOT/scripts/install-sindri.sh" --channel next --ref "$MERGED2" 2>&1)"; then echo "FAIL: a failing build was accepted"; exit 1; fi
+  grep -q "^ci" "$shim/calls" || { echo "FAIL: the npm shim was not the build that ran"; exit 1; }
   [ ! -e "$TMP/state/sindri/channels/next/$MERGED2" ] || { echo "FAIL: the failed build left a directory behind"; exit 1; }
   [ ! -e "$TMP/bin/sindri-next" ] && [ ! -e "$TMP/state/sindri/channels.json" ] || { echo "FAIL: the failed build wrote the wrapper or state"; exit 1; }
-  channel_install next "$MERGED2" > /dev/null || { echo "FAIL: the retry was refused"; exit 1; }
+  # A retry with a working npm succeeds: nothing blocks the same sha.
+  printf '#!/bin/sh\necho "$@" >> "%s/calls-ok"\nexit 0\n' "$shim" > "$shim/npm"
+  PATH="$shim:$PATH" AW_SINDRI_SRC="$SRC" AW_SKIP_LAUNCHD=1 AW_STATE_DIR="$TMP/state" CLAUDE_LOCAL_BIN="$TMP/bin" bash "$ROOT/scripts/install-sindri.sh" --channel next --ref "$MERGED2" > /dev/null || { echo "FAIL: the retry was refused"; exit 1; }
+  grep -q "^run build" "$shim/calls-ok" || { echo "FAIL: the retry did not run the build"; exit 1; }
   [ "$("$TMP/bin/sindri-next" again)" = "channel-ok again" ] || { echo "FAIL: retry did not install"; exit 1; }
   echo "PASS: test_channel_failed_build_does_not_block_a_retry"
 }
