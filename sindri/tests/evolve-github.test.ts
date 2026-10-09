@@ -44,6 +44,14 @@ describe("prContext (read-only, repo pinned, merged PRs by allowed authors only)
     expect(c.diff).toContain("[REDACTED:aws-access-key]");
   });
 
+  it("scrubs the diff before cutting it, so a secret straddling the cap leaks no prefix", async () => {
+    const key = "AKIA" + "ABCDEFGHIJKLMNOP";
+    const diff = "x".repeat(60_000 - 9) + " " + key + "\n+tail";
+    const c = await prContext(fakeProc((argv) => (argv.includes("view") ? { stdout: view() } : { stdout: diff })), "/repo", "acme/toolkit", 12, ["joi-t"]);
+    expect(c.diff.length).toBeLessThanOrEqual(60_000);
+    for (let n = 5; n <= key.length; n++) expect(c.diff).not.toContain(key.slice(0, n));
+  });
+
   it("refuses unmerged PRs, other authors, an unreadable diff and a failing gh", async () => {
     await expect(prContext(fakeProc(() => ({ stdout: view({ state: "OPEN", mergedAt: null }) })), "/r", "a/b", 5, ["joi-t"])).rejects.toThrow(/PR #5 isn't merged/);
     await expect(prContext(fakeProc(() => ({ stdout: view({ state: "MERGED", mergedAt: null }) })), "/r", "a/b", 5, ["joi-t"])).rejects.toThrow(/PR #5 isn't merged/);

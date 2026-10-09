@@ -64,6 +64,7 @@ export async function prContext(run: ProcessRunner, repo: string, ghRepo: string
     branch: v.headRefName,
     files: v.files.map((f) => f.path),
     author: v.author.login,
-    diff: scrubber.scrub(diff.stdout.slice(0, 60_000)).text,
+    // Scrub first, cut after: a secret straddling the cap must not leave a partial, unredacted prefix.
+    diff: scrubber.scrub(diff.stdout).text.slice(0, 60_000),
   };
 }
