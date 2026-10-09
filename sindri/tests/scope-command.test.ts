@@ -218,6 +218,41 @@ describe("the ledger", () => {
     expect(rows(d, "SELECT COUNT(*) AS n FROM scope_runs")).toEqual([{ n: 0 }]);
   });
 
+  it("waits for the lock up to 10 s (injected sleep) and records once it is free", async () => {
+    const base = await approvedScopeDeps();
+    const db = openLedger(ledgerPath(stateDir(base)));
+    const held = acquireTickLock({ dir: stateDir(base), db, sys: fakeSystem({ pid: 5555 }), now: base.now });
+    const slept: number[] = [];
+    const d = { ...base, sleep: async (ms: number) => { slept.push(ms); if (slept.length === 3 && held.ok) held.release(); } };
+    const r = await makeScopeCommand(scriptedIo([MAP, NONE]))([briefFile(), "--out", tempDir()], d);
+    db.close();
+    expect(slept).toEqual([250, 250, 250]);
+    expect(r.stdout).not.toContain("Not recorded");
+    expect(r.stderr).not.toContain("Not recorded");
+    expect(rows(d, "SELECT COUNT(*) AS n FROM scope_runs")).toEqual([{ n: 1 }]);
+    expect(rows(d, "SELECT COUNT(*) AS n FROM model_calls")).toEqual([{ n: 2 }]);
+  });
+
+  it("gives up after 10 s and prints the run id and the unrecorded tokens on stderr, keeping the files", async () => {
+    const base = await approvedScopeDeps();
+    const db = openLedger(ledgerPath(stateDir(base)));
+    const held = acquireTickLock({ dir: stateDir(base), db, sys: fakeSystem({ pid: 5555 }), now: base.now });
+    const slept: number[] = [];
+    const d = { ...base, sleep: async (ms: number) => { slept.push(ms); } };
+    const out = tempDir();
+    const r = await makeScopeCommand(scriptedIo([MAP, NONE]))([briefFile(), "--out", out], d);
+    const j = await makeScopeCommand(scriptedIo([MAP, NONE]))([briefFile(), "--out", out, "--json"], d);
+    if (held.ok) held.release();
+    db.close();
+    expect(slept.slice(0, 40).reduce((a, b) => a + b, 0)).toBe(10_000);
+    expect(slept).toHaveLength(80);
+    expect(r.stderr).toMatch(/Not recorded: run [0-9a-z]{26} spent 110 tokens over 2 model calls; the lock stayed held for 10 s\. The files are kept: .*scope-shift-times-2026-10-08\.md/);
+    expect(j.stderr).toMatch(/Not recorded: run [0-9a-z]{26} spent 110 tokens/);
+    expect(JSON.parse(j.stdout)).toMatchObject({ recorded: false, runId: expect.stringMatching(/^[0-9a-z]{26}$/) });
+    expect(fs.readdirSync(out).sort()).toEqual(["scope-shift-times-2026-10-08-2.json", "scope-shift-times-2026-10-08-2.md", "scope-shift-times-2026-10-08.json", "scope-shift-times-2026-10-08.md"]);
+    expect(rows(d, "SELECT COUNT(*) AS n FROM scope_runs")).toEqual([{ n: 0 }]);
+  });
+
   it("sindri scope runs lists the latest runs, newest first, as text and JSON", async () => {
     expect((await makeScopeCommand(scriptedIo([]))(["runs"], makeDeps())).stdout).toBe("No scope runs recorded.\n");
     const d = await approvedScopeDeps();
@@ -225,7 +260,7 @@ describe("the ledger", () => {
     const out = tempDir();
     await makeScopeCommand(io)([briefFile(), "--out", out], d);
     await makeScopeCommand(io)([briefFile(), "--out", out], d);
-    expect(recordRun(d, {
+    expect(await recordRun(d, {
       runId: "r-backtest", subject: "linear:abc", mode: "backtest", status: "complete", rounds: 2, surfaces: 1, recall: 0.5, precision: 1,
       baselineRecall: 0, baselinePrecision: 0, leaky: true, tokens: 660, outPath: "/x/backtest-p-2026-10-09.md",
     }, [])).toBe(true);

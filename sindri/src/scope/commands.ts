@@ -201,17 +201,35 @@ function unrecorded(e: unknown, file: string, scrubber: Scrubber, json: boolean)
 
 export const LEDGER_MISS = "Not recorded in the ledger: another run holds the lock.";
 
-// One scope_runs row and one model_calls row per call, under the tick lock. False when the lock is held.
-export function recordRun(deps: Deps, row: RunRow, calls: ModelAuditRow[]): boolean {
+// A tick or index job holds the lock for seconds at most, and the ledger write takes milliseconds:
+// wait for it (deps.sleep, so tests don't) before giving up on the run's rows.
+export const RECORD_LOCK_WAIT = { totalMs: 10_000, stepMs: 250 };
+
+// What a lock miss loses, on stderr: the run id and the tokens spent that the ledger never saw.
+// The written files stay where they are.
+export function missLine(runId: string, calls: ModelAuditRow[], file: string): string {
+  const tokens = calls.reduce((n, c) => n + c.inputTokens + c.outputTokens, 0);
+  return `Not recorded: run ${runId} spent ${tokens} tokens over ${calls.length} model calls; the lock stayed held for ${RECORD_LOCK_WAIT.totalMs / 1000} s. The files are kept: ${file} and ${file.replace(/\.md$/, ".json")}.\n`;
+}
+
+// One scope_runs row and one model_calls row per call, under the tick lock. False when the lock
+// stays held for RECORD_LOCK_WAIT.totalMs.
+export async function recordRun(deps: Deps, row: RunRow, calls: ModelAuditRow[]): Promise<boolean> {
   const db = openLedger(ledgerPath(stateDir(deps)));
   try {
-    const lock = acquireTickLock({ dir: stateDir(deps), db, sys: deps.system, now: deps.now });
+    const tries = Math.floor(RECORD_LOCK_WAIT.totalMs / RECORD_LOCK_WAIT.stepMs) + 1;
+    let lock = acquireTickLock({ dir: stateDir(deps), db, sys: deps.system, now: deps.now });
+    for (let i = 1; !lock.ok && i < tries; i++) {
+      await deps.sleep(RECORD_LOCK_WAIT.stepMs);
+      lock = acquireTickLock({ dir: stateDir(deps), db, sys: deps.system, now: deps.now });
+    }
     if (!lock.ok) return false;
+    const owner = lock.owner;
     try {
-      withEpoch(db, lock.owner.epoch, () => {
+      withEpoch(db, owner.epoch, () => {
         db.prepare(
           "INSERT INTO scope_runs (run_id, subject, mode, ts, status, rounds, surfaces, recall, precision, baseline_recall, baseline_precision, leaky, tokens, out_path, epoch) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
-        ).run(row.runId, row.subject, row.mode, deps.now().toISOString(), row.status, row.rounds, row.surfaces, row.recall, row.precision, row.baselineRecall, row.baselinePrecision, row.leaky ? 1 : 0, row.tokens, row.outPath, lock.owner.epoch);
+        ).run(row.runId, row.subject, row.mode, deps.now().toISOString(), row.status, row.rounds, row.surfaces, row.recall, row.precision, row.baselineRecall, row.baselinePrecision, row.leaky ? 1 : 0, row.tokens, row.outPath, owner.epoch);
         const insert = db.prepare("INSERT INTO model_calls (run_id, seq, role, model, input_tokens, output_tokens) VALUES (?, ?, ?, ?, ?, ?)");
         calls.forEach((c, i) => insert.run(row.runId, i + 1, c.role, c.model, c.inputTokens, c.outputTokens));
       });
@@ -361,7 +379,7 @@ async function runBacktest(
   const baselinePrecision = baseline?.precision ?? null;
   let recorded: boolean;
   try {
-    recorded = recordRun(deps, {
+    recorded = await recordRun(deps, {
       runId, subject: label, mode: "backtest", status, rounds: first.result.rounds, surfaces: firstMap === null ? 0 : firstMap.surfaces.length,
       recall, precision, baselineRecall, baselinePrecision, leaky: o.withIndex, tokens: budget.used, outPath: file,
     }, audit);
@@ -374,8 +392,9 @@ async function runBacktest(
     `Wrote ${file}.`,
     ...(recorded ? [] : [LEDGER_MISS]),
   ];
-  const res = success(text.join("\n"), { status, recall, precision, baselineRecall, baselinePrecision, bar: passBar(full, baseline), leaky: o.withIndex, file, recorded, reasons: report.reasons }, o.json, status === "complete" ? 0 : 1);
-  return { ...res, stderr: o.json ? "" : problems.map((x) => `Why incomplete: ${x}\n`).join("") };
+  const res = success(text.join("\n"), { status, recall, precision, baselineRecall, baselinePrecision, bar: passBar(full, baseline), leaky: o.withIndex, file, runId, recorded, reasons: report.reasons }, o.json, status === "complete" ? 0 : 1);
+  const miss = recorded ? "" : missLine(runId, audit, file);
+  return { ...res, stderr: (o.json ? "" : problems.map((x) => `Why incomplete: ${x}\n`).join("")) + miss };
 }
 
 export function makeScopeCommand(io: ScopeIo): Command {
@@ -450,7 +469,7 @@ export function makeScopeCommand(io: ScopeIo): Command {
       const n = map === null ? { surfaces: 0, workstreams: 0, questions: 0 } : { surfaces: map.surfaces.length, workstreams: map.workstreams.length, questions: map.questions.length };
       let recorded: boolean;
       try {
-        recorded = recordRun(deps, { runId, subject: label, mode: "scope", status: result.status, rounds: result.rounds, surfaces: n.surfaces, recall: null, precision: null, baselineRecall: null, baselinePrecision: null, leaky: false, tokens: result.tokens, outPath: file }, audit);
+        recorded = await recordRun(deps, { runId, subject: label, mode: "scope", status: result.status, rounds: result.rounds, surfaces: n.surfaces, recall: null, precision: null, baselineRecall: null, baselinePrecision: null, leaky: false, tokens: result.tokens, outPath: file }, audit);
       } catch (e) {
         return unrecorded(e, file, scrubber, json);
       }
@@ -468,8 +487,9 @@ export function makeScopeCommand(io: ScopeIo): Command {
         ...(recorded ? [] : [LEDGER_MISS]),
       ];
       const why = [...evidence.notes.map((x) => `Note: ${x}`), ...(result.status === "incomplete" ? reasons.map((x) => `Why incomplete: ${x}`) : [])];
-      const res = success(lines.join("\n"), { file, ...meta, ...n, counts: evidence.counts, recorded }, json, result.status === "complete" ? 0 : 1);
-      return { ...res, stderr: json ? "" : why.map((x) => `${x}\n`).join("") };
+      const res = success(lines.join("\n"), { file, runId, ...meta, ...n, counts: evidence.counts, recorded }, json, result.status === "complete" ? 0 : 1);
+      const miss = recorded ? "" : missLine(runId, audit, file);
+      return { ...res, stderr: (json ? "" : why.map((x) => `${x}\n`).join("")) + miss };
     } catch (e) {
       return fromError(e, json);
     }

@@ -410,6 +410,7 @@ describe("sindri scope --backtest", () => {
     expect(r.stdout).toContain("recall not measured (2 of 2 issues could not be judged), precision not measured (4 project issues could not be judged); brief-only baseline not measured. Pass bar: NOT MEASURED.");
     expect(r.stdout).toContain("Not recorded in the ledger: another run holds the lock.");
     expect(r.stderr).toContain("Why incomplete: baseline: no scope map passed the checks (token budget exhausted)");
+    expect(r.stderr).toMatch(/Not recorded: run [0-9a-z]{26} spent \d+ tokens over \d+ model calls/);
     expect(fs.readdirSync(out)).toContain("backtest-new-shift-times-2026-10-08.md");
     expect(rows(d, "SELECT COUNT(*) AS n FROM scope_runs")).toEqual([{ n: 0 }]);
   });
