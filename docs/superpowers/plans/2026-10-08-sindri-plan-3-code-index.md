@@ -2898,7 +2898,7 @@ git commit -m "feat: sindri embeddings layer on a loopback-only Ollama"
 - Produces (`build.ts`): the graph layer runs on a **snapshot** of tracked, non-denied source and docs files written to a temp dir (spec amendment 3), only when the inputs' digest changed, the stamp changed, or there is no graph yet (so a `--quick` build that absorbed a change doesn't hide it from the next full build); `ok` (stamp `graphify@<version>`), `disabled` or `unavailable`.
 - Produces (`commands.ts`): `graphFor(loaded: LoadedProfile, deps: Deps, io: IndexIo): GraphProvider | null`.
 
-- [ ] **Step 1: Install graphify at an age-gated pin, and record a real `graph.json` fixture**
+- [x] **Step 1: Install graphify at an age-gated pin, and record a real `graph.json` fixture**
 
 `graphifyy` is a Python package; install it with `uv` (required, no `pipx` path). First confirm the package name and the flags this plan builds on:
 
@@ -6425,7 +6425,7 @@ git add config/launchd/com.agentic-workflow.sindri-observe.plist config/launchd/
 git commit -m "feat: hourly quick and nightly full sindri index builds"
 ```
 
-- [ ] **Step 6: After merge, switch on (builder)**
+- [x] **Step 6: After merge, switch on (builder)**
 
 The profile file is unchanged by this plan (new keys have defaults), so the approved profile stays approved. No human step is needed, unless `sindri repo add .` reports that this repo is not yet in the profile (then run `sindri profile approve` at a terminal).
 
@@ -6441,7 +6441,7 @@ sindri doctor; echo "doctor exit: $?"
 
 Expected, full switch-on: every `index setup` step `ok` or `done`; `index status` shows `structure ok, clones ok, deps ok, embeddings ok, graph ok`; `doctor exit: 0`. Degraded switch-on: `index setup` shows `fail` or `skip` for what is missing (each with its fix), `index status` shows `embeddings unavailable (…)` or `graph unavailable (…)` with the reason, and `doctor` warns for exactly those layers (exit 1); that is acceptable, and the PR evidence lists them under "Known gaps".
 
-- [ ] **Step 7: Prove it records, then post the evidence**
+- [x] **Step 7: Prove it records, then post the evidence**
 
 Make the first ordinary commit of Plan 4 work (or any real commit), then:
 

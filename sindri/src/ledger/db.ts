@@ -172,6 +172,19 @@ export function openLedgerReadOnly(file: string): Ledger | null {
   return db;
 }
 
+// The schema version a ledger file is at, or null when there is no file: tells a hook why
+// openLedgerReadOnly answered null. Read-only, like it.
+export function ledgerFileVersion(file: string): number | null {
+  if (!fs.existsSync(file)) return null;
+  const db = new Database(file, { fileMustExist: true });
+  try {
+    db.pragma("query_only = ON");
+    return schemaVersion(db);
+  } finally {
+    db.close();
+  }
+}
+
 export function openMemoryLedger(): Ledger {
   const db = new Database(":memory:");
   db.pragma("foreign_keys = ON");

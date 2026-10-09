@@ -162,7 +162,7 @@ describe("sindri shape --record --staged", () => {
     raw.pragma("user_version = 1");
     raw.close();
     const r = await record(d);
-    expect(r.stderr).toContain("sindri-shape: skipped (no approved profile)");
+    expect(r.stderr).toContain("sindri-shape: skipped (ledger schema v1, expected v2; run sindri shape reconcile)");
     expect(beside()).toEqual(listing);
     const check = new Database(file, { readonly: true });
     expect(check.pragma("user_version", { simple: true })).toBe(1);
