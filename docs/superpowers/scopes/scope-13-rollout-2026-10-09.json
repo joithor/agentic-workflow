@@ -1,0 +1,612 @@
+{
+  "status": "complete",
+  "rounds": 4,
+  "tokens": 91195,
+  "generatedAt": "2026-10-09T15:29:17.607Z",
+  "reasons": [],
+  "notes": [],
+  "added": 5,
+  "subject": "2026-10-07-sindri-design.md",
+  "map": {
+    "subject": "Sindri design §13 rollout: steps 0–6, container spike, and ring-0/ring-1 bootstrapping ladder",
+    "surfaces": [
+      {
+        "id": "S1",
+        "kind": "job",
+        "title": "Transcript audit scripts and scorer audit command",
+        "detail": "Turn audit extraction into scripts/transcript-audit/. Dedupe resumed/forked turns keyed on (timestamp,text). Label calibration on a 400-turn sample (Wilson bound >=0.6, >=10 positives). Measure design wrong-approach corrections per 30 days with a 95% interval. Weekly unlabeled launchd job and monthly manual labeled re-check. Existing scorer audit code and tests already exist.",
+        "citations": [
+          "R1",
+          "R11",
+          "R12",
+          "R13"
+        ]
+      },
+      {
+        "id": "S2",
+        "kind": "data",
+        "title": "Baselines, targets, XS-share and quota-per-item measurements",
+        "detail": "Record baselines (~/.agentic-workflow/audit/baseline.md, weekly summary.json), set §2 targets, measure share of last 60 days of in-scope items that would be XS/clear/trusted (10% threshold decides autoStartMaxSize), and subscription quota per item on manual sessions.",
+        "citations": [
+          "R1",
+          "R13"
+        ]
+      },
+      {
+        "id": "S3",
+        "kind": "other",
+        "title": "Host foundation: profile schema/tooling, lock and fencing, scrubber, done-gate fix",
+        "detail": "Profile schema and CLI skeleton (sindri profile init --ring0, doctor), ledger, heavy-job lock with fencing, scrubber with pre-commit install (v1, v2 records shape signals), done-gate claim-detection fix reinstalled via scripts/install-done-gate.sh.",
+        "citations": [
+          "R1",
+          "R32",
+          "R38",
+          "R39",
+          "R36"
+        ]
+      },
+      {
+        "id": "S4",
+        "kind": "api",
+        "title": "judge --providers flag",
+        "detail": "Callers pin providers (Anthropic + Jev) for direction checks and verifiers; existing judge providers, evaluate and adjudicate modules and tests.",
+        "citations": [
+          "R1",
+          "R2",
+          "R6",
+          "R4"
+        ]
+      },
+      {
+        "id": "S5",
+        "kind": "integration",
+        "title": "plan-file Tracker adapter and sindri observe",
+        "detail": "Generic adapter reading docs/superpowers/plans/*.md tasks as work items; observe hourly via launchd; rule-based sizes at first, model triage from step 2. Error codes SND-TRACKER-001/002 and size cap exist.",
+        "citations": [
+          "R1",
+          "R15",
+          "R16"
+        ]
+      },
+      {
+        "id": "S6",
+        "kind": "data",
+        "title": "Code index (structure, clones, deps, embeddings, graphify) and mirror",
+        "detail": "Per-repo sqlite index with layers, schema versioning, degraded layers allowed, quick hourly and nightly full builds under heavy lock, git mirror, sindri index setup/build/status, repo add.",
+        "citations": [
+          "R1",
+          "R18",
+          "R19",
+          "R20",
+          "R21",
+          "R22",
+          "R23",
+          "R24",
+          "R25",
+          "R26",
+          "R27",
+          "R28",
+          "R31",
+          "R33"
+        ]
+      },
+      {
+        "id": "S7",
+        "kind": "data",
+        "title": "Shape signals spool, ledger ingest and reconciliation",
+        "detail": "Record-only shape signals in 3a, ingested from spool into ledger, linked to runs and labeled; precision >=0.7 over >=30 signals per layer gates enforcement in 3b.",
+        "citations": [
+          "R1",
+          "R34",
+          "R35",
+          "R38"
+        ]
+      },
+      {
+        "id": "S8",
+        "kind": "other",
+        "title": "Reuse ports phase 1 and scoping harness with --backtest",
+        "detail": "Port skills needed for scoping/evidence; sindri scope command with --section, --sources, --out docs/superpowers/scopes/; backtest recall on the motivating project; first value is scope maps plus recall.",
+        "citations": [
+          "R1",
+          "R40",
+          "R41"
+        ]
+      },
+      {
+        "id": "S9",
+        "kind": "job",
+        "title": "Self-evolution loop and artifact registry",
+        "detail": "Offline blinded eval (step 1), online shadow A/B (3a), self-adopt tier (6). Registry over toolkit repo: module eval suites wired to existing tests, hook false-positive telemetry, stable/next channels, reflect/correct/eval ports, sindri evolve init/resume, auto-revert.",
+        "citations": [
+          "R1"
+        ]
+      },
+      {
+        "id": "S10",
+        "kind": "ui",
+        "title": "Dashboard (Sessions, Waiting) and SwiftBar badge",
+        "detail": "sindri dashboard showing ring-0 items and what Sindri would do; SwiftBar badge install; step 2.",
+        "citations": [
+          "R1"
+        ]
+      },
+      {
+        "id": "S11",
+        "kind": "job",
+        "title": "Shadow triage, packs, historical replay",
+        "detail": "Model triage of items, packs, replay; exit when per-class routing agreement >=90% over >=30 items and spike verdict in.",
+        "citations": [
+          "R1"
+        ]
+      },
+      {
+        "id": "S12",
+        "kind": "integration",
+        "title": "Container spike: model proxy, lock broker sidecars, attach",
+        "detail": "Interactive Claude Code in container with dummy credential and ANTHROPIC_BASE_URL proxy swapping subscription bearer; proxy and lock broker as sidecars over one authenticated TCP channel (no bind-mounted unix socket); Warp attach; bundle export and two-phase verify; warm start <60s; 4-session fleet 24h; quota effect under quota.reserveForHuman. Runs as one heavy job.",
+        "citations": [
+          "R1",
+          "R32"
+        ]
+      },
+      {
+        "id": "S13",
+        "kind": "api",
+        "title": "sindri start, packs and re-injection, worker→ship Steps, write shim, two-phase verify",
+        "detail": "Step 3a assist: dispatch replaces pasted prompts, ship Step opens PRs, handoffs removed; containers if spike passed else host with no auto-start.",
+        "citations": [
+          "R1"
+        ]
+      },
+      {
+        "id": "S14",
+        "kind": "other",
+        "title": "Turn classification, tool gate, Stop pattern gate",
+        "detail": "Pattern-based gates in 3a, using metric-grade patterns only where calibrated.",
+        "citations": [
+          "R1"
+        ]
+      },
+      {
+        "id": "S15",
+        "kind": "other",
+        "title": "Direction checks (Approach, Drift, Shape, Scoping, Scope expansion)",
+        "detail": "Per §13.2 matrix: Approach/Drift conditional on step-0 rule (shadow, built only if design corrections >=8/30d); Shape enforce in 3b; Scoping and Scope expansion shadow then enforce in step 5; sindri-side verifier authoritative in 3b.",
+        "citations": [
+          "R1"
+        ]
+      },
+      {
+        "id": "S16",
+        "kind": "notification",
+        "title": "Notifications",
+        "detail": "Step 3a notifications for handoffs/waiting; SwiftBar badge related.",
+        "citations": [
+          "R1"
+        ]
+      },
+      {
+        "id": "S17",
+        "kind": "flag",
+        "title": "Profile mode and enforcement flags",
+        "detail": "mode: shadow/assist/auto-small, autoStartMaxSize, shape.enforce, quota.reserveForHuman, evolve tier self-adopt; per-ring switches.",
+        "citations": [
+          "R1"
+        ]
+      },
+      {
+        "id": "S18",
+        "kind": "permission",
+        "title": "Auto-small unattended execution and credentials",
+        "detail": "Requires container isolation pass, doctor passing §8, step-2 threshold, and confirmed plan terms for unattended subscription use or API-key mode; no real token in container.",
+        "citations": [
+          "R1"
+        ]
+      },
+      {
+        "id": "S19",
+        "kind": "integration",
+        "title": "Issue creation from scope maps",
+        "detail": "Moves to self-adopt once a project type meets its backtest bar; step 5.",
+        "citations": [
+          "R1"
+        ]
+      },
+      {
+        "id": "S20",
+        "kind": "other",
+        "title": "Bootstrapping ladder switch-on tasks",
+        "detail": "Every plan ends with a Turn it on task (command, PR evidence, use on next plan); ring 0 then ring 1 gating (one plan's worth, no open defects); one-working-day rule.",
+        "citations": [
+          "R1"
+        ]
+      },
+      {
+        "id": "S21",
+        "kind": "report",
+        "title": "Steering turns per merged Sindri PR metric",
+        "detail": "The ladder names this as the first metric it has to bring down. The scorer audit should measure it on the build itself and report it in the weekly summary.json, so the build can be tracked from P1 onward. The map only mentions it as a reporting implication. No surface or workstream acceptance criterion produces it.",
+        "citations": [
+          "R1"
+        ]
+      },
+      {
+        "id": "S22",
+        "kind": "data",
+        "title": "Session-to-item linkage in the ledger",
+        "detail": "Each observe run records every plan task, and each change to it, in the ledger. From rollout step 2, sessions are also linked to items. Quota per item, routing agreement and steering-per-PR all depend on that link. No surface in the map covers how sessions are joined to items.",
+        "citations": [
+          "R1",
+          "R13"
+        ]
+      },
+      {
+        "id": "S23",
+        "kind": "report",
+        "title": "UI-evidence run cost records",
+        "detail": "The scorer already tracks a cost record for each ui-evidence run: broken steps, visual change, PR, route and invocations. This sits alongside the ported ui-evidence parity publishing. The map covers parity publishing under reuse ports (S8) but not cost and telemetry reporting for the ported evidence skill.",
+        "citations": [
+          "R14",
+          "R40",
+          "R41",
+          "R1"
+        ]
+      },
+      {
+        "id": "S24",
+        "kind": "integration",
+        "title": "Real (workplace) tracker adapter for ring-1 observe and shadow triage",
+        "detail": "The ladder's ring-1 column says `observe` and shadow triage run \"on the real tracker\" for workplace tickets, and assist mode then runs on workplace tickets. The map only covers the generic plan-file Tracker adapter (S5). The map doesn't cover a second Tracker implementation that reads workplace issues as work items, with sizes, change recording in the ledger and session linkage. Belongs with the ring-1 switch-on work (W11).",
+        "citations": [
+          "R1",
+          "R16"
+        ]
+      },
+      {
+        "id": "S25",
+        "kind": "flag",
+        "title": "Live-view off switch enforced in host-mode fallback",
+        "detail": "If the container spike fails, shadow and assist are only cleared on the host provided the live view stays off and the sindri never fetches bundles on the host. The map has no flag, setting or doctor check that turns the live view off, and nothing that blocks bundle fetches when running on the host without isolation. Belongs with the spike and fallback (W7), and it gates W8.",
+        "citations": [
+          "R1"
+        ]
+      }
+    ],
+    "implications": [
+      {
+        "kind": "migration",
+        "detail": "Index sqlite schema is versioned by user_version and is dropped and rebuilt on mismatch; layer stamps trigger table wipes. Any schema or parser change causes a full rebuild. Ledger and profile schema need migration plans as plans P2–P5 land.",
+        "citations": [
+          "R28",
+          "R22",
+          "R24"
+        ]
+      },
+      {
+        "kind": "migration",
+        "detail": "Done-gate hook copy in ~/.claude/hooks/ must be reinstalled on merge; scrubber pre-commit upgrades from v1 to v2 for shape signals.",
+        "citations": [
+          "R1"
+        ]
+      },
+      {
+        "kind": "permissions",
+        "detail": "Auto-small requires confirmed subscription terms for unattended use or API-key mode; containers hold no real token; no host unix socket bind-mounts; sindri never fetches bundles on host if spike fails; live view off.",
+        "citations": [
+          "R1"
+        ]
+      },
+      {
+        "kind": "permissions",
+        "detail": "Index and mirror directories use 0700/0600 modes and a deny-path list; scrubber guards this public repo from secrets and identifiers.",
+        "citations": [
+          "R28",
+          "R33",
+          "R1"
+        ]
+      },
+      {
+        "kind": "reporting",
+        "detail": "Weekly audit summary.json, baseline.md, monthly labeled re-check, steering turns per merged Sindri PR as first ladder metric; Wilson-bound metric-grade vs floor-count reporting; routing agreement and per-layer precision reporting.",
+        "citations": [
+          "R1",
+          "R12"
+        ]
+      },
+      {
+        "kind": "notifications",
+        "detail": "Notifications arrive in 3a with the dashboard badge; false 'Claiming done' blocks should drop to ~0.",
+        "citations": [
+          "R1"
+        ]
+      },
+      {
+        "kind": "mobile",
+        "detail": "No mobile surface is named in the brief; only Warp attach and a macOS SwiftBar badge appear.",
+        "citations": [
+          "R1"
+        ]
+      },
+      {
+        "kind": "flags",
+        "detail": "Rollout is gated by flags and thresholds: autoStartMaxSize XS vs S (10% XS share), shape.enforce per ring, mode per ring, Approach/Drift conditional on the step-0 8/30d rule with shadow-first, evolve tier.",
+        "citations": [
+          "R1"
+        ]
+      },
+      {
+        "kind": "other",
+        "detail": "Spike failure fallback: 3a and earlier run on host with no auto-start; step 4 waits for another runtime or Linux cloud box. Heavy jobs serialize through one lock, so spike, index builds and audits compete.",
+        "citations": [
+          "R1",
+          "R32"
+        ]
+      }
+    ],
+    "workstreams": [
+      {
+        "id": "W1",
+        "title": "Step 0: measure and decide",
+        "surfaces": [
+          "S1",
+          "S2",
+          "S21",
+          "S22",
+          "S23"
+        ],
+        "dependsOn": [],
+        "acceptance": [
+          "scripts/transcript-audit/ exists and dedupes forked/resumed turns",
+          "baseline.md recorded and §2 targets set",
+          "Approach/Drift decision recorded with 95% interval",
+          "XS share and quota per item measured"
+        ]
+      },
+      {
+        "id": "W2",
+        "title": "Step 1a: host foundation and judge flag",
+        "surfaces": [
+          "S3",
+          "S4",
+          "S5",
+          "S17"
+        ],
+        "dependsOn": [
+          "W1"
+        ],
+        "acceptance": [
+          "doctor all ok and ledger exists",
+          "false done-gate block rate ~0 in next weekly audit",
+          "judge --providers jev why <id> works",
+          "fixture secret refused by pre-commit",
+          "plan-file observe lists remaining plan tasks"
+        ]
+      },
+      {
+        "id": "W3",
+        "title": "Step 1b: code index",
+        "surfaces": [
+          "S6",
+          "S7"
+        ],
+        "dependsOn": [
+          "W2"
+        ],
+        "acceptance": [
+          "index status fresh",
+          "layers down are listed in PR evidence",
+          "shape signals appear in ledger for builder commits"
+        ]
+      },
+      {
+        "id": "W4",
+        "title": "Step 1c: scoping harness and reuse ports",
+        "surfaces": [
+          "S8"
+        ],
+        "dependsOn": [
+          "W2",
+          "W3"
+        ],
+        "acceptance": [
+          "Scope map file produced for the design §13",
+          "--backtest recall number reported on motivating project"
+        ]
+      },
+      {
+        "id": "W5",
+        "title": "Self-evolution and artifact registry",
+        "surfaces": [
+          "S9"
+        ],
+        "dependsOn": [
+          "W2"
+        ],
+        "acceptance": [
+          "Registry lists every module",
+          "first reflect proposal recorded",
+          "offline blinded eval runs"
+        ]
+      },
+      {
+        "id": "W6",
+        "title": "Step 2: shadow triage, dashboard, badge",
+        "surfaces": [
+          "S10",
+          "S11"
+        ],
+        "dependsOn": [
+          "W3",
+          "W4"
+        ],
+        "acceptance": [
+          "Dashboard shows ring-0 items",
+          "routing agreement >=90% over >=30 items"
+        ]
+      },
+      {
+        "id": "W7",
+        "title": "Step 2: container spike",
+        "surfaces": [
+          "S12"
+        ],
+        "dependsOn": [
+          "W2"
+        ],
+        "acceptance": [
+          "All 7 spike criteria pass or documented fail",
+          "verdict recorded"
+        ]
+      },
+      {
+        "id": "W8",
+        "title": "Step 3a: assist patterns",
+        "surfaces": [
+          "S13",
+          "S14",
+          "S16"
+        ],
+        "dependsOn": [
+          "W6",
+          "W7"
+        ],
+        "acceptance": [
+          "Next Sindri PR opened by ship Step",
+          "runs in containers if spike passed else host without auto-start",
+          "notifications delivered"
+        ]
+      },
+      {
+        "id": "W9",
+        "title": "Direction checks across steps 3a–5",
+        "surfaces": [
+          "S15",
+          "S19"
+        ],
+        "dependsOn": [
+          "W8"
+        ],
+        "acceptance": [
+          "Approach/Drift shadow only if step-0 rule met",
+          "Shape enforces once per-layer precision >=0.7 over >=30 signals",
+          "Scoping and scope-expansion enforce at step 5",
+          "Issue creation self-adopt after backtest bar"
+        ]
+      },
+      {
+        "id": "W10",
+        "title": "Step 4: auto-small",
+        "surfaces": [
+          "S18"
+        ],
+        "dependsOn": [
+          "W7",
+          "W8",
+          "W1"
+        ],
+        "acceptance": [
+          "Isolation pass and doctor §8 pass",
+          "plan terms confirmed or API-key mode",
+          "XS ring-0 task goes to draft PR unattended"
+        ]
+      },
+      {
+        "id": "W11",
+        "title": "Bootstrapping ladder switch-on",
+        "surfaces": [
+          "S20"
+        ],
+        "dependsOn": [
+          "W2"
+        ],
+        "acceptance": [
+          "Each plan ends with Turn it on task with PR evidence",
+          "ring-1 only after ring 0 runs a plan with no open defects"
+        ]
+      },
+      {
+        "id": "W12",
+        "title": "Missing surfaces",
+        "surfaces": [
+          "S24",
+          "S25"
+        ],
+        "dependsOn": [],
+        "acceptance": [
+          "each listed surface is scoped before work starts"
+        ]
+      }
+    ],
+    "questions": [
+      {
+        "question": "What are the §2 targets, given they are set from measured baselines?",
+        "options": [],
+        "citations": [
+          "R1"
+        ]
+      },
+      {
+        "question": "If the XS share is under 10%, pilot S with 100% verification or skip auto-small and stay in assist?",
+        "options": [
+          "Pilot S",
+          "Stay in assist"
+        ],
+        "citations": [
+          "R1"
+        ]
+      },
+      {
+        "question": "If subscription auth cannot work via base-URL proxy, accept API-key mode for containers and its cost?",
+        "options": [
+          "API-key mode",
+          "Block auto-small"
+        ],
+        "citations": [
+          "R1"
+        ]
+      },
+      {
+        "question": "Are the plan terms for unattended subscription use confirmed, and who confirms?",
+        "options": [],
+        "citations": [
+          "R1"
+        ]
+      },
+      {
+        "question": "What backtest bar per project type allows issue creation to move to self-adopt?",
+        "options": [],
+        "citations": [
+          "R1"
+        ]
+      },
+      {
+        "question": "Is mobile in scope beyond Warp attach and SwiftBar?",
+        "options": [
+          "No",
+          "Yes"
+        ],
+        "citations": [
+          "R1"
+        ]
+      },
+      {
+        "question": "Which notification channels and events are included in 3a?",
+        "options": [],
+        "citations": [
+          "R1"
+        ]
+      },
+      {
+        "question": "What is the Linux cloud box or alternative runtime if the spike fails?",
+        "options": [],
+        "citations": [
+          "R1"
+        ]
+      }
+    ]
+  },
+  "counts": {
+    "code": 40
+  }
+}
