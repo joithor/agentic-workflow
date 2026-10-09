@@ -20,6 +20,7 @@ export const META_WORDS: readonly string[] = [
 const OVERRIDES: readonly RegExp[] = [
   /\b(?:ignore|disregard|override|overrule|forget|bypass|supersede)\b[^.]{0,40}?\b(?:safety|clause|rules?|instructions?|guidelines?|above|previous|prior|earlier|before)\b/i,
   /\b(?:do not|don't|never|stop)\s+follow(?:ing)?\b[^.]{0,40}?\b(?:safety|clause|rules?|above|previous|prior|earlier|before)\b/i,
+  /\bdiscard\b[^.]{0,40}?\b(?:safety|clause|rules?|instructions?|guidelines?)\b/i,
   /\binstead of\b[^.]{0,30}?\b(?:safety|clause|rules?|above|previous)\b/i,
 ];
 

@@ -2,10 +2,10 @@ import { createHash } from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
 
-import { escapeRe } from "../scrub/scrub.js";
 import { SindriError } from "../errors.js";
 import type { GitRunner } from "../git.js";
 import type { Ledger } from "../ledger/db.js";
+import { escapeRe } from "../scrub/scrub.js";
 
 export type ArtifactKind = "skill" | "hook" | "package" | "installer" | "rule" | "doc" | "mod" | "pack-pin" | "prompt";
 
