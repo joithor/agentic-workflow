@@ -1,3 +1,4 @@
+import Database from "better-sqlite3";
 import { execFileSync } from "node:child_process";
 import fs from "node:fs";
 import path from "node:path";
@@ -161,6 +162,30 @@ describe("sindri observe", () => {
     expect(after?.items).toEqual(before?.items);
     expect(after?.events).toEqual(before?.events);
     expect(before).toMatchObject({ items: [], events: [] });
+  });
+
+  it("--no-record reads the ledger without migrating it, and never creates one (plan 3 amendment P8)", async () => {
+    const deps = await ring0(planRepo());
+    await approve(deps);
+    const file = ledgerPath(stateDir(deps));
+    const raw = new Database(file);
+    raw.pragma("user_version = 1");
+    raw.close();
+    const beside = (): string[] => fs.readdirSync(path.dirname(file)).filter((n) => n.startsWith(path.basename(file))).sort();
+    const bytes = fs.readFileSync(file);
+    const listing = beside();
+    const r = await runCli(["observe", "--no-record"], deps);
+    expect(r.stdout).toContain("Not recorded: --no-record.");
+    expect(fs.readFileSync(file)).toEqual(bytes);
+    expect(beside()).toEqual(listing);
+    const check = new Database(file, { readonly: true });
+    expect(check.pragma("user_version", { simple: true })).toBe(1);
+    check.close();
+
+    const fresh = await ring0(planRepo());
+    const none = await runCli(["observe", "--no-record"], fresh);
+    expect(none.stdout).toContain("has never been approved");
+    expect(fs.existsSync(ledgerPath(stateDir(fresh)))).toBe(false);
   });
 
   it("refuses to record when the plan dir is gone: no removed events, ledger untouched, exit 1", async () => {

@@ -39,7 +39,7 @@ function describeLayers(ls: LayerInfo): string {
   }).join(", ");
 }
 
-export function embedderFor(loaded: LoadedProfile, io: IndexIo): Embedder | null {
+export function embedderFor(loaded: LoadedProfile, io: Pick<IndexIo, "fetch">): Embedder | null {
   const e = loaded.profile.index.embeddings;
   return e.enabled ? makeOllamaEmbedder({ url: e.url, model: e.model, fetch: io.fetch }) : null;
 }

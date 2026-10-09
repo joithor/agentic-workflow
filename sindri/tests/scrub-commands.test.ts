@@ -4,7 +4,7 @@ import path from "node:path";
 import { describe, expect, it } from "vitest";
 
 import { runCli } from "../src/main.js";
-import { hitsIn, hookBinary, parseAddedLines, preCommitHook, preCommitPath, PRE_COMMIT_MARKER } from "../src/scrub/commands.js";
+import { hitsIn, hookBinary, isSindriHook, parseAddedLines, preCommitHook, preCommitPath, PRE_COMMIT_MARKER } from "../src/scrub/commands.js";
 import { makeScrubber } from "../src/scrub/scrub.js";
 import { realGitRunner } from "../src/git-real.js";
 import { fakeGit, makeDeps, tempDir } from "./helpers.js";
@@ -242,5 +242,56 @@ describe("sindri scrub (stdin)", () => {
     expect(r.exitCode).toBe(0);
     expect(r.stdout).not.toContain(secret);
     expect(JSON.parse(r.stdout)).toEqual({ text: "token [REDACTED:github-token]\n", hits: [{ kind: "github-token", start: 6, end: 46 }] });
+  });
+});
+
+describe("pre-commit hook v2", () => {
+  it("scans, then records shape signals without blocking, and upgrades a v1 hook in place", async () => {
+    const root = repo();
+    const hookPath = path.join(root, ".git/hooks/pre-commit");
+    fs.mkdirSync(path.dirname(hookPath), { recursive: true });
+    fs.writeFileSync(hookPath, "#!/bin/sh\n# sindri-scrub-pre-commit v1\nSINDRI='/old/sindri'\nexec \"$SINDRI\" scrub --staged\n");
+    await runCli(["scrub", "--install-pre-commit"], makeDeps({ cwd: root, env: { SINDRI_BIN: "/new/sindri" } }));
+    const text = fs.readFileSync(hookPath, "utf8");
+    expect(text).toContain("# sindri-pre-commit v2");
+    expect(text).toContain('"$SINDRI" scrub --staged || exit 1');
+    expect(text).toContain('"$SINDRI" shape --record --staged || true');
+    expect(hookBinary(text)).toBe("/new/sindri");
+    expect(hookBinary("#!/bin/sh\n# sindri-scrub-pre-commit v1\nSINDRI='/old/sindri'\n")).toBe("/old/sindri");
+  });
+
+  it("only a whole marker line makes a hook sindri's own", async () => {
+    expect(isSindriHook("#!/bin/sh\n# sindri-pre-commit v2\n")).toBe(true);
+    expect(isSindriHook("#!/bin/sh\n# sindri-scrub-pre-commit v1\n")).toBe(true);
+    expect(isSindriHook("#!/bin/sh\n# see the docs for # sindri-pre-commit v2\necho mine\n")).toBe(false);
+    const root = repo();
+    const hookPath = path.join(root, ".git/hooks/pre-commit");
+    fs.mkdirSync(path.dirname(hookPath), { recursive: true });
+    fs.writeFileSync(hookPath, "#!/bin/sh\n# see the docs for # sindri-pre-commit v2\necho mine\n");
+    expect((await runCli(["scrub", "--install-pre-commit"], makeDeps({ cwd: root }))).stderr).toContain("SND-SCRUB-003");
+  });
+
+  it("runs the scan first, stops on its refusal, and never lets the shape step block", () => {
+    const dir = tempDir();
+    const log = path.join(dir, "log");
+    const fake = path.join(dir, "fake-sindri");
+    fs.writeFileSync(fake, '#!/bin/sh\necho "$*" >> "$LOG"\nif [ "$1" = scrub ]; then exit "${SCRUB_EXIT:-0}"; fi\nexit "${SHAPE_EXIT:-0}"\n', { mode: 0o755 });
+    const hook = path.join(dir, "hook.sh");
+    fs.writeFileSync(hook, preCommitHook(fake));
+    const exec = (env: Record<string, string>): number => {
+      try {
+        execFileSync("sh", [hook], { env: { ...process.env, LOG: log, ...env }, stdio: "ignore" });
+        return 0;
+      } catch (e) {
+        return (e as { status: number }).status;
+      }
+    };
+    expect(exec({})).toBe(0);
+    expect(fs.readFileSync(log, "utf8")).toBe("scrub --staged\nshape --record --staged\n");
+    fs.rmSync(log);
+    expect(exec({ SCRUB_EXIT: "1" })).toBe(1);
+    expect(fs.readFileSync(log, "utf8")).toBe("scrub --staged\n");
+    fs.rmSync(log);
+    expect(exec({ SHAPE_EXIT: "3" })).toBe(0);
   });
 });

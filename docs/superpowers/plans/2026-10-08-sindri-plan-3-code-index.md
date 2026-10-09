@@ -4113,7 +4113,7 @@ git commit -m "feat: sindri staged overlay, shape signals and index query"
   - `recordStaged(deps, io, o: { repo?: string; size?: Size }): Promise<{ written: string | null; note: string }>` — opens the ledger read-only, finds the profile repo by git common dir (so a linked worktree matches), and diffs the commit's own worktree.
 - Produces (`scrub/commands.ts`): hook v2 — marker `# sindri-pre-commit v2`; scrubs (and refuses on a hit), then runs `"$SINDRI" shape --record --staged || true`. `install` upgrades a v1 hook in place; `isSindriHook(text)` matches whole marker lines; `hookBinary` reads both versions.
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 `sindri/tests/spool.test.ts`:
 
@@ -4477,12 +4477,12 @@ describe("pre-commit hook v2", () => {
 });
 ```
 
-- [ ] **Step 2: Run the tests to verify they fail**
+- [x] **Step 2: Run the tests to verify they fail**
 
 Run: `cd sindri && npx vitest run tests/spool.test.ts tests/shape.test.ts tests/scrub-commands.test.ts`
 Expected: FAIL with `Failed to load url ../src/index/spool.js` (and `shape.js`), and the v2 hook tests failing on the marker.
 
-- [ ] **Step 3: Implement**
+- [x] **Step 3: Implement**
 
 `sindri/src/index/spool.ts`:
 
@@ -4871,12 +4871,12 @@ import { makeShapeCommand } from "./index/shape.js";
   },
 ```
 
-- [ ] **Step 4: Run the tests**
+- [x] **Step 4: Run the tests**
 
 Run: `cd sindri && npx vitest run && npm run typecheck && npm run test:coverage`
 Expected: all tests PASS; 100% coverage.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add sindri/src sindri/tests

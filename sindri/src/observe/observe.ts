@@ -9,12 +9,13 @@ import { parseFlags } from "../args.js";
 import { stateDir, type Deps } from "../deps.js";
 import { SindriError } from "../errors.js";
 import { ulid } from "../ids.js";
-import { fenced, ledgerPath, openLedger, type Ledger } from "../ledger/db.js";
+import { ingestSpool } from "../index/spool.js";
+import { fenced, ledgerPath, openLedger, readLedger, type Ledger } from "../ledger/db.js";
 import { listEvents, markMissing, setCursor, upsertItem } from "../ledger/items.js";
 import { acquireTickLock } from "../lock/lock.js";
 import type { Command } from "../main.js";
 import { fromError, success, type CommandResult } from "../output.js";
-import { approvalProblem, approvalState } from "../profile/approve.js";
+import { approvalProblem, approvalState, type ApprovalState } from "../profile/approve.js";
 import { requireProfile, ring0Files } from "../profile/commands.js";
 import { loadProfile, resolveProfileRoot, type LoadedProfile } from "../profile/load.js";
 import { compileExtraPatterns, makeScrubber } from "../scrub/scrub.js";
@@ -109,6 +110,8 @@ function record(db: Ledger, deps: Deps, loaded: LoadedProfile, snap: Snapshot, e
     }
     counts.removed = markMissing(db, ctx, source, new Set(snap.items.map((i) => i.id)));
     setCursor(db, source, snap.cursor, deps.now());
+    // Commit-time shape runs the hook spooled (it never writes the ledger itself, spec §5.2).
+    ingestSpool(db, deps, epoch);
     return counts;
   });
 }
@@ -152,6 +155,16 @@ function report(
   return success(lines.join("\n"), data, json, attention ? 1 : 0);
 }
 
+// Spec §8.7: runtime uses the latest approved snapshot, never unapproved edits.
+function gate(state: ApprovalState, live: LoadedProfile): { ok: true; approved: LoadedProfile; drift: string } | { ok: false; note: string } {
+  if (state.kind === "never-approved" || state.kind === "snapshot-missing") {
+    return { ok: false, note: `Not recorded: ${approvalProblem(state, live.hash)} (sindri profile approve).` };
+  }
+  const approved = state.approved;
+  const drift = state.kind === "approved" ? "" : ` Using approved profile ${approved.hash.slice(0, 12)}; the live profile has unapproved changes (sindri profile approve).`;
+  return { ok: true, approved, drift };
+}
+
 export const observeCommand: Command = async (args, deps) => {
   const json = args.includes("--json");
   try {
@@ -162,19 +175,21 @@ export const observeCommand: Command = async (args, deps) => {
       return report(loaded, await readAll(loaded, deps), null, "Not recorded: no profile (run `sindri profile init --ring0` to keep a ledger).", false, json);
     }
     const live = requireProfile(deps, values.profile);
-    const db = openLedger(ledgerPath(stateDir(deps)));
+    const file = ledgerPath(stateDir(deps));
+    if (values["no-record"] === true) {
+      // A read: it never creates or migrates the ledger (a missing one has approved nothing).
+      const state: ApprovalState = fs.existsSync(file) ? readLedger(file, (db) => approvalState(deps, db, live.hash)) : { kind: "never-approved" };
+      const g = gate(state, live);
+      if (!g.ok) return report(live, await readAll(live, deps), null, g.note, true, json);
+      return report(g.approved, await readAll(g.approved, deps), null, `Not recorded: --no-record.${g.drift}`, g.drift !== "", json);
+    }
+    const db = openLedger(file);
     try {
-      // Spec §8.7: runtime uses the latest approved snapshot, never unapproved edits.
-      const state = approvalState(deps, db, live.hash);
-      if (state.kind === "never-approved" || state.kind === "snapshot-missing") {
-        const note = `Not recorded: ${approvalProblem(state, live.hash)} (sindri profile approve).`;
-        return report(live, await readAll(live, deps), null, note, true, json);
-      }
-      const approved = state.approved;
-      const drift = state.kind === "approved" ? "" : ` Using approved profile ${approved.hash.slice(0, 12)}; the live profile has unapproved changes (sindri profile approve).`;
+      const g = gate(approvalState(deps, db, live.hash), live);
+      if (!g.ok) return report(live, await readAll(live, deps), null, g.note, true, json);
+      const { approved, drift } = g;
       const host = deps.system.hostname();
       const active = approved.profile.hosts.active;
-      if (values["no-record"] === true) return report(approved, await readAll(approved, deps), null, `Not recorded: --no-record.${drift}`, drift !== "", json);
       if (active !== host) {
         return report(approved, await readAll(approved, deps), null, `Not recorded: this host (${host}) is not hosts.active (${active}).${drift}`, true, json);
       }

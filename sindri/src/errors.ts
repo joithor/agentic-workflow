@@ -27,7 +27,7 @@ export const ERRORS = {
   "SND-LOCK-001": { summary: "Another sindri run holds the lock.", fix: "wait a moment and rerun; `sindri doctor` shows the holder" },
   "SND-SCRUB-001": { summary: "A profile scrub pattern does not compile.", fix: "Fix the regex at the named scrub.extraPatterns index, then run `sindri profile validate`." },
   "SND-SCRUB-002": { summary: "Staged changes contain likely secrets.", fix: "remove them (use a secret pointer or an env var); for a false positive, commit with --no-verify and say why" },
-  "SND-SCRUB-003": { summary: "A different pre-commit hook is already installed.", fix: "Add `sindri scrub --staged || exit 1` to that hook by hand." },
+  "SND-SCRUB-003": { summary: "A different pre-commit hook is already installed.", fix: "Add both lines to that hook by hand, in this order: `sindri scrub --staged || exit 1` then `sindri shape --record --staged || true`." },
   "SND-SCRUB-004": { summary: "`scrub --staged` or `--install-pre-commit` ran outside a git repo.", fix: "cd into the repo first, or pass --repo PATH to --install-pre-commit." },
   "SND-SCRUB-005": { summary: "`git diff --cached` failed, so `scrub --staged` could not scan the staged changes.", fix: "Fix the git error shown in the details, then retry the commit." },
   "SND-LEDGER-001": { summary: "The ledger was written by a newer sindri.", fix: "Upgrade sindri (`scripts/install-sindri.sh` from the latest main), then rerun." },

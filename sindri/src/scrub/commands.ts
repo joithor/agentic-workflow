@@ -12,7 +12,13 @@ import { approvedProfile } from "../profile/approve.js";
 import { loadProfile, resolveProfileRoot, type LoadedProfile } from "../profile/load.js";
 import { compileExtraPatterns, makeScrubber, type Scrubber } from "./scrub.js";
 
-export const PRE_COMMIT_MARKER = "# sindri-scrub-pre-commit v1";
+export const PRE_COMMIT_MARKER = "# sindri-pre-commit v2";
+const LEGACY_MARKERS: readonly string[] = ["# sindri-scrub-pre-commit v1"];
+
+// A whole-line match, never a substring: a foreign hook that merely mentions a marker isn't ours.
+export function isSindriHook(text: string): boolean {
+  return text.split("\n").some((l) => l === PRE_COMMIT_MARKER || LEGACY_MARKERS.includes(l));
+}
 
 // The hook calls the CLI by the absolute path it was installed from (GUI git
 // clients don't load ~/.local/bin into PATH) and fails closed when it's missing.
@@ -20,7 +26,7 @@ export const PRE_COMMIT_MARKER = "# sindri-scrub-pre-commit v1";
 export function preCommitHook(bin: string): string {
   return `#!/bin/sh
 ${PRE_COMMIT_MARKER}
-# Refuses commits that add secret-shaped strings (spec §8.4).
+# Refuses commits that add secret-shaped strings (spec §8.4), then records shape signals (spec §6.2).
 # Installed by \`sindri scrub --install-pre-commit\`.
 SINDRI='${bin.replace(/'/g, "'\\''")}'
 if [ ! -x "$SINDRI" ] && ! command -v "$SINDRI" >/dev/null 2>&1; then
@@ -28,7 +34,9 @@ if [ ! -x "$SINDRI" ] && ! command -v "$SINDRI" >/dev/null 2>&1; then
   echo "  fix: scripts/install-sindri.sh (or commit with --no-verify and say why)" >&2
   exit 1
 fi
-exec "$SINDRI" scrub --staged
+"$SINDRI" scrub --staged || exit 1
+# Record-only shape signals (spec §6.2): never blocks the commit.
+"$SINDRI" shape --record --staged || true
 `;
 }
 
@@ -138,7 +146,7 @@ async function install(deps: Deps, repo: string | undefined, json: boolean): Pro
   const repoPath = path.resolve(deps.cwd, repo ?? ".");
   const hook = await preCommitPath(deps.git, repoPath);
   if (hook === null) throw new SindriError("SND-SCRUB-004", `${repoPath} is not inside a git repo`);
-  if (fs.existsSync(hook) && !fs.readFileSync(hook, "utf8").includes(PRE_COMMIT_MARKER)) {
+  if (fs.existsSync(hook) && !isSindriHook(fs.readFileSync(hook, "utf8"))) {
     throw new SindriError("SND-SCRUB-003", `${hook} already exists and is not sindri's`);
   }
   fs.mkdirSync(path.dirname(hook), { recursive: true });

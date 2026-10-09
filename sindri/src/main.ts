@@ -4,6 +4,7 @@ import type { Deps } from "./deps.js";
 import { doctorCommand } from "./doctor/doctor.js";
 import { makeIndexCommand } from "./index/commands.js";
 import { realIndexIo } from "./index/sandbox-real.js";
+import { makeShapeCommand } from "./index/shape.js";
 import { ledgerCommand, observeCommand } from "./observe/observe.js";
 import { profileCommand } from "./profile/commands.js";
 import { failure, success, type CommandResult } from "./output.js";
@@ -52,6 +53,15 @@ export const COMMANDS: Record<string, CommandDef> = {
       "  sindri index setup [--dry-run] [--json]",
     ].join("\n"),
     run: makeIndexCommand(realIndexIo()),
+  },
+  shape: {
+    summary: "Record shape signals for staged changes (pre-commit), or report them",
+    usage: [
+      "Usage:",
+      "  sindri shape --record --staged [--repo NAME] [--size XS|S|M|L|XL]   (always exits 0)",
+      "  sindri shape report [--recent N] [--json]",
+    ].join("\n"),
+    run: makeShapeCommand(realIndexIo()),
   },
   ledger: { summary: "Show ledger events", usage: "Usage: sindri ledger [--item ID] [--since 7d|12h] [--json]", run: ledgerCommand },
 };

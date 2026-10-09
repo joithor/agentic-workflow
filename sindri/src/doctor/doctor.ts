@@ -10,7 +10,7 @@ import type { Command } from "../main.js";
 import { fromError, success, type ExitCode } from "../output.js";
 import { approvalProblem, approvalState, type ApprovalState } from "../profile/approve.js";
 import { loadProfile, resolveProfileRoot, type LoadedProfile } from "../profile/load.js";
-import { hookBinary, preCommitPath, PRE_COMMIT_MARKER } from "../scrub/commands.js";
+import { hookBinary, isSindriHook, preCommitPath } from "../scrub/commands.js";
 
 function isExecutable(p: string): boolean {
   try {
@@ -111,7 +111,7 @@ async function profileChecks(deps: Deps, loaded: LoadedProfile): Promise<Check[]
   for (const [name, repo] of Object.entries(used.repos)) {
     const hook = await preCommitPath(deps.git, repo.path);
     const text = hook !== null && fs.existsSync(hook) ? fs.readFileSync(hook, "utf8") : "";
-    const bin = text.includes(PRE_COMMIT_MARKER) ? hookBinary(text) : null;
+    const bin = isSindriHook(text) ? hookBinary(text) : null;
     const fix = `sindri scrub --install-pre-commit --repo ${repo.path}`;
     if (bin === null) out.push({ name: `pre-commit:${name}`, status: "warn", detail: "secret-scan hook not installed", fix });
     else if (path.isAbsolute(bin) && !isExecutable(bin)) out.push({ name: `pre-commit:${name}`, status: "warn", detail: `hook calls ${bin}, which is missing, so every commit is refused`, fix: `scripts/install-sindri.sh, then ${fix}` });
