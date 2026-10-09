@@ -3,6 +3,7 @@ import path from "node:path";
 import { describe, expect, it } from "vitest";
 
 import { excerptFor, parseSince, readRepoSessions, sessionOf, textBlocks, toolNames, transcriptsDir } from "../src/evolve/transcripts.js";
+import { compileExtraPatterns, makeScrubber } from "../src/scrub/scrub.js";
 import { evolveFixture } from "./evolve-fixtures.js";
 import { tempDir } from "./helpers.js";
 
@@ -196,6 +197,8 @@ describe("excerptFor and transcriptsDir", () => {
     );
     expect(excerptFor(d, "/repo", "transcript:5e55a1d0#1")).toBe("first line [REDACTED:aws-access-key]");
     expect(excerptFor(d, "/repo", "transcript:5e55a1d0#4")).toBe("x".repeat(300));
+    const profile = makeScrubber(compileExtraPatterns([{ kind: "ticket", regex: "first" }]));
+    expect(excerptFor(d, "/repo", "transcript:5e55a1d0#1", 300, profile)).toBe("[REDACTED:ticket] line [REDACTED:aws-access-key]");
     expect(excerptFor(d, "/repo", "transcript:5e55a1d0#2")).toBeNull();
     expect(excerptFor(d, "/repo", "transcript:5e55a1d0#3")).toBeNull();
     expect(excerptFor(d, "/repo", "transcript:5e55a1d0#99")).toBeNull();

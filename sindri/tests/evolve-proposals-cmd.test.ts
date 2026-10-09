@@ -25,8 +25,8 @@ const prop = (over: Record<string, unknown> = {}): Proposal =>
     change: { type: "describe", files: ["skills/review/SKILL.md"], description: "Add a step." }, ...over,
   });
 
-async function ready() {
-  const fx = await evolveFixture({ files: FILES });
+async function ready(extraYaml?: string) {
+  const fx = await evolveFixture({ files: FILES, extraYaml });
   await init([], fx.ctx);
   let n = 0; // a clock that moves, so created_at orders the proposals
   const save = (over: Record<string, unknown>, tierName: "code" | "approval" | "self-adopt" = "code", status?: ProposalStatus) => {
@@ -122,6 +122,16 @@ describe("sindri evolve reject", () => {
     expect(fs.existsSync(stagedFile(fx.deps, id))).toBe(false);
     expect(fx.ctx.db.prepare("SELECT verb, detail FROM evolve_audit").all()).toEqual([{ verb: "reject", detail: `${id}: not useful` }]);
     expect((await reject([id, "--reason", "again"], fx.ctx)).stdout).toBe(`Proposal ${id} is already rejected; nothing to do.\nNext: sindri evolve proposals\n`);
+    fx.close();
+  });
+});
+
+describe("sindri evolve reject with a profile scrub pattern", () => {
+  it("redacts a scrub.extraPatterns match from the audit detail", async () => {
+    const { fx, save } = await ready('scrub:\n  extraPatterns:\n    - kind: ticket\n      regex: "WRK-[0-9]{3,6}"\n');
+    const id = save({}, "code", "staged");
+    await reject([id, "--reason", "see WRK-4242"], fx.ctx);
+    expect(fx.ctx.db.prepare("SELECT detail FROM evolve_audit").get()).toEqual({ detail: `${id}: see [REDACTED:ticket]` });
     fx.close();
   });
 });

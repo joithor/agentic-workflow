@@ -46,7 +46,7 @@ export async function stageProposals(ctx: EvolveCtx): Promise<StageOutcome> {
   await ctx.writeRetry((epoch) => {
     for (const d of duplicates) {
       setStatus(ctx.db, d.id, "rejected", epoch, ctx.deps.now());
-      audit(ctx.db, ctx.deps, "reject", `${d.id}: duplicate of ${d.of}`, epoch);
+      audit(ctx.db, ctx.deps, "reject", `${d.id}: duplicate of ${d.of}`, epoch, profileScrubber(ctx.loaded));
     }
     fs.mkdirSync(dir, { recursive: true, mode: 0o700 });
     for (const [i, c] of take.entries()) {
@@ -146,7 +146,7 @@ export async function publishProposals(ctx: EvolveCtx, o: { dryRun: boolean; noP
         setStatus(ctx.db, p.id, "published", epoch, ctx.deps.now());
         fs.rmSync(stagedFile(ctx.deps, p.id), { force: true });
       }
-      audit(ctx.db, ctx.deps, "publish", `${published.length} proposal(s) into ${relFile}`, epoch);
+      audit(ctx.db, ctx.deps, "publish", `${published.length} proposal(s) into ${relFile}`, epoch, scrubber);
     });
   }
   const listed = ctx.loaded.profile.tracker.include.some((pattern) => wildcard(pattern).test(name));

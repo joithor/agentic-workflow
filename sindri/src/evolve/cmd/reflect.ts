@@ -52,7 +52,7 @@ export async function reflectCommand(args: string[], ctx: EvolveCtx, budget: Bud
       const t = classifyTier(p, registry, extra);
       return { title: p.title, tier: t.tier, outcome: saveProposal(ctx.db, p, `reflect:pr-${pr}`, t.tier, epoch, ctx.deps.now()) };
     });
-    if (!result.incomplete) audit(ctx.db, ctx.deps, "reflect", `pr-${pr}`, epoch);
+    if (!result.incomplete) audit(ctx.db, ctx.deps, "reflect", `pr-${pr}`, epoch, profileScrubber(ctx.loaded));
     return out;
   });
   const { tiers, lines } = renderSaved(saved);

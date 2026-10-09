@@ -2,7 +2,7 @@ import fs from "node:fs";
 import path from "node:path";
 
 import { SindriError } from "../errors.js";
-import { makeScrubber } from "../scrub/scrub.js";
+import { makeScrubber, type Scrubber } from "../scrub/scrub.js";
 import type { EvolveCtx } from "./ctx.js";
 
 const scrubber = makeScrubber();
@@ -168,9 +168,9 @@ export const transcriptsDir = (ctx: EvolveCtx): string => ctx.loaded.profile.sou
 // A short, scrubbed, single-line excerpt for a transcript:<session>#<line> ref (what `show` prints).
 // Refs resolve only through this repo's sessions (Review Focus 5), so another repo's line is never
 // printed even when its session prefix matches.
-export function excerptFor(dir: string, repo: string, ref: string, max = 300): string | null {
+export function excerptFor(dir: string, repo: string, ref: string, max = 300, scrub: Scrubber = scrubber): string | null {
   const line = readRepoSessions(dir, repo, new Date(0), Infinity).lines.find((l) => l.ref === ref);
   if (line === undefined) return null;
   const text = line.blocks.map((b) => b.text).join(" ").replace(/[\u0000-\u001f\u007f]+/g, " ").trim();
-  return text === "" ? null : scrubber.scrub(text).text.slice(0, max);
+  return text === "" ? null : scrub.scrub(text).text.slice(0, max);
 }

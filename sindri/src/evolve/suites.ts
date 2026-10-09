@@ -3,9 +3,7 @@ import path from "node:path";
 import type { Deps } from "../deps.js";
 import type { ProcessRunner } from "../index/io.js";
 import { withHeavyLock } from "../index/heavy-lock.js";
-import { makeScrubber } from "../scrub/scrub.js";
-
-const scrubber = makeScrubber();
+import { makeScrubber, type Scrubber } from "../scrub/scrub.js";
 
 // A suite runs repo code, so it gets a clean environment: HOME and a few harmless variables only.
 export function cleanEnvArgv(deps: Deps, argv: string[]): string[] {
@@ -16,7 +14,7 @@ export function cleanEnvArgv(deps: Deps, argv: string[]): string[] {
 // A module's eval suite is its existing tests (spec §7.7 table). Suites are heavy: one at a
 // time, box-wide. They wait for the heavy lock for at most 10 minutes.
 export async function runSuite(
-  deps: Deps, run: ProcessRunner, base: string, a: { id: string; suite: { argv: string[]; cwd: string } },
+  deps: Deps, run: ProcessRunner, base: string, a: { id: string; suite: { argv: string[]; cwd: string } }, scrubber: Scrubber = makeScrubber(),
 ): Promise<{ ok: boolean; exitCode: number; ms: number; tail: string }> {
   return withHeavyLock(deps, `suite:${a.id}`, 600_000, async () => {
     const started = deps.now().getTime();

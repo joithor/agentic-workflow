@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import { cleanEnvArgv, runSuite } from "../src/evolve/suites.js";
+import { compileExtraPatterns, makeScrubber } from "../src/scrub/scrub.js";
 import type { ProcessRunner } from "../src/index/io.js";
 import { fakeProc } from "./evolve-fixtures.js";
 import { makeDeps } from "./helpers.js";
@@ -30,5 +31,13 @@ describe("runSuite", () => {
     expect(r.tail).toContain("[REDACTED:aws-access-key]");
     const pass: ProcessRunner = { run: async () => ({ code: 0, stdout: "ok", stderr: "" }) };
     expect((await runSuite(d, pass, "/repo", { id: "x", suite: { argv: ["true"], cwd: "." } })).ok).toBe(true);
+  });
+
+  it("scrubs the tail with the scrubber it is given (the profile's extra patterns)", async () => {
+    const d = withEnv({ PATH: "/bin" });
+    const proc = fakeProc(() => ({ code: 1, stdout: "failed for WRK-123456" }));
+    const scrubber = makeScrubber(compileExtraPatterns([{ kind: "ticket", regex: "WRK-[0-9]{6}" }]));
+    const r = await runSuite(d, proc, "/repo", { id: "x", suite: { argv: ["true"], cwd: "." } }, scrubber);
+    expect(r.tail).toBe("failed for [REDACTED:ticket]");
   });
 });

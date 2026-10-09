@@ -11,6 +11,7 @@ import { escapeInvisible } from "../invisible.js";
 import { loadPrompt, sha256 } from "../overlay.js";
 import { defaultPrompt, hasSafetyClause, PROMPT_IDS, type PromptId } from "../prompts.js";
 import { comparisonRuns, getProposal, latestComparison, runningComparison, setStatus } from "../proposals.js";
+import { profileScrubber } from "../../scope/commands.js";
 
 const refuse = (why: string): SindriError => new SindriError("SND-EVOLVE-004", why);
 
@@ -63,7 +64,7 @@ export async function adopt(args: string[], ctx: EvolveCtx): Promise<CommandResu
     ctx.db.prepare("INSERT INTO adoptions (prompt_id, proposal_id, sha256, adopted_at, adopted_by, epoch) VALUES (?, ?, ?, ?, ?, ?)")
       .run(promptId, id, w.sha, ctx.deps.now().toISOString(), ctx.deps.system.username(), epoch);
     setStatus(ctx.db, id, "adopted", epoch, ctx.deps.now());
-    audit(ctx.db, ctx.deps, "adopt", `${id} -> ${promptId} sha256 ${w.sha.slice(0, 16)}`, epoch);
+    audit(ctx.db, ctx.deps, "adopt", `${id} -> ${promptId} sha256 ${w.sha.slice(0, 16)}`, epoch, profileScrubber(ctx.loaded));
     return w;
   });
   return success(`Adopted ${id}: wrote ${written.file} (sha256 ${sha.slice(0, 8)}). It takes effect on the next sindri scope run.\nNext: sindri evolve status`, { id, prompt: promptId, file: written.file, sha256: written.sha }, values.json === true);
@@ -83,7 +84,7 @@ export async function revert(args: string[], ctx: EvolveCtx): Promise<CommandRes
       ctx.db.prepare("INSERT INTO adoptions (prompt_id, proposal_id, sha256, adopted_at, adopted_by, epoch) VALUES (?, 'revert', 'reverted', ?, ?, ?)")
         .run(promptId, ctx.deps.now().toISOString(), ctx.deps.system.username(), epoch);
       // The proposal statuses have no "reverted", so the adopted proposal keeps "adopted"; the ledger says so.
-      audit(ctx.db, ctx.deps, "revert", stale ? `${promptId} (adopted proposal ${latest.proposal_id} keeps status adopted: there is no reverted status)` : promptId, epoch);
+      audit(ctx.db, ctx.deps, "revert", stale ? `${promptId} (adopted proposal ${latest.proposal_id} keeps status adopted: there is no reverted status)` : promptId, epoch, profileScrubber(ctx.loaded));
     }
     return { present, reverted: present || stale };
   });

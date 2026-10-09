@@ -10,6 +10,7 @@ import {
 } from "../proposals.js";
 import { isAddedTestAllowed, isProtectedPath, loadRegistry } from "../registry.js";
 import { excerptFor, transcriptsDir } from "../transcripts.js";
+import { profileScrubber } from "../../scope/commands.js";
 
 const ageDays = (iso: string, now: Date): number => Math.max(0, Math.floor((now.getTime() - Date.parse(iso)) / 86_400_000));
 
@@ -45,7 +46,7 @@ export async function show(args: string[], ctx: EvolveCtx): Promise<CommandResul
   const indent = (t: string): string => t.split("\n").map((l) => `  ${l}`).join("\n");
   const dir = transcriptsDir(ctx);
   const excerpts = ev.refs.flatMap((r) => {
-    const e = excerptFor(dir, ctx.repo, r);
+    const e = excerptFor(dir, ctx.repo, r, undefined, profileScrubber(ctx.loaded));
     return e === null ? [] : [`  ${r}: "${e}"`];
   });
   const lines = [
@@ -74,7 +75,7 @@ export async function reject(args: string[], ctx: EvolveCtx): Promise<CommandRes
   if (TERMINAL.includes(s.status)) return success(`Proposal ${id} is already ${s.status}; nothing to do.\nNext: sindri evolve proposals`, { id, status: s.status }, values.json === true);
   ctx.write((epoch) => {
     setStatus(ctx.db, id, "rejected", epoch, ctx.deps.now());
-    audit(ctx.db, ctx.deps, "reject", `${id}: ${reason}`, epoch);
+    audit(ctx.db, ctx.deps, "reject", `${id}: ${reason}`, epoch, profileScrubber(ctx.loaded));
   });
   fs.rmSync(stagedFile(ctx.deps, id), { force: true });
   return success(`Rejected ${id}. The same proposal won't be saved again.\nNext: sindri evolve proposals`, { id, status: "rejected" }, values.json === true);

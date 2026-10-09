@@ -8287,7 +8287,7 @@ git commit -m "feat: weekly sindri evolve job"
 - Create: `skills/reflect/SKILL.md`, `skills/correct/SKILL.md`, `docs/sindri/evolve.md`
 - Modify: `setup.sh` (`MANAGED_SKILLS`), `skills/_preamble.md` (skill table), `docs/sindri/README.md`, `AGENTS.md`, `.agents/rules/testing.md`, `planning/ERD.md`, `planning/ARCHITECTURE.md`, `docs/superpowers/specs/2026-10-07-sindri-design.md`
 
-- [ ] **Step 1: Write the two skills**
+- [x] **Step 1: Write the two skills**
 
 Each `SKILL.md` follows `.agents/rules/skills.md`: frontmatter, the preamble reference, capabilities named rather than provider tools, and the pstack attribution.
 
@@ -8381,7 +8381,7 @@ grep -rn "48 native" AGENTS.md skills/_preamble.md .agents/rules planning docs R
 
 Replace `48 native` with `50 native` in each hit, and `All 48 native skills are present` (in `.agents/rules/skills.md`) with `All 50 native skills are present`. Then run `scripts/sync-rules.sh`.
 
-- [ ] **Step 2: Write `docs/sindri/evolve.md` and update the other docs**
+- [x] **Step 2: Write `docs/sindri/evolve.md` and update the other docs**
 
 `docs/sindri/evolve.md`:
 
@@ -8617,7 +8617,7 @@ Spec edits, in `docs/superpowers/specs/2026-10-07-sindri-design.md`:
   and add `SCOPE`, `SECRET` and `EVOLVE` to the error-area list in the Output contract (if Plan 4's edit already added the first two, add only `EVOLVE`).
 - **§13.3**, row "Ported `reflect` / `correct` / `eval` + artifact registry (P5)": change the switch-on cell to "`sindri evolve init`; `sindri evolve check --changed`; `sindri evolve reflect --pr <n>` on each merged Sindri PR (the weekly job does it for the last 7 days); `sindri evolve weekly` (Mondays 07:30, launchd); then `sindri evolve publish` on a branch" and the evidence cell to "Registry lists every module; first reflect run recorded; staged proposals published as plan tasks that `sindri observe` lists; `evolve status` reports the merge rate".
 
-- [ ] **Step 3: Run the merge gate, one job at a time**
+- [x] **Step 3: Run the merge gate, one job at a time**
 
 Run each command after the previous one finishes:
 
@@ -8633,7 +8633,7 @@ grep -rnE "hxxp|joi@|/Users/[a-z]" sindri/tests/fixtures && echo "FOUND private 
 
 Expected: no type errors; 100% coverage; installer tests PASS; `sync-rules` exits 0; `SETUP_DRY_RUN_OK`; `NO_V8_IGNORE`; `NO_ANY`; `FIXTURES_CLEAN` (the committed hook-fire fixtures are synthetic: they use `/example/...` paths only).
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add skills/reflect skills/correct skills/_preamble.md setup.sh docs/sindri AGENTS.md .agents/rules planning docs/superpowers/specs/2026-10-07-sindri-design.md

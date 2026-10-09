@@ -5,6 +5,7 @@ import type { EvolveCtx } from "../ctx.js";
 import { loadRegistry, type Artifact } from "../registry.js";
 import { runSuite } from "../suites.js";
 import { checkAt } from "./check-at.js";
+import { profileScrubber } from "../../scope/commands.js";
 
 export type WithSuite = Artifact & { suite: NonNullable<Artifact["suite"]> };
 const hasSuite = (a: Artifact): a is WithSuite => a.suite !== null;
@@ -61,7 +62,7 @@ export async function check(args: string[], ctx: EvolveCtx): Promise<CommandResu
   for (const [i, g] of groups.entries()) {
     const ids = g.map((a) => a.id);
     ctx.deps.log(`running ${ids.join(", ")} (${i + 1} of ${groups.length})`);
-    const r = await runSuite(ctx.deps, ctx.io.process, ctx.repo, g[0]);
+    const r = await runSuite(ctx.deps, ctx.io.process, ctx.repo, g[0], profileScrubber(ctx.loaded));
     await ctx.writeRetry((epoch) => {
       for (const a of g) {
         ctx.db.prepare("INSERT INTO suite_runs (artifact_id, hash, head, dirty, ok, exit_code, ms, ts, epoch) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)")

@@ -45,7 +45,7 @@ export async function correctCommand(args: string[], ctx: EvolveCtx): Promise<Co
   const clusters = clusterCorrections(labeled.corrections);
   if (clusters.length === 0) {
     // Labeling finished cleanly and found nothing repeated: remember it. A cut-short or errored pass is not remembered, so it can be retried.
-    if (turns.length > 0 && !labeled.incomplete && labeled.labelErrors === 0) await ctx.writeRetry((epoch) => audit(ctx.db, ctx.deps, "correct", mark, epoch));
+    if (turns.length > 0 && !labeled.incomplete && labeled.labelErrors === 0) await ctx.writeRetry((epoch) => audit(ctx.db, ctx.deps, "correct", mark, epoch, profileScrubber(ctx.loaded)));
     const partial = labeled.incomplete ? [`Partial result: ${labeled.notes.join("; ")}`] : [];
     const next = labeled.incomplete ? BUDGET_NEXT : "sindri evolve correct --since 30d";
     return success(
@@ -66,7 +66,7 @@ export async function correctCommand(args: string[], ctx: EvolveCtx): Promise<Co
       const t = classifyTier(p, registry, extra);
       return { title: p.title, tier: t.tier, outcome: saveProposal(ctx.db, p, `correct:${key}`, t.tier, epoch, ctx.deps.now()) };
     });
-    if (!incomplete) audit(ctx.db, ctx.deps, "correct", mark, epoch);
+    if (!incomplete) audit(ctx.db, ctx.deps, "correct", mark, epoch, profileScrubber(ctx.loaded));
     return out;
   });
   const noun = (c: number, one: string, many: string): string => `${c} ${c === 1 ? one : many}`;

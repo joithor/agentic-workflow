@@ -9,6 +9,7 @@ import { buildProblem, readChannels } from "../channel.js";
 import type { EvolveCtx } from "../ctx.js";
 import { loadRegistry } from "../registry.js";
 import { runSuite } from "../suites.js";
+import { profileScrubber } from "../../scope/commands.js";
 
 // The suite needs the whole repo at the sha (docs, shell helpers, git), which the sindri/-only
 // channel build does not have. So it runs in a temporary detached worktree of the repo at the
@@ -69,7 +70,7 @@ export async function checkAt(sha: string, ids: string[], ctx: EvolveCtx, json: 
   if (!fs.existsSync(modules)) throw new SindriError("SND-EVOLVE-005", `the build at ${entry.dir} has no node_modules`, { fix: `scripts/install-sindri.sh --channel next --ref ${sha}` });
   ctx.deps.log(`running package:sindri at ${sha.slice(0, 8)}`);
   const suite = { id: artifact.id, suite: { argv: artifact.suite.argv, cwd: "sindri" } };
-  const r = await inWorktree(ctx, sha, modules, (base) => runSuite(ctx.deps, ctx.io.process, base, suite));
+  const r = await inWorktree(ctx, sha, modules, (base) => runSuite(ctx.deps, ctx.io.process, base, suite, profileScrubber(ctx.loaded)));
   await ctx.writeRetry((epoch) => {
     ctx.db.prepare("INSERT INTO suite_runs (artifact_id, hash, head, dirty, ok, exit_code, ms, ts, epoch) VALUES (?, ?, ?, 0, ?, ?, ?, ?, ?)")
       .run(artifact.id, `at:${sha}`, sha, r.ok ? 1 : 0, r.exitCode, r.ms, ctx.deps.now().toISOString(), epoch);

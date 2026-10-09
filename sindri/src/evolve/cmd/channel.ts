@@ -13,6 +13,7 @@ import { audit } from "../audit.js";
 import { canPromote, promote, readChannels, rollback, wrapperTarget } from "../channel.js";
 import { repoConfig, ringZeroRepo, withLockedWriteRetry } from "../ctx.js";
 import { isProtectedPath } from "../registry.js";
+import { profileScrubber } from "../../scope/commands.js";
 
 export interface ChannelIo {
   process: ProcessRunner;
@@ -72,7 +73,7 @@ const promoteSub: ChannelSub = async (args, ctx) => {
   await confirmed(ctx, `Promote ${short(sha)} to stable?\n${note}`, sha);
   const before = c.stable?.sha;
   await promote(ctx.deps, ctx.process, sha, ctx.deps.now());
-  await withLockedWriteRetry(ctx.deps, ctx.db, (epoch) => audit(ctx.db, ctx.deps, "promote", `${sha} (previous ${before ?? "none"})`, epoch));
+  await withLockedWriteRetry(ctx.deps, ctx.db, (epoch) => audit(ctx.db, ctx.deps, "promote", `${sha} (previous ${before ?? "none"})`, epoch, profileScrubber(ctx.loaded)));
   return success(`Promoted ${short(sha)} to stable. Roll back with: sindri channel rollback\nNext: sindri channel status`, { promoted: sha, previous: before ?? null }, values.json === true);
 };
 
@@ -82,7 +83,7 @@ const rollbackSub: ChannelSub = async (args, ctx) => {
   if (prev === null) throw new SindriError("SND-EVOLVE-005", "there is no previous stable build to roll back to");
   await confirmed(ctx, `Roll stable back to ${short(prev.sha)}?`, prev.sha);
   await rollback(ctx.deps, ctx.process, ctx.deps.now());
-  await withLockedWriteRetry(ctx.deps, ctx.db, (epoch) => audit(ctx.db, ctx.deps, "rollback", `to ${prev.sha}`, epoch));
+  await withLockedWriteRetry(ctx.deps, ctx.db, (epoch) => audit(ctx.db, ctx.deps, "rollback", `to ${prev.sha}`, epoch, profileScrubber(ctx.loaded)));
   return success(`Rolled back to ${short(prev.sha)}. There is no previous build now; to go forward, promote a build from next.\nNext: sindri channel status`, { rolledBackTo: prev.sha }, values.json === true);
 };
 
