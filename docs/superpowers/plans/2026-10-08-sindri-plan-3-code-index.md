@@ -6441,7 +6441,7 @@ sindri doctor; echo "doctor exit: $?"
 
 Expected, full switch-on: every `index setup` step `ok` or `done`; `index status` shows `structure ok, clones ok, deps ok, embeddings ok, graph ok`; `doctor exit: 0`. Degraded switch-on: `index setup` shows `fail` or `skip` for what is missing (each with its fix), `index status` shows `embeddings unavailable (…)` or `graph unavailable (…)` with the reason, and `doctor` warns for exactly those layers (exit 1); that is acceptable, and the PR evidence lists them under "Known gaps".
 
-- [ ] **Step 7: Prove it records, then post the evidence**
+- [x] **Step 7: Prove it records, then post the evidence**
 
 Make the first ordinary commit of Plan 4 work (or any real commit), then:
 
