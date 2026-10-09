@@ -108,7 +108,7 @@ export async function discover(
   const adapters = under("config/hooks/adapters/");
   if (adapters.length > 0) {
     const tests = ["config/hooks/tests/codex-adapter.test.sh", "config/hooks/tests/cursor-adapter.test.sh"].filter(has);
-    add("hook:adapters", "hook", [...adapters, ...tests], "config/hooks/adapters/", tests.length === 0 ? null : { argv: ["bash", "-c", tests.map((t) => `bash ${t}`).join(" && ")], cwd: "." });
+    add("hook:adapters", "hook", [...adapters, ...tests], "config/hooks/adapters/", tests.length === 0 ? null : { argv: ["bash", "-c", 'for t in "$@"; do bash "$t" || exit 1; done', "adapters", ...tests], cwd: "." });
   }
 
   for (const pkg of ["judge", "scorer", "mcp-bridge", "sindri"].filter((p) => has(`${p}/package.json`))) {
@@ -129,7 +129,7 @@ export async function discover(
   for (const rule of tracked.filter((p) => /^\.agents\/rules\/[^/]+\.md$/.test(p))) add(`rule:${path.basename(rule, ".md")}`, "rule", [rule], null, ruleSuite);
   for (const doc of tracked.filter((p) => /^planning\/[^/]+\.md$/.test(p))) add(`doc:${path.basename(doc, ".md").toLowerCase()}`, "doc", [doc], null, null);
 
-  for (const mod of [...new Set(under("mods/").filter((p) => p.split("/").length > 2).map((p) => p.split("/")[1]))]) add(`mod:${mod}`, "mod", under(`mods/${mod}/`), `mods/${mod}/`, { argv: ["claude", "plugin", "test", `mods/${mod}`], cwd: "." });
+  for (const mod of [...new Set(under("mods/").filter((p) => p.split("/").length > 2).map((p) => p.split("/")[1]))]) add(`mod:${mod}`, "mod", under(`mods/${mod}/`), `mods/${mod}/`, { argv: ["bash", "-c", 'claude plugin validate "$1" && claude plugin test "$1"', "mod", `mods/${mod}`], cwd: "." });
   if (has("EXTERNAL_PINS.env")) add("pack-pin:external", "pack-pin", ["EXTERNAL_PINS.env"], null, null);
 
   for (const p of prompts) out.push({ id: `prompt:${p.id}`, kind: "prompt", paths: [], root: null, hash: hashFiles(repoPath, [], p.text), protected: false, suite: null });

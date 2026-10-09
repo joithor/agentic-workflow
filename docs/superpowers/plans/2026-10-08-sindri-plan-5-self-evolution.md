@@ -1099,7 +1099,7 @@ git commit -m "feat: sindri artifact registry and evolve command shell"
   - `runSuite(deps, run, base, a: { id: string; suite: { argv: string[]; cwd: string } }): Promise<{ ok: boolean; exitCode: number; ms: number; tail: string }>` — under the heavy lock (`kind: suite:<id>`, waits at most 10 minutes), timeout 30 min; `base` is the directory `suite.cwd` is relative to; `tail` is the scrubbed last 20 lines of output.
   - `sindri evolve check [<artifact-id>...] [--changed] [--list] [--json]`. `--changed` picks artifacts with a suite and no passing `suite_runs` row for their current hash. Artifacts that share one suite command (every `rule:*` runs `scripts/sync-rules.sh --check`) run once and get one row each. Each row records `head` (the repo's `HEAD`) and `dirty` (uncommitted changes), and is bound to the artifact's content hash. `--list` prints what would run. A progress line goes through `deps.log` before each suite. Task 11 adds `--at <sha>`.
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 `sindri/tests/evolve-suites.test.ts`:
 
@@ -1247,12 +1247,12 @@ describe("sindri evolve check", () => {
 
 Trace: the registry for `FILES` is `hook:done-gate` (suite `bash config/lib/tests/done-gate.test.sh`), `package:judge`, `rule:a` and `rule:b` (both `scripts/sync-rules.sh --check`, the same key), `skill:review` (none). Groups run in registry order: done-gate, judge, rules. The handler fails any argv containing `bash` (only done-gate's). The second `--changed` run skips judge and the rules (passing rows for their current hashes) and reruns only done-gate, so `proc.calls` goes from 3 to 4.
 
-- [ ] **Step 2: Run the tests to verify they fail**
+- [x] **Step 2: Run the tests to verify they fail**
 
 Run: `cd sindri && npx vitest run tests/evolve-suites.test.ts tests/evolve-check.test.ts`
 Expected: FAIL with `Failed to load url ../src/evolve/suites.js`.
 
-- [ ] **Step 3: Implement**
+- [x] **Step 3: Implement**
 
 `sindri/src/evolve/suites.ts`:
 
@@ -1384,12 +1384,12 @@ Add one more test to `evolve-check.test.ts` for branch (c):
   });
 ```
 
-- [ ] **Step 4: Run the tests**
+- [x] **Step 4: Run the tests**
 
 Run: `cd sindri && npx vitest run && npm run typecheck && npm run test:coverage`
 Expected: all tests PASS; coverage 100% on the files this task touches.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add sindri/src/evolve sindri/tests

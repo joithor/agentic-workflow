@@ -61,7 +61,7 @@ describe("artifact registry (spec §7.7)", () => {
     expect(by["skill:ui-evidence"]).toMatchObject({ root: "skills/ui-evidence/", suite: { argv: ["npm", "test"], cwd: "skills/ui-evidence" } });
     expect(by["skill:review"]).toMatchObject({ root: "skills/review/", suite: null });
     expect(by["rule:testing"]).toMatchObject({ protected: true, suite: { argv: ["scripts/sync-rules.sh", "--check"], cwd: "." } });
-    expect(by["mod:aw-live"].suite).toEqual({ argv: ["claude", "plugin", "test", "mods/aw-live"], cwd: "." });
+    expect(by["mod:aw-live"].suite).toEqual({ argv: ["bash", "-c", 'claude plugin validate "$1" && claude plugin test "$1"', "mod", "mods/aw-live"], cwd: "." });
     expect(by["installer:providers-claude"]).toMatchObject({ protected: true, suite: { argv: ["bash", "providers/tests/install.test.sh"], cwd: "." } });
     expect(by["installer:setup"]).toMatchObject({ protected: true, suite: { argv: ["./setup.sh", "--providers", "claude,codex,cursor", "--dry-run"], cwd: "." } });
     expect(by["doc:architecture"]).toMatchObject({ suite: null, protected: false });
@@ -70,7 +70,7 @@ describe("artifact registry (spec §7.7)", () => {
     expect(by["doc:skills-preamble"].paths).toEqual(["skills/_design-preamble.md", "skills/_preamble.md"]);
     expect(by["skill:bootstrap"]).toMatchObject({ root: "bootstrap/", suite: null, protected: false, paths: ["bootstrap/SKILL.md"] });
     expect(by["hook:adapters"]).toMatchObject({
-      protected: true, root: "config/hooks/adapters/", suite: { argv: ["bash", "-c", "bash config/hooks/tests/codex-adapter.test.sh && bash config/hooks/tests/cursor-adapter.test.sh"], cwd: "." },
+      protected: true, root: "config/hooks/adapters/", suite: { argv: ["bash", "-c", 'for t in "$@"; do bash "$t" || exit 1; done', "adapters", "config/hooks/tests/codex-adapter.test.sh", "config/hooks/tests/cursor-adapter.test.sh"], cwd: "." },
       paths: ["config/hooks/adapters/codex.sh", "config/hooks/tests/codex-adapter.test.sh", "config/hooks/tests/cursor-adapter.test.sh"],
     });
     expect(by["installer:sindri"]).toMatchObject({

@@ -8,6 +8,8 @@ Generated from `sindri/src/errors.ts` by `cd sindri && npm run gen`. Do not edit
 | `SND-CLI-002` | Invalid arguments for this command. | Run `sindri help` and check the command's flags. |
 | `SND-CLI-900` | Unexpected internal error (a bug). | rerun with SINDRI_DEBUG=1 and report the output |
 | `SND-EVOLVE-001` | The toolkit repo couldn't be read as a git repository. | check the ring-0 repo's path in repos/&lt;name&gt;.yaml, then sindri profile approve |
+| `SND-EVOLVE-008` | No artifact in the registry has that id. | sindri evolve status lists the registered artifacts; sindri evolve init refreshes the registry |
+| `SND-EVOLVE-010` | The artifact registry is empty. | sindri evolve init |
 | `SND-INDEX-001` | The heavy-job lock is busy. | wait for the holder to finish; `sindri doctor` shows it |
 | `SND-INDEX-002` | The repo path is not a git repo. | check repos/&lt;name&gt;.yaml path, then sindri profile approve |
 | `SND-INDEX-003` | The index input is larger than index.maxTotalMB. | add generated or vendored paths to index.denyPaths, or raise index.maxTotalMB |

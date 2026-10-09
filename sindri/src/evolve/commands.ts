@@ -3,12 +3,13 @@ import { ledgerPath, openLedger } from "../ledger/db.js";
 import type { Command } from "../main.js";
 import { failure, fromError } from "../output.js";
 import { requireApprovedProfile } from "../profile/approve.js";
+import { check } from "./cmd/check.js";
 import { init } from "./cmd/registry.js";
 import { status } from "./cmd/status.js";
 import { ringZeroRepo, writers, type EvolveIo, type Sub } from "./ctx.js";
 
 // Later tasks add their subcommands here.
-export const SUBCOMMANDS: Record<string, Sub> = { init, status };
+export const SUBCOMMANDS: Record<string, Sub> = { check, init, status };
 
 export function evolveUsage(): string {
   return `Usage: sindri evolve ${Object.keys(SUBCOMMANDS).sort().join(" | ")}   (each takes --json)`;
