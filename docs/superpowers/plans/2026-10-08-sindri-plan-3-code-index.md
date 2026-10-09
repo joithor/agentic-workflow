@@ -6251,7 +6251,7 @@ From the merge on, every commit in this repo records shape signals against an in
 - Create: `config/launchd/com.agentic-workflow.sindri-index.plist`, `config/launchd/com.agentic-workflow.sindri-index-quick.plist`
 - Modify: `config/launchd/com.agentic-workflow.sindri-observe.plist` (Plan 2's; add `PATH`), `scripts/install-sindri.sh` (install the three jobs), `scripts/tests/install-sindri.test.sh`
 
-- [ ] **Step 1: Check the preconditions (builder, before writing anything)**
+- [x] **Step 1: Check the preconditions (builder, before writing anything)**
 
 ```bash
 for bin in git node curl; do command -v "$bin" >/dev/null || echo "MISSING (required): $bin"; done
@@ -6262,7 +6262,7 @@ curl -s -o /dev/null -w 'ollama: HTTP %{http_code}\n' --max-time 3 http://127.0.
 
 Expected: no `MISSING (required)` line; an `ollama: HTTP 200` line if the embeddings layer is going to be `ok`. Anything else is a known gap to record, not a blocker.
 
-- [ ] **Step 2: Write the failing test**
+- [x] **Step 2: Write the failing test**
 
 Append to `scripts/tests/install-sindri.test.sh` (and add it to the list of calls):
 
@@ -6286,12 +6286,12 @@ test_index_jobs() {
 }
 ```
 
-- [ ] **Step 3: Run it to verify it fails**
+- [x] **Step 3: Run it to verify it fails**
 
 Run: `bash scripts/tests/install-sindri.test.sh`
 Expected: the earlier tests PASS, then `FAIL: …/com.agentic-workflow.sindri-observe.plist has no PATH …` (Plan 2's plist has none yet).
 
-- [ ] **Step 4: Implement**
+- [x] **Step 4: Implement**
 
 `config/launchd/com.agentic-workflow.sindri-index.plist`:
 
@@ -6415,7 +6415,7 @@ and replace the dry-run line `echo "  [dry-run] would install launchd job com.ag
   done
 ```
 
-- [ ] **Step 5: Run the tests and commit**
+- [x] **Step 5: Run the tests and commit**
 
 Run: `bash scripts/tests/install-sindri.test.sh`
 Expected: every test PASS, including `test_index_jobs` and Plan 2's `test_observe_job_is_hourly`.

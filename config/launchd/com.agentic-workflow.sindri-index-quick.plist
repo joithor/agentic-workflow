@@ -3,11 +3,13 @@
 <plist version="1.0">
 <dict>
   <key>Label</key>
-  <string>com.agentic-workflow.sindri-observe</string>
+  <string>com.agentic-workflow.sindri-index-quick</string>
   <key>ProgramArguments</key>
   <array>
     <string>__BIN__/sindri</string>
-    <string>observe</string>
+    <string>index</string>
+    <string>build</string>
+    <string>--quick</string>
   </array>
   <key>EnvironmentVariables</key>
   <dict>
@@ -17,8 +19,8 @@
   <key>StartInterval</key>
   <integer>3600</integer>
   <key>StandardOutPath</key>
-  <string>__HOME__/.agentic-workflow/sindri/observe-launchd.log</string>
+  <string>__HOME__/.agentic-workflow/sindri/index-launchd.log</string>
   <key>StandardErrorPath</key>
-  <string>__HOME__/.agentic-workflow/sindri/observe-launchd.log</string>
+  <string>__HOME__/.agentic-workflow/sindri/index-launchd.log</string>
 </dict>
 </plist>

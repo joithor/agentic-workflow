@@ -3,22 +3,28 @@
 <plist version="1.0">
 <dict>
   <key>Label</key>
-  <string>com.agentic-workflow.sindri-observe</string>
+  <string>com.agentic-workflow.sindri-index</string>
   <key>ProgramArguments</key>
   <array>
     <string>__BIN__/sindri</string>
-    <string>observe</string>
+    <string>index</string>
+    <string>build</string>
   </array>
   <key>EnvironmentVariables</key>
   <dict>
     <key>PATH</key>
     <string>__BIN__:__HOME__/.local/bin:/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin</string>
   </dict>
-  <key>StartInterval</key>
-  <integer>3600</integer>
+  <key>StartCalendarInterval</key>
+  <dict>
+    <key>Hour</key>
+    <integer>3</integer>
+    <key>Minute</key>
+    <integer>15</integer>
+  </dict>
   <key>StandardOutPath</key>
-  <string>__HOME__/.agentic-workflow/sindri/observe-launchd.log</string>
+  <string>__HOME__/.agentic-workflow/sindri/index-launchd.log</string>
   <key>StandardErrorPath</key>
-  <string>__HOME__/.agentic-workflow/sindri/observe-launchd.log</string>
+  <string>__HOME__/.agentic-workflow/sindri/index-launchd.log</string>
 </dict>
 </plist>
