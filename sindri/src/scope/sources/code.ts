@@ -19,7 +19,7 @@ export function codeSource(deps: Deps, repos: string[], o: { allowAsOf?: boolean
         const db = openIndexReadOnly(indexPath(deps, repo));
         if (db === null) continue;
         let picked: SymbolRow[];
-        let bodies: Map<number, string>;
+        let withBody: { sym: SymbolRow; body: string }[];
         try {
           const syms = allSymbols(db);
           const score = (s: SymbolRow): number => words(s.name).filter((w) => q.keywords.some((k) => k.startsWith(w) || w.startsWith(k))).length;
@@ -29,14 +29,14 @@ export function codeSource(deps: Deps, repos: string[], o: { allowAsOf?: boolean
           // SymbolRow carries no body (Plan 3 keeps bodies for embeddings), so read only the picked ones here.
           const bodyOf = db.prepare("SELECT body FROM symbols WHERE id = ?");
           // A stale index row can lack its body: skip it rather than throw.
-          bodies = new Map(picked.flatMap((s) => (bodyOf.all(s.id) as { body: string }[]).map((r): [number, string] => [s.id, r.body])));
+          withBody = picked.flatMap((sym) => (bodyOf.all(sym.id) as { body: string }[]).slice(0, 1).map((r) => ({ sym, body: r.body })));
         } finally {
           db.close();
         }
-        for (const s of picked.filter((x) => bodies.has(x.id)).sort((a, b) => a.file.localeCompare(b.file) || a.startLine - b.startLine)) {
+        for (const { sym: s, body } of withBody.sort((a, b) => a.sym.file.localeCompare(b.sym.file) || a.sym.startLine - b.sym.startLine)) {
           out.push({
             ref: `code:${repo}/${s.file}:${s.startLine}`, kind: "code", title: clean(`${s.name}${s.signature}`, o.scrubber),
-            text: clean((bodies.get(s.id) as string).slice(0, 600), o.scrubber), author: null, createdAt: null, trust: "untrusted",
+            text: clean(body.slice(0, 600), o.scrubber), author: null, createdAt: null, trust: "untrusted",
           });
         }
       }

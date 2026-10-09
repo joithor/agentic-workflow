@@ -47,7 +47,7 @@ export function keywordHits(text: string, keywords: string[]): number {
 // and remote image URLs. Remote links keep only their text. Control characters
 // go too (a terminal escape in a Linear title must not reach a terminal).
 // Invisible characters are written as \u escapes so they stay visible in review.
-const INVISIBLE = /[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F\u200B-\u200F\u202A-\u202E\u2060-\u2064\u2066-\u2069\uFEFF]/g;
+const INVISIBLE = /[\u00AD\u061C\u180E\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F\u200B-\u200F\u202A-\u202E\u2060-\u2064\u2066-\u2069\uFEFF\u{E0000}-\u{E007F}]/gu;
 const REMOTE_DEF = /^[ \t]{0,3}\[([^\]\n]+)\]:[ \t]*<?https?:\/\/[^\n]*\n?/gim;
 const TITLE = String.raw`(?:\s+(?:"[^"]*"|'[^']*'))?`;
 const REMOTE_IMAGE = new RegExp(String.raw`!\[([^\]]*)\]\(\s*<?https?:\/\/[^)\s>]*>?${TITLE}\s*\)`, "gi");
