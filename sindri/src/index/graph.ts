@@ -28,8 +28,15 @@ export const SANDBOX_EXEC = "/usr/bin/sandbox-exec";
 export const BWRAP = ["/usr/bin/bwrap", "/bin/bwrap"];
 
 // graphify's private temp and cache dir, inside the snapshot (the only writable path): uv, pip
-// and Python keep code in ~/.cache and the temp dirs that unsandboxed tools later run.
+// and Python keep code in ~/.cache and the temp dirs that unsandboxed tools later run. Each run
+// makes a fresh one with an unguessable name (mkdtemp of `.sindri-tmp-`), and the snapshot never
+// holds tracked files under it or under graphify-out/, so a repo can't pre-seed either.
 export const PRIVATE_DIR = ".sindri-tmp";
+
+export function isReservedSnapshotPath(rel: string): boolean {
+  const first = rel.split("/")[0];
+  return first === "graphify-out" || first.startsWith(PRIVATE_DIR);
+}
 export const privateEnv = (dir: string): Record<string, string> => ({
   TMPDIR: dir,
   XDG_CACHE_HOME: `${dir}/cache`,
@@ -171,7 +178,8 @@ export function parseGraphJson(text: string): GraphData {
 }
 
 // graphify writes absolute paths into the temp snapshot, which is deleted after the build:
-// store them relative to the snapshot root; a path outside it, or in the private dir, is null.
+// store them relative to the snapshot root; a path outside it, in the private dir or in
+// graphify-out/, is null.
 function inSnapshot(file: string, roots: string[]): string | null {
   let rel = file;
   for (const root of roots) {
@@ -182,7 +190,7 @@ function inSnapshot(file: string, roots: string[]): string | null {
   }
   if (rel === file && path.isAbsolute(file)) return null;
   const norm = path.posix.normalize(rel.replace(/^\/+/, ""));
-  return norm === "." || norm === ".." || norm.startsWith("../") || norm === PRIVATE_DIR || norm.startsWith(`${PRIVATE_DIR}/`) ? null : norm;
+  return norm === "." || norm === ".." || norm.startsWith("../") || isReservedSnapshotPath(norm) ? null : norm;
 }
 
 const unusable = (): SindriError => new SindriError("SND-INDEX-008", "graphify wrote an unusable graph.json");
@@ -237,8 +245,8 @@ export function makeGraphifyProvider(o: {
       if (argv === null) {
         throw new SindriError("SND-INDEX-007", "no network sandbox available (sandbox-exec on macOS, bwrap on Linux); graphify never runs unsandboxed");
       }
-      const priv = path.join(real, PRIVATE_DIR);
-      fs.mkdirSync(path.join(priv, "cache"), { recursive: true, mode: 0o700 });
+      const priv = fs.mkdtempSync(path.join(real, `${PRIVATE_DIR}-`));
+      fs.mkdirSync(path.join(priv, "cache"), { mode: 0o700 });
       const r = await o.runner.run(argv, { cwd: snapshotDir, timeoutMs: 600_000, cleanEnv: true, env: privateEnv(priv) });
       if (r.code !== 0) {
         const first = scrubber.scrub(r.stderr.split("\n")[0]).text;

@@ -4,7 +4,7 @@ import path from "node:path";
 import { describe, expect, it } from "vitest";
 
 import { SindriError } from "../src/errors.js";
-import { makeGraphifyProvider, parseGraphJson, pathKind, PRIVATE_DIR, privateEnv, sandboxArgv, type PathKind } from "../src/index/graph.js";
+import { isReservedSnapshotPath, makeGraphifyProvider, parseGraphJson, pathKind, PRIVATE_DIR, privateEnv, sandboxArgv, type PathKind } from "../src/index/graph.js";
 import type { ProcessRunner } from "../src/index/io.js";
 import { tempDir } from "./helpers.js";
 
@@ -132,6 +132,7 @@ describe("sandboxArgv (Review Focus 4)", () => {
     expect([pathKind(dir), pathKind(path.join(dir, "f")), pathKind(path.join(dir, "l")), pathKind(path.join(dir, "missing"))]).toEqual(["dir", "file", "file", null]);
     expect(privateEnv("/s/.sindri-tmp")).toEqual({ TMPDIR: "/s/.sindri-tmp", XDG_CACHE_HOME: "/s/.sindri-tmp/cache", UV_CACHE_DIR: "/s/.sindri-tmp/cache/uv", PYTHONPYCACHEPREFIX: "/s/.sindri-tmp/pycache" });
     expect(PRIVATE_DIR).toBe(".sindri-tmp");
+    expect(["graphify-out/a.md", "graphify-out", ".sindri-tmp/x.py", ".sindri-tmp-q/x.md", "src/a.ts", "src/graphify-out/a.ts", ".sindri-tmpx.md"].map(isReservedSnapshotPath)).toEqual([true, true, true, true, false, false, true]);
   });
 });
 
@@ -168,15 +169,28 @@ describe("graphify provider", () => {
     expect(argv[2]).toContain(`(subpath "${fs.realpathSync(snap)}")`);
     expect(argv.slice(3)).toEqual(["graphify", "extract", snap, "--code-only", "--no-viz"]);
     expect(r.opts[0]).toMatchObject({ cwd: snap, cleanEnv: true });
-    // Temp and cache dirs: a private dir inside the snapshot, made before the run.
-    const priv = path.join(fs.realpathSync(snap), ".sindri-tmp");
+    // Temp and cache dirs: a fresh private dir with an unguessable name inside the snapshot, made before the run.
+    const priv = r.opts[0].env?.TMPDIR ?? "";
+    expect(path.dirname(priv)).toBe(fs.realpathSync(snap));
+    expect(path.basename(priv)).toMatch(/^\.sindri-tmp-.{6}$/);
     expect(r.opts[0].env).toEqual(privateEnv(priv));
-    expect(fs.statSync(path.join(priv, "cache")).isDirectory()).toBe(true);
+    expect(fs.readdirSync(priv)).toEqual(["cache"]);
     expect(argv[2]).not.toContain("/private/tmp");
     expect(p.version).toBe("1.2.3");
   });
 
-  it("refuses a graph.json that is a symlink, a FIFO or not a file, or under a symlinked graphify-out", async () => {
+  it("never reuses a pre-seeded private dir: repo files named like it are not graphify's temp or cache", async () => {
+    const snap = tempDir();
+    fs.mkdirSync(path.join(snap, ".sindri-tmp", "cache"), { recursive: true });
+    fs.writeFileSync(path.join(snap, ".sindri-tmp", "cache", "x.py"), "planted");
+    const r = runner(0, true);
+    await make(r, "darwin", () => true).build(snap);
+    const priv = r.opts[0].env?.TMPDIR ?? "";
+    expect(priv).not.toBe(path.join(fs.realpathSync(snap), ".sindri-tmp"));
+    expect(fs.readdirSync(path.join(priv, "cache"))).toEqual([]);
+  });
+
+    it("refuses a graph.json that is a symlink, a FIFO or not a file, or under a symlinked graphify-out", async () => {
     const secret = path.join(tempDir(), "hidden.json");
     fs.writeFileSync(secret, JSON.stringify({ nodes: [{ id: "leak" }] }));
     const plant = (how: (out: string) => void): ProcessRunner => ({
@@ -196,10 +210,10 @@ describe("graphify provider", () => {
   });
 
   it("stores node files relative to the snapshot root; a path outside it is null", async () => {
-    const files = (snap: string) => [`${snap}/src/a.ts`, `${fs.realpathSync(snap)}/src/b.ts`, "docs/r.md", "/src/c.ts", "/etc/passwd", "../up.ts", snap, `${snap}/../x.ts`, `${snap}/.sindri-tmp/cache/x.py`, ".sindri-tmp"];
+    const files = (snap: string) => [`${snap}/src/a.ts`, `${fs.realpathSync(snap)}/src/b.ts`, "docs/r.md", "/src/c.ts", "/etc/passwd", "../up.ts", snap, `${snap}/../x.ts`, `${snap}/.sindri-tmp/cache/x.py`, ".sindri-tmp", `${snap}/.sindri-tmp-a1b2c3/x.py`, "graphify-out/graph.md"];
     const r = runner(0, (snap) => JSON.stringify({ nodes: files(snap).map((f, i) => ({ id: i, source_file: f })) }));
     const g = await make(r, "darwin", () => true).build(tempDir());
-    expect(g.nodes.map((n) => n.file)).toEqual(["src/a.ts", "src/b.ts", "docs/r.md", null, null, null, null, null, null, null]);
+    expect(g.nodes.map((n) => n.file)).toEqual(["src/a.ts", "src/b.ts", "docs/r.md", null, null, null, null, null, null, null, null, null]);
   });
 
   it("reads the recorded fixture through the provider, with paths relative to the snapshot", async () => {

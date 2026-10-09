@@ -1,3 +1,4 @@
+import { execFileSync } from "node:child_process";
 import fs from "node:fs";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
@@ -118,5 +119,14 @@ describe("shape spool", () => {
     fs.renameSync(file, path.join(spoolDir(d), "shape-01k0000000000000000000000e.json"));
     const db = openMemoryLedger();
     expect(ingestSpool(db, d, bumpEpoch(db))).toEqual({ runs: 0, signals: 0, quarantined: 1 });
+  });
+
+  it("quarantines a FIFO named like a run without blocking (observe holds the tick lock while it reads)", () => {
+    const d = makeDeps();
+    writeShapeRun(d, run());
+    execFileSync("mkfifo", [path.join(spoolDir(d), "shape-01k0000000000000000000000f.json")]);
+    const db = openMemoryLedger();
+    expect(ingestSpool(db, d, bumpEpoch(db))).toEqual({ runs: 1, signals: 1, quarantined: 1 });
+    expect(fs.readdirSync(path.join(spoolDir(d), "quarantine"))).toEqual(["shape-01k0000000000000000000000f.json"]);
   });
 });

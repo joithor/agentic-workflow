@@ -13,7 +13,7 @@ import { type IndexDb, indexPath, type Layer, type LayerStatus, openIndex } from
 import { EMBED_BATCH, embeddingText, encodeVec, type Embedder } from "./embed.js";
 import { readManifestDeps } from "./deps-layer.js";
 import { inventory, isGraphInput, isSourcePath, type IndexedFile } from "./files.js";
-import type { GraphProvider } from "./graph.js";
+import { isReservedSnapshotPath, type GraphProvider } from "./graph.js";
 import { matchesAny } from "./globs.js";
 import { withHeavyLock } from "./heavy-lock.js";
 import { refreshMirror } from "./mirror.js";
@@ -165,7 +165,8 @@ async function graphLayer(
     // A snapshot: graphify writes graphify-out/ into the directory it reads, so it never runs
     // on the working tree (spec amendment 3).
     snap = fs.mkdtempSync(path.join(os.tmpdir(), "sindri-graph-"));
-    for (const f of inv.files) {
+    // Never graphify's own dirs: a tracked file there would seed its temp/cache or output.
+    for (const f of inv.files.filter((x) => !isReservedSnapshotPath(x.path))) {
       fs.mkdirSync(path.dirname(path.join(snap, f.path)), { recursive: true });
       fs.writeFileSync(path.join(snap, f.path), f.text);
     }

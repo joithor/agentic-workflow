@@ -75,7 +75,9 @@ export function writeShapeRun(deps: Deps, run: ShapeRun): string {
 function readRun(file: string): z.infer<typeof RunSchema> | null {
   let text: string | null = null;
   try {
-    const fd = fs.openSync(file, fs.constants.O_RDONLY | fs.constants.O_NOFOLLOW);
+    // O_NONBLOCK: opening a FIFO named like a run doesn't wait for a writer (observe reads the
+    // spool under the tick lock); fstat then refuses anything but a regular file.
+    const fd = fs.openSync(file, fs.constants.O_RDONLY | fs.constants.O_NOFOLLOW | fs.constants.O_NONBLOCK);
     try {
       const st = fs.fstatSync(fd);
       if (st.isFile() && st.size <= MAX_BYTES) text = fs.readFileSync(fd, "utf8");

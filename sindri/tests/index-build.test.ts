@@ -524,13 +524,15 @@ function fakeGraph(fail = false): GraphProvider & { snapshots: string[][] } {
 
 describe("graph layer", () => {
   it("runs on a snapshot of source and docs only, when the inputs changed, retries after a failure, and degrades", async () => {
-    const root = gitRepo({ ...FILES, "docs/readme.md": "# r\n", "data.sqlite": "x" });
+    // Tracked files under graphify's own names never reach the snapshot: they'd seed its temp/cache or output dir.
+    const root = gitRepo({ ...FILES, "docs/readme.md": "# r\n", "data.sqlite": "x", ".sindri-tmp/cache/x.md": "planted", "graphify-out/notes.md": "planted" });
     const d = makeDeps();
     const p = profileFor(root);
     const g = fakeGraph();
     const first = await buildIndex(d, p, "r", { full: false }, { embedder: null, graph: g });
     expect(first.layers.graph).toEqual({ status: "ok", detail: "graphify 9.9, 1 nodes, 1 edges" });
     expect(g.snapshots[0]).toEqual(expect.arrayContaining(["docs/readme.md", "src/a.ts"]));
+    expect(g.snapshots[0].filter((f) => f.startsWith(".sindri-tmp") || f.startsWith("graphify-out"))).toEqual([]);
     expect(g.snapshots[0]).not.toContain(".env.local.ts");
     expect(g.snapshots[0]).not.toContain("data.sqlite");
     const db = openIndexReadOnly(indexPath(d, "r"));
