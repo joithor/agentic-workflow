@@ -1227,7 +1227,7 @@ git commit -m "feat: sindri TypeScript structure parser for the code index"
   - `estimateJaccard(a: Uint32Array, b: Uint32Array): number`; `jaccard(a: Set<string>, b: Set<string>): number` (exact).
   - `encodeSig(sig): Buffer` / `decodeSig(buf): Uint32Array` for SQLite blobs.
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 `sindri/tests/minhash.test.ts`:
 
@@ -1274,12 +1274,12 @@ describe("minhash", () => {
 });
 ```
 
-- [ ] **Step 2: Run the tests to verify they fail**
+- [x] **Step 2: Run the tests to verify they fail**
 
 Run: `cd sindri && npx vitest run tests/minhash.test.ts`
 Expected: FAIL with `Failed to load url ../src/index/minhash.js`.
 
-- [ ] **Step 3: Implement**
+- [x] **Step 3: Implement**
 
 `sindri/src/index/minhash.ts`:
 
@@ -1351,12 +1351,12 @@ export function decodeSig(buf: Buffer): Uint32Array {
 }
 ```
 
-- [ ] **Step 4: Run the tests**
+- [x] **Step 4: Run the tests**
 
 Run: `cd sindri && npx vitest run && npm run typecheck && npm run test:coverage`
 Expected: all tests PASS; 100% coverage.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add sindri/src/index/minhash.ts sindri/tests/minhash.test.ts
