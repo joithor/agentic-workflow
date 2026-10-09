@@ -121,7 +121,7 @@ export async function promote(deps: Deps, run: ProcessRunner, sha: string, now: 
   return state;
 }
 
-// The build we roll back from becomes the new `previous`, so a second rollback goes forward again.
+// The build we roll back from is not kept as `previous`: a second rollback refuses, and going forward again needs promote.
 export async function rollback(deps: Deps, run: ProcessRunner, now: Date): Promise<ChannelState> {
   const c = readChannels(deps);
   const stable = c.stable;
@@ -129,7 +129,7 @@ export async function rollback(deps: Deps, run: ProcessRunner, now: Date): Promi
   const prev = stable.previous;
   await ensureRunnable(deps, run, prev);
   writeWrapper(deps, cliOf(prev));
-  const state: ChannelState = { ...c, stable: { ...prev, installedAt: now.toISOString(), previous: plain(stable) } };
+  const state: ChannelState = { ...c, stable: { ...prev, installedAt: now.toISOString(), previous: null } };
   writeChannels(deps, state);
   return state;
 }

@@ -127,9 +127,11 @@ describe("promote and rollback", () => {
     expect(readChannels(d)).toEqual(after);
     expect(wrapperTarget(d)).toBe(path.join(dirB, "dist", "cli.js"));
     const back = await rollback(d, smoke, now);
-    expect(back.stable).toEqual({ sha: A, dir: dirA, installedAt: now.toISOString(), previous: entry(B, dirB, now.toISOString()) });
+    expect(back.stable).toEqual({ sha: A, dir: dirA, installedAt: now.toISOString(), previous: null });
     expect(wrapperTarget(d)).toBe(path.join(dirA, "dist", "cli.js"));
-    expect((await rollback(d, smoke, now)).stable?.sha).toBe(B);
+    // The build we rolled back from is not remembered: a second rollback refuses, going forward needs promote.
+    await expect(rollback(d, smoke, now)).rejects.toThrow(/no previous stable build/);
+    expect(readChannels(d).stable?.sha).toBe(A);
   });
 
   it("promotes onto an empty stable", async () => {

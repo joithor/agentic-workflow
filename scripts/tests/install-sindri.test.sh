@@ -183,6 +183,8 @@ test_nudge_hook_per_provider() {
   echo "PASS: test_nudge_hook_per_provider"
 }
 
+mode_of() { stat -c '%a' "$1" 2>/dev/null || stat -f '%Lp' "$1"; }
+
 # A scratch source repo with an origin: two merged commits on main and one unmerged commit on a branch.
 make_scratch_repo() {
   local work="$TMP/src" origin="$TMP/origin.git"
@@ -227,7 +229,7 @@ test_channel_dry_run_writes_nothing() {
 test_channel_refuses_unmerged_ref() {
   make_scratch_repo
   if out="$(channel_install next "$UNMERGED" 2>&1)"; then echo "FAIL: an unmerged ref was installed"; exit 1; fi
-  grep -q "is not an ancestor of origin/main" <<<"$out" || { echo "FAIL: wrong refusal: $out"; exit 1; }
+  grep -q "is not an ancestor of refs/remotes/origin/main" <<<"$out" || { echo "FAIL: wrong refusal: $out"; exit 1; }
   [ ! -e "$TMP/state/sindri/channels/next/$UNMERGED" ] || { echo "FAIL: build dir exists"; exit 1; }
   echo "PASS: test_channel_refuses_unmerged_ref"
 }
@@ -235,7 +237,7 @@ test_channel_refuses_unmerged_ref() {
 test_channel_install_writes_wrapper_and_state() {
   make_scratch_repo
   channel_install next "$MERGED2" > /dev/null
-  [ "$(stat -f '%Lp' "$TMP/state/sindri" 2>/dev/null || stat -c '%a' "$TMP/state/sindri")" = "700" ] || { echo "FAIL: channel state dir is not 0700"; exit 1; }
+  [ "$(mode_of "$TMP/state/sindri")" = "700" ] || { echo "FAIL: channel state dir is not 0700"; exit 1; }
   [ "$("$TMP/bin/sindri-next" hi)" = "channel-ok hi" ] || { echo "FAIL: sindri-next did not run the build"; exit 1; }
   node -e 'const c = JSON.parse(require("node:fs").readFileSync(process.argv[1], "utf8")); if (c.next.sha !== process.argv[2] || c.stable !== null) process.exit(1);' "$TMP/state/sindri/channels.json" "$MERGED2" || { echo "FAIL: channels.json wrong"; exit 1; }
   if out="$(channel_install next "$MERGED2" 2>&1)"; then echo "FAIL: reinstall over an existing build was allowed"; exit 1; fi
@@ -243,13 +245,21 @@ test_channel_install_writes_wrapper_and_state() {
   echo "PASS: test_channel_install_writes_wrapper_and_state"
 }
 
-test_channel_stable_remembers_previous() {
+test_channel_stable_bootstraps_once() {
   make_scratch_repo
   channel_install stable "$MERGED1" > /dev/null
-  channel_install stable "$MERGED2" > /dev/null
-  node -e 'const c = JSON.parse(require("node:fs").readFileSync(process.argv[1], "utf8")); if (c.stable.sha !== process.argv[2] || c.stable.previous.sha !== process.argv[3]) process.exit(1);' "$TMP/state/sindri/channels.json" "$MERGED2" "$MERGED1" || { echo "FAIL: previous not recorded"; exit 1; }
   [ "$("$TMP/bin/sindri" yo)" = "channel-ok yo" ] || { echo "FAIL: stable wrapper broken"; exit 1; }
-  echo "PASS: test_channel_stable_remembers_previous"
+  local before out
+  before="$(cat "$TMP/state/sindri/channels.json")"
+  if out="$(channel_install stable "$MERGED2" 2>&1)"; then echo "FAIL: --channel stable replaced an existing stable"; exit 1; fi
+  grep -q "sindri channel promote" <<<"$out" || { echo "FAIL: refusal does not name sindri channel promote: $out"; exit 1; }
+  [ "$(cat "$TMP/state/sindri/channels.json")" = "$before" ] || { echo "FAIL: channels.json changed"; exit 1; }
+  [ ! -e "$TMP/state/sindri/channels/stable/$MERGED2" ] || { echo "FAIL: a second stable build was made"; exit 1; }
+  # A dry run refuses too.
+  if AW_DRY_RUN=1 channel_install stable "$MERGED2" > /dev/null 2>&1; then echo "FAIL: dry run accepted a second stable"; exit 1; fi
+  # next is unaffected.
+  channel_install next "$MERGED2" > /dev/null || { echo "FAIL: next refused with a stable present"; exit 1; }
+  echo "PASS: test_channel_stable_bootstraps_once"
 }
 
 test_channel_wrapper_quotes_paths() {
@@ -259,11 +269,104 @@ test_channel_wrapper_quotes_paths() {
   echo "PASS: test_channel_wrapper_quotes_paths"
 }
 
+# Runs the installer fully sandboxed (dry run, scratch HOME and state); sets RUN_RC and RUN_OUT.
+sandboxed() {
+  RUN_RC=0
+  RUN_OUT="$(HOME="$TMP/sandbox-home" AW_DRY_RUN=1 AW_SKIP_BUILD=1 AW_SKIP_LAUNCHD=1 AW_STATE_DIR="$TMP/sandbox-state" CLAUDE_LOCAL_BIN="$TMP/sandbox-bin" bash "$ROOT/scripts/install-sindri.sh" "$@" 2>&1)" || RUN_RC=$?
+}
+
 test_channel_rejects_bad_arguments() {
-  if bash "$ROOT/scripts/install-sindri.sh" --channel nope 2>/dev/null; then echo "FAIL: --channel nope accepted"; exit 1; fi
-  if bash "$ROOT/scripts/install-sindri.sh" --ref abc 2>/dev/null; then echo "FAIL: --ref without --channel accepted"; exit 1; fi
-  if bash "$ROOT/scripts/install-sindri.sh" --bogus 2>/dev/null; then echo "FAIL: unknown option accepted"; exit 1; fi
+  mkdir -p "$TMP/sandbox-home"
+  local args msg
+  for args in "--bogus" "--channel" "--channel next --ref" "--channel next --bogus"; do
+    # shellcheck disable=SC2086
+    sandboxed $args
+    [ "$RUN_RC" = 1 ] || { echo "FAIL: '$args' exited $RUN_RC, want 1"; exit 1; }
+    grep -q "usage: install-sindri.sh" <<<"$RUN_OUT" || { echo "FAIL: '$args' printed no usage: $RUN_OUT"; exit 1; }
+  done
+  sandboxed --channel nope
+  [ "$RUN_RC" = 1 ] && grep -q "must be stable or next" <<<"$RUN_OUT" || { echo "FAIL: --channel nope: $RUN_RC $RUN_OUT"; exit 1; }
+  sandboxed --ref abc
+  [ "$RUN_RC" = 1 ] && grep -q "only makes sense with --channel" <<<"$RUN_OUT" || { echo "FAIL: --ref alone: $RUN_RC $RUN_OUT"; exit 1; }
+  sandboxed --hook-only --channel next
+  [ "$RUN_RC" = 1 ] && grep -q "usage: install-sindri.sh" <<<"$RUN_OUT" || { echo "FAIL: --hook-only --channel: $RUN_RC $RUN_OUT"; exit 1; }
+  for msg in "--provider codex" "--provider=codex"; do
+    # shellcheck disable=SC2086
+    sandboxed --channel next $msg
+    [ "$RUN_RC" = 1 ] && grep -q "provider" <<<"$RUN_OUT" || { echo "FAIL: --channel with $msg: $RUN_RC $RUN_OUT"; exit 1; }
+  done
+  [ ! -e "$TMP/sandbox-bin" ] && [ ! -e "$TMP/sandbox-state" ] || { echo "FAIL: a rejected invocation wrote something"; exit 1; }
   echo "PASS: test_channel_rejects_bad_arguments"
+}
+
+test_channel_ref_must_be_in_remote_tracking_main() {
+  make_scratch_repo
+  local out
+  # A local tag named origin/main, on the unmerged commit, must not stand in for the remote-tracking ref.
+  git -C "$SRC" tag origin/main "$UNMERGED"
+  if out="$(channel_install next "$UNMERGED" 2>&1)"; then echo "FAIL: a tag named origin/main bypassed the merged-only check"; exit 1; fi
+  grep -q "is not an ancestor of refs/remotes/origin/main" <<<"$out" || { echo "FAIL: wrong refusal: $out"; exit 1; }
+  [ ! -e "$TMP/state/sindri/channels/next/$UNMERGED" ] || { echo "FAIL: build dir exists"; exit 1; }
+  git -C "$SRC" tag -d origin/main > /dev/null
+  # Same for a local branch named origin/main.
+  git -C "$SRC" branch origin/main "$UNMERGED"
+  if out="$(channel_install next "$UNMERGED" 2>&1)"; then echo "FAIL: a branch named origin/main bypassed the check"; exit 1; fi
+  git -C "$SRC" branch -q -D origin/main
+  # With no remote-tracking ref at all, even a merged sha is refused.
+  git -C "$SRC" update-ref -d refs/remotes/origin/main
+  if out="$(channel_install next "$MERGED2" 2>&1)"; then echo "FAIL: installed with no refs/remotes/origin/main"; exit 1; fi
+  grep -q "no refs/remotes/origin/main" <<<"$out" || { echo "FAIL: wrong refusal: $out"; exit 1; }
+  echo "PASS: test_channel_ref_must_be_in_remote_tracking_main"
+}
+
+test_channel_failed_build_does_not_block_a_retry() {
+  make_scratch_repo
+  local out
+  if out="$(AW_SINDRI_SRC="$SRC" AW_SINDRI_BUILD_CMD='exit 7' AW_SKIP_LAUNCHD=1 AW_STATE_DIR="$TMP/state" CLAUDE_LOCAL_BIN="$TMP/bin" bash "$ROOT/scripts/install-sindri.sh" --channel next --ref "$MERGED2" 2>&1)"; then echo "FAIL: a failing build was accepted"; exit 1; fi
+  [ ! -e "$TMP/state/sindri/channels/next/$MERGED2" ] || { echo "FAIL: the failed build left a directory behind"; exit 1; }
+  [ ! -e "$TMP/bin/sindri-next" ] && [ ! -e "$TMP/state/sindri/channels.json" ] || { echo "FAIL: the failed build wrote the wrapper or state"; exit 1; }
+  channel_install next "$MERGED2" > /dev/null || { echo "FAIL: the retry was refused"; exit 1; }
+  [ "$("$TMP/bin/sindri-next" again)" = "channel-ok again" ] || { echo "FAIL: retry did not install"; exit 1; }
+  echo "PASS: test_channel_failed_build_does_not_block_a_retry"
+}
+
+test_channel_refuses_a_symlink_in_the_archive() {
+  make_scratch_repo
+  git -C "$SRC" checkout -q main
+  ln -s /etc/hosts "$SRC/sindri/link"
+  git -C "$SRC" add -A
+  git -C "$SRC" -c user.name=t -c user.email=t@example.com commit -qm "symlink"
+  git -C "$SRC" push -q origin main
+  local sha out
+  sha="$(git -C "$SRC" rev-parse HEAD)"
+  if out="$(channel_install next "$sha" 2>&1)"; then echo "FAIL: an archive with a symlink was installed"; exit 1; fi
+  grep -q "contains symlinks" <<<"$out" || { echo "FAIL: wrong refusal: $out"; exit 1; }
+  [ ! -e "$TMP/state/sindri/channels/next/$sha" ] || { echo "FAIL: build dir exists"; exit 1; }
+  echo "PASS: test_channel_refuses_a_symlink_in_the_archive"
+}
+
+test_channel_corrupt_state_leaves_the_wrapper_alone() {
+  make_scratch_repo
+  channel_install next "$MERGED1" > /dev/null
+  local before out
+  before="$(cat "$TMP/bin/sindri-next")"
+  echo '{ not json' > "$TMP/state/sindri/channels.json"
+  if out="$(channel_install next "$MERGED2" 2>&1)"; then echo "FAIL: a corrupt channels.json was accepted"; exit 1; fi
+  grep -q "channels.json is unreadable" <<<"$out" || { echo "FAIL: wrong refusal: $out"; exit 1; }
+  [ "$(cat "$TMP/bin/sindri-next")" = "$before" ] || { echo "FAIL: the wrapper was switched before the state was recorded"; exit 1; }
+  [ ! -e "$TMP/state/sindri/channels/next/$MERGED2" ] || { echo "FAIL: the new build was left behind"; exit 1; }
+  echo "PASS: test_channel_corrupt_state_leaves_the_wrapper_alone"
+}
+
+test_channel_refuses_a_directory_at_the_wrapper_path() {
+  make_scratch_repo
+  mkdir -p "$TMP/bin/sindri-next"
+  local out
+  if out="$(channel_install next "$MERGED2" 2>&1)"; then echo "FAIL: a directory at the wrapper path was accepted"; exit 1; fi
+  grep -q "is a directory" <<<"$out" || { echo "FAIL: wrong refusal: $out"; exit 1; }
+  [ -z "$(ls -A "$TMP/bin/sindri-next")" ] || { echo "FAIL: the wrapper was moved into the directory"; exit 1; }
+  [ ! -e "$TMP/state/sindri/channels/next/$MERGED2" ] || { echo "FAIL: a build was made"; exit 1; }
+  echo "PASS: test_channel_refuses_a_directory_at_the_wrapper_path"
 }
 
 test_dry_run_writes_nothing
@@ -280,6 +383,11 @@ test_nudge_hook_per_provider
 test_channel_dry_run_writes_nothing
 test_channel_refuses_unmerged_ref
 test_channel_install_writes_wrapper_and_state
-test_channel_stable_remembers_previous
+test_channel_stable_bootstraps_once
 test_channel_wrapper_quotes_paths
 test_channel_rejects_bad_arguments
+test_channel_ref_must_be_in_remote_tracking_main
+test_channel_failed_build_does_not_block_a_retry
+test_channel_refuses_a_symlink_in_the_archive
+test_channel_corrupt_state_leaves_the_wrapper_alone
+test_channel_refuses_a_directory_at_the_wrapper_path

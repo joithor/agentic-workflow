@@ -2,6 +2,8 @@ import fs from "node:fs";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
 
+import { stateDir } from "../src/deps.js";
+import { acquireTickLock } from "../src/lock/lock.js";
 import { channelsRoot, readChannels, wrapperTarget, writeChannels, writeWrapper } from "../src/evolve/channel.js";
 import { makeChannelCommand } from "../src/evolve/cmd/channel.js";
 import type { GitRunner } from "../src/git.js";
@@ -170,14 +172,64 @@ describe("sindri channel rollback", () => {
     const a = ok.mk("stable", A);
     writeChannels(ok.deps, { stable: { ...entry(B, ok.mk("stable", B)), previous: entry(A, a) }, next: null });
     const r = await ok.run(["rollback"]);
-    expect(r.stdout).toBe("Rolled back to aaaaaaaa. Roll forward again with: sindri channel rollback\nNext: sindri channel status\n");
+    expect(r.stdout).toBe("Rolled back to aaaaaaaa. There is no previous build now; to go forward, promote a build from next.\nNext: sindri channel status\n");
     expect(ok.asked[0]).toBe("Roll stable back to aaaaaaaa?\nType the first 8 characters of the sha to confirm: ");
     expect(readChannels(ok.deps).stable?.sha).toBe(A);
     expect(ok.fx.ctx.db.prepare("SELECT verb FROM evolve_audit").all()).toEqual([{ verb: "rollback" }]);
+    expect(readChannels(ok.deps).stable?.previous).toBeNull();
+    expect((await ok.run(["rollback"])).stderr).toContain("SND-EVOLVE-005 there is no previous stable build to roll back to");
     const none = await ready({ tty: "x" });
     expect((await none.run(["rollback"])).stderr).toContain("SND-EVOLVE-005 there is no previous stable build to roll back to");
     ok.fx.close();
     none.fx.close();
+  });
+});
+
+describe("what unlocks promote (gate rows)", () => {
+  const insert = (t: Awaited<ReturnType<typeof ready>>, hash: string, head: string, dirty: number, ok: number) =>
+    t.fx.ctx.db.prepare("INSERT INTO suite_runs (artifact_id, hash, head, dirty, ok, exit_code, ms, ts, epoch) VALUES ('package:sindri', ?, ?, ?, ?, 0, 1, 't', 1)").run(hash, head, dirty, ok);
+
+  it("is not unlocked by a run at another sha, a failed run, a dirty run, or a run of the checkout rather than the build", async () => {
+    const t = await ready({ tty: "bbbbbbbb" });
+    writeChannels(t.deps, { stable: { ...entry(A, t.mk("stable", A)), previous: null }, next: entry(B, t.mk("next", B)) });
+    insert(t, `at:${A}`, A, 0, 1);
+    insert(t, `at:${B}`, B, 0, 0);
+    insert(t, `at:${B}`, B, 1, 1);
+    insert(t, "checkout-hash", B, 0, 1);
+    const refused = await t.run(["promote", B]);
+    expect(refused.stderr).toContain(`SND-EVOLVE-005 no passing package:sindri suite run for ${B}`);
+    expect(readChannels(t.deps).stable?.sha).toBe(A);
+    t.record(B);
+    expect((await t.run(["promote", B])).stdout).toContain("Promoted bbbbbbbb");
+    t.fx.close();
+  });
+
+  it("refuses, and changes nothing, when the next build won't start", async () => {
+    const t = await ready({ tty: "bbbbbbbb" });
+    const proc = fakeProc(() => ({ code: 3 }));
+    const dirA = t.mk("stable", A);
+    writeChannels(t.deps, { stable: { ...entry(A, dirA), previous: null }, next: entry(B, t.mk("next", B)) });
+    t.record(B);
+    const r = await makeChannelCommand({ process: proc })(["promote", B], t.deps);
+    expect(r.stderr).toContain("didn't start (--version exited 3)");
+    expect(readChannels(t.deps).stable?.sha).toBe(A);
+    expect(t.fx.ctx.db.prepare("SELECT verb FROM evolve_audit").all()).toEqual([]);
+    t.fx.close();
+  });
+
+  it("retries a held tick lock when it writes the audit row, instead of failing after the switch", async () => {
+    const t = await ready({ tty: "bbbbbbbb" });
+    writeChannels(t.deps, { stable: { ...entry(A, t.mk("stable", A)), previous: null }, next: entry(B, t.mk("next", B)) });
+    t.record(B);
+    const held = acquireTickLock({ dir: stateDir(t.deps), db: t.fx.ctx.db, sys: t.deps.system, now: t.deps.now });
+    expect(held.ok).toBe(true);
+    const sleeps: number[] = [];
+    const deps = { ...t.deps, sleep: async (ms: number) => { sleeps.push(ms); if (held.ok) held.release(); } };
+    const r = await makeChannelCommand({ process: t.proc })(["promote", B], deps);
+    expect(r.exitCode).toBe(0);
+    expect(sleeps).toEqual([2000]);
+    expect(t.fx.ctx.db.prepare("SELECT verb FROM evolve_audit").all()).toEqual([{ verb: "promote" }]);
+    t.fx.close();
   });
 });
 

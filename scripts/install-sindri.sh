@@ -14,7 +14,10 @@
 #                                     build a merged ref (default HEAD; must be an ancestor of
 #                                     origin/<default branch>) into $AW_STATE_DIR/sindri/channels/
 #                                     <channel>/<sha>/ and point sindri (stable) or sindri-next at it.
-#                                     AW_SINDRI_SRC=DIR picks the source repo (tests).
+#                                     AW_SINDRI_SRC=DIR picks the source repo (tests);
+#                                     AW_SINDRI_BUILD_CMD='...' replaces the build step (tests).
+#                                     --channel stable only bootstraps: once a stable exists, a
+#                                     stable change goes through `sindri channel promote <sha>`.
 #
 # The git template hook is a separate, explicit opt-in (it changes global git config):
 # `sindri repo onboard --template`. This script only prints that as a hint.
@@ -25,6 +28,10 @@ SINDRI_DIR="$SCRIPT_DIR/sindri"
 BIN_DIR="${CLAUDE_LOCAL_BIN:-$HOME/.local/bin}"
 # shellcheck source=../config/hooks/adapters/install-lib.sh
 source "$SCRIPT_DIR/config/hooks/adapters/install-lib.sh"
+PROVIDER_GIVEN=0
+for a in "$@"; do
+  case "$a" in --provider|--provider=*) PROVIDER_GIVEN=1 ;; esac
+done
 aw_parse_provider_args "$@" || exit 1
 set -- ${AW_ARGS[@]+"${AW_ARGS[@]}"}
 
@@ -51,6 +58,10 @@ if [ -z "$CHANNEL" ] && [ -n "$REF" ]; then
 fi
 if [ "$HOOK_ONLY" = "1" ] && [ -n "$CHANNEL" ]; then
   echo "$USAGE" >&2
+  exit 1
+fi
+if [ "$PROVIDER_GIVEN" = "1" ] && [ -n "$CHANNEL" ]; then
+  echo "--provider has no meaning with --channel (a channel build is not per provider)" >&2
   exit 1
 fi
 
@@ -82,9 +93,17 @@ fi
 shq() { printf "'%s'" "$(printf '%s' "$1" | sed "s/'/'\\\\''/g")"; }
 
 # A wrapper is written to a temp file in the same directory and renamed into place: a symlink at
-# the destination is replaced, never written through.
+# the destination is replaced, never written through. A directory (or a symlink to one) at the
+# destination is refused: mv would move the wrapper into it.
+check_wrapper_target() { # name
+  if [ -d "$BIN_DIR/$1" ]; then
+    echo "refusing: $BIN_DIR/$1 is a directory" >&2
+    exit 1
+  fi
+}
 write_wrapper() { # name cli
   local target="$BIN_DIR/$1" tmp
+  check_wrapper_target "$1"
   mkdir -p "$BIN_DIR"
   tmp="$(mktemp "$BIN_DIR/.$1.XXXXXX")"
   {
@@ -125,23 +144,49 @@ NODE
   rm -f "$js"
 }
 
-# Only merged code runs on a channel: the ref must be an ancestor of origin/<default branch>.
+# Prints "yes" or "no": does channels.json already name a stable build? A corrupt file refuses.
+has_stable() { # state
+  node -e '
+const fs = require("node:fs");
+let c = { stable: null };
+try { c = JSON.parse(fs.readFileSync(process.argv[1], "utf8")); } catch (e) {
+  if (e.code !== "ENOENT") { console.error("channels.json is unreadable: " + e.message); process.exit(1); }
+}
+process.stdout.write(c !== null && typeof c === "object" && c.stable ? "yes" : "no");' "$1/channels.json"
+}
+
+# Only merged code runs on a channel: the ref must be an ancestor of refs/remotes/origin/<default
+# branch>, named in full so a local tag or branch called origin/<branch> can't stand in for it. This
+# guards against mistakes and agents, not against someone who can rewrite refs in the source repo.
+DEST_CLEANUP=""
+cleanup_dest() { if [ -n "$DEST_CLEANUP" ]; then rm -rf "$DEST_CLEANUP"; fi; }
+
 install_channel() {
-  local state="${AW_STATE_DIR:-$HOME/.agentic-workflow}/sindri" default_branch sha dest wrapper
+  local state="${AW_STATE_DIR:-$HOME/.agentic-workflow}/sindri" default_branch sha dest wrapper remote_ref
   default_branch="$(git -C "$SRC_REPO" symbolic-ref --short refs/remotes/origin/HEAD 2>/dev/null | sed 's|^origin/||' || true)"
   default_branch="${default_branch:-main}"
+  case "$default_branch" in
+    *[!A-Za-z0-9._/-]*|-*) echo "refusing: the default branch name '$default_branch' has unexpected characters" >&2; exit 1 ;;
+  esac
+  remote_ref="refs/remotes/origin/$default_branch"
+  git -C "$SRC_REPO" rev-parse --verify --quiet "$remote_ref^{commit}" > /dev/null || { echo "refusing: no $remote_ref in $SRC_REPO (run git fetch origin first)" >&2; exit 1; }
   sha="$(git -C "$SRC_REPO" rev-parse --verify --end-of-options "${REF:-HEAD}^{commit}")" || { echo "refusing: ${REF:-HEAD} is not a commit in $SRC_REPO" >&2; exit 1; }
-  if ! git -C "$SRC_REPO" merge-base --is-ancestor "$sha" "origin/$default_branch" 2>/dev/null; then
-    echo "refusing: $sha is not an ancestor of origin/$default_branch (only merged code runs on a channel)" >&2
+  if ! git -C "$SRC_REPO" merge-base --is-ancestor "$sha" "$remote_ref" 2>/dev/null; then
+    echo "refusing: $sha is not an ancestor of $remote_ref (only merged code runs on a channel)" >&2
     exit 1
   fi
   dest="$state/channels/$CHANNEL/$sha"
   wrapper="sindri"
   [ "$CHANNEL" = "next" ] && wrapper="sindri-next"
+  if [ "$CHANNEL" = "stable" ] && [ "$(has_stable "$state")" = "yes" ]; then
+    echo "refusing: a stable build already exists; change stable with: sindri channel promote <sha> (it checks the soak and the suite, and asks you to confirm)" >&2
+    exit 1
+  fi
   if [ -e "$dest" ]; then
     echo "refusing: $dest already exists (channel builds are immutable)" >&2
     exit 1
   fi
+  check_wrapper_target "$wrapper"
   if [ "${AW_DRY_RUN:-0}" = "1" ]; then
     echo "  [dry-run] would build sindri at $sha into $dest"
     echo "  [dry-run] would write $BIN_DIR/$wrapper"
@@ -149,19 +194,25 @@ install_channel() {
   fi
   mkdir -p -m 700 "$state"
   chmod 700 "$state"
+  # A failed build removes its partial directory, so the same sha can be retried.
+  DEST_CLEANUP="$dest"
+  trap cleanup_dest EXIT
   mkdir -p "$dest"
   git -C "$SRC_REPO" archive "$sha" sindri | tar -x -C "$dest" --strip-components=1 --no-same-owner
   if [ -n "$(find "$dest" -type l)" ]; then
-    rm -rf "$dest"
     echo "refusing: the archive at $sha contains symlinks" >&2
     exit 1
   fi
-  if [ "${AW_SKIP_BUILD:-0}" != "1" ]; then
+  if [ -n "${AW_SINDRI_BUILD_CMD:-}" ]; then
+    (cd "$dest" && bash -c "$AW_SINDRI_BUILD_CMD")
+  elif [ "${AW_SKIP_BUILD:-0}" != "1" ]; then
     # Install scripts from the ref don't run; only better-sqlite3's native build does.
     (cd "$dest" && npm ci --ignore-scripts && npm rebuild better-sqlite3 && npm run build)
   fi
-  write_wrapper "$wrapper" "$dest/dist/cli.js"
+  # Record first: if the state can't be written, the old wrapper stays and the new build is removed.
   record_channel "$state" "$CHANNEL" "$sha" "$dest"
+  DEST_CLEANUP=""
+  write_wrapper "$wrapper" "$dest/dist/cli.js"
   echo "  sindri: $CHANNEL channel at $sha ($BIN_DIR/$wrapper)"
 }
 
