@@ -24,7 +24,7 @@ Four Vitest packages, each with v8 coverage, `testTimeout: 10_000`, and 100% lin
 | `mcp-bridge` | in-memory SQLite via `tests/helpers.ts`; route tests in `tests/routes/` | `src/index.ts` (entry point wiring), `src/mcp.ts` (stdio transport; tool handlers covered by `tests/mcp-tools.test.ts`) |
 | `scorer` | transcript parsing, reports, probe summaries | `src/cli.ts` |
 | `judge` | judge CLI logic | `src/cli.ts` |
-| `sindri` | in-memory SQLite ledgers, temp git repos, fake SystemProbe/GitRunner, tracker contract tests | `src/system-real.ts`, `src/git-real.ts`, `src/index/sandbox-real.ts` (smoke-tested in `tests/real.test.ts`); `src/cli.ts`, `src/gen.ts` (thin wiring; generated outputs are checked by tests) |
+| `sindri` | in-memory SQLite ledgers, temp git repos, fake SystemProbe/GitRunner/IndexIo, tracker contract tests | `src/system-real.ts` (OS-specific branches; smoke-tested in `tests/real.test.ts`, which also covers `src/git-real.ts` and `src/index/sandbox-real.ts` in full); `src/cli.ts`, `src/gen.ts` (thin wiring; generated outputs are checked by tests) |
 
 `/* v8 ignore */` annotations are prohibited — write the test instead. (One legacy `/* v8 ignore next */` remains in `mcp-bridge/src/db/schema.ts`.)
 
@@ -101,6 +101,6 @@ Bash suites live in `config/**/tests/`, `scripts/tests/`, and `providers/tests/`
 - mcp-bridge: 99 tests across 14 test files
 - scorer: 235 tests across 20 test files
 - judge: 261 tests across 22 test files
-- sindri: 502 tests across 42 test files
+- sindri: 549 tests across 42 test files
 
 Any PR that reduces these counts needs explicit justification.
