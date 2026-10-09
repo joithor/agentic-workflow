@@ -63,6 +63,33 @@ describe("ledger db", () => {
     db.close();
   });
 
+  it("backs up a consistent snapshot, WAL frames included, while a reader holds a snapshot open", () => {
+    const file = path.join(tempDir(), "ledger.db");
+    const steps = ["CREATE TABLE a (x INTEGER);", "CREATE TABLE b (y INTEGER);"];
+    const writer = new Database(file);
+    writer.pragma("journal_mode = WAL");
+    writer.pragma("wal_autocheckpoint = 0");
+    migrateWith(writer, file, steps.slice(0, 1));
+    writer.prepare("INSERT INTO a VALUES (1)").run();
+    // The reader's open snapshot pins the WAL: a checkpoint can't move later frames into the file.
+    const reader = new Database(file);
+    reader.prepare("BEGIN").run();
+    reader.prepare("SELECT COUNT(*) FROM a").get();
+    writer.prepare("INSERT INTO a VALUES (2)").run();
+    const migrator = new Database(file);
+    migrateWith(migrator, file, steps);
+    reader.prepare("COMMIT").run();
+    const bak = new Database(`${file}.bak-v1`, { readonly: true });
+    expect(bak.prepare("SELECT x FROM a ORDER BY x").pluck().all()).toEqual([1, 2]);
+    expect(schemaVersion(bak)).toBe(1);
+    bak.close();
+    // A second backup of the same version replaces the first; no temp file is left behind.
+    migrator.pragma("user_version = 1");
+    migrateWith(migrator, file, steps.slice(0, 1).concat(["CREATE TABLE c (z INTEGER);"]));
+    expect(fs.readdirSync(path.dirname(file)).filter((n) => n.includes(".bak-v1")).sort()).toEqual(["ledger.db.bak-v1"]);
+    for (const db of [writer, reader, migrator]) db.close();
+  });
+
   it("bumps the epoch and rejects writes under a stale one (SND-LOCK-003)", () => {
     const db = openMemoryLedger();
     expect(currentEpoch(db)).toBe(0);

@@ -1,4 +1,5 @@
 import { execFileSync } from "node:child_process";
+import Database from "better-sqlite3";
 import fs from "node:fs";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
@@ -9,7 +10,8 @@ import { indexPath } from "../src/index/db.js";
 import { parserId, typescriptParser } from "../src/index/parse-ts.js";
 import { FETCH_ENV, reconcileShape } from "../src/index/reconcile.js";
 import { makeShapeCommand } from "../src/index/shape.js";
-import { bumpEpoch, ledgerPath, openLedger, type Ledger } from "../src/ledger/db.js";
+import { bumpEpoch, ledgerPath, openLedger, schemaVersion, type Ledger } from "../src/ledger/db.js";
+import { acquireTickLock } from "../src/lock/lock.js";
 import { approvedProfile } from "../src/profile/approve.js";
 import type { LoadedProfile } from "../src/profile/load.js";
 import { runCli } from "../src/main.js";
@@ -184,6 +186,18 @@ describe("reconcileShape (Review Focus 7)", () => {
     expect(outcomes(db)).toEqual(EXPECTED);
     expect(await reconcileShape(db, later(d, 15), loaded, bumpEpoch(db))).toEqual({ linked: 0, labeled: 0 });
     db.close();
+  });
+
+  it("makes no git call when no run waits for its commit and no signal is due (most hourly ticks)", async () => {
+    const x = await dated();
+    const tree = git(x.root, "rev-parse", "HEAD^{tree}").trim();
+    insertRun(x.db, { id: "run-1", repo: x.name, tree, signals: [{ type: "reinvented:exact", at: "src/feature.ts:1", name: "shorten", hash: hashOf("src/feature.ts", "shorten") }] });
+    await reconcileShape(x.db, later(x.d, 1), x.loaded, bumpEpoch(x.db)); // links it
+    const calls: string[][] = [];
+    const spy: GitRunner = { run: async (args, cwd, o) => (calls.push(args), realGitRunner().run(args, cwd, o)) };
+    expect(await reconcileShape(x.db, { ...later(x.d, 2), git: spy }, x.loaded, bumpEpoch(x.db))).toEqual({ linked: 0, labeled: 0 });
+    expect(calls).toEqual([]);
+    x.db.close();
   });
 
   it("gives the same labels with the default branch checked out and uncommitted edits in the working tree", async () => {
@@ -366,6 +380,60 @@ describe("reconcileShape: reached the default branch, judged by content (Task 10
     x.db.close();
   });
 
+  it("judges kept at the default branch as of outcomeDays after the run, not at today's tip", async () => {
+    const x = await dated();
+    x.put("src/feature.ts", EDITED);
+    const tree = x.commitOn(3, "edit shorten in place");
+    insertRun(x.db, { id: "run-w", repo: x.name, tree, ts: dayIso(3), signals: [{ type: "simpler:complexity", at: "src/feature.ts:1", name: "shorten", hash: editedHash() }] });
+    // An unrelated rewrite on day 20, after the run's 14-day window closed on day 17.
+    x.put("src/feature.ts", AGAIN);
+    x.commitOn(20, "unrelated rewrite later");
+    expect(await labelOn(x, 4, 25)).toEqual({ "run-w|simpler:complexity|shorten": "kept" });
+    x.db.close();
+    // When git can't list the branch's history, the tip is the fallback: the later rewrite reads as acted-on.
+    const y = await dated();
+    y.put("src/feature.ts", EDITED);
+    const t2 = y.commitOn(3, "edit shorten in place");
+    insertRun(y.db, { id: "run-w", repo: y.name, tree: t2, ts: dayIso(3), signals: [{ type: "simpler:complexity", at: "src/feature.ts:1", name: "shorten", hash: editedHash() }] });
+    y.put("src/feature.ts", AGAIN);
+    y.commitOn(20, "unrelated rewrite later");
+    await reconcileShape(y.db, later(y.d, 4), y.loaded, bumpEpoch(y.db));
+    await reconcileShape(y.db, { ...later(y.d, 25), git: failingGit("rev-list") }, y.loaded, bumpEpoch(y.db));
+    expect(outcomes(y.db)).toEqual({ "run-w|simpler:complexity|shorten": "acted-on" });
+    y.db.close();
+  });
+
+  it("judges a change merged after its window at today's tip (it wasn't on the branch at the window's end)", async () => {
+    const x = await dated();
+    const branch = git(x.root, "symbolic-ref", "--short", "HEAD").trim();
+    git(x.root, "checkout", "-q", "-b", "late");
+    x.put("src/feature.ts", EDITED);
+    const tree = x.commitOn(3, "edit shorten on a branch");
+    git(x.root, "checkout", "-q", branch);
+    x.put("src/other.ts", BODY("other"));
+    x.commitOn(10, "unrelated main work");
+    gitOn(20, x.root, "merge", "-q", "--no-ff", "-m", "late merge", "late");
+    insertRun(x.db, { id: "run-l", repo: x.name, tree, ts: dayIso(3), signals: [{ type: "simpler:complexity", at: "src/feature.ts:1", name: "shorten", hash: editedHash() }] });
+    expect(await labelOn(x, 4, 25)).toEqual({ "run-l|simpler:complexity|shorten": "kept" });
+    x.db.close();
+  });
+
+  it("counts runs that share a staged tree once: the latest run's signals are labeled, the earlier ones n/a", async () => {
+    const x = await dated();
+    x.put("src/feature.ts", EDITED);
+    const tree = x.commitOn(3, "edit shorten in place");
+    // A hook rejected the first attempt (or the message editor was closed): the retry has the same tree.
+    const sig = { type: "simpler:complexity", at: "src/feature.ts:1", name: "shorten", hash: editedHash() };
+    insertRun(x.db, { id: "run-1", repo: x.name, tree, ts: dayIso(3), signals: [sig] });
+    insertRun(x.db, { id: "run-2", repo: x.name, tree, ts: new Date(Date.parse(dayIso(3)) + 60_000).toISOString(), signals: [sig] });
+    expect(await labelOn(x, 4, 18)).toEqual({ "run-1|simpler:complexity|shorten": "n/a", "run-2|simpler:complexity|shorten": "kept" });
+    // A later run with the same tree supersedes an earlier one that is already linked but unlabeled.
+    insertRun(x.db, { id: "run-0", repo: x.name, tree, ts: dayIso(2), signals: [sig] });
+    expect(await reconcileShape(x.db, later(x.d, 19), x.loaded, bumpEpoch(x.db))).toEqual({ linked: 1, labeled: 1 });
+    expect(outcomes(x.db)["run-0|simpler:complexity|shorten"]).toBe("n/a");
+    x.db.close();
+  });
+
   it("labels an in-place edit that is still on the default branch as kept", async () => {
     const x = await dated();
     x.put("src/feature.ts", EDITED);
@@ -515,18 +583,21 @@ describe("reconcileShape: reached the default branch, judged by content (Task 10
       },
     };
     await reconcileShape(db, { ...later(d, 15), git: spy }, loaded, bumpEpoch(db));
-    expect(fetches).toEqual([{ args: ["fetch", "--quiet", "--no-tags", "origin", "refs/heads/main"], o: { foreign: true, env: { GIT_SSH_COMMAND: "ssh -o BatchMode=yes", GIT_TERMINAL_PROMPT: "0" } } }]);
+    expect(fetches).toEqual([{ args: ["fetch", "--quiet", "--no-tags", "origin", "refs/heads/main"], o: { foreign: true, env: { GIT_SSH_COMMAND: "ssh -o BatchMode=yes", GIT_TERMINAL_PROMPT: "0" }, timeoutMs: 20_000 } }]);
     expect(FETCH_ENV).toEqual({ GIT_SSH_COMMAND: "ssh -o BatchMode=yes", GIT_TERMINAL_PROMPT: "0" });
     db.close();
   });
 });
 
 describe("sindri shape report: outcomes and precision", () => {
-  it("reconciles, then prints per-type labeled counts, precision and progress toward the 3b bar", async () => {
+  it("reconcile labels outcomes; report then prints per-type labeled counts, precision and progress toward the 3b bar", async () => {
     const { d, db } = await world();
     db.close();
+    const rec = await makeShapeCommand(fakeIndexIo())(["reconcile"], later(d, 15));
+    expect(rec.stdout).toContain("Reconciled: linked 3 run(s) to commits, labeled 14 signal(s).");
+    expect(rec.exitCode).toBe(0);
     const r = await makeShapeCommand(fakeIndexIo())(["report"], later(d, 15));
-    expect(r.stdout).toContain("Reconciled: linked 3 run(s) to commits, labeled 14 signal(s).");
+    expect(r.stdout).not.toContain("Reconciled");
     expect(r.stdout).toContain("Runs: 8 recorded; 1 deferred the embeddings layer.");
     expect(r.stdout).toMatch(/^TYPE\s+SIGNALS\s+LABELED\s+ACTED-ON\s+KEPT\s+PRECISION\s+TOWARD 3b$/m);
     expect(r.stdout).toMatch(/^reinvented:exact\s+9\s+3\s+1\s+2\s+0\.33\s+3\/30 labeled; bar 0\.70$/m);
@@ -553,10 +624,59 @@ describe("sindri shape report: outcomes and precision", () => {
     expect(r.stdout).toMatch(/^reinvented:embedding\s+30\s+30\s+10\s+20\s+0\.33\s+30\/30 labeled; bar 0\.70$/m);
   });
 
-  it("skips the reconcile step when no profile is approved", async () => {
-    const r = await makeShapeCommand(fakeIndexIo())(["report"], makeDeps());
+  it("report on a machine with no ledger says nothing was recorded, and creates no ledger", async () => {
+    const d = makeDeps();
+    const r = await makeShapeCommand(fakeIndexIo())(["report"], d);
     expect(r.stdout).toContain("No shape signals recorded yet.");
-    expect(r.stdout).not.toContain("Reconciled");
+    expect(fs.existsSync(ledgerPath(stateDir(d)))).toBe(false);
+  });
+
+  it("report never migrates, writes or reconciles: a v1 ledger stays v1, and nothing is fetched or labeled", async () => {
+    const { d, db, root } = await world();
+    db.close();
+    const file = ledgerPath(stateDir(d));
+    const bytes = fs.readFileSync(file);
+    const calls: string[][] = [];
+    const spy: GitRunner = { run: async (args, cwd, o) => (calls.push(args), realGitRunner().run(args, cwd, o)) };
+    git(root, "remote", "add", "origin", path.join(tempDir("sindri-offline-"), "missing.git"));
+    const r = await makeShapeCommand(fakeIndexIo())(["report", "--json"], { ...later(d, 15), git: spy });
+    expect(JSON.parse(r.stdout).types.every((t: { labeled: number }) => t.labeled === 0)).toBe(true);
+    expect(calls).toEqual([]);
+    expect(fs.readFileSync(file).equals(bytes)).toBe(true);
+    // A Plan 2 ledger: schema v1, no shape tables.
+    const s = makeDeps();
+    fs.mkdirSync(stateDir(s), { recursive: true });
+    const old = new Database(ledgerPath(stateDir(s)));
+    old.pragma("user_version = 1");
+    old.close();
+    expect((await makeShapeCommand(fakeIndexIo())(["report"], s)).stdout).toContain("No shape signals recorded yet.");
+    const check = new Database(ledgerPath(stateDir(s)), { readonly: true });
+    expect(schemaVersion(check)).toBe(1);
+    check.close();
+  });
+
+  it("reconcile runs only with an approved profile, on hosts.active, and outside another run's lock", async () => {
+    expect(await makeShapeCommand(fakeIndexIo())(["reconcile", "--json"], makeDeps())).toMatchObject({ exitCode: 1, stdout: expect.stringContaining('"reason": "no approved profile (sindri profile approve)"') });
+    const { d, db } = await world();
+    const other = await makeShapeCommand(fakeIndexIo())(["reconcile"], { ...later(d, 15), system: { ...d.system, hostname: () => "elsewhere" } });
+    expect(other).toMatchObject({ exitCode: 1, stdout: "Not reconciled: this host (elsewhere) is not hosts.active (test-host).\n" });
+    const held = acquireTickLock({ dir: stateDir(d), db, sys: d.system, now: d.now });
+    const busy = await makeShapeCommand(fakeIndexIo())(["reconcile"], later(d, 15));
+    if (held.ok) held.release();
+    expect(busy.stdout).toBe("Not reconciled: another run holds the lock.\n");
+    expect(outcomes(db)["run-a|reinvented:exact|shorten"]).toBeNull();
+    db.close();
+  });
+
+  it("reconcile reports a failed step as a note, never as an error", async () => {
+    const { d, db } = await world();
+    db.close();
+    const broken: GitRunner = { run: async () => { throw new Error("git exploded"); } };
+    const r = await makeShapeCommand(fakeIndexIo())(["reconcile"], { ...later(d, 15), git: broken });
+    expect(r.exitCode).toBe(1);
+    expect(r.stdout).toContain("Shape signals not reconciled: git exploded.");
+    const odd: GitRunner = { run: async () => { throw "not an Error"; } };
+    expect((await makeShapeCommand(fakeIndexIo())(["reconcile"], { ...later(d, 15), git: odd })).stdout).toContain("Shape signals not reconciled: not an Error.");
   });
 });
 

@@ -1,8 +1,10 @@
 import type { Deps } from "../deps.js";
 import { withEpoch, type Ledger } from "../ledger/db.js";
 import type { LoadedProfile } from "../profile/load.js";
+import { makeScrubber } from "../scrub/scrub.js";
 import { readManifestDeps } from "./deps-layer.js";
 import { parserId, typescriptParser } from "./parse-ts.js";
+import { ingestSpool, pruneSpool } from "./spool.js";
 
 const DAY = 86_400_000;
 // Every call is about a profile repo, never the caller's own, so git's hook-exported repository
@@ -11,7 +13,9 @@ const FOREIGN = { foreign: true };
 // The hourly job must never wait on a prompt: ssh fails instead of asking for a passphrase or
 // a host key, and https fails instead of asking for credentials.
 export const FETCH_ENV = { GIT_SSH_COMMAND: "ssh -o BatchMode=yes", GIT_TERMINAL_PROMPT: "0" };
-const FETCH = { ...FOREIGN, env: FETCH_ENV };
+// Shorter than git's 60 s default: the fetch runs inside observe's tick lock.
+export const FETCH_TIMEOUT_MS = 20_000;
+const FETCH = { ...FOREIGN, env: FETCH_ENV, timeoutMs: FETCH_TIMEOUT_MS };
 
 export type Outcome = "kept" | "acted-on" | "dropped" | "n/a";
 
@@ -65,6 +69,17 @@ async function linkRuns(db: Ledger, deps: Deps, loaded: LoadedProfile, epoch: nu
     for (const id of drops) {
       dropped += db.prepare("UPDATE shape_signals SET outcome = 'dropped', labeled_at = ? WHERE run_id = ? AND outcome IS NULL").run(now.toISOString(), id).changes;
     }
+    // One run per commit: a retried commit (a later hook refused it, the message editor was
+    // closed empty, an amend of the message only) spools a run per attempt with the same tree.
+    // The latest run (of the same parser) stands for the commit; the others' unlabeled signals are
+    // n/a, so one flagged symbol never counts twice toward precision.
+    dropped += db
+      .prepare(
+        `UPDATE shape_signals SET outcome = 'n/a', labeled_at = ? WHERE outcome IS NULL AND run_id IN (
+           SELECT r.run_id FROM shape_runs r WHERE r.commit_sha IS NOT NULL AND EXISTS (
+             SELECT 1 FROM shape_runs n WHERE n.repo = r.repo AND n.commit_sha = r.commit_sha AND n.parser = r.parser AND (n.ts > r.ts OR (n.ts = r.ts AND n.run_id > r.run_id))))`,
+      )
+      .run(now.toISOString()).changes;
   });
   return { linked: links.length, dropped };
 }
@@ -128,35 +143,41 @@ async function labelSignals(db: Ledger, deps: Deps, loaded: LoadedProfile, epoch
         (s.type === "reinvented:dependency"
           ? readManifestDeps(at, text).some((d) => d.name === name)
           : typescriptParser.supports(at) && typescriptParser.parse(at, text).some((x) => x.name === name && x.astHash === s.ast_hash));
-      // Reached the default branch: the run's commit is on it, or (a squash or rebase merge) some
-      // version of the file on it since the run holds the flagged code. Judged by content, never by
-      // `-S<name>` counts, which miss in-place edits and match substrings (Task 10 ruling).
-      let reached = (await deps.git.run(["merge-base", "--is-ancestor", s.commit_sha, tip], cfg.path, FOREIGN)).ok;
-      if (!reached) {
+      // Reached the default branch by `rev`: the run's commit is on it, or (a squash or rebase
+      // merge) some version of the file on it since the run holds the flagged code. Judged by
+      // content, never by `-S<name>` counts, which miss in-place edits and match substrings
+      // (Task 10 ruling). null: git couldn't tell.
+      const reachedBy = async (rev: string): Promise<boolean | null> => {
+        if ((await deps.git.run(["merge-base", "--is-ancestor", s.commit_sha, rev], cfg.path, FOREIGN)).ok) return true;
         const since = Math.floor(Date.parse(s.ts) / 1000);
-        const versions = await deps.git.run(["log", tip, `--since=${since}`, "--format=%H", "--", file], cfg.path, FOREIGN);
-        if (!versions.ok) continue;
-        for (const sha of versions.stdout.split("\n").filter((x) => x !== "")) {
-          if (holds(file, await fileAt(sha, file))) {
-            reached = true;
-            break;
-          }
-        }
-      }
+        const versions = await deps.git.run(["log", rev, `--since=${since}`, "--format=%H", "--", file], cfg.path, FOREIGN);
+        if (!versions.ok) return null;
+        for (const sha of versions.stdout.split("\n").filter((x) => x !== "")) if (holds(file, await fileAt(sha, file))) return true;
+        return false;
+      };
+      const reached = await reachedBy(tip);
+      if (reached === null) continue;
       // Never reached the default branch: the change was dropped.
       if (!reached) {
         labels.push({ seq: s.seq, outcome: "dropped" });
         continue;
       }
-      let kept = holds(file, await fileAt(tip, file));
+      // Kept or acted-on is judged at the default branch as it stood outcomeDays after the run,
+      // so a later, unrelated edit of the symbol doesn't read as acting on the signal. A change
+      // that reached the branch only after that (a late merge) is judged at the tip.
+      const before = Math.floor((Date.parse(s.ts) + loaded.profile.shape.outcomeDays * DAY) / 1000);
+      const list = await deps.git.run(["rev-list", "-1", `--before=${before}`, tip], cfg.path, FOREIGN);
+      const asOf = list.ok ? list.stdout.trim() : "";
+      const at = asOf !== "" && (await reachedBy(asOf)) === true ? asOf : tip;
+      let kept = holds(file, await fileAt(at, file));
       if (!kept) {
-        // Renamed or moved on the default branch since: kept if any file at the tip holds the same
+        // Renamed or moved on the default branch since: kept if any file there holds the same
         // name and hash. git grep exits 1 for no match; any other failure leaves it unlabeled.
-        const hits = await deps.git.run(["grep", "-l", "-w", "-F", "-e", name, tip, "--"], cfg.path, FOREIGN);
+        const hits = await deps.git.run(["grep", "-l", "-w", "-F", "-e", name, at, "--"], cfg.path, FOREIGN);
         if (!hits.ok && hits.code !== 1) continue;
         for (const hit of hits.ok ? hits.stdout.split("\n").filter((x) => x !== "") : []) {
-          const other = hit.slice(tip.length + 1); // "<tip>:<path>"
-          if (other !== file && holds(other, await fileAt(tip, other))) {
+          const other = hit.slice(at.length + 1); // "<rev>:<path>"
+          if (other !== file && holds(other, await fileAt(at, other))) {
             kept = true;
             break;
           }
@@ -176,4 +197,31 @@ export async function reconcileShape(db: Ledger, deps: Deps, loaded: LoadedProfi
   const now = deps.now();
   const { linked, dropped } = await linkRuns(db, deps, loaded, epoch, now);
   return { linked, labeled: dropped + (await labelSignals(db, deps, loaded, epoch, now)) };
+}
+
+export interface SideSteps {
+  ingested: { runs: number; signals: number; quarantined: number };
+  reconciled: { linked: number; labeled: number };
+  notes: string[];
+}
+
+// The record-only shape pipeline, after observe's item write (or `shape reconcile`), inside the
+// tick lock. Best effort: the ingest has its own transaction, so a broken spool file can't roll
+// back plan-task recording, and neither step throws; a failure becomes a note in the output.
+// Reconcile makes no git call unless a run is waiting for its commit or a signal is old enough.
+export async function shapeSideSteps(db: Ledger, deps: Deps, loaded: LoadedProfile, epoch: number): Promise<SideSteps> {
+  const out: SideSteps = { ingested: { runs: 0, signals: 0, quarantined: 0 }, reconciled: { linked: 0, labeled: 0 }, notes: [] };
+  const why = (e: unknown): string => makeScrubber().scrub(e instanceof Error ? e.message : String(e)).text.split("\n")[0];
+  try {
+    out.ingested = withEpoch(db, epoch, () => ingestSpool(db, deps, epoch));
+    pruneSpool(db, deps); // after the commit: the ingested runs are in the ledger
+  } catch (e) {
+    out.notes.push(`Shape spool not ingested: ${why(e)}.`);
+  }
+  try {
+    out.reconciled = await reconcileShape(db, deps, loaded, epoch);
+  } catch (e) {
+    out.notes.push(`Shape signals not reconciled: ${why(e)}.`);
+  }
+  return out;
 }

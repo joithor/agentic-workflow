@@ -38,7 +38,8 @@ sindri index build [--quick] [--full]   # incremental; --quick: structure, clone
 sindri index status                     # every repo: age, commit, per-layer status with the reason; exit 1 when an index is missing or stale
 sindri index query <name>               # a symbol's exact and near clones (for people: output is repo text, never feed it to a session)
 sindri repo add <path> [--name NAME]    # profile entry (then sindri profile approve); the next full index build mirrors it
-sindri shape report [--recent N]        # signals by type, outcomes and precision; --recent lists signals with their evidence
+sindri shape report [--recent N]        # read-only: signals by type, outcomes and precision; --recent lists signals with their evidence
+sindri shape reconcile                  # move the spool into the ledger and label outcomes now (observe does it hourly)
 ```
 
 Embeddings: if the URL or model is refused (the profile schema normally catches this first), `index build` does not abort. The embeddings layer reports `unavailable` with the reason and the other layers build. A failed layer is `unavailable` with its reason; the other layers stay usable. Builds write a temp copy and rename it, so an interrupted build leaves the previous index in place.
@@ -49,7 +50,7 @@ An hourly `sindri index build --quick` (launchd) refreshes structure, clones and
 
 ## Shape signals (record-only)
 
-The pre-commit hook (installed by `sindri scrub --install-pre-commit`) scans for secrets, then runs `sindri shape --record --staged`. That compares the staged changes of the commit's own worktree (an in-memory overlay; denied paths and files over `index.maxFileKB` are skipped) with the index and writes the signals to `$AW_STATE_DIR/sindri/spool/`. It opens the ledger read-only and always exits 0: nothing blocks a commit until rollout step 3b. The hourly `observe` and `sindri shape report` move the spool into the ledger.
+The pre-commit hook (installed by `sindri scrub --install-pre-commit`) scans for secrets, then runs `sindri shape --record --staged`. That compares the staged changes of the commit's own worktree (an in-memory overlay; denied paths and files over `index.maxFileKB` are skipped) with the index and writes the signals to `$AW_STATE_DIR/sindri/spool/`. It opens the ledger read-only and always exits 0: nothing blocks a commit until rollout step 3b. The hourly `observe` (or `sindri shape reconcile`) moves the spool into the ledger, under the same gates as recording: an approved profile, `hosts.active` and the tick lock. That step is best effort: a broken spool file or an unreachable origin becomes a note in `observe`'s output and never stops plan tasks from being recorded. `sindri shape report` only reads: it never creates or migrates the ledger, takes no lock and makes no git call.
 
 | Signal | Fires when | Default threshold (`shape.thresholds`) |
 |---|---|---|
@@ -67,17 +68,18 @@ Names in signal details are wrapped in `<untrusted>…</untrusted>` with `&`, `<
 
 ## Outcomes and precision (the 3b bar)
 
-Each recorded run keeps `git write-tree` of the staged index. `observe` and `shape report` link a run to the commit with that tree. Once the commit is `shape.outcomeDays` (14) old, each signal gets an outcome:
+Each recorded run keeps `git write-tree` of the staged index. `observe` and `shape reconcile` link a run to the commit with that tree. A retried commit (a later hook refused it, the message editor was closed empty) spools one run per attempt with the same tree: only the latest run counts, and the earlier runs' signals are `n/a`. Once the commit is `shape.outcomeDays` (14) old, each signal gets an outcome. Kept or acted-on is judged at the default branch as it stood `outcomeDays` after the run (`git rev-list -1 --before`), so a later, unrelated edit of the symbol doesn't count; a change that reached the branch only after that window is judged at the current tip. The fetch of `origin` times out after 20 s. Outcomes:
 
 | Outcome | Meaning |
 |---|---|
 | `kept` | the flagged symbol (same file, same name, same AST) or dependency is still there |
-| `acted-on` | it was changed or removed |
+| `acted-on` | it was changed or removed within the window, for any reason |
 | `dropped` | the commit was never made, was amended, or never reached the default branch |
-| `n/a` | diff size and export count have no flagged symbol, and a symbol signal with no recorded name or AST hash can't be matched to any version |
+| `n/a` | diff size and export count have no flagged symbol, a symbol signal with no recorded name or AST hash can't be matched to any version, and an earlier run of a retried commit is superseded by the latest |
 
 `sindri shape report` prints, per type, `SIGNALS | LABELED | ACTED-ON | KEPT | PRECISION | TOWARD 3b`. Precision is `acted-on / (acted-on + kept)`, and 3b wants at least 30 labeled signals and precision at least 0.70 per layer (`ready`). Known measurement effects:
 
+- A commit still on an open branch after `outcomeDays` is labeled `dropped` (spec amendment 6: not on the default branch by then counts as dropped, and dropped is excluded from precision), so a long-lived PR's signals never enter precision.
 - With squash merges, a signal whose flagged code was reworked later in the same PR has no version with the recorded hash on the default branch, so it is labeled `dropped` and excluded from precision. Measured precision is therefore biased **low** (conservative for the 3b bar). Recovering those signals needs PR data, which a later plan adds.
 - AST hashes depend on the parser (the indexer version and the TypeScript version). Each run records its parser, and only runs recorded by the current parser are labeled, so a TypeScript upgrade leaves older runs unlabeled instead of reading them as `acted-on`. The structure layer's stamp names the parser too, so an upgrade re-parses every file on the next build.
 - A file renamed on the default branch after the merge, or a symbol moved to another file, still reads as `kept`: when the original path no longer holds it, every file at the tip that mentions the name (`git grep -w`) is parsed for the same name and AST hash. If that search fails, the signal stays unlabeled until the next run.

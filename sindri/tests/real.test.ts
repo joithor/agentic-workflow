@@ -24,13 +24,14 @@ describe("realSystemProbe (smoke)", () => {
 describe("realGitRunner (smoke)", () => {
   it("runs git and reports failures", async () => {
     const git = realGitRunner();
-    const ok = await git.run(["--version"], process.cwd());
+    const ok = await git.run(["--version"], process.cwd(), { timeoutMs: 5000 });
     expect(ok.ok && ok.stdout).toMatch(/^git version /);
     const bad = await git.run(["no-such-subcommand"], process.cwd());
     expect(bad.ok).toBe(false);
     // The exit status rides along: `git grep` exits 1 for "no match", other failures differently.
     const none = await git.run(["grep", "-l", "-F", "-e", "sindri-no-such-text-" + "xyz", "HEAD", "--"], process.cwd());
     expect(none.ok ? null : none.code).toBe(1);
+    expect((await git.run(["--version"], process.cwd())).ok).toBe(true);
     const badRev = await git.run(["grep", "-l", "-F", "-e", "x", "no-such-rev", "--"], process.cwd());
     expect(badRev.ok ? null : badRev.code).toBe(128);
     // git never started (a missing cwd): no exit status, and the error message stands in for stderr.

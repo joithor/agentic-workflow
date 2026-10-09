@@ -5,7 +5,7 @@ import { parseFlags } from "../args.js";
 import { stateDir, type Deps } from "../deps.js";
 import { SindriError } from "../errors.js";
 import { ulid } from "../ids.js";
-import { ledgerPath, openLedger, openLedgerReadOnly, withEpoch, type Ledger } from "../ledger/db.js";
+import { ledgerPath, openLedger, openLedgerReadOnly, readLedger, schemaVersion, type Ledger } from "../ledger/db.js";
 import { acquireTickLock } from "../lock/lock.js";
 import type { Command } from "../main.js";
 import { failure, fromError, success, type CommandResult } from "../output.js";
@@ -18,9 +18,9 @@ import { indexPath, layers, meta, openIndexReadOnly, type Layer } from "./db.js"
 import type { IndexIo } from "./io.js";
 import { buildOverlay, stagedChanges } from "./overlay.js";
 import { parserId } from "./parse-ts.js";
-import { reconcileShape } from "./reconcile.js";
+import { shapeSideSteps } from "./reconcile.js";
 import { computeSignals } from "./signals.js";
-import { ingestSpool, pruneSpool, writeShapeRun } from "./spool.js";
+import { spoolDir, writeShapeRun } from "./spool.js";
 
 async function commonDir(deps: Deps, cwd: string, foreign: boolean): Promise<string> {
   const r = await deps.git.run(["rev-parse", "--git-common-dir"], cwd, { foreign });
@@ -185,56 +185,89 @@ function summarize(s: Stat): { labeled: number; precision: number | null; toward
   return { labeled, precision, toward };
 }
 
+interface Summary {
+  types: Stat[];
+  layerStats: Stat[];
+  runs: { runs: number; deferred: number };
+  recent: RecentRow[];
+}
+
+function summary(db: Ledger | null, recentN: number | null): Summary {
+  if (db === null) return { types: [], layerStats: [], runs: { runs: 0, deferred: 0 }, recent: [] };
+  return {
+    types: stats(db, "type"),
+    layerStats: stats(db, "layer"),
+    runs: db.prepare("SELECT COUNT(*) AS runs, COALESCE(SUM(deferred LIKE '%\"embeddings\"%'), 0) AS deferred FROM shape_runs").get() as { runs: number; deferred: number },
+    recent:
+      recentN === null
+        ? []
+        : (db
+            .prepare("SELECT s.type, s.at, s.existing, s.value, s.threshold, s.detail, s.outcome, r.index_age_ms FROM shape_signals s JOIN shape_runs r ON r.run_id = s.run_id ORDER BY s.seq DESC LIMIT ?")
+            .all(recentN) as RecentRow[]),
+  };
+}
+
+const spooledRuns = (deps: Deps): number => (fs.existsSync(spoolDir(deps)) ? fs.readdirSync(spoolDir(deps)).filter((n) => n.startsWith("shape-") && n.endsWith(".json")).length : 0);
+
+// A read: it never creates, migrates or writes the ledger, takes no lock and makes no git call.
+// `observe` (hourly) and `shape reconcile` move the spool in and label outcomes.
 async function report(args: string[], deps: Deps): Promise<CommandResult> {
   const { values } = parseFlags(args, { json: { type: "boolean" }, recent: { type: "string" } });
   const recentN = values.recent === undefined ? null : Number(values.recent);
   if (recentN !== null && !(Number.isInteger(recentN) && recentN > 0)) {
     throw new SindriError("SND-CLI-002", "--recent needs a positive whole number", { fix: "sindri shape report --recent 10" });
   }
+  const file = ledgerPath(stateDir(deps));
+  // A ledger from before the shape tables (schema v1) has recorded nothing yet.
+  const { types, layerStats, runs, recent } = fs.existsSync(file) ? readLedger(file, (db) => summary(schemaVersion(db) >= 2 ? db : null, recentN)) : summary(null, recentN);
+  const spooled = spooledRuns(deps);
+  const byType = Object.fromEntries(types.map((r) => [r.key, r.signals]));
+  const rows = types.map((s) => {
+    const x = summarize(s);
+    return [s.key, String(s.signals), String(x.labeled), String(s.acted), String(s.kept), x.precision === null ? "n/a" : x.precision.toFixed(2), x.toward];
+  });
+  const lines = [
+    ...(spooled === 0 ? [] : [`${spooled} run(s) wait in the spool; sindri observe (hourly) or sindri shape reconcile moves them into the ledger.`]),
+    ...(runs.runs === 0 ? [] : [`Runs: ${runs.runs} recorded; ${runs.deferred} deferred the embeddings layer.`]),
+    ...(types.length === 0 ? ["No shape signals recorded yet."] : table(["TYPE", "SIGNALS", "LABELED", "ACTED-ON", "KEPT", "PRECISION", "TOWARD 3b"], rows)),
+    "Precision is an outcome proxy, not a human label: acted-on means the flagged code was changed or removed within shape.outcomeDays of the commit, for any reason.",
+    ...(recent.length === 0 ? [] : ["", "Recent signals:", ...recent.flatMap(evidence)]),
+  ];
+  const data = {
+    spooled, byType, runs,
+    types: types.map((s) => ({ ...s, ...summarize(s) })),
+    layers: layerStats.map((s) => ({ ...s, ...summarize(s) })),
+    recent,
+  };
+  return success(lines.join("\n"), data, values.json === true);
+}
+
+// The write half of `report`: moves the spool into the ledger and labels outcomes, under the
+// same gates as observe's recording (an approved profile, hosts.active, the tick lock).
+async function reconcile(args: string[], deps: Deps): Promise<CommandResult> {
+  const { values } = parseFlags(args, { json: { type: "boolean" } });
+  const json = values.json === true;
   const db = openLedger(ledgerPath(stateDir(deps)));
   try {
+    const skip = (why: string): CommandResult => success(`Not reconciled: ${why}.`, { done: false, reason: why }, json, 1);
+    const loaded = approvedProfile(deps, db);
+    if (loaded === null) return skip("no approved profile (sindri profile approve)");
+    const host = deps.system.hostname();
+    if (loaded.profile.hosts.active !== host) return skip(`this host (${host}) is not hosts.active (${loaded.profile.hosts.active})`);
     const lock = acquireTickLock({ dir: stateDir(deps), db, sys: deps.system, now: deps.now });
-    let ingested = { runs: 0, signals: 0, quarantined: 0 };
-    let reconciled = { linked: 0, labeled: 0 };
-    if (lock.ok) {
-      try {
-        ingested = withEpoch(db, lock.owner.epoch, () => ingestSpool(db, deps, lock.owner.epoch));
-        pruneSpool(db, deps);
-        const loaded = approvedProfile(deps, db);
-        if (loaded !== null) reconciled = await reconcileShape(db, deps, loaded, lock.owner.epoch);
-      } finally {
-        lock.release();
-      }
+    if (!lock.ok) return skip("another run holds the lock");
+    try {
+      const side = await shapeSideSteps(db, deps, loaded, lock.owner.epoch);
+      const { ingested, reconciled } = side;
+      const lines = [
+        `Ingested ${ingested.runs} run(s), ${ingested.signals} signal(s).${ingested.quarantined > 0 ? ` Quarantined ${ingested.quarantined} bad spool file(s).` : ""}`,
+        `Reconciled: linked ${reconciled.linked} run(s) to commits, labeled ${reconciled.labeled} signal(s).`,
+        ...side.notes,
+      ];
+      return success(lines.join("\n"), { done: true, ...side }, json, side.notes.length > 0 ? 1 : 0);
+    } finally {
+      lock.release();
     }
-    const types = stats(db, "type");
-    const layerStats = stats(db, "layer");
-    const byType = Object.fromEntries(types.map((r) => [r.key, r.signals]));
-    const runs = db.prepare("SELECT COUNT(*) AS runs, COALESCE(SUM(deferred LIKE '%\"embeddings\"%'), 0) AS deferred FROM shape_runs").get() as { runs: number; deferred: number };
-    const recent =
-      recentN === null
-        ? []
-        : (db
-            .prepare("SELECT s.type, s.at, s.existing, s.value, s.threshold, s.detail, s.outcome, r.index_age_ms FROM shape_signals s JOIN shape_runs r ON r.run_id = s.run_id ORDER BY s.seq DESC LIMIT ?")
-            .all(recentN) as RecentRow[]);
-    const rows = types.map((s) => {
-      const x = summarize(s);
-      return [s.key, String(s.signals), String(x.labeled), String(s.acted), String(s.kept), x.precision === null ? "n/a" : x.precision.toFixed(2), x.toward];
-    });
-    const lines = [
-      `Ingested ${ingested.runs} run(s), ${ingested.signals} signal(s).${ingested.quarantined > 0 ? ` Quarantined ${ingested.quarantined} bad spool file(s).` : ""}${lock.ok ? "" : " (Another run holds the lock; showing what's already ingested.)"}`,
-      ...(reconciled.linked + reconciled.labeled === 0 ? [] : [`Reconciled: linked ${reconciled.linked} run(s) to commits, labeled ${reconciled.labeled} signal(s).`]),
-      ...(runs.runs === 0 ? [] : [`Runs: ${runs.runs} recorded; ${runs.deferred} deferred the embeddings layer.`]),
-      ...(types.length === 0 ? ["No shape signals recorded yet."] : table(["TYPE", "SIGNALS", "LABELED", "ACTED-ON", "KEPT", "PRECISION", "TOWARD 3b"], rows)),
-      "Precision is an outcome proxy, not a human label: acted-on means the flagged code was later changed or removed.",
-      ...(recent.length === 0 ? [] : ["", "Recent signals:", ...recent.flatMap(evidence)]),
-    ];
-    const data = {
-      ingested, reconciled, byType, runs,
-      types: types.map((s) => ({ ...s, ...summarize(s) })),
-      layers: layerStats.map((s) => ({ ...s, ...summarize(s) })),
-      recent,
-    };
-    return success(lines.join("\n"), data, values.json === true);
   } finally {
     db.close();
   }
@@ -243,14 +276,14 @@ async function report(args: string[], deps: Deps): Promise<CommandResult> {
 export function makeShapeCommand(io: Pick<IndexIo, "fetch">): Command {
   return async (args, deps) => {
     const json = args.includes("--json");
-    if (args[0] === "report") {
+    if (args[0] === "report" || args[0] === "reconcile") {
       try {
-        return await report(args.slice(1), deps);
+        return await (args[0] === "report" ? report : reconcile)(args.slice(1), deps);
       } catch (e) {
         return fromError(e, json);
       }
     }
-    if (!args.includes("--record")) return failure("SND-CLI-002", `unknown shape subcommand: ${args[0] ?? "(none)"}; use --record --staged or report`, json, { fix: "sindri shape --help" });
+    if (!args.includes("--record")) return failure("SND-CLI-002", `unknown shape subcommand: ${args[0] ?? "(none)"}; use --record --staged, report or reconcile`, json, { fix: "sindri shape --help" });
     try {
       const { values } = parseFlags(args, { record: { type: "boolean" }, staged: { type: "boolean" }, repo: { type: "string" }, size: { type: "string" } });
       const size = SIZES.find((s) => s === values.size);

@@ -60,11 +60,12 @@ export const COMMANDS: Record<string, CommandDef> = {
     run: repoCommand,
   },
   shape: {
-    summary: "Record shape signals for staged changes (pre-commit), or report them",
+    summary: "Record shape signals for staged changes (pre-commit), report them, or reconcile their outcomes",
     usage: [
       "Usage:",
       "  sindri shape --record --staged [--repo NAME] [--size XS|S|M|L|XL]   (always exits 0)",
-      "  sindri shape report [--recent N] [--json]",
+      "  sindri shape report [--recent N] [--json]   (read-only)",
+      "  sindri shape reconcile [--json]   (ingest the spool and label outcomes; observe does this hourly)",
     ].join("\n"),
     run: (args, deps) => makeShapeCommand(deps.io)(args, deps),
   },

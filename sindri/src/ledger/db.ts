@@ -1,3 +1,4 @@
+import { randomBytes } from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
 import Database from "better-sqlite3";
@@ -90,15 +91,22 @@ export function schemaVersion(db: Ledger): number {
 
 // Exported with an injectable list so the backup path is testable before a
 // second real migration exists. Two openers racing: the IMMEDIATE transaction
-// re-reads the version, so the loser applies nothing.
+// re-reads the version, so the loser applies nothing. The backup is `VACUUM INTO`: one
+// read transaction, so a consistent copy with the WAL's newest frames whatever other
+// connections hold open (a checkpoint plus a file copy misses frames a reader pins and can
+// tear). It is the synchronous form of better-sqlite3's async db.backup(), which openLedger
+// can't await. Written to a unique temp name, then renamed: VACUUM INTO refuses an
+// existing file, and a racing opener's backup must not fail this one.
 export function migrateWith(db: Ledger, file: string | null, migrations: readonly string[]): void {
   const before = schemaVersion(db);
   if (before > migrations.length) {
     throw new SindriError("SND-LEDGER-001", `ledger schema v${before} is newer than this sindri (v${migrations.length})`);
   }
   if (before > 0 && before < migrations.length && file !== null) {
-    db.pragma("wal_checkpoint(TRUNCATE)");
-    fs.copyFileSync(file, `${file}.bak-v${before}`);
+    const bak = `${file}.bak-v${before}`;
+    const tmp = `${bak}.tmp-${process.pid}-${randomBytes(4).toString("hex")}`;
+    db.prepare("VACUUM INTO ?").run(tmp);
+    fs.renameSync(tmp, bak);
   }
   db.transaction(() => {
     for (let v = schemaVersion(db); v < migrations.length; v++) db.exec(migrations[v]);

@@ -9,8 +9,7 @@ import { parseFlags } from "../args.js";
 import { stateDir, type Deps } from "../deps.js";
 import { SindriError } from "../errors.js";
 import { ulid } from "../ids.js";
-import { reconcileShape } from "../index/reconcile.js";
-import { ingestSpool, pruneSpool } from "../index/spool.js";
+import { shapeSideSteps } from "../index/reconcile.js";
 import { fenced, ledgerPath, openLedger, readLedger, type Ledger } from "../ledger/db.js";
 import { listEvents, markMissing, setCursor, upsertItem } from "../ledger/items.js";
 import { acquireTickLock } from "../lock/lock.js";
@@ -111,8 +110,6 @@ function record(db: Ledger, deps: Deps, loaded: LoadedProfile, snap: Snapshot, e
     }
     counts.removed = markMissing(db, ctx, source, new Set(snap.items.map((i) => i.id)));
     setCursor(db, source, snap.cursor, deps.now());
-    // Commit-time shape runs the hook spooled (it never writes the ledger itself, spec §5.2).
-    ingestSpool(db, deps, epoch);
     return counts;
   });
 }
@@ -207,10 +204,11 @@ export const observeCommand: Command = async (args, deps) => {
           const r = report(approved, snap, null, `Not recorded: another run took over.${drift}`, drift !== "", json);
           return { ...r, stderr: `no-op: stale epoch ${lock.owner.epoch} (current ${written.current}); another run took over\n` };
         }
-        pruneSpool(db, deps); // after the commit: the ingested runs are in the ledger
-        await reconcileShape(db, deps, approved, lock.owner.epoch); // links shape runs to their commits, labels old-enough signals
+        // Commit-time shape runs the hook spooled (it never writes the ledger itself, spec §5.2),
+        // then links runs to their commits and labels old-enough signals. Never fails the tick.
+        const side = await shapeSideSteps(db, deps, approved, lock.owner.epoch);
         const counts = written.value;
-        const note = `Recorded ${counts.new} new, ${counts.changed} changed, ${counts.removed} removed in the ledger.${drift}`;
+        const note = [`Recorded ${counts.new} new, ${counts.changed} changed, ${counts.removed} removed in the ledger.${drift}`, ...side.notes].join(" ");
         return report(approved, snap, counts, note, drift !== "", json);
       } finally {
         lock.release();

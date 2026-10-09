@@ -229,13 +229,15 @@ describe("sindri shape report", () => {
     });
   };
 
-  it("ingests the spool, prints the per-type table with a header, and lists recent signals with their evidence", async () => {
+  it("reconcile ingests the spool; report prints the per-type table with a header, and lists recent signals with their evidence", async () => {
     const { d, root } = await ready();
     stage(root, "src/feature.ts", BODY("shorten"));
     await record(d);
     diffRun(d);
+    expect((await shape()(["report"], d)).stdout).toContain("2 run(s) wait in the spool; sindri observe (hourly) or sindri shape reconcile moves them into the ledger.");
+    expect((await shape()(["reconcile"], d)).stdout).toContain("Ingested 2 run(s), 2 signal(s).");
     const r = await shape()(["report", "--recent", "2"], d);
-    expect(r.stdout).toContain("Ingested 2 run(s), 2 signal(s).");
+    expect(r.stdout).not.toContain("wait in the spool");
     expect(r.stdout).toContain("Runs: 2 recorded; 0 deferred the embeddings layer.");
     expect(r.stdout).toMatch(/^TYPE\s+SIGNALS\s+LABELED\s+ACTED-ON\s+KEPT\s+PRECISION\s+TOWARD 3b$/m);
     expect(r.stdout).toMatch(/^reinvented:exact\s+1\s+0\s+0\s+0\s+n\/a\s+0\/30 labeled; bar 0\.70$/m);
@@ -248,20 +250,36 @@ describe("sindri shape report", () => {
     expect((await shape()(["report", "--recent", "0"], d)).stderr).toContain("SND-CLI-002");
   });
 
-  it("says when nothing was recorded, notes quarantined files, and notes a held tick lock", async () => {
+  it("says when nothing was recorded, notes quarantined files, and leaves the spool alone under a held tick lock", async () => {
     const { d } = await ready();
     expect((await shape()(["report"], d)).stdout).toContain("No shape signals recorded yet.");
     fs.mkdirSync(spoolDir(d), { recursive: true });
     fs.writeFileSync(path.join(spoolDir(d), "shape-garbage.json"), "not json");
-    expect((await shape()(["report"], d)).stdout).toContain("Quarantined 1 bad spool file(s).");
+    expect((await shape()(["reconcile"], d)).stdout).toContain("Quarantined 1 bad spool file(s).");
     diffRun(d);
     const db = openLedger(ledgerPath(stateDir(d)));
     const held = acquireTickLock({ dir: stateDir(d), db, sys: d.system, now: d.now });
-    const busy = await shape()(["report"], d);
+    const busy = await shape()(["reconcile"], d);
     if (held.ok) held.release();
     db.close();
-    expect(busy.stdout).toContain("Ingested 0 run(s), 0 signal(s). (Another run holds the lock; showing what's already ingested.)");
+    expect(busy.stdout).toContain("Not reconciled: another run holds the lock.");
     expect(fs.existsSync(path.join(spoolDir(d), "shape-01k0000000000000000000000z.json"))).toBe(true);
+  });
+
+  it("observe still records plan tasks when the spool can't be ingested, and says so", async () => {
+    const { d, root } = await ready();
+    fs.writeFileSync(path.join(root, "docs/superpowers/plans/p.md"), "# P\n\n### Task 1: Small\n\n- [ ] **Step 1: x**\n");
+    diffRun(d);
+    // A bad spool file that can't be quarantined: a plain file sits where the quarantine/ dir goes.
+    fs.writeFileSync(path.join(spoolDir(d), "shape-garbage.json"), "not json");
+    fs.writeFileSync(path.join(spoolDir(d), "quarantine"), "");
+    const r = await runCli(["observe"], d);
+    expect(r.exitCode).toBe(0);
+    expect(r.stdout).toMatch(/Recorded 1 new, 0 changed, 0 removed in the ledger\. Shape spool not ingested: /);
+    const db = openLedger(ledgerPath(stateDir(d)));
+    expect(db.prepare("SELECT COUNT(*) AS n FROM items").get()).toEqual({ n: 1 });
+    expect(db.prepare("SELECT COUNT(*) AS n FROM shape_runs").get()).toEqual({ n: 0 });
+    db.close();
   });
 
   it("observe moves the spool into the ledger while it records", async () => {
