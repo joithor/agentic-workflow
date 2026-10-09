@@ -1,7 +1,7 @@
 import { execFileSync } from "node:child_process";
 import fs from "node:fs";
 import path from "node:path";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
 import { runCli } from "../src/main.js";
 import { hitsIn, hookBinary, isSindriHook, parseAddedLines, preCommitHook, preCommitPath, PRE_COMMIT_MARKER } from "../src/scrub/commands.js";
@@ -181,19 +181,61 @@ describe("sindri scrub --install-pre-commit", () => {
     const fallback = await runCli(["scrub", "--install-pre-commit"], makeDeps({ cwd: sub }));
     expect(fs.realpathSync(fallback.stdout.match(/at (.*)\.\n/)?.[1] as string)).toBe(fs.realpathSync(path.join(root, ".git/hooks/pre-commit")));
     execFileSync("git", ["config", "core.hooksPath", ".githooks"], { cwd: root });
-    await runCli(["scrub", "--install-pre-commit"], makeDeps({ cwd: sub }));
-    expect(fs.existsSync(path.join(root, ".githooks", "pre-commit"))).toBe(true);
-    expect(fs.existsSync(path.join(sub, ".githooks"))).toBe(false);
+    expect(await preCommitPath(realGitRunner(), sub)).toBe(path.join(fs.realpathSync(root), ".githooks", "pre-commit"));
   });
 
-  it("honors core.hooksPath and --repo, and refuses outside git", async () => {
+  // Final review I1: a hooks dir that core.hooksPath names is the user's (often tracked, maybe public),
+  // so sindri never writes there, even when it is empty, and the fix gives the two lines by hand.
+  it("refuses whenever core.hooksPath is set (local, even an empty tracked dir), writing nothing; --repo; outside git", async () => {
     const root = repo();
+    fs.mkdirSync(path.join(root, ".githooks"));
+    fs.writeFileSync(path.join(root, ".githooks", "commit-msg"), "#!/bin/sh\nexit 0\n");
+    execFileSync("git", ["add", "-A"], { cwd: root });
     execFileSync("git", ["config", "core.hooksPath", ".githooks"], { cwd: root });
     const real = fs.realpathSync(root); // git reports symlink-resolved paths (macOS /var -> /private/var)
     expect(await preCommitPath(realGitRunner(), root)).toBe(path.join(real, ".githooks", "pre-commit"));
-    const r = await runCli(["scrub", "--install-pre-commit", "--repo", root], makeDeps());
-    expect(r.stdout).toContain(path.join(real, ".githooks", "pre-commit"));
+    const r = await runCli(["scrub", "--install-pre-commit", "--repo", root, "--json"], makeDeps({ env: { SINDRI_BIN: "/opt/aw bin/sindri" } }));
+    expect(r.exitCode).not.toBe(0);
+    const err = JSON.parse(r.stdout).error as { code: string; message: string; fix: string };
+    expect(err.code).toBe("SND-SCRUB-003");
+    expect(err.message).toContain("core.hooksPath");
+    expect(err.fix).toContain(`add these two lines to ${path.join(real, ".githooks", "pre-commit")} yourself`);
+    expect(err.fix).toContain("'/opt/aw bin/sindri' scrub --staged || exit 1");
+    expect(err.fix).toContain("'/opt/aw bin/sindri' shape --record --staged || true");
+    expect(err.fix).not.toContain("husky");
+    expect(fs.readdirSync(path.join(root, ".githooks"))).toEqual(["commit-msg"]);
+    expect(fs.existsSync(path.join(root, ".git", "hooks", "pre-commit"))).toBe(false);
     expect((await runCli(["scrub", "--install-pre-commit"], makeDeps({ cwd: tempDir() }))).stderr).toContain("SND-SCRUB-004");
+  });
+
+  it("refuses a global core.hooksPath too, even though that dir doesn't exist yet", async () => {
+    const root = repo();
+    const cfgDir = tempDir();
+    const global = path.join(cfgDir, "gitconfig");
+    const hooks = path.join(cfgDir, "global-hooks");
+    fs.writeFileSync(global, `[core]\n\thooksPath = ${hooks}\n`);
+    vi.stubEnv("GIT_CONFIG_GLOBAL", global);
+    try {
+      const r = await runCli(["scrub", "--install-pre-commit"], makeDeps({ cwd: root }));
+      expect(r.stderr).toContain("SND-SCRUB-003");
+      expect(r.stderr).toContain(`add these two lines to ${path.join(fs.realpathSync(cfgDir), "global-hooks", "pre-commit")} yourself`);
+      expect(fs.existsSync(hooks)).toBe(false);
+    } finally {
+      vi.unstubAllEnvs();
+    }
+  });
+
+  it("names the husky route when core.hooksPath is husky's, and falls back to the two lines if git can't name the common dir", async () => {
+    const answers = (common: { ok: true; stdout: string } | { ok: false; stderr: string }) => fakeGit({
+      "rev-parse --path-format=absolute --git-path hooks/pre-commit": { ok: true, stdout: "/r/.husky/_/pre-commit\n" },
+      "config --get core.hooksPath": { ok: true, stdout: ".husky/_\n" },
+      "rev-parse --path-format=absolute --git-common-dir": common,
+    });
+    const husky = await runCli(["scrub", "--install-pre-commit", "--json"], makeDeps({ cwd: "/r", git: answers({ ok: true, stdout: "/r/.git\n" }) }));
+    expect(JSON.parse(husky.stdout).error.fix).toContain("husky/init.sh");
+    expect(JSON.parse(husky.stdout).error.fix).toContain("'/r/.git'");
+    const noCommon = await runCli(["scrub", "--install-pre-commit", "--json"], makeDeps({ cwd: "/r", git: answers({ ok: false, stderr: "fatal" }) }));
+    expect(JSON.parse(noCommon.stdout).error.fix).toContain("add these two lines to /r/.husky/_/pre-commit yourself");
   });
 });
 

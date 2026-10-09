@@ -30,7 +30,7 @@ export const ERRORS = {
   "SND-LOCK-001": { summary: "Another sindri run holds the lock.", fix: "wait a moment and rerun; `sindri doctor` shows the holder" },
   "SND-SCRUB-001": { summary: "A profile scrub pattern does not compile.", fix: "Fix the regex at the named scrub.extraPatterns index, then run `sindri profile validate`." },
   "SND-SCRUB-002": { summary: "Staged changes contain likely secrets.", fix: "remove them (use a secret pointer or an env var); for a false positive, commit with --no-verify and say why" },
-  "SND-SCRUB-003": { summary: "A different pre-commit hook is already installed.", fix: "Add both lines to that hook by hand, in this order: `sindri scrub --staged || exit 1` then `sindri shape --record --staged || true`." },
+  "SND-SCRUB-003": { summary: "A different pre-commit hook is already installed, or core.hooksPath points the hook at a directory sindri didn't create (it never writes there).", fix: "Add both lines to that hook by hand, in this order: `sindri scrub --staged || exit 1` then `sindri shape --record --staged || true`." },
   "SND-SCRUB-004": { summary: "`scrub --staged` or `--install-pre-commit` ran outside a git repo.", fix: "cd into the repo first, or pass --repo PATH to --install-pre-commit." },
   "SND-SCRUB-005": { summary: "`git diff --cached` failed, so `scrub --staged` could not scan the staged changes.", fix: "Fix the git error shown in the details, then retry the commit." },
   "SND-SCRUB-006": { summary: "git's init.templateDir is set to a directory sindri does not own, or could not be read or set.", fix: "copy the named hook into that template dir's hooks/ yourself, or `git config --global --unset init.templateDir` and rerun `sindri repo onboard --template`" },

@@ -250,7 +250,7 @@ describe("read-only paths never create or migrate the ledger", () => {
     expect(fs.existsSync(stateDir(d))).toBe(false);
   });
 
-  it("--dry-run and scope runs leave a v2 ledger byte-identical, at v2, with no backup", async () => {
+  it("--dry-run and scope runs read approval from a v2 ledger and leave it byte-identical, at v2, with no backup (final review M1)", async () => {
     const d = await approvedScopeDeps();
     const file = ledgerPath(stateDir(d));
     const db = openLedger(file);
@@ -260,7 +260,10 @@ describe("read-only paths never create or migrate the ledger", () => {
     const before = fs.readFileSync(file);
     const listing = fs.readdirSync(stateDir(d)).sort();
     const cmd = makeScopeCommand(scriptedIo([]));
-    expect((await cmd([briefFile(), "--dry-run"], d)).stderr).toContain("SND-PROFILE-012");
+    const dry = await cmd([briefFile(), "--dry-run"], d);
+    expect(dry.stderr).toBe("");
+    expect(dry.exitCode).toBe(0);
+    expect(dry.stdout).toContain('Dry run for "Shift times".');
     expect((await cmd(["runs"], d)).stdout).toBe("No scope runs recorded.\n");
     expect(fs.readFileSync(file).equals(before)).toBe(true);
     expect(fs.readdirSync(stateDir(d)).sort()).toEqual(listing);

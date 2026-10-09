@@ -275,7 +275,7 @@ export function renderBacktest(r: BacktestReport): string {
   const p = summarize(r);
   const bar = passBar(r.full, r.baseline);
   const f = r.full;
-  const issueLine = (i: IssueRef, extra = ""): string => `${i.issue}: ${safeText(i.title)}${extra}`;
+  const issueLine = (i: IssueRef, extra = ""): string => `${safeText(i.issue)}: ${safeText(i.title)}${extra}`;
   const section = (title: string, items: string[]): string[] => ["", `## ${title}`, "", ...(items.length === 0 ? ["- none"] : items.map((x) => `- ${x}`))];
   return [
     `# Backtest: ${safeText(r.name)}`,

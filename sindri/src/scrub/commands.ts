@@ -163,32 +163,44 @@ function scrubberFor(deps: Deps): { scrubber: Scrubber; warning: string } {
   return { scrubber: makeScrubber(compileExtraPatterns(use.profile.scrub.extraPatterns)), warning };
 }
 
-// A foreign hook reached through core.hooksPath is never edited, and core.hooksPath is never set.
-// When that hook is husky's (under .husky/, or its shim), the local-only route is husky's
-// ${XDG_CONFIG_HOME:-~/.config}/husky/init.sh, which husky sources before every hook: the two lines
-// there, guarded to this repo and calling the installed binary (GUI git clients have no ~/.local/bin).
+// A hooks dir that core.hooksPath names (local or global) is the user's: often tracked, maybe public,
+// so sindri never writes there, not even into an empty one, and never sets core.hooksPath (final review I1).
+// When it is husky's, the local-only route is husky's ${XDG_CONFIG_HOME:-~/.config}/husky/init.sh, which
+// husky sources before every hook: the two lines there, guarded to this repo. Otherwise the two lines go
+// into that pre-commit by hand. Both call the installed binary (GUI git clients have no ~/.local/bin).
+// Null when core.hooksPath is unset.
 const HUSKY = /husky/;
-async function foreignHookFix(deps: Deps, repoPath: string, hook: string, text: string): Promise<string | undefined> {
-  if (!hook.includes(`${path.sep}.husky${path.sep}`) && !HUSKY.test(text)) return undefined;
+export async function hooksPathFix(deps: Deps, repoPath: string, hook: string, text: string): Promise<string | null> {
   const hooksPath = await deps.git.run(["config", "--get", "core.hooksPath"], repoPath);
-  const common = await deps.git.run(["rev-parse", "--path-format=absolute", "--git-common-dir"], repoPath);
-  if (!hooksPath.ok || !common.ok) return undefined;
+  if (!hooksPath.ok) return null;
+  const value = hooksPath.stdout.trim();
   const q = (s: string): string => `'${s.replace(/'/g, "'\\''")}'`;
   const bin = q(deps.env.SINDRI_BIN ?? "sindri");
-  return `core.hooksPath (${hooksPath.stdout.trim()}) makes ${hook} this repo's hook; sindri never edits it and never sets core.hooksPath. ` +
-    `Local-only route (husky): add to \${XDG_CONFIG_HOME:-~/.config}/husky/init.sh: ` +
-    `if [ "$(basename "$0")" = pre-commit ] && [ "$(git rev-parse --path-format=absolute --git-common-dir)" = ${q(common.stdout.trim())} ]; then ${bin} scrub --staged || exit 1; ${bin} shape --record --staged || true; fi`;
+  const scan = `${bin} scrub --staged || exit 1`;
+  const shape = `${bin} shape --record --staged || true`;
+  const head = `core.hooksPath (${value}) makes ${path.dirname(hook)} this repo's hooks dir; sindri never writes there and never sets core.hooksPath. `;
+  if (HUSKY.test(value) || HUSKY.test(text)) {
+    const common = await deps.git.run(["rev-parse", "--path-format=absolute", "--git-common-dir"], repoPath);
+    if (common.ok) {
+      return head + `Local-only route (husky): add to \${XDG_CONFIG_HOME:-~/.config}/husky/init.sh: ` +
+        `if [ "$(basename "$0")" = pre-commit ] && [ "$(git rev-parse --path-format=absolute --git-common-dir)" = ${q(common.stdout.trim())} ]; then ${scan}; ${shape}; fi`;
+    }
+  }
+  return head + `To scan commits, add these two lines to ${hook} yourself, in this order: ${scan} then ${shape}`;
 }
 
-// Replaces any sindri hook (v1, v2 or the template copy); refuses a foreign one.
+// Replaces any sindri hook (v1, v2 or the template copy) in the repo's own hooks dir; refuses a
+// foreign one, and refuses to write at all when core.hooksPath is set.
 export async function installPreCommit(deps: Deps, repoPath: string): Promise<{ hook: string; changed: boolean }> {
   const hook = await preCommitPath(deps.git, repoPath);
   if (hook === null) throw new SindriError("SND-SCRUB-004", `${repoPath} is not inside a git repo`);
   const text = preCommitHook(deps.env.SINDRI_BIN ?? "sindri");
   const old = fs.existsSync(hook) ? fs.readFileSync(hook, "utf8") : null;
-  if (old !== null && !isSindriHook(old)) {
-    throw new SindriError("SND-SCRUB-003", `${hook} already exists and is not sindri's`, { fix: await foreignHookFix(deps, repoPath, hook, old) });
+  const viaHooksPath = await hooksPathFix(deps, repoPath, hook, old ?? "");
+  if (viaHooksPath !== null) {
+    throw new SindriError("SND-SCRUB-003", `core.hooksPath points the pre-commit hook at ${hook}, in a directory sindri didn't create; nothing was written`, { fix: viaHooksPath });
   }
+  if (old !== null && !isSindriHook(old)) throw new SindriError("SND-SCRUB-003", `${hook} already exists and is not sindri's`);
   if (old === text) return { hook, changed: false };
   fs.mkdirSync(path.dirname(hook), { recursive: true });
   fs.writeFileSync(hook, text);

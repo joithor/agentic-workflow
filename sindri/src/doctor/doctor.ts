@@ -17,7 +17,7 @@ import { fromError, success, type ExitCode } from "../output.js";
 import { approvalProblem, approvalState, type ApprovalState } from "../profile/approve.js";
 import { loadProfile, resolveProfileRoot, type LoadedProfile } from "../profile/load.js";
 import { spoolDir } from "../index/spool.js";
-import { hookBinary, isSindriHook, isTemplateHook, PRE_COMMIT_MARKER, preCommitPath } from "../scrub/commands.js";
+import { hookBinary, hooksPathFix, isSindriHook, isTemplateHook, PRE_COMMIT_MARKER, preCommitPath } from "../scrub/commands.js";
 
 const lines = (text: string): string[] => text.split("\n");
 
@@ -121,7 +121,9 @@ async function profileChecks(deps: Deps, loaded: LoadedProfile): Promise<{ check
     const hook = await preCommitPath(deps.git, repo.path);
     const text = hook !== null && fs.existsSync(hook) ? fs.readFileSync(hook, "utf8") : "";
     const bin = isSindriHook(text) ? hookBinary(text) : null;
-    const fix = `sindri scrub --install-pre-commit --repo ${repo.path}`;
+    // The installer refuses a core.hooksPath dir (it never writes there), so it is never the fix for one.
+    const manual = hook === null ? null : await hooksPathFix(deps, repo.path, hook, text);
+    const fix = manual ?? `sindri scrub --install-pre-commit --repo ${repo.path}`;
     const missing = bin !== null && path.isAbsolute(bin) && !isExecutable(bin);
     if (bin === null) out.push({ name: `pre-commit:${name}`, status: "warn", detail: "secret-scan hook not installed", fix });
     // The template copy (git init.templateDir) never refuses a commit: a missing binary or a failed

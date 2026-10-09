@@ -12,7 +12,6 @@ import { ledgerPath, openLedger, openLedgerReadOnly, withEpoch } from "../ledger
 import { acquireTickLock } from "../lock/lock.js";
 import type { Command } from "../main.js";
 import { failure, fromError, success, type CommandResult } from "../output.js";
-import { requireApprovedProfile } from "../profile/approve.js";
 import type { LoadedProfile } from "../profile/load.js";
 import { compileExtraPatterns, makeScrubber, type Scrubber } from "../scrub/scrub.js";
 import { resolveSecret } from "../secrets.js";
@@ -90,19 +89,6 @@ export function localSources(
   if (src.transcripts.enabled && want("transcripts")) out.push(transcriptsSource(src.transcripts.dir.replace(/^~(?=\/|$)/, deps.home), TRANSCRIPT_CAPS, o.scrubber));
   if (want("code")) out.push(codeSource(deps, o.codeRepos, { allowAsOf: o.withIndex, scrubber: o.scrubber }));
   return out;
-}
-
-// A dry run never creates or migrates the ledger: a missing ledger, or one at another
-// schema version, has approved nothing it can read. A real run records, so it may migrate later.
-export function loadApproved(deps: Deps, dryRun: boolean): LoadedProfile {
-  if (!dryRun) return approvedOrThrow(deps);
-  const db = openLedgerReadOnly(ledgerPath(stateDir(deps)));
-  if (db === null) throw new SindriError("SND-PROFILE-012", "no approved profile", { fix: "sindri profile approve" });
-  try {
-    return requireApprovedProfile(deps, db);
-  } finally {
-    db.close();
-  }
 }
 
 export async function loadLinear(deps: Deps, loaded: LoadedProfile, io: ScopeIo, ref: string, scrubber: Scrubber): Promise<LinearProject> {
@@ -201,6 +187,16 @@ export interface RunRow {
   leaky: boolean;
   tokens: number;
   outPath: string;
+}
+
+// The run's file is on disk but recordRun threw (a newer ledger, an I/O error): say where the file is
+// before the error, so the run isn't lost. Its scope_runs row and model_calls rows are not kept, the
+// same for a scope run and a backtest.
+function unrecorded(e: unknown, file: string, scrubber: Scrubber, json: boolean): CommandResult {
+  const wrote = `wrote ${file} and ${file.replace(/\.md$/, ".json")}; the run was not recorded`;
+  const err = e instanceof SindriError ? e : new SindriError("SND-CLI-900", `could not record the run: ${scrubber.scrub((e as Error).message).text}`);
+  const f = failure(err.code, err.message, json, { fix: err.fix, details: [...err.details, wrote], exitCode: err.exitCode });
+  return json ? f : { ...f, stdout: `Wrote ${file}.\n` };
 }
 
 export const LEDGER_MISS = "Not recorded in the ledger: another run holds the lock.";
@@ -363,10 +359,15 @@ async function runBacktest(
   const precision = full?.precision ?? null;
   const baselineRecall = baseline?.recall ?? null;
   const baselinePrecision = baseline?.precision ?? null;
-  const recorded = recordRun(deps, {
-    runId, subject: label, mode: "backtest", status, rounds: first.result.rounds, surfaces: firstMap === null ? 0 : firstMap.surfaces.length,
-    recall, precision, baselineRecall, baselinePrecision, leaky: o.withIndex, tokens: budget.used, outPath: file,
-  }, audit);
+  let recorded: boolean;
+  try {
+    recorded = recordRun(deps, {
+      runId, subject: label, mode: "backtest", status, rounds: first.result.rounds, surfaces: firstMap === null ? 0 : firstMap.surfaces.length,
+      recall, precision, baselineRecall, baselinePrecision, leaky: o.withIndex, tokens: budget.used, outPath: file,
+    }, audit);
+  } catch (e) {
+    return unrecorded(e, file, scrubber, o.json);
+  }
   const p = summarize(report);
   const text = [
     `Backtest of "${project.name}": ${p.recall}, ${p.precision}; ${p.baseline}. Pass bar: ${p.overall}.${o.withIndex ? " Leaky: used today's code index." : ""}`,
@@ -390,7 +391,9 @@ export function makeScopeCommand(io: ScopeIo): Command {
       if (subject === undefined) return failure("SND-CLI-002", USAGE, json);
       const only = parseSources(values.sources);
       const dryRun = values["dry-run"] === true;
-      const loaded = loadApproved(deps, dryRun);
+      // Read-only and at any schema version (readLedger, as `repo status` does): a dry run on an older
+      // ledger finds the approval the real run finds. Only recordRun, at the end of a real run, migrates.
+      const loaded = approvedOrThrow(deps);
       const scrubber = profileScrubber(loaded);
       const linear = isLinearSubject(subject);
       if (linear && values.section !== undefined) throw new SindriError("SND-CLI-002", "--section applies to brief files, not Linear projects");
@@ -449,11 +452,7 @@ export function makeScopeCommand(io: ScopeIo): Command {
       try {
         recorded = recordRun(deps, { runId, subject: label, mode: "scope", status: result.status, rounds: result.rounds, surfaces: n.surfaces, recall: null, precision: null, baselineRecall: null, baselinePrecision: null, leaky: false, tokens: result.tokens, outPath: file }, audit);
       } catch (e) {
-        // The map is on disk: say where before the error, so the run isn't lost.
-        const wrote = `wrote ${file} and ${file.replace(/\.md$/, ".json")}; the run was not recorded`;
-        const err = e instanceof SindriError ? e : new SindriError("SND-CLI-900", `could not record the run: ${scrubber.scrub((e as Error).message).text}`);
-        const f = failure(err.code, err.message, json, { fix: err.fix, details: [...err.details, wrote], exitCode: err.exitCode });
-        return json ? f : { ...f, stdout: `Wrote ${file}.\n` };
+        return unrecorded(e, file, scrubber, json);
       }
       const next =
         result.status === "incomplete"

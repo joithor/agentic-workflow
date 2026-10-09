@@ -15,11 +15,14 @@ import { installTemplate, nudgeLine, onboard, repoState } from "./onboard.js";
 
 // Edits the LIVE profile; the change takes effect after `sindri profile approve` (spec §8.7).
 // The mirror is not created here: every full `sindri index build` creates or refreshes it.
+// From a linked worktree (its git dir differs from the common dir, <main>/.git) it adds the main
+// checkout, as repoState matches it: a worktree is ephemeral, and its path breaks once it is removed.
 export async function repoAdd(deps: Deps, target: string, name?: string): Promise<{ name: string; path: string; added: boolean }> {
   const loaded = requireProfile(deps);
-  const top = await deps.git.run(["rev-parse", "--show-toplevel"], path.resolve(deps.cwd, target));
-  if (!top.ok) throw new SindriError("SND-PROFILE-009", `${target} is not inside a git repo`);
-  const repoPath = fs.realpathSync(top.stdout.trim());
+  const r = await deps.git.run(["rev-parse", "--path-format=absolute", "--show-toplevel", "--git-dir", "--git-common-dir"], path.resolve(deps.cwd, target));
+  if (!r.ok) throw new SindriError("SND-PROFILE-009", `${target} is not inside a git repo`);
+  const [top, gitDir, common] = r.stdout.trim().split("\n");
+  const repoPath = fs.realpathSync(gitDir === common ? top : path.dirname(common));
   const repoName = sanitizeName(name ?? path.basename(repoPath));
   // --name becomes a file name and a directory name: it must already be what sanitizing makes of it.
   if (name !== undefined && repoName !== name) {

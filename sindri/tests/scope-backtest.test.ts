@@ -269,6 +269,20 @@ describe("renderBacktest and summarize", () => {
     expect(md).toContain("- ABC-3: go hxxps://evil.example/leak");
     expect(md.split("\n").filter((l) => l.startsWith("# "))).toEqual(["# Backtest: P # Fake"]);
   });
+
+  it("keeps a hostile issue identifier inert too (final review M4)", () => {
+    const id = "ABC-3](https://evil.example/x) <img src=x>\n# Fake";
+    const hostile = { issue: id, title: "t" };
+    const md = renderBacktest(report({ full: measured(0.5, 0.5, { recallJudged: { covered: [{ ...hostile, surface: "S1" }], missed: [hostile], unstable: [hostile], unjudged: [hostile], reasons: [] } }) }));
+    expect(md).not.toMatch(/https?:\/\//);
+    expect(md).not.toMatch(/<[a-z/]/i);
+    expect(md).not.toMatch(/[^\\]\]\(/); // every ] is escaped, so no link forms
+    expect(md.split("\n").filter((l) => l.startsWith("# "))).toHaveLength(1);
+    for (const section of ["Missed issues", "Unstable (the adjudicator's two runs disagreed; counted as not covered)", "Not judged"]) {
+      expect(md).toContain(`## ${section}\n\n- ABC-3\\](hxxps://evil.example/x) # Fake: t`);
+    }
+    expect(md).toContain("- ABC-3\\](hxxps://evil.example/x) # Fake: t (surface S1)");
+  });
 });
 
 // ---- the command ----
@@ -398,6 +412,24 @@ describe("sindri scope --backtest", () => {
     expect(r.stderr).toContain("Why incomplete: baseline: no scope map passed the checks (token budget exhausted)");
     expect(fs.readdirSync(out)).toContain("backtest-new-shift-times-2026-10-08.md");
     expect(rows(d, "SELECT COUNT(*) AS n FROM scope_runs")).toEqual([{ n: 0 }]);
+  });
+
+  it("prints the written report, then the error, when the run can't be recorded (final review M2)", async () => {
+    const d = await approvedScopeDeps(LINEAR);
+    const db = openLedger(ledgerPath(stateDir(d)));
+    db.pragma("user_version = 99");
+    db.close();
+    const out = tempDir();
+    const r = await makeScopeCommand(scriptedIo(FULL_RUN(), linearFetch()))(["--backtest", "linear:abc", "--out", out], withToken(d));
+    const file = path.join(out, "backtest-new-shift-times-2026-10-08.md");
+    expect(r.exitCode).toBe(2);
+    expect(r.stdout).toBe(`Wrote ${file}.\n`);
+    expect(r.stderr).toContain("SND-LEDGER-001");
+    expect(r.stderr).toContain(`wrote ${file} and ${file.replace(/\.md$/, ".json")}; the run was not recorded`);
+    expect(fs.readdirSync(out).sort()).toEqual(["backtest-new-shift-times-2026-10-08.json", "backtest-new-shift-times-2026-10-08.md"]);
+    const j = await makeScopeCommand(scriptedIo(FULL_RUN(), linearFetch()))(["--backtest", "linear:abc", "--out", out, "--json"], withToken(d));
+    expect(j.exitCode).toBe(2);
+    expect(JSON.parse(j.stdout).error.details.join("\n")).toContain("backtest-new-shift-times-2026-10-08-2.md");
   });
 
   it("refuses the flags that don't fit, and a file subject", async () => {

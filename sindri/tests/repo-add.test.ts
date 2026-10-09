@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 
 import { runCli } from "../src/main.js";
 import { sanitizeName } from "../src/profile/commands.js";
-import { gitRepo, makeDeps } from "./helpers.js";
+import { git, gitRepo, makeDeps, tempDir } from "./helpers.js";
 
 describe("sindri repo add", () => {
   it("adds a repo to the live profile, keeps comments, asks for approval, creates no mirror, and is idempotent", async () => {
@@ -24,6 +24,18 @@ describe("sindri repo add", () => {
     expect(fs.readdirSync(path.join(state, "profile")).filter((n) => n.includes(".tmp"))).toEqual([]);
     expect((await runCli(["profile", "validate"], d)).exitCode).toBe(0);
     expect((await runCli(["repo", "add", target, "--name", "webapp"], d)).stdout).toContain("webapp is already in the profile.");
+  });
+
+  it("from a linked worktree, adds the main checkout and names it after that (final review I2)", async () => {
+    const d = makeDeps();
+    await runCli(["profile", "init"], d);
+    const target = gitRepo({ "a.ts": "1" });
+    const wt = path.join(tempDir(), "wt");
+    git(target, "worktree", "add", "-q", wt, "-b", "side");
+    fs.mkdirSync(path.join(wt, "sub"));
+    const r = JSON.parse((await runCli(["repo", "add", path.join(wt, "sub"), "--json"], d)).stdout) as { name: string; path: string };
+    expect(r).toMatchObject({ name: sanitizeName(path.basename(fs.realpathSync(target))), path: fs.realpathSync(target) });
+    expect((await runCli(["repo", "add", target], d)).stdout).toContain("is already in the profile.");
   });
 
   it("names a repo after its directory when no name is given", async () => {

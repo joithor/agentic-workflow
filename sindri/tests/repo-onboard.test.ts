@@ -153,7 +153,7 @@ describe("sindri repo onboard", () => {
     await approve(d);
     const p = stepList((await runCli(["repo", "onboard", plain, "--name", "lib", "--no-build", "--json"], d)).stdout).find((s) => s.name === "pre-commit");
     expect(p?.fix).not.toContain("husky");
-    // A core.hooksPath that isn't husky's keeps the generic fix; husky's shim text elsewhere still counts.
+    // A core.hooksPath that isn't husky's gets the two lines to add by hand; husky's shim text elsewhere still counts.
     const other = gitRepo({ "d.ts": "1" });
     git(other, "config", "core.hooksPath", ".githooks");
     fs.mkdirSync(path.join(other, ".githooks"));
@@ -162,7 +162,7 @@ describe("sindri repo onboard", () => {
     await approve(d);
     const o = stepList((await runCli(["repo", "onboard", other, "--name", "other", "--no-build", "--json"], d)).stdout).find((s) => s.name === "pre-commit");
     expect(o?.status).toBe("fail");
-    expect(o?.fix).toBe(ERRORS["SND-SCRUB-003"].fix);
+    expect(o?.fix).toContain(`add these two lines to ${path.join(fs.realpathSync(other), ".githooks", "pre-commit")} yourself`);
     fs.writeFileSync(path.join(other, ".githooks", "pre-commit"), "#!/usr/bin/env sh\n. \"$(dirname -- \"$0\")/_/husky.sh\"\n");
     const h = stepList((await runCli(["repo", "onboard", other, "--name", "other", "--no-build", "--json"], d)).stdout).find((s) => s.name === "pre-commit");
     expect(h?.fix).toContain("husky/init.sh");
@@ -173,6 +173,39 @@ describe("sindri repo onboard", () => {
     await approve(d);
     const f = stepList((await runCli(["repo", "onboard", v4, "--name", "v4", "--no-build", "--json"], d)).stdout).find((s) => s.name === "pre-commit");
     expect(f?.fix).toBe(ERRORS["SND-SCRUB-003"].fix);
+  });
+});
+
+describe("sindri repo onboard: hooksPath and linked worktrees (final review I1, I2)", () => {
+  it("never writes a pre-commit into an empty core.hooksPath dir; the step fails with the two lines to add", async () => {
+    const d = await approvedIndexDeps(ring0Repo({ "a.ts": "1" }));
+    const target = gitRepo({ ".githooks/commit-msg": "#!/bin/sh\nexit 0\n" });
+    git(target, "config", "core.hooksPath", ".githooks");
+    await runCli(["repo", "onboard", target, "--name", "web", "--no-build"], d);
+    await approve(d);
+    const r = await runCli(["repo", "onboard", target, "--name", "web", "--no-build", "--json"], { ...d, env: { ...d.env, SINDRI_BIN: "/opt/aw bin/sindri" } });
+    expect(r.exitCode).toBe(2);
+    const step = stepList(r.stdout).find((s) => s.name === "pre-commit");
+    expect(step?.status).toBe("fail");
+    expect(step?.detail).toContain("SND-SCRUB-003");
+    expect(step?.fix).toContain("'/opt/aw bin/sindri' scrub --staged || exit 1");
+    expect(fs.readdirSync(path.join(target, ".githooks"))).toEqual(["commit-msg"]);
+    expect(git(target, "status", "--porcelain")).toBe("");
+  });
+
+  it("run from a linked worktree, adds the main checkout, not the worktree", async () => {
+    const d = await approvedIndexDeps(ring0Repo({ "a.ts": "1" }));
+    const target = gitRepo({ "b.ts": "1" });
+    const wt = path.join(tempDir(), "wt");
+    git(target, "worktree", "add", "-q", wt, "-b", "side");
+    const r = await runCli(["repo", "onboard", wt, "--name", "web", "--no-build", "--json"], d);
+    expect(r.exitCode).toBe(1);
+    expect(stepList(r.stdout)[0].detail).toBe(`web (${fs.realpathSync(target)}) is in the live profile`);
+    const repoFile = path.join(d.env.AW_STATE_DIR as string, "profile", "repos", "web.yaml");
+    expect(fs.readFileSync(repoFile, "utf8")).toContain(`path: ${fs.realpathSync(target)}\n`);
+    await approve(d);
+    expect((await runCli(["repo", "status", target], d)).exitCode).toBe(0);
+    expect((await runCli(["repo", "status", wt], d)).exitCode).toBe(0);
   });
 });
 

@@ -152,6 +152,16 @@ describe("sindri doctor coverage paths", () => {
     expect(await hookCheck()).toMatchObject({ status: "warn", detail: "template copy: it skips the secret scan if sindri goes missing or repo status fails", fix: `sindri repo onboard ${repo}` });
   });
 
+  it("never tells a core.hooksPath repo to run the installer (final review I1)", async () => {
+    const d = await ring0Deps();
+    execFileSync("git", ["config", "core.hooksPath", ".githooks"], { cwd: d.cwd });
+    const hook = Object.entries(await byName({ ...d, env: { ...d.env, SINDRI_BIN: "/opt/aw bin/sindri" } })).find(([k]) => k.startsWith("pre-commit:"))?.[1];
+    expect(hook).toMatchObject({ status: "warn", detail: "secret-scan hook not installed" });
+    expect(hook?.fix).not.toContain("--install-pre-commit");
+    expect(hook?.fix).toContain(`add these two lines to ${path.join(fs.realpathSync(d.cwd), ".githooks", "pre-commit")} yourself`);
+    expect(hook?.fix).toContain("'/opt/aw bin/sindri' scrub --staged || exit 1");
+  });
+
   it("reports an executable hook binary as ok", async () => {
     const d = await ring0Deps();
     await runCli(["scrub", "--install-pre-commit"], { ...d, env: { ...d.env, SINDRI_BIN: process.execPath } });
