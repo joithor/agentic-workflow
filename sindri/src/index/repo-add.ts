@@ -5,6 +5,7 @@ import YAML from "yaml";
 import { parseFlags } from "../args.js";
 import type { Deps } from "../deps.js";
 import { SindriError } from "../errors.js";
+import { ulid } from "../ids.js";
 import type { Command } from "../main.js";
 import { failure, fromError, success } from "../output.js";
 import { requireProfile, sanitizeName } from "../profile/commands.js";
@@ -27,15 +28,30 @@ export async function repoAdd(deps: Deps, target: string, name?: string): Promis
     if (fs.realpathSync(existing.path) !== repoPath) throw new SindriError("SND-PROFILE-013", `repo name ${repoName} is already used for ${existing.path}`, { fix: "pass --name <another name>" });
     return { name: repoName, path: repoPath, added: false };
   }
-  // The loader already refuses a repos/<name>.yaml that profile.yaml doesn't list; "wx" still never overwrites one.
+  // The loader already refuses a repos/<name>.yaml that profile.yaml doesn't list; "wx" still never
+  // overwrites one, so a concurrent add of the same name loses with EEXIST.
   const repoFile = path.join(loaded.root, "repos", `${repoName}.yaml`);
   fs.mkdirSync(path.dirname(repoFile), { recursive: true, mode: 0o700 });
-  fs.writeFileSync(repoFile, YAML.stringify({ schemaVersion: PROFILE_SCHEMA_VERSION, name: repoName, path: repoPath, defaultBranch: "main", protectedPaths: [] }), { mode: 0o600, flag: "wx" });
+  try {
+    fs.writeFileSync(repoFile, YAML.stringify({ schemaVersion: PROFILE_SCHEMA_VERSION, name: repoName, path: repoPath, defaultBranch: "main", protectedPaths: [] }), { mode: 0o600, flag: "wx" });
+  } catch (e) {
+    if ((e as NodeJS.ErrnoException).code !== "EEXIST") throw e;
+    throw new SindriError("SND-PROFILE-013", `${repoFile} appeared while adding ${repoName} (another repo add?)`, { fix: "rerun sindri repo add, or pass --name <another name>" });
+  }
   const file = path.join(loaded.root, "profile.yaml");
-  const doc = YAML.parseDocument(fs.readFileSync(file, "utf8"));
-  doc.addIn(["repos"], repoName);
-  fs.writeFileSync(`${file}.tmp`, doc.toString(), { mode: 0o600 });
-  fs.renameSync(`${file}.tmp`, file);
+  // A unique tmp name ("wx": never through a symlink); on any failure the repos file goes too,
+  // since an orphan repos/<name>.yaml makes every profile command fail.
+  const tmp = `${file}.tmp-${deps.system.pid}-${ulid(deps.now())}`;
+  try {
+    const doc = YAML.parseDocument(fs.readFileSync(file, "utf8"));
+    doc.addIn(["repos"], repoName);
+    fs.writeFileSync(tmp, doc.toString(), { mode: 0o600, flag: "wx" });
+    fs.renameSync(tmp, file);
+  } catch (e) {
+    fs.rmSync(tmp, { force: true });
+    fs.rmSync(repoFile, { force: true });
+    throw e;
+  }
   return { name: repoName, path: repoPath, added: true };
 }
 
