@@ -130,8 +130,12 @@ function realPath(p: string): string {
   return path.join(fs.realpathSync(base), path.relative(base, p));
 }
 
-const refuse = (dir: string, why: string): SindriError =>
-  new SindriError("SND-SCOPE-025", `refusing to write ${path.basename(dir)} inside a git worktree: ${why}`);
+// `verified` false: git errored and no .git entry was found, so the guard could only fail closed.
+const refuse = (dir: string, verified: boolean, why: string): SindriError =>
+  new SindriError(
+    "SND-SCOPE-025",
+    verified ? `refusing to write ${path.basename(dir)} inside a git worktree: ${why}` : `refusing to write ${path.basename(dir)}: could not confirm --out is outside a git worktree (git failed), and ${why}`,
+  );
 
 // The nearest directory at or above `p` that holds a `.git` entry (a directory, or a
 // file for a linked worktree or submodule), or null.
@@ -157,13 +161,14 @@ export async function guardOutput(deps: Deps, loaded: LoadedProfile, dir: string
   const r = await deps.git.run(["rev-parse", "--show-toplevel"], nearestExisting(at), { foreign: true });
   const outside = !r.ok && holder === null && /not a git repository/i.test(r.stderr);
   if (outside) return all;
+  const verified = r.ok || holder !== null;
   if (only === null || linear || ![...only].every((n) => n === "file" || n === "code")) {
-    throw refuse(dir, "the map may carry notes, transcripts or tracker text");
+    throw refuse(dir, verified, "the map may carry notes, transcripts or tracker text");
   }
   if (!only.has("code")) return [];
   const top = r.ok ? realPath(r.stdout.trim()) : holder;
   const repo = all.find((name) => realPath(loaded.repos[name].path) === top);
-  if (repo === undefined) throw refuse(dir, "it is not the top level of a profile repo, so the code source would carry another repo's code");
+  if (repo === undefined) throw refuse(dir, verified, "it is not the top level of a profile repo, so the code source would carry another repo's code");
   return [repo];
 }
 

@@ -347,7 +347,9 @@ describe("the public-repo guard fails closed", () => {
     for (const answer of cases) {
       const gd = { ...d, git: fakeGit({ "rev-parse --show-toplevel": answer }) };
       const out = path.join(tempDir(), "maps");
-      expect((await makeScopeCommand(scriptedIo([]))([f, "--out", out, "--sources", "file,notes"], gd)).stderr).toContain("SND-SCOPE-025");
+      expect((await makeScopeCommand(scriptedIo([]))([f, "--out", out, "--sources", "file,notes"], gd)).stderr).toContain(
+        "SND-SCOPE-025 refusing to write maps: could not confirm --out is outside a git worktree (git failed), and the map may carry notes",
+      );
       expect((await makeScopeCommand(scriptedIo([]))([f, "--out", out, "--sources", "file,code"], gd)).stderr).toContain("SND-SCOPE-025");
       expect(fs.existsSync(out)).toBe(false);
       expect((await makeScopeCommand(scriptedIo([MAP, NONE]))([f, "--out", out, "--sources", "file"], gd)).exitCode).toBe(0);
@@ -365,7 +367,7 @@ describe("the public-repo guard fails closed", () => {
     const withFile = tempDir();
     fs.writeFileSync(path.join(withFile, ".git"), "gitdir: /elsewhere\n");
     for (const root of [withDir, withFile]) {
-      expect((await makeScopeCommand(scriptedIo([]))([f, "--out", path.join(root, "a", "b")], plain)).stderr).toContain("SND-SCOPE-025");
+      expect((await makeScopeCommand(scriptedIo([]))([f, "--out", path.join(root, "a", "b")], plain)).stderr).toContain("SND-SCOPE-025 refusing to write b inside a git worktree");
       expect((await makeScopeCommand(scriptedIo([]))([f, "--out", path.join(root, "a"), "--sources", "file,code"], plain)).stderr).toContain("SND-SCOPE-025");
     }
     expect((await makeScopeCommand(scriptedIo([]))([f, "--out", path.join(d.cwd, ".git", "maps")], d)).stderr).toContain("SND-SCOPE-025");
@@ -441,7 +443,9 @@ describe("writing and recording", () => {
   it("never writes the Linear token to stdout, the map files or the ledger", async () => {
     const token = "lin_" + "api_" + "Zq7Kx2Wm9Rt4Yp6Ln3Bv8Hc5Jd1Fs0Ga";
     const d = await approvedScopeDeps("  linear:\n    token: env:LINEAR_TOKEN\n");
+    const auth: string[] = [];
     const fetchFor: GraphqlFetch = async (_u, init) => {
+      auth.push(init.headers.authorization);
       const q = JSON.parse(init.body) as { query: string };
       if (q.query.includes("projects(")) return { ok: true, status: 200, json: async () => ({ data: { projects: { nodes: [{ id: "p1", name: "Shift times", description: "shift times", createdAt: "2026-01-01T00:00:00Z", url: "u" }] } } }) };
       return { ok: true, status: 200, json: async () => ({ data: { project: { issues: { pageInfo: { hasNextPage: false, endCursor: null }, nodes: [] } } } }) };
@@ -449,6 +453,8 @@ describe("writing and recording", () => {
     const out = tempDir();
     const r = await makeScopeCommand(scriptedIo([MAP, NONE], fetchFor))(["linear:abc", "--out", out], { ...d, env: { ...d.env, LINEAR_TOKEN: token } });
     expect(r.exitCode).toBe(0);
+    expect(auth.length).toBeGreaterThan(0);
+    expect(auth.every((a) => a === token)).toBe(true);
     const files = fs.readdirSync(out).map((n) => fs.readFileSync(path.join(out, n), "utf8")).join("\n");
     const ledger = JSON.stringify([rows(d, "SELECT * FROM scope_runs"), rows(d, "SELECT * FROM model_calls")]);
     for (const text of [r.stdout, r.stderr, files, ledger]) expect(text).not.toContain(token.slice(8));
