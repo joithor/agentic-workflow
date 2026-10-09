@@ -22,7 +22,7 @@ describe("staged overlay", () => {
     expect(changes).toEqual([
       { path: "a.ts", text: "export function a() { return 2; }\n" },
       { path: "b.ts", text: null },
-      { path: "logo.png", text: expect.any(String) },
+      { path: "logo.png", text: null },
     ]);
     expect(addedLines).toBe(1);
     expect(skipped).toEqual([]);
@@ -92,5 +92,22 @@ describe("staged overlay refusals", () => {
     const r = await stagedChanges(realGitRunner(), root, { denyPaths: ["*.env"], maxFileKB: 512 });
     expect(r.changes).toEqual([{ path: "link.ts", text: null }]);
     expect(r.skipped).toEqual([{ path: "SECRETS.ENV", reason: "denied" }, { path: "link.ts", reason: "symlink" }]);
+  });
+});
+
+describe("staged overlay reads only what it parses", () => {
+  it("never reads a blob for non-code files, however many or large", async () => {
+    const root = gitRepo({ "a.ts": "export const a = 1;\n" });
+    for (let i = 0; i < 20; i++) fs.writeFileSync(path.join(root, `img${i}.png`), Buffer.concat([Buffer.from([0]), Buffer.alloc(300_000, i + 1)]));
+    fs.writeFileSync(path.join(root, "notes.md"), "# n\n".repeat(1000));
+    git(root, "add", "-A");
+    const real = realGitRunner();
+    const calls: string[][] = [];
+    const spy = { run: async (args: string[], cwd: string) => { calls.push(args); return real.run(args, cwd); } };
+    const { changes, addedLines } = await stagedChanges(spy, root, caps);
+    expect(changes.every((c) => c.text === null)).toBe(true);
+    expect(changes).toHaveLength(21);
+    expect(addedLines).toBe(1000);
+    expect(calls.filter((a) => a.includes("cat-file") || a.includes("show"))).toEqual([]);
   });
 });

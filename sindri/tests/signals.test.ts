@@ -3,11 +3,12 @@ import { describe, expect, it } from "vitest";
 import { buildIndex } from "../src/index/build.js";
 import { indexPath, openIndexReadOnly, type IndexDb } from "../src/index/db.js";
 import type { Embedder } from "../src/index/embed.js";
-import { buildOverlay } from "../src/index/overlay.js";
+import { realGitRunner } from "../src/git-real.js";
+import { buildOverlay, stagedChanges } from "../src/index/overlay.js";
 import { computeSignals, nameSimilarity } from "../src/index/signals.js";
 import { ProfileSchema } from "../src/profile/schema.js";
 import { BODY, METHOD, profileFor } from "./index-fixtures.js";
-import { gitRepo, makeDeps } from "./helpers.js";
+import { git, gitRepo, makeDeps } from "./helpers.js";
 
 const t = ProfileSchema.parse({ schemaVersion: 1, user: "me", hosts: { active: "h" }, tracker: { type: "plan-file", repo: "r" }, repos: ["r"] }).shape.thresholds;
 
@@ -165,5 +166,26 @@ describe("shape signals: what counts as reusable", () => {
     const base = await baseIndex({ "src/feature/priv.ts": BODY("clip").replace("export ", "") });
     const r = await run(base, [{ path: "src/other.ts", text: BODY("clips", "out.reverse();") }]);
     expect(r.signals.filter((s) => s.type === "reinvented:name")).toEqual([]);
+  });
+});
+
+describe("shape signals: renames", () => {
+  const mod = (extra = "") => Array.from({ length: 4 }, (_, i) => `export function f${i}() { return ${i}; }`).join("\n") + "\n" + extra;
+
+  it("records nothing for a pure rename of a multi-export module, or a rename with a small edit", async () => {
+    const files = { "src/old.ts": mod() };
+    const root = gitRepo(files);
+    const d = makeDeps();
+    await buildIndex(d, profileFor(root), "r", { full: false }, { embedder: null, graph: null });
+    const base = openIndexReadOnly(indexPath(d, "r"));
+    if (base === null) throw new Error("no index");
+    git(root, "mv", "src/old.ts", "src/new.ts");
+    const pure = await stagedChanges(realGitRunner(), root, { denyPaths: [], maxFileKB: 512 });
+    expect(pure.renames).toEqual(new Map([["src/new.ts", "src/old.ts"]]));
+    const overlay = (c: typeof pure) => buildOverlay(c.changes, c.addedLines, c.renames);
+    const input = { base, t, sizeBudget: 250, exportAllowance: 3, embed: null };
+    expect(await computeSignals({ ...input, overlay: overlay(pure) })).toEqual({ signals: [], deferred: [] });
+    const edited = { ...pure, changes: pure.changes.map((c) => (c.path === "src/new.ts" ? { ...c, text: mod("// note\n") } : c)) };
+    expect(await computeSignals({ ...input, overlay: overlay(edited) })).toEqual({ signals: [], deferred: [] });
   });
 });

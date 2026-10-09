@@ -26,7 +26,11 @@ export interface Overlay {
   changedPaths: Set<string>;
   manifests: { path: string; text: string }[];
   addedLines: number;
+  // New path -> old path for staged renames, so a moved file's symbols compare against their old selves.
+  renamedFrom: Map<string, string>;
 }
+
+const isParsed = (p: string): boolean => isSourcePath(p) || path.basename(p) === "package.json";
 
 // The commit as it will be, in the commit's own worktree: staged blobs (git show :path), never
 // the working tree. Denied paths and blobs over the size cap are never read or parsed.
@@ -34,12 +38,13 @@ export async function stagedChanges(
   git: GitRunner,
   worktree: string,
   o: { denyPaths: readonly string[]; maxFileKB: number },
-): Promise<{ changes: StagedChange[]; addedLines: number; skipped: SkippedFile[] }> {
+): Promise<{ changes: StagedChange[]; addedLines: number; skipped: SkippedFile[]; renames: Map<string, string> }> {
   const names = await git.run(["-c", "core.quotePath=false", "diff", "--cached", "--raw", "--no-abbrev", "-M", "-z"], worktree);
   if (!names.ok) throw new SindriError("SND-INDEX-002", `${worktree} is not a git repo`);
   const parts = names.stdout.split("\0").filter((p) => p !== "");
   const changes: StagedChange[] = [];
   const skipped: SkippedFile[] = [];
+  const renames = new Map<string, string>();
   const add = async (p: string, mode: string): Promise<void> => {
     if (matchesAny(p, o.denyPaths)) {
       skipped.push({ path: p, reason: "denied" });
@@ -48,6 +53,11 @@ export async function stagedChanges(
     // A staged symlink's blob is its target path: never read it as source, same as the inventory.
     if (mode === "120000") {
       skipped.push({ path: p, reason: "symlink" });
+      changes.push({ path: p, text: null });
+      return;
+    }
+    // Only what gets parsed is ever read: images, docs and the like never cost a blob read.
+    if (!isParsed(p)) {
       changes.push({ path: p, text: null });
       return;
     }
@@ -71,6 +81,7 @@ export async function stagedChanges(
     if (status.startsWith("R")) {
       // The old path is gone, which keeps a moved file from matching itself.
       changes.push({ path: parts[i + 1], text: null });
+      renames.set(parts[i + 2], parts[i + 1]);
       await add(parts[i + 2], dstMode);
       i += 3;
     } else {
@@ -85,10 +96,10 @@ export async function stagedChanges(
     .map((l) => Number(l.split("\t")[0]))
     .filter((n) => Number.isFinite(n))
     .reduce((a, b) => a + b, 0);
-  return { changes: changes.sort((a, b) => a.path.localeCompare(b.path)), addedLines, skipped };
+  return { changes: changes.sort((a, b) => a.path.localeCompare(b.path)), addedLines, skipped, renames };
 }
 
-export function buildOverlay(changes: StagedChange[], addedLines: number): Overlay {
+export function buildOverlay(changes: StagedChange[], addedLines: number, renames: Map<string, string> = new Map()): Overlay {
   const symbols: OverlaySymbol[] = [];
   const manifests: { path: string; text: string }[] = [];
   for (const c of changes) {
@@ -99,5 +110,5 @@ export function buildOverlay(changes: StagedChange[], addedLines: number): Overl
       manifests.push({ path: c.path, text: c.text });
     }
   }
-  return { symbols, changedPaths: new Set(changes.map((c) => c.path)), manifests, addedLines };
+  return { symbols, changedPaths: new Set(changes.map((c) => c.path)), manifests, addedLines, renamedFrom: renames };
 }

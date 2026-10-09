@@ -89,7 +89,9 @@ export async function computeSignals(i: {
   const unchanged = (s: SymbolRow): boolean => !overlay.changedPaths.has(s.file);
   const reusable = stable.filter((s) => s.kind !== "class" && (s.exported || s.utility));
   const before = new Map(baseAll.map((s) => [`${s.file}#${s.name}`, s]));
-  const fresh = overlay.symbols.filter((s) => before.get(`${s.file}#${s.name}`)?.astHash !== s.astHash);
+  // A renamed file's symbols are compared with what they were at the old path.
+  const prior = (s: { file: string; name: string }): SymbolRow | undefined => before.get(`${overlay.renamedFrom.get(s.file) ?? s.file}#${s.name}`);
+  const fresh = overlay.symbols.filter((s) => prior(s)?.astHash !== s.astHash);
   const candidates = fresh.filter((s) => s.kind !== "class" && s.tokens.length >= MIN_TOKENS);
 
   for (const s of candidates) {
@@ -171,12 +173,12 @@ export async function computeSignals(i: {
     signals.push({ type: "simpler:diff-size", layer: "structure", value: overlay.addedLines, threshold: i.sizeBudget, at: "(diff)", existing: null, detail: `${overlay.addedLines} added lines; the size budget is ${i.sizeBudget}`, name: null, astHash: null });
   }
   for (const s of fresh) {
-    const old = before.get(`${s.file}#${s.name}`);
+    const old = prior(s);
     if (old !== undefined && s.complexity - old.complexity > t.complexityDelta) {
       signals.push({ type: "simpler:complexity", layer: "structure", value: s.complexity - old.complexity, threshold: t.complexityDelta, at: loc(s), existing: loc(old), detail: `${u(s.name)} grew from complexity ${old.complexity} to ${s.complexity}`, name: s.name, astHash: s.astHash });
     }
   }
-  const newExports = fresh.filter((s) => s.exported && !before.has(`${s.file}#${s.name}`)).length;
+  const newExports = fresh.filter((s) => s.exported && prior(s) === undefined).length;
   if (newExports > i.exportAllowance) {
     signals.push({ type: "simpler:exports", layer: "structure", value: newExports, threshold: i.exportAllowance, at: "(diff)", existing: null, detail: `${newExports} new exports; the allowance is ${i.exportAllowance}`, name: null, astHash: null });
   }
