@@ -33,6 +33,8 @@ Generated from `sindri/src/errors.ts` by `cd sindri && npm run gen`. Do not edit
 | `SND-PROFILE-012` | No profile has been approved yet. | sindri profile approve |
 | `SND-PROFILE-013` | That repo name is already used for another path or file. | pass --name &lt;another name&gt; |
 | `SND-PROFILE-014` | That repo name is not valid. | use lowercase letters, digits and dashes (max 39) |
+| `SND-SCOPE-010` | Linear rejected the token. | check sources.linear.token points at a valid read-only Linear API key |
+| `SND-SCOPE-011` | Linear could not be read. | check the project URL and your network, then rerun; the message carries Linear's own error text |
 | `SND-SCOPE-020` | The brief file can't be read. | check the path you passed to sindri scope |
 | `SND-SCRUB-001` | A profile scrub pattern does not compile. | Fix the regex at the named scrub.extraPatterns index, then run `sindri profile validate`. |
 | `SND-SCRUB-002` | Staged changes contain likely secrets. | remove them (use a secret pointer or an env var); for a false positive, commit with --no-verify and say why |

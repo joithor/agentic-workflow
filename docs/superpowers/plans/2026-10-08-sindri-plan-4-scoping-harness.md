@@ -1065,7 +1065,7 @@ git commit -m "feat: sindri scope sources (file, notes, transcripts, code), inge
   - `linearSource(project: LinearProject): Source` — issue and comment records (`trust: "untrusted"`) with ≥ 1 keyword hit, or all of them when no keywords are given; `asOf` keeps only records created at or before it.
   - The token is sent only in the `Authorization` header to `apiUrl`, never logged, and never put in a record, an error or the ledger. Comments past the 20th are not read (disclosed in the docs).
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 `sindri/tests/scope-linear.test.ts`:
 
@@ -1206,12 +1206,12 @@ describe("Linear source (Review Focus 4)", () => {
 });
 ```
 
-- [ ] **Step 2: Run the test to verify it fails**
+- [x] **Step 2: Run the test to verify it fails**
 
 Run: `cd sindri && npx vitest run tests/scope-linear.test.ts`
 Expected: FAIL with `Failed to load url ../src/scope/sources/linear.js`.
 
-- [ ] **Step 3: Implement**
+- [x] **Step 3: Implement**
 
 `sindri/src/scope/sources/linear.ts`:
 
@@ -1366,12 +1366,12 @@ Add to `ERRORS`:
   "SND-SCOPE-011": { summary: "Linear could not be read.", fix: "check the project URL and your network, then rerun; the message carries Linear's own error text" },
 ```
 
-- [ ] **Step 4: Run the tests**
+- [x] **Step 4: Run the tests**
 
 Run: `cd sindri && npm run gen && npm run typecheck && npm run test:coverage`
 Expected: all tests PASS; coverage 100% on the files this task touches.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add sindri/src sindri/tests docs/sindri/errors.md
