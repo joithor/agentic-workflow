@@ -113,4 +113,32 @@ class C { #q() { return this.#q(); } }
     const out = typescriptParser.parse("b.ts", src);
     expect(out.map((s) => s.name)).toEqual(["over", "A", "y", "B", "B.[\"k\"]", "B.s", "C", "C.#q"]);
   });
+
+  describe("astHash invariance", () => {
+    const hash = (src: string): string => typescriptParser.parse("h.ts", src)[0].astHash;
+
+    it("ignores literal values", () => {
+      expect(hash(`function f(a) { return a + 1 + "x" + true; }`)).toBe(hash(`function f(a) { return a + 99 + "yy" + false; }`));
+    });
+
+    it("changes on small structural changes", () => {
+      expect(hash(`function f(a, b) { return a + b; }`)).not.toBe(hash(`function f(a, b) { return a - b; }`));
+      expect(hash(`function f(a, b) { return a + b; }`)).not.toBe(hash(`function f(a, b) { log(a); return a + b; }`));
+    });
+
+    it("distinguishes unary operators and other dropped operator tokens", () => {
+      expect(hash(`function f(a) { return !a; }`)).not.toBe(hash(`function f(a) { return -a; }`));
+      expect(hash(`function f(a) { a++; }`)).not.toBe(hash(`function f(a) { a--; }`));
+      expect(hash(`function f(a: keyof T) { }`)).not.toBe(hash(`function f(a: readonly T[]) { }`));
+      expect(hash(`function f() { return new.target; }`)).not.toBe(hash(`function f() { return import.meta; }`));
+    });
+
+    it("ignores export, default and declare modifiers but keeps others", () => {
+      expect(hash(`export function f(a) { return a; }`)).toBe(hash(`function f(a) { return a; }`));
+      expect(hash(`export default function f(a) { return a; }`)).toBe(hash(`function f(a) { return a; }`));
+      expect(hash(`export const f = (a) => a;`)).toBe(hash(`const f = (a) => a;`));
+      expect(hash(`async function f(a) { return a; }`)).not.toBe(hash(`function f(a) { return a; }`));
+      expect(typescriptParser.parse("h.ts", `declare class D { }`)[0].astHash).toBe(typescriptParser.parse("h.ts", `class D { }`)[0].astHash);
+    });
+  });
 });

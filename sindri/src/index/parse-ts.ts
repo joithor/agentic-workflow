@@ -62,8 +62,13 @@ function tokensOf(ts: typeof TS, node: TS.Node): string[] {
   const walk = (n: TS.Node): void => {
     if (ts.isIdentifier(n) || ts.isPrivateIdentifier(n)) out.push("$id");
     else if (ts.isLiteralExpression(n) || n.kind === ts.SyntaxKind.TrueKeyword || n.kind === ts.SyntaxKind.FalseKeyword) out.push("$lit");
-    else {
+    else if (n.kind === ts.SyntaxKind.ExportKeyword || n.kind === ts.SyntaxKind.DefaultKeyword || n.kind === ts.SyntaxKind.DeclareKeyword) {
+      // Not part of the structure: `export function f` and `function f` are the same clone.
+    } else {
       out.push(ts.SyntaxKind[n.kind]);
+      // forEachChild skips these nodes' operator tokens, so hash them explicitly (`!a` vs `-a`).
+      if (ts.isPrefixUnaryExpression(n) || ts.isPostfixUnaryExpression(n) || ts.isTypeOperatorNode(n)) out.push(ts.SyntaxKind[n.operator]);
+      else if (ts.isMetaProperty(n)) out.push(ts.SyntaxKind[n.keywordToken]);
       ts.forEachChild(n, walk);
     }
   };
