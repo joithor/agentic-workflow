@@ -41,6 +41,7 @@ export const ERRORS = {
   "SND-SCOPE-020": { summary: "The brief file can't be read.", fix: "check the path you passed to sindri scope" },
   "SND-SCOPE-021": { summary: "No output directory for the scope map.", fix: "pass --out DIR or set sources.notesDir" },
   "SND-SCOPE-022": { summary: "That section isn't in the document.", fix: "check the heading number (## 13. …)" },
+  "SND-SCOPE-023": { summary: "The project has no issues filed after its brief.", fix: "pick a project with later issues, or a shorter --window" },
   "SND-SCOPE-024": { summary: "Linear isn't configured as a source.", fix: "add sources.linear.token (a secret pointer), then sindri profile approve" },
   "SND-SCOPE-025": { summary: "Refusing to write a scope map into a git worktree.", fix: "use --sources file,code, or write outside the repo" },
   "SND-LEDGER-001": { summary: "The ledger was written by a newer sindri.", fix: "Upgrade sindri (`scripts/install-sindri.sh` from the latest main), then rerun." },

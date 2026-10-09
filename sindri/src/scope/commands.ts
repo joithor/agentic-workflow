@@ -16,6 +16,7 @@ import { requireApprovedProfile } from "../profile/approve.js";
 import type { LoadedProfile } from "../profile/load.js";
 import { compileExtraPatterns, makeScrubber, type Scrubber } from "../scrub/scrub.js";
 import { resolveSecret } from "../secrets.js";
+import { measureMap, measureNotes, measureProblems, parseWindow, passBar, renderBacktest, splitProject, summarize, type BacktestReport, type Measured } from "./backtest.js";
 import { gather, type Evidence } from "./gather.js";
 import { renderIncomplete, renderMap, type RenderMeta } from "./map.js";
 import { Budget, meteredRunner, type ModelAuditRow, type ModelRunner } from "./model.js";
@@ -40,7 +41,7 @@ export const SOURCE_NAMES = ["file", "notes", "transcripts", "linear", "code"] a
 export type SourceName = (typeof SOURCE_NAMES)[number];
 
 const USAGE =
-  "usage: sindri scope <brief.md | linear:<project-url>> [--section N] [--out DIR] [--sources LIST] [--dry-run] [--json]  |  sindri scope runs [--json]";
+  "usage: sindri scope <brief.md | linear:<project-url>> [--section N] [--out DIR] [--sources LIST] [--dry-run] [--json]  |  sindri scope --backtest linear:<project-url> [--window 1d] [--with-index] [--out DIR] [--sources LIST] [--json]  |  sindri scope runs [--json]";
 
 export function extractSection(markdown: string, n: string): string | null {
   const lines = markdown.split("\n");
@@ -288,6 +289,94 @@ function scopeRuns(args: string[], deps: Deps): CommandResult {
   return success(text.join("\n"), data, json);
 }
 
+// Spec §7.5: scope the brief as it stood at the cut, then the brief alone, and let a model
+// (never a person) judge both maps against the issues filed later. One budget covers it all.
+async function runBacktest(
+  deps: Deps,
+  loaded: LoadedProfile,
+  io: ScopeIo,
+  subject: string,
+  o: { out: string; only: Set<SourceName> | null; codeRepos: string[]; scrubber: Scrubber; window: string | undefined; withIndex: boolean; json: boolean },
+): Promise<CommandResult> {
+  if (!isLinearSubject(subject)) throw new SindriError("SND-CLI-002", "--backtest takes a Linear project (linear:<project-url>), not a file");
+  const scrubber = o.scrubber;
+  const windowMs = parseWindow(o.window);
+  const project = await loadLinear(deps, loaded, io, subject, scrubber);
+  const { cut, brief, early, later } = splitProject(project, windowMs);
+  if (later.length === 0) throw new SindriError("SND-SCOPE-023", `no issues were filed after ${cut.toISOString()}; nothing to backtest`, { fix: "pick a project with later issues, or a shorter --window" });
+
+  // One budget and one audit trail for the whole backtest: scoping, baseline and every adjudication.
+  const runId = ulid(deps.now());
+  const budget = new Budget(loaded.profile.scope.maxTokensPerBacktest);
+  const audit: ModelAuditRow[] = [];
+  const raw = io.runner(loaded, scrubber);
+  const judgeWith = (tag: string) => ({ runner: meteredRunner(raw, { budget, audit, tag }), model: loaded.profile.models.adjudicator, progress: io.progress, scrubber });
+  const problems: string[] = [];
+  const notes: string[] = [];
+  // The model's text never passed a scrubber: scrub a map before it is judged, rendered or saved.
+  const scrubbed = (m: ScopeResult["map"]) => (m === null ? null : scrubber.scrubDeep(m));
+  const why = (r: string[]): string => r.map((x) => scrubber.scrub(x).text).join("; ");
+
+  // Spec amendment 4: as-of sources only; the code index is today's code, so it's opt-in and labeled leaky.
+  const sources: Source[] = [
+    ...(o.only === null || o.only.has("linear") ? [linearSource({ ...project, issues: early })] : []),
+    ...localSources(deps, loaded, { withIndex: o.withIndex, only: o.only, codeRepos: o.codeRepos, scrubber }),
+  ];
+  io.progress("scoping the brief with every source…");
+  const fullJudge = judgeWith("");
+  const first = await scopeOnce(loaded, io, brief, sources, cut, fullJudge.runner, budget, scrubber);
+  const firstMap = scrubbed(first.result.map);
+  if (first.result.status === "incomplete") problems.push(`scoping incomplete: ${why(first.result.reasons)}`);
+
+  let full: Measured | null = null;
+  let baseline: Measured | null = null;
+  if (firstMap === null) {
+    problems.push("recall and precision not measured: no scope map passed the checks");
+  } else {
+    full = await measureMap(firstMap, { early, later }, fullJudge);
+    problems.push(...measureProblems("", full));
+    notes.push(...measureNotes("", full));
+    // The same scoping with the brief alone: what the sources add is the difference.
+    io.progress("scoping the brief alone (baseline)…");
+    const baseJudge = judgeWith("baseline:");
+    const base = await scopeOnce(loaded, io, brief, [], cut, baseJudge.runner, budget, scrubber);
+    const baseMap = scrubbed(base.result.map);
+    if (baseMap === null) {
+      problems.push(`baseline: no scope map passed the checks (${why(base.result.reasons)})`);
+    } else {
+      baseline = await measureMap(baseMap, { early, later }, baseJudge);
+      problems.push(...measureProblems("baseline: ", baseline));
+      notes.push(...measureNotes("baseline: ", baseline));
+    }
+  }
+
+  const status = problems.length === 0 ? "complete" : "incomplete";
+  const label = subjectLabel(subject, scrubber);
+  const report: BacktestReport = {
+    name: project.name, cut: cut.toISOString(), generatedAt: deps.now().toISOString(), leaky: o.withIndex, status, reasons: [...problems, ...notes],
+    scoping: { status: first.result.status, rounds: first.result.rounds }, tokens: budget.used, later, full, baseline,
+  };
+  const file = writeOut(o.out, `backtest-${slug(project.name)}-${deps.now().toISOString().slice(0, 10)}`, renderBacktest(report), {
+    ...report, later: later.map((i) => i.identifier), subject: label, map: firstMap,
+  }, scrubber);
+  const recall = full?.recall ?? null;
+  const precision = full?.precision ?? null;
+  const baselineRecall = baseline?.recall ?? null;
+  const baselinePrecision = baseline?.precision ?? null;
+  const recorded = recordRun(deps, {
+    runId, subject: label, mode: "backtest", status, rounds: first.result.rounds, surfaces: firstMap === null ? 0 : firstMap.surfaces.length,
+    recall, precision, baselineRecall, baselinePrecision, leaky: o.withIndex, tokens: budget.used, outPath: file,
+  }, audit);
+  const p = summarize(report);
+  const text = [
+    `Backtest of "${project.name}": ${p.recall}, ${p.precision}; ${p.baseline}. Pass bar: ${p.overall}.${o.withIndex ? " Leaky: used today's code index." : ""}`,
+    `Wrote ${file}.`,
+    ...(recorded ? [] : [LEDGER_MISS]),
+  ];
+  const res = success(text.join("\n"), { status, recall, precision, baselineRecall, baselinePrecision, bar: passBar(full, baseline), leaky: o.withIndex, file, recorded, reasons: report.reasons }, o.json, status === "complete" ? 0 : 1);
+  return { ...res, stderr: o.json ? "" : problems.map((x) => `Why incomplete: ${x}\n`).join("") };
+}
+
 export function makeScopeCommand(io: ScopeIo): Command {
   return async (args, deps) => {
     const json = args.includes("--json");
@@ -295,6 +384,7 @@ export function makeScopeCommand(io: ScopeIo): Command {
       if (args[0] === "runs") return scopeRuns(args.slice(1), deps);
       const { values, positionals } = parseFlags(args, {
         section: { type: "string" }, out: { type: "string" }, json: { type: "boolean" }, sources: { type: "string" }, "dry-run": { type: "boolean" },
+        backtest: { type: "boolean" }, window: { type: "string" }, "with-index": { type: "boolean" },
       });
       const subject = positionals[0];
       if (subject === undefined) return failure("SND-CLI-002", USAGE, json);
@@ -304,8 +394,15 @@ export function makeScopeCommand(io: ScopeIo): Command {
       const scrubber = profileScrubber(loaded);
       const linear = isLinearSubject(subject);
       if (linear && values.section !== undefined) throw new SindriError("SND-CLI-002", "--section applies to brief files, not Linear projects");
+      const backtest = values.backtest === true;
+      if (!backtest && (values.window !== undefined || values["with-index"] === true)) throw new SindriError("SND-CLI-002", "--window and --with-index apply only to --backtest");
+      if (backtest && values.section !== undefined) throw new SindriError("SND-CLI-002", "--section does not apply to --backtest");
+      if (backtest && dryRun) throw new SindriError("SND-CLI-002", "--dry-run does not apply to --backtest");
       const out = dryRun ? null : outputDir(loaded, deps, values.out);
       const codeRepos = out === null ? Object.keys(loaded.repos).sort() : await guardOutput(deps, loaded, out, only, linear);
+      if (backtest && out !== null) {
+        return await runBacktest(deps, loaded, io, subject, { out, only, codeRepos, scrubber, window: values.window, withIndex: values["with-index"] === true, json });
+      }
 
       let brief: SourceRecord;
       const sources = localSources(deps, loaded, { withIndex: true, only, codeRepos, scrubber });

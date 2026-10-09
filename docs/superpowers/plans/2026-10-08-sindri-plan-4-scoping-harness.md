@@ -3558,7 +3558,7 @@ git commit -m "feat: sindri scope command"
   - `measureProblems(label, m)` (what makes a backtest incomplete) and `measureNotes(label, m)` (informational reasons); `renderBacktest(report): string` and `summarize(report)` — the report writes the sources it ran without and the Linear edited-text caveat in its header, lists **missed issues first** (id and escaped title), then unstable, not judged and covered, and the surfaces no issue supports.
 - Produces (`commands.ts`): `sindri scope --backtest linear:<project> [--window 1d] [--with-index] [--out DIR] [--sources LIST] [--json]`. It scopes the as-of brief with the as-of sources, then **scopes the same brief with no other sources as a baseline**, measures both, and writes `backtest-<slug>-<date>.md|.json`. One `Budget` of `scope.maxTokensPerBacktest` covers all of it. The run is `complete` only if the scoping completed, both maps were measured and every issue was judged; otherwise it is `incomplete`, still writes its report with the reasons, and exits 1. When no map passed, the report says `recall not measured`, never 0.00. A row with `mode: "backtest"` and `recall`, `precision`, `baseline_recall`, `baseline_precision` goes into the ledger (null when not measured). Errors: `SND-SCOPE-023` (no issues after the window), `SND-CLI-002` for a file subject, `--section`, `--dry-run`, and `--window` or `--with-index` without `--backtest`.
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 `sindri/tests/scope-backtest.test.ts`:
 
@@ -3983,12 +3983,12 @@ describe("sindri scope --backtest", () => {
 });
 ```
 
-- [ ] **Step 2: Run the test to verify it fails**
+- [x] **Step 2: Run the test to verify it fails**
 
 Run: `cd sindri && npx vitest run tests/scope-backtest.test.ts`
 Expected: FAIL with `Failed to load url ../src/scope/backtest.js`.
 
-- [ ] **Step 3: Implement**
+- [x] **Step 3: Implement**
 
 `sindri/src/scope/backtest.ts`:
 
@@ -4430,12 +4430,12 @@ Add to `ERRORS`:
   "SND-SCOPE-023": { summary: "The project has no issues filed after its brief.", fix: "pick a project with later issues, or a shorter --window" },
 ```
 
-- [ ] **Step 4: Run the tests**
+- [x] **Step 4: Run the tests**
 
 Run: `cd sindri && npm run gen && npm run typecheck && npm run test:coverage`
 Expected: all tests PASS; coverage 100% on the files this task touches.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add sindri/src sindri/tests docs/sindri/errors.md

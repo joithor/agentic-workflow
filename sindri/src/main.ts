@@ -72,8 +72,8 @@ export const COMMANDS: Record<string, CommandDef> = {
     run: (args, deps) => makeShapeCommand(deps.io)(args, deps),
   },
   scope: {
-    summary: "Scope a project into a cited map (surfaces, workstreams, questions); `scope runs` lists past runs",
-    usage: "Usage:\n  sindri scope <brief.md> [--section N] [--out DIR] [--sources LIST] [--dry-run] [--json]\n  sindri scope linear:<project-url> [--out DIR] [--sources LIST] [--dry-run] [--json]\n  sindri scope runs [--json]\n  --sources is a comma-separated list of file,notes,transcripts,linear,code. Inside a git worktree only --sources file,code is allowed.",
+    summary: "Scope a project into a cited map (surfaces, workstreams, questions); --backtest measures recall and precision against a baseline",
+    usage: "Usage:\n  sindri scope <brief.md> [--section N] [--out DIR] [--sources LIST] [--dry-run] [--json]\n  sindri scope linear:<project-url> [--out DIR] [--sources LIST] [--dry-run] [--json]\n  sindri scope --backtest linear:<project-url> [--window 1d] [--with-index] [--out DIR] [--sources LIST] [--json]\n  sindri scope runs [--json]\n  --sources is a comma-separated list of file,notes,transcripts,linear,code. Inside a git worktree only --sources file,code is allowed.",
     run: makeScopeCommand(realScopeIo()),
   },
   ledger: { summary: "Show ledger events", usage: "Usage: sindri ledger [--item ID] [--since 7d|12h] [--json]", run: ledgerCommand },
