@@ -14,8 +14,8 @@ const loaded = (index: object = {}): LoadedProfile => ({
   profile: ProfileSchema.parse({ schemaVersion: 1, user: "me", hosts: { active: "h" }, tracker: { type: "plan-file", repo: "r" }, repos: ["r"], index }),
 });
 
-interface Opts { bins?: string[]; tags?: unknown; graphify?: string; freeCurl?: number; boxedCurl?: number; pullCode?: number }
-const ALL = ["ollama", "uv", "sandbox-exec", "curl", "graphify"];
+interface Opts { bins?: string[]; tags?: unknown; graphify?: string; freeCurl?: number; boxedCurl?: number; pullCode?: number; boxedSubmit?: number }
+const ALL = ["ollama", "uv", "/usr/bin/sandbox-exec", "curl", "graphify"];
 
 function probes(o: Opts = {}): IndexProbes & { ran: string[][] } {
   const ran: string[][] = [];
@@ -28,6 +28,7 @@ function probes(o: Opts = {}): IndexProbes & { ran: string[][] } {
       if (argv.includes("--version")) return { code: o.graphify === "missing" ? 1 : 0, stdout: `graphify ${o.graphify ?? GRAPHIFY_PIN}\n`, stderr: "" };
       if (argv.includes("curl")) return { code: argv[0] === "curl" ? (o.freeCurl ?? 0) : (o.boxedCurl ?? 6), stdout: "", stderr: "" };
       if (argv[0] === "ollama") return { code: o.pullCode ?? 0, stdout: "", stderr: "" };
+      if (argv.includes("submit")) return { code: o.boxedSubmit ?? 1, stdout: "", stderr: "" };
       return { code: 0, stdout: "", stderr: "" };
     },
   };
@@ -40,7 +41,7 @@ const statuses = async (p: IndexProbes, o = {}) => Object.fromEntries((await run
 describe("sindri index setup", () => {
   it("reports everything ok when installed, pinned and sandboxed", async () => {
     const r = await run(probes());
-    expect(r.steps.map((s) => [s.name, s.status])).toEqual([["ollama", "ok"], ["ollama-server", "ok"], ["embedding-model", "ok"], ["graphify", "ok"], ["sandbox", "ok"]]);
+    expect(r.steps.map((s) => [s.name, s.status])).toEqual([["ollama", "ok"], ["ollama-server", "ok"], ["embedding-model", "ok"], ["graphify", "ok"], ["sandbox", "ok"], ["sandbox-launchd", "ok"]]);
   });
 
   it("pulls a missing model and installs the pinned graphify with an age gate, or says what it would do", async () => {
@@ -67,7 +68,7 @@ describe("sindri index setup", () => {
 
   it("evaluates every step even when Ollama is missing (never returns early)", async () => {
     const r = await run(probes({ bins: ALL.filter((b) => b !== "ollama") }));
-    expect(r.steps.map((s) => [s.name, s.status])).toEqual([["ollama", "fail"], ["ollama-server", "skip"], ["embedding-model", "skip"], ["graphify", "ok"], ["sandbox", "ok"]]);
+    expect(r.steps.map((s) => [s.name, s.status])).toEqual([["ollama", "fail"], ["ollama-server", "skip"], ["embedding-model", "skip"], ["graphify", "ok"], ["sandbox", "ok"], ["sandbox-launchd", "ok"]]);
     expect(r.steps[0]).toMatchObject({ fix: "install Ollama (https://ollama.com/download), then rerun" });
     expect(r.steps[1].detail).toBe("needs ollama");
   });
@@ -90,6 +91,21 @@ describe("sindri index setup", () => {
     expect((await statuses(probes())).sandbox).toMatchObject({ status: "ok", detail: "network denied inside the sandbox" });
   });
 
+  it("proves a launchd job can't be submitted from inside the sandbox (macOS), and removes one that was", async () => {
+    const ok = probes();
+    expect((await statuses(ok))["sandbox-launchd"]).toMatchObject({ status: "ok", detail: "launchd job submission denied inside the sandbox" });
+    const submit = ok.ran.find((a) => a.includes("submit"));
+    expect(submit?.[0]).toBe("/usr/bin/sandbox-exec");
+    expect(submit?.slice(3)).toEqual(["/bin/launchctl", "submit", "-l", "sindri.sandbox-probe", "--", "/usr/bin/true"]);
+    expect(ok.ran).not.toContainEqual(["/bin/launchctl", "remove", "sindri.sandbox-probe"]);
+    const leaked = probes({ boxedSubmit: 0 });
+    expect((await statuses(leaked))["sandbox-launchd"]).toMatchObject({ status: "fail", detail: "a launchd job was submitted from inside the sandbox" });
+    expect(leaked.ran).toContainEqual(["/bin/launchctl", "remove", "sindri.sandbox-probe"]);
+    const linux = await statuses(probes({ bins: [...ALL, "/usr/bin/bwrap"] }), { platform: "linux" });
+    expect(linux.sandbox.status).toBe("ok");
+    expect(linux["sandbox-launchd"]).toBeUndefined();
+  });
+
   it("without a network sandbox graphify is skipped and the sandbox step fails", async () => {
     const r = await statuses(probes({ bins: ["ollama", "uv", "curl", "graphify"] }), { platform: "linux" });
     expect(r.graphify).toMatchObject({ status: "skip", detail: "needs a network sandbox" });
@@ -101,7 +117,7 @@ describe("sindri index setup", () => {
     await run(p);
     const version = p.ran.filter((a) => a.includes("--version"));
     expect(version).toHaveLength(1);
-    expect(version[0][0]).toBe("sandbox-exec");
+    expect(version[0][0]).toBe("/usr/bin/sandbox-exec");
   });
 
   it("skips layers the profile turns off", async () => {
@@ -134,7 +150,7 @@ describe("sindri index setup (the command)", () => {
     const d = await approvedIndexDeps(ring0Repo({ "a.ts": "export const a = 1;\n" }), { index: "index:\n  embeddings:\n    enabled: true\n" });
     const ok = await makeIndexCommand(fakeIndexIo({ probes: probes() }))(["setup", "--json"], d);
     expect(ok.exitCode).toBe(0);
-    expect(JSON.parse(ok.stdout).map((s: { name: string }) => s.name)).toEqual(["ollama", "ollama-server", "embedding-model", "graphify", "sandbox"]);
+    expect(JSON.parse(ok.stdout).map((s: { name: string }) => s.name)).toEqual(["ollama", "ollama-server", "embedding-model", "graphify", "sandbox", "sandbox-launchd"]);
     expect((await makeIndexCommand(fakeIndexIo({ probes: probes({ freeCurl: 6 }) }))(["setup", "--dry-run"], d)).exitCode).toBe(1);
     const off = await approvedIndexDeps(ring0Repo({ "a.ts": "export const a = 1;\n" }));
     expect((await makeIndexCommand(fakeIndexIo())(["setup"], off)).stdout).toContain("Nothing to set up");

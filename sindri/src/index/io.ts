@@ -5,12 +5,15 @@ export type FetchLike = (
 ) => Promise<{ ok: boolean; status: number; json(): Promise<unknown> }>;
 
 export interface ProcessRunner {
-  // cleanEnv: run with only PATH, HOME, LANG and TMPDIR (graphify never sees tokens).
-  run(argv: string[], o: { cwd: string; timeoutMs: number; cleanEnv?: boolean }): Promise<{ code: number; stdout: string; stderr: string }>;
+  // cleanEnv: run with only PATH, HOME, LANG and TMPDIR (graphify never sees tokens); `env` is
+  // set over that (graphify's private temp and cache dirs).
+  run(argv: string[], o: { cwd: string; timeoutMs: number; cleanEnv?: boolean; env?: Record<string, string> }): Promise<{ code: number; stdout: string; stderr: string }>;
 }
 
 // What `index setup` and `doctor` need from the machine. Real: sandbox-real.ts.
 export interface IndexProbes {
+  // A bare name: found on PATH. An absolute path: that file exists, is executable and root owns
+  // it (how the sandbox binaries are found; a user-writable one is no sandbox).
   has(bin: string): boolean;
   run: ProcessRunner["run"];
   getJson(url: string, timeoutMs: number): Promise<unknown | null>;

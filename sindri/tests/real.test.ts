@@ -5,7 +5,7 @@ import path from "node:path";
 import { describe, expect, it } from "vitest";
 
 import { realGitRunner } from "../src/git-real.js";
-import { sandboxArgv } from "../src/index/graph.js";
+import { pathKind, PRIVATE_DIR, privateEnv, sandboxArgv } from "../src/index/graph.js";
 import { hasBinary, realIndexIo, realIndexProbes, realProcessRunner } from "../src/index/sandbox-real.js";
 import { realSystemProbe } from "../src/system-real.js";
 
@@ -33,6 +33,9 @@ describe("realGitRunner (smoke)", () => {
     expect(none.ok ? null : none.code).toBe(1);
     const badRev = await git.run(["grep", "-l", "-F", "-e", "x", "no-such-rev", "--"], process.cwd());
     expect(badRev.ok ? null : badRev.code).toBe(128);
+    // git never started (a missing cwd): no exit status, and the error message stands in for stderr.
+    const unstarted = await git.run(["--version"], path.join(os.tmpdir(), "sindri-no-such-dir-" + process.pid));
+    expect(unstarted.ok ? null : [unstarted.code, unstarted.stderr]).toEqual([undefined, expect.stringContaining("ENOENT")]);
   });
 
   it("clears git's repository variables for a call about another repo", async () => {
@@ -76,6 +79,26 @@ describe("real index I/O (smoke)", () => {
     expect((await run.run(["definitely-not-a-binary-xyz"], o)).code).not.toBe(0);
     expect(hasBinary("sh")).toBe(true);
     expect(hasBinary("definitely-not-a-binary-xyz")).toBe(false);
+    expect((await run.run(["sh", "-c", "exit 3"], o)).code).toBe(3);
+    // A key that isn't set stays unset; `env` is set over the clean environment.
+    const lang = process.env.LANG;
+    delete process.env.LANG;
+    try {
+      const env = ["sh", "-c", 'echo "${LANG-unset} $SINDRI_SMOKE_X"'];
+      expect((await run.run(env, { ...o, cleanEnv: true, env: { SINDRI_SMOKE_X: "x" } })).stdout.trim()).toBe("unset x");
+    } finally {
+      if (lang !== undefined) process.env.LANG = lang;
+    }
+  });
+
+  it("hasBinary takes an absolute path only when it is a root-owned executable file", () => {
+    expect(hasBinary("/bin/sh")).toBe(true);
+    const mine = path.join(fs.mkdtempSync(path.join(os.tmpdir(), "sindri-bin-")), "sandbox-exec");
+    fs.writeFileSync(mine, "#!/bin/sh\n", { mode: 0o755 });
+    expect(hasBinary(mine)).toBe(process.getuid?.() === 0);
+    expect(hasBinary("/bin")).toBe(false);
+    expect(hasBinary("/no/such/binary")).toBe(false);
+    fs.rmSync(path.dirname(mine), { recursive: true });
   });
 
   it("getJson answers JSON from a loopback server, and null for an error, a redirect and a closed port", async () => {
@@ -95,6 +118,7 @@ describe("real index I/O (smoke)", () => {
     await new Promise<void>((r) => server.listen(0, "127.0.0.1", r));
     const port = (server.address() as { port: number }).port;
     const probes = realIndexProbes();
+    expect((await probes.run(["echo", "ok"], { cwd: process.cwd(), timeoutMs: 5000 })).stdout.trim()).toBe("ok");
     try {
       expect(await probes.getJson(`http://127.0.0.1:${port}/ok`, 2000)).toEqual({ models: [] });
       expect(await probes.getJson(`http://127.0.0.1:${port}/err`, 2000)).toBeNull();
@@ -107,52 +131,82 @@ describe("real index I/O (smoke)", () => {
   });
 });
 
+// Each test skips (and says so in the report) when this machine can't prove its point; a
+// skipped sandbox test is unverified, never green.
 describe("sandbox (smoke)", () => {
   const o = { cwd: process.cwd(), timeoutMs: 15_000 };
-  const box = (argv: string[]) => sandboxArgv(process.platform, argv, hasBinary, { writable: [], home: os.homedir(), exists: fs.existsSync });
+  const box = (argv: string[], writable: string[] = []) =>
+    sandboxArgv(process.platform, argv, hasBinary, { writable, home: os.homedir(), kind: pathKind, runtimeDir: process.env.XDG_RUNTIME_DIR });
+  const noSandbox = box(["true"]) === null;
 
-  it("denies the network, once the same request is shown to succeed outside the sandbox", async () => {
-    const run = realProcessRunner();
-    const curl = ["curl", "-sS", "--max-time", "3", "https://example.com"];
-    const wrapped = box(curl);
-    if (wrapped === null || !hasBinary("curl")) return; // no sandbox or curl here: nothing to prove
-    if ((await run.run(curl, o)).code !== 0) return; // offline: the control failed, so a sandboxed failure proves nothing
-    expect((await run.run(wrapped, o)).code).not.toBe(0);
+  it("finds the sandbox by an absolute, root-owned path", () => {
+    if (process.platform === "darwin") expect(box(["true"])?.[0]).toBe("/usr/bin/sandbox-exec");
+    else if (!noSandbox) expect(box(["true"])?.[0]).toMatch(/^\/(usr\/)?bin\/bwrap$/);
   });
 
-  it("denies LaunchServices opens (a browser launched outside the sandbox would carry data out)", async () => {
-    if (process.platform !== "darwin") return;
+  it.skipIf(noSandbox || !hasBinary("curl"))("denies the network, once the same request is shown to succeed outside the sandbox", async (ctx) => {
+    const run = realProcessRunner();
+    const curl = ["curl", "-sS", "--max-time", "3", "https://example.com"];
+    if ((await run.run(curl, o)).code !== 0) ctx.skip(); // offline: the control failed, so a sandboxed failure proves nothing
+    expect((await run.run(box(curl) ?? [], o)).code).not.toBe(0);
+  });
+
+  it.skipIf(process.platform !== "darwin")("denies LaunchServices opens (a browser launched outside the sandbox would carry data out)", async (ctx) => {
     const run = realProcessRunner();
     // `open -R /` exits 0 even when LaunchServices refuses it, so the probe is a background
     // open of Finder (always running; -g keeps it in the background), shown to work outside first.
     const open = ["/usr/bin/open", "-g", "-a", "Finder"];
-    const wrapped = box(open);
-    if (wrapped === null) return; // no sandbox-exec here: nothing to prove
-    if ((await run.run(open, o)).code !== 0) return; // no window server (headless): a sandboxed failure proves nothing
-    const r = await run.run(wrapped, o);
+    if ((await run.run(open, o)).code !== 0) ctx.skip(); // no window server (headless): a sandboxed failure proves nothing
+    const r = await run.run(box(open) ?? [], o);
     expect(r.code).not.toBe(0);
     expect(r.stderr).toContain("-54");
   });
 
-  it("denies writes outside the snapshot and hides ~/.ssh", async () => {
+  it.skipIf(process.platform !== "darwin")("denies submitting a launchd job (it would run outside the sandbox)", async (ctx) => {
     const run = realProcessRunner();
-    // A fresh dir that is not writable in the sandbox (not a temp dir), never the real home.
     const dir = fs.mkdtempSync(path.join(import.meta.dirname, "..", ".sandbox-probe-"));
+    const label = `sindri.smoke-probe.${process.pid}`;
+    const submit = (file: string) => ["/bin/launchctl", "submit", "-l", label, "--", "/usr/bin/touch", file];
     try {
-      const probe = path.join(dir, "probe");
-      const write = box(["touch", probe]);
-      if (write === null) return;
-      expect((await run.run(["touch", path.join(dir, "control")], o)).code).toBe(0);
-      expect((await run.run(write, o)).code).not.toBe(0);
-      expect(fs.existsSync(probe)).toBe(false);
+      const control = await run.run(submit(path.join(dir, "control")), o);
+      await run.run(["/bin/launchctl", "remove", label], o);
+      if (control.code !== 0) ctx.skip(); // no launchd session here: a sandboxed failure proves nothing
+      const r = await run.run(box(submit(path.join(dir, "probe"))) ?? [], o);
+      if (r.code === 0) await run.run(["/bin/launchctl", "remove", label], o);
+      expect(r.code).not.toBe(0);
     } finally {
       fs.rmSync(dir, { recursive: true });
     }
-    const ssh = path.join(os.homedir(), ".ssh");
-    const read = box(["ls", "-A", ssh]);
-    if (read !== null && fs.existsSync(ssh)) {
-      const r = await run.run(read, o);
-      expect(r.code !== 0 || r.stdout.trim() === "").toBe(true);
+  });
+
+  it.skipIf(noSandbox)("denies writes outside the snapshot: a plain dir, ~/.cache and the system temp dir; the private dir is writable", async () => {
+    const run = realProcessRunner();
+    // Fresh dirs, removed after: a probe that got through never stays behind.
+    const dir = fs.mkdtempSync(path.join(import.meta.dirname, "..", ".sandbox-probe-"));
+    const cache = path.join(os.homedir(), ".cache");
+    const cacheProbe = fs.existsSync(cache) ? fs.mkdtempSync(path.join(cache, "sindri-sandbox-probe-")) : null;
+    const tmpProbe = fs.mkdtempSync(path.join(os.tmpdir(), "sindri-sandbox-probe-"));
+    const snap = fs.realpathSync(fs.mkdtempSync(path.join(os.tmpdir(), "sindri-graph-")));
+    try {
+      for (const target of [dir, cacheProbe, tmpProbe, fs.realpathSync(tmpProbe)]) {
+        if (target === null) continue;
+        expect((await run.run(["touch", path.join(target, "control")], o)).code).toBe(0);
+        expect((await run.run(box(["touch", path.join(target, "probe")], [snap]) ?? [], o)).code).not.toBe(0);
+        expect(fs.existsSync(path.join(target, "probe"))).toBe(false);
+      }
+      // Inside the snapshot, through the private env, writes work (what graphify's temp files use).
+      const priv = path.join(snap, PRIVATE_DIR);
+      fs.mkdirSync(priv);
+      const sh = box(["sh", "-c", 'touch "$TMPDIR/t" && mkdir -p "$XDG_CACHE_HOME" && touch "$XDG_CACHE_HOME/c"'], [snap]) ?? [];
+      expect((await run.run(sh, { ...o, cleanEnv: true, env: privateEnv(priv) })).code).toBe(0);
+      expect(fs.existsSync(path.join(priv, "t")) && fs.existsSync(path.join(priv, "cache", "c"))).toBe(true);
+    } finally {
+      for (const d of [dir, cacheProbe, tmpProbe, snap]) if (d !== null) fs.rmSync(d, { recursive: true });
     }
+  });
+
+  it.skipIf(noSandbox || !fs.existsSync(path.join(os.homedir(), ".ssh")))("hides ~/.ssh", async () => {
+    const r = await realProcessRunner().run(box(["ls", "-A", path.join(os.homedir(), ".ssh")]) ?? [], o);
+    expect(r.code !== 0 || r.stdout.trim() === "").toBe(true);
   });
 });

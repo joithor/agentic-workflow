@@ -62,7 +62,7 @@ export function embedderOrUnavailable(loaded: LoadedProfile, io: IndexIo): Embed
 
 export function graphFor(loaded: LoadedProfile, deps: Deps, io: IndexIo): GraphProvider | null {
   if (loaded.profile.index.graph === "none") return null;
-  return makeGraphifyProvider({ bin: "graphify", version: GRAPHIFY_PIN, runner: { run: io.probes.run }, platform: deps.system.platform, has: io.probes.has, home: deps.home });
+  return makeGraphifyProvider({ bin: "graphify", version: GRAPHIFY_PIN, runner: { run: io.probes.run }, platform: deps.system.platform, has: io.probes.has, home: deps.home, runtimeDir: deps.env.XDG_RUNTIME_DIR });
 }
 
 async function build(args: string[], deps: Deps, io: IndexIo): Promise<CommandResult> {
@@ -167,7 +167,7 @@ function query(args: string[], deps: Deps): CommandResult {
 async function setup(args: string[], deps: Deps, io: IndexIo): Promise<CommandResult> {
   const { values } = parseFlags(args, { "dry-run": { type: "boolean" }, json: { type: "boolean" } });
   const approved = approvedOrThrow(deps);
-  const { steps } = await runSetup(approved, io.probes, { dryRun: values["dry-run"] === true, platform: deps.system.platform, home: deps.home, log: deps.log });
+  const { steps } = await runSetup(approved, io.probes, { dryRun: values["dry-run"] === true, platform: deps.system.platform, home: deps.home, runtimeDir: deps.env.XDG_RUNTIME_DIR, log: deps.log });
   const text = steps.map((s) => `${s.status.padEnd(5)} ${s.name}  ${s.detail}${s.fix === undefined ? "" : `\n     fix: ${s.fix}`}`).join("\n");
   const exit: ExitCode = steps.some((s) => s.status === "fail") ? 2 : steps.some((s) => s.status === "warn") ? 1 : 0;
   return success(text === "" ? "Nothing to set up: embeddings and the graph are off in the profile." : text, steps, values.json === true, exit);

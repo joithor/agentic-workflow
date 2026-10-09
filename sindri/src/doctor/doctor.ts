@@ -175,7 +175,7 @@ async function indexChecks(deps: Deps, loaded: LoadedProfile, probes: IndexProbe
   if (ix.graph === "none") {
     out.push({ name: "graphify", status: "ok", detail: "off (index.graph: none)" });
   } else {
-    const boxed = sandboxedVersionArgv(deps.system.platform, probes, deps.home);
+    const boxed = sandboxedVersionArgv(deps.system.platform, probes, deps.home, deps.env.XDG_RUNTIME_DIR);
     if (boxed === null) {
       out.push({ name: "graphify", status: "warn", detail: "no network sandbox", fix: "sindri index setup" });
     } else {

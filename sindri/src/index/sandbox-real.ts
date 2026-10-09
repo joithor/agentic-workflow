@@ -1,4 +1,6 @@
 import { execFile, execFileSync } from "node:child_process";
+import fs from "node:fs";
+import path from "node:path";
 
 import type { IndexIo, IndexProbes, ProcessRunner } from "./io.js";
 
@@ -17,7 +19,7 @@ export function realProcessRunner(): ProcessRunner {
         execFile(
           argv[0],
           argv.slice(1),
-          { cwd: o.cwd, env: o.cleanEnv === true ? cleanEnv() : process.env, timeout: o.timeoutMs, maxBuffer: 64 * 1024 * 1024, encoding: "utf8" },
+          { cwd: o.cwd, env: { ...(o.cleanEnv === true ? cleanEnv() : process.env), ...o.env }, timeout: o.timeoutMs, maxBuffer: 64 * 1024 * 1024, encoding: "utf8" },
           (err, stdout, stderr) => {
             const code = err === null ? 0 : typeof err.code === "number" ? err.code : 1;
             resolve({ code, stdout, stderr });
@@ -28,6 +30,15 @@ export function realProcessRunner(): ProcessRunner {
 }
 
 export function hasBinary(bin: string): boolean {
+  if (path.isAbsolute(bin)) {
+    try {
+      fs.accessSync(bin, fs.constants.X_OK);
+      const st = fs.statSync(bin);
+      return st.isFile() && st.uid === 0;
+    } catch {
+      return false;
+    }
+  }
   try {
     execFileSync("/bin/sh", ["-c", `command -v "$1"`, "sh", bin], { stdio: "ignore" });
     return true;

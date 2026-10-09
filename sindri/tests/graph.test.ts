@@ -1,9 +1,10 @@
+import { execFileSync } from "node:child_process";
 import fs from "node:fs";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
 
 import { SindriError } from "../src/errors.js";
-import { makeGraphifyProvider, parseGraphJson, sandboxArgv } from "../src/index/graph.js";
+import { makeGraphifyProvider, parseGraphJson, pathKind, PRIVATE_DIR, privateEnv, sandboxArgv, type PathKind } from "../src/index/graph.js";
 import type { ProcessRunner } from "../src/index/io.js";
 import { tempDir } from "./helpers.js";
 
@@ -44,61 +45,101 @@ describe("parseGraphJson", () => {
     for (const text of ["not json", "null", "[]", "3"]) expect(() => parseGraphJson(text)).toThrow(SindriError);
     expect(() => parseGraphJson("null")).toThrow("graphify wrote an unexpected graph.json");
     expect(() => parseGraphJson("not json")).toThrow("graphify wrote invalid JSON");
-    for (const g of [{ nodes: [null] }, { nodes: [{ id: "a" }, [1]] }, { links: [1] }, { edges: ["x"] }]) {
+    // A node without a usable id, or an edge without usable endpoints, is an error (never "undefined").
+    const bad = [{ nodes: [null] }, { nodes: [{ id: "a" }, [1]] }, { links: [1] }, { edges: ["x"] }, { nodes: [{ label: "f" }] }, { nodes: [{ id: { x: 1 } }] }, { nodes: "x" }, { links: [{ source: "a" }] }, { edges: [{ source: "a", target: [1] }] }];
+    for (const g of bad) {
       expect(() => parseGraphJson(JSON.stringify(g))).toThrow("graphify wrote an unexpected graph.json");
     }
   });
 });
 
 describe("sandboxArgv (Review Focus 4)", () => {
-  const o = { writable: ["/snap"], home: HOME, exists: () => true };
+  const MAC_SECRETS = [".ssh", ".aws", ".gnupg", ".agentic-workflow", ".config/gh", ".docker", ".kube", ".codex", ".claude", ".claude.json", ".netrc", ".git-credentials", ".npmrc", ".pypirc", "Library/Keychains"];
+  const o = { writable: ["/snap"], home: HOME, kind: (): PathKind => "dir" };
 
-  it("wraps the command in a network-denying, filesystem-locked sandbox, or refuses", () => {
+  it("wraps the command in a network-denying sandbox that writes only to the given paths, or refuses", () => {
+    const hidden = MAC_SECRETS.map((d) => `(subpath "/home/u/${d}")`).join(" ");
     expect(sandboxArgv("darwin", ["graphify", "x"], () => true, o)).toEqual([
-      "sandbox-exec",
+      "/usr/bin/sandbox-exec",
       "-p",
-      '(version 1)(allow default)(deny network*)(deny lsopen)(deny appleevent-send)(deny mach-lookup (global-name "com.apple.coreservices.launchservicesd"))(deny file-write*)(allow file-write* (subpath "/snap") (subpath "/private/var/folders") (subpath "/private/tmp") (subpath "/dev") (subpath "/home/u/.cache"))(deny file-read* (subpath "/home/u/.ssh") (subpath "/home/u/.aws") (subpath "/home/u/.gnupg") (subpath "/home/u/.agentic-workflow") (subpath "/home/u/Library/Keychains"))',
+      `(version 1)(allow default)(deny network*)(deny lsopen)(deny appleevent-send)(deny mach-lookup (global-name "com.apple.coreservices.launchservicesd"))(deny process-exec (literal "/bin/launchctl"))(deny file-write*)(allow file-write* (subpath "/snap") (subpath "/dev"))(deny file-read* ${hidden})`,
       "graphify",
       "x",
     ]);
-    expect(sandboxArgv("linux", ["graphify", "x"], () => true, o)).toEqual([
-      "bwrap", "--ro-bind", "/", "/", "--dev", "/dev", "--proc", "/proc", "--tmpfs", "/tmp", "--bind", "/snap", "/snap",
-      "--bind", "/home/u/.cache", "/home/u/.cache",
-      "--tmpfs", "/home/u/.ssh", "--tmpfs", "/home/u/.aws", "--tmpfs", "/home/u/.gnupg", "--tmpfs", "/home/u/.agentic-workflow",
-      "--unshare-net", "--unshare-pid", "--die-with-parent", "graphify", "x",
-    ]);
-    // bwrap can't mount over a missing dir on the read-only root: only existing credential dirs are hidden.
-    expect(sandboxArgv("linux", ["graphify", "x"], () => true, { ...o, exists: (p) => p === "/home/u/.ssh" })).toEqual([
-      "bwrap", "--ro-bind", "/", "/", "--dev", "/dev", "--proc", "/proc", "--tmpfs", "/tmp", "--bind", "/snap", "/snap",
-      "--tmpfs", "/home/u/.ssh", "--unshare-net", "--unshare-pid", "--die-with-parent", "graphify", "x",
-    ]);
-    expect(sandboxArgv("darwin", ["g"], () => true, { ...o, exists: () => false })?.[2]).toBe(sandboxArgv("darwin", ["g"], () => true, o)?.[2]);
+    // No ~/.cache, /private/tmp or /private/var/folders: other tools run code from them later.
+    const profile = sandboxArgv("darwin", ["g"], () => true, o)?.[2] ?? "";
+    for (const p of ["/home/u/.cache", "/private/tmp", "/private/var/folders"]) expect(profile).not.toContain(p);
+    expect(sandboxArgv("darwin", ["g"], () => true, { ...o, kind: () => null })?.[2]).toBe(profile);
+    // The sandbox binary by absolute path, never a bare name looked up on PATH.
+    const asked: string[] = [];
+    expect(sandboxArgv("darwin", ["g"], (b) => (asked.push(b), b === "sandbox-exec"), o)).toBeNull();
+    expect(asked).toEqual(["/usr/bin/sandbox-exec"]);
     expect(sandboxArgv("linux", ["graphify"], () => false, o)).toBeNull();
+    expect(sandboxArgv("linux", ["graphify"], (b) => b === "bwrap", o)).toBeNull();
     expect(sandboxArgv("darwin", ["graphify"], () => false, o)).toBeNull();
     expect(sandboxArgv("win32", ["graphify"], () => true, o)).toBeNull();
   });
 
-  it("escapes quotes and backslashes in paths, and allows no writable path beyond temp when none is given", () => {
-    const argv = sandboxArgv("darwin", ["g"], () => true, { writable: ['/a"b\\c'], home: "/h", exists: () => true });
+  it("on Linux: unshares everything in a new session, masks /run and the runtime dir, and hides the credential stores that exist", () => {
+    const kinds: Record<string, PathKind> = { "/run": "dir", "/var/run": "dir", "/xdg": "dir", "/home/u/.ssh": "dir", "/home/u/.netrc": "file" };
+    const kind = (p: string): PathKind => kinds[p] ?? null;
+    expect(sandboxArgv("linux", ["graphify", "x"], (b) => b === "/bin/bwrap", { ...o, kind, realpath: (p) => p, runtimeDir: "/xdg" })).toEqual([
+      "/bin/bwrap", "--unshare-all", "--new-session", "--die-with-parent",
+      "--ro-bind", "/", "/", "--dev", "/dev", "--proc", "/proc", "--tmpfs", "/tmp",
+      "--tmpfs", "/run", "--tmpfs", "/var/run", "--tmpfs", "/xdg",
+      "--tmpfs", "/home/u/.ssh", "--ro-bind", "/dev/null", "/home/u/.netrc",
+      "--bind", "/snap", "/snap", "graphify", "x",
+    ]);
+    // A runtime dir under /run is already masked; /usr/bin/bwrap comes first.
+    const argv = sandboxArgv("linux", ["g"], () => true, { ...o, kind, runtimeDir: "/run/user/1" }) ?? [];
+    expect(argv[0]).toBe("/usr/bin/bwrap");
+    expect(argv).not.toContain("/run/user/1");
+    expect(argv).not.toContain("/home/u/.cache");
+  });
+
+  it("hides a symlinked credential dir by its real path too, and masks one target once", () => {
+    const home = tempDir("sindri-home-");
+    const real = fs.realpathSync(tempDir("sindri-ssh-"));
+    fs.symlinkSync(real, path.join(home, ".ssh"));
+    fs.symlinkSync(real, path.join(home, ".aws"));
+    const profile = sandboxArgv("darwin", ["g"], () => true, { writable: [], home, kind: pathKind })?.[2] ?? "";
+    expect(profile).toContain(`(subpath "${fs.realpathSync(home)}/.ssh")`);
+    expect(profile).toContain(`(subpath "${real}")`);
+    const linux = sandboxArgv("linux", ["g"], () => true, { writable: [], home, kind: pathKind }) ?? [];
+    expect(linux.filter((a) => a === real)).toHaveLength(1);
+    expect(linux).not.toContain(path.join(home, ".ssh"));
+  });
+
+  it("escapes quotes and backslashes in paths, and allows no write beyond /dev when no path is given", () => {
+    const argv = sandboxArgv("darwin", ["g"], () => true, { writable: ['/a"b\\c'], home: "/h", kind: () => null });
     expect(argv?.[2]).toContain('(subpath "/a\\"b\\\\c")');
-    expect(sandboxArgv("darwin", ["g"], () => true, { writable: [], home: "/h", exists: () => true })?.[2]).toContain('(allow file-write* (subpath "/private/var/folders")');
+    expect(sandboxArgv("darwin", ["g"], () => true, { writable: [], home: "/h", kind: () => null })?.[2]).toContain('(allow file-write* (subpath "/dev"))');
   });
 
   it("names the home's real path in the macOS profile (a symlinked home would otherwise fail open)", () => {
     const real = fs.realpathSync(tempDir("sindri-realhome-"));
     const link = path.join(tempDir("sindri-linkhome-"), "home");
     fs.symlinkSync(real, link);
-    const profile = sandboxArgv("darwin", ["g"], () => true, { writable: [], home: link, exists: () => true })?.[2];
+    const profile = sandboxArgv("darwin", ["g"], () => true, { writable: [], home: link, kind: pathKind })?.[2];
     expect(profile).toContain(`(subpath "${real}/.ssh")`);
-    expect(profile).toContain(`(subpath "${real}/.cache")`);
     expect(profile).not.toContain(link);
+  });
+
+  it("pathKind follows symlinks; privateEnv points every temp and cache dir into the private dir", () => {
+    const dir = tempDir();
+    fs.writeFileSync(path.join(dir, "f"), "");
+    fs.symlinkSync(path.join(dir, "f"), path.join(dir, "l"));
+    expect([pathKind(dir), pathKind(path.join(dir, "f")), pathKind(path.join(dir, "l")), pathKind(path.join(dir, "missing"))]).toEqual(["dir", "file", "file", null]);
+    expect(privateEnv("/s/.sindri-tmp")).toEqual({ TMPDIR: "/s/.sindri-tmp", XDG_CACHE_HOME: "/s/.sindri-tmp/cache", UV_CACHE_DIR: "/s/.sindri-tmp/cache/uv", PYTHONPYCACHEPREFIX: "/s/.sindri-tmp/pycache" });
+    expect(PRIVATE_DIR).toBe(".sindri-tmp");
   });
 });
 
 describe("graphify provider", () => {
-  function runner(code: number, write: boolean | number | ((snap: string) => string)): ProcessRunner & { argv: string[][]; opts: { cwd: string; cleanEnv?: boolean }[] } {
+  type Opts = { cwd: string; cleanEnv?: boolean; env?: Record<string, string> };
+  function runner(code: number, write: boolean | number | ((snap: string) => string)): ProcessRunner & { argv: string[][]; opts: Opts[] } {
     const argv: string[][] = [];
-    const opts: { cwd: string; cleanEnv?: boolean }[] = [];
+    const opts: Opts[] = [];
     return {
       argv,
       opts,
@@ -123,18 +164,42 @@ describe("graphify provider", () => {
     const snap = tempDir();
     expect((await p.build(snap)).nodes).toEqual([{ id: "a", file: null, name: null, line: null }]);
     const argv = r.argv[0];
-    expect(argv.slice(0, 2)).toEqual(["sandbox-exec", "-p"]);
+    expect(argv.slice(0, 2)).toEqual(["/usr/bin/sandbox-exec", "-p"]);
     expect(argv[2]).toContain(`(subpath "${fs.realpathSync(snap)}")`);
     expect(argv.slice(3)).toEqual(["graphify", "extract", snap, "--code-only", "--no-viz"]);
     expect(r.opts[0]).toMatchObject({ cwd: snap, cleanEnv: true });
+    // Temp and cache dirs: a private dir inside the snapshot, made before the run.
+    const priv = path.join(fs.realpathSync(snap), ".sindri-tmp");
+    expect(r.opts[0].env).toEqual(privateEnv(priv));
+    expect(fs.statSync(path.join(priv, "cache")).isDirectory()).toBe(true);
+    expect(argv[2]).not.toContain("/private/tmp");
     expect(p.version).toBe("1.2.3");
   });
 
+  it("refuses a graph.json that is a symlink, a FIFO or not a file, or under a symlinked graphify-out", async () => {
+    const secret = path.join(tempDir(), "hidden.json");
+    fs.writeFileSync(secret, JSON.stringify({ nodes: [{ id: "leak" }] }));
+    const plant = (how: (out: string) => void): ProcessRunner => ({
+      run: async (_a, o) => {
+        how(path.join(o.cwd, "graphify-out"));
+        return { code: 0, stdout: "", stderr: "" };
+      },
+    });
+    const build = (how: (out: string) => void) => make(plant(how), "darwin", () => true).build(tempDir());
+    const unusable = "graphify wrote an unusable graph.json";
+    await expect(build((out) => (fs.mkdirSync(out), fs.symlinkSync(secret, path.join(out, "graph.json"))))).rejects.toThrow(unusable);
+    await expect(build((out) => fs.symlinkSync(path.dirname(secret), out))).rejects.toThrow(unusable);
+    await expect(build((out) => fs.writeFileSync(out, "x"))).rejects.toThrow(unusable);
+    await expect(build((out) => (fs.mkdirSync(out), fs.mkdirSync(path.join(out, "graph.json"))))).rejects.toThrow(unusable);
+    await expect(build((out) => (fs.mkdirSync(out), execFileSync("mkfifo", [path.join(out, "graph.json")])))).rejects.toThrow(unusable);
+    await expect(build((out) => fs.mkdirSync(out))).rejects.toThrow("graphify wrote no graph.json");
+  });
+
   it("stores node files relative to the snapshot root; a path outside it is null", async () => {
-    const files = (snap: string) => [`${snap}/src/a.ts`, `${fs.realpathSync(snap)}/src/b.ts`, "docs/r.md", "/src/c.ts", "/etc/passwd", "../up.ts", snap, `${snap}/../x.ts`];
+    const files = (snap: string) => [`${snap}/src/a.ts`, `${fs.realpathSync(snap)}/src/b.ts`, "docs/r.md", "/src/c.ts", "/etc/passwd", "../up.ts", snap, `${snap}/../x.ts`, `${snap}/.sindri-tmp/cache/x.py`, ".sindri-tmp"];
     const r = runner(0, (snap) => JSON.stringify({ nodes: files(snap).map((f, i) => ({ id: i, source_file: f })) }));
     const g = await make(r, "darwin", () => true).build(tempDir());
-    expect(g.nodes.map((n) => n.file)).toEqual(["src/a.ts", "src/b.ts", "docs/r.md", null, null, null, null, null]);
+    expect(g.nodes.map((n) => n.file)).toEqual(["src/a.ts", "src/b.ts", "docs/r.md", null, null, null, null, null, null, null]);
   });
 
   it("reads the recorded fixture through the provider, with paths relative to the snapshot", async () => {

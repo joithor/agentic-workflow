@@ -245,7 +245,7 @@ describe("doctor index checks", () => {
     expect((await checks(d, probes({ graphifyCode: 1 }))).graphify.detail).toBe(`not installed at ${GRAPHIFY_PIN}`);
     expect((await checks(d, probes({ graphify: "0.0.1" }))).graphify.detail).toBe(`not installed at ${GRAPHIFY_PIN} (found 0.0.1)`);
     expect((await checks(d, probes({ graphify: `${GRAPHIFY_PIN}0` }))).graphify.detail).toBe(`not installed at ${GRAPHIFY_PIN} (found ${GRAPHIFY_PIN}0)`);
-    const noBox = await checks({ ...d, system: fakeSystem({ platform: "linux" }) }, probes({ has: (b) => b !== "bwrap" }));
+    const noBox = await checks({ ...d, system: fakeSystem({ platform: "linux" }) }, probes({ has: (b) => !b.endsWith("/bwrap") }));
     expect(noBox.graphify).toMatchObject({ status: "warn", detail: "no network sandbox" });
     const proxied = await checks({ ...d, env: { ...d.env, NODE_USE_ENV_PROXY: "1" } }, probes());
     expect(proxied["embedding-proxy"]).toMatchObject({ status: "warn", fix: "unset NODE_USE_ENV_PROXY for sindri" });

@@ -530,7 +530,7 @@ describe("graphFor and the build command", () => {
     });
     const r = await makeIndexCommand(io)(["build"], d);
     expect(r.stdout).toContain("graph ok");
-    expect(ran[0][0]).toBe("sandbox-exec");
+    expect(ran[0][0]).toBe("/usr/bin/sandbox-exec");
   });
 });
 
@@ -552,7 +552,7 @@ describe("graph layer fails closed (Review Focus 4)", () => {
   };
 
   it("graphify missing: nothing runs", async () => {
-    const io = fakeIndexIo({ probes: { has: (b) => b === "sandbox-exec", getJson: async () => null, run: never } });
+    const io = fakeIndexIo({ probes: { has: (b) => b === "/usr/bin/sandbox-exec", getJson: async () => null, run: never } });
     expect(await buildWith(makeDeps(), io)).toBe("graphify is not installed (sindri index setup)");
   });
 
@@ -580,7 +580,7 @@ describe("graph layer fails closed (Review Focus 4)", () => {
     });
     const detail = await buildWith(d, io);
     expect(ran).toHaveLength(1);
-    expect(ran[0].slice(0, 2)).toEqual(["sandbox-exec", "-p"]);
+    expect(ran[0].slice(0, 2)).toEqual(["/usr/bin/sandbox-exec", "-p"]);
     expect(ran[0][2]).toContain("(deny network*)");
     expect(ran[0][2]).toContain("(deny lsopen)");
     // By the home's real path: the temp home sits under the /var -> /private/var symlink.

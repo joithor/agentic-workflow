@@ -1,7 +1,5 @@
-import fs from "node:fs";
-
 import type { LoadedProfile } from "../profile/load.js";
-import { sandboxArgv } from "./graph.js";
+import { pathKind, sandboxArgv } from "./graph.js";
 import type { IndexProbes } from "./io.js";
 import { GRAPHIFY_PIN, GRAPHIFY_PIN_DATE } from "./pins.js";
 
@@ -28,8 +26,8 @@ export const tagsUrl = (url: string): string => `${url.replace(/\/+$/, "")}/api/
 
 // `graphify --version` inside the sandbox (no network, clean env): the installed version, or null.
 // `null` sandbox: none on this machine. Shared by `setup` and `doctor`.
-export function sandboxedVersionArgv(platform: NodeJS.Platform, probes: IndexProbes, home: string): string[] | null {
-  return sandboxArgv(platform, ["graphify", "--version"], probes.has, { writable: [], home, exists: fs.existsSync });
+export function sandboxedVersionArgv(platform: NodeJS.Platform, probes: IndexProbes, home: string, runtimeDir?: string): string[] | null {
+  return sandboxArgv(platform, ["graphify", "--version"], probes.has, { writable: [], home, kind: pathKind, runtimeDir });
 }
 
 export async function installedGraphify(probes: IndexProbes, boxed: string[]): Promise<string | null> {
@@ -39,6 +37,9 @@ export async function installedGraphify(probes: IndexProbes, boxed: string[]): P
 }
 
 const CURL = ["curl", "-sS", "--max-time", "3", "https://example.com"];
+// A launchd job runs outside the sandbox: submitting one from inside must fail (macOS).
+const PROBE_LABEL = "sindri.sandbox-probe";
+const SUBMIT = ["/bin/launchctl", "submit", "-l", PROBE_LABEL, "--", "/usr/bin/true"];
 
 // Spec §11.3 index dependencies: Ollama + the embedding model, pinned and age-gated graphify, and
 // a network sandbox that really denies the network. Every step is evaluated and reported, so one
@@ -46,7 +47,7 @@ const CURL = ["curl", "-sS", "--max-time", "3", "https://example.com"];
 export async function runSetup(
   loaded: LoadedProfile,
   probes: IndexProbes,
-  o: { dryRun: boolean; platform: NodeJS.Platform; home: string; log: (line: string) => void },
+  o: { dryRun: boolean; platform: NodeJS.Platform; home: string; runtimeDir?: string; log: (line: string) => void },
 ): Promise<{ steps: Step[] }> {
   const steps: Step[] = [];
   const ix = loaded.profile.index;
@@ -79,8 +80,9 @@ export async function runSetup(
     }
   }
   if (ix.graph === "graphify") {
-    const version = sandboxedVersionArgv(o.platform, probes, o.home);
-    const curl = sandboxArgv(o.platform, CURL, probes.has, { writable: [], home: o.home, exists: fs.existsSync });
+    const version = sandboxedVersionArgv(o.platform, probes, o.home, o.runtimeDir);
+    const box = { writable: [], home: o.home, kind: pathKind, runtimeDir: o.runtimeDir };
+    const curl = sandboxArgv(o.platform, CURL, probes.has, box);
     if (version === null || curl === null) {
       steps.push({ name: "graphify", status: "skip", detail: "needs a network sandbox" });
       steps.push({ name: "sandbox", status: "fail", detail: "no network sandbox (sandbox-exec or bwrap)", fix: "Linux: install bubblewrap; or set index.graph: none" });
@@ -104,6 +106,16 @@ export async function runSetup(
           boxed.code !== 0
             ? { name: "sandbox", status: "ok", detail: "network denied inside the sandbox" }
             : { name: "sandbox", status: "fail", detail: "a network request succeeded inside the sandbox", fix: "report this; graphify stays off until the sandbox denies the network" },
+        );
+      }
+      const submit = o.platform === "darwin" ? sandboxArgv(o.platform, SUBMIT, probes.has, box) : null;
+      if (submit !== null) {
+        const r = await probes.run(submit, { cwd: "/", timeoutMs: 15_000 });
+        if (r.code === 0) await probes.run(["/bin/launchctl", "remove", PROBE_LABEL], { cwd: "/", timeoutMs: 15_000 });
+        steps.push(
+          r.code !== 0
+            ? { name: "sandbox-launchd", status: "ok", detail: "launchd job submission denied inside the sandbox" }
+            : { name: "sandbox-launchd", status: "fail", detail: "a launchd job was submitted from inside the sandbox", fix: "report this; graphify stays off until the sandbox denies it" },
         );
       }
     }
