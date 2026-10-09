@@ -157,7 +157,7 @@ describe("graphify provider", () => {
     };
   }
   const make = (r: ProcessRunner, platform: NodeJS.Platform, has: (b: string) => boolean) =>
-    makeGraphifyProvider({ bin: "graphify", version: "1.2.3", runner: r, platform, has, home: HOME });
+    makeGraphifyProvider({ bin: "graphify", version: "1.2.3", runner: r, platform, has, home: HOME, maxGraphMB: 32 });
 
   it("runs graphify sandboxed in the snapshot with a clean environment and parses its output", async () => {
     const r = runner(0, true);
@@ -227,6 +227,16 @@ describe("graphify provider", () => {
     await expect(make(runner(0, true), "darwin", (b) => b !== "graphify").build(tempDir())).rejects.toThrow("graphify is not installed (sindri index setup)");
     await expect(make(runner(1, false), "darwin", () => true).build(tempDir())).rejects.toThrow("graphify failed (exit 1): Traceback: boom");
     await expect(make(runner(0, false), "darwin", () => true).build(tempDir())).rejects.toThrow("graphify wrote no graph.json");
-    await expect(make(runner(0, 33 * 1024 * 1024), "darwin", () => true).build(tempDir())).rejects.toThrow("graphify wrote a graph.json over 32 MB");
+  });
+
+  it("reads a graph.json just under the limit and rejects one just over it, naming the key", async () => {
+    const mk = (r: ProcessRunner) => makeGraphifyProvider({ bin: "graphify", version: "1.2.3", runner: r, platform: "darwin", has: () => true, home: HOME, maxGraphMB: 1 });
+    const body = (bytes: number) => (snap: string) => {
+      void snap;
+      const head = '{"nodes":[{"id":"a"}],"links":[],"pad":"';
+      return head + "x".repeat(bytes - head.length - 2) + '"}';
+    };
+    expect((await mk(runner(0, body(1024 * 1024))).build(tempDir())).nodes).toHaveLength(1);
+    await expect(mk(runner(0, body(1024 * 1024 + 1))).build(tempDir())).rejects.toThrow("graphify wrote a graph.json over 1 MB (raise index.graphMaxMB, max 512)");
   });
 });

@@ -151,6 +151,14 @@ function proxyCheck(env: NodeJS.ProcessEnv): Check | null {
   return { name: "embedding-proxy", status: "warn", detail, fix: `${fix} for sindri` };
 }
 
+// The fix that helps one down layer: a graph over the cap needs the profile key raised,
+// a pending layer only needs the next build, anything else needs setup.
+function layerFix(l: { layer: string; status: string; detail: string }, repo: string): string {
+  const build = `sindri index build --repo ${repo}`;
+  if (l.layer === "graph" && /graph\.json over \d+ MB/.test(l.detail)) return `raise index.graphMaxMB in the profile (max 512), then ${build}`;
+  return l.status === "pending" ? build : "sindri index setup";
+}
+
 async function indexChecks(deps: Deps, loaded: LoadedProfile, probes: IndexProbes): Promise<Check[]> {
   const out: Check[] = [];
   const ix = loaded.profile.index;
@@ -167,7 +175,7 @@ async function indexChecks(deps: Deps, loaded: LoadedProfile, probes: IndexProbe
     const rebuild = `sindri index build --repo ${repo}`;
     if (ageH === null) out.push({ name: `index:${repo}`, status: "warn", detail: "never built", fix: rebuild });
     else if (ageH > ix.maxAgeHours) out.push({ name: `index:${repo}`, status: "warn", detail: `stale (built ${Math.floor(ageH)} h ago)`, fix: rebuild });
-    else if (down.length > 0) out.push({ name: `index:${repo}`, status: "warn", detail: down.map((l) => `${l.layer} ${l.status}: ${l.detail}`).join("; "), fix: "sindri index setup" });
+    else if (down.length > 0) out.push({ name: `index:${repo}`, status: "warn", detail: down.map((l) => `${l.layer} ${l.status}: ${l.detail}`).join("; "), fix: [...new Set(down.map((l) => layerFix(l, repo)))].join("; ") });
     else out.push({ name: `index:${repo}`, status: "ok", detail: `built ${Math.floor(ageH)} h ago` });
   }
   if (!ix.embeddings.enabled) {

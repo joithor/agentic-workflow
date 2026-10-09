@@ -60,6 +60,7 @@ const IndexSchema = z
       .strict()
       .default({}),
     graph: z.enum(["graphify", "none"]).default("graphify"),
+    graphMaxMB: z.number().int().min(1).max(512).default(256).describe("Largest graphify graph.json the index reads, in MB (max 512, the V8 string limit); a bigger one leaves the graph layer unavailable"),
   })
   .strict()
   .default({})

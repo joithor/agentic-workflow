@@ -1210,6 +1210,7 @@ interface Badge    { publish(summary: StatusSummary): Promise<Result<void>> }
 - **Index dependencies (M6):** structure uses the TypeScript compiler API, not bundled tree-sitter grammars (other languages come later). Ollama and the embedding model
   (`index.embeddings.{enabled,url,model}`) are checked and pulled by `sindri index setup`; `uv` is installed by `./setup.sh --with-sindri`. graphify is installed and pinned by
   the same command and run in its network-less sandbox. `doctor` verifies each.
+  *Amendment (2026-10-09): the graphify `graph.json` size cap is the profile key `index.graphMaxMB` (default 256, max 512), not a fixed 32 MB.*
 
 ### 11.4 Migration from existing orchestrators (H19, V2)
 - The v1 Worker session runs `/bugFixOrchestrator <item>` inside the container, unchanged, through a

@@ -310,6 +310,26 @@ describe("doctor index checks", () => {
     expect((await checks(on, offline))[`index:${ring0Name(on)}`].detail).toBe("embeddings pending: not built yet (sindri index build); graph pending: not built yet (sindri index build)");
   });
 
+  it("gives each down layer the fix that helps: raise the cap, rebuild, or set up", async () => {
+    const d = await approvedIndexDeps(ring0Repo({ "src/a.ts": "export const a = 1;\n" }));
+    const name = ring0Name(d);
+    await makeIndexCommand(fakeIndexIo())(["build", "--repo", name], d);
+    const setLayer = (layer: string, status: string, detail: string) => {
+      const db = new Database(indexPath(d, name));
+      db.prepare("UPDATE layers SET status = ?, detail = ? WHERE layer = ?").run(status, detail, layer);
+      db.close();
+    };
+    const fixOf = async () => (await checks(d, offline))[`index:${name}`].fix;
+    setLayer("graph", "unavailable", "graphify wrote a graph.json over 256 MB (raise index.graphMaxMB, max 512)");
+    expect(await fixOf()).toBe(`raise index.graphMaxMB in the profile (max 512), then sindri index build --repo ${name}`);
+    setLayer("graph", "pending", "not built yet (the next build continues)");
+    expect(await fixOf()).toBe(`sindri index build --repo ${name}`);
+    setLayer("graph", "unavailable", "graphify is not installed (sindri index setup)");
+    expect(await fixOf()).toBe("sindri index setup");
+    setLayer("embeddings", "pending", "not built yet (the next build continues)");
+    expect(await fixOf()).toBe(`sindri index build --repo ${name}; sindri index setup`);
+  });
+
   it("reports the heavy-job lock: free, held, and stuck for over 6 hours", async () => {
     const base = await approvedIndexDeps(ring0Repo({ "src/a.ts": "export const a = 1;\n" }));
     // The default lock dir, then $AW_HEAVY_JOB_LOCK (the path config/lib/locks.sh callers share).
