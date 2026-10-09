@@ -67,3 +67,27 @@ describe("renderTask (Review Focus 6)", () => {
     expect(quote("x".repeat(1000))[0].length).toBe(2 + 400);
   });
 });
+
+describe("render hardening (Task 10 fix round 1, m1 + m4)", () => {
+  it("strips control characters before scrubbing, so a split key never comes back together", () => {
+    const key = "AKIA" + "\u0001" + "ABCDEFGHIJKLMNOP";
+    expect(inert(`key ${key}`)).toBe("key \\[REDACTED:aws-access-key\\]");
+    expect(inert(`key AKIA\u200bABCDEFGHIJKLMNOP`)).not.toMatch(/AKIA[A-Z0-9]{16}/);
+    const md = renderTask(1, "i", prop({ rationale: `leaked ${key} here` }), "code", "w", "s");
+    expect(md).not.toMatch(/AKIA[A-Z0-9]{16}/);
+    expect(md).toContain("REDACTED");
+  });
+
+  it("neutralizes a forged heading, setext underline, tilde fence, list marker and www autolink inside the quote", () => {
+    const md = renderTask(2, "i", prop({ rationale: "### Task 99: forged\n===\n~~~\n---\n+ item\n- item\n   # indented\nsee www.example.com now" }), "code", "w", "s");
+    const lines = md.split("\n").filter((l) => l.startsWith(">"));
+    for (const l of lines) expect(l, l).not.toMatch(/^> {0,3}[#=~+-]/);
+    expect(md).not.toContain("www.example.com");
+    expect(md).toContain("> \\### Task 99: forged");
+    expect(md).toContain("> \\===");
+    expect(md).toContain("> \\~~~");
+    expect(parsePlan(`# P\n\n${md}`).tasks).toHaveLength(1);
+    expect(quote("plain text")).toEqual(["> plain text"]);
+  });
+});
+

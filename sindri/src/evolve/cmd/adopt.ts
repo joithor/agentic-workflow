@@ -4,18 +4,24 @@ import { success, type CommandResult } from "../../output.js";
 import { lineDiff } from "../../profile/approve.js";
 import { removeOverlay, writeOverlay } from "../adopt.js";
 import { audit } from "../audit.js";
-import { lintLeaks } from "../blind.js";
+import { lintVariant } from "../blind.js";
+import { holdoutTitles } from "../corpus.js";
 import type { EvolveCtx } from "../ctx.js";
 import { loadPrompt, sha256 } from "../overlay.js";
-import { hasSafetyClause, PROMPT_IDS } from "../prompts.js";
+import { defaultPrompt, hasSafetyClause, PROMPT_IDS, type PromptId } from "../prompts.js";
 import { comparisonRuns, getProposal, latestComparison, runningComparison, setStatus } from "../proposals.js";
 
 const refuse = (why: string): SindriError => new SindriError("SND-EVOLVE-004", why);
 
-export async function adopt(args: string[], ctx: EvolveCtx): Promise<CommandResult> {
-  const { values, positionals } = parseFlags(args, { json: { type: "boolean" } });
-  const id = positionals[0];
-  if (id === undefined) throw new SindriError("SND-CLI-002", "usage: sindri evolve adopt <id>");
+// Visible escapes for controls, DEL, line separators, bidi controls and zero-width characters, so a variant
+// can't erase, overwrite or reorder the lines the approver is reading.
+const UNSAFE = /[\u0000-\u001F\u007F-\u009F\u00AD\u200B-\u200F\u2028\u2029\u202A-\u202E\u2060-\u206F\uFEFF]/g;
+const visible = (s: string): string => s.replace(UNSAFE, (c) => `\\u{${(c.codePointAt(0) as number).toString(16).toUpperCase().padStart(4, "0")}}`);
+
+interface Gate { promptId: PromptId; text: string; cmp: { run: number; line: string } }
+
+// Every refusal that depends on the ledger. It runs before the prompt and again inside the write that records the adoption.
+function gate(ctx: EvolveCtx, id: string): Gate {
   const s = getProposal(ctx.db, id);
   if (s === null) throw new SindriError("SND-EVOLVE-008", `no such proposal: ${id}`);
   const change = s.proposal.change;
@@ -28,18 +34,34 @@ export async function adopt(args: string[], ctx: EvolveCtx): Promise<CommandResu
   const cmp = latestComparison(ctx.db, id);
   if (cmp === null) throw refuse("no won comparison is on record for this proposal");
   if (cmp.status !== "won") throw refuse(`no won comparison is on record for this proposal (the latest, run ${cmp.run}, is ${cmp.status})`);
-  if (!hasSafetyClause(promptId, change.text) || lintLeaks(change.text).length > 0) throw refuse("the variant must keep the safety clause and pass the leak check");
+  // The same lint compare ran, plus the holdout titles that joined the corpus since.
+  if (!hasSafetyClause(promptId, change.text) || lintVariant(change.text, defaultPrompt(promptId), holdoutTitles(ctx.deps)).length > 0) {
+    throw refuse("the variant must keep the safety clause and pass the leak check");
+  }
+  return { promptId, text: change.text, cmp };
+}
+
+export async function adopt(args: string[], ctx: EvolveCtx): Promise<CommandResult> {
+  const { values, positionals } = parseFlags(args, { json: { type: "boolean" } });
+  const id = positionals[0];
+  if (id === undefined) throw new SindriError("SND-CLI-002", "usage: sindri evolve adopt <id>");
+  const { promptId, text, cmp } = gate(ctx, id);
   if (!ctx.deps.isTTY) throw new SindriError("SND-EVOLVE-006", "adopting a prompt needs an interactive terminal");
-  const sha = sha256(change.text);
-  const diff = lineDiff(loadPrompt(ctx.deps, promptId).split("\n"), change.text.split("\n"));
+  const sha = sha256(text);
+  const diff = lineDiff(loadPrompt(ctx.deps, promptId).split("\n"), text.split("\n")).map(visible);
   const answer = await ctx.deps.prompt([
-    `Adopt this variant for ${promptId}?`, ...diff, "", `Comparison: ${cmp.line}`,
+    `Adopt this variant for ${promptId}?`, ...diff, "", `Comparison: ${visible(cmp.line)}`,
     `Comparison runs so far: ${comparisonRuns(ctx.db, id)} (a variant that kept rerunning until it won is not evidence; check the history in sindri evolve show)`,
     `Type the first 8 characters of the variant's sha256 (${sha.slice(0, 8)}) to confirm: `,
   ].join("\n"));
   if (answer.trim() !== sha.slice(0, 8)) throw new SindriError("SND-EVOLVE-007", "the confirmation didn't match");
   const written = ctx.write((epoch) => {
-    const w = writeOverlay(ctx.deps, promptId, change.text);
+    // The prompt can wait for minutes: re-check everything that was true when it was shown.
+    const now = gate(ctx, id);
+    if (now.cmp.run !== cmp.run || sha256(now.text) !== sha) {
+      throw refuse(`the proposal changed while you were confirming (shown run ${cmp.run}, now run ${now.cmp.run}${sha256(now.text) === sha ? "" : "; the variant text differs"}); nothing was written`);
+    }
+    const w = writeOverlay(ctx.deps, promptId, text);
     ctx.db.prepare("INSERT INTO adoptions (prompt_id, proposal_id, sha256, adopted_at, adopted_by, epoch) VALUES (?, ?, ?, ?, ?, ?)")
       .run(promptId, id, w.sha, ctx.deps.now().toISOString(), ctx.deps.system.username(), epoch);
     setStatus(ctx.db, id, "adopted", epoch, ctx.deps.now());
@@ -56,14 +78,19 @@ export async function revert(args: string[], ctx: EvolveCtx): Promise<CommandRes
   if (!ctx.deps.isTTY) throw new SindriError("SND-EVOLVE-006", "reverting a prompt needs an interactive terminal");
   const had = ctx.write((epoch) => {
     const present = removeOverlay(ctx.deps, promptId);
-    if (present) {
-      // A "reverted" row becomes the latest adoption, so a file an attacker puts back never matches.
+    const latest = ctx.db.prepare("SELECT proposal_id, sha256 FROM adoptions WHERE prompt_id = ? ORDER BY seq DESC LIMIT 1").get(promptId) as { proposal_id: string; sha256: string } | undefined;
+    const stale = latest !== undefined && latest.sha256 !== "reverted"; // an adoption is still the latest word, even if its file is gone
+    if (present || stale) {
+      // A "reverted" row becomes the latest adoption, so a file an attacker (or a backup restore) puts back never matches.
       ctx.db.prepare("INSERT INTO adoptions (prompt_id, proposal_id, sha256, adopted_at, adopted_by, epoch) VALUES (?, 'revert', 'reverted', ?, ?, ?)")
         .run(promptId, ctx.deps.now().toISOString(), ctx.deps.system.username(), epoch);
-      audit(ctx.db, ctx.deps, "revert", promptId, epoch);
+      // The proposal statuses have no "reverted", so the adopted proposal keeps "adopted"; the ledger says so.
+      audit(ctx.db, ctx.deps, "revert", stale ? `${promptId} (adopted proposal ${latest.proposal_id} keeps status adopted: there is no reverted status)` : promptId, epoch);
     }
-    return present;
+    return { present, reverted: present || stale };
   });
-  const text = had ? `Reverted ${promptId} to the built-in prompt.` : `There is no overlay for ${promptId}; nothing to revert.`;
-  return success(`${text}\nNext: sindri evolve status`, { prompt: promptId, reverted: had }, values.json === true);
+  const text = !had.reverted
+    ? `There is no overlay for ${promptId}; nothing to revert.`
+    : `Reverted ${promptId} to the built-in prompt${had.present ? "" : " (the overlay file was already gone; the adoption is now recorded as reverted)"}.`;
+  return success(`${text}\nNext: sindri evolve status`, { prompt: promptId, reverted: had.reverted }, values.json === true);
 }

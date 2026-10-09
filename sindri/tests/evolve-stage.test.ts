@@ -96,3 +96,16 @@ describe("sindri evolve stage (Task 10 rulings)", () => {
     fx.close();
   });
 });
+
+describe("stage preview hardening (Task 10 fix round 1, m1)", () => {
+  it("never writes a live key rebuilt from a control-character split into the staged preview", async () => {
+    const { fx, save } = await ready(4);
+    const id = save("Clean title here", { rationale: `leaked ${"AKIA" + "\u0001" + "ABCDEFGHIJKLMNOP"} here` }, "code");
+    await stage([], fx.ctx);
+    const preview = fs.readFileSync(stagedFile(fx.deps, id), "utf8");
+    expect(preview).not.toMatch(/AKIA[A-Z0-9]{16}/);
+    expect(preview).toContain("REDACTED");
+    fx.close();
+  });
+});
+

@@ -97,7 +97,14 @@ export async function publishProposals(ctx: EvolveCtx, o: { dryRun: boolean; noP
   const monday = isoWeekMonday(ctx.deps.now());
   if (!o.dryRun) {
     const cur = await ctx.deps.git.run(["branch", "--show-current"], ctx.repo);
-    if (cur.ok && cur.stdout.trim() === cfg.defaultBranch) {
+    if (!cur.ok) {
+      throw new SindriError("SND-EVOLVE-014", "couldn't tell which branch the toolkit repo is on", { fix: `check that ${ctx.repo} is a git repository, then rerun sindri evolve publish` });
+    }
+    const branch = cur.stdout.trim();
+    if (branch === "") {
+      throw new SindriError("SND-EVOLVE-014", "the toolkit repo is not on a branch (detached HEAD)", { fix: `git switch -c docs/sindri-proposals-${monday}, then rerun sindri evolve publish` });
+    }
+    if (branch === cfg.defaultBranch) {
       throw new SindriError("SND-EVOLVE-014", `the toolkit repo is on its default branch (${cfg.defaultBranch})`, { fix: `git switch -c docs/sindri-proposals-${monday}, then rerun sindri evolve publish` });
     }
   }
@@ -118,7 +125,7 @@ export async function publishProposals(ctx: EvolveCtx, o: { dryRun: boolean; noP
     const md = renderTask(n, s.id, s.proposal, t.tier, t.why, s.source);
     const p = s.proposal;
     const raw = [p.title, p.rationale, ...p.evidence, p.change.type === "describe" ? `${p.change.description}\n${p.change.files.join("\n")}` : p.change.text, s.source].join("\n");
-    const problem = privacyProblem(`${raw}\n${md}`, deny) ?? (scrubber.find(`${raw}\n${md}`).length > 0 ? "contains a pattern from scrub.extraPatterns" : null);
+    const problem = privacyProblem(`${raw}\n${md}`, deny) ?? (scrubber.find(`${raw}\n${md}`).length > 0 ? "contains text the scrubber redacts (a secret or a scrub.extraPatterns match)" : null);
     if (problem !== null) {
       held.push({ id: s.id, why: problem });
       continue;

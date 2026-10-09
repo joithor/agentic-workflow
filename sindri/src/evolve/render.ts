@@ -8,18 +8,24 @@ const LINE_BREAKS = /\r\n|[\r\n\u0085\u2028\u2029]/;
 
 // Model-written text becomes inert Markdown: no HTML, images, links, @-mentions, issue references,
 // code spans or control characters, so it can't forge a heading, a ticked step or a ping in a plan file.
+// Controls and invisible characters go first: scrubbing "AKIA<control>…" before the strip would let it rebuild a live key.
+const STRIP = /[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F\u00AD\u200B-\u200F\u202A-\u202E\u2060-\u206F\uFEFF]/g;
+
 export function inert(s: string): string {
-  return scrubber.scrub(s).text
-    .replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F]/g, "")
+  return scrubber.scrub(s.replace(STRIP, "")).text
     .replace(/\\/g, "\\\\").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
     .replace(/[[\]!`|*]/g, (c) => `\\${c}`)
     .replace(/@/g, "(at)").replace(/#(?=\d)/g, "(num)")
-    .replace(/https?:\/\//gi, "hxxp://");
+    .replace(/https?:\/\//gi, "hxxp://")
+    .replace(/\bwww\./gi, "www(dot)");
 }
 
 export const oneLine = (s: string, max = 200): string => inert(s.replace(/[\s\u0085]+/g, " ").trim().slice(0, max));
 
-export const quote = (s: string): string[] => s.split(LINE_BREAKS).slice(0, MAX_LINES).map((l) => `> ${inert(l.slice(0, MAX_LINE))}`.trimEnd());
+// A quoted line that starts with a heading, setext, fence or list marker would render as one inside the quote.
+const BLOCK_START = /^(\s*)([#=\-~+])/;
+
+export const quote = (s: string): string[] => s.split(LINE_BREAKS).slice(0, MAX_LINES).map((l) => `> ${inert(l.slice(0, MAX_LINE)).replace(BLOCK_START, "$1\\$2")}`.trimEnd());
 
 const CHECK_KINDS: readonly Proposal["kind"][] = ["prompt-edit", "docs", "rule"];
 

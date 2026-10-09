@@ -1,11 +1,14 @@
 import { createHash } from "node:crypto";
 import fs from "node:fs";
+import os from "node:os";
+import path from "node:path";
 import { describe, expect, it } from "vitest";
 
 import { adopt, revert } from "../src/evolve/cmd/adopt.js";
 import { inspectOverlay, loadPrompt, overlayFile } from "../src/evolve/overlay.js";
 import { defaultPrompt, SOURCES_CLAUSE } from "../src/evolve/prompts.js";
 import { getProposal, ProposalSchema, saveProposal, setStatus, type ProposalStatus } from "../src/evolve/proposals.js";
+import { isHoldout, saveReplay, type ReplayItem } from "../src/evolve/corpus.js";
 import { evolveFixture, withDeps, type EvolveFixture } from "./evolve-fixtures.js";
 
 const VARIANT = `${SOURCES_CLAUSE}\nBETTER draft prompt.`;
@@ -141,3 +144,126 @@ describe("sindri evolve adopt (Task 10 rulings)", () => {
     fx.close();
   });
 });
+
+describe("sindri evolve adopt: state changes while the human confirms (Task 10 fix round 1, I2)", () => {
+  const insert = (fx: EvolveFixture, id: string, run: number, verdict: string, line = `${verdict}: x`): void => {
+    fx.ctx.db.prepare("INSERT INTO comparisons (proposal_id, run, item_id, verdict, detail, ts, epoch) VALUES (?, ?, '*', ?, ?, 't', 1)").run(id, run, verdict, JSON.stringify({ line }));
+  };
+  type Change = (fx: EvolveFixture, id: string) => void;
+  const CHANGES: [string, Change][] = [
+    ["the proposal is rejected", (fx, id) => fx.ctx.write((e) => setStatus(fx.ctx.db, id, "rejected", e, fx.deps.now()))],
+    ["a rerun starts (status evaluating, a running marker)", (fx, id) => { fx.ctx.write((e) => setStatus(fx.ctx.db, id, "evaluating", e, fx.deps.now())); insert(fx, id, 2, "running", ""); }],
+    ["a running marker appears", (fx, id) => insert(fx, id, 2, "running", "")],
+    ["a newer run lost", (fx, id) => insert(fx, id, 2, "lost")],
+    ["a newer run errored", (fx, id) => insert(fx, id, 2, "errored")],
+    ["the variant text changes", (fx, id) => {
+      const body = JSON.parse((fx.ctx.db.prepare("SELECT body FROM proposals WHERE id = ?").get(id) as { body: string }).body) as { change: { text: string } };
+      body.change.text += " tampered";
+      fx.ctx.db.prepare("UPDATE proposals SET body = ? WHERE id = ?").run(JSON.stringify(body), id);
+    }],
+  ];
+
+  for (const [name, change] of CHANGES) {
+    it(`aborts with no overlay written when ${name} between the confirmation and the write`, async () => {
+      const { fx, save } = await ready();
+      const id = save(`Racing variant ${name.length}`, `${VARIANT} racing`, "won");
+      const before = getProposal(fx.ctx.db, id)?.status;
+      const tty = withDeps(fx.ctx, { isTTY: true, prompt: async () => { change(fx, id); return sha8(`${VARIANT} racing`); } });
+      await expect(adopt([id], tty)).rejects.toThrow(/SND-EVOLVE-004|changed while you were confirming|only a won|no won comparison|still running/);
+      expect(inspectOverlay(fx.deps, "scope.draft").state).toBe("none");
+      expect(fs.existsSync(overlayFile(fx.deps, "scope.draft"))).toBe(false);
+      expect(fx.ctx.db.prepare("SELECT COUNT(*) AS c FROM adoptions").get()).toEqual({ c: 0 });
+      expect(fx.ctx.db.prepare("SELECT COUNT(*) AS c FROM evolve_audit WHERE verb = 'adopt'").get()).toEqual({ c: 0 });
+      const after = getProposal(fx.ctx.db, id)?.status;
+      expect(after).not.toBe("adopted");
+      if (!name.startsWith("the proposal is rejected") && !name.startsWith("a rerun")) expect(after).toBe(before);
+      fx.close();
+    });
+  }
+
+  it("names the change when the won run is no longer the one that was shown", async () => {
+    const { fx, save } = await ready();
+    const id = save("Racing variant message", `${VARIANT} message`, "won");
+    const tty = withDeps(fx.ctx, { isTTY: true, prompt: async () => { insert(fx, id, 2, "won", "won: 22 of 22 decided pairs"); return sha8(`${VARIANT} message`); } });
+    await expect(adopt([id], tty)).rejects.toThrow(/changed while you were confirming \(shown run 1, now run 2\)/);
+    expect(inspectOverlay(fx.deps, "scope.draft").state).toBe("none");
+    fx.close();
+  });
+});
+
+describe("sindri evolve adopt: the diff is safe to read (Task 10 fix round 1, I3)", () => {
+  it("shows ESC sequences, CR and bidi controls as visible \\u{XXXX} escapes", async () => {
+    const { fx, tty, asked, save, answerWith } = await ready();
+    const text = `${VARIANT}\n\u001b[1A\u001b[2Kinnocent line\nfirst\rsecond\nrtl \u202eevil\u2066 iso\u2069 \u200b zero \u0085 \u007f`;
+    const id = save("Hostile looking variant", text, "won");
+    answerWith(sha8(text));
+    await adopt([id], tty);
+    const q = asked[0];
+    expect(q).not.toMatch(/[\u0000-\u0009\u000b-\u001f\u007f-\u009f\u200b-\u200f\u202a-\u202e\u2060-\u206f]/u);
+    for (const esc of ["\\u{001B}[1A\\u{001B}[2Kinnocent line", "first\\u{000D}second", "\\u{202E}evil\\u{2066}", "iso\\u{2069}", "\\u{200B}", "\\u{0085}", "\\u{007F}"]) expect(q, esc).toContain(esc);
+    fx.close();
+  });
+});
+
+describe("sindri evolve adopt: holdout titles and the overlay directory (Task 10 fix round 1, m10 + m12)", () => {
+  const holdoutId = Array.from({ length: 600 }, (_, i) => `item-${i}`).find(isHoldout) as string;
+  const it1: ReplayItem = {
+    id: holdoutId, artifact: "scope.draft", createdAt: "2026-10-08T00:00:00Z",
+    brief: { ref: "file:/b.md", kind: "brief", title: "Quarterly onboarding revamp", text: "b", author: null, createdAt: null, trust: "trusted" },
+    records: [], outcome: { status: "complete", surfaces: 1, recall: null },
+  };
+
+  it("refuses a variant that copies a holdout title (m10)", async () => {
+    const { fx, tty, save, answerWith } = await ready();
+    fx.ctx.db.prepare("INSERT OR IGNORE INTO scope_runs (run_id, subject, mode, ts, status, rounds, surfaces, tokens, out_path, epoch) VALUES (?, 's', 'scope', 't', 'complete', 1, 1, 1, '/o', 1)").run(it1.id);
+    saveReplay(fx.deps, it1);
+    const text = `${VARIANT} Think of the quarterly onboarding revamp when drafting.`;
+    const id = save("Copies a holdout title", text, "won");
+    answerWith(sha8(text));
+    await expect(adopt([id], tty)).rejects.toThrow(/keep the safety clause and pass the leak check/);
+    expect(inspectOverlay(fx.deps, "scope.draft").state).toBe("none");
+    fx.close();
+  });
+
+  it("refuses when the overlay directory is a symlink, and writes nothing (m12)", async () => {
+    const { fx, tty, save, answerWith } = await ready();
+    const other = fs.mkdtempSync(path.join(os.tmpdir(), "sindri-elsewhere-"));
+    const prompts = path.dirname(overlayFile(fx.deps, "scope.draft"));
+    fs.mkdirSync(path.dirname(prompts), { recursive: true });
+    fs.symlinkSync(other, prompts);
+    const text = `${VARIANT} symlinked`;
+    const id = save("Symlinked overlay dir", text, "won");
+    answerWith(sha8(text));
+    await expect(adopt([id], tty)).rejects.toThrow(/isn't a plain directory/);
+    expect(fs.readdirSync(other)).toEqual([]);
+    expect(fx.ctx.db.prepare("SELECT COUNT(*) AS c FROM adoptions").get()).toEqual({ c: 0 });
+    expect(getProposal(fx.ctx.db, id)?.status).toBe("won");
+    fs.rmSync(prompts);
+    fs.rmSync(path.dirname(prompts), { recursive: true });
+    fs.symlinkSync(other, path.dirname(prompts));
+    await expect(adopt([id], tty)).rejects.toThrow(/isn't a plain directory/);
+    expect(fs.readdirSync(other)).toEqual([]);
+    fx.close();
+  });
+});
+
+describe("sindri evolve revert: an overlay already deleted by hand (Task 10 fix round 1, m5)", () => {
+  it("records a reverted row anyway, so a restored file stays unadopted, and says what happened", async () => {
+    const { fx, tty, save } = await ready();
+    const id = save("Better draft prompt", VARIANT, "won");
+    await adopt([id], tty);
+    fs.rmSync(overlayFile(fx.deps, "scope.draft")); // deleted by hand
+    const r = await revert(["scope.draft"], tty);
+    expect(r.stdout).toBe("Reverted scope.draft to the built-in prompt (the overlay file was already gone; the adoption is now recorded as reverted).\nNext: sindri evolve status\n");
+    expect(JSON.parse((await revert(["scope.draft", "--json"], tty)).stdout)).toMatchObject({ reverted: false });
+    fs.writeFileSync(overlayFile(fx.deps, "scope.draft"), VARIANT, { mode: 0o600 }); // a backup restore
+    expect(inspectOverlay(fx.deps, "scope.draft").state).toBe("unadopted");
+    expect(fx.ctx.db.prepare("SELECT sha256 FROM adoptions ORDER BY seq").all()).toEqual([{ sha256: createHash("sha256").update(VARIANT).digest("hex") }, { sha256: "reverted" }]);
+    const audits = fx.ctx.db.prepare("SELECT verb, detail FROM evolve_audit WHERE verb = 'revert'").all() as { detail: string }[];
+    expect(audits).toHaveLength(1);
+    expect(audits[0].detail).toBe(`scope.draft (adopted proposal ${id} keeps status adopted: there is no reverted status)`);
+    expect(getProposal(fx.ctx.db, id)?.status).toBe("adopted");
+    fx.close();
+  });
+});
+

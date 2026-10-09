@@ -7,7 +7,7 @@ import { parsePlan } from "../src/adapters/plan-file/parse.js";
 import { init } from "../src/evolve/cmd/registry.js";
 import { publish, stage } from "../src/evolve/cmd/stage.js";
 import { getProposal, inFlightCount, ProposalSchema, saveProposal, stagedFile, type Tier } from "../src/evolve/proposals.js";
-import { evolveFixture, git } from "./evolve-fixtures.js";
+import { evolveFixture, git, withDeps } from "./evolve-fixtures.js";
 
 const FILES = { "config/hooks/done-gate.sh": "#!/bin/sh\n", "skills/review/SKILL.md": "x\n" };
 const DENY = "privacy:\n  denyTerms:\n    - Acme Care\n"; // every test but the N1 ones runs with a term list, as a real profile must
@@ -202,8 +202,8 @@ describe("publish: re-tiering, replace-prompt text, profile scrub patterns, the 
     await stage([], fx.ctx);
     const r = await publish([], fx.ctx);
     expect(r.exitCode).toBe(1);
-    expect(r.stdout).toContain(`held ${bad}: contains a pattern from scrub.extraPatterns`);
-    expect(r.stdout).toContain(`held ${rat}: contains a pattern from scrub.extraPatterns`);
+    expect(r.stdout).toContain(`held ${bad}: contains text the scrubber redacts (a secret or a scrub.extraPatterns match)`);
+    expect(r.stdout).toContain(`held ${rat}: contains text the scrubber redacts (a secret or a scrub.extraPatterns match)`);
     expect(r.stdout).not.toContain("WRK-");
     expect(fs.readFileSync(path.join(fx.repo, REL), "utf8")).not.toContain("WRK-");
     expect([ok, bad, rat].map((id) => getProposal(fx.ctx.db, id)?.status)).toEqual(["published", "held", "held"]);
@@ -228,3 +228,47 @@ describe("publish: re-tiering, replace-prompt text, profile scrub patterns, the 
     fx.close();
   });
 });
+
+describe("publish hardening (Task 10 fix round 1)", () => {
+  it("holds a term hidden across a line break, a double space or an NBSP in the rationale, without echoing it (I1)", async () => {
+    const { fx, save } = await ready({ extraYaml: `${DENY}evolve:\n  maxOpenProposals: 5\n` });
+    const ids = ["Acme\nCare", "Acme  Care", "Acme\u00a0Care", "Acme\u2028Care"].map((h, i) => save(`Clean title number ${i}`, { rationale: `We saw this at ${h} twice` }));
+    const fine = save("Perfectly clean proposal");
+    await stage([], fx.ctx);
+    const r = await publish([], fx.ctx);
+    for (const id of ids) expect(r.stdout).toContain(`held ${id}: contains a private term`);
+    expect(r.stdout).not.toMatch(/Acme/);
+    expect(getProposal(fx.ctx.db, fine)?.status).toBe("published");
+    expect(fs.readFileSync(path.join(fx.repo, REL), "utf8")).not.toMatch(/Acme/);
+    fx.close();
+  });
+
+  it("holds a private term that appears only in a replace-prompt text (m9)", async () => {
+    const { fx, save } = await ready();
+    const id = save("Prompt replacement on a skill", { change: { type: "replace-prompt", text: "Written for Acme Care teams only." } }, "approval");
+    await stage([], fx.ctx);
+    const r = await publish([], fx.ctx);
+    expect(r.stdout).toContain(`held ${id}: contains a private term`);
+    expect(getProposal(fx.ctx.db, id)?.status).toBe("held");
+    fx.close();
+  });
+
+  it("refuses when HEAD is detached, and when git can't say which branch it is on (m6)", async () => {
+    const detached = await ready({ branch: null });
+    detached.save("A clean proposal");
+    await stage([], detached.fx.ctx);
+    git(detached.fx.repo, "checkout", "-q", "--detach");
+    await expect(publish([], detached.fx.ctx)).rejects.toThrow(/not on a branch/);
+    expect((await publish(["--dry-run"], detached.fx.ctx)).exitCode).toBe(0);
+    expect(fs.existsSync(path.join(detached.fx.repo, REL))).toBe(false);
+    detached.fx.close();
+    const broken = await ready();
+    broken.save("A clean proposal");
+    await stage([], broken.fx.ctx);
+    const failing = withDeps(broken.fx.ctx, { git: { run: async () => ({ ok: false, stdout: "", stderr: "boom", code: 128 }) } as never });
+    await expect(publish([], failing)).rejects.toThrow(/couldn't tell which branch/);
+    expect(fs.existsSync(path.join(broken.fx.repo, REL))).toBe(false);
+    broken.fx.close();
+  });
+});
+
