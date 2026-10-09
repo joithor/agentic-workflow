@@ -180,4 +180,31 @@ describe("sindri evolve telemetry", () => {
     expect(r.stdout).not.toContain("maxTokensPerJob");
     fx.close();
   });
+
+  it("cites only post-merge samples as evidence for a new proposal", async () => {
+    const fx = await ready();
+    writeFires(fx, 12);
+    await telemetry([], fx.ctx);
+    const old = fx.ctx.db.prepare("SELECT id FROM proposals").get() as { id: string };
+    fx.ctx.write((epoch) => setStatus(fx.ctx.db, old.id, "merged", epoch, new Date("2026-10-05T10:01:30Z")));
+    await telemetry([], fx.ctx);
+    const rows = fx.ctx.db.prepare("SELECT id, body FROM proposals WHERE id != ?").all(old.id) as { id: string; body: string }[];
+    expect(rows).toHaveLength(1);
+    const evidence = (JSON.parse(rows[0].body) as { evidence: string[] }).evidence;
+    expect(evidence).toHaveLength(5);
+    // Fires n = 0 and 1 (lines 2 and 4 of the file) predate the merge.
+    expect(evidence.every((r) => !["transcript:5e55a1d0#2", "transcript:5e55a1d0#4"].includes(r))).toBe(true);
+    fx.close();
+  });
+
+  it("treats a non-array results as a failed batch and stops without crashing", async () => {
+    const fx = await evolveFixture({ files: FILES, io: scriptedEvolveIo(() => ({ results: "nope" })) });
+    await init([], fx.ctx);
+    writeFires(fx, 3);
+    const r = await telemetry([], fx.ctx);
+    expect(r.exitCode).toBe(1);
+    expect(r.stdout).toContain("Stopped early:");
+    expect(r.stdout).toContain("3 fire(s) were not adjudicated.");
+    fx.close();
+  });
 });

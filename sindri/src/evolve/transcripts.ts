@@ -120,8 +120,15 @@ export function readRepoSessions(dir: string, repo: string, since: Date, maxFile
   const recent = all.map((f) => ({ f, m: fs.statSync(f).mtimeMs })).filter((x) => x.m >= since.getTime()).sort((a, b) => b.m - a.m).slice(0, maxFiles).map((x) => x.f);
   const parsed = recent.map((file) => {
     const entries = fs.readFileSync(file, "utf8").split("\n").map((raw, i) => ({ n: i + 1, e: parseEntry(raw) }));
-    const times = entries.flatMap((x) => (x.e === null ? [] : [Date.parse(tsOf(x.e))])).filter((t) => !Number.isNaN(t));
-    return { file, entries, first: times.length === 0 ? Infinity : Math.min(...times), last: times.length === 0 ? Infinity : Math.max(...times) };
+    let first = Infinity;
+    let last = -Infinity;
+    for (const x of entries) {
+      const t = x.e === null ? NaN : Date.parse(tsOf(x.e));
+      if (Number.isNaN(t)) continue;
+      first = Math.min(first, t);
+      last = Math.max(last, t);
+    }
+    return { file, entries, first, last: last === -Infinity ? Infinity : last };
   }).sort((a, b) => a.first - b.first || a.last - b.last || (a.file < b.file ? -1 : 1));
   const lines: SessionLine[] = [];
   const seen = new Set<string>(); // keys of lines in earlier files

@@ -156,6 +156,13 @@ describe("readRepoSessions (Review Focus 5)", () => {
     expect(r.lines.map((l) => l.ref)).toEqual(["transcript:zzzz0002#1", "transcript:zzzz0002#2", "transcript:aaaa0001#2", "transcript:nnnn0005#1", "transcript:oooo0006#1", "transcript:pppp0004#1", "transcript:mmmm0003#1"]);
   });
 
+  it("reads a session with far more lines than a spread call can take", () => {
+    const d = dir();
+    const one = line({ type: "user", cwd: "/repo", timestamp: "2026-10-01T00:00:00Z", message: { content: "same" } });
+    fs.writeFileSync(path.join(d, "proj", "gggg0007.jsonl"), Array.from({ length: 200_000 }, () => one).join("\n"));
+    expect(readRepoSessions(d, "/repo", new Date(0)).lines).toHaveLength(200_000);
+  });
+
   it("records the isMeta flag", () => {
     const d = dir();
     fs.writeFileSync(path.join(d, "proj", "ffff0006.jsonl"), [line({ type: "user", cwd: "/repo", isMeta: true, message: { content: "a" } }), line({ type: "user", cwd: "/repo", message: { content: "b" } })].join("\n"));

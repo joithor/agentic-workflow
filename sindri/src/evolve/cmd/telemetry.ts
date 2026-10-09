@@ -82,7 +82,7 @@ export async function telemetry(args: string[], ctx: EvolveCtx): Promise<Command
       lines.push(`  no registered artifact hook:${hook}; run sindri evolve init`);
       continue;
     }
-    const refs = (ctx.db.prepare("SELECT ref FROM hook_samples WHERE hook = ? AND warranted = 0 ORDER BY ts DESC LIMIT 5").all(hook) as { ref: string }[]).map((r) => r.ref);
+    const refs = (ctx.db.prepare("SELECT ref FROM hook_samples WHERE hook = ? AND warranted = 0 AND ts > ? ORDER BY ts DESC LIMIT 5").all(hook, st.since ?? "") as { ref: string }[]).map((r) => r.ref);
     const proposal = hookFixProposal(artifact, st, lower, refs);
     const tier = classifyTier(proposal, registry, repoConfig(ctx.loaded).protectedPaths).tier;
     const saved = await ctx.writeRetry((epoch) => saveProposal(ctx.db, proposal, `telemetry:${hook}`, tier, epoch, ctx.deps.now()));
