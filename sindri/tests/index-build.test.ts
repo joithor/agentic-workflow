@@ -572,7 +572,9 @@ describe("graph layer fails closed (Review Focus 4)", () => {
     expect(ran).toHaveLength(1);
     expect(ran[0].slice(0, 2)).toEqual(["sandbox-exec", "-p"]);
     expect(ran[0][2]).toContain("(deny network*)");
-    for (const dir of [".ssh", ".aws", ".gnupg", ".agentic-workflow", "Library/Keychains"]) expect(ran[0][2]).toContain(`(subpath "${d.home}/${dir}")`);
+    expect(ran[0][2]).toContain("(deny lsopen)");
+    // By the home's real path: the temp home sits under the /var -> /private/var symlink.
+    for (const dir of [".ssh", ".aws", ".gnupg", ".agentic-workflow", "Library/Keychains"]) expect(ran[0][2]).toContain(`(subpath "${fs.realpathSync(d.home)}/${dir}")`);
     expect(detail).toMatch(/^graphify failed \(exit 1\): PermissionError: \[Errno 1\] Operation not permitted/);
     expect(detail).not.toContain(secret);
   });
