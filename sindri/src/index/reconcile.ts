@@ -116,7 +116,9 @@ async function labelSignals(db: Ledger, deps: Deps, loaded: LoadedProfile, epoch
         continue;
       }
       const name = s.name;
-      const file = s.type === "reinvented:dependency" ? s.at : s.at.slice(0, s.at.lastIndexOf(":"));
+      // `at` is path:line for a symbol; a bare path (no ":") is the file itself.
+      const colon = s.at.lastIndexOf(":");
+      const file = s.type === "reinvented:dependency" || colon === -1 ? s.at : s.at.slice(0, colon);
       // Whether this version of the file holds the flagged code: the dependency, or a symbol with
       // the flagged name and the recorded ast hash.
       const holds = (text: string | null): boolean =>

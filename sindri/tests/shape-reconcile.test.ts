@@ -375,6 +375,15 @@ describe("reconcileShape: reached the default branch, judged by content (Task 10
     x.db.close();
   });
 
+  it("reads a bare-path `at` (no \":\") as the whole file name, not one character short", async () => {
+    const x = await dated();
+    x.put("src/feature.ts", EDITED);
+    const tree = x.commitOn(3, "edit shorten in place");
+    insertRun(x.db, { id: "run-p", repo: x.name, tree, ts: dayIso(3), signals: [{ type: "simpler:complexity", at: "src/feature.ts", name: "shorten", hash: editedHash() }] });
+    expect(await labelOn(x, 4, 18)).toEqual({ "run-p|simpler:complexity|shorten": "kept" });
+    x.db.close();
+  });
+
   it("labels a squash merge by the content it landed, then acted-on once the default branch rewrites it", async () => {
     const x = await dated();
     const branch = git(x.root, "symbolic-ref", "--short", "HEAD").trim();
