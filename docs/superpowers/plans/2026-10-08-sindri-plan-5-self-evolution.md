@@ -4150,7 +4150,7 @@ git commit -m "feat: sindri blinded pairwise judging (pstack eval and arena rule
   - Errors `SND-EVOLVE-002` (no offline comparison for that artifact yet) and `SND-EVOLVE-009`.
 - Expected cost: about 100 000 tokens per holdout item (two drafts at up to 35 000 input tokens, two judge calls at up to 15 000 each), so the default `evolve.maxTokensPerCompare` of 3 000 000 covers about 30 items.
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 `sindri/tests/evolve-compare.test.ts`:
 
@@ -4410,12 +4410,12 @@ describe("sindri evolve compare", () => {
 
 Trace for the rerun and JSON assertions: the first call runs 22 items and writes 22 item rows plus one summary row (`item_id = '*'`, run 1). The second call finds a stored verdict summary (`won`) and prints it without calling the model. `--rerun` records run 2. The `--json` call without `--rerun` returns the stored run-2 summary (`stored: true`, `run: 2`). The insufficient-corpus text: 5 holdout items, need 15 more, `Math.ceil(15 / 0.3)` is 50. The leaky text: the variant `The judge likes this.` contains `judge` only (no other meta words), so `leaks` is `["judge"]`. For the inconclusive fixture the drafter returns the same map for both prompts, so the judge sees equal outputs and always answers `tie`: 0 wins, 0 losses, 22 ties, decided 0 (< 10), status `inconclusive`, exit 1. For the budget stop: `maxTokensPerCompare: 8`, per-call usage 2, so item 1 uses all 8 tokens and item 2 is not started: `n` is 1.
 
-- [ ] **Step 2: Run the tests to verify they fail**
+- [x] **Step 2: Run the tests to verify they fail**
 
 Run: `cd sindri && npx vitest run tests/evolve-compare.test.ts tests/evolve-compare-cmd.test.ts`
 Expected: FAIL with `Failed to load url ../src/evolve/compare.js`.
 
-- [ ] **Step 3: Implement**
+- [x] **Step 3: Implement**
 
 Add to `ERRORS`:
 
@@ -4640,12 +4640,12 @@ Trace for the stored-result tests: after the first run, `prev` is `{ run: 1, ver
 
 Register in `sindri/src/evolve/commands.ts`: import `compare` from `./cmd/compare.js` and add it to `SUBCOMMANDS`.
 
-- [ ] **Step 4: Run the tests**
+- [x] **Step 4: Run the tests**
 
 Run: `cd sindri && npm run gen && npx vitest run && npm run typecheck && npm run test:coverage`
 Expected: all tests PASS; coverage 100% on the files this task touches.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add sindri/src sindri/tests docs/sindri
