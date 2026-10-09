@@ -616,3 +616,31 @@ describe("graph layer inputs and stored paths", () => {
     db?.close();
   });
 });
+
+describe("sindri index query", () => {
+  const idx = makeIndexCommand(fakeIndexIo());
+  const files = { "src/util/text.ts": BODY("clip"), "src/b.ts": BODY("shorten"), "src/feature.ts": BODY("widen", "out.reverse(); out.sort();") };
+
+  it("lists a symbol, its exact clones and its near clones", async () => {
+    const d = await approvedIndexDeps(ring0Repo(files));
+    await idx(["build"], d);
+    const r = await idx(["query", "clip"], d);
+    const lines = r.stdout.trim().split("\n");
+    expect(lines[0]).toBe("src/util/text.ts:1 clip");
+    expect(lines[1]).toBe("src/b.ts:1 shorten (exact)");
+    expect(lines[2]).toMatch(/^src\/feature\.ts:1 widen \(near 0\.\d\d\)$/);
+    expect(lines).toHaveLength(3);
+    const json = JSON.parse((await idx(["query", "clip", "--json", "--repo", ring0Name(d)], d)).stdout);
+    expect(json.map((x: { relation: string }) => x.relation)).toEqual(["match", "exact", "near"]);
+  });
+
+  it("says when there is no such symbol, no name, or no index", async () => {
+    const d = await approvedIndexDeps(ring0Repo(files), { extraRepos: ["ghost"] });
+    await idx(["build", "--repo", ring0Name(d)], d);
+    expect((await idx(["query", "nope", "--repo", ring0Name(d)], d)).stdout).toContain(`No symbol named nope in ${ring0Name(d)}.`);
+    expect((await idx(["query"], d)).stderr).toContain("SND-CLI-002");
+    const noIndex = await idx(["query", "clip", "--repo", "ghost"], d);
+    expect(noIndex.stderr).toContain("SND-INDEX-404");
+    expect(noIndex.stderr).toContain("fix: sindri index build --repo ghost");
+  });
+});

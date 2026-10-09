@@ -40,6 +40,7 @@ export const ERRORS = {
   "SND-INDEX-001": { summary: "The heavy-job lock is busy.", fix: "wait for the holder to finish; `sindri doctor` shows it" },
   "SND-INDEX-002": { summary: "The repo path is not a git repo.", fix: "check repos/<name>.yaml path, then sindri profile approve" },
   "SND-INDEX-003": { summary: "The index input is larger than index.maxTotalMB.", fix: "add generated or vendored paths to index.denyPaths, or raise index.maxTotalMB" },
+  "SND-INDEX-404": { summary: "No index has been built for this repo.", fix: "sindri index build --repo <name>" },
   "SND-INDEX-005": { summary: "The embedding URL is not loopback.", fix: "set index.embeddings.url to http://127.0.0.1:11434 (or disable embeddings)" },
   "SND-INDEX-006": { summary: "The local embedding server failed.", fix: "sindri index setup (starts Ollama checks and pulls the model)" },
   "SND-INDEX-007": { summary: "No network sandbox is available for graphify.", fix: "macOS: sandbox-exec ships with the OS; Linux: install bubblewrap (bwrap), or set index.graph: none" },

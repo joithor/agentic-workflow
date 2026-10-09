@@ -3458,7 +3458,7 @@ git commit -m "feat: sindri graph layer via sandboxed graphify"
   - A symbol is a reinvention candidate only if it is not a class and has at least 20 tokens; base candidates are other files' symbols that are exported or under `index.utilityGlobs` (the things meant for reuse). Base symbols are loaded once into memory (no per-row queries).
 - Produces (`commands.ts`): `sindri index query <name> [--repo NAME] [--json]`.
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 `sindri/tests/overlay.test.ts`:
 
@@ -3732,12 +3732,12 @@ describe("sindri index query", () => {
 });
 ```
 
-- [ ] **Step 2: Run the tests to verify they fail**
+- [x] **Step 2: Run the tests to verify they fail**
 
 Run: `cd sindri && npx vitest run tests/overlay.test.ts tests/signals.test.ts tests/index-build.test.ts`
 Expected: FAIL with `Failed to load url ../src/index/overlay.js` (and `signals.js`).
 
-- [ ] **Step 3: Implement**
+- [x] **Step 3: Implement**
 
 `sindri/src/index/overlay.ts`:
 
@@ -4080,12 +4080,12 @@ function query(args: string[], deps: Deps): CommandResult {
 
 and in `makeIndexCommand`, before the unknown-subcommand `failure`, add `if (sub === "query") return query(rest, deps);`.
 
-- [ ] **Step 4: Run the tests**
+- [x] **Step 4: Run the tests**
 
 Run: `cd sindri && npx vitest run && npm run typecheck && npm run test:coverage`
 Expected: all tests PASS; 100% coverage. If a fixture misses a threshold by a hair (for example, the near-clone Jaccard), fix the fixture body so the case is unambiguous; never lower the default threshold to make a test pass.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add sindri/src/index sindri/tests

@@ -9,10 +9,11 @@ import { failure, fromError, success, type CommandResult } from "../output.js";
 import { requireApprovedProfile } from "../profile/approve.js";
 import type { LoadedProfile } from "../profile/load.js";
 import { buildIndex, type BuildReport } from "./build.js";
-import { indexPath, LAYERS, layers, meta, openIndexReadOnly } from "./db.js";
+import { allSymbols, bandCandidates, indexPath, LAYERS, layers, meta, openIndexReadOnly, symbolsByAstHash } from "./db.js";
 import { makeOllamaEmbedder, type Embedder } from "./embed.js";
 import { makeGraphifyProvider, type GraphProvider } from "./graph.js";
 import type { IndexIo } from "./io.js";
+import { bandKeys, estimateJaccard } from "./minhash.js";
 import { GRAPHIFY_PIN } from "./pins.js";
 
 // Read-only: index commands never create or migrate the ledger. A missing ledger is "nothing approved".
@@ -115,6 +116,52 @@ function status(args: string[], deps: Deps): CommandResult {
   return success(rows.flatMap(statusLines).join("\n"), rows, values.json === true, rows.some((r) => r.stale) ? 1 : 0);
 }
 
+interface QueryRow {
+  repo: string;
+  at: string;
+  name: string;
+  relation: "match" | "exact" | "near";
+  similarity: number;
+}
+
+// For humans at a terminal: names and paths are repo text, so this output is never fed to a session.
+function query(args: string[], deps: Deps): CommandResult {
+  const { values, positionals } = parseFlags(args, { repo: { type: "string" }, json: { type: "boolean" } });
+  const name = positionals[0];
+  if (name === undefined) throw new SindriError("SND-CLI-002", "index query needs a symbol name", { fix: "sindri index query <name> [--repo NAME]" });
+  const loaded = approvedOrThrow(deps);
+  const minJaccard = loaded.profile.shape.thresholds.nearCloneJaccard;
+  const rows: QueryRow[] = [];
+  const lines: string[] = [];
+  for (const repo of reposOf(loaded, values.repo)) {
+    const db = openIndexReadOnly(indexPath(deps, repo));
+    if (db === null) throw new SindriError("SND-INDEX-404", `no index for ${repo}`, { fix: `sindri index build --repo ${repo}` });
+    const all = allSymbols(db);
+    const found = all.filter((s) => s.name === name);
+    for (const s of found) {
+      const at = (x: { file: string; startLine: number }): string => `${x.file}:${x.startLine}`;
+      rows.push({ repo, at: at(s), name: s.name, relation: "match", similarity: 1 });
+      lines.push(`${at(s)} ${s.name}`);
+      for (const e of symbolsByAstHash(db, s.astHash).filter((x) => x.id !== s.id)) {
+        rows.push({ repo, at: at(e), name: e.name, relation: "exact", similarity: 1 });
+        lines.push(`${at(e)} ${e.name} (exact)`);
+      }
+      const ids = new Set(bandCandidates(db, bandKeys(s.minhash)));
+      const near = all
+        .filter((c) => ids.has(c.id) && c.astHash !== s.astHash)
+        .map((c) => ({ c, j: estimateJaccard(s.minhash, c.minhash) }))
+        .filter(({ j }) => j >= minJaccard);
+      for (const { c, j } of near) {
+        rows.push({ repo, at: at(c), name: c.name, relation: "near", similarity: j });
+        lines.push(`${at(c)} ${c.name} (near ${j.toFixed(2)})`);
+      }
+    }
+    db.close();
+    if (found.length === 0) lines.push(`No symbol named ${name} in ${repo}.`);
+  }
+  return success(lines.join("\n"), rows, values.json === true);
+}
+
 export function makeIndexCommand(io: IndexIo): Command {
   return async (args, deps) => {
     const [sub, ...rest] = args;
@@ -122,6 +169,7 @@ export function makeIndexCommand(io: IndexIo): Command {
     try {
       if (sub === "build") return await build(rest, deps, io);
       if (sub === "status") return status(rest, deps);
+      if (sub === "query") return query(rest, deps);
       return failure("SND-CLI-002", `unknown index subcommand: ${sub ?? "(none)"}; use build, status, query or setup`, json, { fix: "sindri index --help" });
     } catch (e) {
       return fromError(e, json);
