@@ -40,6 +40,9 @@ function parseEnvelope<O extends string>(stdout: string): ProviderResult<O> {
  * outputs enum, so every question gets a schema for free. Runs from an empty
  * temp cwd so the child never inherits this repo's project context. Sets
  * AW_JUDGE_CHILD=1 so every aw:* hook exits 0 immediately (recursion guard).
+ * `--setting-sources ""` loads no user, project or local settings and no
+ * CLAUDE.md, so a settings `env` block can't re-inject what childEnv dropped
+ * (same as sindri's model runner). Managed (policy) settings still apply.
  */
 export function makeClaudeCliProvider(deps: { spawn: Spawn; tmpDirFactory: () => string; model?: string; effort?: string }): Provider {
   // The default (hook-chain) path is fast: thinking off. A caller that asks
@@ -77,6 +80,7 @@ export function makeClaudeCliProvider(deps: { spawn: Spawn; tmpDirFactory: () =>
         return run<O>([
           "-p", "--model", deps.model ?? "haiku", "--effort", deps.effort ?? "low", "--no-session-persistence",
           "--strict-mcp-config", "--mcp-config", '{"mcpServers":{}}',
+          "--setting-sources", "",
           "--settings", settings,
           "--disable-slash-commands",
           "--tools", "Read", "--allowedTools", "Read(./**)",
@@ -94,6 +98,7 @@ export function makeClaudeCliProvider(deps: { spawn: Spawn; tmpDirFactory: () =>
         "--no-session-persistence",
         "--strict-mcp-config",
         "--mcp-config", '{"mcpServers":{}}',
+        "--setting-sources", "",
         "--settings", settings,
         "--disable-slash-commands",
         "--tools", "",
