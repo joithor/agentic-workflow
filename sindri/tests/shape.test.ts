@@ -1,7 +1,7 @@
 import Database from "better-sqlite3";
 import fs from "node:fs";
 import path from "node:path";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
 import { stateDir, type Deps } from "../src/deps.js";
 import { makeIndexCommand } from "../src/index/commands.js";
@@ -15,9 +15,12 @@ import { runCli } from "../src/main.js";
 import { approvedIndexDeps, BODY, embedFetch, failingGit, fakeIndexIo, OFF, ring0Name, ring0Repo } from "./index-fixtures.js";
 import { git, gitRepo, makeDeps, tempDir } from "./helpers.js";
 
-async function ready(o: { index?: string; io?: IndexIo; extraRepos?: string[] } = {}): Promise<{ d: Deps; root: string; io: IndexIo }> {
+async function ready(o: { index?: string; io?: IndexIo; extraRepos?: (string | { name: string; path: string })[] } = {}): Promise<{ d: Deps; root: string; io: IndexIo }> {
   const root = ring0Repo({ "src/util/text.ts": BODY("clip") });
-  const d = await approvedIndexDeps(root, { index: o.index, extraRepos: o.extraRepos });
+  // A long budget: these tests check what gets recorded, not timing (shape-budget.test.ts does),
+  // so a loaded machine can't turn them into "over budget".
+  const index = o.index ?? OFF;
+  const d = await approvedIndexDeps(root, { index: index.includes("shape:") ? index : `${index}shape:\n  budgetMs: 60000\n`, extraRepos: o.extraRepos });
   const io = o.io ?? fakeIndexIo();
   await makeIndexCommand(io)(["build", "--repo", ring0Name(d)], d);
   return { d, root, io };
@@ -54,6 +57,36 @@ describe("sindri shape --record --staged", () => {
     expect(r.stderr).toContain("1 signal(s) recorded (reinvented:exact)");
     expect(spooled(d)[0].signals[0].at).toBe("src/feature.ts:1");
     expect(spooled(d)[0].tree).toBe(git(wt, "write-tree").trim());
+  });
+
+  it("under a real hook's GIT_DIR from a linked worktree, matches the worktree's own repo, not the first (Task 9 I2)", async () => {
+    const second = ring0Repo({ "src/util/pad.ts": BODY("pad") });
+    const { d } = await ready({ extraRepos: [{ name: "zz-second", path: fs.realpathSync(second) }] });
+    await makeIndexCommand(fakeIndexIo())(["build", "--repo", "zz-second"], d);
+    const wt = path.join(tempDir("sindri-wt-"), "wt");
+    git(second, "worktree", "add", "-q", "-b", "feat", wt);
+    stage(wt, "src/feature.ts", BODY("shorten"));
+    // What git exports to a pre-commit hook in a linked worktree: an absolute GIT_DIR and index.
+    const gitDir = git(wt, "rev-parse", "--absolute-git-dir").trim();
+    const asHook = async (cwd: string, dir: string) => {
+      vi.stubEnv("GIT_DIR", dir);
+      vi.stubEnv("GIT_INDEX_FILE", path.join(dir, "index"));
+      try {
+        return await record({ ...d, cwd });
+      } finally {
+        vi.unstubAllEnvs();
+      }
+    };
+    expect((await asHook(wt, gitDir)).stderr).toContain("1 signal(s) recorded (reinvented:exact)");
+    expect(spooled(d)[0]).toMatchObject({ repo: "zz-second", tree: git(wt, "write-tree").trim() });
+    expect(spooled(d)[0].signals[0]).toMatchObject({ at: "src/feature.ts:1", existing: "src/util/pad.ts:1" });
+
+    const outsider = gitRepo({ "a.ts": "export const a = 1;\n" });
+    const owt = path.join(tempDir("sindri-wt-"), "owt");
+    git(outsider, "worktree", "add", "-q", "-b", "feat", owt);
+    stage(owt, "src/feature.ts", BODY("shorten"));
+    const odir = git(owt, "rev-parse", "--absolute-git-dir").trim();
+    expect((await asHook(owt, odir)).stderr).toBe("sindri-shape: skipped (this repo is not in the profile)\n");
   });
 
   it("a clone of the profile repo is not the profile repo: it has its own git common dir", async () => {
@@ -207,6 +240,7 @@ describe("sindri shape report", () => {
     expect(r.stdout).toContain("simpler:diff-size  (diff) vs -  value 400/250  index age unknown  unlabeled");
     expect(r.stdout).toContain("reinvented:exact  src/feature.ts:1 vs src/util/text.ts:1  value 1/1  index 0 h old  unlabeled");
     expect(r.stdout).toContain("    <untrusted>shorten</untrusted> has the same structure as <untrusted>clip</untrusted>");
+    expect(spooled(d)).toEqual([]);
     const json = JSON.parse((await shape()(["report", "--json"], d)).stdout);
     expect(json.byType["reinvented:exact"]).toBe(1);
     expect((await shape()(["report", "--recent", "0"], d)).stderr).toContain("SND-CLI-002");
@@ -237,5 +271,6 @@ describe("sindri shape report", () => {
     const db = openLedger(ledgerPath(stateDir(d)));
     expect(db.prepare("SELECT COUNT(*) AS n FROM shape_signals").get()).toEqual({ n: 1 });
     db.close();
+    expect(spooled(d)).toEqual([]);
   });
 });

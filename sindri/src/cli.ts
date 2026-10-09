@@ -30,6 +30,6 @@ const result = await runCli(process.argv.slice(2), {
     return Buffer.concat(chunks).toString("utf8");
   },
 });
-process.stdout.write(result.stdout);
-process.stderr.write(result.stderr);
-process.exitCode = result.exitCode;
+// Exit once both streams have flushed (pipes are async on macOS): work a command abandoned, such
+// as a shape run past its commit budget, must not keep a git hook waiting.
+process.stdout.write(result.stdout, () => process.stderr.write(result.stderr, () => process.exit(result.exitCode)));

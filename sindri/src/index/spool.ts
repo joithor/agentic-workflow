@@ -85,13 +85,15 @@ function readRun(file: string): z.infer<typeof RunSchema> | null {
   if (text === null) return null;
   try {
     const r = RunSchema.safeParse(JSON.parse(text));
-    return r.success ? r.data : null;
+    // The file is named for its run, so pruneSpool can find what the ledger already holds.
+    return r.success && path.basename(file) === `shape-${r.data.runId}.json` ? r.data : null;
   } catch {
     return null;
   }
 }
 
-// Sindri side, inside the tick lock.
+// Sindri side, inside the tick lock. Inserts only: the files stay until pruneSpool runs after
+// the enclosing transaction commits, so a rolled-back ingest loses nothing.
 export function ingestSpool(db: Ledger, deps: Deps, epoch: number): { runs: number; signals: number; quarantined: number } {
   const dir = spoolDir(deps);
   const counts = { runs: 0, signals: 0, quarantined: 0 };
@@ -122,11 +124,22 @@ export function ingestSpool(db: Ledger, deps: Deps, epoch: number): { runs: numb
       }
       return true;
     })();
-    fs.rmSync(path.join(dir, name));
     if (inserted) {
       counts.runs++;
       counts.signals += run.signals.length;
     }
   }
   return counts;
+}
+
+// After the ingest committed: removes each spool file whose run the ledger now holds (a replay
+// included). A file whose run isn't there (a rolled-back ingest) stays for the next one.
+export function pruneSpool(db: Ledger, deps: Deps): void {
+  const dir = spoolDir(deps);
+  if (!fs.existsSync(dir)) return;
+  const has = db.prepare("SELECT 1 FROM shape_runs WHERE run_id = ?");
+  for (const name of fs.readdirSync(dir)) {
+    const m = /^shape-([0-9a-z]{26})\.json$/.exec(name);
+    if (m !== null && has.get(m[1]) !== undefined) fs.rmSync(path.join(dir, name));
+  }
 }

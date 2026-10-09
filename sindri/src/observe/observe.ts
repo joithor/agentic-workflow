@@ -9,7 +9,7 @@ import { parseFlags } from "../args.js";
 import { stateDir, type Deps } from "../deps.js";
 import { SindriError } from "../errors.js";
 import { ulid } from "../ids.js";
-import { ingestSpool } from "../index/spool.js";
+import { ingestSpool, pruneSpool } from "../index/spool.js";
 import { fenced, ledgerPath, openLedger, readLedger, type Ledger } from "../ledger/db.js";
 import { listEvents, markMissing, setCursor, upsertItem } from "../ledger/items.js";
 import { acquireTickLock } from "../lock/lock.js";
@@ -206,6 +206,7 @@ export const observeCommand: Command = async (args, deps) => {
           const r = report(approved, snap, null, `Not recorded: another run took over.${drift}`, drift !== "", json);
           return { ...r, stderr: `no-op: stale epoch ${lock.owner.epoch} (current ${written.current}); another run took over\n` };
         }
+        pruneSpool(db, deps); // after the commit: the ingested runs are in the ledger
         const counts = written.value;
         const note = `Recorded ${counts.new} new, ${counts.changed} changed, ${counts.removed} removed in the ledger.${drift}`;
         return report(approved, snap, counts, note, drift !== "", json);

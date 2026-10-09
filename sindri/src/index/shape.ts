@@ -18,19 +18,20 @@ import { indexPath, layers, meta, openIndexReadOnly, type Layer } from "./db.js"
 import type { IndexIo } from "./io.js";
 import { buildOverlay, stagedChanges } from "./overlay.js";
 import { computeSignals } from "./signals.js";
-import { ingestSpool, writeShapeRun } from "./spool.js";
+import { ingestSpool, pruneSpool, writeShapeRun } from "./spool.js";
 
-async function commonDir(deps: Deps, cwd: string): Promise<string> {
-  const r = await deps.git.run(["rev-parse", "--git-common-dir"], cwd);
+async function commonDir(deps: Deps, cwd: string, foreign: boolean): Promise<string> {
+  const r = await deps.git.run(["rev-parse", "--git-common-dir"], cwd, { foreign });
   return r.ok ? fs.realpathSync(path.resolve(cwd, r.stdout.trim())) : "";
 }
 
 // The commit's repo is the profile repo with the same git common dir: a linked worktree shares
-// it with the main checkout, a clone doesn't.
+// it with the main checkout, a clone doesn't. Git exports GIT_DIR to a hook in a linked worktree,
+// so the profile repos are probed as foreign repos, or each would answer with the commit's own.
 async function repoFor(deps: Deps, loaded: LoadedProfile, worktree: string): Promise<string | undefined> {
-  const mine = await commonDir(deps, worktree);
+  const mine = await commonDir(deps, worktree, false);
   for (const [name, r] of Object.entries(loaded.repos)) {
-    const other = await commonDir(deps, r.path);
+    const other = await commonDir(deps, r.path, true);
     if (other !== "" && other === mine) return name;
   }
   return undefined;
@@ -78,16 +79,24 @@ async function measure(
   if (base === null) return { written: null, note: "skipped (no index; sindri index build)" };
   try {
     const ix = loaded.profile.index;
-    const { changes, addedLines, skipped, renames } = await stagedChanges(deps.git, worktree, { denyPaths: [...ix.denyPaths, ...cfg.index.denyPaths], maxFileKB: ix.maxFileKB });
-    const overlay = buildOverlay(changes, addedLines, renames);
-    if (overlay.symbols.length === 0 && overlay.manifests.length === 0) return { written: null, note: "" };
     const shape = loaded.profile.shape;
+    const now = (): number => deps.now().getTime();
+    // Every step after this one starts only inside the budget; parsing stops at it too.
+    const { changes, addedLines, skipped, renames } = await stagedChanges(deps.git, worktree, { denyPaths: [...ix.denyPaths, ...cfg.index.denyPaths], maxFileKB: ix.maxFileKB });
+    const stop1 = overBudget();
+    if (stop1 !== null) return stop1;
+    const overlay = buildOverlay(changes, addedLines, renames, { at: started + shape.budgetMs, now });
+    const stop2 = overBudget();
+    if (stop2 !== null) return stop2;
+    if (overlay.symbols.length === 0 && overlay.manifests.length === 0) return { written: null, note: "" };
     const size = o.size ?? shape.defaultSize;
     const embedder = embedderFor(loaded, io);
     const { signals, deferred } = await computeSignals({
       base, overlay, t: shape.thresholds, sizeBudget: shape.sizeBudget[size], exportAllowance: shape.exportAllowance[size],
-      embed: embedder === null ? null : { embedder, deadline: started + shape.budgetMs, now: () => deps.now().getTime() },
+      embed: embedder === null ? null : { embedder, deadline: started + shape.budgetMs, now },
     });
+    const stop3 = overBudget();
+    if (stop3 !== null) return stop3;
     const head = await deps.git.run(["rev-parse", "HEAD"], worktree);
     const tree = await deps.git.run(["write-tree"], worktree);
     const built = meta(base).builtAt;
@@ -95,8 +104,8 @@ async function measure(
       const l = layers(base).find((x) => x.layer === name && x.status === "ok");
       return l === undefined ? null : l.stamp;
     };
-    const late = overBudget();
-    if (late !== null) return late;
+    const stop4 = overBudget();
+    if (stop4 !== null) return stop4;
     const written = writeShapeRun(deps, {
       runId: ulid(deps.now()),
       repo,
@@ -155,6 +164,7 @@ async function report(args: string[], deps: Deps): Promise<CommandResult> {
     if (lock.ok) {
       try {
         ingested = withEpoch(db, lock.owner.epoch, () => ingestSpool(db, deps, lock.owner.epoch));
+        pruneSpool(db, deps);
       } finally {
         lock.release();
       }

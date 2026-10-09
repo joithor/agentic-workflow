@@ -2,7 +2,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
 
-import { ingestSpool, spoolDir, writeShapeRun, type ShapeRun } from "../src/index/spool.js";
+import { ingestSpool, pruneSpool, spoolDir, writeShapeRun, type ShapeRun } from "../src/index/spool.js";
 import type { Signal, SignalType } from "../src/index/signals.js";
 import { bumpEpoch, openMemoryLedger } from "../src/ledger/db.js";
 import { makeDeps } from "./helpers.js";
@@ -40,8 +40,10 @@ describe("shape spool", () => {
     const epoch = bumpEpoch(db);
     writeShapeRun(d, run());
     expect(ingestSpool(db, d, epoch).runs).toBe(1);
+    pruneSpool(db, d);
     writeShapeRun(d, run());
     expect(ingestSpool(db, d, epoch)).toEqual({ runs: 0, signals: 0, quarantined: 0 });
+    pruneSpool(db, d);
     expect(fs.readdirSync(spoolDir(d)).filter((n) => n.startsWith("shape-"))).toEqual([]);
     expect(db.prepare("SELECT COUNT(*) AS n FROM shape_signals").get()).toEqual({ n: 1 });
   });
@@ -80,6 +82,37 @@ describe("shape spool", () => {
 
   it("does nothing when there is no spool", () => {
     const db = openMemoryLedger();
-    expect(ingestSpool(db, makeDeps(), bumpEpoch(db))).toEqual({ runs: 0, signals: 0, quarantined: 0 });
+    const d = makeDeps();
+    expect(ingestSpool(db, d, bumpEpoch(db))).toEqual({ runs: 0, signals: 0, quarantined: 0 });
+    pruneSpool(db, d);
+    expect(fs.existsSync(spoolDir(d))).toBe(false);
+  });
+
+  it("keeps a spool file when the transaction around the ingest rolls back, and prunes it once committed (Task 9 M2)", () => {
+    const d = makeDeps();
+    const file = writeShapeRun(d, run());
+    const db = openMemoryLedger();
+    const epoch = bumpEpoch(db);
+    expect(() =>
+      db.transaction(() => {
+        expect(ingestSpool(db, d, epoch).runs).toBe(1);
+        throw new Error("commit failed");
+      })(),
+    ).toThrow("commit failed");
+    pruneSpool(db, d);
+    expect(fs.existsSync(file)).toBe(true);
+    expect(db.prepare("SELECT COUNT(*) AS n FROM shape_runs").get()).toEqual({ n: 0 });
+    db.transaction(() => ingestSpool(db, d, epoch))();
+    fs.writeFileSync(path.join(spoolDir(d), "notes.txt"), "not a run");
+    pruneSpool(db, d);
+    expect(fs.readdirSync(spoolDir(d))).toEqual(["notes.txt"]);
+  });
+
+  it("quarantines a file whose name doesn't match the run it holds", () => {
+    const d = makeDeps();
+    const file = writeShapeRun(d, run());
+    fs.renameSync(file, path.join(spoolDir(d), "shape-01k0000000000000000000000e.json"));
+    const db = openMemoryLedger();
+    expect(ingestSpool(db, d, bumpEpoch(db))).toEqual({ runs: 0, signals: 0, quarantined: 1 });
   });
 });

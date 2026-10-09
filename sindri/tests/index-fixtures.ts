@@ -28,16 +28,17 @@ export function fakeIndexIo(over: Partial<IndexIo> = {}): IndexIo {
 export const ring0Repo = (files: Record<string, string>): string => gitRepo({ ...files, "docs/superpowers/plans/p.md": "# P\n" });
 
 // Deps with this repo as ring 0 and an approved profile. `index` is appended to profile.yaml
-// before approval; `extraRepos` adds repos whose path is a plain (non-git) temp dir.
-export async function approvedIndexDeps(root: string, o: { index?: string; extraRepos?: string[] } = {}): Promise<Deps> {
+// before approval; `extraRepos` adds repos whose path is a plain (non-git) temp dir, or the given path.
+export async function approvedIndexDeps(root: string, o: { index?: string; extraRepos?: (string | { name: string; path: string })[] } = {}): Promise<Deps> {
   const d = makeDeps({ cwd: root });
   await runCli(["profile", "init", "--ring0"], d);
   const dir = path.join(d.env.AW_STATE_DIR as string, "profile");
   fs.appendFileSync(path.join(dir, "profile.yaml"), o.index ?? OFF);
   if (o.extraRepos !== undefined) {
     const doc = YAML.parseDocument(fs.readFileSync(path.join(dir, "profile.yaml"), "utf8"));
-    for (const name of o.extraRepos) {
-      fs.writeFileSync(path.join(dir, "repos", `${name}.yaml`), YAML.stringify({ schemaVersion: 1, name, path: tempDir("sindri-ghost-"), defaultBranch: "main", protectedPaths: [] }));
+    for (const extra of o.extraRepos) {
+      const { name, path: repoPath } = typeof extra === "string" ? { name: extra, path: tempDir("sindri-ghost-") } : extra;
+      fs.writeFileSync(path.join(dir, "repos", `${name}.yaml`), YAML.stringify({ schemaVersion: 1, name, path: repoPath, defaultBranch: "main", protectedPaths: [] }));
       doc.addIn(["repos"], name);
     }
     fs.writeFileSync(path.join(dir, "profile.yaml"), doc.toString());

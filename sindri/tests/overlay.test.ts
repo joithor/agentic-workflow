@@ -78,6 +78,15 @@ describe("staged overlay", () => {
     expect(o.addedLines).toBe(3);
   });
 
+  it("stops parsing once the deadline passes and records the rest as skipped (Task 9 I1)", () => {
+    const fn = (n: string) => ({ path: `src/${n}.ts`, text: `export function ${n}(a: number) { return a + 1; }\n` });
+    let t = 0;
+    const o = buildOverlay([fn("a"), { path: "src/gone.ts", text: null }, fn("b"), fn("c")], 3, new Map(), { at: 1, now: () => t++ });
+    expect(o.symbols.map((s) => s.name)).toEqual(["a", "b"]);
+    expect(o.skipped).toEqual([{ path: "src/c.ts", reason: "over-budget" }]);
+    expect(buildOverlay([fn("a")], 1).skipped).toEqual([]);
+  });
+
   it("fails outside a git repo", async () => {
     await expect(stagedChanges(realGitRunner(), "/", caps)).rejects.toThrow(/SND-INDEX-002|not a git repo/);
   });

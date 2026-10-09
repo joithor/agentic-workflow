@@ -1,5 +1,7 @@
 export type GitResult = { ok: true; stdout: string } | { ok: false; stderr: string };
 
 export interface GitRunner {
-  run(args: string[], cwd: string): Promise<GitResult>;
+  // foreign: the call is about another repo, so git's repository variables (GIT_DIR,
+  // GIT_INDEX_FILE, …, which git exports to hooks) are cleared for it (githooks(5)).
+  run(args: string[], cwd: string, o?: { foreign?: boolean }): Promise<GitResult>;
 }

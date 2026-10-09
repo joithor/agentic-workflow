@@ -29,6 +29,22 @@ describe("realGitRunner (smoke)", () => {
     const bad = await git.run(["no-such-subcommand"], process.cwd());
     expect(bad.ok).toBe(false);
   });
+
+  it("clears git's repository variables for a call about another repo", async () => {
+    const git = realGitRunner();
+    const repo = fs.mkdtempSync(path.join(os.tmpdir(), "sindri-hookrepo-"));
+    const other = fs.mkdtempSync(path.join(os.tmpdir(), "sindri-foreign-"));
+    expect((await git.run(["init", "-q"], repo)).ok).toBe(true);
+    process.env.GIT_DIR = path.join(repo, ".git");
+    try {
+      const inherited = await git.run(["rev-parse", "--absolute-git-dir"], other);
+      expect(inherited.ok && fs.realpathSync(inherited.stdout.trim())).toBe(fs.realpathSync(path.join(repo, ".git")));
+      const foreign = await git.run(["rev-parse", "--absolute-git-dir"], other, { foreign: true });
+      expect(foreign.ok ? "" : foreign.stderr).toMatch(/not a git repository/);
+    } finally {
+      delete process.env.GIT_DIR;
+    }
+  });
 });
 
 describe("real index I/O (smoke)", () => {

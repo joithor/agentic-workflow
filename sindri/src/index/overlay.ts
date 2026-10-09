@@ -14,7 +14,7 @@ export interface StagedChange {
 
 export interface SkippedFile {
   path: string;
-  reason: "denied" | "symlink" | "too-large" | "unreadable";
+  reason: "denied" | "symlink" | "too-large" | "unreadable" | "over-budget";
 }
 
 export interface OverlaySymbol extends ParsedSymbol {
@@ -28,6 +28,8 @@ export interface Overlay {
   addedLines: number;
   // New path -> old path for staged renames, so a moved file's symbols compare against their old selves.
   renamedFrom: Map<string, string>;
+  // Files left unparsed because the deadline passed.
+  skipped: SkippedFile[];
 }
 
 const isParsed = (p: string): boolean => isSourcePath(p) || path.basename(p) === "package.json";
@@ -99,16 +101,25 @@ export async function stagedChanges(
   return { changes: changes.sort((a, b) => a.path.localeCompare(b.path)), addedLines, skipped, renames };
 }
 
-export function buildOverlay(changes: StagedChange[], addedLines: number, renames: Map<string, string> = new Map()): Overlay {
+// Parsing is synchronous, so a deadline is checked before each file: once it has passed, the
+// remaining files are skipped rather than parsed (the commit-time budget bounds the whole run).
+export function buildOverlay(
+  changes: StagedChange[], addedLines: number, renames: Map<string, string> = new Map(), deadline?: { at: number; now: () => number },
+): Overlay {
   const symbols: OverlaySymbol[] = [];
   const manifests: { path: string; text: string }[] = [];
+  const skipped: SkippedFile[] = [];
   for (const c of changes) {
     if (c.text === null) continue;
+    if (deadline !== undefined && deadline.now() > deadline.at) {
+      skipped.push({ path: c.path, reason: "over-budget" });
+      continue;
+    }
     if (isSourcePath(c.path)) {
       for (const s of typescriptParser.parse(c.path, c.text)) symbols.push({ ...s, minhash: signature(s.tokens) });
     } else if (path.basename(c.path) === "package.json") {
       manifests.push({ path: c.path, text: c.text });
     }
   }
-  return { symbols, changedPaths: new Set(changes.map((c) => c.path)), manifests, addedLines, renamedFrom: renames };
+  return { symbols, changedPaths: new Set(changes.map((c) => c.path)), manifests, addedLines, renamedFrom: renames, skipped };
 }
