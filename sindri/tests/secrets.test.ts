@@ -43,4 +43,47 @@ describe("resolveSecret", () => {
     await expect(resolveSecret("op:Work/Linear", d, runner(1, ""))).rejects.toMatchObject({ code: "SND-SECRET-001" });
     await expect(resolveSecret("vault:x", d, runner(0, "x"))).rejects.toMatchObject({ code: "SND-SECRET-001" });
   });
+
+  it("keychain pointers must be exactly service/account", async () => {
+    const d = makeDeps({ env: {} });
+    const kc = runner(0, "x");
+    await expect(resolveSecret("keychain:a/b/c", d, kc)).rejects.toMatchObject({ code: "SND-SECRET-001" });
+    await expect(resolveSecret("keychain:/acct", d, kc)).rejects.toMatchObject({ code: "SND-SECRET-001" });
+    expect(kc.argv).toEqual([]);
+  });
+
+  it("never puts the pointer, its target or a resolved value into an error", async () => {
+    const raw = "lin_" + "api_" + "rawtoken123";
+    const sentinel = "sentinel" + "-secret-value";
+    const loose = path.join(tempDir(), "leakyname");
+    fs.writeFileSync(loose, sentinel, { mode: 0o644 });
+    fs.chmodSync(loose, 0o644);
+    const empty = path.join(tempDir(), "emptyname");
+    fs.writeFileSync(empty, "\n", { mode: 0o600 });
+    const noisy = (code: number): ProcessRunner => ({ run: async () => ({ code, stdout: "", stderr: sentinel }) });
+    const d = makeDeps({ env: {} });
+    const cases: [string, ProcessRunner][] = [
+      [raw, runner(0, sentinel)],
+      [`${raw}:more`, runner(0, sentinel)],
+      ["env:" + "MISSING_" + "VARNAME", runner(0, "")],
+      [`file:${loose}`, runner(0, "")],
+      [`file:${empty}`, runner(0, "")],
+      ["file:/no/such/" + "targetname", runner(0, "")],
+      ["keychain:svc" + "name/acct" + "name", noisy(44)],
+      ["keychain:badsvc" + "name", runner(0, sentinel)],
+      ["keychain:a/b/c" + "name", runner(0, sentinel)],
+      ["op:Vault" + "name/Item/field", noisy(1)],
+    ];
+    for (const [pointer, run] of cases) {
+      const err = await resolveSecret(pointer, d, run).then(
+        () => { throw new Error("expected a rejection"); },
+        (e: unknown) => e as { message: string; fix?: string; details: string[] },
+      );
+      const text = [err.message, err.fix ?? "", ...err.details].join("\n");
+      for (const leak of [raw, sentinel, "VARNAME", "targetname", "svcname", "acctname", "badsvcname", "Vaultname", "leakyname", "emptyname", "more"]) {
+        expect(text, `${pointer} leaked ${leak}`).not.toContain(leak);
+      }
+    }
+    await expect(resolveSecret(raw, d, runner(0, ""))).rejects.toThrow(/expected env:, file:, keychain: or op:/);
+  });
 });
