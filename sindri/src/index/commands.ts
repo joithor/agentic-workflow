@@ -11,7 +11,9 @@ import type { LoadedProfile } from "../profile/load.js";
 import { buildIndex, type BuildReport } from "./build.js";
 import { indexPath, LAYERS, layers, meta, openIndexReadOnly } from "./db.js";
 import { makeOllamaEmbedder, type Embedder } from "./embed.js";
+import { makeGraphifyProvider, type GraphProvider } from "./graph.js";
 import type { IndexIo } from "./io.js";
+import { GRAPHIFY_PIN } from "./pins.js";
 
 // Read-only: index commands never create or migrate the ledger. A missing ledger is "nothing approved".
 export function approvedOrThrow(deps: Deps): LoadedProfile {
@@ -56,6 +58,11 @@ export function embedderOrUnavailable(loaded: LoadedProfile, io: IndexIo): Embed
   }
 }
 
+export function graphFor(loaded: LoadedProfile, deps: Deps, io: IndexIo): GraphProvider | null {
+  if (loaded.profile.index.graph === "none") return null;
+  return makeGraphifyProvider({ bin: "graphify", version: GRAPHIFY_PIN, runner: { run: io.probes.run }, platform: deps.system.platform, has: io.probes.has, home: deps.home });
+}
+
 async function build(args: string[], deps: Deps, io: IndexIo): Promise<CommandResult> {
   const { values } = parseFlags(args, { repo: { type: "string" }, full: { type: "boolean" }, quick: { type: "boolean" }, json: { type: "boolean" } });
   const loaded = approvedOrThrow(deps);
@@ -63,7 +70,7 @@ async function build(args: string[], deps: Deps, io: IndexIo): Promise<CommandRe
   const reports: BuildReport[] = [];
   for (const repo of reposOf(loaded, values.repo)) {
     deps.log(`building ${repo}${quick ? " (quick: structure, clones, deps)" : ""}; this takes the heavy-job lock`);
-    reports.push(await buildIndex(deps, loaded, repo, { full: values.full === true, quick, mirror: !quick }, { embedder: embedderOrUnavailable(loaded, io), graph: null }));
+    reports.push(await buildIndex(deps, loaded, repo, { full: values.full === true, quick, mirror: !quick }, { embedder: embedderOrUnavailable(loaded, io), graph: graphFor(loaded, deps, io) }));
   }
   const text = reports
     .map((r) => `${r.repo}: ${r.files.indexed} files (${r.files.changed} changed, ${r.files.removed} removed, ${r.files.skipped} skipped), ${r.symbols} symbols; ${describeLayers(r.layers)} (${(r.ms / 1000).toFixed(1)} s)`)

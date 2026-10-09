@@ -1,8 +1,11 @@
+import fs from "node:fs";
 import http from "node:http";
 import os from "node:os";
+import path from "node:path";
 import { describe, expect, it } from "vitest";
 
 import { realGitRunner } from "../src/git-real.js";
+import { sandboxArgv } from "../src/index/graph.js";
 import { hasBinary, realIndexIo, realIndexProbes, realProcessRunner } from "../src/index/sandbox-real.js";
 import { realSystemProbe } from "../src/system-real.js";
 
@@ -72,5 +75,41 @@ describe("real index I/O (smoke)", () => {
     }
     expect(await probes.getJson(`http://127.0.0.1:${port}/ok`, 500)).toBeNull();
     expect(typeof realIndexIo().fetch).toBe("function");
+  });
+});
+
+describe("sandbox (smoke)", () => {
+  const o = { cwd: process.cwd(), timeoutMs: 15_000 };
+  const box = (argv: string[]) => sandboxArgv(process.platform, argv, hasBinary, { writable: [], home: os.homedir() });
+
+  it("denies the network, once the same request is shown to succeed outside the sandbox", async () => {
+    const run = realProcessRunner();
+    const curl = ["curl", "-sS", "--max-time", "3", "https://example.com"];
+    const wrapped = box(curl);
+    if (wrapped === null || !hasBinary("curl")) return; // no sandbox or curl here: nothing to prove
+    if ((await run.run(curl, o)).code !== 0) return; // offline: the control failed, so a sandboxed failure proves nothing
+    expect((await run.run(wrapped, o)).code).not.toBe(0);
+  });
+
+  it("denies writes outside the snapshot and hides ~/.ssh", async () => {
+    const run = realProcessRunner();
+    // A fresh dir that is not writable in the sandbox (not a temp dir), never the real home.
+    const dir = fs.mkdtempSync(path.join(import.meta.dirname, "..", ".sandbox-probe-"));
+    try {
+      const probe = path.join(dir, "probe");
+      const write = box(["touch", probe]);
+      if (write === null) return;
+      expect((await run.run(["touch", path.join(dir, "control")], o)).code).toBe(0);
+      expect((await run.run(write, o)).code).not.toBe(0);
+      expect(fs.existsSync(probe)).toBe(false);
+    } finally {
+      fs.rmSync(dir, { recursive: true });
+    }
+    const ssh = path.join(os.homedir(), ".ssh");
+    const read = box(["ls", "-A", ssh]);
+    if (read !== null && fs.existsSync(ssh)) {
+      const r = await run.run(read, o);
+      expect(r.code !== 0 || r.stdout.trim() === "").toBe(true);
+    }
   });
 });

@@ -4,13 +4,15 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { SindriError } from "../src/errors.js";
 import { buildIndex } from "../src/index/build.js";
-import { embedderFor, embedderOrUnavailable, makeIndexCommand } from "../src/index/commands.js";
+import { embedderFor, embedderOrUnavailable, graphFor, makeIndexCommand } from "../src/index/commands.js";
 import type { Embedder } from "../src/index/embed.js";
+import type { GraphProvider } from "../src/index/graph.js";
+import { GRAPHIFY_PIN } from "../src/index/pins.js";
 import { allSymbols, bandCandidates, depRows, embeddingRows, graphEdges, indexPath, layers, meta, openIndex, openIndexReadOnly, symbolsByAstHash } from "../src/index/db.js";
 import { mirrorPath, refreshMirror } from "../src/index/mirror.js";
 import { runCli } from "../src/main.js";
 import { approvedIndexDeps, BODY, embedFetch, fakeIndexIo, profileFor, ring0Name, ring0Repo } from "./index-fixtures.js";
-import { git, gitRepo, makeDeps, tempDir } from "./helpers.js";
+import { fakeSystem, git, gitRepo, makeDeps, tempDir } from "./helpers.js";
 import { ledgerPath, openLedger } from "../src/ledger/db.js";
 import { stateDir } from "../src/deps.js";
 import Database from "better-sqlite3";
@@ -432,5 +434,146 @@ describe("a profile that slips a non-loopback URL or cloud model past the schema
     expect(r.layers.structure.status).toBe("ok");
     expect(r.symbols).toBe(3);
     expect(calls).toBe(0);
+  });
+});
+
+function fakeGraph(fail = false): GraphProvider & { snapshots: string[][] } {
+  const snapshots: string[][] = [];
+  return {
+    version: "9.9",
+    snapshots,
+    build: async (dir) => {
+      snapshots.push(fs.readdirSync(dir, { recursive: true }).map(String).sort());
+      if (fail) throw new Error("graphify failed (exit 1): boom");
+      return { nodes: [{ id: "a", file: "src/a.ts", name: "add", line: 1 }], edges: [{ src: "a", dst: "a", relation: "calls", confidence: "EXTRACTED" }] };
+    },
+  };
+}
+
+describe("graph layer", () => {
+  it("runs on a snapshot of source and docs only, when the inputs changed, retries after a failure, and degrades", async () => {
+    const root = gitRepo({ ...FILES, "docs/readme.md": "# r\n", "data.sqlite": "x" });
+    const d = makeDeps();
+    const p = profileFor(root);
+    const g = fakeGraph();
+    const first = await buildIndex(d, p, "r", { full: false }, { embedder: null, graph: g });
+    expect(first.layers.graph).toEqual({ status: "ok", detail: "graphify 9.9, 1 nodes, 1 edges" });
+    expect(g.snapshots[0]).toEqual(expect.arrayContaining(["docs/readme.md", "src/a.ts"]));
+    expect(g.snapshots[0]).not.toContain(".env.local.ts");
+    expect(g.snapshots[0]).not.toContain("data.sqlite");
+    const db = openIndexReadOnly(indexPath(d, "r"));
+    expect(db === null ? [] : graphEdges(db)).toHaveLength(1);
+    db?.close();
+    await buildIndex(d, p, "r", { full: false }, { embedder: null, graph: g });
+    expect(g.snapshots).toHaveLength(1);
+    fs.writeFileSync(path.join(root, "src/a.ts"), "export function add2() { return 1; }\n");
+    const failed = await buildIndex(d, p, "r", { full: false }, { embedder: null, graph: fakeGraph(true) });
+    expect(failed.layers.graph).toEqual({ status: "unavailable", detail: "graphify failed (exit 1): boom" });
+    expect(failed.layers.structure.status).toBe("ok");
+    const retry = fakeGraph();
+    const again = await buildIndex(d, p, "r", { full: false }, { embedder: null, graph: retry });
+    expect(retry.snapshots).toHaveLength(1);
+    expect(again.layers.graph.status).toBe("ok");
+  });
+
+  it("is unavailable on a first build whose graphify fails", async () => {
+    const r = await buildIndex(makeDeps(), profileFor(gitRepo(FILES)), "r", { full: false }, { embedder: null, graph: fakeGraph(true) });
+    expect(r.layers.graph.status).toBe("unavailable");
+  });
+
+  it("a full build after quick builds still rebuilds the graph for changes a quick build absorbed", async () => {
+    const root = gitRepo(FILES);
+    const d = makeDeps();
+    const p = profileFor(root);
+    const g = fakeGraph();
+    await buildIndex(d, p, "r", { full: false }, { embedder: null, graph: g });
+    fs.writeFileSync(path.join(root, "src/a.ts"), "export function add2() { return 1; }\n");
+    await buildIndex(d, p, "r", { full: false, quick: true }, { embedder: null, graph: g });
+    expect(g.snapshots).toHaveLength(1);
+    await buildIndex(d, p, "r", { full: false }, { embedder: null, graph: g });
+    expect(g.snapshots).toHaveLength(2);
+  });
+});
+
+describe("graphFor and the build command", () => {
+  it("builds the provider from the profile and the injected probes, or none when the graph is off", () => {
+    const root = gitRepo(FILES);
+    expect(graphFor(profileFor(root), makeDeps(), fakeIndexIo())?.version).toBe(GRAPHIFY_PIN);
+    expect(graphFor(profileFor(root, { yaml: "  graph: none\n" }), makeDeps(), fakeIndexIo())).toBeNull();
+  });
+
+  it("index build runs graphify through the injected probes, sandboxed", async () => {
+    const d = await approvedIndexDeps(ring0Repo(FILES), { index: "index:\n  embeddings:\n    enabled: false\n" });
+    const ran: string[][] = [];
+    const io = fakeIndexIo({
+      probes: {
+        has: () => true,
+        getJson: async () => null,
+        run: async (argv) => {
+          ran.push(argv);
+          const snap = argv[argv.indexOf("extract") + 1];
+          fs.mkdirSync(path.join(snap, "graphify-out"), { recursive: true });
+          fs.writeFileSync(path.join(snap, "graphify-out", "graph.json"), JSON.stringify({ nodes: [{ id: "a", source_file: "src/a.ts", label: "add" }], links: [{ source: "a", target: "a", relation: "calls" }] }));
+          return { code: 0, stdout: "", stderr: "" };
+        },
+      },
+    });
+    const r = await makeIndexCommand(io)(["build"], d);
+    expect(r.stdout).toContain("graph ok");
+    expect(ran[0][0]).toBe("sandbox-exec");
+  });
+});
+
+describe("graph layer fails closed (Review Focus 4)", () => {
+  // Each case: the graph layer is unavailable with the reason, and structure, clones and deps still build.
+  async function buildWith(deps: ReturnType<typeof makeDeps>, io: ReturnType<typeof fakeIndexIo>) {
+    const p = profileFor(gitRepo(FILES));
+    const r = await buildIndex(deps, p, "r", { full: false }, { embedder: null, graph: graphFor(p, deps, io) });
+    expect(r.layers.graph.status).toBe("unavailable");
+    expect([r.layers.structure.status, r.layers.clones.status, r.layers.deps.status]).toEqual(["ok", "ok", "ok"]);
+    expect(r.symbols).toBe(3);
+    const db = openIndexReadOnly(indexPath(deps, "r"));
+    expect(db === null ? null : graphEdges(db)).toEqual([]);
+    db?.close();
+    return r.layers.graph.detail;
+  }
+  const never = async (): Promise<never> => {
+    throw new Error("graphify must not run");
+  };
+
+  it("graphify missing: nothing runs", async () => {
+    const io = fakeIndexIo({ probes: { has: (b) => b === "sandbox-exec", getJson: async () => null, run: never } });
+    expect(await buildWith(makeDeps(), io)).toBe("graphify is not installed (sindri index setup)");
+  });
+
+  it("sandbox missing: graphify never runs unsandboxed", async () => {
+    const io = fakeIndexIo({ probes: { has: (b) => b === "graphify", getJson: async () => null, run: never } });
+    expect(await buildWith(makeDeps(), io)).toMatch(/^no network sandbox available/);
+    expect(await buildWith(makeDeps({ system: fakeSystem({ platform: "linux" }) }), io)).toMatch(/^no network sandbox available/);
+    expect(await buildWith(makeDeps({ system: fakeSystem({ platform: "win32" }) }), io)).toMatch(/^no network sandbox available/);
+  });
+
+  it("graphify trying the network or reading the home dir's secrets: the sandbox refuses, the layer is unavailable", async () => {
+    const d = makeDeps();
+    const secret = "AKIA" + "ABCDEFGHIJKLMNOP";
+    const ran: string[][] = [];
+    const io = fakeIndexIo({
+      probes: {
+        has: () => true,
+        getJson: async () => null,
+        // What graphify sees under the sandbox: no network, and the credential dirs unreadable.
+        run: async (argv) => {
+          ran.push(argv);
+          return { code: 1, stdout: "", stderr: `PermissionError: [Errno 1] Operation not permitted: '${d.home}/.aws/credentials' ${secret}\nTraceback` };
+        },
+      },
+    });
+    const detail = await buildWith(d, io);
+    expect(ran).toHaveLength(1);
+    expect(ran[0].slice(0, 2)).toEqual(["sandbox-exec", "-p"]);
+    expect(ran[0][2]).toContain("(deny network*)");
+    for (const dir of [".ssh", ".aws", ".gnupg", ".agentic-workflow", "Library/Keychains"]) expect(ran[0][2]).toContain(`(subpath "${d.home}/${dir}")`);
+    expect(detail).toMatch(/^graphify failed \(exit 1\): PermissionError: \[Errno 1\] Operation not permitted/);
+    expect(detail).not.toContain(secret);
   });
 });

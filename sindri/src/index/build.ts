@@ -1,5 +1,6 @@
 import { createHash } from "node:crypto";
 import fs from "node:fs";
+import os from "node:os";
 import path from "node:path";
 
 import type { Deps } from "../deps.js";
@@ -10,7 +11,8 @@ import { compileExtraPatterns, makeScrubber, type Scrubber } from "../scrub/scru
 import { type IndexDb, indexPath, type Layer, type LayerStatus, openIndex } from "./db.js";
 import { embeddingText, encodeVec, type Embedder } from "./embed.js";
 import { readManifestDeps } from "./deps-layer.js";
-import { inventory, isSourcePath, type IndexedFile } from "./files.js";
+import { inventory, isGraphInput, isSourcePath, type IndexedFile } from "./files.js";
+import type { GraphProvider } from "./graph.js";
 import { matchesAny } from "./globs.js";
 import { withHeavyLock } from "./heavy-lock.js";
 import { refreshMirror } from "./mirror.js";
@@ -26,9 +28,8 @@ export const INDEXER_VERSION = "1";
 const structureStamp = (utilityGlobs: readonly string[], extraPatterns: readonly { kind: string; regex: string }[]): string =>
   `parse-ts@${INDEXER_VERSION}+${createHash("sha256").update(JSON.stringify([utilityGlobs, extraPatterns])).digest("hex").slice(0, 8)}`;
 
-// Replaced by the real interface in Task 7 (GraphProvider).
 export type { Embedder } from "./embed.js";
-export type GraphProvider = never;
+export type { GraphProvider } from "./graph.js";
 export interface Providers {
   embedder: Embedder | null;
   graph: GraphProvider | null;
@@ -127,6 +128,41 @@ async function embedLayer(db: IndexDb, embedder: Embedder | null, now: Date): Pr
   }
 }
 
+async function graphLayer(
+  db: IndexDb, provider: GraphProvider | null, deps: Deps, repoPath: string, deny: string[], digest: string, ix: LoadedProfile["profile"]["index"], now: Date,
+): Promise<void> {
+  if (provider === null) {
+    setLayer(db, "graph", "none", "disabled", "no graph provider configured", now);
+    return;
+  }
+  const stamp = `graphify@${provider.version}`;
+  const hasGraph = (db.prepare("SELECT COUNT(*) AS n FROM graph_nodes").get() as { n: number }).n > 0;
+  const stored = (db.prepare("SELECT value FROM meta WHERE key = 'graph_digest'").get() as { value: string } | undefined)?.value;
+  if (stored === digest && stampOf(db, "graph") === stamp && hasGraph) return;
+  // Snapshot of tracked, non-denied source and docs files: graphify writes graphify-out/ into the
+  // directory it reads, so it never runs on the working tree (spec amendment 3).
+  const snap = fs.mkdtempSync(path.join(os.tmpdir(), "sindri-graph-"));
+  try {
+    const inv = await inventory(deps.git, repoPath, { denyPaths: deny, maxFileKB: ix.maxFileKB, maxTotalMB: ix.maxTotalMB, select: isGraphInput });
+    for (const f of inv.files) {
+      fs.mkdirSync(path.dirname(path.join(snap, f.path)), { recursive: true });
+      fs.writeFileSync(path.join(snap, f.path), f.text);
+    }
+    const g = await provider.build(snap);
+    db.transaction(() => {
+      db.exec("DELETE FROM graph_nodes; DELETE FROM graph_edges;");
+      for (const n of g.nodes) db.prepare("INSERT OR REPLACE INTO graph_nodes (id, file, name, line) VALUES (?, ?, ?, ?)").run(n.id, n.file, n.name, n.line);
+      for (const e of g.edges) db.prepare("INSERT INTO graph_edges (src, dst, relation, confidence) VALUES (?, ?, ?, ?)").run(e.src, e.dst, e.relation, e.confidence);
+      db.prepare("INSERT OR REPLACE INTO meta (key, value) VALUES ('graph_digest', ?)").run(digest);
+    })();
+    setLayer(db, "graph", stamp, "ok", `graphify ${provider.version}, ${g.nodes.length} nodes, ${g.edges.length} edges`, now);
+  } catch (e) {
+    setLayer(db, "graph", stampOf(db, "graph") ?? "none", "unavailable", (e as Error).message, now);
+  } finally {
+    fs.rmSync(snap, { recursive: true, force: true });
+  }
+}
+
 export async function buildIndex(deps: Deps, loaded: LoadedProfile, repo: string, o: { full: boolean; quick?: boolean; mirror?: boolean }, providers: Providers): Promise<BuildReport> {
   const cfg = loaded.repos[repo];
   if (cfg === undefined) throw new SindriError("SND-PROFILE-004", `no repo named ${repo}`);
@@ -143,6 +179,7 @@ export async function buildIndex(deps: Deps, loaded: LoadedProfile, repo: string
       maxTotalMB: ix.maxTotalMB,
       select: (p) => isSourcePath(p) || p === "package.json" || p.endsWith("/package.json"),
     });
+    const digest = createHash("sha256").update(inv.files.map((f) => `${f.path}:${f.hash}`).join("\n")).digest("hex");
     const live = indexPath(deps, repo);
     fs.mkdirSync(path.dirname(live), { recursive: true, mode: 0o700 });
     sweepTmp(deps, live);
@@ -166,9 +203,8 @@ export async function buildIndex(deps: Deps, loaded: LoadedProfile, repo: string
           if (stampOf(db, layer) === null) setLayer(db, layer, "none", "pending", "not built yet (sindri index build)", now);
         }
       } else {
-        // Task 7 replaces the graph line with the provider-backed layer.
         await embedLayer(db, providers.embedder, now);
-        setLayer(db, "graph", "none", "disabled", "no graph provider configured", now);
+        await graphLayer(db, providers.graph, deps, cfg.path, deny, digest, ix, now);
       }
       const head = await deps.git.run(["rev-parse", "HEAD"], cfg.path);
       const commit = head.ok ? head.stdout.trim() : null;

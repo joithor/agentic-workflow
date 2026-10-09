@@ -2898,7 +2898,7 @@ git commit -m "feat: sindri embeddings layer on a loopback-only Ollama"
 - Produces (`build.ts`): the graph layer runs on a **snapshot** of tracked, non-denied source and docs files written to a temp dir (spec amendment 3), only when the inputs' digest changed, the stamp changed, or there is no graph yet (so a `--quick` build that absorbed a change doesn't hide it from the next full build); `ok` (stamp `graphify@<version>`), `disabled` or `unavailable`.
 - Produces (`commands.ts`): `graphFor(loaded: LoadedProfile, deps: Deps, io: IndexIo): GraphProvider | null`.
 
-- [ ] **Step 1: Install graphify at an age-gated pin, and record a real `graph.json` fixture**
+- [x] **Step 1: Install graphify at an age-gated pin, and record a real `graph.json` fixture**
 
 `graphifyy` is a Python package; install it with `uv` (required, no `pipx` path). First confirm the package name and the flags this plan builds on:
 
@@ -2939,7 +2939,7 @@ jq '{nodes: (.nodes | length), links: ((.links // .edges) | length), node_keys: 
 
 Expected: at least 2 nodes and 1 link. If graphify fails because the sandbox forbids a path it needs, stop and add that single path to the profile in Step 4 (and here); don't loosen the profile otherwise. Note the printed `node_keys` and `link_keys`. If a key that names the file, the symbol name, the line, the relation or the confidence is not already in `parseGraphJson`'s candidate lists (Step 4), add it there. Don't rename the fixture's keys. The fixture holds `/snapshot` in place of the temp path, so no machine-specific path is committed.
 
-- [ ] **Step 2: Write the failing tests**
+- [x] **Step 2: Write the failing tests**
 
 `sindri/tests/pins.test.ts`:
 
@@ -3207,12 +3207,12 @@ describe("graphFor and the build command", () => {
 });
 ```
 
-- [ ] **Step 3: Run the tests to verify they fail**
+- [x] **Step 3: Run the tests to verify they fail**
 
 Run: `cd sindri && npx vitest run tests/graph.test.ts tests/pins.test.ts tests/index-build.test.ts tests/real.test.ts`
 Expected: FAIL with `Failed to load url ../src/index/graph.js` (and `pins.js`).
 
-- [ ] **Step 4: Implement**
+- [x] **Step 4: Implement**
 
 `sindri/src/index/pins.ts`:
 
@@ -3420,12 +3420,12 @@ Add to `ERRORS`:
   "SND-INDEX-008": { summary: "graphify is missing, failed or wrote no usable graph.", fix: "sindri index setup, then sindri index build --full" },
 ```
 
-- [ ] **Step 5: Run the tests**
+- [x] **Step 5: Run the tests**
 
 Run: `cd sindri && npm run gen && npx vitest run && npm run typecheck && npm run test:coverage`
 Expected: all tests PASS (the sandbox smoke tests prove network, write and `~/.ssh` denial where a sandbox and network exist, and skip quietly where they don't); 100% coverage.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add sindri/package.json sindri/src sindri/tests docs/sindri/errors.md
