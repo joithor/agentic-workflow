@@ -60,6 +60,8 @@ sindri shape report [--recent N]        # read-only: signals by type, outcomes a
 sindri shape reconcile                  # move the spool into the ledger and label outcomes now (observe does it hourly)
 ```
 
+`index build --json` prints `{ "reports": [...], "unapproved": [...] }`: `reports` is one build report per repo built (repo, commit, quick, files, symbols, layers, ms) and `unapproved` lists the repos in the live profile that are not approved yet and were skipped (always `[]` with `--repo`). **Breaking change:** before Plan 4 it printed the bare `reports` array; a script that parsed it reads `.reports` now.
+
 Embeddings: if the URL or model is refused (the profile schema normally catches this first), `index build` does not abort. The embeddings layer reports `unavailable` with the reason and the other layers build. A failed layer is `unavailable` with its reason; the other layers stay usable. Builds write a temp copy and rename it, so an interrupted build leaves the previous index in place.
 
 ## Freshness
