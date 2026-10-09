@@ -10,7 +10,13 @@ const CAP = 4000;
 const GENERATED = /^(scope|backtest)-.*\.md$/;
 
 function walk(dir: string, root: string, out: string[]): void {
-  for (const e of fs.readdirSync(dir, { withFileTypes: true })) {
+  let entries: fs.Dirent[];
+  try {
+    entries = fs.readdirSync(dir, { withFileTypes: true });
+  } catch {
+    return; // an unreadable directory is skipped, not fatal
+  }
+  for (const e of entries) {
     if (e.name.startsWith(".")) continue;
     const p = path.join(dir, e.name);
     if (e.isDirectory()) walk(p, root, out);
@@ -19,8 +25,13 @@ function walk(dir: string, root: string, out: string[]): void {
 }
 
 // At most CAP + 1 bytes of a file are read, never the whole file.
-function readHead(file: string): string {
-  const fd = fs.openSync(file, "r");
+function readHead(file: string): string | null {
+  let fd: number;
+  try {
+    fd = fs.openSync(file, "r");
+  } catch {
+    return null;
+  }
   try {
     const buf = Buffer.alloc(CAP + 1);
     const n = fs.readSync(fd, buf, 0, buf.length, 0);
@@ -39,13 +50,17 @@ export function notesSource(dir: string, scrubber?: Scrubber): Source {
       const files: string[] = [];
       walk(dir, dir, files);
       const scored = files
-        .map((rel) => ({ rel, text: readHead(path.join(dir, rel)).slice(0, CAP) }))
+        .flatMap((rel) => {
+          const head = readHead(path.join(dir, rel));
+          // Score the cleaned text: hidden text must not raise a note's score.
+          return head === null ? [] : [{ rel, text: clean(head.slice(0, CAP), scrubber) }];
+        })
         .map((f) => ({ ...f, hits: keywordHits(f.text, q.keywords) }))
         .filter((f) => f.hits >= 2)
         .sort((a, b) => b.hits - a.hits || a.rel.localeCompare(b.rel))
         .slice(0, q.limit);
       return ok(scored.map((f): SourceRecord => ({
-        ref: `notes:${f.rel}`, kind: "note", title: path.basename(f.rel), text: clean(f.text, scrubber), author: null, createdAt: null, trust: "trusted",
+        ref: `notes:${f.rel}`, kind: "note", title: path.basename(f.rel), text: f.text, author: null, createdAt: null, trust: "trusted",
       })));
     },
   };

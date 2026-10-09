@@ -75,6 +75,37 @@ describe("local sources (Review Focus 5: stripped and scrubbed at fetch)", () =>
     expect(r.ok && r.value[0].text.length).toBeLessThanOrEqual(4000);
   });
 
+  it("notes and transcripts score the cleaned text: a keyword hidden in a comment does not select a record (I3)", async () => {
+    const dir = tempDir();
+    fs.writeFileSync(path.join(dir, "h.md"), "shift <!-- times --> only");
+    fs.writeFileSync(path.join(dir, "ok.md"), "shift times");
+    const n = await notesSource(dir).find(q(["shift", "times"]));
+    expect(n.ok && n.value.map((x) => x.ref)).toEqual(["notes:ok.md"]);
+    fs.writeFileSync(path.join(dir, "s.jsonl"), `${turn("shift <!-- times -->", "2026-01-01T00:00:00Z")}\n${turn("shift times", "2026-01-03T00:00:00Z")}\n`);
+    const t = await transcriptsSource(dir).find(q(["shift", "times"]));
+    expect(t.ok && t.value.map((x) => x.ref)).toEqual(["transcript:s.jsonl#2"]);
+  });
+
+  it("notes and transcripts skip an unreadable file or directory instead of throwing", async () => {
+    const dir = tempDir();
+    fs.writeFileSync(path.join(dir, "ok.md"), "shift times");
+    fs.writeFileSync(path.join(dir, "locked.md"), "shift times");
+    fs.mkdirSync(path.join(dir, "locked-dir"));
+    fs.writeFileSync(path.join(dir, "locked-dir", "x.md"), "shift times");
+    fs.writeFileSync(path.join(dir, "ok.jsonl"), `${turn("shift times", "2026-01-01T00:00:00Z")}\n`);
+    fs.writeFileSync(path.join(dir, "locked.jsonl"), `${turn("shift times", "2026-01-02T00:00:00Z")}\n`);
+    fs.mkdirSync(path.join(dir, "locked-dir2"));
+    for (const p of ["locked.md", "locked-dir", "locked.jsonl", "locked-dir2"]) fs.chmodSync(path.join(dir, p), 0o000);
+    try {
+      const n = await notesSource(dir).find(q(["shift", "times"]));
+      expect(n.ok && n.value.map((x) => x.ref)).toEqual(["notes:ok.md"]);
+      const t = await transcriptsSource(dir).find(q(["shift", "times"]));
+      expect(t.ok && t.value.map((x) => x.ref)).toEqual(["transcript:ok.jsonl#1"]);
+    } finally {
+      for (const p of ["locked.md", "locked-dir", "locked.jsonl", "locked-dir2"]) fs.chmodSync(path.join(dir, p), 0o755);
+    }
+  });
+
   it("transcripts: human turns only, up to asOf, untrusted, referenced by basename", async () => {
     const dir = tempDir();
     fs.mkdirSync(path.join(dir, "proj"));
@@ -140,6 +171,7 @@ describe("local sources (Review Focus 5: stripped and scrubbed at fetch)", () =>
     const r = await codeSource(d, ["r"]).find(q(["shift", "times"]));
     expect(r.ok && r.value.map((x) => x.ref)).toEqual(["code:r/src/shift.ts:1", "code:r/src/shift.ts:2"]);
     expect(r.ok && r.value[0].trust).toBe("untrusted");
+    expect(r.ok && r.value[0].title).toContain("saveShiftTimes");
     expect(r.ok && r.value[0].text).toContain("return validateTimes(t)");
     const noWords = await codeSource(d, ["r"]).find(q([]));
     expect(noWords.ok && noWords.value).toEqual([]);

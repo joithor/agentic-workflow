@@ -47,14 +47,43 @@ export function keywordHits(text: string, keywords: string[]): number {
 // and remote image URLs. Remote links keep only their text. Control characters
 // go too (a terminal escape in a Linear title must not reach a terminal).
 // Invisible characters are written as \u escapes so they stay visible in review.
-export function sanitizeIngest(text: string): string {
-  return text
+const INVISIBLE = /[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F\u200B-\u200F\u202A-\u202E\u2060-\u2064\u2066-\u2069\uFEFF]/g;
+const REMOTE_DEF = /^[ \t]{0,3}\[([^\]\n]+)\]:[ \t]*<?https?:\/\/[^\n]*\n?/gim;
+const TITLE = String.raw`(?:\s+(?:"[^"]*"|'[^']*'))?`;
+const REMOTE_IMAGE = new RegExp(String.raw`!\[([^\]]*)\]\(\s*<?https?:\/\/[^)\s>]*>?${TITLE}\s*\)`, "gi");
+const REMOTE_LINK = new RegExp(String.raw`\[([^\]]*)\]\(\s*<?https?:\/\/[^)\s>]*>?${TITLE}\s*\)`, "gi");
+
+function sanitizeOnce(input: string): string {
+  // Invisible characters go first so they cannot split a pattern below.
+  let text = input
+    .replace(INVISIBLE, "")
     .replace(/<!--[\s\S]*?-->/g, "")
     .replace(/<img\b[^>]*>/gi, "")
-    .replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F\u200B-\u200F\u202A-\u202E\u2060-\u2064\u2066-\u2069\uFEFF]/g, "")
-    .replace(/[A-Za-z0-9+\/=_-]{201,}/g, "[blob]")
-    .replace(/!\[([^\]]*)\]\(https?:\/\/[^)\s]*\)/gi, "$1")
-    .replace(/\[([^\]]*)\]\(https?:\/\/[^)\s]*\)/gi, "$1");
+    .replace(/[A-Za-z0-9+\/=_-]{201,}/g, "[blob]");
+  // Reference-style images and links: drop remote definitions, reduce their uses to the text.
+  const labels = new Set([...text.matchAll(REMOTE_DEF)].map((m) => m[1].trim().toLowerCase()));
+  if (labels.size > 0) {
+    text = text.replace(REMOTE_DEF, "");
+    text = text.replace(/!?\[([^\]]*)\]\[([^\]]*)\]/g, (whole, label: string, ref: string) => (labels.has((ref === "" ? label : ref).trim().toLowerCase()) ? label : whole));
+  }
+  return text.replace(REMOTE_IMAGE, "$1").replace(REMOTE_LINK, "$1").replace(/<https?:\/\/[^>\s]*>/gi, "");
+}
+
+// Spec §8.3: ingest strips HTML comments, zero-width characters, encoded blobs
+// and remote image URLs. Remote links keep only their text. Control characters
+// go too (a terminal escape in a Linear title must not reach a terminal).
+// Invisible characters are written as \u escapes so they stay visible in review.
+// Stripping can expose new markup (a removal can join two halves), so it repeats
+// until the text stops changing, at most MAX_PASSES times.
+const MAX_PASSES = 5;
+export function sanitizeIngest(text: string): string {
+  let cur = text;
+  for (let i = 0; i < MAX_PASSES; i++) {
+    const next = sanitizeOnce(cur);
+    if (next === cur) break;
+    cur = next;
+  }
+  return cur;
 }
 
 const defaultScrubber = makeScrubber();
@@ -75,7 +104,7 @@ export function escapeMarkup(s: string): string {
 
 // A fenced data block for model input: the body can never close its own fence.
 export function fence(kind: string, text: string): string {
-  return `<untrusted kind="${kind}">${text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")}</untrusted>`;
+  return `<untrusted kind="${escapeMarkup(kind)}">${text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")}</untrusted>`;
 }
 
 // The reference as a person sees it: no directories from notes or transcripts.

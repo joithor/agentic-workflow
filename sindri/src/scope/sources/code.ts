@@ -28,13 +28,14 @@ export function codeSource(deps: Deps, repos: string[], o: { allowAsOf?: boolean
           picked = [...matched, ...syms.filter((s) => called.has(s.name) && !matched.includes(s))].slice(0, q.limit);
           // SymbolRow carries no body (Plan 3 keeps bodies for embeddings), so read only the picked ones here.
           const bodyOf = db.prepare("SELECT body FROM symbols WHERE id = ?");
-          bodies = new Map(picked.map((s) => [s.id, (bodyOf.get(s.id) as { body: string }).body]));
+          // A stale index row can lack its body: skip it rather than throw.
+          bodies = new Map(picked.flatMap((s) => (bodyOf.all(s.id) as { body: string }[]).map((r): [number, string] => [s.id, r.body])));
         } finally {
           db.close();
         }
-        for (const s of picked.sort((a, b) => a.file.localeCompare(b.file) || a.startLine - b.startLine)) {
+        for (const s of picked.filter((x) => bodies.has(x.id)).sort((a, b) => a.file.localeCompare(b.file) || a.startLine - b.startLine)) {
           out.push({
-            ref: `code:${repo}/${s.file}:${s.startLine}`, kind: "code", title: `${s.name}${s.signature}`,
+            ref: `code:${repo}/${s.file}:${s.startLine}`, kind: "code", title: clean(`${s.name}${s.signature}`, o.scrubber),
             text: clean((bodies.get(s.id) as string).slice(0, 600), o.scrubber), author: null, createdAt: null, trust: "untrusted",
           });
         }

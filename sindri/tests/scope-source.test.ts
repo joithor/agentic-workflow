@@ -32,6 +32,31 @@ describe("sanitizeIngest (spec §8.3)", () => {
     expect(sanitizeIngest("before <img src='https://evil.example/x'> after")).toBe("before  after");
   });
 
+  it("strips invisible characters before matching, so they cannot split markup (I1)", () => {
+    expect(sanitizeIngest("a<!\u200B-- hidden -->b")).toBe("ab");
+    expect(sanitizeIngest("a<im\u200Bg src='https://evil.example/x'>b")).toBe("ab");
+    expect(sanitizeIngest("![a](ht\u200Btps://evil.example/x)")).toBe("a");
+    expect(sanitizeIngest("x<!-\u202E- hidden -->y")).toBe("xy");
+  });
+
+  it("repeats until stable but only a bounded number of passes", () => {
+    expect(sanitizeIngest("a<!-<!-- x -->- y -->b")).toBe("ab");
+    let nested = "<!-- x -->";
+    for (let i = 0; i < 7; i++) nested = `<!-${nested}- y -->`;
+    const out = sanitizeIngest(nested);
+    expect(out).not.toBe("");
+    expect(out.length).toBeLessThan(nested.length);
+  });
+
+  it("reduces titled, reference-style and autolinked remote URLs to their text (I2)", () => {
+    expect(sanitizeIngest('![x](https://evil.example/p.png "title") and [y](https://evil.example/a \'t\')')).toBe("x and y");
+    expect(sanitizeIngest("![x](<https://evil.example/p.png>)")).toBe("x");
+    expect(sanitizeIngest("see ![x][1] and [y][Two] and [z][]\n\n[1]: https://evil.example/?d=1\n[two]: <https://evil.example/b> \"t\"\n[z]: HTTP://evil.example/c\n")).toBe("see x and y and z\n\n");
+    expect(sanitizeIngest("keep [a][loc]\n\n[loc]: ./local.md\n")).toBe("keep [a][loc]\n\n[loc]: ./local.md\n");
+    expect(sanitizeIngest("[a][loc] [b][1]\n[loc]: ./l.md\n[1]: https://evil.example/x\n")).toBe("[a][loc] b\n[loc]: ./l.md\n");
+    expect(sanitizeIngest("go <https://evil.example/?d=1> now")).toBe("go  now");
+  });
+
   it("replaces long encoded blobs, but not 200 characters", () => {
     expect(sanitizeIngest(`key ${"A".repeat(250)} end`)).toBe("key [blob] end");
     expect(sanitizeIngest("A".repeat(200))).toBe("A".repeat(200));
@@ -64,6 +89,7 @@ describe("references and fences", () => {
 
   it("escapes markup and fences a body without escaping quotes", () => {
     expect(escapeMarkup(`<a href="x">&</a>`)).toBe("&lt;a href=&quot;x&quot;&gt;&amp;&lt;/a&gt;");
+    expect(fence('a"b<', "x")).toBe('<untrusted kind="a&quot;b&lt;">x</untrusted>');
     expect(fence("checks", '- a < b & "c"')).toBe('<untrusted kind="checks">- a &lt; b &amp; "c"</untrusted>');
   });
 });

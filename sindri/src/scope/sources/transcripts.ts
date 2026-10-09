@@ -9,15 +9,26 @@ const CAP = 1500;
 export const TRANSCRIPT_CAPS = { perFile: 2 * 1024 * 1024, perRun: 50 * 1024 * 1024 };
 
 function jsonlFiles(dir: string, root: string, out: string[]): void {
-  for (const e of fs.readdirSync(dir, { withFileTypes: true })) {
+  let entries: fs.Dirent[];
+  try {
+    entries = fs.readdirSync(dir, { withFileTypes: true });
+  } catch {
+    return; // an unreadable directory is skipped, not fatal
+  }
+  for (const e of entries) {
     const p = path.join(dir, e.name);
     if (e.isDirectory()) jsonlFiles(p, root, out);
     else if (e.isFile() && e.name.endsWith(".jsonl")) out.push(path.relative(root, p));
   }
 }
 
-function readCapped(file: string, max: number): string {
-  const fd = fs.openSync(file, "r");
+function readCapped(file: string, max: number): string | null {
+  let fd: number;
+  try {
+    fd = fs.openSync(file, "r");
+  } catch {
+    return null;
+  }
   try {
     const buf = Buffer.alloc(Math.min(fs.fstatSync(fd).size, max));
     const n = fs.readSync(fd, buf, 0, buf.length, 0);
@@ -57,6 +68,7 @@ export function transcriptsSource(dir: string, caps: { perFile: number; perRun: 
       for (const rel of files.sort()) {
         if (total >= caps.perRun) break;
         const text = readCapped(path.join(dir, rel), caps.perFile);
+        if (text === null) continue;
         total += Buffer.byteLength(text);
         const name = path.basename(rel);
         const own: string[] = [];
@@ -69,9 +81,11 @@ export function transcriptsSource(dir: string, caps: { perFile: number; perRun: 
             own.push(key);
           }
           if (q.asOf !== null && !(Date.parse(t.ts) <= q.asOf.getTime())) return;
-          const hits = keywordHits(t.text, q.keywords);
+          // Score the cleaned text: hidden text must not raise a turn's score.
+          const body = clean(t.text.slice(0, CAP), scrubber);
+          const hits = keywordHits(body, q.keywords);
           if (hits < 2) return;
-          found.push({ ref: `transcript:${name}#${i + 1}`, kind: "transcript", title: `${name} turn ${i + 1}`, text: clean(t.text.slice(0, CAP), scrubber), author: "human", createdAt: t.ts || null, trust: "untrusted", hits });
+          found.push({ ref: `transcript:${name}#${i + 1}`, kind: "transcript", title: `${name} turn ${i + 1}`, text: body, author: "human", createdAt: t.ts || null, trust: "untrusted", hits });
         });
         for (const k of own) seen.add(k);
       }
