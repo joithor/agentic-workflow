@@ -61,12 +61,17 @@ export function checkMap(map: ScopeMap, refs: RefTable): string[] {
   const seen = new Set<string>();
   const known = new Set(refs.ids());
   const inStream = new Set(map.workstreams.flatMap((w) => w.surfaces));
+  const streamCount = new Map<string, number>();
+  for (const w of map.workstreams) for (const id of new Set(w.surfaces)) streamCount.set(id, (streamCount.get(id) ?? 0) + 1);
+  const dupStream = new Set<string>();
   for (const s of map.surfaces) {
     if (seen.has(s.id)) reasons.push(`duplicate surface id ${s.id}`);
     seen.add(s.id);
     if (s.citations.length === 0) reasons.push(`surface ${s.id} cites no source`);
     for (const c of s.citations) if (!known.has(c)) reasons.push(`surface ${s.id} cites ${c}, which is not a source reference`);
     if (!inStream.has(s.id)) reasons.push(`surface ${s.id} is in no workstream`);
+    if (!dupStream.has(s.id) && (streamCount.get(s.id) ?? 0) > 1) reasons.push(`surface ${s.id} is in more than one workstream`);
+    dupStream.add(s.id);
   }
   map.implications.forEach((im, i) => {
     if (im.citations.length === 0) reasons.push(`implication ${i + 1} (${im.kind}) cites no source`);
@@ -76,7 +81,10 @@ export function checkMap(map: ScopeMap, refs: RefTable): string[] {
     for (const c of q.citations) if (!known.has(c)) reasons.push(`question ${i + 1} cites ${c}, which is not a source reference`);
   });
   const streamIds = new Set(map.workstreams.map((w) => w.id));
+  const seenStreams = new Set<string>();
   for (const w of map.workstreams) {
+    if (seenStreams.has(w.id)) reasons.push(`duplicate workstream id ${w.id}`);
+    seenStreams.add(w.id);
     for (const s of w.surfaces) if (!seen.has(s)) reasons.push(`workstream ${w.id} lists unknown surface ${s}`);
     for (const d of w.dependsOn) if (!streamIds.has(d)) reasons.push(`workstream ${w.id} depends on unknown workstream ${d}`);
     if (w.acceptance.length === 0) reasons.push(`workstream ${w.id} has no acceptance checks`);
@@ -91,8 +99,14 @@ export function checkMap(map: ScopeMap, refs: RefTable): string[] {
 // then neutralize what is left.
 export function safeText(s: string): string {
   return sanitizeIngest(s)
-    .replace(/\bhttp(s?):\/\//gi, "hxxp$1://")
-    .replace(/[<>[\]!`|]/g, (c) => (c === "<" ? "&lt;" : c === ">" ? "&gt;" : `\\${c}`))
+    .replace(/https?:\/\//gi, (m) => `hxx${m.slice(3)}`)
+    .replace(/ftp:\/\//gi, "fxp://")
+    // Backslash first, so a planted `\!` can't turn our own escape into a live one.
+    .replace(/[\\<>[\]!`|*_~]/g, (c) => (c === "<" ? "&lt;" : c === ">" ? "&gt;" : `\\${c}`))
+    .replace(/(javascript|vbscript|data):/gi, "$1\\:")
+    .replace(/(?<!:)\/\//g, "/\\/")
+    .replace(/www\./gi, "www\\.")
+    .replace(/@/g, "\\@")
     .replace(/\s*[\r\n\u0085\u2028\u2029]\s*/g, " ")
     .trim();
 }

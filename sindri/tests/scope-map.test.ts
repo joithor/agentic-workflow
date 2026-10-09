@@ -182,3 +182,46 @@ describe("renderMap", () => {
     expect(headings(md)).toEqual(["# Scope map: Title # X", "## Why incomplete", "## Source notes"]);
   });
 });
+
+describe("fix round 1: safeText escaping and defanging", () => {
+  // Every markup character must be preceded by an odd number of backslashes (i.e. escaped).
+  const unescaped = (s: string, ch: string): boolean => new RegExp(`(?<!\\\\)(?:\\\\\\\\)*\\${ch}`).test(s);
+
+  it("escapes the backslash first so a planted escape cannot re-activate an image", () => {
+    const out = safeText("\\!\\[x\\](//evil.example/?d=x) and \\*b\\* \\_u\\_ \\~s\\~");
+    for (const ch of ["!", "[", "]", "*", "_", "~"]) expect(unescaped(out, ch)).toBe(false);
+    expect(out).not.toContain("(//");
+    expect(out).toContain("\\\\");
+  });
+
+  it("defangs schemes even after emphasis characters, and protocol-relative, ftp, javascript and data URLs", () => {
+    const out = safeText("_https://a.example *http://b.example ~https://c.example ftp://d.example javascript:alert(1) data:text/html,x see //e.example/p");
+    expect(out).not.toMatch(/https?:\/\//);
+    expect(out).not.toMatch(/ftp:\/\//i);
+    expect(out).not.toMatch(/javascript:/i);
+    expect(out).not.toMatch(/data:/i);
+    expect(out).not.toMatch(/(^|[^:])\/\/e\.example/);
+    expect(out).toContain("hxxps://a.example");
+    expect(out).toContain("hxxp://b.example");
+    expect(out).toContain("fxp://d.example");
+  });
+
+  it("defangs www. hosts and email addresses", () => {
+    const out = safeText("go www.evil.example or mail eve@evil.example");
+    expect(out).not.toContain("www.");
+    expect(out).not.toMatch(/[^\\]@/);
+  });
+});
+
+describe("fix round 1: workstream structure checks", () => {
+  it("reports duplicate workstream ids and a surface in more than one workstream", () => {
+    const dup: ScopeMap = {
+      ...good,
+      workstreams: [
+        { id: "W1", title: "API", surfaces: ["S1", "S2"], dependsOn: [], acceptance: ["x"] },
+        { id: "W1", title: "Again", surfaces: ["S1"], dependsOn: [], acceptance: ["x"] },
+      ],
+    };
+    expect(checkMap(dup, refs())).toEqual(["surface S1 is in more than one workstream", "duplicate workstream id W1"]);
+  });
+});
