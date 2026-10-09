@@ -247,4 +247,102 @@ describe("sindri evolve compare", () => {
     expect(fx.ctx.db.prepare("SELECT detail FROM comparisons WHERE proposal_id = ? AND verdict = 'errored'").get(id)).toEqual({ detail: '{"line":"errored: plain string"}' });
     fx.close();
   });
+
+  it("leaves the proposal status to the highest run when overlapping --rerun runs finish out of order", async () => {
+    const { fx, save } = await ready(22);
+    const id = save();
+    let release: () => void = () => undefined;
+    const gate = new Promise<void>((r) => { release = r; });
+    const loser = scriptedEvolveIo(preferPlain).runner(fx.ctx.loaded, undefined as never);
+    const winner = fx.ctx.io.runner(fx.ctx.loaded, undefined as never);
+    let made = 0;
+    const lagging = { run: async <T,>(c: Parameters<typeof loser.run<T>>[0]) => { await gate; return loser.run(c); } };
+    const ctx = { ...fx.ctx, io: { ...fx.ctx.io, runner: () => (made++ === 0 ? lagging : winner) } };
+    const first = compare([id, "--rerun", "--json"], ctx);
+    const started = (): number => (fx.ctx.db.prepare("SELECT COUNT(*) AS c FROM comparisons WHERE proposal_id = ?").get(id) as { c: number }).c;
+    while (started() === 0) await new Promise((r) => setTimeout(r, 1));
+    const second = JSON.parse((await compare([id, "--rerun", "--json"], ctx)).stdout) as { run: number; status: string };
+    expect(second).toMatchObject({ run: 2, status: "won" });
+    expect(status(fx, id)).toBe("won");
+    release();
+    expect(JSON.parse((await first).stdout)).toMatchObject({ run: 1, status: "lost" });
+    expect(status(fx, id)).toBe("won"); // run 1 finished last but is not the highest run
+    expect(fx.ctx.db.prepare("SELECT COUNT(*) AS c FROM comparisons WHERE proposal_id = ? AND run = 1 AND verdict = 'lost'").get(id)).toEqual({ c: 1 });
+    fx.close();
+  });
+
+  it("does not resurrect a proposal rejected while its comparison was running, whether that comparison finishes or throws", async () => {
+    const { fx, save } = await ready(22);
+    const rejectOnce = (): ((m: string) => void) => {
+      let done = false;
+      return () => {
+        if (done) return;
+        done = true;
+        const mine = fx.ctx.db.prepare("SELECT proposal_id AS p FROM comparisons WHERE verdict = 'running'").all() as { p: string }[];
+        for (const { p } of mine) fx.ctx.write((epoch) => setStatus(fx.ctx.db, p, "rejected", epoch, fx.deps.now()));
+      };
+    };
+    const win = save();
+    const finishing = { ...fx.ctx, deps: { ...fx.ctx.deps, log: rejectOnce() } };
+    expect((await compare([win], finishing)).exitCode).toBe(0);
+    expect(status(fx, win)).toBe("rejected");
+    expect(fx.ctx.db.prepare("SELECT COUNT(*) AS c FROM comparisons WHERE proposal_id = ? AND item_id = '*' AND verdict = 'won'").get(win)).toEqual({ c: 1 });
+    const thrower = save({ title: "Another draft prompt" });
+    const rejectThenThrow = rejectOnce();
+    const throwing = { ...fx.ctx, deps: { ...fx.ctx.deps, log: (m: string) => { rejectThenThrow(m); throw new Error("log exploded"); } } };
+    await expect(compare([thrower], throwing)).rejects.toThrow(/log exploded/);
+    expect(status(fx, thrower)).toBe("rejected");
+    expect(fx.ctx.db.prepare("SELECT COUNT(*) AS c FROM comparisons WHERE proposal_id = ? AND verdict = 'errored'").get(thrower)).toEqual({ c: 1 });
+    fx.close();
+  });
+
+  it("surfaces the original error when the closing write of a failed comparison also fails", async () => {
+    const { fx, save } = await ready(22);
+    const id = save();
+    const m = fx.ctx.loaded.profile.models;
+    let calls = 0;
+    const writeRetry: typeof fx.ctx.writeRetry = (fn) => {
+      if (++calls > 1) throw new Error("lock gone");
+      return fx.ctx.writeRetry(fn);
+    };
+    const bad = { ...fx.ctx, writeRetry, loaded: { ...fx.ctx.loaded, profile: { ...fx.ctx.loaded.profile, models: { ...m, adjudicator: m.scoping } } } };
+    await expect(compare([id], bad)).rejects.toThrow(/judge model must differ/);
+    fx.close();
+  });
+
+  it("caps the stored errored message at 500 characters", async () => {
+    const { fx, save } = await ready(22);
+    const id = save();
+    const long = { ...fx.ctx, io: { ...fx.ctx.io, runner: () => { throw new Error("x".repeat(600)); } } };
+    await expect(compare([id], long)).rejects.toThrow();
+    expect(fx.ctx.db.prepare("SELECT detail FROM comparisons WHERE proposal_id = ? AND verdict = 'errored'").get(id)).toEqual({ detail: JSON.stringify({ line: `errored: ${"x".repeat(500)}` }) });
+    fx.close();
+  });
+
+  it("scrubs the reason stored for an errored item", async () => {
+    const secret = "AKIA" + "ABCDEFGHIJKLMNOP";
+    const items = [item(holdoutIds[0], "boom"), ...holdoutIds.slice(1, 22).map((id) => item(id))];
+    const io = scriptedEvolveIo((c) => {
+      if (c.model === "sonnet" && c.input.includes("boom")) throw new Error(`model exploded ${secret}`);
+      return script(c);
+    });
+    const { fx, save } = await ready(0, { io, items });
+    const id = save();
+    await compare([id], fx.ctx);
+    const row = fx.ctx.db.prepare("SELECT detail FROM comparisons WHERE proposal_id = ? AND item_id = ?").get(id, holdoutIds[0]) as { detail: string };
+    expect(row.detail).toContain("model exploded");
+    expect(row.detail).not.toContain(secret);
+    fx.close();
+  });
+
+  it("shows the running run in --json", async () => {
+    const { fx, save } = await ready(22);
+    await init([], fx.ctx);
+    const id = save();
+    const running = async () => (JSON.parse((await show([id, "--json"], fx.ctx)).stdout) as { running: number | null }).running;
+    expect(await running()).toBeNull();
+    fx.ctx.db.prepare("INSERT INTO comparisons (proposal_id, run, item_id, verdict, detail, ts, epoch) VALUES (?, 3, '*', 'running', '{}', 't', 1)").run(id);
+    expect(await running()).toBe(3);
+    fx.close();
+  });
 });

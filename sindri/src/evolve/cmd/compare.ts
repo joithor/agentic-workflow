@@ -61,6 +61,14 @@ function nextFor(status: CompareStatus, id: string): string {
   }
 }
 
+// A closing write always records its row, but moves the proposal's status only when this run is the highest
+// run and nothing else (reject, defer, a newer run) has changed the status since it was set to `evaluating`.
+function closeStatus(ctx: EvolveCtx, id: string, run: number, to: ProposalStatus, epoch: number): void {
+  const newest = (ctx.db.prepare("SELECT MAX(run) AS r FROM comparisons WHERE proposal_id = ?").get(id) as { r: number }).r;
+  const now = (ctx.db.prepare("SELECT status FROM proposals WHERE id = ?").get(id) as { status: ProposalStatus }).status;
+  if (run === newest && now === "evaluating") setStatus(ctx.db, id, to, epoch, ctx.deps.now());
+}
+
 export async function compare(args: string[], ctx: EvolveCtx): Promise<CommandResult> {
   const { values, positionals } = parseFlags(args, { rerun: { type: "boolean" }, json: { type: "boolean" } });
   const json = values.json === true;
@@ -108,23 +116,29 @@ export async function compare(args: string[], ctx: EvolveCtx): Promise<CommandRe
   } catch (e) {
     // SND-EVOLVE-009 (judge = drafter) or anything unexpected: don't strand the proposal in `evaluating`.
     // Close the run with an `errored` row so a crash never leaves a dangling `running` marker.
-    const message = profileScrubber(ctx.loaded).scrub(e instanceof Error ? e.message : String(e)).text;
-    await ctx.writeRetry((epoch) => {
-      ctx.db.prepare("INSERT INTO comparisons (proposal_id, run, item_id, verdict, detail, ts, epoch) VALUES (?, ?, '*', 'errored', ?, ?, ?)")
-        .run(id, run, JSON.stringify({ line: `errored: ${message}` }), ctx.deps.now().toISOString(), epoch);
-      setStatus(ctx.db, id, before === "evaluating" ? "proposed" : before, epoch, ctx.deps.now());
-    });
+    const message = profileScrubber(ctx.loaded).scrub(e instanceof Error ? e.message : String(e)).text.slice(0, 500);
+    // Best-effort: if the closing write fails too, the original error is the one worth reporting.
+    try {
+      await ctx.writeRetry((epoch) => {
+        ctx.db.prepare("INSERT INTO comparisons (proposal_id, run, item_id, verdict, detail, ts, epoch) VALUES (?, ?, '*', 'errored', ?, ?, ?)")
+          .run(id, run, JSON.stringify({ line: `errored: ${message}` }), ctx.deps.now().toISOString(), epoch);
+        closeStatus(ctx, id, run, before === "evaluating" ? "proposed" : before, epoch);
+      });
+    } catch {
+      // swallowed on purpose: see above
+    }
     throw e;
   }
   const line = lineFor(result, budgetLimit);
+  const scrubber = profileScrubber(ctx.loaded);
   await ctx.writeRetry((epoch) => {
     const ts = ctx.deps.now().toISOString();
     for (const p of result.perItem) {
-      ctx.db.prepare("INSERT INTO comparisons (proposal_id, run, item_id, verdict, detail, ts, epoch) VALUES (?, ?, ?, ?, ?, ?, ?)").run(id, run, p.id, p.verdict, JSON.stringify({ reason: p.reason ?? null }), ts, epoch);
+      ctx.db.prepare("INSERT INTO comparisons (proposal_id, run, item_id, verdict, detail, ts, epoch) VALUES (?, ?, ?, ?, ?, ?, ?)").run(id, run, p.id, p.verdict, JSON.stringify({ reason: p.reason === undefined ? null : scrubber.scrub(p.reason).text }), ts, epoch);
     }
     const summary = { status: result.status, n: result.n, wins: result.wins, losses: result.losses, ties: result.ties, errors: result.errors, winRate: result.winRate, lower: result.lower, leaks: result.leaks, line };
     ctx.db.prepare("INSERT INTO comparisons (proposal_id, run, item_id, verdict, detail, ts, epoch) VALUES (?, ?, '*', ?, ?, ?, ?)").run(id, run, result.status, JSON.stringify(summary), ts, epoch);
-    setStatus(ctx.db, id, proposalStatusFor(result.status, before), epoch, ctx.deps.now());
+    closeStatus(ctx, id, run, proposalStatusFor(result.status, before), epoch);
   });
   const decisive = result.status === "won" || result.status === "lost";
   return success(`${line}\nNext: ${nextFor(result.status, id)}`, { id, run, ...result, line, stored: false }, json, decisive ? 0 : 1);

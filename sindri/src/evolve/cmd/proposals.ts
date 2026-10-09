@@ -61,7 +61,7 @@ export async function show(args: string[], ctx: EvolveCtx): Promise<CommandResul
     ...(running === null ? [] : [`A comparison is running (run ${running}).`]),
     `Next: ${nextFor(s)}`,
   ];
-  return success(lines.join("\n"), { ...s, recomputed: now, evidence: ev.refs, comparison: cmp }, values.json === true);
+  return success(lines.join("\n"), { ...s, recomputed: now, evidence: ev.refs, comparison: cmp, running }, values.json === true);
 }
 
 export async function reject(args: string[], ctx: EvolveCtx): Promise<CommandResult> {
