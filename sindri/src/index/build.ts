@@ -8,6 +8,7 @@ import { ulid } from "../ids.js";
 import type { LoadedProfile } from "../profile/load.js";
 import { compileExtraPatterns, makeScrubber, type Scrubber } from "../scrub/scrub.js";
 import { type IndexDb, indexPath, type Layer, type LayerStatus, openIndex } from "./db.js";
+import { embeddingText, encodeVec, type Embedder } from "./embed.js";
 import { readManifestDeps } from "./deps-layer.js";
 import { inventory, isSourcePath, type IndexedFile } from "./files.js";
 import { matchesAny } from "./globs.js";
@@ -25,8 +26,8 @@ export const INDEXER_VERSION = "1";
 const structureStamp = (utilityGlobs: readonly string[], extraPatterns: readonly { kind: string; regex: string }[]): string =>
   `parse-ts@${INDEXER_VERSION}+${createHash("sha256").update(JSON.stringify([utilityGlobs, extraPatterns])).digest("hex").slice(0, 8)}`;
 
-// Replaced by the real interfaces in Tasks 6 (Embedder) and 7 (GraphProvider).
-export type Embedder = never;
+// Replaced by the real interface in Task 7 (GraphProvider).
+export type { Embedder } from "./embed.js";
 export type GraphProvider = never;
 export interface Providers {
   embedder: Embedder | null;
@@ -103,6 +104,29 @@ function writeDeps(db: IndexDb, files: IndexedFile[]): void {
   })();
 }
 
+async function embedLayer(db: IndexDb, embedder: Embedder | null, now: Date): Promise<void> {
+  if (embedder === null) {
+    setLayer(db, "embeddings", "none", "disabled", "no embedder configured", now);
+    return;
+  }
+  const stamp = `${embedder.model}@${INDEXER_VERSION}`;
+  const previous = stampOf(db, "embeddings");
+  if (previous !== stamp) db.exec("DELETE FROM embeddings");
+  const todo = db
+    .prepare("SELECT s.id, s.name, s.signature, s.body FROM symbols s LEFT JOIN embeddings e ON e.symbol_id = s.id WHERE e.symbol_id IS NULL AND s.kind != 'class' ORDER BY s.id")
+    .all() as { id: number; name: string; signature: string; body: string }[];
+  try {
+    const vectors = await embedder.embed(todo.map(embeddingText));
+    db.transaction(() => {
+      todo.forEach((s, i) => db.prepare("INSERT OR REPLACE INTO embeddings (symbol_id, model, vector) VALUES (?, ?, ?)").run(s.id, embedder.model, encodeVec(vectors[i])));
+    })();
+    setLayer(db, "embeddings", stamp, "ok", `${embedder.model} on loopback`, now);
+  } catch (e) {
+    // The other layers stay usable; the next build retries (Review Focus 3).
+    setLayer(db, "embeddings", previous ?? "none", "unavailable", (e as Error).message, now);
+  }
+}
+
 export async function buildIndex(deps: Deps, loaded: LoadedProfile, repo: string, o: { full: boolean; quick?: boolean; mirror?: boolean }, providers: Providers): Promise<BuildReport> {
   const cfg = loaded.repos[repo];
   if (cfg === undefined) throw new SindriError("SND-PROFILE-004", `no repo named ${repo}`);
@@ -142,8 +166,8 @@ export async function buildIndex(deps: Deps, loaded: LoadedProfile, repo: string
           if (stampOf(db, layer) === null) setLayer(db, layer, "none", "pending", "not built yet (sindri index build)", now);
         }
       } else {
-        // Tasks 6 and 7 replace these two lines with the provider-backed layers.
-        setLayer(db, "embeddings", "none", "disabled", "no embedder configured", now);
+        // Task 7 replaces the graph line with the provider-backed layer.
+        await embedLayer(db, providers.embedder, now);
         setLayer(db, "graph", "none", "disabled", "no graph provider configured", now);
       }
       const head = await deps.git.run(["rev-parse", "HEAD"], cfg.path);

@@ -10,6 +10,8 @@ Generated from `sindri/src/errors.ts` by `cd sindri && npm run gen`. Do not edit
 | `SND-INDEX-001` | The heavy-job lock is busy. | wait for the holder to finish; `sindri doctor` shows it |
 | `SND-INDEX-002` | The repo path is not a git repo. | check repos/&lt;name&gt;.yaml path, then sindri profile approve |
 | `SND-INDEX-003` | The index input is larger than index.maxTotalMB. | add generated or vendored paths to index.denyPaths, or raise index.maxTotalMB |
+| `SND-INDEX-005` | The embedding URL is not loopback. | set index.embeddings.url to http://127.0.0.1:11434 (or disable embeddings) |
+| `SND-INDEX-006` | The local embedding server failed. | sindri index setup (starts Ollama checks and pulls the model) |
 | `SND-ITEM-404` | No such item in the ledger. | Run `sindri observe` to list items. |
 | `SND-LEDGER-001` | The ledger was written by a newer sindri. | Upgrade sindri (`scripts/install-sindri.sh` from the latest main), then rerun. |
 | `SND-LOCK-001` | Another sindri run holds the lock. | wait a moment and rerun; `sindri doctor` shows the holder |

@@ -10,6 +10,7 @@ import { requireApprovedProfile } from "../profile/approve.js";
 import type { LoadedProfile } from "../profile/load.js";
 import { buildIndex, type BuildReport } from "./build.js";
 import { indexPath, LAYERS, layers, meta, openIndexReadOnly } from "./db.js";
+import { makeOllamaEmbedder, type Embedder } from "./embed.js";
 import type { IndexIo } from "./io.js";
 
 // Read-only: index commands never create or migrate the ledger. A missing ledger is "nothing approved".
@@ -35,14 +36,34 @@ function describeLayers(ls: LayerInfo): string {
   }).join(", ");
 }
 
-async function build(args: string[], deps: Deps, _io: IndexIo): Promise<CommandResult> {
+export function embedderFor(loaded: LoadedProfile, io: IndexIo): Embedder | null {
+  const e = loaded.profile.index.embeddings;
+  return e.enabled ? makeOllamaEmbedder({ url: e.url, model: e.model, fetch: io.fetch }) : null;
+}
+
+// The profile schema already refuses these; if one slips through, the layer reports
+// unavailable with the reason and the other layers still build (no request is made).
+export function embedderOrUnavailable(loaded: LoadedProfile, io: IndexIo): Embedder | null {
+  try {
+    return embedderFor(loaded, io);
+  } catch (e) {
+    return {
+      model: loaded.profile.index.embeddings.model,
+      embed: async () => {
+        throw e;
+      },
+    };
+  }
+}
+
+async function build(args: string[], deps: Deps, io: IndexIo): Promise<CommandResult> {
   const { values } = parseFlags(args, { repo: { type: "string" }, full: { type: "boolean" }, quick: { type: "boolean" }, json: { type: "boolean" } });
   const loaded = approvedOrThrow(deps);
   const quick = values.quick === true;
   const reports: BuildReport[] = [];
   for (const repo of reposOf(loaded, values.repo)) {
     deps.log(`building ${repo}${quick ? " (quick: structure, clones, deps)" : ""}; this takes the heavy-job lock`);
-    reports.push(await buildIndex(deps, loaded, repo, { full: values.full === true, quick, mirror: !quick }, { embedder: null, graph: null }));
+    reports.push(await buildIndex(deps, loaded, repo, { full: values.full === true, quick, mirror: !quick }, { embedder: embedderOrUnavailable(loaded, io), graph: null }));
   }
   const text = reports
     .map((r) => `${r.repo}: ${r.files.indexed} files (${r.files.changed} changed, ${r.files.removed} removed, ${r.files.skipped} skipped), ${r.symbols} symbols; ${describeLayers(r.layers)} (${(r.ms / 1000).toFixed(1)} s)`)

@@ -40,6 +40,8 @@ export const ERRORS = {
   "SND-INDEX-001": { summary: "The heavy-job lock is busy.", fix: "wait for the holder to finish; `sindri doctor` shows it" },
   "SND-INDEX-002": { summary: "The repo path is not a git repo.", fix: "check repos/<name>.yaml path, then sindri profile approve" },
   "SND-INDEX-003": { summary: "The index input is larger than index.maxTotalMB.", fix: "add generated or vendored paths to index.denyPaths, or raise index.maxTotalMB" },
+  "SND-INDEX-005": { summary: "The embedding URL is not loopback.", fix: "set index.embeddings.url to http://127.0.0.1:11434 (or disable embeddings)" },
+  "SND-INDEX-006": { summary: "The local embedding server failed.", fix: "sindri index setup (starts Ollama checks and pulls the model)" },
   "SND-CLI-900": { summary: "Unexpected internal error (a bug).", fix: "rerun with SINDRI_DEBUG=1 and report the output" },
 } as const satisfies Record<string, ErrorDef>;
 

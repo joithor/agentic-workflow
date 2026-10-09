@@ -4,11 +4,12 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { SindriError } from "../src/errors.js";
 import { buildIndex } from "../src/index/build.js";
-import { makeIndexCommand } from "../src/index/commands.js";
+import { embedderFor, embedderOrUnavailable, makeIndexCommand } from "../src/index/commands.js";
+import type { Embedder } from "../src/index/embed.js";
 import { allSymbols, bandCandidates, depRows, embeddingRows, graphEdges, indexPath, layers, meta, openIndex, openIndexReadOnly, symbolsByAstHash } from "../src/index/db.js";
 import { mirrorPath, refreshMirror } from "../src/index/mirror.js";
 import { runCli } from "../src/main.js";
-import { approvedIndexDeps, BODY, fakeIndexIo, profileFor, ring0Name, ring0Repo } from "./index-fixtures.js";
+import { approvedIndexDeps, BODY, embedFetch, fakeIndexIo, profileFor, ring0Name, ring0Repo } from "./index-fixtures.js";
 import { git, gitRepo, makeDeps, tempDir } from "./helpers.js";
 import { ledgerPath, openLedger } from "../src/ledger/db.js";
 import { stateDir } from "../src/deps.js";
@@ -337,5 +338,99 @@ describe("sindri index build | status", () => {
     const help = await runCli(["index", "--help"], makeDeps());
     expect(help.stdout).toContain("sindri index build [--repo NAME] [--quick] [--full] [--json]");
     expect(help.stdout).toContain("sindri index setup [--dry-run] [--json]");
+  });
+});
+function fakeEmbedder(model = "m1"): Embedder & { seen: string[] } {
+  const seen: string[] = [];
+  return {
+    model,
+    seen,
+    embed: async (texts) => {
+      seen.push(...texts);
+      return texts.map((t) => new Float32Array([t.length, 1]));
+    },
+  };
+}
+
+describe("embeddings layer", () => {
+  it("embeds new symbols only, re-embeds on a model change, and degrades on failure", async () => {
+    const root = gitRepo(FILES);
+    const d = makeDeps();
+    const p = profileFor(root);
+    const e1 = fakeEmbedder();
+    const first = await buildIndex(d, p, "r", { full: false }, { embedder: e1, graph: null });
+    expect(first.layers.embeddings).toEqual({ status: "ok", detail: "m1 on loopback" });
+    expect(e1.seen).toHaveLength(3);
+    fs.writeFileSync(path.join(root, "src/c.ts"), "export function c() { return 3; }\n");
+    git(root, "add", "-A");
+    const e2 = fakeEmbedder();
+    await buildIndex(d, p, "r", { full: false }, { embedder: e2, graph: null });
+    expect(e2.seen).toEqual([expect.stringContaining("function c()")]);
+    const e3 = fakeEmbedder("m2");
+    await buildIndex(d, p, "r", { full: false }, { embedder: e3, graph: null });
+    expect(e3.seen).toHaveLength(4);
+    const broken: Embedder = { model: "m2", embed: async () => { throw new Error("embedding server unreachable: down"); } };
+    fs.writeFileSync(path.join(root, "src/d.ts"), "export function d() { return 4; }\n");
+    git(root, "add", "-A");
+    const degraded = await buildIndex(d, p, "r", { full: false }, { embedder: broken, graph: null });
+    expect(degraded.layers.embeddings).toEqual({ status: "unavailable", detail: "embedding server unreachable: down" });
+    expect(degraded.layers.structure.status).toBe("ok");
+  });
+
+  it("is unavailable, not stampless, on a first build whose embedder fails", async () => {
+    const root = gitRepo(FILES);
+    const broken: Embedder = { model: "m1", embed: async () => { throw new Error("embedding server unreachable: down"); } };
+    const r = await buildIndex(makeDeps(), profileFor(root), "r", { full: false }, { embedder: broken, graph: null });
+    expect(r.layers.embeddings.status).toBe("unavailable");
+  });
+
+  it("a quick build never calls the embedder and leaves the layer as it was", async () => {
+    const root = gitRepo(FILES);
+    const d = makeDeps();
+    const p = profileFor(root);
+    await buildIndex(d, p, "r", { full: false }, { embedder: fakeEmbedder(), graph: null });
+    fs.writeFileSync(path.join(root, "src/c.ts"), "export function c() { return 3; }\n");
+    git(root, "add", "-A");
+    const e = fakeEmbedder();
+    const quick = await buildIndex(d, p, "r", { full: false, quick: true }, { embedder: e, graph: null });
+    expect(e.seen).toEqual([]);
+    expect(quick.layers.embeddings).toEqual({ status: "ok", detail: "m1 on loopback" });
+    expect(quick.files.changed).toBe(1);
+  });
+});
+
+describe("embedderFor and the build command", () => {
+  it("builds the Ollama embedder from the profile, or none when embeddings are off", () => {
+    const root = gitRepo(FILES);
+    expect(embedderFor(profileFor(root), fakeIndexIo())?.model).toBe("nomic-embed-text");
+    expect(embedderFor(profileFor(root, { yaml: "  embeddings:\n    enabled: false\n" }), fakeIndexIo())).toBeNull();
+  });
+
+  it("index build reports embeddings ok when Ollama answers, and unavailable with the reason when it doesn't", async () => {
+    const d = await approvedIndexDeps(ring0Repo(FILES), { index: "index:\n  graph: none\n" });
+    const ok = await makeIndexCommand(fakeIndexIo({ fetch: embedFetch() }))(["build"], d);
+    expect(ok.stdout).toContain("embeddings ok");
+    const down = await makeIndexCommand(fakeIndexIo())(["build", "--full"], d);
+    expect(down.stdout).toContain("embeddings unavailable (embedding server unreachable: connect ECONNREFUSED)");
+    expect((await makeIndexCommand(fakeIndexIo())(["status"], d)).stdout).toContain("embeddings unavailable (embedding server unreachable");
+  });
+});
+
+describe("a profile that slips a non-loopback URL or cloud model past the schema (Review Focus 3)", () => {
+  it.each([
+    ["non-loopback URL", { url: "https://api.example.com", model: "m1" }, "is not loopback"],
+    ["cloud model", { url: "http://127.0.0.1:11434", model: "x-cloud" }, "cloud model"],
+  ])("a %s leaves embeddings unavailable and the other layers built, with no request made", async (_n, emb, reason) => {
+    const root = gitRepo(FILES);
+    const p = profileFor(root);
+    p.profile.index.embeddings = { enabled: true, ...emb };
+    let calls = 0;
+    const io = fakeIndexIo({ fetch: async () => { calls++; throw new Error("must not be called"); } });
+    const r = await buildIndex(makeDeps(), p, "r", { full: false }, { embedder: embedderOrUnavailable(p, io), graph: null });
+    expect(r.layers.embeddings.status).toBe("unavailable");
+    expect(r.layers.embeddings.detail).toContain(reason);
+    expect(r.layers.structure.status).toBe("ok");
+    expect(r.symbols).toBe(3);
+    expect(calls).toBe(0);
   });
 });

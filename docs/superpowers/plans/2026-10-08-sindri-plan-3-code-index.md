@@ -2563,7 +2563,7 @@ git commit -m "feat: sindri code index database, dependency layer, incremental b
 - Produces (`build.ts`): `Embedder` is now the real interface; the embeddings layer is `ok` (stamp `<model>@<INDEXER_VERSION>`), `disabled` (no embedder) or `unavailable` (with the error text). Only symbols without a vector for the current model are embedded; a model change re-embeds everything. Classes are not embedded. A `--quick` build never calls the embedder.
 - Produces (`commands.ts`): `embedderFor(loaded: LoadedProfile, io: IndexIo): Embedder | null`.
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 `sindri/tests/embed.test.ts`:
 
@@ -2723,12 +2723,12 @@ describe("embedderFor and the build command", () => {
 });
 ```
 
-- [ ] **Step 2: Run the tests to verify they fail**
+- [x] **Step 2: Run the tests to verify they fail**
 
 Run: `cd sindri && npx vitest run tests/embed.test.ts tests/index-build.test.ts`
 Expected: FAIL with `Failed to load url ../src/index/embed.js`.
 
-- [ ] **Step 3: Implement**
+- [x] **Step 3: Implement**
 
 `sindri/src/index/embed.ts`:
 
@@ -2865,12 +2865,12 @@ Add to `ERRORS`:
   "SND-INDEX-006": { summary: "The local embedding server failed.", fix: "sindri index setup (starts Ollama checks and pulls the model)" },
 ```
 
-- [ ] **Step 4: Run the tests**
+- [x] **Step 4: Run the tests**
 
 Run: `cd sindri && npm run gen && npx vitest run && npm run typecheck && npm run test:coverage`
 Expected: all tests PASS; 100% coverage.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add sindri/src sindri/tests docs/sindri/errors.md
