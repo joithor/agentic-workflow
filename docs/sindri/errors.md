@@ -10,12 +10,17 @@ Generated from `sindri/src/errors.ts` by `cd sindri && npm run gen`. Do not edit
 | `SND-EVOLVE-001` | The toolkit repo couldn't be read as a git repository. | check the ring-0 repo's path in repos/&lt;name&gt;.yaml, then sindri profile approve |
 | `SND-EVOLVE-002` | No offline comparison exists for that artifact yet. | only the scope.draft prompt can be compared in this release (spec amendment 4) |
 | `SND-EVOLVE-003` | A pull request couldn't be read with gh. | check the PR number and `gh auth status` |
+| `SND-EVOLVE-004` | That proposal can't be adopted. | sindri evolve show &lt;id&gt; says what is missing: a won comparison, the safety clause, or a clean leak check |
+| `SND-EVOLVE-006` | That action needs an interactive terminal. | run it yourself in a terminal |
+| `SND-EVOLVE-007` | The confirmation didn't match. | rerun and type the characters shown |
 | `SND-EVOLVE-008` | No artifact in the registry has that id. | sindri evolve status lists the registered artifacts; sindri evolve init refreshes the registry |
 | `SND-EVOLVE-009` | The judge model must differ from the model that wrote the outputs. | set models.adjudicator to a different model than models.scoping, then sindri profile approve |
 | `SND-EVOLVE-010` | The artifact registry is empty. | sindri evolve init |
 | `SND-EVOLVE-011` | The toolkit repo has no GitHub remote called origin. | git remote add origin &lt;github url&gt; in the toolkit repo |
 | `SND-EVOLVE-012` | That pull request can't be reflected on. | reflect only reads merged PRs by an allowed author (evolve.prAuthors) |
 | `SND-EVOLVE-013` | gh returned a reply in an unexpected shape. | update gh, then rerun |
+| `SND-EVOLVE-014` | Publishing writes into the working tree, which is on the default branch. | git switch -c docs/sindri-proposals-&lt;week&gt;, then rerun sindri evolve publish |
+| `SND-EVOLVE-015` | The privacy gate has no private terms to check against. | add your workplace's names to privacy.denyTerms in the private profile, then sindri profile approve; or pass --no-privacy-terms to publish with only the email and home-path checks |
 | `SND-EVOLVE-016` | That proposal's status doesn't allow a comparison. | sindri evolve show &lt;id&gt; prints its status; a rejected, adopted, merged or staged proposal is never compared again |
 | `SND-INDEX-001` | The heavy-job lock is busy. | wait for the holder to finish; `sindri doctor` shows it |
 | `SND-INDEX-002` | The repo path is not a git repo. | check repos/&lt;name&gt;.yaml path, then sindri profile approve |

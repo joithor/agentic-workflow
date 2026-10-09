@@ -6055,7 +6055,7 @@ git commit -m "feat: sindri correct port turns repeated corrections into proposa
   - `writeOverlay`, `sindri evolve adopt <id>` (a human verb: a terminal, the line diff and the comparison shown first, a typed confirmation bound to the variant's sha256; records the hash in `adoptions`), `sindri evolve revert <prompt-id>` (a terminal; deletes the overlay and records a revert row so an old file can't come back).
   - Errors `SND-EVOLVE-004` (can't be adopted), `006` (needs a terminal), `007` (confirmation didn't match), `014` (publish on the default branch), `015` (publish with no `privacy.denyTerms` and no `--no-privacy-terms`).
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 `sindri/tests/evolve-render.test.ts`:
 
@@ -6517,12 +6517,12 @@ describe("sindri evolve revert", () => {
 
 Trace for the adopt test: `defaultPrompt("scope.draft")` starts with `You scope a software project before work starts.`, which is a removed line in the diff against `VARIANT` (two lines, the clause then `BETTER draft prompt.`; the clause line is common, so it appears as context). The expected `- You scope …` and `+ BETTER draft prompt.` lines come from `lineDiff` (`- ` removed, `+ ` added, two-space context). After the revert the overlay file has no row to match and the `reverted` row is the latest, so the restored file is `unadopted`; the second `revert` removes that stray file and writes another revert row; the third finds no file at all. In the refusal table: the unconfirmed attempts leave no overlay. `save(VARIANT, "proposed")` has the `won` row too, but the status gate fires first (`this one is proposed`); the describe-change proposal on `skill:review` is `won` but not a prompt replacement (`this one is won`); the replace-prompt proposal on `skill:review` fails at the prompt-artifact check (`isn't a prompt artifact`); then no comparison row; then a `lost` row; then no clause; then a leak (`judge`).
 
-- [ ] **Step 2: Run the tests to verify they fail**
+- [x] **Step 2: Run the tests to verify they fail**
 
 Run: `cd sindri && npx vitest run tests/evolve-render.test.ts tests/evolve-privacy.test.ts tests/evolve-stage.test.ts tests/evolve-publish.test.ts tests/evolve-adopt.test.ts`
 Expected: FAIL with `Failed to load url ../src/evolve/render.js`.
 
-- [ ] **Step 3: Implement**
+- [x] **Step 3: Implement**
 
 Add to `ERRORS`:
 
@@ -6915,12 +6915,12 @@ Trace for `adopt` tests: the prompt text shown to the human is a diff, then the 
 
 Register in `sindri/src/evolve/commands.ts`: import `stage`, `publish` from `./cmd/stage.js` and `adopt`, `revert` from `./cmd/adopt.js`; add all four to `SUBCOMMANDS`.
 
-- [ ] **Step 4: Run the tests**
+- [x] **Step 4: Run the tests**
 
 Run: `cd sindri && npm run gen && npx vitest run && npm run typecheck && npm run test:coverage`
 Expected: all tests PASS; coverage 100% on the files this task touches.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add sindri/src sindri/tests docs/sindri

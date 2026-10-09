@@ -135,6 +135,11 @@ export function listProposals(db: Ledger, statuses?: readonly ProposalStatus[]):
   return rows.map((r) => ({ id: r.id, artifact: r.artifact_id, tier: r.tier, status: r.status, title: r.title, source: r.source, createdAt: r.created_at }));
 }
 
+export function listStored(db: Ledger, statuses: readonly ProposalStatus[]): StoredProposal[] {
+  const ids = (db.prepare(`SELECT id FROM proposals WHERE status IN (${statuses.map(() => "?").join(",")}) ORDER BY created_at, id`).all(...statuses) as { id: string }[]).map((r) => r.id);
+  return ids.map((id) => getProposal(db, id)).filter((s): s is StoredProposal => s !== null);
+}
+
 export function setStatus(db: Ledger, id: string, status: ProposalStatus, epoch: number, now: Date): void {
   db.prepare("UPDATE proposals SET status = ?, updated_at = ?, epoch = ? WHERE id = ?").run(status, now.toISOString(), epoch, id);
 }
@@ -159,6 +164,11 @@ export function latestComparison(db: Ledger, id: string): { run: number; status:
     | { run: number; verdict: string; detail: string }
     | undefined;
   return r === undefined ? null : { run: r.run, status: r.verdict, line: SummaryDetail.parse(JSON.parse(r.detail)).line };
+}
+
+// How many comparison runs the proposal has had, finished or still running.
+export function comparisonRuns(db: Ledger, id: string): number {
+  return (db.prepare("SELECT COUNT(DISTINCT run) AS c FROM comparisons WHERE proposal_id = ? AND item_id = '*'").get(id) as { c: number }).c;
 }
 
 // The run number of a comparison that has started and not closed (no summary row after its `running` marker), or null.
