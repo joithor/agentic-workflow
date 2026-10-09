@@ -44,7 +44,7 @@ export async function show(args: string[], ctx: EvolveCtx): Promise<CommandResul
   const indent = (t: string): string => t.split("\n").map((l) => `  ${l}`).join("\n");
   const dir = transcriptsDir(ctx);
   const excerpts = ev.refs.flatMap((r) => {
-    const e = excerptFor(dir, r);
+    const e = excerptFor(dir, ctx.repo, r);
     return e === null ? [] : [`  ${r}: "${e}"`];
   });
   const lines = [

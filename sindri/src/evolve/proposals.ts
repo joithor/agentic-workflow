@@ -166,8 +166,8 @@ export function reduceEvidence(refs: readonly string[]): { refs: string[]; withh
   let withheld = 0;
   for (const r of refs) {
     const pr = /^pr:(\d{1,6})$/.exec(r);
-    const tr = /^(?:transcript:)?(?:[^#]*\/)?([A-Za-z0-9]{1,8})[A-Za-z0-9-]*(?:\.jsonl)?#(\d{1,7})$/.exec(r);
-    const clean = pr !== null ? `pr:${pr[1]}` : tr !== null ? `transcript:${tr[1]}#${tr[2]}` : null;
+    const tr = /^(?:transcript:)?(?:[^#]*\/)?([A-Za-z0-9]{1,8})(?:\.(?!jsonl\b)([A-Za-z0-9]{1,40}))?[A-Za-z0-9-]*(?:\.jsonl)?#(\d{1,7})$/.exec(r);
+    const clean = pr !== null ? `pr:${pr[1]}` : tr !== null ? `transcript:${tr[1]}${tr[2] === undefined ? "" : `.${tr[2]}`}#${tr[3]}` : null;
     if (clean === null) withheld++;
     else if (!out.includes(clean)) out.push(clean);
   }

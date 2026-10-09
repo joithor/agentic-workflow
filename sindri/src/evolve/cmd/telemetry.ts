@@ -11,6 +11,7 @@ import { wilsonLower } from "../stats.js";
 import { adjudicateFires, findHookFires, hookFixProposal } from "../telemetry.js";
 import { parseSince, transcriptsDir } from "../transcripts.js";
 
+const BUDGET_WHY = "token budget exhausted";
 const MIN_SAMPLES = 10;
 const FP_BAR = 0.2;
 
@@ -25,9 +26,18 @@ export async function telemetry(args: string[], ctx: EvolveCtx): Promise<Command
     return success(`No transcripts directory at ${dir}.\nNext: set sources.transcripts.dir in the profile, then sindri profile approve`, { dir, hooks: [] }, json, 1);
   }
   const fires = findHookFires(dir, ctx.repo, since);
-  const known = new Set((ctx.db.prepare("SELECT ref FROM hook_samples").all() as { ref: string }[]).map((r) => r.ref));
-  const fresh = fires.filter((f) => !known.has(f.ref));
+  // Only samples from after the latest merged hook-fix for a hook count: the fix is what they
+  // measured, so pre-fix samples would re-propose it.
+  const mergedAt = (hook: string): string | null =>
+    (ctx.db.prepare("SELECT MAX(updated_at) AS at FROM proposals WHERE artifact_id = ? AND kind = 'hook-fix' AND status = 'merged'").get(`hook:${hook}`) as { at: string | null }).at;
+  // A fire is sampled once: by ref, and by (hook, ts), because a session resumed or forked into a
+  // file that is scanned first has the same fire under a new ref (Review Focus 9). The ledger keeps no
+  // message text, so the timestamp (to the millisecond in real transcripts) stands in for it.
+  const samples = ctx.db.prepare("SELECT hook, ref, ts FROM hook_samples").all() as { hook: string; ref: string; ts: string }[];
+  const known = new Set(samples.flatMap((r) => [r.ref, `${r.hook}\u0000${r.ts}`]));
+  const fresh = fires.filter((f) => !known.has(f.ref) && !known.has(`${f.hook}\u0000${f.ts}`) && f.ts > (mergedAt(f.hook) ?? ""));
   let stopped: { skipped: number; why: string } | null = null;
+  let dropped = 0;
   if (fresh.length > 0) {
     const adj = await adjudicateFires(fresh, {
       runner: ctx.io.runner(ctx.loaded, profileScrubber(ctx.loaded)), model: ctx.loaded.profile.models.adjudicator, budget: new Budget(ctx.loaded.profile.evolve.maxTokensPerJob), perHook,
@@ -38,31 +48,34 @@ export async function telemetry(args: string[], ctx: EvolveCtx): Promise<Command
           .run(l.hook, l.ref, l.ts, l.warranted === null ? null : l.warranted ? 1 : 0, l.reason, ctx.deps.now().toISOString(), epoch);
       }
     });
+    dropped = adj.dropped;
     if (adj.incomplete) stopped = { skipped: adj.skipped, why: adj.why };
   }
 
-  const stats = ctx.db.prepare(
-    `SELECT hook, SUM(CASE WHEN warranted IS NOT NULL THEN 1 ELSE 0 END) AS labelled, SUM(CASE WHEN warranted = 0 THEN 1 ELSE 0 END) AS unwarranted
-     FROM hook_samples GROUP BY hook ORDER BY hook`,
-  ).all() as { hook: string; labelled: number; unwarranted: number }[];
+  const registry = loadRegistry(ctx.db);
+  const all = ctx.db.prepare("SELECT hook, ts, warranted FROM hook_samples").all() as { hook: string; ts: string; warranted: number | null }[];
+  const stats = [...new Set(all.map((r) => r.hook))].sort().map((hook) => {
+    const at = mergedAt(hook);
+    const rows = all.filter((r) => r.hook === hook && r.warranted !== null && (at === null || r.ts > at));
+    return { hook, labelled: rows.length, unwarranted: rows.filter((r) => r.warranted === 0).length, since: at };
+  });
   const hooks = [...new Set([...stats.map((s) => s.hook), ...fires.map((f) => f.hook)])].sort();
   if (hooks.length === 0) {
     return success(`No hook fires found in sessions of ${ctx.repo} since ${day}.\nNext: sindri evolve telemetry --since 30d`, { since: day, hooks: [] }, json);
   }
 
-  const registry = loadRegistry(ctx.db);
   const lines: string[] = [];
   const rows: { hook: string; fires: number; labelled: number; unwarranted: number; rate: number | null; lower: number | null }[] = [];
   let firstOpened: string | null = null;
   for (const hook of hooks) {
-    const st = stats.find((s) => s.hook === hook) ?? { hook, labelled: 0, unwarranted: 0 };
+    const st = stats.find((s) => s.hook === hook) ?? { hook, labelled: 0, unwarranted: 0, since: null };
     const count = fires.filter((f) => f.hook === hook).length;
     const enough = st.labelled >= MIN_SAMPLES;
     const rate = enough ? st.unwarranted / st.labelled : null;
     const lower = enough ? wilsonLower(st.unwarranted, st.labelled) : null;
     rows.push({ hook, fires: count, labelled: st.labelled, unwarranted: st.unwarranted, rate, lower });
     const tail = rate === null || lower === null ? `not enough samples yet (${st.labelled}/${MIN_SAMPLES})` : `FP rate ${rate.toFixed(2)} (lower bound ${lower.toFixed(2)})`;
-    lines.push(`${hook}: ${count} fire(s) since ${day}; ${st.labelled} labelled sample(s), ${st.unwarranted} unwarranted; ${tail}`);
+    lines.push(`${hook}: ${count} fire(s) since ${day}; ${st.labelled} labelled sample(s)${st.since === null ? "" : ` after the merged fix of ${st.since.slice(0, 10)}`}, ${st.unwarranted} unwarranted; ${tail}`);
     if (lower === null || lower <= FP_BAR) continue;
     const artifact = registry.find((a) => a.id === `hook:${hook}`);
     if (artifact === undefined) {
@@ -76,9 +89,12 @@ export async function telemetry(args: string[], ctx: EvolveCtx): Promise<Command
     lines.push(saved.kind === "saved" ? `  opened proposal ${saved.id} (${tier})` : `  already proposed (${saved.id})`);
     if (saved.kind === "saved") firstOpened ??= saved.id;
   }
+  if (dropped > 0) lines.push(`${dropped} adjudicator answer(s) were malformed and dropped; those fires have no label.`);
   if (stopped !== null) lines.push(`Stopped early: ${stopped.why}; ${stopped.skipped} fire(s) were not adjudicated.`);
   const next = stopped !== null
-    ? "raise evolve.maxTokensPerJob in the profile (then sindri profile approve), or rerun later"
+    ? stopped.why === BUDGET_WHY
+      ? "raise evolve.maxTokensPerJob in the profile (then sindri profile approve), or rerun later"
+      : "rerun sindri evolve telemetry (the model's answer failed; samples so far are kept)"
     : firstOpened !== null ? `sindri evolve show ${firstOpened}` : "sindri evolve proposals";
-  return success([...lines, `Next: ${next}`].join("\n"), { since: day, hooks: rows, opened: firstOpened, stopped }, json, stopped !== null ? 1 : 0);
+  return success([...lines, `Next: ${next}`].join("\n"), { since: day, hooks: rows, opened: firstOpened, stopped, dropped }, json, stopped !== null ? 1 : 0);
 }

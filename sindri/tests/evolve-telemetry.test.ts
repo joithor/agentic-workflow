@@ -34,7 +34,7 @@ describe("findHookFires on the synthetic fixture (Review Focus 5)", () => {
   it("includes fires from before the cutoff only when since allows, scrubs, and tolerates a fire with no earlier assistant text", () => {
     const dir = tempDir();
     const secret = "AKIA" + "ABCDEFGHIJKLMNOP";
-    const fire = (ts: string, msg: string) => JSON.stringify({ type: "user", timestamp: ts, cwd: "/r", message: { content: `Stop hook feedback:\n[/r/config/hooks/done-gate.sh # aw:done-gate]: ${msg}` } });
+    const fire = (ts: string, msg: string) => JSON.stringify({ type: "user", isMeta: true, timestamp: ts, cwd: "/r", message: { content: `Stop hook feedback:\n[/r/config/hooks/done-gate.sh # aw:done-gate]: ${msg}` } });
     fs.writeFileSync(
       path.join(dir, "s.jsonl"),
       [fire("2026-10-01T00:00:00Z", `first ${secret}`), JSON.stringify({ type: "assistant", cwd: "/r", message: { content: [{ type: "tool_use" }] } }), fire("not a date", "x")].join("\n"),
@@ -46,14 +46,64 @@ describe("findHookFires on the synthetic fixture (Review Focus 5)", () => {
 
   it("ignores hook feedback that names no hook script", () => {
     const dir = tempDir();
-    const entry = (content: unknown) => JSON.stringify({ type: "user", timestamp: "2026-10-01T00:00:00Z", cwd: "/r", message: { content } });
-    fs.writeFileSync(path.join(dir, "s.jsonl"), [entry("Stop hook feedback:\nno bracketed hook id here"), entry([{ type: "tool_result", content: "PreToolUse:Bash hook error: no script" }])].join("\n"));
+    const entry = (content: unknown) => JSON.stringify({ type: "user", isMeta: true, timestamp: "2026-10-01T00:00:00Z", cwd: "/r", message: { content } });
+    fs.writeFileSync(path.join(dir, "s.jsonl"), [entry("Stop hook feedback:\nno bracketed hook id here"), entry([{ type: "tool_result", is_error: true, content: "PreToolUse:Bash hook error: no script" }])].join("\n"));
     expect(findHookFires(dir, "/r", since)).toEqual([]);
+  });
+
+  it("needs the harness's own markers: is_error on a Pre fire, and a user entry with isMeta on a Stop fire", () => {
+    const dir = tempDir();
+    const stop = "Stop hook feedback:\n[/r/config/hooks/done-gate.sh # aw:done-gate]: Claiming done";
+    const pre = "PreToolUse:Bash hook error: [/r/config/hooks/block-destructive.sh]: BLOCKED";
+    const e = (n: number, o: Record<string, unknown>, content: unknown) => JSON.stringify({ timestamp: `2026-10-01T00:00:0${n}Z`, cwd: "/r", ...o, message: { content } });
+    fs.writeFileSync(
+      path.join(dir, "s.jsonl"),
+      [
+        e(1, { type: "user" }, stop), // typed or pasted: no isMeta
+        e(2, { type: "user", isMeta: false }, stop),
+        e(3, { type: "system", isMeta: true }, stop), // not a user entry
+        e(4, { type: "user" }, [{ type: "tool_result", content: pre }]), // a tool printed it: no is_error
+        e(4, { type: "user", isMeta: true }, "a meta entry that is not hook feedback"),
+        e(5, { type: "user", isMeta: true }, stop), // real
+        e(6, { type: "user" }, [{ type: "tool_result", is_error: true, content: pre }]), // real
+      ].join("\n"),
+    );
+    expect(findHookFires(dir, "/r", since).map((f) => [f.hook, f.ref])).toEqual([["done-gate", "transcript:s#6"], ["block-destructive", "transcript:s#7"]]);
+  });
+
+  it("scrubs before it cuts, so a secret straddling the cap is still redacted", () => {
+    const dir = tempDir();
+    const secret = "AKIA" + "ABCDEFGHIJKLMNOP";
+    const pad = "x ".repeat(750 - 5); // the secret starts 10 characters before the 1500-character cap
+    const msg = `${pad}${secret}${" y".repeat(40)}`;
+    fs.writeFileSync(
+      path.join(dir, "s.jsonl"),
+      [
+        JSON.stringify({ type: "assistant", cwd: "/r", message: { content: [{ type: "text", text: `${secret}${" y".repeat(745)}` }] } }),
+        JSON.stringify({ type: "user", isMeta: true, timestamp: "2026-10-01T00:00:00Z", cwd: "/r", message: { content: `Stop hook feedback:\n[/r/config/hooks/done-gate.sh # aw:done-gate]: ${msg}` } }),
+      ].join("\n"),
+    );
+    const [f] = findHookFires(dir, "/r", since);
+    expect(f.message).toContain("[REDACTED"); // the cap may cut the placeholder, but never leaves the secret's own text
+    expect(f.message).not.toContain("AKIA");
+    expect(f.message.length).toBeLessThanOrEqual(1500);
+    expect(f.context).not.toContain("IJKLMNOP"); // the cap cuts the context's secret; scrubbing came first
+  });
+
+  it("gives each subagent file its own ref, even when two share a 3-character prefix and a line number", () => {
+    const dir = tempDir();
+    const fire = JSON.stringify({ type: "user", isMeta: true, timestamp: "2026-10-01T00:00:00Z", cwd: "/r", message: { content: "Stop hook feedback:\n[/r/config/hooks/done-gate.sh # aw:done-gate]: Claiming done" } });
+    for (const [id, ts] of [["abc111", "00:00:00"], ["abc222", "00:00:09"]]) {
+      const sub = path.join(dir, "5e55a1d0-0000-4000-8000-000000000001", "subagents");
+      fs.mkdirSync(sub, { recursive: true });
+      fs.writeFileSync(path.join(sub, `agent-${id}.jsonl`), `${fire.replace("00:00:00", ts)}\n`);
+    }
+    expect(findHookFires(dir, "/r", since).map((f) => f.ref)).toEqual(["transcript:5e55a1d0.abc111#1", "transcript:5e55a1d0.abc222#1"]);
   });
 
   it("counts a fire copied into a forked session once, and the same text at another time twice", () => {
     const dir = tempDir();
-    const fire = (ts: string) => JSON.stringify({ type: "user", timestamp: ts, cwd: "/r", message: { content: "Stop hook feedback:\n[/r/config/hooks/done-gate.sh # aw:done-gate]: Claiming done" } });
+    const fire = (ts: string) => JSON.stringify({ type: "user", isMeta: true, timestamp: ts, cwd: "/r", message: { content: "Stop hook feedback:\n[/r/config/hooks/done-gate.sh # aw:done-gate]: Claiming done" } });
     fs.writeFileSync(path.join(dir, "aaaa0001.jsonl"), `${fire("2026-10-01T00:00:00Z")}\n`);
     fs.writeFileSync(path.join(dir, "bbbb0002.jsonl"), `${fire("2026-10-01T00:00:00Z")}\n${fire("2026-10-02T00:00:00Z")}\n`);
     expect(findHookFires(dir, "/r", since).map((f) => [f.ref, f.ts])).toEqual([
@@ -95,6 +145,17 @@ describe("adjudicateFires", () => {
       { ref: "transcript:s#2", hook: "done-gate", ts: "2026-10-02T00:00:00Z", warranted: null, reason: "the adjudicator gave no label" },
       { ref: "transcript:s#1", hook: "done-gate", ts: "2026-10-01T00:00:00Z", warranted: true, reason: "ok" },
     ]);
+  });
+
+  it("keeps the valid items of a batch and counts the malformed ones as dropped (one 600-character reason)", async () => {
+    const r = runner((refs) => [
+      { ref: refs[0], warranted: true, reason: "x".repeat(600) },
+      { ref: refs[1], warranted: false, reason: "fine" },
+      { ref: refs[2], warranted: "yes" as unknown as boolean, reason: "bad type" },
+    ]);
+    const out = await adjudicateFires([fire(1), fire(2), fire(3)], { runner: r, model: "opus", budget: new Budget(1000), perHook: 5 });
+    expect(out).toMatchObject({ incomplete: false, dropped: 2 });
+    expect(out.labels.map((l) => [l.ref, l.warranted])).toEqual([["transcript:s#3", null], ["transcript:s#2", false], ["transcript:s#1", null]]);
   });
 
   it("stops with a partial result when the budget runs out between batches", async () => {

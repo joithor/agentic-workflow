@@ -19,13 +19,15 @@ describe("textBlocks", () => {
         { type: "text", text: "a" },
         { type: "text", text: 7 },
         { type: "tool_result", content: "result" },
+        { type: "tool_result", is_error: true, content: "failed" },
         { type: "tool_result", content: [{ type: "text", text: "x" }, { type: "text", text: "y" }] },
         { type: "image" },
       ]),
     ).toEqual([
       { text: "a", toolResult: false },
-      { text: "result", toolResult: true },
-      { text: "x\ny", toolResult: true },
+      { text: "result", toolResult: true, isError: false },
+      { text: "failed", toolResult: true, isError: true },
+      { text: "x\ny", toolResult: true, isError: false },
     ]);
   });
 });
@@ -41,6 +43,9 @@ describe("sessionOf and parseSince", () => {
   it("takes the first eight characters of the session file name", () => {
     expect(sessionOf("/p/5e55a1d0-0000-4000-8000-000000000001.jsonl")).toBe("5e55a1d0");
     expect(sessionOf("s.jsonl")).toBe("s");
+    // A subagent file is <session prefix>.<agent id>, so agents never collide on a 3-character prefix.
+    expect(sessionOf("/p/5e55a1d0-0000-4000-8000-000000000001/subagents/agent-abc111def.jsonl")).toBe("5e55a1d0.abc111def");
+    expect(sessionOf("/p/5e55a1d0-0000-4000-8000-000000000001/subagents/agent-abc222def.jsonl")).toBe("5e55a1d0.abc222def");
   });
 
   it("parses N d, defaulting to 7 days", () => {
@@ -123,6 +128,40 @@ describe("readRepoSessions (Review Focus 5)", () => {
     expect(readRepoSessions(solo, "/repo", new Date(0)).lines).toHaveLength(2);
   });
 
+  it("resolves both paths: dot-dot segments don't count as under the repo, and a trailing slash changes nothing", () => {
+    const d = dir();
+    fs.writeFileSync(
+      path.join(d, "proj", "eeee0005.jsonl"),
+      [
+        line({ type: "user", cwd: "/x/repo/../other", timestamp: "2026-10-01T00:00:00Z", message: { content: "escaped" } }),
+        line({ type: "user", cwd: "relative/repo", timestamp: "2026-10-01T00:00:01Z", message: { content: "relative" } }),
+        line({ type: "user", cwd: "/x/repo/sub/", timestamp: "2026-10-01T00:00:02Z", message: { content: "inside with slash" } }),
+      ].join("\n"),
+    );
+    expect(readRepoSessions(d, "/x/repo/", new Date(0)).lines.map((l) => l.blocks[0].text)).toEqual(["inside with slash"]);
+    expect(readRepoSessions(d, "/x/repo", new Date(0)).lines).toHaveLength(1);
+    expect(readRepoSessions(d, "/", new Date(0)).lines).toHaveLength(2);
+  });
+
+  it("orders files by first and last timestamp, not by name, so the original keeps a copied line", () => {
+    const d = dir();
+    const at = (ts: string, text: string) => line({ type: "user", cwd: "/repo", timestamp: ts, message: { content: text } });
+    const shared = at("2026-10-01T00:00:00Z", "shared turn");
+    // The resumed session sorts first by name, but it started with the original's lines and ran longer.
+    fs.writeFileSync(path.join(d, "proj", "aaaa0001.jsonl"), [shared, at("2026-10-03T00:00:00Z", "later turn")].join("\n"));
+    fs.writeFileSync(path.join(d, "proj", "zzzz0002.jsonl"), [shared, at("2026-10-01T00:00:05Z", "second turn")].join("\n"));
+    fs.writeFileSync(path.join(d, "proj", "mmmm0003.jsonl"), [at("garbage-time", "no usable time")].join("\n"));
+    for (const n of ["pppp0004", "nnnn0005", "oooo0006"]) fs.writeFileSync(path.join(d, "proj", `${n}.jsonl`), at("2026-10-04T00:00:00Z", n)); // same span: by name
+    const r = readRepoSessions(d, "/repo", new Date(0));
+    expect(r.lines.map((l) => l.ref)).toEqual(["transcript:zzzz0002#1", "transcript:zzzz0002#2", "transcript:aaaa0001#2", "transcript:nnnn0005#1", "transcript:oooo0006#1", "transcript:pppp0004#1", "transcript:mmmm0003#1"]);
+  });
+
+  it("records the isMeta flag", () => {
+    const d = dir();
+    fs.writeFileSync(path.join(d, "proj", "ffff0006.jsonl"), [line({ type: "user", cwd: "/repo", isMeta: true, message: { content: "a" } }), line({ type: "user", cwd: "/repo", message: { content: "b" } })].join("\n"));
+    expect(readRepoSessions(d, "/repo", new Date(0)).lines.map((l) => l.meta)).toEqual([true, false]);
+  });
+
   it("skips files older than since without reading them, and caps the number of files", () => {
     const d = dir();
     const old = path.join(d, "proj", "old00000.jsonl");
@@ -146,16 +185,24 @@ describe("excerptFor and transcriptsDir", () => {
     const secret = "AKIA" + "ABCDEFGHIJKLMNOP";
     fs.writeFileSync(
       path.join(d, "proj", "5e55a1d0-1111.jsonl"),
-      [line({ type: "assistant", message: { content: [{ type: "text", text: `first\nline ${secret}` }] } }), line({ type: "user", message: { content: "" } }), "garbage", line({ type: "user", message: { content: "x".repeat(400) } })].join("\n"),
+      [line({ type: "assistant", cwd: "/repo", message: { content: [{ type: "text", text: `first\nline ${secret}` }] } }), line({ type: "user", message: { content: "" } }), "garbage", line({ type: "user", message: { content: "x".repeat(400) } })].join("\n"),
     );
-    expect(excerptFor(d, "transcript:5e55a1d0#1")).toBe("first line [REDACTED:aws-access-key]");
-    expect(excerptFor(d, "transcript:5e55a1d0#4")).toBe("x".repeat(300));
-    expect(excerptFor(d, "transcript:5e55a1d0#2")).toBeNull();
-    expect(excerptFor(d, "transcript:5e55a1d0#3")).toBeNull();
-    expect(excerptFor(d, "transcript:5e55a1d0#99")).toBeNull();
-    expect(excerptFor(d, "transcript:deadbeef#1")).toBeNull();
-    expect(excerptFor(d, "pr:12")).toBeNull();
-    expect(excerptFor(path.join(d, "missing"), "transcript:5e55a1d0#1")).toBeNull();
+    expect(excerptFor(d, "/repo", "transcript:5e55a1d0#1")).toBe("first line [REDACTED:aws-access-key]");
+    expect(excerptFor(d, "/repo", "transcript:5e55a1d0#4")).toBe("x".repeat(300));
+    expect(excerptFor(d, "/repo", "transcript:5e55a1d0#2")).toBeNull();
+    expect(excerptFor(d, "/repo", "transcript:5e55a1d0#3")).toBeNull();
+    expect(excerptFor(d, "/repo", "transcript:5e55a1d0#99")).toBeNull();
+    expect(excerptFor(d, "/repo", "transcript:deadbeef#1")).toBeNull();
+    expect(excerptFor(d, "/repo", "pr:12")).toBeNull();
+    expect(excerptFor(path.join(d, "missing"), "/repo", "transcript:5e55a1d0#1")).toBeNull();
+    // Refs resolve only through this repo's sessions: another repo's line with a matching prefix is never printed.
+    fs.writeFileSync(path.join(d, "proj", "5e55a1d0-2222.jsonl"), line({ type: "user", cwd: "/elsewhere", message: { content: "private line" } }));
+    expect(excerptFor(d, "/elsewhere", "transcript:5e55a1d0#1")).toBe("private line");
+    expect(excerptFor(d, "/repo", "transcript:5e55a1d0#1")).toBe("first line [REDACTED:aws-access-key]");
+    const other = tempDir();
+    fs.mkdirSync(path.join(other, "proj"));
+    fs.writeFileSync(path.join(other, "proj", "5e55a1d0-3333.jsonl"), line({ type: "user", cwd: "/elsewhere", message: { content: "private line" } }));
+    expect(excerptFor(other, "/repo", "transcript:5e55a1d0#1")).toBeNull();
     const fx = await evolveFixture();
     expect(transcriptsDir(fx.ctx)).toBe(fx.transcripts);
     fx.close();

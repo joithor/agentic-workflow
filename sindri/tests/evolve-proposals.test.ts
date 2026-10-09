@@ -194,6 +194,11 @@ describe("proposal storage, dedupe and merge tracking", () => {
       withheld: 1,
     });
     expect(reduceEvidence([])).toEqual({ refs: [], withheld: 0 });
+    // A subagent ref keeps its agent id, so two agents of one session stay distinct.
+    expect(reduceEvidence(["transcript:5e55a1d0.a1b2c3d4e5#7", "transcript:5e55a1d0.ffff0000#7", "p/5e55a1d0-1234.jsonl#3"])).toEqual({
+      refs: ["transcript:5e55a1d0.a1b2c3d4e5#7", "transcript:5e55a1d0.ffff0000#7", "transcript:5e55a1d0#3"],
+      withheld: 0,
+    });
   });
 
   it("finds a published proposal the default branch mentions, and nothing once it is marked merged", async () => {
