@@ -187,6 +187,7 @@ erDiagram
         TEXT deferred "JSON: checks skipped over the commit budget"
         INTEGER signal_count
         INTEGER epoch
+        TEXT closed_at "set when a run is still unlinked at shape.outcomeDays: never links later, NULLABLE"
     }
     shape_signals {
         INTEGER seq PK
@@ -212,7 +213,7 @@ Items are keyed by `(source, id)`: an item id is unique only within its tracker 
 
 Every write runs inside `withEpoch(db, epoch, …)` or `fenced(db, epoch, …)`, an `IMMEDIATE` transaction that rejects a stale epoch (spec §9.1): `withEpoch` throws `SND-LOCK-003`, and `fenced` returns `{ ok: false }` so `observe` can stop as a no-op. Re-approving a profile deletes and re-inserts its `profile_approvals` row, so a rollback becomes the latest approval.
 
-Ledger v2 adds `shape_runs` and `shape_signals` (record-only shape signals; outcomes are labeled by tree reconcile once a commit is `shape.outcomeDays` old). The v1 to v2 migration keeps all rows and leaves `ledger.db.bak-v1`.
+Ledger v2 adds `shape_runs` and `shape_signals` (record-only shape signals; outcomes are labeled by tree reconcile once a commit is `shape.outcomeDays` old). The v1 to v2 migration keeps all rows and leaves `ledger.db.bak-v1`. Indexes: `shape_runs_pending (commit_sha, closed_at, ts)` for the runs waiting for a commit, `shape_runs_tree (repo, tree, parser, ts, run_id)` for the one-run-per-staged-tree rule, and `shape_signals_type`, `shape_signals_run`.
 
 ## Sindri code index
 

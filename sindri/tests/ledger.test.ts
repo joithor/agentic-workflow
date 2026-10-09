@@ -90,6 +90,15 @@ describe("ledger db", () => {
     for (const db of [writer, reader, migrator]) db.close();
   });
 
+  it("indexes shape_runs for the pending-runs query and the one-run-per-tree rule", () => {
+    const db = openMemoryLedger();
+    const names = (db.prepare("PRAGMA index_list(shape_runs)").all() as { name: string }[]).map((r) => r.name);
+    expect(names).toEqual(expect.arrayContaining(["shape_runs_pending", "shape_runs_tree"]));
+    const plan = db.prepare("EXPLAIN QUERY PLAN SELECT 1 FROM shape_runs n WHERE n.repo = 'r' AND n.tree = 't' AND n.parser = 'p' AND n.commit_sha IS NOT NULL").all() as { detail: string }[];
+    expect(plan.map((p) => p.detail).join(" ")).toContain("shape_runs_tree");
+    db.close();
+  });
+
   it("bumps the epoch and rejects writes under a stale one (SND-LOCK-003)", () => {
     const db = openMemoryLedger();
     expect(currentEpoch(db)).toBe(0);

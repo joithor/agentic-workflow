@@ -37,9 +37,12 @@ interface Due {
   ts: string;
 }
 
-// Step 1: link each run to the commit that was actually made, by tree hash.
-async function linkRuns(db: Ledger, deps: Deps, loaded: LoadedProfile, epoch: number, now: Date): Promise<{ linked: number; dropped: number }> {
-  const pending = db.prepare("SELECT run_id, repo, ts, tree FROM shape_runs WHERE commit_sha IS NULL AND tree IS NOT NULL ORDER BY ts").all() as Pending[];
+// Step 1: link each run to the commit that was actually made, by tree hash. A run still unlinked
+// once it is outcomeDays old is closed: its signals are dropped, it never links later, and it
+// leaves the pending set, so it can't widen every later tick's `git log --since`.
+async function linkRuns(db: Ledger, deps: Deps, loaded: LoadedProfile, epoch: number, now: Date): Promise<{ linked: number; dropped: number; superseded: number }> {
+  const pending = db.prepare("SELECT run_id, repo, ts, tree FROM shape_runs WHERE commit_sha IS NULL AND tree IS NOT NULL AND closed_at IS NULL ORDER BY ts").all() as Pending[];
+  const window = loaded.profile.shape.outcomeDays * DAY;
   const byRepo = new Map<string, Pending[]>();
   for (const r of pending) byRepo.set(r.repo, [...(byRepo.get(r.repo) ?? []), r]);
   const links: { runId: string; sha: string }[] = [];
@@ -60,28 +63,33 @@ async function linkRuns(db: Ledger, deps: Deps, loaded: LoadedProfile, epoch: nu
     for (const r of runs) {
       const sha = trees.get(r.tree);
       if (sha !== undefined) links.push({ runId: r.run_id, sha });
-      else if (now.getTime() - Date.parse(r.ts) > 7 * DAY) drops.push(r.run_id);
+      else if (now.getTime() - Date.parse(r.ts) > window) drops.push(r.run_id);
     }
   }
   let dropped = 0;
+  let superseded = 0;
   withEpoch(db, epoch, () => {
     for (const l of links) db.prepare("UPDATE shape_runs SET commit_sha = ? WHERE run_id = ?").run(l.sha, l.runId);
     for (const id of drops) {
+      db.prepare("UPDATE shape_runs SET closed_at = ? WHERE run_id = ?").run(now.toISOString(), id);
       dropped += db.prepare("UPDATE shape_signals SET outcome = 'dropped', labeled_at = ? WHERE run_id = ? AND outcome IS NULL").run(now.toISOString(), id).changes;
     }
-    // One run per commit: a retried commit (a later hook refused it, the message editor was
-    // closed empty, an amend of the message only) spools a run per attempt with the same tree.
-    // The latest run (of the same parser) stands for the commit; the others' unlabeled signals are
-    // n/a, so one flagged symbol never counts twice toward precision.
-    dropped += db
+    // One run per staged tree: a retried commit (a later hook refused it, the message editor was
+    // closed empty, an amend of the message only, even after a tick linked the first attempt to
+    // the commit the amend replaced) spools a run per attempt with the same tree. The latest
+    // linked run (of the same parser) stands for it; the others' unlabeled signals are n/a, so
+    // one flagged symbol never counts twice toward precision. (A later commit with a byte-equal
+    // tree, such as a revert of a revert, merges too: rare, and it adds no new code.)
+    superseded = db
       .prepare(
         `UPDATE shape_signals SET outcome = 'n/a', labeled_at = ? WHERE outcome IS NULL AND run_id IN (
            SELECT r.run_id FROM shape_runs r WHERE r.commit_sha IS NOT NULL AND EXISTS (
-             SELECT 1 FROM shape_runs n WHERE n.repo = r.repo AND n.commit_sha = r.commit_sha AND n.parser = r.parser AND (n.ts > r.ts OR (n.ts = r.ts AND n.run_id > r.run_id))))`,
+             SELECT 1 FROM shape_runs n WHERE n.repo = r.repo AND n.tree = r.tree AND n.parser = r.parser AND n.commit_sha IS NOT NULL
+               AND (n.ts > r.ts OR (n.ts = r.ts AND n.run_id > r.run_id))))`,
       )
       .run(now.toISOString()).changes;
   });
-  return { linked: links.length, dropped };
+  return { linked: links.length, dropped, superseded };
 }
 
 // Step 2: label each signal whose run is old enough. The outcome is read from the default
@@ -162,11 +170,12 @@ async function labelSignals(db: Ledger, deps: Deps, loaded: LoadedProfile, epoch
         labels.push({ seq: s.seq, outcome: "dropped" });
         continue;
       }
-      // Kept or acted-on is judged at the default branch as it stood outcomeDays after the run,
+      // Kept or acted-on is judged at the default branch as it stood outcomeDays after the run (on
+      // its first-parent chain: only commits that were its tip, never a merged side branch's own),
       // so a later, unrelated edit of the symbol doesn't read as acting on the signal. A change
       // that reached the branch only after that (a late merge) is judged at the tip.
       const before = Math.floor((Date.parse(s.ts) + loaded.profile.shape.outcomeDays * DAY) / 1000);
-      const list = await deps.git.run(["rev-list", "-1", `--before=${before}`, tip], cfg.path, FOREIGN);
+      const list = await deps.git.run(["rev-list", "-1", "--first-parent", `--before=${before}`, tip], cfg.path, FOREIGN);
       const asOf = list.ok ? list.stdout.trim() : "";
       const at = asOf !== "" && (await reachedBy(asOf)) === true ? asOf : tip;
       let kept = holds(file, await fileAt(at, file));
@@ -195,8 +204,8 @@ async function labelSignals(db: Ledger, deps: Deps, loaded: LoadedProfile, epoch
 // Call inside the tick lock, with the epoch it was acquired under. Idempotent.
 export async function reconcileShape(db: Ledger, deps: Deps, loaded: LoadedProfile, epoch: number): Promise<{ linked: number; labeled: number }> {
   const now = deps.now();
-  const { linked, dropped } = await linkRuns(db, deps, loaded, epoch, now);
-  return { linked, labeled: dropped + (await labelSignals(db, deps, loaded, epoch, now)) };
+  const { linked, dropped, superseded } = await linkRuns(db, deps, loaded, epoch, now);
+  return { linked, labeled: dropped + superseded + (await labelSignals(db, deps, loaded, epoch, now)) };
 }
 
 export interface SideSteps {

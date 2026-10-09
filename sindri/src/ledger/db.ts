@@ -60,8 +60,11 @@ const MIGRATIONS: readonly string[] = [
     parser TEXT NOT NULL,
     deferred TEXT NOT NULL,
     signal_count INTEGER NOT NULL,
-    epoch INTEGER NOT NULL
+    epoch INTEGER NOT NULL,
+    closed_at TEXT
   );
+  CREATE INDEX shape_runs_pending ON shape_runs(commit_sha, closed_at, ts);
+  CREATE INDEX shape_runs_tree ON shape_runs(repo, tree, parser, ts, run_id);
   CREATE TABLE shape_signals (
     seq INTEGER PRIMARY KEY AUTOINCREMENT,
     run_id TEXT NOT NULL REFERENCES shape_runs(run_id),

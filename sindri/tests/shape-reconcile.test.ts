@@ -246,7 +246,7 @@ describe("reconcileShape: signals that can't be labeled (Review Focus 7)", () =>
     db.close();
   });
 
-  it("drops an amended commit's run after 7 days: its staged tree never became a reachable commit", async () => {
+  it("drops an amended commit's run once it is outcomeDays old: its staged tree never became a reachable commit", async () => {
     const root = ring0Repo({ "src/util/text.ts": BODY("clip") });
     const d = await approvedIndexDeps(root);
     fs.writeFileSync(path.join(root, "src/feature.ts"), BODY("first"));
@@ -260,9 +260,9 @@ describe("reconcileShape: signals that can't be labeled (Review Focus 7)", () =>
     insertRun(db, { id: "run-m", repo: ring0Name(d), tree: staged, signals: [{ type: "reinvented:exact", at: "src/feature.ts:1", name: "first", hash: hashOf("src/feature.ts", "first") }] });
     const loaded = approvedProfile(d, db);
     if (loaded === null) throw new Error("profile is not approved");
-    expect(await reconcileShape(db, later(d, 7), loaded, bumpEpoch(db))).toEqual({ linked: 0, labeled: 0 });
+    expect(await reconcileShape(db, later(d, 14), loaded, bumpEpoch(db))).toEqual({ linked: 0, labeled: 0 });
     expect(outcomes(db)).toEqual({ "run-m|reinvented:exact|first": null });
-    expect(await reconcileShape(db, later(d, 8), loaded, bumpEpoch(db))).toEqual({ linked: 0, labeled: 1 });
+    expect(await reconcileShape(db, later(d, 15), loaded, bumpEpoch(db))).toEqual({ linked: 0, labeled: 1 });
     expect(db.prepare("SELECT commit_sha FROM shape_runs").get()).toEqual({ commit_sha: null });
     expect(outcomes(db)).toEqual({ "run-m|reinvented:exact|first": "dropped" });
     db.close();
@@ -434,6 +434,54 @@ describe("reconcileShape: reached the default branch, judged by content (Task 10
     x.db.close();
   });
 
+  it("closes an unlinked run once it is outcomeDays old: it never links later and never widens the next tick's git log", async () => {
+    const x = await dated();
+    insertRun(x.db, { id: "run-old", repo: x.name, tree: "c".repeat(40), ts: dayIso(0), signals: [{ type: "reinvented:exact", at: "src/x.ts:1", name: "x", hash: "a".repeat(64) }] });
+    insertRun(x.db, { id: "run-empty", repo: x.name, tree: "d".repeat(40), ts: dayIso(0), signals: [] });
+    expect(await reconcileShape(x.db, later(x.d, 15), x.loaded, bumpEpoch(x.db))).toEqual({ linked: 0, labeled: 1 });
+    expect(x.db.prepare("SELECT run_id, commit_sha, closed_at IS NOT NULL AS closed FROM shape_runs ORDER BY run_id").all()).toEqual([
+      { run_id: "run-empty", commit_sha: null, closed: 1 },
+      { run_id: "run-old", commit_sha: null, closed: 1 },
+    ]);
+    insertRun(x.db, { id: "run-new", repo: x.name, tree: "e".repeat(40), ts: dayIso(20), signals: [] });
+    const logs: string[][] = [];
+    const spy: GitRunner = { run: async (args, cwd, o) => (args[0] === "log" && logs.push(args), realGitRunner().run(args, cwd, o)) };
+    await reconcileShape(x.db, { ...later(x.d, 21), git: spy }, x.loaded, bumpEpoch(x.db));
+    expect(logs.map((a) => a.find((v) => v.startsWith("--since=")))).toEqual([`--since=${Math.floor((Date.parse(dayIso(20)) - 86_400_000) / 1000)}`]);
+    x.db.close();
+  });
+
+  it("picks the as-of state on the default branch's first-parent chain, never a merged side branch's commit", async () => {
+    const x = await dated();
+    const branch = git(x.root, "symbolic-ref", "--short", "HEAD").trim();
+    x.put("src/feature.ts", EDITED);
+    const tree = x.commitOn(3, "edit shorten in place");
+    insertRun(x.db, { id: "run-f", repo: x.name, tree, ts: dayIso(3), signals: [{ type: "simpler:complexity", at: "src/feature.ts:1", name: "shorten", hash: editedHash() }] });
+    // A side branch rewrites it on day 10 (before the day-17 cutoff) but merges only on day 30.
+    git(x.root, "checkout", "-q", "-b", "side");
+    x.put("src/feature.ts", AGAIN);
+    x.commitOn(10, "rewrite on a side branch");
+    git(x.root, "checkout", "-q", branch);
+    gitOn(30, x.root, "merge", "-q", "--no-ff", "-m", "late merge", "side");
+    expect(await labelOn(x, 4, 35)).toEqual({ "run-f|simpler:complexity|shorten": "kept" });
+    x.db.close();
+  });
+
+  it("counts an amended commit once even when a tick linked the first attempt before the amend", async () => {
+    const x = await dated();
+    x.put("src/feature.ts", EDITED);
+    const tree = x.commitOn(3, "edit shorten in place");
+    const sig = { type: "simpler:complexity", at: "src/feature.ts:1", name: "shorten", hash: editedHash() };
+    insertRun(x.db, { id: "run-1", repo: x.name, tree, ts: dayIso(3), signals: [sig] });
+    await reconcileShape(x.db, later(x.d, 3.5), x.loaded, bumpEpoch(x.db)); // links run-1 to the first commit
+    gitOn(4, x.root, "commit", "-q", "--amend", "-m", "reworded");
+    insertRun(x.db, { id: "run-2", repo: x.name, tree, ts: dayIso(4), signals: [sig] });
+    expect(await labelOn(x, 5, 19)).toEqual({ "run-1|simpler:complexity|shorten": "n/a", "run-2|simpler:complexity|shorten": "kept" });
+    const [a, b] = x.db.prepare("SELECT commit_sha FROM shape_runs ORDER BY run_id").pluck().all() as string[];
+    expect(a).not.toBe(b);
+    x.db.close();
+  });
+
   it("labels an in-place edit that is still on the default branch as kept", async () => {
     const x = await dated();
     x.put("src/feature.ts", EDITED);
@@ -564,7 +612,7 @@ describe("reconcileShape: reached the default branch, judged by content (Task 10
     expect(git(x.root, "rev-parse", "refs/stash^2^{tree}").trim()).toBe(staged);
     insertRun(x.db, { id: "run-t", repo: x.name, tree: staged, signals: [{ type: "simpler:complexity", at: "src/feature.ts:1", name: "shorten", hash: "a".repeat(64) }] });
     expect(await reconcileShape(x.db, later(x.d, 2), x.loaded, bumpEpoch(x.db))).toEqual({ linked: 0, labeled: 0 });
-    expect(await reconcileShape(x.db, later(x.d, 8), x.loaded, bumpEpoch(x.db))).toEqual({ linked: 0, labeled: 1 });
+    expect(await reconcileShape(x.db, later(x.d, 15), x.loaded, bumpEpoch(x.db))).toEqual({ linked: 0, labeled: 1 });
     expect(outcomes(x.db)).toEqual({ "run-t|simpler:complexity|shorten": "dropped" });
     x.db.close();
   });
