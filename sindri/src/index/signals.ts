@@ -79,15 +79,20 @@ export async function computeSignals(i: {
   sizeBudget: number;
   exportAllowance: number;
   embed: { embedder: Embedder; deadline: number; now: () => number } | null;
+  // The commit budget. The hook's timer can't fire while this synchronous work holds the
+  // thread, so the candidate loops check the clock themselves and stop at the deadline.
+  budget?: { deadline: number; now: () => number };
 }): Promise<{ signals: Signal[]; deferred: Layer[] }> {
   const { base, overlay, t } = i;
   const signals: Signal[] = [];
   const deferred: Layer[] = [];
+  const over = (): boolean => i.budget !== undefined && i.budget.now() > i.budget.deadline;
   const baseAll = allSymbols(base);
   // Symbols of files this commit doesn't touch (a renamed file's old path counts as touched).
   const stable = baseAll.filter((s) => !overlay.changedPaths.has(s.file));
   const unchanged = (s: SymbolRow): boolean => !overlay.changedPaths.has(s.file);
   const reusable = stable.filter((s) => s.kind !== "class" && (s.exported || s.utility));
+  const stableById = new Map(stable.map((s) => [s.id, s]));
   const before = new Map(baseAll.map((s) => [`${s.file}#${s.name}`, s]));
   // A renamed file's symbols are compared with what they were at the old path.
   const prior = (s: { file: string; name: string }): SymbolRow | undefined => before.get(`${overlay.renamedFrom.get(s.file) ?? s.file}#${s.name}`);
@@ -95,22 +100,36 @@ export async function computeSignals(i: {
   const candidates = fresh.filter((s) => s.kind !== "class" && s.tokens.length >= MIN_TOKENS);
 
   for (const s of candidates) {
+    if (over()) {
+      deferred.push("clones", "structure", "graph");
+      break;
+    }
     const exact = symbolsByAstHash(base, s.astHash).find((b) => unchanged(b) && b.name !== s.name);
     if (exact !== undefined) {
       signals.push({ type: "reinvented:exact", layer: "clones", value: 1, threshold: 1, at: loc(s), existing: loc(exact), detail: `${u(s.name)} has the same structure as ${u(exact.name)}`, name: s.name, astHash: s.astHash });
       continue;
     }
-    const ids = new Set(bandCandidates(base, bandKeys(s.minhash)));
-    const near = stable
-      .filter((b) => ids.has(b.id) && b.tokenCount >= t.nearCloneTokens)
+    const near = bandCandidates(base, bandKeys(s.minhash))
+      .flatMap((id) => {
+        const b = stableById.get(id);
+        return b !== undefined && b.tokenCount >= t.nearCloneTokens ? [b] : [];
+      })
       .map((b) => ({ b, j: estimateJaccard(s.minhash, b.minhash) }))
       .sort((x, y) => y.j - x.j)[0];
     if (near !== undefined && s.tokens.length >= t.nearCloneTokens && near.j >= t.nearCloneJaccard) {
       signals.push({ type: "generalize:near-clone", layer: "clones", value: near.j, threshold: t.nearCloneJaccard, at: loc(s), existing: loc(near.b), detail: `${u(s.name)} is a near-copy of ${u(near.b.name)}; generalize at the second case`, name: s.name, astHash: s.astHash });
     }
-    const named = reusable.find((b) => nameSimilarity(s.name, b.name) >= t.nameSimilarity && nameSimilarity(s.signature, b.signature) >= t.nameSimilarity);
+    // Each similarity is computed once; the signature only for a name that matched.
+    let named: { b: SymbolRow; sim: number } | undefined;
+    for (const b of reusable) {
+      const sim = nameSimilarity(s.name, b.name);
+      if (sim >= t.nameSimilarity && nameSimilarity(s.signature, b.signature) >= t.nameSimilarity) {
+        named = { b, sim };
+        break;
+      }
+    }
     if (named !== undefined) {
-      signals.push({ type: "reinvented:name", layer: "structure", value: nameSimilarity(s.name, named.name), threshold: t.nameSimilarity, at: loc(s), existing: loc(named), detail: `${u(s.name)} looks like ${u(named.name)}`, name: s.name, astHash: s.astHash });
+      signals.push({ type: "reinvented:name", layer: "structure", value: named.sim, threshold: t.nameSimilarity, at: loc(s), existing: loc(named.b), detail: `${u(s.name)} looks like ${u(named.b.name)}`, name: s.name, astHash: s.astHash });
     }
     const calls = s.callees.length >= MIN_CALLS ? reusable.find((b) => b.callees.length >= MIN_CALLS && setJaccard(s.callees, b.callees) >= t.callOverlap) : undefined;
     if (calls !== undefined) {
@@ -118,7 +137,7 @@ export async function computeSignals(i: {
     }
   }
 
-  if (i.embed !== null && candidates.length > 0) {
+  if (i.embed !== null && candidates.length > 0 && !deferred.includes("clones")) {
     const ready = layers(base).some((l) => l.layer === "embeddings" && l.status === "ok");
     const left = i.embed.deadline - i.embed.now();
     let vectors: Float32Array[] | null = null;
@@ -141,19 +160,24 @@ export async function computeSignals(i: {
       deferred.push("embeddings");
     } else {
       const found: Float32Array[] = vectors;
-      const vecs = new Map(embeddingRows(base, i.embed.embedder.model).map((r) => [r.symbolId, decodeVec(r.vector)]));
-      candidates.forEach((s, k) => {
-        const best = stable
-          .flatMap((b) => {
-            const v = vecs.get(b.id);
-            return v === undefined ? [] : [{ b, c: cosine(found[k], v) }];
-          })
+      // Only stable symbols' vectors are decoded: a changed file's old vectors never match.
+      const vecs = embeddingRows(base, i.embed.embedder.model).flatMap((r) => {
+        const b = stableById.get(r.symbolId);
+        return b === undefined ? [] : [{ b, v: decodeVec(r.vector) }];
+      });
+      for (const [k, s] of candidates.entries()) {
+        if (over()) {
+          deferred.push("embeddings");
+          break;
+        }
+        const best = vecs
+          .map(({ b, v }) => ({ b, c: cosine(found[k], v) }))
           .filter(({ b, c }) => c >= t.embedding && estimateJaccard(s.minhash, b.minhash) >= t.embeddingAst)
           .sort((x, y) => y.c - x.c)[0];
         if (best !== undefined) {
           signals.push({ type: "reinvented:embedding", layer: "embeddings", value: best.c, threshold: t.embedding, at: loc(s), existing: loc(best.b), detail: `${u(s.name)} means what ${u(best.b.name)} means`, name: s.name, astHash: s.astHash });
         }
-      });
+      }
     }
   }
 

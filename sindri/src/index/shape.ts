@@ -96,6 +96,7 @@ async function measure(
     const { signals, deferred } = await computeSignals({
       base, overlay, t: shape.thresholds, sizeBudget: shape.sizeBudget[size], exportAllowance: shape.exportAllowance[size],
       embed: embedder === null ? null : { embedder, deadline: started + shape.budgetMs, now },
+      budget: { deadline: started + shape.budgetMs, now },
     });
     const stop3 = overBudget();
     if (stop3 !== null) return stop3;

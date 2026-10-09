@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { globToRegExp, matchesAny } from "../src/index/globs.js";
+import { compiledGlob, globToRegExp, matchesAny } from "../src/index/globs.js";
 
 describe("globToRegExp", () => {
   it.each([
@@ -27,5 +27,13 @@ describe("globToRegExp", () => {
   it("matchesAny checks every glob", () => {
     expect(matchesAny("x/key.pem", ["src/**", "**/*.pem"])).toBe(true);
     expect(matchesAny("x/key.ts", [])).toBe(false);
+  });
+});
+
+describe("compiledGlob", () => {
+  it("compiles each glob once and reuses it", () => {
+    expect(compiledGlob("src/**/*.ts")).toBe(compiledGlob("src/**/*.ts"));
+    expect(compiledGlob("src/**/*.ts").test("src/a/b.ts")).toBe(true);
+    expect(compiledGlob("src/**/*.ts")).not.toBe(globToRegExp("src/**/*.ts"));
   });
 });

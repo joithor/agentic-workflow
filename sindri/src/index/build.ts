@@ -10,7 +10,7 @@ import type { LoadedProfile } from "../profile/load.js";
 import { denyPathsFor } from "../profile/schema.js";
 import { compileExtraPatterns, makeScrubber, type Scrubber } from "../scrub/scrub.js";
 import { type IndexDb, indexPath, type Layer, type LayerStatus, openIndex } from "./db.js";
-import { embeddingText, encodeVec, type Embedder } from "./embed.js";
+import { EMBED_BATCH, embeddingText, encodeVec, type Embedder } from "./embed.js";
 import { readManifestDeps } from "./deps-layer.js";
 import { inventory, isGraphInput, isSourcePath, type IndexedFile } from "./files.js";
 import type { GraphProvider } from "./graph.js";
@@ -83,10 +83,11 @@ function writeStructure(db: IndexDb, files: IndexedFile[], utilityGlobs: readonl
     for (const f of changed) {
       db.prepare("DELETE FROM files WHERE path = ?").run(f.path);
       db.prepare("INSERT INTO files (path, hash, size) VALUES (?, ?, ?)").run(f.path, f.hash, f.size);
+      const utility = matchesAny(f.path, utilityGlobs) ? 1 : 0;
       for (const s of typescriptParser.parse(f.path, f.text)) {
         const sig = signature(s.tokens);
         const { lastInsertRowid } = insertSymbol.run({
-          ...s, exported: s.exported ? 1 : 0, utility: matchesAny(f.path, utilityGlobs) ? 1 : 0, tokenCount: s.tokens.length,
+          ...s, exported: s.exported ? 1 : 0, utility, tokenCount: s.tokens.length,
           callees: JSON.stringify(s.callees), minhash: encodeSig(sig), body: scrubber.scrub(s.text).text,
         });
         // Fewer tokens than one shingle: every such symbol would share bands with every other, so none is banded.
@@ -105,7 +106,11 @@ function writeDeps(db: IndexDb, files: IndexedFile[]): void {
   })();
 }
 
-async function embedLayer(db: IndexDb, embedder: Embedder | null, now: Date): Promise<void> {
+// Symbols embedded per build at most; the rest wait for the next build (pending), so one
+// first build of a big repo can't hold the heavy-job lock for hours.
+export const EMBED_PER_BUILD = 4096;
+
+async function embedLayer(db: IndexDb, embedder: Embedder | null, now: Date, limit: number): Promise<void> {
   if (embedder === null) {
     setLayer(db, "embeddings", "none", "disabled", "no embedder configured", now);
     return;
@@ -116,15 +121,26 @@ async function embedLayer(db: IndexDb, embedder: Embedder | null, now: Date): Pr
   const todo = db
     .prepare("SELECT s.id, s.name, s.signature, s.body FROM symbols s LEFT JOIN embeddings e ON e.symbol_id = s.id WHERE e.symbol_id IS NULL AND s.kind != 'class' ORDER BY s.id")
     .all() as { id: number; name: string; signature: string; body: string }[];
+  const batch = todo.slice(0, limit);
+  let done = 0;
   try {
-    const vectors = await embedder.embed(todo.map(embeddingText));
-    db.transaction(() => {
-      todo.forEach((s, i) => db.prepare("INSERT OR REPLACE INTO embeddings (symbol_id, model, vector) VALUES (?, ?, ?)").run(s.id, embedder.model, encodeVec(vectors[i])));
-    })();
-    setLayer(db, "embeddings", stamp, "ok", `${embedder.model} on loopback`, now);
+    // One request's vectors are written as they arrive: a failure keeps what was embedded, and
+    // the next build asks only for the rest.
+    for (let i = 0; i < batch.length; i += EMBED_BATCH) {
+      const chunk = batch.slice(i, i + EMBED_BATCH);
+      const vectors = await embedder.embed(chunk.map(embeddingText));
+      db.transaction(() => {
+        chunk.forEach((s, k) => db.prepare("INSERT OR REPLACE INTO embeddings (symbol_id, model, vector) VALUES (?, ?, ?)").run(s.id, embedder.model, encodeVec(vectors[k])));
+      })();
+      done += chunk.length;
+    }
+    if (batch.length < todo.length) setLayer(db, "embeddings", stamp, "pending", `embedded ${done} of ${todo.length} symbols; the next build continues`, now);
+    else setLayer(db, "embeddings", stamp, "ok", `${embedder.model} on loopback`, now);
   } catch (e) {
-    // The other layers stay usable; the next build retries (Review Focus 3).
-    setLayer(db, "embeddings", previous ?? "none", "unavailable", (e as Error).message, now);
+    // The other layers stay usable; the next build retries (Review Focus 3). Vectors written
+    // this build are this stamp's, so the stamp is kept and the next build doesn't drop them.
+    const message = (e as Error).message;
+    setLayer(db, "embeddings", done === 0 ? (previous ?? "none") : stamp, "unavailable", done === 0 ? message : `embedded ${done} of ${todo.length} symbols, then: ${message}`, now);
   }
 }
 
@@ -167,12 +183,16 @@ async function graphLayer(
   }
 }
 
-export async function buildIndex(deps: Deps, loaded: LoadedProfile, repo: string, o: { full: boolean; quick?: boolean; mirror?: boolean }, providers: Providers): Promise<BuildReport> {
+// embedLimit: symbols embedded per build (default EMBED_PER_BUILD). lockTimeoutMs: how long to
+// wait for the heavy-job lock (default 10 min; 0 tries once).
+export async function buildIndex(
+  deps: Deps, loaded: LoadedProfile, repo: string, o: { full: boolean; quick?: boolean; mirror?: boolean; embedLimit?: number; lockTimeoutMs?: number }, providers: Providers,
+): Promise<BuildReport> {
   const cfg = loaded.repos[repo];
   if (cfg === undefined) throw new SindriError("SND-PROFILE-004", `no repo named ${repo}`);
   const ix = loaded.profile.index;
   const quick = o.quick === true;
-  return withHeavyLock(deps, `index-build:${repo}`, 600_000, async () => {
+  return withHeavyLock(deps, `index-build:${repo}`, o.lockTimeoutMs ?? 600_000, async () => {
     const started = deps.now().getTime();
     // Inside the heavy-job lock: a clone of a big repo is heavy too.
     if (o.mirror === true) await refreshMirror(deps, repo, cfg.path);
@@ -206,7 +226,7 @@ export async function buildIndex(deps: Deps, loaded: LoadedProfile, repo: string
           if (stampOf(db, layer) === null) setLayer(db, layer, "none", "pending", "not built yet (sindri index build)", now);
         }
       } else {
-        await embedLayer(db, providers.embedder, now);
+        await embedLayer(db, providers.embedder, now, o.embedLimit ?? EMBED_PER_BUILD);
         await graphLayer(db, providers.graph, deps, cfg.path, deny, ix, now);
       }
       const head = await deps.git.run(["rev-parse", "HEAD"], cfg.path);

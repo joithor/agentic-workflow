@@ -65,10 +65,10 @@ describe("heavy-job lock", () => {
     expect(logs).toEqual([expect.stringContaining("waiting for the heavy-job lock (test-suite, pid 4242")]);
     fs.mkdirSync(heavyLockDir(root, d.env));
     const err = await withHeavyLock(d, "x", 0, async () => 0).catch((e: unknown) => e);
-    expect((err as SindriError).message).toBe("the heavy-job lock is busy");
+    expect((err as SindriError).message).toMatch(/^the heavy-job lock is busy; held \d+ (min|h)$/);
     fs.writeFileSync(holderPath(root), JSON.stringify({ nope: 1 }));
     const err2 = await withHeavyLock(d, "x", 0, async () => 0).catch((e: unknown) => e);
-    expect((err2 as SindriError).message).toBe("the heavy-job lock is busy");
+    expect((err2 as SindriError).message).toMatch(/^the heavy-job lock is busy; held /);
     expect(heavyLockState(root, () => new Date(Date.now() + 60_000), d.env).ageMs).toBeGreaterThan(0);
   });
 
@@ -109,6 +109,16 @@ describe("heavy-job lock", () => {
     await expect(withHeavyLock(d, "x", 0, async () => 0)).rejects.toThrow("no space left");
   });
 
+  it("says busy without an age when the lock is released between the failed mkdir and the check", async () => {
+    const d = makeDeps();
+    const real = fs.mkdirSync;
+    vi.spyOn(fs, "mkdirSync").mockImplementation((p, opts) => {
+      if (String(p) === heavyLockDir(awStateDir(d), d.env)) throw Object.assign(new Error("exists"), { code: "EEXIST" });
+      return real(p, opts);
+    });
+    await expect(withHeavyLock(d, "x", 0, async () => 0)).rejects.toThrow(/^the heavy-job lock is busy$/);
+  });
+
   it("records the boot id and treats a holder from another boot as dead (a reused pid looks alive)", async () => {
     const d = makeDeps();
     const root = awStateDir(d);
@@ -132,6 +142,33 @@ describe("heavy-job lock", () => {
     }
   });
 
+  it("reclaims a lock held over 6 h as a last resort: no holder record (a crashed locks.sh holder) or a reused live pid", async () => {
+    const logs: string[] = [];
+    const d = makeDeps({ log: (l) => logs.push(l) });
+    const root = awStateDir(d);
+    const dir = heavyLockDir(root, d.env);
+    const age = (hours: number): void => {
+      const t = new Date(d.now().getTime() - hours * 3_600_000);
+      fs.utimesSync(dir, t, t);
+    };
+    fs.mkdirSync(dir, { recursive: true });
+    age(1);
+    const busy = await withHeavyLock(d, "x", 0, async () => 0).catch((e: unknown) => e);
+    expect((busy as SindriError).message).toBe("the heavy-job lock is busy; held 1 h");
+    age(7);
+    expect(await withHeavyLock(d, "next", 0, async () => heavyLockState(root, d.now, d.env).holder?.reclaimed)).toBe("a lock held over 6 h with no holder record");
+    fs.mkdirSync(dir);
+    fs.writeFileSync(holderPath(root), JSON.stringify({ kind: "index-build", pid: 4242, host: "test-host", startedAt: "t" }));
+    const t = new Date(d.now().getTime() - 7 * 3_600_000);
+    fs.utimesSync(holderPath(root), t, t);
+    age(7);
+    expect(await withHeavyLock(d, "next", 0, async () => heavyLockState(root, d.now, d.env).holder?.reclaimed)).toBe("a lock held over 6 h by index-build (pid 4242)");
+    expect(logs).toEqual([
+      "reclaiming the heavy-job lock left by a lock held over 6 h with no holder record",
+      "reclaiming the heavy-job lock left by a lock held over 6 h by index-build (pid 4242)",
+    ]);
+  });
+
   it("ignores a holder record older than the lock dir (a leftover beside a lock taken by locks.sh)", async () => {
     const d = makeDeps({ system: fakeSystem({ pidAlive: (p) => p !== 999 }) });
     const root = awStateDir(d);
@@ -141,7 +178,7 @@ describe("heavy-job lock", () => {
     const old = new Date(fs.statSync(dir).mtimeMs - 60_000);
     fs.utimesSync(holderPath(root), old, old);
     const err = await withHeavyLock(d, "x", 0, async () => 0).catch((e: unknown) => e);
-    expect((err as SindriError).message).toBe("the heavy-job lock is busy");
+    expect((err as SindriError).message).toMatch(/^the heavy-job lock is busy; held /);
     expect(fs.existsSync(dir)).toBe(true);
     expect(heavyLockState(root, d.now, d.env).holder).toBeNull();
   });

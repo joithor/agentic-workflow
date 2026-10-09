@@ -124,6 +124,13 @@ test_index_jobs() {
   grep -q '<string>--quick</string>' "$launchd/com.agentic-workflow.sindri-index-quick.plist" && grep -q '<integer>3600</integer>' "$launchd/com.agentic-workflow.sindri-index-quick.plist" || { echo "FAIL: the quick job is not an hourly --quick build"; exit 1; }
   grep -q '<key>Hour</key>' "$launchd/com.agentic-workflow.sindri-index.plist" || { echo "FAIL: the full build is not nightly"; exit 1; }
   if grep -q -- '--quick' "$launchd/com.agentic-workflow.sindri-index.plist"; then echo "FAIL: the nightly build is quick"; exit 1; fi
+  # Heavy jobs run at background priority, so they never compete with the interactive session.
+  for name in sindri-index sindri-index-quick; do
+    plist="$launchd/com.agentic-workflow.$name.plist"
+    tr -d ' \n' < "$plist" | grep -q '<key>ProcessType</key><string>Background</string>' || { echo "FAIL: $name is not ProcessType Background"; exit 1; }
+    tr -d ' \n' < "$plist" | grep -q '<key>Nice</key><integer>10</integer>' || { echo "FAIL: $name is not Nice 10"; exit 1; }
+    tr -d ' \n' < "$plist" | grep -q '<key>LowPriorityIO</key><true/>' || { echo "FAIL: $name is not LowPriorityIO"; exit 1; }
+  done
   # Each index job has its own log, so one job's failure isn't read as the other's.
   [ "$(grep -c '<string>__HOME__/.agentic-workflow/sindri/index-quick-launchd.log</string>' "$launchd/com.agentic-workflow.sindri-index-quick.plist")" = 2 ] || { echo "FAIL: the quick job does not log to index-quick-launchd.log"; exit 1; }
   [ "$(grep -c '<string>__HOME__/.agentic-workflow/sindri/index-launchd.log</string>' "$launchd/com.agentic-workflow.sindri-index.plist")" = 2 ] || { echo "FAIL: the nightly job does not log to index-launchd.log"; exit 1; }

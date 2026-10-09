@@ -31,6 +31,12 @@ const HolderSchema = z.object({
 
 // A reclaim mutex with no readable record is treated as live this long, then as dead.
 const UNREADABLE_GRACE_MS = 60_000;
+// The last resort: a lock held this long is reclaimed whoever holds it. That covers a lock with
+// no holder record (a crashed config/lib/locks.sh holder never releases) and a holder whose pid
+// an unrelated live process reused. doctor warns at the same age.
+export const MAX_HEAVY_AGE_MS = 6 * 3_600_000;
+
+const ageText = (ms: number): string => (ms >= 3_600_000 ? `${Math.floor(ms / 3_600_000)} h` : `${Math.max(0, Math.floor(ms / 60_000))} min`);
 
 // $AW_HEAVY_JOB_LOCK, default <state root>/locks/heavy-job.lock (the path locks.sh callers use).
 export const heavyLockDir = (stateRoot: string, env: NodeJS.ProcessEnv): string =>
@@ -89,7 +95,9 @@ function tryMkdir(dir: string): boolean {
 // exist, so two waiters on one dead holder can never both enter. The mutex holds its
 // taker's record; it is cleared only when that taker is dead (an unreadable one after
 // 60 s), and a taker removes it only while it is still its own. true: the lock is ours.
-function reclaim(deps: Deps, dir: string, gone: HeavyHolder, me: HeavyHolder): boolean {
+// `gone`: the holder to replace (null: the lock has no holder record); `due`: re-checked on the
+// lock dir inside the mutex (its age, for the last-resort reclaim).
+function reclaim(deps: Deps, dir: string, gone: HeavyHolder | null, me: HeavyHolder, due: (st: fs.Stats) => boolean): boolean {
   if (!tryMkdir(mutexDir(dir))) {
     const taker = parseHolder(mutexRecord(dir));
     const st = fs.statSync(mutexDir(dir), { throwIfNoEntry: false });
@@ -100,7 +108,8 @@ function reclaim(deps: Deps, dir: string, gone: HeavyHolder, me: HeavyHolder): b
   try {
     writeHolder(mutexRecord(dir), me);
     const st = fs.statSync(dir, { throwIfNoEntry: false });
-    if (st === undefined || !sameHolder(readHolder(dir), gone)) return false; // released, or it changed hands
+    const now = st === undefined ? null : readHolder(dir);
+    if (st === undefined || !due(st) || (gone === null ? now !== null : !sameHolder(now, gone))) return false; // released, or it changed hands
     // The dir exists, so nobody else can enter while its dead holder's record goes.
     fs.rmSync(holderFile(dir), { force: true });
     const stale = `${dir}.stale-${ulid(deps.now())}`;
@@ -148,10 +157,15 @@ export async function withHeavyLock<T>(deps: Deps, kind: string, timeoutMs: numb
   for (let i = 1; ; i++) {
     if (tryMkdir(dir)) break;
     const h = readHolder(dir);
-    // A holder that is dead on this host (killed, crashed, rebooted) never releases: take the lock over.
-    if (h !== null && dead(h, sys)) {
-      const taken: HeavyHolder = { ...me, reclaimed: `dead pid ${h.pid} (${h.kind})` };
-      if (reclaim(deps, dir, h, taken)) {
+    const st = fs.statSync(dir, { throwIfNoEntry: false });
+    const aged = (s: fs.Stats): boolean => deps.now().getTime() - s.mtimeMs > MAX_HEAVY_AGE_MS;
+    // A holder that is dead on this host (killed, crashed, rebooted) never releases: take the
+    // lock over. So is one held past MAX_HEAVY_AGE_MS, whoever holds it.
+    const isDead = h !== null && dead(h, sys);
+    const why = isDead ? `dead pid ${h.pid} (${h.kind})` : st !== undefined && aged(st) ? `a lock held over 6 h${h === null ? " with no holder record" : ` by ${h.kind} (pid ${h.pid})`}` : null;
+    if (why !== null) {
+      const taken: HeavyHolder = { ...me, reclaimed: why };
+      if (reclaim(deps, dir, h, taken, isDead ? () => true : aged)) {
         deps.log(`reclaiming the heavy-job lock left by ${taken.reclaimed}`);
         me = taken;
         written = true;
@@ -160,7 +174,8 @@ export async function withHeavyLock<T>(deps: Deps, kind: string, timeoutMs: numb
     }
     const cur = readHolder(dir) ?? h;
     const who = cur === null ? "" : ` (${cur.kind}, pid ${cur.pid}, since ${cur.startedAt})`;
-    if (i >= attempts) throw new SindriError("SND-INDEX-001", `the heavy-job lock is busy${who}`);
+    const held = st === undefined ? "" : `; held ${ageText(deps.now().getTime() - st.mtimeMs)}`;
+    if (i >= attempts) throw new SindriError("SND-INDEX-001", `the heavy-job lock is busy${who}${held}`);
     if (i === 1) deps.log(`waiting for the heavy-job lock${who}`);
     await deps.sleep(1000);
   }

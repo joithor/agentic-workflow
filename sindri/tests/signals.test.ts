@@ -24,6 +24,19 @@ const run = (base: IndexDb, changes: { path: string; text: string | null }[], ad
   computeSignals({ base, overlay: buildOverlay(changes, addedLines), t, sizeBudget: 250, exportAllowance: 3, embed });
 
 describe("shape signals", () => {
+  it("stops comparing candidates at the deadline (a timer can't preempt synchronous work), deferring the unfinished layers", async () => {
+    const base = await baseIndex({ "src/util/text.ts": BODY("clip") });
+    const changes = [{ path: "src/a.ts", text: BODY("first") }, { path: "src/b.ts", text: BODY("second") }];
+    const all = await computeSignals({ base, overlay: buildOverlay(changes, 5), t, sizeBudget: 250, exportAllowance: 3, embed: null, budget: { deadline: 100, now: () => 0 } });
+    expect(all.signals.filter((s) => s.type === "reinvented:exact")).toHaveLength(2);
+    expect(all.deferred).toEqual([]);
+    // The clock passes the deadline after the first candidate: the second is never compared.
+    let calls = 0;
+    const cut = await computeSignals({ base, overlay: buildOverlay(changes, 5), t, sizeBudget: 250, exportAllowance: 3, embed: null, budget: { deadline: 100, now: () => (calls++ === 0 ? 0 : 200) } });
+    expect(cut.signals.filter((s) => s.type === "reinvented:exact").map((s) => s.name)).toEqual(["first"]);
+    expect(cut.deferred).toEqual(["clones", "structure", "graph"]);
+  });
+
   it("flags an exact clone of an exported function in another file, with the flagged name and hash", async () => {
     const base = await baseIndex({ "src/util/text.ts": BODY("clip") });
     const { signals } = await run(base, [{ path: "src/feature.ts", text: BODY("shorten") }]);
@@ -104,6 +117,21 @@ describe("shape signals", () => {
       const hit = await run(base, change, 5, { embedder, deadline: 1000, now: () => 0 });
       expect(hit.signals.map((s) => s.type)).toContain("reinvented:embedding");
       expect(hit.deferred).toEqual([]);
+      // The file it matched changes in the same commit: its old vector is never compared.
+      const both = await run(base, [...change, { path: "src/util/text.ts", text: "export const gone = 1;\n" }], 5, { embedder, deadline: 1000, now: () => 0 });
+      expect(both.signals.map((s) => s.type)).not.toContain("reinvented:embedding");
+    });
+
+    it("defers the embedding comparison when the model answers after the deadline has passed", async () => {
+      const base = await baseIndex(files, embedder);
+      let t0 = 0;
+      const slow: Embedder = { model: "m", embed: async (texts) => ((t0 = 2000), texts.map(vec)) };
+      const late = await computeSignals({
+        base, overlay: buildOverlay(change, 5), t, sizeBudget: 250, exportAllowance: 3,
+        embed: { embedder: slow, deadline: 1000, now: () => t0 }, budget: { deadline: 1000, now: () => t0 },
+      });
+      expect(late.signals.map((s) => s.type)).not.toContain("reinvented:embedding");
+      expect(late.deferred).toEqual(["embeddings"]);
     });
 
     it("records no embedding signal when the vectors disagree", async () => {

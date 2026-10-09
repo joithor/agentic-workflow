@@ -74,7 +74,7 @@ describe("inventory (Review Focus 1)", () => {
   });
 
   it("skips a file whose parent directory cannot be resolved", async () => {
-    const root = repo({ "a.ts": "1" });
+    const root = repo({ "d/a.ts": "1", "d/b.ts": "2" });
     const real = fs.realpathSync;
     let calls = 0;
     vi.spyOn(fs, "realpathSync").mockImplementation(((p: fs.PathLike) => {
@@ -82,7 +82,8 @@ describe("inventory (Review Focus 1)", () => {
       throw new Error("gone");
     }) as typeof fs.realpathSync);
     const inv = await inventory(realGitRunner(), root, opts);
-    expect(inv.skipped).toEqual([{ path: "a.ts", reason: "unreadable" }]);
+    expect(inv.skipped).toEqual([{ path: "d/a.ts", reason: "unreadable" }, { path: "d/b.ts", reason: "unreadable" }]);
+    expect(calls).toBe(2);
   });
 
   it("re-checks size and type on the open descriptor and bounds the read", async () => {
@@ -111,9 +112,31 @@ describe("inventory (Review Focus 1)", () => {
     expect(inv.files).toEqual([]);
     expect(inv.skipped).toEqual([
       { path: "grew.ts", reason: "too-large" },
-      { path: "grows-mid-read.ts", reason: "too-large" },
+      { path: "grows-mid-read.ts", reason: "unreadable" }, // changed while it was read: the next build retries
       { path: "swapped.ts", reason: "not-a-file" },
     ]);
+  });
+
+  it("reads each file into a buffer of its own size, and resolves each parent directory once", async () => {
+    const root = repo({ "a.ts": "x".repeat(10), "d/b.ts": "y".repeat(20), "d/c.ts": "z", "d/e.ts": "w" });
+    const allocs: number[] = [];
+    const realAlloc = Buffer.alloc;
+    vi.spyOn(Buffer, "alloc").mockImplementation(((n: number) => (allocs.push(n), realAlloc(n))) as typeof Buffer.alloc);
+    const realReal = fs.realpathSync;
+    const resolved: string[] = [];
+    vi.spyOn(fs, "realpathSync").mockImplementation(((p: fs.PathLike) => (resolved.push(String(p)), realReal(p))) as typeof fs.realpathSync);
+    const inv = await inventory(realGitRunner(), root, { ...opts, maxFileKB: 512 });
+    expect(inv.files.map((f) => [f.path, f.text.length])).toEqual([["a.ts", 10], ["d/b.ts", 20], ["d/c.ts", 1], ["d/e.ts", 1]]);
+    // Never a maxFileKB-sized (512 KB) buffer for a small file.
+    expect(allocs).toEqual(expect.arrayContaining([11, 21, 2]));
+    expect(Math.max(...allocs)).toBeLessThanOrEqual(21);
+    expect(resolved).toEqual([root, path.join(root, "d")]);
+  });
+
+  it("skips a file at the size cap that grows while it is read as too large", async () => {
+    const root = repo({ "cap.ts": "x".repeat(1024) });
+    vi.spyOn(fs, "readSync").mockImplementation(((_fd: number, _buf: Buffer, _off: number, len: number) => len) as typeof fs.readSync);
+    expect((await inventory(realGitRunner(), root, opts)).skipped).toEqual([{ path: "cap.ts", reason: "too-large" }]);
   });
 
   it("stops past maxTotalMB and outside a git repo", async () => {

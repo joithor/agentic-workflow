@@ -42,6 +42,20 @@ export async function inventory(
   let total = 0;
   const cap = o.maxFileKB * 1024;
   const root = fs.realpathSync(repoPath);
+  // Many files share a parent: each directory is resolved once (null: it can't be).
+  const parents = new Map<string, string | null>([[path.join(repoPath, "."), root]]);
+  const parentOf = (dir: string): string | null => {
+    if (!parents.has(dir)) {
+      let real: string | null = null;
+      try {
+        real = fs.realpathSync(dir);
+      } catch {
+        // unresolvable: skipped as unreadable below
+      }
+      parents.set(dir, real);
+    }
+    return parents.get(dir) ?? null;
+  };
   for (const rel of [...new Set(ls.stdout.split("\0").filter((p) => p !== ""))].sort()) {
     if (!o.select(rel)) continue;
     if (matchesAny(rel, o.denyPaths)) {
@@ -57,10 +71,8 @@ export async function inventory(
       continue;
     }
     // O_NOFOLLOW guards only the last component: a symlinked parent directory must not lead outside the repo.
-    let parent: string;
-    try {
-      parent = fs.realpathSync(path.dirname(full));
-    } catch {
+    const parent = parentOf(path.dirname(full));
+    if (parent === null) {
       skipped.push({ path: rel, reason: "unreadable" });
       continue;
     }
@@ -76,9 +88,12 @@ export async function inventory(
         const fst = fs.fstatSync(fd);
         if (!fst.isFile()) late = "not-a-file";
         else if (fst.size > cap) late = "too-large";
-        buf = Buffer.alloc(cap + 1);
-        const n = late === null ? fs.readSync(fd, buf, 0, cap + 1, 0) : 0;
-        if (late === null && n > cap) late = "too-large";
+        // A buffer of the file's own size plus one byte: the extra byte shows a file that grew
+        // while it was read (past the cap: too large; otherwise changed, so the next build retries).
+        const want = late === null ? fst.size + 1 : 0;
+        buf = Buffer.alloc(want);
+        const n = late === null ? fs.readSync(fd, buf, 0, want, 0) : 0;
+        if (late === null && n > fst.size) late = n > cap ? "too-large" : "unreadable";
         buf = buf.subarray(0, n);
       } finally {
         fs.closeSync(fd);

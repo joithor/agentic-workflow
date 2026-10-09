@@ -9,7 +9,8 @@ export interface Embedder {
   embed(texts: string[], o?: { timeoutMs?: number }): Promise<Float32Array[]>;
 }
 
-const BATCH = 32;
+// Texts per /api/embed request.
+export const EMBED_BATCH = 32;
 const TEXT_CAP = 2000;
 const Answer = z.object({ embeddings: z.array(z.array(z.number())) });
 
@@ -25,8 +26,8 @@ export function makeOllamaEmbedder(o: { url: string; model: string; fetch: Fetch
     async embed(texts, call) {
       const timeoutMs = Math.min(call?.timeoutMs ?? cap, cap);
       const out: Float32Array[] = [];
-      for (let i = 0; i < texts.length; i += BATCH) {
-        const input = texts.slice(i, i + BATCH);
+      for (let i = 0; i < texts.length; i += EMBED_BATCH) {
+        const input = texts.slice(i, i + EMBED_BATCH);
         let res: Awaited<ReturnType<FetchLike>>;
         try {
           res = await o.fetch(endpoint, {

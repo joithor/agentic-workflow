@@ -18,6 +18,13 @@
   </dict>
   <key>StartInterval</key>
   <integer>3600</integer>
+  <!-- Heavy jobs run at background CPU and I/O priority, behind the interactive session. -->
+  <key>ProcessType</key>
+  <string>Background</string>
+  <key>Nice</key>
+  <integer>10</integer>
+  <key>LowPriorityIO</key>
+  <true/>
   <key>StandardOutPath</key>
   <string>__HOME__/.agentic-workflow/sindri/index-quick-launchd.log</string>
   <key>StandardErrorPath</key>

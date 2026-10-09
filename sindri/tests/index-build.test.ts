@@ -231,6 +231,23 @@ describe("buildIndex", () => {
     expect(seen).toEqual([true]);
   });
 
+  it("a quick build tries the heavy-job lock once and skips quietly (exit 0) when it is held; a full build waits", async () => {
+    const d = await approvedIndexDeps(ring0Repo(FILES));
+    let slept = 0;
+    const lock = path.join(d.env.AW_STATE_DIR as string, "locks", "heavy-job.lock");
+    fs.mkdirSync(lock, { recursive: true });
+    const deps = { ...d, sleep: async () => { slept++; } };
+    const quick = await makeIndexCommand(fakeIndexIo())(["build", "--quick"], deps);
+    expect(quick.exitCode).toBe(0);
+    expect(quick.stdout.trim()).toMatch(new RegExp(`^${ring0Name(d)}: skipped \\(the heavy-job lock is busy; held \\d+ (min|h)\\); the next hourly run retries$`));
+    expect(slept).toBe(0);
+    expect(fs.existsSync(indexPath(d, ring0Name(d)))).toBe(false);
+    const full = await makeIndexCommand(fakeIndexIo())(["build"], deps);
+    expect(full.stderr).toContain("SND-INDEX-001");
+    expect(slept).toBe(600);
+    fs.rmdirSync(lock);
+  });
+
   it("refuses an unknown repo", async () => {
     const root = gitRepo(FILES);
     await expect(buildIndex(makeDeps(), profileFor(root), "nope", { full: false }, none)).rejects.toThrow(/SND-PROFILE-004|no repo named nope/);
@@ -387,6 +404,34 @@ describe("embeddings layer", () => {
     const degraded = await buildIndex(d, p, "r", { full: false }, { embedder: broken, graph: null });
     expect(degraded.layers.embeddings).toEqual({ status: "unavailable", detail: "embedding server unreachable: down" });
     expect(degraded.layers.structure.status).toBe("ok");
+  });
+
+  it("commits vectors per batch, so a failure keeps what was embedded and the next build continues from there", async () => {
+    const many = Object.fromEntries(Array.from({ length: 40 }, (_, i) => [`src/f${i}.ts`, `export function f${i}(x: number) { return x + ${i}; }\n`]));
+    const root = gitRepo(many);
+    const d = makeDeps();
+    const p = profileFor(root);
+    let calls = 0;
+    const flaky: Embedder = { model: "m1", embed: async (texts) => { if (++calls === 2) throw new Error("embedding server unreachable: restarted"); return texts.map(() => new Float32Array([1, 0])); } };
+    const r = await buildIndex(d, p, "r", { full: false }, { embedder: flaky, graph: null });
+    expect(r.layers.embeddings).toEqual({ status: "unavailable", detail: "embedded 32 of 40 symbols, then: embedding server unreachable: restarted" });
+    const after = fakeEmbedder();
+    const r2 = await buildIndex(d, p, "r", { full: false }, { embedder: after, graph: null });
+    expect(after.seen).toHaveLength(8);
+    expect(r2.layers.embeddings.status).toBe("ok");
+  });
+
+  it("embeds at most embedLimit symbols per build (pending), and the next builds finish the rest", async () => {
+    const many = Object.fromEntries(Array.from({ length: 12 }, (_, i) => [`src/f${i}.ts`, `export function f${i}(x: number) { return x + ${i}; }\n`]));
+    const d = makeDeps();
+    const p = profileFor(gitRepo(many));
+    const e = fakeEmbedder();
+    const r = await buildIndex(d, p, "r", { full: false, embedLimit: 5 }, { embedder: e, graph: null });
+    expect(r.layers.embeddings).toEqual({ status: "pending", detail: "embedded 5 of 12 symbols; the next build continues" });
+    expect(e.seen).toHaveLength(5);
+    await buildIndex(d, p, "r", { full: false, embedLimit: 5 }, { embedder: e, graph: null });
+    expect((await buildIndex(d, p, "r", { full: false, embedLimit: 5 }, { embedder: e, graph: null })).layers.embeddings.status).toBe("ok");
+    expect(e.seen).toHaveLength(12);
   });
 
   it("is unavailable, not stampless, on a first build whose embedder fails", async () => {

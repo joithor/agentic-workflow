@@ -70,13 +70,21 @@ async function build(args: string[], deps: Deps, io: IndexIo): Promise<CommandRe
   const loaded = approvedOrThrow(deps);
   const quick = values.quick === true;
   const reports: BuildReport[] = [];
+  const lines: string[] = [];
   for (const repo of reposOf(loaded, values.repo)) {
     deps.log(`building ${repo}${quick ? " (quick: structure, clones, deps)" : ""}; this takes the heavy-job lock`);
-    reports.push(await buildIndex(deps, loaded, repo, { full: values.full === true, quick, mirror: !quick }, { embedder: embedderOrUnavailable(loaded, io), graph: graphFor(loaded, deps, io) }));
+    try {
+      // The hourly quick build tries the lock once: waiting is pointless (the next hour retries)
+      // and a nightly full build may hold it for long.
+      const r = await buildIndex(deps, loaded, repo, { full: values.full === true, quick, mirror: !quick, lockTimeoutMs: quick ? 0 : undefined }, { embedder: embedderOrUnavailable(loaded, io), graph: graphFor(loaded, deps, io) });
+      reports.push(r);
+      lines.push(`${r.repo}: ${r.files.indexed} files (${r.files.changed} changed, ${r.files.removed} removed, ${r.files.skipped} skipped), ${r.symbols} symbols; ${describeLayers(r.layers)} (${(r.ms / 1000).toFixed(1)} s)`);
+    } catch (e) {
+      if (!quick || !(e instanceof SindriError) || e.code !== "SND-INDEX-001") throw e;
+      lines.push(`${repo}: skipped (${e.message}); the next hourly run retries`);
+    }
   }
-  const text = reports
-    .map((r) => `${r.repo}: ${r.files.indexed} files (${r.files.changed} changed, ${r.files.removed} removed, ${r.files.skipped} skipped), ${r.symbols} symbols; ${describeLayers(r.layers)} (${(r.ms / 1000).toFixed(1)} s)`)
-    .join("\n");
+  const text = lines.join("\n");
   return success(text, reports, values.json === true);
 }
 

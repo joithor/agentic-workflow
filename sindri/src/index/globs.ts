@@ -24,6 +24,18 @@ export function globToRegExp(glob: string): RegExp {
   return new RegExp(`^${re}$`, "is");
 }
 
+// Each glob is compiled once per process: matchesAny runs per tracked file and per staged path.
+const compiled = new Map<string, RegExp>();
+
+export function compiledGlob(glob: string): RegExp {
+  let re = compiled.get(glob);
+  if (re === undefined) {
+    re = globToRegExp(glob);
+    compiled.set(glob, re);
+  }
+  return re;
+}
+
 export function matchesAny(p: string, globs: readonly string[]): boolean {
-  return globs.some((g) => globToRegExp(g).test(p));
+  return globs.some((g) => compiledGlob(g).test(p));
 }
