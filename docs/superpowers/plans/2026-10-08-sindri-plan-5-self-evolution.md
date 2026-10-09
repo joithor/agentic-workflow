@@ -7933,7 +7933,7 @@ git commit -m "feat: sindri stable and next channels, and check --at"
 
   It prints one line per step (`ok`, `attn` or `FAIL` first), one summary line and the next command, and exits 1 if any step wasn't `ok`. Publishing stays a builder's explicit verb. The launchd job runs it on Mondays at 07:30.
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 `sindri/tests/evolve-weekly.test.ts`:
 
@@ -8096,12 +8096,12 @@ test_evolve_job_is_weekly() {
 }
 ```
 
-- [ ] **Step 2: Run the tests to verify they fail**
+- [x] **Step 2: Run the tests to verify they fail**
 
 Run: `cd sindri && npx vitest run tests/evolve-weekly.test.ts && cd .. && bash scripts/tests/install-sindri.test.sh`
 Expected: FAIL with `Failed to load url ../src/evolve/cmd/weekly.js`, then `FAIL: …/com.agentic-workflow.sindri-evolve.plist missing`.
 
-- [ ] **Step 3: Implement**
+- [x] **Step 3: Implement**
 
 `sindri/src/evolve/cmd/weekly.ts`:
 
@@ -8268,12 +8268,12 @@ Then, in the launchd loop that Plans 2 and 3 left (`for NAME in com.agentic-work
 3. add `echo "  [dry-run] would install launchd job com.agentic-workflow.sindri-evolve.plist (macOS, Mondays 07:30)"` to the dry-run branch;
 4. extend the message to `"  sindri: hourly observe, daily index build, weekly evolve (Mondays 07:30) (launchd)"`, keeping whatever Plan 3 printed for its own jobs.
 
-- [ ] **Step 4: Run the tests**
+- [x] **Step 4: Run the tests**
 
 Run: `cd sindri && npx vitest run && npm run typecheck && npm run test:coverage && cd .. && bash scripts/tests/install-sindri.test.sh`
 Expected: all tests PASS; coverage 100% on the files this task touches; every installer test PASS.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add sindri/src sindri/tests config/launchd scripts/install-sindri.sh scripts/tests/install-sindri.test.sh

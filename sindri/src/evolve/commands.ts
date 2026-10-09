@@ -13,11 +13,12 @@ import { init } from "./cmd/registry.js";
 import { publish, stage } from "./cmd/stage.js";
 import { status } from "./cmd/status.js";
 import { telemetry } from "./cmd/telemetry.js";
+import { weekly } from "./cmd/weekly.js";
 import { ringZeroRepo, writers, type EvolveIo, type Sub } from "./ctx.js";
 import { effectivePrompts } from "./overlay.js";
 
 // Later tasks add their subcommands here.
-export const SUBCOMMANDS: Record<string, Sub> = { adopt, check, compare, correct: correctCommand, init, proposals, reflect: reflectCommand, publish, reject, revert, show, stage, status, telemetry, tier };
+export const SUBCOMMANDS: Record<string, Sub> = { adopt, check, compare, correct: correctCommand, init, proposals, reflect: reflectCommand, publish, reject, revert, show, stage, status, telemetry, tier, weekly };
 
 export function evolveUsage(): string {
   return `Usage: sindri evolve ${Object.keys(SUBCOMMANDS).sort().join(" | ")}   (each takes --json)`;

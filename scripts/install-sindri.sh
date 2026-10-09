@@ -4,7 +4,7 @@
 #   install-sindri.sh                 npm ci + build, then write the wrapper
 #   AW_DRY_RUN=1 install-sindri.sh    print what would happen, write nothing
 #   AW_SKIP_BUILD=1 install-sindri.sh write the wrapper only (tests; dist/ already built)
-#   AW_SKIP_LAUNCHD=1 install-sindri.sh skip the observe and index launchd jobs (macOS; tests)
+#   AW_SKIP_LAUNCHD=1 install-sindri.sh skip the observe, index and evolve launchd jobs (macOS; tests)
 #   CLAUDE_LOCAL_BIN=DIR             where the wrapper goes (default ~/.local/bin)
 #   install-sindri.sh --hook-only [--provider claude|codex|cursor]
 #                                     install only the SessionStart nudge (aw:sindri-nudge) for
@@ -232,7 +232,7 @@ echo "Installing sindri..."
 if [ "${AW_DRY_RUN:-0}" = "1" ]; then
   echo "  [dry-run] would run npm ci && npm run build in $SINDRI_DIR"
   echo "  [dry-run] would write $BIN_DIR/sindri"
-  for PLIST_FILE in com.agentic-workflow.sindri-observe.plist com.agentic-workflow.sindri-index-quick.plist com.agentic-workflow.sindri-index.plist; do
+  for PLIST_FILE in com.agentic-workflow.sindri-observe.plist com.agentic-workflow.sindri-index-quick.plist com.agentic-workflow.sindri-index.plist com.agentic-workflow.sindri-evolve.plist; do
     echo "  [dry-run] would install launchd job $PLIST_FILE (macOS)"
   done
   exit 0
@@ -274,7 +274,8 @@ if [ "$USE_LAUNCHD" = "1" ]; then
   chmod 700 "$SINDRI_STATE"
   for JOB in "com.agentic-workflow.sindri-observe|hourly observe" \
              "com.agentic-workflow.sindri-index-quick|hourly quick index build" \
-             "com.agentic-workflow.sindri-index|nightly full index build at 03:15"; do
+             "com.agentic-workflow.sindri-index|nightly full index build at 03:15" \
+             "com.agentic-workflow.sindri-evolve|weekly evolve (Mondays 07:30)"; do
     NAME="${JOB%%|*}"
     WHAT="${JOB#*|}"
     PLIST="$LAUNCH_AGENTS_DIR/$NAME.plist"

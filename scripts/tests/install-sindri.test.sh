@@ -90,12 +90,12 @@ test_launchd_bootstrap_failure_warns_and_continues() {
   run_launchd_install fail
   [ "$RUN_RC" = 0 ] || { echo "FAIL: installer exited $RUN_RC on bootstrap failure: $RUN_OUT"; exit 1; }
   local name
-  for name in sindri-observe sindri-index-quick sindri-index; do
+  for name in sindri-observe sindri-index-quick sindri-index sindri-evolve; do
     grep -q "WARN: could not load com.agentic-workflow.$name; run: launchctl bootstrap gui/" <<<"$RUN_OUT" || { echo "FAIL: WARN line missing for $name: $RUN_OUT"; exit 1; }
   done
   ! grep -q 'hourly observe (launchd' <<<"$RUN_OUT" || { echo "FAIL: success line printed after a failed load"; exit 1; }
-  # Three jobs (observe, quick index, full index), each tried twice.
-  [ "$(grep -c '^bootstrap' "$STUB_LOG")" = 6 ] || { echo "FAIL: bootstrap not retried once per job"; exit 1; }
+  # Four jobs (observe, quick index, full index, evolve), each tried twice.
+  [ "$(grep -c '^bootstrap' "$STUB_LOG")" = 8 ] || { echo "FAIL: bootstrap not retried once per job"; exit 1; }
   echo "PASS: test_launchd_bootstrap_failure_warns_and_continues"
 }
 
@@ -142,7 +142,7 @@ test_launchd_installs_every_job() {
   run_launchd_install ok
   [ "$RUN_RC" = 0 ] || { echo "FAIL: installer exited $RUN_RC: $RUN_OUT"; exit 1; }
   local name plist
-  for name in sindri-observe sindri-index-quick sindri-index; do
+  for name in sindri-observe sindri-index-quick sindri-index sindri-evolve; do
     plist="$SCRATCH/home/Library/LaunchAgents/com.agentic-workflow.$name.plist"
     [ -f "$plist" ] || { echo "FAIL: $name plist not written under scratch HOME"; exit 1; }
     ! grep -qE '__HOME__|__BIN__' "$plist" || { echo "FAIL: $name plist has unsubstituted placeholders"; exit 1; }
@@ -151,6 +151,22 @@ test_launchd_installs_every_job() {
     grep -q "launchd com.agentic-workflow.$name)" <<<"$RUN_OUT" || { echo "FAIL: no success line for $name"; exit 1; }
   done
   echo "PASS: test_launchd_installs_every_job"
+}
+
+test_evolve_job_is_weekly() {
+  local plist="$ROOT/config/launchd/com.agentic-workflow.sindri-evolve.plist"
+  [ -f "$plist" ] || { echo "FAIL: $plist missing"; exit 1; }
+  if command -v plutil >/dev/null 2>&1; then plutil -lint "$plist" >/dev/null || { echo "FAIL: plist invalid"; exit 1; }; fi
+  tr -d ' \n' < "$plist" | grep -q '<key>Weekday</key><integer>1</integer><key>Hour</key><integer>7</integer><key>Minute</key><integer>30</integer>' || { echo "FAIL: not Mondays 07:30"; exit 1; }
+  tr -d ' \n' < "$plist" | grep -q '<string>__BIN__/sindri</string><string>evolve</string><string>weekly</string>' || { echo "FAIL: evolve weekly command missing"; exit 1; }
+  grep -q '<key>PATH</key>' "$plist" && grep -q '<string>__BIN__:__HOME__/.local/bin:/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin</string>' "$plist" || { echo "FAIL: PATH is not the fixed launchd PATH"; exit 1; }
+  if sed -e "s|__HOME__|/h|g" -e "s|__BIN__|/b|g" "$plist" | grep -q '__'; then echo "FAIL: a placeholder the installer does not substitute"; exit 1; fi
+  [ "$(grep -c '<string>__HOME__/.agentic-workflow/sindri/evolve-launchd.log</string>' "$plist")" = 2 ] || { echo "FAIL: the evolve job does not log to evolve-launchd.log"; exit 1; }
+  grep -qE 'com\.agentic-workflow\.sindri-evolve\|weekly evolve \(Mondays 07:30\)' "$ROOT/scripts/install-sindri.sh" || { echo "FAIL: installer does not install the job"; exit 1; }
+  local out
+  out="$(AW_DRY_RUN=1 CLAUDE_LOCAL_BIN="$TMP/bin" bash "$ROOT/scripts/install-sindri.sh")"
+  grep -q 'would install launchd job com.agentic-workflow.sindri-evolve.plist' <<<"$out" || { echo "FAIL: dry-run does not list the evolve job"; exit 1; }
+  echo "PASS: test_evolve_job_is_weekly"
 }
 
 test_nudge_hook_per_provider() {
@@ -449,6 +465,7 @@ test_launchd_bootstrap_failure_warns_and_continues
 test_launchd_refuses_unsafe_bin_path
 test_index_jobs
 test_launchd_installs_every_job
+test_evolve_job_is_weekly
 test_nudge_hook_per_provider
 test_channel_dry_run_writes_nothing
 test_channel_refuses_unmerged_ref
