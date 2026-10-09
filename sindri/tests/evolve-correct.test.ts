@@ -9,9 +9,11 @@ import {
 import { TRANSCRIPTS_CLAUSE } from "../src/evolve/prompts.js";
 import type { Artifact } from "../src/evolve/registry.js";
 import { Budget, type ModelRunner } from "../src/scope/model.js";
+import { compileExtraPatterns, makeScrubber } from "../src/scrub/scrub.js";
 import { answeringRunner } from "./evolve-fixtures.js";
 import { tempDir } from "./helpers.js";
 
+const scrub = makeScrubber();
 const DESIGN: CorrectionLabel = "wrong_approach_design";
 const PROCESS: CorrectionLabel = "wrong_approach_process";
 const c = (ref: string, session: string, day: string, text: string, labels: CorrectionLabel[] = [DESIGN]): Correction => ({ ref, session, day, text, labels });
@@ -53,14 +55,14 @@ describe("findCandidateTurns (Review Focus 5, 8, 9)", () => {
     ]);
     const file = path.join(dir, "5e55a1d0-a.jsonl");
     const tail = `${"a".repeat(500)} done [REDACTED:aws-access-key]`.slice(-400);
-    const found = findCandidateTurns(dir, "/repo", since, ["quarterly staffing overhaul"], 10);
+    const found = findCandidateTurns(dir, "/repo", since, ["quarterly staffing overhaul"], 10, scrub);
     expect(found).toEqual([
       { ref: "transcript:5e55a1d0#10", session: file, day: "2026-10-07", text: "run the suite in CI", prevAssistantTail: tail, editsBefore: true },
       { ref: "transcript:5e55a1d0#3", session: file, day: "2026-10-07", text: "No, wrong file [REDACTED:aws-access-key]", prevAssistantTail: tail, editsBefore: true },
       { ref: "transcript:5e55a1d0#1", session: file, day: "2026-10-07", text: "please fix the hook", prevAssistantTail: "", editsBefore: false },
     ]);
-    expect(findCandidateTurns(dir, "/repo", since, [], 2).map((t) => t.ref)).toEqual(["transcript:5e55a1d0#10", "transcript:5e55a1d0#8"]); // no holdout titles given, so the quoting turn stays
-    expect(findCandidateTurns(path.join(dir, "missing"), "/repo", new Date(0), [], 10)).toEqual([]);
+    expect(findCandidateTurns(dir, "/repo", since, [], 2, scrub).map((t) => t.ref)).toEqual(["transcript:5e55a1d0#10", "transcript:5e55a1d0#8"]); // no holdout titles given, so the quoting turn stays
+    expect(findCandidateTurns(path.join(dir, "missing"), "/repo", new Date(0), [], 10, scrub)).toEqual([]);
   });
 
   it("tracks edits per session, and counts a turn copied into a forked session once but the same text at another time twice", () => {
@@ -68,7 +70,7 @@ describe("findCandidateTurns (Review Focus 5, 8, 9)", () => {
     const same = line("/repo", "2026-10-07T10:00:00Z", "use the hook, not the test");
     write(dir, "aaaa0001.jsonl", [same, line("/repo", "2026-10-07T10:01:00Z", [{ type: "tool_use", name: "Write" }], "assistant"), line("/repo", "2026-10-07T10:02:00Z", "wait, edit the doc instead")]);
     write(dir, "bbbb0002.jsonl", [same, line("/repo", "2026-10-08T10:00:00Z", "use the hook, not the test"), line("/repo", "2026-10-08T10:01:00Z", "and run it in CI")]);
-    const found = findCandidateTurns(dir, "/repo", since, [], 10);
+    const found = findCandidateTurns(dir, "/repo", since, [], 10, scrub);
     expect(found.map((t) => [t.ref, t.day, t.editsBefore])).toEqual([
       ["transcript:bbbb0002#3", "2026-10-08", false],
       ["transcript:bbbb0002#2", "2026-10-08", false],
@@ -79,19 +81,52 @@ describe("findCandidateTurns (Review Focus 5, 8, 9)", () => {
 });
 
 describe("findCandidateTurns cuts (scrub the whole text, then cut)", () => {
+  const key = "AKIA" + "ABCDEFGHIJKLMNOP";
+  const line = (ts: string, content: string, type: string) => JSON.stringify({ type, cwd: "/repo", timestamp: ts, message: { role: type, content } });
+  // No fragment of `key` of 5 or more characters may survive at either end of a cut text.
+  const fragments = (k: string): string[] => Array.from({ length: k.length - 5 }, (_, i) => [k.slice(0, i + 5), k.slice(-(i + 5))]).flat();
+
   it("never leaves a fragment of a secret at the tail or text cut", () => {
     const dir = tempDir();
-    const secret = "AKIA" + "ABCDEFGHIJKLMNOP";
-    const line = (ts: string, content: string, type: string) => JSON.stringify({ type, cwd: "/repo", timestamp: ts, message: { role: type, content } });
     fs.writeFileSync(path.join(dir, "c0ffee01.jsonl"), [
-      line("2026-10-07T10:00:00Z", `${"x".repeat(100)} ${secret} ${"y".repeat(390)}`, "assistant"),
-      line("2026-10-07T10:01:00Z", `${"a".repeat(1490)} ${secret} ${"b".repeat(50)}`, "user"),
+      line("2026-10-07T10:00:00Z", `${"x".repeat(100)} ${key} ${"y".repeat(390)}`, "assistant"),
+      line("2026-10-07T10:01:00Z", `${"a".repeat(1490)} ${key} ${"b".repeat(50)}`, "user"),
     ].join("\n"));
-    const [t] = findCandidateTurns(dir, "/repo", new Date("2026-10-01"), [], 5);
+    const [t] = findCandidateTurns(dir, "/repo", new Date("2026-10-01"), [], 5, scrub);
     expect(t.prevAssistantTail).toHaveLength(400);
-    expect(t.prevAssistantTail).not.toContain("GHIJKLMNOP");
     expect(t.text).toHaveLength(1500);
-    expect(t.text).not.toContain("AKIA");
+    for (const f of fragments(key)) {
+      expect(t.prevAssistantTail, f).not.toContain(f);
+      expect(t.text, f).not.toContain(f);
+    }
+  });
+
+  it("cuts with the profile scrubber, so a profile pattern straddling a cut leaves no fragment", () => {
+    const dir = tempDir();
+    const term = "zq-internal-" + "0123456789";
+    const profile = makeScrubber(compileExtraPatterns([{ kind: "internal-term", regex: "zq-internal-[0-9]{10}" }]));
+    fs.writeFileSync(path.join(dir, "c0ffee02.jsonl"), [
+      line("2026-10-07T10:00:00Z", `${"x".repeat(100)} ${term} ${"y".repeat(390)}`, "assistant"),
+      line("2026-10-07T10:01:00Z", `${"a".repeat(1490)} ${term} ${"b".repeat(50)}`, "user"),
+    ].join("\n"));
+    const [t] = findCandidateTurns(dir, "/repo", new Date("2026-10-01"), [], 5, profile);
+    for (const f of fragments(term)) {
+      expect(t.prevAssistantTail, f).not.toContain(f);
+      expect(t.text, f).not.toContain(f);
+    }
+    const [plain] = findCandidateTurns(dir, "/repo", new Date("2026-10-01"), [], 5, scrub);
+    expect(plain.text).toContain("zq-in"); // the default scrubber does not know the profile term
+  });
+
+  it("blanks an assistant tail that quotes a holdout title, but keeps the human turn", () => {
+    const dir = tempDir();
+    fs.writeFileSync(path.join(dir, "c0ffee03.jsonl"), [
+      line("2026-10-07T10:00:00Z", `${"x".repeat(600)} the Quarterly Staffing Overhaul brief says so`, "assistant"),
+      line("2026-10-07T10:01:00Z", "no, use the other file", "user"),
+    ].join("\n"));
+    const since = new Date("2026-10-01");
+    expect(findCandidateTurns(dir, "/repo", since, ["quarterly staffing overhaul"], 5, scrub)).toMatchObject([{ text: "no, use the other file", prevAssistantTail: "" }]);
+    expect(findCandidateTurns(dir, "/repo", since, [], 5, scrub)[0].prevAssistantTail).toContain("Staffing Overhaul");
   });
 });
 
@@ -145,20 +180,40 @@ describe("labelTurns (a model labels each turn; Review Focus 5)", () => {
     expect(twice.calls).toHaveLength(4); // batch 1, batch 2 (bad), batch 2 again (bad), batch 3
   });
 
-  it("treats a malformed answer as a failed batch: missing, unknown or repeated turns, none with another label, a repeated or unknown label, no labels", async () => {
+  it("keeps a batch's valid items and drops and counts the invalid ones", async () => {
+    const t = turns(20);
+    const r = answeringRunner((call) => ({ results: refsOf(call.input).map((ref) => ({ ref, labels: ref === "t7" ? ["vibes"] : [DESIGN] })) }));
+    const out = await labelTurns(t, opts(r));
+    expect(out).toMatchObject({ labeled: 19, labelErrors: 0, labelDropped: 1, incomplete: false });
+    expect(out.corrections.map((x) => x.ref)).not.toContain("t7");
+    expect(out.corrections).toHaveLength(19);
+    expect(r.calls).toHaveLength(1); // no retry: the batch parsed
+    // Every kind of bad item is dropped on its own: unknown turn, repeated turn, none with another label, repeated label, no labels, wrong shape.
+    const mixed = answeringRunner(() => ({
+      results: [
+        { ref: "t1", labels: ["none"] }, { ref: "t1", labels: [DESIGN] }, { ref: "zz", labels: ["none"] }, { ref: "t2", labels: ["none", "rigor"] },
+        { ref: "t3", labels: ["rigor", "rigor"] }, { ref: "t4", labels: [] }, { ref: "t5" }, "junk", { ref: "t6", labels: [PROCESS] },
+      ],
+    }));
+    const m = await labelTurns(turns(6), opts(mixed));
+    expect(m).toMatchObject({ labeled: 2, labelErrors: 0, labelDropped: 7 });
+    expect(m.corrections.map((x) => x.ref)).toEqual(["t6"]);
+  });
+
+  it("fails the batch when no item parses or the answer is not an array", async () => {
     const shapes: unknown[] = [
       { results: [] },
       { results: [{ ref: "zz", labels: ["none"] }] },
-      { results: [{ ref: "t1", labels: ["none"] }, { ref: "zz", labels: ["none"] }] },
-      { results: [{ ref: "t1", labels: ["none"] }, { ref: "t1", labels: ["none"] }] },
       { results: [{ ref: "t1", labels: ["none", "rigor"] }] },
       { results: [{ ref: "t1", labels: ["rigor", "rigor"] }] },
       { results: [{ ref: "t1", labels: ["vibes"] }] },
       { results: [{ ref: "t1", labels: [] }] },
+      { results: "t1" },
+      { nope: 1 },
     ];
     for (const shape of shapes) {
       const r = answeringRunner(() => shape);
-      expect(await labelTurns([turn("t1")], opts(r)), JSON.stringify(shape)).toMatchObject({ labeled: 0, labelErrors: 1, corrections: [] });
+      expect(await labelTurns([turn("t1")], opts(r)), JSON.stringify(shape)).toMatchObject({ labeled: 0, labelErrors: 1, labelDropped: 0, corrections: [] });
       expect(r.calls).toHaveLength(2);
     }
   });

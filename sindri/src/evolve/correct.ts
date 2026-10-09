@@ -3,7 +3,7 @@ import { zodToJsonSchema } from "zod-to-json-schema";
 
 import type { Budget, ModelRunner } from "../scope/model.js";
 import { keywordsOf } from "../scope/source.js";
-import { makeScrubber } from "../scrub/scrub.js";
+import type { Scrubber } from "../scrub/scrub.js";
 import { askModel } from "./ask.js";
 import { mentionsHoldout } from "./corpus.js";
 import { TRANSCRIPTS_CLAUSE } from "./prompts.js";
@@ -46,11 +46,11 @@ export interface Labeled {
   labeled: number;
   counts: Record<CorrectionLabel, number>;
   labelErrors: number;
+  labelDropped: number;
   incomplete: boolean;
   notes: string[];
 }
 
-const scrubber = makeScrubber();
 const esc = (s: string): string => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 const EDIT_TOOLS = new Set(["Edit", "Write", "MultiEdit", "NotebookEdit"]);
 const BATCH = 20;
@@ -60,7 +60,7 @@ const humanText = (blocks: { text: string; toolResult: boolean }[]): string => b
 
 // The human turns of this repo's sessions, newest first, at most `cap`. readRepoSessions has already
 // dropped lines copied into a forked or resumed session.
-export function findCandidateTurns(dir: string, repo: string, since: Date, dropTitles: readonly string[], cap: number): CandidateTurn[] {
+export function findCandidateTurns(dir: string, repo: string, since: Date, dropTitles: readonly string[], cap: number, scrubber: Scrubber): CandidateTurn[] {
   const { lines } = readRepoSessions(dir, repo, since);
   const lastAssistant = new Map<string, string>();
   const edited = new Set<string>();
@@ -74,13 +74,14 @@ export function findCandidateTurns(dir: string, repo: string, since: Date, dropT
     }
     if (l.type !== "user" || !(Date.parse(l.ts) >= since.getTime())) continue;
     const text = humanText(l.blocks);
+    const before = lastAssistant.get(l.file) ?? "";
     if (text === "" || text.startsWith("<") || mentionsHoldout(text, dropTitles)) continue;
     found.push({
       ts: l.ts,
       turn: {
         ref: l.ref, session: l.file, day: l.ts.slice(0, 10),
         text: scrubber.scrub(text).text.slice(0, 1500),
-        prevAssistantTail: scrubber.scrub(lastAssistant.get(l.file) ?? "").text.slice(-TAIL),
+        prevAssistantTail: mentionsHoldout(before, dropTitles) ? "" : scrubber.scrub(before).text.slice(-TAIL),
         editsBefore: edited.has(l.file),
       },
     });
@@ -102,30 +103,33 @@ export const LABEL_SYSTEM = [
   "- none: none of the above (a new request, a question, thanks, an answer).",
 ].join("\n");
 
-const BatchAnswer = z
+const LabelItem = z
   .object({
-    results: z.array(
-      z
-        .object({
-          ref: z.string(),
-          labels: z
-            .array(z.enum(LABELS))
-            .min(1)
-            .refine((l) => new Set(l).size === l.length, "labels must be distinct")
-            .refine((l) => !l.includes("none") || l.length === 1, "none stands alone"),
-        })
-        .strict(),
-    ),
+    ref: z.string(),
+    labels: z
+      .array(z.enum(LABELS))
+      .min(1)
+      .refine((l) => new Set(l).size === l.length, "labels must be distinct")
+      .refine((l) => !l.includes("none") || l.length === 1, "none stands alone"),
   })
   .strict();
-const LABEL_SCHEMA = zodToJsonSchema(BatchAnswer, { $refStrategy: "none" }) as Record<string, unknown>;
+const LABEL_SCHEMA = zodToJsonSchema(z.object({ results: z.array(LabelItem) }).strict(), { $refStrategy: "none" }) as Record<string, unknown>;
 
-// The answer must label each id of the batch exactly once.
-const batchAnswer = (refs: readonly string[]) =>
-  BatchAnswer.superRefine((a, ctx) => {
-    const got = a.results.map((r) => r.ref);
-    if (got.length !== refs.length || !refs.every((r) => got.includes(r))) ctx.addIssue({ code: z.ZodIssueCode.custom, message: "results must label each turn id exactly once" });
-  });
+// Items are validated one by one: a bad item (unknown or repeated turn id, bad labels) is dropped and
+// counted, the rest of the batch is kept. The batch fails only when the answer is not a list or no item parses.
+const batchAnswer = (refs: readonly string[]) => (v: unknown): { results: z.infer<typeof LabelItem>[]; dropped: number } => {
+  const items = z.object({ results: z.array(z.unknown()) }).parse(v).results;
+  const seen = new Set<string>();
+  const results: z.infer<typeof LabelItem>[] = [];
+  for (const raw of items) {
+    const r = LabelItem.safeParse(raw);
+    if (!r.success || !refs.includes(r.data.ref) || seen.has(r.data.ref)) continue;
+    seen.add(r.data.ref);
+    results.push(r.data);
+  }
+  if (results.length === 0) throw new Error("no item of the answer labels a turn id it was given");
+  return { results, dropped: items.length - results.length };
+};
 
 const fenceTurn = (t: CandidateTurn): string =>
   [
@@ -137,7 +141,7 @@ const fenceTurn = (t: CandidateTurn): string =>
 // (it never aborts the run); an exhausted budget stops the loop with a partial result.
 export async function labelTurns(turns: readonly CandidateTurn[], o: { runner: ModelRunner; model: string; budget: Budget }): Promise<Labeled> {
   const out: Labeled = {
-    corrections: [], labeled: 0, labelErrors: 0, incomplete: false, notes: [],
+    corrections: [], labeled: 0, labelErrors: 0, labelDropped: 0, incomplete: false, notes: [],
     counts: { wrong_approach_design: 0, wrong_approach_process: 0, restate: 0, scope_surface: 0 },
   };
   for (let start = 0; start < turns.length; start += BATCH) {
@@ -150,7 +154,7 @@ export async function labelTurns(turns: readonly CandidateTurn[], o: { runner: M
     const refs = batch.map((t) => t.ref);
     const call = {
       role: "label", model: o.model, system: LABEL_SYSTEM, input: [TRANSCRIPTS_CLAUSE, ...batch.map(fenceTurn)].join("\n\n"),
-      schema: LABEL_SCHEMA, parse: (v: unknown) => batchAnswer(refs).parse(v), timeoutMs: 600_000,
+      schema: LABEL_SCHEMA, parse: batchAnswer(refs), timeoutMs: 600_000,
     };
     let a = await askModel(o.runner, o.budget, call);
     if (!a.ok) a = await askModel(o.runner, o.budget, call);
@@ -158,10 +162,13 @@ export async function labelTurns(turns: readonly CandidateTurn[], o: { runner: M
       out.labelErrors += 1;
       continue;
     }
-    const labelsOf: Record<string, readonly Label[]> = Object.fromEntries(a.value.results.map((r) => [r.ref, r.labels] as const));
+    out.labelDropped += a.value.dropped;
+    const labelsOf = new Map<string, readonly Label[]>(a.value.results.map((r) => [r.ref, r.labels] as const));
     for (const t of batch) {
+      const got = labelsOf.get(t.ref);
+      if (got === undefined) continue;
       out.labeled += 1;
-      const kept = CORRECTION_LABELS.filter((l) => labelsOf[t.ref].includes(l));
+      const kept = CORRECTION_LABELS.filter((l) => got.includes(l));
       if (kept.length === 0) continue;
       for (const l of kept) out.counts[l] += 1;
       out.corrections.push({ ref: t.ref, session: t.session, day: t.day, text: t.text, labels: kept });

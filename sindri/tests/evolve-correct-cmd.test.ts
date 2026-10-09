@@ -136,4 +136,75 @@ describe("sindri evolve correct", () => {
     expect(tight.io.calls).toHaveLength(1);
     tight.fx.close();
   });
+
+  // Two classes (process: the hook-file corrections; design: the CI ones) and the fillers that make the batches.
+  const CLASSES = { proposal: { ...answer.proposal, artifact: "hook:done-gate", kind: "code", title: "Run it in CI", change: { type: "describe", files: ["config/hooks/done-gate.sh"], description: "d" } } };
+  const filler = (fx: EvolveFixture, name: string, day: string, n: number) =>
+    fs.writeFileSync(path.join(fx.transcripts, name), `${Array.from({ length: n }, (_, i) => JSON.stringify({ type: "user", cwd: fx.repo, timestamp: `2026-10-${day}T10:00:${String(i).padStart(2, "0")}Z`, message: { content: `turn number ${i}` } })).join("\n")}\n`);
+  const labelsBy = (call: ModelCall<unknown>) => ({ results: refsOf(call.input).map((ref) => ({ ref, labels: call.input.includes(`id="${ref}" kind="human" edits-before="no">turn number`) ? ["none"] : call.input.includes(`id="${ref}" kind="human" edits-before="no">run it`) ? ["wrong_approach_design"] : ["wrong_approach_process"] })) });
+  const twoClasses = (fx: EvolveFixture) => {
+    writeCorrections(fx);
+    for (const [name, day, text] of [["8b88d4a3-d.jsonl", "4", "run it in CI, never locally"], ["9c99e5b4-e.jsonl", "3", "run it in CI, never locally please"]]) {
+      fs.writeFileSync(path.join(fx.transcripts, name), `${JSON.stringify({ type: "user", cwd: fx.repo, timestamp: `2026-10-0${day}T10:00:00Z`, message: { content: text } })}\n`);
+    }
+  };
+
+  it("lets a partial week be rerun: only the complete-run marker says already ran, and a complete run writes it", async () => {
+    let failDesign = true;
+    const io = scriptedEvolveIo((call) => {
+      if (call.role === "label") return labelsBy(call);
+      if (call.input.includes("Class label: wrong_approach_design")) return failDesign ? { nope: 1 } : CLASSES;
+      return answer;
+    });
+    const fx = await evolveFixture({ files: FILES, io });
+    await init([], fx.ctx);
+    twoClasses(fx);
+    const first = await correctCommand([], fx.ctx);
+    expect(first.exitCode).toBe(1);
+    expect(first.stdout).toContain("Partial result: class 1: the model's answer didn't match the schema");
+    expect(fx.ctx.db.prepare("SELECT COUNT(*) AS c FROM proposals").get()).toEqual({ c: 1 }); // the process class was saved
+    expect(fx.ctx.db.prepare("SELECT COUNT(*) AS c FROM evolve_audit").get()).toEqual({ c: 0 });
+    failDesign = false;
+    const calls = io.calls.length;
+    const second = await correctCommand([], fx.ctx);
+    expect(io.calls.length).toBeGreaterThan(calls); // the rerun asked the model again
+    expect(second.exitCode).toBe(0);
+    expect(second.stdout).toContain("Run it in CI");
+    expect(fx.ctx.db.prepare("SELECT COUNT(*) AS c FROM proposals").get()).toEqual({ c: 2 }); // the missing class was added, the first was a duplicate
+    expect(fx.ctx.db.prepare("SELECT COUNT(*) AS c FROM evolve_audit").get()).toEqual({ c: 1 });
+    const third = await correctCommand([], fx.ctx);
+    expect(third.stdout).toMatch(/^Already ran for 2026-W41: \S+, \S+\.\nNext: sindri evolve proposals\n$/);
+    expect(io.calls.length).toBe(calls + 3); // the third run spent nothing
+    fx.close();
+  });
+
+  it("does not remember the week when a labeling batch failed, even though a class was found", async () => {
+    const io = scriptedEvolveIo((call) => (call.role === "label" ? (call.input.includes("turn number") ? { nope: 1 } : labelsBy(call)) : answer));
+    const fx = await evolveFixture({ files: FILES, io });
+    await init([], fx.ctx);
+    writeCorrections(fx);
+    filler(fx, "7a77c3f2-c.jsonl", "07", 20); // the newest 20 turns are the first batch, which fails
+    const r = await correctCommand([], fx.ctx);
+    expect(r.exitCode).toBe(1);
+    expect(r.stdout).toContain(`Correct: ${LABELED(2, 0, 2, 1)}; 1 repeated-correction class, 1 proposal`);
+    expect(r.stdout).toContain("Partial result: labeling: 1 failed batch(es)");
+    expect(r.stdout).toContain("Next: rerun sindri evolve correct once the cause above is fixed");
+    expect(fx.ctx.db.prepare("SELECT COUNT(*) AS c FROM evolve_audit").get()).toEqual({ c: 0 });
+    fx.close();
+  });
+
+  it("says to raise the budget, not to rerun, when the labeling budget ran out after a class was found", async () => {
+    const io = scriptedEvolveIo((call) => (call.role === "label" ? labelsBy(call) : answer));
+    const fx = await evolveFixture({ files: FILES, io, extraYaml: "evolve:\n  maxTokensPerJob: 2\n" });
+    await init([], fx.ctx);
+    writeCorrections(fx);
+    filler(fx, "7a77c3f2-c.jsonl", "03", 20); // the two corrections are newest: batch 1 finds the class, batch 2 is never labeled
+    const r = await correctCommand([], fx.ctx);
+    expect(r.exitCode).toBe(1);
+    expect(r.stdout).toContain("Partial result: labeling stopped before batch 2: token budget exhausted");
+    expect(r.stdout).toContain("Next: raise evolve.maxTokensPerJob in the profile (then sindri profile approve), or rerun later");
+    expect(r.stdout).not.toContain("Next: rerun sindri evolve correct once");
+    expect(fx.ctx.db.prepare("SELECT COUNT(*) AS c FROM evolve_audit").get()).toEqual({ c: 0 });
+    fx.close();
+  });
 });
