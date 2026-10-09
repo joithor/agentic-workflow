@@ -12,6 +12,7 @@ import { readManifestDeps } from "./deps-layer.js";
 import { inventory, isSourcePath, type IndexedFile } from "./files.js";
 import { matchesAny } from "./globs.js";
 import { withHeavyLock } from "./heavy-lock.js";
+import { refreshMirror } from "./mirror.js";
 import { bandKeys, encodeSig, SHINGLE, signature } from "./minhash.js";
 import { typescriptParser } from "./parse-ts.js";
 
@@ -19,8 +20,10 @@ import { typescriptParser } from "./parse-ts.js";
 export const INDEXER_VERSION = "1";
 // The stamp includes the utility globs: they decide each symbol's `utility` flag, so
 // changing them must re-parse unchanged files.
-const structureStamp = (utilityGlobs: readonly string[]): string =>
-  `parse-ts@${INDEXER_VERSION}+${createHash("sha256").update(JSON.stringify(utilityGlobs)).digest("hex").slice(0, 8)}`;
+// It also includes scrub.extraPatterns: they decide what stored bodies redact, so a new pattern
+// must reach the bodies of unchanged files.
+const structureStamp = (utilityGlobs: readonly string[], extraPatterns: readonly { kind: string; regex: string }[]): string =>
+  `parse-ts@${INDEXER_VERSION}+${createHash("sha256").update(JSON.stringify([utilityGlobs, extraPatterns])).digest("hex").slice(0, 8)}`;
 
 // Replaced by the real interfaces in Tasks 6 (Embedder) and 7 (GraphProvider).
 export type Embedder = never;
@@ -100,13 +103,15 @@ function writeDeps(db: IndexDb, files: IndexedFile[]): void {
   })();
 }
 
-export async function buildIndex(deps: Deps, loaded: LoadedProfile, repo: string, o: { full: boolean; quick?: boolean }, providers: Providers): Promise<BuildReport> {
+export async function buildIndex(deps: Deps, loaded: LoadedProfile, repo: string, o: { full: boolean; quick?: boolean; mirror?: boolean }, providers: Providers): Promise<BuildReport> {
   const cfg = loaded.repos[repo];
   if (cfg === undefined) throw new SindriError("SND-PROFILE-004", `no repo named ${repo}`);
   const ix = loaded.profile.index;
   const quick = o.quick === true;
   return withHeavyLock(deps, `index-build:${repo}`, 600_000, async () => {
     const started = deps.now().getTime();
+    // Inside the heavy-job lock: a clone of a big repo is heavy too.
+    if (o.mirror === true) await refreshMirror(deps, repo, cfg.path);
     const deny = [...ix.denyPaths, ...cfg.index.denyPaths];
     const inv = await inventory(deps.git, cfg.path, {
       denyPaths: deny,
@@ -124,7 +129,7 @@ export async function buildIndex(deps: Deps, loaded: LoadedProfile, repo: string
     const db = openIndex(tmp);
     try {
       const now = deps.now();
-      const stamp = structureStamp(ix.utilityGlobs);
+      const stamp = structureStamp(ix.utilityGlobs, loaded.profile.scrub.extraPatterns);
       const scrubber = makeScrubber(compileExtraPatterns(loaded.profile.scrub.extraPatterns));
       const { changed, removed } = writeStructure(db, inv.files, ix.utilityGlobs, stamp, scrubber);
       setLayer(db, "structure", stamp, "ok", "TypeScript compiler API", now);

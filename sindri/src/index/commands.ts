@@ -11,7 +11,6 @@ import type { LoadedProfile } from "../profile/load.js";
 import { buildIndex, type BuildReport } from "./build.js";
 import { indexPath, LAYERS, layers, meta, openIndexReadOnly } from "./db.js";
 import type { IndexIo } from "./io.js";
-import { refreshMirror } from "./mirror.js";
 
 // Read-only: index commands never create or migrate the ledger. A missing ledger is "nothing approved".
 export function approvedOrThrow(deps: Deps): LoadedProfile {
@@ -43,8 +42,7 @@ async function build(args: string[], deps: Deps, _io: IndexIo): Promise<CommandR
   const reports: BuildReport[] = [];
   for (const repo of reposOf(loaded, values.repo)) {
     deps.log(`building ${repo}${quick ? " (quick: structure, clones, deps)" : ""}; this takes the heavy-job lock`);
-    if (!quick) await refreshMirror(deps, repo, loaded.repos[repo].path);
-    reports.push(await buildIndex(deps, loaded, repo, { full: values.full === true, quick }, { embedder: null, graph: null }));
+    reports.push(await buildIndex(deps, loaded, repo, { full: values.full === true, quick, mirror: !quick }, { embedder: null, graph: null }));
   }
   const text = reports
     .map((r) => `${r.repo}: ${r.files.indexed} files (${r.files.changed} changed, ${r.files.removed} removed, ${r.files.skipped} skipped), ${r.symbols} symbols; ${describeLayers(r.layers)} (${(r.ms / 1000).toFixed(1)} s)`)

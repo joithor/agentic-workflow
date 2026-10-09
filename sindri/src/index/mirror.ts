@@ -14,6 +14,8 @@ export async function refreshMirror(deps: Deps, name: string, repoPath: string):
   const r = fs.existsSync(mirror)
     ? await deps.git.run(["--git-dir", mirror, "fetch", "--prune", "--quiet"], repoPath)
     : await deps.git.run(["clone", "--mirror", "--quiet", repoPath, mirror], repoPath);
+  fs.chmodSync(path.dirname(mirror), 0o700);
   if (!r.ok) throw new SindriError("SND-INDEX-002", `could not mirror ${repoPath}: ${r.stderr.split("\n")[0]}`);
+  fs.chmodSync(mirror, 0o700);
   return mirror;
 }

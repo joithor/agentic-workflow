@@ -55,14 +55,14 @@ export function ring0Name(d: Deps): string {
 
 // A live (unapproved) profile for one repo named `r`, for tests that call buildIndex directly.
 // `yaml` is more children of `index:` (two-space indent).
-export function profileFor(root: string, o: { utility?: string[]; yaml?: string } = {}): LoadedProfile {
+export function profileFor(root: string, o: { utility?: string[]; yaml?: string; top?: string } = {}): LoadedProfile {
   const dir = tempDir("sindri-prof-");
   fs.mkdirSync(path.join(dir, "repos"));
   const utility = o.utility ?? ["src/util/**"];
   const globs = utility.length === 0 ? "  utilityGlobs: []\n" : `  utilityGlobs:\n${utility.map((g) => `    - "${g}"\n`).join("")}`;
   fs.writeFileSync(
     path.join(dir, "profile.yaml"),
-    `schemaVersion: 1\nuser: me\nhosts:\n  active: test-host\ntracker:\n  type: plan-file\n  repo: r\nrepos:\n  - r\nindex:\n${globs}${o.yaml ?? ""}`,
+    `schemaVersion: 1\nuser: me\nhosts:\n  active: test-host\ntracker:\n  type: plan-file\n  repo: r\nrepos:\n  - r\nindex:\n${globs}${o.yaml ?? ""}${o.top ?? ""}`,
   );
   fs.writeFileSync(path.join(dir, "repos/r.yaml"), `schemaVersion: 1\nname: r\npath: ${root}\n`);
   const r = loadProfile(dir);

@@ -191,6 +191,33 @@ describe("buildIndex", () => {
     expect(rows.find((r) => r.name === "big")?.n).toBeGreaterThan(0);
   });
 
+  it("re-scrubs unchanged files when scrub.extraPatterns changes", async () => {
+    const root = gitRepo({ "src/k.ts": 'export function key() { return "internal-token-4242"; }\n' });
+    const d = makeDeps();
+    await buildIndex(d, profileFor(root), "r", { full: false }, none);
+    const body = () => {
+      const db = openIndexReadOnly(indexPath(d, "r"));
+      const row = db?.prepare("SELECT body FROM symbols WHERE name = 'key'").get() as { body: string };
+      db?.close();
+      return row.body;
+    };
+    expect(body()).toContain("internal-token-4242");
+    const top = "scrub:\n  extraPatterns:\n    - kind: internal-token\n      regex: 'internal-token-[0-9]+'\n";
+    const again = await buildIndex(d, profileFor(root, { top }), "r", { full: false }, none);
+    expect(again.files.changed).toBe(1);
+    expect(body()).not.toContain("internal-token-4242");
+  });
+
+  it("mirrors inside the heavy-job lock when asked", async () => {
+    const root = gitRepo(FILES);
+    const d = makeDeps();
+    const lock = path.join(d.env.AW_STATE_DIR as string, "locks", "heavy-job.lock");
+    const seen: boolean[] = [];
+    const git = { run: async (args: string[], cwd: string) => { if (args[0] === "clone") seen.push(fs.existsSync(lock)); return d.git.run(args, cwd); } };
+    await buildIndex({ ...d, git }, profileFor(root), "r", { full: false, mirror: true }, none);
+    expect(seen).toEqual([true]);
+  });
+
   it("refuses an unknown repo", async () => {
     const root = gitRepo(FILES);
     await expect(buildIndex(makeDeps(), profileFor(root), "nope", { full: false }, none)).rejects.toThrow(/SND-PROFILE-004|no repo named nope/);
@@ -203,6 +230,8 @@ describe("mirror", () => {
     const d = makeDeps();
     expect(await refreshMirror(d, "r", root)).toBe(mirrorPath(d, "r"));
     expect(fs.existsSync(path.join(mirrorPath(d, "r"), "HEAD"))).toBe(true);
+    expect(fs.statSync(mirrorPath(d, "r")).mode & 0o777).toBe(0o700);
+    expect(fs.statSync(path.dirname(mirrorPath(d, "r"))).mode & 0o777).toBe(0o700);
     fs.writeFileSync(path.join(root, "src/c.ts"), "export const c = 1;\n");
     git(root, "add", "-A");
     git(root, "commit", "-qm", "second");
