@@ -1922,7 +1922,7 @@ If it fails, the message names the cause: `SND-SCOPE-002 … (claude exited N): 
   - `safeText(s: string): string` — makes one model-written or source-derived string inert in Markdown: strips what `sanitizeIngest` strips (HTML comments, `<img>`, zero-width characters, remote images and links), writes any remaining `http(s)://` as `hxxp(s)://`, escapes `< > [ ] ! \` |`, and folds line breaks into spaces so text can't start a heading or fake a status line.
   - `interface RenderMeta { status; rounds; tokens; generatedAt; reasons: string[]; notes: string[]; added: number }`, `renderMap(map, refs, meta): string` and `renderIncomplete(title, meta): string` (the file for a run where no map passed the checks). Both write the run's reasons and source notes into the file; every model- or source-derived string goes through `safeText`; the Sources table shows trust, author, a short excerpt and `displayRef` (no directories).
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 `sindri/tests/scope-map.test.ts`:
 
@@ -2101,12 +2101,12 @@ describe("renderMap", () => {
 });
 ```
 
-- [ ] **Step 2: Run the test to verify it fails**
+- [x] **Step 2: Run the test to verify it fails**
 
 Run: `cd sindri && npx vitest run tests/scope-map.test.ts`
 Expected: FAIL with `Failed to load url ../src/scope/map.js`.
 
-- [ ] **Step 3: Implement**
+- [x] **Step 3: Implement**
 
 `sindri/src/scope/map.ts`:
 
@@ -2291,12 +2291,12 @@ export function renderIncomplete(title: string, meta: RenderMeta): string {
 }
 ```
 
-- [ ] **Step 4: Run the tests**
+- [x] **Step 4: Run the tests**
 
 Run: `cd sindri && npm run typecheck && npm run test:coverage`
 Expected: all tests PASS; coverage 100% on `map.ts`.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add sindri/src/scope/map.ts sindri/tests/scope-map.test.ts
