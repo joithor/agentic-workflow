@@ -8,6 +8,10 @@ const DAY = 86_400_000;
 // Every call is about a profile repo, never the caller's own, so git's hook-exported repository
 // variables are cleared for it.
 const FOREIGN = { foreign: true };
+// The hourly job must never wait on a prompt: ssh fails instead of asking for a passphrase or
+// a host key, and https fails instead of asking for credentials.
+export const FETCH_ENV = { GIT_SSH_COMMAND: "ssh -o BatchMode=yes", GIT_TERMINAL_PROMPT: "0" };
+const FETCH = { ...FOREIGN, env: FETCH_ENV };
 
 export type Outcome = "kept" | "acted-on" | "dropped" | "n/a";
 
@@ -40,7 +44,8 @@ async function linkRuns(db: Ledger, deps: Deps, loaded: LoadedProfile, epoch: nu
     const cfg = loaded.repos[repo];
     if (cfg === undefined) continue;
     const since = Math.floor((Date.parse(runs[0].ts) - DAY) / 1000);
-    const log = await deps.git.run(["log", "--all", "--format=%H %T", `--since=${since}`], cfg.path, FOREIGN);
+    // A stash's index commit carries the staged tree too; only real commits count (Task 10 M4).
+    const log = await deps.git.run(["log", "--exclude=refs/stash", "--all", "--format=%H %T", `--since=${since}`], cfg.path, FOREIGN);
     if (!log.ok) continue;
     const trees = new Map<string, string>();
     for (const line of log.stdout.split("\n")) {
@@ -67,9 +72,9 @@ async function linkRuns(db: Ledger, deps: Deps, loaded: LoadedProfile, epoch: nu
 // Step 2: label each signal whose run is old enough. The outcome is read from the default
 // branch's own content (`git show <tip>:<file>`), never from the checked-out working tree or the
 // index, so it is right whatever branch the checkout is on (arch r2 N1). Merging is recognised by
-// content (`git log -S<name>` on the branch), not by ancestry, so squash and rebase merges count
-// (arch r2 N2). The branch tip prefers origin/<branch> after a best-effort fetch, so a stale
-// local branch can't mislabel.
+// ancestry or, failing that, by content (a version of the file on the branch holding the flagged
+// code), so squash and rebase merges count (arch r2 N2). The branch tip prefers origin/<branch>
+// after a best-effort fetch, so a stale local branch can't mislabel.
 async function labelSignals(db: Ledger, deps: Deps, loaded: LoadedProfile, epoch: number, now: Date): Promise<number> {
   const cutoff = now.getTime() - loaded.profile.shape.outcomeDays * DAY;
   const due = (
@@ -88,41 +93,55 @@ async function labelSignals(db: Ledger, deps: Deps, loaded: LoadedProfile, epoch
     const hasOrigin = (await deps.git.run(["remote", "get-url", "origin"], cfg.path, FOREIGN)).ok;
     // The fetch moves only refs/remotes/origin/<branch> (no tags, no local branch, HEAD, index or
     // working tree). Refs are spelled out in full, so a branch name can't be read as an option.
-    if (hasOrigin && !(await deps.git.run(["fetch", "--quiet", "--no-tags", "origin", `refs/heads/${cfg.defaultBranch}`], cfg.path, FOREIGN)).ok) continue;
+    if (hasOrigin && !(await deps.git.run(["fetch", "--quiet", "--no-tags", "origin", `refs/heads/${cfg.defaultBranch}`], cfg.path, FETCH)).ok) continue;
     const remote = await deps.git.run(["rev-parse", "--verify", "--quiet", `refs/remotes/origin/${cfg.defaultBranch}^{commit}`], cfg.path, FOREIGN);
     const local = remote.ok ? remote : await deps.git.run(["rev-parse", "--verify", "--quiet", `refs/heads/${cfg.defaultBranch}^{commit}`], cfg.path, FOREIGN);
     // Without a default branch to read, nothing can be decided yet: leave the signals unlabeled.
     if (!local.ok) continue;
     const tip = local.stdout.trim();
     const shown = new Map<string, string | null>();
-    const fileAt = async (rel: string): Promise<string | null> => {
-      if (!shown.has(rel)) {
-        const r = await deps.git.run(["show", `${tip}:${rel}`], cfg.path, FOREIGN);
-        shown.set(rel, r.ok ? r.stdout : null);
+    const fileAt = async (rev: string, rel: string): Promise<string | null> => {
+      const key = `${rev}:${rel}`;
+      if (!shown.has(key)) {
+        const r = await deps.git.run(["show", key], cfg.path, FOREIGN);
+        shown.set(key, r.ok ? r.stdout : null);
       }
-      return shown.get(rel) ?? null;
+      return shown.get(key) ?? null;
     };
     for (const s of signals) {
-      if (s.type === "simpler:diff-size" || s.type === "simpler:exports" || s.name === null) {
+      // A symbol signal with no recorded hash can't be matched to any version, so it can't be judged.
+      const unjudgeable = s.type !== "reinvented:dependency" && s.ast_hash === null;
+      if (s.type === "simpler:diff-size" || s.type === "simpler:exports" || s.name === null || unjudgeable) {
         labels.push({ seq: s.seq, outcome: "n/a" });
         continue;
       }
+      const name = s.name;
       const file = s.type === "reinvented:dependency" ? s.at : s.at.slice(0, s.at.lastIndexOf(":"));
-      const since = Math.floor((Date.parse(s.ts) - DAY) / 1000);
-      const reached = await deps.git.run(["log", tip, `--since=${since}`, `-S${s.name}`, "--format=%H", "--", file], cfg.path, FOREIGN);
-      if (!reached.ok) continue;
-      if (reached.stdout.trim() === "") {
-        // The flagged name never reached the default branch within outcomeDays: the change was dropped.
-        labels.push({ seq: s.seq, outcome: "dropped" });
-        continue;
+      // Whether this version of the file holds the flagged code: the dependency, or a symbol with
+      // the flagged name and the recorded ast hash.
+      const holds = (text: string | null): boolean =>
+        text !== null &&
+        (s.type === "reinvented:dependency"
+          ? readManifestDeps(file, text).some((d) => d.name === name)
+          : typescriptParser.parse(file, text).some((x) => x.name === name && x.astHash === s.ast_hash));
+      // Reached the default branch: the run's commit is on it, or (a squash or rebase merge) some
+      // version of the file on it since the run holds the flagged code. Judged by content, never by
+      // `-S<name>` counts, which miss in-place edits and match substrings (Task 10 ruling).
+      let reached = (await deps.git.run(["merge-base", "--is-ancestor", s.commit_sha, tip], cfg.path, FOREIGN)).ok;
+      if (!reached) {
+        const since = Math.floor(Date.parse(s.ts) / 1000);
+        const versions = await deps.git.run(["log", tip, `--since=${since}`, "--format=%H", "--", file], cfg.path, FOREIGN);
+        if (!versions.ok) continue;
+        for (const sha of versions.stdout.split("\n").filter((x) => x !== "")) {
+          if (holds(await fileAt(sha, file))) {
+            reached = true;
+            break;
+          }
+        }
       }
-      const text = await fileAt(file);
-      if (s.type === "reinvented:dependency") {
-        labels.push({ seq: s.seq, outcome: text !== null && readManifestDeps(file, text).some((d) => d.name === s.name) ? "kept" : "acted-on" });
-        continue;
-      }
-      const syms = text === null ? [] : typescriptParser.parse(file, text);
-      labels.push({ seq: s.seq, outcome: syms.some((x) => x.name === s.name && x.astHash === s.ast_hash) ? "kept" : "acted-on" });
+      // Never reached the default branch: the change was dropped.
+      if (!reached) labels.push({ seq: s.seq, outcome: "dropped" });
+      else labels.push({ seq: s.seq, outcome: holds(await fileAt(tip, file)) ? "kept" : "acted-on" });
     }
   }
   withEpoch(db, epoch, () => {

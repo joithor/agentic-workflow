@@ -45,6 +45,14 @@ describe("realGitRunner (smoke)", () => {
       delete process.env.GIT_DIR;
     }
   });
+
+  it("adds per-call environment variables, for that call only", async () => {
+    const git = realGitRunner();
+    const withEnv = await git.run(["var", "GIT_EDITOR"], process.cwd(), { env: { GIT_EDITOR: "sindri-editor" } });
+    expect(withEnv.ok && withEnv.stdout.trim()).toBe("sindri-editor");
+    const without = await git.run(["var", "GIT_EDITOR"], process.cwd());
+    expect(without.ok && without.stdout.trim()).not.toBe("sindri-editor");
+  });
 });
 
 describe("real index I/O (smoke)", () => {

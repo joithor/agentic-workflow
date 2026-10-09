@@ -11,6 +11,7 @@ export function realGitRunner(): GitRunner {
       new Promise<GitResult>((resolve) => {
         const env: NodeJS.ProcessEnv = { ...process.env, LC_ALL: "C", GIT_TERMINAL_PROMPT: "0" };
         if (o?.foreign === true) for (const v of REPO_VARS) delete env[v];
+        Object.assign(env, o?.env);
         execFile("git", args, { cwd, env, timeout: 60_000, maxBuffer: 64 * 1024 * 1024, encoding: "utf8" }, (err, stdout, stderr) => {
           resolve(err === null ? { ok: true, stdout } : { ok: false, stderr: stderr || err.message });
         });

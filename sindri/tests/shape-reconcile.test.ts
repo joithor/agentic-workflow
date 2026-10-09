@@ -1,3 +1,4 @@
+import { execFileSync } from "node:child_process";
 import fs from "node:fs";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
@@ -6,23 +7,25 @@ import { stateDir, type Deps } from "../src/deps.js";
 import { makeIndexCommand } from "../src/index/commands.js";
 import { indexPath } from "../src/index/db.js";
 import { typescriptParser } from "../src/index/parse-ts.js";
-import { reconcileShape } from "../src/index/reconcile.js";
+import { FETCH_ENV, reconcileShape } from "../src/index/reconcile.js";
 import { makeShapeCommand } from "../src/index/shape.js";
 import { bumpEpoch, ledgerPath, openLedger, type Ledger } from "../src/ledger/db.js";
 import { approvedProfile } from "../src/profile/approve.js";
 import type { LoadedProfile } from "../src/profile/load.js";
 import { runCli } from "../src/main.js";
 import { approvedIndexDeps, BODY, failingGit, fakeIndexIo, ring0Name, ring0Repo } from "./index-fixtures.js";
+import type { GitRunner } from "../src/git.js";
+import { realGitRunner } from "../src/git-real.js";
 import { git, makeDeps, tempDir } from "./helpers.js";
 
 const TS = "2026-10-08T12:00:00.000Z"; // the fixed commit date of every test commit
 const later = (d: Deps, days: number): Deps => ({ ...d, now: () => new Date(Date.parse(TS) + days * 86_400_000) });
 
 interface Sig { type: string; at: string; name: string | null; hash: string | null; outcome?: string }
-function insertRun(db: Ledger, o: { id: string; repo: string; tree: string | null; sha?: string; deferred?: string; signals: Sig[] }): void {
+function insertRun(db: Ledger, o: { id: string; repo: string; tree: string | null; sha?: string; ts?: string; deferred?: string; signals: Sig[] }): void {
   db.prepare(
     "INSERT INTO shape_runs (run_id, repo, ts, head, tree, commit_sha, elapsed_ms, index_age_ms, providers, deferred, signal_count, epoch) VALUES (?, ?, ?, NULL, ?, ?, 0, NULL, '{}', ?, ?, 1)",
-  ).run(o.id, o.repo, TS, o.tree, o.sha ?? null, o.deferred ?? "[]", o.signals.length);
+  ).run(o.id, o.repo, o.ts ?? TS, o.tree, o.sha ?? null, o.deferred ?? "[]", o.signals.length);
   for (const s of o.signals) {
     db.prepare("INSERT INTO shape_signals (run_id, type, layer, value, threshold, at, existing, detail, name, ast_hash, outcome, epoch) VALUES (?, ?, 'clones', 1, 1, ?, NULL, 'd', ?, ?, ?, 1)").run(
       o.id, s.type, s.at, s.name, s.hash, s.outcome ?? null,
@@ -141,10 +144,10 @@ const EXPECTED: Record<string, string | null> = {
   "run-a|simpler:diff-size|null": "n/a",
   "run-a|simpler:exports|null": "n/a",
   "run-a|reinvented:name|null": "n/a",
-  "run-a|simpler:complexity|shorten": "acted-on", // no recorded hash can match, so changed
+  "run-a|simpler:complexity|shorten": "n/a", // no recorded hash: nothing can be matched, so never acted-on
   "run-b|reinvented:exact|sidefn": "dropped", // only ever on the unmerged side branch
   "run-s|reinvented:exact|squashed": "kept", // squash merge: a new sha, same content, still counts as merged
-  "run-s|simpler:complexity|squashed": "acted-on",
+  "run-s|simpler:complexity|squashed": "dropped", // no version on the default branch ever held this hash
   "run-c|reinvented:exact|x": "dropped", // no commit ever matched, and it is older than 7 days
   "run-g|reinvented:exact|g": null, // not a git repo
   "run-r|reinvented:exact|r": null, // repo not in the profile
@@ -202,12 +205,13 @@ describe("reconcileShape (Review Focus 7)", () => {
   it("labels only the n/a signals when git cannot search the default branch", async () => {
     const { d, db, loaded } = await world();
     await reconcileShape(db, later(d, 2), loaded, bumpEpoch(db));
-    expect(await reconcileShape(db, { ...later(d, 15), git: failingGit("-S") }, loaded, bumpEpoch(db))).toEqual({ linked: 0, labeled: 4 });
+    expect(await reconcileShape(db, { ...later(d, 15), git: failingGit("merge-base", " -- ") }, loaded, bumpEpoch(db))).toEqual({ linked: 0, labeled: 5 });
     const labels = outcomes(db);
     expect(Object.entries(labels).filter(([, o]) => o !== null).map(([k, o]) => `${k}=${o}`)).toEqual([
       "run-a|simpler:diff-size|null=n/a",
       "run-a|simpler:exports|null=n/a",
       "run-a|reinvented:name|null=n/a",
+      "run-a|simpler:complexity|shorten=n/a",
       "run-c|reinvented:exact|x=dropped",
     ]);
     db.close();
@@ -295,6 +299,166 @@ describe("reconcileShape: signals that can't be labeled (Review Focus 7)", () =>
     const json = JSON.parse((await makeShapeCommand(fakeIndexIo())(["report", "--json"], d)).stdout);
     expect(json.types.find((t: { key: string }) => t.key === "reinvented:exact")).toMatchObject({ signals: 3, labeled: 1, acted: 1, kept: 0, precision: 1 });
     expect(json.types.find((t: { key: string }) => t.key === "reinvented:name")).toMatchObject({ signals: 1, labeled: 0, precision: null });
+  });
+});
+
+// Realistic history: each commit carries its own date, days after TS, so a name first added
+// long before a run is outside any window that starts at the run.
+const dayIso = (days: number): string => new Date(Date.parse(TS) + days * 86_400_000).toISOString();
+function gitOn(days: number, cwd: string, ...args: string[]): string {
+  const date = dayIso(days);
+  return execFileSync("git", ["-c", "user.name=Tester", "-c", "user.email=tester@example.com", ...args], {
+    cwd, encoding: "utf8", env: { ...process.env, GIT_AUTHOR_DATE: date, GIT_COMMITTER_DATE: date },
+  });
+}
+
+// One approved repo whose first commit (at TS) has src/util/text.ts `clip` and src/feature.ts `shorten`.
+async function dated(): Promise<{ d: Deps; db: Ledger; loaded: LoadedProfile; root: string; name: string; put: (rel: string, text: string) => void; commitOn: (days: number, msg: string) => string }> {
+  const root = ring0Repo({ "src/util/text.ts": BODY("clip"), "src/feature.ts": BODY("shorten") });
+  const d = await approvedIndexDeps(root);
+  const db = openLedger(ledgerPath(stateDir(d)));
+  const loaded = approvedProfile(d, db);
+  if (loaded === null) throw new Error("profile is not approved");
+  const put = (rel: string, text: string): void => {
+    fs.mkdirSync(path.dirname(path.join(root, rel)), { recursive: true });
+    fs.writeFileSync(path.join(root, rel), text);
+  };
+  const commitOn = (days: number, msg: string): string => {
+    gitOn(days, root, "add", "-A");
+    gitOn(days, root, "commit", "-qm", msg);
+    return git(root, "rev-parse", "HEAD^{tree}").trim();
+  };
+  return { d, db, loaded, root, name: ring0Name(d), put, commitOn };
+}
+
+async function labelOn(x: { d: Deps; db: Ledger; loaded: LoadedProfile }, linkDay: number, labelDay: number): Promise<Record<string, string | null>> {
+  await reconcileShape(x.db, later(x.d, linkDay), x.loaded, bumpEpoch(x.db));
+  await reconcileShape(x.db, later(x.d, labelDay), x.loaded, bumpEpoch(x.db));
+  return outcomes(x.db);
+}
+
+describe("reconcileShape: reached the default branch, judged by content (Task 10 ruling)", () => {
+  // Edits that change the body's structure, not only a literal (the ast hash ignores literals).
+  const EDITED = BODY("shorten", "out.reverse();");
+  const AGAIN = BODY("shorten", "out.reverse(); out.sort();");
+  const editedHash = (): string => typescriptParser.parse("src/feature.ts", EDITED)[0].astHash;
+
+  it("labels an in-place edit merged by fast-forward, including a simpler:complexity signal", async () => {
+    const x = await dated();
+    expect(editedHash()).not.toBe(hashOf("src/feature.ts", "shorten"));
+    const branch = git(x.root, "symbolic-ref", "--short", "HEAD").trim();
+    git(x.root, "checkout", "-q", "-b", "work");
+    x.put("src/feature.ts", EDITED); // `shorten` occurs as often as before, so `-S` would see nothing
+    const tree = x.commitOn(3, "edit shorten in place");
+    git(x.root, "checkout", "-q", branch);
+    git(x.root, "merge", "-q", "--ff-only", "work");
+    insertRun(x.db, {
+      id: "run-e", repo: x.name, tree, ts: dayIso(3),
+      signals: [
+        { type: "simpler:complexity", at: "src/feature.ts:1", name: "shorten", hash: editedHash() },
+        { type: "reinvented:exact", at: "src/feature.ts:1", name: "shorten", hash: editedHash() },
+      ],
+    });
+    // Rewritten again on the default branch later: both were acted on.
+    x.put("src/feature.ts", AGAIN);
+    x.commitOn(5, "rewrite shorten");
+    expect(await labelOn(x, 4, 18)).toEqual({ "run-e|simpler:complexity|shorten": "acted-on", "run-e|reinvented:exact|shorten": "acted-on" });
+    x.db.close();
+  });
+
+  it("labels an in-place edit that is still on the default branch as kept", async () => {
+    const x = await dated();
+    x.put("src/feature.ts", EDITED);
+    const tree = x.commitOn(3, "edit shorten in place");
+    insertRun(x.db, { id: "run-k", repo: x.name, tree, ts: dayIso(3), signals: [{ type: "simpler:complexity", at: "src/feature.ts:1", name: "shorten", hash: editedHash() }] });
+    expect(await labelOn(x, 4, 18)).toEqual({ "run-k|simpler:complexity|shorten": "kept" });
+    x.db.close();
+  });
+
+  it("labels a squash merge by the content it landed, then acted-on once the default branch rewrites it", async () => {
+    const x = await dated();
+    const branch = git(x.root, "symbolic-ref", "--short", "HEAD").trim();
+    git(x.root, "checkout", "-q", "-b", "squash-src");
+    x.put("src/squashed.ts", BODY("squashed"));
+    const tree = x.commitOn(1, "squash source");
+    git(x.root, "checkout", "-q", branch);
+    git(x.root, "checkout", "-q", "squash-src", "--", "src/squashed.ts");
+    x.commitOn(2, "squash merge");
+    x.put("src/squashed.ts", BODY("squashed", "out.reverse();"));
+    x.commitOn(4, "rewrite squashed");
+    insertRun(x.db, {
+      id: "run-s", repo: x.name, tree, ts: dayIso(1),
+      signals: [{ type: "reinvented:exact", at: "src/squashed.ts:1", name: "squashed", hash: hashOf("src/squashed.ts", "squashed") }],
+    });
+    expect(await labelOn(x, 2, 16)).toEqual({ "run-s|reinvented:exact|squashed": "acted-on" });
+    x.db.close();
+  });
+
+  it("drops a never-merged signal even when the default branch adds a name that contains it", async () => {
+    const x = await dated();
+    const branch = git(x.root, "symbolic-ref", "--short", "HEAD").trim();
+    git(x.root, "checkout", "-q", "-b", "side");
+    x.put("src/util/parse.ts", BODY("parse"));
+    const tree = x.commitOn(1, "add parse");
+    git(x.root, "checkout", "-q", branch);
+    x.put("src/util/parse.ts", BODY("parseInt"));
+    x.commitOn(2, "add parseInt");
+    insertRun(x.db, { id: "run-n", repo: x.name, tree, ts: dayIso(1), signals: [{ type: "reinvented:exact", at: "src/util/parse.ts:1", name: "parse", hash: hashOf("src/util/parse.ts", "parse") }] });
+    expect(await labelOn(x, 2, 16)).toEqual({ "run-n|reinvented:exact|parse": "dropped" });
+    x.db.close();
+  });
+
+  it("drops a dependency that never reached the default branch, and labels one a squash merge landed", async () => {
+    const x = await dated();
+    const branch = git(x.root, "symbolic-ref", "--short", "HEAD").trim();
+    git(x.root, "checkout", "-q", "-b", "deps");
+    x.put("package.json", JSON.stringify({ dependencies: { dayjs: "^1", moment: "^2" } }));
+    const tree = x.commitOn(1, "add deps");
+    git(x.root, "checkout", "-q", branch);
+    x.put("package.json", JSON.stringify({ dependencies: { dayjs: "^1" } }));
+    x.commitOn(2, "squash merge: dayjs only");
+    insertRun(x.db, {
+      id: "run-d", repo: x.name, tree, ts: dayIso(1),
+      signals: [
+        { type: "reinvented:dependency", at: "package.json", name: "dayjs", hash: null },
+        { type: "reinvented:dependency", at: "package.json", name: "moment", hash: null },
+      ],
+    });
+    expect(await labelOn(x, 2, 16)).toEqual({ "run-d|reinvented:dependency|dayjs": "kept", "run-d|reinvented:dependency|moment": "dropped" });
+    x.db.close();
+  });
+
+  it("never links a run to a stash: a stash's index commit carries the staged tree", async () => {
+    const x = await dated();
+    x.put("src/feature.ts", BODY("shorten", "out.reverse();"));
+    git(x.root, "add", "-A");
+    const staged = git(x.root, "write-tree").trim();
+    git(x.root, "stash", "push", "-q", "-m", "sindri-test-stash");
+    expect(git(x.root, "rev-parse", "refs/stash^2^{tree}").trim()).toBe(staged);
+    insertRun(x.db, { id: "run-t", repo: x.name, tree: staged, signals: [{ type: "simpler:complexity", at: "src/feature.ts:1", name: "shorten", hash: "a".repeat(64) }] });
+    expect(await reconcileShape(x.db, later(x.d, 2), x.loaded, bumpEpoch(x.db))).toEqual({ linked: 0, labeled: 0 });
+    expect(await reconcileShape(x.db, later(x.d, 8), x.loaded, bumpEpoch(x.db))).toEqual({ linked: 0, labeled: 1 });
+    expect(outcomes(x.db)).toEqual({ "run-t|simpler:complexity|shorten": "dropped" });
+    x.db.close();
+  });
+
+  it("fetches with ssh in batch mode and no terminal prompt, so the hourly job never waits on one", async () => {
+    const { d, db, loaded, root } = await world();
+    const bare = path.join(tempDir("sindri-origin-"), "origin.git");
+    git(root, "clone", "-q", "--bare", root, bare);
+    git(root, "remote", "add", "origin", bare);
+    const real = realGitRunner();
+    const fetches: { args: string[]; o: Parameters<GitRunner["run"]>[2] }[] = [];
+    const spy: GitRunner = {
+      run: async (args, cwd, o) => {
+        if (args[0] === "fetch") fetches.push({ args, o });
+        return real.run(args, cwd, o);
+      },
+    };
+    await reconcileShape(db, { ...later(d, 15), git: spy }, loaded, bumpEpoch(db));
+    expect(fetches).toEqual([{ args: ["fetch", "--quiet", "--no-tags", "origin", "refs/heads/main"], o: { foreign: true, env: { GIT_SSH_COMMAND: "ssh -o BatchMode=yes", GIT_TERMINAL_PROMPT: "0" } } }]);
+    expect(FETCH_ENV).toEqual({ GIT_SSH_COMMAND: "ssh -o BatchMode=yes", GIT_TERMINAL_PROMPT: "0" });
+    db.close();
   });
 });
 
