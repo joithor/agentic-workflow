@@ -5299,7 +5299,7 @@ git commit -m "feat: sindri reflect port over merged PRs and their sessions"
   - `sindri evolve correct [--since 7d] [--json]` — labels the newest `evolve.maxCorrectTurns` human turns, clusters the corrections, saves the proposals (source `correct:<ISO year>-W<week>`, skipped when that week already ran, including a week that proposed nothing and a clean labeling pass that found no repeated class, the latter per `--since` window) and prints `Correct: labeled 400 turns: 31 design, 52 process, 9 restate, 14 scope (0 label errors); 3 repeated-correction classes, 2 proposals (2 code).`
   - Cost: about 20 `label` calls per run at the default cap (400 turns in batches of 20; sonnet), roughly 100 000 to 200 000 tokens at the cap with long turns and far less with short ones, plus at most 5 proposal calls. The default `evolve.maxTokensPerJob` of 600 000 covers it; at the maximum cap of 2000 turns (100 calls) a run can stop early with an `incomplete` partial result.
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 `sindri/tests/evolve-week.test.ts`:
 
@@ -5674,12 +5674,12 @@ describe("sindri evolve correct", () => {
 
 (Dates: the fixture clock is 2026-10-08T12:00:00Z (ISO week 41); `since` is 2026-10-01T12:00Z; the two corrections are on 2026-10-05 and 2026-10-06. `sessions` differ (two files) and `days` differ, and the keyword sets overlap well above 0.3 (the same strings the cluster test uses), so one `wrong_approach_process` cluster results when the stub labels both turns that way. With `maxCorrectTurns: 1` only the newest turn (the 2026-10-06 one, line 1 of `6f66b2e1`) is sent, so nothing can cluster. In the last case there are 22 turns: the newest 20 go in the first batch, which spends the whole `maxTokensPerJob` of 2 (the stub's usage is 1 input plus 1 output token), so batch 2 is never sent and the result is partial with exit code 1; because labeling was cut short, there is no audit marker, so the week can be rerun. The proposal's `Invalid` text is Zod's default regex-failure message for `artifact`.)
 
-- [ ] **Step 2: Run the tests to verify they fail**
+- [x] **Step 2: Run the tests to verify they fail**
 
 Run: `cd sindri && npx vitest run tests/evolve-week.test.ts tests/evolve-correct.test.ts tests/evolve-correct-cmd.test.ts`
 Expected: FAIL with `Failed to load url ../src/evolve/week.js`.
 
-- [ ] **Step 3: Implement**
+- [x] **Step 3: Implement**
 
 `sindri/src/evolve/week.ts`:
 
@@ -6024,12 +6024,12 @@ Trace for the first test: the stub labels both turns `wrong_approach_process` (f
 
 Register in `sindri/src/evolve/commands.ts`: import `correctCommand` from `./cmd/correct.js` and add `correct: correctCommand` to `SUBCOMMANDS`.
 
-- [ ] **Step 4: Run the tests**
+- [x] **Step 4: Run the tests**
 
 Run: `cd sindri && npx vitest run && npm run typecheck && npm run test:coverage`
 Expected: all tests PASS; coverage 100% on the files this task touches.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add sindri/src/evolve sindri/tests

@@ -5,6 +5,7 @@ import { failure, fromError } from "../output.js";
 import { requireApprovedProfile } from "../profile/approve.js";
 import { check } from "./cmd/check.js";
 import { compare } from "./cmd/compare.js";
+import { correctCommand } from "./cmd/correct.js";
 import { proposals, reject, show, tier } from "./cmd/proposals.js";
 import { reflectCommand } from "./cmd/reflect.js";
 import { init } from "./cmd/registry.js";
@@ -14,7 +15,7 @@ import { ringZeroRepo, writers, type EvolveIo, type Sub } from "./ctx.js";
 import { effectivePrompts } from "./overlay.js";
 
 // Later tasks add their subcommands here.
-export const SUBCOMMANDS: Record<string, Sub> = { check, compare, init, proposals, reflect: reflectCommand, reject, show, status, telemetry, tier };
+export const SUBCOMMANDS: Record<string, Sub> = { check, compare, correct: correctCommand, init, proposals, reflect: reflectCommand, reject, show, status, telemetry, tier };
 
 export function evolveUsage(): string {
   return `Usage: sindri evolve ${Object.keys(SUBCOMMANDS).sort().join(" | ")}   (each takes --json)`;
