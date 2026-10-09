@@ -137,7 +137,7 @@ Each is also edited into the spec in Task 13.
   - `SUBCOMMANDS`, `evolveUsage()`, `makeEvolveCommand(io)`, `sindri evolve init [--json]`, `sindri evolve status [--json]`.
   - Test helpers in `evolve-fixtures.ts`: `evolveFixture`, `scriptedEvolveIo`, `answeringRunner`, `fakeProc`, `withDeps`, `git`.
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 `sindri/tests/evolve-fixtures.ts` (every later evolve test uses it):
 
@@ -604,12 +604,12 @@ describe("evolve context helpers", () => {
 
 Trace for `init`'s first output: the fixture's ring-0 profile has `protectedPaths: [".github/**", "config/hooks/**", "config/settings.json"]`, so `hook:done-gate` (paths `config/hooks/done-gate.sh` plus its test) is protected through the glob. `package:judge` and `skill:review` aren't. `skill:review` has no suite. That is 3 artifacts, 1 protected, 1 without a suite. The `mixed` status: `package:judge`'s last run failed on the current hash, so `FAIL`; `hook:done-gate`'s last non-`at:` run passed on the current hash, so `ok`. The empty fixture's repo has only a plan file, so `discover` returns `[]` and the init text uses the no-kinds form.
 
-- [ ] **Step 2: Run the tests to verify they fail**
+- [x] **Step 2: Run the tests to verify they fail**
 
 Run: `cd sindri && npx vitest run tests/evolve-profile.test.ts tests/evolve-registry.test.ts tests/evolve-commands.test.ts`
 Expected: FAIL with `Failed to load url ../src/evolve/registry.js` (and the profile test failing on the missing keys).
 
-- [ ] **Step 3: Implement**
+- [x] **Step 3: Implement**
 
 Append migration v4 to `MIGRATIONS` in `sindri/src/ledger/db.ts`:
 
@@ -1071,12 +1071,12 @@ import { realScopeIo } from "./scope/io-real.js";
   },
 ```
 
-- [ ] **Step 4: Run the tests**
+- [x] **Step 4: Run the tests**
 
 Run: `cd sindri && npm run gen && npx vitest run && npm run typecheck && npm run test:coverage`
 Expected: all tests PASS (Plan 3 and Plan 4 ledger-version assertions are `>=`; if one is still `toBe(<n>)`, change it to `toBeGreaterThanOrEqual(<n>)`); coverage 100% on the files this task touches.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add sindri/src sindri/tests sindri/schema docs/sindri

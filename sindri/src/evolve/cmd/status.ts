@@ -1,0 +1,65 @@
+import { parseFlags } from "../../args.js";
+import { success, type CommandResult } from "../../output.js";
+import type { EvolveCtx } from "../ctx.js";
+
+export interface Section {
+  lines: string[];
+  data: Record<string, unknown>;
+  attention: boolean;
+  next: string | null;
+}
+export type SectionFn = (ctx: EvolveCtx) => Promise<Section>;
+
+type State = "ok" | "FAIL" | "stale" | "untested" | "no-suite";
+
+interface Row {
+  id: string;
+  kind: string;
+  protected: number;
+  hash: string;
+  suite: string | null;
+  run_ok: number | null;
+  run_hash: string | null;
+  open: number;
+}
+
+export function stateOf(r: Pick<Row, "suite" | "run_ok" | "run_hash" | "hash">): State {
+  if (r.suite === null) return "no-suite";
+  if (r.run_ok === null) return "untested";
+  if (r.run_hash !== r.hash) return "stale";
+  return r.run_ok === 1 ? "ok" : "FAIL";
+}
+
+// "at:<sha>" rows come from `check --at` (a channel build), so they never make a working-tree artifact look stale.
+const ROWS = `
+  SELECT a.id, a.kind, a.protected, a.hash, a.suite,
+    (SELECT ok FROM suite_runs s WHERE s.artifact_id = a.id AND s.hash NOT LIKE 'at:%' ORDER BY s.seq DESC LIMIT 1) AS run_ok,
+    (SELECT hash FROM suite_runs s WHERE s.artifact_id = a.id AND s.hash NOT LIKE 'at:%' ORDER BY s.seq DESC LIMIT 1) AS run_hash,
+    (SELECT COUNT(*) FROM proposals p WHERE p.artifact_id = a.id AND p.status NOT IN ('rejected', 'adopted', 'lost', 'merged')) AS open
+  FROM artifacts a WHERE a.removed_at IS NULL ORDER BY a.id`;
+
+export async function artifactSection(ctx: EvolveCtx): Promise<Section> {
+  const rows = ctx.db.prepare(ROWS).all() as Row[];
+  if (rows.length === 0) return { lines: ["No artifacts registered yet."], data: { artifacts: [] }, attention: false, next: "sindri evolve init" };
+  const items = rows.map((r) => ({ id: r.id, kind: r.kind, state: stateOf(r), protected: r.protected === 1, openProposals: r.open }));
+  const lines = items.map((i) => `${i.state.padEnd(8)} ${i.id}${i.protected ? "  protected" : ""}${i.openProposals > 0 ? `  ${i.openProposals} open proposal(s)` : ""}`);
+  const failing = items.filter((i) => i.state === "FAIL").map((i) => i.id);
+  const needsRun = items.some((i) => i.state === "stale" || i.state === "untested");
+  let next: string | null = null;
+  if (failing.length > 0) next = `sindri evolve check ${failing.join(" ")}   (after fixing)`;
+  else if (needsRun) next = "sindri evolve check --changed";
+  return { lines, data: { artifacts: items }, attention: failing.length > 0 || items.some((i) => i.state === "stale"), next };
+}
+
+// Later tasks add their sections here (proposals in Task 3, the corpus in Task 5).
+export const SECTIONS: SectionFn[] = [artifactSection];
+
+export async function status(args: string[], ctx: EvolveCtx): Promise<CommandResult> {
+  const { values } = parseFlags(args, { json: { type: "boolean" } });
+  const sections: Section[] = [];
+  for (const fn of SECTIONS) sections.push(await fn(ctx));
+  const next = sections.map((s) => s.next).find((n) => n !== null) ?? "sindri evolve proposals";
+  const text = [...sections.flatMap((s) => s.lines), `Next: ${next}`].join("\n");
+  const data = sections.reduce<Record<string, unknown>>((acc, s) => ({ ...acc, ...s.data }), {});
+  return success(text, data, values.json === true, sections.some((s) => s.attention) ? 1 : 0);
+}

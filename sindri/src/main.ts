@@ -2,6 +2,7 @@ import { createRequire } from "node:module";
 
 import type { Deps } from "./deps.js";
 import { doctorCommand } from "./doctor/doctor.js";
+import { evolveUsage, makeEvolveCommand } from "./evolve/commands.js";
 import { makeIndexCommand } from "./index/commands.js";
 import { repoCommand } from "./index/repo-add.js";
 import { makeShapeCommand } from "./index/shape.js";
@@ -81,6 +82,11 @@ export const COMMANDS: Record<string, CommandDef> = {
     summary: "Scope a project into a cited map (surfaces, workstreams, questions); --backtest measures recall and precision against a baseline",
     usage: "Usage:\n  sindri scope <brief.md> [--section N] [--out DIR] [--sources LIST] [--dry-run] [--json]\n  sindri scope linear:<project-url> [--out DIR] [--sources LIST] [--dry-run] [--json]\n  sindri scope --backtest linear:<project-url> [--window 1d] [--with-index] [--out DIR] [--sources LIST] [--json]\n  sindri scope runs [--json]\n  --sources is a comma-separated list of file,notes,transcripts,linear,code. Inside a git worktree only --sources file,code is allowed.",
     run: makeScopeCommand(realScopeIo()),
+  },
+  evolve: {
+    summary: "Artifact registry, eval suites, proposals and offline comparisons (self-evolution)",
+    usage: evolveUsage(),
+    run: makeEvolveCommand(realScopeIo()),
   },
   ledger: { summary: "Show ledger events", usage: "Usage: sindri ledger [--item ID] [--since 7d|12h] [--json]", run: ledgerCommand },
 };

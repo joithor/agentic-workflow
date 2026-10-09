@@ -150,6 +150,28 @@ const ScopeSchema = z
   .strict()
   .default({});
 
+const EvolveSchema = z
+  .object({
+    maxOpenProposals: z.number().int().positive().default(10).describe("stage stops once this many proposals are staged or published and not yet merged"),
+    maxTokensPerJob: z.number().int().positive().default(600_000).describe("Token budget for one reflect, correct, telemetry or weekly step"),
+    maxTokensPerCompare: z.number().int().positive().default(3_000_000).describe("Token budget for one offline comparison (about 100000 tokens per holdout item)"),
+    maxCorrectTurns: z.number().int().min(1).max(2000).default(400).describe("How many of the newest human turns `correct` sends to the labeling model per run (20 per call)"),
+    prAuthors: z.array(z.string().regex(/^[A-Za-z0-9-]{1,39}$/, "must be a GitHub login")).default([]).describe("GitHub logins whose merged PRs reflect may read; empty means only the authenticated gh user"),
+  })
+  .strict()
+  .default({});
+
+const PrivacySchema = z
+  .object({
+    denyTerms: z
+      .array(z.string().min(2).max(60))
+      .max(500)
+      .default([])
+      .describe("Workplace words that must never appear in a published proposal task (whole words, case-insensitive). Changing this list needs profile approval"),
+  })
+  .strict()
+  .default({});
+
 export const ProfileSchema = z
   .object({
     schemaVersion: z.literal(PROFILE_SCHEMA_VERSION).describe("Profile format version"),
@@ -188,6 +210,8 @@ export const ProfileSchema = z
     shape: ShapeSchema,
     sources: SourcesSchema,
     models: ModelsSchema,
+    evolve: EvolveSchema,
+    privacy: PrivacySchema,
     scope: ScopeSchema,
   })
   .strict();

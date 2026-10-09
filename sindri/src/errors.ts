@@ -64,6 +64,7 @@ export const ERRORS = {
   "SND-INDEX-006": { summary: "The local embedding server failed.", fix: "sindri index setup (starts Ollama checks and pulls the model)" },
   "SND-INDEX-007": { summary: "No network sandbox is available for graphify.", fix: "macOS: sandbox-exec ships with the OS; Linux: install bubblewrap (bwrap), or set index.graph: none" },
   "SND-INDEX-008": { summary: "graphify is missing, failed or wrote no usable graph.", fix: "if graphify or its sandbox is missing: sindri index setup; if graph.json is over the cap: raise index.graphMaxMB (max 512); then sindri index build" },
+  "SND-EVOLVE-001": { summary: "The toolkit repo couldn't be read as a git repository.", fix: "check the ring-0 repo's path in repos/<name>.yaml, then sindri profile approve" },
   "SND-CLI-900": { summary: "Unexpected internal error (a bug).", fix: "rerun with SINDRI_DEBUG=1 and report the output" },
 } as const satisfies Record<string, ErrorDef>;
 

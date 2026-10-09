@@ -510,6 +510,65 @@
       "additionalProperties": false,
       "default": {}
     },
+    "evolve": {
+      "type": "object",
+      "properties": {
+        "maxOpenProposals": {
+          "type": "integer",
+          "exclusiveMinimum": 0,
+          "default": 10,
+          "description": "stage stops once this many proposals are staged or published and not yet merged"
+        },
+        "maxTokensPerJob": {
+          "type": "integer",
+          "exclusiveMinimum": 0,
+          "default": 600000,
+          "description": "Token budget for one reflect, correct, telemetry or weekly step"
+        },
+        "maxTokensPerCompare": {
+          "type": "integer",
+          "exclusiveMinimum": 0,
+          "default": 3000000,
+          "description": "Token budget for one offline comparison (about 100000 tokens per holdout item)"
+        },
+        "maxCorrectTurns": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 2000,
+          "default": 400,
+          "description": "How many of the newest human turns `correct` sends to the labeling model per run (20 per call)"
+        },
+        "prAuthors": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9-]{1,39}$"
+          },
+          "default": [],
+          "description": "GitHub logins whose merged PRs reflect may read; empty means only the authenticated gh user"
+        }
+      },
+      "additionalProperties": false,
+      "default": {}
+    },
+    "privacy": {
+      "type": "object",
+      "properties": {
+        "denyTerms": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 2,
+            "maxLength": 60
+          },
+          "maxItems": 500,
+          "default": [],
+          "description": "Workplace words that must never appear in a published proposal task (whole words, case-insensitive). Changing this list needs profile approval"
+        }
+      },
+      "additionalProperties": false,
+      "default": {}
+    },
     "scope": {
       "type": "object",
       "properties": {
