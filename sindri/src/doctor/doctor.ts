@@ -10,6 +10,7 @@ import { heavyLockDir, heavyLockState } from "../index/heavy-lock.js";
 import type { IndexProbes } from "../index/io.js";
 import { GRAPHIFY_PIN } from "../index/pins.js";
 import { hasModel, installedGraphify, sandboxedVersionArgv, tagsUrl } from "../index/setup.js";
+import { evolveOverlayCheck } from "../evolve/overlay.js";
 import { LEDGER_SCHEMA_VERSION, ledgerPath, readLedger, schemaVersion } from "../ledger/db.js";
 import { inspectLock } from "../lock/lock.js";
 import type { Command } from "../main.js";
@@ -237,6 +238,7 @@ export async function runChecks(deps: Deps, nodeVersion: string = process.versio
     { name: "boot-id", status: "ok", detail: deps.system.bootId() === null ? "unreadable; stale-lock checks use pids only" : "readable" },
     ledgerCheck(deps),
     lockCheck(deps),
+    evolveOverlayCheck(deps),
   ];
   const root = resolveProfileRoot(deps);
   if (root === null) return [...checks, { name: "profile", status: "warn", detail: "no profile", fix: INIT_FIX }];

@@ -3129,7 +3129,7 @@ git commit -m "feat: sindri hook telemetry with adjudicated false-positive rates
 
 **Files:**
 - Create: `sindri/src/evolve/prompts.ts`, `sindri/src/evolve/overlay.ts`, `sindri/src/evolve/corpus.ts`
-- Modify (Plan 4's code, as exact diffs in Step 3; every Plan 4 parameter stays, the new ones are optional and trailing): `sindri/src/scope/gather.ts` (export `DRAFT_SYSTEM`; `draftPrompt`'s new fourth parameter `{ system? }`), `sindri/src/scope/run.ts` (export `CHALLENGER_SYSTEM`; `ScopeOptions.prompts`), `sindri/src/scope/commands.ts` (`scopeOnce`'s new eighth parameter `prompts`; `makeScopeCommand` loads them through `loadPrompt` and saves a replay item after `recordRun`), `sindri/src/doctor/doctor.ts` (an overlay check), `sindri/src/evolve/commands.ts` (`prompts: () => effectivePrompts(deps)`), `sindri/src/evolve/cmd/status.ts` (corpus section)
+- Modify (Plan 4's code, as exact diffs in Step 3; every Plan 4 parameter stays, the new ones are optional and trailing): `sindri/src/scope/gather.ts` (export `DRAFT_SYSTEM`; `draftPrompt`'s new fourth parameter `{ system? }`), `sindri/src/scope/run.ts` (export `CHALLENGER_SYSTEM`; `ScopeOptions.prompts`), `sindri/src/scope/commands.ts` (`scopeOnce`'s new ninth parameter `prompts`; `makeScopeCommand` loads them through `loadPrompt` and saves a replay item after `recordRun`), `sindri/src/doctor/doctor.ts` (an overlay check), `sindri/src/evolve/commands.ts` (`prompts: () => effectivePrompts(deps)`), `sindri/src/evolve/cmd/status.ts` (corpus section)
 - Test: `sindri/tests/evolve-prompts.test.ts`, `sindri/tests/evolve-corpus.test.ts`, plus additions to Plan 4's `scope-gather.test.ts`, `scope-run.test.ts`, `scope-command.test.ts`
 
 **Interfaces:**
@@ -3146,7 +3146,7 @@ git commit -m "feat: sindri hook telemetry with adjudicated false-positive rates
   - `corpusDir(deps)`, `saveReplay(deps, item): boolean` (scrubbed on write, 0600, exclusive create, appends `{ id, sha256, added_at }` to the append-only `manifest.jsonl`), `trySaveReplay` (never throws), `readCorpus(deps, artifact): { items; dropped }` and `loadCorpus` (drop any item whose file is missing from the manifest or whose hash doesn't match), `isHoldout(id)`, `split(items)`, `holdoutTitles(deps)`, `mentionsHoldout(text, titles)`.
   - A **Corpus** line in `evolve status`: items, holdout, and how many more are needed (about 3.3 scope runs per holdout item).
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 `sindri/tests/evolve-prompts.test.ts`:
 
@@ -3508,14 +3508,14 @@ Also extend `sindri/tests/evolve-commands.test.ts` with one test that the dispat
   });
 ```
 
-- [ ] **Step 2: Run the tests to verify they fail**
+- [x] **Step 2: Run the tests to verify they fail**
 
 Run: `cd sindri && npx vitest run tests/evolve-prompts.test.ts tests/evolve-corpus.test.ts`
 Expected: FAIL with `Failed to load url ../src/evolve/overlay.js`.
 
-- [ ] **Step 3: Implement**
+- [x] **Step 3: Implement**
 
-Edit Plan 4's three scope files as exact diffs. Each diff is written against Plan 4's final code, so every Plan 4 parameter stays (`draftPrompt`'s `fix?: Fix`, `scopeOnce`'s seven parameters) and the new ones are optional and trailing. Plan 4's other callers (`runBacktest`'s two `scopeOnce` calls, the challenger's `draftPrompt(e, o.maxPackChars).input`) need no change. The `| undefined` in the option types is for `exactOptionalPropertyTypes`.
+Edit Plan 4's three scope files as exact diffs. Each diff is written against Plan 4's final code, so every Plan 4 parameter stays (`draftPrompt`'s `fix?: Fix`, `scopeOnce`'s eight parameters, ending with `scrubber`) and the new ones are optional and trailing. Plan 4's other callers (`runBacktest`'s two `scopeOnce` calls, the challenger's `draftPrompt(e, o.maxPackChars).input`) need no change. The `| undefined` in the option types is for `exactOptionalPropertyTypes`.
 
 `sindri/src/scope/gather.ts`: rename `SYSTEM` and export it, append the injection-resistance clause as a new final line (Plan 4's last line, the one that explains the `checks` and `previous` blocks, stays), and add a fourth parameter. The fenced `input`, including the brief title staying out of the instructions, is untouched.
 
@@ -3562,7 +3562,7 @@ Edit Plan 4's three scope files as exact diffs. Each diff is written against Pla
 +    const send = (): Promise<Outcome<Missing>> => ask("challenge", o.models.challenger, o.prompts?.challenger ?? CHALLENGER_SYSTEM, input, missingSchema, (v) => Missing.parse(v));
 ```
 
-`sindri/src/scope/commands.ts`: `scopeOnce` gets an eighth optional parameter and passes it on; `makeScopeCommand` loads the overlay-or-built-in prompts (`loadPrompt` returns the built-in text when there is no valid adopted overlay, so behavior is unchanged until something is adopted) and saves the replay item after `recordRun`, under the run's own id.
+`sindri/src/scope/commands.ts`: `scopeOnce` gets a ninth optional parameter (`prompts`) and passes it on (the runner is built on its own line, so `prompts` is computed before it); `makeScopeCommand` loads the overlay-or-built-in prompts (`loadPrompt` returns the built-in text when there is no valid adopted overlay, so behavior is unchanged until something is adopted) and saves the replay item after `recordRun`, under the run's own id.
 
 ```diff
 -import { runScoping, type ScopeResult } from "./run.js";
@@ -3745,7 +3745,7 @@ export function evolveOverlayCheck(deps: Deps): { name: string; status: "ok" | "
 }
 ```
 
-Trace for the "unsafe" test where an oversized overlay is written: the file size is 70 000 bytes (> 65 536), so `unsafe` before the clause check. For the "doctor" test with mode `0o666` and no clause, the state is `unsafe` (the mode check precedes the clause check). `d3` has a 0600 file without the clause: state `no-clause`. For the symlinked directory (`d2`): `lstat` reports a symlink, `isDirectory()` is false, so `unsafe`. For the symlinked file: `openSync` with `O_NOFOLLOW` fails with `ELOOP` (not `ENOENT`), so `unsafe`. `latestAdoption` is `null` while no ledger file exists (`makeDeps()` has a fresh state dir), which gives `unadopted`; after the first `adopt()` call the ledger exists (the helper opens it, migrating to v4).
+Trace for the "unsafe" test where an oversized overlay is written: the file size is 70 000 bytes (> 65 536), so `unsafe` before the clause check. For the "doctor" test with mode `0o666` and no clause, the state is `unsafe` (the mode check precedes the clause check). `d3` has a 0600 file without the clause: state `no-clause`. For the symlinked directory (`d2`): `lstat` reports a symlink, `isDirectory()` is false, so `unsafe`. For the symlinked file: `openSync` with `O_NOFOLLOW` fails with `ELOOP` (not `ENOENT`), so `unsafe`. `latestAdoption` opens the ledger read-only (`readLedger`, so doctor never migrates, backs up or chmods it) and is `null` on any error, a newer schema included; it is also `null` while no ledger file exists (`makeDeps()` has a fresh state dir), which gives `unadopted`; after the first `adopt()` call the ledger exists (the helper opens it, migrating to v4).
 
 In `sindri/src/doctor/doctor.ts` import `evolveOverlayCheck` from `../evolve/overlay.js` and add `evolveOverlayCheck(deps),` to the `checks` array in `runChecks`, after `lockCheck(deps),`. (The new check type is structurally a `Check`.) Plan 2's doctor tests look checks up by name, so they keep passing, and the line is exercised whenever `runChecks` runs.
 
@@ -3872,7 +3872,7 @@ export function holdoutTitles(deps: Deps): string[] {
 export const mentionsHoldout = (text: string, titles: readonly string[]): boolean => titles.some((t) => text.toLowerCase().includes(t.toLowerCase()));
 ```
 
-In the manifest reader, a blank line fails `JSON.parse("")`, the `catch` skips it, and a line that parses but fails the schema (`not json`'s neighbour) is skipped by the `parsed.success` check. In the test, the manifest has valid lines for `good` and `tampered`; the appended `malformed` line carries the right hash (so the file passes the hash check, then fails `Item.parse` and is dropped); `unlisted.json` has no manifest line (dropped); a later duplicate line for `good` with a wrong hash is ignored because the first line wins. `tampered.json` had a word replaced so its hash no longer matches. The `holdoutTitles` test saves two holdout items (one with a 27-character title, one with an 11-character title) and one training item; only the long holdout title is returned.
+In the manifest reader, a blank line fails `JSON.parse("")`, the `catch` skips it, `not json` fails `JSON.parse` and is skipped, and a line that parses but fails the schema (`{ "id": 7 }`, which the test appends) is skipped by the `parsed.success` check. In the test, the manifest has valid lines for `good` and `tampered`; the appended `malformed` line carries the right hash (so the file passes the hash check, then fails `Item.parse` and is dropped); `unlisted.json` has no manifest line (dropped); a later duplicate line for `good` with a wrong hash is ignored because the first line wins. `tampered.json` had a word replaced so its hash no longer matches. The `holdoutTitles` test saves two holdout items (one with a 27-character title, one with an 11-character title) and one training item; only the long holdout title is returned.
 
 In `sindri/src/evolve/cmd/status.ts`, add the corpus section and register it (`SECTIONS = [artifactSection, proposalSection, corpusSection]`):
 
@@ -3894,12 +3894,12 @@ export async function corpusSection(ctx: EvolveCtx): Promise<Section> {
 
 (`Math.ceil(15 * 10 / 3)` is 50. In the status test a stray `stray.json` with no manifest line is flagged.)
 
-- [ ] **Step 4: Run the tests**
+- [x] **Step 4: Run the tests**
 
 Run: `cd sindri && npx vitest run tests/scope-*.test.ts` (Plan 4's scope tests, before and after this change: they must keep passing), then `npx vitest run && npm run typecheck && npm run test:coverage`.
 Expected: all tests PASS; coverage 100% on the files this task touches.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add sindri/src sindri/tests

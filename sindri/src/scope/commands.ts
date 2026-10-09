@@ -19,7 +19,9 @@ import { measureMap, measureNotes, measureProblems, parseWindow, passBar, render
 import { gather, type Evidence } from "./gather.js";
 import { renderIncomplete, renderMap, type RenderMeta } from "./map.js";
 import { Budget, meteredRunner, type ModelAuditRow, type ModelRunner } from "./model.js";
-import { runScoping, type ScopeResult } from "./run.js";
+import { trySaveReplay } from "../evolve/corpus.js";
+import { loadPrompt } from "../evolve/overlay.js";
+import { runScoping, type ScopeOptions, type ScopeResult } from "./run.js";
 import type { Source, SourceRecord } from "./source.js";
 import { codeSource } from "./sources/code.js";
 import { fileSource } from "./sources/file.js";
@@ -251,6 +253,7 @@ export async function scopeOnce(
   runner: ModelRunner,
   budget: Budget,
   scrubber: Scrubber,
+  prompts?: ScopeOptions["prompts"],
 ): Promise<{ result: ScopeResult; evidence: Evidence }> {
   const evidence = await gather(brief, sources, { asOf, maxRecords: loaded.profile.scope.maxRecords, progress: io.progress, scrubber });
   const result = await runScoping(evidence, {
@@ -260,6 +263,7 @@ export async function scopeOnce(
     budget,
     maxPackChars: loaded.profile.scope.maxPackChars,
     progress: io.progress,
+    prompts,
   });
   return { result, evidence };
 }
@@ -457,8 +461,9 @@ export function makeScopeCommand(io: ScopeIo): Command {
       const runId = ulid(deps.now());
       const budget = new Budget(s.maxTokensPerRun);
       const audit: ModelAuditRow[] = [];
+      const prompts = { draft: loadPrompt(deps, "scope.draft"), challenger: loadPrompt(deps, "scope.challenger") };
       const runner = meteredRunner(io.runner(loaded, scrubber), { budget, audit });
-      const { result, evidence } = await scopeOnce(loaded, io, brief, sources, null, runner, budget, scrubber);
+      const { result, evidence } = await scopeOnce(loaded, io, brief, sources, null, runner, budget, scrubber, prompts);
       // The model's text never passed a scrubber: scrub it before it is rendered or saved.
       const map = result.map === null ? null : scrubber.scrubDeep(result.map);
       const reasons = result.reasons.map((r) => scrubber.scrub(r).text);
@@ -473,6 +478,13 @@ export function makeScopeCommand(io: ScopeIo): Command {
       } catch (e) {
         return unrecorded(e, file, scrubber, json);
       }
+      // The replay item shares the run's id with the scope_runs row recordRun just wrote. evidence.brief is the
+      // scrubbed brief (never the raw one). trySaveReplay never throws, so a full disk can't fail the run.
+      trySaveReplay(deps, {
+        id: runId, artifact: "scope.draft", createdAt: deps.now().toISOString(), brief: evidence.brief,
+        records: evidence.refs.entries().slice(1).map(([, r]) => r),
+        outcome: { status: result.status, surfaces: n.surfaces, recall: null },
+      });
       const next =
         result.status === "incomplete"
           ? "Rerun after raising scope.maxRounds or scope.maxTokensPerRun in the profile (then sindri profile approve), or fix the reasons above."

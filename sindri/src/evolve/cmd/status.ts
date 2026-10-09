@@ -1,6 +1,7 @@
 import { parseFlags } from "../../args.js";
 import { success, type CommandResult } from "../../output.js";
 import { repoConfig, type EvolveCtx } from "../ctx.js";
+import { isHoldout, readCorpus } from "../corpus.js";
 import { findMerged, setStatus, STATUSES, type ProposalStatus } from "../proposals.js";
 
 export interface Section {
@@ -79,8 +80,19 @@ export async function proposalSection(ctx: EvolveCtx): Promise<Section> {
   };
 }
 
-// Later tasks add their sections here (the corpus in Task 5).
-export const SECTIONS: SectionFn[] = [artifactSection, proposalSection];
+const MIN_HOLDOUT = 20;
+
+export async function corpusSection(ctx: EvolveCtx): Promise<Section> {
+  const { items, dropped } = readCorpus(ctx.deps, "scope.draft");
+  if (items.length === 0 && dropped.length === 0) return { lines: [], data: {}, attention: false, next: null };
+  const holdout = items.filter((i) => isHoldout(i.id)).length;
+  const needed = Math.max(0, MIN_HOLDOUT - holdout);
+  const first = `Corpus: ${items.length} items (${holdout} holdout); ${needed > 0 ? `${needed} more holdout items needed, about ${Math.ceil((needed * 10) / 3)} more scope runs (30% of runs join the holdout).` : "enough for a comparison."}`;
+  const lines = dropped.length > 0 ? [first, `Corpus check: ${dropped.length} item(s) failed the manifest check and are ignored.`] : [first];
+  return { lines, data: { corpus: { items: items.length, holdout, needed, dropped: dropped.length } }, attention: dropped.length > 0, next: null };
+}
+
+export const SECTIONS: SectionFn[] = [artifactSection, proposalSection, corpusSection];
 
 export async function status(args: string[], ctx: EvolveCtx): Promise<CommandResult> {
   const { values } = parseFlags(args, { json: { type: "boolean" } });

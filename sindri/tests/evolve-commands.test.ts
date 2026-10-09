@@ -86,6 +86,14 @@ describe("sindri evolve init and status", () => {
     fx.close();
   });
 
+  it("registers the seven prompts as artifacts when the dispatcher builds the context", async () => {
+    const fx = await evolveFixture();
+    const r = await makeEvolveCommand(fx.io)(["init"], fx.deps);
+    expect(r.stdout).toContain("Registry: 7 artifacts (7 prompt);");
+    expect(r.stdout).toContain("0 protected, 7 without a suite.");
+    fx.close();
+  });
+
   it("lists every subcommand in the usage text and the unknown-subcommand error", async () => {
     const fx = await evolveFixture();
     const names = Object.keys(SUBCOMMANDS);

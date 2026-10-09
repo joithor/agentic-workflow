@@ -9,6 +9,7 @@ import { init } from "./cmd/registry.js";
 import { status } from "./cmd/status.js";
 import { telemetry } from "./cmd/telemetry.js";
 import { ringZeroRepo, writers, type EvolveIo, type Sub } from "./ctx.js";
+import { effectivePrompts } from "./overlay.js";
 
 // Later tasks add their subcommands here.
 export const SUBCOMMANDS: Record<string, Sub> = { check, init, proposals, reject, show, status, telemetry, tier };
@@ -28,8 +29,7 @@ export function makeEvolveCommand(io: EvolveIo): Command {
       const db = openLedger(ledgerPath(stateDir(deps)));
       try {
         const loaded = requireApprovedProfile(deps, db);
-        // Task 5 replaces `prompts: () => []` with the effective prompt texts.
-        return await SUBCOMMANDS[sub](rest, { deps, io, loaded, db, repo: ringZeroRepo(loaded), prompts: () => [], ...writers(deps, db) });
+        return await SUBCOMMANDS[sub](rest, { deps, io, loaded, db, repo: ringZeroRepo(loaded), prompts: () => effectivePrompts(deps), ...writers(deps, db) });
       } finally {
         db.close();
       }
