@@ -2507,7 +2507,7 @@ git commit -m "feat: sindri scope evidence gathering and draft prompt"
     3. **Budget:** a refused call (`SND-SCOPE-005`) stops the run `incomplete` with the reason `token budget exhausted`. Any other model error (`SND-SCOPE-002`) also ends the run `incomplete`, keeping the last passing map.
   - The result is `complete` only if the final map passes `checkMap` and the missing-surface loop ended because nothing new was found. `rounds` counts the calls the model answered (a refused or failed call is not a round).
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 `sindri/tests/scope-run.test.ts`:
 
@@ -2642,12 +2642,12 @@ describe("runScoping (Review Focus 2, 3)", () => {
 });
 ```
 
-- [ ] **Step 2: Run the test to verify it fails**
+- [x] **Step 2: Run the test to verify it fails**
 
 Run: `cd sindri && npx vitest run tests/scope-run.test.ts`
 Expected: FAIL with `Failed to load url ../src/scope/run.js`.
 
-- [ ] **Step 3: Implement**
+- [x] **Step 3: Implement**
 
 `sindri/src/scope/run.ts`:
 
@@ -2789,12 +2789,12 @@ export async function runScoping(e: Evidence, o: ScopeOptions): Promise<ScopeRes
 }
 ```
 
-- [ ] **Step 4: Run the tests**
+- [x] **Step 4: Run the tests**
 
 Run: `cd sindri && npm run typecheck && npm run test:coverage`
 Expected: all tests PASS; coverage 100% on `run.ts`.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add sindri/src/scope/run.ts sindri/tests/scope-run.test.ts
