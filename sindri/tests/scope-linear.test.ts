@@ -42,7 +42,7 @@ function fakeLinear(pages: object[][], o: { status?: number; errors?: unknown; n
   return f;
 }
 
-const run = (f: GraphqlFetch) => fetchLinearProject({ apiUrl: "https://api.linear.app/graphql", token: "t", fetch: f, ref: "abc" });
+const run = (f: GraphqlFetch) => fetchLinearProject({ apiUrl: "https://api.linear.app/graphql", token: "zz" + "-tok-0123456789", fetch: f, ref: "abc" });
 
 describe("Linear source (Review Focus 4)", () => {
   it("parses project references", () => {
@@ -136,11 +136,54 @@ describe("Linear source (Review Focus 4)", () => {
   it("redacts a caller's extra pattern and never leaks the token into errors", async () => {
     const scrubber = makeScrubber([{ kind: "ticket-code", re: /ZQX-[0-9]+/g }]);
     const f = fakeLinear([[issue(1, "2026-01-09T00:00:00Z", { title: "fix ZQX-123 now", comments: { nodes: [{ body: "see ZQX-456", createdAt: "2026-01-09T00:00:00Z", user: { name: "ZQX-789" } }] } })]]);
-    const r = await fetchLinearProject({ apiUrl: "https://api.linear.app/graphql", token: "t", fetch: f, ref: "abc", scrubber });
+    const r = await fetchLinearProject({ apiUrl: "https://api.linear.app/graphql", token: "zz-tok-0123456789", fetch: f, ref: "abc", scrubber });
     expect(JSON.stringify(r)).not.toMatch(/ZQX-\d+/);
-    const token = "lin_" + "api_" + "SECRETTOKEN123";
+    const token = "zz" + "tok-0123456789";
     const bad = await fetchLinearProject({ apiUrl: "https://api.linear.app/graphql", token, fetch: async () => { throw new Error(`boom ${token}`); }, ref: "abc" });
     const gqlBad = await fetchLinearProject({ apiUrl: "https://api.linear.app/graphql", token, fetch: fakeLinear([], { errors: [{ message: `echo ${token}` }] }), ref: "abc" });
-    for (const x of [bad, gqlBad]) expect(JSON.stringify(x)).not.toContain(token);
+    const slugBad = await fetchLinearProject({ apiUrl: "https://api.linear.app/graphql", token, fetch: fakeLinear([], { noProject: true }), ref: token });
+    for (const x of [bad, gqlBad, slugBad]) {
+      expect(!x.ok && x.error.message).toContain("[REDACTED:token]");
+      expect(JSON.stringify(x)).not.toContain(token);
+    }
+  });
+
+  it("leaves error text alone when the token is empty", async () => {
+    const r = await fetchLinearProject({ apiUrl: "https://api.linear.app/graphql", token: "", fetch: async () => { throw new Error("ENOTFOUND"); }, ref: "abc" });
+    expect(!r.ok && r.error.message).toBe("Linear unreachable: ENOTFOUND");
+  });
+
+  it("stops on a missing or repeated cursor, and on endless pages", async () => {
+    const mk = (cursor: (n: number) => string | null): GraphqlFetch => {
+      let n = 0;
+      return async (_u, init) => {
+        if ((JSON.parse(init.body) as { query: string }).query.includes("projects(")) {
+          return { ok: true, status: 200, json: async () => ({ data: { projects: { nodes: [{ id: "p1", name: "n", description: null, createdAt: "2026-01-10T00:00:00Z", url: "u" }] } } }) };
+        }
+        n++;
+        return { ok: true, status: 200, json: async () => ({ data: { project: { issues: { pageInfo: { hasNextPage: true, endCursor: cursor(n) }, nodes: [] } } } }) };
+      };
+    };
+    const nul = await run(mk(() => null));
+    expect(!nul.ok && nul.error.message).toBe("Linear pagination did not advance (missing or repeated cursor)");
+    const same = await run(mk(() => "c"));
+    expect(!same.ok && same.error.message).toBe("Linear pagination did not advance (missing or repeated cursor)");
+    const endless = await run(mk((n) => `c${n}`));
+    expect(!endless.ok && endless.error.message).toBe("Linear issue pagination did not finish within 400 pages");
+  });
+
+  it("does not halve the page for a rate limit that mentions complexity", async () => {
+    const sizes: string[] = [];
+    const f: GraphqlFetch = async (_u, init) => {
+      const q = (JSON.parse(init.body) as { query: string }).query;
+      if (q.includes("projects(")) {
+        return { ok: true, status: 200, json: async () => ({ data: { projects: { nodes: [{ id: "p1", name: "n", description: null, createdAt: "2026-01-10T00:00:00Z", url: "u" }] } } }) };
+      }
+      sizes.push(/issues\(first: (\d+)/.exec(q)?.[1] ?? "?");
+      return { ok: false, status: 400, json: async () => ({ errors: [{ message: "query complexity budget exhausted", extensions: { code: "RATELIMITED" } }] }) };
+    };
+    const r = await run(f);
+    expect(!r.ok && r.error.kind).toBe("rate-limited");
+    expect(sizes).toEqual(["50"]);
   });
 });

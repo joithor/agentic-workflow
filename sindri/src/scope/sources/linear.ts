@@ -37,6 +37,7 @@ export function projectSlug(ref: string): string {
 
 const PAGE = 50;
 const SMALL_PAGE = 25;
+const MAX_PAGES = 400;
 
 const PROJECT = `query P($slug: String!) { projects(filter: { slugId: { eq: $slug } }) { nodes { id name description createdAt url } } }`;
 const issuesQuery = (first: number): string => `query I($id: String!, $after: String) { project(id: $id) { issues(first: ${first}, after: $after, includeArchived: true) {
@@ -55,9 +56,14 @@ const isRecord = (v: unknown): v is Record<string, unknown> => typeof v === "obj
 
 type Ctx = { apiUrl: string; token: string; fetch: GraphqlFetch; scrubber?: Scrubber };
 
+// Mask the token first (so no scrubber pattern can split it), then clean.
+function safe(o: Ctx, v: string): string {
+  return clean(o.token === "" ? v : v.split(o.token).join("[REDACTED:token]"), o.scrubber);
+}
+
 async function gql<T>(o: Ctx, query: string, variables: object, schema: z.ZodType<T>): Promise<Result<T>> {
   // Error text is scrubbed and the token is masked in it, so a server or proxy that echoes it back cannot leak it.
-  const s = (v: string): string => (o.token.length >= 8 ? clean(v, o.scrubber).split(o.token).join("[REDACTED:token]") : clean(v, o.scrubber));
+  const s = (v: string): string => safe(o, v);
   let res: Awaited<ReturnType<GraphqlFetch>>;
   try {
     res = await o.fetch(o.apiUrl, {
@@ -95,15 +101,17 @@ export async function fetchLinearProject(o: { apiUrl: string; token: string; fet
   const p = await gql(o, PROJECT, { slug }, ProjectAnswer);
   if (!p.ok) return p;
   const node = p.value.data.projects.nodes[0];
-  if (node === undefined) return err({ kind: "not-found", code: "SND-SCOPE-011", message: `no Linear project with slug ${slug}` });
+  if (node === undefined) return err({ kind: "not-found", code: "SND-SCOPE-011", message: `no Linear project with slug ${safe(o, slug).slice(0, 200)}` });
   const issues: LinearIssue[] = [];
   let after: string | null = null;
   let first = PAGE;
-  for (;;) {
+  const seen = new Set<string>();
+  for (let pages = 0; ; pages++) {
+    if (pages >= MAX_PAGES) return err({ kind: "fatal", code: "SND-SCOPE-011", message: `Linear issue pagination did not finish within ${MAX_PAGES} pages` });
     const page: Result<z.infer<typeof IssuesAnswer>> = await gql(o, issuesQuery(first), { id: node.id, after }, IssuesAnswer);
     if (!page.ok) {
       // Linear caps a query's complexity: halve the page once, then give up.
-      if (first === PAGE && /complex/i.test(page.error.message)) {
+      if (first === PAGE && page.error.kind !== "rate-limited" && /complex/i.test(page.error.message)) {
         first = SMALL_PAGE;
         continue;
       }
@@ -117,6 +125,10 @@ export async function fetchLinearProject(o: { apiUrl: string; token: string; fet
     }
     const info: { hasNextPage: boolean; endCursor: string | null } = page.value.data.project.issues.pageInfo;
     if (!info.hasNextPage) break;
+    if (info.endCursor === null || seen.has(info.endCursor)) {
+      return err({ kind: "fatal", code: "SND-SCOPE-011", message: "Linear pagination did not advance (missing or repeated cursor)" });
+    }
+    seen.add(info.endCursor);
     after = info.endCursor;
   }
   issues.sort((a, b) => a.createdAt.localeCompare(b.createdAt) || a.identifier.localeCompare(b.identifier));
