@@ -13,19 +13,24 @@ import { evolveFixture, fakeProc, git, scriptedEvolveIo, withDeps } from "./evol
 const FILES = { "judge/package.json": "{}", "skills/review/SKILL.md": "x\n" };
 const view = JSON.stringify({ title: "Fix", body: "B", headRefName: "feat/x", files: [{ path: "a.ts" }], state: "MERGED", mergedAt: "2026-10-07T00:00:00Z", author: { login: "joi-t" } });
 
-function gh(list: string, over: { listCode?: number; open?: boolean } = {}) {
+const prs = (...nums: number[]) => JSON.stringify(nums.map((number) => ({ number, author: { login: "joi-t" } })));
+
+function gh(list: string, over: { listCode?: number; open?: boolean; titles?: Record<string, string> } = {}) {
   return fakeProc((argv) => {
     if (argv[0] !== "gh") return { stdout: "fine" }; // a suite
     if (argv[1] === "api") return { stdout: '{"login":"joi-t"}' };
     if (argv[2] === "list") return over.listCode === undefined ? { stdout: list } : { code: over.listCode, stderr: "rate limited\nretry later" };
-    if (argv[2] === "view") return { stdout: over.open === true ? view.replace('"MERGED"', '"OPEN"').replace(/"mergedAt":"[^"]*"/, '"mergedAt":null') : view };
+    if (argv[2] === "view") {
+      const v = over.titles?.[argv[3]] === undefined ? view : view.replace('"Fix"', JSON.stringify(over.titles[argv[3]]));
+      return { stdout: over.open === true ? v.replace('"MERGED"', '"OPEN"').replace(/"mergedAt":"[^"]*"/, '"mergedAt":null') : v };
+    }
     return { stdout: "diff --git a/a.ts b/a.ts\n" };
   });
 }
 
-async function ready(proc = gh('[{"number":12},{"number":13}]')) {
-  const io = scriptedEvolveIo((c) => (c.model === "sonnet" ? { findings: [] } : { accepted: [], rejected: [], backlog: [] }), proc);
-  const fx = await evolveFixture({ files: FILES, io });
+async function ready(proc = gh(prs(12, 13)), extraYaml?: string) {
+  const io = scriptedEvolveIo((c) => (c.model === "sonnet" ? (c.input.includes('id="pr-title">Partial<') ? { findings: "bad" } : { findings: [] }) : { accepted: [], rejected: [], backlog: [] }), proc);
+  const fx = await evolveFixture({ files: FILES, io, extraYaml });
   git(fx.repo, "remote", "add", "origin", "https://github.com/acme/toolkit.git");
   await init([], fx.ctx);
   fx.ctx.write((epoch) => audit(fx.ctx.db, fx.deps, "reflect", "pr-13", epoch));
@@ -50,7 +55,7 @@ describe("sindri evolve weekly", () => {
       ].join("\n"),
     );
     const list = proc.calls.find((c) => c.argv[2] === "list");
-    expect(list?.argv).toEqual(["gh", "pr", "list", "--state", "merged", "--search", "merged:>=2026-10-01", "--json", "number", "--limit", "100", "--repo", "acme/toolkit"]);
+    expect(list?.argv).toEqual(["gh", "pr", "list", "--state", "merged", "--search", "merged:>=2026-09-24", "--base", "main", "--json", "number,author", "--limit", "100", "--repo", "acme/toolkit"]);
     expect(proc.calls.filter((c) => c.argv[2] === "view").map((c) => c.argv[3])).toEqual(["12"]);
     fx.close();
   });
@@ -77,10 +82,10 @@ describe("sindri evolve weekly", () => {
   });
 
   it("counts a PR that can't be reflected on as a failed reflect step", async () => {
-    const { fx } = await ready(gh('[{"number":12}]', { open: true }));
+    const { fx } = await ready(gh(prs(12), { open: true }));
     const r = await weekly([], fx.ctx);
     expect(r.exitCode).toBe(1);
-    expect(r.stdout).toContain("FAIL reflect: reflected on 1 merged PR(s): #12 FAIL");
+    expect(r.stdout).toContain("FAIL reflect: reflected on 1 merged PR(s): #12 FAIL (SND-EVOLVE-012 PR #12 isn't merged)");
     fx.close();
   });
 
@@ -117,7 +122,7 @@ describe("sindri evolve weekly", () => {
     const r = await weekly(["--dry-run"], fx.ctx);
     expect(r.exitCode).toBe(0);
     expect(r.stdout).toBe("Weekly plan (dry run): telemetry --since 7d; reflect on 1 merged PR(s) (#12); correct --since 7d; check --changed; stage. Nothing ran.\nNext: sindri evolve weekly\n");
-    expect(proc.calls.filter((c) => c.argv[2] !== "list" && c.argv[0] === "gh")).toHaveLength(0);
+    expect(proc.calls.filter((c) => c.argv[2] !== "list" && c.argv[1] !== "api" && c.argv[0] === "gh")).toHaveLength(0);
     expect(JSON.parse((await weekly(["--dry-run", "--json"], fx.ctx)).stdout)).toMatchObject({ dryRun: true, prs: [12] });
     const bad = await ready(gh("", { listCode: 1 }));
     expect((await weekly(["--dry-run"], bad.fx.ctx)).stdout).toContain("reflect: couldn't list merged PRs (SND-EVOLVE-003 gh pr list failed: rate limited)");
@@ -128,7 +133,7 @@ describe("sindri evolve weekly", () => {
   it("says when no merged PR needs a reflection", async () => {
     const { fx } = await ready(gh("[]"));
     const r = await weekly([], fx.ctx);
-    expect(r.stdout).toContain("ok   reflect: no merged PRs from the last 7 days need a reflection");
+    expect(r.stdout).toContain("ok   reflect: no merged PRs from the last 14 days need a reflection");
     fx.close();
   });
 
@@ -144,6 +149,48 @@ describe("sindri evolve weekly", () => {
     const r = await weekly(["--dry-run"], fx.ctx);
     expect(r.stdout).toBe("Weekly plan (dry run): telemetry --since 7d; reflect on 0 merged PR(s); correct --since 7d; check --changed; stage. Nothing ran.\nNext: sindri evolve weekly\n");
     expect(JSON.parse((await weekly(["--dry-run", "--json"], fx.ctx)).stdout)).toMatchObject({ dryRun: true, prs: [] });
+    fx.close();
+  });
+
+  it("skips PRs by authors outside evolve.prAuthors without failing the job, and says how many", async () => {
+    const list = JSON.stringify([{ number: 12, author: { login: "joi-t" } }, { number: 14, author: { login: "app/bot" } }]);
+    const { fx, proc } = await ready(gh(list));
+    const r = await weekly([], fx.ctx);
+    expect(r.exitCode).toBe(0);
+    expect(r.stdout).toContain("ok   reflect: reflected on 1 merged PR(s): #12 ok, 1 skipped (author)\n");
+    expect(proc.calls.filter((c) => c.argv[2] === "view").map((c) => c.argv[3])).toEqual(["12"]);
+    const only = await ready(gh(JSON.stringify([{ number: 14, author: { login: "app/bot" } }])));
+    expect((await weekly([], only.fx.ctx)).stdout).toContain("ok   reflect: no merged PRs from the last 14 days need a reflection (1 skipped (author))\n");
+    fx.close();
+    only.fx.close();
+  });
+
+  it("reflects on the first 10 PRs of a busy week and reports the rest as left for next week", async () => {
+    const { fx, proc } = await ready(gh(prs(...Array.from({ length: 12 }, (_, i) => 20 + i))));
+    const r = await weekly([], fx.ctx);
+    expect(r.exitCode).toBe(0);
+    expect(r.stdout).toContain(`ok   reflect: reflected on 10 merged PR(s): ${Array.from({ length: 10 }, (_, i) => `#${20 + i} ok`).join(", ")}, 2 PR(s) left for next week\n`);
+    expect(proc.calls.filter((c) => c.argv[2] === "view")).toHaveLength(10);
+    fx.close();
+  });
+
+  it("shares one token budget across the PRs and stops when it runs out", async () => {
+    const { fx, proc } = await ready(gh(prs(20, 21, 22, 23)), "evolve:\n  maxTokensPerJob: 16\n");
+    const r = await weekly([], fx.ctx);
+    expect(r.stdout).toContain("reflect: reflected on 2 merged PR(s): #20 ok, #21 ok, 2 PR(s) left for next week\n");
+    expect(proc.calls.filter((c) => c.argv[2] === "view").map((c) => c.argv[3])).toEqual(["20", "21"]);
+    fx.close();
+  });
+
+  it("reports a partial PR next to an ok one, keeps going, and reflects on each PR once", async () => {
+    const { fx, proc } = await ready(gh(prs(20, 21), { titles: { "21": "Partial" } }));
+    const r = await weekly([], fx.ctx);
+    expect(r.exitCode).toBe(1);
+    const reflect = r.stdout.split("\n").find((l) => l.includes(" reflect: "));
+    expect(reflect).toMatch(/^attn reflect: reflected on 2 merged PR\(s\): #20 ok, #21 attn \(Partial result: judgment reviewer: [^\n]*\)$/);
+    expect(r.stdout).toContain("ok   check:");
+    expect(r.stdout).toContain("ok   stage:");
+    expect(proc.calls.filter((c) => c.argv[2] === "view").map((c) => c.argv[3])).toEqual(["20", "21"]);
     fx.close();
   });
 });

@@ -19,7 +19,8 @@ export function reflectedBefore(ctx: EvolveCtx, pr: number): { reflected: boolea
   return { reflected: marked, ids }; // the marker is written only by a complete run, so a partial run can be rerun
 }
 
-export async function reflectCommand(args: string[], ctx: EvolveCtx): Promise<CommandResult> {
+// `budget` lets a caller (the weekly job) share one budget across several PRs; alone, each PR gets its own.
+export async function reflectCommand(args: string[], ctx: EvolveCtx, budget: Budget = new Budget(ctx.loaded.profile.evolve.maxTokensPerJob)): Promise<CommandResult> {
   const { values } = parseFlags(args, { pr: { type: "string" }, json: { type: "boolean" } });
   const json = values.json === true;
   if (values.pr === undefined || !/^[1-9]\d{0,6}$/.test(values.pr)) throw new SindriError("SND-CLI-002", "usage: sindri evolve reflect --pr <n>");
@@ -38,7 +39,7 @@ export async function reflectCommand(args: string[], ctx: EvolveCtx): Promise<Co
   const result = await reflect({
     runner: ctx.io.runner(ctx.loaded, profileScrubber(ctx.loaded)),
     models: { reviewer: ctx.loaded.profile.models.scoping, synthesizer: ctx.loaded.profile.models.challenger },
-    budget: new Budget(ctx.loaded.profile.evolve.maxTokensPerJob),
+    budget,
     prompts: {
       judgment: loadPrompt(ctx.deps, "reflect.judgment"), tooling: loadPrompt(ctx.deps, "reflect.tooling"),
       divergent: loadPrompt(ctx.deps, "reflect.divergent"), synthesize: loadPrompt(ctx.deps, "reflect.synthesize"),
