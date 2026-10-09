@@ -75,7 +75,7 @@ export function findCandidateTurns(dir: string, repo: string, since: Date, dropT
     if (l.type !== "user" || !(Date.parse(l.ts) >= since.getTime())) continue;
     const text = humanText(l.blocks);
     const before = lastAssistant.get(l.file) ?? "";
-    if (text === "" || text.startsWith("<") || mentionsHoldout(text, dropTitles)) continue;
+    if (l.meta || text === "" || text.startsWith("<") || mentionsHoldout(text, dropTitles)) continue;
     found.push({
       ts: l.ts,
       turn: {

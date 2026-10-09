@@ -207,4 +207,26 @@ describe("sindri evolve correct", () => {
     expect(fx.ctx.db.prepare("SELECT COUNT(*) AS c FROM evolve_audit").get()).toEqual({ c: 0 });
     fx.close();
   });
+
+  it("never sends harness-injected turns (Stop hook feedback, skill bodies marked isMeta) to the labeler (I3)", async () => {
+    const { fx, io } = await ready();
+    const meta = (name: string, day: string, text: string) =>
+      fs.writeFileSync(path.join(fx.transcripts, name), `${JSON.stringify({ type: "user", isMeta: true, cwd: fx.repo, timestamp: `2026-10-0${day}T11:00:00Z`, message: { content: text } })}\n`);
+    meta("7a77c3f2-c.jsonl", "5", "Stop hook feedback:\n[/r/config/hooks/done-gate.sh # aw:done-gate]: Claiming done without tests");
+    meta("7b77c3f3-d.jsonl", "6", "Base directory for this skill: /skills/review\n\n# Review skill body that is not a human turn");
+    await correctCommand([], fx.ctx);
+    const sent = io.calls.filter((c) => c.role === "label").map((c) => c.input).join("\n");
+    expect(sent).toContain("you edited the test file");
+    expect(sent).not.toContain("Stop hook feedback");
+    expect(sent).not.toContain("Review skill body");
+    fx.close();
+  });
+
+  it("keeps the audit marker key exact when a profile scrub pattern would match it", async () => {
+    const { fx } = await ready(script(["none"]), "scrub:\n  extraPatterns:\n    - kind: marker\n      regex: \"W[0-9]+ 7d|2026-W41\"\n");
+    await correctCommand([], fx.ctx);
+    expect(fx.ctx.db.prepare("SELECT detail FROM evolve_audit WHERE verb = 'correct'").all()).toEqual([{ detail: "2026-W41 7d" }]);
+    expect(JSON.parse((await correctCommand(["--json"], fx.ctx)).stdout)).toMatchObject({ alreadyRan: true });
+    fx.close();
+  });
 });

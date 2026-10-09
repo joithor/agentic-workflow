@@ -3,7 +3,7 @@ import { SindriError } from "../../errors.js";
 import { success, type CommandResult } from "../../output.js";
 import { profileScrubber } from "../../scope/commands.js";
 import { Budget } from "../../scope/model.js";
-import { audit } from "../audit.js";
+import { auditMarker } from "../audit.js";
 import { holdoutTitles } from "../corpus.js";
 import { repoConfig, type EvolveCtx } from "../ctx.js";
 import { allowedAuthors, ghRepoOf, prContext } from "../github.js";
@@ -52,7 +52,7 @@ export async function reflectCommand(args: string[], ctx: EvolveCtx, budget: Bud
       const t = classifyTier(p, registry, extra);
       return { title: p.title, tier: t.tier, outcome: saveProposal(ctx.db, p, `reflect:pr-${pr}`, t.tier, epoch, ctx.deps.now()) };
     });
-    if (!result.incomplete) audit(ctx.db, ctx.deps, "reflect", `pr-${pr}`, epoch, profileScrubber(ctx.loaded));
+    if (!result.incomplete) auditMarker(ctx.db, ctx.deps, "reflect", `pr-${pr}`, epoch);
     return out;
   });
   const { tiers, lines } = renderSaved(saved);

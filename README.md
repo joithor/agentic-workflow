@@ -191,6 +191,7 @@ cd mcp-bridge && npm start    # Fastify on http://127.0.0.1:3100
 | Debug & QA | `rootCause`, `bugHunt`, `bugReport`, `bugFixOrchestrator`, `testAudit` |
 | Ship & operate | `shipRelease`, `landAndDeploy`, `canary`, `syncDocs`, `weeklyRetro`, `prismStatus`, `judge` |
 | Repo setup | `bootstrap` |
+| Self-evolution | `reflect`, `correct` |
 
 Skills write their artifacts to `~/.agentic-workflow/<repo-slug>/<domain>/`, and downstream skills discover them from there.
 

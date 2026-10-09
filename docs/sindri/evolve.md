@@ -91,7 +91,7 @@ Suite output tails, audit details and transcript excerpts are scrubbed with the 
 | `SND-EVOLVE-005` | A channel change isn't allowed yet | `sindri channel status` says why and what to run |
 | `SND-EVOLVE-014` | `publish` would write into the default branch | `git switch -c docs/sindri-proposals-<week>` |
 | `SND-EVOLVE-015` | `publish` found `privacy.denyTerms` empty | add your workplace's names to `privacy.denyTerms` in the private profile, then `sindri profile approve`; or pass `--no-privacy-terms` |
-| `held: contains a private term` | A proposal matched `privacy.denyTerms` | `reject` it, or reword the source and let it re-propose; held proposals don't count against the cap |
+| `held: contains a private term` | A proposal matched `privacy.denyTerms` | `reject` it first: a held proposal is still open, so a re-proposal with the same title merges into it and stays held, and a rejected title can't be saved again, so a reworded one needs a different title. Or fix the cause (edit `privacy.denyTerms` or `scrub.extraPatterns`, then `sindri profile approve`) and rerun `publish`, which re-checks held proposals. Held proposals don't count against the cap |
 | `SND-LOCK-001` from an evolve command | `observe` held the tick lock for more than 6 seconds | rerun; evolve retries a held lock 3 times, 2 seconds apart, before failing |
 | `evolve-overlay` warning in `doctor` | An overlay file is being ignored | `adopt` properly, or delete the file |
 

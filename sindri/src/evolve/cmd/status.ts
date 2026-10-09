@@ -1,8 +1,9 @@
 import { parseFlags } from "../../args.js";
 import { success, type CommandResult } from "../../output.js";
-import { repoConfig, type EvolveCtx } from "../ctx.js";
+import type { EvolveCtx } from "../ctx.js";
 import { isHoldout, readCorpus } from "../corpus.js";
-import { findMerged, setStatus, STATUSES, type ProposalStatus } from "../proposals.js";
+import { markMerged } from "../stage.js";
+import { STATUSES, type ProposalStatus } from "../proposals.js";
 
 export interface Section {
   lines: string[];
@@ -54,8 +55,7 @@ export async function artifactSection(ctx: EvolveCtx): Promise<Section> {
 }
 
 export async function proposalSection(ctx: EvolveCtx): Promise<Section> {
-  const ids = await findMerged(ctx.db, ctx.deps.git, ctx.repo, repoConfig(ctx.loaded).defaultBranch);
-  if (ids.length > 0) await ctx.writeRetry((epoch) => ids.forEach((id) => setStatus(ctx.db, id, "merged", epoch, ctx.deps.now())));
+  await markMerged(ctx);
   const counts = Object.fromEntries(STATUSES.map((s) => [s, 0])) as Record<ProposalStatus, number>;
   for (const r of ctx.db.prepare("SELECT status, COUNT(*) AS c FROM proposals GROUP BY status").all() as { status: ProposalStatus; c: number }[]) counts[r.status] = r.c;
   const cap = ctx.loaded.profile.evolve.maxOpenProposals;

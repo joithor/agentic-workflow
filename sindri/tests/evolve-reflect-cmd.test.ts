@@ -139,4 +139,27 @@ describe("sindri evolve reflect", () => {
     expect(input).not.toContain("Quarterly Staffing Overhaul");
     fx.close();
   });
+
+  it("never sends harness-injected turns (isMeta) to the reviewers (I3)", async () => {
+    const { fx } = await ready(synthesis([]));
+    const meta = (text: string) => JSON.stringify({ type: "user", isMeta: true, gitBranch: "feat/x", cwd: fx.repo, timestamp: "2026-10-06T10:01:00Z", message: { content: text } });
+    fs.appendFileSync(path.join(fx.transcripts, "5e55a1d0-aaaa.jsonl"), `${meta("Stop hook feedback:\n[/r/config/hooks/done-gate.sh # aw:done-gate]: Claiming done")}\n${meta("Base directory for this skill: /skills/review\n\n# Review skill body")}\n`);
+    await reflectCommand(["--pr", "12"], fx.ctx);
+    const sent = (fx.io as ReturnType<typeof scriptedEvolveIo>).calls[0].input;
+    expect(sent).toContain("please fix the thing");
+    expect(sent).not.toContain("Stop hook feedback");
+    expect(sent).not.toContain("Review skill body");
+    fx.close();
+  });
+
+  it("keeps the audit marker key exact when a profile scrub pattern would match it", async () => {
+    const proc = gh();
+    const fx = await evolveFixture({ files: FILES, extraYaml: "scrub:\n  extraPatterns:\n    - kind: marker\n      regex: \"pr-[0-9]+\"\n", io: scriptedEvolveIo((c) => (c.model === "sonnet" ? finding : synthesis([])), proc) });
+    git(fx.repo, "remote", "add", "origin", "https://github.com/acme/toolkit.git");
+    await init([], fx.ctx);
+    await reflectCommand(["--pr", "12"], fx.ctx);
+    expect(fx.ctx.db.prepare("SELECT detail FROM evolve_audit WHERE verb = 'reflect'").all()).toEqual([{ detail: "pr-12" }]);
+    expect((await reflectCommand(["--pr", "12"], fx.ctx)).stdout).toContain("Already reflected on PR #12");
+    fx.close();
+  });
 });

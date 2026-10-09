@@ -7,7 +7,7 @@ import { init } from "../src/evolve/cmd/registry.js";
 import { stage } from "../src/evolve/cmd/stage.js";
 import { getProposal, ProposalSchema, saveProposal, setStatus, stagedFile, type ProposalStatus, type Tier } from "../src/evolve/proposals.js";
 import { PROMPTS } from "../src/evolve/prompts.js";
-import { evolveFixture } from "./evolve-fixtures.js";
+import { evolveFixture, git } from "./evolve-fixtures.js";
 
 const FILES = { "config/hooks/done-gate.sh": "#!/bin/sh\n", "skills/review/SKILL.md": "x\n", "sindri/package.json": "{}", "sindri/src/observe/observe.ts": "export const a = 1;\n" };
 
@@ -107,5 +107,17 @@ describe("stage preview hardening (Task 10 fix round 1, m1)", () => {
     expect(preview).toContain("REDACTED");
     fx.close();
   });
-});
 
+  it("marks published proposals whose commits are on the default branch as merged before it counts the cap (I2)", async () => {
+    const { fx, save } = await ready(10);
+    const published = Array.from({ length: 10 }, (_, k) => save(`Published change number ${k}`, {}, "code", "published"));
+    for (const id of published) git(fx.repo, "commit", "-q", "--allow-empty", "-m", `feat: ship it\n\nProposal \`${id}\``);
+    const fresh = save("Fresh change to stage", {}, "code");
+    const r = await stage([], fx.ctx);
+    expect(r.stdout).toContain("Staged 1 proposal(s)");
+    expect(r.stdout).not.toContain("Cap reached");
+    expect(published.map((id) => getProposal(fx.ctx.db, id)?.status)).toEqual(Array(10).fill("merged"));
+    expect(getProposal(fx.ctx.db, fresh)?.status).toBe("staged");
+    fx.close();
+  });
+});

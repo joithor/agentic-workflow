@@ -21,7 +21,7 @@ export function branchTranscript(dir: string, repo: string, branch: string, o: {
   for (const l of lines) {
     if (l.branch !== branch || (l.type !== "user" && l.type !== "assistant")) continue;
     const text = l.blocks.filter((b) => !b.toolResult).map((b) => b.text).join("\n").trim();
-    if (text === "" || (l.type === "user" && text.startsWith("<")) || mentionsHoldout(text, o.dropTitles)) continue;
+    if (text === "" || (l.type === "user" && (l.meta || text.startsWith("<"))) || mentionsHoldout(text, o.dropTitles)) continue;
     turns.push(`<untrusted id="${l.ref}" role="${l.type === "user" ? "human" : "assistant"}">${esc(scrubber.scrub(text).text)}</untrusted>`);
   }
   let total = turns.reduce((n, t) => n + t.length + 1, 0);

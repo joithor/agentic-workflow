@@ -1,12 +1,14 @@
+import { createHash } from "node:crypto";
 import { describe, expect, it } from "vitest";
 
+import { adopt } from "../src/evolve/cmd/adopt.js";
 import { compare } from "../src/evolve/cmd/compare.js";
 import { show } from "../src/evolve/cmd/proposals.js";
 import { init } from "../src/evolve/cmd/registry.js";
 import { isHoldout, saveReplay, type ReplayItem } from "../src/evolve/corpus.js";
-import { ProposalSchema, getProposal, saveProposal, setStatus, type ProposalStatus } from "../src/evolve/proposals.js";
+import { ProposalSchema, getProposal, runningComparison, saveProposal, setStatus, type ProposalStatus } from "../src/evolve/proposals.js";
 import { SOURCES_CLAUSE } from "../src/evolve/prompts.js";
-import { evolveFixture, scriptedEvolveIo, type EvolveFixture, type ScriptedEvolveIo } from "./evolve-fixtures.js";
+import { evolveFixture, scriptedEvolveIo, withDeps, type EvolveFixture, type ScriptedEvolveIo } from "./evolve-fixtures.js";
 
 const map = (title: string) => ({
   subject: "B", surfaces: [{ id: "S1", kind: "ui", title, detail: "", citations: ["R1"] }], implications: [],
@@ -343,6 +345,26 @@ describe("sindri evolve compare", () => {
     expect(await running()).toBeNull();
     fx.ctx.db.prepare("INSERT INTO comparisons (proposal_id, run, item_id, verdict, detail, ts, epoch) VALUES (?, 3, '*', 'running', '{}', 't', 1)").run(id);
     expect(await running()).toBe(3);
+    fx.close();
+  });
+
+  it("closes every earlier running row when --rerun starts, so a won rerun can be adopted after a killed run (I1)", async () => {
+    const { fx, save } = await ready(22);
+    const id = save();
+    // A killed compare: its `running` marker is in the ledger, nothing closed it, and the proposal is `evaluating`.
+    fx.ctx.db.prepare("INSERT INTO comparisons (proposal_id, run, item_id, verdict, detail, ts, epoch) VALUES (?, 1, '*', 'running', '{}', 't', 1)").run(id);
+    fx.ctx.write((epoch) => setStatus(fx.ctx.db, id, "evaluating", epoch, fx.deps.now()));
+    expect(runningComparison(fx.ctx.db, id)).toBe(1);
+    const r = await compare([id, "--rerun", "--json"], fx.ctx);
+    expect(JSON.parse(r.stdout)).toMatchObject({ run: 2, status: "won" });
+    expect(runningComparison(fx.ctx.db, id)).toBeNull();
+    expect(fx.ctx.db.prepare("SELECT run, verdict, detail FROM comparisons WHERE proposal_id = ? AND item_id = '*' AND verdict = 'errored'").all(id)).toEqual([
+      { run: 1, verdict: "errored", detail: JSON.stringify({ line: "superseded by run 2" }) },
+    ]);
+    const sha8 = createHash("sha256").update(variant).digest("hex").slice(0, 8);
+    const adopted = await adopt([id], withDeps(fx.ctx, { isTTY: true, prompt: async () => sha8 }));
+    expect(adopted.exitCode).toBe(0);
+    expect(status(fx, id)).toBe("adopted");
     fx.close();
   });
 });

@@ -96,6 +96,15 @@ export async function compare(args: string[], ctx: EvolveCtx): Promise<CommandRe
       if (VERDICTS.includes(prev.verdict as CompareStatus)) return { kind: "stored" as const, run: prev.run, verdict: prev.verdict as CompareStatus, line: (JSON.parse(prev.detail) as { line: string }).line };
     }
     const next = (ctx.db.prepare("SELECT COALESCE(MAX(run), 0) + 1 AS n FROM comparisons WHERE proposal_id = ?").get(id) as { n: number }).n;
+    // A rerun supersedes every earlier run still open (a killed compare leaves its `running` marker behind, and
+    // an open marker blocks adopt forever). Close each one here, in the same write that takes the new number.
+    const open = values.rerun !== true ? [] : ctx.db.prepare(
+      "SELECT run FROM comparisons m WHERE proposal_id = ? AND item_id = '*' AND verdict = 'running' AND NOT EXISTS (SELECT 1 FROM comparisons c WHERE c.proposal_id = m.proposal_id AND c.run = m.run AND c.item_id = '*' AND c.verdict != 'running') ORDER BY run",
+    ).all(id) as { run: number }[];
+    for (const o of open) {
+      ctx.db.prepare("INSERT INTO comparisons (proposal_id, run, item_id, verdict, detail, ts, epoch) VALUES (?, ?, '*', 'errored', ?, ?, ?)")
+        .run(id, o.run, JSON.stringify({ line: `superseded by run ${next}` }), ctx.deps.now().toISOString(), epoch);
+    }
     ctx.db.prepare("INSERT INTO comparisons (proposal_id, run, item_id, verdict, detail, ts, epoch) VALUES (?, ?, '*', 'running', '{}', ?, ?)").run(id, next, ctx.deps.now().toISOString(), epoch);
     setStatus(ctx.db, id, "evaluating", epoch, ctx.deps.now());
     return { kind: "go" as const, run: next, before: now };

@@ -8,7 +8,7 @@ import { audit } from "./audit.js";
 import { repoConfig, type EvolveCtx } from "./ctx.js";
 import { profileScrubber } from "../scope/commands.js";
 import { privacyProblem } from "./privacy.js";
-import { classifyTier, inFlightCount, listStored, normTitle, setStatus, setTier, stagedFile, type Tier } from "./proposals.js";
+import { classifyTier, findMerged, inFlightCount, listStored, normTitle, setStatus, setTier, stagedFile, type Tier } from "./proposals.js";
 import { loadRegistry } from "./registry.js";
 import { renderTask } from "./render.js";
 import { isoWeekMonday } from "./week.js";
@@ -24,8 +24,16 @@ export interface StageOutcome {
   dir: string;
 }
 
+// A published proposal whose commit reached the default branch is merged. `evolve status` and `stage` both run
+// this, so the weekly job frees its cap slots without anyone looking at status first.
+export async function markMerged(ctx: EvolveCtx): Promise<void> {
+  const ids = await findMerged(ctx.db, ctx.deps.git, ctx.repo, repoConfig(ctx.loaded).defaultBranch);
+  if (ids.length > 0) await ctx.writeRetry((epoch) => ids.forEach((id) => setStatus(ctx.db, id, "merged", epoch, ctx.deps.now())));
+}
+
 // Unattended: previews go under the state dir, never into the repo.
 export async function stageProposals(ctx: EvolveCtx): Promise<StageOutcome> {
+  await markMerged(ctx);
   const registry = loadRegistry(ctx.db);
   const extra = repoConfig(ctx.loaded).protectedPaths;
   const cap = ctx.loaded.profile.evolve.maxOpenProposals;
