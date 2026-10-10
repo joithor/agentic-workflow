@@ -18,9 +18,10 @@ const PrList = z.array(z.object({ number: z.number().int().positive(), author: z
 
 const messageOf = (e: unknown): string => (e instanceof SindriError ? `${e.code} ${e.message}` : e instanceof Error ? e.message : String(e));
 
-// The last line of a step's output that isn't a "Next:" pointer. Steps throw on error, so stdout is all there is.
+// The last line of a step's output that isn't a "Next:" pointer or a per-proposal "held <id>: why" detail line.
+// Steps throw on error, so stdout is all there is.
 function summaryOf(r: CommandResult): string {
-  const lines = r.stdout.split("\n").filter((l) => l !== "" && !l.startsWith("Next:"));
+  const lines = r.stdout.split("\n").filter((l) => l !== "" && !l.startsWith("Next:") && !l.startsWith("held "));
   return lines[lines.length - 1];
 }
 

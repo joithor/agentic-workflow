@@ -200,6 +200,21 @@ describe("stage generalizes first (privacy B1)", () => {
     fx.close();
   });
 
+  it("spends no model call on a duplicate of shipped work; the write still rejects it", async () => {
+    const io = scriptedEvolveIo(generalizingScript());
+    const { fx, save } = await ready(4, io);
+    const merged = save("Alpha change here", {}, "code", "merged");
+    const again = save("alpha CHANGE here!", { evidence: ["pr:1", "pr:2"] }, "code");
+    const fresh = save("A fresh idea about it", {}, "code");
+    const o = await stageProposals(fx.ctx);
+    expect(io.calls).toHaveLength(2);
+    expect(io.calls.every((c) => c.input.includes("A fresh idea about it"))).toBe(true);
+    expect(o).toMatchObject({ staged: [{ id: fresh }], duplicates: 1 });
+    expect(getProposal(fx.ctx.db, again)?.status).toBe("rejected");
+    expect(fx.ctx.db.prepare("SELECT detail FROM evolve_audit").all()).toEqual([{ detail: `${again}: duplicate of ${merged}` }]);
+    fx.close();
+  });
+
   it("sends each proposal's own resolved transcript lines to both generalize calls, never another proposal's", async () => {
     const io = scriptedEvolveIo(generalizingScript());
     const { fx, save } = await ready(2, io);

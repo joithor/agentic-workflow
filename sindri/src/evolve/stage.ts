@@ -40,6 +40,10 @@ export async function markMerged(ctx: EvolveCtx): Promise<void> {
 
 // Held at stage: the generalization pass refused it and it has no public row yet, so the next stage retries it.
 const heldAtStage = (ctx: EvolveCtx): StoredProposal[] => listStored(ctx.db, ["held"]).filter((s) => getPublic(ctx.db, s.id) === null);
+// Reruns of reflect and correct can re-propose shipped work: the first merged or adopted proposal it duplicates.
+const shippedDuplicate = (ctx: EvolveCtx, s: StoredProposal): string | undefined =>
+  (ctx.db.prepare("SELECT id FROM proposals WHERE artifact_id = ? COLLATE NOCASE AND norm_title = ? AND status IN ('merged', 'adopted') ORDER BY created_at, id LIMIT 1")
+    .get(s.artifact, normTitle(s.proposal.title)) as { id: string } | undefined)?.id;
 const byEvidence = (a: StoredProposal, b: StoredProposal): number => b.proposal.evidence.length - a.proposal.evidence.length;
 
 // Unattended: previews go under the state dir, never into the repo. Generalization (privacy spec §5.1) runs first,
@@ -55,7 +59,8 @@ export async function stageProposals(ctx: EvolveCtx, budget: Budget = new Budget
   const cap = ctx.loaded.profile.evolve.maxOpenProposals;
   const dir = path.dirname(stagedFile(ctx.deps, "x"));
   const scrub = profileScrubber(ctx.loaded);
-  const snapshot = [...listStored(ctx.db, ["proposed"]), ...heldAtStage(ctx)]
+  // Shipped duplicates are left out here so they cost no model calls; the write below rejects them.
+  const snapshot = [...listStored(ctx.db, ["proposed"]).filter((s) => shippedDuplicate(ctx, s) === undefined), ...heldAtStage(ctx)]
     .filter((s) => classifyTier(s.proposal, registry, extra).tier !== "self-adopt")
     .sort(byEvidence)
     .slice(0, Math.max(0, cap - inFlightCount(ctx.db)));
@@ -74,12 +79,11 @@ export async function stageProposals(ctx: EvolveCtx, budget: Budget = new Budget
   }
   return ctx.writeRetry((epoch) => {
     const inFlight = inFlightCount(ctx.db);
-    // Reruns of reflect and correct can re-propose shipped work: reject it rather than stage it again.
-    const shipped = ctx.db.prepare("SELECT id FROM proposals WHERE artifact_id = ? COLLATE NOCASE AND norm_title = ? AND status IN ('merged', 'adopted') ORDER BY created_at, id LIMIT 1");
+    // Re-checked under the lock: reject shipped duplicates rather than stage them again.
     const duplicates: { id: string; of: string }[] = [];
     const fresh = listStored(ctx.db, ["proposed"]).filter((s) => {
-      const dup = shipped.get(s.artifact, normTitle(s.proposal.title)) as { id: string } | undefined;
-      if (dup !== undefined) duplicates.push({ id: s.id, of: dup.id });
+      const dup = shippedDuplicate(ctx, s);
+      if (dup !== undefined) duplicates.push({ id: s.id, of: dup });
       return dup === undefined;
     });
     const classified = [...fresh, ...heldAtStage(ctx)].map((s) => ({ s, t: classifyTier(s.proposal, registry, extra) }));

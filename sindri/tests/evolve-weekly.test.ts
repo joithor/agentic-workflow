@@ -6,8 +6,10 @@ import { awStateDir } from "../src/deps.js";
 import { audit } from "../src/evolve/audit.js";
 import { init } from "../src/evolve/cmd/registry.js";
 import { weekly } from "../src/evolve/cmd/weekly.js";
+import { GENERALIZE_ROLES } from "../src/evolve/generalize.js";
 import { ProposalSchema, saveProposal } from "../src/evolve/proposals.js";
 import { heavyLockDir } from "../src/index/heavy-lock.js";
+import type { ModelCall } from "../src/scope/model.js";
 import { evolveFixture, fakeProc, generalizingScript, git, scriptedEvolveIo, withDeps } from "./evolve-fixtures.js";
 
 const FILES = { "judge/package.json": "{}", "skills/review/SKILL.md": "x\n" };
@@ -103,6 +105,28 @@ describe("sindri evolve weekly", () => {
     const b = await weekly([], broken);
     expect(b.stdout).toContain("FAIL reflect: git exploded");
     expect(b.stdout).toContain("FAIL check: git exploded");
+    fx.close();
+  });
+
+  it("keeps the stage summary as the digest line when the generalization pass holds a proposal", async () => {
+    const { fx, proc } = await ready();
+    const base = (c: ModelCall<unknown>) => (c.model === "sonnet" ? { findings: [] } : { accepted: [], rejected: [], backlog: [] });
+    const io = scriptedEvolveIo((c) => (c.role === GENERALIZE_ROLES.judge && c.input.includes("Leaky") ? { leaks: true, category: "people" } : generalizingScript(base)(c)), proc);
+    for (const title of ["Tighten review scope", "Leaky review idea"]) {
+      fx.ctx.write((epoch) =>
+        saveProposal(fx.ctx.db, ProposalSchema.parse({
+          artifact: "skill:review", kind: "skill-edit", title, rationale: "r", evidence: ["pr:1"],
+          change: { type: "describe", files: ["skills/review/SKILL.md"], description: "d" },
+        }), "reflect:pr-1", "code", epoch, fx.deps.now()));
+    }
+    const r = await weekly([], { ...fx.ctx, io });
+    const stageLine = r.stdout.split("\n").find((l) => l.includes(" stage: "));
+    expect(stageLine).toMatch(/^ok {3}stage: Staged 1 proposal\(s\) \(0 approval tier\) in .*\.$/);
+    expect(r.stdout).not.toContain("held ");
+    expect(fx.ctx.db.prepare("SELECT title, status FROM proposals ORDER BY title").all()).toEqual([
+      { title: "Leaky review idea", status: "held" },
+      { title: "Tighten review scope", status: "staged" },
+    ]);
     fx.close();
   });
 
