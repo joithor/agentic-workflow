@@ -94,6 +94,7 @@ dotnet test --solution AgenticWorkflow.slnx                                     
 dotnet test --solution AgenticWorkflow.slnx --filter-trait "Lane=unit" --ignore-exit-code 8          # Unit lane (< 10 s per package)
 dotnet test --solution AgenticWorkflow.slnx --filter-trait "Lane=integration" --ignore-exit-code 8   # Temp SQLite files, WebApplicationFactory (< 60 s per package)
 dotnet test --solution AgenticWorkflow.slnx --filter-not-trait "Lane=heavy" --ignore-exit-code 8     # Everything except containers, browsers and index builds
+node scripts/ci/lane-budgets.mjs        # After a Release build: each package's unit/integration lane wall clock vs its budget (LANE-PKG-001)
 dotnet format --verify-no-changes       # Style and analyzer fixes are applied (CI and pre-commit)
 scripts/dotnet-verify-packages.sh       # Lock files present and unchanged, signature-verified locked restore, dotnet nuget verify --all
 # Add a package: /new-package (spec docs/csharp/scaffolds/new-package.md)
@@ -107,7 +108,9 @@ scripts/sync-rules.sh --check           # Exit 1 if links or the Rules Index are
 node scripts/check-deps.mjs             # Schema, tiers, cycles, fan-out, undeclared cli/db/file edges; exit 1 on drift
 node scripts/check-deps.mjs --mermaid [--base-file F]   # Also print the Mermaid graph and the edge list (added/removed vs F)
 
-# Bash tests
+# Bash tests (CI: scripts/ci/bash-tests.sh runs every tracked suite, independent ones in parallel and
+# its SERIAL list, the timing-sensitive ones, one at a time afterwards; --serial prints them with reasons)
+bash scripts/ci/bash-tests.sh
 bash providers/tests/install.test.sh
 bash scripts/tests/sync-rules.test.sh
 bash scripts/tests/check-deps.test.sh
@@ -120,6 +123,7 @@ bash scripts/tests/readiness-baseline.test.sh
 bash scripts/tests/agent-token.test.sh
 bash scripts/tests/ci-changed-areas.test.sh
 bash scripts/tests/ci-bash-tests.test.sh
+bash scripts/tests/ci-lane-budgets.test.sh
 bash scripts/tests/ci-no-any.test.sh
 bash config/hooks/tests/codex-adapter.test.sh
 bash config/hooks/tests/cursor-adapter.test.sh
@@ -168,7 +172,7 @@ Before merging any PR:
 5. `./setup.sh --providers claude,codex,cursor --dry-run` runs cleanly
 6. No `/* v8 ignore */` annotations in source files (prohibited — write the test instead)
 7. No `any` types outside of Fastify integration boundaries (`node scripts/ci/no-any.mjs`; existing ones are held in `scripts/ci/no-any-baseline.json`, which only shrinks)
-8. C# build (active once `src/` has projects): `dotnet build -warnaserror` reports zero warnings; `dotnet test --solution AgenticWorkflow.slnx --filter-trait "Lane=unit" --ignore-exit-code 8` and `dotnet test --solution AgenticWorkflow.slnx --filter-trait "Lane=integration" --ignore-exit-code 8` pass within their budgets (the heavy lane runs nightly); `dotnet format --verify-no-changes` is clean, `scripts/dotnet-verify-packages.sh` passes, and the ratchet baseline block at the end of `.editorconfig` didn't grow
+8. C# build (active once `src/` has projects): `dotnet build -warnaserror` reports zero warnings; `dotnet test --solution AgenticWorkflow.slnx --filter-trait "Lane=unit" --ignore-exit-code 8` and `dotnet test --solution AgenticWorkflow.slnx --filter-trait "Lane=integration" --ignore-exit-code 8` pass within their budgets (`node scripts/ci/lane-budgets.mjs`, LANE-PKG-001; the heavy lane runs nightly); `dotnet format --verify-no-changes` is clean, `scripts/dotnet-verify-packages.sh` passes, and the ratchet baseline block at the end of `.editorconfig` didn't grow
 
 ## C# slice recipe
 

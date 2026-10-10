@@ -23,7 +23,7 @@ Each rule names the check that enforces it. "Gap — R1b" means the check doesn'
 |---|---|
 | Red test committed before the code | Commit history (the `/specToProvenPR` red-commit rule); review |
 | Every test has exactly one `Lane` trait | Gap — R1b. Planned check: a reflection test in `Aw.Architecture.Tests` that loads every `Aw.*.Tests` assembly and fails on any `[Fact]`/`[Theory]` with zero or several `Lane` traits, plus a CI step asserting the unfiltered test count equals the sum of the three lane counts |
-| Lane budgets (below) | Gap — R1b. Planned check: the CI lane job takes the wall clock of `dotnet test --project <test project> --filter-trait "Lane=<lane>" --ignore-exit-code 8` per test project, sums it per package, and fails a package over its budget; each test's own time from xUnit's CTRF report is checked against the same budget as a per-test cap (`Aw.Kernel.Testing` ships that check). Failures print the rule id, the measured seconds, the limit and the package |
+| Lane budgets (below) | Per package: `node scripts/ci/lane-budgets.mjs` (CI's .NET job, after the Release build) times `dotnet test --project <test project> --no-build --configuration Release --filter-trait "Lane=<lane>" --ignore-exit-code 8` per test project, sums the wall clock per `deps.yaml` package (longest `projectPrefix`; a test assembly no package owns, such as `Aw.Architecture.Tests`, is its own row) and fails a package at or over its budget with `LANE-PKG-001` (package, lane, measured seconds, limit, the slowest project and the command to measure it); a timed run that fails is `LANE-PKG-002`. The time is the test run with each test host's start-up, not the compile. Per test: each test's own time from xUnit's CTRF report is checked against the same budget as a per-test cap (`Aw.Kernel.Testing` ships that check; gap — R1b until it lands) |
 | No mocking libraries | Not in `Directory.Packages.props`; review rejects them |
 | A fake and its SQL implementation pass the same contract tests | The contract-test base (per port); review checks every new port has one |
 | Architecture rules (§4b.1) | ArchUnitNET in `tests/Aw.Architecture.Tests` (gap — R1b until it exists) |
@@ -46,7 +46,7 @@ Each rule names the check that enforces it. "Gap — R1b" means the check doesn'
 
 ## Lanes
 
-Lanes are xUnit traits named `Lane`. Every test carries exactly one. A budget covers the **whole package's run of that lane** (spec §4b.5: "under 10 s per package"), not a single test; the check is a gap — R1b (table above).
+Lanes are xUnit traits named `Lane`. Every test carries exactly one. A budget covers the **whole package's run of that lane** (spec §4b.5: "under 10 s per package"), not a single test; `node scripts/ci/lane-budgets.mjs` checks it (table above).
 
 | Lane | What | Budget (whole lane, per package) |
 |---|---|---|
