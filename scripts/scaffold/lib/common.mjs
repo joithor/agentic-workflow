@@ -41,12 +41,12 @@ export function parseArgs(argv, known, flags = []) {
 export class UsageError extends Error {}
 
 /**
- * SIGINT and SIGTERM during a run: remembered, never fatal on their own, so the generator can revert what it wrote
- * and release the heavy-job lock. run() refuses to start another command once one arrived and fails the one it was
- * waiting on (SCAFFOLD-INTERRUPTED); the caller's catch reverts. Installed by each generator's main() around the whole
- * run, from the first write to the revert.
+ * SIGINT, SIGTERM or SIGHUP during a run: caught (never fatal on their own) so the generator can revert what it wrote
+ * and release the heavy-job lock. The running command's whole process group is stopped (stopGroup), run() fails that
+ * step and refuses to start another (SCAFFOLD-INTERRUPTED), and the caller's catch reverts. Installed by each
+ * generator's main() around the whole run, from the first write to the revert.
  */
-export const signals = { interrupted: false };
+export const signals = { interrupted: null };
 const running = { child: null };
 const TRAPPED = ["SIGINT", "SIGTERM", "SIGHUP"];
 export function trapSignals(log = console.error) {
@@ -54,8 +54,8 @@ export function trapSignals(log = console.error) {
     sig,
     () => {
       if (!signals.interrupted) log(`${sig}: stopping the current step; the scaffold will be reverted`);
-      signals.interrupted = true;
-      running.child?.kill(sig);   // don't wait for a long dotnet step to finish on its own
+      signals.interrupted ??= sig;
+      stopGroup(running.child);   // don't wait for a long dotnet step to finish on its own
     },
   ]);
   for (const [sig, fn] of handlers) process.on(sig, fn);
@@ -65,8 +65,26 @@ export function trapSignals(log = console.error) {
 }
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
+/**
+ * Stops a command and everything it started. Each command runs in its own process group (spawn's detached), and the
+ * group gets SIGINT, the dotnet CLI's cancel path (on SIGTERM or SIGHUP it exits but leaves its build and test
+ * processes running), then SIGKILL if it is still there after 10 s.
+ */
+function stopGroup(child) {
+  if (!child || child.exitCode !== null || child.signalCode !== null) return;
+  signalGroup(child.pid, "SIGINT");
+  setTimeout(() => signalGroup(child.pid, "SIGKILL"), 10_000).unref();
+}
+function signalGroup(pid, sig) {
+  try {
+    process.kill(-pid, sig);
+  } catch {
+    // the group is already gone
+  }
+}
+
 function checkInterrupted() {
-  if (signals.interrupted) throw new ScaffoldError("SCAFFOLD-INTERRUPTED", "interrupted (SIGINT or SIGTERM)", "nothing to fix: the files were reverted; run it again");
+  if (signals.interrupted) throw new ScaffoldError("SCAFFOLD-INTERRUPTED", `interrupted (${signals.interrupted})`, "nothing to fix: the files were reverted; run it again");
 }
 
 /** Splits a comma-separated list; empty or missing gives []. */
@@ -187,7 +205,7 @@ export async function withHeavyLock(fn, { timeoutS = 5400, log = console.error }
       }
       checkInterrupted();
       if (Date.now() - start > timeoutS * 1000) throw new ScaffoldError("SCAFFOLD-LOCK", `the heavy-job lock ${lock} was held for ${timeoutS} s`, "wait for the other build, or remove a stale lock directory");
-      await sleep(1000);   // async, so a SIGINT or SIGTERM handler gets to run
+      await sleep(1000);   // async, so a signal handler gets to run
     }
   }
   fs.writeFileSync(owner, `${process.pid} ${new Date().toISOString()} ${process.argv.slice(1).join(" ")}\n`);
@@ -206,13 +224,16 @@ export async function run(root, cmd, args, { log = console.error } = {}) {
   log(`$ ${[cmd, ...args].join(" ")}`);
   const r = await new Promise((resolve) => {
     const chunks = [];
-    const child = spawn(cmd, args, { cwd: root, env: process.env, stdio: ["ignore", "pipe", "pipe"] });
-    running.child = child;   // a signal handler forwards SIGINT/SIGTERM/SIGHUP to it
+    // detached: its own process group, so stopGroup can reach whatever it starts (a terminal's Ctrl-C reaches only
+    // this process's group, and the handler forwards it).
+    const child = spawn(cmd, args, { cwd: root, env: process.env, stdio: ["ignore", "pipe", "pipe"], detached: true });
+    running.child = child;
     child.stdout.on("data", (c) => chunks.push(c));
     child.stderr.on("data", (c) => chunks.push(c));
     child.on("error", (e) => resolve({ code: 127, out: String(e.message) }));
     child.on("close", (code) => resolve({ code: code ?? 1, out: Buffer.concat(chunks).toString("utf8") }));
   });
+  if (signals.interrupted && running.child) signalGroup(running.child.pid, "SIGKILL");   // sweep what outlived the command
   running.child = null;
   checkInterrupted();   // a signal that arrived while the command ran fails it, whatever it exited with
   // CI terminals get ANSI colors (\u001b[31mfailed …); the checks parse plain text.
