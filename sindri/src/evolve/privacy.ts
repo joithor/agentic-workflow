@@ -38,12 +38,14 @@ const SEPARATORS = /[^\p{L}\p{N}]+/gu;
 // re-separated spelling holds without the owner listing it (holds only: a false positive such as "acme carefully"
 // is accepted). A term without separators stays whole-word: "acme" doesn't hold "acmeville". A case boundary in the term
 // as written (a lower-case letter or a digit before a capital) counts as a separator, so "AcmeCare" is the two-part
-// "acme care" and holds "Acme Care" and "acme-care" too (security-sentinel-2).
-const CASE_BOUNDARY = /([\p{Ll}\p{N}])(\p{Lu})/gu;
+// "acme care" and holds "Acme Care" and "acme-care" too (security-sentinel-2); so does the end of an upper-case run
+// before a capitalized word, so "GLXCare" is "glx care" and "IBMWatson" is "ibm watson" (run 4 security-sentinel-2).
+// An all-capitals term has no boundary and stays one word.
+const splitCase = (d: string): string => d.replace(/([\p{Ll}\p{N}])(\p{Lu})/gu, "$1 $2").replace(/(\p{Lu})(\p{Lu}\p{Ll})/gu, "$1 $2");
 export function termProblem(text: string, denyTerms: readonly string[]): string | null {
   const t = normalizeForPrivacy(text);
   const joined = t.replace(SEPARATORS, "");
-  for (const term of denyTerms.map((d) => normalizeForPrivacy(d.replace(CASE_BOUNDARY, "$1 $2"))).filter((x) => x !== "")) {
+  for (const term of denyTerms.map((d) => normalizeForPrivacy(splitCase(d))).filter((x) => x !== "")) {
     if (new RegExp(`(?<![a-z0-9])${escapeRe(term)}(?![a-z0-9])`).test(t)) return "contains a private term";
     const bare = term.replace(SEPARATORS, "");
     if (bare !== term && bare !== "" && joined.includes(bare)) return "contains a private term";

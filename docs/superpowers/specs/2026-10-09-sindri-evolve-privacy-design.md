@@ -98,7 +98,9 @@ private context (for example, session-start memory output).
 ### 5.2 `privacy.denyTerms` (obvious names)
 
 Unchanged in code. `SND-EVOLVE-015` (publish refuses while the list is empty) stays. The owner's
-names go into the private profile and are approved once, together with `denyPatterns`. *(Amended in review run 3, security-sentinel-2: a case boundary in a term as written, a lower-case letter or digit before a capital, counts as a separator, so `AcmeCare` is two-part and also holds `Acme Care`, `acme-care` and `acme‑care`; `Acme` stays whole-word and doesn't hold `Acmeville`.)*
+names go into the private profile and are approved once, together with `denyPatterns`. *(Amended in review run 3, security-sentinel-2: a case boundary in a term as written, a lower-case letter or digit before a capital, counts as a separator, so `AcmeCare` is two-part and also holds `Acme Care`, `acme-care` and `acme‑care`; `Acme` stays whole-word and doesn't hold `Acmeville`. Run 4, security-sentinel-2: the end of an upper-case run before a
+capitalized word is a boundary too, so `GLXCare` holds `GLX Care` and `glx-care` and `IBMWatson` holds `IBM Watson`; `GLX`
+alone doesn't hold `GLXville`.)*
 
 ### 5.3 `privacy.denyPatterns`
 

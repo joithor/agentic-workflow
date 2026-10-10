@@ -97,6 +97,18 @@ describe("termProblem: joined, hyphenated and underscored variants (security-sen
     expect(termProblem("the Acmeville depot", ["Acme"])).toBeNull();
     expect(termProblem("the ACMECARE flag", ["ACME"])).toBeNull(); // all capitals: one word, whole-word as before
   });
+
+  it("splits an upper-case run before a capitalized word too (run 4 security-sentinel-2)", () => {
+    for (const text of ["we fixed GLX Care flows", "we fixed glx-care flows", "the GLXCare portal", "the glx‑care desk"]) {
+      expect(termProblem(text, ["GLXCare"]), JSON.stringify(text)).toBe(HELD);
+    }
+    expect(termProblem("ask IBM Watson", ["IBMWatson"])).toBe(HELD);
+    expect(termProblem("ask ibm-watson", ["IBMWatson"])).toBe(HELD);
+    expect(termProblem("the GLX2Care build", ["GLX2Care"])).toBe(HELD); // digit then capital, as before
+    expect(termProblem("the GLXville depot", ["GLX"])).toBeNull(); // an all-capitals term stays whole-word
+    expect(termProblem("the GLXCARE flag", ["GLXCARE"])).toBe(HELD);
+    expect(termProblem("the glx care flag", ["GLXCARE"])).toBeNull(); // no lower-case letter: one word, never split
+  });
 });
 
 describe("privacyProblem (Review Focus 6)", () => {
