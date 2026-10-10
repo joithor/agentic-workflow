@@ -17,7 +17,7 @@ it encodes: **test (with compiling stubs) → service → endpoint or CLI comman
 | `slice` | PascalCase verb-first use case, e.g. `CheckRepo`, `StartItem` | `^[A-Z][A-Za-z0-9]{2,40}$`; no existing `Features/<slice>/` folder |
 | `behavior` | snake_case sentence for the first test, e.g. `reports_level_one_for_an_empty_repo` | becomes `<Slice>_<behavior>` |
 | `surface` | `cli`, `http` or `none` | must match the package's host; `cli` adds a command, `http` adds an endpoint |
-| `route` / `command` | e.g. `POST /items/{id}/start` or `check` | required for `http` / `cli` |
+| `route` / `command` | e.g. `POST /items/{id}/start` or `check` | required for `http` / `cli`. Each `{name}` segment of `route` names a typed id (from `ids` or already in `Core`); ask the user which when it isn't clear |
 | `ids` | list of new typed ids the request uses, each `Name:primitive`, e.g. `ItemId:string` (primitive is `string`, `Guid` or `int`) | not already declared in `Core`; existing ids are reused |
 | `ports` | list of `Core` port interfaces the service needs | each exists in `Core`, or the generator adds an empty interface plus its fake and contract base |
 
@@ -36,8 +36,8 @@ src/<Pkg>/Aw.<Pkg>.Features/<Slice>/
 ├── <Slice>Service.cs        # internal sealed class, no constructor parameters, Handle throws NotSupportedException
 └── <Slice>Validator.cs      # internal sealed class, IValidator<<Slice>Request>; accepts everything until a rule is added
 src/<Pkg>/Aw.<Pkg>.Host/
-├── Endpoints/<Slice>Endpoint.cs   # http: internal static, Map<Slice>(RouteGroupBuilder) — bind, one service call, ToHttpResult()
-├── Endpoints/<Slice>Body.cs       # http: internal sealed record <Slice>Body(...) with ToRequest()
+├── Endpoints/<Slice>Endpoint.cs   # http: internal static, Map<Slice>(RouteGroupBuilder) — bind route ids + body, one service call, ToHttpResult()
+├── Endpoints/<Slice>Body.cs       # http: internal sealed record <Slice>Body(...) with ToRequest(<route ids>)
 └── Commands/<Slice>Command.cs     # cli: internal static, binds args → one service call → exit code
 tests/Aw.<Pkg>.Tests/<Slice>/
 └── <Slice>Tests.cs          # the red test (below)
@@ -45,6 +45,7 @@ src/<Pkg>/Aw.<Pkg>.Core/Ids/      # one file per entry in `ids` (R9)
 └── <Id>.cs                  # Vogen [ValueObject<prim>], [JsonConverter(typeof(<Prim>IdJsonConverter<<Id>>))], ITypedId<<Id>, prim>, Validate
 tests/Aw.<Pkg>.Tests/Ids/
 └── <Id>Tests.cs             # JSON round-trip through AwJson; invalid value → JsonException; Parse/TryParse (Lane=unit)
+    <Id>RouteBindingTests.cs  # http, when a `{name}` in `route` uses the id: route/query binding, refused → 400, `?id=` → 400 (Lane=integration)
 tests/Aw.<Pkg>.Testing/
 └── <Slice>RequestBuilder.cs # public sealed class with deterministic defaults; A.<Slice>Request() returns it
 ```
@@ -114,7 +115,11 @@ with the typed-ids PR (#100, C3); the recipe is `docs/csharp/typed-ids.md`. The 
 `/new-package`) sets all six arguments of `docs/csharp/typed-ids.md` step 2, verbatim. **Before an id in this form binds a route** (an
 http slice whose `route` has `{id}`), the generator adds an RDG route-binding test for it in
 `tests/Aw.<Pkg>.Tests/Ids/<Id>RouteBindingTests.cs` (Lane=integration): an id in the `ITypedId` form is used behind an
-endpoint only once that test passes; otherwise the id gets a hand-written `TryParse` instead. The architecture test
+endpoint only once that test passes; otherwise the id gets a hand-written `TryParse` instead. The test maps its own
+`/items/{id}` and `/items?id=` endpoints with the id, runs the Host's `ValueObjectValidation` middleware (from
+`/new-package`, `docs/csharp/typed-ids.md` step 4), and asserts through `WebApplicationFactory`: valid text → 200 with
+the id's value; text the type refuses → 400; an empty `?id=` → 400; and the endpoint's `ParameterBindingMetadata`
+reports the id as route/query with `hasTryParse: true`, so losing `IParsable` is a red test, not a production 500. The architecture test
 (`TypedIdGuard`, #100) covers every id in the assembly.
 
 ### Template: `<Slice>Validator.cs`
@@ -160,16 +165,38 @@ internal static class <Slice>Endpoint
 {
     internal static RouteGroupBuilder Map<Slice>(this RouteGroupBuilder group)
     {
-        _ = group.MapPost("<route>", static async (<Slice>Body body,
+        _ = group.MapPost("<route>", static async (<Id> id, <Slice>Body body,
                 IService<<Slice>Request, <Slice>Response> service, CancellationToken ct)
-            => (await service.Handle(body.ToRequest(), ct).ConfigureAwait(false)).ToHttpResult());
+            => (await service.Handle(body.ToRequest(id), ct).ConfigureAwait(false)).ToHttpResult());
         return group;
     }
 }
 ```
 
-The lambda binds, calls one service and maps the result. Body JSON goes through the AwJson profile the Host applies in `ConfigureHttpJsonOptions`, and `HttpResults` turns Vogen's validation exception into a 400. It has no branches. The discard keeps `IDE0058` quiet.
-`ToHttpResult()` is the Host's `HttpResults` helper generated by `/new-package`.
+Shown for `route` `POST /items/{id}/start`. For each `{name}` in `route` the lambda takes one typed-id parameter of
+that name (`<Id> name`), in route order, before the body; the request is built from those ids plus the body with
+`<Slice>Body.ToRequest(<Id> id, …)`. A route with no `{name}` segment gives `ToRequest()`. The lambda binds, calls one
+service and maps the result; it has no branches, and the discard keeps `IDE0058` quiet. Route text binds through the
+id's `IParsable` `TryParse` (Vogen-generated, runs `Validate`; refused text → 400). Body JSON goes through the AwJson
+profile the Host applies in `ConfigureHttpJsonOptions`. An uninitialized id's `ValueObjectValidationException` is
+mapped to 400 by the Host's `ValueObjectValidation` middleware, not here. `ToHttpResult()` is the Host's `HttpResults`
+helper generated by `/new-package`; it maps only the returned `Result`.
+
+### Template: `Endpoints/<Slice>Body.cs` (http)
+
+```csharp
+using Aw.<Pkg>.Core.Ids;
+using Aw.<Pkg>.Features.<Slice>;
+
+namespace Aw.<Pkg>.Host.Endpoints;
+
+internal sealed record <Slice>Body(<body fields>)
+{
+    internal <Slice>Request ToRequest(<Id> id) => new(id, <body fields>);
+}
+```
+
+The body carries only what isn't in the route; route ids never repeat in it.
 
 ### Template: the red test
 
