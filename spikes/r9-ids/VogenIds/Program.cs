@@ -19,10 +19,10 @@ try { TokenBudget.From(-1); failures.Add("negative budget rejected"); } catch (V
 
 // 2. System.Text.Json source generation round trip
 var payload = new Payload(id, size, "alpha");
-var json = JsonSerializer.Serialize(payload, SpikeJson.Default.Payload);
+var json = JsonSerializer.Serialize(payload, Json.Payload);
 Console.WriteLine($"vogen: json {json}");
 Check(json == "{\"id\":\"item-1\",\"budget\":1200,\"name\":\"alpha\"}", "json shape");
-var back = JsonSerializer.Deserialize(json, SpikeJson.Default.Payload);
+var back = JsonSerializer.Deserialize(json, Json.Payload);
 Check(back == payload, "json round trip");
 
 // 3. ADO.NET binding + reading back into the id type
@@ -73,7 +73,27 @@ namespace Spike.R9
 
     public sealed record Payload(ItemId Id, TokenBudget Budget, string Name);
 
+    // The STJ source generator cannot see Vogen's generated [JsonConverter] attributes or converter
+    // types (source generators don't see each other's output), so the ids would serialize as {}.
+    // Workaround: register Vogen's converters at runtime on options that wrap this context (see Json below).
     [JsonSourceGenerationOptions(PropertyNamingPolicy = JsonKnownNamingPolicy.CamelCase)]
     [JsonSerializable(typeof(Payload))]
+    [JsonSerializable(typeof(int))]
     public sealed partial class SpikeJson : JsonSerializerContext;
+
+    public static class Json
+    {
+        public static readonly JsonSerializerOptions Options = Create();
+
+        static JsonSerializerOptions Create()
+        {
+            var o = new JsonSerializerOptions(SpikeJson.Default.Options);
+            o.Converters.Add(new ItemId.ItemIdSystemTextJsonConverter());
+            o.Converters.Add(new TokenBudget.TokenBudgetSystemTextJsonConverter());
+            return o;
+        }
+
+        public static System.Text.Json.Serialization.Metadata.JsonTypeInfo<Payload> Payload =>
+            (System.Text.Json.Serialization.Metadata.JsonTypeInfo<Payload>)Options.GetTypeInfo(typeof(Payload));
+    }
 }
