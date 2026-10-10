@@ -38,16 +38,17 @@ Not the managed content." > "$dest/lean-coder.md"
   echo '{"lean-coder.md": "0000000000000000000000000000000000000000000000000000000000000000"}' > "$manifest"
   local before
   before="$(cat "$dest/lean-coder.md")"
-  install_agents "$src" "$dest" "$manifest" 2>/tmp/install-agents-warn.txt
+  local warn; warn="$(mktemp)"
+  install_agents "$src" "$dest" "$manifest" 2>"$warn"
   local after
   after="$(cat "$dest/lean-coder.md")"
   if [ "$before" != "$after" ]; then
-    echo "FAIL: overwrote a hand-edited agent file"; rm -rf "$src" "$dest" "$manifest"; exit 1
+    echo "FAIL: overwrote a hand-edited agent file"; rm -rf "$src" "$dest" "$manifest" "$warn"; exit 1
   fi
-  if ! grep -q "lean-coder.md" /tmp/install-agents-warn.txt; then
-    echo "FAIL: expected a warning naming the skipped file"; rm -rf "$src" "$dest" "$manifest"; exit 1
+  if ! grep -q "lean-coder.md" "$warn"; then
+    echo "FAIL: expected a warning naming the skipped file"; rm -rf "$src" "$dest" "$manifest" "$warn"; exit 1
   fi
-  rm -rf "$src" "$dest" "$manifest"
+  rm -rf "$src" "$dest" "$manifest" "$warn"
   echo "PASS: test_skips_a_file_hand_edited_since_install"
 }
 

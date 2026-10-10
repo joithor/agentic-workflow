@@ -57,8 +57,14 @@ classify_changes() {
         dotnet=true ;;
     esac
     case "$file" in
+      # scripts/ci/lane-budgets.mjs groups test projects by deps.yaml package; check-deps and check-rules read it too
+      deps.yaml) dotnet=true; bash=true ;;
+      # lane-budgets.mjs reads deps.yaml through this parser (scripts/* already runs the bash tests)
+      scripts/deps/*) dotnet=true ;;
       schemas/packets/*) ;;  # the packet schemas belong to Aw.Packets (its golden test, the dotnet area above)
-      schemas/*|rules/*|deps.yaml) bash=true ;;  # check-deps and check-rules (and their suites) read these
+      schemas/*|rules/*) bash=true ;;  # check-deps and check-rules (and their suites) read these
+      # scripts/tests/ci-lane-budgets.test.sh checks lane-budgets.mjs against these numbers
+      tests/Aw.Kernel.Testing/Lanes.cs) bash=true ;;
     esac
     for pkg in "${TS_PACKAGES[@]}"; do
       case "$file" in

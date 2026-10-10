@@ -12,7 +12,7 @@ writes <dir>/inflight, then holds the request for $FAKE_HOLD seconds (default
 (whether or not the client was still there).
 Usage: fake-github.py <dir> <public.pem> <mode>
 """
-import base64, json, os, subprocess, sys, tempfile, time
+import base64, json, os, socketserver, subprocess, sys, tempfile, time
 from http.server import BaseHTTPRequestHandler, HTTPServer
 
 DIR, PUB, MODE = sys.argv[1], sys.argv[2], sys.argv[3]
@@ -86,7 +86,16 @@ class H(BaseHTTPRequestHandler):
                 open(os.path.join(DIR, "answered"), "w").close()
 
 
-srv = HTTPServer(("127.0.0.1", 0), H)
+class LoopbackServer(HTTPServer):
+    # HTTPServer.server_bind calls socket.getfqdn("127.0.0.1"), a reverse DNS lookup
+    # that can stall for seconds on a CI runner; every start of this fake paid it.
+    # The handler never uses server_name, so skip the lookup.
+    def server_bind(self):
+        socketserver.TCPServer.server_bind(self)
+        self.server_name, self.server_port = "127.0.0.1", self.server_address[1]
+
+
+srv = LoopbackServer(("127.0.0.1", 0), H)
 with open(os.path.join(DIR, "port.tmp"), "w") as f:
     f.write(str(srv.server_address[1]))
 os.rename(os.path.join(DIR, "port.tmp"), os.path.join(DIR, "port"))
