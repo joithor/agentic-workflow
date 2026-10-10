@@ -458,5 +458,5 @@ not the first user.
 - Re-running with the same `name` refuses: `NP-EXISTS: src/<Name> already exists`. A taken `errorPrefix` refuses with
   `NP-PREFIX`; a missing package pin stops with `NP-PINS` and the pin commit to make; `shape: small` with `host: http`
   refuses with `NP-SMALL-HTTP`, and with `host: none` with `NP-SMALL-NONE`.
-- SIGINT or SIGTERM during a run is remembered, not fatal: the next command boundary (or the heavy-lock wait) fails
-  with `SCAFFOLD-INTERRUPTED`, then the files are reverted and the lock released.
+- SIGINT, SIGTERM or SIGHUP during a run (including the heavy-lock wait) is caught and forwarded to the running
+  command; the step fails with `SCAFFOLD-INTERRUPTED`, then the files are reverted and the lock released.

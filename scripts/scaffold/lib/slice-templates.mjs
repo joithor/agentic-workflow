@@ -326,8 +326,8 @@ public sealed class ${id.name}RouteBindingTests
     private const string Valid = "${ROUTE_GOOD[id.prim](id.name)}";
 
     [Theory, Trait("Lane", "integration")]
-    [InlineData("/items/" + Valid)]
-    [InlineData("/items?id=" + Valid)]
+    [InlineData("/__probe/items/" + Valid)]
+    [InlineData("/__probe/items?id=" + Valid)]
     public async Task Valid_text_binds_to_the_id(string url)
     {
         await using var app = await Started();
@@ -340,9 +340,9 @@ public sealed class ${id.name}RouteBindingTests
     }
 
     [Theory, Trait("Lane", "integration")]
-    [InlineData("/items/${ROUTE_BAD[id.prim]}")]
-    [InlineData("/items?id=${ROUTE_BAD[id.prim]}")]
-    [InlineData("/items?id=")]
+    [InlineData("/__probe/items/${ROUTE_BAD[id.prim]}")]
+    [InlineData("/__probe/items?id=${ROUTE_BAD[id.prim]}")]
+    [InlineData("/__probe/items?id=")]
     public async Task Refused_or_empty_text_is_400(string url)
     {
         await using var app = await Started();
@@ -359,7 +359,8 @@ public sealed class ${id.name}RouteBindingTests
         await using var app = await Started();
         var probes = app.Services.GetRequiredService<EndpointDataSource>().Endpoints
             .OfType<RouteEndpoint>()
-            .Where(e => e.RoutePattern.RawText?.StartsWith("/items", StringComparison.Ordinal) == true);
+            .Where(e => string.Equals(e.RoutePattern.RawText, "/__probe/items/{id}", StringComparison.Ordinal)
+                || string.Equals(e.RoutePattern.RawText, "/__probe/items", StringComparison.Ordinal));
 
         var parameters = probes.SelectMany(e => e.Metadata.GetOrderedMetadata<IParameterBindingMetadata>()).ToList();
 
@@ -371,8 +372,8 @@ public sealed class ${id.name}RouteBindingTests
     {
         var app = LoopbackBinding.Build([], _ => null, new FakeTimeProvider());
         _ = Pipeline.Configure(app);
-        _ = app.MapGet("/items/{id}", static (${id.name} id) => ${TEXT[id.prim]});
-        _ = app.MapGet("/items", static (${id.name} id) => ${TEXT[id.prim]});
+        _ = app.MapGet("/__probe/items/{id}", static (${id.name} id) => ${TEXT[id.prim]});
+        _ = app.MapGet("/__probe/items", static (${id.name} id) => ${TEXT[id.prim]});
         await app.StartAsync(TestContext.Current.CancellationToken);
         return app;
     }

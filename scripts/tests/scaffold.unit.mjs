@@ -278,6 +278,28 @@ t("SIGINT while waiting on the heavy lock reverts everything and exits 1 (SCAFFO
   assert.equal(hashTree(d), before, "the tree changed");
 });
 
+t("SIGTERM to the generator alone stops a running command at once and fails it (SCAFFOLD-INTERRUPTED)", () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "aw-scaffold-unit-sig-"));
+  trees.push(dir);
+  const script = path.join(dir, "probe.mjs");
+  fs.writeFileSync(script, `import { run, trapSignals } from ${JSON.stringify(path.join(REPO, "scripts/scaffold/lib/common.mjs"))};
+trapSignals(() => {});
+const start = Date.now();
+try {
+  await run(".", "sleep", ["30"], { log: () => {} });
+  console.log("not interrupted");
+} catch (e) {
+  console.log(e.message, Date.now() - start < 10000 ? "fast" : "slow");
+}
+`);
+  const out = path.join(dir, "out.txt");
+  const fd = fs.openSync(out, "w");
+  // timeout + killSignal: SIGTERM goes to node's pid only, not its process group, so the sleep never sees it directly.
+  spawnSync("node", [script], { cwd: dir, stdio: ["ignore", fd, fd], timeout: 1000, killSignal: "SIGTERM" });
+  fs.closeSync(fd);
+  assert.match(fs.readFileSync(out, "utf8"), /^SCAFFOLD-INTERRUPTED: .* fast$/m);
+});
+
 const common = await import(path.join(REPO, "scripts/scaffold/lib/common.mjs"));
 const colored = await common.run(REPO, "printf", ["\u001b[31mfailed Aw.X.Tests.T.T_does (1ms)\u001b[m\n  failed: 1\n"], { log: () => {} });
 t("run() strips ANSI colors (CI colors MTP's 'failed' lines, which the red-test check parses)", () => {

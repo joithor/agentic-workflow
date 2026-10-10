@@ -253,7 +253,7 @@ using Aw.Kernel;
 
 namespace ${ns};
 
-/// <summary>The package's one source-generated JSON context (spec §4b.3): through AwJson.CreateOptions, and first in an http host's resolver chain.</summary>
+/// <summary>The package's one source-generated JSON context (spec §4b.3): through AwJson.CreateOptions, and an http host's resolver after ASP.NET's ProblemDetails context.</summary>
 [JsonSerializable(typeof(Error))]
 internal sealed partial class ${p.name}JsonContext : JsonSerializerContext;
 `;
@@ -712,7 +712,7 @@ public sealed class LoopbackBindingTests
 `;
 
 /** The http Host's JSON options are the AwJson profile, setting by setting (ASP.NET starts from the looser Web defaults). */
-export const httpJsonProfileTests = (p) => `${usingsBlock([`Aw.${p.name}.Host`, "Aw.Kernel.Json", "Microsoft.Extensions.DependencyInjection", "Microsoft.Extensions.Options", "Microsoft.Extensions.Time.Testing"])}
+export const httpJsonProfileTests = (p) => `${usingsBlock(["System.Text.Json.Serialization.Metadata", `Aw.${p.name}.Host`, "Aw.Kernel.Json", "Microsoft.Extensions.DependencyInjection", "Microsoft.Extensions.Options", "Microsoft.Extensions.Time.Testing"])}
 using HttpJsonOptions = Microsoft.AspNetCore.Http.Json.JsonOptions;
 using ProblemDetails = Microsoft.AspNetCore.Mvc.ProblemDetails;
 
@@ -727,7 +727,11 @@ public sealed class HttpJsonProfileTests
         var http = app.Services.GetRequiredService<IOptions<HttpJsonOptions>>().Value.SerializerOptions;
         var profile = AwJson.CreateOptions(${p.name}JsonContext.Default);
 
-        Assert.Contains(${p.name}JsonContext.Default, http.TypeInfoResolverChain);   // with ASP.NET's ProblemDetails context
+        // Exactly ASP.NET's ProblemDetails context, then ours: no reflection resolver, so a missing [JsonSerializable]
+        // fails here as it would in the NativeAOT host.
+        Assert.Equal(2, http.TypeInfoResolverChain.Count);
+        Assert.Same(${p.name}JsonContext.Default, http.TypeInfoResolverChain[1]);
+        Assert.DoesNotContain(http.TypeInfoResolverChain, r => r is DefaultJsonTypeInfoResolver);
         Assert.NotNull(http.TypeInfoResolver?.GetTypeInfo(typeof(ProblemDetails), http));   // error results serialize
         Assert.Equal(profile.PropertyNamingPolicy, http.PropertyNamingPolicy);
         Assert.Equal(profile.PropertyNameCaseInsensitive, http.PropertyNameCaseInsensitive);
