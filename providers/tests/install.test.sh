@@ -108,22 +108,64 @@ test_cursor_mcp_merge_preserves_and_is_idempotent() {
   setup_env
   mkdir -p "$HOME/.cursor"
   echo '{"mcpServers":{"mine":{"url":"https://x"}},"other":1}' > "$HOME/.cursor/mcp.json"
-  AW_MCP_SERVERS='[{"name":"agentic-bridge","command":"node","args":["/b/mcp.js"]},{"name":"prism-mcp","command":"npx","args":["-y","p@1"],"env":{"PRISM_DASHBOARD_PORT":"7180"}}]'
+  AW_MCP_SERVERS='[{"name":"sample-server","command":"node","args":["/b/mcp.js"]},{"name":"prism-mcp","command":"npx","args":["-y","p@1"],"env":{"PRISM_DASHBOARD_PORT":"7180"}}]'
   cursor_register_mcp >/dev/null
   local f="$HOME/.cursor/mcp.json"
   jq -e '.mcpServers.mine.url == "https://x" and .other == 1' "$f" >/dev/null || fail "existing entries not preserved"
-  jq -e '.mcpServers["agentic-bridge"].args == ["/b/mcp.js"]' "$f" >/dev/null || fail "bridge not added"
+  jq -e '.mcpServers["sample-server"].args == ["/b/mcp.js"]' "$f" >/dev/null || fail "sample server not added"
   jq -e '.mcpServers["prism-mcp"].env.PRISM_DASHBOARD_PORT == "7180"' "$f" >/dev/null || fail "env not written"
-  jq -e '.mcpServers["agentic-bridge"] | has("env") | not' "$f" >/dev/null || fail "empty env should be omitted"
+  jq -e '.mcpServers["sample-server"] | has("env") | not' "$f" >/dev/null || fail "empty env should be omitted"
   cursor_register_mcp | grep -q "up to date" || fail "second merge should be a no-op"
   teardown_env
   echo "PASS: test_cursor_mcp_merge_preserves_and_is_idempotent"
 }
 
+# A server the toolkit no longer ships (AW_MCP_RETIRED) is removed from mcp.json on re-run; the user's own entries
+# and our current ones stay, and a second run removes nothing.
+test_cursor_retires_stale_servers() {
+  setup_env
+  mkdir -p "$HOME/.cursor"
+  echo '{"mcpServers":{"mine":{"url":"https://x"},"agentic-bridge":{"command":"node","args":["/old/mcp.js"]}}}' > "$HOME/.cursor/mcp.json"
+  AW_MCP_SERVERS='[{"name":"sample-server","command":"node","args":["/b/mcp.js"]}]'
+  AW_MCP_RETIRED="agentic-bridge"
+  local f="$HOME/.cursor/mcp.json" out
+  out="$(cursor_register_mcp)"
+  jq -e '.mcpServers | has("agentic-bridge") | not' "$f" >/dev/null || fail "retired server not removed from mcp.json"
+  jq -e '.mcpServers.mine.url == "https://x" and (.mcpServers | has("sample-server"))' "$f" >/dev/null || fail "other servers not kept"
+  echo "$out" | grep -q "agentic-bridge: removed (retired)" || fail "removal not reported: $out"
+  out="$(cursor_register_mcp)"
+  echo "$out" | grep -q "up to date" || fail "second run should be a no-op: $out"
+  ! echo "$out" | grep -q "removed" || fail "second run should remove nothing: $out"
+  teardown_env
+  echo "PASS: test_cursor_retires_stale_servers"
+}
+
+# CLI providers (claude, codex): a retired server is removed only where it is registered; dry-run only prints.
+test_cli_retire_removes_only_registered() {
+  setup_env
+  local calls="$SANDBOX/calls" out
+  fake_present() { [ "$1" = "agentic-bridge" ]; }
+  fake_remove() { aw_run echo "remove $AW_MCP_NAME" >>"$calls"; }
+  AW_MCP_RETIRED="agentic-bridge never-registered"
+  out="$(aw_mcp_retire_cli "Fake" fake_present fake_remove)"
+  [ "$(cat "$calls")" = "remove agentic-bridge" ] || fail "expected one removal, got: $(cat "$calls" 2>/dev/null)"
+  echo "$out" | grep -q "agentic-bridge: removed from Fake (retired)" || fail "removal not reported: $out"
+  ! echo "$out" | grep -q "never-registered" || fail "absent server should be silent: $out"
+  rm -f "$calls"
+  AW_DRY_RUN=1
+  out="$(aw_mcp_retire_cli "Fake" fake_present fake_remove)"
+  [ ! -s "$calls" ] || fail "dry run removed something: $(cat "$calls")"
+  echo "$out" | grep -q "would remove agentic-bridge from Fake (retired)" || fail "dry run should say what it would remove: $out"
+  AW_MCP_RETIRED=""
+  [ -z "$(aw_mcp_retire_cli "Fake" fake_present fake_remove)" ] || fail "nothing retired should print nothing"
+  teardown_env
+  echo "PASS: test_cli_retire_removes_only_registered"
+}
+
 test_dry_run_writes_nothing() {
   setup_env
   AW_DRY_RUN=1
-  AW_MCP_SERVERS='[{"name":"agentic-bridge","command":"node","args":["/b/mcp.js"]}]'
+  AW_MCP_SERVERS='[{"name":"sample-server","command":"node","args":["/b/mcp.js"]}]'
   aw_link_toolkit >/dev/null
   aw_install_skills_into "$HOME/.claude/skills" </dev/null >/dev/null
   cursor_register_mcp >/dev/null
@@ -233,6 +275,8 @@ test_stale_cleanup_only_removes_our_links
 test_external_skills_link_but_native_wins
 test_toolkit_link_and_registry_merge
 test_cursor_mcp_merge_preserves_and_is_idempotent
+test_cursor_retires_stale_servers
+test_cli_retire_removes_only_registered
 test_dry_run_writes_nothing
 test_agents_render_per_provider
 test_builds_skill_packages_and_warns_on_failure
