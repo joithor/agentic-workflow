@@ -73,11 +73,21 @@ function runsOf(text: string): Set<string> {
   return out;
 }
 
+// One session's text as the verbatim layer compares it, computed once per session per publish run.
+export interface SessionShingles {
+  runs: ReadonlySet<string>;
+}
+
+export function shingleSession(lines: readonly string[]): SessionShingles {
+  const runs = new Set<string>();
+  for (const line of lines) for (const run of runsOf(line)) runs.add(run);
+  return { runs };
+}
+
 // `isPublic(run)` says whether the run already appears in the toolkit's own tracked text; those are not leaks.
-export function copiedRun(text: string, sources: readonly string[], isPublic: (run: string) => boolean): boolean {
+export function copiedFrom(text: string, sessions: readonly SessionShingles[], isPublic: (run: string) => boolean): boolean {
   const mine = runsOf(text);
-  if (mine.size === 0) return false;
-  return sources.some((s) => [...runsOf(s)].some((run) => mine.has(run) && !isPublic(run)));
+  return [...mine].some((run) => sessions.some((s) => s.runs.has(run)) && !isPublic(run));
 }
 
 const CORPUS_FILE_MAX = 1_000_000;

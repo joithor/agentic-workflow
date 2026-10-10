@@ -2,7 +2,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
 
-import { copiedRun, patternProblem, personalProblem, privacyProblem, runWords, termProblem, toolkitCorpus, RUN_WORDS } from "../src/evolve/privacy.js";
+import { copiedFrom, patternProblem, personalProblem, privacyProblem, runWords, shingleSession, termProblem, toolkitCorpus, RUN_WORDS } from "../src/evolve/privacy.js";
 import { realGitRunner } from "../src/git-real.js";
 import { gitRepo } from "./helpers.js";
 
@@ -160,7 +160,8 @@ describe("termProblem and personalProblem split privacyProblem (privacy B1)", ()
   });
 });
 
-describe("copiedRun (privacy B1, verbatim overlap)", () => {
+describe("copiedFrom (privacy B1, verbatim overlap)", () => {
+  const copiedRun = (text: string, sources: readonly string[], isPublic: (run: string) => boolean): boolean => copiedFrom(text, sources.map((x) => shingleSession([x])), isPublic);
   const src = "the overnight rota swap left two shifts without a charge nurse on the ward";
   const never = (): boolean => false;
   it("finds a run of RUN_WORDS words copied from a source, ignoring case and punctuation", () => {

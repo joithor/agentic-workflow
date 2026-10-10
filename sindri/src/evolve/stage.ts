@@ -8,8 +8,9 @@ import { ulid } from "../ids.js";
 import { audit, auditMarker } from "./audit.js";
 import { repoConfig, type EvolveCtx } from "./ctx.js";
 import { profileScrubber } from "../scope/commands.js";
-import { copiedRun, patternProblem, personalProblem, termProblem, toolkitCorpus, type HoldLayer } from "./privacy.js";
-import { identifierProblem, loadDerivedSet, unsetPrivateRepos } from "./privacy-derived.js";
+import { toolkitCorpus, type HoldLayer } from "./privacy.js";
+import { runGate, verbatimChecker, type GateCtx } from "./publish-gate.js";
+import { loadDerivedSet, unsetPrivateRepos } from "./privacy-derived.js";
 import { Budget } from "../scope/model.js";
 import { generalize, type Generalized } from "./generalize.js";
 import {
@@ -248,13 +249,9 @@ export async function publishProposals(ctx: EvolveCtx, o: { dryRun: boolean; noP
   // repo's sessions doesn't resolve and brings in nothing (Review Focus 1).
   const cited = (refs: readonly string[]): { session: string; n: number }[] => refs.flatMap((r) => parseTranscriptRef(r) ?? []);
   const sessions = sessionTexts(transcriptsDir(ctx), ctx.repo, open.flatMap((l) => cited(l.refs).map((c) => c.session)), scrubber);
-  // The toolkit corpus is read only when some proposal shares a run with its evidence, and at most once per run.
-  let corpus: Promise<string> | null = null;
-  const copies = async (text: string, evidence: readonly string[]): Promise<boolean> => {
-    if (!copiedRun(text, evidence, () => false)) return false;
-    corpus ??= toolkitCorpus(ctx.deps.git, ctx.repo);
-    const c = await corpus;
-    return copiedRun(text, evidence, (run) => c.includes(` ${run} `));
+  const gate: GateCtx = {
+    deny, patterns, derived, user, scrubber,
+    copies: verbatimChecker(sessions, () => toolkitCorpus(ctx.deps.git, ctx.repo)),
   };
   const ready: { s: StoredProposal; pub: Proposal; t: { tier: Tier; why: string } }[] = [];
   const held: PublishOutcome["held"] = [];
@@ -266,28 +263,10 @@ export async function publishProposals(ctx: EvolveCtx, o: { dryRun: boolean; noP
     const t = publicTier(s.proposal, pub, registry, cfg.protectedPaths); // re-tiered from the public version, never below the original (Review Focus 2)
     const md = renderTask(first + ready.length, s.id, pub, t.tier, t.why, s.source);
     const raw = [pub.title, pub.rationale, ...pub.evidence, pub.change.type === "describe" ? `${pub.change.description}\n${pub.change.files.join("\n")}` : pub.change.text, s.source].join("\n");
-    const text = `${raw}\n${md}`;
     const mine = cited(refs);
-    const evidence = [...sessions]
-      .filter(([session, lines]) => mine.some((c) => c.session === session && lines.has(c.n)))
-      .flatMap(([, lines]) => [...lines.values()].filter((t) => t !== ""));
-    // In order; the first hit holds and the rest don't run (a terms hit never reads the corpus).
-    const checks: [HoldLayer, () => Promise<string | null>][] = [
-      ["terms", async () => termProblem(text, deny)],
-      ["patterns", async () => patternProblem(text, patterns)],
-      ["identifiers", async () => identifierProblem(text, derived)],
-      ["verbatim", async () => ((await copies(text, evidence)) ? "copies transcript text" : null)],
-      ["personal", async () => personalProblem(text, user)],
-      ["scrubber", async () => (scrubber.find(text).length > 0 ? "contains text the scrubber redacts (a secret or a scrub.extraPatterns match)" : null)],
-    ];
-    let hit: { layer: HoldLayer; why: string } | null = null;
-    for (const [layer, check] of checks) {
-      const why = await check();
-      if (why !== null) {
-        hit = { layer, why };
-        break;
-      }
-    }
+    // A cited session counts while its cited line resolves (Review Focus 1).
+    const citedSessions = [...sessions].filter(([session, lines]) => mine.some((c) => c.session === session && lines.has(c.n))).map(([session]) => session);
+    const hit = await runGate({ text: `${raw}\n${md}`, sessions: citedSessions }, gate);
     if (hit !== null) held.push({ id: s.id, ...hit });
     else ready.push({ s, pub, t });
   }
