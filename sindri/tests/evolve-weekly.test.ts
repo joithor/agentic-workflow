@@ -121,13 +121,33 @@ describe("sindri evolve weekly", () => {
     }
     const r = await weekly([], { ...fx.ctx, io });
     const stageLine = r.stdout.split("\n").find((l) => l.includes(" stage: "));
-    // From stage's structured outcome: the held count, never a per-proposal line.
-    expect(stageLine).toMatch(/^ok {3}stage: Staged 1 proposal\(s\) \(0 approval tier\) in .*; 1 held by the generalization pass\.$/);
+    // From stage's structured outcome: the held count, never a per-proposal line; a held proposal needs attention.
+    expect(stageLine).toMatch(/^attn stage: Staged 1 proposal\(s\) \(0 approval tier\) in .*; 1 held by the generalization pass\.$/);
+    expect(r.exitCode).toBe(1);
+    expect(r.stdout).toContain("Weekly: 5 steps, 4 ok, 1 need attention.\n");
     expect(r.stdout).not.toMatch(/held \w{26}/);
     expect(fx.ctx.db.prepare("SELECT title, status FROM proposals ORDER BY title").all()).toEqual([
       { title: "Leaky review idea", status: "held" },
       { title: "Tighten review scope", status: "staged" },
     ]);
+    fx.close();
+  });
+
+  it("reports stage as attn while a proposal sits at the generalize cap, with no model call for it (architecture-strategist-1)", async () => {
+    const { fx, proc } = await ready(gh(prs(12, 13)), "evolve:\n  maxGeneralizeAttempts: 1\n");
+    const base = (c: ModelCall<unknown>) => (c.model === "sonnet" ? { findings: [] } : { accepted: [], rejected: [], backlog: [] });
+    const io = scriptedEvolveIo((c) => (c.role === GENERALIZE_ROLES.judge ? { leaks: true, category: "people" } : generalizingScript(base)(c)), proc);
+    fx.ctx.write((epoch) =>
+      saveProposal(fx.ctx.db, ProposalSchema.parse({
+        artifact: "skill:review", kind: "skill-edit", title: "Leaky review idea", rationale: "r", evidence: ["pr:1"],
+        change: { type: "describe", files: ["skills/review/SKILL.md"], description: "d" },
+      }), "reflect:pr-1", "code", epoch, fx.deps.now()));
+    await weekly([], { ...fx.ctx, io }); // held once: the cap of 1 is reached
+    const calls = io.calls.filter((c) => c.role === GENERALIZE_ROLES.rewrite).length;
+    const r = await weekly([], { ...fx.ctx, io });
+    expect(io.calls.filter((c) => c.role === GENERALIZE_ROLES.rewrite)).toHaveLength(calls);
+    expect(r.stdout).toContain("attn stage: Nothing to stage; 1 held by the generalization pass.\n");
+    expect(r.exitCode).toBe(1);
     fx.close();
   });
 

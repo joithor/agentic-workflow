@@ -29,9 +29,12 @@ function summaryOf(r: CommandResult): string {
 type StepResult = { exitCode: ExitCode; line: string };
 const fromCommand = (r: CommandResult): StepResult => ({ exitCode: r.exitCode, line: summaryOf(r) });
 
-// Stage's digest line comes from its structured outcome (the held count included), not from its printed text.
+// Stage's digest line comes from its structured outcome (the held count included), not from its printed text. A held
+// proposal (one at evolve.maxGeneralizeAttempts included: `held` lists those too, `gaveUp` names them) needs a person,
+// so the step is `attn` and counts under "need attention".
 async function stageStep(ctx: EvolveCtx): Promise<StepResult> {
-  return { exitCode: 0, line: terminalSafe(stageReport(await stageProposals(ctx)).summary) };
+  const o = await stageProposals(ctx);
+  return { exitCode: o.held.length > 0 ? 1 : 0, line: terminalSafe(stageReport(o).summary) };
 }
 
 const WINDOW_DAYS = 14; // the marker dedupes, so a wider window only costs one list call and survives a missed week
