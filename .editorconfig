@@ -147,7 +147,7 @@ dotnet_diagnostic.MA0026.severity = error    # no TODO comments: finish the work
 #### Turned off, with the reason ####
 dotnet_diagnostic.CA1303.severity = none     # literal strings: no localization in a CLI toolkit
 dotnet_diagnostic.RCS1046.severity = none    # Async suffix: services use intent names (Handle, Get) per spec §4b.2
-dotnet_diagnostic.JSON002.severity = none    # "probable JSON string": golden and compat-test literals are data; it also fails `dotnet format --verify-no-changes`
+dotnet_diagnostic.JSON002.severity = none    # "probable JSON string": golden-file and JSON-contract literals are data; it also fails `dotnet format --verify-no-changes`
 dotnet_diagnostic.IDE0008.severity = none    # explicit types: `var` is the house style (IDE0007 owns it)
 dotnet_diagnostic.MA0038.severity = none     # deprecated by Meziantou; owner: CA1822
 dotnet_diagnostic.RCS1141.severity = none    # param docs: CS1591 owns docs on public API; <param> is optional
