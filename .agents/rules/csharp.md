@@ -187,7 +187,7 @@ Name ports for what the code needs (`IItemStore`, `IJobQueue`), not for the tech
 
 ## Adding code
 
-- **New package:** `/new-package` (spec: `docs/csharp/scaffolds/new-package.md`).
-- **New use case:** `/new-slice` (spec: `docs/csharp/scaffolds/new-slice.md`).
+- **New package:** `/new-package` (generator `scripts/scaffold/new-package.mjs`; contract `docs/csharp/scaffolds/new-package.md`).
+- **New use case:** `/new-slice` (generator `scripts/scaffold/new-slice.mjs`; contract `docs/csharp/scaffolds/new-slice.md`).
 - **By hand**, the slice recipe is: (1) the failing test plus request and response records and a parameterless service stub whose `Handle` throws `NotSupportedException`, committed red but compiling; (2) the real assertion and the ports the service needs; (3) the service, with pure decisions on the domain type in `Core`; (4) the endpoint or CLI command in `Host`; (5) the explicit registration and the JSON context entries.
 - Test rules: `.agents/rules/csharp-testing.md`.

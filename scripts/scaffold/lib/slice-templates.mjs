@@ -87,9 +87,7 @@ public readonly partial struct ${id.name} : ITypedId<${id.name}, ${id.prim}>
 export const port = (s, name) => `namespace Aw.${s.pkg}.Core;
 
 /// <summary>${name}: a port ${s.slice} needs. Declare its members, then keep ${name.slice(1)}Contract, the fake and every adapter in step.</summary>
-public interface ${name}
-{
-}
+public interface ${name};
 `;
 
 // ---------------------------------------------------------------- Host: CLI command and http endpoint
@@ -237,9 +235,7 @@ export const fake = (s, name) => `using Aw.${s.pkg}.Core;
 namespace Aw.${s.pkg}.Testing;
 
 /// <summary>The in-memory ${name}: the one fake, kept honest by ${name.slice(1)}Contract.</summary>
-public sealed class InMemory${name.slice(1)} : ${name}
-{
-}
+public sealed class InMemory${name.slice(1)} : ${name};
 `;
 
 export const contract = (s, name) => `using Aw.${s.pkg}.Core;
