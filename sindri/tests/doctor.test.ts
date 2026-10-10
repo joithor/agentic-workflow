@@ -352,6 +352,31 @@ describe("doctor index checks", () => {
     expect((await checks(d, offline))[`index:${name}`]).toMatchObject({ status: "ok" });
   });
 
+  it("reports an index whose meta table is gone as damaged instead of throwing (M4)", async () => {
+    const d = await approvedIndexDeps(ring0Repo({ "src/a.ts": "export const a = 1;\n" }));
+    const name = ring0Name(d);
+    await makeIndexCommand(fakeIndexIo())(["build", "--repo", name], d);
+    const db = openIndex(indexPath(d, name));
+    db.exec("DROP TABLE meta");
+    db.close();
+    expect((await checks(d, offline))[`index:${name}`]).toMatchObject({
+      status: "warn", detail: "damaged (no usable meta table)", fix: `rm ${indexPath(d, name)}, then sindri index build --repo ${name}`,
+    });
+  });
+
+  it("rethrows an index read error that is not a missing table, rather than advising rm (M4)", async () => {
+    for (const table of ["layers", "meta"]) {
+      const d = await approvedIndexDeps(ring0Repo({ "src/a.ts": "export const a = 1;\n" }));
+      const name = ring0Name(d);
+      await makeIndexCommand(fakeIndexIo())(["build", "--repo", name], d);
+      const db = openIndex(indexPath(d, name));
+      // A view that fails when read, with an error other than "no such table" (as SQLITE_BUSY or an I/O error would).
+      db.exec(`DROP TABLE ${table}; CREATE VIEW ${table} AS SELECT json('{') AS layer, json('{') AS key, 'v' AS value`);
+      db.close();
+      await expect(checks(d, offline)).rejects.toThrow(/malformed JSON/);
+    }
+  });
+
   it("gives each down layer the fix that helps: raise the cap, rebuild, or set up", async () => {
     const d = await approvedIndexDeps(ring0Repo({ "src/a.ts": "export const a = 1;\n" }));
     const name = ring0Name(d);

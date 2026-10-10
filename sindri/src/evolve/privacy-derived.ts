@@ -3,7 +3,7 @@ import path from "node:path";
 
 import type { Deps } from "../deps.js";
 import { SindriError } from "../errors.js";
-import { indexPath, layers, openIndexReadOnly, type IndexDb } from "../index/db.js";
+import { indexPath, layers, missingTableAsNull, openIndexReadOnly, type IndexDb } from "../index/db.js";
 import type { LoadedProfile } from "../profile/load.js";
 import { stripInvisible, WHITESPACE } from "./invisible.js";
 
@@ -35,13 +35,9 @@ export function buildDerivedSet(o: { privateDbs: readonly IndexDb[]; toolkit: In
   return out;
 }
 
-// The index's layers, or null when its layers table is missing or unreadable.
+// The index's layers, or null when its layers table is missing. Any other read error is rethrown.
 export function layersOrNull(db: IndexDb): ReturnType<typeof layers> | null {
-  try {
-    return layers(db);
-  } catch {
-    return null;
-  }
+  return missingTableAsNull(() => layers(db));
 }
 
 // An index without a usable layers table counts as unbuilt: fail closed with the same code.

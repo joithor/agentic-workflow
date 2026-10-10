@@ -3,7 +3,7 @@ import path from "node:path";
 import { describe, expect, it } from "vitest";
 
 import { indexPath, openIndex, type IndexDb } from "../src/index/db.js";
-import { buildDerivedSet, identifierProblem, identifierTokens, loadDerivedSet, vocabularyOf, wordsFile } from "../src/evolve/privacy-derived.js";
+import { buildDerivedSet, identifierProblem, identifierTokens, layersOrNull, loadDerivedSet, vocabularyOf, wordsFile } from "../src/evolve/privacy-derived.js";
 import { SindriError } from "../src/errors.js";
 import { seedIndex } from "./index-fixtures.js";
 import { makeDeps, tempDir } from "./helpers.js";
@@ -121,5 +121,16 @@ describe("loadDerivedSet", () => {
     db.exec("DROP TABLE layers");
     db.close();
     expect(() => loadDerivedSet(deps, loaded(deps, { toolkit: {}, globex: { private: true } }))).toThrow(expect.objectContaining({ code: "SND-EVOLVE-017" }) as SindriError);
+  });
+
+  it("rethrows a layers read error that is not a missing table (M4)", () => {
+    const db = openIndex(path.join(tempDir("ix-"), "i.db"));
+    expect(layersOrNull(db)).toEqual([]);
+    db.exec("DROP TABLE layers");
+    expect(layersOrNull(db)).toBeNull();
+    db.exec("CREATE VIEW layers AS SELECT json('{') AS layer");
+    expect(() => layersOrNull(db)).toThrow(/malformed JSON/);
+    db.close();
+    expect(() => layersOrNull(db)).toThrow(/not open/);
   });
 });

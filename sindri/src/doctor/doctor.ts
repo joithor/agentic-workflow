@@ -4,7 +4,7 @@ import path from "node:path";
 import { parseFlags } from "../args.js";
 import { awStateDir, stateDir, type Deps } from "../deps.js";
 import { SindriError } from "../errors.js";
-import { indexPath, meta, openIndexReadOnly } from "../index/db.js";
+import { indexPath, meta, missingTableAsNull, openIndexReadOnly } from "../index/db.js";
 import { GRAPH_OVER_CAP } from "../index/graph.js";
 import { heavyLockDir, heavyLockState } from "../index/heavy-lock.js";
 import type { IndexProbes } from "../index/io.js";
@@ -183,14 +183,22 @@ async function indexChecks(deps: Deps, loaded: LoadedProfile, probes: IndexProbe
       out.push({ name: `index:${repo}`, status: "warn", detail: "no index", fix: `sindri index build --repo ${repo}` });
       continue;
     }
-    const m = meta(db);
-    const all = layersOrNull(db);
-    db.close();
+    // Only a missing table counts as damage; any other read error (a busy or unreadable file) is rethrown.
+    let m: ReturnType<typeof meta> | null;
+    let all: ReturnType<typeof layersOrNull>;
+    try {
+      m = missingTableAsNull(() => meta(db));
+      all = layersOrNull(db);
+    } finally {
+      db.close();
+    }
     const down = (all ?? []).filter((l) => l.status === "unavailable" || l.status === "pending");
-    const ageH = m.builtAt === null ? null : (deps.now().getTime() - Date.parse(m.builtAt)) / 3_600_000;
+    const builtAt = m?.builtAt ?? null;
+    const ageH = builtAt === null ? null : (deps.now().getTime() - Date.parse(builtAt)) / 3_600_000;
     const rebuild = `sindri index build --repo ${repo}`;
     // A rebuild keeps a same-version index file, so a missing table needs the file removed first.
-    if (all === null) out.push({ name: `index:${repo}`, status: "warn", detail: "damaged (no usable layers table)", fix: `rm ${indexPath(deps, repo)}, then ${rebuild}` });
+    const missing = m === null ? "meta" : all === null ? "layers" : null;
+    if (missing !== null) out.push({ name: `index:${repo}`, status: "warn", detail: `damaged (no usable ${missing} table)`, fix: `rm ${indexPath(deps, repo)}, then ${rebuild}` });
     else if (ageH === null) out.push({ name: `index:${repo}`, status: "warn", detail: "never built", fix: rebuild });
     else if (ageH > ix.maxAgeHours) out.push({ name: `index:${repo}`, status: "warn", detail: `stale (built ${Math.floor(ageH)} h ago)`, fix: rebuild });
     else if (down.length > 0) out.push({ name: `index:${repo}`, status: "warn", detail: down.map((l) => `${l.layer} ${l.status}: ${l.detail}`).join("; "), fix: [...new Set(down.map((l) => layerFix(l, repo)))].join("; ") });
@@ -245,8 +253,12 @@ function privacyChecks(deps: Deps, loaded: LoadedProfile): Check[] {
       out.push({ name: `privacy:${repo}`, status: "warn", detail: "private: is not set, so sindri evolve publish treats this repo as public", fix: `set private: true (or false) in repos/${repo}.yaml, then sindri profile approve` });
     } else if (p) {
       const db = openIndexReadOnly(indexPath(deps, repo));
-      const built = db !== null && structureOk(db);
-      db?.close();
+      let built: boolean;
+      try {
+        built = db !== null && structureOk(db);
+      } finally {
+        db?.close();
+      }
       out.push(built
         ? { name: `privacy:${repo}`, status: "ok", detail: "private; its identifiers are held at publish" }
         : { name: `privacy:${repo}`, status: "warn", detail: "private, but no code index: sindri evolve publish will refuse (SND-EVOLVE-017)", fix: `sindri index build --repo ${repo}` });

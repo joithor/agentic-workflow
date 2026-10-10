@@ -136,6 +136,18 @@ export function layers(db: IndexDb): { layer: Layer; stamp: string; status: Laye
   );
 }
 
+// A read of a table that may be missing (an index damaged by hand or by an older build): null for SQLite's
+// "no such table", and every other error (SQLITE_BUSY, I/O, a closed handle) rethrown, so a busy index is never
+// reported as damaged.
+export function missingTableAsNull<T>(read: () => T): T | null {
+  try {
+    return read();
+  } catch (e) {
+    if (e instanceof Error && e.message.startsWith("no such table:")) return null;
+    throw e;
+  }
+}
+
 export function meta(db: IndexDb): { commit: string; builtAt: string | null } {
   const get = (k: string) => (db.prepare("SELECT value FROM meta WHERE key = ?").get(k) as { value: string } | undefined)?.value;
   return { commit: get("commit") ?? "", builtAt: get("built_at") ?? null };
