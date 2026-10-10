@@ -308,4 +308,19 @@ public sealed class SpanTests
         var items = Assert.IsType<string[]>(Assert.Single(h.Spans!.Exported).GetTagItem("items"));
         Assert.DoesNotContain("hunter2", Assert.Single(items), StringComparison.Ordinal);
     }
+
+    [Fact]
+    public void A_nested_record_tag_is_replaced_by_its_withheld_text()
+    {
+        using var h = new Harness(export: true);
+        using (var span = h.Source.StartActivity("work"))
+        {
+            _ = span!.SetTag("session", new Session("s1", new LoginRequest("alice", "p,ss-hunter2")));
+        }
+
+        h.Runtime.Flush();
+
+        var session = Assert.IsType<string>(Assert.Single(h.Spans!.Exported).GetTagItem("session"));
+        Assert.DoesNotContain("hunter2", session, StringComparison.Ordinal);
+    }
 }

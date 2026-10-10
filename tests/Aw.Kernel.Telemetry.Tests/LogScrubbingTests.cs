@@ -210,4 +210,46 @@ public sealed class LogScrubbingTests
         _ = Assert.Single(h.Lines());
         Assert.DoesNotContain("hunter2", h.Sink.Text, StringComparison.Ordinal);
     }
+
+    [Theory]
+    [InlineData("hunter2-plain")]
+    [InlineData("p,ss-hunter2")]
+    [InlineData("p}ss-hunter2")]
+    [InlineData("a, hunter2 } b")]
+    public void A_nested_record_never_shows_any_part_of_a_secret_member(string password)
+    {
+        using var h = new Harness();
+        var session = new Session("s1", new LoginRequest("alice", password));
+
+        h.Logger().EmitTemplate("{Session} {Pair} {Anon}", ("Session", session),
+            ("Pair", new KeyValuePair<string, LoginRequest>("req", session.Login)), ("Anon", new { Id = 1, Auth = new { Token = password } }));
+
+        var line = Assert.Single(h.Lines());
+        Assert.DoesNotContain("hunter2", h.Sink.Text, StringComparison.Ordinal);
+        Assert.StartsWith("Session { Id = s1, Login = LoginRequest { User = alice, Password = [REDACTED:secret-field]", line.GetProperty("message").GetString(), StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void A_key_value_pair_nested_in_a_key_value_pair_withholds_the_inner_secret()
+    {
+        using var h = new Harness();
+        var nested = new List<KeyValuePair<string, KeyValuePair<string, string>>> { new("cfg", new("password", "hunter2-nested")) };
+
+        h.Logger().EmitTemplate("{Outer}", ("Outer", nested));
+
+        _ = Assert.Single(h.Lines());
+        Assert.DoesNotContain("hunter2", h.Sink.Text, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void A_list_that_contains_itself_is_written_without_overflowing_the_stack()
+    {
+        using var h = new Harness();
+        var list = new List<object>();
+        list.Add(list);
+
+        h.Logger().EmitTemplate("{L}", ("L", list));
+
+        Assert.Contains("[REDACTED:too-deep]", Assert.Single(h.Sink.Lines), StringComparison.Ordinal);
+    }
 }

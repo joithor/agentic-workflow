@@ -62,8 +62,9 @@ internal sealed partial class Scrubber(IRedactor redactor)
     /// <summary>
     /// The invariant text of a value, as the log formatter writes it, with secret-named parts withheld: a list is its
     /// elements joined with ", "; a key-value entry is "[key, value]"; a char array is one string; any other object is
-    /// its ToString() with secret-named members ("Password = …", as records and anonymous objects print) withheld.
-    /// Not regex-scrubbed.
+    /// its ToString(), cut at its first secret-named member ("Password = …", as records and anonymous objects print,
+    /// nested ones included) so no part of that value or anything after it is written. Nesting deeper than
+    /// <see cref="MaxDepth"/> (a list that contains itself) is written as "[REDACTED:too-deep]". Not regex-scrubbed.
     /// </summary>
     public string Render(object? value) => Render(value, out _);
 
@@ -74,40 +75,52 @@ internal sealed partial class Scrubber(IRedactor redactor)
         return withheld;
     }
 
+    private const int MaxDepth = 8;
+    private const string TooDeepText = "[REDACTED:too-deep]";
+
     private string Render(object? value, out bool withheld)
     {
         withheld = false;
-        switch (value)
-        {
-            case null:
-                return string.Empty;
-            case string text:
-                return text;
-            case char[] chars:
-                return new string(chars);
-            case IEnumerable items:
-                var parts = new List<string>();
-                foreach (var (key, item, keyed) in KeyedEntries.Of(items))
-                {
-                    parts.Add(keyed ? Entry(key, item, ref withheld) : RenderInto(item, ref withheld));
-                }
-
-                return string.Join(", ", parts);
-            case not null when KeyedEntries.TryRead(value, out var key, out var item):
-                return Entry(key, item, ref withheld);
-            default:
-                return WithholdMembers(Convert.ToString(value, CultureInfo.InvariantCulture) ?? string.Empty, ref withheld);
-        }
+        return RenderAt(value, 0, ref withheld);
     }
 
-    private string RenderInto(object? value, ref bool withheld)
+    private string RenderAt(object? value, int depth, ref bool withheld)
     {
-        var text = Render(value, out var inner);
-        withheld |= inner;
-        return text;
+        if (depth > MaxDepth)
+        {
+            withheld = true;
+            return TooDeepText;
+        }
+
+        return value switch
+        {
+            null => string.Empty,
+            string text => text,
+            char[] chars => new string(chars),
+            IEnumerable items => RenderList(items, depth, ref withheld),
+            _ => RenderObject(value, depth, ref withheld),
+        };
     }
 
-    private string Entry(string key, object? value, ref bool withheld)
+    private string RenderObject(object value, int depth, ref bool withheld) =>
+        KeyedEntries.TryRead(value, out var key, out var item)
+            ? Entry(key, item, depth + 1, ref withheld)
+            : WithholdMembers(Convert.ToString(value, CultureInfo.InvariantCulture) ?? string.Empty, ref withheld);
+
+    private string RenderList(IEnumerable items, int depth, ref bool withheld)
+    {
+        var parts = new List<string>();
+        foreach (var (key, item, keyed) in KeyedEntries.Of(items))
+        {
+            parts.Add(keyed ? Entry(key, item, depth + 1, ref withheld) : RenderAt(item, depth + 1, ref withheld));
+        }
+
+        return string.Join(", ", parts);
+    }
+
+    // A KeyValuePair's value arrives as its text (KeyedEntries reads it without reflection), so that text is checked
+    // too: as a nested "[key, value]" pair, then for secret-named members.
+    private string Entry(string key, object? value, int depth, ref bool withheld)
     {
         if (IsSecretName(key))
         {
@@ -115,25 +128,30 @@ internal sealed partial class Scrubber(IRedactor redactor)
             return $"[{key}, {ScrubResult.SecretFieldText}]";
         }
 
-        return $"[{key}, {RenderInto(value, ref withheld)}]";
+        var text = value is string pairText && depth <= MaxDepth && KeyedEntries.TryReadText(pairText, out var innerKey, out var innerValue)
+            ? Entry(innerKey, innerValue, depth + 1, ref withheld)
+            : value is string plain ? WithholdMembers(plain, ref withheld) : RenderAt(value, depth, ref withheld);
+        return $"[{key}, {text}]";
     }
 
+    // Cut at the first secret-named "Name = " (fail closed: a value may hold ',' or '}', so where it ends can't be
+    // known) and close the braces left open.
     private string WithholdMembers(string text, ref bool withheld)
     {
-        var found = false;
-        string result;
         try
         {
-            result = Member.Replace(text, m =>
+            foreach (Match member in Member.Matches(text))
             {
-                if (!IsSecretName(m.Groups["name"].Value))
+                if (!IsSecretName(member.Groups["name"].Value))
                 {
-                    return m.Value;
+                    continue;
                 }
 
-                found = true;
-                return m.Groups["name"].Value + " = " + ScrubResult.SecretFieldText;
-            });
+                withheld = true;
+                var head = text[..(member.Index + member.Length)];
+                var open = head.Count(c => c == '{') - head.Count(c => c == '}');
+                return head + ScrubResult.SecretFieldText + string.Concat(Enumerable.Repeat(" }", Math.Max(open, 0)));
+            }
         }
         catch (RegexMatchTimeoutException)
         {
@@ -141,8 +159,7 @@ internal sealed partial class Scrubber(IRedactor redactor)
             return ScrubResult.BlockedText;
         }
 
-        withheld |= found;
-        return result;
+        return text;
     }
 
     private string[] ScrubElements(IEnumerable items, ref ScrubTally tally)
@@ -157,7 +174,7 @@ internal sealed partial class Scrubber(IRedactor redactor)
         foreach (var (key, item, keyed) in KeyedEntries.Of(items))
         {
             var withheld = false;
-            var text = keyed ? Entry(key, item, ref withheld) : RenderInto(item, ref withheld);
+            var text = keyed ? Entry(key, item, 1, ref withheld) : RenderAt(item, 1, ref withheld);
             plain &= !withheld && !keyed;
             scrubbed.Add(Scrub(text, ref tally));
         }
@@ -183,7 +200,7 @@ internal sealed partial class Scrubber(IRedactor redactor)
     private static bool IsNumberOrFlag(object value) =>
         value is bool or byte or sbyte or short or ushort or int or uint or long or ulong or float or double or decimal;
 
-    // "Name = value" up to the next ", " or " }", as a record's or anonymous object's ToString() prints its members.
-    [GeneratedRegex(@"(?<=[{,] )(?<name>[A-Za-z_][A-Za-z0-9_]*) = (?<value>[^,}]*?)(?=, | })", RegexOptions.CultureInvariant, matchTimeoutMilliseconds: 1000)]
+    // "Name = " after "{ " or ", ", as a record's or anonymous object's ToString() prints a member.
+    [GeneratedRegex(@"(?<=[{,] )(?<name>[A-Za-z_][A-Za-z0-9_]*) = ", RegexOptions.CultureInvariant, matchTimeoutMilliseconds: 1000)]
     private static partial Regex Member { get; }
 }

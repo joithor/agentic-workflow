@@ -40,7 +40,7 @@ internal static class KeyedEntries
                 (key, value) = (first, tuple[1]);
                 return true;
             case not null when IsKeyValuePair(item):
-                return FromText(item.ToString() ?? string.Empty, out key, out value);
+                return TryReadText(item.ToString() ?? string.Empty, out key, out value);
             default:
                 (key, value) = (string.Empty, null);
                 return false;
@@ -50,8 +50,8 @@ internal static class KeyedEntries
     private static bool IsKeyValuePair(object item) =>
         item.GetType() is { IsGenericType: true } type && type.GetGenericTypeDefinition() == typeof(KeyValuePair<,>);
 
-    // KeyValuePair<,>.ToString() is "[key, value]".
-    private static bool FromText(string text, out string key, out object? value)
+    /// <summary>Reads "[key, value]", the text KeyValuePair&lt;,&gt;.ToString() writes.</summary>
+    public static bool TryReadText(string text, out string key, out object? value)
     {
         var comma = text.IndexOf(", ", StringComparison.Ordinal);
         if (text.Length < 2 || text[0] != '[' || text[^1] != ']' || comma < 1)
