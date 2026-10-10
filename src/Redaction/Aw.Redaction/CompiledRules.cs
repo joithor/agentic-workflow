@@ -15,7 +15,7 @@ internal sealed class CompiledRules
         _rules = [.. rules.Select(r => (r.Id, new Regex(r.Pattern, r.Options | Always, matchTimeout)))];
 
         // Only a placeholder naming one of these rules is skipped, so a crafted "[REDACTED:<secret>]" is still scanned.
-        var ids = string.Join('|', ruleIds.Append("blocked").Select(Regex.Escape));
+        var ids = string.Join('|', ruleIds.Append("blocked").Append("secret-field").Select(Regex.Escape));
         _placeholder = new Regex(@"\[REDACTED:(?:" + ids + @")\]", Always, matchTimeout);
     }
 

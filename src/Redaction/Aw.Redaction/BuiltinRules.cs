@@ -58,11 +58,12 @@ internal static class BuiltinRules
         new("stripe-key", Start + "[sr]k_(?:live|test)_[A-Za-z0-9]{16,}"),
         new("google-api-key", Start + "AIza[0-9A-Za-z_-]{35}" + End),
         new("linear-key", Start + "lin_(?:api|oauth)_[A-Za-z0-9]{32,}"),
-        // Atomic segments: each scan ends at the next dot, so an unbounded segment (an 8 KB identity token) stays linear.
-        new("jwt", Start + "eyJ(?>[A-Za-z0-9_-]{8,})\\.(?>[A-Za-z0-9_-]{8,})\\.[A-Za-z0-9_-]{8,}"),
+        // Atomic segments: each scan ends at the next dot, so an unbounded segment (an 8 KB identity token) stays linear; a
+        // match starts only where a run of segment characters starts, so a chain of "-eyJ" can't make it quadratic.
+        new("jwt", "(?<![A-Za-z0-9_-])eyJ(?>[A-Za-z0-9_-]{8,})\\.(?>[A-Za-z0-9_-]{8,})\\.[A-Za-z0-9_-]{8,}"),
         new("bearer", Start + "Bearer" + Ws + "+(?<v>[A-Za-z0-9._~+/=-]{20,})", RegexOptions.IgnoreCase),
         new("credentialed-url",
-            Start + "[a-z][a-z0-9+.-]{0,30}://[^ \t\r\n/:@]{1,256}:(?<v>[^ \t\r\n/]{1,256})@(?=[^ \t\r\n/@]*(?:[/?# \t\r\n]|$))",
+            Start + "[a-z][a-z0-9+.-]{0,30}://[^ \t\r\n/:@]{0,256}:(?<v>[^ \t\r\n/]{1,256})@(?=[^ \t\r\n/@]*(?:[/?# \t\r\n]|$))",
             RegexOptions.IgnoreCase),
 
         // Code style: NAME [=:] "value", NAME ending in a secret word in any case; only a quoted value counts, so
@@ -70,15 +71,20 @@ internal static class BuiltinRules
         new("secret-assignment",
             "(?<![A-Za-z0-9_-])[A-Za-z0-9_-]*?" + SecretWord + "['\"]?" + Ws + "*[=:]" + Ws + "*['\"]" + Value, RegexOptions.IgnoreCase),
 
-        // Env style: an UPPER_SNAKE name may take an unquoted value (API_KEY=..., CLIENT_SECRET=...).
+        // Env style: an UPPER_SNAKE name may take an unquoted value, dots included (API_KEY=..., CLIENT_SECRET=...).
         new("secret-assignment",
             "(?<![A-Za-z0-9_-])(?:[A-Z0-9]+_)*(?:API_?KEY|SECRET(?:_KEY)?|TOKEN|PASSWORD|PRIVATE_KEY|ACCESS_KEY)" + Ws + "*[=:]" + Ws + "*"
-            + Value),
+            + DottedValue),
 
-        // Shell and query style: name=value after a space, ;, &, |, ( or ? (cd repo && export api_key=...,
-        // curl -d client_secret=..., ?access_token=...), in any case; the value may hold dots.
+        // Shell style: name=value at a line start or after a space, ;, |, ( or comma, in any case (cd repo; export
+        // api_key=..., opts=a,token=...). Keyword arguments holding attribute access (token=settings.value) don't count:
+        // the value stops at a dot.
         new("secret-assignment",
-            "(?<![^ \t;&|(?])[A-Za-z0-9_.-]*?" + SecretWord + "=['\"]?" + DottedValue, RegexOptions.IgnoreCase),
+            "(?<![^ \t\r\n;|(,])[A-Za-z0-9_.-]*?" + SecretWord + "=['\"]?" + Value, RegexOptions.IgnoreCase),
+
+        // Query style: name=value after ?, & or # (?access_token=..., a #access_token= redirect fragment,
+        // cd repo && api_key=...); the value may hold dots (Google's ya29. tokens).
+        new("secret-assignment", "(?<=[?&#])[A-Za-z0-9_.-]*?" + SecretWord + "=" + DottedValue, RegexOptions.IgnoreCase),
 
         // Header style: a hyphenated header name may take an unquoted value (X-Api-Key: ...).
         new("secret-assignment",

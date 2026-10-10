@@ -99,7 +99,9 @@ public sealed class Redactor : IRedactor
             tier++;
         }
 
-        return _tiers[tier] ??= new CompiledRules(_rules, RuleIds, _matchTimeout * (1L << tier));
+        // Regex refuses a timeout past int.MaxValue - 1 ms (about 24.8 days); a longer budget is capped there.
+        var timeout = TimeSpan.FromMilliseconds(Math.Min(_matchTimeout.TotalMilliseconds * (1L << tier), int.MaxValue - 1));
+        return _tiers[tier] ??= new CompiledRules(_rules, RuleIds, timeout);
     }
 
     private static string Replace(string text, List<RedactionHit> hits)

@@ -9,20 +9,22 @@ is its first C# consumer, on every log and export path.
 ## API
 
 ```csharp
-IRedactor redactor = Redactor.Default;            // built-in rules, 1 s match timeout per pattern per 128 KB
+IRedactor redactor = Redactor.Default;            // built-in rules, 1 s match timeout per pattern per 128 K characters
 ScrubResult result = redactor.Scrub(text);
 // result.Text     scrubbed text; each hit becomes [REDACTED:<rule>]
 // result.Hits     RedactionHit(Rule, Start, End) in input order: spans in the original text, never the value
 // result.Outcome  Clean (Text is the input, same instance) | Redacted | Blocked
 // result.BlockCode AW-REDACT-001 when Blocked
-bool whole = redactor.IsSecretName("client_secret");   // true: redact this field's value whole
+bool whole = redactor.IsSecretName("client_secret");   // true: write ScrubResult.SecretFieldText instead of the value
 ```
 
 - `Redactor.Create(TimeSpan)` gives the same rules with another per-pattern timeout.
 - `IsSecretName(name)` is for callers that see a key and its value apart (a telemetry attribute, a header, a JSON
   field): the assignment rules need the name and the value in one string, so such a caller redacts the whole value of
   a field whose name ends in a secret word (API_KEY, SECRET, TOKEN, PASSWORD, PRIVATE_KEY, ACCESS_KEY, any case and
-  separator) or is `Authorization`, `Proxy-Authorization`, `Cookie` or `Set-Cookie`, and scrubs every other value.
+  separator) or is `Authorization`, `Proxy-Authorization`, `Cookie` or `Set-Cookie`, writing
+  `ScrubResult.SecretFieldText` (`[REDACTED:secret-field]`, which later scrubs treat as a placeholder) in its place, and
+  scrubs every other value.
 - Register `IRedactor` as a singleton (`Redactor.Default`) in the composing `Add…()` method; tests use the real
   redactor (it has no I/O, so it needs no fake).
 
@@ -36,8 +38,8 @@ bool whole = redactor.IsSecretName("client_secret");   // true: redact this fiel
 | `github-token` | `ghp_`, `gho_`, `ghu_`, `ghs_`, `ghr_`, `github_pat_` |
 | `slack-token`, `stripe-key`, `google-api-key`, `linear-key`, `jwt` | `xox[abprs]-`, `sk_live_`/`rk_test_`…, `AIza…`, `lin_api_`/`lin_oauth_`, three-part `eyJ…` tokens of any length |
 | `bearer` | the token after `Bearer` (the word stays; the token may follow on the next line) |
-| `credentialed-url` | the password in `scheme://user:password@host`, up to the last `@` before the host (an unencoded `@` in the password stays inside the redaction) |
-| `secret-assignment` | the value of `NAME = "value"` (NAME ends in API_KEY, SECRET, TOKEN, PASSWORD, PRIVATE_KEY, ACCESS_KEY; any case, quoted value), `UPPER_SNAKE=value`, a shell or query pair `name=value` after a space, `;`, `&`, `|`, `(` or `?` in any case (`cd repo && export api_key=…`, `curl -d client_secret=…`, `?access_token=…`; the value may hold dots), a config line in any case that starts with the name and ends with an unquoted value (INI, YAML, `.properties`, `.env`; `api_key=…`, `client_secret: …`, `db.password = …`), `X-Api-Key: value` headers, and `aws_secret_access_key` / `aws_session_token` lines. A value needs 20+ characters with a digit in its first 256 (the `aws_*` lines: 16+ base64 characters, no digit needed); except in the line-anchored forms it may follow the separator on the next line |
+| `credentialed-url` | the password in `scheme://user:password@host` (the user may be empty: `redis://:password@host`), up to the last `@` before the host (an unencoded `@` in the password stays inside the redaction) |
+| `secret-assignment` | the value of `NAME = "value"` (NAME ends in API_KEY, SECRET, TOKEN, PASSWORD, PRIVATE_KEY, ACCESS_KEY; any case, quoted value), `UPPER_SNAKE=value` (dots allowed in the value), a shell pair `name=value` at a line start or after a space, `;`, `|`, `(` or comma in any case (`export api_key=…`, `curl -d client_secret=…`, `opts=a,token=…`; the value stops at a dot, so `token=settings.value` keyword arguments stay), a query pair after `?`, `&` or `#` (`?access_token=…`, a `#access_token=` redirect fragment, `cd repo && api_key=…`; the value may hold dots), a config line in any case that starts with the name and ends with an unquoted value (INI, YAML, `.properties`, `.env`; `api_key=…`, `client_secret: …`, `db.password = …`), `X-Api-Key: value` headers, and `aws_secret_access_key` / `aws_session_token` lines. A value needs 20+ characters with a digit in its first 256 (the `aws_*` lines: 16+ base64 characters, no digit needed); in the code, env and header forms it may follow the separator on the next line |
 | `ssn`, `mrn` | `123-45-6789`, `MRN: 12345678` |
 
 Overlapping hits merge into one placeholder named by the earlier rule (`Redactor.RuleIds` is the priority order). A
@@ -65,7 +67,8 @@ Not folded: mathematical alphanumeric look-alikes (astral code points) and base6
 
 `detect-secrets.sh` blocks any `NAME=value` with a 20+ character value anywhere in a command, digits or not, and with
 no boundary before the name. Here a value needs a digit (logs and code are full of long all-letter identifiers), so
-`export TOKEN=<30 letters>` stays, and a pair needs a space, `;`, `&`, `|`, `(` or `?` before its name;
+`export TOKEN=<30 letters>` stays, and a pair needs a line start, a space, `;`, `|`, `(`, a comma, `?`, `&` or `#`
+before its name;
 `PassThroughTests` pins the first choice. The hook's other shapes (AWS keys, GitHub tokens, bearer tokens, and pairs
 with a digit: `cd repo && api_key=…`, `curl -d client_secret=…`, `FOO=1 mytoken=…`, `x=1; Password=…`, dotted values)
 are covered by corpus cases.
@@ -77,6 +80,10 @@ get the redactor's timeout (1 s for `Default`), and each doubling of the text do
 size tier), so a large ordinary input is scrubbed and only a pathological match blocks. A timeout returns `ScrubOutcome.Blocked` with
 `Text = "[REDACTED:blocked]"` and `BlockCode = "AW-REDACT-001"`: the input is withheld, never passed on. The caller
 logs the block (Redaction has no logger) and refuses the commit, write or egress.
+
+The budget is per match call: .NET restarts the timeout on every match, so it does not bound a whole scan. Every rule
+is therefore written to stay linear on its own (no rule can restart at every position of a long run; see
+`AdversarialInputTests`).
 
 ## Pattern rules
 
