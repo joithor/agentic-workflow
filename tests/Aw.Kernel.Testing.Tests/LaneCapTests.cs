@@ -125,7 +125,8 @@ public sealed class LaneCapTests
         // project; a fixed --report-xunit-ctrf-filename would make the projects overwrite each other's report.
         using var dir = new TempDir();
         _ = dir.Write("a.ctrf", Report(Test("Demo.Fast", 400)));
-        _ = dir.Write("b.json", Report(Test("Demo.Slow", 10_500)));
+        _ = dir.Write("b.ctrf", Report(Test("Demo.Slow", 10_500)));
+        _ = dir.Write("coverage.json", """{ "not": "ctrf" }""");
         _ = dir.Write("notes.txt", "not a report");
         using var output = new StringWriter();
         using var error = new StringWriter();
@@ -137,7 +138,25 @@ public sealed class LaneCapTests
         Assert.Contains("a.ctrf: 1 tests", text, StringComparison.Ordinal);
         Assert.Contains("LANE-TEST-001 Aw.Demo.Tests Demo.Slow", text, StringComparison.Ordinal);
         Assert.DoesNotContain("notes.txt", text, StringComparison.Ordinal);
+        Assert.DoesNotContain("coverage.json", text, StringComparison.Ordinal);
     }
+
+    [Fact]
+    public void Run_where_no_report_holds_a_test_is_exit_2()
+    {
+        // A crashed or misfiltered lane yields only empty reports; that must not pass as OK.
+        using var dir = new TempDir();
+        var path = dir.Write("empty.ctrf", Report());
+        using var output = new StringWriter();
+        using var error = new StringWriter();
+
+        Assert.Equal(2, LaneCap.Run([path], output, error));
+        Assert.Contains("no tests in any report", error.ToString(), StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void A_report_whose_suites_are_not_objects_is_an_input_error() =>
+        Assert.Throws<InvalidDataException>(() => LaneCap.Check("""{ "results": { "tests": [], "extra": { "suites": [1] } } }"""));
 
     [Fact]
     public void Run_on_a_directory_without_reports_is_exit_2()

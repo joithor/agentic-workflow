@@ -6,6 +6,11 @@ namespace Aw.Kernel.Testing;
 /// One in-memory unit of work: enlisted writes run, in order, on <see cref="Commit"/>; disposing without a commit drops
 /// them. Not thread-safe, like a unit of work (one per use case).
 /// </summary>
+/// <remarks>
+/// Two limits a SQL unit of work doesn't have, so don't write a test that depends on them: a fake repository can't read
+/// its own enlisted writes before the commit (with SQL, a read later in the same unit sees them), and an enlisted write
+/// that throws during <see cref="Commit"/> leaves the writes before it applied (SQL would roll them all back).
+/// </remarks>
 public sealed class InMemoryUnitOfWork : IUnitOfWork
 {
     private readonly List<Action> _writes = [];

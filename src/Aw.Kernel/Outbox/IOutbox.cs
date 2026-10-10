@@ -15,8 +15,9 @@ public interface IOutbox
     public ValueTask<Result<Unit>> Enqueue(OutboxCommand command, CancellationToken cancellationToken);
 
     /// <summary>
-    /// Reads up to <paramref name="max"/> commands that are due, oldest first: not dispatched, not dead-lettered,
-    /// and with no next attempt time or one that has passed on the implementation's clock.
+    /// Reads up to <paramref name="max"/> commands that are due, oldest first by enqueue time (ties in the order they were
+    /// enqueued): not dispatched, not dead-lettered, and with no next attempt time or one at or before the
+    /// implementation's clock. Times come back in UTC.
     /// </summary>
     /// <param name="max">The most commands to return, at least 1.</param>
     /// <param name="cancellationToken">Cancels the operation.</param>
@@ -38,6 +39,9 @@ public interface IOutbox
     /// <param name="id">The command id.</param>
     /// <param name="error">Why the send failed.</param>
     /// <param name="cancellationToken">Cancels the operation.</param>
-    /// <returns>Success, or AW-KERNEL-002 when there is no such pending command.</returns>
+    /// <returns>
+    /// Success, AW-KERNEL-002 when there is no such pending command, or AW-KERNEL-003 when another session changed the
+    /// command at the same moment (only possible outside a write transaction; try again).
+    /// </returns>
     public ValueTask<Result<Unit>> MarkFailed(Guid id, Error error, CancellationToken cancellationToken);
 }

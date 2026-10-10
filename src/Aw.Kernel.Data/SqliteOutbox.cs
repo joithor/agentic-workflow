@@ -8,7 +8,8 @@ namespace Aw.Kernel.Data;
 /// The SQLite <see cref="IOutbox"/> over the <see cref="SqliteOutboxSchema"/> table. It runs on the session it is
 /// given, so commands enqueued through a <see cref="SqliteUnitOfWork"/> commit or roll back with the state change that
 /// recorded them (the transactional outbox, spec §4b.6). Time comes from <paramref name="clock"/>; failures are retried
-/// by <paramref name="policy"/>. Checked by the shared OutboxContract (Aw.Kernel.Testing).
+/// by <paramref name="policy"/>. Times are stored and read back in UTC, and commands with the same enqueue time are read
+/// in the order they were enqueued. Checked by the shared OutboxContract (Aw.Kernel.Testing).
 /// </summary>
 /// <param name="session">The session (normally the use case's unit of work).</param>
 /// <param name="clock">Where 'now' comes from.</param>
@@ -31,6 +32,8 @@ public sealed class SqliteOutbox(ISqliteSession session, TimeProvider clock, Out
     private const string MarkDispatchedSql = "UPDATE outbox_commands SET dispatched_at = $at WHERE id = $id AND " + Pending;
 
     private const string AttemptsSql = "SELECT attempts FROM outbox_commands WHERE id = $id AND " + Pending;
+
+    private const string PendingExistsSql = "SELECT EXISTS (SELECT 1 FROM outbox_commands WHERE id = $id AND " + Pending + ")";
 
     private const string MarkFailedSql =
         "UPDATE outbox_commands SET attempts = $attempts, last_error_code = $code, last_error_message = $message, "
@@ -94,9 +97,18 @@ public sealed class SqliteOutbox(ISqliteSession session, TimeProvider clock, Out
                     .Bind("$id", id).Bind("$previous", attempts.Value),
                 $"outbox command {id}"),
             cancellationToken).ConfigureAwait(false);
-        return updated.Bind(rows => rows == 1
-            ? Results.Ok()
-            : KernelErrors.Conflict.With($"outbox command {id} changed while its failure was being recorded"));
+        if (updated.IsError || updated.Value == 1)
+        {
+            return updated.Map(_ => Unit.Value);
+        }
+
+        // Another session changed the command between the read and the update (only possible outside a write
+        // transaction): no longer pending is the documented not-found; still pending is a conflict to retry.
+        var again = await SqliteQueries.Exists(
+            session, new SqlStatement(PendingExistsSql, c => c.Bind("$id", id), $"outbox command {id}"), cancellationToken).ConfigureAwait(false);
+        return again.Bind(pending => pending
+            ? Results.Failure<Unit>(KernelErrors.Conflict.With($"outbox command {id} changed while its failure was being recorded; try again"))
+            : NoSuchPending(id));
     }
 
     private static Error NoSuchPending(Guid id) => KernelErrors.NotFound.With($"no pending outbox command {id}");

@@ -9,9 +9,10 @@ namespace Aw.Kernel.Testing;
 /// each real adapter alike (spec §4b.5, csharp.md Seams). A derived test class binds <see cref="CreateOutbox"/> to one
 /// implementation and carries its lane: '[Lane(TestLane.Unit)]' for the fake, '[Lane(TestLane.Integration)]' for SQL.
 /// The contract owns the clock: it starts at <see cref="KnownInstants.Epoch"/> and moves only when a test advances it,
-/// and a command is due when its next attempt time is at or before the clock's time.
+/// and a command is due when its next attempt time is at or before the clock's time. It also checks the outbox is
+/// transactional: a command enqueued through a unit of work lands with the unit's commit and disappears with its rollback.
 /// </summary>
-public abstract class OutboxContract
+public abstract partial class OutboxContract
 {
     private readonly ContractClock _clock = new();
 

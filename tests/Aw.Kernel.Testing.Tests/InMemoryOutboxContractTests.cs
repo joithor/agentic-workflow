@@ -1,4 +1,5 @@
 using Aw.Kernel.Outbox;
+using Aw.Kernel.Persistence;
 
 namespace Aw.Kernel.Testing.Tests;
 
@@ -6,6 +7,17 @@ namespace Aw.Kernel.Testing.Tests;
 [Lane(TestLane.Unit)]
 public sealed class InMemoryOutboxContractTests : OutboxContract
 {
-    protected override ValueTask<IOutbox> CreateOutbox(TimeProvider clock, OutboxRetryPolicy policy, CancellationToken cancellationToken) =>
-        ValueTask.FromResult<IOutbox>(new InMemoryOutbox(clock, policy));
+    private InMemoryOutbox? _outbox;
+
+    protected override ValueTask<IOutbox> CreateOutbox(TimeProvider clock, OutboxRetryPolicy policy, CancellationToken cancellationToken)
+    {
+        _outbox = new InMemoryOutbox(clock, policy);
+        return ValueTask.FromResult<IOutbox>(_outbox);
+    }
+
+    protected override ValueTask<IUnitOfWorkFactory> CreateUnitOfWorkFactory(CancellationToken cancellationToken) =>
+        ValueTask.FromResult<IUnitOfWorkFactory>(new InMemoryUnitOfWorkFactory());
+
+    protected override IOutbox OutboxIn(IUnitOfWork work, TimeProvider clock, OutboxRetryPolicy policy) =>
+        _outbox!.In((InMemoryUnitOfWork)work); // why: the contract calls CreateOutbox first
 }
