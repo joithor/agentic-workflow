@@ -160,6 +160,7 @@ dotnet_diagnostic.RCS1046.severity = none    # Async suffix: services use intent
 dotnet_diagnostic.JSON002.severity = none    # "probable JSON string": golden-file and JSON-contract literals are data; it also fails `dotnet format --verify-no-changes`
 dotnet_diagnostic.IDE0008.severity = none    # explicit types: `var` is the house style (IDE0007 owns it)
 dotnet_diagnostic.MA0038.severity = none     # deprecated by Meziantou; owner: CA1822
+dotnet_diagnostic.CA1005.severity = none     # generic arity (off by default, limit 2) — owner: AW1009 (limit 3, spec §4b.3)
 dotnet_diagnostic.RCS1141.severity = none    # param docs: CS1591 owns docs on public API; <param> is optional
 dotnet_diagnostic.RCS1142.severity = none    # typeparam docs: same owner as RCS1141
 dotnet_diagnostic.RCS1140.severity = none    # exception docs: exceptions are only for bugs here (spec §4b.3), not part of a contract

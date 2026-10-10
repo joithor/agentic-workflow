@@ -11,8 +11,8 @@ namespace Aw.Kernel.Events;
 /// </summary>
 /// <remarks>
 /// <see cref="Create"/> is public because Kernel can't name the host projects that may call it. Only Host projects
-/// call it: that rule is enforced by the in-repo analyzer (spec §4b.6, Aw.Analyzers) and the architecture test that
-/// checks Host-only registration, not by this type. Everything else receives a context and derives from it with
+/// call it. No check enforces that yet (it is not on the spec §4b.6 Aw.Analyzers list; a candidate architecture-test
+/// rule); this type doesn't either. Everything else receives a context and derives from it with
 /// <see cref="CausedBy{TPayload}"/>.
 /// </remarks>
 public sealed record EventContext
