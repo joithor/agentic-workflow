@@ -42,7 +42,7 @@ public sealed class SecretShapeTests
     [Fact]
     public void A_zero_width_joiner_inside_a_token_is_redacted_with_the_token()
     {
-        var input = Shapes.Join("x gh", "p_", "Ab3dE6gH9jK2mN5p", "‍", Shapes.Body, " y");
+        var input = Shapes.Join("x gh", "p_", "Ab3dE6gH9jK2mN5p", "\u200D", Shapes.Body, " y");
 
         var result = Redactor.Default.Scrub(input);
 

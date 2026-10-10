@@ -17,6 +17,10 @@ public sealed class PassThroughTests
         "secret = compute_hash_value_v2(input)",
         "token = session.refresh_token_value_2",
         "-----BEGIN RSA PRIVATE KEY----- is the header line",
+
+        // Narrower than the frozen detect-secrets.sh hook on purpose: a value needs a digit (logs are full of long
+        // identifiers), so an all-letter value is not a secret here (docs/csharp/redaction.md).
+        "export TOKEN=abcdefghijklmnopqrstuvwxyzabcd",
         "C:\\new\\temp\\file.txt",
         "Bearer token expired",
         "\u043F\u0440\u0438\u0432\u0435\u0442 \u043C\u0438\u0440",
