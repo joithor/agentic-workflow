@@ -261,6 +261,11 @@ expect "comment markers inside strings don't hide ids" 0 "rules: ok"
 d="$(fixture rcs)"; printf '| x | `RCS1075` `SYSLIB1045` |\n' >> "$d/.agents/rules/csharp.md"; run "$d"
 expect "RCS and SYSLIB ids in the rules docs need a record" 1 "RULE-COVER-002" "RCS1075" "SYSLIB1045"
 
+d="$(fixture suggestion-flip)"; mkdir -p "$d/src/Aw.Analyzers"; printf 'const string Id = "AW1008";\n' > "$d/src/Aw.Analyzers/Ids.cs"
+printf 'dotnet_diagnostic.AW1008.severity = suggestion\n' >> "$d/.editorconfig"
+addcheck "$(rec "$d" no-catch-exception)" "  - type: analyzer" '    id: "AW1008"' "    severity: suggestion" "    status: pending" "    pendingPr: 132"; run "$d"
+expect "a pending suggestion-level check that now exists still warns to flip it" 0 "WARN RULE-CHECK-002" "AW1008"
+
 d="$(fixture norecords)"; mv "$d/rules" "$d/rules.gone"; run "$d"
 expect "a tree with no rules directory is a tool error" 2 "check-rules: error"
 
