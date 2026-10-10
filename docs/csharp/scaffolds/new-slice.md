@@ -42,13 +42,18 @@ src/<Pkg>/Aw.<Pkg>.Host/
 tests/Aw.<Pkg>.Tests/<Slice>/
 └── <Slice>Tests.cs          # the red test (below)
 src/<Pkg>/Aw.<Pkg>.Core/Ids/      # one file per entry in `ids` (R9)
-└── <Id>.cs                  # Vogen [ValueObject<prim>], [JsonConverter(typeof(<Prim>IdJsonConverter<<Id>>))], ITypedId<<Id>, prim>, Validate
+└── <Id>.cs                  # Vogen [ValueObject<prim>], [JsonConverter(typeof(<Conv><<Id>>))], ITypedId<<Id>, prim>, Validate
 tests/Aw.<Pkg>.Tests/Ids/
-└── <Id>Tests.cs             # JSON round-trip through AwJson; invalid value → JsonException; Parse/TryParse (Lane=unit)
-    <Id>RouteBindingTests.cs  # http, when a `{name}` in `route` uses the id: route/query binding, refused → 400, `?id=` → 400 (Lane=integration)
+├── <Id>Tests.cs             # JSON round-trip through AwJson; an invalid, missing or null value → AW-KERNEL-001 from AwJson.Deserialize; Parse/TryParse (Lane=unit)
+└── <Id>RouteBindingTests.cs # http, when a `{name}` in `route` uses the id: route/query binding, refused → 400, `?id=` → 400 (Lane=integration)
 tests/Aw.<Pkg>.Testing/
 └── <Slice>RequestBuilder.cs # public sealed class with deterministic defaults; A.<Slice>Request() returns it
 ```
+
+`<Conv>` by primitive: `string` → `StringIdJsonConverter`, `Guid` → `GuidIdJsonConverter`, `int` → `Int32IdJsonConverter`
+(all in `Aw.Kernel.Json`). `<Id>Tests` reads with `AwJson.Deserialize`, which catches the converter's `JsonException`
+and returns `AW-KERNEL-001` (`KernelErrors.Invalid`) in a failed `Result`, so the test asserts that error for an
+invalid, a missing and a null value (spec §4b.3), never a thrown exception.
 
 The endpoint lives in `Host`, never in `Features`: `Host` is the Web SDK project where the request-delegate generator
 runs, so the minimal-API lambda is AOT-safe there, while in an `IsAotCompatible` `Features` library it would raise
@@ -110,7 +115,7 @@ public readonly partial struct <Id> : ITypedId<<Id>, string>
 ```
 
 `ITypedId<TSelf, TValue>` declares `IParsable<TSelf>` in user code, and the converter reads with `TryFrom` and throws
-`JsonException` (a 400). `ITypedId` and the `StringIdJsonConverter`/`GuidIdJsonConverter`/`Int32IdJsonConverter` ship
+`JsonException` (AW-KERNEL-001 through `AwJson.Deserialize`, a 400 in ASP.NET body binding). `ITypedId` and the `StringIdJsonConverter`/`GuidIdJsonConverter`/`Int32IdJsonConverter` ship
 with the typed-ids PR (#100, C3); the recipe is `docs/csharp/typed-ids.md`. The package's `VogenDefaults.cs` (from
 `/new-package`) sets all six arguments of `docs/csharp/typed-ids.md` step 2, verbatim. **Before an id in this form binds a route** (an
 http slice whose `route` has `{id}`), the generator adds an RDG route-binding test for it in
