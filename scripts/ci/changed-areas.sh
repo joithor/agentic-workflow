@@ -6,7 +6,9 @@
 # Prints GitHub step outputs (key=value lines) naming which areas a change
 # touches, so each CI job can decide between real work and a no-op success:
 #   bash=true|false      the bash tests need to run
-#   dotnet=true|false    the .NET solution needs to build
+#   dotnet=true|false    the .NET solution needs to build (spikes/ never counts)
+#   golden=true|false    the golden harness needs to replay (harness, recordings, or the
+#                        judge, scrubber and hooks the recordings cover)
 #   packages=[...]       JSON array of the TS packages that changed
 #
 # Anything other than a pull_request with a known base runs everything: a
@@ -29,18 +31,25 @@ json_array() {
 }
 
 print_all() {
-  printf 'bash=true\ndotnet=true\npackages=%s' "$(json_array "${TS_PACKAGES[@]}")"
+  printf 'bash=true\ndotnet=true\ngolden=true\npackages=%s' "$(json_array "${TS_PACKAGES[@]}")"
 }
 
 # Reads changed paths, NUL-separated (git diff -z), on stdin and prints the outputs.
 # NUL separation means no quoting: a non-ASCII or oddly named path arrives verbatim.
 classify_changes() {
-  local bash=false dotnet=false file pkg
+  local bash=false dotnet=false golden=false file pkg
   local -a changed_packages=()
   while IFS= read -r -d '' file || [ -n "$file" ]; do
     [ -n "$file" ] || continue
     case "$file" in
       .github/*|scripts/ci/*) print_all; return 0 ;;
+    esac
+    case "$file" in
+      spikes/*) continue ;;  # throwaway spike projects: no area, never the dotnet job
+    esac
+    case "$file" in
+      golden/*|goldens/*|judge/*|sindri/src/scrub/*|config/hooks/*)
+        golden=true ;;
     esac
     case "$file" in
       config/*|scripts/*|providers/*|setup.sh|mods/*|skills/*|.agents/*|AGENTS.md|CLAUDE.md|.claude/*|.cursor/*)
@@ -63,7 +72,7 @@ classify_changes() {
       esac
     done
   done
-  printf 'bash=%s\ndotnet=%s\npackages=%s' "$bash" "$dotnet" \
+  printf 'bash=%s\ndotnet=%s\ngolden=%s\npackages=%s' "$bash" "$dotnet" "$golden" \
     "$(json_array ${changed_packages[@]+"${changed_packages[@]}"})"
 }
 
