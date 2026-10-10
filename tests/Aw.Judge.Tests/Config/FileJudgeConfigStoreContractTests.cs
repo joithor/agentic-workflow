@@ -1,6 +1,5 @@
 using Aw.Judge.Core.Ports;
 using Aw.Judge.Host;
-using Aw.Judge.Infrastructure;
 using Aw.Judge.Infrastructure.Config;
 using Aw.Judge.Testing;
 using Aw.Kernel.Json;
@@ -26,5 +25,5 @@ public sealed class FileJudgeConfigStoreContractTests : JudgeConfigStoreContract
     public void Dispose() => _state.Dispose();
 
     private static FileJudgeConfigStore Store(string stateDirectory) =>
-        new(new JudgeSettings(stateDirectory), AwJson.CreateOptions(JudgeJsonContext.Default));
+        new(stateDirectory, AwJson.CreateOptions(JudgeJsonContext.Default));
 }

@@ -1,3 +1,4 @@
+using System.Text.Json;
 using Aw.Judge.Core.Ports;
 using Aw.Judge.Infrastructure.Config;
 using Aw.Judge.Infrastructure.Sqlite;
@@ -21,6 +22,6 @@ public static class JudgeInfrastructureServiceCollectionExtensions
             .AddSingleton(sp => new JudgeDatabase(JudgeDatabase.OptionsFor(settings.StateDirectory), sp.GetRequiredService<TimeProvider>()))
             .AddScoped<IDecisionLog, SqliteDecisionLog>()
             .AddScoped<IBriefStore, SqliteBriefStore>()
-            .AddScoped<IJudgeConfigStore, FileJudgeConfigStore>();
+            .AddScoped<IJudgeConfigStore>(sp => new FileJudgeConfigStore(settings.StateDirectory, sp.GetRequiredService<JsonSerializerOptions>()));
     }
 }
