@@ -212,6 +212,8 @@ jobs:
           else
             echo "no-op: scripts/check-deps.mjs not present yet — the deps.yaml check starts when it lands"
           fi
+      - name: Rule records name real checks
+        run: node scripts/check-rules.mjs
       - name: claude plugin validate mods/aw-live
         run: .github/ci-tools/node_modules/.bin/claude plugin validate mods/aw-live
       - name: claude plugin test mods/aw-live
