@@ -196,6 +196,20 @@ public sealed class QuestionEvaluatorTests
     }
 
     [Fact]
+    public async Task Input_that_is_not_json_or_misses_a_required_field_escalates_as_invalid_input()
+    {
+        var harness = new EvaluatorHarness();
+        var cli = Cli().Decides("send", 1);
+
+        Assert.Equal(new EscalatedOutcome("invalid-input"), await harness.RunText(A.Question().Build(), "not json", cli));
+        Assert.Equal(new EscalatedOutcome("invalid-input"), await harness.RunText(A.Question().Build(), """{"other":"x"}""", cli));
+        Assert.Equal(new EscalatedOutcome("invalid-input"), await harness.RunText(A.Question().Build(), "null", cli));
+
+        Assert.Empty(cli.Calls);
+        Assert.Equal("\"not json\"", harness.Log.Decisions[0].Details?.InputJson);
+    }
+
+    [Fact]
     public async Task A_configured_threshold_overrides_the_question_threshold()
     {
         var harness = new EvaluatorHarness();

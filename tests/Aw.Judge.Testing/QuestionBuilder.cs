@@ -10,8 +10,6 @@ public sealed class QuestionBuilder : Builder<QuestionBuilder, QuestionDefinitio
     private QuestionDefinition<TextInput> _question = new()
     {
         Name = "wake-gate",
-        Parse = TextInput.Parse,
-        ToJson = input => input.ToJson(),
         Outputs = ["send", "batch", "drop"],
         Prompt = input => $"Classify: {input.Text}",
         Threshold = 0.7,

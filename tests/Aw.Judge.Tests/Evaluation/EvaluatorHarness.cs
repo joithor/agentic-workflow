@@ -6,9 +6,7 @@ using Aw.Judge.Core.Ids;
 using Aw.Judge.Core.Ports;
 using Aw.Judge.Core.Providers;
 using Aw.Judge.Core.Questions;
-using Aw.Judge.Host;
 using Aw.Judge.Testing;
-using Aw.Kernel.Json;
 using Aw.Kernel.Testing;
 using Microsoft.Extensions.Time.Testing;
 
@@ -23,8 +21,8 @@ internal sealed class EvaluatorHarness
         Evaluator = new QuestionEvaluator(Log, redactor ?? new FakeInputRedactor(), new SequentialIdGenerator(), Clock, JsonOptions);
     }
 
-    /// <summary>The Host's AwJson options.</summary>
-    public static JsonSerializerOptions JsonOptions { get; } = AwJson.CreateOptions(JudgeJsonContext.Default);
+    /// <summary>The AwJson options over the test question's context.</summary>
+    public static JsonSerializerOptions JsonOptions => TestJson.Options;
 
     /// <summary>The id the first evaluation gets.</summary>
     public static DecisionId FirstId { get; } = DecisionId.From(SequentialIdGenerator.IdAt(1).ToString());
@@ -44,7 +42,10 @@ internal sealed class EvaluatorHarness
         Run(question, input, new EvaluationContext { Providers = providers });
 
     public ValueTask<EvaluationOutcome> Run(QuestionDefinition<TextInput> question, JsonNode? input, EvaluationContext context) =>
-        Evaluator.Evaluate(question, input, context, CancellationToken.None);
+        Evaluator.Evaluate(question, input?.ToJsonString() ?? "null", context, CancellationToken.None);
+
+    public ValueTask<EvaluationOutcome> RunText(QuestionDefinition<TextInput> question, string rawInput, params IModelProvider[] providers) =>
+        Evaluator.Evaluate(question, rawInput, new EvaluationContext { Providers = providers }, CancellationToken.None);
 
     /// <summary>A chain that routes message-meta to exactly these providers.</summary>
     public static ChainSpec Chain(params ProviderName[] names) =>

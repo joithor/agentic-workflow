@@ -3,19 +3,17 @@ using Aw.Judge.Core.Providers;
 
 namespace Aw.Judge.Core.Questions;
 
-/// <summary>One judge question: how to read its input, what it may answer, how to ask a model, and its rules.</summary>
-/// <typeparam name="TInput">The validated input.</typeparam>
+/// <summary>One judge question: what it may answer, how to ask a model, and its rules.</summary>
+/// <typeparam name="TInput">
+/// The question's input record. The evaluator reads it from the raw JSON through the package's AwJson options, so the
+/// record must be in the package's JSON context; required and non-nullable members give the schema checks, unknown fields
+/// are dropped, and ids are plain strings (convert them to typed ids after).
+/// </typeparam>
 public sealed record QuestionDefinition<TInput>
     where TInput : class
 {
     /// <summary>The question name, e.g. 'wake-gate'.</summary>
     public required string Name { get; init; }
-
-    /// <summary>Validates the raw input (JSON null as null); null when it fails the question's schema ('invalid-input').</summary>
-    public required Func<JsonNode?, TInput?> Parse { get; init; }
-
-    /// <summary>The validated input as JSON (what providers see, what is digested and stored); unknown fields dropped.</summary>
-    public required Func<TInput, JsonNode?> ToJson { get; init; }
 
     /// <summary>The allowed decisions.</summary>
     public required IReadOnlyList<string> Outputs { get; init; }

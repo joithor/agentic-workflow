@@ -1,4 +1,5 @@
 using System.Diagnostics.CodeAnalysis;
+using System.Text;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using Aw.Judge.Core.Decisions;
@@ -7,6 +8,7 @@ using Aw.Judge.Core.Ports;
 using Aw.Judge.Core.Providers;
 using Aw.Judge.Core.Questions;
 using Aw.Kernel.Ids;
+using Aw.Kernel.Json;
 
 namespace Aw.Judge.Core.Evaluation;
 
@@ -25,30 +27,32 @@ public sealed partial class QuestionEvaluator(IDecisionLog log, IInputRedactor r
     /// <summary>Evaluates a question against a raw input.</summary>
     /// <typeparam name="TInput">The question's validated input.</typeparam>
     /// <param name="question">The question.</param>
-    /// <param name="rawInput">The input as read (JSON null as null).</param>
+    /// <param name="rawInput">The input text as read (stdin); anything that doesn't deserialize into the question's input record, syntax or shape, escalates as 'invalid-input'.</param>
     /// <param name="context">The providers, the chain and the question's config.</param>
     /// <param name="cancellationToken">Cancels the provider calls and the writes.</param>
     /// <returns>The decision, or an escalation.</returns>
     public async ValueTask<EvaluationOutcome> Evaluate<TInput>(
-        QuestionDefinition<TInput> question, JsonNode? rawInput, EvaluationContext context, CancellationToken cancellationToken)
+        QuestionDefinition<TInput> question, string rawInput, EvaluationContext context, CancellationToken cancellationToken)
         where TInput : class
     {
         ArgumentNullException.ThrowIfNull(question);
         ArgumentNullException.ThrowIfNull(context);
-        var run = new EvaluationRun(DecisionId.From(ids.NewId().ToString()), clock.GetUtcNow(), rawInput) { SessionId = context.SessionId };
+        ArgumentNullException.ThrowIfNull(rawInput);
+        var run = new EvaluationRun(DecisionId.From(ids.NewId().ToString()), clock.GetUtcNow(), RawNode(rawInput)) { SessionId = context.SessionId };
         var settings = context.Override;
         if (settings is { Enabled: false })
         {
             return await Escalate(question, run, EvaluationReasons.QuestionDisabled, DecisionOutcome.Escalated, cancellationToken).ConfigureAwait(false);
         }
 
-        var input = question.Parse(rawInput);
-        if (input is null)
+        var parsed = AwJson.Deserialize<TInput>(Encoding.UTF8.GetBytes(rawInput), json);
+        if (parsed.IsError)
         {
             return await Escalate(question, run, EvaluationReasons.InvalidInput, DecisionOutcome.Escalated, cancellationToken).ConfigureAwait(false);
         }
 
-        run.Input = question.ToJson(input);
+        var input = parsed.Value;
+        run.Input = JsonNode.Parse(AwJson.Serialize(input, json));
         run.Threshold = settings?.Threshold ?? question.Threshold;
         if (question.PreRules?.Invoke(input) is { } preRule)
         {
@@ -58,6 +62,19 @@ public sealed partial class QuestionEvaluator(IDecisionLog log, IInputRedactor r
 
         var candidates = ChainRouting.Candidates(context.Chain, question.ContentClass, context.Providers, settings?.Providers);
         return await Walk(question, input, candidates, run, cancellationToken).ConfigureAwait(false);
+    }
+
+    // What escalation rows digest and store: the parsed JSON, or the text itself as a JSON string when it isn't JSON.
+    private static JsonNode? RawNode(string rawInput)
+    {
+        try
+        {
+            return JsonNode.Parse(rawInput);
+        }
+        catch (JsonException)
+        {
+            return JsonValue.Create(rawInput);
+        }
     }
 
     private static Settlement Rule(string decision, string reasonCode, long latencyMs, int chainPosition) => new()
