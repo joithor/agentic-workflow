@@ -12,7 +12,6 @@ internal static class PacketChecks
         ScopeChecks.Run(packet, tree, checks);
         ContentChecks.Run(packet, checks);
         checks.Unchecked(PacketRules.SizeBudget, "the size-class budgets aren't defined yet, so each task's size and budget are recorded but not compared");
-        checks.Unchecked(PacketRules.HoldoutStored, "where held-out examples are stored, away from the implementer, isn't defined yet");
         checks.Unchecked(PacketRules.WorkflowCoverage, "workflow coverage (addendum §17.7) needs the lens catalog and workflow generation, which don't exist yet");
         return checks.Results;
     }

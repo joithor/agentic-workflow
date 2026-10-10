@@ -53,12 +53,15 @@ internal static class ScopeChecks
     {
         var graph = new TaskGraph(packet.Tasks.Tasks);
         var tasks = packet.Tasks.Tasks.OrderBy(static t => t.Id.Value, StringComparer.Ordinal).ToList();
+        var declared = scopes.Values.SelectMany(static e => e).Select(static e => e.Glob?.NewPath).OfType<string>();
+        var paths = files.Concat(declared).Distinct(StringComparer.Ordinal).Order(StringComparer.Ordinal).ToList();
+        var writes = tasks.ToDictionary(static t => t, t => Written(Globs(scopes[t]), paths));
         for (var i = 0; i < tasks.Count; i++)
         {
             for (var j = i + 1; j < tasks.Count; j++)
             {
                 var (a, b) = (tasks[i], tasks[j]);
-                if (a.Id != b.Id && !graph.Ordered(a.Id, b.Id) && Shared(Globs(scopes[a]), Globs(scopes[b]), files) is { } path)
+                if (a.Id != b.Id && !graph.Ordered(a.Id, b.Id) && writes[a].FirstOrDefault(writes[b].Contains) is { } path)
                 {
                     yield return ($"tasks {a.Id.Value}, {b.Id.Value}",
                         $"tasks {a.Id.Value} and {b.Id.Value} can run at the same time and both write '{path}'",
@@ -71,13 +74,9 @@ internal static class ScopeChecks
     private static List<ScopeGlob> Globs(List<(string Entry, ScopeGlob? Glob)> entries) =>
         [.. entries.Select(static e => e.Glob).OfType<ScopeGlob>()];
 
-    private static string? Shared(List<ScopeGlob> a, List<ScopeGlob> b, IReadOnlySet<string> files)
-    {
-        var declared = a.Concat(b).Select(static g => g.NewPath).OfType<string>();
-        return files.Concat(declared)
-            .Order(StringComparer.Ordinal)
-            .FirstOrDefault(path => a.Exists(g => g.Matches(path)) && b.Exists(g => g.Matches(path)));
-    }
+    // The paths (sorted by ordinal) a task's scope matches: base files and every declared new path.
+    private static SortedSet<string> Written(List<ScopeGlob> globs, List<string> paths) =>
+        new(paths.Where(p => globs.Exists(g => g.Matches(p))), StringComparer.Ordinal);
 
     private static string Short(string sha) => sha.Length > 12 ? sha[..12] : sha;
 }

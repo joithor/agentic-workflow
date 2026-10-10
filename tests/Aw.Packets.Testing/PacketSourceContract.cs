@@ -60,6 +60,34 @@ public abstract class PacketSourceContract
         Expect.That(loaded.IsError && loaded.Error.Code == PacketsErrors.Malformed.Code, "a missing linked file is AW-PACKETS-003");
     }
 
+    /// <summary>A link that leaves the packet directory is AW-PACKETS-003, whatever reads the files.</summary>
+    /// <returns>A task.</returns>
+    [Fact]
+    public async Task A_link_leaving_the_directory_is_AW_PACKETS_003()
+    {
+        var files = PacketFiles.Of(A.Packet().Build());
+        files["packet.json"] = System.Text.Encoding.UTF8.GetBytes(
+            System.Text.Encoding.UTF8.GetString(files["packet.json"]).Replace("\"decisions.json\"", "\"../decisions.json\"", StringComparison.Ordinal));
+
+        var loaded = await Create(files).Load(Directory, CancellationToken.None);
+
+        Expect.That(loaded.IsError && loaded.Error.Code == PacketsErrors.Malformed.Code, "a link outside the directory is AW-PACKETS-003");
+    }
+
+    /// <summary>A file at a schemaVersion this build doesn't read is AW-PACKETS-004.</summary>
+    /// <returns>A task.</returns>
+    [Fact]
+    public async Task An_unsupported_schema_version_is_AW_PACKETS_004()
+    {
+        var files = PacketFiles.Of(A.Packet().Build());
+        files["tasks.json"] = System.Text.Encoding.UTF8.GetBytes(
+            System.Text.Encoding.UTF8.GetString(files["tasks.json"]).Replace("\"schemaVersion\": 1", "\"schemaVersion\": 2", StringComparison.Ordinal));
+
+        var loaded = await Create(files).Load(Directory, CancellationToken.None);
+
+        Expect.That(loaded.IsError && loaded.Error.Code == PacketsErrors.UnsupportedSchema.Code, "schemaVersion 2 is AW-PACKETS-004");
+    }
+
     /// <summary>The packet directory this contract loads.</summary>
     protected abstract string Directory { get; }
 

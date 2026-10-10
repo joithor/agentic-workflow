@@ -1,5 +1,6 @@
 using Aw.Kernel;
 using Aw.Packets.Core;
+using Aw.Packets.Core.Values;
 
 namespace Aw.Packets.Testing;
 
@@ -29,13 +30,13 @@ internal sealed class InMemoryRepoSnapshot : IRepoSnapshot
     }
 
     /// <inheritdoc />
-    public ValueTask<Result<IReadOnlySet<string>>> Files(string repoDirectory, string commitSha, CancellationToken cancellationToken)
+    public ValueTask<Result<IReadOnlySet<string>>> Files(string repoDirectory, CommitSha commitSha, CancellationToken cancellationToken)
     {
         var result = _unreadable.Contains(repoDirectory)
             ? PacketsErrors.RepoUnavailable.With($"{repoDirectory} is not readable.")
-            : _commits.TryGetValue(commitSha, out var files)
+            : _commits.TryGetValue(commitSha.Value, out var files)
                 ? Results.Success(files)
-                : PacketsErrors.CommitNotFound.With($"Commit {commitSha} is not in the repository.");
+                : PacketsErrors.CommitNotFound.With($"Commit {commitSha.Value} is not in the repository.");
         return ValueTask.FromResult(result);
     }
 }

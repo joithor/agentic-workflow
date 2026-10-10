@@ -17,53 +17,60 @@ internal sealed class TaskGraph
 
     internal IReadOnlyList<TaskId> Ids { get; }
 
-    /// <summary>Each cycle once, as ids from its smallest id back to it: 't1 -> t3 -> t2 -> t1'.</summary>
-    internal IReadOnlyList<IReadOnlyList<TaskId>> Cycles()
+    /// <summary>
+    /// Each strongly connected group once (Tarjan), in order of its smallest id, naming every task in it and one
+    /// cycle through it. Every task that is on any cycle is named, even where the group holds several cycles.
+    /// </summary>
+    internal IReadOnlyList<TaskCycle> Cycles()
     {
-        var found = new SortedDictionary<string, IReadOnlyList<TaskId>>(StringComparer.Ordinal);
-        var done = new HashSet<TaskId>();
-        foreach (var start in Ids)
+        var state = new Tarjan(_deps);
+        foreach (var id in Ids)
         {
-            Walk(start, [], done, found);
+            state.Visit(id);
         }
 
-        return [.. found.Values];
+        return [.. state.Groups
+            .Where(g => g.Count > 1 || _deps[g[0]].Contains(g[0]))
+            .Select(g => new TaskCycle([.. g.OrderBy(static id => id.Value, StringComparer.Ordinal)], PathThrough(g)))
+            .OrderBy(static c => c.Members[0].Value, StringComparer.Ordinal)];
     }
 
     /// <summary>True when a chain of dependencies orders <paramref name="a"/> and <paramref name="b"/> either way.</summary>
     internal bool Ordered(TaskId a, TaskId b) => Reach(a).Contains(b) || Reach(b).Contains(a);
 
-    private void Walk(TaskId node, List<TaskId> path, HashSet<TaskId> done, SortedDictionary<string, IReadOnlyList<TaskId>> found)
+    // One cycle through the group, from its smallest id: a depth-first walk inside the group, deps in declared order.
+    private List<TaskId> PathThrough(List<TaskId> group)
     {
-        var at = path.IndexOf(node);
-        if (at >= 0)
-        {
-            var cycle = Rotate(path.GetRange(at, path.Count - at));
-            _ = found.TryAdd(string.Join(" -> ", cycle.Select(static id => id.Value)), cycle);
-            return;
-        }
-
-        if (done.Contains(node) || !_deps.TryGetValue(node, out var deps))
-        {
-            return;
-        }
-
-        path.Add(node);
-        foreach (var dep in deps)
-        {
-            Walk(dep, path, done, found);
-        }
-
-        path.RemoveAt(path.Count - 1);
-        _ = done.Add(node);
+        var members = group.ToHashSet();
+        var start = group.MinBy(static id => id.Value, StringComparer.Ordinal);
+        var path = new List<TaskId> { start };
+        var seen = new HashSet<TaskId> { start };
+        return Extend(start, start, members, path, seen) ? path : [start, start];
     }
 
-    private static List<TaskId> Rotate(List<TaskId> cycle)
+    private bool Extend(TaskId node, TaskId start, HashSet<TaskId> members, List<TaskId> path, HashSet<TaskId> seen)
     {
-        var first = cycle.IndexOf(cycle.MinBy(static id => id.Value, StringComparer.Ordinal));
-        var rotated = cycle.Skip(first).Concat(cycle.Take(first)).ToList();
-        rotated.Add(rotated[0]);
-        return rotated;
+        foreach (var dep in _deps[node].Where(members.Contains))
+        {
+            if (dep == start)
+            {
+                path.Add(start);
+                return true;
+            }
+
+            if (seen.Add(dep))
+            {
+                path.Add(dep);
+                if (Extend(dep, start, members, path, seen))
+                {
+                    return true;
+                }
+
+                path.RemoveAt(path.Count - 1);
+            }
+        }
+
+        return false;
     }
 
     private HashSet<TaskId> Reach(TaskId from)

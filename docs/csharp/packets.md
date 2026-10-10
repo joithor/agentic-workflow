@@ -3,7 +3,7 @@
 `Aw.Packets` (`src/Packets`, tier 1, small shape: `Aw.Packets.Core` + `Aw.Packets.App`) checks and freezes handoff
 packets (factory addendum §17.4). Before the switch it is the standalone NativeAOT CLI `aw-packets`, which writes only
 under `${AW_STATE_DIR:-~/.agentic-workflow}/packets/` (spec §4c); nothing installs or schedules it. After the switch,
-sindri's C# host exposes the same use cases as `sindri packet …`.
+sindri's C# host exposes the same use cases as `sindri packets …` (spec §4c; addendum §17.4 says `sindri packet`, which S2 reconciles).
 
 It was generated with `/new-package` (the invocation is in the PR that added it) and grown slice by slice with
 `/new-slice`.
@@ -12,18 +12,18 @@ It was generated with `/new-package` (the invocation is in the PR that added it)
 
 | File | Record | Holds |
 |---|---|---|
-| `packet.json` | `PacketManifest` | `schemaVersion`, `id` (lower-case letters, digits, `-`, ≤ 64), `repo`, `baseSha` (a full commit sha), `status` (`draft`, `frozen`), `hash`, `links` |
+| `packet.json` | `PacketManifest` | `schemaVersion`, `id` (`PacketId`: lower-case letters, digits, `-`, ≤ 64), `repo` (`RepoSlug`: `owner/name`), `baseSha` (text, so a short sha is a PKT-BASE-001 failure rather than a malformed packet), `status` (`draft`, `frozen`), `hash` (`PacketHash`: `sha256:` + 64 hex, or null), `links` |
 | `links.decisions` | `DecisionLog` | `questions[]`: `id`, `text`, `asker`, and either `answer` or `deferred: { owner, buildMayAssume }`; `affects[]` |
 | `links.outOfScope` | `OutOfScope` | `items[]` |
-| `links.tasks` | `TaskPlan` | `workstreams[]` (`id`, `title`) and `tasks[]`: `id`, `workstream`, `title`, `deps[]`, `size` (`XS`…`XL`), `writeScope[]` (globs, or `new: <path>`), `readSeeds[]`, `acceptance[]` (`id`, `text`, `evidence[]`, `holdout`), `rules[]`, `budget` (`tokens`, `turns`, `wallMinutes`) |
+| `links.tasks` | `TaskPlan` | `workstreams[]` (`id`, `title`) and `tasks[]`: `id`, `workstream`, `title`, `deps[]`, `size` (`XS`…`XL`), `writeScope[]` (globs, or `new: <path>`), `readSeeds[]`, `acceptance[]` (`id`, `text` — none for a held-out example —, `evidence[]`, `holdout`), `rules[]`, `budget` (`tokens`, `turns`, `wallMinutes`) |
 | `links.design[]`, `links.plans[]`, `links.workflow` | — | Any format; part of the hash by content |
 
 Every JSON file carries `schemaVersion` (1). The JSON Schemas for editors are generated from the records and committed
 in `schemas/packets/` (`PacketSchemaTests` fails when a record changes and the schema isn't regenerated). Links are
-relative paths with `/` inside the packet directory; `..`, a root, a `:` or a symbolic link is refused.
+relative paths with `/` inside the packet directory; `..`, a root or a `:` is refused, and so is a symbolic link anywhere between the packet directory and the file (a linked file or a linked sub-directory). Every JSON file is UTF-8 without a byte order mark and has no duplicate keys (AW-PACKETS-003 otherwise).
 
 Write-scope globs are repo-relative: `*` and `?` stay inside one path segment, `**` crosses segments (`src/**`,
-`**/guide.md`). `new: src/c.cs` declares a file the task creates.
+`**/guide.md`); matching is linear in the path's length whatever the glob. `new: src/c.cs` declares a file the task creates.
 
 ## Checks (`aw-packets validate <packet-dir> [--repo <dir>] [--json]`)
 
@@ -35,15 +35,16 @@ file list comes from git.
 | `PKT-ID-001` | Task, workstream, question and example ids are unique |
 | `PKT-WS-001` | Every task is in a declared workstream |
 | `PKT-GRAPH-001` | Every dependency names a task in the packet |
-| `PKT-GRAPH-002` | The task graph is acyclic (each cycle reported once: `t1 -> t3 -> t2 -> t1`) |
+| `PKT-GRAPH-002` | The task graph is acyclic: each strongly connected group is reported once, naming every task in it and one cycle through it (`tasks t1, t2, t3 form a cycle: t1 -> t3 -> t2 -> t1`) |
 | `PKT-BASE-001` | `baseSha` is a full commit sha that exists in the repository |
 | `PKT-SCOPE-001` | Every write scope matches a file at the base commit, or is `new:` and doesn't exist there |
 | `PKT-SCOPE-002` | Two tasks no dependency chain orders don't write the same path (a base file both match, or a declared new path) |
+| `PKT-ACC-001` | Every acceptance example the implementer sees has text |
 | `PKT-EVID-001` | Every acceptance example names at least one kebab-case evidence kind (addendum §17.11) |
 | `PKT-DEC-001` | Every question is answered, or deferred with an owner and a `buildMayAssume` default |
 | `PKT-HOLD-001` | At least one acceptance example is held out |
 | `PKT-SIZE-001` | **Unchecked**: the size-class budgets aren't defined (open question below) |
-| `PKT-HOLD-002` | **Unchecked**: where held-out examples are stored, away from the implementer, isn't defined |
+| `PKT-HOLD-002` | No held-out example keeps its text in the packet: held-out text lives in sindri-private state, mounted only into evaluator Steps and never committed (addendum §17.19); the packet keeps its id and evidence kinds |
 | `PKT-FLOW-001` | **Unchecked**: workflow coverage (addendum §17.7) needs the lens catalog and workflow generation |
 
 The text output lists every rule (`pass`, `FAIL` with the subject, what was found and the fix, or `unchecked` with the
@@ -61,7 +62,7 @@ when sindri is ported, spec §4c).
 **The hash (`digestVersion` 1, spec §4c Digests):** SHA-256 over the canonical JSON of
 `{"digestVersion":1,"files":{<path>:<entry>}}`. A JSON packet file's entry is the file itself, except `packet.json`'s
 `status` and `hash`; any other linked file's entry is `sha256:<hex of its bytes>`. Canonical JSON sorts object keys by
-ordinal, drops whitespace, escapes only what JSON requires, and keeps numbers as written.
+ordinal, drops whitespace, keeps numbers as written, and writes strings as System.Text.Json's relaxed encoder does (the Kernel profile): `"` and `\` escaped, control characters in their short or `\u00XX` form, U+2028/U+2029 and characters outside the Basic Multilingual Plane as `\u` escapes (surrogate pairs), everything else as UTF-8. `CanonicalJsonTests` pins examples and one packet's hash; changing these bytes needs a new `digestVersion`.
 
 ## Exit codes and errors
 
@@ -80,14 +81,18 @@ Errors go to stderr as `aw-packets: <code> <message>` (with `--json`, the `Error
 | `IPacketSource` | `FileSystemPacketSource` | `InMemoryPacketSource`, `PacketSourceContract` |
 | `IRepoSnapshot` | `GitRepoSnapshot` (`git ls-tree -r -z`, 30 s limit per run) | `InMemoryRepoSnapshot`, `RepoSnapshotContract` |
 | `IFreezeLog` | `FileFreezeLog` (temp file, then move) | `InMemoryFreezeLog`, `FreezeLogContract` |
+
+Every `IPacketSource` adapter reads through `PacketReader` (in `Aw.Packets.Core`), so parsing, link safety and the
+errors are the same whatever supplies the bytes; `PacketSourceContract` checks them on each adapter.
 | `TimeProvider` (BCL) | `TimeProvider.System` | `FakeTimeProvider` |
 
 ## Open questions (the unchecked rules)
 
 - **Size classes (`PKT-SIZE-001`):** what are the budgets (tokens, turns, wall minutes) for `XS`, `S`, `M`, `L` and
   `XL`, and is a task over its class's budget a failure or a split signal?
-- **Holdout storage (`PKT-HOLD-002`):** where do held-out examples live so the implementer can't read them (a path
-  outside the packet directory, a separate store), and what does the check compare?
+- **Holdout store (`PKT-HOLD-002` checks the packet side today):** addendum §17.19 puts held-out examples in
+  sindri-private state with a canary per set. What is that store's path and format, and how does a packet name a set
+  (by example id, as now)? The store side and the canary are checked once the store exists.
 - **Workflow coverage (`PKT-FLOW-001`):** the §17.7 coverage checks need the lens catalog and workflow generation (F3).
 - **`packet.yaml` vs `packet.json`:** the addendum names `packet.yaml`; this build reads `packet.json` (typed,
   source-generated JSON under NativeAOT with no YAML library). Keep JSON, or add a YAML reader?

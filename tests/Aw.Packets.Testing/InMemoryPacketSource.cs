@@ -1,5 +1,4 @@
 using Aw.Kernel;
-using Aw.Packets.App.Infrastructure;
 using Aw.Packets.Core;
 using Aw.Packets.Core.Model;
 
@@ -24,7 +23,7 @@ internal sealed class InMemoryPacketSource : IPacketSource
     public ValueTask<Result<LoadedPacket>> Load(string packetDirectory, CancellationToken cancellationToken)
     {
         var files = _directories.GetValueOrDefault(packetDirectory) ?? [];
-        return ValueTask.FromResult(PacketLoading.Load(
+        return ValueTask.FromResult(PacketReader.Load(
             path => files.TryGetValue(path, out var bytes) ? new ReadOnlyMemory<byte>(bytes) : (ReadOnlyMemory<byte>?)null,
             PacketFiles.Json));
     }

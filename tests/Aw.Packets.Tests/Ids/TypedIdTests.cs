@@ -3,6 +3,7 @@ using System.Text.Json;
 using Aw.Kernel;
 using Aw.Kernel.Json;
 using Aw.Packets.Core.Ids;
+using Aw.Packets.Core.Values;
 
 namespace Aw.Packets.Tests.Ids;
 
@@ -68,5 +69,33 @@ public sealed class TypedIdTests
     {
         Assert.True(PacketId.TryParse(new string('a', 64), provider: null, out _));
         Assert.False(PacketId.TryParse(new string('a', 65), provider: null, out _));
+    }
+
+    [Theory, Trait("Lane", "unit")]
+    [InlineData("owner/name", true)]
+    [InlineData("my-org/my.repo_2", true)]
+    [InlineData("name", false)]
+    [InlineData("a/b/c", false)]
+    [InlineData("owner/ name", false)]
+    public void A_repo_slug_is_owner_and_name(string value, bool valid) =>
+        Assert.Equal(valid, RepoSlug.TryParse(value, provider: null, out _));
+
+    [Theory, Trait("Lane", "unit")]
+    [InlineData(40, 'a', true)]
+    [InlineData(64, '0', true)]
+    [InlineData(12, 'a', false)]
+    [InlineData(40, 'A', false)]
+    [InlineData(41, 'a', false)]
+    public void A_commit_sha_is_full_lower_case_hex(int length, char digit, bool valid) =>
+        Assert.Equal(valid, CommitSha.TryParse(new string(digit, length), provider: null, out _));
+
+    [Fact, Trait("Lane", "unit")]
+    public void A_packet_hash_is_sha256_hex_and_exposes_its_digits()
+    {
+        var hex = new string('b', 64);
+
+        Assert.Equal(hex, PacketHash.From("sha256:" + hex).Hex);
+        Assert.False(PacketHash.TryParse("sha256:0", provider: null, out _));
+        Assert.False(PacketHash.TryParse("md5:" + hex, provider: null, out _));
     }
 }

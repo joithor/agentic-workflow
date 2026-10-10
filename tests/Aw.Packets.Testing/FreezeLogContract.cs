@@ -1,6 +1,7 @@
 using Aw.Packets.Core;
 using Aw.Packets.Core.Ids;
 using Aw.Packets.Core.Model;
+using Aw.Packets.Core.Values;
 using Xunit;
 
 namespace Aw.Packets.Testing;
@@ -21,9 +22,9 @@ public abstract class FreezeLogContract
     {
         SchemaVersion = 1,
         Packet = PacketId.From("demo-packet"),
-        Hash = hash,
+        Hash = PacketHash.From(hash),
         DigestVersion = 1,
-        BaseSha = PacketBuilder.BaseSha,
+        BaseSha = CommitSha.From(PacketBuilder.BaseSha),
         FrozenAt = new DateTimeOffset(2026, 10, 10, 12, 0, 0, TimeSpan.Zero),
         Files = ["packet.json", "tasks.json"],
     };
@@ -69,19 +70,6 @@ public abstract class FreezeLogContract
         var second = await log.Record(ARecord(HashB), CancellationToken.None);
 
         Expect.That(second.IsSuccess && !second.Value.AlreadyFrozen && ReadBack(log).Count == 2, "a second hash is a second record");
-    }
-
-    /// <summary>A hash that isn't sha256 is refused with AW-PACKETS-001 and nothing is written.</summary>
-    /// <returns>A task.</returns>
-    [Fact]
-    public async Task A_malformed_hash_is_refused()
-    {
-        var log = Create();
-
-        var result = await log.Record(ARecord("md5:abc"), CancellationToken.None);
-
-        Expect.That(result.IsError && result.Error.Code == PacketsErrors.Invalid.Code && ReadBack(log).Count == 0,
-            "a hash that isn't sha256 is AW-PACKETS-001 and nothing is stored");
     }
 
     /// <summary>A log that can't write fails with AW-PACKETS-007.</summary>

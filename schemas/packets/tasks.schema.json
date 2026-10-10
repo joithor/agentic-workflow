@@ -80,7 +80,10 @@
                   "pattern": "\\S"
                 },
                 "text": {
-                  "type": "string"
+                  "type": [
+                    "string",
+                    "null"
+                  ]
                 },
                 "evidence": {
                   "type": "array",
@@ -94,7 +97,6 @@
               },
               "required": [
                 "id",
-                "text",
                 "evidence"
               ]
             }

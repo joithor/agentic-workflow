@@ -4,6 +4,7 @@ using System.Globalization;
 using System.Text;
 using Aw.Kernel;
 using Aw.Packets.Core;
+using Aw.Packets.Core.Values;
 
 namespace Aw.Packets.App.Infrastructure;
 
@@ -11,7 +12,7 @@ namespace Aw.Packets.App.Infrastructure;
 /// <param name="timeout">How long one git run may take.</param>
 internal sealed class GitRepoSnapshot(TimeSpan timeout) : IRepoSnapshot
 {
-    public async ValueTask<Result<IReadOnlySet<string>>> Files(string repoDirectory, string commitSha, CancellationToken cancellationToken)
+    public async ValueTask<Result<IReadOnlySet<string>>> Files(string repoDirectory, CommitSha commitSha, CancellationToken cancellationToken)
     {
         var repo = await Git(repoDirectory, ["rev-parse", "--git-dir"], cancellationToken).ConfigureAwait(false);
         if (repo.IsError || repo.Value.ExitCode != 0)
@@ -19,13 +20,13 @@ internal sealed class GitRepoSnapshot(TimeSpan timeout) : IRepoSnapshot
             return repo.IsError ? repo.Error : PacketsErrors.RepoUnavailable.With($"{repoDirectory} is not in a git repository: {repo.Value.Error}");
         }
 
-        var commit = await Git(repoDirectory, ["rev-parse", "--verify", "--quiet", $"{commitSha}^{{commit}}"], cancellationToken).ConfigureAwait(false);
+        var commit = await Git(repoDirectory, ["rev-parse", "--verify", "--quiet", $"{commitSha.Value}^{{commit}}"], cancellationToken).ConfigureAwait(false);
         if (commit.IsError || commit.Value.ExitCode != 0)
         {
-            return commit.IsError ? commit.Error : PacketsErrors.CommitNotFound.With($"Commit {commitSha} is not in the repository at {repoDirectory}.");
+            return commit.IsError ? commit.Error : PacketsErrors.CommitNotFound.With($"Commit {commitSha.Value} is not in the repository at {repoDirectory}.");
         }
 
-        var tree = await Git(repoDirectory, ["ls-tree", "-r", "-z", "--name-only", "--full-tree", commitSha], cancellationToken).ConfigureAwait(false);
+        var tree = await Git(repoDirectory, ["ls-tree", "-r", "-z", "--name-only", "--full-tree", commitSha.Value], cancellationToken).ConfigureAwait(false);
         if (tree.IsError || tree.Value.ExitCode != 0)
         {
             return tree.IsError ? tree.Error : PacketsErrors.RepoUnavailable.With($"git ls-tree failed: {tree.Value.Error}");

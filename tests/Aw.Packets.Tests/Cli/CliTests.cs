@@ -118,7 +118,7 @@ public sealed class CliTests : IDisposable
         var (exit, output, _) = _work.Run("freeze", packet, "--repo", _work.Repo);
 
         Assert.Equal(1, exit);
-        Assert.StartsWith("aw-packets freeze: packet demo-packet — not frozen: FAIL (1 failed, 3 unchecked)", output, StringComparison.Ordinal);
+        Assert.StartsWith("aw-packets freeze: packet demo-packet — not frozen: FAIL (1 failed, 2 unchecked)", output, StringComparison.Ordinal);
         Assert.Empty(_work.StateFiles());
     }
 }

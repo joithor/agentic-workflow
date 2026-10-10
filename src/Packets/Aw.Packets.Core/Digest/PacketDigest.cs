@@ -5,6 +5,7 @@ using System.Text.Json;
 using System.Text.Json.Nodes;
 using Aw.Kernel;
 using Aw.Packets.Core.Model;
+using Aw.Packets.Core.Values;
 
 namespace Aw.Packets.Core.Digest;
 
@@ -12,8 +13,11 @@ namespace Aw.Packets.Core.Digest;
 /// The packet's canonical hash (spec §4c Digests, version 1): SHA-256 over the canonical JSON of the object
 /// '{"digestVersion":1,"files":{&lt;path&gt;: &lt;entry&gt;}}'. A JSON packet file's entry is the file itself (packet.json
 /// without its 'status' and 'hash', which change when a packet is frozen); any other linked file's entry is
-/// 'sha256:&lt;hex of its bytes&gt;'. Canonical JSON: object keys sorted by ordinal, no whitespace, the Kernel profile's
-/// relaxed escaping, numbers as they are written in the file.
+/// 'sha256:&lt;hex of its bytes&gt;'. Canonical JSON: object keys sorted by ordinal, no whitespace, numbers as written in
+/// the file, and strings as System.Text.Json writes them with the Kernel profile's encoder (UnsafeRelaxedJsonEscaping):
+/// '"' and '\' escaped, control characters in their short or \u00XX form, U+2028 and U+2029 as \u escapes, and
+/// characters outside the Basic Multilingual Plane as \uXXXX surrogate pairs; everything else as UTF-8.
+/// CanonicalJsonTests pins examples and one packet's hash; changing these bytes needs a new <see cref="Version"/>.
 /// </summary>
 public static class PacketDigest
 {
@@ -21,12 +25,13 @@ public static class PacketDigest
     public const int Version = 1;
 
     private const string ManifestFile = "packet.json";
+    private static readonly JsonDocumentOptions _strict = new() { AllowDuplicateProperties = false };
     private static readonly JsonWriterOptions _writer = new() { Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping, Indented = false };
 
     /// <summary>Computes the hash of a loaded packet.</summary>
     /// <param name="loaded">The packet and its files.</param>
-    /// <returns>'sha256:&lt;64 hex digits&gt;', or AW-PACKETS-003 when a JSON file can't be put in canonical form (a duplicate key).</returns>
-    public static Result<string> Compute(LoadedPacket loaded)
+    /// <returns>The hash, or AW-PACKETS-003 when a JSON file can't be put in canonical form (a duplicate key).</returns>
+    public static Result<PacketHash> Compute(LoadedPacket loaded)
     {
         ArgumentNullException.ThrowIfNull(loaded);
         var links = loaded.Packet.Manifest.Links;
@@ -44,7 +49,7 @@ public static class PacketDigest
         }
 
         var document = new JsonObject { ["digestVersion"] = Version, ["files"] = files };
-        return Hex(Canonical(document));
+        return PacketHash.From(Hex(Canonical(document)));
     }
 
     /// <summary>The canonical bytes of a JSON node: keys sorted by ordinal, no whitespace.</summary>
@@ -66,7 +71,7 @@ public static class PacketDigest
     {
         try
         {
-            var node = JsonNode.Parse(bytes.Span);
+            var node = JsonNode.Parse(bytes.Span, nodeOptions: null, _strict);
             if (path == ManifestFile && node is JsonObject manifest)
             {
                 _ = manifest.Remove("status");

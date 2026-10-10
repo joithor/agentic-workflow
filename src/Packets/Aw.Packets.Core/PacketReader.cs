@@ -2,25 +2,35 @@ using System.Globalization;
 using System.Text.Json;
 using Aw.Kernel;
 using Aw.Kernel.Json;
-using Aw.Packets.Core;
 using Aw.Packets.Core.Model;
 
-namespace Aw.Packets.App.Infrastructure;
+namespace Aw.Packets.Core;
 
 /// <summary>
-/// Loads a packet through a file reader, so the disk adapter and the in-memory fake share one parser: packet.json
-/// first, then every file it links (relative, inside the packet directory), each JSON file at schemaVersion 1.
+/// Reads a packet through a file reader: packet.json first, then every file it links (relative, inside the packet
+/// directory), each JSON file at schemaVersion 1, with no duplicate keys and no byte order mark. Pure: every
+/// IPacketSource adapter supplies the reader and gets the same parsing, link safety and errors.
 /// </summary>
-internal static class PacketLoading
+public static class PacketReader
 {
-    internal const string ManifestFile = "packet.json";
-    internal const int SchemaVersion = 1;
+    /// <summary>The manifest's file name.</summary>
+    public const string ManifestFile = "packet.json";
 
-    /// <summary>Reads one file by its path relative to the packet directory: the bytes, null when it is missing,
-    /// or AW-PACKETS-008 when it exists but can't be read.</summary>
-    internal delegate Result<ReadOnlyMemory<byte>?> FileReader(string relativePath);
+    /// <summary>The schemaVersion this build reads.</summary>
+    public const int SchemaVersion = 1;
 
-    internal static Result<LoadedPacket> Load(FileReader read, JsonSerializerOptions json)
+    private static readonly JsonDocumentOptions _strict = new() { AllowDuplicateProperties = false };
+
+    /// <summary>Reads one file by its path relative to the packet directory.</summary>
+    /// <param name="relativePath">The path, with '/' separators.</param>
+    /// <returns>The bytes, null when the file is missing, or an error (AW-PACKETS-003 or -008) when it can't be read.</returns>
+    public delegate Result<ReadOnlyMemory<byte>?> FileReader(string relativePath);
+
+    /// <summary>Reads and parses a packet.</summary>
+    /// <param name="read">Reads one file.</param>
+    /// <param name="json">The packet file options (AwJson over the package's JSON context).</param>
+    /// <returns>The packet, or AW-PACKETS-002, -003, -004 or the reader's error.</returns>
+    public static Result<LoadedPacket> Load(FileReader read, JsonSerializerOptions json)
     {
         var manifestBytes = read(ManifestFile);
         if (manifestBytes.IsError)
@@ -88,6 +98,12 @@ internal static class PacketLoading
 
     private static Result<T> Parse<T>(string path, ReadOnlyMemory<byte> bytes, JsonSerializerOptions json, Func<T, int> version)
     {
+        var strict = Strict(path, bytes.Span);
+        if (strict.IsError)
+        {
+            return strict.Error;
+        }
+
         var parsed = AwJson.Deserialize<T>(bytes.Span, json);
         if (parsed.IsError)
         {
@@ -98,5 +114,23 @@ internal static class PacketLoading
         return declared == SchemaVersion
             ? parsed
             : PacketsErrors.UnsupportedSchema.With(string.Create(CultureInfo.InvariantCulture, $"{path}: schemaVersion {declared}; this build reads {SchemaVersion}."));
+    }
+
+    private static Result<Unit> Strict(string path, ReadOnlySpan<byte> bytes)
+    {
+        if (bytes.StartsWith((ReadOnlySpan<byte>)[0xEF, 0xBB, 0xBF]))
+        {
+            return PacketsErrors.Malformed.With($"{path} starts with a UTF-8 byte order mark; save it as UTF-8 without one.");
+        }
+
+        try
+        {
+            using var document = JsonDocument.Parse(bytes.ToArray(), _strict);   // throws on a duplicate key at any depth
+            return Unit.Value;
+        }
+        catch (JsonException ex)
+        {
+            return PacketsErrors.Malformed.With($"{path}: {ex.Message}");
+        }
     }
 }

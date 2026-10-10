@@ -44,10 +44,10 @@ public sealed class FreezePacketTests
         var frozen = result.Value;
         Assert.True(frozen.Frozen);
         Assert.False(frozen.AlreadyFrozen);
-        Assert.Matches("^sha256:[0-9a-f]{64}$", frozen.Hash!);
-        Assert.Equal($"demo-packet/frozen/{frozen.Hash![7..]}.json", frozen.Location);
+        var hash = Assert.NotNull(frozen.Hash);
+        Assert.Equal($"demo-packet/frozen/{hash.Hex}.json", frozen.Location);
         var record = Assert.Single(log.Records).Value;
-        Assert.Equal((frozen.Hash, _now, PacketBuilder.BaseSha, 1), (record.Hash, record.FrozenAt, record.BaseSha, record.DigestVersion));
+        Assert.Equal((hash, _now, PacketBuilder.BaseSha, 1), (record.Hash, record.FrozenAt, record.BaseSha.Value, record.DigestVersion));
         Assert.Equal(["decisions.json", "design/design.md", "out-of-scope.json", "packet.json", "tasks.json"], record.Files);
     }
 
@@ -74,13 +74,13 @@ public sealed class FreezePacketTests
             ? Encoding.UTF8.GetBytes(Encoding.UTF8.GetString(f.Value).Replace("\n", "", StringComparison.Ordinal).Replace("  ", "", StringComparison.Ordinal))
             : f.Value, StringComparer.Ordinal);
         var reordered = Edit(files, "out-of-scope.json", "\"schemaVersion\": 1,\n  \"items\": [\n    \"anything else\"\n  ]", "\"items\": [\"anything else\"], \"schemaVersion\": 1");
-        var restatused = Edit(Edit(files, "packet.json", "\"draft\"", "\"frozen\""), "packet.json", "\"hash\": null", "\"hash\": \"sha256:0\"");
+        var restatused = Edit(Edit(files, "packet.json", "\"draft\"", "\"frozen\""), "packet.json", "\"hash\": null", "\"hash\": \"sha256:" + new string('a', 64) + "\"");
 
         Assert.Equal(hash, (await Freeze(compact)).Hash);
         Assert.Equal(hash, (await Freeze(reordered)).Hash);
         Assert.Equal(hash, (await Freeze(restatused)).Hash);
-        Assert.NotEqual(hash, (await Freeze(Edit(files, "out-of-scope.json", "anything else", "anything other"))).Hash, StringComparer.Ordinal);
-        Assert.NotEqual(hash, (await Freeze(Edit(files, "design/design.md", "#", "##"))).Hash, StringComparer.Ordinal);
+        Assert.NotEqual(hash, (await Freeze(Edit(files, "out-of-scope.json", "anything else", "anything other"))).Hash);
+        Assert.NotEqual(hash, (await Freeze(Edit(files, "design/design.md", "#", "##"))).Hash);
     }
 
     [Fact, Trait("Lane", "unit")]

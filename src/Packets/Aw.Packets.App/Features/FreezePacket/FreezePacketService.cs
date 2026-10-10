@@ -3,6 +3,7 @@ using Aw.Kernel.Services;
 using Aw.Packets.Core;
 using Aw.Packets.Core.Digest;
 using Aw.Packets.Core.Model;
+using Aw.Packets.Core.Values;
 
 namespace Aw.Packets.App.Features.FreezePacket;
 
@@ -43,13 +44,13 @@ internal sealed class FreezePacketService(PacketInspector inspector, IFreezeLog 
         return receipt.Map(r => notFrozen with { Frozen = true, Hash = hash.Value, Location = r.Location, AlreadyFrozen = r.AlreadyFrozen });
     }
 
-    private FreezeRecord Record(LoadedPacket loaded, string hash) => new()
+    private FreezeRecord Record(LoadedPacket loaded, PacketHash hash) => new()
     {
         SchemaVersion = 1,
         Packet = loaded.Packet.Manifest.Id,
         Hash = hash,
         DigestVersion = PacketDigest.Version,
-        BaseSha = loaded.Packet.Manifest.BaseSha,
+        BaseSha = CommitSha.From(loaded.Packet.Manifest.BaseSha),   // the checks passed, so PKT-BASE-001 accepted it
         FrozenAt = clock.GetUtcNow(),
         Files = [.. loaded.Files.Keys.Order(StringComparer.Ordinal)],
     };

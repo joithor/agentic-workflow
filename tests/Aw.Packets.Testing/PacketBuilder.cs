@@ -1,5 +1,6 @@
 using Aw.Packets.Core.Ids;
 using Aw.Packets.Core.Model;
+using Aw.Packets.Core.Values;
 
 namespace Aw.Packets.Testing;
 
@@ -70,7 +71,7 @@ internal sealed class PacketBuilder
         {
             SchemaVersion = 1,
             Id = PacketId.From(_id),
-            Repo = "example/repo",
+            Repo = RepoSlug.From("example/repo"),
             BaseSha = _baseSha,
             Status = PacketStatus.Draft,
             Links = new PacketLinks

@@ -1,15 +1,16 @@
-aw-packets validate: packet demo-packet — FAIL (1 failed, 3 unchecked)
+aw-packets validate: packet demo-packet — FAIL (1 failed, 2 unchecked)
 pass      PKT-ID-001 packet: every id is unique
 pass      PKT-WS-001 packet: every task is in a declared workstream
 pass      PKT-GRAPH-001 packet: every dependency names a task
-FAIL      PKT-GRAPH-002 task t1: tasks form a cycle: t1 -> t1
-  fix: Remove one dependency in the cycle, or merge the tasks.
+FAIL      PKT-GRAPH-002 task t1: task t1 depends on itself
+  fix: Remove dependencies until no task in the group waits on itself, or merge the tasks.
 pass      PKT-BASE-001 packet: base commit <sha> is in the repository
 pass      PKT-SCOPE-001 packet: every write scope exists at the base commit or is declared new
 pass      PKT-SCOPE-002 packet: no two unordered tasks share a write scope
+pass      PKT-ACC-001 packet: every visible acceptance example has text
 pass      PKT-EVID-001 packet: every acceptance example maps to an evidence kind
 pass      PKT-DEC-001 packet: every question is answered or deferred with an owner and a default
 pass      PKT-HOLD-001 packet: the packet has a held-out share
+pass      PKT-HOLD-002 packet: no held-out example keeps its text in the packet
 unchecked PKT-SIZE-001 packet: the size-class budgets aren't defined yet, so each task's size and budget are recorded but not compared
-unchecked PKT-HOLD-002 packet: where held-out examples are stored, away from the implementer, isn't defined yet
 unchecked PKT-FLOW-001 packet: workflow coverage (addendum §17.7) needs the lens catalog and workflow generation, which don't exist yet

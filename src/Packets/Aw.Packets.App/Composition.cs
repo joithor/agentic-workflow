@@ -10,9 +10,13 @@ namespace Aw.Packets.App;
 internal static class Composition
 {
     internal static IServiceCollection Compose(IServiceCollection services, Func<string, string?> environment, TimeProvider clock)
-        => services
+    {
+        var json = AwJson.CreateOptions(PacketsJsonContext.Default);   // the one Kernel JSON profile: output and state files
+        return services
             .AddSingleton(clock)
+            .AddSingleton(json)
             .AddPacketsCore()
             .AddPacketsFeatures()
-            .AddPacketsInfrastructure(environment, AwJson.CreateOptions(PacketsJsonContext.Default));
+            .AddPacketsInfrastructure(environment, json);
+    }
 }

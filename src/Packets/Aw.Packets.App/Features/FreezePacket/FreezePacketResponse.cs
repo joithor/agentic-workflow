@@ -1,5 +1,6 @@
 using Aw.Packets.Core.Checks;
 using Aw.Packets.Core.Ids;
+using Aw.Packets.Core.Values;
 
 namespace Aw.Packets.App.Features.FreezePacket;
 
@@ -16,7 +17,7 @@ internal sealed record FreezePacketResponse
     public required bool Frozen { get; init; }
 
     /// <summary>The canonical hash; null when the checks failed.</summary>
-    public string? Hash { get; init; }
+    public PacketHash? Hash { get; init; }
 
     /// <summary>The canonical form's version.</summary>
     public required int DigestVersion { get; init; }

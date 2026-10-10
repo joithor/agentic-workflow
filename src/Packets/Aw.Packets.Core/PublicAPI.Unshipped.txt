@@ -76,7 +76,7 @@ Aw.Packets.Core.Inspection.Passed.get -> bool
 Aw.Packets.Core.IPacketSource
 Aw.Packets.Core.IPacketSource.Load(string! packetDirectory, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Packets.Core.Model.LoadedPacket!>!>
 Aw.Packets.Core.IRepoSnapshot
-Aw.Packets.Core.IRepoSnapshot.Files(string! repoDirectory, string! commitSha, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<System.Collections.Generic.IReadOnlySet<string!>!>!>
+Aw.Packets.Core.IRepoSnapshot.Files(string! repoDirectory, Aw.Packets.Core.Values.CommitSha commitSha, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<System.Collections.Generic.IReadOnlySet<string!>!>!>
 Aw.Packets.Core.Model.AcceptanceExample
 Aw.Packets.Core.Model.AcceptanceExample.<Clone>$() -> Aw.Packets.Core.Model.AcceptanceExample!
 Aw.Packets.Core.Model.AcceptanceExample.AcceptanceExample() -> void
@@ -118,7 +118,7 @@ Aw.Packets.Core.Model.FreezeReceipt.Location.get -> string!
 Aw.Packets.Core.Model.FreezeReceipt.Location.init -> void
 Aw.Packets.Core.Model.FreezeRecord
 Aw.Packets.Core.Model.FreezeRecord.<Clone>$() -> Aw.Packets.Core.Model.FreezeRecord!
-Aw.Packets.Core.Model.FreezeRecord.BaseSha.get -> string!
+Aw.Packets.Core.Model.FreezeRecord.BaseSha.get -> Aw.Packets.Core.Values.CommitSha
 Aw.Packets.Core.Model.FreezeRecord.BaseSha.init -> void
 Aw.Packets.Core.Model.FreezeRecord.DigestVersion.get -> int
 Aw.Packets.Core.Model.FreezeRecord.DigestVersion.init -> void
@@ -128,7 +128,7 @@ Aw.Packets.Core.Model.FreezeRecord.Files.init -> void
 Aw.Packets.Core.Model.FreezeRecord.FreezeRecord() -> void
 Aw.Packets.Core.Model.FreezeRecord.FrozenAt.get -> System.DateTimeOffset
 Aw.Packets.Core.Model.FreezeRecord.FrozenAt.init -> void
-Aw.Packets.Core.Model.FreezeRecord.Hash.get -> string!
+Aw.Packets.Core.Model.FreezeRecord.Hash.get -> Aw.Packets.Core.Values.PacketHash
 Aw.Packets.Core.Model.FreezeRecord.Hash.init -> void
 Aw.Packets.Core.Model.FreezeRecord.Packet.get -> Aw.Packets.Core.Ids.PacketId
 Aw.Packets.Core.Model.FreezeRecord.Packet.init -> void
@@ -186,14 +186,14 @@ Aw.Packets.Core.Model.PacketManifest.<Clone>$() -> Aw.Packets.Core.Model.PacketM
 Aw.Packets.Core.Model.PacketManifest.BaseSha.get -> string!
 Aw.Packets.Core.Model.PacketManifest.BaseSha.init -> void
 Aw.Packets.Core.Model.PacketManifest.Equals(Aw.Packets.Core.Model.PacketManifest? other) -> bool
-Aw.Packets.Core.Model.PacketManifest.Hash.get -> string?
+Aw.Packets.Core.Model.PacketManifest.Hash.get -> Aw.Packets.Core.Values.PacketHash?
 Aw.Packets.Core.Model.PacketManifest.Hash.init -> void
 Aw.Packets.Core.Model.PacketManifest.Id.get -> Aw.Packets.Core.Ids.PacketId
 Aw.Packets.Core.Model.PacketManifest.Id.init -> void
 Aw.Packets.Core.Model.PacketManifest.Links.get -> Aw.Packets.Core.Model.PacketLinks!
 Aw.Packets.Core.Model.PacketManifest.Links.init -> void
 Aw.Packets.Core.Model.PacketManifest.PacketManifest() -> void
-Aw.Packets.Core.Model.PacketManifest.Repo.get -> string!
+Aw.Packets.Core.Model.PacketManifest.Repo.get -> Aw.Packets.Core.Values.RepoSlug
 Aw.Packets.Core.Model.PacketManifest.Repo.init -> void
 Aw.Packets.Core.Model.PacketManifest.SchemaVersion.get -> int
 Aw.Packets.Core.Model.PacketManifest.SchemaVersion.init -> void
@@ -282,8 +282,36 @@ Aw.Packets.Core.Model.Workstream.Workstream(Aw.Packets.Core.Ids.WorkstreamId Id,
 Aw.Packets.Core.PacketInspector
 Aw.Packets.Core.PacketInspector.Inspect(string! packetDirectory, string! repoDirectory, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Packets.Core.Inspection!>!>
 Aw.Packets.Core.PacketInspector.PacketInspector(Aw.Packets.Core.IPacketSource! source, Aw.Packets.Core.IRepoSnapshot! repo) -> void
+Aw.Packets.Core.PacketReader
+Aw.Packets.Core.PacketReader.FileReader
 Aw.Packets.Core.PacketsCoreServiceCollectionExtensions
 Aw.Packets.Core.PacketsErrors
+Aw.Packets.Core.Values.CommitSha
+Aw.Packets.Core.Values.CommitSha.CommitSha() -> void
+Aw.Packets.Core.Values.CommitSha.Equals(Aw.Packets.Core.Values.CommitSha other, System.Collections.Generic.IEqualityComparer<Aw.Packets.Core.Values.CommitSha>! comparer) -> bool
+Aw.Packets.Core.Values.CommitSha.Equals(Aw.Packets.Core.Values.CommitSha other) -> bool
+Aw.Packets.Core.Values.CommitSha.GetTypeCode() -> System.TypeCode
+Aw.Packets.Core.Values.CommitSha.IsInitialized() -> bool
+Aw.Packets.Core.Values.CommitSha.ToString(System.IFormatProvider? provider) -> string!
+Aw.Packets.Core.Values.CommitSha.Value.get -> string!
+Aw.Packets.Core.Values.PacketHash
+Aw.Packets.Core.Values.PacketHash.Equals(Aw.Packets.Core.Values.PacketHash other, System.Collections.Generic.IEqualityComparer<Aw.Packets.Core.Values.PacketHash>! comparer) -> bool
+Aw.Packets.Core.Values.PacketHash.Equals(Aw.Packets.Core.Values.PacketHash other) -> bool
+Aw.Packets.Core.Values.PacketHash.GetTypeCode() -> System.TypeCode
+Aw.Packets.Core.Values.PacketHash.Hex.get -> string!
+Aw.Packets.Core.Values.PacketHash.IsInitialized() -> bool
+Aw.Packets.Core.Values.PacketHash.PacketHash() -> void
+Aw.Packets.Core.Values.PacketHash.ToString(System.IFormatProvider? provider) -> string!
+Aw.Packets.Core.Values.PacketHash.Value.get -> string!
+Aw.Packets.Core.Values.RepoSlug
+Aw.Packets.Core.Values.RepoSlug.Equals(Aw.Packets.Core.Values.RepoSlug other, System.Collections.Generic.IEqualityComparer<Aw.Packets.Core.Values.RepoSlug>! comparer) -> bool
+Aw.Packets.Core.Values.RepoSlug.Equals(Aw.Packets.Core.Values.RepoSlug other) -> bool
+Aw.Packets.Core.Values.RepoSlug.GetTypeCode() -> System.TypeCode
+Aw.Packets.Core.Values.RepoSlug.IsInitialized() -> bool
+Aw.Packets.Core.Values.RepoSlug.RepoSlug() -> void
+Aw.Packets.Core.Values.RepoSlug.ToString(System.IFormatProvider? provider) -> string!
+Aw.Packets.Core.Values.RepoSlug.Value.get -> string!
+const Aw.Packets.Core.Checks.PacketRules.AcceptanceText = "PKT-ACC-001" -> string!
 const Aw.Packets.Core.Checks.PacketRules.Acyclic = "PKT-GRAPH-002" -> string!
 const Aw.Packets.Core.Checks.PacketRules.BaseCommit = "PKT-BASE-001" -> string!
 const Aw.Packets.Core.Checks.PacketRules.Decisions = "PKT-DEC-001" -> string!
@@ -298,6 +326,8 @@ const Aw.Packets.Core.Checks.PacketRules.TaskInWorkstream = "PKT-WS-001" -> stri
 const Aw.Packets.Core.Checks.PacketRules.UniqueIds = "PKT-ID-001" -> string!
 const Aw.Packets.Core.Checks.PacketRules.WorkflowCoverage = "PKT-FLOW-001" -> string!
 const Aw.Packets.Core.Digest.PacketDigest.Version = 1 -> int
+const Aw.Packets.Core.PacketReader.ManifestFile = "packet.json" -> string!
+const Aw.Packets.Core.PacketReader.SchemaVersion = 1 -> int
 override Aw.Packets.Core.Checks.CheckResult.Equals(object? obj) -> bool
 override Aw.Packets.Core.Checks.CheckResult.GetHashCode() -> int
 override Aw.Packets.Core.Checks.CheckResult.ToString() -> string!
@@ -364,11 +394,20 @@ override Aw.Packets.Core.Model.TaskPlan.ToString() -> string!
 override Aw.Packets.Core.Model.Workstream.Equals(object? obj) -> bool
 override Aw.Packets.Core.Model.Workstream.GetHashCode() -> int
 override Aw.Packets.Core.Model.Workstream.ToString() -> string!
+override Aw.Packets.Core.Values.CommitSha.Equals(object? obj) -> bool
+override Aw.Packets.Core.Values.CommitSha.GetHashCode() -> int
+override Aw.Packets.Core.Values.CommitSha.ToString() -> string!
+override Aw.Packets.Core.Values.PacketHash.Equals(object? obj) -> bool
+override Aw.Packets.Core.Values.PacketHash.GetHashCode() -> int
+override Aw.Packets.Core.Values.PacketHash.ToString() -> string!
+override Aw.Packets.Core.Values.RepoSlug.Equals(object? obj) -> bool
+override Aw.Packets.Core.Values.RepoSlug.GetHashCode() -> int
+override Aw.Packets.Core.Values.RepoSlug.ToString() -> string!
 static Aw.Packets.Core.Checks.CheckResult.operator !=(Aw.Packets.Core.Checks.CheckResult? left, Aw.Packets.Core.Checks.CheckResult? right) -> bool
 static Aw.Packets.Core.Checks.CheckResult.operator ==(Aw.Packets.Core.Checks.CheckResult? left, Aw.Packets.Core.Checks.CheckResult? right) -> bool
 static Aw.Packets.Core.Digest.PacketDigest.Canonical(System.Text.Json.Nodes.JsonNode! node) -> byte[]!
-static Aw.Packets.Core.Digest.PacketDigest.Compute(Aw.Packets.Core.Model.LoadedPacket! loaded) -> Aw.Kernel.Result<string!>!
-static Aw.Packets.Core.FreezeLocation.Of(Aw.Packets.Core.Model.FreezeRecord! record) -> Aw.Kernel.Result<string!>!
+static Aw.Packets.Core.Digest.PacketDigest.Compute(Aw.Packets.Core.Model.LoadedPacket! loaded) -> Aw.Kernel.Result<Aw.Packets.Core.Values.PacketHash>!
+static Aw.Packets.Core.FreezeLocation.Of(Aw.Packets.Core.Model.FreezeRecord! record) -> string!
 static Aw.Packets.Core.Ids.ExampleId.From(string! value) -> Aw.Packets.Core.Ids.ExampleId
 static Aw.Packets.Core.Ids.ExampleId.operator !=(Aw.Packets.Core.Ids.ExampleId left, Aw.Packets.Core.Ids.ExampleId right) -> bool
 static Aw.Packets.Core.Ids.ExampleId.operator ==(Aw.Packets.Core.Ids.ExampleId left, Aw.Packets.Core.Ids.ExampleId right) -> bool
@@ -432,8 +471,27 @@ static Aw.Packets.Core.Model.TaskPlan.operator !=(Aw.Packets.Core.Model.TaskPlan
 static Aw.Packets.Core.Model.TaskPlan.operator ==(Aw.Packets.Core.Model.TaskPlan? left, Aw.Packets.Core.Model.TaskPlan? right) -> bool
 static Aw.Packets.Core.Model.Workstream.operator !=(Aw.Packets.Core.Model.Workstream? left, Aw.Packets.Core.Model.Workstream? right) -> bool
 static Aw.Packets.Core.Model.Workstream.operator ==(Aw.Packets.Core.Model.Workstream? left, Aw.Packets.Core.Model.Workstream? right) -> bool
+static Aw.Packets.Core.PacketReader.Load(Aw.Packets.Core.PacketReader.FileReader! read, System.Text.Json.JsonSerializerOptions! json) -> Aw.Kernel.Result<Aw.Packets.Core.Model.LoadedPacket!>!
 static Aw.Packets.Core.PacketsCoreServiceCollectionExtensions.AddPacketsCore(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
 static Aw.Packets.Core.PacketsErrors.All.get -> System.Collections.Generic.IReadOnlyList<Aw.Kernel.ErrorDefinition!>!
+static Aw.Packets.Core.Values.CommitSha.From(string! value) -> Aw.Packets.Core.Values.CommitSha
+static Aw.Packets.Core.Values.CommitSha.operator !=(Aw.Packets.Core.Values.CommitSha left, Aw.Packets.Core.Values.CommitSha right) -> bool
+static Aw.Packets.Core.Values.CommitSha.operator ==(Aw.Packets.Core.Values.CommitSha left, Aw.Packets.Core.Values.CommitSha right) -> bool
+static Aw.Packets.Core.Values.CommitSha.Parse(string! s, System.IFormatProvider? provider) -> Aw.Packets.Core.Values.CommitSha
+static Aw.Packets.Core.Values.CommitSha.TryFrom(string? value, out Aw.Packets.Core.Values.CommitSha vo) -> bool
+static Aw.Packets.Core.Values.CommitSha.TryParse(string? s, System.IFormatProvider? provider, out Aw.Packets.Core.Values.CommitSha result) -> bool
+static Aw.Packets.Core.Values.PacketHash.From(string! value) -> Aw.Packets.Core.Values.PacketHash
+static Aw.Packets.Core.Values.PacketHash.operator !=(Aw.Packets.Core.Values.PacketHash left, Aw.Packets.Core.Values.PacketHash right) -> bool
+static Aw.Packets.Core.Values.PacketHash.operator ==(Aw.Packets.Core.Values.PacketHash left, Aw.Packets.Core.Values.PacketHash right) -> bool
+static Aw.Packets.Core.Values.PacketHash.Parse(string! s, System.IFormatProvider? provider) -> Aw.Packets.Core.Values.PacketHash
+static Aw.Packets.Core.Values.PacketHash.TryFrom(string? value, out Aw.Packets.Core.Values.PacketHash vo) -> bool
+static Aw.Packets.Core.Values.PacketHash.TryParse(string? s, System.IFormatProvider? provider, out Aw.Packets.Core.Values.PacketHash result) -> bool
+static Aw.Packets.Core.Values.RepoSlug.From(string! value) -> Aw.Packets.Core.Values.RepoSlug
+static Aw.Packets.Core.Values.RepoSlug.operator !=(Aw.Packets.Core.Values.RepoSlug left, Aw.Packets.Core.Values.RepoSlug right) -> bool
+static Aw.Packets.Core.Values.RepoSlug.operator ==(Aw.Packets.Core.Values.RepoSlug left, Aw.Packets.Core.Values.RepoSlug right) -> bool
+static Aw.Packets.Core.Values.RepoSlug.Parse(string! s, System.IFormatProvider? provider) -> Aw.Packets.Core.Values.RepoSlug
+static Aw.Packets.Core.Values.RepoSlug.TryFrom(string? value, out Aw.Packets.Core.Values.RepoSlug vo) -> bool
+static Aw.Packets.Core.Values.RepoSlug.TryParse(string? s, System.IFormatProvider? provider, out Aw.Packets.Core.Values.RepoSlug result) -> bool
 static readonly Aw.Packets.Core.PacketsErrors.CommitNotFound -> Aw.Kernel.ErrorDefinition!
 static readonly Aw.Packets.Core.PacketsErrors.FreezeLogUnavailable -> Aw.Kernel.ErrorDefinition!
 static readonly Aw.Packets.Core.PacketsErrors.Invalid -> Aw.Kernel.ErrorDefinition!
@@ -442,3 +500,4 @@ static readonly Aw.Packets.Core.PacketsErrors.NotFound -> Aw.Kernel.ErrorDefinit
 static readonly Aw.Packets.Core.PacketsErrors.RepoUnavailable -> Aw.Kernel.ErrorDefinition!
 static readonly Aw.Packets.Core.PacketsErrors.Unreadable -> Aw.Kernel.ErrorDefinition!
 static readonly Aw.Packets.Core.PacketsErrors.UnsupportedSchema -> Aw.Kernel.ErrorDefinition!
+virtual Aw.Packets.Core.PacketReader.FileReader.Invoke(string! relativePath) -> Aw.Kernel.Result<System.ReadOnlyMemory<byte>?>!

@@ -39,7 +39,7 @@ internal sealed class ScopeGlob
             return RelativePath.IsSafe(path) ? new ScopeGlob(entry, path, pattern: null) : null;
         }
 
-        return entry.Trim().Length == 0 ? null : new ScopeGlob(entry, newPath: null, ToRegex(entry.Trim()));
+        return entry.Trim().Length == 0 ? null : new ScopeGlob(entry, newPath: null, ToRegex(Collapse(entry.Trim())));
     }
 
     /// <summary>True when the glob matches <paramref name="path"/>, or a 'new:' entry declares exactly it.</summary>
@@ -48,6 +48,19 @@ internal sealed class ScopeGlob
     public bool Matches(string path) =>
         _pattern?.IsMatch(path) ?? string.Equals(NewPath, path, StringComparison.Ordinal);
 
+    // '**/**/' matches what '**/' matches: collapse the runs, so the pattern stays small.
+    private static string Collapse(string glob)
+    {
+        var collapsed = glob;
+        while (collapsed.Contains("**/**/", StringComparison.Ordinal))
+        {
+            collapsed = collapsed.Replace("**/**/", "**/", StringComparison.Ordinal);
+        }
+
+        return collapsed;
+    }
+
+    // NonBacktracking: matching is linear in the path's length whatever the glob (these patterns have no lookarounds).
     private static Regex ToRegex(string glob)
     {
         var pattern = new StringBuilder("^");
@@ -74,6 +87,6 @@ internal sealed class ScopeGlob
             }
         }
 
-        return new Regex(pattern.Append('$').ToString(), RegexOptions.CultureInvariant, _timeout);
+        return new Regex(pattern.Append('$').ToString(), RegexOptions.CultureInvariant | RegexOptions.NonBacktracking, _timeout);
     }
 }

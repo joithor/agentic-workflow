@@ -24,6 +24,9 @@ public static class PacketRules
     /// <summary>Tasks that can run concurrently don't share a write scope unless a dependency orders them.</summary>
     public const string ScopeOverlap = "PKT-SCOPE-002";
 
+    /// <summary>Every acceptance example the implementer sees has text.</summary>
+    public const string AcceptanceText = "PKT-ACC-001";
+
     /// <summary>Every acceptance example maps to at least one evidence kind.</summary>
     public const string Evidence = "PKT-EVID-001";
 
@@ -36,7 +39,10 @@ public static class PacketRules
     /// <summary>The held-out share exists.</summary>
     public const string HoldoutExists = "PKT-HOLD-001";
 
-    /// <summary>The held-out share is stored where the implementer can't read it (unchecked until the store is defined).</summary>
+    /// <summary>
+    /// Held-out examples keep no text in the packet: their text lives in sindri-private state, mounted only into
+    /// evaluator Steps and never committed (addendum §17.19). The store itself is checked once it exists.
+    /// </summary>
     public const string HoldoutStored = "PKT-HOLD-002";
 
     /// <summary>The workflow passes its coverage checks (unchecked until workflow generation exists, addendum §17.7).</summary>

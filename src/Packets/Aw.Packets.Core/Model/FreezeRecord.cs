@@ -1,4 +1,5 @@
 using Aw.Packets.Core.Ids;
+using Aw.Packets.Core.Values;
 
 namespace Aw.Packets.Core.Model;
 
@@ -12,13 +13,13 @@ public sealed record FreezeRecord
     public required PacketId Packet { get; init; }
 
     /// <summary>The canonical hash, 'sha256:&lt;hex&gt;'.</summary>
-    public required string Hash { get; init; }
+    public required PacketHash Hash { get; init; }
 
     /// <summary>The canonical form's version (1 today).</summary>
     public required int DigestVersion { get; init; }
 
     /// <summary>The base commit the packet was checked against.</summary>
-    public required string BaseSha { get; init; }
+    public required CommitSha BaseSha { get; init; }
 
     /// <summary>When it was frozen (UTC).</summary>
     public required DateTimeOffset FrozenAt { get; init; }

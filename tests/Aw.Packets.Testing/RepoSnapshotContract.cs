@@ -1,4 +1,5 @@
 using Aw.Packets.Core;
+using Aw.Packets.Core.Values;
 using Xunit;
 
 namespace Aw.Packets.Testing;
@@ -19,7 +20,7 @@ public abstract class RepoSnapshotContract
     {
         var (snapshot, repo, sha) = Create();
 
-        var files = await snapshot.Files(repo, sha, CancellationToken.None);
+        var files = await snapshot.Files(repo, CommitSha.From(sha), CancellationToken.None);
 
         Expect.That(files.IsSuccess && files.Value.SetEquals(CommitFiles), "the commit's files, every one, with '/' separators");
     }
@@ -31,7 +32,7 @@ public abstract class RepoSnapshotContract
     {
         var (snapshot, repo, _) = Create();
 
-        var files = await snapshot.Files(repo, new string('e', 40), CancellationToken.None);
+        var files = await snapshot.Files(repo, CommitSha.From(new string('e', 40)), CancellationToken.None);
 
         Expect.That(files.IsError && files.Error.Code == PacketsErrors.CommitNotFound.Code, "an unknown commit is AW-PACKETS-005");
     }
@@ -43,7 +44,7 @@ public abstract class RepoSnapshotContract
     {
         var (snapshot, _, sha) = Create();
 
-        var files = await snapshot.Files(NotARepository, sha, CancellationToken.None);
+        var files = await snapshot.Files(NotARepository, CommitSha.From(sha), CancellationToken.None);
 
         Expect.That(files.IsError && files.Error.Code == PacketsErrors.RepoUnavailable.Code, "a directory outside any repository is AW-PACKETS-006");
     }

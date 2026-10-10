@@ -29,9 +29,11 @@ internal static class StructureChecks
             PacketRules.Acyclic,
             "the task graph has no cycle",
             new TaskGraph(plan.Tasks).Cycles().Select(static c => (
-                $"task {c[0].Value}",
-                $"tasks form a cycle: {string.Join(" -> ", c.Select(static id => id.Value))}",
-                "Remove one dependency in the cycle, or merge the tasks.")));
+                $"task {c.Members[0].Value}",
+                c.Members.Count == 1
+                    ? $"task {c.Members[0].Value} depends on itself"
+                    : $"tasks {string.Join(", ", c.Members.Select(static id => id.Value))} form a cycle: {string.Join(" -> ", c.Path.Select(static id => id.Value))}",
+                "Remove dependencies until no task in the group waits on itself, or merge the tasks.")));
     }
 
     private static IEnumerable<(string, string, string)> DuplicateIds(Packet packet)

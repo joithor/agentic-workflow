@@ -12,13 +12,13 @@ namespace Aw.Packets.App.Infrastructure;
 /// same hash changes nothing.
 /// </summary>
 /// <param name="settings">The state directory (…/packets).</param>
-/// <param name="json">The record options (AwJson, indented).</param>
+/// <param name="json">The package's JSON options (the one AwJson profile Composition builds).</param>
 internal sealed class FileFreezeLog(PacketsSettings settings, JsonSerializerOptions json) : IFreezeLog
 {
     public ValueTask<Result<FreezeReceipt>> Record(FreezeRecord record, CancellationToken cancellationToken)
     {
-        var location = FreezeLocation.Of(record);
-        return ValueTask.FromResult(location.IsError ? location.Error : Write(record, location.Value));
+        ArgumentNullException.ThrowIfNull(record);
+        return ValueTask.FromResult(Write(record, FreezeLocation.Of(record)));
     }
 
     private Result<FreezeReceipt> Write(FreezeRecord record, string location)

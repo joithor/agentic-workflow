@@ -10,6 +10,7 @@ using Aw.Kernel.Testing;
 using Aw.Packets.App;
 using Aw.Packets.Core.Ids;
 using Aw.Packets.Core.Model;
+using Aw.Packets.Core.Values;
 
 namespace Aw.Packets.Tests.Schemas;
 
@@ -24,7 +25,7 @@ public sealed class PacketSchemaTests
 
     public static TheoryData<string> Files => ["packet", "decisions", "out-of-scope", "tasks", "freeze-record"];
 
-    [Theory, Trait("Lane", "unit")]
+    [Theory, Trait("Lane", "integration")]   // reads (and in update mode writes) schemas/packets/
     [MemberData(nameof(Files))]
     public void The_committed_schema_is_generated_from_the_record(string name)
     {
@@ -80,6 +81,13 @@ public sealed class PacketSchemaTests
             return IdSchema(type);
         }
 
+        if (Nullable.GetUnderlyingType(type) is { } underlying && IsTypedId(underlying))
+        {
+            var nullable = IdSchema(underlying);
+            nullable["type"] = new JsonArray("string", "null");
+            return nullable;
+        }
+
         if (node is JsonObject array && type.IsGenericType && type.GetGenericArguments() is [var item] && IsTypedId(item)
             && typeof(IEnumerable<>).MakeGenericType(item).IsAssignableFrom(type))
         {
@@ -92,9 +100,15 @@ public sealed class PacketSchemaTests
     private static bool IsTypedId(Type type) =>
         type.GetInterfaces().Any(static i => i.IsGenericType && i.GetGenericTypeDefinition() == typeof(ITypedId<,>));
 
-    private static JsonObject IdSchema(Type type) => type == typeof(PacketId)
-        ? new JsonObject { ["type"] = "string", ["pattern"] = "^[a-z0-9][a-z0-9-]{0,63}$" }
-        : new JsonObject { ["type"] = "string", ["pattern"] = "\\S" };
+    private static JsonObject IdSchema(Type type) => new()
+    {
+        ["type"] = "string",
+        ["pattern"] = type == typeof(PacketId) ? "^[a-z0-9][a-z0-9-]{0,63}$"
+            : type == typeof(RepoSlug) ? "^[A-Za-z0-9._-]+/[A-Za-z0-9._-]+$"
+            : type == typeof(CommitSha) ? "^(?:[0-9a-f]{40}|[0-9a-f]{64})$"
+            : type == typeof(PacketHash) ? "^sha256:[0-9a-f]{64}$"
+            : "\\S",
+    };
 
     private static string Render(JsonNode node)
     {

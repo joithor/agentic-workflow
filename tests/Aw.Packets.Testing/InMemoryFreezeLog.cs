@@ -24,12 +24,7 @@ internal sealed class InMemoryFreezeLog : IFreezeLog
         }
 
         var location = FreezeLocation.Of(record);
-        if (location.IsError)
-        {
-            return ValueTask.FromResult<Result<FreezeReceipt>>(location.Error);
-        }
-
-        var added = _records.TryAdd(location.Value, record);
-        return ValueTask.FromResult<Result<FreezeReceipt>>(new FreezeReceipt(location.Value, AlreadyFrozen: !added));
+        var added = _records.TryAdd(location, record);
+        return ValueTask.FromResult<Result<FreezeReceipt>>(new FreezeReceipt(location, AlreadyFrozen: !added));
     }
 }
