@@ -364,6 +364,20 @@ describe("doctor index checks", () => {
     });
   });
 
+  it("reports an index file that isn't a database, or lacks its symbols table, as damaged instead of aborting", async () => {
+    const d = await approvedIndexDeps(ring0Repo({ "src/a.ts": "export const a = 1;\n" }));
+    const name = ring0Name(d);
+    await makeIndexCommand(fakeIndexIo())(["build", "--repo", name], d);
+    const db = openIndex(indexPath(d, name));
+    db.exec("DROP TABLE symbols");
+    db.close();
+    expect((await checks(d, offline))[`index:${name}`]).toMatchObject({ status: "warn", detail: "damaged (no usable symbols table)" });
+    fs.writeFileSync(indexPath(d, name), "a text file where the index should be, long enough to fill a page".repeat(5));
+    expect((await checks(d, offline))[`index:${name}`]).toMatchObject({
+      status: "warn", detail: "damaged (not a database)", fix: `rm ${indexPath(d, name)}, then sindri index build --repo ${name}`,
+    });
+  });
+
   it("rethrows an index read error that is not a missing table, rather than advising rm (M4)", async () => {
     for (const table of ["layers", "meta"]) {
       const d = await approvedIndexDeps(ring0Repo({ "src/a.ts": "export const a = 1;\n" }));
@@ -499,6 +513,14 @@ describe("doctor privacy checks (privacy B1)", () => {
     const deps = await depsWithRepos({ globex: { private: true } });
     seedIndex(openIndex(indexPath(deps, "globex")), { files: ["a.ts"], symbols: ["x"], structure: "pending" }).close();
     expect((await byName(deps))["privacy:globex"].detail).toContain("SND-EVOLVE-017");
+  });
+
+  it("warns on a private repo whose index is unusable, as publish would refuse it (one shared readiness test)", async () => {
+    const deps = await depsWithRepos({ globex: { private: true } });
+    const db = seedIndex(openIndex(indexPath(deps, "globex")), { files: ["a.ts"], symbols: ["x"] });
+    db.exec("DROP TABLE files");
+    db.close();
+    expect((await byName(deps))["privacy:globex"]).toMatchObject({ status: "warn", detail: "private, but no usable code index: sindri evolve publish will refuse (SND-EVOLVE-017)" });
   });
 
   it("never checks the toolkit repo as private, even when it sets private: true", async () => {

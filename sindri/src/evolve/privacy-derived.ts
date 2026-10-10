@@ -3,7 +3,8 @@ import path from "node:path";
 
 import type { Deps } from "../deps.js";
 import { SindriError } from "../errors.js";
-import { indexPath, layers, missingTableAsNull, openIndexReadOnly, type IndexDb } from "../index/db.js";
+import { indexPath, type IndexDb } from "../index/db.js";
+import { readBuiltIndex, readIndex } from "../index/health.js";
 import type { LoadedProfile } from "../profile/load.js";
 import { stripInvisible, WHITESPACE } from "./invisible.js";
 
@@ -28,45 +29,42 @@ export function vocabularyOf(db: IndexDb): Set<string> {
   return out;
 }
 
-export function buildDerivedSet(o: { privateDbs: readonly IndexDb[]; toolkit: IndexDb | null; words: ReadonlySet<string> }): Set<string> {
-  const toolkit = o.toolkit === null ? new Set<string>() : vocabularyOf(o.toolkit);
+export function buildDerivedSet(o: { privateVocab: readonly ReadonlySet<string>[]; toolkit: ReadonlySet<string>; words: ReadonlySet<string> }): Set<string> {
   const out = new Set<string>();
-  for (const db of o.privateDbs) for (const t of vocabularyOf(db)) if (!o.words.has(t) && !toolkit.has(t)) out.add(t);
+  for (const vocab of o.privateVocab) for (const t of vocab) if (!o.words.has(t) && !o.toolkit.has(t)) out.add(t);
   return out;
 }
 
-// The index's layers, or null when its layers table is missing. Any other read error is rethrown.
-export function layersOrNull(db: IndexDb): ReturnType<typeof layers> | null {
-  return missingTableAsNull(() => layers(db));
+// The repos publish treats as private: `private: true` in their repo file. The tracker repo is the public publish target
+// by definition, so it is never one, even if it sets the flag. Doctor and publish both decide it here.
+export function privateRepos(loaded: LoadedProfile): string[] {
+  return Object.keys(loaded.repos).sort().filter((name) => name !== loaded.profile.tracker.repo && loaded.repos[name].private === true);
 }
 
-// An index without a usable layers table counts as unbuilt: fail closed with the same code.
-export function structureOk(db: IndexDb): boolean {
-  return (layersOrNull(db) ?? []).some((l) => l.layer === "structure" && l.status === "ok");
+// Repos other than the tracker repo that don't say `private:` either way; publish treats them as public.
+export function unsetPrivateRepos(loaded: LoadedProfile): string[] {
+  return Object.keys(loaded.repos).sort().filter((name) => name !== loaded.profile.tracker.repo && loaded.repos[name].private === undefined);
 }
 
 export function loadDerivedSet(deps: Deps, loaded: LoadedProfile): Set<string> {
-  // The tracker repo is the public publish target by definition, so it is never treated as private even if it sets the flag.
-  const priv = Object.keys(loaded.repos).sort().filter((name) => name !== loaded.profile.tracker.repo && loaded.repos[name].private === true);
+  const priv = privateRepos(loaded);
   if (priv.length === 0) return new Set();
   const wf = wordsFile(deps);
   if (!fs.existsSync(wf)) throw new SindriError("SND-EVOLVE-018", `the word list ${wf} is missing, so publish can't tell private identifiers from English words`);
   const words = new Set(fs.readFileSync(wf, "utf8").split("\n").map((w) => w.trim().toLowerCase()).filter((w) => w !== ""));
-  const opened: IndexDb[] = [];
-  try {
-    for (const name of priv) {
-      const db = openIndexReadOnly(indexPath(deps, name));
-      if (db !== null) opened.push(db);
-      if (db === null || !structureOk(db)) {
-        throw new SindriError("SND-EVOLVE-017", `repo ${name} is private but has no built code index`, { fix: `sindri index build --repo ${name}, then rerun sindri evolve publish` });
-      }
+  const privateVocab = priv.map((name) => {
+    // Fail closed: no index, an unbuilt one or an unusable one (a missing table, not a database) refuses.
+    const file = indexPath(deps, name);
+    const r = readBuiltIndex(file, vocabularyOf);
+    if (r.state === "damaged") {
+      throw new SindriError("SND-EVOLVE-017", `repo ${name} is private but its code index is unusable (${r.detail})`, { fix: `rm ${file}, then sindri index build --repo ${name}, then rerun sindri evolve publish` });
     }
-    const toolkit = openIndexReadOnly(indexPath(deps, loaded.profile.tracker.repo));
-    if (toolkit !== null) opened.push(toolkit);
-    return buildDerivedSet({ privateDbs: opened.filter((d) => d !== toolkit), toolkit, words });
-  } finally {
-    opened.forEach((d) => d.close());
-  }
+    if (r.state !== "ok") throw new SindriError("SND-EVOLVE-017", `repo ${name} is private but has no built code index`, { fix: `sindri index build --repo ${name}, then rerun sindri evolve publish` });
+    return r.value;
+  });
+  // No usable toolkit index subtracts nothing: more identifiers are held, never fewer.
+  const tk = readIndex(indexPath(deps, loaded.profile.tracker.repo), vocabularyOf);
+  return buildDerivedSet({ privateVocab, toolkit: tk.state === "ok" ? tk.value : new Set(), words });
 }
 
 export function identifierProblem(text: string, derived: ReadonlySet<string>): string | null {

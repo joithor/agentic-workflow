@@ -60,7 +60,14 @@ export function openIndex(file: string): IndexDb {
 export function openIndexReadOnly(file: string): IndexDb | null {
   if (!fs.existsSync(file)) return null;
   const db = new Database(file, { readonly: true });
-  if (db.pragma("user_version", { simple: true }) !== INDEX_SCHEMA_VERSION) {
+  let version: unknown;
+  try {
+    version = db.pragma("user_version", { simple: true }); // the first read: a file that isn't a database throws here
+  } catch (e) {
+    db.close();
+    throw e;
+  }
+  if (version !== INDEX_SCHEMA_VERSION) {
     db.close();
     return null;
   }
@@ -134,18 +141,6 @@ export function layers(db: IndexDb): { layer: Layer; stamp: string; status: Laye
   return (db.prepare("SELECT * FROM layers ORDER BY layer").all() as { layer: Layer; stamp: string; status: LayerStatus; detail: string; built_at: string }[]).map(
     (r) => ({ layer: r.layer, stamp: r.stamp, status: r.status, detail: r.detail, builtAt: r.built_at }),
   );
-}
-
-// A read of a table that may be missing (an index damaged by hand or by an older build): null for SQLite's
-// "no such table", and every other error (SQLITE_BUSY, I/O, a closed handle) rethrown, so a busy index is never
-// reported as damaged.
-export function missingTableAsNull<T>(read: () => T): T | null {
-  try {
-    return read();
-  } catch (e) {
-    if (e instanceof Error && e.message.startsWith("no such table:")) return null;
-    throw e;
-  }
 }
 
 export function meta(db: IndexDb): { commit: string; builtAt: string | null } {
