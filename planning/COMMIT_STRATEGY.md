@@ -35,7 +35,7 @@ Or with an optional scope:
 Scope narrows the area of change. Use the package or module name:
 
 ```
-feat(mcp-bridge): add batch message endpoint
+feat(scorer): add live session view
 fix(db): handle null analysis in task update
 test(services): cover reportStatus error path
 ```

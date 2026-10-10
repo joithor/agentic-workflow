@@ -10,7 +10,7 @@ Domain-specific rules live in `.agents/rules/` — one file per rule, the only c
 |----------|---------|
 | `planning/ARCHITECTURE.md` | System components and data flow |
 | `planning/PROVIDERS.md` | Claude Code / Codex / Cursor support matrix and canonical layout |
-| `planning/CODE_STYLE.md` | TypeScript conventions and patterns |
+| `planning/CODE_STYLE.md` | Code style: C# by its rule files, TypeScript for bug fixes |
 | `planning/TESTING.md` | Test strategy and coverage targets |
 | `skills/_shared/capabilities.md` | Capability → tool map used by all skill text |
 

@@ -280,7 +280,7 @@
         <div class="card">
           <div class="icon"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><circle cx="6" cy="12" r="3"/><circle cx="18" cy="6" r="3"/><circle cx="18" cy="18" r="3"/><path d="M9 11l6-4M9 13l6 4"/></svg></div>
           <h3>MCP servers</h3>
-          <p><b>serena</b> symbol search · <b>agentic-bridge</b> agent-to-agent messaging · <b>prism-mcp</b> memory · <b>headroom</b> compression · <b>xcodebuildmcp</b> iOS</p>
+          <p><b>serena</b> symbol search · <b>prism-mcp</b> memory · <b>headroom</b> compression · <b>xcodebuildmcp</b> iOS</p>
         </div>
         <div class="card">
           <div class="icon"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg></div>
@@ -463,7 +463,7 @@
       <h2>Extras & staying up to date</h2>
       <div class="cards" style="margin-bottom:24px">
         <div class="card"><h3>See what sessions cost</h3><p>Reports land in <code>~/.agentic-workflow/scorer/reports/</code>.</p><div class="term"><span class="pr">$ </span>scorer --since 7d</div></div>
-        <div class="card"><h3>Coordinate agents</h3><p>With <b>agentic-bridge</b>, one session can assign a task to another, even across providers. Messages queue while the recipient is offline.</p></div>
+        <div class="card"><h3>Coordinate agents</h3><p>Agents hand off through Prism handoffs (<code>session_save_handoff</code> / <code>session_load_context</code>), judge's outbox and teammate names (agent teams), and Sindri's ledger; there is no bridge server.</p></div>
         <div class="card"><h3>Trim skills per repo</h3><p>Claude Code only. Profiles: <code>web-app</code>, <code>ios</code>, <code>personal</code>.</p><div class="term"><span class="pr">$ </span>./setup.sh --profile web-app \
     --target ~/repos/app</div></div>
         <div class="card"><h3>Tune the judge</h3><p><code data-cmd>judge</code> lets you inspect, tune, and undo the decisions it made for hooks: <code>why</code>, <code>undo</code>, <code>health</code>.</p></div>

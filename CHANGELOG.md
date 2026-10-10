@@ -5,6 +5,23 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased] - 2026-10-10 — MCP bridge retired
+
+### Removed
+
+- The MCP bridge (`mcp-bridge/`, the `agentic-bridge` server: Fastify REST on port 3100 and stdio MCP over SQLite).
+  It was never used (its database held no message or task) and nothing called it; agent handoffs run on Prism
+  handoffs, judge's outbox and Sindri's ledger. Its rules (`bridge-services`, `bridge-transport`, `database`), CI job,
+  `area:bridge` label, `deps.yaml` node and docs (`planning/API_CONTRACT.md`, `planning/ERD.md`) go with it.
+
+### Changed
+
+- `./setup.sh` removes an existing `agentic-bridge` registration from Claude Code, Codex and Cursor (`AW_MCP_RETIRED`);
+  re-run it once on every machine.
+- The skill preamble no longer checks port 3100, so skills stop offering to re-run `setup.sh` because the bridge is down.
+- `/enhancePrompt` still suggests a peer-agent dialogue, as a prompt you carry to the other session.
+- Merge gate 7 bans `any` in all TypeScript (the bridge's Fastify boundary was its only exemption).
+
 ## [Unreleased] - 2026-09-28 — Provider-agnostic toolkit
 
 The toolkit now supports Claude Code, Codex, and Cursor equally, with one canonical core and a thin adapter per provider.

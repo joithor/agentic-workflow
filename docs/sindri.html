@@ -1116,7 +1116,7 @@ status: active  # proposed | active | retired</code></pre>
     ["parallel","designed","Seams built now","LedgerStore, Lease, Launcher and Scheduler ports; idempotent events keyed by (kind, item, attempt, sha); tenant and ring keys on every row.","§17.20, readiness §4b.6"],
 
     ["multi","designed","Event envelope and transactional outbox","Every state change is an event (id, type, version, tenant, ring, actor, item, causation, correlation, trace, time) in an append-only log written in the ledger's transaction; consumers read with durable cursors.","§17.21"],
-    ["multi","designed","Bus port","In-process → database polling or LISTEN/NOTIFY → a broker at P2+. The bridge becomes one consumer, not a parallel channel.","§17.21"],
+    ["multi","designed","Bus port","In-process → database polling or LISTEN/NOTIFY → a broker at P2+.","§17.21"],
     ["multi","designed","Exactly-once outward commands","Every push, merge, comment, label and notification is an outbox command with an idempotency key, run by one dispatcher under the lease.","§17.21"],
     ["multi","designed","Service identities","Coordinator, each worker, each agent session and each standing workflow has its own identity; every record carries an actor. Agents never act as a person.","§17.21"],
     ["multi","designed","Roles and authorization","Owner, approver, contributor, viewer per tenant; every decision kind declares its role; two-person approval available per kind.","§17.21"],
@@ -1759,7 +1759,7 @@ status: active  # proposed | active | retired</code></pre>
       });
     });
     var R = [
-      ["Event log and bus", "The ledger is the record; hooks append to spool files; the dashboard and bridge poll.", "One event envelope, an append-only log in the ledger's transaction (transactional outbox), durable cursors, and a Bus port."],
+      ["Event log and bus", "The ledger is the record; hooks append to spool files; the dashboard polls.", "One event envelope, an append-only log in the ledger's transaction (transactional outbox), durable cursors, and a Bus port."],
       ["Exactly-once outward actions", "Writes run directly from the ship Step, with idempotency keys on some adapters.", "Every outward action is an outbox command with an idempotency key, run by one dispatcher under the lease."],
       ["Identity", "One OS user; host CLI verbs are the authority.", "People, devices and service identities; every record and event carries an actor."],
       ["Authorization", "Implicit: the host user can do everything.", "Roles per tenant (owner, approver, contributor, viewer); each decision kind declares its role; optional two-person approval."],
@@ -1872,14 +1872,13 @@ status: active  # proposed | active | retired</code></pre>
       { id: "evidence", t: "Evidence", tier: 2, x: 230, y: 120, w: 140, b: "Tier 2 (ui-evidence). Framework-dependent, because Playwright for .NET doesn't support NativeAOT." },
       { id: "bugfix", t: "BugFix", tier: 2, x: 400, y: 120, w: 140, b: "Tier 2 (the bugfix-state CLI). AOT entry point." },
       { id: "judge", t: "Judge", tier: 1, x: 48, y: 230, w: 125, b: "Tier 1. Ported first, after Redaction. Depends only on tier 0: the Kernel and Redaction." },
-      { id: "bridge", t: "Bridge", tier: 1, x: 183, y: 230, w: 125, b: "Tier 1. MCP + HTTP host; binds to loopback in code, ignoring URL settings." },
       { id: "redaction", t: "Redaction", tier: 0, x: 420, y: 340, w: 140, b: "Tier 0, next to the Kernel. The scrubbing patterns now copied between judge and sindri, in one pattern file, with timeouts that block." },
       { id: "packets", t: "Packets", tier: 1, x: 453, y: 230, w: 125, b: "Tier 1. The packet schema, validate and freeze. A standalone C# package built from the template in R1b; depends only on the Kernel." },
       { id: "readiness", t: "Readiness", tier: 1, x: 318, y: 230, w: 125, b: "Tier 1. Our readiness check, the score of record. Built from the template in R1b; keeps its own history until the switch." },
       { id: "kernel", t: "Aw.Kernel", tier: 0, x: 140, y: 340, w: 240, b: "Tier 0, with its Data, Telemetry and Testing parts: <code>Result&lt;T&gt;</code>, <code>Error</code>, clock helpers, id conventions, logging, the <code>IService</code> pipeline and contract-test base classes. The BCL plus one external package each." }
     ];
     var by = {}; T.forEach(function (t) { by[t.id] = t; });
-    var E = [["sindri", "scorer"], ["sindri", "evidence"], ["sindri", "bugfix"], ["sindri", "judge"], ["sindri", "bridge"], ["sindri", "redaction"], ["scorer", "judge"], ["scorer", "kernel"], ["evidence", "kernel"], ["bugfix", "kernel"], ["judge", "kernel"], ["bridge", "kernel"], ["judge", "redaction"], ["packets", "kernel"], ["readiness", "kernel"], ["sindri", "packets"], ["sindri", "readiness"]];
+    var E = [["sindri", "scorer"], ["sindri", "evidence"], ["sindri", "bugfix"], ["sindri", "judge"], ["sindri", "redaction"], ["scorer", "judge"], ["scorer", "kernel"], ["evidence", "kernel"], ["bugfix", "kernel"], ["judge", "kernel"], ["judge", "redaction"], ["packets", "kernel"], ["readiness", "kernel"], ["sindri", "packets"], ["sindri", "readiness"]];
     var edgeEls = [];
     E.forEach(function (e) {
       var a = by[e[0]], b = by[e[1]];
@@ -1930,7 +1929,7 @@ status: active  # proposed | active | retired</code></pre>
         ["R0", "designed", "R0 · Baseline", "A manual pass over the nine pillars, recorded per criterion.", "readiness §10"],
         ["R1a", "designed", "R1a · Safety and measurement", "Hardened CI, the main ruleset and agent identity; the cutover contract; fail-open logging; the AOT spike; the readiness baseline.", "readiness §4c, §4d, §10"],
         ["R1b", "designed", "R1b · The template", "Build props, central packages, analyzers, ratchet, Kernel, <code>deps.yaml</code> with edge checks, scaffolds, rule records, devcontainer and templates; <code>Aw.Readiness</code> and <code>Aw.Packets</code> as the first two packages built from it.", "readiness §10"],
-        ["R2", "designed", "R2 · The ports", "One packet per package, whole, lowest tier first: Redaction → Judge and Bridge → Scorer, Evidence and BugFix → Sindri. Stop rules: 2× per package or 1.5× overall triggers a review.", "readiness §4a, §10"],
+        ["R2", "designed", "R2 · The ports", "One packet per package, whole, lowest tier first: Redaction → Judge → Scorer, Evidence and BugFix → Sindri. Stop rules: 2× per package or 1.5× overall triggers a review.", "readiness §4a, §10"],
         ["R3", "designed", "R3 · Level 4", "Criteria that need usage data; Level 4 passed. Factory work starts here.", "readiness §10"],
         ["R4", "designed", "R4 · Level 5", "F0–F3 plus the readiness module's weekly workflow.", "readiness §10"]
       ] },

@@ -2,7 +2,7 @@
 
 ## Overview
 
-The multi-agent bridge space is emerging rapidly alongside Claude Code and OpenAI Codex adoption. Several projects attempt to solve similar problems — enabling communication between AI coding agents. This analysis compares agentic-workflow against five discovered alternatives.
+The multi-agent bridge space is emerging rapidly alongside Claude Code and OpenAI Codex adoption. Several projects attempt to solve similar problems — enabling communication between AI coding agents. This analysis compares agentic-workflow against five discovered alternatives. Agentic-workflow's own MCP bridge was retired on 2026-10-10 (it was never used); agents now hand off through Prism handoffs, judge's outbox and teammate names, and Sindri's ledger, so the bridge-era rows in the matrix below are marked retired.
 
 ---
 
@@ -100,30 +100,26 @@ The multi-agent bridge space is emerging rapidly alongside Claude Code and OpenA
 | Capability | agentic-workflow | codex-bridge | claude-codex-bridge | codex-mcp-server | claude-code-mcp | ai-cli-mcp |
 |---|---|---|---|---|---|---|
 | **Language** | TypeScript | Python | Mixed | TypeScript | TypeScript | TypeScript |
-| **Message Persistence** | SQLite store-and-forward | None (stateless) | Planning docs only | Session-scoped | None | Orchestrator state |
-| **Task Management** | Full (assign, status, domain) | None | Planning tasks | None | None | Dispatch queue |
-| **MCP Protocol** | Yes (stdio) | No | Partial | Yes (stdio) | Yes (server) | Yes |
-| **REST API** | Yes (Fastify, port 3100) | No | No | No | No | Partial |
-| **Conversation History** | Full (queryable by UUID) | None | Planning history | Session-scoped | None | Limited |
-| **Offline Tolerance** | Yes (store-and-forward) | No (real-time only) | Partial | Session-dependent | No | Orchestrator buffers |
+| **Message Persistence** | Retired (bridge removed) | None (stateless) | Planning docs only | Session-scoped | None | Orchestrator state |
+| **Task Management** | Retired (bridge removed) | None | Planning tasks | None | None | Dispatch queue |
+| **MCP Protocol** | Retired (bridge removed) | No | Partial | Yes (stdio) | Yes (server) | Yes |
+| **REST API** | Retired (bridge removed) | No | No | No | No | Partial |
+| **Conversation History** | Retired (bridge removed) | None | Planning history | Session-scoped | None | Limited |
+| **Offline Tolerance** | Retired (bridge removed) | No (real-time only) | Partial | Session-dependent | No | Orchestrator buffers |
 | **Skill System** | 34 skills + bootstrap | None | Workflow templates | None | None | Agent registry |
 | **Multi-Model** | Claude Code + Codex + Cursor | Claude + Codex | Claude + Codex | Claude + Codex | Claude only | Claude + Codex + Gemini |
-| **Type Safety** | Full (Zod + AppResult\<T\>) | Runtime only | Partial | TypeScript | TypeScript | TypeScript |
-| **Transaction Safety** | SQLite transactions | N/A | None | None | N/A | None |
+| **Type Safety** | Retired (bridge removed) | Runtime only | Partial | TypeScript | TypeScript | TypeScript |
+| **Transaction Safety** | Retired (bridge removed) | N/A | None | None | N/A | None |
 | **Setup Complexity** | Low (setup.sh) | Low (pip install) | Medium | Low | Low | Medium-High |
-| **Architecture** | Peer-to-peer + shared DB | Relay | Planning coordinator | Session server | Tool server | Central orchestrator |
+| **Architecture** | Retired (bridge removed) | Relay | Planning coordinator | Session server | Tool server | Central orchestrator |
 
 ## Differentiation Summary
 
-**Note:** Persistent memory, graph visualization, semantic search, and conversation embedding are delegated to prism-mcp. The agentic-bridge is a pure coordination bus (store-and-forward messages, task management, MCP tools).
+**Note:** Persistent memory, graph visualization, semantic search, and conversation embedding are delegated to prism-mcp. Agent handoffs run on Prism handoffs (`session_save_handoff` / `session_load_context`), judge's outbox and teammate names (agent teams), and Sindri's ledger; there is no bridge server.
 
-Agentic-workflow occupies a distinct position in this space through three differentiators:
+Agentic-workflow's remaining differentiator is its integrated skill library. Store-and-forward persistence and the dual MCP/REST transport went with the retired bridge.
 
-**1. Store-and-forward persistence.** Unlike stateless relays (codex-bridge) or session-scoped stores (codex-mcp-server), agentic-workflow persists all messages and tasks in SQLite with WAL mode and atomic transactions. Agents can go offline and pick up messages later. Conversation history is queryable indefinitely.
-
-**2. Integrated skill library.** No other bridge project ships production-ready Claude Code skills. The `/review` pipeline (triage, parallel domain reviewers, structured findings, GitHub posting) is a complete workflow that demonstrates the bridge's value rather than just providing infrastructure.
-
-**3. Dual transport with zero lock-in.** The same application services power both the MCP stdio server and the Fastify REST API. Non-MCP clients (scripts, CI pipelines, dashboards) can interact with the bridge over HTTP. The custom router avoids framework-specific coupling, making the HTTP layer replaceable.
+**Integrated skill library.** No bridge project ships production-ready agent skills. The `/review` pipeline (triage, parallel domain reviewers, structured findings, GitHub posting) is a complete workflow rather than just infrastructure.
 
 **Where agentic-workflow trails:**
 - Multi-model support covers Claude Code, Codex, and Cursor; ai-cli-mcp additionally covers Gemini CLI (the protocol itself is model-agnostic)
@@ -132,6 +128,6 @@ Agentic-workflow occupies a distinct position in this space through three differ
 
 ## Strategic Recommendation
 
-The primary competitive advantage is the combination of infrastructure (bridge) and application (skills) in a single portable toolkit. Competitors provide one or the other. Maintaining this integrated approach — where new skills demonstrate new bridge capabilities and new bridge features enable new skill patterns — is the strongest differentiator to preserve.
+The primary competitive advantage is the skill library in a single portable toolkit that works the same in Claude Code, Codex and Cursor. Competitors provide messaging infrastructure without skills. With the bridge retired, agentic-workflow no longer competes as a messaging bus.
 
-The most impactful gap to close is multi-model support (v2.0 roadmap item), since the bridge protocol is already model-agnostic and the limitation is purely in documentation and skill design. Adding Gemini CLI support would match ai-cli-mcp's breadth while retaining the persistence and skill advantages.
+The most impactful gap to close is multi-model support (v2.0 roadmap item), since skills already name provider-neutral capabilities and the limitation is purely in documentation and skill design. Adding Gemini CLI support would match ai-cli-mcp's breadth while retaining the skill advantage.

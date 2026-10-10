@@ -1,8 +1,8 @@
 # Agentic Workflow
 
-A portable, provider-agnostic workflow toolkit for AI coding agents. It works the same way in **Claude Code**, **Codex**, and **Cursor**: 52 native skills plus 3 fetched external design packs (impeccable, emil-design-eng, taste-skill), a repo bootstrapper, safety hooks, a bidirectional MCP bridge for multi-agent communication, a cheap-decision judge, a cost/involvement scorer, and token-efficiency tools (the rtk command rewriter and the headroom context compressor).
+A portable, provider-agnostic workflow toolkit for AI coding agents. It works the same way in **Claude Code**, **Codex**, and **Cursor**: 52 native skills plus 3 fetched external design packs (impeccable, emil-design-eng, taste-skill), a repo bootstrapper, safety hooks, a cheap-decision judge, a cost/involvement scorer, and token-efficiency tools (the rtk command rewriter and the headroom context compressor).
 
-There is one canonical core: skills, hook logic, MCP servers, bridge, judge, and scorer. Each provider gets a thin adapter on top. Skills describe *capabilities* ("ask the user", "spawn a subagent", "call an MCP tool"), and each provider maps those to its own tools. See [Providers](#providers) and [`planning/PROVIDERS.md`](planning/PROVIDERS.md).
+There is one canonical core: skills, hook logic, MCP servers, judge, and scorer. Each provider gets a thin adapter on top. Skills describe *capabilities* ("ask the user", "spawn a subagent", "call an MCP tool"), and each provider maps those to its own tools. See [Providers](#providers) and [`planning/PROVIDERS.md`](planning/PROVIDERS.md).
 
 > **New here?** Start with the onboarding guide: [`ONBOARDING.md`](ONBOARDING.md), or the visual walkthrough in [`docs/onboarding.html`](docs/onboarding.html) (open it in a browser).
 
@@ -98,7 +98,7 @@ The toolkit treats Claude Code, Codex, and Cursor as equal hosts. `setup.sh` ins
 | Skills installed to | `~/.claude/skills/` | `~/.codex/skills/` | `~/.cursor/skills/` |
 | Repo instructions | `CLAUDE.md` (symlink to `AGENTS.md`) + `.claude/rules` (symlink) | `AGENTS.md` (Rules Index) | `AGENTS.md` + `.cursor/rules/*.mdc` (symlinks) |
 | Safety hooks (`config/hooks/`) | Native | Via adapter (`config/hooks/adapters/codex.sh`); trust with `/hooks` | Via adapter (`config/hooks/adapters/cursor.sh`) |
-| MCP servers (bridge, serena, headroom, prism-mcp, …) | `claude mcp add --scope user` | `codex mcp add` | merged into `~/.cursor/mcp.json` (may need `cursor-agent mcp enable <name>`) |
+| MCP servers (serena, headroom, prism-mcp, …) | `claude mcp add --scope user` | `codex mcp add` | merged into `~/.cursor/mcp.json` (may need `cursor-agent mcp enable <name>`) |
 | Judge model provider | `claude-cli` | `codex-cli` | `cursor-cli` |
 | Scorer transcript source | Yes | Yes | Involvement only (no token/cost data) |
 | Statusline + shell integration | Yes | — | — |
@@ -154,27 +154,11 @@ The setup script:
 - Creates the `~/.agentic-workflow/toolkit` symlink and writes the `~/.agentic-workflow/providers` registry
 - Symlinks native skills, `/bootstrap`, and the external design packs (cloned at pinned commits from `EXTERNAL_PINS.env`) into each selected provider's skills directory
 - Installs the safety hooks (`block-destructive.sh`, `block-push-main.sh`, `detect-secrets.sh`, `rtk-rewrite.sh`) and session-context hooks for each provider. Claude Code uses them natively; Codex and Cursor go through their hook adapters.
-- Installs and builds the MCP bridge
 - Builds the Serena Docker images (base TS/Python image; opt-in C# and Swift extensions) and installs the `serena-docker` wrapper to `~/.local/bin/`
-- Registers the MCP servers (`agentic-bridge`, `serena`, `headroom`, `prism-mcp`, and `xcodebuildmcp` on macOS) with each selected provider
+- Registers the MCP servers (`serena`, `headroom`, `prism-mcp`, and `xcodebuildmcp` on macOS) with each selected provider, and removes an old `agentic-bridge` registration (the MCP bridge was retired)
 - Configures `prism-mcp` (persistent memory, downloaded on first use) with its Mind Palace dashboard at `http://localhost:7180` (`PRISM_DASHBOARD_PORT`). The `prism-context.sh` session-start hook warns if the dashboard is unreachable; `/prismStatus` runs a full health check
 - Installs rtk and headroom
 - **Claude Code only:** copies `settings.json`, installs the statusline and shell integration, and adds plugin marketplaces and plugins
-
-### Start the bridge
-
-```bash
-cd mcp-bridge && npm start    # Fastify on http://127.0.0.1:3100
-```
-
-### Environment Variables
-
-| Variable | Default | Description |
-|----------|---------|-------------|
-| `PORT` | `3100` | REST API port |
-| `HOST` | `127.0.0.1` | Bind address (loopback only by default) |
-| `DB_PATH` | `./bridge.db` | SQLite database file path |
-| `ALLOW_REMOTE` | unset | Set to `1` to allow non-loopback binding |
 
 ## Contents
 
@@ -206,33 +190,9 @@ Run `/bootstrap` (`$bootstrap` in Codex) in any repo to generate its documentati
 - Infers glob-scoped rule files from the repo's structure into `.agents/rules/`, then links them for each provider with `sync-rules.sh` (`.claude/rules`, `.cursor/rules/*.mdc`)
 - Handles bare repos, partially documented repos, and well-documented repos
 
-### 3. MCP Bridge
+### 3. Agent Handoffs
 
-A TypeScript MCP server for bidirectional multi-agent communication across any mix of Claude Code, Codex, and Cursor sessions. All providers register the same stdio server and share one SQLite database.
-
-**MCP Tools:**
-- `send_context`: send task context + meta-prompt between agents
-- `get_messages`: retrieve conversation history by UUID
-- `get_unread`: check for unread messages (marks them read on retrieval)
-- `assign_task`: assign tasks with domain and implementation details
-- `report_status`: report back with feedback or completion
-
-**API Endpoints:**
-- `POST /messages/send`: send context between agents
-- `GET /messages/conversation/:id`: retrieve conversation history
-- `GET /messages/unread?recipient=`: fetch unread messages and mark them read
-- `POST /tasks/assign`: assign a task with domain classification
-- `GET /tasks/:id`: get a task by ID
-- `GET /tasks/conversation/:id`: get all tasks for a conversation
-- `POST /tasks/report`: report task status
-- `GET /conversations`: paginated conversation summaries
-
-**Features:**
-- SQLite store-and-forward (messages queue while the recipient is offline)
-- Conversation continuity via UUID
-- Fastify REST API (port 3100) + MCP stdio server
-- End-to-end type safety with the `AppResult<T>` pattern
-- Atomic transactions for multi-step operations
+Agents hand off through Prism handoffs (`session_save_handoff` / `session_load_context`), judge's outbox and teammate names (agent teams), and Sindri's ledger; there is no bridge server.
 
 ### 4. Judge and Scorer
 
@@ -275,7 +235,6 @@ The statusline reads the size of the tty its own Claude Code process is attached
 ## Testing
 
 ```bash
-cd mcp-bridge && npm test   # Vitest, in-memory SQLite
 cd scorer && npm test
 cd judge && npm test
 bash providers/tests/install.test.sh
@@ -290,7 +249,7 @@ scripts/sync-rules.sh --check
 
 The full list is under Commands in [`AGENTS.md`](AGENTS.md).
 
-Tests cover unit tests (controllers, services, DB client, schemas, utilities) and integration tests (all REST routes via Fastify inject, plus the MCP tool handlers). `/* v8 ignore */` annotations are prohibited; write the test instead.
+`/* v8 ignore */` annotations are prohibited; write the test instead.
 
 ## Repository Layout
 
@@ -302,7 +261,6 @@ agentic-workflow/
 ├── bootstrap/               # /bootstrap — repo documentation generator
 ├── providers/<name>/        # Per-provider installers: install.sh, install-hooks.sh (claude, codex, cursor)
 ├── config/                  # Settings, MCP config, statusline, hooks (+ hooks/adapters/ for codex, cursor)
-├── mcp-bridge/              # MCP bridge + REST API (Fastify, SQLite)
 ├── judge/                   # Cheap typed decisions (rules → model chain via claude/codex/cursor CLI)
 ├── scorer/                  # Cost/involvement report from provider transcripts
 ├── scripts/                 # sync-rules.sh, serena-docker, probe.sh, install-*.sh, refresh-external-pins.sh
