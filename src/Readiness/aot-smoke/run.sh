@@ -6,6 +6,9 @@
 # (the ILCompiler packs) into the lock files, so it runs unlocked and the committed packages.lock.json files are
 # copied aside first and put back afterwards: the repo's lock files stay RID-free and the same on every OS.
 set -euo pipefail
+# The binary writes Kernel telemetry to stderr, which expected.txt captures, and log lines carry wall-clock timestamps:
+# pin the level that writes none, whatever the caller set (docs/csharp/telemetry.md, the CLI stderr contract).
+export AW_LOG_LEVEL=none
 
 here="$(cd "$(dirname "$0")" && pwd)"
 out="$here/../../../artifacts/aot-readiness"

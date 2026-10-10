@@ -28,6 +28,15 @@ ${groups.join("\n\n")}
 };
 
 const kernel = "../../Aw.Kernel/Aw.Kernel.csproj";
+/** Only the host (full: Host; small: the App exe) references telemetry; it starts it in Compose (spec §4b.4). */
+const kernelTelemetry = "../../Aw.Kernel.Telemetry/Aw.Kernel.Telemetry.csproj";
+
+/**
+ * True when the package has a host that starts Kernel telemetry, so the host project references Aw.Kernel.Telemetry and
+ * deps.yaml carries the <Name> → KernelTelemetry edge. The one source for the csproj references, the edge and the
+ * NP-FANOUT count. Takes the raw inputs, so the generator can call it before it builds the package record.
+ */
+export const startsTelemetry = ({ host }) => host !== "none";
 const dependsCores = (p) => p.depends.map((d) => `../../${d}/Aw.${d}.Core/Aw.${d}.Core.csproj`);
 
 // ---------------------------------------------------------------- Core
@@ -197,7 +206,7 @@ export const hostCsproj = (p) => {
        Composition.`,
     props: ["<OutputType>Exe</OutputType>", "<AwAotEntryPoint>true</AwAotEntryPoint>", "<PublishAot Condition=\"'$(RuntimeIdentifier)' != ''\">true</PublishAot>", `<AssemblyName>${p.binary}</AssemblyName>`, `<RootNamespace>Aw.${p.name}.Host</RootNamespace>`],
     packages: http ? [] : ["Microsoft.Extensions.DependencyInjection"],
-    projects: [`../Aw.${p.name}.Core/Aw.${p.name}.Core.csproj`, `../Aw.${p.name}.Features/Aw.${p.name}.Features.csproj`, `../Aw.${p.name}.Infrastructure/Aw.${p.name}.Infrastructure.csproj`, kernel],
+    projects: [`../Aw.${p.name}.Core/Aw.${p.name}.Core.csproj`, `../Aw.${p.name}.Features/Aw.${p.name}.Features.csproj`, `../Aw.${p.name}.Infrastructure/Aw.${p.name}.Infrastructure.csproj`, kernel, ...(startsTelemetry(p) ? [kernelTelemetry] : [])],
     visibleTo: [`Aw.${p.name}.Tests`],
   });
 };
@@ -213,14 +222,14 @@ export const appCsproj = (p) => {
       `<RootNamespace>Aw.${p.name}.App</RootNamespace>`,
     ],
     packages: exe ? ["Microsoft.Extensions.DependencyInjection"] : ["Microsoft.Extensions.DependencyInjection.Abstractions"],
-    projects: [`../Aw.${p.name}.Core/Aw.${p.name}.Core.csproj`, kernel, ...dependsCores(p)],
+    projects: [`../Aw.${p.name}.Core/Aw.${p.name}.Core.csproj`, kernel, ...(startsTelemetry(p) ? [kernelTelemetry] : []), ...dependsCores(p)],
     visibleTo: [`Aw.${p.name}.Tests`, `Aw.${p.name}.Testing`],
   });
 };
 
 /** Composition: `ns` is the root namespace (Aw.N.Host or Aw.N.App); `usings` the namespaces of the Add…() methods. */
 export const composition = (p, ns, usings, { webSdk }) => {
-  return `${usingsBlock([...usings, ...(webSdk ? [] : ["Microsoft.Extensions.DependencyInjection"])])}
+  return `${usingsBlock([...usings, "Aw.Kernel.Telemetry", ...(webSdk ? [] : ["Microsoft.Extensions.DependencyInjection"])])}
 
 namespace ${ns};
 
@@ -230,6 +239,7 @@ internal static class Composition
     internal static IServiceCollection Compose(IServiceCollection services, Func<string, string?> environment, TimeProvider clock)
         => services
             .AddSingleton(clock)
+            .AddKernelTelemetry(TelemetryOptions.FromEnvironment("${p.binary}", environment, clock))   // JSON lines on stderr (AW_LOG_LEVEL); exports off
             .Add${p.name}Core()
             .Add${p.name}Features()
             .Add${p.name}Infrastructure(environment);
@@ -258,13 +268,14 @@ namespace ${ns};
 internal sealed partial class ${p.name}JsonContext : JsonSerializerContext;
 `;
 
-export const programCli = (p, ns) => `${usingsBlock([ns, `${ns}.Commands`, "Aw.Kernel.Json", "Microsoft.Extensions.DependencyInjection"])}
+export const programCli = (p, ns) => `${usingsBlock([ns, `${ns}.Commands`, "Aw.Kernel.Json", "Aw.Kernel.Telemetry", "Microsoft.Extensions.DependencyInjection"])}
 
 var services = Composition.Compose(new ServiceCollection(), Environment.GetEnvironmentVariable, TimeProvider.System);
 var json = AwJson.CreateOptions(${p.name}JsonContext.Default);   // the one Kernel JSON profile
 var provider = services.BuildServiceProvider();   // validation runs in HostTests, not at CLI startup
 await using (provider.ConfigureAwait(false))
 {
+    _ = provider.GetRequiredService<TelemetryRuntime>();   // resolved so the container disposes it on exit, which flushes
     return await CommandTable.Run(args, provider, json).ConfigureAwait(false);
 }
 `;
@@ -333,7 +344,7 @@ internal static class CommandOutput
 
 export const programHttp = (p) => `using Aw.${p.name}.Host;
 
-var app = LoopbackBinding.Build(args, Environment.GetEnvironmentVariable, TimeProvider.System);
+var app = LoopbackBinding.Build(args, Environment.GetEnvironmentVariable, TimeProvider.System);   // also resolves the telemetry runtime
 await using (app.ConfigureAwait(false))
 {
     _ = Pipeline.Configure(app);
@@ -358,6 +369,7 @@ export const loopbackBinding = (p) => `using System.Globalization;
 using System.Net;
 using System.Text.Json;
 using Aw.Kernel.Json;
+using Aw.Kernel.Telemetry;
 
 namespace Aw.${p.name}.Host;
 
@@ -382,10 +394,13 @@ internal static class LoopbackBinding
         _ = builder.Configuration.AddInMemoryCollection();   // the host still writes its own settings somewhere
         _ = builder.WebHost.PreferHostingUrls(preferHostingUrls: false);
         _ = builder.WebHost.UseKestrel(kestrel => kestrel.Listen(IPAddress.Loopback, PortFrom(environment)));
+        _ = builder.Logging.ClearProviders();   // Kernel telemetry (AddKernelTelemetry in Compose) is the only logger: scrubbed JSON lines
         _ = Composition.Compose(builder.Services, environment, clock);
         _ = builder.Services.ConfigureHttpJsonOptions(o => CopyProfile(o.SerializerOptions));
         _ = builder.Services.AddProblemDetails();   // its post-configure step adds ProblemDetails' JSON context to the chain
-        return builder.Build();
+        var app = builder.Build();
+        _ = app.Services.GetRequiredService<TelemetryRuntime>();   // resolved here, so the container disposes it with the app (Program.cs and every test)
+        return app;
     }
 
     private static int PortFrom(Func<string, string?> environment)
@@ -556,18 +571,18 @@ public sealed class ${p.name}ErrorsTests
 }
 `;
 
-export const hostTests = (p, ns) => `${usingsBlock([ns, "Aw.Kernel.Services", "Microsoft.Extensions.DependencyInjection", "Microsoft.Extensions.Time.Testing"])}
+export const hostTests = (p, ns) => `${usingsBlock([ns, "Aw.Kernel.Services", "Aw.Kernel.Telemetry", "Microsoft.Extensions.DependencyInjection", "Microsoft.Extensions.Logging", "Microsoft.Extensions.Time.Testing"])}
 
 namespace Aw.${p.name}.Tests;
 
 public sealed class HostTests
 {
+    private static readonly string _stateRoot = Path.Combine(Path.GetTempPath(), "aw-${p.lower}-di-test");
+
     [Fact, Trait("Lane", "unit")]
     public void Every_registered_service_resolves_in_a_scope()
     {
-        var stateRoot = Path.Combine(Path.GetTempPath(), "aw-${p.lower}-di-test");
-        var services = Composition.Compose(
-            new ServiceCollection(), name => name == "AW_STATE_DIR" ? stateRoot : null, new FakeTimeProvider());
+        var services = Compose();
         var serviceTypes = services
             .Select(d => d.ServiceType)
             .Where(t => t.IsGenericType && t.GetGenericTypeDefinition() == typeof(IService<,>))
@@ -575,11 +590,45 @@ public sealed class HostTests
 
         using var provider = services.BuildServiceProvider(
             new ServiceProviderOptions { ValidateOnBuild = true, ValidateScopes = true });
+        _ = provider.GetRequiredService<TelemetryRuntime>();   // so the container disposes it, as Program.cs does
         using var scope = provider.CreateScope();
 
         Assert.NotEmpty(serviceTypes);
         Assert.All(serviceTypes, t => Assert.NotNull(scope.ServiceProvider.GetRequiredService(t)));
     }
+
+    [Fact, Trait("Lane", "unit")]
+    public void Telemetry_is_composed_and_exports_nothing()
+    {
+        var services = Compose();
+        using var provider = services.BuildServiceProvider(
+            new ServiceProviderOptions { ValidateOnBuild = true, ValidateScopes = true });
+
+        var runtime = provider.GetRequiredService<TelemetryRuntime>();
+
+        Assert.False(runtime.IsExporting);
+        _ = Assert.Single(services, d => d.ServiceType == typeof(ILoggerFactory));
+        Assert.Same(runtime.LoggerFactory, provider.GetRequiredService<ILoggerFactory>());
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public void The_log_level_comes_from_the_environment_Compose_is_given()
+    {
+        using var provider = Compose(logLevel: "warning").BuildServiceProvider(
+            new ServiceProviderOptions { ValidateOnBuild = true, ValidateScopes = true });
+        _ = provider.GetRequiredService<TelemetryRuntime>();
+
+        var logger = provider.GetRequiredService<ILogger<HostTests>>();
+
+        Assert.False(logger.IsEnabled(LogLevel.Information));
+        Assert.True(logger.IsEnabled(LogLevel.Warning));
+    }
+
+    private static IServiceCollection Compose(string? logLevel = null)
+        => Composition.Compose(
+            new ServiceCollection(),
+            name => name switch { "AW_STATE_DIR" => _stateRoot, "AW_LOG_LEVEL" => logLevel, _ => null },
+            new FakeTimeProvider());
 }
 `;
 
@@ -593,7 +642,7 @@ public sealed class ProcessEnvironment
 }
 `;
 
-export const loopbackTests = (p) => `${usingsBlock(["System.Net", `Aw.${p.name}.Host`, "Aw.Kernel", "Microsoft.AspNetCore.Builder", "Microsoft.AspNetCore.Hosting.Server", "Microsoft.AspNetCore.Hosting.Server.Features", "Microsoft.Extensions.DependencyInjection", "Microsoft.Extensions.Time.Testing"])}
+export const loopbackTests = (p) => `${usingsBlock(["System.Net", `Aw.${p.name}.Host`, "Aw.Kernel", "Aw.Kernel.Telemetry", "Microsoft.Extensions.Logging", "Microsoft.AspNetCore.Builder", "Microsoft.AspNetCore.Hosting.Server", "Microsoft.AspNetCore.Hosting.Server.Features", "Microsoft.Extensions.DependencyInjection", "Microsoft.Extensions.Time.Testing"])}
 
 namespace Aw.${p.name}.Tests;
 
@@ -643,6 +692,21 @@ public sealed class LoopbackBindingTests
             () => LoopbackBinding.Build([option, value], _ => null, new FakeTimeProvider()));
 
         Assert.Equal("args", refused.ParamName);
+    }
+
+    // WebApplicationBuilder registers its own ILoggerFactory before Compose runs, so the http host's guarantee is the
+    // resolved one: Kernel's (registered later), with ASP.NET's providers cleared.
+    [Fact, Trait("Lane", "integration")]
+    public async Task Kernel_telemetry_is_the_only_logger()
+    {
+        var app = LoopbackBinding.Build([], _ => null, new FakeTimeProvider());
+        await using (app)
+        {
+            var runtime = app.Services.GetRequiredService<TelemetryRuntime>();
+
+            Assert.Same(runtime.LoggerFactory, app.Services.GetRequiredService<ILoggerFactory>());
+            Assert.Empty(app.Services.GetServices<ILoggerProvider>());
+        }
     }
 
     [Fact, Trait("Lane", "integration")]

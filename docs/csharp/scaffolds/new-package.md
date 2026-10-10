@@ -23,7 +23,7 @@ first move is the TDD step.
 | `note` | one line: what the package is for | Used for the `deps.yaml` node when the package isn't declared yet |
 | `shape` | `small` (Core + App) or `full` (Core, Features, Infrastructure, Host) | `small` unless the package is expected over ~1,500 lines |
 | `host` | `cli`, `http` or `none` | `cli` → NativeAOT console app; `http` → minimal API with `CreateSlimBuilder`; `none` → library. `http` and `none` need `shape: full`: `shape: small` with `host: http` is refused with `NP-SMALL-HTTP` (the Web SDK's generated public `Program` would land in `App`, a library with `RS0016` on), and with `host: none` with `NP-SMALL-NONE` (nothing could call `App`'s internal `Add…()` methods) |
-| `depends` | list of package names | Each must be in a lower tier (checked against `deps.yaml`). Project edges from this package's `Features` (`App` in the small shape) to their `Core`. Refused with `NP-FANOUT` if that project would hold more than 4 in-repo references |
+| `depends` | list of package names | Each must be in a lower tier (checked against `deps.yaml`). Project edges from this package's `Features` (`App` in the small shape) to their `Core`. Refused with `NP-FANOUT` if that project would hold more than 4 in-repo references: `Features` holds Core, Aw.Kernel and the depends; the small shape's `App` is also the host, so it holds Aw.Kernel.Telemetry too (at most 1 depends) |
 | `binary` | the executable name, e.g. `aw-readiness` | `^[a-z][a-z0-9-]{1,40}$`; default `<name lowercase>`. The `AssemblyName` of the Host (or the small shape's `App`) |
 | `firstSlice` | PascalCase use-case name, e.g. `CheckRepo`, plus its `behavior` | Passed to `/new-slice` to generate the first red test, with the slice's `command` or `route`, `ids` and `ports` (`new-slice.md`) |
 
@@ -84,11 +84,12 @@ src/<Name>/
 │   └── <Name>InfrastructureServiceCollectionExtensions.cs   # public static Add<Name>Infrastructure(this IServiceCollection, Func<string, string?> environment)
 └── Aw.<Name>.Host/
     ├── Aw.<Name>.Host.csproj          # OutputType=Exe; AwAotEntryPoint=true; PublishAot only under a RID; AssemblyName=<binary>;
-    │                                  # refs DI; InternalsVisibleTo Aw.<Name>.Tests
+    │                                  # refs DI, the package's Core, Features and Infrastructure, Aw.Kernel and
+    │                                  # Aw.Kernel.Telemetry (only the host references it); InternalsVisibleTo Aw.<Name>.Tests
     ├── .editorconfig                  # root = false; [*.cs] dotnet_diagnostic.CA1031.severity = none  (composition root)
     ├── packages.lock.json
-    ├── Program.cs                     # calls Composition.Compose, then the command table
-    ├── Composition.cs                 # internal static class Composition { Compose(...) }; the only file that uses Infrastructure
+    ├── Program.cs                     # calls Composition.Compose, resolves TelemetryRuntime, then the command table
+    ├── Composition.cs                 # internal static class Composition { Compose(...) }: starts Kernel telemetry; the only file that uses Infrastructure
     ├── Commands/CommandTable.cs       # internal static: command name → handler; /new-slice adds one switch arm per slice
     ├── Commands/CommandOutput.cs      # internal static: Result → one JSON line on stdout (0) or the error on stderr (1); usage (2)
     └── <Name>JsonContext.cs           # internal partial class, [JsonSerializable] source-generated; used only through AwJson.CreateOptions
@@ -139,7 +140,7 @@ tests/
 
 **`shape: small`** replaces `Features`, `Infrastructure` and `Host` with one `Aw.<Name>.App` project: same files under
 `Features/`, `Infrastructure/`, `Commands/`, same `Add…()` methods, `OutputType=Exe` when `host`
-is `cli` (then `AwAotEntryPoint=true` and `PublishAot` under a RuntimeIdentifier too, see csharp.md "AOT scope"; `http` is refused for `small`, see Inputs). `App` is a library under `Directory.Build.props`' project roles, so it gets
+is `cli` (then `AwAotEntryPoint=true` and `PublishAot` under a RuntimeIdentifier too, see csharp.md "AOT scope"; `http` is refused for `small`, see Inputs). As the host, `App` references `Aw.Kernel.Telemetry` beside the package's `Core` and `Aw.Kernel`, and `App` isn't exempt from fan-out the way a `Host` is (`NP-FANOUT` counts it). `App` is a library under `Directory.Build.props`' project roles, so it gets
 `IsAotCompatible=true` from the root. Nothing outside the package references `App`, and with `host: cli` it is an Exe,
 where `CA1515` (an error under the root `.editorconfig`) rejects public types. So `App`'s types, its `Add…()` methods
 and its slice request and response records are `internal`; `App` declares `InternalsVisibleTo Aw.<Name>.Tests,
@@ -174,7 +175,8 @@ tests/Aw.<Name>.Tests/HttpJsonProfileTests.cs   # the http JSON options equal th
 `LoopbackBinding.Build(args, environment, clock)` refuses any command-line argument (`ArgumentException`), builds the
 host with `WebApplication.CreateSlimBuilder(new WebApplicationOptions { Args = [] })`, clears every configuration source
 (`ASPNETCORE_*`/`DOTNET_*` environment variables reach the host's configuration otherwise, even with `Args = []`) and adds
-an empty in-memory one (the host writes its own settings), pins `PreferHostingUrls` off, and listens with
+an empty in-memory one (the host writes its own settings), clears ASP.NET's logging providers (so Kernel telemetry,
+started in `Compose`, is the only logger and ASP.NET's own log lines are scrubbed JSON too), pins `PreferHostingUrls` off, and listens with
 `Listen(IPAddress.Loopback, port)` only. The port is `AW_<NAME>_PORT` from the environment `Composition` gets, `0` (a free
 port) by default. `LoopbackBindingTests` starts the host once per
 override vector and checks the only listener is `127.0.0.1:<port>`: `ASPNETCORE_URLS`, `DOTNET_URLS`,
@@ -251,7 +253,7 @@ for now; the second HTTP package moves it into a tier-0 Kernel part (second use 
 | File | Change |
 |---|---|
 | `AgenticWorkflow.slnx` | Adds every new project under `/src/<Name>/` and `/tests/` folders |
-| `deps.yaml` | **The node:** if the package is declared already (as `Readiness` and `Packets` are), check that `tier`, `src` (`src/<Name>`) and `projectPrefix` (`Aw.<Name>`) match the inputs, else refuse `NP-DEPS-MISMATCH`. If it isn't declared, add it (`id: <Name>`, `kind: package`, `tier`, `projectPrefix: Aw.<Name>`, `ts: null`, `src: src/<Name>`, `note`). **The edges, one rule for both cases:** for every cross-package project edge the scaffold creates (always `<Name> → Kernel`, since `Core`, `Features` and `Infrastructure` reference `Aw.Kernel`, plus one per `depends` entry), a `planned` edge in `deps.yaml` becomes `current`, and a missing edge is added as `current` with a note. Planned edges the scaffold doesn't create stay `planned` (otherwise `DEPS-STALE-001`) |
+| `deps.yaml` | **The node:** if the package is declared already (as `Readiness` and `Packets` are), check that `tier`, `src` (`src/<Name>`) and `projectPrefix` (`Aw.<Name>`) match the inputs, else refuse `NP-DEPS-MISMATCH`. If it isn't declared, add it (`id: <Name>`, `kind: package`, `tier`, `projectPrefix: Aw.<Name>`, `ts: null`, `src: src/<Name>`, `note`). **The edges, one rule for both cases:** for every cross-package project edge the scaffold creates (always `<Name> → Kernel`, since `Core`, `Features` and `Infrastructure` reference `Aw.Kernel`; `<Name> → KernelTelemetry` for every package with a host, since the host references `Aw.Kernel.Telemetry`; plus one per `depends` entry), a `planned` edge in `deps.yaml` becomes `current`, and a missing edge is added as `current` with a note. Planned edges the scaffold doesn't create stay `planned` (otherwise `DEPS-STALE-001`) |
 | `tests/Aw.Architecture.Tests/Packages.cs` | One line per new production project, by project name (`"Aw.<Name>.Core",` … `"Aw.<Name>.Host",` even though the Host sets `AssemblyName`; `Core` and `App` in the small shape), appended to `Packages.Production`, so every §4b.1 rule covers them (`ARCH-REG-001` fails otherwise) |
 | `tests/Aw.Architecture.Tests/Aw.Architecture.Tests.csproj` | One `ProjectReference` per new production project in the `Registered packages` item group, so each registered project's assembly loads (`ARCH-REG-002`) |
 | `tests/Aw.Architecture.Tests/packages.lock.json` | Rewritten by the unlocked restore below: it lists the new projects and any new transitive packages |
@@ -265,6 +267,7 @@ No other file changes. In particular the scaffold never touches `Directory.Packa
 using Aw.<Name>.Core;
 using Aw.<Name>.Features;
 using Aw.<Name>.Infrastructure;
+using Aw.Kernel.Telemetry;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Aw.<Name>.Host;
@@ -275,6 +278,7 @@ internal static class Composition
     internal static IServiceCollection Compose(IServiceCollection services, Func<string, string?> environment, TimeProvider clock)
         => services
             .AddSingleton(clock)
+            .AddKernelTelemetry(TelemetryOptions.FromEnvironment("<binary>", environment, clock))   // JSON lines on stderr (AW_LOG_LEVEL); exports off
             .Add<Name>Core()
             .Add<Name>Features()
             .Add<Name>Infrastructure(environment);
@@ -285,7 +289,14 @@ internal static class Composition
 technology (`.agents/rules/csharp.md`, Seams) changes `Infrastructure` and this one `Add…()` call, not the rest of
 `Host`. When `Infrastructure` offers more than one adapter for a port (`Add<Name>SqliteInfrastructure(environment)`,
 `Add<Name>PostgresInfrastructure(environment)`), this is where one is picked. The environment is a `Func<string, string?>` rather
-than `IConfiguration`: the AOT CLI hosts reference only `Microsoft.Extensions.DependencyInjection`.
+than `IConfiguration`: settings never bind from configuration (spec §4b.4), even though `Aw.Kernel.Telemetry`'s
+OpenTelemetry closure brings the configuration assemblies into every host.
+
+`AddKernelTelemetry` starts the process's one `TelemetryRuntime` (spec §4b.4; recipe `docs/csharp/telemetry.md`): log
+lines are scrubbed JSON on standard error at the `AW_LOG_LEVEL` level (default information; an unknown level writes one
+`AW-TELEMETRY-001` warning and carries on), spans are recorded so log lines carry trace ids, and nothing is exported. The
+service name is the package's `binary` input. Only the host project references `Aw.Kernel.Telemetry` (the `App` exe in the
+small shape), and the scaffold declares its `<Name> → KernelTelemetry` project edge.
 
 `using Microsoft.Extensions.DependencyInjection;` is emitted only for a `Microsoft.NET.Sdk` host (`host: cli`). For
 `host: http` the Web SDK's implicit usings already include it, and a duplicate fails the build (`IDE0005` is an error).
@@ -296,6 +307,7 @@ than `IConfiguration`: the AOT CLI hosts reference only `Microsoft.Extensions.De
 using Aw.<Name>.Host;
 using Aw.<Name>.Host.Commands;
 using Aw.Kernel.Json;
+using Aw.Kernel.Telemetry;
 using Microsoft.Extensions.DependencyInjection;
 
 var services = Composition.Compose(new ServiceCollection(), Environment.GetEnvironmentVariable, TimeProvider.System);
@@ -303,9 +315,14 @@ var json = AwJson.CreateOptions(<Name>JsonContext.Default);   // the one Kernel 
 var provider = services.BuildServiceProvider();   // validation runs in HostTests, not at CLI startup
 await using (provider.ConfigureAwait(false))
 {
+    _ = provider.GetRequiredService<TelemetryRuntime>();   // resolved so the container disposes it on exit, which flushes
     return await CommandTable.Run(args, provider, json).ConfigureAwait(false);
 }
 ```
+
+The container disposes only what it has resolved, so `Program.cs` resolves `TelemetryRuntime` right after building it.
+An http host resolves it inside `LoopbackBinding.Build` instead, right after `builder.Build()`: `Program.cs` and every
+test that builds the host go through that method, so each app disposes its own runtime, whoever built it.
 
 `CommandTable.Run(string[] args, IServiceProvider provider, JsonSerializerOptions json)` binds the arguments, opens a scope (`var scope = provider.CreateAsyncScope(); await using
 (scope.ConfigureAwait(false)) { … }`), resolves one `IService<TReq, TRes>`, calls it, and maps the `Result` to an exit
@@ -378,19 +395,21 @@ public static class <Name>Errors
 ```csharp
 using Aw.<Name>.Host;
 using Aw.Kernel.Services;
+using Aw.Kernel.Telemetry;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Time.Testing;
 
 namespace Aw.<Name>.Tests;
 
 public sealed class HostTests
 {
+    private static readonly string _stateRoot = Path.Combine(Path.GetTempPath(), "aw-<name>-di-test");
+
     [Fact, Trait("Lane", "unit")]
     public void Every_registered_service_resolves_in_a_scope()
     {
-        var stateRoot = Path.Combine(Path.GetTempPath(), "aw-<name>-di-test");
-        var services = Composition.Compose(
-            new ServiceCollection(), name => name == "AW_STATE_DIR" ? stateRoot : null, new FakeTimeProvider());
+        var services = Compose();
         var serviceTypes = services
             .Select(d => d.ServiceType)
             .Where(t => t.IsGenericType && t.GetGenericTypeDefinition() == typeof(IService<,>))
@@ -398,16 +417,57 @@ public sealed class HostTests
 
         using var provider = services.BuildServiceProvider(
             new ServiceProviderOptions { ValidateOnBuild = true, ValidateScopes = true });
+        _ = provider.GetRequiredService<TelemetryRuntime>();   // so the container disposes it, as Program.cs does
         using var scope = provider.CreateScope();
 
         Assert.NotEmpty(serviceTypes);
         Assert.All(serviceTypes, t => Assert.NotNull(scope.ServiceProvider.GetRequiredService(t)));
     }
+
+    [Fact, Trait("Lane", "unit")]
+    public void Telemetry_is_composed_and_exports_nothing()
+    {
+        var services = Compose();
+        using var provider = services.BuildServiceProvider(
+            new ServiceProviderOptions { ValidateOnBuild = true, ValidateScopes = true });
+
+        var runtime = provider.GetRequiredService<TelemetryRuntime>();
+
+        Assert.False(runtime.IsExporting);
+        _ = Assert.Single(services, d => d.ServiceType == typeof(ILoggerFactory));
+        Assert.Same(runtime.LoggerFactory, provider.GetRequiredService<ILoggerFactory>());
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public void The_log_level_comes_from_the_environment_Compose_is_given()
+    {
+        using var provider = Compose(logLevel: "warning").BuildServiceProvider(
+            new ServiceProviderOptions { ValidateOnBuild = true, ValidateScopes = true });
+        _ = provider.GetRequiredService<TelemetryRuntime>();
+
+        var logger = provider.GetRequiredService<ILogger<HostTests>>();
+
+        Assert.False(logger.IsEnabled(LogLevel.Information));
+        Assert.True(logger.IsEnabled(LogLevel.Warning));
+    }
+
+    private static IServiceCollection Compose(string? logLevel = null)
+        => Composition.Compose(
+            new ServiceCollection(),
+            name => name switch { "AW_STATE_DIR" => _stateRoot, "AW_LOG_LEVEL" => logLevel, _ => null },
+            new FakeTimeProvider());
 }
 ```
 
 `ValidateOnBuild` can't see inside the decorator factories `/new-slice` registers, so the test resolves every
 `IService<,>` in a scope: a missing inner service or validator registration fails here, not at the first command.
+`Telemetry_is_composed_and_exports_nothing` pins the composition: Compose registers a runtime, its logger factory is the
+only `ILoggerFactory` registration, and exporting is off by default. `The_log_level_comes_from_the_environment_Compose_is_given`
+pins that Compose hands its environment to telemetry (`AW_LOG_LEVEL=warning` turns information off). One runtime per
+process is a convention (`docs/csharp/telemetry.md`); `AddKernelTelemetry` refuses only a second call on the same
+collection. An http host's `ILoggerFactory` is checked on the real web host instead, because `WebApplicationBuilder`
+registers its own before `Compose` runs: `LoopbackBindingTests.Kernel_telemetry_is_the_only_logger` asserts the resolved
+factory is the runtime's and no `ILoggerProvider` is left.
 
 ## The red test
 
@@ -448,7 +508,10 @@ declares that has no `src/` yet, as `small`/`cli`, and an undeclared one as `ful
 builds each against the real root files (`Directory.Build.props`, `.editorconfig`, `tests/.editorconfig`,
 `Directory.Packages.props`) and asserts criterion 1, then adds a second slice to the first (after making its first
 slice green) and runs the second's integration lane, so template drift from the root settings fails the generator's CI,
-not the first user.
+not the first user. The first package's `App` is also published NativeAOT for the runner's RID and run natively: the
+publish must raise no trim or AOT warning (IL2xxx/IL3xxx), and the binary must exit 2 (usage) and write the
+`AW-TELEMETRY-001` line for an unknown `AW_LOG_LEVEL`. That is the check that the generated telemetry wiring survives
+trimming. It needs the NativeAOT toolchain (the Xcode command-line tools on macOS, clang and zlib on Linux).
 
 ## Failure behavior
 

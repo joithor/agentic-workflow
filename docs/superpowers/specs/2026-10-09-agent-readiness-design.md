@@ -358,7 +358,8 @@ group.MapPost("/items/{id}/start", async (ItemId id, StartItemBody body, IServic
 - Composition shape: decorators are registered in the owning project's `Add…()` method, outermost first, never in
   `Host`; each host has one `Compose` method that `Program.cs` and the DI validation test both call. Hosts start
   telemetry there with `AddKernelTelemetry(TelemetryOptions.FromEnvironment(service, environment, clock))`, and
-  `Program.cs` resolves `TelemetryRuntime` once the container is built (one runtime per process; R1b, #136).
+  `Program.cs` resolves `TelemetryRuntime` once the container is built (one runtime per process; R1b, #136; an http host
+  does it in `LoopbackBinding.Build`, which `Program.cs` and its tests share).
   `Compose` may also register the package's JSON options (`AwJson.CreateOptions` over the package's
   source-generated context) as a singleton, for an `Infrastructure` adapter that persists JSON; `Aw.Readiness.App`'s
   run history (`JsonRunHistory`) takes them this way (R1b, #141, on main), so `Infrastructure` never reaches for the
@@ -627,10 +628,13 @@ lands:
 
 Also still gaps:
 - the `IConfiguration` ban for hosts (§4b.4, R13);
-- the complete one-`Lane`-trait scan (§4b.5);
-- telemetry in generated code: the `/new-package` templates (#139, on main), `Aw.Readiness` (#141, on main) and
-  `Aw.Packets` (#142) don't call `AddKernelTelemetry` in `Compose` yet (§4b.4), because #139 predates #136.
-  They adopt it once #136 merges.
+- the complete one-`Lane`-trait scan (§4b.5).
+
+Closed in R2 stage 0, before the first port: telemetry in generated code. The `/new-package` hosts (cli and http),
+`aw-readiness` and `aw-packets` call `AddKernelTelemetry` in `Compose` and resolve `TelemetryRuntime` once the container
+is built (`Program.cs`; an http host in `LoopbackBinding.Build`) (§4b.4). Each host's `HostTests` checks the composition
+(`Telemetry_is_composed_and_exports_nothing`), and an http host's `LoopbackBindingTests.Kernel_telemetry_is_the_only_logger`
+checks the real web host.
 
 **Sources:**
 [Vertical slice vs Clean Architecture](https://milanjovanovic.tech/blog/vertical-slice-vs-clean-architecture) ·

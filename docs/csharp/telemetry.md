@@ -14,8 +14,8 @@ external dependency is `OpenTelemetry`. Its closure (see `src/Aw.Kernel.Telemetr
 services.AddKernelTelemetry(TelemetryOptions.FromEnvironment("aw-readiness", environment, clock));
 // A host that exports picks the adapter here too: … with { TraceExporter = <adapter from Infrastructure> }.
 
-// Program.cs, right after building the container: resolving the runtime hands it to the container, which then
-// disposes (and flushes) it on exit.
+// Program.cs, right after building the container (an http host: in LoopbackBinding.Build, right after builder.Build()):
+// resolving the runtime hands it to the container, which then disposes (and flushes) it on exit.
 using var provider = services.BuildServiceProvider();
 _ = provider.GetRequiredService<TelemetryRuntime>();
 ```
@@ -27,7 +27,8 @@ as its first line, a warning whose `eventName` is the code. Without DI, `using v
 TelemetryRuntime.Start(options)` and `telemetry.LoggerFactory`. `AddKernelTelemetry` starts the runtime right away (so
 spans are recorded and the problem line is written while Compose runs, before anything resolves a logger) and
 registers it as a singleton. The container disposes a singleton only once something has resolved it, hence the
-resolve in Program.cs; disposing the runtime flushes it. A second `AddKernelTelemetry` call throws. Run **one runtime per process**: the withheld counter is process-wide.
+resolve in Program.cs (an http host: in `LoopbackBinding.Build`, which Program.cs and its tests share); disposing the
+runtime flushes it. A second `AddKernelTelemetry` call throws. Run **one runtime per process**: the withheld counter is process-wide.
 
 OpenTelemetry's SDK reads some standard `OTEL_*` variables. The resource is exactly `service.name` from `ServiceName`
 (`ResourceBuilder.CreateEmpty()`, so `OTEL_SERVICE_NAME` and `OTEL_RESOURCE_ATTRIBUTES` are ignored), and the sampler
@@ -63,6 +64,42 @@ One JSON object per line, written with `Utf8JsonWriter` (no reflection), relaxed
   ", "). A name the template repeats gets a numbered key (`A`, `A_2`), so no JSON property repeats.
 - Log through `[LoggerMessage]` source-generated methods (`CA1848`); hand finished text to `ILogger.Log` only when the
   text is built at run time.
+
+## Standard error is diagnostic (the CLI stderr contract)
+
+A CLI host's log lines share standard error with its own error output. So a program that calls one of these CLIs (a
+`cli` edge in `deps.yaml`, such as sindri running `aw-readiness check --json`) reads:
+
+- **the outcome from the exit code, as that CLI defines it.** The codes are per command, not one global map: for
+  `aw-readiness check`, 0 the level holds, 1 it doesn't (a successful run with a negative result: the report is on
+  standard output and standard error has no error line, only log lines if any), 2 a usage or tool error (`docs/readiness/README.md`); for
+  `aw-packets`, 0 every check passed, 1 a check failed or the packet is malformed, 2 a usage or tool error
+  (`docs/csharp/packets.md`). A package scaffolded by `/new-package` starts with 0 success, 1 an error `Result`,
+  2 usage, and its own docs define the codes once its commands exist;
+- **the result from standard output** (`--json` where the command offers it);
+- **the error from standard error only to show it.** A program that must parse it passes `--json` where the CLI has it,
+  then takes the one line with a `code` member and no `level` member: the error envelope (`{"code","kind","message"}`,
+  the Kernel `Error`) never has `level`, and a log line always has `timestamp` and `level`. Error lines are written
+  only on an error, so a nonzero exit doesn't by itself mean standard error has one (`aw-readiness` exit 1 has none).
+  Without `--json`, the error is whatever the CLI documents (`aw-packets: <code> <message>`). A missing or unknown
+  command is a `usage:` text line in every CLI; a bad argument to a command is that CLI's documented error
+  (`aw-readiness`: the `AW-READINESS-001` envelope, with or without `--json`; `aw-packets`: a `usage:` line).
+
+Standard error is otherwise diagnostic: its log lines change with `AW_LOG_LEVEL` and with what the code logs, so
+nothing parses them as a contract. Golden tests and smokes that capture standard error pin a level that writes no log
+lines, because every line carries a wall-clock timestamp (the AOT smokes set `AW_LOG_LEVEL=none`; the unknown-level
+warning is checked by the scaffold e2e's native run instead).
+
+## Framework logs in http hosts
+
+An http host clears ASP.NET's logging providers (`/new-package`'s `LoopbackBinding`), so Kernel's factory is the only
+logger and ASP.NET's own lines (lifetime, hosting diagnostics, routing, Kestrel) are scrubbed JSON too. The factory
+filters by `MinimumLevel` only, with no per-category rules, and the host reads no `Logging:LogLevel` configuration.
+At the default level, information, each request therefore writes its hosting and routing lines, where a stock ASP.NET
+app would hold `Microsoft.AspNetCore` at warning. This is deliberate for now: these hosts are local, loopback-only and
+low-traffic, and the request lines carry the trace ids. A host that finds them too loud sets `AW_LOG_LEVEL=warning`;
+per-category minimums (`Microsoft.*` and `System.*` at warning) are a `TelemetryOptions` change for when the first
+http package (Bridge) needs them.
 
 ## Scrubbing on every path
 

@@ -3,9 +3,12 @@
 # scaffolds (a) a small CLI package declared in deps.yaml and (b) a full http package that isn't, each in its own
 # temporary git worktree of HEAD, and lets the generator run its own checks against the real root files
 # (restores, RS0016, build -warnaserror, the unit lane with exactly one red test, format, check-deps). Then, by hand:
-# (a) makes its first slice green and adds a second slice with /new-slice (exactly one new red test); (b) runs its
-# integration lane (loopback binding, id route binding) green. The worktrees are removed afterwards.
+# (a) makes its first slice green and adds a second slice with /new-slice (exactly one new red test), then
+# NativeAOT-publishes its App for the runner's RID (no IL2xxx/IL3xxx warning) and runs the native binary (usage exit 2
+# and the AW-TELEMETRY-001 line for an unknown AW_LOG_LEVEL); (b) runs its integration lane (loopback binding, id route
+# binding, Kernel telemetry as the only logger) green. The worktrees are removed afterwards.
 #
+# Needs the NativeAOT toolchain for the AOT step: the Xcode command-line tools on macOS, clang and zlib on Linux.
 # Usage: scripts/scaffold/e2e.sh            (from the repo root; needs the .NET SDK from global.json and node)
 # Exit:  0 both packages behaved; 1 a check failed (its output is printed); 2 usage or setup error.
 #
@@ -86,6 +89,17 @@ perl -0pi -e 's/=> throw new NotSupportedException\("CheckThing: make CheckThing
 perl -0pi -e 's/\n        Assert\.Fail\("red: assert reports_nothing_for_an_empty_tree"\);//' "$RED"
 (cd "$A" && gen scripts/scaffold/new-slice.mjs --package "$SMALL" --slice ListThings --behavior lists_nothing_for_an_empty_tree \
   --surface cli --command list --ids ThingId:string --ports IThingStore) || fail "(a) new-slice"
+
+step "(a) NativeAOT publish of the generated cli App (telemetry included): no trim or AOT warning, native run"
+# PublishAot under a RID adds the host's ILCompiler packs to the lock files, which only this throwaway worktree sees.
+rid="$(dotnet --info | awk '/^ *RID:/ {print $2; exit}')"
+(cd "$A" && env -u CI dotnet publish "src/$SMALL/Aw.$SMALL.App/Aw.$SMALL.App.csproj" -c Release -r "$rid" \
+  -p:RestoreLockedMode=false -o "$TMP/small-aot" >"$TMP/small-aot.log" 2>&1) || { tail -20 "$TMP/small-aot.log" >&2; fail "(a) AOT publish"; }
+if grep -E 'IL[23][0-9]{3}' "$TMP/small-aot.log" >&2; then fail "(a) AOT publish raised trim or AOT warnings"; fi
+bin="$TMP/small-aot/$(printf '%s' "$SMALL" | tr '[:upper:]' '[:lower:]')"
+rc=0; AW_LOG_LEVEL=bogus "$bin" >/dev/null 2>"$TMP/small-aot.err" || rc=$?
+[ "$rc" = 2 ] || fail "(a) native run with no command: exit $rc, expected 2 (usage)"
+grep -q '"eventName":"AW-TELEMETRY-001"' "$TMP/small-aot.err" || fail "(a) native run: no AW-TELEMETRY-001 line for AW_LOG_LEVEL=bogus"
 
 # ---- (b) full http package, not declared ----
 tree http

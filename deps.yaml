@@ -374,11 +374,21 @@ edges:
     kind: project
     status: current
     note: "Result, JSON"
+  - from: Packets
+    to: KernelTelemetry
+    kind: project
+    status: current
+    note: "the aw-packets host starts Kernel telemetry in Compose (§4b.4)"
   - from: Readiness
     to: Kernel
     kind: project
     status: current
     note: "Result, JSON"
+  - from: Readiness
+    to: KernelTelemetry
+    kind: project
+    status: current
+    note: "the aw-readiness host starts Kernel telemetry in Compose (§4b.4)"
   - from: Scorer
     to: Kernel
     kind: project

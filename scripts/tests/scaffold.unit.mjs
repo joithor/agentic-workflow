@@ -99,6 +99,38 @@ t("NP-DEPENDS: not a lower tier", () => untouched((d) => refused(pkg(d, { depend
 t("NP-DEPENDS: unknown package", () => untouched((d) => refused(pkg(d, { depends: "Nope" }), "NP-DEPENDS")));
 t("NP-FANOUT: more than 4 references", () =>
   untouched((d) => refused(pkg(d, { name: "Fanout", tier: "3", note: "x", "error-prefix": "FANOUT", depends: "Judge,Bridge,Packets" }), "NP-FANOUT")));
+// A small App is its own host, so it also references Aw.Kernel.Telemetry: Core + Kernel + Telemetry + 2 depends = 5.
+t("NP-FANOUT: a small App with 2 depends counts the telemetry reference", () =>
+  untouched((d) => {
+    const r = pkg(d, { name: "Fanout", tier: "2", note: "x", "error-prefix": "FANOUT", binary: "aw-fanout", depends: "Readiness,Packets" });
+    refused(r, "NP-FANOUT");
+    assert.match(r.out, /App would hold 5 in-repo references \(Core, Aw\.Kernel, Aw\.Kernel\.Telemetry and 2 depends\)/);
+  }));
+t("NP-FANOUT: a small App with 1 depend, and full Features with 2, stay within 4", () => {
+  const ported = () => {   // a tree where Readiness and Packets are ported (their Core projects exist)
+    const d = tree();
+    for (const n of ["Readiness", "Packets"]) {
+      const rel = `src/${n}/Aw.${n}.Core/Aw.${n}.Core.csproj`;
+      fs.mkdirSync(path.dirname(path.join(d, rel)), { recursive: true });
+      fs.copyFileSync(path.join(REPO, rel), path.join(d, rel));
+    }
+    return d;
+  };
+  const small = pkg(ported(), { name: "Fanout", tier: "2", note: "x", "error-prefix": "FANOUT", binary: "aw-fanout", depends: "Packets" });
+  assert.equal(small.code, 0, small.out);
+  const full = pkg(ported(), { name: "Fanout", tier: "2", note: "x", "error-prefix": "FANOUT", binary: "aw-fanout", shape: "full", depends: "Readiness,Packets" });
+  assert.equal(full.code, 0, full.out);
+});
+t("full cli: the Host starts telemetry (Program, csproj, deps edge)", () => {
+  const d = tree();
+  const r = pkg(d, { name: "Democli", tier: "1", note: "a scaffold probe", "error-prefix": "DEMOCLI", shape: "full", binary: "aw-democli" });
+  assert.equal(r.code, 0, r.out);
+  const host = "src/Democli/Aw.Democli.Host";
+  assert.match(read(d, `${host}/Composition.cs`), /\.AddKernelTelemetry\(TelemetryOptions\.FromEnvironment\("aw-democli", environment, clock\)\)/);
+  assert.match(read(d, `${host}/Program.cs`), /_ = provider\.GetRequiredService<TelemetryRuntime>\(\);/);
+  assert.match(read(d, `${host}/Aw.Democli.Host.csproj`), /<ProjectReference Include="\.\.\/\.\.\/Aw\.Kernel\.Telemetry\/Aw\.Kernel\.Telemetry\.csproj" \/>/);
+  assert.match(read(d, "deps.yaml"), /- from: Democli\n {4}to: KernelTelemetry\n {4}kind: project\n {4}status: current/);
+});
 t("NP-PINS: a missing pin stops with the pin commit to make", () =>
   untouched((d) => {
     const props = path.join(d, "Directory.Packages.props");
@@ -147,6 +179,12 @@ t("small cli: the projects, the deps edge, the registry and the red test", () =>
   assert.match(read(d, "src/Readiness/Aw.Readiness.App/Aw.Readiness.App.csproj"), /<AwAotEntryPoint>true<\/AwAotEntryPoint>/);
   assert.match(read(d, "src/Readiness/Aw.Readiness.App/Aw.Readiness.App.csproj"), /<PublishAot Condition="'\$\(RuntimeIdentifier\)' != ''">true<\/PublishAot>/);
   assert.match(read(d, "deps.yaml"), /- from: Readiness\n {4}to: Kernel\n {4}kind: project\n {4}status: current/);
+  // the host starts Kernel telemetry (spec §4b.4): Compose registers it, Program resolves it, the host references it
+  assert.match(read(d, "src/Readiness/Aw.Readiness.App/Composition.cs"), /\.AddKernelTelemetry\(TelemetryOptions\.FromEnvironment\("aw-readiness", environment, clock\)\)/);
+  assert.match(read(d, "src/Readiness/Aw.Readiness.App/Program.cs"), /_ = provider\.GetRequiredService<TelemetryRuntime>\(\);/);
+  assert.match(read(d, "src/Readiness/Aw.Readiness.App/Aw.Readiness.App.csproj"), /<ProjectReference Include="\.\.\/\.\.\/Aw\.Kernel\.Telemetry\/Aw\.Kernel\.Telemetry\.csproj" \/>/);
+  assert.match(read(d, "deps.yaml"), /- from: Readiness\n {4}to: KernelTelemetry\n {4}kind: project\n {4}status: current/);
+  assert.match(read(d, "tests/Aw.Readiness.Tests/HostTests.cs"), /public void Telemetry_is_composed_and_exports_nothing\(\)/);
   assert.match(read(d, "tests/Aw.Architecture.Tests/Packages.cs"), /"Aw\.Readiness\.Core",\n {8}"Aw\.Readiness\.App",\n {4}\];/);
   assert.match(read(d, "tests/Aw.Architecture.Tests/Aw.Architecture.Tests.csproj"), /src\/Readiness\/Aw\.Readiness\.App\/Aw\.Readiness\.App\.csproj/);
   assert.match(read(d, "AgenticWorkflow.slnx"), /<Folder Name="\/src\/Readiness\/">/);
@@ -182,7 +220,19 @@ t("full http: Host, loopback, endpoint, id, route binding test, undeclared node 
   assert.match(read(d, "src/Demohttp/Aw.Demohttp.Core/Aw.Demohttp.Core.csproj"), /<NoWarn>\$\(NoWarn\);RS0041<\/NoWarn>/, "OwnerId is a Guid id");
   assert.ok(!exists(d, "tests/Aw.Demohttp.Testing/.editorconfig"), "full-shape builders are public");
   assert.match(read(d, `${host}/Program.cs`), /Pipeline\.Configure\(app\)/);
+  // telemetry: the binary name defaults to the lowercase package name; ASP.NET's own providers are cleared
+  assert.match(read(d, `${host}/Composition.cs`), /\.AddKernelTelemetry\(TelemetryOptions\.FromEnvironment\("demohttp", environment, clock\)\)/);
+  // the http host resolves the runtime in LoopbackBinding.Build, so Program.cs and every test that builds a host dispose it
+  assert.match(read(d, `${host}/LoopbackBinding.cs`), /var app = builder\.Build\(\);\n {8}_ = app\.Services\.GetRequiredService<TelemetryRuntime>\(\);/);
+  assert.doesNotMatch(read(d, `${host}/Program.cs`), /TelemetryRuntime/);
+  assert.match(read(d, `${host}/LoopbackBinding.cs`), /_ = builder\.Logging\.ClearProviders\(\);/);
+  assert.match(read(d, `${host}/Aw.Demohttp.Host.csproj`), /<ProjectReference Include="\.\.\/\.\.\/Aw\.Kernel\.Telemetry\/Aw\.Kernel\.Telemetry\.csproj" \/>/);
+  assert.match(read(d, "deps.yaml"), /- from: Demohttp\n {4}to: KernelTelemetry\n {4}kind: project\n {4}status: current/);
+  for (const layer of ["Core", "Features", "Infrastructure"])
+    assert.doesNotMatch(read(d, `src/Demohttp/Aw.Demohttp.${layer}/Aw.Demohttp.${layer}.csproj`), /Aw\.Kernel\.Telemetry/, `only the host references telemetry, not ${layer}`);
   assert.match(read(d, "tests/Aw.Demohttp.Tests/LoopbackBindingTests.cs"), /Pipeline\.Configure\(app\)/);
+  assert.match(read(d, "tests/Aw.Demohttp.Tests/LoopbackBindingTests.cs"), /public async Task Kernel_telemetry_is_the_only_logger\(\)/);
+  assert.match(read(d, "tests/Aw.Demohttp.Tests/HostTests.cs"), /public void The_log_level_comes_from_the_environment_Compose_is_given\(\)/);
   assert.match(read(d, "tests/Aw.Demohttp.Tests/LoopbackBindingTests.cs"), /"ASPNETCORE_PREFERHOSTINGURLS=true;ASPNETCORE_URLS=http:\/\/0\.0\.0\.0:0"/);
   // a second http slice: GET by a route id that already exists, chained on the same group, its own JSON lines
   const r2 = slice(d, { package: "Demohttp", slice: "GetItem", behavior: "gets_an_item", surface: "http", route: "GET /items/{itemId}" });
