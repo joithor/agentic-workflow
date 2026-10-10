@@ -6,7 +6,7 @@
 
 Repository: `jthorare/agentic-workflow` · Apps (7): `mcp-bridge`, `scorer`, `judge`, `sindri`, `skills/ui-evidence`, `skills/bugFixOrchestrator`, `mods/aw-live`
 
-Generated: 2026-10-10T07:06:01.693Z
+Generated: 2026-10-10T07:13:26.104Z
 
 ## Summary
 
@@ -56,7 +56,7 @@ Criteria: 34 (pass 8 · fail 24 · n/a 0 · unknown 2).
 | ID | Criterion | Level | Scope | State | Score | Evidence | Source |
 |---|---|---|---|---|---|---|---|
 | SV-1 | Linter configured | 1 | app | fail | 0 / 7 | fail: mcp-bridge (no lint config or linter dependency), scorer (no lint config or linter dependency), judge (no lint config or linter dependency), sindri (no lint config or linter dependency), skills/ui-evidence (no lint config or linter dependency), skills/bugFixOrchestrator (no lint config or linter dependency), mods/aw-live (no lint config or linter dependency) | F-level |
-| SV-2 | Type checker (strict) | 1 | app | fail | 6 / 7 | pass: mcp-bridge (tsconfig strict: true), scorer (tsconfig strict: true), judge (tsconfig strict: true), sindri (tsconfig strict: true), skills/ui-evidence (tsconfig strict: true), skills/bugFixOrchestrator (tsconfig strict: true); fail: mods/aw-live (no tsconfig.json) | F-level |
+| SV-2 | Type checker (strict) | 1 | app | fail | 6 / 7 | pass: mcp-bridge (compilerOptions.strict), scorer (compilerOptions.strict), judge (compilerOptions.strict), sindri (compilerOptions.strict), skills/ui-evidence (compilerOptions.strict), skills/bugFixOrchestrator (compilerOptions.strict); fail: mods/aw-live (no tsconfig.json) | F-level |
 | SV-3 | Code formatter | 1 | app | fail | 0 / 7 | fail: mcp-bridge (no formatter config or dependency), scorer (no formatter config or dependency), judge (no formatter config or dependency), sindri (no formatter config or dependency), skills/ui-evidence (no formatter config or dependency), skills/bugFixOrchestrator (no formatter config or dependency), mods/aw-live (no formatter config or dependency) | F-pillar |
 | SV-4 | Pre-commit hooks (tracked config) | 2 | repo | fail | 0 / 1 | no tracked hook config (.pre-commit-config.yaml, .husky, lefthook, .githooks); hooks installed per clone are not reproducible | F-level |
 
@@ -64,7 +64,7 @@ Criteria: 34 (pass 8 · fail 24 · n/a 0 · unknown 2).
 
 | ID | Criterion | Level | Scope | State | Score | Evidence | Source |
 |---|---|---|---|---|---|---|---|
-| BS-1 | Build command documented | 2 | app | pass | 6 / 6 | pass: mcp-bridge (scripts.build documented in AGENTS.md; no single root build command), scorer (scripts.build documented in AGENTS.md; no single root build command), judge (scripts.build documented in AGENTS.md; no single root build command), sindri (scripts.build documented in AGENTS.md; no single root build command), skills/ui-evidence (scripts.build documented in AGENTS.md; no single root build command), skills/bugFixOrchestrator (scripts.build documented in AGENTS.md; no single root build command); n/a: mods/aw-live (no package.json; nothing to build (loaded as source)) | S5 |
+| BS-1 | Build command documented | 2 | app | pass | 6 / 6 | pass: mcp-bridge (heuristic: AGENTS.md Commands block lists mcp-bridge and build; no single root build command), scorer (heuristic: AGENTS.md Commands block lists scorer and build; no single root build command), judge (heuristic: AGENTS.md Commands block lists judge and build; no single root build command), sindri (heuristic: AGENTS.md Commands block lists sindri and build; no single root build command), skills/ui-evidence (heuristic: AGENTS.md Commands block lists skills/ui-evidence and build; no single root build command), skills/bugFixOrchestrator (heuristic: AGENTS.md Commands block lists skills/bugFixOrchestrator and build; no single root build command); n/a: mods/aw-live (no package.json; nothing to build (loaded as source)) | S5 |
 | BS-2 | Dependencies pinned (lockfile) | 2 | app | pass | 6 / 6 | pass: mcp-bridge (package-lock.json), scorer (package-lock.json), judge (package-lock.json), sindri (package-lock.json), skills/ui-evidence (package-lock.json), skills/bugFixOrchestrator (package-lock.json); n/a: mods/aw-live (no package.json, no dependencies to pin) | S5 |
 | BS-3 | VCS CLI tools documented | 2 | repo | pass | 1 / 1 | README.md documents the gh CLI | inferred |
 | BS-4 | Regular deployment frequency (≥3 releases in 90 days) | 4 | repo | fail | 0 / 1 | 0 releases published in the 90 days before 2026-10-10 | F-level |
@@ -75,7 +75,7 @@ Criteria: 34 (pass 8 · fail 24 · n/a 0 · unknown 2).
 | ID | Criterion | Level | Scope | State | Score | Evidence | Source |
 |---|---|---|---|---|---|---|---|
 | TS-1 | Unit tests exist | 1 | app | pass | 7 / 7 | pass: mcp-bridge (14 test files), scorer (37 test files), judge (49 test files), sindri (92 test files), skills/ui-evidence (24 test files), skills/bugFixOrchestrator (4 test files), mods/aw-live (2 test files) | F-level |
-| TS-2 | Integration tests exist | 3 | app | fail | 3 / 7 | pass: mcp-bridge (3 files under integration/e2e/contract/browser/routes), sindri (script test:heavy), skills/ui-evidence (3 files under integration/e2e/contract/browser/routes); fail: scorer (no integration/e2e/contract/browser/routes tests or test:integration\|e2e\|heavy script), judge (no integration/e2e/contract/browser/routes tests or test:integration\|e2e\|heavy script), skills/bugFixOrchestrator (no integration/e2e/contract/browser/routes tests or test:integration\|e2e\|heavy script), mods/aw-live (no integration/e2e/contract/browser/routes tests or test:integration\|e2e\|heavy script) | F-level |
+| TS-2 | Integration tests exist | 3 | app | fail | 3 / 7 | pass: mcp-bridge (heuristic: matched 3 test files under integration/e2e/contract/browser/routes paths), sindri (heuristic: matched script test:heavy), skills/ui-evidence (heuristic: matched 3 test files under integration/e2e/contract/browser/routes paths); fail: scorer (no integration/e2e/contract/browser/routes tests or test:integration\|e2e\|heavy script), judge (no integration/e2e/contract/browser/routes tests or test:integration\|e2e\|heavy script), skills/bugFixOrchestrator (no integration/e2e/contract/browser/routes tests or test:integration\|e2e\|heavy script), mods/aw-live (no integration/e2e/contract/browser/routes tests or test:integration\|e2e\|heavy script) | F-level |
 | TS-3 | Tests runnable locally (one command) | 3 | app | pass | 7 / 7 | pass: mcp-bridge (npm test), scorer (npm test), judge (npm test), sindri (npm test), skills/ui-evidence (npm test), skills/bugFixOrchestrator (npm test), mods/aw-live (test command in AGENTS.md) | S5 |
 | TS-4 | Fast CI feedback | 4 | repo | fail | 0 / 1 | no .github/workflows — no CI at all | F-level |
 | TS-5 | Flaky test detection | 4 | repo | fail | 0 / 1 | no .github/workflows — no CI at all | F-level |
