@@ -1,4 +1,30 @@
 <Project>
+  <!-- Evaluated after the project body, so properties a .csproj sets (AwAotCompatible, TargetFramework) are seen. -->
+
+  <!-- AOT (spec §4b.6): every library project turns on the trim and AOT analyzers. Opt-out: AwAotCompatible=false
+       in the .csproj with a comment saying why (for example Evidence: Playwright for .NET doesn't support NativeAOT).
+       Only for TFMs that support it: a netstandard2.0 project (a source generator, analyzer code fixes) would fail
+       with NETSDK1210. PublishAot is set only on entry points, in their own project files. -->
+  <PropertyGroup Condition="'$(AwIsLibraryProject)' == 'true' and '$(AwAotCompatible)' != 'false' and '$(TargetFramework)' != '' and $([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net8.0'))">
+    <IsAotCompatible>true</IsAotCompatible>
+  </PropertyGroup>
+
+  <!-- Placement (AW0002): the test-project policy is tests/.editorconfig, so *.Tests and *.Testing projects
+       (including Aw.Kernel.Testing) must live under tests/, and nothing else may: a library under tests/ would
+       silently lose RS0016, CS1591, CA2007 and CA1515. -->
+  <PropertyGroup>
+    <_AwRelDir>$([MSBuild]::MakeRelative('$(MSBuildThisFileDirectory)', '$(MSBuildProjectDirectory)').Replace('\','/'))</_AwRelDir>
+    <_AwUnderTests Condition="$(_AwRelDir.StartsWith('tests/'))">true</_AwUnderTests>
+  </PropertyGroup>
+  <Target Name="AwCheckPlacement"
+          BeforeTargets="_GenerateRestoreGraphProjectEntry;Restore;BeforeBuild"
+          Condition="('$(AwIsTestProject)' == 'true' and '$(_AwUnderTests)' != 'true') or ('$(AwIsTestProject)' != 'true' and '$(_AwUnderTests)' == 'true')">
+    <Error Condition="'$(AwIsTestProject)' == 'true'" Code="AW0002"
+           Text="$(MSBuildProjectName) is a test project (*.Tests or *.Testing) but sits at $(_AwRelDir). Move it under tests/, where tests/.editorconfig applies the test-project policy." />
+    <Error Condition="'$(AwIsTestProject)' != 'true'" Code="AW0002"
+           Text="$(MSBuildProjectName) sits at $(_AwRelDir) but is not a *.Tests or *.Testing project. Move it out of tests/, or rename it if it is test code: tests/.editorconfig would drop library rules (RS0016, CS1591, CA2007, CA1515) for it." />
+  </Target>
+
   <!-- CI lock-file guard (spec §4b.6, §4d). Locked restore (RestoreLockedMode, set when CI=true) only fails when
        package references drift from the lock file; with no lock file at all it quietly writes a new one.
        This target makes a missing packages.lock.json an error in CI. -->

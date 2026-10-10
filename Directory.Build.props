@@ -49,7 +49,8 @@
   <!-- CI (GitHub Actions sets CI=true). Locked mode fails restore when a project's package references no longer
        match its packages.lock.json (NU1004). It does not fail on a missing or hand-edited lock file: the
        AwRequireLockFile target (Directory.Build.targets) fails on a missing one, and
-       scripts/dotnet-verify-packages.sh fails when restore changed a committed one. -->
+       scripts/dotnet-verify-packages.sh fails when restore changed a committed one. Restore with
+       the force-evaluate option bypasses locked mode (drift exits 0 and rewrites the lock file): no CI step may use it. -->
   <PropertyGroup Label="CI" Condition="'$(CI)' == 'true'">
     <RestoreLockedMode>true</RestoreLockedMode>
     <ContinuousIntegrationBuild>true</ContinuousIntegrationBuild>
@@ -63,8 +64,8 @@
     <AwIsAnalyzerProject Condition="$(_AwName.EndsWith('.Analyzers'))">true</AwIsAnalyzerProject>
     <AwIsCoreProject Condition="$(_AwName.EndsWith('.Core'))">true</AwIsCoreProject>
     <!-- Every other project is a library (Core, Features, Infrastructure, App, Kernel, Redaction, ...). A new
-         project shape is covered by default; opting out needs AwAotCompatible=false in its .csproj with a
-         comment saying why (for example Evidence: Playwright for .NET doesn't support NativeAOT). -->
+         project shape is covered by default. Libraries get IsAotCompatible in Directory.Build.targets (it must be
+         evaluated after the .csproj, so an AwAotCompatible=false opt-out there is seen). -->
     <AwIsLibraryProject Condition="'$(AwIsTestProject)' != 'true' and '$(AwIsHostProject)' != 'true' and '$(AwIsAnalyzerProject)' != 'true'">true</AwIsLibraryProject>
     <!-- Core projects have no I/O, clock or random ids (spec §4b.1). Other projects may opt in with AwBannedSymbols=true. -->
     <AwBannedSymbols Condition="'$(AwBannedSymbols)' == '' and '$(AwIsCoreProject)' == 'true'">true</AwBannedSymbols>
@@ -75,12 +76,6 @@
        on, so IDE0005 (unused usings) still runs; tests/.editorconfig turns off CS1591 instead. -->
   <PropertyGroup Condition="'$(AwIsTestProject)' == 'true'">
     <IsPackable>false</IsPackable>
-  </PropertyGroup>
-
-  <!-- AOT: library projects turn on the trim and AOT analyzers. PublishAot is set only on entry points
-       (a Host, or a small package's App project), in their own project files. -->
-  <PropertyGroup Condition="'$(AwIsLibraryProject)' == 'true' and '$(AwAotCompatible)' != 'false'">
-    <IsAotCompatible>true</IsAotCompatible>
   </PropertyGroup>
 
   <ItemGroup Condition="'$(AwBannedSymbols)' == 'true'">
