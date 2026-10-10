@@ -9,7 +9,7 @@ internal static partial class ContentChecks
     internal static void Run(Packet packet, CheckList checks)
     {
         var examples = packet.Tasks.Tasks.SelectMany(static t => t.Acceptance.Select(e => (Task: t, Example: e))).ToList();
-        Examples(examples, checks);
+        Examples(packet.Tasks.Tasks, examples, checks);
         checks.Rule(
             PacketRules.Decisions,
             "every question is answered or deferred with an owner and a default",
@@ -17,18 +17,15 @@ internal static partial class ContentChecks
                 $"question {q.Id.Value}",
                 q.Deferred is null ? "is open: no answer and no deferral" : "is deferred without an owner or a 'buildMayAssume' default",
                 "Answer it at the desk, or defer it with an owner and what the build may assume meanwhile.")));
-        Holdouts(examples, checks);
+        Holdouts(packet.Tasks.Tasks, examples, checks);
     }
 
-    private static void Examples(List<(PacketTask Task, AcceptanceExample Example)> examples, CheckList checks)
+    private static void Examples(IReadOnlyList<PacketTask> tasks, List<(PacketTask Task, AcceptanceExample Example)> examples, CheckList checks)
     {
         checks.Rule(
             PacketRules.AcceptanceText,
-            "every visible acceptance example has text",
-            examples.Where(static x => !x.Example.Holdout && string.IsNullOrWhiteSpace(x.Example.Text)).Select(static x => (
-                $"example {x.Example.Id.Value}",
-                $"task {x.Task.Id.Value}'s example has no text",
-                "Write the example (given-when-then or prose), or mark it 'holdout: true' if the implementer must not see it.")));
+            "every task has a visible acceptance example, and each visible one has text",
+            Visible(tasks, examples));
         checks.Rule(
             PacketRules.Evidence,
             "every acceptance example maps to an evidence kind",
@@ -42,17 +39,15 @@ internal static partial class ContentChecks
                     "Name at least one evidence kind (addendum §17.11), for example 'test' or 'cli-transcript'.")));
     }
 
-    private static void Holdouts(List<(PacketTask Task, AcceptanceExample Example)> examples, CheckList checks)
+    private static void Holdouts(IReadOnlyList<PacketTask> tasks, List<(PacketTask Task, AcceptanceExample Example)> examples, CheckList checks)
     {
         checks.Rule(
             PacketRules.HoldoutExists,
-            "every task with acceptance examples holds one out",
-            examples.GroupBy(static x => x.Task)
-                .Where(static g => !g.Any(static x => x.Example.Holdout))
-                .Select(static g => (
-                    $"task {g.Key.Id.Value}",
-                    "none of its acceptance examples is held out",
-                    "Add a held-out example to this task ('holdout: true', its text kept in sindri-private state).")));
+            "every task holds an acceptance example out",
+            tasks.Where(static t => !t.Acceptance.Any(static e => e.Holdout)).Select(static t => (
+                $"task {t.Id.Value}",
+                t.Acceptance.Count == 0 ? "has no acceptance examples, so nothing is held out" : "none of its acceptance examples is held out",
+                "Add a held-out example to this task ('holdout: true', its text kept in sindri-private state).")));
         checks.Rule(
             PacketRules.HoldoutStored,
             "no held-out example keeps its text in the packet",
@@ -62,10 +57,21 @@ internal static partial class ContentChecks
                 "Keep only the example's id and evidence kinds here; its text belongs in sindri-private state (addendum §17.19).")));
     }
 
+    // A task with no visible example gives its implementer nothing to aim at; a visible example needs its text.
+    private static IEnumerable<(string, string, string)> Visible(IReadOnlyList<PacketTask> tasks, List<(PacketTask Task, AcceptanceExample Example)> examples) =>
+        tasks.Where(static t => !t.Acceptance.Any(static e => !e.Holdout)).Select(static t => (
+                $"task {t.Id.Value}",
+                "has no visible acceptance example",
+                "Add an example the implementer can read (given-when-then or prose), besides the held-out ones."))
+            .Concat(examples.Where(static x => !x.Example.Holdout && string.IsNullOrWhiteSpace(x.Example.Text)).Select(static x => (
+                $"example {x.Example.Id.Value}",
+                $"task {x.Task.Id.Value}'s example has no text",
+                "Write the example (given-when-then or prose), or mark it 'holdout: true' if the implementer must not see it.")));
+
     private static bool Settled(Question question) =>
         !string.IsNullOrWhiteSpace(question.Answer)
         || (question.Deferred is { } d && !string.IsNullOrWhiteSpace(d.Owner) && !string.IsNullOrWhiteSpace(d.BuildMayAssume));
 
-    [GeneratedRegex("^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$", RegexOptions.CultureInvariant, matchTimeoutMilliseconds: 1000)]
+    [GeneratedRegex("^[a-z][a-z0-9]*(?:-[a-z0-9]+)*\\z", RegexOptions.CultureInvariant, matchTimeoutMilliseconds: 1000)]
     private static partial Regex EvidenceKind { get; }
 }

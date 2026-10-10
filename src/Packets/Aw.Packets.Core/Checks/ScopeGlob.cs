@@ -5,7 +5,8 @@ namespace Aw.Packets.Core.Checks;
 /// <summary>
 /// One write-scope entry: a repo-relative glob, or 'new: &lt;path&gt;' for a file the task creates. In a glob, '*' and '?'
 /// stay inside one path segment and a whole '**' segment matches any number of segments (none included). Matching is
-/// a two-pointer walk over segments and characters: no regex, so it can't time out or grow with the pattern.
+/// a two-pointer walk over segments and characters: no regex, bounded by the entry's length with no backtracking
+/// blow-up.
 /// </summary>
 internal sealed class ScopeGlob
 {
@@ -53,8 +54,14 @@ internal sealed class ScopeGlob
     /// <summary>True when the glob matches <paramref name="path"/>, or a 'new:' entry declares exactly it.</summary>
     /// <param name="path">A repo-relative path with '/' separators.</param>
     /// <returns>Whether it matches.</returns>
-    public bool Matches(string path) =>
-        _segments is null ? string.Equals(NewPath, path, StringComparison.Ordinal) : MatchSegments(_segments, path.Split('/'));
+    public bool Matches(string path) => Matches(path, path.Split('/'));
+
+    /// <summary>As <see cref="Matches(string)"/>, with the path already split at '/'.</summary>
+    /// <param name="path">The path.</param>
+    /// <param name="segments">Its segments.</param>
+    /// <returns>Whether it matches.</returns>
+    public bool Matches(string path, string[] segments) =>
+        _segments is null ? string.Equals(NewPath, path, StringComparison.Ordinal) : MatchSegments(_segments, segments);
 
     // '**' over segments, like '*' over characters: on a mismatch, retry from the last '**' one segment later.
     private static bool MatchSegments(string[] glob, string[] path)

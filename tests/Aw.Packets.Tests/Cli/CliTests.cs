@@ -45,7 +45,7 @@ public sealed class CliTests : IDisposable
     [Fact]
     public void Validate_a_failing_packet_exits_1_and_names_the_rule_and_the_fix()
     {
-        var packet = _work.WritePacket(A.Packet().With(A.Task("t1").After("t1").Example("h", holdout: true, "test")));
+        var packet = _work.WritePacket(A.Packet().With(A.Task("t1").After("t1")));
 
         var (exit, output, _) = _work.Run("validate", packet, "--repo", _work.Repo);
 
@@ -113,7 +113,7 @@ public sealed class CliTests : IDisposable
     [Fact]
     public void Freeze_a_failing_packet_exits_1_and_writes_nothing()
     {
-        var packet = _work.WritePacket(A.Packet().With(A.Task("t1").Writing("lib/**").Example("h", holdout: true, "test")));
+        var packet = _work.WritePacket(A.Packet().With(A.Task("t1").Writing("lib/**")));
 
         var (exit, output, _) = _work.Run("freeze", packet, "--repo", _work.Repo);
 

@@ -12,7 +12,7 @@ It was generated with `/new-package` (the invocation is in the PR that added it)
 
 | File | Record | Holds |
 |---|---|---|
-| `packet.json` | `PacketManifest` | `schemaVersion`, `id` (`PacketId`: lower-case letters, digits, `-`, ≤ 64), `repo` (`RepoSlug`: `owner/name`), `baseSha` (text, so a short sha is a PKT-BASE-001 failure rather than a malformed packet), `status` (`draft`, `frozen`), `hash` (`PacketHash`: `sha256:` + 64 hex, or null), `links` |
+| `packet.json` | `PacketManifest` | `schemaVersion`, `id` (`PacketId`: lower-case letters, digits, `-`, ≤ 64), `repo` (`RepoSlug`: `owner/name`, each side letters, digits, `.`, `_`, `-`, not ending in `.`, not a Windows device name), `baseSha` (text, so a short sha is a PKT-BASE-001 failure rather than a malformed packet), `status` (`draft`, `frozen`), `hash` (`PacketHash`: `sha256:` + 64 hex, or null), `links` |
 | `links.decisions` | `DecisionLog` | `questions[]`: `id`, `text`, `asker`, and either `answer` or `deferred: { owner, buildMayAssume }`; `affects[]` |
 | `links.outOfScope` | `OutOfScope` | `items[]` |
 | `links.tasks` | `TaskPlan` | `workstreams[]` (`id`, `title`) and `tasks[]`: `id`, `workstream`, `title`, `deps[]`, `size` (`XS`…`XL`), `writeScope[]` (globs, or `new: <path>`), `readSeeds[]`, `acceptance[]` (`id`, `text` — none for a held-out example —, `evidence[]`, `holdout`), `rules[]`, `budget` (`tokens`, `turns`, `wallMinutes`) |
@@ -23,7 +23,7 @@ in `schemas/packets/` (`PacketSchemaTests` fails when a record changes and the s
 relative paths with `/` inside the packet directory; `..`, a root or a `:` is refused, and so is a symbolic link anywhere between the packet directory and the file (a linked file or a linked sub-directory). Every JSON file is UTF-8 without a byte order mark, with no duplicate keys, no unknown members (an optional `$schema` editor hint is allowed at the top of each file) and no null in a list; a packet holds at most 2,000 tasks (`PacketReader.MaxTasks`). Anything else is AW-PACKETS-003.
 
 Write-scope globs are repo-relative: `*` and `?` stay inside one path segment, `**` crosses segments (`src/**`,
-`**/guide.md`; `**` only as a whole segment, inside one it acts as `*`); entries are at most 1,024 characters, and matching is a two-pointer walk with no regex, so it can't time out or grow with the pattern. `new: src/c.cs` declares a file the task creates.
+`**/guide.md`; `**` only as a whole segment, inside one it acts as `*`); entries are at most 1,024 characters, and matching is a two-pointer walk with no regex (bounded by the entry length, no backtracking blow-up); each distinct entry is matched against the base commit's files once. `new: src/c.cs` declares a file the task creates.
 
 ## Checks (`aw-packets validate <packet-dir> [--repo <dir>] [--json]`)
 
@@ -37,18 +37,18 @@ file list comes from git.
 | `PKT-GRAPH-001` | Every dependency names a task in the packet |
 | `PKT-GRAPH-002` | The task graph is acyclic: each strongly connected group is reported once, naming every task in it and one cycle through it (`tasks t1, t2, t3 form a cycle: t1 -> t3 -> t2 -> t1`) |
 | `PKT-BASE-001` | `baseSha` is a full commit sha that exists in the repository |
-| `PKT-SCOPE-001` | Every write scope matches a file at the base commit, or is `new:` and doesn't exist there |
+| `PKT-SCOPE-001` | Every write scope is a relative glob that matches a file at the base commit, or `new:` a path that can be created there (not an existing file or directory, not under an existing file) |
 | `PKT-SCOPE-002` | Two tasks no dependency chain orders don't write the same path (a base file both match, or a declared new path) |
-| `PKT-ACC-001` | Every acceptance example the implementer sees has text |
+| `PKT-ACC-001` | Every task has a visible acceptance example, and every visible one has text |
 | `PKT-EVID-001` | Every acceptance example names at least one kebab-case evidence kind (addendum §17.11) |
 | `PKT-DEC-001` | Every question is answered, or deferred with an owner and a `buildMayAssume` default |
-| `PKT-HOLD-001` | Every task with acceptance examples holds at least one out (addendum §17.4: a share held out, per task) |
+| `PKT-HOLD-001` | Every task holds at least one acceptance example out (addendum §17.4: a share held out, per task); a task with no examples fails |
 | `PKT-HOLD-002` | No held-out example keeps its text in the packet: held-out text lives in sindri-private state, mounted only into evaluator Steps and never committed (addendum §17.19); the packet keeps its id and evidence kinds |
 | `PKT-SIZE-001` | **Unchecked**: the size-class budgets aren't defined (open question below) |
 | `PKT-FLOW-001` | **Unchecked**: workflow coverage (addendum §17.7) needs the lens catalog and workflow generation |
 
 The text output lists every rule (`pass`, `FAIL` with the subject, what was found and the fix, or `unchecked` with the
-reason). `--json` writes one document, `schemaVersion` 1, with `packet`, `passed` and `checks[]` (one record per
+reason). A rule reports at most 50 failures, then one record counting the rest. `--json` writes one document, `schemaVersion` 1, with `packet`, `passed` and `checks[]` (one record per
 failure, one per passing or unchecked rule; each failure has `rule`, `subject`, `message` and `fix`).
 
 ## Freeze (`aw-packets freeze <packet-dir> [--repo <dir>] [--json]`)

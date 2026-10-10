@@ -7,10 +7,10 @@ pass      PKT-GRAPH-002 packet: the task graph has no cycle
 pass      PKT-BASE-001 packet: base commit <sha> is in the repository
 pass      PKT-SCOPE-001 packet: every write scope exists at the base commit or is declared new
 pass      PKT-SCOPE-002 packet: no two unordered tasks share a write scope
-pass      PKT-ACC-001 packet: every visible acceptance example has text
+pass      PKT-ACC-001 packet: every task has a visible acceptance example, and each visible one has text
 pass      PKT-EVID-001 packet: every acceptance example maps to an evidence kind
 pass      PKT-DEC-001 packet: every question is answered or deferred with an owner and a default
-pass      PKT-HOLD-001 packet: every task with acceptance examples holds one out
+pass      PKT-HOLD-001 packet: every task holds an acceptance example out
 pass      PKT-HOLD-002 packet: no held-out example keeps its text in the packet
 unchecked PKT-SIZE-001 packet: the size-class budgets aren't defined yet, so each task's size and budget are recorded but not compared
 unchecked PKT-FLOW-001 packet: workflow coverage (addendum §17.7) needs the lens catalog and workflow generation, which don't exist yet
@@ -24,10 +24,10 @@ FAIL      PKT-GRAPH-002 task t1: tasks t1, t2 form a cycle: t1 -> t2 -> t1
 pass      PKT-BASE-001 packet: base commit <sha> is in the repository
 pass      PKT-SCOPE-001 packet: every write scope exists at the base commit or is declared new
 pass      PKT-SCOPE-002 packet: no two unordered tasks share a write scope
-pass      PKT-ACC-001 packet: every visible acceptance example has text
+pass      PKT-ACC-001 packet: every task has a visible acceptance example, and each visible one has text
 pass      PKT-EVID-001 packet: every acceptance example maps to an evidence kind
 pass      PKT-DEC-001 packet: every question is answered or deferred with an owner and a default
-pass      PKT-HOLD-001 packet: every task with acceptance examples holds one out
+pass      PKT-HOLD-001 packet: every task holds an acceptance example out
 pass      PKT-HOLD-002 packet: no held-out example keeps its text in the packet
 unchecked PKT-SIZE-001 packet: the size-class budgets aren't defined yet, so each task's size and budget are recorded but not compared
 unchecked PKT-FLOW-001 packet: workflow coverage (addendum §17.7) needs the lens catalog and workflow generation, which don't exist yet

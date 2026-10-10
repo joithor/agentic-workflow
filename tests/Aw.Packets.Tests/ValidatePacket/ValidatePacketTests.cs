@@ -380,7 +380,7 @@ public sealed class ValidatePacketTests
         }
 
         var packet = A.Packet();
-        for (var i = 0; i < Aw.Packets.Core.PacketReader.MaxTasks; i++)
+        for (var i = 0; i < PacketReader.MaxTasks; i++)
         {
             var task = A.Task("t" + i.ToString(System.Globalization.CultureInfo.InvariantCulture)).Writing("src/**");
             _ = packet.With(i == 0 ? task : task.After("t" + (i - 1).ToString(System.Globalization.CultureInfo.InvariantCulture)));
@@ -398,5 +398,5 @@ public sealed class ValidatePacketTests
     [InlineData("a**b", "axyb", true)]
     [InlineData("a**b", "ax/yb", false)]
     public void Glob_edge_cases(string glob, string path, bool matches) =>
-        Assert.Equal(matches, Aw.Packets.Core.Checks.ScopeGlob.Parse(glob)?.Matches(path));
+        Assert.Equal(matches, ScopeGlob.Parse(glob)?.Matches(path));
 }

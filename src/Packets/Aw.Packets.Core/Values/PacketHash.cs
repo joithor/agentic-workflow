@@ -19,6 +19,6 @@ public readonly partial struct PacketHash : ITypedId<PacketHash, string>
     private static Validation Validate(string value) =>
         Shape.IsMatch(value) ? Validation.Ok : Validation.Invalid("PacketHash must be 'sha256:' and 64 lower-case hex digits");
 
-    [GeneratedRegex("^sha256:[0-9a-f]{64}$", RegexOptions.CultureInvariant, matchTimeoutMilliseconds: 1000)]
+    [GeneratedRegex("^sha256:[0-9a-f]{64}\\z", RegexOptions.CultureInvariant, matchTimeoutMilliseconds: 1000)]
     private static partial Regex Shape { get; }
 }

@@ -1,3 +1,4 @@
+using System.Collections;
 using System.Globalization;
 using Aw.Packets.Core.Model;
 
@@ -6,6 +7,9 @@ namespace Aw.Packets.Core.Checks;
 /// <summary>The rules that read the base commit: the base sha, write scopes that exist, and overlapping write scopes.</summary>
 internal static class ScopeChecks
 {
+    private const string ScopeFix =
+        "Point the scope at files that exist at the base commit (a relative glob), or declare a file the task creates as 'new: <path>'.";
+
     internal static void Run(Packet packet, BaseTree tree, CheckList checks)
     {
         var sha = packet.Manifest.BaseSha;
@@ -21,52 +25,54 @@ internal static class ScopeChecks
             return;
         }
 
-        var parsed = new Dictionary<string, ScopeGlob?>(StringComparer.Ordinal);   // one regex per distinct entry
+        var parsed = new Dictionary<string, ScopeGlob?>(StringComparer.Ordinal);   // one parse per distinct entry
         var scopes = packet.Tasks.Tasks.ToDictionary(
             static t => t,
             t => t.WriteScope.Select(e => (e, parsed.TryGetValue(e, out var known) ? known : parsed[e] = ScopeGlob.Parse(e))).ToList());
-        checks.Rule(PacketRules.ScopeExists, "every write scope exists at the base commit or is declared new", Missing(scopes, files, sha));
-        checks.Rule(PacketRules.ScopeOverlap, "no two unordered tasks share a write scope", Overlaps(packet, scopes, files));
+        var index = new PathIndex(files, parsed.Values.Select(static g => g?.NewPath).OfType<string>());
+        checks.Rule(PacketRules.ScopeExists, "every write scope exists at the base commit or is declared new", Missing(scopes, index, sha));
+        checks.Rule(PacketRules.ScopeOverlap, "no two unordered tasks share a write scope", Overlaps(packet, scopes, index));
     }
 
     private static IEnumerable<(string, string, string)> Missing(
-        Dictionary<PacketTask, List<(string Entry, ScopeGlob? Glob)>> scopes, IReadOnlySet<string> files, string sha)
+        Dictionary<PacketTask, List<(string Entry, ScopeGlob? Glob)>> scopes, PathIndex index, string sha)
     {
         foreach (var (task, entries) in scopes)
         {
             foreach (var (entry, glob) in entries)
             {
-                var problem = glob switch
+                if (Problem(entry, glob, index, sha) is { } problem)
                 {
-                    null => $"isn't a glob or a safe 'new: <relative path>' of at most {ScopeGlob.MaxLength} characters",
-                    { NewPath: { } path } when files.Contains(path) => $"declares '{path}' new, but it exists at {Short(sha)}",
-                    { NewPath: null } when !files.Any(glob.Matches) => $"matches no file at {Short(sha)}",
-                    _ => null,
-                };
-                if (problem is not null)
-                {
-                    yield return ($"task {task.Id.Value}", $"write scope '{Shown(entry)}' {problem}",
-                        "Point the scope at files that exist at the base commit, or declare a file the task creates as 'new: <path>'.");
+                    yield return ($"task {task.Id.Value}", $"write scope '{Shown(entry)}' {problem}", ScopeFix);
                 }
             }
         }
     }
 
+    private static string? Problem(string entry, ScopeGlob? glob, PathIndex index, string sha) => glob switch
+    {
+        null => $"isn't a glob or a safe 'new: <relative path>' of at most {ScopeGlob.MaxLength} characters",
+        { NewPath: { } path } when index.IsFile(path) => $"declares '{path}' new, but it exists at {Short(sha)}",
+        { NewPath: { } path } when index.IsDirectory(path) => $"declares '{path}' new, but it is an existing directory at {Short(sha)}",
+        { NewPath: { } path } when index.FileAbove(path) is { } file => $"declares '{path}' new, but '{file}' is a file at {Short(sha)}",
+        { NewPath: null } when entry.TrimStart().StartsWith('/') => "starts with '/': write scopes are relative to the repository root",
+        { NewPath: null } when !PathIndex.Any(index.Matched(glob)) => $"matches no file at {Short(sha)}",
+        _ => null,
+    };
+
     private static IEnumerable<(string, string, string)> Overlaps(
-        Packet packet, Dictionary<PacketTask, List<(string Entry, ScopeGlob? Glob)>> scopes, IReadOnlySet<string> files)
+        Packet packet, Dictionary<PacketTask, List<(string Entry, ScopeGlob? Glob)>> scopes, PathIndex index)
     {
         var graph = new TaskGraph(packet.Tasks.Tasks);
         var tasks = packet.Tasks.Tasks.OrderBy(static t => t.Id.Value, StringComparer.Ordinal).ToList();
-        var declared = scopes.Values.SelectMany(static e => e).Select(static e => e.Glob?.NewPath).OfType<string>();
-        var paths = files.Concat(declared).Distinct(StringComparer.Ordinal).Order(StringComparer.Ordinal).ToList();
-        var writes = tasks.ToDictionary(static t => t, t => Written(Globs(scopes[t]), paths));
+        var writes = tasks.ToDictionary(static t => t, t => PathIndex.Words(Written(scopes[t], index)));
         for (var i = 0; i < tasks.Count; i++)
         {
             for (var j = i + 1; j < tasks.Count; j++)
             {
                 var (a, b) = (tasks[i], tasks[j]);
                 // the shared path first: reachability is only computed for tasks that share one
-                if (a.Id != b.Id && FirstShared(writes[a], writes[b]) is { } path && !graph.Ordered(a.Id, b.Id))
+                if (a.Id != b.Id && index.FirstShared(writes[a], writes[b]) is { } path && !graph.Ordered(a.Id, b.Id))
                 {
                     yield return ($"tasks {a.Id.Value}, {b.Id.Value}",
                         $"tasks {a.Id.Value} and {b.Id.Value} can run at the same time and both write '{path}'",
@@ -76,28 +82,16 @@ internal static class ScopeChecks
         }
     }
 
-    private static List<ScopeGlob> Globs(List<(string Entry, ScopeGlob? Glob)> entries) =>
-        [.. entries.Select(static e => e.Glob).OfType<ScopeGlob>()];
-
-    // The paths a task's scope matches (base files and every declared new path), in ordinal order and as a set.
-    private static (string[] Sorted, HashSet<string> Set) Written(List<ScopeGlob> globs, List<string> paths)
+    // The paths a task's scope matches: the union of its entries' bits.
+    private static BitArray Written(List<(string Entry, ScopeGlob? Glob)> entries, PathIndex index)
     {
-        var sorted = paths.Where(p => globs.Exists(g => g.Matches(p))).ToArray();
-        return (sorted, new HashSet<string>(sorted, StringComparer.Ordinal));
-    }
-
-    // The first path (ordinal) both tasks write; allocation-free, because it runs for every pair of tasks.
-    private static string? FirstShared((string[] Sorted, HashSet<string> Set) a, (string[] Sorted, HashSet<string> Set) b)
-    {
-        foreach (var path in a.Sorted)
+        var bits = new BitArray(index.Paths.Count);
+        foreach (var glob in entries.Select(static e => e.Glob).OfType<ScopeGlob>())
         {
-            if (b.Set.Contains(path))
-            {
-                return path;
-            }
+            _ = bits.Or(index.Matched(glob));
         }
 
-        return null;
+        return bits;
     }
 
     // An entry as a message shows it: a long one is cut, with its length.

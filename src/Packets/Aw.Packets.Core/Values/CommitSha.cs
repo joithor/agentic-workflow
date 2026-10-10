@@ -14,6 +14,6 @@ public readonly partial struct CommitSha : ITypedId<CommitSha, string>
     private static Validation Validate(string value) =>
         Shape.IsMatch(value) ? Validation.Ok : Validation.Invalid("CommitSha must be 40 or 64 lower-case hex digits");
 
-    [GeneratedRegex("^(?:[0-9a-f]{40}|[0-9a-f]{64})$", RegexOptions.CultureInvariant, matchTimeoutMilliseconds: 1000)]
+    [GeneratedRegex("^(?:[0-9a-f]{40}|[0-9a-f]{64})\\z", RegexOptions.CultureInvariant, matchTimeoutMilliseconds: 1000)]
     private static partial Regex Shape { get; }
 }

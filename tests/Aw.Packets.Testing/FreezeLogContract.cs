@@ -30,7 +30,7 @@ public abstract class FreezeLogContract
         Files = ["packet.json", "tasks.json"],
     };
 
-    /// <summary>A record lands at '&lt;packet&gt;/frozen/&lt;hex&gt;.json' and reads back unchanged.</summary>
+    /// <summary>A record lands at '&lt;owner&gt;/&lt;name&gt;/&lt;packet&gt;/frozen/&lt;hex&gt;.json' and reads back unchanged.</summary>
     /// <returns>A task.</returns>
     [Fact]
     public async Task A_record_lands_at_its_location_and_reads_back()
@@ -40,7 +40,7 @@ public abstract class FreezeLogContract
         var receipt = await log.Record(ARecord(), CancellationToken.None);
 
         Expect.That(receipt.IsSuccess && receipt.Value == new FreezeReceipt("example/repo/demo-packet/frozen/" + HashA[7..] + ".json", AlreadyFrozen: false),
-            "a first record lands at <packet>/frozen/<hex>.json and isn't already frozen");
+            "a first record lands at <owner>/<name>/<packet>/frozen/<hex>.json and isn't already frozen");
         var stored = ReadBack(log);
         Expect.That(stored.Count == 1 && Same(ARecord(), stored[0]), "the stored record reads back unchanged");
     }

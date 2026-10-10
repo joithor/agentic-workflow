@@ -104,7 +104,7 @@ public sealed class PacketSchemaTests
     {
         ["type"] = "string",
         ["pattern"] = type == typeof(PacketId) ? "^[a-z0-9][a-z0-9-]{0,63}$"
-            : type == typeof(RepoSlug) ? "^[A-Za-z0-9._-]+/[A-Za-z0-9._-]+$"
+            : type == typeof(RepoSlug) ? "^[A-Za-z0-9._-]*[A-Za-z0-9_-]/[A-Za-z0-9._-]*[A-Za-z0-9_-]$"
             : type == typeof(CommitSha) ? "^(?:[0-9a-f]{40}|[0-9a-f]{64})$"
             : type == typeof(PacketHash) ? "^sha256:[0-9a-f]{64}$"
             : "\\S",
