@@ -26,6 +26,21 @@ describe("identifierTokens", () => {
     expect(identifierTokens("call quarbleScheduler() in src/glx-rota/utils.ts, ok")).toEqual(["quarblescheduler", "utils"]);
     expect(identifierTokens("ｑuarbleScheduler")).toEqual(["quarblescheduler"]);
   });
+
+  it("is Unicode-aware: a combining mark or a non-ASCII letter inside an identifier never splits it", () => {
+    expect(identifierTokens("BillingEngine\u0301Service")).toEqual(["billingengineservice"]); // decomposed accent stripped
+    expect(identifierTokens("BillingEngin\u00e9Service")).toEqual(["billingengineservice"]); // precomposed accent folded
+    expect(identifierTokens("Bill\u0456ngEngine")).toEqual(["bill\u0456ngengine"]); // a Cyrillic letter stays inside the token
+    expect(identifierTokens("\u00c9tatMachine $scope_ref")).toEqual(["etatmachine", "$scope_ref"]);
+    expect(identifierTokens("Quarble\u200bScheduler")).toEqual(["quarblescheduler"]); // invisibles still go
+  });
+
+  it("matches an accented candidate against a symbol stored with or without the accent (both sides normalized alike)", () => {
+    const db = seedIndex(openIndex(path.join(tempDir("ix-"), "p.db")), { files: ["src/caf\u00e9-rota/x.ts"], symbols: ["BillingEngin\u00e9Service"] });
+    const set = buildDerivedSet({ privateVocab: [vocabularyOf(db)], toolkit: new Set(), words: new Set() });
+    expect(identifierProblem("uses BillingEngine\u0301Service now", set)).toBe("contains a private-repo identifier");
+    expect(identifierProblem("uses BillingEngineService now", set)).toBe("contains a private-repo identifier");
+  });
 });
 
 describe("buildDerivedSet", () => {

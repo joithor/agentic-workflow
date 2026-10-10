@@ -11,13 +11,17 @@ import { stripInvisible, WHITESPACE } from "./invisible.js";
 // Layer 3 of the publish gate (spec §5.4): code identifiers from private repos' indexes, minus English
 // words and the toolkit's own vocabulary. Built in memory at publish; never written, logged or printed.
 const MIN_IDENTIFIER = 5;
-const IDENT = /[A-Za-z_$][A-Za-z0-9_$]*/g;
+// Unicode-aware on both sides (the derived set and the candidate): a non-ASCII letter is an identifier character, so it
+// can't split a token.
+const IDENT = /[\p{L}_$][\p{L}\p{N}_$]*/gu;
 
 export const wordsFile = (deps: Deps): string => deps.env.SINDRI_WORDS ?? "/usr/share/dict/words";
 
+// NFKD, invisibles and combining marks (\p{M}) removed, lowercased: a decomposed or precomposed accent, fullwidth
+// letters and zero-width characters neither split an identifier nor change it.
 export function identifierTokens(text: string): string[] {
-  const visible = stripInvisible(text.normalize("NFKC"), WHITESPACE);
-  return (visible.match(IDENT) ?? []).map((t) => t.toLowerCase()).filter((t) => t.length >= MIN_IDENTIFIER);
+  const visible = stripInvisible(text.normalize("NFKD"), WHITESPACE).replace(/\p{M}/gu, "").toLowerCase();
+  return (visible.match(IDENT) ?? []).filter((t) => t.length >= MIN_IDENTIFIER);
 }
 
 export function vocabularyOf(db: IndexDb): Set<string> {
