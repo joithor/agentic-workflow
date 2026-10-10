@@ -11,3 +11,5 @@ records:
     section: "4b.3"
   - id: engineering.csharp.sdk-pinned
     section: "4b.6"
+  - id: engineering.csharp.public-api-tracked
+    section: "4b.3"

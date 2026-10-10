@@ -1,0 +1,20 @@
+schemaVersion: 1
+id: engineering.csharp.public-api-tracked
+kind: engineering
+section: "4b.3"
+text: "Every library's public surface is listed in PublicAPI.Shipped.txt and PublicAPI.Unshipped.txt."
+why: "A change to a package's contract shows in the diff."
+select:
+  languages: [csharp]
+  paths: ["src/**"]
+checks:
+  - type: analyzer
+    id: "RS0016"
+    via: baseline
+    package: Microsoft.CodeAnalysis.PublicApiAnalyzers
+    status: active
+gap: closed
+source:
+  type: adr
+  ref: "docs/spec.md#4b3"
+status: active
