@@ -1,7 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import Database from "better-sqlite3";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
 import { SindriError } from "../src/errors.js";
 import {
@@ -76,6 +76,34 @@ describe("ledger db", () => {
     expect(schemaVersion(db)).toBe(2);
     migrateWith(db, file, steps);
     expect(schemaVersion(db)).toBe(2);
+    db.close();
+  });
+
+  it("never overwrites an existing backup of the same version: a racing opener can't replace .bak-v<N> with a newer copy", () => {
+    const dir = tempDir();
+    const file = path.join(dir, "ledger.db");
+    const db = new Database(file);
+    const steps = ["CREATE TABLE a (x INTEGER);", "CREATE TABLE b (y INTEGER);"];
+    migrateWith(db, file, steps.slice(0, 1));
+    fs.writeFileSync(`${file}.bak-v1`, "the first opener's genuine v1 backup");
+    migrateWith(db, file, steps);
+    expect(fs.readFileSync(`${file}.bak-v1`, "utf8")).toBe("the first opener's genuine v1 backup");
+    expect(schemaVersion(db)).toBe(2);
+    expect(fs.readdirSync(dir).filter((f) => f.includes(".tmp-"))).toEqual([]); // the unused copy is removed
+    db.close();
+  });
+
+  it("rethrows a backup error other than an existing backup, and leaves no temp copy", () => {
+    const dir = tempDir();
+    const file = path.join(dir, "ledger.db");
+    const db = new Database(file);
+    const steps = ["CREATE TABLE a (x INTEGER);", "CREATE TABLE b (y INTEGER);"];
+    migrateWith(db, file, steps.slice(0, 1));
+    const spy = vi.spyOn(fs, "linkSync").mockImplementationOnce(() => { throw Object.assign(new Error("EIO: i/o error"), { code: "EIO" }); });
+    expect(() => migrateWith(db, file, steps)).toThrow(/EIO/);
+    spy.mockRestore();
+    expect(schemaVersion(db)).toBe(1); // no migration without a backup
+    expect(fs.readdirSync(dir).filter((f) => f.includes(".tmp-") || f.includes(".bak-"))).toEqual([]);
     db.close();
   });
 

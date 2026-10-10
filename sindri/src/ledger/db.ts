@@ -167,7 +167,7 @@ export function schemaVersion(db: Ledger): number {
 // read transaction, so a consistent copy with the WAL's newest frames whatever other
 // connections hold open (a checkpoint plus a file copy misses frames a reader pins and can
 // tear). It is the synchronous form of better-sqlite3's async db.backup(), which openLedger
-// can't await. Written to a unique temp name, then renamed: VACUUM INTO refuses an
+// can't await. Written to a unique temp name, then linked into place (never over an existing backup): VACUUM INTO refuses an
 // existing file, and a racing opener's backup must not fail this one.
 export function migrateWith(db: Ledger, file: string | null, migrations: readonly string[]): void {
   const before = schemaVersion(db);
@@ -178,7 +178,16 @@ export function migrateWith(db: Ledger, file: string | null, migrations: readonl
     const bak = `${file}.bak-v${before}`;
     const tmp = `${bak}.tmp-${process.pid}-${randomBytes(4).toString("hex")}`;
     db.prepare("VACUUM INTO ?").run(tmp);
-    fs.renameSync(tmp, bak);
+    // Exclusive: a hard link fails on an existing backup, where a rename would replace it. An opener that read
+    // `before` just ahead of another opener's migration could otherwise put a newer copy over the genuine
+    // .bak-v<before>; the first backup of a version is the one kept.
+    try {
+      fs.linkSync(tmp, bak);
+    } catch (e) {
+      if ((e as NodeJS.ErrnoException).code !== "EEXIST") throw e;
+    } finally {
+      fs.rmSync(tmp, { force: true });
+    }
   }
   db.transaction(() => {
     for (let v = schemaVersion(db); v < migrations.length; v++) db.exec(migrations[v]);
