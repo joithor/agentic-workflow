@@ -98,15 +98,15 @@ gets CI as a safety net until the switch. The standards in §4 still apply, expr
    codes, JSON files, SQLite schemas, MCP tool schemas and HTTP routes) is defined by the C# package's own tests.
    The TS behavior is the reference for what the contract should do, not a byte-for-byte target, and the C# build
    is free to fix what the TS got wrong.
-2. **One package at a time,** smallest and least shared first: `judge` → `scorer` → `skills/bugFixOrchestrator`
-   state CLI → `mcp-bridge` → `skills/ui-evidence` → `sindri` (by module: profile and ledger, scrub, observe,
-   index, scope, evolve).
+2. **One package at a time,** lowest tier first, in the §10 R2 order: `Redaction` → `judge` and `mcp-bridge` →
+   `scorer`, `skills/ui-evidence` and the `skills/bugFixOrchestrator` state CLI → `sindri` (by module: profile and
+   ledger, scrub, observe, index, scope, evolve).
 3. **One clean cutover (decided 2026-10-10).** The installed TS toolkit stays untouched while the C# build is
    ported and proven beside it. Each package is "done" when its tests pass in every lane within budget, its AOT
    entry points build and pass the AOT CI job, the real hook scripts pass against its binaries in CI, and it
    builds on macOS and Linux. When **every** package is done, one reversible switch moves the install to C#.
 4. **No data compatibility.** The C# build never reads TS-written ledgers, indexes or state files, and the TS build
-   never reads C# data. At the switch the TS state dir is archived and the C# build starts with fresh state in its
+   never reads C# data. At the switch the TS packages' state is moved aside and the C# build starts with fresh state in its
    own schemas (which include the multiplayer seams, §4b.6).
 5. **Each package rewrite is a packet** (addendum §17.4), built with today's skills on the host. That makes the
    rewrite the first real test of the packet format and the thin end-to-end slice (F0.5), before the factory
@@ -177,7 +177,7 @@ declaration.
 
 | Tier | Packages | May depend on |
 |---|---|---|
-| 0 | `Aw.Kernel` and its `Data`, `Telemetry`, `Testing` parts, `Analyzers` (build-time only), and `Redaction` (the scrubbing patterns now copied between judge and sindri; moved here by §4e B10) | the BCL plus one external package each, and lower tier-0 sublevels (below) |
+| 0 | `Aw.Kernel` and its `Data`, `Telemetry`, `Testing` parts, `Analyzers` (build-time only and edge-less: referenced only as an analyzer), and `Redaction` (the scrubbing patterns now copied between judge and sindri; moved here by §4e B10) | the BCL plus one external package each, and lower tier-0 sublevels (below) |
 | 1 | `Judge`, `Bridge`, `Packets`, `Readiness` | Tier 0 |
 | 2 | `Scorer`, `Evidence` (ui-evidence), `BugFix` | Tiers 0–1 (today they call judge, and scorer reads `judge.db`) |
 | 3 | `Sindri` | Tiers 0–2, **only through their `Core` contracts or their CLIs** (every package reaches a non-tier-0 package only through its `Core`; `deps.yaml` check DEPS-PROJ-007) |
@@ -193,8 +193,9 @@ declaration.
   edge, with its kind: `project` (a reference), `cli` (one package runs another's binary), `db` (one package opens
   another's SQLite file) or `file` (shared state files). Project edges are checked against the real references. CLI,
   database and file edges are checked by a scan of process launches, connection strings and known state paths. Any
-  undeclared edge fails CI. A `db` edge is read-only and should become a CLI or a published view over time (today:
-  scorer reads `judge.db`). Adding an edge is
+  undeclared edge fails CI. **Direction:** `project` edges point strictly down the tiers; `db` and `file` edges
+  point down or across, are read-only, and are slated to become CLIs or published views over time (today: scorer
+  reads `judge.db`, and reads Evidence's run files across tier 2, §4e B10). Adding an edge is
   a reviewed change to `deps.yaml` (and an approval-tier change once it is a rule record).
 - **Prefer contracts over references:** a package calls a same-tier or higher-tier package only through its CLI or
   HTTP contract, never through a project reference. Copied logic is a smell: the redaction patterns copied between
@@ -203,7 +204,7 @@ declaration.
 - **Inside a package**, the four-project shape (§4b.1) is itself a fixed DAG. **Inside a project,** feature
   folders and namespaces must not form cycles. ArchUnitNET's slice-cycle rule checks every namespace in every
   project (MSBuild already refuses circular *project* references; this covers the namespaces inside one).
-- **Fan-out limits** (every `Host` is exempt, because composing is its job): a project references at most 4 other in-repo projects and at most 6 third-party packages
+- **Fan-out limits** (every `Host` and all test code are exempt: composing is the Host's job): a project references at most 4 other in-repo projects and at most 6 third-party packages
   (analyzers and test packages excluded; DEPS-FANOUT-002/003). Per package, at most 4 other packages through
   declared project edges (`limits.packageFanOut` in `deps.yaml`, DEPS-FANOUT-001). Going over either is a ratchet
   violation that needs a recorded exception with a reason and an expiry.
@@ -313,8 +314,10 @@ group.MapPost("/items/{id}/start", async (ItemId id, StartItemBody body, IServic
 - **Visibility:** classes are `internal sealed` by default. Public API is tracked with `PublicApiAnalyzers`
   (`PublicAPI.Shipped.txt`), so a change to a package's public surface shows in the diff.
 - **JSON:** System.Text.Json with one source-generated `JsonSerializerContext` per package and one shared Kernel
-  profile (camelCase names, UTC ISO-8601 timestamps with millisecond precision and `Z`, the strict required and
-  nullable settings above). There is no requirement to match the bytes the TS build writes. No reflection-based
+  profile (`AwJson`): camelCase names in declaration order; relaxed escaping (only what JSON requires); null
+  properties written; timestamps in the `O` round-trip form (UTC, seven fractional digits and `Z`), and reading
+  requires `Z` or an offset; two-space indentation with `\n`; the strict required and nullable settings above.
+  There is no requirement to match the bytes the TS build writes. No reflection-based
   serialization (it's AOT- and trim-analyzer enforced).
 
 ### 4b.4 Dependency injection
@@ -437,10 +440,12 @@ agentic-workflow/
 │   ├── Aw.Kernel/                     # Result, Error, IService<,>, decorators, contracts
 │   ├── Aw.Kernel.Data/ · Aw.Kernel.Telemetry/
 │   ├── Aw.Analyzers/                  # repo-specific Roslyn rules
+│   ├── Redaction/ · Readiness/ · Packets/
 │   ├── Sindri/   (Aw.Sindri.Core · Aw.Sindri.Features · Aw.Sindri.Infrastructure · Aw.Sindri.Host)
 │   ├── Judge/    (Aw.Judge.Core · … · Aw.Judge.Host)
 │   ├── Scorer/   (…)
-│   └── Bridge/   (…)                  # minimal API host
+│   ├── Bridge/   (…)                  # minimal API host
+│   └── …
 ├── tests/
 │   ├── .editorconfig                  # the test-project analyzer policy (§4b.6)
 │   ├── Aw.Architecture.Tests/         # one assembly for every rule in §4b.1
@@ -532,12 +537,21 @@ assert that no tested path fails open against the C# binaries.
   its own output directory. Nothing in `setup.sh`, the providers, MCP registration or launchd points at it.
 - **Trying C# early:** `./setup.sh --runtime cs --prefix <dev dir>` installs the C# build into a separate directory for
   a hand test or a dev session, without touching the real install.
-- **The switch:** `./setup.sh --runtime cs` **moves** the TS state dir aside (renames `$AW_STATE_DIR` to a
-  timestamped archive), installs the C# binaries, and rewrites hooks, MCP registration and launchd jobs to call them.
-  The C# build starts in an empty state dir, so it can never see TS files; nothing is migrated. The C# build refuses
-  to start if it finds TS-schema files in its state dir.
-- **Rollback:** `./setup.sh --runtime ts --restore <archive>` reinstalls the TS build, moves the archive back, and
-  explicitly discards everything the C# build wrote after the switch.
+- **The switch:** `./setup.sh --runtime cs` **moves** only the TS packages' state aside: the namespaces and files
+  `deps.yaml` lists for them (`judge/`, `scorer/`, `sindri/`, `ui-evidence/`, `context-guard/`, `locks/`, and the
+  hook-owned files under `judge/`) go to one timestamped archive. Skill and workflow state is runtime-neutral and
+  stays where it is through the switch and a rollback: `<repo-slug>/` (plans, reviews, proof, verification,
+  design), `digests/`, `external-skills/`, `providers/`, `toolkit/` and `logs/`. The switch then installs the C#
+  binaries and rewrites hooks, MCP registration and launchd jobs to call them. The C# packages start with empty
+  namespaces, so they can never see TS files; nothing is migrated. The C# build refuses to start if TS-schema files
+  remain in its packages' namespaces.
+- **State written before the switch:** `Aw.Readiness` and `Aw.Packets` run before the switch and write only under
+  their own namespaces (`readiness/`, `packets/`), which the TS build never touches and the switch keeps. When
+  sindri's C# ledger first runs, it imports Readiness's history into the ledger and keeps the file.
+- **Hooks during the port:** the hook-facing CLI and file surface (the `deps.yaml` Hooks, Statusline and AwLive edges)
+  is frozen until the switch.
+- **Rollback:** `./setup.sh --runtime ts --restore <archive>` reinstalls the TS build, moves the archived TS
+  namespaces back, and discards the C# packages' post-switch state (never skill and workflow state).
   The TS build stays in the repo, tagged, for 14 days after the switch, then it's deleted.
 - **The switch happens on the always-on box first**, then the laptop after a day with no rollback.
 - **TS stays frozen to bug fixes** once porting starts.
@@ -680,9 +694,9 @@ next PR shows it passing.
 - `sindri readiness check [--json]` runs our reproducible criteria, per repo and per app. It is built in **R1b as
   one of the first two packages scaffolded from the template** (§10), so the template proves itself and the Level-4
   gate is measurable from the start.
-- **Where results live:** until sindri is ported, `Aw.Readiness` keeps its own history (a small file under its own
-  `deps.yaml` namespace) for the delta and the first-run baseline. Results are recorded in the ledger once sindri's
-  C# ledger exists, at the switch.
+- **Where results live:** until sindri is ported, `Aw.Readiness` keeps its own history under its own `deps.yaml`
+  namespace (`readiness/`), for the delta and the first-run baseline; the switch keeps it (§4c). When sindri's C#
+  ledger first runs, it imports that history and keeps the file; results are recorded in the ledger from then on.
 - **Usage metrics for R3** (promotion frequency, flake rates, doc freshness over time) come from external sources
   where possible (git tags, the GitHub Actions API). Anything else is measured from the switch.
 - **Output contract:**
@@ -728,7 +742,7 @@ Recent pace: about 49 commits in 60 days. The sizes below are estimates to be re
 | Step | Contents | Size | Exit |
 |---|---|---|---|
 | R0 | Baseline: a quick manual pass over the nine pillars, recorded per criterion | XS | Baseline recorded |
-| R1a | **Safety and measurement:**<br>• CI hardened for a public repo, the agent App, the `main` and tag rulesets, the `main`-only key environment (§4d);<br>• fail-open logging in every hook (§4c, B5);<br>• the AOT spike (R7, R8, R9, the MCP C# SDK);<br>• the readiness baseline by a throwaway script (B2);<br>• usage recording for R3 | M (1–2 weeks) | Fail-open logging live; baseline recorded; agents can't bypass `main` |
+| R1a | **Safety and measurement:**<br>• CI hardened for a public repo, the agent App, the `main` and tag rulesets, the `main`-only key environment (§4d);<br>• fail-open logging in every hook (§4c, B5);<br>• the AOT spike (R7, R8, R9, the MCP C# SDK);<br>• the readiness baseline by a throwaway script (B2) | M (1–2 weeks) | Fail-open logging live; baseline recorded; agents can't bypass `main` |
 | R1b | **The template:**<br>• `Directory.Build.props`, Central Package Management, analyzers with one owner per rule, the ratchet baseline, `.editorconfig`;<br>• `Aw.Kernel` and its `Data`, `Telemetry` and `Testing` parts;<br>• `deps.yaml` with every edge kind and its checks (§4b.1a);<br>• the `/new-package` and `/new-slice` scaffolds (inputs, generated files, a red test) and `AGENTS.md` for C#;<br>• rule records for the §4b rules;<br>• W5 devcontainer and W6 templates;<br>• **`Aw.Readiness` and `Aw.Packets` as the first two standalone packages built from the template** (B2) | M (1–2 weeks) | A scaffolded package passes every check; `Aw.Readiness` reports Level 4 for the template; the R2 estimate is fixed here as the stop-rule baseline (B9) |
 | R2 | **The ports, one packet per package:** `Redaction` → `Judge` and `Bridge` → `Scorer`, `Evidence` and `BugFix` → `Sindri` (by module inside its packet). Then **the switch**: `./setup.sh --runtime cs` on the always-on box, then the laptop. **In parallel,** new factory code (addendum F0 schemas, rule records) is written in C# from the start | L–XL (estimate 6–10 weeks; each packet carries its own) | All packages done (§4a step 3); the switch done on both hosts; TS deleted 14 days later |
 | R3 | Remaining Level 4 criteria that need usage data (promotion frequency, flake rates, doc freshness over time), and W9 | S–M | Level 4 passed. **Factory work (F0) starts here** |
