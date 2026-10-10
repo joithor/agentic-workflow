@@ -2,6 +2,7 @@ import fs from "node:fs";
 import path from "node:path";
 import YAML from "yaml";
 
+import type { IndexDb } from "../src/index/db.js";
 import type { Deps } from "../src/deps.js";
 import type { GitRunner } from "../src/git.js";
 import { realGitRunner } from "../src/git-real.js";
@@ -100,3 +101,17 @@ export function embedFetch(vec: (text: string) => number[] = () => [1, 0, 0]): F
     return { ok: true, status: 200, json: async () => ({ embeddings: input.map(vec) }) };
   };
 }
+
+// A minimal index: files, symbols and a structure layer with the given status.
+export function seedIndex(db: IndexDb, o: { files: string[]; symbols: string[]; structure?: "ok" | "pending" }): IndexDb {
+  const now = "2026-10-09T00:00:00Z";
+  for (const f of o.files) db.prepare("INSERT INTO files (path, hash, size) VALUES (?, 'h', 1)").run(f);
+  for (const [i, name] of o.symbols.entries()) {
+    db.prepare(
+      "INSERT INTO symbols (file, name, kind, start_line, end_line, exported, utility, signature, ast_hash, token_count, complexity, callees, minhash, body) VALUES (?, ?, 'function', 1, 2, 1, 0, '', ?, 1, 1, '[]', ?, '')",
+    ).run(o.files[0], name, `a${i}`, Buffer.alloc(4));
+  }
+  db.prepare("INSERT INTO layers (layer, stamp, status, detail, built_at) VALUES ('structure', 's', ?, '', ?)").run(o.structure ?? "ok", now);
+  return db;
+}
+
