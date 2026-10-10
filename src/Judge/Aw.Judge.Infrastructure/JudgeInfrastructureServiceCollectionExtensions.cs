@@ -17,6 +17,7 @@ public static class JudgeInfrastructureServiceCollectionExtensions
         return services
             .AddSingleton(settings)
             .AddSingleton(sp => new JudgeDatabase(JudgeDatabase.OptionsFor(settings.StateDirectory), sp.GetRequiredService<TimeProvider>()))
-            .AddScoped<IDecisionLog, SqliteDecisionLog>();
+            .AddScoped<IDecisionLog, SqliteDecisionLog>()
+            .AddScoped<IBriefStore, SqliteBriefStore>();
     }
 }

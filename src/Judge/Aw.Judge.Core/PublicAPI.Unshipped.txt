@@ -204,3 +204,38 @@ static Aw.Judge.Core.Ids.ToolUseId.TryParse(string? s, System.IFormatProvider? p
 static readonly Aw.Judge.Core.JudgeErrors.BriefExists -> Aw.Kernel.ErrorDefinition!
 static readonly Aw.Judge.Core.JudgeErrors.DecisionExists -> Aw.Kernel.ErrorDefinition!
 static readonly Aw.Judge.Core.JudgeErrors.UnknownDecision -> Aw.Kernel.ErrorDefinition!
+Aw.Judge.Core.Briefs.Brief
+Aw.Judge.Core.Briefs.Brief.<Clone>$() -> Aw.Judge.Core.Briefs.Brief!
+Aw.Judge.Core.Briefs.Brief.AcceptanceCriteria.get -> string!
+Aw.Judge.Core.Briefs.Brief.AcceptanceCriteria.init -> void
+Aw.Judge.Core.Briefs.Brief.AgentId.get -> Aw.Judge.Core.Ids.AgentId?
+Aw.Judge.Core.Briefs.Brief.AgentId.init -> void
+Aw.Judge.Core.Briefs.Brief.Brief() -> void
+Aw.Judge.Core.Briefs.Brief.DispatchName.get -> string?
+Aw.Judge.Core.Briefs.Brief.DispatchName.init -> void
+Aw.Judge.Core.Briefs.Brief.Equals(Aw.Judge.Core.Briefs.Brief? other) -> bool
+Aw.Judge.Core.Briefs.Brief.Goal.get -> string!
+Aw.Judge.Core.Briefs.Brief.Goal.init -> void
+Aw.Judge.Core.Briefs.Brief.PromptId.get -> Aw.Judge.Core.Ids.PromptId
+Aw.Judge.Core.Briefs.Brief.PromptId.init -> void
+Aw.Judge.Core.Briefs.Brief.ProofCommand.get -> string!
+Aw.Judge.Core.Briefs.Brief.ProofCommand.init -> void
+Aw.Judge.Core.Briefs.Brief.SavedAt.get -> System.DateTimeOffset
+Aw.Judge.Core.Briefs.Brief.SavedAt.init -> void
+Aw.Judge.Core.Briefs.Brief.SessionId.get -> Aw.Judge.Core.Ids.SessionId
+Aw.Judge.Core.Briefs.Brief.SessionId.init -> void
+Aw.Judge.Core.Briefs.Brief.SubagentType.get -> string!
+Aw.Judge.Core.Briefs.Brief.SubagentType.init -> void
+Aw.Judge.Core.Briefs.Brief.ToolUseId.get -> Aw.Judge.Core.Ids.ToolUseId
+Aw.Judge.Core.Briefs.Brief.ToolUseId.init -> void
+Aw.Judge.Core.Ports.IBriefStore
+Aw.Judge.Core.Ports.IBriefStore.ByToolUseId(Aw.Judge.Core.Ids.ToolUseId toolUseId, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Judge.Core.Briefs.Brief?>!>
+Aw.Judge.Core.Ports.IBriefStore.FirstUnmappedByDispatch(Aw.Judge.Core.Ids.SessionId sessionId, Aw.Judge.Core.Ids.PromptId promptId, string! subagentType, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Judge.Core.Briefs.Brief?>!>
+Aw.Judge.Core.Ports.IBriefStore.FirstUnmappedByDispatchName(string! dispatchName, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Judge.Core.Briefs.Brief?>!>
+Aw.Judge.Core.Ports.IBriefStore.Save(Aw.Judge.Core.Briefs.Brief! brief, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Kernel.Unit>!>
+Aw.Judge.Core.Ports.IBriefStore.SetAgentId(Aw.Judge.Core.Ids.ToolUseId toolUseId, Aw.Judge.Core.Ids.AgentId agentId, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Kernel.Unit>!>
+override Aw.Judge.Core.Briefs.Brief.Equals(object? obj) -> bool
+override Aw.Judge.Core.Briefs.Brief.GetHashCode() -> int
+override Aw.Judge.Core.Briefs.Brief.ToString() -> string!
+static Aw.Judge.Core.Briefs.Brief.operator !=(Aw.Judge.Core.Briefs.Brief? left, Aw.Judge.Core.Briefs.Brief? right) -> bool
+static Aw.Judge.Core.Briefs.Brief.operator ==(Aw.Judge.Core.Briefs.Brief? left, Aw.Judge.Core.Briefs.Brief? right) -> bool

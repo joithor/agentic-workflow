@@ -10,4 +10,8 @@ public static class A
     /// <summary>A decision builder with deterministic defaults.</summary>
     /// <returns>A new builder.</returns>
     public static DecisionBuilder Decision() => new();
+
+    /// <summary>A brief builder with deterministic defaults.</summary>
+    /// <returns>A new builder.</returns>
+    public static BriefBuilder Brief() => new();
 }
