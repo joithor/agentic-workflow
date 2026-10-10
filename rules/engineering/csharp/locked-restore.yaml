@@ -15,10 +15,6 @@ checks:
     id: "dotnet-verify-packages"
     ref: scripts/dotnet-verify-packages.sh
     status: active
-  - type: ci
-    id: "dotnet restore (locked, one retry)"
-    ref: .github/workflows/ci.yml
-    status: active
 gap: closed
 source:
   type: adr

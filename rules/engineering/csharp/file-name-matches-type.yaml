@@ -12,6 +12,7 @@ checks:
     id: "MA0048"
     status: active
 gap: closed
+relatedIds: ["IDE0130"]
 source:
   type: adr
   ref: "docs/superpowers/specs/2026-10-09-agent-readiness-design.md#4b6"

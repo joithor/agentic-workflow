@@ -9,9 +9,10 @@ select:
   paths: ["src/**"]
 checks:
   - type: test
-    id: "TypedIdGuardTests"
-    ref: tests/Aw.Kernel.Tests/TypedIds/TypedIdGuardTests.cs
+    id: "TypedIdGuard"
+    ref: tests
     status: active
+    note: "the guard moves from Aw.Kernel.Tests to Aw.Architecture.Tests in #131"
   - type: archunit
     id: "ARCH-ID-001"
     status: pending
