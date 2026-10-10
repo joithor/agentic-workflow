@@ -1,0 +1,209 @@
+#nullable enable
+abstract Aw.Kernel.Services.Decorated<TRequest, TResponse>.Handle(TRequest request, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<TResponse>!>
+Aw.Kernel.Error
+Aw.Kernel.Error.<Clone>$() -> Aw.Kernel.Error!
+Aw.Kernel.Error.Code.get -> string!
+Aw.Kernel.Error.Code.init -> void
+Aw.Kernel.Error.Deconstruct(out string! Code, out Aw.Kernel.ErrorKind Kind, out string! Message) -> void
+Aw.Kernel.Error.Equals(Aw.Kernel.Error? other) -> bool
+Aw.Kernel.Error.Error(string! Code, Aw.Kernel.ErrorKind Kind, string! Message) -> void
+Aw.Kernel.Error.Kind.get -> Aw.Kernel.ErrorKind
+Aw.Kernel.Error.Kind.init -> void
+Aw.Kernel.Error.Message.get -> string!
+Aw.Kernel.Error.Message.init -> void
+Aw.Kernel.ErrorCatalogue
+Aw.Kernel.ErrorDefinition
+Aw.Kernel.ErrorDefinition.<Clone>$() -> Aw.Kernel.ErrorDefinition!
+Aw.Kernel.ErrorDefinition.Code.get -> string!
+Aw.Kernel.ErrorDefinition.Code.init -> void
+Aw.Kernel.ErrorDefinition.Deconstruct(out string! Code, out Aw.Kernel.ErrorKind Kind, out string! Title) -> void
+Aw.Kernel.ErrorDefinition.Equals(Aw.Kernel.ErrorDefinition? other) -> bool
+Aw.Kernel.ErrorDefinition.ErrorDefinition(string! Code, Aw.Kernel.ErrorKind Kind, string! Title) -> void
+Aw.Kernel.ErrorDefinition.Kind.get -> Aw.Kernel.ErrorKind
+Aw.Kernel.ErrorDefinition.Kind.init -> void
+Aw.Kernel.ErrorDefinition.Title.get -> string!
+Aw.Kernel.ErrorDefinition.Title.init -> void
+Aw.Kernel.ErrorDefinition.With(string! message) -> Aw.Kernel.Error!
+Aw.Kernel.ErrorKind
+Aw.Kernel.ErrorKind.BudgetExceeded = 5 -> Aw.Kernel.ErrorKind
+Aw.Kernel.ErrorKind.Conflict = 3 -> Aw.Kernel.ErrorKind
+Aw.Kernel.ErrorKind.Forbidden = 8 -> Aw.Kernel.ErrorKind
+Aw.Kernel.ErrorKind.Invalid = 1 -> Aw.Kernel.ErrorKind
+Aw.Kernel.ErrorKind.NotFound = 2 -> Aw.Kernel.ErrorKind
+Aw.Kernel.ErrorKind.RateLimited = 4 -> Aw.Kernel.ErrorKind
+Aw.Kernel.ErrorKind.Timeout = 7 -> Aw.Kernel.ErrorKind
+Aw.Kernel.ErrorKind.Unavailable = 6 -> Aw.Kernel.ErrorKind
+Aw.Kernel.Events.EventContext
+Aw.Kernel.Events.EventContext.<Clone>$() -> Aw.Kernel.Events.EventContext!
+Aw.Kernel.Events.EventContext.Actor.get -> string!
+Aw.Kernel.Events.EventContext.CausationId.get -> System.Guid?
+Aw.Kernel.Events.EventContext.CausedBy<TPayload>(Aw.Kernel.Events.EventEnvelope<TPayload>! cause) -> Aw.Kernel.Events.EventContext!
+Aw.Kernel.Events.EventContext.Command(string! kind, string! payloadJson, System.TimeProvider! clock, Aw.Kernel.Ids.IIdGenerator! ids) -> Aw.Kernel.Outbox.OutboxCommand!
+Aw.Kernel.Events.EventContext.CorrelationId.get -> System.Guid
+Aw.Kernel.Events.EventContext.Envelope<TPayload>(string! type, TPayload payload, System.TimeProvider! clock, Aw.Kernel.Ids.IIdGenerator! ids) -> Aw.Kernel.Events.EventEnvelope<TPayload>!
+Aw.Kernel.Events.EventContext.Equals(Aw.Kernel.Events.EventContext? other) -> bool
+Aw.Kernel.Events.EventContext.Ring.get -> int
+Aw.Kernel.Events.EventContext.Tenant.get -> string!
+Aw.Kernel.Events.EventContext.TraceId.get -> string?
+Aw.Kernel.Events.EventEnvelope<TPayload>
+Aw.Kernel.Events.EventEnvelope<TPayload>.<Clone>$() -> Aw.Kernel.Events.EventEnvelope<TPayload>!
+Aw.Kernel.Events.EventEnvelope<TPayload>.Actor.get -> string!
+Aw.Kernel.Events.EventEnvelope<TPayload>.Actor.init -> void
+Aw.Kernel.Events.EventEnvelope<TPayload>.CausationId.get -> System.Guid?
+Aw.Kernel.Events.EventEnvelope<TPayload>.CausationId.init -> void
+Aw.Kernel.Events.EventEnvelope<TPayload>.CorrelationId.get -> System.Guid
+Aw.Kernel.Events.EventEnvelope<TPayload>.CorrelationId.init -> void
+Aw.Kernel.Events.EventEnvelope<TPayload>.Deconstruct(out System.Guid Id, out string! Type, out int SchemaVersion, out System.DateTimeOffset OccurredAt, out string! Actor, out string! Tenant, out int Ring, out System.Guid CorrelationId, out System.Guid? CausationId, out string? TraceId, out TPayload Payload) -> void
+Aw.Kernel.Events.EventEnvelope<TPayload>.Equals(Aw.Kernel.Events.EventEnvelope<TPayload>? other) -> bool
+Aw.Kernel.Events.EventEnvelope<TPayload>.EventEnvelope(System.Guid Id, string! Type, int SchemaVersion, System.DateTimeOffset OccurredAt, string! Actor, string! Tenant, int Ring, System.Guid CorrelationId, System.Guid? CausationId, string? TraceId, TPayload Payload) -> void
+Aw.Kernel.Events.EventEnvelope<TPayload>.Id.get -> System.Guid
+Aw.Kernel.Events.EventEnvelope<TPayload>.Id.init -> void
+Aw.Kernel.Events.EventEnvelope<TPayload>.OccurredAt.get -> System.DateTimeOffset
+Aw.Kernel.Events.EventEnvelope<TPayload>.OccurredAt.init -> void
+Aw.Kernel.Events.EventEnvelope<TPayload>.Payload.get -> TPayload
+Aw.Kernel.Events.EventEnvelope<TPayload>.Payload.init -> void
+Aw.Kernel.Events.EventEnvelope<TPayload>.Ring.get -> int
+Aw.Kernel.Events.EventEnvelope<TPayload>.Ring.init -> void
+Aw.Kernel.Events.EventEnvelope<TPayload>.SchemaVersion.get -> int
+Aw.Kernel.Events.EventEnvelope<TPayload>.SchemaVersion.init -> void
+Aw.Kernel.Events.EventEnvelope<TPayload>.Tenant.get -> string!
+Aw.Kernel.Events.EventEnvelope<TPayload>.Tenant.init -> void
+Aw.Kernel.Events.EventEnvelope<TPayload>.TraceId.get -> string?
+Aw.Kernel.Events.EventEnvelope<TPayload>.TraceId.init -> void
+Aw.Kernel.Events.EventEnvelope<TPayload>.Type.get -> string!
+Aw.Kernel.Events.EventEnvelope<TPayload>.Type.init -> void
+Aw.Kernel.Events.EventSchema
+Aw.Kernel.Ids.IIdGenerator
+Aw.Kernel.Ids.IIdGenerator.NewId() -> System.Guid
+Aw.Kernel.Json.AwJson
+Aw.Kernel.KernelErrors
+Aw.Kernel.Outbox.IOutbox
+Aw.Kernel.Outbox.IOutbox.Enqueue(Aw.Kernel.Outbox.OutboxCommand! command, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Kernel.Unit>!>
+Aw.Kernel.Outbox.IOutbox.MarkDispatched(System.Guid id, System.DateTimeOffset dispatchedAt, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Kernel.Unit>!>
+Aw.Kernel.Outbox.IOutbox.MarkFailed(System.Guid id, Aw.Kernel.Error! error, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Kernel.Unit>!>
+Aw.Kernel.Outbox.IOutbox.ReadPending(int max, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<System.Collections.Generic.IReadOnlyList<Aw.Kernel.Outbox.OutboxCommand!>!>!>
+Aw.Kernel.Outbox.OutboxCommand
+Aw.Kernel.Outbox.OutboxCommand.<Clone>$() -> Aw.Kernel.Outbox.OutboxCommand!
+Aw.Kernel.Outbox.OutboxCommand.Actor.get -> string!
+Aw.Kernel.Outbox.OutboxCommand.Actor.init -> void
+Aw.Kernel.Outbox.OutboxCommand.CausationId.get -> System.Guid?
+Aw.Kernel.Outbox.OutboxCommand.CausationId.init -> void
+Aw.Kernel.Outbox.OutboxCommand.CorrelationId.get -> System.Guid
+Aw.Kernel.Outbox.OutboxCommand.CorrelationId.init -> void
+Aw.Kernel.Outbox.OutboxCommand.Deconstruct(out System.Guid Id, out string! Kind, out string! PayloadJson, out int SchemaVersion, out System.DateTimeOffset EnqueuedAt, out string! Actor, out string! Tenant, out int Ring, out System.Guid CorrelationId, out System.Guid? CausationId, out string? TraceId) -> void
+Aw.Kernel.Outbox.OutboxCommand.EnqueuedAt.get -> System.DateTimeOffset
+Aw.Kernel.Outbox.OutboxCommand.EnqueuedAt.init -> void
+Aw.Kernel.Outbox.OutboxCommand.Equals(Aw.Kernel.Outbox.OutboxCommand? other) -> bool
+Aw.Kernel.Outbox.OutboxCommand.Id.get -> System.Guid
+Aw.Kernel.Outbox.OutboxCommand.Id.init -> void
+Aw.Kernel.Outbox.OutboxCommand.Kind.get -> string!
+Aw.Kernel.Outbox.OutboxCommand.Kind.init -> void
+Aw.Kernel.Outbox.OutboxCommand.OutboxCommand(System.Guid Id, string! Kind, string! PayloadJson, int SchemaVersion, System.DateTimeOffset EnqueuedAt, string! Actor, string! Tenant, int Ring, System.Guid CorrelationId, System.Guid? CausationId, string? TraceId) -> void
+Aw.Kernel.Outbox.OutboxCommand.PayloadJson.get -> string!
+Aw.Kernel.Outbox.OutboxCommand.PayloadJson.init -> void
+Aw.Kernel.Outbox.OutboxCommand.Ring.get -> int
+Aw.Kernel.Outbox.OutboxCommand.Ring.init -> void
+Aw.Kernel.Outbox.OutboxCommand.SchemaVersion.get -> int
+Aw.Kernel.Outbox.OutboxCommand.SchemaVersion.init -> void
+Aw.Kernel.Outbox.OutboxCommand.Tenant.get -> string!
+Aw.Kernel.Outbox.OutboxCommand.Tenant.init -> void
+Aw.Kernel.Outbox.OutboxCommand.TraceId.get -> string?
+Aw.Kernel.Outbox.OutboxCommand.TraceId.init -> void
+Aw.Kernel.Outbox.OutboxRetryPolicy
+Aw.Kernel.Outbox.OutboxRetryPolicy.<Clone>$() -> Aw.Kernel.Outbox.OutboxRetryPolicy!
+Aw.Kernel.Outbox.OutboxRetryPolicy.BaseDelay.get -> System.TimeSpan
+Aw.Kernel.Outbox.OutboxRetryPolicy.Equals(Aw.Kernel.Outbox.OutboxRetryPolicy? other) -> bool
+Aw.Kernel.Outbox.OutboxRetryPolicy.MaxAttempts.get -> int
+Aw.Kernel.Outbox.OutboxRetryPolicy.MaxDelay.get -> System.TimeSpan
+Aw.Kernel.Outbox.OutboxRetryPolicy.NextAttempt(int failedAttempts, System.DateTimeOffset failedAt) -> System.DateTimeOffset?
+Aw.Kernel.Outbox.OutboxTables
+Aw.Kernel.Result<T>
+Aw.Kernel.Result<T>.Bind<TOut>(System.Func<T, Aw.Kernel.Result<TOut>!>! bind) -> Aw.Kernel.Result<TOut>!
+Aw.Kernel.Result<T>.Error.get -> Aw.Kernel.Error!
+Aw.Kernel.Result<T>.IsError.get -> bool
+Aw.Kernel.Result<T>.IsSuccess.get -> bool
+Aw.Kernel.Result<T>.Map<TOut>(System.Func<T, TOut>! map) -> Aw.Kernel.Result<TOut>!
+Aw.Kernel.Result<T>.Match<TOut>(System.Func<T, TOut>! onSuccess, System.Func<Aw.Kernel.Error!, TOut>! onError) -> TOut
+Aw.Kernel.Result<T>.Value.get -> T
+Aw.Kernel.ResultAsyncExtensions
+Aw.Kernel.Results
+Aw.Kernel.Services.Decorated<TRequest, TResponse>
+Aw.Kernel.Services.Decorated<TRequest, TResponse>.Decorated(Aw.Kernel.Services.IService<TRequest, TResponse>! inner) -> void
+Aw.Kernel.Services.Decorated<TRequest, TResponse>.Inner.get -> Aw.Kernel.Services.IService<TRequest, TResponse>!
+Aw.Kernel.Services.IService<TRequest, TResponse>
+Aw.Kernel.Services.IService<TRequest, TResponse>.Handle(TRequest request, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<TResponse>!>
+Aw.Kernel.Services.IValidator<T>
+Aw.Kernel.Services.IValidator<T>.Validate(T value) -> Aw.Kernel.Result<Aw.Kernel.Unit>!
+Aw.Kernel.Services.ValidatingService<TRequest, TResponse>
+Aw.Kernel.Services.ValidatingService<TRequest, TResponse>.ValidatingService(Aw.Kernel.Services.IService<TRequest, TResponse>! inner, Aw.Kernel.Services.IValidator<TRequest>! validator) -> void
+Aw.Kernel.Unit
+Aw.Kernel.Unit.Equals(Aw.Kernel.Unit other) -> bool
+Aw.Kernel.Unit.Unit() -> void
+const Aw.Kernel.Events.EventContext.MaxRing = 2 -> int
+const Aw.Kernel.Events.EventSchema.CurrentVersion = 1 -> int
+const Aw.Kernel.Outbox.OutboxCommand.CurrentSchemaVersion = 1 -> int
+const Aw.Kernel.Outbox.OutboxTables.Commands = "outbox_commands" -> string!
+override Aw.Kernel.Error.Equals(object? obj) -> bool
+override Aw.Kernel.Error.GetHashCode() -> int
+override Aw.Kernel.Error.ToString() -> string!
+override Aw.Kernel.ErrorDefinition.Equals(object? obj) -> bool
+override Aw.Kernel.ErrorDefinition.GetHashCode() -> int
+override Aw.Kernel.ErrorDefinition.ToString() -> string!
+override Aw.Kernel.Events.EventContext.Equals(object? obj) -> bool
+override Aw.Kernel.Events.EventContext.GetHashCode() -> int
+override Aw.Kernel.Events.EventContext.ToString() -> string!
+override Aw.Kernel.Events.EventEnvelope<TPayload>.Equals(object? obj) -> bool
+override Aw.Kernel.Events.EventEnvelope<TPayload>.GetHashCode() -> int
+override Aw.Kernel.Events.EventEnvelope<TPayload>.ToString() -> string!
+override Aw.Kernel.Outbox.OutboxCommand.Equals(object? obj) -> bool
+override Aw.Kernel.Outbox.OutboxCommand.GetHashCode() -> int
+override Aw.Kernel.Outbox.OutboxCommand.ToString() -> string!
+override Aw.Kernel.Outbox.OutboxRetryPolicy.Equals(object? obj) -> bool
+override Aw.Kernel.Outbox.OutboxRetryPolicy.GetHashCode() -> int
+override Aw.Kernel.Outbox.OutboxRetryPolicy.ToString() -> string!
+override Aw.Kernel.Services.ValidatingService<TRequest, TResponse>.Handle(TRequest request, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<TResponse>!>
+override Aw.Kernel.Unit.GetHashCode() -> int
+static Aw.Kernel.Error.operator !=(Aw.Kernel.Error? left, Aw.Kernel.Error? right) -> bool
+static Aw.Kernel.Error.operator ==(Aw.Kernel.Error? left, Aw.Kernel.Error? right) -> bool
+static Aw.Kernel.ErrorCatalogue.Validate(System.Collections.Generic.IEnumerable<Aw.Kernel.ErrorDefinition!>! definitions) -> Aw.Kernel.Result<Aw.Kernel.Unit>!
+static Aw.Kernel.ErrorDefinition.operator !=(Aw.Kernel.ErrorDefinition? left, Aw.Kernel.ErrorDefinition? right) -> bool
+static Aw.Kernel.ErrorDefinition.operator ==(Aw.Kernel.ErrorDefinition? left, Aw.Kernel.ErrorDefinition? right) -> bool
+static Aw.Kernel.Events.EventContext.Create(string! actor, string! tenant, int ring, System.Guid correlationId, string? traceId = null) -> Aw.Kernel.Result<Aw.Kernel.Events.EventContext!>!
+static Aw.Kernel.Events.EventContext.operator !=(Aw.Kernel.Events.EventContext? left, Aw.Kernel.Events.EventContext? right) -> bool
+static Aw.Kernel.Events.EventContext.operator ==(Aw.Kernel.Events.EventContext? left, Aw.Kernel.Events.EventContext? right) -> bool
+static Aw.Kernel.Events.EventEnvelope<TPayload>.operator !=(Aw.Kernel.Events.EventEnvelope<TPayload>? left, Aw.Kernel.Events.EventEnvelope<TPayload>? right) -> bool
+static Aw.Kernel.Events.EventEnvelope<TPayload>.operator ==(Aw.Kernel.Events.EventEnvelope<TPayload>? left, Aw.Kernel.Events.EventEnvelope<TPayload>? right) -> bool
+static Aw.Kernel.Json.AwJson.CreateOptions(System.Text.Json.Serialization.Metadata.IJsonTypeInfoResolver! resolver, bool indented = false) -> System.Text.Json.JsonSerializerOptions!
+static Aw.Kernel.Json.AwJson.Deserialize<T>(System.ReadOnlySpan<byte> utf8Json, System.Text.Json.JsonSerializerOptions! options) -> Aw.Kernel.Result<T>!
+static Aw.Kernel.Json.AwJson.Serialize<T>(T value, System.Text.Json.JsonSerializerOptions! options) -> byte[]!
+static Aw.Kernel.KernelErrors.All.get -> System.Collections.Generic.IReadOnlyList<Aw.Kernel.ErrorDefinition!>!
+static Aw.Kernel.Outbox.OutboxCommand.operator !=(Aw.Kernel.Outbox.OutboxCommand? left, Aw.Kernel.Outbox.OutboxCommand? right) -> bool
+static Aw.Kernel.Outbox.OutboxCommand.operator ==(Aw.Kernel.Outbox.OutboxCommand? left, Aw.Kernel.Outbox.OutboxCommand? right) -> bool
+static Aw.Kernel.Outbox.OutboxRetryPolicy.Create(int maxAttempts, System.TimeSpan baseDelay, System.TimeSpan maxDelay) -> Aw.Kernel.Result<Aw.Kernel.Outbox.OutboxRetryPolicy!>!
+static Aw.Kernel.Outbox.OutboxRetryPolicy.Default.get -> Aw.Kernel.Outbox.OutboxRetryPolicy!
+static Aw.Kernel.Outbox.OutboxRetryPolicy.operator !=(Aw.Kernel.Outbox.OutboxRetryPolicy? left, Aw.Kernel.Outbox.OutboxRetryPolicy? right) -> bool
+static Aw.Kernel.Outbox.OutboxRetryPolicy.operator ==(Aw.Kernel.Outbox.OutboxRetryPolicy? left, Aw.Kernel.Outbox.OutboxRetryPolicy? right) -> bool
+static Aw.Kernel.Result<T>.implicit operator Aw.Kernel.Result<T>!(Aw.Kernel.Error! error) -> Aw.Kernel.Result<T>!
+static Aw.Kernel.Result<T>.implicit operator Aw.Kernel.Result<T>!(T value) -> Aw.Kernel.Result<T>!
+static Aw.Kernel.ResultAsyncExtensions.Bind<T, TOut>(this System.Threading.Tasks.ValueTask<Aw.Kernel.Result<T>!> pending, System.Func<T, Aw.Kernel.Result<TOut>!>! bind) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<TOut>!>
+static Aw.Kernel.ResultAsyncExtensions.BindAsync<T, TOut>(this Aw.Kernel.Result<T>! result, System.Func<T, System.Threading.Tasks.ValueTask<Aw.Kernel.Result<TOut>!>>! bind) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<TOut>!>
+static Aw.Kernel.ResultAsyncExtensions.BindAsync<T, TOut>(this System.Threading.Tasks.ValueTask<Aw.Kernel.Result<T>!> pending, System.Func<T, System.Threading.Tasks.ValueTask<Aw.Kernel.Result<TOut>!>>! bind) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<TOut>!>
+static Aw.Kernel.ResultAsyncExtensions.Map<T, TOut>(this System.Threading.Tasks.ValueTask<Aw.Kernel.Result<T>!> pending, System.Func<T, TOut>! map) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<TOut>!>
+static Aw.Kernel.ResultAsyncExtensions.MapAsync<T, TOut>(this Aw.Kernel.Result<T>! result, System.Func<T, System.Threading.Tasks.ValueTask<TOut>>! map) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<TOut>!>
+static Aw.Kernel.ResultAsyncExtensions.MapAsync<T, TOut>(this System.Threading.Tasks.ValueTask<Aw.Kernel.Result<T>!> pending, System.Func<T, System.Threading.Tasks.ValueTask<TOut>>! map) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<TOut>!>
+static Aw.Kernel.Results.Failure<T>(Aw.Kernel.Error! error) -> Aw.Kernel.Result<T>!
+static Aw.Kernel.Results.Ok() -> Aw.Kernel.Result<Aw.Kernel.Unit>!
+static Aw.Kernel.Results.Success<T>(T value) -> Aw.Kernel.Result<T>!
+static Aw.Kernel.Unit.operator !=(Aw.Kernel.Unit left, Aw.Kernel.Unit right) -> bool
+static Aw.Kernel.Unit.operator ==(Aw.Kernel.Unit left, Aw.Kernel.Unit right) -> bool
+static Aw.Kernel.Unit.Value.get -> Aw.Kernel.Unit
+static readonly Aw.Kernel.KernelErrors.BudgetExceeded -> Aw.Kernel.ErrorDefinition!
+static readonly Aw.Kernel.KernelErrors.Conflict -> Aw.Kernel.ErrorDefinition!
+static readonly Aw.Kernel.KernelErrors.Forbidden -> Aw.Kernel.ErrorDefinition!
+static readonly Aw.Kernel.KernelErrors.Invalid -> Aw.Kernel.ErrorDefinition!
+static readonly Aw.Kernel.KernelErrors.NotFound -> Aw.Kernel.ErrorDefinition!
+static readonly Aw.Kernel.KernelErrors.RateLimited -> Aw.Kernel.ErrorDefinition!
+static readonly Aw.Kernel.KernelErrors.Timeout -> Aw.Kernel.ErrorDefinition!
+static readonly Aw.Kernel.KernelErrors.Unavailable -> Aw.Kernel.ErrorDefinition!
+~override Aw.Kernel.Unit.Equals(object obj) -> bool
+~override Aw.Kernel.Unit.ToString() -> string
