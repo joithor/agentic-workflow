@@ -96,6 +96,9 @@ tests/
   `static Aw.<Name>.Core.<Name>CoreServiceCollectionExtensions.Add<Name>Core(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!`.
   Records also list their compiler-generated members (about 12 lines each). The generator writes these lines from the
   `RS0016` code fix (`dotnet format analyzers <project> --diagnostics RS0016`), never by hand, and then checks the header.
+  The code fix skips source-generated code, so a typed id's Vogen-generated members (about 17 lines for a string id)
+  are recorded from the build's `RS0016` output instead, with the step in `docs/csharp/typed-ids.md` ("Public ids and
+  PublicAPI files"), and reviewed. `/new-slice` runs both steps on `Core` when it adds ids.
 - One top-level type per file, named after it (`MA0048`); no `TODO` comments (`MA0026`); no discarded results (`IDE0058`).
 - Library code uses `.ConfigureAwait(false)` on every `await`, `await using` and `await foreach` (`CA2007`); the Host
   templates do the same.

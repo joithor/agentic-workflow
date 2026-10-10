@@ -62,7 +62,7 @@ IL2026/IL3050 (errors under warnings-as-errors). The test reaches the `internal`
 | `src/<Pkg>/Aw.<Pkg>.Features/PublicAPI.Unshipped.txt` | The request and response records and all their members, compiler-generated ones included, annotated — written by the `RS0016` code fix (`dotnet format analyzers <project> --diagnostics RS0016`) |
 | `src/<Pkg>/Aw.<Pkg>.Host/Endpoints/EndpointTable.cs` or `Commands/CommandTable.cs` | One line mapping the route or command |
 | `src/<Pkg>/Aw.<Pkg>.Host/<Pkg>JsonContext.cs` | `[JsonSerializable]` for `<Slice>Request`, `<Slice>Response`, and `<Slice>Body` (http) |
-| `src/<Pkg>/Aw.<Pkg>.Core/PublicAPI.Unshipped.txt` | Only if a new port interface is added |
+| `src/<Pkg>/Aw.<Pkg>.Core/PublicAPI.Unshipped.txt` | When `ids` is non-empty or a new port interface is added. Each new id adds its type (from the `RS0016` code fix) and its Vogen-generated members (about 17 lines for a string id), which the code fix skips: those are recorded from the build's `RS0016` output (`docs/csharp/typed-ids.md`, "Public ids and PublicAPI files") and reviewed |
 | `tests/Aw.<Pkg>.Testing/A.cs` | One factory method: `public static <Slice>RequestBuilder <Slice>Request() => new();` |
 | `tests/Aw.<Pkg>.Testing/` | A fake (and contract base) per new port, one type per file |
 
@@ -204,6 +204,11 @@ and `CA1515` for test projects, with `GenerateDocumentationFile=true` and `CS159
 ## Commands the generator runs
 
 ```bash
+# when `ids` is non-empty or a port was added: the code fix on Core, then the generated id members from the build output
+dotnet format analyzers src/<Pkg>/Aw.<Pkg>.Core --diagnostics RS0016       # each id's type and any new port
+dotnet build src/<Pkg>/Aw.<Pkg>.Core 2>&1 \
+  | sed -n "s/.*RS0016: Symbol '\(.*\)' is not part of the declared public API.*/\1/p" | sort -u \
+  >> src/<Pkg>/Aw.<Pkg>.Core/PublicAPI.Unshipped.txt                      # Vogen's generated members (typed-ids.md); review them
 dotnet format analyzers src/<Pkg>/Aw.<Pkg>.Features --diagnostics RS0016   # PublicAPI lines for the new records
 dotnet build -warnaserror                                         # 0 warnings
 dotnet test --solution AgenticWorkflow.slnx --filter-trait "Lane=unit" --ignore-exit-code 8   # exactly one failure: <Slice>Tests.<Slice>_<behavior>; exit 8 = empty lane in some project
