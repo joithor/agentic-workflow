@@ -39,8 +39,13 @@ export async function markMerged(ctx: EvolveCtx): Promise<void> {
   if (ids.length > 0) await ctx.writeRetry((epoch) => ids.forEach((id) => transition(ctx.db, id, ["published"], "merged", epoch, ctx.deps.now())));
 }
 
-// Held at stage: the generalization pass refused it and it has no public row yet, so the next stage retries it.
-const heldAtStage = (ctx: EvolveCtx): StoredProposal[] => listStored(ctx.db, ["held"]).filter((s) => getPublic(ctx.db, s.id) === null);
+// Retried by stage: an open proposal past `proposed` with no public row. Held at stage (the generalization pass refused
+// it), or staged by a v4 build before public rows existed; such a staged row doesn't hold a cap slot while it waits.
+const retries = (ctx: EvolveCtx): StoredProposal[] => listStored(ctx.db, ["held", "staged"]).filter((s) => getPublic(ctx.db, s.id) === null);
+const slotsFree = (ctx: EvolveCtx, cap: number, retry: readonly StoredProposal[]): { inFlight: number; free: number } => {
+  const inFlight = inFlightCount(ctx.db) - retry.filter((s) => s.status === "staged").length;
+  return { inFlight, free: Math.max(0, cap - inFlight) };
+};
 // Reruns of reflect and correct can re-propose shipped work: the first merged or adopted proposal it duplicates.
 const shippedDuplicate = (ctx: EvolveCtx, s: StoredProposal): string | undefined =>
   (ctx.db.prepare("SELECT id FROM proposals WHERE artifact_id = ? COLLATE NOCASE AND norm_title = ? AND status IN ('merged', 'adopted') ORDER BY created_at, id LIMIT 1")
@@ -71,8 +76,8 @@ export async function stageProposals(ctx: EvolveCtx, budget: Budget = new Budget
   // Shipped duplicates are left out here so they cost no model calls; the write below rejects them.
   const eligible = notSelfAdopt(registry, extra);
   const unshipped = (s: StoredProposal): boolean => shippedDuplicate(ctx, s) === undefined && eligible(s);
-  const snapshot = slotOrder(listStored(ctx.db, ["proposed"]).filter(unshipped), heldAtStage(ctx).filter(unshipped), (s) => s)
-    .slice(0, Math.max(0, cap - inFlightCount(ctx.db)));
+  const retry = retries(ctx);
+  const snapshot = slotOrder(listStored(ctx.db, ["proposed"]).filter(unshipped), retry.filter(unshipped), (s) => s).slice(0, slotsFree(ctx, cap, retry).free);
   const refsOf = (s: StoredProposal): string[] => reduceEvidence(s.proposal.evidence).refs;
   const evidence = resolveRefs(transcriptsDir(ctx), ctx.repo, snapshot.flatMap(refsOf), scrub);
   const runner = ctx.io.runner(ctx.loaded, scrub);
@@ -87,7 +92,8 @@ export async function stageProposals(ctx: EvolveCtx, budget: Budget = new Budget
     results.set(s.id, await generalize({ runner, budget, models, proposal: s.proposal, evidence: mine }));
   }
   return ctx.writeRetry((epoch) => {
-    const inFlight = inFlightCount(ctx.db);
+    const retryNow = retries(ctx);
+    const { inFlight, free } = slotsFree(ctx, cap, retryNow);
     // Re-checked under the lock: reject shipped duplicates rather than stage them again. A held-at-stage retry can be
     // the open row a re-proposal of shipped work merged into, so the retries are checked too.
     const duplicates: { id: string; of: string }[] = [];
@@ -98,18 +104,18 @@ export async function stageProposals(ctx: EvolveCtx, budget: Budget = new Budget
     });
     const classify = (s: StoredProposal) => ({ s, t: classifyTier(s.proposal, registry, extra) });
     const freshC = notShipped(listStored(ctx.db, ["proposed"])).map(classify);
-    const heldC = notShipped(heldAtStage(ctx)).map(classify);
+    const heldC = notShipped(retryNow).map(classify);
     const keep = (c: ReturnType<typeof classify>): boolean => c.t.tier !== "self-adopt";
     const candidates = slotOrder(freshC.filter(keep), heldC.filter(keep), (c) => c.s);
-    const take = candidates.slice(0, Math.max(0, cap - inFlight));
+    const take = candidates.slice(0, free);
     let reclassified = 0;
     for (const d of duplicates) {
-      transition(ctx.db, d.id, ["proposed", "held"], "rejected", epoch, ctx.deps.now());
+      transition(ctx.db, d.id, ["proposed", "held", "staged"], "rejected", epoch, ctx.deps.now());
       audit(ctx.db, ctx.deps, "reject", `${d.id}: duplicate of ${d.of}`, epoch, scrub);
     }
     fs.mkdirSync(dir, { recursive: true, mode: 0o700 });
     // The candidates were read under this lock, so each transition below applies.
-    const FROM = ["proposed", "held"] as const;
+    const FROM = ["proposed", "held", "staged"] as const;
     const staged: StageOutcome["staged"] = [];
     const held: StageOutcome["held"] = [];
     let waiting = candidates.length - take.length;
@@ -133,6 +139,12 @@ export async function stageProposals(ctx: EvolveCtx, budget: Budget = new Budget
         reclassified++;
       }
       staged.push({ id: c.s.id, tier: t.tier });
+    }
+    // A preview is only ever rendered from a public row: one whose proposal has none (a v4-era preview of the
+    // original text, or a proposal held or rejected since) is removed.
+    for (const f of fs.readdirSync(dir)) {
+      const id = /^(.+)\.md$/.exec(f)?.[1];
+      if (id !== undefined && getPublic(ctx.db, id) === null) fs.rmSync(path.join(dir, f), { force: true });
     }
     return { staged, held, waiting, inFlight, cap, reclassified, selfAdopt: freshC.length + heldC.length - candidates.length, duplicates: duplicates.length, dir };
   });

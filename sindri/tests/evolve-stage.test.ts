@@ -9,7 +9,7 @@ import { acquireTickLock } from "../src/lock/lock.js";
 import { stage } from "../src/evolve/cmd/stage.js";
 import type { EvolveIo } from "../src/evolve/ctx.js";
 import { GENERALIZE_ROLES } from "../src/evolve/generalize.js";
-import { getProposal, getPublic, ProposalSchema, saveProposal, stagedFile, type ProposalStatus, type Tier } from "../src/evolve/proposals.js";
+import { getProposal, getPublic, ProposalSchema, savePublic, saveProposal, stagedFile, type ProposalStatus, type Tier } from "../src/evolve/proposals.js";
 import { PROMPTS } from "../src/evolve/prompts.js";
 import { stageProposals } from "../src/evolve/stage.js";
 import { Budget } from "../src/scope/model.js";
@@ -95,7 +95,11 @@ describe("sindri evolve stage (guarded transitions)", () => {
     const { fx, save } = await ready(1);
     const a = save("Alpha change here", {}, "code");
     const b = save("Beta change here", {}, "code");
-    const ctx = heldLock(fx, () => void fx.ctx.write((epoch) => setStatus(fx.ctx.db, b, "staged", epoch, fx.deps.now())));
+    // The overlapping run stages b the way stage does: with its public row.
+    const ctx = heldLock(fx, () => void fx.ctx.write((epoch) => {
+      setStatus(fx.ctx.db, b, "staged", epoch, fx.deps.now());
+      savePublic(fx.ctx.db, b, getProposal(fx.ctx.db, b)!.proposal, { category: "none", model: "m" }, epoch, fx.deps.now());
+    }));
     const r = await stage([], ctx);
     expect(getProposal(fx.ctx.db, a)?.status).toBe("proposed");
     expect(r.stdout).toContain("Cap reached: 1 proposals are staged or published");
@@ -247,6 +251,53 @@ describe("stage generalizes first (privacy B1)", () => {
     expect(o).toMatchObject({ staged: [], held: [], duplicates: 1 });
     expect(getProposal(fx.ctx.db, held)?.status).toBe("rejected");
     expect(fx.ctx.db.prepare("SELECT verb, detail FROM evolve_audit").all()).toEqual([{ verb: "reject", detail: `${held}: duplicate of ${merged}` }]);
+    fx.close();
+  });
+
+  it("regenerates a staged proposal with no public row (a v4-era stage), which doesn't hold a cap slot meanwhile", async () => {
+    const io = scriptedEvolveIo(generalizingScript());
+    const { fx, save } = await ready(1, io);
+    const legacy = save("Legacy staged change", { evidence: ["pr:1", "pr:2"] }, "code", "staged");
+    const fresh = save("Fresh change here", {}, "code");
+    // One slot: the fresh proposal goes first; the legacy row waits without counting as in flight.
+    const first = await stageProposals(fx.ctx);
+    expect(first).toMatchObject({ staged: [{ id: fresh }], waiting: 1, inFlight: 0 });
+    expect(getPublic(fx.ctx.db, legacy)).toBeNull();
+    fx.ctx.write((epoch) => setStatus(fx.ctx.db, fresh, "rejected", epoch, fx.deps.now()));
+    io.calls.length = 0;
+    const second = await stageProposals(fx.ctx);
+    expect(second).toMatchObject({ staged: [{ id: legacy }], waiting: 0 });
+    expect(io.calls.map((c) => c.role)).toEqual([GENERALIZE_ROLES.rewrite, GENERALIZE_ROLES.judge]);
+    expect(getProposal(fx.ctx.db, legacy)?.status).toBe("staged");
+    expect(getPublic(fx.ctx.db, legacy)?.title).toBe("Legacy staged change");
+    expect(fs.readFileSync(stagedFile(fx.deps, legacy), "utf8")).toContain("Legacy staged change");
+    fx.close();
+  });
+
+  it("holds a regenerated v4-era staged proposal the judge flags", async () => {
+    const io = scriptedEvolveIo((c) => (c.role === GENERALIZE_ROLES.judge ? { leaks: true, category: "domain" } : generalizingScript()(c)));
+    const { fx, save } = await ready(2, io);
+    const legacy = save("Legacy staged change", {}, "code", "staged");
+    expect((await stageProposals(fx.ctx)).held).toEqual([{ id: legacy, why: "generalize: the judge found domain" }]);
+    expect(getProposal(fx.ctx.db, legacy)?.status).toBe("held");
+    fx.close();
+  });
+
+  it("removes every staged preview whose proposal has no public row, so no v4-era preview keeps the original text", async () => {
+    const { fx, save } = await ready(2);
+    const legacy = save("Legacy staged change", {}, "code", "staged");
+    const held = save("Legacy held change", {}, "code", "held");
+    const gone = save("Legacy rejected change", {}, "code", "rejected");
+    const kept = save("Kept change here", {}, "code");
+    await stageProposals(fx.ctx, new Budget(0)); // nothing is generalized: only the cleanup runs
+    expect(getPublic(fx.ctx.db, kept)).toBeNull();
+    for (const id of [legacy, held, gone]) fs.writeFileSync(stagedFile(fx.deps, id), "### Task 1: original private text\n");
+    fs.writeFileSync(path.join(path.dirname(stagedFile(fx.deps, kept)), "notes.txt"), "not a preview\n");
+    await stageProposals(fx.ctx);
+    expect(fs.existsSync(stagedFile(fx.deps, kept))).toBe(true); // staged now, rendered from its public row
+    expect([legacy, held, gone].filter((id) => fs.existsSync(stagedFile(fx.deps, id)))).toEqual([legacy]); // the legacy row was regenerated and rewritten
+    expect(fs.readFileSync(stagedFile(fx.deps, legacy), "utf8")).not.toContain("original private text");
+    expect(fs.existsSync(path.join(path.dirname(stagedFile(fx.deps, kept)), "notes.txt"))).toBe(true);
     fx.close();
   });
 
