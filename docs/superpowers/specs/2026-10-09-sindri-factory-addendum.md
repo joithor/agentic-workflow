@@ -284,6 +284,15 @@ source: { type: desk, ref: "decision-log#D-12" }             # desk | correction
 status: active          # proposed | active | retired
 ```
 
+**Recorded shape in this repo (readiness R1b, #137):** the C# engineering rules are records in
+`rules/engineering/csharp/<slug>.yaml` (schema `schemas/rule-record.schema.json`, check `node scripts/check-rules.mjs`).
+They differ from the sketch above in one open way: `checks` is a **list** (a rule can be enforced by several checks,
+each with its own `type`, id, `status` and, while its PR is open, `pendingPr`), and `check.type` takes this repo's
+check kinds (analyzer, architecture test, `check-deps`, banned symbols, build target, script) instead of `eslint`.
+They add `section` (the readiness spec section), `gap` (`closed`, `partial`, `pending`, `open`), `gapNote` and
+`relatedIds`. Whether to keep the list form or split to one record per check is an open owner question (readiness
+spec §9 R12).
+
 **Layers** (a later layer wins on the same id): core defaults → `rules/` in this repo (the human's personal
 taste, safe to be public) → profile overlay (workplace and repo specifics, private) → packet (project-specific).
 

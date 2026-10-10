@@ -1,7 +1,8 @@
 # Agent readiness for agentic-workflow — design
 
-Status: draft for review, revision 5 · 2026-10-10 (rounds 1–2 applied; owner decision: **one clean cutover, no backward
-compatibility** — no TS parity, no data migration, no replay; decisions from the R1a/R1b PRs folded in)
+Status: draft for review, revision 6 · 2026-10-11 (rounds 1–2 applied; owner decision: **one clean cutover, no backward
+compatibility** — no TS parity, no data migration, no replay; decisions from the R1a PRs and the R1b template PRs
+folded in; R1b checks of record in §4b.10)
 Target: **Level 5 (Autonomous)** on Factory's agent-readiness framework. Level 4 is a prerequisite for the
 factory work in `2026-10-09-sindri-factory-addendum.md` (§17.16). Level 5 is reached together with that work.
 
@@ -132,6 +133,9 @@ The human's preferences set the shape:
 
 The research behind these choices is listed in Sources at the end of this section. Every rule below becomes a
 rule record (addendum §17.6) with the check named in its row. A rule with no check is a gap to close in R1.
+The records live one per file in `rules/engineering/csharp/<slug>.yaml`, listed in
+`rules/engineering/csharp.inventory.yaml` and validated against `schemas/rule-record.schema.json` by
+`node scripts/check-rules.mjs` (merge gate; R1b, #137). §4b.10 lists the check of record for each rule.
 
 ### 4b.1 Architectural shape: feature slices on a clean dependency direction
 
@@ -163,9 +167,13 @@ threshold.
 - `Core` has no I/O. It doesn't reference `System.IO`, `System.Net`, `Microsoft.Data.*`, `System.Diagnostics.Process`,
   `Console`, `DateTime.Now`/`UtcNow` or `Guid.NewGuid`. They're banned through `BannedSymbols.txt` (the
   BannedApiAnalyzers package), and time and ids come from injected ports (`TimeProvider`, `IIdGenerator`).
+  Technology packages the banned list can't name (`Aw.Kernel.Data`, `SQLitePCL`, `Npgsql`, cache and queue clients)
+  are kept out of `Core`, `Features` and a small package's `Commands` by an architecture test, and `Core` and
+  `Features` use no tier-0 package other than `Aw.Kernel` (§4b.10).
 - One slice never references another slice's types. Shared behavior moves into `Core` as a domain service or a port.
   A second use of the same logic is the trigger to move it (the "generalize at the second case" signal, §6.2).
 - `Infrastructure` row and DTO types are `internal`. They never leave the project, and repositories return `Core` types.
+  The architecture test is stricter: in `Infrastructure` only the `*ServiceCollectionExtensions` class is public.
 - Packages reference other packages only through their `Core` project's public surface, or through a CLI or HTTP
   contract. Their `Infrastructure` and `Features` are never referenced.
 
@@ -204,8 +212,9 @@ declaration.
   judge and sindri move into the tier-0 `Redaction` package, and scorer's labeler, which sindri copies, moves into
   scorer's `Core` for sindri to call through scorer's CLI.
 - **Inside a package**, the four-project shape (§4b.1) is itself a fixed DAG. **Inside a project,** feature
-  folders and namespaces must not form cycles. ArchUnitNET's slice-cycle rule checks every namespace in every
-  project (MSBuild already refuses circular *project* references; this covers the namespaces inside one).
+  folders and namespaces must not form cycles. A namespace-graph check over the ArchUnitNET model covers every
+  namespace in every registered production assembly (MSBuild already refuses circular *project* references; this
+  covers the namespaces inside one). Test projects and the AOT smoke apps aren't registered, so it doesn't cover them.
 - **Fan-out limits** (every `Host` and all test code are exempt: composing is the Host's job): a project references at most 4 other in-repo projects and at most 6 third-party packages
   (analyzers and test packages excluded; DEPS-FANOUT-002/003). Per package, at most 4 other packages through
   declared project edges (`limits.packageFanOut` in `deps.yaml`, DEPS-FANOUT-001). Going over either is a ratchet
@@ -302,7 +311,11 @@ group.MapPost("/items/{id}/start", async (ItemId id, StartItemBody body, IServic
   - an architecture test fails if any value object lacks a user-code `[JsonConverter]` or has Vogen STJ
     conversions on, and each id has a JSON round-trip test (including missing and null values).
 
-  A raw `string` or `Guid` in a public signature of `Core` or `Features` is an analyzer error.
+  A raw `string` or `Guid` in a public signature of `Core` or `Features` is an analyzer error. A `Guid` always
+  counts; a `string` counts only when its member is named as an id (so ordinary text stays a `string`); a typed id's
+  own members are exempt.
+  - A public `Guid` or `int` id needs `NoWarn RS0041` on its `Core` (Vogen's generated member is
+    nullable-oblivious); `/new-slice` adds it with the first such id.
 - **`Result<T>` and `Error`** live in `Aw.Kernel`:
   - expected failures (not found, invalid, conflict, rate-limited, budget exceeded) are `Error` records with a stable
     code from the error catalogue (`SND-…`, `AW-…`);
@@ -328,8 +341,16 @@ group.MapPost("/items/{id}/start", async (ItemId id, StartItemBody body, IServic
   types and decorators (`services.AddSindriCore()`, `AddSindriInfrastructure(settings)`). Only `Host` calls them and
   builds the container (its `Compose`). There's no assembly scanning, because it's reflection and not AOT-safe.
 - Constructor injection only: no service locator. `IServiceProvider` appears outside `Host` only as the parameter of a
-  registration factory lambda inside a project's own `Add…()` method (the planned ArchUnitNET rule allows exactly
-  that).
+  registration factory lambda inside a project's own `Add…()` method. The architecture test can't isolate the
+  lambda, so it allows any member of a `*ServiceCollectionExtensions` class (and, in the small shape, the `App` root
+  namespace).
+- Composition shape: decorators are registered in the owning project's `Add…()` method, outermost first, never in
+  `Host`; each host has one `Compose` method that `Program.cs` and the DI validation test both call. Hosts start
+  telemetry there with `AddKernelTelemetry(TelemetryOptions.FromEnvironment(service, environment, clock))`, and
+  `Program.cs` resolves `TelemetryRuntime` once the container is built (one runtime per process; R1b, #136).
+- Nothing reads `IConfiguration`: settings come from the environment `Compose` passes. OpenTelemetry brings the
+  configuration assemblies into every host, and `BannedSymbols.txt` doesn't apply to hosts, so this needs an
+  architecture rule over the host assemblies (a gap until it lands).
 - Lifetimes: services and repositories are scoped per request or command, pure domain services are singletons, and
   `TimeProvider` is a singleton (a `FakeTimeProvider` in tests).
 - A DI validation test builds the container with `ValidateOnBuild` and `ValidateScopes` for every host.
@@ -341,7 +362,8 @@ group.MapPost("/items/{id}/start", async (ItemId id, StartItemBody body, IServic
 - **Tests by feature, not by layer:** `StartItemTests`, not `ItemRepositoryTests` plus `ItemServiceTests`.
 - **Lanes:**
   - `unit`: `Core` logic and services with in-memory fakes. No I/O, under 10 s per package.
-  - `integration`: repositories on a real temp SQLite file; endpoints through `WebApplicationFactory`. Under 60 s.
+  - `integration`: repositories on a real temp SQLite file; endpoints through `WebApplicationFactory` or the real
+    host listening on loopback. Under 60 s.
   - `heavy`: real containers, browsers and index builds. Nightly or alone.
 
   Lanes are test traits, run from the repo root with `dotnet test --solution AgenticWorkflow.slnx --filter-trait
@@ -350,15 +372,24 @@ group.MapPost("/items/{id}/start", async (ItemId id, StartItemBody body, IServic
   ignores it; the unfiltered `dotnet test --solution AgenticWorkflow.slnx` keeps exit 8 as a failure. A lane's budget
   is the wall clock of `dotnet test --project <test project> --filter-trait "Lane=<lane>" --ignore-exit-code 8` per
   test project, summed per package; CI fails a package over its budget. Each test's own time from xUnit's CTRF report
-  is checked against the same budget as an extra per-test cap (`Aw.Kernel.Testing` ships the check).
+  is checked against the same budget as an extra per-test cap (`Aw.Kernel.Testing` ships the check). The
+  per-test cap reads one CTRF report per test project, so a lane run writes them with `--report-xunit-ctrf
+  --results-directory <dir>` (never a fixed `--report-xunit-ctrf-filename` with `--solution`, which keeps only the
+  last project's report), then `dotnet run --project tests/Aw.LaneCap.Testing -- <dir>` checks them (R1b, #133).
+  CTRF reports carry the OS user name, so they are never committed.
+- **Every test carries exactly one `Lane` trait.** The per-test cap reports a test without exactly one known lane
+  (LANE-TEST-002); a scan of every built test assembly is the planned complete check.
 - **Fakes, not mocks.** Each port has one in-memory fake in a shared `Aw.<Pkg>.Testing` project. A generic contract-test
   base class (`ReadRepositoryContract<TEntity, TId>`, `ItemRepositoryContract`) runs the **same tests against the fake
-  and the SQL implementation**, so the fake can't drift. Mocking libraries are not used.
+  and the SQL implementation**, so the fake can't drift. Mocking libraries are not used. Test-support projects
+  (`*.Testing`) are referenced only by test code.
 - **Test data:** builders with sensible defaults (`AnItem().WithSize(S).Build()`), deterministic ids and
   `FakeTimeProvider`, and no shared mutable fixtures. Golden files are used for CLI output and JSON contracts.
 - **Architecture tests** (ArchUnitNET, which is maintained; NetArchTest's last release was in 2023) run in the unit
-  lane. They cover the dependency directions, no slice-to-slice references, the `internal` row types and the naming
-  rules.
+  lane, in `tests/Aw.Architecture.Tests` (rule ids in §4b.10). They cover the dependency directions, no
+  slice-to-slice references, the `internal` row types and the naming rules. They run over the assemblies listed in
+  the `Packages.Production` registry (`tests/Aw.Architecture.Tests/Packages.cs`), which `/new-package` appends to; a
+  production project in the solution that is missing from the registry fails.
 - **Framework (decided, R7):** xUnit v3 on Microsoft.Testing.Platform. Tests run JIT; the AOT binaries are checked
   by the AOT CI job, which runs the CLI smoke tests and the real hook scripts against them. Both frameworks were well
   inside the lane budgets in the R1a spike.
@@ -411,6 +442,10 @@ group.MapPost("/items/{id}/start", async (ItemId id, StartItemBody body, IServic
   (W2) will fail CI if that block grows. (Not a `baseline.globalconfig`: a global config can't lower a rule `.editorconfig` sets,
   and its sections need absolute paths.)
 - `.editorconfig` sets every rule's severity explicitly (no "suggestion" level for anything agents should obey).
+  Also from `.editorconfig`: no `TODO` comments (MA0026; finish the work or open a work item) and one top-level type
+  per file, named after it (MA0048). A suppression (`#pragma warning disable`, `[SuppressMessage]`) or a project-level
+  severity override needs a written reason and is reviewed like an override.
+- `nuget.config` maps every package source to nuget.org only (package source mapping).
   The size limits: file ≤ 300 lines, method ≤ 40 lines, cyclomatic complexity ≤ 10, parameters ≤ 5. Existing
   violations go into a ratchet baseline that only shrinks.
 - `Aw.Analyzers`: a small in-repo analyzer project for the rules no package covers:
@@ -420,6 +455,11 @@ group.MapPost("/items/{id}/start", async (ItemId id, StartItemBody body, IServic
   - endpoint lambdas call exactly one service;
   - the size limits no off-the-shelf analyzer covers: file ≤ 300 lines, parameters ≤ 5, constructor dependencies
     (≤ 5, an error over 7) and generic arity ≤ 3.
+
+  It runs on production projects only, not on test code under `tests/`. Class constructors fall under the
+  constructor-dependency rule rather than the parameter rule; record constructors (data shapes) and lambdas aren't
+  counted. The 6–7 constructor-dependency split signal is reported at `suggestion`, the one deliberate exception to
+  "never suggestion" below (an owner question, §9 R11). Ids in §4b.10.
 
 **AOT scope** (verified in the R1a spike; anything that fails ships framework-dependent with a startup budget):
 
@@ -437,6 +477,15 @@ contract-test suite, idempotent events, an event envelope (`actor`, `tenant`, `r
 `trace`), a transactional outbox, and `Lease`, `Launcher`, `Scheduler`, `Bus` and `Secrets` ports, in `Aw.Kernel`
 and `Aw.Kernel.Telemetry`. The C# build never shares files with the TS build (one clean cutover, §4a), so the
 seams go into the C# schemas **from the first commit**, and the C# build starts with fresh state at the switch.
+
+**Every external technology sits behind a port** (database, cache, queue or bus, file system, processes, HTTP, git,
+containers, model CLIs, secrets, clock and ids). `Core` declares the port, named for what the code needs
+(`IItemStore`, not `ISqliteItems`); each technology is one `Infrastructure` adapter; only the host's `Compose`
+picks the adapter. Every port has a contract-test suite that its in-memory fake and every real adapter pass. In
+R1b the Kernel ports have theirs in `Aw.Kernel.Testing`: `ReadRepositoryContract`, and `UnitOfWorkContract` and
+`OutboxContract` (R1b, #133), run against the fakes and against `Aw.Kernel.Data`'s SQLite adapters, which include
+the transactional outbox `SqliteOutbox` with its table from `SqliteOutboxSchema.CreateMigration`. Logging's port
+is `ILogSink` in `Aw.Kernel.Telemetry`, with its contract in `tests/Aw.Kernel.Telemetry.Testing` (R1b, #136).
 
 ### 4b.7 Repository tree
 
@@ -496,8 +545,41 @@ The skill packages that hold code today (`skills/ui-evidence`, `skills/bugFixOrc
   It also has the slice recipe ("to add a use case: test, request and response, service, endpoint, registration")
   and points to the `/new-package` and `/new-slice` scaffolds.
 - The scaffolds produce compliant code with a red test, so an agent's first move is always the TDD step.
-- Rule records carry the analyzer ID that enforces each rule. A denial or build error names the rule, and
-  `sindri rules explain <id>` shows the why.
+- The scaffolds exist (R1b, #139): `/new-package` and `/new-slice` are skills that drive
+  `scripts/scaffold/new-package.mjs` and `scripts/scaffold/new-slice.mjs`, and the CI job "C# scaffold generators"
+  scaffolds a small CLI package and a full http package into a temporary tree and builds and tests them.
+- Rule records carry the analyzer ID that enforces each rule, and `node scripts/check-rules.mjs` enforces that every
+  check id the C# rules name is in a record and exists in the repo (RULE-COVER-002, RULE-CHECK-001; R1b, #137). A
+  denial or build error names the rule; `sindri rules explain <id>`, which shows the why, is not built yet.
+
+### 4b.10 Checks of record (R1b)
+
+The rule ids the R1b template PRs added. Each failure message names the rule id, what was found, the limit and the
+fix (§8). Where a check is still in an open PR, the PR is named; the rule record (§4b intro) says `pending` until it
+merges.
+
+| Area | Ids | Check | PR |
+|---|---|---|---|
+| Dependency direction; another package only through its `Core`; `Core` and `Features` use no tier-0 package but `Aw.Kernel` | ARCH-DIR-001…005 | `tests/Aw.Architecture.Tests` | #131 |
+| Every type in its project's layer namespace | ARCH-PLACE-001 | same | #131 |
+| No slice-to-slice references | ARCH-SLICE-001 (authoritative); AW1003 (fast analyzer check) | same; `Aw.Analyzers` | #131, #132 |
+| `Infrastructure` types internal | ARCH-INFRA-001 | `tests/Aw.Architecture.Tests` | #131 |
+| No namespace cycles | ARCH-CYCLE-001 | same | #131 |
+| No `Common`, `Shared`, `Utils`, `Helpers` | ARCH-NAME-001 | same | #131 |
+| Service-locator types only in `Host` and registration classes | ARCH-DI-001 | same | #131 |
+| No technology types outside `Infrastructure`; only `Composition` uses it | ARCH-PORT-001, ARCH-PORT-002 | same | #131 |
+| Typed ids (R9: defaults, user-code converter) | ARCH-ID-001, ARCH-ID-002 (`TypedIdGuard`, moved from `Aw.Kernel.Tests`) | same | #131 |
+| The `Packages.Production` registry matches the solution | ARCH-REG-001, ARCH-REG-002 | same | #131 |
+| Raw ids in public `Core`/`Features` signatures; `!` without `// why:`; endpoint lambda calls exactly one service; file ≤ 300 lines; parameters ≤ 5; constructor dependencies > 7 (error) and 6–7 (`suggestion`); generic arity ≤ 3 | AW1001, AW1002, AW1004, AW1005, AW1006, AW1007, AW1008, AW1009 | `Aw.Analyzers` (`CA1005` off, owned by AW1009) | #132 |
+| Per-test lane cap; exactly one known lane | LANE-TEST-001, LANE-TEST-002 | `tests/Aw.LaneCap.Testing` over CTRF reports | #133 |
+| Kernel port contracts | `UnitOfWorkContract`, `OutboxContract` (with `ReadRepositoryContract`) | `Aw.Kernel.Testing` | #133 |
+| Redaction timeout blocks | AW-REDACT-001 | `Aw.Redaction` | #130 |
+| Rule records cover every named check and each check exists | RULE-COVER-*, RULE-CHECK-* | `node scripts/check-rules.mjs` | #137 |
+| Scaffold inputs and refusals; generator steps | NP-* (`/new-package`), NS-* (`/new-slice`), SCAFFOLD-* | `scripts/scaffold/*.mjs`, CI job "C# scaffold generators" | #139 |
+| Every environment variable read is documented | ENV-EXAMPLE-001…004 | `scripts/check-env-example.sh` | #140 |
+
+Still gaps after R1b: the `IConfiguration` ban for hosts (§4b.4), the tier-0 one-external-package cap (§4b.1a), the
+20% build-time regression gate (§4b.8) and the complete one-`Lane`-trait scan (§4b.5).
 
 **Sources:**
 [Vertical slice vs Clean Architecture](https://milanjovanovic.tech/blog/vertical-slice-vs-clean-architecture) ·
@@ -540,6 +622,15 @@ assert that no tested path fails open against the C# binaries.
 - Patterns use explicit ASCII classes (`[0-9]`, `[A-Za-z0-9_]`), `RegexOptions.CultureInvariant`, and never
   `NonBacktracking` where lookarounds exist.
 - Every match has a timeout. A timeout **blocks** (the commit, the write or the egress) and is logged. It never passes.
+  In `Aw.Redaction` (R1b, #130) a timeout returns the `Blocked` outcome with `AW-REDACT-001` and withholds the text;
+  the caller logs it. The budget scales with input size (by default 1 s per pattern per 128K characters), so a large
+  ordinary input isn't blocked for its size alone.
+- Evasions are folded, not enumerated: the rules run on the text as written and on a folded copy (zero-width
+  characters dropped, Unicode spaces and Latin look-alikes mapped to ASCII, JSON escapes decoded), and hits from both
+  are mapped back to the original text.
+- Deliberately narrower than `detect-secrets.sh`: a `NAME=value` secret needs a digit in its value, and judge's bare
+  40+ hex rule (which erases git SHAs and digests) isn't carried over. Retiring the hook into these patterns (§4e
+  B12) accepts that, or adds the hook's shapes as rules first.
 - Redaction's tests carry a corpus of synthetic secret shapes, Unicode look-alikes, zero-width joiners, escaped
   newlines and long inputs.
 
@@ -630,17 +721,27 @@ still TS.
 
 **Runtime hardening (A16).**
 - The bridge binds to loopback **in code**, and nothing outside the code can change it:
-  - no command-line args or environment variables reach the web host's configuration, `PreferHostingUrls` is pinned
-    off, and Kestrel listens with `Listen(IPAddress.Loopback, port)` only;
+  - no command-line args or environment variables reach the web host's configuration (an http host clears the
+    configuration sources: `CreateSlimBuilder` still reads `ASPNETCORE_*`, `DOTNET_*` and unprefixed environment
+    variables), `PreferHostingUrls` is pinned off, and Kestrel listens with `Listen(IPAddress.Loopback, port)` only;
+  - the http host's JSON options are the `AwJson` profile with the resolver chain replaced, plus `AddProblemDetails()`
+    so error results serialize;
   - a test starts the bridge with each override vector (`ASPNETCORE_URLS`, `DOTNET_URLS`, `ASPNETCORE_HTTP_PORTS`,
-    `ASPNETCORE_PREFERHOSTINGURLS`, `Kestrel__Endpoints__*` in the environment and on the command line, `--urls`) and
+    `ASPNETCORE_PREFERHOSTINGURLS`, `ASPNETCORE_Kestrel__Endpoints__*` and the unprefixed
+    `Kestrel__Endpoints__*` in the environment and on the command line, `--urls`) and
     checks the only listener is `127.0.0.1:<port>` (the R1a spike found two of them binding all interfaces in a
     default `CreateSlimBuilder(args)` host);
   - requests with a non-loopback `Host` get 400 (B12, DNS rebinding) and a browser `Origin` that isn't loopback gets
     403 (the MCP Streamable HTTP rule);
   - not carried over from the TS bridge: the `HOST` variable, the `ALLOW_REMOTE` escape hatch and wildcard CORS
     (`@fastify/cors` with `origin: true` today).
-- The scrubber runs as a processor on logs and OpenTelemetry exports, so new logging can't carry secrets out.
+- The scrubber runs as a processor on logs and OpenTelemetry exports, so new logging can't carry secrets out
+  (`Aw.Kernel.Telemetry`, R1b, #136). Per path: log text and fields are scrubbed and secret-named fields withheld
+  whole; with a trace exporter, span display names, tag values and status descriptions are rewritten in place, and a
+  span with a secret in what can't be rewritten (operation name, trace state, tag keys, events, links) is dropped; a
+  metric instrument whose tags carry a secret is withheld from every export. A blocked scrub never passes raw text,
+  a scrub failure is never thrown into the caller, and what was withheld is counted on
+  `aw.telemetry.scrub.withheld`. Exporters are host-supplied adapters and off by default.
 - The devcontainer is for humans, and it is never the agent sandbox. Docker-in-Docker means root on the host, so
   agent sessions keep using the Sindri containers of the main spec §8.2.
 
@@ -674,8 +775,8 @@ Each row is a criterion family, the change that satisfies it, and its owner work
 | 2 | Pinned dependencies, documented build | `global.json`, Central Package Management, locked restore (§4b.6) | W1 |
 | 3 | Integration tests, tests runnable locally | Lanes, one root `test` command | W3 |
 | 3 | Secret scanning, CODEOWNERS | GitHub secret scanning + push protection, a scrub job in CI, CODEOWNERS backed by a check (§4d) | W4 |
-| 3 | Structured logging, tracing, metrics | One logger module (JSON lines, levels, ids); OTel spans and metrics in bridge and sindri (exporter off by default, local collector in the devcontainer) | W7 |
-| 3 | Issue and PR templates, labels | Templates; label scheme (`type:`, `area:`, `size:`, `ring:`) synced from a file | W6 |
+| 3 | Structured logging, tracing, metrics | One logger module (JSON lines, levels, ids; `Aw.Kernel.Telemetry`); OTel spans and metrics in bridge and sindri (exporter off by default; the OTLP adapter and a local collector, run on the host, arrive with the first exporting host) | W7 |
+| 3 | Issue and PR templates, labels | Templates; label scheme (`type:`, `area:`, `size:`, `ring:`) in `.github/labels.yml`, synced to the repo by the owner | W6 |
 | 4 | Fast CI feedback | Required CI under 5 minutes for lint, types and unit tests; affected-package detection; heavy lanes nightly | W3 |
 | 4 | Flaky-test detection | The quarantine job (§4e B11, §8) | W3 |
 | 4 | Deployment frequency | "Release" here means promoting a stable channel (§7.7 of the main spec). Track promotion frequency and lead time | W8 |
@@ -692,9 +793,9 @@ Each row is a criterion family, the change that satisfies it, and its owner work
 | W2 Style | Analyzers with one owner per rule, `.editorconfig`, the ratchet baseline, shellcheck and shfmt (§4b.6) | Applies to each package as it's ported |
 | W3 Tests and CI | GitHub Actions: lint, types, unit and integration per affected package, bash tests, `sync-rules --check`, `setup.sh --dry-run`, `claude plugin validate`; nightly heavy lane; quarantine job; time budgets | The `AGENTS.md` merge gate becomes required checks |
 | W4 Security | Branch protection with required checks and linear history; CODEOWNERS; secret scanning and push protection; Dependabot (or Renovate) with grouped updates; scrub job in CI | Single maintainer: CODEOWNERS is for the protected modules (§7.7) |
-| W5 Dev environment | Devcontainer (Node, uv, Docker-in-Docker for Serena and sindri containers, Ollama optional); `.env.example` covering every env var the packages read | |
+| W5 Dev environment | Devcontainer for humans (.NET SDK, Node, uv; no Docker-in-Docker, §4d: Serena, the sindri containers and the optional collector run on the host; Ollama optional); `.env.example` covering every env var the packages read, enforced by `scripts/check-env-example.sh` (ENV-EXAMPLE-001…004) with `scripts/env-scan-ignore.txt` for OS and host variables | |
 | W6 Task discovery | Issue templates (bug, feature, skill change, idea card), PR template with the evidence section, label sync | Matches the addendum's work-item kinds |
-| W7 Observability | One shared logging module; OTel in bridge and sindri; `doctor` reports exporter state | |
+| W7 Observability | One shared logging module; OTel in bridge and sindri; `doctor` reports exporter state (`TelemetryRuntime.IsExporting`). The OTLP adapter must set `service.name` on the resource explicitly | |
 | W8 Docs and delivery | `AGENTS.md` command executor; freshness check; promotion metrics | |
 | W9 Product signals | A page that maps existing telemetry and experiment machinery onto the pillar | Mostly documentation of what exists |
 | W10 Code shape | The §4b shape applied in each port; `deps.yaml` edges and tiers; merging duplicate logic (redaction, labeler, locks, `Result`, error codes, CLI output) found by the code index's clone layer | Happens inside the ports, not as a separate refactor of the TS |
@@ -751,6 +852,9 @@ next PR shows it passing.
 | R8 | Data access under NativeAOT | **Decided (R1a spike):** hand-written ADO.NET with `IRowMapper<T>` over the bundled SQLite shipped beside each tool (§4b.2); EF Core 10 and Dapper.AOT fail warnings-as-errors |
 | R9 | Strongly typed ids | **Decided (R1a spike):** Vogen with its STJ generation off, a user-code converter per id and `IParsable<T>` declared in user code (§4b.3) |
 | R10 | Agent identity | A GitHub App installed on the repo (preferred) or a fine-grained token, with contents and pull-request write only |
+| R11 | AW1008 at `suggestion` | **Open (owner).** The 6–7 constructor-dependency split signal is reported at `suggestion`. Keep it as a recorded exception to "never suggestion", or raise it to `warning` |
+| R12 | Rule record shape | **Open (owner).** R1b records carry a `checks` list (one record per rule, several checks each) plus `section`, `gap`, `gapNote`, `relatedIds` (addendum §17.6). Keep the list form, or one record per check |
+| R13 | How hosts are kept off `IConfiguration` | **Open (owner).** An architecture rule over host assemblies is proposed; `BannedSymbols.txt` doesn't apply to hosts |
 
 ## 10. Rollout and sizing (rough, one builder with agents)
 
