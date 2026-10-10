@@ -19,6 +19,7 @@ internal static class DecisionJson
         Assert.Equal(1234, row.GetProperty("latency_ms").GetInt64());
         Assert.Equal("0123456789abcdef", row.GetProperty("input_digest").GetString());
         Assert.Equal(undone ? JsonValueKind.String : JsonValueKind.Null, row.GetProperty("undone_at").ValueKind);
+        Assert.True(row.TryGetProperty("approved_at", out _), "every row carries approved_at (null until approved)");
         Assert.Equal(1, row.GetProperty("chain_position").GetInt32());
         var skipped = Assert.Single(row.GetProperty("skipped").EnumerateArray());
         Assert.Equal(("jev", "unavailable"), (skipped.GetProperty("provider").GetString(), skipped.GetProperty("reason").GetString()));

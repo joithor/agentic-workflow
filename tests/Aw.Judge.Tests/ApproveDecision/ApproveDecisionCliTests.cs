@@ -1,21 +1,39 @@
 using Aw.Judge.Testing;
+using Aw.Kernel.Testing;
 
 namespace Aw.Judge.Tests.ApproveDecision;
 
-// The contract of 'judge approve' (TS runApprove: reason_code prefixed 'approved:'; unknown → exit 1 with a message).
+// The contract of 'judge approve': the decision row with approved_at set (the first approval's time); unknown → exit 1.
 public sealed class ApproveDecisionCliTests : IDisposable
 {
     private readonly TempStateDirectory _state = new();
 
     [Fact, Trait("Lane", "integration")]
-    public async Task Approve_prints_the_row_with_the_reason_code_prefixed()
+    public async Task Approve_prints_the_row_with_approved_at_and_the_reason_code_unchanged()
     {
         _ = await _state.DecisionLog().Record(A.Decision().WithId("d-1").Build(), CancellationToken.None);
+        var cli = new JudgeCli(_state);
+        cli.Clock.Advance(TimeSpan.FromMinutes(5));
 
-        var run = await new JudgeCli(_state).Run("approve", "d-1");
+        var run = await cli.Run("approve", "d-1");
 
         Assert.Equal((0, ""), (run.ExitCode, run.Stderr));
-        DecisionJson.AssertRow(run.Json(), "d-1", "approved:model", undone: false);
+        DecisionJson.AssertRow(run.Json(), "d-1", "model", undone: false);
+        Assert.Equal(KnownInstants.Epoch.AddMinutes(5), run.Json().GetProperty("approved_at").GetDateTimeOffset());
+    }
+
+    [Fact, Trait("Lane", "integration")]
+    public async Task Approving_twice_keeps_the_first_approved_at()
+    {
+        _ = await _state.DecisionLog().Record(A.Decision().WithId("d-1").Build(), CancellationToken.None);
+        var cli = new JudgeCli(_state);
+        _ = await cli.Run("approve", "d-1");
+        cli.Clock.Advance(TimeSpan.FromMinutes(5));
+
+        var again = await cli.Run("approve", "d-1");
+
+        Assert.Equal(0, again.ExitCode);
+        Assert.Equal(KnownInstants.Epoch, again.Json().GetProperty("approved_at").GetDateTimeOffset());
     }
 
     [Fact, Trait("Lane", "integration")]

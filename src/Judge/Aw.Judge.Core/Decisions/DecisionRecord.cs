@@ -26,7 +26,7 @@ public sealed record DecisionRecord
     /// <summary>The confidence, 0 to 1.</summary>
     public required double Confidence { get; init; }
 
-    /// <summary>Why, e.g. 'pre-rule' or 'below-threshold'; 'approve' prefixes it with 'approved:'.</summary>
+    /// <summary>Why, e.g. 'pre-rule' or 'below-threshold'.</summary>
     public required string ReasonCode { get; init; }
 
     /// <summary>How long the decision took, in milliseconds.</summary>
@@ -37,6 +37,9 @@ public sealed record DecisionRecord
 
     /// <summary>When the decision was undone, if it was.</summary>
     public DateTimeOffset? UndoneAt { get; init; }
+
+    /// <summary>When the user approved the decision ('judge approve'), if they did; the first approval's time.</summary>
+    public DateTimeOffset? ApprovedAt { get; init; }
 
     /// <summary>The settling provider's position in the chain.</summary>
     public required int ChainPosition { get; init; }

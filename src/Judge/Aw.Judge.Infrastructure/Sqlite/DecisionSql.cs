@@ -28,8 +28,6 @@ internal static class DecisionSql
 
     internal const string MarkUndone = "UPDATE decisions SET undone_at = $at WHERE id = $id";
 
-    internal const string PrefixReasonCode = "UPDATE decisions SET reason_code = $prefix || reason_code WHERE id = $id";
-
     internal const string CountFailuresSince = "SELECT COUNT(*) FROM failures WHERE ts >= $since";
 
     // "Model attempts" leave out rows that never reached a provider (a disabled question, invalid input).
@@ -58,9 +56,6 @@ internal static class DecisionSql
 
     internal static SqlStatement Undo(DecisionId id, DateTimeOffset at) =>
         new(MarkUndone, c => c.Bind("$id", id.Value).Bind("$at", at), "decision " + id.Value);
-
-    internal static SqlStatement Prefix(DecisionId id, string prefix) =>
-        new(PrefixReasonCode, c => c.Bind("$id", id.Value).Bind("$prefix", prefix), "decision " + id.Value);
 
     internal static SqlStatement At(string sql, string name, DateTimeOffset at) => new(sql, c => c.Bind(name, at));
 

@@ -214,7 +214,6 @@ Aw.Judge.Core.Ports.IDecisionLog.CountFailuresSince(System.DateTimeOffset since,
 Aw.Judge.Core.Ports.IDecisionLog.Find(Aw.Judge.Core.Ids.DecisionId id, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Judge.Core.Decisions.DecisionRecord!>!>
 Aw.Judge.Core.Ports.IDecisionLog.LastAttemptOutcomes(int count, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<System.Collections.Generic.IReadOnlyList<Aw.Judge.Core.Decisions.DecisionOutcome>!>!>
 Aw.Judge.Core.Ports.IDecisionLog.MarkUndone(Aw.Judge.Core.Ids.DecisionId id, System.DateTimeOffset at, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Kernel.Unit>!>
-Aw.Judge.Core.Ports.IDecisionLog.PrefixReasonCode(Aw.Judge.Core.Ids.DecisionId id, string! prefix, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Kernel.Unit>!>
 Aw.Judge.Core.Ports.IDecisionLog.PruneDetailsBefore(System.DateTimeOffset before, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<int>!>
 Aw.Judge.Core.Ports.IDecisionLog.Record(Aw.Judge.Core.Decisions.DecisionRecord! decision, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Kernel.Unit>!>
 Aw.Judge.Core.Ports.IDecisionLog.RecordFailure(Aw.Judge.Core.Decisions.FailureRecord! failure, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Kernel.Unit>!>
@@ -631,3 +630,6 @@ static Aw.Judge.Core.Config.ConfigReading.operator ==(Aw.Judge.Core.Config.Confi
 static Aw.Judge.Core.Config.JudgeConfigParser.Parse(System.ReadOnlySpan<byte> utf8Json, System.Text.Json.JsonSerializerOptions! json) -> Aw.Kernel.Result<Aw.Judge.Core.Config.JudgeConfig!>!
 static Aw.Judge.Core.Config.JudgeConfigParser.ThresholdProblem(double threshold) -> string?
 static readonly Aw.Judge.Core.Errors.JudgeErrors.ConfigMalformed -> Aw.Kernel.ErrorDefinition!
+Aw.Judge.Core.Decisions.DecisionRecord.ApprovedAt.get -> System.DateTimeOffset?
+Aw.Judge.Core.Decisions.DecisionRecord.ApprovedAt.init -> void
+Aw.Judge.Core.Ports.IDecisionLog.MarkApproved(Aw.Judge.Core.Ids.DecisionId id, System.DateTimeOffset at, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Kernel.Unit>!>

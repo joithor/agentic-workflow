@@ -111,19 +111,21 @@ public abstract partial class DecisionLogContract
         Expect.That(found.IsSuccess && DecisionEquality.Same(decision with { UndoneAt = at }, found.Value), "only undone_at changed");
     }
 
-    /// <summary>Approve prefixes the reason code and changes nothing else.</summary>
+    /// <summary>Approve sets the approved time and changes nothing else; approving again keeps the first time.</summary>
     /// <returns>A task.</returns>
     [Fact]
-    public async Task Prefixing_the_reason_code_keeps_the_old_code_after_the_prefix()
+    public async Task Approve_sets_the_approved_time_once()
     {
         var log = await Create(_none);
         var decision = A.Decision().WithOutcome(DecisionOutcome.Escalated).Build();
         _ = await log.Record(decision, _none);
+        var first = KnownInstants.Epoch.AddMinutes(5);
 
-        Expect.That((await log.PrefixReasonCode(decision.Id, "approved:", _none)).IsSuccess, "approve succeeds on a known id");
+        Expect.That((await log.MarkApproved(decision.Id, first, _none)).IsSuccess, "approve succeeds on a known id");
+        Expect.That((await log.MarkApproved(decision.Id, first.AddMinutes(1), _none)).IsSuccess, "approving again succeeds");
 
         var found = await log.Find(decision.Id, _none);
-        Expect.That(found.IsSuccess && DecisionEquality.Same(decision with { ReasonCode = "approved:model" }, found.Value), "only reason_code changed, to approved:<old>");
+        Expect.That(found.IsSuccess && DecisionEquality.Same(decision with { ApprovedAt = first }, found.Value), "only approved_at changed, to the first approval's time");
     }
 
     /// <summary>Undo and approve on an unknown id are AW-JUDGE-002.</summary>
@@ -135,7 +137,7 @@ public abstract partial class DecisionLogContract
         var missing = DecisionId.From("missing");
 
         var undo = await log.MarkUndone(missing, KnownInstants.Epoch, _none);
-        var approve = await log.PrefixReasonCode(missing, "approved:", _none);
+        var approve = await log.MarkApproved(missing, KnownInstants.Epoch, _none);
 
         Expect.That(undo.IsError && undo.Error.Code == JudgeErrors.UnknownDecision.Code, "undo on an unknown id is AW-JUDGE-002");
         Expect.That(approve.IsError && approve.Error.Code == JudgeErrors.UnknownDecision.Code, "approve on an unknown id is AW-JUDGE-002");

@@ -32,12 +32,12 @@ public interface IDecisionLog
     /// <returns>Success, or AW-JUDGE-002 when there is no such decision.</returns>
     public ValueTask<Result<Unit>> MarkUndone(DecisionId id, DateTimeOffset at, CancellationToken cancellationToken);
 
-    /// <summary>Prefixes a decision's reason code ('approve' passes 'approved:').</summary>
+    /// <summary>Sets a decision's approved time, unless it is already approved (approving twice keeps the first time).</summary>
     /// <param name="id">The decision id.</param>
-    /// <param name="prefix">The prefix.</param>
+    /// <param name="at">When it was approved.</param>
     /// <param name="cancellationToken">Cancels the write.</param>
     /// <returns>Success, or AW-JUDGE-002 when there is no such decision.</returns>
-    public ValueTask<Result<Unit>> PrefixReasonCode(DecisionId id, string prefix, CancellationToken cancellationToken);
+    public ValueTask<Result<Unit>> MarkApproved(DecisionId id, DateTimeOffset at, CancellationToken cancellationToken);
 
     /// <summary>Counts the failures at or after a time.</summary>
     /// <param name="since">The start of the window, inclusive.</param>

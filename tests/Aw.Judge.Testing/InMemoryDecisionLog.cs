@@ -69,8 +69,8 @@ public sealed class InMemoryDecisionLog : IDecisionLog
         Change(id, decision => decision with { UndoneAt = at });
 
     /// <inheritdoc />
-    public ValueTask<Result<Unit>> PrefixReasonCode(DecisionId id, string prefix, CancellationToken cancellationToken) =>
-        Change(id, decision => decision with { ReasonCode = prefix + decision.ReasonCode });
+    public ValueTask<Result<Unit>> MarkApproved(DecisionId id, DateTimeOffset at, CancellationToken cancellationToken) =>
+        Change(id, decision => decision with { ApprovedAt = decision.ApprovedAt ?? at });
 
     /// <inheritdoc />
     public ValueTask<Result<int>> CountFailuresSince(DateTimeOffset since, CancellationToken cancellationToken) =>

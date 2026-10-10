@@ -4,14 +4,12 @@ using Aw.Kernel.Services;
 
 namespace Aw.Judge.Features.ApproveDecision;
 
-internal sealed class ApproveDecisionService(IDecisionLog decisions) : IService<ApproveDecisionRequest, ApproveDecisionResponse>
+// Records that the user cleared a decision (typically an escalated one); approving twice keeps the first time.
+internal sealed class ApproveDecisionService(IDecisionLog decisions, TimeProvider clock) : IService<ApproveDecisionRequest, ApproveDecisionResponse>
 {
-    // Marks an escalated decision as cleared by the user (TS runApprove), until approvals get their own table.
-    private const string ApprovedPrefix = "approved:";
-
     public async ValueTask<Result<ApproveDecisionResponse>> Handle(ApproveDecisionRequest request, CancellationToken cancellationToken)
     {
-        var approved = await decisions.PrefixReasonCode(request.DecisionId, ApprovedPrefix, cancellationToken).ConfigureAwait(false);
+        var approved = await decisions.MarkApproved(request.DecisionId, clock.GetUtcNow(), cancellationToken).ConfigureAwait(false);
         if (approved.IsError)
         {
             return approved.Error;

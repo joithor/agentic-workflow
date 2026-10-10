@@ -68,8 +68,8 @@ internal sealed class SqliteDecisionLog(JudgeDatabase database, JsonSerializerOp
     public ValueTask<Result<Unit>> MarkUndone(DecisionId id, DateTimeOffset at, CancellationToken cancellationToken) =>
         Write(DecisionSql.Undo(id, at), cancellationToken).Bind(changed => OneRow(changed, id));
 
-    public ValueTask<Result<Unit>> PrefixReasonCode(DecisionId id, string prefix, CancellationToken cancellationToken) =>
-        Write(DecisionSql.Prefix(id, prefix), cancellationToken).Bind(changed => OneRow(changed, id));
+    public ValueTask<Result<Unit>> MarkApproved(DecisionId id, DateTimeOffset at, CancellationToken cancellationToken) =>
+        throw new NotSupportedException("red: approved_at column");
 
     public async ValueTask<Result<int>> CountFailuresSince(DateTimeOffset since, CancellationToken cancellationToken)
     {
