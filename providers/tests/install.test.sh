@@ -211,6 +211,30 @@ test_claude_retire_removes_user_and_local_scopes() {
   echo "PASS: test_claude_retire_removes_user_and_local_scopes"
 }
 
+# A retired package's leftover ignored output (dist, node_modules, a db) is removed once git tracks nothing in it;
+# a directory git still tracks is kept, and dry-run only prints.
+test_remove_retired_dir_only_when_untracked() {
+  setup_env
+  local repo="$SANDBOX/repo" out
+  mkdir -p "$repo/old-pkg/dist" "$repo/kept"
+  git -C "$repo" init -q
+  touch "$repo/old-pkg/dist/mcp.js" "$repo/kept/file"
+  git -C "$repo" add kept/file
+  AW_DRY_RUN=1
+  out="$(aw_remove_retired_dir "$repo" old-pkg)"
+  [ -d "$repo/old-pkg" ] || fail "dry run removed the directory"
+  echo "$out" | grep -q "would remove $repo/old-pkg" || fail "dry run should say what it would remove: $out"
+  AW_DRY_RUN=0
+  out="$(aw_remove_retired_dir "$repo" old-pkg)"
+  [ ! -e "$repo/old-pkg" ] || fail "untracked leftover not removed"
+  echo "$out" | grep -q "removed $repo/old-pkg (retired)" || fail "removal not reported: $out"
+  out="$(aw_remove_retired_dir "$repo" kept)"
+  [ -f "$repo/kept/file" ] || fail "a tracked directory must stay"
+  [ -z "$(aw_remove_retired_dir "$repo" old-pkg)" ] || fail "a missing directory should print nothing"
+  teardown_env
+  echo "PASS: test_remove_retired_dir_only_when_untracked"
+}
+
 test_dry_run_writes_nothing() {
   setup_env
   AW_DRY_RUN=1
@@ -328,6 +352,7 @@ test_cursor_retires_stale_servers
 test_cli_retire_removes_only_registered
 test_cli_retire_skips_shipped_servers
 test_claude_retire_removes_user_and_local_scopes
+test_remove_retired_dir_only_when_untracked
 test_dry_run_writes_nothing
 test_agents_render_per_provider
 test_builds_skill_packages_and_warns_on_failure
