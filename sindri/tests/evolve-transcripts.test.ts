@@ -2,7 +2,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
 
-import { excerptFor, parseSince, resolveRefs, readRepoSessions, sessionOf, textBlocks, toolNames, transcriptsDir } from "../src/evolve/transcripts.js";
+import { excerptFor, parseSince, resolveRefs, readRepoSessions, sessionTexts, sessionOf, textBlocks, toolNames, transcriptsDir } from "../src/evolve/transcripts.js";
 import { compileExtraPatterns, makeScrubber } from "../src/scrub/scrub.js";
 import { evolveFixture } from "./evolve-fixtures.js";
 import { tempDir } from "./helpers.js";
@@ -247,5 +247,36 @@ describe("resolveRefs (privacy B1)", () => {
 
   it("returns an empty map for no refs without reading anything", () => {
     expect(resolveRefs("/nonexistent", "/nonexistent", []).size).toBe(0);
+  });
+});
+
+describe("sessionTexts (privacy B1, verbatim gate)", () => {
+  it("returns every line of the asked sessions of this repo, scrubbed, by line number, in one scan", () => {
+    const d = tempDir();
+    const secret = "AKIA" + "ABCDEFGHIJKLMNOP";
+    fs.mkdirSync(path.join(d, "proj"));
+    fs.writeFileSync(
+      path.join(d, "proj", "5e55a1d0-1111.jsonl"),
+      [
+        line({ type: "user", cwd: "/repo", message: { content: "first line\twith a tab" } }),
+        line({ type: "assistant", cwd: "/repo", message: { content: [{ type: "tool_use", name: "Edit" }] } }),
+        line({ type: "user", cwd: "/repo", message: { content: [{ type: "tool_result", content: `key ${secret}` }] } }),
+      ].join("\n"),
+    );
+    fs.writeFileSync(path.join(d, "proj", "0ddba11e-2222.jsonl"), line({ type: "user", cwd: "/repo", message: { content: "a session nobody asked for" } }));
+    fs.writeFileSync(path.join(d, "proj", "5e55a1d0-3333.jsonl"), line({ type: "user", cwd: "/elsewhere", message: { content: "another repo's session" } }));
+    const m = sessionTexts(d, "/repo", ["5e55a1d0", "zzzzzzzz"]);
+    expect([...m.keys()]).toEqual(["5e55a1d0"]); // unknown prefixes are absent; other sessions aren't read in
+    const lines = m.get("5e55a1d0")!;
+    expect([...lines.keys()]).toEqual([1, 2, 3]); // a line with no text is still a line of the session
+    expect(lines.get(1)).toBe("first line with a tab");
+    expect(lines.get(2)).toBe("");
+    expect(lines.get(3)).toMatch(/^key /);
+    expect(lines.get(3)).not.toContain(secret);
+    expect(JSON.stringify([...lines.values()])).not.toMatch(/another repo|nobody asked/);
+  });
+
+  it("returns an empty map for no sessions without reading anything", () => {
+    expect(sessionTexts("/nonexistent", "/nonexistent", []).size).toBe(0);
   });
 });

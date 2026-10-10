@@ -12,7 +12,11 @@ import { seedIndex } from "./index-fixtures.js";
 import { tempDir } from "./helpers.js";
 
 // A made-up workplace. Nothing below may reach the plan file.
-const SECRETS = ["Globex", "quarbleScheduler", "GLX-1234", "zentrovaRota", "overnight rota swap left two shifts without a charge nurse"];
+const SECRETS = [
+  "Globex", "quarbleScheduler", "GLX-1234", "zentrovaRota", "overnight rota swap left two shifts without a charge nurse",
+  "night handover sheet listed the wrong ward for three patients",
+];
+const LATER = "then the night handover sheet listed the wrong ward for three patients again";
 const STORY = "the quarbleScheduler for Globex broke on GLX-1234 because the overnight rota swap left two shifts without a charge nurse on zentrovaRota";
 const PRIVACY = "privacy:\n  denyTerms:\n    - Globex\n  denyPatterns:\n    - \"GLX-\\\\d+\"\n";
 // The ISO-week Monday the fixture clock produces (same as evolve-publish.test.ts).
@@ -35,7 +39,8 @@ async function world(rewriteTitle: string, json: boolean) {
   seedIndex(openIndex(indexPath(fx.deps, "globex-app")), { files: ["src/zentrova/rota.ts"], symbols: ["quarbleScheduler", "zentrovaRota"] }).close();
   fs.writeFileSync(
     path.join(fx.transcripts, "5e55a1d0-0000-4000-8000-000000000001.jsonl"),
-    `${JSON.stringify({ type: "user", timestamp: "2026-10-08T10:00:00Z", cwd: fx.repo, message: { content: STORY } })}\n`,
+    // The evidence cites line 1; line 2 is a later turn of the same session that no ref points at.
+    [STORY, LATER].map((content, i) => `${JSON.stringify({ type: "user", timestamp: `2026-10-08T10:0${i}:00Z`, cwd: fx.repo, message: { content } })}\n`).join(""),
   );
   await init([], fx.ctx);
   git(fx.repo, "checkout", "-q", "-b", "docs/proposals");
@@ -64,6 +69,7 @@ describe("privacy end to end: a synthetic workplace never reaches the plan file"
     ["a ticket key the rewrite kept", "Retry scheduler checks after GLX-1234", "patterns"],
     ["a private identifier the rewrite kept", "Retry quarbleScheduler checks", "identifiers"],
     ["a copied transcript run", "overnight rota swap left two shifts without a charge nurse", "verbatim"],
+    ["a run copied from an uncited turn of the cited session", "night handover sheet listed the wrong ward for three patients", "verbatim"],
   ] as const;
 
   describe.each([["human", false], ["--json", true]] as const)("with %s output", (_mode, json) => {

@@ -448,6 +448,35 @@ describe("publish gate layers (privacy B1)", () => {
     expect(held).toEqual([]);
   });
 
+  it("verbatim: a run copied from an uncited line of a cited session holds too (hand-test leak)", async () => {
+    const held = await heldLayer(
+      { title: "Fix: the overnight rota swap left two shifts without cover", evidence: ["transcript:5e55a1d0#2"] },
+      { files: (fx) => ({ [SESSION]: transcriptLine(fx, COPIED) + transcriptLine(fx, "please retry the flaky check once") }) },
+    );
+    expect(held).toEqual([{ layer: "verbatim", why: "copies transcript text" }]);
+    expect(JSON.stringify(held)).not.toMatch(/rota/);
+  });
+
+  it("verbatim: a run copied from a session the evidence doesn't reference still passes (the gate's scope)", async () => {
+    const other = "0ddba11e-0000-4000-8000-000000000002.jsonl";
+    const held = await heldLayer(
+      { title: "Fix: the overnight rota swap left two shifts without cover", evidence: ["transcript:5e55a1d0#1"] },
+      { files: (fx) => ({ [SESSION]: transcriptLine(fx, "please retry the flaky check once"), [other]: transcriptLine(fx, COPIED) }) },
+    );
+    expect(held).toEqual([]);
+  });
+
+  it("verbatim: an uncited line's run the toolkit's tracked files already contain is public", async () => {
+    const held = await heldLayer(
+      { title: "Fix: the overnight rota swap left two shifts without cover", evidence: ["transcript:5e55a1d0#2"] },
+      {
+        files: (fx) => ({ [SESSION]: transcriptLine(fx, COPIED) + transcriptLine(fx, "please retry the flaky check once") }),
+        repoFiles: { "NOTES.md": "# Notes\n\nThe overnight rota swap left two shifts without anyone.\n" },
+      },
+    );
+    expect(held).toEqual([]);
+  });
+
   it("verbatim: checks the original's evidence too, so a ref merged in after generalization still counts (fail closed)", async () => {
     const { fx, save } = await ready({ extraYaml: PATTERNS });
     fs.writeFileSync(path.join(fx.transcripts, SESSION), transcriptLine(fx, COPIED));

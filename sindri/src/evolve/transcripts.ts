@@ -174,10 +174,37 @@ export function resolveRefs(dir: string, repo: string, refs: readonly string[], 
   if (want.size === 0) return out;
   for (const line of readRepoSessions(dir, repo, new Date(0), Infinity).lines) {
     if (!want.has(line.ref)) continue;
-    const text = line.blocks.map((b) => b.text).join(" ").replace(/[\u0000-\u001f\u007f]+/g, " ").trim();
-    if (text !== "") out.set(line.ref, scrub.scrub(text).text);
+    const text = lineText(line, scrub);
+    if (text !== "") out.set(line.ref, text);
   }
   return out;
+}
+
+// One line's text blocks on a single line, control characters spaced out, scrubbed ("" when it has no text).
+function lineText(line: SessionLine, scrub: Scrubber): string {
+  const text = line.blocks.map((b) => b.text).join(" ").replace(/[\u0000-\u001f\u007f]+/g, " ").trim();
+  return text === "" ? "" : scrub.scrub(text).text;
+}
+
+// Every line of the given sessions (prefixes as sessionOf gives them), scrubbed and keyed by line number, in one
+// scan of this repo's sessions. The verbatim gate reads it: a rewrite can copy any turn of a session its evidence
+// cites, not only the cited line. A prefix with no line in this repo is absent; a line with no text maps to "".
+export function sessionTexts(dir: string, repo: string, sessions: readonly string[], scrub: Scrubber = scrubber): Map<string, Map<number, string>> {
+  const want = new Set(sessions);
+  const out = new Map<string, Map<number, string>>();
+  if (want.size === 0) return out;
+  for (const line of readRepoSessions(dir, repo, new Date(0), Infinity).lines) {
+    if (!want.has(line.session)) continue;
+    const lines = out.get(line.session) ?? new Map<number, string>();
+    out.set(line.session, lines.set(line.n, lineText(line, scrub)));
+  }
+  return out;
+}
+
+// transcript:<session>#<line> split into its parts; null for any other ref.
+export function parseTranscriptRef(ref: string): { session: string; n: number } | null {
+  const m = /^transcript:([^#]+)#(\d+)$/.exec(ref);
+  return m === null ? null : { session: m[1], n: Number(m[2]) };
 }
 
 // A short, scrubbed, single-line excerpt for a transcript:<session>#<line> ref (what `show` prints).

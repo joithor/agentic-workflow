@@ -17,7 +17,7 @@ import {
 } from "./proposals.js";
 import { loadRegistry } from "./registry.js";
 import { renderTask } from "./render.js";
-import { resolveRefs, transcriptsDir } from "./transcripts.js";
+import { parseTranscriptRef, resolveRefs, sessionTexts, transcriptsDir } from "./transcripts.js";
 import { isoWeekMonday } from "./week.js";
 
 export interface StageOutcome {
@@ -217,8 +217,11 @@ export async function publishProposals(ctx: EvolveCtx, o: { dryRun: boolean; noP
     const pub = getPublic(ctx.db, s.id);
     return { s, pub, refs: [...new Set([...reduceEvidence(s.proposal.evidence).refs, ...reduceEvidence(pub?.evidence ?? []).refs])] };
   });
-  // The evidence of every listed proposal, resolved in one scan; a ref that doesn't resolve isn't checked (Review Focus 1).
-  const sources = resolveRefs(transcriptsDir(ctx), ctx.repo, open.flatMap((l) => l.refs), scrubber);
+  // Every line of every session the listed proposals' evidence cites, read in one scan: a rewrite can copy an uncited
+  // turn of a cited session as easily as the cited line (privacy spec §5.5 amendment). A ref whose line isn't in this
+  // repo's sessions doesn't resolve and brings in nothing (Review Focus 1).
+  const cited = (refs: readonly string[]): { session: string; n: number }[] => refs.flatMap((r) => parseTranscriptRef(r) ?? []);
+  const sessions = sessionTexts(transcriptsDir(ctx), ctx.repo, open.flatMap((l) => cited(l.refs).map((c) => c.session)), scrubber);
   // The toolkit corpus is read only when some proposal shares a run with its evidence, and at most once per run.
   let corpus: Promise<string> | null = null;
   const copies = async (text: string, evidence: readonly string[]): Promise<boolean> => {
@@ -238,10 +241,10 @@ export async function publishProposals(ctx: EvolveCtx, o: { dryRun: boolean; noP
     const md = renderTask(first + ready.length, s.id, pub, t.tier, t.why, s.source);
     const raw = [pub.title, pub.rationale, ...pub.evidence, pub.change.type === "describe" ? `${pub.change.description}\n${pub.change.files.join("\n")}` : pub.change.text, s.source].join("\n");
     const text = `${raw}\n${md}`;
-    const evidence = refs.flatMap((r) => {
-      const e = sources.get(r);
-      return e === undefined ? [] : [e];
-    });
+    const mine = cited(refs);
+    const evidence = [...sessions]
+      .filter(([session, lines]) => mine.some((c) => c.session === session && lines.has(c.n)))
+      .flatMap(([, lines]) => [...lines.values()].filter((t) => t !== ""));
     // In order; the first hit holds and the rest don't run (a terms hit never reads the corpus).
     const checks: [HoldLayer, () => Promise<string | null>][] = [
       ["terms", async () => termProblem(text, deny)],
