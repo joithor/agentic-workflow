@@ -5,48 +5,35 @@ using System.Text.Json.Nodes;
 namespace Aw.Judge.Core.Evaluation;
 
 /// <summary>
-/// Caps stored input and keeps it valid JSON (TS capJsonValue): instead of slicing the text, the longest string values
-/// are shortened, each with its own "[truncated N chars]" marker, until the whole fits. Redact first: a secret cut at
-/// the cap would no longer match its pattern.
+/// Caps the stored input and keeps it valid JSON. Input that fits is stored whole. Over the cap, every string value
+/// longer than <see cref="StringLimit"/> is cut to that length with a "[truncated N chars]" marker; if that still
+/// doesn't fit (a huge array of numbers, thousands of strings), the stored value is {"truncated": "&lt;prefix&gt;"}.
+/// Redact first: a secret cut in half would no longer match its pattern.
 /// </summary>
 public static class InputCap
 {
     /// <summary>The stored input's cap, in UTF-16 characters.</summary>
     public const int MaxChars = 16_000;
 
-    // A string this short is never shortened: past that point the stub below is used.
-    private const int ShrinkFloor = 64;
+    /// <summary>How long a string value may stay once the input is over the cap.</summary>
+    public const int StringLimit = 1_000;
 
-    /// <summary>Writes the value as JSON of at most <paramref name="maxChars"/> characters (for any cap above ~100).</summary>
+    /// <summary>Writes the value as JSON of at most <paramref name="maxChars"/> characters.</summary>
     /// <param name="value">The (redacted) value; not changed.</param>
-    /// <param name="maxChars">The cap.</param>
+    /// <param name="maxChars">The cap (at least 100).</param>
     /// <param name="options">The package's AwJson options.</param>
     /// <returns>Valid JSON text.</returns>
     public static string Write(JsonNode? value, int maxChars, JsonSerializerOptions options)
     {
+        ArgumentOutOfRangeException.ThrowIfLessThan(maxChars, 100);
         var text = InputJson.Write(value, options);
-        if (text.Length <= maxChars || value is null)
+        if (text.Length <= maxChars)
         {
-            return text.Length <= maxChars ? text : Stub(text, maxChars, options);
+            return text;
         }
 
-        var work = value.DeepClone();
-        while (text.Length > maxChars)
-        {
-            var longest = Longest(work);
-            if (longest is null || longest.GetValue<string>().Length <= ShrinkFloor)
-            {
-                // Nothing left to shorten (a huge array of numbers): keep a valid stub.
-                return Stub(text, maxChars, options);
-            }
-
-            var current = longest.GetValue<string>();
-            var keep = Math.Max(0, current.Length - (text.Length - maxChars) - ShrinkFloor);
-            work = Replace(work, longest, JsonValue.Create(Truncate(current, keep)));
-            text = InputJson.Write(work, options);
-        }
-
-        return text;
+        var cut = InputJson.Write(CutStrings(value), options);
+        return cut.Length <= maxChars ? cut : Stub(text, maxChars, options);
     }
 
     /// <summary>The text cut to <paramref name="maxChars"/> with a "[truncated N chars]" marker, or unchanged when it fits.</summary>
@@ -65,45 +52,27 @@ public static class InputCap
         return string.Create(CultureInfo.InvariantCulture, $"{text[..keep]}[truncated {text.Length - keep} chars]");
     }
 
-    // Puts the replacement where the old value was (an object keeps the key's position); the root is replaced whole.
-    private static JsonNode Replace(JsonNode root, JsonValue old, JsonValue replacement)
+    private static JsonNode? CutStrings(JsonNode? node) => node switch
     {
-        switch (old.Parent)
-        {
-            case JsonObject parent:
-                parent[old.GetPropertyName()] = replacement;
-                return root;
-            case JsonArray parent:
-                parent[old.GetElementIndex()] = replacement;
-                return root;
-            default:
-                return replacement;
-        }
-    }
-
-    private static string Stub(string text, int maxChars, JsonSerializerOptions options) =>
-        InputJson.Write(new JsonObject { ["truncated"] = Truncate(text, Math.Max(0, maxChars - 80)) }, options);
-
-    // The first longest string value, depth first in document order.
-    private static JsonValue? Longest(JsonNode? node)
-    {
-        JsonValue? best = null;
-        foreach (var candidate in Strings(node))
-        {
-            if (best is null || candidate.GetValue<string>().Length > best.GetValue<string>().Length)
-            {
-                best = candidate;
-            }
-        }
-
-        return best;
-    }
-
-    private static IEnumerable<JsonValue> Strings(JsonNode? node) => node switch
-    {
-        JsonObject obj => obj.SelectMany(pair => Strings(pair.Value)),
-        JsonArray array => array.SelectMany(Strings),
-        JsonValue value when value.GetValueKind() == JsonValueKind.String => [value],
-        _ => [],
+        JsonObject obj => new JsonObject(obj.Select(pair => KeyValuePair.Create(pair.Key, CutStrings(pair.Value)))),
+        JsonArray array => new JsonArray([.. array.Select(CutStrings)]),
+        JsonValue value when value.TryGetValue<string>(out var text) => JsonValue.Create(Truncate(text, StringLimit)),
+        _ => node?.DeepClone(),
     };
+
+    // A prefix of the full text as one string; halved until its escaped form fits.
+    private static string Stub(string text, int maxChars, JsonSerializerOptions options)
+    {
+        var keep = maxChars - 80;
+        while (true)
+        {
+            var stub = InputJson.Write(new JsonObject { ["truncated"] = Truncate(text, keep) }, options);
+            if (stub.Length <= maxChars)
+            {
+                return stub;
+            }
+
+            keep /= 2;
+        }
+    }
 }

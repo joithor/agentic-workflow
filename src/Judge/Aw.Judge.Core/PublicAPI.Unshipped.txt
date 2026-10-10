@@ -366,6 +366,7 @@ const Aw.Judge.Core.Evaluation.EvaluationReasons.PreRule = "pre-rule" -> string!
 const Aw.Judge.Core.Evaluation.EvaluationReasons.ProviderThrew = "provider-threw" -> string!
 const Aw.Judge.Core.Evaluation.EvaluationReasons.QuestionDisabled = "question-disabled" -> string!
 const Aw.Judge.Core.Evaluation.InputCap.MaxChars = 16000 -> int
+const Aw.Judge.Core.Evaluation.InputCap.StringLimit = 1000 -> int
 const Aw.Judge.Core.Providers.ProviderUnavailable.Timeout = "timeout" -> string!
 override Aw.Judge.Core.Briefs.Brief.Equals(object? obj) -> bool
 override Aw.Judge.Core.Briefs.Brief.GetHashCode() -> int

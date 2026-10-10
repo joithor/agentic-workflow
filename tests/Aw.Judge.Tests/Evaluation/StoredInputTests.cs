@@ -53,7 +53,7 @@ public sealed class StoredInputTests
     public void An_input_that_fits_is_written_unchanged() => Assert.Equal("""{"a":1}""", InputCap.Write(new JsonObject { ["a"] = 1 }, 100, JsonOptions));
 
     [Fact]
-    public void The_longest_strings_are_shortened_in_place_until_it_fits()
+    public void Over_the_cap_long_strings_are_cut_with_a_marker_and_short_ones_kept()
     {
         var value = new JsonObject
         {
@@ -74,7 +74,7 @@ public sealed class StoredInputTests
     }
 
     [Fact]
-    public void Nothing_long_to_shorten_falls_back_to_a_valid_stub()
+    public void Input_still_over_the_cap_after_cutting_strings_is_stored_as_a_valid_stub()
     {
         var numbers = new JsonObject { ["nums"] = new JsonArray([.. Enumerable.Range(0, 20_000).Select(i => (JsonNode)i)]) };
 
