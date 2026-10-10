@@ -5,12 +5,12 @@
        - Not in AgenticWorkflow.slnx and no lock file, like Aw.Kernel.AotSmoke: PublishAot makes restore resolve the host
          RID's ILCompiler packs, so a lock file would be per-OS. The RID is a project property (the SDK's host RID), not
          a global -r, so Aw.Kernel and Aw.Kernel.Data are restored without one and their lock files are never rewritten.
-       - Under src/, not tests/: it is not a *.Tests project (AW0002). InvariantGlobalization, as on every AOT tool. -->
+       - Under src/, not tests/: it is not a *.Tests project (AW0002). InvariantGlobalization comes from
+         Directory.Build.targets, as on every PublishAot project. -->
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <TargetFramework>net10.0</TargetFramework>
     <PublishAot>true</PublishAot>
-    <InvariantGlobalization>true</InvariantGlobalization>
     <RestorePackagesWithLockFile>false</RestorePackagesWithLockFile>
     <RuntimeIdentifier>$(NETCoreSdkRuntimeIdentifier)</RuntimeIdentifier>
   </PropertyGroup>

@@ -34,8 +34,9 @@ public static class DataErrors
     public static readonly ErrorDefinition Damaged = new("AW-DATA-008", ErrorKind.Invalid, "Database damaged");
 
     /// <summary>
-    /// AW-DATA-009: the database has tables but no schema_version table, so this runner didn't create it (usually a
-    /// path pointing at the wrong file). Refused before anything is written.
+    /// AW-DATA-009: the database has tables but no schema_version table, or a schema_version with other columns than
+    /// this runner's, so this runner didn't create it (usually a path pointing at the wrong file). Refused before
+    /// anything is written.
     /// </summary>
     public static readonly ErrorDefinition ForeignDatabase = new("AW-DATA-009", ErrorKind.Conflict, "Database not managed by this runner");
 
