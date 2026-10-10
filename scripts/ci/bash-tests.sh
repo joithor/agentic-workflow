@@ -125,8 +125,9 @@ while IFS= read -r s; do
   j=$((j + 1)); printf 'ser\t%s\ts%03d\n' "$s" "$j"
 done <<<"$serial_paths" >>"$OUT/plan"
 
-grep '^par' "$OUT/plan" | cut -f2,3 | tr '\t' '\n' \
-  | xargs -n 2 -P "$jobs" sh -c 'exec bash "$0" --run-one par "$2" "$1" "$3"' "$SELF" "$OUT" \
+# NUL-delimited, so a path with a blank or quote stays one argument.
+grep '^par' "$OUT/plan" | cut -f2,3 | tr '\t\n' '\0\0' \
+  | xargs -0 -n 2 -P "$jobs" sh -c 'exec bash "$0" --run-one par "$2" "$1" "$3"' "$SELF" "$OUT" \
   || true
 # Phase 2: the serial suites, one at a time, after the pool has drained.
 while IFS=$'\t' read -r mode s idx; do
