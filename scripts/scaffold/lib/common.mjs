@@ -89,6 +89,18 @@ export class Journal {
     fs.writeFileSync(this.abs(rel), after);
   }
 
+  /**
+   * Rewrites an existing file by inserting at an anchor; refuses (the given rule) when the anchor isn't there, so a
+   * hand-edited file can't make the scaffold skip a registration silently.
+   */
+  insert(rel, anchor, replacement, rule, what) {
+    const text = this.read(rel);
+    if (!anchor.test(text)) {
+      throw new ScaffoldError(rule, `${rel}: no anchor for ${what} (${anchor})`, "restore the anchor the scaffold writes (see the scaffold spec's templates) or make this edit by hand");
+    }
+    this.edit(rel, (t) => t.replace(anchor, replacement));
+  }
+
   /** Marks a file a command will rewrite (a lock file), so revert restores it. */
   watch(rel) {
     if (this.created.includes(rel) || this.edited.has(rel)) return;
@@ -110,7 +122,8 @@ export class Journal {
 
   /** Every path the scaffold touched, sorted (for the summary and the git-status check). */
   touched() {
-    return [...new Set([...this.created, ...this.edited.keys()])].sort();
+    const changed = [...this.edited.keys()].filter((rel) => !this.exists(rel) || this.read(rel) !== this.edited.get(rel));
+    return [...new Set([...this.created, ...changed])].sort();
   }
 
   revert() {
@@ -132,6 +145,7 @@ export function withHeavyLock(fn, { timeoutS = 5400, log = console.error } = {})
   fs.mkdirSync(path.dirname(lock), { recursive: true });
   const start = Date.now();
   let told = false;
+  const owner = path.join(lock, "owner");
   for (;;) {
     try {
       fs.mkdirSync(lock);
@@ -146,10 +160,19 @@ export function withHeavyLock(fn, { timeoutS = 5400, log = console.error } = {})
       spawnSync("sleep", ["1"]);
     }
   }
+  fs.writeFileSync(owner, `${process.pid} ${new Date().toISOString()} ${process.argv.slice(1).join(" ")}\n`);
   process.env.AW_HEAVY_LOCK_HELD = "1";
+  // Ctrl-C or SIGTERM must still release the lock and revert: everything here is synchronous spawnSync, so ignoring
+  // the signal in this process lets the signalled dotnet child die, its non-zero exit fails the check, and the
+  // caller's revert and this finally run.
+  const ignore = () => {};
+  process.on("SIGINT", ignore);
+  process.on("SIGTERM", ignore);
   try {
     return fn();
   } finally {
+    process.off("SIGINT", ignore);
+    process.off("SIGTERM", ignore);
     delete process.env.AW_HEAVY_LOCK_HELD;
     fs.rmSync(lock, { recursive: true, force: true });
   }

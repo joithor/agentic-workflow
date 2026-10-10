@@ -17,6 +17,18 @@ set -euo pipefail
 ROOT="$(git rev-parse --show-toplevel)"
 cd "$ROOT"
 TMP="$(mktemp -d "${TMPDIR:-/tmp}/aw-scaffold-e2e.XXXXXX")"
+# One heavy job at a time (config/lib/locks.sh): take the box-wide lock for the whole run unless a caller holds it,
+# and tell the generators it is held.
+LOCK=""
+if [ "${AW_HEAVY_LOCK_HELD:-}" != "1" ]; then
+  # shellcheck source=../../config/lib/locks.sh
+  source "$ROOT/config/lib/locks.sh"
+  LOCK="${AW_STATE_DIR:-$HOME/.agentic-workflow}/locks/heavy-job.lock"
+  mkdir -p "$(dirname "$LOCK")"
+  acquire_lock "$LOCK" 5400 || { echo "heavy-job lock busy: $LOCK" >&2; exit 2; }
+  echo "$$ $(date -u +%FT%TZ) scripts/scaffold/e2e.sh" > "$LOCK/owner"
+fi
+export AW_HEAVY_LOCK_HELD=1
 cleanup() {
   local dir
   for dir in "$TMP/small" "$TMP/http"; do
@@ -24,6 +36,7 @@ cleanup() {
   done
   rm -rf "$TMP"
   git -C "$ROOT" worktree prune
+  if [ -n "$LOCK" ]; then rm -f "$LOCK/owner"; release_lock "$LOCK"; fi
 }
 trap cleanup EXIT
 
@@ -34,7 +47,8 @@ fail() { printf 'FAIL: %s\n' "$*" >&2; exit 1; }
 tree() { git worktree add --quiet --detach "$TMP/$1" HEAD; }
 
 # The first package deps.yaml declares (tier 1-3) that has no src/ directory yet, so the declared-node path
-# (NP-DEPS-MISMATCH checks, a planned edge flipping to current) is exercised whichever packages have been ported.
+# (NP-DEPS-MISMATCH checks, a planned edge flipping to current) is exercised while unported packages remain. Once every
+# declared package is ported, (a) falls back to an undeclared small probe (the node-adding path (b) also covers).
 declared="$(node --input-type=module -e '
   import { parseYaml } from "./scripts/deps/yaml.mjs";
   import fs from "node:fs";
@@ -42,17 +56,26 @@ declared="$(node --input-type=module -e '
   const n = doc.packages.find((p) => p.kind === "package" && p.tier >= 1 && !p.test && !fs.existsSync(p.src) && /^src\/[A-Z][A-Za-z0-9]+$/.test(p.src));
   if (!n) process.exit(3);
   console.log(`${n.id} ${n.tier}`);
-')" || { echo "no declared package left to scaffold" >&2; exit 2; }
-read -r SMALL SMALL_TIER <<<"$declared"
+')" || declared=""
+if [ -n "$declared" ]; then
+  read -r SMALL SMALL_TIER <<<"$declared"
+  SMALL_NOTE=()
+  SMALL_KIND="declared in deps.yaml"
+else
+  SMALL="Scaffoldsmall"
+  SMALL_TIER=1
+  SMALL_NOTE=(--note "scaffold e2e probe")
+  SMALL_KIND="no declared package left unported: an undeclared probe"
+fi
 HTTP="Scaffoldprobe"
 
-gen() { env -u CI AW_HEAVY_LOCK_HELD="${AW_HEAVY_LOCK_HELD:-}" node "$@"; }
+gen() { env -u CI node "$@"; }
 
 # ---- (a) small CLI package, declared ----
 tree small
 A="$TMP/small"
-step "(a) /new-package: $SMALL, small, cli, tier $SMALL_TIER (declared in deps.yaml)"
-(cd "$A" && gen scripts/scaffold/new-package.mjs --name "$SMALL" --tier "$SMALL_TIER" --error-prefix E2ESMALL \
+step "(a) /new-package: $SMALL, small, cli, tier $SMALL_TIER ($SMALL_KIND)"
+(cd "$A" && gen scripts/scaffold/new-package.mjs --name "$SMALL" --tier "$SMALL_TIER" --error-prefix E2ESMALL ${SMALL_NOTE[@]+"${SMALL_NOTE[@]}"} \
   --shape small --host cli --first-slice CheckThing --behavior reports_nothing_for_an_empty_tree) || fail "(a) new-package"
 (cd "$A" && git status --porcelain --untracked-files=all | grep -q "src/$SMALL/") || fail "(a) wrote no src/$SMALL"
 

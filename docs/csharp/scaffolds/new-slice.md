@@ -91,8 +91,15 @@ IL2026/IL3050 (errors under warnings-as-errors). The test reaches the `internal`
 | `tests/Aw.<Pkg>.Testing/A.cs` | One factory method: `public static <Slice>RequestBuilder <Slice>Request() => new();` |
 | `tests/Aw.<Pkg>.Testing/` | A fake and a contract base per new port, one type per file. The contract base lives here, not in `Aw.Kernel.Testing`, and derives from a Kernel base where one fits (`ReadRepositoryContract`); the fake and every real adapter pass it (`.agents/rules/csharp.md`, Seams) |
 
-No other slice is read or referenced. Shared logic is never copied from another slice; if it's needed, the generator
-stops and says: "Move it into `Core` first (second use → generalize)."
+No other slice is read or referenced. Don't copy logic from another slice (`ARCH-SLICE-001` fails a cross-slice
+reference): move shared logic into `Core` first (second use → generalize), then scaffold the slice.
+
+Every edit to an existing file inserts at a fixed anchor (`return services;`, the `_ => CommandOutput.Usage` arm, the
+`_ = app.MapGroup(…)` chain, the context class, `A`'s closing brace); a missing anchor (a hand-edited file) is refused
+with `NS-EDIT`, never skipped. The first `Guid` or `int` id also adds `<NoWarn>$(NoWarn);RS0041</NoWarn>` to `Core`'s
+csproj (Vogen's `#nullable disable` around that id's generated `ToString(string, IFormatProvider)`; `typed-ids.md`).
+A `GET` or `DELETE` slice has no body, so every id it takes must be a route segment (`NS-ROUTE` otherwise); an id
+listed twice (`NS-IDS`, `NS-PORTS`, `NS-ROUTE`) is refused too.
 
 ### Template: `<Slice>Service.cs`
 
@@ -140,10 +147,11 @@ public readonly partial struct <Id> : ITypedId<<Id>, string>
 http slice whose `route` has `{id}`), the generator adds an RDG route-binding test for it in
 `tests/Aw.<Pkg>.Tests/Ids/<Id>RouteBindingTests.cs` (Lane=integration): an id in the `ITypedId` form is used behind an
 endpoint only once that test passes; otherwise the id gets a hand-written `TryParse` instead. The test maps its own
-`/items/{id}` and `/items?id=` endpoints with the id, runs the Host's `ValueObjectValidation` middleware (from
-`/new-package`, `docs/csharp/typed-ids.md` step 4), and asserts through `WebApplicationFactory`: valid text → 200 with
-the id's value; text the type refuses → 400; an empty `?id=` → 400; and the endpoint's `ParameterBindingMetadata`
-reports the id as route/query with `hasTryParse: true`, so losing `IParsable` is a red test, not a production 500. The architecture check
+`/items/{id}` and `/items?id=` endpoints with the id on a slim app over `TestServer` (from
+`Microsoft.AspNetCore.Mvc.Testing`; the test project runs the request-delegate generator), runs the Host's
+`ValueObjectValidation` middleware (from `/new-package`, `docs/csharp/typed-ids.md` step 4), and asserts: valid text →
+200 with the id's value; text the type refuses → 400; an empty `?id=` → 400; and both endpoints' `IParameterBindingMetadata`
+reports `HasTryParse`, so losing `IParsable` is a red test, not a production 500. The architecture check
 for the package's ids is `TypedIdGuard` in `tests/Aw.Architecture.Tests` (`ARCH-ID-001`, `ARCH-ID-002`), which covers
 every assembly `/new-package` registered in `Packages.cs`.
 
@@ -191,17 +199,20 @@ internal static class <Slice>Endpoint
 {
     internal static RouteGroupBuilder Map<Slice>(this RouteGroupBuilder group)
     {
-        _ = group.MapPost("<route>", static async (<Id> id, <Slice>Body body,
-                IService<<Slice>Request, <Slice>Response> service, CancellationToken ct)
-            => (await service.Handle(body.ToRequest(id), ct).ConfigureAwait(false)).ToHttpResult());
+        _ = group.MapPost("/items/{itemId}/start", static async (ItemId itemId, StartItemBody body,
+                IService<StartItemRequest, StartItemResponse> service, CancellationToken ct)
+            => (await service.Handle(body.ToRequest(itemId), ct).ConfigureAwait(false)).ToHttpResult());
         return group;
     }
 }
 ```
 
-Shown for `route` `POST /items/{id}/start`. For each `{name}` in `route` the lambda takes one typed-id parameter of
-that name (`<Id> name`), in route order, before the body; the request is built from those ids plus the body with
-`<Slice>Body.ToRequest(<Id> id, …)`. A route with no `{name}` segment gives `ToRequest()`. Each file emits exactly the namespaces its own types use (new-package.md): `<Slice>Endpoint.cs` emits `using Aw.<Pkg>.Core.Ids;` when `route` has a `{name}` segment, and `<Slice>Body.cs` emits it when `route` has a `{name}` segment or any body field's type is in `Aw.<Pkg>.Core.Ids`. A missing using fails with CS0246, and an unused one fails the build too (`IDE0005` is an error). The lambda binds, calls one
+Shown for `--route "POST /items/{itemId}/start" --ids ItemId:string,OwnerId:Guid` (generated on one line; wrapped
+here). For each `{name}` in `route` the lambda takes one typed-id parameter named after the id (`ItemId itemId`; the
+route segment is rewritten to that name, since the request-delegate generator binds by name), in route order, before
+the body; the request is built from those ids plus the body with `<Slice>Body.ToRequest(<route ids>)`. A body exists
+only when the method takes one and the request has ids the route doesn't carry; otherwise the lambda builds
+`new <Slice>Request(<route ids>)`. A route with no `{name}` segment gives `ToRequest()`. Each file emits exactly the namespaces its own types use (new-package.md): `<Slice>Endpoint.cs` emits `using Aw.<Pkg>.Core.Ids;` when `route` has a `{name}` segment, and `<Slice>Body.cs` emits it when `route` has a `{name}` segment or any body field's type is in `Aw.<Pkg>.Core.Ids`. A missing using fails with CS0246, and an unused one fails the build too (`IDE0005` is an error). The lambda binds, calls one
 service and maps the result; it has no branches, and the discard keeps `IDE0058` quiet. Route text binds through the
 id's `IParsable` `TryParse` (Vogen-generated, runs `Validate`; refused text → 400). Body JSON goes through the AwJson
 profile the Host applies in `ConfigureHttpJsonOptions`. An uninitialized id's `ValueObjectValidationException` is
@@ -256,6 +267,10 @@ and `CA1515` for test projects, with `GenerateDocumentationFile=true` and `CS159
 
 ## Commands the generator runs
 
+Before them, `/new-slice` records `Core`'s and `Features`' `PublicAPI.Unshipped.txt` in its journal (the code fix
+rewrites them), so a failed check restores them too.
+
+
 ```bash
 # when `ids` is non-empty or a port was added: the code fix on Core, then the generated id members from the build output
 dotnet format analyzers src/<Pkg>/Aw.<Pkg>.Core --diagnostics RS0016 --severity error   # each id's type and any new port
@@ -272,8 +287,10 @@ Under the heavy-job lock. Commit: `test: red <Slice> test (<behavior>)`.
 
 ## Done criteria
 
-1. Build 0 warnings; the new test is the only failing test; format clean; architecture tests green.
-2. `git status` shows only the files listed above.
+1. Build 0 warnings; the new test is the only failing test (the lane exits 2 with `failed: 1`); format clean;
+   architecture tests green. A `/new-slice` while an earlier slice's test is still red is therefore refused
+   (`SCAFFOLD-RED`): make that slice green first.
+2. `git status` shows only the files listed above (`SCAFFOLD-STRAY` otherwise).
 3. The generator prints the next steps in order: write the assertion → add the ports to the constructor → implement `<Slice>Service` (pure decisions on the
    domain type, not in the service) → add the integration test if the slice touches SQL → run the lane.
 
@@ -285,4 +302,6 @@ green, scaffolds a second slice with a new id, and asserts criterion 1 against t
 - A check fails other than the expected red test → revert every created or edited file and print the rule id, the
   measured value and the fix.
 - `NS-EXISTS` when the slice folder exists; `NS-SURFACE` when `surface` doesn't match the package's host; `NS-DEPS` as
-  above.
+  above; `NS-EDIT` when an anchor is missing; `SCAFFOLD-INTERNAL` for a generator bug (also reverted).
+- The generator ignores SIGINT and SIGTERM while it holds the heavy-job lock: the signalled `dotnet` child fails the
+  check, then the revert and the lock release run. The lock directory carries an `owner` file (pid, time, command).

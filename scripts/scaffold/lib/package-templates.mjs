@@ -36,13 +36,7 @@ export const coreCsproj = (p) =>
   csproj({
     comment: `Aw.${p.name}.Core (scaffolded by /new-package): domain types, typed ids, value objects, pure logic, port
        interfaces and errors. No I/O, clock or random ids (BannedSymbols.txt, spec §4b.1). ${p.note}`,
-    props: [
-      `<RootNamespace>Aw.${p.name}.Core</RootNamespace>`,
-      "<!-- RS0041 (oblivious reference types in the public API): Vogen 8.0.7 wraps a Guid or int id's generated",
-      "     ToString(string, IFormatProvider) in #nullable disable, and .editorconfig can't reach generated files.",
-      "     RS0016 still tracks those members (docs/csharp/typed-ids.md, \"Public ids and PublicAPI files\"). -->",
-      "<NoWarn>$(NoWarn);RS0041</NoWarn>",
-    ],
+    props: [`<RootNamespace>Aw.${p.name}.Core</RootNamespace>`],
     packages: ["Microsoft.Extensions.DependencyInjection.Abstractions", "Vogen"],
     projects: [kernel],
     visibleTo: [`Aw.${p.name}.Tests`, `Aw.${p.name}.Testing`],
@@ -146,6 +140,15 @@ export const smallEditorconfig = () => `root = false
 # .agents/rules/csharp.md "Types and errors").
 [{Infrastructure/**.cs,Commands/**.cs,Program.cs,Composition.cs}]
 dotnet_diagnostic.CA1031.severity = none
+`;
+
+/** A small package's Testing project: its builder root and builders are internal (App's records are). */
+export const smallTestingEditorconfig = () => `root = false
+
+# A small package's builders and builder root are internal, because App's records are; Aw.<Pkg>.Tests uses them
+# through InternalsVisibleTo, which MA0182 ("internal type is apparently never used") can't see.
+[*.cs]
+dotnet_diagnostic.MA0182.severity = none
 `;
 
 export const settings = (p, ns) => `namespace ${ns};
@@ -329,13 +332,25 @@ internal static class CommandOutput
 // ---------------------------------------------------------------- Host (http)
 
 export const programHttp = (p) => `using Aw.${p.name}.Host;
-using Aw.${p.name}.Host.Endpoints;
 
 var app = LoopbackBinding.Build(args, Environment.GetEnvironmentVariable, TimeProvider.System);
 await using (app.ConfigureAwait(false))
 {
-    _ = app.UseLoopbackGuard().UseValueObjectValidation().Map${p.name}Endpoints();
+    _ = Pipeline.Configure(app);
     await app.RunAsync().ConfigureAwait(false);
+}
+`;
+
+/** The request pipeline, shared by Program.cs and the tests (like Composition for DI), so the tests run the real one. */
+export const pipeline = (p) => `using Aw.${p.name}.Host.Endpoints;
+
+namespace Aw.${p.name}.Host;
+
+/// <summary>The request pipeline Program.cs runs: the loopback guard, Vogen's 400 mapping, then the endpoint table.</summary>
+internal static class Pipeline
+{
+    internal static WebApplication Configure(WebApplication app)
+        => app.UseLoopbackGuard().UseValueObjectValidation().Map${p.name}Endpoints();
 }
 `;
 
@@ -379,8 +394,13 @@ internal static class LoopbackBinding
     private static void CopyProfile(JsonSerializerOptions target)
     {
         var profile = AwJson.CreateOptions(${p.name}JsonContext.Default);
-        target.TypeInfoResolverChain.Insert(0, ${p.name}JsonContext.Default);
+        target.TypeInfoResolverChain.Clear();   // ASP.NET's own post-configure steps add their contexts (ProblemDetails) after this
+        target.TypeInfoResolverChain.Add(${p.name}JsonContext.Default);
         target.PropertyNamingPolicy = profile.PropertyNamingPolicy;
+        target.PropertyNameCaseInsensitive = profile.PropertyNameCaseInsensitive;   // the Web defaults are case-insensitive
+        target.NumberHandling = profile.NumberHandling;                             // and read numbers from strings
+        target.DefaultIgnoreCondition = profile.DefaultIgnoreCondition;
+        target.UnmappedMemberHandling = profile.UnmappedMemberHandling;
         target.Encoder = profile.Encoder;
         target.RespectNullableAnnotations = profile.RespectNullableAnnotations;
         target.RespectRequiredConstructorParameters = profile.RespectRequiredConstructorParameters;
@@ -579,22 +599,24 @@ namespace Aw.${p.name}.Tests;
 [Collection(ProcessEnvironment.Name)]
 public sealed class LoopbackBindingTests
 {
-    public static TheoryData<string, string> Vectors => new()
-    {
-        { "ASPNETCORE_URLS", "http://0.0.0.0:0" },
-        { "DOTNET_URLS", "http://0.0.0.0:0" },
-        { "ASPNETCORE_HTTP_PORTS", "0" },
-        { "ASPNETCORE_PREFERHOSTINGURLS", "true" },
-        { "Kestrel__Endpoints__Any__Url", "http://0.0.0.0:0" },
-        { "ASPNETCORE_Kestrel__Endpoints__Any__Url", "http://0.0.0.0:0" },
-    };
+    /// <summary>Spec §4d's override vectors, as "NAME=value" pairs separated by ';' (PREFERHOSTINGURLS needs a URL to prefer).</summary>
+    public static TheoryData<string> Vectors =>
+    [
+        "ASPNETCORE_URLS=http://0.0.0.0:0",
+        "DOTNET_URLS=http://0.0.0.0:0",
+        "ASPNETCORE_HTTP_PORTS=0",
+        "ASPNETCORE_PREFERHOSTINGURLS=true;ASPNETCORE_URLS=http://0.0.0.0:0",
+        "Kestrel__Endpoints__Any__Url=http://0.0.0.0:0",
+        "ASPNETCORE_Kestrel__Endpoints__Any__Url=http://0.0.0.0:0",
+    ];
 
     [Theory, Trait("Lane", "integration")]
     [MemberData(nameof(Vectors))]
-    public async Task The_only_listener_is_loopback_whatever_the_environment_says(string variable, string value)
+    public async Task The_only_listener_is_loopback_whatever_the_environment_says(string vector)
     {
-        var before = Environment.GetEnvironmentVariable(variable);
-        Environment.SetEnvironmentVariable(variable, value);
+        var pairs = vector.Split(';').Select(p => p.Split('=', 2)).ToList();
+        var before = pairs.ToDictionary(p => p[0], p => Environment.GetEnvironmentVariable(p[0]), StringComparer.Ordinal);
+        pairs.ForEach(p => Environment.SetEnvironmentVariable(p[0], p[1]));
         try
         {
             var addresses = await ListenerAddresses();
@@ -604,7 +626,10 @@ public sealed class LoopbackBindingTests
         }
         finally
         {
-            Environment.SetEnvironmentVariable(variable, before);
+            foreach (var (name, value) in before)
+            {
+                Environment.SetEnvironmentVariable(name, value);
+            }
         }
     }
 
@@ -648,7 +673,7 @@ public sealed class LoopbackBindingTests
     private static async Task<WebApplication> Started()
     {
         var app = LoopbackBinding.Build([], _ => null, new FakeTimeProvider());
-        _ = app.UseLoopbackGuard();
+        _ = Pipeline.Configure(app);   // the pipeline Program.cs runs
         await app.StartAsync(TestContext.Current.CancellationToken);
         return app;
     }
@@ -662,6 +687,34 @@ public sealed class LoopbackBindingTests
     {
         await using var app = await Started();
         return Addresses(app);
+    }
+}
+`;
+
+/** The http Host's JSON options are the AwJson profile, setting by setting (ASP.NET starts from the looser Web defaults). */
+export const httpJsonProfileTests = (p) => `${usingsBlock([`Aw.${p.name}.Host`, "Aw.Kernel.Json", "Microsoft.AspNetCore.Http.Json", "Microsoft.Extensions.DependencyInjection", "Microsoft.Extensions.Options", "Microsoft.Extensions.Time.Testing"])}
+
+namespace Aw.${p.name}.Tests;
+
+public sealed class HttpJsonProfileTests
+{
+    [Fact, Trait("Lane", "unit")]
+    public async Task The_http_json_options_are_the_Kernel_profile()
+    {
+        await using var app = LoopbackBinding.Build([], _ => null, new FakeTimeProvider());
+        var http = app.Services.GetRequiredService<IOptions<JsonOptions>>().Value.SerializerOptions;
+        var profile = AwJson.CreateOptions(${p.name}JsonContext.Default);
+
+        Assert.Same(${p.name}JsonContext.Default, http.TypeInfoResolverChain[0]);
+        Assert.Equal(profile.PropertyNamingPolicy, http.PropertyNamingPolicy);
+        Assert.Equal(profile.PropertyNameCaseInsensitive, http.PropertyNameCaseInsensitive);
+        Assert.Equal(profile.NumberHandling, http.NumberHandling);
+        Assert.Equal(profile.DefaultIgnoreCondition, http.DefaultIgnoreCondition);
+        Assert.Equal(profile.UnmappedMemberHandling, http.UnmappedMemberHandling);
+        Assert.Equal(profile.Encoder, http.Encoder);
+        Assert.Equal(profile.RespectNullableAnnotations, http.RespectNullableAnnotations);
+        Assert.Equal(profile.RespectRequiredConstructorParameters, http.RespectRequiredConstructorParameters);
+        Assert.Equal(profile.Converters.Select(c => c.GetType()), http.Converters.Select(c => c.GetType()));
     }
 }
 `;

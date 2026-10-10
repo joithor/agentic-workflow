@@ -29,15 +29,19 @@ first move is the TDD step.
 
 Inputs come from the arguments, then **Ask the user** for anything missing (the generator refuses a missing one with
 `NP-INPUT`). Refuse (exit with the rule id) on any rule violation; never guess a tier or a prefix. The ids:
-`NP-INPUT`, `NP-NAME` (format or a reserved name), `NP-EXISTS`, `NP-TIER` (not 1–3), `NP-DEPS-MISMATCH`, `NP-PREFIX`,
-`NP-DEPENDS` (not a declared package, not a lower tier, or tier 0), `NP-FANOUT`, `NP-SMALL-HTTP`, `NP-PINS`, and the
-first slice's `NS-*` ids.
+`NP-INPUT`, `NP-NAME` (format or a reserved name), `NP-EXISTS` (`src/<Name>`, `tests/Aw.<Name>.Tests` or
+`tests/Aw.<Name>.Testing` exists), `NP-TIER` (not 1–3), `NP-DEPS-MISMATCH`, `NP-PREFIX`, `NP-DEPENDS` (not a declared
+package, not a lower tier, tier 0, or not ported yet: no `src/<D>/Aw.<D>.Core`), `NP-FANOUT`, `NP-SMALL-HTTP`,
+`NP-SMALL-NONE` (a small package needs an entry point: nothing outside it references `App`, so `App`'s internal
+`Add…()` methods would never be called; use `full` for a library), `NP-PINS`, and the first slice's `NS-*` ids.
 
 ```bash
 node scripts/scaffold/new-package.mjs --name Readiness --tier 1 --error-prefix READINESS --shape small --host cli \
   --binary aw-readiness --first-slice CheckRepo --behavior reports_level_one_for_an_empty_repo --command check
-``` `Readiness` and `Packets` are `host: cli` packages that ship before the
-switch as the standalone NativeAOT CLIs `aw-readiness` and `aw-packets` (spec §4c).
+```
+
+`Readiness` and `Packets` are `host: cli` packages that ship before the switch as the standalone NativeAOT CLIs
+`aw-readiness` and `aw-packets` (spec §4c).
 
 ## Before the scaffold: package pins
 
@@ -56,7 +60,7 @@ The scaffold itself never edits `Directory.Packages.props`, so its whole-solutio
 src/<Name>/
 ├── Aw.<Name>.Core/
 │   ├── Aw.<Name>.Core.csproj          # refs Aw.Kernel + DI.Abstractions + Vogen (R9); InternalsVisibleTo Aw.<Name>.Tests, Aw.<Name>.Testing;
-│   │                                  # NoWarn RS0041 (Vogen's Guid/int ids, below)
+│   │                                  # /new-slice adds NoWarn RS0041 with the first Guid or int id (below)
 │   ├── packages.lock.json             # written by the first restore
 │   ├── PublicAPI.Shipped.txt          # "#nullable enable" only
 │   ├── PublicAPI.Unshipped.txt        # "#nullable enable", then every public symbol, annotated (below)
@@ -99,6 +103,7 @@ tests/
 └── Aw.<Name>.Testing/
     ├── Aw.<Name>.Testing.csproj       # refs Core, Features (App in the small shape) and Aw.Kernel.Testing (builders, fakes,
     │                                  # contract bases); no package of its own (xUnit comes through Aw.Kernel.Testing)
+    ├── .editorconfig                  # small shape only: MA0182 off (its builders are internal; Tests uses them through IVT)
     ├── packages.lock.json
     └── A.cs                           # builder root: public static class A
 ```
@@ -120,15 +125,17 @@ tests/
 - Usings: the generator emits exactly the namespaces each file uses (`IDE0005` and `IDE0161` are errors); the
   templates below show them.
 - Test projects follow the test policy set by #89 in `tests/.editorconfig` (`root = false`): `CA1707`, `RS0016`,
-  `RS0017`, `RS0036`, `RS0037`, `CA2007` and `CA1515` off; `GenerateDocumentationFile=true` with `CS1591` off. `MA0182`
-  ("internal type is never used") is off for `*.Testing` projects only: their builders are used by `*.Tests` through
-  `InternalsVisibleTo`, and in the small shape they are internal.
+  `RS0017`, `RS0036`, `RS0037`, `CA2007` and `CA1515` off; `GenerateDocumentationFile=true` with `CS1591` off. A small
+  package's `Aw.<Name>.Testing` also gets its own `.editorconfig` (`root = false`) turning `MA0182` ("internal type is
+  never used") off: its builders and `A` are internal (App's records are) and only `Aw.<Name>.Tests` uses them, through
+  `InternalsVisibleTo`. Full-shape builders are public, so they don't need it.
 - Private fields are `_camelCase` (the root naming rule, `IDE1006`), static ones included; literal `bool` and `null`
   arguments are named (`MA0003`); string comparisons say their `StringComparison` (`MA0127`, `CA1309`).
 - Vogen 8.0.7 wraps a `Guid` or `int` id's generated `ToString(string, IFormatProvider)` in `#nullable disable`, which
   `RS0041` (oblivious types in the public API) rejects with nothing to fix in user code, and `.editorconfig` sections
-  don't reach source-generated files. So `Core` sets `<NoWarn>$(NoWarn);RS0041</NoWarn>` with that reason; `RS0016`
-  still tracks the member (declared with the `~` marker the build reports).
+  don't reach source-generated files. So `/new-slice` adds `<NoWarn>$(NoWarn);RS0041</NoWarn>`, with that reason, to
+  `Core`'s csproj when it writes the package's first `Guid` or `int` id (a package with only string ids, or none, keeps
+  RS0041 on); `RS0016` still tracks the member (declared with the `~` marker the build reports).
 
 **`shape: small`** replaces `Features`, `Infrastructure` and `Host` with one `Aw.<Name>.App` project: same files under
 `Features/`, `Infrastructure/`, `Commands/`, same `Add…()` methods, `OutputType=Exe` when `host`
@@ -157,8 +164,11 @@ Aw.<Name>.Host/
 ├── HttpResults.cs                     # internal static: Result<T> → TypedResults / ProblemDetails (ToHttpResult)
 ├── LoopbackBinding.cs                 # the only listener: Listen(IPAddress.Loopback, port) (spec §4d, below)
 ├── LoopbackGuard.cs                   # middleware: non-loopback Host → 400; non-loopback browser Origin → 403
+├── Pipeline.cs                        # internal static Configure(app): guard → Vogen 400 → endpoint table; Program.cs and the tests call it
 └── ValueObjectValidation.cs           # middleware: Vogen's ValueObjectValidationException → 400 (typed-ids.md step 4)
 tests/Aw.<Name>.Tests/LoopbackBindingTests.cs   # every override vector, Host 400, Origin 403 (Lane=integration)
+tests/Aw.<Name>.Tests/ProcessEnvironment.cs     # the xUnit collection (parallelization off) the environment-setting tests share
+tests/Aw.<Name>.Tests/HttpJsonProfileTests.cs   # the http JSON options equal the AwJson profile (Lane=unit)
 ```
 
 `LoopbackBinding.Build(args, environment, clock)` refuses any command-line argument (`ArgumentException`), builds the
@@ -168,11 +178,18 @@ an empty in-memory one (the host writes its own settings), pins `PreferHostingUr
 `Listen(IPAddress.Loopback, port)` only. The port is `AW_<NAME>_PORT` from the environment `Composition` gets, `0` (a free
 port) by default. `LoopbackBindingTests` starts the host once per
 override vector and checks the only listener is `127.0.0.1:<port>`: `ASPNETCORE_URLS`, `DOTNET_URLS`,
-`ASPNETCORE_HTTP_PORTS`, `ASPNETCORE_PREFERHOSTINGURLS`, `Kestrel__Endpoints__*` (each in the environment and on the
-command line) and `--urls` (the R1a spike found two of these binding all interfaces in a default
-`CreateSlimBuilder(args)` host). It also sends a request with `Host: example.com` (expects 400) and one with
-`Origin: https://example.com` (expects 403); the command-line vector is `Build(["--urls", …])`, refused. The tests set
-process environment variables, so they share an xUnit collection with parallelization off (`ProcessEnvironment.cs`).
+`ASPNETCORE_HTTP_PORTS`, `ASPNETCORE_PREFERHOSTINGURLS` (paired with `ASPNETCORE_URLS`, so there is a URL to
+prefer), `Kestrel__Endpoints__*` and `ASPNETCORE_Kestrel__Endpoints__*` in the environment (the R1a spike found two of
+these binding all interfaces in a default `CreateSlimBuilder(args)` host). Command-line vectors are not started: any
+argument (`--urls …`, `--Kestrel:Endpoints:…`) makes `Build` throw, which is stricter than starting the host with
+them. It also sends a request with `Host: example.com` (expects 400) and one with `Origin: https://example.com`
+(expects 403), through `Pipeline.Configure`, the same pipeline `Program.cs` runs (guard, Vogen 400, endpoint table),
+so dropping or reordering a middleware fails a test. The tests set process environment variables, so they share an
+xUnit collection with parallelization off (`ProcessEnvironment.cs`). `HttpJsonProfileTests` (Lane=unit) checks the
+http JSON options equal the AwJson profile setting by setting: `LoopbackBinding` replaces the resolver chain and copies
+the naming policy, case sensitivity, number handling, ignore and unmapped-member handling, encoder, the two `Respect…`
+settings and the converters, because ASP.NET starts from the looser Web defaults (case-insensitive names, numbers
+read from strings).
 No `HOST` variable, no `ALLOW_REMOTE` switch, no wildcard CORS. An http package's test project sets
 `EnableRequestDelegateGenerator=true`, so its id route-binding tests (`new-slice.md`) compile through the
 request-delegate generator, like the Host.
@@ -216,9 +233,9 @@ internal static class ValueObjectValidation
 
 The body is `docs/csharp/typed-ids.md` step 4, proven under NativeAOT (500 without it, 400 with it). It is covered by
 the route-binding test `/new-slice` adds before the first id binds a route (`tests/Aw.<Name>.Tests/Ids/<Id>RouteBindingTests.cs`,
-Lane=integration): through `WebApplicationFactory`, with this middleware in the pipeline, valid route or query text →
-200 with the id's value; text the type refuses → 400; an empty `?id=` → 400; and the endpoint's
-`ParameterBindingMetadata` reports the id as route/query with `hasTryParse: true`, never as a body.
+Lane=integration): on a slim app over `TestServer` with this middleware in the pipeline, valid route or query text →
+200 with the id's value; text the type refuses → 400; an empty `?id=` → 400; and both endpoints'
+`IParameterBindingMetadata` report `HasTryParse`, so the id never binds as a body.
 
 `HttpResults` lives in each HTTP host
 for now; the second HTTP package moves it into a tier-0 Kernel part (second use → generalize). It can't go in
