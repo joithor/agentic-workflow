@@ -4,6 +4,7 @@ import path from "node:path";
 
 import { stateDir, type Deps } from "../src/deps.js";
 import { SindriError } from "../src/errors.js";
+import { GENERALIZE_ROLES } from "../src/evolve/generalize.js";
 import { writers, type EvolveCtx, type EvolveIo } from "../src/evolve/ctx.js";
 import type { ProcessRunner } from "../src/index/io.js";
 import { STATUSES, transition, type ProposalStatus } from "../src/evolve/proposals.js";
@@ -56,6 +57,18 @@ export function answeringRunner(
   };
 }
 
+const unescapeFence = (s: string): string => s.replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&amp;/g, "&");
+
+// Answers generalize calls by keeping the proposal as it is and judging it clean; any other call goes to `other`
+// (by default: fail the test, as before).
+export function generalizingScript(other: (call: ModelCall<unknown>) => unknown = () => { throw new Error("no model call expected"); }): (call: ModelCall<unknown>) => unknown {
+  return (call) => {
+    if (call.role === GENERALIZE_ROLES.rewrite) return JSON.parse(unescapeFence(/<untrusted id="proposal">([\s\S]*?)<\/untrusted>/.exec(call.input)?.[1] ?? "null")) as unknown;
+    if (call.role === GENERALIZE_ROLES.judge) return { leaks: false, category: "none" };
+    return other(call);
+  };
+}
+
 export type ScriptedEvolveIo = EvolveIo & { calls: ModelCall<unknown>[] };
 
 // An EvolveIo whose model answers come from `script`; every call is recorded.
@@ -101,7 +114,7 @@ export async function evolveFixture(
   if (done.exitCode !== 0) throw new Error(done.stderr);
   const db = openLedger(ledgerPath(stateDir(deps)));
   const loaded = requireApprovedProfile(deps, db);
-  const io = o.io ?? scriptedEvolveIo(() => { throw new Error("no model call expected"); });
+  const io = o.io ?? scriptedEvolveIo(generalizingScript());
   const repo = loaded.repos[loaded.profile.tracker.repo].path;
   const ctx: EvolveCtx = { deps, io, loaded, db, repo, prompts: o.prompts ?? (() => []), ...writers(deps, db) };
   return { ctx, deps, repo, transcripts, io, close: () => db.close() };
