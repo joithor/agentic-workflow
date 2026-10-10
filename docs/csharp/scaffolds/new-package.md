@@ -21,7 +21,7 @@ first move is the TDD step.
 | `errorPrefix` | e.g. `READINESS` | `^[A-Z0-9]{2,16}$`; codes are `AW-<errorPrefix>-NNN` (the form `ErrorCatalogue.Validate` accepts: `^(AW\|SND)-[A-Z0-9]+-[0-9]{3}$`; `SND-` is reserved for Sindri). Unique: no `"AW-<errorPrefix>-` in `src/**/*Errors.cs`; never derived or guessed |
 | `note` | one line: what the package is for | Used for the `deps.yaml` node when the package isn't declared yet |
 | `shape` | `small` (Core + App) or `full` (Core, Features, Infrastructure, Host) | `small` unless the package is expected over ~1,500 lines |
-| `host` | `cli`, `http` or `none` | `cli` → NativeAOT console app; `http` → minimal API with `CreateSlimBuilder`; `none` → library |
+| `host` | `cli`, `http` or `none` | `cli` → NativeAOT console app; `http` → minimal API with `CreateSlimBuilder`; `none` → library. `http` needs `shape: full`: `shape: small` with `host: http` is refused with `NP-SMALL-HTTP` (the Web SDK's generated public `Program` would land in `App`, a library with `RS0016` on) |
 | `depends` | list of package names | Each must be in a lower tier (checked against `deps.yaml`). Project edges from this package's `Features` (`App` in the small shape) to their `Core`. Refused with `NP-FANOUT` if that project would hold more than 4 in-repo references |
 | `firstSlice` | PascalCase use-case name, e.g. `CheckRepo`, plus its `behavior` | Passed to `/new-slice` to generate the first red test |
 
@@ -108,13 +108,13 @@ tests/
   `RS0017`, `RS0036`, `RS0037`, `CA2007` and `CA1515` off; `GenerateDocumentationFile=true` with `CS1591` off.
 
 **`shape: small`** replaces `Features`, `Infrastructure` and `Host` with one `Aw.<Name>.App` project: same files under
-`Features/`, `Infrastructure/`, `Commands/` (or `Endpoints/`), same `Add…()` methods, `OutputType=Exe` when `host`
-isn't `none` (then `PublishAot=true` too). `App` is a library under `Directory.Build.props`' project roles, so it gets
+`Features/`, `Infrastructure/`, `Commands/`, same `Add…()` methods, `OutputType=Exe` when `host`
+is `cli` (then `PublishAot=true` too; `http` is refused for `small`, see Inputs). `App` is a library under `Directory.Build.props`' project roles, so it gets
 `IsAotCompatible=true` from the root. Its `.editorconfig` lowers `CA1031` only for the boundary folders:
 
 ```ini
 root = false
-[{Infrastructure/**.cs,Commands/**.cs,Endpoints/**.cs,Program.cs,Composition.cs}]
+[{Infrastructure/**.cs,Commands/**.cs,Program.cs,Composition.cs}]
 dotnet_diagnostic.CA1031.severity = none
 ```
 
@@ -361,4 +361,5 @@ root settings fails the generator's CI, not the first user.
 - Any check fails other than the expected red test → the generator reverts everything it created or edited (it
   records the file list before writing) and prints the rule id, the measured value and the fix.
 - Re-running with the same `name` refuses: `NP-EXISTS: src/<Name> already exists`. A taken `errorPrefix` refuses with
-  `NP-PREFIX`; a missing package pin stops with `NP-PINS` and the pin commit to make.
+  `NP-PREFIX`; a missing package pin stops with `NP-PINS` and the pin commit to make; `shape: small` with `host: http`
+  refuses with `NP-SMALL-HTTP`.
