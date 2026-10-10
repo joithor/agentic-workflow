@@ -217,10 +217,45 @@ for h in block-destructive block-push-main detect-secrets; do
   CASE_PATH="$NO_CAT" WANT_RC=127 run_case "$h: crash keeps its exit code (not counted)" "$h.sh" '{"tool_input":{"command":"ls"}}' "-"
   INJECT=': "$AW_NOPE_UNSET"' WANT_RC=1 run_case "$h: set -u abort keeps exit 1" "$h.sh" '{"tool_input":{"command":"ls"}}' "-"
 done
-# The other fail-open hooks don't use set -e, so their EXIT trap sees the real code.
-INJECT='exit 3' WANT_RC=3 run_case "send-gate: crash is counted, exit code kept" send-gate.sh "$SEND" "send-gate exit-3"
-INJECT='exit 3' WANT_RC=3 run_case "send-gate: crash under an adapter is left to the adapter" send-gate.sh "$SEND" "-" AW_PROVIDER=codex
-INJECT=': "${AW_NOPE_UNSET:?}"' WANT_RC=1 run_case "scope-gate: unbound abort keeps exit 1 and is counted" scope-gate.sh "$AGENT" "scope-gate exit-1"
+# No fail-open hook has an EXIT trap: on bash 3.2 a trap turns a set -u abort
+# under set -e into exit 0, and it defers SIGTERM until a running $(judge …)
+# returns. A crash keeps its exit code and is not counted under Claude Code.
+INJECT='exit 3' WANT_RC=3 run_case "send-gate: crash keeps its exit code (not counted)" send-gate.sh "$SEND" "-"
+INJECT=': "${AW_NOPE_UNSET:?}"' WANT_RC=1 run_case "scope-gate: unbound abort keeps exit 1 (not counted)" scope-gate.sh "$AGENT" "-"
+
+# SIGTERM while the hook waits on a slow judge: the current hook must die as
+# fast as the baseline (no trap deferring the signal), within a bounded wait.
+SLOW_BIN="$(mktemp -d)"
+printf '#!/usr/bin/env bash
+sleep 4
+echo "{\\"decision\\":\\"send\\"}"
+' > "$SLOW_BIN/judge"; chmod +x "$SLOW_BIN/judge"
+# term_exit_ms <hook path> <stdin> — ms from start until the hook exits after a TERM at 0.5 s.
+term_exit_ms() {
+  local in t0 t1 p i=0; in="$(mktemp)"; printf '%s' "$2" > "$in"
+  t0="$(perl -MTime::HiRes=time -e 'printf "%d", time*1000')"
+  env PATH="$SLOW_BIN:$BASE_PATH" AW_STATE_DIR="$(mktemp -d)" bash "$1" < "$in" > /dev/null 2>&1 &
+  p=$!
+  sleep 0.5; kill -TERM "$p" 2>/dev/null
+  while kill -0 "$p" 2>/dev/null; do
+    [ "$i" -ge 200 ] && { kill -9 "$p" 2>/dev/null; break; }
+    sleep 0.05; i=$((i + 1))
+  done
+  wait "$p" 2>/dev/null
+  t1="$(perl -MTime::HiRes=time -e 'printf "%d", time*1000')"
+  echo $((t1 - t0))
+}
+for pair in "send-gate.sh:$SEND" "scope-gate.sh:$AGENT" \
+            "done-gate.sh:{\"session_id\":\"s1\",\"last_assistant_message\":\"Still working on the parser.\"}"; do
+  h="${pair%%:*}"; payload="${pair#*:}"
+  cur="$(stage_current 1)"; base="$(stage_baseline 1)"
+  ms_cur="$(term_exit_ms "$cur/$h" "$payload")"; ms_base="$(term_exit_ms "$base/$h" "$payload")"
+  if [ "$ms_cur" -le $((ms_base + 1000)) ] && [ "$ms_cur" -lt 3000 ]; then
+    echo "PASS: $h: SIGTERM during a slow judge exits as fast as the baseline (${ms_cur} ms vs ${ms_base} ms)"
+  else
+    echo "FAIL: $h: SIGTERM during a slow judge — current ${ms_cur} ms, baseline ${ms_base} ms"; fail=1
+  fi
+done
 run_case "block-destructive: deny logs nothing" block-destructive.sh '{"tool_input":{"command":"rm -rf /tmp/x"}}' "-"
 
 # --- The logger can never change a decision, even when it can't run ---
