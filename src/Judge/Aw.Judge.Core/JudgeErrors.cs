@@ -20,6 +20,9 @@ public static class JudgeErrors
     /// <summary>AW-JUDGE-005: no brief was saved for this tool use id ('brief get').</summary>
     public static readonly ErrorDefinition NoBrief = new("AW-JUDGE-005", ErrorKind.NotFound, "no brief for tool use id");
 
+    /// <summary>AW-JUDGE-006: 'config set … threshold' got a value that isn't a finite number.</summary>
+    public static readonly ErrorDefinition NotANumber = new("AW-JUDGE-006", ErrorKind.Invalid, "not a number");
+
     /// <summary>Every Judge error, for ErrorCatalogue.Validate.</summary>
-    public static IReadOnlyList<ErrorDefinition> All { get; } = [Invalid, UnknownDecision, DecisionExists, BriefExists, NoBrief];
+    public static IReadOnlyList<ErrorDefinition> All { get; } = [Invalid, UnknownDecision, DecisionExists, BriefExists, NoBrief, NotANumber];
 }

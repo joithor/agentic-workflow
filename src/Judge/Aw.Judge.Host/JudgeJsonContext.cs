@@ -1,4 +1,5 @@
 using System.Text.Json.Serialization;
+using Aw.Judge.Core.Config;
 using Aw.Judge.Features.ApproveDecision;
 using Aw.Judge.Features.ExplainDecision;
 using Aw.Judge.Features.GetBrief;
@@ -18,6 +19,7 @@ namespace Aw.Judge.Host;
 [JsonSerializable(typeof(HealthOutput))]
 [JsonSerializable(typeof(BriefOutput))]
 [JsonSerializable(typeof(DecisionOutput))]
+[JsonSerializable(typeof(JudgeConfig))]
 [JsonSerializable(typeof(GetHealthRequest))]
 [JsonSerializable(typeof(GetHealthResponse))]
 [JsonSerializable(typeof(SaveBriefRequest))]
