@@ -5,6 +5,6 @@ namespace Aw.Readiness.Core.Criteria;
 /// <param name="Check">The check.</param>
 internal sealed record CatalogueEntry(Criterion Criterion, Func<RepoContext, Verdict> Check)
 {
-    internal static CatalogueEntry Of(string id, Pillar pillar, int level, string title, string fix, Func<RepoContext, Verdict> check) =>
-        new(new Criterion(CriterionId.From(id), pillar, level, title, fix), check);
+    internal static CatalogueEntry Of(CriterionKey key, string title, string fix, Func<RepoContext, Verdict> check) =>
+        new(new Criterion(CriterionId.From(key.Id), key.Pillar, key.Level, title, fix), check);
 }

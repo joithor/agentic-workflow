@@ -12,23 +12,23 @@ internal static partial class StyleAndBuildChecks
 
     internal static IEnumerable<CatalogueEntry> Entries()
     {
-        yield return CatalogueEntry.Of("SV-1", Pillar.StyleAndValidation, 1, "Linter configured (Roslyn analyzers)",
+        yield return CatalogueEntry.Of(new("SV-1", Pillar.StyleAndValidation, 1), "Linter configured (Roslyn analyzers)",
             "add Microsoft.CodeAnalysis.NetAnalyzers as a GlobalPackageReference in Directory.Packages.props (spec §4b.6)", Linter);
-        yield return CatalogueEntry.Of("SV-2", Pillar.StyleAndValidation, 1, "Type checker strict (nullable, warnings as errors)",
+        yield return CatalogueEntry.Of(new("SV-2", Pillar.StyleAndValidation, 1), "Type checker strict (nullable, warnings as errors)",
             "set <Nullable>enable</Nullable> and <TreatWarningsAsErrors>true</TreatWarningsAsErrors> in Directory.Build.props", Strict);
-        yield return CatalogueEntry.Of("SV-3", Pillar.StyleAndValidation, 1, "Code formatter (dotnet format over .editorconfig)",
+        yield return CatalogueEntry.Of(new("SV-3", Pillar.StyleAndValidation, 1), "Code formatter (dotnet format over .editorconfig)",
             "keep .editorconfig at the root and list 'dotnet format --verify-no-changes' in AGENTS.md", Formatter);
-        yield return CatalogueEntry.Of("SV-4", Pillar.StyleAndValidation, 2, "Pre-commit hooks (tracked config)",
+        yield return CatalogueEntry.Of(new("SV-4", Pillar.StyleAndValidation, 2), "Pre-commit hooks (tracked config)",
             "commit a hook config (.pre-commit-config.yaml, .githooks/, lefthook.yml or .husky/) that runs format and the scrubber", PreCommit);
-        yield return CatalogueEntry.Of("BS-1", Pillar.BuildSystem, 2, "Build command documented",
+        yield return CatalogueEntry.Of(new("BS-1", Pillar.BuildSystem, 2), "Build command documented",
             "list 'dotnet build -warnaserror' in AGENTS.md", c => Documented(c, "dotnet build"));
-        yield return CatalogueEntry.Of("BS-2", Pillar.BuildSystem, 2, "Dependencies pinned (central versions, lock files)",
+        yield return CatalogueEntry.Of(new("BS-2", Pillar.BuildSystem, 2), "Dependencies pinned (central versions, lock files)",
             "turn on central package management and lock files, then run a restore and commit every packages.lock.json", Pinned);
-        yield return CatalogueEntry.Of("BS-3", Pillar.BuildSystem, 2, "VCS CLI tools documented",
+        yield return CatalogueEntry.Of(new("BS-3", Pillar.BuildSystem, 2), "VCS CLI tools documented",
             "say in README.md or AGENTS.md that PRs and issues go through the gh CLI", VcsCli);
-        yield return CatalogueEntry.Of("BS-4", Pillar.BuildSystem, 4, "Regular deployment frequency (≥3 releases in 90 days)",
+        yield return CatalogueEntry.Of(new("BS-4", Pillar.BuildSystem, 4), "Regular deployment frequency (≥3 releases in 90 days)",
             "promote a stable channel at least three times in 90 days (spec §5, W8)", Releases);
-        yield return CatalogueEntry.Of("BS-5", Pillar.BuildSystem, 2, "Runtime version pinned (global.json)",
+        yield return CatalogueEntry.Of(new("BS-5", Pillar.BuildSystem, 2), "Runtime version pinned (global.json)",
             "pin the SDK in global.json with \"rollForward\": \"disable\"", RuntimePinned);
     }
 

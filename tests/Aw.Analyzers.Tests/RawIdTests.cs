@@ -86,6 +86,22 @@ public sealed class RawIdTests
     }
 
     [Fact]
+    public async Task Skips_const_fields_because_a_const_can_never_be_a_typed_id()
+    {
+        var found = await AnalyzerHarness.Run(new RawIdAnalyzer(), "Aw.Probe.Core", """
+            namespace Aw.Probe.Core;
+            public static class Rules
+            {
+                public const string UniqueIds = "PKT-ID-001";
+                public static readonly string OwnerId = "x";
+            }
+            """);
+
+        // Line 4: a const rule id is a value, not an id slot. Line 5: a readonly field still counts.
+        Assert.Equal(["AW1001@5"], found);
+    }
+
+    [Fact]
     public async Task Checks_events_and_indexer_parameters()
     {
         var found = await AnalyzerHarness.Run(new RawIdAnalyzer(), "Aw.Probe.Core", """

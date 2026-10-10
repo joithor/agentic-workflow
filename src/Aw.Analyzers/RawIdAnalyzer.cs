@@ -113,6 +113,8 @@ internal sealed class RawIdAnalyzer : DiagnosticAnalyzer
             [(0, receiver.Type, receiver.Name, receiver.Locations)],
         IPropertySymbol property when !IsRecordPositional(property) =>
             Parameters(property.Parameters).Prepend((-1, property.Type, property.Name, property.Locations)),
+        // A const can never be a typed id, so a const string named like an id (a rule id, PKT-ID-001) has no fix.
+        IFieldSymbol { IsConst: true } => [],
         IFieldSymbol field => [(-1, field.Type, field.Name, field.Locations)],
         IEventSymbol @event => [(-1, @event.Type, @event.Name, @event.Locations)],
         INamedTypeSymbol { DelegateInvokeMethod: { } invoke } type => MethodSlots(invoke, type.Name, type.Locations),

@@ -10,25 +10,25 @@ internal static class TestingAndDocsChecks
 
     internal static IEnumerable<CatalogueEntry> Entries()
     {
-        yield return CatalogueEntry.Of("TS-1", Pillar.Testing, 1, "Unit tests exist (unit lane)",
+        yield return CatalogueEntry.Of(new("TS-1", Pillar.Testing, 1), "Unit tests exist (unit lane)",
             "add a test with Trait(\"Lane\", \"unit\") under tests/ (spec §4b.5)", c => Lane(c, "unit", "Unit"));
-        yield return CatalogueEntry.Of("TS-2", Pillar.Testing, 3, "Integration tests exist (integration lane)",
+        yield return CatalogueEntry.Of(new("TS-2", Pillar.Testing, 3), "Integration tests exist (integration lane)",
             "add a test with Trait(\"Lane\", \"integration\") under tests/ (real SQLite or WebApplicationFactory)", c => Lane(c, "integration", "Integration"));
-        yield return CatalogueEntry.Of("TS-3", Pillar.Testing, 3, "Tests runnable locally (one command)",
+        yield return CatalogueEntry.Of(new("TS-3", Pillar.Testing, 3), "Tests runnable locally (one command)",
             $"list '{OneCommand}' in AGENTS.md", c => Verdict.When(c.Contains(Agents, OneCommand),
                 $"AGENTS.md lists '{OneCommand}'", $"AGENTS.md doesn't list '{OneCommand}'"));
-        yield return CatalogueEntry.Of("TS-4", Pillar.Testing, 4, "Fast CI feedback (PR CI, affected areas, lane budgets)",
+        yield return CatalogueEntry.Of(new("TS-4", Pillar.Testing, 4), "Fast CI feedback (PR CI, affected areas, lane budgets)",
             "run dotnet test on pull_request with changed-area detection and the per-test lane cap (Aw.LaneCap.Testing)", FastCi);
-        yield return CatalogueEntry.Of("TS-5", Pillar.Testing, 4, "Flaky test detection (quarantine)",
+        yield return CatalogueEntry.Of(new("TS-5", Pillar.Testing, 4), "Flaky test detection (quarantine)",
             "add the quarantine job (spec §4e B11: in on 2 flaky failures in 7 days, out after 20 green runs)",
             c => Verdict.When(c.WorkflowsContaining("quarantine").Count > 0, RepoContext.Named(c.WorkflowsContaining("quarantine"), "quarantine job in"),
                 "no workflow runs a quarantine job"));
-        yield return CatalogueEntry.Of("DOC-1", Pillar.Documentation, 2, "AGENTS.md (covers the C# build)",
+        yield return CatalogueEntry.Of(new("DOC-1", Pillar.Documentation, 2), "AGENTS.md (covers the C# build)",
             "keep AGENTS.md at the root with the dotnet commands", c => Verdict.When(c.Contains(Agents, "dotnet"),
                 "AGENTS.md present and lists dotnet commands", c.Has(Agents) ? "AGENTS.md doesn't mention the C# build (dotnet)" : "no AGENTS.md"));
-        yield return CatalogueEntry.Of("DOC-2", Pillar.Documentation, 1, "README",
+        yield return CatalogueEntry.Of(new("DOC-2", Pillar.Documentation, 1), "README",
             "add README.md at the root", c => Verdict.When(c.Has("README.md"), "README.md present", "no README.md"));
-        yield return CatalogueEntry.Of("DOC-3", Pillar.Documentation, 4, "Documentation freshness checked automatically",
+        yield return CatalogueEntry.Of(new("DOC-3", Pillar.Documentation, 4), "Documentation freshness checked automatically",
             "run scripts/sync-rules.sh --check in CI (and, W8, the AGENTS.md command executor)", DocFreshness);
     }
 
