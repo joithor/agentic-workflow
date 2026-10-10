@@ -53,8 +53,8 @@ Host ──► Features ──► Core ◄── Infrastructure
 |---|---|---|
 | `Aw.<Pkg>.Core` | Domain types, typed ids, value objects, pure logic, **port interfaces**, errors | `Aw.Kernel` (+ `Microsoft.Extensions.DependencyInjection.Abstractions` for its `Add…()` method, and Vogen for its typed ids) |
 | `Aw.<Pkg>.Features` | One folder per use case (slice): request/response records, service, validator | `Core`, `Aw.Kernel`, other packages' `Core` |
-| `Aw.<Pkg>.Infrastructure` | Repositories over SQL, adapters (git, containers, model CLIs, HTTP), migrations | `Core`, `Aw.Kernel`, `Aw.Kernel.Data`, and other tier-0 packages (e.g. `Redaction`) through a declared `deps.yaml` edge |
-| `Aw.<Pkg>.Host` | Composition root: minimal API app or CLI `Main`, the endpoints and CLI commands (one per slice), `Compose`, settings, the JSON context | everything in the package, plus `Aw.Kernel.Telemetry` and the tier-0 and lower-tier `Core`s it composes |
+| `Aw.<Pkg>.Infrastructure` | Repositories over SQL, adapters (git, containers, model CLIs, HTTP), migrations, its own settings (internal, read from the environment `Composition` passes) | `Core`, `Aw.Kernel`, `Aw.Kernel.Data`, and other tier-0 packages (e.g. `Redaction`) through a declared `deps.yaml` edge |
+| `Aw.<Pkg>.Host` | Composition root: minimal API app or CLI `Main`, the endpoints and CLI commands (one per slice), `Compose` (which passes the environment to `Add…Infrastructure`), the JSON context | everything in the package, plus `Aw.Kernel.Telemetry` and the tier-0 and lower-tier `Core`s it composes |
 
 A package under ~1,500 lines may use two projects, `Core` and `App`, with the same direction; split into four past the threshold.
 
@@ -109,7 +109,7 @@ A package under ~1,500 lines may use two projects, `Core` and `App`, with the sa
 
 - `Microsoft.Extensions.DependencyInjection`. **Each project owns one explicit, public extension method** that registers its own types (`services.AddSindriCore()`, `AddSindriFeatures()`, `AddSindriInfrastructure(environment)`); **only `Host` calls them and builds the container.** No assembly scanning (reflection, not AOT-safe).
 - So `Core`, `Features` and `Infrastructure` may reference `Microsoft.Extensions.DependencyInjection.Abstractions` (for `Core`, alongside Vogen for its typed ids, its only packages besides `Aw.Kernel`). `Aw.Kernel` stays BCL-only: no `IConfiguration` in Kernel signatures. `Host` never builds an `Infrastructure` settings type: `Composition` passes the environment (a `Func<string, string?>`, `Environment.GetEnvironmentVariable` in `Program.cs`, a lambda in tests; no `IConfiguration`, which the AOT CLI hosts don't reference) to `Add<Name>Infrastructure(environment)`, and `Infrastructure` reads its own settings (an `internal` `<Name>Settings` record: the state directory, a connection string). A technology swap changes `Infrastructure` and the one `Add…()` call in `Composition`, never the rest of `Host`.
-- Decorators are registered in the **owning project's `Add…()` method** (outermost first), never in `Host`: `Compose` only calls the projects' `Add…()` methods (choosing one where `Infrastructure` offers several, Seams below) and adds the clock and the environment.
+- Decorators are registered in the **owning project's `Add…()` method** (outermost first), never in `Host`: `Compose` only calls the projects' `Add…()` methods (choosing one where `Infrastructure` offers several, Seams below) registers the clock and passes the environment to `Add<Name>Infrastructure`.
 - Each `Host` exposes one `internal static IServiceCollection Compose(IServiceCollection, Func<string, string?> environment, TimeProvider)` that `Program.cs` and the DI validation test both call, so the test covers the real composition.
 - Constructor injection only; no service locator; no `IServiceProvider` outside `Host`, with **one exception**: the `IServiceProvider` parameter of a registration factory lambda inside a project's own `Add…()` method. M.E.DI has no decorator support, so that's how a decorator wraps its service:
 
@@ -168,7 +168,7 @@ In the small shape this holds by namespace: `Aw.<Pkg>.App.Features.*` and `Comma
 
 **Picking an adapter.** Each real implementation of a port is an `Infrastructure` adapter. A second technology for the
 same port lives in the same `Infrastructure` project behind its own registration method, `Add<Name><Tech>Infrastructure()`
-(e.g. `AddItemsSqliteInfrastructure()` and `AddItemsPostgresInfrastructure()`); its package comes in through a
+(e.g. `AddItemsSqliteInfrastructure(environment)` and `AddItemsPostgresInfrastructure(environment)`); its package comes in through a
 `Directory.Packages.props` review. `Composition` in the `Host` picks the adapter by which `Add…()` it calls, and
 `Infrastructure` reads that adapter's own settings from the environment `Composition` passes (DI above). `Aw.Kernel.Data`
 is SQLite-specific today; a second engine needs its own data package, `Aw.Kernel.Data.<Engine>`, added when needed.

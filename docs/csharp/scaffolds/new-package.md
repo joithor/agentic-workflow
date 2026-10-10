@@ -83,7 +83,7 @@ tests/
 │   ├── <Name>ErrorsTests.cs           # ErrorCatalogue.Validate(<Name>Errors.All) succeeds (Lane=unit) — green
 │   └── <FirstSlice>/<FirstSlice>Tests.cs   # from /new-slice — RED
 └── Aw.<Name>.Testing/
-    ├── Aw.<Name>.Testing.csproj       # refs Core and Features (builders, fakes)
+    ├── Aw.<Name>.Testing.csproj       # refs Core, Features and Aw.Kernel.Testing (builders, fakes, contract bases)
     ├── packages.lock.json
     └── A.cs                           # builder root: public static class A
 ```
@@ -224,8 +224,8 @@ internal static class Composition
 
 `Composition` passes the environment, never a settings record: `Infrastructure` reads its own settings, so swapping a
 technology (`.agents/rules/csharp.md`, Seams) changes `Infrastructure` and this one `Add…()` call, not the rest of
-`Host`. When `Infrastructure` offers more than one adapter for a port (`Add<Name>SqliteInfrastructure()`,
-`Add<Name>PostgresInfrastructure()`), this is where one is picked. The environment is a `Func<string, string?>` rather
+`Host`. When `Infrastructure` offers more than one adapter for a port (`Add<Name>SqliteInfrastructure(environment)`,
+`Add<Name>PostgresInfrastructure(environment)`), this is where one is picked. The environment is a `Func<string, string?>` rather
 than `IConfiguration`: the AOT CLI hosts reference only `Microsoft.Extensions.DependencyInjection`.
 
 `using Microsoft.Extensions.DependencyInjection;` is emitted only for a `Microsoft.NET.Sdk` host (`host: cli`). For
