@@ -50,12 +50,13 @@ public abstract class ReadRepositoryContract<TEntity, TId>
     [Fact]
     public async Task Get_returns_the_seeded_entity()
     {
+        const string test = nameof(Get_returns_the_seeded_entity);
         var entity = NewEntity(1);
-        await Seed(entity, Token).ConfigureAwait(false);
+        await SeedChecked(test, entity).ConfigureAwait(false);
 
-        var found = await Get(IdOf(entity), Token).ConfigureAwait(false);
+        var found = await GetChecked(test, IdOf(entity)).ConfigureAwait(false);
 
-        ExpectFound(nameof(Get_returns_the_seeded_entity), entity, found);
+        ExpectFound(test, entity, found);
     }
 
     /// <summary>Each of several seeded entities comes back by its own id.</summary>
@@ -63,16 +64,17 @@ public abstract class ReadRepositoryContract<TEntity, TId>
     [Fact]
     public async Task Get_returns_each_entity_by_its_own_id()
     {
+        const string test = nameof(Get_returns_each_entity_by_its_own_id);
         TEntity[] entities = [NewEntity(1), NewEntity(2), NewEntity(3)];
         foreach (var entity in entities)
         {
-            await Seed(entity, Token).ConfigureAwait(false);
+            await SeedChecked(test, entity).ConfigureAwait(false);
         }
 
         foreach (var entity in entities)
         {
-            var found = await Get(IdOf(entity), Token).ConfigureAwait(false);
-            ExpectFound(nameof(Get_returns_each_entity_by_its_own_id), entity, found);
+            var found = await GetChecked(test, IdOf(entity)).ConfigureAwait(false);
+            ExpectFound(test, entity, found);
         }
     }
 
@@ -82,7 +84,7 @@ public abstract class ReadRepositoryContract<TEntity, TId>
     public async Task Get_of_a_missing_id_is_a_not_found_error()
     {
         const string test = nameof(Get_of_a_missing_id_is_a_not_found_error);
-        await Seed(NewEntity(1), Token).ConfigureAwait(false);
+        await SeedChecked(test, NewEntity(1)).ConfigureAwait(false);
         var missing = MissingId();
         Result<TEntity> found;
         try
@@ -112,14 +114,14 @@ public abstract class ReadRepositoryContract<TEntity, TId>
     {
         const string test = nameof(Exists_is_true_only_for_seeded_ids);
         var entity = NewEntity(1);
-        await Seed(entity, Token).ConfigureAwait(false);
+        await SeedChecked(test, entity).ConfigureAwait(false);
 
-        if (!await Exists(IdOf(entity), Token).ConfigureAwait(false))
+        if (!await ExistsChecked(test, IdOf(entity)).ConfigureAwait(false))
         {
             throw Violation(test, $"Exists({IdOf(entity)}) is false for a stored entity.");
         }
 
-        if (await Exists(MissingId(), Token).ConfigureAwait(false))
+        if (await ExistsChecked(test, MissingId()).ConfigureAwait(false))
         {
             throw Violation(test, $"Exists({MissingId()}) is true for an id nobody stored.");
         }
@@ -132,6 +134,42 @@ public abstract class ReadRepositoryContract<TEntity, TId>
 
     private static ContractViolationException Violation(string test, string detail, Exception cause) =>
         new($"{typeof(ReadRepositoryContract<TEntity, TId>).Name.Split('`')[0]}.{test}: {detail}", cause);
+
+    private async ValueTask SeedChecked(string test, TEntity entity)
+    {
+        try
+        {
+            await Seed(entity, Token).ConfigureAwait(false);
+        }
+        catch (Exception e)
+        {
+            throw Violation(test, $"Seed threw {e.GetType().Name}: {e.Message}", e);
+        }
+    }
+
+    private async ValueTask<Result<TEntity>> GetChecked(string test, TId id)
+    {
+        try
+        {
+            return await Get(id, Token).ConfigureAwait(false);
+        }
+        catch (Exception e)
+        {
+            throw Violation(test, $"Get({id}) threw {e.GetType().Name}: {e.Message}", e);
+        }
+    }
+
+    private async ValueTask<bool> ExistsChecked(string test, TId id)
+    {
+        try
+        {
+            return await Exists(id, Token).ConfigureAwait(false);
+        }
+        catch (Exception e)
+        {
+            throw Violation(test, $"Exists({id}) threw {e.GetType().Name}: {e.Message}", e);
+        }
+    }
 
     private void ExpectFound(string test, TEntity stored, Result<TEntity> found)
     {

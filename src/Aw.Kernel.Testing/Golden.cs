@@ -30,7 +30,13 @@ public static class Golden
     {
         ArgumentNullException.ThrowIfNull(testAssembly);
         ArgumentException.ThrowIfNullOrEmpty(relativePath);
-        throw new NotSupportedException("red: Aw.Kernel.Testing C2 SourcePath");
+        var root = testAssembly.GetCustomAttributes<AssemblyMetadataAttribute>()
+            .FirstOrDefault(a => string.Equals(a.Key, SourceRootKey, StringComparison.Ordinal))?.Value;
+        return string.IsNullOrEmpty(root)
+            ? throw new InvalidOperationException(
+                $"{testAssembly.GetName().Name} doesn't declare its source root. Add "
+                + $"<AssemblyMetadata Include=\"{SourceRootKey}\" Value=\"$(MSBuildProjectDirectory)\" /> to its project file.")
+            : Path.Combine(root, relativePath);
     }
 
     /// <summary>Checks <paramref name="actual"/> against the golden file after normalization.</summary>
