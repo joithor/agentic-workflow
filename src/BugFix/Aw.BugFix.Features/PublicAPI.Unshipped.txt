@@ -1,0 +1,21 @@
+#nullable enable
+Aw.BugFix.Features.BugFixFeaturesServiceCollectionExtensions
+Aw.BugFix.Features.Init.InitRequest
+Aw.BugFix.Features.Init.InitRequest.<Clone>$() -> Aw.BugFix.Features.Init.InitRequest!
+Aw.BugFix.Features.Init.InitRequest.Equals(Aw.BugFix.Features.Init.InitRequest? other) -> bool
+Aw.BugFix.Features.Init.InitRequest.InitRequest() -> void
+Aw.BugFix.Features.Init.InitResponse
+Aw.BugFix.Features.Init.InitResponse.<Clone>$() -> Aw.BugFix.Features.Init.InitResponse!
+Aw.BugFix.Features.Init.InitResponse.Equals(Aw.BugFix.Features.Init.InitResponse? other) -> bool
+Aw.BugFix.Features.Init.InitResponse.InitResponse() -> void
+override Aw.BugFix.Features.Init.InitRequest.Equals(object? obj) -> bool
+override Aw.BugFix.Features.Init.InitRequest.GetHashCode() -> int
+override Aw.BugFix.Features.Init.InitRequest.ToString() -> string!
+override Aw.BugFix.Features.Init.InitResponse.Equals(object? obj) -> bool
+override Aw.BugFix.Features.Init.InitResponse.GetHashCode() -> int
+override Aw.BugFix.Features.Init.InitResponse.ToString() -> string!
+static Aw.BugFix.Features.BugFixFeaturesServiceCollectionExtensions.AddBugFixFeatures(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
+static Aw.BugFix.Features.Init.InitRequest.operator !=(Aw.BugFix.Features.Init.InitRequest? left, Aw.BugFix.Features.Init.InitRequest? right) -> bool
+static Aw.BugFix.Features.Init.InitRequest.operator ==(Aw.BugFix.Features.Init.InitRequest? left, Aw.BugFix.Features.Init.InitRequest? right) -> bool
+static Aw.BugFix.Features.Init.InitResponse.operator !=(Aw.BugFix.Features.Init.InitResponse? left, Aw.BugFix.Features.Init.InitResponse? right) -> bool
+static Aw.BugFix.Features.Init.InitResponse.operator ==(Aw.BugFix.Features.Init.InitResponse? left, Aw.BugFix.Features.Init.InitResponse? right) -> bool

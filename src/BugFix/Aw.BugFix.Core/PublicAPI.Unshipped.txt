@@ -1,0 +1,6 @@
+#nullable enable
+Aw.BugFix.Core.BugFixCoreServiceCollectionExtensions
+Aw.BugFix.Core.BugFixErrors
+static Aw.BugFix.Core.BugFixCoreServiceCollectionExtensions.AddBugFixCore(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
+static Aw.BugFix.Core.BugFixErrors.All.get -> System.Collections.Generic.IReadOnlyList<Aw.Kernel.ErrorDefinition!>!
+static readonly Aw.BugFix.Core.BugFixErrors.Invalid -> Aw.Kernel.ErrorDefinition!

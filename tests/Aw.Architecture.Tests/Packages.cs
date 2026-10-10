@@ -20,5 +20,9 @@ internal static class Packages
         "Aw.Readiness.Core",
         "Aw.Readiness.App",
         "Aw.Redaction",
+        "Aw.BugFix.Core",
+        "Aw.BugFix.Features",
+        "Aw.BugFix.Infrastructure",
+        "Aw.BugFix.Host",
     ];
 }

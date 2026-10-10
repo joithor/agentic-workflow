@@ -394,7 +394,7 @@ edges:
   - from: BugFix
     to: Kernel
     kind: project
-    status: planned
+    status: current
     note: "Result, IService, ports"
   - from: Sindri
     to: Kernel
@@ -434,4 +434,10 @@ edges:
 
 # No exceptions: Sindri's project fan-out is 4 (Kernel, KernelData, KernelTelemetry, Redaction) now that it reaches
 # Packets and Readiness through their CLIs (spec §4c, §8).
+  - from: BugFix
+    to: KernelTelemetry
+    kind: project
+    status: current
+    note: "the host starts Kernel telemetry in Compose (scaffolded by /new-package)"
+
 exceptions: []
