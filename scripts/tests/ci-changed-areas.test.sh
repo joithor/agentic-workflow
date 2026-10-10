@@ -38,6 +38,10 @@ expect "a hook change runs bash tests only" \
   "$(printf 'config/hooks/send-gate.sh\n')" \
   "$(printf 'bash=true\ndotnet=false\npackages=[]')"
 
+expect "a devcontainer or .env.example change runs the bash tests (their checks are bash suites)" \
+  "$(printf '.devcontainer/Dockerfile\n.env.example\n')" \
+  "$(printf 'bash=true\ndotnet=false\npackages=[]')"
+
 expect "a C# change runs dotnet only" \
   "$(printf 'src/Aw.Kernel/Result.cs\nDirectory.Packages.props\n')" \
   "$(printf 'bash=false\ndotnet=true\npackages=[]')"
