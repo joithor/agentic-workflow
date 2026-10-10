@@ -234,7 +234,7 @@ for p in src/<Name>/*/*.csproj tests/Aw.<Name>.*/*.csproj; do dotnet restore "$p
 dotnet restore --locked-mode                            # whole solution; must pass — existing lock files never change here
 dotnet format analyzers <each new src project> --diagnostics RS0016   # writes the PublicAPI.Unshipped.txt lines
 dotnet build -warnaserror                               # must report 0 warnings, 0 errors
-dotnet test --filter-trait "Lane=unit"                  # HostTests pass; the slice test fails (expected)
+dotnet test --solution AgenticWorkflow.slnx --filter-trait "Lane=unit" --ignore-exit-code 8   # HostTests pass; the slice test fails (expected); exit 8 = empty lane in some project
 dotnet format --verify-no-changes
 node scripts/check-deps.mjs                             # the package and edges are declared (once the deps-graph PR #92 merges)
 ```

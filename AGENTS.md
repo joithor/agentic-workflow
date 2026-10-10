@@ -86,9 +86,12 @@ scorer audit [--since 60d; default 1d] [--items FILE] [--max-size XS] [--label N
 
 # C# build (in progress; the merge-gate lines below apply once src/ has projects)
 dotnet build -warnaserror               # Whole solution (AgenticWorkflow.slnx); zero warnings
-dotnet test --filter-trait "Lane=unit"  # Unit lane (< 10 s per package); xUnit v3 on Microsoft.Testing.Platform
-dotnet test --filter-trait "Lane=integration"   # Temp SQLite files, WebApplicationFactory (< 60 s per package)
-dotnet test --filter-not-trait "Lane=heavy"     # Everything except containers, browsers and index builds
+# Lane runs (xUnit v3 on Microsoft.Testing.Platform, MTP options only). Exit 8 = no test matched the filter in some
+# project (e.g. an integration-only project in the unit lane): ignored for filtered runs only. The unfiltered
+# `dotnet test --solution AgenticWorkflow.slnx` keeps exit 8 as a failure.
+dotnet test --solution AgenticWorkflow.slnx --filter-trait "Lane=unit" --ignore-exit-code 8          # Unit lane (< 10 s per package)
+dotnet test --solution AgenticWorkflow.slnx --filter-trait "Lane=integration" --ignore-exit-code 8   # Temp SQLite files, WebApplicationFactory (< 60 s per package)
+dotnet test --solution AgenticWorkflow.slnx --filter-not-trait "Lane=heavy" --ignore-exit-code 8     # Everything except containers, browsers and index builds
 dotnet format --verify-no-changes       # Style and analyzer fixes are applied (CI and pre-commit)
 scripts/dotnet-verify-packages.sh       # Lock files present and unchanged, signature-verified locked restore, dotnet nuget verify --all
 # Add a package: /new-package (spec docs/csharp/scaffolds/new-package.md)

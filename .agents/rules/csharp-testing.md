@@ -23,7 +23,7 @@ Each rule names the check that enforces it. "Gap — R1b" means the check doesn'
 |---|---|
 | Red test committed before the code | Commit history (the `/specToProvenPR` red-commit rule); review |
 | Every test has exactly one `Lane` trait | Gap — R1b. Planned check: a reflection test in `Aw.Architecture.Tests` that loads every `Aw.*.Tests` assembly and fails on any `[Fact]`/`[Theory]` with zero or several `Lane` traits, plus a CI step asserting the unfiltered test count equals the sum of the three lane counts |
-| Lane budgets (below) | Gap — R1b. Planned check: the CI lane job times `dotnet test --filter-trait "Lane=<lane>"` per test project and fails over the budget, printing the rule id, the measured seconds, the limit and the project |
+| Lane budgets (below) | Gap — R1b. Planned check: the CI lane job times `dotnet test --solution AgenticWorkflow.slnx --filter-trait "Lane=<lane>" --ignore-exit-code 8` per test project and fails over the budget, printing the rule id, the measured seconds, the limit and the project |
 | No mocking libraries | Not in `Directory.Packages.props`; review rejects them |
 | A fake and its SQL implementation pass the same contract tests | The contract-test base (per port); review checks every new port has one |
 | Architecture rules (§4b.1) | ArchUnitNET in `tests/Aw.Architecture.Tests` (gap — R1b until it exists) |
@@ -62,9 +62,11 @@ public void StartItem_parks_when_budget_is_exhausted() { … }
 Run a lane (xUnit v3 on Microsoft.Testing.Platform, which needs `"test": { "runner": "Microsoft.Testing.Platform" }` in `global.json`):
 
 ```bash
-dotnet test --filter-trait "Lane=unit"
-dotnet test --filter-not-trait "Lane=heavy"
+dotnet test --solution AgenticWorkflow.slnx --filter-trait "Lane=unit" --ignore-exit-code 8
+dotnet test --solution AgenticWorkflow.slnx --filter-not-trait "Lane=heavy" --ignore-exit-code 8
 ```
+
+Exit code 8 means a test project had no test in the filtered lane (an integration-only project in the unit lane, for example). It is fine **only for filtered runs**, hence `--ignore-exit-code 8` there. The unfiltered `dotnet test --solution AgenticWorkflow.slnx` keeps 8 as a failure: a project with no tests at all is a mistake.
 
 The test framework is xUnit v3 unless the AOT spike picks TUnit (decision R7, `docs/readiness/aot-spike.md`, written by the R1a spike); if it changes, this section changes with it.
 

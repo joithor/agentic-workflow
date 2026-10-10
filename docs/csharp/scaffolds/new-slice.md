@@ -172,7 +172,7 @@ and `CA1515` for test projects, with `GenerateDocumentationFile=true` and `CS159
 ```bash
 dotnet format analyzers src/<Pkg>/Aw.<Pkg>.Features --diagnostics RS0016   # PublicAPI lines for the new records
 dotnet build -warnaserror                                         # 0 warnings
-dotnet test --filter-trait "Lane=unit"                            # exactly one failure: <Slice>Tests.<Slice>_<behavior>
+dotnet test --solution AgenticWorkflow.slnx --filter-trait "Lane=unit" --ignore-exit-code 8   # exactly one failure: <Slice>Tests.<Slice>_<behavior>; exit 8 = empty lane in some project
 dotnet format --verify-no-changes
 ```
 
