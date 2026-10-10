@@ -11,8 +11,9 @@ namespace Aw.Analyzers;
 /// the type (an array element or any type argument, so tuples and dictionaries too), or a <see cref="string"/> whose
 /// member is named as an id ('id', '…Id', '…Ids'), also inside an array, a nullable or a one-argument generic such as
 /// 'IReadOnlyList&lt;T&gt;'. A typed id's own members (it implements 'ITypedId&lt;,&gt;' or carries Vogen's
-/// '[ValueObject]') wrap the primitive and are allowed. An override or interface implementation is reported at its
-/// base when that base is reported (public, in this assembly, and raw itself); otherwise at the implementation.
+/// '[ValueObject]') wrap the primitive and are allowed. A slot of an override or interface implementation (its
+/// return or a parameter) is reported at the base when the base reports the same slot (public, in this assembly, raw
+/// in its own declaration); otherwise at the implementation.
 /// </summary>
 [DiagnosticAnalyzer(LanguageNames.CSharp)]
 internal sealed class RawIdAnalyzer : DiagnosticAnalyzer
@@ -46,61 +47,57 @@ internal sealed class RawIdAnalyzer : DiagnosticAnalyzer
         }
 
         var raw = RawSlots(member);
-        if (raw.Count == 0 || InheritedShape.Bases(member).Any(b => ReportedAt(b, context.Compilation.Assembly)))
+        if (raw.Count == 0)
         {
             return;
         }
 
-        foreach (var (kind, name, location) in raw)
+        // A slot its base reports too (the same position, raw in the base's own declaration) is reported there only.
+        var reportedAtBase = new HashSet<int>(InheritedShape.Bases(member)
+            .Where(b => SymbolEqualityComparer.Default.Equals(b.ContainingAssembly, context.Compilation.Assembly) && IsPublicSurface(b))
+            .SelectMany(b => RawSlots(b.OriginalDefinition).Select(slot => slot.Position)));
+        foreach (var slot in raw.Where(slot => !reportedAtBase.Contains(slot.Position)))
         {
-            context.ReportDiagnostic(Diagnostic.Create(AwDiagnostics.RawId, location, name, kind, assembly));
+            context.ReportDiagnostic(Diagnostic.Create(AwDiagnostics.RawId, slot.Location, slot.Name, slot.Kind, assembly));
         }
     }
 
-    // A base that this rule reports itself: public surface in this assembly, with a raw id in its own declaration.
-    private static bool ReportedAt(ISymbol baseMember, IAssemblySymbol assembly) =>
-        SymbolEqualityComparer.Default.Equals(baseMember.ContainingAssembly, assembly)
-        && IsPublicSurface(baseMember)
-        && RawSlots(baseMember.OriginalDefinition).Count > 0;
-
-    // Every raw id in the member's signature: (kind, name, location).
-    private static List<(string Kind, string Name, Location Location)> RawSlots(ISymbol member)
+    // Every raw id in the member's signature. Position: -1 for the member's own type (return, property, field,
+    // event), i for parameter i, so an implementation's slots line up with its base's.
+    private static List<(int Position, string Kind, string Name, Location Location)> RawSlots(ISymbol member)
     {
-        var slots = new List<(string, string, Location)>();
-        void Add(ITypeSymbol type, string name, ImmutableArray<Location> locations)
+        var slots = new List<(int, string, string, Location)>();
+        foreach (var (position, type, name, locations) in Slots(member))
         {
             var kind = RawIdKind(type, name);
             if (kind is not null && !locations.IsEmpty)
             {
-                slots.Add((kind, name, locations[0]));
+                slots.Add((position, kind, name, locations[0]));
             }
-        }
-
-        foreach (var (type, name, locations) in Slots(member))
-        {
-            Add(type, name, locations);
         }
 
         return slots;
     }
 
-    private static IEnumerable<(ITypeSymbol Type, string Name, ImmutableArray<Location> Locations)> Slots(ISymbol member) => member switch
+    private static IEnumerable<(int Position, ITypeSymbol Type, string Name, ImmutableArray<Location> Locations)> Slots(ISymbol member) => member switch
     {
         IMethodSymbol method when method.MethodKind is MethodKind.Ordinary or MethodKind.Constructor => MethodSlots(method, method.Name, method.Locations),
         IPropertySymbol property when !IsRecordPositional(property) =>
-            property.Parameters.Select(p => (p.Type, p.Name, p.Locations)).Prepend((property.Type, property.Name, property.Locations)),
-        IFieldSymbol field => [(field.Type, field.Name, field.Locations)],
-        IEventSymbol @event => [(@event.Type, @event.Name, @event.Locations)],
-        INamedTypeSymbol { DelegateInvokeMethod: { } invoke } => MethodSlots(invoke, invoke.Name, []),
+            Parameters(property.Parameters).Prepend((-1, property.Type, property.Name, property.Locations)),
+        IFieldSymbol field => [(-1, field.Type, field.Name, field.Locations)],
+        IEventSymbol @event => [(-1, @event.Type, @event.Name, @event.Locations)],
+        INamedTypeSymbol { DelegateInvokeMethod: { } invoke } type => MethodSlots(invoke, type.Name, type.Locations),
         _ => [],
     };
 
-    private static IEnumerable<(ITypeSymbol, string, ImmutableArray<Location>)> MethodSlots(
-        IMethodSymbol method, string name, ImmutableArray<Location> returnLocations)
-    {
-        var parameters = method.Parameters.Select(p => (p.Type, p.Name, p.Locations));
-        return method.ReturnsVoid ? parameters : parameters.Prepend((method.ReturnType, name, returnLocations));
-    }
+    private static IEnumerable<(int, ITypeSymbol, string, ImmutableArray<Location>)> MethodSlots(
+        IMethodSymbol method, string name, ImmutableArray<Location> returnLocations) =>
+        method.ReturnsVoid
+            ? Parameters(method.Parameters)
+            : Parameters(method.Parameters).Prepend((-1, method.ReturnType, name, returnLocations));
+
+    private static IEnumerable<(int, ITypeSymbol, string, ImmutableArray<Location>)> Parameters(ImmutableArray<IParameterSymbol> parameters) =>
+        parameters.Select(p => (p.Ordinal, p.Type, p.Name, p.Locations));
 
     // "Guid" or "string" when the type is a raw id under this member name, else null.
     private static string? RawIdKind(ITypeSymbol type, string name)
