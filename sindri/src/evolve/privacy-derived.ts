@@ -7,6 +7,7 @@ import { indexPath, type IndexDb } from "../index/db.js";
 import { readBuiltIndex, readIndex } from "../index/health.js";
 import type { LoadedProfile } from "../profile/load.js";
 import { stripInvisible, WHITESPACE } from "./invisible.js";
+import { NAME_JOINER } from "./privacy.js";
 
 // Layer 3 of the publish gate (spec §5.4): code identifiers from private repos' indexes, minus English
 // words and the toolkit's own vocabulary. Built in memory at publish; never written, logged or printed.
@@ -17,9 +18,11 @@ const IDENT = /[\p{L}_$][\p{L}\p{N}_$]*/gu;
 
 export const wordsFile = (deps: Deps): string => deps.env.SINDRI_WORDS ?? "/usr/share/dict/words";
 
-// A name spelled with separators: identifier characters joined by `-` or `.` (`nova-ledger`, `order_sync_worker`,
-// `pkg.name`). Its joined form drops every character that isn't a letter or a digit.
-const SPELLED = /[\p{L}\p{N}_$]+(?:[-.][\p{L}\p{N}_$]+)*/gu;
+// A name spelled with separators: parts joined by any NAME_JOINER (`nova-ledger`, `nova\u2011ledger`,
+// `order_sync_worker`, `pkg.name`), the same class on the derived set's side and the candidate's. Its joined form drops
+// every character that isn't a letter or a digit.
+const PART = "[\\p{L}\\p{N}$]+";
+const SPELLED = new RegExp(`${PART}(?:${NAME_JOINER.source}+${PART})*`, "gu");
 const joinedForm = (run: string): string => run.replace(/[^\p{L}\p{N}]/gu, "");
 
 // NFKD, invisibles and combining marks (\p{M}) removed, lowercased: a decomposed or precomposed accent, fullwidth
@@ -41,11 +44,14 @@ export function vocabularyOf(db: IndexDb): Set<string> {
   return out;
 }
 
-// Each directory and the basename without extension of each path, as identifier tokens.
+// Each directory (whole: a dot in `nova.ledger/` joins a name, it isn't an extension) and the basename without its
+// extension of each path, as identifier tokens.
 export function pathVocabulary(paths: readonly string[]): Set<string> {
   const out = new Set<string>();
   for (const p of paths) {
-    for (const seg of p.split("/")) identifierTokens(seg.slice(0, seg.length - path.posix.extname(seg).length)).forEach((t) => out.add(t));
+    const segs = p.split("/");
+    const base = segs.pop() as string;
+    for (const seg of [...segs, base.slice(0, base.length - path.posix.extname(base).length)]) identifierTokens(seg).forEach((t) => out.add(t));
   }
   return out;
 }

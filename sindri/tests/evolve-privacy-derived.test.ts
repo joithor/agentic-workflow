@@ -5,6 +5,7 @@ import { describe, expect, it } from "vitest";
 import { indexPath, openIndex, type IndexDb } from "../src/index/db.js";
 import { buildDerivedSet, identifierProblem, identifierTokens, loadDerivedSet, privateRepos, unsetPrivateRepos, vocabularyOf, wordsFile } from "../src/evolve/privacy-derived.js";
 import { SindriError } from "../src/errors.js";
+import { NAME_JOINER, termProblem } from "../src/evolve/privacy.js";
 import { seedCorruptIndex, seedIndex } from "./index-fixtures.js";
 import { git, gitRepo, makeDeps, tempDir } from "./helpers.js";
 
@@ -69,6 +70,27 @@ describe("identifier folding across separators (security-sentinel-1)", () => {
       expect(identifierProblem(`the change ${spelling} here`, d)).toBe("contains a private-repo identifier");
     }
     expect(identifierProblem("a nova ledger, two words", d)).toBeNull(); // two separate words stay out of scope
+  });
+
+  it("joins parts across every Unicode dash, `.`, `_`, a middle dot and a hyphenation point, on both sides (run 4 security-sentinel-0)", () => {
+    const d = derivedFrom({ files: ["packages/nova-ledger/src/main.ts"] });
+    const joiners = ["\u2010", "\u2011", "\u2012", "\u2013", "\u2014", "\u2015", "\u2212", "\ufe63", "\uff0d", "\u2e3a", ".", "_", "\u00b7", "\u2027", "--"];
+    for (const j of joiners) expect(identifierProblem(`the change nova${j}ledger here`, d), JSON.stringify(j)).toBe("contains a private-repo identifier");
+    for (const j of joiners) {
+      const set = derivedFrom({ files: [`packages/nova${j}ledger/src/main.ts`] }); // the set side folds the same way
+      expect(identifierProblem("the change nova-ledger here", set), JSON.stringify(j)).toBe("contains a private-repo identifier");
+    }
+    expect(identifierProblem("see nova/ledger", d)).toBeNull(); // `/` stays a path-segment boundary
+    expect(identifierProblem("a nova\u2009ledger", d)).toBeNull(); // so does a space
+    for (const c of ["/", " ", ":"]) expect(NAME_JOINER.test(c), JSON.stringify(c)).toBe(false);
+  });
+
+  it("uses the same joiners as the terms layer, which also folds each of them (run 4 security-sentinel-0)", () => {
+    for (const c of ["-", "\u2010", "\u2011", "\u2013", "\u2014", "\u2212", ".", "_", "\u00b7", "\u2027"]) {
+      expect(NAME_JOINER.test(c), JSON.stringify(c)).toBe(true);
+      expect(termProblem(`the acme${c}care desk`, ["Acme Care"]), JSON.stringify(c)).toBe("contains a private term");
+      expect(identifierTokens(`quarble${c}rota`), JSON.stringify(c)).toContain("quarblerota");
+    }
   });
 
   it("matches snake_case against camelCase both ways", () => {

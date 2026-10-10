@@ -34,6 +34,12 @@ export function normalizeForPrivacy(text: string): string {
 // "acme care", "acme-care", "acme\u2011care", "acme/care", "AcmeCare" all join to "acmecare".
 const SEPARATORS = /[^\p{L}\p{N}]+/gu;
 
+// The characters that join the parts of one written name: every Unicode dash (\p{Pd}, which NFKD leaves apart from
+// `-`: U+2010, U+2011, U+2013, U+2014, ...), the minus sign, `.`, `_`, the middle dot and the hyphenation point. The
+// identifiers layer joins parts across exactly these (a space or a `/` still separates two names there); the terms
+// layer's SEPARATORS above is a superset, so both layers fold each of them (run 4 security-sentinel-0).
+export const NAME_JOINER = /[\p{Pd}\u2212._\u00B7\u2027]/u;
+
 // Whole words; and a term with separators also matches with them removed on both sides, so every joined or
 // re-separated spelling holds without the owner listing it (holds only: a false positive such as "acme carefully"
 // is accepted). A term without separators stays whole-word: "acme" doesn't hold "acmeville". A case boundary in the term
