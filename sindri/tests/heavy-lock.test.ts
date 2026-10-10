@@ -298,6 +298,34 @@ describe("heavy-job lock", () => {
     expect(fs.existsSync(`${dir}.reclaim`)).toBe(false);
   });
 
+  it("backs off when the replacement dir reuses the checked dir's inode number (Linux does at once)", async () => {
+    const d = makeDeps({ system: fakeSystem({ pidAlive: (p) => p !== 999 }) });
+    const root = awStateDir(d);
+    const dir = heavyLockDir(root, d.env);
+    fs.mkdirSync(dir, { recursive: true });
+    fs.writeFileSync(holderPath(root), JSON.stringify({ kind: "index-build", pid: 999, host: "test-host", startedAt: "t" }));
+    const ino = fs.statSync(dir).ino;
+    const realMkdir = fs.mkdirSync;
+    const realRename = fs.renameSync;
+    const realStat = fs.statSync;
+    // Another process removes the dead holder's dir and takes the lock between the recheck and the rename.
+    vi.spyOn(fs, "renameSync").mockImplementationOnce(((from: fs.PathLike, to: fs.PathLike) => {
+      fs.rmSync(from, { recursive: true, force: true });
+      realMkdir(from);
+      realRename(from, to);
+    }) as typeof fs.renameSync);
+    // The new dir gets the freed inode number, as it would on Linux.
+    vi.spyOn(fs, "statSync").mockImplementation(((p: fs.PathLike, o?: fs.StatSyncOptions) => {
+      const st = realStat(p, o);
+      return st !== undefined && String(p).includes(".stale-") ? Object.assign(st, { ino }) : st;
+    }) as typeof fs.statSync);
+    await expect(withHeavyLock(d, "x", 0, async () => 1)).rejects.toThrow("the heavy-job lock is busy");
+    vi.restoreAllMocks();
+    expect(fs.existsSync(dir)).toBe(true);
+    expect(fs.readdirSync(dir)).toEqual([]);
+    expect(fs.readdirSync(path.dirname(dir)).filter((n) => n.includes(".stale-"))).toEqual([]);
+  });
+
   it("keeps the mutex until the holder is written, frees the dir when that write fails, and never removes another taker's mutex", async () => {
     const d = makeDeps({ system: fakeSystem({ pidAlive: (p) => p !== 999 }) });
     const root = awStateDir(d);
