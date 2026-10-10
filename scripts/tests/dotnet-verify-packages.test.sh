@@ -23,7 +23,13 @@ cat > "$FAKE" <<'FAKE_EOF'
 #!/usr/bin/env bash
 echo "$* | CI=${CI:-} SIGVERIFY=${DOTNET_NUGET_SIGNATURE_VERIFICATION:-}" >> "$FAKE_LOG"
 case "$1 ${2:-}" in
-  "restore "*) if [ -n "${FAKE_RESTORE_EDIT:-}" ]; then echo '{"changed":true}' > "$FAKE_RESTORE_EDIT"; fi; exit "${FAKE_RESTORE_EXIT:-0}" ;;
+  "restore "*)
+    if [ -n "${FAKE_RESTORE_FAIL_ONCE:-}" ] && [ ! -e "$FAKE_RESTORE_FAIL_ONCE" ]; then
+      touch "$FAKE_RESTORE_FAIL_ONCE"
+      echo "error NU1900: Error occurred while getting package vulnerability data: The SSL connection could not be established."
+      exit 1
+    fi
+    if [ -n "${FAKE_RESTORE_EDIT:-}" ]; then echo '{"changed":true}' > "$FAKE_RESTORE_EDIT"; fi; exit "${FAKE_RESTORE_EXIT:-0}" ;;
   "nuget locals") echo "global-packages: $FAKE_PKGS/"; exit 0 ;;
   "nuget verify") printf '%b' "${FAKE_VERIFY_OUT:-}"; exit "${FAKE_VERIFY_EXIT:-0}" ;;
 esac
@@ -43,7 +49,7 @@ new_repo() {
   echo '<Solution />' > "$REPO/AgenticWorkflow.slnx"
   echo '<configuration />' > "$REPO/nuget.config"
   export FAKE_LOG="$WORK/fake-$RANDOM.log"; : > "$FAKE_LOG"
-  unset FAKE_RESTORE_EDIT FAKE_VERIFY_EXIT FAKE_VERIFY_OUT FAKE_RESTORE_EXIT
+  unset FAKE_RESTORE_EDIT FAKE_VERIFY_EXIT FAKE_VERIFY_OUT FAKE_RESTORE_EXIT FAKE_RESTORE_FAIL_ONCE
 }
 add_project() { # name, with-lock(yes|no), dir (default src), in-solution(yes|no, default yes)
   local dir="${3:-src}"
@@ -163,11 +169,20 @@ run
 check "corrupt lock: exit 1" "$CODE" "1"
 check "corrupt lock: says it can't read the lock files" "$(echo "$OUT" | grep -c 'cannot read lock files')" "1"
 
-# --- a failed restore fails ---
+# --- a failed restore fails, after exactly one retry ---
 new_repo; add_project Demo.Core yes
 export FAKE_RESTORE_EXIT=1
 run
 check "restore failure: exit 1" "$CODE" "1"
+check "restore failure: tried twice" "$(grep -c '^restore' "$FAKE_LOG")" "2"
+
+# --- an advisory-feed outage (NU1900) on the first restore is retried once and then passes ---
+new_repo; add_project Demo.Core yes
+export FAKE_RESTORE_FAIL_ONCE="$WORK/failed-once-$RANDOM"
+run
+check "NU1900 then success: exit 0" "$CODE" "0"
+check "NU1900 then success: restore ran twice" "$(grep -c '^restore' "$FAKE_LOG")" "2"
+check "NU1900 then success: says it retried" "$(echo "$OUT" | grep -c 'retrying once')" "1"
 
 # --- allowed codes plus a failing line with no code: fails closed ---
 new_repo; add_project Demo.Core yes
