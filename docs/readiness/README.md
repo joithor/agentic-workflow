@@ -9,6 +9,7 @@ Agent-readiness measurements for this repo (spec: `docs/superpowers/specs/2026-1
 | `src/Readiness/` | `Aw.Readiness`: the `aw-readiness` NativeAOT CLI (`Aw.Readiness.Core` + `Aw.Readiness.App`) |
 | `baseline-2026-10.md` | The R0 baseline of the TS apps, from the throwaway `scripts/readiness-baseline.mjs` |
 | `aot-spike.md` | The R1a AOT spike (R7, R8, R9) |
+| `r2-estimate.md` | The R2 estimate fixed at the R1b exit: per-packet hours from the template packages' measured throughput, and the §10 stop-rule thresholds |
 
 ## aw-readiness check
 
