@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- Aw.Readiness.Testing (scaffolded by /new-package): builders, in-memory fakes and contract bases for Readiness's
+       ports (spec §4b.5). Test support: only *.Tests and *.Testing projects reference it. -->
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <RootNamespace>Aw.Readiness.Testing</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../../src/Readiness/Aw.Readiness.Core/Aw.Readiness.Core.csproj" />
+    <ProjectReference Include="../../src/Readiness/Aw.Readiness.App/Aw.Readiness.App.csproj" />
+    <ProjectReference Include="../Aw.Kernel.Testing/Aw.Kernel.Testing.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="Aw.Readiness.Tests" />
+  </ItemGroup>
+</Project>

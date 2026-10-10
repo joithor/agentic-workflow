@@ -373,7 +373,7 @@ edges:
   - from: Readiness
     to: Kernel
     kind: project
-    status: planned
+    status: current
     note: "Result, JSON"
   - from: Scorer
     to: Kernel

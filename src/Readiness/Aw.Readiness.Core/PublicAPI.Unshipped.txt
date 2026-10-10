@@ -1,0 +1,6 @@
+#nullable enable
+Aw.Readiness.Core.ReadinessCoreServiceCollectionExtensions
+Aw.Readiness.Core.ReadinessErrors
+static Aw.Readiness.Core.ReadinessCoreServiceCollectionExtensions.AddReadinessCore(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
+static Aw.Readiness.Core.ReadinessErrors.All.get -> System.Collections.Generic.IReadOnlyList<Aw.Kernel.ErrorDefinition!>!
+static readonly Aw.Readiness.Core.ReadinessErrors.Invalid -> Aw.Kernel.ErrorDefinition!
