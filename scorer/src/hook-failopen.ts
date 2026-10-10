@@ -12,27 +12,53 @@ export interface FailOpenRow {
   last: string;
 }
 
-const EventSchema = z.object({ ts: z.string(), event: z.literal("HOOK-FAILOPEN"), hook: z.string(), cause: z.string() });
+// The log is untrusted input (anything running as the user can append to it),
+// so the schema mirrors the writer's contract exactly: a word from
+// [A-Za-z0-9._:-] for hook and cause, and an ISO-8601 UTC timestamp. Anything
+// else is dropped, so a line can't break or forge the Markdown table.
+const WORD = /^[A-Za-z0-9._:-]{1,80}$/;
+const ISO_Z = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z$/;
+const EventSchema = z.object({
+  ts: z.string().regex(ISO_Z),
+  event: z.literal("HOOK-FAILOPEN"),
+  hook: z.string().regex(WORD),
+  cause: z.string().regex(WORD),
+});
+type FailOpenEvent = z.infer<typeof EventSchema>;
 
-// Reads hooks/failopen.log (JSONL), tolerating unparseable lines, and groups
-// the events in [since, until] by hook and cause, most frequent first.
+function parseEvent(line: string): FailOpenEvent | null {
+  try {
+    const parsed = EventSchema.safeParse(JSON.parse(line));
+    return parsed.success ? parsed.data : null;
+  } catch {
+    return null;
+  }
+}
+
+// An unreadable log (a directory, no permission) yields no lines rather than
+// failing the whole daily report.
+function readLines(file: string): string[] {
+  try {
+    return fs.readFileSync(file, "utf8").split("\n");
+  } catch {
+    return [];
+  }
+}
+
+// Reads logs/failopen.log and its rotated predecessor failopen.log.1 (JSONL),
+// tolerating unparseable lines, and groups the events in [since, until] by
+// hook and cause, most frequent first.
 export function readFailOpenLog(file: string, since: Date, until: Date): FailOpenRow[] {
-  if (!fs.existsSync(file)) return [];
   const rows = new Map<string, FailOpenRow>();
-  for (const line of fs.readFileSync(file, "utf8").split("\n")) {
-    let parsed;
-    try {
-      parsed = EventSchema.safeParse(JSON.parse(line));
-    } catch {
-      continue;
-    }
-    if (!parsed.success) continue;
-    const e = parsed.data;
+  for (const line of [...readLines(`${file}.1`), ...readLines(file)]) {
+    const e = parseEvent(line);
+    if (e === null) continue;
     const at = Date.parse(e.ts);
     if (Number.isNaN(at) || at < since.getTime() || at > until.getTime()) continue;
     const key = `${e.hook}\t${e.cause}`;
     const row = rows.get(key) ?? { hook: e.hook, cause: e.cause, events: 0, last: e.ts };
     row.events += 1;
+    // ts strings share one fixed ISO-Z format (checked above), so they order lexically.
     if (e.ts > row.last) row.last = e.ts;
     rows.set(key, row);
   }

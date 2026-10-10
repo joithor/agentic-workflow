@@ -20,8 +20,8 @@ function setup(lines: string[]): CliOptions {
 describe("runReport", () => {
   it("lists the state dir's HOOK-FAILOPEN events in the report and its JSON", async () => {
     const options = setup([user("hi", { ts: "2026-09-26T10:00:00.000Z" })]);
-    fs.mkdirSync(path.join(options.stateDir, "hooks"), { recursive: true });
-    fs.writeFileSync(path.join(options.stateDir, "hooks", "failopen.log"),
+    fs.mkdirSync(path.join(options.stateDir, "logs"), { recursive: true });
+    fs.writeFileSync(path.join(options.stateDir, "logs", "failopen.log"),
       `${JSON.stringify({ ts: "2026-09-26T09:00:00Z", event: "HOOK-FAILOPEN", hook: "send-gate", cause: "judge-exit-127", provider: "claude" })}\n`);
     const result = await runReport(options, { lookup: async () => "MERGED", log: () => undefined });
     expect(fs.readFileSync(result.markdownPath, "utf8")).toContain("| send-gate | judge-exit-127 | 1 | 2026-09-26T09:00:00Z |");

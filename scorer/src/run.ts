@@ -104,7 +104,7 @@ export async function runReport(options: CliOptions, deps: RunDeps): Promise<Run
     const outboxState = readOutboxState(path.join(options.stateDir, "judge", "outbox"));
     const metrics = computeMetrics(db, options.since, options.until, firesLog, uiEvidenceRuns, outboxState, providers);
     const judgeRows = readJudgeRows(options.since.toISOString(), deps.judgeDbPath);
-    const failOpen = readFailOpenLog(path.join(options.stateDir, "hooks", "failopen.log"), options.since, options.until);
+    const failOpen = readFailOpenLog(path.join(options.stateDir, "logs", "failopen.log"), options.since, options.until);
     const day = options.until.toISOString().slice(0, 10);
     const markdownPath = path.join(reportsDir, `${day}.md`);
     const jsonPath = path.join(reportsDir, `${day}.json`);
