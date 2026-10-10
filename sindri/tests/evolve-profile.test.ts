@@ -23,7 +23,7 @@ describe("ledger v4", () => {
   it("upgrades a v3 ledger with rows to v4, keeps the rows and writes .bak-v3", () => {
     const file = path.join(tempDir(), "ledger.db");
     const v3 = openLedger(file);
-    v3.exec("DROP TABLE artifacts; DROP TABLE suite_runs; DROP TABLE proposals; DROP TABLE comparisons; DROP TABLE hook_samples; DROP TABLE adoptions; DROP TABLE evolve_audit;");
+    v3.exec("DROP TABLE artifacts; DROP TABLE suite_runs; DROP TABLE proposals; DROP TABLE comparisons; DROP TABLE hook_samples; DROP TABLE adoptions; DROP TABLE evolve_audit; DROP TABLE proposal_public;");
     v3.pragma("user_version = 3");
     v3.prepare(
       "INSERT INTO items (source, id, title, state, content_hash, first_seen, last_seen, epoch) VALUES ('s', 'i1', 'T', 'open', 'h', 't0', 't1', 0)",

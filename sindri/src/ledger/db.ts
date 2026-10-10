@@ -146,6 +146,13 @@ const MIGRATIONS: readonly string[] = [
     seq INTEGER PRIMARY KEY AUTOINCREMENT, ts TEXT NOT NULL, verb TEXT NOT NULL, actor TEXT NOT NULL, detail TEXT NOT NULL, epoch INTEGER NOT NULL
   );
   `,
+  // v5: the generalized proposal publish renders (evolve privacy B1).
+  `
+  CREATE TABLE proposal_public (
+    proposal_id TEXT PRIMARY KEY REFERENCES proposals(id), body TEXT NOT NULL, judge_category TEXT NOT NULL, model TEXT NOT NULL,
+    created_at TEXT NOT NULL, epoch INTEGER NOT NULL
+  );
+  `,
 ];
 
 export const LEDGER_SCHEMA_VERSION = MIGRATIONS.length;

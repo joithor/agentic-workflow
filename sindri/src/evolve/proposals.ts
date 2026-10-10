@@ -130,6 +130,17 @@ export function getProposal(db: Ledger, id: string): StoredProposal | null {
     : { id: r.id, artifact: r.artifact_id, source: r.source, tier: r.tier, status: r.status, createdAt: r.created_at, updatedAt: r.updated_at, proposal: ProposalSchema.parse(JSON.parse(r.body)) };
 }
 
+// The generalized version publish renders (privacy spec 5.1). The original stays in `proposals`, local only.
+export function savePublic(db: Ledger, id: string, p: Proposal, o: { category: string; model: string }, epoch: number, now: Date): void {
+  db.prepare("INSERT OR REPLACE INTO proposal_public (proposal_id, body, judge_category, model, created_at, epoch) VALUES (?, ?, ?, ?, ?, ?)")
+    .run(id, JSON.stringify(scrubber.scrubDeep(p)), o.category, o.model, now.toISOString(), epoch);
+}
+
+export function getPublic(db: Ledger, id: string): Proposal | null {
+  const r = db.prepare("SELECT body FROM proposal_public WHERE proposal_id = ?").get(id) as { body: string } | undefined;
+  return r === undefined ? null : ProposalSchema.parse(JSON.parse(r.body));
+}
+
 export function listProposals(db: Ledger, statuses?: readonly ProposalStatus[]): { id: string; artifact: string; tier: Tier; status: ProposalStatus; title: string; source: string; createdAt: string }[] {
   const where = statuses === undefined ? "" : `WHERE status IN (${statuses.map(() => "?").join(",")})`;
   const rows = db.prepare(`SELECT id, artifact_id, tier, status, title, source, created_at FROM proposals ${where} ORDER BY created_at, id`).all(...(statuses ?? [])) as

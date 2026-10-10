@@ -20,6 +20,22 @@ function ctx(db: ReturnType<typeof openMemoryLedger>, now = "2026-10-08T12:00:00
   return { epoch: currentEpoch(db), tickId: "tick-1", now: new Date(now), scrubber: makeScrubber() };
 }
 
+describe("ledger v5 (privacy B1)", () => {
+  it("adds proposal_public and backs up a v4 ledger as .bak-v4", () => {
+    const file = path.join(tempDir(), "ledger.db");
+    const v4 = openLedger(file);
+    v4.exec("DROP TABLE proposal_public;");
+    v4.pragma("user_version = 4");
+    v4.close();
+    const v5 = openLedger(file);
+    expect(schemaVersion(v5)).toBe(5);
+    expect(LEDGER_SCHEMA_VERSION).toBe(5);
+    expect(fs.existsSync(`${file}.bak-v4`)).toBe(true);
+    expect(v5.prepare("SELECT name FROM sqlite_master WHERE name = 'proposal_public'").get()).toBeDefined();
+    v5.close();
+  });
+});
+
 describe("ledger db", () => {
   it("creates a WAL ledger with private permissions and migrates idempotently", () => {
     const dir = path.join(tempDir(), "sindri");

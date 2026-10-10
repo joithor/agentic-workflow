@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import { discover, isAddedTestAllowed, isEvalMachinery } from "../src/evolve/registry.js";
-import { classifyTier, findMerged, getProposal, inFlightCount, listProposals, parseEach, ProposalSchema, reduceEvidence, renderSaved, saveProposal, setTier, type Proposal } from "../src/evolve/proposals.js";
+import { classifyTier, findMerged, getProposal, inFlightCount, listProposals, parseEach, ProposalSchema, reduceEvidence, renderSaved, saveProposal, savePublic, getPublic, setTier, type Proposal } from "../src/evolve/proposals.js";
 import { realGitRunner } from "../src/git-real.js";
 import { bumpEpoch, openMemoryLedger } from "../src/ledger/db.js";
 import { git, setStatus } from "./evolve-fixtures.js";
@@ -214,5 +214,33 @@ describe("proposal storage, dedupe and merge tracking", () => {
     expect(await findMerged(db, realGitRunner(), root, "main")).toEqual([]);
     expect(getProposal(db, a)?.status).toBe("merged");
     expect(getProposal(db, b)?.status).toBe("published");
+  });
+});
+
+describe("proposal_public (privacy B1)", () => {
+  const now = new Date("2026-10-08T00:00:00Z");
+  const setup = () => {
+    const db = openMemoryLedger();
+    return { db, epoch: bumpEpoch(db) };
+  };
+
+  it("stores and replaces the generalized version beside the original, which stays unchanged", () => {
+    const { db, epoch } = setup();
+    const p = prop({ title: "Original title here" });
+    const { id } = saveProposal(db, p, "reflect:pr-1", "code", epoch, now);
+    expect(getPublic(db, id)).toBeNull();
+    savePublic(db, id, { ...p, title: "Generic title here" }, { category: "none", model: "opus" }, epoch, new Date(0));
+    savePublic(db, id, { ...p, title: "Second generic title" }, { category: "none", model: "opus" }, epoch, new Date(1));
+    expect(getPublic(db, id)?.title).toBe("Second generic title");
+    expect(getProposal(db, id)?.proposal.title).toBe("Original title here");
+  });
+
+  it("scrubs the generalized body", () => {
+    const { db, epoch } = setup();
+    const secret = "AKIA" + "ABCDEFGHIJKLMNOP";
+    const p = prop();
+    const { id } = saveProposal(db, p, "reflect:pr-1", "code", epoch, now);
+    savePublic(db, id, { ...p, rationale: `because ${secret}` }, { category: "none", model: "opus" }, epoch, now);
+    expect(JSON.stringify(getPublic(db, id))).not.toContain(secret);
   });
 });
