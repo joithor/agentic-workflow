@@ -51,5 +51,9 @@
     <!-- Architecture tests (spec §4b.5: ArchUnitNET, maintained; NetArchTest's last release was 2023). The core
          package only: the xUnit adapter pulls System.Net.Http 4.3.4. 0.13.4 published 2026-08-20. -->
     <PackageVersion Include="TngTech.ArchUnitNET" Version="[0.13.4]" />
+    <!-- Browser automation for Evidence (ui-evidence; spec §4b.6 AOT scope: framework-dependent, because Playwright for
+         .NET has no NativeAOT or trimming support). Only Aw.Evidence.Infrastructure references it. 1.63.0 published
+         2026-09-23; its browsers are installed by `ui-evidence install-browser`, never at build time. -->
+    <PackageVersion Include="Microsoft.Playwright" Version="[1.63.0]" />
   </ItemGroup>
 </Project>
