@@ -134,6 +134,8 @@ Aw.Packets.Core.Model.FreezeRecord.Hash.get -> Aw.Packets.Core.Values.PacketHash
 Aw.Packets.Core.Model.FreezeRecord.Hash.init -> void
 Aw.Packets.Core.Model.FreezeRecord.Packet.get -> Aw.Packets.Core.Ids.PacketId
 Aw.Packets.Core.Model.FreezeRecord.Packet.init -> void
+Aw.Packets.Core.Model.FreezeRecord.Repo.get -> Aw.Packets.Core.Values.RepoSlug
+Aw.Packets.Core.Model.FreezeRecord.Repo.init -> void
 Aw.Packets.Core.Model.FreezeRecord.SchemaVersion.get -> int
 Aw.Packets.Core.Model.FreezeRecord.SchemaVersion.init -> void
 Aw.Packets.Core.Model.LoadedPacket
@@ -335,6 +337,7 @@ const Aw.Packets.Core.Checks.PacketRules.UniqueIds = "PKT-ID-001" -> string!
 const Aw.Packets.Core.Checks.PacketRules.WorkflowCoverage = "PKT-FLOW-001" -> string!
 const Aw.Packets.Core.Digest.PacketDigest.Version = 1 -> int
 const Aw.Packets.Core.PacketReader.ManifestFile = "packet.json" -> string!
+const Aw.Packets.Core.PacketReader.MaxTasks = 2000 -> int
 const Aw.Packets.Core.PacketReader.SchemaVersion = 1 -> int
 override Aw.Packets.Core.Checks.CheckResult.Equals(object? obj) -> bool
 override Aw.Packets.Core.Checks.CheckResult.GetHashCode() -> int

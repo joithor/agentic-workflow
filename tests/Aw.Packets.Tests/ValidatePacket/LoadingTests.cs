@@ -119,4 +119,37 @@ public sealed class LoadingTests
                 Replace(f, file, "{\n  \"schemaVersion\"", "{\n  \"$schema\": \"x.json\",\n  \"schemaVersion\"");
             }
         }));
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task The_first_null_in_document_order_is_named()
+    {
+        var files = PacketFiles.Of(A.Packet().With(A.Task("t1").Writing("src/a.cs")).With(A.Task("t2").After("t1").Writing("src/b.cs")).Build());
+        Replace(files, "tasks.json", "\"readSeeds\": [", "\"readSeeds\": [null, ");
+        var service = new ValidatePacketService(new PacketInspector(
+            new InMemoryPacketSource().With("pkt", files),
+            new InMemoryRepoSnapshot().With(PacketBuilder.BaseSha, PacketBuilder.BaseFiles)));
+
+        var result = await service.Handle(new ValidatePacketRequest("pkt"), CancellationToken.None);
+
+        Assert.Contains("$.tasks[0].readSeeds[0]", result.Error.Message, StringComparison.Ordinal);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task A_packet_over_the_task_limit_is_AW_PACKETS_003()
+    {
+        var packet = A.Packet();
+        for (var i = 0; i <= Aw.Packets.Core.PacketReader.MaxTasks; i++)
+        {
+            _ = packet.With(A.Task("t" + i.ToString(System.Globalization.CultureInfo.InvariantCulture)).Writing("src/a.cs"));
+        }
+
+        var service = new ValidatePacketService(new PacketInspector(
+            new InMemoryPacketSource().With("pkt", PacketFiles.Of(packet.Build())),
+            new InMemoryRepoSnapshot().With(PacketBuilder.BaseSha, PacketBuilder.BaseFiles)));
+
+        var result = await service.Handle(new ValidatePacketRequest("pkt"), CancellationToken.None);
+
+        Assert.Equal("AW-PACKETS-003", result.Error.Code);
+        Assert.Contains("split", result.Error.Message, StringComparison.Ordinal);
+    }
 }

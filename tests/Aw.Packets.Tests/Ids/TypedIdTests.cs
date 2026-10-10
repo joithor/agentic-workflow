@@ -122,4 +122,11 @@ public sealed class TypedIdTests
         Assert.Null(empty.Value.Id);
         Assert.Equal(KernelErrors.Invalid.Code, bad.Error.Code);
     }
+
+    [Theory, Trait("Lane", "unit")]
+    [InlineData("../name")]
+    [InlineData("owner/..")]
+    [InlineData("./x")]
+    public void A_repo_slug_never_has_a_dot_segment(string value) =>
+        Assert.False(RepoSlug.TryParse(value, provider: null, out _));
 }

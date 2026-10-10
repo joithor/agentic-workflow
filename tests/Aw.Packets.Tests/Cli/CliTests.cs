@@ -101,12 +101,12 @@ public sealed class CliTests : IDisposable
         var (secondExit, secondOut, _) = _work.Run("freeze", packet, "--repo", _work.Repo, "--json");
 
         Assert.Equal(0, firstExit);
-        Assert.Matches("^aw-packets freeze: packet demo-packet — frozen sha256:[0-9a-f]{64} \\(packets/demo-packet/frozen/[0-9a-f]{64}\\.json\\)\n$", firstOut);
+        Assert.Matches("^aw-packets freeze: packet demo-packet — frozen sha256:[0-9a-f]{64} \\(packets/example/repo/demo-packet/frozen/[0-9a-f]{64}\\.json\\)\n$", firstOut);
         Assert.Equal(0, secondExit);
         using var json = JsonDocument.Parse(secondOut);
         Assert.True(json.RootElement.GetProperty("alreadyFrozen").GetBoolean());
         var record = Assert.Single(_work.StateFiles());
-        Assert.StartsWith(Path.Combine("packets", "demo-packet", "frozen") + Path.DirectorySeparatorChar, record, StringComparison.Ordinal);
+        Assert.StartsWith(Path.Combine("packets", "example", "repo", "demo-packet", "frozen") + Path.DirectorySeparatorChar, record, StringComparison.Ordinal);
         Assert.Equal("", _work.Git("status", "--porcelain"));
     }
 

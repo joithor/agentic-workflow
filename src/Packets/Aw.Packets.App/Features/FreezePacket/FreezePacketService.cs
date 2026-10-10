@@ -47,6 +47,7 @@ internal sealed class FreezePacketService(PacketInspector inspector, IFreezeLog 
     private FreezeRecord Record(LoadedPacket loaded, PacketHash hash) => new()
     {
         SchemaVersion = 1,
+        Repo = loaded.Packet.Manifest.Repo,
         Packet = loaded.Packet.Manifest.Id,
         Hash = hash,
         DigestVersion = PacketDigest.Version,

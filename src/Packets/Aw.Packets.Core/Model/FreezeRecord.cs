@@ -9,6 +9,9 @@ public sealed record FreezeRecord
     /// <summary>The record's schema version (1).</summary>
     public required int SchemaVersion { get; init; }
 
+    /// <summary>The repository the packet builds (records are kept per repository: packet ids are unique only within one).</summary>
+    public required RepoSlug Repo { get; init; }
+
     /// <summary>The packet.</summary>
     public required PacketId Packet { get; init; }
 

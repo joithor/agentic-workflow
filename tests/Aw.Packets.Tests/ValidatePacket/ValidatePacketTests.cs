@@ -264,4 +264,42 @@ public sealed class ValidatePacketTests
 
         _ = Assert.Single(Failures(report, "PKT-SCOPE-001"));
     }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task An_oversized_scope_entry_is_shortened_in_the_message()
+    {
+        var report = await Validate(A.Packet().With(A.Task("t1").Writing("src/**", "src/" + new string('b', 3000))));
+
+        var failure = Assert.Single(Failures(report, "PKT-SCOPE-001"));
+        Assert.True(failure.Message.Length < 300, failure.Message.Length.ToString(System.Globalization.CultureInfo.InvariantCulture));
+        Assert.Contains("3004 characters", failure.Message, StringComparison.Ordinal);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task Every_task_with_acceptance_examples_has_a_held_out_one()
+    {
+        var report = await Validate(A.Packet()
+            .With(A.Task("t1").Writing("src/a.cs"))
+            .With(A.Task("t2").After("t1").Writing("src/b.cs").Example("e2", holdout: false, "test")));
+
+        Assert.Equal("task t2", Assert.Single(Failures(report, "PKT-HOLD-001")).Subject);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task A_chain_at_the_task_limit_validates_in_seconds()
+    {
+        var packet = A.Packet();
+        for (var i = 0; i < Aw.Packets.Core.PacketReader.MaxTasks; i++)
+        {
+            var id = "t" + i.ToString(System.Globalization.CultureInfo.InvariantCulture);
+            var task = A.Task(id).Writing("src/a.cs");
+            _ = packet.With(i == 0 ? task : task.After("t" + (i - 1).ToString(System.Globalization.CultureInfo.InvariantCulture)));
+        }
+
+        var started = System.Diagnostics.Stopwatch.StartNew();
+        var report = await Validate(packet);
+
+        Assert.True(report.Passed, string.Join("; ", report.Checks.Where(static c => c.State == CheckState.Fail).Select(static c => c.Rule)));
+        Assert.True(started.Elapsed < TimeSpan.FromSeconds(5), started.Elapsed.ToString());
+    }
 }

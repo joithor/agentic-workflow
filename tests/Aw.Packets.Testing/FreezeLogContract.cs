@@ -21,6 +21,7 @@ public abstract class FreezeLogContract
     protected static FreezeRecord ARecord(string hash = HashA) => new()
     {
         SchemaVersion = 1,
+        Repo = RepoSlug.From("example/repo"),
         Packet = PacketId.From("demo-packet"),
         Hash = PacketHash.From(hash),
         DigestVersion = 1,
@@ -38,7 +39,7 @@ public abstract class FreezeLogContract
 
         var receipt = await log.Record(ARecord(), CancellationToken.None);
 
-        Expect.That(receipt.IsSuccess && receipt.Value == new FreezeReceipt("demo-packet/frozen/" + HashA[7..] + ".json", AlreadyFrozen: false),
+        Expect.That(receipt.IsSuccess && receipt.Value == new FreezeReceipt("example/repo/demo-packet/frozen/" + HashA[7..] + ".json", AlreadyFrozen: false),
             "a first record lands at <packet>/frozen/<hex>.json and isn't already frozen");
         var stored = ReadBack(log);
         Expect.That(stored.Count == 1 && Same(ARecord(), stored[0]), "the stored record reads back unchanged");
@@ -87,7 +88,7 @@ public abstract class FreezeLogContract
     /// <param name="y">The other.</param>
     /// <returns>True when every field matches.</returns>
     protected static bool Same(FreezeRecord x, FreezeRecord y) =>
-        x.SchemaVersion == y.SchemaVersion && x.Packet == y.Packet && x.Hash == y.Hash && x.DigestVersion == y.DigestVersion
+        x.SchemaVersion == y.SchemaVersion && x.Repo == y.Repo && x.Packet == y.Packet && x.Hash == y.Hash && x.DigestVersion == y.DigestVersion
         && x.BaseSha == y.BaseSha && x.FrozenAt == y.FrozenAt && x.Files.SequenceEqual(y.Files, StringComparer.Ordinal);
 
     /// <summary>Creates an empty log.</summary>

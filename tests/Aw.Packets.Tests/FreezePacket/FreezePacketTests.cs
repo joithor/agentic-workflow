@@ -45,7 +45,7 @@ public sealed class FreezePacketTests
         Assert.True(frozen.Frozen);
         Assert.False(frozen.AlreadyFrozen);
         var hash = Assert.NotNull(frozen.Hash);
-        Assert.Equal($"demo-packet/frozen/{hash.Hex}.json", frozen.Location);
+        Assert.Equal($"example/repo/demo-packet/frozen/{hash.Hex}.json", frozen.Location);
         var record = Assert.Single(log.Records).Value;
         Assert.Equal((hash, _now, PacketBuilder.BaseSha, 1), (record.Hash, record.FrozenAt, record.BaseSha.Value, record.DigestVersion));
         Assert.Equal(["decisions.json", "design/design.md", "out-of-scope.json", "packet.json", "tasks.json"], record.Files);
@@ -125,5 +125,27 @@ public sealed class FreezePacketTests
         var result = await Setup(files).Service.Handle(new FreezePacketRequest("pkt"), CancellationToken.None);
 
         Assert.Equal(PacketsErrors.Malformed.Code, result.Error.Code);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task A_schema_hint_is_not_part_of_the_hash()
+    {
+        var files = PacketFiles.Of(A.Packet().Build());
+        var hash = (await Freeze(files)).Hash;
+        var hinted = files.ToDictionary(static f => f.Key, static f => f.Key.EndsWith(".json", StringComparison.Ordinal)
+            ? Encoding.UTF8.GetBytes("{\n  \"$schema\": \"../schemas/x.json\"," + Encoding.UTF8.GetString(f.Value)[1..])
+            : f.Value, StringComparer.Ordinal);
+
+        Assert.Equal(hash, (await Freeze(hinted)).Hash);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task The_record_lives_under_the_repo_and_the_packet()
+    {
+        var (service, _, _) = Setup(PacketFiles.Of(A.Packet().Build()));
+
+        var frozen = (await service.Handle(new FreezePacketRequest("pkt"), CancellationToken.None)).Value;
+
+        Assert.StartsWith("example/repo/demo-packet/frozen/", frozen.Location, StringComparison.Ordinal);
     }
 }
