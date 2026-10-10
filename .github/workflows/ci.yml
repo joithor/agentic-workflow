@@ -1,0 +1,199 @@
+# CI — the AGENTS.md merge gate, run on every PR to main and every push to main.
+#
+# Rules (docs/superpowers/specs/2026-10-09-agent-readiness-design.md §4d):
+# - workflow-level `permissions: read-all`; no job asks for more
+# - every action pinned to a full commit SHA (tag in the trailing comment)
+# - no pull_request_target, no workflow_run, no secrets
+# - path filtering happens inside each job (step-level `if:`), so a job whose
+#   area didn't change still reports success with a no-op line, never "skipped"
+name: CI
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+# zizmor flags read-all as broad; spec §4d mandates read-all at the workflow level
+# (no job asks for any write scope), so the finding is acknowledged here.
+permissions: read-all # zizmor: ignore[excessive-permissions]
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+env:
+  NODE_VERSION: "22"
+  FORCE_COLOR: "0"
+
+jobs:
+  changes:
+    name: Detect changed areas
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    outputs:
+      ts: ${{ steps.detect.outputs.ts }}
+      bash: ${{ steps.detect.outputs.bash }}
+      dotnet: ${{ steps.detect.outputs.dotnet }}
+      packages: ${{ steps.detect.outputs.packages }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - id: detect
+        name: Diff against the base
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        run: bash scripts/ci/changed-areas.sh "$EVENT_NAME" "${BASE_SHA:-}" >> "$GITHUB_OUTPUT"
+
+  ts:
+    name: TS ${{ matrix.package }}
+    needs: changes
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        package:
+          - mcp-bridge
+          - scorer
+          - judge
+          - sindri
+          - skills/ui-evidence
+          - skills/bugFixOrchestrator
+    env:
+      CHANGED: ${{ contains(fromJSON(needs.changes.outputs.packages), matrix.package) }}
+    defaults:
+      run:
+        working-directory: ${{ matrix.package }}
+    steps:
+      - name: No-op when unchanged
+        if: env.CHANGED != 'true'
+        working-directory: .
+        env:
+          PACKAGE: ${{ matrix.package }}
+        run: |
+          echo "no-op: $PACKAGE unchanged — typecheck and tests not needed"
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        if: env.CHANGED == 'true'
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        if: env.CHANGED == 'true'
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+      - name: npm ci
+        if: env.CHANGED == 'true'
+        run: npm ci --no-audit --no-fund
+      - name: Install Playwright Chromium
+        if: env.CHANGED == 'true' && matrix.package == 'skills/ui-evidence'
+        run: npx --no-install playwright install --with-deps chromium
+      - name: Typecheck
+        if: env.CHANGED == 'true'
+        run: npm run typecheck
+      - name: Test
+        if: env.CHANGED == 'true'
+        run: npm test
+
+  bash-tests:
+    name: Bash tests
+    needs: changes
+    # The hooks and installers target the owner's macOS boxes (launchd, BSD userland).
+    runs-on: macos-15
+    timeout-minutes: 30
+    env:
+      CHANGED: ${{ needs.changes.outputs.bash }}
+    steps:
+      - name: No-op when unchanged
+        if: env.CHANGED != 'true'
+        run: |
+          echo "no-op: no hook, script, installer or package change — bash tests not needed"
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        if: env.CHANGED == 'true'
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        if: env.CHANGED == 'true'
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+      - name: Build the CLIs the tests call
+        if: env.CHANGED == 'true'
+        run: |
+          for pkg in judge scorer sindri; do
+            (cd "$pkg" && npm ci --no-audit --no-fund && npm run build)
+          done
+      - name: Run every bash test in AGENTS.md
+        if: env.CHANGED == 'true'
+        run: bash scripts/ci/bash-tests.sh
+
+  gate:
+    name: Merge gate checks
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+      - name: Rules links and index are current
+        run: scripts/sync-rules.sh --check
+      - name: setup.sh dry run (every provider)
+        run: ./setup.sh --providers claude,codex,cursor --dry-run
+      - name: No coverage-ignore annotations
+        run: |
+          if git grep -nE '(v8|c8|istanbul) ignore' -- '*.ts' '*.tsx' ':!**/node_modules/**'; then
+            echo "::error::coverage-ignore annotations are prohibited (AGENTS.md merge gate 5) — write the test instead"
+            exit 1
+          fi
+      - name: Install Claude Code (plugin validator) from the CI tools lockfile
+        # Scripts stay off for the whole tree; only claude-code's own installer runs, and it
+        # links the platform binary that the lockfile already pinned by integrity hash.
+        run: |
+          npm ci --prefix .github/ci-tools --ignore-scripts --no-audit --no-fund
+          (cd .github/ci-tools && node node_modules/@anthropic-ai/claude-code/install.cjs)
+      - name: claude plugin validate mods/aw-live
+        run: .github/ci-tools/node_modules/.bin/claude plugin validate mods/aw-live
+      - name: claude plugin test mods/aw-live
+        run: .github/ci-tools/node_modules/.bin/claude plugin test mods/aw-live
+
+  dotnet:
+    name: .NET build and test
+    needs: changes
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    env:
+      CHANGED: ${{ needs.changes.outputs.dotnet }}
+      DOTNET_CLI_TELEMETRY_OPTOUT: "1"
+      DOTNET_NOLOGO: "1"
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Detect the solution
+        id: sln
+        run: |
+          if [ -d src ] && [ "$CHANGED" = "true" ]; then
+            echo "run=true" >> "$GITHUB_OUTPUT"
+          elif [ -d src ]; then
+            echo "no-op: no .NET change — dotnet build/test not needed"
+          else
+            echo "no-op: src/ not present — dotnet build/test no-op until the first C# project lands"
+          fi
+      - uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
+        if: steps.sln.outputs.run == 'true'
+        with:
+          global-json-file: global.json
+      - name: dotnet restore (locked)
+        if: steps.sln.outputs.run == 'true'
+        run: dotnet restore --locked-mode
+      - name: dotnet build
+        if: steps.sln.outputs.run == 'true'
+        run: dotnet build --no-restore --configuration Release -warnaserror
+      - name: dotnet test
+        if: steps.sln.outputs.run == 'true'
+        run: dotnet test --no-build --configuration Release

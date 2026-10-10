@@ -87,6 +87,7 @@ bash scripts/tests/install-scorer-audit.test.sh
 bash scripts/tests/install-sindri.test.sh
 bash scripts/tests/readiness-baseline.test.sh
 bash scripts/tests/agent-token.test.sh
+bash scripts/tests/ci-changed-areas.test.sh
 bash config/hooks/tests/codex-adapter.test.sh
 bash config/hooks/tests/cursor-adapter.test.sh
 bash config/hooks/tests/provider-install-hooks.test.sh

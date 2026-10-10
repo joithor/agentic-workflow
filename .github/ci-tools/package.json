@@ -1,0 +1,8 @@
+{
+  "name": "aw-ci-tools",
+  "private": true,
+  "description": "CLI tools the CI merge gate runs, installed from the lockfile with npm ci (no ad-hoc installs).",
+  "dependencies": {
+    "@anthropic-ai/claude-code": "2.1.289"
+  }
+}
