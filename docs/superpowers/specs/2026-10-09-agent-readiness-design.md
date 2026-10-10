@@ -380,6 +380,7 @@ group.MapPost("/items/{id}/start", async (ItemId id, StartItemBody body, IServic
     it needs `libicu` at runtime);
   - `EnableRequestDelegateGenerator=true` on every `*.Host` project, so JIT endpoint tests run the same generated
     binding as the AOT binary;
+  - the missing-lock-file check (AW0001): under CI, a project without a committed `packages.lock.json` fails;
   - the placement check (AW0002): every `*.Tests` and `*.Testing` project, including `Aw.Kernel.Testing`, lives
     under `tests/`, and nothing else does.
 - Test projects (under `tests/`) get their analyzer policy from `tests/.editorconfig`: CA1707, CA2007, CA1515,
@@ -394,8 +395,8 @@ group.MapPost("/items/{id}/start", async (ItemId id, StartItemBody body, IServic
 - **One owner per rule (A14):** where analyzer packs overlap (for example CA2007 and MA0004 on `ConfigureAwait`),
   `.editorconfig` names one owning rule and disables the others. Roslynator, which overlaps the IDE rules most, is
   off except for rules opted in by name. Existing violations are captured in a generated block at the end of the
-  root `.editorconfig`, after a fixed sentinel line, that lowers only those rule-and-file pairs; the ratchet fails
-  CI if that block grows. (Not a `baseline.globalconfig`: a global config can't lower a rule `.editorconfig` sets,
+  root `.editorconfig`, after a fixed sentinel line, that lowers only those rule-and-file pairs; the ratchet check
+  (W2) will fail CI if that block grows. (Not a `baseline.globalconfig`: a global config can't lower a rule `.editorconfig` sets,
   and its sections need absolute paths.)
 - `.editorconfig` sets every rule's severity explicitly (no "suggestion" level for anything agents should obey).
   The size limits: file ≤ 300 lines, method ≤ 40 lines, cyclomatic complexity ≤ 10, parameters ≤ 5. Existing
@@ -404,7 +405,9 @@ group.MapPost("/items/{id}/start", async (ItemId id, StartItemBody body, IServic
   - no raw ids in public signatures;
   - `!` needs a reason;
   - no cross-slice references (fast feedback; the architecture test is authoritative);
-  - endpoint lambdas call exactly one service.
+  - endpoint lambdas call exactly one service;
+  - the size limits no off-the-shelf analyzer covers: file ≤ 300 lines, parameters ≤ 5, constructor dependencies
+    (≤ 5, an error over 7) and generic arity ≤ 3.
 
 **AOT scope** (verified in the R1a spike; anything that fails ships framework-dependent with a startup budget):
 
@@ -427,7 +430,8 @@ seams go into the C# schemas **from the first commit**, and the C# build starts 
 
 ```
 agentic-workflow/
-├── global.json · Directory.Build.props · Directory.Packages.props · .editorconfig · BannedSymbols.txt
+├── global.json · Directory.Build.props · Directory.Build.targets · Directory.Packages.props · nuget.config
+├── .editorconfig · BannedSymbols.txt · CodeMetricsConfig.txt
 ├── AgenticWorkflow.slnx
 ├── src/
 │   ├── Aw.Kernel/                     # Result, Error, IService<,>, decorators, contracts
@@ -438,6 +442,7 @@ agentic-workflow/
 │   ├── Scorer/   (…)
 │   └── Bridge/   (…)                  # minimal API host
 ├── tests/
+│   ├── .editorconfig                  # the test-project analyzer policy (§4b.6)
 │   ├── Aw.Architecture.Tests/         # one assembly for every rule in §4b.1
 │   ├── Aw.Kernel.Testing/             # tier 0 with Aw.Kernel, but lives here like every *.Testing (AW0002)
 │   ├── Aw.Sindri.Tests/               # by feature; lanes as traits
