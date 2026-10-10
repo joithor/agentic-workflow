@@ -926,9 +926,9 @@ Recent pace: about 49 commits in 60 days. The sizes below are estimates to be re
 the R1b stage PRs merged **and** the owner's label sync (§5 Level 3, TD-2):
 - the readiness PR's branch alone: Level 2 (no devcontainer, env template, telemetry or templates yet);
 - the readiness PR with #130, #132, #136, #137, #138 and #140 merged in a scratch tree (its stack already holds
-  #131, #133 and #139): Level 3. Level 2 passes at exactly 80% (8 of 10; SV-4, no tracked
-  pre-commit config, and SEC-1, branch protection unavailable on the repo's current plan, fail). Level 3 stops at 8
-  of 11 (SEC-2 secret scanning unavailable, SEC-3 no CODEOWNERS, TD-2 labels not on the repo);
+  #131, #133 and #139): Level 3. Level 2 passes at exactly 80% (8 of 10; SV-4, no tracked pre-commit config, and
+  SEC-1, branch protection unavailable on the repo's current plan, fail). Level 3 stops at 8 of 11 (SEC-2 secret
+  scanning unavailable, SEC-3 no CODEOWNERS, TD-2 labels not on the repo);
 - the same tree with `.github/labels.yml` applied to the repo (simulated): Level 4 holds. A CODEOWNERS file backed by
   a required check (SEC-3) would also reach it.
 
