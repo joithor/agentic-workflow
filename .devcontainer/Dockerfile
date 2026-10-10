@@ -12,11 +12,11 @@ FROM mcr.microsoft.com/dotnet/sdk:10.0.401-noble@sha256:e70cdb7f80b0348f5cb85f19
 COPY --from=ghcr.io/astral-sh/uv:0.12.17@sha256:10787c682e4184e4f290de1171fd4703dc63de99221f10fe1c99002ce7fa9acc /uv /uvx /usr/local/bin/
 
 # Tools the repo's scripts and checks use: git, jq, sqlite3 (state inspection), shellcheck and shfmt (spec §4:
-# bash in config/, scripts/, providers/), xz-utils (the Node tarball), python3 and build-essential (native
-# modules such as better-sqlite3).
+# bash in config/, scripts/, providers/), ruby (its stdlib YAML parser, for scripts/tests/repo-templates.test.sh),
+# xz-utils (the Node tarball), python3 and build-essential (native modules such as better-sqlite3).
 RUN apt-get update \
  && apt-get install -y --no-install-recommends \
-      ca-certificates curl git jq python3 build-essential shellcheck shfmt sqlite3 xz-utils \
+      ca-certificates curl git jq python3 build-essential ruby shellcheck shfmt sqlite3 xz-utils \
  && apt-get clean \
  && find /var/lib/apt/lists -type f -delete
 
