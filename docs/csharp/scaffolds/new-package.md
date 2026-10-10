@@ -142,8 +142,10 @@ command line) and `--urls` (the R1a spike found two of these binding all interfa
 `CreateSlimBuilder(args)` host). It also sends a request with `Host: example.com` (expects 400) and one with
 `Origin: https://example.com` (expects 403). No `HOST` variable, no `ALLOW_REMOTE` switch, no wildcard CORS.
 
-The http Host applies the same JSON profile in `ConfigureHttpJsonOptions`: `o.SerializerOptions` is read-only, so it
-copies the settings and resolver of `AwJson.CreateOptions(<Name>JsonContext.Default)` into it.
+The http Host applies the same JSON profile in `ConfigureHttpJsonOptions` by copying the settings, converters and
+resolver of `AwJson.CreateOptions(<Name>JsonContext.Default)` into `o.SerializerOptions`. It copies because
+`AwJson.CreateOptions` returns read-only options (it calls `MakeReadOnly()`) and `SerializerOptions` has no setter to
+assign them to; the instance it returns is still mutable during configuration.
 
 `HttpResults` maps only a returned `Result`: values to `TypedResults`, errors to `ProblemDetails`. It never sees Vogen's
 `ValueObjectValidationException`, which is thrown during binding or at an uninitialized id's first `.Value` (ASP.NET
