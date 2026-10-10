@@ -42,4 +42,8 @@ public static class A
     /// <summary>A UndoDecisionRequest builder with deterministic defaults.</summary>
     /// <returns>A new builder.</returns>
     public static UndoDecisionRequestBuilder UndoDecisionRequest() => new();
+
+    /// <summary>A ApproveDecisionRequest builder with deterministic defaults.</summary>
+    /// <returns>A new builder.</returns>
+    public static ApproveDecisionRequestBuilder ApproveDecisionRequest() => new();
 }

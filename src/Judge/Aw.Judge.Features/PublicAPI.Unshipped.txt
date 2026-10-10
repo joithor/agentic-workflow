@@ -209,3 +209,27 @@ static Aw.Judge.Features.UndoDecision.UndoDecisionRequest.operator !=(Aw.Judge.F
 static Aw.Judge.Features.UndoDecision.UndoDecisionRequest.operator ==(Aw.Judge.Features.UndoDecision.UndoDecisionRequest? left, Aw.Judge.Features.UndoDecision.UndoDecisionRequest? right) -> bool
 static Aw.Judge.Features.UndoDecision.UndoDecisionResponse.operator !=(Aw.Judge.Features.UndoDecision.UndoDecisionResponse? left, Aw.Judge.Features.UndoDecision.UndoDecisionResponse? right) -> bool
 static Aw.Judge.Features.UndoDecision.UndoDecisionResponse.operator ==(Aw.Judge.Features.UndoDecision.UndoDecisionResponse? left, Aw.Judge.Features.UndoDecision.UndoDecisionResponse? right) -> bool
+Aw.Judge.Features.ApproveDecision.ApproveDecisionRequest
+Aw.Judge.Features.ApproveDecision.ApproveDecisionRequest.<Clone>$() -> Aw.Judge.Features.ApproveDecision.ApproveDecisionRequest!
+Aw.Judge.Features.ApproveDecision.ApproveDecisionRequest.ApproveDecisionRequest(Aw.Judge.Core.Ids.DecisionId DecisionId) -> void
+Aw.Judge.Features.ApproveDecision.ApproveDecisionRequest.DecisionId.get -> Aw.Judge.Core.Ids.DecisionId
+Aw.Judge.Features.ApproveDecision.ApproveDecisionRequest.DecisionId.init -> void
+Aw.Judge.Features.ApproveDecision.ApproveDecisionRequest.Deconstruct(out Aw.Judge.Core.Ids.DecisionId DecisionId) -> void
+Aw.Judge.Features.ApproveDecision.ApproveDecisionRequest.Equals(Aw.Judge.Features.ApproveDecision.ApproveDecisionRequest? other) -> bool
+Aw.Judge.Features.ApproveDecision.ApproveDecisionResponse
+Aw.Judge.Features.ApproveDecision.ApproveDecisionResponse.<Clone>$() -> Aw.Judge.Features.ApproveDecision.ApproveDecisionResponse!
+Aw.Judge.Features.ApproveDecision.ApproveDecisionResponse.ApproveDecisionResponse(Aw.Judge.Core.Decisions.DecisionRecord! Decision) -> void
+Aw.Judge.Features.ApproveDecision.ApproveDecisionResponse.Decision.get -> Aw.Judge.Core.Decisions.DecisionRecord!
+Aw.Judge.Features.ApproveDecision.ApproveDecisionResponse.Decision.init -> void
+Aw.Judge.Features.ApproveDecision.ApproveDecisionResponse.Deconstruct(out Aw.Judge.Core.Decisions.DecisionRecord! Decision) -> void
+Aw.Judge.Features.ApproveDecision.ApproveDecisionResponse.Equals(Aw.Judge.Features.ApproveDecision.ApproveDecisionResponse? other) -> bool
+override Aw.Judge.Features.ApproveDecision.ApproveDecisionRequest.Equals(object? obj) -> bool
+override Aw.Judge.Features.ApproveDecision.ApproveDecisionRequest.GetHashCode() -> int
+override Aw.Judge.Features.ApproveDecision.ApproveDecisionRequest.ToString() -> string!
+override Aw.Judge.Features.ApproveDecision.ApproveDecisionResponse.Equals(object? obj) -> bool
+override Aw.Judge.Features.ApproveDecision.ApproveDecisionResponse.GetHashCode() -> int
+override Aw.Judge.Features.ApproveDecision.ApproveDecisionResponse.ToString() -> string!
+static Aw.Judge.Features.ApproveDecision.ApproveDecisionRequest.operator !=(Aw.Judge.Features.ApproveDecision.ApproveDecisionRequest? left, Aw.Judge.Features.ApproveDecision.ApproveDecisionRequest? right) -> bool
+static Aw.Judge.Features.ApproveDecision.ApproveDecisionRequest.operator ==(Aw.Judge.Features.ApproveDecision.ApproveDecisionRequest? left, Aw.Judge.Features.ApproveDecision.ApproveDecisionRequest? right) -> bool
+static Aw.Judge.Features.ApproveDecision.ApproveDecisionResponse.operator !=(Aw.Judge.Features.ApproveDecision.ApproveDecisionResponse? left, Aw.Judge.Features.ApproveDecision.ApproveDecisionResponse? right) -> bool
+static Aw.Judge.Features.ApproveDecision.ApproveDecisionResponse.operator ==(Aw.Judge.Features.ApproveDecision.ApproveDecisionResponse? left, Aw.Judge.Features.ApproveDecision.ApproveDecisionResponse? right) -> bool

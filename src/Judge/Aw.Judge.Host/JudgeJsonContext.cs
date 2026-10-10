@@ -1,4 +1,5 @@
 using System.Text.Json.Serialization;
+using Aw.Judge.Features.ApproveDecision;
 using Aw.Judge.Features.ExplainDecision;
 using Aw.Judge.Features.GetBrief;
 using Aw.Judge.Features.GetHealth;
@@ -33,4 +34,6 @@ namespace Aw.Judge.Host;
 [JsonSerializable(typeof(ExplainDecisionResponse))]
 [JsonSerializable(typeof(UndoDecisionRequest))]
 [JsonSerializable(typeof(UndoDecisionResponse))]
+[JsonSerializable(typeof(ApproveDecisionRequest))]
+[JsonSerializable(typeof(ApproveDecisionResponse))]
 internal sealed partial class JudgeJsonContext : JsonSerializerContext;

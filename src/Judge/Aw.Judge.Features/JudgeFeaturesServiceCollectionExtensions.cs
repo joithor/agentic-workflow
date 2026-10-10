@@ -1,3 +1,4 @@
+using Aw.Judge.Features.ApproveDecision;
 using Aw.Judge.Features.ExplainDecision;
 using Aw.Judge.Features.GetBrief;
 using Aw.Judge.Features.GetHealth;
@@ -35,6 +36,13 @@ public static class JudgeFeaturesServiceCollectionExtensions
                 new ValidatingService<UndoDecisionRequest, UndoDecisionResponse>(
                     sp.GetRequiredService<UndoDecisionService>(),
                     sp.GetRequiredService<IValidator<UndoDecisionRequest>>()));
+        _ = services
+            .AddScoped<ApproveDecisionService>()
+            .AddScoped<IValidator<ApproveDecisionRequest>, ApproveDecisionValidator>()
+            .AddScoped<IService<ApproveDecisionRequest, ApproveDecisionResponse>>(static sp =>
+                new ValidatingService<ApproveDecisionRequest, ApproveDecisionResponse>(
+                    sp.GetRequiredService<ApproveDecisionService>(),
+                    sp.GetRequiredService<IValidator<ApproveDecisionRequest>>()));
         return services;
     }
 
