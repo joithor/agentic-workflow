@@ -1,3 +1,4 @@
+using System.Collections.Concurrent;
 using System.Collections.Immutable;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
@@ -23,12 +24,25 @@ internal sealed class CrossSliceAnalyzer : DiagnosticAnalyzer
     {
         context.ConfigureGeneratedCodeAnalysis(GeneratedCodeAnalysisFlags.None);
         context.EnableConcurrentExecution();
-        context.RegisterSyntaxNodeAction(Analyze, SyntaxKind.IdentifierName, SyntaxKind.GenericName);
+        context.RegisterCompilationStartAction(start =>
+        {
+            // Only an assembly with slices can break the rule; the slice of each namespace is worked out once.
+            if (!HasFeatures(start.Compilation.Assembly.GlobalNamespace))
+            {
+                return;
+            }
+
+            var slices = new ConcurrentDictionary<INamespaceSymbol, (string Root, string Name)?>(SymbolEqualityComparer.Default);
+            start.RegisterSyntaxNodeAction(c => Analyze(c, slices), SyntaxKind.IdentifierName, SyntaxKind.GenericName);
+        });
     }
 
-    private static void Analyze(SyntaxNodeAnalysisContext context)
+    private static bool HasFeatures(INamespaceSymbol ns) =>
+        ns.GetNamespaceMembers().Any(n => string.Equals(n.Name, FeaturesSegment, StringComparison.Ordinal) || HasFeatures(n));
+
+    private static void Analyze(SyntaxNodeAnalysisContext context, ConcurrentDictionary<INamespaceSymbol, (string Root, string Name)?> slices)
     {
-        var from = context.ContainingSymbol is null ? null : Slice(Namespace(context.ContainingSymbol));
+        var from = SliceOf(context.ContainingSymbol, slices);
         if (from is null)
         {
             return;
@@ -51,7 +65,7 @@ internal sealed class CrossSliceAnalyzer : DiagnosticAnalyzer
             return;
         }
 
-        var to = Slice(Namespace(type));
+        var to = SliceOf(type, slices);
         if (to is not null && to.Value.Root == from.Value.Root && to.Value.Name != from.Value.Name)
         {
             context.ReportDiagnostic(Diagnostic.Create(
@@ -79,8 +93,11 @@ internal sealed class CrossSliceAnalyzer : DiagnosticAnalyzer
             && context.SemanticModel.GetSymbolInfo(right, context.CancellationToken).Symbol is INamedTypeSymbol;
     }
 
-    private static string Namespace(ISymbol symbol) =>
-        symbol is INamespaceSymbol ns ? ns.ToDisplayString() : symbol.ContainingNamespace?.ToDisplayString() ?? string.Empty;
+    private static (string Root, string Name)? SliceOf(ISymbol? symbol, ConcurrentDictionary<INamespaceSymbol, (string Root, string Name)?> slices)
+    {
+        var ns = symbol as INamespaceSymbol ?? symbol?.ContainingNamespace;
+        return ns is null ? null : slices.GetOrAdd(ns, n => Slice(n.ToDisplayString()));
+    }
 
     // ("Aw.Pkg.Features", "StartItem") for "Aw.Pkg.Features.StartItem[.…]", else null.
     private static (string Root, string Name)? Slice(string ns)

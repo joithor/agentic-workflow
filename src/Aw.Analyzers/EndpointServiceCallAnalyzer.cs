@@ -58,6 +58,7 @@ internal sealed class EndpointServiceCallAnalyzer : DiagnosticAnalyzer
     private static string InvokedName(InvocationExpressionSyntax invocation) => invocation.Expression switch
     {
         MemberAccessExpressionSyntax member => member.Name.Identifier.ValueText,
+        MemberBindingExpressionSyntax binding => binding.Name.Identifier.ValueText,   // svc?.Handle(...)
         SimpleNameSyntax name => name.Identifier.ValueText,
         _ => string.Empty,
     };

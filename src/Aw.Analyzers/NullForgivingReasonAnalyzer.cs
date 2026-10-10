@@ -8,8 +8,8 @@ namespace Aw.Analyzers;
 
 /// <summary>
 /// AW1002: every null-forgiving '!' carries a reason (spec §4b.3): a '// why: &lt;reason&gt;' comment on the
-/// line of the '!', or in the comment lines directly above the statement or member that holds it. The text
-/// after 'why:' must not be empty.
+/// line of the '!', or in the comment lines directly above the statement or member that holds it (or between its
+/// attributes and the declaration), with no blank line between. The text after 'why:' must not be empty.
 /// </summary>
 [DiagnosticAnalyzer(LanguageNames.CSharp)]
 internal sealed class NullForgivingReasonAnalyzer : DiagnosticAnalyzer
@@ -67,8 +67,38 @@ internal sealed class NullForgivingReasonAnalyzer : DiagnosticAnalyzer
             _ => default,
         };
         return holder is not null
-            && (holder.GetLeadingTrivia().Any(IsReason)
-                || (attributes.Count > 0 && attributes.Last().GetLastToken().GetNextToken().LeadingTrivia.Any(IsReason)));
+            && (HasReasonDirectlyAbove(holder.GetLeadingTrivia())
+                || (attributes.Count > 0 && HasReasonDirectlyAbove(attributes.Last().GetLastToken().GetNextToken().LeadingTrivia)));
+    }
+
+    // A reason in the comment lines right before the token: walking up, a blank line ends the search.
+    private static bool HasReasonDirectlyAbove(SyntaxTriviaList trivia)
+    {
+        var lineEnded = false;
+        for (var i = trivia.Count - 1; i >= 0; i--)
+        {
+            var t = trivia[i];
+            if (t.IsKind(SyntaxKind.EndOfLineTrivia))
+            {
+                if (lineEnded)
+                {
+                    return false;   // two line ends with only whitespace between: a blank line
+                }
+
+                lineEnded = true;
+            }
+            else if (!t.IsKind(SyntaxKind.WhitespaceTrivia))
+            {
+                if (IsReason(t))
+                {
+                    return true;
+                }
+
+                lineEnded = false;
+            }
+        }
+
+        return false;
     }
 
     private static bool OnLine(SyntaxTrivia trivia, Microsoft.CodeAnalysis.Text.TextLine line) =>
