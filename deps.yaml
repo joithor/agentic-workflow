@@ -25,15 +25,20 @@
 #           exempt). Only the fan-out rules take exceptions, each with a reason, at most
 #           limits.exceptionMaxDays long, and an exception that suppresses nothing fails.
 # C# names  A project belongs to the package whose projectPrefix starts its name (longest wins), e.g.
-#           src/Judge/Aw.Judge.Core and tests/Aw.Judge.Tests both belong to Judge. Test code is
-#           Aw.<Pkg>.Tests (tests) and Aw.<Pkg>.Testing (that package's fakes, builders, contract bases).
-#           Test code follows its owner: it may reference its own package, test-support packages
-#           (test: true, such as Aw.Kernel.Testing) and what its owner has a project edge to, needs no edge
-#           of its own, and is exempt from fan-out. Nothing references *.Tests; only test code references
-#           *.Testing. Test assemblies no package owns (Aw.Architecture.Tests) may reference every package.
-#           Analyzer packages (analyzer: true, Aw.Analyzers) are referenced only with
-#           OutputItemType="Analyzer" (in a .csproj or a Directory.Build file); they need no edge and don't
-#           count as fan-out. Any other ProjectReference in a Directory.Build file fails.
+#           src/Judge/Aw.Judge.Core and tests/Aw.Judge.Tests both belong to Judge. Another package is
+#           reached only through its Core project (Aw.<Pkg>.Core) or as a whole tier-0 package; any other
+#           cross-package reference fails DEPS-PROJ-007 (§4b.1a "only through their Core contracts").
+#           Test code is every project under tests/, plus any project named *.Tests or *.Testing (also
+#           with a further suffix, such as *.Tests.Integration). Names with a .Testing segment are
+#           test-support (a package's fakes, builders, contract bases); the rest are leaves. Test code
+#           follows its owner: it may reference its own package, test-support packages (test: true, such
+#           as Aw.Kernel.Testing), analyzers (normally, to test them) and what its owner has a project edge
+#           to, needs no edge of its own, and is exempt from fan-out. Nothing references a leaf; only test
+#           code references test-support. Test assemblies no package owns (Aw.Architecture.Tests) may
+#           reference every package. Analyzer packages (analyzer: true, Aw.Analyzers) are referenced from
+#           production code only with OutputItemType="Analyzer" (in a .csproj or a Directory.Build file);
+#           they need no edge and don't count as fan-out. Any other ProjectReference in a Directory.Build
+#           file fails.
 # scan      A heuristic, not a proof. It reads *.ts/*.js and *.sh under `scan` (not tests, node_modules or
 #           dist) and finds: spawn/exec*(…"bin…" calls, also wrapped over lines; `?? "bin"` and `|| "bin"`
 #           fallbacks; *Bin = "bin" and *Bin("bin"); BIN_BIN env names; shell commands after VAR=, env,

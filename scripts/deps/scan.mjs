@@ -62,6 +62,8 @@ export function lexTs(src) {
     let k = i - 1;
     while (k >= 0 && /\s/.test(out[k])) k--;
     if (k < 0) return true;
+    // A postfix ++ or -- (after an identifier, `)` or `]`) ends a value, so the slash divides.
+    if ((out[k] === "+" || out[k] === "-") && out[k - 1] === out[k] && k >= 2 && /[A-Za-z0-9_$)\]]/.test(out[k - 2])) return false;
     if (BEFORE_REGEX.has(out[k])) return true;
     if (!/[A-Za-z0-9_$]/.test(out[k])) return false;
     let w = k;

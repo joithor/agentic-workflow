@@ -32,14 +32,23 @@ const edgeKey = (e) => `${e.from}|${e.to}|${e.kind}`;
 const edgeText = (e) => `${e.from} -> ${e.to} (${e.kind})`;
 const isHostProject = (name) => /\.Host$/.test(name);
 
-// What a C# project is, by name and owner: "tests" (*.Tests), "testing" (a package's own *.Testing
-// test-support project), "analyzer" (a project of an analyzer: true package) or "prod".
-function roleOf(name, owner) {
-  if (/\.Tests$/.test(name)) return "tests";
-  if (/\.Testing$/.test(name) && !owner?.test) return "testing";
+// What a C# project is: "tests" or "testing" (test code), "analyzer" (a project of an analyzer: true
+// package) or "prod". Test code is every project under tests/, plus any project named *.Tests or
+// *.Testing (also with a further suffix, such as *.Tests.Integration). Within test code, a name with a
+// .Testing segment is test-support that other test code may reference; everything else is a leaf.
+// A test: true package's own *.Testing project outside tests/ (Aw.Kernel.Testing) is that package's
+// production code. `file` is the project's repo-relative path, or null for a referenced name.
+function roleOf(name, owner, file) {
+  const underTests = file !== null && file.startsWith("tests/");
+  const testing = /\.Testing(\.|$)/.test(name);
+  if (underTests || testing || /\.Tests(\.|$)/.test(name)) {
+    if (testing && owner?.test && !underTests) return owner.analyzer ? "analyzer" : "prod";
+    return testing ? "testing" : "tests";
+  }
   if (owner?.analyzer) return "analyzer";
   return "prod";
 }
+
 const yamlEdge = (from, to, kind, status) => [`      - from: ${from}`, `        to: ${to}`, `        kind: ${kind}`, `        status: ${status}`, "        note: <why this edge exists>"].join("\n");
 
 function findCycles(edges) {
@@ -208,37 +217,44 @@ function checkProjects(root, doc, byId, declared, edges, { fail, info, excepted,
     }
   }
   const projects = readProjects(root);
+  const fileOf = new Map(projects.map((p) => [p.name, p.file]));
+  const roleOfRef = (ref, refOwner) => roleOf(ref, refOwner, fileOf.get(ref) ?? null);
+  // §4b.1a: a package reaches another package only through its Core (tier-0 packages are used whole).
+  const contractOk = (ref, refOwner) => refOwner.tier === 0 || ref === `${refOwner.projectPrefix}.Core`;
+  const contractFail = (pj, ref, refOwner) => fail("DEPS-PROJ-007", "reference into another package past its Core", `${pj.name} -> ${ref} (${refOwner.id})`, `another package is used only through its Core project (${refOwner.projectPrefix}.Core) or a tier-0 package (§4b.1a)`, `reference ${refOwner.projectPrefix}.Core instead, moving what you need into ${refOwner.id}'s Core contracts`);
   const real = new Set(); // "Owner|RefOwner" for production cross-package references
   const owners = new Set(); // packages with at least one production project
   for (const pj of projects) {
     const owner = ownerOf(pj.name, doc.packages);
-    const role = roleOf(pj.name, owner);
+    const role = roleOf(pj.name, owner, pj.file);
     const testCode = role === "tests" || role === "testing";
     if (!owner && !testCode) { fail("DEPS-PROJ-002", "C# project no package owns", `${pj.file} (${pj.name})`, "every project name starts with a package's projectPrefix (test assemblies such as Aw.Architecture.Tests excepted)", "rename the project, or declare its package in deps.yaml"); continue; }
     if (role === "prod" || role === "analyzer") owners.add(owner.id);
     for (const a of pj.analyzers) if (!analyzerOk(a)) fail("DEPS-PROJ-006", "analyzer reference to a project that is not an analyzer", `${pj.name} -> ${a}`, "OutputItemType=\"Analyzer\" references point at an analyzer: true package", `point the reference at an analyzer project, or drop OutputItemType="Analyzer"`);
     for (const ref of pj.refs) {
       const refOwner = ownerOf(ref, doc.packages);
-      const refRole = roleOf(ref, refOwner);
+      const refRole = roleOfRef(ref, refOwner);
       if (refRole === "tests" || (refRole === "testing" && !testCode)) { fail("DEPS-PROJ-003", "reference to test code", `${pj.name} -> ${ref} (${pj.file})`, "nothing references a *.Tests project, and only test code references a *.Testing project", "remove the reference; production code gets fakes through its ports, not from test projects"); continue; }
-      if (refRole === "analyzer") { fail("DEPS-PROJ-006", "runtime reference to an analyzer", `${pj.name} -> ${ref}`, "analyzers are referenced with OutputItemType=\"Analyzer\" ReferenceOutputAssembly=\"false\" only", `add OutputItemType="Analyzer" ReferenceOutputAssembly="false" to the reference in ${pj.file}`); continue; }
+      if (refRole === "analyzer" && !testCode) { fail("DEPS-PROJ-006", "runtime reference to an analyzer", `${pj.name} -> ${ref}`, "analyzers are referenced with OutputItemType=\"Analyzer\" ReferenceOutputAssembly=\"false\" only", `add OutputItemType="Analyzer" ReferenceOutputAssembly="false" to the reference in ${pj.file}`); continue; }
       if (!refOwner) { fail("DEPS-PROJ-002", "C# project no package owns", `${pj.name} -> ${ref}`, "every project name starts with a package's projectPrefix", "rename the project, or declare its package in deps.yaml"); continue; }
       if (testCode) {
         // Test code follows its owner: its own package, test-support packages, and its owner's project edges.
-        if (!owner || refOwner.id === owner.id || refOwner.test || declared.has(`${owner.id}|${refOwner.id}|project`)) continue;
+        if (!owner || refOwner.id === owner.id || refOwner.test || refRole === "analyzer") continue;
+        if (declared.has(`${owner.id}|${refOwner.id}|project`)) { if (refRole === "prod" && !contractOk(ref, refOwner)) contractFail(pj, ref, refOwner); continue; }
         fail("DEPS-PROJ-004", "test code references a package its owner may not", `${pj.name} -> ${ref} (${owner.id} -> ${refOwner.id})`, "test code may reference its own package, test-support packages (test: true) and what its owner has a project edge to", `reference ${refOwner.id} from its own tests, or declare (from: ${owner.id}, to: ${refOwner.id}, kind: project) if ${owner.id} itself needs it`);
         continue;
       }
       if (refOwner.id === owner.id) continue;
       real.add(`${owner.id}|${refOwner.id}`);
+      if (!contractOk(ref, refOwner)) contractFail(pj, ref, refOwner);
       if (!declared.has(`${owner.id}|${refOwner.id}|project`)) fail("DEPS-PROJ-001", "undeclared ProjectReference", `${pj.name} -> ${ref} (${owner.id} -> ${refOwner.id})`, "every cross-package ProjectReference is a declared project edge", `call ${refOwner.id} through its CLI, or add this under edges in deps.yaml (a reviewed change):\n${yamlEdge(owner.id, refOwner.id, "project", "current")}`);
     }
     if (testCode || isHostProject(pj.name) || owner.test) continue;
     const inRepo = [...pj.refs].sort();
     const m2 = `${pj.name} references ${inRepo.length} in-repo projects (${inRepo.join(", ")})`;
-    if (inRepo.length > doc.limits.projectFanOut) { if (!excepted("DEPS-FANOUT-002", owner.id, m2)) fail("DEPS-FANOUT-002", "project fan-out over the limit", m2, `${doc.limits.projectFanOut} in-repo projects per project (limits.projectFanOut; *.Host, *.Tests, *.Testing and analyzer references exempt)`, `split ${pj.name}, or record a DEPS-FANOUT-002 exception for ${owner.id} with a reason and an expiry`); } else measure("DEPS-FANOUT-002", owner.id, m2);
+    if (inRepo.length > doc.limits.projectFanOut) { if (!excepted("DEPS-FANOUT-002", owner.id, m2)) fail("DEPS-FANOUT-002", "project fan-out over the limit", m2, `${doc.limits.projectFanOut} in-repo projects per project (limits.projectFanOut; *.Host and test code exempt, analyzer references not counted)`, `split ${pj.name}, or record a DEPS-FANOUT-002 exception for ${owner.id} with a reason and an expiry`); } else measure("DEPS-FANOUT-002", owner.id, m2);
     const m3 = `${pj.name} references ${pj.packages.length} third-party packages (${pj.packages.join(", ")})`;
-    if (pj.packages.length > doc.limits.thirdPartyFanOut) { if (!excepted("DEPS-FANOUT-003", owner.id, m3)) fail("DEPS-FANOUT-003", "third-party fan-out over the limit", m3, `${doc.limits.thirdPartyFanOut} third-party packages per project, analyzers (PrivateAssets=all) excluded (limits.thirdPartyFanOut)`, `drop a package from ${pj.name} or split it, or record a DEPS-FANOUT-003 exception for ${owner.id}`); } else measure("DEPS-FANOUT-003", owner.id, m3);
+    if (pj.packages.length > doc.limits.thirdPartyFanOut) { if (!excepted("DEPS-FANOUT-003", owner.id, m3)) fail("DEPS-FANOUT-003", "third-party fan-out over the limit", m3, `${doc.limits.thirdPartyFanOut} third-party packages per project, analyzers (PrivateAssets=all) excluded (limits.thirdPartyFanOut; *.Host and test code exempt)`, `drop a package from ${pj.name} or split it, or record a DEPS-FANOUT-003 exception for ${owner.id}`); } else measure("DEPS-FANOUT-003", owner.id, m3);
   }
   for (const e of edges.filter((x) => x.kind === "project")) {
     const has = real.has(`${e.from}|${e.to}`);
