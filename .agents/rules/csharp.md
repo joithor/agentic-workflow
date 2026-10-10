@@ -7,6 +7,7 @@ globs:
   - "**/*.slnx"
   - "global.json"
   - "Directory.Build.props"
+  - "Directory.Build.targets"
   - "Directory.Packages.props"
   - "nuget.config"
   - "BannedSymbols.txt"
@@ -23,6 +24,7 @@ paths:
   - "**/*.slnx"
   - "global.json"
   - "Directory.Build.props"
+  - "Directory.Build.targets"
   - "Directory.Packages.props"
   - "nuget.config"
   - "BannedSymbols.txt"
@@ -62,7 +64,7 @@ A package under ~1,500 lines may use two projects, `Core` and `App`, with the sa
 | `Core` has no I/O: no `System.IO`, `System.Net`, `Microsoft.Data.*`, `System.Diagnostics.Process`, `Console`, `DateTime.Now/UtcNow`, `DateTimeOffset.Now/UtcNow`, `Guid.NewGuid` — use `TimeProvider` and `IIdGenerator` ports | `BannedSymbols.txt` → `RS0030` (BannedApiAnalyzers, wired for `*.Core` in `Directory.Build.props`; another project opts in with `AwBannedSymbols=true`, as `Aw.Kernel` does) |
 | A slice never references another slice's types; the second use moves the logic into `Core` | ArchUnitNET (gap — R1b); `Aw.Analyzers` fast check (gap — R1b) |
 | `Infrastructure` row/DTO types are `internal`; repositories return `Core` types | ArchUnitNET (gap — R1b) |
-| Packages reference other packages only through their `Core` public surface (the reference sits in `Features`, or `App` in the small shape) or a CLI/HTTP contract | `node scripts/check-deps.mjs` against `deps.yaml` (gap — active once the deps-graph PR #92 merges) |
+| Packages reference other packages only through their `Core` public surface (the reference sits in `Features` (`App` in the small shape) or `Host`) or a CLI/HTTP contract | `node scripts/check-deps.mjs` against `deps.yaml` (gap — active once the deps-graph PR #92 merges) |
 | No namespace cycles inside a project | ArchUnitNET slice-cycle rule (gap — R1b) |
 | No `Common`, `Shared`, `Utils`, `Helpers` project or namespace | ArchUnitNET naming rule (gap — R1b) |
 
@@ -141,7 +143,7 @@ A package under ~1,500 lines may use two projects, `Core` and `App`, with the sa
 | `Bridge` host (MCP + HTTP) | NativeAOT if the MCP C# SDK passes the AOT spike, else framework-dependent |
 | `Evidence` (ui-evidence) | Framework-dependent (Playwright for .NET has no NativeAOT) |
 
-Every library project (see Project roles above: everything except `*.Tests`, `*.Testing`, `*.Host`, `*.Analyzers`) gets `IsAotCompatible=true` from `Directory.Build.props`; `Evidence`'s libraries opt out with `AwAotCompatible=false` and the reason. `PublishAot=true` only on the entry points above (a Host, or a small package's `App`), in their own project files. AOT publishing runs in its own CI job and in releases; local builds and tests are JIT.
+Every library project (see Project roles above: everything except `*.Tests`, `*.Testing`, `*.Host`, `*.Analyzers`) gets `IsAotCompatible=true` from the root build files; `Evidence`'s libraries opt out with `AwAotCompatible=false` and the reason. `PublishAot=true` only on the entry points above (a Host, or a small package's `App`), in their own project files. AOT publishing runs in its own CI job and in releases; local builds and tests are JIT.
 
 ## Seams (§4b.6, factory addendum §17.20–17.21)
 
