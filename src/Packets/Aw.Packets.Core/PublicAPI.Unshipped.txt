@@ -20,6 +20,7 @@ Aw.Packets.Core.Checks.CheckState.Pass = 1 -> Aw.Packets.Core.Checks.CheckState
 Aw.Packets.Core.Checks.CheckState.Unchecked = 3 -> Aw.Packets.Core.Checks.CheckState
 Aw.Packets.Core.Checks.PacketRules
 Aw.Packets.Core.Digest.PacketDigest
+Aw.Packets.Core.FreezeLocation
 Aw.Packets.Core.Ids.ExampleId
 Aw.Packets.Core.Ids.ExampleId.Equals(Aw.Packets.Core.Ids.ExampleId other, System.Collections.Generic.IEqualityComparer<Aw.Packets.Core.Ids.ExampleId>! comparer) -> bool
 Aw.Packets.Core.Ids.ExampleId.Equals(Aw.Packets.Core.Ids.ExampleId other) -> bool
@@ -86,7 +87,7 @@ Aw.Packets.Core.Model.AcceptanceExample.Holdout.get -> bool
 Aw.Packets.Core.Model.AcceptanceExample.Holdout.init -> void
 Aw.Packets.Core.Model.AcceptanceExample.Id.get -> Aw.Packets.Core.Ids.ExampleId
 Aw.Packets.Core.Model.AcceptanceExample.Id.init -> void
-Aw.Packets.Core.Model.AcceptanceExample.Text.get -> string!
+Aw.Packets.Core.Model.AcceptanceExample.Text.get -> string?
 Aw.Packets.Core.Model.AcceptanceExample.Text.init -> void
 Aw.Packets.Core.Model.DecisionLog
 Aw.Packets.Core.Model.DecisionLog.<Clone>$() -> Aw.Packets.Core.Model.DecisionLog!
@@ -106,7 +107,6 @@ Aw.Packets.Core.Model.Deferral.Deferral(string! Owner, string! BuildMayAssume) -
 Aw.Packets.Core.Model.Deferral.Equals(Aw.Packets.Core.Model.Deferral? other) -> bool
 Aw.Packets.Core.Model.Deferral.Owner.get -> string!
 Aw.Packets.Core.Model.Deferral.Owner.init -> void
-Aw.Packets.Core.FreezeLocation
 Aw.Packets.Core.Model.FreezeReceipt
 Aw.Packets.Core.Model.FreezeReceipt.<Clone>$() -> Aw.Packets.Core.Model.FreezeReceipt!
 Aw.Packets.Core.Model.FreezeReceipt.AlreadyFrozen.get -> bool
@@ -368,6 +368,7 @@ static Aw.Packets.Core.Checks.CheckResult.operator !=(Aw.Packets.Core.Checks.Che
 static Aw.Packets.Core.Checks.CheckResult.operator ==(Aw.Packets.Core.Checks.CheckResult? left, Aw.Packets.Core.Checks.CheckResult? right) -> bool
 static Aw.Packets.Core.Digest.PacketDigest.Canonical(System.Text.Json.Nodes.JsonNode! node) -> byte[]!
 static Aw.Packets.Core.Digest.PacketDigest.Compute(Aw.Packets.Core.Model.LoadedPacket! loaded) -> Aw.Kernel.Result<string!>!
+static Aw.Packets.Core.FreezeLocation.Of(Aw.Packets.Core.Model.FreezeRecord! record) -> Aw.Kernel.Result<string!>!
 static Aw.Packets.Core.Ids.ExampleId.From(string! value) -> Aw.Packets.Core.Ids.ExampleId
 static Aw.Packets.Core.Ids.ExampleId.operator !=(Aw.Packets.Core.Ids.ExampleId left, Aw.Packets.Core.Ids.ExampleId right) -> bool
 static Aw.Packets.Core.Ids.ExampleId.operator ==(Aw.Packets.Core.Ids.ExampleId left, Aw.Packets.Core.Ids.ExampleId right) -> bool
@@ -406,7 +407,6 @@ static Aw.Packets.Core.Model.DecisionLog.operator !=(Aw.Packets.Core.Model.Decis
 static Aw.Packets.Core.Model.DecisionLog.operator ==(Aw.Packets.Core.Model.DecisionLog? left, Aw.Packets.Core.Model.DecisionLog? right) -> bool
 static Aw.Packets.Core.Model.Deferral.operator !=(Aw.Packets.Core.Model.Deferral? left, Aw.Packets.Core.Model.Deferral? right) -> bool
 static Aw.Packets.Core.Model.Deferral.operator ==(Aw.Packets.Core.Model.Deferral? left, Aw.Packets.Core.Model.Deferral? right) -> bool
-static Aw.Packets.Core.FreezeLocation.Of(Aw.Packets.Core.Model.FreezeRecord! record) -> Aw.Kernel.Result<string!>!
 static Aw.Packets.Core.Model.FreezeReceipt.operator !=(Aw.Packets.Core.Model.FreezeReceipt? left, Aw.Packets.Core.Model.FreezeReceipt? right) -> bool
 static Aw.Packets.Core.Model.FreezeReceipt.operator ==(Aw.Packets.Core.Model.FreezeReceipt? left, Aw.Packets.Core.Model.FreezeReceipt? right) -> bool
 static Aw.Packets.Core.Model.FreezeRecord.operator !=(Aw.Packets.Core.Model.FreezeRecord? left, Aw.Packets.Core.Model.FreezeRecord? right) -> bool

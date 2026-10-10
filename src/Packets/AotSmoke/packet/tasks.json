@@ -7,7 +7,7 @@
       "writeScope": ["src/**", "new: src/c.cs"], "readSeeds": ["README.md"],
       "acceptance": [
         { "id": "e1", "text": "it builds", "evidence": ["test"] },
-        { "id": "h1", "text": "held out", "evidence": ["cli-transcript"], "holdout": true }
+        { "id": "h1", "evidence": ["cli-transcript"], "holdout": true }
       ],
       "budget": { "tokens": 100000 }
     },

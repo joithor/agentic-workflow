@@ -46,7 +46,18 @@ internal sealed class TaskBuilder(string id)
     /// <returns>This builder.</returns>
     public TaskBuilder Example(string exampleId, bool holdout, params string[] evidence)
     {
-        _examples.Add(new AcceptanceExample { Id = ExampleId.From(exampleId), Text = $"{exampleId} holds", Evidence = evidence, Holdout = holdout });
+        _examples.Add(new AcceptanceExample { Id = ExampleId.From(exampleId), Text = holdout ? null : $"{exampleId} holds", Evidence = evidence, Holdout = holdout });
+        return this;
+    }
+
+    /// <summary>Adds an acceptance example with exactly the given text (null for none), held out or not.</summary>
+    /// <param name="exampleId">The example id.</param>
+    /// <param name="holdout">Whether it is held out.</param>
+    /// <param name="text">Its text in the packet.</param>
+    /// <returns>This builder.</returns>
+    public TaskBuilder ExampleWithText(string exampleId, bool holdout, string? text)
+    {
+        _examples.Add(new AcceptanceExample { Id = ExampleId.From(exampleId), Text = text, Evidence = ["test"], Holdout = holdout });
         return this;
     }
 

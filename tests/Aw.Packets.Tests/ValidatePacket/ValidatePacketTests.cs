@@ -45,11 +45,11 @@ public sealed class ValidatePacketTests
         Assert.Equal(PacketId.From("demo-packet"), report.Packet);
         Assert.Equal(
             ["PKT-ID-001", "PKT-WS-001", "PKT-GRAPH-001", "PKT-GRAPH-002", "PKT-BASE-001", "PKT-SCOPE-001", "PKT-SCOPE-002",
-             "PKT-EVID-001", "PKT-DEC-001", "PKT-HOLD-001"],
+             "PKT-ACC-001", "PKT-EVID-001", "PKT-DEC-001", "PKT-HOLD-001", "PKT-HOLD-002"],
             report.Checks.Where(static c => c.State == CheckState.Pass).Select(static c => c.Rule),
             StringComparer.Ordinal);
         Assert.Equal(
-            ["PKT-SIZE-001", "PKT-HOLD-002", "PKT-FLOW-001"],
+            ["PKT-SIZE-001", "PKT-FLOW-001"],
             report.Checks.Where(static c => c.State == CheckState.Unchecked).Select(static c => c.Rule),
             StringComparer.Ordinal);
     }
@@ -210,5 +210,50 @@ public sealed class ValidatePacketTests
 
         Assert.True(defaulted.IsError);
         Assert.True(given.IsSuccess);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task Every_task_in_a_strongly_connected_group_is_named_once()
+    {
+        var report = await Validate(A.Packet()
+            .With(A.Task("t1").After("t2", "t3").Writing("src/a.cs").Example("h", holdout: true, "test"))
+            .With(A.Task("t2").After("t4").Writing("src/a.cs"))
+            .With(A.Task("t3").After("t4").Writing("src/a.cs"))
+            .With(A.Task("t4").After("t1").Writing("src/a.cs")));
+
+        var cycle = Assert.Single(Failures(report, "PKT-GRAPH-002"));
+        Assert.Contains("t1, t2, t3, t4", cycle.Message, StringComparison.Ordinal);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task A_deep_double_star_glob_is_checked_in_linear_time_not_a_crash()
+    {
+        var deep = string.Join('/', Enumerable.Repeat("a", 41));
+        var repo = new InMemoryRepoSnapshot().With(PacketBuilder.BaseSha, new HashSet<string>(PacketBuilder.BaseFiles, StringComparer.Ordinal) { deep });
+
+        var report = await Validate(A.Packet().With(A.Task("t1").Writing("src/**", string.Concat(Enumerable.Repeat("**/", 12)) + "zz").Example("h", holdout: true, "test")), repo);
+
+        Assert.Contains("matches no file", Assert.Single(Failures(report, "PKT-SCOPE-001")).Message, StringComparison.Ordinal);
+    }
+
+    [Theory, Trait("Lane", "unit")]
+    [InlineData(false, "it works", true)]
+    [InlineData(false, null, false)]
+    [InlineData(false, " ", false)]
+    public async Task Every_visible_example_has_text(bool holdout, string? text, bool passes)
+    {
+        var report = await Validate(A.Packet().With(A.Task("t1").ExampleWithText("e1", holdout, text).Example("h", holdout: true, "test")));
+
+        Assert.Equal(passes, Failures(report, "PKT-ACC-001").Count == 0);
+    }
+
+    [Theory, Trait("Lane", "unit")]
+    [InlineData(null, true)]
+    [InlineData("the secret expected output", false)]
+    public async Task A_held_out_example_keeps_no_text_in_the_packet(string? text, bool passes)
+    {
+        var report = await Validate(A.Packet().With(A.Task("t1").ExampleWithText("h1", holdout: true, text)));
+
+        Assert.Equal(passes, Failures(report, "PKT-HOLD-002").Count == 0);
     }
 }

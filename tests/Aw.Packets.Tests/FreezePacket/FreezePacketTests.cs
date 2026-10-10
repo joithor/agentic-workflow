@@ -116,4 +116,14 @@ public sealed class FreezePacketTests
 
         Assert.Equal(PacketsErrors.NotFound.Code, result.Error.Code);
     }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task A_duplicate_key_is_an_error_not_a_crash()
+    {
+        var files = Edit(PacketFiles.Of(A.Packet().Build()), "decisions.json", "\"text\": \"Which shape?\",", "\"text\": \"Which shape?\", \"text\": \"Which?\",");
+
+        var result = await Setup(files).Service.Handle(new FreezePacketRequest("pkt"), CancellationToken.None);
+
+        Assert.Equal(PacketsErrors.Malformed.Code, result.Error.Code);
+    }
 }

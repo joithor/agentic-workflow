@@ -59,4 +59,25 @@ public sealed class LoadingTests
     [Fact, Trait("Lane", "unit")]
     public async Task An_invalid_typed_id_is_AW_PACKETS_003() =>
         Assert.Equal("AW-PACKETS-003", await ErrorCode(static f => Replace(f, "packet.json", "\"demo-packet\"", "\"Demo Packet\"")));
+
+    [Theory, Trait("Lane", "unit")]
+    [InlineData("tasks.json", "\"schemaVersion\": 1,", "\"schemaVersion\": 1, \"schemaVersion\": 1,")]
+    [InlineData("decisions.json", "\"text\": \"Which shape?\",", "\"text\": \"Which shape?\", \"text\": \"Which?\",")]
+    public async Task A_duplicate_key_is_AW_PACKETS_003(string file, string from, string to) =>
+        Assert.Equal("AW-PACKETS-003", await ErrorCode(f => Replace(f, file, from, to)));
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task A_byte_order_mark_is_named_in_the_error()
+    {
+        var files = PacketFiles.Of(A.Packet().Build());
+        files["tasks.json"] = [0xEF, 0xBB, 0xBF, .. files["tasks.json"]];
+        var service = new ValidatePacketService(new PacketInspector(
+            new InMemoryPacketSource().With("pkt", files),
+            new InMemoryRepoSnapshot().With(PacketBuilder.BaseSha, PacketBuilder.BaseFiles)));
+
+        var result = await service.Handle(new ValidatePacketRequest("pkt"), CancellationToken.None);
+
+        Assert.Equal("AW-PACKETS-003", result.Error.Code);
+        Assert.Contains("byte order mark", result.Error.Message, StringComparison.Ordinal);
+    }
 }
