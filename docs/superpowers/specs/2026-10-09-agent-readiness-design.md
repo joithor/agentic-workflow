@@ -102,9 +102,13 @@ gets CI as a safety net until the switch. The standards in §4 still apply, expr
    The TS behavior is the reference for what the contract should do, not a byte-for-byte target, and the C# build
    is free to fix what the TS got wrong, except on the hook-facing CLI and file surface, which is frozen until the
    switch (§4c).
-2. **One package at a time,** lowest tier first, in the §10 R2 order: `Redaction` → `judge` and `mcp-bridge` →
-   `scorer`, `skills/ui-evidence` and the `skills/bugFixOrchestrator` state CLI → `sindri` (by module: profile and
-   ledger, scrub, observe, index, scope, evolve).
+2. **One package at a time,** lowest tier first, in the §10 R2 order: `Redaction` (done in R1b, #130) → `judge` and
+   `mcp-bridge` → `scorer`, `skills/ui-evidence` and the `skills/bugFixOrchestrator` state CLI → `sindri` (by module:
+   profile and ledger, scrub, observe, index, scope, evolve). Sindri's code outside those directories goes with a
+   module: the CLI, errors, ids, output, lock, doctor and docs code goes with profile and ledger, the first module
+   ported, which also builds Sindri's host; `secrets.ts` goes with scrub; `adapters` goes with observe. Shape, signals
+   and spool live under `sindri/src/index` and stay with index. `docs/readiness/r2-estimate.md` (#144) sizes each
+   module this way.
 3. **One clean cutover (decided 2026-10-10).** The installed TS toolkit stays untouched while the C# build is
    ported and proven beside it. Each package is "done" when its tests pass in every lane within budget, its AOT
    entry points build and pass the AOT CI job, the real hook scripts pass against its binaries in CI, and it
@@ -927,15 +931,17 @@ next PR shows it passing.
 
 ## 10. Rollout and sizing (rough, one builder with agents)
 
-Repo size today: about 24.6k lines of TypeScript source and 31.2k lines of tests, of which sindri is about half.
-Recent pace: about 49 commits in 60 days. The sizes below are estimates to be replaced by each packet's own.
+Repo size today (`main` at `1c18a76`, the R2 packages' `deps.yaml` scan paths, blank lines included): about 26.0k
+lines of TypeScript source and 34.9k lines of tests (25,967 and 34,905), of which sindri is about half. Recent pace:
+about 49 commits in 60 days. The step sizes below are rough; each R2 packet's own estimate, fixed in
+`docs/readiness/r2-estimate.md` (#144), replaces them.
 
 | Step | Contents | Size | Exit |
 |---|---|---|---|
 | R0 | Baseline: a quick manual pass over the nine pillars, recorded per criterion | XS | Baseline recorded |
 | R1a | **Safety and measurement:**<br>• CI hardened for a public repo, the agent App, the `main` and tag rulesets, the `main`-only key environment (§4d);<br>• fail-open logging in every hook (§4c, B5);<br>• the AOT spike (R7, R8, R9, the MCP C# SDK);<br>• the readiness baseline by a throwaway script (B2) | M (1–2 weeks) | Fail-open logging live; baseline recorded; agents can't bypass `main` |
-| R1b | **The template:**<br>• `Directory.Build.props`, Central Package Management, analyzers with one owner per rule, the ratchet baseline, `.editorconfig`;<br>• `Aw.Kernel` and its `Data`, `Telemetry` and `Testing` parts;<br>• `deps.yaml` with every edge kind and its checks (§4b.1a);<br>• the `/new-package` and `/new-slice` scaffolds (inputs, generated files, a red test) and `AGENTS.md` for C#;<br>• rule records for the §4b rules;<br>• W5 devcontainer and W6 templates;<br>• **`Aw.Readiness` and `Aw.Packets` as the first two standalone packages built from the template** (B2) | M (1–2 weeks) | A scaffolded package passes every check; `Aw.Readiness` reports Level 4 for the template; the R2 estimate is fixed here as the stop-rule baseline (B9) |
-| R2 | **The ports, one packet per package:** `Redaction` → `Judge` and `Bridge` → `Scorer`, `Evidence` and `BugFix` → `Sindri` (by module inside its packet). Then **the switch**: `./setup.sh --runtime cs` on the always-on box, then the laptop. **In parallel,** new factory code (addendum F0 schemas, rule records) is written in C# from the start | L–XL (estimate 6–10 weeks; each packet carries its own) | All packages done (§4a step 3); the switch done on both hosts; TS deleted 14 days later |
+| R1b | **The template:**<br>• `Directory.Build.props`, Central Package Management, analyzers with one owner per rule, the ratchet baseline, `.editorconfig`;<br>• `Aw.Kernel` and its `Data`, `Telemetry` and `Testing` parts;<br>• `deps.yaml` with every edge kind and its checks (§4b.1a);<br>• the `/new-package` and `/new-slice` scaffolds (inputs, generated files, a red test) and `AGENTS.md` for C#;<br>• rule records for the §4b rules;<br>• W5 devcontainer and W6 templates;<br>• **`Aw.Readiness` and `Aw.Packets` as the first two standalone packages built from the template** (B2) | M (1–2 weeks) | A scaffolded package passes every check; `Aw.Readiness` reports Level 4 for the template; the R2 estimate is fixed here as the stop-rule baseline (round-2 review item B9: the 1.5× stop rule had no fixed baseline), in `docs/readiness/r2-estimate.md` (#144) |
+| R2 | **The ports, one packet per package:** `Redaction` is done in R1b (#130), so R2 starts at `Judge` and `Bridge` → `Scorer`, `Evidence` and `BugFix` → `Sindri` (by module inside its packet). Then **the switch**: `./setup.sh --runtime cs` on the always-on box, then the laptop. **In parallel,** new factory code (addendum F0 schemas, rule records) is written in C# from the start | L–XL (6–10 calendar weeks, including merge waits and the switch; the stop rules compare against the fixed baseline instead: 53.8 agent-hours expected, band 19.2–117.2 h, #144) | All packages done (§4a step 3); the switch done on both hosts; TS deleted 14 days later |
 | R3 | Remaining Level 4 criteria that need usage data (promotion frequency, flake rates, doc freshness over time), and W9 | S–M | Level 4 passed. **Factory work (F0) starts here** |
 | R4 | Addendum F0–F3 plus the readiness module's weekly workflow | With the addendum | Level 5 passed |
 
@@ -953,9 +959,15 @@ the R1b stage PRs merged **and** the owner's label sync (§5 Level 3, TD-2):
 `aw-packets validate` and `aw-packets freeze` are the R1b packet commands (addendum §17.4).
 
 **Stop rules:**
-- A package that overruns its packet's estimate by 2× is reviewed with the human before more work goes in.
+- **The unit is agent elapsed hours.** A packet's clock starts at the `created` line of its verification plan and
+  stops at the packet's last commit before it's marked ready or blocked at the review cap. Time waiting for the
+  human to merge, and the switch itself, are excluded. Each packet's expected hours and thresholds are fixed in
+  `docs/readiness/r2-estimate.md` (#144) and change only through a re-plan with the human.
+- A package that overruns its packet's estimate by 2× is reviewed with the human before more work goes in. Sindri is
+  one packet, so the rule applies to its total, not per module.
 - **R2 as a whole** overrunning 1.5× its summed estimate triggers a re-plan with the human: reorder, cut scope, or
-  run more packets in parallel. The port itself is decided and isn't reopened.
+  run more packets in parallel. The port itself is decided and isn't reopened. The summed estimate excludes
+  Redaction (done): 53.8 h expected, so the re-plan point is 80.7 h.
 - CI cost while both builds exist: TS jobs run only on PRs that touch TS (bug fixes), and the C# jobs run on everything
   else.
 
