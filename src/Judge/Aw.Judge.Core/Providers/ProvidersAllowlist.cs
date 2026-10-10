@@ -1,12 +1,12 @@
-using Aw.Judge.Core.Providers;
+using Aw.Judge.Core.Errors;
 using Aw.Kernel;
 
-namespace Aw.Judge.Core;
+namespace Aw.Judge.Core.Providers;
 
 /// <summary>
 /// The providers allowlist: the global flag '--providers a,b', accepted anywhere in argv so it composes with every
 /// command, else AW_JUDGE_PROVIDERS (hooks can't always add flags). The Host prints an error as 'judge: &lt;message&gt;'
-/// and exits 64. It sits beside JudgeErrors so the Providers namespace stays below the root (no namespace cycle).
+/// and exits 64.
 /// </summary>
 /// <param name="Allowed">The allowed providers, deduplicated in first-seen order; null means every provider is allowed.</param>
 /// <param name="Arguments">argv without the flag and its value.</param>

@@ -1,5 +1,6 @@
 using System.Globalization;
 using System.Text.Json.Serialization;
+using Aw.Judge.Core.Errors;
 using Aw.Kernel;
 
 namespace Aw.Judge.Core.Config;

@@ -1,6 +1,6 @@
 using Aw.Kernel;
 
-namespace Aw.Judge.Core;
+namespace Aw.Judge.Core.Errors;
 
 /// <summary>The Judge error catalogue (codes AW-JUDGE-NNN).</summary>
 public static class JudgeErrors

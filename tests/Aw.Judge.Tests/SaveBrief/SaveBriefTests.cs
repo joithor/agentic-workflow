@@ -1,4 +1,4 @@
-using Aw.Judge.Core;
+using Aw.Judge.Core.Errors;
 using Aw.Judge.Core.Ids;
 using Aw.Judge.Features.SaveBrief;
 using Aw.Judge.Testing;
