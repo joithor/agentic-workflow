@@ -597,8 +597,6 @@ still TS.
   as the owner's OS user, so the owner's `gh` login and keychain are reachable in principle. Until then: sessions get a
   scrubbed environment (`GH_TOKEN` set to a short-lived App token, `GH_CONFIG_DIR` pointed at an App-only profile),
   and a hook denies `gh auth`, `security find-*` and reads of the owner's `gh` config.
-  The same deny hook also blocks `scripts/agent-token.sh` and any `AGENT_APP_*` variable in agent sessions: the script
-  reads the App key from the owner's keychain itself, so only the owner or the session launcher runs it.
 - The `main` ruleset requires each required check **from the GitHub Actions source**, so a check run posted by any
   other app can't satisfy it.
 - `main` is protected by a ruleset with an **empty bypass list**: required checks, linear history, no force pushes.
