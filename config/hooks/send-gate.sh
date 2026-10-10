@@ -5,14 +5,22 @@
 set -uo pipefail
 HOOK_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # HOOK-FAILOPEN: record why this hook is failing open (config/lib/failopen.sh,
-# installed at <hooks>/lib/failopen.sh). Logging only: never changes a decision.
+# installed at <hooks>/lib/failopen.sh). Logging only: it runs in a subshell
+# with its output discarded, so it can never change this hook's exit code,
+# stdout or stderr, whatever set -e/-u or the environment do to it.
 failopen() {
-  local d f; d="$(cd "$(dirname "${BASH_SOURCE[0]}")" 2>/dev/null && pwd)"
-  for f in "$d/lib/failopen.sh" "$d/../lib/failopen.sh"; do
-    if [ -f "$f" ]; then . "$f" 2>/dev/null && aw_failopen send-gate "$@"; break; fi
-  done
-  return 0
+  (
+    set +eu
+    d="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)" || exit 0
+    for f in "$d/lib/failopen.sh" "$d/../lib/failopen.sh"; do
+      if [ -f "$f" ]; then . "$f" && aw_failopen send-gate "$@"; exit 0; fi
+    done
+  ) > /dev/null 2>&1 || true
 }
+# A crash (exit other than 0 or 2) lets the call through under Claude Code; count
+# it. Under an adapter (AW_PROVIDER set) the adapter logs hook-exit-<N> instead.
+# The trap doesn't call exit, so the hook's exit status is unchanged.
+trap 'aw_rc=$?; [ -n "${AW_PROVIDER:-}" ] || case "$aw_rc" in 0|2) ;; *) failopen "exit-$aw_rc" ;; esac' EXIT
 # Installed layout first (scripts/install-wake-gating.sh copies locks.sh to
 # $HOOKS_DIR/lib/locks.sh alongside this script), then a raw repo-checkout
 # layout (config/hooks/send-gate.sh next to config/lib/locks.sh) — a bare
@@ -68,8 +76,9 @@ INPUT="$(cat 2>/dev/null || true)"
 SESSION_ID="$(printf '%s' "$INPUT" | jq -r '.session_id // "unknown"')"
 AGENT_TYPE="$(printf '%s' "$INPUT" | jq -r '.agent_type // empty')"
 MESSAGE="$(printf '%s' "$INPUT" | jq -r '.tool_input.message // empty')"
-# A readable payload with no message (a control message) is not a failure.
-[ -n "$MESSAGE" ] || { failopen input "$INPUT"; allow; }
+# A control message carries no message and is not a failure; a plain
+# SendMessage without one means the payload shape changed.
+[ -n "$MESSAGE" ] || { failopen input "$INPUT" '.tool_name == "SendMessage" and ((.tool_input.type // "message") == "message")'; allow; }
 
 # BLOCKER fix (Step 2, F6): a control message (shutdown_request,
 # shutdown_response, ...) is never routed through the classifier —

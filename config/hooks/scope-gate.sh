@@ -5,14 +5,22 @@
 # SubagentStart mapping (subagent-start-map.sh) can find it later.
 set -uo pipefail
 # HOOK-FAILOPEN: record why this hook is failing open (config/lib/failopen.sh,
-# installed at <hooks>/lib/failopen.sh). Logging only: never changes a decision.
+# installed at <hooks>/lib/failopen.sh). Logging only: it runs in a subshell
+# with its output discarded, so it can never change this hook's exit code,
+# stdout or stderr, whatever set -e/-u or the environment do to it.
 failopen() {
-  local d f; d="$(cd "$(dirname "${BASH_SOURCE[0]}")" 2>/dev/null && pwd)"
-  for f in "$d/lib/failopen.sh" "$d/../lib/failopen.sh"; do
-    if [ -f "$f" ]; then . "$f" 2>/dev/null && aw_failopen scope-gate "$@"; break; fi
-  done
-  return 0
+  (
+    set +eu
+    d="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)" || exit 0
+    for f in "$d/lib/failopen.sh" "$d/../lib/failopen.sh"; do
+      if [ -f "$f" ]; then . "$f" && aw_failopen scope-gate "$@"; exit 0; fi
+    done
+  ) > /dev/null 2>&1 || true
 }
+# A crash (exit other than 0 or 2) lets the call through under Claude Code; count
+# it. Under an adapter (AW_PROVIDER set) the adapter logs hook-exit-<N> instead.
+# The trap doesn't call exit, so the hook's exit status is unchanged.
+trap 'aw_rc=$?; [ -n "${AW_PROVIDER:-}" ] || case "$aw_rc" in 0|2) ;; *) failopen "exit-$aw_rc" ;; esac' EXIT
 
 if [ -n "${AW_JUDGE_CHILD:-}" ]; then
   echo '{"hookSpecificOutput":{"hookEventName":"PreToolUse","permissionDecision":"allow"}}'
@@ -42,7 +50,7 @@ PROMPT_TEXT="$(printf '%s' "$INPUT" | jq -r '.tool_input.prompt // empty')"
 # convention on its own Agent call's tool_input — exempt the same way a
 # read-only agent type is (brief-scope.ts's own pre-rule).
 SKILL_INTERNAL="$(printf '%s' "$INPUT" | jq -r '.tool_input.skill_internal // false')"
-[ -n "$TOOL_USE_ID" ] || { failopen input "$INPUT"; allow; }
+[ -n "$TOOL_USE_ID" ] || { failopen input "$INPUT" '.tool_name == "Agent"'; allow; }
 
 # The brief lives inside the dispatch's own prompt text, per convention: a
 # goal and acceptance criteria the dispatcher wrote there. This hook doesn't

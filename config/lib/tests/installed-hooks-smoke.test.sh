@@ -168,8 +168,8 @@ test_installed_fail_open_hooks_log_hook_failopen() {
     [ -f "$HOOKS_DIR/lib/failopen.sh" ] || { echo "FAIL: $installer did not install lib/failopen.sh"; exit 1; }
     printf 'not json' | AW_STATE_DIR="$STATE_DIR" PATH="$BIN_DIR:$PATH" bash "$HOOKS_DIR/$hook.sh" > /dev/null 2>&1 || true
     jq -e --arg h "$hook" 'select(.event == "HOOK-FAILOPEN" and .hook == $h and .cause == "input-unparsable")' \
-      "$STATE_DIR/hooks/failopen.log" > /dev/null 2>&1 \
-      || { echo "FAIL: installed $hook.sh did not log HOOK-FAILOPEN to $STATE_DIR/hooks/failopen.log"; exit 1; }
+      "$STATE_DIR/logs/failopen.log" > /dev/null 2>&1 \
+      || { echo "FAIL: installed $hook.sh did not log HOOK-FAILOPEN to $STATE_DIR/logs/failopen.log"; exit 1; }
   done
   echo "PASS: test_installed_fail_open_hooks_log_hook_failopen"
 }

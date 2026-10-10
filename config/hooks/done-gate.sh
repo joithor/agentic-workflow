@@ -4,14 +4,22 @@
 # unconditionally before touching anything else, so this can never loop.
 set -uo pipefail
 # HOOK-FAILOPEN: record why this hook is failing open (config/lib/failopen.sh,
-# installed at <hooks>/lib/failopen.sh). Logging only: never changes a decision.
+# installed at <hooks>/lib/failopen.sh). Logging only: it runs in a subshell
+# with its output discarded, so it can never change this hook's exit code,
+# stdout or stderr, whatever set -e/-u or the environment do to it.
 failopen() {
-  local d f; d="$(cd "$(dirname "${BASH_SOURCE[0]}")" 2>/dev/null && pwd)"
-  for f in "$d/lib/failopen.sh" "$d/../lib/failopen.sh"; do
-    if [ -f "$f" ]; then . "$f" 2>/dev/null && aw_failopen done-gate "$@"; break; fi
-  done
-  return 0
+  (
+    set +eu
+    d="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)" || exit 0
+    for f in "$d/lib/failopen.sh" "$d/../lib/failopen.sh"; do
+      if [ -f "$f" ]; then . "$f" && aw_failopen done-gate "$@"; exit 0; fi
+    done
+  ) > /dev/null 2>&1 || true
 }
+# A crash (exit other than 0 or 2) lets the call through under Claude Code; count
+# it. Under an adapter (AW_PROVIDER set) the adapter logs hook-exit-<N> instead.
+# The trap doesn't call exit, so the hook's exit status is unchanged.
+trap 'aw_rc=$?; [ -n "${AW_PROVIDER:-}" ] || case "$aw_rc" in 0|2) ;; *) failopen "exit-$aw_rc" ;; esac' EXIT
 [ -n "${AW_JUDGE_CHILD:-}" ] && exit 0
 
 INPUT="$(cat 2>/dev/null || true)"
@@ -61,7 +69,12 @@ CLAIM_TEXT="$(printf '%s' "$LAST_ASSISTANT_LINE" | jq -r '
   else ([.message.content[]? | select(.type=="text") | .text] | join("\n"))
   end
 ' 2>/dev/null)"
-[ -n "$CLAIM_TEXT" ] || exit 0
+CLAIM_RC=$?
+if [ -z "$CLAIM_TEXT" ]; then
+  # A tool-use-only turn has no text and is fine; a line jq can't read is not.
+  [ "$CLAIM_RC" -ne 0 ] && failopen transcript-line-unparsable
+  exit 0
+fi
 fi
 
 # A done claim is an assertion of completion, not any occurrence of a claim word.
@@ -135,6 +148,8 @@ if ! is_done_claim "$CLAIM_TEXT"; then
   printf '%s' "$ASK_INPUT" | AW_SESSION_ID="$SESSION_ID" judge ask-check > /dev/null 2>&1
   ASK_RC=$?
   set -e
+  # 0 = ask, 2 = continue; anything else is judge failing (auto-continue is lost).
+  case "$ASK_RC" in 0|2) ;; *) failopen "judge-ask-check-exit-$ASK_RC" ;; esac
   if [ "$ASK_RC" -eq 2 ] && [ -n "$SESSION_ID" ]; then
     mkdir -p "$SESSIONS_DIR"
     jq -nc --arg ts "$(date -u +%Y-%m-%dT%H:%M:%SZ)" '{auto_continued_at: $ts}' > "$SESSIONS_DIR/$SESSION_ID.json" 2>/dev/null || true
@@ -160,7 +175,15 @@ if printf '%s' "$SESSION_ID" | grep -qE '^[A-Za-z0-9._-]{1,80}$' && [ "${SESSION
   fi
 fi
 
-BRIEF_JSON="$(judge brief get "task:$SESSION_ID" 2>/dev/null || true)"
+# judge says "no brief for …" (exit 1) when there simply is none. Any other
+# failure drops the acceptance-criteria check to the RF-2 evidence check below.
+BRIEF_ERR="$(mktemp 2>/dev/null)" || BRIEF_ERR=/dev/null
+BRIEF_RC=0
+BRIEF_JSON="$(judge brief get "task:$SESSION_ID" 2>"$BRIEF_ERR")" || BRIEF_RC=$?
+if [ "$BRIEF_RC" -ne 0 ] && ! grep -q '^no brief for' "$BRIEF_ERR" 2>/dev/null; then
+  failopen "judge-brief-exit-$BRIEF_RC"
+fi
+[ "$BRIEF_ERR" = /dev/null ] || rm -f "$BRIEF_ERR"
 
 if [ -z "$BRIEF_JSON" ]; then
   # RF-2: no brief at all — only check that SOME evidence is mentioned.

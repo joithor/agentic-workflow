@@ -1,14 +1,22 @@
 #!/usr/bin/env bash
 set -euo pipefail
 # HOOK-FAILOPEN: record why this hook is failing open (config/lib/failopen.sh,
-# installed at <hooks>/lib/failopen.sh). Logging only: never changes a decision.
+# installed at <hooks>/lib/failopen.sh). Logging only: it runs in a subshell
+# with its output discarded, so it can never change this hook's exit code,
+# stdout or stderr, whatever set -e/-u or the environment do to it.
 failopen() {
-  local d f; d="$(cd "$(dirname "${BASH_SOURCE[0]}")" 2>/dev/null && pwd)"
-  for f in "$d/lib/failopen.sh" "$d/../lib/failopen.sh"; do
-    if [ -f "$f" ]; then . "$f" 2>/dev/null && aw_failopen detect-secrets "$@"; break; fi
-  done
-  return 0
+  (
+    set +eu
+    d="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)" || exit 0
+    for f in "$d/lib/failopen.sh" "$d/../lib/failopen.sh"; do
+      if [ -f "$f" ]; then . "$f" && aw_failopen detect-secrets "$@"; exit 0; fi
+    done
+  ) > /dev/null 2>&1 || true
 }
+# A crash (exit other than 0 or 2) lets the call through under Claude Code; count
+# it. Under an adapter (AW_PROVIDER set) the adapter logs hook-exit-<N> instead.
+# The trap doesn't call exit, so the hook's exit status is unchanged.
+trap 'aw_rc=$?; [ -n "${AW_PROVIDER:-}" ] || case "$aw_rc" in 0|2) ;; *) failopen "exit-$aw_rc" ;; esac' EXIT
 
 # PreToolUse hook: Aggressive secret detection in bash commands
 # Exit 2 = deny, Exit 0 = allow.
@@ -17,7 +25,7 @@ INPUT=$(cat)
 COMMAND=$(printf '%s\n' "$INPUT" | jq -r '.tool_input.command // empty' 2>/dev/null) || true
 # No command to check: log why when the payload itself was unreadable.
 if [ -z "$COMMAND" ]; then
-  failopen input "$INPUT"
+  failopen input "$INPUT" '.tool_name == "Bash"'
   exit 0
 fi
 

@@ -43,6 +43,9 @@ default_output() {
 aw_adapter_parse_args "$@" || { aw_adapter_failopen cursor args-invalid; default_output "${AW_ADAPTER_EVENT:-}"; exit 0; }
 
 RAW_INPUT="$(cat 2>/dev/null || true)"
+# An empty or unreadable host payload becomes {} below, which the canonical
+# hook can't check: log it here, where the raw payload is still visible.
+aw_adapter_failopen cursor input "$RAW_INPUT"
 [ -n "$RAW_INPUT" ] || RAW_INPUT='{}'
 printf '%s' "$RAW_INPUT" | jq -e 'type == "object"' > /dev/null 2>&1 || RAW_INPUT='{}'
 

@@ -19,15 +19,18 @@
 AW_ADAPTER_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 AW_ADAPTER_HOOKS_ROOT="$(cd "$AW_ADAPTER_DIR/.." && pwd)"
 
-# aw_adapter_failopen <provider> <cause> — HOOK-FAILOPEN logging for the
-# adapter's own fail-open paths (config/lib/failopen.sh: <hooks>/lib when
-# installed, config/lib in a checkout). Logging only; never prints.
+# aw_adapter_failopen <provider> <cause> [raw-input] — HOOK-FAILOPEN logging
+# for the adapter's own fail-open paths (config/lib/failopen.sh: <hooks>/lib
+# when installed, config/lib in a checkout). Cause "input" classifies the host
+# payload (empty-input, input-unparsable, …). Runs in a subshell with its output
+# discarded, so it can never change what the adapter prints or exits with.
 aw_adapter_failopen() {
-  local f
-  for f in "$AW_ADAPTER_DIR/../lib/failopen.sh" "$AW_ADAPTER_DIR/../../lib/failopen.sh"; do
-    if [ -f "$f" ]; then . "$f" 2>/dev/null && aw_failopen "$1-adapter" "$2"; break; fi
-  done
-  return 0
+  (
+    set +eu
+    for f in "$AW_ADAPTER_DIR/../lib/failopen.sh" "$AW_ADAPTER_DIR/../../lib/failopen.sh"; do
+      if [ -f "$f" ]; then . "$f" && aw_failopen "$1-adapter" "$2" "${3-}"; exit 0; fi
+    done
+  ) > /dev/null 2>&1 || true
 }
 
 AW_ADAPTER_RAW=0
