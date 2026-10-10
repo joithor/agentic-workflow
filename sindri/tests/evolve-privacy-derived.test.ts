@@ -20,6 +20,7 @@ describe("wordsFile", () => {
 describe("identifierTokens", () => {
   it("returns nothing for text without identifiers", () => {
     expect(identifierTokens("12 -- 34")).toEqual([]);
+    expect(identifierTokens("-- !! --")).toEqual([]); // no name spelled with separators either
   });
 
   it("splits on non-identifier characters, lowercases and drops tokens under 5 characters", () => {
