@@ -114,10 +114,14 @@ names go into the private profile and are approved once, together with `denyPatt
 
 At publish, for each repo with `private: true`:
 
-1. Open `index/<repo>.db` read-only. Missing DB or no built symbols layer → `SND-EVOLVE-017`, publish
-   refuses.
+1. Open `index/<repo>.db` read-only. Missing DB, no built symbols layer, or an unusable index (a missing
+   `meta`, `layers`, `files` or `symbols` table, or a file that isn't a SQLite database) →
+   `SND-EVOLVE-017`, publish refuses.
 2. Collect symbol names (`symbols.name`) and file path segments (each directory and the basename
-   without extension, from `files.path`).
+   without extension, from `files.path` and from every path `git ls-files` lists in the repo; a failed
+   listing → `SND-EVOLVE-019`, publish refuses). *(Amended in review: the index leaves out
+   `index.denyPaths`, secret globs, oversized and non-source files, exactly the paths an owner marks
+   sensitive, so their names never reached the set. Names only; no file is read.)*
 3. Keep tokens that are ≥ 5 characters, not in `/usr/share/dict/words` (case-insensitive), and not in
    the toolkit repo's own index vocabulary (its symbol names and path segments). A missing word list →
    `SND-EVOLVE-018`.

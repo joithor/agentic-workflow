@@ -6,7 +6,7 @@ import { indexPath, openIndex, type IndexDb } from "../src/index/db.js";
 import { buildDerivedSet, identifierProblem, identifierTokens, loadDerivedSet, privateRepos, unsetPrivateRepos, vocabularyOf, wordsFile } from "../src/evolve/privacy-derived.js";
 import { SindriError } from "../src/errors.js";
 import { seedIndex } from "./index-fixtures.js";
-import { makeDeps, tempDir } from "./helpers.js";
+import { gitRepo, makeDeps, tempDir } from "./helpers.js";
 
 const WORDS = new Set(["schedule", "nurse", "shift", "patient", "query", "utils"]);
 
@@ -62,31 +62,32 @@ describe("identifierProblem", () => {
 });
 
 describe("loadDerivedSet", () => {
-  function loaded(deps: ReturnType<typeof makeDeps>, repos: Record<string, { private?: boolean }>) {
-    return { profile: { tracker: { repo: "toolkit" } }, repos: Object.fromEntries(Object.entries(repos).map(([k, v]) => [k, { name: k, ...v }])) } as unknown as Parameters<typeof loadDerivedSet>[1];
+  // Each repo is a real (empty, by default) git checkout: publish lists a private repo's tracked files.
+  function loaded(deps: ReturnType<typeof makeDeps>, repos: Record<string, { private?: boolean; path?: string }>) {
+    return { profile: { tracker: { repo: "toolkit" } }, repos: Object.fromEntries(Object.entries(repos).map(([k, v]) => [k, { name: k, path: gitRepo({}), ...v }])) } as unknown as Parameters<typeof loadDerivedSet>[1];
   }
 
-  it("returns an empty set when no repo is private, without needing a word list", () => {
+  it("returns an empty set when no repo is private, without needing a word list", async () => {
     const deps = makeDeps({ env: { SINDRI_WORDS: "/nonexistent" } });
-    expect(loadDerivedSet(deps, loaded(deps, { toolkit: {}, other: { private: false } })).size).toBe(0);
+    expect((await loadDerivedSet(deps, loaded(deps, { toolkit: {}, other: { private: false } }))).size).toBe(0);
   });
 
-  it("refuses with SND-EVOLVE-018 when a repo is private and the word list is missing", () => {
+  it("refuses with SND-EVOLVE-018 when a repo is private and the word list is missing", async () => {
     const deps = makeDeps({ env: { SINDRI_WORDS: "/nonexistent" } });
-    expect(() => loadDerivedSet(deps, loaded(deps, { toolkit: {}, globex: { private: true } }))).toThrow(expect.objectContaining({ code: "SND-EVOLVE-018" }) as SindriError);
+    await expect(loadDerivedSet(deps, loaded(deps, { toolkit: {}, globex: { private: true } }))).rejects.toThrow(expect.objectContaining({ code: "SND-EVOLVE-018" }) as SindriError);
   });
 
-  it("refuses with SND-EVOLVE-017 when a private repo has no index or no ok structure layer", () => {
+  it("refuses with SND-EVOLVE-017 when a private repo has no index or no ok structure layer", async () => {
     const words = path.join(tempDir("w-"), "words");
     fs.writeFileSync(words, "schedule\nnurse\n");
     const deps = makeDeps({ env: { SINDRI_WORDS: words } });
     const l = loaded(deps, { toolkit: {}, globex: { private: true } });
-    expect(() => loadDerivedSet(deps, l)).toThrow(expect.objectContaining({ code: "SND-EVOLVE-017" }) as SindriError);
+    await expect(loadDerivedSet(deps, l)).rejects.toThrow(expect.objectContaining({ code: "SND-EVOLVE-017" }) as SindriError);
     seedIndex(openIndex(indexPath(deps, "globex")), { files: ["a.ts"], symbols: ["quarbleScheduler"], structure: "pending" }).close();
-    expect(() => loadDerivedSet(deps, l)).toThrow(expect.objectContaining({ code: "SND-EVOLVE-017" }) as SindriError);
+    await expect(loadDerivedSet(deps, l)).rejects.toThrow(expect.objectContaining({ code: "SND-EVOLVE-017" }) as SindriError);
   });
 
-  it("reads an index whose structure layer is ok while embeddings are still pending (Review Focus 3)", () => {
+  it("reads an index whose structure layer is ok while embeddings are still pending (Review Focus 3)", async () => {
     const words = path.join(tempDir("w-"), "words");
     fs.writeFileSync(words, "Schedule\nnurse\n");
     const deps = makeDeps({ env: { SINDRI_WORDS: words } });
@@ -94,26 +95,26 @@ describe("loadDerivedSet", () => {
     const db = seedIndex(openIndex(indexPath(deps, "globex")), { files: ["a.ts"], symbols: ["quarbleScheduler", "schedule"] });
     db.prepare("INSERT INTO layers (layer, stamp, status, detail, built_at) VALUES ('embeddings', 's', 'pending', 'embedded 1 of 9', 'x')").run();
     db.close();
-    const set = loadDerivedSet(deps, loaded(deps, { toolkit: {}, globex: { private: true } }));
+    const set = await loadDerivedSet(deps, loaded(deps, { toolkit: {}, globex: { private: true } }));
     expect([...set]).toEqual(["quarblescheduler"]);
   });
 
-  it("never treats the tracker repo as private, subtracting its vocabulary instead", () => {
+  it("never treats the tracker repo as private, subtracting its vocabulary instead", async () => {
     const words = path.join(tempDir("w-"), "words");
     fs.writeFileSync(words, "nurse\n");
     const deps = makeDeps({ env: { SINDRI_WORDS: words } });
     seedIndex(openIndex(indexPath(deps, "toolkit")), { files: ["t.ts"], symbols: ["renderTask"] }).close();
     seedIndex(openIndex(indexPath(deps, "globex")), { files: ["a.ts"], symbols: ["quarbleScheduler", "renderTask"] }).close();
-    const set = loadDerivedSet(deps, loaded(deps, { toolkit: { private: true }, globex: { private: true } }));
+    const set = await loadDerivedSet(deps, loaded(deps, { toolkit: { private: true }, globex: { private: true } }));
     expect([...set]).toEqual(["quarblescheduler"]);
   });
 
-  it("returns an empty set, without a word list, when only the tracker repo is marked private", () => {
+  it("returns an empty set, without a word list, when only the tracker repo is marked private", async () => {
     const deps = makeDeps({ env: { SINDRI_WORDS: "/nonexistent" } });
-    expect(loadDerivedSet(deps, loaded(deps, { toolkit: { private: true } })).size).toBe(0);
+    expect((await loadDerivedSet(deps, loaded(deps, { toolkit: { private: true } }))).size).toBe(0);
   });
 
-  it("refuses with SND-EVOLVE-017, with the rm fix, when the private index is missing any table or isn't a database", () => {
+  it("refuses with SND-EVOLVE-017, with the rm fix, when the private index is missing any table or isn't a database", async () => {
     const words = path.join(tempDir("w-"), "words");
     fs.writeFileSync(words, "nurse\n");
     const deps = makeDeps({ env: { SINDRI_WORDS: words } });
@@ -124,39 +125,62 @@ describe("loadDerivedSet", () => {
       const db = seedIndex(openIndex(file), { files: ["a.ts"], symbols: ["quarbleScheduler"] });
       db.exec(`DROP TABLE ${table}`);
       db.close();
-      expect(() => loadDerivedSet(deps, l), table).toThrow(expect.objectContaining({
+      await expect(loadDerivedSet(deps, l), table).rejects.toThrow(expect.objectContaining({
         code: "SND-EVOLVE-017", message: `repo globex is private but its code index is unusable (no usable ${table} table)`,
         fix: `rm ${file}, then sindri index build --repo globex, then rerun sindri evolve publish`,
       }) as SindriError);
     }
     fs.writeFileSync(file, "this file is not a SQLite database, only text that fills its first page".repeat(4));
-    expect(() => loadDerivedSet(deps, l)).toThrow(expect.objectContaining({ code: "SND-EVOLVE-017", message: "repo globex is private but its code index is unusable (not a database)" }) as SindriError);
+    await expect(loadDerivedSet(deps, l)).rejects.toThrow(expect.objectContaining({ code: "SND-EVOLVE-017", message: "repo globex is private but its code index is unusable (not a database)" }) as SindriError);
   });
 
-  it("subtracts nothing when the toolkit index is unusable: more identifiers are held, never fewer", () => {
+  it("subtracts nothing when the toolkit index is unusable: more identifiers are held, never fewer", async () => {
     const words = path.join(tempDir("w-"), "words");
     fs.writeFileSync(words, "nurse\n");
     const deps = makeDeps({ env: { SINDRI_WORDS: words } });
     fs.mkdirSync(path.dirname(indexPath(deps, "toolkit")), { recursive: true });
     fs.writeFileSync(indexPath(deps, "toolkit"), "not a database either, just a page of plain text".repeat(6));
     seedIndex(openIndex(indexPath(deps, "globex")), { files: ["a.ts"], symbols: ["renderTask"] }).close();
-    expect([...loadDerivedSet(deps, loaded(deps, { toolkit: {}, globex: { private: true } }))]).toEqual(["rendertask"]);
+    expect([...(await loadDerivedSet(deps, loaded(deps, { toolkit: {}, globex: { private: true } })))]).toEqual(["rendertask"]);
   });
 
-  it("names private and unset repos the same way for doctor and publish, never the tracker repo", () => {
+  it("adds the path segments of every tracked file of a private repo, also those its index skips (denyPaths, secrets, non-source)", async () => {
+    const words = path.join(tempDir("w-"), "words");
+    fs.writeFileSync(words, "nurse\nexports\nsecrets\n");
+    const deps = makeDeps({ env: { SINDRI_WORDS: words } });
+    seedIndex(openIndex(indexPath(deps, "globex")), { files: ["a.ts"], symbols: ["quarbleScheduler"] }).close();
+    const repo = gitRepo({ "customer-exports/zorbBillingMigration.sql": "x\n", "config/secrets/vexillaKeys.yaml": "x\n", "nurse.md": "x\n" });
+    fs.writeFileSync(path.join(repo, "untrackedPlumbus.txt"), "x\n");
+    const set = await loadDerivedSet(deps, loaded(deps, { toolkit: {}, globex: { private: true, path: repo } }));
+    expect([...set].sort()).toEqual(["config", "customer", "quarblescheduler", "vexillakeys", "zorbbillingmigration"]);
+  });
+
+  it("refuses with SND-EVOLVE-019 when a private repo's tracked files can't be listed (fail closed)", async () => {
+    const words = path.join(tempDir("w-"), "words");
+    fs.writeFileSync(words, "nurse\n");
+    const deps = makeDeps({ env: { SINDRI_WORDS: words } });
+    seedIndex(openIndex(indexPath(deps, "globex")), { files: ["a.ts"], symbols: ["quarbleScheduler"] }).close();
+    const notGit = tempDir("not-a-repo-");
+    await expect(loadDerivedSet(deps, loaded(deps, { toolkit: {}, globex: { private: true, path: notGit } }))).rejects.toThrow(expect.objectContaining({
+      code: "SND-EVOLVE-019", message: "couldn't list the tracked files of private repo globex, so publish can't check proposals for their names",
+      fix: "check that repos/globex.yaml's path is that repo's git checkout on this machine, then rerun sindri evolve publish",
+    }) as SindriError);
+  });
+
+  it("names private and unset repos the same way for doctor and publish, never the tracker repo", async () => {
     const deps = makeDeps();
     const l = loaded(deps, { toolkit: { private: true }, b: { private: true }, a: { private: true }, c: {}, d: { private: false } });
     expect(privateRepos(l)).toEqual(["a", "b"]);
     expect(unsetPrivateRepos(l)).toEqual(["c"]);
   });
 
-  it("refuses with SND-EVOLVE-017 when the private index has no usable layers table", () => {
+  it("refuses with SND-EVOLVE-017 when the private index has no usable layers table", async () => {
     const words = path.join(tempDir("w-"), "words");
     fs.writeFileSync(words, "nurse\n");
     const deps = makeDeps({ env: { SINDRI_WORDS: words } });
     const db = seedIndex(openIndex(indexPath(deps, "globex")), { files: ["a.ts"], symbols: ["quarbleScheduler"] });
     db.exec("DROP TABLE layers");
     db.close();
-    expect(() => loadDerivedSet(deps, loaded(deps, { toolkit: {}, globex: { private: true } }))).toThrow(expect.objectContaining({ code: "SND-EVOLVE-017" }) as SindriError);
+    await expect(loadDerivedSet(deps, loaded(deps, { toolkit: {}, globex: { private: true } }))).rejects.toThrow(expect.objectContaining({ code: "SND-EVOLVE-017" }) as SindriError);
   });
 });

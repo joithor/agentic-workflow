@@ -206,8 +206,9 @@ export async function publishProposals(ctx: EvolveCtx, o: { dryRun: boolean; noP
       fix: "add your workplace's names to privacy.denyTerms in the private profile, then sindri profile approve; or pass --no-privacy-terms to publish with the private-terms layer skipped (the other five layers still run)",
     });
   }
-  // May throw SND-EVOLVE-017/018 (a private repo without an index, no word list), also on --dry-run, before any write.
-  const derived = loadDerivedSet(ctx.deps, ctx.loaded);
+  // May throw SND-EVOLVE-017/018/019 (a private repo without a usable index, no word list, unlistable tracked files),
+  // also on --dry-run, before any write.
+  const derived = await loadDerivedSet(ctx.deps, ctx.loaded);
   const cfg = repoConfig(ctx.loaded);
   const monday = isoWeekMonday(ctx.deps.now());
   if (!o.dryRun) {

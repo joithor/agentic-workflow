@@ -23,8 +23,15 @@ export function identifierTokens(text: string): string[] {
 export function vocabularyOf(db: IndexDb): Set<string> {
   const out = new Set<string>();
   for (const r of db.prepare("SELECT name FROM symbols").all() as { name: string }[]) identifierTokens(r.name).forEach((t) => out.add(t));
-  for (const r of db.prepare("SELECT path FROM files").all() as { path: string }[]) {
-    for (const seg of r.path.split("/")) identifierTokens(seg.slice(0, seg.length - path.posix.extname(seg).length)).forEach((t) => out.add(t));
+  pathVocabulary((db.prepare("SELECT path FROM files").all() as { path: string }[]).map((r) => r.path)).forEach((t) => out.add(t));
+  return out;
+}
+
+// Each directory and the basename without extension of each path, as identifier tokens.
+export function pathVocabulary(paths: readonly string[]): Set<string> {
+  const out = new Set<string>();
+  for (const p of paths) {
+    for (const seg of p.split("/")) identifierTokens(seg.slice(0, seg.length - path.posix.extname(seg).length)).forEach((t) => out.add(t));
   }
   return out;
 }
@@ -46,13 +53,14 @@ export function unsetPrivateRepos(loaded: LoadedProfile): string[] {
   return Object.keys(loaded.repos).sort().filter((name) => name !== loaded.profile.tracker.repo && loaded.repos[name].private === undefined);
 }
 
-export function loadDerivedSet(deps: Deps, loaded: LoadedProfile): Set<string> {
+export async function loadDerivedSet(deps: Deps, loaded: LoadedProfile): Promise<Set<string>> {
   const priv = privateRepos(loaded);
   if (priv.length === 0) return new Set();
   const wf = wordsFile(deps);
   if (!fs.existsSync(wf)) throw new SindriError("SND-EVOLVE-018", `the word list ${wf} is missing, so publish can't tell private identifiers from English words`);
   const words = new Set(fs.readFileSync(wf, "utf8").split("\n").map((w) => w.trim().toLowerCase()).filter((w) => w !== ""));
-  const privateVocab = priv.map((name) => {
+  const privateVocab: Set<string>[] = [];
+  for (const name of priv) {
     // Fail closed: no index, an unbuilt one or an unusable one (a missing table, not a database) refuses.
     const file = indexPath(deps, name);
     const r = readBuiltIndex(file, vocabularyOf);
@@ -60,8 +68,16 @@ export function loadDerivedSet(deps: Deps, loaded: LoadedProfile): Set<string> {
       throw new SindriError("SND-EVOLVE-017", `repo ${name} is private but its code index is unusable (${r.detail})`, { fix: `rm ${file}, then sindri index build --repo ${name}, then rerun sindri evolve publish` });
     }
     if (r.state !== "ok") throw new SindriError("SND-EVOLVE-017", `repo ${name} is private but has no built code index`, { fix: `sindri index build --repo ${name}, then rerun sindri evolve publish` });
-    return r.value;
-  });
+    // The index skips denyPaths, secret globs, oversized and non-source files; their names still count, so every
+    // tracked path is read from git too (names only, never contents). Fail closed when git can't list them.
+    const ls = await deps.git.run(["ls-files", "-z"], loaded.repos[name].path, { foreign: true });
+    if (!ls.ok) {
+      throw new SindriError("SND-EVOLVE-019", `couldn't list the tracked files of private repo ${name}, so publish can't check proposals for their names`, {
+        fix: `check that repos/${name}.yaml's path is that repo's git checkout on this machine, then rerun sindri evolve publish`,
+      });
+    }
+    privateVocab.push(new Set([...r.value, ...pathVocabulary(ls.stdout.split("\0").filter((f) => f !== ""))]));
+  }
   // No usable toolkit index subtracts nothing: more identifiers are held, never fewer.
   const tk = readIndex(indexPath(deps, loaded.profile.tracker.repo), vocabularyOf);
   return buildDerivedSet({ privateVocab, toolkit: tk.state === "ok" ? tk.value : new Set(), words });

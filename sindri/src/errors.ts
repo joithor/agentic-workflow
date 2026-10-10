@@ -82,6 +82,7 @@ export const ERRORS = {
   "SND-EVOLVE-016": { summary: "That proposal's status doesn't allow a comparison.", fix: "sindri evolve show <id> prints its status; a rejected, adopted, merged or staged proposal is never compared again" },
   "SND-EVOLVE-017": { summary: "A private repo has no built code index, so publish can't check proposals for its identifiers.", fix: "sindri index build --repo <name>, then rerun sindri evolve publish" },
   "SND-EVOLVE-018": { summary: "The English word list publish uses to tell private identifiers from ordinary words is missing.", fix: "install a word list at /usr/share/dict/words (or point SINDRI_WORDS at one), then rerun sindri evolve publish" },
+  "SND-EVOLVE-019": { summary: "Publish couldn't list a private repo's tracked files, so it can't check proposals for their names.", fix: "check that the repo file's path is that repo's git checkout on this machine, then rerun sindri evolve publish" },
   "SND-CLI-900": { summary: "Unexpected internal error (a bug).", fix: "rerun with SINDRI_DEBUG=1 and report the output" },
 } as const satisfies Record<string, ErrorDef>;
 
