@@ -1,0 +1,70 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/jthorare/agentic-workflow/schemas/packets/decisions.schema.json",
+  "title": "Packet decisions file (schemaVersion 1)",
+  "type": "object",
+  "properties": {
+    "schemaVersion": {
+      "type": "integer"
+    },
+    "questions": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "\\S"
+          },
+          "text": {
+            "type": "string"
+          },
+          "asker": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "answer": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "deferred": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "properties": {
+              "owner": {
+                "type": "string"
+              },
+              "buildMayAssume": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "owner",
+              "buildMayAssume"
+            ]
+          },
+          "affects": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "id",
+          "text"
+        ]
+      }
+    }
+  },
+  "required": [
+    "schemaVersion",
+    "questions"
+  ]
+}

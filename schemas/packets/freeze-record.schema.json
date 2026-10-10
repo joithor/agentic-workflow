@@ -1,0 +1,40 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/jthorare/agentic-workflow/schemas/packets/freeze-record.schema.json",
+  "title": "Packet freeze-record file (schemaVersion 1)",
+  "type": "object",
+  "properties": {
+    "schemaVersion": {
+      "type": "integer"
+    },
+    "packet": {
+      "type": "string",
+      "pattern": "^[a-z0-9][a-z0-9-]{0,63}$"
+    },
+    "hash": {
+      "type": "string"
+    },
+    "digestVersion": {
+      "type": "integer"
+    },
+    "baseSha": {
+      "type": "string"
+    },
+    "frozenAt": true,
+    "files": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    }
+  },
+  "required": [
+    "schemaVersion",
+    "packet",
+    "hash",
+    "digestVersion",
+    "baseSha",
+    "frozenAt",
+    "files"
+  ]
+}
