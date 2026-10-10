@@ -59,7 +59,10 @@ public static class LaneCap
     }
 
     /// <summary>
-    /// The command-line check: 'lane-cap &lt;ctrf.json&gt;...'. Prints each violation (rule id, package, test, measured
+    /// The command-line check: 'lane-cap &lt;report-or-directory&gt;...'. A directory stands for every '*.ctrf' and
+    /// '*.json' file in it, which is what 'dotnet test --solution --report-xunit-ctrf --results-directory &lt;dir&gt;' writes
+    /// (one report per test project; a fixed '--report-xunit-ctrf-filename' would make the projects overwrite each
+    /// other's report). Prints each violation (rule id, package, test, measured
     /// seconds, limit, fix) and one summary line per report, plain text with no colour. Exit codes: 0 every report
     /// passes, 1 a test breaks a lane rule, 2 a usage or input error (missing file, not CTRF).
     /// </summary>
@@ -72,14 +75,14 @@ public static class LaneCap
         ArgumentNullException.ThrowIfNull(args);
         ArgumentNullException.ThrowIfNull(output);
         ArgumentNullException.ThrowIfNull(error);
-        if (args.Count == 0)
+        var paths = ReportPaths(args, error);
+        if (paths is null)
         {
-            error.WriteLine("usage: lane-cap <ctrf.json>...   (a report from dotnet test --report-xunit-ctrf)");
             return 2;
         }
 
         var failed = false;
-        foreach (var path in args)
+        foreach (var path in paths)
         {
             LaneCapReport report;
             try
@@ -103,6 +106,39 @@ public static class LaneCap
 
         output.WriteLine(failed ? "FAIL: a test breaks a lane rule (spec §4b.5)" : "OK");
         return failed ? 1 : 0;
+    }
+
+    private static List<string>? ReportPaths(IReadOnlyList<string> args, TextWriter error)
+    {
+        if (args.Count == 0)
+        {
+            error.WriteLine("usage: lane-cap <ctrf-report-or-directory>...   (from dotnet test --report-xunit-ctrf --results-directory <dir>)");
+            return null;
+        }
+
+        var paths = new List<string>();
+        foreach (var arg in args)
+        {
+            if (!Directory.Exists(arg))
+            {
+                paths.Add(arg);
+                continue;
+            }
+
+            var reports = Directory.EnumerateFiles(arg)
+                .Where(f => f.EndsWith(".ctrf", StringComparison.Ordinal) || f.EndsWith(".json", StringComparison.Ordinal))
+                .Order(StringComparer.Ordinal)
+                .ToList();
+            if (reports.Count == 0)
+            {
+                error.WriteLine($"lane-cap: {arg}: no CTRF reports (*.ctrf or *.json) in this directory");
+                return null;
+            }
+
+            paths.AddRange(reports);
+        }
+
+        return paths;
     }
 
     private static JsonDocument Parse(string json)
