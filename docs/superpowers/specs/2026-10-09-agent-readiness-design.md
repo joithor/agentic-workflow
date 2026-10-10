@@ -33,7 +33,8 @@ Sources: [Factory agent readiness](https://factory.com/product/agent-readiness),
   this project won't use (decision R4). **Our check is the score of record.** It covers every criterion we can
   reproduce from Factory's public pillars, levels and published examples, and marks any criterion it can't
   reproduce as `unknown`. `unknown` also covers a criterion whose data wasn't read on this run (`unread`, §8); an
-  unread criterion counts as not passing, so the reported level is a lower bound. Scouting (§17.18) watches Factory's public docs for criteria changes.
+  unread criterion counts as not passing, so the reported level is a lower bound. Scouting (§17.18) watches
+  Factory's public docs for criteria changes.
 
 ## 3. Where the repo stands (quick check, 2026-10-09)
 
@@ -382,8 +383,8 @@ group.MapPost("/items/{id}/start", async (ItemId id, StartItemBody body, IServic
   `node scripts/ci/lane-budgets.mjs` (R1b, #138): it runs after CI's build and times each run with `--no-build`, so
   compile time stays out and each test host's start-up stays in; it sums per `deps.yaml` package by `projectPrefix`
   (a test assembly no package owns, such as `Aw.Architecture.Tests`, is its own row) and reports LANE-PKG-001 (a
-  package's lane at or over its budget) or LANE-PKG-002 (a timed run failed). Each test's own time from xUnit's CTRF report
-  is checked against the same budget as an extra per-test cap (`Aw.Kernel.Testing` ships the check). The
+  package's lane at or over its budget) or LANE-PKG-002 (a timed run failed). Each test's own time from xUnit's
+  CTRF report is checked against the same budget as an extra per-test cap (`Aw.Kernel.Testing` ships the check). The
   per-test cap reads one CTRF report per test project, so a lane run writes them with `--report-xunit-ctrf
   --results-directory <dir>` (never a fixed `--report-xunit-ctrf-filename` with `--solution`, which keeps only the
   last project's report), then `dotnet run --project tests/Aw.LaneCap.Testing -- <dir>` checks them (R1b, #133).
@@ -851,7 +852,7 @@ next PR shows it passing.
     without admin rights) is `unknown` with `unread: true`. It counts as not passing, so the level is a lower bound
     and a run that couldn't read the host never scores higher than one that could. A target the level reaches holds
     whatever the unread criteria turn out to be; below the target, the unread criteria at or above the level reached
-    are listed under `unconfirmed`. The delta doesn't compare a criterion that was unread on either run.
+    and below the target (the only ones that could still raise it) are listed under `unconfirmed`. The delta doesn't compare a criterion that was unread on either run.
 - **Where results live:** until sindri is ported, `Aw.Readiness` keeps its own history under its own `deps.yaml`
   namespace (`readiness/`), for the delta and the first-run baseline; the switch keeps it (§4c). In R1b that is one
   JSON file per run, `${AW_STATE_DIR:-~/.agentic-workflow}/readiness/runs/<repo>/<scope>/<UTC time>-NNN.json`
@@ -923,7 +924,8 @@ Recent pace: about 49 commits in 60 days. The sizes below are estimates to be re
 **R1b exit, as measured (2026-10-10, `aw-readiness check`, R1b, #141).** The "Level 4 for the template" exit needs
 the R1b stage PRs merged **and** the owner's label sync (§5 Level 3, TD-2):
 - the readiness PR's branch alone: Level 2 (no devcontainer, env template, telemetry or templates yet);
-- all R1b stage branches merged in a scratch tree: Level 3. Level 2 passes at exactly 80% (8 of 10; SV-4, no tracked
+- the readiness PR with #130, #132, #136, #137, #138 and #140 merged in a scratch tree (its stack already holds
+  #131, #133 and #139): Level 3. Level 2 passes at exactly 80% (8 of 10; SV-4, no tracked
   pre-commit config, and SEC-1, branch protection unavailable on the repo's current plan, fail). Level 3 stops at 8
   of 11 (SEC-2 secret scanning unavailable, SEC-3 no CODEOWNERS, TD-2 labels not on the repo);
 - the same tree with `.github/labels.yml` applied to the repo (simulated): Level 4 holds. A CODEOWNERS file backed by
