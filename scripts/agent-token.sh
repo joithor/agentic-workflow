@@ -75,7 +75,7 @@ done
 for r in ${REPOS[@]+"${REPOS[@]}"}; do
   [[ "$r" =~ ^[A-Za-z0-9._-]{1,100}$ ]] || die "invalid repository name (letters, digits, . _ - only)" 2
 done
-for c in curl jq openssl; do
+for c in curl jq openssl pgrep; do
   command -v "$c" >/dev/null || die "$c is required"
 done
 
@@ -85,20 +85,26 @@ fi
 
 umask 077
 WORK="$(mktemp -d "${TMPDIR:-/tmp}/agent-token.XXXXXX")"
-trap 'rm -rf "$WORK"' EXIT
-REQ_PID=""
-# kill_tree PID: signal PID's descendants (the command substitution, curl), then PID.
+# kill_tree PID: snapshot PID's children, stop PID first (so the request job
+# can't go on to print), then its children (the command substitution, curl).
 kill_tree() {
-  local child
-  for child in $(pgrep -P "$1" 2>/dev/null); do kill_tree "$child"; done
+  local kids child
+  kids="$(pgrep -P "$1" 2>/dev/null || true)"
   kill -TERM "$1" 2>/dev/null || true
+  for child in $kids; do kill_tree "$child"; done
 }
-on_signal() {
-  [ -z "$REQ_PID" ] || kill_tree "$REQ_PID"
-  exit "$1"
+# On every exit — normal, `exit` from a trap, or a fatal signal bash doesn't
+# trap (USR1, ALRM, …) — stop any request job still running, found as this
+# shell's children so it doesn't matter whether `$!` was recorded yet.
+cleanup() {
+  local p
+  for p in $(pgrep -P $$ 2>/dev/null || true); do kill_tree "$p"; done
+  rm -rf "$WORK"
 }
-trap 'on_signal 130' INT
-trap 'on_signal 143' TERM
+trap cleanup EXIT
+trap 'exit 130' INT
+trap 'exit 143' TERM
+trap 'exit 129' HUP
 KEY="$WORK/key.pem"
 
 if [ -n "${AGENT_APP_KEY_FILE:-}" ]; then
@@ -146,10 +152,12 @@ unset jwt sig
 
 # The request runs as a background job and the main shell `wait`s on it: bash
 # defers a trap until a foreground child exits, but `wait` returns as soon as a
-# trapped signal arrives, so TERM/INT stop the script (and curl) at once. The
-# response stays in the job's memory and reaches jq through pipes (a bash 3.2
-# here-string would be a temp file).
+# trapped signal arrives, so TERM/INT/HUP stop the script at once, and the
+# EXIT trap (cleanup) stops the job and curl on any exit. The response stays in
+# the job's memory and reaches jq through pipes (a bash 3.2 here-string would
+# be a temp file).
 (
+  trap - EXIT INT TERM HUP # the job must not run the parent's cleanup
   resp="$(printf '%s\n' "$cfg" | curl -q -sS --max-time 30 -w '\n%{http_code}' --config -)" \
     || die "request to $API_URL failed"
   status="${resp##*$'\n'}"
@@ -175,5 +183,4 @@ REQ_PID=$!
 unset cfg
 rc=0
 wait "$REQ_PID" || rc=$?
-REQ_PID=""
 exit "$rc"
