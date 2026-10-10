@@ -45,6 +45,16 @@ public abstract class ReadRepositoryContract<TEntity, TId>
     /// <returns>The id.</returns>
     protected abstract TId MissingId();
 
+    /// <summary>
+    /// Whether <paramref name="found"/> is the entity that was stored as <paramref name="stored"/>. The default is
+    /// the type's equality. Override it for an aggregate without value equality: a SQL repository returns a new
+    /// instance, and fakes must return an equal copy too, never the stored instance.
+    /// </summary>
+    /// <param name="stored">What was seeded.</param>
+    /// <param name="found">What the implementation returned.</param>
+    /// <returns>True when they are the same entity.</returns>
+    protected virtual bool SameEntity(TEntity stored, TEntity found) => throw new NotSupportedException("red: SameEntity");
+
     /// <summary>A seeded entity comes back from 'Get' equal to what was stored.</summary>
     /// <returns>The test.</returns>
     [Fact]

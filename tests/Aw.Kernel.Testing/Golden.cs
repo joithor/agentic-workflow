@@ -39,6 +39,19 @@ public static class Golden
             : Path.Combine(root, relativePath);
     }
 
+    /// <summary>Checks output against a golden file in the test project's source tree (see <see cref="SourcePath"/>).</summary>
+    /// <param name="actual">The output.</param>
+    /// <param name="testAssembly">The test assembly; it declares <see cref="SourceRootKey"/>.</param>
+    /// <param name="relativePath">The golden file, relative to the test project directory.</param>
+    /// <param name="normalization">The declared normalization.</param>
+    public static void Match(string actual, Assembly testAssembly, string relativePath, Normalization normalization) =>
+        throw new NotSupportedException("red: Golden.Match(assembly)");
+
+    internal static void Match(string actual, string sourceRoot, string relativePath, Normalization normalization, bool update, bool inCi) =>
+        throw new NotSupportedException("red: Golden.Match(root)");
+
+    internal static bool IsCi(Func<string, string?> environment) => throw new NotSupportedException("red: Golden.IsCi");
+
     /// <summary>Checks <paramref name="actual"/> against the golden file after normalization.</summary>
     /// <param name="actual">The output.</param>
     /// <param name="goldenPath">The golden file.</param>
