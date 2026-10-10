@@ -2,7 +2,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
 
-import { excerptFor, parseSince, readRepoSessions, sessionOf, textBlocks, toolNames, transcriptsDir } from "../src/evolve/transcripts.js";
+import { excerptFor, parseSince, resolveRefs, readRepoSessions, sessionOf, textBlocks, toolNames, transcriptsDir } from "../src/evolve/transcripts.js";
 import { compileExtraPatterns, makeScrubber } from "../src/scrub/scrub.js";
 import { evolveFixture } from "./evolve-fixtures.js";
 import { tempDir } from "./helpers.js";
@@ -223,5 +223,29 @@ describe("excerptFor and transcriptsDir", () => {
     const ctx = { ...fx.ctx, loaded: { ...fx.ctx.loaded, profile: { ...fx.ctx.loaded.profile, sources: { ...fx.ctx.loaded.profile.sources, transcripts: { enabled: true, dir: "~/sessions" } } } } };
     expect(transcriptsDir(ctx)).toBe(path.join(fx.deps.home, "sessions"));
     fx.close();
+  });
+});
+
+describe("resolveRefs (privacy B1)", () => {
+  it("returns the full scrubbed text of every resolvable transcript ref in one scan, tool results included", () => {
+    const d = tempDir();
+    fs.mkdirSync(path.join(d, "proj"));
+    fs.writeFileSync(
+      path.join(d, "proj", "5e55a1d0-1111.jsonl"),
+      [
+        line({ type: "user", cwd: "/repo", message: { content: "first line\twith a tab" } }),
+        line({ type: "user", cwd: "/repo", message: { content: [{ type: "tool_result", content: "x".repeat(500) }] } }),
+      ].join("\n"),
+    );
+    const session = "5e55a1d0";
+    const m = resolveRefs(d, "/repo", [`transcript:${session}#1`, `transcript:${session}#2`, "pr:12", "transcript:zzzzzzzz#9"]);
+    expect(m.get(`transcript:${session}#1`)).toBe("first line with a tab");
+    expect(m.get(`transcript:${session}#2`)).toHaveLength(500); // not cut to the 300-character excerpt
+    expect(m.has("pr:12")).toBe(false);
+    expect(m.size).toBe(2);
+  });
+
+  it("returns an empty map for no refs without reading anything", () => {
+    expect(resolveRefs("/nonexistent", "/nonexistent", []).size).toBe(0);
   });
 });

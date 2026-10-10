@@ -165,12 +165,23 @@ export function parseSince(v: string | undefined, now: Date): Date {
 // is on: that flag governs scoping, and evolve only ever reads this repo's sessions.
 export const transcriptsDir = (ctx: EvolveCtx): string => ctx.loaded.profile.sources.transcripts.dir.replace(/^~(?=\/|$)/, ctx.deps.home);
 
+// Full text behind transcript refs, scrubbed, in one scan of this repo's sessions (what generalize and the
+// verbatim gate read). Refs resolve only through this repo's sessions (Review Focus 5), so another repo's
+// line is never returned even when its session prefix matches.
+export function resolveRefs(dir: string, repo: string, refs: readonly string[], scrub: Scrubber = scrubber): Map<string, string> {
+  const want = new Set(refs);
+  const out = new Map<string, string>();
+  if (want.size === 0) return out;
+  for (const line of readRepoSessions(dir, repo, new Date(0), Infinity).lines) {
+    if (!want.has(line.ref)) continue;
+    const text = line.blocks.map((b) => b.text).join(" ").replace(/[\u0000-\u001f\u007f]+/g, " ").trim();
+    if (text !== "") out.set(line.ref, scrub.scrub(text).text);
+  }
+  return out;
+}
+
 // A short, scrubbed, single-line excerpt for a transcript:<session>#<line> ref (what `show` prints).
-// Refs resolve only through this repo's sessions (Review Focus 5), so another repo's line is never
-// printed even when its session prefix matches.
 export function excerptFor(dir: string, repo: string, ref: string, max = 300, scrub: Scrubber = scrubber): string | null {
-  const line = readRepoSessions(dir, repo, new Date(0), Infinity).lines.find((l) => l.ref === ref);
-  if (line === undefined) return null;
-  const text = line.blocks.map((b) => b.text).join(" ").replace(/[\u0000-\u001f\u007f]+/g, " ").trim();
-  return text === "" ? null : scrub.scrub(text).text.slice(0, max);
+  const text = resolveRefs(dir, repo, [ref], scrub).get(ref);
+  return text === undefined ? null : text.slice(0, max);
 }
