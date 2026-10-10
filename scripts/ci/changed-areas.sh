@@ -48,6 +48,9 @@ classify_changes() {
       spikes/*) continue ;;  # throwaway spike projects: no area, never the dotnet job
     esac
     case "$file" in
+      scripts/dotnet-verify-packages.sh) dotnet=true ;;  # the .NET job runs it; its bash test runs below
+    esac
+    case "$file" in
       config/*|scripts/*|providers/*|setup.sh|mods/*|skills/*|.agents/*|AGENTS.md|CLAUDE.md|.claude/*|.cursor/*)
         bash=true ;;
       src/*|tests/*|schemas/packets/*|*.cs|*.csproj|*.props|*.targets|*.slnx|global.json|nuget.config|.editorconfig|BannedSymbols.txt|packages.lock.json|.config/dotnet-tools.json)

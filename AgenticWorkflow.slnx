@@ -1,5 +1,6 @@
 <Solution>
   <Folder Name="/src/">
+    <Project Path="src/Aw.Analyzers/Aw.Analyzers.csproj" />
     <Project Path="src/Aw.Kernel/Aw.Kernel.csproj" />
     <Project Path="src/Aw.Kernel.Data/Aw.Kernel.Data.csproj" />
     <Project Path="src/Aw.Kernel.Telemetry/Aw.Kernel.Telemetry.csproj" />
@@ -14,6 +15,7 @@
     <Project Path="src/Readiness/Aw.Readiness.App/Aw.Readiness.App.csproj" />
   </Folder>
   <Folder Name="/tests/">
+    <Project Path="tests/Aw.Analyzers.Tests/Aw.Analyzers.Tests.csproj" />
     <Project Path="tests/Aw.Kernel.Testing/Aw.Kernel.Testing.csproj" />
     <Project Path="tests/Aw.Kernel.Tests/Aw.Kernel.Tests.csproj" />
     <Project Path="tests/Aw.Kernel.Testing.Tests/Aw.Kernel.Testing.Tests.csproj" />

@@ -27,6 +27,14 @@
     <InvariantGlobalization>true</InvariantGlobalization>
   </PropertyGroup>
 
+  <!-- Aw.Analyzers (spec §4b.6, AW1001–AW1009): every production project (not test code, not the analyzer itself)
+       loads the repo rules as an analyzer only. ReferenceOutputAssembly=false keeps it out of the build output and
+       the runtime; the analyzer's own compiler dependency is PrivateAssets=all, so nothing flows into the project.
+       deps.yaml declares Analyzers edge-less (analyzer: true); check-deps allows this reference here (DEPS-PROJ-005/006). -->
+  <ItemGroup Condition="'$(AwIsTestProject)' != 'true' and '$(AwIsAnalyzerProject)' != 'true'">
+    <ProjectReference Include="$(MSBuildThisFileDirectory)src/Aw.Analyzers/Aw.Analyzers.csproj"
+                      OutputItemType="Analyzer" ReferenceOutputAssembly="false" PrivateAssets="all" />
+  </ItemGroup>
   <!-- An entry point's PublishAot is off in a plain build (no RID), which would also switch off the trim, AOT and
        single-file analyzers a Host relies on (a Host isn't a library, so IsAotCompatible doesn't cover it). They
        add no package, so the lock file stays RID-free. -->

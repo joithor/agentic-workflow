@@ -274,18 +274,13 @@ jobs:
             echo "::error::SDK $got is not the global.json pin $want"
             exit 1
           fi
-      - name: dotnet restore (locked, one retry)
+      - name: dotnet restore (locked, signature-verified) and the NuGet supply-chain check
         if: steps.sln.outputs.run == 'true'
-        env:
-          SLN: ${{ steps.sln.outputs.sln }}
-        # NU1900 (vulnerability feed unreachable) is an error by design; a feed outage
-        # gets one retry before the job fails.
-        run: |
-          if ! dotnet restore "$SLN" --locked-mode; then
-            echo "::warning::dotnet restore failed — retrying once in 30s (NU1900 feed outages are transient)"
-            sleep 30
-            dotnet restore "$SLN" --locked-mode
-          fi
+        # scripts/dotnet-verify-packages.sh (spec §4b.6, §4d; merge gate item 8): every solution project has a
+        # committed lock file; a locked, signature-verified restore (one retry: NU1900 feed outages are transient)
+        # leaves them unchanged; and `dotnet nuget verify --all` passes for every locked package (analyzers
+        # included: they run in every build). The build and test steps below use this restore.
+        run: bash scripts/dotnet-verify-packages.sh
       - name: dotnet build
         if: steps.sln.outputs.run == 'true'
         env:

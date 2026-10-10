@@ -54,6 +54,10 @@ expect "a .NET tool manifest change runs dotnet" \
   "$(printf '.config/dotnet-tools.json\n')" \
   "$(printf 'bash=false\ndotnet=true\npackages=[]')"
 
+expect "the NuGet supply-chain script runs dotnet (where CI runs it) and bash (its test)" \
+  "$(printf 'scripts/dotnet-verify-packages.sh\n')" \
+  "$(printf 'bash=true\ndotnet=true\npackages=[]')"
+
 expect "spike projects never run dotnet" \
   "$(printf 'spikes/aot/Spike.csproj\nspikes/aot/Program.cs\nspikes/Directory.Build.props\n')" \
   "$(printf 'bash=false\ndotnet=false\npackages=[]')"

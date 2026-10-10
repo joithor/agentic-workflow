@@ -156,7 +156,5 @@ it with the first `Guid` or `int` id (a `Core` with only string ids keeps RS0041
 ## Not covered yet
 
 - `long`-backed ids: add `Int64IdJsonConverter<TId>` with the first such id.
-- The "no raw `string`/`Guid` in public `Core`/`Features` signatures" analyzer: an `Aw.Analyzers` gap (R1b). It needs
-  an exemption for each id's generated `IParsable` string members.
 - `Aw.Kernel.Data` overloads constrained on `ITypedId` (`BindId<TId>`, `GetId<TId>`): a follow-up once this and
   `Aw.Kernel.Data` are both merged.

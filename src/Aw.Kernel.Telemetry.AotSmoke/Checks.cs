@@ -70,6 +70,7 @@ internal static class Checks
         using var runtime = TelemetryRuntime.Start(new TelemetryOptions { ServiceName = Service, Sink = new MemorySink(), TraceExporter = collector });
         using (var span = _source.StartActivity("call"))
         {
+            // why: the runtime started above listens to this source, so StartActivity returns an activity.
             span!.DisplayName = "call " + Samples.GithubToken;
             _ = span.SetTag("header", Samples.Bearer).SetTag("count", 2);
         }
