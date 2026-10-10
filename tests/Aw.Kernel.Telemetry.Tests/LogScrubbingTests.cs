@@ -252,4 +252,18 @@ public sealed class LogScrubbingTests
 
         Assert.Contains("[REDACTED:too-deep]", Assert.Single(h.Sink.Lines), StringComparison.Ordinal);
     }
+
+    [Fact]
+    public void A_key_value_pair_or_tuple_inside_an_object_is_cut_at_its_secret_key()
+    {
+        using var h = new Harness();
+        var anon = new { User = "a", Pair = new KeyValuePair<string, string>("password", "hunter2-plain") };
+        var pair = new KeyValuePair<string, (string, string)>("creds", ("password", "hunter2-plain"));
+
+        h.Logger().EmitTemplate("{Anon} {Pair}", ("Anon", anon), ("Pair", pair));
+
+        var line = Assert.Single(h.Lines());
+        Assert.Equal("{ User = a, Pair = [password, [REDACTED:secret-field]] } [creds, (password, [REDACTED:secret-field])]", line.GetProperty("message").GetString());
+        Assert.DoesNotContain("hunter2", h.Sink.Text, StringComparison.Ordinal);
+    }
 }

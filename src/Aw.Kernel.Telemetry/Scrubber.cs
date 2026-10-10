@@ -149,8 +149,7 @@ internal sealed partial class Scrubber(IRedactor redactor)
 
                 withheld = true;
                 var head = text[..(member.Index + member.Length)];
-                var open = head.Count(c => c == '{') - head.Count(c => c == '}');
-                return head + ScrubResult.SecretFieldText + string.Concat(Enumerable.Repeat(" }", Math.Max(open, 0)));
+                return head + ScrubResult.SecretFieldText + Closers(head);
             }
         }
         catch (RegexMatchTimeoutException)
@@ -160,6 +159,25 @@ internal sealed partial class Scrubber(IRedactor redactor)
         }
 
         return text;
+    }
+
+    // The brackets left open in a cut text, closed innermost first: " }" for an object, "]" for a key-value pair, ")" for a tuple.
+    private static string Closers(string head)
+    {
+        var open = new Stack<char>();
+        foreach (var c in head)
+        {
+            if (c is '{' or '[' or '(')
+            {
+                open.Push(c);
+            }
+            else if (c is '}' or ']' or ')' && open.Count > 0)
+            {
+                _ = open.Pop();
+            }
+        }
+
+        return string.Concat(open.Select(c => c switch { '{' => " }", '[' => "]", _ => ")" }));
     }
 
     private string[] ScrubElements(IEnumerable items, ref ScrubTally tally)
@@ -200,7 +218,8 @@ internal sealed partial class Scrubber(IRedactor redactor)
     private static bool IsNumberOrFlag(object value) =>
         value is bool or byte or sbyte or short or ushort or int or uint or long or ulong or float or double or decimal;
 
-    // "Name = " after "{ " or ", ", as a record's or anonymous object's ToString() prints a member.
-    [GeneratedRegex(@"(?<=[{,] )(?<name>[A-Za-z_][A-Za-z0-9_]*) = ", RegexOptions.CultureInvariant, matchTimeoutMilliseconds: 1000)]
+    // "Name = " after "{ " or ", ", as a record's or anonymous object's ToString() prints a member; or "[name, " /
+    // "(name, " as a KeyValuePair or a tuple prints its key when it sits inside another object's text.
+    [GeneratedRegex(@"(?<=[{,] )(?<name>[A-Za-z_][A-Za-z0-9_]*) = |(?<=[\[(])(?<name>[A-Za-z_][A-Za-z0-9_.-]*), ", RegexOptions.CultureInvariant, matchTimeoutMilliseconds: 1000)]
     private static partial Regex Member { get; }
 }
