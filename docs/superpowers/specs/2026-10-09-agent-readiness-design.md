@@ -322,8 +322,10 @@ group.MapPost("/items/{id}/start", async (ItemId id, StartItemBody body, IServic
     per-rule lines, and `dotnet_analyzer_diagnostic.category-<X>.severity` lines where a whole category is raised);
   - `IsAotCompatible=true` on every library project: everything except `*.Tests`, `*.Testing`, `*.Host` and
     `*.Analyzers` (so `Core`, `Features`, `Infrastructure`, a small package's `App`, Kernel and Redaction). A library
-    that can't be AOT-compatible opts out with `AwAotCompatible=false` and a reason. `PublishAot=true` only on the
-    entry points in the table below;
+    that can't be AOT-compatible opts out with `AwAotCompatible=false` and a reason in its `.csproj` (the setting
+    lives in `Directory.Build.targets`, after the project body, so the opt-out is seen). Only TFMs that support it
+    (net8.0 and later), so a netstandard2.0 source generator doesn't fail with NETSDK1210. `PublishAot=true` only on
+    the entry points in the table below;
   - `GenerateDocumentationFile=true` everywhere (IDE0005 needs it); test projects turn off CS1591 instead;
   - NuGet audit: NU1903 and NU1904 (high, critical) fail the build, NU1901 and NU1902 stay warnings, because the
     advisory data is live and would otherwise turn every branch red without a repo change;
@@ -332,7 +334,9 @@ group.MapPost("/items/{id}/start", async (ItemId id, StartItemBody body, IServic
     (`scripts/dotnet-verify-packages.sh`).
 - Test projects (under `tests/`) get their analyzer policy from `tests/.editorconfig`: CA1707, CA2007, CA1515,
   RS0016, RS0017, RS0036, RS0037 and CS1591 off, each with its reason. CA2007 elsewhere applies to libraries only
-  (`output_kind = DynamicallyLinkedLibrary`): hosts have no SynchronizationContext.
+  (`output_kind = DynamicallyLinkedLibrary`): hosts have no SynchronizationContext. Placement is checked (AW0002):
+  every `*.Tests` and `*.Testing` project, including `Aw.Kernel.Testing`, lives under `tests/`, and nothing else
+  does.
 - `Directory.Packages.props`: Central Package Management with exact versions (`[x.y.z]`; a bare version is a
   minimum). Analyzers are added as
   `GlobalPackageReference`: `Microsoft.CodeAnalysis.NetAnalyzers`, `Meziantou.Analyzer`, `Roslynator.Analyzers`,
@@ -388,6 +392,7 @@ agentic-workflow/
 │   ├── Aw.Architecture.Tests/         # one assembly for every rule in §4b.1
 │   ├── Sindri.Tests/                  # by feature; lanes as traits
 │   ├── Sindri.Testing/                # fakes + builders + contract bases
+│   ├── Aw.Kernel.Testing/             # tier 0 with Aw.Kernel, but lives here like every *.Testing (AW0002)
 │   └── …
 ├── tools/ts-indexer/                  # the pinned Node sidecar (§4a)
 ├── mods/                              # Claude Code mods (TypeScript, thin)
@@ -534,7 +539,10 @@ still TS.
   mode in CI. Restore applies the trusted-signer policy only when signature verification is on (off by default on
   macOS; `DOTNET_NUGET_SIGNATURE_VERIFICATION=true` turns it on) and only to packages it extracts, so a warm cache
   is never re-checked. The enforcement step is `scripts/dotnet-verify-packages.sh` in CI: lock files present and
-  unchanged, a signature-verified locked restore, and `dotnet nuget verify --all` over every locked package. Analyzer packages run code in every build, so they get the same review as runtime dependencies.
+  unchanged, a signature-verified locked restore, and `dotnet nuget verify --all` over every locked package. One
+  carve-out: a package whose only failures are an expired signature (NU3037) or a timestamp from a since-distrusted
+  authority (NU3028), which restore accepts, passes with a warning; any other failure fails. Analyzer packages run
+  code in every build, so they get the same review as runtime dependencies.
 - The TS-indexer sidecar installs with `--ignore-scripts`, runs with no network and no secrets, and talks over
   stdin and stdout only (a versioned JSON protocol with its own golden tests).
 
