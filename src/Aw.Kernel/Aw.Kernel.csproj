@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- Aw.Kernel: tier 0 (deps.yaml), the BCL only (spec §4b.1, §4b.1a). Result, Error and the error
+       catalogue, IService and decorators, the id port, the event envelope and outbox seams, and the
+       Node-compatible JSON profile (spec §4b.3, §4b.6, §4c). -->
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <RootNamespace>Aw.Kernel</RootNamespace>
+    <!-- Kernel is domain-free shared code: no clock, ids, I/O or environment of its own (BannedSymbols.txt). -->
+    <AwBannedSymbols>true</AwBannedSymbols>
+    <!-- NodeJsonEncoder implements JavaScriptEncoder, whose abstract members take char pointers. -->
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="Aw.Kernel.Tests" />
+  </ItemGroup>
+</Project>
