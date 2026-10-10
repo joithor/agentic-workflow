@@ -6,40 +6,47 @@
 
 Repository: `jthorare/agentic-workflow` · Apps (7): `mcp-bridge`, `scorer`, `judge`, `sindri`, `skills/ui-evidence`, `skills/bugFixOrchestrator`, `mods/aw-live`
 
-Generated: 2026-10-10T06:29:09.604Z
+Generated: 2026-10-10T06:57:11.870Z
 
 ## Summary
 
-**Overall level: 1** (of 5). Cells show passed credit / scored criteria at that level.
+**Overall level: 1** (of 5). Cells show passed credit / scored criteria at that level; `skip`
+is a level with nothing scored that the walk passed; `—` is nothing scored and not reached.
 
 | Pillar | L1 | L2 | L3 | L4 | L5 | Level |
 |---|---|---|---|---|---|---|
 | Style & Validation | 0.86 / 3 (29%) | 0 / 1 (0%) | — | — | — | 1 |
-| Build System | — | 1.86 / 3 (62%) | — | 0 / 1 (0%) | — | 1 |
-| Testing | 1 / 1 (100%) | — | 1.43 / 2 (71%) | 0 / 2 (0%) | — | 2 |
-| Documentation | 1 / 1 (100%) | 1 / 1 (100%) | — | 0 / 1 (0%) | — | 3 |
-| Development Environment | — | 1 / 3 (33%) | — | — | — | 1 |
-| Debugging & Observability | — | — | 0.14 / 3 (5%) | — | — | 1 |
-| Security | — | 0 / 1 (0%) | 0 / 2 (0%) | — | — | 1 |
-| Task Discovery | — | — | 0 / 3 (0%) | — | — | 1 |
-| Product & Experimentation | — | — | — | — | — | 1 |
-| **Overall** | 2.86 / 5 (57%) | 3.86 / 9 (43%) | 1.57 / 10 (16%) | 0 / 4 (0%) | — | **1** |
+| Build System | skip | 3 / 3 (100%) | skip | 0 / 1 (0%) | — | 3 |
+| Testing | 1 / 1 (100%) | skip | 1.43 / 2 (71%) | 0 / 2 (0%) | — | 2 |
+| Documentation | 1 / 1 (100%) | 1 / 1 (100%) | skip | 0 / 1 (0%) | — | 3 |
+| Development Environment | skip | 1 / 3 (33%) | — | — | — | 1 |
+| Debugging & Observability | skip | skip | 0.14 / 3 (5%) | — | — | 1 |
+| Security | skip | 0 / 1 (0%) | 0 / 2 (0%) | — | — | 1 |
+| Task Discovery | skip | skip | 0 / 3 (0%) | — | — | 1 |
+| Product & Experimentation | skip | skip | skip | 0 / 2 (0%) | — | 1 |
+| **Overall** | 2.86 / 5 (57%) | 5 / 9 (56%) | 1.57 / 10 (16%) | 0 / 6 (0%) | — | **1** |
 
-Criteria: 31 (pass 6 · fail 22 · n/a 0 · unknown 3).
+Criteria: 32 (pass 8 · fail 22 · n/a 0 · unknown 2).
 
 ## How it scores
 
-- **Criteria** are the examples Factory publishes per pillar and per level (Sources). Where Factory gives no level,
-  the level comes from spec §5 (`S5`) or is placed by this script (`inferred`).
-- **States:** `pass`, `fail`, `n/a` (with a reason) or `unknown` (Factory's check is not public, or the data was
-  not readable). `unknown` and `n/a` are not scored.
+- **Criteria** are the examples Factory publishes per level (`F-level`) or per pillar (`F-pillar`, level placed
+  by this script), the criterion families of spec §5 (`S5`, level from §5), or criteria placed by this script
+  (`inferred`). See Sources.
+- **States:** `pass`, `fail`, `n/a` (with a reason) or `unknown` (no observable artifact to check yet, or the
+  data was not readable). `unknown` and `n/a` are not scored.
 - **Scope:** `repo` criteria are checked once. `app` criteria are checked in each of the 7 apps (spec §2) and
-  score as a fraction; they count as fractional credit and show `pass` only when every app passes.
+  score as a fraction of the apps they apply to (an app where a criterion does not apply is `n/a` and leaves the
+  denominator). They count as fractional credit and show `pass` only when every applicable app passes.
 - **Levels:** every repo starts at Level 1. Level N+1 unlocks when at least 80% of the scored Level N criteria
   pass and every lower level with scored criteria also reached 80%. Levels with nothing scored (in a pillar, or
-  overall) are skipped: they neither unlock nor block.
-- **Remote data** comes from read-only `gh api` GETs (branch protection, rulesets, secret scanning, labels,
-  releases).
+  overall) neither unlock nor block; the summary shows the ones the walk passed as `skip`. A pillar with nothing
+  scored has no level (`—`).
+- **Remote data** comes from read-only `gh api` GETs (default branch, branch protection, rulesets, secret
+  scanning, labels, releases).
+- **Not the §8 contract:** this R0 script has no `--json`, no delta since the last run, and its exit codes mean
+  "report written" (0) or "tool error" (2), not "target level holds". `Aw.Readiness` (R1b) implements §8 and
+  treats this file as its first previous run.
 
 ## Criteria by pillar
 
@@ -49,15 +56,15 @@ Criteria: 31 (pass 6 · fail 22 · n/a 0 · unknown 3).
 |---|---|---|---|---|---|---|---|
 | SV-1 | Linter configured | 1 | app | fail | 0 / 7 | fail: mcp-bridge (no lint config or linter dependency), scorer (no lint config or linter dependency), judge (no lint config or linter dependency), sindri (no lint config or linter dependency), skills/ui-evidence (no lint config or linter dependency), skills/bugFixOrchestrator (no lint config or linter dependency), mods/aw-live (no lint config or linter dependency) | F-level |
 | SV-2 | Type checker (strict) | 1 | app | fail | 6 / 7 | pass: mcp-bridge (tsconfig strict: true), scorer (tsconfig strict: true), judge (tsconfig strict: true), sindri (tsconfig strict: true), skills/ui-evidence (tsconfig strict: true), skills/bugFixOrchestrator (tsconfig strict: true); fail: mods/aw-live (no tsconfig.json) | F-level |
-| SV-3 | Code formatter | 1 | app | fail | 0 / 7 | fail: mcp-bridge (no formatter config or dependency), scorer (no formatter config or dependency), judge (no formatter config or dependency), sindri (no formatter config or dependency), skills/ui-evidence (no formatter config or dependency), skills/bugFixOrchestrator (no formatter config or dependency), mods/aw-live (no formatter config or dependency) | S5 |
+| SV-3 | Code formatter | 1 | app | fail | 0 / 7 | fail: mcp-bridge (no formatter config or dependency), scorer (no formatter config or dependency), judge (no formatter config or dependency), sindri (no formatter config or dependency), skills/ui-evidence (no formatter config or dependency), skills/bugFixOrchestrator (no formatter config or dependency), mods/aw-live (no formatter config or dependency) | F-pillar |
 | SV-4 | Pre-commit hooks (tracked config) | 2 | repo | fail | 0 / 1 | no tracked hook config (.pre-commit-config.yaml, .husky, lefthook, .githooks); hooks installed per clone are not reproducible | F-level |
 
 ### Build System
 
 | ID | Criterion | Level | Scope | State | Score | Evidence | Source |
 |---|---|---|---|---|---|---|---|
-| BS-1 | Build command documented | 2 | repo | fail | 0 / 1 | no build command line in AGENTS.md or README.md (packages list their npm scripts; no single build command) | S5 |
-| BS-2 | Dependencies pinned (lockfile) | 2 | app | fail | 6 / 7 | pass: mcp-bridge (package-lock.json), scorer (package-lock.json), judge (package-lock.json), sindri (package-lock.json), skills/ui-evidence (package-lock.json), skills/bugFixOrchestrator (package-lock.json); fail: mods/aw-live (no lockfile) | S5 |
+| BS-1 | Build command documented | 2 | app | pass | 6 / 6 | pass: mcp-bridge (scripts.build documented in AGENTS.md; no single root build command), scorer (scripts.build documented in AGENTS.md; no single root build command), judge (scripts.build documented in AGENTS.md; no single root build command), sindri (scripts.build documented in AGENTS.md; no single root build command), skills/ui-evidence (scripts.build documented in AGENTS.md; no single root build command), skills/bugFixOrchestrator (scripts.build documented in AGENTS.md; no single root build command); n/a: mods/aw-live (no package.json; nothing to build (loaded as source)) | S5 |
+| BS-2 | Dependencies pinned (lockfile) | 2 | app | pass | 6 / 6 | pass: mcp-bridge (package-lock.json), scorer (package-lock.json), judge (package-lock.json), sindri (package-lock.json), skills/ui-evidence (package-lock.json), skills/bugFixOrchestrator (package-lock.json); n/a: mods/aw-live (no package.json, no dependencies to pin) | S5 |
 | BS-3 | VCS CLI tools documented | 2 | repo | pass | 1 / 1 | README.md documents the gh CLI | inferred |
 | BS-4 | Regular deployment frequency (≥3 releases in 90 days) | 4 | repo | fail | 0 / 1 | 0 releases published in the 90 days before 2026-10-10 | F-level |
 
@@ -84,14 +91,14 @@ Criteria: 31 (pass 6 · fail 22 · n/a 0 · unknown 3).
 | ID | Criterion | Level | Scope | State | Score | Evidence | Source |
 |---|---|---|---|---|---|---|---|
 | DE-1 | Devcontainer | 2 | repo | fail | 0 / 1 | no .devcontainer | F-level |
-| DE-2 | Environment template | 2 | repo | fail | 0 / 1 | no .env.example | S5 |
+| DE-2 | Environment template | 2 | repo | fail | 0 / 1 | no .env.example | F-pillar |
 | DE-3 | Local services setup | 2 | repo | pass | 1 / 1 | setup.sh | inferred |
 
 ### Debugging & Observability
 
 | ID | Criterion | Level | Scope | State | Score | Evidence | Source |
 |---|---|---|---|---|---|---|---|
-| OBS-1 | Structured logging | 3 | app | fail | 1 / 7 | pass: mcp-bridge (Fastify pino logger (src/server.ts)); fail: scorer (no structured logger), judge (no structured logger), sindri (no structured logger), skills/ui-evidence (no structured logger), skills/bugFixOrchestrator (no structured logger), mods/aw-live (no structured logger) | S5 |
+| OBS-1 | Structured logging | 3 | app | fail | 1 / 7 | pass: mcp-bridge (Fastify pino logger (src/server.ts)); fail: scorer (ad-hoc JSONL writers, no shared logger with levels and ids (spec §3)), judge (ad-hoc JSONL writers, no shared logger with levels and ids (spec §3)), sindri (ad-hoc JSONL writers, no shared logger with levels and ids (spec §3)), skills/ui-evidence (no structured logger), skills/bugFixOrchestrator (no structured logger), mods/aw-live (no structured logger) | S5 |
 | OBS-2 | Distributed tracing | 3 | app | fail | 0 / 7 | fail: mcp-bridge (no OpenTelemetry), scorer (no OpenTelemetry), judge (no OpenTelemetry), sindri (no OpenTelemetry), skills/ui-evidence (no OpenTelemetry), skills/bugFixOrchestrator (no OpenTelemetry), mods/aw-live (no OpenTelemetry) | F-level |
 | OBS-3 | Metrics collection | 3 | app | fail | 0 / 7 | fail: mcp-bridge (no metrics library), scorer (no metrics library), judge (no metrics library), sindri (no metrics library), skills/ui-evidence (no metrics library), skills/bugFixOrchestrator (no metrics library), mods/aw-live (no metrics library) | F-level |
 
@@ -99,9 +106,9 @@ Criteria: 31 (pass 6 · fail 22 · n/a 0 · unknown 3).
 
 | ID | Criterion | Level | Scope | State | Score | Evidence | Source |
 |---|---|---|---|---|---|---|---|
-| SEC-1 | Branch protection on the default branch | 2 | repo | fail | 0 / 1 | protection: "gh: Branch not protected (HTTP 404)"; rulesets on main: none | F-level |
+| SEC-1 | Branch protection on the default branch | 2 | repo | fail | 0 / 1 | main: protection "gh: Branch not protected (HTTP 404)"; rulesets: none | F-level |
 | SEC-2 | Secret scanning | 3 | repo | fail | 0 / 1 | secret_scanning disabled, push_protection disabled | F-level |
-| SEC-3 | CODEOWNERS | 3 | repo | fail | 0 / 1 | no CODEOWNERS | F-pillar |
+| SEC-3 | CODEOWNERS | 3 | repo | fail | 0 / 1 | no CODEOWNERS | S5 |
 
 ### Task Discovery
 
@@ -110,18 +117,19 @@ Criteria: 31 (pass 6 · fail 22 · n/a 0 · unknown 3).
 | TD-1 | Issue templates | 3 | repo | fail | 0 / 1 | no issue templates | S5 |
 | TD-2 | Issue labeling system | 3 | repo | fail | 0 / 1 | 9 labels, all GitHub defaults | S5 |
 | TD-3 | PR template | 3 | repo | fail | 0 / 1 | no PR template | S5 |
+| TD-4 | Complex requirements decomposed into parallel execution (pillar placement inferred) | 5 | repo | unknown | — | no observable artifact yet: packets and stacked epics (factory addendum F0–F3) are not built | S5 |
 
 ### Product & Experimentation
 
 | ID | Criterion | Level | Scope | State | Score | Evidence | Source |
 |---|---|---|---|---|---|---|---|
-| PE-1 | Product analytics instrumentation | 4 | repo | unknown | — | Factory's check is not public; scorer telemetry exists but is not framed as product analytics (spec §3) | S5 |
-| PE-2 | Experiment infrastructure | 4 | repo | unknown | — | Factory's check is not public; judge shadow mode and evolve offline comparisons exist (spec §3) | S5 |
-| PE-3 | Self-improving systems (pillar placement inferred) | 5 | repo | unknown | — | Factory's check is not public; sindri evolve exists (Plan 5) | F-level |
+| PE-1 | Product analytics instrumentation | 4 | repo | fail | 0 / 1 | scorer telemetry exists but is not framed as product analytics (spec §3); no W9 page (docs/readiness/product-signals.md) | S5 |
+| PE-2 | Experiment infrastructure | 4 | repo | fail | 0 / 1 | judge shadow mode and evolve offline comparisons exist but are not listed as experiments (spec §3); no W9 page (docs/readiness/product-signals.md) | S5 |
+| PE-3 | Self-improving systems (pillar placement inferred) | 5 | repo | unknown | — | no observable artifact to check yet: sindri evolve exists (Plan 5); the readiness module proposing its own fixes (§8) does not | F-level |
 
 ## Sources
 
-- `F-pillar`: https://docs.factory.com/agent-readiness/overview — criteria examples per pillar
+- `F-pillar`: https://docs.factory.com/agent-readiness/overview — criteria examples per pillar (no level given; placed by this script)
 - `F-level`: https://docs.factory.com/agent-readiness/overview — example criteria per level
 - `S5`: docs/superpowers/specs/2026-10-09-agent-readiness-design.md §5 — level inferred (Factory gives none)
 - `inferred`: no published level; placed by this script (see "How it scores")
