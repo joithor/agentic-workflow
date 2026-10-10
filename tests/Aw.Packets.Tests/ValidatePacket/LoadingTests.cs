@@ -1,6 +1,6 @@
 using System.Text;
-using Aw.Packets.Core.Checks;
 using Aw.Packets.App.Features.ValidatePacket;
+using Aw.Packets.Core;
 using Aw.Packets.Testing;
 
 namespace Aw.Packets.Tests.ValidatePacket;

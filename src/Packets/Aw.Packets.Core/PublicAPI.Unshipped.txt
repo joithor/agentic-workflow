@@ -18,19 +18,19 @@ Aw.Packets.Core.Checks.CheckState
 Aw.Packets.Core.Checks.CheckState.Fail = 2 -> Aw.Packets.Core.Checks.CheckState
 Aw.Packets.Core.Checks.CheckState.Pass = 1 -> Aw.Packets.Core.Checks.CheckState
 Aw.Packets.Core.Checks.CheckState.Unchecked = 3 -> Aw.Packets.Core.Checks.CheckState
-Aw.Packets.Core.Checks.Inspection
-Aw.Packets.Core.Checks.Inspection.<Clone>$() -> Aw.Packets.Core.Checks.Inspection!
-Aw.Packets.Core.Checks.Inspection.Checks.get -> System.Collections.Generic.IReadOnlyList<Aw.Packets.Core.Checks.CheckResult!>!
-Aw.Packets.Core.Checks.Inspection.Checks.init -> void
-Aw.Packets.Core.Checks.Inspection.Deconstruct(out Aw.Packets.Core.Model.LoadedPacket! Loaded, out System.Collections.Generic.IReadOnlyList<Aw.Packets.Core.Checks.CheckResult!>! Checks) -> void
-Aw.Packets.Core.Checks.Inspection.Equals(Aw.Packets.Core.Checks.Inspection? other) -> bool
-Aw.Packets.Core.Checks.Inspection.Inspection(Aw.Packets.Core.Model.LoadedPacket! Loaded, System.Collections.Generic.IReadOnlyList<Aw.Packets.Core.Checks.CheckResult!>! Checks) -> void
-Aw.Packets.Core.Checks.Inspection.Loaded.get -> Aw.Packets.Core.Model.LoadedPacket!
-Aw.Packets.Core.Checks.Inspection.Loaded.init -> void
-Aw.Packets.Core.Checks.Inspection.Passed.get -> bool
-Aw.Packets.Core.Checks.PacketInspector
-Aw.Packets.Core.Checks.PacketInspector.Inspect(string! packetDirectory, string! repoDirectory, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Packets.Core.Checks.Inspection!>!>
-Aw.Packets.Core.Checks.PacketInspector.PacketInspector(Aw.Packets.Core.Ports.IPacketSource! source, Aw.Packets.Core.Ports.IRepoSnapshot! repo) -> void
+Aw.Packets.Core.Inspection
+Aw.Packets.Core.Inspection.<Clone>$() -> Aw.Packets.Core.Inspection!
+Aw.Packets.Core.Inspection.Checks.get -> System.Collections.Generic.IReadOnlyList<Aw.Packets.Core.Checks.CheckResult!>!
+Aw.Packets.Core.Inspection.Checks.init -> void
+Aw.Packets.Core.Inspection.Deconstruct(out Aw.Packets.Core.Model.LoadedPacket! Loaded, out System.Collections.Generic.IReadOnlyList<Aw.Packets.Core.Checks.CheckResult!>! Checks) -> void
+Aw.Packets.Core.Inspection.Equals(Aw.Packets.Core.Inspection? other) -> bool
+Aw.Packets.Core.Inspection.Inspection(Aw.Packets.Core.Model.LoadedPacket! Loaded, System.Collections.Generic.IReadOnlyList<Aw.Packets.Core.Checks.CheckResult!>! Checks) -> void
+Aw.Packets.Core.Inspection.Loaded.get -> Aw.Packets.Core.Model.LoadedPacket!
+Aw.Packets.Core.Inspection.Loaded.init -> void
+Aw.Packets.Core.Inspection.Passed.get -> bool
+Aw.Packets.Core.PacketInspector
+Aw.Packets.Core.PacketInspector.Inspect(string! packetDirectory, string! repoDirectory, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Packets.Core.Inspection!>!>
+Aw.Packets.Core.PacketInspector.PacketInspector(Aw.Packets.Core.Ports.IPacketSource! source, Aw.Packets.Core.Ports.IRepoSnapshot! repo) -> void
 Aw.Packets.Core.Checks.PacketRules
 Aw.Packets.Core.Ids.ExampleId
 Aw.Packets.Core.Ids.ExampleId.Equals(Aw.Packets.Core.Ids.ExampleId other, System.Collections.Generic.IEqualityComparer<Aw.Packets.Core.Ids.ExampleId>! comparer) -> bool
@@ -298,9 +298,9 @@ const Aw.Packets.Core.Checks.PacketRules.WorkflowCoverage = "PKT-FLOW-001" -> st
 override Aw.Packets.Core.Checks.CheckResult.Equals(object? obj) -> bool
 override Aw.Packets.Core.Checks.CheckResult.GetHashCode() -> int
 override Aw.Packets.Core.Checks.CheckResult.ToString() -> string!
-override Aw.Packets.Core.Checks.Inspection.Equals(object? obj) -> bool
-override Aw.Packets.Core.Checks.Inspection.GetHashCode() -> int
-override Aw.Packets.Core.Checks.Inspection.ToString() -> string!
+override Aw.Packets.Core.Inspection.Equals(object? obj) -> bool
+override Aw.Packets.Core.Inspection.GetHashCode() -> int
+override Aw.Packets.Core.Inspection.ToString() -> string!
 override Aw.Packets.Core.Ids.ExampleId.Equals(object? obj) -> bool
 override Aw.Packets.Core.Ids.ExampleId.GetHashCode() -> int
 override Aw.Packets.Core.Ids.ExampleId.ToString() -> string!
@@ -363,8 +363,8 @@ override Aw.Packets.Core.Model.Workstream.GetHashCode() -> int
 override Aw.Packets.Core.Model.Workstream.ToString() -> string!
 static Aw.Packets.Core.Checks.CheckResult.operator !=(Aw.Packets.Core.Checks.CheckResult? left, Aw.Packets.Core.Checks.CheckResult? right) -> bool
 static Aw.Packets.Core.Checks.CheckResult.operator ==(Aw.Packets.Core.Checks.CheckResult? left, Aw.Packets.Core.Checks.CheckResult? right) -> bool
-static Aw.Packets.Core.Checks.Inspection.operator !=(Aw.Packets.Core.Checks.Inspection? left, Aw.Packets.Core.Checks.Inspection? right) -> bool
-static Aw.Packets.Core.Checks.Inspection.operator ==(Aw.Packets.Core.Checks.Inspection? left, Aw.Packets.Core.Checks.Inspection? right) -> bool
+static Aw.Packets.Core.Inspection.operator !=(Aw.Packets.Core.Inspection? left, Aw.Packets.Core.Inspection? right) -> bool
+static Aw.Packets.Core.Inspection.operator ==(Aw.Packets.Core.Inspection? left, Aw.Packets.Core.Inspection? right) -> bool
 static Aw.Packets.Core.Ids.ExampleId.From(string! value) -> Aw.Packets.Core.Ids.ExampleId
 static Aw.Packets.Core.Ids.ExampleId.operator !=(Aw.Packets.Core.Ids.ExampleId left, Aw.Packets.Core.Ids.ExampleId right) -> bool
 static Aw.Packets.Core.Ids.ExampleId.operator ==(Aw.Packets.Core.Ids.ExampleId left, Aw.Packets.Core.Ids.ExampleId right) -> bool

@@ -1,3 +1,4 @@
+using Aw.Kernel.Json;
 using Aw.Packets.App.Features;
 using Aw.Packets.App.Infrastructure;
 using Aw.Packets.Core;
@@ -13,5 +14,5 @@ internal static class Composition
             .AddSingleton(clock)
             .AddPacketsCore()
             .AddPacketsFeatures()
-            .AddPacketsInfrastructure(environment);
+            .AddPacketsInfrastructure(environment, AwJson.CreateOptions(PacketsJsonContext.Default));
 }

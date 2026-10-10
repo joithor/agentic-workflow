@@ -1,6 +1,7 @@
+using Aw.Packets.Core.Checks;
 using Aw.Packets.Core.Model;
 
-namespace Aw.Packets.Core.Checks;
+namespace Aw.Packets.Core;
 
 /// <summary>A loaded packet and the outcome of every check.</summary>
 /// <param name="Loaded">The packet as loaded.</param>

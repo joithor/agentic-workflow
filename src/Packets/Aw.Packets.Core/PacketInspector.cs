@@ -1,8 +1,9 @@
 using System.Text.RegularExpressions;
 using Aw.Kernel;
+using Aw.Packets.Core.Checks;
 using Aw.Packets.Core.Ports;
 
-namespace Aw.Packets.Core.Checks;
+namespace Aw.Packets.Core;
 
 /// <summary>Loads a packet and runs the deterministic checks (addendum §17.4) against its base commit.</summary>
 /// <param name="source">Reads the packet directory.</param>
