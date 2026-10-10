@@ -609,6 +609,8 @@ export AW_MCP_SERVERS
 # bridge, retired 2026-10-10: never used; the ledger and judge's outbox carry agent handoffs).
 AW_MCP_RETIRED="agentic-bridge"
 export AW_MCP_RETIRED
+# The bridge package itself: after the pull only its ignored output (dist, node_modules, bridge.db) is left.
+aw_remove_retired_dir "$SCRIPT_DIR" mcp-bridge
 
 # --- Per-provider install ---
 REGISTRY_ENTRIES=()

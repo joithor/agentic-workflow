@@ -387,6 +387,20 @@ aw_mcp_retire_cli() {
   done
 }
 
+# Remove a retired package's directory from the toolkit checkout once git tracks nothing in it (what is left is
+# ignored build output: dist/, node_modules/, a database). A directory with tracked files is kept.
+#   aw_remove_retired_dir <repo> <relative-dir>
+aw_remove_retired_dir() {
+  local repo="$1" rel="$2"
+  [ -d "$repo/$rel" ] || return 0
+  [ -z "$(git -C "$repo" ls-files -- "$rel" 2>/dev/null)" ] || return 0
+  if aw_dry; then
+    echo "  [dry-run] would remove $repo/$rel (retired; only untracked files left)"
+  else
+    rm -rf "${repo:?}/${rel:?}" && echo "  removed $repo/$rel (retired)"
+  fi
+}
+
 # Cheap-agent-harness lever hooks for one provider. Each scripts/install-*.sh
 # takes --provider (default claude) and no-ops with a note where a lever is
 # unsupported on that provider.
