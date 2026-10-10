@@ -45,9 +45,19 @@ new_repo() {
   export FAKE_LOG="$WORK/fake-$RANDOM.log"; : > "$FAKE_LOG"
   unset FAKE_RESTORE_EDIT FAKE_VERIFY_EXIT FAKE_VERIFY_OUT
 }
-add_project() { # name, with-lock(yes|no)
-  mkdir -p "$REPO/src/$1"; echo '<Project Sdk="Microsoft.NET.Sdk" />' > "$REPO/src/$1/$1.csproj"
-  if [ "$2" = yes ]; then echo "$LOCK" > "$REPO/src/$1/packages.lock.json"; fi
+add_project() { # name, with-lock(yes|no), dir (default src), in-solution(yes|no, default yes)
+  local dir="${3:-src}"
+  mkdir -p "$REPO/$dir/$1"; echo '<Project Sdk="Microsoft.NET.Sdk" />' > "$REPO/$dir/$1/$1.csproj"
+  if [ "$2" = yes ]; then echo "$LOCK" > "$REPO/$dir/$1/packages.lock.json"; fi
+  if [ "${4:-yes}" = yes ]; then
+    python3 - "$REPO/AgenticWorkflow.slnx" "$dir/$1/$1.csproj" <<'PY'
+import sys
+p, proj = sys.argv[1], sys.argv[2]
+body = open(p).read().replace("<Solution />", "<Solution>\n</Solution>")
+body = body.replace("</Solution>", '  <Folder Name="/x/">\n    <Project Path="%s" />\n  </Folder>\n</Solution>' % proj)
+open(p, "w").write(body)
+PY
+  fi
   git -C "$REPO" add -A; git -C "$REPO" commit -qm "add $1"
 }
 run() { set +e; OUT="$(bash "$SCRIPT" "$REPO" 2>&1)"; CODE=$?; set -e; }
@@ -64,6 +74,24 @@ run
 check "missing lock: exit 1" "$CODE" "1"
 check "missing lock: names the file" "$(echo "$OUT" | grep -c 'src/Demo.Core/packages.lock.json')" "1"
 check "missing lock: no restore ran" "$(grep -c '^restore' "$FAKE_LOG" || true)" "0"
+
+# --- only projects in AgenticWorkflow.slnx count: a spike project outside the solution needs no lock file ---
+new_repo; add_project Demo.Core yes; add_project Spike.Probe no spikes no
+run
+check "project outside the solution: exit 0" "$CODE" "0"
+check "project outside the solution: not named" "$(echo "$OUT" | grep -c 'Spike.Probe' || true)" "0"
+
+# --- a solution project in a nested folder without a lock file still fails ---
+new_repo; add_project Demo.Core yes; add_project Demo.Tests no tests
+run
+check "solution project without lock (tests/): exit 1" "$CODE" "1"
+check "solution project without lock (tests/): names it" "$(echo "$OUT" | grep -c 'tests/Demo.Tests/packages.lock.json')" "1"
+
+# --- only spike projects, none in the solution: no-op success ---
+new_repo; add_project Spike.Only no spikes no
+run
+check "spikes only: exit 0" "$CODE" "0"
+check "spikes only: says no C# projects" "$(echo "$OUT" | grep -c 'no C# projects')" "1"
 
 # --- restore runs locked, in CI mode, with signature verification on; verify gets every locked package ---
 new_repo; add_project Demo.Core yes
