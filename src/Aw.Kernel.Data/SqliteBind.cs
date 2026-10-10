@@ -35,8 +35,8 @@ public static class SqliteBind
         Add(command, name, SqliteType.Integer, (long)value);
 
     /// <summary>
-    /// Binds a timestamp as TEXT in UTC with exactly three fractional digits, the same as Node's toISOString()
-    /// ('2026-10-10T07:05:07.042Z'), so text the TS build wrote compares and sorts the same (spec §4c).
+    /// Binds a timestamp as TEXT in UTC round-trip form ('2026-10-10T07:05:07.0420000Z'), the same text AwJson writes.
+    /// Fixed width with a Z, so stored timestamps sort and compare as text.
     /// </summary>
     /// <param name="command">The command.</param>
     /// <param name="name">The parameter name.</param>
@@ -46,8 +46,8 @@ public static class SqliteBind
         Add(command, name, SqliteType.Text, Timestamp(value));
 
     /// <summary>
-    /// Binds a Guid as lowercase hyphenated TEXT ('0f8fad5b-d9cb-…'), the form Node's crypto.randomUUID() writes.
-    /// Never a 16-byte BLOB, which is what an untyped parameter would store (spec §4c).
+    /// Binds a Guid as lowercase hyphenated TEXT ('0f8fad5b-d9cb-…'): readable in the sqlite3 CLI and the form
+    /// SqliteRead.GetGuid accepts. Never a 16-byte BLOB, which is what an untyped parameter would store.
     /// </summary>
     /// <param name="command">The command.</param>
     /// <param name="name">The parameter name.</param>
@@ -126,7 +126,7 @@ public static class SqliteBind
     }
 
     internal static string Timestamp(DateTimeOffset value) =>
-        value.UtcDateTime.ToString("yyyy-MM-dd'T'HH:mm:ss.fff'Z'", CultureInfo.InvariantCulture);
+        value.UtcDateTime.ToString("O", CultureInfo.InvariantCulture);
 
     private static SqliteCommand Add(SqliteCommand command, string name, SqliteType type, object? value)
     {

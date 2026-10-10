@@ -20,7 +20,7 @@ namespace Aw.Kernel.Data;
 /// state (no TS-written database is read or migrated), so the runner keeps its version only in schema_version.
 /// </summary>
 /// <param name="connections">Opens the database.</param>
-/// <param name="clock">Stamps applied_at (UTC, millisecond precision, like Node's toISOString).</param>
+/// <param name="clock">Stamps applied_at (UTC round-trip text, as SqliteBind writes timestamps).</param>
 /// <param name="backupBeforeUpgrade">Write 'file.bak-vN' before upgrading from version N &gt; 0. Default on.</param>
 public sealed class MigrationRunner(ISqliteConnectionFactory connections, TimeProvider clock, bool backupBeforeUpgrade = true)
 {

@@ -7,8 +7,7 @@ namespace Aw.Kernel.Data;
 public static class SqliteRead
 {
     /// <summary>
-    /// Reads a Guid stored as lowercase hyphenated TEXT (what <see cref="SqliteBind"/> and Node's crypto.randomUUID()
-    /// write). Anything else (a BLOB, upper case, braces, junk) is a data bug and throws, so a row never round-trips
+    /// Reads a Guid stored as lowercase hyphenated TEXT (what <see cref="SqliteBind"/> writes). Anything else (a BLOB, upper case, braces, junk) is a data bug and throws, so a row never round-trips
     /// to different bytes.
     /// </summary>
     /// <param name="reader">A reader on a row.</param>

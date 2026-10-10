@@ -82,7 +82,7 @@ public sealed class BindTests
 
     private const string Upper = "0F8FAD5B-D9CB-469F-A165-70867728950E";
 
-    private const string FromTs = "7c9e6679-7425-40de-944b-e07fc1f90ae7";
+    private const string Lowercase = "7c9e6679-7425-40de-944b-e07fc1f90ae7";
 
     private readonly record struct RunId(Guid Value);
 
@@ -92,7 +92,7 @@ public sealed class BindTests
     }
 
     [Fact]
-    public async Task Guids_bind_as_lowercase_text_like_node_randomUUID_and_read_back()
+    public async Task Guids_bind_as_lowercase_text_and_read_back()
     {
         using var db = new TempDatabase();
         var ct = TestContext.Current.CancellationToken;
@@ -101,12 +101,12 @@ public sealed class BindTests
         var id = Guid.Parse(Upper, System.Globalization.CultureInfo.InvariantCulture);
 
         _ = await SqliteQueries.Execute(work, new SqlStatement("INSERT INTO g VALUES ($id, $run)", c => c.Bind("$id", id).BindId("$run", new RunId(id), r => r.Value)), ct);
-        // A row the TS build wrote: crypto.randomUUID() is lowercase text.
+        // A row written as plain lowercase text, as the sqlite3 CLI would.
         _ = await SqliteQueries.Execute(work, new SqlStatement("INSERT INTO g VALUES ('7c9e6679-7425-40de-944b-e07fc1f90ae7', NULL)"), ct);
 
         Assert.True((await SqliteQueries.Exists(work, new SqlStatement("SELECT EXISTS (SELECT 1 FROM g WHERE id = '0f8fad5b-d9cb-469f-a165-70867728950e' AND run = id AND typeof(id) = 'text')"), ct)).Value);
         var read = await SqliteQueries.List(work, new SqlStatement("SELECT id FROM g ORDER BY rowid"), new GuidMapper(), ct);
-        Assert.Equal([id, Guid.Parse(FromTs, System.Globalization.CultureInfo.InvariantCulture)], read.Value);
+        Assert.Equal([id, Guid.Parse(Lowercase, System.Globalization.CultureInfo.InvariantCulture)], read.Value);
     }
 
     [Theory]

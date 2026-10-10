@@ -14,7 +14,7 @@ SQLite access for every C# package: hand-written ADO.NET over `Microsoft.Data.Sq
 | Type | Job |
 |---|---|
 | `SqliteConnectionFactory` / `SqliteOptions` | `Open`: read-write, creates the file, sets `busy_timeout`, `journal_mode=WAL` (checked: a connection that can't get WAL is refused), `foreign_keys=ON`, `synchronous=NORMAL`. `OpenReadOnly`: `query_only`, never creates the file, doesn't touch the journal mode. Pooling is off |
-| `SqliteBind` | Typed parameters: text, integer (`int`, `long`), real, boolean (0/1), blob, `DateTimeOffset` (UTC text, `2026-10-10T07:05:07.042Z`), `Guid` (lowercase hyphenated text), and `BindId(name, id, accessor)` for typed ids stored as text, integer or Guid. Cast a bare `null` (`(string?)null`) |
+| `SqliteBind` | Typed parameters: text, integer (`int`, `long`), real, boolean (0/1), blob, `DateTimeOffset` (UTC round-trip text, `2026-10-10T07:05:07.0420000Z`, the same text AwJson writes), `Guid` (lowercase hyphenated text), and `BindId(name, id, accessor)` for typed ids stored as text, integer or Guid. Cast a bare `null` (`(string?)null`) |
 | `SqliteRead` | `GetGuid`: reads lowercase hyphenated text strictly; a BLOB, upper case or braces throw `InvalidDataException` |
 | `IRowMapper<T>` | Maps one row, columns by ordinal |
 | `SqlStatement`, `SqliteQueries` | `One`, `List`, `Exists`, `Execute`, each returning `Result<T>` |
