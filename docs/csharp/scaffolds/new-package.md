@@ -156,7 +156,7 @@ dotnet_diagnostic.CA1031.severity = none
 **`host: none`** generates no Host and no `HostTests`: there is no composition root to validate. The hosts that compose
 the library carry the DI validation.
 
-**`host: http`** uses `Microsoft.NET.Sdk.Web` for Host (its request-delegate generator runs with `PublishAot`), and adds:
+**`host: http`** uses `Microsoft.NET.Sdk.Web` for Host (its request-delegate generator is on in every build: `Directory.Build.targets` sets `EnableRequestDelegateGenerator=true` for every `*.Host`, independent of `PublishAot`), and adds:
 
 ```
 Aw.<Name>.Host/

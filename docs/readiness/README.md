@@ -18,16 +18,16 @@ bash src/Readiness/aot-smoke/run.sh                                     # publis
 artifacts/aot-readiness/bin/aw-readiness check [--json] [--root DIR] [--no-remote]
 ```
 
-- **Exit codes:** 0 when the level reaches the target for the repo's ring **and every criterion gating it was read**,
-  1 when it doesn't (or can't be confirmed: see "unread" below), 2 on a usage or tool error (an `AW-READINESS-NNN` error on stderr: 001 bad arguments, 002 root not found, 003 `readiness.yaml` missing or
+- **Exit codes:** 0 when the level reaches the target for the repo's ring, 1 when it doesn't, 2 on a usage or tool
+  error (an `AW-READINESS-NNN` error on stderr: 001 bad arguments, 002 root not found, 003 `readiness.yaml` missing or
   malformed, 004 history unreadable or unwritable).
 - **States:** each criterion is `pass`, `fail`, `n/a` (with a reason) or `unknown`. Only pass and fail are scored. A
   failure prints the criterion's fix. `unknown` has two causes, told apart by the finding's `unread` flag: the check
   can't be reproduced yet (TD-4, PE-3), or its data couldn't be read this run (`--no-remote`, gh missing, failing or
-  not an admin). An **unread** criterion below the target's level can't confirm the target: the report says
-  "not confirmed (… weren't read)", lists them under `unconfirmed`, and exits 1, whatever the level. For scoring, an
-  unread criterion counts as not passing, so the level is a lower bound: a run that couldn't read the host never
-  scores higher than one that could.
+  not an admin). An **unread** criterion counts as not passing, so the level is a lower bound: a run that couldn't
+  read the host never scores higher than one that could, and a target the level reaches holds whatever the unread
+  criteria turn out to be. When the target isn't reached, the unread criteria below it are listed under `unconfirmed`
+  ("does not hold; … weren't read and could raise the level").
 - **Levels:** every repo starts at Level 1; Level N+1 unlocks when at least 80% of the scored Level N criteria pass.
   A level with nothing scored neither unlocks nor blocks: the climb skips it, so the level is one above the highest
   scored level that passed with every scored level below it passing (the R0 baseline's rule; with L1 passing, L2

@@ -29,8 +29,8 @@ public static class TemplateReadiness
         return [.. _catalogue.Select(e => Decide(e, context))];
     }
 
-    /// <summary>The criteria that gate a target (their level is below it) but weren't read this run: while any is
-    /// listed the target can't be confirmed, whatever the level.</summary>
+    /// <summary>The criteria that gate a target (their level is below it) but weren't read this run. They count as not
+    /// passing, so when the level misses the target these are what could still raise it once read.</summary>
     /// <param name="findings">The run's findings.</param>
     /// <param name="target">The target.</param>
     /// <returns>Their ids, in report order.</returns>

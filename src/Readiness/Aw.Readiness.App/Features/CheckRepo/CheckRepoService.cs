@@ -49,7 +49,8 @@ internal sealed class CheckRepoService(IRepoReader reader, IRepoHost host, IRunH
 
         var card = ReadinessScoring.Score(findings);
         var run = RunRecord.From(config.Repo, config.Scope, now, card.Level, findings);
-        var unconfirmed = TemplateReadiness.Unconfirmed(findings, config.Target);
+        var holds = card.Level >= config.Target.Level;
+        var unconfirmed = holds ? [] : TemplateReadiness.Unconfirmed(findings, config.Target);
         var saved = await history.Save(run, cancellationToken).ConfigureAwait(false);
         if (saved.IsError)
         {
@@ -58,7 +59,7 @@ internal sealed class CheckRepoService(IRepoReader reader, IRepoHost host, IRunH
 
         return new CheckRepoResponse(
             CheckRepoResponse.CurrentSchemaVersion, config.Repo, config.Scope, now, config.Target, card.Level,
-            card.Level >= config.Target.Level && unconfirmed.Count == 0, unconfirmed, saved.Value,
+            holds, unconfirmed, saved.Value,
             RunDelta.Between(previous.Value, run), card.Pillars, card.Tallies, findings);
     }
 }

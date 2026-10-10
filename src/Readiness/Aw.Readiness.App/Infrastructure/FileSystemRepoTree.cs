@@ -47,7 +47,7 @@ internal sealed class FileSystemRepoTree(string root) : IRepoTree
         try
         {
             found.AddRange(Directory.EnumerateFiles(directory)
-                .Where(f => Path.GetFileName(f).EndsWith(suffix, StringComparison.Ordinal))
+                .Where(f => Path.GetFileName(f).EndsWith(suffix, StringComparison.Ordinal) && new FileInfo(f).LinkTarget is null)
                 .Select(Relative));
             foreach (var child in Directory.EnumerateDirectories(directory).Where(IsWalked))
             {

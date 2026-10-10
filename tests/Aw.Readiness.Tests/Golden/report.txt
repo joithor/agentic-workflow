@@ -1,5 +1,5 @@
 aw-readiness: agentic-workflow (csharp-template)
-Level 3 of 5; target 4 (ring 0): not confirmed (SEC-1, SEC-2, TD-2 weren't read)
+Level 3 of 5; target 4 (ring 0): does not hold; SEC-1, SEC-2, TD-2 weren't read and could raise the level
 since 2026-10-09T12:00:00Z: level 4 -> 3, 1 change
   SEC-3: pass -> fail
 

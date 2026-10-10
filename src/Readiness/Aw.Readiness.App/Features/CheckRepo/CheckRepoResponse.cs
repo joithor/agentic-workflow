@@ -10,9 +10,10 @@ namespace Aw.Readiness.App.Features.CheckRepo;
 /// <param name="RecordedAt">When the run happened (UTC).</param>
 /// <param name="Target">The target for the repo's ring.</param>
 /// <param name="Level">The overall level reached.</param>
-/// <param name="Holds">True when the level reaches the target and every criterion gating it was read.</param>
-/// <param name="Unconfirmed">Criteria below the target's level whose data wasn't read (offline, gh failing): while
-/// any is listed the target isn't confirmed (Holds is false), whatever the level.</param>
+/// <param name="Holds">True when the level reaches the target. Unread criteria count as not passing, so the level is a
+/// lower bound and a target it reaches holds whatever they turn out to be.</param>
+/// <param name="Unconfirmed">When the target doesn't hold: the criteria below its level whose data wasn't read
+/// (offline, gh failing), which could still raise the level once read. Empty when it holds.</param>
 /// <param name="RecordedTo">Where the run was recorded.</param>
 /// <param name="Delta">What changed since the previous run.</param>
 /// <param name="Pillars">The level per pillar.</param>

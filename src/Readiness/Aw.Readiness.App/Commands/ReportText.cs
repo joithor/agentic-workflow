@@ -23,7 +23,7 @@ internal static class ReportText
 
     private static string Verdict(CheckRepoResponse report) =>
         report.Holds ? "holds"
-        : report.Unconfirmed.Count > 0 ? $"not confirmed ({string.Join(", ", report.Unconfirmed)} weren't read)"
+        : report.Unconfirmed.Count > 0 ? $"does not hold; {string.Join(", ", report.Unconfirmed)} weren't read and could raise the level"
         : "does not hold";
 
     private static string Delta(CheckRepoResponse report)
