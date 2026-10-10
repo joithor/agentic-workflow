@@ -72,4 +72,8 @@ public sealed class LaneCapTests
     [InlineData("""{ "results": { "tests": [ { "name": "Demo.NoDuration" } ] } }""")]
     public void Input_that_is_not_a_CTRF_report_is_an_input_error(string text) =>
         Assert.Throws<InvalidDataException>(() => LaneCap.Check(text));
+
+    [Fact]
+    public void A_report_whose_suites_are_not_objects_is_an_input_error() =>
+        Assert.Throws<InvalidDataException>(() => LaneCap.Check("""{ "results": { "tests": [], "extra": { "suites": [1] } } }"""));
 }

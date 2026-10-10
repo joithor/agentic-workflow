@@ -86,10 +86,6 @@ public sealed class LaneCapRunTests
     }
 
     [Fact]
-    public void A_report_whose_suites_are_not_objects_is_an_input_error() =>
-        Assert.Throws<InvalidDataException>(() => LaneCap.Check("""{ "results": { "tests": [], "extra": { "suites": [1] } } }"""));
-
-    [Fact]
     public void Run_on_a_directory_without_reports_is_exit_2()
     {
         using var dir = new TempDir();
