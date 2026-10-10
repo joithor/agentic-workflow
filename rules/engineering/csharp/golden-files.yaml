@@ -1,0 +1,20 @@
+schemaVersion: 1
+id: engineering.csharp.golden-files
+kind: engineering
+section: "4b.5"
+text: "Golden files for CLI output and JSON contracts are recorded from the C# build and compared after a declared normalization, never loosely."
+why: "A contract change shows as a reviewed golden diff."
+select:
+  languages: [csharp]
+  paths: ["tests/**"]
+checks:
+  - type: test
+    id: "GoldenTests"
+    ref: tests/Aw.Kernel.Testing.Tests/GoldenTests.cs
+    status: active
+gap: partial
+gapNote: "The assertions are tested; whether a package uses them for every CLI output is reviewed."
+source:
+  type: adr
+  ref: "docs/superpowers/specs/2026-10-09-agent-readiness-design.md#4b5"
+status: active

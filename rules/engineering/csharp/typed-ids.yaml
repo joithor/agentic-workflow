@@ -1,0 +1,28 @@
+schemaVersion: 1
+id: engineering.csharp.typed-ids
+kind: engineering
+section: "4b.3"
+text: "Every id and constrained primitive is a Vogen typed value with the six VogenDefaults arguments, a user-code [JsonConverter] and IParsable<T> declared in user code, plus a JSON round-trip test."
+why: "Decided in R9: source generators can't see each other's output, so Vogen's own STJ and parse generation would silently break JSON and route binding."
+select:
+  languages: [csharp]
+  paths: ["src/**"]
+checks:
+  - type: test
+    id: "TypedIdGuardTests"
+    ref: tests/Aw.Kernel.Tests/TypedIds/TypedIdGuardTests.cs
+    status: active
+  - type: archunit
+    id: "ARCH-ID-001"
+    status: pending
+    pendingPr: 131
+  - type: archunit
+    id: "ARCH-ID-002"
+    status: pending
+    pendingPr: 131
+gap: pending
+gapNote: "TypedIdGuard covers only Aw.Kernel's own ids on main; ARCH-ID-001/002 run it over every registered assembly."
+source:
+  type: adr
+  ref: "docs/superpowers/specs/2026-10-09-agent-readiness-design.md#4b3"
+status: active

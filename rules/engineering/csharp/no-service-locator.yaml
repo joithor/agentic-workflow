@@ -1,0 +1,19 @@
+schemaVersion: 1
+id: engineering.csharp.no-service-locator
+kind: engineering
+section: "4b.4"
+text: "Constructor injection only; IServiceProvider appears outside Host only as the parameter of a registration factory lambda inside a project's own *ServiceCollectionExtensions."
+why: "A service locator hides dependencies from the constructor and the DI validation test."
+select:
+  languages: [csharp]
+  paths: ["src/**"]
+checks:
+  - type: archunit
+    id: "ARCH-DI-001"
+    status: pending
+    pendingPr: 131
+gap: pending
+source:
+  type: adr
+  ref: "docs/superpowers/specs/2026-10-09-agent-readiness-design.md#4b4"
+status: active

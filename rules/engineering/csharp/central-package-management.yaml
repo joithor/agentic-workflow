@@ -1,0 +1,22 @@
+schemaVersion: 1
+id: engineering.csharp.central-package-management
+kind: engineering
+section: "4b.6"
+text: "Central Package Management with exact [x.y.z] pins; analyzers as GlobalPackageReference; new packages at least 14 days old."
+why: "One version per package across the solution, and no surprise upgrades."
+select:
+  languages: [csharp]
+  paths: ["Directory.Packages.props"]
+checks:
+  - type: build-setting
+    id: "<ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>"
+    status: active
+  - type: build-setting
+    id: "GlobalPackageReference"
+    status: active
+gap: partial
+gapNote: "Nothing checks the [x.y.z] form or the 14-day age; both are reviewed."
+source:
+  type: adr
+  ref: "docs/superpowers/specs/2026-10-09-agent-readiness-design.md#4b6"
+status: active

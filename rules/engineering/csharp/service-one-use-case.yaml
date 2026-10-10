@@ -1,0 +1,24 @@
+schemaVersion: 1
+id: engineering.csharp.service-one-use-case
+kind: engineering
+section: "4b.2"
+text: "A service implements IService<TReq, TRes> for one use case; more than 5 constructor dependencies is a split signal, more than 7 is an error."
+why: "Small services stay readable for agents and humans; manager services hide coupling."
+select:
+  languages: [csharp]
+  paths: ["src/**"]
+checks:
+  - type: analyzer
+    id: "AW1007"
+    status: pending
+    pendingPr: 132
+  - type: analyzer
+    id: "AW1008"
+    status: pending
+    pendingPr: 132
+    note: "6-7 dependencies, severity suggestion (the split signal)"
+gap: pending
+source:
+  type: adr
+  ref: "docs/superpowers/specs/2026-10-09-agent-readiness-design.md#4b2"
+status: active

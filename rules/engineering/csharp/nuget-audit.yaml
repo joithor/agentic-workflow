@@ -1,0 +1,18 @@
+schemaVersion: 1
+id: engineering.csharp.nuget-audit
+kind: engineering
+section: "4b.6"
+text: "High and critical NuGet advisories (NU1903, NU1904) fail the build; NU1900 (feed unreadable) stays an error; NU1901 and NU1902 stay warnings."
+why: "A known high-severity vulnerability never ships, and a skipped audit is never silent."
+select:
+  languages: [csharp]
+  paths: ["Directory.Build.props"]
+checks:
+  - type: build-setting
+    id: "<WarningsNotAsErrors>$(WarningsNotAsErrors);NU1901;NU1902</WarningsNotAsErrors>"
+    status: active
+gap: closed
+source:
+  type: adr
+  ref: "docs/superpowers/specs/2026-10-09-agent-readiness-design.md#4b6"
+status: active

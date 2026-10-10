@@ -1,0 +1,20 @@
+schemaVersion: 1
+id: engineering.csharp.generic-arity
+kind: engineering
+section: "4b.3"
+text: "Generic types take at most 3 type parameters and are constrained."
+why: "Wide generics are hard to read and usually hide two abstractions."
+select:
+  languages: [csharp]
+  paths: ["src/**"]
+checks:
+  - type: analyzer
+    id: "AW1009"
+    status: pending
+    pendingPr: 132
+gap: pending
+relatedIds: ["CA1005"]
+source:
+  type: adr
+  ref: "docs/superpowers/specs/2026-10-09-agent-readiness-design.md#4b3"
+status: active

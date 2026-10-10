@@ -1,0 +1,24 @@
+schemaVersion: 1
+id: engineering.csharp.ado-net-row-mappers
+kind: engineering
+section: "4b.2"
+text: "Data access is hand-written ADO.NET over Microsoft.Data.Sqlite with typed parameters and one IRowMapper<T> per row type; SQL lives in const strings or embedded .sql files; no EF Core, no Dapper."
+why: "Decided in R8: both ORMs fail TreatWarningsAsErrors under NativeAOT."
+select:
+  languages: [csharp]
+  paths: ["src/**/*.Infrastructure/**", "src/**/*.App/**", "src/Aw.Kernel.Data/**"]
+checks:
+  - type: test
+    id: "QueryTests"
+    ref: tests/Aw.Kernel.Data.Tests/QueryTests.cs
+    status: active
+  - type: review
+    id: "no EF Core or Dapper pin"
+    status: active
+    note: "Directory.Packages.props is reviewed"
+gap: partial
+gapNote: "Kernel.Data's mapping and binding are tested; nothing rejects an EF Core or Dapper pin."
+source:
+  type: adr
+  ref: "docs/superpowers/specs/2026-10-09-agent-readiness-design.md#4b2"
+status: active

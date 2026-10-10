@@ -1,0 +1,19 @@
+schemaVersion: 1
+id: engineering.csharp.endpoint-calls-one-service
+kind: engineering
+section: "4b.2"
+text: "Endpoints and CLI commands bind input, call exactly one IService<TReq, TRes>, and map the Result; no branching on domain state."
+why: "Thin entry points keep behavior in testable services and AOT-friendly generated binding."
+select:
+  languages: [csharp]
+  paths: ["src/**/*.Host/**", "src/**/*.App/**"]
+checks:
+  - type: analyzer
+    id: "AW1004"
+    status: pending
+    pendingPr: 132
+gap: pending
+source:
+  type: adr
+  ref: "docs/superpowers/specs/2026-10-09-agent-readiness-design.md#4b2"
+status: active

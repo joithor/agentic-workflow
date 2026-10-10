@@ -1,0 +1,20 @@
+schemaVersion: 1
+id: engineering.csharp.agents-md-commands
+kind: engineering
+section: "4b.9"
+text: "AGENTS.md lists the one-line root commands (build, all tests, the unit lane, format) and the slice recipe, and points to /new-package and /new-slice."
+why: "An agent's first move is a known command, not exploration."
+select:
+  languages: [csharp]
+  paths: ["AGENTS.md"]
+checks:
+  - type: review
+    id: "AGENTS.md commands"
+    status: active
+    note: "the command executor and freshness check are workstream W8"
+gap: open
+gapNote: "No check executes the AGENTS.md commands yet (W8)."
+source:
+  type: adr
+  ref: "docs/superpowers/specs/2026-10-09-agent-readiness-design.md#4b9"
+status: active

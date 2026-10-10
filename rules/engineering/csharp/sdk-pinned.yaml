@@ -1,0 +1,22 @@
+schemaVersion: 1
+id: engineering.csharp.sdk-pinned
+kind: engineering
+section: "4b.6"
+text: "global.json pins the .NET SDK exactly (rollForward disable, no prereleases) and selects Microsoft.Testing.Platform."
+why: "Every machine and CI run builds with the same compiler and analyzers."
+select:
+  languages: [csharp]
+  paths: ["global.json"]
+checks:
+  - type: build-setting
+    id: "\"rollForward\": \"disable\""
+    status: active
+  - type: ci
+    id: "The SDK is exactly the global.json pin"
+    ref: .github/workflows/ci.yml
+    status: active
+gap: closed
+source:
+  type: adr
+  ref: "docs/superpowers/specs/2026-10-09-agent-readiness-design.md#4b6"
+status: active

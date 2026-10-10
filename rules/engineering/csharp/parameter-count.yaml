@@ -1,0 +1,19 @@
+schemaVersion: 1
+id: engineering.csharp.parameter-count
+kind: engineering
+section: "4b.6"
+text: "A method takes at most 5 parameters."
+why: "Long parameter lists want a request record."
+select:
+  languages: [csharp]
+  paths: ["src/**"]
+checks:
+  - type: analyzer
+    id: "AW1006"
+    status: pending
+    pendingPr: 132
+gap: pending
+source:
+  type: adr
+  ref: "docs/superpowers/specs/2026-10-09-agent-readiness-design.md#4b6"
+status: active

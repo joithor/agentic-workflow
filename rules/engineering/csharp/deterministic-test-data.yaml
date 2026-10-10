@@ -1,0 +1,20 @@
+schemaVersion: 1
+id: engineering.csharp.deterministic-test-data
+kind: engineering
+section: "4b.5"
+text: "Use builders with defaults, deterministic ids and FakeTimeProvider; no wall clock or Guid.NewGuid in a test, no shared mutable fixtures."
+why: "Deterministic tests don't flake."
+select:
+  languages: [csharp]
+  paths: ["tests/**"]
+checks:
+  - type: review
+    id: "test data"
+    status: active
+    note: "checked in review"
+gap: open
+gapNote: "BannedSymbols applies to Core only; tests aren't checked for the wall clock or random ids."
+source:
+  type: adr
+  ref: "docs/superpowers/specs/2026-10-09-agent-readiness-design.md#4b5"
+status: active

@@ -1,0 +1,18 @@
+schemaVersion: 1
+id: engineering.csharp.file-name-matches-type
+kind: engineering
+section: "4b.6"
+text: "One top-level type per file, named after it."
+why: "Agents find a type by its file name."
+select:
+  languages: [csharp]
+  paths: ["src/**", "tests/**"]
+checks:
+  - type: analyzer
+    id: "MA0048"
+    status: active
+gap: closed
+source:
+  type: adr
+  ref: "docs/superpowers/specs/2026-10-09-agent-readiness-design.md#4b6"
+status: active

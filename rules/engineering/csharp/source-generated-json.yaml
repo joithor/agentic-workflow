@@ -1,0 +1,29 @@
+schemaVersion: 1
+id: engineering.csharp.source-generated-json
+kind: engineering
+section: "4b.3"
+text: "System.Text.Json with one source-generated JsonSerializerContext per package and the shared AwJson profile; no reflection-based serialization."
+why: "Reflection breaks under NativeAOT and trimming."
+select:
+  languages: [csharp]
+  paths: ["src/**"]
+checks:
+  - type: compiler
+    id: "IL2026"
+    status: active
+  - type: compiler
+    id: "IL3050"
+    status: active
+  - type: build-setting
+    id: "<IsAotCompatible>true</IsAotCompatible>"
+    status: active
+  - type: test
+    id: "AwJsonTests"
+    ref: tests/Aw.Kernel.Tests/AwJsonTests.cs
+    status: active
+gap: partial
+gapNote: "The trim analyzers catch reflection; using AwJson.CreateOptions instead of hand-made options is checked in review."
+source:
+  type: adr
+  ref: "docs/superpowers/specs/2026-10-09-agent-readiness-design.md#4b3"
+status: active

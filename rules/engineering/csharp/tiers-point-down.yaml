@@ -1,0 +1,21 @@
+schemaVersion: 1
+id: engineering.csharp.tiers-point-down
+kind: engineering
+section: "4b.1a"
+text: "Project edges point strictly down the tiers (tier 0 ordered by sublevel); db and file edges point down or across, read-only; cli edges may point anywhere."
+why: "Lower tiers change least, so nothing stable can come to depend on something volatile."
+select:
+  languages: [csharp]
+  paths: ["deps.yaml"]
+checks:
+  - type: check-deps
+    id: "DEPS-TIER-001"
+    status: active
+  - type: check-deps
+    id: "DEPS-TIER-002"
+    status: active
+gap: closed
+source:
+  type: adr
+  ref: "docs/superpowers/specs/2026-10-09-agent-readiness-design.md#4b1a"
+status: active

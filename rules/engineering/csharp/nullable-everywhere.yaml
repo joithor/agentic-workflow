@@ -1,0 +1,21 @@
+schemaVersion: 1
+id: engineering.csharp.nullable-everywhere
+kind: engineering
+section: "4b.3"
+text: "Nullable reference types are on everywhere and warnings are errors."
+why: "Null bugs become compile errors."
+select:
+  languages: [csharp]
+  paths: ["src/**", "tests/**"]
+checks:
+  - type: build-setting
+    id: "<Nullable>enable</Nullable>"
+    status: active
+  - type: build-setting
+    id: "<TreatWarningsAsErrors>true</TreatWarningsAsErrors>"
+    status: active
+gap: closed
+source:
+  type: adr
+  ref: "docs/superpowers/specs/2026-10-09-agent-readiness-design.md#4b3"
+status: active

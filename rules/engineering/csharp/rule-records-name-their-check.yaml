@@ -1,0 +1,24 @@
+schemaVersion: 1
+id: engineering.csharp.rule-records-name-their-check
+kind: engineering
+section: "4b.9"
+text: "Every §4b rule has a rule record naming the check that enforces it, and every check id the C# rules docs name belongs to a record."
+why: "A denial or build error names its rule, and the rule says why."
+select:
+  languages: [csharp]
+  paths: ["rules/**", ".agents/rules/**"]
+checks:
+  - type: check-rules
+    id: "RULE-COVER-001"
+    status: active
+  - type: check-rules
+    id: "RULE-COVER-002"
+    status: active
+  - type: check-rules
+    id: "RULE-CHECK-001"
+    status: active
+gap: closed
+source:
+  type: adr
+  ref: "docs/superpowers/specs/2026-10-09-agent-readiness-design.md#4b9"
+status: active

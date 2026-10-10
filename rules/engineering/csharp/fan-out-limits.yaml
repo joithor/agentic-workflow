@@ -1,0 +1,33 @@
+schemaVersion: 1
+id: engineering.csharp.fan-out-limits
+kind: engineering
+section: "4b.1a"
+text: "A project references at most 4 in-repo projects and 6 third-party packages; a package declares at most 4 package edges; over the limit needs a dated exception with a reason."
+why: "Wide fan-out is the spider web the graph rules exist to prevent."
+select:
+  languages: [csharp]
+  paths: ["deps.yaml", "src/**"]
+checks:
+  - type: check-deps
+    id: "DEPS-FANOUT-001"
+    status: active
+  - type: check-deps
+    id: "DEPS-FANOUT-002"
+    status: active
+  - type: check-deps
+    id: "DEPS-FANOUT-003"
+    status: active
+  - type: check-deps
+    id: "DEPS-EXC-001"
+    status: active
+  - type: check-deps
+    id: "DEPS-EXC-002"
+    status: active
+  - type: check-deps
+    id: "DEPS-EXC-003"
+    status: active
+gap: closed
+source:
+  type: adr
+  ref: "docs/superpowers/specs/2026-10-09-agent-readiness-design.md#4b1a"
+status: active

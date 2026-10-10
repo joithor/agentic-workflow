@@ -1,0 +1,21 @@
+schemaVersion: 1
+id: engineering.csharp.internal-sealed-by-default
+kind: engineering
+section: "4b.3"
+text: "Classes are internal sealed by default; only what crosses an assembly is public."
+why: "A small public surface is a small contract."
+select:
+  languages: [csharp]
+  paths: ["src/**"]
+checks:
+  - type: analyzer
+    id: "CA1852"
+    status: active
+  - type: analyzer
+    id: "CA1515"
+    status: active
+gap: closed
+source:
+  type: adr
+  ref: "docs/superpowers/specs/2026-10-09-agent-readiness-design.md#4b3"
+status: active
