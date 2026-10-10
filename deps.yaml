@@ -334,7 +334,7 @@ edges:
   - from: Judge
     to: KernelData
     kind: project
-    status: planned
+    status: current
     note: "decisions.sqlite"
   - from: Judge
     to: KernelTelemetry
@@ -344,7 +344,7 @@ edges:
   - from: Judge
     to: Redaction
     kind: project
-    status: planned
+    status: current
     note: "replaces judge's copy of the scrubbing patterns"
   - from: Packets
     to: Kernel
