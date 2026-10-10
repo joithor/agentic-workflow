@@ -721,6 +721,29 @@ describe("publish gate layers (privacy B1)", () => {
     fx.close();
   });
 
+  it("with only proposals that have no public version, needs no index or word list: it holds them under generalize (kieran-typescript-reviewer-0)", async () => {
+    const { fx, save } = await ready({ extraYaml: `${DENY}evolve:\n  maxGeneralizeAttempts: 1\n` });
+    const fresh = save("Alpha change here");
+    const givenUp = save("Beta change here");
+    fx.ctx.write((epoch) => {
+      setStatus(fx.ctx.db, fresh, "held", epoch, fx.deps.now());
+      setStatus(fx.ctx.db, givenUp, "held", epoch, fx.deps.now());
+      fx.ctx.db.prepare("INSERT INTO evolve_audit (ts, verb, actor, detail, epoch) VALUES ('t', 'generalize-hold', 'a', ?, ?)").run(`${givenUp}: generalize: the judge found domain`, epoch);
+    });
+    const name = fx.ctx.loaded.profile.tracker.repo;
+    const loaded = { ...fx.ctx.loaded, repos: { ...fx.ctx.loaded.repos, globex: { ...fx.ctx.loaded.repos[name], private: true } } };
+    const ctx = { ...withDeps(fx.ctx, { env: { ...fx.deps.env, SINDRI_WORDS: path.join(fx.transcripts, "no-words") } }), loaded };
+    for (const args of [["--dry-run", "--json"], ["--json"]]) {
+      const r = JSON.parse((await publish(args, ctx)).stdout) as { held: { id: string; layer: string; why: string }[] };
+      expect(r.held).toEqual([
+        { id: fresh, layer: "generalize", why: "not generalized yet; run sindri evolve stage" },
+        // a proposal stage gave up on points at the way out, not at stage
+        { id: givenUp, layer: "generalize", why: `generalize: gave up after 1 attempts; sindri evolve retry ${givenUp} to try again, or reject it` },
+      ]);
+    }
+    fx.close();
+  });
+
   it("reports how many non-toolkit repos leave private: unset, by count only, and still publishes", async () => {
     const fx = await evolveFixture({ files: FILES, extraYaml: DENY, extraRepos: [{ name: "initrode" }, { name: "zylo" }, { name: "vandelay", private: false }] });
     await init([], fx.ctx);

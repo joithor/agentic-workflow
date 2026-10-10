@@ -56,6 +56,8 @@ export const generalizeHolds = (db: Ledger, id: string): number =>
   ).get(id, id, id) as { c: number }).c;
 // At evolve.maxGeneralizeAttempts holds stage stops retrying a proposal (no model calls) until it is retried or rejected.
 const gaveUp = (ctx: EvolveCtx, s: StoredProposal): boolean => generalizeHolds(ctx.db, s.id) >= ctx.loaded.profile.evolve.maxGeneralizeAttempts;
+// The reason stage and publish both print for a proposal stage gave up on: it names the way out.
+const gaveUpWhy = (max: number, id: string): string => `generalize: gave up after ${max} attempts; sindri evolve retry ${id} to try again, or reject it`;
 const slotsFree = (ctx: EvolveCtx, cap: number, retry: readonly StoredProposal[]): { inFlight: number; free: number } => {
   const inFlight = inFlightCount(ctx.db) - retry.filter((s) => s.status === "staged").length;
   return { inFlight, free: Math.max(0, cap - inFlight) };
@@ -148,7 +150,7 @@ export async function stageProposals(ctx: EvolveCtx, budget: Budget = new Budget
     const staged: StageOutcome["staged"] = [];
     const max = ctx.loaded.profile.evolve.maxGeneralizeAttempts;
     // Stays held, costs nothing and takes no slot; reported on every run so it doesn't go unnoticed.
-    const held: StageOutcome["held"] = givenUp.map((c) => ({ id: c.s.id, why: `generalize: gave up after ${max} attempts; sindri evolve retry ${c.s.id} to try again, or reject it` }));
+    const held: StageOutcome["held"] = givenUp.map((c) => ({ id: c.s.id, why: gaveUpWhy(max, c.s.id) }));
     let waiting = candidates.length - take.length;
     for (const c of take) {
       const g = results.get(c.s.id);
@@ -253,8 +255,9 @@ export async function publishProposals(ctx: EvolveCtx, o: { dryRun: boolean; noP
     };
   });
   // May throw SND-EVOLVE-017/018/019 (a private repo without a usable index, no word list, unlistable tracked files),
-  // also on --dry-run, before any write; only when there is a proposal to check (architecture-strategist-2).
-  const derived = open.length > 0 ? await loadDerivedSet(ctx.deps, ctx.loaded) : new Set<string>();
+  // also on --dry-run, before any write; only when some proposal has a public version for the gate to check
+  // (architecture-strategist-2, kieran-typescript-reviewer-0). The others are held under generalize below either way.
+  const derived = open.some((o) => o.pub !== null) ? await loadDerivedSet(ctx.deps, ctx.loaded) : new Set<string>();
   const cfg = repoConfig(ctx.loaded);
   const monday = isoWeekMonday(ctx.deps.now());
   if (!o.dryRun) {
@@ -296,7 +299,8 @@ export async function publishProposals(ctx: EvolveCtx, o: { dryRun: boolean; noP
   for (const l of open) {
     const { s, pub } = l;
     if (pub === null) {
-      held.push({ id: s.id, layer: "generalize", why: l.unreadable ? "its public version is unreadable; run sindri evolve stage" : "not generalized yet; run sindri evolve stage" });
+      const why = l.unreadable ? "its public version is unreadable; run sindri evolve stage" : gaveUp(ctx, s) ? gaveUpWhy(ctx.loaded.profile.evolve.maxGeneralizeAttempts, s.id) : "not generalized yet; run sindri evolve stage";
+      held.push({ id: s.id, layer: "generalize", why });
       continue;
     }
     const t = publicTier(s.proposal, pub, registry, cfg.protectedPaths); // re-tiered from the public version, never below the original (Review Focus 2)
