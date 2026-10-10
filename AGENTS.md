@@ -86,6 +86,7 @@ bash scripts/tests/dotnet-verify-packages.test.sh
 bash scripts/tests/install-scorer-audit.test.sh
 bash scripts/tests/install-sindri.test.sh
 bash scripts/tests/readiness-baseline.test.sh
+bash scripts/tests/agent-token.test.sh
 bash config/hooks/tests/codex-adapter.test.sh
 bash config/hooks/tests/cursor-adapter.test.sh
 bash config/hooks/tests/provider-install-hooks.test.sh
@@ -111,6 +112,7 @@ sindri shape report                      # record-only shape signals and their o
 sindri shape reconcile                   # move the spool into the ledger and label outcomes now (observe does it hourly)
 sindri observe                          # Backlog with sizes; records to the ledger when the profile is approved
 scripts/install-sindri.sh               # Build sindri, install the CLI wrapper (or ./setup.sh --with-sindri)
+GH_TOKEN="$(scripts/agent-token.sh [--repo NAME])"  # Short-lived (1h) token for the agent GitHub App; key from the keychain
 
 # Setup (from repo root)
 ./setup.sh --providers claude,codex,cursor --dry-run   # Print every change, write nothing
