@@ -1,0 +1,25 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- NativeAOT canary for Aw.Kernel.Data: run.sh publishes it with PublishAot, fails on any trim/AOT (IL2xxx/IL3xxx)
+       warning, runs the native binary against a temp database and compares its stdout with expected.txt. It covers
+       the reflection-adjacent paths (embedded migration resources, the generated file-name regex) and the binders.
+       - Not in AgenticWorkflow.slnx and no lock file, like Aw.Kernel.AotSmoke: PublishAot makes restore resolve the host
+         RID's ILCompiler packs, so a lock file would be per-OS. The RID is a project property (the SDK's host RID), not
+         a global -r, so Aw.Kernel and Aw.Kernel.Data are restored without one and their lock files are never rewritten.
+       - Under src/, not tests/: it is not a *.Tests project (AW0002). InvariantGlobalization comes from
+         Directory.Build.targets, as on every PublishAot project. -->
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+    <PublishAot>true</PublishAot>
+    <RestorePackagesWithLockFile>false</RestorePackagesWithLockFile>
+    <RuntimeIdentifier>$(NETCoreSdkRuntimeIdentifier)</RuntimeIdentifier>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../Aw.Kernel.Data/Aw.Kernel.Data.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Include="Migrations/*.sql" />
+  </ItemGroup>
+</Project>

@@ -207,6 +207,13 @@ static readonly Aw.Kernel.KernelErrors.Timeout -> Aw.Kernel.ErrorDefinition!
 static readonly Aw.Kernel.KernelErrors.Unavailable -> Aw.Kernel.ErrorDefinition!
 ~override Aw.Kernel.Unit.Equals(object obj) -> bool
 ~override Aw.Kernel.Unit.ToString() -> string
+Aw.Kernel.Persistence.IReadRepository<TEntity, TId>
+Aw.Kernel.Persistence.IReadRepository<TEntity, TId>.Exists(TId id, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<bool>!>
+Aw.Kernel.Persistence.IReadRepository<TEntity, TId>.Get(TId id, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<TEntity>!>
+Aw.Kernel.Persistence.IUnitOfWork
+Aw.Kernel.Persistence.IUnitOfWork.Commit(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Kernel.Unit>!>
+Aw.Kernel.Persistence.IUnitOfWorkFactory
+Aw.Kernel.Persistence.IUnitOfWorkFactory.Begin(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Kernel.Persistence.IUnitOfWork!>!>
 Aw.Kernel.Ids.IdGeneratorExtensions
 Aw.Kernel.Ids.ITypedId<TSelf, TValue>
 Aw.Kernel.Ids.ITypedId<TSelf, TValue>.TryFrom(TValue value, out TSelf id) -> bool
