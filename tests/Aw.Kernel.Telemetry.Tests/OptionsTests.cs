@@ -53,7 +53,9 @@ public sealed class OptionsTests
     public void The_runtime_writes_the_problem_as_its_first_line()
     {
         var sink = new Testing.InMemoryLogSink();
-        var options = TelemetryOptions.FromEnvironment("aw-demo", _ => "s3cr3t-pasted-here", TimeProvider.System) with { Sink = sink };
+        // Its own source pattern: the default 'Aw.*' would listen to every parallel test's 'Aw.Test.*' source while this
+        // runtime is alive (RegistrationTests asserts a disposed runtime leaves its source with no listeners).
+        var options = TelemetryOptions.FromEnvironment("aw-demo", _ => "s3cr3t-pasted-here", TimeProvider.System) with { Sink = sink, SourcePattern = "Aw.Test.Problem" };
 
         using (TelemetryRuntime.Start(options))
         {
