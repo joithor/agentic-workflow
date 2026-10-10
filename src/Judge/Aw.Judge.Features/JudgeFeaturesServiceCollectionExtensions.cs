@@ -7,6 +7,7 @@ using Aw.Judge.Features.MapBriefByDispatch;
 using Aw.Judge.Features.MapBriefByName;
 using Aw.Judge.Features.SaveBrief;
 using Aw.Judge.Features.SetBriefAgentId;
+using Aw.Judge.Features.SetConfig;
 using Aw.Judge.Features.UndoDecision;
 using Aw.Kernel.Services;
 using Microsoft.Extensions.DependencyInjection;
@@ -51,6 +52,13 @@ public static class JudgeFeaturesServiceCollectionExtensions
                 new ValidatingService<GetConfigRequest, GetConfigResponse>(
                     sp.GetRequiredService<GetConfigService>(),
                     sp.GetRequiredService<IValidator<GetConfigRequest>>()));
+        _ = services
+            .AddScoped<SetConfigService>()
+            .AddScoped<IValidator<SetConfigRequest>, SetConfigValidator>()
+            .AddScoped<IService<SetConfigRequest, SetConfigResponse>>(static sp =>
+                new ValidatingService<SetConfigRequest, SetConfigResponse>(
+                    sp.GetRequiredService<SetConfigService>(),
+                    sp.GetRequiredService<IValidator<SetConfigRequest>>()));
         return services;
     }
 

@@ -50,4 +50,8 @@ public static class A
     /// <summary>A GetConfigRequest builder with deterministic defaults.</summary>
     /// <returns>A new builder.</returns>
     public static GetConfigRequestBuilder GetConfigRequest() => new();
+
+    /// <summary>A SetConfigRequest builder with deterministic defaults.</summary>
+    /// <returns>A new builder.</returns>
+    public static SetConfigRequestBuilder SetConfigRequest() => new();
 }

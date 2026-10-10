@@ -9,6 +9,7 @@ using Aw.Judge.Features.MapBriefByDispatch;
 using Aw.Judge.Features.MapBriefByName;
 using Aw.Judge.Features.SaveBrief;
 using Aw.Judge.Features.SetBriefAgentId;
+using Aw.Judge.Features.SetConfig;
 using Aw.Judge.Features.UndoDecision;
 using Aw.Judge.Host.Commands;
 using Aw.Kernel;
@@ -41,4 +42,6 @@ namespace Aw.Judge.Host;
 [JsonSerializable(typeof(ApproveDecisionResponse))]
 [JsonSerializable(typeof(GetConfigRequest))]
 [JsonSerializable(typeof(GetConfigResponse))]
+[JsonSerializable(typeof(SetConfigRequest))]
+[JsonSerializable(typeof(SetConfigResponse))]
 internal sealed partial class JudgeJsonContext : JsonSerializerContext;
