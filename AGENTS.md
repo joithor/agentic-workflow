@@ -1,6 +1,6 @@
 # AGENTS.md — Agentic Workflow
 
-> Agentic Workflow — provider-agnostic agent workflow toolkit for Claude Code, Codex, and Cursor: 52 native skills + 3 fetched external packs (impeccable, emil-design-eng, taste-skill), config archive, repo bootstrapper, MCP bridge for multi-agent communication, and token-efficiency tools (rtk + headroom).
+> Agentic Workflow — provider-agnostic agent workflow toolkit for Claude Code, Codex, and Cursor: 52 native skills + 3 fetched external packs (impeccable, emil-design-eng, taste-skill), config archive, repo bootstrapper, and token-efficiency tools (rtk + headroom).
 
 Domain-specific rules live in `.agents/rules/` — one file per rule, the only copy. `.claude/rules` and `.cursor/rules/*.mdc` are symlinks to it (auto-loaded by Claude Code and Cursor), and `CLAUDE.md` is a symlink to this file. Codex reads the Rules Index at the bottom of this file. After adding or removing a rule, run `scripts/sync-rules.sh`.
 
@@ -10,10 +10,10 @@ Domain-specific rules live in `.agents/rules/` — one file per rule, the only c
 |----------|---------|
 | `planning/ARCHITECTURE.md` | System components and data flow |
 | `planning/PROVIDERS.md` | Claude Code / Codex / Cursor support matrix and canonical layout |
-| `planning/API_CONTRACT.md` | MCP bridge REST & tool schemas |
-| `planning/CODE_STYLE.md` | TypeScript conventions and patterns |
+| `planning/API_CONTRACT.md` | Sindri CLI output contract |
+| `planning/CODE_STYLE.md` | Code style: C# by its rule files, TypeScript for bug fixes |
 | `planning/TESTING.md` | Test strategy and coverage targets |
-| `planning/ERD.md` | SQLite schema and relationships |
+| `planning/ERD.md` | Sindri ledger and code-index SQLite schemas |
 | `skills/_shared/capabilities.md` | Capability → tool map used by all skill text |
 
 ## Tech Stack
@@ -22,9 +22,7 @@ Domain-specific rules live in `.agents/rules/` — one file per rule, the only c
 |-------|------------|
 | Runtime | Node.js >= 22 (`.nvmrc`; better-sqlite3 13 requires it), ES2022 target |
 | Language | TypeScript 5.7, strict mode |
-| HTTP (bridge) | Fastify 5 |
 | Database | SQLite via better-sqlite3, WAL mode |
-| MCP | @modelcontextprotocol/sdk (stdio transport) |
 | LSP (Serena) | Docker (Dockerized Serena MCP server via `scripts/serena-docker`) |
 | Validation | Zod 3 |
 | Test | Vitest (in-memory SQLite) |
@@ -36,9 +34,9 @@ Domain-specific rules live in `.agents/rules/` — one file per rule, the only c
 |-------|------------|
 | Runtime | .NET 10 (LTS), SDK pinned in `global.json`; NativeAOT for hook and CLI entry points |
 | Language | C# (latest), nullable on, warnings as errors |
-| HTTP (bridge) | ASP.NET Core minimal APIs (`CreateSlimBuilder`) |
+| HTTP (an http host) | ASP.NET Core minimal APIs (`CreateSlimBuilder`), loopback only |
 | Database | `Microsoft.Data.Sqlite` with its bundled `e_sqlite3` (shipped beside each AOT tool), new C# schemas, WAL mode |
-| MCP | Official MCP C# SDK |
+| MCP | Official MCP C# SDK (approved in the AOT spike; no package uses it since the bridge was retired) |
 | JSON | System.Text.Json, one source-generated context per package |
 | Logging | `Aw.Kernel.Telemetry`: JSON lines on stderr (`AW_LOG_LEVEL`), OpenTelemetry spans and metrics, exporting off by default, scrubbed by `Aw.Redaction` |
 | Analyzers | NetAnalyzers, Meziantou, Roslynator, BannedApiAnalyzers, PublicApiAnalyzers (one owner per rule, `.editorconfig`) |
@@ -53,7 +51,6 @@ agentic-workflow/
 ├── bootstrap/     # /bootstrap skill — repo documentation generator
 ├── config/        # Settings, MCP config, statusline, safety hooks, sindri-nudge SessionStart hook (+ hooks/adapters/ per provider)
 ├── providers/     # Per-provider installers (claude, codex, cursor)
-├── mcp-bridge/    # MCP bridge + REST API (Fastify, SQLite)
 ├── scorer/        # Daily cost/involvement report from provider session transcripts
 ├── judge/         # Cheap-agent-harness judge CLI (decisions, config, health)
 ├── sindri/        # Sindri core: profile, ledger, lock, scrubber, plan-file tracker, observe, doctor (CLI)
@@ -75,7 +72,6 @@ agentic-workflow/
 
 ```bash
 # TypeScript packages (each has test, test:coverage, typecheck, build)
-cd mcp-bridge && npm test               # Vitest, in-memory SQLite
 cd scorer && npm test                   # Vitest
 cd judge && npm test                    # Vitest
 cd sindri && npm test                   # Vitest
@@ -177,7 +173,7 @@ GH_TOKEN="$(scripts/agent-token.sh [--repo NAME])"  # Owner/session launcher onl
 # Setup (from repo root)
 ./setup.sh --providers claude,codex,cursor --dry-run   # Print every change, write nothing
 ./setup.sh [--providers ...]            # Default: detect installed CLIs. Links skills, installs
-                                        # hooks + levers + MCP servers per provider, builds bridge,
+                                        # hooks + levers + MCP servers per provider (and removes retired ones), builds
                                         # judge, scorer, Serena image
 ```
 
@@ -186,13 +182,13 @@ After installing for Codex, open `codex` and run `/hooks` to trust the `aw:*` ho
 ## Merge Gate
 
 Before merging any PR:
-1. `npm run typecheck` passes with zero errors in `mcp-bridge`, `scorer`, `judge`, `sindri`, `skills/ui-evidence`, and `skills/bugFixOrchestrator`
-2. `npm test` passes in `mcp-bridge`, `scorer`, `judge`, `sindri`, `skills/ui-evidence`, and `skills/bugFixOrchestrator`, every bash test listed above passes, and `claude plugin validate mods/aw-live` and `claude plugin test mods/aw-live` pass
+1. `npm run typecheck` passes with zero errors in `scorer`, `judge`, `sindri`, `skills/ui-evidence`, and `skills/bugFixOrchestrator`
+2. `npm test` passes in `scorer`, `judge`, `sindri`, `skills/ui-evidence`, and `skills/bugFixOrchestrator`, every bash test listed above passes, and `claude plugin validate mods/aw-live` and `claude plugin test mods/aw-live` pass
 3. `scripts/sync-rules.sh --check` passes (rule links and Rules Index match `.agents/rules/`)
 4. `node scripts/check-deps.mjs` passes (`deps.yaml` declares every edge the code has; a new edge is a reviewed change to it); `scripts/check-env-example.sh` passes (`.env.example` lists every environment variable the code reads)
 5. `./setup.sh --providers claude,codex,cursor --dry-run` runs cleanly
 6. No `/* v8 ignore */` annotations in source files (prohibited — write the test instead)
-7. No `any` types outside of Fastify integration boundaries (`node scripts/ci/no-any.mjs`; existing ones are held in `scripts/ci/no-any-baseline.json`, which only shrinks)
+7. No `any` types in TypeScript source (`node scripts/ci/no-any.mjs`; existing ones are held in `scripts/ci/no-any-baseline.json`, which only shrinks)
 8. C# build (active once `src/` has projects): `dotnet build -warnaserror` reports zero warnings; `dotnet test --solution AgenticWorkflow.slnx --filter-trait "Lane=unit" --ignore-exit-code 8` and `dotnet test --solution AgenticWorkflow.slnx --filter-trait "Lane=integration" --ignore-exit-code 8` pass within their budgets (`node scripts/ci/lane-budgets.mjs`, LANE-PKG-001; the heavy lane runs nightly); `dotnet format --verify-no-changes` is clean, `scripts/dotnet-verify-packages.sh` passes, and the ratchet baseline block at the end of `.editorconfig` didn't grow
 9. `node scripts/check-rules.mjs` passes (every §4b rule has a rule record, and every check a record calls active exists in the tree)
 
@@ -223,14 +219,11 @@ Domain rules live in `.agents/rules/`. Before editing a file, read every rule be
 
 | Rule | Description | Applies to | Path |
 |------|-------------|------------|------|
-| `bridge-services` | MCP bridge service layer — AppResult, service contracts, MCP tools, route registration | `mcp-bridge/src/application/**`, `mcp-bridge/src/routes/**`, `mcp-bridge/src/server.ts`, `mcp-bridge/src/mcp.ts`, `mcp-bridge/src/index.ts` | `.agents/rules/bridge-services.md` |
-| `bridge-transport` | MCP bridge transport layer — typed routes, controller factories, Zod schemas | `mcp-bridge/src/transport/**` | `.agents/rules/bridge-transport.md` |
 | `csharp-testing` | C# tests — TDD order, lanes and time budgets, fakes with contract tests, builders, golden files, architecture tests | `tests/**`, `**/*Tests.cs`, `**/*.Tests.csproj`, `**/*.Testing.csproj` | `.agents/rules/csharp-testing.md` |
 | `csharp` | C# build (in progress) — package shape, dependency rules, types, errors, DI, JSON, AOT scope, analyzers | `src/**`, `**/*.cs`, `**/*.csproj`, `**/*.slnx`, `global.json`, `Directory.Build.props`, `Directory.Build.targets`, `Directory.Packages.props`, `nuget.config`, `BannedSymbols.txt`, `deps.yaml`, `schemas/deps.schema.json`, `**/.editorconfig`, `CodeMetricsConfig.txt`, `**/PublicAPI.*.txt`, `**/packages.lock.json` | `.agents/rules/csharp.md` |
-| `database` | Bridge SQLite database — client, prepared statements, schema, transactions | `mcp-bridge/src/db/**` | `.agents/rules/database.md` |
 | `design` | Design pipeline artifacts — tokens, .impeccable.md, DESIGN_SYSTEM.md, design-* skills | `design-tokens.json`, `.impeccable.md`, `planning/DESIGN_SYSTEM.md`, `skills/design-*/**` | `.agents/rules/design.md` |
 | `hooks` | Safety and context hooks — per-provider adapters, protocols, installation | `config/hooks/**`, `config/settings.json` | `.agents/rules/hooks.md` |
 | `mcp-servers` | MCP servers registered globally with every provider — available in every session | always | `.agents/rules/mcp-servers.md` |
 | `skills` | Skill structure, preamble, output directories, pipeline, and installation | `skills/**`, `bootstrap/**` | `.agents/rules/skills.md` |
-| `testing` | Test infrastructure, shared helpers, and coverage policy | `**/*.test.ts`, `**/*.spec.ts`, `**/vitest.config.ts`, `mcp-bridge/tests/helpers.ts` | `.agents/rules/testing.md` |
+| `testing` | Test infrastructure, coverage policy, and test count baseline | `**/*.test.ts`, `**/*.spec.ts`, `**/vitest.config.ts` | `.agents/rules/testing.md` |
 <!-- === RULES INDEX END === -->

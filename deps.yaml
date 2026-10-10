@@ -134,14 +134,6 @@ packages:
     files: [judge/outbox, judge/sessions]
     namespace: judge
     note: "decisions, health, briefs and the prompt sorter; called by hooks and tier-2 packages through its CLI"
-  - id: Bridge
-    kind: package
-    tier: 1
-    projectPrefix: Aw.Bridge
-    ts: mcp-bridge
-    src: src/Bridge
-    scan: [mcp-bridge/src]
-    note: "MCP + REST bridge; its SQLite file lives in the package dir, and no other package reads it"
   # Packets and Readiness are standalone (§10 R1b, §4c): they depend on tier 0 only and Sindri (tier 3)
   # consumes both. Tier 1 rather than tier 0, because they carry domain (packet schema, readiness criteria)
   # and tier 0 stays domain-free.
@@ -354,21 +346,6 @@ edges:
     kind: project
     status: planned
     note: "replaces judge's copy of the scrubbing patterns"
-  - from: Bridge
-    to: Kernel
-    kind: project
-    status: planned
-    note: "Result, IService, ports"
-  - from: Bridge
-    to: KernelData
-    kind: project
-    status: planned
-    note: "bridge.db"
-  - from: Bridge
-    to: KernelTelemetry
-    kind: project
-    status: planned
-    note: "logging and OTel"
   - from: Packets
     to: Kernel
     kind: project

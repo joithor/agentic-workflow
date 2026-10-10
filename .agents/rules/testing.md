@@ -1,15 +1,13 @@
 ---
-description: Test infrastructure, shared helpers, and coverage policy
+description: Test infrastructure, coverage policy, and test count baseline
 globs:
   - "**/*.test.ts"
   - "**/*.spec.ts"
   - "**/vitest.config.ts"
-  - "mcp-bridge/tests/helpers.ts"
 paths:
   - "**/*.test.ts"
   - "**/*.spec.ts"
   - "**/vitest.config.ts"
-  - "mcp-bridge/tests/helpers.ts"
 alwaysApply: false
 ---
 
@@ -17,80 +15,17 @@ alwaysApply: false
 
 ## Test Infrastructure
 
-Four Vitest packages, each with v8 coverage, `testTimeout: 10_000`, and 100% line/function/branch/statement thresholds in `vitest.config.ts` (enforced by `npm run test:coverage`):
+Five Vitest packages, each with v8 coverage, `testTimeout: 10_000`, and 100% line/function/branch/statement thresholds in `vitest.config.ts` (enforced by `npm run test:coverage`):
 
 | Package | Tests | Coverage excludes |
 |---------|-------|-------------------|
-| `mcp-bridge` | in-memory SQLite via `tests/helpers.ts`; route tests in `tests/routes/` | `src/index.ts` (entry point wiring), `src/mcp.ts` (stdio transport; tool handlers covered by `tests/mcp-tools.test.ts`) |
 | `scorer` | transcript parsing, reports, probe summaries | `src/cli.ts` |
 | `judge` | judge CLI logic | `src/cli.ts` |
 | `sindri` | in-memory SQLite ledgers, temp git repos, fake SystemProbe/GitRunner/IndexIo, tracker contract tests, evolve fixtures (`tests/evolve-fixtures.ts`: a temp repo with an approved profile and an open ledger, fake process and model runners; synthetic hook-fire transcripts under `tests/fixtures`) | `src/system-real.ts` (OS-specific branches; smoke-tested in `tests/real.test.ts`, which also covers `src/git-real.ts` and `src/index/sandbox-real.ts` in full); `src/scope/model-real.ts`, `src/scope/io-real.ts`; `src/cli.ts`, `src/gen.ts` (thin wiring; generated outputs are checked by tests) |
+| `skills/ui-evidence` | qa-runner scripts, lint, parity, publish; a real-browser test under `tests/browser` | `src/run-script.ts`, `src/parity-run.ts`, `src/step-exec.ts`, `src/bin.ts` (process wiring), `src/pixelmatch.d.ts` (types) |
+| `skills/bugFixOrchestrator` | the bugfix-state CLI: gates, journey, refusals | `src/bin.ts` |
 
 `/* v8 ignore */` annotations are prohibited — write the test instead.
-
-## Shared Test Helpers (mcp-bridge)
-
-`mcp-bridge/tests/helpers.ts` exports one factory — use it for every bridge test that needs a database:
-
-```typescript
-import { createTestBridgeDb } from "./helpers.js";
-
-const { db, raw } = createTestBridgeDb(); // in-memory, WAL + foreign_keys + busy_timeout, MIGRATIONS applied
-```
-
-Never inline `new Database(":memory:")` — always go through the helper so pragma setup is consistent.
-
-## Route Testing Pattern
-
-Use Fastify's `app.inject()` for HTTP simulation — no real network. Build the app with `createServer([...routes])` and `await app.ready()`:
-
-```typescript
-const conv = randomUUID();
-const res = await app.inject({
-  method: "POST",
-  url: "/messages/send",
-  payload: { conversation: conv, sender: "claude", recipient: "codex", payload: "hello" },
-});
-expect(res.statusCode).toBe(201);
-const body = res.json();
-expect(body.ok).toBe(true);
-expect(body.data.conversation).toBe(conv);
-```
-
-Conversation ids are validated as UUIDs — use `randomUUID()` in fixtures.
-
-## AppResult Test Coverage
-
-Always test both paths of AppResult-returning services:
-
-```typescript
-// OK path
-const result = myService(db, validInput);
-expect(result.ok).toBe(true);
-if (result.ok) expect(result.data.id).toBeDefined();
-
-// Error path
-const bad = myService(db, invalidInput);
-expect(bad.ok).toBe(false);
-if (!bad.ok) {
-  expect(bad.error.code).toBe("NOT_FOUND");
-  expect(bad.error.statusHint).toBe(404);
-}
-```
-
-## Zod Validation Tests
-
-Test validation rejection with invalid inputs — don't assume the happy path is enough:
-
-```typescript
-// Invalid UUID
-const res = await app.inject({ method: "GET", url: "/messages/conversation/not-a-uuid" });
-expect(res.statusCode).toBe(400);
-
-// Missing required field
-const res2 = await app.inject({ method: "POST", url: "/messages/send", payload: { sender: "a" } });
-expect(res2.statusCode).toBe(400);
-```
 
 ## Shell Tests
 
@@ -98,9 +33,10 @@ Bash suites live in `config/**/tests/`, `scripts/tests/`, and `providers/tests/`
 
 ## Test Count Baseline
 
-- mcp-bridge: 99 tests across 14 test files
-- scorer: 235 tests across 20 test files
-- judge: 261 tests across 22 test files
-- sindri: 1109 tests across 87 test files
+- scorer: 471 tests across 38 test files
+- judge: 625 tests across 49 test files
+- sindri: 1359 tests across 92 test files
+- skills/ui-evidence: 252 tests across 24 test files (including the real-browser tests under `tests/browser`)
+- skills/bugFixOrchestrator: 70 tests across 4 test files
 
 Any PR that reduces these counts needs explicit justification.

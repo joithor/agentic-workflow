@@ -58,7 +58,7 @@ It learns from its own steering so recurring corrections become rules.
 - Evolve: recurring human steering becomes a proposed, backtested, typed rule change.
 - **Scope projects at creation:** surfaces, implications and workstreams found up front, proven by
   backtest (§7.5).
-- **Improve itself:** the whole toolkit repo (skills, hooks, judge, scorer, bridge, the sindri itself,
+- **Improve itself:** the whole toolkit repo (skills, hooks, judge, scorer, the sindri itself,
   installers, docs) plus adopted skills, prompts, recipes and thresholds are evaluated and evolved
   automatically. Human input is needed only for protected surfaces and, by default, merges (§7.4, §7.7).
 - Keep the codebase simple as it grows: deterministic checks for reinvention, second-case
@@ -135,7 +135,7 @@ It learns from its own steering so recurring corrections become rules.
 | Worker wraps existing `/bugFixOrchestrator` | New native worker |
 | Ship state machine for single PRs and stacks | — |
 | Eval loop: proposal-only on evidence and ship recipes | Free-form rule discovery |
-| Direction checks, sindri-relayed, bridge as audit mirror; shadow first (§6.1) | Human participating live in a thread; non-Anthropic challengers by default |
+| Direction checks, sindri-relayed, the ledger as the record; shadow first (§6.1) | Human participating live in a thread; non-Anthropic challengers by default |
 | Code index: structure, clones, dependencies, local embeddings, graphify graph; shape checks at commit (§6.2) | Cross-repo index |
 
 Linux is a design constraint in v1 (no OS assumptions in core, per-OS boot-id, hook portability fixes,
@@ -167,7 +167,6 @@ The tick never waits on a model. It reads job results from the ledger on the nex
 | `sindri/scrub/` | Secret/PHI scrubber used at ingest, pack write, ledger write, eval corpus |
 | `judge/src/questions/` | New questions (size, ambiguity, pack-probe, independence, step-complete, direction-verdict), called through the `judge` CLI |
 | `sindri/index/` | Code index builders, `Index` adapter, graphify adapter, shape signals (§6.2) |
-| `mcp-bridge/` | Audit mirror for direction-check threads. Hardened: token auth, no CORS, Host check, ack-based unread, size caps, retention (§6.1) |
 | `config/hooks/` | The sindri-mode hook set in §5.3: injection, gate, checkpoints, shape checks, turn classification, Stop gate, heartbeat |
 
 ### 5.2 Storage (M7)
@@ -308,18 +307,10 @@ XS-clear items skip Approach unless a drift signal fires.
   session's checkpoint output, stamped with the session id and turn id, and signed by the sindri on
   ingest. The session never signs anything.
 - **Leg timeouts (M2):** position 10 min, challenge 5 min, reply 10 min, verdict 2 min. A timeout escalates.
-- **The MCP bridge is the record of each dialogue,** not its transport. Every turn is mirrored to a bridge
-  conversation (UUID = check id) for audit and for `sindri why`.
-- **Bridge hardening, required when the bridge is enabled:**
-  - token auth on every route
-  - CORS off and a Host-header check
-  - `sender` taken from the token, not the request body
-  - ack-based unread (no destructive reads)
-  - payload size caps
-  - retention under §8.4
-- No session can read or post to a direction-check thread. If the bridge is down, checks still run, the
-  ledger keeps the record, the mirror is back-filled when the bridge returns, and `doctor` warns. The
-  bridge is never a hard dependency.
+- **The ledger is the record of each dialogue,** and `sindri why` reads it. (This section first planned an MCP bridge
+  mirror of each turn; the bridge was retired on 2026-10-10 without ever carrying a message, so no mirror is built.
+  A later audit view reads the ledger's events, addendum §17 "Event log and bus".)
+- No session can read or post to a direction-check thread.
 
 **State machine** (durable in the ledger):
 ```
@@ -634,7 +625,7 @@ The **entire toolkit repo** (this repo) is registered in the artifact registry, 
 covers:
 - skills and the shared skill text
 - hooks and adapters
-- `judge`, `scorer`, `mcp-bridge`, `sindri` itself
+- `judge`, `scorer`, `sindri` itself
 - provider installers and `setup.sh`
 - rules, planning docs, mods
 - the external-pack pins
@@ -782,7 +773,7 @@ the container.
   - The only reachable host is the sindri's egress proxy. It forwards to: the model upstream, the
     read-only data endpoints, package registries through the cache, and the profile's environment
     endpoints.
-  - Everything else is denied, including the host's loopback services (Prism dashboard, bridge).
+  - Everything else is denied, including the host's loopback services (the Prism dashboard).
   - Every denial is logged as `SND-PROXY-1xx`.
 - **Secrets for recipes** (e.g. a preview login): `sindri cred run <recipe>` runs host-side and passes a
   short-lived session cookie or token into `/sindri` for that recipe only. Long-lived secrets never
@@ -863,8 +854,7 @@ and dropped capabilities.
   write, every ledger free-text field and the eval corpus.
 - The scrubber also runs **at every egress to a model** (pack injection, challenger bundle, judge input),
   not only before storage (M9).
-- The bridge database (when enabled) follows the same retention. Bridge and challenger text are never part
-  of the eval corpus (M10).
+- Challenger text is never part of the eval corpus (M10).
 - Packs are stored 0600 with a 14-day TTL purge.
 - The ledger stores reason codes and hashes. Free-text reasons are scrubbed and capped.
 
@@ -1076,7 +1066,7 @@ The `UserPromptSubmit` hook classifies every human turn in a sindri session:
 - `NO_COLOR` and non-TTY output are honored.
 - Exit codes: `0` ok, `1` attention needed, `2` error.
 - Errors carry stable codes `SND-<AREA>-<NNN>`, with the areas seeded in `docs/sindri/errors.md`: PROFILE,
-  LOCK, SESS, ITEM, GATE, DIR, SHAPE, INDEX, BRIDGE, NOTIFY, BUDGET, CLI, LEDGER, SCRUB, TRACKER, SCOPE, SECRET, EVOLVE.
+  LOCK, SESS, ITEM, GATE, DIR, SHAPE, INDEX, NOTIFY, BUDGET, CLI, LEDGER, SCRUB, TRACKER, SCOPE, SECRET, EVOLVE.
 
 ### 10.4 Silent-failure floor (R7)
 - **Fallback chain:** macOS notification, then the `$AW_STATE_DIR/ATTENTION` file, then a banner in
@@ -1280,7 +1270,6 @@ interface Badge    { publish(summary: StatusSummary): Promise<Result<void>> }
   - every §5.3 hook registered, each answering a recorded probe payload with the expected decision
   - code index age per repo, and which providers are enabled (structure, embeddings, graphify)
   - local embedding model reachable
-  - bridge mirror: auth enabled, CORS off, backlog size (only when enabled)
   - unacknowledged ATTENTION entries and the last `notify --test` time
   - direction-check mode per checkpoint, shadow precision, caps used today
 
@@ -1564,7 +1553,6 @@ toolkit needs no tracker account to build itself. The adapter ships in Plan 2.
   - providers outside `providers.allowed` are never called
   - per-item and per-day caps
   - shadow mode never blocks
-  - bridge down: checks run and the mirror back-fills
 - **Shape checks:**
   - fixture repos with an exact clone, a renamed clone, a second-case near-clone, a duplicate dependency, a
     graph-neighbor reinvention and an over-budget diff each produce the right signal

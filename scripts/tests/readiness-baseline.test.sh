@@ -64,8 +64,8 @@ test_deterministic_for_fixed_date() {
 test_app_fraction_counts_present_apps() {
   local t="$TMP/frac"; make_tree "$t"
   node "$SCRIPT" --root "$t" --no-remote --date 2026-10-10 --out "$t/o.md"
-  # TS-1 is per app over seven apps; only judge exists and has a test.
-  grep -E '^\| TS-1 \|.*\| 1 / 7 \|' "$t/o.md" >/dev/null || fail "TS-1 should report 1 / 7"
+  # TS-1 is per app over six apps; only judge exists and has a test.
+  grep -E '^\| TS-1 \|.*\| 1 / 6 \|' "$t/o.md" >/dev/null || fail "TS-1 should report 1 / 6"
   echo "PASS: test_app_fraction_counts_present_apps"
 }
 
@@ -145,11 +145,11 @@ test_app_na_leaves_denominator() {
   local t="$TMP/na"; make_tree "$t"
   mkdir -p "$t/mods/aw-live/hooks"; echo 'export {}' > "$t/mods/aw-live/hooks/index.ts"
   node "$SCRIPT" --root "$t" --no-remote --date 2026-10-10 --out "$t/o.md"
-  # BS-2: judge passes, aw-live is n/a (no package.json), the other five are absent -> 1 / 6
-  row "$t/o.md" BS-2 | grep -E '\| 1 / 6 \|' >/dev/null || fail "BS-2 should be 1 / 6: $(row "$t/o.md" BS-2)"
+  # BS-2: judge passes, aw-live is n/a (no package.json), the other four are absent -> 1 / 5
+  row "$t/o.md" BS-2 | grep -E '\| 1 / 5 \|' >/dev/null || fail "BS-2 should be 1 / 5: $(row "$t/o.md" BS-2)"
   row "$t/o.md" BS-2 | grep -F 'n/a: mods/aw-live (no package.json' >/dev/null || fail "BS-2 should list aw-live as n/a"
   # BS-1: per app; judge has scripts.build and AGENTS.md documents it
-  row "$t/o.md" BS-1 | grep -E '\| app \|.*\| 1 / 6 \|' >/dev/null || fail "BS-1 should be app-scope 1 / 6: $(row "$t/o.md" BS-1)"
+  row "$t/o.md" BS-1 | grep -E '\| app \|.*\| 1 / 5 \|' >/dev/null || fail "BS-1 should be app-scope 1 / 5: $(row "$t/o.md" BS-1)"
   echo "PASS: test_app_na_leaves_denominator"
 }
 

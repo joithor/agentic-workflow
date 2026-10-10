@@ -7,11 +7,10 @@ Agentic Workflow (repo: `agentic-workflow`) is a portable, provider-agnostic wor
 - 52 native skills spanning the full development lifecycle (planning, design, review, debugging, QA, shipping, retrospectives)
 - a documentation bootstrapper skill
 - canonical safety hooks
-- a TypeScript MCP bridge server for inter-agent coordination
 - the judge and scorer packages
 - a centralized output directory for cross-skill artifact sharing
 
-A thin **provider adapter layer** (see below and `planning/PROVIDERS.md`) installs that core into each provider. Skills are symlinked into each installed provider's skills directory. They are invoked as `/<name>` in Claude Code and Cursor and as `$<name>` in Codex. The MCP bridge runs either as a stdio MCP server, registered with every installed provider, or as a standalone Fastify REST API. Both modes persist messages and tasks to a local SQLite database, so agents on any provider can exchange context asynchronously.
+A thin **provider adapter layer** (see below and `planning/PROVIDERS.md`) installs that core into each provider. Skills are symlinked into each installed provider's skills directory. They are invoked as `/<name>` in Claude Code and Cursor and as `$<name>` in Codex. Agents hand off through Prism handoffs (`session_save_handoff` / `session_load_context`), judge's outbox and teammate names (agent teams), and Sindri's ledger; there is no bridge server.
 
 ```mermaid
 graph TD
@@ -82,14 +81,6 @@ graph TD
     AddressReview --> |"spawn subagent"| Implementers[Parallel Implementer Subagents]
     Implementers --> |"git push"| GitHub
     ShipRelease --> |"gh pr create"| GitHub
-
-    subgraph "MCP Bridge"
-        MCP[mcp.ts — stdio] --> Services[Application Services]
-        REST[index.ts — Fastify :3100] --> Services
-        Services --> SQLite[(bridge.db)]
-    end
-
-    Review -.-> |"send_context / assign_task"| MCP
 ```
 
 ### Provider Adapter Layer
@@ -102,7 +93,7 @@ graph LR
         Skills["skills/*/SKILL.md<br/>(capability phrases)"]
         Hooks["config/hooks/*.sh<br/>(canonical protocol)"]
         Rules["AGENTS.md + .agents/rules/"]
-        MCPs["MCP servers<br/>(bridge, serena, headroom, prism-mcp, ...)"]
+        MCPs["MCP servers<br/>(serena, headroom, prism-mcp, ...)"]
     end
 
     Setup["setup.sh --providers ..."] --> PClaude["providers/claude/"]
@@ -117,7 +108,7 @@ graph LR
     MCPs --> |"claude mcp add / codex mcp add / ~/.cursor/mcp.json"| PClaude & PCodex & PCursor
 ```
 
-- **Installer.** `setup.sh [--providers claude,codex,cursor]` installs for the listed providers, or detects installed CLIs when no flag is given. It runs the shared steps (bridge build, Serena images, external pack fetch, rtk and headroom) once, then calls `providers/<name>/install.sh` and `providers/<name>/install-hooks.sh` for each selected provider.
+- **Installer.** `setup.sh [--providers claude,codex,cursor]` installs for the listed providers, or detects installed CLIs when no flag is given. It runs the shared steps (Serena images, external pack fetch, rtk and headroom) once, then calls `providers/<name>/install.sh` and `providers/<name>/install-hooks.sh` for each selected provider.
 - **Stable paths.** `~/.agentic-workflow/toolkit` is a symlink to the repo root. Skills resolve shared fragments through `SHARED_DIR=~/.agentic-workflow/toolkit/skills/_shared`, never through a provider's skills directory. `~/.agentic-workflow/providers` records each installed provider and its skills directory (`<name> <skills-dir>` per line).
 - **Capabilities, not tools.** Skill text names capabilities (**Ask the user**, **Spawn a subagent**, **Dispatch in parallel**, **Invoke skill**, `mcp: <server>/<tool>`). `skills/_shared/capabilities.md` maps each one to the right tool on each provider. `allowed-tools` frontmatter uses Claude Code names, and the other providers ignore it.
 - **Hooks.** `config/hooks/*.sh` speak one protocol (JSON on stdin, exit 2 = deny). Claude Code runs them directly. `config/hooks/adapters/{codex,cursor}.sh` translate each provider's hook payloads, event names, and exit semantics to that protocol, so the safety logic exists once.
@@ -144,7 +135,7 @@ agentic-workflow/
 ├── .agents/rules/                       # Glob-scoped rules, the only copy (linked by scripts/sync-rules.sh)
 ├── providers/                           # Per-provider adapters
 │   └── <claude|codex|cursor>/           #   install.sh (skills, MCP, config) + install-hooks.sh
-├── skills/                              # Native skills (47), shared by all providers
+├── skills/                              # Native skills (51, plus bootstrap/), shared by all providers
 │   ├── review/                          # /review — multi-agent PR review orchestrator
 │   │   ├── SKILL.md                     #   skill manifest + 7-step orchestration flow
 │   │   ├── triage-prompt.md             #   subagent prompt: classify files → reviewer agents
@@ -215,53 +206,6 @@ agentic-workflow/
 │       ├── rtk-rewrite.sh              #     PreToolUse — rewrites eligible bash commands to rtk equivalents for token compression (runs 4th)
 │       ├── git-context.sh              #     SessionStart — injects current branch, recent commits, working tree status
 │       └── prism-context.sh            #     SessionStart — one-line warning if the prism-mcp dashboard is unreachable
-├── mcp-bridge/                          # TypeScript MCP bridge server
-│   ├── package.json                     #   Node >=22, Fastify 5, better-sqlite3, Zod 3
-│   ├── tsconfig.json                    #   ES2022, Node16 modules, strict mode
-│   ├── vitest.config.ts                 #   Vitest config — v8 coverage, 100% thresholds, excludes index.ts + mcp.ts
-│   ├── tests/                           #   Unit and integration tests (99 tests)
-│   │   ├── routes/                      #     Route integration tests via Fastify inject (messages, tasks, conversations)
-│   │   ├── client.test.ts               #     DbClient unit tests
-│   │   ├── schema.test.ts               #     Migration and schema tests
-│   │   ├── message-controller.test.ts   #     Message controller unit tests
-│   │   ├── task-controller.test.ts      #     Task controller unit tests
-│   │   ├── conversation-controller.test.ts #  Conversation controller unit tests
-│   │   ├── mcp-tools.test.ts            #     MCP tool handler tests (resultToContent validation)
-│   │   ├── services.test.ts             #     Application service unit tests
-│   │   ├── server-errors.test.ts        #     Server error handling tests
-│   │   ├── result.test.ts               #     AppResult utility tests
-│   │   ├── types.test.ts               #     Transport type tests
-│   │   └── helpers.ts                   #     Shared test helpers: createTestBridgeDb
-│   └── src/
-│       ├── index.ts                     #   REST entry point — binds Fastify on :3100
-│       ├── mcp.ts                       #   MCP entry point — stdio transport, 5 tools
-│       ├── server.ts                    #   Fastify factory — registers routes, Zod validation
-│       ├── db/
-│       │   ├── schema.ts               #   SQLite migrations (messages + tasks tables, WAL)
-│       │   └── client.ts               #   DbClient interface — prepared statements, transactions
-│       ├── application/
-│       │   ├── result.ts               #   AppResult<T> discriminated union (ok/err, never throws)
-│       │   └── services/
-│       │       ├── send-context.ts     #   Insert a "context" message into a conversation
-│       │       ├── get-messages.ts     #   Fetch by conversation; fetch unread + mark-read (atomic)
-│       │       ├── get-conversations.ts #   Get paginated conversation summaries
-│       │       ├── assign-task.ts      #   Insert task + notification message (transactional)
-│       │       └── report-status.ts    #   Insert status message + update task (transactional)
-│       ├── transport/
-│       │   ├── types.ts               #   RouteSchema, ApiRequest<T>, ApiResponse<T>, defineRoute()
-│       │   ├── schemas/
-│       │   │   ├── common.ts          #   Shared Zod schemas: IdParams, ConversationParams, RecipientQuery
-│       │   │   ├── message-schemas.ts #   SendContext, GetMessages, GetUnread request/response schemas
-│       │   │   ├── task-schemas.ts    #   AssignTask, GetTask, GetTasksByConversation, ReportStatus schemas
-│       │   │   └── conversation-schemas.ts  #   Zod schemas for conversation list request/response
-│       │   └── controllers/
-│       │       ├── message-controller.ts      #   Delegates to message services, maps AppResult → ApiResponse
-│       │       ├── task-controller.ts         #   Delegates to task services, maps AppResult → ApiResponse
-│       │       └── conversation-controller.ts #   Delegates to conversation service, maps AppResult → ApiResponse
-│       └── routes/
-│           ├── messages.ts            #   POST /messages/send, GET /messages/conversation/:id, GET /messages/unread
-│           ├── tasks.ts               #   POST /tasks/assign, GET /tasks/:id, GET /tasks/conversation/:id, POST /tasks/report
-│           └── conversations.ts       #   GET /conversations (paginated summaries)
 ├── judge/                               # Cheap typed decisions (providers: claude-cli, codex-cli, cursor-cli)
 ├── scorer/                              # Cost/involvement report (transcript sources: claude, codex, cursor)
 ├── scripts/                             # Utility scripts
@@ -273,9 +217,8 @@ agentic-workflow/
 │   └── project.yml                      #   Language servers, ignored_paths, read_only flag
 ├── .claude/
 │   ├── rules/                           # Generated from .agents/rules/ (auto-loaded by Claude Code)
-│   │   ├── bridge-services.md           #   AppResult pattern, MCP tools, service contracts
-│   │   ├── bridge-transport.md          #   Typed router, controller factories, Zod schema conventions
-│   │   ├── database.md                  #   DbClient, schema reference, idempotency
+│   │   ├── csharp.md                    #   C# build: package shape, dependency rules, types, errors, DI, AOT
+│   │   ├── csharp-testing.md            #   C# tests: TDD order, lanes and budgets, fakes, builders
 │   │   ├── design.md                    #   Design pipeline, artifact formats, design principles
 │   │   ├── hooks.md                     #   Hook protocols, PreToolUse/SessionStart patterns, adding new hooks
 │   │   ├── mcp-servers.md               #   MCP server usage guide (Serena vs Grep/Read decision table)
@@ -398,69 +341,14 @@ Serena is a Dockerized LSP MCP server that provides symbol navigation (find defi
 - **`mcp-servers.md` rule** — Project-scoped rule (canonical in `.agents/rules/`, emitted per provider) loaded into every session. Documents all registered MCP servers and provides a decision table for when to use Serena vs Grep/Read.
 - **Two-image strategy** — The base image (`serena-local:latest`) supports TypeScript, Python, Go, Rust, and most other languages. The C# extension image (`serena-local:latest-csharp`) adds OmniSharp and .NET SDK; it is auto-built by `setup.sh` when `.csproj`/`.cs` files are detected, or manually via `BUILD_CSHARP=1 ./setup.sh`.
 
-## Component 2: MCP Bridge (mcp-bridge/)
-
-### Overview
-
-A TypeScript application providing two transport layers over the same business logic: a Fastify REST API (for HTTP clients) and an MCP stdio server (for agent tool calls from any provider). Both transports share the same `DbClient` and application services. The bridge enables asynchronous message-passing between AI agents using a SQLite store-and-forward pattern.
-
-### Layered Architecture
-
-The bridge follows a strict three-layer architecture with unidirectional dependencies:
-
-**Transport Layer** (`transport/`, `routes/`, `server.ts`) — Handles HTTP request parsing, Zod validation, and response formatting. The `defineRoute<TSchema>()` identity function captures the generic `TSchema` type parameter, linking Zod schemas to handler signatures at compile time. The Fastify server iterates over `ControllerDefinition[]` arrays, registering each route with automatic Zod validation of `params`, `query`, and `body`. POST routes return 201; errors map `statusHint` to HTTP status codes; `ZodError` maps to 400.
-
-**Application Layer** (`application/`) — Pure functions that accept a `DbClient` and input, returning `AppResult<T>`. The `AppResult<T>` type is a discriminated union: `{ ok: true, data: T } | { ok: false, error: AppError }`. Services never throw. Multi-step operations (e.g., `assignTask` inserts both a task and a notification message) are wrapped in `db.transaction()` for atomicity.
-
-**Data Layer** (`db/`) — `schema.ts` runs DDL migrations on startup (idempotent `CREATE TABLE IF NOT EXISTS`). `client.ts` exposes a `DbClient` interface with pre-compiled prepared statements. All IDs are UUIDs generated via `crypto.randomUUID()`. The database uses WAL journal mode for concurrent read performance.
-
-### Data Model
-
-**Bridge database (bridge.db)** — Two tables with conversation-based partitioning:
-
-**messages** — `id` (UUID PK), `conversation` (UUID), `sender`, `recipient`, `kind` (enum: context | task | status | reply), `payload` (text), `meta_prompt` (nullable), `created_at`, `read_at` (nullable, set on retrieval). Indexed on `conversation` and `(recipient, read_at)`.
-
-**tasks** — `id` (UUID PK), `conversation` (UUID), `domain`, `summary`, `details`, `analysis` (nullable), `assigned_to` (nullable), `status` (enum: pending | in_progress | completed | failed), `created_at`, `updated_at`. Indexed on `conversation` and `status`.
-
-
-### MCP Tools (mcp.ts)
-
-Five tools exposed over stdio transport:
-
-| Tool | Description |
-|------|-------------|
-| `send_context` | Insert a message with kind=context into a conversation |
-| `get_messages` | Retrieve full conversation history by UUID |
-| `get_unread` | Fetch unread messages for a recipient, atomically marking them read |
-| `assign_task` | Create a task + notification message in one transaction |
-| `report_status` | Send a status message and optionally update task status |
-
-### REST API (index.ts + server.ts)
-
-Nine endpoints on Fastify (default `127.0.0.1:3100`):
-
-| Method | Path | Handler |
-|--------|------|---------|
-| GET | `/health` | Health check (returns `{ status: "ok" }`) |
-| POST | `/messages/send` | `sendContext` service |
-| GET | `/messages/conversation/:conversation` | `getMessagesByConversation` service |
-| GET | `/messages/unread?recipient=` | `getUnreadMessages` service |
-| POST | `/tasks/assign` | `assignTask` service |
-| GET | `/tasks/:id` | Direct `db.getTask()` lookup |
-| GET | `/tasks/conversation/:conversation` | Direct `db.getTasksByConversation()` lookup |
-| POST | `/tasks/report` | `reportStatus` service |
-| GET | `/conversations?limit=&offset=` | `getConversations` service — paginated summaries |
-
-The server refuses to bind to non-loopback addresses unless `ALLOW_REMOTE=1` is set, since the API has no authentication.
-
-## Component 3: Config Archive (config/, .claude/)
+## Component 2: Config Archive (config/, .claude/)
 
 Archived configuration for replication across machines. `settings.json`, the statusline, and plugin marketplaces are Claude Code only; hooks and MCP servers are installed for every provider via `providers/<name>/`:
 
 - **config/settings.json** — Sets model to `opus`, enables plugins (github, superpowers, compound-engineering, swift-lsp, playwright), enables experimental agent teams flag, sets effort level to `high`.
 - **config/mcp.json** — Registers the `xcodebuildmcp` MCP server (`npx -y xcodebuildmcp@2.3.0 mcp`) for iOS Simulator control.
 - **`.claude/settings.json`** — Project-level settings: disables bypass-permissions mode (`"disable"` string, not boolean per Claude Code 1.x schema).
-- **`.agents/rules/`** — Canonical glob-scoped rule files. `scripts/sync-rules.sh` emits them as `.claude/rules/` (Claude Code), `.cursor/rules/*.mdc` (Cursor), and a rules index in `AGENTS.md` (Codex). Detailed domain rules were moved out of the monolithic instructions file into these files: `bridge-services.md`, `bridge-transport.md`, `database.md`, `design.md`, `hooks.md`, `mcp-servers.md`, `skills.md`, `testing.md`.
+- **`.agents/rules/`** — Canonical glob-scoped rule files. `scripts/sync-rules.sh` emits them as `.claude/rules/` (Claude Code), `.cursor/rules/*.mdc` (Cursor), and a rules index in `AGENTS.md` (Codex). Detailed domain rules were moved out of the monolithic instructions file into these files: `csharp.md`, `csharp-testing.md`, `design.md`, `hooks.md`, `mcp-servers.md`, `skills.md`, `testing.md`.
 
 ## Scorer
 
@@ -490,24 +378,12 @@ Plan 4 adds the scoping harness (`sindri/src/scope/`, doc: `docs/sindri/scope.md
 
 2. **All skill outputs go to the centralized directory.** `~/.agentic-workflow/<repo-slug>/` is the persistent output directory shared across all skills. Subdirectories: `design/`, `reviews/`, `investigations/`, `qa/`, `plans/`, `releases/`, `retros/`. The repo slug is derived from `git remote get-url origin` or falls back to the directory name.
 
-3. **Every skill references the shared preamble.** The preamble lists all native skills, points to the output directory, and checks bootstrap status (skills installed for the running provider, MCP bridge built, repo rules present). If not bootstrapped, it prompts the user to run `setup.sh`. Design pipeline skills additionally include a design-specific preamble for brand context.
+3. **Every skill references the shared preamble.** The preamble lists all native skills, points to the output directory, and checks bootstrap status (skills installed for the running provider, repo rules present). If not bootstrapped, it prompts the user to run `setup.sh`. Design pipeline skills additionally include a design-specific preamble for brand context.
 
-4. **Application services never throw.** Every service function returns `AppResult<T>` — a discriminated union of `ok(data)` or `err(AppError)`. Error propagation uses value returns, not exceptions. The transport layer maps `AppError.statusHint` to HTTP status codes.
+4. **Subagents run in parallel (Dispatch in parallel).** Both `/review` (reviewer subagents) and `/addressReview` (implementer subagents) spawn all agents at once using the provider's parallel-dispatch mechanism (see `skills/_shared/capabilities.md`). Triage always runs sequentially first to determine the agent assignments.
 
-5. **Type safety flows from Zod schemas through to handlers.** The `defineRoute<TSchema>()` generic captures the schema type, so `handler(req: ApiRequest<TSchema>)` gets fully inferred `params`, `query`, and `body` types. Schemas are defined once and shared between validation and type inference.
+5. **Setup is symlink-based.** `setup.sh` creates symlinks from each installed provider's skills directory into this repo, plus the stable `~/.agentic-workflow/toolkit` symlink, rather than copying files. Changes to skill definitions take effect immediately without re-running setup. Setup also creates the `~/.agentic-workflow/` base directory, builds the Serena Docker image(s), installs the `serena-docker` wrapper to `~/.local/bin/`, and registers Serena and the other MCP servers with every selected provider.
 
-6. **Multi-step writes are transactional.** `assignTask` (task + message insert) and `reportStatus` (message + task update) wrap their operations in `db.transaction()`. `getUnreadMessages` atomically fetches and marks messages read.
+6. **Zero telemetry.** No session tracking, no analytics logging, no external service calls. Skills do not phone home. All data stays local.
 
-7. **The bridge has no authentication.** The REST API binds to loopback only (`127.0.0.1`) by default and exits with an error if a non-loopback host is configured without `ALLOW_REMOTE=1`. This is a deliberate design choice for local-only multi-agent coordination.
-
-8. **Subagents run in parallel (Dispatch in parallel).** Both `/review` (reviewer subagents) and `/addressReview` (implementer subagents) spawn all agents at once using the provider's parallel-dispatch mechanism (see `skills/_shared/capabilities.md`). Triage always runs sequentially first to determine the agent assignments.
-
-9. **Setup is symlink-based.** `setup.sh` creates symlinks from each installed provider's skills directory into this repo, plus the stable `~/.agentic-workflow/toolkit` symlink, rather than copying files. Changes to skill definitions take effect immediately without re-running setup. Setup also creates the `~/.agentic-workflow/` base directory, builds the Serena Docker image(s), installs the `serena-docker` wrapper to `~/.local/bin/`, and registers Serena and the other MCP servers with every selected provider.
-
-10. **The MCP server and REST API share identical business logic.** `mcp.ts` calls the same service functions as the Fastify controllers. The only difference is transport: stdio with `resultToContent()` formatting vs. HTTP with `ApiResponse<T>` envelopes.
-
-11. **SQLite is configured for concurrent access.** WAL journal mode is enabled on database creation, allowing multiple readers alongside a single writer — suitable for the bridge's pattern of multiple agents polling for unread messages.
-
-12. **Zero telemetry.** No session tracking, no analytics logging, no external service calls. Skills do not phone home. All data stays local.
-
-13. **`/* v8 ignore */` annotations are prohibited.** Write the test instead. The bridge uses Vitest with v8 coverage. Coverage thresholds are not enforced at the `vitest.config.ts` level. Entry points `src/index.ts` and `src/mcp.ts` are excluded from coverage.
+7. **`/* v8 ignore */` annotations are prohibited.** Write the test instead. The TypeScript packages use Vitest with v8 coverage.

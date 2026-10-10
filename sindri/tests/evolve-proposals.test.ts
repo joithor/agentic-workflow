@@ -94,7 +94,7 @@ describe("isAddedTestAllowed", () => {
     expect(isAddedTestAllowed("sindri/tests/new.test.ts", tracked)).toBe(true);
     expect(isAddedTestAllowed("skills/x/tests/new.spec.ts", tracked)).toBe(true);
     const no = (f: string, extra: string[] = []) => expect(isAddedTestAllowed(f, tracked, extra), f).toBe(false);
-    for (const f of ["sindri/tests/helpers.js", "sindri/tests/new.sh", "sindri/tests/old.test.js", "sindri/tests/heavy/new.test.ts", "mcp-bridge/tests/heavy/x.test.ts"]) no(f);
+    for (const f of ["sindri/tests/helpers.js", "sindri/tests/new.sh", "sindri/tests/old.test.js", "sindri/tests/heavy/new.test.ts", "judge/tests/heavy/x.test.ts"]) no(f);
     for (const f of ["config/hooks/tests/done-gate.test.sh", "config/lib/tests/x.test.sh", "scripts/tests/install-x.test.sh", "providers/tests/install.test.sh"]) no(f);
     for (const f of ["sindri/src/evolve/new.test.ts", "sindri/tests/package.json", ".claude/rules/new.test.ts", "sindri/src/observe/observe.ts", "a b.test.ts"]) no(f);
     no("sindri/tests/new.test.ts", ["sindri/tests/**"]);

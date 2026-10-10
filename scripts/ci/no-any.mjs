@@ -1,6 +1,5 @@
 #!/usr/bin/env node
-// scripts/ci/no-any.mjs — merge gate 7 (AGENTS.md): no `any` type outside the Fastify
-// integration boundary. Parses every tracked .ts/.tsx file with the TypeScript compiler
+// scripts/ci/no-any.mjs — merge gate 7 (AGENTS.md): no `any` type in TypeScript source. Parses every tracked .ts/.tsx file with the TypeScript compiler
 // (pinned in .github/ci-tools), so `any` inside strings and comments never counts.
 // Existing violations live in a ratchet baseline (path -> count) that may only shrink:
 // a file over its count fails, a file under it fails until the baseline is lowered, and
@@ -17,8 +16,6 @@ import { fileURLToPath } from "node:url";
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const REPO = path.resolve(HERE, "../..");
 const RULE = "AW-GATE-7";
-// The Fastify integration boundary: the bridge's server, routes and transport.
-const BOUNDARY = ["mcp-bridge/src/server.ts", "mcp-bridge/src/routes/", "mcp-bridge/src/transport/"];
 
 function arg(name, fallback) {
   const i = process.argv.indexOf(name);
@@ -40,8 +37,7 @@ try {
 const baseline = JSON.parse(readFileSync(baselinePath, "utf8"));
 const files = execFileSync("git", ["-C", root, "ls-files", "-z", "--", "*.ts", "*.tsx"], { encoding: "utf8" })
   .split("\0")
-  .filter((f) => f && !f.includes("node_modules/"))
-  .filter((f) => !BOUNDARY.some((b) => (b.endsWith("/") ? f.startsWith(b) : f === b)));
+  .filter((f) => f && !f.includes("node_modules/"));
 
 const baselineFile = path.relative(REPO, baselinePath);
 const problems = [];
@@ -73,16 +69,16 @@ for (const file of files) {
 }
 
 for (const [file, count] of Object.entries(baseline)) {
-  if (count > 0 && !files.includes(file)) shrunk.push(`${file}: not checked any more (deleted or in the boundary), baseline ${count}`);
+  if (count > 0 && !files.includes(file)) shrunk.push(`${file}: not checked any more (deleted), baseline ${count}`);
 }
 for (const s of shrunk) problems.push(`${RULE}: ${s} — lower the baseline in ${baselineFile} to match`);
 for (const p of problems) console.log(p);
 if (over.length === 0 && problems.length === 0) {
-  console.log(`${RULE}: ok — ${files.length} files, no any outside the Fastify boundary beyond the baseline`);
+  console.log(`${RULE}: ok — ${files.length} files, no any beyond the baseline`);
   process.exit(0);
 }
 for (const { file, hits, allowed } of over) {
   for (const h of hits) console.log(`${h}: any type (${RULE}: ${hits.length} in file, baseline ${allowed})`);
-  console.log(`  fix: use unknown or a real type in ${file}; any is allowed only in ${BOUNDARY.join(", ")}`);
+  console.log(`  fix: use unknown or a real type in ${file}`);
 }
 process.exit(1);

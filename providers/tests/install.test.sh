@@ -108,22 +108,152 @@ test_cursor_mcp_merge_preserves_and_is_idempotent() {
   setup_env
   mkdir -p "$HOME/.cursor"
   echo '{"mcpServers":{"mine":{"url":"https://x"}},"other":1}' > "$HOME/.cursor/mcp.json"
-  AW_MCP_SERVERS='[{"name":"agentic-bridge","command":"node","args":["/b/mcp.js"]},{"name":"prism-mcp","command":"npx","args":["-y","p@1"],"env":{"PRISM_DASHBOARD_PORT":"7180"}}]'
+  AW_MCP_SERVERS='[{"name":"sample-server","command":"node","args":["/b/mcp.js"]},{"name":"prism-mcp","command":"npx","args":["-y","p@1"],"env":{"PRISM_DASHBOARD_PORT":"7180"}}]'
   cursor_register_mcp >/dev/null
   local f="$HOME/.cursor/mcp.json"
   jq -e '.mcpServers.mine.url == "https://x" and .other == 1' "$f" >/dev/null || fail "existing entries not preserved"
-  jq -e '.mcpServers["agentic-bridge"].args == ["/b/mcp.js"]' "$f" >/dev/null || fail "bridge not added"
+  jq -e '.mcpServers["sample-server"].args == ["/b/mcp.js"]' "$f" >/dev/null || fail "sample server not added"
   jq -e '.mcpServers["prism-mcp"].env.PRISM_DASHBOARD_PORT == "7180"' "$f" >/dev/null || fail "env not written"
-  jq -e '.mcpServers["agentic-bridge"] | has("env") | not' "$f" >/dev/null || fail "empty env should be omitted"
+  jq -e '.mcpServers["sample-server"] | has("env") | not' "$f" >/dev/null || fail "empty env should be omitted"
   cursor_register_mcp | grep -q "up to date" || fail "second merge should be a no-op"
   teardown_env
   echo "PASS: test_cursor_mcp_merge_preserves_and_is_idempotent"
 }
 
+# A server the toolkit no longer ships (AW_MCP_RETIRED) is removed from mcp.json on re-run; the user's own entries
+# and our current ones stay, and a second run removes nothing.
+test_cursor_retires_stale_servers() {
+  setup_env
+  mkdir -p "$HOME/.cursor"
+  echo '{"mcpServers":{"mine":{"url":"https://x"},"agentic-bridge":{"command":"node","args":["/old/mcp.js"]}}}' > "$HOME/.cursor/mcp.json"
+  AW_MCP_SERVERS='[{"name":"sample-server","command":"node","args":["/b/mcp.js"]}]'
+  AW_MCP_RETIRED="agentic-bridge"
+  local f="$HOME/.cursor/mcp.json" out
+  out="$(cursor_register_mcp)"
+  jq -e '.mcpServers | has("agentic-bridge") | not' "$f" >/dev/null || fail "retired server not removed from mcp.json"
+  jq -e '.mcpServers.mine.url == "https://x" and (.mcpServers | has("sample-server"))' "$f" >/dev/null || fail "other servers not kept"
+  echo "$out" | grep -q "agentic-bridge: removed (retired)" || fail "removal not reported: $out"
+  out="$(cursor_register_mcp)"
+  echo "$out" | grep -q "up to date" || fail "second run should be a no-op: $out"
+  ! echo "$out" | grep -q "removed" || fail "second run should remove nothing: $out"
+  AW_MCP_RETIRED="sample-server"
+  out="$(cursor_register_mcp)"
+  ! echo "$out" | grep -q "sample-server: removed" || fail "a shipped server is not retired, so don't report it removed: $out"
+  jq -e '.mcpServers | has("sample-server")' "$f" >/dev/null || fail "a shipped server must stay"
+  teardown_env
+  echo "PASS: test_cursor_retires_stale_servers"
+}
+
+# CLI providers (claude, codex): a retired server is removed only where it is registered; dry-run only prints.
+test_cli_retire_removes_only_registered() {
+  setup_env
+  local calls="$SANDBOX/calls" out
+  fake_present() { [ "$1" = "agentic-bridge" ]; }
+  fake_remove() { aw_run echo "remove $AW_MCP_NAME" >>"$calls"; }
+  AW_MCP_RETIRED="agentic-bridge never-registered"
+  out="$(aw_mcp_retire_cli "Fake" fake_present fake_remove)"
+  [ "$(cat "$calls")" = "remove agentic-bridge" ] || fail "expected one removal, got: $(cat "$calls" 2>/dev/null)"
+  echo "$out" | grep -q "agentic-bridge: removed from Fake (retired)" || fail "removal not reported: $out"
+  ! echo "$out" | grep -q "never-registered" || fail "absent server should be silent: $out"
+  rm -f "$calls"
+  AW_DRY_RUN=1
+  out="$(aw_mcp_retire_cli "Fake" fake_present fake_remove)"
+  [ ! -s "$calls" ] || fail "dry run removed something: $(cat "$calls")"
+  echo "$out" | grep -q "would remove agentic-bridge from Fake (retired)" || fail "dry run should say what it would remove: $out"
+  AW_MCP_RETIRED=""
+  [ -z "$(aw_mcp_retire_cli "Fake" fake_present fake_remove)" ] || fail "nothing retired should print nothing"
+  teardown_env
+  echo "PASS: test_cli_retire_removes_only_registered"
+}
+
+# A name still shipped (in AW_MCP_SERVERS) is never retired, whatever order the installer calls register and retire
+# in: cursor's upsert keeps it, so claude and codex must too.
+test_cli_retire_skips_shipped_servers() {
+  setup_env
+  local calls="$SANDBOX/calls" out
+  fake_present() { return 0; }
+  fake_remove() { aw_run echo "remove $AW_MCP_NAME" >>"$calls"; }
+  AW_MCP_SERVERS='[{"name":"serena","command":"x","args":[]}]'
+  AW_MCP_RETIRED="serena agentic-bridge"
+  out="$(aw_mcp_retire_cli "Fake" fake_present fake_remove)"
+  [ "$(cat "$calls")" = "remove agentic-bridge" ] || fail "only the unshipped server should go, got: $(cat "$calls" 2>/dev/null)"
+  ! echo "$out" | grep -q "serena" || fail "a shipped server should be silent: $out"
+  AW_MCP_SERVERS=""; AW_MCP_RETIRED=""
+  teardown_env
+  echo "PASS: test_cli_retire_skips_shipped_servers"
+}
+
+# Claude: a retired server is removed from every scope ~/.claude.json holds it in (user, and local scope under any
+# project), each local one from its own project directory; dry-run sees a local-only entry and runs nothing.
+test_claude_retire_removes_user_and_local_scopes() {
+  setup_env
+  local proj="$SANDBOX/proj" bin="$SANDBOX/bin" calls="$SANDBOX/calls" out
+  mkdir -p "$proj" "$bin"
+  printf '#!/usr/bin/env bash\necho "$PWD $*" >>"%s"\n' "$calls" >"$bin/claude"; chmod +x "$bin/claude"
+  jq -n --arg p "$proj" '{mcpServers: {"agentic-bridge": {command: "node"}},
+    projects: {($p): {mcpServers: {"agentic-bridge": {command: "node"}}}}}' >"$HOME/.claude.json"
+  AW_MCP_SERVERS='[]'; AW_MCP_RETIRED="agentic-bridge"
+  out="$(PATH="$bin:$PATH" claude_retire_mcp)"
+  grep -qx "$proj mcp remove --scope local agentic-bridge" "$calls" || fail "local scope not removed from its project: $(cat "$calls")"
+  grep -q " mcp remove --scope user agentic-bridge$" "$calls" || fail "user scope not removed: $(cat "$calls")"
+  echo "$out" | grep -q "agentic-bridge: removed from Claude Code (retired)" || fail "removal not reported: $out"
+  rm -f "$calls"
+  jq -n --arg p "$proj" '{projects: {($p): {mcpServers: {"agentic-bridge": {command: "node"}}}}}' >"$HOME/.claude.json"
+  AW_DRY_RUN=1
+  out="$(PATH="$bin:$PATH" claude_retire_mcp)"
+  [ ! -s "$calls" ] || fail "dry run ran claude: $(cat "$calls")"
+  echo "$out" | grep -q "would remove agentic-bridge from Claude Code (retired)" || fail "dry run missed the local-only entry: $out"
+  AW_DRY_RUN=0
+  jq -n '{projects: {"/no/such/dir": {mcpServers: {"agentic-bridge": {command: "node"}}}}}' >"$HOME/.claude.json"
+  [ -z "$(PATH="$bin:$PATH" claude_retire_mcp)" ] && [ ! -s "$calls" ] || fail "an entry under a deleted project should be left alone"
+  mkdir -p "$SANDBOX/gitrepo/sub"; git -C "$SANDBOX/gitrepo" init -q
+  jq -n --arg p "$SANDBOX/gitrepo/sub" '{projects: {($p): {mcpServers: {"agentic-bridge": {command: "node"}}}}}' >"$HOME/.claude.json"
+  [ -z "$(PATH="$bin:$PATH" claude_retire_mcp)" ] && [ ! -s "$calls" ] || fail "an entry under a git subdirectory should be left alone"
+  git -C "$SANDBOX/gitrepo" -c user.email=t@t -c user.name=t commit -q --allow-empty -m init
+  git -C "$SANDBOX/gitrepo" worktree add -q "$SANDBOX/gitrepo-wt" 2>/dev/null
+  jq -n --arg p "$SANDBOX/gitrepo-wt" '{projects: {($p): {mcpServers: {"agentic-bridge": {command: "node"}}}}}' >"$HOME/.claude.json"
+  [ -z "$(PATH="$bin:$PATH" claude_retire_mcp)" ] && [ ! -s "$calls" ] || fail "an entry keyed at a linked worktree should be left alone"
+  AW_MCP_SERVERS=""; AW_MCP_RETIRED=""
+  teardown_env
+  echo "PASS: test_claude_retire_removes_user_and_local_scopes"
+}
+
+# A retired package's leftover ignored output (dist, node_modules, a db) is removed once git tracks nothing in it;
+# a directory git still tracks is kept, and dry-run only prints.
+test_remove_retired_dir_only_when_untracked() {
+  setup_env
+  local repo="$SANDBOX/repo" out
+  mkdir -p "$repo/old-pkg/dist" "$repo/kept"
+  git -C "$repo" init -q
+  touch "$repo/old-pkg/dist/mcp.js" "$repo/kept/file"
+  printf 'dist/\n' >"$repo/.gitignore"
+  git -C "$repo" add kept/file
+  AW_DRY_RUN=1
+  out="$(aw_remove_retired_dir "$repo" old-pkg)"
+  [ -d "$repo/old-pkg" ] || fail "dry run removed the directory"
+  echo "$out" | grep -q "would remove $repo/old-pkg" || fail "dry run should say what it would remove: $out"
+  AW_DRY_RUN=0
+  out="$(aw_remove_retired_dir "$repo" old-pkg)"
+  [ ! -e "$repo/old-pkg" ] || fail "untracked leftover not removed"
+  echo "$out" | grep -q "removed $repo/old-pkg (retired)" || fail "removal not reported: $out"
+  out="$(aw_remove_retired_dir "$repo" kept)"
+  [ -f "$repo/kept/file" ] || fail "a tracked directory must stay"
+  mkdir -p "$repo/wip/dist"; touch "$repo/wip/dist/x.js" "$repo/wip/new-feature.ts"
+  printf 'dist/\n' >"$repo/.gitignore"
+  aw_remove_retired_dir "$repo" wip >/dev/null
+  [ -f "$repo/wip/new-feature.ts" ] || fail "untracked work that git doesn't ignore must stay"
+  mkdir -p "$SANDBOX/plain/old-pkg"
+  aw_remove_retired_dir "$SANDBOX/plain" old-pkg >/dev/null
+  [ -d "$SANDBOX/plain/old-pkg" ] || fail "outside a git repo nothing may be removed"
+  [ -z "$(aw_remove_retired_dir "$repo" old-pkg)" ] || fail "a missing directory should print nothing"
+  teardown_env
+  echo "PASS: test_remove_retired_dir_only_when_untracked"
+}
+
 test_dry_run_writes_nothing() {
   setup_env
   AW_DRY_RUN=1
-  AW_MCP_SERVERS='[{"name":"agentic-bridge","command":"node","args":["/b/mcp.js"]}]'
+  AW_MCP_SERVERS='[{"name":"sample-server","command":"node","args":["/b/mcp.js"]}]'
   aw_link_toolkit >/dev/null
   aw_install_skills_into "$HOME/.claude/skills" </dev/null >/dev/null
   cursor_register_mcp >/dev/null
@@ -233,6 +363,11 @@ test_stale_cleanup_only_removes_our_links
 test_external_skills_link_but_native_wins
 test_toolkit_link_and_registry_merge
 test_cursor_mcp_merge_preserves_and_is_idempotent
+test_cursor_retires_stale_servers
+test_cli_retire_removes_only_registered
+test_cli_retire_skips_shipped_servers
+test_claude_retire_removes_user_and_local_scopes
+test_remove_retired_dir_only_when_untracked
 test_dry_run_writes_nothing
 test_agents_render_per_provider
 test_builds_skill_packages_and_warns_on_failure

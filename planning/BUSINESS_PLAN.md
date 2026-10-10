@@ -8,7 +8,7 @@ Agentic Workflow provides a portable, self-contained toolkit that turns Claude C
 
 1. **Workflow replication is manual.** Custom skills, prompts, and configurations live in per-provider dotfiles (`~/.claude/`, `~/.codex/`, `~/.cursor/`) and are lost when switching machines or tools. The toolkit archives these as one Git-versioned, provider-neutral skill library with a one-command setup script.
 
-2. **Single-agent bottlenecks.** Claude Code, Codex, and Cursor operate as isolated agents. There is no built-in mechanism for one agent to delegate work to another, wait for results, or maintain conversation history. The MCP bridge provides store-and-forward messaging and task assignment between any number of agents via a shared SQLite database.
+2. **Single-agent bottlenecks.** Claude Code, Codex, and Cursor operate as isolated agents. There is no built-in mechanism for one agent to delegate work to another, wait for results, or maintain conversation history. Agents hand off through Prism handoffs (`session_save_handoff` / `session_load_context`), judge's outbox and teammate names (agent teams), and Sindri's ledger; the MCP bridge that once offered store-and-forward messaging was retired on 2026-10-10 (never used).
 
 3. **Code review requires context switching.** Reviewing a PR means reading diffs, mentally categorizing concerns (security, performance, style), and writing comments. The `/review` skill automates this by spawning domain-specific reviewer subagents in parallel, saving structured findings to a local cache, and optionally publishing them to GitHub.
 
@@ -17,7 +17,6 @@ Agentic Workflow provides a portable, self-contained toolkit that turns Claude C
 | User Profile | Use Case |
 |-------------|----------|
 | Individual developers using Claude Code, Codex, or Cursor | Portable skill library, bootstrapping new repos with documentation, enhanced prompts |
-| Teams mixing Claude Code, Codex, and Cursor | Multi-agent communication via MCP bridge — delegate frontend work to one agent, backend to another, coordinate results |
 | Open-source maintainers | Automated PR review pipeline — triage, parallel domain review, batch comment posting |
 | Developers setting up new projects | `/bootstrap` generates up to 17 Pivot-pattern documentation files adapted to the detected tech stack |
 
@@ -56,15 +55,6 @@ For a team reviewing 5 PRs/week, this saves approximately 3-7 hours per week.
 | Create AGENTS.md / CLAUDE.md for AI context | 30-60 min | Included in bootstrap | 30-60 min |
 | **Total per new repo** | **4.5-9 hours** | **10-15 min** | **4.25-8.75 hours** |
 
-### Multi-Agent Task Delegation (MCP Bridge)
-
-| Activity | Manual Time | Automated Time | Savings |
-|----------|-------------|----------------|---------|
-| Context switching between agent sessions | 5-10 min per handoff | 0 min (automated via send_context) | 5-10 min |
-| Re-explaining context to a second agent | 5-15 min | 0 min (meta-prompts carry context) | 5-15 min |
-| Tracking which agent is working on what | Ongoing mental overhead | Queryable via get_messages/tasks | Reduced cognitive load |
-| **Per multi-agent workflow** | **10-25 min overhead** | **< 1 min** | **~10-25 min** |
-
 ### Review Fix Implementation (`/addressReview`)
 
 | Activity | Manual Time | Automated Time | Savings |
@@ -77,11 +67,9 @@ For a team reviewing 5 PRs/week, this saves approximately 3-7 hours per week.
 This is **not** a product competing for market share. It is an open-source reference implementation that demonstrates:
 
 - How to build portable, version-controlled, provider-neutral agent skill libraries
-- How to use the MCP protocol for inter-agent communication
-- How to structure multi-agent workflows with store-and-forward messaging
 - How to automate code review with domain-specific subagents
 
-The project's value grows as the agent-CLI (Claude Code, Codex, Cursor) and MCP ecosystems mature. Skills and bridge configurations developed here can be shared, forked, and adapted by the community.
+The project's value grows as the agent-CLI (Claude Code, Codex, Cursor) and MCP ecosystems mature. Skills and configurations developed here can be shared, forked, and adapted by the community.
 
 ## Success Metrics
 
@@ -91,6 +79,5 @@ Since this is not a revenue product, success is measured by utility:
 |--------|--------|-------------|
 | Setup friction | < 2 minutes from clone to working skills | Time `./setup.sh` from a clean machine |
 | Skill portability | Works on macOS and Linux without modification | CI testing on both platforms |
-| Bridge reliability | Zero message loss under normal operation | SQLite WAL mode + transaction guarantees |
 | Community adoption | Forks and skill contributions | GitHub metrics |
 | Documentation coverage | Bootstrap generates accurate docs for diverse tech stacks | Manual testing against varied repos |

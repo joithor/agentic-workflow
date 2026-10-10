@@ -8,8 +8,8 @@
 #   ./setup.sh --profile <web-app|ios|personal> --target <dir> [--dry-run]
 #
 # --providers defaults to every provider whose CLI is installed
-# (`claude`, `codex`, `cursor-agent`/`cursor`). Shared steps (bridge build,
-# scorer/judge, Serena image, external pack clone, rtk, headroom) run once;
+# (`claude`, `codex`, `cursor-agent`/`cursor`). Shared steps (scorer/judge,
+# Serena image, external pack clone, rtk, headroom) run once;
 # per-provider steps live in providers/<name>/install.sh.
 #
 # State stays under ~/.agentic-workflow (kept for compatibility):
@@ -244,21 +244,6 @@ echo "Creating stable paths..."
 aw_run mkdir -p "$AW_STATE_ROOT"
 echo "  $AW_STATE_ROOT/: output + state directory"
 aw_link_toolkit
-
-# --- MCP Bridge: Install, Build ---
-echo ""
-echo "Installing MCP bridge..."
-BRIDGE_DIR="$SCRIPT_DIR/mcp-bridge"
-if [ -f "$BRIDGE_DIR/package.json" ]; then
-  if aw_dry; then
-    echo "  [dry-run] would run: npm install && npm run build (in $BRIDGE_DIR)"
-  else
-    (cd "$BRIDGE_DIR" && npm install && npm run build)
-    echo "  MCP bridge: built successfully"
-  fi
-else
-  echo "  MCP bridge: package.json not found, skipping"
-fi
 
 # --- Scorer + judge (shared CLIs) ---
 if aw_dry; then
@@ -609,19 +594,23 @@ PRISM_VERSION="20.21.17"       # pin: bump here when upgrading (5.1.0 hung on MC
 XCODEBUILDMCP_VERSION="2.3.0"  # pin: bump here when upgrading (keep config/mcp.json in sync)
 
 AW_MCP_SERVERS="$(jq -nc \
-  --arg bridge "$BRIDGE_DIR/dist/mcp.js" \
   --arg serena "$HOME/.local/bin/serena-docker" \
   --arg headroom "$HEADROOM_CMD" \
   --arg prism "prism-mcp-server@$PRISM_VERSION" \
   --arg xcode "xcodebuildmcp@$XCODEBUILDMCP_VERSION" \
   --arg darwin "$([ "$(uname)" = "Darwin" ] && echo 1 || echo 0)" '
-  [ {name: "agentic-bridge", command: "node", args: [$bridge]},
-    {name: "serena", command: $serena, args: []},
+  [ {name: "serena", command: $serena, args: []},
     (if $headroom != "" then {name: "headroom", command: $headroom, args: ["mcp", "serve"]} else empty end),
     {name: "prism-mcp", command: "npx", args: ["-y", $prism], env: {PRISM_DASHBOARD_PORT: "7180"}},
     (if $darwin == "1" then {name: "xcodebuildmcp", command: "npx", args: ["-y", $xcode, "mcp"]} else empty end)
   ]')"
 export AW_MCP_SERVERS
+# Servers the toolkit no longer ships: each provider removes them from an existing install (agentic-bridge, the MCP
+# bridge, retired 2026-10-10: never used; the ledger and judge's outbox carry agent handoffs).
+AW_MCP_RETIRED="agentic-bridge"
+export AW_MCP_RETIRED
+# The bridge package itself: after the pull only its ignored output (dist, node_modules, bridge.db) is left.
+aw_remove_retired_dir "$SCRIPT_DIR" mcp-bridge
 
 # --- Per-provider install ---
 REGISTRY_ENTRIES=()
@@ -662,7 +651,6 @@ for _entry in "${REGISTRY_ENTRIES[@]}"; do
 done
 echo "Toolkit path:       $AW_STATE_ROOT/toolkit → $TOOLKIT_DIR"
 echo "Output directory:   ~/.agentic-workflow/<repo-slug>/"
-echo "MCP bridge:         $BRIDGE_DIR/"
 echo "MCP registered:     $(printf '%s' "$AW_MCP_SERVERS" | jq -r 'map(.name) | join(", ")')"
 case " $PROVIDERS " in *" claude "*)
   echo "Claude statusline:  $CLAUDE_DIR/statusline.sh"

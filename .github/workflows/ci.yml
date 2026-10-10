@@ -62,7 +62,6 @@ jobs:
       fail-fast: false
       matrix:
         package:
-          - mcp-bridge
           - scorer
           - judge
           - sindri
@@ -191,7 +190,7 @@ jobs:
         run: |
           npm ci --prefix .github/ci-tools --ignore-scripts --no-audit --no-fund
           (cd .github/ci-tools && node node_modules/@anthropic-ai/claude-code/install.cjs)
-      - name: No any types outside the Fastify boundary
+      - name: No any types in TypeScript source (merge gate 7)
         # Merge gate 7: parses the TS (strings and comments never count) and holds existing
         # violations to scripts/ci/no-any-baseline.json, which may only shrink.
         # On a PR the baseline is also checked against the base branch's copy, so a PR

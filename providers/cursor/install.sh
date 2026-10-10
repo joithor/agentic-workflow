@@ -26,7 +26,8 @@ cursor_agents_dir() { echo "$CURSOR_DIR/agents"; }
 
 # Merge our servers into ~/.cursor/mcp.json with jq. Idempotent; every server
 # not named by the toolkit is preserved untouched. Our entries are upserted so
-# a moved repo path (bridge dist, serena wrapper) is corrected on re-run.
+# a moved repo path (the serena wrapper) is corrected on re-run, and a server the toolkit retired (AW_MCP_RETIRED)
+# is removed.
 cursor_register_mcp() {
   local mcp_file="$CURSOR_DIR/mcp.json" servers tmp
   echo ""
@@ -44,7 +45,19 @@ cursor_register_mcp() {
   else
     echo '{}' > "$tmp"
   fi
-  jq --argjson ours "$servers" '.mcpServers = ((.mcpServers // {}) + $ours)' "$tmp" > "$tmp.next"
+  # Servers the toolkit no longer ships (AW_MCP_RETIRED, less any name still in AW_MCP_SERVERS) go first, then ours
+  # are upserted.
+  local retired name
+  retired="$(printf '%s\n' ${AW_MCP_RETIRED:-} | jq -R . | jq -sc --argjson ours "$servers" \
+    'map(select(. as $n | $n != "" and ($ours | has($n) | not)))')"
+  for name in $(printf '%s' "$retired" | jq -r '.[]'); do
+    if jq -e --arg n "$name" '(.mcpServers // {}) | has($n)' "$tmp" &>/dev/null; then
+      if aw_dry; then echo "  [dry-run] would remove $name from $mcp_file (retired)"; else echo "  $name: removed (retired)"; fi
+    fi
+  done
+  jq --argjson ours "$servers" --argjson retired "$retired" \
+    '.mcpServers = (((.mcpServers // {}) | with_entries(select(.key as $k | $retired | index($k) | not))) + $ours)' \
+    "$tmp" > "$tmp.next"
   mv "$tmp.next" "$tmp"
 
   if [ -f "$mcp_file" ] && cmp -s "$tmp" "$mcp_file"; then

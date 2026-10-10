@@ -365,6 +365,45 @@ aw_mcp_register_cli() {
   done < <(aw_mcp_each)
 }
 
+# Remove MCP servers the toolkit no longer ships (AW_MCP_RETIRED, space separated) from a CLI-based provider, so a
+# re-run of setup.sh cleans an existing install. Only a registered server is removed, never one still in
+# AW_MCP_SERVERS (as cursor's upsert keeps it); dry-run prints instead.
+#   aw_mcp_retire_cli <label> <present-fn> <remove-fn>
+# <remove-fn> reads AW_MCP_NAME and must run the provider's remove command (via aw_run).
+aw_mcp_retire_cli() {
+  local label="$1" present_fn="$2" remove_fn="$3" name shipped
+  shipped=" $(aw_mcp_each | jq -r '.name' | tr '\n' ' ')"
+  for name in ${AW_MCP_RETIRED:-}; do
+    case "$shipped" in *" $name "*) continue ;; esac
+    "$present_fn" "$name" </dev/null || continue
+    AW_MCP_NAME="$name"
+    if aw_dry; then
+      echo "  [dry-run] would remove $name from $label (retired)"
+    elif "$remove_fn" </dev/null >/dev/null 2>&1; then
+      echo "  $name: removed from $label (retired)"
+    else
+      echo "  WARN: $name removal failed in $label (non-fatal)"
+    fi
+  done
+}
+
+# Remove a retired package's directory from the toolkit checkout once everything left in it is ignored build output
+# (dist/, node_modules/, a database). Kept: a directory with tracked files or with untracked files git doesn't ignore
+# (someone's uncommitted work), and anything outside a git checkout.
+#   aw_remove_retired_dir <repo> <relative-dir>
+aw_remove_retired_dir() {
+  local repo="$1" rel="$2"
+  [ -d "$repo/$rel" ] || return 0
+  git -C "$repo" rev-parse --git-dir >/dev/null 2>&1 || return 0
+  [ -z "$(git -C "$repo" ls-files -- "$rel")" ] || return 0
+  [ -z "$(git -C "$repo" ls-files --others --exclude-standard -- "$rel")" ] || return 0
+  if aw_dry; then
+    echo "  [dry-run] would remove $repo/$rel (retired; only ignored build output left)"
+  else
+    rm -rf "${repo:?}/${rel:?}" && echo "  removed $repo/$rel (retired)"
+  fi
+}
+
 # Cheap-agent-harness lever hooks for one provider. Each scripts/install-*.sh
 # takes --provider (default claude) and no-ops with a note where a lever is
 # unsupported on that provider.

@@ -130,7 +130,7 @@ export async function discover(
     add("hook:adapters", "hook", [...adapters, ...tests], "config/hooks/adapters/", tests.length === 0 ? null : { argv: ["bash", "-c", 'for t in "$@"; do bash "$t" || exit 1; done', "adapters", ...tests], cwd: "." });
   }
 
-  for (const pkg of ["judge", "scorer", "mcp-bridge", "sindri"].filter((p) => has(`${p}/package.json`))) {
+  for (const pkg of ["judge", "scorer", "sindri"].filter((p) => has(`${p}/package.json`))) {
     add(`package:${pkg}`, "package", under(`${pkg}/`), `${pkg}/`, { argv: ["npm", "test"], cwd: pkg });
   }
 

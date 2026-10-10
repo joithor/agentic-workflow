@@ -1,6 +1,6 @@
 # Onboarding: Using Agentic Workflow
 
-A how-to guide for engineers and PMs who want to use Agentic Workflow in their own repos. It takes you from a fresh clone to shipping your first PR with the skills. For the full reference (support matrix, bridge API, statusline), see [`README.md`](README.md).
+A how-to guide for engineers and PMs who want to use Agentic Workflow in their own repos. It takes you from a fresh clone to shipping your first PR with the skills. For the full reference (support matrix, statusline), see [`README.md`](README.md).
 
 > **Prefer a visual walkthrough?** Open [`docs/onboarding.html`](docs/onboarding.html) in a browser (`open docs/onboarding.html`). It has an interactive pipeline, a setup checklist, and a skill finder you can search.
 
@@ -23,7 +23,7 @@ Once it's installed, every Claude Code, Codex, or Cursor session on your machine
 |-------|----------------------|
 | **Skills** (`/officeHours`, `/review`, `/rootCause`, …) | Packaged workflows for planning, design, building, reviewing, debugging, and shipping. They work the same way in every provider. |
 | **Safety hooks** | Block `rm -rf`, `git reset --hard`, force-push, pushes to `main`/`master`, and commands that contain secrets. They also add git context when a session starts. |
-| **MCP servers** | `serena` (symbol navigation), `agentic-bridge` (messages between agents), `headroom` (compression), `prism-mcp` (memory across sessions), `xcodebuildmcp` (iOS simulator, macOS only) |
+| **MCP servers** | `serena` (symbol navigation), `headroom` (compression), `prism-mcp` (memory across sessions), `xcodebuildmcp` (iOS simulator, macOS only) |
 | **Token savers** | `rtk` rewrites noisy shell commands into compact ones. `headroom` compresses large reads. |
 | **Judge + scorer** | `judge` makes quick, low-cost decisions for the hooks. `scorer` reports what your agent sessions cost and how much input they needed from you. |
 
@@ -259,7 +259,7 @@ The report lands in `~/.agentic-workflow/scorer/reports/`. For Cursor, the repor
 
 ### Coordinate multiple agents
 
-The `agentic-bridge` MCP server lets sessions talk to each other, even across providers. For example, a Claude Code session can assign a task to a Codex session. Agents use `send_context`, `assign_task`, `get_unread`, and `report_status`. Messages queue in SQLite while the recipient is offline. The MCP side works without any extra steps. You only need `cd mcp-bridge && npm start` if you want the REST API on `:3100`.
+Agents hand off through Prism handoffs (`session_save_handoff` / `session_load_context`), judge's outbox and teammate names (agent teams), and Sindri's ledger; there is no bridge server.
 
 ### Trim skills per repo *(Claude Code only)*
 

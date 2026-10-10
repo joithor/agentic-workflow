@@ -104,27 +104,23 @@ for s in review postReview addressReview enhancePrompt bootstrap rootCause bugHu
   done < "$HOME/.agentic-workflow/providers" 2>/dev/null
 done
 
-BRIDGE_OK=false
-lsof -i TCP:3100 -sTCP:LISTEN &>/dev/null && BRIDGE_OK=true
-
 RULES_OK=false
 [ -f "AGENTS.md" ] && [ -n "$(ls -A .agents/rules/ 2>/dev/null)" ] && RULES_OK=true
 [ -n "$(ls -A .claude/rules/ 2>/dev/null)" ] && RULES_OK=true  # legacy layout
 
 echo "skills-symlinked: $SKILLS_OK"
-echo "bridge-running: $BRIDGE_OK"
 echo "rules-directory: $RULES_OK"
 ```
 
 Domain rules live in `.agents/rules/` (canonical) and are emitted per provider (`.claude/rules/`, `.cursor/rules/`, `AGENTS.md` rules index). Before editing a file, read any rule whose `globs` match it — Claude Code and Cursor load these automatically; in Codex, consult the rules index in `AGENTS.md`.
 
-If `SKILLS_OK=false` or `BRIDGE_OK=false`, **Ask the user:**
+If `SKILLS_OK=false`, **Ask the user:**
 > "Agentic Workflow is not fully set up. Run setup.sh now? (yes/no)"
 
 If **yes**: run `bash <path-to-agentic-workflow>/setup.sh` (`$HOME/.agentic-workflow/toolkit/setup.sh`).
 If **no**: warn that some features may not work, then continue.
 
-If `RULES_OK=false` (and `SKILLS_OK` and `BRIDGE_OK` are both true), do not offer setup.sh. Instead, show:
+If `RULES_OK=false` (and `SKILLS_OK` is true), do not offer setup.sh. Instead, show:
 > "Domain rules not found — run `/bootstrap` to generate `AGENTS.md` and `.agents/rules/` for this repo."
 
 Create the output directory for this repo:

@@ -71,7 +71,7 @@ never for live state. Observing every agent on the machine is therefore new grou
 provider stores ─┐
 hook spool ──────┼─► sindri fleet (collector + state rules) ─► sindri fleet --json ─┐
 sindri ledger ───┤                                                                  ├─► sindri dashboard (HTTP, 127.0.0.1)
-gh / bridge ─────┘    sindri status/evolve/index … --json ──────────────────────────┘        │
+gh ──────────────┘    sindri status/evolve/index … --json ──────────────────────────┘        │
                                                                                              └─► menu-bar badge (SwiftBar)
 ```
 
@@ -180,7 +180,6 @@ One list, sorted by state priority, then oldest first. It holds:
    - an unhealthy judge.
 4. PRs in onboarded repos that request the builder's review, or that agents opened and that are ready to merge
    (from `gh`, cached for 2 minutes).
-5. Unread bridge messages addressed to the builder.
 
 ## 5. Views
 

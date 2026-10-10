@@ -4,7 +4,7 @@
 
 | Requirement | Minimum Version | Purpose |
 |-------------|----------------|---------|
-| Node.js | >= 22 (`.nvmrc`) | Runtime for MCP bridge and build tooling; better-sqlite3 13 requires 22 |
+| Node.js | >= 22 (`.nvmrc`) | Runtime for the TypeScript packages (`scorer`, `judge`, `sindri`) and build tooling; better-sqlite3 13 requires 22 |
 | GitHub CLI (`gh`) | Latest | Required by review skills for PR interaction |
 | Claude Code, Codex, or Cursor CLI | Latest | At least one agent host for skills and MCP server registration |
 | npm | Bundled with Node | Dependency management |
@@ -35,107 +35,26 @@ The setup script performs the following (per-provider steps live in `providers/<
    - `mcp.json` -- only if no existing file (will not overwrite).
    - If files exist, it prints a `diff` command for manual comparison.
 
-3. **Installs MCP bridge dependencies**:
-   - Runs `npm install` inside `mcp-bridge/`.
+### 3. MCP Servers
 
-### 3. Build the MCP Bridge
-
-```bash
-cd ~/repos/agentic-workflow/mcp-bridge
-npm run build
-```
-
-This runs `tsc` and outputs compiled JavaScript to `mcp-bridge/dist/`.
-
-### 4. Register the MCP Server
-
-`setup.sh` does this for every selected provider. To do it by hand:
-
-```bash
-claude mcp add agentic-bridge -- node ~/repos/agentic-workflow/mcp-bridge/dist/mcp.js
-```
-
-```bash
-codex mcp add agentic-bridge -- node ~/repos/agentic-workflow/mcp-bridge/dist/mcp.js
-# Cursor: add an "agentic-bridge" entry under mcpServers in ~/.cursor/mcp.json
-```
-
-This registers the bridge as a stdio-based MCP server that the provider can invoke.
-
-## Environment Configuration
-
-Copy the example environment file and edit as needed:
-
-```bash
-cd ~/repos/agentic-workflow/mcp-bridge
-cp .env.example .env
-```
-
-### Environment Variables
-
-| Variable | Default | Description |
-|----------|---------|-------------|
-| `PORT` | `3100` | Port for the Fastify REST API server |
-| `HOST` | `127.0.0.1` | Bind address (loopback only by default) |
-| `DB_PATH` | `./bridge.db` | Path to the SQLite database file |
-| `ALLOW_REMOTE` | unset | Set to `1` to allow binding to non-loopback addresses |
-
-The server refuses to bind to non-loopback addresses unless `ALLOW_REMOTE=1` is set, since it has no authentication layer.
-
-## Running the Servers
-
-### REST API Server (Fastify)
-
-```bash
-cd ~/repos/agentic-workflow/mcp-bridge
-
-# Development mode (tsx, auto-restarts not included -- use manually)
-npm run dev
-
-# Production mode (requires prior build)
-npm run build
-npm start
-```
-
-The REST API starts at `http://127.0.0.1:3100` by default. It exposes message and task routes for HTTP-based agent communication.
-
-### MCP Server (stdio)
-
-The MCP server runs as a stdio process, intended to be launched by Claude Code, Codex, or Cursor:
-
-```bash
-# Direct invocation (for testing)
-cd ~/repos/agentic-workflow/mcp-bridge
-npm run build
-npm run mcp
-
-# Normal usage: the provider spawns it via the registered MCP config
-claude mcp add agentic-bridge -- node ~/repos/agentic-workflow/mcp-bridge/dist/mcp.js
-```
-
-The MCP server exposes five tools: `send_context`, `get_messages`, `get_unread`, `assign_task`, `report_status`.
+`setup.sh` registers `serena`, `headroom`, `prism-mcp` and, on macOS, `xcodebuildmcp` with every selected provider, and removes an old `agentic-bridge` registration on re-run. Agents hand off through Prism handoffs (`session_save_handoff` / `session_load_context`), judge's outbox and teammate names (agent teams), and Sindri's ledger; there is no bridge server.
 
 ## Running Tests
 
 ```bash
-cd ~/repos/agentic-workflow/mcp-bridge
+cd ~/repos/agentic-workflow/scorer   # or judge, sindri
 
 # Single run
 npm run test
-
-# Watch mode
-npm run test:watch
 
 # Type-check without emitting files
 npm run typecheck
 ```
 
-Tests use in-memory SQLite -- no database file is created or modified during testing.
-
 ## Building
 
 ```bash
-cd ~/repos/agentic-workflow/mcp-bridge
+cd ~/repos/agentic-workflow/scorer   # or judge, sindri
 npm run build
 ```
 
@@ -167,33 +86,14 @@ agentic-workflow/
 ├── config/                    # Settings & MCP config archive
 │   ├── settings.json
 │   └── mcp.json
-├── mcp-bridge/                # MCP bridge application
-│   ├── src/
-│   │   ├── application/       # AppResult<T>, services (never throw)
-│   │   ├── db/                # SQLite schema, client interface, transactions
-│   │   ├── transport/         # Typed router, Zod schemas, controllers
-│   │   ├── routes/            # Route factories (messages, tasks, conversations)
-│   │   ├── server.ts          # Fastify server factory
-│   │   ├── mcp.ts             # MCP stdio server entry point
-│   │   └── index.ts           # REST API entry point
-│   ├── tests/                 # Vitest test files
-│   ├── dist/                  # Compiled output (gitignored)
-│   ├── .env.example           # Environment variable template
-│   ├── package.json
-│   ├── tsconfig.json
-│   └── vitest.config.ts
+├── judge/                     # Cheap-agent-harness judge CLI
+├── scorer/                    # Daily cost/involvement report
+├── sindri/                    # Sindri core CLI
 ├── setup.sh                   # One-command setup script
 └── README.md
 ```
 
 ## Common Development Tasks
-
-### Adding a New Service
-
-1. Create the service function in `mcp-bridge/src/application/services/`.
-2. Return `AppResult<T>` -- never throw exceptions.
-3. Wire it into a route in `mcp-bridge/src/routes/` (for REST) and/or register a tool in `mcp-bridge/src/mcp.ts` (for MCP).
-4. Add tests in `mcp-bridge/tests/` using `createTestBridgeDb()` from `tests/helpers.ts` in `beforeEach`.
 
 ### Adding a New Skill
 
