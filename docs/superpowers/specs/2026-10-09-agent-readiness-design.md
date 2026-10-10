@@ -184,6 +184,38 @@ Host ──► Features ──► Core ◄── Infrastructure
 - Packages reference other packages only through their `Core` project's public surface, or through a CLI or HTTP
   contract. Their `Infrastructure` and `Features` are never referenced.
 
+### 4b.1a No cycles, no spider web
+
+The dependency graph is a **declared, layered, acyclic tree** at every level, and CI fails on any drift from the
+declaration.
+
+**Package tiers** (a package may depend only on packages in a lower tier, never on its own tier):
+
+| Tier | Packages | May depend on |
+|---|---|---|
+| 0 | `Aw.Kernel` | the BCL only |
+| 1 | `Judge`, `Scorer`, `Bridge`, `Evidence` (ui-evidence), `BugFix` | Tier 0 |
+| 2 | `Sindri` | Tiers 0–1, **only through their `Core` contracts** |
+| — | Every `Host` | Its own package's projects, plus the tier-0 and lower-tier `Core`s it composes |
+
+- **Declared graph:** `deps.yaml` at the root lists each package's tier and its allowed package dependencies. An
+  architecture test compares it with the real project references and fails on any undeclared edge. Adding an edge is
+  a reviewed change to `deps.yaml` (and an approval-tier change once it is a rule record).
+- **Prefer contracts over references:** a package calls a same-tier or higher-tier package only through its CLI or
+  HTTP contract, never through a project reference. Today `sindri` calls `judge` through its CLI; that stays.
+- **Inside a package**, the four-project shape (§4b.1) is itself a fixed DAG. **Inside a project,** feature
+  folders and namespaces must not form cycles. ArchUnitNET's slice-cycle rule checks every namespace in every
+  project (MSBuild already refuses circular *project* references; this covers the namespaces inside one).
+- **Fan-out limits:** a project references at most 4 other in-repo projects and at most 6 third-party packages
+  (analyzers and test packages excluded). Going over is a ratchet violation that needs a recorded reason.
+- **No dumping grounds:** there is no `Common`, `Shared`, `Utils` or `Helpers` project or namespace. Code shared by
+  two packages goes into `Aw.Kernel` only if it is domain-free and stable; otherwise it is duplicated until a
+  second case proves the abstraction (§6.2), then extracted into the owning package's `Core`.
+- **Stability direction:** lower tiers change least. Fan-in and fan-out per project are reported in CI, and a
+  tier-0 or tier-1 change that would add a dependency on a higher tier is impossible by the rules above.
+- **Visible:** CI renders the package and project graph (Mermaid from `deps.yaml` plus the real references) into
+  the PR summary whenever it changes, so a new edge is reviewed as a picture, not found later.
+
 ### 4b.2 Request flow: minimal endpoint → service → repository → SQL
 
 ```csharp
