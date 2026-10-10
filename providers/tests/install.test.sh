@@ -209,6 +209,10 @@ test_claude_retire_removes_user_and_local_scopes() {
   mkdir -p "$SANDBOX/gitrepo/sub"; git -C "$SANDBOX/gitrepo" init -q
   jq -n --arg p "$SANDBOX/gitrepo/sub" '{projects: {($p): {mcpServers: {"agentic-bridge": {command: "node"}}}}}' >"$HOME/.claude.json"
   [ -z "$(PATH="$bin:$PATH" claude_retire_mcp)" ] && [ ! -s "$calls" ] || fail "an entry under a git subdirectory should be left alone"
+  git -C "$SANDBOX/gitrepo" -c user.email=t@t -c user.name=t commit -q --allow-empty -m init
+  git -C "$SANDBOX/gitrepo" worktree add -q "$SANDBOX/gitrepo-wt" 2>/dev/null
+  jq -n --arg p "$SANDBOX/gitrepo-wt" '{projects: {($p): {mcpServers: {"agentic-bridge": {command: "node"}}}}}' >"$HOME/.claude.json"
+  [ -z "$(PATH="$bin:$PATH" claude_retire_mcp)" ] && [ ! -s "$calls" ] || fail "an entry keyed at a linked worktree should be left alone"
   AW_MCP_SERVERS=""; AW_MCP_RETIRED=""
   teardown_env
   echo "PASS: test_claude_retire_removes_user_and_local_scopes"
