@@ -154,6 +154,9 @@ dotnet_diagnostic.RCS1141.severity = none    # param docs: CS1591 owns docs on p
 dotnet_diagnostic.RCS1142.severity = none    # typeparam docs: same owner as RCS1141
 dotnet_diagnostic.RCS1140.severity = none    # exception docs: exceptions are only for bugs here (spec §4b.3), not part of a contract
 dotnet_diagnostic.CA1716.severity = none     # keyword clashes in other .NET languages: the toolkit is C#-only, and the spec names `Error`
+# Vogen (typed ids, docs/csharp/typed-ids.md). Its info-level hints are advice, and the bulk error severity would
+# make every id fail the build. AddValidationMethod stays on: every id validates.
+dotnet_diagnostic.AddNormalizeInputMethod.severity = none   # "could normalize input": ids are compared as written
 
 #### Code style ####
 csharp_style_namespace_declarations = file_scoped:error
