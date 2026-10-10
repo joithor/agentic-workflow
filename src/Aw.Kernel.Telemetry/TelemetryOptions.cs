@@ -25,7 +25,7 @@ public sealed record TelemetryOptions
     public ILogSink? Sink { get; init; }
 
     /// <summary>The scrubber on every log and export path. Default: <see cref="Redactor.Default"/>.</summary>
-    public IRedactor Redactor { get; init; } = Aw.Redaction.Redactor.Default;
+    public IRedactor Redactor { get; init; } = Redaction.Redactor.Default;
 
     /// <summary>The clock for log timestamps. Default: <see cref="TimeProvider.System"/>.</summary>
     public TimeProvider Clock { get; init; } = TimeProvider.System;

@@ -59,7 +59,7 @@ internal static class MessageText
         var format = end >= 0 && hole[end] == ':' ? hole[(end + 1)..] : null;
         if (isSecretName(name))
         {
-            return Aw.Redaction.ScrubResult.SecretFieldText;
+            return Redaction.ScrubResult.SecretFieldText;
         }
 
         var value = fields.FirstOrDefault(f => f.Key == name).Value;

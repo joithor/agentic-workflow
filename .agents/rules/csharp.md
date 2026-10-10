@@ -105,6 +105,12 @@ A package under ~1,500 lines may use two projects, `Core` and `App`, with the sa
 - System.Text.Json with **one source-generated `JsonSerializerContext` per package**. No reflection-based serialization. Check: trim/AOT analyzers (`IL2026`, `IL3050`) via `IsAotCompatible=true`.
 - Use the shared **`AwJson` profile** from `Aw.Kernel.Json`: `AwJson.CreateOptions(<Name>JsonContext.Default)` once per host, then `AwJson.Serialize`/`Deserialize` with those options (camelCase, relaxed escaping, UTC `O` timestamps, `RespectNullableAnnotations`, `RespectRequiredConstructorParameters`). Never construct `JsonSerializerOptions` yourself or serialize through a context's `.Default` options directly. HTTP hosts register the same resolver and options in `ConfigureHttpJsonOptions`.
 
+## Logging and telemetry (§4b.1, §4d)
+
+- Hosts start `Aw.Kernel.Telemetry` once (`services.AddKernelTelemetry(options)` in `Compose`; options from `TelemetryOptions.FromEnvironment`, level `AW_LOG_LEVEL`). Log lines are JSON (one object per line) on standard error by default; **exporting is off by default**, and an exporter is an adapter the host opts into. Recipe: `docs/csharp/telemetry.md`.
+- Log through `[LoggerMessage]` source-generated methods (`CA1848`). Put structured values in fields, never secrets: `Aw.Redaction` scrubs every log line, span and metric before it leaves the process, withholds secret-named fields whole, and drops what it can't rewrite (span events and links, metric tags). Check: the scrubbing tests in `tests/Aw.Kernel.Telemetry.Tests`.
+- Use `ActivitySource`/`Meter` names under `Aw.` (the default listen pattern `Aw.*`). Metric tags are small fixed sets.
+
 ## Dependency injection (§4b.4)
 
 - `Microsoft.Extensions.DependencyInjection`. **Each project owns one explicit, public extension method** that registers its own types (`services.AddSindriCore()`, `AddSindriFeatures()`, `AddSindriInfrastructure(environment)`); **only `Host` calls them and builds the container.** No assembly scanning (reflection, not AOT-safe).
@@ -155,7 +161,7 @@ Every library project (see Project roles above: everything except `*.Tests`, `*.
 
 ## Seams (§4b.6, factory addendum §17.20–17.21)
 
-The C# schemas carry the distribution and multiplayer seams from their first commit: idempotent events, the event envelope (`actor`, `tenant`, `ring`, `causation`, `correlation`, `trace`) and a transactional outbox (`outbox_commands`, `IOutbox` in `Aw.Kernel`). The other seams are **planned, not in `Aw.Kernel` yet**: `ILedgerStore` (with a shared contract suite), `IBus`, `ISecrets`, `ILease`, `ILauncher` and `IScheduler`, in `Aw.Kernel`/`Aw.Kernel.Telemetry`. Until a planned port lands, a package that needs it declares it in its own `Core`; it moves to Kernel when a second package needs it. `actor` is set by the host process, never by the caller.
+The C# schemas carry the distribution and multiplayer seams from their first commit: idempotent events, the event envelope (`actor`, `tenant`, `ring`, `causation`, `correlation`, `trace`) and a transactional outbox (`outbox_commands`, `IOutbox` in `Aw.Kernel`). The other seams are **planned, not in `Aw.Kernel` yet**: `ILedgerStore` (with a shared contract suite), `IBus`, `ISecrets`, `ILease`, `ILauncher` and `IScheduler`, in `Aw.Kernel`/`Aw.Kernel.Telemetry` (`Aw.Kernel.Telemetry` exists: its own port is `ILogSink`, with `LogSinkContract` in `tests/Aw.Kernel.Telemetry.Testing`). Until a planned port lands, a package that needs it declares it in its own `Core`; it moves to Kernel when a second package needs it. `actor` is set by the host process, never by the caller.
 
 **Every external technology sits behind a port, so it can be swapped.** Database, cache, queue or bus, file system,
 processes, HTTP clients, git, containers, model CLIs, secrets, clock and ids: `Core` declares the port as an interface,

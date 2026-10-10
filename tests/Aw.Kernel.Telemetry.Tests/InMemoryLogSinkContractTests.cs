@@ -1,5 +1,5 @@
-using Aw.Kernel.Testing;
 using Aw.Kernel.Telemetry.Testing;
+using Aw.Kernel.Testing;
 
 namespace Aw.Kernel.Telemetry.Tests;
 

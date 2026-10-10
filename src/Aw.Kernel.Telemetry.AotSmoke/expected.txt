@@ -1,0 +1,13 @@
+exporting by default: off
+log keys: timestamp,level,category,eventId,eventName,message,traceId,spanId,actor,tenant,ring,correlationId
+log timestamp: 2026-10-10T06:00:00.0000000Z
+log message: calling with Authorization: Bearer [REDACTED:bearer]
+log trace id: 32 hex chars
+log actor: host:smoke
+exporting with an exporter: on
+spans exported: 1
+span name: call [REDACTED:github-token]
+span tag header: Authorization: Bearer [REDACTED:bearer]
+span tag count: 2
+withheld: logs=0 spans=1 metrics=0
+secret in any output: no
