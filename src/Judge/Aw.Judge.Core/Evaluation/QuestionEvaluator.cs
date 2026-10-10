@@ -1,4 +1,5 @@
 using System.Diagnostics.CodeAnalysis;
+using System.Text.Json;
 using System.Text.Json.Nodes;
 using Aw.Judge.Core.Decisions;
 using Aw.Judge.Core.Ids;
@@ -18,7 +19,8 @@ namespace Aw.Judge.Core.Evaluation;
 /// <param name="redactor">Strips secrets from the stored input.</param>
 /// <param name="ids">Makes the decision id.</param>
 /// <param name="clock">Timestamps and latencies.</param>
-public sealed partial class QuestionEvaluator(IDecisionLog log, IInputRedactor redactor, IIdGenerator ids, TimeProvider clock)
+/// <param name="json">The package's AwJson options, for the digest and the stored input.</param>
+public sealed partial class QuestionEvaluator(IDecisionLog log, IInputRedactor redactor, IIdGenerator ids, TimeProvider clock, JsonSerializerOptions json)
 {
     /// <summary>Evaluates a question against a raw input.</summary>
     /// <typeparam name="TInput">The question's validated input.</typeparam>

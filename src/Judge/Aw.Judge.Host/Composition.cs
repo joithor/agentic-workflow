@@ -1,6 +1,7 @@
 using Aw.Judge.Core;
 using Aw.Judge.Features;
 using Aw.Judge.Infrastructure;
+using Aw.Kernel.Json;
 using Aw.Kernel.Telemetry;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -12,6 +13,7 @@ internal static class Composition
     internal static IServiceCollection Compose(IServiceCollection services, Func<string, string?> environment, TimeProvider clock)
         => services
             .AddSingleton(clock)
+            .AddSingleton(AwJson.CreateOptions(JudgeJsonContext.Default))   // the Kernel JSON profile, for Core's stored-input JSON
             .AddKernelTelemetry(TelemetryOptions.FromEnvironment("judge", environment, clock))   // JSON lines on stderr (AW_LOG_LEVEL); exports off
             .AddJudgeCore()
             .AddJudgeFeatures()

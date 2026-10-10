@@ -192,7 +192,7 @@ public sealed class QuestionEvaluatorTests
 
         Assert.Equal(new EscalatedOutcome("invalid-input"), outcome);
         Assert.Empty(cli.Calls);
-        Assert.Equal((DecisionOutcome.Escalated, InputJson.Digest(raw)), (harness.Row.Outcome, harness.Row.InputDigest));
+        Assert.Equal((DecisionOutcome.Escalated, InputJson.Digest(raw, JsonOptions)), (harness.Row.Outcome, harness.Row.InputDigest));
     }
 
     [Fact]
@@ -237,6 +237,6 @@ public sealed class QuestionEvaluatorTests
         var call = Assert.Single(cli.Calls);
         Assert.Equal(("Classify: hi", """{"text":"hi"}""", TimeSpan.FromSeconds(5)), (call.Question.Prompt, call.Input?.ToJsonString(), call.Budget));
         Assert.Same(extra, Assert.IsType<DecidedOutcome>(outcome).Extra);
-        Assert.Equal(InputJson.Digest(Text("hi")), harness.Row.InputDigest);
+        Assert.Equal(InputJson.Digest(Text("hi"), JsonOptions), harness.Row.InputDigest);
     }
 }

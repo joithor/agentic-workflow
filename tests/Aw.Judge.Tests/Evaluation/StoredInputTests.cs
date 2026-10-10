@@ -46,11 +46,11 @@ public sealed class StoredInputTests
         var stored = JsonNode.Parse(harness.Row.Details?.InputJson ?? "");
         Assert.Equal("b", stored?["brief"]?.GetValue<string>());
         Assert.Matches(@"\[truncated \d+ chars\]$", stored?["diff"]?.GetValue<string>());
-        Assert.Equal(InputJson.Digest(input), harness.Row.InputDigest);
+        Assert.Equal(InputJson.Digest(input, JsonOptions), harness.Row.InputDigest);
     }
 
     [Fact]
-    public void An_input_that_fits_is_written_unchanged() => Assert.Equal("""{"a":1}""", InputCap.Write(new JsonObject { ["a"] = 1 }, 100));
+    public void An_input_that_fits_is_written_unchanged() => Assert.Equal("""{"a":1}""", InputCap.Write(new JsonObject { ["a"] = 1 }, 100, JsonOptions));
 
     [Fact]
     public void The_longest_strings_are_shortened_in_place_until_it_fits()
@@ -62,7 +62,7 @@ public sealed class StoredInputTests
             ["n"] = 1,
         };
 
-        var text = InputCap.Write(value, 4000);
+        var text = InputCap.Write(value, 4000, JsonOptions);
 
         Assert.True(text.Length <= 4000, $"{text.Length} chars");
         var parsed = JsonNode.Parse(text)!;
@@ -78,7 +78,7 @@ public sealed class StoredInputTests
     {
         var numbers = new JsonObject { ["nums"] = new JsonArray([.. Enumerable.Range(0, 20_000).Select(i => (JsonNode)i)]) };
 
-        var text = InputCap.Write(numbers, InputCap.MaxChars);
+        var text = InputCap.Write(numbers, InputCap.MaxChars, JsonOptions);
 
         Assert.True(text.Length <= InputCap.MaxChars, $"{text.Length} chars");
         Assert.NotNull(JsonNode.Parse(text)?["truncated"]);
@@ -94,7 +94,7 @@ public sealed class StoredInputTests
     [Fact]
     public void The_digest_is_the_first_16_hex_of_the_sha256_of_the_compact_json()
     {
-        var digest = InputJson.Digest(new JsonObject { ["text"] = "hi" });
+        var digest = InputJson.Digest(new JsonObject { ["text"] = "hi" }, JsonOptions);
 
         Assert.Equal(16, digest.Length);
         Assert.Equal(Convert.ToHexStringLower(System.Security.Cryptography.SHA256.HashData("""{"text":"hi"}"""u8))[..16], digest);

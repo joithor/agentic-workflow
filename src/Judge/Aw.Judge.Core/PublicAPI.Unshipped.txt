@@ -149,7 +149,7 @@ Aw.Judge.Core.Evaluation.InputCap
 Aw.Judge.Core.Evaluation.InputJson
 Aw.Judge.Core.Evaluation.QuestionEvaluator
 Aw.Judge.Core.Evaluation.QuestionEvaluator.Evaluate<TInput>(Aw.Judge.Core.Questions.QuestionDefinition<TInput!>! question, System.Text.Json.Nodes.JsonNode? rawInput, Aw.Judge.Core.Evaluation.EvaluationContext! context, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Judge.Core.Evaluation.EvaluationOutcome!>
-Aw.Judge.Core.Evaluation.QuestionEvaluator.QuestionEvaluator(Aw.Judge.Core.Ports.IDecisionLog! log, Aw.Judge.Core.Ports.IInputRedactor! redactor, Aw.Kernel.Ids.IIdGenerator! ids, System.TimeProvider! clock) -> void
+Aw.Judge.Core.Evaluation.QuestionEvaluator.QuestionEvaluator(Aw.Judge.Core.Ports.IDecisionLog! log, Aw.Judge.Core.Ports.IInputRedactor! redactor, Aw.Kernel.Ids.IIdGenerator! ids, System.TimeProvider! clock, System.Text.Json.JsonSerializerOptions! json) -> void
 Aw.Judge.Core.Evaluation.QuestionOverride
 Aw.Judge.Core.Evaluation.QuestionOverride.<Clone>$() -> Aw.Judge.Core.Evaluation.QuestionOverride!
 Aw.Judge.Core.Evaluation.QuestionOverride.Deconstruct(out bool Enabled, out double? Threshold, out System.Collections.Generic.IReadOnlyList<Aw.Judge.Core.Providers.ProviderName>? Providers) -> void
@@ -472,9 +472,9 @@ static Aw.Judge.Core.Evaluation.EvaluationContext.operator ==(Aw.Judge.Core.Eval
 static Aw.Judge.Core.Evaluation.EvaluationOutcome.operator !=(Aw.Judge.Core.Evaluation.EvaluationOutcome? left, Aw.Judge.Core.Evaluation.EvaluationOutcome? right) -> bool
 static Aw.Judge.Core.Evaluation.EvaluationOutcome.operator ==(Aw.Judge.Core.Evaluation.EvaluationOutcome? left, Aw.Judge.Core.Evaluation.EvaluationOutcome? right) -> bool
 static Aw.Judge.Core.Evaluation.InputCap.Truncate(string! text, int maxChars) -> string!
-static Aw.Judge.Core.Evaluation.InputCap.Write(System.Text.Json.Nodes.JsonNode? value, int maxChars) -> string!
-static Aw.Judge.Core.Evaluation.InputJson.Digest(System.Text.Json.Nodes.JsonNode? node) -> string!
-static Aw.Judge.Core.Evaluation.InputJson.Write(System.Text.Json.Nodes.JsonNode? node) -> string!
+static Aw.Judge.Core.Evaluation.InputCap.Write(System.Text.Json.Nodes.JsonNode? value, int maxChars, System.Text.Json.JsonSerializerOptions! options) -> string!
+static Aw.Judge.Core.Evaluation.InputJson.Digest(System.Text.Json.Nodes.JsonNode? node, System.Text.Json.JsonSerializerOptions! options) -> string!
+static Aw.Judge.Core.Evaluation.InputJson.Write(System.Text.Json.Nodes.JsonNode? node, System.Text.Json.JsonSerializerOptions! options) -> string!
 static Aw.Judge.Core.Evaluation.QuestionOverride.operator !=(Aw.Judge.Core.Evaluation.QuestionOverride? left, Aw.Judge.Core.Evaluation.QuestionOverride? right) -> bool
 static Aw.Judge.Core.Evaluation.QuestionOverride.operator ==(Aw.Judge.Core.Evaluation.QuestionOverride? left, Aw.Judge.Core.Evaluation.QuestionOverride? right) -> bool
 static Aw.Judge.Core.Ids.AgentId.From(string! value) -> Aw.Judge.Core.Ids.AgentId

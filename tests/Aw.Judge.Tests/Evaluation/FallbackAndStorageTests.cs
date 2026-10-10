@@ -154,7 +154,7 @@ public sealed class FallbackAndStorageTests
         _ = await harness.Run(A.Question().Build(), input, new ScriptedProvider(ProviderName.ClaudeCli).Decides("send", 1));
 
         Assert.Equal("""{"text":"token [REDACTED] here"}""", harness.Row.Details?.InputJson);
-        Assert.Equal(InputJson.Digest(input), harness.Row.InputDigest);
+        Assert.Equal(InputJson.Digest(input, JsonOptions), harness.Row.InputDigest);
     }
 
     [Fact]

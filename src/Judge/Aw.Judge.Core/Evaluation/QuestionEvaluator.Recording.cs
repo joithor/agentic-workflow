@@ -51,14 +51,14 @@ public sealed partial class QuestionEvaluator
             Confidence = settlement.Confidence,
             ReasonCode = settlement.ReasonCode,
             LatencyMs = settlement.LatencyMs,
-            InputDigest = InputJson.Digest(input),
+            InputDigest = InputJson.Digest(input, json),
             ChainPosition = settlement.ChainPosition,
             Skipped = [.. run.Skipped],
             Outcome = settlement.Outcome,
             Details = new DecisionDetails
             {
                 // Redact the parsed values first, then cap, so a secret cut at the cap can't survive.
-                InputJson = InputCap.Write(redactor.Redact(input), InputCap.MaxChars),
+                InputJson = InputCap.Write(redactor.Redact(input), InputCap.MaxChars, json),
                 Probabilities = settlement.Probabilities,
                 RulesOpinion = settlement.RulesOpinion,
                 Agreement = settlement.Agreement,

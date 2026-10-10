@@ -1,3 +1,4 @@
+using System.Text.Json;
 using System.Text.Json.Nodes;
 using Aw.Judge.Core.Decisions;
 using Aw.Judge.Core.Evaluation;
@@ -5,7 +6,9 @@ using Aw.Judge.Core.Ids;
 using Aw.Judge.Core.Ports;
 using Aw.Judge.Core.Providers;
 using Aw.Judge.Core.Questions;
+using Aw.Judge.Host;
 using Aw.Judge.Testing;
+using Aw.Kernel.Json;
 using Aw.Kernel.Testing;
 using Microsoft.Extensions.Time.Testing;
 
@@ -17,8 +20,11 @@ internal sealed class EvaluatorHarness
     public EvaluatorHarness(InMemoryDecisionLog? log = null, IInputRedactor? redactor = null)
     {
         Log = log ?? new InMemoryDecisionLog();
-        Evaluator = new QuestionEvaluator(Log, redactor ?? new FakeInputRedactor(), new SequentialIdGenerator(), Clock);
+        Evaluator = new QuestionEvaluator(Log, redactor ?? new FakeInputRedactor(), new SequentialIdGenerator(), Clock, JsonOptions);
     }
+
+    /// <summary>The Host's AwJson options.</summary>
+    public static JsonSerializerOptions JsonOptions { get; } = AwJson.CreateOptions(JudgeJsonContext.Default);
 
     /// <summary>The id the first evaluation gets.</summary>
     public static DecisionId FirstId { get; } = DecisionId.From(SequentialIdGenerator.IdAt(1).ToString());

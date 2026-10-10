@@ -20,13 +20,14 @@ public static class InputCap
     /// <summary>Writes the value as JSON of at most <paramref name="maxChars"/> characters (for any cap above ~100).</summary>
     /// <param name="value">The (redacted) value; not changed.</param>
     /// <param name="maxChars">The cap.</param>
+    /// <param name="options">The package's AwJson options.</param>
     /// <returns>Valid JSON text.</returns>
-    public static string Write(JsonNode? value, int maxChars)
+    public static string Write(JsonNode? value, int maxChars, JsonSerializerOptions options)
     {
-        var text = InputJson.Write(value);
+        var text = InputJson.Write(value, options);
         if (text.Length <= maxChars || value is null)
         {
-            return text.Length <= maxChars ? text : Stub(text, maxChars);
+            return text.Length <= maxChars ? text : Stub(text, maxChars, options);
         }
 
         var work = value.DeepClone();
@@ -36,13 +37,13 @@ public static class InputCap
             if (longest is null || longest.GetValue<string>().Length <= ShrinkFloor)
             {
                 // Nothing left to shorten (a huge array of numbers): keep a valid stub.
-                return Stub(text, maxChars);
+                return Stub(text, maxChars, options);
             }
 
             var current = longest.GetValue<string>();
             var keep = Math.Max(0, current.Length - (text.Length - maxChars) - ShrinkFloor);
             work = Replace(work, longest, JsonValue.Create(Truncate(current, keep)));
-            text = InputJson.Write(work);
+            text = InputJson.Write(work, options);
         }
 
         return text;
@@ -80,8 +81,8 @@ public static class InputCap
         }
     }
 
-    private static string Stub(string text, int maxChars) =>
-        InputJson.Write(new JsonObject { ["truncated"] = Truncate(text, Math.Max(0, maxChars - 80)) });
+    private static string Stub(string text, int maxChars, JsonSerializerOptions options) =>
+        InputJson.Write(new JsonObject { ["truncated"] = Truncate(text, Math.Max(0, maxChars - 80)) }, options);
 
     // The first longest string value, depth first in document order.
     private static JsonValue? Longest(JsonNode? node)
