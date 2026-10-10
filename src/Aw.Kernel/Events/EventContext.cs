@@ -89,7 +89,7 @@ public sealed record EventContext
     /// <param name="payloadJson">The command's data as JSON.</param>
     /// <param name="clock">The clock.</param>
     /// <param name="ids">The id source.</param>
-    /// <returns>The command, ready for <see cref="Outbox.IOutbox.Enqueue"/>.</returns>
+    /// <returns>The command, ready for <see cref="IOutbox.Enqueue"/>.</returns>
     public OutboxCommand Command(string kind, string payloadJson, TimeProvider clock, IIdGenerator ids) =>
         new(ids.NewId(), kind, payloadJson, OutboxCommand.CurrentSchemaVersion, clock.GetUtcNow(), Actor, Tenant, Ring,
             CorrelationId, CausationId, TraceId);
