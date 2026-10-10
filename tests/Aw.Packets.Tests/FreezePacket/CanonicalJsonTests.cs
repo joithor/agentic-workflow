@@ -22,7 +22,7 @@ public sealed class CanonicalJsonTests
     public void The_digest_of_a_known_packet_is_pinned()
     {
         var files = PacketFiles.Of(A.Packet().Build()).ToDictionary(static f => f.Key, static f => new ReadOnlyMemory<byte>(f.Value), StringComparer.Ordinal);
-        var loaded = new Aw.Packets.Core.Model.LoadedPacket(A.Packet().Build(), files);
+        var loaded = new Core.Model.LoadedPacket(A.Packet().Build(), files);
 
         // digestVersion 1: a change to these bytes needs a new PacketDigest.Version, not a new pin.
         Assert.Equal("sha256:f840e32a5a4fcec56de95512e458d1efd8e7a8bfeea92ce9d2f79a094190c177", PacketDigest.Compute(loaded).Value.Value);
