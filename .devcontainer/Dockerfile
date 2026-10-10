@@ -3,7 +3,7 @@
 # (Docker-in-Docker means root on the host; agent sessions use the Sindri containers, main spec §8.2).
 #
 # Pins: the base image by digest (its tag is the exact SDK in global.json), Node by version and SHA-256 (the
-# major in .nvmrc), uv by image digest. scripts/tests/devcontainer.test.sh checks they stay in step.
+# major in .nvmrc), uv by image digest. scripts/tests/repo-templates.test.sh checks they stay in step.
 
 # .NET SDK 10.0.401 (global.json: rollForward disable) on Ubuntu 24.04.
 FROM mcr.microsoft.com/dotnet/sdk:10.0.401-noble@sha256:e70cdb7f80b0348f5cb85f19a8f670fca061f033d57eed12fa003d58b0e06317

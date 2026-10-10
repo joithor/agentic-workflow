@@ -8,7 +8,7 @@ USER # login name (OS)
 TMPDIR # temp directory (OS)
 COLUMNS # terminal width (shell); the statusline falls back to it
 PROMPT_COMMAND # bash prompt hook; the Claude installer appends to it
-XDG_RUNTIME_DIR # per-user runtime dir (OS); sindri doctor only reports it
+XDG_RUNTIME_DIR # per-user runtime dir (OS); sindri doctor reports it and masks it in the graphify sandbox
 
 # Owned by another tool; the code only reports or forwards it.
 NODE_OPTIONS # Node's own option variable; sindri doctor checks it for --use-env-proxy
