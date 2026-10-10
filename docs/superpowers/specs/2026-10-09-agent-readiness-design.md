@@ -177,7 +177,7 @@ declaration.
 
 | Tier | Packages | May depend on |
 |---|---|---|
-| 0 | `Aw.Kernel` and its `Data`, `Telemetry`, `Testing` parts, and `Redaction` (the scrubbing patterns now copied between judge and sindri; moved here by §4e B10) | the BCL plus one external package each, and lower tier-0 sublevels (below) |
+| 0 | `Aw.Kernel` and its `Data`, `Telemetry`, `Testing` parts, `Analyzers` (build-time only), and `Redaction` (the scrubbing patterns now copied between judge and sindri; moved here by §4e B10) | the BCL plus one external package each, and lower tier-0 sublevels (below) |
 | 1 | `Judge`, `Bridge`, `Packets`, `Readiness` | Tier 0 |
 | 2 | `Scorer`, `Evidence` (ui-evidence), `BugFix` | Tiers 0–1 (today they call judge, and scorer reads `judge.db`) |
 | 3 | `Sindri` | Tiers 0–2, **only through their `Core` contracts or their CLIs** (every package reaches a non-tier-0 package only through its `Core`; `deps.yaml` check DEPS-PROJ-007) |
@@ -204,7 +204,9 @@ declaration.
   folders and namespaces must not form cycles. ArchUnitNET's slice-cycle rule checks every namespace in every
   project (MSBuild already refuses circular *project* references; this covers the namespaces inside one).
 - **Fan-out limits** (every `Host` is exempt, because composing is its job): a project references at most 4 other in-repo projects and at most 6 third-party packages
-  (analyzers and test packages excluded). Going over is a ratchet violation that needs a recorded reason.
+  (analyzers and test packages excluded; DEPS-FANOUT-002/003). Per package, at most 4 other packages through
+  declared project edges (`limits.packageFanOut` in `deps.yaml`, DEPS-FANOUT-001). Going over either is a ratchet
+  violation that needs a recorded exception with a reason and an expiry.
 - **No dumping grounds:** there is no `Common`, `Shared`, `Utils` or `Helpers` project or namespace. Code shared by
   two packages goes into `Aw.Kernel` only if it is domain-free and stable; otherwise it is duplicated until a
   second case proves the abstraction (§6.2), then extracted into the owning package's `Core`.
@@ -286,7 +288,10 @@ group.MapPost("/items/{id}/start", async (ItemId id, StartItemBody body, IServic
     satisfies this;
   - `IParsable<T>` must be declared in user code so the request-delegate generator sees it: either the id declares
     the Kernel's `ITypedId<TSelf, TValue>` (which extends `IParsable<TSelf>`), or the id writes `TryParse` by hand
-    with Vogen's parse generation off;
+    with Vogen's parse generation off. Only the hand-written `TryParse` was verified through the request-delegate
+    generator in the R1a spike, so an id that uses the `ITypedId` form is used behind an endpoint only once an RDG
+    route-binding test passes for that form;
+  - the scaffolds (`/new-slice`, `/new-package`) generate the converter and `IParsable<T>` with each id;
   - the Kernel JSON profile sets `RespectRequiredConstructorParameters` and `RespectNullableAnnotations`, because a
     missing property otherwise deserializes to an uninitialized id without calling the converter;
   - an uninitialized id can still reach a handler (the RDG passes one for an empty query value, `?id=`), so the
@@ -314,10 +319,12 @@ group.MapPost("/items/{id}/start", async (ItemId id, StartItemBody body, IServic
 
 ### 4b.4 Dependency injection
 
-- `Microsoft.Extensions.DependencyInjection`. Registration lives **only** in `Host`. Each project exposes one explicit
-  extension method (`services.AddSindriCore()`, `AddSindriInfrastructure(config)`). There's no assembly scanning,
-  because it's reflection and not AOT-safe.
-- Constructor injection only: no service locator, and no `IServiceProvider` outside `Host`.
+- `Microsoft.Extensions.DependencyInjection`. Each project owns one explicit extension method that registers its own
+  types and decorators (`services.AddSindriCore()`, `AddSindriInfrastructure(settings)`). Only `Host` calls them and
+  builds the container (its `Compose`). There's no assembly scanning, because it's reflection and not AOT-safe.
+- Constructor injection only: no service locator. `IServiceProvider` appears outside `Host` only as the parameter of a
+  registration factory lambda inside a project's own `Add…()` method (the planned ArchUnitNET rule allows exactly
+  that).
 - Lifetimes: services and repositories are scoped per request or command, pure domain services are singletons, and
   `TimeProvider` is a singleton (a `FakeTimeProvider` in tests).
 - A DI validation test builds the container with `ValidateOnBuild` and `ValidateScopes` for every host.
@@ -451,7 +458,7 @@ The skill packages that hold code today (`skills/ui-evidence`, `skills/bugFixOrc
 | Four layers, allowed dependency directions, enforced by dependency-cruiser | Four projects per package, project references and ArchUnitNET (§4b.1) |
 | Public API surface per package | `internal` by default and PublicApiAnalyzers |
 | Internal folder template per package | Feature-slice folders (§4b.2) |
-| DI only at composition roots; ports passed in | DI only in `Host`; explicit `Add…()` methods (§4b.4) |
+| DI only at composition roots; ports passed in | Each project's explicit `Add…()` registers its own types; only `Host` calls them and builds the container (§4b.4) |
 | Error taxonomy and `AppResult` | `Result<T>` and `Error` with catalogue codes (§4b.3) |
 | zod at boundaries only | Source-generated JSON and `IValidator<T>` at endpoints and CLI inputs |
 | Branded ids | Vogen strongly typed ids (§4b.3) |
@@ -464,7 +471,7 @@ The skill packages that hold code today (`skills/ui-evidence`, `skills/bugFixOrc
 
 ### 4b.9 Agent readiness of the code itself
 
-- `AGENTS.md` lists the one-line commands: `dotnet build`, `dotnet test --filter Lane=unit`, `dotnet format --verify-no-changes`.
+- `AGENTS.md` lists the one-line commands: `dotnet build`, `dotnet test --filter-trait "Lane=unit"`, `dotnet format --verify-no-changes`.
   It also has the slice recipe ("to add a use case: test, request and response, service, endpoint, registration")
   and points to the `/new-package` and `/new-slice` scaffolds.
 - The scaffolds produce compliant code with a red test, so an agent's first move is always the TDD step.
@@ -520,10 +527,12 @@ assert that no tested path fails open against the C# binaries.
   its own output directory. Nothing in `setup.sh`, the providers, MCP registration or launchd points at it.
 - **Trying C# early:** `./setup.sh --runtime cs --prefix <dev dir>` installs the C# build into a separate directory for
   a hand test or a dev session, without touching the real install.
-- **The switch:** `./setup.sh --runtime cs` archives the state dir (`$AW_STATE_DIR` → a timestamped copy), installs
-  the C# binaries, and rewrites hooks, MCP registration and launchd jobs to call them. The C# build starts with fresh
-  state; nothing is migrated.
-- **Rollback:** `./setup.sh --runtime ts --restore <archive>` reinstalls the TS build and restores the archived state.
+- **The switch:** `./setup.sh --runtime cs` **moves** the TS state dir aside (renames `$AW_STATE_DIR` to a
+  timestamped archive), installs the C# binaries, and rewrites hooks, MCP registration and launchd jobs to call them.
+  The C# build starts in an empty state dir, so it can never see TS files; nothing is migrated. The C# build refuses
+  to start if it finds TS-schema files in its state dir.
+- **Rollback:** `./setup.sh --runtime ts --restore <archive>` reinstalls the TS build, moves the archive back, and
+  explicitly discards everything the C# build wrote after the switch.
   The TS build stays in the repo, tagged, for 14 days after the switch, then it's deleted.
 - **The switch happens on the always-on box first**, then the laptop after a day with no rollback.
 - **TS stays frozen to bug fixes** once porting starts.
@@ -632,7 +641,7 @@ Each row is a criterion family, the change that satisfies it, and its owner work
 | 3 | Structured logging, tracing, metrics | One logger module (JSON lines, levels, ids); OTel spans and metrics in bridge and sindri (exporter off by default, local collector in the devcontainer) | W7 |
 | 3 | Issue and PR templates, labels | Templates; label scheme (`type:`, `area:`, `size:`, `ring:`) synced from a file | W6 |
 | 4 | Fast CI feedback | Required CI under 5 minutes for lint, types and unit tests; affected-package detection; heavy lanes nightly | W3 |
-| 4 | Flaky-test detection | The quarantine job (§4) | W3 |
+| 4 | Flaky-test detection | The quarantine job (§4e B11, §8) | W3 |
 | 4 | Deployment frequency | "Release" here means promoting a stable channel (§7.7 of the main spec). Track promotion frequency and lead time | W8 |
 | 4 | Documentation freshness | A check that executes every command in `AGENTS.md` and fails on drift; link checks; doc age against code changes | W8 |
 | 4 | Product analytics and experiments | Report scorer and ledger telemetry as product analytics; evolve's A/B and the judge's shadow modes as experiment infrastructure, with a page that lists them | W9 |
@@ -663,9 +672,14 @@ next PR shows it passing.
 
 ## 8. Readiness as a Sindri module
 
-- `sindri readiness check [--json]` runs our reproducible criteria, per repo and per app, and records each result
-  in the ledger. It is built in **R1a as the first package scaffolded from the template**, so the template proves
-  itself and the Level-4 gate is measurable from the start.
+- `sindri readiness check [--json]` runs our reproducible criteria, per repo and per app. It is built in **R1b as
+  one of the first two packages scaffolded from the template** (§10), so the template proves itself and the Level-4
+  gate is measurable from the start.
+- **Where results live:** until sindri is ported, `Aw.Readiness` keeps its own history (a small file under its own
+  `deps.yaml` namespace) for the delta and the first-run baseline. Results are recorded in the ledger once sindri's
+  C# ledger exists, at the switch.
+- **Usage metrics for R3** (promotion frequency, flake rates, doc freshness over time) come from external sources
+  where possible (git tags, the GitHub Actions API). Anything else is measured from the switch.
 - **Output contract:**
   - each criterion has a state: `pass`, `fail`, `n/a` (with a reason) or `unknown` (we can't reproduce Factory's
     check);

@@ -848,10 +848,10 @@ status: active  # proposed | active | retired</code></pre>
     "fencing epoch": ["Fencing epoch", "A counter bumped when the lock is acquired. Every write carries it, and stale epochs are rejected, so a zombie tick can't act.", "§9.1"],
     "swipe inbox": ["Swipe inbox", "The mobile view for binary, non-protected decisions, signed with a passkey on an enrolled device, each with visible buttons and a 10-second undo.", "§17.12, §17.19"],
     "tailnet": ["Tailnet", "A private Tailscale network. The dashboard is served only there (tailscale serve, never funnel).", "§17.12"],
-    "strangler": ["Strangler rewrite", "Porting each package beside the untouched TS install, proving it with golden tests, then one reversible cutover (setup.sh --runtime cs) once every package is at parity.", "readiness §4a, §4c"],
+    "strangler": ["Strangler rewrite", "Porting each package beside the untouched TS install, proving it with its own tests, then one clean, reversible cutover (setup.sh --runtime cs) once every package is done.", "readiness §4a, §4c"],
     "slice": ["Feature slice", "One folder per use case holding its request and response records, service, validator and endpoint or CLI mapping. Slices never reference each other.", "readiness §4b.1"],
     "typed id": ["Strongly typed id", "A value type such as ItemId or SizeClass in place of a raw string or Guid; raw ids in public signatures are an analyzer error.", "readiness §4b.3"],
-    "golden harness": ["Golden harness", "Recorded TS behaviour (CLI I/O, files, schemas, real hook scripts) replayed against the C# build with declared normalization; byte-identical where it matters.", "readiness §4c"],
+    "golden harness": ["Golden files", "CLI output and JSON contracts recorded from the C# build and compared after declared normalization (ids, times). No TS parity: the cutover is clean.", "readiness §4c"],
     "holdout": ["Holdout", "Acceptance examples (or eval corpus) the implementer never sees. Mounted only into evaluator Steps; a canary example detects leaks.", "§17.4, §17.19"]
   };
 
@@ -861,7 +861,7 @@ status: active  # proposed | active | retired</code></pre>
     ["overview","built","Sindri builds Sindri, on ring 0","Each merged plan's piece was switched on and used on the next plan: observe lists the backlog, scope maps later plans, evolve reflects on merged PRs.","§13.3"],
     ["overview","specced","One place to see every agent","The Plan 6 dashboard: every Claude Code, Codex and Cursor session on the machine, repo index status, automatic work, and a 'needs you' list.","dashboard spec, Plan 6"],
     ["overview","designed","The factory production line","Scope → design studio → frozen packet → workflow generation → factory build → review anywhere → human merges.","§17.0"],
-    ["overview","designed","Readiness and a C# port first","Level 4 agent readiness before F0, with the toolkit rewritten in C# on .NET 10 behind golden contract tests.","§17.16, readiness"],
+    ["overview","designed","Readiness and a C# port first","Level 4 agent readiness before F0, with the toolkit rewritten in C# on .NET 10 and switched over in one clean cutover.","§17.16, readiness"],
 
     ["tenets","built","1 · One Sindri at a time","A singleton lock with a fencing epoch; a tick that can't acquire exits quietly.","§3, §9.1"],
     ["tenets","designed","2 · Nothing long-lived holds a model","The tick is short deterministic code; model work runs in bounded jobs and sessions that end.","§3"],
@@ -1014,7 +1014,7 @@ status: active  # proposed | active | retired</code></pre>
     ["hosts","designed","Linux built-ins as prerequisites","systemd scheduler, Docker sandbox and a phone-reachable notifier.","§17.13"],
 
     ["readiness","designed","Readiness check module","<code>sindri readiness check</code> per repo and app, recorded in the ledger; Factory's report as score of record when available.","readiness §8"],
-    ["readiness","designed","Cutover contract","A golden harness that runs the real hooks, a replay week, zero fail-open events, regex parity, and one reversible cutover with a state backup.","readiness §4c"],
+    ["readiness","designed","Cutover contract","No TS parity: each package proves itself with its own tests, the AOT job and the real hook scripts run against the C# binaries; the switch moves the TS state aside and C# starts fresh; one reversible cutover.","readiness §4c"],
     ["readiness","designed","CI, identity and supply chain","read-all permissions, banned untrusted triggers, SHA-pinned actions, NuGet source mapping, loopback bind in code.","readiness §4d"],
     ["readiness","designed","Feature slices on a clean direction","Host → Features → Core ← Infrastructure; Core has no I/O and bans clocks and random ids.","readiness §4b.1"],
     ["readiness","designed","Minimal endpoint → service → repository → SQL","Endpoints call exactly one service; repositories return Core types over hand-written ADO.NET by default.","readiness §4b.2"],
@@ -1693,11 +1693,11 @@ status: active  # proposed | active | retired</code></pre>
       { id: "bugfix", t: "BugFix", tier: 2, x: 400, y: 120, w: 140, b: "Tier 2 (the bugfix-state CLI). AOT entry point." },
       { id: "judge", t: "Judge", tier: 1, x: 60, y: 230, w: 140, b: "Tier 1. Ported first, with Redaction. Depends only on the Kernel." },
       { id: "bridge", t: "Bridge", tier: 1, x: 230, y: 230, w: 140, b: "Tier 1. MCP + HTTP host; binds to loopback in code, ignoring URL settings." },
-      { id: "redaction", t: "Redaction", tier: 1, x: 400, y: 230, w: 140, b: "Tier 1. The scrubbing patterns now copied between judge and sindri, with regex parity and timeouts that block." },
-      { id: "kernel", t: "Aw.Kernel", tier: 0, x: 200, y: 340, w: 200, b: "Tier 0, with its Data, Telemetry and Testing parts: <code>Result&lt;T&gt;</code>, <code>Error</code>, clock helpers, id conventions, logging, the <code>IService</code> pipeline and contract-test base classes. The BCL plus one external package each." }
+      { id: "redaction", t: "Redaction", tier: 0, x: 420, y: 340, w: 140, b: "Tier 0, next to the Kernel. The scrubbing patterns now copied between judge and sindri, in one pattern file, with timeouts that block." },
+      { id: "kernel", t: "Aw.Kernel", tier: 0, x: 140, y: 340, w: 240, b: "Tier 0, with its Data, Telemetry and Testing parts: <code>Result&lt;T&gt;</code>, <code>Error</code>, clock helpers, id conventions, logging, the <code>IService</code> pipeline and contract-test base classes. The BCL plus one external package each." }
     ];
     var by = {}; T.forEach(function (t) { by[t.id] = t; });
-    var E = [["sindri", "scorer"], ["sindri", "evidence"], ["sindri", "bugfix"], ["sindri", "judge"], ["sindri", "bridge"], ["sindri", "redaction"], ["scorer", "judge"], ["scorer", "kernel"], ["evidence", "kernel"], ["bugfix", "kernel"], ["judge", "kernel"], ["bridge", "kernel"], ["redaction", "kernel"]];
+    var E = [["sindri", "scorer"], ["sindri", "evidence"], ["sindri", "bugfix"], ["sindri", "judge"], ["sindri", "bridge"], ["sindri", "redaction"], ["scorer", "judge"], ["scorer", "kernel"], ["evidence", "kernel"], ["bugfix", "kernel"], ["judge", "kernel"], ["bridge", "kernel"], ["judge", "redaction"]];
     var edgeEls = [];
     E.forEach(function (e) {
       var a = by[e[0]], b = by[e[1]];
@@ -1746,7 +1746,7 @@ status: active  # proposed | active | retired</code></pre>
       ] },
       { y: 155, name: "Readiness", items: [
         ["R0", "designed", "R0 · Baseline", "Factory's report if available, plus a manual pass over the pillars.", "readiness §10"],
-        ["R1a", "designed", "R1a · Safety and measurement", "Hardened CI, the main ruleset and agent identity; the cutover contract and golden harness; golden recordings; the AOT spike; a minimal C# packet schema; readiness check as the first templated package.", "readiness §4c, §4d, §10"],
+        ["R1a", "designed", "R1a · Safety and measurement", "Hardened CI, the main ruleset and agent identity; the cutover contract; fail-open logging; the AOT spike; a minimal C# packet schema; the readiness baseline.", "readiness §4c, §4d, §10"],
         ["R1b", "designed", "R1b · The template", "Build props, central packages, analyzers, ratchet, Kernel, <code>deps.yaml</code> with edge checks, scaffolds, rule records, devcontainer and templates.", "readiness §10"],
         ["R2", "designed", "R2 · The ports", "One packet per package, whole: Judge and Redaction → Scorer → BugFix → Bridge → Evidence → Sindri. Stop rules: 2× per package or 1.5× overall triggers a review.", "readiness §4a, §10"],
         ["R3", "designed", "R3 · Level 4", "Criteria that need usage data; Level 4 passed. Factory work starts here.", "readiness §10"],
