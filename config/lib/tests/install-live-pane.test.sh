@@ -126,8 +126,12 @@ test_a_failing_claude_write_warns_and_exits_zero() {
   local step
   for step in "marketplace add" "install" "uninstall"; do
     new_world
-    sed -i.bak "2i\\
-case \"\$1 \$2\" in \"plugin $step\"|\"plugin marketplace\") [ \"\$2 \$3\" = \"$step\" ] || [ \"\$2\" = \"$step\" ] && exit 1 ;; esac" "$BIN/claude"
+    # Insert the failure line as line 2 without `sed i`: BSD sed versions differ on
+    # whether the inserted text gets a trailing newline (macOS 15 joins it to line 3).
+    { head -n 1 "$BIN/claude"
+      printf 'case "$1 $2" in "plugin %s"|"plugin marketplace") [ "$2 $3" = "%s" ] || [ "$2" = "%s" ] && exit 1 ;; esac\n' "$step" "$step" "$step"
+      tail -n +2 "$BIN/claude"; } > "$BIN/claude.new"
+    mv "$BIN/claude.new" "$BIN/claude"; chmod +x "$BIN/claude"
     local out rc=0
     if [ "$step" = "uninstall" ]; then
       echo "[{\"id\": \"$ID\"}]" > "$STATE/plugins.json"
