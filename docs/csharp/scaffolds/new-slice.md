@@ -181,7 +181,7 @@ internal static class <Slice>Endpoint
 
 Shown for `route` `POST /items/{id}/start`. For each `{name}` in `route` the lambda takes one typed-id parameter of
 that name (`<Id> name`), in route order, before the body; the request is built from those ids plus the body with
-`<Slice>Body.ToRequest(<Id> id, …)`. A route with no `{name}` segment gives `ToRequest()`. Both templates emit `using Aw.<Pkg>.Core.Ids;` exactly when `route` has at least one `{name}` segment: without it the id type doesn't resolve (CS0246), and an unused using fails the build (`IDE0005` is an error). The lambda binds, calls one
+`<Slice>Body.ToRequest(<Id> id, …)`. A route with no `{name}` segment gives `ToRequest()`. Each file emits exactly the namespaces its own types use (new-package.md): `<Slice>Endpoint.cs` emits `using Aw.<Pkg>.Core.Ids;` when `route` has a `{name}` segment, and `<Slice>Body.cs` emits it when `route` has a `{name}` segment or any body field's type is in `Aw.<Pkg>.Core.Ids`. A missing using fails with CS0246, and an unused one fails the build too (`IDE0005` is an error). The lambda binds, calls one
 service and maps the result; it has no branches, and the discard keeps `IDE0058` quiet. Route text binds through the
 id's `IParsable` `TryParse` (Vogen-generated, runs `Validate`; refused text → 400). Body JSON goes through the AwJson
 profile the Host applies in `ConfigureHttpJsonOptions`. An uninitialized id's `ValueObjectValidationException` is
