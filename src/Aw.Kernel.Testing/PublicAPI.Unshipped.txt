@@ -66,3 +66,4 @@ static Aw.Kernel.Testing.Normalization.TempPath(string! path) -> Aw.Kernel.Testi
 static Aw.Kernel.Testing.Normalization.Ulids.get -> Aw.Kernel.Testing.NormalizationRule!
 static Aw.Kernel.Testing.SequentialIdGenerator.IdAt(long n, uint scope = 0) -> System.Guid
 static readonly Aw.Kernel.Testing.KnownInstants.Epoch -> System.DateTimeOffset
+const Aw.Kernel.Testing.SequentialIdGenerator.MaxCall = 281474976710655 -> long

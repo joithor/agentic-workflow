@@ -48,20 +48,102 @@ public abstract class ReadRepositoryContract<TEntity, TId>
     /// <summary>A seeded entity comes back from 'Get' equal to what was stored.</summary>
     /// <returns>The test.</returns>
     [Fact]
-    public Task Get_returns_the_seeded_entity() => throw new NotSupportedException("red: Aw.Kernel.Testing C2");
+    public async Task Get_returns_the_seeded_entity()
+    {
+        var entity = NewEntity(1);
+        await Seed(entity, Token).ConfigureAwait(false);
+
+        var found = await Get(IdOf(entity), Token).ConfigureAwait(false);
+
+        ExpectFound(nameof(Get_returns_the_seeded_entity), entity, found);
+    }
 
     /// <summary>Each of several seeded entities comes back by its own id.</summary>
     /// <returns>The test.</returns>
     [Fact]
-    public Task Get_returns_each_entity_by_its_own_id() => throw new NotSupportedException("red: Aw.Kernel.Testing C2");
+    public async Task Get_returns_each_entity_by_its_own_id()
+    {
+        TEntity[] entities = [NewEntity(1), NewEntity(2), NewEntity(3)];
+        foreach (var entity in entities)
+        {
+            await Seed(entity, Token).ConfigureAwait(false);
+        }
+
+        foreach (var entity in entities)
+        {
+            var found = await Get(IdOf(entity), Token).ConfigureAwait(false);
+            ExpectFound(nameof(Get_returns_each_entity_by_its_own_id), entity, found);
+        }
+    }
 
     /// <summary>'Get' of an id nobody stored is a not-found error with a catalogue code, never an exception.</summary>
     /// <returns>The test.</returns>
     [Fact]
-    public Task Get_of_a_missing_id_is_a_not_found_error() => throw new NotSupportedException("red: Aw.Kernel.Testing C2");
+    public async Task Get_of_a_missing_id_is_a_not_found_error()
+    {
+        const string test = nameof(Get_of_a_missing_id_is_a_not_found_error);
+        await Seed(NewEntity(1), Token).ConfigureAwait(false);
+        var missing = MissingId();
+        Result<TEntity> found;
+        try
+        {
+            found = await Get(missing, Token).ConfigureAwait(false);
+        }
+        catch (Exception e)
+        {
+            throw Violation(test, $"Get({missing}) threw {e.GetType().Name} instead of returning a notFound error.", e);
+        }
+
+        if (found.IsSuccess)
+        {
+            throw Violation(test, $"Get({missing}) returned an entity for an id nobody stored.");
+        }
+
+        if (found.Error.Kind != ErrorKind.NotFound || string.IsNullOrWhiteSpace(found.Error.Code))
+        {
+            throw Violation(test, $"Get({missing}) must return a notFound error with a catalogue code; got {found.Error.Kind} ({found.Error.Code}).");
+        }
+    }
 
     /// <summary>'Exists' is true for a seeded id and false for a missing one.</summary>
     /// <returns>The test.</returns>
     [Fact]
-    public Task Exists_is_true_only_for_seeded_ids() => throw new NotSupportedException("red: Aw.Kernel.Testing C2");
+    public async Task Exists_is_true_only_for_seeded_ids()
+    {
+        const string test = nameof(Exists_is_true_only_for_seeded_ids);
+        var entity = NewEntity(1);
+        await Seed(entity, Token).ConfigureAwait(false);
+
+        if (!await Exists(IdOf(entity), Token).ConfigureAwait(false))
+        {
+            throw Violation(test, $"Exists({IdOf(entity)}) is false for a stored entity.");
+        }
+
+        if (await Exists(MissingId(), Token).ConfigureAwait(false))
+        {
+            throw Violation(test, $"Exists({MissingId()}) is true for an id nobody stored.");
+        }
+    }
+
+    private static CancellationToken Token => TestContext.Current.CancellationToken;
+
+    private static ContractViolationException Violation(string test, string detail) =>
+        new($"{typeof(ReadRepositoryContract<TEntity, TId>).Name.Split('`')[0]}.{test}: {detail}");
+
+    private static ContractViolationException Violation(string test, string detail, Exception cause) =>
+        new($"{typeof(ReadRepositoryContract<TEntity, TId>).Name.Split('`')[0]}.{test}: {detail}", cause);
+
+    private void ExpectFound(string test, TEntity stored, Result<TEntity> found)
+    {
+        var id = IdOf(stored);
+        if (found.IsError)
+        {
+            throw Violation(test, $"Get({id}) returned {found.Error.Kind} ({found.Error.Code}) for a stored entity.");
+        }
+
+        if (!EqualityComparer<TEntity>.Default.Equals(found.Value, stored))
+        {
+            throw Violation(test, $"Get({id}) returned {found.Value}, not the stored {stored}.");
+        }
+    }
 }

@@ -52,7 +52,7 @@ public sealed class NormalizationTests
 
     [Fact]
     public void An_invalid_pattern_is_refused_when_the_rule_is_made() =>
-        Assert.Throws<ArgumentException>(() => new NormalizationRule("bad", "(", "x"));
+        Assert.ThrowsAny<ArgumentException>(() => new NormalizationRule("bad", "(", "x"));
 
     [Fact]
     public void The_declared_rules_are_visible_by_name() =>

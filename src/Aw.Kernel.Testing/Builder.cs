@@ -12,7 +12,13 @@ public abstract class Builder<TSelf, T>
     /// <summary>Applies a one-off change to this builder.</summary>
     /// <param name="change">The change.</param>
     /// <returns>This builder.</returns>
-    public TSelf With(Action<TSelf> change) => throw new NotSupportedException("red: Aw.Kernel.Testing C2");
+    public TSelf With(Action<TSelf> change)
+    {
+        ArgumentNullException.ThrowIfNull(change);
+        var self = (TSelf)this;
+        change(self);
+        return self;
+    }
 
     /// <summary>Builds the value from the current settings.</summary>
     /// <returns>The value.</returns>
@@ -22,5 +28,18 @@ public abstract class Builder<TSelf, T>
     /// <param name="count">How many.</param>
     /// <param name="vary">Changes the builder per index; the changes accumulate.</param>
     /// <returns>The values, in order.</returns>
-    public IReadOnlyList<T> BuildMany(int count, Action<TSelf, int> vary) => throw new NotSupportedException("red: Aw.Kernel.Testing C2");
+    public IReadOnlyList<T> BuildMany(int count, Action<TSelf, int> vary)
+    {
+        ArgumentOutOfRangeException.ThrowIfNegative(count);
+        ArgumentNullException.ThrowIfNull(vary);
+        var self = (TSelf)this;
+        var built = new List<T>(count);
+        for (var i = 0; i < count; i++)
+        {
+            vary(self, i);
+            built.Add(Build());
+        }
+
+        return built;
+    }
 }
