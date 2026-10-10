@@ -43,7 +43,22 @@ public sealed class HostTests
         Assert.Same(runtime.LoggerFactory, provider.GetRequiredService<ILoggerFactory>());
     }
 
-    private static IServiceCollection Compose()
+    [Fact, Trait("Lane", "unit")]
+    public void The_log_level_comes_from_the_environment_Compose_is_given()
+    {
+        using var provider = Compose(logLevel: "warning").BuildServiceProvider(
+            new ServiceProviderOptions { ValidateOnBuild = true, ValidateScopes = true });
+        _ = provider.GetRequiredService<TelemetryRuntime>();
+
+        var logger = provider.GetRequiredService<ILogger<HostTests>>();
+
+        Assert.False(logger.IsEnabled(LogLevel.Information));
+        Assert.True(logger.IsEnabled(LogLevel.Warning));
+    }
+
+    private static IServiceCollection Compose(string? logLevel = null)
         => Composition.Compose(
-            new ServiceCollection(), name => name == "AW_STATE_DIR" ? _stateRoot : null, new FakeTimeProvider());
+            new ServiceCollection(),
+            name => name switch { "AW_STATE_DIR" => _stateRoot, "AW_LOG_LEVEL" => logLevel, _ => null },
+            new FakeTimeProvider());
 }

@@ -206,7 +206,7 @@ export const hostCsproj = (p) => {
        Composition.`,
     props: ["<OutputType>Exe</OutputType>", "<AwAotEntryPoint>true</AwAotEntryPoint>", "<PublishAot Condition=\"'$(RuntimeIdentifier)' != ''\">true</PublishAot>", `<AssemblyName>${p.binary}</AssemblyName>`, `<RootNamespace>Aw.${p.name}.Host</RootNamespace>`],
     packages: http ? [] : ["Microsoft.Extensions.DependencyInjection"],
-    projects: [`../Aw.${p.name}.Core/Aw.${p.name}.Core.csproj`, `../Aw.${p.name}.Features/Aw.${p.name}.Features.csproj`, `../Aw.${p.name}.Infrastructure/Aw.${p.name}.Infrastructure.csproj`, kernel, kernelTelemetry],
+    projects: [`../Aw.${p.name}.Core/Aw.${p.name}.Core.csproj`, `../Aw.${p.name}.Features/Aw.${p.name}.Features.csproj`, `../Aw.${p.name}.Infrastructure/Aw.${p.name}.Infrastructure.csproj`, kernel, ...(startsTelemetry(p) ? [kernelTelemetry] : [])],
     visibleTo: [`Aw.${p.name}.Tests`],
   });
 };
@@ -609,9 +609,24 @@ public sealed class HostTests
         Assert.Same(runtime.LoggerFactory, provider.GetRequiredService<ILoggerFactory>());
     }
 
-    private static IServiceCollection Compose()
+    [Fact, Trait("Lane", "unit")]
+    public void The_log_level_comes_from_the_environment_Compose_is_given()
+    {
+        using var provider = Compose(logLevel: "warning").BuildServiceProvider(
+            new ServiceProviderOptions { ValidateOnBuild = true, ValidateScopes = true });
+        _ = provider.GetRequiredService<TelemetryRuntime>();
+
+        var logger = provider.GetRequiredService<ILogger<HostTests>>();
+
+        Assert.False(logger.IsEnabled(LogLevel.Information));
+        Assert.True(logger.IsEnabled(LogLevel.Warning));
+    }
+
+    private static IServiceCollection Compose(string? logLevel = null)
         => Composition.Compose(
-            new ServiceCollection(), name => name == "AW_STATE_DIR" ? _stateRoot : null, new FakeTimeProvider());
+            new ServiceCollection(),
+            name => name switch { "AW_STATE_DIR" => _stateRoot, "AW_LOG_LEVEL" => logLevel, _ => null },
+            new FakeTimeProvider());
 }
 `;
 
@@ -625,7 +640,7 @@ public sealed class ProcessEnvironment
 }
 `;
 
-export const loopbackTests = (p) => `${usingsBlock(["System.Net", `Aw.${p.name}.Host`, "Aw.Kernel", "Microsoft.AspNetCore.Builder", "Microsoft.AspNetCore.Hosting.Server", "Microsoft.AspNetCore.Hosting.Server.Features", "Microsoft.Extensions.DependencyInjection", "Microsoft.Extensions.Time.Testing"])}
+export const loopbackTests = (p) => `${usingsBlock(["System.Net", `Aw.${p.name}.Host`, "Aw.Kernel", "Aw.Kernel.Telemetry", "Microsoft.Extensions.Logging", "Microsoft.AspNetCore.Builder", "Microsoft.AspNetCore.Hosting.Server", "Microsoft.AspNetCore.Hosting.Server.Features", "Microsoft.Extensions.DependencyInjection", "Microsoft.Extensions.Time.Testing"])}
 
 namespace Aw.${p.name}.Tests;
 
@@ -675,6 +690,21 @@ public sealed class LoopbackBindingTests
             () => LoopbackBinding.Build([option, value], _ => null, new FakeTimeProvider()));
 
         Assert.Equal("args", refused.ParamName);
+    }
+
+    // WebApplicationBuilder registers its own ILoggerFactory before Compose runs, so the http host's guarantee is the
+    // resolved one: Kernel's (registered later), with ASP.NET's providers cleared.
+    [Fact, Trait("Lane", "integration")]
+    public async Task Kernel_telemetry_is_the_only_logger()
+    {
+        var app = LoopbackBinding.Build([], _ => null, new FakeTimeProvider());
+        await using (app)
+        {
+            var runtime = app.Services.GetRequiredService<TelemetryRuntime>();
+
+            Assert.Same(runtime.LoggerFactory, app.Services.GetRequiredService<ILoggerFactory>());
+            Assert.Empty(app.Services.GetServices<ILoggerProvider>());
+        }
     }
 
     [Fact, Trait("Lane", "integration")]

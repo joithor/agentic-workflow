@@ -229,6 +229,8 @@ t("full http: Host, loopback, endpoint, id, route binding test, undeclared node 
   for (const layer of ["Core", "Features", "Infrastructure"])
     assert.doesNotMatch(read(d, `src/Demohttp/Aw.Demohttp.${layer}/Aw.Demohttp.${layer}.csproj`), /Aw\.Kernel\.Telemetry/, `only the host references telemetry, not ${layer}`);
   assert.match(read(d, "tests/Aw.Demohttp.Tests/LoopbackBindingTests.cs"), /Pipeline\.Configure\(app\)/);
+  assert.match(read(d, "tests/Aw.Demohttp.Tests/LoopbackBindingTests.cs"), /public async Task Kernel_telemetry_is_the_only_logger\(\)/);
+  assert.match(read(d, "tests/Aw.Demohttp.Tests/HostTests.cs"), /public void The_log_level_comes_from_the_environment_Compose_is_given\(\)/);
   assert.match(read(d, "tests/Aw.Demohttp.Tests/LoopbackBindingTests.cs"), /"ASPNETCORE_PREFERHOSTINGURLS=true;ASPNETCORE_URLS=http:\/\/0\.0\.0\.0:0"/);
   // a second http slice: GET by a route id that already exists, chained on the same group, its own JSON lines
   const r2 = slice(d, { package: "Demohttp", slice: "GetItem", behavior: "gets_an_item", surface: "http", route: "GET /items/{itemId}" });

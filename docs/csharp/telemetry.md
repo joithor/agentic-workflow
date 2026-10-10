@@ -66,14 +66,22 @@ One JSON object per line, written with `Utf8JsonWriter` (no reflection), relaxed
 
 ## Standard error is diagnostic (the CLI stderr contract)
 
-A CLI host's log lines share standard error with its own error output: the error envelope its `CommandOutput` writes
-(`{"code","kind","message"}`, the Kernel `Error`) and `usage:` text. So a program that calls one of these CLIs (a `cli` edge in
-`deps.yaml`, such as sindri running `aw-readiness check --json`) reads:
+A CLI host's log lines share standard error with its own error output. So a program that calls one of these CLIs (a
+`cli` edge in `deps.yaml`, such as sindri running `aw-readiness check --json`) reads:
 
-- **the result from standard output** (`--json` where the command offers it) and **the outcome from the exit code**
-  (0 success, 1 an expected error, 2 usage or tool error);
-- **the error from standard error only to show it**, and when it must parse it, the one line that has a `code` member
-  and no `level` member. A log line always has `timestamp` and `level`, and an error envelope never has `level`.
+- **the outcome from the exit code, as that CLI defines it.** The codes are per command, not one global map: for
+  `aw-readiness check`, 0 the level holds, 1 it doesn't (a successful run with a negative result: the report is on
+  standard output and standard error is empty), 2 a usage or tool error (`docs/readiness/README.md`); for
+  `aw-packets`, 0 every check passed, 1 a check failed or the packet is malformed, 2 a usage or tool error
+  (`docs/csharp/packets.md`). A package scaffolded by `/new-package` starts with 0 success, 1 an error `Result`,
+  2 usage, and its own docs define the codes once its commands exist;
+- **the result from standard output** (`--json` where the command offers it);
+- **the error from standard error only to show it.** A program that must parse it passes `--json` where the CLI has it,
+  then takes the one line with a `code` member and no `level` member: the error envelope (`{"code","kind","message"}`,
+  the Kernel `Error`) never has `level`, and a log line always has `timestamp` and `level`. Error lines are written
+  only on an error, so a nonzero exit doesn't by itself mean standard error has one (`aw-readiness` exit 1 has none).
+  Without `--json`, the error is whatever the CLI documents (`aw-packets: <code> <message>`), and usage errors are a
+  `usage:` text line in every CLI.
 
 Standard error is otherwise diagnostic: its log lines change with `AW_LOG_LEVEL` and with what the code logs, so
 nothing parses them as a contract. Golden tests and smokes that capture standard error pin the level (the AOT smokes

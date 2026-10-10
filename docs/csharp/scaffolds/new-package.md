@@ -437,16 +437,36 @@ public sealed class HostTests
         Assert.Same(runtime.LoggerFactory, provider.GetRequiredService<ILoggerFactory>());
     }
 
-    private static IServiceCollection Compose()
+    [Fact, Trait("Lane", "unit")]
+    public void The_log_level_comes_from_the_environment_Compose_is_given()
+    {
+        using var provider = Compose(logLevel: "warning").BuildServiceProvider(
+            new ServiceProviderOptions { ValidateOnBuild = true, ValidateScopes = true });
+        _ = provider.GetRequiredService<TelemetryRuntime>();
+
+        var logger = provider.GetRequiredService<ILogger<HostTests>>();
+
+        Assert.False(logger.IsEnabled(LogLevel.Information));
+        Assert.True(logger.IsEnabled(LogLevel.Warning));
+    }
+
+    private static IServiceCollection Compose(string? logLevel = null)
         => Composition.Compose(
-            new ServiceCollection(), name => name == "AW_STATE_DIR" ? _stateRoot : null, new FakeTimeProvider());
+            new ServiceCollection(),
+            name => name switch { "AW_STATE_DIR" => _stateRoot, "AW_LOG_LEVEL" => logLevel, _ => null },
+            new FakeTimeProvider());
 }
 ```
 
 `ValidateOnBuild` can't see inside the decorator factories `/new-slice` registers, so the test resolves every
 `IService<,>` in a scope: a missing inner service or validator registration fails here, not at the first command.
-`Telemetry_is_composed_and_exports_nothing` pins the telemetry contract: one runtime, its logger factory is the only
-`ILoggerFactory`, and exporting is off by default.
+`Telemetry_is_composed_and_exports_nothing` pins the composition: Compose registers a runtime, its logger factory is the
+only `ILoggerFactory` registration, and exporting is off by default. `The_log_level_comes_from_the_environment_Compose_is_given`
+pins that Compose hands its environment to telemetry (`AW_LOG_LEVEL=warning` turns information off). One runtime per
+process is a convention (`docs/csharp/telemetry.md`); `AddKernelTelemetry` refuses only a second call on the same
+collection. An http host's `ILoggerFactory` is checked on the real web host instead, because `WebApplicationBuilder`
+registers its own before `Compose` runs: `LoopbackBindingTests.Kernel_telemetry_is_the_only_logger` asserts the resolved
+factory is the runtime's and no `ILoggerProvider` is left.
 
 ## The red test
 
