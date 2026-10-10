@@ -1,0 +1,211 @@
+# Repo .editorconfig (agent-readiness spec §4b.6).
+#
+# Only C# and MSBuild files are configured here. TypeScript, bash and Markdown keep the behaviour of
+# their own tools (tsc, Biome/shfmt later); no [*] section, so editors keep their defaults for them.
+#
+# C# analyzer policy:
+# - Bulk baseline: every analyzer diagnostic that is on by default is an ERROR. There is no
+#   "suggestion" level for anything an agent must obey. This replaces AnalysisLevel/AnalysisMode, which
+#   don't apply with the pinned NetAnalyzers package (see Directory.Build.props); raising a whole category
+#   later means an explicit `dotnet_analyzer_diagnostic.category-<X>.severity = error` line here.
+# - Roslynator overlaps the IDE code-style rules the most, so its rules are OFF unless listed below
+#   (opt-in); the CA, IDE and Meziantou packs run at the bulk baseline.
+# - Explicit lines below raise rules that are off by default, name ONE owning rule where analyzer
+#   packs overlap (the others are set to none with "owner: <id>"), and turn off rules that conflict
+#   with the house style, each with its reason.
+# - Existing violations (once code is ported) go into the ratchet baseline at the end of this file,
+#   which may only shrink.
+root = true
+
+[*.{csproj,props,targets,slnx,xml,config}]
+indent_style = space
+indent_size = 2
+
+[*.cs]
+indent_style = space
+indent_size = 4
+end_of_line = lf
+charset = utf-8
+insert_final_newline = true
+trim_trailing_whitespace = true
+
+#### Bulk baseline ####
+dotnet_analyzer_diagnostic.severity = error
+# Roslynator off unless opted in below. (`roslynator_analyzers.enabled_by_default = false` is not enough: the
+# bulk baseline above re-enables its default-on rules.)
+dotnet_analyzer_diagnostic.category-roslynator.severity = none
+
+#### Roslynator opt-ins ####
+# Each one is a correctness rule no CA/IDE/MA rule that runs covers (checked against the default-enabled
+# descriptors of every pinned pack). Not opted in: RCS1261 (await using), a duplicate of MA0042.
+dotnet_diagnostic.RCS1075.severity = error   # empty catch clause that catches System.Exception
+dotnet_diagnostic.RCS1233.severity = error   # use the short-circuiting operator (`a & b()` always evaluates b())
+dotnet_diagnostic.RCS1164.severity = error   # unused type parameter (spec §4b.3 caps generic arity)
+dotnet_diagnostic.RCS1215.severity = error   # expression is always true or false (CA1508 is off by default)
+dotnet_diagnostic.RCS1130.severity = error   # bitwise operation on an enum without [Flags]
+dotnet_diagnostic.RCS1242.severity = error   # non-read-only struct passed as `in` (MA0168 is off by default)
+
+#### Size limits (spec §4b.6) ####
+# Method length: Meziantou MA0051, 40 lines.
+dotnet_diagnostic.MA0051.severity = error
+MA0051.maximum_lines_per_method = 40
+MA0051.maximum_statements_per_method = 40
+# Cyclomatic complexity <= 10: CA1502, limit in CodeMetricsConfig.txt.
+dotnet_diagnostic.CA1502.severity = error
+# No analyzer in these packs covers: file <= 300 lines, parameters <= 5, constructor dependencies
+# (split signal over 5, error over 7), generic type parameters <= 3, raw ids in public signatures,
+# `!` needs a `// why:` comment. None of them is enforced by this build yet; the in-repo Aw.Analyzers
+# project is where custom rules go (raw ids and the `!` reason are on its list in spec §4b.6; the others
+# need a spec entry before anyone can rely on them).
+
+#### One owner per rule (spec §4b.6, A14) ####
+# ConfigureAwait in library code — owner: CA2007, scoped to libraries. Hosts (CLI Main, minimal-API
+# endpoints) have no SynchronizationContext, so ConfigureAwait does nothing there; test projects turn it
+# off in tests/.editorconfig (xUnit1030).
+dotnet_diagnostic.CA2007.severity = error
+dotnet_code_quality.CA2007.output_kind = DynamicallyLinkedLibrary
+dotnet_diagnostic.MA0004.severity = none
+dotnet_diagnostic.RCS1090.severity = none
+# Culture / IFormatProvider — owner: CA1305.
+dotnet_diagnostic.CA1305.severity = error
+dotnet_diagnostic.MA0011.severity = none
+# StringComparison on string methods — owners: CA1307, CA1309, CA1310.
+dotnet_diagnostic.CA1307.severity = error
+dotnet_diagnostic.CA1309.severity = error
+dotnet_diagnostic.CA1310.severity = error
+dotnet_diagnostic.MA0001.severity = none
+dotnet_diagnostic.MA0006.severity = none
+dotnet_diagnostic.MA0074.severity = none
+# Forward the CancellationToken — owner: MA0040 (covers every overload, not only the ones CA2016 knows).
+dotnet_diagnostic.MA0040.severity = error
+dotnet_diagnostic.CA2016.severity = none
+# Call async methods in async code — owner: MA0042.
+dotnet_diagnostic.MA0042.severity = error
+dotnet_diagnostic.CA1849.severity = none
+# Collection abstractions in public API — owner: MA0016.
+dotnet_diagnostic.MA0016.severity = error
+dotnet_diagnostic.CA1002.severity = none
+# Seal types — owner: CA1852.
+dotnet_diagnostic.CA1852.severity = error
+dotnet_diagnostic.MA0053.severity = none
+# Argument exception parameter names — owner: CA2208.
+dotnet_diagnostic.CA2208.severity = error
+dotnet_diagnostic.MA0015.severity = none
+# Array.Empty — owner: CA1825.
+dotnet_diagnostic.CA1825.severity = error
+dotnet_diagnostic.MA0005.severity = none
+# Explicit default-value initialization — owner: CA1805.
+dotnet_diagnostic.CA1805.severity = error
+dotnet_diagnostic.RCS1129.severity = none
+# Exception constructors — owner: CA1032.
+dotnet_diagnostic.CA1032.severity = error
+dotnet_diagnostic.RCS1194.severity = none
+# Generated regex — owner: SYSLIB1045. Regex timeouts — owner: MA0009 (spec §4c: every match has a timeout).
+dotnet_diagnostic.SYSLIB1045.severity = error
+dotnet_diagnostic.MA0110.severity = none
+dotnet_diagnostic.MA0009.severity = error
+# Unused parameters / members — owners: IDE0060, IDE0051, IDE0052.
+dotnet_diagnostic.IDE0060.severity = error
+dotnet_diagnostic.IDE0051.severity = error
+dotnet_diagnostic.IDE0052.severity = error
+dotnet_diagnostic.RCS1163.severity = none
+dotnet_diagnostic.RCS1213.severity = none
+# Accessibility modifiers — owner: IDE0040.
+dotnet_diagnostic.IDE0040.severity = error
+dotnet_diagnostic.RCS1018.severity = none
+# Braces — owner: IDE0011.
+dotnet_diagnostic.IDE0011.severity = error
+dotnet_diagnostic.RCS1001.severity = none
+dotnet_diagnostic.RCS1003.severity = none
+# Whitespace and blank lines — owner: IDE0055 (`dotnet format`).
+dotnet_diagnostic.IDE0055.severity = error
+dotnet_diagnostic.RCS1036.severity = none
+dotnet_diagnostic.RCS1037.severity = none
+# Static members on generic types — owner: CA1000.
+dotnet_diagnostic.CA1000.severity = error
+dotnet_diagnostic.MA0018.severity = none
+# Conditional expressions — IDE0045 (simple if/else assignment) runs; nothing else does. IDE0046 (turn
+# if/return chains into conditional expressions) is off because it produces nested ?:. Nested ?: is NOT
+# banned by any analyzer: RCS1238 stays off with the rest of Roslynator, since enabling it would contradict
+# IDE0045 whenever a branch already holds a ?:, and Roslynator opt-ins are kept to correctness rules that
+# have no other owner. Avoiding nested ?: is a review convention, not a build rule.
+dotnet_diagnostic.IDE0046.severity = none
+dotnet_diagnostic.RCS1238.severity = none
+# Catching general exceptions — owner: CA1031 (allowed only in Host and Infrastructure boundary adapters,
+# which lower it in their own project-level config).
+dotnet_diagnostic.CA1031.severity = error
+# Null checks on public arguments — owner: the compiler's nullable analysis (CS86xx), not CA1062.
+dotnet_diagnostic.CA1062.severity = none
+
+#### Rules raised from off-by-default ####
+dotnet_diagnostic.IDE0005.severity = error   # unused usings
+dotnet_diagnostic.IDE0161.severity = error   # file-scoped namespaces
+dotnet_diagnostic.CA1515.severity = error    # internal by default in executables (Hosts); CA1515 analyzes only Exe output. In libraries, RS0016 enforces it: every public symbol must be declared in PublicAPI.*.txt (spec §4b.3)
+dotnet_diagnostic.MA0048.severity = error    # file name matches the type name
+dotnet_diagnostic.MA0026.severity = error    # no TODO comments: finish the work or open an item
+
+#### Turned off, with the reason ####
+dotnet_diagnostic.CA1303.severity = none     # literal strings: no localization in a CLI toolkit
+dotnet_diagnostic.RCS1046.severity = none    # Async suffix: services use intent names (Handle, Get) per spec §4b.2
+dotnet_diagnostic.JSON002.severity = none    # "probable JSON string": golden-file and JSON-contract literals are data; it also fails `dotnet format --verify-no-changes`
+dotnet_diagnostic.IDE0008.severity = none    # explicit types: `var` is the house style (IDE0007 owns it)
+dotnet_diagnostic.MA0038.severity = none     # deprecated by Meziantou; owner: CA1822
+dotnet_diagnostic.RCS1141.severity = none    # param docs: CS1591 owns docs on public API; <param> is optional
+dotnet_diagnostic.RCS1142.severity = none    # typeparam docs: same owner as RCS1141
+dotnet_diagnostic.RCS1140.severity = none    # exception docs: exceptions are only for bugs here (spec §4b.3), not part of a contract
+dotnet_diagnostic.CA1716.severity = none     # keyword clashes in other .NET languages: the toolkit is C#-only, and the spec names `Error`
+
+#### Code style ####
+csharp_style_namespace_declarations = file_scoped:error
+csharp_style_var_for_built_in_types = true:error
+csharp_style_var_when_type_is_apparent = true:error
+csharp_style_var_elsewhere = true:error
+dotnet_style_qualification_for_field = false:error
+dotnet_style_qualification_for_property = false:error
+dotnet_style_qualification_for_method = false:error
+dotnet_style_qualification_for_event = false:error
+dotnet_style_predefined_type_for_locals_parameters_members = true:error
+dotnet_style_require_accessibility_modifiers = always:error
+csharp_prefer_braces = true:error
+csharp_using_directive_placement = outside_namespace:error
+dotnet_sort_system_directives_first = true
+csharp_style_prefer_primary_constructors = true:error
+csharp_style_expression_bodied_methods = when_on_single_line:error
+csharp_style_expression_bodied_constructors = false:error
+csharp_style_expression_bodied_operators = when_on_single_line:error
+csharp_style_expression_bodied_properties = true:error
+csharp_style_expression_bodied_indexers = true:error
+csharp_style_expression_bodied_accessors = true:error
+csharp_style_expression_bodied_lambdas = true:error
+csharp_style_expression_bodied_local_functions = when_on_single_line:error
+dotnet_style_readonly_field = true:error
+
+# Naming: constants PascalCase; other private fields _camelCase; everything else follows .NET defaults.
+# The order of the two rules doesn't matter: Roslyn ranks the rule with a required modifier (const) first.
+dotnet_naming_rule.constants_pascal.symbols = constant_fields
+dotnet_naming_rule.constants_pascal.style = pascal
+dotnet_naming_rule.constants_pascal.severity = error
+dotnet_naming_symbols.constant_fields.applicable_kinds = field
+dotnet_naming_symbols.constant_fields.applicable_accessibilities = *
+dotnet_naming_symbols.constant_fields.required_modifiers = const
+dotnet_naming_style.pascal.capitalization = pascal_case
+dotnet_naming_rule.private_fields_underscore.symbols = private_fields
+dotnet_naming_rule.private_fields_underscore.style = underscore_camel
+dotnet_naming_rule.private_fields_underscore.severity = error
+dotnet_naming_symbols.private_fields.applicable_kinds = field
+dotnet_naming_symbols.private_fields.applicable_accessibilities = private
+dotnet_naming_style.underscore_camel.capitalization = camel_case
+dotnet_naming_style.underscore_camel.required_prefix = _
+
+#### Ratchet baseline (spec §4b.6) ####
+# Existing violations, one section per file, lowering ONLY the named rule for ONLY that file. New code never
+# gets an entry. Planned enforcement (the ratchet job, workstream W2; not in CI yet): compare only the region
+# after the sentinel line below with the base branch and fail if it grew; fail if any key other than a
+# per-file `dotnet_diagnostic.<id>.severity` appears after the sentinel, or a per-file section appears before
+# it. That keeps the policy above (approval-tier) and the generated baseline below separable in review.
+# It lives here, last in the file, rather than in a .globalconfig: a global config cannot lower a rule that
+# this .editorconfig sets (editorconfig wins), and global-config sections need absolute paths.
+# Format:
+#   [src/Pkg/Pkg.Core/SomeFile.cs]
+#   dotnet_diagnostic.MA0051.severity = none   # existing: 52-line method; split tracked in its work item
+# ---- ratchet-baseline: generated entries only below this line ----
