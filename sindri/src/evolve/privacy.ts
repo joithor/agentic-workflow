@@ -61,33 +61,43 @@ export function patternProblem(text: string, patterns: readonly string[]): strin
   return patterns.some((p) => forms.some((f) => new RegExp(p, "iu").test(f))) ? "matches a privacy.denyPatterns entry" : null;
 }
 
-// Verbatim overlap (spec 5.5): a run of RUN_WORDS normalized words shared with a transcript line is a quote.
+// Verbatim overlap (spec 5.5): a run of RUN_WORDS normalized words shared with a cited session is a quote, and so is a
+// whole short turn (SHORT_MIN to RUN_WORDS - 1 words) found as a contiguous run in the candidate.
 export const RUN_WORDS = 8;
+export const SHORT_MIN = 4;
 const wordsOf = (text: string): string[] => normalizeForPrivacy(text).split(/[^\p{L}\p{N}]+/u).filter((w) => w !== "");
 export const runWords = (text: string): string => wordsOf(text).join(" ");
 
 function runsOf(text: string): Set<string> {
-  const w = wordsOf(text);
+  return runsOfWords(wordsOf(text));
+}
+
+function runsOfWords(w: readonly string[]): Set<string> {
   const out = new Set<string>();
   for (let i = 0; i + RUN_WORDS <= w.length; i++) out.add(w.slice(i, i + RUN_WORDS).join(" "));
   return out;
 }
 
 // One session's text as the verbatim layer compares it, computed once per session per publish run.
+// `runs` come from the session's lines joined in order, so a quote that crosses from one turn into the next is a run
+// too (sessions are never joined to each other); `short` holds each turn of SHORT_MIN to RUN_WORDS - 1 words, whole.
 export interface SessionShingles {
   runs: ReadonlySet<string>;
+  short: readonly string[];
 }
 
 export function shingleSession(lines: readonly string[]): SessionShingles {
-  const runs = new Set<string>();
-  for (const line of lines) for (const run of runsOf(line)) runs.add(run);
-  return { runs };
+  const perLine = lines.map(wordsOf);
+  const short = perLine.filter((w) => w.length >= SHORT_MIN && w.length < RUN_WORDS).map((w) => w.join(" "));
+  return { runs: runsOfWords(perLine.flat()), short: [...new Set(short)] };
 }
 
-// `isPublic(run)` says whether the run already appears in the toolkit's own tracked text; those are not leaks.
+// `isPublic(run)` says whether a run (or a whole short turn) already appears in the toolkit's own public text; those
+// are not leaks.
 export function copiedFrom(text: string, sessions: readonly SessionShingles[], isPublic: (run: string) => boolean): boolean {
-  const mine = runsOf(text);
-  return [...mine].some((run) => sessions.some((s) => s.runs.has(run)) && !isPublic(run));
+  const padded = ` ${runWords(text)} `;
+  const copiedRunHere = [...runsOf(text)].some((run) => sessions.some((s) => s.runs.has(run)) && !isPublic(run));
+  return copiedRunHere || sessions.some((s) => s.short.some((turn) => padded.includes(` ${turn} `) && !isPublic(turn)));
 }
 
 const CORPUS_FILE_MAX = 1_000_000;

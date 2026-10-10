@@ -480,6 +480,22 @@ describe("publish gate layers (privacy B1)", () => {
     expect(JSON.stringify(held)).not.toMatch(/rota/);
   });
 
+  it("verbatim: a short human turn copied whole into the title holds", async () => {
+    const held = await heldLayer(
+      { title: "Migrate the zorb ledger sync before freeze", evidence: ["transcript:5e55a1d0#1"] },
+      { files: (fx) => ({ [SESSION]: transcriptLine(fx, "migrate the zorb ledger sync before freeze") }) },
+    );
+    expect(held).toEqual([{ layer: "verbatim", why: "copies transcript text" }]);
+  });
+
+  it("verbatim: a quote spanning two turns of a cited session holds", async () => {
+    const held = await heldLayer(
+      { rationale: "So the overnight rota swap left two shifts uncovered.", evidence: ["transcript:5e55a1d0#1"] },
+      { files: (fx) => ({ [SESSION]: transcriptLine(fx, "why did the overnight rota swap") + transcriptLine(fx, "left two shifts uncovered on the ward") }) },
+    );
+    expect(held).toEqual([{ layer: "verbatim", why: "copies transcript text" }]);
+  });
+
   it("verbatim: a run copied from a session the evidence doesn't reference still passes (the gate's scope)", async () => {
     const other = "0ddba11e-0000-4000-8000-000000000002.jsonl";
     const held = await heldLayer(

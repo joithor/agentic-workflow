@@ -181,4 +181,29 @@ describe("copiedFrom (privacy B1, verbatim overlap)", () => {
   it("passes text shorter than a run", () => {
     expect(copiedRun("the overnight rota", [src], never)).toBe(false);
   });
+
+  it("finds a run that spans two turns of one session (joined across turns)", () => {
+    const session = shingleSession(["please check why the overnight rota swap", "left two shifts without cover again"]);
+    expect(copiedFrom("Fix: the overnight rota swap left two shifts without a lead", [session], never)).toBe(true);
+    // Sessions are never joined to each other.
+    const apart = [shingleSession(["please check why the overnight rota swap"]), shingleSession(["left two shifts without cover again"])];
+    expect(copiedFrom("Fix: the overnight rota swap left two shifts without a lead", apart, never)).toBe(false);
+  });
+
+  it("finds a short turn (4 to 7 words) copied whole, ignoring case and punctuation", () => {
+    for (const turn of ["fix the zorb reconcile cron", "Fix the zorb reconcile cron for payroll!", "migrate the ledger sync first"]) {
+      expect(copiedFrom(`Title: ${turn.toUpperCase()} soon`, [shingleSession([turn])], never), turn).toBe(true);
+    }
+  });
+
+  it("passes a 3-word turn copied whole, and a short turn copied only in part (near misses)", () => {
+    expect(copiedFrom("Please retry flaky checks today", [shingleSession(["retry flaky checks"])], never)).toBe(false);
+    expect(copiedFrom("fix the zorb reconcile job", [shingleSession(["fix the zorb reconcile cron"])], never)).toBe(false);
+    expect(copiedFrom("prefix the zorb reconcile cronjob", [shingleSession(["fix the zorb reconcile cron"])], never)).toBe(false); // whole words only
+  });
+
+  it("passes a short turn the toolkit's own text already holds", () => {
+    const pub = ` ${runWords("Run the done gate first")} `;
+    expect(copiedFrom("Always run the done gate first.", [shingleSession(["run the done gate first"])], (t) => pub.includes(` ${t} `))).toBe(false);
+  });
 });
