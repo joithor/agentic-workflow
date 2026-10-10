@@ -30,8 +30,8 @@
 #           (never a Host, Infrastructure, Features or App); anything else fails DEPS-PROJ-007 (§4b.1a
 #           "only through their Core contracts"). The reference sits in Features (App in the small shape)
 #           or Host: Core and Infrastructure use tier-0 packages only (DEPS-PROJ-008, §4b.1). Which tier-0
-#           package a Core may use (Aw.Kernel, not Aw.Kernel.Data) is left to BannedSymbols and the
-#           ArchUnitNET tests.
+#           package Core and Features may use (Aw.Kernel only, not Aw.Kernel.Data, Telemetry or Redaction)
+#           is ARCH-DIR-005 in tests/Aw.Architecture.Tests.
 #           Test code is every project under tests/, plus any project named *.Tests or *.Testing (also
 #           with a further suffix, such as *.Tests.Integration). Names with a .Testing segment are
 #           test-support (a package's fakes, builders, contract bases; KernelTesting is the shared one,

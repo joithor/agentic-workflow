@@ -2,7 +2,8 @@ namespace Aw.Architecture.Tests.Rules;
 
 /// <summary>
 /// Every external technology sits behind a port (csharp.md Seams): Core, Features and the small shape's App.Commands use
-/// no technology type, and only Composition uses Infrastructure (Host, including Program, and App.Commands).
+/// no technology type, and only Composition uses Infrastructure (the rest of Host and App.Commands don't; a top-level
+/// Program's body isn't visible to ArchUnitNET, so review checks it).
 /// </summary>
 public static class PortRules
 {
