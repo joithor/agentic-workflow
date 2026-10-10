@@ -2,22 +2,31 @@
 
 Logging, spans and metrics for every C# host, with `Aw.Redaction`'s scrubber on every log and export path (spec §4b.1,
 §4d "runtime hardening", §5 W7). Tier 0, sublevel 1 in `deps.yaml` (edges to `Kernel` and `Redaction`); its one
-external dependency is `OpenTelemetry` (which brings `Microsoft.Extensions.Logging`).
+external dependency is `OpenTelemetry`. Its closure (see `src/Aw.Kernel.Telemetry/packages.lock.json`) also brings
+`Microsoft.Extensions.Logging`, `.Logging.Configuration`, `.Configuration` (with `.Binder` and the
+`.EnvironmentVariables` provider), `.Options` and `.DependencyInjection` into every host: nothing in this repo may use
+`IConfiguration` (csharp.md DI rules), and no exporter, OTLP, gRPC or HTTP package is in it.
 
 ## Start it in the Host
 
 ```csharp
-// Program.cs (a CLI host): level from AW_LOG_LEVEL, log lines to standard error, nothing exported.
-var options = TelemetryOptions.FromEnvironment("aw-readiness", Environment.GetEnvironmentVariable);
-if (options.IsError) { Console.Error.WriteLine(options.Error.Message); return 2; }
-services.AddKernelTelemetry(options.Value);          // in Compose: TelemetryRuntime, ILoggerFactory, ILogger<T>
+// Composition.Compose(services, environment, clock) — the signature every Host has (csharp.md DI rules):
+services.AddKernelTelemetry(TelemetryOptions.FromEnvironment("aw-readiness", environment, clock));
+// A host that exports picks the adapter here too: … with { TraceExporter = <adapter from Infrastructure> }.
 ```
 
-OpenTelemetry's SDK also reads its standard `OTEL_*` environment variables (sampler, resource attributes, limits).
-None of them can turn exporting on: no exporter package is referenced, so only an exporter the host passes exports.
+`FromEnvironment` reads `AW_LOG_LEVEL` and takes the host's clock (a `FakeTimeProvider` in the DI validation test). It
+never fails the host: an unknown level stays at information and sets `TelemetryOptions.Problem`
+(`AW-TELEMETRY-001`, without the value, which could be anything pasted into the variable); the runtime writes it once
+as its first line, a warning whose `eventName` is the code. Without DI, `using var telemetry =
+TelemetryRuntime.Start(options)` and `telemetry.LoggerFactory`. Disposing the runtime flushes it; the DI container
+disposes the singleton for you. Run **one runtime per process**: the withheld counter is process-wide.
 
-Without DI, `using var telemetry = TelemetryRuntime.Start(options)` and `telemetry.LoggerFactory`. Disposing the
-runtime flushes it; the DI container disposes the singleton for you.
+OpenTelemetry's SDK reads some standard `OTEL_*` variables. The resource is exactly `service.name` from `ServiceName`
+(`ResourceBuilder.CreateEmpty()`, so `OTEL_SERVICE_NAME` and `OTEL_RESOURCE_ATTRIBUTES` are ignored), and the sampler
+is set in code (always on, so `OTEL_TRACES_SAMPLER` is ignored). `OTEL_SDK_DISABLED=true` still turns the providers
+off: spans aren't recorded and log lines then carry null ids. None of them can turn exporting on: only an exporter
+the host passes exports.
 
 | Option | Default | Notes |
 |---|---|---|
@@ -40,24 +49,34 @@ One JSON object per line, written with `Utf8JsonWriter` (no reflection), relaxed
 - `timestamp` in the AwJson `O` form (UTC, seven fractional digits, `Z`); `level` lowercase; `eventId` always,
   `eventName` and `exception` (the exception's `ToString()`) only when present.
 - `traceId`/`spanId`: the current `Activity`, or `null` outside a span. The tracer provider records spans even with
-  exporting off, so log lines inside a span always carry ids.
+  exporting off (unless `OTEL_SDK_DISABLED=true`), so log lines inside a span carry ids.
 - `actor`, `tenant`, `ring`, `correlationId`, `causationId`: from the innermost `EventContext` scope
   (`logger.BeginScope(context)`). Other scope states are not written.
-- `fields`: the structured values of a `[LoggerMessage]` call, as invariant text.
+- `fields`: the structured values of a `[LoggerMessage]` call, as invariant text (a list as its elements joined with
+  ", "). A name the template repeats gets a numbered key (`A`, `A_2`), so no JSON property repeats.
 - Log through `[LoggerMessage]` source-generated methods (`CA1848`); hand finished text to `ILogger.Log` only when the
   text is built at run time.
 
 ## Scrubbing on every path
 
+A name counts as a secret's when `IRedactor.IsSecretName` says so after a leading `@` or `$` (template destructuring
+prefixes) is removed.
+
 | Path | What happens |
 |---|---|
-| Log line | category, event name, message, exception and every field scrubbed; a field whose **name** is a secret's (`IsSecretName`: password, token, api_key, Authorization, …) is withheld whole (`[REDACTED:secret-field]`), and so is its hole in the message (the message is re-rendered from its template) |
-| Span | the scrubbing processor runs first, before any export processor: name, tag values (secret-named tags withheld) and status description are rewritten in place. Events and links can't be rewritten, so a span with a secret in an event or link is **dropped** (marked not recorded) |
-| Metric | the exporter is wrapped: a metric stream with a secret tag value or a secret-named tag is **dropped** (metric tags should be small fixed sets) |
-| Blocked scrub (a match timeout) | never passes raw text: a log line is written with `[REDACTED:blocked]` in place of the text; a span or metric stream is dropped |
+| Log line | category, event name, message, exception (`ToString()`, inner exceptions included) and every field scrubbed; a field with a secret's **name** is withheld whole (`[REDACTED:secret-field]`), and so is its hole in the message (the message is rendered again from its template, positionally, with alignment and format, as the formatter does) |
+| Span (only with a trace exporter) | the scrubbing processor runs before the export processor: name, tag values and status description are rewritten in place. A tag with a secret's name is withheld whatever its type; numbers and flags are kept; a list is scrubbed element by element (the tag becomes a string array); any other object is scrubbed as its text. Events and links can't be rewritten, so a span with a secret in an event or link (including list values) is **dropped** (marked not recorded). Without an exporter nothing leaves the process, so spans aren't touched |
+| Metric | the exporter is wrapped: an instrument with any point whose tag carries a secret (by value, list element or name) is **withheld** from every export for the life of the process (cumulative points come back each time) and counted once. Metric tags should be small fixed sets |
+| Blocked scrub (a match timeout) | never passes raw text: a log line is written with `[REDACTED:blocked]` in place of the text; a span or metric instrument is dropped |
+| Failure (the sink or a value's `ToString()` throws) | never thrown into the caller: the log line or span is dropped and counted as `failure`; `Flush` and `Dispose` never throw (a writer the host already closed is counted too) |
 
-Withheld records are counted: `TelemetryRuntime.Withheld` (logs, spans, metrics) and the counter
-`aw.telemetry.scrub.withheld` with tag `path` (`log`, `span`, `metric`), never with the payload.
+Withheld records are counted: `TelemetryRuntime.Withheld` (logs, spans, metrics, failures, for this runtime) and the
+process-wide counter `aw.telemetry.scrub.withheld` with tag `path` (`log`, `span`, `metric`, `failure`), never with
+the payload.
+
+**Limit:** the wrapped metric exporter's `ParentProvider` stays unset (OpenTelemetry's setter is internal), so an
+exporter that reads its resource from the provider sees none, and metric exports carry no `service.name`. The OTLP
+adapter, when a host adds one, has to take the resource explicitly.
 
 ## The sink port
 

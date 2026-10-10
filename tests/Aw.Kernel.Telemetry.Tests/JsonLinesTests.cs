@@ -130,4 +130,15 @@ public sealed class JsonLinesTests
         Assert.NotNull(exception);
         Assert.StartsWith("System.InvalidOperationException: boom", exception, StringComparison.Ordinal);
     }
+
+    [Fact]
+    public void A_repeated_field_name_gets_a_numbered_key_so_no_property_repeats()
+    {
+        using var h = new Harness();
+        h.Logger().EmitTemplate("{A} then {A}", ("A", 1), ("A", 2));
+
+        var fields = Assert.Single(h.Lines()).GetProperty("fields");
+        Assert.Equal("1", fields.GetProperty("A").GetString());
+        Assert.Equal("2", fields.GetProperty("A_2").GetString());
+    }
 }

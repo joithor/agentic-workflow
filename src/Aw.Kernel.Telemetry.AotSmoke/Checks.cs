@@ -14,14 +14,8 @@ internal static class Checks
 
     public static async Task<int> StdinMode()
     {
-        var options = TelemetryOptions.FromEnvironment(Service, Environment.GetEnvironmentVariable);
-        if (options.IsError)
-        {
-            await Console.Error.WriteLineAsync($"{options.Error.Code}: {options.Error.Message}").ConfigureAwait(false);
-            return 2;
-        }
-
-        using var runtime = TelemetryRuntime.Start(options.Value with { Sink = new TextWriterLogSink(Console.Out) });
+        var options = TelemetryOptions.FromEnvironment(Service, Environment.GetEnvironmentVariable, TimeProvider.System);
+        using var runtime = TelemetryRuntime.Start(options with { Sink = new TextWriterLogSink(Console.Out) });
         var logger = runtime.LoggerFactory.CreateLogger("Aw.Smoke.Stdin");
         while (await Console.In.ReadLineAsync().ConfigureAwait(false) is { } text)
         {
@@ -36,6 +30,8 @@ internal static class Checks
     {
         var sink = LogCheck(output);
         var collector = SpanCheck(output);
+        MetricCheck(output);
+        RegistrationCheck(output);
         var leaked = sink.Lines.Exists(l => l.Contains(Samples.Body, StringComparison.Ordinal))
             || collector.Spans.Exists(s => s.TagObjects.Any(t => Text(t.Value).Contains(Samples.Body, StringComparison.Ordinal)));
         Write(output, $"secret in any output: {(leaked ? "yes" : "no")}");
@@ -90,6 +86,37 @@ internal static class Checks
         var withheld = runtime.Withheld;
         Write(output, $"withheld: logs={withheld.Logs} spans={withheld.Spans} metrics={withheld.Metrics}");
         return collector;
+    }
+
+    private static void MetricCheck(TextWriter output)
+    {
+        var metrics = new MetricCollector();
+        using var meter = new System.Diagnostics.Metrics.Meter("Aw.Smoke.Metrics");
+        using var runtime = TelemetryRuntime.Start(new TelemetryOptions { ServiceName = Service, Sink = new MemorySink(), MetricExporter = metrics });
+        var counter = meter.CreateCounter<long>("aw.smoke.calls");
+        var leaky = meter.CreateCounter<long>("aw.smoke.leaky");
+        counter.Add(2, new KeyValuePair<string, object?>("kind", "check"));
+        leaky.Add(1, new KeyValuePair<string, object?>("header", Samples.Bearer));
+        runtime.Flush();
+        runtime.Flush();
+        Write(output, $"metric streams exported: {string.Join(',', metrics.Names.Where(n => n.StartsWith("aw.smoke", StringComparison.Ordinal)).Distinct(StringComparer.Ordinal))}");
+        Write(output, $"withheld metrics: {runtime.Withheld.Metrics}");
+    }
+
+    private static void RegistrationCheck(TextWriter output)
+    {
+        var sink = new MemorySink();
+        var services = new Microsoft.Extensions.DependencyInjection.ServiceCollection()
+            .AddKernelTelemetry(new TelemetryOptions { ServiceName = Service, Sink = sink, SourcePattern = "Aw.Smoke.Registration" });
+        using (var provider = Microsoft.Extensions.DependencyInjection.ServiceCollectionContainerBuilderExtensions.BuildServiceProvider(services))
+        {
+            var logger = Microsoft.Extensions.DependencyInjection.ServiceProviderServiceExtensions.GetRequiredService<ILogger<MemorySink>>(provider);
+            Emit(logger, LogLevel.Information, default, "from DI " + Samples.GithubToken);
+        }
+
+        var line = JsonDocument.Parse(sink.Lines[0]).RootElement;
+        Write(output, $"DI logger category: {line.GetProperty("category").GetString()}");
+        Write(output, $"DI logger message: {line.GetProperty("message").GetString()}");
     }
 
     private static void Emit(ILogger logger, LogLevel level, EventId eventId, string text) =>

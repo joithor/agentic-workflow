@@ -1,25 +1,35 @@
+using System.Diagnostics.CodeAnalysis;
 using OpenTelemetry;
 using OpenTelemetry.Metrics;
 
 namespace Aw.Kernel.Telemetry;
 
 /// <summary>
-/// Wraps the host's metric exporter. A metric stream with a tag whose value scrubs to anything but clean (or whose name
-/// is a secret's) can't be rewritten, so the whole stream is dropped from the batch and counted. Metric tags should be
-/// small fixed sets; a secret there is a bug, and it never leaves the process.
+/// Wraps the host's metric exporter. A metric's points can't be rewritten, so an instrument with any point whose tag
+/// carries a secret (by value or by name), or whose scrub was blocked or failed, is withheld from every export for the
+/// life of the process (cumulative points come back each time) and counted once. Metric tags should be small fixed
+/// sets; a secret there is a bug, and it never leaves the process.
 /// </summary>
+/// <remarks>
+/// The wrapped exporter's ParentProvider stays unset (its setter is internal to OpenTelemetry), so an exporter that
+/// reads the resource from it sees none: docs/csharp/telemetry.md.
+/// </remarks>
+[ExportModes(ExportModes.Push)]
 internal sealed class ScrubbingMetricExporter(BaseExporter<Metric> inner, Scrubber scrubber, Withheld withheld) : BaseExporter<Metric>
 {
+    private readonly HashSet<string> _withheld = new(StringComparer.Ordinal);
+
     public override ExportResult Export(in Batch<Metric> batch)
     {
         var kept = new List<Metric>();
         foreach (var metric in batch)
         {
-            if (IsClean(metric))
+            var id = metric.MeterName + "/" + metric.Name;
+            if (!_withheld.Contains(id) && IsClean(metric))
             {
                 kept.Add(metric);
             }
-            else
+            else if (_withheld.Add(id))
             {
                 withheld.Metric();
             }
@@ -42,15 +52,24 @@ internal sealed class ScrubbingMetricExporter(BaseExporter<Metric> inner, Scrubb
         base.Dispose(disposing);
     }
 
+    [SuppressMessage("Design", "CA1031:Do not catch general exception types", Justification = "A tag value whose text throws makes the instrument unexportable; it is withheld and counted, never thrown into the metric reader.")]
     private bool IsClean(Metric metric)
     {
         var tally = default(ScrubTally);
-        foreach (ref readonly var point in metric.GetMetricPoints())
+        try
         {
-            foreach (var tag in point.Tags)
+            foreach (ref readonly var point in metric.GetMetricPoints())
             {
-                _ = scrubber.ScrubField(tag.Key, tag.Value, ref tally);
+                foreach (var tag in point.Tags)
+                {
+                    _ = scrubber.ScrubValue(tag.Key, tag.Value, ref tally);
+                }
             }
+        }
+        catch (Exception)
+        {
+            withheld.Failure();
+            return false;
         }
 
         return tally.Clean;

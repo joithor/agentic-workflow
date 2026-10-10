@@ -142,4 +142,66 @@ public sealed class SpanTests
         Assert.Equal(3, exported.GetTagItem("count"));
         Assert.Equal(true, exported.GetTagItem("ok"));
     }
+
+    [Fact]
+    public void An_array_tag_with_a_secret_is_rewritten_element_by_element()
+    {
+        using var h = new Harness(export: true);
+        using (var span = h.Source.StartActivity("work"))
+        {
+            _ = span!.SetTag("headers", new[] { Secrets.Bearer, "plain" });
+        }
+
+        h.Runtime.Flush();
+
+        var headers = Assert.IsType<string[]>(Assert.Single(h.Spans!.Exported).GetTagItem("headers"));
+        Assert.Equal(2, headers.Length);
+        Assert.Contains("[REDACTED:", headers[0], StringComparison.Ordinal);
+        Assert.DoesNotContain(Secrets.Body, headers[0], StringComparison.Ordinal);
+        Assert.Equal("plain", headers[1]);
+    }
+
+    [Fact]
+    public void A_span_whose_event_has_an_array_tag_with_a_secret_is_dropped()
+    {
+        using var h = new Harness(export: true);
+        using (var span = h.Source.StartActivity("work"))
+        {
+            _ = span!.AddEvent(new ActivityEvent("sent", tags: new ActivityTagsCollection { ["body"] = new[] { Secrets.Bearer } }));
+        }
+
+        h.Runtime.Flush();
+
+        Assert.Empty(h.Spans!.Exported);
+        Assert.Equal(1, h.Runtime.Withheld.Spans);
+    }
+
+    [Fact]
+    public void A_numeric_tag_with_a_secret_name_is_withheld()
+    {
+        using var h = new Harness(export: true);
+        using (var span = h.Source.StartActivity("work"))
+        {
+            _ = span!.SetTag("auth.token", 123456789L);
+        }
+
+        h.Runtime.Flush();
+
+        Assert.Equal("[REDACTED:secret-field]", Assert.Single(h.Spans!.Exported).GetTagItem("auth.token"));
+    }
+
+    [Fact]
+    public void A_tag_of_another_type_is_scrubbed_as_its_text()
+    {
+        using var h = new Harness(export: true);
+        using (var span = h.Source.StartActivity("work"))
+        {
+            _ = span!.SetTag("remote", new Uri("https://deploy:" + Secrets.Body + "@example.com/repo.git"));
+        }
+
+        h.Runtime.Flush();
+
+        var remote = Assert.IsType<string>(Assert.Single(h.Spans!.Exported).GetTagItem("remote"));
+        Assert.DoesNotContain(Secrets.Body, remote, StringComparison.Ordinal);
+    }
 }

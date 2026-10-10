@@ -93,4 +93,32 @@ public sealed class LogScrubbingTests
         var line = Assert.Single(h.Lines());
         Assert.Equal("{took 1,234.50} as [REDACTED:secret-field]", line.GetProperty("message").GetString());
     }
+
+    [Theory]
+    [InlineData("login {@Password}", "@Password")]
+    [InlineData("using {$Token}", "$Token")]
+    public void A_destructuring_prefix_does_not_hide_a_secret_name(string template, string key)
+    {
+        using var h = new Harness();
+
+        h.Logger().EmitTemplate(template, (key, "hunter2-plain"));
+
+        var line = Assert.Single(h.Lines());
+        Assert.Equal("[REDACTED:secret-field]", line.GetProperty("fields").GetProperty(key).GetString());
+        Assert.DoesNotContain("hunter2", h.Sink.Text, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void An_array_field_is_written_as_its_scrubbed_elements()
+    {
+        using var h = new Harness();
+
+        h.Logger().EmitTemplate("sent {Headers}", ("Headers", new[] { Secrets.Bearer, "plain" }));
+
+        var headers = Assert.Single(h.Lines()).GetProperty("fields").GetProperty("Headers").GetString();
+        Assert.NotNull(headers);
+        Assert.Contains("[REDACTED:", headers, StringComparison.Ordinal);
+        Assert.EndsWith(", plain", headers, StringComparison.Ordinal);
+        Assert.DoesNotContain(Secrets.Body, h.Sink.Text, StringComparison.Ordinal);
+    }
 }

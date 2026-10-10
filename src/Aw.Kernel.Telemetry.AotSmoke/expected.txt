@@ -10,4 +10,8 @@ span name: call [REDACTED:github-token]
 span tag header: Authorization: Bearer [REDACTED:bearer]
 span tag count: 2
 withheld: logs=0 spans=1 metrics=0
+metric streams exported: aw.smoke.calls
+withheld metrics: 1
+DI logger category: Aw.Kernel.Telemetry.AotSmoke.MemorySink
+DI logger message: from DI [REDACTED:github-token]
 secret in any output: no

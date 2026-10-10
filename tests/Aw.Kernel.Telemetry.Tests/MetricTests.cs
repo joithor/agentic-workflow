@@ -67,7 +67,49 @@ public sealed class MetricTests
         h.Runtime.Flush();
         h.Runtime.Flush();
 
-        var withheld = Assert.Single(h.Metrics!.Exported, m => m.Name == "aw.telemetry.scrub.withheld");
+        // Cumulative: each flush exports the counter again, so look at the last export.
+        var withheld = h.Metrics!.Exported.Last(m => m.Name == "aw.telemetry.scrub.withheld");
         Assert.Contains(withheld.PointTags, p => p["path"] == "metric");
+    }
+
+    [Fact]
+    public void An_instrument_withheld_once_is_counted_once_however_often_it_is_exported()
+    {
+        using var h = new Harness(export: true);
+        var counter = h.Meter.CreateCounter<long>("aw.test.sticky");
+
+        counter.Add(1, new KeyValuePair<string, object?>("header", Secrets.Bearer));
+        counter.Add(1, new KeyValuePair<string, object?>("header", "clean"));
+        h.Runtime.Flush();
+        h.Runtime.Flush();
+        h.Runtime.Flush();
+
+        Assert.DoesNotContain(h.Metrics!.Exported, m => m.Name == "aw.test.sticky");
+        Assert.Equal(1, h.Runtime.Withheld.Metrics);
+    }
+
+    [Fact]
+    public void A_metric_stream_with_an_array_tag_carrying_a_secret_is_dropped()
+    {
+        using var h = new Harness(export: true);
+        var counter = h.Meter.CreateCounter<long>("aw.test.array");
+
+        counter.Add(1, new KeyValuePair<string, object?>("hdr", new[] { Secrets.Bearer }));
+        h.Runtime.Flush();
+
+        Assert.DoesNotContain(h.Metrics!.Exported, m => m.Name == "aw.test.array");
+        Assert.Equal(1, h.Runtime.Withheld.Metrics);
+    }
+
+    [Fact]
+    public void A_metric_stream_with_a_secret_named_numeric_tag_is_dropped()
+    {
+        using var h = new Harness(export: true);
+        var counter = h.Meter.CreateCounter<long>("aw.test.pin");
+
+        counter.Add(1, new KeyValuePair<string, object?>("pin_token", 123456));
+        h.Runtime.Flush();
+
+        Assert.DoesNotContain(h.Metrics!.Exported, m => m.Name == "aw.test.pin");
     }
 }

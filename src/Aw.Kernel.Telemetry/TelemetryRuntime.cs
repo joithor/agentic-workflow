@@ -8,29 +8,28 @@ namespace Aw.Kernel.Telemetry;
 
 /// <summary>
 /// The running telemetry of one process: the logger factory (JSON lines through the scrubber), the tracer provider
-/// (the scrubbing processor, then the exporter if one was given) and the meter provider (only when a metric exporter
-/// was given). Start it once in the host and dispose it on exit, which flushes. The runtime owns the exporters it was
-/// given and disposes them.
+/// (always sampling, so log lines inside a span carry its ids; with a trace exporter, the scrubbing processor and then
+/// the export processor) and the meter provider (only when a metric exporter was given). Start one per process in the
+/// host and dispose it on exit, which flushes. The runtime owns the exporters it was given and disposes them.
 /// </summary>
 public sealed class TelemetryRuntime : IDisposable
 {
-    private readonly ILogSink _sink;
+    private readonly JsonLinesLoggerProvider _logs;
     private readonly Withheld _withheld;
     private readonly TracerProvider _tracer;
     private readonly MeterProvider? _meter;
 
     private TelemetryRuntime(TelemetryOptions options, ILogSink sink, Withheld withheld)
     {
-        _sink = sink;
         _withheld = withheld;
         var scrubber = new Scrubber(options.Redactor);
-        LoggerFactory = new LoggerFactory(
-            [new JsonLinesLoggerProvider(sink, scrubber, options.Clock, withheld)],
-            new LoggerFilterOptions { MinLevel = options.MinimumLevel });
-        _tracer = BuildTracer(options, scrubber, withheld);
+        _logs = new JsonLinesLoggerProvider(sink, scrubber, options.Clock, withheld);
+        var factory = new LoggerFactory([], new LoggerFilterOptions { MinLevel = options.MinimumLevel });
+        factory.AddProvider(_logs);
+        LoggerFactory = factory;
+        (_tracer, ExportProcessorCount) = BuildTracer(options, scrubber, withheld);
         _meter = options.MetricExporter is { } metricExporter ? BuildMeter(options, metricExporter, scrubber, withheld) : null;
-        IsExporting = options.TraceExporter is not null || options.MetricExporter is not null;
-        ExportProcessorCount = options.TraceExporter is null ? 0 : 1;
+        IsExporting = ExportProcessorCount > 0 || _meter is not null;
     }
 
     /// <summary>Creates loggers that write scrubbed JSON lines.</summary>
@@ -39,51 +38,58 @@ public sealed class TelemetryRuntime : IDisposable
     /// <summary>True when an exporter was given. False by default: nothing leaves the process.</summary>
     public bool IsExporting { get; }
 
-    /// <summary>What the scrubber withheld so far.</summary>
+    /// <summary>What telemetry withheld so far.</summary>
     public WithheldCounts Withheld => _withheld.Counts;
 
-    /// <summary>How many export processors run after the scrubbing processor (0 when exporting is off).</summary>
+    /// <summary>How many export processors the tracer provider was built with (0 when exporting is off).</summary>
     internal int ExportProcessorCount { get; }
 
-    /// <summary>Starts telemetry with <paramref name="options"/>.</summary>
+    /// <summary>Starts telemetry with <paramref name="options"/>; writes <see cref="TelemetryOptions.Problem"/> first, if any.</summary>
     /// <param name="options">The options.</param>
     /// <returns>The runtime.</returns>
     public static TelemetryRuntime Start(TelemetryOptions options)
     {
         ArgumentNullException.ThrowIfNull(options);
-        return new TelemetryRuntime(options, options.Sink ?? new TextWriterLogSink(Console.Error), new Withheld());
+        var runtime = new TelemetryRuntime(options, options.Sink ?? new TextWriterLogSink(Console.Error), new Withheld());
+        if (options.Problem is { } problem)
+        {
+            runtime.LoggerFactory.CreateLogger("Aw.Kernel.Telemetry").Log(
+                LogLevel.Warning, new EventId(1, problem.Code), problem.Message, exception: null, static (state, _) => state);
+        }
+
+        return runtime;
     }
 
-    /// <summary>Exports what is buffered (spans, metrics) and flushes the log sink.</summary>
+    /// <summary>Exports what is buffered (spans, metrics) and flushes the log sink. Never throws; a failed flush is counted.</summary>
     public void Flush()
     {
         _ = _tracer.ForceFlush();
         _ = _meter?.ForceFlush();
-        _sink.Flush();
+        _logs.Flush();
     }
 
     /// <inheritdoc />
     public void Dispose()
     {
-        LoggerFactory.Dispose();
         _tracer.Dispose();
         _meter?.Dispose();
-        _withheld.Dispose();
-        _sink.Flush();
+        LoggerFactory.Dispose();
     }
 
-    private static TracerProvider BuildTracer(TelemetryOptions options, Scrubber scrubber, Withheld withheld)
+    private static (TracerProvider Provider, int ExportProcessors) BuildTracer(TelemetryOptions options, Scrubber scrubber, Withheld withheld)
     {
+        // The sampler is set in code, so OTEL_TRACES_SAMPLER can't turn span recording (and the ids in log lines) off.
         var builder = Sdk.CreateTracerProviderBuilder()
             .SetResourceBuilder(ResourceBuilder.CreateEmpty().AddService(options.ServiceName))
-            .AddSource(options.SourcePattern)
-            .AddProcessor(new ScrubbingActivityProcessor(scrubber, withheld));
-        if (options.TraceExporter is { } exporter)
+            .SetSampler(new AlwaysOnSampler())
+            .AddSource(options.SourcePattern);
+        if (options.TraceExporter is not { } exporter)
         {
-            builder = builder.AddProcessor(new SimpleActivityExportProcessor(exporter));
+            return (builder.Build(), 0);
         }
 
-        return builder.Build();
+        builder = builder.AddProcessor(new ScrubbingActivityProcessor(scrubber, withheld)).AddProcessor(new SimpleActivityExportProcessor(exporter));
+        return (builder.Build(), 1);
     }
 
     private static MeterProvider BuildMeter(TelemetryOptions options, BaseExporter<Metric> exporter, Scrubber scrubber, Withheld withheld) =>

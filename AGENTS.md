@@ -40,6 +40,7 @@ Domain-specific rules live in `.agents/rules/` — one file per rule, the only c
 | Database | `Microsoft.Data.Sqlite` with its bundled `e_sqlite3` (shipped beside each AOT tool), new C# schemas, WAL mode |
 | MCP | Official MCP C# SDK |
 | JSON | System.Text.Json, one source-generated context per package |
+| Logging | `Aw.Kernel.Telemetry`: JSON lines on stderr (`AW_LOG_LEVEL`), OpenTelemetry spans and metrics, exporting off by default, scrubbed by `Aw.Redaction` |
 | Analyzers | NetAnalyzers, Meziantou, Roslynator, BannedApiAnalyzers, PublicApiAnalyzers (one owner per rule, `.editorconfig`) |
 | Test | xUnit v3 on Microsoft.Testing.Platform (decided, R7), lanes `unit` / `integration` / `heavy` |
 | Packages | Central Package Management (`Directory.Packages.props`), locked restore, nuget.org only (`nuget.config`) |
@@ -58,7 +59,7 @@ agentic-workflow/
 ├── sindri/        # Sindri core: profile, ledger, lock, scrubber, plan-file tracker, observe, doctor (CLI)
 ├── mods/          # Claude Code mods (in-process function hooks): aw-live /live pane. Claude-only
 ├── planning/      # Project documentation
-├── src/           # C# build (in progress): Aw.Kernel, Redaction, Aw.Analyzers, then one package per port — Core · Features · Infrastructure · Host
+├── src/           # C# build (in progress): Aw.Kernel (+ .Data, .Telemetry), Redaction, Aw.Analyzers, then one package per port — Core · Features · Infrastructure · Host
 ├── tests/         # C# tests: Aw.<Pkg>.Tests (by feature), Aw.<Pkg>.Testing (fakes, builders, contract bases), Aw.Architecture.Tests
 ├── global.json · AgenticWorkflow.slnx · Directory.Build.props · Directory.Build.targets · Directory.Packages.props · nuget.config · .editorconfig · CodeMetricsConfig.txt · BannedSymbols.txt
 ├── .agents/rules/ # Glob-scoped domain rules (.claude/rules and .cursor/rules link here)

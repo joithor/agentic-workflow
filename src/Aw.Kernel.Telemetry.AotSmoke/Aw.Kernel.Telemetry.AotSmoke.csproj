@@ -1,7 +1,8 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <!-- NativeAOT canary for Aw.Kernel.Telemetry: run.sh publishes it with PublishAot, fails on any trim/AOT
        (IL2xxx/IL3xxx) warning, runs the native binary and compares its stdout with expected.txt. It covers the
-       JSON-lines logger, the OpenTelemetry tracer and meter providers, and the scrubbing processor under NativeAOT.
+       JSON-lines logger, the OpenTelemetry tracer and meter providers with the scrubbing span processor and metric
+       exporter, and the AddKernelTelemetry registration with ILogger<T> resolved from DI, under NativeAOT.
        With "stdin-mode" it logs each standard-input line and prints the JSON lines (the hand test in the stage proof).
        - Not in AgenticWorkflow.slnx and no lock file, like Aw.Kernel.AotSmoke: PublishAot makes restore resolve the
          host RID's ILCompiler packs, so a lock file would be per-OS. -->

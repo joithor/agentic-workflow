@@ -24,6 +24,14 @@ internal static partial class Log
     [LoggerMessage(Level = LogLevel.Error, Message = "failed")]
     public static partial void Failed(ILogger logger, Exception exception);
 
+    /// <summary>Logs the state Microsoft.Extensions.Logging builds for a template: the fields in hole order, then the template.</summary>
+    public static void EmitTemplate(this ILogger logger, string template, params (string Key, object? Value)[] fields)
+    {
+        IReadOnlyList<KeyValuePair<string, object?>> state =
+            [.. fields.Select(f => new KeyValuePair<string, object?>(f.Key, f.Value)), new("{OriginalFormat}", template)];
+        logger.Log(LogLevel.Information, default, state, exception: null, (s, _) => string.Join(' ', s.Select(f => f.Value)));
+    }
+
     public static void Emit(this ILogger logger, LogLevel level, string text, EventId eventId = default) =>
         logger.Log(level, eventId, text, exception: null, static (state, _) => state);
 }

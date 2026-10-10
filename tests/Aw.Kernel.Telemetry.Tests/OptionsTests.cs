@@ -1,5 +1,6 @@
 using Aw.Kernel.Testing;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Time.Testing;
 
 namespace Aw.Kernel.Telemetry.Tests;
 
@@ -25,23 +26,43 @@ public sealed class OptionsTests
     [InlineData("none", LogLevel.None)]
     public void The_level_comes_from_AW_LOG_LEVEL(string? value, LogLevel expected)
     {
-        var options = TelemetryOptions.FromEnvironment("aw-demo", n => n == TelemetryOptions.LevelVariable ? value : null);
+        var clock = new FakeTimeProvider();
+        var options = TelemetryOptions.FromEnvironment("aw-demo", n => n == TelemetryOptions.LevelVariable ? value : null, clock);
 
-        Assert.True(options.IsSuccess);
-        Assert.Equal(expected, options.Value.MinimumLevel);
-        Assert.Equal("aw-demo", options.Value.ServiceName);
+        Assert.Equal(expected, options.MinimumLevel);
+        Assert.Equal("aw-demo", options.ServiceName);
+        Assert.Same(clock, options.Clock);
+        Assert.Null(options.Problem);
     }
 
     [Theory]
     [InlineData("loud")]
     [InlineData("3")]
-    public void An_unknown_level_is_an_invalid_setting(string value)
+    public void An_unknown_level_falls_back_to_information_and_records_the_problem_without_the_value(string value)
     {
-        var options = TelemetryOptions.FromEnvironment("aw-demo", _ => value);
+        var options = TelemetryOptions.FromEnvironment("aw-demo", _ => value, TimeProvider.System);
 
-        Assert.True(options.IsError);
-        Assert.Equal("AW-TELEMETRY-001", options.Error.Code);
-        Assert.Contains(TelemetryOptions.LevelVariable, options.Error.Message, StringComparison.Ordinal);
+        Assert.Equal(LogLevel.Information, options.MinimumLevel);
+        Assert.NotNull(options.Problem);
+        Assert.Equal("AW-TELEMETRY-001", options.Problem.Code);
+        Assert.Contains(TelemetryOptions.LevelVariable, options.Problem.Message, StringComparison.Ordinal);
+        Assert.DoesNotContain(value, options.Problem.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void The_runtime_writes_the_problem_as_its_first_line()
+    {
+        var sink = new Testing.InMemoryLogSink();
+        var options = TelemetryOptions.FromEnvironment("aw-demo", _ => "s3cr3t-pasted-here", TimeProvider.System) with { Sink = sink };
+
+        using (TelemetryRuntime.Start(options))
+        {
+        }
+
+        var line = System.Text.Json.JsonDocument.Parse(Assert.Single(sink.Lines)).RootElement;
+        Assert.Equal("warning", line.GetProperty("level").GetString());
+        Assert.Equal("AW-TELEMETRY-001", line.GetProperty("eventName").GetString());
+        Assert.DoesNotContain("s3cr3t", sink.Text, StringComparison.Ordinal);
     }
 
     [Fact]

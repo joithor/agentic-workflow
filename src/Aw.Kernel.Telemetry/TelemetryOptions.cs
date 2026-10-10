@@ -39,23 +39,38 @@ public sealed record TelemetryOptions
     /// <summary>The metric exporter, an adapter the host opts into. Null (the default): metrics are never collected or exported.</summary>
     public BaseExporter<Metric>? MetricExporter { get; init; }
 
-    /// <summary>Options for <paramref name="serviceName"/> with the level read from <see cref="LevelVariable"/>.</summary>
+    /// <summary>
+    /// A problem found while reading the environment (an unknown <see cref="LevelVariable"/>), or null. The runtime writes
+    /// it once, as a warning line with the error code as its event name, and carries on with the default.
+    /// </summary>
+    public Error? Problem { get; init; }
+
+    /// <summary>
+    /// Options for <paramref name="serviceName"/> with the level read from <see cref="LevelVariable"/> and the host's
+    /// clock. An unknown level never fails the host: the level stays information and <see cref="Problem"/> says why,
+    /// without echoing the value (it could be anything pasted into the variable).
+    /// </summary>
     /// <param name="serviceName">The service name.</param>
-    /// <param name="environment">Reads an environment variable (Environment.GetEnvironmentVariable in Program.cs).</param>
-    /// <returns>The options, or AW-TELEMETRY-001 when the level isn't one of the names above.</returns>
-    public static Result<TelemetryOptions> FromEnvironment(string serviceName, Func<string, string?> environment)
+    /// <param name="environment">Reads an environment variable (Environment.GetEnvironmentVariable in Program.cs, a lambda in tests).</param>
+    /// <param name="clock">The host's clock (the one Compose receives).</param>
+    /// <returns>The options.</returns>
+    public static TelemetryOptions FromEnvironment(string serviceName, Func<string, string?> environment, TimeProvider clock)
     {
         ArgumentNullException.ThrowIfNull(environment);
+        var options = new TelemetryOptions { ServiceName = serviceName, Clock = clock };
         var value = environment(LevelVariable);
         if (string.IsNullOrEmpty(value))
         {
-            return new TelemetryOptions { ServiceName = serviceName };
+            return options;
         }
 
         return _levels.TryGetValue(value, out var level)
-            ? new TelemetryOptions { ServiceName = serviceName, MinimumLevel = level }
-            : TelemetryErrors.InvalidSetting.With(
-                $"{LevelVariable}='{value}' is not a level: use trace, debug, information, warning, error, critical or none.");
+            ? options with { MinimumLevel = level }
+            : options with
+            {
+                Problem = TelemetryErrors.InvalidSetting.With(
+                    $"{LevelVariable} is not a level (trace, debug, information, warning, error, critical or none); logging at information."),
+            };
     }
 
     private static readonly Dictionary<string, LogLevel> _levels = new(StringComparer.OrdinalIgnoreCase)
