@@ -128,7 +128,8 @@ Aw.<Name>.Host/
 ├── Endpoints/EndpointTable.cs         # internal static: MapGroup("/<name>"); /new-slice adds one Map<Slice>() line
 ├── HttpResults.cs                     # internal static: Result<T> → TypedResults / ProblemDetails (ToHttpResult)
 ├── LoopbackBinding.cs                 # the only listener: Listen(IPAddress.Loopback, port) (spec §4d, below)
-└── LoopbackGuard.cs                   # middleware: non-loopback Host → 400; non-loopback browser Origin → 403
+├── LoopbackGuard.cs                   # middleware: non-loopback Host → 400; non-loopback browser Origin → 403
+└── ValueObjectValidation.cs           # middleware: Vogen's ValueObjectValidationException → 400 (typed-ids.md step 4)
 tests/Aw.<Name>.Tests/LoopbackBindingTests.cs   # every override vector, Host 400, Origin 403 (Lane=integration)
 ```
 
@@ -142,8 +143,45 @@ command line) and `--urls` (the R1a spike found two of these binding all interfa
 `Origin: https://example.com` (expects 403). No `HOST` variable, no `ALLOW_REMOTE` switch, no wildcard CORS.
 
 The http Host applies the same JSON profile in `ConfigureHttpJsonOptions`: `o.SerializerOptions` is read-only, so it
-copies the settings and resolver of `AwJson.CreateOptions(<Name>JsonContext.Default)` into it. And
-`HttpResults` maps Vogen's validation exception to a 400 as well as `Result` errors to `ProblemDetails`.
+copies the settings and resolver of `AwJson.CreateOptions(<Name>JsonContext.Default)` into it.
+
+`HttpResults` maps only a returned `Result`: values to `TypedResults`, errors to `ProblemDetails`. It never sees Vogen's
+`ValueObjectValidationException`, which is thrown during binding or at an uninitialized id's first `.Value` (ASP.NET
+passes `default(T)` for an empty `?id=` without calling `TryParse`), before any `Result` exists. That exception is
+mapped to 400 by pipeline middleware, `ValueObjectValidation.cs`, registered in `Program.cs` with
+`app.UseValueObjectValidation()` before the endpoint table is mapped:
+
+```csharp
+using Vogen;
+
+namespace Aw.<Name>.Host;
+
+/// <summary>Maps Vogen's validation exception (an uninitialized id from an empty route or query value) to 400.</summary>
+internal static class ValueObjectValidation
+{
+    internal static WebApplication UseValueObjectValidation(this WebApplication app)
+    {
+        _ = app.Use(async (context, next) =>
+        {
+            try
+            {
+                await next(context).ConfigureAwait(false);
+            }
+            catch (ValueObjectValidationException) when (!context.Response.HasStarted)
+            {
+                context.Response.StatusCode = StatusCodes.Status400BadRequest;
+            }
+        });
+        return app;
+    }
+}
+```
+
+The body is `docs/csharp/typed-ids.md` step 4, proven under NativeAOT (500 without it, 400 with it). It is covered by
+the route-binding test `/new-slice` adds before the first id binds a route (`tests/Aw.<Name>.Tests/Ids/<Id>RouteBindingTests.cs`,
+Lane=integration): through `WebApplicationFactory`, with this middleware in the pipeline, valid route or query text →
+200 with the id's value; text the type refuses → 400; an empty `?id=` → 400; and the endpoint's
+`ParameterBindingMetadata` reports the id as route/query with `hasTryParse: true`, never as a body.
 
 `HttpResults` lives in each HTTP host
 for now; the second HTTP package moves it into a tier-0 Kernel part (second use → generalize). It can't go in
