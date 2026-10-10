@@ -15,7 +15,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="../../src/Aw.Kernel.Testing/Aw.Kernel.Testing.csproj" />
+    <ProjectReference Include="../Aw.Kernel.Testing/Aw.Kernel.Testing.csproj" />
   </ItemGroup>
 
   <ItemGroup>

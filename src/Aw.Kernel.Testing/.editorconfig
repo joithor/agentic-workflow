@@ -1,4 +1,0 @@
-# Aw.Kernel.Testing ships contract-test bases: their public [Fact] methods are inherited by test classes in
-# package test projects, so they follow the test naming rule (spec §4b.5).
-[ReadRepositoryContract.cs]
-dotnet_diagnostic.CA1707.severity = none   # contract test names are sentences with underscores

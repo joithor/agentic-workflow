@@ -52,9 +52,9 @@ public abstract class ReadRepositoryContract<TEntity, TId>
     {
         const string test = nameof(Get_returns_the_seeded_entity);
         var entity = NewEntity(1);
-        await SeedChecked(test, entity).ConfigureAwait(false);
+        await SeedChecked(test, entity);
 
-        var found = await GetChecked(test, IdOf(entity)).ConfigureAwait(false);
+        var found = await GetChecked(test, IdOf(entity));
 
         ExpectFound(test, entity, found);
     }
@@ -68,12 +68,12 @@ public abstract class ReadRepositoryContract<TEntity, TId>
         TEntity[] entities = [NewEntity(1), NewEntity(2), NewEntity(3)];
         foreach (var entity in entities)
         {
-            await SeedChecked(test, entity).ConfigureAwait(false);
+            await SeedChecked(test, entity);
         }
 
         foreach (var entity in entities)
         {
-            var found = await GetChecked(test, IdOf(entity)).ConfigureAwait(false);
+            var found = await GetChecked(test, IdOf(entity));
             ExpectFound(test, entity, found);
         }
     }
@@ -84,12 +84,12 @@ public abstract class ReadRepositoryContract<TEntity, TId>
     public async Task Get_of_a_missing_id_is_a_not_found_error()
     {
         const string test = nameof(Get_of_a_missing_id_is_a_not_found_error);
-        await SeedChecked(test, NewEntity(1)).ConfigureAwait(false);
+        await SeedChecked(test, NewEntity(1));
         var missing = MissingId();
         Result<TEntity> found;
         try
         {
-            found = await Get(missing, Token).ConfigureAwait(false);
+            found = await Get(missing, Token);
         }
         catch (Exception e)
         {
@@ -114,14 +114,14 @@ public abstract class ReadRepositoryContract<TEntity, TId>
     {
         const string test = nameof(Exists_is_true_only_for_seeded_ids);
         var entity = NewEntity(1);
-        await SeedChecked(test, entity).ConfigureAwait(false);
+        await SeedChecked(test, entity);
 
-        if (!await ExistsChecked(test, IdOf(entity)).ConfigureAwait(false))
+        if (!await ExistsChecked(test, IdOf(entity)))
         {
             throw Violation(test, $"Exists({IdOf(entity)}) is false for a stored entity.");
         }
 
-        if (await ExistsChecked(test, MissingId()).ConfigureAwait(false))
+        if (await ExistsChecked(test, MissingId()))
         {
             throw Violation(test, $"Exists({MissingId()}) is true for an id nobody stored.");
         }
@@ -139,7 +139,7 @@ public abstract class ReadRepositoryContract<TEntity, TId>
     {
         try
         {
-            await Seed(entity, Token).ConfigureAwait(false);
+            await Seed(entity, Token);
         }
         catch (Exception e)
         {
@@ -151,7 +151,7 @@ public abstract class ReadRepositoryContract<TEntity, TId>
     {
         try
         {
-            return await Get(id, Token).ConfigureAwait(false);
+            return await Get(id, Token);
         }
         catch (Exception e)
         {
@@ -163,7 +163,7 @@ public abstract class ReadRepositoryContract<TEntity, TId>
     {
         try
         {
-            return await Exists(id, Token).ConfigureAwait(false);
+            return await Exists(id, Token);
         }
         catch (Exception e)
         {
