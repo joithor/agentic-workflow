@@ -366,7 +366,7 @@ agentic-workflow/
 ├── AgenticWorkflow.slnx
 ├── src/
 │   ├── Aw.Kernel/                     # Result, Error, IService<,>, decorators, contracts
-│   ├── Aw.Kernel.Data/ · Aw.Kernel.Telemetry/ · Aw.Kernel.Testing/
+│   ├── Aw.Kernel.Data/ · Aw.Kernel.Telemetry/
 │   ├── Aw.Analyzers/                  # repo-specific Roslyn rules
 │   ├── Sindri/   (Aw.Sindri.Core · Aw.Sindri.Features · Aw.Sindri.Infrastructure · Aw.Sindri.Host)
 │   ├── Judge/    (Aw.Judge.Core · … · Aw.Judge.Host)
@@ -374,6 +374,7 @@ agentic-workflow/
 │   └── Bridge/   (…)                  # minimal API host
 ├── tests/
 │   ├── Aw.Architecture.Tests/         # one assembly for every rule in §4b.1
+│   ├── Aw.Kernel.Testing/             # shared fakes base, builders, contract bases, golden harness
 │   ├── Aw.Sindri.Tests/               # by feature; lanes as traits
 │   ├── Aw.Sindri.Testing/             # fakes + builders + contract bases
 │   └── …
