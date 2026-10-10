@@ -30,6 +30,13 @@ ${groups.join("\n\n")}
 const kernel = "../../Aw.Kernel/Aw.Kernel.csproj";
 /** Only the host (full: Host; small: the App exe) references telemetry; it starts it in Compose (spec §4b.4). */
 const kernelTelemetry = "../../Aw.Kernel.Telemetry/Aw.Kernel.Telemetry.csproj";
+
+/**
+ * True when the package has a host that starts Kernel telemetry, so the host project references Aw.Kernel.Telemetry and
+ * deps.yaml carries the <Name> → KernelTelemetry edge. The one source for the csproj references, the edge and the
+ * NP-FANOUT count. Takes the raw inputs, so the generator can call it before it builds the package record.
+ */
+export const startsTelemetry = ({ host }) => host !== "none";
 const dependsCores = (p) => p.depends.map((d) => `../../${d}/Aw.${d}.Core/Aw.${d}.Core.csproj`);
 
 // ---------------------------------------------------------------- Core
@@ -215,7 +222,7 @@ export const appCsproj = (p) => {
       `<RootNamespace>Aw.${p.name}.App</RootNamespace>`,
     ],
     packages: exe ? ["Microsoft.Extensions.DependencyInjection"] : ["Microsoft.Extensions.DependencyInjection.Abstractions"],
-    projects: [`../Aw.${p.name}.Core/Aw.${p.name}.Core.csproj`, kernel, ...(exe ? [kernelTelemetry] : []), ...dependsCores(p)],
+    projects: [`../Aw.${p.name}.Core/Aw.${p.name}.Core.csproj`, kernel, ...(startsTelemetry(p) ? [kernelTelemetry] : []), ...dependsCores(p)],
     visibleTo: [`Aw.${p.name}.Tests`, `Aw.${p.name}.Testing`],
   });
 };
@@ -581,6 +588,7 @@ public sealed class HostTests
 
         using var provider = services.BuildServiceProvider(
             new ServiceProviderOptions { ValidateOnBuild = true, ValidateScopes = true });
+        _ = provider.GetRequiredService<TelemetryRuntime>();   // so the container disposes it, as Program.cs does
         using var scope = provider.CreateScope();
 
         Assert.NotEmpty(serviceTypes);
@@ -590,14 +598,15 @@ public sealed class HostTests
     [Fact, Trait("Lane", "unit")]
     public void Telemetry_is_composed_and_exports_nothing()
     {
-        using var provider = Compose().BuildServiceProvider(
+        var services = Compose();
+        using var provider = services.BuildServiceProvider(
             new ServiceProviderOptions { ValidateOnBuild = true, ValidateScopes = true });
 
         var runtime = provider.GetRequiredService<TelemetryRuntime>();
 
         Assert.False(runtime.IsExporting);
+        _ = Assert.Single(services, d => d.ServiceType == typeof(ILoggerFactory));
         Assert.Same(runtime.LoggerFactory, provider.GetRequiredService<ILoggerFactory>());
-        Assert.NotNull(provider.GetRequiredService<ILogger<HostTests>>());
     }
 
     private static IServiceCollection Compose()

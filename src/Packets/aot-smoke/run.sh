@@ -9,6 +9,8 @@
 # makes restore add the host RID's ILCompiler packs to the lock files, so it never runs on the checkout, whose lock files
 # stay RID-free.
 set -euo pipefail
+# The binary writes Kernel telemetry to stderr, which expected.txt captures: run at the default level whatever the caller set.
+unset AW_LOG_LEVEL
 
 here="$(cd "$(dirname "$0")" && pwd)"
 out="$here/../../../artifacts/aot-packets-smoke"

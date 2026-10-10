@@ -64,6 +64,32 @@ One JSON object per line, written with `Utf8JsonWriter` (no reflection), relaxed
 - Log through `[LoggerMessage]` source-generated methods (`CA1848`); hand finished text to `ILogger.Log` only when the
   text is built at run time.
 
+## Standard error is diagnostic (the CLI stderr contract)
+
+A CLI host's log lines share standard error with its own error output: the error envelope its `CommandOutput` writes
+(`{"code","kind","message"}`, the Kernel `Error`) and `usage:` text. So a program that calls one of these CLIs (a `cli` edge in
+`deps.yaml`, such as sindri running `aw-readiness check --json`) reads:
+
+- **the result from standard output** (`--json` where the command offers it) and **the outcome from the exit code**
+  (0 success, 1 an expected error, 2 usage or tool error);
+- **the error from standard error only to show it**, and when it must parse it, the one line that has a `code` member
+  and no `level` member. A log line always has `timestamp` and `level`, and an error envelope never has `level`.
+
+Standard error is otherwise diagnostic: its log lines change with `AW_LOG_LEVEL` and with what the code logs, so
+nothing parses them as a contract. Golden tests and smokes that capture standard error pin the level (the AOT smokes
+`unset AW_LOG_LEVEL`).
+
+## Framework logs in http hosts
+
+An http host clears ASP.NET's logging providers (`/new-package`'s `LoopbackBinding`), so Kernel's factory is the only
+logger and ASP.NET's own lines (lifetime, hosting diagnostics, routing, Kestrel) are scrubbed JSON too. The factory
+filters by `MinimumLevel` only, with no per-category rules, and the host reads no `Logging:LogLevel` configuration.
+At the default level, information, each request therefore writes its hosting and routing lines, where a stock ASP.NET
+app would hold `Microsoft.AspNetCore` at warning. This is deliberate for now: these hosts are local, loopback-only and
+low-traffic, and the request lines carry the trace ids. A host that finds them too loud sets `AW_LOG_LEVEL=warning`;
+per-category minimums (`Microsoft.*` and `System.*` at warning) are a `TelemetryOptions` change for when the first
+http package (Bridge) needs them.
+
 ## Scrubbing on every path
 
 A name counts as a secret's when `IRedactor.IsSecretName` says so after a leading `@` or `$` (template destructuring

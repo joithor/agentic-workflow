@@ -62,8 +62,11 @@ export function resolvePackage(journal, input) {
   const depends = list(input.depends);
   const repeated = depends.find((d, i) => depends.indexOf(d) !== i);
   if (repeated) throw new ScaffoldError("NP-DEPENDS", `${repeated} is listed twice`, "list each package once");
-  const refs = 2 + depends.length;
-  if (refs > 4) throw new ScaffoldError("NP-FANOUT", `${shape === "small" ? "App" : "Features"} would hold ${refs} in-repo references (Core, Aw.Kernel and ${depends.length} depends); the limit is 4`, "depend on fewer packages, or reach one through its CLI");
+  // Features (full) or App (small) holds Core, Aw.Kernel and one Core per depends entry; a small App is also the host, so
+  // it references Aw.Kernel.Telemetry too (a full Host is exempt from fan-out).
+  const telemetryRef = shape === "small" && P.startsTelemetry({ host }) ? 1 : 0;
+  const refs = 2 + telemetryRef + depends.length;
+  if (refs > 4) throw new ScaffoldError("NP-FANOUT", `${shape === "small" ? "App" : "Features"} would hold ${refs} in-repo references (Core, Aw.Kernel${telemetryRef ? ", Aw.Kernel.Telemetry" : ""} and ${depends.length} depends); the limit is 4`, "depend on fewer packages, or reach one through its CLI");
   for (const d of depends) {
     const node = R.nodeOf(deps, d);
     if (!node || node.kind !== "package") throw new ScaffoldError("NP-DEPENDS", `'${d}' is not a package in deps.yaml`, "depend only on declared packages");
@@ -183,7 +186,7 @@ export function writePackage(journal, p) {
   R.addToSolution(journal, p.name, prod.map((x) => x.path), tests.map((x) => x.path));
   if (!p.declared) R.addDepsNode(journal, p);
   const edges = [R.ensureProjectEdge(journal, p.name, "Kernel", "Result, IService, ports (scaffolded by /new-package)")];
-  if (p.host !== "none") edges.push(R.ensureProjectEdge(journal, p.name, "KernelTelemetry", "the host starts Kernel telemetry in Compose (scaffolded by /new-package)"));
+  if (P.startsTelemetry(p)) edges.push(R.ensureProjectEdge(journal, p.name, "KernelTelemetry", "the host starts Kernel telemetry in Compose (scaffolded by /new-package)"));
   for (const d of p.depends) edges.push(R.ensureProjectEdge(journal, p.name, d, `${p.name}'s Features reference ${d}'s Core (scaffolded by /new-package)`));
   R.registerWithArchitectureTests(journal, prod);
   return { prod, tests, edges };

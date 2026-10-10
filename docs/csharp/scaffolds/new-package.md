@@ -23,7 +23,7 @@ first move is the TDD step.
 | `note` | one line: what the package is for | Used for the `deps.yaml` node when the package isn't declared yet |
 | `shape` | `small` (Core + App) or `full` (Core, Features, Infrastructure, Host) | `small` unless the package is expected over ~1,500 lines |
 | `host` | `cli`, `http` or `none` | `cli` → NativeAOT console app; `http` → minimal API with `CreateSlimBuilder`; `none` → library. `http` and `none` need `shape: full`: `shape: small` with `host: http` is refused with `NP-SMALL-HTTP` (the Web SDK's generated public `Program` would land in `App`, a library with `RS0016` on), and with `host: none` with `NP-SMALL-NONE` (nothing could call `App`'s internal `Add…()` methods) |
-| `depends` | list of package names | Each must be in a lower tier (checked against `deps.yaml`). Project edges from this package's `Features` (`App` in the small shape) to their `Core`. Refused with `NP-FANOUT` if that project would hold more than 4 in-repo references |
+| `depends` | list of package names | Each must be in a lower tier (checked against `deps.yaml`). Project edges from this package's `Features` (`App` in the small shape) to their `Core`. Refused with `NP-FANOUT` if that project would hold more than 4 in-repo references: `Features` holds Core, Aw.Kernel and the depends; the small shape's `App` is also the host, so it holds Aw.Kernel.Telemetry too (at most 1 depends) |
 | `binary` | the executable name, e.g. `aw-readiness` | `^[a-z][a-z0-9-]{1,40}$`; default `<name lowercase>`. The `AssemblyName` of the Host (or the small shape's `App`) |
 | `firstSlice` | PascalCase use-case name, e.g. `CheckRepo`, plus its `behavior` | Passed to `/new-slice` to generate the first red test, with the slice's `command` or `route`, `ids` and `ports` (`new-slice.md`) |
 
@@ -84,11 +84,12 @@ src/<Name>/
 │   └── <Name>InfrastructureServiceCollectionExtensions.cs   # public static Add<Name>Infrastructure(this IServiceCollection, Func<string, string?> environment)
 └── Aw.<Name>.Host/
     ├── Aw.<Name>.Host.csproj          # OutputType=Exe; AwAotEntryPoint=true; PublishAot only under a RID; AssemblyName=<binary>;
-    │                                  # refs DI; InternalsVisibleTo Aw.<Name>.Tests
+    │                                  # refs DI, the package's Core, Features and Infrastructure, Aw.Kernel and
+    │                                  # Aw.Kernel.Telemetry (only the host references it); InternalsVisibleTo Aw.<Name>.Tests
     ├── .editorconfig                  # root = false; [*.cs] dotnet_diagnostic.CA1031.severity = none  (composition root)
     ├── packages.lock.json
-    ├── Program.cs                     # calls Composition.Compose, then the command table
-    ├── Composition.cs                 # internal static class Composition { Compose(...) }; the only file that uses Infrastructure
+    ├── Program.cs                     # calls Composition.Compose, resolves TelemetryRuntime, then the command table
+    ├── Composition.cs                 # internal static class Composition { Compose(...) }: starts Kernel telemetry; the only file that uses Infrastructure
     ├── Commands/CommandTable.cs       # internal static: command name → handler; /new-slice adds one switch arm per slice
     ├── Commands/CommandOutput.cs      # internal static: Result → one JSON line on stdout (0) or the error on stderr (1); usage (2)
     └── <Name>JsonContext.cs           # internal partial class, [JsonSerializable] source-generated; used only through AwJson.CreateOptions
@@ -139,7 +140,7 @@ tests/
 
 **`shape: small`** replaces `Features`, `Infrastructure` and `Host` with one `Aw.<Name>.App` project: same files under
 `Features/`, `Infrastructure/`, `Commands/`, same `Add…()` methods, `OutputType=Exe` when `host`
-is `cli` (then `AwAotEntryPoint=true` and `PublishAot` under a RuntimeIdentifier too, see csharp.md "AOT scope"; `http` is refused for `small`, see Inputs). `App` is a library under `Directory.Build.props`' project roles, so it gets
+is `cli` (then `AwAotEntryPoint=true` and `PublishAot` under a RuntimeIdentifier too, see csharp.md "AOT scope"; `http` is refused for `small`, see Inputs). As the host, `App` references `Aw.Kernel.Telemetry` beside the package's `Core` and `Aw.Kernel`, and `App` isn't exempt from fan-out the way a `Host` is (`NP-FANOUT` counts it). `App` is a library under `Directory.Build.props`' project roles, so it gets
 `IsAotCompatible=true` from the root. Nothing outside the package references `App`, and with `host: cli` it is an Exe,
 where `CA1515` (an error under the root `.editorconfig`) rejects public types. So `App`'s types, its `Add…()` methods
 and its slice request and response records are `internal`; `App` declares `InternalsVisibleTo Aw.<Name>.Tests,
@@ -415,6 +416,7 @@ public sealed class HostTests
 
         using var provider = services.BuildServiceProvider(
             new ServiceProviderOptions { ValidateOnBuild = true, ValidateScopes = true });
+        _ = provider.GetRequiredService<TelemetryRuntime>();   // so the container disposes it, as Program.cs does
         using var scope = provider.CreateScope();
 
         Assert.NotEmpty(serviceTypes);
@@ -424,14 +426,15 @@ public sealed class HostTests
     [Fact, Trait("Lane", "unit")]
     public void Telemetry_is_composed_and_exports_nothing()
     {
-        using var provider = Compose().BuildServiceProvider(
+        var services = Compose();
+        using var provider = services.BuildServiceProvider(
             new ServiceProviderOptions { ValidateOnBuild = true, ValidateScopes = true });
 
         var runtime = provider.GetRequiredService<TelemetryRuntime>();
 
         Assert.False(runtime.IsExporting);
+        _ = Assert.Single(services, d => d.ServiceType == typeof(ILoggerFactory));
         Assert.Same(runtime.LoggerFactory, provider.GetRequiredService<ILoggerFactory>());
-        Assert.NotNull(provider.GetRequiredService<ILogger<HostTests>>());
     }
 
     private static IServiceCollection Compose()

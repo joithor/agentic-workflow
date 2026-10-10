@@ -22,6 +22,7 @@ public sealed class HostTests
 
         using var provider = services.BuildServiceProvider(
             new ServiceProviderOptions { ValidateOnBuild = true, ValidateScopes = true });
+        _ = provider.GetRequiredService<TelemetryRuntime>();   // so the container disposes it, as Program.cs does
         using var scope = provider.CreateScope();
 
         Assert.NotEmpty(serviceTypes);
@@ -31,14 +32,15 @@ public sealed class HostTests
     [Fact, Trait("Lane", "unit")]
     public void Telemetry_is_composed_and_exports_nothing()
     {
-        using var provider = Compose().BuildServiceProvider(
+        var services = Compose();
+        using var provider = services.BuildServiceProvider(
             new ServiceProviderOptions { ValidateOnBuild = true, ValidateScopes = true });
 
         var runtime = provider.GetRequiredService<TelemetryRuntime>();
 
         Assert.False(runtime.IsExporting);
+        _ = Assert.Single(services, d => d.ServiceType == typeof(ILoggerFactory));
         Assert.Same(runtime.LoggerFactory, provider.GetRequiredService<ILoggerFactory>());
-        Assert.NotNull(provider.GetRequiredService<ILogger<HostTests>>());
     }
 
     private static IServiceCollection Compose()

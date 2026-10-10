@@ -99,6 +99,38 @@ t("NP-DEPENDS: not a lower tier", () => untouched((d) => refused(pkg(d, { depend
 t("NP-DEPENDS: unknown package", () => untouched((d) => refused(pkg(d, { depends: "Nope" }), "NP-DEPENDS")));
 t("NP-FANOUT: more than 4 references", () =>
   untouched((d) => refused(pkg(d, { name: "Fanout", tier: "3", note: "x", "error-prefix": "FANOUT", depends: "Judge,Bridge,Packets" }), "NP-FANOUT")));
+// A small App is its own host, so it also references Aw.Kernel.Telemetry: Core + Kernel + Telemetry + 2 depends = 5.
+t("NP-FANOUT: a small App with 2 depends counts the telemetry reference", () =>
+  untouched((d) => {
+    const r = pkg(d, { name: "Fanout", tier: "2", note: "x", "error-prefix": "FANOUT", binary: "aw-fanout", depends: "Readiness,Packets" });
+    refused(r, "NP-FANOUT");
+    assert.match(r.out, /App would hold 5 in-repo references \(Core, Aw\.Kernel, Aw\.Kernel\.Telemetry and 2 depends\)/);
+  }));
+t("NP-FANOUT: a small App with 1 depend, and full Features with 2, stay within 4", () => {
+  const ported = () => {   // a tree where Readiness and Packets are ported (their Core projects exist)
+    const d = tree();
+    for (const n of ["Readiness", "Packets"]) {
+      const rel = `src/${n}/Aw.${n}.Core/Aw.${n}.Core.csproj`;
+      fs.mkdirSync(path.dirname(path.join(d, rel)), { recursive: true });
+      fs.copyFileSync(path.join(REPO, rel), path.join(d, rel));
+    }
+    return d;
+  };
+  const small = pkg(ported(), { name: "Fanout", tier: "2", note: "x", "error-prefix": "FANOUT", binary: "aw-fanout", depends: "Packets" });
+  assert.equal(small.code, 0, small.out);
+  const full = pkg(ported(), { name: "Fanout", tier: "2", note: "x", "error-prefix": "FANOUT", binary: "aw-fanout", shape: "full", depends: "Readiness,Packets" });
+  assert.equal(full.code, 0, full.out);
+});
+t("full cli: the Host starts telemetry (Program, csproj, deps edge)", () => {
+  const d = tree();
+  const r = pkg(d, { name: "Democli", tier: "1", note: "a scaffold probe", "error-prefix": "DEMOCLI", shape: "full", binary: "aw-democli" });
+  assert.equal(r.code, 0, r.out);
+  const host = "src/Democli/Aw.Democli.Host";
+  assert.match(read(d, `${host}/Composition.cs`), /\.AddKernelTelemetry\(TelemetryOptions\.FromEnvironment\("aw-democli", environment, clock\)\)/);
+  assert.match(read(d, `${host}/Program.cs`), /_ = provider\.GetRequiredService<TelemetryRuntime>\(\);/);
+  assert.match(read(d, `${host}/Aw.Democli.Host.csproj`), /<ProjectReference Include="\.\.\/\.\.\/Aw\.Kernel\.Telemetry\/Aw\.Kernel\.Telemetry\.csproj" \/>/);
+  assert.match(read(d, "deps.yaml"), /- from: Democli\n {4}to: KernelTelemetry\n {4}kind: project\n {4}status: current/);
+});
 t("NP-PINS: a missing pin stops with the pin commit to make", () =>
   untouched((d) => {
     const props = path.join(d, "Directory.Packages.props");
