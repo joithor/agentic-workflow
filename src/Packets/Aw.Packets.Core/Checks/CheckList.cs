@@ -45,10 +45,11 @@ internal sealed class CheckList
         {
             _results.Add(new CheckResult(
                 rule,
-                CheckState.Fail,
+                CheckState.Omitted,
                 "packet",
-                string.Create(CultureInfo.InvariantCulture, $"… and {more} more {rule} failures"),
-                found[^1].Fix));
+                string.Create(CultureInfo.InvariantCulture, $"… and {more} more {rule} failures, not listed"),
+                "Fix the failures above and run validate again to see the rest.")
+            { Omitted = more });
         }
     }
 

@@ -6,4 +6,8 @@ namespace Aw.Packets.Core.Checks;
 /// <param name="Subject">What it is about: 'packet', 'task t1', 'question q2'.</param>
 /// <param name="Message">What was found, or why it is unchecked.</param>
 /// <param name="Fix">How to fix a failure; null otherwise.</param>
-public sealed record CheckResult(string Rule, CheckState State, string Subject, string Message, string? Fix);
+public sealed record CheckResult(string Rule, CheckState State, string Subject, string Message, string? Fix)
+{
+    /// <summary>For an <see cref="CheckState.Omitted"/> record: how many failures of the rule weren't reported; 0 otherwise.</summary>
+    public int Omitted { get; init; }
+}

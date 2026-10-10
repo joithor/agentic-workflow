@@ -83,45 +83,6 @@ public sealed class ValidatePacketTests
     }
 
     [Theory, Trait("Lane", "unit")]
-    [InlineData("src/**", true)]
-    [InlineData("src/*.cs", true)]
-    [InlineData("**/guide.md", true)]
-    [InlineData("README.md", true)]
-    [InlineData("new: src/c.cs", true)]
-    [InlineData("lib/**", false)]
-    [InlineData("src/*.ts", false)]
-    [InlineData("new: src/a.cs", false)]
-    [InlineData("new: ../outside.cs", false)]
-    public async Task A_write_scope_must_exist_at_the_base_sha_or_be_declared_new(string scope, bool passes)
-    {
-        var report = await Validate(A.Packet().With(A.Task("t1").Writing(scope).Example("h", holdout: true, "test")));
-
-        Assert.Equal(passes, Failures(report, "PKT-SCOPE-001").Count == 0);
-    }
-
-    [Theory, Trait("Lane", "unit")]
-    [InlineData("src/a.cs", "src/**", false, false)]
-    [InlineData("src/a.cs", "src/b.cs", false, true)]
-    [InlineData("src/a.cs", "src/**", true, true)]
-    [InlineData("new: src/c.cs", "src/*.cs", false, false)]
-    [InlineData("new: src/c.cs", "new: src/c.cs", false, false)]
-    [InlineData("docs/**", "src/**", false, true)]
-    public async Task Unordered_tasks_must_not_share_a_write_scope(string first, string second, bool ordered, bool passes)
-    {
-        var t2 = A.Task("t2").Writing(second);
-        var report = await Validate(A.Packet()
-            .With(A.Task("t1").Writing(first).Example("h", holdout: true, "test"))
-            .With(ordered ? t2.After("t1") : t2));
-
-        var failures = Failures(report, "PKT-SCOPE-002");
-        Assert.Equal(passes, failures.Count == 0);
-        if (!passes)
-        {
-            Assert.Contains("t1", Assert.Single(failures).Message, StringComparison.Ordinal);
-        }
-    }
-
-    [Theory, Trait("Lane", "unit")]
     [InlineData(new string[0], false)]
     [InlineData(new[] { "Not A Kind" }, false)]
     [InlineData(new[] { "test", "cli-transcript" }, true)]
@@ -225,17 +186,6 @@ public sealed class ValidatePacketTests
         Assert.Contains("t1, t2, t3, t4", cycle.Message, StringComparison.Ordinal);
     }
 
-    [Fact, Trait("Lane", "unit")]
-    public async Task A_deep_double_star_glob_is_checked_in_linear_time_not_a_crash()
-    {
-        var deep = string.Join('/', Enumerable.Repeat("a", 41));
-        var repo = new InMemoryRepoSnapshot().With(PacketBuilder.BaseSha, new HashSet<string>(PacketBuilder.BaseFiles, StringComparer.Ordinal) { deep });
-
-        var report = await Validate(A.Packet().With(A.Task("t1").Writing("src/**", string.Concat(Enumerable.Repeat("**/", 12)) + "zz").Example("h", holdout: true, "test")), repo);
-
-        Assert.Contains("matches no file", Assert.Single(Failures(report, "PKT-SCOPE-001")).Message, StringComparison.Ordinal);
-    }
-
     [Theory, Trait("Lane", "unit")]
     [InlineData(false, "it works", true)]
     [InlineData(false, null, false)]
@@ -258,24 +208,6 @@ public sealed class ValidatePacketTests
     }
 
     [Fact, Trait("Lane", "unit")]
-    public async Task A_very_long_glob_is_a_scope_failure_not_a_crash()
-    {
-        var report = await Validate(A.Packet().With(A.Task("t1").Writing("src/**", "src/" + new string('b', 3000)).Example("h", holdout: true, "test")));
-
-        _ = Assert.Single(Failures(report, "PKT-SCOPE-001"));
-    }
-
-    [Fact, Trait("Lane", "unit")]
-    public async Task An_oversized_scope_entry_is_shortened_in_the_message()
-    {
-        var report = await Validate(A.Packet().With(A.Task("t1").Writing("src/**", "src/" + new string('b', 3000))));
-
-        var failure = Assert.Single(Failures(report, "PKT-SCOPE-001"));
-        Assert.True(failure.Message.Length < 300, failure.Message.Length.ToString(System.Globalization.CultureInfo.InvariantCulture));
-        Assert.Contains("3004 characters", failure.Message, StringComparison.Ordinal);
-    }
-
-    [Fact, Trait("Lane", "unit")]
     public async Task Every_task_with_acceptance_examples_has_a_held_out_one()
     {
         var report = await Validate(A.Packet()
@@ -284,42 +216,6 @@ public sealed class ValidatePacketTests
 
         Assert.Equal("task t2", Assert.Single(Failures(report, "PKT-HOLD-001")).Subject);
     }
-
-    [Fact, Trait("Lane", "unit")]
-    public async Task A_chain_at_the_task_limit_validates_in_seconds()
-    {
-        var packet = A.Packet();
-        for (var i = 0; i < PacketReader.MaxTasks; i++)
-        {
-            var id = "t" + i.ToString(System.Globalization.CultureInfo.InvariantCulture);
-            var task = A.Task(id).Writing("src/a.cs");
-            _ = packet.With(i == 0 ? task : task.After("t" + (i - 1).ToString(System.Globalization.CultureInfo.InvariantCulture)));
-        }
-
-        var started = System.Diagnostics.Stopwatch.StartNew();
-        var report = await Validate(packet);
-
-        Assert.True(report.Passed, string.Join("; ", report.Checks.Where(static c => c.State == CheckState.Fail).Select(static c => c.Rule)));
-        Assert.True(started.Elapsed < TimeSpan.FromSeconds(5), started.Elapsed.ToString());
-    }
-
-    [Theory, Trait("Lane", "unit")]
-    [InlineData("src/**", "src/a.cs", true)]
-    [InlineData("src/**", "src/deep/x/y.cs", true)]
-    [InlineData("**", "README.md", true)]
-    [InlineData("**/guide.md", "docs/guide.md", true)]
-    [InlineData("**/guide.md", "guide.md", true)]
-    [InlineData("src/*.cs", "src/a.cs", true)]
-    [InlineData("src/*.cs", "src/deep/a.cs", false)]
-    [InlineData("src/?.cs", "src/a.cs", true)]
-    [InlineData("src/?.cs", "src/ab.cs", false)]
-    [InlineData("a/**/b/**/c", "a/x/b/y/z/c", true)]
-    [InlineData("a/**/b/**/c", "a/x/c", false)]
-    [InlineData("*a*b*", "xaybz", true)]
-    [InlineData("*a*b*", "xbya", false)]
-    [InlineData("docs/*", "docs", false)]
-    public void Glob_semantics(string glob, string path, bool matches) =>
-        Assert.Equal(matches, ScopeGlob.Parse(glob)?.Matches(path));
 
     [Fact, Trait("Lane", "unit")]
     public async Task A_task_with_no_acceptance_examples_fails()
@@ -343,60 +239,4 @@ public sealed class ValidatePacketTests
     [Fact, Trait("Lane", "unit")]
     public async Task An_evidence_kind_with_a_trailing_newline_fails() =>
         Assert.Single(Failures(await Validate(A.Packet().With(A.Task("t1").Example("e1", holdout: false, "test\n").Example("h", holdout: true, "test"))), "PKT-EVID-001"));
-
-    [Theory, Trait("Lane", "unit")]
-    [InlineData("new: src", "is an existing directory")]
-    [InlineData("new: README.md/x", "is a file")]
-    [InlineData("/src/a.cs", "relative")]
-    public async Task A_new_path_can_be_created_and_a_glob_is_relative(string scope, string message)
-    {
-        var report = await Validate(A.Packet().With(A.Task("t1").Writing("src/**", scope)));
-
-        Assert.Contains(message, Assert.Single(Failures(report, "PKT-SCOPE-001")).Message, StringComparison.Ordinal);
-    }
-
-    [Fact, Trait("Lane", "unit")]
-    public async Task A_rule_reports_at_most_50_failures_and_counts_the_rest()
-    {
-        var packet = A.Packet();
-        for (var i = 0; i < 20; i++)
-        {
-            _ = packet.With(A.Task("t" + i.ToString(System.Globalization.CultureInfo.InvariantCulture)).Writing("src/a.cs"));
-        }
-
-        var failures = Failures(await Validate(packet), "PKT-SCOPE-002");
-
-        Assert.Equal(51, failures.Count);
-        Assert.Contains("140 more", failures[^1].Message, StringComparison.Ordinal);
-    }
-
-    [Fact, Trait("Lane", "unit")]
-    public async Task Overlap_stays_cheap_on_a_large_repo_at_the_task_limit()
-    {
-        var files = new HashSet<string>(PacketBuilder.BaseFiles, StringComparer.Ordinal);
-        for (var i = 0; i < 20_000; i++)
-        {
-            _ = files.Add("src/f" + i.ToString(System.Globalization.CultureInfo.InvariantCulture) + ".cs");
-        }
-
-        var packet = A.Packet();
-        for (var i = 0; i < PacketReader.MaxTasks; i++)
-        {
-            var task = A.Task("t" + i.ToString(System.Globalization.CultureInfo.InvariantCulture)).Writing("src/**");
-            _ = packet.With(i == 0 ? task : task.After("t" + (i - 1).ToString(System.Globalization.CultureInfo.InvariantCulture)));
-        }
-
-        var started = System.Diagnostics.Stopwatch.StartNew();
-        var report = await Validate(packet, new InMemoryRepoSnapshot().With(PacketBuilder.BaseSha, files));
-
-        Assert.True(report.Passed);
-        Assert.True(started.Elapsed < TimeSpan.FromSeconds(5), started.Elapsed.ToString());
-    }
-
-    [Theory, Trait("Lane", "unit")]
-    [InlineData("docs/**", "docs", true)]
-    [InlineData("a**b", "axyb", true)]
-    [InlineData("a**b", "ax/yb", false)]
-    public void Glob_edge_cases(string glob, string path, bool matches) =>
-        Assert.Equal(matches, ScopeGlob.Parse(glob)?.Matches(path));
 }

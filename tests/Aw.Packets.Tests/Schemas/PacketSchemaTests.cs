@@ -78,7 +78,13 @@ public sealed class PacketSchemaTests
     {
         if (IsTypedId(type))
         {
-            return IdSchema(type);
+            var id = IdSchema(type);
+            if (type == typeof(RepoSlug))
+            {
+                id["description"] = "owner/name; aw-packets also refuses Windows device names (con, prn, aux, nul, com1-9, lpt1-9) on either side";
+            }
+
+            return id;
         }
 
         if (Nullable.GetUnderlyingType(type) is { } underlying && IsTypedId(underlying))

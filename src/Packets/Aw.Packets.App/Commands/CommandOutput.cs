@@ -46,7 +46,7 @@ internal static class CommandOutput
 
     internal static string Summary(IReadOnlyList<CheckResult> checks)
     {
-        var failed = checks.Count(static c => c.State == CheckState.Fail);
+        var failed = checks.Count(static c => c.State == CheckState.Fail) + checks.Sum(static c => c.Omitted);
         var open = checks.Count(static c => c.State == CheckState.Unchecked);
         return string.Create(CultureInfo.InvariantCulture, $"{(failed == 0 ? "PASS" : "FAIL")} ({failed} failed, {open} unchecked)");
     }
@@ -62,6 +62,7 @@ internal static class CommandOutput
         CheckState.Pass => "pass     ",
         CheckState.Fail => "FAIL     ",
         CheckState.Unchecked => "unchecked",
+        CheckState.Omitted => "FAIL …   ",
         _ => "unknown  ",
     };
 }

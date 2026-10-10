@@ -30,6 +30,9 @@ internal sealed class ScopeGlob
     /// <summary>The path a 'new:' entry declares; null for a glob.</summary>
     public string? NewPath { get; }
 
+    /// <summary>The one path this entry can match when it has no wildcard ('new:' path or plain path); null for a wildcard glob.</summary>
+    public string? Literal => NewPath ?? (_segments is { } s && !s.Any(static x => x.Contains('*', StringComparison.Ordinal) || x.Contains('?', StringComparison.Ordinal)) ? string.Join('/', s) : null);
+
     /// <summary>Parses one entry; null when it is empty, too long, or a 'new:' path isn't a safe relative path.</summary>
     /// <param name="entry">The entry.</param>
     /// <returns>The scope, or null.</returns>

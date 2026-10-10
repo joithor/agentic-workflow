@@ -37,7 +37,7 @@ file list comes from git.
 | `PKT-GRAPH-001` | Every dependency names a task in the packet |
 | `PKT-GRAPH-002` | The task graph is acyclic: each strongly connected group is reported once, naming every task in it and one cycle through it (`tasks t1, t2, t3 form a cycle: t1 -> t3 -> t2 -> t1`) |
 | `PKT-BASE-001` | `baseSha` is a full commit sha that exists in the repository |
-| `PKT-SCOPE-001` | Every write scope is a relative glob that matches a file at the base commit, or `new:` a path that can be created there (not an existing file or directory, not under an existing file) |
+| `PKT-SCOPE-001` | Every write scope is a relative glob that matches a file at the base commit, or `new:` a path that can be created there (not an existing file or directory, not under an existing file, and not in conflict with another declared new path); a glob with a leading `/` or a `.`/`..` segment is named as not relative |
 | `PKT-SCOPE-002` | Two tasks no dependency chain orders don't write the same path (a base file both match, or a declared new path) |
 | `PKT-ACC-001` | Every task has a visible acceptance example, and every visible one has text |
 | `PKT-EVID-001` | Every acceptance example names at least one kebab-case evidence kind (addendum §17.11) |
@@ -48,14 +48,14 @@ file list comes from git.
 | `PKT-FLOW-001` | **Unchecked**: workflow coverage (addendum §17.7) needs the lens catalog and workflow generation |
 
 The text output lists every rule (`pass`, `FAIL` with the subject, what was found and the fix, or `unchecked` with the
-reason). A rule reports at most 50 failures, then one record counting the rest. `--json` writes one document, `schemaVersion` 1, with `packet`, `passed` and `checks[]` (one record per
+reason). A rule reports at most 50 failures, then one `omitted` record whose `omitted` field counts the rest (the summary line's failure count includes them). `--json` writes one document, `schemaVersion` 1, with `packet`, `passed` and `checks[]` (one record per
 failure, one per passing or unchecked rule; each failure has `rule`, `subject`, `message` and `fix`).
 
 ## Freeze (`aw-packets freeze <packet-dir> [--repo <dir>] [--json]`)
 
 Runs the same checks. A packet with a failed check isn't frozen and nothing is written. Otherwise its canonical hash
-is recorded at `packets/<owner>/<name>/<id>/frozen/<hex>.json` (per repository: a packet id is unique only within one) (`FreezeRecord`: packet, hash, `digestVersion`, `baseSha`,
-`frozenAt`, the files the hash covers). Freezing the same hash again writes nothing and says `already frozen`. The
+is recorded at `packets/<owner>/<name>/<id>/frozen/<hex>.json` (per repository: a packet id is unique only within one) (`FreezeRecord`: `schemaVersion`, `repo`, packet, hash,
+`digestVersion`, `baseSha`, `frozenAt`, the files the hash covers). Freezing the same hash again writes nothing and says `already frozen`. The
 packet directory itself is never changed; the record under `packets/` is authoritative (the sindri ledger takes over
 when sindri is ported, spec §4c).
 

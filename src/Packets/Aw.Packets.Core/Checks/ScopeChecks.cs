@@ -53,10 +53,11 @@ internal static class ScopeChecks
     {
         null => $"isn't a glob or a safe 'new: <relative path>' of at most {ScopeGlob.MaxLength} characters",
         { NewPath: { } path } when index.IsFile(path) => $"declares '{path}' new, but it exists at {Short(sha)}",
-        { NewPath: { } path } when index.IsDirectory(path) => $"declares '{path}' new, but it is an existing directory at {Short(sha)}",
-        { NewPath: { } path } when index.FileAbove(path) is { } file => $"declares '{path}' new, but '{file}' is a file at {Short(sha)}",
+        { NewPath: { } path } when index.IsDirectory(path) => $"declares '{path}' new, but it is a directory (at {Short(sha)} or above a declared new path)",
+        { NewPath: { } path } when index.FileAbove(path) is { } file => $"declares '{path}' new, but '{file}' is a file (at {Short(sha)} or declared new)",
         { NewPath: null } when entry.TrimStart().StartsWith('/') => "starts with '/': write scopes are relative to the repository root",
-        { NewPath: null } when !PathIndex.Any(index.Matched(glob)) => $"matches no file at {Short(sha)}",
+        { NewPath: null } when entry.Trim().Split('/').Any(static s => string.Equals(s, ".", StringComparison.Ordinal) || string.Equals(s, "..", StringComparison.Ordinal)) => "has a '.' or '..' segment: write scopes are relative to the repository root, with no dot segments",
+        { NewPath: null } when !index.MatchesAny(glob) => $"matches no file at {Short(sha)}",
         _ => null,
     };
 
@@ -88,7 +89,7 @@ internal static class ScopeChecks
         var bits = new BitArray(index.Paths.Count);
         foreach (var glob in entries.Select(static e => e.Glob).OfType<ScopeGlob>())
         {
-            _ = bits.Or(index.Matched(glob));
+            index.MatchInto(glob, bits);
         }
 
         return bits;

@@ -9,5 +9,5 @@ namespace Aw.Packets.Core;
 public sealed record Inspection(LoadedPacket Loaded, IReadOnlyList<CheckResult> Checks)
 {
     /// <summary>True when no check failed (unchecked rules don't fail a packet).</summary>
-    public bool Passed => Checks.All(static c => c.State != CheckState.Fail);
+    public bool Passed => Checks.All(static c => c.State is not (CheckState.Fail or CheckState.Omitted));
 }

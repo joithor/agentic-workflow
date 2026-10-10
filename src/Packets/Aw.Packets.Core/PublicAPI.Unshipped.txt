@@ -8,6 +8,8 @@ Aw.Packets.Core.Checks.CheckResult.Fix.get -> string?
 Aw.Packets.Core.Checks.CheckResult.Fix.init -> void
 Aw.Packets.Core.Checks.CheckResult.Message.get -> string!
 Aw.Packets.Core.Checks.CheckResult.Message.init -> void
+Aw.Packets.Core.Checks.CheckResult.Omitted.get -> int
+Aw.Packets.Core.Checks.CheckResult.Omitted.init -> void
 Aw.Packets.Core.Checks.CheckResult.Rule.get -> string!
 Aw.Packets.Core.Checks.CheckResult.Rule.init -> void
 Aw.Packets.Core.Checks.CheckResult.State.get -> Aw.Packets.Core.Checks.CheckState
@@ -16,6 +18,7 @@ Aw.Packets.Core.Checks.CheckResult.Subject.get -> string!
 Aw.Packets.Core.Checks.CheckResult.Subject.init -> void
 Aw.Packets.Core.Checks.CheckState
 Aw.Packets.Core.Checks.CheckState.Fail = 2 -> Aw.Packets.Core.Checks.CheckState
+Aw.Packets.Core.Checks.CheckState.Omitted = 4 -> Aw.Packets.Core.Checks.CheckState
 Aw.Packets.Core.Checks.CheckState.Pass = 1 -> Aw.Packets.Core.Checks.CheckState
 Aw.Packets.Core.Checks.CheckState.Unchecked = 3 -> Aw.Packets.Core.Checks.CheckState
 Aw.Packets.Core.Checks.PacketRules
