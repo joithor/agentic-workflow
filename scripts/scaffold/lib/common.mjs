@@ -5,7 +5,7 @@
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { spawnSync } from "node:child_process";
+import { spawn } from "node:child_process";
 
 /** A refusal or a failed check: printed as "<rule>: <message>" plus "fix: <fix>", exit 1. */
 export class ScaffoldError extends Error {
@@ -47,22 +47,23 @@ export class UsageError extends Error {}
  * run, from the first write to the revert.
  */
 export const signals = { interrupted: false };
+const running = { child: null };
+const TRAPPED = ["SIGINT", "SIGTERM", "SIGHUP"];
 export function trapSignals(log = console.error) {
-  const on = (sig) => {
-    if (!signals.interrupted) log(`${sig}: stopping after the current step; the scaffold will be reverted`);
-    signals.interrupted = true;
-  };
-  const onInt = () => on("SIGINT");
-  const onTerm = () => on("SIGTERM");
-  process.on("SIGINT", onInt);
-  process.on("SIGTERM", onTerm);
+  const handlers = TRAPPED.map((sig) => [
+    sig,
+    () => {
+      if (!signals.interrupted) log(`${sig}: stopping the current step; the scaffold will be reverted`);
+      signals.interrupted = true;
+      running.child?.kill(sig);   // don't wait for a long dotnet step to finish on its own
+    },
+  ]);
+  for (const [sig, fn] of handlers) process.on(sig, fn);
   return () => {
-    process.off("SIGINT", onInt);
-    process.off("SIGTERM", onTerm);
+    for (const [sig, fn] of handlers) process.off(sig, fn);
   };
 }
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
-const nextTurn = () => new Promise((resolve) => setImmediate(resolve));
 
 function checkInterrupted() {
   if (signals.interrupted) throw new ScaffoldError("SCAFFOLD-INTERRUPTED", "interrupted (SIGINT or SIGTERM)", "nothing to fix: the files were reverted; run it again");
@@ -151,7 +152,7 @@ export class Journal {
   /** Every path the scaffold touched, sorted (for the summary and the git-status check). */
   touched() {
     const changed = [...this.edited.keys()].filter((rel) => !this.exists(rel) || this.read(rel) !== this.edited.get(rel));
-    return [...new Set([...this.created, ...changed])].sort();
+    return [...new Set([...this.created.filter((rel) => this.exists(rel)), ...changed])].sort();
   }
 
   revert() {
@@ -203,13 +204,19 @@ export async function withHeavyLock(fn, { timeoutS = 5400, log = console.error }
 export async function run(root, cmd, args, { log = console.error } = {}) {
   checkInterrupted();
   log(`$ ${[cmd, ...args].join(" ")}`);
-  const r = spawnSync(cmd, args, { cwd: root, encoding: "utf8", maxBuffer: 256 * 1024 * 1024, env: process.env });
-  if (r.error) return { code: 127, out: String(r.error.message) };
-  // CI terminals get ANSI colors (\u001b[31mfailed …); the checks parse plain text.
-  await nextTurn();   // signal handlers run only between event-loop turns, never during spawnSync
-  const out = `${r.stdout ?? ""}${r.stderr ?? ""}`.replace(/\u001b\[[0-9;]*m/g, "");
+  const r = await new Promise((resolve) => {
+    const chunks = [];
+    const child = spawn(cmd, args, { cwd: root, env: process.env, stdio: ["ignore", "pipe", "pipe"] });
+    running.child = child;   // a signal handler forwards SIGINT/SIGTERM/SIGHUP to it
+    child.stdout.on("data", (c) => chunks.push(c));
+    child.stderr.on("data", (c) => chunks.push(c));
+    child.on("error", (e) => resolve({ code: 127, out: String(e.message) }));
+    child.on("close", (code) => resolve({ code: code ?? 1, out: Buffer.concat(chunks).toString("utf8") }));
+  });
+  running.child = null;
   checkInterrupted();   // a signal that arrived while the command ran fails it, whatever it exited with
-  return { code: r.status ?? 1, out };
+  // CI terminals get ANSI colors (\u001b[31mfailed …); the checks parse plain text.
+  return { code: r.code, out: r.out.replace(/\u001b\[[0-9;]*m/g, "") };
 }
 
 export const lower = (name) => name.toLowerCase();

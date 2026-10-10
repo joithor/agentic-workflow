@@ -147,7 +147,7 @@ public readonly partial struct <Id> : ITypedId<<Id>, string>
 http slice whose `route` has `{id}`), the generator adds an RDG route-binding test for it in
 `tests/Aw.<Pkg>.Tests/Ids/<Id>RouteBindingTests.cs` (Lane=integration): an id in the `ITypedId` form is used behind an
 endpoint only once that test passes; otherwise the id gets a hand-written `TryParse` instead. The test maps its own
-`/items/{id}` and `/items?id=` endpoints with the id on the real host (`LoopbackBinding.Build` + `Pipeline.Configure`,
+`/__probe/items/{id}` and `/__probe/items?id=` endpoints (a prefix no package group can take) with the id on the real host (`LoopbackBinding.Build` + `Pipeline.Configure`,
 as `Program.cs` runs it, listening on loopback; the test project runs the request-delegate generator), so the Host's
 `ValueObjectValidation` middleware (from `/new-package`, `docs/csharp/typed-ids.md` step 4) is the one in the real
 pipeline, and asserts: valid text →
@@ -304,5 +304,6 @@ green, scaffolds a second slice with a new id, and asserts criterion 1 against t
   measured value and the fix.
 - `NS-EXISTS` when the slice folder exists; `NS-SURFACE` when `surface` doesn't match the package's host; `NS-DEPS` as
   above; `NS-EDIT` when an anchor is missing; `SCAFFOLD-INTERNAL` for a generator bug (also reverted).
-- The generator ignores SIGINT and SIGTERM while it holds the heavy-job lock: the signalled `dotnet` child fails the
-  check, then the revert and the lock release run. The lock directory carries an `owner` file (pid, time, command).
+- SIGINT, SIGTERM or SIGHUP at any point of a run (including the heavy-lock wait) is caught: the generator forwards
+  it to the running command, fails that step with `SCAFFOLD-INTERRUPTED` whatever the command exited with, then
+  reverts and releases the lock. The lock directory carries an `owner` file (pid, time, command).
