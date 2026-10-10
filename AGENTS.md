@@ -83,6 +83,7 @@ bash config/hooks/tests/provider-install-hooks.test.sh
 bash config/hooks/tests/probe-log.test.sh
 bash config/hooks/tests/judge-health.test.sh
 bash config/hooks/tests/sindri-nudge.test.sh
+bash config/hooks/tests/failopen.test.sh
 for t in config/lib/tests/*.test.sh; do bash "$t" || echo "FAILED: $t"; done  # merge-hook, levers, installers
 
 # Levers and probe (default provider: claude)

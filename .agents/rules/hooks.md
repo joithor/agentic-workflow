@@ -84,7 +84,21 @@ Each provider's `install-hooks.sh` installs them by copying, not symlinking, so 
 
 **Lever hooks** (context-guard, done-gate, scope-gate, external-write-guard, wake gating, judge-health, prompt-sort, sindri-nudge) are installed by `scripts/install-*.sh --provider claude|codex|cursor`, with `claude` as the default. `setup.sh` runs them for each selected provider. A lever with no equivalent event on a provider prints `skipped for <provider>` and writes nothing. For example, context-guard is skipped on Cursor.
 
-Tests (all run under a temp `HOME`): `config/hooks/tests/{codex-adapter,cursor-adapter,provider-install-hooks,probe-log,judge-health,sindri-nudge}.test.sh`, plus `config/lib/tests/{prompt-sort,install-prompt-sort}.test.sh` (run through the `config/lib/tests/*.test.sh` glob).
+Tests (all run under a temp `HOME`): `config/hooks/tests/{codex-adapter,cursor-adapter,failopen,provider-install-hooks,probe-log,judge-health,sindri-nudge}.test.sh`, plus `config/lib/tests/{prompt-sort,install-prompt-sort}.test.sh` (run through the `config/lib/tests/*.test.sh` glob).
+
+## Fail-open logging (HOOK-FAILOPEN)
+
+A hook **fails open** when its own error turns into an allow or a let-through: judge missing or erroring, a payload it can't read, unreadable state. Each such path calls `failopen <cause>` right before it allows, which appends one line to `${AW_STATE_DIR:-~/.agentic-workflow}/hooks/failopen.log`:
+
+```json
+{"ts":"2026-10-10T06:30:00Z","event":"HOOK-FAILOPEN","hook":"send-gate","cause":"judge-exit-127","provider":"claude"}
+```
+
+- The logger is `config/lib/failopen.sh` (`aw_failopen <hook> <cause>`; `aw_failopen <hook> input "$INPUT"` classifies an unreadable payload as `empty-input`, `jq-missing` or `input-unparsable` and logs nothing for a readable one). Installers copy it to `<hooks-dir>/lib/failopen.sh`; a hook looks there first, then at `../lib/` (a repo checkout).
+- **Logging only.** It never prints, never fails, and never changes a decision, exit code or stdout. Payload content never reaches the log. `config/hooks/tests/failopen.test.sh` runs every path with and without the lib and requires identical output.
+- Fail-open hooks: `send-gate`, `scope-gate`, `external-write-guard`, `done-gate`, `outbox-flush`, the three Bash safety hooks, and the Codex/Cursor adapters (`<provider>-adapter`). Advisory hooks with no allow/deny (context-guard, prompt-sort, done-gate-annotate, rtk-rewrite, the SessionStart hooks) and hooks that fail closed (turn-origin) don't log.
+- `scorer`'s daily report lists the events per hook and cause (`## Hook fail-open`). The C# cutover needs zero of them (spec §4c).
+- A new hook with a fail-open path must call `failopen` with a fixed cause word on it.
 
 ## Adding a New Hook
 
