@@ -19,14 +19,13 @@ checks:
   - type: test
     id: "OutboxContract"
     ref: tests/Aw.Kernel.Testing/OutboxContract.cs
-    status: pending
-    pendingPr: 133
+    status: active
   - type: review
     id: "no mocking library pins"
     status: active
     note: "Directory.Packages.props is reviewed"
-gap: pending
-gapNote: "Only IReadRepository has a contract base on main; nothing rejects a mocking-library pin."
+gap: partial
+gapNote: "The Kernel ports' contract bases (read repository, unit of work, outbox) run against their fakes and SQL adapters; that every new port gets one (/new-slice writes it) and that no mocking library is pinned are reviewed."
 source:
   type: adr
   ref: "docs/superpowers/specs/2026-10-09-agent-readiness-design.md#4b5"

@@ -10,14 +10,12 @@ select:
 checks:
   - type: archunit
     id: "ARCH-SLICE-001"
-    status: pending
-    pendingPr: 131
+    status: active
   - type: analyzer
     id: "AW1003"
-    status: pending
-    pendingPr: 132
+    status: active
     note: "fast feedback; the ArchUnitNET rule is authoritative"
-gap: pending
+gap: closed
 source:
   type: adr
   ref: "docs/superpowers/specs/2026-10-09-agent-readiness-design.md#4b1"

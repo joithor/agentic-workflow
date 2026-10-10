@@ -10,16 +10,15 @@ select:
 checks:
   - type: analyzer
     id: "AW1007"
-    status: pending
-    pendingPr: 132
+    status: active
     note: "counts constructor dependencies only: one use case per service stays a review item"
   - type: analyzer
     id: "AW1008"
-    status: pending
-    pendingPr: 132
+    status: active
     severity: suggestion
     note: "6-7 dependencies, severity suggestion (the split signal)"
-gap: pending
+gap: partial
+gapNote: "AW1007 fails over 7 constructor dependencies and AW1008 flags 6-7 as a suggestion; one use case per service is reviewed."
 source:
   type: adr
   ref: "docs/superpowers/specs/2026-10-09-agent-readiness-design.md#4b2"

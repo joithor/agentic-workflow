@@ -10,10 +10,10 @@ select:
 checks:
   - type: lane-cap
     id: "LANE-TEST-002"
-    status: pending
-    pendingPr: 133
+    status: active
     note: "reads each test's lane from the CTRF report, so a test with no lane is caught only in an unfiltered run"
-gap: pending
+gap: partial
+gapNote: "LANE-TEST-002 reads lanes from the CTRF report: several or unknown Lane traits fail in any run, a test with none only in the unfiltered run CI makes. The planned assembly scan (csharp-testing.md) closes the rest."
 source:
   type: import
   ref: ".agents/rules/csharp-testing.md"

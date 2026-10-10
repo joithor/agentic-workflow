@@ -10,8 +10,7 @@ select:
 checks:
   - type: lane-cap
     id: "LANE-TEST-001"
-    status: pending
-    pendingPr: 133
+    status: active
     note: "per-test cap from the CTRF report"
   - type: script
     id: "LANE-PKG-001"
@@ -23,8 +22,7 @@ checks:
     ref: scripts/ci/lane-budgets.mjs
     status: active
     note: "a timed lane run that fails"
-gap: pending
-gapNote: "The per-package budget is checked (LANE-PKG-001/002); the per-test cap waits on LANE-TEST-001."
+gap: closed
 source:
   type: adr
   ref: "docs/superpowers/specs/2026-10-09-agent-readiness-design.md#4b5"
