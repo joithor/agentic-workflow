@@ -1,4 +1,3 @@
-using Aw.Kernel;
 
 namespace Aw.Kernel.Tests;
 

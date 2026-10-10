@@ -2,13 +2,12 @@ using Aw.Kernel.Json;
 
 namespace Aw.Kernel.Tests;
 
-// Number#toString as Node prints it (ECMAScript Number::toString), from .NET's shortest round-trip digits.
+/// <summary>Number#toString as Node prints it (ECMAScript Number::toString), from .NET's shortest round-trip digits.</summary>
 [Trait("Lane", "unit")]
 public sealed class JsNumberTests
 {
     [Theory]
     [InlineData(0d, "0")]
-    [InlineData(-0d, "0")]
     [InlineData(-1d, "-1")]
     [InlineData(1e21, "1e+21")]
     [InlineData(1e20, "100000000000000000000")]
@@ -22,4 +21,7 @@ public sealed class JsNumberTests
     [InlineData(0.30000000000000004, "0.30000000000000004")]
     public void Formats_like_Node(double value, string expected) =>
         Assert.Equal(expected, JsNumber.Format(value));
+
+    [Fact]
+    public void Negative_zero_prints_as_zero() => Assert.Equal("0", JsNumber.Format(-0d));
 }

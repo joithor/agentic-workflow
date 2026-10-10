@@ -1,4 +1,3 @@
-using Aw.Kernel;
 using Aw.Kernel.Services;
 
 namespace Aw.Kernel.Tests;
@@ -36,7 +35,7 @@ public sealed class DecoratedServiceTests
         var log = new List<string>();
         IService<int, int> service = new Recording(new Recording(new Doubler(), log, "inner"), log, "outer");
 
-        await service.Handle(1, TestContext.Current.CancellationToken);
+        _ = await service.Handle(1, TestContext.Current.CancellationToken);
 
         Assert.Equal(["outer>", "inner>", "<inner", "<outer"], log);
     }
@@ -55,7 +54,7 @@ public sealed class DecoratedServiceTests
     private sealed class PositiveOnly : IValidator<int>
     {
         public Result<Unit> Validate(int value) =>
-            value > 0 ? Result.Ok() : KernelErrors.Invalid.With($"{value} is not positive");
+            value > 0 ? Results.Ok() : KernelErrors.Invalid.With(value.ToString(System.Globalization.CultureInfo.InvariantCulture) + " is not positive");
     }
 
     private sealed class Recording(IService<int, int> inner, List<string> log, string name) : Decorated<int, int>(inner)

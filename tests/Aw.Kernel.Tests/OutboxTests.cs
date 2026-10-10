@@ -14,14 +14,14 @@ public sealed class OutboxTests
     [Fact]
     public void A_command_and_an_error_serialize_with_camel_case_keys_in_declaration_order()
     {
-        var options = NodeJson.CreateOptions(KernelJsonContext.Default);
+        var options = NodeJson.CreateOptions(TestJsonContext.Default);
         var command = new OutboxCommand(
-            new Guid("00000000-0000-0000-0000-0000000000aa"),
+            new Guid(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0xaa),
             "github.comment",
             "{\"pr\":1}",
             new DateTimeOffset(2026, 10, 10, 6, 0, 0, TimeSpan.Zero),
             "host:sindri",
-            new Guid("00000000-0000-0000-0000-0000000000c1"));
+            new Guid(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0xc1));
 
         Assert.Equal(
             "{\"id\":\"00000000-0000-0000-0000-0000000000aa\",\"kind\":\"github.comment\",\"payloadJson\":\"{\\\"pr\\\":1}\","

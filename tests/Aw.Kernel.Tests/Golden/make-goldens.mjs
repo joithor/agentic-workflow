@@ -1,4 +1,4 @@
-// Regenerates the Node goldens the C# byte-compat tests compare against (agent-readiness spec \u00a74c, A1).
+// Regenerates the Node goldens the C# byte-compat tests compare against (agent-readiness spec §4c, A1).
 // Run from the repo root: node tests/Aw.Kernel.Tests/Golden/make-goldens.mjs
 // The values here and in NodeJsonFixture.cs must describe the same object.
 import { writeFileSync } from "node:fs";

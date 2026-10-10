@@ -2,7 +2,7 @@ using System.Text.Json.Serialization;
 
 namespace Aw.Kernel.Tests;
 
-// The C# side of Golden/make-goldens.mjs: the same object, in the same key order.
+/// <summary>The C# side of Golden/make-goldens.mjs: the same object, in the same key order.</summary>
 internal sealed record NodeJsonFixture(
     string Id,
     DateTimeOffset CreatedAt,
