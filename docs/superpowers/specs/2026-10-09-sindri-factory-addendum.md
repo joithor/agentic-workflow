@@ -1,6 +1,6 @@
 # Sindri — factory addendum (§17)
 
-Status: draft for review, revision 3 · 2026-10-09 (applies the /autoplan findings C1–C17; resolutions in §17.19)
+Status: draft for review, revision 4 · 2026-10-09 (applies /autoplan round 1 C1–C17 in §17.19 and round 2 D1–D12 in §17.22)
 Revision 2 adds:
 - development lenses and workflow generation (§17.7)
 - lean session bootstrap (§17.8)
@@ -655,8 +655,8 @@ These resolve the /autoplan findings C1–C17. Where a rule here conflicts with 
   can't reach the lease is passive and can't act outward. A laptop working offline runs in a degraded local mode
   that can't push or merge.
 - Hosts are tagged `work` or `personal`, like accounts. Ring-1 data and sessions never run on a `personal` host.
-- `sindri host handover <to> [--dry-run]` signs the transferred ledger snapshot, verifies it on arrival, and keeps
-  the previous host's snapshot for `handover --back`.
+- `sindri host handover <to> [--dry-run]` signs the transferred ledger snapshot and verifies it on arrival.
+  `--back` is a new handover in the other direction, never a restore of an old snapshot (D2).
 - The dashboard is reached at one stable tailnet name that follows the lease, so phone passkeys stay valid across
   handovers.
 
@@ -672,15 +672,16 @@ These resolve the /autoplan findings C1–C17. Where a rule here conflicts with 
   tailnet name. `sindri device revoke` takes effect immediately.
 - **Each decision signs** `(item id, item version, nonce, choice)`. A decision for a changed item, or a reused
   nonce, is refused with a code, and the item shows its new state.
-- **Walkthrough pages** are served from a separate origin with no cookies or decision endpoints, so a generated page
-  can't trigger or change a decision.
+- **Walkthrough pages** are served from a **separate tailnet hostname** with no cookies and no decision endpoints, so
+  they share no passkey RP ID or cookies with the dashboard (D3). Comments link to the dashboard origin.
 - **Plan 6 amendment:** the dashboard binds to loopback and is exposed only through `tailscale serve`. The Host and
   Origin checks accept the stable tailnet name, and the login token is replaced by the passkey for tailnet clients.
 - **States per surface** (spec'd in Plan 6's amendment): pending, deciding, decided here, decided elsewhere (CLI or
   another device), stale (item changed), offline (queued locally, sent on reconnect, refused if stale), passkey
   failed, revoked device.
 - **Not only swipe:** every swipe has visible buttons (WCAG 2.5.1). Swipe right = approve, left = reject, up =
-  "queue for desk", and each choice can be undone for 10 seconds. Recordings carry captions or a transcript.
+  "queue for desk". Undo works because every outward command a decision causes waits **10 seconds in the outbox**
+  before dispatch; undo cancels the queued command, never an action already sent (D3). Recordings carry captions or a transcript.
 - **Queues:** the swipe inbox holds non-protected binary items; the desk queue holds open questions, amendments,
   freezes and every approval-tier item; the dashboard's "Needs you" lists both with their queue.
 
@@ -705,8 +706,10 @@ These resolve the /autoplan findings C1–C17. Where a rule here conflicts with 
   (`reviews/<pr>.json`, bugfix state) readable from the same paths.
 - A skill lint spec: frontmatter, preamble, size budget, no interactive asks on sindri-mode paths, and pressure
   scenarios as `scenarios/*.md` with an expected-behavior block.
-- **Micro-packets:** an S-or-smaller tracker item gets an auto-generated packet (one task, write scope from triage,
-  default evidence for its kind), frozen without a desk step. It still goes through validation.
+- **Micro-packets (D1):** an S-or-smaller tracker item that passes the trust gate (§8.3) gets a generated packet.
+  Its write scope is **computed by code**: paths linked in the item, plus code-index neighbours of symbols the item
+  names. If no scope can be computed, there is no micro-packet and the item goes to the desk. A micro-packet is frozen
+  by a **one-tap human decision** (phone allowed in ring 0, desk only in ring 1). It still goes through validation.
 - Rule, lens and workflow files carry `schemaVersion` and have generated JSON Schemas. Lens `commands` name repo
   command aliases from `repos/<repo>.yaml`, not raw strings. `sindri rules explain <id>` shows why a rule was
   selected. A glossary in `docs/sindri/glossary.md` fixes "lens", "factory", "profile", "ring" and "packet".
@@ -728,7 +731,7 @@ ladder, and each level reuses the one below:
 |---|---|---|
 | **P1 · many workstreams, one host** | One Sindri, many packets, epics and standing workflows | A **scheduler** with a WIP limit per packet and per ring, priorities, and fair sharing. **Conflict-aware dispatch:** tasks whose write scopes or `deps.yaml` neighbours overlap are serialized, and others run together. **Resource classes** replace the single heavy-job lock: CPU, memory, browser, container builds, index builds and model quota each have their own slots. A capacity model sets the session cap from the smallest of quota windows, host resources and the human-minutes budget (§17.19) |
 | **P2 · one coordinator, many workers** | One coordinator holds the shared lease (§17.19), the ledger, and every decision and outward action. Worker hosts only run containers | **Worker hosts** (laptop, Linux box, cloud boxes) register over the tailnet, advertise resource classes, and pull Steps under leases with heartbeats. They hold no tokens beyond their session proxies, and their spool ships back to the coordinator. A dead worker's Step returns to the queue from its last checkpoint |
-| **P3 · federation** | Several independent Sindri instances (for example one per ring: personal and work) | Instances never share state or credentials. They share only **published packs** (prompt-text lenses, rules, evidence providers, workflow templates) and scouting idea cards, at the lowest trust tier (§17.19). This is how improvements made at home reach work without data crossing |
+| **P3 · federation** | Several independent Sindri instances (for example one per ring) | Instances never share state or credentials. They share **prompt text only** (lens wording, rules, rubrics) and idea cards, at the lowest trust tier. Evidence providers (code) and workflow templates or any capability field never cross; each instance re-implements or re-approves them (D5). Direction defaults to **home → work** |
 | **P4 · team mode** | One Sindri serving a team at work | A shared database store instead of per-host SQLite, a user per human with roles, per-user and per-team budgets, tenant-keyed ledger rows, audit per user, and the second-user rules of main spec §15. Every decision still has a named human approver |
 
 **Limits that don't go away with more machines:**
@@ -773,7 +776,7 @@ lists what exists and what is needed, in the order it's built.
 | **Config and policy as code** | Profile files with `profile approve` | Versioned profiles per tenant, changed by pull request with the required approvers, and a history of who changed which policy and when |
 | **Data lifecycle** | Retention in §8.4 | Retention, export and deletion per tenant. Backups and restore drills for the coordinator store |
 | **Operations** | One process on one host | Rolling upgrades with version skew rules: workers are at most one minor version behind the coordinator, and events are versioned and upcast. Zero-downtime migrations for the shared store. A health endpoint per component |
-| **API** | CLI verbs; the dashboard's local HTTP | One versioned API (HTTP + event stream) that the CLI, dashboard, phone and other instances all use, plus outbound webhooks. No client gets a private back door |
+| **API** | CLI verbs; the dashboard's local HTTP | One versioned API (HTTP + event stream) for the CLI, dashboard, phone and other instances, plus webhooks. **Approval-tier and protected decisions stay terminal-bound** (a typed confirmation on an interactive TTY, or an enrolled-device passkey); an API token alone can never make them (D6) |
 
 **Order of work:**
 - **During the C# port (cheap seams):** the event envelope and transactional outbox, outward actions as outbox
@@ -786,6 +789,79 @@ lists what exists and what is needed, in the order it's built.
 
 **Not a goal:** Sindri doesn't become a hosted SaaS. Team mode runs on infrastructure the team controls, under
 its own policy.
+
+## 17.22 Round-2 resolutions (D1–D12)
+
+Where this conflicts with earlier text, this section wins. §17.5 and §17.13 are read through it.
+
+**The lease, from F0.5 (D2).**
+- Store: one row in a small SQLite file on the always-on host, served to other hosts over the tailnet by the
+  coordinator process (later the P4 shared store). Fields: holder host id, fencing token (monotonic), expiry.
+  TTL 60 s, renewed every 20 s.
+- **Required from F0.5**, when the first push happens; a single host holds it trivially. Today's per-host ledger
+  epoch (`ledger/db.ts`) and the profile's `hosts.active` (`observe.ts`) are replaced by the lease's fencing token.
+- Every outward action (outbox dispatch) and every **desk command** (`approve`, `answer`, `decide`, `freeze`) checks
+  the token. A host without the lease forwards the command to the holder, or refuses with `SND-LEASE-0xx`. It never
+  writes to its local ledger.
+
+**Phone authority (D3).**
+- Nonces are **issued by the server** per item version. An offline decision can only use a nonce received while
+  online for that version, and is refused if the item changed.
+- Undo is the 10-second outbox delay above. The dashboard origin carries comments; walkthroughs link to it.
+
+**Workers (D4).**
+- Workers are enrolled at the desk (`sindri worker enroll`), each with its own key and a class (`work` or
+  `personal`, resources). Steps are matched to worker class, and ring-1 Steps only go to `work` workers.
+- The model proxy and the real tokens stay on the coordinator. Workers get per-Step proxy credentials.
+- **Verification never runs on the worker that produced the work.** Phase 1 and phase 2 run on the coordinator or a
+  different worker.
+
+**Outbox correctness (D9).**
+- Before retrying a command, the dispatcher checks whether its effect already exists (the PR, comment, label or
+  merge). Idempotency keys include the event's sequence number. Requeued Steps carry fenced attempt tokens.
+- Rings are a dimension inside a tenant. Per-ring WIP limits (P1) apply within each tenant.
+
+**Multiplayer security (D10).**
+- The gate re-checks every outbox command at dispatch time.
+- Tenancy is enforced in the store with database-level filters, and every cache key includes the tenant.
+- The audit chain's head is anchored outside its store once a day (a signed commit to a private audit repo).
+- Policy may require a second approver when an owner approves their own request.
+- Instances authenticate each other with mutual TLS or signed requests.
+- ntfy publishing is authenticated. Tailnet identity headers are trusted only from the local `tailscale serve`
+  socket. Adapter pins are approval-tier. The graph store follows §8.4 retention.
+
+**Desk and status surfaces (D11, D12).**
+- A standing-workflow panel shows each workflow's tier, last run, precision and a **pause** control.
+- A "blocked on you" alert fires when the factory has no runnable work without a human, within the notification
+  budget.
+- Phone accessibility: every swipe action has a screen-reader action, and focus moves to the next item after a
+  decision.
+- Generated walkthroughs follow a semantics checklist (landmarks, headings, alt text, captions).
+- `sindri queue why <step>` explains why a Step is waiting. The error catalogue gains the `SANDBOX`, `LEASE`,
+  `WORKER`, `OUTBOX` and `PHONE` areas.
+- Docs deliverables per F-step are listed in the plan that builds it. Evidence publish asks first unless the repo
+  profile says otherwise.
+
+**Sizes, exit bars and ring-1 rows (D8).**
+
+| Step | Size | Exit bar |
+|---|---|---|
+| F0 | S | Schemas, `validate`, `freeze`, `init --from-scope`, `amend` with golden tests |
+| F0.5 | S | One micro-packet → one merged PR with evidence. **It runs on one of the C# port packets** (readiness R2), so the first factory-built PR lands during the port |
+| F1 | M | 10 packets built with lean bootstrap; first-call tokens within budget |
+| F2 | L | 3 packets with parallel tasks merged into epics, rework ≤ the step-0 baseline |
+| F3 | M | Workflow generation used on 5 packets; zero `scope-mismatch` parks from missing lenses |
+| F4 | M | 2 weeks of phone decisions; median decision latency below the desk's |
+| F5 | L | One context-graph arm adopted per repo by backtest |
+| F6 | M | 3 self-adopted prompt changes held for 20 items |
+| F7 | M | One handover each way and one rate-limit failover in production |
+
+"F3 holds" means 5 packets merged through workflow generation with rework at or below the step-0 baseline. Human
+minutes are compared with the step-0 baseline in the weekly digest.
+
+Ring-1 rows added to §17.19's table: containers on the work host (on, if the work host can run them), auto-start
+(off until ring-1 policy allows), P3 federation (on, home → work only), workplace connectors (only those the
+workplace approves).
 
 ## 17.17 Decisions
 

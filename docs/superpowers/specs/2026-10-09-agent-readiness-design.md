@@ -1,6 +1,6 @@
 # Agent readiness for agentic-workflow — design
 
-Status: draft for review, revision 2 · 2026-10-09 (applies /autoplan findings A1–A19; the C# port itself is decided and was not under review)
+Status: draft for review, revision 3 · 2026-10-09 (applies /autoplan round 1 A1–A19 and round 2 B1–B13; the C# port itself is decided and was not under review)
 Target: **Level 5 (Autonomous)** on Factory's agent-readiness framework. Level 4 is a prerequisite for the
 factory work in `2026-10-09-sindri-factory-addendum.md` (§17.16). Level 5 is reached together with that work.
 
@@ -345,14 +345,14 @@ group.MapPost("/items/{id}/start", async (ItemId id, StartItemBody body, IServic
 AOT publishing runs only in a separate CI job and in releases. Local builds and tests are JIT, so the inner loop
 stays fast.
 
-**Seams for distribution** (factory addendum §17.20): the C# ledger sits behind a `LedgerStore` port with a
-shared contract-test suite, every event is idempotent, `Lease`, `Launcher` and `Scheduler` are ports, and every row
-carries a tenant and ring key. These cost little now and avoid a second rewrite later.
-
-**Seams for multiplayer** (factory addendum §17.21): one event envelope (`actor`, `tenant`, `ring`, `causation`,
-`correlation`, `trace`), a transactional outbox for every state change and every outward action, `Bus` and
-`Secrets` ports, and OpenTelemetry with trace context passed into child processes and containers. They live in
-`Aw.Kernel` and `Aw.Kernel.Telemetry`, so every ported package gets them from its first commit.
+**Seams for distribution and multiplayer** (factory addendum §17.20, §17.21): a `LedgerStore` port with a shared
+contract-test suite, idempotent events, an event envelope (`actor`, `tenant`, `ring`, `causation`, `correlation`,
+`trace`), a transactional outbox, and `Lease`, `Launcher`, `Scheduler`, `Bus` and `Secrets` ports, in `Aw.Kernel`
+and `Aw.Kernel.Telemetry`. **Timing (B1):** every package is ported **at parity first**, with the schemas and bytes
+§4c freezes. The seams that change stored schemas (tenant and ring keys, envelope columns, the outbox table) are
+added in a **post-cutover migration**, only after that package's TS build has been deleted (the 14-day rollback
+window has passed). Golden tests are re-recorded at that migration. Ports and interfaces that don't change stored
+data (`Bus`, `Secrets`, `Lease`, OTel) go in from the first commit.
 
 ### 4b.7 Repository tree
 
@@ -428,7 +428,9 @@ No package is ported until this contract and its harness exist. Every rule here 
 packages write today:
 - camelCase names, JS-compatible escaping (no `\u0027` where Node writes `'`), the same null and
   number handling, and `toISOString()`-identical timestamps (UTC, millisecond precision, `Z`);
-- a canonical JSON writer (sorted keys, no whitespace) for anything hashed, such as judge's `input_digest`;
+- digests reproduce the TS bytes exactly, including **key insertion order** where today's digests depend on it
+  (judge's `input_digest`, `evaluate.ts:84`). A canonical sorted-key form is used only for new digests, which carry
+  a `digestVersion` field (B4);
 - a compat test suite that feeds recorded TS outputs through the C# reader and writer and requires identical bytes.
 
 **Golden harness (A1, A15).** Each package's contract is recorded from the TS build and replayed against the C# build:
@@ -455,25 +457,46 @@ hooks that call a ported binary log a `HOOK-FAILOPEN` event that the daily diges
 
 **Coexistence and rollback (A5, A18).**
 - Each package is ported **whole**, not module by module, behind one entry-point shim: `bin/<tool>` runs the C# or
-  TS build according to `runtime.<package>: ts | cs` in the profile. Rollback is one profile change.
+  TS build according to **`runtime.json`** (B3). It lives at `$AW_STATE_DIR/runtime.json` on installs and at
+  `config/runtime.json` in the repo for CI, is owned by the shim, and is read by every package. It is not part of
+  sindri's approved profile. Rollback is one line in that file, and CI runs TS jobs only for packages still on `ts`.
+- **Shim failures deny (B5).** A missing binary, a checksum mismatch or a crash exits with a dedicated code. Gate and
+  scrub hooks treat that code as **deny**, never as a pass, and log `SHIM-FAIL`. The shim adds at most 10 ms per call,
+  measured in CI.
+- **Fail-open is measurable (B5).** Before any port, R1a changes every hook that can fail open to log
+  `HOOK-FAILOPEN` with its cause (today `send-gate.sh` allows silently). The "zero fail-open" cutover rule counts
+  those events.
+- **Judge runs in shadow first (B9).** For one week before judge's switch, both builds answer every call, the TS
+  answer is used, and any disagreement is recorded. Cutover needs zero unexplained disagreements.
 - During a package's cutover its ledger and state schemas are frozen. Neither build migrates them.
 - The TS package is frozen (bug fixes only) once its port starts, and deleted when the C# build has run as default
   for 14 days with no rollback.
 - `setup.sh`, the provider installers, MCP registration (`node dist/mcp.js` today) and the launchd jobs call the
   shim, never a runtime directly.
-- CI publishes prebuilt binaries per OS and architecture (macOS arm64, Linux x64 and arm64) as release assets.
-  `setup.sh` downloads and verifies them by checksum, or builds from source with `--from-source`.
+- **Prebuilt binaries (B6).** Release builds per OS and architecture carry build-provenance attestations. A committed
+  `binaries.lock` maps each tool and platform to its expected SHA-256, so the check doesn't trust a checksum
+  published in the same release. `setup.sh` installs the binaries the checkout's `binaries.lock` names and verifies
+  them, and contributors build from source by default (`--prebuilt` opts in). Release tags are protected by a tag
+  ruleset (only the owner creates `v*` tags), releases are immutable, and sindri's `stable` and `next` channels map to
+  tags.
 - The evolve registry's module paths move with a test that fails if any registered suite disappears (`registry.ts`
   enumerates paths today).
 
-**Packets for ports (A6).** A minimal C# packet schema with `validate` and `freeze` is built in R1a, so every port
-runs as a packet from the start.
+**Packets for ports (A6, B2).** `Aw.Packets` (schema, `validate`, `freeze`) is a standalone C# package built at the end
+of R1b, before any port, so every port runs as a packet. It doesn't depend on sindri, so it runs while sindri is
+still TS.
 
 ## 4d. CI, identity and supply chain (public repo)
 
 **Agent identity (A9).**
-- Agents push and open PRs as a **GitHub App** (or a fine-grained token) that is not the owner's account. The
-  owner's admin token is never available inside agent sessions.
+- Agents push and open PRs as the **GitHub App** `sindri-agentic-workflow`, never as the owner. Its permissions are
+  contents, pull requests and issues write, checks **read**, metadata read; no workflows, administration or secrets.
+- **Honest gap until containers (B7):** until agent sessions run in the main spec's containers (rollout R4), they run
+  as the owner's OS user, so the owner's `gh` login and keychain are reachable in principle. Until then: sessions get a
+  scrubbed environment (`GH_TOKEN` set to a short-lived App token, `GH_CONFIG_DIR` pointed at an App-only profile),
+  and a hook denies `gh auth`, `security find-*` and reads of the owner's `gh` config.
+- The `main` ruleset requires each required check **from the GitHub Actions source**, so a check run posted by any
+  other app can't satisfy it.
 - `main` is protected by a ruleset with an **empty bypass list**: required checks, linear history, no force pushes.
   There's no bypass label.
 - The owner merges as themself. CODEOWNERS covers the protected modules and is backed by a required check (a solo
@@ -483,7 +506,9 @@ runs as a packet from the start.
 - `permissions: read-all` at the workflow level, with write scopes granted per job only where needed.
 - `pull_request_target` and `workflow_run` with untrusted checkouts are banned. Forks get no secrets.
 - Every action is pinned to a full commit SHA. `zizmor` lints the workflows.
-- Model or API keys are only used in scheduled or manually dispatched workflows, never on pull requests.
+- Model or API keys live in a **`main`-only environment** with the owner as required reviewer (B8), used only by
+  scheduled or manually dispatched workflows on `main`. They are never repository secrets that any pushed branch
+  could reach.
 - Required checks always report a status: a path-filtered job reports a no-op success instead of skipping, so a
   skipped job can't block or silently pass a merge (A11).
 - Dependabot (or Renovate) with grouped updates and a 14-day cooldown, matching the existing pin policy.
@@ -500,6 +525,25 @@ runs as a packet from the start.
 - The scrubber runs as a processor on logs and OpenTelemetry exports, so new logging can't carry secrets out.
 - The devcontainer is for humans, and it is never the agent sandbox. Docker-in-Docker means root on the host, so
   agent sessions keep using the Sindri containers of the main spec §8.2.
+
+## 4e. Round-2 resolutions (B10–B13)
+
+- **Tiers (B10):** `Redaction` is domain-free and moves to tier 0 next to `Aw.Kernel`, so judge and sindri both depend
+  on it downward. Scorer reading Evidence's run files is declared as a `file` edge. The new outbox table is named
+  `outbox_commands` to avoid `judge/outbox`. Sindri's fan-out exceeds the limit and carries a recorded exception
+  until its modules split.
+- **Readiness target (B11):** the target level is per ring in `readiness.yaml` (ring 0: Level 4 before F0, Level 5
+  with F3). Exit code 0 means every repo in scope meets its ring's target.
+- **Overrides (B11):** requested by PR only. `overrides.yaml` is CODEOWNERS-protected and an approval-tier file, so an
+  agent PR can't grant itself one.
+- **Weekly items (B11):** deduplicated by criterion id and closed automatically when the criterion passes.
+- **Quarantine (B11):** a test enters on 2 flaky failures in 7 days and leaves after 20 green runs in a row.
+- **Hook and dispatcher safety (B12):** the outbox dispatcher re-runs the gate checks on each command at dispatch
+  time. `actor` is set by the host process, never by the caller. `detect-secrets.sh` is retired into the shared
+  pattern file. The bridge checks the `Host` header (DNS rebinding).
+- **Text fixes (B13):** stale `§4` references point to §4b; the colour rule reads "colour is never the only carrier of
+  meaning"; test-lane filters use xUnit v3 trait syntax; a doc-migration checklist (README, ARCHITECTURE, TESTING,
+  CODE_STYLE, ERD, AGENTS.md, rules) and a CI job graph are R1b deliverables.
 
 ## 5. Criteria plan by level
 
@@ -558,7 +602,7 @@ next PR shows it passing.
   - `--json` follows a versioned schema.
 - **Every CI failure message** names the rule id, the measured value, the limit and the fix command. That covers lane
   budgets, ratchets, `deps.yaml` drift, fan-out and analyzer rules. Text is never the only carrier of meaning:
-  colors are paired with words, and `NO_COLOR` is respected (A19).
+  colour is never the only carrier of meaning, and `NO_COLOR` is respected (A19).
 - **Overrides are records, not labels:** an override names the rule, the reason, the approver and an expiry date,
   and lives in `overrides.yaml`. An expired override fails CI. Quarantined tests leave quarantine after 20 green
   runs in a row (A17).
@@ -593,8 +637,8 @@ Recent pace: about 49 commits in 60 days. The sizes below are estimates to be re
 | Step | Contents | Size | Exit |
 |---|---|---|---|
 | R0 | Baseline: Factory's report if Droid is available, plus a quick manual pass over the pillars | XS | Baseline recorded |
-| R1a | **Safety and measurement first:**<br>• CI hardened for a public repo, the `main` ruleset and the agent identity (§4d);<br>• the cutover contract and harness (§4c): byte-compat profile, golden harness running the real hooks, the scrubber differential corpus, entry-point shims, the install and MCP-registration migration, prebuilt-binary releases;<br>• golden recordings for every TS package;<br>• the AOT spike (R7, R8, R9, the MCP C# SDK);<br>• a minimal C# packet schema with `validate` and `freeze` (§4c);<br>• `sindri readiness check` as the first templated package (§8) | M (1–2 weeks) | Golden tests green on TS; readiness check reports a baseline; agents can't bypass `main` |
-| R1b | **The template:**<br>• `Directory.Build.props`, Central Package Management, analyzers with one owner per rule, the ratchet baseline, `.editorconfig`;<br>• `Aw.Kernel` and its `Data`, `Telemetry` and `Testing` parts;<br>• `deps.yaml` with every edge kind and its checks (§4b.1a);<br>• the `/new-package` and `/new-slice` scaffolds (inputs, generated files, a red test) and `AGENTS.md` for C#;<br>• rule records for the §4b rules;<br>• W5 devcontainer and W6 templates | M (1–2 weeks) | A scaffolded package passes every check; the readiness check reports Level 4 for the template |
+| R1a | **Safety and measurement first:**<br>• CI hardened for a public repo, the agent App, the `main` and tag rulesets, the `main`-only key environment (§4d);<br>• fail-open logging in every hook (§4c, B5);<br>• the cutover harness: byte-compat profile, golden harness running the real hooks, scrubber differential corpus, entry-point shims and `runtime.json`, install and MCP-registration migration, `binaries.lock` and release provenance;<br>• the AOT spike (R7, R8, R9, the MCP C# SDK);<br>• the readiness **baseline by a throwaway script** (B2);<br>• usage metrics collection starts here, for R3 (B9).<br>Golden recordings are made **per package when its port starts**, not all up front (B9) | M (1–2 weeks) | Shims and fail-open logging live; baseline recorded; agents can't bypass `main` |
+| R1b | **The template:**<br>• `Directory.Build.props`, Central Package Management, analyzers with one owner per rule, the ratchet baseline, `.editorconfig`;<br>• `Aw.Kernel` and its `Data`, `Telemetry` and `Testing` parts;<br>• `deps.yaml` with every edge kind and its checks (§4b.1a);<br>• the `/new-package` and `/new-slice` scaffolds (inputs, generated files, a red test) and `AGENTS.md` for C#;<br>• rule records for the §4b rules;<br>• W5 devcontainer and W6 templates;<br>• **`Aw.Readiness` and `Aw.Packets` as the first two standalone packages built from the template** (B2) | M (1–2 weeks) | A scaffolded package passes every check; `Aw.Readiness` reports Level 4 for the template; the R2 estimate is fixed here as the stop-rule baseline (B9) |
 | R2 | **The ports, one packet per package, whole:** `Judge` and `Redaction` → `Scorer` → `BugFix` → `Bridge` → `Evidence` → `Sindri`. Sindri is sized per module inside its packet. **In parallel,** new factory code (addendum F0 schemas, rule records) is written in C# from the start | L–XL (estimate 6–10 weeks; each packet carries its own) | Every package on C# by default through the shim; TS deleted 14 days after each cutover |
 | R3 | Remaining Level 4 criteria that need usage data (promotion frequency, flake rates, doc freshness over time), and W9 | S–M | Level 4 passed. **Factory work (F0) starts here** |
 | R4 | Addendum F0–F3 plus the readiness module's weekly workflow | With the addendum | Level 5 passed |
