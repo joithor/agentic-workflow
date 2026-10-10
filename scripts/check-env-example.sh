@@ -103,31 +103,31 @@ if [ "$LIST" -eq 1 ]; then
 fi
 
 awk -F'\t' -v ignore_file="$IGNORE_FILE" '
-  FILENAME == ARGV[1] { doc[$1] = 1; ind[$1] = $2; val[$1] = $3; next }
-  FILENAME == ARGV[2] { ign[$1] = 1; why[$1] = $2; next }
+  # A name listed twice keeps its worst case: any copy with a value, any ignore entry without a reason.
+  FILENAME == ARGV[1] { doc[$1] = 1; ind[$1] = $2; val[$1] = val[$1] || $3; next }
+  FILENAME == ARGV[2] { why[$1] = (($1 in ign) ? why[$1] : 1) && $2; ign[$1] = 1; next }
   { read[$1] = $2 }
+  function problem(text) { print text | sorted; bad++ }
   END {
+    sorted = "LC_ALL=C sort"
     bad = 0
     for (n in read) if (!(n in doc) && !(n in ign)) {
-      printf "ENV-EXAMPLE-001: %s is read at %s but is not in .env.example — fix: add a \"# <what it does>\" line and \"# %s=\" to .env.example, or \"%s # <reason>\" to %s if the OS, shell or CI sets it\n", n, read[n], n, n, ignore_file
-      bad++
+      problem(sprintf("ENV-EXAMPLE-001: %s is read at %s but is not in .env.example — fix: add a \"# <what it does>\" line and \"# %s=\" to .env.example, or \"%s # <reason>\" to %s if the OS, shell or CI sets it", n, read[n], n, n, ignore_file))
     }
     for (n in doc) if (!(n in read) && !ind[n] && !(n in ign)) {
-      printf "ENV-EXAMPLE-002: %s is in .env.example but nothing reads it — fix: remove the entry, or mark its comment \"(indirect: <where it is read>)\" if it is read through a configured name\n", n
-      bad++
+      problem(sprintf("ENV-EXAMPLE-002: %s is in .env.example but nothing reads it — fix: remove the entry, or mark its comment \"(indirect: <where it is read>)\" if it is read through a configured name", n))
     }
     for (n in ign) {
-      if (!why[n]) { printf "ENV-EXAMPLE-003: %s in %s has no reason — fix: write \"%s # <why the scan should skip it>\"\n", n, ignore_file, n; bad++ }
-      if (n in doc) { printf "ENV-EXAMPLE-003: %s is both in %s and in .env.example — fix: keep one (document a variable users set; ignore one the OS, shell or CI sets)\n", n, ignore_file; bad++ }
+      if (!why[n]) problem(sprintf("ENV-EXAMPLE-003: %s in %s has no reason — fix: write \"%s # <why the scan should skip it>\"", n, ignore_file, n))
+      if (n in doc) problem(sprintf("ENV-EXAMPLE-003: %s is both in %s and in .env.example — fix: keep one (document a variable users set; ignore one the OS, shell or CI sets)", n, ignore_file))
     }
     for (n in doc) if (val[n] && n ~ /(KEY|TOKEN|SECRET|PASSWORD|PASSWD|CREDENTIAL)/) {
-      printf "ENV-EXAMPLE-004: %s in .env.example carries a value — fix: leave secret-named entries empty (\"# %s=\")\n", n, n
-      bad++
+      problem(sprintf("ENV-EXAMPLE-004: %s in .env.example carries a value — fix: leave secret-named entries empty (\"# %s=\")", n, n))
     }
+    close(sorted)
     nread = 0; for (n in read) nread++
     nign = 0; for (n in ign) nign++
     if (bad > 0) { printf "ENV-EXAMPLE: %d problem(s); %d names read\n", bad, nread; exit 1 }
     printf "ENV-EXAMPLE: %d names read, all documented (%d ignored by %s)\n", nread, nign, ignore_file
   }
-' "$TMP/documented" "$TMP/ignored" "$TMP/reads" | LC_ALL=C sort -s -t: -k1,1
-exit "${PIPESTATUS[0]}"
+' "$TMP/documented" "$TMP/ignored" "$TMP/reads"
