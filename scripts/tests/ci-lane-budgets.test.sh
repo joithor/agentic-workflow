@@ -102,14 +102,15 @@ $(cat "$WORK/log")"
 
 test_a_package_over_budget_fails_with_the_rule_id() {
   local d="$WORK/over"; make_fixture "$d"; : > "$WORK/log"
-  export STUB_Aw_Foo_Tests_unit=0.4 STUB_Aw_Foo_Core_Tests_unit=0.4
+  # Aw.Foo.Tests is the slower of Foo's two projects, so the fix command names it.
+  export STUB_Aw_Foo_Tests_unit=0.6 STUB_Aw_Foo_Core_Tests_unit=0.1
   run_check "$d" --budget unit=0.5,integration=5
   unset STUB_Aw_Foo_Tests_unit STUB_Aw_Foo_Core_Tests_unit
   [ "$RC" -eq 1 ] || fail "over budget must exit 1, got $RC:
 $OUT"
   printf '%s\n' "$OUT" | grep -E '^LANE-PKG-001' | grep -F 'Foo' | grep -F 'unit' | grep -F 'limit 0.5 s' \
-    | grep -qF 'dotnet test --project tests/Aw.Foo.Tests/Aw.Foo.Tests.csproj' \
-    || fail "LANE-PKG-001 must name the package, lane, measured s, limit and the fix command:
+    | grep -F 'Slowest project: Aw.Foo.Tests' | grep -qF 'dotnet test --project tests/Aw.Foo.Tests/Aw.Foo.Tests.csproj' \
+    || fail "LANE-PKG-001 must name the package, lane, measured s, limit, the slowest project and the fix command:
 $OUT"
   printf '%s\n' "$OUT" | grep -qE '^ok +FooData' || fail "a package under budget still reports ok:
 $OUT"

@@ -51,8 +51,9 @@ EXCLUDED=(
   "config/tests/statusline-judge.test.sh	stale on main: it extracts only judge_segment() from statusline.sh, which now calls judge_health(), so all 3 cases fail; config/lib/tests/statusline.test.sh covers the judge column"
 )
 
-# path<TAB>reason. Suites that measure wall time or race signals: they run after the pool,
-# one at a time, so CPU contention from other suites can't turn a pass into a timeout.
+# path<TAB>reason. Suites that measure wall time or race signals, or that watch state outside
+# their own sandbox: they run after the pool, one at a time, so CPU contention or another
+# suite's writes can't turn a pass into a failure.
 # Everything else must be safe to run beside any other suite (its own mktemp dirs, its
 # own HOME or AW_STATE_DIR, stubs on PATH, no fixed ports).
 SERIAL=(
@@ -62,6 +63,7 @@ SERIAL=(
   "config/lib/tests/statusline.test.sh	asserts the statusline returns within 1 s while a 3 s scorer runs, then polls a 10 s deadline for the cache"
   "config/hooks/tests/sindri-nudge.test.sh	asserts the nudge gives up within a 300 ms budget (AW_SINDRI_NUDGE_BUDGET_MS) against a 5 s sleeping sindri"
   "config/lib/tests/prompt-sort.test.sh	asserts the hook gives up within a 600 ms budget (AW_PROMPT_SORT_BUDGET_MS) against a 5 s sleeping sorter"
+  "config/lib/tests/aw-state-dir-isolation.test.sh	snapshots the real HOME's install-target locations around a sandboxed installer run and fails on any change, so another suite writing there at the same time is a false failure"
   "scripts/tests/readiness-baseline.test.sh	asserts a 200 ms gh timeout (READINESS_GH_TIMEOUT_MS) fires against a 3 s stub and is reported as the timeout, not a parse error"
 )
 
