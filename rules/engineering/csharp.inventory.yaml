@@ -1,4 +1,5 @@
-# The §4b rule list (readiness spec): one record per entry in rules/engineering/csharp/<slug>.yaml.
+# The §4b rule list (readiness spec), plus the rules .agents/rules/csharp.md adds under a §4b heading (their
+# source is that file): one record per entry in rules/engineering/csharp/<slug>.yaml.
 # Checked by node scripts/check-rules.mjs; see docs/csharp/rule-records.md.
 version: 1
 spec: docs/superpowers/specs/2026-10-09-agent-readiness-design.md
@@ -22,6 +23,8 @@ records:
   - id: engineering.csharp.tiers-point-down
     section: "4b.1a"
   - id: engineering.csharp.no-package-cycles
+    section: "4b.1a"
+  - id: engineering.csharp.tier-zero-minimal-deps
     section: "4b.1a"
   - id: engineering.csharp.no-namespace-cycles
     section: "4b.1a"
@@ -96,7 +99,7 @@ records:
   - id: engineering.csharp.architecture-tests
     section: "4b.5"
   - id: engineering.csharp.tests-live-under-tests
-    section: "4b.5"
+    section: "4b.6"
   - id: engineering.csharp.sdk-pinned
     section: "4b.6"
   - id: engineering.csharp.warnings-are-errors

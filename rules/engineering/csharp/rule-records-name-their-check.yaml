@@ -2,7 +2,7 @@ schemaVersion: 1
 id: engineering.csharp.rule-records-name-their-check
 kind: engineering
 section: "4b.9"
-text: "Every §4b rule has a rule record naming the check that enforces it, and every check id the C# rules docs name belongs to a record."
+text: "Rule records carry the check id that enforces each rule; a denial or build error names the rule, and `sindri rules explain <id>` shows the why."
 why: "A denial or build error names its rule, and the rule says why."
 select:
   languages: [csharp]
@@ -17,7 +17,8 @@ checks:
   - type: check-rules
     id: "RULE-CHECK-001"
     status: active
-gap: closed
+gap: partial
+gapNote: "check-rules proves every rule has a record naming its check; `sindri rules explain <id>` (the why at the point of denial) isn't built yet (sindri is still TypeScript)."
 source:
   type: adr
   ref: "docs/superpowers/specs/2026-10-09-agent-readiness-design.md#4b9"

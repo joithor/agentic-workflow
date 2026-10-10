@@ -11,9 +11,9 @@ checks:
   - type: review
     id: "lifetimes"
     status: active
-    note: "ValidateScopes in each host's DI test catches captive dependencies"
+    note: "reviewed; each host's DI test will catch captive dependencies"
 gap: open
-gapNote: "Only captive scoped-in-singleton dependencies are caught (ValidateScopes); the lifetime choice itself is reviewed."
+gapNote: "No host exists yet; once each host's DI test exists (T6), ValidateScopes catches captive scoped-in-singleton dependencies. The lifetime choice itself is reviewed."
 source:
   type: adr
   ref: "docs/superpowers/specs/2026-10-09-agent-readiness-design.md#4b4"

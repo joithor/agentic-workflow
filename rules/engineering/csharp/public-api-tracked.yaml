@@ -13,21 +13,25 @@ checks:
     status: active
     via: baseline
     package: Microsoft.CodeAnalysis.PublicApiAnalyzers
+    category: ApiDesign
   - type: analyzer
     id: "RS0017"
     status: active
     via: baseline
     package: Microsoft.CodeAnalysis.PublicApiAnalyzers
+    category: ApiDesign
   - type: analyzer
     id: "RS0036"
     status: active
     via: baseline
     package: Microsoft.CodeAnalysis.PublicApiAnalyzers
+    category: ApiDesign
   - type: analyzer
     id: "RS0037"
     status: active
     via: baseline
     package: Microsoft.CodeAnalysis.PublicApiAnalyzers
+    category: ApiDesign
   - type: compiler
     id: "CS1591"
     status: active

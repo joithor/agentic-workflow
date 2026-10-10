@@ -15,6 +15,6 @@ checks:
 gap: open
 gapNote: "No analyzer requires the Justification yet."
 source:
-  type: adr
-  ref: "docs/superpowers/specs/2026-10-09-agent-readiness-design.md#4b6"
+  type: import
+  ref: ".agents/rules/csharp.md"
 status: active

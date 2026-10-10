@@ -2,7 +2,7 @@ schemaVersion: 1
 id: engineering.csharp.endpoint-calls-one-service
 kind: engineering
 section: "4b.2"
-text: "Endpoints and CLI commands bind input, call exactly one IService<TReq, TRes>, and map the Result; no branching on domain state."
+text: "Endpoints and CLI commands bind input, call exactly one IService<TReq, TRes>, and map the Result; no branching on domain state; endpoints are grouped per feature with MapGroup on a CreateSlimBuilder host."
 why: "Thin entry points keep behavior in testable services and AOT-friendly generated binding."
 select:
   languages: [csharp]
@@ -12,7 +12,7 @@ checks:
     id: "AW1004"
     status: pending
     pendingPr: 132
-    note: "endpoint lambdas only: CLI commands and branching on domain state stay a review item"
+    note: "endpoint lambdas only: CLI commands, branching on domain state, MapGroup and CreateSlimBuilder stay review items"
 gap: pending
 source:
   type: adr

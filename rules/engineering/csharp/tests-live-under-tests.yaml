@@ -1,7 +1,7 @@
 schemaVersion: 1
 id: engineering.csharp.tests-live-under-tests
 kind: engineering
-section: "4b.5"
+section: "4b.6"
 text: "Every *.Tests and *.Testing project lives under tests/, and nothing else does; the tests/.editorconfig analyzer policy applies there."
 why: "The test analyzer policy applies by location, so placement must be exact."
 select:
@@ -15,5 +15,5 @@ gap: closed
 relatedIds: ["CA1707", "IDE0005", "xUnit1030", "xUnit1051"]
 source:
   type: adr
-  ref: "docs/superpowers/specs/2026-10-09-agent-readiness-design.md#4b5"
+  ref: "docs/superpowers/specs/2026-10-09-agent-readiness-design.md#4b6"
 status: active

@@ -14,7 +14,8 @@ checks:
   - type: check-deps
     id: "DEPS-TIER-002"
     status: active
-gap: closed
+gap: partial
+gapNote: "Direction is checked (DEPS-TIER-001/002); read-only access on db and file edges has no deps.yaml field or scan, so it's reviewed."
 source:
   type: adr
   ref: "docs/superpowers/specs/2026-10-09-agent-readiness-design.md#4b1a"

@@ -15,7 +15,14 @@ checks:
     id: "dotnet-verify-packages"
     ref: scripts/dotnet-verify-packages.sh
     status: active
-gap: closed
+    note: "a script check proves the file exists, not that CI runs it"
+  - type: ci
+    id: "dotnet restore (locked, signature-verified) and the NuGet supply-chain check"
+    ref: .github/workflows/ci.yml
+    status: pending
+    pendingPr: 132
+gap: partial
+gapNote: "CI on main runs only the locked restore (and AW0001); a changed lock file and the signature check are scripts/dotnet-verify-packages.sh, a manual merge-gate item until #132's CI step lands."
 source:
   type: adr
   ref: "docs/superpowers/specs/2026-10-09-agent-readiness-design.md#4b6"
