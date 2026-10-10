@@ -191,8 +191,9 @@ export function checkPackage(journal, p, s, log) {
   const root = journal.root;
   const { prod, tests } = projectsOf(p);
   const restored = [...prod, ...tests, { path: R.ARCH_CSPROJ }];
+  // Record every lock file first: restoring one project also writes the lock files of the projects it references.
+  for (const proj of restored) journal.watch(path.join(path.dirname(proj.path), "packages.lock.json"));
   for (const proj of restored) {
-    journal.watch(path.join(path.dirname(proj.path), "packages.lock.json"));
     // --force: a restore no-op cache left by an earlier, reverted run would otherwise skip rewriting the lock file.
     mustPass(root, "SCAFFOLD-RESTORE", "dotnet", ["restore", proj.path, "--force"], "a package the templates reference must be pinned in Directory.Packages.props", log);
   }
