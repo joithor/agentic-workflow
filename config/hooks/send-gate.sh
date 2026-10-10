@@ -4,6 +4,15 @@
 # denies-as-pure-ack. Fails open to allow on any judge failure (RF-1).
 set -uo pipefail
 HOOK_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# HOOK-FAILOPEN: record why this hook is failing open (config/lib/failopen.sh,
+# installed at <hooks>/lib/failopen.sh). Logging only: never changes a decision.
+failopen() {
+  local d f; d="$(cd "$(dirname "${BASH_SOURCE[0]}")" 2>/dev/null && pwd)"
+  for f in "$d/lib/failopen.sh" "$d/../lib/failopen.sh"; do
+    if [ -f "$f" ]; then . "$f" 2>/dev/null && aw_failopen send-gate "$@"; break; fi
+  done
+  return 0
+}
 # Installed layout first (scripts/install-wake-gating.sh copies locks.sh to
 # $HOOKS_DIR/lib/locks.sh alongside this script), then a raw repo-checkout
 # layout (config/hooks/send-gate.sh next to config/lib/locks.sh) — a bare
@@ -29,6 +38,7 @@ if [ -z "$LOCKS_LIB" ] || ! command -v acquire_lock > /dev/null 2>&1; then
   # for it — judge/src/db.ts's `failures` table is only ever written from
   # inside evaluate()'s own provider-failure path, not from a plain shell
   # hook — so it's skipped rather than faked.
+  failopen locks-lib-missing
   jq -nc '{"hookSpecificOutput":{"hookEventName":"PreToolUse","permissionDecision":"allow"},"systemMessage":"send-gate: locks.sh missing, wake gating disabled"}'
   exit 0
 fi
@@ -53,12 +63,13 @@ deny() {
 }
 
 INPUT="$(cat 2>/dev/null || true)"
-[ -n "$INPUT" ] || allow
+[ -n "$INPUT" ] || { failopen empty-input; allow; }
 
 SESSION_ID="$(printf '%s' "$INPUT" | jq -r '.session_id // "unknown"')"
 AGENT_TYPE="$(printf '%s' "$INPUT" | jq -r '.agent_type // empty')"
 MESSAGE="$(printf '%s' "$INPUT" | jq -r '.tool_input.message // empty')"
-[ -n "$MESSAGE" ] || allow
+# A readable payload with no message (a control message) is not a failure.
+[ -n "$MESSAGE" ] || { failopen input "$INPUT"; allow; }
 
 # BLOCKER fix (Step 2, F6): a control message (shutdown_request,
 # shutdown_response, ...) is never routed through the classifier —
@@ -83,9 +94,9 @@ OUTBOX_FILE="$OUTBOX_DIR/$SESSION_ID.jsonl"
 LOCK_DIR="$OUTBOX_FILE.lock"
 
 JUDGE_INPUT="$(jq -nc --arg text "$MESSAGE" --arg sk "$SENDER_KIND" '{text: $text, senderKind: $sk}')"
-JUDGE_OUT="$(printf '%s' "$JUDGE_INPUT" | AW_SESSION_ID="$SESSION_ID" judge wake-gate 2>/dev/null)" || allow
-DECISION="$(printf '%s' "$JUDGE_OUT" | jq -r '.decision // empty' 2>/dev/null)" || allow
-[ -n "$DECISION" ] || allow
+JUDGE_OUT="$(printf '%s' "$JUDGE_INPUT" | AW_SESSION_ID="$SESSION_ID" judge wake-gate 2>/dev/null)" || { failopen "judge-exit-$?"; allow; }
+DECISION="$(printf '%s' "$JUDGE_OUT" | jq -r '.decision // empty' 2>/dev/null)" || { failopen judge-output-unparsable; allow; }
+[ -n "$DECISION" ] || { failopen judge-decision-missing; allow; }
 
 case "$DECISION" in
   send)

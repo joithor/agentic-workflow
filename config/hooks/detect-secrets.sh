@@ -1,12 +1,25 @@
 #!/usr/bin/env bash
 set -euo pipefail
+# HOOK-FAILOPEN: record why this hook is failing open (config/lib/failopen.sh,
+# installed at <hooks>/lib/failopen.sh). Logging only: never changes a decision.
+failopen() {
+  local d f; d="$(cd "$(dirname "${BASH_SOURCE[0]}")" 2>/dev/null && pwd)"
+  for f in "$d/lib/failopen.sh" "$d/../lib/failopen.sh"; do
+    if [ -f "$f" ]; then . "$f" 2>/dev/null && aw_failopen detect-secrets "$@"; break; fi
+  done
+  return 0
+}
 
 # PreToolUse hook: Aggressive secret detection in bash commands
 # Exit 2 = deny, Exit 0 = allow.
 
 INPUT=$(cat)
 COMMAND=$(printf '%s\n' "$INPUT" | jq -r '.tool_input.command // empty' 2>/dev/null) || true
-[ -z "$COMMAND" ] && exit 0
+# No command to check: log why when the payload itself was unreadable.
+if [ -z "$COMMAND" ]; then
+  failopen input "$INPUT"
+  exit 0
+fi
 
 # AWS access keys (AKIA for permanent, ASIA for STS temporary credentials)
 if printf '%s\n' "$COMMAND" | grep -qE 'A(KIA|SIA)[0-9A-Z]{16}'; then

@@ -40,7 +40,7 @@ default_output() {
   esac
 }
 
-aw_adapter_parse_args "$@" || { default_output "${AW_ADAPTER_EVENT:-}"; exit 0; }
+aw_adapter_parse_args "$@" || { aw_adapter_failopen cursor args-invalid; default_output "${AW_ADAPTER_EVENT:-}"; exit 0; }
 
 RAW_INPUT="$(cat 2>/dev/null || true)"
 [ -n "$RAW_INPUT" ] || RAW_INPUT='{}'
@@ -125,14 +125,14 @@ else
         | .stop_hook_active = ((.loop_count // 0) > 0)
       else .hook_event_name = $ev end
   ' 2>/dev/null)"
-  [ -n "$PAYLOAD" ] || { default_output "$EVENT"; exit 0; }
+  [ -n "$PAYLOAD" ] || { aw_adapter_failopen cursor payload-unparsable; default_output "$EVENT"; exit 0; }
 fi
 
 aw_adapter_run "$PAYLOAD" cursor
 [ -n "$AW_ERR" ] && [ "$AW_RC" != "2" ] && printf '%s\n' "$AW_ERR" >&2
 
 OUT_JSON="$(aw_adapter_out_json)"
-[ "$AW_RC" = "0" ] || [ "$AW_RC" = "2" ] || { AW_RC=0; OUT_JSON=null; AW_OUT=""; }
+[ "$AW_RC" = "0" ] || [ "$AW_RC" = "2" ] || { aw_adapter_failopen cursor "hook-exit-$AW_RC"; AW_RC=0; OUT_JSON=null; AW_OUT=""; }
 MSG=""
 [ "$AW_RC" = "2" ] && MSG="$(aw_adapter_message)"
 
@@ -177,6 +177,7 @@ RESULT="$(jq -nc \
 if [ -n "$RESULT" ]; then
   printf '%s\n' "$RESULT"
 else
+  aw_adapter_failopen cursor result-unparsable
   default_output "$EVENT"
 fi
 exit 0

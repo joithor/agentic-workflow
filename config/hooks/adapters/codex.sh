@@ -24,7 +24,7 @@ source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/common.sh"
 # Tell canonical hooks (and the judge they call) which host is running them.
 export AW_PROVIDER="codex"
 
-aw_adapter_parse_args "$@" || exit 0
+aw_adapter_parse_args "$@" || { aw_adapter_failopen codex args-invalid; exit 0; }
 
 RAW_INPUT="$(cat 2>/dev/null || true)"
 [ -n "$RAW_INPUT" ] || RAW_INPUT='{}'
@@ -57,8 +57,8 @@ else
     | if (.hook_event_name == "Stop" or .hook_event_name == "SubagentStop") then
         .transcript_path = null
       else . end
-  ' 2>/dev/null)" || exit 0
-  [ -n "$PAYLOAD" ] || exit 0
+  ' 2>/dev/null)" || { aw_adapter_failopen codex payload-unparsable; exit 0; }
+  [ -n "$PAYLOAD" ] || { aw_adapter_failopen codex payload-unparsable; exit 0; }
 fi
 
 # Rewrites (updatedInput) are only safe to forward when the original shell
@@ -103,6 +103,7 @@ case "$AW_RC" in
   *)
     # Claude semantics: any other exit is a non-blocking hook error. Codex
     # would record it as a hook failure — keep it non-blocking and quiet.
+    aw_adapter_failopen codex "hook-exit-$AW_RC"
     [ -n "$AW_ERR" ] && printf '%s\n' "$AW_ERR" >&2
     exit 0
     ;;

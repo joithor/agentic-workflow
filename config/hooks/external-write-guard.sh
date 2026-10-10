@@ -10,6 +10,15 @@
 # matched external-write tools always allows — a matcher misconfiguration
 # must never turn into a silent default-deny.
 set -uo pipefail
+# HOOK-FAILOPEN: record why this hook is failing open (config/lib/failopen.sh,
+# installed at <hooks>/lib/failopen.sh). Logging only: never changes a decision.
+failopen() {
+  local d f; d="$(cd "$(dirname "${BASH_SOURCE[0]}")" 2>/dev/null && pwd)"
+  for f in "$d/lib/failopen.sh" "$d/../lib/failopen.sh"; do
+    if [ -f "$f" ]; then . "$f" 2>/dev/null && aw_failopen external-write-guard "$@"; break; fi
+  done
+  return 0
+}
 
 if [ -n "${AW_JUDGE_CHILD:-}" ]; then
   echo '{"hookSpecificOutput":{"hookEventName":"PreToolUse","permissionDecision":"allow"}}'
@@ -26,7 +35,7 @@ deny() {
 }
 
 INPUT="$(cat 2>/dev/null || true)"
-[ -n "$INPUT" ] || allow
+[ -n "$INPUT" ] || { failopen empty-input; allow; }
 
 TOOL_NAME="$(printf '%s' "$INPUT" | jq -r '.tool_name // empty')"
 COMMAND="$(printf '%s' "$INPUT" | jq -r '.tool_input.command // empty')"
@@ -52,14 +61,19 @@ is_matched_external_write() {
 
 # RF-5: only the exact matched set ever denies — everything else allows,
 # even if this hook was mistakenly wired to a broader matcher.
-is_matched_external_write || allow
+# An unreadable payload has no tool name, so it can never match: log why.
+is_matched_external_write || { [ -n "$TOOL_NAME" ] || failopen input "$INPUT"; allow; }
 
 SESSION_ID="$(printf '%s' "$INPUT" | jq -r '.session_id // empty')"
 SESSIONS_DIR="${AW_JUDGE_SESSIONS_DIR:-${AW_STATE_DIR:-$HOME/.agentic-workflow}/judge/sessions}"
 SESSION_FILE="$SESSIONS_DIR/$SESSION_ID.json"
 
-if [ -n "$SESSION_ID" ] && [ -f "$SESSION_FILE" ]; then
-  AUTO_CONTINUED_AT="$(jq -r '.auto_continued_at // empty' "$SESSION_FILE" 2>/dev/null || true)"
+if [ -z "$SESSION_ID" ]; then
+  failopen session-id-missing
+elif [ -f "$SESSION_FILE" ]; then
+  AUTO_CONTINUED_AT="$(jq -r '.auto_continued_at // empty' "$SESSION_FILE" 2>/dev/null)"
+  JQ_RC=$?
+  [ "$JQ_RC" -ne 0 ] && [ -z "$AUTO_CONTINUED_AT" ] && failopen session-state-unreadable
   if [ -n "$AUTO_CONTINUED_AT" ]; then
     deny "This turn auto-continued without the user — external writes (merge/PR comments/reviews/Linear/Slack) need the user's own turn first."
   fi

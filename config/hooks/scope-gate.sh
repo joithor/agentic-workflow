@@ -4,6 +4,15 @@
 # brief-scope`, saving an approved brief so the done gate (Task 2) and the
 # SubagentStart mapping (subagent-start-map.sh) can find it later.
 set -uo pipefail
+# HOOK-FAILOPEN: record why this hook is failing open (config/lib/failopen.sh,
+# installed at <hooks>/lib/failopen.sh). Logging only: never changes a decision.
+failopen() {
+  local d f; d="$(cd "$(dirname "${BASH_SOURCE[0]}")" 2>/dev/null && pwd)"
+  for f in "$d/lib/failopen.sh" "$d/../lib/failopen.sh"; do
+    if [ -f "$f" ]; then . "$f" 2>/dev/null && aw_failopen scope-gate "$@"; break; fi
+  done
+  return 0
+}
 
 if [ -n "${AW_JUDGE_CHILD:-}" ]; then
   echo '{"hookSpecificOutput":{"hookEventName":"PreToolUse","permissionDecision":"allow"}}'
@@ -20,7 +29,7 @@ deny() {
 }
 
 INPUT="$(cat 2>/dev/null || true)"
-[ -n "$INPUT" ] || allow
+[ -n "$INPUT" ] || { failopen empty-input; allow; }
 
 SESSION_ID="$(printf '%s' "$INPUT" | jq -r '.session_id // "unknown"')"
 PROMPT_ID="$(printf '%s' "$INPUT" | jq -r '.prompt_id // "unknown"')"
@@ -33,7 +42,7 @@ PROMPT_TEXT="$(printf '%s' "$INPUT" | jq -r '.tool_input.prompt // empty')"
 # convention on its own Agent call's tool_input — exempt the same way a
 # read-only agent type is (brief-scope.ts's own pre-rule).
 SKILL_INTERNAL="$(printf '%s' "$INPUT" | jq -r '.tool_input.skill_internal // false')"
-[ -n "$TOOL_USE_ID" ] || allow
+[ -n "$TOOL_USE_ID" ] || { failopen input "$INPUT"; allow; }
 
 # The brief lives inside the dispatch's own prompt text, per convention: a
 # goal and acceptance criteria the dispatcher wrote there. This hook doesn't
@@ -43,9 +52,9 @@ PROOF_COMMAND="$PROMPT_TEXT"
 
 JUDGE_INPUT="$(jq -nc --arg t "$AGENT_TYPE" --arg g "$GOAL" --arg a "$ACCEPTANCE" --arg p "$PROOF_COMMAND" --argjson si "$SKILL_INTERNAL" \
   '{agentType: $t, goal: $g, acceptanceCriteria: $a, proofCommand: $p, skillInternal: $si}')"
-JUDGE_OUT="$(printf '%s' "$JUDGE_INPUT" | AW_SESSION_ID="$SESSION_ID" judge brief-scope 2>/dev/null)" || allow
-DECISION="$(printf '%s' "$JUDGE_OUT" | jq -r '.decision // empty' 2>/dev/null)" || allow
-[ -n "$DECISION" ] || allow
+JUDGE_OUT="$(printf '%s' "$JUDGE_INPUT" | AW_SESSION_ID="$SESSION_ID" judge brief-scope 2>/dev/null)" || { failopen "judge-exit-$?"; allow; }
+DECISION="$(printf '%s' "$JUDGE_OUT" | jq -r '.decision // empty' 2>/dev/null)" || { failopen judge-output-unparsable; allow; }
+[ -n "$DECISION" ] || { failopen judge-decision-missing; allow; }
 
 case "$DECISION" in
   ready)
@@ -64,6 +73,7 @@ case "$DECISION" in
     deny "This dispatch needs a design decision first — send it to the user instead of dispatching."
     ;;
   *)
+    failopen judge-decision-unknown
     allow
     ;;
 esac

@@ -3,10 +3,19 @@
 # means this is our own re-invocation from a prior "continue" — exit 0
 # unconditionally before touching anything else, so this can never loop.
 set -uo pipefail
+# HOOK-FAILOPEN: record why this hook is failing open (config/lib/failopen.sh,
+# installed at <hooks>/lib/failopen.sh). Logging only: never changes a decision.
+failopen() {
+  local d f; d="$(cd "$(dirname "${BASH_SOURCE[0]}")" 2>/dev/null && pwd)"
+  for f in "$d/lib/failopen.sh" "$d/../lib/failopen.sh"; do
+    if [ -f "$f" ]; then . "$f" 2>/dev/null && aw_failopen done-gate "$@"; break; fi
+  done
+  return 0
+}
 [ -n "${AW_JUDGE_CHILD:-}" ] && exit 0
 
 INPUT="$(cat 2>/dev/null || true)"
-[ -n "$INPUT" ] || exit 0
+[ -n "$INPUT" ] || { failopen empty-input; exit 0; }
 
 STOP_HOOK_ACTIVE="$(printf '%s' "$INPUT" | jq -r '.stop_hook_active // false')"
 [ "$STOP_HOOK_ACTIVE" = "true" ] && exit 0
@@ -20,7 +29,11 @@ if [ -z "$TRANSCRIPT" ] || [ ! -f "$TRANSCRIPT" ]; then
   # last_assistant_message (Codex's Stop input carries it natively). Claude
   # Code always sends a real transcript_path, so its path below is unchanged.
   CLAIM_TEXT="$(printf '%s' "$INPUT" | jq -r '.last_assistant_message // empty' 2>/dev/null)"
-  [ -n "$CLAIM_TEXT" ] || exit 0
+  if [ -z "$CLAIM_TEXT" ]; then
+    # A done claim goes unchecked: say why, unless the payload simply has none.
+    if [ -n "$TRANSCRIPT" ]; then failopen transcript-unreadable; else failopen input "$INPUT"; fi
+    exit 0
+  fi
 else
 # Last complete assistant text turn: grab every whole line whose top-level
 # "type" is "assistant" (tail a generous window, not the whole file — a
@@ -39,7 +52,7 @@ if [ -z "$LAST_ASSISTANT_LINE" ]; then
   # unevaluated; this path is rare, so the cost of a full scan is acceptable.
   LAST_ASSISTANT_LINE="$(grep '"type":"assistant"' "$TRANSCRIPT" 2>/dev/null | tail -n 1)"
 fi
-[ -n "$LAST_ASSISTANT_LINE" ] || exit 0
+[ -n "$LAST_ASSISTANT_LINE" ] || { failopen no-assistant-line; exit 0; }
 # message.content is real-world either a bare string or an array of blocks
 # (scorer/src/transcript/parse-line.ts's own schema confirms both shapes) —
 # branch on its type rather than assuming array-shaped content.
