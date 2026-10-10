@@ -8,6 +8,7 @@ import type { CliOptions } from "./args.js";
 import type { HealthStatus } from "./format-health.js";
 import type { PrStateLookup } from "./pr-state.js";
 import { readFiresLog } from "./context-guard-fires.js";
+import { readFailOpenLog } from "./hook-failopen.js";
 import { readOutboxState } from "./outbox.js";
 import { readUiEvidenceRuns } from "./ui-evidence-runs.js";
 import { openDb } from "./db.js";
@@ -103,11 +104,12 @@ export async function runReport(options: CliOptions, deps: RunDeps): Promise<Run
     const outboxState = readOutboxState(path.join(options.stateDir, "judge", "outbox"));
     const metrics = computeMetrics(db, options.since, options.until, firesLog, uiEvidenceRuns, outboxState, providers);
     const judgeRows = readJudgeRows(options.since.toISOString(), deps.judgeDbPath);
+    const failOpen = readFailOpenLog(path.join(options.stateDir, "hooks", "failopen.log"), options.since, options.until);
     const day = options.until.toISOString().slice(0, 10);
     const markdownPath = path.join(reportsDir, `${day}.md`);
     const jsonPath = path.join(reportsDir, `${day}.json`);
-    fs.writeFileSync(markdownPath, renderReport(metrics, v, judgeRows));
-    fs.writeFileSync(jsonPath, `${JSON.stringify({ verdict: v, health, metrics, judge: judgeRows }, null, 2)}\n`);
+    fs.writeFileSync(markdownPath, renderReport(metrics, v, judgeRows, failOpen));
+    fs.writeFileSync(jsonPath, `${JSON.stringify({ verdict: v, health, metrics, judge: judgeRows, hookFailOpen: failOpen }, null, 2)}\n`);
     deps.log(`scorer: wrote ${markdownPath}`);
     return { markdownPath, jsonPath, status: v.status };
   } finally {
