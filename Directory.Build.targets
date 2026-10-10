@@ -9,6 +9,20 @@
     <IsAotCompatible>true</IsAotCompatible>
   </PropertyGroup>
 
+  <!-- Hosts (spec §4b.6): minimal-API endpoints bind through the request-delegate source generator in every build, so
+       JIT endpoint tests run the same generated binding as the AOT binary. -->
+  <!-- Hosts have no tracked public API: CA1515 (Exe output) keeps their types internal. The web SDK also generates
+       a public `partial class Program` for WebApplicationFactory, which RS0016 would otherwise reject. -->
+  <PropertyGroup Condition="'$(AwIsHostProject)' == 'true'">
+    <EnableRequestDelegateGenerator>true</EnableRequestDelegateGenerator>
+    <NoWarn>$(NoWarn);RS0016;RS0017;RS0036;RS0037</NoWarn>
+  </PropertyGroup>
+
+  <!-- NativeAOT entry points (spec §4b.6): no ICU dependency in the single-file binary. -->
+  <PropertyGroup Condition="'$(PublishAot)' == 'true'">
+    <InvariantGlobalization>true</InvariantGlobalization>
+  </PropertyGroup>
+
   <!-- Placement (AW0002): the test-project policy is tests/.editorconfig, so *.Tests and *.Testing projects
        (including Aw.Kernel.Testing) must live under tests/, and nothing else may: a library under tests/ would
        silently lose RS0016, CS1591 and CA2007. -->

@@ -54,7 +54,9 @@ MA0051.maximum_statements_per_method = 40
 dotnet_diagnostic.CA1502.severity = error
 # No analyzer in these packs covers: file <= 300 lines, parameters <= 5, constructor dependencies
 # (split signal over 5, error over 7), generic type parameters <= 3, raw ids in public signatures,
-# `!` needs a `// why:` comment. They belong to the in-repo Aw.Analyzers project (spec §4b.6).
+# `!` needs a `// why:` comment. None of them is enforced by this build yet; the in-repo Aw.Analyzers
+# project is where custom rules go (raw ids and the `!` reason are on its list in spec §4b.6; the others
+# need a spec entry before anyone can rely on them).
 
 #### One owner per rule (spec §4b.6, A14) ####
 # ConfigureAwait in library code — owner: CA2007, scoped to libraries. Hosts (CLI Main, minimal-API
