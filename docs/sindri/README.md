@@ -26,6 +26,10 @@ This package is being built in plans. What exists today (Plans 2 and 3; the code
 
 Every read command takes `--json`. Exit codes: `0` ok, `1` attention needed, `2` error. Errors carry a stable code (`SND-<AREA>-<NNN>`); see `errors.md`.
 
+## Design language
+
+Sindri's UI (the dashboard and any other screen it grows) follows `DESIGN.md` in this folder: Linear's design language (near-black canvas, light gray text, one lavender-blue accent, hairline-bordered charcoal panels). It was added with `npx getdesign@latest add linear.app --out docs/sindri/DESIGN.md` from [awesome-design-md](https://github.com/VoltAgent/awesome-design-md/tree/main/design-md/linear.app) (MIT; also at https://getdesign.md/linear.app/design-md). Agents read it before writing any Sindri UI, and it's the reference to feed `/design-language` when the dashboard's tokens are made. Edit it as Sindri's look evolves.
+
 ## Quick start (this repo, ring 0)
 
 ```bash
