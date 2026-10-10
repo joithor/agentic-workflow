@@ -150,7 +150,7 @@ Host ──► Features ──► Core ◄── Infrastructure
 | `Aw.<Pkg>.Infrastructure` | Repository implementations over SQL, external adapters (git, containers, model CLIs, HTTP), migrations | `Core`, `Aw.Kernel` |
 | `Aw.<Pkg>.Host` | The composition root: the minimal API app or the CLI `Main`, DI registration, configuration, the JSON context | everything in the package |
 | `Aw.Kernel` (shared) | `Result<T>`, `Error`, clock and id ports, value-object conventions, the generic `IService<TReq, TRes>` pipeline and decorators, the byte-compat JSON settings (§4c) | the BCL only |
-| `Aw.Kernel.Data` · `Aw.Kernel.Telemetry` · `Aw.Kernel.Testing` | SQLite access and migrations runner · logging and OpenTelemetry setup with the scrubbing processor · fakes base, builders, contract-test bases, golden harness | `Aw.Kernel` plus their one external dependency each |
+| `Aw.Kernel.Data` · `Aw.Kernel.Telemetry` · `Aw.Kernel.Testing` | SQLite access and migrations runner · logging and OpenTelemetry setup with the scrubbing processor · fakes base, builders, contract-test bases, golden harness | `Aw.Kernel` plus their one external dependency each; Telemetry also references `Redaction` (its scrubbing processor) and Testing also references `Aw.Kernel.Data` (contract tests run on SQLite) |
 
 **Small packages:** a package under about 1,500 lines may use two projects, `Core` and `App` (features,
 infrastructure and host together), with the same dependency direction. It splits into four when it crosses the
@@ -175,12 +175,15 @@ declaration.
 
 | Tier | Packages | May depend on |
 |---|---|---|
-| 0 | `Aw.Kernel` and its `Data`, `Telemetry`, `Testing` parts | the BCL plus one external package each |
-| 1 | `Judge`, `Bridge`, `Redaction` (the scrubbing patterns now copied between judge and sindri) | Tier 0 |
+| 0 | `Aw.Kernel` and its `Data`, `Telemetry`, `Testing` parts, and `Redaction` (the scrubbing patterns now copied between judge and sindri; moved here by §4e B10) | the BCL plus one external package each, and lower tier-0 sublevels (below) |
+| 1 | `Judge`, `Bridge`, `Packets`, `Readiness` | Tier 0 |
 | 2 | `Scorer`, `Evidence` (ui-evidence), `BugFix` | Tiers 0–1 (today they call judge, and scorer reads `judge.db`) |
 | 3 | `Sindri` | Tiers 0–2, **only through their `Core` contracts or their CLIs** |
 | — | Every `Host` | Its own package's projects, plus the tier-0 and lower-tier `Core`s it composes |
 
+- **Tier 0 is ordered inside:** it is the one tier with internal project references. `deps.yaml` gives each tier-0
+  package a sublevel (0: `Aw.Kernel`, `Redaction`; 1: `Data`, `Telemetry`; 2: `Testing`), and a tier-0 project
+  references only a lower sublevel. Every other tier keeps the rule above: never a project reference within the tier.
 - **Declared graph, every edge kind:** `deps.yaml` (with a JSON Schema) lists each package's tier and every allowed
   edge, with its kind: `project` (a reference), `cli` (one package runs another's binary), `db` (one package opens
   another's SQLite file) or `file` (shared state files). Project edges are checked against the real references. CLI,

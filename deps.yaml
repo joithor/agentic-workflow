@@ -414,6 +414,6 @@ edges:
 exceptions:
   - rule: DEPS-FANOUT-001
     subject: Sindri
-    reason: "§4e B10: sindri's fan-out exceeds the limit until its modules split; revisit when the Sindri port splits by module"
+    reason: "§4e B10: sindri declares project edges to 6 packages (limits.packageFanOut is 4) until its modules split; revisit when the Sindri port splits by module. Per-project fan-out (DEPS-FANOUT-002/003) is measured separately once its projects exist"
     recorded: 2026-10-10
     expires: 2027-04-01
