@@ -6,11 +6,13 @@ using Microsoft.CodeAnalysis.Diagnostics;
 namespace Aw.Analyzers;
 
 /// <summary>
-/// AW1001: no raw ids in the public signatures of a 'Core' or 'Features' assembly (spec §4b.3). A raw id is
-/// a <see cref="Guid"/> anywhere, or a <see cref="string"/> whose member is named as an id ('id', '…Id',
-/// '…Ids'), also inside an array, a nullable or a one-argument generic such as 'IReadOnlyList&lt;T&gt;'. A typed
-/// id's own members (it implements 'ITypedId&lt;,&gt;' or carries Vogen's '[ValueObject]') wrap the primitive
-/// and are allowed.
+/// AW1001: no raw ids in the public signatures of a 'Core' or 'Features' assembly (spec §4b.3): methods,
+/// constructors, properties, fields and delegates. A raw id is a <see cref="Guid"/> anywhere in the type (an array
+/// element or any type argument, so tuples and dictionaries too), or a <see cref="string"/> whose member is named as
+/// an id ('id', '…Id', '…Ids'), also inside an array, a nullable or a one-argument generic such as
+/// 'IReadOnlyList&lt;T&gt;'. A typed id's own members (it implements 'ITypedId&lt;,&gt;' or carries Vogen's
+/// '[ValueObject]') wrap the primitive and are allowed. Overrides and interface implementations are reported at
+/// their base declaration.
 /// </summary>
 [DiagnosticAnalyzer(LanguageNames.CSharp)]
 internal sealed class RawIdAnalyzer : DiagnosticAnalyzer
@@ -30,13 +32,14 @@ internal sealed class RawIdAnalyzer : DiagnosticAnalyzer
             }
 
             start.RegisterSymbolAction(c => AnalyzeMember(c, name), SymbolKind.Method, SymbolKind.Property, SymbolKind.Field);
+            start.RegisterSymbolAction(c => AnalyzeDelegate(c, name), SymbolKind.NamedType);
         });
     }
 
     private static void AnalyzeMember(SymbolAnalysisContext context, string assembly)
     {
         var member = context.Symbol;
-        if (member.IsImplicitlyDeclared || !IsPublicSurface(member) || IsTypedId(member.ContainingType))
+        if (!InScope(member))
         {
             return;
         }
@@ -66,6 +69,24 @@ internal sealed class RawIdAnalyzer : DiagnosticAnalyzer
         }
     }
 
+    private static bool InScope(ISymbol member) =>
+        !member.IsImplicitlyDeclared && IsPublicSurface(member) && !IsTypedId(member.ContainingType) && !InheritedShape.IsInherited(member);
+
+    // A delegate's signature is its (compiler-declared) Invoke method.
+    private static void AnalyzeDelegate(SymbolAnalysisContext context, string assembly)
+    {
+        var type = (INamedTypeSymbol)context.Symbol;
+        if (type.DelegateInvokeMethod is not { } invoke || !IsPublicSurface(type))
+        {
+            return;
+        }
+
+        foreach (var parameter in invoke.Parameters)
+        {
+            Check(context, parameter.Type, parameter.Name, parameter.Locations, assembly);
+        }
+    }
+
     private static void Check(SymbolAnalysisContext context, ITypeSymbol type, string name, ImmutableArray<Location> locations, string assembly)
     {
         var raw = RawIdKind(type, name);
@@ -78,14 +99,22 @@ internal sealed class RawIdAnalyzer : DiagnosticAnalyzer
     // "Guid" or "string" when the type is a raw id under this member name, else null.
     private static string? RawIdKind(ITypeSymbol type, string name)
     {
-        var element = Element(type);
-        if (element.SpecialType == SpecialType.System_String)
+        if (ContainsGuid(type))
         {
-            return IsIdName(name) ? "string" : null;
+            return "Guid";
         }
 
-        return IsNamed(element, "Guid", "System") ? "Guid" : null;
+        return Element(type).SpecialType == SpecialType.System_String && IsIdName(name) ? "string" : null;
     }
+
+    // A Guid anywhere in the type: itself, an array element, or any type argument (tuples and dictionaries included).
+    private static bool ContainsGuid(ITypeSymbol type) => type switch
+    {
+        IArrayTypeSymbol array => ContainsGuid(array.ElementType),
+        INamedTypeSymbol named when IsNamed(named, "Guid", "System") => true,
+        INamedTypeSymbol named => named.TypeArguments.Any(ContainsGuid),
+        _ => false,
+    };
 
     private static ITypeSymbol Element(ITypeSymbol type) => type switch
     {

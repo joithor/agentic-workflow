@@ -5,8 +5,8 @@ using Microsoft.CodeAnalysis.Diagnostics;
 namespace Aw.Analyzers;
 
 /// <summary>
-/// AW1009: a generic type, delegate or method declares at most 3 type parameters (spec §4b.3). An override repeats
-/// its base method's type parameters, so only the base declaration is reported.
+/// AW1009: a generic type, delegate, method or local function declares at most 3 type parameters (spec §4b.3). An
+/// override or interface implementation repeats its base's type parameters, so only the base declaration is reported.
 /// </summary>
 [DiagnosticAnalyzer(LanguageNames.CSharp)]
 internal sealed class GenericArityAnalyzer : DiagnosticAnalyzer
@@ -17,21 +17,23 @@ internal sealed class GenericArityAnalyzer : DiagnosticAnalyzer
     {
         context.ConfigureGeneratedCodeAnalysis(GeneratedCodeAnalysisFlags.None);
         context.EnableConcurrentExecution();
-        context.RegisterSymbolAction(Analyze, SymbolKind.NamedType, SymbolKind.Method);
+        context.RegisterSymbolAction(c => Check(c.ReportDiagnostic, c.Symbol), SymbolKind.NamedType, SymbolKind.Method);
+        context.RegisterOperationAction(
+            c => Check(c.ReportDiagnostic, ((Microsoft.CodeAnalysis.Operations.ILocalFunctionOperation)c.Operation).Symbol),
+            OperationKind.LocalFunction);
     }
 
-    private static void Analyze(SymbolAnalysisContext context)
+    private static void Check(Action<Diagnostic> report, ISymbol symbol)
     {
-        var count = context.Symbol switch
+        var count = symbol switch
         {
             INamedTypeSymbol type => type.TypeParameters.Length,
-            IMethodSymbol { IsImplicitlyDeclared: false, IsOverride: false } method => method.TypeParameters.Length,
+            IMethodSymbol { IsImplicitlyDeclared: false } method => method.TypeParameters.Length,
             _ => 0,
         };
-        if (count > AwDiagnostics.MaxTypeParameters && !context.Symbol.Locations.IsEmpty)
+        if (count > AwDiagnostics.MaxTypeParameters && !symbol.Locations.IsEmpty && !InheritedShape.IsInherited(symbol))
         {
-            context.ReportDiagnostic(Diagnostic.Create(
-                AwDiagnostics.GenericArity, context.Symbol.Locations[0], context.Symbol.Name, count, AwDiagnostics.MaxTypeParameters));
+            report(Diagnostic.Create(AwDiagnostics.GenericArity, symbol.Locations[0], symbol.Name, count, AwDiagnostics.MaxTypeParameters));
         }
     }
 }

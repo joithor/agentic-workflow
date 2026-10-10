@@ -54,12 +54,12 @@ public sealed class ParameterCountTests
         """;
 
     [Fact]
-    public async Task Counts_struct_constructors_and_explicit_record_constructors()
+    public async Task Counts_struct_constructors_but_not_record_or_class_constructors()
     {
         var found = await AnalyzerHarness.Run(new ParameterCountAnalyzer(), "Aw.Probe", Constructors);
 
-        // Struct constructors, primary (line 2) or not (line 5), and a record's explicit constructor (line 10) are
-        // AW1006's. Record positional parameters (lines 8, 12) are data; class constructors (line 13) are AW1007's.
-        Assert.Equal(["AW1006@10", "AW1006@2", "AW1006@5"], found);
+        // Struct constructors, primary (line 2) or not (line 5), are AW1006's. A record's constructors, positional
+        // (lines 8, 12) or explicit (line 10), declare data; class constructors (line 13) are AW1007's.
+        Assert.Equal(["AW1006@2", "AW1006@5"], found);
     }
 }

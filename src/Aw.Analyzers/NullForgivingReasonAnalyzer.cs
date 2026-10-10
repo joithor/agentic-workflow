@@ -28,7 +28,7 @@ internal sealed class NullForgivingReasonAnalyzer : DiagnosticAnalyzer
     private static void Analyze(SyntaxNodeAnalysisContext context)
     {
         var node = (PostfixUnaryExpressionSyntax)context.Node;
-        if (HasReasonOnLine(node) || HasReasonAbove(node))
+        if (HasReasonOnLine(node, context.CancellationToken) || HasReasonAbove(node))
         {
             return;
         }
@@ -37,11 +37,11 @@ internal sealed class NullForgivingReasonAnalyzer : DiagnosticAnalyzer
     }
 
     // A '// why:' comment anywhere on the line of the '!' (normally trailing).
-    private static bool HasReasonOnLine(PostfixUnaryExpressionSyntax node)
+    private static bool HasReasonOnLine(PostfixUnaryExpressionSyntax node, CancellationToken cancellationToken)
     {
         var tree = node.SyntaxTree;
-        var line = tree.GetText().Lines[node.OperatorToken.GetLocation().GetLineSpan().StartLinePosition.Line];
-        var token = tree.GetRoot().FindToken(line.Start);
+        var line = tree.GetText(cancellationToken).Lines.GetLineFromPosition(node.OperatorToken.SpanStart);
+        var token = tree.GetRoot(cancellationToken).FindToken(line.Start);
         while (token.RawKind != 0 && token.SpanStart <= line.End)
         {
             if (token.LeadingTrivia.Concat(token.TrailingTrivia).Any(t => OnLine(t, line) && IsReason(t)))
@@ -55,11 +55,20 @@ internal sealed class NullForgivingReasonAnalyzer : DiagnosticAnalyzer
         return false;
     }
 
-    // A '// why:' comment in the leading trivia of the statement or member that holds the '!'.
+    // A '// why:' comment in the leading trivia of the statement or member that holds the '!', before its attribute
+    // lists or between them and the declaration.
     private static bool HasReasonAbove(SyntaxNode node)
     {
         var holder = node.AncestorsAndSelf().FirstOrDefault(n => n is StatementSyntax or MemberDeclarationSyntax);
-        return holder is not null && holder.GetLeadingTrivia().Any(IsReason);
+        var attributes = holder switch
+        {
+            MemberDeclarationSyntax member => member.AttributeLists,
+            StatementSyntax statement => statement.AttributeLists,
+            _ => default,
+        };
+        return holder is not null
+            && (holder.GetLeadingTrivia().Any(IsReason)
+                || (attributes.Count > 0 && attributes.Last().GetLastToken().GetNextToken().LeadingTrivia.Any(IsReason)));
     }
 
     private static bool OnLine(SyntaxTrivia trivia, Microsoft.CodeAnalysis.Text.TextLine line) =>
