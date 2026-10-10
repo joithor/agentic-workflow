@@ -169,7 +169,7 @@ export function schemaVersion(db: Ledger): number {
 // read transaction, so a consistent copy with the WAL's newest frames whatever other
 // connections hold open (a checkpoint plus a file copy misses frames a reader pins and can
 // tear). It is the synchronous form of better-sqlite3's async db.backup(), which openLedger
-// can't await. Written to a unique temp name, then linked into place (never over an existing backup): VACUUM INTO refuses an
+// can't await. Written to a unique temp name, then copied exclusively into place (never over an existing backup): VACUUM INTO refuses an
 // existing file, and a racing opener's backup must not fail this one.
 export function migrateWith(db: Ledger, file: string | null, migrations: readonly string[]): void {
   const before = schemaVersion(db);
@@ -180,13 +180,20 @@ export function migrateWith(db: Ledger, file: string | null, migrations: readonl
     const bak = `${file}.bak-v${before}`;
     const tmp = `${bak}.tmp-${process.pid}-${randomBytes(4).toString("hex")}`;
     db.prepare("VACUUM INTO ?").run(tmp);
-    // Exclusive: a hard link fails on an existing backup, where a rename would replace it. An opener that read
+    // Exclusive: COPYFILE_EXCL fails on an existing backup, where a rename would replace it. An opener that read
     // `before` just ahead of another opener's migration could otherwise put a newer copy over the genuine
-    // .bak-v<before>; the first backup of a version is the one kept.
+    // .bak-v<before>; the first backup of a version is the one kept. No hard link, so filesystems without them
+    // (FAT, exFAT, some network mounts) work. COPYFILE_FICLONE clones where the filesystem can (APFS, Btrfs: the
+    // backup appears whole at once) and copies otherwise; a copy that fails part way removes the half-written
+    // backup it created, so only a complete one is ever left under the final name.
+    const existed = fs.existsSync(bak);
     try {
-      fs.linkSync(tmp, bak);
+      if (!existed) fs.copyFileSync(tmp, bak, fs.constants.COPYFILE_EXCL | fs.constants.COPYFILE_FICLONE);
     } catch (e) {
-      if ((e as NodeJS.ErrnoException).code !== "EEXIST") throw e;
+      if ((e as NodeJS.ErrnoException).code !== "EEXIST") {
+        fs.rmSync(bak, { force: true }); // it didn't exist before this copy, so it is this copy's partial output
+        throw e;
+      }
     } finally {
       fs.rmSync(tmp, { force: true });
     }

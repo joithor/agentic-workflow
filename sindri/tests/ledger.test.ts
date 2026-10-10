@@ -93,17 +93,57 @@ describe("ledger db", () => {
     db.close();
   });
 
-  it("rethrows a backup error other than an existing backup, and leaves no temp copy", () => {
+  it("rethrows a backup error other than an existing backup, and leaves no temp copy and no half-written backup", () => {
     const dir = tempDir();
     const file = path.join(dir, "ledger.db");
     const db = new Database(file);
     const steps = ["CREATE TABLE a (x INTEGER);", "CREATE TABLE b (y INTEGER);"];
     migrateWith(db, file, steps.slice(0, 1));
-    const spy = vi.spyOn(fs, "linkSync").mockImplementationOnce(() => { throw Object.assign(new Error("EIO: i/o error"), { code: "EIO" }); });
+    const spy = vi.spyOn(fs, "copyFileSync").mockImplementationOnce((_src, dst) => {
+      fs.writeFileSync(dst as string, "half a backup"); // the copy created the file, then failed part way
+      throw Object.assign(new Error("EIO: i/o error"), { code: "EIO" });
+    });
     expect(() => migrateWith(db, file, steps)).toThrow(/EIO/);
     spy.mockRestore();
     expect(schemaVersion(db)).toBe(1); // no migration without a backup
     expect(fs.readdirSync(dir).filter((f) => f.includes(".tmp-") || f.includes(".bak-"))).toEqual([]);
+    db.close();
+  });
+
+  it("makes the backup without a hard link, so it works where the filesystem has none (data-integrity-guardian-4)", () => {
+    const dir = tempDir();
+    const file = path.join(dir, "ledger.db");
+    const db = new Database(file);
+    const steps = ["CREATE TABLE a (x INTEGER);", "CREATE TABLE b (y INTEGER);"];
+    migrateWith(db, file, steps.slice(0, 1));
+    db.prepare("INSERT INTO a VALUES (7)").run();
+    const spy = vi.spyOn(fs, "linkSync").mockImplementation(() => { throw Object.assign(new Error("EPERM: operation not permitted"), { code: "EPERM" }); });
+    migrateWith(db, file, steps);
+    spy.mockRestore();
+    expect(schemaVersion(db)).toBe(2);
+    const bak = new Database(`${file}.bak-v1`, { readonly: true });
+    expect(bak.prepare("SELECT x FROM a").pluck().all()).toEqual([7]);
+    expect(schemaVersion(bak)).toBe(1);
+    bak.close();
+    expect(fs.readdirSync(dir).filter((f) => f.includes(".tmp-"))).toEqual([]);
+    db.close();
+  });
+
+  it("keeps an existing backup when another opener writes it between the check and the copy (exclusive copy)", () => {
+    const dir = tempDir();
+    const file = path.join(dir, "ledger.db");
+    const db = new Database(file);
+    const steps = ["CREATE TABLE a (x INTEGER);", "CREATE TABLE b (y INTEGER);"];
+    migrateWith(db, file, steps.slice(0, 1));
+    const real = fs.copyFileSync;
+    const spy = vi.spyOn(fs, "copyFileSync").mockImplementationOnce((src, dst, mode) => {
+      fs.writeFileSync(dst as string, "the racing opener's genuine v1 backup");
+      real(src, dst, mode);
+    });
+    migrateWith(db, file, steps);
+    spy.mockRestore();
+    expect(fs.readFileSync(`${file}.bak-v1`, "utf8")).toBe("the racing opener's genuine v1 backup");
+    expect(schemaVersion(db)).toBe(2);
     db.close();
   });
 
@@ -127,7 +167,7 @@ describe("ledger db", () => {
     expect(bak.prepare("SELECT x FROM a ORDER BY x").pluck().all()).toEqual([1, 2]);
     expect(schemaVersion(bak)).toBe(1);
     bak.close();
-    // A second backup of the same version replaces the first; no temp file is left behind.
+    // A later backup of the same version keeps the first; no temp file is left behind.
     migrator.pragma("user_version = 1");
     migrateWith(migrator, file, steps.slice(0, 1).concat(["CREATE TABLE c (z INTEGER);"]));
     expect(fs.readdirSync(path.dirname(file)).filter((n) => n.includes(".bak-v1")).sort()).toEqual(["ledger.db.bak-v1"]);
