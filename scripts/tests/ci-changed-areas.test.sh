@@ -38,6 +38,10 @@ expect "a hook change runs bash tests only" \
   "$(printf 'config/hooks/send-gate.sh\n')" \
   "$(printf 'bash=true\ndotnet=false\npackages=[]')"
 
+expect "a schema, rule record or deps.yaml change runs the bash tests (their checks' suites copy them)" \
+  "$(printf 'schemas/rule-record.schema.json\nrules/engineering/csharp/method-length.yaml\ndeps.yaml\n')" \
+  "$(printf 'bash=true\ndotnet=false\npackages=[]')"
+
 expect "a C# change runs dotnet only" \
   "$(printf 'src/Aw.Kernel/Result.cs\nDirectory.Packages.props\n')" \
   "$(printf 'bash=false\ndotnet=true\npackages=[]')"
