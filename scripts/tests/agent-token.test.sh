@@ -245,22 +245,53 @@ check "token off disk: token minted" "$out" "$CANNED"
 check "token off disk: scan ran while the script was alive" "$([ -s "$WORK/disk-scan-ran" ] && echo yes || echo no)" "yes"
 check "token off disk: no file under TMPDIR ever held the token" "$(cat "$WORK/disk-scan" 2>/dev/null | wc -l | tr -d ' ')" "0"
 
-# --- SIGTERM mid-request: stops promptly, kills curl, prints nothing, cleans up ---
-start_server slow
-bash "$SCRIPT" >"$WORK/term.out" 2>"$WORK/term.err" &
-TPID=$!
-for _ in $(seq 1 100); do [ -e "$SRV/inflight" ] && break; sleep 0.1; done
+# --- signals mid-request: prompt exit, the run's own curl dies, and no token
+#     ever reaches stdout, checked after the fake has answered ---
+mkdir -p "$WORK/curlpid"
+REAL_CURL="$(command -v curl)"
+cat >"$WORK/curlpid/curl" <<STUB
+#!/bin/sh
+echo \$\$ >"$WORK/curl.pid"
+exec "$REAL_CURL" "\$@"
+STUB
+chmod +x "$WORK/curlpid/curl"
 ms() { python3 -c 'import time; print(int(time.time() * 1000))'; }
-t0="$(ms)"
-kill -TERM "$TPID"
-rc=0; wait "$TPID" || rc=$?
-elapsed=$(( $(ms) - t0 ))
-check "SIGTERM: exit 143" "$rc" "143"
-check "SIGTERM: exits within 2 s while the request is held (took ${elapsed} ms)" "$([ "$elapsed" -le 2000 ] && echo yes || echo no)" "yes"
-check "SIGTERM: curl child killed" "$(ps -axo args= | grep -c "[c]url -q -sS --max-time 30" || true)" "0"
-check "SIGTERM: stdout empty" "$(wc -c <"$WORK/term.out" | tr -d ' ')" "0"
-check "SIGTERM: temp dir removed" "$(find "$TMPDIR" -mindepth 1 | wc -l | tr -d ' ')" "0"
-stop_server
+signal_mid_request() { # $1 = signal name, $2 = expected exit code ("nonzero" for any)
+  local sig="$1" want="$2" tpid rc elapsed alive
+  export FAKE_HOLD=3; start_server slow; unset FAKE_HOLD
+  : >"$WORK/curl.pid"
+  PATH="$WORK/curlpid:$PATH" bash "$SCRIPT" >"$WORK/sig.out" 2>"$WORK/sig.err" &
+  tpid=$!
+  for _ in $(seq 1 100); do [ -e "$SRV/inflight" ] && break; sleep 0.1; done
+  if ! [ -e "$SRV/inflight" ]; then
+    echo "not ok - SIG$sig: the request never reached the fake"; kill "$tpid" 2>/dev/null; exit 1
+  fi
+  [ -s "$WORK/curl.pid" ] || { echo "not ok - SIG$sig: curl pid not recorded"; exit 1; }
+  local t0; t0="$(ms)"
+  kill "-$sig" "$tpid"
+  rc=0; wait "$tpid" || rc=$?
+  elapsed=$(( $(ms) - t0 ))
+  if [ "$want" = nonzero ]; then
+    check "SIG$sig: exits non-zero" "$([ "$rc" -ne 0 ] && echo yes || echo no)" "yes"
+  else
+    check "SIG$sig: exit $want" "$rc" "$want"
+  fi
+  check "SIG$sig: exits within 2 s while the request is held (took ${elapsed} ms)" "$([ "$elapsed" -le 2000 ] && echo yes || echo no)" "yes"
+  alive=yes
+  for _ in $(seq 1 10); do kill -0 "$(cat "$WORK/curl.pid")" 2>/dev/null || { alive=no; break; }; sleep 0.1; done
+  check "SIG$sig: this run's curl is gone" "$alive" "no"
+  for _ in $(seq 1 60); do [ -e "$SRV/answered" ] && break; sleep 0.1; done
+  check "SIG$sig: the fake answered (the late-token window was exercised)" "$([ -e "$SRV/answered" ] && echo yes || echo no)" "yes"
+  sleep 0.3
+  check "SIG$sig: stdout still empty after the fake answered" "$(wc -c <"$WORK/sig.out" | tr -d ' ')" "0"
+  check "SIG$sig: temp dir removed" "$(find "$TMPDIR" -mindepth 1 | wc -l | tr -d ' ')" "0"
+  cat "$WORK/sig.err" >>"$WORK/term.err"
+  stop_server
+}
+: >"$WORK/term.err"
+signal_mid_request TERM 143
+signal_mid_request HUP 129
+signal_mid_request USR1 nonzero
 
 # --- key material never in any output across all runs ---
 leaks="$(cat "$WORK"/err "$WORK"/tty.out "$WORK"/tty2.out "$WORK"/xtrace "$WORK"/xtrace2 "$WORK"/term.err | grep -c -e "$KEY_LINE" -e 'PRIVATE KEY' || true)"

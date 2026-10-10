@@ -7,7 +7,9 @@ code path), snapshots every process argv while the request is in flight, and
 answers by MODE: ok -> 201 with a canned token; err -> 401 with a body that
 carries a token-shaped string the script must not echo; errmsg -> 401 whose
 message itself holds token shapes and terminal control characters; slow ->
-writes <dir>/inflight, then holds the request for 10 s before answering ok.
+writes <dir>/inflight, then holds the request for $FAKE_HOLD seconds (default
+10) before answering ok, and writes <dir>/answered once the reply was attempted
+(whether or not the client was still there).
 Usage: fake-github.py <dir> <public.pem> <mode>
 """
 import base64, json, os, subprocess, sys, tempfile, time
@@ -61,7 +63,7 @@ class H(BaseHTTPRequestHandler):
             f.write(json.dumps(rec) + "\n")
         if MODE == "slow":
             open(os.path.join(DIR, "inflight"), "w").close()
-            time.sleep(10)
+            time.sleep(float(os.environ.get("FAKE_HOLD", "10")))
         if MODE in ("ok", "slow"):
             code, out = 201, {"token": CANNED, "expires_at": "2099-01-01T00:00:00Z"}
         elif MODE == "errmsg":
@@ -70,11 +72,18 @@ class H(BaseHTTPRequestHandler):
             code, out = 401, {"message": "Bad credentials", "token": LEAK,
                               "documentation_url": "https://docs.github.com/rest"}
         payload = json.dumps(out).encode()
-        self.send_response(code)
-        self.send_header("Content-Type", "application/json")
-        self.send_header("Content-Length", str(len(payload)))
-        self.end_headers()
-        self.wfile.write(payload)
+        try:
+            self.send_response(code)
+            self.send_header("Content-Type", "application/json")
+            self.send_header("Content-Length", str(len(payload)))
+            self.end_headers()
+            self.wfile.write(payload)
+            self.wfile.flush()
+        except OSError:  # the client was killed while we held the request
+            pass
+        finally:
+            if MODE == "slow":
+                open(os.path.join(DIR, "answered"), "w").close()
 
 
 srv = HTTPServer(("127.0.0.1", 0), H)
