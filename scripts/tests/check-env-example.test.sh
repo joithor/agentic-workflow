@@ -110,6 +110,26 @@ expect_no_out "never prints the value" 'abc123'
 d="$(fixture lowercase)"; printf 'for f in "${files[@]:-}"; do :; done\necho "${foo:-bar}"\n' >> "$d/config/hooks/demo.sh"; run "$d"
 expect_rc "lowercase shell locals are not env reads" 0
 
+d="$(fixture tsx-env-get)"; mkdir -p "$d/mods/demo"; printf "const b = await \$.env.get('AW_T10_TSX');\n" > "$d/mods/demo/register.tsx"; run "$d"
+expect_rc "a .tsx env.get('NAME') read is scanned" 1
+expect_out "names the .tsx read" 'ENV-EXAMPLE-001: AW_T10_TSX .*mods/demo/register.tsx:1'
+
+d="$(fixture mjs-single-quote)"; printf "const v = deps.env['AW_T10_SQ'];\n" > "$d/scripts/x.mjs"; run "$d"
+expect_out "a single-quoted bracket read in .mjs is scanned" 'ENV-EXAMPLE-001: AW_T10_SQ .*scripts/x.mjs:1'
+
+d="$(fixture shell-forms)"; printf 'A="${AW_T10_ASSIGN:=x}"\nB="${AW_T10_PLUS:+y}"\nC="${AW_T10_DASH-z}"\n' >> "$d/config/hooks/demo.sh"; run "$d"
+expect_out "shell := form is scanned" 'ENV-EXAMPLE-001: AW_T10_ASSIGN'
+expect_out "shell :+ form is scanned" 'ENV-EXAMPLE-001: AW_T10_PLUS'
+expect_out "shell - form is scanned" 'ENV-EXAMPLE-001: AW_T10_DASH'
+
+d="$(fixture first-line)"; for i in 1 2 3 4 5 6 7 8; do printf '// filler\n' >> "$d/judge/src/lines.ts"; done
+printf 'const a = process.env.AW_T10_LINE;\n' >> "$d/judge/src/lines.ts"
+printf 'const b = process.env.AW_T10_LINE;\n' >> "$d/judge/src/lines.ts"; run "$d"
+expect_out "reports the first read by line number, not text order" 'ENV-EXAMPLE-001: AW_T10_LINE .*judge/src/lines.ts:9 '
+
+d="$(fixture no-env-example)"; unlink "$d/.env.example"; run "$d"
+expect_rc "a missing .env.example is a tool error" 2
+
 run "$REPO"
 expect_rc "the real repo passes" 0
 

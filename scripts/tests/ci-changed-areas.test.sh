@@ -42,6 +42,14 @@ expect "a devcontainer or .env.example change runs the bash tests (their checks 
   "$(printf '.devcontainer/Dockerfile\n.env.example\n')" \
   "$(printf 'bash=true\ndotnet=false\npackages=[]')"
 
+expect "an SDK pin change runs dotnet and the bash tests (the devcontainer pin check)" \
+  "$(printf 'global.json\n')" \
+  "$(printf 'bash=true\ndotnet=true\npackages=[]')"
+
+expect "the devcontainer doc runs the bash tests (repo-templates checks its wording)" \
+  "$(printf 'docs/devcontainer.md\n')" \
+  "$(printf 'bash=true\ndotnet=false\npackages=[]')"
+
 expect "a C# change runs dotnet only" \
   "$(printf 'src/Aw.Kernel/Result.cs\nDirectory.Packages.props\n')" \
   "$(printf 'bash=false\ndotnet=true\npackages=[]')"
