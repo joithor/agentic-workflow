@@ -717,6 +717,40 @@ These resolve the /autoplan findings C1–C17. Where a rule here conflicts with 
 - A notification budget **per surface**: phone pushes per day, digest items, desk-queue additions. Standing
   workflows and scouting draw from it.
 
+## 17.20 Parallelism and distribution
+
+**Today:** one active host (invariant 1), a session cap, and one heavy job at a time per host (invariant 5). Inside
+a packet, tasks with non-overlapping write scopes can run in parallel (§17.4, §17.7). Nothing yet schedules
+**several packets and standing workflows at once** fairly, and nothing runs Sindri across machines. The target is a
+ladder, and each level reuses the one below:
+
+| Level | Shape | What it adds |
+|---|---|---|
+| **P1 · many workstreams, one host** | One Sindri, many packets, epics and standing workflows | A **scheduler** with a WIP limit per packet and per ring, priorities, and fair sharing. **Conflict-aware dispatch:** tasks whose write scopes or `deps.yaml` neighbours overlap are serialized, and others run together. **Resource classes** replace the single heavy-job lock: CPU, memory, browser, container builds, index builds and model quota each have their own slots. A capacity model sets the session cap from the smallest of quota windows, host resources and the human-minutes budget (§17.19) |
+| **P2 · one coordinator, many workers** | One coordinator holds the shared lease (§17.19), the ledger, and every decision and outward action. Worker hosts only run containers | **Worker hosts** (laptop, Linux box, cloud boxes) register over the tailnet, advertise resource classes, and pull Steps under leases with heartbeats. They hold no tokens beyond their session proxies, and their spool ships back to the coordinator. A dead worker's Step returns to the queue from its last checkpoint |
+| **P3 · federation** | Several independent Sindri instances (for example one per ring: personal and work) | Instances never share state or credentials. They share only **published packs** (prompt-text lenses, rules, evidence providers, workflow templates) and scouting idea cards, at the lowest trust tier (§17.19). This is how improvements made at home reach work without data crossing |
+| **P4 · team mode** | One Sindri serving a team at work | A shared database store instead of per-host SQLite, a user per human with roles, per-user and per-team budgets, tenant-keyed ledger rows, audit per user, and the second-user rules of main spec §15. Every decision still has a named human approver |
+
+**Limits that don't go away with more machines:**
+- **Model quota** is usually the first ceiling. The capacity router (§17.15) spreads Steps across allowed accounts, but
+  never across the work/personal line.
+- **Human review bandwidth** is the real ceiling. The human-minutes budget caps how much work Sindri starts, however
+  many workers exist.
+- **Merge contention:** parallel tasks on one epic rebase onto each other. Conflict-aware dispatch and small write
+  scopes keep it low, and a task that conflicts twice is serialized.
+
+**Seams built now, so the ladder needs no rewrite** (in the C# port, readiness §4b):
+- The ledger behind a `LedgerStore` port, with SQLite (today) and a server database (P4) as implementations,
+  sharing one contract-test suite.
+- Every ledger event is idempotent, keyed by `(kind, item, attempt, sha)`, so retries and a second worker can't
+  apply anything twice.
+- `Lease`, `Launcher` and `Scheduler` are ports. `Launcher` gains a remote implementation in P2.
+- Every row carries a tenant and ring key from day one, set to a single value until P4.
+
+**Rollout:** P1 joins F2 (the task compiler needs it to run a packet's tasks in parallel). P2 follows F7 (it reuses
+the shared lease). P3 starts when ring 1 begins, as the safe way to share improvements between home and work. P4
+starts only when a team adopts it, and needs the workplace's approval.
+
 ## 17.17 Decisions
 
 **Decided by the human (2026-10-09):**

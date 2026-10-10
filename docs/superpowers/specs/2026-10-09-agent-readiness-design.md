@@ -345,6 +345,10 @@ group.MapPost("/items/{id}/start", async (ItemId id, StartItemBody body, IServic
 AOT publishing runs only in a separate CI job and in releases. Local builds and tests are JIT, so the inner loop
 stays fast.
 
+**Seams for distribution** (factory addendum §17.20): the C# ledger sits behind a `LedgerStore` port with a
+shared contract-test suite, every event is idempotent, `Lease`, `Launcher` and `Scheduler` are ports, and every row
+carries a tenant and ring key. These cost little now and avoid a second rewrite later.
+
 ### 4b.7 Repository tree
 
 ```
