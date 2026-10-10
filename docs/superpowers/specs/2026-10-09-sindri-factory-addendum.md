@@ -1,6 +1,6 @@
 # Sindri — factory addendum (§17)
 
-Status: draft for review, revision 2 · 2026-10-09
+Status: draft for review, revision 3 · 2026-10-09 (applies the /autoplan findings C1–C17; resolutions in §17.19)
 Revision 2 adds:
 - development lenses and workflow generation (§17.7)
 - lean session bootstrap (§17.8)
@@ -87,10 +87,13 @@ profiles and repos. This document is generic.
 
 12. **The human is the product SME.** Sindri batches, contextualizes and cites product questions. It never
     answers them, and it doesn't count product or design turns as cost.
-13. **Agents don't decide their own scope.** A session's write scope, sandbox policy, context, rules, lenses and
-    next handoff come from the frozen packet and its frozen workflow, computed by Sindri code. A model may
-    *propose* a workflow at planning time (§17.7); it is validated and frozen before any session uses it.
-    Widening scope is a scope-expansion request (§6.1), never a silent edit.
+13. **Agents don't decide their own scope, and models never grant capabilities.** A session's write scope,
+    sandbox policy, context, rules, lenses and next handoff come from the frozen packet and its frozen workflow,
+    computed by Sindri code. A model may *propose* the Step order, review-only lenses and injection plans at
+    planning time (§17.7). It may never propose a **capability field**: tool, command, MCP, network, write-scope
+    or budget allowlists. The session policy is always the profile's approved allowlist (the ceiling) intersected
+    with the lens and task allowlists, never more. Freezing and re-freezing are desk actions. Widening scope is a
+    scope-expansion request (§6.1), never a silent edit.
 14. **No build without a frozen packet.** A build Step starts only from a handoff packet that passes
     `sindri packet validate` and is frozen by hash (§17.4).
 15. **Context is budgeted.** Every session starts from an injection plan with a token budget per section.
@@ -197,8 +200,9 @@ skills (`/officeHours`, brainstorming, `/autoplan`, `/archReview`). The studio a
 - a local **visual walkthrough** (HTML) generated from the packet. It is never published unless the human
   publishes it.
 
-**Handoff packet:** a directory with a manifest, validated by a Zod schema (`sindri/packet/`, with a JSON Schema
-export like the profile's).
+**Handoff packet:** a directory with a manifest, validated by a typed C# schema (System.Text.Json source-generated
+records, with a generated JSON Schema for editors; see the readiness design §4b and §4c). Each schema file carries
+`schemaVersion`. A minimal version ships in readiness step R1a so the C# ports themselves run as packets.
 
 | Part | Contents |
 |---|---|
@@ -252,7 +256,8 @@ Out-of-scope actions are refused by the gate (§8.1) and the container, never le
 | Skills and subagents | The lens's allowlist | Session image settings (§17.8) |
 | Budgets | `budget` | The model proxy and the tick |
 
-A denied action returns `SND-SCOPE-1xx` with the reason and turns into a scope-expansion request. Three denials
+A denied action returns `SND-SANDBOX-1xx` (a new error area; `SND-SCOPE` stays with `sindri scope`) with the
+rule, the attempted action and the fix, and turns into a scope-expansion request. Three denials
 of the same kind in one Step park the Step with a `scope-mismatch` reason, which counts against the workflow
 generator (§17.2).
 
@@ -345,7 +350,8 @@ per agent turn.
    product nodes. This yields the required lenses per task.
 3. **Model pass** (bounded job, read-only): proposes the Step graph. That covers the order of lenses per task,
    which lenses review rather than build, where parallel work is safe, and the injection plan per Step
-   (§17.8). It may add lenses, never remove a required one.
+   (§17.8). It may add **review-only** lenses (they read and comment, and get no extra capabilities), and it never
+   removes a required one. It can't write capability fields (invariant 13).
 4. **Coverage checks** (deterministic): every required lens appears; every acceptance example has an evaluator
    Step; every Step's injection plan fits its budget; write scopes of parallel Steps don't overlap; every Step
    has a valid next handoff.
@@ -411,8 +417,14 @@ precision bar like direction checks (§6.1).
 
 - Each packet gets an epic branch. Task PRs are opened as a stack against it in dependency order (§7.3's stack
   machine).
-- With `epicMerge: auto`, a task PR merges into the epic once the deterministic ship gate passes: CI green,
-  threads resolved, evidence plan satisfied, and the review-round cap not exceeded.
+- With `epicMerge: auto`, a task PR merges into the epic once the deterministic ship gate passes:
+  - CI green on the **verified head SHA**, merged with `--match-head-commit <sha>`;
+  - review threads resolved **by a human or a trusted bot** (`trustedBots`, §8.3); a thread resolved by a Sindri
+    session or the PR babysitter doesn't count;
+  - the evidence plan satisfied, and the review-round cap not exceeded.
+- Undrafting a task PR in an epic is an explicit allowlist entry (§8.1), not a general undraft permission.
+- Ring-1 profiles default to `epicMerge: off`. It turns on only where the workplace policy allows agent merges into
+  a shared branch (§17.19 ring-1 table).
 - The epic → default-branch PR is always the human's. It carries the packet's walkthrough and the evidence
   roll-up.
 - Protected modules (§7.7) always wait for the human, even inside an epic.
@@ -470,7 +482,7 @@ with `tailscale serve` (tailnet only), never `funnel`.
 
 | Surface | Decisions | Where |
 |---|---|---|
-| **Swipe inbox** (mobile view of the Plan 6 dashboard) | Binary, low-context: undraft a PR, accept evidence, approve or reject a rule or evolve proposal, keep or drop a scope surface, resolve `shape-unresolved`, raise a standing workflow's tier | Phone |
+| **Swipe inbox** (mobile view of the Plan 6 dashboard) | Binary, low-context, **non-protected** only: undraft a PR, accept evidence, approve or reject a **prompt-text** rule or idea card, keep or drop a scope surface, resolve `shape-unresolved`. Never tier raises, capability changes, evolve adoptions or publishes, or packet freezes | Phone |
 | **Walkthrough pages** (HTML from the packet, the scope map, or a PR with its evidence) | Read and comment: designs, scope maps, PR walkthroughs, incident timelines | Phone or desk |
 | **Desk queue** | Open questions, design revisions, amendments, packet freezes, protected-surface approvals | Desk |
 | **Live session** (Warp remote control, or `sindri attach` over Tailscale SSH) | Watching or taking over a running session | Either |
@@ -536,14 +548,15 @@ holds on ring 1.
 
 | Step | Contents | First value |
 |---|---|---|
-| F0 | Metrics revision (§17.2); packet schema with `validate` and `freeze`; rule, lens and workflow schemas and loaders | Packets, rules and lenses are checkable |
+| F0 | Metrics revision (§17.2); packet schema with `validate`, `freeze`, `init --from-scope` and `amend`; rule, lens and workflow schemas and loaders | Packets, rules and lenses are checkable |
+| F0.5 | **Thin slice:** one micro-packet → one task → one PR through `/specToProvenPR` in sindri mode, with 2 lenses (implementer, QA) and 2 evidence kinds (`test`, `cli-transcript`) | The whole pipeline works end to end once, before it grows |
 | F1 | Lean session bootstrap (§17.8) with first-call token measurement; ship contract; evidence providers `test`, `ui-browser`, `api-transcript` and `cli-transcript`; sindri mode in `/specToProvenPR` and `/bugFixOrchestrator` | Sessions start small; any task kind can be proven |
 | F2 | Task compiler and compiled sandbox policy (§17.5); roles and automatic handoff; stacked epics (main spec step 3a, expanded) | A frozen packet builds task by task in scope, with no pasted prompts |
-| F3 | Workflow generation and the initial lens catalog (§17.7) | Any deliverable gets the right lenses, decided once at freeze time |
+| F3 | Workflow generation and the starting lens catalog: 4 lenses (implementer, QA, architecture, security), 4 evidence kinds, 3 standing workflows (PR babysitter, triager, daily digest). Scouting grows the rest (§17.18) | Any deliverable gets the right lenses, decided once at freeze time |
 | F4 | Review anywhere (§17.12) and standing workflows at the `report` tier (§17.9) | Approvals from the phone; digests, triage and inspection running |
 | F5 | Context graph with first adapters, the query planner, and backtest arms per dimension (§17.3) | Measured scoping and pack precision per repo |
 | F6 | Skill-change items, rule growth into self-adopt, standing workflows promoted by tier | The factory maintains its own skills, taste and lenses |
-| F7 | Swappable host handover and subscription capacity routing | Builds continue when the laptop closes or a window runs out |
+| F7 | Swappable host handover on a shared lease, and subscription capacity routing | Builds move between hosts safely, and keep running when a window runs out |
 
 F5 can run in parallel with F1–F4, because it doesn't depend on them.
 
@@ -605,6 +618,104 @@ and digests list the rest.
 - a native phone app, if the PWA's decision latency stalls (§17.17 Q4);
 - marketplace memory or consolidation stores as context-graph arms (§17.3);
 - importing community lens and subagent definitions as trust-tiered packs (§17.7).
+
+## 17.19 Review resolutions (revision 3)
+
+These resolve the /autoplan findings C1–C17. Where a rule here conflicts with an earlier section, this section wins.
+
+### Capabilities, protection and the core tenet (C1, C2, tension 2)
+- **Every registered artifact is split in two:** *prompt text* (instructions, questions, rubrics, rule wording) and
+  *capability fields* (tool, command, MCP, network, write-scope and budget allowlists; trust tiers; workflow
+  templates; security rules).
+- **Prompt text** may self-adopt under §7.4. **Capability fields** are always approval-tier, a packet can't
+  override them downward, and no model output may set them (invariant 13). Sindri still *proposes* capability
+  changes (invariant 16); the human approves them at the desk.
+- **Ceiling:** the compiled session policy = the profile's approved allowlist ∩ the lens allowlist ∩ the task spec.
+  A lens can only narrow, never widen.
+- **Imported lens and subagent packs** enter as prompt text at the lowest trust tier. Their capability fields are
+  dropped on import and must be re-declared through approval. Upstream upgrades of imported packs never self-adopt.
+
+### What the sandbox really enforces (C3, C4, C5)
+| Control | Pattern (cooperative agent; hooks) | Boundary (holds against a hostile agent) |
+|---|---|---|
+| Writes | `PreToolUse` path guard; `PostToolUse` tree check | The sindri-side verifier refuses any bundle with out-of-scope paths (§8.5) |
+| Commands | Gate on Bash command strings (easily evaded) | Credentials and network: a command that needs a secret or an endpoint the session lacks can't succeed |
+| Network | — | The egress proxy allowlist per task (§8.2) |
+| Reads | Gate on read tools | Mounts: only the repo, the pack and allowed refs are present |
+| Budgets | — | The model proxy and the tick |
+| Holdouts | — | Stored in sindri-private state, mounted **only** into evaluator Steps, never committed; a canary example in each set detects leaks |
+- The per-session settings overlay lives in the read-only `/sindri` mount. The gate, the Stop gate and the safety
+  hooks are in root-owned managed settings that the overlay can't disable.
+- Rule checks that run repo-controlled config (for example a repo's eslint or analyzer config) run in the
+  **phase-2** verifier, never in the phase-1 verifier, which runs no repo code.
+
+### Hosts and the lease (C6, C17, tension 3)
+- One **shared lease** decides the active factory host. It lives on the always-on box (or another shared store),
+  and its epoch is checked before every outward action: push, merge, tracker write, notification. A host that
+  can't reach the lease is passive and can't act outward. A laptop working offline runs in a degraded local mode
+  that can't push or merge.
+- Hosts are tagged `work` or `personal`, like accounts. Ring-1 data and sessions never run on a `personal` host.
+- `sindri host handover <to> [--dry-run]` signs the transferred ledger snapshot, verifies it on arrival, and keeps
+  the previous host's snapshot for `handover --back`.
+- The dashboard is reached at one stable tailnet name that follows the lease, so phone passkeys stay valid across
+  handovers.
+
+### Context graph boundaries (C7)
+- The context graph package defines ports (`Scrubber`, `Sanitizer`, `CodeIndex`, `Store`) that Sindri injects; it
+  has no Sindri imports. The existing `Source` adapters are wrapped by a `Source → Connector` shim, not duplicated.
+- One store per profile, written only by Sindri. Consolidation ("dreaming") output keeps the **lowest trust** of its
+  inputs, so untrusted chat or telemetry text never becomes a trusted fact.
+- The graph's evals (backtest arms) stay in Sindri, so the graph can't grade itself.
+
+### Phone decisions (C8, C11, tension 1)
+- **Enrollment** happens at the desk (`sindri device enroll`) and creates a passkey for one device and the stable
+  tailnet name. `sindri device revoke` takes effect immediately.
+- **Each decision signs** `(item id, item version, nonce, choice)`. A decision for a changed item, or a reused
+  nonce, is refused with a code, and the item shows its new state.
+- **Walkthrough pages** are served from a separate origin with no cookies or decision endpoints, so a generated page
+  can't trigger or change a decision.
+- **Plan 6 amendment:** the dashboard binds to loopback and is exposed only through `tailscale serve`. The Host and
+  Origin checks accept the stable tailnet name, and the login token is replaced by the passkey for tailnet clients.
+- **States per surface** (spec'd in Plan 6's amendment): pending, deciding, decided here, decided elsewhere (CLI or
+  another device), stale (item changed), offline (queued locally, sent on reconnect, refused if stale), passkey
+  failed, revoked device.
+- **Not only swipe:** every swipe has visible buttons (WCAG 2.5.1). Swipe right = approve, left = reject, up =
+  "queue for desk", and each choice can be undone for 10 seconds. Recordings carry captions or a transcript.
+- **Queues:** the swipe inbox holds non-protected binary items; the desk queue holds open questions, amendments,
+  freezes and every approval-tier item; the dashboard's "Needs you" lists both with their queue.
+
+### Ring 1 (C10, tension 4)
+| Feature | Ring 1 default | Turns on when |
+|---|---|---|
+| Assist mode, packets, task compiler, evidence, lenses | On | — |
+| `epicMerge: auto` | Off | The workplace allows agent merges into a shared branch |
+| Phone decisions | Off | The workplace allows decisions from a personal device on a personal tailnet |
+| Personal Linux box as host | Never | Ring 1 runs only on `work` hosts |
+| Standing workflows above `report` | Off | The workplace allows agents to comment or open PRs on their own |
+| Personal accounts | Never | — |
+
+"F3 holds on ring 1" is judged only over the rows that are on there.
+
+### Developer experience (C12, C14, C16)
+- `sindri packet init --from-scope <map>`, `packet amend`, and `packet validate --json` (one record per failed
+  check with its rule id and fix).
+- `sindri session spec <step>` prints the compiled session spec. `sindri why-denied <id>` shows the denial record:
+  rule, attempted action, policy source, and how to request expansion.
+- Skills detect sindri mode through `SINDRI_MODE=1` and a state-path shim that keeps today's state files
+  (`reviews/<pr>.json`, bugfix state) readable from the same paths.
+- A skill lint spec: frontmatter, preamble, size budget, no interactive asks on sindri-mode paths, and pressure
+  scenarios as `scenarios/*.md` with an expected-behavior block.
+- **Micro-packets:** an S-or-smaller tracker item gets an auto-generated packet (one task, write scope from triage,
+  default evidence for its kind), frozen without a desk step. It still goes through validation.
+- Rule, lens and workflow files carry `schemaVersion` and have generated JSON Schemas. Lens `commands` name repo
+  command aliases from `repos/<repo>.yaml`, not raw strings. `sindri rules explain <id>` shows why a rule was
+  selected. A glossary in `docs/sindri/glossary.md` fixes "lens", "factory", "profile", "ring" and "packet".
+
+### Human effort (C15)
+- A weekly **human-minutes** metric (desk sessions, phone decisions, takeovers) with a ceiling in the profile.
+  Crossing it two weeks in a row pauses new auto-started work and raises the top time sinks in the digest.
+- A notification budget **per surface**: phone pushes per day, digest items, desk-queue additions. Standing
+  workflows and scouting draw from it.
 
 ## 17.17 Decisions
 
