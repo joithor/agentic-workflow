@@ -309,14 +309,14 @@ jobs:
       - name: NativeAOT smoke tests
         if: steps.sln.outputs.run == 'true'
         # Each publishes for the runner's own RID (linux-x64), runs the native binary and
-        # compares its output; clang and zlib1g-dev are on ubuntu runners.
+        # compares its output; clang and zlib1g-dev are on ubuntu runners. The smokes are found by
+        # location (src/<Project>.AotSmoke/, src/<Pkg>/<Project>.AotSmoke/ or src/<Pkg>/aot-smoke/), so
+        # a new package's smoke needs no edit here.
         run: |
-          for smoke in src/Aw.Kernel.AotSmoke/run.sh src/Aw.Kernel.Data.AotSmoke/run.sh src/Redaction/Aw.Redaction.AotSmoke/run.sh; do
-            if [ -f "$smoke" ]; then
-              bash "$smoke"
-            else
-              echo "no-op: $smoke not present yet"
-            fi
+          shopt -s nullglob
+          for smoke in src/*.AotSmoke/run.sh src/*/*.AotSmoke/run.sh src/*/aot-smoke/run.sh; do
+            echo "== $smoke"
+            bash "$smoke"
           done
       - name: Upload test and AOT smoke output on failure
         if: failure() && steps.sln.outputs.run == 'true'
@@ -326,14 +326,63 @@ jobs:
           path: |
             TestResults
             artifacts/aot-smoke
+            artifacts/aot-*/*.txt
+            artifacts/aot-*/publish.log
             artifacts/aot-data-smoke
             artifacts/aot-redaction-smoke
           if-no-files-found: ignore
           retention-days: 7
 
+  scaffold:
+    name: C# scaffold generators
+    needs: changes
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    env:
+      # The generators live under scripts/ (bash area) and their templates must build against the root C# settings
+      # (dotnet area): either change runs them.
+      CHANGED: ${{ needs.changes.outputs.bash == 'true' || needs.changes.outputs.dotnet == 'true' }}
+      DOTNET_CLI_TELEMETRY_OPTOUT: "1"
+      DOTNET_NOLOGO: "1"
+    steps:
+      - name: No-op when unchanged
+        if: env.CHANGED != 'true'
+        run: |
+          echo "no-op: no script or .NET change — the scaffold end-to-end test is not needed"
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        if: env.CHANGED == 'true'
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        if: env.CHANGED == 'true'
+        with:
+          node-version-file: .nvmrc
+      - uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
+        if: env.CHANGED == 'true'
+        with:
+          global-json-file: global.json
+          cache: true
+          cache-dependency-path: "**/packages.lock.json"
+      - name: Scaffold, build and test a small cli and a full http package, then remove them
+        if: env.CHANGED == 'true'
+        # docs/csharp/scaffolds/new-package.md "Done criteria": the generators' own CI test, against the real root
+        # files. Each package lives in a throwaway git worktree that the script removes. A NuGet feed error (the
+        # generators restore new projects over the network) gets one retry, like the .NET job's restore.
+        run: |
+          set +e
+          bash scripts/scaffold/e2e.sh 2>&1 | tee "$RUNNER_TEMP/scaffold-e2e.log"
+          code="${PIPESTATUS[0]}"
+          if [ "$code" -ne 0 ] && grep -qE 'NU1900|NU1301|Unable to load the service index' "$RUNNER_TEMP/scaffold-e2e.log"; then
+            echo "::warning::NuGet feed error during the scaffold e2e — retrying once in 30s"
+            sleep 30
+            bash scripts/scaffold/e2e.sh
+            code=$?
+          fi
+          exit "$code"
+
   ci-result:
     name: CI result
-    needs: [changes, ts, bash-tests, gate, dotnet]
+    needs: [changes, ts, bash-tests, gate, dotnet, scaffold]
     # The one job-level `if:` in this file: it must run (and fail) even when a need
     # failed or was skipped, since GitHub counts a skipped required check as passing.
     if: always()

@@ -1,0 +1,7 @@
+{
+  "schemaVersion": 1,
+  "questions": [
+    { "id": "q1", "text": "Which shape?", "answer": "small" },
+    { "id": "q2", "text": "Which store?", "deferred": { "owner": "owner", "buildMayAssume": "files" } }
+  ]
+}

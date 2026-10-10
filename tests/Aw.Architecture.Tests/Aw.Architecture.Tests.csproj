@@ -1,0 +1,35 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- The architecture tests (spec §4b.1, §4b.5): every §4b.1 rule over every Aw.* production assembly registered
+       in Packages.cs, plus the typed-id guard (docs/csharp/typed-ids.md). Fixtures that break each rule live in this
+       assembly under Fixtures/ (a separate fixtures project would be a leaf nothing may reference, DEPS-PROJ-003).
+       No package owns this assembly, so it may reference every package (deps.yaml "C# names"). -->
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <OutputType>Exe</OutputType>
+    <RootNamespace>Aw.Architecture.Tests</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="xunit.v3" />
+    <PackageReference Include="TngTech.ArchUnitNET" />
+    <!-- Example ids for the typed-id guard's fixtures (decision R9). -->
+    <PackageReference Include="Vogen" />
+    <Using Include="Xunit" />
+  </ItemGroup>
+
+  <!-- Every production assembly in Packages.cs is referenced here, so it lands in the output and loads by name.
+       /new-package adds one ProjectReference per new production project next to its Packages.cs line. -->
+  <ItemGroup Label="Registered packages">
+    <ProjectReference Include="../../src/Aw.Kernel/Aw.Kernel.csproj" />
+    <ProjectReference Include="../../src/Aw.Kernel.Data/Aw.Kernel.Data.csproj" />
+    <ProjectReference Include="../../src/Packets/Aw.Packets.Core/Aw.Packets.Core.csproj" />
+    <ProjectReference Include="../../src/Packets/Aw.Packets.App/Aw.Packets.App.csproj" />
+    <ProjectReference Include="../../src/Readiness/Aw.Readiness.Core/Aw.Readiness.Core.csproj" />
+    <ProjectReference Include="../../src/Readiness/Aw.Readiness.App/Aw.Readiness.App.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- The registry test reads the solution file from the source tree. -->
+    <AssemblyMetadata Include="AwRepoRoot" Value="$([System.IO.Path]::GetFullPath('$(MSBuildProjectDirectory)/../..'))" />
+  </ItemGroup>
+</Project>

@@ -1,0 +1,23 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- Aw.Packets.Testing (scaffolded by /new-package): builders, in-memory fakes and contract bases for Packets's
+       ports (spec §4b.5). Test support: only *.Tests and *.Testing projects reference it. -->
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <RootNamespace>Aw.Packets.Testing</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- [Fact] for the contract bases; like Aw.Kernel.Testing they throw ContractViolationException, not Assert. -->
+    <PackageReference Include="xunit.v3.extensibility.core" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../../src/Packets/Aw.Packets.Core/Aw.Packets.Core.csproj" />
+    <ProjectReference Include="../../src/Packets/Aw.Packets.App/Aw.Packets.App.csproj" />
+    <ProjectReference Include="../Aw.Kernel.Testing/Aw.Kernel.Testing.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="Aw.Packets.Tests" />
+  </ItemGroup>
+</Project>
