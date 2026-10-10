@@ -39,7 +39,7 @@ alwaysApply: false
 
 # C# Rules
 
-The TypeScript packages are being rewritten in C# on .NET 10 (spec `docs/superpowers/specs/2026-10-09-agent-readiness-design.md`, §4a–§4e; the spec's §4b is the source of truth for every number here). The port is decided — don't reopen it. **One cutover at parity:** the installed toolkit stays TypeScript until every package passes its golden tests against the C# build; nothing in `setup.sh`, the providers, MCP registration or launchd points at `src/` before the switch. There are no per-package shims.
+The TypeScript packages are being rewritten in C# on .NET 10 (spec `docs/superpowers/specs/2026-10-09-agent-readiness-design.md`, §4a–§4e; the spec's §4b is the source of truth for every number here). The port is decided — don't reopen it. **Clean cutover:** the C# build keeps no backward compatibility with the TS build (no byte-compatible JSON, no golden replay, no migration of TS state). The installed toolkit stays TypeScript until the C# build is complete; nothing in `setup.sh`, the providers, MCP registration or launchd points at `src/` before the switch. There are no per-package shims.
 
 Each rule names the check that enforces it. "Gap — R1b" means the check doesn't exist yet: follow the rule by hand and don't add new violations.
 
@@ -86,17 +86,16 @@ A package under ~1,500 lines may use two projects, `Core` and `App`, with the sa
 
 ## Types and errors (§4b.3)
 
-- Every id and constrained primitive is a strongly typed value (`ItemId`, `RepoSlug`, `SizeClass`): Vogen or a hand-written `readonly record struct` (decision R9, `docs/readiness/aot-spike.md`, written by the R1a spike). No raw `string`/`Guid` ids in public `Core`/`Features` signatures. Check: `Aw.Analyzers` (gap — R1b).
+- Every id and constrained primitive is a strongly typed value (`ItemId`, `RepoSlug`, `SizeClass`), per decision R9: the type declares `IParsable<T>` in user code; Vogen generates it with `Conversions.None` (no generated JSON or ADO.NET converters); JSON and SQL conversions come from the Kernel converters. No raw `string`/`Guid` ids in public `Core`/`Features` signatures. Check: `Aw.Analyzers` (gap — R1b).
 - Expected failures are `Error` records with a stable catalogue code (`SND-…`, `AW-…`) returned in `Result<T>` from `Aw.Kernel`. Exceptions are for bugs and broken invariants only. No `catch (Exception)` outside `Host` and `Infrastructure` boundary adapters. Check: `CA1031` at error in the root `.editorconfig`; `Host` and `Infrastructure` projects lower it in their own project-level `.editorconfig` (`/new-package` generates it).
 - Generic types take ≤ 3 type parameters and are constrained (`where TId : struct, IEquatable<TId>`).
 - Nullable is on everywhere (`Nullable=enable` + `TreatWarningsAsErrors`). A `!` needs a `// why:` comment. Check: compiler for nullability; `Aw.Analyzers` for the comment (gap — R1b).
 - `required` members and primary constructors preferred; records immutable by default.
 - Classes are `internal sealed` by default (`CA1852`, `CA1515`). Only what crosses an assembly is public: the `Add…()` methods, request and response records, port interfaces and errors in `Core`. Every non-test project keeps `PublicAPI.Shipped.txt`/`PublicAPI.Unshipped.txt`: both start with `#nullable enable` (`RS0037`), and every symbol line carries nullability annotations (`RS0036`), e.g. `static Aw.Demo.Core.DemoCoreServiceCollectionExtensions.AddDemoCore(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!`. A record lists its compiler-generated members too (`<Clone>$`, `Deconstruct`, `Equals`, `GetHashCode`, `ToString`, `==`/`!=`, each `get`/`init`); take the lines from the `RS0016` code fix rather than writing them by hand. Every public member has a `///` summary. Tests reach internals through `InternalsVisibleTo`: `Core`, `Features` and `Infrastructure` declare it for `Aw.<Pkg>.Tests` and `Aw.<Pkg>.Testing`; `Host` for `Aw.<Pkg>.Tests` only. Check: `RS0016`/`RS0017`/`RS0036`/`RS0037` (PublicApiAnalyzers), `CS1591`.
 
-## JSON (§4b.3, §4c)
+## JSON (§4b.3)
 
 - System.Text.Json with **one source-generated `JsonSerializerContext` per package**. No reflection-based serialization. Check: trim/AOT analyzers (`IL2026`, `IL3050`) via `IsAotCompatible=true`.
-- Files the TS build writes today are read and written byte-identically: use the shared options profile in `Aw.Kernel` (camelCase, JS-compatible escaping, `toISOString()` timestamps, key insertion order where digests depend on it). New digests carry a `digestVersion`. Check: the byte-compat test suite (golden TS outputs).
 
 ## Dependency injection (§4b.4)
 

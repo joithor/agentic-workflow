@@ -30,7 +30,7 @@ Domain-specific rules live in `.agents/rules/` — one file per rule, the only c
 | Test | Vitest (in-memory SQLite) |
 | Build | tsc (ESM, Node16 module resolution) |
 
-**C# build — in progress, not installed until the cutover.** The TypeScript packages are being ported to C# (spec `docs/superpowers/specs/2026-10-09-agent-readiness-design.md` §4a–§4e). The installed toolkit stays TypeScript until every package passes its golden tests against the C# build; then one reversible switch moves the install. Nothing in `setup.sh`, the providers, MCP registration or launchd points at `src/` before that.
+**C# build — in progress, not installed until the cutover.** The TypeScript packages are being ported to C# (spec `docs/superpowers/specs/2026-10-09-agent-readiness-design.md` §4a–§4e). This is a clean cutover: the C# build doesn't keep byte or state compatibility with the TS build, and no TS state is migrated. The installed toolkit stays TypeScript until the C# build is complete; then one switch moves the install. Nothing in `setup.sh`, the providers, MCP registration or launchd points at `src/` before that.
 
 | Layer | Technology (C# build) |
 |-------|------------|
@@ -180,7 +180,7 @@ Domain rules live in `.agents/rules/`. Before editing a file, read every rule be
 |------|-------------|------------|------|
 | `bridge-services` | MCP bridge service layer — AppResult, service contracts, MCP tools, route registration | `mcp-bridge/src/application/**`, `mcp-bridge/src/routes/**`, `mcp-bridge/src/server.ts`, `mcp-bridge/src/mcp.ts`, `mcp-bridge/src/index.ts` | `.agents/rules/bridge-services.md` |
 | `bridge-transport` | MCP bridge transport layer — typed routes, controller factories, Zod schemas | `mcp-bridge/src/transport/**` | `.agents/rules/bridge-transport.md` |
-| `csharp-testing` | C# tests — TDD order, lanes and time budgets, fakes with contract tests, builders, golden files, architecture tests | `tests/**`, `**/*Tests.cs`, `**/*.Tests.csproj`, `**/*.Testing.csproj` | `.agents/rules/csharp-testing.md` |
+| `csharp-testing` | C# tests — TDD order, lanes and time budgets, fakes with contract tests, builders, snapshot files, architecture tests | `tests/**`, `**/*Tests.cs`, `**/*.Tests.csproj`, `**/*.Testing.csproj` | `.agents/rules/csharp-testing.md` |
 | `csharp` | C# build (in progress) — package shape, dependency rules, types, errors, DI, JSON, AOT scope, analyzers | `src/**`, `**/*.cs`, `**/*.csproj`, `**/*.slnx`, `global.json`, `Directory.Build.props`, `Directory.Build.targets`, `Directory.Packages.props`, `nuget.config`, `BannedSymbols.txt`, `deps.yaml`, `schemas/deps.schema.json`, `**/.editorconfig`, `CodeMetricsConfig.txt`, `**/PublicAPI.*.txt`, `**/packages.lock.json` | `.agents/rules/csharp.md` |
 | `database` | Bridge SQLite database — client, prepared statements, schema, transactions | `mcp-bridge/src/db/**` | `.agents/rules/database.md` |
 | `design` | Design pipeline artifacts — tokens, .impeccable.md, DESIGN_SYSTEM.md, design-* skills | `design-tokens.json`, `.impeccable.md`, `planning/DESIGN_SYSTEM.md`, `skills/design-*/**` | `.agents/rules/design.md` |

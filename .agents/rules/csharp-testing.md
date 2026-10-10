@@ -1,5 +1,5 @@
 ---
-description: C# tests — TDD order, lanes and time budgets, fakes with contract tests, builders, golden files, architecture tests
+description: C# tests — TDD order, lanes and time budgets, fakes with contract tests, builders, snapshot files, architecture tests
 globs:
   - "tests/**"
   - "**/*Tests.cs"
@@ -39,7 +39,7 @@ Each rule names the check that enforces it. "Gap — R1b" means the check doesn'
 
 - Tests by **feature**, not by layer: `StartItemTests`, not `ItemRepositoryTests` + `ItemServiceTests`.
 - Per package: `tests/Aw.<Pkg>.Tests/` (by feature) and `tests/Aw.<Pkg>.Testing/` (fakes, builders, contract bases); project names and root namespaces match their folders, like `tests/Aw.Architecture.Tests/`, which holds every §4b.1 rule.
-- `Aw.<Pkg>.Testing` is **test-support** (as `deps.yaml` marks `KernelTesting` with `test: true`): it may reference test-support packages such as `Aw.Kernel.Testing` (the generic contract bases, golden harness) without a declared edge, only `*.Tests` and `*.Testing` projects may reference it, and it's exempt from fan-out like `*.Tests`. `*.Tests` projects are leaves: nothing references them. Check: `scripts/check-deps.mjs` (once #92 merges).
+- `Aw.<Pkg>.Testing` is **test-support** (as `deps.yaml` marks `KernelTesting` with `test: true`): it may reference test-support packages such as `Aw.Kernel.Testing` (the generic contract bases) without a declared edge, only `*.Tests` and `*.Testing` projects may reference it, and it's exempt from fan-out like `*.Tests`. `*.Tests` projects are leaves: nothing references them. Check: `scripts/check-deps.mjs` (once #92 merges).
 - Tests reach `internal` types through `InternalsVisibleTo`: `Core`, `Features` and `Infrastructure` declare it for `Aw.<Pkg>.Tests` and `Aw.<Pkg>.Testing`; `Host` declares it for `Aw.<Pkg>.Tests` only.
 - The test policy applies **by location**: every `*.Tests` and `*.Testing` project lives under `tests/` (including `tests/Aw.Kernel.Testing/`), and #89's `tests/.editorconfig` (`root = false`) covers everything there; outside `tests/` it doesn't apply. It sets: `CA1707` (underscore test names), `RS0016`, `RS0017`, `RS0036`, `RS0037` (no public-API tracking), `CA2007` and `CA1515` (xUnit needs public test classes; xUnit1030 forbids `ConfigureAwait(false)` in tests) are off; `GenerateDocumentationFile` stays `true` (IDE0005 needs it) with `CS1591` off. Test classes are `public sealed`, test names use underscores, and tests `await` without `ConfigureAwait`. `Aw.<Pkg>.Testing` code (fakes, builders, contract bases) gets the same policy because it lives under `tests/` too.
 - One top-level type per file, named after it (`MA0048`): builders go in `A.cs`, not `Builders.cs`.
@@ -78,7 +78,7 @@ The test framework is xUnit v3 unless the AOT spike picks TUnit (decision R7, `d
 - Builders with sensible defaults: `AnItem().WithSize(S).Build()`.
 - Deterministic ids (a fake `IIdGenerator`) and `FakeTimeProvider`; never the wall clock or `Guid.NewGuid` in a test.
 - No shared mutable fixtures; each test builds its own state.
-- Golden files for CLI output and JSON contracts. Compare after the declared normalization (ids, times), never by loose matching. Golden files recorded from the TS build are the port's contract (§4c): don't edit them to make a C# test pass — a real difference is a bug in the port.
+- Snapshot files for CLI output and JSON contracts. Compare after the declared normalization (ids, times), never by loose matching. Update a snapshot only in a reviewed change that says why the contract changed.
 
 ## Architecture tests
 
