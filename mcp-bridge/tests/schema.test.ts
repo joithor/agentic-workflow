@@ -1,9 +1,9 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, vi, afterEach } from "vitest";
 import { createDatabase, MIGRATIONS } from "../src/db/schema.js";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { randomUUID } from "node:crypto";
-import { unlinkSync } from "node:fs";
+import { existsSync, mkdtempSync, rmSync, unlinkSync } from "node:fs";
 
 describe("createDatabase", () => {
   it("creates a database with WAL mode and tables", () => {
@@ -26,8 +26,24 @@ describe("createDatabase", () => {
     }
   });
 
-  it("uses default path when none provided", () => {
-    // Just verify MIGRATIONS constant is a non-empty string with CREATE TABLE
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it("creates bridge.db in the working directory when no path is given", () => {
+    const dir = mkdtempSync(join(tmpdir(), "bridge-default-"));
+    vi.spyOn(process, "cwd").mockReturnValue(dir);
+    try {
+      const db = createDatabase();
+      expect(db.name).toBe(join(dir, "bridge.db"));
+      expect(existsSync(join(dir, "bridge.db"))).toBe(true);
+      db.close();
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  it("MIGRATIONS creates both tables", () => {
     expect(MIGRATIONS).toContain("CREATE TABLE IF NOT EXISTS messages");
     expect(MIGRATIONS).toContain("CREATE TABLE IF NOT EXISTS tasks");
   });

@@ -36,7 +36,7 @@ You don't install anything per repo. Skills and hooks are global. The only per-r
 ### Prerequisites
 
 - At least one agent CLI: `claude`, `codex`, or `cursor-agent`
-- Node.js >= 20
+- Node.js >= 22 (see `.nvmrc`)
 - Docker Desktop, **installed and running** (Serena needs it)
 - `gh`, installed and logged in (`gh auth login`)
 - `jq` (`brew install jq`)

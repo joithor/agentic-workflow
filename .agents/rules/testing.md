@@ -26,7 +26,7 @@ Four Vitest packages, each with v8 coverage, `testTimeout: 10_000`, and 100% lin
 | `judge` | judge CLI logic | `src/cli.ts` |
 | `sindri` | in-memory SQLite ledgers, temp git repos, fake SystemProbe/GitRunner/IndexIo, tracker contract tests, evolve fixtures (`tests/evolve-fixtures.ts`: a temp repo with an approved profile and an open ledger, fake process and model runners; synthetic hook-fire transcripts under `tests/fixtures`) | `src/system-real.ts` (OS-specific branches; smoke-tested in `tests/real.test.ts`, which also covers `src/git-real.ts` and `src/index/sandbox-real.ts` in full); `src/scope/model-real.ts`, `src/scope/io-real.ts`; `src/cli.ts`, `src/gen.ts` (thin wiring; generated outputs are checked by tests) |
 
-`/* v8 ignore */` annotations are prohibited — write the test instead. (One legacy `/* v8 ignore next */` remains in `mcp-bridge/src/db/schema.ts`.)
+`/* v8 ignore */` annotations are prohibited — write the test instead.
 
 ## Shared Test Helpers (mcp-bridge)
 

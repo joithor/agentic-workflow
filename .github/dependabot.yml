@@ -1,0 +1,30 @@
+# Dependency updates (spec §4d): grouped per ecosystem and directory, with a
+# 14-day cooldown that matches the repo's minimum-age pin policy.
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    cooldown:
+      default-days: 14
+    groups:
+      actions:
+        patterns: ["*"]
+  - package-ecosystem: npm
+    directories:
+      - /mcp-bridge
+      - /scorer
+      - /judge
+      - /sindri
+      - /skills/ui-evidence
+      - /skills/bugFixOrchestrator
+      - /.github/ci-tools
+    schedule:
+      interval: weekly
+    cooldown:
+      default-days: 14
+    open-pull-requests-limit: 5
+    groups:
+      npm-minor-and-patch:
+        update-types: ["minor", "patch"]

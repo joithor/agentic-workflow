@@ -304,12 +304,17 @@ edges:
     status: current
     note: "the /live pane runs scorer live --json"
 
-  # ---- planned: the C# project references the ports create (§4b.1, §4b.1a) ----
   - from: KernelData
     to: Kernel
     kind: project
-    status: planned
+    status: current
     note: "kernel family"
+  - from: KernelTesting
+    to: Kernel
+    kind: project
+    status: current
+    note: "fakes and builders"
+  # ---- planned: the C# project references the ports create (§4b.1, §4b.1a) ----
   - from: KernelTelemetry
     to: Kernel
     kind: project
@@ -320,11 +325,6 @@ edges:
     kind: project
     status: planned
     note: "the scrubbing processor on logs and OTel exports"
-  - from: KernelTesting
-    to: Kernel
-    kind: project
-    status: planned
-    note: "fakes and builders"
   - from: KernelTesting
     to: KernelData
     kind: project

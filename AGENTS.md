@@ -20,7 +20,7 @@ Domain-specific rules live in `.agents/rules/` — one file per rule, the only c
 
 | Layer | Technology |
 |-------|------------|
-| Runtime | Node.js >= 20, ES2022 target |
+| Runtime | Node.js >= 22 (`.nvmrc`; better-sqlite3 13 requires it), ES2022 target |
 | Language | TypeScript 5.7, strict mode |
 | HTTP (bridge) | Fastify 5 |
 | Database | SQLite via better-sqlite3, WAL mode |
@@ -87,6 +87,9 @@ bash scripts/tests/install-scorer-audit.test.sh
 bash scripts/tests/install-sindri.test.sh
 bash scripts/tests/readiness-baseline.test.sh
 bash scripts/tests/agent-token.test.sh
+bash scripts/tests/ci-changed-areas.test.sh
+bash scripts/tests/ci-bash-tests.test.sh
+bash scripts/tests/ci-no-any.test.sh
 bash config/hooks/tests/codex-adapter.test.sh
 bash config/hooks/tests/cursor-adapter.test.sh
 bash config/hooks/tests/provider-install-hooks.test.sh
@@ -133,7 +136,7 @@ Before merging any PR:
 4. `node scripts/check-deps.mjs` passes (`deps.yaml` declares every edge the code has; a new edge is a reviewed change to it)
 5. `./setup.sh --providers claude,codex,cursor --dry-run` runs cleanly
 6. No `/* v8 ignore */` annotations in source files (prohibited — write the test instead)
-7. No `any` types outside of Fastify integration boundaries
+7. No `any` types outside of Fastify integration boundaries (`node scripts/ci/no-any.mjs`; existing ones are held in `scripts/ci/no-any-baseline.json`, which only shrinks)
 
 ## Commit Conventions
 
