@@ -42,6 +42,10 @@ expect "a C# change runs dotnet only" \
   "$(printf 'src/Aw.Kernel/Result.cs\nDirectory.Packages.props\n')" \
   "$(printf 'bash=false\ndotnet=true\npackages=[]')"
 
+expect "an AOT smoke script or its expected output runs dotnet" \
+  "$(printf 'src/Aw.Kernel.AotSmoke/run.sh\nsrc/Aw.Kernel.Data.AotSmoke/expected.txt\n')" \
+  "$(printf 'bash=false\ndotnet=true\npackages=[]')"
+
 expect "a .NET tool manifest change runs dotnet" \
   "$(printf '.config/dotnet-tools.json\n')" \
   "$(printf 'bash=false\ndotnet=true\npackages=[]')"
