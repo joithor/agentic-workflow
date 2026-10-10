@@ -27,8 +27,6 @@ Never paste a secret, a token, a private path or a work-repo name.
 <!-- Findings found and fixed, and how many review runs. -->
 
 ## Merge gate
-- [ ] `npm run typecheck` and `npm test` pass in every changed TS package
-- [ ] `dotnet build -warnaserror` and `dotnet test --solution AgenticWorkflow.slnx` pass (C# changes)
-- [ ] Every bash suite passes (`bash scripts/ci/bash-tests.sh`)
-- [ ] `scripts/sync-rules.sh --check`, `node scripts/check-deps.mjs` and `scripts/check-env-example.sh` pass
-- [ ] `./setup.sh --providers claude,codex,cursor --dry-run` runs cleanly
+<!-- Every item of the Merge Gate in AGENTS.md (the list there is the one source; don't copy it here).
+     Say which items this change touched and paste their output under Evidence. -->
+- [ ] Every item of the AGENTS.md Merge Gate passes

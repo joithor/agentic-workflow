@@ -110,7 +110,8 @@ node scripts/check-deps.mjs --mermaid [--base-file F]   # Also print the Mermaid
 # Environment and dev container
 scripts/check-env-example.sh            # Every env var the code reads is in .env.example (ENV-EXAMPLE-001..004); exit 1 on drift
 # .devcontainer/ is for humans only, never the agent sandbox (no Docker-in-Docker); see docs/devcontainer.md
-# Label scheme: .github/labels.yml (type:, area:, size:, ring:); applying it to the repo is an owner settings change
+# Label scheme: .github/labels.yml (type:, area:, size:, ring:). Applying it to the repo is an owner settings change; until then
+# the issue forms' labels don't exist and GitHub drops them silently
 
 # Bash tests
 bash providers/tests/install.test.sh
@@ -171,7 +172,7 @@ Before merging any PR:
 1. `npm run typecheck` passes with zero errors in `mcp-bridge`, `scorer`, `judge`, `sindri`, `skills/ui-evidence`, and `skills/bugFixOrchestrator`
 2. `npm test` passes in `mcp-bridge`, `scorer`, `judge`, `sindri`, `skills/ui-evidence`, and `skills/bugFixOrchestrator`, every bash test listed above passes, and `claude plugin validate mods/aw-live` and `claude plugin test mods/aw-live` pass
 3. `scripts/sync-rules.sh --check` passes (rule links and Rules Index match `.agents/rules/`)
-4. `node scripts/check-deps.mjs` passes (`deps.yaml` declares every edge the code has; a new edge is a reviewed change to it)
+4. `node scripts/check-deps.mjs` passes (`deps.yaml` declares every edge the code has; a new edge is a reviewed change to it); `scripts/check-env-example.sh` passes (`.env.example` lists every environment variable the code reads)
 5. `./setup.sh --providers claude,codex,cursor --dry-run` runs cleanly
 6. No `/* v8 ignore */` annotations in source files (prohibited — write the test instead)
 7. No `any` types outside of Fastify integration boundaries (`node scripts/ci/no-any.mjs`; existing ones are held in `scripts/ci/no-any-baseline.json`, which only shrinks)

@@ -1,6 +1,7 @@
 # .github/labels.yml — the label scheme (readiness spec §5 Level 3, §6 W6): four families, type:, area:,
 # size: and ring:. This file is the source of truth; applying it to the repo (`gh label create … --force`
-# per entry, or a sync job) is a repo-settings change the owner makes. No workflow here applies it.
+# per entry, or a sync job) is a repo-settings change the owner makes. No workflow here applies it. Until it is
+# applied, the labels the issue forms set don't exist, and GitHub drops them from new issues without a warning.
 # Checked by scripts/tests/repo-templates.test.sh: "family:value" names, 6-hex colors, a description each.
 
 # ---- type: what kind of work item (the addendum's work-item kinds) ----
@@ -102,13 +103,14 @@
   color: e99695
   description: More than a week; needs a packet and a split
 
-# ---- ring: which ring the work belongs to (readiness §4e B11) ----
+# ---- ring: which ring the work belongs to (sindri addendum, "Rings"; readiness §4e B11). Ring specifics stay
+# in their private profiles; these names only say which ring. ----
 - name: "ring:0"
   color: bfd4f2
   description: This toolkit
 - name: "ring:1"
   color: bfd4f2
-  description: Onboarded personal repos
+  description: Workplace repos, where the factory is tested first
 - name: "ring:2"
   color: bfd4f2
-  description: Work repos (profile overlay, private)
+  description: The private product repo (starts after ring 1 holds)

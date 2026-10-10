@@ -28,15 +28,17 @@ versions and runs a locked `dotnet restore` (`.devcontainer/post-create.sh`); th
 - **`setup.sh`.** The installed toolkit lives on the host (it wires hooks into Claude Code, Codex and Cursor
   there). The devcontainer is for building and testing the code.
 
-## Optional services, on the host
+## Optional services
 
-Both run on the host, not inside the container; the container reaches them through `host.docker.internal`.
-
-- **Ollama** (the code index's embeddings): install it on the host and set `OLLAMA_HOST=http://host.docker.internal:11434`
-  in the container.
-- **A local OpenTelemetry collector** (the exporter is off by default, spec §5 Level 3): start one on the host,
-  for example the `otel/opentelemetry-collector` image with its default OTLP ports, and point the C# build's
-  exporter at `http://host.docker.internal:4318` once you turn it on.
+- **Ollama** (the code index's embeddings). Sindri accepts only a loopback embeddings URL
+  (`index.embeddings.url`, `SND-INDEX-005`: the index never sends code off the machine), so an Ollama on the host
+  isn't reachable from the container. Build the index on the host, where `sindri index setup` expects Ollama at
+  `http://127.0.0.1:11434`.
+- **A local OpenTelemetry collector** (spec §5 Level 3; the exporter is off by default). The C# telemetry
+  package that would export to it isn't on `main` yet. When it is, run the collector on the host and point the
+  exporter at it. The container reaches the host as `host.docker.internal` on Docker Desktop. On Linux Docker
+  Engine that name resolves only if the container is started with `--add-host=host.docker.internal:host-gateway`,
+  which this devcontainer doesn't add.
 
 ## Environment variables
 
