@@ -1,7 +1,5 @@
 using System.Text.Json;
 using Aw.BugFix.Features.Init;
-using Aw.Kernel.Services;
-using Microsoft.Extensions.DependencyInjection;
 
 namespace Aw.BugFix.Host.Commands;
 
@@ -10,15 +8,7 @@ internal static class InitCommand
 {
     internal const string Name = "init";
 
-    internal static async Task<int> Run(IReadOnlyList<string> args, IServiceProvider services, JsonSerializerOptions json)
-    {
-        if (args.Count != 4 || args[0] != "--state" || args[2] != "--ticket")
-        {
-            return CommandOutput.Usage("init --state <dir> --ticket <ticket.json>");
-        }
+    internal static readonly CommandSpec Spec = new("init --state <dir> --ticket <ticket.json>", ["state", "ticket"], [], []);
 
-        var service = services.GetRequiredService<IService<InitRequest, InitResponse>>();
-        var result = await service.Handle(new InitRequest(args[1], args[3]), CancellationToken.None).ConfigureAwait(false);
-        return CommandOutput.Write(result, json);
-    }
+    internal static async Task<int> Run(CommandLine line, IServiceProvider services, JsonSerializerOptions json) => await CommandOutput.Call<InitRequest, InitResponse>(services, json, new InitRequest(line.StateDirectory, line.FullPath("ticket"))).ConfigureAwait(false);
 }

@@ -1,0 +1,81 @@
+using System.Globalization;
+
+namespace Aw.BugFix.Host.Commands;
+
+/// <summary>A command's parsed arguments. Paths are left as given; the command resolves them.</summary>
+/// <param name="Positionals">The positional arguments.</param>
+/// <param name="Values">Option → value.</param>
+/// <param name="Flags">The boolean flags given.</param>
+/// <param name="Command">The argv after "--".</param>
+internal sealed record CommandLine(IReadOnlyList<string> Positionals, IReadOnlyDictionary<string, string> Values, IReadOnlySet<string> Flags, IReadOnlyList<string> Command)
+{
+    internal string? this[string option] => Values.GetValueOrDefault(option);
+
+    internal string StateDirectory => Path.GetFullPath(Values["state"]);
+
+    internal string WorkingDirectory => Path.GetFullPath(Values.GetValueOrDefault("cwd") ?? Directory.GetCurrentDirectory());
+
+    internal string FullPath(string option) => Path.GetFullPath(Values[option]);
+
+    /// <summary>Parses <paramref name="args"/> against <paramref name="spec"/>: an unknown option, a missing value or a missing required option is a usage error.</summary>
+    internal static CommandLine? Parse(IReadOnlyList<string> args, CommandSpec spec, out string problem)
+    {
+        var (positionals, values, flags) = (new List<string>(), new Dictionary<string, string>(StringComparer.Ordinal), new HashSet<string>(StringComparer.Ordinal));
+        for (var i = 0; i < args.Count; i++)
+        {
+            if (args[i] == "--")
+            {
+                return spec.TakesCommand ? Finish(spec, new CommandLine(positionals, values, flags, [.. args.Skip(i + 1)]), out problem) : Fail("unexpected --", out problem);
+            }
+
+            if (!args[i].StartsWith("--", StringComparison.Ordinal))
+            {
+                positionals.Add(args[i]);
+                continue;
+            }
+
+            var name = args[i][2..];
+            if (spec.Flags.Contains(name, StringComparer.Ordinal))
+            {
+                _ = flags.Add(name);
+            }
+            else if (!spec.Required.Concat(spec.Optional).Contains(name, StringComparer.Ordinal))
+            {
+                return Fail($"unknown option --{name}", out problem);
+            }
+            else if (i + 1 >= args.Count || args[i + 1].StartsWith("--", StringComparison.Ordinal) || !values.TryAdd(name, args[++i]))
+            {
+                return Fail($"--{name} needs one value", out problem);
+            }
+        }
+
+        return Finish(spec, new CommandLine(positionals, values, flags, []), out problem);
+    }
+
+    private static CommandLine? Finish(CommandSpec spec, CommandLine line, out string problem)
+    {
+        if (spec.Required.FirstOrDefault(r => !line.Values.ContainsKey(r)) is { } missing)
+        {
+            return Fail($"missing --{missing}", out problem);
+        }
+
+        if (line.Positionals.Count != spec.Positionals)
+        {
+            return Fail(string.Create(CultureInfo.InvariantCulture, $"expected {spec.Positionals} argument(s) before the options, got {line.Positionals.Count}"), out problem);
+        }
+
+        if (spec.TakesCommand && line.Command.Count == 0)
+        {
+            return Fail("missing the command after --", out problem);
+        }
+
+        problem = string.Empty;
+        return line;
+    }
+
+    private static CommandLine? Fail(string reason, out string problem)
+    {
+        problem = reason;
+        return null;
+    }
+}
