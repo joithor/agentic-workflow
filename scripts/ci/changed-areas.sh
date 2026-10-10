@@ -48,6 +48,10 @@ classify_changes() {
       spikes/*) continue ;;  # throwaway spike projects: no area, never the dotnet job
     esac
     case "$file" in
+      # global.json also pins the devcontainer's base image, which a bash suite checks (repo-templates).
+      global.json|docs/devcontainer.md) bash=true ;;
+    esac
+    case "$file" in
       config/*|scripts/*|providers/*|setup.sh|mods/*|skills/*|.agents/*|AGENTS.md|CLAUDE.md|.claude/*|.cursor/*|.devcontainer/*|.env.example)
         bash=true ;;
       src/*|tests/*|*.cs|*.csproj|*.props|*.targets|*.slnx|global.json|nuget.config|.editorconfig|BannedSymbols.txt|packages.lock.json|.config/dotnet-tools.json)

@@ -10,7 +10,8 @@ PASS=0
 FAIL=0
 ok()   { PASS=$((PASS + 1)); echo "  ok   $1"; }
 fail() { FAIL=$((FAIL + 1)); echo "  FAIL $1"; }
-check() { if eval "$2"; then ok "$1"; else fail "$1"; fi; }
+# The check runs in a subshell, so an `exit 1` inside it fails that check only and the suite goes on.
+check() { if (eval "$2"); then ok "$1"; else fail "$1"; fi; }
 
 yaml_ok() { ruby -ryaml -e 'YAML.safe_load(File.read(ARGV[0]), permitted_classes: [], aliases: false)' "$1" 2>/dev/null; }
 # Prints the value of a top-level YAML key as JSON.

@@ -1,9 +1,11 @@
 #!/usr/bin/env bash
 # scripts/check-env-example.sh — every environment variable the repo's code reads is documented in
-# .env.example (readiness spec §6 W5). Exit 0 when it is, 1 on drift, 2 on a tool error.
+# .env.example (readiness spec §6 W5). Exit 0 when it is, 1 on drift, 2 when the root, .env.example or a
+# temp directory is missing (other tool failures are not detected separately).
 #
 # What counts as a read (a heuristic scan, not a proof):
-#   TS / JS   process.env.<NAME>, process.env["<NAME>"], <x>.env.<NAME>, <x>.env["<NAME>"]
+#   TS / JS   process.env.<NAME>, process.env["<NAME>"], <x>.env.<NAME>, <x>.env['<NAME>'],
+#             <x>.env.get('<NAME>') (the mods' $.env), in .ts .tsx .mts .cts .js .mjs .cjs
 #   C#        Environment.GetEnvironmentVariable("<NAME>"), environment("<NAME>") (the Compose lambda)
 #   shell     ${<NAME>:-…}, ${<NAME>-…}, ${<NAME>:=…}, ${<NAME>:?…}, ${<NAME>:+…} (an override with a default)
 # Only UPPER_CASE names. Not scanned: test files and directories (tests/, test/, __tests__/, fixtures/,
@@ -49,29 +51,31 @@ source_files() {
     -o -type f \( "$@" \) ! -name '*.test.*' ! -name '*.spec.*' -print | LC_ALL=C sort
 }
 
-# Each scan prints "NAME<TAB>path:line".
+# Each scan prints "NAME<TAB>path<TAB>line".
 scan() { # $1 = grep -E pattern, $2 = sed script that reduces a match to the name; files on stdin
   local f
   while IFS= read -r f; do
     grep -HnoE -- "$1" "$f" 2>/dev/null | sed -E 's|^\./||' | while IFS= read -r hit; do
       local path="${hit%%:*}" rest="${hit#*:}"
       local line="${rest%%:*}" match="${rest#*:}"
-      printf '%s\t%s:%s\n' "$(printf '%s' "$match" | sed -E "$2")" "$path" "$line"
+      printf '%s\t%s\t%s\n' "$(printf '%s' "$match" | sed -E "$2")" "$path" "$line"
     done
   done
 }
 
 {
-  source_files -name '*.ts' -o -name '*.mts' -o -name '*.mjs' -o -name '*.js' |
-    scan "(^|[^A-Za-z0-9_\$])env(\\.[A-Z][A-Z0-9_]*|\\[[\"'][A-Z][A-Z0-9_]*[\"']\\])" \
-      "s/.*env(\\.|\\[[\"'])//; s/[\"'\\]]+\$//"
+  source_files -name '*.ts' -o -name '*.tsx' -o -name '*.mts' -o -name '*.cts' \
+    -o -name '*.js' -o -name '*.mjs' -o -name '*.cjs' |
+    scan "(^|[^A-Za-z0-9_\$])env(\\.[A-Z][A-Z0-9_]*|\\[[\"'][A-Z][A-Z0-9_]*[\"']\\]|\\.get\\([\"'][A-Z][A-Z0-9_]*[\"'])" \
+      "s/.*env(\\.get\\([\"']|\\.|\\[[\"'])//; s/[]\"']+\$//"
   source_files -name '*.cs' |
     scan "(GetEnvironmentVariable|environment)\\(\"[A-Z][A-Z0-9_]*\"" 's/.*\("//; s/"$//'
   source_files -name '*.sh' -o -name '*.bash' |
     scan '\$\{[A-Z][A-Z0-9_]*:?[-=?+]' 's/^\$\{//; s/:?[-=?+]$//'
 } > "$TMP/reads.raw"
-# First location per name (paths sorted, so the report is stable).
-LC_ALL=C sort -t "$(printf '\t')" -k1,1 -k2,2 "$TMP/reads.raw" | awk -F'\t' '!seen[$1]++' > "$TMP/reads"
+# First location per name: paths in byte order, then line numbers numerically, so the report is stable.
+LC_ALL=C sort -t "$(printf '\t')" -k1,1 -k2,2 -k3,3n "$TMP/reads.raw" |
+  awk -F'\t' '!seen[$1]++ { printf "%s\t%s:%s\n", $1, $2, $3 }' > "$TMP/reads"
 
 # .env.example → "NAME<TAB>indirect(0|1)<TAB>has-value(0|1)" per entry.
 awk '
