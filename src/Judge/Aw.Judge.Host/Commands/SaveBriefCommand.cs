@@ -1,4 +1,3 @@
-using Aw.Judge.Core.Json;
 using Aw.Judge.Features.SaveBrief;
 using Aw.Kernel.Services;
 using Microsoft.Extensions.DependencyInjection;
@@ -12,13 +11,13 @@ internal static class SaveBriefCommand
 
     internal static async Task<int> Run(IServiceProvider services)
     {
-        var input = JsJson.Parse(await CommandOutput.ReadInput(CancellationToken.None).ConfigureAwait(false));
+        using var input = CommandOutput.ParseInput(await CommandOutput.ReadInput(CancellationToken.None).ConfigureAwait(false));
         if (input is null)
         {
             return CommandOutput.Emit(1, "", "input is not valid JSON");
         }
 
-        if (BriefPayload.Read(input) is not { } request)
+        if (BriefPayload.Read(input.RootElement) is not { } request)
         {
             return CommandOutput.Emit(1, "", "invalid brief payload");
         }

@@ -1,5 +1,3 @@
-using Aw.Judge.Core.Json;
-
 namespace Aw.Judge.Host.Commands;
 
 /// <summary>
@@ -10,7 +8,7 @@ internal static class QuestionCommand
 {
     internal static async Task<int> Run(string name)
     {
-        var input = JsJson.Parse(await CommandOutput.ReadInput(CancellationToken.None).ConfigureAwait(false));
+        using var input = CommandOutput.ParseInput(await CommandOutput.ReadInput(CancellationToken.None).ConfigureAwait(false));
         return input is null
             ? CommandOutput.Emit(1, "", "input is not valid JSON")
             : CommandOutput.Emit(1, "", $"unknown question: {name}");

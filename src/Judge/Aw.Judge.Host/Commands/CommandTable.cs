@@ -22,15 +22,14 @@ internal static class CommandTable
             return await QuestionCommand.Run(args[0]).ConfigureAwait(false);
         }
 
-        _ = json;   // the Kernel JSON profile: /new-slice's generated arms pass it to their commands
         var scope = provider.CreateAsyncScope();
         await using (scope.ConfigureAwait(false))
         {
             var rest = args[1..];
             return args[0] switch
             {
-                GetHealthCommand.Name => await GetHealthCommand.Run(scope.ServiceProvider).ConfigureAwait(false),
-                BriefCommands.Name => await BriefCommands.Run(rest, scope.ServiceProvider).ConfigureAwait(false),
+                GetHealthCommand.Name => await GetHealthCommand.Run(scope.ServiceProvider, json).ConfigureAwait(false),
+                BriefCommands.Name => await BriefCommands.Run(rest, scope.ServiceProvider, json).ConfigureAwait(false),
                 _ => CommandOutput.Usage($"unknown command '{args[0]}'"),
             };
         }

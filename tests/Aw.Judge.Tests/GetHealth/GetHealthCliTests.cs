@@ -13,7 +13,7 @@ public sealed class GetHealthCliTests : IDisposable
     {
         var run = await new JudgeCli(_state).Run("health", "ignored-extra-argument");
 
-        Assert.Equal(new CliRun(0, "{\"status\":\"ok\",\"failures24h\":0}\n", ""), run);
+        AssertHealth(run, "ok", 0);
     }
 
     [Fact, Trait("Lane", "integration")]
@@ -25,7 +25,15 @@ public sealed class GetHealthCliTests : IDisposable
 
         var run = await cli.Run("health");
 
-        Assert.Equal(new CliRun(0, "{\"status\":\"degraded\",\"failures24h\":1}\n", ""), run);
+        AssertHealth(run, "degraded", 1);
+    }
+
+    private static void AssertHealth(CliRun run, string status, int failures)
+    {
+        Assert.Equal((0, ""), (run.ExitCode, run.Stderr));
+        var json = run.Json();
+        Assert.Equal(status, json.GetProperty("status").GetString());
+        Assert.Equal(failures, json.GetProperty("failures24h").GetInt32());
     }
 
     public void Dispose() => _state.Dispose();

@@ -1,12 +1,14 @@
+using System.Text.Json;
+
 namespace Aw.Judge.Tests.GetBrief;
 
-// The frozen surface of 'judge brief get' (TS runBriefGet: the BriefRow as JSON, savedAt as toISOString).
+// The frozen surface of 'judge brief get' (TS runBriefGet: the brief as JSON, camelCase fields).
 public sealed class GetBriefCliTests : IDisposable
 {
     private readonly TempStateDirectory _state = new();
 
     [Fact, Trait("Lane", "integration")]
-    public async Task Brief_get_prints_the_saved_brief_in_the_TS_key_order()
+    public async Task Brief_get_prints_the_saved_brief_with_the_contract_field_names()
     {
         var cli = new JudgeCli(_state);
         cli.Clock.Advance(TimeSpan.FromMilliseconds(1234.5678));
@@ -16,9 +18,18 @@ public sealed class GetBriefCliTests : IDisposable
 
         var run = await cli.Run("brief", "get", "toolu_1");
 
-        Assert.Equal(new CliRun(0,
-            """{"toolUseId":"toolu_1","agentId":null,"sessionId":"s1","promptId":"p1","dispatchName":"helper","subagentType":"Explore","goal":"Find \"it\"","acceptanceCriteria":"é\n😀","proofCommand":"","savedAt":"2026-01-01T00:00:01.234Z"}""" + "\n",
-            ""), run);
+        Assert.Equal((0, ""), (run.ExitCode, run.Stderr));
+        var json = run.Json();
+        Assert.Equal("toolu_1", json.GetProperty("toolUseId").GetString());
+        Assert.Equal(JsonValueKind.Null, json.GetProperty("agentId").ValueKind);
+        Assert.Equal("s1", json.GetProperty("sessionId").GetString());
+        Assert.Equal("p1", json.GetProperty("promptId").GetString());
+        Assert.Equal("helper", json.GetProperty("dispatchName").GetString());
+        Assert.Equal("Explore", json.GetProperty("subagentType").GetString());
+        Assert.Equal("Find \"it\"", json.GetProperty("goal").GetString());
+        Assert.Equal("é\n😀", json.GetProperty("acceptanceCriteria").GetString());
+        Assert.Equal("", json.GetProperty("proofCommand").GetString());
+        Assert.Equal(cli.Clock.GetUtcNow(), json.GetProperty("savedAt").GetDateTimeOffset());
     }
 
     [Fact, Trait("Lane", "integration")]

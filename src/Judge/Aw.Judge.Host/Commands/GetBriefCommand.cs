@@ -1,5 +1,5 @@
+using System.Text.Json;
 using Aw.Judge.Core.Ids;
-using Aw.Judge.Core.Json;
 using Aw.Judge.Features.GetBrief;
 using Aw.Kernel;
 using Aw.Kernel.Services;
@@ -12,7 +12,7 @@ internal static class GetBriefCommand
 {
     internal const string Name = "get";
 
-    internal static async Task<int> Run(string toolUseId, IServiceProvider services)
+    internal static async Task<int> Run(string toolUseId, IServiceProvider services, JsonSerializerOptions json)
     {
         var none = $"no brief for tool_use_id: {toolUseId}";
         if (!ToolUseId.TryFrom(toolUseId, out var id))
@@ -27,6 +27,6 @@ internal static class GetBriefCommand
             return CommandOutput.Emit(1, "", result.Error.Kind == ErrorKind.NotFound ? none : result.Error.Message);
         }
 
-        return CommandOutput.Emit(0, JsJson.Stringify(FrozenJson.Brief(result.Value.Brief)));
+        return CommandOutput.Emit(0, CommandOutput.Json(BriefOutput.From(result.Value.Brief), json));
     }
 }

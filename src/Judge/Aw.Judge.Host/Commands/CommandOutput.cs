@@ -42,6 +42,22 @@ internal static class CommandOutput
         }
     }
 
+    /// <summary>A value as Kernel-profile JSON (the context's records carry the contract's field names).</summary>
+    internal static string Json<T>(T value, JsonSerializerOptions json) => Encoding.UTF8.GetString(AwJson.Serialize(value, json));
+
+    /// <summary>Parses stdin as one JSON document, or null when it isn't valid JSON.</summary>
+    internal static JsonDocument? ParseInput(string text)
+    {
+        try
+        {
+            return JsonDocument.Parse(text);
+        }
+        catch (JsonException)
+        {
+            return null;
+        }
+    }
+
     /// <summary>The scaffold's mapping (/new-slice generates calls to it): the value as Kernel JSON, or the error.</summary>
     internal static int Write<T>(Result<T> result, JsonSerializerOptions json) =>
         result.IsError

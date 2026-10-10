@@ -239,40 +239,6 @@ override Aw.Judge.Core.Briefs.Brief.GetHashCode() -> int
 override Aw.Judge.Core.Briefs.Brief.ToString() -> string!
 static Aw.Judge.Core.Briefs.Brief.operator !=(Aw.Judge.Core.Briefs.Brief? left, Aw.Judge.Core.Briefs.Brief? right) -> bool
 static Aw.Judge.Core.Briefs.Brief.operator ==(Aw.Judge.Core.Briefs.Brief? left, Aw.Judge.Core.Briefs.Brief? right) -> bool
-Aw.Judge.Core.Json.JsArray
-Aw.Judge.Core.Json.JsArray.Items.get -> System.Collections.Generic.IReadOnlyList<Aw.Judge.Core.Json.JsValue!>!
-Aw.Judge.Core.Json.JsArray.JsArray(System.Collections.Generic.IEnumerable<Aw.Judge.Core.Json.JsValue!>! items) -> void
-Aw.Judge.Core.Json.JsBoolean
-Aw.Judge.Core.Json.JsBoolean.JsBoolean(bool value) -> void
-Aw.Judge.Core.Json.JsBoolean.Value.get -> bool
-Aw.Judge.Core.Json.JsJson
-Aw.Judge.Core.Json.JsNull
-Aw.Judge.Core.Json.JsNumber
-Aw.Judge.Core.Json.JsNumber.JsNumber(double value) -> void
-Aw.Judge.Core.Json.JsNumber.Value.get -> double
-Aw.Judge.Core.Json.JsNumbers
-Aw.Judge.Core.Json.JsObject
-Aw.Judge.Core.Json.JsObject.Count.get -> int
-Aw.Judge.Core.Json.JsObject.JsObject() -> void
-Aw.Judge.Core.Json.JsObject.Properties.get -> System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string!, Aw.Judge.Core.Json.JsValue!>>!
-Aw.Judge.Core.Json.JsObject.Remove(string! key) -> bool
-Aw.Judge.Core.Json.JsObject.Set(string! key, Aw.Judge.Core.Json.JsValue! value) -> Aw.Judge.Core.Json.JsObject!
-Aw.Judge.Core.Json.JsObject.TryGet(string! key, out Aw.Judge.Core.Json.JsValue? value) -> bool
-Aw.Judge.Core.Json.JsString
-Aw.Judge.Core.Json.JsString.JsString(string! value) -> void
-Aw.Judge.Core.Json.JsString.Value.get -> string!
-Aw.Judge.Core.Json.JsValue
-static Aw.Judge.Core.Json.JsJson.Parse(string! text) -> Aw.Judge.Core.Json.JsValue?
-static Aw.Judge.Core.Json.JsJson.Stringify(Aw.Judge.Core.Json.JsValue! value) -> string!
-static Aw.Judge.Core.Json.JsJson.StringifyIndented(Aw.Judge.Core.Json.JsValue! value) -> string!
-static Aw.Judge.Core.Json.JsNumbers.Format(double value) -> string!
-static Aw.Judge.Core.Json.JsNumbers.FromString(string! text) -> double
-static Aw.Judge.Core.Json.JsObject.Spread(Aw.Judge.Core.Json.JsValue! value) -> Aw.Judge.Core.Json.JsObject!
-static Aw.Judge.Core.Json.JsValue.From(bool value) -> Aw.Judge.Core.Json.JsValue!
-static Aw.Judge.Core.Json.JsValue.From(double value) -> Aw.Judge.Core.Json.JsValue!
-static Aw.Judge.Core.Json.JsValue.From(string! value) -> Aw.Judge.Core.Json.JsValue!
-static Aw.Judge.Core.Json.JsValue.FromNullable(string? value) -> Aw.Judge.Core.Json.JsValue!
-static Aw.Judge.Core.Json.JsValue.Null.get -> Aw.Judge.Core.Json.JsValue!
 Aw.Judge.Core.Health.HealthStatus
 Aw.Judge.Core.Health.HealthStatus.Degraded = 2 -> Aw.Judge.Core.Health.HealthStatus
 Aw.Judge.Core.Health.HealthStatus.Down = 3 -> Aw.Judge.Core.Health.HealthStatus
