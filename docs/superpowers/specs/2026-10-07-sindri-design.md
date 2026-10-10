@@ -617,6 +617,7 @@ code.
 - *(12) The Scoping job in v1 has no read-only code tools (`--tools ""`); code context comes from the code-index source in the pack, and "independence checked against predicted file sets" (§6.1) is deferred.*
 - *(13) Acceptance checks are per workstream in v1, not per surface.*
 - *(14) The challenger sees the same evidence pack as the drafter; graph-neighbour and embedding recall for the challenger are deferred (cross-source retrieval is issue #75).*
+- *(15) Scoping v2 (factory addendum §17.26) replaces (12) and (14): the challenger writes typed expansion queries that Sindri runs against the index and tracker every round, a prune pass drops unsupported surfaces, tracker intake can start scoping, and the design studio edits the packet with the same pipeline.*
 
 ### 7.6 Dogfooding
 The harness's own backlog goes through the harness as ordinary work items in the core repo's tracker:
