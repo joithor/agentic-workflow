@@ -1,3 +1,4 @@
+using Aw.Judge.Features.GetBrief;
 using Aw.Judge.Features.GetHealth;
 using Aw.Judge.Features.SaveBrief;
 using Aw.Kernel.Services;
@@ -27,6 +28,13 @@ public static class JudgeFeaturesServiceCollectionExtensions
                 new ValidatingService<SaveBriefRequest, SaveBriefResponse>(
                     sp.GetRequiredService<SaveBriefService>(),
                     sp.GetRequiredService<IValidator<SaveBriefRequest>>()));
+        _ = services
+            .AddScoped<GetBriefService>()
+            .AddScoped<IValidator<GetBriefRequest>, GetBriefValidator>()
+            .AddScoped<IService<GetBriefRequest, GetBriefResponse>>(static sp =>
+                new ValidatingService<GetBriefRequest, GetBriefResponse>(
+                    sp.GetRequiredService<GetBriefService>(),
+                    sp.GetRequiredService<IValidator<GetBriefRequest>>()));
         return services;
     }
 }

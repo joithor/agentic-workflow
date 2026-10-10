@@ -18,4 +18,8 @@ public static class A
     /// <summary>A SaveBriefRequest builder with deterministic defaults.</summary>
     /// <returns>A new builder.</returns>
     public static SaveBriefRequestBuilder SaveBriefRequest() => new();
+
+    /// <summary>A GetBriefRequest builder with deterministic defaults.</summary>
+    /// <returns>A new builder.</returns>
+    public static GetBriefRequestBuilder GetBriefRequest() => new();
 }

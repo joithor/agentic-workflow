@@ -17,6 +17,9 @@ public static class JudgeErrors
     /// <summary>AW-JUDGE-004: a brief for this tool use id is already saved.</summary>
     public static readonly ErrorDefinition BriefExists = new("AW-JUDGE-004", ErrorKind.Conflict, "brief already saved");
 
+    /// <summary>AW-JUDGE-005: no brief was saved for this tool use id ('brief get').</summary>
+    public static readonly ErrorDefinition NoBrief = new("AW-JUDGE-005", ErrorKind.NotFound, "no brief for tool use id");
+
     /// <summary>Every Judge error, for ErrorCatalogue.Validate.</summary>
-    public static IReadOnlyList<ErrorDefinition> All { get; } = [Invalid, UnknownDecision, DecisionExists, BriefExists];
+    public static IReadOnlyList<ErrorDefinition> All { get; } = [Invalid, UnknownDecision, DecisionExists, BriefExists, NoBrief];
 }

@@ -281,3 +281,4 @@ Aw.Judge.Core.Health.JudgeHealth
 const Aw.Judge.Core.Health.JudgeHealth.DownStreak = 5 -> int
 static Aw.Judge.Core.Health.JudgeHealth.Assess(int failures, System.Collections.Generic.IReadOnlyList<Aw.Judge.Core.Decisions.DecisionOutcome>! lastAttempts) -> Aw.Judge.Core.Health.HealthStatus
 static Aw.Judge.Core.Health.JudgeHealth.FailureWindow.get -> System.TimeSpan
+static readonly Aw.Judge.Core.JudgeErrors.NoBrief -> Aw.Kernel.ErrorDefinition!

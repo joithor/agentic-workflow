@@ -62,3 +62,27 @@ static Aw.Judge.Features.SaveBrief.SaveBriefRequest.operator !=(Aw.Judge.Feature
 static Aw.Judge.Features.SaveBrief.SaveBriefRequest.operator ==(Aw.Judge.Features.SaveBrief.SaveBriefRequest? left, Aw.Judge.Features.SaveBrief.SaveBriefRequest? right) -> bool
 static Aw.Judge.Features.SaveBrief.SaveBriefResponse.operator !=(Aw.Judge.Features.SaveBrief.SaveBriefResponse? left, Aw.Judge.Features.SaveBrief.SaveBriefResponse? right) -> bool
 static Aw.Judge.Features.SaveBrief.SaveBriefResponse.operator ==(Aw.Judge.Features.SaveBrief.SaveBriefResponse? left, Aw.Judge.Features.SaveBrief.SaveBriefResponse? right) -> bool
+Aw.Judge.Features.GetBrief.GetBriefRequest
+Aw.Judge.Features.GetBrief.GetBriefRequest.<Clone>$() -> Aw.Judge.Features.GetBrief.GetBriefRequest!
+Aw.Judge.Features.GetBrief.GetBriefRequest.Deconstruct(out Aw.Judge.Core.Ids.ToolUseId ToolUseId) -> void
+Aw.Judge.Features.GetBrief.GetBriefRequest.Equals(Aw.Judge.Features.GetBrief.GetBriefRequest? other) -> bool
+Aw.Judge.Features.GetBrief.GetBriefRequest.GetBriefRequest(Aw.Judge.Core.Ids.ToolUseId ToolUseId) -> void
+Aw.Judge.Features.GetBrief.GetBriefRequest.ToolUseId.get -> Aw.Judge.Core.Ids.ToolUseId
+Aw.Judge.Features.GetBrief.GetBriefRequest.ToolUseId.init -> void
+Aw.Judge.Features.GetBrief.GetBriefResponse
+Aw.Judge.Features.GetBrief.GetBriefResponse.<Clone>$() -> Aw.Judge.Features.GetBrief.GetBriefResponse!
+Aw.Judge.Features.GetBrief.GetBriefResponse.Brief.get -> Aw.Judge.Core.Briefs.Brief!
+Aw.Judge.Features.GetBrief.GetBriefResponse.Brief.init -> void
+Aw.Judge.Features.GetBrief.GetBriefResponse.Deconstruct(out Aw.Judge.Core.Briefs.Brief! Brief) -> void
+Aw.Judge.Features.GetBrief.GetBriefResponse.Equals(Aw.Judge.Features.GetBrief.GetBriefResponse? other) -> bool
+Aw.Judge.Features.GetBrief.GetBriefResponse.GetBriefResponse(Aw.Judge.Core.Briefs.Brief! Brief) -> void
+override Aw.Judge.Features.GetBrief.GetBriefRequest.Equals(object? obj) -> bool
+override Aw.Judge.Features.GetBrief.GetBriefRequest.GetHashCode() -> int
+override Aw.Judge.Features.GetBrief.GetBriefRequest.ToString() -> string!
+override Aw.Judge.Features.GetBrief.GetBriefResponse.Equals(object? obj) -> bool
+override Aw.Judge.Features.GetBrief.GetBriefResponse.GetHashCode() -> int
+override Aw.Judge.Features.GetBrief.GetBriefResponse.ToString() -> string!
+static Aw.Judge.Features.GetBrief.GetBriefRequest.operator !=(Aw.Judge.Features.GetBrief.GetBriefRequest? left, Aw.Judge.Features.GetBrief.GetBriefRequest? right) -> bool
+static Aw.Judge.Features.GetBrief.GetBriefRequest.operator ==(Aw.Judge.Features.GetBrief.GetBriefRequest? left, Aw.Judge.Features.GetBrief.GetBriefRequest? right) -> bool
+static Aw.Judge.Features.GetBrief.GetBriefResponse.operator !=(Aw.Judge.Features.GetBrief.GetBriefResponse? left, Aw.Judge.Features.GetBrief.GetBriefResponse? right) -> bool
+static Aw.Judge.Features.GetBrief.GetBriefResponse.operator ==(Aw.Judge.Features.GetBrief.GetBriefResponse? left, Aw.Judge.Features.GetBrief.GetBriefResponse? right) -> bool
