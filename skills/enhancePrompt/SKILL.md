@@ -2,7 +2,7 @@
 name: enhancePrompt
 description: Use when the user invokes /enhancePrompt — discovers available project documentation, reads relevant files, and rewrites the user's request with richer context before execution
 argument-hint: [prompt-to-enhance]
-allowed-tools: Read, Write, Glob, Grep, AskUserQuestion, Bash(git *), Bash(ls *), Bash(mkdir *), Bash(date *), Bash(SHARED_DIR=*), mcp__prism-mcp__session_load_context, mcp__prism-mcp__session_save_ledger, mcp__prism-mcp__session_save_handoff, mcp__agentic-bridge__send_context, mcp__agentic-bridge__assign_task
+allowed-tools: Read, Write, Glob, Grep, AskUserQuestion, Bash(git *), Bash(ls *), Bash(mkdir *), Bash(date *), Bash(SHARED_DIR=*), mcp__prism-mcp__session_load_context, mcp__prism-mcp__session_save_ledger, mcp__prism-mcp__session_save_handoff
 ---
 
 <!-- preamble -->
@@ -30,7 +30,7 @@ Use judgment — a prompt about pricing doesn't need the testing strategy doc �
 
 ### 3. Evaluate peer-agent dialogue value
 
-Before producing output, assess whether the task would benefit from consulting a peer agent on another provider (e.g. Codex when you are Claude Code or Cursor, Claude Code when you are Codex) via the MCP bridge (`agentic-bridge`). Include a dialogue recommendation **only** when at least one applies: **cross-domain task** (parallel second agent reduces total time), **second opinion valuable** (architecture/security-sensitive/unfamiliar code), **parallel research** (multiple approaches explorable simultaneously), or **verification needed** ("implement X, then have the peer agent try to break it"). If none apply, skip the dialogue section entirely.
+Before producing output, assess whether the task would benefit from consulting a peer agent on another provider (e.g. Codex when you are Claude Code or Cursor, Claude Code when you are Codex). The user carries the prompt to the peer agent's session; this skill doesn't send it. Include a dialogue recommendation **only** when at least one applies: **cross-domain task** (parallel second agent reduces total time), **second opinion valuable** (architecture/security-sensitive/unfamiliar code), **parallel research** (multiple approaches explorable simultaneously), or **verification needed** ("implement X, then have the peer agent try to break it"). If none apply, skip the dialogue section entirely.
 
 ### 4. Output the enhanced prompt
 
@@ -65,7 +65,7 @@ If step 3 identified dialogue value, append:
 **Peer agent:** <provider / agent name, e.g. codex>
 
 **What to ask the peer agent:**
-<specific prompt to dispatch via mcp: agentic-bridge/assign_task or mcp: agentic-bridge/send_context>
+<specific, self-contained prompt to paste into the peer agent's session>
 
 **Expected value:** <what the response would add — a review, alternative approach, parallel implementation, etc.>
 ```
@@ -89,13 +89,9 @@ Write the content to that path and echo it back to the user so downstream skills
 
 **Ask the user:** "Should I proceed with this, or adjust anything?"
 
-If step 3 recommended a peer-agent dialogue and the user confirms, **dispatch it now** over the bridge (BRIDGE_OK was checked in the preamble):
-- `mcp: agentic-bridge/assign_task` — conversation, domain, summary, details = the "What to ask the peer agent" prompt — when the peer should do independent work
-- `mcp: agentic-bridge/send_context` — conversation, sender, recipient, payload — when the peer only needs the context for a second opinion
-
-**Fallback (bridge down, `BRIDGE_OK=false`):** don't dispatch; instead print the manual instructions —
-> In the peer agent's session (e.g. Codex): "Check your unread messages on the agentic-bridge"
-> Or manually: assign_task with conversation UUID, domain, and the prompt above
+If step 3 recommended a peer-agent dialogue and the user confirms, print the handoff for them to carry over:
+> In the peer agent's session (e.g. Codex), paste the "What to ask the peer agent" prompt above, and bring its answer
+> back here.
 
 Do NOT begin executing the task during this skill.
 
