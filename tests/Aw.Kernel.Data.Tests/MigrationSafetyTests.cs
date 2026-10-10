@@ -174,4 +174,36 @@ public sealed class MigrationSafetyTests
         Assert.Equal(DataErrors.MigrationSequence.Code, refused.Error.Code);
         Assert.False(File.Exists(db.Path));
     }
+
+    [Fact]
+    public async Task A_foreign_schema_version_table_is_not_taken_as_ours_and_the_file_is_left_unchanged()
+    {
+        using var db = new TempDatabase();
+        await Exec(db.Path, "CREATE TABLE schema_version (version INTEGER); INSERT INTO schema_version VALUES (1); CREATE TABLE events (id INTEGER PRIMARY KEY); PRAGMA journal_mode = DELETE;");
+        var before = Hash(db.Path);
+
+        var refused = await Runner(db).Migrate([Schema.Items], Ct);
+
+        Assert.Equal(DataErrors.ForeignDatabase.Code, refused.Error.Code);
+        Assert.Contains("schema_version", refused.Error.Message, StringComparison.Ordinal);
+        Assert.Equal(before, Hash(db.Path));
+        Assert.False(File.Exists(db.Path + "-wal"));
+    }
+
+    [Fact]
+    public async Task History_errors_are_found_before_anything_is_written()
+    {
+        using var db = new TempDatabase();
+        _ = await Runner(db).Migrate([Schema.Items, Schema.Tags], Ct);
+        await Exec(db.Path, "PRAGMA journal_mode = DELETE;");
+        var before = Hash(db.Path);
+
+        var newer = await Runner(db).Migrate([Schema.Items], Ct);
+        var drifted = await Runner(db).Migrate([Schema.Items with { Sql = Schema.Items.Sql + " -- edited" }, Schema.Tags], Ct);
+
+        Assert.Equal(DataErrors.MigrationUnknown.Code, newer.Error.Code);
+        Assert.Equal(DataErrors.MigrationDrift.Code, drifted.Error.Code);
+        Assert.Equal(before, Hash(db.Path));
+        Assert.False(File.Exists(db.Path + "-wal"));
+    }
 }
