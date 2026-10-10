@@ -5,6 +5,7 @@ Aw.Kernel.Data.IRowMapper<T>
 Aw.Kernel.Data.IRowMapper<T>.Map(Microsoft.Data.Sqlite.SqliteDataReader! reader) -> T
 Aw.Kernel.Data.ISqliteConnectionFactory
 Aw.Kernel.Data.ISqliteConnectionFactory.Open(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Microsoft.Data.Sqlite.SqliteConnection!>!>
+Aw.Kernel.Data.ISqliteConnectionFactory.OpenReadOnly(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Microsoft.Data.Sqlite.SqliteConnection!>!>
 Aw.Kernel.Data.ISqliteSession
 Aw.Kernel.Data.ISqliteSession.Connection.get -> Microsoft.Data.Sqlite.SqliteConnection!
 Aw.Kernel.Data.ISqliteSession.Transaction.get -> Microsoft.Data.Sqlite.SqliteTransaction?
@@ -33,7 +34,7 @@ Aw.Kernel.Data.MigrationReport.ToVersion.get -> int
 Aw.Kernel.Data.MigrationReport.ToVersion.init -> void
 Aw.Kernel.Data.MigrationRunner
 Aw.Kernel.Data.MigrationRunner.Migrate(System.Collections.Generic.IReadOnlyList<Aw.Kernel.Data.Migration!>! migrations, System.Threading.CancellationToken cancellationToken, int? targetVersion = null) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Kernel.Data.MigrationReport!>!>
-Aw.Kernel.Data.MigrationRunner.MigrationRunner(Aw.Kernel.Data.ISqliteConnectionFactory! connections, System.TimeProvider! clock) -> void
+Aw.Kernel.Data.MigrationRunner.MigrationRunner(Aw.Kernel.Data.ISqliteConnectionFactory! connections, System.TimeProvider! clock, bool backupBeforeUpgrade = true) -> void
 Aw.Kernel.Data.SqlStatement
 Aw.Kernel.Data.SqlStatement.<Clone>$() -> Aw.Kernel.Data.SqlStatement!
 Aw.Kernel.Data.SqlStatement.Bind.get -> System.Action<Microsoft.Data.Sqlite.SqliteCommand!>?
@@ -48,6 +49,7 @@ Aw.Kernel.Data.SqlStatement.Subject.init -> void
 Aw.Kernel.Data.SqliteBind
 Aw.Kernel.Data.SqliteConnectionFactory
 Aw.Kernel.Data.SqliteConnectionFactory.Open(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Microsoft.Data.Sqlite.SqliteConnection!>!>
+Aw.Kernel.Data.SqliteConnectionFactory.OpenReadOnly(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Microsoft.Data.Sqlite.SqliteConnection!>!>
 Aw.Kernel.Data.SqliteConnectionFactory.SqliteConnectionFactory(Aw.Kernel.Data.SqliteOptions! options) -> void
 Aw.Kernel.Data.SqliteOptions
 Aw.Kernel.Data.SqliteOptions.<Clone>$() -> Aw.Kernel.Data.SqliteOptions!
@@ -57,11 +59,17 @@ Aw.Kernel.Data.SqliteOptions.DatabasePath.get -> string!
 Aw.Kernel.Data.SqliteOptions.Equals(Aw.Kernel.Data.SqliteOptions? other) -> bool
 Aw.Kernel.Data.SqliteOptions.SqliteOptions(string! databasePath) -> void
 Aw.Kernel.Data.SqliteQueries
+Aw.Kernel.Data.SqliteRead
 Aw.Kernel.Data.SqliteReadRepository<TEntity, TId>
 Aw.Kernel.Data.SqliteReadRepository<TEntity, TId>.Exists(TId id, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<bool>!>
 Aw.Kernel.Data.SqliteReadRepository<TEntity, TId>.Get(TId id, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<TEntity>!>
 Aw.Kernel.Data.SqliteReadRepository<TEntity, TId>.Session.get -> Aw.Kernel.Data.ISqliteSession!
 Aw.Kernel.Data.SqliteReadRepository<TEntity, TId>.SqliteReadRepository(Aw.Kernel.Data.ISqliteSession! session, Aw.Kernel.Data.IRowMapper<TEntity>! mapper) -> void
+Aw.Kernel.Data.SqliteReadSession
+Aw.Kernel.Data.SqliteReadSession.Connection.get -> Microsoft.Data.Sqlite.SqliteConnection!
+Aw.Kernel.Data.SqliteReadSession.DisposeAsync() -> System.Threading.Tasks.ValueTask
+Aw.Kernel.Data.SqliteReadSession.Transaction.get -> Microsoft.Data.Sqlite.SqliteTransaction?
+Aw.Kernel.Data.SqliteRuntime
 Aw.Kernel.Data.SqliteUnitOfWork
 Aw.Kernel.Data.SqliteUnitOfWork.Commit(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Kernel.Unit>!>
 Aw.Kernel.Data.SqliteUnitOfWork.Connection.get -> Microsoft.Data.Sqlite.SqliteConnection!
@@ -69,11 +77,13 @@ Aw.Kernel.Data.SqliteUnitOfWork.DisposeAsync() -> System.Threading.Tasks.ValueTa
 Aw.Kernel.Data.SqliteUnitOfWork.Transaction.get -> Microsoft.Data.Sqlite.SqliteTransaction!
 Aw.Kernel.Data.SqliteUnitOfWorkFactory
 Aw.Kernel.Data.SqliteUnitOfWorkFactory.Begin(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Kernel.Persistence.IUnitOfWork!>!>
+Aw.Kernel.Data.SqliteUnitOfWorkFactory.BeginRead(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Kernel.Data.SqliteReadSession!>!>
 Aw.Kernel.Data.SqliteUnitOfWorkFactory.BeginSession(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Kernel.Data.SqliteUnitOfWork!>!>
 Aw.Kernel.Data.SqliteUnitOfWorkFactory.SqliteUnitOfWorkFactory(Aw.Kernel.Data.ISqliteConnectionFactory! connections) -> void
 abstract Aw.Kernel.Data.SqliteReadRepository<TEntity, TId>.BindId(Microsoft.Data.Sqlite.SqliteCommand! command, TId id) -> void
 abstract Aw.Kernel.Data.SqliteReadRepository<TEntity, TId>.ExistsSql.get -> string!
 abstract Aw.Kernel.Data.SqliteReadRepository<TEntity, TId>.GetSql.get -> string!
+const Aw.Kernel.Data.SqliteRuntime.MinimumVersion = "3.38.0" -> string!
 override Aw.Kernel.Data.Migration.Equals(object? obj) -> bool
 override Aw.Kernel.Data.Migration.GetHashCode() -> int
 override Aw.Kernel.Data.Migration.ToString() -> string!
@@ -94,11 +104,15 @@ static Aw.Kernel.Data.MigrationReport.operator !=(Aw.Kernel.Data.MigrationReport
 static Aw.Kernel.Data.MigrationReport.operator ==(Aw.Kernel.Data.MigrationReport? left, Aw.Kernel.Data.MigrationReport? right) -> bool
 static Aw.Kernel.Data.SqlStatement.operator !=(Aw.Kernel.Data.SqlStatement? left, Aw.Kernel.Data.SqlStatement? right) -> bool
 static Aw.Kernel.Data.SqlStatement.operator ==(Aw.Kernel.Data.SqlStatement? left, Aw.Kernel.Data.SqlStatement? right) -> bool
+static Aw.Kernel.Data.SqliteBind.Bind(this Microsoft.Data.Sqlite.SqliteCommand! command, string! name, System.DateTimeOffset value) -> Microsoft.Data.Sqlite.SqliteCommand!
+static Aw.Kernel.Data.SqliteBind.Bind(this Microsoft.Data.Sqlite.SqliteCommand! command, string! name, System.Guid value) -> Microsoft.Data.Sqlite.SqliteCommand!
 static Aw.Kernel.Data.SqliteBind.Bind(this Microsoft.Data.Sqlite.SqliteCommand! command, string! name, bool value) -> Microsoft.Data.Sqlite.SqliteCommand!
 static Aw.Kernel.Data.SqliteBind.Bind(this Microsoft.Data.Sqlite.SqliteCommand! command, string! name, byte[]? value) -> Microsoft.Data.Sqlite.SqliteCommand!
 static Aw.Kernel.Data.SqliteBind.Bind(this Microsoft.Data.Sqlite.SqliteCommand! command, string! name, double? value) -> Microsoft.Data.Sqlite.SqliteCommand!
+static Aw.Kernel.Data.SqliteBind.Bind(this Microsoft.Data.Sqlite.SqliteCommand! command, string! name, int value) -> Microsoft.Data.Sqlite.SqliteCommand!
 static Aw.Kernel.Data.SqliteBind.Bind(this Microsoft.Data.Sqlite.SqliteCommand! command, string! name, long? value) -> Microsoft.Data.Sqlite.SqliteCommand!
 static Aw.Kernel.Data.SqliteBind.Bind(this Microsoft.Data.Sqlite.SqliteCommand! command, string! name, string? value) -> Microsoft.Data.Sqlite.SqliteCommand!
+static Aw.Kernel.Data.SqliteBind.BindId<TId>(this Microsoft.Data.Sqlite.SqliteCommand! command, string! name, TId id, System.Func<TId, System.Guid>! value) -> Microsoft.Data.Sqlite.SqliteCommand!
 static Aw.Kernel.Data.SqliteBind.BindId<TId>(this Microsoft.Data.Sqlite.SqliteCommand! command, string! name, TId id, System.Func<TId, long>! value) -> Microsoft.Data.Sqlite.SqliteCommand!
 static Aw.Kernel.Data.SqliteBind.BindId<TId>(this Microsoft.Data.Sqlite.SqliteCommand! command, string! name, TId id, System.Func<TId, string!>! value) -> Microsoft.Data.Sqlite.SqliteCommand!
 static Aw.Kernel.Data.SqliteOptions.operator !=(Aw.Kernel.Data.SqliteOptions? left, Aw.Kernel.Data.SqliteOptions? right) -> bool
@@ -107,8 +121,14 @@ static Aw.Kernel.Data.SqliteQueries.Execute(Aw.Kernel.Data.ISqliteSession! sessi
 static Aw.Kernel.Data.SqliteQueries.Exists(Aw.Kernel.Data.ISqliteSession! session, Aw.Kernel.Data.SqlStatement! statement, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<bool>!>
 static Aw.Kernel.Data.SqliteQueries.List<T>(Aw.Kernel.Data.ISqliteSession! session, Aw.Kernel.Data.SqlStatement! statement, Aw.Kernel.Data.IRowMapper<T>! mapper, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<System.Collections.Generic.IReadOnlyList<T>!>!>
 static Aw.Kernel.Data.SqliteQueries.One<T>(Aw.Kernel.Data.ISqliteSession! session, Aw.Kernel.Data.SqlStatement! statement, Aw.Kernel.Data.IRowMapper<T>! mapper, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<T>!>
+static Aw.Kernel.Data.SqliteRead.GetGuid(Microsoft.Data.Sqlite.SqliteDataReader! reader, int ordinal) -> System.Guid
+static Aw.Kernel.Data.SqliteRuntime.Check() -> Aw.Kernel.Result<string!>!
+static Aw.Kernel.Data.SqliteRuntime.Initialize(SQLitePCL.ISQLite3Provider! provider) -> void
+static Aw.Kernel.Data.SqliteRuntime.Version.get -> string!
 static readonly Aw.Kernel.Data.DataErrors.Busy -> Aw.Kernel.ErrorDefinition!
 static readonly Aw.Kernel.Data.DataErrors.Constraint -> Aw.Kernel.ErrorDefinition!
+static readonly Aw.Kernel.Data.DataErrors.Damaged -> Aw.Kernel.ErrorDefinition!
+static readonly Aw.Kernel.Data.DataErrors.ForeignDatabase -> Aw.Kernel.ErrorDefinition!
 static readonly Aw.Kernel.Data.DataErrors.MigrationDrift -> Aw.Kernel.ErrorDefinition!
 static readonly Aw.Kernel.Data.DataErrors.MigrationSequence -> Aw.Kernel.ErrorDefinition!
 static readonly Aw.Kernel.Data.DataErrors.MigrationUnknown -> Aw.Kernel.ErrorDefinition!

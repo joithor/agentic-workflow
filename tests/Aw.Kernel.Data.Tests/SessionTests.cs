@@ -1,5 +1,3 @@
-using Microsoft.Data.Sqlite;
-
 namespace Aw.Kernel.Data.Tests;
 
 [Trait("Lane", "integration")]
@@ -51,23 +49,24 @@ public sealed class SessionTests
         var rows = await SqliteQueries.List(reader, new SqlStatement("SELECT id, name, size FROM items"), ItemMapper.Instance, Ct);
 
         Assert.Empty(rows.Value);
-        _ = await Assert.ThrowsAsync<SqliteException>(async () =>
-            await SqliteQueries.Execute(reader, new SqlStatement("INSERT INTO items VALUES ('r', 'r', 1)"), Ct));
+        var write = await SqliteQueries.Execute(reader, new SqlStatement("INSERT INTO items VALUES ('r', 'r', 1)"), Ct);
+        Assert.Equal(DataErrors.Unavailable.Code, write.Error.Code);
     }
 
     [Fact]
-    public async Task Disposing_the_last_session_closes_the_file()
+    public async Task Disposing_a_session_releases_its_lock_at_once()
     {
         using var db = new TempDatabase();
         await Schema.CreateItems(db);
+        var sessions = new SqliteUnitOfWorkFactory(db.Factory(TimeSpan.FromMilliseconds(50)));
 
-        await using (var work = (await new SqliteUnitOfWorkFactory(db.Factory()).BeginSession(Ct)).Value)
+        await using (var work = (await sessions.BeginSession(Ct)).Value)
         {
             _ = await new ItemRepository(work).Add(new Item(new ItemId("a"), "alpha", 1), Ct);
-            _ = await work.Commit(Ct);
         }
 
-        // SQLite checkpoints and removes the WAL when the last connection to the file closes.
-        Assert.False(File.Exists(db.Path + "-wal"));
+        var stopwatch = System.Diagnostics.Stopwatch.StartNew();
+        await using var next = (await sessions.BeginSession(Ct)).Value;
+        Assert.True(stopwatch.ElapsedMilliseconds < 500);
     }
 }

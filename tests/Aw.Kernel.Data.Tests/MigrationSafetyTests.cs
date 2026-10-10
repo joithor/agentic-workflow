@@ -63,8 +63,8 @@ public sealed class MigrationSafetyTests
     public async Task Foreign_keys_are_back_on_after_migrating()
     {
         using var db = new TempDatabase();
-        await using var work = (await new SqliteUnitOfWorkFactory(db.Factory()).BeginSession(Ct)).Value;
         _ = await Runner(db).Migrate([Parent], Ct);
+        await using var work = (await new SqliteUnitOfWorkFactory(db.Factory()).BeginSession(Ct)).Value;
 
         var orphan = await SqliteQueries.Execute(work, new SqlStatement("INSERT INTO child VALUES (1, 999)"), Ct);
 

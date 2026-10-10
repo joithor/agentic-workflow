@@ -18,13 +18,28 @@ public static class DataErrors
     /// <summary>AW-DATA-005: the migration set is malformed (a gap, a duplicate, out of order, or a file without a version).</summary>
     public static readonly ErrorDefinition MigrationSequence = new("AW-DATA-005", ErrorKind.Invalid, "Migration set malformed");
 
-    /// <summary>AW-DATA-006: a migration the database already applied has different text now.</summary>
-    public static readonly ErrorDefinition MigrationDrift = new("AW-DATA-006", ErrorKind.Conflict, "Applied migration changed");
+    /// <summary>
+    /// AW-DATA-006: the database's applied history doesn't match the build: an applied migration's text or name
+    /// changed, or schema_version isn't exactly 1, 2, …, n (a gap, version 0 or less).
+    /// </summary>
+    public static readonly ErrorDefinition MigrationDrift = new("AW-DATA-006", ErrorKind.Conflict, "Applied migration history changed");
 
     /// <summary>AW-DATA-007: the database has a migration this build doesn't know (it is newer than the build).</summary>
     public static readonly ErrorDefinition MigrationUnknown = new("AW-DATA-007", ErrorKind.Conflict, "Database newer than this build");
 
+    /// <summary>
+    /// AW-DATA-008: the file is damaged or isn't a SQLite database (SQLITE_CORRUPT, SQLITE_NOTADB). Not retryable:
+    /// stop and restore from a backup.
+    /// </summary>
+    public static readonly ErrorDefinition Damaged = new("AW-DATA-008", ErrorKind.Invalid, "Database damaged");
+
+    /// <summary>
+    /// AW-DATA-009: the database has tables or a user_version but no schema_version table, so this runner didn't
+    /// create it (for example a file the TS build wrote). Refused before anything is written.
+    /// </summary>
+    public static readonly ErrorDefinition ForeignDatabase = new("AW-DATA-009", ErrorKind.Conflict, "Database not managed by this runner");
+
     /// <summary>Every data code, in code order.</summary>
     public static IReadOnlyList<ErrorDefinition> All { get; } =
-        [NotFound, Unavailable, Busy, Constraint, MigrationSequence, MigrationDrift, MigrationUnknown];
+        [NotFound, Unavailable, Busy, Constraint, MigrationSequence, MigrationDrift, MigrationUnknown, Damaged, ForeignDatabase];
 }

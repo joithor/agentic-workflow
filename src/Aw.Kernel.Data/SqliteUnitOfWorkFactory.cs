@@ -15,4 +15,10 @@ public sealed class SqliteUnitOfWorkFactory(ISqliteConnectionFactory connections
     /// <returns>The unit of work, or AW-DATA-002 / AW-DATA-003.</returns>
     public ValueTask<Result<SqliteUnitOfWork>> BeginSession(CancellationToken cancellationToken) =>
         SqliteUnitOfWork.Begin(connections, cancellationToken);
+
+    /// <summary>Begins a read-only session: one snapshot, no write lock, no file created.</summary>
+    /// <param name="cancellationToken">Cancels the begin.</param>
+    /// <returns>The session, or AW-DATA-002 (including a missing file) / AW-DATA-008.</returns>
+    public ValueTask<Result<SqliteReadSession>> BeginRead(CancellationToken cancellationToken) =>
+        SqliteReadSession.Begin(connections, cancellationToken);
 }

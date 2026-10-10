@@ -44,32 +44,10 @@ public sealed class SqliteUnitOfWork : IUnitOfWork, ISqliteSession
     }
 
     /// <inheritdoc />
-    public async ValueTask DisposeAsync()
-    {
-        // Disposing an uncommitted SqliteTransaction rolls it back.
-        await Transaction.DisposeAsync().ConfigureAwait(false);
-        await Connection.DisposeAsync().ConfigureAwait(false);
-    }
+    public ValueTask DisposeAsync() => SqliteTransactions.Close(Connection, Transaction);
 
-    internal static async ValueTask<Result<SqliteUnitOfWork>> Begin(ISqliteConnectionFactory connections, CancellationToken cancellationToken)
-    {
-        var opened = await connections.Open(cancellationToken).ConfigureAwait(false);
-        if (opened.IsError)
-        {
-            return opened.Error;
-        }
-
-        var connection = opened.Value;
-        try
-        {
-            // deferred: false → BEGIN IMMEDIATE: take the write lock now, so a busy database fails here, not mid-use-case.
-            var transaction = (SqliteTransaction)await connection.BeginTransactionAsync(cancellationToken).ConfigureAwait(false);
-            return new SqliteUnitOfWork(connection, transaction);
-        }
-        catch (SqliteException exception) when (SqliteErrors.TryMap(exception, "Beginning a transaction", out var error))
-        {
-            await connection.DisposeAsync().ConfigureAwait(false);
-            return error;
-        }
-    }
+    internal static async ValueTask<Result<SqliteUnitOfWork>> Begin(ISqliteConnectionFactory connections, CancellationToken cancellationToken) =>
+        // BEGIN IMMEDIATE: take the write lock now, so a busy database fails here, not mid-use-case.
+        (await SqliteTransactions.Begin(await connections.Open(cancellationToken).ConfigureAwait(false), deferred: false, cancellationToken).ConfigureAwait(false))
+            .Map(opened => new SqliteUnitOfWork(opened.Connection, opened.Transaction));
 }

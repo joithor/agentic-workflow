@@ -7,7 +7,6 @@ internal static class SqliteErrors
 {
     internal const int SqlitePerm = 3;
     internal const int SqliteBusy = 5;
-    internal const int SqliteLocked = 6;
     internal const int SqliteReadOnly = 8;
     internal const int SqliteIoErr = 10;
     internal const int SqliteCorrupt = 11;
@@ -25,9 +24,11 @@ internal static class SqliteErrors
     {
         var definition = (exception.SqliteErrorCode & 0xFF) switch
         {
-            SqliteBusy or SqliteLocked => DataErrors.Busy,
+            // SQLITE_LOCKED (6) is a conflict inside one connection: a bug, so it isn't mapped.
+            SqliteBusy => DataErrors.Busy,
             SqliteConstraint => DataErrors.Constraint,
-            SqlitePerm or SqliteReadOnly or SqliteIoErr or SqliteCorrupt or SqliteFull or SqliteCantOpen or SqliteNotADb => DataErrors.Unavailable,
+            SqliteCorrupt or SqliteNotADb => DataErrors.Damaged,
+            SqlitePerm or SqliteReadOnly or SqliteIoErr or SqliteFull or SqliteCantOpen => DataErrors.Unavailable,
             _ => null,
         };
         error = definition?.With($"{context}: {exception.Message}")!; // why: only read when this returns true

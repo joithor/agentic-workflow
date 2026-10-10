@@ -14,7 +14,7 @@ public static partial class EmbeddedMigrations
     /// <summary>Loads every '.sql' resource under <paramref name="resourcePrefix"/>, ordered by version.</summary>
     /// <param name="assembly">The assembly holding the resources.</param>
     /// <param name="resourcePrefix">The resource name prefix, including the trailing dot.</param>
-    /// <returns>The migrations (possibly none), or AW-DATA-005 for a resource name without a version.</returns>
+    /// <returns>The migrations, or AW-DATA-005 for none found or a resource name without a version.</returns>
     public static Result<IReadOnlyList<Migration>> Load(Assembly assembly, string resourcePrefix)
     {
         ArgumentNullException.ThrowIfNull(assembly);
@@ -36,7 +36,10 @@ public static partial class EmbeddedMigrations
             migrations.Add(new Migration(match.Value.Version, match.Value.Name, Read(assembly, resource)));
         }
 
-        return migrations.OrderBy(m => m.Version).ToList();
+        // A typo in the prefix, or .sql files not marked EmbeddedResource, would otherwise migrate nothing and succeed.
+        return migrations.Count == 0
+            ? DataErrors.MigrationSequence.With($"No migration resources under '{resourcePrefix}': check the prefix and that the .sql files are EmbeddedResource items.")
+            : migrations.OrderBy(m => m.Version).ToList();
     }
 
     private static (int Version, string Name)? Match(string file)
