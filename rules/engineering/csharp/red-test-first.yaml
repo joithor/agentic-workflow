@@ -14,7 +14,7 @@ checks:
     note: "the /specToProvenPR red-commit rule"
 gap: open
 gapNote: "Commit order is checked in review."
-relatedIds: ["MA0025"]
+relatedIds: ["MA0025", "CS9113"]
 source:
   type: adr
   ref: "docs/superpowers/specs/2026-10-09-agent-readiness-design.md#4b5"

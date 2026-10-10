@@ -12,6 +12,7 @@ checks:
     id: "AW1009"
     status: pending
     pendingPr: 132
+    note: "arity only: constraints stay a review item"
 gap: pending
 relatedIds: ["CA1005"]
 source:

@@ -11,11 +11,8 @@ checks:
   - type: build-setting
     id: "AW0002"
     status: active
-  - type: analyzer
-    id: "CA1707"
-    status: active
 gap: closed
-relatedIds: ["IDE0005"]
+relatedIds: ["CA1707", "IDE0005", "xUnit1030", "xUnit1051"]
 source:
   type: adr
   ref: "docs/superpowers/specs/2026-10-09-agent-readiness-design.md#4b5"

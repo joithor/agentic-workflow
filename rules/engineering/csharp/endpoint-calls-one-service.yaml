@@ -12,6 +12,7 @@ checks:
     id: "AW1004"
     status: pending
     pendingPr: 132
+    note: "endpoint lambdas only: CLI commands and branching on domain state stay a review item"
 gap: pending
 source:
   type: adr

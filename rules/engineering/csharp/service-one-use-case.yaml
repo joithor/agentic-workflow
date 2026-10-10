@@ -12,10 +12,12 @@ checks:
     id: "AW1007"
     status: pending
     pendingPr: 132
+    note: "counts constructor dependencies only: one use case per service stays a review item"
   - type: analyzer
     id: "AW1008"
     status: pending
     pendingPr: 132
+    severity: suggestion
     note: "6-7 dependencies, severity suggestion (the split signal)"
 gap: pending
 source:

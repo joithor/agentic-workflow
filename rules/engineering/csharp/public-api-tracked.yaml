@@ -11,17 +11,28 @@ checks:
   - type: analyzer
     id: "RS0016"
     status: active
+    via: baseline
+    package: Microsoft.CodeAnalysis.PublicApiAnalyzers
   - type: analyzer
     id: "RS0017"
     status: active
+    via: baseline
+    package: Microsoft.CodeAnalysis.PublicApiAnalyzers
   - type: analyzer
     id: "RS0036"
     status: active
+    via: baseline
+    package: Microsoft.CodeAnalysis.PublicApiAnalyzers
   - type: analyzer
     id: "RS0037"
     status: active
+    via: baseline
+    package: Microsoft.CodeAnalysis.PublicApiAnalyzers
   - type: compiler
     id: "CS1591"
+    status: active
+  - type: build-setting
+    id: "<GenerateDocumentationFile>true</GenerateDocumentationFile>"
     status: active
 gap: closed
 source:

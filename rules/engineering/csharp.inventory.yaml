@@ -127,6 +127,12 @@ records:
     section: "4b.6"
   - id: engineering.csharp.suppressions-need-justification
     section: "4b.6"
+  - id: engineering.csharp.distribution-seams
+    section: "4b.6"
+  - id: engineering.csharp.build-time-regression
+    section: "4b.8"
+  - id: engineering.csharp.validate-at-boundaries
+    section: "4b.8"
   - id: engineering.csharp.agents-md-commands
     section: "4b.9"
   - id: engineering.csharp.scaffolds-produce-compliant-code

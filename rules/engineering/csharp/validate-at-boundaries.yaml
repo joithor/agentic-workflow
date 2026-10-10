@@ -1,0 +1,24 @@
+schemaVersion: 1
+id: engineering.csharp.validate-at-boundaries
+kind: engineering
+section: "4b.8"
+text: "Inputs are validated at endpoints and CLI inputs with an IValidator<T> registered through the ValidatingService decorator, not inside domain code."
+why: "One validation point per input keeps services free of defensive checks."
+select:
+  languages: [csharp]
+  paths: ["src/**"]
+checks:
+  - type: review
+    id: "validators"
+    status: active
+    note: "checked in review"
+  - type: test
+    id: "DecoratedServiceTests"
+    ref: tests/Aw.Kernel.Tests/DecoratedServiceTests.cs
+    status: active
+gap: partial
+gapNote: "The decorator is tested; whether each slice registers a validator is reviewed (/new-slice generates one)."
+source:
+  type: adr
+  ref: "docs/superpowers/specs/2026-10-09-agent-readiness-design.md#4b8"
+status: active

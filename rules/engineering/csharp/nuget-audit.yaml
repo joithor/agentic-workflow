@@ -11,7 +11,11 @@ checks:
   - type: build-setting
     id: "<WarningsNotAsErrors>$(WarningsNotAsErrors);NU1901;NU1902</WarningsNotAsErrors>"
     status: active
+  - type: build-setting
+    id: "<TreatWarningsAsErrors>true</TreatWarningsAsErrors>"
+    status: active
 gap: closed
+relatedIds: ["NU1903", "NU1904"]
 source:
   type: adr
   ref: "docs/superpowers/specs/2026-10-09-agent-readiness-design.md#4b6"
