@@ -162,6 +162,23 @@ test_cli_retire_removes_only_registered() {
   echo "PASS: test_cli_retire_removes_only_registered"
 }
 
+# A name still shipped (in AW_MCP_SERVERS) is never retired, whatever order the installer calls register and retire
+# in: cursor's upsert keeps it, so claude and codex must too.
+test_cli_retire_skips_shipped_servers() {
+  setup_env
+  local calls="$SANDBOX/calls" out
+  fake_present() { return 0; }
+  fake_remove() { aw_run echo "remove $AW_MCP_NAME" >>"$calls"; }
+  AW_MCP_SERVERS='[{"name":"serena","command":"x","args":[]}]'
+  AW_MCP_RETIRED="serena agentic-bridge"
+  out="$(aw_mcp_retire_cli "Fake" fake_present fake_remove)"
+  [ "$(cat "$calls")" = "remove agentic-bridge" ] || fail "only the unshipped server should go, got: $(cat "$calls" 2>/dev/null)"
+  ! echo "$out" | grep -q "serena" || fail "a shipped server should be silent: $out"
+  AW_MCP_SERVERS=""; AW_MCP_RETIRED=""
+  teardown_env
+  echo "PASS: test_cli_retire_skips_shipped_servers"
+}
+
 test_dry_run_writes_nothing() {
   setup_env
   AW_DRY_RUN=1
@@ -277,6 +294,7 @@ test_toolkit_link_and_registry_merge
 test_cursor_mcp_merge_preserves_and_is_idempotent
 test_cursor_retires_stale_servers
 test_cli_retire_removes_only_registered
+test_cli_retire_skips_shipped_servers
 test_dry_run_writes_nothing
 test_agents_render_per_provider
 test_builds_skill_packages_and_warns_on_failure
