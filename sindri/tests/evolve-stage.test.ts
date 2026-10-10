@@ -174,6 +174,20 @@ describe("stage generalizes first (privacy B1)", () => {
     fx.close();
   });
 
+  it("keeps the stricter tier: a rewrite that drops the protected file still stages as approval", async () => {
+    const io = scriptedEvolveIo((c) => (c.role === GENERALIZE_ROLES.rewrite
+      ? { ...(JSON.parse(unescapeFence(/<untrusted id="proposal">([\s\S]*?)<\/untrusted>/.exec(c.input)![1])) as object), change: { type: "describe", files: ["skills/review/SKILL.md"], description: "d" } }
+      : { leaks: false, category: "none" }));
+    const { fx, save } = await ready(2, io);
+    const id = save("Alpha change here", { change: { type: "describe", files: ["config/hooks/done-gate.sh"], description: "d" } }, "code");
+    const o = await stageProposals(fx.ctx);
+    expect(o.staged).toEqual([{ id, tier: "approval" }]);
+    expect(getProposal(fx.ctx.db, id)?.tier).toBe("approval");
+    expect(getPublic(fx.ctx.db, id)?.change).toMatchObject({ files: ["skills/review/SKILL.md"] });
+    expect(fs.readFileSync(stagedFile(fx.deps, id), "utf8")).toContain("touches a protected path");
+    fx.close();
+  });
+
   it("holds a proposal the judge flags, keeps no public row, and retries it on the next stage", async () => {
     const strict = scriptedEvolveIo(generalizingScript((c) => { throw new Error(`unexpected ${c.role}`); }));
     const leaky = scriptedEvolveIo((c) => (c.role === GENERALIZE_ROLES.judge ? { leaks: true, category: "tickets" } : generalizingScript()(c)));

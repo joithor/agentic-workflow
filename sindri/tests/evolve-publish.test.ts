@@ -377,6 +377,19 @@ describe("publish renders only the generalized version (privacy B1)", () => {
     fx.close();
   });
 
+  it("keeps the stricter tier: a rewrite that moves files from a protected path to an ordinary one still lands as approval", async () => {
+    const { fx, save } = await ready();
+    const id = save("Alpha change here", { change: { type: "describe", files: ["config/hooks/done-gate.sh"], description: "x" } });
+    await stage([], fx.ctx);
+    const p = getProposal(fx.ctx.db, id)!.proposal;
+    fx.ctx.write((epoch) => savePublic(fx.ctx.db, id, { ...p, change: { type: "describe", files: ["skills/review/SKILL.md"], description: "x" } }, { category: "none", model: "m" }, epoch, fx.deps.now()));
+    const r = JSON.parse((await publish(["--json"], fx.ctx)).stdout) as { published: { tier: string }[] };
+    expect(r.published[0].tier).toBe("approval");
+    expect(getProposal(fx.ctx.db, id)?.tier).toBe("approval");
+    expect(fs.readFileSync(path.join(fx.repo, REL), "utf8")).toContain("touches a protected path");
+    fx.close();
+  });
+
   it("checks the public version only: a private term left in the original doesn't hold a clean rewrite", async () => {
     const { fx, save } = await ready();
     const id = save("Acme Care scheduling fix");

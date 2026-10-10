@@ -13,7 +13,7 @@ import { identifierProblem, loadDerivedSet } from "./privacy-derived.js";
 import { Budget } from "../scope/model.js";
 import { generalize, type Generalized } from "./generalize.js";
 import {
-  classifyTier, findMerged, getPublic, inFlightCount, listStored, normTitle, reduceEvidence, savePublic, setTier, stagedFile, transition, type Proposal, type StoredProposal, type Tier,
+  classifyTier, findMerged, getPublic, inFlightCount, listStored, normTitle, publicTier, reduceEvidence, savePublic, setTier, stagedFile, transition, type Proposal, type StoredProposal, type Tier,
 } from "./proposals.js";
 import { loadRegistry } from "./registry.js";
 import { renderTask } from "./render.js";
@@ -123,7 +123,7 @@ export async function stageProposals(ctx: EvolveCtx, budget: Budget = new Budget
         held.push({ id: c.s.id, why: g.why });
         continue;
       }
-      const t = classifyTier(g.proposal, registry, extra);
+      const t = publicTier(c.s.proposal, g.proposal, registry, extra); // a rewrite can raise the tier, never lower it
       transition(ctx.db, c.s.id, FROM, "staged", epoch, ctx.deps.now());
       savePublic(ctx.db, c.s.id, g.proposal, { category: g.category, model: g.model }, epoch, ctx.deps.now());
       fs.writeFileSync(stagedFile(ctx.deps, c.s.id), renderTask(staged.length + 1, c.s.id, g.proposal, t.tier, t.why, c.s.source), { mode: 0o600 });
@@ -237,7 +237,7 @@ export async function publishProposals(ctx: EvolveCtx, o: { dryRun: boolean; noP
       held.push({ id: s.id, layer: "generalize", why: "not generalized yet; run sindri evolve stage" });
       continue;
     }
-    const t = classifyTier(pub, registry, cfg.protectedPaths); // re-tiered from the public version (Review Focus 2)
+    const t = publicTier(s.proposal, pub, registry, cfg.protectedPaths); // re-tiered from the public version, never below the original (Review Focus 2)
     const md = renderTask(first + ready.length, s.id, pub, t.tier, t.why, s.source);
     const raw = [pub.title, pub.rationale, ...pub.evidence, pub.change.type === "describe" ? `${pub.change.description}\n${pub.change.files.join("\n")}` : pub.change.text, s.source].join("\n");
     const text = `${raw}\n${md}`;

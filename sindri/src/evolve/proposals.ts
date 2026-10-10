@@ -83,6 +83,16 @@ export function classifyTier(p: Proposal, artifacts: readonly Artifact[], extraP
   return { tier: "code", why: "a repo change, built and merged as an ordinary work item" };
 }
 
+const STRICTNESS: Record<Tier, number> = { "self-adopt": 0, code: 1, approval: 2 };
+
+// The tier a public version ships at: the stricter of the original's and the rewrite's. The rewrite model sees
+// untrusted transcript text and may change the file list, so a rewrite can raise the tier, never lower it.
+export function publicTier(original: Proposal, pub: Proposal, artifacts: readonly Artifact[], extraProtected: readonly string[] = []): { tier: Tier; why: string } {
+  const a = classifyTier(original, artifacts, extraProtected);
+  const b = classifyTier(pub, artifacts, extraProtected);
+  return STRICTNESS[a.tier] > STRICTNESS[b.tier] ? a : b;
+}
+
 const scrubber = makeScrubber();
 // NFKC, lower case, whitespace to one space, then only letters, digits and spaces: punctuation and zero-width variants dedupe.
 export const normTitle = (t: string): string => t.normalize("NFKC").toLowerCase().replace(/\s+/g, " ").replace(/[^\p{L}\p{N} ]/gu, "").replace(/ +/g, " ").trim();
