@@ -256,42 +256,73 @@ exec "$REAL_CURL" "\$@"
 STUB
 chmod +x "$WORK/curlpid/curl"
 ms() { python3 -c 'import time; print(int(time.time() * 1000))'; }
-signal_mid_request() { # $1 = signal name, $2 = expected exit code ("nonzero" for any)
-  local sig="$1" want="$2" tpid rc elapsed alive
+# `python3 -c "$DFL" CMD...` execs CMD with SIGINT and SIGQUIT back at their
+# default disposition. A plain background `&` in this non-interactive shell
+# would start the script with both ignored, so INT and QUIT could not be tested
+# that way. It's a direct command, not a function, so `$!` is the script's pid.
+DFL='import os, signal, sys
+for s in (signal.SIGINT, signal.SIGQUIT):
+    signal.signal(s, signal.SIG_DFL)
+os.execvp(sys.argv[1], sys.argv[1:])'
+# signal_mid_request "SIG [SIG2 ...]" WANT [kill]: send the signals back to back
+# to the script while the fake holds the request. WANT is the exit code or
+# "nonzero". With "kill" (SIGKILL: nothing can clean up) the request job
+# survives the script, so only "nothing printed, no file left" is checked.
+signal_mid_request() {
+  local sigs="$1" want="$2" mode="${3:-}" name tpid rc elapsed alive sig t0
+  name="SIG${sigs// /+SIG}"
   export FAKE_HOLD=3; start_server slow; unset FAKE_HOLD
   : >"$WORK/curl.pid"
-  PATH="$WORK/curlpid:$PATH" bash "$SCRIPT" >"$WORK/sig.out" 2>"$WORK/sig.err" &
+  PATH="$WORK/curlpid:$PATH" python3 -c "$DFL" bash "$SCRIPT" >"$WORK/sig.out" 2>"$WORK/sig.err" &
   tpid=$!
   for _ in $(seq 1 100); do [ -e "$SRV/inflight" ] && break; sleep 0.1; done
   if ! [ -e "$SRV/inflight" ]; then
-    echo "not ok - SIG$sig: the request never reached the fake"; kill "$tpid" 2>/dev/null; exit 1
+    echo "not ok - $name: the request never reached the fake"; kill "$tpid" 2>/dev/null; exit 1
   fi
-  [ -s "$WORK/curl.pid" ] || { echo "not ok - SIG$sig: curl pid not recorded"; exit 1; }
-  local t0; t0="$(ms)"
-  kill "-$sig" "$tpid"
+  if ! [ -s "$WORK/curl.pid" ]; then
+    echo "not ok - $name: curl pid not recorded"; kill "$tpid" 2>/dev/null; exit 1
+  fi
+  t0="$(ms)"
+  for sig in $sigs; do kill "-$sig" "$tpid" 2>/dev/null || true; done
   rc=0; wait "$tpid" || rc=$?
   elapsed=$(( $(ms) - t0 ))
   if [ "$want" = nonzero ]; then
-    check "SIG$sig: exits non-zero" "$([ "$rc" -ne 0 ] && echo yes || echo no)" "yes"
+    check "$name: exits non-zero" "$([ "$rc" -ne 0 ] && echo yes || echo no)" "yes"
   else
-    check "SIG$sig: exit $want" "$rc" "$want"
+    check "$name: exit $want" "$rc" "$want"
   fi
-  check "SIG$sig: exits within 2 s while the request is held (took ${elapsed} ms)" "$([ "$elapsed" -le 2000 ] && echo yes || echo no)" "yes"
-  alive=yes
-  for _ in $(seq 1 10); do kill -0 "$(cat "$WORK/curl.pid")" 2>/dev/null || { alive=no; break; }; sleep 0.1; done
-  check "SIG$sig: this run's curl is gone" "$alive" "no"
+  check "$name: exits within 2 s while the request is held (took ${elapsed} ms)" "$([ "$elapsed" -le 2000 ] && echo yes || echo no)" "yes"
+  if [ "$mode" != kill ]; then
+    alive=yes
+    for _ in $(seq 1 10); do kill -0 "$(cat "$WORK/curl.pid")" 2>/dev/null || { alive=no; break; }; sleep 0.1; done
+    check "$name: this run's curl is gone" "$alive" "no"
+  fi
   for _ in $(seq 1 60); do [ -e "$SRV/answered" ] && break; sleep 0.1; done
-  check "SIG$sig: the fake answered (the late-token window was exercised)" "$([ -e "$SRV/answered" ] && echo yes || echo no)" "yes"
-  sleep 0.3
-  check "SIG$sig: stdout still empty after the fake answered" "$(wc -c <"$WORK/sig.out" | tr -d ' ')" "0"
-  check "SIG$sig: temp dir removed" "$(find "$TMPDIR" -mindepth 1 | wc -l | tr -d ' ')" "0"
+  check "$name: the fake answered (the late-token window was exercised)" "$([ -e "$SRV/answered" ] && echo yes || echo no)" "yes"
+  sleep 0.5
+  check "$name: stdout still empty after the fake answered" "$(wc -c <"$WORK/sig.out" | tr -d ' ')" "0"
+  if [ "$mode" = kill ]; then
+    check "$name: no file left in the temp dir" "$(find "$TMPDIR" -type f | wc -l | tr -d ' ')" "0"
+    find "$TMPDIR" -mindepth 1 -delete # SIGKILL leaves the empty private dir behind
+  else
+    check "$name: temp dir removed" "$(find "$TMPDIR" -mindepth 1 | wc -l | tr -d ' ')" "0"
+    find "$TMPDIR" -mindepth 1 -delete # a failure here must not cascade into the next case
+  fi
   cat "$WORK/sig.err" >>"$WORK/term.err"
   stop_server
 }
 : >"$WORK/term.err"
 signal_mid_request TERM 143
 signal_mid_request HUP 129
+signal_mid_request INT 130
+signal_mid_request QUIT 131
+signal_mid_request PROF 155
 signal_mid_request USR1 nonzero
+signal_mid_request ALRM nonzero
+signal_mid_request "TERM TERM" 143
+signal_mid_request "HUP HUP" 129
+signal_mid_request "TERM HUP" nonzero
+signal_mid_request KILL 137 kill
 
 # --- key material never in any output across all runs ---
 leaks="$(cat "$WORK"/err "$WORK"/tty.out "$WORK"/tty2.out "$WORK"/xtrace "$WORK"/xtrace2 "$WORK"/term.err | grep -c -e "$KEY_LINE" -e 'PRIVATE KEY' || true)"
