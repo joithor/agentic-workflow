@@ -145,10 +145,10 @@ Host ──► Features ──► Core ◄── Infrastructure
 
 | Project (per package) | Holds | May reference |
 |---|---|---|
-| `Aw.<Pkg>.Core` | Domain types, strongly typed ids and value objects, pure logic, **port interfaces** (repositories, clock, process runner), errors | `Aw.Kernel` only |
-| `Aw.<Pkg>.Features` | One folder per use case (a slice): request and response records, the service (handler), the validator, and the endpoint or CLI mapping | `Core`, `Aw.Kernel` |
+| `Aw.<Pkg>.Core` | Domain types, strongly typed ids and value objects, pure logic, **port interfaces** (repositories, clock, process runner), errors, its own `Add…()` registration method | `Aw.Kernel`, plus `Microsoft.Extensions.DependencyInjection.Abstractions` for that method |
+| `Aw.<Pkg>.Features` | One folder per use case (a slice): request and response records, the service (handler), the validator | `Core`, `Aw.Kernel`, other packages' `Core` |
 | `Aw.<Pkg>.Infrastructure` | Repository implementations over SQL, external adapters (git, containers, model CLIs, HTTP), migrations | `Core`, `Aw.Kernel` |
-| `Aw.<Pkg>.Host` | The composition root: the minimal API app or the CLI `Main`, DI registration, configuration, the JSON context | everything in the package |
+| `Aw.<Pkg>.Host` | The composition root: the minimal API app or the CLI `Main`, the endpoints and CLI commands (one per slice, so the request-delegate generator covers them), `Compose` (calls each project's `Add…()`), settings, the JSON context | everything in the package |
 | `Aw.Kernel` (shared) | `Result<T>`, `Error`, clock and id ports, value-object conventions, the generic `IService<TReq, TRes>` pipeline and decorators, the byte-compat JSON settings (§4c) | the BCL only |
 | `Aw.Kernel.Data` · `Aw.Kernel.Telemetry` · `Aw.Kernel.Testing` | SQLite access and migrations runner · logging and OpenTelemetry setup with the scrubbing processor · fakes base, builders, contract-test bases, golden harness | `Aw.Kernel` plus their one external dependency each |
 

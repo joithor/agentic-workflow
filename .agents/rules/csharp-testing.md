@@ -32,15 +32,15 @@ Each rule names the check that enforces it. "Gap — R1b" means the check doesn'
 ## Red first
 
 - Every slice starts with a failing test that names the behavior: `StartItem_parks_when_budget_is_exhausted`.
-- The red commit compiles: it carries the test plus request, response and service stubs (the service throws), so `dotnet build` stays at zero warnings and the test fails at run time, not at compile time. `/new-slice` generates exactly that.
+- The red commit compiles: it carries the test plus request and response records and a service stub with **no constructor parameters** whose `Handle` throws `NotSupportedException` (an unread constructor parameter is `CS9113` and a `NotImplementedException` is `MA0025`, both errors). `dotnet build` stays at zero warnings and the test fails at run time. The ports arrive in the implement step. `/new-slice` generates exactly that.
 - A red placeholder is `Assert.Fail("red: <what to assert>")`, never a `TODO` comment (`MA0026` is an error).
 
 ## Organization
 
 - Tests by **feature**, not by layer: `StartItemTests`, not `ItemRepositoryTests` + `ItemServiceTests`.
 - Per package: `tests/Aw.<Pkg>.Tests/` (by feature) and `tests/Aw.<Pkg>.Testing/` (fakes, builders, contract bases); project names and root namespaces match their folders, like `tests/Aw.Architecture.Tests/`, which holds every §4b.1 rule.
-- Tests reach `internal` types through `InternalsVisibleTo` for `Aw.<Pkg>.Tests` and `Aw.<Pkg>.Testing`, declared in the `Core`, `Features`, `Infrastructure` and `Host` project files.
-- Test projects: `CA2007` and `CA1515` are off (set in `Directory.Build.props`/`.editorconfig` by the .NET solution PR #89). Test classes are `public sealed` and `await` without `ConfigureAwait` (xUnit1030).
+- Tests reach `internal` types through `InternalsVisibleTo`: `Core`, `Features` and `Infrastructure` declare it for `Aw.<Pkg>.Tests` and `Aw.<Pkg>.Testing`; `Host` declares it for `Aw.<Pkg>.Tests` only.
+- Test projects (`*.Tests`, `*.Testing`) get their own policy, set by #89 in `tests/.editorconfig` (`root = false`): `CA1707` (underscore test names), `RS0016`, `RS0017`, `RS0036`, `RS0037` (no public-API tracking), `CA2007` and `CA1515` (xUnit needs public test classes; xUnit1030 forbids `ConfigureAwait(false)` in tests) are off; `GenerateDocumentationFile` stays `true` (IDE0005 needs it) with `CS1591` off. Test classes are `public sealed`, test names use underscores, and tests `await` without `ConfigureAwait`. `Aw.<Pkg>.Testing` code (fakes, builders, contract bases) gets the same policy.
 - One top-level type per file, named after it (`MA0048`): builders go in `A.cs`, not `Builders.cs`.
 
 ## Lanes

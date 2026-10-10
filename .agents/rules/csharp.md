@@ -11,6 +11,11 @@ globs:
   - "nuget.config"
   - "BannedSymbols.txt"
   - "deps.yaml"
+  - "schemas/deps.schema.json"
+  - "**/.editorconfig"
+  - "CodeMetricsConfig.txt"
+  - "**/PublicAPI.*.txt"
+  - "**/packages.lock.json"
 paths:
   - "src/**"
   - "**/*.cs"
@@ -22,6 +27,11 @@ paths:
   - "nuget.config"
   - "BannedSymbols.txt"
   - "deps.yaml"
+  - "schemas/deps.schema.json"
+  - "**/.editorconfig"
+  - "CodeMetricsConfig.txt"
+  - "**/PublicAPI.*.txt"
+  - "**/packages.lock.json"
 alwaysApply: false
 ---
 
@@ -58,7 +68,7 @@ A package under ~1,500 lines may use two projects, `Core` and `App`, with the sa
 
 ## Dependency graph (§4b.1a, §4e)
 
-- Tiers: 0 `Aw.Kernel` (+ `Data`, `Telemetry`, `Testing`) and `Redaction` · 1 `Judge`, `Bridge` · 2 `Scorer`, `Evidence`, `BugFix` · 3 `Sindri`. A package depends only on lower tiers; same-tier or upward calls go through a CLI or HTTP contract.
+- Tiers (`deps.yaml` is the tier table of record): 0 `Aw.Kernel` (+ `Data`, `Telemetry`, `Testing`) and `Redaction` · 1 `Judge`, `Bridge`, `Packets`, `Readiness` · 2 `Scorer`, `Evidence`, `BugFix` · 3 `Sindri`. A package depends only on lower tiers; same-tier or upward calls go through a CLI or HTTP contract.
 - Every edge is declared in `deps.yaml` (schema `schemas/deps.schema.json`) with its kind (`project`, `cli`, `db`, `file`). Adding an edge is a reviewed change to `deps.yaml`. Check: `node scripts/check-deps.mjs`, which compares the declared edges with the project references and with the cli, db and file edges it scans in the source (gap — active once the deps-graph PR #92 merges).
 - Fan-out: ≤ 4 in-repo project references and ≤ 6 third-party packages per project (analyzers and test packages excluded; every `Host` exempt). Over the limit needs a recorded reason. Check: `scripts/check-deps.mjs` for the project-reference count (once #92 merges); the third-party count is a gap — R1b.
 
@@ -77,7 +87,7 @@ A package under ~1,500 lines may use two projects, `Core` and `App`, with the sa
 - Generic types take ≤ 3 type parameters and are constrained (`where TId : struct, IEquatable<TId>`).
 - Nullable is on everywhere (`Nullable=enable` + `TreatWarningsAsErrors`). A `!` needs a `// why:` comment. Check: compiler for nullability; `Aw.Analyzers` for the comment (gap — R1b).
 - `required` members and primary constructors preferred; records immutable by default.
-- Classes are `internal sealed` by default (`CA1852`, `CA1515`). Only what crosses an assembly is public: the `Add…()` methods, request and response records, port interfaces and errors in `Core`. Every non-test project keeps `PublicAPI.Shipped.txt`/`PublicAPI.Unshipped.txt`, and every public member has a `///` summary. Tests reach internals through `InternalsVisibleTo` for `Aw.<Pkg>.Tests` and `Aw.<Pkg>.Testing`, set in each project file. Check: `RS0016`/`RS0017` (PublicApiAnalyzers), `CS1591`.
+- Classes are `internal sealed` by default (`CA1852`, `CA1515`). Only what crosses an assembly is public: the `Add…()` methods, request and response records, port interfaces and errors in `Core`. Every non-test project keeps `PublicAPI.Shipped.txt`/`PublicAPI.Unshipped.txt`: both start with `#nullable enable` (`RS0037`), and every symbol line carries nullability annotations (`RS0036`), e.g. `static Aw.Demo.Core.DemoCoreServiceCollectionExtensions.AddDemoCore(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!`. A record lists its compiler-generated members too (`<Clone>$`, `Deconstruct`, `Equals`, `GetHashCode`, `ToString`, `==`/`!=`, each `get`/`init`); take the lines from the `RS0016` code fix rather than writing them by hand. Every public member has a `///` summary. Tests reach internals through `InternalsVisibleTo`: `Core`, `Features` and `Infrastructure` declare it for `Aw.<Pkg>.Tests` and `Aw.<Pkg>.Testing`; `Host` for `Aw.<Pkg>.Tests` only. Check: `RS0016`/`RS0017`/`RS0036`/`RS0037` (PublicApiAnalyzers), `CS1591`.
 
 ## JSON (§4b.3, §4c)
 
@@ -101,7 +111,8 @@ A package under ~1,500 lines may use two projects, `Core` and `App`, with the sa
 - **One owner per rule:** where analyzer packs overlap (for example `CA2007` vs `MA0004`), `.editorconfig` names the owner and disables the other. Every rule agents must obey has an explicit severity — never `suggestion`.
 - **Ratchet:** existing violations live in the `#### Ratchet baseline ####` block at the end of the root `.editorconfig` (one section per file, lowering only the named rule), which may only shrink. It replaces the spec's `baseline.globalconfig`: a global config can't lower a rule that `.editorconfig` sets (editorconfig wins), and global-config sections need absolute paths. The growth check is a gap — R1b.
 - **Size limits:** file ≤ 300 lines (gap — `Aw.Analyzers`); method ≤ 40 lines (`MA0051`, `MA0051.maximum_lines_per_method = 40` in `.editorconfig`); cyclomatic complexity ≤ 10 (`CA1502`, error in `.editorconfig`, limit `CA1502: 10` in `CodeMetricsConfig.txt`); parameters ≤ 5 (gap — `Aw.Analyzers`).
-- **Test projects** (`*.Tests`, `*.Testing`): `CA2007` and `CA1515` are off (set in `Directory.Build.props`/`.editorconfig` by the .NET solution PR #89). xUnit needs public test classes, and its xUnit1030 rule forbids `ConfigureAwait(false)` in tests. Everywhere else `await` uses `.ConfigureAwait(false)` (`CA2007` owns it; `MA0004` is off).
+- **Test projects:** Test projects (`*.Tests`, `*.Testing`) get their own policy, set by #89 in `tests/.editorconfig` (`root = false`): `CA1707` (underscore test names), `RS0016`, `RS0017`, `RS0036`, `RS0037` (no public-API tracking), `CA2007` and `CA1515` (xUnit needs public test classes; xUnit1030 forbids `ConfigureAwait(false)` in tests) are off; `GenerateDocumentationFile` stays `true` (IDE0005 needs it) with `CS1591` off.
+- **`ConfigureAwait`:** `CA2007` owns it (`MA0004` is off) and, per #89, applies to libraries (`dotnet_code_quality.CA2007.output_kind = DynamicallyLinkedLibrary`). Library code writes `.ConfigureAwait(false)` on every `await`, every `await using` (`await using (x.ConfigureAwait(false)) { … }`, including `CreateAsyncScope()`) and every `await foreach`. Host templates use the same forms so code moved into a library stays compliant.
 - **No TODO comments** (`MA0026`): finish the work or open a work item.
 - **File name matches the type** (`MA0048`): one top-level type per file.
 - Fix a warning; don't suppress it. A `#pragma warning disable` or `[SuppressMessage]` needs a `Justification` and is reviewed like an override.
@@ -124,5 +135,5 @@ The C# schemas carry the distribution and multiplayer seams from their first com
 
 - **New package:** `/new-package` (spec: `docs/csharp/scaffolds/new-package.md`).
 - **New use case:** `/new-slice` (spec: `docs/csharp/scaffolds/new-slice.md`).
-- **By hand**, the slice recipe is: (1) the failing test plus request, response and service stubs (the service throws), committed red but compiling; (2) the real assertion; (3) the service, with pure decisions on the domain type in `Core`; (4) the endpoint or CLI command in `Host`; (5) the explicit registration and the JSON context entries.
+- **By hand**, the slice recipe is: (1) the failing test plus request and response records and a parameterless service stub whose `Handle` throws `NotSupportedException`, committed red but compiling; (2) the real assertion and the ports the service needs; (3) the service, with pure decisions on the domain type in `Core`; (4) the endpoint or CLI command in `Host`; (5) the explicit registration and the JSON context entries.
 - Test rules: `.agents/rules/csharp-testing.md`.
