@@ -4,11 +4,14 @@
 // Replaced by Aw.Readiness in R1b, which becomes the score of record (decision R4). Node >= 20 stdlib only.
 //
 // Usage: node scripts/readiness-baseline.mjs [--root DIR] [--repo OWNER/NAME] [--no-remote] [--date YYYY-MM-DD] [--out FILE]
-// Exit codes: 0 report written, 2 tool error (bad flag or root). Remote reads are `gh api` GETs only.
+// Exit codes: 0 report written, 2 tool error (bad flag, value, root or output path). Remote reads are `gh api`
+// GETs only (READINESS_GH_TIMEOUT_MS bounds each call, default 30000).
+// Not the §8 contract: no --json, no delta since the last run, and exit 0/1 does not mean "target level holds".
 
 import { execFileSync } from 'node:child_process';
 import { existsSync, readFileSync, readdirSync, statSync, writeFileSync } from 'node:fs';
 import { join, relative } from 'node:path';
+import { pathToFileURL } from 'node:url';
 
 const APPS = [
   'mcp-bridge', 'scorer', 'judge', 'sindri',
@@ -21,7 +24,7 @@ const PILLARS = [
 ];
 
 const SOURCES = {
-  'F-pillar': 'https://docs.factory.com/agent-readiness/overview — criteria examples per pillar',
+  'F-pillar': 'https://docs.factory.com/agent-readiness/overview — criteria examples per pillar (no level given; placed by this script)',
   'F-level': 'https://docs.factory.com/agent-readiness/overview — example criteria per level',
   'S5': 'docs/superpowers/specs/2026-10-09-agent-readiness-design.md §5 — level inferred (Factory gives none)',
   'inferred': 'no published level; placed by this script (see "How it scores")',
@@ -42,7 +45,11 @@ function parseArgs(argv) {
   const opts = { root: null, repo: null, remote: true, date: null, out: null };
   for (let i = 0; i < argv.length; i++) {
     const a = argv[i];
-    const val = () => { const v = argv[++i]; if (v === undefined) die(`${a} needs a value`); return v; };
+    const val = () => {
+      const v = argv[++i];
+      if (v === undefined || v.startsWith('--')) die(`${a} needs a value`);
+      return v;
+    };
     if (a === '--root') opts.root = val();
     else if (a === '--repo') opts.repo = val();
     else if (a === '--no-remote') opts.remote = false;
@@ -57,18 +64,21 @@ function parseArgs(argv) {
 
 const SKIP_DIRS = new Set(['node_modules', '.git', 'dist', 'coverage', '.claude', 'bin', 'obj']);
 
+// Sorted, so evidence that names the first match is the same on every filesystem. Symlinks are skipped: a broken
+// link would throw and a link back up the tree would recurse forever.
 function walk(dir, out = []) {
   if (!existsSync(dir)) return out;
-  for (const name of readdirSync(dir)) {
-    if (SKIP_DIRS.has(name)) continue;
-    const p = join(dir, name);
-    const st = statSync(p);
-    if (st.isDirectory()) walk(p, out); else out.push(p);
+  const entries = readdirSync(dir, { withFileTypes: true }).sort((a, b) => (a.name < b.name ? -1 : a.name > b.name ? 1 : 0));
+  for (const e of entries) {
+    if (SKIP_DIRS.has(e.name) || e.isSymbolicLink()) continue;
+    const p = join(dir, e.name);
+    if (e.isDirectory()) walk(p, out); else if (e.isFile()) out.push(p);
   }
   return out;
 }
 
-const read = (p) => (existsSync(p) ? readFileSync(p, 'utf8') : '');
+const isFile = (p) => { try { return statSync(p).isFile(); } catch { return false; } };
+const read = (p) => (isFile(p) ? readFileSync(p, 'utf8') : '');
 const firstExisting = (root, paths) => paths.find((p) => existsSync(join(root, p))) ?? null;
 
 function pkg(appDir) {
@@ -78,26 +88,43 @@ const allDeps = (p) => Object.keys({ ...(p?.dependencies ?? {}), ...(p?.devDepen
 
 // ---------- remote (gh api GET only) ----------
 
-function ghGet(path) {
+const GH_TIMEOUT_MS = Number(process.env.READINESS_GH_TIMEOUT_MS) || 30000;
+const ghCache = new Map();
+
+// `gh api <path>`, optionally with a `--jq` projection; never a method override or a field flag.
+function ghGet(path, jq) {
+  const key = `${path}\0${jq ?? ''}`;
+  if (ghCache.has(key)) return ghCache.get(key);
+  let r;
   try {
-    const out = execFileSync('gh', ['api', path], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] });
-    return { ok: true, json: JSON.parse(out) };
+    const args = jq ? ['api', path, '--jq', jq] : ['api', path];
+    const out = execFileSync('gh', args, {
+      encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'], maxBuffer: 16 * 1024 * 1024, timeout: GH_TIMEOUT_MS,
+    });
+    r = { ok: true, json: JSON.parse(out) };
   } catch (e) {
-    const msg = String(e.stderr || e.message || e).trim().split('\n').pop();
-    return { ok: false, error: msg };
+    const timedOut = e.code === 'ETIMEDOUT' || e.signal === 'SIGTERM';
+    const msg = timedOut ? `gh timed out after ${GH_TIMEOUT_MS} ms` : String(e.stderr || e.message || e).trim().split('\n').pop();
+    r = { ok: false, error: msg };
   }
+  ghCache.set(key, r);
+  return r;
 }
+
+const repoInfo = (ctx) => ghGet(`repos/${ctx.repo}`);
 
 // ---------- criteria ----------
 // repo criteria: check(ctx) -> { state, evidence }
-// app criteria:  app(ctx, appDir, rel) -> { pass: boolean, why: string }
+// app criteria:  app(ctx, appDir, rel) -> { pass: boolean, why } or { state: 'n/a', why } where it doesn't apply
 
 function workflows(root) {
   const dir = join(root, '.github', 'workflows');
-  return existsSync(dir) ? readdirSync(dir).filter((f) => /\.ya?ml$/.test(f)).map((f) => join(dir, f)) : [];
+  if (!existsSync(dir)) return [];
+  return readdirSync(dir).filter((f) => /\.ya?ml$/.test(f)).sort().map((f) => join(dir, f)).filter(isFile);
 }
 
 const remoteUnknown = (ctx) => ({ state: 'unknown', evidence: ctx.remoteWhy });
+const PRODUCT_SIGNALS = 'docs/readiness/product-signals.md';
 
 const CRITERIA = [
   // Style & Validation
@@ -112,7 +139,7 @@ const CRITERIA = [
     if (!ts) return { pass: false, why: 'no tsconfig.json' };
     return /"strict"\s*:\s*true/.test(ts) ? { pass: true, why: 'tsconfig strict: true' } : { pass: false, why: 'tsconfig without strict: true' };
   } },
-  { id: 'SV-3', pillar: 0, level: 1, src: 'S5', name: 'Code formatter', app: (ctx, d) => {
+  { id: 'SV-3', pillar: 0, level: 1, src: 'F-pillar', name: 'Code formatter', app: (ctx, d) => {
     const names = ['biome.json', 'biome.jsonc', '.prettierrc', '.prettierrc.json', 'prettier.config.js', 'dprint.json'];
     const f = firstExisting(d, names) ?? firstExisting(ctx.root, names);
     const dep = allDeps(pkg(d)).find((x) => /^(prettier|@biomejs\/biome|dprint)$/.test(x));
@@ -125,14 +152,20 @@ const CRITERIA = [
   } },
 
   // Build System
-  { id: 'BS-1', pillar: 1, level: 2, src: 'S5', name: 'Build command documented', check: (ctx) => {
-    for (const f of ['AGENTS.md', 'README.md']) {
-      const m = read(join(ctx.root, f)).match(/\b(npm run build|dotnet build|make build|cargo build|go build)\b/);
-      if (m) return { state: 'pass', evidence: `${f} names \`${m[1]}\`` };
-    }
-    return { state: 'fail', evidence: 'no build command line in AGENTS.md or README.md (packages list their npm scripts; no single build command)' };
+  // Per app: a build script that AGENTS.md documents. The missing single root build command (spec §5 "one-line root
+  // commands") is a separate gap, named in the evidence of every app row, not scored here.
+  { id: 'BS-1', pillar: 1, level: 2, src: 'S5', name: 'Build command documented', app: (ctx, d, rel) => {
+    const p = pkg(d);
+    if (!p) return { state: 'n/a', why: 'no package.json; nothing to build (loaded as source)' };
+    if (!p.scripts?.build) return { pass: false, why: 'no build script' };
+    const agents = read(join(ctx.root, 'AGENTS.md'));
+    const documented = agents.split('\n').some((l) => l.includes(rel))
+      && /\bnpm run build\b|each has [^\n]*\bbuild\b/.test(agents);
+    return documented ? { pass: true, why: 'scripts.build documented in AGENTS.md; no single root build command' }
+      : { pass: false, why: 'scripts.build not documented in AGENTS.md' };
   } },
   { id: 'BS-2', pillar: 1, level: 2, src: 'S5', name: 'Dependencies pinned (lockfile)', app: (ctx, d) => {
+    if (!pkg(d)) return { state: 'n/a', why: 'no package.json, no dependencies to pin' };
     const f = firstExisting(d, ['package-lock.json', 'pnpm-lock.yaml', 'yarn.lock', 'packages.lock.json']);
     return f ? { pass: true, why: f } : { pass: false, why: 'no lockfile' };
   } },
@@ -142,10 +175,13 @@ const CRITERIA = [
   } },
   { id: 'BS-4', pillar: 1, level: 4, src: 'F-level', name: 'Regular deployment frequency (≥3 releases in 90 days)', check: (ctx) => {
     if (!ctx.remote) return remoteUnknown(ctx);
-    const r = ghGet(`repos/${ctx.repo}/releases?per_page=100`);
+    const r = ghGet(`repos/${ctx.repo}/releases?per_page=100`, '[.[] | {published_at, draft}]');
     if (!r.ok) return { state: 'unknown', evidence: `gh api releases: ${r.error}` };
     const cutoff = ctx.now - 90 * 864e5;
-    const n = r.json.filter((x) => Date.parse(x.published_at ?? x.created_at) >= cutoff).length;
+    const n = r.json.filter((x) => {
+      const t = Date.parse(x.published_at);
+      return !x.draft && t >= cutoff && t <= ctx.now;
+    }).length;
     return { state: n >= 3 ? 'pass' : 'fail', evidence: `${n} releases published in the 90 days before ${ctx.date}` };
   } },
 
@@ -196,7 +232,7 @@ const CRITERIA = [
     const f = firstExisting(ctx.root, ['.devcontainer/devcontainer.json', '.devcontainer.json']);
     return f ? { state: 'pass', evidence: f } : { state: 'fail', evidence: 'no .devcontainer' };
   } },
-  { id: 'DE-2', pillar: 4, level: 2, src: 'S5', name: 'Environment template', check: (ctx) => {
+  { id: 'DE-2', pillar: 4, level: 2, src: 'F-pillar', name: 'Environment template', check: (ctx) => {
     const f = firstExisting(ctx.root, ['.env.example', '.env.template', '.env.sample']);
     return f ? { state: 'pass', evidence: f } : { state: 'fail', evidence: 'no .env.example' };
   } },
@@ -210,7 +246,9 @@ const CRITERIA = [
     const dep = allDeps(pkg(d)).find((x) => /^(pino|winston|bunyan)$/.test(x));
     if (dep) return { pass: true, why: dep };
     const src = walk(join(d, 'src')).find((p) => /Fastify\(\s*\{[^}]*logger:\s*(true|\{)/.test(read(p)));
-    return src ? { pass: true, why: `Fastify pino logger (${relative(d, src)})` } : { pass: false, why: 'no structured logger' };
+    if (src) return { pass: true, why: `Fastify pino logger (${relative(d, src)})` };
+    const jsonl = walk(join(d, 'src')).some((p) => /\.jsonl\b/.test(read(p)));
+    return { pass: false, why: jsonl ? 'ad-hoc JSONL writers, no shared logger with levels and ids (spec §3)' : 'no structured logger' };
   } },
   { id: 'OBS-2', pillar: 5, level: 3, src: 'F-level', name: 'Distributed tracing', app: (ctx, d) => {
     const dep = allDeps(pkg(d)).find((x) => x.startsWith('@opentelemetry/'));
@@ -224,22 +262,26 @@ const CRITERIA = [
   // Security
   { id: 'SEC-1', pillar: 6, level: 2, src: 'F-level', name: 'Branch protection on the default branch', check: (ctx) => {
     if (!ctx.remote) return remoteUnknown(ctx);
-    const prot = ghGet(`repos/${ctx.repo}/branches/main/protection`);
-    if (prot.ok) return { state: 'pass', evidence: 'classic branch protection on main' };
-    const rules = ghGet(`repos/${ctx.repo}/rules/branches/main`);
-    if (rules.ok && rules.json.length) return { state: 'pass', evidence: `${rules.json.length} ruleset rules apply to main` };
-    if (rules.ok && /not protected/i.test(prot.error)) return { state: 'fail', evidence: `protection: "${prot.error}"; rulesets on main: none` };
+    const info = repoInfo(ctx);
+    if (!info.ok) return { state: 'unknown', evidence: `gh api: ${info.error}` };
+    const b = info.json.default_branch;
+    if (typeof b !== 'string' || !/^[\w./-]+$/.test(b)) return { state: 'unknown', evidence: 'default_branch not readable' };
+    const prot = ghGet(`repos/${ctx.repo}/branches/${b}/protection`);
+    if (prot.ok) return { state: 'pass', evidence: `classic branch protection on ${b}` };
+    const rules = ghGet(`repos/${ctx.repo}/rules/branches/${b}`);
+    if (rules.ok && rules.json.length) return { state: 'pass', evidence: `${rules.json.length} ruleset rules apply to ${b}` };
+    if (rules.ok && /not protected/i.test(prot.error)) return { state: 'fail', evidence: `${b}: protection "${prot.error}"; rulesets: none` };
     return { state: 'unknown', evidence: `protection: ${prot.error}; rules: ${rules.ok ? 'none' : rules.error}` };
   } },
   { id: 'SEC-2', pillar: 6, level: 3, src: 'F-level', name: 'Secret scanning', check: (ctx) => {
     if (!ctx.remote) return remoteUnknown(ctx);
-    const r = ghGet(`repos/${ctx.repo}`);
+    const r = repoInfo(ctx);
     const s = r.ok ? r.json.security_and_analysis?.secret_scanning?.status : null;
     if (!s) return { state: 'unknown', evidence: r.ok ? 'security_and_analysis not readable' : `gh api: ${r.error}` };
     const pp = r.json.security_and_analysis?.secret_scanning_push_protection?.status ?? 'n/a';
     return { state: s === 'enabled' ? 'pass' : 'fail', evidence: `secret_scanning ${s}, push_protection ${pp}` };
   } },
-  { id: 'SEC-3', pillar: 6, level: 3, src: 'F-pillar', name: 'CODEOWNERS', check: (ctx) => {
+  { id: 'SEC-3', pillar: 6, level: 3, src: 'S5', name: 'CODEOWNERS', check: (ctx) => {
     const f = firstExisting(ctx.root, ['CODEOWNERS', '.github/CODEOWNERS', 'docs/CODEOWNERS']);
     return f ? { state: 'pass', evidence: f } : { state: 'fail', evidence: 'no CODEOWNERS' };
   } },
@@ -261,14 +303,19 @@ const CRITERIA = [
     const f = firstExisting(ctx.root, ['.github/pull_request_template.md', '.github/PULL_REQUEST_TEMPLATE.md', '.github/PULL_REQUEST_TEMPLATE', 'pull_request_template.md', 'docs/pull_request_template.md']);
     return f ? { state: 'pass', evidence: f } : { state: 'fail', evidence: 'no PR template' };
   } },
+  { id: 'TD-4', pillar: 7, level: 5, src: 'S5', name: 'Complex requirements decomposed into parallel execution (pillar placement inferred)', check: () => ({
+    state: 'unknown', evidence: 'no observable artifact yet: packets and stacked epics (factory addendum F0–F3) are not built' }) },
 
-  // Product & Experimentation
-  { id: 'PE-1', pillar: 8, level: 4, src: 'S5', name: 'Product analytics instrumentation', check: () => ({
-    state: 'unknown', evidence: "Factory's check is not public; scorer telemetry exists but is not framed as product analytics (spec §3)" }) },
-  { id: 'PE-2', pillar: 8, level: 4, src: 'S5', name: 'Experiment infrastructure', check: () => ({
-    state: 'unknown', evidence: "Factory's check is not public; judge shadow mode and evolve offline comparisons exist (spec §3)" }) },
+  // Product & Experimentation. PE-1/PE-2 pass on the W9 page (spec §5, §6) that frames the existing telemetry and
+  // experiment machinery for this pillar.
+  { id: 'PE-1', pillar: 8, level: 4, src: 'S5', name: 'Product analytics instrumentation', check: (ctx) => (
+    existsSync(join(ctx.root, PRODUCT_SIGNALS)) ? { state: 'pass', evidence: PRODUCT_SIGNALS }
+      : { state: 'fail', evidence: `scorer telemetry exists but is not framed as product analytics (spec §3); no W9 page (${PRODUCT_SIGNALS})` }) },
+  { id: 'PE-2', pillar: 8, level: 4, src: 'S5', name: 'Experiment infrastructure', check: (ctx) => (
+    existsSync(join(ctx.root, PRODUCT_SIGNALS)) ? { state: 'pass', evidence: PRODUCT_SIGNALS }
+      : { state: 'fail', evidence: `judge shadow mode and evolve offline comparisons exist but are not listed as experiments (spec §3); no W9 page (${PRODUCT_SIGNALS})` }) },
   { id: 'PE-3', pillar: 8, level: 5, src: 'F-level', name: 'Self-improving systems (pillar placement inferred)', check: () => ({
-    state: 'unknown', evidence: "Factory's check is not public; sindri evolve exists (Plan 5)" }) },
+    state: 'unknown', evidence: 'no observable artifact to check yet: sindri evolve exists (Plan 5); the readiness module proposing its own fixes (§8) does not' }) },
 ];
 
 // ---------- scoring ----------
@@ -282,30 +329,39 @@ function evaluate(ctx) {
     }
     const per = APPS.map((rel) => {
       const d = join(ctx.root, rel);
-      if (!existsSync(d)) return { rel, pass: false, why: 'absent' };
-      return { rel, ...c.app(ctx, d, rel) };
+      if (!existsSync(d)) return { rel, state: 'fail', why: 'absent' };
+      const r = c.app(ctx, d, rel);
+      return { rel, state: r.state ?? (r.pass ? 'pass' : 'fail'), why: r.why };
     });
-    const k = per.filter((p) => p.pass).length;
-    const fails = per.filter((p) => !p.pass).map((p) => `${p.rel} (${p.why})`);
-    const passes = per.filter((p) => p.pass).map((p) => `${p.rel} (${p.why})`);
-    const evidence = [passes.length && `pass: ${passes.join(', ')}`, fails.length && `fail: ${fails.join(', ')}`].filter(Boolean).join('; ');
-    return { ...c, scope: 'app', state: k === APPS.length ? 'pass' : 'fail', evidence,
-      credit: k / APPS.length, score: `${k} / ${APPS.length}` };
+    const list = (s) => per.filter((p) => p.state === s).map((p) => `${p.rel} (${p.why})`);
+    const [passes, fails, nas] = [list('pass'), list('fail'), list('n/a')];
+    const evidence = [passes.length && `pass: ${passes.join(', ')}`, fails.length && `fail: ${fails.join(', ')}`,
+      nas.length && `n/a: ${nas.join(', ')}`].filter(Boolean).join('; ');
+    // An app where the criterion doesn't apply leaves the denominator; all n/a makes the criterion n/a.
+    const n = APPS.length - nas.length;
+    if (!n) return { ...c, scope: 'app', state: 'n/a', evidence, credit: 0, score: '—' };
+    return { ...c, scope: 'app', state: passes.length === n ? 'pass' : 'fail', evidence,
+      credit: passes.length / n, score: `${passes.length} / ${n}` };
   });
 }
 
 // Levels: every repo starts at L1. Walking the levels that have scored criteria in order, each one that reaches
 // 80% (fractional credit for app criteria; n/a and unknown are not scored) unlocks the level above it; the first
-// one below 80% stops the walk. Levels with nothing scored are skipped, so they neither unlock nor block.
-function levelOf(rows) {
+// one below 80% stops the walk. Levels with nothing scored neither unlock nor block; those the walk passed on its
+// way to a scored level are marked `skipped`, so a level reached without evidence of its own reads as inferred.
+// With nothing scored at all there is no level (null, rendered —).
+export function levelOf(rows) {
   const byLevel = [1, 2, 3, 4, 5].map((L) => {
     const scored = rows.filter((r) => r.level === L && (r.state === 'pass' || r.state === 'fail'));
     const credit = scored.reduce((s, r) => s + r.credit, 0);
-    return { L, n: scored.length, credit, ratio: scored.length ? credit / scored.length : null };
+    return { L, n: scored.length, credit, ratio: scored.length ? credit / scored.length : null, skipped: false };
   });
+  if (byLevel.every((b) => b.ratio === null)) return { level: null, byLevel };
   let level = 1;
+  const empty = [];
   for (const b of byLevel) {
-    if (b.ratio === null) continue;
+    if (b.ratio === null) { empty.push(b); continue; }
+    for (const e of empty.splice(0)) e.skipped = true;
     if (b.ratio < 0.8) break;
     level = Math.min(5, b.L + 1);
   }
@@ -314,7 +370,9 @@ function levelOf(rows) {
 
 // ---------- render ----------
 
-const pct = (b) => (b.ratio === null ? '—' : `${b.credit.toFixed(2).replace(/\.00$/, '')} / ${b.n} (${Math.round(b.ratio * 100)}%)`);
+const pct = (b) => (b.skipped ? 'skip' : b.ratio === null ? '—'
+  : `${b.credit.toFixed(2).replace(/\.00$/, '')} / ${b.n} (${Math.round(b.ratio * 100)}%)`);
+const lvl = (l) => l.level ?? '—';
 const esc = (s) => String(s).replace(/\|/g, '\\|');
 
 function render(ctx, rows) {
@@ -328,28 +386,35 @@ function render(ctx, rows) {
 
   const overall = levelOf(rows);
   out.push('## Summary', '');
-  out.push(`**Overall level: ${overall.level}** (of 5). Cells show passed credit / scored criteria at that level.`, '');
+  out.push(`**Overall level: ${lvl(overall)}** (of 5). Cells show passed credit / scored criteria at that level; \`skip\``,
+    'is a level with nothing scored that the walk passed; `—` is nothing scored and not reached.', '');
   out.push('| Pillar | L1 | L2 | L3 | L4 | L5 | Level |', '|---|---|---|---|---|---|---|');
   PILLARS.forEach((name, i) => {
     const l = levelOf(rows.filter((r) => r.pillar === i));
-    out.push(`| ${name} | ${l.byLevel.map(pct).join(' | ')} | ${l.level} |`);
+    out.push(`| ${name} | ${l.byLevel.map(pct).join(' | ')} | ${lvl(l)} |`);
   });
-  out.push(`| **Overall** | ${overall.byLevel.map(pct).join(' | ')} | **${overall.level}** |`, '');
+  out.push(`| **Overall** | ${overall.byLevel.map(pct).join(' | ')} | **${lvl(overall)}** |`, '');
   const counts = ['pass', 'fail', 'n/a', 'unknown'].map((s) => `${s} ${rows.filter((r) => r.state === s).length}`).join(' · ');
   out.push(`Criteria: ${rows.length} (${counts}).`, '');
 
   out.push('## How it scores', '',
-    '- **Criteria** are the examples Factory publishes per pillar and per level (Sources). Where Factory gives no level,',
-    '  the level comes from spec §5 (`S5`) or is placed by this script (`inferred`).',
-    '- **States:** `pass`, `fail`, `n/a` (with a reason) or `unknown` (Factory\'s check is not public, or the data was',
-    '  not readable). `unknown` and `n/a` are not scored.',
+    '- **Criteria** are the examples Factory publishes per level (`F-level`) or per pillar (`F-pillar`, level placed',
+    '  by this script), the criterion families of spec §5 (`S5`, level from §5), or criteria placed by this script',
+    '  (`inferred`). See Sources.',
+    '- **States:** `pass`, `fail`, `n/a` (with a reason) or `unknown` (no observable artifact to check yet, or the',
+    '  data was not readable). `unknown` and `n/a` are not scored.',
     `- **Scope:** \`repo\` criteria are checked once. \`app\` criteria are checked in each of the ${APPS.length} apps (spec §2) and`,
-    '  score as a fraction; they count as fractional credit and show `pass` only when every app passes.',
+    '  score as a fraction of the apps they apply to (an app where a criterion does not apply is `n/a` and leaves the',
+    '  denominator). They count as fractional credit and show `pass` only when every applicable app passes.',
     '- **Levels:** every repo starts at Level 1. Level N+1 unlocks when at least 80% of the scored Level N criteria',
     '  pass and every lower level with scored criteria also reached 80%. Levels with nothing scored (in a pillar, or',
-    '  overall) are skipped: they neither unlock nor block.',
-    '- **Remote data** comes from read-only `gh api` GETs (branch protection, rulesets, secret scanning, labels,',
-    '  releases).', '');
+    '  overall) neither unlock nor block; the summary shows the ones the walk passed as `skip`. A pillar with nothing',
+    '  scored has no level (`—`).',
+    '- **Remote data** comes from read-only `gh api` GETs (default branch, branch protection, rulesets, secret',
+    '  scanning, labels, releases).',
+    '- **Not the §8 contract:** this R0 script has no `--json`, no delta since the last run, and its exit codes mean',
+    '  "report written" (0) or "tool error" (2), not "target level holds". `Aw.Readiness` (R1b) implements §8 and',
+    '  treats this file as its first previous run.', '');
 
   out.push('## Criteria by pillar', '');
   PILLARS.forEach((name, i) => {
@@ -377,17 +442,22 @@ function main() {
   }
   if (!existsSync(root) || !statSync(root).isDirectory()) die(`root is not a directory: ${root}`);
 
+  if (opts.repo && !REPO_RE.test(opts.repo)) die(`--repo must be OWNER/NAME, got ${opts.repo}`);
   let repo = opts.repo;
   if (!repo) {
     try {
       const url = execFileSync('git', ['-C', root, 'remote', 'get-url', 'origin'], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }).trim();
       repo = url.replace(/\.git$/, '').match(/[:/]([^/:]+\/[^/]+)$/)?.[1] ?? null;
     } catch { repo = null; }
+    if (repo && !REPO_RE.test(repo)) repo = null;
   }
   const remote = opts.remote && Boolean(repo);
-  const remoteWhy = !opts.remote ? 'not read (--no-remote)' : 'no origin remote; pass --repo';
+  const remoteWhy = !opts.remote ? 'not read (--no-remote)' : 'no usable origin remote; pass --repo';
   const date = opts.date ?? new Date().toISOString().slice(0, 10);
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) die(`--date must be YYYY-MM-DD, got ${date}`);
+  // The regex alone accepts 2026-13-45; round-trip through Date so an impossible date is a tool error, not NaN.
+  const real = /^\d{4}-\d{2}-\d{2}$/.test(date) && !Number.isNaN(Date.parse(`${date}T00:00:00Z`))
+    && new Date(`${date}T00:00:00Z`).toISOString().slice(0, 10) === date;
+  if (!real) die(`--date must be a real YYYY-MM-DD date, got ${date}`);
   const ctx = {
     root, repo, remote, remoteWhy, date,
     now: Date.parse(`${date}T23:59:59Z`),
@@ -395,7 +465,11 @@ function main() {
   };
 
   const md = render(ctx, evaluate(ctx));
-  if (opts.out) writeFileSync(opts.out, md); else process.stdout.write(md);
+  if (!opts.out) { process.stdout.write(md); return; }
+  try { writeFileSync(opts.out, md); } catch (e) { die(`cannot write ${opts.out}: ${e.message}`); }
 }
 
-main();
+const REPO_RE = /^[\w.-]+\/[\w.-]+$/;
+
+// Run only as a CLI; the tests import levelOf.
+if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) main();

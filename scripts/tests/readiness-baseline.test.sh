@@ -99,13 +99,15 @@ levels() { # levels '<rows json>'
 }
 
 test_level_walk() {
+  # JSON lives in single-quoted variables: bash 3.2 brace-expands {…} written inside a quoted $( ) argument.
   local p='{"level":1,"state":"pass","credit":1}' f='{"level":1,"state":"fail","credit":0}'
+  local frac='{"level":1,"state":"fail","credit":0.857}' p3='{"level":3,"state":"pass","credit":1}'
   [ "$(levels "[$p,$p,$p,$p,$f]")" = '{"level":2,"skipped":[]}' ] || fail "exactly 80% at L1 should unlock L2"
   [ "$(levels '[{"level":1,"state":"fail","credit":0.79}]')" = '{"level":1,"skipped":[]}' ] || fail "79% should block"
   # fractional app credit: 6/7 + a pass = 1.857 / 2 = 93%
-  [ "$(levels "[{\"level\":1,\"state\":\"fail\",\"credit\":0.857},$p]")" = '{"level":2,"skipped":[]}' ] || fail "fractional credit should pool"
+  [ "$(levels "[$frac,$p]")" = '{"level":2,"skipped":[]}' ] || fail "fractional credit should pool"
   # a skipped level in the middle is walked past and reported as skipped
-  [ "$(levels "[$p,{\"level\":3,\"state\":\"pass\",\"credit\":1}]")" = '{"level":4,"skipped":[2]}' ] || fail "empty L2 should be skipped and marked"
+  [ "$(levels "[$p,$p3]")" = '{"level":4,"skipped":[2]}' ] || fail "empty L2 should be skipped and marked"
   # n/a and unknown are not scored; nothing scored -> no level
   [ "$(levels '[{"level":1,"state":"unknown","credit":0},{"level":2,"state":"n/a","credit":0}]')" = '{"level":null,"skipped":[]}' ] \
     || fail "nothing scored should give level null"
@@ -168,7 +170,7 @@ make_gh_stub() {
   cat > "$d/gh" <<'STUB'
 #!/usr/bin/env bash
 echo "$*" >> "$GH_LOG"
-[ -n "${GH_STUB_SLEEP:-}" ] && sleep "$GH_STUB_SLEEP"
+[ -n "${GH_STUB_SLEEP:-}" ] && exec sleep "$GH_STUB_SLEEP"
 case "$2" in
   repos/o/r) echo '{"default_branch":"trunk","security_and_analysis":{"secret_scanning":{"status":"enabled"},"secret_scanning_push_protection":{"status":"disabled"}}}' ;;
   repos/o/r/branches/trunk/protection) echo 'gh: Branch not protected (HTTP 404)' >&2; exit 1 ;;
