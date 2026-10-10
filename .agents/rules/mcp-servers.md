@@ -19,7 +19,6 @@ Skill text refers to MCP tools as `mcp: <server>/<tool>`; map that to your host'
 | Server | Purpose | Use instead of |
 |--------|---------|----------------|
 | `serena` | LSP symbol navigation — find definitions, usages, call hierarchy | File search + read for code structure questions |
-| `agentic-bridge` | Multi-agent messaging — send context, assign tasks, report status | Manual context passing between agents |
 | `context7` | Up-to-date library/framework documentation | Guessing API shapes from training data |
 | `playwright` | Browser automation — click, fill, screenshot, DOM inspection | Manual browser testing |
 | `github` | GitHub API — PRs, issues, releases, comments | `gh` CLI for read operations |
