@@ -1,0 +1,20 @@
+schemaVersion: 1
+id: engineering.csharp.explicit-di-registration
+kind: engineering
+section: "4b.4"
+text: "Each project owns one explicit Add…() registration method; only Host calls them and builds the container (its Compose); no assembly scanning."
+why: "Explicit registration is AOT-safe and readable."
+select:
+  languages: [csharp]
+  paths: ["src/**"]
+checks:
+  - type: review
+    id: "registration shape"
+    status: active
+    note: "checked in review; ARCH-DI-001 covers the service-locator half"
+gap: open
+gapNote: "No check proves a project has exactly one Add…() method or that Host alone calls them."
+source:
+  type: adr
+  ref: "docs/superpowers/specs/2026-10-09-agent-readiness-design.md#4b4"
+status: active

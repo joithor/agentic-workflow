@@ -25,10 +25,31 @@
     <PackageVersion Include="xunit.v3.extensibility.core" Version="[4.0.1]" />
     <!-- FakeTimeProvider for test projects (spec §4b.4, §4b.5). 10.10.0 published 2026-09-09. -->
     <PackageVersion Include="Microsoft.Extensions.TimeProvider.Testing" Version="[10.10.0]" />
+    <!-- Dependency injection for the package scaffolds (spec §4b.4, docs/csharp/scaffolds/new-package.md "package pins"):
+         Abstractions in Core, Features and Infrastructure (their Add…() methods), the container in each Host and in
+         the DI validation tests. 10.0.12 published 2026-09-08. -->
+    <PackageVersion Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="[10.0.12]" />
+    <PackageVersion Include="Microsoft.Extensions.DependencyInjection" Version="[10.0.12]" />
+    <!-- An http Host's test project (spec §4b.5): brings the ASP.NET framework the scaffolded loopback and id route-binding
+         tests run the real host on, and WebApplicationFactory for hand-written endpoint tests. 10.0.12 published 2026-09-08. -->
+    <PackageVersion Include="Microsoft.AspNetCore.Mvc.Testing" Version="[10.0.12]" />
     <!-- Data (Aw.Kernel.Data, decision R8). Microsoft.Data.Sqlite 10.0.12 published 2026-09-08; it bundles e_sqlite3,
          which ships as a libe_sqlite3 file beside each AOT tool (docs/csharp/kernel-data.md). -->
     <PackageVersion Include="Microsoft.Data.Sqlite" Version="[10.0.12]" />
     <!-- Typed ids (decision R9, docs/csharp/typed-ids.md). Vogen 8.0.7 published 2026-07-21. -->
     <PackageVersion Include="Vogen" Version="[8.0.7]" />
+    <!-- Aw.Analyzers (spec §4b.6) and its tests: the compiler API the in-repo rules are written against. 5.0.0
+         (published 2025-11-18) is the Roslyn of the .NET 10.0.100 SDK: an analyzer must not reference a newer
+         compiler than the one that loads it, and every pinned SDK from 10.0.100 on carries 5.0 or later. -->
+    <PackageVersion Include="Microsoft.CodeAnalysis.CSharp" Version="[5.0.0]" />
+    <!-- Telemetry (Aw.Kernel.Telemetry's one external dependency, spec §4b.1): spans, metrics and the processor and
+         exporter seams. OpenTelemetry 1.19.1 published 2026-09-21. It brings Microsoft.Extensions.Logging,
+         .Configuration (with the EnvironmentVariables provider), .Options and .DependencyInjection transitively (pinned
+         by the lock files; nothing may use IConfiguration). No exporter package: exporting is off by default and an
+         exporter is an adapter the host opts into (docs/csharp/telemetry.md). -->
+    <PackageVersion Include="OpenTelemetry" Version="[1.19.1]" />
+    <!-- Architecture tests (spec §4b.5: ArchUnitNET, maintained; NetArchTest's last release was 2023). The core
+         package only: the xUnit adapter pulls System.Net.Http 4.3.4. 0.13.4 published 2026-08-20. -->
+    <PackageVersion Include="TngTech.ArchUnitNET" Version="[0.13.4]" />
   </ItemGroup>
 </Project>

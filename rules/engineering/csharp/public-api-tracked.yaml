@@ -1,0 +1,45 @@
+schemaVersion: 1
+id: engineering.csharp.public-api-tracked
+kind: engineering
+section: "4b.3"
+text: "Every library's public surface is listed, with nullability, in PublicAPI.Shipped.txt and PublicAPI.Unshipped.txt, and every public member has a /// summary."
+why: "A change to a package's contract shows in the diff."
+select:
+  languages: [csharp]
+  paths: ["src/**"]
+checks:
+  - type: analyzer
+    id: "RS0016"
+    status: active
+    via: baseline
+    package: Microsoft.CodeAnalysis.PublicApiAnalyzers
+    category: ApiDesign
+  - type: analyzer
+    id: "RS0017"
+    status: active
+    via: baseline
+    package: Microsoft.CodeAnalysis.PublicApiAnalyzers
+    category: ApiDesign
+  - type: analyzer
+    id: "RS0036"
+    status: active
+    via: baseline
+    package: Microsoft.CodeAnalysis.PublicApiAnalyzers
+    category: ApiDesign
+  - type: analyzer
+    id: "RS0037"
+    status: active
+    via: baseline
+    package: Microsoft.CodeAnalysis.PublicApiAnalyzers
+    category: ApiDesign
+  - type: compiler
+    id: "CS1591"
+    status: active
+  - type: build-setting
+    id: "<GenerateDocumentationFile>true</GenerateDocumentationFile>"
+    status: active
+gap: closed
+source:
+  type: adr
+  ref: "docs/superpowers/specs/2026-10-09-agent-readiness-design.md#4b3"
+status: active

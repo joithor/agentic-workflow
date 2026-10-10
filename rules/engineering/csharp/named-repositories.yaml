@@ -1,0 +1,20 @@
+schemaVersion: 1
+id: engineering.csharp.named-repositories
+kind: engineering
+section: "4b.2"
+text: "One repository interface per aggregate, named by intent; IReadRepository<TEntity, TId> covers Get and Exists; no generic IRepository<T> or IQueryable."
+why: "Named queries keep the SQL in one place and the intent visible."
+select:
+  languages: [csharp]
+  paths: ["src/**/*.Core/**", "src/**/*.Infrastructure/**"]
+checks:
+  - type: review
+    id: "repository shape"
+    status: active
+    note: "checked in review"
+gap: open
+gapNote: "No analyzer or architecture rule bans IQueryable or a generic repository yet."
+source:
+  type: adr
+  ref: "docs/superpowers/specs/2026-10-09-agent-readiness-design.md#4b2"
+status: active

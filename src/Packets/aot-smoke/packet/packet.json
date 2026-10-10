@@ -1,0 +1,16 @@
+{
+  "$schema": "../../../../schemas/packets/packet.schema.json",
+  "schemaVersion": 1,
+  "id": "aot-smoke",
+  "repo": "example/repo",
+  "baseSha": "__BASE_SHA__",
+  "status": "draft",
+  "hash": null,
+  "links": {
+    "decisions": "decisions.json",
+    "outOfScope": "out-of-scope.json",
+    "tasks": "tasks.json",
+    "design": ["design/design.md"],
+    "plans": []
+  }
+}

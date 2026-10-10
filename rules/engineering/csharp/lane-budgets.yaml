@@ -1,0 +1,31 @@
+schemaVersion: 1
+id: engineering.csharp.lane-budgets
+kind: engineering
+section: "4b.5"
+text: "A package's unit lane runs under 10 s and its integration lane under 60 s; each test's own time is capped by the same budget."
+why: "Fast lanes keep the inner loop and required CI quick."
+select:
+  languages: [csharp]
+  paths: ["tests/**"]
+checks:
+  - type: lane-cap
+    id: "LANE-TEST-001"
+    status: pending
+    pendingPr: 133
+    note: "per-test cap from the CTRF report"
+  - type: script
+    id: "LANE-PKG-001"
+    ref: scripts/ci/lane-budgets.mjs
+    status: active
+    note: "per-package wall clock of each lane, summed by deps.yaml package, at or over its budget; CI's .NET job runs it"
+  - type: script
+    id: "LANE-PKG-002"
+    ref: scripts/ci/lane-budgets.mjs
+    status: active
+    note: "a timed lane run that fails"
+gap: pending
+gapNote: "The per-package budget is checked (LANE-PKG-001/002); the per-test cap waits on LANE-TEST-001."
+source:
+  type: adr
+  ref: "docs/superpowers/specs/2026-10-09-agent-readiness-design.md#4b5"
+status: active

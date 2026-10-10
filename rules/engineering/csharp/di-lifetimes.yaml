@@ -1,0 +1,20 @@
+schemaVersion: 1
+id: engineering.csharp.di-lifetimes
+kind: engineering
+section: "4b.4"
+text: "Services and repositories are scoped per request or command, pure domain services are singletons, TimeProvider is a singleton."
+why: "Wrong lifetimes leak state across requests."
+select:
+  languages: [csharp]
+  paths: ["src/**"]
+checks:
+  - type: review
+    id: "lifetimes"
+    status: active
+    note: "reviewed; each host's DI test will catch captive dependencies"
+gap: open
+gapNote: "No host exists yet; once each host's DI test exists (T6), ValidateScopes catches captive scoped-in-singleton dependencies. The lifetime choice itself is reviewed."
+source:
+  type: adr
+  ref: "docs/superpowers/specs/2026-10-09-agent-readiness-design.md#4b4"
+status: active

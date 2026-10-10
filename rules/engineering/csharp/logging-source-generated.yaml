@@ -1,0 +1,25 @@
+schemaVersion: 1
+id: engineering.csharp.logging-source-generated
+kind: engineering
+section: "4b.1"
+text: "Log through [LoggerMessage] source-generated methods with structured values in fields, never secrets; Aw.Redaction scrubs every log line, span and metric before it leaves the process."
+why: "Source-generated logging is AOT-safe and allocation-free, and one scrubber on the way out means no call site has to remember to redact."
+select:
+  languages: [csharp]
+  paths: ["src/**"]
+checks:
+  - type: analyzer
+    id: "CA1848"
+    status: active
+    via: baseline
+    package: Microsoft.CodeAnalysis.NetAnalyzers
+    category: Performance
+  - type: test
+    id: "LogScrubbingTests"
+    ref: tests/Aw.Kernel.Telemetry.Tests/LogScrubbingTests.cs
+    status: active
+gap: closed
+source:
+  type: import
+  ref: ".agents/rules/csharp.md"
+status: active

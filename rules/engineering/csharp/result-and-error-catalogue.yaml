@@ -1,0 +1,20 @@
+schemaVersion: 1
+id: engineering.csharp.result-and-error-catalogue
+kind: engineering
+section: "4b.3"
+text: "Expected failures are Error records with a stable catalogue code (AW-<AREA>-NNN, SND-…) returned in Result<T>; exceptions are for bugs only."
+why: "Stable codes make failures searchable and explainable; Result keeps control flow explicit."
+select:
+  languages: [csharp]
+  paths: ["src/**"]
+checks:
+  - type: test
+    id: "ErrorCatalogueTests"
+    ref: tests/Aw.Kernel.Tests/ErrorCatalogueTests.cs
+    status: active
+gap: partial
+gapNote: "ErrorCatalogue.Validate checks format and uniqueness per catalogue; nothing yet checks codes are unique across packages."
+source:
+  type: adr
+  ref: "docs/superpowers/specs/2026-10-09-agent-readiness-design.md#4b3"
+status: active

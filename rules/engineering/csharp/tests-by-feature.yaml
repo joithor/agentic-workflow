@@ -1,0 +1,20 @@
+schemaVersion: 1
+id: engineering.csharp.tests-by-feature
+kind: engineering
+section: "4b.5"
+text: "Organize tests by feature (StartItemTests), not by layer."
+why: "A feature's behavior is read in one place."
+select:
+  languages: [csharp]
+  paths: ["tests/**"]
+checks:
+  - type: review
+    id: "test layout"
+    status: active
+    note: "checked in review"
+gap: open
+gapNote: "No check reads test naming."
+source:
+  type: adr
+  ref: "docs/superpowers/specs/2026-10-09-agent-readiness-design.md#4b5"
+status: active

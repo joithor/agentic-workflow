@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- Aw.Kernel.Telemetry.Testing: test support for Aw.Kernel.Telemetry (spec §4b.5): the in-memory log sink, the
+       ILogSink contract every sink passes, and collecting exporters for spans and metrics. Test code only. -->
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <RootNamespace>Aw.Kernel.Telemetry.Testing</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="xunit.v3.extensibility.core" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../../src/Aw.Kernel.Telemetry/Aw.Kernel.Telemetry.csproj" />
+    <ProjectReference Include="../Aw.Kernel.Testing/Aw.Kernel.Testing.csproj" />
+  </ItemGroup>
+</Project>

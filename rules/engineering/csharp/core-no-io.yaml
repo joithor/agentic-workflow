@@ -1,0 +1,19 @@
+schemaVersion: 1
+id: engineering.csharp.core-no-io
+kind: engineering
+section: "4b.1"
+text: "Core has no I/O: no System.IO, System.Net, Microsoft.Data, Process, Console, environment, wall clock or Guid.NewGuid; use TimeProvider, IIdGenerator and ports."
+why: "Pure Core logic is testable with fakes and portable across adapters."
+select:
+  languages: [csharp]
+  paths: ["src/**/*.Core/**"]
+checks:
+  - type: banned-symbols
+    id: "RS0030"
+    entries: ["T:System.Console", "N:System.IO", "N:System.Net", "N:Microsoft.Data", "T:System.Diagnostics.Process", "T:System.Environment", "P:System.DateTime.Now", "P:System.DateTime.UtcNow", "P:System.DateTime.Today", "P:System.DateTimeOffset.Now", "P:System.DateTimeOffset.UtcNow", "P:System.TimeProvider.System", "T:System.Diagnostics.Stopwatch", "M:System.Guid.NewGuid", "M:System.Guid.CreateVersion7"]
+    status: active
+gap: closed
+source:
+  type: adr
+  ref: "docs/superpowers/specs/2026-10-09-agent-readiness-design.md#4b1"
+status: active

@@ -1,0 +1,19 @@
+schemaVersion: 1
+id: engineering.csharp.no-dumping-grounds
+kind: engineering
+section: "4b.1a"
+text: "No Common, Shared, Utils or Helpers project or namespace; shared code goes to Aw.Kernel only if domain-free, otherwise it waits for the second case."
+why: "Dumping grounds collect unrelated code and become everyone's dependency."
+select:
+  languages: [csharp]
+  paths: ["src/**"]
+checks:
+  - type: archunit
+    id: "ARCH-NAME-001"
+    status: pending
+    pendingPr: 131
+gap: pending
+source:
+  type: adr
+  ref: "docs/superpowers/specs/2026-10-09-agent-readiness-design.md#4b1a"
+status: active

@@ -1,0 +1,22 @@
+schemaVersion: 1
+id: engineering.csharp.analyzers-edge-less
+kind: engineering
+section: "4b.1a"
+text: "Reference Aw.Analyzers only as an analyzer (OutputItemType=Analyzer, ReferenceOutputAssembly=false); a Directory.Build file holds no runtime ProjectReference."
+why: "Build-time rules must never become runtime dependencies."
+select:
+  languages: [csharp]
+  paths: ["Directory.Build.*", "**/*.csproj"]
+checks:
+  - type: check-deps
+    id: "DEPS-PROJ-005"
+    status: active
+  - type: check-deps
+    id: "DEPS-PROJ-006"
+    status: active
+gap: partial
+gapNote: "DEPS-PROJ-006 checks OutputItemType=Analyzer only; ReferenceOutputAssembly=false (without it the analyzer is also a compile and runtime reference) is reviewed."
+source:
+  type: adr
+  ref: "docs/superpowers/specs/2026-10-09-agent-readiness-design.md#4b1a"
+status: active

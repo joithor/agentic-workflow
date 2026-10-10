@@ -30,8 +30,8 @@
 #           (never a Host, Infrastructure, Features or App); anything else fails DEPS-PROJ-007 (§4b.1a
 #           "only through their Core contracts"). The reference sits in Features (App in the small shape)
 #           or Host: Core and Infrastructure use tier-0 packages only (DEPS-PROJ-008, §4b.1). Which tier-0
-#           package a Core may use (Aw.Kernel, not Aw.Kernel.Data) is left to BannedSymbols and the
-#           ArchUnitNET tests.
+#           package Core and Features may use (Aw.Kernel only, not Aw.Kernel.Data, Telemetry or Redaction)
+#           is ARCH-DIR-005 in tests/Aw.Architecture.Tests.
 #           Test code is every project under tests/, plus any project named *.Tests or *.Testing (also
 #           with a further suffix, such as *.Tests.Integration). Names with a .Testing segment are
 #           test-support (a package's fakes, builders, contract bases; KernelTesting is the shared one,
@@ -151,14 +151,18 @@ packages:
     projectPrefix: Aw.Packets
     ts: null
     src: src/Packets
-    note: "packet schema, validate, freeze (§4c); built at the end of R1b, before any port"
+    bins: [aw-packets]
+    namespace: packets
+    note: "packet schema, validate, freeze (§4c); a standalone NativeAOT CLI before the switch, writing only under packets/"
   - id: Readiness
     kind: package
     tier: 1
     projectPrefix: Aw.Readiness
     ts: null
     src: src/Readiness
-    note: "the readiness check of record (decision R4, §8)"
+    bins: [aw-readiness]
+    namespace: readiness
+    note: "the readiness check of record (decision R4, §8); a standalone NativeAOT CLI before the switch, writing only under readiness/ (§4c)"
 
   # ---- tier 2 ----
   - id: Scorer
@@ -314,17 +318,17 @@ edges:
     kind: project
     status: current
     note: "fakes and builders"
-  # ---- planned: the C# project references the ports create (§4b.1, §4b.1a) ----
   - from: KernelTelemetry
     to: Kernel
     kind: project
-    status: planned
+    status: current
     note: "kernel family"
   - from: KernelTelemetry
     to: Redaction
     kind: project
-    status: planned
+    status: current
     note: "the scrubbing processor on logs and OTel exports"
+  # ---- planned: the C# project references the ports create (§4b.1, §4b.1a) ----
   - from: KernelTesting
     to: KernelData
     kind: project
@@ -368,12 +372,12 @@ edges:
   - from: Packets
     to: Kernel
     kind: project
-    status: planned
+    status: current
     note: "Result, JSON"
   - from: Readiness
     to: Kernel
     kind: project
-    status: planned
+    status: current
     note: "Result, JSON"
   - from: Scorer
     to: Kernel
@@ -427,23 +431,20 @@ edges:
     note: "replaces sindri's copy of the scrubbing patterns"
   - from: Sindri
     to: Packets
-    kind: project
+    kind: cli
     status: planned
-    note: "every port and factory run is a packet"
+    note: "every port and factory run is a packet; sindri runs aw-packets, since the use cases live in App and a project edge reaches only Core (spec §4c)"
   - from: Sindri
     to: Readiness
-    kind: project
+    kind: cli
     status: planned
-    note: "sindri readiness check (§8)"
+    note: "sindri readiness check (§8): runs aw-readiness check --json (schema v1, tests/Aw.Readiness.Tests/Golden/report.json); a project edge could reach only Aw.Readiness.Core and would re-implement the adapters"
   - from: Sindri
     to: Scorer
     kind: cli
     status: planned
     note: "scorer's labeler moves into scorer's Core; sindri calls it through scorer's CLI instead of copying it (§4b.1a)"
 
-exceptions:
-  - rule: DEPS-FANOUT-001
-    subject: Sindri
-    reason: "§4e B10: sindri declares project edges to 6 packages (limits.packageFanOut is 4) until its modules split; revisit when the Sindri port splits by module. Per-project fan-out (DEPS-FANOUT-002/003) is measured separately once its projects exist"
-    recorded: 2026-10-10
-    expires: 2027-04-01
+# No exceptions: Sindri's project fan-out is 4 (Kernel, KernelData, KernelTelemetry, Redaction) now that it reaches
+# Packets and Readiness through their CLIs (spec §4c, §8).
+exceptions: []

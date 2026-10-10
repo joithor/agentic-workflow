@@ -1,6 +1,6 @@
 # AGENTS.md — Agentic Workflow
 
-> Agentic Workflow — provider-agnostic agent workflow toolkit for Claude Code, Codex, and Cursor: 50 native skills + 3 fetched external packs (impeccable, emil-design-eng, taste-skill), config archive, repo bootstrapper, MCP bridge for multi-agent communication, and token-efficiency tools (rtk + headroom).
+> Agentic Workflow — provider-agnostic agent workflow toolkit for Claude Code, Codex, and Cursor: 52 native skills + 3 fetched external packs (impeccable, emil-design-eng, taste-skill), config archive, repo bootstrapper, MCP bridge for multi-agent communication, and token-efficiency tools (rtk + headroom).
 
 Domain-specific rules live in `.agents/rules/` — one file per rule, the only copy. `.claude/rules` and `.cursor/rules/*.mdc` are symlinks to it (auto-loaded by Claude Code and Cursor), and `CLAUDE.md` is a symlink to this file. Codex reads the Rules Index at the bottom of this file. After adding or removing a rule, run `scripts/sync-rules.sh`.
 
@@ -40,6 +40,7 @@ Domain-specific rules live in `.agents/rules/` — one file per rule, the only c
 | Database | `Microsoft.Data.Sqlite` with its bundled `e_sqlite3` (shipped beside each AOT tool), new C# schemas, WAL mode |
 | MCP | Official MCP C# SDK |
 | JSON | System.Text.Json, one source-generated context per package |
+| Logging | `Aw.Kernel.Telemetry`: JSON lines on stderr (`AW_LOG_LEVEL`), OpenTelemetry spans and metrics, exporting off by default, scrubbed by `Aw.Redaction` |
 | Analyzers | NetAnalyzers, Meziantou, Roslynator, BannedApiAnalyzers, PublicApiAnalyzers (one owner per rule, `.editorconfig`) |
 | Test | xUnit v3 on Microsoft.Testing.Platform (decided, R7), lanes `unit` / `integration` / `heavy` |
 | Packages | Central Package Management (`Directory.Packages.props`), locked restore, nuget.org only (`nuget.config`) |
@@ -48,7 +49,7 @@ Domain-specific rules live in `.agents/rules/` — one file per rule, the only c
 
 ```
 agentic-workflow/
-├── skills/        # 49 provider-neutral skills (linked into each provider's skills dir)
+├── skills/        # 51 provider-neutral skills (linked into each provider's skills dir)
 ├── bootstrap/     # /bootstrap skill — repo documentation generator
 ├── config/        # Settings, MCP config, statusline, safety hooks, sindri-nudge SessionStart hook (+ hooks/adapters/ per provider)
 ├── providers/     # Per-provider installers (claude, codex, cursor)
@@ -58,13 +59,14 @@ agentic-workflow/
 ├── sindri/        # Sindri core: profile, ledger, lock, scrubber, plan-file tracker, observe, doctor (CLI)
 ├── mods/          # Claude Code mods (in-process function hooks): aw-live /live pane. Claude-only
 ├── planning/      # Project documentation
-├── src/           # C# build (in progress): Aw.Kernel, Aw.Analyzers, then one package per port — Core · Features · Infrastructure · Host
+├── src/           # C# build (in progress): Aw.Kernel (+ .Data, .Telemetry), Redaction, Aw.Analyzers, then one package per port — Core · Features · Infrastructure · Host
 ├── tests/         # C# tests: Aw.<Pkg>.Tests (by feature), Aw.<Pkg>.Testing (fakes, builders, contract bases), Aw.Architecture.Tests
 ├── global.json · AgenticWorkflow.slnx · Directory.Build.props · Directory.Build.targets · Directory.Packages.props · nuget.config · .editorconfig · CodeMetricsConfig.txt · BannedSymbols.txt
 ├── .agents/rules/ # Glob-scoped domain rules (.claude/rules and .cursor/rules link here)
 ├── .serena/       # Serena LSP project configuration
 ├── scripts/       # Utility scripts (sync-rules.sh, check-deps.mjs, serena-docker, probe.sh, install-scorer.sh)
-├── schemas/       # JSON Schemas for repo config (deps.schema.json)
+├── schemas/       # JSON Schemas for repo config (deps.schema.json, rule-record.schema.json)
+├── rules/         # Rule records (factory addendum §17.6): rules/engineering/csharp/*.yaml, one per §4b rule
 ├── deps.yaml      # Declared package graph: tiers and every project/cli/db/file edge (spec §4b.1a)
 └── setup.sh       # One-command setup for every installed provider
 ```
@@ -97,8 +99,14 @@ dotnet test --solution AgenticWorkflow.slnx --filter-not-trait "Lane=heavy" --ig
 node scripts/ci/lane-budgets.mjs        # After a Release build: each package's unit/integration lane wall clock vs its budget (LANE-PKG-001)
 dotnet format --verify-no-changes       # Style and analyzer fixes are applied (CI and pre-commit)
 scripts/dotnet-verify-packages.sh       # Lock files present and unchanged, signature-verified locked restore, dotnet nuget verify --all
-# Add a package: /new-package (spec docs/csharp/scaffolds/new-package.md)
-# Add a use case: /new-slice (spec docs/csharp/scaffolds/new-slice.md) — test, request and response, service, endpoint, registration
+# Add a package: /new-package (node scripts/scaffold/new-package.mjs; contract docs/csharp/scaffolds/new-package.md)
+# Add a use case: /new-slice (node scripts/scaffold/new-slice.mjs; contract docs/csharp/scaffolds/new-slice.md) — test, request and response, service, endpoint, registration
+dotnet run --project src/Readiness/Aw.Readiness.App -- check [--json] [--root DIR] [--no-remote]   # Readiness level vs readiness.yaml's target: exit 0 holds, 1 not, 2 tool error (docs/readiness/README.md)
+bash src/Readiness/aot-smoke/run.sh     # Publish aw-readiness NativeAOT and smoke-test the native binary (CI's AOT step)
+bash scripts/scaffold/e2e.sh            # The generators end to end: scaffold, build and test a small cli and a full http package in throwaway worktrees (~1 min)
+dotnet run --project src/Packets/Aw.Packets.App -- validate <packet-dir> [--repo <dir>] [--json]   # aw-packets: the packet checks (docs/csharp/packets.md); exit 0 pass, 1 fail, 2 tool error; writes nothing
+dotnet run --project src/Packets/Aw.Packets.App -- freeze <packet-dir> [--repo <dir>] [--json]     # Record the packet's canonical hash under $AW_STATE_DIR/packets/<owner>/<name>/<id>/frozen/
+bash src/Packets/aot-smoke/run.sh        # aw-packets under NativeAOT: publish (on a copy), run against a temp repo, compare with expected.txt
 
 # Rules (edit .agents/rules/, then regenerate)
 scripts/sync-rules.sh                   # Link .claude/rules, .cursor/rules, CLAUDE.md; refresh Rules Index
@@ -108,12 +116,17 @@ scripts/sync-rules.sh --check           # Exit 1 if links or the Rules Index are
 node scripts/check-deps.mjs             # Schema, tiers, cycles, fan-out, undeclared cli/db/file edges; exit 1 on drift
 node scripts/check-deps.mjs --mermaid [--base-file F]   # Also print the Mermaid graph and the edge list (added/removed vs F)
 
+# Rule records (rules/engineering/csharp/*.yaml + schemas/rule-record.schema.json; docs/csharp/rule-records.md)
+node scripts/check-rules.mjs [--json]   # Every §4b rule has a record; every active check exists; pending ones wait on their PR
+
 # Bash tests (CI: scripts/ci/bash-tests.sh runs every tracked suite, independent ones in parallel and
 # its SERIAL list, the timing-sensitive ones, one at a time afterwards; --serial prints them with reasons)
 bash scripts/ci/bash-tests.sh
 bash providers/tests/install.test.sh
 bash scripts/tests/sync-rules.test.sh
 bash scripts/tests/check-deps.test.sh
+bash scripts/tests/check-rules.test.sh
+bash scripts/tests/scaffold.test.sh
 bash scripts/tests/probe.test.sh
 bash scripts/tests/find-duplicate-skills.test.sh
 bash scripts/tests/dotnet-verify-packages.test.sh
@@ -173,6 +186,7 @@ Before merging any PR:
 6. No `/* v8 ignore */` annotations in source files (prohibited — write the test instead)
 7. No `any` types outside of Fastify integration boundaries (`node scripts/ci/no-any.mjs`; existing ones are held in `scripts/ci/no-any-baseline.json`, which only shrinks)
 8. C# build (active once `src/` has projects): `dotnet build -warnaserror` reports zero warnings; `dotnet test --solution AgenticWorkflow.slnx --filter-trait "Lane=unit" --ignore-exit-code 8` and `dotnet test --solution AgenticWorkflow.slnx --filter-trait "Lane=integration" --ignore-exit-code 8` pass within their budgets (`node scripts/ci/lane-budgets.mjs`, LANE-PKG-001; the heavy lane runs nightly); `dotnet format --verify-no-changes` is clean, `scripts/dotnet-verify-packages.sh` passes, and the ratchet baseline block at the end of `.editorconfig` didn't grow
+9. `node scripts/check-rules.mjs` passes (every §4b rule has a rule record, and every check a record calls active exists in the tree)
 
 ## C# slice recipe
 

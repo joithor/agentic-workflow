@@ -38,12 +38,20 @@ expect "a hook change runs bash tests only" \
   "$(printf 'config/hooks/send-gate.sh\n')" \
   "$(printf 'bash=true\ndotnet=false\npackages=[]')"
 
+expect "a schema or rule record change runs the bash tests (their checks' suites copy them; deps.yaml is below)" \
+  "$(printf 'schemas/rule-record.schema.json\nrules/engineering/csharp/method-length.yaml\n')" \
+  "$(printf 'bash=true\ndotnet=false\npackages=[]')"
+
 expect "a C# change runs dotnet only" \
   "$(printf 'src/Aw.Kernel/Result.cs\nDirectory.Packages.props\n')" \
   "$(printf 'bash=false\ndotnet=true\npackages=[]')"
 
 expect "an AOT smoke script or its expected output runs dotnet" \
   "$(printf 'src/Aw.Kernel.AotSmoke/run.sh\nsrc/Aw.Kernel.Data.AotSmoke/expected.txt\n')" \
+  "$(printf 'bash=false\ndotnet=true\npackages=[]')"
+
+expect "a packet JSON Schema change runs dotnet (its golden test compares it with the records)" \
+  "$(printf 'schemas/packets/tasks.schema.json\n')" \
   "$(printf 'bash=false\ndotnet=true\npackages=[]')"
 
 expect "a .NET tool manifest change runs dotnet" \
@@ -56,6 +64,10 @@ expect "deps.yaml or its parser runs dotnet (lane budgets group test projects by
 
 expect "Lanes.cs also runs the bash tests (ci-lane-budgets checks lane-budgets.mjs against its numbers)" \
   "$(printf 'tests/Aw.Kernel.Testing/Lanes.cs\n')" \
+  "$(printf 'bash=true\ndotnet=true\npackages=[]')"
+
+expect "the NuGet supply-chain script runs dotnet (where CI runs it) and bash (its test)" \
+  "$(printf 'scripts/dotnet-verify-packages.sh\n')" \
   "$(printf 'bash=true\ndotnet=true\npackages=[]')"
 
 expect "spike projects never run dotnet" \

@@ -1,0 +1,10 @@
+# readiness.yaml — what `aw-readiness check` checks in this repo and the level it must hold (spec §4e B11, §8).
+# Format (a flat YAML subset, read without a library): `key: value` lines, one `targets:` list of
+# `- ring: N` / `level: N` items, and # comments. docs/readiness/README.md describes each key.
+version: 1
+repo: agentic-workflow      # the name the run history is kept under ($AW_STATE_DIR/readiness/runs/<repo>/)
+ring: 0                     # this toolkit and the owner's own repos
+scope: csharp-template      # the C# build surface: src/, tests/, root build files, the CI .NET job, AGENTS.md and rules
+targets:
+  - ring: 0
+    level: 4                # Level 4 before the factory (F0); Level 5 with F3 (addendum §17.16)

@@ -1,0 +1,20 @@
+schemaVersion: 1
+id: engineering.csharp.scaffolds-produce-compliant-code
+kind: engineering
+section: "4b.9"
+text: "The /new-package and /new-slice scaffolds produce code that passes every check with one red test."
+why: "The template proves itself on every new package."
+select:
+  languages: [csharp]
+  paths: ["src/**", "tests/**"]
+checks:
+  - type: review
+    id: "scaffold output"
+    status: active
+    note: "the generators and their CI test are stage T6"
+gap: open
+gapNote: "The scaffolds are still specs (docs/csharp/scaffolds); stage T6 builds them with a generator CI test."
+source:
+  type: adr
+  ref: "docs/superpowers/specs/2026-10-09-agent-readiness-design.md#4b9"
+status: active

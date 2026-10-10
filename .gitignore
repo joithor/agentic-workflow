@@ -35,3 +35,5 @@ sindri/.sandbox-probe-*/
 
 # .NET build output (Directory.Build.props UseArtifactsOutput)
 artifacts/
+# dotnet test --report-* and --results-directory output (local runs and CI)
+TestResults/

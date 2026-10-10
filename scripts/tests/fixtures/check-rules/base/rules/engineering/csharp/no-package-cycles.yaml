@@ -1,0 +1,18 @@
+schemaVersion: 1
+id: engineering.csharp.no-package-cycles
+kind: engineering
+section: "4b.1a"
+text: "The declared package graph has no cycles across any edge kind."
+why: "A cycle makes every package in it change together."
+select:
+  languages: [csharp]
+  paths: ["deps.yaml"]
+checks:
+  - type: check-deps
+    id: DEPS-CYCLE-001
+    status: active
+gap: closed
+source:
+  type: adr
+  ref: "docs/spec.md#4b1a"
+status: active

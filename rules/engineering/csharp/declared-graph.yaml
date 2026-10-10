@@ -1,0 +1,59 @@
+schemaVersion: 1
+id: engineering.csharp.declared-graph
+kind: engineering
+section: "4b.1a"
+text: "Declare every package edge in deps.yaml with its kind (project, cli, db, file); an undeclared or stale edge fails."
+why: "The graph is reviewed as a declaration, so a new dependency is a decision, not an accident."
+select:
+  languages: [csharp]
+  paths: ["deps.yaml", "src/**", "tests/**", "config/**"]
+checks:
+  - type: check-deps
+    id: "DEPS-SCHEMA-001"
+    status: active
+  - type: check-deps
+    id: "DEPS-YAML-001"
+    status: active
+  - type: check-deps
+    id: "DEPS-EDGE-001"
+    status: active
+  - type: check-deps
+    id: "DEPS-STALE-001"
+    status: active
+  - type: check-deps
+    id: "DEPS-STALE-002"
+    status: active
+  - type: check-deps
+    id: "DEPS-REF-001"
+    status: active
+  - type: check-deps
+    id: "DEPS-REF-002"
+    status: active
+  - type: check-deps
+    id: "DEPS-REF-003"
+    status: active
+  - type: check-deps
+    id: "DEPS-REF-004"
+    status: active
+  - type: check-deps
+    id: "DEPS-REF-005"
+    status: active
+  - type: check-deps
+    id: "DEPS-PROJ-002"
+    status: active
+  - type: check-deps
+    id: "DEPS-KIND-001"
+    status: active
+  - type: check-deps
+    id: "DEPS-KIND-002"
+    status: active
+  - type: ci
+    id: "deps.yaml matches the code"
+    ref: .github/workflows/ci.yml
+    status: active
+gap: partial
+gapNote: "The cli/db/file scan is a heuristic (deps.yaml lists what it can't see: npx indirection, JSON and plist config)."
+source:
+  type: adr
+  ref: "docs/superpowers/specs/2026-10-09-agent-readiness-design.md#4b1a"
+status: active

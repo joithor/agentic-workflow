@@ -1,0 +1,24 @@
+schemaVersion: 1
+id: engineering.csharp.slice-isolation
+kind: engineering
+section: "4b.1"
+text: "A slice never references another slice's types; a second use moves the shared logic into Core."
+why: "Independent slices can change without rippling; duplication is the signal to generalize, not coupling."
+select:
+  languages: [csharp]
+  paths: ["src/**/*.Features/**", "src/**/*.App/**"]
+checks:
+  - type: archunit
+    id: "ARCH-SLICE-001"
+    status: pending
+    pendingPr: 131
+  - type: analyzer
+    id: "AW1003"
+    status: pending
+    pendingPr: 132
+    note: "fast feedback; the ArchUnitNET rule is authoritative"
+gap: pending
+source:
+  type: adr
+  ref: "docs/superpowers/specs/2026-10-09-agent-readiness-design.md#4b1"
+status: active

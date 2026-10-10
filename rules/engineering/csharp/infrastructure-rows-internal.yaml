@@ -1,0 +1,19 @@
+schemaVersion: 1
+id: engineering.csharp.infrastructure-rows-internal
+kind: engineering
+section: "4b.1"
+text: "Infrastructure row and DTO types are internal; repositories return Core types."
+why: "Storage shapes never leak, so an adapter or schema can change without touching callers."
+select:
+  languages: [csharp]
+  paths: ["src/**/*.Infrastructure/**", "src/**/*.App/**"]
+checks:
+  - type: archunit
+    id: "ARCH-INFRA-001"
+    status: pending
+    pendingPr: 131
+gap: pending
+source:
+  type: adr
+  ref: "docs/superpowers/specs/2026-10-09-agent-readiness-design.md#4b1"
+status: active

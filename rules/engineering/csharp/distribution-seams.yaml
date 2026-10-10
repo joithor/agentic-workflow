@@ -1,0 +1,24 @@
+schemaVersion: 1
+id: engineering.csharp.distribution-seams
+kind: engineering
+section: "4b.6"
+text: "The C# schemas carry the distribution and multiplayer seams from the first commit: idempotent events, the event envelope (actor, tenant, ring, causation, correlation, trace), the transactional outbox, and the LedgerStore, Lease, Launcher, Scheduler, Bus and Secrets ports with contract suites."
+why: "The C# build starts with fresh state at the switch, so the seams can only be added cheaply now."
+select:
+  languages: [csharp]
+  paths: ["src/**"]
+checks:
+  - type: test
+    id: "EventEnvelopeTests"
+    ref: tests/Aw.Kernel.Tests/EventEnvelopeTests.cs
+    status: active
+  - type: test
+    id: "OutboxTests"
+    ref: tests/Aw.Kernel.Tests/OutboxTests.cs
+    status: active
+gap: partial
+gapNote: "The envelope and outbox exist in Aw.Kernel with tests; the LedgerStore, Lease, Launcher, Scheduler, Bus and Secrets ports are planned and declared per package until a second package needs one."
+source:
+  type: adr
+  ref: "docs/superpowers/specs/2026-10-09-agent-readiness-design.md#4b6"
+status: active
