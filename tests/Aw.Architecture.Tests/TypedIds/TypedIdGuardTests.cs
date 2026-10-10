@@ -1,6 +1,7 @@
-using Aw.Kernel.Tests.TypedIds.GuardFixtures;
+using Aw.Architecture.Tests.TypedIds.GuardFixtures;
+using Aw.Kernel;
 
-namespace Aw.Kernel.Tests.TypedIds;
+namespace Aw.Architecture.Tests.TypedIds;
 
 [Trait("Lane", "unit")]
 public sealed class TypedIdGuardTests

@@ -1,7 +1,7 @@
 using Aw.Kernel.Ids;
 using Vogen;
 
-namespace Aw.Kernel.Tests.TypedIds.GuardFixtures;
+namespace Aw.Architecture.Tests.TypedIds.GuardFixtures;
 
 /// <summary>Guard fixture: an id with no [JsonConverter] (it would write {}).</summary>
 [ValueObject<string>(comparison: ComparisonGeneration.Omit)]

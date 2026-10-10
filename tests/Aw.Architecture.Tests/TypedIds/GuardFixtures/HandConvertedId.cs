@@ -1,7 +1,7 @@
 using System.Text.Json.Serialization;
 using Vogen;
 
-namespace Aw.Kernel.Tests.TypedIds.GuardFixtures;
+namespace Aw.Architecture.Tests.TypedIds.GuardFixtures;
 
 /// <summary>Guard fixture: a hand-written converter in user code, but no ITypedId.</summary>
 [ValueObject<int>(comparison: ComparisonGeneration.Omit)]

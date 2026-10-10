@@ -1,7 +1,7 @@
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
-namespace Aw.Kernel.Tests.TypedIds.GuardFixtures;
+namespace Aw.Architecture.Tests.TypedIds.GuardFixtures;
 
 /// <summary>Guard fixture: the converter <see cref="HandConvertedId"/> names.</summary>
 internal sealed class HandIdConverter : JsonConverter<HandConvertedId>

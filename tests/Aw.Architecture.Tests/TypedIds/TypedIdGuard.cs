@@ -3,13 +3,13 @@ using System.Reflection;
 using System.Text.Json.Serialization;
 using Aw.Kernel.Ids;
 
-namespace Aw.Kernel.Tests.TypedIds;
+namespace Aw.Architecture.Tests.TypedIds;
 
 /// <summary>
 /// The typed-id guard (docs/csharp/typed-ids.md). It catches the silent failures: an id that writes {} and
 /// reads back uninitialized, and a typed-id property that a missing JSON property would leave uninitialized. It
-/// matches Vogen's attributes by name and never references Vogen, so it can scan any assembly. It lives here until
-/// Aw.Architecture.Tests exists (R1b), which runs it over every Aw.* assembly.
+/// matches Vogen's attributes by name and never references Vogen, so it can scan any assembly. ArchitectureTests runs
+/// it over every registered Aw.* assembly (Packages.cs): ARCH-ID-001 for the defaults, ARCH-ID-002 for the types.
 /// </summary>
 internal static class TypedIdGuard
 {
@@ -41,6 +41,11 @@ internal static class TypedIdGuard
                 .Where(r => !string.Equals(r.Got, r.Want, StringComparison.Ordinal))
                 .Select(r => $"{assembly.GetName().Name}: VogenDefaults {r.Key} is {r.Got ?? "missing"}, the recipe requires {r.Want}.")];
     }
+
+    /// <summary>Whether the assembly declares any Vogen value object (then it must carry the VogenDefaults block).</summary>
+    /// <param name="assembly">The assembly.</param>
+    /// <returns>True when at least one type carries a ValueObject attribute.</returns>
+    public static bool DeclaresIds(Assembly assembly) => assembly.GetTypes().Any(IsValueObject);
 
     /// <summary>
     /// Checks value objects (a [JsonConverter] in user code, <see cref="ITypedId{TSelf, TValue}"/>, no per-type

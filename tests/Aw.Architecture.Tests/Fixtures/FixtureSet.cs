@@ -1,0 +1,31 @@
+using ArchUnitNET.Domain;
+using ArchUnitNET.Loader;
+using Aw.Architecture.Tests.Rules;
+
+namespace Aw.Architecture.Tests.Fixtures;
+
+/// <summary>The fixture packages under Fixtures/: each folder is one package root that breaks (or keeps) a rule.</summary>
+internal static class FixtureSet
+{
+    private const string Prefix = "Aw.Architecture.Tests.Fixtures.";
+
+    private static readonly Lazy<IReadOnlyList<IType>> _all = new(() =>
+        [.. new ArchLoader().LoadAssemblies(typeof(FixtureSet).Assembly).Build().Types
+            .Where(t => t.Namespace.FullName.StartsWith(Prefix, StringComparison.Ordinal))]);
+
+    /// <summary>The types of the named fixture packages.</summary>
+    /// <param name="packages">Fixture folder names, e.g. Good.</param>
+    /// <returns>Their types.</returns>
+    public static IReadOnlyList<IType> Types(params string[] packages) =>
+        [.. _all.Value.Where(t => packages.Any(p => t.Namespace.FullName.StartsWith(Prefix + p + ".", StringComparison.Ordinal)))];
+
+    /// <summary>The package roots of the named fixture packages.</summary>
+    /// <param name="packages">Fixture folder names.</param>
+    /// <returns>Their roots.</returns>
+    public static IReadOnlyList<string> Roots(params string[] packages) => [.. packages.Select(p => Prefix + p)];
+
+    /// <summary>The dependency edges among the named fixture packages' types.</summary>
+    /// <param name="packages">Fixture folder names.</param>
+    /// <returns>The edges.</returns>
+    public static IReadOnlyList<Edge> Edges(params string[] packages) => Edge.All(Types(packages), Roots(packages));
+}

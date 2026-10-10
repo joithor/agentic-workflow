@@ -1,6 +1,6 @@
 using Vogen;
 
-namespace Aw.Kernel.Tests.TypedIds.GuardFixtures;
+namespace Aw.Architecture.Tests.TypedIds.GuardFixtures;
 
 /// <summary>Guard fixture: the non-generic attribute form, no converter and no ITypedId.</summary>
 [ValueObject(typeof(Guid), comparison: ComparisonGeneration.Omit)]
