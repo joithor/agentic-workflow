@@ -102,6 +102,18 @@ public sealed class TemplateReadinessTests
     }
 
     [Fact, Trait("Lane", "unit")]
+    public void A_project_that_opts_out_of_lock_files_is_not_counted_and_is_named()
+    {
+        var tree = A.ReadyTemplate().With(
+            "src/Aw.Kernel.AotSmoke/Aw.Kernel.AotSmoke.csproj", "<RestorePackagesWithLockFile>false</RestorePackagesWithLockFile>");
+
+        var finding = TemplateReadiness.Evaluate(tree, _hostReady, _now).Single(f => f.Criterion.Id.Value == "BS-2");
+
+        Assert.Equal(CriterionState.Pass, finding.State);
+        Assert.Contains("opted out: src/Aw.Kernel.AotSmoke/Aw.Kernel.AotSmoke.csproj", finding.Evidence, StringComparison.Ordinal);
+    }
+
+    [Fact, Trait("Lane", "unit")]
     public void Host_criteria_are_unknown_when_the_host_could_not_be_read()
     {
         var findings = TemplateReadiness.Evaluate(A.ReadyTemplate(), HostFacts.Unknown("--no-remote"), _now);
