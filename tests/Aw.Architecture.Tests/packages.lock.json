@@ -351,6 +351,7 @@
         "type": "Project",
         "dependencies": {
           "Aw.Kernel": "[1.0.0, )",
+          "Aw.Kernel.Telemetry": "[1.0.0, )",
           "Aw.Packets.Core": "[1.0.0, )",
           "Microsoft.Extensions.DependencyInjection": "[10.0.12, 10.0.12]"
         }
@@ -359,6 +360,7 @@
         "type": "Project",
         "dependencies": {
           "Aw.Kernel": "[1.0.0, )",
+          "Aw.Kernel.Telemetry": "[1.0.0, )",
           "Aw.Readiness.Core": "[1.0.0, )",
           "Microsoft.Extensions.DependencyInjection": "[10.0.12, 10.0.12]"
         }
