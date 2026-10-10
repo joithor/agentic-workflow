@@ -83,7 +83,7 @@ src/<Name>/
 │   ├── SettingsFromEnvironment.cs     # internal static: reads <Name>Settings from the environment Composition passes (template below)
 │   └── <Name>InfrastructureServiceCollectionExtensions.cs   # public static Add<Name>Infrastructure(this IServiceCollection, Func<string, string?> environment)
 └── Aw.<Name>.Host/
-    ├── Aw.<Name>.Host.csproj          # OutputType=Exe; PublishAot=true; AssemblyName=<binary>;
+    ├── Aw.<Name>.Host.csproj          # OutputType=Exe; AwAotEntryPoint=true; PublishAot only under a RID; AssemblyName=<binary>;
     │                                  # refs DI; InternalsVisibleTo Aw.<Name>.Tests
     ├── .editorconfig                  # root = false; [*.cs] dotnet_diagnostic.CA1031.severity = none  (composition root)
     ├── packages.lock.json
@@ -139,7 +139,7 @@ tests/
 
 **`shape: small`** replaces `Features`, `Infrastructure` and `Host` with one `Aw.<Name>.App` project: same files under
 `Features/`, `Infrastructure/`, `Commands/`, same `Add…()` methods, `OutputType=Exe` when `host`
-is `cli` (then `PublishAot=true` too; `http` is refused for `small`, see Inputs). `App` is a library under `Directory.Build.props`' project roles, so it gets
+is `cli` (then `AwAotEntryPoint=true` and `PublishAot` under a RuntimeIdentifier too, see csharp.md "AOT scope"; `http` is refused for `small`, see Inputs). `App` is a library under `Directory.Build.props`' project roles, so it gets
 `IsAotCompatible=true` from the root. Nothing outside the package references `App`, and with `host: cli` it is an Exe,
 where `CA1515` (an error under the root `.editorconfig`) rejects public types. So `App`'s types, its `Add…()` methods
 and its slice request and response records are `internal`; `App` declares `InternalsVisibleTo Aw.<Name>.Tests,

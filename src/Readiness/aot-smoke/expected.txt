@@ -1,7 +1,7 @@
 == first run
 aw-readiness: smoke (csharp-template)
 Level 2 of 5; target 2 (ring 0): holds
-first run: baseline recorded (<state>/readiness/runs/smoke/<run>.json)
+first run: baseline recorded (<state>/readiness/runs/smoke/csharp-template/<run>.json)
 
 pillar                       L1      L2      L3      L4      L5      level
 Style & Validation           3/3     0/1     -       -       -       2
@@ -60,8 +60,8 @@ FAIL  SEC-4 (L3) Dependency update bot covers the C# packages: no .github/depend
       fix: add a 'package-ecosystem: nuget' entry to .github/dependabot.yml (grouped, 14-day cooldown)
 FAIL  TD-1 (L3) Issue templates: no issue templates under .github/ISSUE_TEMPLATE/
       fix: add issue forms under .github/ISSUE_TEMPLATE/
-FAIL  TD-2 (L3) Issue labeling system (label scheme file): no .github/labels.yml
-      fix: keep .github/labels.yml with the type:, area:, size: and ring: families (spec §5 L3)
+FAIL  TD-2 (L3) Issue labeling system (scheme file, applied to the repo): no .github/labels.yml
+      fix: keep .github/labels.yml with the type:, area:, size: and ring: families and apply it to the repo (gh label create … --force per entry; spec §5 L3)
 FAIL  TD-3 (L3) PR template: no .github/pull_request_template.md or .github/PULL_REQUEST_TEMPLATE.md or .github/PULL_REQUEST_TEMPLATE
       fix: add .github/pull_request_template.md with the evidence section
 unknown  TD-4 (L5) Complex requirements decomposed into parallel execution: no observable artifact yet: frozen packets and generated workflows (addendum F0-F3) are not built
@@ -133,8 +133,8 @@ FAIL  SEC-4 (L3) Dependency update bot covers the C# packages: no .github/depend
       fix: add a 'package-ecosystem: nuget' entry to .github/dependabot.yml (grouped, 14-day cooldown)
 FAIL  TD-1 (L3) Issue templates: no issue templates under .github/ISSUE_TEMPLATE/
       fix: add issue forms under .github/ISSUE_TEMPLATE/
-FAIL  TD-2 (L3) Issue labeling system (label scheme file): no .github/labels.yml
-      fix: keep .github/labels.yml with the type:, area:, size: and ring: families (spec §5 L3)
+FAIL  TD-2 (L3) Issue labeling system (scheme file, applied to the repo): no .github/labels.yml
+      fix: keep .github/labels.yml with the type:, area:, size: and ring: families and apply it to the repo (gh label create … --force per entry; spec §5 L3)
 FAIL  TD-3 (L3) PR template: no .github/pull_request_template.md or .github/PULL_REQUEST_TEMPLATE.md or .github/PULL_REQUEST_TEMPLATE
       fix: add .github/pull_request_template.md with the evidence section
 unknown  TD-4 (L5) Complex requirements decomposed into parallel execution: no observable artifact yet: frozen packets and generated workflows (addendum F0-F3) are not built

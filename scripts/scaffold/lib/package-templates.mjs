@@ -195,7 +195,7 @@ export const hostCsproj = (p) => {
     comment: `Aw.${p.name}.Host (scaffolded by /new-package): the composition root and the ${http ? "minimal API endpoints" : "CLI commands"}
        (one per slice). NativeAOT entry point '${p.binary}' (spec §4b.6); the only project that uses Infrastructure, in
        Composition.`,
-    props: ["<OutputType>Exe</OutputType>", "<PublishAot>true</PublishAot>", `<AssemblyName>${p.binary}</AssemblyName>`, `<RootNamespace>Aw.${p.name}.Host</RootNamespace>`],
+    props: ["<OutputType>Exe</OutputType>", "<AwAotEntryPoint>true</AwAotEntryPoint>", "<PublishAot Condition=\"'$(RuntimeIdentifier)' != ''\">true</PublishAot>", `<AssemblyName>${p.binary}</AssemblyName>`, `<RootNamespace>Aw.${p.name}.Host</RootNamespace>`],
     packages: http ? [] : ["Microsoft.Extensions.DependencyInjection"],
     projects: [`../Aw.${p.name}.Core/Aw.${p.name}.Core.csproj`, `../Aw.${p.name}.Features/Aw.${p.name}.Features.csproj`, `../Aw.${p.name}.Infrastructure/Aw.${p.name}.Infrastructure.csproj`, kernel],
     visibleTo: [`Aw.${p.name}.Tests`],
@@ -209,7 +209,7 @@ export const appCsproj = (p) => {
        project, with the same dependency direction by namespace (spec §4b.1; ARCH-* in tests/Aw.Architecture.Tests).
        Nothing outside the package references it, so its types are internal (CA1515).${exe ? ` NativeAOT entry point '${p.binary}'.` : ""}`,
     props: [
-      ...(exe ? ["<OutputType>Exe</OutputType>", "<PublishAot>true</PublishAot>", `<AssemblyName>${p.binary}</AssemblyName>`] : []),
+      ...(exe ? ["<OutputType>Exe</OutputType>", "<AwAotEntryPoint>true</AwAotEntryPoint>", "<PublishAot Condition=\"'$(RuntimeIdentifier)' != ''\">true</PublishAot>", `<AssemblyName>${p.binary}</AssemblyName>`] : []),
       `<RootNamespace>Aw.${p.name}.App</RootNamespace>`,
     ],
     packages: exe ? ["Microsoft.Extensions.DependencyInjection"] : ["Microsoft.Extensions.DependencyInjection.Abstractions"],

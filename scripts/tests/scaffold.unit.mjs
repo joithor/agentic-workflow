@@ -143,7 +143,9 @@ t("small cli: the projects, the deps edge, the registry and the red test", () =>
     assert.ok(exists(d, f), `missing ${f}`);
   assert.ok(!exists(d, "src/Readiness/Aw.Readiness.Host"), "a small package has no Host");
   assert.match(read(d, "src/Readiness/Aw.Readiness.App/Aw.Readiness.App.csproj"), /<AssemblyName>aw-readiness<\/AssemblyName>/);
-  assert.match(read(d, "src/Readiness/Aw.Readiness.App/Aw.Readiness.App.csproj"), /<PublishAot>true<\/PublishAot>/);
+  // PublishAot only under a RID, so the committed packages.lock.json stays RID-free (csharp.md "AOT scope").
+  assert.match(read(d, "src/Readiness/Aw.Readiness.App/Aw.Readiness.App.csproj"), /<AwAotEntryPoint>true<\/AwAotEntryPoint>/);
+  assert.match(read(d, "src/Readiness/Aw.Readiness.App/Aw.Readiness.App.csproj"), /<PublishAot Condition="'\$\(RuntimeIdentifier\)' != ''">true<\/PublishAot>/);
   assert.match(read(d, "deps.yaml"), /- from: Readiness\n {4}to: Kernel\n {4}kind: project\n {4}status: current/);
   assert.match(read(d, "tests/Aw.Architecture.Tests/Packages.cs"), /"Aw\.Readiness\.Core",\n {8}"Aw\.Readiness\.App",\n {4}\];/);
   assert.match(read(d, "tests/Aw.Architecture.Tests/Aw.Architecture.Tests.csproj"), /src\/Readiness\/Aw\.Readiness\.App\/Aw\.Readiness\.App\.csproj/);

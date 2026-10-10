@@ -82,7 +82,7 @@ internal static partial class SecurityAndTaskChecks
             return Verdict.Fail($"{scheme} lacks the {string.Join(", ", missing)} families");
         }
 
-        if (c.Host.Labels.Names is not { } applied || !c.Host.Labels.Evidence.StartsWith('\u0001'))
+        if (c.Host.Labels.Names is not { } applied)
         {
             return Verdict.NotRead($"{scheme} defines the four families; the repo's labels weren't read ({c.Host.Labels.Evidence})");
         }

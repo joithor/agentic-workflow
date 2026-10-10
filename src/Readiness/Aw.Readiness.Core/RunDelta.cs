@@ -26,6 +26,7 @@ public sealed record RunDelta(DateTimeOffset? Since, int? LevelBefore, int Level
         var before = previous.States.ToDictionary(s => s.Id.Value, s => s.State, StringComparer.Ordinal);
         var after = current.States.ToDictionary(s => s.Id.Value, s => s.State, StringComparer.Ordinal);
         var changes = before.Keys.Union(after.Keys, StringComparer.Ordinal)
+            .Where(id => !unread.Contains(id))
             .Order(StringComparer.Ordinal)
             .Select(id => new StateChange(CriterionId.From(id), StateOf(before, id), StateOf(after, id)))
             .Where(c => c.Before != c.After)

@@ -35,7 +35,7 @@ public static class TemplateReadiness
     /// <param name="target">The target.</param>
     /// <returns>Their ids, in report order.</returns>
     public static IReadOnlyList<CriterionId> Unconfirmed(IEnumerable<Finding> findings, ReadinessTarget target) =>
-        [.. findings.Where(f => f.Unread && f.Criterion.Level < target.Level && target.Level < 0).Select(f => f.Criterion.Id)];
+        [.. findings.Where(f => f.Unread && f.Criterion.Level < target.Level).Select(f => f.Criterion.Id)];
 
     private static Finding Decide(CatalogueEntry entry, RepoContext context)
     {

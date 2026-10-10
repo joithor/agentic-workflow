@@ -51,11 +51,6 @@ internal sealed class GhCli(ReadinessSettings settings)
     /// the checkout being checked); null when nothing qualifies.</summary>
     internal static string? Resolve(string binary, string? path)
     {
-        if (binary.Length > 0)
-        {
-            return binary;
-        }
-
         if (Path.IsPathFullyQualified(binary))
         {
             return File.Exists(binary) ? binary : null;
@@ -104,7 +99,7 @@ internal sealed class GhCli(ReadinessSettings settings)
     {
         try
         {
-            _ = process.HasExited;
+            process.Kill(entireProcessTree: true);
             _ = process.WaitForExit(TimeSpan.FromSeconds(5));
         }
         catch (InvalidOperationException)

@@ -18,8 +18,10 @@
     <NoWarn>$(NoWarn);RS0016;RS0017;RS0036;RS0037</NoWarn>
   </PropertyGroup>
 
-  <!-- NativeAOT entry points (spec §4b.6): no ICU dependency in the single-file binary. -->
-  <PropertyGroup Condition="'$(PublishAot)' == 'true'">
+  <!-- NativeAOT entry points (spec §4b.6): no ICU dependency in the single-file binary. An entry point sets
+       AwAotEntryPoint=true and PublishAot only under a RuntimeIdentifier (so its packages.lock.json stays RID-free);
+       keying on AwAotEntryPoint too keeps JIT runs and tests on the same invariant globalization as the binary. -->
+  <PropertyGroup Condition="'$(PublishAot)' == 'true' or '$(AwAotEntryPoint)' == 'true'">
     <InvariantGlobalization>true</InvariantGlobalization>
   </PropertyGroup>
 

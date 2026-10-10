@@ -38,7 +38,7 @@ internal static class ReadinessConfigParser
 
     private static Error? TopLine(string line, int number, Dictionary<string, (string, int)> top, ref bool inTargets)
     {
-        if (inTargets && line[0] is '\0')
+        if (inTargets && line[0] is '-' or '\t')
         {
             return Refuse(number, "targets", "indent target items with spaces under 'targets:' (two spaces, then '- ring: N')");
         }
@@ -86,7 +86,7 @@ internal static class ReadinessConfigParser
     private static Error? Assign(List<(int? Ring, int? Level, int Line)> targets, int number, string key, int n)
     {
         var item = targets[^1];
-        if (key.Length == 0 && item.Ring is not null)
+        if ((key == "ring" && item.Ring is not null) || (key == "level" && item.Level is not null))
         {
             return Refuse(number, key, $"'{key}' is set twice in this target");
         }

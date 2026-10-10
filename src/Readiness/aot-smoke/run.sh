@@ -15,7 +15,16 @@ root="$(cd "$here/../../.." && pwd)"
 
 locks="$(mktemp -d "$out/locks.XXXXXX")"
 (cd "$root" && git ls-files -z '*packages.lock.json' | xargs -0 -I{} sh -c 'mkdir -p "$1/$(dirname "$2")" && cp "$2" "$1/$2"' _ "$locks" {})
-put_back() { [ -d "$locks" ] || return 0; (cd "$locks" && find . -name packages.lock.json -exec sh -c 'cp "$1" "$2/$1"' _ {} "$root" \;) && find "$locks" -delete; }
+# Put the lock files back; keep the backup (and say where) unless every copy succeeded.
+put_back() {
+  [ -d "$locks" ] || return 0
+  if cp -R "$locks/." "$root/"; then
+    find "$locks" -delete
+  else
+    echo "aot-readiness-smoke: restoring lock files failed; the originals are in $locks" >&2
+    return 1
+  fi
+}
 trap put_back EXIT
 
 dotnet publish "$here/../Aw.Readiness.App/Aw.Readiness.App.csproj" -c Release -r "$rid" -p:RestoreLockedMode=false \
@@ -26,7 +35,7 @@ if grep -qE 'IL[23][0-9]{3}' "$out/publish.log"; then
 fi
 
 work="$(mktemp -d "$out/run.XXXXXX")"
-trap 'find "$work" -delete; put_back' EXIT
+trap 'put_back; find "$work" -delete || true' EXIT
 repo="$work/repo"
 state="$work/state"
 mkdir -p "$repo/tests/Aw.Demo.Tests" "$state"

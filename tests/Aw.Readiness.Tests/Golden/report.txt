@@ -1,5 +1,5 @@
 aw-readiness: agentic-workflow (csharp-template)
-Level 5 of 5; target 4 (ring 0): holds
+Level 5 of 5; target 4 (ring 0): not confirmed (SEC-1, SEC-2, TD-2 weren't read)
 since 2026-10-09T12:00:00Z: level 4 -> 5, 1 change
   SEC-3: pass -> fail
 
@@ -11,9 +11,9 @@ Documentation                1/1     1/1     -       1/1     -       5
 Development Environment      -       3/3     -       -       -       3
 Debugging & Observability    -       -       3/3     -       -       4
 Security                     -       -       1/2     -       -       1
-Task Discovery               -       -       3/3     -       -       4
+Task Discovery               -       -       2/2     -       -       4
 Product & Experimentation    -       -       -       2/2     -       5
-overall                      5/5     9/9     9/10    5/5     -       5
+overall                      5/5     9/9     8/9     5/5     -       5
 
 pass  SV-1 (L1) Linter configured (Roslyn analyzers): NetAnalyzers is a GlobalPackageReference; .editorconfig sets analyzer severities
 pass  SV-2 (L1) Type checker strict (nullable, warnings as errors): Directory.Build.props: Nullable=enable, TreatWarningsAsErrors=true
@@ -27,7 +27,7 @@ pass  BS-5 (L2) Runtime version pinned (global.json): global.json pins the SDK v
 pass  TS-1 (L1) Unit tests exist (unit lane): 1 test files in the unit lane
 pass  TS-2 (L3) Integration tests exist (integration lane): 1 test files in the integration lane
 pass  TS-3 (L3) Tests runnable locally (one command): AGENTS.md lists 'dotnet test --solution AgenticWorkflow.slnx'
-pass  TS-4 (L4) Fast CI feedback (PR CI, affected areas, lane budgets): CI runs dotnet test on pull_request with changed-area detection and the per-test lane cap (run time isn't measured offline)
+pass  TS-4 (L4) Fast CI feedback (PR CI, affected areas, lane budgets): CI is configured to run dotnet test on pull_request with changed-area detection and the per-test lane cap (config only: no run or its time is checked)
 pass  TS-5 (L4) Flaky test detection (quarantine): quarantine job in: .github/workflows/ci.yml
 pass  DOC-1 (L2) AGENTS.md (covers the C# build): AGENTS.md present and lists dotnet commands
 pass  DOC-2 (L1) README: README.md present
@@ -44,7 +44,7 @@ FAIL  SEC-3 (L3) CODEOWNERS: no .github/CODEOWNERS or CODEOWNERS or docs/CODEOWN
       fix: add CODEOWNERS for the protected modules, backed by a required check (spec §4d)
 pass  SEC-4 (L3) Dependency update bot covers the C# packages: .github/dependabot.yml updates nuget packages
 pass  TD-1 (L3) Issue templates: issue templates: .github/ISSUE_TEMPLATE/bug.yml
-pass  TD-2 (L3) Issue labeling system (label scheme file): .github/labels.yml defines the type:, area:, size: and ring: families (applying them to the repo is the owner's)
+unknown  TD-2 (L3) Issue labeling system (scheme file, applied to the repo): .github/labels.yml defines the four families; the repo's labels weren't read (host unreachable (test))
 pass  TD-3 (L3) PR template: .github/pull_request_template.md present
 unknown  TD-4 (L5) Complex requirements decomposed into parallel execution: no observable artifact yet: frozen packets and generated workflows (addendum F0-F3) are not built
 pass  PE-1 (L4) Product analytics instrumentation: docs/readiness/product-signals.md present

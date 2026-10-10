@@ -18,20 +18,33 @@ bash src/Readiness/aot-smoke/run.sh                                     # publis
 artifacts/aot-readiness/bin/aw-readiness check [--json] [--root DIR] [--no-remote]
 ```
 
-- **Exit codes:** 0 when the level reaches the target for the repo's ring, 1 when it doesn't, 2 on a usage or tool
-  error (an `AW-READINESS-NNN` error on stderr: 001 bad arguments, 002 root not found, 003 `readiness.yaml` missing or
+- **Exit codes:** 0 when the level reaches the target for the repo's ring **and every criterion gating it was read**,
+  1 when it doesn't (or can't be confirmed: see "unread" below), 2 on a usage or tool error (an `AW-READINESS-NNN` error on stderr: 001 bad arguments, 002 root not found, 003 `readiness.yaml` missing or
   malformed, 004 history unreadable or unwritable).
-- **States:** each criterion is `pass`, `fail`, `n/a` (with a reason) or `unknown` (the check can't be reproduced, or
-  its data couldn't be read). Only pass and fail are scored. A failure prints the criterion's fix.
+- **States:** each criterion is `pass`, `fail`, `n/a` (with a reason) or `unknown`. Only pass and fail are scored. A
+  failure prints the criterion's fix. `unknown` has two causes, told apart by the finding's `unread` flag: the check
+  can't be reproduced yet (TD-4, PE-3), or its data couldn't be read this run (`--no-remote`, gh missing, failing or
+  not an admin). An **unread** criterion below the target's level can't confirm the target: the report says
+  "not confirmed (… weren't read)", lists them under `unconfirmed`, and exits 1, whatever the level.
 - **Levels:** every repo starts at Level 1; Level N+1 unlocks when at least 80% of the scored Level N criteria pass.
-  A level with nothing scored neither unlocks nor blocks; the first scored level under 80% stops the climb. Reported
-  per pillar and overall.
-- **Delta:** each run is diffed against the repo's previous run. The first run records a baseline and says so.
-- **History:** one JSON file per run under `${AW_STATE_DIR:-~/.agentic-workflow}/readiness/runs/<repo>/`. It writes
-  nothing else (spec §4c), and nothing installs or schedules it (no `setup.sh`, provider or launchd entry).
-- **Host criteria** (BS-4 releases, SEC-1 branch protection, SEC-2 secret scanning) come from read-only `gh repo view`
-  and `gh api` GETs run in the checkout (`AW_READINESS_GH` overrides the `gh` binary). Offline (`--no-remote`) or when
-  gh can't answer, they are `unknown`, never guessed.
+  A level with nothing scored neither unlocks nor blocks: the climb skips it, so the level is one above the highest
+  scored level that passed with every scored level below it passing (the R0 baseline's rule; with L1 passing, L2
+  empty and L3 failing the level is 2). The first scored level under 80% stops the climb. Reported per pillar and overall.
+- **Delta:** each run is diffed against the repo's previous run in the same scope; a criterion unread on either run
+  isn't compared (so an offline run doesn't show host criteria flipping). The first run records a baseline and says so.
+- **History:** one JSON file per run, `{schemaVersion: 1, repo, scope, recordedAt, level, states[] {id, state, unread}}`,
+  under `${AW_STATE_DIR:-~/.agentic-workflow}/readiness/runs/<repo>/<scope>/<UTC time>-NNN.json` (NNN keeps runs at
+  the same instant apart, in save order). It writes nothing else (spec §4c), and nothing installs or schedules it (no
+  `setup.sh`, provider or launchd entry). Use a scratch `AW_STATE_DIR` when checking another checkout or a scratch
+  merge, so its runs don't become the real checkout's baseline.
+- **Host criteria** (BS-4 releases, SEC-1 branch protection, SEC-2 secret scanning, and TD-2's "applied to the repo"
+  half) come from read-only `gh repo view` and `gh api` GETs run in the checkout. `gh` is found only on absolute PATH
+  entries, never in the current directory (a checkout can't plant its own); `AW_READINESS_GH` overrides it with an
+  absolute path. A call that outlives its 30 s timeout is killed. Offline (`--no-remote`) or when gh can't answer,
+  they are unread `unknown`s, never guessed. A plan that can't protect branches (HTTP 403 "Upgrade to GitHub Pro") is
+  a known fail for SEC-1; a repo admin seeing no `security_and_analysis` is a known fail for SEC-2.
+- **Files** are read only inside the root, never through a symlinked file, and at most 1 MiB each (a bigger or linked
+  file reads as missing).
 - **Output:** text by default — every state is a word, so colour never carries meaning and `NO_COLOR` has nothing to
   strip. `--json` writes the report object, `schemaVersion: 1` (recorded in
   `tests/Aw.Readiness.Tests/Golden/report.json`): `repo`, `scope`, `recordedAt`, `target {ring, level}`, `level`,
@@ -42,7 +55,9 @@ artifacts/aot-readiness/bin/aw-readiness check [--json] [--root DIR] [--no-remot
 
 `scope: csharp-template` checks the C# build surface — `src/`, `tests/`, the root build files, the CI workflows,
 `AGENTS.md`, the rules and the repo-level files (templates, devcontainer, CODEOWNERS, dependency updates) — against the
-R0 baseline's 34 criteria, with the same ids and levels. The TS apps are not scored: they are frozen until the
+R0 baseline's 34 criteria, with the same ids and levels. Two read narrower than R0: TS-4 checks the CI configuration
+only (no run or its time), and TD-2 needs both the scheme file (`.github/labels.yml`, the type:, area:, size: and
+ring: families) and labels of each family on the repo (R0 read only the repo's labels). The TS apps are not scored: they are frozen until the
 cutover. The criteria live in `src/Readiness/Aw.Readiness.Core/Criteria/` (one file per pair of pillars); a change
 to a criterion is a reviewed change to its check and its test in `tests/Aw.Readiness.Tests/Criteria/`.
 

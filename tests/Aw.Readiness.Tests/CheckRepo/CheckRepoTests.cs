@@ -67,7 +67,7 @@ public sealed class CheckRepoTests
         var result = await Service().Handle(A.CheckRepoRequest().AtRoot(Root).Offline().Build(), CancellationToken.None);
 
         Assert.False(result.Value.Holds);
-        Assert.Equal<string>(["SEC-1", "SEC-2", "TD-2"], [.. result.Value.Unconfirmed.Select(id => id.Value)]);
+        Assert.Equal(["SEC-1", "SEC-2", "TD-2"], [.. result.Value.Unconfirmed.Select(id => id.Value)]);
     }
 
     [Fact, Trait("Lane", "unit")]

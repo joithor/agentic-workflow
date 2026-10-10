@@ -326,6 +326,9 @@ jobs:
           path: |
             TestResults
             artifacts/aot-smoke
+            artifacts/aot-data-smoke
+            artifacts/aot-readiness/publish.log
+            artifacts/aot-readiness/actual.txt
           if-no-files-found: ignore
           retention-days: 7
 
