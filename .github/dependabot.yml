@@ -19,6 +19,7 @@ updates:
       - /sindri
       - /skills/ui-evidence
       - /skills/bugFixOrchestrator
+      - /.github/ci-tools
     schedule:
       interval: weekly
     cooldown:
