@@ -26,7 +26,6 @@ concurrency:
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 env:
-  NODE_VERSION: "22"
   FORCE_COLOR: "0"
 
 jobs:
@@ -52,24 +51,20 @@ jobs:
         run: bash scripts/ci/changed-areas.sh "$EVENT_NAME" "${BASE_SHA:-}" >> "$GITHUB_OUTPUT"
 
   ts:
-    name: TS ${{ matrix.package }} (Node ${{ matrix.node }})
+    name: TS ${{ matrix.package }}
     needs: changes
     runs-on: ubuntu-24.04
     timeout-minutes: 20
     strategy:
       fail-fast: false
       matrix:
-        include:
-          # Node 22 runs typecheck + tests with the 100% coverage thresholds.
-          - { package: mcp-bridge, node: "22" }
-          - { package: scorer, node: "22" }
-          - { package: judge, node: "22" }
-          - { package: sindri, node: "22" }
-          - { package: skills/ui-evidence, node: "22" }
-          - { package: skills/bugFixOrchestrator, node: "22" }
-          # The engines floor (>= 20): the native-module package and the largest one.
-          - { package: mcp-bridge, node: "20" }
-          - { package: sindri, node: "20" }
+        package:
+          - mcp-bridge
+          - scorer
+          - judge
+          - sindri
+          - skills/ui-evidence
+          - skills/bugFixOrchestrator
     env:
       CHANGED: ${{ contains(fromJSON(needs.changes.outputs.packages), matrix.package) }}
     defaults:
@@ -90,7 +85,9 @@ jobs:
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         if: env.CHANGED == 'true'
         with:
-          node-version: ${{ matrix.node }}
+          # .nvmrc is the engines floor (>= 22, set by better-sqlite3 13), so the
+          # version CI tests is the lowest one the packages declare.
+          node-version-file: .nvmrc
           cache: npm
           cache-dependency-path: |
             ${{ matrix.package }}/package-lock.json
@@ -111,11 +108,8 @@ jobs:
         if: env.CHANGED == 'true'
         run: npm run typecheck
       - name: Test with coverage thresholds
-        if: env.CHANGED == 'true' && matrix.node == env.NODE_VERSION
+        if: env.CHANGED == 'true'
         run: npm run test:coverage
-      - name: Test on the engines floor
-        if: env.CHANGED == 'true' && matrix.node != env.NODE_VERSION
-        run: npm test
 
   bash-tests:
     name: Bash tests
@@ -139,7 +133,7 @@ jobs:
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         if: env.CHANGED == 'true'
         with:
-          node-version: ${{ env.NODE_VERSION }}
+          node-version-file: .nvmrc
           cache: npm
           cache-dependency-path: |
             judge/package-lock.json
@@ -151,6 +145,9 @@ jobs:
           for pkg in judge scorer sindri; do
             (cd "$pkg" && npm ci --no-audit --no-fund && npm run build)
           done
+      - name: Install the CI tools (the gate 6 checker's tests need typescript)
+        if: env.CHANGED == 'true'
+        run: npm ci --prefix .github/ci-tools --ignore-scripts --no-audit --no-fund
       - name: Run every tracked bash test suite
         if: env.CHANGED == 'true'
         run: bash scripts/ci/bash-tests.sh
@@ -168,7 +165,7 @@ jobs:
           persist-credentials: false
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
-          node-version: ${{ env.NODE_VERSION }}
+          node-version-file: .nvmrc
           cache: npm
           cache-dependency-path: .github/ci-tools/package-lock.json
       - name: Rules links and index are current
@@ -227,7 +224,7 @@ jobs:
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         if: steps.harness.outputs.run == 'true'
         with:
-          node-version: ${{ env.NODE_VERSION }}
+          node-version-file: .nvmrc
           cache: npm
           cache-dependency-path: |
             golden/package-lock.json
