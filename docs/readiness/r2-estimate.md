@@ -27,8 +27,8 @@ threshold can differ by 0.1 h from twice the rounded figure:
 **The unit is agent elapsed hours.** A packet's clock starts when its verification plan is created (the
 `created` line of `verification-plan.md` in the packet's proof directory). It stops at the packet's last commit
 before it's marked ready or blocked at the review cap. The clock runs while the agent waits on the heavy-job lock,
-because the baseline counted that time too. Time spent waiting for the human to merge, and the switch itself
-(`./setup.sh --runtime cs` on each host), are not part of a packet and are not in these numbers.
+because the baseline counted that time too. Time spent waiting for the human to merge, and the switch itself (§10 R2), are not part of a packet and are not
+in these numbers.
 
 ## The baseline: what R1b measured
 
@@ -61,10 +61,6 @@ none of the three reached zero findings within five runs. T8's long gap ends at 
 (`743d120` in #142, which applies #141's machine-independent AOT build). The record doesn't say what filled the gap.
 It stays in the elapsed time, because a port packet can hit the same kind of wait.
 
-These figures differ slightly from the stage reports: T7's tests are 1,883 lines, not 1,881. T8's tests are 2,325,
-not 2,375. T7's hand-written lines are 4,368, not 4,517, because golden files and the AOT `expected.txt` are counted
-as generated here. This doc uses the measured values.
-
 **The template's fixed cost.** `/new-package` (#139) with the small shape generates 235 lines of C# source and 81 lines of
 C# tests (the scaffold commits `f897d52` in #141 and `571d8ef` in #142 are identical in size). Every new package pays this once.
 
@@ -89,7 +85,8 @@ package with its own corpus and contract tests (1,108 C# lines, 8.7×). That's a
 used as a ratio. The ratio is therefore a stated assumption, with a band around it:
 
 - **C# lines = 316 (template, once per package) + k × TS lines**, where TS lines are non-blank lines of source plus
-  tests.
+  tests, and C# lines are added `.cs` lines as `git diff --numstat` counts them, blank lines included. k absorbs
+  that difference.
 - **k = 1.0 / 1.3 / 1.8 (low / expected / high).** k above 1 is expected because the template requires typed
   records instead of inline object literals, a port and a contract-tested fake for every external technology,
   `Result` mapping at each edge, and explicit registration. Many TS tests translate close to 1:1, which keeps k
