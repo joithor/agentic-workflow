@@ -58,7 +58,7 @@ agentic-workflow/
 ├── sindri/        # Sindri core: profile, ledger, lock, scrubber, plan-file tracker, observe, doctor (CLI)
 ├── mods/          # Claude Code mods (in-process function hooks): aw-live /live pane. Claude-only
 ├── planning/      # Project documentation
-├── src/           # C# build (in progress): Aw.Kernel, Aw.Analyzers, then one package per port — Core · Features · Infrastructure · Host
+├── src/           # C# build (in progress): Aw.Kernel, Redaction, Aw.Analyzers, then one package per port — Core · Features · Infrastructure · Host
 ├── tests/         # C# tests: Aw.<Pkg>.Tests (by feature), Aw.<Pkg>.Testing (fakes, builders, contract bases), Aw.Architecture.Tests
 ├── global.json · AgenticWorkflow.slnx · Directory.Build.props · Directory.Build.targets · Directory.Packages.props · nuget.config · .editorconfig · CodeMetricsConfig.txt · BannedSymbols.txt
 ├── .agents/rules/ # Glob-scoped domain rules (.claude/rules and .cursor/rules link here)

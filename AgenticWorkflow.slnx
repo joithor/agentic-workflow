@@ -2,6 +2,7 @@
   <Folder Name="/src/">
     <Project Path="src/Aw.Kernel/Aw.Kernel.csproj" />
     <Project Path="src/Aw.Kernel.Data/Aw.Kernel.Data.csproj" />
+    <Project Path="src/Redaction/Aw.Redaction/Aw.Redaction.csproj" />
   </Folder>
   <Folder Name="/src/Packets/">
     <Project Path="src/Packets/Aw.Packets.Core/Aw.Packets.Core.csproj" />
@@ -17,6 +18,7 @@
     <Project Path="tests/Aw.Kernel.Testing.Tests/Aw.Kernel.Testing.Tests.csproj" />
     <Project Path="tests/Aw.Kernel.Data.Tests/Aw.Kernel.Data.Tests.csproj" />
     <Project Path="tests/Aw.Architecture.Tests/Aw.Architecture.Tests.csproj" />
+    <Project Path="tests/Aw.Redaction.Tests/Aw.Redaction.Tests.csproj" />
     <Project Path="tests/Aw.LaneCap.Testing/Aw.LaneCap.Testing.csproj" />
     <Project Path="tests/Aw.Packets.Tests/Aw.Packets.Tests.csproj" />
     <Project Path="tests/Aw.Packets.Testing/Aw.Packets.Testing.csproj" />
