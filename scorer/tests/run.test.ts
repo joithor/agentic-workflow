@@ -23,7 +23,8 @@ describe("runReport", () => {
     fs.mkdirSync(path.join(options.stateDir, "logs"), { recursive: true });
     fs.writeFileSync(path.join(options.stateDir, "logs", "failopen.log"),
       `${JSON.stringify({ ts: "2026-09-26T09:00:00Z", event: "HOOK-FAILOPEN", hook: "send-gate", cause: "judge-exit-127", provider: "claude" })}\n`);
-    const result = await runReport(options, { lookup: async () => "MERGED", log: () => undefined });
+    const judgeDbPath = path.join(options.stateDir, "judge", "decisions.sqlite");
+    const result = await runReport(options, { lookup: async () => "MERGED", log: () => undefined, judgeDbPath });
     expect(fs.readFileSync(result.markdownPath, "utf8")).toContain("| send-gate | judge-exit-127 | 1 | 2026-09-26T09:00:00Z |");
     expect(JSON.parse(fs.readFileSync(result.jsonPath, "utf8")).hookFailOpen).toEqual([
       { hook: "send-gate", cause: "judge-exit-127", events: 1, last: "2026-09-26T09:00:00Z" },

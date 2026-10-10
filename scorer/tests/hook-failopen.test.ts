@@ -1,3 +1,4 @@
+import { execFileSync } from "node:child_process";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
@@ -76,6 +77,13 @@ describe("readFailOpenLog", () => {
     const dir = fs.mkdtempSync(path.join(os.tmpdir(), "failopen-"));
     const file = path.join(dir, "failopen.log");
     fs.mkdirSync(file);
+    expect(readFailOpenLog(file, SINCE, UNTIL)).toEqual([]);
+  });
+
+  it("never opens a FIFO at the log path (it would hang the report job)", () => {
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), "failopen-"));
+    const file = path.join(dir, "failopen.log");
+    execFileSync("mkfifo", [file]);
     expect(readFailOpenLog(file, SINCE, UNTIL)).toEqual([]);
   });
 
