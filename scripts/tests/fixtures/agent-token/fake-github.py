@@ -1,0 +1,67 @@
+#!/usr/bin/env python3
+"""Fake GitHub App token endpoint for scripts/tests/agent-token.test.sh.
+
+Binds 127.0.0.1 on a free port (written to <dir>/port), verifies the RS256 JWT
+with the fixture public key through `openssl dgst -verify` (not the signer's
+code path), snapshots every process argv while the request is in flight, and
+answers by MODE: ok -> 201 with a canned token, err -> 401 with a body that
+carries a token-shaped string the script must not echo.
+Usage: fake-github.py <dir> <public.pem> <mode>
+"""
+import base64, json, os, subprocess, sys, tempfile
+from http.server import BaseHTTPRequestHandler, HTTPServer
+
+DIR, PUB, MODE = sys.argv[1], sys.argv[2], sys.argv[3]
+CANNED = "ghs_fixtureToken0123456789abcdefABCDEF"
+LEAK = "ghs_leakyBodyToken9876543210zyxwvuZYXW"
+
+
+def b64d(s):
+    return base64.urlsafe_b64decode(s + "=" * (-len(s) % 4))
+
+
+def verify(jwt):
+    head, claims, sig = jwt.split(".")
+    with tempfile.TemporaryDirectory() as t:
+        data, sigf = os.path.join(t, "d"), os.path.join(t, "s")
+        open(data, "wb").write(f"{head}.{claims}".encode())
+        open(sigf, "wb").write(b64d(sig))
+        r = subprocess.run(["openssl", "dgst", "-sha256", "-verify", PUB, "-signature", sigf, data],
+                           capture_output=True, text=True)
+    return json.loads(b64d(head)), json.loads(b64d(claims)), r.stdout.strip()
+
+
+class H(BaseHTTPRequestHandler):
+    def log_message(self, *a):
+        pass
+
+    def do_POST(self):
+        auth = self.headers.get("Authorization", "")
+        body = self.rfile.read(int(self.headers.get("Content-Length", 0) or 0)).decode()
+        argv = subprocess.run(["ps", "-axww", "-o", "args="], capture_output=True, text=True).stdout
+        rec = {"path": self.path, "accept": self.headers.get("Accept"), "body": body,
+               "argv_has_bearer": "Bearer " in argv, "argv_has_jwt": auth[7:] in argv if auth else False}
+        try:
+            rec["header"], rec["claims"], rec["verify"] = verify(auth.removeprefix("Bearer "))
+        except Exception as e:  # malformed JWT is a test failure, recorded
+            rec["verify"] = f"error: {e}"
+        with open(os.path.join(DIR, "requests.jsonl"), "a") as f:
+            f.write(json.dumps(rec) + "\n")
+        if MODE == "ok":
+            code, out = 201, {"token": CANNED, "expires_at": "2099-01-01T00:00:00Z"}
+        else:
+            code, out = 401, {"message": "Bad credentials", "token": LEAK,
+                              "documentation_url": "https://docs.github.com/rest"}
+        payload = json.dumps(out).encode()
+        self.send_response(code)
+        self.send_header("Content-Type", "application/json")
+        self.send_header("Content-Length", str(len(payload)))
+        self.end_headers()
+        self.wfile.write(payload)
+
+
+srv = HTTPServer(("127.0.0.1", 0), H)
+with open(os.path.join(DIR, "port.tmp"), "w") as f:
+    f.write(str(srv.server_address[1]))
+os.rename(os.path.join(DIR, "port.tmp"), os.path.join(DIR, "port"))
+srv.serve_forever()
