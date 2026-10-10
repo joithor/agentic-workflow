@@ -21,13 +21,53 @@ export const SEARCH = {
 };
 const BUILD_FILES = ["Directory.Build.props", "Directory.Build.targets", "Directory.Packages.props", "global.json", ".editorconfig", "nuget.config"];
 
+// stripCode(text) — C# or JavaScript without // and /* */ comments. String literals ("…", '…', `…`, C# @"…")
+// are copied as they are, so a comment marker inside a string never hides code.
+function stripCode(text) {
+  let out = "";
+  let i = 0;
+  while (i < text.length) {
+    const c = text[i];
+    const d = text[i + 1];
+    if (c === "/" && d === "/") { while (i < text.length && text[i] !== "\n") i++; continue; }
+    if (c === "/" && d === "*") { const e = text.indexOf("*/", i + 2); i = e < 0 ? text.length : e + 2; out += " "; continue; }
+    if (c === "@" && d === '"') {
+      let j = i + 2;
+      while (j < text.length && !(text[j] === '"' && text[j + 1] !== '"')) j += text[j] === '"' ? 2 : 1;
+      out += text.slice(i, j + 1); i = j + 1; continue;
+    }
+    if (c === '"' || c === "'" || c === "`") {
+      let j = i + 1;
+      while (j < text.length && text[j] !== c && (c === "`" || text[j] !== "\n")) j += text[j] === "\\" ? 2 : 1;
+      out += text.slice(i, j + 1); i = j + 1; continue;
+    }
+    out += c; i++;
+  }
+  return out;
+}
+
+// stripHashComments(text) — .editorconfig, YAML and text files: a line starting with # or ; is a comment, and so is
+// " #…" outside quotes.
+function stripHashComments(text) {
+  return text.split("\n").map((l) => {
+    if (/^\s*[#;]/.test(l)) return "";
+    let q = null;
+    for (let i = 0; i < l.length; i++) {
+      const c = l[i];
+      if (q) { if (c === q) q = null; } else if (c === '"' || c === "'") q = c;
+      else if (c === "#" && /\s/.test(l[i - 1] ?? "")) return l.slice(0, i).trimEnd();
+    }
+    return l;
+  }).join("\n");
+}
+
 // stripComments(file, text) — the text without the comments its format allows.
 export function stripComments(file, text) {
-  if (/\.(cs|mjs|js)$/.test(file)) return text.replace(/\/\*[\s\S]*?\*\//g, "").replace(/(^|[^:])\/\/.*$/gm, "$1");
-  if (/\.(props|targets|csproj|xml)$/.test(file)) return text.replace(/<!--[\s\S]*?-->/g, "");
-  if (/(^|\/)\.editorconfig$|\.(txt|ya?ml)$/.test(file)) {
-    return text.split("\n").map((l) => (/^\s*[#;]/.test(l) ? "" : l.replace(/\s+#.*$/, ""))).join("\n");
+  if (/\.(cs|mjs|js)$/.test(file)) return stripCode(text);
+  if (/\.(props|targets|csproj|xml)$/.test(file)) {
+    return text.split(/(<!\[CDATA\[[\s\S]*?\]\]>)/).map((part) => (part.startsWith("<![CDATA[") ? part : part.replace(/<!--[\s\S]*?-->/g, ""))).join("");
   }
+  if (/(^|\/)\.editorconfig$|\.(txt|ya?ml)$/.test(file)) return stripHashComments(text);
   return text;
 }
 
@@ -65,11 +105,31 @@ export class Tree {
   hasLiteral(rels, s) { return rels.some((r) => (this.text(r) ?? "").includes(s)); }
 }
 
-// The severities the root .editorconfig sets per diagnostic id (the last line wins, as in editorconfig).
+// A section that applies to C# files in general ([*], [*.cs], [**.cs], [**/*.cs], [*.{…,cs,…}]); a narrower section
+// (a path glob) neither enables nor disables a rule for the whole repo.
+const GENERAL_CS = /^\*$|^\*\*?(\/\*)?\.cs$|^\*\.\{[^}]*\bcs\b[^}]*\}$/;
+
+// rootSeverities(tree) — what the root .editorconfig's general C# sections set: per-id severities (ids upper-cased;
+// editorconfig keys are case-insensitive), per-category severities (lower-cased) and the bulk severity. Last wins.
 function rootSeverities(tree) {
-  const out = new Map();
-  for (const m of (tree.text(".editorconfig") ?? "").matchAll(/^\s*dotnet_diagnostic\.([A-Za-z0-9]+)\.severity\s*=\s*([a-z]+)/gm)) out.set(m[1], m[2]);
-  return out;
+  const ids = new Map();
+  const categories = new Map();
+  let bulk = null;
+  let applies = false;
+  for (const line of (tree.text(".editorconfig") ?? "").split("\n")) {
+    const section = line.match(/^\s*\[(.*)\]\s*$/);
+    if (section) { applies = GENERAL_CS.test(section[1].trim()); continue; }
+    const kv = applies && line.match(/^\s*([^=]+?)\s*=\s*(.*?)\s*$/);
+    if (!kv) continue;
+    const key = kv[1].toLowerCase();
+    const value = kv[2].toLowerCase();
+    const id = key.match(/^dotnet_diagnostic\.([a-z0-9_]+)\.severity$/);
+    const cat = key.match(/^dotnet_analyzer_diagnostic\.category-(.+)\.severity$/);
+    if (id) ids.set(id[1].toUpperCase(), value);
+    else if (cat) categories.set(cat[1], value);
+    else if (key === "dotnet_analyzer_diagnostic.severity") bulk = value;
+  }
+  return { ids, categories, bulk };
 }
 
 function analyzer(tree, c) {
@@ -77,17 +137,19 @@ function analyzer(tree, c) {
   if (/^AW[0-9]{4}$/.test(c.id) && !tree.hasToken(["src/Aw.Analyzers"], c.id)) {
     return { found: false, where: "src/Aw.Analyzers (no diagnostic descriptor with this id)" };
   }
-  const set = rootSeverities(tree).get(c.id);
+  const sev = rootSeverities(tree);
+  const set = sev.ids.get(c.id.toUpperCase());
   if (set !== undefined) {
     return want.includes(set)
       ? { found: true, where: ".editorconfig" }
       : { found: false, where: `.editorconfig (the root .editorconfig sets severity ${set}; the check needs ${want.join(" or ")})` };
   }
   if (c.via !== "baseline") return { found: false, where: `.editorconfig (no dotnet_diagnostic.${c.id}.severity = ${want.join("|")} line; add one, or mark the check via: baseline with its package)` };
-  const bulk = /^\s*dotnet_analyzer_diagnostic\.severity\s*=\s*error\b/m.test(tree.text(".editorconfig") ?? "");
-  const pkg = tree.hasLiteral(["Directory.Packages.props"], `Include="${c.package}"`);
-  if (!bulk) return { found: false, where: ".editorconfig (no bulk dotnet_analyzer_diagnostic.severity = error line for the baseline)" };
-  if (!pkg) return { found: false, where: `Directory.Packages.props (the analyzer package ${c.package} isn't referenced)` };
+  const pkg = new RegExp(`<GlobalPackageReference\\s[^>]*Include="${escapeRe(c.package)}"`).test(tree.text("Directory.Packages.props") ?? "");
+  const cat = sev.categories.get(c.category.toLowerCase());
+  if (sev.bulk !== "error") return { found: false, where: ".editorconfig (no bulk dotnet_analyzer_diagnostic.severity = error line in a general C# section for the baseline)" };
+  if (!pkg) return { found: false, where: `Directory.Packages.props (no GlobalPackageReference to ${c.package})` };
+  if (cat !== undefined && cat !== "error") return { found: false, where: `.editorconfig (dotnet_analyzer_diagnostic.category-${c.category}.severity = ${cat} turns the baseline off)` };
   return { found: true, where: `.editorconfig bulk baseline + ${c.package}` };
 }
 
@@ -103,9 +165,28 @@ function bannedSymbols(tree, c) {
   return { found: true, where: "BannedSymbols.txt wired in Directory.Build.props" };
 }
 
+// stepNames(text) — the names of workflow steps: `name:` keys of the items of a `steps:` list (not jobs or `with:`).
+function stepNames(text) {
+  const names = [];
+  let stepsIndent = -1;
+  let itemIndent = -1;
+  for (const line of text.split("\n")) {
+    if (!line.trim()) continue;
+    const indent = line.length - line.trimStart().length;
+    if (stepsIndent >= 0 && indent <= stepsIndent) stepsIndent = -1;
+    if (/^\s*steps:\s*$/.test(line)) { stepsIndent = indent; itemIndent = -1; continue; }
+    if (stepsIndent < 0) continue;
+    const item = line.match(/^(\s*)-\s+(.*)$/);
+    if (item && (itemIndent < 0 || item[1].length === itemIndent)) itemIndent = item[1].length;
+    const key = item && item[1].length === itemIndent ? item[2] : indent === itemIndent + 2 ? line.trim() : null;
+    const m = key?.match(/^name:\s*(.+?)\s*$/);
+    if (m) names.push(m[1].replace(/^(["'])(.*)\1$/, "$2"));
+  }
+  return names;
+}
+
 function ciStep(tree, c) {
-  const names = [...(tree.text(c.ref) ?? "").matchAll(/^\s*(?:-\s+)?name:\s*(.+?)\s*$/gm)].map((m) => m[1].replace(/^(["'])(.*)\1$/, "$2"));
-  return { found: names.includes(c.id), where: `${c.ref} (a step named exactly "${c.id}")` };
+  return { found: stepNames(tree.text(c.ref) ?? "").includes(c.id), where: `${c.ref} (a step named exactly "${c.id}")` };
 }
 
 // existsCheck(tree, check) -> { found, where } — whether the check is in the tree, and what was looked at

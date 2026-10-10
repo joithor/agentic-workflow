@@ -198,7 +198,7 @@
           "minLength": 1
         },
         "via": {
-          "description": "analyzer: 'baseline' when the id has no severity line and is enforced by the bulk dotnet_analyzer_diagnostic.severity = error line (needs package)",
+          "description": "analyzer: 'baseline' when the id has no severity line and is enforced by the bulk dotnet_analyzer_diagnostic.severity = error line; only for rules enabled by default (needs package and category)",
           "enum": [
             "baseline"
           ]
@@ -215,6 +215,11 @@
             "warning",
             "suggestion"
           ]
+        },
+        "category": {
+          "description": "analyzer via baseline: the diagnostic's category (e.g. ApiDesign), so a category-level severity below error fails the check",
+          "type": "string",
+          "minLength": 1
         }
       },
       "allOf": [
@@ -293,7 +298,8 @@
           },
           "then": {
             "required": [
-              "package"
+              "package",
+              "category"
             ]
           }
         }

@@ -29,9 +29,10 @@ const SCHEMA = "schemas/rule-record.schema.json";
 const RULES_DOCS = [".agents/rules/csharp.md", ".agents/rules/csharp-testing.md"];
 // The check-id families the rules docs name: analyzer, compiler, trim, NuGet and xUnit diagnostics, build-target
 // ids, and the check-deps, ArchUnitNET, lane and rule-record ids.
-const DOC_ID = /\b(?:CA|MA|RS|IDE|AW|CS|IL|NU)[0-9]{4}\b|\bxUnit[0-9]{4}\b|\b(?:DEPS|ARCH|LANE|RULE)-[A-Z]+-[0-9]{3}\b/g;
+const DOC_ID = /\b(?:CA|MA|RS|RCS|IDE|AW|CS|IL|NU|SYSLIB)[0-9]{4}\b|\bxUnit[0-9]{4}\b|\b(?:DEPS|ARCH|LANE|RULE)-[A-Z]+-[0-9]{3}\b/g;
 
-const deterministic = (c) => c.type !== "review";
+// A review check, or an analyzer at suggestion (it never fails a build), doesn't enforce anything.
+const deterministic = (c) => c.type !== "review" && !(c.type === "analyzer" && c.severity === "suggestion");
 
 function readText(file) {
   try { return fs.readFileSync(file, "utf8"); } catch { return null; }
