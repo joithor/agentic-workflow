@@ -43,3 +43,46 @@ const fixture = {
 
 writeFileSync(join(here, "fixture.compact.json"), JSON.stringify(fixture));
 writeFileSync(join(here, "fixture.indented.json"), JSON.stringify(fixture, null, 2));
+
+// Untyped JSON: what judge's input_digest hashes on its failure path, JSON.stringify(JSON.parse(raw)) (spec §4c).
+// Number text is re-laid out, integer-like keys move first, duplicate keys keep the first position and the last
+// value, escapes are re-written the Node way (a lone surrogate stays escaped).
+const untypedInput =
+  String.raw`{"b":1.0,"1":2,"s":"caf\u00e9 <&> \/ \ud800 lone ` +
+  "caf\u00e9 \u4e2d \u{1F600}" +
+  String.raw`","e":1E5,"10":"ten","2":"two","01":"lead","-1":"neg","4294967295":"max","4294967294":"idx",` +
+  String.raw`"dup":1,"nested":{"z":[1.50,-0,1e400,-1e-7,0.1e1,123456789012345678901234,[],{}],"a":{"9":null,"x":true}},` +
+  String.raw`"dup":2,"pair":"\ud83d\ude00","ctl":"\u0001\u001f\t","esc":"\"\\","\udc00 key":false}`;
+const untyped = JSON.parse(untypedInput);
+writeFileSync(join(here, "untyped.input.json"), untypedInput);
+writeFileSync(join(here, "untyped.compact.json"), JSON.stringify(untyped));
+writeFileSync(join(here, "untyped.indented.json"), JSON.stringify(untyped, null, 2));
+// The same untyped value inside a typed record (a JsonElement property and a JsonNode property).
+writeFileSync(join(here, "wrapped.compact.json"), JSON.stringify({ name: "w", data: untyped, node: untyped }));
+
+// The event envelope as it is stored and sent. causationId and traceId are undefined, so they are left out.
+const envelope = {
+  id: "00000000-0000-0000-0000-000000000001",
+  type: "item.started",
+  schemaVersion: 1,
+  occurredAt: new Date(Date.UTC(2026, 9, 10, 6, 0, 0, 0)).toISOString(),
+  actor: "host:sindri",
+  tenant: "personal",
+  ring: 0,
+  correlationId: "00000000-0000-0000-0000-0000000000c1",
+  payload: { item: "item-7" },
+};
+writeFileSync(join(here, "envelope.compact.json"), JSON.stringify(envelope));
+
+// Scalars a C# record may hold, as Node would hold and write them: every number is a double.
+const scalars = {
+  when: new Date(Date.UTC(2026, 9, 10, 6, 0, 0, 0)).toISOString(),
+  money: 1.10,
+  whole: 1.0,
+  big: 9007199254740993,
+  single: Math.fround(0.1),
+  huge: 9223372036854775808,
+  nan: NaN,
+  maybe: null,
+};
+writeFileSync(join(here, "scalars.compact.json"), JSON.stringify(scalars));

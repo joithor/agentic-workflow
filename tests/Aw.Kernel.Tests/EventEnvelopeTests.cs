@@ -42,6 +42,28 @@ public sealed class EventEnvelopeTests
         Assert.NotEqual(cause.Id, effect.Id);
     }
 
+    [Fact]
+    public void An_envelope_serializes_like_the_TS_event_with_causation_and_trace_left_out()
+    {
+        var context = EventContext.Create("host:sindri", "personal", 0, _correlation).Value;
+        var envelope = context.Envelope("item.started", new Shapes.ItemStarted("item-7"), new FixedClock(_now), new SequentialIds());
+
+        Assert.Equal(
+            File.ReadAllText(Path.Combine(AppContext.BaseDirectory, "Golden", "envelope.compact.json")),
+            System.Text.Encoding.UTF8.GetString(Json.NodeJson.Serialize(envelope, Json.NodeJson.CreateOptions(TestJsonContext.Default))));
+    }
+
+    [Theory]
+    [InlineData(" ")]
+    [InlineData("")]
+    [InlineData("has space")]
+    public void A_blank_or_spaced_trace_id_is_an_invalid_error(string traceId) =>
+        Assert.Equal("AW-KERNEL-001", EventContext.Create("host:sindri", "personal", 0, _correlation, traceId).Error.Code);
+
+    [Fact]
+    public void An_empty_correlation_id_is_an_invalid_error() =>
+        Assert.Equal("AW-KERNEL-001", EventContext.Create("host:sindri", "personal", 0, Guid.Empty).Error.Code);
+
     [Theory]
     [InlineData("", "personal", 0)]
     [InlineData("host:sindri", " ", 0)]

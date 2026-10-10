@@ -26,6 +26,21 @@ public sealed class ErrorCatalogueTests
         Assert.Equal(kind, definition.Kind);
     }
 
+    [Theory]
+    [InlineData(ErrorKind.Invalid, "invalid")]
+    [InlineData(ErrorKind.NotFound, "notFound")]
+    [InlineData(ErrorKind.Conflict, "conflict")]
+    [InlineData(ErrorKind.RateLimited, "rateLimited")]
+    [InlineData(ErrorKind.BudgetExceeded, "budgetExceeded")]
+    [InlineData(ErrorKind.Unavailable, "unavailable")]
+    [InlineData(ErrorKind.Timeout, "timeout")]
+    [InlineData(ErrorKind.Forbidden, "forbidden")]
+    public void Every_kind_has_its_exact_camel_case_wire_name(ErrorKind kind, string name) =>
+        Assert.Equal(
+            "{\"code\":\"AW-X-001\",\"kind\":\"" + name + "\",\"message\":\"m\"}",
+            System.Text.Encoding.UTF8.GetString(
+                Json.NodeJson.Serialize(new Error("AW-X-001", kind, "m"), Json.NodeJson.CreateOptions(TestJsonContext.Default))));
+
     [Fact]
     public void A_definition_makes_an_error_with_its_code_and_kind()
     {
@@ -55,9 +70,11 @@ public sealed class ErrorCatalogueTests
     [InlineData("XX-KERNEL-001")]
     [InlineData("AW-KERNEL-\uff10\uff10\uff11")]
     [InlineData("")]
-    public void Malformed_codes_fail_validation(string code)
+    [InlineData("AW-KERNEL-001\n")]
+    [InlineData(null)]
+    public void Malformed_codes_fail_validation(string? code)
     {
-        var result = ErrorCatalogue.Validate([new ErrorDefinition(code, ErrorKind.Invalid, "bad")]);
+        var result = ErrorCatalogue.Validate([new ErrorDefinition(code!, ErrorKind.Invalid, "bad")]);
 
         Assert.Equal("AW-KERNEL-001", result.Error.Code);
     }

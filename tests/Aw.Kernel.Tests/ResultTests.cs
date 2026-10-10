@@ -60,6 +60,17 @@ public sealed class ResultTests
         Assert.Same(_notFound, Results.Failure<int>(_notFound).Error);
     }
 
+    [Fact]
+    public void A_null_error_is_a_bug_not_a_success()
+    {
+        _ = Assert.Throws<ArgumentNullException>(() => Results.Failure<int>(null!));
+        _ = Assert.Throws<ArgumentNullException>(() =>
+        {
+            Result<int> result = (Error)null!;
+            return result;
+        });
+    }
+
     private static Result<int> Half(int value) =>
         value % 2 == 0 ? value / 2 : KernelErrors.Invalid.With(value.ToString(System.Globalization.CultureInfo.InvariantCulture) + " is odd");
 }
