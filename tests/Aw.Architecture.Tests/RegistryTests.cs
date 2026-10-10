@@ -20,7 +20,7 @@ public sealed class RegistryTests
     public void Every_registered_assembly_is_a_production_project_that_loads() =>
         Verify.None(Stale(Solution.ProductionProjects, Packages.Production)
             .Concat(Packages.Production.Where(n => Production.Assemblies.All(a => a.GetName().Name != n))
-                .Select(n => new Violation(StaleId, $"{n} doesn't load", AddReference(n)))));
+                .Select(n => new Violation(StaleId, $"{n} is in Packages.cs but doesn't load from the test output", $"add {AddReference(n)}"))));
 
     [Fact]
     public void Every_registered_assembly_is_in_the_architecture_model()
