@@ -23,7 +23,7 @@ cat > "$FAKE" <<'FAKE_EOF'
 #!/usr/bin/env bash
 echo "$* | CI=${CI:-} SIGVERIFY=${DOTNET_NUGET_SIGNATURE_VERIFICATION:-}" >> "$FAKE_LOG"
 case "$1 ${2:-}" in
-  "restore "*) if [ -n "${FAKE_RESTORE_EDIT:-}" ]; then echo '{"changed":true}' > "$FAKE_RESTORE_EDIT"; fi; exit 0 ;;
+  "restore "*) if [ -n "${FAKE_RESTORE_EDIT:-}" ]; then echo '{"changed":true}' > "$FAKE_RESTORE_EDIT"; fi; exit "${FAKE_RESTORE_EXIT:-0}" ;;
   "nuget locals") echo "global-packages: $FAKE_PKGS/"; exit 0 ;;
   "nuget verify") printf '%b' "${FAKE_VERIFY_OUT:-}"; exit "${FAKE_VERIFY_EXIT:-0}" ;;
 esac
@@ -43,7 +43,7 @@ new_repo() {
   echo '<Solution />' > "$REPO/AgenticWorkflow.slnx"
   echo '<configuration />' > "$REPO/nuget.config"
   export FAKE_LOG="$WORK/fake-$RANDOM.log"; : > "$FAKE_LOG"
-  unset FAKE_RESTORE_EDIT FAKE_VERIFY_EXIT FAKE_VERIFY_OUT
+  unset FAKE_RESTORE_EDIT FAKE_VERIFY_EXIT FAKE_VERIFY_OUT FAKE_RESTORE_EXIT
 }
 add_project() { # name, with-lock(yes|no), dir (default src), in-solution(yes|no, default yes)
   local dir="${3:-src}"
@@ -141,5 +141,52 @@ LOCK_SAVED="$LOCK"; LOCK="${LOCK//1.2.3/9.9.9}"; add_project Demo.Core yes; LOCK
 run
 check "missing nupkg: exit 1" "$CODE" "1"
 check "missing nupkg: names it" "$(echo "$OUT" | grep -c 'demo.pkg 9.9.9')" "1"
+
+# --- a missing solution file fails closed ---
+new_repo; rm "$REPO/AgenticWorkflow.slnx"; git -C "$REPO" add -A; git -C "$REPO" commit -qm "no slnx"
+run
+check "missing slnx: exit 1" "$CODE" "1"
+check "missing slnx: says so" "$(echo "$OUT" | grep -c 'AgenticWorkflow.slnx not found')" "1"
+
+# --- a malformed solution file fails closed ---
+new_repo; add_project Demo.Core yes
+printf '<Solution>\n  <Folder Name="/x/">\n    <Project Path="src/Demo.Core/Demo.Core.csproj" />\n</Solution>\n' > "$REPO/AgenticWorkflow.slnx"
+git -C "$REPO" commit -qam "mangled slnx"
+run
+check "malformed slnx: exit 1" "$CODE" "1"
+check "malformed slnx: says it can't parse" "$(echo "$OUT" | grep -c 'cannot parse AgenticWorkflow.slnx')" "1"
+check "malformed slnx: no restore ran" "$(grep -c '^restore' "$FAKE_LOG" || true)" "0"
+
+# --- a corrupt lock file fails closed ---
+new_repo; LOCK_SAVED="$LOCK"; LOCK='{"version":2,"dependencies":'; add_project Demo.Core yes; LOCK="$LOCK_SAVED"
+run
+check "corrupt lock: exit 1" "$CODE" "1"
+check "corrupt lock: says it can't read the lock files" "$(echo "$OUT" | grep -c 'cannot read lock files')" "1"
+
+# --- a failed restore fails ---
+new_repo; add_project Demo.Core yes
+export FAKE_RESTORE_EXIT=1
+run
+check "restore failure: exit 1" "$CODE" "1"
+
+# --- allowed codes plus a failing line with no code: fails closed ---
+new_repo; add_project Demo.Core yes
+export FAKE_VERIFY_EXIT=1 FAKE_VERIFY_OUT='Verifying Demo.Pkg.1.2.3\nerror: NU3037: The author primary signature validity period has expired.\nerror: Could not load file or assembly; unexpected failure\n'
+run
+check "NU3037 plus an uncoded error: exit 1" "$CODE" "1"
+
+# --- after the expired-timestamp warning, no "signature-verified" success claim ---
+new_repo; add_project Demo.Core yes
+export FAKE_VERIFY_EXIT=1 FAKE_VERIFY_OUT='Verifying Demo.Pkg.1.2.3\nerror: NU3037: The author primary signature validity period has expired.\n'
+run
+check "warning run: exit 0" "$CODE" "0"
+check "warning run: no clean success line" "$(echo "$OUT" | grep -c 'restored and signature-verified$' || true)" "0"
+check "warning run: success line names the warning" "$(echo "$OUT" | grep -c 'with expired legacy timestamps')" "1"
+
+# --- a staged (not yet committed) lock file that restore leaves alone passes ---
+new_repo; add_project Demo.Core yes; add_project Demo.Two no
+echo "$LOCK" > "$REPO/src/Demo.Two/packages.lock.json"; git -C "$REPO" add src/Demo.Two/packages.lock.json
+run
+check "staged lock untouched by restore: exit 0" "$CODE" "0"
 
 exit "$fail"
