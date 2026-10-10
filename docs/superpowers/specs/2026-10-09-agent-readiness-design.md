@@ -327,7 +327,9 @@ group.MapPost("/items/{id}/start", async (ItemId id, StartItemBody body, IServic
   the same 14-day minimum age as the existing pins.
 - **One owner per rule (A14):** where analyzer packs overlap (for example CA2007 and MA0004 on `ConfigureAwait`),
   `.editorconfig` names one owning rule and disables the others. Existing violations are captured in a generated
-  `baseline.globalconfig` that lowers only those rule-and-file pairs; the ratchet fails CI if the baseline grows.
+  ratchet baseline block at the end of `.editorconfig` that lowers only those rule-and-file pairs; the ratchet fails
+  CI if the baseline grows. (Not a `baseline.globalconfig`: a global config can't lower a rule that `.editorconfig`
+  sets, and global-config sections need absolute paths.)
 - `.editorconfig` sets every rule's severity explicitly (no "suggestion" level for anything agents should obey).
   The size limits: file ≤ 300 lines, method ≤ 40 lines, cyclomatic complexity ≤ 10, parameters ≤ 5. Existing
   violations go into a ratchet baseline that only shrinks.

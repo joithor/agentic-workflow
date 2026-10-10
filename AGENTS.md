@@ -41,7 +41,7 @@ Domain-specific rules live in `.agents/rules/` — one file per rule, the only c
 | MCP | Official MCP C# SDK |
 | JSON | System.Text.Json, one source-generated context per package |
 | Analyzers | NetAnalyzers, Meziantou, Roslynator, BannedApiAnalyzers, PublicApiAnalyzers (one owner per rule, `.editorconfig`) |
-| Test | xUnit v3 on Microsoft.Testing.Platform (decision R7), lanes `unit` / `integration` / `heavy` |
+| Test | xUnit v3 on Microsoft.Testing.Platform (default; decision R7 may pick TUnit), lanes `unit` / `integration` / `heavy` |
 | Packages | Central Package Management (`Directory.Packages.props`), locked restore, nuget.org only (`nuget.config`) |
 
 ## Directory Structure
@@ -59,10 +59,10 @@ agentic-workflow/
 ├── mods/          # Claude Code mods (in-process function hooks): aw-live /live pane. Claude-only
 ├── planning/      # Project documentation
 ├── src/           # C# build (in progress): Aw.Kernel, Aw.Analyzers, then one package per port — Core · Features · Infrastructure · Host
-├── tests/         # C# tests: <Pkg>.Tests (by feature), <Pkg>.Testing (fakes, builders, contract bases), Aw.Architecture.Tests
+├── tests/         # C# tests: Aw.<Pkg>.Tests (by feature), Aw.<Pkg>.Testing (fakes, builders, contract bases), Aw.Architecture.Tests
 ├── spikes/        # Throwaway C# spikes (AOT spike); never part of the solution
 ├── global.json · AgenticWorkflow.slnx · Directory.Build.props · Directory.Packages.props · nuget.config · BannedSymbols.txt
-├── deps.yaml      # Declared package tiers and every dependency edge (project, cli, db, file)
+├── deps.yaml      # Declared package tiers and every dependency edge (project, cli, db, file); checked by scripts/check-deps.mjs (deps-graph PR #92)
 ├── .agents/rules/ # Glob-scoped domain rules (.claude/rules and .cursor/rules link here)
 ├── .serena/       # Serena LSP project configuration
 ├── scripts/       # Utility scripts (sync-rules.sh, serena-docker, probe.sh, install-scorer.sh)
@@ -149,19 +149,18 @@ Before merging any PR:
 4. `./setup.sh --providers claude,codex,cursor --dry-run` runs cleanly
 5. No `/* v8 ignore */` annotations in source files (prohibited — write the test instead)
 6. No `any` types outside of Fastify integration boundaries
-7. C# build (active once `src/` has projects): `dotnet build -warnaserror` reports zero warnings, `dotnet test` passes in every lane CI runs, `dotnet format --verify-no-changes` is clean, `baseline.globalconfig` didn't grow, and `deps.yaml` matches the real dependency edges
+7. C# build (active once `src/` has projects): `dotnet build -warnaserror` reports zero warnings, `dotnet test` passes in every lane CI runs, `dotnet format --verify-no-changes` is clean, and the ratchet baseline block at the end of `.editorconfig` didn't grow. Once `scripts/check-deps.mjs` exists (deps-graph PR #92), `node scripts/check-deps.mjs` passes too (`deps.yaml` matches the real edges)
 
 ## C# slice recipe
 
 To add a use case to a C# package: **test, request and response, service, endpoint, registration.**
 
-1. Write the failing test that names the behavior (`StartItem_parks_when_budget_is_exhausted`) in `tests/<Pkg>.Tests/<Slice>/` and commit it red.
-2. Add the request and response records in `src/<Pkg>/Aw.<Pkg>.Features/<Slice>/`.
-3. Implement the service (`IService<TRequest, TResponse>`); pure decisions live on the domain type in `Core`.
-4. Map the endpoint or CLI command: bind, call one service, map the `Result`.
-5. Register it explicitly in the project's `Add…()` method; add the types to the package's JSON context.
+1. Write the failing test that names the behavior (`StartItem_parks_when_budget_is_exhausted`) in `tests/Aw.<Pkg>.Tests/<Slice>/`, together with the request and response records and a service stub that throws, in `src/<Pkg>/Aw.<Pkg>.Features/<Slice>/`. Commit it red: it compiles with zero warnings and fails when run.
+2. Implement the service (`IService<TRequest, TResponse>`); pure decisions live on the domain type in `Core`.
+3. Map the endpoint (`Host/Endpoints/`) or CLI command (`Host/Commands/`): bind, call one service, map the `Result`.
+4. Register it explicitly in the project's `Add…()` method; add the types to the package's JSON context.
 
-`/new-slice` generates steps 1–5 as stubs with the red test. Full rules: `.agents/rules/csharp.md` and `.agents/rules/csharp-testing.md`.
+`/new-slice` generates step 1 and the stubs for steps 3–4. Full rules: `.agents/rules/csharp.md` and `.agents/rules/csharp-testing.md`.
 
 ## Commit Conventions
 
