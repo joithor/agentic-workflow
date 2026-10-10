@@ -23,6 +23,9 @@ public static class JudgeErrors
     /// <summary>AW-JUDGE-006: 'config set … threshold' got a value that isn't a finite number.</summary>
     public static readonly ErrorDefinition NotANumber = new("AW-JUDGE-006", ErrorKind.Invalid, "not a number");
 
+    /// <summary>AW-JUDGE-010: the --providers flag or AW_JUDGE_PROVIDERS is malformed; the message is the TS error text.</summary>
+    public static readonly ErrorDefinition ProvidersFlag = new("AW-JUDGE-010", ErrorKind.Invalid, "bad providers allowlist");
+
     /// <summary>Every Judge error, for ErrorCatalogue.Validate.</summary>
-    public static IReadOnlyList<ErrorDefinition> All { get; } = [Invalid, UnknownDecision, DecisionExists, BriefExists, NoBrief, NotANumber];
+    public static IReadOnlyList<ErrorDefinition> All { get; } = [Invalid, UnknownDecision, DecisionExists, BriefExists, NoBrief, NotANumber, ProvidersFlag];
 }

@@ -13,7 +13,7 @@ internal static class Composition
     internal static IServiceCollection Compose(IServiceCollection services, Func<string, string?> environment, TimeProvider clock)
         => services
             .AddSingleton(clock)
-            .AddSingleton(AwJson.CreateOptions(JudgeJsonContext.Default))   // the Kernel JSON profile, for the config file
+            .AddSingleton(AwJson.CreateOptions(JudgeJsonContext.Default))   // the Kernel JSON profile: the config file and Core's stored-input JSON
             .AddKernelTelemetry(TelemetryOptions.FromEnvironment("judge", environment, clock))   // JSON lines on stderr (AW_LOG_LEVEL); exports off
             .AddJudgeCore()
             .AddJudgeFeatures()
