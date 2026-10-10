@@ -75,7 +75,7 @@ done
 for r in ${REPOS[@]+"${REPOS[@]}"}; do
   [[ "$r" =~ ^[A-Za-z0-9._-]{1,100}$ ]] || die "invalid repository name (letters, digits, . _ - only)" 2
 done
-for c in curl jq openssl pgrep; do
+for c in curl jq openssl pgrep ps; do
   command -v "$c" >/dev/null || die "$c is required"
 done
 
@@ -93,18 +93,37 @@ kill_tree() {
   kill -TERM "$1" 2>/dev/null || true
   for child in $kids; do kill_tree "$child"; done
 }
-# On every exit — normal, `exit` from a trap, or a fatal signal bash doesn't
-# trap (USR1, ALRM, …) — stop any request job still running, found as this
-# shell's children so it doesn't matter whether `$!` was recorded yet.
-cleanup() {
+# stop_jobs: stop any request job still running, found as this shell's
+# children so it doesn't matter whether `$!` was recorded yet.
+stop_jobs() {
   local p
   for p in $(pgrep -P $$ 2>/dev/null || true); do kill_tree "$p"; done
+}
+# Every way out stops the job before the shell can exit:
+# - the signal traps (INT, TERM, HUP, and QUIT and PROF, on which bash 3.2
+#   skips the EXIT trap) ignore further signals, stop the job, then exit;
+# - the EXIT trap (normal exit, and fatal signals on which bash still runs it,
+#   such as USR1 and ALRM) does the same and removes the temp dir.
+# A second signal that lands before a handler's first line runs that handler
+# again, which also stops the job first, so a burst of signals can't cut the
+# cleanup short. SIGKILL can't be handled at all; for that the job itself
+# refuses to print once the script is gone.
+on_signal() {
+  trap '' HUP INT QUIT TERM PROF
+  stop_jobs
+  exit "$1"
+}
+cleanup() {
+  trap '' HUP INT QUIT TERM PROF
+  stop_jobs
   rm -rf "$WORK"
 }
 trap cleanup EXIT
-trap 'exit 130' INT
-trap 'exit 143' TERM
-trap 'exit 129' HUP
+trap 'on_signal 130' INT
+trap 'on_signal 143' TERM
+trap 'on_signal 129' HUP
+trap 'on_signal 131' QUIT
+trap 'on_signal 155' PROF
 KEY="$WORK/key.pem"
 
 if [ -n "${AGENT_APP_KEY_FILE:-}" ]; then
@@ -157,7 +176,8 @@ unset jwt sig
 # the job's memory and reaches jq through pipes (a bash 3.2 here-string would
 # be a temp file).
 (
-  trap - EXIT INT TERM HUP # the job must not run the parent's cleanup
+  trap - EXIT INT TERM HUP QUIT PROF # the job must not run the parent's cleanup
+  self="$(exec sh -c 'echo "$PPID"')" # this job's pid (bash 3.2 has no BASHPID)
   resp="$(printf '%s\n' "$cfg" | curl -q -sS --max-time 30 -w '\n%{http_code}' --config -)" \
     || die "request to $API_URL failed"
   status="${resp##*$'\n'}"
@@ -177,6 +197,11 @@ unset jwt sig
   if [ "$VERBOSE" -eq 1 ]; then
     echo "agent-token: expires_at $(printf '%s' "$resp" | jq -r '.expires_at // "unknown"')" >&2
   fi
+  # Still the script's child? After a SIGKILL the job is reparented at once
+  # (kill -0 $$ would still pass on the unreaped zombie), and it prints
+  # nothing; the minted token is wasted. A tiny window remains between this
+  # check and the printf.
+  [ "$(ps -o ppid= -p "$self" | tr -d ' ')" = "$$" ] || exit 1
   printf '%s\n' "$token"
 ) &
 REQ_PID=$!
