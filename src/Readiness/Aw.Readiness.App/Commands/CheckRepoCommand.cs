@@ -18,7 +18,7 @@ internal static class CheckRepoCommand
         }
 
         var service = services.GetRequiredService<IService<CheckRepoRequest, CheckRepoResponse>>();
-        var result = await service.Handle(new CheckRepoRequest(), CancellationToken.None).ConfigureAwait(false);
+        var result = await service.Handle(new CheckRepoRequest(Environment.CurrentDirectory, UseHost: true), CancellationToken.None).ConfigureAwait(false);
         return CommandOutput.Write(result, json);
     }
 }
