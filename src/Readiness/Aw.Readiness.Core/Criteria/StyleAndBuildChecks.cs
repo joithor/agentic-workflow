@@ -61,12 +61,16 @@ internal static partial class StyleAndBuildChecks
     {
         var central = c.Contains(Packages, "<ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>");
         var locks = c.Contains(BuildProps, "<RestorePackagesWithLockFile>true</RestorePackagesWithLockFile>");
-        var projects = c.Tree.Files("src", ".csproj").Concat(c.Tree.Files("tests", ".csproj")).ToList();
+        var all = c.Tree.Files("src", ".csproj").Concat(c.Tree.Files("tests", ".csproj")).ToList();
+        var optedOut = all.Where(p => c.Contains(p, "<RestorePackagesWithLockFile>false</RestorePackagesWithLockFile>")).ToList();
+        var projects = all.Except(optedOut, StringComparer.Ordinal).ToList();
         var unlocked = projects.Where(p => !c.Has(p[..(p.LastIndexOf('/') + 1)] + "packages.lock.json")).ToList();
+        var exempt = optedOut.Count == 0 ? "" : $"; opted out: {string.Join(", ", optedOut)}";
         return !central || !locks
             ? Verdict.Fail("Directory.Packages.props or Directory.Build.props doesn't turn on central versions and lock files")
-            : Verdict.When(unlocked.Count == 0, string.Create(CultureInfo.InvariantCulture, $"central versions, lock files on, {projects.Count} projects locked"),
-                string.Create(CultureInfo.InvariantCulture, $"{unlocked.Count} of {projects.Count} projects have no packages.lock.json: {string.Join(", ", unlocked.Take(5))}"));
+            : Verdict.When(unlocked.Count == 0,
+                string.Create(CultureInfo.InvariantCulture, $"central versions, lock files on, {projects.Count} projects locked{exempt}"),
+                string.Create(CultureInfo.InvariantCulture, $"{unlocked.Count} of {projects.Count} projects have no packages.lock.json: {string.Join(", ", unlocked.Take(5))}{exempt}"));
     }
 
     private static Verdict VcsCli(RepoContext c)
