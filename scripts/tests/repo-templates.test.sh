@@ -30,8 +30,9 @@ check "every FROM and COPY --from image is pinned by digest" \
 nvm="$(tr -d '[:space:]v' < .nvmrc)"
 check "Node major matches .nvmrc ($nvm)" "grep -qE '^ARG NODE_VERSION=${nvm%%.*}\\.[0-9]+\\.[0-9]+\$' $DF"
 check "Node tarball is checksum-verified" "grep -q 'sha256sum -c' $DF && grep -qE '^ARG NODE_SHA256_X64=[0-9a-f]{64}\$' $DF && grep -qE '^ARG NODE_SHA256_ARM64=[0-9a-f]{64}\$' $DF"
+# Comment lines may name what's excluded; only the configuration itself counts.
 check "no Docker-in-Docker, host socket, privileged mode or extra run args" \
-  "! grep -niE 'docker-in-docker|docker-outside-of-docker|docker\.sock|privileged|\"runArgs\"|\"mounts\"|\"features\"|--cap-add' .devcontainer/*"
+  "! grep -hvE '^[[:space:]]*(#|//)' .devcontainer/* | grep -iE 'docker-in-docker|docker-outside-of-docker|docker\.sock|privileged|\"runArgs\"|\"mounts\"|\"features\"|--cap-add'"
 check "the container runs as a non-root user" "grep -qE '^USER [a-z]+' $DF && grep -q '\"remoteUser\": \"ubuntu\"' $DC"
 check "post-create script is executable and restores locked" \
   "[ -x .devcontainer/post-create.sh ] && grep -q 'dotnet restore AgenticWorkflow.slnx --locked-mode' .devcontainer/post-create.sh"
