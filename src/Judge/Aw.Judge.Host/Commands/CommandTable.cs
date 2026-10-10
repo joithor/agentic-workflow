@@ -19,7 +19,7 @@ internal static class CommandTable
 
         if (!_routed.Contains(args[0]))
         {
-            return await QuestionCommand.Run(args[0]).ConfigureAwait(false);
+            return QuestionCommand.Run(args[0]);
         }
 
         var scope = provider.CreateAsyncScope();

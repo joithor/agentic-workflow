@@ -10,7 +10,7 @@ internal static class BriefCommands
     internal static async Task<int> Run(IReadOnlyList<string> args, IServiceProvider services, JsonSerializerOptions json) =>
         (args.Count > 0 ? args[0] : null) switch
         {
-            SaveBriefCommand.Name => await SaveBriefCommand.Run(services).ConfigureAwait(false),
+            SaveBriefCommand.Name => await SaveBriefCommand.Run(services, json).ConfigureAwait(false),
             GetBriefCommand.Name => await GetBriefCommand.Run(Argument(args, 1), services, json).ConfigureAwait(false),
             MapBriefByNameCommand.Name => await MapBriefByNameCommand.Run(Argument(args, 1), services).ConfigureAwait(false),
             SetBriefAgentIdCommand.Name => await SetBriefAgentIdCommand.Run(Argument(args, 1), Argument(args, 2), services).ConfigureAwait(false),

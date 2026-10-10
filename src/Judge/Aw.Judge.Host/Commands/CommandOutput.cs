@@ -7,8 +7,8 @@ namespace Aw.Judge.Host.Commands;
 
 /// <summary>
 /// The command line's frozen streams (TS cli.ts): a command produces an exit code, stdout and stderr; each stream gets
-/// its text plus "\n" only when the text isn't empty, as UTF-8. Stdin is read whole and decoded as node decodes it
-/// (invalid UTF-8 becomes U+FFFD). A test captures all three for its own async flow (<see cref="Capture"/>).
+/// its text plus "\n" only when the text isn't empty, as UTF-8. Stdin is read whole and deserialized into the command's
+/// input record. A test captures all three for its own async flow (<see cref="Capture"/>).
 /// </summary>
 internal static class CommandOutput
 {
@@ -25,12 +25,13 @@ internal static class CommandOutput
         return exitCode;
     }
 
-    /// <summary>Reads stdin to the end.</summary>
-    internal static async Task<string> ReadInput(CancellationToken cancellationToken)
+    /// <summary>Reads stdin to the end and deserializes it into <typeparamref name="T"/> through the AwJson profile.</summary>
+    /// <returns>The record, or AW-KERNEL-001 when stdin isn't JSON or misses the record's shape (required, nullable).</returns>
+    internal static async Task<Result<T>> ReadInput<T>(JsonSerializerOptions json, CancellationToken cancellationToken)
     {
         if (_capture.Value is { } capture)
         {
-            return capture.Stdin;
+            return AwJson.Deserialize<T>(Encoding.UTF8.GetBytes(capture.Stdin), json);
         }
 
         var stdin = Console.OpenStandardInput();
@@ -38,25 +39,15 @@ internal static class CommandOutput
         {
             using var buffer = new MemoryStream();
             await stdin.CopyToAsync(buffer, cancellationToken).ConfigureAwait(false);
-            return Encoding.UTF8.GetString(buffer.GetBuffer(), 0, (int)buffer.Length);
+            return AwJson.Deserialize<T>(buffer.GetBuffer().AsSpan(0, (int)buffer.Length), json);
         }
     }
 
     /// <summary>A value as Kernel-profile JSON (the context's records carry the contract's field names).</summary>
     internal static string Json<T>(T value, JsonSerializerOptions json) => Encoding.UTF8.GetString(AwJson.Serialize(value, json));
 
-    /// <summary>Parses stdin as one JSON document, or null when it isn't valid JSON.</summary>
-    internal static JsonDocument? ParseInput(string text)
-    {
-        try
-        {
-            return JsonDocument.Parse(text);
-        }
-        catch (JsonException)
-        {
-            return null;
-        }
-    }
+    /// <summary>Stdin that isn't the command's input record: exit 1, 'invalid input: &lt;reason&gt;' on one line.</summary>
+    internal static int InvalidInput(string reason) => Emit(1, "", $"invalid input: {OneLine(reason)}");
 
     /// <summary>The scaffold's mapping (/new-slice generates calls to it): the value as Kernel JSON, or the error.</summary>
     internal static int Write<T>(Result<T> result, JsonSerializerOptions json) =>
@@ -66,6 +57,9 @@ internal static class CommandOutput
 
     /// <summary>The scaffold's usage error (/new-slice generates calls to it).</summary>
     internal static int Usage(string message) => Emit(2, "", $"usage: {message}");
+
+    // Error text is one stderr line: any line break inside it becomes a space.
+    private static string OneLine(string text) => text.ReplaceLineEndings(" ");
 
     private static void Write(string text, bool error)
     {

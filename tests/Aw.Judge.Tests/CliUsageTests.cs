@@ -14,11 +14,11 @@ public sealed class CliUsageTests : IDisposable
     }
 
     [Fact, Trait("Lane", "integration")]
-    public async Task An_unknown_first_word_is_a_question_that_needs_JSON_on_stdin()
+    public async Task An_unknown_first_word_is_an_unknown_question_whatever_stdin_holds()
     {
         var cli = new JudgeCli(_state);
 
-        Assert.Equal(new CliRun(1, "", "input is not valid JSON\n"), await cli.RunWithInput("", "no-such-question"));
+        Assert.Equal(new CliRun(1, "", "unknown question: no-such-question\n"), await cli.RunWithInput("", "no-such-question"));
         Assert.Equal(new CliRun(1, "", "unknown question: no-such-question\n"), await cli.RunWithInput("{}", "no-such-question"));
     }
 

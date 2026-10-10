@@ -24,6 +24,7 @@ namespace Aw.Judge.Host;
 [JsonSerializable(typeof(JudgeConfig))]
 [JsonSerializable(typeof(GetHealthRequest))]
 [JsonSerializable(typeof(GetHealthResponse))]
+[JsonSerializable(typeof(BriefInput))]
 [JsonSerializable(typeof(SaveBriefRequest))]
 [JsonSerializable(typeof(SaveBriefResponse))]
 [JsonSerializable(typeof(GetBriefRequest))]
