@@ -161,6 +161,7 @@ what `ValidateOnBuild` can't see inside the factory.
 ### Template: `Endpoints/<Slice>Endpoint.cs` (http)
 
 ```csharp
+using Aw.<Pkg>.Core.Ids;
 using Aw.<Pkg>.Features.<Slice>;
 using Aw.Kernel.Services;
 
@@ -180,7 +181,7 @@ internal static class <Slice>Endpoint
 
 Shown for `route` `POST /items/{id}/start`. For each `{name}` in `route` the lambda takes one typed-id parameter of
 that name (`<Id> name`), in route order, before the body; the request is built from those ids plus the body with
-`<Slice>Body.ToRequest(<Id> id, …)`. A route with no `{name}` segment gives `ToRequest()`. The lambda binds, calls one
+`<Slice>Body.ToRequest(<Id> id, …)`. A route with no `{name}` segment gives `ToRequest()`. Both templates emit `using Aw.<Pkg>.Core.Ids;` exactly when `route` has at least one `{name}` segment: without it the id type doesn't resolve (CS0246), and an unused using fails the build (`IDE0005` is an error). The lambda binds, calls one
 service and maps the result; it has no branches, and the discard keeps `IDE0058` quiet. Route text binds through the
 id's `IParsable` `TryParse` (Vogen-generated, runs `Validate`; refused text → 400). Body JSON goes through the AwJson
 profile the Host applies in `ConfigureHttpJsonOptions`. An uninitialized id's `ValueObjectValidationException` is
