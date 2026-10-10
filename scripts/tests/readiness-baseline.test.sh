@@ -85,6 +85,150 @@ test_only_read_only_gh_calls() {
   echo "PASS: test_only_read_only_gh_calls"
 }
 
+row() { # row <file> <criterion-id> -> the whole table row
+  grep -E "^\| $2 \|" "$1" || true
+}
+
+# levelOf is exported; call it on synthetic rows. Prints JSON {level, cells}.
+levels() { # levels '<rows json>'
+  node --input-type=module -e "
+    const { levelOf } = await import('$SCRIPT');
+    const r = levelOf(JSON.parse(process.argv[1]));
+    console.log(JSON.stringify({ level: r.level, skipped: r.byLevel.filter((b) => b.skipped).map((b) => b.L) }));
+  " "$1"
+}
+
+test_level_walk() {
+  local p='{"level":1,"state":"pass","credit":1}' f='{"level":1,"state":"fail","credit":0}'
+  [ "$(levels "[$p,$p,$p,$p,$f]")" = '{"level":2,"skipped":[]}' ] || fail "exactly 80% at L1 should unlock L2"
+  [ "$(levels '[{"level":1,"state":"fail","credit":0.79}]')" = '{"level":1,"skipped":[]}' ] || fail "79% should block"
+  # fractional app credit: 6/7 + a pass = 1.857 / 2 = 93%
+  [ "$(levels "[{\"level\":1,\"state\":\"fail\",\"credit\":0.857},$p]")" = '{"level":2,"skipped":[]}' ] || fail "fractional credit should pool"
+  # a skipped level in the middle is walked past and reported as skipped
+  [ "$(levels "[$p,{\"level\":3,\"state\":\"pass\",\"credit\":1}]")" = '{"level":4,"skipped":[2]}' ] || fail "empty L2 should be skipped and marked"
+  # n/a and unknown are not scored; nothing scored -> no level
+  [ "$(levels '[{"level":1,"state":"unknown","credit":0},{"level":2,"state":"n/a","credit":0}]')" = '{"level":null,"skipped":[]}' ] \
+    || fail "nothing scored should give level null"
+  echo "PASS: test_level_walk"
+}
+
+test_unscored_pillar_and_skipped_cells_render() {
+  local t="$TMP/render"; make_tree "$t"
+  node "$SCRIPT" --root "$t" --no-remote --date 2026-10-10 --out "$t/o.md"
+  # Product & Experimentation is scored now (PE-1/PE-2 fail at L4); the walk passes empty L1–L3 to reach L4 -> 'skip'
+  grep -E '^\| Product & Experimentation \| skip \| skip \| skip \| 0 / 2 \(0%\) \| — \| 1 \|$' "$t/o.md" >/dev/null \
+    || fail "PE pillar row wrong: $(grep -E '^\| Product' "$t/o.md")"
+  # Documentation: L1, L2 pass; L3 empty and walked past (L4 is scored) -> 'skip'; L5 empty, never reached -> '—'
+  grep -E '^\| Documentation \| 1 / 1 \(100%\) \| 1 / 1 \(100%\) \| skip \| 0 / 1 \(0%\) \| — \| 3 \|$' "$t/o.md" >/dev/null \
+    || fail "Documentation row wrong: $(grep -E '^\| Documentation' "$t/o.md")"
+  echo "PASS: test_unscored_pillar_and_skipped_cells_render"
+}
+
+test_pe_scored_against_w9_page() {
+  local t="$TMP/pe"; make_tree "$t"
+  node "$SCRIPT" --root "$t" --no-remote --date 2026-10-10 --out "$t/a.md"
+  [ "$(row_state "$t/a.md" PE-1)" = "fail" ] || fail "PE-1 should fail without the W9 page"
+  [ "$(row_state "$t/a.md" PE-2)" = "fail" ] || fail "PE-2 should fail without the W9 page"
+  mkdir -p "$t/docs/readiness"; echo "# signals" > "$t/docs/readiness/product-signals.md"
+  node "$SCRIPT" --root "$t" --no-remote --date 2026-10-10 --out "$t/b.md"
+  [ "$(row_state "$t/b.md" PE-1)" = "pass" ] || fail "PE-1 should pass with docs/readiness/product-signals.md"
+  [ "$(row_state "$t/b.md" TD-4)" = "unknown" ] || fail "TD-4 (parallel decomposition) should be unknown"
+  echo "PASS: test_pe_scored_against_w9_page"
+}
+
+test_app_na_leaves_denominator() {
+  local t="$TMP/na"; make_tree "$t"
+  mkdir -p "$t/mods/aw-live/hooks"; echo 'export {}' > "$t/mods/aw-live/hooks/index.ts"
+  node "$SCRIPT" --root "$t" --no-remote --date 2026-10-10 --out "$t/o.md"
+  # BS-2: judge passes, aw-live is n/a (no package.json), the other five are absent -> 1 / 6
+  row "$t/o.md" BS-2 | grep -E '\| 1 / 6 \|' >/dev/null || fail "BS-2 should be 1 / 6: $(row "$t/o.md" BS-2)"
+  row "$t/o.md" BS-2 | grep -F 'n/a: mods/aw-live (no package.json' >/dev/null || fail "BS-2 should list aw-live as n/a"
+  # BS-1: per app; judge has scripts.build and AGENTS.md documents it
+  row "$t/o.md" BS-1 | grep -E '\| app \|.*\| 1 / 6 \|' >/dev/null || fail "BS-1 should be app-scope 1 / 6: $(row "$t/o.md" BS-1)"
+  echo "PASS: test_app_na_leaves_denominator"
+}
+
+test_arg_errors_exit_2() {
+  local t="$TMP/args"; make_tree "$t"
+  local args
+  for args in "--bogus" "--out" "--out --no-remote" "--date 2026-13-45" "--date yesterday" "--out $TMP/no-such-dir/x.md" "--repo a/b/../../x"; do
+    local rc=0
+    # shellcheck disable=SC2086
+    node "$SCRIPT" --root "$t" --no-remote --date 2026-10-10 $args >/dev/null 2>"$TMP/err" || rc=$?
+    [ "$rc" -eq 2 ] || fail "'$args' should exit 2, got $rc ($(head -c 300 "$TMP/err"))"
+    grep -q "Error:\|at " "$TMP/err" && fail "'$args' printed a stack trace"
+  done
+  [ ! -e "$t/--no-remote" ] || fail "--out took a flag as its value"
+  echo "PASS: test_arg_errors_exit_2"
+}
+
+# A stub gh on PATH: logs argv, returns tiny payloads per path, sleeps when GH_STUB_SLEEP is set.
+make_gh_stub() {
+  local d="$1"; mkdir -p "$d"
+  cat > "$d/gh" <<'STUB'
+#!/usr/bin/env bash
+echo "$*" >> "$GH_LOG"
+[ -n "${GH_STUB_SLEEP:-}" ] && sleep "$GH_STUB_SLEEP"
+case "$2" in
+  repos/o/r) echo '{"default_branch":"trunk","security_and_analysis":{"secret_scanning":{"status":"enabled"},"secret_scanning_push_protection":{"status":"disabled"}}}' ;;
+  repos/o/r/branches/trunk/protection) echo 'gh: Branch not protected (HTTP 404)' >&2; exit 1 ;;
+  repos/o/r/rules/branches/trunk) echo '[]' ;;
+  repos/o/r/labels*) echo 'gh: API rate limit exceeded (HTTP 403)' >&2; exit 1 ;;
+  repos/o/r/releases*) echo '[{"published_at":"2026-10-01T00:00:00Z","created_at":"2026-10-01T00:00:00Z","draft":false},
+    {"published_at":"2026-09-01T00:00:00Z","created_at":"2026-09-01T00:00:00Z","draft":false},
+    {"published_at":null,"created_at":"2026-10-02T00:00:00Z","draft":true},
+    {"published_at":"2026-10-20T00:00:00Z","created_at":"2026-10-20T00:00:00Z","draft":false}]' ;;
+  *) echo 'gh: Not Found (HTTP 404)' >&2; exit 1 ;;
+esac
+STUB
+  chmod +x "$d/gh"
+}
+
+test_gh_stub_states_and_get_only() {
+  local t="$TMP/gh"; make_tree "$t"; make_gh_stub "$TMP/stub"
+  export GH_LOG="$TMP/gh.log"; : > "$GH_LOG"
+  local rc=0
+  PATH="$TMP/stub:$PATH" node "$SCRIPT" --root "$t" --repo o/r --date 2026-10-10 --out "$t/o.md" 2>"$TMP/err" || rc=$?
+  [ "$rc" -eq 0 ] || fail "stubbed run should exit 0, got $rc"
+  row "$t/o.md" SEC-1 | grep -E '\| fail \|.*trunk' >/dev/null || fail "SEC-1 should fail on the default branch trunk: $(row "$t/o.md" SEC-1)"
+  [ "$(row_state "$t/o.md" SEC-2)" = "pass" ] || fail "SEC-2 should pass"
+  row "$t/o.md" TD-2 | grep -E '\| unknown \|.*403' >/dev/null || fail "TD-2 should be unknown on 403: $(row "$t/o.md" TD-2)"
+  # drafts and releases after --date don't count: 2 in the window -> fail
+  row "$t/o.md" BS-4 | grep -E '\| fail \|.*2 releases' >/dev/null || fail "BS-4 should count 2: $(row "$t/o.md" BS-4)"
+  # every call is `api <path>` (optionally with --jq), never a write flag
+  if grep -vE '^api repos/o/r[^ ]*( --jq .*)?$' "$GH_LOG"; then fail "unexpected gh argv above"; fi
+  grep -q 'branches/main' "$GH_LOG" && fail "SEC-1 should not hardcode main"
+  echo "PASS: test_gh_stub_states_and_get_only"
+}
+
+test_gh_timeout_is_unknown() {
+  local t="$TMP/gto"; make_tree "$t"; make_gh_stub "$TMP/stub"
+  export GH_LOG="$TMP/gto.log"; : > "$GH_LOG"
+  local rc=0
+  GH_STUB_SLEEP=3 READINESS_GH_TIMEOUT_MS=200 PATH="$TMP/stub:$PATH" \
+    node "$SCRIPT" --root "$t" --repo o/r --date 2026-10-10 --out "$t/o.md" 2>/dev/null || rc=$?
+  [ "$rc" -eq 0 ] || fail "timed-out run should exit 0, got $rc"
+  for id in SEC-1 SEC-2 TD-2 BS-4; do
+    [ "$(row_state "$t/o.md" "$id")" = "unknown" ] || fail "$id should be unknown when gh times out"
+  done
+  echo "PASS: test_gh_timeout_is_unknown"
+}
+
+test_walk_sorted_and_skips_symlinks() {
+  local t="$TMP/walk"; make_tree "$t"
+  mkdir -p "$t/.github/workflows"
+  echo 'name: z flaky quarantine' > "$t/.github/workflows/z.yml"
+  echo 'name: a flaky quarantine' > "$t/.github/workflows/a.yml"
+  mkdir "$t/.github/workflows/dir.yml"
+  ln -s "$t/missing-target" "$t/judge/src/broken-link.ts"
+  ln -s "$t/judge" "$t/judge/src/cycle"
+  local rc=0
+  node "$SCRIPT" --root "$t" --no-remote --date 2026-10-10 --out "$t/o.md" 2>"$TMP/err" || rc=$?
+  [ "$rc" -eq 0 ] || fail "broken symlink / cycle / *.yml dir should not crash ($(head -c 300 "$TMP/err"))"
+  row "$t/o.md" TS-5 | grep -F '.github/workflows/a.yml' >/dev/null || fail "TS-5 should name the first sorted workflow: $(row "$t/o.md" TS-5)"
+  echo "PASS: test_walk_sorted_and_skips_symlinks"
+}
+
 test_codeowners_flips_sec3
 test_env_template_flips_de2
 test_no_remote_marks_remote_unknown
@@ -92,3 +236,11 @@ test_deterministic_for_fixed_date
 test_app_fraction_counts_present_apps
 test_bad_root_exits_2
 test_only_read_only_gh_calls
+test_level_walk
+test_unscored_pillar_and_skipped_cells_render
+test_pe_scored_against_w9_page
+test_app_na_leaves_denominator
+test_arg_errors_exit_2
+test_gh_stub_states_and_get_only
+test_gh_timeout_is_unknown
+test_walk_sorted_and_skips_symlinks
