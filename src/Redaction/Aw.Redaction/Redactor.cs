@@ -44,9 +44,8 @@ public sealed class Redactor : IRedactor
         ArgumentNullException.ThrowIfNull(text);
         try
         {
-            var folded = FoldedText.Fold(text);
-            var hits = Merge(Find(folded.Text))
-                .Select(h => ToOriginal(folded, h))
+            var hits = Merge(FindBoth(text))
+                .Select(h => new RedactionHit(h.Rule, h.Start, h.End))
                 .ToList();
             return hits.Count == 0
                 ? new ScrubResult(text, [], ScrubOutcome.Clean, BlockCode: null)
@@ -59,10 +58,24 @@ public sealed class Redactor : IRedactor
         }
     }
 
-    private static RedactionHit ToOriginal(FoldedText folded, RawHit hit)
+    // The rules run on the text as written and on its folded copy, and the hits are united in original coordinates.
+    // The folded pass sees through look-alikes, zero-width characters and JSON escapes; the plain pass keeps the
+    // token boundaries the fold would change (Cyrillic prose glued to a token, a fullwidth letter before it, or a
+    // Windows path whose backslash-r the fold would decode).
+    private List<RawHit> FindBoth(string text)
     {
-        var (start, end) = folded.ToOriginal(hit.Start, hit.End);
-        return new RedactionHit(hit.Rule, start, end);
+        var raw = Find(text);
+        var folded = FoldedText.Fold(text);
+        if (!string.Equals(folded.Text, text, StringComparison.Ordinal))
+        {
+            raw.AddRange(Find(folded.Text).Select(h =>
+            {
+                var (start, end) = folded.ToOriginal(h.Start, h.End);
+                return h with { Start = start, End = end };
+            }));
+        }
+
+        return raw;
     }
 
     private static string Replace(string text, List<RedactionHit> hits)
@@ -100,7 +113,7 @@ public sealed class Redactor : IRedactor
 
     private List<RawHit> Find(string text)
     {
-        var placeholders = _placeholder.Matches(text).Select(m => (m.Index, End: m.Index + m.Length)).ToList();
+        var placeholders = new Placeholders(_placeholder.Matches(text));
         var raw = new List<RawHit>();
         for (var order = 0; order < _rules.Length; order++)
         {
@@ -110,7 +123,7 @@ public sealed class Redactor : IRedactor
                 var value = match.Groups["v"];
                 var span = value.Success ? value : match;
                 var end = span.Index + span.Length;
-                if (span.Length > 0 && !placeholders.Exists(p => span.Index >= p.Index && end <= p.End))
+                if (span.Length > 0 && !placeholders.Contain(span.Index, end))
                 {
                     raw.Add(new RawHit(id, span.Index, end, order));
                 }

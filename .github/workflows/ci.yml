@@ -316,6 +316,7 @@ jobs:
           path: |
             TestResults
             artifacts/aot-smoke
+            artifacts/aot-data-smoke
             artifacts/aot-redaction-smoke
           if-no-files-found: ignore
           retention-days: 7
