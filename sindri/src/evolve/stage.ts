@@ -199,11 +199,11 @@ function requirePlainPlanPath(repo: string, relFile: string): void {
 
 // Explicit, in a session: scrub, privacy-gate, append. Never commits.
 export async function publishProposals(ctx: EvolveCtx, o: { dryRun: boolean; noPrivacyTerms?: boolean }): Promise<PublishOutcome> {
-  // Fail closed (security N1): with no private terms the gate only catches emails and home paths.
+  // Fail closed (security N1): no other layer knows the employer's names, so an empty term list needs the explicit flag.
   const deny = ctx.loaded.profile.privacy.denyTerms;
   if (deny.length === 0 && o.noPrivacyTerms !== true) {
     throw new SindriError("SND-EVOLVE-015", "privacy.denyTerms is empty in the profile, so publish can't check proposals for workplace words", {
-      fix: "add your workplace's names to privacy.denyTerms in the private profile, then sindri profile approve; or pass --no-privacy-terms to publish with only the email and home-path checks",
+      fix: "add your workplace's names to privacy.denyTerms in the private profile, then sindri profile approve; or pass --no-privacy-terms to publish with the private-terms layer skipped (the other five layers still run)",
     });
   }
   // May throw SND-EVOLVE-017/018 (a private repo without an index, no word list), also on --dry-run, before any write.

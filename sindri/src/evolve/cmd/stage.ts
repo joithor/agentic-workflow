@@ -52,7 +52,7 @@ export async function publish(args: string[], ctx: EvolveCtx): Promise<CommandRe
   const heldLines = [...r.held.map((h) => `held ${h.id} (${h.layer}): ${h.why}`), ...(byLayer.length > 0 ? [`Held by layer: ${byLayer.join(", ")}`] : [])];
   const heldHelp = r.held.length > 0 ? ['Held proposals stay held and don\'t count against the cap. Reject one with: sindri evolve reject <id> --reason "..."'] : [];
   const warning = [
-    ...(r.termsSkipped ? ["Warning: no privacy.denyTerms were set; only the email-address and home-path checks ran."] : []),
+    ...(r.termsSkipped ? ["Warning: no privacy.denyTerms were set, so the private-terms layer was skipped; the patterns, identifiers, verbatim, personal and scrubber layers ran."] : []),
     ...(r.warning === null ? [] : [`Warning: ${r.warning}`]),
   ];
   const heldNote = r.held.length > 0 ? `; ${r.held.length} held back` : "";

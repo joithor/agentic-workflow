@@ -182,12 +182,14 @@ describe("sindri evolve publish (the explicit half; Review Focus 6)", () => {
     const id = save("A clean proposal");
     await stage([], fx.ctx);
     await expect(publish([], fx.ctx)).rejects.toThrow(/privacy\.denyTerms is empty/);
-    await expect(publish(["--dry-run"], fx.ctx)).rejects.toThrow(/privacy\.denyTerms is empty/);
+    await expect(publish(["--dry-run"], fx.ctx)).rejects.toThrow(expect.objectContaining({
+      code: "SND-EVOLVE-015", fix: expect.stringContaining("--no-privacy-terms to publish with the private-terms layer skipped (the other five layers still run)"),
+    }));
     expect(fs.existsSync(path.join(fx.repo, REL))).toBe(false);
     expect(getProposal(fx.ctx.db, id)?.status).toBe("staged");
     const r = await publish(["--no-privacy-terms"], fx.ctx);
     expect(r.exitCode).toBe(0);
-    expect(r.stdout).toContain("Warning: no privacy.denyTerms were set; only the email-address and home-path checks ran.");
+    expect(r.stdout).toContain("Warning: no privacy.denyTerms were set, so the private-terms layer was skipped; the patterns, identifiers, verbatim, personal and scrubber layers ran.");
     expect(getProposal(fx.ctx.db, id)?.status).toBe("published");
     fx.close();
     // The flag changes nothing once terms are set, and the email and home-path checks still run without them.

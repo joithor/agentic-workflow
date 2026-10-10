@@ -78,7 +78,7 @@ export const ERRORS = {
   "SND-EVOLVE-012": { summary: "That pull request can't be reflected on.", fix: "reflect only reads merged PRs by an allowed author (evolve.prAuthors)" },
   "SND-EVOLVE-013": { summary: "gh returned a reply in an unexpected shape.", fix: "update gh, then rerun" },
   "SND-EVOLVE-014": { summary: "Publishing writes into the working tree, which is on the default branch.", fix: "git switch -c docs/sindri-proposals-<week>, then rerun sindri evolve publish" },
-  "SND-EVOLVE-015": { summary: "The privacy gate has no private terms to check against.", fix: "add your workplace's names to privacy.denyTerms in the private profile, then sindri profile approve; or pass --no-privacy-terms to publish with only the email and home-path checks" },
+  "SND-EVOLVE-015": { summary: "The privacy gate has no private terms to check against.", fix: "add your workplace's names to privacy.denyTerms in the private profile, then sindri profile approve; or pass --no-privacy-terms to publish with the private-terms layer skipped (the other five layers still run)" },
   "SND-EVOLVE-016": { summary: "That proposal's status doesn't allow a comparison.", fix: "sindri evolve show <id> prints its status; a rejected, adopted, merged or staged proposal is never compared again" },
   "SND-EVOLVE-017": { summary: "A private repo has no built code index, so publish can't check proposals for its identifiers.", fix: "sindri index build --repo <name>, then rerun sindri evolve publish" },
   "SND-EVOLVE-018": { summary: "The English word list publish uses to tell private identifiers from ordinary words is missing.", fix: "install a word list at /usr/share/dict/words (or point SINDRI_WORDS at one), then rerun sindri evolve publish" },
