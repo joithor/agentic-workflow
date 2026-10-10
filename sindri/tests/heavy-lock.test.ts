@@ -275,17 +275,37 @@ describe("heavy-job lock", () => {
     vi.spyOn(fs, "renameSync").mockImplementationOnce(() => { throw Object.assign(new Error("gone"), { code: "ENOENT" }); });
     await expect(withHeavyLock(d, "x", 0, async () => 1)).rejects.toThrow("the heavy-job lock is busy");
     vi.restoreAllMocks();
+    expect(fs.readdirSync(dir)).toEqual([]); // the mark is cleaned up
     // The dir was replaced between the recheck and the rename: put the new one back.
     fs.writeFileSync(holderPath(root), JSON.stringify({ kind: "index-build", pid: 999, host: "test-host", startedAt: "t" }));
     vi.spyOn(fs, "renameSync").mockImplementationOnce(((from: fs.PathLike, to: fs.PathLike) => {
-      fs.rmdirSync(from);
+      fs.rmSync(from, { recursive: true, force: true });
       realMkdir(from);
       realRename(from, to);
     }) as typeof fs.renameSync);
     await expect(withHeavyLock(d, "x", 0, async () => 1)).rejects.toThrow("the heavy-job lock is busy");
     expect(fs.existsSync(dir)).toBe(true);
+    expect(fs.readdirSync(dir)).toEqual([]);
     expect(fs.readdirSync(path.dirname(dir)).filter((n) => n.includes(".stale-"))).toEqual([]);
     vi.restoreAllMocks();
+    fs.rmdirSync(dir);
+    // Released between the recheck and the mark: back off. Any other write error is thrown.
+    plant();
+    const realWrite = fs.writeFileSync;
+    const onMark = (err: string): void => {
+      vi.spyOn(fs, "writeFileSync").mockImplementation(((f: fs.PathOrFileDescriptor, data: string, o?: fs.WriteFileOptions) => {
+        if (String(f).includes(".reclaim-")) throw Object.assign(new Error(err), { code: err });
+        return realWrite(f, data, o);
+      }) as typeof fs.writeFileSync);
+    };
+    onMark("ENOENT");
+    await expect(withHeavyLock(d, "x", 0, async () => 1)).rejects.toThrow("the heavy-job lock is busy");
+    vi.restoreAllMocks();
+    onMark("EACCES");
+    await expect(withHeavyLock(d, "x", 0, async () => 1)).rejects.toThrow("EACCES");
+    vi.restoreAllMocks();
+    expect(fs.readdirSync(dir)).toEqual([]);
+    fs.rmSync(`${dir}.reclaim`, { recursive: true, force: true });
     fs.rmdirSync(dir);
     // A waiter that wasn't reclaiming took the freed dir first.
     plant();

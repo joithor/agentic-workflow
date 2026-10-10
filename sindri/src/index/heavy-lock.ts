@@ -79,6 +79,17 @@ function dead(h: HeavyHolder, sys: SystemProbe): boolean {
   return !sys.pidAlive(h.pid);
 }
 
+// false: the dir is gone (released between the recheck and the mark).
+function tryMark(file: string): boolean {
+  try {
+    fs.writeFileSync(file, "", { flag: "wx" });
+    return true;
+  } catch (e) {
+    if ((e as NodeJS.ErrnoException).code !== "ENOENT") throw e;
+    return false;
+  }
+}
+
 function tryMkdir(dir: string): boolean {
   try {
     fs.mkdirSync(dir);
@@ -110,15 +121,25 @@ function reclaim(deps: Deps, dir: string, gone: HeavyHolder | null, me: HeavyHol
     const st = fs.statSync(dir, { throwIfNoEntry: false });
     const now = st === undefined ? null : readHolder(dir);
     if (st === undefined || !due(st) || (gone === null ? now !== null : !sameHolder(now, gone))) return false; // released, or it changed hands
+    // Mark the checked dir with a name only this takeover knows. The inode number alone can't
+    // tell a replacement apart: Linux hands a freed inode to the next mkdir at once.
+    const id = ulid(deps.now());
+    const mark = `.reclaim-${id}`;
+    if (!tryMark(path.join(dir, mark))) return false; // released in between
     // The dir exists, so nobody else can enter while its dead holder's record goes.
     fs.rmSync(holderFile(dir), { force: true });
-    const stale = `${dir}.stale-${ulid(deps.now())}`;
-    if (!tryRename(dir, stale)) return false;
+    const stale = `${dir}.stale-${id}`;
+    if (!tryRename(dir, stale)) {
+      fs.rmSync(path.join(dir, mark), { force: true });
+      return false;
+    }
     // Moved a dir other than the one checked (it changed hands in between): put it back.
-    if (fs.statSync(stale).ino !== st.ino) {
+    if (!fs.existsSync(path.join(stale, mark)) || fs.statSync(stale).ino !== st.ino) {
+      fs.rmSync(path.join(stale, mark), { force: true });
       tryRename(stale, dir);
       return false;
     }
+    fs.rmSync(path.join(stale, mark));
     fs.rmdirSync(stale);
     if (!tryMkdir(dir)) return false; // a waiter that wasn't reclaiming got in first
     try {
