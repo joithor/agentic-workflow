@@ -138,3 +138,26 @@ static Aw.Judge.Features.MapBriefByDispatch.MapBriefByDispatchRequest.operator !
 static Aw.Judge.Features.MapBriefByDispatch.MapBriefByDispatchRequest.operator ==(Aw.Judge.Features.MapBriefByDispatch.MapBriefByDispatchRequest? left, Aw.Judge.Features.MapBriefByDispatch.MapBriefByDispatchRequest? right) -> bool
 static Aw.Judge.Features.MapBriefByDispatch.MapBriefByDispatchResponse.operator !=(Aw.Judge.Features.MapBriefByDispatch.MapBriefByDispatchResponse? left, Aw.Judge.Features.MapBriefByDispatch.MapBriefByDispatchResponse? right) -> bool
 static Aw.Judge.Features.MapBriefByDispatch.MapBriefByDispatchResponse.operator ==(Aw.Judge.Features.MapBriefByDispatch.MapBriefByDispatchResponse? left, Aw.Judge.Features.MapBriefByDispatch.MapBriefByDispatchResponse? right) -> bool
+Aw.Judge.Features.SetBriefAgentId.SetBriefAgentIdRequest
+Aw.Judge.Features.SetBriefAgentId.SetBriefAgentIdRequest.<Clone>$() -> Aw.Judge.Features.SetBriefAgentId.SetBriefAgentIdRequest!
+Aw.Judge.Features.SetBriefAgentId.SetBriefAgentIdRequest.AgentId.get -> Aw.Judge.Core.Ids.AgentId
+Aw.Judge.Features.SetBriefAgentId.SetBriefAgentIdRequest.AgentId.init -> void
+Aw.Judge.Features.SetBriefAgentId.SetBriefAgentIdRequest.Deconstruct(out Aw.Judge.Core.Ids.ToolUseId ToolUseId, out Aw.Judge.Core.Ids.AgentId AgentId) -> void
+Aw.Judge.Features.SetBriefAgentId.SetBriefAgentIdRequest.Equals(Aw.Judge.Features.SetBriefAgentId.SetBriefAgentIdRequest? other) -> bool
+Aw.Judge.Features.SetBriefAgentId.SetBriefAgentIdRequest.SetBriefAgentIdRequest(Aw.Judge.Core.Ids.ToolUseId ToolUseId, Aw.Judge.Core.Ids.AgentId AgentId) -> void
+Aw.Judge.Features.SetBriefAgentId.SetBriefAgentIdRequest.ToolUseId.get -> Aw.Judge.Core.Ids.ToolUseId
+Aw.Judge.Features.SetBriefAgentId.SetBriefAgentIdRequest.ToolUseId.init -> void
+Aw.Judge.Features.SetBriefAgentId.SetBriefAgentIdResponse
+Aw.Judge.Features.SetBriefAgentId.SetBriefAgentIdResponse.<Clone>$() -> Aw.Judge.Features.SetBriefAgentId.SetBriefAgentIdResponse!
+Aw.Judge.Features.SetBriefAgentId.SetBriefAgentIdResponse.Equals(Aw.Judge.Features.SetBriefAgentId.SetBriefAgentIdResponse? other) -> bool
+Aw.Judge.Features.SetBriefAgentId.SetBriefAgentIdResponse.SetBriefAgentIdResponse() -> void
+override Aw.Judge.Features.SetBriefAgentId.SetBriefAgentIdRequest.Equals(object? obj) -> bool
+override Aw.Judge.Features.SetBriefAgentId.SetBriefAgentIdRequest.GetHashCode() -> int
+override Aw.Judge.Features.SetBriefAgentId.SetBriefAgentIdRequest.ToString() -> string!
+override Aw.Judge.Features.SetBriefAgentId.SetBriefAgentIdResponse.Equals(object? obj) -> bool
+override Aw.Judge.Features.SetBriefAgentId.SetBriefAgentIdResponse.GetHashCode() -> int
+override Aw.Judge.Features.SetBriefAgentId.SetBriefAgentIdResponse.ToString() -> string!
+static Aw.Judge.Features.SetBriefAgentId.SetBriefAgentIdRequest.operator !=(Aw.Judge.Features.SetBriefAgentId.SetBriefAgentIdRequest? left, Aw.Judge.Features.SetBriefAgentId.SetBriefAgentIdRequest? right) -> bool
+static Aw.Judge.Features.SetBriefAgentId.SetBriefAgentIdRequest.operator ==(Aw.Judge.Features.SetBriefAgentId.SetBriefAgentIdRequest? left, Aw.Judge.Features.SetBriefAgentId.SetBriefAgentIdRequest? right) -> bool
+static Aw.Judge.Features.SetBriefAgentId.SetBriefAgentIdResponse.operator !=(Aw.Judge.Features.SetBriefAgentId.SetBriefAgentIdResponse? left, Aw.Judge.Features.SetBriefAgentId.SetBriefAgentIdResponse? right) -> bool
+static Aw.Judge.Features.SetBriefAgentId.SetBriefAgentIdResponse.operator ==(Aw.Judge.Features.SetBriefAgentId.SetBriefAgentIdResponse? left, Aw.Judge.Features.SetBriefAgentId.SetBriefAgentIdResponse? right) -> bool

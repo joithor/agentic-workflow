@@ -3,6 +3,7 @@ using Aw.Judge.Features.GetHealth;
 using Aw.Judge.Features.MapBriefByDispatch;
 using Aw.Judge.Features.MapBriefByName;
 using Aw.Judge.Features.SaveBrief;
+using Aw.Judge.Features.SetBriefAgentId;
 using Aw.Kernel.Services;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -16,6 +17,14 @@ public static class JudgeFeaturesServiceCollectionExtensions
     /// <returns>The same collection.</returns>
     public static IServiceCollection AddJudgeFeatures(this IServiceCollection services)
     {
+        AddHealth(services);
+        AddBriefs(services);
+        return services;
+    }
+
+    // GetHealth.
+    private static void AddHealth(IServiceCollection services)
+    {
         _ = services
             .AddScoped<GetHealthService>()
             .AddScoped<IValidator<GetHealthRequest>, GetHealthValidator>()
@@ -23,6 +32,11 @@ public static class JudgeFeaturesServiceCollectionExtensions
                 new ValidatingService<GetHealthRequest, GetHealthResponse>(
                     sp.GetRequiredService<GetHealthService>(),
                     sp.GetRequiredService<IValidator<GetHealthRequest>>()));
+    }
+
+    // The brief slices: SaveBrief, GetBrief, MapBriefByName, MapBriefByDispatch, SetBriefAgentId.
+    private static void AddBriefs(IServiceCollection services)
+    {
         _ = services
             .AddScoped<SaveBriefService>()
             .AddScoped<IValidator<SaveBriefRequest>, SaveBriefValidator>()
@@ -51,6 +65,12 @@ public static class JudgeFeaturesServiceCollectionExtensions
                 new ValidatingService<MapBriefByDispatchRequest, MapBriefByDispatchResponse>(
                     sp.GetRequiredService<MapBriefByDispatchService>(),
                     sp.GetRequiredService<IValidator<MapBriefByDispatchRequest>>()));
-        return services;
+        _ = services
+            .AddScoped<SetBriefAgentIdService>()
+            .AddScoped<IValidator<SetBriefAgentIdRequest>, SetBriefAgentIdValidator>()
+            .AddScoped<IService<SetBriefAgentIdRequest, SetBriefAgentIdResponse>>(static sp =>
+                new ValidatingService<SetBriefAgentIdRequest, SetBriefAgentIdResponse>(
+                    sp.GetRequiredService<SetBriefAgentIdService>(),
+                    sp.GetRequiredService<IValidator<SetBriefAgentIdRequest>>()));
     }
 }
