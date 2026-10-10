@@ -9,15 +9,20 @@ is its first C# consumer, on every log and export path.
 ## API
 
 ```csharp
-IRedactor redactor = Redactor.Default;            // built-in rules, 1 s match timeout per pattern
+IRedactor redactor = Redactor.Default;            // built-in rules, 1 s match timeout per pattern per 128 KB
 ScrubResult result = redactor.Scrub(text);
 // result.Text     scrubbed text; each hit becomes [REDACTED:<rule>]
 // result.Hits     RedactionHit(Rule, Start, End) in input order: spans in the original text, never the value
 // result.Outcome  Clean (Text is the input, same instance) | Redacted | Blocked
 // result.BlockCode AW-REDACT-001 when Blocked
+bool whole = redactor.IsSecretName("client_secret");   // true: redact this field's value whole
 ```
 
 - `Redactor.Create(TimeSpan)` gives the same rules with another per-pattern timeout.
+- `IsSecretName(name)` is for callers that see a key and its value apart (a telemetry attribute, a header, a JSON
+  field): the assignment rules need the name and the value in one string, so such a caller redacts the whole value of
+  a field whose name ends in a secret word (API_KEY, SECRET, TOKEN, PASSWORD, PRIVATE_KEY, ACCESS_KEY, any case and
+  separator) or is `Authorization`, `Proxy-Authorization`, `Cookie` or `Set-Cookie`, and scrubs every other value.
 - Register `IRedactor` as a singleton (`Redactor.Default`) in the composing `Add…()` method; tests use the real
   redactor (it has no I/O, so it needs no fake).
 
@@ -25,14 +30,14 @@ ScrubResult result = redactor.Scrub(text);
 
 | Rule id | Catches |
 |---|---|
-| `private-key` | `-----BEGIN … PRIVATE KEY-----` (PEM, OpenSSH) and `-----BEGIN PGP PRIVATE KEY BLOCK-----` through the matching END line; without an END line (a truncated key), the armor headers (`Proc-Type`, `DEK-Info`, `Comment`, `Version`), one blank line after them, and the base64 body: on the BEGIN line, on following lines of any length, or flattened onto one line with spaces. The body needs 16+ base64 characters, so a BEGIN line followed by prose is left alone |
+| `private-key` | `-----BEGIN … PRIVATE KEY-----` (PEM, OpenSSH) and `-----BEGIN PGP PRIVATE KEY BLOCK-----` through the matching END line; without an END line (a truncated key), up to 8 armor header lines (`Proc-Type:`, `DEK-Info:`, `Charset:`, …), one blank line after them, and the base64 body: on the BEGIN line, on following lines of any length and number, or flattened onto one line with spaces. The first body run and each later one need 16+ base64 characters, so a BEGIN line followed by prose, or the short log lines after a truncated key, are left alone |
 | `anthropic-key`, `openai-key` | `sk-ant-…`, `sk-…`, `sk-proj-…` |
 | `aws-access-key` | `AKIA…` and `ASIA…` (STS) access key ids |
 | `github-token` | `ghp_`, `gho_`, `ghu_`, `ghs_`, `ghr_`, `github_pat_` |
-| `slack-token`, `stripe-key`, `google-api-key`, `linear-key`, `jwt` | `xox[abprs]-`, `sk_live_`/`rk_test_`…, `AIza…`, `lin_api_`/`lin_oauth_`, three-part `eyJ…` tokens |
+| `slack-token`, `stripe-key`, `google-api-key`, `linear-key`, `jwt` | `xox[abprs]-`, `sk_live_`/`rk_test_`…, `AIza…`, `lin_api_`/`lin_oauth_`, three-part `eyJ…` tokens of any length |
 | `bearer` | the token after `Bearer` (the word stays; the token may follow on the next line) |
-| `credentialed-url` | the password in `scheme://user:password@host` |
-| `secret-assignment` | the value of `NAME = "value"` (NAME ends in API_KEY, SECRET, TOKEN, PASSWORD, PRIVATE_KEY, ACCESS_KEY; any case, quoted value), `UPPER_SNAKE=value`, `export name=value` anywhere on a line in any case, a config line in any case that starts with the name and ends with an unquoted value (INI, YAML, `.properties`, `.env`; `api_key=…`, `client_secret: …`, `db.password = …`), `X-Api-Key: value` headers, and `aws_secret_access_key` / `aws_session_token` lines; a value needs 20+ characters with a digit |
+| `credentialed-url` | the password in `scheme://user:password@host`, up to the last `@` before the host (an unencoded `@` in the password stays inside the redaction) |
+| `secret-assignment` | the value of `NAME = "value"` (NAME ends in API_KEY, SECRET, TOKEN, PASSWORD, PRIVATE_KEY, ACCESS_KEY; any case, quoted value), `UPPER_SNAKE=value`, a shell or query pair `name=value` after a space, `;`, `&`, `|`, `(` or `?` in any case (`cd repo && export api_key=…`, `curl -d client_secret=…`, `?access_token=…`; the value may hold dots), a config line in any case that starts with the name and ends with an unquoted value (INI, YAML, `.properties`, `.env`; `api_key=…`, `client_secret: …`, `db.password = …`), `X-Api-Key: value` headers, and `aws_secret_access_key` / `aws_session_token` lines. A value needs 20+ characters with a digit in its first 256 (the `aws_*` lines: 16+ base64 characters, no digit needed); except in the line-anchored forms it may follow the separator on the next line |
 | `ssn`, `mrn` | `123-45-6789`, `MRN: 12345678` |
 
 Overlapping hits merge into one placeholder named by the earlier rule (`Redactor.RuleIds` is the priority order). A
@@ -49,7 +54,7 @@ such as `C:\keys\rk_live_…` whose backslash-r the fold would decode). The fold
 
 - zero-width characters (U+200B–U+200D, U+2060–U+2064, U+FEFF, U+180E) and soft hyphens are dropped, so a joiner
   inside a token doesn't split it;
-- Unicode spaces (NBSP and the U+2000 block) become a space; fullwidth ASCII (U+FF01–U+FF5E) and Cyrillic and Greek
+- Unicode spaces (NBSP, the U+2000 block, U+2028/U+2029) become a space; fullwidth ASCII (U+FF01–U+FF5E) and Cyrillic and Greek
   letters that look like Latin ones become ASCII (`gһp_`, `ΑΚΙΑ`);
 - JSON escapes (`\n`, `\r`, `\t`, `\"`, `\/`, `\\`, `\uXXXX`) are decoded, so a token right after an escaped newline
   in serialized JSON still starts a word, and an escaped `client_secret` pair still matches.
@@ -58,14 +63,18 @@ Not folded: mathematical alphanumeric look-alikes (astral code points) and base6
 
 ## Narrower than the hook, on purpose
 
-`detect-secrets.sh` blocks any `NAME=value` with a 20+ character value anywhere in a command, digits or not. Here a
-value needs a digit (logs and code are full of long all-letter identifiers), so `export TOKEN=<30 letters>` stays;
-`PassThroughTests` pins that choice. Every other hook shape (AWS keys, GitHub tokens, bearer tokens in a header, the
-`export` and `NAME=value` forms with a digit) is covered.
+`detect-secrets.sh` blocks any `NAME=value` with a 20+ character value anywhere in a command, digits or not, and with
+no boundary before the name. Here a value needs a digit (logs and code are full of long all-letter identifiers), so
+`export TOKEN=<30 letters>` stays, and a pair needs a space, `;`, `&`, `|`, `(` or `?` before its name;
+`PassThroughTests` pins the first choice. The hook's other shapes (AWS keys, GitHub tokens, bearer tokens, and pairs
+with a digit: `cd repo && api_key=…`, `curl -d client_secret=…`, `FOO=1 mytoken=…`, `x=1; Password=…`, dotted values)
+are covered by corpus cases.
 
 ## Timeouts block
 
-Every pattern is a `Regex` with a match timeout. A timeout returns `ScrubOutcome.Blocked` with
+Every pattern is a `Regex` with a match timeout. The timeout is a budget per window of input: up to 128 K characters
+get the redactor's timeout (1 s for `Default`), and each doubling of the text doubles it (the rules are compiled once per
+size tier), so a large ordinary input is scrubbed and only a pathological match blocks. A timeout returns `ScrubOutcome.Blocked` with
 `Text = "[REDACTED:blocked]"` and `BlockCode = "AW-REDACT-001"`: the input is withheld, never passed on. The caller
 logs the block (Redaction has no logger) and refuses the commit, write or egress.
 
@@ -73,8 +82,9 @@ logs the block (Redaction has no logger) and refuses the commit, write or egress
 
 Explicit ASCII classes (`[0-9]`, `[A-Za-z0-9_]`) and lookarounds instead of `\d`, `\s`, `\w` and `\b`, which are
 Unicode-aware in .NET; `RegexOptions.CultureInvariant` and `ExplicitCapture` on every pattern; the value of a pair is
-the named group `v`; no `RegexOptions.NonBacktracking` (the patterns use lookarounds). Overlong scans are bounded: the END search of a key block stops at the next BEGIN, and the placeholder check is a
-binary search, so a text full of BEGIN lines or placeholders stays linear (`AdversarialInputTests`). A new rule needs a
+the named group `v`; no `RegexOptions.NonBacktracking` (the patterns use lookarounds). Overlong scans are bounded: the END search of a key block stops at the next BEGIN, JWT segments are atomic, and the
+placeholder check is a binary search, so a text full of BEGIN lines, token-like runs or placeholders stays linear
+(`AdversarialInputTests`). A new rule needs a
 corpus case in `tests/Aw.Redaction.Tests/Corpus.cs` (assembled from parts, so no scanner sees a whole token in the source) and,
 when it is a new kind, a row above.
 

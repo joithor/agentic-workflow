@@ -6,22 +6,27 @@ namespace Aw.Redaction;
 /// <summary>The built-in pattern set (spec §4c "One pattern source").</summary>
 public sealed class Redactor : IRedactor
 {
-    private const RegexOptions Always = RegexOptions.CultureInvariant | RegexOptions.ExplicitCapture;
+    // The match timeout is a budget per window of input: a text of up to Window characters gets the redactor's
+    // timeout, and each doubling of the text doubles it, so input size alone never blocks; only a pathological match
+    // does (spec §4c). The rules are compiled once per size tier, on first use.
+    private const int Window = 128 * 1024;
 
-    private readonly (string Id, Regex Regex)[] _rules;
-    private readonly Regex _placeholder;
+    private readonly IReadOnlyList<RedactionRule> _rules;
+    private readonly TimeSpan _matchTimeout;
+    private readonly CompiledRules?[] _tiers = new CompiledRules?[24];
+    private readonly Regex _secretName;
 
     /// <summary>A redactor over <paramref name="rules"/> (tests inject a slow rule to prove the timeout blocks).</summary>
     internal Redactor(IReadOnlyList<RedactionRule> rules, TimeSpan matchTimeout)
     {
         ArgumentOutOfRangeException.ThrowIfLessThanOrEqual(matchTimeout, TimeSpan.Zero);
-        _rules = [.. rules.Select(r => (r.Id, new Regex(r.Pattern, r.Options | Always, matchTimeout)))];
+        _rules = rules;
+        _matchTimeout = matchTimeout;
         RuleIds = [.. rules.Select(r => r.Id).Distinct(StringComparer.Ordinal)];
-
-        // Only a placeholder naming one of this redactor's rules is skipped, so a crafted "[REDACTED:<secret>]" is
-        // still scanned.
-        var ids = string.Join('|', RuleIds.Append("blocked").Select(Regex.Escape));
-        _placeholder = new Regex(@"\[REDACTED:(?:" + ids + @")\]", Always, matchTimeout);
+        _secretName = new Regex(
+            BuiltinRules.SecretName,
+            RegexOptions.CultureInvariant | RegexOptions.ExplicitCapture | RegexOptions.IgnoreCase,
+            matchTimeout);
     }
 
     /// <summary>The per-pattern match timeout <see cref="Default"/> uses.</summary>
@@ -39,7 +44,11 @@ public sealed class Redactor : IRedactor
     public static Redactor Create(TimeSpan matchTimeout) => new(BuiltinRules.All, matchTimeout);
 
     /// <inheritdoc/>
-    public bool IsSecretName(string name) => throw new NotSupportedException("red: IsSecretName");
+    public bool IsSecretName(string name)
+    {
+        ArgumentNullException.ThrowIfNull(name);
+        return _secretName.IsMatch(name);
+    }
 
     /// <inheritdoc/>
     public ScrubResult Scrub(string text)
@@ -67,11 +76,12 @@ public sealed class Redactor : IRedactor
     // Windows path whose backslash-r the fold would decode).
     private List<RawHit> FindBoth(string text)
     {
-        var raw = Find(text);
-        var folded = FoldedText.Fold(text);
-        if (!string.Equals(folded.Text, text, StringComparison.Ordinal))
+        var rules = RulesFor(text.Length);
+        var raw = rules.Find(text);
+        if (text.AsSpan().ContainsAnyExceptInRange('\u0000', '\u007F') || text.Contains('\\', StringComparison.Ordinal))
         {
-            raw.AddRange(Find(folded.Text).Select(h =>
+            var folded = FoldedText.Fold(text);
+            raw.AddRange(rules.Find(folded.Text).Select(h =>
             {
                 var (start, end) = folded.ToOriginal(h.Start, h.End);
                 return h with { Start = start, End = end };
@@ -79,6 +89,17 @@ public sealed class Redactor : IRedactor
         }
 
         return raw;
+    }
+
+    private CompiledRules RulesFor(int length)
+    {
+        var tier = 0;
+        while (tier < _tiers.Length - 1 && (long)Window << tier < length)
+        {
+            tier++;
+        }
+
+        return _tiers[tier] ??= new CompiledRules(_rules, RuleIds, _matchTimeout * (1L << tier));
     }
 
     private static string Replace(string text, List<RedactionHit> hits)
@@ -113,28 +134,4 @@ public sealed class Redactor : IRedactor
 
         return merged;
     }
-
-    private List<RawHit> Find(string text)
-    {
-        var placeholders = new Placeholders(_placeholder.Matches(text));
-        var raw = new List<RawHit>();
-        for (var order = 0; order < _rules.Length; order++)
-        {
-            var (id, regex) = _rules[order];
-            foreach (Match match in regex.Matches(text))
-            {
-                var value = match.Groups["v"];
-                var span = value.Success ? value : match;
-                var end = span.Index + span.Length;
-                if (span.Length > 0 && !placeholders.Contain(span.Index, end))
-                {
-                    raw.Add(new RawHit(id, span.Index, end, order));
-                }
-            }
-        }
-
-        return raw;
-    }
-
-    private readonly record struct RawHit(string Rule, int Start, int End, int Order);
 }

@@ -14,7 +14,7 @@ internal static class Homoglyphs
         "\u0410A\u0412B\u0415E\u041AK\u041CM\u041DH\u041EO\u0420P\u0421C\u0422T\u0423Y\u0425X\u0406I\u0408J\u0405S"
         + "\u0430a\u0435e\u043Eo\u0440p\u0441c\u0443y\u0445x\u0456i\u0458j\u0455s\u04BBh\u0501d\u051Bq\u051Dw\u04CFl"
         + "\u0391A\u0392B\u0395E\u0396Z\u0397H\u0399I\u039AK\u039CM\u039DN\u039FO\u03A1P\u03A4T\u03A5Y\u03A7X"
-        + "\u03B1a\u03B9i\u03BAk\u03BDv\u03BFo\u03C1p\u03C5u\u03C7x\u0131i";
+        + "\u03B1a\u03B9i\u03BAk\u03BDv\u03BFo\u03C1p\u03C5u\u03C7x\u0131i\u0261g";
 
     private static readonly FrozenDictionary<char, char> _letters = BuildLetters();
 
@@ -35,7 +35,7 @@ internal static class Homoglyphs
             return (char)(c - 0xFEE0);
         }
 
-        if (c is '\u00A0' or '\u1680' or '\u202F' or '\u205F' or '\u3000' or (>= '\u2000' and <= '\u200A'))
+        if (c is '\u00A0' or '\u1680' or '\u202F' or '\u205F' or '\u3000' or '\u2028' or '\u2029' or (>= '\u2000' and <= '\u200A'))
         {
             return ' ';
         }

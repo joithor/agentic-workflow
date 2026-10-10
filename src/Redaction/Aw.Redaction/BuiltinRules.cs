@@ -28,6 +28,13 @@ internal static class BuiltinRules
     // Between two runs of an unterminated key body: one line break (never a blank line) or spaces.
     private const string BodyBreak = "[ \t]*\r?\n|[ \t]+";
 
+    // A Value that may also hold dots (a dotted token in a shell pair).
+    private const string DottedValue = "(?=[A-Za-z0-9+/=_.-]{0,255}?[0-9])(?<v>[A-Za-z0-9+/=_.-]{20,})";
+
+    /// <summary>A field, header or attribute name whose value is a secret whatever it looks like.</summary>
+    public const string SecretName =
+        "^(?:[A-Za-z0-9_.-]*?" + SecretWord + "|(?:proxy-)?authorization|(?:set-)?cookie)$";
+
     private const string SecretWord = "(?:API[_-]?KEY|SECRET(?:[_-]?KEY)?|TOKEN|PASSWORD|PRIVATE[_-]?KEY|ACCESS[_-]?KEY)";
 
     /// <summary>The rules, in priority order.</summary>
@@ -36,11 +43,13 @@ internal static class BuiltinRules
         // A terminated block (the END scan stops at the next BEGIN, so a run of BEGIN lines stays linear), or, when no
         // END line follows (a truncated key), the armor headers, one blank line after them, and the base64 body after
         // BEGIN: on the BEGIN line, on following lines of any length, or flattened onto one line with spaces. The body
-        // needs 16+ base64 characters, so a BEGIN line followed by prose is left alone.
+        // needs 16+ base64 characters, and each later run 16+ too (base64 lines are 64 or 76 long), so a BEGIN line followed
+        // by prose, or the short lines of a log after a truncated key, are left alone. Runs are unbounded in number: they
+        // are separated by whitespace, so they can't overlap and the scan stays linear.
         new("private-key",
             "-----BEGIN " + KeyLabel + "(?:(?:(?!-----BEGIN )(?s:.)){0,16384}?-----END " + KeyLabel
-            + "|(?:[ \t]*\r?\n(?:Proc-Type|DEK-Info|Comment|Version):[^\r\n]{0,200}){0,8}(?:[ \t]*\r?\n(?=[ \t]*\r?\n))?"
-            + "(?:" + BodyBreak + ")?(?=[A-Za-z0-9+/=]{16})[A-Za-z0-9+/=]{1,16384}(?:(?:" + BodyBreak + ")[A-Za-z0-9+/=]{1,16384}){0,512})"),
+            + "|(?:[ \t]*\r?\n[A-Za-z][A-Za-z-]{0,39}:[^\r\n]{0,200}){0,8}(?:[ \t]*\r?\n(?=[ \t]*\r?\n))?"
+            + "(?:" + BodyBreak + ")?(?=[A-Za-z0-9+/=]{16})[A-Za-z0-9+/=]{1,16384}(?:(?:" + BodyBreak + ")[A-Za-z0-9+/=]{16,16384})*)"),
         new("anthropic-key", Start + "sk-ant-[A-Za-z0-9_-]{20,}"),
         new("openai-key", Start + "sk-(?:proj-)?[A-Za-z0-9_-]{20,}"),
         new("aws-access-key", Start + "A(?:KIA|SIA)[0-9A-Z]{16}" + End),
@@ -49,10 +58,12 @@ internal static class BuiltinRules
         new("stripe-key", Start + "[sr]k_(?:live|test)_[A-Za-z0-9]{16,}"),
         new("google-api-key", Start + "AIza[0-9A-Za-z_-]{35}" + End),
         new("linear-key", Start + "lin_(?:api|oauth)_[A-Za-z0-9]{32,}"),
-        new("jwt", Start + "eyJ[A-Za-z0-9_-]{8,4096}\\.[A-Za-z0-9_-]{8,4096}\\.[A-Za-z0-9_-]{8,4096}"),
+        // Atomic segments: each scan ends at the next dot, so an unbounded segment (an 8 KB identity token) stays linear.
+        new("jwt", Start + "eyJ(?>[A-Za-z0-9_-]{8,})\\.(?>[A-Za-z0-9_-]{8,})\\.[A-Za-z0-9_-]{8,}"),
         new("bearer", Start + "Bearer" + Ws + "+(?<v>[A-Za-z0-9._~+/=-]{20,})", RegexOptions.IgnoreCase),
         new("credentialed-url",
-            Start + "[a-z][a-z0-9+.-]{0,30}://[^ \t\r\n/:@]{1,256}:(?<v>[^ \t\r\n/@]{1,256})@", RegexOptions.IgnoreCase),
+            Start + "[a-z][a-z0-9+.-]{0,30}://[^ \t\r\n/:@]{1,256}:(?<v>[^ \t\r\n/]{1,256})@(?=[^ \t\r\n/@]*(?:[/?# \t\r\n]|$))",
+            RegexOptions.IgnoreCase),
 
         // Code style: NAME [=:] "value", NAME ending in a secret word in any case; only a quoted value counts, so
         // member access and calls never do (refreshToken: RefreshTokenSchemaV2).
@@ -64,9 +75,10 @@ internal static class BuiltinRules
             "(?<![A-Za-z0-9_-])(?:[A-Z0-9]+_)*(?:API_?KEY|SECRET(?:_KEY)?|TOKEN|PASSWORD|PRIVATE_KEY|ACCESS_KEY)" + Ws + "*[=:]" + Ws + "*"
             + Value),
 
-        // Shell style: `export name=value` anywhere on a line, in any case (cd repo && export api_key=...).
+        // Shell and query style: name=value after a space, ;, &, |, ( or ? (cd repo && export api_key=...,
+        // curl -d client_secret=..., ?access_token=...), in any case; the value may hold dots.
         new("secret-assignment",
-            Start + "export[ \t]+(?:[A-Za-z0-9]+_)*" + SecretWord + "=['\"]?" + Value, RegexOptions.IgnoreCase),
+            "(?<![^ \t;&|(?])[A-Za-z0-9_.-]*?" + SecretWord + "=['\"]?" + DottedValue, RegexOptions.IgnoreCase),
 
         // Header style: a hyphenated header name may take an unquoted value (X-Api-Key: ...).
         new("secret-assignment",
