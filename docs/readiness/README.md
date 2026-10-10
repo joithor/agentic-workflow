@@ -21,8 +21,9 @@ artifacts/aot-readiness/bin/aw-readiness check [--json] [--root DIR] [--no-remot
 - **Exit codes:** 0 when the level reaches the target for the repo's ring, 1 when it doesn't, 2 on a usage or tool
   error (an `AW-READINESS-NNN` error on stderr: 001 bad arguments, 002 root not found, 003 `readiness.yaml` missing or
   malformed, 004 history unreadable or unwritable).
-- **States:** each criterion is `pass`, `fail`, `n/a` (with a reason) or `unknown`. Only pass and fail are scored. A
-  failure prints the criterion's fix. `unknown` has two causes, told apart by the finding's `unread` flag: the check
+- **States:** each criterion is `pass`, `fail`, `n/a` (with a reason) or `unknown`. Pass and fail are scored, and so is an
+  unread `unknown` (as not passing); `n/a` and a not-yet-reproducible `unknown` (TD-4, PE-3) aren't. A failure prints
+  the criterion's fix. `unknown` has two causes, told apart by the finding's `unread` flag: the check
   can't be reproduced yet (TD-4, PE-3), or its data couldn't be read this run (`--no-remote`, gh missing, failing or
   not an admin). An **unread** criterion counts as not passing, so the level is a lower bound: a run that couldn't
   read the host never scores higher than one that could, and a target the level reaches holds whatever the unread
