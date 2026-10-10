@@ -42,7 +42,7 @@ classify_changes() {
   while IFS= read -r -d '' file || [ -n "$file" ]; do
     [ -n "$file" ] || continue
     case "$file" in
-      .github/*|scripts/ci/*) print_all; return 0 ;;
+      .github/*|scripts/ci/*|.nvmrc) print_all; return 0 ;;
     esac
     case "$file" in
       spikes/*) continue ;;  # throwaway spike projects: no area, never the dotnet job
