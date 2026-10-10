@@ -448,6 +448,22 @@ describe("publish gate layers (privacy B1)", () => {
     expect(held).toEqual([]);
   });
 
+  it("verbatim: checks the original's evidence too, so a ref merged in after generalization still counts (fail closed)", async () => {
+    const { fx, save } = await ready({ extraYaml: PATTERNS });
+    fs.writeFileSync(path.join(fx.transcripts, SESSION), transcriptLine(fx, COPIED));
+    const id = save("Alpha change here");
+    await stage([], fx.ctx);
+    const pub = { ...getProposal(fx.ctx.db, id)!.proposal, title: "The overnight rota swap left two shifts without cover" };
+    fx.ctx.write((epoch) => savePublic(fx.ctx.db, id, pub, { category: "none", model: "m" }, epoch, fx.deps.now()));
+    const before = JSON.parse((await publish(["--json", "--dry-run"], fx.ctx)).stdout) as { held: unknown[] };
+    expect(before.held).toEqual([]); // the public version's refs don't reach that line
+    expect(save("Alpha change here", { evidence: ["transcript:5e55a1d0#1"] })).toBe(id); // a re-proposal merges its evidence into the original
+    expect(getProposal(fx.ctx.db, id)!.proposal.evidence).toContain("transcript:5e55a1d0#1");
+    const after = JSON.parse((await publish(["--json", "--dry-run"], fx.ctx)).stdout) as { held: { id: string; layer: string; why: string }[] };
+    expect(after.held).toEqual([{ id, layer: "verbatim", why: "copies transcript text" }]);
+    fx.close();
+  });
+
   it("personal", async () => {
     expect(await heldLayer({ rationale: "mail ops@example.org" })).toEqual([{ layer: "personal", why: "contains an email address or a home directory path" }]);
   });

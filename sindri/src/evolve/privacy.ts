@@ -5,8 +5,8 @@ import type { GitRunner } from "../git.js";
 import { stripInvisible, WHITESPACE } from "./invisible.js";
 
 // The publish gate's layers, in the order they run (spec §5.4); `generalize` holds a proposal with no public version.
-export type HoldLayer = "generalize" | "terms" | "patterns" | "identifiers" | "verbatim" | "personal" | "scrubber";
-export const HOLD_LAYERS: readonly HoldLayer[] = ["generalize", "terms", "patterns", "identifiers", "verbatim", "personal", "scrubber"];
+export const HOLD_LAYERS = ["generalize", "terms", "patterns", "identifiers", "verbatim", "personal", "scrubber"] as const;
+export type HoldLayer = (typeof HOLD_LAYERS)[number];
 
 // The publication gate (spec amendment 2): nothing workplace-specific reaches the public repo.
 // Matching runs on a normalized copy, so a term can't be hidden behind a line break, a double space,

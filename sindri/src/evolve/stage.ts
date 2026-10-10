@@ -200,9 +200,14 @@ export async function publishProposals(ctx: EvolveCtx, o: { dryRun: boolean; noP
   const user = ctx.deps.system.username();
   // Only the public version is ever rendered or checked (privacy spec §5.1); the original never reaches the repo.
   // A proposal released by a profile change publishes from the public row it already has: no model call.
-  const open = listStored(ctx.db, ["staged", "held"]).map((s) => ({ s, pub: getPublic(ctx.db, s.id) }));
+  // The verbatim gate checks the union of the original's and the public version's evidence: a merged re-proposal can
+  // add refs to the original after its public row was written (fail closed).
+  const open = listStored(ctx.db, ["staged", "held"]).map((s) => {
+    const pub = getPublic(ctx.db, s.id);
+    return { s, pub, refs: [...new Set([...reduceEvidence(s.proposal.evidence).refs, ...reduceEvidence(pub?.evidence ?? []).refs])] };
+  });
   // The evidence of every listed proposal, resolved in one scan; a ref that doesn't resolve isn't checked (Review Focus 1).
-  const sources = resolveRefs(transcriptsDir(ctx), ctx.repo, open.flatMap((l) => reduceEvidence(l.pub?.evidence ?? []).refs), scrubber);
+  const sources = resolveRefs(transcriptsDir(ctx), ctx.repo, open.flatMap((l) => l.refs), scrubber);
   // The toolkit corpus is read only when some proposal shares a run with its evidence, and at most once per run.
   let corpus: Promise<string> | null = null;
   const copies = async (text: string, evidence: readonly string[]): Promise<boolean> => {
@@ -213,7 +218,7 @@ export async function publishProposals(ctx: EvolveCtx, o: { dryRun: boolean; noP
   };
   const ready: { s: StoredProposal; pub: Proposal; t: { tier: Tier; why: string } }[] = [];
   const held: PublishOutcome["held"] = [];
-  for (const { s, pub } of open) {
+  for (const { s, pub, refs } of open) {
     if (pub === null) {
       held.push({ id: s.id, layer: "generalize", why: "not generalized yet; run sindri evolve stage" });
       continue;
@@ -222,7 +227,7 @@ export async function publishProposals(ctx: EvolveCtx, o: { dryRun: boolean; noP
     const md = renderTask(first + ready.length, s.id, pub, t.tier, t.why, s.source);
     const raw = [pub.title, pub.rationale, ...pub.evidence, pub.change.type === "describe" ? `${pub.change.description}\n${pub.change.files.join("\n")}` : pub.change.text, s.source].join("\n");
     const text = `${raw}\n${md}`;
-    const evidence = reduceEvidence(pub.evidence).refs.flatMap((r) => {
+    const evidence = refs.flatMap((r) => {
       const e = sources.get(r);
       return e === undefined ? [] : [e];
     });
