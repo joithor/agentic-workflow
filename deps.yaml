@@ -429,9 +429,9 @@ edges:
     note: "replaces sindri's copy of the scrubbing patterns"
   - from: Sindri
     to: Packets
-    kind: project
+    kind: cli
     status: planned
-    note: "every port and factory run is a packet"
+    note: "every port and factory run is a packet; sindri runs aw-packets, since the use cases live in App and a project edge reaches only Core (spec §4c)"
   - from: Sindri
     to: Readiness
     kind: project

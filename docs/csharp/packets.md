@@ -3,7 +3,7 @@
 `Aw.Packets` (`src/Packets`, tier 1, small shape: `Aw.Packets.Core` + `Aw.Packets.App`) checks and freezes handoff
 packets (factory addendum §17.4). Before the switch it is the standalone NativeAOT CLI `aw-packets`, which writes only
 under `${AW_STATE_DIR:-~/.agentic-workflow}/packets/` (spec §4c); nothing installs or schedules it. After the switch,
-sindri's C# host exposes the same use cases as `sindri packet …` (spec §4c, addendum §17.4).
+sindri offers them as `sindri packet …` by running `aw-packets` (a `cli` edge in `deps.yaml`; spec §4c, addendum §17.4).
 
 It was generated with `/new-package` (the invocation is in the PR that added it) and grown slice by slice with
 `/new-slice`.
