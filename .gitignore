@@ -12,6 +12,10 @@ coverage/
 .worktrees/
 .claude/worktrees/
 
+# dotnet test output; xUnit's CTRF reports are named <user>_<host>_<time>.ctrf and carry the OS user
+TestResults/
+*.ctrf
+
 # Serena runtime data (LSP index caches, logs, session state)
 .serena/cache/
 .serena/logs/
