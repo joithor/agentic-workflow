@@ -138,7 +138,8 @@ ADO.NET round trip that `sqlite3` reads back as `item-1|1200` (`logs/r8-r9-run.t
 1. the first run as above;
 2. `publish2`: Vogen's converter types listed in `[JsonSourceGenerationOptions(Converters = …)]`. Still `{}`,
    because those types exist only in Vogen's output, which the STJ generator can't see;
-3. `publish3`, the current log: the runtime registration, (a′).
+3. `publish3`: the runtime registration, (a′), published by hand. The current log for that code is
+   `logs/r9-VogenIds.publish.log`, written by `publish-all.sh`.
 
 **Why the hybrid.** System.Text.Json's source generator and the request-delegate generator are source generators
 like Vogen, and generators don't see each other's output:
@@ -436,6 +437,8 @@ These logs are history from earlier code states, kept because the doc quotes the
 tag doesn't reproduce them:
 - `logs/r9-VogenIds.run1-no-converters.txt` and `logs/r9-VogenIds.publish2.log`: Vogen-defaults variant (a) before
   the runtime converters;
+- `logs/r9-VogenIds.publish3.log`: the hand-run publish of (a′), superseded by `publish-all.sh`'s
+  `logs/r9-VogenIds.publish.log`;
 - `logs/r9-RouteBind.run1.log` and `logs/r9-RouteBind.jit-rdg-before-fix.txt`: `RouteBind` before the user-code
   `IParsable<T>`;
 - `logs/r9-RouteBind.emptyquery.log`: before the Host's 400 mapping;
