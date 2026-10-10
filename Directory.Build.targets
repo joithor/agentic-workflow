@@ -11,7 +11,7 @@
 
   <!-- Placement (AW0002): the test-project policy is tests/.editorconfig, so *.Tests and *.Testing projects
        (including Aw.Kernel.Testing) must live under tests/, and nothing else may: a library under tests/ would
-       silently lose RS0016, CS1591, CA2007 and CA1515. -->
+       silently lose RS0016, CS1591 and CA2007. -->
   <PropertyGroup>
     <_AwRelDir>$([MSBuild]::MakeRelative('$(MSBuildThisFileDirectory)', '$(MSBuildProjectDirectory)').Replace('\','/'))</_AwRelDir>
     <_AwUnderTests Condition="$(_AwRelDir.StartsWith('tests/'))">true</_AwUnderTests>
@@ -22,7 +22,7 @@
     <Error Condition="'$(AwIsTestProject)' == 'true'" Code="AW0002"
            Text="$(MSBuildProjectName) is a test project (*.Tests or *.Testing) but sits at $(_AwRelDir). Move it under tests/, where tests/.editorconfig applies the test-project policy." />
     <Error Condition="'$(AwIsTestProject)' != 'true'" Code="AW0002"
-           Text="$(MSBuildProjectName) sits at $(_AwRelDir) but is not a *.Tests or *.Testing project. Move it out of tests/, or rename it if it is test code: tests/.editorconfig would drop library rules (RS0016, CS1591, CA2007, CA1515) for it." />
+           Text="$(MSBuildProjectName) sits at $(_AwRelDir) but is not a *.Tests or *.Testing project. Move it out of tests/, or rename it if it is test code: tests/.editorconfig would drop library rules (RS0016, CS1591, CA2007) for it." />
   </Target>
 
   <!-- CI lock-file guard (spec §4b.6, §4d). Locked restore (RestoreLockedMode, set when CI=true) only fails when

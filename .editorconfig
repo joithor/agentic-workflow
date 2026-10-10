@@ -122,9 +122,11 @@ dotnet_diagnostic.RCS1037.severity = none
 # Static members on generic types — owner: CA1000.
 dotnet_diagnostic.CA1000.severity = error
 dotnet_diagnostic.MA0018.severity = none
-# Conditional expressions — owner: RCS1238's direction (no nested ?:). IDE0046 pushes if/return chains into
-# (nested) conditional expressions, which RCS1238 forbids; IDE0046 is off and RCS1238 stays off with the rest
-# of Roslynator. IDE0045 (simple if/else assignment) keeps running.
+# Conditional expressions — IDE0045 (simple if/else assignment) runs; nothing else does. IDE0046 (turn
+# if/return chains into conditional expressions) is off because it produces nested ?:. Nested ?: is NOT
+# banned by any analyzer: RCS1238 stays off with the rest of Roslynator, since enabling it would contradict
+# IDE0045 whenever a branch already holds a ?:, and Roslynator opt-ins are kept to correctness rules that
+# have no other owner. Avoiding nested ?: is a review convention, not a build rule.
 dotnet_diagnostic.IDE0046.severity = none
 dotnet_diagnostic.RCS1238.severity = none
 # Catching general exceptions — owner: CA1031 (allowed only in Host and Infrastructure boundary adapters,

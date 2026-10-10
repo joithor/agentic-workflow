@@ -1,9 +1,9 @@
 <Project>
-  <!-- Central Package Management (agent-readiness spec §4b.6, §4d): every version we choose lives here, pinned exactly ([x.y.z];
-       a bare version means "x.y.z or newer"). Packages the SDK adds implicitly (Microsoft.NET.ILLink.Tasks, from
-       IsAotCompatible) carry an open range and are pinned only by packages.lock.json;
-       and is at least 14 days old when pinned (the repo's existing pin policy). Analyzers run code in
-       every build, so they get the same review as runtime dependencies. -->
+  <!-- Central Package Management (agent-readiness spec §4b.6, §4d). Each version we choose lives here, is pinned
+       exactly ([x.y.z]; a bare version means "x.y.z or newer"), and is at least 14 days old when pinned (the repo's
+       existing pin policy). Packages the SDK adds implicitly (Microsoft.NET.ILLink.Tasks, from IsAotCompatible)
+       carry an open range and are pinned only by packages.lock.json. Analyzers run code in every build, so they get
+       the same review as runtime dependencies. -->
   <PropertyGroup>
     <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
     <CentralPackageTransitivePinningEnabled>true</CentralPackageTransitivePinningEnabled>
