@@ -44,7 +44,7 @@ function parseArgs(argv) {
     else if (a === "--budget") {
       for (const pair of value().split(",")) {
         const [lane, secs] = pair.split("=");
-        if (!(lane in BUDGETS)) throw new ToolError(`--budget: unknown lane '${lane}' (lanes: ${Object.keys(BUDGETS).join(", ")})`);
+        if (!Object.hasOwn(BUDGETS, lane)) throw new ToolError(`--budget: unknown lane '${lane}' (lanes: ${Object.keys(BUDGETS).join(", ")})`);
         const n = Number(secs);
         if (!Number.isFinite(n) || n <= 0) throw new ToolError(`--budget: '${pair}' needs a positive number of seconds`);
         opts.budgets[lane] = n;
@@ -99,7 +99,12 @@ function time(opts, project, lane) {
   return { secs, status: r.status ?? -1, output: `${r.stdout ?? ""}${r.stderr ?? ""}`, command: shown(args) };
 }
 
-const fmt = (s) => (s < 10 ? s.toFixed(2) : s.toFixed(1)).replace(/\.?0+$/, "") || "0";
+// Truncated, never rounded up, so a passing row just under its limit never prints the limit itself.
+const fmt = (s) => {
+  const digits = s < 10 ? 2 : 1;
+  const f = 10 ** digits;
+  return (Math.floor(s * f + 1e-9) / f).toFixed(digits).replace(/\.?0+$/, "") || "0";
+};
 
 export function main(argv, out = (l) => console.log(l)) {
   let opts;

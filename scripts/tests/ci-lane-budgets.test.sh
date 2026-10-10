@@ -149,6 +149,8 @@ test_tool_errors_exit_2() {
   [ "$RC" -eq 2 ] || fail "a missing solution must exit 2, got $RC"
   run_check "$d" --bogus
   [ "$RC" -eq 2 ] || fail "an unknown flag must exit 2, got $RC"
+  run_check "$d" --budget constructor=5
+  [ "$RC" -eq 2 ] || fail "an inherited object key is not a lane and must exit 2, got $RC"
   echo "PASS: test_tool_errors_exit_2"
 }
 
@@ -179,9 +181,14 @@ test_default_budgets_are_the_rule_numbers() {
   run_check "$d"
   [ "$RC" -eq 0 ] || fail "default run must pass on the instant stub, got $RC:
 $OUT"
-  printf '%s\n' "$OUT" | grep -qE 'unit .*limit 10 s' || fail "the unit budget is 10 s:
+  # The script's budgets must equal Aw.Kernel.Testing's Lanes.BudgetOf, which the per-test cap reads.
+  local unit integration
+  unit="$(sed -nE 's/.*TestLane\.Unit => TimeSpan\.FromSeconds\(([0-9]+)\).*/\1/p' "$ROOT/tests/Aw.Kernel.Testing/Lanes.cs")"
+  integration="$(sed -nE 's/.*TestLane\.Integration => TimeSpan\.FromSeconds\(([0-9]+)\).*/\1/p' "$ROOT/tests/Aw.Kernel.Testing/Lanes.cs")"
+  [ -n "$unit" ] && [ -n "$integration" ] || fail "could not read the budgets from tests/Aw.Kernel.Testing/Lanes.cs"
+  printf '%s\n' "$OUT" | grep -qE "unit .*limit $unit s" || fail "the unit budget must be Lanes.cs's $unit s:
 $OUT"
-  printf '%s\n' "$OUT" | grep -qE 'integration .*limit 60 s' || fail "the integration budget is 60 s:
+  printf '%s\n' "$OUT" | grep -qE "integration .*limit $integration s" || fail "the integration budget must be Lanes.cs's $integration s:
 $OUT"
   echo "PASS: test_default_budgets_are_the_rule_numbers"
 }
