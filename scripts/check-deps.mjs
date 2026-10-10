@@ -352,7 +352,7 @@ export function mermaid(doc, baseDoc) {
   const groups = new Map();
   for (const p of doc.packages) { const g = p.kind === "package" ? `T${p.tier}` : "X"; if (!groups.has(g)) groups.set(g, []); groups.get(g).push(p.id); }
   for (const g of [...groups.keys()].sort()) {
-    out.push(`  subgraph ${g}["${g === "X" ? "outside the tiers (shell, mod)" : `tier ${g.slice(1)}`}"]`, ...groups.get(g).map((id) => `    ${id}`), "  end");
+    out.push(`  subgraph ${g}["${g === "X" ? "consumers" : `tier ${g.slice(1)}`}"]`, ...groups.get(g).map((id) => `    ${id}`), "  end");
   }
   for (const e of doc.edges) out.push(`  ${e.from} ${ARROW[e.kind]}|${e.kind}| ${e.to}`);
   out.push("```", "");
