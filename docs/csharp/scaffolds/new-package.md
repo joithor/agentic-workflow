@@ -222,6 +222,9 @@ internal static class Composition
 }
 ```
 
+`using Microsoft.Extensions.DependencyInjection;` is emitted only for a `Microsoft.NET.Sdk` host (`host: cli`). For
+`host: http` the Web SDK's implicit usings already include it, and a duplicate fails the build (`IDE0005` is an error).
+
 ### Template: `Program.cs` (cli)
 
 ```csharp

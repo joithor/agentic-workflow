@@ -153,7 +153,7 @@ services
             sp.GetRequiredService<IValidator<<Slice>Request>>()));
 ```
 
-M.E.DI has no decorators, so the decorator is a factory registration. Its `IServiceProvider` parameter is the one
+The edit also adds `using Aw.<Pkg>.Features.<Slice>;`, plus `using Aw.Kernel.Services;` when the file doesn't have it yet (the first slice); the file already has `Microsoft.Extensions.DependencyInjection` for `IServiceCollection`. M.E.DI has no decorators, so the decorator is a factory registration. Its `IServiceProvider` parameter is the one
 exception to "no `IServiceProvider` outside `Host`" (`.agents/rules/csharp.md`, DI): it lives only inside the project's
 own `Add…()` method and only resolves and constructs. `HostTests` resolves every `IService<,>` in a scope, which covers
 what `ValidateOnBuild` can't see inside the factory.
