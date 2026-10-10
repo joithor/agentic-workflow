@@ -10,8 +10,11 @@ rules themselves live in `.agents/rules/` (one file per domain); this guide is t
 - [ ] **One logical change per PR**, with atomic commits (`type: short description`, `planning/COMMIT_STRATEGY.md`).
 - [ ] **TypeScript packages take bug fixes only** -- they are being replaced by the C# build (spec
   `docs/superpowers/specs/2026-10-09-agent-readiness-design.md` §4a). New behavior goes into C#.
-- [ ] **The hook-facing CLI and file surface is unchanged** -- the flags, output and files the hooks use
-  (`judge/sessions`, `judge/outbox`, `judge/teammate-names.jsonl`) stay frozen until the switch.
+- [ ] **The hook contract is unchanged** -- only what the hooks read stays frozen until the switch: the commands and
+  arguments they call, the JSON fields they `jq`, the exit codes and stderr prefixes they branch on, and the files they
+  write (`judge/sessions`, `judge/outbox`, `judge/teammate-names.jsonl`). Spec §4c.
+- [ ] **A C# port is idiomatic C#, not a translation of the TS** -- no TS formatting, quirks or workarounds
+  reproduced (spec §4a step 1, `.agents/rules/csharp.md` "Porting a TS package").
 
 ---
 

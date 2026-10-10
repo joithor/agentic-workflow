@@ -1316,9 +1316,12 @@ behaviour didn't change.
 
   Only then come the migration tasks, checked against those tests.
 - The pinning tests are frozen with the packet. Under invariant 17, the migration tasks can't edit them.
-- Sindri's own C# port (readiness §4c) applies the rule narrowly. It is a clean cutover with no TS behaviour parity,
-  so its oracle covers only the frozen hook-facing CLI and file surface, checked by running the real hook scripts
-  against the C# binaries.
+- This repo's own C# port (readiness §4a step 1, §4c) is the exception: it is a clean cutover and a reimplementation
+  in idiomatic C#, with the TS as a guideline for what each package does, never a behaviour to pin. Workflow
+  generation must not add characterization or golden tasks that record TS output for a port packet. Its oracle is
+  the C# package's own contract tests plus the **hook contract** only (what the bash hooks and statusline read: the
+  commands and arguments they call, the fields they `jq`, the exit codes and stderr prefixes they branch on, the
+  files they write), checked by running the real hook scripts against the C# binaries.
 
 ### 17.24.3 Critic lens (addyosmani)
 
