@@ -71,7 +71,7 @@ A CLI host's log lines share standard error with its own error output. So a prog
 
 - **the outcome from the exit code, as that CLI defines it.** The codes are per command, not one global map: for
   `aw-readiness check`, 0 the level holds, 1 it doesn't (a successful run with a negative result: the report is on
-  standard output and standard error is empty), 2 a usage or tool error (`docs/readiness/README.md`); for
+  standard output and standard error has no error line, only log lines if any), 2 a usage or tool error (`docs/readiness/README.md`); for
   `aw-packets`, 0 every check passed, 1 a check failed or the packet is malformed, 2 a usage or tool error
   (`docs/csharp/packets.md`). A package scaffolded by `/new-package` starts with 0 success, 1 an error `Result`,
   2 usage, and its own docs define the codes once its commands exist;
@@ -80,12 +80,14 @@ A CLI host's log lines share standard error with its own error output. So a prog
   then takes the one line with a `code` member and no `level` member: the error envelope (`{"code","kind","message"}`,
   the Kernel `Error`) never has `level`, and a log line always has `timestamp` and `level`. Error lines are written
   only on an error, so a nonzero exit doesn't by itself mean standard error has one (`aw-readiness` exit 1 has none).
-  Without `--json`, the error is whatever the CLI documents (`aw-packets: <code> <message>`), and usage errors are a
-  `usage:` text line in every CLI.
+  Without `--json`, the error is whatever the CLI documents (`aw-packets: <code> <message>`). A missing or unknown
+  command is a `usage:` text line in every CLI; a bad argument to a command is that CLI's documented error
+  (`aw-readiness`: the `AW-READINESS-001` envelope, with or without `--json`; `aw-packets`: a `usage:` line).
 
 Standard error is otherwise diagnostic: its log lines change with `AW_LOG_LEVEL` and with what the code logs, so
-nothing parses them as a contract. Golden tests and smokes that capture standard error pin the level (the AOT smokes
-`unset AW_LOG_LEVEL`).
+nothing parses them as a contract. Golden tests and smokes that capture standard error pin a level that writes no log
+lines, because every line carries a wall-clock timestamp (the AOT smokes set `AW_LOG_LEVEL=none`; the unknown-level
+warning is checked by the scaffold e2e's native run instead).
 
 ## Framework logs in http hosts
 

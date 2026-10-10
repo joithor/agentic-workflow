@@ -3,9 +3,12 @@
 # scaffolds (a) a small CLI package declared in deps.yaml and (b) a full http package that isn't, each in its own
 # temporary git worktree of HEAD, and lets the generator run its own checks against the real root files
 # (restores, RS0016, build -warnaserror, the unit lane with exactly one red test, format, check-deps). Then, by hand:
-# (a) makes its first slice green and adds a second slice with /new-slice (exactly one new red test); (b) runs its
-# integration lane (loopback binding, id route binding) green. The worktrees are removed afterwards.
+# (a) makes its first slice green and adds a second slice with /new-slice (exactly one new red test), then
+# NativeAOT-publishes its App for the runner's RID (no IL2xxx/IL3xxx warning) and runs the native binary (usage exit 2
+# and the AW-TELEMETRY-001 line for an unknown AW_LOG_LEVEL); (b) runs its integration lane (loopback binding, id route
+# binding, Kernel telemetry as the only logger) green. The worktrees are removed afterwards.
 #
+# Needs the NativeAOT toolchain for the AOT step: the Xcode command-line tools on macOS, clang and zlib on Linux.
 # Usage: scripts/scaffold/e2e.sh            (from the repo root; needs the .NET SDK from global.json and node)
 # Exit:  0 both packages behaved; 1 a check failed (its output is printed); 2 usage or setup error.
 #

@@ -507,7 +507,10 @@ declares that has no `src/` yet, as `small`/`cli`, and an undeclared one as `ful
 builds each against the real root files (`Directory.Build.props`, `.editorconfig`, `tests/.editorconfig`,
 `Directory.Packages.props`) and asserts criterion 1, then adds a second slice to the first (after making its first
 slice green) and runs the second's integration lane, so template drift from the root settings fails the generator's CI,
-not the first user.
+not the first user. The first package's `App` is also published NativeAOT for the runner's RID and run natively: the
+publish must raise no trim or AOT warning (IL2xxx/IL3xxx), and the binary must exit 2 (usage) and write the
+`AW-TELEMETRY-001` line for an unknown `AW_LOG_LEVEL`. That is the check that the generated telemetry wiring survives
+trimming. It needs the NativeAOT toolchain (the Xcode command-line tools on macOS, clang and zlib on Linux).
 
 ## Failure behavior
 
