@@ -70,7 +70,9 @@ A package under ~1,500 lines may use two projects, `Core` and `App`, with the sa
 
 - Tiers (`deps.yaml` is the tier table of record): 0 `Aw.Kernel` (+ `Data`, `Telemetry`, `Testing`) and `Redaction` · 1 `Judge`, `Bridge`, `Packets`, `Readiness` · 2 `Scorer`, `Evidence`, `BugFix` · 3 `Sindri`. A package depends only on lower tiers; same-tier or upward calls go through a CLI or HTTP contract.
 - Every edge is declared in `deps.yaml` (schema `schemas/deps.schema.json`) with its kind (`project`, `cli`, `db`, `file`). Adding an edge is a reviewed change to `deps.yaml`. Check: `node scripts/check-deps.mjs`, which compares the declared edges with the project references and with the cli, db and file edges it scans in the source (gap — active once the deps-graph PR #92 merges).
-- Fan-out: ≤ 4 in-repo project references and ≤ 6 third-party packages per project (analyzers and test packages excluded; every `Host` exempt). Over the limit needs a recorded reason. Check: `scripts/check-deps.mjs` for the project-reference count (once #92 merges); the third-party count is a gap — R1b.
+- Fan-out: ≤ 4 in-repo project references (`limits.projectFanOut`) and ≤ 6 third-party packages (`limits.thirdPartyFanOut`) per project. `*.Host`, `*.Tests` and `*.Testing` projects are exempt; analyzers are excluded (packages with `PrivateAssets=all`, and project references with `OutputItemType=Analyzer`). Over the limit needs a recorded exception with a reason in `deps.yaml`. Check: `scripts/check-deps.mjs` (`DEPS-FANOUT-002`/`003`, once #92 merges).
+- **Test support:** `*.Testing` projects are test-support, like packages marked `test: true` in `deps.yaml` (e.g. `KernelTesting`). They may reference test-support packages without a declared edge, and only `*.Tests` and `*.Testing` projects may reference them. Production code never references test support. Check: `scripts/check-deps.mjs` (once #92 merges).
+- **Analyzers:** `Aw.Analyzers` is declared as the `Analyzers` node in `deps.yaml`. It's wired in through `Directory.Build.props`/`Directory.Build.targets` as a project reference with `OutputItemType=Analyzer` (`ReferenceOutputAssembly=false`). Such analyzer references are allowed only in the `Directory.Build` files, and are excluded from fan-out and from `DEPS-PROJ-001`. Check: `scripts/check-deps.mjs` (once #92 merges).
 
 ## Request flow (§4b.2)
 
@@ -99,9 +101,20 @@ A package under ~1,500 lines may use two projects, `Core` and `App`, with the sa
 - `Microsoft.Extensions.DependencyInjection`. **Each project owns one explicit, public extension method** that registers its own types (`services.AddSindriCore()`, `AddSindriFeatures()`, `AddSindriInfrastructure(settings)`); **only `Host` calls them and builds the container.** No assembly scanning (reflection, not AOT-safe).
 - So `Core`, `Features` and `Infrastructure` may reference `Microsoft.Extensions.DependencyInjection.Abstractions` (for `Core`, its only package besides `Aw.Kernel`). `Aw.Kernel` stays BCL-only: no `IConfiguration` in Kernel signatures. Each package's settings are a typed record (`<Name>Settings`) that `Host` builds from the environment and passes to `Add<Name>Infrastructure(settings)`.
 - Each `Host` exposes one `internal static IServiceCollection Compose(IServiceCollection, <Name>Settings, TimeProvider)` that `Program.cs` and the DI validation test both call, so the test covers the real composition.
-- Constructor injection only; no service locator; no `IServiceProvider` outside `Host`.
+- Constructor injection only; no service locator; no `IServiceProvider` outside `Host`, with **one exception**: the `IServiceProvider` parameter of a registration factory lambda inside a project's own `Add…()` method. M.E.DI has no decorator support, so that's how a decorator wraps its service:
+
+  ```csharp
+  services.AddScoped<StartItemService>();
+  services.AddScoped<IValidator<StartItemRequest>, StartItemValidator>();
+  services.AddScoped<IService<StartItemRequest, StartItemResponse>>(static sp =>
+      new ValidatingService<StartItemRequest, StartItemResponse>(
+          sp.GetRequiredService<StartItemService>(),
+          sp.GetRequiredService<IValidator<StartItemRequest>>()));
+  ```
+
+  The lambda only resolves and constructs; it holds no logic. The planned ArchUnitNET rule allows exactly this (an `IServiceProvider` use inside a `*ServiceCollectionExtensions` type) and nothing else. Check: ArchUnitNET (gap — R1b).
 - Lifetimes: services and repositories scoped per request/command; pure domain services singletons; `TimeProvider` singleton (`FakeTimeProvider` in tests).
-- Every host has a DI validation test (`ValidateOnBuild` + `ValidateScopes`) over `Compose`. Production `Program.cs` skips the validation flags (CLI startup time); the test carries it. Check: that test (per host).
+- Every host has a DI validation test over `Compose`: it builds with `ValidateOnBuild` + `ValidateScopes`, then **resolves every registered `IService<,>` inside a scope**, because `ValidateOnBuild` can't see what a factory lambda resolves (a missing validator would otherwise fail only at run time). Production `Program.cs` skips the validation flags (CLI startup time); the test carries them. Check: that test (per host).
 
 ## Build settings and analyzers (§4b.6)
 
