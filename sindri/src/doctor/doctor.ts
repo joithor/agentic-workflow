@@ -265,9 +265,10 @@ function privacyChecks(deps: Deps, loaded: LoadedProfile): Check[] {
 }
 
 export async function runChecks(deps: Deps, nodeVersion: string = process.versions.node, probes: IndexProbes = deps.io.probes): Promise<Check[]> {
-  const [major, minor] = nodeVersion.split(".").map(Number);
+  const major = Number(nodeVersion.split(".")[0]);
   const checks: Check[] = [
-    major > 20 || (major === 20 && minor >= 11) ? { name: "node", status: "ok", detail: nodeVersion } : { name: "node", status: "fail", detail: `${nodeVersion} (need >= 20.11)`, fix: "install Node 20.11 or newer" },
+    // One floor with package.json engines and .nvmrc: better-sqlite3 13 (the ledger) needs 22.
+    major >= 22 ? { name: "node", status: "ok", detail: nodeVersion } : { name: "node", status: "fail", detail: `${nodeVersion} (need >= 22, which better-sqlite3 13 requires)`, fix: "install Node 22 or newer (see .nvmrc)" },
     stateDirCheck(deps),
     { name: "boot-id", status: "ok", detail: deps.system.bootId() === null ? "unreadable; stale-lock checks use pids only" : "readable" },
     ledgerCheck(deps),
