@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import { discover, isAddedTestAllowed, isEvalMachinery } from "../src/evolve/registry.js";
-import { classifyTier, findMerged, getProposal, inFlightCount, listProposals, parseEach, ProposalSchema, reduceEvidence, renderSaved, saveProposal, savePublic, getPublic, setTier, type Proposal } from "../src/evolve/proposals.js";
+import { classifyTier, findMerged, getProposal, inFlightCount, listProposals, parseEach, proposalSources, ProposalSchema, readsTranscripts, reduceEvidence, renderSaved, saveProposal, savePublic, getPublic, setTier, type Proposal } from "../src/evolve/proposals.js";
 import { realGitRunner } from "../src/git-real.js";
 import { bumpEpoch, openMemoryLedger } from "../src/ledger/db.js";
 import { git, setStatus } from "./evolve-fixtures.js";
@@ -176,6 +176,24 @@ describe("proposal storage, dedupe and merge tracking", () => {
     setStatus(db, first.id, "rejected", epoch, now);
     expect(saveProposal(db, prop({ title: "Tighten re\u200Bview, scope." }), "s", "code", epoch, now)).toEqual({ kind: "previously-rejected", id: first.id });
     expect(saveProposal(db, prop({ artifact: "skill:Review" }), "s", "code", epoch, now)).toEqual({ kind: "previously-rejected", id: first.id });
+  });
+
+  it("records the source sessions code sent to the model, and a re-proposal adds its own (security-sentinel-0)", () => {
+    const { db, epoch } = setup();
+    const first = saveProposal(db, prop(), "reflect:pr-1", "code", epoch, now, ["bbbb2222", "aaaa1111", "aaaa1111"]);
+    expect(proposalSources(db, first.id)).toEqual(["aaaa1111", "bbbb2222"]);
+    expect(saveProposal(db, prop(), "correct:2026-W41", "code", epoch, now, ["cccc3333", "aaaa1111"])).toEqual({ kind: "duplicate", id: first.id });
+    expect(proposalSources(db, first.id)).toEqual(["aaaa1111", "bbbb2222", "cccc3333"]);
+    const bare = saveProposal(db, prop({ title: "A telemetry proposal" }), "telemetry:done-gate", "code", epoch, now);
+    expect(proposalSources(db, bare.id)).toEqual([]);
+    setStatus(db, first.id, "rejected", epoch, now);
+    expect(saveProposal(db, prop(), "reflect:pr-2", "code", epoch, now, ["dddd4444"]).kind).toBe("previously-rejected");
+    expect(proposalSources(db, first.id)).toEqual(["aaaa1111", "bbbb2222", "cccc3333"]); // nothing added to a rejected one
+  });
+
+  it("says which sources read transcripts: every source but telemetry (fail closed)", () => {
+    expect(["reflect:pr-1", "correct:2026-W41", "correct", "anything"].map(readsTranscripts)).toEqual([true, true, true, true]);
+    expect(readsTranscripts("telemetry:done-gate")).toBe(false);
   });
 
   it("keeps the newest 20 evidence entries when merging a duplicate", () => {

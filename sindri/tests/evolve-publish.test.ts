@@ -7,7 +7,7 @@ import { makePlanFileTracker } from "../src/adapters/plan-file/tracker.js";
 import { parsePlan } from "../src/adapters/plan-file/parse.js";
 import { init } from "../src/evolve/cmd/registry.js";
 import { publish, stage } from "../src/evolve/cmd/stage.js";
-import { getProposal, inFlightCount, ProposalSchema, savePublic, saveProposal, stagedFile, type Tier } from "../src/evolve/proposals.js";
+import { getProposal, inFlightCount, NO_TRANSCRIPT, ProposalSchema, savePublic, saveProposal, stagedFile, type Tier } from "../src/evolve/proposals.js";
 import type { GitRunner } from "../src/git.js";
 import { evolveFixture, git, scriptedEvolveIo, withDeps, setStatus, type EvolveFixture } from "./evolve-fixtures.js";
 
@@ -24,12 +24,13 @@ async function ready(o: { extraYaml?: string; plans?: string; branch?: string | 
   await init([], fx.ctx);
   if (o.branch !== null) git(fx.repo, "checkout", "-q", "-b", o.branch ?? "docs/proposals");
   let n = 0;
-  const save = (title: string, over: Record<string, unknown> = {}, tier: Tier = "code") =>
+  // A reflect proposal records the sessions its transcript came from (security-sentinel-0): by default, that session.
+  const save = (title: string, over: Record<string, unknown> = {}, tier: Tier = "code", src: { source?: string; sessions?: string[] } = {}) =>
     fx.ctx.write((epoch) =>
       saveProposal(fx.ctx.db, ProposalSchema.parse({
         artifact: "skill:review", kind: "skill-edit", title, rationale: "Seen twice in review sessions.", evidence: ["pr:12", "transcript:5e55a1d0#4"],
         change: { type: "describe", files: ["skills/review/SKILL.md"], description: "Add a step." }, ...over,
-      }), "reflect:pr-12", tier, epoch, new Date(Date.parse("2026-10-08T12:00:00Z") + n++ * 1000)).id);
+      }), src.source ?? "reflect:pr-12", tier, epoch, new Date(Date.parse("2026-10-08T12:00:00Z") + n++ * 1000), src.sessions ?? ["5e55a1d0"]).id);
   return { fx, save };
 }
 
@@ -417,7 +418,10 @@ describe("publish gate layers (privacy B1)", () => {
 
   async function heldLayer(
     over: Record<string, unknown>,
-    o: { extraYaml?: string; files?: (fx: EvolveFixture) => Record<string, string>; repoFiles?: Record<string, string>; stagedFiles?: Record<string, string>; noTranscripts?: boolean } = {},
+    o: {
+      extraYaml?: string; files?: (fx: EvolveFixture) => Record<string, string>; repoFiles?: Record<string, string>; stagedFiles?: Record<string, string>; noTranscripts?: boolean;
+      src?: { source?: string; sessions?: string[] };
+    } = {},
   ): Promise<{ layer: string; why: string }[]> {
     const { fx, save } = await ready({ extraYaml: o.extraYaml ?? PATTERNS });
     for (const [f, t] of Object.entries(o.files?.(fx) ?? {})) fs.writeFileSync(path.join(fx.transcripts, f), t);
@@ -432,7 +436,7 @@ describe("publish gate layers (privacy B1)", () => {
       fs.writeFileSync(path.join(fx.repo, f), t);
       git(fx.repo, "add", f);
     }
-    save("Alpha change here", over);
+    save("Alpha change here", over, "code", o.src);
     await stage([], fx.ctx);
     if (o.noTranscripts === true) fs.rmSync(fx.transcripts, { recursive: true }); // deleted (cleanupPeriodDays) after stage
     const r = JSON.parse((await publish(["--json", "--dry-run"], fx.ctx)).stdout) as { held: { layer: string; why: string }[] };
@@ -486,15 +490,64 @@ describe("publish gate layers (privacy B1)", () => {
   it("verbatim: holds when none of a proposal's cited sessions resolves, so copied text can't be checked (security-sentinel-1)", async () => {
     const held = await heldLayer(
       { rationale: "The overnight rota swap left two shifts without cover.", evidence: ["pr:12", "transcript:0badc0de#1"] },
-      { files: (fx) => ({ [SESSION]: transcriptLine(fx, COPIED) }) },
+      { files: (fx) => ({ [SESSION]: transcriptLine(fx, COPIED) }), src: { sessions: [NO_TRANSCRIPT] } }, // nothing else to check
     );
     expect(held).toEqual([{ layer: "verbatim", why: "evidence transcripts are missing, so copied text can't be checked" }]);
   });
 
-  it("verbatim: holds the same way when the transcripts dir doesn't exist; a proposal citing no transcript still passes", async () => {
-    expect(await heldLayer({ evidence: ["transcript:5e55a1d0#1"] }, { noTranscripts: true }))
-      .toEqual([{ layer: "verbatim", why: "evidence transcripts are missing, so copied text can't be checked" }]);
-    expect(await heldLayer({ evidence: ["pr:12"] }, { noTranscripts: true })).toEqual([]);
+  it("verbatim: holds the same way when the transcripts dir doesn't exist, also for a proposal citing no transcript whose sources are recorded; telemetry passes", async () => {
+    const missing = [{ layer: "verbatim", why: "evidence transcripts are missing, so copied text can't be checked" }];
+    expect(await heldLayer({ evidence: ["transcript:5e55a1d0#1"] }, { noTranscripts: true })).toEqual(missing);
+    expect(await heldLayer({ evidence: ["pr:12"] }, { noTranscripts: true })).toEqual(missing); // its recorded source is gone
+    expect(await heldLayer({ evidence: ["pr:12"] }, { noTranscripts: true, src: { source: "telemetry:done-gate", sessions: [] } })).toEqual([]);
+  });
+
+  it("verbatim: a reflect proposal citing only pr:N that copies 8 words of a branch session it was built from holds (security-sentinel-0)", async () => {
+    const held = await heldLayer(
+      { rationale: "The overnight rota swap left two shifts without cover.", evidence: ["pr:12"] },
+      { files: (fx) => ({ [SESSION]: transcriptLine(fx, COPIED) }) },
+    );
+    expect(held).toEqual([{ layer: "verbatim", why: "copies transcript text" }]);
+  });
+
+  it("verbatim: a proposal citing session A that copies from source session B holds (security-sentinel-0)", async () => {
+    const other = "0ddba11e-0000-4000-8000-000000000002.jsonl";
+    const held = await heldLayer(
+      { rationale: "The overnight rota swap left two shifts without cover.", evidence: ["transcript:5e55a1d0#1"] },
+      { files: (fx) => ({ [SESSION]: transcriptLine(fx, "please retry the flaky check once"), [other]: transcriptLine(fx, COPIED) }), src: { sessions: ["5e55a1d0", "0ddba11e"] } },
+    );
+    expect(held).toEqual([{ layer: "verbatim", why: "copies transcript text" }]);
+  });
+
+  it("verbatim: a transcript-sourced proposal with no recorded source sessions holds, whatever it cites (security-sentinel-0)", async () => {
+    const why = [{ layer: "verbatim", why: "its source transcripts weren't recorded, so copied text can't be checked" }];
+    expect(await heldLayer({ evidence: ["pr:12"] }, { src: { sessions: [] } })).toEqual(why);
+    expect(await heldLayer({ evidence: ["transcript:5e55a1d0#1"] }, { src: { source: "correct:2026-W41", sessions: [] } })).toEqual(why);
+  });
+
+  it("verbatim: a reflect proposal recorded as having read no transcript passes; what it cites is still checked", async () => {
+    expect(await heldLayer({ evidence: ["pr:12"] }, { src: { sessions: [NO_TRANSCRIPT] } })).toEqual([]);
+    expect(await heldLayer(
+      { rationale: "The overnight rota swap left two shifts without cover.", evidence: ["transcript:5e55a1d0#1"] },
+      { files: (fx) => ({ [SESSION]: transcriptLine(fx, COPIED) }), src: { sessions: [NO_TRANSCRIPT] } },
+    )).toEqual([{ layer: "verbatim", why: "copies transcript text" }]);
+  });
+
+  it("verbatim: a telemetry proposal (no transcripts behind it) is unaffected", async () => {
+    expect(await heldLayer({ evidence: ["pr:12"] }, { src: { source: "telemetry:done-gate", sessions: [] } })).toEqual([]);
+  });
+
+  it("verbatim: a re-proposal adds its source sessions, and publish checks them (security-sentinel-0)", async () => {
+    const { fx, save } = await ready({ extraYaml: PATTERNS });
+    git(fx.repo, "update-ref", "refs/remotes/origin/main", "HEAD");
+    fs.writeFileSync(path.join(fx.transcripts, "abcd1234-0000-4000-8000-000000000003.jsonl"), transcriptLine(fx, COPIED));
+    const id = save("Alpha change here", { rationale: "The overnight rota swap left two shifts without cover.", evidence: ["pr:12"] });
+    await stage([], fx.ctx);
+    expect((JSON.parse((await publish(["--json", "--dry-run"], fx.ctx)).stdout) as { held: unknown[] }).held).toEqual([]);
+    expect(save("Alpha change here", { evidence: ["pr:13"] }, "code", { sessions: ["abcd1234"] })).toBe(id);
+    const after = JSON.parse((await publish(["--json", "--dry-run"], fx.ctx)).stdout) as { held: { id: string; layer: string; why: string }[] };
+    expect(after.held).toEqual([{ id, layer: "verbatim", why: "copies transcript text" }]);
+    fx.close();
   });
 
   it("verbatim: a run in a staged but uncommitted toolkit file isn't public, so the copy still holds (security-sentinel-0)", async () => {
@@ -530,7 +583,7 @@ describe("publish gate layers (privacy B1)", () => {
     expect(held).toEqual([{ layer: "verbatim", why: "copies transcript text" }]);
   });
 
-  it("verbatim: a run copied from a session the evidence doesn't reference still passes (the gate's scope)", async () => {
+  it("verbatim: a run copied from a session neither cited nor recorded as a source still passes (the gate's scope)", async () => {
     const other = "0ddba11e-0000-4000-8000-000000000002.jsonl";
     const held = await heldLayer(
       { title: "Fix: the overnight rota swap left two shifts without cover", evidence: ["transcript:5e55a1d0#1"] },
@@ -659,7 +712,7 @@ describe("publish gate layers (privacy B1)", () => {
     fx.ctx.write((epoch) => saveProposal(fx.ctx.db, ProposalSchema.parse({
       artifact: "skill:review", kind: "skill-edit", title: "A clean proposal", rationale: "r", evidence: ["pr:12"],
       change: { type: "describe", files: ["skills/review/SKILL.md"], description: "d" },
-    }), "reflect:pr-12", "code", epoch, fx.deps.now()));
+    }), "telemetry:done-gate", "code", epoch, fx.deps.now())); // no transcripts behind it
     await stage([], fx.ctx);
     const note = "Warning: 2 repo(s) other than the toolkit repo don't set private:, so publish treats them as public (sindri doctor lists them).";
     const dry = await publish(["--dry-run"], fx.ctx);

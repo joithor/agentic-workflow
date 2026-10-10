@@ -22,15 +22,25 @@ describe("the publish gate as an ordered list (architecture-strategist-7)", () =
   it("returns the first hit only, and passes clean text", async () => {
     let copiesCalled = false;
     const g = ctx({ copies: async () => { copiesCalled = true; return "copies"; } });
-    expect(await runGate({ text: "Acme Care saw GLX-12 in quarbleScheduler", sessions: [] }, g)).toEqual({ layer: "terms", why: "contains a private term" });
+    expect(await runGate({ text: "Acme Care saw GLX-12 in quarbleScheduler", sessions: [], unrecorded: false }, g)).toEqual({ layer: "terms", why: "contains a private term" });
     expect(copiesCalled).toBe(false); // a terms hit never reaches the verbatim layer
-    expect(await runGate({ text: "seen on glx-12", sessions: [] }, g)).toEqual({ layer: "patterns", why: "matches a privacy.denyPatterns entry" });
-    expect(await runGate({ text: "touches QuarbleScheduler", sessions: [] }, g)).toEqual({ layer: "identifiers", why: "contains a private-repo identifier" });
-    expect(await runGate({ text: "a plain idea", sessions: ["s"] }, g)).toEqual({ layer: "verbatim", why: "copies transcript text" });
-    expect(await runGate({ text: "a plain idea", sessions: ["s"] }, ctx({ copies: async () => "missing" })))
+    expect(await runGate({ text: "seen on glx-12", sessions: [], unrecorded: false }, g)).toEqual({ layer: "patterns", why: "matches a privacy.denyPatterns entry" });
+    expect(await runGate({ text: "touches QuarbleScheduler", sessions: [], unrecorded: false }, g)).toEqual({ layer: "identifiers", why: "contains a private-repo identifier" });
+    expect(await runGate({ text: "a plain idea", sessions: ["s"], unrecorded: false }, g)).toEqual({ layer: "verbatim", why: "copies transcript text" });
+    expect(await runGate({ text: "a plain idea", sessions: ["s"], unrecorded: false }, ctx({ copies: async () => "missing" })))
       .toEqual({ layer: "verbatim", why: "evidence transcripts are missing, so copied text can't be checked" });
-    expect(await runGate({ text: "mail ops@example.org", sessions: [] }, ctx())).toEqual({ layer: "personal", why: "contains an email address or a home directory path" });
-    expect(await runGate({ text: "a plain idea", sessions: [] }, ctx())).toBeNull();
+    expect(await runGate({ text: "mail ops@example.org", sessions: [], unrecorded: false }, ctx())).toEqual({ layer: "personal", why: "contains an email address or a home directory path" });
+    expect(await runGate({ text: "a plain idea", sessions: [], unrecorded: false }, ctx())).toBeNull();
+  });
+
+  it("holds a transcript-sourced candidate whose source sessions weren't recorded at the verbatim layer, without reading transcripts (security-sentinel-0)", async () => {
+    let copiesCalled = false;
+    const g = ctx({ copies: async () => { copiesCalled = true; return null; } });
+    expect(await runGate({ text: "a plain idea", sessions: ["s"], unrecorded: true }, g))
+      .toEqual({ layer: "verbatim", why: "its source transcripts weren't recorded, so copied text can't be checked" });
+    expect(copiesCalled).toBe(false);
+    // the earlier layers still come first
+    expect(await runGate({ text: "Acme Care idea", sessions: [], unrecorded: true }, g)).toEqual({ layer: "terms", why: "contains a private term" });
   });
 });
 

@@ -15,21 +15,23 @@ import { readRepoSessions } from "./transcripts.js";
 const scrubber = makeScrubber();
 const esc = (s: string): string => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 
-export function branchTranscript(dir: string, repo: string, branch: string, o: { cap: number; since: Date; dropTitles: readonly string[] }): string {
+// The branch's turns as the reviewers and the synthesizer read them, and the sessions those turns came from: the
+// proposal's provenance, recorded by code when it is saved (security-sentinel-0), never taken from the model's evidence.
+export function branchTranscript(dir: string, repo: string, branch: string, o: { cap: number; since: Date; dropTitles: readonly string[] }): { text: string; sessions: string[] } {
   const { lines } = readRepoSessions(dir, repo, o.since);
-  const turns: string[] = [];
+  const turns: { text: string; session: string }[] = [];
   for (const l of lines) {
     if (l.branch !== branch || (l.type !== "user" && l.type !== "assistant")) continue;
     const text = l.blocks.filter((b) => !b.toolResult).map((b) => b.text).join("\n").trim();
     if (text === "" || (l.type === "user" && (l.meta || text.startsWith("<"))) || mentionsHoldout(text, o.dropTitles)) continue;
-    turns.push(`<untrusted id="${l.ref}" role="${l.type === "user" ? "human" : "assistant"}">${esc(scrubber.scrub(text).text)}</untrusted>`);
+    turns.push({ text: `<untrusted id="${l.ref}" role="${l.type === "user" ? "human" : "assistant"}">${esc(scrubber.scrub(text).text)}</untrusted>`, session: l.session });
   }
-  let total = turns.reduce((n, t) => n + t.length + 1, 0);
+  let total = turns.reduce((n, t) => n + t.text.length + 1, 0);
   while (turns.length > 0 && total > o.cap) {
-    total -= turns[0].length + 1;
+    total -= turns[0].text.length + 1;
     turns.shift();
   }
-  return turns.join("\n");
+  return { text: turns.map((t) => t.text).join("\n"), sessions: [...new Set(turns.map((t) => t.session))] };
 }
 
 const Findings = z.object({

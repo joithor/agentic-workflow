@@ -63,9 +63,9 @@ export async function correctCommand(args: string[], ctx: EvolveCtx): Promise<Co
   const notes = [...labeled.notes, ...(failed > 0 ? [`labeling: ${failed} failed batch(es)`] : []), ...result.notes];
   const extra = repoConfig(ctx.loaded).protectedPaths;
   const saved = await ctx.writeRetry((epoch) => {
-    const out = result.proposals.map((p) => {
+    const out = result.proposals.map(({ proposal: p, sessions }) => {
       const t = classifyTier(p, registry, extra);
-      return { title: p.title, tier: t.tier, outcome: saveProposal(ctx.db, p, `correct:${key}`, t.tier, epoch, ctx.deps.now()) };
+      return { title: p.title, tier: t.tier, outcome: saveProposal(ctx.db, p, `correct:${key}`, t.tier, epoch, ctx.deps.now(), sessions) };
     });
     if (!incomplete) auditMarker(ctx.db, ctx.deps, "correct", mark, epoch);
     return out;

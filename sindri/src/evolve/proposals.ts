@@ -99,16 +99,24 @@ export const normTitle = (t: string): string => t.normalize("NFKC").toLowerCase(
 
 export type SaveOutcome = { kind: "saved" | "duplicate" | "previously-rejected"; id: string };
 
-export function saveProposal(db: Ledger, p: Proposal, source: string, tier: Tier, epoch: number, now: Date): SaveOutcome {
+// `sessions`: the transcript sessions (prefixes as sessionOf gives them) whose text the caller sent to the model for
+// this proposal, decided by code, never read from the model's answer (security-sentinel-0). Only ever added to: a
+// re-proposal merged into an open one adds its sessions, so the verbatim layer checks every source it was built from.
+export function saveProposal(db: Ledger, p: Proposal, source: string, tier: Tier, epoch: number, now: Date, sessions: readonly string[] = []): SaveOutcome {
   const clean = scrubber.scrubDeep(p);
   const norm = normTitle(clean.title);
   const prior = db.prepare("SELECT id, status, body FROM proposals WHERE artifact_id = ? COLLATE NOCASE AND norm_title = ? ORDER BY created_at DESC, id DESC").all(p.artifact, norm) as { id: string; status: ProposalStatus; body: string }[];
   const open = prior.find((r) => !TERMINAL.includes(r.status));
   const ts = now.toISOString();
+  const addSources = (id: string): void => {
+    const add = db.prepare("INSERT OR IGNORE INTO proposal_sources (proposal_id, session) VALUES (?, ?)");
+    for (const s of new Set(sessions)) add.run(id, s);
+  };
   if (open !== undefined) {
     const older = ProposalSchema.parse(JSON.parse(open.body));
     const merged = { ...older, evidence: [...new Set([...older.evidence, ...clean.evidence])].slice(-20) };
     db.prepare("UPDATE proposals SET body = ?, updated_at = ?, epoch = ? WHERE id = ?").run(JSON.stringify(merged), ts, epoch, open.id);
+    addSources(open.id);
     return { kind: "duplicate", id: open.id };
   }
   const rejected = prior.find((r) => r.status === "rejected");
@@ -117,8 +125,22 @@ export function saveProposal(db: Ledger, p: Proposal, source: string, tier: Tier
   db.prepare(
     "INSERT INTO proposals (id, artifact_id, source, kind, tier, status, title, norm_title, body, created_at, updated_at, epoch) VALUES (?, ?, ?, ?, ?, 'proposed', ?, ?, ?, ?, ?, ?)",
   ).run(id, p.artifact, scrubber.scrub(source).text, p.kind, tier, clean.title, norm, JSON.stringify(clean), ts, ts, epoch);
+  addSources(id);
   return { kind: "saved", id };
 }
+
+// The source row a transcript-reading command records when the model read no transcript text at all (reflect on a PR
+// with no session on its branch). Never a session prefix (sessionOf gives letters, digits and dots only), so nothing
+// resolves through it; it tells publish that provenance was recorded, and there was none.
+export const NO_TRANSCRIPT = "-";
+
+// The recorded source sessions of a proposal, sorted (NO_TRANSCRIPT included when it was recorded).
+export const proposalSources = (db: Ledger, id: string): string[] =>
+  (db.prepare("SELECT session FROM proposal_sources WHERE proposal_id = ? ORDER BY session").all(id) as { session: string }[]).map((r) => r.session);
+
+// Whether a proposal's source fed transcript text to the model: every source but telemetry, whose text is fixed
+// (fail closed: an unknown source kind counts as reading transcripts).
+export const readsTranscripts = (source: string): boolean => !source.startsWith("telemetry:");
 
 export interface StoredProposal {
   id: string;

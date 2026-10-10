@@ -7,11 +7,16 @@ import type { SessionFile } from "./transcripts.js";
 // public version) is decided before the gate runs, so the list starts at `terms`.
 export interface Candidate {
   text: string; // the public version's raw fields plus its rendered task
-  sessions: readonly string[]; // the session prefixes its transcript evidence cites
+  // The session prefixes the verbatim layer checks: those its transcript evidence cites plus the source sessions
+  // recorded when it was saved (security-sentinel-0); the model chooses the first, code the second.
+  sessions: readonly string[];
+  // Its source fed transcript text to the model but no source session was recorded (a proposal saved before
+  // provenance existed): copied text can't be checked, so the verbatim layer holds (fail closed).
+  unrecorded: boolean;
 }
 
-// "copies": a run or a whole short turn of a cited session is in the text; "missing": the candidate cites at least one
-// session and none of them resolves (deleted, moved, another transcripts dir), so copied text can't be checked (fail closed).
+// "copies": a run or a whole short turn of a checked session is in the text; "missing": the candidate has at least one
+// session to check and none of them resolves (deleted, moved, another transcripts dir), so copied text can't be checked (fail closed).
 export type VerbatimResult = "copies" | "missing" | null;
 const VERBATIM_WHY: Record<Exclude<VerbatimResult, null>, string> = {
   copies: "copies transcript text",
@@ -34,6 +39,7 @@ export const GATE_LAYERS: readonly GateLayer[] = [
   { layer: "patterns", check: async (c, g) => patternProblem(c.text, g.patterns) },
   { layer: "identifiers", check: async (c, g) => identifierProblem(c.text, g.derived) },
   { layer: "verbatim", check: async (c, g) => {
+    if (c.unrecorded) return "its source transcripts weren't recorded, so copied text can't be checked";
     const r = await g.copies(c.text, c.sessions);
     return r === null ? null : VERBATIM_WHY[r];
   } },

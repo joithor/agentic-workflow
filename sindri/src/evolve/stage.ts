@@ -15,7 +15,7 @@ import { loadDerivedSet, unsetPrivateRepos } from "./privacy-derived.js";
 import { Budget } from "../scope/model.js";
 import { generalize, type Generalized } from "./generalize.js";
 import {
-  classifyTier, findMerged, getPublic, hasPublic, inFlightCount, listStored, normTitle, publicTier, reduceEvidence, savePublic, setTier, stagedFile, transition, type Proposal, type StoredProposal, type Tier,
+  classifyTier, findMerged, getPublic, hasPublic, inFlightCount, listStored, NO_TRANSCRIPT, normTitle, proposalSources, publicTier, readsTranscripts, reduceEvidence, savePublic, setTier, stagedFile, transition, type Proposal, type StoredProposal, type Tier,
 } from "./proposals.js";
 import { loadRegistry } from "./registry.js";
 import { renderTask } from "./render.js";
@@ -94,6 +94,10 @@ export async function stageProposals(ctx: EvolveCtx, budget: Budget = new Budget
     .slice(0, slotsFree(ctx, cap, retry).free);
   const refsOf = (s: StoredProposal): string[] => reduceEvidence(s.proposal.evidence).refs;
   const evidence = resolveRefs(transcriptsDir(ctx), ctx.repo, snapshot.flatMap(refsOf), scrub);
+  // The recorded source sessions' turns go to the rewrite and the judge too (security-sentinel-0): the model may have
+  // drawn on any of them, whatever its evidence cites. Cited lines come first; generalize bounds the total.
+  const sourcesOf = (s: StoredProposal): string[] => proposalSources(ctx.db, s.id).filter((x) => x !== NO_TRANSCRIPT);
+  const sourceFiles = [...sessionTexts(transcriptsDir(ctx), ctx.repo, snapshot.flatMap(sourcesOf), scrub).values()];
   const runner = ctx.io.runner(ctx.loaded, scrub);
   const models = { rewriter: ctx.loaded.profile.models.challenger, judge: ctx.loaded.profile.models.adjudicator };
   const results = new Map<string, Generalized>();
@@ -103,6 +107,14 @@ export async function stageProposals(ctx: EvolveCtx, budget: Budget = new Budget
       const text = evidence.get(r);
       return text === undefined ? [] : [[r, text] as const];
     }));
+    for (const session of sourcesOf(s)) {
+      for (const f of sourceFiles.filter((x) => x.session === session)) {
+        for (const [n, t] of [...f.lines].sort(([a], [b]) => a - b)) {
+          const ref = `transcript:${session}#${n}`;
+          if (t.turn !== "" && !mine.has(ref)) mine.set(ref, t.turn);
+        }
+      }
+    }
     results.set(s.id, await generalize({ runner, budget, models, proposal: s.proposal, evidence: mine }));
   }
   return ctx.writeRetry((epoch) => {
@@ -228,9 +240,15 @@ export async function publishProposals(ctx: EvolveCtx, o: { dryRun: boolean; noP
   // A proposal released by a profile change publishes from the public row it already has: no model call.
   // The verbatim gate checks the union of the original's and the public version's evidence: a merged re-proposal can
   // add refs to the original after its public row was written (fail closed).
+  // The verbatim layer also checks the source sessions recorded when the proposal was saved (security-sentinel-0); a
+  // transcript-reading proposal with none recorded (saved before provenance existed) holds.
   const open = listStored(ctx.db, ["staged", "held"]).map((s) => {
     const pub = getPublic(ctx.db, s.id);
-    return { s, pub, refs: [...new Set([...reduceEvidence(s.proposal.evidence).refs, ...reduceEvidence(pub?.evidence ?? []).refs])] };
+    const recorded = proposalSources(ctx.db, s.id);
+    return {
+      s, pub, refs: [...new Set([...reduceEvidence(s.proposal.evidence).refs, ...reduceEvidence(pub?.evidence ?? []).refs])],
+      sources: recorded.filter((x) => x !== NO_TRANSCRIPT), unrecorded: readsTranscripts(s.source) && recorded.length === 0,
+    };
   });
   // May throw SND-EVOLVE-017/018/019 (a private repo without a usable index, no word list, unlistable tracked files),
   // also on --dry-run, before any write; only when there is a proposal to check (architecture-strategist-2).
@@ -260,19 +278,21 @@ export async function publishProposals(ctx: EvolveCtx, o: { dryRun: boolean; noP
   const scrubber = profileScrubber(ctx.loaded);
   const patterns = ctx.loaded.profile.privacy.denyPatterns;
   const user = ctx.deps.system.username();
-  // Every line of every session the listed proposals' evidence cites, read in one scan: a rewrite can copy an uncited
-  // turn of a cited session as easily as the cited line (privacy spec §5.5 amendment). A ref whose session isn't among
-  // this repo's sessions brings in nothing (Review Focus 1); a proposal none of whose cited sessions resolves holds.
+  // Every line of every session the listed proposals' evidence cites or that they were built from (their recorded sources),
+  // read in one scan: a rewrite can copy an uncited turn as easily as the cited line (privacy spec §5.5 amendments). A ref whose session isn't among
+  // this repo's sessions brings in nothing (Review Focus 1); a proposal none of whose checked sessions resolves holds.
   // Nothing is deduped here: a resumed session keeps the turns it copied (security-sentinel-2).
   const cited = (refs: readonly string[]): { session: string; n: number }[] => refs.flatMap((r) => parseTranscriptRef(r) ?? []);
-  const sessions = sessionTexts(transcriptsDir(ctx), ctx.repo, open.flatMap((l) => cited(l.refs).map((c) => c.session)), scrubber);
+  const checked = (l: (typeof open)[number]): string[] => [...new Set([...cited(l.refs).map((c) => c.session), ...l.sources])];
+  const sessions = sessionTexts(transcriptsDir(ctx), ctx.repo, open.flatMap(checked), scrubber);
   const gate: GateCtx = {
     deny, patterns, derived, user, scrubber,
     copies: verbatimChecker(sessions, () => toolkitCorpus(ctx.deps.git, ctx.repo, cfg.defaultBranch)),
   };
   const ready: { s: StoredProposal; pub: Proposal; t: { tier: Tier; why: string } }[] = [];
   const held: PublishOutcome["held"] = [];
-  for (const { s, pub, refs } of open) {
+  for (const l of open) {
+    const { s, pub } = l;
     if (pub === null) {
       held.push({ id: s.id, layer: "generalize", why: "not generalized yet; run sindri evolve stage" });
       continue;
@@ -283,7 +303,7 @@ export async function publishProposals(ctx: EvolveCtx, o: { dryRun: boolean; noP
     // Fail closed: a cited session among this repo's sessions brings in every line, even when the cited line number
     // doesn't resolve (the transcript was compacted). A cited session that isn't there is skipped while another one
     // resolves; when none of them does (deleted, moved, another transcripts dir), the verbatim layer holds (security-sentinel-1).
-    const hit = await runGate({ text: `${raw}\n${md}`, sessions: cited(refs).map((c) => c.session) }, gate);
+    const hit = await runGate({ text: `${raw}\n${md}`, sessions: checked(l), unrecorded: l.unrecorded }, gate);
     if (hit !== null) held.push({ id: s.id, ...hit });
     else ready.push({ s, pub, t });
   }

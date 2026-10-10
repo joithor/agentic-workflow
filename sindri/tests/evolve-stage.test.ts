@@ -23,12 +23,12 @@ async function ready(cap = 2, io?: EvolveIo) {
   const fx = await evolveFixture({ files: FILES, extraYaml: `evolve:\n  maxOpenProposals: ${cap}\n`, prompts: () => PROMPTS, io });
   await init([], fx.ctx);
   let n = 0;
-  const save = (title: string, over: Record<string, unknown>, tier: Tier, status?: ProposalStatus) => {
+  const save = (title: string, over: Record<string, unknown>, tier: Tier, status?: ProposalStatus, sessions: string[] = []) => {
     const id = fx.ctx.write((epoch) =>
       saveProposal(fx.ctx.db, ProposalSchema.parse({
         artifact: "skill:review", kind: "skill-edit", title, rationale: "r", evidence: ["pr:1"],
         change: { type: "describe", files: ["skills/review/SKILL.md"], description: "d" }, ...over,
-      }), "reflect:pr-1", tier, epoch, new Date(Date.parse("2026-10-08T12:00:00Z") + n++ * 1000)).id);
+      }), "reflect:pr-1", tier, epoch, new Date(Date.parse("2026-10-08T12:00:00Z") + n++ * 1000), sessions).id);
     if (status !== undefined) fx.ctx.write((epoch) => setStatus(fx.ctx.db, id, status, epoch, fx.deps.now()));
     return id;
   };
@@ -352,6 +352,30 @@ describe("stage generalizes first (privacy B1)", () => {
     for (const c of alpha) {
       expect(c.input).toContain('<untrusted id="transcript:5e55a1d0#1">the Initech billing retry broke</untrusted>');
       expect(c.input).not.toContain("second line");
+    }
+    fx.close();
+  });
+
+  it("also sends the recorded source sessions' turns to both generalize calls, cited lines first and bounded (security-sentinel-0)", async () => {
+    const io = scriptedEvolveIo(generalizingScript());
+    const { fx, save } = await ready(2, io);
+    const line = (text: string) => JSON.stringify({ type: "user", cwd: fx.repo, timestamp: "2026-10-05T10:00:00Z", message: { content: text } });
+    fs.writeFileSync(path.join(fx.transcripts, "5e55a1d0-a.jsonl"), `${line("the Initech billing retry broke")}\n${line("a tool result follows")}\n`);
+    // A long source session: far more text than the evidence bound, so only its first lines fit.
+    fs.writeFileSync(path.join(fx.transcripts, "6f66b2e1-b.jsonl"), Array.from({ length: 40 }, (_, i) => line(`turn ${i} ${"word ".repeat(400)}`)).join("\n"));
+    fs.writeFileSync(path.join(fx.transcripts, "0ddba11e-c.jsonl"), `${line("cited from a session that isn't a source")}\n`);
+    save("Alpha change here", { evidence: ["pr:1", "transcript:0ddba11e#1"] }, "code", undefined, ["6f66b2e1", "5e55a1d0"]);
+    await stageProposals(fx.ctx);
+    const alpha = io.calls.filter((c) => c.input.includes("Alpha change here"));
+    expect(alpha.map((c) => c.role)).toEqual([GENERALIZE_ROLES.rewrite, GENERALIZE_ROLES.judge]);
+    for (const c of alpha) {
+      const cited = c.input.indexOf('<untrusted id="transcript:0ddba11e#1">');
+      expect(cited).toBeGreaterThan(-1);
+      expect(c.input).toContain('<untrusted id="transcript:5e55a1d0#1">the Initech billing retry broke</untrusted>');
+      expect(c.input).toContain('<untrusted id="transcript:6f66b2e1#1">turn 0 ');
+      expect(c.input.indexOf('<untrusted id="transcript:6f66b2e1#1">')).toBeGreaterThan(cited);
+      expect(c.input).not.toContain('id="transcript:6f66b2e1#40"'); // bounded like the evidence
+      expect(c.input.length).toBeLessThan(60_000);
     }
     fx.close();
   });

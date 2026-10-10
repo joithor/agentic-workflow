@@ -5,6 +5,7 @@ import { describe, expect, it } from "vitest";
 import { init } from "../src/evolve/cmd/registry.js";
 import { reflectCommand } from "../src/evolve/cmd/reflect.js";
 import { isHoldout, saveReplay } from "../src/evolve/corpus.js";
+import { NO_TRANSCRIPT, proposalSources } from "../src/evolve/proposals.js";
 import { evolveFixture, fakeProc, git, scriptedEvolveIo, type EvolveFixture } from "./evolve-fixtures.js";
 
 const FILES = { "config/hooks/done-gate.sh": "#!/bin/sh\n", "skills/review/SKILL.md": "x\n" };
@@ -53,6 +54,9 @@ describe("sindri evolve reflect", () => {
     );
     expect(proc.calls.some((c) => c.argv.join(" ").includes("--repo acme/toolkit"))).toBe(true);
     expect((fx.io as ReturnType<typeof scriptedEvolveIo>).calls[0].input).toContain('<untrusted id="transcript:5e55a1d0#1" role="human">please fix the thing</untrusted>');
+    // Provenance is recorded by code, not taken from the model's evidence (security-sentinel-0).
+    expect(proposalSources(fx.ctx.db, first.id)).toEqual(["5e55a1d0"]);
+    expect(proposalSources(fx.ctx.db, second.id)).toEqual(["5e55a1d0"]);
     const again = await reflectCommand(["--pr", "12"], fx.ctx);
     expect(again.stdout).toBe(`Already reflected on PR #12: ${sorted(fx).join(", ")}.\nNext: sindri evolve proposals\n`);
     fx.close();
@@ -120,6 +124,7 @@ describe("sindri evolve reflect", () => {
     expect(partial.exitCode).toBe(1);
     expect(JSON.parse(partial.stdout)).toMatchObject({ pr: 12, incomplete: true });
     expect(sorted(fx)).toHaveLength(1);
+    expect(proposalSources(fx.ctx.db, sorted(fx)[0])).toEqual([NO_TRANSCRIPT]); // no branch session: recorded as having read none
     expect(fx.ctx.db.prepare("SELECT COUNT(*) AS c FROM evolve_audit WHERE verb = 'reflect'").get()).toEqual({ c: 0 });
     failSecond = false;
     const rerun = await reflectCommand(["--pr", "12"], fx.ctx);

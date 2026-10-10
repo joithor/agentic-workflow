@@ -24,7 +24,7 @@ describe("ledger v5 (privacy B1)", () => {
   it("adds proposal_public and backs up a v4 ledger as .bak-v4", () => {
     const file = path.join(tempDir(), "ledger.db");
     const v4 = openLedger(file);
-    v4.exec("DROP TABLE proposal_public;");
+    v4.exec("DROP TABLE proposal_sources; DROP TABLE proposal_public;");
     v4.pragma("user_version = 4");
     v4.close();
     const v5 = openLedger(file);
@@ -32,6 +32,10 @@ describe("ledger v5 (privacy B1)", () => {
     expect(LEDGER_SCHEMA_VERSION).toBe(5);
     expect(fs.existsSync(`${file}.bak-v4`)).toBe(true);
     expect(v5.prepare("SELECT name FROM sqlite_master WHERE name = 'proposal_public'").get()).toBeDefined();
+    // proposal_sources (security-sentinel-0): one row per (proposal, source session); the pair is the key.
+    v5.prepare("INSERT INTO proposals (id, artifact_id, source, kind, tier, status, title, norm_title, body, created_at, updated_at, epoch) VALUES ('p1', 'a', 's', 'k', 'code', 'proposed', 't', 't', '{}', '', '', 0)").run();
+    v5.prepare("INSERT INTO proposal_sources (proposal_id, session) VALUES ('p1', 'aaaa1111')").run();
+    expect(() => v5.prepare("INSERT INTO proposal_sources (proposal_id, session) VALUES ('p1', 'aaaa1111')").run()).toThrow(/UNIQUE|PRIMARY KEY/);
     v5.close();
   });
 });

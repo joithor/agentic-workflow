@@ -47,7 +47,7 @@ async function world(rewriteTitle: string, json: boolean) {
   fx.ctx.write((epoch) => saveProposal(fx.ctx.db, ProposalSchema.parse({
     artifact: "skill:review", kind: "skill-edit", title: "Globex quarbleScheduler GLX-1234 retries", rationale: STORY,
     evidence: ["transcript:5e55a1d0#1"], change: { type: "describe", files: ["skills/review/SKILL.md"], description: STORY },
-  }), "correct", "code", epoch, new Date("2026-10-08T12:00:00Z")));
+  }), "correct", "code", epoch, new Date("2026-10-08T12:00:00Z"), ["5e55a1d0"]));
   const mode = json ? ["--json"] : [];
   // Every command's output is checked too (threat-model point 3), in the mode under test.
   const stdout = [(await stage(mode, fx.ctx)).stdout];

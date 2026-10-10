@@ -148,11 +148,16 @@ const MIGRATIONS: readonly string[] = [
   `,
   // v5: the generalized proposal publish renders (evolve privacy B1). judge_category is always 'none' today: only a
   // clean verdict (leaks false, category none) is ever stored, every other one holds. It stays as an audit column so a
-  // future judge with graded clean categories needs no migration.
+  // future judge with graded clean categories needs no migration. proposal_sources is the verbatim layer's provenance.
   `
   CREATE TABLE proposal_public (
     proposal_id TEXT PRIMARY KEY REFERENCES proposals(id), body TEXT NOT NULL, judge_category TEXT NOT NULL, model TEXT NOT NULL,
     created_at TEXT NOT NULL, epoch INTEGER NOT NULL
+  );
+  -- The transcript sessions whose text code sent to the model for a proposal (security-sentinel-0): written by reflect
+  -- and correct when they save, never by a model, and only ever added to (a re-proposal adds its sessions).
+  CREATE TABLE proposal_sources (
+    proposal_id TEXT NOT NULL REFERENCES proposals(id), session TEXT NOT NULL, PRIMARY KEY (proposal_id, session)
   );
   `,
 ];
