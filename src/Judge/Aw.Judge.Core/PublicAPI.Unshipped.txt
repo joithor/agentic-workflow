@@ -273,3 +273,11 @@ static Aw.Judge.Core.Json.JsValue.From(double value) -> Aw.Judge.Core.Json.JsVal
 static Aw.Judge.Core.Json.JsValue.From(string! value) -> Aw.Judge.Core.Json.JsValue!
 static Aw.Judge.Core.Json.JsValue.FromNullable(string? value) -> Aw.Judge.Core.Json.JsValue!
 static Aw.Judge.Core.Json.JsValue.Null.get -> Aw.Judge.Core.Json.JsValue!
+Aw.Judge.Core.Health.HealthStatus
+Aw.Judge.Core.Health.HealthStatus.Degraded = 2 -> Aw.Judge.Core.Health.HealthStatus
+Aw.Judge.Core.Health.HealthStatus.Down = 3 -> Aw.Judge.Core.Health.HealthStatus
+Aw.Judge.Core.Health.HealthStatus.Ok = 1 -> Aw.Judge.Core.Health.HealthStatus
+Aw.Judge.Core.Health.JudgeHealth
+const Aw.Judge.Core.Health.JudgeHealth.DownStreak = 5 -> int
+static Aw.Judge.Core.Health.JudgeHealth.Assess(int failures, System.Collections.Generic.IReadOnlyList<Aw.Judge.Core.Decisions.DecisionOutcome>! lastAttempts) -> Aw.Judge.Core.Health.HealthStatus
+static Aw.Judge.Core.Health.JudgeHealth.FailureWindow.get -> System.TimeSpan

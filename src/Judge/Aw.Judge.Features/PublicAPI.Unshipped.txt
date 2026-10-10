@@ -6,7 +6,6 @@ Aw.Judge.Features.GetHealth.GetHealthRequest.GetHealthRequest() -> void
 Aw.Judge.Features.GetHealth.GetHealthResponse
 Aw.Judge.Features.GetHealth.GetHealthResponse.<Clone>$() -> Aw.Judge.Features.GetHealth.GetHealthResponse!
 Aw.Judge.Features.GetHealth.GetHealthResponse.Equals(Aw.Judge.Features.GetHealth.GetHealthResponse? other) -> bool
-Aw.Judge.Features.GetHealth.GetHealthResponse.GetHealthResponse() -> void
 Aw.Judge.Features.JudgeFeaturesServiceCollectionExtensions
 override Aw.Judge.Features.GetHealth.GetHealthRequest.Equals(object? obj) -> bool
 override Aw.Judge.Features.GetHealth.GetHealthRequest.GetHashCode() -> int
@@ -19,3 +18,9 @@ static Aw.Judge.Features.GetHealth.GetHealthRequest.operator ==(Aw.Judge.Feature
 static Aw.Judge.Features.GetHealth.GetHealthResponse.operator !=(Aw.Judge.Features.GetHealth.GetHealthResponse? left, Aw.Judge.Features.GetHealth.GetHealthResponse? right) -> bool
 static Aw.Judge.Features.GetHealth.GetHealthResponse.operator ==(Aw.Judge.Features.GetHealth.GetHealthResponse? left, Aw.Judge.Features.GetHealth.GetHealthResponse? right) -> bool
 static Aw.Judge.Features.JudgeFeaturesServiceCollectionExtensions.AddJudgeFeatures(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
+Aw.Judge.Features.GetHealth.GetHealthResponse.Deconstruct(out Aw.Judge.Core.Health.HealthStatus Status, out int Failures24h) -> void
+Aw.Judge.Features.GetHealth.GetHealthResponse.Failures24h.get -> int
+Aw.Judge.Features.GetHealth.GetHealthResponse.Failures24h.init -> void
+Aw.Judge.Features.GetHealth.GetHealthResponse.GetHealthResponse(Aw.Judge.Core.Health.HealthStatus Status, int Failures24h) -> void
+Aw.Judge.Features.GetHealth.GetHealthResponse.Status.get -> Aw.Judge.Core.Health.HealthStatus
+Aw.Judge.Features.GetHealth.GetHealthResponse.Status.init -> void
