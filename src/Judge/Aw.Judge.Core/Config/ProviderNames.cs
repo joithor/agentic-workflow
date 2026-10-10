@@ -1,6 +1,6 @@
 namespace Aw.Judge.Core.Config;
 
-/// <summary>The provider and scaffold names config.json may use; any other is dropped.</summary>
+/// <summary>The provider and scaffold names config.json may use; any other makes the file invalid.</summary>
 public static class ProviderNames
 {
     /// <summary>The agent CLIs, in their default priority order.</summary>

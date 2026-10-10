@@ -1,128 +1,97 @@
+using System.Globalization;
 using System.Text.Json;
+using Aw.Judge.Core.Errors;
+using Aw.Kernel;
+using Aw.Kernel.Json;
 
 namespace Aw.Judge.Core.Config;
 
 /// <summary>
-/// Reads config.json leniently, as the TS judge's loadConfig did: a file that isn't a JSON object, or whose questions
-/// block isn't an object, is the default config; unknown provider names and wrong-typed fields are dropped (a question
-/// entry that isn't an object is dropped; a wrong-typed enabled or threshold gets its default), never fatal.
+/// Reads config.json: deserialized into <see cref="JudgeConfig"/> through the AwJson profile (the records' required
+/// and nullable members are the schema; unknown keys are ignored), then checked. Anything that fails either step is
+/// AW-JUDGE-007 with the reason; there is no per-field leniency. A config without wake-gate gets the default one.
 /// </summary>
 public static class JudgeConfigParser
 {
-    private const double MinBudgetMs = 200;
-    private const double MaxBudgetMs = 1050;   // the hook's 1500 ms kill minus the 450 ms startup allowance (TS config.ts)
+    /// <summary>The prompt sorter's budget range: the hook's 1500 ms kill minus the 450 ms startup allowance at most.</summary>
+    public const double MinBudgetMs = 200;
 
-    /// <summary>Parses config.json's text.</summary>
-    /// <param name="text">The file's text, or null when there is no file.</param>
-    /// <returns>The effective config.</returns>
-    public static JudgeConfig Parse(string? text)
+    /// <summary>The upper end of the prompt sorter's budget, in milliseconds.</summary>
+    public const double MaxBudgetMs = 1050;
+
+    /// <summary>Parses config.json's bytes.</summary>
+    /// <param name="utf8Json">The file's bytes.</param>
+    /// <param name="json">The package's AwJson options (its context knows JudgeConfig).</param>
+    /// <returns>The config, or AW-JUDGE-007 saying what is wrong.</returns>
+    public static Result<JudgeConfig> Parse(ReadOnlySpan<byte> utf8Json, JsonSerializerOptions json)
     {
-        using var document = text is null ? null : Document(text);
-        if (document?.RootElement is not { ValueKind: JsonValueKind.Object } root)
+        var read = AwJson.Deserialize<JudgeConfig>(utf8Json, json);
+        if (read.IsError)
         {
-            return JudgeConfig.Default;
+            return JudgeErrors.ConfigMalformed.With(read.Error.Message);
         }
 
-        var questions = root.TryGetProperty("questions", out var q) ? q : default;
-        return questions.ValueKind is JsonValueKind.Undefined or JsonValueKind.Object
-            ? new JudgeConfig(Questions(questions), Providers(root), PromptSort(root))
-            : JudgeConfig.Default;
+        var problem = Problem(read.Value);
+        return problem is null ? WithWakeGate(read.Value) : JudgeErrors.ConfigMalformed.With(problem);
     }
 
-    private static JsonDocument? Document(string text)
+    /// <summary>What makes a question's threshold invalid, or null when it is a confidence between 0 and 1.</summary>
+    /// <param name="threshold">The threshold.</param>
+    /// <returns>The problem, or null.</returns>
+    public static string? ThresholdProblem(double threshold) =>
+        double.IsFinite(threshold) && threshold is >= 0 and <= 1 ? null : string.Create(CultureInfo.InvariantCulture, $"threshold must be between 0 and 1, not {threshold}");
+
+    private static string? Problem(JudgeConfig config) =>
+        config.Questions.Select(static q => QuestionProblem(q.Key, q.Value)).FirstOrDefault(static p => p is not null)
+        ?? ProvidersProblem(config.Providers)
+        ?? PromptSortProblem(config.PromptSort);
+
+    private static string? QuestionProblem(string name, QuestionConfig? question)
     {
-        try
+        if (name.Length == 0)
         {
-            return JsonDocument.Parse(text);
+            return "a question name is empty";
         }
-        catch (JsonException)
+
+        if (question is null)
         {
-            return null;
+            return $"question '{name}' is null";
         }
+
+        return (ThresholdProblem(question.Threshold) is { } threshold ? $"question '{name}': {threshold}" : null)
+            ?? Unknown($"question '{name}' providers", question.Providers, ProviderNames.All);
     }
 
-    private static Dictionary<string, QuestionConfig> Questions(JsonElement questions)
+    private static string? ProvidersProblem(ProvidersConfig? providers) =>
+        providers is null ? null : Unknown("providers.agentClis", providers.AgentClis, ProviderNames.AgentClis);
+
+    private static string? PromptSortProblem(PromptSortConfig? sort)
     {
-        var parsed = new Dictionary<string, QuestionConfig>(JudgeConfig.Default.Questions, StringComparer.Ordinal);
-        if (questions.ValueKind != JsonValueKind.Object)
-        {
-            return parsed;
-        }
-
-        foreach (var entry in questions.EnumerateObject().Where(static e => e.Value.ValueKind == JsonValueKind.Object))
-        {
-            var e = entry.Value;
-            parsed[entry.Name] = new QuestionConfig(
-                Boolean(e, "enabled") ?? JudgeConfig.DefaultQuestion.Enabled,
-                Number(e, "threshold") ?? JudgeConfig.DefaultQuestion.Threshold)
-            {
-                Providers = Named(e, "providers", ProviderNames.All) is { Count: > 0 } named ? named : null,
-            };
-        }
-
-        return parsed;
-    }
-
-    private static ProvidersConfig? Providers(JsonElement root)
-    {
-        if (!root.TryGetProperty("providers", out var block) || block.ValueKind != JsonValueKind.Object)
-        {
-            return null;
-        }
-
-        var agentClis = Named(block, "agentClis", ProviderNames.AgentClis);
-        var jev = Boolean(block, "jev");
-        return agentClis is null && jev is null ? null : new ProvidersConfig(agentClis, jev);
-    }
-
-    private static PromptSortConfig? PromptSort(JsonElement root)
-    {
-        if (!root.TryGetProperty("promptSort", out var block) || block.ValueKind != JsonValueKind.Object)
+        if (sort is null)
         {
             return null;
         }
 
-        var budget = Number(block, "budgetMs");
-        var cooldown = Number(block, "cooldownPrompts");
-        return new PromptSortConfig(
-            Boolean(block, "enabled"),
-            budget is { } b ? Math.Clamp(b, MinBudgetMs, MaxBudgetMs) : null,
-            cooldown >= 0 ? cooldown : null,
-            Scaffolds(block));
-    }
-
-    private static Dictionary<string, bool>? Scaffolds(JsonElement block)
-    {
-        if (!block.TryGetProperty("scaffolds", out var scaffolds) || scaffolds.ValueKind != JsonValueKind.Object)
+        if (sort.BudgetMs is { } budget && budget is not (>= MinBudgetMs and <= MaxBudgetMs))
         {
-            return null;
+            return string.Create(CultureInfo.InvariantCulture, $"promptSort.budgetMs must be between {MinBudgetMs} and {MaxBudgetMs}, not {budget}");
         }
 
-        var parsed = new Dictionary<string, bool>(StringComparer.Ordinal);
-        foreach (var id in ProviderNames.Scaffolds)
+        if (sort.CooldownPrompts is { } cooldown && (cooldown < 0 || cooldown != Math.Floor(cooldown)))
         {
-            if (Boolean(scaffolds, id) is { } on)
-            {
-                parsed[id] = on;
-            }
+            return string.Create(CultureInfo.InvariantCulture, $"promptSort.cooldownPrompts must be a whole number of at least 0, not {cooldown}");
         }
 
-        return parsed;
+        return sort.Scaffolds is null ? null : Unknown("promptSort.scaffolds", [.. sort.Scaffolds.Keys], ProviderNames.Scaffolds);
     }
 
-    // The array's strings that are known names, in order; null when the field isn't an array.
-    private static List<string>? Named(JsonElement element, string name, IReadOnlyList<string> known) =>
-        element.TryGetProperty(name, out var value) && value.ValueKind == JsonValueKind.Array
-            ? [.. value.EnumerateArray().Where(static v => v.ValueKind == JsonValueKind.String).Select(static v => v.GetString() ?? "").Where(known.Contains)]
+    private static string? Unknown(string where, IReadOnlyList<string>? names, IReadOnlyList<string> known) =>
+        names?.FirstOrDefault(n => !known.Contains(n, StringComparer.Ordinal)) is { } bad
+            ? $"{where}: unknown name '{bad}' (known: {string.Join(", ", known)})"
             : null;
 
-    private static bool? Boolean(JsonElement element, string name) =>
-        element.TryGetProperty(name, out var value) && value.ValueKind is JsonValueKind.True or JsonValueKind.False
-            ? value.GetBoolean()
-            : null;
-
-    private static double? Number(JsonElement element, string name) =>
-        element.TryGetProperty(name, out var value) && value.ValueKind == JsonValueKind.Number && value.TryGetDouble(out var n) && double.IsFinite(n)
-            ? n
-            : null;
+    private static JudgeConfig WithWakeGate(JudgeConfig config) =>
+        config.Questions.ContainsKey(JudgeConfig.WakeGate)
+            ? config
+            : config with { Questions = new Dictionary<string, QuestionConfig>(config.Questions, StringComparer.Ordinal) { [JudgeConfig.WakeGate] = JudgeConfig.DefaultQuestion } };
 }

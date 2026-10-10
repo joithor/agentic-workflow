@@ -1,3 +1,4 @@
+using Aw.Judge.Core.Errors;
 using Aw.Judge.Core.Ports;
 using Aw.Kernel;
 using Aw.Kernel.Services;
@@ -11,7 +12,9 @@ internal sealed class SetConfigService(IJudgeConfigStore configs) : IService<Set
         var loaded = await configs.Load(cancellationToken).ConfigureAwait(false);
         if (loaded.IsError)
         {
-            return loaded.Error;
+            return loaded.Error.Code == JudgeErrors.ConfigMalformed.Code
+                ? JudgeErrors.ConfigMalformed.With($"{loaded.Error.Message}; fix or delete it, then set again")
+                : loaded.Error;
         }
 
         var next = loaded.Value.Set(request.Question, request.Field, request.Value);

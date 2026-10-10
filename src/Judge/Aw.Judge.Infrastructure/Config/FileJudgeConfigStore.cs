@@ -1,5 +1,6 @@
 using System.Text.Json;
 using Aw.Judge.Core.Config;
+using Aw.Judge.Core.Errors;
 using Aw.Judge.Core.Ports;
 using Aw.Kernel;
 using Aw.Kernel.Data;
@@ -8,8 +9,8 @@ using Aw.Kernel.Json;
 namespace Aw.Judge.Infrastructure.Config;
 
 /// <summary>
-/// IJudgeConfigStore over $AW_STATE_DIR/judge/config.json: read leniently (a missing or unreadable file is the default
-/// config, as in TS), written as indented Kernel-profile JSON.
+/// IJudgeConfigStore over $AW_STATE_DIR/judge/config.json: no file is the default config; a file that can't be read
+/// or isn't a valid config (JudgeConfigParser) is AW-JUDGE-007 naming the file. Written as indented Kernel-profile JSON.
 /// </summary>
 /// <param name="stateDirectory">$AW_STATE_DIR/judge (JudgeSettings.StateDirectory).</param>
 /// <param name="json">The host's Kernel JSON profile (its context knows JudgeConfig).</param>
@@ -24,17 +25,22 @@ internal sealed class FileJudgeConfigStore(string stateDirectory, JsonSerializer
 
     public async ValueTask<Result<JudgeConfig>> Load(CancellationToken cancellationToken)
     {
-        string? text;
+        byte[] bytes;
         try
         {
-            text = await File.ReadAllTextAsync(_file, cancellationToken).ConfigureAwait(false);
+            bytes = await File.ReadAllBytesAsync(_file, cancellationToken).ConfigureAwait(false);
+        }
+        catch (Exception exception) when (exception is FileNotFoundException or DirectoryNotFoundException)
+        {
+            return JudgeConfig.Default;
         }
         catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
         {
-            text = null;   // no file, a directory in its place, no permission: the defaults
+            return Invalid(exception.Message);   // a directory in its place, no permission
         }
 
-        return JudgeConfigParser.Parse(text);
+        var parsed = JudgeConfigParser.Parse(bytes, json);
+        return parsed.IsError ? Invalid(parsed.Error.Message) : parsed;
     }
 
     public async ValueTask<Result<Unit>> Save(JudgeConfig config, CancellationToken cancellationToken)
@@ -50,4 +56,6 @@ internal sealed class FileJudgeConfigStore(string stateDirectory, JsonSerializer
             return DataErrors.Unavailable.With($"Can't write the judge config '{_file}': {exception.Message}");
         }
     }
+
+    private Result<JudgeConfig> Invalid(string reason) => JudgeErrors.ConfigMalformed.With($"invalid config {_file}: {reason}");
 }

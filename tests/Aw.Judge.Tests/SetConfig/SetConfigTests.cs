@@ -61,6 +61,19 @@ public sealed class SetConfigTests
         Assert.Same(before, _store.Stored);
     }
 
+    [Fact, Trait("Lane", "unit")]
+    public async Task SetConfig_refuses_to_overwrite_an_invalid_stored_config()
+    {
+        _store.InvalidReason = "invalid config config.json: not JSON";
+        var before = _store.Stored;
+
+        var result = await Set("wake-gate", "threshold", "0.5");
+
+        Assert.Equal(JudgeErrors.ConfigMalformed.Code, result.Error.Code);
+        Assert.Equal("invalid config config.json: not JSON; fix or delete it, then set again", result.Error.Message);
+        Assert.Same(before, _store.Stored);
+    }
+
     private Task<Kernel.Result<SetConfigResponse>> Set(string question, string field, string value) =>
         new SetConfigService(_store).Handle(A.SetConfigRequest().Setting(question, field, value).Build(), CancellationToken.None).AsTask();
 

@@ -1,6 +1,6 @@
 namespace Aw.Judge.Tests.GetConfig;
 
-// The contract of 'judge config get' (TS runConfigGet: the effective config as JSON, exit 0).
+// The contract of 'judge config get': the effective config as JSON, exit 0.
 public sealed class GetConfigCliTests : IDisposable
 {
     private readonly TempStateDirectory _state = new();
@@ -25,7 +25,7 @@ public sealed class GetConfigCliTests : IDisposable
         Directory.CreateDirectory(Path.Combine(_state.Path, "judge"));
         await File.WriteAllTextAsync(
             Path.Combine(_state.Path, "judge", "config.json"),
-            """{"questions":{"ask-check":{"enabled":false,"threshold":0.6,"providers":["jev"]}},"providers":{"agentClis":["codex-cli"],"jev":false},"promptSort":{"budgetMs":5000}}""",
+            """{"questions":{"ask-check":{"enabled":false,"threshold":0.6,"providers":["jev"]}},"providers":{"agentClis":["codex-cli"],"jev":false},"promptSort":{"budgetMs":800}}""",
             TestContext.Current.CancellationToken);
 
         var json = (await new JudgeCli(_state).Run("config", "get")).Json();
@@ -35,7 +35,23 @@ public sealed class GetConfigCliTests : IDisposable
         Assert.Equal("jev", askCheck.GetProperty("providers")[0].GetString());
         Assert.Equal("codex-cli", json.GetProperty("providers").GetProperty("agentClis")[0].GetString());
         Assert.False(json.GetProperty("providers").GetProperty("jev").GetBoolean());
-        Assert.Equal(1050, json.GetProperty("promptSort").GetProperty("budgetMs").GetDouble());
+        Assert.Equal(800, json.GetProperty("promptSort").GetProperty("budgetMs").GetDouble());
+    }
+
+    [Theory, Trait("Lane", "integration")]
+    [InlineData("not json")]
+    [InlineData("""{"questions":{"wake-gate":{"enabled":"yes","threshold":0.5}}}""")]
+    public async Task Config_get_prints_the_defaults_when_the_file_isnt_a_valid_config(string text)
+    {
+        Directory.CreateDirectory(Path.Combine(_state.Path, "judge"));
+        await File.WriteAllTextAsync(Path.Combine(_state.Path, "judge", "config.json"), text, TestContext.Current.CancellationToken);
+
+        var run = await new JudgeCli(_state).Run("config", "get");
+
+        Assert.Equal(0, run.ExitCode);
+        var wakeGate = run.Json().GetProperty("questions").GetProperty("wake-gate");
+        Assert.True(wakeGate.GetProperty("enabled").GetBoolean());
+        Assert.Equal(0.7, wakeGate.GetProperty("threshold").GetDouble());
     }
 
     [Fact, Trait("Lane", "integration")]

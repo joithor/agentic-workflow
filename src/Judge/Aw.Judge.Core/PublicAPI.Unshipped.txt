@@ -480,7 +480,6 @@ Aw.Judge.Core.Config.JudgeConfig
 Aw.Judge.Core.Config.JudgeConfig.<Clone>$() -> Aw.Judge.Core.Config.JudgeConfig!
 Aw.Judge.Core.Config.JudgeConfig.Deconstruct(out System.Collections.Generic.IReadOnlyDictionary<string!, Aw.Judge.Core.Config.QuestionConfig!>! Questions, out Aw.Judge.Core.Config.ProvidersConfig? Providers, out Aw.Judge.Core.Config.PromptSortConfig? PromptSort) -> void
 Aw.Judge.Core.Config.JudgeConfig.Equals(Aw.Judge.Core.Config.JudgeConfig? other) -> bool
-Aw.Judge.Core.Config.JudgeConfig.JudgeConfig(System.Collections.Generic.IReadOnlyDictionary<string!, Aw.Judge.Core.Config.QuestionConfig!>! Questions, Aw.Judge.Core.Config.ProvidersConfig? Providers, Aw.Judge.Core.Config.PromptSortConfig? PromptSort) -> void
 Aw.Judge.Core.Config.JudgeConfig.PromptSort.get -> Aw.Judge.Core.Config.PromptSortConfig?
 Aw.Judge.Core.Config.JudgeConfig.PromptSort.init -> void
 Aw.Judge.Core.Config.JudgeConfig.Providers.get -> Aw.Judge.Core.Config.ProvidersConfig?
@@ -499,7 +498,6 @@ Aw.Judge.Core.Config.PromptSortConfig.Deconstruct(out bool? Enabled, out double?
 Aw.Judge.Core.Config.PromptSortConfig.Enabled.get -> bool?
 Aw.Judge.Core.Config.PromptSortConfig.Enabled.init -> void
 Aw.Judge.Core.Config.PromptSortConfig.Equals(Aw.Judge.Core.Config.PromptSortConfig? other) -> bool
-Aw.Judge.Core.Config.PromptSortConfig.PromptSortConfig(bool? Enabled, double? BudgetMs, double? CooldownPrompts, System.Collections.Generic.IReadOnlyDictionary<string!, bool>? Scaffolds) -> void
 Aw.Judge.Core.Config.PromptSortConfig.Scaffolds.get -> System.Collections.Generic.IReadOnlyDictionary<string!, bool>?
 Aw.Judge.Core.Config.PromptSortConfig.Scaffolds.init -> void
 Aw.Judge.Core.Config.ProvidersConfig
@@ -510,7 +508,6 @@ Aw.Judge.Core.Config.ProvidersConfig.Deconstruct(out System.Collections.Generic.
 Aw.Judge.Core.Config.ProvidersConfig.Equals(Aw.Judge.Core.Config.ProvidersConfig? other) -> bool
 Aw.Judge.Core.Config.ProvidersConfig.Jev.get -> bool?
 Aw.Judge.Core.Config.ProvidersConfig.Jev.init -> void
-Aw.Judge.Core.Config.ProvidersConfig.ProvidersConfig(System.Collections.Generic.IReadOnlyList<string!>? AgentClis, bool? Jev) -> void
 Aw.Judge.Core.Config.QuestionConfig
 Aw.Judge.Core.Config.QuestionConfig.<Clone>$() -> Aw.Judge.Core.Config.QuestionConfig!
 Aw.Judge.Core.Config.QuestionConfig.Deconstruct(out bool Enabled, out double Threshold) -> void
@@ -541,7 +538,6 @@ static Aw.Judge.Core.Config.JudgeConfig.Default.get -> Aw.Judge.Core.Config.Judg
 static Aw.Judge.Core.Config.JudgeConfig.DefaultQuestion.get -> Aw.Judge.Core.Config.QuestionConfig!
 static Aw.Judge.Core.Config.JudgeConfig.operator !=(Aw.Judge.Core.Config.JudgeConfig? left, Aw.Judge.Core.Config.JudgeConfig? right) -> bool
 static Aw.Judge.Core.Config.JudgeConfig.operator ==(Aw.Judge.Core.Config.JudgeConfig? left, Aw.Judge.Core.Config.JudgeConfig? right) -> bool
-static Aw.Judge.Core.Config.JudgeConfigParser.Parse(string? text) -> Aw.Judge.Core.Config.JudgeConfig!
 static Aw.Judge.Core.Config.PromptSortConfig.operator !=(Aw.Judge.Core.Config.PromptSortConfig? left, Aw.Judge.Core.Config.PromptSortConfig? right) -> bool
 static Aw.Judge.Core.Config.PromptSortConfig.operator ==(Aw.Judge.Core.Config.PromptSortConfig? left, Aw.Judge.Core.Config.PromptSortConfig? right) -> bool
 static Aw.Judge.Core.Config.ProvidersConfig.operator !=(Aw.Judge.Core.Config.ProvidersConfig? left, Aw.Judge.Core.Config.ProvidersConfig? right) -> bool
@@ -611,3 +607,27 @@ virtual Aw.Judge.Core.Providers.ProviderResult.PrintMembers(System.Text.StringBu
 ~Aw.Judge.Core.Questions.QuestionDefinition<TInput>.Equals(Aw.Judge.Core.Questions.QuestionDefinition<TInput>? other) -> bool
 ~static Aw.Judge.Core.Questions.QuestionDefinition<TInput>.operator !=(Aw.Judge.Core.Questions.QuestionDefinition<TInput>? left, Aw.Judge.Core.Questions.QuestionDefinition<TInput>? right) -> bool
 ~static Aw.Judge.Core.Questions.QuestionDefinition<TInput>.operator ==(Aw.Judge.Core.Questions.QuestionDefinition<TInput>? left, Aw.Judge.Core.Questions.QuestionDefinition<TInput>? right) -> bool
+Aw.Judge.Core.Config.ConfigReading
+Aw.Judge.Core.Config.ConfigReading.<Clone>$() -> Aw.Judge.Core.Config.ConfigReading!
+Aw.Judge.Core.Config.ConfigReading.Config.get -> Aw.Judge.Core.Config.JudgeConfig!
+Aw.Judge.Core.Config.ConfigReading.Config.init -> void
+Aw.Judge.Core.Config.ConfigReading.ConfigReading(Aw.Judge.Core.Config.JudgeConfig! Config, string? Warning) -> void
+Aw.Judge.Core.Config.ConfigReading.Deconstruct(out Aw.Judge.Core.Config.JudgeConfig! Config, out string? Warning) -> void
+Aw.Judge.Core.Config.ConfigReading.Equals(Aw.Judge.Core.Config.ConfigReading? other) -> bool
+Aw.Judge.Core.Config.ConfigReading.Warning.get -> string?
+Aw.Judge.Core.Config.ConfigReading.Warning.init -> void
+Aw.Judge.Core.Config.JudgeConfig.JudgeConfig(System.Collections.Generic.IReadOnlyDictionary<string!, Aw.Judge.Core.Config.QuestionConfig!>! Questions, Aw.Judge.Core.Config.ProvidersConfig? Providers = null, Aw.Judge.Core.Config.PromptSortConfig? PromptSort = null) -> void
+Aw.Judge.Core.Config.PromptSortConfig.PromptSortConfig(bool? Enabled = null, double? BudgetMs = null, double? CooldownPrompts = null, System.Collections.Generic.IReadOnlyDictionary<string!, bool>? Scaffolds = null) -> void
+Aw.Judge.Core.Config.ProvidersConfig.ProvidersConfig(System.Collections.Generic.IReadOnlyList<string!>? AgentClis = null, bool? Jev = null) -> void
+const Aw.Judge.Core.Config.JudgeConfig.WakeGate = "wake-gate" -> string!
+const Aw.Judge.Core.Config.JudgeConfigParser.MaxBudgetMs = 1050 -> double
+const Aw.Judge.Core.Config.JudgeConfigParser.MinBudgetMs = 200 -> double
+override Aw.Judge.Core.Config.ConfigReading.Equals(object? obj) -> bool
+override Aw.Judge.Core.Config.ConfigReading.GetHashCode() -> int
+override Aw.Judge.Core.Config.ConfigReading.ToString() -> string!
+static Aw.Judge.Core.Config.ConfigReading.From(Aw.Kernel.Result<Aw.Judge.Core.Config.JudgeConfig!>! loaded) -> Aw.Kernel.Result<Aw.Judge.Core.Config.ConfigReading!>!
+static Aw.Judge.Core.Config.ConfigReading.operator !=(Aw.Judge.Core.Config.ConfigReading? left, Aw.Judge.Core.Config.ConfigReading? right) -> bool
+static Aw.Judge.Core.Config.ConfigReading.operator ==(Aw.Judge.Core.Config.ConfigReading? left, Aw.Judge.Core.Config.ConfigReading? right) -> bool
+static Aw.Judge.Core.Config.JudgeConfigParser.Parse(System.ReadOnlySpan<byte> utf8Json, System.Text.Json.JsonSerializerOptions! json) -> Aw.Kernel.Result<Aw.Judge.Core.Config.JudgeConfig!>!
+static Aw.Judge.Core.Config.JudgeConfigParser.ThresholdProblem(double threshold) -> string?
+static readonly Aw.Judge.Core.Errors.JudgeErrors.ConfigMalformed -> Aw.Kernel.ErrorDefinition!

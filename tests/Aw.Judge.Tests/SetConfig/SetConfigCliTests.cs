@@ -1,6 +1,6 @@
 namespace Aw.Judge.Tests.SetConfig;
 
-// The contract of 'judge config set' (TS runConfigSet): prints the new config, keeps hand-edited blocks.
+// The contract of 'judge config set': prints the new config, keeps hand-edited blocks.
 public sealed class SetConfigCliTests : IDisposable
 {
     private readonly TempStateDirectory _state = new();
@@ -48,6 +48,20 @@ public sealed class SetConfigCliTests : IDisposable
 
         Assert.Equal(new CliRun(1, "", "not a number: high\n"), await cli.Run("config", "set", "wake-gate", "threshold", "high"));
         Assert.False(File.Exists(ConfigFile));
+    }
+
+    [Fact, Trait("Lane", "integration")]
+    public async Task Config_set_refuses_to_overwrite_a_file_that_isnt_a_valid_config()
+    {
+        Directory.CreateDirectory(Path.GetDirectoryName(ConfigFile)!);   // why: the path has a directory part by construction
+        await File.WriteAllTextAsync(ConfigFile, "not json", TestContext.Current.CancellationToken);
+
+        var run = await new JudgeCli(_state).Run("config", "set", "wake-gate", "threshold", "0.5");
+
+        Assert.Equal((1, ""), (run.ExitCode, run.Stdout));
+        Assert.StartsWith($"invalid config {ConfigFile}: ", run.Stderr, StringComparison.Ordinal);
+        Assert.EndsWith("; fix or delete it, then set again\n", run.Stderr, StringComparison.Ordinal);
+        Assert.Equal("not json", await File.ReadAllTextAsync(ConfigFile, TestContext.Current.CancellationToken));
     }
 
     public void Dispose() => _state.Dispose();
