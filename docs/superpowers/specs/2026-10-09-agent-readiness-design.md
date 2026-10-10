@@ -627,10 +627,11 @@ lands:
 
 Also still gaps:
 - the `IConfiguration` ban for hosts (§4b.4, R13);
-- the complete one-`Lane`-trait scan (§4b.5);
-- telemetry in generated code: the `/new-package` templates (#139, on main), `Aw.Readiness` (#141, on main) and
-  `Aw.Packets` (#142) don't call `AddKernelTelemetry` in `Compose` yet (§4b.4), because #139 predates #136.
-  They adopt it once #136 merges.
+- the complete one-`Lane`-trait scan (§4b.5).
+
+Closed in R2 stage 0, before the first port: telemetry in generated code. The `/new-package` hosts (cli and http),
+`aw-readiness` and `aw-packets` call `AddKernelTelemetry` in `Compose` and resolve `TelemetryRuntime` in `Program.cs`
+(§4b.4), and each host's `HostTests` checks it (`Telemetry_is_composed_and_exports_nothing`).
 
 **Sources:**
 [Vertical slice vs Clean Architecture](https://milanjovanovic.tech/blog/vertical-slice-vs-clean-architecture) ·
