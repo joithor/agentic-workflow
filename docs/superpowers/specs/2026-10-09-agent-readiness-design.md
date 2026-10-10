@@ -87,6 +87,32 @@ gets CI as a safety net until the switch. The standards in §4 still apply, expr
 | Fastify (bridge; retired 2026-10-10, not ported) | — (an http host, if one is ever needed, uses ASP.NET Core minimal APIs) |
 | Node CLIs started per hook call | **NativeAOT** binaries for hook and CLI entry points only (§4b.6 AOT table), so startup stays fast; a tool that opens a database ships the bundled SQLite library beside it. Reflection-free JSON (source generators) is required for them |
 | Playwright (ui-evidence) | Playwright for .NET |
+| The Plan 6 dashboard (planned as static HTML and TypeScript in a browser; not built) | **Avalonia UI** app in C# (below) |
+
+**UI: Avalonia (decided 2026-10-10).** Sindri's UI (the Plan 6 dashboard, the §17.27 action forms and the §17.12
+swipe inbox) is one [Avalonia UI](https://avaloniaui.net/) app in C#, not a browser page. It is cross-platform today
+and ports to native apps without a rewrite:
+- **Platforms:** desktop (macOS, Linux, Windows) first. iOS and Android heads, and a browser (WebAssembly) head if
+  one is ever wanted, are later projects over the same views and view models. Going native is adding a head, not
+  rewriting the UI.
+- **Shape:** `Aw.Sindri.Ui` holds the views, view models and the API client; each platform is a thin head project
+  (`Aw.Sindri.Ui.Desktop` first, then `.iOS`, `.Android`). MVVM with compiled bindings only
+  (`AvaloniaUseCompiledBindingsByDefault`, every view has an `x:DataType`, no `ReflectionBinding`), so the app stays
+  trim- and AOT-safe.
+- **A client, not a second implementation:** the app talks to Sindri's host over its versioned HTTP API (factory
+  addendum §17.27.1) and holds no logic of its own: no extra checks, shortcuts or UI-only state. It is its own
+  package (`SindriUi` in `deps.yaml`, above `Sindri`) and references no Sindri project: Sindri's HTTP contract is
+  its only edge. `deps.yaml` has no `http` edge kind yet (today: `project`, `cli`, `db`, `file`); the first UI PR
+  adds it to the schema and `check-deps.mjs`. Its own platform services (notifications, tray icon, opening
+  apps for attach, passkeys) sit behind ports in `Aw.Sindri.Ui`, one adapter per platform in the heads.
+- **Dependencies:** the MIT-licensed Avalonia packages only (no Avalonia XPF or paid add-ons), under the same
+  Central Package Management, pinning and 14-day rules as every package (§4b.6).
+- **Tests:** view models are plain C# and tested in the `unit` lane; views run under Avalonia's headless platform
+  (`Avalonia.Headless`) in the `integration` lane, with no window or display. Whether `Avalonia.Headless.XUnit`
+  runs on xUnit v3 and Microsoft.Testing.Platform (R7) is checked in the package's first PR; if it doesn't, the
+  headless tests drive `HeadlessUnitTestSession` from plain xUnit v3 tests.
+- **Not in scope:** walkthrough pages (§17.12) stay generated HTML documents, read in any browser. They are
+  documents, not the app.
 
 **What stays outside C#, on purpose:**
 - **Claude Code mods** (`mods/aw-live`) run in-process in Claude Code, so they stay TypeScript. They stay thin and
@@ -213,6 +239,7 @@ declaration.
 | 1 | `Judge`, `Packets`, `Readiness` | Tier 0 |
 | 2 | `Scorer`, `Evidence` (ui-evidence), `BugFix` | Tiers 0–1 (today they call judge, and scorer reads `judge.db`) |
 | 3 | `Sindri` | Tiers 0–2, **only through their `Core` contracts or their CLIs** (every package reaches a non-tier-0 package only through its `Core`; `deps.yaml` check DEPS-PROJ-007) |
+| 4 | `SindriUi` (the Avalonia app, §4a "UI") | No project edges: Sindri's HTTP contract only |
 | — | Every `Host` | Its own package's projects, plus the tier-0 and lower-tier `Core`s it composes |
 
 - **Tier 0 is ordered inside:** it is the one tier with internal project references. `deps.yaml` gives each tier-0
@@ -512,6 +539,7 @@ group.MapPost("/items/{id}/start", async (ItemId id, StartItemBody body, IServic
 |---|---|---|
 | Hook binaries, `judge`, `sindri`, `scorer`, `bugfix-state` CLIs | NativeAOT | Run per hook call or per command; startup matters |
 | `Evidence` (ui-evidence) | Framework-dependent | Playwright for .NET doesn't support NativeAOT |
+| `Aw.Sindri.Ui.Desktop` (the Avalonia app, §4a "UI") | NativeAOT (compiled bindings only) | Starts fast and ships without a runtime; Avalonia supports NativeAOT on desktop. The mobile heads build with their platform's toolchain |
 | `aw-readiness` (`Aw.Readiness.App`, #141 on main) and `aw-packets` (`Aw.Packets.App`, #142): small-shape packages, so the entry point is `App` | NativeAOT | Standalone CLIs before the switch (§4c); sindri runs them per check after it |
 
 AOT publishing runs only in a separate CI job and in releases. Local builds and tests are JIT, so the inner loop
@@ -546,6 +574,7 @@ agentic-workflow/
 │   ├── Aw.Analyzers/                  # repo-specific Roslyn rules
 │   ├── Redaction/ · Readiness/ · Packets/
 │   ├── Sindri/   (Aw.Sindri.Core · Aw.Sindri.Features · Aw.Sindri.Infrastructure · Aw.Sindri.Host)
+│   │             (Aw.Sindri.Ui · Aw.Sindri.Ui.Desktop; later .iOS · .Android: the Avalonia app, §4a)
 │   ├── Judge/    (Aw.Judge.Core · … · Aw.Judge.Host)
 │   ├── Scorer/   (…)
 │   └── …

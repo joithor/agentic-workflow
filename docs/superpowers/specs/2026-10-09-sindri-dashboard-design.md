@@ -21,6 +21,17 @@ Cursor, a terminal). There is no chat inside the dashboard.
 *Amended by the factory addendum §17.12 and §17.27: the dashboard becomes a client of Sindri's command layer, and every
 action gets a UI form by action class. This plan's read-mostly scope is the first step, not the end state.*
 
+*Amended 2026-10-10 (readiness spec §4a "UI"): the dashboard is an **Avalonia UI app in C#**, not a page in a
+browser. Desktop (macOS, Linux, Windows) first; iOS and Android heads come later from the same views and view
+models. What it shows, its states, the needs-you signal and attach are unchanged. What changes:*
+- *the app is a client of the loopback HTTP API below, which serves JSON only (no static files);*
+- *browser-only parts become their app equivalents: the tab title and favicon become the window title, the dock or
+  taskbar badge and the tray icon; `aria-live` becomes Avalonia's automation live regions; `prefers-reduced-motion`
+  becomes the OS reduce-motion setting;*
+- *the tray icon replaces the SwiftBar plugin (§5.2), so the badge works on every desktop OS;*
+- *the UI tests run under Avalonia's headless platform instead of Playwright (§9);*
+- *a native app is no longer out of scope by design: the mobile heads are a later step, not a rewrite.*
+
 **Success looks like this:**
 - the builder can tell, without reading text, that a page has something that needs them;
 - every live agent on the machine appears within one poll;
@@ -31,7 +42,7 @@ action gets a UI form by action class. This plan's read-mostly scope is the firs
 - in-app chat or terminals;
 - starting new worker agents (that's the Sindri runner, rollout step 3a: its sessions appear here once it exists);
 - container metrics;
-- a native app.
+- the mobile (iOS, Android) heads of the Avalonia app: a later step over the same views.
 
 ## 2. Prior art checked: T3 Code
 
@@ -72,18 +83,19 @@ provider stores ─┐
 hook spool ──────┼─► sindri fleet (collector + state rules) ─► sindri fleet --json ─┐
 sindri ledger ───┤                                                                  ├─► sindri dashboard (HTTP, 127.0.0.1)
 gh ──────────────┘    sindri status/evolve/index … --json ──────────────────────────┘        │
-                                                                                             └─► menu-bar badge (SwiftBar)
+                                                                                             └─► Avalonia app (window + tray badge)
 ```
 
-- **One source of truth:** the server only runs `sindri … --json` commands and serves their output, plus static files.
+- **One source of truth:** the server only runs `sindri … --json` commands and serves their output as JSON to the
+  Avalonia app (`Aw.Sindri.Ui`, readiness spec §4a "UI"). It serves no static files.
   Actions are a fixed list of CLI commands, so the dashboard holds no state of its own.
-- **Polling:** the browser polls every 5 s; there is no websocket in v1. T3 pushes events only because it owns the
+- **Polling:** the app polls every 5 s; there is no websocket in v1. T3 pushes events only because it owns the
   processes; an observer has to poll.
 - **New code:**
   - `sindri/src/fleet/`: adapters, the hook spool reader, state rules, and the needs-you aggregator;
-  - `sindri/src/dashboard/`: the server, static UI, and attach resolver;
+  - the dashboard server and attach resolver in Sindri's host, and the Avalonia app in `src/Sindri/Aw.Sindri.Ui*`;
   - an `aw:fleet` hook in `config/hooks/` (with per-provider adapters);
-  - a SwiftBar plugin;
+  - the app's tray icon (replaces the SwiftBar plugin);
   - docs in `docs/sindri/dashboard.md`.
 
 ## 4. Collector (`sindri fleet`)
@@ -242,10 +254,22 @@ The app opens on **Needs you** when it isn't empty, otherwise on **Agents**. Dee
 
 ### 5.2 Menu-bar badge
 
+*Amended 2026-10-10: the Avalonia app's tray icon (menu bar on macOS, system tray on Windows and Linux) is the
+badge, with the behaviour below; the SwiftBar plugin is dropped.*
+
 A SwiftBar plugin shows "3 working · 1 needs you", refreshed every 30 s from `sindri fleet --json`. Its dropdown
 lists the items that need you, and clicking one opens the dashboard at that item. No action runs from the menu bar.
 
 ## 6. Security
+
+*Amended 2026-10-10 for the Avalonia app: binding, the `Host` check, the fixed action list and the rules for
+untrusted text stay. The browser-only defences change:*
+- *Token: the server writes the per-restart token to a file only the user can read (mode 0600, under
+  `$AW_STATE_DIR`); the app sends it as a bearer header. There is no cookie or URL token.*
+- *The API serves JSON only. It sends no CORS headers and refuses any request that carries an `Origin` header, so a
+  browser page can't call it; CSRF tokens and CSP aren't needed.*
+- *Untrusted text is shown as plain text (`TextBlock.Text`, never parsed as markup or inlines), with control and
+  invisible characters escaped by the shared sanitizer.*
 
 - **Binding:** listens on `127.0.0.1` only, on the port set in `dashboard.port`, and refuses any other interface.
   If the port is taken, it exits with an error naming the port and the profile key; it never silently picks another port.
@@ -326,7 +350,8 @@ lists the items that need you, and clicking one opens the dashboard at that item
   - the CSP header is set;
   - a command outside the allowed list is refused;
   - a command that needs a terminal can only be shown, never run.
-- **UI (Playwright):**
+- **UI (Avalonia headless; amended 2026-10-10, was Playwright):** view models in the `unit` lane, views under
+  `Avalonia.Headless` in the `integration` lane:
   - the `aria-live` announcement, and focus and scroll staying put while polling;
   - the attention pulse appearing, then stopping once the row is seen;
   - `prefers-reduced-motion` showing the static outline instead;

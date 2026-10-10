@@ -35,6 +35,7 @@ Domain-specific rules live in `.agents/rules/` — one file per rule, the only c
 | Runtime | .NET 10 (LTS), SDK pinned in `global.json`; NativeAOT for hook and CLI entry points |
 | Language | C# (latest), nullable on, warnings as errors |
 | HTTP (an http host) | ASP.NET Core minimal APIs (`CreateSlimBuilder`), loopback only |
+| UI (the Sindri app) | [Avalonia UI](https://avaloniaui.net/) (MIT core only, no paid add-ons), MVVM with compiled bindings; a client of Sindri's HTTP API with no logic of its own. Desktop (macOS, Linux, Windows) first; iOS, Android and browser heads later from the same views. Spec §4a "UI" |
 | Database | `Microsoft.Data.Sqlite` with its bundled `e_sqlite3` (shipped beside each AOT tool), new C# schemas, WAL mode |
 | MCP | Official MCP C# SDK (approved in the AOT spike; no package uses it since the bridge was retired) |
 | JSON | System.Text.Json, one source-generated context per package |
