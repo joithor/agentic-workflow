@@ -54,6 +54,10 @@ expect "deps.yaml or its parser runs dotnet (lane budgets group test projects by
   "$(printf 'deps.yaml\nscripts/deps/yaml.mjs\n')" \
   "$(printf 'bash=true\ndotnet=true\npackages=[]')"
 
+expect "Lanes.cs also runs the bash tests (ci-lane-budgets checks lane-budgets.mjs against its numbers)" \
+  "$(printf 'tests/Aw.Kernel.Testing/Lanes.cs\n')" \
+  "$(printf 'bash=true\ndotnet=true\npackages=[]')"
+
 expect "spike projects never run dotnet" \
   "$(printf 'spikes/aot/Spike.csproj\nspikes/aot/Program.cs\nspikes/Directory.Build.props\n')" \
   "$(printf 'bash=false\ndotnet=false\npackages=[]')"
