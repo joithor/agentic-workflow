@@ -88,6 +88,12 @@ jobs:
       - name: npm ci
         if: env.CHANGED == 'true'
         run: npm ci --no-audit --no-fund
+      # scorer's tests import judge/src/db.ts (the declared scorer -> judge db edge),
+      # which resolves better-sqlite3 from judge's own node_modules.
+      - name: npm ci judge (scorer's tests import judge's source)
+        if: env.CHANGED == 'true' && matrix.package == 'scorer'
+        working-directory: judge
+        run: npm ci --no-audit --no-fund
       - name: Install Playwright Chromium
         if: env.CHANGED == 'true' && matrix.package == 'skills/ui-evidence'
         run: npx --no-install playwright install --with-deps chromium
