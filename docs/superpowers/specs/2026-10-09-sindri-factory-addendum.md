@@ -288,7 +288,8 @@ status: active          # proposed | active | retired
 `rules/engineering/csharp/<slug>.yaml` (schema `schemas/rule-record.schema.json`, check `node scripts/check-rules.mjs`).
 They differ from the sketch above in one open way: `checks` is a **list** (a rule can be enforced by several checks,
 each with its own `type`, id, `status` and, while its PR is open, `pendingPr`), and `check.type` takes this repo's
-check kinds (analyzer, architecture test, `check-deps`, banned symbols, build target, script) instead of `eslint`.
+check kinds (`analyzer`, `compiler`, `banned-symbols`, `archunit`, `check-deps`, `lane-cap`, `check-rules`,
+`build-setting`, `test`, `script`, `ci`, `review`) instead of `eslint`.
 They add `section` (the readiness spec section), `gap` (`closed`, `partial`, `pending`, `open`), `gapNote` and
 `relatedIds`. Whether to keep the list form or split to one record per check is an open owner question (readiness
 spec §9 R12).

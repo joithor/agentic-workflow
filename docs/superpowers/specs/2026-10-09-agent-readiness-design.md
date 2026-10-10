@@ -1,6 +1,6 @@
 # Agent readiness for agentic-workflow — design
 
-Status: draft for review, revision 6 · 2026-10-11 (rounds 1–2 applied; owner decision: **one clean cutover, no backward
+Status: draft for review, revision 6 · 2026-10-10 (rounds 1–2 applied; owner decision: **one clean cutover, no backward
 compatibility** — no TS parity, no data migration, no replay; decisions from the R1a PRs and the R1b template PRs
 folded in; R1b checks of record in §4b.10)
 Target: **Level 5 (Autonomous)** on Factory's agent-readiness framework. Level 4 is a prerequisite for the
