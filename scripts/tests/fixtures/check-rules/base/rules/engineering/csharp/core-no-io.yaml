@@ -1,0 +1,19 @@
+schemaVersion: 1
+id: engineering.csharp.core-no-io
+kind: engineering
+section: "4b.1"
+text: "Core has no I/O: use ports for files, network, processes, clock and ids."
+why: "Core stays pure, so it is testable with fakes and portable across adapters."
+select:
+  languages: [csharp]
+  paths: ["src/**/*.Core/**"]
+checks:
+  - type: banned-symbols
+    id: RS0030
+    entries: ["T:System.Console"]
+    status: active
+gap: closed
+source:
+  type: adr
+  ref: "docs/spec.md#4b1"
+status: active

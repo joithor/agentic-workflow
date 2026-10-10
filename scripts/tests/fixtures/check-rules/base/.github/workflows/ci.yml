@@ -1,0 +1,4 @@
+jobs:
+  dotnet:
+    steps:
+      - name: The SDK is exactly the global.json pin

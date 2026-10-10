@@ -1,0 +1,18 @@
+schemaVersion: 1
+id: engineering.csharp.no-catch-exception
+kind: engineering
+section: "4b.3"
+text: "No catch (Exception) outside Host and Infrastructure boundary adapters."
+why: "Exceptions are bugs; expected failures are Error values in Result<T>."
+select:
+  languages: [csharp]
+  paths: ["src/**"]
+checks:
+  - type: analyzer
+    id: CA1031
+    status: active
+gap: closed
+source:
+  type: adr
+  ref: "docs/spec.md#4b3"
+status: active

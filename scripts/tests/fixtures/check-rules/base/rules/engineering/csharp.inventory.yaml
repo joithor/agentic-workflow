@@ -1,0 +1,13 @@
+version: 1
+spec: docs/spec.md
+records:
+  - id: engineering.csharp.core-no-io
+    section: "4b.1"
+  - id: engineering.csharp.slice-isolation
+    section: "4b.1"
+  - id: engineering.csharp.no-package-cycles
+    section: "4b.1a"
+  - id: engineering.csharp.no-catch-exception
+    section: "4b.3"
+  - id: engineering.csharp.sdk-pinned
+    section: "4b.6"
