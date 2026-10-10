@@ -126,8 +126,8 @@ attributes by name, never references Vogen, and runs over any assembly:
   assembly (Features request and response records, Host bodies, Infrastructure DTOs), is required on read by the
   constructor System.Text.Json actually uses, `required` or `[JsonRequired]`. Nullable ids (`RunId?`) are exempt.
 
-Until `Aw.Architecture.Tests` exists, a package that declares ids calls it from its unit lane, the way
-`TypedIdGuardTests` does. **In R1b it moves to `Aw.Architecture.Tests`**, which runs it over every `Aw.*` assembly so
+Until `Aw.Architecture.Tests` exists, it covers only the Kernel's own ids (it is internal to `tests/Aw.Kernel.Tests`,
+which nothing may reference); a package's ids are a gap until then. **In R1b it moves to `Aw.Architecture.Tests`**, which runs it over every `Aw.*` assembly so
 no package can forget it. A compile-time version (converter presence) is a candidate `Aw.Analyzers` rule.
 
 ## Public ids and PublicAPI files
