@@ -75,6 +75,13 @@ describe("privacy.denyPatterns and repo private (privacy B1)", () => {
     expect(privacy.safeParse({ denyPatterns: [""] }).success).toBe(false);
   });
 
+  it("rejects a pattern that only compiles without the u flag", () => {
+    expect(() => new RegExp("\\-", "i")).not.toThrow();
+    const r = privacy.safeParse({ denyPatterns: ["\\-"] });
+    expect(r.success).toBe(false);
+    if (!r.success) expect(r.error.issues[0].message).toBe("must be a valid regular expression");
+  });
+
   it("leaves repo private unset unless the repo file sets it", () => {
     expect(RepoSchema.shape.private.parse(undefined)).toBeUndefined();
     expect(RepoSchema.shape.private.parse(true)).toBe(true);

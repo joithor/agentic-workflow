@@ -24,14 +24,50 @@ export function normalizeForPrivacy(text: string): string {
     .trim();
 }
 
+export function termProblem(text: string, denyTerms: readonly string[]): string | null {
+  const t = normalizeForPrivacy(text);
+  for (const term of denyTerms.map(normalizeForPrivacy).filter((x) => x !== "")) {
+    if (new RegExp(`(?<![a-z0-9])${escapeRe(term)}(?![a-z0-9])`).test(t)) return "contains a private term";
+  }
+  return null;
+}
+
 // `osUser` is the current OS user (from the system seam): their home path is held in any case and in Claude's encoding.
-export function privacyProblem(text: string, denyTerms: readonly string[], osUser = ""): string | null {
+export function personalProblem(text: string, osUser = ""): string | null {
   const t = normalizeForPrivacy(text);
   const visible = visibleForm(text);
   const me = osUser === "" ? null : escapeRe(osUser.normalize("NFKC"));
   const mine = me === null ? false : new RegExp(`(?<![A-Za-z0-9._-])\\/(?:users|home)\\/${me}(?![A-Za-z0-9._-])|(?<![A-Za-z0-9])-(?:users|home)-${me}(?![A-Za-z0-9])`, "i").test(visible);
-  for (const term of denyTerms.map(normalizeForPrivacy).filter((x) => x !== "")) {
-    if (new RegExp(`(?<![a-z0-9])${escapeRe(term)}(?![a-z0-9])`).test(t)) return "contains a private term";
-  }
   return EMAIL.test(t) || HOME_UNIX.test(visible) || CLAUDE_DIR.test(visible) || mine || HOME_WINDOWS.test(t) ? "contains an email address or a home directory path" : null;
+}
+
+export function privacyProblem(text: string, denyTerms: readonly string[], osUser = ""): string | null {
+  return termProblem(text, denyTerms) ?? personalProblem(text, osUser);
+}
+
+// Publish-only regexes (privacy.denyPatterns), tried on the visible text and on the fully normalized copy, so
+// fullwidth letters, invisibles, accents and line breaks don't hide a match.
+export function patternProblem(text: string, patterns: readonly string[]): string | null {
+  if (patterns.length === 0) return null;
+  const forms = [visibleForm(text), normalizeForPrivacy(text)];
+  return patterns.some((p) => forms.some((f) => new RegExp(p, "iu").test(f))) ? "matches a privacy.denyPatterns entry" : null;
+}
+
+// Verbatim overlap (spec 5.5): a run of RUN_WORDS normalized words shared with a transcript line is a quote.
+export const RUN_WORDS = 8;
+const wordsOf = (text: string): string[] => normalizeForPrivacy(text).split(/[^\p{L}\p{N}]+/u).filter((w) => w !== "");
+export const runWords = (text: string): string => wordsOf(text).join(" ");
+
+function runsOf(text: string): Set<string> {
+  const w = wordsOf(text);
+  const out = new Set<string>();
+  for (let i = 0; i + RUN_WORDS <= w.length; i++) out.add(w.slice(i, i + RUN_WORDS).join(" "));
+  return out;
+}
+
+// `isPublic(run)` says whether the run already appears in the toolkit's own tracked text; those are not leaks.
+export function copiedRun(text: string, sources: readonly string[], isPublic: (run: string) => boolean): boolean {
+  const mine = runsOf(text);
+  if (mine.size === 0) return false;
+  return sources.some((s) => [...runsOf(s)].some((run) => mine.has(run) && !isPublic(run)));
 }

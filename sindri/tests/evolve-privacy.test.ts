@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { privacyProblem } from "../src/evolve/privacy.js";
+import { copiedRun, patternProblem, personalProblem, privacyProblem, runWords, termProblem, RUN_WORDS } from "../src/evolve/privacy.js";
 
 describe("privacyProblem (Review Focus 6)", () => {
   it("finds profile deny terms as whole words, case-insensitively, without echoing them", () => {
@@ -101,5 +101,48 @@ describe("privacyProblem: file URLs, lowercase homes and Claude's encoded projec
     expect(privacyProblem("see -users-joi-app/x", [], "joi")).toBe(PATHS);
     expect(privacyProblem("see -users-joi-app/x", [])).toBeNull();
     expect(privacyProblem("a plain -Users- list and the Users-guide", [])).toBeNull();
+  });
+});
+
+describe("patternProblem (privacy B1)", () => {
+  const P = "matches a privacy.denyPatterns entry";
+  it("matches case-insensitively, through fullwidth letters, invisibles and line breaks, without echoing the match", () => {
+    expect(patternProblem("see glx-1234 for the repro", ["GLX-\\d+"])).toBe(P);
+    expect(patternProblem("see ＧＬＸ-1234", ["GLX-\\d+"])).toBe(P);
+    expect(patternProblem("see GL\u200bX-1234", ["GLX-\\d+"])).toBe(P);
+    expect(patternProblem("see GLX-\n1234", ["GLX-\\s?\\d+"])).toBe(P);
+    expect(patternProblem("see GLX-12 34", ["GLX-\\d{4}"])).toBeNull();
+    expect(patternProblem("anything", [])).toBeNull();
+  });
+});
+
+describe("termProblem and personalProblem split privacyProblem (privacy B1)", () => {
+  it("keeps the two reasons separate", () => {
+    expect(termProblem("at Globex today", ["Globex"])).toBe("contains a private term");
+    expect(termProblem("mail a@b.co", ["Globex"])).toBeNull();
+    expect(personalProblem("mail a@b.co")).toBe("contains an email address or a home directory path");
+    expect(personalProblem("at Globex today")).toBeNull();
+  });
+});
+
+describe("copiedRun (privacy B1, verbatim overlap)", () => {
+  const src = "the overnight rota swap left two shifts without a charge nurse on the ward";
+  const never = (): boolean => false;
+  it("finds a run of RUN_WORDS words copied from a source, ignoring case and punctuation", () => {
+    expect(RUN_WORDS).toBe(8);
+    expect(copiedRun("Seen: The overnight rota-swap left two shifts WITHOUT a charge.", [src], never)).toBe(true);
+  });
+  it("passes a 7-word overlap", () => {
+    expect(copiedRun("the overnight rota swap left two shifts, then", [src], never)).toBe(false);
+  });
+  it("passes a copied run that is public toolkit text", () => {
+    const pub = runWords(src);
+    expect(copiedRun("the overnight rota swap left two shifts without", [src], (run) => pub.includes(run))).toBe(false);
+  });
+  it("passes when there are no sources", () => {
+    expect(copiedRun(src, [], never)).toBe(false);
+  });
+  it("passes text shorter than a run", () => {
+    expect(copiedRun("the overnight rota", [src], never)).toBe(false);
   });
 });
