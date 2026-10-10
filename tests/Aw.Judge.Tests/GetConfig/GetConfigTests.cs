@@ -1,3 +1,4 @@
+using Aw.Judge.Core.Config;
 using Aw.Judge.Features.GetConfig;
 using Aw.Judge.Testing;
 
@@ -8,12 +9,12 @@ public sealed class GetConfigTests
     [Fact, Trait("Lane", "unit")]
     public async Task GetConfig_returns_the_effective_config()
     {
-        var service = new GetConfigService();
-        var request = A.GetConfigRequest().Build();
+        var stored = JudgeConfig.Default with { Providers = new ProvidersConfig(["codex-cli"], Jev: null) };
+        var store = new InMemoryJudgeConfigStore { Stored = stored };
 
-        var result = await service.Handle(request, CancellationToken.None);
+        var result = await new GetConfigService(store).Handle(A.GetConfigRequest().Build(), CancellationToken.None);
 
         Assert.True(result.IsSuccess);
-        Assert.Fail("red: assert returns_the_effective_config");
+        Assert.Same(stored, result.Value.Config);
     }
 }
