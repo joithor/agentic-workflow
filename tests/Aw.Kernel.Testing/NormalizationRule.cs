@@ -4,7 +4,7 @@ namespace Aw.Kernel.Testing;
 
 /// <summary>
 /// One named rewrite applied to output before it is compared with a golden file: every match of an
-/// ASCII-class pattern becomes a fixed placeholder. Matching is culture-invariant and has a timeout (spec §4c A2).
+/// ASCII-class pattern becomes a fixed placeholder. Matching is culture-invariant and has a timeout.
 /// </summary>
 public sealed class NormalizationRule
 {

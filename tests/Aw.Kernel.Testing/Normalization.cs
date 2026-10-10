@@ -1,7 +1,7 @@
 namespace Aw.Kernel.Testing;
 
 /// <summary>
-/// The normalization a golden comparison declares up front (spec §4c): named rules applied in order, then
+/// The normalization a golden comparison declares up front: named rules applied in order, then
 /// CRLF to LF. Outputs are compared exactly after it, never by loose matching.
 /// </summary>
 public sealed class Normalization

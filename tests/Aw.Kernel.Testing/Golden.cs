@@ -4,7 +4,7 @@ using System.Reflection;
 namespace Aw.Kernel.Testing;
 
 /// <summary>
-/// Golden-file checks for CLI output and JSON contracts (spec §4b.5, §4c). A golden file holds normalized output and
+/// Golden-file (snapshot) checks for CLI output and JSON contracts (spec §4b.5). A golden file holds normalized output and
 /// lives in the test project's source tree. Set 'AW_GOLDEN_UPDATE=1' locally to rewrite it from the current output:
 /// the run then fails so the diff gets reviewed. Update mode is refused in CI, and writes never leave the source root.
 /// </summary>
