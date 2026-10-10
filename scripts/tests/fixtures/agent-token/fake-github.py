@@ -49,7 +49,10 @@ class H(BaseHTTPRequestHandler):
         # machine may legitimately carry a "Bearer " of their own.
         rec = {"path": self.path, "accept": self.headers.get("Accept"), "body": body,
                "argv_has_bearer": bool(jwt) and ("Bearer " + jwt) in argv,
-               "argv_has_jwt": bool(jwt) and jwt in argv}
+               "argv_has_jwt": bool(jwt) and jwt in argv,
+               # the snapshot must at least contain this server's own command
+               # line, or the two checks above prove nothing
+               "argv_seen": "fake-github.py" in argv}
         try:
             rec["header"], rec["claims"], rec["verify"] = verify(jwt)
         except Exception as e:  # malformed JWT is a test failure, recorded

@@ -7,6 +7,9 @@ DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ROOT="$(cd "$DIR/../.." && pwd)"
 SCRIPT="$ROOT/scripts/agent-token.sh"
 FAKE="$DIR/fixtures/agent-token/fake-github.py"
+for c in python3 openssl jq curl xxd; do
+  command -v "$c" >/dev/null || { echo "not ok - $c is required by this test"; exit 1; }
+done
 fail=0
 
 check() {
@@ -86,6 +89,7 @@ check "JWT signature verifies with the public key" "$(jq -r .verify <<<"$req")" 
 check "no request body without --repo" "$(jq -r .body <<<"$req")" ""
 check "Authorization header never in any process argv" "$(jq -r .argv_has_bearer <<<"$req")" "false"
 check "JWT never in any process argv" "$(jq -r .argv_has_jwt <<<"$req")" "false"
+check "argv snapshot is non-empty (the argv checks are real)" "$(jq -r .argv_seen <<<"$req")" "true"
 check "private temp dir removed after the run" "$(find "$TMPDIR" -mindepth 1 | wc -l | tr -d ' ')" "0"
 
 # --- flags: --app-id, --installation, --repo, --verbose ---
@@ -225,14 +229,35 @@ check "errmsg: no token shape survives" "$(grep -c -e 'ghs_abc' -e 'def.ghi' -e 
 check "errmsg: no control characters" "$(LC_ALL=C tr -d '\n' <"$WORK/err" | LC_ALL=C grep -c '[[:cntrl:]]' || true)" "0"
 check "errmsg: still names status and message" "$(grep -c 'GitHub returned HTTP 401: Bad credentials' "$WORK/err")" "1"
 
-# --- SIGTERM mid-request: exits 143, prints nothing, cleans up ---
+# --- the token never lands on disk: a jq wrapper scans TMPDIR while the script runs ---
+start_server ok
+mkdir -p "$WORK/jqscan"
+REAL_JQ="$(command -v jq)"
+cat >"$WORK/jqscan/jq" <<STUB
+#!/bin/sh
+grep -rl "$CANNED" "\$TMPDIR" >>"$WORK/disk-scan" 2>/dev/null
+echo scanned >>"$WORK/disk-scan-ran"
+exec "$REAL_JQ" "\$@"
+STUB
+chmod +x "$WORK/jqscan/jq"
+rc=0; out="$(PATH="$WORK/jqscan:$PATH" bash "$SCRIPT" --verbose 2>/dev/null)" || rc=$?
+check "token off disk: token minted" "$out" "$CANNED"
+check "token off disk: scan ran while the script was alive" "$([ -s "$WORK/disk-scan-ran" ] && echo yes || echo no)" "yes"
+check "token off disk: no file under TMPDIR ever held the token" "$(cat "$WORK/disk-scan" 2>/dev/null | wc -l | tr -d ' ')" "0"
+
+# --- SIGTERM mid-request: stops promptly, kills curl, prints nothing, cleans up ---
 start_server slow
 bash "$SCRIPT" >"$WORK/term.out" 2>"$WORK/term.err" &
 TPID=$!
 for _ in $(seq 1 100); do [ -e "$SRV/inflight" ] && break; sleep 0.1; done
+ms() { python3 -c 'import time; print(int(time.time() * 1000))'; }
+t0="$(ms)"
 kill -TERM "$TPID"
 rc=0; wait "$TPID" || rc=$?
+elapsed=$(( $(ms) - t0 ))
 check "SIGTERM: exit 143" "$rc" "143"
+check "SIGTERM: exits within 2 s while the request is held (took ${elapsed} ms)" "$([ "$elapsed" -le 2000 ] && echo yes || echo no)" "yes"
+check "SIGTERM: curl child killed" "$(ps -axo args= | grep -c "[c]url -q -sS --max-time 30" || true)" "0"
 check "SIGTERM: stdout empty" "$(wc -c <"$WORK/term.out" | tr -d ' ')" "0"
 check "SIGTERM: temp dir removed" "$(find "$TMPDIR" -mindepth 1 | wc -l | tr -d ' ')" "0"
 stop_server
