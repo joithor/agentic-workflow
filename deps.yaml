@@ -434,18 +434,15 @@ edges:
     note: "every port and factory run is a packet; sindri runs aw-packets, since the use cases live in App and a project edge reaches only Core (spec §4c)"
   - from: Sindri
     to: Readiness
-    kind: project
+    kind: cli
     status: planned
-    note: "sindri readiness check (§8)"
+    note: "sindri readiness check (§8): runs aw-readiness check --json (schema v1, tests/Aw.Readiness.Tests/Golden/report.json); a project edge could reach only Aw.Readiness.Core and would re-implement the adapters"
   - from: Sindri
     to: Scorer
     kind: cli
     status: planned
     note: "scorer's labeler moves into scorer's Core; sindri calls it through scorer's CLI instead of copying it (§4b.1a)"
 
-exceptions:
-  - rule: DEPS-FANOUT-001
-    subject: Sindri
-    reason: "§4e B10: sindri declares project edges to 6 packages (limits.packageFanOut is 4) until its modules split; revisit when the Sindri port splits by module. Per-project fan-out (DEPS-FANOUT-002/003) is measured separately once its projects exist"
-    recorded: 2026-10-10
-    expires: 2027-04-01
+# No exceptions: Sindri's project fan-out is 4 (Kernel, KernelData, KernelTelemetry, Redaction) now that it reaches
+# Packets and Readiness through their CLIs (spec §4c, §8).
+exceptions: []
