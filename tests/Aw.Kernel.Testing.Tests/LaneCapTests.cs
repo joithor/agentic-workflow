@@ -44,8 +44,14 @@ public sealed class LaneCapTests
     }
 
     [Fact]
-    public void An_integration_test_over_60_s_breaks_the_cap() =>
-        Assert.Equal("LANE-TEST-001", Assert.Single(LaneCap.Check(Report(Test("Demo.Db", 60_500, """{ "Lane": "integration" }"""))).Violations).RuleId);
+    public void An_integration_test_over_60_s_breaks_the_cap_and_is_pointed_at_the_heavy_lane()
+    {
+        var violation = Assert.Single(LaneCap.Check(Report(Test("Demo.Db", 60_500, """{ "Lane": "integration" }"""))).Violations);
+
+        Assert.Equal(
+            "LANE-TEST-001 Aw.Demo.Tests Demo.Db: 60.500 s in lane integration, limit 60 s per test. Fix: make the test faster, or if it needs real containers, browsers or index builds move it to the heavy lane ([Lane(TestLane.Heavy)], nightly).",
+            violation.Message);
+    }
 
     [Theory]
     [InlineData(null, "[]")]
