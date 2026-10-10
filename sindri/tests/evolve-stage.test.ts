@@ -243,10 +243,29 @@ describe("stage generalizes first (privacy B1)", () => {
     expect((await stage([], fx.ctx)).stdout).toBe(`Staged 1 proposal(s) (0 approval tier) in ${dir}.\n${held}\nNext: sindri evolve publish\n`);
     // Held at stage: retried (and held again) on the next run, which has nothing else to stage.
     expect((await stage([], fx.ctx)).stdout).toBe(`Nothing to stage; 1 held by the generalization pass.\n${held}\nNext: sindri evolve proposals\n`);
-    // One free slot: the held proposal has more evidence, takes it, and is held again; the new one waits.
+    // One free slot: the new proposal takes it ahead of the held retry, which has more evidence but waits (I1).
     const e = save("Epsilon change here", {}, "code");
-    expect((await stage([], fx.ctx)).stdout).toBe(`Nothing staged; 1 held by the generalization pass; 1 waiting for the next run.\n${held}\nNext: rerun sindri evolve stage\n`);
-    expect([a, b, e].map((id) => getProposal(fx.ctx.db, id)?.status)).toEqual(["held", "staged", "proposed"]);
+    expect((await stage([], fx.ctx)).stdout).toBe(`Staged 1 proposal(s) (0 approval tier) in ${dir}; 1 more waiting (cap 2, 2 in flight).\nNext: sindri evolve publish\n`);
+    expect([a, b, e].map((id) => getProposal(fx.ctx.db, id)?.status)).toEqual(["held", "staged", "staged"]);
+    fx.close();
+  });
+
+  it("fills slots from proposed proposals first, then retries held ones with what is left (I1)", async () => {
+    const io = scriptedEvolveIo((c) => (c.role === GENERALIZE_ROLES.judge && !c.input.includes("Fresh") ? { leaks: true, category: "domain" } : generalizingScript()(c)));
+    const { fx, save } = await ready(2, io);
+    const many = { evidence: ["pr:1", "pr:2", "pr:3", "pr:4"] };
+    const h1 = save("Held one here", many, "code");
+    const h2 = save("Held two here", many, "code");
+    expect((await stageProposals(fx.ctx)).held.map((h) => h.id)).toEqual([h1, h2]);
+    // Re-proposals merged more evidence into the held ones; the fresh one still goes first.
+    const fresh = save("Fresh idea here", {}, "code");
+    io.calls.length = 0;
+    const o = await stageProposals(fx.ctx);
+    expect(o.staged.map((s) => s.id)).toEqual([fresh]);
+    expect(io.calls.filter((c) => c.role === GENERALIZE_ROLES.rewrite).map((c) => c.input.includes("Fresh idea here"))).toEqual([true, false]);
+    expect(o.held).toHaveLength(1);
+    expect(o.waiting).toBe(1);
+    expect(getProposal(fx.ctx.db, fresh)?.status).toBe("staged");
     fx.close();
   });
 });

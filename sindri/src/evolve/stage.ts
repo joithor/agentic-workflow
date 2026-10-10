@@ -46,6 +46,14 @@ const shippedDuplicate = (ctx: EvolveCtx, s: StoredProposal): string | undefined
   (ctx.db.prepare("SELECT id FROM proposals WHERE artifact_id = ? COLLATE NOCASE AND norm_title = ? AND status IN ('merged', 'adopted') ORDER BY created_at, id LIMIT 1")
     .get(s.artifact, normTitle(s.proposal.title)) as { id: string } | undefined)?.id;
 const byEvidence = (a: StoredProposal, b: StoredProposal): number => b.proposal.evidence.length - a.proposal.evidence.length;
+// Slot order (I1): every `proposed` proposal by evidence count, then the held-at-stage retries by evidence count. A
+// re-proposal merges its evidence into an open held one, so sorting the two together would let proposals the judge
+// keeps flagging take every slot, and two model calls each, run after run, while nothing new is ever staged.
+const slotOrder = <T>(fresh: T[], held: T[], of: (t: T) => StoredProposal): T[] => [
+  ...[...fresh].sort((a, b) => byEvidence(of(a), of(b))), ...[...held].sort((a, b) => byEvidence(of(a), of(b))),
+];
+const notSelfAdopt = (registry: ReturnType<typeof loadRegistry>, extra: readonly string[]) => (s: StoredProposal): boolean =>
+  classifyTier(s.proposal, registry, extra).tier !== "self-adopt";
 
 // Unattended: previews go under the state dir, never into the repo. Generalization (privacy spec §5.1) runs first,
 // outside the tick lock, because it is model work; one budget covers every call. Everything that depends on the
@@ -61,10 +69,10 @@ export async function stageProposals(ctx: EvolveCtx, budget: Budget = new Budget
   const dir = path.dirname(stagedFile(ctx.deps, "x"));
   const scrub = profileScrubber(ctx.loaded);
   // Shipped duplicates are left out here so they cost no model calls; the write below rejects them.
-  const snapshot = [...listStored(ctx.db, ["proposed"]).filter((s) => shippedDuplicate(ctx, s) === undefined), ...heldAtStage(ctx)]
-    .filter((s) => classifyTier(s.proposal, registry, extra).tier !== "self-adopt")
-    .sort(byEvidence)
-    .slice(0, Math.max(0, cap - inFlightCount(ctx.db)));
+  const eligible = notSelfAdopt(registry, extra);
+  const snapshot = slotOrder(
+    listStored(ctx.db, ["proposed"]).filter((s) => shippedDuplicate(ctx, s) === undefined && eligible(s)), heldAtStage(ctx).filter(eligible), (s) => s,
+  ).slice(0, Math.max(0, cap - inFlightCount(ctx.db)));
   const refsOf = (s: StoredProposal): string[] => reduceEvidence(s.proposal.evidence).refs;
   const evidence = resolveRefs(transcriptsDir(ctx), ctx.repo, snapshot.flatMap(refsOf), scrub);
   const runner = ctx.io.runner(ctx.loaded, scrub);
@@ -87,8 +95,11 @@ export async function stageProposals(ctx: EvolveCtx, budget: Budget = new Budget
       if (dup !== undefined) duplicates.push({ id: s.id, of: dup });
       return dup === undefined;
     });
-    const classified = [...fresh, ...heldAtStage(ctx)].map((s) => ({ s, t: classifyTier(s.proposal, registry, extra) }));
-    const candidates = classified.filter((c) => c.t.tier !== "self-adopt").sort((a, b) => byEvidence(a.s, b.s));
+    const classify = (s: StoredProposal) => ({ s, t: classifyTier(s.proposal, registry, extra) });
+    const freshC = fresh.map(classify);
+    const heldC = heldAtStage(ctx).map(classify);
+    const keep = (c: ReturnType<typeof classify>): boolean => c.t.tier !== "self-adopt";
+    const candidates = slotOrder(freshC.filter(keep), heldC.filter(keep), (c) => c.s);
     const take = candidates.slice(0, Math.max(0, cap - inFlight));
     let reclassified = 0;
     for (const d of duplicates) {
@@ -122,7 +133,7 @@ export async function stageProposals(ctx: EvolveCtx, budget: Budget = new Budget
       }
       staged.push({ id: c.s.id, tier: t.tier });
     }
-    return { staged, held, waiting, inFlight, cap, reclassified, selfAdopt: classified.length - candidates.length, duplicates: duplicates.length, dir };
+    return { staged, held, waiting, inFlight, cap, reclassified, selfAdopt: freshC.length + heldC.length - candidates.length, duplicates: duplicates.length, dir };
   });
 }
 
