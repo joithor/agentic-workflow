@@ -336,6 +336,17 @@ d="$(fixture metrics)"; printf '# limits\nCA1502: 10\n' > "$d/CodeMetricsConfig.
 addcheck "$(rec "$d" no-catch-exception)" "  - type: build-setting" '    id: "CA1502: 10"' "    status: active"; run "$d"
 expect "a CodeMetricsConfig.txt limit is a build setting" 0 "rules: ok"
 
+# ---- review run 5 (post-cap): build-setting literals match whole tokens; deps.yaml limits are build settings ----
+d="$(fixture metrics-100)"; printf 'CA1502: 100\n' > "$d/CodeMetricsConfig.txt"
+addcheck "$(rec "$d" no-catch-exception)" "  - type: build-setting" '    id: "CA1502: 10"' "    status: active"; run "$d"
+expect "a build-setting literal matches whole tokens (CA1502: 100 isn't CA1502: 10)" 1 "RULE-CHECK-001" "CA1502: 10"
+
+d="$(fixture deps-limit)"; printf 'limits:\n  projectFanOut: 4  # spec 4b.1a\n' > "$d/deps.yaml"
+addcheck "$(rec "$d" no-catch-exception)" "  - type: build-setting" '    id: "projectFanOut: 4"' "    status: active"; run "$d"
+expect "a deps.yaml limit is a build setting" 0 "rules: ok"
+printf 'limits:\n  projectFanOut: 40\n' > "$d/deps.yaml"; run "$d"
+expect "a raised deps.yaml limit fails" 1 "RULE-CHECK-001" "projectFanOut: 4"
+
 d="$(fixture norecords)"; mv "$d/rules" "$d/rules.gone"; run "$d"
 expect "a tree with no rules directory is a tool error" 2 "check-rules: error"
 
