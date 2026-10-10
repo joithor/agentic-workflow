@@ -204,4 +204,53 @@ public sealed class SpanTests
         var remote = Assert.IsType<string>(Assert.Single(h.Spans!.Exported).GetTagItem("remote"));
         Assert.DoesNotContain(Secrets.Body, remote, StringComparison.Ordinal);
     }
+
+    [Fact]
+    public void A_span_whose_operation_name_carries_a_secret_is_dropped()
+    {
+        using var h = new Harness(export: true);
+        using (h.Source.StartActivity("call " + Secrets.GithubToken))
+        {
+        }
+
+        h.Runtime.Flush();
+
+        Assert.Empty(h.Spans!.Exported);
+        Assert.Equal(1, h.Runtime.Withheld.Spans);
+    }
+
+    [Fact]
+    public void A_span_with_a_secret_in_a_tag_key_or_its_trace_state_is_dropped()
+    {
+        using var h = new Harness(export: true);
+        using (var span = h.Source.StartActivity("work"))
+        {
+            _ = span!.SetTag("x." + Secrets.GithubToken, 1);
+        }
+
+        using (var span = h.Source.StartActivity("work"))
+        {
+            span!.TraceStateString = "k=" + Secrets.GithubToken;
+        }
+
+        h.Runtime.Flush();
+
+        Assert.Empty(h.Spans!.Exported);
+        Assert.Equal(2, h.Runtime.Withheld.Spans);
+    }
+
+    [Fact]
+    public void A_dictionary_tag_with_a_secret_named_key_is_rewritten()
+    {
+        using var h = new Harness(export: true);
+        using (var span = h.Source.StartActivity("work"))
+        {
+            _ = span!.SetTag("creds", new Dictionary<string, string>(StringComparer.Ordinal) { ["password"] = "hunter2-plain" });
+        }
+
+        h.Runtime.Flush();
+
+        var creds = Assert.IsType<string[]>(Assert.Single(h.Spans!.Exported).GetTagItem("creds"));
+        Assert.Equal("[password, [REDACTED:secret-field]]", Assert.Single(creds));
+    }
 }

@@ -96,8 +96,9 @@ internal static class LogLineWriter
                 json.WriteStartObject("fields");
             }
 
-            var count = seen[key] = seen.GetValueOrDefault(key) + 1;
-            var name = count == 1 ? key : string.Create(System.Globalization.CultureInfo.InvariantCulture, $"{key}_{count}");
+            var safeKey = scrubber.Scrub(key, ref tally);
+            var count = seen[safeKey] = seen.GetValueOrDefault(safeKey) + 1;
+            var name = count == 1 ? safeKey : string.Create(System.Globalization.CultureInfo.InvariantCulture, $"{safeKey}_{count}");
             json.WriteString(name, scrubber.ScrubField(key, value, ref tally));
         }
 

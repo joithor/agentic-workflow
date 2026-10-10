@@ -112,4 +112,30 @@ public sealed class MetricTests
 
         Assert.DoesNotContain(h.Metrics!.Exported, m => m.Name == "aw.test.pin");
     }
+
+    [Fact]
+    public void An_instrument_of_a_meter_with_a_secret_tag_is_withheld()
+    {
+        using var h = new Harness(export: true);
+        using var meter = new System.Diagnostics.Metrics.Meter(h.Meter.Name, version: null, tags: [new("api_key", "zq81-plain")]);
+        var counter = meter.CreateCounter<long>("aw.test.metertag");
+
+        counter.Add(1);
+        h.Runtime.Flush();
+
+        Assert.DoesNotContain(h.Metrics!.Exported, m => m.Name == "aw.test.metertag");
+        Assert.Equal(1, h.Runtime.Withheld.Metrics);
+    }
+
+    [Fact]
+    public void An_instrument_with_a_secret_in_a_tag_key_is_withheld()
+    {
+        using var h = new Harness(export: true);
+        var counter = h.Meter.CreateCounter<long>("aw.test.tagkey");
+
+        counter.Add(1, new KeyValuePair<string, object?>("x." + Secrets.GithubToken, 1));
+        h.Runtime.Flush();
+
+        Assert.DoesNotContain(h.Metrics!.Exported, m => m.Name == "aw.test.tagkey");
+    }
 }

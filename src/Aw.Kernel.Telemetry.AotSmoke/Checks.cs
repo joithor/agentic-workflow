@@ -32,8 +32,9 @@ internal static class Checks
         var collector = SpanCheck(output);
         MetricCheck(output);
         RegistrationCheck(output);
-        var leaked = sink.Lines.Exists(l => l.Contains(Samples.Body, StringComparison.Ordinal))
-            || collector.Spans.Exists(s => s.TagObjects.Any(t => Text(t.Value).Contains(Samples.Body, StringComparison.Ordinal)));
+        var spanTexts = collector.Spans.SelectMany(s => s.TagObjects.Select(t => t.Key + "=" + Text(t.Value))
+            .Concat([s.OperationName, s.DisplayName, s.StatusDescription ?? string.Empty, s.TraceStateString ?? string.Empty]));
+        var leaked = sink.Lines.Concat(spanTexts).Any(l => l.Contains(Samples.Body, StringComparison.Ordinal));
         Write(output, $"secret in any output: {(leaked ? "yes" : "no")}");
         return leaked ? 1 : 0;
     }
@@ -67,9 +68,10 @@ internal static class Checks
     {
         var collector = new SpanCollector();
         using var runtime = TelemetryRuntime.Start(new TelemetryOptions { ServiceName = Service, Sink = new MemorySink(), TraceExporter = collector });
-        using (var span = _source.StartActivity("call " + Samples.GithubToken))
+        using (var span = _source.StartActivity("call"))
         {
-            _ = span?.SetTag("header", Samples.Bearer).SetTag("count", 2);
+            span!.DisplayName = "call " + Samples.GithubToken;
+            _ = span.SetTag("header", Samples.Bearer).SetTag("count", 2);
         }
 
         using (var leaky = _source.StartActivity("leaky"))

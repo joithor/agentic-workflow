@@ -32,4 +32,22 @@ public sealed class RegistrationTests
         Assert.Same(provider.GetRequiredService<TelemetryRuntime>(), provider.GetRequiredService<TelemetryRuntime>());
         Assert.Same(provider.GetRequiredService<TelemetryRuntime>().LoggerFactory, provider.GetRequiredService<ILoggerFactory>());
     }
+
+    [Fact]
+    public void AddKernelTelemetry_starts_telemetry_in_Compose_so_spans_are_recorded_before_any_logger_is_resolved()
+    {
+        var sink = new InMemoryLogSink();
+        using var source = new System.Diagnostics.ActivitySource("Aw.Test.Eager");
+        var services = new ServiceCollection().AddKernelTelemetry(
+            TelemetryOptions.FromEnvironment("aw-demo", _ => "loud", TimeProvider.System) with { Sink = sink, SourcePattern = "Aw.Test.Eager" });
+
+        using (var span = source.StartActivity("work"))
+        {
+            Assert.NotNull(span);
+        }
+
+        Assert.Contains("AW-TELEMETRY-001", Assert.Single(sink.Lines), StringComparison.Ordinal);
+        using var provider = services.BuildServiceProvider();
+        Assert.NotNull(provider.GetRequiredService<TelemetryRuntime>());
+    }
 }

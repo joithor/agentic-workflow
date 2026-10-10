@@ -121,4 +121,54 @@ public sealed class LogScrubbingTests
         Assert.EndsWith(", plain", headers, StringComparison.Ordinal);
         Assert.DoesNotContain(Secrets.Body, h.Sink.Text, StringComparison.Ordinal);
     }
+
+    [Fact]
+    public void A_generated_method_with_reordered_parameters_never_moves_a_secret_into_another_hole()
+    {
+        using var h = new Harness();
+        var logger = h.Logger();
+
+        Log.SignIn(logger, "hunter2-plain", "alice");
+
+        var line = Assert.Single(h.Lines());
+        Assert.Equal("alice signed in with [REDACTED:secret-field]", line.GetProperty("message").GetString());
+        Assert.DoesNotContain("hunter2", h.Sink.Text, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void A_dictionary_with_secret_named_keys_is_withheld_per_key_in_message_and_fields()
+    {
+        using var h = new Harness();
+        var creds = new Dictionary<string, object?>(StringComparer.Ordinal) { ["password"] = "hunter2-plain", ["user"] = "alice" };
+
+        h.Logger().EmitTemplate("c {Creds}", ("Creds", creds));
+
+        var line = Assert.Single(h.Lines());
+        Assert.Equal("c [password, [REDACTED:secret-field]], [user, alice]", line.GetProperty("message").GetString());
+        Assert.Equal("[password, [REDACTED:secret-field]], [user, alice]", line.GetProperty("fields").GetProperty("Creds").GetString());
+        Assert.DoesNotContain("hunter2", h.Sink.Text, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void A_secret_held_as_a_char_array_is_scrubbed_as_one_string()
+    {
+        using var h = new Harness();
+
+        h.Logger().EmitTemplate("v {V}", ("V", Secrets.GithubToken.ToCharArray()));
+
+        _ = Assert.Single(h.Lines());
+        Assert.DoesNotContain("g, h, p", h.Sink.Text, StringComparison.Ordinal);
+        Assert.DoesNotContain(Secrets.Body, h.Sink.Text, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void A_secret_in_a_field_key_is_scrubbed()
+    {
+        using var h = new Harness();
+
+        h.Logger().EmitTemplate("x", ("x." + Secrets.GithubToken, 1));
+
+        _ = Assert.Single(h.Lines());
+        Assert.DoesNotContain(Secrets.Body, h.Sink.Text, StringComparison.Ordinal);
+    }
 }

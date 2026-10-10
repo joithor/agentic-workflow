@@ -7,8 +7,9 @@ namespace Aw.Kernel.Telemetry;
 public static class KernelTelemetryServiceCollectionExtensions
 {
     /// <summary>
-    /// Registers the <see cref="TelemetryRuntime"/> (a singleton, started on first resolve), its logger factory as
-    /// ILoggerFactory, and ILogger of T.
+    /// Starts the <see cref="TelemetryRuntime"/> now (so spans are recorded and a <see cref="TelemetryOptions.Problem"/>
+    /// is written while Compose runs, before anything resolves a logger) and registers it as a singleton the container
+    /// disposes, with its logger factory as ILoggerFactory and ILogger of T.
     /// </summary>
     /// <param name="services">The services.</param>
     /// <param name="options">The telemetry options.</param>
@@ -16,7 +17,8 @@ public static class KernelTelemetryServiceCollectionExtensions
     public static IServiceCollection AddKernelTelemetry(this IServiceCollection services, TelemetryOptions options)
     {
         ArgumentNullException.ThrowIfNull(options);
-        _ = services.AddSingleton(_ => TelemetryRuntime.Start(options));
+        var runtime = TelemetryRuntime.Start(options);
+        _ = services.AddSingleton(_ => runtime);
         _ = services.AddSingleton(static sp => sp.GetRequiredService<TelemetryRuntime>().LoggerFactory);
         _ = services.AddSingleton(typeof(ILogger<>), typeof(Logger<>));
         return services;

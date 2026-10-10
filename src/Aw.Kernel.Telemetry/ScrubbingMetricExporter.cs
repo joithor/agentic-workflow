@@ -5,8 +5,9 @@ using OpenTelemetry.Metrics;
 namespace Aw.Kernel.Telemetry;
 
 /// <summary>
-/// Wraps the host's metric exporter. A metric's points can't be rewritten, so an instrument with any point whose tag
-/// carries a secret (by value or by name), or whose scrub was blocked or failed, is withheld from every export for the
+/// Wraps the host's metric exporter. A metric's points can't be rewritten, so an instrument whose meter tags or any
+/// point's tags carry a secret (in a key, a value or a list element, or as a secret's name), or whose scrub was
+/// blocked or failed, is withheld from every export for the
 /// life of the process (cumulative points come back each time) and counted once. Metric tags should be small fixed
 /// sets; a secret there is a bug, and it never leaves the process.
 /// </summary>
@@ -58,11 +59,16 @@ internal sealed class ScrubbingMetricExporter(BaseExporter<Metric> inner, Scrubb
         var tally = default(ScrubTally);
         try
         {
+            foreach (var (key, value) in metric.MeterTags ?? [])
+            {
+                Check(key, value, ref tally);
+            }
+
             foreach (ref readonly var point in metric.GetMetricPoints())
             {
                 foreach (var tag in point.Tags)
                 {
-                    _ = scrubber.ScrubValue(tag.Key, tag.Value, ref tally);
+                    Check(tag.Key, tag.Value, ref tally);
                 }
             }
         }
@@ -73,5 +79,11 @@ internal sealed class ScrubbingMetricExporter(BaseExporter<Metric> inner, Scrubb
         }
 
         return tally.Clean;
+    }
+
+    private void Check(string key, object? value, ref ScrubTally tally)
+    {
+        _ = scrubber.Scrub(key, ref tally);
+        _ = scrubber.ScrubValue(key, value, ref tally);
     }
 }

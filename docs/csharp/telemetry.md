@@ -19,8 +19,9 @@ services.AddKernelTelemetry(TelemetryOptions.FromEnvironment("aw-readiness", env
 never fails the host: an unknown level stays at information and sets `TelemetryOptions.Problem`
 (`AW-TELEMETRY-001`, without the value, which could be anything pasted into the variable); the runtime writes it once
 as its first line, a warning whose `eventName` is the code. Without DI, `using var telemetry =
-TelemetryRuntime.Start(options)` and `telemetry.LoggerFactory`. Disposing the runtime flushes it; the DI container
-disposes the singleton for you. Run **one runtime per process**: the withheld counter is process-wide.
+TelemetryRuntime.Start(options)` and `telemetry.LoggerFactory`. `AddKernelTelemetry` starts the runtime right away (so
+spans are recorded and the problem line is written while Compose runs, before anything resolves a logger) and
+registers it as a singleton the container disposes; disposing the runtime flushes it. Run **one runtime per process**: the withheld counter is process-wide.
 
 OpenTelemetry's SDK reads some standard `OTEL_*` variables. The resource is exactly `service.name` from `ServiceName`
 (`ResourceBuilder.CreateEmpty()`, so `OTEL_SERVICE_NAME` and `OTEL_RESOURCE_ATTRIBUTES` are ignored), and the sampler
@@ -64,9 +65,9 @@ prefixes) is removed.
 
 | Path | What happens |
 |---|---|
-| Log line | category, event name, message, exception (`ToString()`, inner exceptions included) and every field scrubbed; a field with a secret's **name** is withheld whole (`[REDACTED:secret-field]`), and so is its hole in the message (the message is rendered again from its template, positionally, with alignment and format, as the formatter does) |
-| Span (only with a trace exporter) | the scrubbing processor runs before the export processor: name, tag values and status description are rewritten in place. A tag with a secret's name is withheld whatever its type; numbers and flags are kept; a list is scrubbed element by element (the tag becomes a string array); any other object is scrubbed as its text. Events and links can't be rewritten, so a span with a secret in an event or link (including list values) is **dropped** (marked not recorded). Without an exporter nothing leaves the process, so spans aren't touched |
-| Metric | the exporter is wrapped: an instrument with any point whose tag carries a secret (by value, list element or name) is **withheld** from every export for the life of the process (cumulative points come back each time) and counted once. Metric tags should be small fixed sets |
+| Log line | category, event name, message, exception (`ToString()`, inner exceptions included), every field key and value scrubbed; a field with a secret's **name** is withheld whole (`[REDACTED:secret-field]`), and so is a dictionary's or key-value list's entry with a secret's name (`[password, [REDACTED:secret-field]]`); a `char[]` is scrubbed as one string. The message is rendered again from its template when it holds such a value, as the formatter does (alignment and format applied), each hole taking the field of its own name: a source-generated `[LoggerMessage]` lists fields in parameter order, so position would put a value in the wrong hole |
+| Span (only with a trace exporter) | the scrubbing processor runs before the export processor: display name, tag values and status description are rewritten in place. A tag with a secret's name is withheld whatever its type; numbers and flags are kept; a list is scrubbed element by element, with secret-named dictionary entries withheld (the tag becomes a string array); any other object is scrubbed as its text. The operation name, trace state, tag keys, events and links can't be rewritten, so a span with a secret in any of them is **dropped** (marked not recorded). Without an exporter nothing leaves the process, so spans aren't touched |
+| Metric | the exporter is wrapped: an instrument whose meter tags or any point's tags carry a secret (in a key, a value, a list element, or as a secret's name) is **withheld** from every export for the life of the process (cumulative points come back each time) and counted once. Metric tags should be small fixed sets |
 | Blocked scrub (a match timeout) | never passes raw text: a log line is written with `[REDACTED:blocked]` in place of the text; a span or metric instrument is dropped |
 | Failure (the sink or a value's `ToString()` throws) | never thrown into the caller: the log line or span is dropped and counted as `failure`; `Flush` and `Dispose` never throw (a writer the host already closed is counted too) |
 

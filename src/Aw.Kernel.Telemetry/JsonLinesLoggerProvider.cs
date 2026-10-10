@@ -9,7 +9,7 @@ internal sealed class JsonLinesLoggerProvider(ILogSink sink, Scrubber scrubber, 
 {
     public IExternalScopeProvider Scopes { get; private set; } = new LoggerExternalScopeProvider();
 
-    public bool IsSecretName(string name) => scrubber.IsSecretName(name);
+    public Scrubber Scrubber { get; } = scrubber;
 
     public ILogger CreateLogger(string categoryName) => new JsonLinesLogger(categoryName, this);
 
@@ -18,7 +18,7 @@ internal sealed class JsonLinesLoggerProvider(ILogSink sink, Scrubber scrubber, 
     public void Write(LogEntry entry)
     {
         var tally = default(ScrubTally);
-        var line = LogLineWriter.Write(entry, clock.GetUtcNow(), scrubber, ref tally);
+        var line = LogLineWriter.Write(entry, clock.GetUtcNow(), Scrubber, ref tally);
         sink.WriteLine(line);
         if (tally.Blocked)
         {

@@ -21,6 +21,10 @@ internal static partial class Log
     [LoggerMessage(Level = LogLevel.Information, Message = "{{took {Ms:N2}}} as {Token}")]
     public static partial void LoginWithFormat(ILogger logger, double ms, string token);
 
+    // Parameters in a different order from the template's holes: the generator builds the state in parameter order.
+    [LoggerMessage(Level = LogLevel.Information, Message = "{User} signed in with {Password}")]
+    public static partial void SignIn(ILogger logger, string password, string user);
+
     [LoggerMessage(Level = LogLevel.Error, Message = "failed")]
     public static partial void Failed(ILogger logger, Exception exception);
 

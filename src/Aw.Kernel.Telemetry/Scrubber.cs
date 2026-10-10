@@ -15,7 +15,7 @@ internal sealed class Scrubber(IRedactor redactor)
         return result.Text;
     }
 
-    /// <summary>A named value as log text: withheld whole when the name is a secret's, otherwise its scrubbed text.</summary>
+    /// <summary>A named value as log text: withheld whole when the name is a secret's, otherwise its scrubbed <see cref="Render"/>.</summary>
     public string ScrubField(string name, object? value, ref ScrubTally tally)
     {
         if (IsSecretName(name))
@@ -24,13 +24,14 @@ internal sealed class Scrubber(IRedactor redactor)
             return ScrubResult.SecretFieldText;
         }
 
-        return Scrub(Text(value), ref tally);
+        return Scrub(Render(value), ref tally);
     }
 
     /// <summary>
     /// A named attribute value (a span or metric tag): withheld whole when the name is a secret's, whatever its type;
-    /// numbers and flags kept; text scrubbed; each element of a list scrubbed (the result is a string array); anything
-    /// else scrubbed as its text. When the tally stays clean the caller keeps the original value.
+    /// numbers and flags kept; text (and a char array, as one string) scrubbed; each element of a list scrubbed, with a
+    /// dictionary's or key-value list's secret-named entries withheld (the result is a string array); anything else
+    /// scrubbed as its text. When the tally stays clean the caller keeps the original value.
     /// </summary>
     public object? ScrubValue(string name, object? value, ref ScrubTally tally)
     {
@@ -45,32 +46,74 @@ internal sealed class Scrubber(IRedactor redactor)
             null => null,
             _ when IsNumberOrFlag(value) => value,
             string text => Scrub(text, ref tally),
+            char[] chars => Scrub(new string(chars), ref tally),
             IEnumerable items => ScrubElements(items, ref tally),
-            _ => Scrub(Text(value), ref tally),
+            _ => Scrub(Render(value), ref tally),
         };
     }
 
     /// <summary>Whether <paramref name="name"/> is a secret's name (password, api_key, …), ignoring a '@' or '$' template prefix.</summary>
     public bool IsSecretName(string name) => redactor.IsSecretName(name.TrimStart('@', '$'));
 
-    /// <summary>The invariant text of a value; a list becomes its elements joined with ", ", as the log formatter writes it.</summary>
-    public static string Text(object? value) => value switch
+    /// <summary>
+    /// The invariant text of a value, as the log formatter writes it, with secret-named entries withheld: a list is its
+    /// elements joined with ", ", a key-value entry is "[key, value]", a char array is one string. Not regex-scrubbed.
+    /// </summary>
+    public string Render(object? value) => value switch
     {
         null => string.Empty,
         string text => text,
-        IEnumerable items => string.Join(", ", items.Cast<object?>().Select(Text)),
+        char[] chars => new string(chars),
+        IEnumerable items => string.Join(", ", Elements(items)),
         _ => Convert.ToString(value, CultureInfo.InvariantCulture) ?? string.Empty,
     };
 
+    /// <summary>Whether a dictionary or key-value list holds an entry with a secret's name.</summary>
+    public bool HasSecretEntries(object? value) =>
+        value is IEnumerable items and not string and not char[] && Entries(items).Any(e => e.Keyed && IsSecretName(e.Key));
+
+    private IEnumerable<string> Elements(IEnumerable items) =>
+        Entries(items).Select(e => !e.Keyed ? Render(e.Value)
+            : $"[{e.Key}, {(IsSecretName(e.Key) ? ScrubResult.SecretFieldText : Render(e.Value))}]");
+
     private string[] ScrubElements(IEnumerable items, ref ScrubTally tally)
     {
-        var scrubbed = new List<string>();
-        foreach (var item in items)
+        if (HasSecretEntries(items))
         {
-            scrubbed.Add(Scrub(Text(item), ref tally));
+            tally = tally.With(ScrubOutcome.Redacted);
+        }
+
+        var scrubbed = new List<string>();
+        foreach (var element in Elements(items))
+        {
+            scrubbed.Add(Scrub(element, ref tally));
         }
 
         return [.. scrubbed];
+    }
+
+    private static IEnumerable<(string Key, object? Value, bool Keyed)> Entries(IEnumerable items)
+    {
+        if (items is IDictionary dictionary)
+        {
+            foreach (DictionaryEntry entry in dictionary)
+            {
+                yield return (Convert.ToString(entry.Key, CultureInfo.InvariantCulture) ?? string.Empty, entry.Value, true);
+            }
+
+            yield break;
+        }
+
+        foreach (var item in items)
+        {
+            yield return item switch
+            {
+                KeyValuePair<string, object?> pair => (pair.Key, pair.Value, true),
+                KeyValuePair<string, string?> pair => (pair.Key, pair.Value, true),
+                DictionaryEntry entry => (Convert.ToString(entry.Key, CultureInfo.InvariantCulture) ?? string.Empty, entry.Value, true),
+                _ => (string.Empty, item, false),
+            };
+        }
     }
 
     private static bool IsNumberOrFlag(object value) =>

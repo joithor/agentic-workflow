@@ -25,7 +25,7 @@ internal sealed class JsonLinesLogger(string category, JsonLinesLoggerProvider p
         try
         {
             var fields = state as IReadOnlyList<KeyValuePair<string, object?>> ?? [];
-            var message = MessageText.Render(formatter(state, exception), fields, provider.IsSecretName);
+            var message = MessageText.Render(formatter(state, exception), fields, provider.Scrubber);
             provider.Write(new LogEntry(category, logLevel, eventId, message, exception, fields, InnermostContext(), Activity.Current));
         }
         catch (Exception)
