@@ -16,11 +16,11 @@ public sealed class ArchitectureTests
 
     [Fact]
     public void Infrastructure_types_stay_internal() =>
-        Verify.None(InfrastructureRules.Check(Production.Architecture.Types, Production.Roots));
+        Verify.None(InfrastructureRules.Check(Production.Architecture.Types, Production.Scope));
 
     [Fact]
     public void Every_namespace_under_a_package_root_names_a_layer() =>
-        Verify.None(PlacementRules.Check(Production.Architecture.Types, Production.Roots));
+        Verify.None(PlacementRules.Check(Production.Architecture.Types, Production.Scope));
 
     [Fact]
     public void No_namespace_cycles_in_any_assembly() => Verify.None(CycleRules.Check(Production.Architecture.Types));

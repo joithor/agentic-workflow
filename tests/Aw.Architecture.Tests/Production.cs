@@ -38,10 +38,15 @@ internal static class Production
     public static ArchArchitecture Architecture => _loaded.Value;
 
     /// <summary>
-    /// The shaped package roots: Aw.Judge for Aw.Judge.Core, Aw.Judge.Features, ... and Aw.Judge.App. Tier-0 packages
-    /// (Aw.Kernel, Aw.Kernel.Data) have no layers, so only the cycle, naming and service-provider rules cover them.
+    /// The shaped packages: roots (Aw.Judge for Aw.Judge.Core, Aw.Judge.Features, ... and Aw.Judge.App) and their Host
+    /// or App assemblies, by the name each builds (a Host may rename its binary). Tier-0 packages (Aw.Kernel,
+    /// Aw.Kernel.Data) have no layers, so only the cycle, naming, service-provider and typed-id rules cover them.
     /// </summary>
-    public static IReadOnlyList<string> Roots { get; } = RootsOf(Packages.Production);
+    public static Scope Scope { get; } = Scope.Of(
+        RootsOf(Packages.Production),
+        Packages.Production
+            .Where(p => p.EndsWith(".Host", StringComparison.Ordinal) || p.EndsWith(".App", StringComparison.Ordinal))
+            .Select(p => KeyValuePair.Create(Solution.AssemblyOf(p), p[..p.LastIndexOf('.')])));
 
     /// <summary>Whether a registered project's assembly loaded.</summary>
     /// <param name="project">A Packages.cs line.</param>
@@ -60,5 +65,5 @@ internal static class Production
             .Order(StringComparer.Ordinal)];
 
     /// <summary>Every dependency edge among the registered assemblies' types.</summary>
-    public static IReadOnlyList<Edge> Edges => Edge.All(Architecture.Types, Roots);
+    public static IReadOnlyList<Edge> Edges => Edge.All(Architecture.Types, Scope);
 }

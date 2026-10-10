@@ -11,14 +11,14 @@ public sealed record Edge(IType Origin, Place? From, IType Target, Place? To)
 {
     /// <summary>Every dependency of the given types, deduplicated by top-level origin and target.</summary>
     /// <param name="types">The types whose dependencies to list.</param>
-    /// <param name="roots">The package roots in scope.</param>
+    /// <param name="scope">The shaped packages in scope.</param>
     /// <returns>The edges.</returns>
-    public static IReadOnlyList<Edge> All(IEnumerable<IType> types, IReadOnlyList<string> roots) =>
+    public static IReadOnlyList<Edge> All(IEnumerable<IType> types, Scope scope) =>
         [.. types
             .SelectMany(t => t.Dependencies.Select(d => (Origin: t, d.Target)))
             .Where(p => !ReferenceEquals(p.Origin, p.Target) && p.Target is not GenericParameter)
             .DistinctBy(p => (TypeNames.Qualified(p.Origin), p.Target.FullName))
-            .Select(p => new Edge(p.Origin, Place.Of(p.Origin, roots), p.Target, Place.Of(p.Target, roots)))];
+            .Select(p => new Edge(p.Origin, Place.Of(p.Origin, scope), p.Target, Place.Of(p.Target, scope)))];
 
     /// <summary>"Origin -> Target" for messages.</summary>
     public string Text => $"{TypeNames.Qualified(Origin)} -> {Target.FullName}";

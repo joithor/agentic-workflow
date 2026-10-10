@@ -22,7 +22,7 @@ internal static class FixtureSet
     /// <summary>The package roots of the named fixture packages.</summary>
     /// <param name="packages">Fixture folder names.</param>
     /// <returns>Their roots.</returns>
-    public static IReadOnlyList<string> Roots(params string[] packages) => [.. packages.Select(p => Prefix + p)];
+    public static Scope Roots(params string[] packages) => Scope.Of(packages.Select(p => Prefix + p));
 
     /// <summary>The dependency edges among the named fixture packages' types.</summary>
     /// <param name="packages">Fixture folder names.</param>

@@ -13,11 +13,11 @@ public static class PlacementRules
 
     /// <summary>Checks that every type under a package root has a layer.</summary>
     /// <param name="types">The types to check.</param>
-    /// <param name="roots">The package roots in scope.</param>
+    /// <param name="scope">The shaped packages in scope.</param>
     /// <returns>One violation per offending namespace.</returns>
-    public static IEnumerable<Violation> Check(IEnumerable<IType> types, IReadOnlyList<string> roots) =>
+    public static IEnumerable<Violation> Check(IEnumerable<IType> types, Scope scope) =>
         types
-            .Where(t => Place.RootOf(TypeNames.NamespaceOf(t), roots) is not null && Place.Of(t, roots) is null)
+            .Where(t => scope.RootOf(TypeNames.NamespaceOf(t)) is not null && Place.Of(t, scope) is null)
             .Select(TypeNames.NamespaceOf)
             .Distinct(StringComparer.Ordinal)
             .Select(ns => new Violation(Id, $"namespace {ns} names no layer",

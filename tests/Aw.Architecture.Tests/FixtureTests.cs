@@ -69,7 +69,7 @@ public sealed class FixtureTests
 
     [Fact]
     public void A_service_locator_in_a_package_with_no_layers_is_reported() =>
-        Verify.Exactly(ServiceProviderRules.Check(Edge.All(FixtureSet.Types("Unrooted"), [])), ServiceProviderRules.Id,
+        Verify.Exactly(ServiceProviderRules.Check(Edge.All(FixtureSet.Types("Unrooted"), Scope.Of([]))), ServiceProviderRules.Id,
             "Unrooted.Tools.Locator uses IServiceProvider");
 
     [Theory]
@@ -103,10 +103,11 @@ public sealed class FixtureTests
     [Theory]
     [InlineData("Aw.Judge.Host", "Aw.Judge")]
     [InlineData("Aw.Judge.App", "Aw.Judge")]
+    [InlineData("judge", "Aw.Judge")]
     [InlineData("Aw.Judge.Core", null)]
     [InlineData("Aw.Kernel", null)]
-    public void Program_and_generator_output_sit_in_host_by_their_assembly(string assembly, string? root) =>
-        Assert.Equal(root, Place.HostRootOfAssembly(assembly, ["Aw.Judge"]));
+    public void Program_and_generator_output_sit_in_host_by_their_assembly_even_when_it_is_renamed(string assembly, string? root) =>
+        Assert.Equal(root, Scope.Of(["Aw.Judge"], [KeyValuePair.Create("judge", "Aw.Judge")]).HostRootOf(assembly));
 
     [Fact]
     public void Technology_types_in_core_and_features_are_reported() =>
