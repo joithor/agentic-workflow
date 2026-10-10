@@ -1,3 +1,4 @@
+using Aw.Kernel.Telemetry;
 using Aw.Readiness.App;
 using Aw.Readiness.App.Commands;
 using Microsoft.Extensions.DependencyInjection;
@@ -7,5 +8,6 @@ var json = Composition.Json;   // the one Kernel JSON profile
 var provider = services.BuildServiceProvider();   // validation runs in HostTests, not at CLI startup
 await using (provider.ConfigureAwait(false))
 {
+    _ = provider.GetRequiredService<TelemetryRuntime>();   // resolved so the container disposes it on exit, which flushes
     return await CommandTable.Run(args, provider, json).ConfigureAwait(false);
 }

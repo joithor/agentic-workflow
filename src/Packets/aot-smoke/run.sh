@@ -4,7 +4,8 @@
 # packet/ (its baseSha is set to the temp commit): validate, validate a broken copy, freeze twice. The normalized
 # output must equal expected.txt, and the run must write nothing outside $AW_STATE_DIR/packets/.
 # Output goes to artifacts/aot-packets-smoke/ (gitignored). The publish runs on a copy of the files it needs (the root
-# build files, src/Aw.Kernel, src/Aw.Analyzers (every production project loads it), src/Packets): PublishAot with a RID
+# build files, src/Aw.Kernel, src/Aw.Kernel.Telemetry and src/Redaction (the host starts telemetry, which scrubs through
+# Redaction), src/Aw.Analyzers (every production project loads it), src/Packets): PublishAot with a RID
 # makes restore add the host RID's ILCompiler packs to the lock files, so it never runs on the checkout, whose lock files
 # stay RID-free.
 set -euo pipefail
@@ -18,7 +19,7 @@ tree="$out/tree"
 [ ! -d "$tree" ] || find "$tree" -delete
 mkdir -p "$tree"
 git -C "$root" ls-files -z --cached --others --exclude-standard -- global.json nuget.config .editorconfig 'Directory.*' BannedSymbols.txt CodeMetricsConfig.txt \
-  src/Aw.Kernel src/Aw.Analyzers src/Packets | (cd "$root" && tar --null -T - -cf -) | tar -xf - -C "$tree"
+  src/Aw.Kernel src/Aw.Kernel.Telemetry src/Redaction src/Aw.Analyzers src/Packets | (cd "$root" && tar --null -T - -cf -) | tar -xf - -C "$tree"
 rid="$(dotnet --info | awk '/^ *RID:/ {print $2; exit}')"
 dotnet publish "$tree/src/Packets/Aw.Packets.App/Aw.Packets.App.csproj" -c Release -r "$rid" -p:RestoreLockedMode=false \
   -o "$out/bin" </dev/null >"$out/publish.log" 2>&1 || { tail -20 "$out/publish.log" >&2; exit 1; }

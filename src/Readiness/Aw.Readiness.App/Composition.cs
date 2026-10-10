@@ -1,5 +1,6 @@
 using System.Text.Json;
 using Aw.Kernel.Json;
+using Aw.Kernel.Telemetry;
 using Aw.Readiness.App.Features;
 using Aw.Readiness.App.Infrastructure;
 using Aw.Readiness.Core;
@@ -16,6 +17,7 @@ internal static class Composition
     internal static IServiceCollection Compose(IServiceCollection services, Func<string, string?> environment, TimeProvider clock)
         => services
             .AddSingleton(clock)
+            .AddKernelTelemetry(TelemetryOptions.FromEnvironment("aw-readiness", environment, clock))   // JSON lines on stderr (AW_LOG_LEVEL); exports off
             .AddSingleton(Json)
             .AddReadinessCore()
             .AddReadinessFeatures()
