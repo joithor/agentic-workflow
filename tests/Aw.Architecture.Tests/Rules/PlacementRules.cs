@@ -24,6 +24,9 @@ public static class PlacementRules
     /// <returns>One violation per offending namespace and assembly.</returns>
     public static IEnumerable<Violation> Check(IEnumerable<IType> types, Scope scope) =>
         types
+            // Defensive: ArchUnitNET 0.13.4 already drops compiler output (<PrivateImplementationDetails>, <>c, embedded
+            // attributes) when it loads an assembly, so no test can reach this filter with a real type; it keeps such a
+            // type, should a later ArchUnitNET keep it, from being reported as off-root. IsCompilerEmitted is tested alone.
             .Where(t => !IsCompilerEmitted(TypeNames.TopLevel(t), t.IsCompilerGenerated, t.Attributes.Select(a => a.FullName)))
             .Select(t => Judge(t, scope))
             .OfType<Violation>()

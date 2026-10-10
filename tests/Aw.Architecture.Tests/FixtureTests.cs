@@ -177,7 +177,7 @@ public sealed class FixtureTests
     [Fact]
     public void Technology_types_in_small_shape_features_and_commands_are_reported() =>
         Verify.Exactly(PortRules.Check(FixtureSet.Edges("PortSmall")).Where(v => v.RuleId == PortRules.TechnologyId),
-            PortRules.TechnologyId, "Go.GoService -> System.Environment", "Commands.ReadCommand -> System.IO.File");
+            PortRules.TechnologyId, "Go.GoService -> System.Environment: Features calls System.Environment.GetEnvironmentVariable", "Commands.ReadCommand -> System.IO.File");
 
     [Fact]
     public void Infrastructure_used_outside_composition_is_reported_in_both_shapes() =>
