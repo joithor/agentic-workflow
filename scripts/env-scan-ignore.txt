@@ -1,0 +1,48 @@
+# scripts/env-scan-ignore.txt — UPPER_CASE names scripts/check-env-example.sh finds but that don't belong
+# in .env.example. One per line: "NAME # reason". A name here must not also be in .env.example.
+
+# Set by the OS or the shell.
+HOME # the user's home directory (OS)
+PATH # executable search path (OS)
+USER # login name (OS)
+TMPDIR # temp directory (OS)
+COLUMNS # terminal width (shell); the statusline falls back to it
+PROMPT_COMMAND # bash prompt hook; the Claude installer appends to it
+XDG_RUNTIME_DIR # per-user runtime dir (OS); sindri doctor only reports it
+
+# Owned by another tool; the code only reports or forwards it.
+NODE_OPTIONS # Node's own option variable; sindri doctor checks it for --use-env-proxy
+NODE_USE_ENV_PROXY # Node's own proxy switch; sindri doctor reports it
+GIT_CONFIG_GLOBAL # git's own variable; sindri onboard forwards it to the git it runs
+
+# Set by the host (Claude Code, Cursor) when it runs our hooks or installers.
+CLAUDECODE # set by Claude Code inside its sessions; the installer skips shell edits there
+CURSOR_PROJECT_DIR # set by Cursor for hook commands
+CURSOR_TRANSCRIPT_PATH # set by Cursor for hook commands
+
+# Internal plumbing: set by the toolkit's own scripts for the scripts they call, not by users.
+AW_PROVIDER # set by the hook adapters and installers (claude, codex, cursor)
+AW_ADAPTER_EVENT # set by the hook adapters' argument parser
+AW_FAILOPEN_INPUT_LOGGED # set by the adapters after they log a bad hook input once
+AW_HOOK_ADAPTER_FLAGS # passed by the hook installer to the adapter command line it writes
+AW_DRY_RUN # set by setup.sh --dry-run for the installers it calls
+AW_MCP_SERVERS # set by setup.sh (the MCP server list) for the provider installers
+AW_EXTERNAL_SKILL_DIRS # set by setup.sh (fetched skill packs) for the provider installers
+WITH_SINDRI # set by setup.sh --with-sindri for the Claude installer
+AW_JUDGE_CHILD # recursion guard the judge sets on the agent CLIs it starts
+AW_SINDRI_CHILD # recursion guard sindri sets on the processes it starts
+LOCK_NAME # a parameter callers set before sourcing skills/_shared/skill-lock.sh
+REF # install-sindri.sh's --ref value
+
+# Script-local UPPER_CASE variables the scan can't tell from overrides (config/statusline.sh).
+BAR_FILL # statusline local (context bar)
+BAR_FILL5 # statusline local (5-hour bar)
+COST # statusline local (session cost)
+CTX_PCT # statusline local (context percent)
+LINES_ADD # statusline local (lines added)
+LINES_DEL # statusline local (lines removed)
+TOTAL_MIN # statusline local (session minutes)
+
+# Examples in a doc comment, not reads (scripts/deps/scan.mjs).
+X # doc-comment example of an env fallback
+X_BIN # doc-comment example of a binary override
