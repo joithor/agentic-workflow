@@ -87,6 +87,16 @@ describe("termProblem: joined, hyphenated and underscored variants (security-sen
     expect(termProblem("acme and care", ["Acme Care"])).toBeNull();
     expect(termProblem("plain text", ["- _"])).toBeNull(); // a term of separators only never matches everything
   });
+
+  it("treats a case boundary in a camelCase or PascalCase term as a separator (security-sentinel-2)", () => {
+    for (const text of ["we fixed Acme Care flows", "we fixed acme-care flows", "we fixed acme‑care flows", "the AcmeCare portal"]) {
+      expect(termProblem(text, ["AcmeCare"]), JSON.stringify(text)).toBe(HELD);
+    }
+    expect(termProblem("the acme care desk", ["acmeCare"])).toBe(HELD);
+    expect(termProblem("the v2 Go build", ["v2Go"])).toBe(HELD); // a digit before a capital is a boundary too
+    expect(termProblem("the Acmeville depot", ["Acme"])).toBeNull();
+    expect(termProblem("the ACMECARE flag", ["ACME"])).toBeNull(); // all capitals: one word, whole-word as before
+  });
 });
 
 describe("privacyProblem (Review Focus 6)", () => {

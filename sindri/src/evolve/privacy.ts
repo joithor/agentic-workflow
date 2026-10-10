@@ -36,11 +36,14 @@ const SEPARATORS = /[^\p{L}\p{N}]+/gu;
 
 // Whole words; and a term with separators also matches with them removed on both sides, so every joined or
 // re-separated spelling holds without the owner listing it (holds only: a false positive such as "acme carefully"
-// is accepted). A term without separators stays whole-word: "acme" doesn't hold "acmeville".
+// is accepted). A term without separators stays whole-word: "acme" doesn't hold "acmeville". A case boundary in the term
+// as written (a lower-case letter or a digit before a capital) counts as a separator, so "AcmeCare" is the two-part
+// "acme care" and holds "Acme Care" and "acme-care" too (security-sentinel-2).
+const CASE_BOUNDARY = /([\p{Ll}\p{N}])(\p{Lu})/gu;
 export function termProblem(text: string, denyTerms: readonly string[]): string | null {
   const t = normalizeForPrivacy(text);
   const joined = t.replace(SEPARATORS, "");
-  for (const term of denyTerms.map(normalizeForPrivacy).filter((x) => x !== "")) {
+  for (const term of denyTerms.map((d) => normalizeForPrivacy(d.replace(CASE_BOUNDARY, "$1 $2"))).filter((x) => x !== "")) {
     if (new RegExp(`(?<![a-z0-9])${escapeRe(term)}(?![a-z0-9])`).test(t)) return "contains a private term";
     const bare = term.replace(SEPARATORS, "");
     if (bare !== term && bare !== "" && joined.includes(bare)) return "contains a private term";
