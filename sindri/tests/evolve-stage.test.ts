@@ -274,6 +274,9 @@ describe("stage generalizes first (privacy B1)", () => {
     expect(o.held).toHaveLength(1);
     expect(o.waiting).toBe(1);
     expect(getProposal(fx.ctx.db, fresh)?.status).toBe("staged");
+    // With no new proposals left, the one free slot goes to a held retry (held again); the other retry waits.
+    const out = (await stage([], fx.ctx)).stdout;
+    expect(out).toMatch(/^Nothing staged; 1 held by the generalization pass; 1 waiting for the next run\.\nheld \w+: generalize: the judge found domain\nNext: rerun sindri evolve stage\n$/);
     fx.close();
   });
 });
