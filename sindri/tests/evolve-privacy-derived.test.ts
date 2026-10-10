@@ -148,6 +148,7 @@ describe("identifierProblem", () => {
     const set = new Set(["quarblescheduler"]);
     expect(identifierProblem("Tighten QuarbleScheduler retries", set)).toBe("contains a private-repo identifier");
     expect(identifierProblem("Tighten the scheduler retries", set)).toBeNull();
+    expect(identifierProblem("-- !! --", set)).toBeNull(); // nothing spelled at all
   });
 });
 
