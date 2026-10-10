@@ -53,7 +53,7 @@ public abstract class ReadRepositoryContract<TEntity, TId>
     /// <param name="stored">What was seeded.</param>
     /// <param name="found">What the implementation returned.</param>
     /// <returns>True when they are the same entity.</returns>
-    protected virtual bool SameEntity(TEntity stored, TEntity found) => throw new NotSupportedException("red: SameEntity");
+    protected virtual bool SameEntity(TEntity stored, TEntity found) => EqualityComparer<TEntity>.Default.Equals(stored, found);
 
     /// <summary>A seeded entity comes back from 'Get' equal to what was stored.</summary>
     /// <returns>The test.</returns>
@@ -189,9 +189,12 @@ public abstract class ReadRepositoryContract<TEntity, TId>
             throw Violation(test, $"Get({id}) returned {found.Error.Kind} ({found.Error.Code}) for a stored entity.");
         }
 
-        if (!EqualityComparer<TEntity>.Default.Equals(found.Value, stored))
+        if (!SameEntity(stored, found.Value))
         {
-            throw Violation(test, $"Get({id}) returned {found.Value}, not the stored {stored}.");
+            throw Violation(
+                test,
+                $"Get({id}) returned {found.Value}, not the stored {stored} (compared with {nameof(SameEntity)}; "
+                + $"override {nameof(SameEntity)} if {typeof(TEntity).Name} has no value equality).");
         }
     }
 }
