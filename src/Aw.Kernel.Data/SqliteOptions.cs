@@ -14,7 +14,10 @@ public sealed record SqliteOptions
     /// <summary>The database file.</summary>
     public string DatabasePath { get; }
 
-    /// <summary>How long to wait for a lock held by another connection before failing with AW-DATA-003. Default 5 s.</summary>
+    /// <summary>
+    /// How long to wait for a lock held by another connection before failing with AW-DATA-003. Default 5 s.
+    /// Microsoft.Data.Sqlite's own retry counts whole seconds, so the effective wait is this rounded up to a second.
+    /// </summary>
     public TimeSpan BusyTimeout
     {
         get;
