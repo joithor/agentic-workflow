@@ -30,8 +30,8 @@ public sealed class NullForgivingReasonTests
     {
         var found = await AnalyzerHarness.Run(new NullForgivingReasonAnalyzer(), "Aw.Probe", Sample);
 
-        // Line 13: '//why:' with no reason doesn't count.
-        Assert.Equal(["AW1002@13", "AW1002@4", "AW1002@9"], found);
+        // Line 14: '//why:' with no reason doesn't count.
+        Assert.Equal(["AW1002@10", "AW1002@14", "AW1002@4"], found);
     }
 
     [Fact]
