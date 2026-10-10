@@ -44,7 +44,7 @@ public sealed class ReportTextTests
 
         var text = ReportText.Render(report);
 
-        Assert.Contains("target 4 (ring 0): not confirmed (SEC-1, SEC-2 weren't read)", text, StringComparison.Ordinal);
+        Assert.Contains("target 4 (ring 0): does not hold; SEC-1, SEC-2 weren't read and could raise the level", text, StringComparison.Ordinal);
     }
 
     [Fact, Trait("Lane", "unit")]

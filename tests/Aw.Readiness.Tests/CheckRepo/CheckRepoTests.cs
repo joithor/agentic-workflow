@@ -62,8 +62,21 @@ public sealed class CheckRepoTests
     }
 
     [Fact, Trait("Lane", "unit")]
-    public async Task Offline_the_target_is_not_confirmed_when_a_gating_criterion_was_not_read()
+    public async Task Offline_a_lower_bound_level_at_or_above_the_target_still_holds()
     {
+        // Unread criteria count as not passing, so Level 5 offline is a floor: the target (4) holds whatever they are.
+        var result = await Service().Handle(A.CheckRepoRequest().AtRoot(Root).Offline().Build(), CancellationToken.None);
+
+        Assert.Equal(5, result.Value.Level);
+        Assert.True(result.Value.Holds);
+        Assert.Empty(result.Value.Unconfirmed);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task Offline_below_the_target_the_unread_criteria_that_could_change_it_are_listed()
+    {
+        _ = _tree.Without(".devcontainer/devcontainer.json").Without(".env.example");
+
         var result = await Service().Handle(A.CheckRepoRequest().AtRoot(Root).Offline().Build(), CancellationToken.None);
 
         Assert.False(result.Value.Holds);

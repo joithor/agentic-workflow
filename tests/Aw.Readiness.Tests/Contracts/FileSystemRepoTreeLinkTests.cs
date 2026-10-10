@@ -43,6 +43,18 @@ public sealed class FileSystemRepoTreeLinkTests : IDisposable
     }
 
     [Fact]
+    public void Links_to_files_and_dangling_links_in_a_plain_directory_are_not_listed()
+    {
+        var (tree, outside) = Checkout();
+        var src = Directory.CreateDirectory(Path.Combine(_dir.Path, "repo", "src")).FullName;
+        File.WriteAllText(Path.Combine(src, "Real.csproj"), "<Project />");
+        _ = File.CreateSymbolicLink(Path.Combine(src, "Linked.csproj"), Path.Combine(outside, "Leak.csproj"));
+        _ = File.CreateSymbolicLink(Path.Combine(src, "Dangling.csproj"), Path.Combine(outside, "missing.csproj"));
+
+        Assert.Equal(["src/Real.csproj"], tree.Files("src", ".csproj"));
+    }
+
+    [Fact]
     public void A_linked_file_reads_as_missing()
     {
         var (tree, outside) = Checkout();
