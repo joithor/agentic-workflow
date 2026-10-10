@@ -183,7 +183,9 @@ export function run(root, cmd, args, { log = console.error } = {}) {
   log(`$ ${[cmd, ...args].join(" ")}`);
   const r = spawnSync(cmd, args, { cwd: root, encoding: "utf8", maxBuffer: 256 * 1024 * 1024, env: process.env });
   if (r.error) return { code: 127, out: String(r.error.message) };
-  return { code: r.status ?? 1, out: `${r.stdout ?? ""}${r.stderr ?? ""}` };
+  // CI terminals get ANSI colors (\u001b[31mfailed …); the checks parse plain text.
+  const out = `${r.stdout ?? ""}${r.stderr ?? ""}`.replace(/\u001b\[[0-9;]*m/g, "");
+  return { code: r.status ?? 1, out };
 }
 
 export const lower = (name) => name.toLowerCase();
