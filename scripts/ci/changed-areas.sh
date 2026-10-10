@@ -48,10 +48,13 @@ classify_changes() {
       spikes/*) continue ;;  # throwaway spike projects: no area, never the dotnet job
     esac
     case "$file" in
-      config/*|scripts/*|providers/*|setup.sh|mods/*|skills/*|.agents/*|AGENTS.md|CLAUDE.md|.claude/*|.cursor/*|schemas/*|rules/*|deps.yaml)
+      config/*|scripts/*|providers/*|setup.sh|mods/*|skills/*|.agents/*|AGENTS.md|CLAUDE.md|.claude/*|.cursor/*)
         bash=true ;;
       src/*|tests/*|*.cs|*.csproj|*.props|*.targets|*.slnx|global.json|nuget.config|.editorconfig|BannedSymbols.txt|packages.lock.json|.config/dotnet-tools.json)
         dotnet=true ;;
+    esac
+    case "$file" in
+      schemas/*|rules/*|deps.yaml) bash=true ;;  # check-deps and check-rules (and their suites) read these
     esac
     for pkg in "${TS_PACKAGES[@]}"; do
       case "$file" in
