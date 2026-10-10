@@ -1,10 +1,15 @@
 #!/usr/bin/env bash
 # NativeAOT publish check for Aw.Kernel: publish this project with PublishAot for the host RID, run the native
 # binary, and compare its stdout with expected.txt. Exit 0 only when identical and the publish had no trim/AOT
-# (IL2xxx/IL3xxx) warnings. R1a's AOT CI job runs this script. The project has no lock file and takes the host RID
-# as a project property (see its .csproj), so publishing never rewrites Aw.Kernel's packages.lock.json.
+# (IL2xxx/IL3xxx) warnings; any other outcome exits non-zero (1 = check failed, 2 = missing tool). The .NET job of
+# the CI workflow (#93) runs this script. The project has no lock file and takes the host RID (osx-arm64, linux-x64,
+# ...) as a project property (see its .csproj), so publishing never writes a lock file, and Aw.Kernel's lock file
+# restores unchanged, in locked mode under CI=true too. On Linux, NativeAOT needs clang and zlib (zlib1g-dev),
+# which GitHub's ubuntu runners have.
 # Output goes to artifacts/aot-smoke/ (gitignored, the C# build's own directory).
 set -euo pipefail
+
+command -v dotnet >/dev/null 2>&1 || { echo "aot-smoke: dotnet not found on PATH" >&2; exit 2; }
 
 here="$(cd "$(dirname "$0")" && pwd)"
 out="$here/../../artifacts/aot-smoke"

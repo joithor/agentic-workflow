@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <!-- NativeAOT publish check for Aw.Kernel: run.sh publishes this console with PublishAot for the host RID, fails on
        any trim/AOT (IL2xxx/IL3xxx) warning, runs the native binary and compares its output with expected.txt.
-       R1a's AOT CI job runs run.sh.
+       CI: the .NET job of the CI workflow (#93) runs run.sh.
        - Not in AgenticWorkflow.slnx: PublishAot makes restore resolve the host RID's ILCompiler packs, so a lock file
          would be per-OS. It is built only by run.sh, with no lock file. The RID is a project property (the SDK's host
          RID), not a global -r, so Aw.Kernel is restored without one and its lock file is never rewritten.

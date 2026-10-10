@@ -74,6 +74,13 @@ public sealed class AwJsonTests
         _ = Assert.Throws<InvalidOperationException>(() =>
             AwJson.Serialize(new Shapes.When(new DateTime(2026, 10, 10, 6, 0, 0, kind)), _options));
 
+    [Theory]
+    [InlineData(double.NaN)]
+    [InlineData(double.PositiveInfinity)]
+    [InlineData(double.NegativeInfinity)]
+    public void Writing_NaN_or_an_infinity_is_a_bug(double value) =>
+        _ = Assert.Throws<ArgumentException>(() => AwJson.Serialize(new[] { value }, _options));
+
     [Fact]
     public void A_JSON_null_document_is_an_invalid_error() =>
         Assert.Equal("AW-KERNEL-001", AwJson.Deserialize<Stamp>("null"u8, _options).Error.Code);

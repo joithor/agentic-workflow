@@ -41,13 +41,13 @@ public static partial class ErrorCatalogue
         }
         catch (RegexMatchTimeoutException)
         {
-            // A timeout never passes (spec §4c): the code counts as malformed.
+            // A timeout never passes: the code counts as malformed.
             return false;
         }
     }
 
-    // Explicit ASCII classes and CultureInvariant, with a match timeout (spec §4c, regex parity). \z, not $: in .NET
-    // $ also matches before a final newline, and JS $ (no m flag) does not.
+    // Explicit ASCII classes and CultureInvariant, with a match timeout. \z, not $: in .NET, $ also matches just
+    // before a final newline, which would accept "AW-KERNEL-001\n".
     [GeneratedRegex("^(AW|SND)-[A-Z0-9]+-[0-9]{3}\\z", RegexOptions.CultureInvariant | RegexOptions.ExplicitCapture, matchTimeoutMilliseconds: 100)]
     private static partial Regex CodePattern { get; }
 }

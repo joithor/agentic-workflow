@@ -10,6 +10,7 @@ namespace Aw.Kernel.Tests;
 [JsonSerializable(typeof(OutboxCommand))]
 [JsonSerializable(typeof(EventEnvelope<Shapes.ItemStarted>))]
 [JsonSerializable(typeof(Shapes.Profile))]
+[JsonSerializable(typeof(double[]))]
 [JsonSerializable(typeof(Shapes.When))]
 [JsonSerializable(typeof(Shapes.Listed))]
 [JsonSerializable(typeof(Shapes.InitOnly))]
