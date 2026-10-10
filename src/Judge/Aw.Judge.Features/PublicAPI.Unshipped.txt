@@ -185,3 +185,27 @@ static Aw.Judge.Features.ExplainDecision.ExplainDecisionRequest.operator !=(Aw.J
 static Aw.Judge.Features.ExplainDecision.ExplainDecisionRequest.operator ==(Aw.Judge.Features.ExplainDecision.ExplainDecisionRequest? left, Aw.Judge.Features.ExplainDecision.ExplainDecisionRequest? right) -> bool
 static Aw.Judge.Features.ExplainDecision.ExplainDecisionResponse.operator !=(Aw.Judge.Features.ExplainDecision.ExplainDecisionResponse? left, Aw.Judge.Features.ExplainDecision.ExplainDecisionResponse? right) -> bool
 static Aw.Judge.Features.ExplainDecision.ExplainDecisionResponse.operator ==(Aw.Judge.Features.ExplainDecision.ExplainDecisionResponse? left, Aw.Judge.Features.ExplainDecision.ExplainDecisionResponse? right) -> bool
+Aw.Judge.Features.UndoDecision.UndoDecisionRequest
+Aw.Judge.Features.UndoDecision.UndoDecisionRequest.<Clone>$() -> Aw.Judge.Features.UndoDecision.UndoDecisionRequest!
+Aw.Judge.Features.UndoDecision.UndoDecisionRequest.DecisionId.get -> Aw.Judge.Core.Ids.DecisionId
+Aw.Judge.Features.UndoDecision.UndoDecisionRequest.DecisionId.init -> void
+Aw.Judge.Features.UndoDecision.UndoDecisionRequest.Deconstruct(out Aw.Judge.Core.Ids.DecisionId DecisionId) -> void
+Aw.Judge.Features.UndoDecision.UndoDecisionRequest.Equals(Aw.Judge.Features.UndoDecision.UndoDecisionRequest? other) -> bool
+Aw.Judge.Features.UndoDecision.UndoDecisionRequest.UndoDecisionRequest(Aw.Judge.Core.Ids.DecisionId DecisionId) -> void
+Aw.Judge.Features.UndoDecision.UndoDecisionResponse
+Aw.Judge.Features.UndoDecision.UndoDecisionResponse.<Clone>$() -> Aw.Judge.Features.UndoDecision.UndoDecisionResponse!
+Aw.Judge.Features.UndoDecision.UndoDecisionResponse.Decision.get -> Aw.Judge.Core.Decisions.DecisionRecord!
+Aw.Judge.Features.UndoDecision.UndoDecisionResponse.Decision.init -> void
+Aw.Judge.Features.UndoDecision.UndoDecisionResponse.Deconstruct(out Aw.Judge.Core.Decisions.DecisionRecord! Decision) -> void
+Aw.Judge.Features.UndoDecision.UndoDecisionResponse.Equals(Aw.Judge.Features.UndoDecision.UndoDecisionResponse? other) -> bool
+Aw.Judge.Features.UndoDecision.UndoDecisionResponse.UndoDecisionResponse(Aw.Judge.Core.Decisions.DecisionRecord! Decision) -> void
+override Aw.Judge.Features.UndoDecision.UndoDecisionRequest.Equals(object? obj) -> bool
+override Aw.Judge.Features.UndoDecision.UndoDecisionRequest.GetHashCode() -> int
+override Aw.Judge.Features.UndoDecision.UndoDecisionRequest.ToString() -> string!
+override Aw.Judge.Features.UndoDecision.UndoDecisionResponse.Equals(object? obj) -> bool
+override Aw.Judge.Features.UndoDecision.UndoDecisionResponse.GetHashCode() -> int
+override Aw.Judge.Features.UndoDecision.UndoDecisionResponse.ToString() -> string!
+static Aw.Judge.Features.UndoDecision.UndoDecisionRequest.operator !=(Aw.Judge.Features.UndoDecision.UndoDecisionRequest? left, Aw.Judge.Features.UndoDecision.UndoDecisionRequest? right) -> bool
+static Aw.Judge.Features.UndoDecision.UndoDecisionRequest.operator ==(Aw.Judge.Features.UndoDecision.UndoDecisionRequest? left, Aw.Judge.Features.UndoDecision.UndoDecisionRequest? right) -> bool
+static Aw.Judge.Features.UndoDecision.UndoDecisionResponse.operator !=(Aw.Judge.Features.UndoDecision.UndoDecisionResponse? left, Aw.Judge.Features.UndoDecision.UndoDecisionResponse? right) -> bool
+static Aw.Judge.Features.UndoDecision.UndoDecisionResponse.operator ==(Aw.Judge.Features.UndoDecision.UndoDecisionResponse? left, Aw.Judge.Features.UndoDecision.UndoDecisionResponse? right) -> bool

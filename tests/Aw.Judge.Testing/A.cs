@@ -38,4 +38,8 @@ public static class A
     /// <summary>A ExplainDecisionRequest builder with deterministic defaults.</summary>
     /// <returns>A new builder.</returns>
     public static ExplainDecisionRequestBuilder ExplainDecisionRequest() => new();
+
+    /// <summary>A UndoDecisionRequest builder with deterministic defaults.</summary>
+    /// <returns>A new builder.</returns>
+    public static UndoDecisionRequestBuilder UndoDecisionRequest() => new();
 }

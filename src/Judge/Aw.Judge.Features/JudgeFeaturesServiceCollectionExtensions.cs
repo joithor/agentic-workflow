@@ -5,6 +5,7 @@ using Aw.Judge.Features.MapBriefByDispatch;
 using Aw.Judge.Features.MapBriefByName;
 using Aw.Judge.Features.SaveBrief;
 using Aw.Judge.Features.SetBriefAgentId;
+using Aw.Judge.Features.UndoDecision;
 using Aw.Kernel.Services;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -27,6 +28,13 @@ public static class JudgeFeaturesServiceCollectionExtensions
                 new ValidatingService<ExplainDecisionRequest, ExplainDecisionResponse>(
                     sp.GetRequiredService<ExplainDecisionService>(),
                     sp.GetRequiredService<IValidator<ExplainDecisionRequest>>()));
+        _ = services
+            .AddScoped<UndoDecisionService>()
+            .AddScoped<IValidator<UndoDecisionRequest>, UndoDecisionValidator>()
+            .AddScoped<IService<UndoDecisionRequest, UndoDecisionResponse>>(static sp =>
+                new ValidatingService<UndoDecisionRequest, UndoDecisionResponse>(
+                    sp.GetRequiredService<UndoDecisionService>(),
+                    sp.GetRequiredService<IValidator<UndoDecisionRequest>>()));
         return services;
     }
 
