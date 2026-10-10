@@ -33,7 +33,7 @@ check "Node major matches .nvmrc ($nvm)" "grep -qE '^ARG NODE_VERSION=${nvm%%.*}
 check "Node tarball is checksum-verified" "grep -q 'sha256sum -c' $DF && grep -qE '^ARG NODE_SHA256_X64=[0-9a-f]{64}\$' $DF && grep -qE '^ARG NODE_SHA256_ARM64=[0-9a-f]{64}\$' $DF"
 # Comment lines may name what's excluded; only the configuration itself counts. The pattern is kept in this
 # variable so the probes below can prove it catches each way a devcontainer can gain privileges.
-PRIV_RE='docker-in-docker|docker-outside-of-docker|docker\.sock|privileged|"runArgs"|"mounts"|"features"|"capAdd"|"securityOpt"|"dockerComposeFile"|cap-add|cap_add|security_opt'
+PRIV_RE='docker-in-docker|docker-outside-of-docker|docker\.sock|privileged|"runArgs"|"mounts"|"features"|"capAdd"|"securityOpt"|"dockerComposeFile"|"workspaceMount"|"initializeCommand"|cap-add|cap_add|security_opt'
 privilege_hits() { grep -hvE '^[[:space:]]*(#|//)' "$1"/* | grep -iE "$PRIV_RE"; }
 check "no Docker-in-Docker, host socket, privileged mode, capabilities or extra run args" "! privilege_hits .devcontainer"
 PROBE_DIR="$(mktemp -d "${TMPDIR:-/tmp}/repo-templates-probe.XXXXXX")"
