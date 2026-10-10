@@ -91,21 +91,36 @@ export interface EvolveFixture {
   repo: string;
   transcripts: string;
   io: EvolveIo;
+  extra: Record<string, string>; // extraRepos name -> path
   close(): void;
 }
 
 // A temp ring-0 git repo on branch main, an approved profile whose transcripts dir is a fresh
-// temp dir, and an open ledger. `extraYaml` is appended at column 0 (top-level keys).
+// temp dir, and an open ledger. `extraYaml` is appended at column 0 (top-level keys). Each of `extraRepos`
+// becomes another temp git repo listed in the profile (with `private: true` when set), before approval.
 export async function evolveFixture(
-  o: { files?: Record<string, string>; extraYaml?: string; io?: EvolveIo; plans?: string; prompts?: EvolveCtx["prompts"] } = {},
+  o: {
+    files?: Record<string, string>; extraYaml?: string; io?: EvolveIo; plans?: string; prompts?: EvolveCtx["prompts"];
+    extraRepos?: { name: string; private?: boolean }[];
+  } = {},
 ): Promise<EvolveFixture> {
   const transcripts = tempDir("sindri-transcripts-");
   const root = gitRepo({ "docs/superpowers/plans/2026-10-01-sindri-plan-0-seed.md": SEED, ...(o.files ?? {}) });
   const deps = makeDeps({ cwd: root });
   const init = await runCli(["profile", "init", "--ring0", "--plans", o.plans ?? "*-sindri-plan-*", "--json"], deps);
   if (init.exitCode !== 0) throw new Error(init.stderr);
+  const profileDir = path.join(deps.env.AW_STATE_DIR as string, "profile");
+  const extra: Record<string, string> = {};
+  for (const r of o.extraRepos ?? []) {
+    extra[r.name] = gitRepo({ "README.md": "x\n" });
+    const priv = r.private === undefined ? "" : `private: ${r.private}\n`;
+    fs.writeFileSync(path.join(profileDir, "repos", `${r.name}.yaml`), `schemaVersion: 1\nname: ${r.name}\npath: ${extra[r.name]}\ndefaultBranch: main\n${priv}`);
+  }
+  const profileFile = path.join(profileDir, "profile.yaml");
+  const listed = Object.keys(extra).map((n) => `  - ${n}\n`).join("");
+  fs.writeFileSync(profileFile, fs.readFileSync(profileFile, "utf8").replace(/^repos:\n/m, (m) => `${m}${listed}`));
   fs.appendFileSync(
-    path.join(deps.env.AW_STATE_DIR as string, "profile", "profile.yaml"),
+    profileFile,
     `index:\n  embeddings:\n    enabled: false\n  graph: none\nsources:\n  transcripts:\n    enabled: true\n    dir: ${transcripts}\n${o.extraYaml ?? ""}`,
   );
   const pending = await runCli(["profile", "approve", "--json"], deps);
@@ -117,7 +132,7 @@ export async function evolveFixture(
   const io = o.io ?? scriptedEvolveIo(generalizingScript());
   const repo = loaded.repos[loaded.profile.tracker.repo].path;
   const ctx: EvolveCtx = { deps, io, loaded, db, repo, prompts: o.prompts ?? (() => []), ...writers(deps, db) };
-  return { ctx, deps, repo, transcripts, io, close: () => db.close() };
+  return { ctx, deps, repo, transcripts, io, extra, close: () => db.close() };
 }
 
 // The same context with some Deps replaced (a TTY, a fake git, a log collector).
