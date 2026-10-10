@@ -449,6 +449,35 @@ d="$(fixture fanout3-text)"; perl -pi -e 's/thirdPartyFanOut: 6/thirdPartyFanOut
 printf '<Project><ItemGroup><PackageReference Include="A" /><PackageReference Include="B" /></ItemGroup></Project>\n' > "$d/src/Alpha/Aw.Alpha.Core/Aw.Alpha.Core.csproj"; run "$d"
 expect "the third-party fan-out limit names the Host and test exemptions" 1 "DEPS-FANOUT-003" "*.Host and test code exempt"
 
+# ---- review run 4 (PR #92) ----
+d="$(fixture tier0-whole)"; perl -0pi -e 's/kind: project\n    status: planned/kind: project\n    status: current/' "$d/deps.yaml"
+csproj "$d" src/Aw.Kernel/Aw.Kernel.csproj; csproj "$d" src/Aw.Kernel/Aw.Kernel.Host.csproj
+csproj "$d" src/Beta/Aw.Beta.Features/Aw.Beta.Features.csproj ../../Aw.Kernel/Aw.Kernel.csproj; run "$d"
+expect "a tier-0 package's library projects are used whole" 0 "deps: ok"
+for p in Host Infrastructure Features; do
+  csproj "$d" src/Beta/Aw.Beta.Features/Aw.Beta.Features.csproj ../../Aw.Kernel/Aw.Kernel.csproj "../../Aw.Kernel/Aw.Kernel.$p.csproj"; run "$d"
+  expect "a tier-0 package's $p is not part of its contract" 1 "DEPS-PROJ-007" "Aw.Beta.Features -> Aw.Kernel.$p"
+done
+
+d="$(fixture source-role)"; perl -0pi -e 's/kind: project\n    status: planned/kind: project\n    status: current/' "$d/deps.yaml"; edge "$d" Beta Alpha project current
+csproj "$d" src/Aw.Kernel/Aw.Kernel.csproj; csproj "$d" src/Alpha/Aw.Alpha.Core/Aw.Alpha.Core.csproj
+csproj "$d" src/Beta/Aw.Beta.Core/Aw.Beta.Core.csproj ../../Aw.Kernel/Aw.Kernel.csproj
+csproj "$d" src/Beta/Aw.Beta.Features/Aw.Beta.Features.csproj ../../Alpha/Aw.Alpha.Core/Aw.Alpha.Core.csproj
+csproj "$d" src/Beta/Aw.Beta.Host/Aw.Beta.Host.csproj ../../Alpha/Aw.Alpha.Core/Aw.Alpha.Core.csproj
+csproj "$d" src/Beta/Aw.Beta.App/Aw.Beta.App.csproj ../../Alpha/Aw.Alpha.Core/Aw.Alpha.Core.csproj; run "$d"
+expect "Features, App and Host may hold another package's Core; any project may use tier 0" 0 "deps: ok"
+for p in Core Infrastructure; do
+  csproj "$d" "src/Beta/Aw.Beta.$p/Aw.Beta.$p.csproj" ../../Aw.Kernel/Aw.Kernel.csproj ../../Alpha/Aw.Alpha.Core/Aw.Alpha.Core.csproj; run "$d"
+  expect "a $p project may not reference another package's Core" 1 "DEPS-PROJ-008" "Aw.Beta.$p -> Aw.Alpha.Core"
+  csproj "$d" "src/Beta/Aw.Beta.$p/Aw.Beta.$p.csproj" ../../Aw.Kernel/Aw.Kernel.csproj
+done
+
+d="$(fixture kernel-testing-tests)"; perl -0pi -e 's/(  - id: Alpha\n)/  - id: KTest\n    kind: package\n    tier: 0\n    test: true\n    projectPrefix: Aw.KTest\n    ts: null\n    src: tests\/Aw.KTest.Testing\n    note: test support\n$1/' "$d/deps.yaml"
+edge "$d" KTest Kernel project current
+csproj "$d" src/Aw.Kernel/Aw.Kernel.csproj; csproj "$d" tests/Aw.KTest.Testing/Aw.KTest.Testing.csproj ../../src/Aw.Kernel/Aw.Kernel.csproj
+csproj "$d" tests/Aw.Beta.Tests/Aw.Beta.Tests.csproj ../Aw.KTest.Testing/Aw.KTest.Testing.csproj; run "$d"
+expect "a test-support package under tests/ makes its own edges current and is usable by any test code" 0 "deps: ok"
+
 # ---- parser, validator and schema drift (node unit table) ----
 set +e; UNIT="$(node "$HERE/check-deps.unit.mjs" 2>&1)"; UCODE=$?; set -e
 if [ "$UCODE" = 0 ]; then ok "parser/validator unit table ($(printf '%s' "$UNIT" | tail -1))"; else fail "parser/validator unit table"; printf '%s\n' "$UNIT" | sed 's/^/       | /'; fi
