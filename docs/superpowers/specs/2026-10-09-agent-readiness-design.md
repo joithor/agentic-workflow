@@ -1,6 +1,6 @@
 # Agent readiness for agentic-workflow — design
 
-Status: draft for review · 2026-10-09
+Status: draft for review, revision 2 · 2026-10-09 (applies /autoplan findings A1–A19; the C# port itself is decided and was not under review)
 Target: **Level 5 (Autonomous)** on Factory's agent-readiness framework. Level 4 is a prerequisite for the
 factory work in `2026-10-09-sindri-factory-addendum.md` (§17.16). Level 5 is reached together with that work.
 
@@ -50,40 +50,14 @@ merge gate in `AGENTS.md` is run by hand.
 
 ## 4. Engineering standards (what "ready" means here)
 
-These match the standards set for the ring-2 product, adapted to this repo. They become rules (§17.6 of the
-addendum) with deterministic checks wherever possible.
+The standards match the ones set for the ring-2 product, adapted to this repo. **§4b is the single source of
+truth** for every rule, number and tool: limits, analyzer levels, test lanes, architecture-test library. Other
+sections point to it rather than restating it. Each rule becomes a rule record (addendum §17.6) with a
+deterministic check wherever possible.
 
-**Types**
-- `strict` plus `noUncheckedIndexedAccess`, `exactOptionalPropertyTypes` and `noImplicitOverride` in every
-  package. Migration is per package, with a ratchet: a new error is a CI failure, and the old error count only
-  goes down.
-- No `any` outside Fastify boundaries (already a merge-gate item; now a lint rule). No non-null `!` assertions
-  without a comment.
-- Types are checked within a budget per package (`tsc --extendedDiagnostics` time is recorded in CI; a regression
-  over 20% fails).
-
-**Code shape**
-- Each package is organized as a pure core (domain logic, no I/O), use cases, and adapters (I/O). Ports are
-  injected (the `deps` pattern sindri already uses). Boundaries are checked by `dependency-cruiser`: core imports
-  no adapter, and packages import each other only through declared entry points.
-- Size and complexity budgets per file and function (for example ≤ 400 lines per file, cyclomatic complexity
-  ≤ 15), enforced by the linter with a ratchet. The sindri shape signals (§6.2) report trends.
-- One way to do each thing: a shared `Result` type, error codes, CLI output conventions and logging. Duplicates
-  are listed in §6 and merged.
-
-**Tests**
-- Lanes: `unit` (no I/O, < 10 s per package), `integration` (in-memory SQLite and fakes, < 60 s), `heavy`
-  (real browser, real index builds; run alone). Each test file declares its lane. A test that is too slow for its
-  lane fails CI.
-- Zero automatic retries. A flaky test is quarantined by a CI job that reruns failures, records them, and opens an
-  issue.
-- Coverage thresholds per package stay as `planning/TESTING.md` sets them, now enforced in CI.
-- Every test follows `/testAudit`'s authoring gate.
-
-**Lint and format**
-- Decision R1 (§9): **Biome** for formatting and most lint rules (one fast tool), plus `typescript-eslint` only
-  for the type-aware rules Biome lacks (floating promises, unsafe `any`) and `dependency-cruiser` for boundaries.
-- `shellcheck` and `shfmt` for the bash in `config/`, `scripts/` and `providers/`.
+The TypeScript that stays (§4a: the Claude Code mods and the TS-indexer sidecar) uses `tsc` strict plus
+`noUncheckedIndexedAccess`, Biome, and the same size limits as §4b.6. Bash in `config/`, `scripts/` and
+`providers/` is checked with `shellcheck` and `shfmt`.
 
 ## 4a. Language: C# on .NET (decided 2026-10-09)
 
@@ -97,15 +71,15 @@ gets CI and golden contract tests as a safety net. The standards in §4 still ap
 
 | Today (TS) | C# / .NET |
 |---|---|
-| `tsc` strict | Nullable reference types enabled, `TreatWarningsAsErrors`, `AnalysisLevel latest-all` |
+| `tsc` strict | Nullable reference types enabled, `TreatWarningsAsErrors`, analyzer levels per §4b.6 |
 | Biome / typescript-eslint (planned) | Roslyn analyzers (built-in + `Microsoft.CodeAnalysis.NetAnalyzers`), `.editorconfig` severities, `dotnet format` in pre-commit and CI |
-| dependency-cruiser (planned) | One project per layer (`Core`, `UseCases`, `Adapters`, `Cli`) with project references as the boundary, plus architecture tests (for example NetArchTest) |
+| dependency-cruiser (planned) | One project per layer (§4b.1) with project references as the boundary, plus ArchUnitNET architecture tests and `deps.yaml` (§4b.1a) |
 | Zod schemas, JSON Schema export | Records with `System.Text.Json` source generation; validators per schema; JSON Schema generated from the types for editor autocomplete |
 | Vitest | xUnit (or TUnit), with the lanes and time budgets in §4 |
 | better-sqlite3 | `Microsoft.Data.Sqlite`, same files and schemas, WAL mode |
 | Fastify (bridge) | ASP.NET Core minimal APIs |
 | `@modelcontextprotocol/sdk` | The official MCP C# SDK |
-| Node CLIs started per hook call | **NativeAOT** single-file binaries for every CLI and hook entry point, so startup stays fast. Reflection-free JSON (source generators) is required for AOT |
+| Node CLIs started per hook call | **NativeAOT** single-file binaries for hook and CLI entry points only (§4b.6 AOT table), so startup stays fast. Reflection-free JSON (source generators) is required for them |
 | Playwright (ui-evidence) | Playwright for .NET |
 
 **What stays outside C#, on purpose:**
@@ -172,7 +146,12 @@ Host ──► Features ──► Core ◄── Infrastructure
 | `Aw.<Pkg>.Features` | One folder per use case (a slice): request and response records, the service (handler), the validator, and the endpoint or CLI mapping | `Core`, `Aw.Kernel` |
 | `Aw.<Pkg>.Infrastructure` | Repository implementations over SQL, external adapters (git, containers, model CLIs, HTTP), migrations | `Core`, `Aw.Kernel` |
 | `Aw.<Pkg>.Host` | The composition root: the minimal API app or the CLI `Main`, DI registration, configuration, the JSON context | everything in the package |
-| `Aw.Kernel` (shared, one per repo) | `Result<T>`, `Error`, `TimeProvider`-based clock helpers, id and value-object conventions, the logging setup, the generic `IService<TReq, TRes>` pipeline, test-contract base classes | the BCL only |
+| `Aw.Kernel` (shared) | `Result<T>`, `Error`, clock and id ports, value-object conventions, the generic `IService<TReq, TRes>` pipeline and decorators, the byte-compat JSON settings (§4c) | the BCL only |
+| `Aw.Kernel.Data` · `Aw.Kernel.Telemetry` · `Aw.Kernel.Testing` | SQLite access and migrations runner · logging and OpenTelemetry setup with the scrubbing processor · fakes base, builders, contract-test bases, golden harness | `Aw.Kernel` plus their one external dependency each |
+
+**Small packages:** a package under about 1,500 lines may use two projects, `Core` and `App` (features,
+infrastructure and host together), with the same dependency direction. It splits into four when it crosses the
+threshold.
 
 **Rules** (enforced by project references, which fail the build, and ArchUnitNET tests):
 - `Core` has no I/O. It doesn't reference `System.IO`, `System.Net`, `Microsoft.Data.*`, `System.Diagnostics.Process`,
@@ -193,20 +172,27 @@ declaration.
 
 | Tier | Packages | May depend on |
 |---|---|---|
-| 0 | `Aw.Kernel` | the BCL only |
-| 1 | `Judge`, `Scorer`, `Bridge`, `Evidence` (ui-evidence), `BugFix` | Tier 0 |
-| 2 | `Sindri` | Tiers 0–1, **only through their `Core` contracts** |
+| 0 | `Aw.Kernel` and its `Data`, `Telemetry`, `Testing` parts | the BCL plus one external package each |
+| 1 | `Judge`, `Bridge`, `Redaction` (the scrubbing patterns now copied between judge and sindri) | Tier 0 |
+| 2 | `Scorer`, `Evidence` (ui-evidence), `BugFix` | Tiers 0–1 (today they call judge, and scorer reads `judge.db`) |
+| 3 | `Sindri` | Tiers 0–2, **only through their `Core` contracts or their CLIs** |
 | — | Every `Host` | Its own package's projects, plus the tier-0 and lower-tier `Core`s it composes |
 
-- **Declared graph:** `deps.yaml` at the root lists each package's tier and its allowed package dependencies. An
-  architecture test compares it with the real project references and fails on any undeclared edge. Adding an edge is
+- **Declared graph, every edge kind:** `deps.yaml` (with a JSON Schema) lists each package's tier and every allowed
+  edge, with its kind: `project` (a reference), `cli` (one package runs another's binary), `db` (one package opens
+  another's SQLite file) or `file` (shared state files). Project edges are checked against the real references. CLI,
+  database and file edges are checked by a scan of process launches, connection strings and known state paths. Any
+  undeclared edge fails CI. A `db` edge is read-only and should become a CLI or a published view over time (today:
+  scorer reads `judge.db`). Adding an edge is
   a reviewed change to `deps.yaml` (and an approval-tier change once it is a rule record).
 - **Prefer contracts over references:** a package calls a same-tier or higher-tier package only through its CLI or
-  HTTP contract, never through a project reference. Today `sindri` calls `judge` through its CLI; that stays.
+  HTTP contract, never through a project reference. Copied logic is a smell: the redaction patterns copied between
+  judge and sindri move into the tier-1 `Redaction` package, and scorer's labeler, which sindri copies, moves into
+  scorer's `Core` for sindri to call through scorer's CLI.
 - **Inside a package**, the four-project shape (§4b.1) is itself a fixed DAG. **Inside a project,** feature
   folders and namespaces must not form cycles. ArchUnitNET's slice-cycle rule checks every namespace in every
   project (MSBuild already refuses circular *project* references; this covers the namespaces inside one).
-- **Fan-out limits:** a project references at most 4 other in-repo projects and at most 6 third-party packages
+- **Fan-out limits** (every `Host` is exempt, because composing is its job): a project references at most 4 other in-repo projects and at most 6 third-party packages
   (analyzers and test packages excluded). Going over is a ratchet violation that needs a recorded reason.
 - **No dumping grounds:** there is no `Common`, `Shared`, `Utils` or `Helpers` project or namespace. Code shared by
   two packages goes into `Aw.Kernel` only if it is domain-free and stable; otherwise it is duplicated until a
@@ -328,13 +314,17 @@ group.MapPost("/items/{id}/start", async (ItemId id, StartItemBody body, IServic
   - language and nullable: `Nullable=enable`, `LangVersion=latest`, `ImplicitUsings=enable`;
   - warnings: `TreatWarningsAsErrors=true`, `EnforceCodeStyleInBuild=true`, `AnalysisLevel=latest-recommended`
     (raised to `latest-all` per category where the noise is acceptable, decided during R1);
-  - `IsAotCompatible=true` on every non-test project, which turns on the trim and AOT analyzers;
+  - `IsAotCompatible=true` on `Core`, `Features`, `Infrastructure` and Kernel projects (it turns on the trim and AOT
+    analyzers). `PublishAot=true` only on the entry points in the table below;
   - `GenerateDocumentationFile=true` for public API;
   - `RestorePackagesWithLockFile=true`, plus `RestoreLockedMode` in CI.
 - `Directory.Packages.props`: Central Package Management with exact versions. Analyzers are added as
   `GlobalPackageReference`: `Microsoft.CodeAnalysis.NetAnalyzers`, `Meziantou.Analyzer`, `Roslynator.Analyzers`,
   `Microsoft.CodeAnalysis.BannedApiAnalyzers`, `Microsoft.CodeAnalysis.PublicApiAnalyzers`. New packages follow
   the same 14-day minimum age as the existing pins.
+- **One owner per rule (A14):** where analyzer packs overlap (for example CA2007 and MA0004 on `ConfigureAwait`),
+  `.editorconfig` names one owning rule and disables the others. Existing violations are captured in a generated
+  `baseline.globalconfig` that lowers only those rule-and-file pairs; the ratchet fails CI if the baseline grows.
 - `.editorconfig` sets every rule's severity explicitly (no "suggestion" level for anything agents should obey).
   The size limits: file ≤ 300 lines, method ≤ 40 lines, cyclomatic complexity ≤ 10, parameters ≤ 5. Existing
   violations go into a ratchet baseline that only shrinks.
@@ -343,6 +333,17 @@ group.MapPost("/items/{id}/start", async (ItemId id, StartItemBody body, IServic
   - `!` needs a reason;
   - no cross-slice references (fast feedback; the architecture test is authoritative);
   - endpoint lambdas call exactly one service.
+
+**AOT scope** (verified in the R1a spike; anything that fails ships framework-dependent with a startup budget):
+
+| Entry point | Build | Why |
+|---|---|---|
+| Hook binaries, `judge`, `sindri`, `scorer`, `bugfix-state` CLIs | NativeAOT | Run per hook call or per command; startup matters |
+| `Bridge` host (MCP + HTTP) | NativeAOT if the MCP C# SDK passes the spike, else framework-dependent | Long-running; startup matters less |
+| `Evidence` (ui-evidence) | Framework-dependent | Playwright for .NET doesn't support NativeAOT |
+
+AOT publishing runs only in a separate CI job and in releases. Local builds and tests are JIT, so the inner loop
+stays fast.
 
 ### 4b.7 Repository tree
 
@@ -410,17 +411,98 @@ The skill packages that hold code today (`skills/ui-evidence`, `skills/bugFixOrc
 [Vogen value objects](https://docsearch.algolia.com/mcp/docs/repo/stevedunn/vogen) ·
 [Directory.Build organization and Central Package Management](https://tessl.io/registry/skills/github/dotnet/skills/directory-build-organization)
 
+## 4c. Cutover contract (written before any port)
+
+No package is ported until this contract and its harness exist. Every rule here is a CI check.
+
+**Byte compatibility (A1).** `Aw.Kernel` defines one `JsonSerializerOptions` profile that matches what the TS
+packages write today:
+- camelCase names, JS-compatible escaping (no `\u0027` where Node writes `'`), the same null and
+  number handling, and `toISOString()`-identical timestamps (UTC, millisecond precision, `Z`);
+- a canonical JSON writer (sorted keys, no whitespace) for anything hashed, such as judge's `input_digest`;
+- a compat test suite that feeds recorded TS outputs through the C# reader and writer and requires identical bytes.
+
+**Golden harness (A1, A15).** Each package's contract is recorded from the TS build and replayed against the C# build:
+- CLI arguments, environment variables, stdin, stdout, stderr and exit codes;
+- JSON and state files, ledger and SQLite schemas and rows, MCP tool schemas and HTTP routes;
+- a fake model provider, so calls to model CLIs are recorded and replayed;
+- a startup-time budget per CLI;
+- **the real hook scripts** in `config/hooks/` run against the C# binary, because their behavior is what users
+  depend on.
+
+Outputs are compared after a declared normalization (ids, times), never by loose matching.
+
+**Fail-closed during cutover (A1).** Some hooks treat a judge error as "allow". A cutover run counts every
+fail-open event. A package cuts over only with **zero** fail-open events across the golden and replay corpus, and
+hooks that call a ported binary log a `HOOK-FAILOPEN` event that the daily digest lists.
+
+**Regex parity for the scrubber and gates (A2).**
+- One shared pattern file is the source for both builds while both exist.
+- Patterns use explicit ASCII classes (`[0-9]`, `[A-Za-z0-9_]`), `RegexOptions.CultureInvariant`, and never
+  `NonBacktracking` where lookarounds exist.
+- Every match has a timeout. A timeout **blocks** (the commit, the write or the egress) and is logged. It never passes.
+- A differential corpus (real secrets shapes, Unicode look-alikes, long inputs) runs both builds in CI and fails on
+  any difference, until the TS scrubber is deleted.
+
+**Coexistence and rollback (A5, A18).**
+- Each package is ported **whole**, not module by module, behind one entry-point shim: `bin/<tool>` runs the C# or
+  TS build according to `runtime.<package>: ts | cs` in the profile. Rollback is one profile change.
+- During a package's cutover its ledger and state schemas are frozen. Neither build migrates them.
+- The TS package is frozen (bug fixes only) once its port starts, and deleted when the C# build has run as default
+  for 14 days with no rollback.
+- `setup.sh`, the provider installers, MCP registration (`node dist/mcp.js` today) and the launchd jobs call the
+  shim, never a runtime directly.
+- CI publishes prebuilt binaries per OS and architecture (macOS arm64, Linux x64 and arm64) as release assets.
+  `setup.sh` downloads and verifies them by checksum, or builds from source with `--from-source`.
+- The evolve registry's module paths move with a test that fails if any registered suite disappears (`registry.ts`
+  enumerates paths today).
+
+**Packets for ports (A6).** A minimal C# packet schema with `validate` and `freeze` is built in R1a, so every port
+runs as a packet from the start.
+
+## 4d. CI, identity and supply chain (public repo)
+
+**Agent identity (A9).**
+- Agents push and open PRs as a **GitHub App** (or a fine-grained token) that is not the owner's account. The
+  owner's admin token is never available inside agent sessions.
+- `main` is protected by a ruleset with an **empty bypass list**: required checks, linear history, no force pushes.
+  There's no bypass label.
+- The owner merges as themself. CODEOWNERS covers the protected modules and is backed by a required check (a solo
+  owner can't approve their own PR, so a review requirement would block every merge).
+
+**Workflows (A10).**
+- `permissions: read-all` at the workflow level, with write scopes granted per job only where needed.
+- `pull_request_target` and `workflow_run` with untrusted checkouts are banned. Forks get no secrets.
+- Every action is pinned to a full commit SHA. `zizmor` lints the workflows.
+- Model or API keys are only used in scheduled or manually dispatched workflows, never on pull requests.
+- Required checks always report a status: a path-filtered job reports a no-op success instead of skipping, so a
+  skipped job can't block or silently pass a merge (A11).
+- Dependabot (or Renovate) with grouped updates and a 14-day cooldown, matching the existing pin policy.
+
+**NuGet and Node (A16).**
+- `nuget.config` with package source mapping (nuget.org only), signed-package validation, and lockfiles in locked
+  mode in CI. Analyzer packages run code in every build, so they get the same review as runtime dependencies.
+- The TS-indexer sidecar installs with `--ignore-scripts`, runs with no network and no secrets, and talks over
+  stdin and stdout only (a versioned JSON protocol with its own golden tests).
+
+**Runtime hardening (A16).**
+- The bridge binds to loopback **in code**, ignoring `ASPNETCORE_URLS` and Kestrel URL settings, with a test that
+  tries to override it.
+- The scrubber runs as a processor on logs and OpenTelemetry exports, so new logging can't carry secrets out.
+- The devcontainer is for humans, and it is never the agent sandbox. Docker-in-Docker means root on the host, so
+  agent sessions keep using the Sindri containers of the main spec §8.2.
+
 ## 5. Criteria plan by level
 
 Each row is a criterion family, the change that satisfies it, and its owner workstream (§6).
 
 | Level | Criterion family | Change | WS |
 |---|---|---|---|
-| 1 | README, linter, type checker, unit tests | Biome + typed lint; root scripts | W1, W2 |
-| 2 | AGENTS.md, devcontainer, pre-commit hooks, branch protection | Devcontainer; pre-commit (format, lint, scrub, shape signals); protect `main` with required checks | W2, W5, W4 |
-| 2 | Pinned dependencies, documented build | Root workspace, `.nvmrc`, lockfile per package checked in CI | W1 |
+| 1 | README, linter, type checker, unit tests | .NET analyzers and `dotnet format` (§4b.6); one-line root commands | W2 |
+| 2 | AGENTS.md, devcontainer, pre-commit hooks, branch protection | Devcontainer; pre-commit (format, analyzers, scrub, shape signals); the `main` ruleset (§4d) | W2, W5, W4 |
+| 2 | Pinned dependencies, documented build | `global.json`, Central Package Management, locked restore (§4b.6) | W1 |
 | 3 | Integration tests, tests runnable locally | Lanes, one root `test` command | W3 |
-| 3 | Secret scanning, CODEOWNERS | GitHub secret scanning + push protection, a scrub job in CI, CODEOWNERS | W4 |
+| 3 | Secret scanning, CODEOWNERS | GitHub secret scanning + push protection, a scrub job in CI, CODEOWNERS backed by a check (§4d) | W4 |
 | 3 | Structured logging, tracing, metrics | One logger module (JSON lines, levels, ids); OTel spans and metrics in bridge and sindri (exporter off by default, local collector in the devcontainer) | W7 |
 | 3 | Issue and PR templates, labels | Templates; label scheme (`type:`, `area:`, `size:`, `ring:`) synced from a file | W6 |
 | 4 | Fast CI feedback | Required CI under 5 minutes for lint, types and unit tests; affected-package detection; heavy lanes nightly | W3 |
@@ -435,8 +517,8 @@ Each row is a criterion family, the change that satisfies it, and its owner work
 
 | WS | Scope | Notes |
 |---|---|---|
-| W1 Workspace | Root `package.json` with npm workspaces for the six packages (keep per-package lockfiles or move to one, decision R2); `.nvmrc`; root `typecheck`, `test`, `lint`, `build` | Doesn't change how `setup.sh` builds |
-| W2 Style | Biome config, typed lint, `.editorconfig`, shellcheck and shfmt; ratchet files for existing violations | Fix-forward in small PRs per package |
+| W1 Workspace | The .NET solution, `global.json`, `Directory.Build.props`, `Directory.Packages.props`, `nuget.config`; root commands | §4b.6, §4d |
+| W2 Style | Analyzers with one owner per rule, `.editorconfig`, the ratchet baseline, shellcheck and shfmt (§4b.6) | Applies to each package as it's ported |
 | W3 Tests and CI | GitHub Actions: lint, types, unit and integration per affected package, bash tests, `sync-rules --check`, `setup.sh --dry-run`, `claude plugin validate`; nightly heavy lane; quarantine job; time budgets | The `AGENTS.md` merge gate becomes required checks |
 | W4 Security | Branch protection with required checks and linear history; CODEOWNERS; secret scanning and push protection; Dependabot (or Renovate) with grouped updates; scrub job in CI | Single maintainer: CODEOWNERS is for the protected modules (§7.7) |
 | W5 Dev environment | Devcontainer (Node, uv, Docker-in-Docker for Serena and sindri containers, Ollama optional); `.env.example` covering every env var the packages read | |
@@ -444,10 +526,9 @@ Each row is a criterion family, the change that satisfies it, and its owner work
 | W7 Observability | One shared logging module; OTel in bridge and sindri; `doctor` reports exporter state | |
 | W8 Docs and delivery | `AGENTS.md` command executor; freshness check; promotion metrics | |
 | W9 Product signals | A page that maps existing telemetry and experiment machinery onto the pillar | Mostly documentation of what exists |
-| W10 Code shape | Pure core / adapters split where a package mixes them; dependency-cruiser rules; size and complexity ratchets; merge duplicate utilities (locks, `Result`, error codes, CLI output, scrubbing) found by the code index's clone layer | The largest piece. Driven by the index's clone report, one package per PR |
+| W10 Code shape | The §4b shape applied in each port; `deps.yaml` edges and tiers; merging duplicate logic (redaction, labeler, locks, `Result`, error codes, CLI output) found by the code index's clone layer | Happens inside the ports, not as a separate refactor of the TS |
 
-**Order:** W1 → W2 → W3 → W4 come first, because they make every later change checkable. Then W6, W5, W7 and W8
-run in parallel. W10 runs package by package once W3 is in. W9 last.
+**Order:** see §10. W3 (CI) and W4 (security) come first, because they make every later change checkable.
 
 ## 7. Turning it on
 
@@ -457,7 +538,22 @@ next PR shows it passing.
 ## 8. Readiness as a Sindri module
 
 - `sindri readiness check [--json]` runs our reproducible criteria, per repo and per app, and records each result
-  in the ledger.
+  in the ledger. It is built in **R1a as the first package scaffolded from the template**, so the template proves
+  itself and the Level-4 gate is measurable from the start.
+- **Output contract:**
+  - each criterion has a state: `pass`, `fail`, `n/a` (with a reason) or `unknown` (we can't reproduce Factory's
+    check);
+  - the summary shows the level per pillar and overall, and the delta since the last run;
+  - exit codes: 0 when the target level holds, 1 when it doesn't, 2 on a tool error;
+  - a first run with no baseline records one and says so;
+  - `--json` follows a versioned schema.
+- **Every CI failure message** names the rule id, the measured value, the limit and the fix command. That covers lane
+  budgets, ratchets, `deps.yaml` drift, fan-out and analyzer rules. Text is never the only carrier of meaning:
+  colors are paired with words, and `NO_COLOR` is respected (A19).
+- **Overrides are records, not labels:** an override names the rule, the reason, the approver and an expiry date,
+  and lives in `overrides.yaml`. An expired override fails CI. Quarantined tests leave quarantine after 20 green
+  runs in a row (A17).
+- **Dependency graph in PRs:** CI renders the graph and adds a plain-text list of added and removed edges (A19).
 - When the Factory CLI is available, `sindri readiness import <report>` stores Factory's report as the score of
   record and lists every criterion where the two disagree.
 - A weekly standing workflow at the `propose` tier turns the top failing criteria into work items, so the factory
@@ -469,25 +565,34 @@ next PR shows it passing.
 
 | # | Decision | Recommendation |
 |---|---|---|
-| R1 | Lint and format tooling | Biome + typed `typescript-eslint` rules + dependency-cruiser |
-| R2 | One lockfile vs per-package | Keep per-package lockfiles for now (`setup.sh` builds each); revisit after W1 |
-| R3 | Branch protection for a solo maintainer | Required checks and no force pushes; admins may bypass only through a recorded label. The factory's own merges still go through the checks |
+| R1 | Lint and format tooling | Settled by R6: .NET analyzers with one owner per rule (§4b.6); Biome only for the TS that stays |
+| R2 | One lockfile vs per-package | Settled by R6: Central Package Management with locked restore |
+| R3 | Branch protection for a solo maintainer | A ruleset with an empty bypass list and a separate agent identity (§4d) |
 | R4 | Score of record | Factory's `/readiness-report` once Droid is installed; our check until then |
 | R5 | Tighter TS flags | Superseded by R6 for the rewritten packages; applies only to the TS that stays (mods, the TS-indexer sidecar) |
 | R6 | Language and runtime | **Decided:** C# on .NET 10 LTS, NativeAOT CLIs, strangler rewrite per package (§4a) |
 | R7 | Test framework | xUnit v3 (most common, best tooling) or TUnit (faster, source-generated); recommend xUnit v3 unless lane budgets fail in the R1 spike |
 | R8 | Data access under NativeAOT | Hand-written ADO.NET with `IRowMapper<T>` (§4b.2) unless the R1 spike shows EF Core 10 or Dapper.AOT passing the AOT golden tests |
 | R9 | Strongly typed ids | Vogen, or hand-written `readonly record struct` if the spike finds an AOT problem |
+| R10 | Agent identity | A GitHub App installed on the repo (preferred) or a fine-grained token, with contents and pull-request write only |
 
 ## 10. Rollout and sizing (rough, one builder with agents)
 
+Repo size today: about 24.6k lines of TypeScript source and 31.2k lines of tests, of which sindri is about half.
+Recent pace: about 49 commits in 60 days. The sizes below are estimates to be replaced by each packet's own.
+
 | Step | Contents | Size | Exit |
 |---|---|---|---|
-| R0 | Baseline: run Factory's report if possible, plus our check; record the level per pillar | XS | Baseline in the ledger |
-| R1 | **Readiness foundation, before any port.** Everything a ported package must meet exists and is enforced first:<br>• the .NET solution template: `Directory.Build.props` (nullable, warnings as errors, analyzers, AOT), `.editorconfig` severities, the layer-per-project layout, architecture tests, and size and complexity rules;<br>• the shared building blocks every package uses: `Result`, error codes, CLI output, JSON logging with OpenTelemetry, SQLite access, the `deps` port pattern;<br>• test lanes with time budgets, and the flake quarantine;<br>• CI with fast required checks, plus AOT builds on Linux and macOS;<br>• W4 security, W6 templates, W5 devcontainer (.NET, the Node sidecar, uv);<br>• the rules from the ring-2 handbook's standards ported to rule records (§17.6) with Roslyn or architecture-test checks;<br>• `AGENTS.md` and `.agents/rules/` rewritten for C#, and a `/new-package` scaffold that creates a compliant project;<br>• golden contract tests for every TS package (§4a step 1), run in CI as the rewrite's safety net | M–L (2–3 weeks) | A scaffolded empty package passes every check; golden tests green on TS; the readiness check reports Level 4 for the template |
-| R2 | The strangler rewrite (§4a), one package per packet. Each package is scaffolded from the template, so it is born compliant, and cuts over only when its golden tests and every R1 check pass | L–XL (4–8 weeks, estimate per package in each packet) | All packages on C#. The per-app readiness fraction rises with each cutover |
-| R3 | Remaining Level 4 criteria that need real usage data (deploy and promotion frequency, flake rates, doc freshness over time), and W9 | S–M | Level 4 passed. **Factory work (F0) starts here** |
-| R4 | Addendum F0–F3 plus the readiness module | With the addendum | Level 5 passed |
+| R0 | Baseline: Factory's report if Droid is available, plus a quick manual pass over the pillars | XS | Baseline recorded |
+| R1a | **Safety and measurement first:**<br>• CI hardened for a public repo, the `main` ruleset and the agent identity (§4d);<br>• the cutover contract and harness (§4c): byte-compat profile, golden harness running the real hooks, the scrubber differential corpus, entry-point shims, the install and MCP-registration migration, prebuilt-binary releases;<br>• golden recordings for every TS package;<br>• the AOT spike (R7, R8, R9, the MCP C# SDK);<br>• a minimal C# packet schema with `validate` and `freeze` (§4c);<br>• `sindri readiness check` as the first templated package (§8) | M (1–2 weeks) | Golden tests green on TS; readiness check reports a baseline; agents can't bypass `main` |
+| R1b | **The template:**<br>• `Directory.Build.props`, Central Package Management, analyzers with one owner per rule, the ratchet baseline, `.editorconfig`;<br>• `Aw.Kernel` and its `Data`, `Telemetry` and `Testing` parts;<br>• `deps.yaml` with every edge kind and its checks (§4b.1a);<br>• the `/new-package` and `/new-slice` scaffolds (inputs, generated files, a red test) and `AGENTS.md` for C#;<br>• rule records for the §4b rules;<br>• W5 devcontainer and W6 templates | M (1–2 weeks) | A scaffolded package passes every check; the readiness check reports Level 4 for the template |
+| R2 | **The ports, one packet per package, whole:** `Judge` and `Redaction` → `Scorer` → `BugFix` → `Bridge` → `Evidence` → `Sindri`. Sindri is sized per module inside its packet. **In parallel,** new factory code (addendum F0 schemas, rule records) is written in C# from the start | L–XL (estimate 6–10 weeks; each packet carries its own) | Every package on C# by default through the shim; TS deleted 14 days after each cutover |
+| R3 | Remaining Level 4 criteria that need usage data (promotion frequency, flake rates, doc freshness over time), and W9 | S–M | Level 4 passed. **Factory work (F0) starts here** |
+| R4 | Addendum F0–F3 plus the readiness module's weekly workflow | With the addendum | Level 5 passed |
 
-Workstreams W1 (npm workspace) and W2 (Biome and typescript-eslint) apply only to the TypeScript that stays
-(§4a). For everything else, the .NET solution and analyzers replace them.
+**Stop rules:**
+- A package that overruns its packet's estimate by 2× is reviewed with the human before more work goes in.
+- **R2 as a whole** overrunning 1.5× its summed estimate triggers a re-plan with the human: reorder, cut scope, or
+  run more packets in parallel. The port itself is decided and isn't reopened.
+- CI cost while both builds exist: TS jobs run only for packages whose `runtime` is still `ts`, so cost falls with
+  each cutover.
