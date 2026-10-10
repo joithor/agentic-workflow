@@ -27,8 +27,8 @@ threshold can differ by 0.1 h from twice the rounded figure:
 **The unit is agent elapsed hours.** A packet's clock starts when its verification plan is created (the
 `created` line of `verification-plan.md` in the packet's proof directory). It stops at the packet's last commit
 before it's marked ready or blocked at the review cap. The clock runs while the agent waits on the heavy-job lock,
-because the baseline counted that time too. Time spent waiting for the human to merge, and the switch itself (§10 R2), are not part of a packet and are not
-in these numbers.
+because the baseline counted that time too. Time spent waiting for the human to merge, and the switch itself
+(§10 R2), are not part of a packet and are not in these numbers.
 
 ## The baseline: what R1b measured
 
@@ -58,11 +58,12 @@ repo. PR #144's Evidence section carries the cross-checks.
 
 The rework rows measure the review loop. They show how much of each package changed after the first review, and
 none of the three reached zero findings within five runs. T8's long gap ends at the template fix it took from T7
-(`743d120` in #142, which applies #141's machine-independent AOT build). The record doesn't say what filled the gap.
-It stays in the elapsed time, because a port packet can hit the same kind of wait.
+(`743d120` in #142, which applies #141's machine-independent AOT build). The record doesn't say what filled the
+gap. It stays in the elapsed time, because a port packet can hit the same kind of wait.
 
-**The template's fixed cost.** `/new-package` (#139) with the small shape generates 235 lines of C# source and 81 lines of
-C# tests (the scaffold commits `f897d52` in #141 and `571d8ef` in #142 are identical in size). Every new package pays this once.
+**The template's fixed cost.** `/new-package` (#139) with the small shape generates 235 lines of C# source and 81
+lines of C# tests (the scaffold commits `f897d52` in #141 and `571d8ef` in #142 are identical in size). Every new
+package pays this once.
 
 ## Throughput
 
