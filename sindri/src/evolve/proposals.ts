@@ -142,15 +142,25 @@ export function getProposal(db: Ledger, id: string): StoredProposal | null {
 
 // The generalized version publish renders (privacy spec 5.1). The original stays in `proposals`, local only.
 // INSERT OR REPLACE on purpose: re-generalizing a proposal (a held retry, a v4-era staged row) replaces its row.
-export function savePublic(db: Ledger, id: string, p: Proposal, o: { category: string; model: string }, epoch: number, now: Date): void {
+// Returns the version as stored (scrubbed, decoded from the stored body): stage renders its preview from it, so the
+// preview and publish read one source. Null, and nothing stored, when the scrubbed version no longer parses (a
+// redaction inside a file path, say): the caller holds the proposal.
+export function savePublic(db: Ledger, id: string, p: Proposal, o: { category: string; model: string }, epoch: number, now: Date): Proposal | null {
+  const parsed = ProposalSchema.safeParse(scrubber.scrubDeep(p));
+  if (!parsed.success) return null;
+  const body = JSON.stringify(parsed.data);
   db.prepare("INSERT OR REPLACE INTO proposal_public (proposal_id, body, judge_category, model, created_at, epoch) VALUES (?, ?, ?, ?, ?, ?)")
-    .run(id, JSON.stringify(scrubber.scrubDeep(p)), o.category, o.model, now.toISOString(), epoch);
+    .run(id, body, o.category, o.model, now.toISOString(), epoch);
+  return ProposalSchema.parse(JSON.parse(body));
 }
 
 export function getPublic(db: Ledger, id: string): Proposal | null {
   const r = db.prepare("SELECT body FROM proposal_public WHERE proposal_id = ?").get(id) as { body: string } | undefined;
   return r === undefined ? null : ProposalSchema.parse(JSON.parse(r.body));
 }
+
+// Whether a public row exists, without reading its body: a body that no longer parses can't make the check throw.
+export const hasPublic = (db: Ledger, id: string): boolean => db.prepare("SELECT 1 FROM proposal_public WHERE proposal_id = ? LIMIT 1").get(id) !== undefined;
 
 export function listProposals(db: Ledger, statuses?: readonly ProposalStatus[]): { id: string; artifact: string; tier: Tier; status: ProposalStatus; title: string; source: string; createdAt: string }[] {
   const where = statuses === undefined ? "" : `WHERE status IN (${statuses.map(() => "?").join(",")})`;

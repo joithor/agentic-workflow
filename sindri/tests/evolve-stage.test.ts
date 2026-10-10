@@ -11,6 +11,7 @@ import type { EvolveIo } from "../src/evolve/ctx.js";
 import { GENERALIZE_ROLES } from "../src/evolve/generalize.js";
 import { getProposal, getPublic, ProposalSchema, savePublic, saveProposal, stagedFile, type ProposalStatus, type Tier } from "../src/evolve/proposals.js";
 import { PROMPTS } from "../src/evolve/prompts.js";
+import { quote } from "../src/evolve/render.js";
 import { stageProposals } from "../src/evolve/stage.js";
 import { Budget } from "../src/scope/model.js";
 import { evolveFixture, generalizingScript, git, scriptedEvolveIo, setStatus, unescapeFence, withDeps } from "./evolve-fixtures.js";
@@ -175,6 +176,41 @@ describe("stage generalizes first (privacy B1)", () => {
     expect(getPublic(fx.ctx.db, id)?.title).toBe("Generic title for publishing");
     expect(fs.readFileSync(stagedFile(fx.deps, id), "utf8")).toContain("Generic title for publishing");
     expect(fs.readFileSync(stagedFile(fx.deps, id), "utf8")).not.toContain("quarbleScheduler");
+    fx.close();
+  });
+
+  it("renders the preview from the stored (scrubbed) public row, the one source publish renders too (data-integrity-guardian-3)", async () => {
+    const key = "AKIA" + "ABCDEFGHIJKLMNOP";
+    const rewriteWith = (over: object) => scriptedEvolveIo((c) => (c.role === GENERALIZE_ROLES.rewrite
+      ? { ...(JSON.parse(unescapeFence(/<untrusted id="proposal">([\s\S]*?)<\/untrusted>/.exec(c.input)![1])) as object), ...over }
+      : { leaks: false, category: "none" }));
+    const { fx, save } = await ready(2, rewriteWith({ rationale: `rotate ${key} first` }));
+    const id = save("Alpha change here", {}, "code");
+    await stageProposals(fx.ctx);
+    const pub = getPublic(fx.ctx.db, id)!;
+    expect(pub.rationale).not.toContain(key);
+    expect(fs.readFileSync(stagedFile(fx.deps, id), "utf8")).toContain(quote(pub.rationale).join("\n"));
+    // A file path the scrubber redacts no longer parses as a path: nothing is stored or previewed, and it holds.
+    const pathy = save("Beta change here", {}, "code");
+    const o = await stageProposals({ ...fx.ctx, io: rewriteWith({ change: { type: "describe", files: [`skills/review/${key}.md`], description: "d" } }) });
+    expect(o.held).toEqual([{ id: pathy, why: "generalize: the rewrite contains text the scrubber redacts" }]);
+    expect(getPublic(fx.ctx.db, pathy)).toBeNull();
+    expect(getProposal(fx.ctx.db, pathy)?.status).toBe("held");
+    expect(fs.existsSync(stagedFile(fx.deps, pathy))).toBe(false);
+    fx.close();
+  });
+
+  it("doesn't parse stored public bodies to learn whether one exists: a malformed row can't stop stage (kieran-typescript-reviewer-3)", async () => {
+    const { fx, save } = await ready(2, scriptedEvolveIo(generalizingScript()));
+    const held = save("Held with a drifted row", {}, "code", "held");
+    fx.ctx.db.prepare("INSERT INTO proposal_public (proposal_id, body, judge_category, model, created_at, epoch) VALUES (?, '{\"drifted\":true}', 'none', 'm', '2026-10-08T00:00:00Z', 1)").run(held);
+    fs.mkdirSync(path.dirname(stagedFile(fx.deps, held)), { recursive: true });
+    fs.writeFileSync(stagedFile(fx.deps, held), "### Task 1: kept\n");
+    const fresh = save("Fresh change here", {}, "code");
+    const o = await stageProposals(fx.ctx);
+    expect(o.staged.map((s) => s.id)).toEqual([fresh]);
+    expect(getProposal(fx.ctx.db, held)?.status).toBe("held"); // it has a public row, so it isn't a generalize retry
+    expect(fs.existsSync(stagedFile(fx.deps, held))).toBe(true);
     fx.close();
   });
 

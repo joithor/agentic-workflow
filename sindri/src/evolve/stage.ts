@@ -14,7 +14,7 @@ import { loadDerivedSet, unsetPrivateRepos } from "./privacy-derived.js";
 import { Budget } from "../scope/model.js";
 import { generalize, type Generalized } from "./generalize.js";
 import {
-  classifyTier, findMerged, getPublic, inFlightCount, listStored, normTitle, publicTier, reduceEvidence, savePublic, setTier, stagedFile, transition, type Proposal, type StoredProposal, type Tier,
+  classifyTier, findMerged, getPublic, hasPublic, inFlightCount, listStored, normTitle, publicTier, reduceEvidence, savePublic, setTier, stagedFile, transition, type Proposal, type StoredProposal, type Tier,
 } from "./proposals.js";
 import { loadRegistry } from "./registry.js";
 import { renderTask } from "./render.js";
@@ -42,7 +42,7 @@ export async function markMerged(ctx: EvolveCtx): Promise<void> {
 
 // Retried by stage: an open proposal past `proposed` with no public row. Held at stage (the generalization pass refused
 // it), or staged by a v4 build before public rows existed; such a staged row doesn't hold a cap slot while it waits.
-const retries = (ctx: EvolveCtx): StoredProposal[] => listStored(ctx.db, ["held", "staged"]).filter((s) => getPublic(ctx.db, s.id) === null);
+const retries = (ctx: EvolveCtx): StoredProposal[] => listStored(ctx.db, ["held", "staged"]).filter((s) => !hasPublic(ctx.db, s.id));
 // How many times stage's generalization pass held this proposal (its `generalize-hold` audit rows).
 const holdsOf = (ctx: EvolveCtx, id: string): number =>
   (ctx.db.prepare("SELECT COUNT(*) AS c FROM evolve_audit WHERE verb = 'generalize-hold' AND substr(detail, 1, length(?) + 1) = ? || ':'").get(id, id) as { c: number }).c;
@@ -136,16 +136,24 @@ export async function stageProposals(ctx: EvolveCtx, budget: Budget = new Budget
         waiting++; // not generalized this run: the budget ran out first, or it appeared after the snapshot; status unchanged
         continue;
       }
-      if (!g.ok) {
+      const hold = (why: string): void => {
         transition(ctx.db, c.s.id, FROM, "held", epoch, ctx.deps.now());
-        auditMarker(ctx.db, ctx.deps, "generalize-hold", `${c.s.id}: ${g.why}`, epoch);
-        held.push({ id: c.s.id, why: g.why });
+        auditMarker(ctx.db, ctx.deps, "generalize-hold", `${c.s.id}: ${why}`, epoch);
+        held.push({ id: c.s.id, why });
+      };
+      if (!g.ok) {
+        hold(g.why);
         continue;
       }
-      const t = publicTier(c.s.proposal, g.proposal, registry, extra); // a rewrite can raise the tier, never lower it
+      // The preview is rendered from the version as stored in proposal_public, the one publish renders (one source).
+      const pub = savePublic(ctx.db, c.s.id, g.proposal, { category: g.category, model: g.model }, epoch, ctx.deps.now());
+      if (pub === null) {
+        hold("generalize: the rewrite contains text the scrubber redacts");
+        continue;
+      }
+      const t = publicTier(c.s.proposal, pub, registry, extra); // a rewrite can raise the tier, never lower it
       transition(ctx.db, c.s.id, FROM, "staged", epoch, ctx.deps.now());
-      savePublic(ctx.db, c.s.id, g.proposal, { category: g.category, model: g.model }, epoch, ctx.deps.now());
-      fs.writeFileSync(stagedFile(ctx.deps, c.s.id), renderTask(staged.length + 1, c.s.id, g.proposal, t.tier, t.why, c.s.source), { mode: 0o600 });
+      fs.writeFileSync(stagedFile(ctx.deps, c.s.id), renderTask(staged.length + 1, c.s.id, pub, t.tier, t.why, c.s.source), { mode: 0o600 });
       if (t.tier !== c.s.tier) {
         setTier(ctx.db, c.s.id, t.tier, epoch, ctx.deps.now());
         reclassified++;
@@ -156,7 +164,7 @@ export async function stageProposals(ctx: EvolveCtx, budget: Budget = new Budget
     // original text, or a proposal held or rejected since) is removed.
     for (const f of fs.readdirSync(dir)) {
       const id = /^(.+)\.md$/.exec(f)?.[1];
-      if (id !== undefined && getPublic(ctx.db, id) === null) fs.rmSync(path.join(dir, f), { force: true });
+      if (id !== undefined && !hasPublic(ctx.db, id)) fs.rmSync(path.join(dir, f), { force: true });
     }
     return { staged, held, waiting, inFlight, cap, reclassified, selfAdopt: freshC.length + heldC.length - candidates.length, duplicates: duplicates.length, dir };
   });

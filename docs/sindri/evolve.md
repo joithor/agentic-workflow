@@ -64,6 +64,7 @@ When the generalization pass refuses a proposal, `stage` moves it to `held` with
 | `generalize: the rewrite changed the artifact, kind or evidence` | The rewrite must keep those exactly as given |
 | `generalize: the rewrite changed the change type` | The rewrite may reword the change, not swap its type |
 | `generalize: the judge failed` | The judge call failed or answered out of schema |
+| `generalize: the rewrite contains text the scrubber redacts` | Scrubbing the rewrite (the public version is stored scrubbed, and the staged preview is rendered from that stored version) left something that is no longer a valid proposal, such as a redacted file path |
 | `generalize: the judge found <category>` | The judge says the rewrite still leaks; `<category>` is one of `company-or-product`, `people`, `customers`, `codebase`, `tickets`, `domain` or `other`, never the text. The judge's remaining category, `none`, means clean, and only `leaks: false` with `none` passes |
 | `generalize: the judge found a leak (no category)` | The judge answered `leaks: true` but category `none`, a contradiction that holds like any other leak |
 
