@@ -53,6 +53,10 @@ classify_changes() {
       src/*|tests/*|*.cs|*.csproj|*.props|*.targets|*.slnx|global.json|nuget.config|.editorconfig|BannedSymbols.txt|packages.lock.json|.config/dotnet-tools.json)
         dotnet=true ;;
     esac
+    case "$file" in
+      # scripts/ci/lane-budgets.mjs groups test projects by deps.yaml package (through its parser)
+      deps.yaml|scripts/deps/*) dotnet=true ;;
+    esac
     for pkg in "${TS_PACKAGES[@]}"; do
       case "$file" in
         "$pkg"/*)

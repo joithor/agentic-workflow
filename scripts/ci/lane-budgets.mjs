@@ -9,13 +9,13 @@
 //   dotnet test --project <test project> --no-build --configuration <C> --filter-trait "Lane=<lane>" --ignore-exit-code 8
 // sums the wall clock per package (the deps.yaml package whose projectPrefix starts the project's name,
 // longest wins; a test assembly no package owns, such as Aw.Architecture.Tests, is its own row) and fails a
-// package over its lane's budget. Budgets: unit 10 s, integration 60 s; heavy has none and isn't run.
+// package at or over its lane's budget. Budgets: unit 10 s, integration 60 s; heavy has none and isn't run.
 //
 // The wall clock is the test run only: run it after the solution is built (CI's `dotnet build` step), so
 // --no-build keeps compile time out of the budget. It includes each test host's start-up, which is part
 // of what an agent waits for. --budget overrides the numbers (for this check's own tests); CI passes none.
 //
-// Rule ids: LANE-PKG-001 a package's lane over its budget; LANE-PKG-002 a timed run failed (a red test, or
+// Rule ids: LANE-PKG-001 a package's lane at or over its budget; LANE-PKG-002 a timed run failed (a red test, or
 // any exit but 0 and 8). Exit codes: 0 ok, 1 a rule failed, 2 a tool error. Node builtins only.
 
 import { spawnSync } from "node:child_process";
@@ -59,8 +59,11 @@ function parseArgs(argv) {
 function testProjects(root) {
   const sln = path.join(root, SOLUTION);
   if (!fs.existsSync(sln)) throw new ToolError(`${SOLUTION} not found under ${root}`);
-  const paths = [...fs.readFileSync(sln, "utf8").matchAll(/<Project\s+Path="([^"]+)"/g)].map((m) => m[1].replaceAll("\\", "/"));
-  return paths.filter((p) => /\.Tests(\.[^./]+)?\.csproj$/.test(path.basename(p))).sort();
+  const paths = [...fs.readFileSync(sln, "utf8").matchAll(/<Project\b[^>]*\sPath="([^"]+)"/g)].map((m) => m[1].replaceAll("\\", "/"));
+  const tests = paths.filter((p) => /\.Tests(\.[^./]+)?\.csproj$/.test(path.basename(p))).sort();
+  // Nothing timed is not a pass: a naming or solution-format drift must not turn the check off.
+  if (tests.length === 0) throw new ToolError(`no *.Tests project in ${SOLUTION}; nothing to time`);
+  return tests;
 }
 
 function packagesOf(root) {
