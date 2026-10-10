@@ -9,7 +9,13 @@ namespace Aw.Kernel.Testing;
 /// </summary>
 public sealed class InMemoryUnitOfWorkFactory : IUnitOfWorkFactory
 {
+    /// <summary>How many units have committed, for tests that assert a use case committed (or didn't).</summary>
+    public int Commits { get; private set; }
+
     /// <inheritdoc />
-    public ValueTask<Result<IUnitOfWork>> Begin(CancellationToken cancellationToken) =>
-        throw new NotSupportedException("red: InMemoryUnitOfWorkFactory.Begin");
+    public ValueTask<Result<IUnitOfWork>> Begin(CancellationToken cancellationToken)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        return ValueTask.FromResult<Result<IUnitOfWork>>(new InMemoryUnitOfWork(() => Commits++));
+    }
 }
