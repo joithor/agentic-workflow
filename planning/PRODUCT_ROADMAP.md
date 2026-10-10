@@ -16,15 +16,16 @@ The initial release provides three core capabilities:
 
 - [x] One-command setup via `./setup.sh` that symlinks skills, copies config, and installs npm dependencies
 - [x] MCP server registers with Claude Code via `claude mcp add`
-- [x] REST API starts on loopback with safety check for non-loopback binding
-- [x] Full end-to-end type safety with `AppResult<T>` pattern (services never throw)
-- [x] Atomic transactions for multi-step operations (assign_task, report_status, get_unread)
+- [x] REST API starts on loopback with safety check for non-loopback binding (retired 2026-10-10 with the bridge)
+- [x] Full end-to-end type safety with `AppResult<T>` pattern (services never throw) (retired 2026-10-10 with the bridge)
+- [x] Atomic transactions for multi-step operations (assign_task, report_status, get_unread) (retired 2026-10-10 with the
+  bridge)
 - [x] `/review` skill spawns parallel domain-specific reviewers and produces structured JSON output
 - [x] TypeScript strict mode, declaration maps, and source maps enabled
 
 ### Timeline
 
-Delivered. Current state of the repository.
+Delivered. The bridge items were retired on 2026-10-10; the rest is the current state of the repository.
 
 ---
 

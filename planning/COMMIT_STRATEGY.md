@@ -120,7 +120,7 @@ Branches use a type prefix followed by a `/` and a kebab-case descriptor:
 | `feat/<description>` | `feat/scorer-live-view` |
 | `fix/<description>` | `fix/ledger-newer-than-binary` |
 | `docs/<description>` | `docs/planning-docs` |
-| `chore/<description>` | `chore/upgrade-fastify-v5` |
+| `chore/<description>` | `chore/upgrade-vitest-v3` |
 | `refactor/<description>` | `refactor/extract-validation` |
 | `test/<description>` | `test/judge-outbox-edge-cases` |
 
