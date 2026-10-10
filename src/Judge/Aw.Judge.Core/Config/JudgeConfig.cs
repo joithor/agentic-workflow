@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Text.Json.Serialization;
 using Aw.Kernel;
 
@@ -25,6 +26,25 @@ public sealed record JudgeConfig(
     /// <param name="field">"enabled", or the threshold for anything else (as the TS judge reads it).</param>
     /// <param name="value">The value as typed.</param>
     /// <returns>The new config, or AW-JUDGE-006 when a threshold isn't a finite number.</returns>
-    public Result<JudgeConfig> Set(string question, string field, string value) =>
-        throw new NotSupportedException("JudgeConfig.Set: make SetConfigTests pass");
+    public Result<JudgeConfig> Set(string question, string field, string value)
+    {
+        ArgumentNullException.ThrowIfNull(question);
+        ArgumentNullException.ThrowIfNull(value);
+        var existing = Questions.TryGetValue(question, out var current) ? current : DefaultQuestion;
+        QuestionConfig updated;
+        if (string.Equals(field, "enabled", StringComparison.Ordinal))
+        {
+            updated = existing with { Enabled = string.Equals(value, "true", StringComparison.Ordinal) };
+        }
+        else if (double.TryParse(value.Trim(), NumberStyles.Float, CultureInfo.InvariantCulture, out var threshold) && double.IsFinite(threshold))
+        {
+            updated = existing with { Threshold = threshold };
+        }
+        else
+        {
+            return JudgeErrors.NotANumber.With($"not a number: {value}");
+        }
+
+        return this with { Questions = new Dictionary<string, QuestionConfig>(Questions, StringComparer.Ordinal) { [question] = updated } };
+    }
 }
