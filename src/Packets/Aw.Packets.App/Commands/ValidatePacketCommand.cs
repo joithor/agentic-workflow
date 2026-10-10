@@ -12,13 +12,27 @@ internal static class ValidatePacketCommand
 
     internal static async Task<int> Run(IReadOnlyList<string> args, IServiceProvider services, JsonSerializerOptions json)
     {
-        if (args.Count != 0)
+        if (PacketArguments.Parse(args) is not { } arguments)
         {
-            return CommandOutput.Usage("validate");
+            return CommandOutput.Usage($"{Name} {PacketArguments.Shape}");
         }
 
         var service = services.GetRequiredService<IService<ValidatePacketRequest, ValidatePacketResponse>>();
-        var result = await service.Handle(new ValidatePacketRequest(), CancellationToken.None).ConfigureAwait(false);
-        return CommandOutput.Write(result, json);
+        var result = await service.Handle(new ValidatePacketRequest(arguments.PacketDirectory, arguments.RepoDirectory), CancellationToken.None)
+            .ConfigureAwait(false);
+        if (result.IsError)
+        {
+            return CommandOutput.Error(result.Error, arguments.Json, json);
+        }
+
+        var report = result.Value;
+        if (arguments.Json)
+        {
+            return CommandOutput.Json(report, report.Passed, json);
+        }
+
+        Console.Out.WriteLine($"aw-packets validate: packet {report.Packet.Value} — {CommandOutput.Summary(report.Checks)}");
+        CommandOutput.Checks(report.Checks);
+        return report.Passed ? 0 : 1;
     }
 }
