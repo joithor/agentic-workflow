@@ -97,7 +97,8 @@ gets CI as a safety net until the switch. The standards in §4 still apply, expr
 1. **Contracts are designed, not recorded.** Each package's external surface (CLI arguments, output and exit
    codes, JSON files, SQLite schemas, MCP tool schemas and HTTP routes) is defined by the C# package's own tests.
    The TS behavior is the reference for what the contract should do, not a byte-for-byte target, and the C# build
-   is free to fix what the TS got wrong.
+   is free to fix what the TS got wrong, except on the hook-facing CLI and file surface, which is frozen until the
+   switch (§4c).
 2. **One package at a time,** lowest tier first, in the §10 R2 order: `Redaction` → `judge` and `mcp-bridge` →
    `scorer`, `skills/ui-evidence` and the `skills/bugFixOrchestrator` state CLI → `sindri` (by module: profile and
    ledger, scrub, observe, index, scope, evolve).
@@ -173,7 +174,7 @@ threshold.
 The dependency graph is a **declared, layered, acyclic tree** at every level, and CI fails on any drift from the
 declaration.
 
-**Package tiers** (a package may depend only on packages in a lower tier, never on its own tier):
+**Package tiers** (a package takes `project` dependencies only on lower tiers; read-only `db` and `file` edges may also point across a tier, see the direction rule below):
 
 | Tier | Packages | May depend on |
 |---|---|---|
@@ -198,7 +199,8 @@ declaration.
   reads `judge.db`, and reads Evidence's run files across tier 2, §4e B10). Adding an edge is
   a reviewed change to `deps.yaml` (and an approval-tier change once it is a rule record).
 - **Prefer contracts over references:** a package calls a same-tier or higher-tier package only through its CLI or
-  HTTP contract, never through a project reference. Copied logic is a smell: the redaction patterns copied between
+  HTTP contract, never through a project reference (read-only `db` and `file` edges across a tier are the declared,
+  temporary exception above). Copied logic is a smell: the redaction patterns copied between
   judge and sindri move into the tier-0 `Redaction` package, and scorer's labeler, which sindri copies, moves into
   scorer's `Core` for sindri to call through scorer's CLI.
 - **Inside a package**, the four-project shape (§4b.1) is itself a fixed DAG. **Inside a project,** feature
@@ -343,8 +345,8 @@ group.MapPost("/items/{id}/start", async (ItemId id, StartItemBody body, IServic
   - `heavy`: real containers, browsers and index builds. Nightly or alone.
 
   Lanes are test traits, run from the repo root with `dotnet test --solution AgenticWorkflow.slnx --filter-trait
-  "Lane=<lane>"` (Microsoft.Testing.Platform options only, no `--logger`). A lane's budget is that command's wall clock per test
-  project, summed per package; CI fails a package over its budget. Each test's own time from xUnit's CTRF report
+  "Lane=<lane>"` (Microsoft.Testing.Platform options only, no `--logger`). A lane's budget is the wall clock of
+  `dotnet test --project <test project> --filter-trait "Lane=<lane>"` per test project, summed per package; CI fails a package over its budget. Each test's own time from xUnit's CTRF report
   is checked against the same budget as an extra per-test cap (`Aw.Kernel.Testing` ships the check).
 - **Fakes, not mocks.** Each port has one in-memory fake in a shared `Aw.<Pkg>.Testing` project. A generic contract-test
   base class (`ReadRepositoryContract<TEntity, TId>`, `ItemRepositoryContract`) runs the **same tests against the fake
@@ -360,7 +362,8 @@ group.MapPost("/items/{id}/start", async (ItemId id, StartItemBody body, IServic
 
 ### 4b.6 Build settings and analyzers (repo root)
 
-- `global.json` pins the .NET SDK.
+- `global.json` pins the .NET SDK exactly (`rollForward: disable`, no prereleases) and sets the test runner to
+  Microsoft.Testing.Platform.
 - `Directory.Build.props`:
   - language and nullable: `Nullable=enable`, `LangVersion=latest`, `ImplicitUsings=enable`;
   - warnings: `TreatWarningsAsErrors=true`, `EnforceCodeStyleInBuild=true`, and `EnableNETAnalyzers=false`
@@ -370,7 +373,9 @@ group.MapPost("/items/{id}/start", async (ItemId id, StartItemBody body, IServic
     per-rule lines, and `dotnet_analyzer_diagnostic.category-<X>.severity` lines where a whole category is raised);
   - `GenerateDocumentationFile=true` everywhere (IDE0005 needs it); test projects turn off CS1591 instead;
   - NuGet audit: NU1903 and NU1904 (high, critical) fail the build, NU1901 and NU1902 stay warnings, because the
-    advisory data is live and would otherwise turn every branch red without a repo change;
+    advisory data is live and would otherwise turn every branch red without a repo change. NU1900 (the advisory feed
+    couldn't be read) stays an error so the high and critical gate is never silently skipped; CI retries the restore
+    once;
   - `RestorePackagesWithLockFile=true`, plus `RestoreLockedMode` in CI. Locked mode only catches reference drift, so
     CI also fails on a missing lock file (`Directory.Build.targets`) and on a lock file that restore changed
     (`scripts/dotnet-verify-packages.sh`).
@@ -541,20 +546,26 @@ assert that no tested path fails open against the C# binaries.
 - **Trying C# early:** `./setup.sh --runtime cs --prefix <dev dir>` installs the C# build into a separate directory for
   a hand test or a dev session, without touching the real install.
 - **The switch:** `./setup.sh --runtime cs` **moves** only the TS packages' state aside: the namespaces and files
-  `deps.yaml` lists for them (`judge/`, `scorer/`, `sindri/`, `ui-evidence/`, `context-guard/`, `locks/`, and the
-  hook-owned files under `judge/`) go to one timestamped archive. Skill and workflow state is runtime-neutral and
+  `deps.yaml` lists for them (`judge/`, `scorer/`, `sindri/`, `ui-evidence/`, `context-guard/`, `locks/`, the
+  hook-owned files under `judge/`, the bug-fix run state `<repo-slug>/bugfix/` and the bridge's `bridge.db`) go to
+  one timestamped archive. The C# BugFix writes to its own namespace (`bugfix/`), so open bug-fix runs restart at the
+  switch. Skill and workflow state is runtime-neutral and
   stays where it is through the switch and a rollback: `<repo-slug>/` (plans, reviews, proof, verification,
   design), `digests/`, `external-skills/`, `providers/`, `toolkit/` and `logs/`. The switch then installs the C#
-  binaries and rewrites hooks, MCP registration and launchd jobs to call them. The C# packages start with empty
-  namespaces, so they can never see TS files; nothing is migrated. The C# build refuses to start if TS-schema files
-  remain in its packages' namespaces.
-- **State written before the switch:** `Aw.Readiness` and `Aw.Packets` run before the switch and write only under
-  their own namespaces (`readiness/`, `packets/`), which the TS build never touches and the switch keeps. When
+  binaries and rewrites hooks, MCP registration and launchd jobs to call them. The ported packages start with empty
+  namespaces (Readiness and Packets keep theirs, below), so they can never see TS files; nothing is migrated. The C#
+  build refuses to start if TS-schema files remain in its packages' namespaces. The check excludes `judge/sessions`
+  and `judge/outbox`, which the hooks write in the frozen shape on both runtimes.
+- **State written before the switch:** `Aw.Readiness` and `Aw.Packets` run before the switch as their own
+  NativeAOT CLIs (`aw-readiness check`, `aw-packets validate|freeze`) and write only under their own namespaces
+  (`readiness/`, `packets/`), which the TS build never touches and the switch keeps. After the switch, sindri's C#
+  host exposes them as `sindri readiness …` and `sindri packets …`. When
   sindri's C# ledger first runs, it imports Readiness's history into the ledger and keeps the file.
 - **Hooks during the port:** the hook-facing CLI and file surface (the `deps.yaml` Hooks, Statusline and AwLive edges)
   is frozen until the switch.
 - **Rollback:** `./setup.sh --runtime ts --restore <archive>` reinstalls the TS build, moves the archived TS
-  namespaces back, and discards the C# packages' post-switch state (never skill and workflow state).
+  namespaces and files (including `bridge.db` and `<repo-slug>/bugfix/`) back, and discards the C# packages'
+  post-switch state, including the C# bridge database (never skill and workflow state).
   The TS build stays in the repo, tagged, for 14 days after the switch, then it's deleted.
 - **The switch happens on the always-on box first**, then the laptop after a day with no rollback.
 - **TS stays frozen to bug fixes** once porting starts.
@@ -694,7 +705,8 @@ next PR shows it passing.
 
 ## 8. Readiness as a Sindri module
 
-- `sindri readiness check [--json]` runs our reproducible criteria, per repo and per app. It is built in **R1b as
+- `sindri readiness check [--json]` (before the switch, the standalone NativeAOT `aw-readiness check [--json]`, §4c)
+  runs our reproducible criteria, per repo and per app. It is built in **R1b as
   one of the first two packages scaffolded from the template** (§10), so the template proves itself and the Level-4
   gate is measurable from the start.
 - **Where results live:** until sindri is ported, `Aw.Readiness` keeps its own history under its own `deps.yaml`

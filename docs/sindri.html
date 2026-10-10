@@ -1691,13 +1691,15 @@ status: active  # proposed | active | retired</code></pre>
       { id: "scorer", t: "Scorer", tier: 2, x: 60, y: 120, w: 140, b: "Tier 2. Calls judge and reads <code>judge.db</code> today: a declared, read-only <code>db</code> edge that should become a CLI or a published view." },
       { id: "evidence", t: "Evidence", tier: 2, x: 230, y: 120, w: 140, b: "Tier 2 (ui-evidence). Framework-dependent, because Playwright for .NET doesn't support NativeAOT." },
       { id: "bugfix", t: "BugFix", tier: 2, x: 400, y: 120, w: 140, b: "Tier 2 (the bugfix-state CLI). AOT entry point." },
-      { id: "judge", t: "Judge", tier: 1, x: 60, y: 230, w: 140, b: "Tier 1. Ported first, with Redaction. Depends only on the Kernel." },
-      { id: "bridge", t: "Bridge", tier: 1, x: 230, y: 230, w: 140, b: "Tier 1. MCP + HTTP host; binds to loopback in code, ignoring URL settings." },
+      { id: "judge", t: "Judge", tier: 1, x: 48, y: 230, w: 125, b: "Tier 1. Ported first, after Redaction. Depends only on tier 0: the Kernel and Redaction." },
+      { id: "bridge", t: "Bridge", tier: 1, x: 183, y: 230, w: 125, b: "Tier 1. MCP + HTTP host; binds to loopback in code, ignoring URL settings." },
       { id: "redaction", t: "Redaction", tier: 0, x: 420, y: 340, w: 140, b: "Tier 0, next to the Kernel. The scrubbing patterns now copied between judge and sindri, in one pattern file, with timeouts that block." },
+      { id: "packets", t: "Packets", tier: 1, x: 453, y: 230, w: 125, b: "Tier 1. The packet schema, validate and freeze. A standalone C# package built from the template in R1b; depends only on the Kernel." },
+      { id: "readiness", t: "Readiness", tier: 1, x: 318, y: 230, w: 125, b: "Tier 1. Our readiness check, the score of record. Built from the template in R1b; keeps its own history until the switch." },
       { id: "kernel", t: "Aw.Kernel", tier: 0, x: 140, y: 340, w: 240, b: "Tier 0, with its Data, Telemetry and Testing parts: <code>Result&lt;T&gt;</code>, <code>Error</code>, clock helpers, id conventions, logging, the <code>IService</code> pipeline and contract-test base classes. The BCL plus one external package each." }
     ];
     var by = {}; T.forEach(function (t) { by[t.id] = t; });
-    var E = [["sindri", "scorer"], ["sindri", "evidence"], ["sindri", "bugfix"], ["sindri", "judge"], ["sindri", "bridge"], ["sindri", "redaction"], ["scorer", "judge"], ["scorer", "kernel"], ["evidence", "kernel"], ["bugfix", "kernel"], ["judge", "kernel"], ["bridge", "kernel"], ["judge", "redaction"]];
+    var E = [["sindri", "scorer"], ["sindri", "evidence"], ["sindri", "bugfix"], ["sindri", "judge"], ["sindri", "bridge"], ["sindri", "redaction"], ["scorer", "judge"], ["scorer", "kernel"], ["evidence", "kernel"], ["bugfix", "kernel"], ["judge", "kernel"], ["bridge", "kernel"], ["judge", "redaction"], ["packets", "kernel"], ["readiness", "kernel"], ["sindri", "packets"], ["sindri", "readiness"]];
     var edgeEls = [];
     E.forEach(function (e) {
       var a = by[e[0]], b = by[e[1]];
