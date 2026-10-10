@@ -9,7 +9,7 @@ public sealed class EmbeddedMigrationsTests
         var loaded = EmbeddedMigrations.Load(typeof(EmbeddedMigrationsTests).Assembly, "Aw.Kernel.Data.Tests.Migrations.Good.");
 
         Assert.Equal([1, 2], loaded.Value.Select(m => m.Version));
-        Assert.Equal(["items", "tags"], loaded.Value.Select(m => m.Name));
+        Assert.Equal(["items", "tags"], loaded.Value.Select(m => m.Name), StringComparer.Ordinal);
         Assert.StartsWith("CREATE TABLE items", loaded.Value[0].Sql, StringComparison.Ordinal);
     }
 
@@ -31,8 +31,5 @@ public sealed class EmbeddedMigrationsTests
     }
 
     [Fact]
-    public void The_catalogue_is_well_formed()
-    {
-        Assert.True(ErrorCatalogue.Validate(DataErrors.All).IsSuccess);
-    }
+    public void The_catalogue_is_well_formed() => Assert.True(ErrorCatalogue.Validate(DataErrors.All).IsSuccess);
 }

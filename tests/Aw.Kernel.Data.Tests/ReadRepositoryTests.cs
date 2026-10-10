@@ -1,5 +1,3 @@
-using Aw.Kernel.Persistence;
-
 namespace Aw.Kernel.Data.Tests;
 
 [Trait("Lane", "integration")]
@@ -14,8 +12,9 @@ public sealed class ReadRepositoryTests
         await Schema.CreateItems(db);
         await using var work = (await new SqliteUnitOfWorkFactory(db.Factory()).BeginSession(Ct)).Value;
         var items = new ItemRepository(work);
-        await items.Add(new Item(new ItemId("a"), "alpha", 1), Ct);
-        IReadRepository<Item, ItemId> port = items;
+        _ = await items.Add(new Item(new ItemId("a"), "alpha", 1), Ct);
+
+        var port = Ports.Read(items);
 
         Assert.Equal("alpha", (await port.Get(new ItemId("a"), Ct)).Value.Name);
         Assert.True((await port.Exists(new ItemId("a"), Ct)).Value);

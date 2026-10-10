@@ -20,7 +20,7 @@ public sealed class UnitOfWorkTests
 
         await using (var work = (await new SqliteUnitOfWorkFactory(db.Factory()).BeginSession(Ct)).Value)
         {
-            await new ItemRepository(work).Add(new Item(new ItemId("a"), "alpha", 1), Ct);
+            _ = await new ItemRepository(work).Add(new Item(new ItemId("a"), "alpha", 1), Ct);
             Assert.True((await work.Commit(Ct)).IsSuccess);
         }
 
@@ -46,9 +46,9 @@ public sealed class UnitOfWorkTests
     {
         using var db = new TempDatabase();
         await using var work = (await new SqliteUnitOfWorkFactory(db.Factory()).BeginSession(Ct)).Value;
-        await work.Commit(Ct);
+        _ = await work.Commit(Ct);
 
-        await Assert.ThrowsAsync<InvalidOperationException>(async () => await work.Commit(Ct));
+        _ = await Assert.ThrowsAsync<InvalidOperationException>(async () => await work.Commit(Ct));
     }
 
     [Fact]
@@ -69,9 +69,7 @@ public sealed class UnitOfWorkTests
     public async Task The_factory_port_hands_out_a_unit_of_work()
     {
         using var db = new TempDatabase();
-        Persistence.IUnitOfWorkFactory port = new SqliteUnitOfWorkFactory(db.Factory());
-
-        var begun = await port.Begin(Ct);
+        var begun = await Ports.UnitOfWork(new SqliteUnitOfWorkFactory(db.Factory())).Begin(Ct);
 
         Assert.True(begun.IsSuccess);
         await using var work = begun.Value;

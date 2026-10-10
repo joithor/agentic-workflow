@@ -43,7 +43,7 @@ public sealed class ConnectionFactoryTests
     [Fact]
     public void Options_refuse_an_empty_path_or_a_non_positive_busy_timeout()
     {
-        Assert.Throws<ArgumentException>(() => new SqliteOptions(" "));
-        Assert.Throws<ArgumentOutOfRangeException>(() => new SqliteOptions("x.db") { BusyTimeout = TimeSpan.Zero });
+        _ = Assert.Throws<ArgumentException>(() => new SqliteOptions(" "));
+        _ = Assert.Throws<ArgumentOutOfRangeException>(() => new SqliteOptions("x.db") { BusyTimeout = TimeSpan.Zero });
     }
 }

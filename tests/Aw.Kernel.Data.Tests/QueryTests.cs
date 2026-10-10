@@ -18,23 +18,23 @@ public sealed class QueryTests
     }
 
     [Fact]
-    public async Task Single_returns_the_mapped_row()
+    public async Task One_returns_the_mapped_row()
     {
         using var db = new TempDatabase();
         await using var work = await Seeded(db);
 
-        var item = await SqliteQueries.Single(work, new SqlStatement("SELECT id, name, size FROM items WHERE name = $n", c => c.Bind("$n", "beta")), ItemMapper.Instance, Ct);
+        var item = await SqliteQueries.One(work, new SqlStatement("SELECT id, name, size FROM items WHERE name = $n", c => c.Bind("$n", "beta")), ItemMapper.Instance, Ct);
 
         Assert.Equal(new Item(new ItemId("b"), "beta", 2), item.Value);
     }
 
     [Fact]
-    public async Task Single_with_no_row_is_not_found_and_names_the_subject()
+    public async Task One_with_no_row_is_not_found_and_names_the_subject()
     {
         using var db = new TempDatabase();
         await using var work = await Seeded(db);
 
-        var item = await SqliteQueries.Single(work, new SqlStatement("SELECT id, name, size FROM items WHERE name = $n", c => c.Bind("$n", "gamma"), "item named gamma"), ItemMapper.Instance, Ct);
+        var item = await SqliteQueries.One(work, new SqlStatement("SELECT id, name, size FROM items WHERE name = $n", c => c.Bind("$n", "gamma"), "item named gamma"), ItemMapper.Instance, Ct);
 
         Assert.Equal(DataErrors.NotFound.Code, item.Error.Code);
         Assert.Equal(ErrorKind.NotFound, item.Error.Kind);
@@ -49,7 +49,7 @@ public sealed class QueryTests
 
         var items = await SqliteQueries.List(work, new SqlStatement("SELECT id, name, size FROM items ORDER BY id"), ItemMapper.Instance, Ct);
 
-        Assert.Equal(["alpha", "beta"], items.Value.Select(i => i.Name));
+        Assert.Equal(["alpha", "beta"], items.Value.Select(i => i.Name), StringComparer.Ordinal);
     }
 
     [Fact]
@@ -83,7 +83,7 @@ public sealed class QueryTests
         using var db = new TempDatabase();
         await using var work = await Seeded(db);
 
-        await Assert.ThrowsAsync<SqliteException>(async () =>
+        _ = await Assert.ThrowsAsync<SqliteException>(async () =>
             await SqliteQueries.Execute(work, new SqlStatement("SELEC nonsense"), Ct));
     }
 }

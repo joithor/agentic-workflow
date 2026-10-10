@@ -5,7 +5,7 @@ namespace Aw.Kernel.Data.Tests;
 [Trait("Lane", "integration")]
 public sealed class MigrationRunnerTests
 {
-    private static readonly DateTimeOffset Noon = new(2026, 10, 9, 12, 0, 0, 123, TimeSpan.Zero);
+    private static DateTimeOffset Noon => new(2026, 10, 9, 12, 0, 0, 123, TimeSpan.Zero);
 
     private static CancellationToken Ct => TestContext.Current.CancellationToken;
 
@@ -33,10 +33,10 @@ public sealed class MigrationRunnerTests
 
         var report = await Runner(db).Migrate([Schema.Items, Schema.Tags], Ct);
 
-        Assert.Equal(new MigrationReport(0, 2, [1, 2]), report.Value with { Applied = [.. report.Value.Applied] });
+        Assert.Equal(new MigrationReport(0, 2, [1, 2]), report.Value);
         var applied = await Applied(db);
         Assert.Equal([1L, 2L], applied.Select(r => r.Version));
-        Assert.Equal(["items", "tags"], applied.Select(r => r.Name));
+        Assert.Equal(["items", "tags"], applied.Select(r => r.Name), StringComparer.Ordinal);
         Assert.All(applied, r => Assert.Equal("2026-10-09T12:00:00.123Z", r.AppliedAt));
         Assert.Equal(Schema.Items.Checksum, applied[0].Checksum);
     }
@@ -45,7 +45,7 @@ public sealed class MigrationRunnerTests
     public async Task Running_again_applies_nothing()
     {
         using var db = new TempDatabase();
-        await Runner(db).Migrate([Schema.Items, Schema.Tags], Ct);
+        _ = await Runner(db).Migrate([Schema.Items, Schema.Tags], Ct);
 
         var again = await Runner(db).Migrate([Schema.Items, Schema.Tags], Ct);
 
@@ -73,7 +73,7 @@ public sealed class MigrationRunnerTests
     public async Task A_malformed_sequence_is_refused_before_the_database_is_touched(int[] versions)
     {
         using var db = new TempDatabase();
-        var migrations = versions.Select(v => new Migration(v, $"m{v}", $"CREATE TABLE t{v} (x);")).ToList();
+        var migrations = versions.Select(v => new Migration(v, "m" + v.ToString(System.Globalization.CultureInfo.InvariantCulture), "CREATE TABLE t" + v.ToString(System.Globalization.CultureInfo.InvariantCulture) + " (x);")).ToList();
 
         var refused = await Runner(db).Migrate(migrations, Ct);
 
@@ -85,20 +85,20 @@ public sealed class MigrationRunnerTests
     public async Task An_applied_migration_whose_text_changed_is_refused_as_drift()
     {
         using var db = new TempDatabase();
-        await Runner(db).Migrate([Schema.Items], Ct);
+        _ = await Runner(db).Migrate([Schema.Items], Ct);
 
         var edited = Schema.Items with { Sql = Schema.Items.Sql + " -- edited" };
         var refused = await Runner(db).Migrate([edited, Schema.Tags], Ct);
 
         Assert.Equal(DataErrors.MigrationDrift.Code, refused.Error.Code);
-        Assert.Single(await Applied(db));
+        _ = Assert.Single(await Applied(db));
     }
 
     [Fact]
     public async Task A_database_newer_than_the_build_is_refused()
     {
         using var db = new TempDatabase();
-        await Runner(db).Migrate([Schema.Items, Schema.Tags], Ct);
+        _ = await Runner(db).Migrate([Schema.Items, Schema.Tags], Ct);
 
         var refused = await Runner(db).Migrate([Schema.Items], Ct);
 
@@ -111,7 +111,7 @@ public sealed class MigrationRunnerTests
         using var db = new TempDatabase();
         var broken = new Migration(2, "broken", "CREATE TABLE half (x); INSERT INTO nowhere VALUES (1);");
 
-        await Assert.ThrowsAsync<SqliteException>(async () => await Runner(db).Migrate([Schema.Items, broken], Ct));
+        _ = await Assert.ThrowsAsync<SqliteException>(async () => await Runner(db).Migrate([Schema.Items, broken], Ct));
 
         Assert.Equal([1L], (await Applied(db)).Select(r => r.Version));
         await using var connection = (await db.Factory().Open(Ct)).Value;
