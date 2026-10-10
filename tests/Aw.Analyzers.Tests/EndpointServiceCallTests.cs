@@ -46,6 +46,7 @@ public sealed class EndpointServiceCallTests
                 other.MapGet("/not-an-endpoint", () => 1);
                 app.MapGet("/derived", (int id, IStart svc, System.Threading.CancellationToken ct) => svc.Handle(id, ct));
                 app.MapGet("/other-handle", (int id, NotAService svc, System.Threading.CancellationToken ct) => svc.Handle(id, ct));
+                app.MapGet("/optional", (int id, IService<int, int>? svc, System.Threading.CancellationToken ct) => svc?.Handle(id, ct));
             }
         }
         internal sealed class Other { internal void MapGet(string p, System.Func<int> f) { } }
@@ -58,7 +59,7 @@ public sealed class EndpointServiceCallTests
             new EndpointServiceCallAnalyzer(), "Aw.Probe.Host", ("Stubs.cs", Stubs), ("Endpoints.cs", Endpoints));
 
         // Line 14: through an interface derived from IService<,> counts as one call. Line 15: a Handle method on
-        // some other type is not a service call.
+        // some other type is not a service call. Line 16: a null-conditional call counts.
         Assert.Equal(["AW1004@10", "AW1004@11", "AW1004@15"], found);
     }
 

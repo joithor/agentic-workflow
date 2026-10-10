@@ -53,6 +53,29 @@ public sealed class NullForgivingReasonTests
     }
 
     [Fact]
+    public async Task A_reason_separated_by_a_blank_line_is_not_directly_above()
+    {
+        var found = await AnalyzerHarness.Run(new NullForgivingReasonAnalyzer(), "Aw.Probe", """
+            namespace Aw.Probe;
+            internal static class C
+            {
+                internal static string M(string? s)
+                {
+                    // why: this comment is about something else
+
+                    var y = s!;
+                    // why: two comment lines directly above count
+                    // (the reason may run on)
+                    var z = s!;
+                    return y + z;
+                }
+            }
+            """);
+
+        Assert.Equal(["AW1002@8"], found);
+    }
+
+    [Fact]
     public async Task Why_in_a_string_literal_is_not_a_comment()
     {
         var found = await AnalyzerHarness.Run(

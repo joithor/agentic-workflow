@@ -61,6 +61,42 @@ public sealed class RawIdTests
     }
 
     [Fact]
+    public async Task Reports_an_implementation_when_its_base_is_not_reported()
+    {
+        var found = await AnalyzerHarness.Run(new RawIdAnalyzer(), "Aw.Probe.Core", """
+            using System;
+            namespace Aw.Probe.Core;
+            public interface IRead<TId> { void Find(TId id); }
+            public sealed class Reader : IRead<Guid> { public void Find(Guid id) { } }
+            internal interface IRepo { void Get(Guid run); }
+            public sealed class Repo : IRepo { public void Get(Guid run) { } }
+            public sealed class Key : IEquatable<Guid> { public bool Equals(Guid other) => false; }
+            public interface IRuns { void Stop(Guid run); }
+            public sealed class Runs : IRuns { public void Stop(Guid run) { } }
+            """);
+
+        // Line 4: the generic base declares TId, not Guid. Line 6: the internal interface isn't public surface.
+        // Line 7: the base is the BCL's. Line 8 is reported at the base, so its implementation (line 9) isn't.
+        Assert.Equal(["AW1001@4", "AW1001@6", "AW1001@7", "AW1001@8"], found);
+    }
+
+    [Fact]
+    public async Task Checks_events_and_indexer_parameters()
+    {
+        var found = await AnalyzerHarness.Run(new RawIdAnalyzer(), "Aw.Probe.Core", """
+            using System;
+            namespace Aw.Probe.Core;
+            public sealed class Bus
+            {
+                public event Action<Guid>? Changed;
+                public int this[Guid run] => Changed is null ? 0 : 1;
+            }
+            """);
+
+        Assert.Equal(["AW1001@5", "AW1001@6"], found);
+    }
+
+    [Fact]
     public async Task Applies_to_Features_assemblies()
     {
         var found = await AnalyzerHarness.Run(
