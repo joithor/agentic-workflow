@@ -64,7 +64,7 @@ A package under ~1,500 lines may use two projects, `Core` and `App`, with the sa
 | `Core` has no I/O: no `System.IO`, `System.Net`, `Microsoft.Data.*`, `System.Diagnostics.Process`, `Console`, `DateTime.Now/UtcNow`, `DateTimeOffset.Now/UtcNow`, `Guid.NewGuid` — use `TimeProvider` and `IIdGenerator` ports | `BannedSymbols.txt` → `RS0030` (BannedApiAnalyzers, wired for `*.Core` in `Directory.Build.props`; another project opts in with `AwBannedSymbols=true`, as `Aw.Kernel` does) |
 | A slice never references another slice's types; the second use moves the logic into `Core` | ArchUnitNET (gap — R1b); `Aw.Analyzers` fast check (gap — R1b) |
 | `Infrastructure` row/DTO types are `internal`; repositories return `Core` types | ArchUnitNET (gap — R1b) |
-| External technology sits behind ports (Seams below): no technology package or type (`Microsoft.Data.*`, `Aw.Kernel.Data`, `SQLitePCLRaw`, `Npgsql`, cache and queue clients, `System.Net.Http`, `System.Diagnostics.Process`, file I/O) in `Core` or `Features`; `Host` references `Infrastructure` only from `Composition` | `BannedSymbols.txt` for `Core` (row above) + ArchUnitNET dependency rule on `Features` and `Host` (gap — R1b) |
+| External technology sits behind ports (Seams below): no technology package or type (`Microsoft.Data.*`, `Aw.Kernel.Data`, `SQLitePCLRaw`, `Npgsql`, cache and queue clients, `System.Net.Http`, `System.Diagnostics.Process`, file I/O) in `Core` or `Features`; `Host` uses `Infrastructure` types only in `Composition`. In the small shape the rule applies by namespace: `Aw.<Pkg>.App.Features.*` and `Commands` use no technology type, and only `Composition` uses `Aw.<Pkg>.App.Infrastructure.*` | `Core`: `BannedSymbols.txt` → `RS0030` covers only `N:System.IO`, `N:System.Net` (so `System.Net.Http`), `N:Microsoft.Data` and `T:System.Diagnostics.Process`; `Aw.Kernel.Data`, `SQLitePCL`, `Npgsql` and cache or queue client packages are not banned (gap — R1b). `Features`, `Commands` and `Host` in both shapes: a namespace-based ArchUnitNET dependency rule (gap — R1b) |
 | Packages reference other packages only through their `Core` public surface (the reference sits in `Features` (`App` in the small shape) or `Host`) or a CLI/HTTP contract | `node scripts/check-deps.mjs` against `deps.yaml` (gap — active once the deps-graph PR #92 merges) |
 | No namespace cycles inside a project | ArchUnitNET slice-cycle rule (gap — R1b) |
 | No `Common`, `Shared`, `Utils`, `Helpers` project or namespace | ArchUnitNET naming rule (gap — R1b) |
@@ -82,7 +82,7 @@ A package under ~1,500 lines may use two projects, `Core` and `App`, with the sa
 - **Endpoints and CLI commands** live in `Host` (`Host/Endpoints/`, `Host/Commands/`). That keeps `Features` free of ASP.NET and of the trim/AOT warnings (`IL2026`, `IL3050`) that minimal-API lambdas raise outside the request-delegate generator, which only runs in the `Host` project. They bind input, call **one** service (resolved as `IService<TReq, TRes>`), and map the `Result` to `TypedResults`/`ProblemDetails` or to an exit code. No branching on domain state. Group with `MapGroup`; use `WebApplication.CreateSlimBuilder`. Check: `Aw.Analyzers` "endpoint calls exactly one service" (gap — R1b).
 - **Services** implement `IService<TRequest, TResponse>`, one use case each, no "manager" services. > 5 constructor dependencies is a split signal, > 7 is an error. Check: gap — `Aw.Analyzers` (R1b).
 - **Cross-cutting** (validation, logging, transactions, budgets) is a `Decorated<TReq, TRes>` decorator registered explicitly. **No MediatR, no AutoMapper** (commercial licences since 2025); mapping is hand-written. Check: not in `Directory.Packages.props` (review).
-- **Repositories:** one interface per aggregate in `Core`, named by intent (`Get`, `SaveStarted`, `ListStartable`). `IReadRepository<TEntity, TId>` covers `Get`/`Exists`; no generic `IRepository<T>`, no `IQueryable`. Writes run in an `IUnitOfWork` (one SQLite transaction).
+- **Repositories:** one interface per aggregate in `Core`, named by intent (`Get`, `SaveStarted`, `ListStartable`). `IReadRepository<TEntity, TId>` covers `Get`/`Exists`; no generic `IRepository<T>`, no `IQueryable`. Writes run in an `IUnitOfWork` (one database transaction; SQLite today).
 - **SQL:** ADO.NET over `Microsoft.Data.Sqlite`, typed parameters, one `IRowMapper<T>` per row type; SQL in `const string` fields or embedded `.sql` files; numbered migration files, each tested on a copy of the previous schema. Data access is decided (R8): hand-written ADO.NET with `IRowMapper<T>`; no EF Core, no Dapper. SQLite is the bundled `e_sqlite3` that `Microsoft.Data.Sqlite` ships, as a second file next to each AOT tool that opens a database and listed in `binaries.lock`; never the host's library. Open connections through `Aw.Kernel.Data`'s `SqliteConnectionFactory`: read-write connections get WAL (checked; refused if not granted), `busy_timeout`, `foreign_keys=on` and `synchronous=NORMAL`; read-only ones (`OpenReadOnly`/`BeginRead`) get only `busy_timeout` and `query_only`, so they never rewrite a file's header (`docs/csharp/kernel-data.md`). The migration runner switches `foreign_keys` off around each migration and checks them before commit. Schemas are new C# schemas. **Keep the database replaceable** (the general port rule in Seams below): SQL, pragmas and `Sqlite*` types live only in `Infrastructure` (`App` in the small shape) and `Aw.Kernel.Data`, behind the `Aw.Kernel.Persistence` ports and the package's repository ports, so moving to another engine (e.g. PostgreSQL through Npgsql) is a new adapter plus migrations, not a change to `Core`, `Features` or `Host`. Inside an adapter, keep engine-specific SQL (pragmas, `VACUUM INTO`, `json_*`, `INSERT OR …`) in the migration files or named `const string` fields, not spread through query building.
 
 ## Types and errors (§4b.3)
@@ -107,10 +107,10 @@ A package under ~1,500 lines may use two projects, `Core` and `App`, with the sa
 
 ## Dependency injection (§4b.4)
 
-- `Microsoft.Extensions.DependencyInjection`. **Each project owns one explicit, public extension method** that registers its own types (`services.AddSindriCore()`, `AddSindriFeatures()`, `AddSindriInfrastructure(settings)`); **only `Host` calls them and builds the container.** No assembly scanning (reflection, not AOT-safe).
-- So `Core`, `Features` and `Infrastructure` may reference `Microsoft.Extensions.DependencyInjection.Abstractions` (for `Core`, alongside Vogen for its typed ids, its only packages besides `Aw.Kernel`). `Aw.Kernel` stays BCL-only: no `IConfiguration` in Kernel signatures. Each package's settings are a typed record (`<Name>Settings`) that `Host` builds from the environment and passes to `Add<Name>Infrastructure(settings)`.
-- Decorators are registered in the **owning project's `Add…()` method** (outermost first), never in `Host`: `Compose` only calls the projects' `Add…()` methods and adds the clock and settings.
-- Each `Host` exposes one `internal static IServiceCollection Compose(IServiceCollection, <Name>Settings, TimeProvider)` that `Program.cs` and the DI validation test both call, so the test covers the real composition.
+- `Microsoft.Extensions.DependencyInjection`. **Each project owns one explicit, public extension method** that registers its own types (`services.AddSindriCore()`, `AddSindriFeatures()`, `AddSindriInfrastructure(environment)`); **only `Host` calls them and builds the container.** No assembly scanning (reflection, not AOT-safe).
+- So `Core`, `Features` and `Infrastructure` may reference `Microsoft.Extensions.DependencyInjection.Abstractions` (for `Core`, alongside Vogen for its typed ids, its only packages besides `Aw.Kernel`). `Aw.Kernel` stays BCL-only: no `IConfiguration` in Kernel signatures. `Host` never builds an `Infrastructure` settings type: `Composition` passes the environment (a `Func<string, string?>`, `Environment.GetEnvironmentVariable` in `Program.cs`, a lambda in tests; no `IConfiguration`, which the AOT CLI hosts don't reference) to `Add<Name>Infrastructure(environment)`, and `Infrastructure` reads its own settings (an `internal` `<Name>Settings` record: the state directory, a connection string). A technology swap changes `Infrastructure` and the one `Add…()` call in `Composition`, never the rest of `Host`.
+- Decorators are registered in the **owning project's `Add…()` method** (outermost first), never in `Host`: `Compose` only calls the projects' `Add…()` methods (choosing one where `Infrastructure` offers several, Seams below) and adds the clock and the environment.
+- Each `Host` exposes one `internal static IServiceCollection Compose(IServiceCollection, Func<string, string?> environment, TimeProvider)` that `Program.cs` and the DI validation test both call, so the test covers the real composition.
 - Constructor injection only; no service locator; no `IServiceProvider` outside `Host`, with **one exception**: the `IServiceProvider` parameter of a registration factory lambda inside a project's own `Add…()` method. M.E.DI has no decorator support, so that's how a decorator wraps its service:
 
   ```csharp
@@ -155,19 +155,33 @@ Every library project (see Project roles above: everything except `*.Tests`, `*.
 
 ## Seams (§4b.6, factory addendum §17.20–17.21)
 
-The C# schemas carry the distribution and multiplayer seams from their first commit: a `LedgerStore` port with a shared contract suite, idempotent events, the event envelope (`actor`, `tenant`, `ring`, `causation`, `correlation`, `trace`), a transactional outbox (`outbox_commands`), and `Lease`, `Launcher`, `Scheduler`, `Bus`, `Secrets` ports in `Aw.Kernel`/`Aw.Kernel.Telemetry`. `actor` is set by the host process, never by the caller.
+The C# schemas carry the distribution and multiplayer seams from their first commit: idempotent events, the event envelope (`actor`, `tenant`, `ring`, `causation`, `correlation`, `trace`) and a transactional outbox (`outbox_commands`, `IOutbox` in `Aw.Kernel`). The other seams are **planned, not in `Aw.Kernel` yet**: `ILedgerStore` (with a shared contract suite), `IBus`, `ISecrets`, `ILease`, `ILauncher` and `IScheduler`, in `Aw.Kernel`/`Aw.Kernel.Telemetry`. Until a planned port lands, a package that needs it declares it in its own `Core`; it moves to Kernel when a second package needs it. `actor` is set by the host process, never by the caller.
 
 **Every external technology sits behind a port, so it can be swapped.** Database, cache, queue or bus, file system,
-processes, HTTP clients, git, containers, model CLIs, secrets, clock and ids: `Core` declares the port as an interface
-(or uses a Kernel one: `IReadRepository`, `IUnitOfWork`, `TimeProvider`, `IIdGenerator`, `Bus`, `Secrets`, …), one
-`Infrastructure` adapter implements it, and only `Composition` in the `Host` picks which adapter is registered.
+processes, HTTP clients, git, containers, model CLIs, secrets, clock and ids: `Core` declares the port as an interface,
+or uses a Kernel one that exists today (`IReadRepository`, `IUnitOfWork`/`IUnitOfWorkFactory`, `IOutbox`,
+`IIdGenerator`, and the BCL's `TimeProvider`); a planned one (above) is declared in the package's `Core` until it lands.
 `Core` and `Features` never reference a technology package or its types (`Microsoft.Data.*`, `Npgsql`, a Redis or
 queue client, `System.Net.Http`, `System.IO` file access, `System.Diagnostics.Process`); they see only the port.
-Each port has a contract test suite (an `Aw.Kernel.Testing` contract base) that the in-memory fake and every real
-adapter pass, so a new adapter (PostgreSQL instead of SQLite, a remote queue instead of the outbox table) is proven
-by the same tests. Name ports for what the code needs (`IItemStore`, `IJobQueue`), not for the technology
-(`ISqliteItems`, `IRedisCache`). Don't add a port for something with one obvious BCL implementation and no I/O
-(collections, `JsonSerializer` through AwJson, `CancellationToken`).
+In the small shape this holds by namespace: `Aw.<Pkg>.App.Features.*` and `Commands` use no technology type, and only
+`Composition` uses `Aw.<Pkg>.App.Infrastructure.*`.
+
+**Picking an adapter.** Each real implementation of a port is an `Infrastructure` adapter. A second technology for the
+same port lives in the same `Infrastructure` project behind its own registration method, `Add<Name><Tech>Infrastructure()`
+(e.g. `AddItemsSqliteInfrastructure()` and `AddItemsPostgresInfrastructure()`); its package comes in through a
+`Directory.Packages.props` review. `Composition` in the `Host` picks the adapter by which `Add…()` it calls, and
+`Infrastructure` reads that adapter's own settings from the environment `Composition` passes (DI above). `Aw.Kernel.Data`
+is SQLite-specific today; a second engine needs its own data package, `Aw.Kernel.Data.<Engine>`, added when needed.
+
+**Contracts.** Every port has a contract test suite that the in-memory fake and every real adapter pass, so a new
+adapter (PostgreSQL instead of SQLite, a remote queue instead of the outbox table) is proven by the same tests. A Kernel
+port's suite is an `Aw.Kernel.Testing` base: today only `ReadRepositoryContract`, with `IUnitOfWork` and `IOutbox`
+contracts planned. A package's own port's suite lives in `Aw.<Pkg>.Testing` (spec §4b.5) and derives from a Kernel base
+where one fits. BCL ports (`TimeProvider`, faked by `FakeTimeProvider`) are exempt.
+
+Name ports for what the code needs (`IItemStore`, `IJobQueue`), not for the technology (`ISqliteItems`,
+`IRedisCache`). Don't add a port for something with one obvious BCL implementation and no I/O (collections,
+`JsonSerializer` through AwJson, `CancellationToken`).
 
 ## Adding code
 

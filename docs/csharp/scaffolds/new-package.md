@@ -62,16 +62,16 @@ src/<Name>/
 │   ├── .editorconfig                  # root = false; [*.cs] dotnet_diagnostic.CA1031.severity = none  (boundary adapters)
 │   ├── packages.lock.json
 │   ├── PublicAPI.Shipped.txt · PublicAPI.Unshipped.txt
-│   ├── <Name>Settings.cs              # public sealed record <Name>Settings(string StateDirectory)
-│   └── <Name>InfrastructureServiceCollectionExtensions.cs   # public static Add<Name>Infrastructure(this IServiceCollection, <Name>Settings)
+│   ├── <Name>Settings.cs              # internal sealed record <Name>Settings(string StateDirectory)
+│   ├── SettingsFromEnvironment.cs     # internal static: reads <Name>Settings from the environment Composition passes (template below)
+│   └── <Name>InfrastructureServiceCollectionExtensions.cs   # public static Add<Name>Infrastructure(this IServiceCollection, Func<string, string?> environment)
 └── Aw.<Name>.Host/
     ├── Aw.<Name>.Host.csproj          # OutputType=Exe; PublishAot=true (cli); AssemblyName=<name lowercase>;
     │                                  # refs DI; InternalsVisibleTo Aw.<Name>.Tests
     ├── .editorconfig                  # root = false; [*.cs] dotnet_diagnostic.CA1031.severity = none  (composition root)
     ├── packages.lock.json
     ├── Program.cs                     # calls Composition.Compose, then the command table
-    ├── Composition.cs                 # internal static class Composition { Compose(...) }
-    ├── SettingsFromEnvironment.cs     # internal static: builds <Name>Settings from environment variables
+    ├── Composition.cs                 # internal static class Composition { Compose(...) }; the only file that uses Infrastructure
     ├── Commands/CommandTable.cs       # internal static: command name → handler; /new-slice adds one line per slice
     └── <Name>JsonContext.cs           # internal partial class, [JsonSerializable] source-generated; used only through AwJson.CreateOptions
 tests/
@@ -213,14 +213,20 @@ namespace Aw.<Name>.Host;
 /// <summary>The one composition root, shared by Program.cs and the DI validation test.</summary>
 internal static class Composition
 {
-    internal static IServiceCollection Compose(IServiceCollection services, <Name>Settings settings, TimeProvider clock)
+    internal static IServiceCollection Compose(IServiceCollection services, Func<string, string?> environment, TimeProvider clock)
         => services
             .AddSingleton(clock)
             .Add<Name>Core()
             .Add<Name>Features()
-            .Add<Name>Infrastructure(settings);
+            .Add<Name>Infrastructure(environment);
 }
 ```
+
+`Composition` passes the environment, never a settings record: `Infrastructure` reads its own settings, so swapping a
+technology (`.agents/rules/csharp.md`, Seams) changes `Infrastructure` and this one `Add…()` call, not the rest of
+`Host`. When `Infrastructure` offers more than one adapter for a port (`Add<Name>SqliteInfrastructure()`,
+`Add<Name>PostgresInfrastructure()`), this is where one is picked. The environment is a `Func<string, string?>` rather
+than `IConfiguration`: the AOT CLI hosts reference only `Microsoft.Extensions.DependencyInjection`.
 
 `using Microsoft.Extensions.DependencyInjection;` is emitted only for a `Microsoft.NET.Sdk` host (`host: cli`). For
 `host: http` the Web SDK's implicit usings already include it, and a duplicate fails the build (`IDE0005` is an error).
@@ -233,7 +239,7 @@ using Aw.<Name>.Host.Commands;
 using Aw.Kernel.Json;
 using Microsoft.Extensions.DependencyInjection;
 
-var services = Composition.Compose(new ServiceCollection(), SettingsFromEnvironment.Read(), TimeProvider.System);
+var services = Composition.Compose(new ServiceCollection(), Environment.GetEnvironmentVariable, TimeProvider.System);
 var json = AwJson.CreateOptions(<Name>JsonContext.Default);   // the one Kernel JSON profile
 var provider = services.BuildServiceProvider();   // validation runs in HostTests, not at CLI startup
 await using (provider.ConfigureAwait(false))
@@ -245,6 +251,25 @@ await using (provider.ConfigureAwait(false))
 `CommandTable.Run(string[] args, IServiceProvider provider, JsonSerializerOptions json)` binds the arguments, opens a scope (`var scope = provider.CreateAsyncScope(); await using
 (scope.ConfigureAwait(false)) { … }`), resolves one `IService<TReq, TRes>`, calls it, and maps the `Result` to an exit
 code and output (written with `AwJson.Serialize(response, json)`). It is generated in the Host; it moves into a Kernel part only when a second CLI package proves the shape.
+
+### Template: `SettingsFromEnvironment.cs` (Infrastructure)
+
+```csharp
+namespace Aw.<Name>.Infrastructure;
+
+/// <summary>Reads this package's settings from the environment that Composition passes in.</summary>
+internal static class SettingsFromEnvironment
+{
+    internal static <Name>Settings Read(Func<string, string?> environment)
+        => new(StateDirectory: environment("AW_STATE_DIR") is { Length: > 0 } root
+            ? Path.Combine(root, "<name>")
+            : Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), ".agentic-workflow", "<name>"));
+}
+```
+
+`Add<Name>Infrastructure(environment)` calls `Read` once and registers the record as a singleton. The record and this
+class are `internal`, so no `Host` or test code names them; an adapter that needs another setting (a connection string)
+adds it here.
 
 ### Template: `VogenDefaults.cs` (Core, R9)
 
@@ -293,7 +318,6 @@ public static class <Name>Errors
 
 ```csharp
 using Aw.<Name>.Host;
-using Aw.<Name>.Infrastructure;
 using Aw.Kernel.Services;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Time.Testing;
@@ -305,8 +329,9 @@ public sealed class HostTests
     [Fact, Trait("Lane", "unit")]
     public void Every_registered_service_resolves_in_a_scope()
     {
-        var settings = new <Name>Settings(StateDirectory: Path.Combine(Path.GetTempPath(), "aw-<name>-di-test"));
-        var services = Composition.Compose(new ServiceCollection(), settings, new FakeTimeProvider());
+        var stateRoot = Path.Combine(Path.GetTempPath(), "aw-<name>-di-test");
+        var services = Composition.Compose(
+            new ServiceCollection(), name => name == "AW_STATE_DIR" ? stateRoot : null, new FakeTimeProvider());
         var serviceTypes = services
             .Select(d => d.ServiceType)
             .Where(t => t.IsGenericType && t.GetGenericTypeDefinition() == typeof(IService<,>))

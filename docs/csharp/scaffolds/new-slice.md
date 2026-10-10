@@ -70,7 +70,7 @@ IL2026/IL3050 (errors under warnings-as-errors). The test reaches the `internal`
 | `src/<Pkg>/Aw.<Pkg>.Host/<Pkg>JsonContext.cs` | `[JsonSerializable]` for `<Slice>Request`, `<Slice>Response`, and `<Slice>Body` (http) |
 | `src/<Pkg>/Aw.<Pkg>.Core/PublicAPI.Unshipped.txt` | When `ids` is non-empty or a new port interface is added. Each new id adds its type (from the `RS0016` code fix) and its Vogen-generated members (about 17 lines for a string id), which the code fix skips: those are recorded from the build's `RS0016` output (`docs/csharp/typed-ids.md`, "Public ids and PublicAPI files") and reviewed |
 | `tests/Aw.<Pkg>.Testing/A.cs` | One factory method: `public static <Slice>RequestBuilder <Slice>Request() => new();` |
-| `tests/Aw.<Pkg>.Testing/` | A fake (and contract base) per new port, one type per file |
+| `tests/Aw.<Pkg>.Testing/` | A fake and a contract base per new port, one type per file. The contract base lives here, not in `Aw.Kernel.Testing`, and derives from a Kernel base where one fits (`ReadRepositoryContract`); the fake and every real adapter pass it (`.agents/rules/csharp.md`, Seams) |
 
 No other slice is read or referenced. Shared logic is never copied from another slice; if it's needed, the generator
 stops and says: "Move it into `Core` first (second use → generalize)."
