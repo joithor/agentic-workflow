@@ -368,7 +368,7 @@ edges:
   - from: Packets
     to: Kernel
     kind: project
-    status: planned
+    status: current
     note: "Result, JSON"
   - from: Readiness
     to: Kernel

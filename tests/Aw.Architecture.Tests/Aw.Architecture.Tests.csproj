@@ -22,6 +22,8 @@
   <ItemGroup Label="Registered packages">
     <ProjectReference Include="../../src/Aw.Kernel/Aw.Kernel.csproj" />
     <ProjectReference Include="../../src/Aw.Kernel.Data/Aw.Kernel.Data.csproj" />
+    <ProjectReference Include="../../src/Packets/Aw.Packets.Core/Aw.Packets.Core.csproj" />
+    <ProjectReference Include="../../src/Packets/Aw.Packets.App/Aw.Packets.App.csproj" />
   </ItemGroup>
 
   <ItemGroup>

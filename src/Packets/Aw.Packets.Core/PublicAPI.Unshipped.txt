@@ -1,0 +1,6 @@
+#nullable enable
+Aw.Packets.Core.PacketsCoreServiceCollectionExtensions
+Aw.Packets.Core.PacketsErrors
+static Aw.Packets.Core.PacketsCoreServiceCollectionExtensions.AddPacketsCore(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
+static Aw.Packets.Core.PacketsErrors.All.get -> System.Collections.Generic.IReadOnlyList<Aw.Kernel.ErrorDefinition!>!
+static readonly Aw.Packets.Core.PacketsErrors.Invalid -> Aw.Kernel.ErrorDefinition!

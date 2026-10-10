@@ -14,5 +14,7 @@ internal static class Packages
     [
         "Aw.Kernel",
         "Aw.Kernel.Data",
+        "Aw.Packets.Core",
+        "Aw.Packets.App",
     ];
 }
