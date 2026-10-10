@@ -1,21 +1,369 @@
 #nullable enable
+Aw.BugFix.Features.AdvanceInvestigate.AdvanceInvestigateRequest
+Aw.BugFix.Features.AdvanceInvestigate.AdvanceInvestigateRequest.<Clone>$() -> Aw.BugFix.Features.AdvanceInvestigate.AdvanceInvestigateRequest!
+Aw.BugFix.Features.AdvanceInvestigate.AdvanceInvestigateRequest.AdvanceInvestigateRequest(string! StateDirectory, string! Handoff) -> void
+Aw.BugFix.Features.AdvanceInvestigate.AdvanceInvestigateRequest.Deconstruct(out string! StateDirectory, out string! Handoff) -> void
+Aw.BugFix.Features.AdvanceInvestigate.AdvanceInvestigateRequest.Equals(Aw.BugFix.Features.AdvanceInvestigate.AdvanceInvestigateRequest? other) -> bool
+Aw.BugFix.Features.AdvanceInvestigate.AdvanceInvestigateRequest.Handoff.get -> string!
+Aw.BugFix.Features.AdvanceInvestigate.AdvanceInvestigateRequest.Handoff.init -> void
+Aw.BugFix.Features.AdvanceInvestigate.AdvanceInvestigateRequest.StateDirectory.get -> string!
+Aw.BugFix.Features.AdvanceInvestigate.AdvanceInvestigateRequest.StateDirectory.init -> void
+Aw.BugFix.Features.AdvanceInvestigate.AdvanceInvestigateResponse
+Aw.BugFix.Features.AdvanceInvestigate.AdvanceInvestigateResponse.<Clone>$() -> Aw.BugFix.Features.AdvanceInvestigate.AdvanceInvestigateResponse!
+Aw.BugFix.Features.AdvanceInvestigate.AdvanceInvestigateResponse.AdvanceInvestigateResponse(Aw.BugFix.Core.Model.Phase Phase, int Hypotheses) -> void
+Aw.BugFix.Features.AdvanceInvestigate.AdvanceInvestigateResponse.Deconstruct(out Aw.BugFix.Core.Model.Phase Phase, out int Hypotheses) -> void
+Aw.BugFix.Features.AdvanceInvestigate.AdvanceInvestigateResponse.Equals(Aw.BugFix.Features.AdvanceInvestigate.AdvanceInvestigateResponse? other) -> bool
+Aw.BugFix.Features.AdvanceInvestigate.AdvanceInvestigateResponse.Hypotheses.get -> int
+Aw.BugFix.Features.AdvanceInvestigate.AdvanceInvestigateResponse.Hypotheses.init -> void
+Aw.BugFix.Features.AdvanceInvestigate.AdvanceInvestigateResponse.Phase.get -> Aw.BugFix.Core.Model.Phase
+Aw.BugFix.Features.AdvanceInvestigate.AdvanceInvestigateResponse.Phase.init -> void
+Aw.BugFix.Features.AdvanceReport.AdvanceReportRequest
+Aw.BugFix.Features.AdvanceReport.AdvanceReportRequest.<Clone>$() -> Aw.BugFix.Features.AdvanceReport.AdvanceReportRequest!
+Aw.BugFix.Features.AdvanceReport.AdvanceReportRequest.AdvanceReportRequest(string! StateDirectory, Aw.BugFix.Core.Ids.CandidateId? Candidate, bool Unresolved) -> void
+Aw.BugFix.Features.AdvanceReport.AdvanceReportRequest.Candidate.get -> Aw.BugFix.Core.Ids.CandidateId?
+Aw.BugFix.Features.AdvanceReport.AdvanceReportRequest.Candidate.init -> void
+Aw.BugFix.Features.AdvanceReport.AdvanceReportRequest.Deconstruct(out string! StateDirectory, out Aw.BugFix.Core.Ids.CandidateId? Candidate, out bool Unresolved) -> void
+Aw.BugFix.Features.AdvanceReport.AdvanceReportRequest.Equals(Aw.BugFix.Features.AdvanceReport.AdvanceReportRequest? other) -> bool
+Aw.BugFix.Features.AdvanceReport.AdvanceReportRequest.StateDirectory.get -> string!
+Aw.BugFix.Features.AdvanceReport.AdvanceReportRequest.StateDirectory.init -> void
+Aw.BugFix.Features.AdvanceReport.AdvanceReportRequest.Unresolved.get -> bool
+Aw.BugFix.Features.AdvanceReport.AdvanceReportRequest.Unresolved.init -> void
+Aw.BugFix.Features.AdvanceReport.AdvanceReportResponse
+Aw.BugFix.Features.AdvanceReport.AdvanceReportResponse.<Clone>$() -> Aw.BugFix.Features.AdvanceReport.AdvanceReportResponse!
+Aw.BugFix.Features.AdvanceReport.AdvanceReportResponse.AdvanceReportResponse(Aw.BugFix.Core.Model.Phase Phase, Aw.BugFix.Core.Model.BugFixStatus Status, Aw.BugFix.Core.Ids.CandidateId? Candidate) -> void
+Aw.BugFix.Features.AdvanceReport.AdvanceReportResponse.Candidate.get -> Aw.BugFix.Core.Ids.CandidateId?
+Aw.BugFix.Features.AdvanceReport.AdvanceReportResponse.Candidate.init -> void
+Aw.BugFix.Features.AdvanceReport.AdvanceReportResponse.Deconstruct(out Aw.BugFix.Core.Model.Phase Phase, out Aw.BugFix.Core.Model.BugFixStatus Status, out Aw.BugFix.Core.Ids.CandidateId? Candidate) -> void
+Aw.BugFix.Features.AdvanceReport.AdvanceReportResponse.Equals(Aw.BugFix.Features.AdvanceReport.AdvanceReportResponse? other) -> bool
+Aw.BugFix.Features.AdvanceReport.AdvanceReportResponse.Phase.get -> Aw.BugFix.Core.Model.Phase
+Aw.BugFix.Features.AdvanceReport.AdvanceReportResponse.Phase.init -> void
+Aw.BugFix.Features.AdvanceReport.AdvanceReportResponse.Status.get -> Aw.BugFix.Core.Model.BugFixStatus
+Aw.BugFix.Features.AdvanceReport.AdvanceReportResponse.Status.init -> void
+Aw.BugFix.Features.AdvanceReproduce.AdvanceReproduceRequest
+Aw.BugFix.Features.AdvanceReproduce.AdvanceReproduceRequest.<Clone>$() -> Aw.BugFix.Features.AdvanceReproduce.AdvanceReproduceRequest!
+Aw.BugFix.Features.AdvanceReproduce.AdvanceReproduceRequest.AdvanceReproduceRequest(string! StateDirectory, string! Evidence, string! Check, string! WorkingDirectory) -> void
+Aw.BugFix.Features.AdvanceReproduce.AdvanceReproduceRequest.Check.get -> string!
+Aw.BugFix.Features.AdvanceReproduce.AdvanceReproduceRequest.Check.init -> void
+Aw.BugFix.Features.AdvanceReproduce.AdvanceReproduceRequest.Deconstruct(out string! StateDirectory, out string! Evidence, out string! Check, out string! WorkingDirectory) -> void
+Aw.BugFix.Features.AdvanceReproduce.AdvanceReproduceRequest.Equals(Aw.BugFix.Features.AdvanceReproduce.AdvanceReproduceRequest? other) -> bool
+Aw.BugFix.Features.AdvanceReproduce.AdvanceReproduceRequest.Evidence.get -> string!
+Aw.BugFix.Features.AdvanceReproduce.AdvanceReproduceRequest.Evidence.init -> void
+Aw.BugFix.Features.AdvanceReproduce.AdvanceReproduceRequest.StateDirectory.get -> string!
+Aw.BugFix.Features.AdvanceReproduce.AdvanceReproduceRequest.StateDirectory.init -> void
+Aw.BugFix.Features.AdvanceReproduce.AdvanceReproduceRequest.WorkingDirectory.get -> string!
+Aw.BugFix.Features.AdvanceReproduce.AdvanceReproduceRequest.WorkingDirectory.init -> void
+Aw.BugFix.Features.AdvanceReproduce.AdvanceReproduceResponse
+Aw.BugFix.Features.AdvanceReproduce.AdvanceReproduceResponse.<Clone>$() -> Aw.BugFix.Features.AdvanceReproduce.AdvanceReproduceResponse!
+Aw.BugFix.Features.AdvanceReproduce.AdvanceReproduceResponse.AdvanceReproduceResponse(Aw.BugFix.Core.Model.Phase Phase, string! Check, string! BaselineCommit) -> void
+Aw.BugFix.Features.AdvanceReproduce.AdvanceReproduceResponse.BaselineCommit.get -> string!
+Aw.BugFix.Features.AdvanceReproduce.AdvanceReproduceResponse.BaselineCommit.init -> void
+Aw.BugFix.Features.AdvanceReproduce.AdvanceReproduceResponse.Check.get -> string!
+Aw.BugFix.Features.AdvanceReproduce.AdvanceReproduceResponse.Check.init -> void
+Aw.BugFix.Features.AdvanceReproduce.AdvanceReproduceResponse.Deconstruct(out Aw.BugFix.Core.Model.Phase Phase, out string! Check, out string! BaselineCommit) -> void
+Aw.BugFix.Features.AdvanceReproduce.AdvanceReproduceResponse.Equals(Aw.BugFix.Features.AdvanceReproduce.AdvanceReproduceResponse? other) -> bool
+Aw.BugFix.Features.AdvanceReproduce.AdvanceReproduceResponse.Phase.get -> Aw.BugFix.Core.Model.Phase
+Aw.BugFix.Features.AdvanceReproduce.AdvanceReproduceResponse.Phase.init -> void
 Aw.BugFix.Features.BugFixFeaturesServiceCollectionExtensions
 Aw.BugFix.Features.Init.InitRequest
 Aw.BugFix.Features.Init.InitRequest.<Clone>$() -> Aw.BugFix.Features.Init.InitRequest!
+Aw.BugFix.Features.Init.InitRequest.Deconstruct(out string! StateDirectory, out string! TicketFile) -> void
 Aw.BugFix.Features.Init.InitRequest.Equals(Aw.BugFix.Features.Init.InitRequest? other) -> bool
-Aw.BugFix.Features.Init.InitRequest.InitRequest() -> void
+Aw.BugFix.Features.Init.InitRequest.InitRequest(string! StateDirectory, string! TicketFile) -> void
+Aw.BugFix.Features.Init.InitRequest.StateDirectory.get -> string!
+Aw.BugFix.Features.Init.InitRequest.StateDirectory.init -> void
+Aw.BugFix.Features.Init.InitRequest.TicketFile.get -> string!
+Aw.BugFix.Features.Init.InitRequest.TicketFile.init -> void
 Aw.BugFix.Features.Init.InitResponse
 Aw.BugFix.Features.Init.InitResponse.<Clone>$() -> Aw.BugFix.Features.Init.InitResponse!
+Aw.BugFix.Features.Init.InitResponse.Deconstruct(out string! State) -> void
 Aw.BugFix.Features.Init.InitResponse.Equals(Aw.BugFix.Features.Init.InitResponse? other) -> bool
-Aw.BugFix.Features.Init.InitResponse.InitResponse() -> void
+Aw.BugFix.Features.Init.InitResponse.InitResponse(string! State) -> void
+Aw.BugFix.Features.Init.InitResponse.State.get -> string!
+Aw.BugFix.Features.Init.InitResponse.State.init -> void
+Aw.BugFix.Features.JudgeCandidate.JudgeCandidateRequest
+Aw.BugFix.Features.JudgeCandidate.JudgeCandidateRequest.<Clone>$() -> Aw.BugFix.Features.JudgeCandidate.JudgeCandidateRequest!
+Aw.BugFix.Features.JudgeCandidate.JudgeCandidateRequest.Candidate.get -> Aw.BugFix.Core.Ids.CandidateId
+Aw.BugFix.Features.JudgeCandidate.JudgeCandidateRequest.Candidate.init -> void
+Aw.BugFix.Features.JudgeCandidate.JudgeCandidateRequest.Deconstruct(out string! StateDirectory, out Aw.BugFix.Core.Ids.CandidateId Candidate) -> void
+Aw.BugFix.Features.JudgeCandidate.JudgeCandidateRequest.Equals(Aw.BugFix.Features.JudgeCandidate.JudgeCandidateRequest? other) -> bool
+Aw.BugFix.Features.JudgeCandidate.JudgeCandidateRequest.JudgeCandidateRequest(string! StateDirectory, Aw.BugFix.Core.Ids.CandidateId Candidate) -> void
+Aw.BugFix.Features.JudgeCandidate.JudgeCandidateRequest.StateDirectory.get -> string!
+Aw.BugFix.Features.JudgeCandidate.JudgeCandidateRequest.StateDirectory.init -> void
+Aw.BugFix.Features.JudgeCandidate.JudgeCandidateResponse
+Aw.BugFix.Features.JudgeCandidate.JudgeCandidateResponse.<Clone>$() -> Aw.BugFix.Features.JudgeCandidate.JudgeCandidateResponse!
+Aw.BugFix.Features.JudgeCandidate.JudgeCandidateResponse.Candidate.get -> Aw.BugFix.Core.Ids.CandidateId
+Aw.BugFix.Features.JudgeCandidate.JudgeCandidateResponse.Candidate.init -> void
+Aw.BugFix.Features.JudgeCandidate.JudgeCandidateResponse.Decision.get -> Aw.BugFix.Core.Model.JudgeDecision
+Aw.BugFix.Features.JudgeCandidate.JudgeCandidateResponse.Decision.init -> void
+Aw.BugFix.Features.JudgeCandidate.JudgeCandidateResponse.DecisionId.get -> Aw.BugFix.Core.Ids.JudgeDecisionId?
+Aw.BugFix.Features.JudgeCandidate.JudgeCandidateResponse.DecisionId.init -> void
+Aw.BugFix.Features.JudgeCandidate.JudgeCandidateResponse.Deconstruct(out Aw.BugFix.Core.Ids.CandidateId Candidate, out Aw.BugFix.Core.Model.JudgeDecision Decision, out Aw.BugFix.Core.Ids.JudgeDecisionId? DecisionId, out string! ReasonCode, out System.Collections.Generic.IReadOnlyList<string!>! Reasons, out Aw.BugFix.Core.Model.BugFixStatus Status) -> void
+Aw.BugFix.Features.JudgeCandidate.JudgeCandidateResponse.Equals(Aw.BugFix.Features.JudgeCandidate.JudgeCandidateResponse? other) -> bool
+Aw.BugFix.Features.JudgeCandidate.JudgeCandidateResponse.JudgeCandidateResponse(Aw.BugFix.Core.Ids.CandidateId Candidate, Aw.BugFix.Core.Model.JudgeDecision Decision, Aw.BugFix.Core.Ids.JudgeDecisionId? DecisionId, string! ReasonCode, System.Collections.Generic.IReadOnlyList<string!>! Reasons, Aw.BugFix.Core.Model.BugFixStatus Status) -> void
+Aw.BugFix.Features.JudgeCandidate.JudgeCandidateResponse.ReasonCode.get -> string!
+Aw.BugFix.Features.JudgeCandidate.JudgeCandidateResponse.ReasonCode.init -> void
+Aw.BugFix.Features.JudgeCandidate.JudgeCandidateResponse.Reasons.get -> System.Collections.Generic.IReadOnlyList<string!>!
+Aw.BugFix.Features.JudgeCandidate.JudgeCandidateResponse.Reasons.init -> void
+Aw.BugFix.Features.JudgeCandidate.JudgeCandidateResponse.Status.get -> Aw.BugFix.Core.Model.BugFixStatus
+Aw.BugFix.Features.JudgeCandidate.JudgeCandidateResponse.Status.init -> void
+Aw.BugFix.Features.RecordCandidate.RecordCandidateRequest
+Aw.BugFix.Features.RecordCandidate.RecordCandidateRequest.<Clone>$() -> Aw.BugFix.Features.RecordCandidate.RecordCandidateRequest!
+Aw.BugFix.Features.RecordCandidate.RecordCandidateRequest.AllowTestChanges.get -> bool
+Aw.BugFix.Features.RecordCandidate.RecordCandidateRequest.AllowTestChanges.init -> void
+Aw.BugFix.Features.RecordCandidate.RecordCandidateRequest.Branch.get -> string!
+Aw.BugFix.Features.RecordCandidate.RecordCandidateRequest.Branch.init -> void
+Aw.BugFix.Features.RecordCandidate.RecordCandidateRequest.Deconstruct(out string! StateDirectory, out string! Branch, out string! WorkingDirectory, out int? Hypothesis, out bool AllowTestChanges) -> void
+Aw.BugFix.Features.RecordCandidate.RecordCandidateRequest.Equals(Aw.BugFix.Features.RecordCandidate.RecordCandidateRequest? other) -> bool
+Aw.BugFix.Features.RecordCandidate.RecordCandidateRequest.Hypothesis.get -> int?
+Aw.BugFix.Features.RecordCandidate.RecordCandidateRequest.Hypothesis.init -> void
+Aw.BugFix.Features.RecordCandidate.RecordCandidateRequest.RecordCandidateRequest(string! StateDirectory, string! Branch, string! WorkingDirectory, int? Hypothesis, bool AllowTestChanges) -> void
+Aw.BugFix.Features.RecordCandidate.RecordCandidateRequest.StateDirectory.get -> string!
+Aw.BugFix.Features.RecordCandidate.RecordCandidateRequest.StateDirectory.init -> void
+Aw.BugFix.Features.RecordCandidate.RecordCandidateRequest.WorkingDirectory.get -> string!
+Aw.BugFix.Features.RecordCandidate.RecordCandidateRequest.WorkingDirectory.init -> void
+Aw.BugFix.Features.RecordCandidate.RecordCandidateResponse
+Aw.BugFix.Features.RecordCandidate.RecordCandidateResponse.<Clone>$() -> Aw.BugFix.Features.RecordCandidate.RecordCandidateResponse!
+Aw.BugFix.Features.RecordCandidate.RecordCandidateResponse.Candidate.get -> Aw.BugFix.Core.Ids.CandidateId
+Aw.BugFix.Features.RecordCandidate.RecordCandidateResponse.Candidate.init -> void
+Aw.BugFix.Features.RecordCandidate.RecordCandidateResponse.ChangedFiles.get -> System.Collections.Generic.IReadOnlyList<string!>!
+Aw.BugFix.Features.RecordCandidate.RecordCandidateResponse.ChangedFiles.init -> void
+Aw.BugFix.Features.RecordCandidate.RecordCandidateResponse.Commit.get -> string!
+Aw.BugFix.Features.RecordCandidate.RecordCandidateResponse.Commit.init -> void
+Aw.BugFix.Features.RecordCandidate.RecordCandidateResponse.Deconstruct(out Aw.BugFix.Core.Ids.CandidateId Candidate, out string! Commit, out System.Collections.Generic.IReadOnlyList<string!>! ChangedFiles) -> void
+Aw.BugFix.Features.RecordCandidate.RecordCandidateResponse.Equals(Aw.BugFix.Features.RecordCandidate.RecordCandidateResponse? other) -> bool
+Aw.BugFix.Features.RecordCandidate.RecordCandidateResponse.RecordCandidateResponse(Aw.BugFix.Core.Ids.CandidateId Candidate, string! Commit, System.Collections.Generic.IReadOnlyList<string!>! ChangedFiles) -> void
+Aw.BugFix.Features.RecordRun.RecordRunRequest
+Aw.BugFix.Features.RecordRun.RecordRunRequest.<Clone>$() -> Aw.BugFix.Features.RecordRun.RecordRunRequest!
+Aw.BugFix.Features.RecordRun.RecordRunRequest.Candidate.get -> Aw.BugFix.Core.Ids.CandidateId
+Aw.BugFix.Features.RecordRun.RecordRunRequest.Candidate.init -> void
+Aw.BugFix.Features.RecordRun.RecordRunRequest.Deconstruct(out string! StateDirectory, out Aw.BugFix.Core.Ids.CandidateId Candidate, out string! Evidence) -> void
+Aw.BugFix.Features.RecordRun.RecordRunRequest.Equals(Aw.BugFix.Features.RecordRun.RecordRunRequest? other) -> bool
+Aw.BugFix.Features.RecordRun.RecordRunRequest.Evidence.get -> string!
+Aw.BugFix.Features.RecordRun.RecordRunRequest.Evidence.init -> void
+Aw.BugFix.Features.RecordRun.RecordRunRequest.RecordRunRequest(string! StateDirectory, Aw.BugFix.Core.Ids.CandidateId Candidate, string! Evidence) -> void
+Aw.BugFix.Features.RecordRun.RecordRunRequest.StateDirectory.get -> string!
+Aw.BugFix.Features.RecordRun.RecordRunRequest.StateDirectory.init -> void
+Aw.BugFix.Features.RecordRun.RecordRunResponse
+Aw.BugFix.Features.RecordRun.RecordRunResponse.<Clone>$() -> Aw.BugFix.Features.RecordRun.RecordRunResponse!
+Aw.BugFix.Features.RecordRun.RecordRunResponse.Candidate.get -> Aw.BugFix.Core.Ids.CandidateId
+Aw.BugFix.Features.RecordRun.RecordRunResponse.Candidate.init -> void
+Aw.BugFix.Features.RecordRun.RecordRunResponse.Deconstruct(out Aw.BugFix.Core.Ids.CandidateId Candidate, out bool Passed, out string! Next) -> void
+Aw.BugFix.Features.RecordRun.RecordRunResponse.Equals(Aw.BugFix.Features.RecordRun.RecordRunResponse? other) -> bool
+Aw.BugFix.Features.RecordRun.RecordRunResponse.Next.get -> string!
+Aw.BugFix.Features.RecordRun.RecordRunResponse.Next.init -> void
+Aw.BugFix.Features.RecordRun.RecordRunResponse.Passed.get -> bool
+Aw.BugFix.Features.RecordRun.RecordRunResponse.Passed.init -> void
+Aw.BugFix.Features.RecordRun.RecordRunResponse.RecordRunResponse(Aw.BugFix.Core.Ids.CandidateId Candidate, bool Passed, string! Next) -> void
+Aw.BugFix.Features.Resume.ResumeRequest
+Aw.BugFix.Features.Resume.ResumeRequest.<Clone>$() -> Aw.BugFix.Features.Resume.ResumeRequest!
+Aw.BugFix.Features.Resume.ResumeRequest.Deconstruct(out string! StateDirectory) -> void
+Aw.BugFix.Features.Resume.ResumeRequest.Equals(Aw.BugFix.Features.Resume.ResumeRequest? other) -> bool
+Aw.BugFix.Features.Resume.ResumeRequest.ResumeRequest(string! StateDirectory) -> void
+Aw.BugFix.Features.Resume.ResumeRequest.StateDirectory.get -> string!
+Aw.BugFix.Features.Resume.ResumeRequest.StateDirectory.init -> void
+Aw.BugFix.Features.Resume.ResumeResponse
+Aw.BugFix.Features.Resume.ResumeResponse.<Clone>$() -> Aw.BugFix.Features.Resume.ResumeResponse!
+Aw.BugFix.Features.Resume.ResumeResponse.Attempt.get -> int
+Aw.BugFix.Features.Resume.ResumeResponse.Attempt.init -> void
+Aw.BugFix.Features.Resume.ResumeResponse.Deconstruct(out Aw.BugFix.Core.Model.Phase Phase, out Aw.BugFix.Core.Model.BugFixStatus Status, out int Attempt, out string! Next) -> void
+Aw.BugFix.Features.Resume.ResumeResponse.Equals(Aw.BugFix.Features.Resume.ResumeResponse? other) -> bool
+Aw.BugFix.Features.Resume.ResumeResponse.Next.get -> string!
+Aw.BugFix.Features.Resume.ResumeResponse.Next.init -> void
+Aw.BugFix.Features.Resume.ResumeResponse.Phase.get -> Aw.BugFix.Core.Model.Phase
+Aw.BugFix.Features.Resume.ResumeResponse.Phase.init -> void
+Aw.BugFix.Features.Resume.ResumeResponse.ResumeResponse(Aw.BugFix.Core.Model.Phase Phase, Aw.BugFix.Core.Model.BugFixStatus Status, int Attempt, string! Next) -> void
+Aw.BugFix.Features.Resume.ResumeResponse.Status.get -> Aw.BugFix.Core.Model.BugFixStatus
+Aw.BugFix.Features.Resume.ResumeResponse.Status.init -> void
+Aw.BugFix.Features.RunTest.RunTestRequest
+Aw.BugFix.Features.RunTest.RunTestRequest.<Clone>$() -> Aw.BugFix.Features.RunTest.RunTestRequest!
+Aw.BugFix.Features.RunTest.RunTestRequest.Check.get -> string!
+Aw.BugFix.Features.RunTest.RunTestRequest.Check.init -> void
+Aw.BugFix.Features.RunTest.RunTestRequest.Command.get -> System.Collections.Generic.IReadOnlyList<string!>!
+Aw.BugFix.Features.RunTest.RunTestRequest.Command.init -> void
+Aw.BugFix.Features.RunTest.RunTestRequest.Deconstruct(out string! StateDirectory, out string! Check, out string! WorkingDirectory, out System.Collections.Generic.IReadOnlyList<string!>! Command) -> void
+Aw.BugFix.Features.RunTest.RunTestRequest.Equals(Aw.BugFix.Features.RunTest.RunTestRequest? other) -> bool
+Aw.BugFix.Features.RunTest.RunTestRequest.RunTestRequest(string! StateDirectory, string! Check, string! WorkingDirectory, System.Collections.Generic.IReadOnlyList<string!>! Command) -> void
+Aw.BugFix.Features.RunTest.RunTestRequest.StateDirectory.get -> string!
+Aw.BugFix.Features.RunTest.RunTestRequest.StateDirectory.init -> void
+Aw.BugFix.Features.RunTest.RunTestRequest.WorkingDirectory.get -> string!
+Aw.BugFix.Features.RunTest.RunTestRequest.WorkingDirectory.init -> void
+Aw.BugFix.Features.RunTest.RunTestResponse
+Aw.BugFix.Features.RunTest.RunTestResponse.<Clone>$() -> Aw.BugFix.Features.RunTest.RunTestResponse!
+Aw.BugFix.Features.RunTest.RunTestResponse.Commit.get -> string!
+Aw.BugFix.Features.RunTest.RunTestResponse.Commit.init -> void
+Aw.BugFix.Features.RunTest.RunTestResponse.Deconstruct(out string! Evidence, out Aw.BugFix.Core.Model.RunOutcome Outcome, out int ExitCode, out string! Commit) -> void
+Aw.BugFix.Features.RunTest.RunTestResponse.Equals(Aw.BugFix.Features.RunTest.RunTestResponse? other) -> bool
+Aw.BugFix.Features.RunTest.RunTestResponse.Evidence.get -> string!
+Aw.BugFix.Features.RunTest.RunTestResponse.Evidence.init -> void
+Aw.BugFix.Features.RunTest.RunTestResponse.ExitCode.get -> int
+Aw.BugFix.Features.RunTest.RunTestResponse.ExitCode.init -> void
+Aw.BugFix.Features.RunTest.RunTestResponse.Outcome.get -> Aw.BugFix.Core.Model.RunOutcome
+Aw.BugFix.Features.RunTest.RunTestResponse.Outcome.init -> void
+Aw.BugFix.Features.RunTest.RunTestResponse.RunTestResponse(string! Evidence, Aw.BugFix.Core.Model.RunOutcome Outcome, int ExitCode, string! Commit) -> void
+Aw.BugFix.Features.RunUi.RunUiRequest
+Aw.BugFix.Features.RunUi.RunUiRequest.<Clone>$() -> Aw.BugFix.Features.RunUi.RunUiRequest!
+Aw.BugFix.Features.RunUi.RunUiRequest.Check.get -> string!
+Aw.BugFix.Features.RunUi.RunUiRequest.Check.init -> void
+Aw.BugFix.Features.RunUi.RunUiRequest.Deconstruct(out string! StateDirectory, out string! Check, out string! WorkingDirectory) -> void
+Aw.BugFix.Features.RunUi.RunUiRequest.Equals(Aw.BugFix.Features.RunUi.RunUiRequest? other) -> bool
+Aw.BugFix.Features.RunUi.RunUiRequest.RunUiRequest(string! StateDirectory, string! Check, string! WorkingDirectory) -> void
+Aw.BugFix.Features.RunUi.RunUiRequest.StateDirectory.get -> string!
+Aw.BugFix.Features.RunUi.RunUiRequest.StateDirectory.init -> void
+Aw.BugFix.Features.RunUi.RunUiRequest.WorkingDirectory.get -> string!
+Aw.BugFix.Features.RunUi.RunUiRequest.WorkingDirectory.init -> void
+Aw.BugFix.Features.RunUi.RunUiResponse
+Aw.BugFix.Features.RunUi.RunUiResponse.<Clone>$() -> Aw.BugFix.Features.RunUi.RunUiResponse!
+Aw.BugFix.Features.RunUi.RunUiResponse.Commit.get -> string!
+Aw.BugFix.Features.RunUi.RunUiResponse.Commit.init -> void
+Aw.BugFix.Features.RunUi.RunUiResponse.Deconstruct(out string! Evidence, out Aw.BugFix.Core.Model.RunOutcome Outcome, out int ExitCode, out string! Commit) -> void
+Aw.BugFix.Features.RunUi.RunUiResponse.Equals(Aw.BugFix.Features.RunUi.RunUiResponse? other) -> bool
+Aw.BugFix.Features.RunUi.RunUiResponse.Evidence.get -> string!
+Aw.BugFix.Features.RunUi.RunUiResponse.Evidence.init -> void
+Aw.BugFix.Features.RunUi.RunUiResponse.ExitCode.get -> int
+Aw.BugFix.Features.RunUi.RunUiResponse.ExitCode.init -> void
+Aw.BugFix.Features.RunUi.RunUiResponse.Outcome.get -> Aw.BugFix.Core.Model.RunOutcome
+Aw.BugFix.Features.RunUi.RunUiResponse.Outcome.init -> void
+Aw.BugFix.Features.RunUi.RunUiResponse.RunUiResponse(string! Evidence, Aw.BugFix.Core.Model.RunOutcome Outcome, int ExitCode, string! Commit) -> void
+Aw.BugFix.Features.StartAttempt.StartAttemptRequest
+Aw.BugFix.Features.StartAttempt.StartAttemptRequest.<Clone>$() -> Aw.BugFix.Features.StartAttempt.StartAttemptRequest!
+Aw.BugFix.Features.StartAttempt.StartAttemptRequest.Deconstruct(out string! StateDirectory, out Aw.BugFix.Core.Model.FixMode Mode) -> void
+Aw.BugFix.Features.StartAttempt.StartAttemptRequest.Equals(Aw.BugFix.Features.StartAttempt.StartAttemptRequest? other) -> bool
+Aw.BugFix.Features.StartAttempt.StartAttemptRequest.Mode.get -> Aw.BugFix.Core.Model.FixMode
+Aw.BugFix.Features.StartAttempt.StartAttemptRequest.Mode.init -> void
+Aw.BugFix.Features.StartAttempt.StartAttemptRequest.StartAttemptRequest(string! StateDirectory, Aw.BugFix.Core.Model.FixMode Mode) -> void
+Aw.BugFix.Features.StartAttempt.StartAttemptRequest.StateDirectory.get -> string!
+Aw.BugFix.Features.StartAttempt.StartAttemptRequest.StateDirectory.init -> void
+Aw.BugFix.Features.StartAttempt.StartAttemptResponse
+Aw.BugFix.Features.StartAttempt.StartAttemptResponse.<Clone>$() -> Aw.BugFix.Features.StartAttempt.StartAttemptResponse!
+Aw.BugFix.Features.StartAttempt.StartAttemptResponse.Attempt.get -> int
+Aw.BugFix.Features.StartAttempt.StartAttemptResponse.Attempt.init -> void
+Aw.BugFix.Features.StartAttempt.StartAttemptResponse.Deconstruct(out Aw.BugFix.Core.Model.Phase Phase, out int Attempt, out Aw.BugFix.Core.Model.FixMode Mode) -> void
+Aw.BugFix.Features.StartAttempt.StartAttemptResponse.Equals(Aw.BugFix.Features.StartAttempt.StartAttemptResponse? other) -> bool
+Aw.BugFix.Features.StartAttempt.StartAttemptResponse.Mode.get -> Aw.BugFix.Core.Model.FixMode
+Aw.BugFix.Features.StartAttempt.StartAttemptResponse.Mode.init -> void
+Aw.BugFix.Features.StartAttempt.StartAttemptResponse.Phase.get -> Aw.BugFix.Core.Model.Phase
+Aw.BugFix.Features.StartAttempt.StartAttemptResponse.Phase.init -> void
+Aw.BugFix.Features.StartAttempt.StartAttemptResponse.StartAttemptResponse(Aw.BugFix.Core.Model.Phase Phase, int Attempt, Aw.BugFix.Core.Model.FixMode Mode) -> void
+Aw.BugFix.Features.Status.StatusRequest
+Aw.BugFix.Features.Status.StatusRequest.<Clone>$() -> Aw.BugFix.Features.Status.StatusRequest!
+Aw.BugFix.Features.Status.StatusRequest.Deconstruct(out string! StateDirectory) -> void
+Aw.BugFix.Features.Status.StatusRequest.Equals(Aw.BugFix.Features.Status.StatusRequest? other) -> bool
+Aw.BugFix.Features.Status.StatusRequest.StateDirectory.get -> string!
+Aw.BugFix.Features.Status.StatusRequest.StateDirectory.init -> void
+Aw.BugFix.Features.Status.StatusRequest.StatusRequest(string! StateDirectory) -> void
+override Aw.BugFix.Features.AdvanceInvestigate.AdvanceInvestigateRequest.Equals(object? obj) -> bool
+override Aw.BugFix.Features.AdvanceInvestigate.AdvanceInvestigateRequest.GetHashCode() -> int
+override Aw.BugFix.Features.AdvanceInvestigate.AdvanceInvestigateRequest.ToString() -> string!
+override Aw.BugFix.Features.AdvanceInvestigate.AdvanceInvestigateResponse.Equals(object? obj) -> bool
+override Aw.BugFix.Features.AdvanceInvestigate.AdvanceInvestigateResponse.GetHashCode() -> int
+override Aw.BugFix.Features.AdvanceInvestigate.AdvanceInvestigateResponse.ToString() -> string!
+override Aw.BugFix.Features.AdvanceReport.AdvanceReportRequest.Equals(object? obj) -> bool
+override Aw.BugFix.Features.AdvanceReport.AdvanceReportRequest.GetHashCode() -> int
+override Aw.BugFix.Features.AdvanceReport.AdvanceReportRequest.ToString() -> string!
+override Aw.BugFix.Features.AdvanceReport.AdvanceReportResponse.Equals(object? obj) -> bool
+override Aw.BugFix.Features.AdvanceReport.AdvanceReportResponse.GetHashCode() -> int
+override Aw.BugFix.Features.AdvanceReport.AdvanceReportResponse.ToString() -> string!
+override Aw.BugFix.Features.AdvanceReproduce.AdvanceReproduceRequest.Equals(object? obj) -> bool
+override Aw.BugFix.Features.AdvanceReproduce.AdvanceReproduceRequest.GetHashCode() -> int
+override Aw.BugFix.Features.AdvanceReproduce.AdvanceReproduceRequest.ToString() -> string!
+override Aw.BugFix.Features.AdvanceReproduce.AdvanceReproduceResponse.Equals(object? obj) -> bool
+override Aw.BugFix.Features.AdvanceReproduce.AdvanceReproduceResponse.GetHashCode() -> int
+override Aw.BugFix.Features.AdvanceReproduce.AdvanceReproduceResponse.ToString() -> string!
 override Aw.BugFix.Features.Init.InitRequest.Equals(object? obj) -> bool
 override Aw.BugFix.Features.Init.InitRequest.GetHashCode() -> int
 override Aw.BugFix.Features.Init.InitRequest.ToString() -> string!
 override Aw.BugFix.Features.Init.InitResponse.Equals(object? obj) -> bool
 override Aw.BugFix.Features.Init.InitResponse.GetHashCode() -> int
 override Aw.BugFix.Features.Init.InitResponse.ToString() -> string!
+override Aw.BugFix.Features.JudgeCandidate.JudgeCandidateRequest.Equals(object? obj) -> bool
+override Aw.BugFix.Features.JudgeCandidate.JudgeCandidateRequest.GetHashCode() -> int
+override Aw.BugFix.Features.JudgeCandidate.JudgeCandidateRequest.ToString() -> string!
+override Aw.BugFix.Features.JudgeCandidate.JudgeCandidateResponse.Equals(object? obj) -> bool
+override Aw.BugFix.Features.JudgeCandidate.JudgeCandidateResponse.GetHashCode() -> int
+override Aw.BugFix.Features.JudgeCandidate.JudgeCandidateResponse.ToString() -> string!
+override Aw.BugFix.Features.RecordCandidate.RecordCandidateRequest.Equals(object? obj) -> bool
+override Aw.BugFix.Features.RecordCandidate.RecordCandidateRequest.GetHashCode() -> int
+override Aw.BugFix.Features.RecordCandidate.RecordCandidateRequest.ToString() -> string!
+override Aw.BugFix.Features.RecordCandidate.RecordCandidateResponse.Equals(object? obj) -> bool
+override Aw.BugFix.Features.RecordCandidate.RecordCandidateResponse.GetHashCode() -> int
+override Aw.BugFix.Features.RecordCandidate.RecordCandidateResponse.ToString() -> string!
+override Aw.BugFix.Features.RecordRun.RecordRunRequest.Equals(object? obj) -> bool
+override Aw.BugFix.Features.RecordRun.RecordRunRequest.GetHashCode() -> int
+override Aw.BugFix.Features.RecordRun.RecordRunRequest.ToString() -> string!
+override Aw.BugFix.Features.RecordRun.RecordRunResponse.Equals(object? obj) -> bool
+override Aw.BugFix.Features.RecordRun.RecordRunResponse.GetHashCode() -> int
+override Aw.BugFix.Features.RecordRun.RecordRunResponse.ToString() -> string!
+override Aw.BugFix.Features.Resume.ResumeRequest.Equals(object? obj) -> bool
+override Aw.BugFix.Features.Resume.ResumeRequest.GetHashCode() -> int
+override Aw.BugFix.Features.Resume.ResumeRequest.ToString() -> string!
+override Aw.BugFix.Features.Resume.ResumeResponse.Equals(object? obj) -> bool
+override Aw.BugFix.Features.Resume.ResumeResponse.GetHashCode() -> int
+override Aw.BugFix.Features.Resume.ResumeResponse.ToString() -> string!
+override Aw.BugFix.Features.RunTest.RunTestRequest.Equals(object? obj) -> bool
+override Aw.BugFix.Features.RunTest.RunTestRequest.GetHashCode() -> int
+override Aw.BugFix.Features.RunTest.RunTestRequest.ToString() -> string!
+override Aw.BugFix.Features.RunTest.RunTestResponse.Equals(object? obj) -> bool
+override Aw.BugFix.Features.RunTest.RunTestResponse.GetHashCode() -> int
+override Aw.BugFix.Features.RunTest.RunTestResponse.ToString() -> string!
+override Aw.BugFix.Features.RunUi.RunUiRequest.Equals(object? obj) -> bool
+override Aw.BugFix.Features.RunUi.RunUiRequest.GetHashCode() -> int
+override Aw.BugFix.Features.RunUi.RunUiRequest.ToString() -> string!
+override Aw.BugFix.Features.RunUi.RunUiResponse.Equals(object? obj) -> bool
+override Aw.BugFix.Features.RunUi.RunUiResponse.GetHashCode() -> int
+override Aw.BugFix.Features.RunUi.RunUiResponse.ToString() -> string!
+override Aw.BugFix.Features.StartAttempt.StartAttemptRequest.Equals(object? obj) -> bool
+override Aw.BugFix.Features.StartAttempt.StartAttemptRequest.GetHashCode() -> int
+override Aw.BugFix.Features.StartAttempt.StartAttemptRequest.ToString() -> string!
+override Aw.BugFix.Features.StartAttempt.StartAttemptResponse.Equals(object? obj) -> bool
+override Aw.BugFix.Features.StartAttempt.StartAttemptResponse.GetHashCode() -> int
+override Aw.BugFix.Features.StartAttempt.StartAttemptResponse.ToString() -> string!
+override Aw.BugFix.Features.Status.StatusRequest.Equals(object? obj) -> bool
+override Aw.BugFix.Features.Status.StatusRequest.GetHashCode() -> int
+override Aw.BugFix.Features.Status.StatusRequest.ToString() -> string!
+static Aw.BugFix.Features.AdvanceInvestigate.AdvanceInvestigateRequest.operator !=(Aw.BugFix.Features.AdvanceInvestigate.AdvanceInvestigateRequest? left, Aw.BugFix.Features.AdvanceInvestigate.AdvanceInvestigateRequest? right) -> bool
+static Aw.BugFix.Features.AdvanceInvestigate.AdvanceInvestigateRequest.operator ==(Aw.BugFix.Features.AdvanceInvestigate.AdvanceInvestigateRequest? left, Aw.BugFix.Features.AdvanceInvestigate.AdvanceInvestigateRequest? right) -> bool
+static Aw.BugFix.Features.AdvanceInvestigate.AdvanceInvestigateResponse.operator !=(Aw.BugFix.Features.AdvanceInvestigate.AdvanceInvestigateResponse? left, Aw.BugFix.Features.AdvanceInvestigate.AdvanceInvestigateResponse? right) -> bool
+static Aw.BugFix.Features.AdvanceInvestigate.AdvanceInvestigateResponse.operator ==(Aw.BugFix.Features.AdvanceInvestigate.AdvanceInvestigateResponse? left, Aw.BugFix.Features.AdvanceInvestigate.AdvanceInvestigateResponse? right) -> bool
+static Aw.BugFix.Features.AdvanceReport.AdvanceReportRequest.operator !=(Aw.BugFix.Features.AdvanceReport.AdvanceReportRequest? left, Aw.BugFix.Features.AdvanceReport.AdvanceReportRequest? right) -> bool
+static Aw.BugFix.Features.AdvanceReport.AdvanceReportRequest.operator ==(Aw.BugFix.Features.AdvanceReport.AdvanceReportRequest? left, Aw.BugFix.Features.AdvanceReport.AdvanceReportRequest? right) -> bool
+static Aw.BugFix.Features.AdvanceReport.AdvanceReportResponse.operator !=(Aw.BugFix.Features.AdvanceReport.AdvanceReportResponse? left, Aw.BugFix.Features.AdvanceReport.AdvanceReportResponse? right) -> bool
+static Aw.BugFix.Features.AdvanceReport.AdvanceReportResponse.operator ==(Aw.BugFix.Features.AdvanceReport.AdvanceReportResponse? left, Aw.BugFix.Features.AdvanceReport.AdvanceReportResponse? right) -> bool
+static Aw.BugFix.Features.AdvanceReproduce.AdvanceReproduceRequest.operator !=(Aw.BugFix.Features.AdvanceReproduce.AdvanceReproduceRequest? left, Aw.BugFix.Features.AdvanceReproduce.AdvanceReproduceRequest? right) -> bool
+static Aw.BugFix.Features.AdvanceReproduce.AdvanceReproduceRequest.operator ==(Aw.BugFix.Features.AdvanceReproduce.AdvanceReproduceRequest? left, Aw.BugFix.Features.AdvanceReproduce.AdvanceReproduceRequest? right) -> bool
+static Aw.BugFix.Features.AdvanceReproduce.AdvanceReproduceResponse.operator !=(Aw.BugFix.Features.AdvanceReproduce.AdvanceReproduceResponse? left, Aw.BugFix.Features.AdvanceReproduce.AdvanceReproduceResponse? right) -> bool
+static Aw.BugFix.Features.AdvanceReproduce.AdvanceReproduceResponse.operator ==(Aw.BugFix.Features.AdvanceReproduce.AdvanceReproduceResponse? left, Aw.BugFix.Features.AdvanceReproduce.AdvanceReproduceResponse? right) -> bool
 static Aw.BugFix.Features.BugFixFeaturesServiceCollectionExtensions.AddBugFixFeatures(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
 static Aw.BugFix.Features.Init.InitRequest.operator !=(Aw.BugFix.Features.Init.InitRequest? left, Aw.BugFix.Features.Init.InitRequest? right) -> bool
 static Aw.BugFix.Features.Init.InitRequest.operator ==(Aw.BugFix.Features.Init.InitRequest? left, Aw.BugFix.Features.Init.InitRequest? right) -> bool
 static Aw.BugFix.Features.Init.InitResponse.operator !=(Aw.BugFix.Features.Init.InitResponse? left, Aw.BugFix.Features.Init.InitResponse? right) -> bool
 static Aw.BugFix.Features.Init.InitResponse.operator ==(Aw.BugFix.Features.Init.InitResponse? left, Aw.BugFix.Features.Init.InitResponse? right) -> bool
+static Aw.BugFix.Features.JudgeCandidate.JudgeCandidateRequest.operator !=(Aw.BugFix.Features.JudgeCandidate.JudgeCandidateRequest? left, Aw.BugFix.Features.JudgeCandidate.JudgeCandidateRequest? right) -> bool
+static Aw.BugFix.Features.JudgeCandidate.JudgeCandidateRequest.operator ==(Aw.BugFix.Features.JudgeCandidate.JudgeCandidateRequest? left, Aw.BugFix.Features.JudgeCandidate.JudgeCandidateRequest? right) -> bool
+static Aw.BugFix.Features.JudgeCandidate.JudgeCandidateResponse.operator !=(Aw.BugFix.Features.JudgeCandidate.JudgeCandidateResponse? left, Aw.BugFix.Features.JudgeCandidate.JudgeCandidateResponse? right) -> bool
+static Aw.BugFix.Features.JudgeCandidate.JudgeCandidateResponse.operator ==(Aw.BugFix.Features.JudgeCandidate.JudgeCandidateResponse? left, Aw.BugFix.Features.JudgeCandidate.JudgeCandidateResponse? right) -> bool
+static Aw.BugFix.Features.RecordCandidate.RecordCandidateRequest.operator !=(Aw.BugFix.Features.RecordCandidate.RecordCandidateRequest? left, Aw.BugFix.Features.RecordCandidate.RecordCandidateRequest? right) -> bool
+static Aw.BugFix.Features.RecordCandidate.RecordCandidateRequest.operator ==(Aw.BugFix.Features.RecordCandidate.RecordCandidateRequest? left, Aw.BugFix.Features.RecordCandidate.RecordCandidateRequest? right) -> bool
+static Aw.BugFix.Features.RecordCandidate.RecordCandidateResponse.operator !=(Aw.BugFix.Features.RecordCandidate.RecordCandidateResponse? left, Aw.BugFix.Features.RecordCandidate.RecordCandidateResponse? right) -> bool
+static Aw.BugFix.Features.RecordCandidate.RecordCandidateResponse.operator ==(Aw.BugFix.Features.RecordCandidate.RecordCandidateResponse? left, Aw.BugFix.Features.RecordCandidate.RecordCandidateResponse? right) -> bool
+static Aw.BugFix.Features.RecordRun.RecordRunRequest.operator !=(Aw.BugFix.Features.RecordRun.RecordRunRequest? left, Aw.BugFix.Features.RecordRun.RecordRunRequest? right) -> bool
+static Aw.BugFix.Features.RecordRun.RecordRunRequest.operator ==(Aw.BugFix.Features.RecordRun.RecordRunRequest? left, Aw.BugFix.Features.RecordRun.RecordRunRequest? right) -> bool
+static Aw.BugFix.Features.RecordRun.RecordRunResponse.operator !=(Aw.BugFix.Features.RecordRun.RecordRunResponse? left, Aw.BugFix.Features.RecordRun.RecordRunResponse? right) -> bool
+static Aw.BugFix.Features.RecordRun.RecordRunResponse.operator ==(Aw.BugFix.Features.RecordRun.RecordRunResponse? left, Aw.BugFix.Features.RecordRun.RecordRunResponse? right) -> bool
+static Aw.BugFix.Features.Resume.ResumeRequest.operator !=(Aw.BugFix.Features.Resume.ResumeRequest? left, Aw.BugFix.Features.Resume.ResumeRequest? right) -> bool
+static Aw.BugFix.Features.Resume.ResumeRequest.operator ==(Aw.BugFix.Features.Resume.ResumeRequest? left, Aw.BugFix.Features.Resume.ResumeRequest? right) -> bool
+static Aw.BugFix.Features.Resume.ResumeResponse.operator !=(Aw.BugFix.Features.Resume.ResumeResponse? left, Aw.BugFix.Features.Resume.ResumeResponse? right) -> bool
+static Aw.BugFix.Features.Resume.ResumeResponse.operator ==(Aw.BugFix.Features.Resume.ResumeResponse? left, Aw.BugFix.Features.Resume.ResumeResponse? right) -> bool
+static Aw.BugFix.Features.RunTest.RunTestRequest.operator !=(Aw.BugFix.Features.RunTest.RunTestRequest? left, Aw.BugFix.Features.RunTest.RunTestRequest? right) -> bool
+static Aw.BugFix.Features.RunTest.RunTestRequest.operator ==(Aw.BugFix.Features.RunTest.RunTestRequest? left, Aw.BugFix.Features.RunTest.RunTestRequest? right) -> bool
+static Aw.BugFix.Features.RunTest.RunTestResponse.operator !=(Aw.BugFix.Features.RunTest.RunTestResponse? left, Aw.BugFix.Features.RunTest.RunTestResponse? right) -> bool
+static Aw.BugFix.Features.RunTest.RunTestResponse.operator ==(Aw.BugFix.Features.RunTest.RunTestResponse? left, Aw.BugFix.Features.RunTest.RunTestResponse? right) -> bool
+static Aw.BugFix.Features.RunUi.RunUiRequest.operator !=(Aw.BugFix.Features.RunUi.RunUiRequest? left, Aw.BugFix.Features.RunUi.RunUiRequest? right) -> bool
+static Aw.BugFix.Features.RunUi.RunUiRequest.operator ==(Aw.BugFix.Features.RunUi.RunUiRequest? left, Aw.BugFix.Features.RunUi.RunUiRequest? right) -> bool
+static Aw.BugFix.Features.RunUi.RunUiResponse.operator !=(Aw.BugFix.Features.RunUi.RunUiResponse? left, Aw.BugFix.Features.RunUi.RunUiResponse? right) -> bool
+static Aw.BugFix.Features.RunUi.RunUiResponse.operator ==(Aw.BugFix.Features.RunUi.RunUiResponse? left, Aw.BugFix.Features.RunUi.RunUiResponse? right) -> bool
+static Aw.BugFix.Features.StartAttempt.StartAttemptRequest.operator !=(Aw.BugFix.Features.StartAttempt.StartAttemptRequest? left, Aw.BugFix.Features.StartAttempt.StartAttemptRequest? right) -> bool
+static Aw.BugFix.Features.StartAttempt.StartAttemptRequest.operator ==(Aw.BugFix.Features.StartAttempt.StartAttemptRequest? left, Aw.BugFix.Features.StartAttempt.StartAttemptRequest? right) -> bool
+static Aw.BugFix.Features.StartAttempt.StartAttemptResponse.operator !=(Aw.BugFix.Features.StartAttempt.StartAttemptResponse? left, Aw.BugFix.Features.StartAttempt.StartAttemptResponse? right) -> bool
+static Aw.BugFix.Features.StartAttempt.StartAttemptResponse.operator ==(Aw.BugFix.Features.StartAttempt.StartAttemptResponse? left, Aw.BugFix.Features.StartAttempt.StartAttemptResponse? right) -> bool
+static Aw.BugFix.Features.Status.StatusRequest.operator !=(Aw.BugFix.Features.Status.StatusRequest? left, Aw.BugFix.Features.Status.StatusRequest? right) -> bool
+static Aw.BugFix.Features.Status.StatusRequest.operator ==(Aw.BugFix.Features.Status.StatusRequest? left, Aw.BugFix.Features.Status.StatusRequest? right) -> bool
