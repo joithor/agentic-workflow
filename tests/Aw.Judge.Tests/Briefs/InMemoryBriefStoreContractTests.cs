@@ -11,5 +11,5 @@ public sealed class InMemoryBriefStoreContractTests : BriefStoreContract
         ValueTask.FromResult<IBriefStore>(new InMemoryBriefStore());
 
     protected override ValueTask<IBriefStore> CreateUnavailable(CancellationToken cancellationToken) =>
-        ValueTask.FromResult<IBriefStore>(new InMemoryBriefStore());
+        ValueTask.FromResult<IBriefStore>(new InMemoryBriefStore { Unavailable = true });
 }
