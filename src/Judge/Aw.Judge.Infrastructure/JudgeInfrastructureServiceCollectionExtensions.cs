@@ -1,6 +1,10 @@
 using Aw.Judge.Core.Ports;
+using Aw.Judge.Infrastructure.Ids;
 using Aw.Judge.Infrastructure.Processes;
+using Aw.Judge.Infrastructure.Redaction;
 using Aw.Judge.Infrastructure.Sqlite;
+using Aw.Kernel.Ids;
+using Aw.Redaction;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Aw.Judge.Infrastructure;
@@ -9,8 +13,8 @@ namespace Aw.Judge.Infrastructure;
 public static class JudgeInfrastructureServiceCollectionExtensions
 {
     /// <summary>
-    /// Adds the Judge adapters and their settings: the SQLite stores over $AW_STATE_DIR/judge/decisions.sqlite and the PATH
-    /// executable locator.
+    /// Adds the Judge adapters and their settings: the SQLite stores over $AW_STATE_DIR/judge/decisions.sqlite, the input
+    /// redactor over Aw.Redaction, the PATH executable locator and random decision ids.
     /// </summary>
     /// <param name="services">The service collection.</param>
     /// <param name="environment">Reads an environment variable (Environment.GetEnvironmentVariable in Program.cs, a lambda in tests).</param>
@@ -23,6 +27,8 @@ public static class JudgeInfrastructureServiceCollectionExtensions
             .AddSingleton(sp => new JudgeDatabase(JudgeDatabase.OptionsFor(settings.StateDirectory), sp.GetRequiredService<TimeProvider>()))
             .AddScoped<IDecisionLog, SqliteDecisionLog>()
             .AddScoped<IBriefStore, SqliteBriefStore>()
-            .AddSingleton<IExecutableLocator>(new PathExecutableLocator(environment));
+            .AddSingleton<IInputRedactor>(new AwInputRedactor(Redactor.Default))
+            .AddSingleton<IExecutableLocator>(new PathExecutableLocator(environment))
+            .AddSingleton<IIdGenerator, RandomIdGenerator>();
     }
 }

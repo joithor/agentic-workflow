@@ -14,4 +14,8 @@ public static class A
     /// <summary>A brief builder with deterministic defaults.</summary>
     /// <returns>A new builder.</returns>
     public static BriefBuilder Brief() => new();
+
+    /// <summary>A test question builder (wake-gate's shape over <see cref="TextInput"/>).</summary>
+    /// <returns>A new builder.</returns>
+    public static QuestionBuilder Question() => new();
 }

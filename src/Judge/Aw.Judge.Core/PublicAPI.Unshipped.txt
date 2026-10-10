@@ -108,6 +108,59 @@ Aw.Judge.Core.Decisions.SkippedProvider.Reason.init -> void
 Aw.Judge.Core.Decisions.SkippedProvider.SkippedProvider(string! Provider, Aw.Judge.Core.Decisions.SkipReason Reason) -> void
 Aw.Judge.Core.Evaluation.AgentCliResolution
 Aw.Judge.Core.Evaluation.ChainRouting
+Aw.Judge.Core.Evaluation.DecidedOutcome
+Aw.Judge.Core.Evaluation.DecidedOutcome.Confidence.get -> double
+Aw.Judge.Core.Evaluation.DecidedOutcome.Confidence.init -> void
+Aw.Judge.Core.Evaluation.DecidedOutcome.DecidedOutcome(string! Decision, double Confidence, Aw.Judge.Core.Providers.ProviderName Model, string! ReasonCode, Aw.Judge.Core.Ids.DecisionId Id) -> void
+Aw.Judge.Core.Evaluation.DecidedOutcome.Decision.get -> string!
+Aw.Judge.Core.Evaluation.DecidedOutcome.Decision.init -> void
+Aw.Judge.Core.Evaluation.DecidedOutcome.Deconstruct(out string! Decision, out double Confidence, out Aw.Judge.Core.Providers.ProviderName Model, out string! ReasonCode, out Aw.Judge.Core.Ids.DecisionId Id) -> void
+Aw.Judge.Core.Evaluation.DecidedOutcome.Equals(Aw.Judge.Core.Evaluation.DecidedOutcome? other) -> bool
+Aw.Judge.Core.Evaluation.DecidedOutcome.Extra.get -> System.Text.Json.Nodes.JsonObject?
+Aw.Judge.Core.Evaluation.DecidedOutcome.Extra.init -> void
+Aw.Judge.Core.Evaluation.DecidedOutcome.Id.get -> Aw.Judge.Core.Ids.DecisionId
+Aw.Judge.Core.Evaluation.DecidedOutcome.Id.init -> void
+Aw.Judge.Core.Evaluation.DecidedOutcome.Model.get -> Aw.Judge.Core.Providers.ProviderName
+Aw.Judge.Core.Evaluation.DecidedOutcome.Model.init -> void
+Aw.Judge.Core.Evaluation.EscalatedOutcome
+Aw.Judge.Core.Evaluation.EscalatedOutcome.Deconstruct(out string! ReasonCode) -> void
+Aw.Judge.Core.Evaluation.EscalatedOutcome.Equals(Aw.Judge.Core.Evaluation.EscalatedOutcome? other) -> bool
+Aw.Judge.Core.Evaluation.EscalatedOutcome.EscalatedOutcome(string! ReasonCode) -> void
+Aw.Judge.Core.Evaluation.EvaluationContext
+Aw.Judge.Core.Evaluation.EvaluationContext.<Clone>$() -> Aw.Judge.Core.Evaluation.EvaluationContext!
+Aw.Judge.Core.Evaluation.EvaluationContext.Chain.get -> Aw.Judge.Core.Providers.ChainSpec!
+Aw.Judge.Core.Evaluation.EvaluationContext.Chain.init -> void
+Aw.Judge.Core.Evaluation.EvaluationContext.Equals(Aw.Judge.Core.Evaluation.EvaluationContext? other) -> bool
+Aw.Judge.Core.Evaluation.EvaluationContext.EvaluationContext() -> void
+Aw.Judge.Core.Evaluation.EvaluationContext.Override.get -> Aw.Judge.Core.Evaluation.QuestionOverride?
+Aw.Judge.Core.Evaluation.EvaluationContext.Override.init -> void
+Aw.Judge.Core.Evaluation.EvaluationContext.Providers.get -> System.Collections.Generic.IReadOnlyList<Aw.Judge.Core.Ports.IModelProvider!>!
+Aw.Judge.Core.Evaluation.EvaluationContext.Providers.init -> void
+Aw.Judge.Core.Evaluation.EvaluationContext.SessionId.get -> Aw.Judge.Core.Ids.SessionId?
+Aw.Judge.Core.Evaluation.EvaluationContext.SessionId.init -> void
+Aw.Judge.Core.Evaluation.EvaluationOutcome
+Aw.Judge.Core.Evaluation.EvaluationOutcome.Deconstruct(out string! ReasonCode) -> void
+Aw.Judge.Core.Evaluation.EvaluationOutcome.EvaluationOutcome(Aw.Judge.Core.Evaluation.EvaluationOutcome! original) -> void
+Aw.Judge.Core.Evaluation.EvaluationOutcome.EvaluationOutcome(string! ReasonCode) -> void
+Aw.Judge.Core.Evaluation.EvaluationOutcome.ReasonCode.get -> string!
+Aw.Judge.Core.Evaluation.EvaluationOutcome.ReasonCode.init -> void
+Aw.Judge.Core.Evaluation.EvaluationReasons
+Aw.Judge.Core.Evaluation.InputCap
+Aw.Judge.Core.Evaluation.InputJson
+Aw.Judge.Core.Evaluation.QuestionEvaluator
+Aw.Judge.Core.Evaluation.QuestionEvaluator.Evaluate<TInput>(Aw.Judge.Core.Questions.QuestionDefinition<TInput!>! question, System.Text.Json.Nodes.JsonNode? rawInput, Aw.Judge.Core.Evaluation.EvaluationContext! context, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Judge.Core.Evaluation.EvaluationOutcome!>
+Aw.Judge.Core.Evaluation.QuestionEvaluator.QuestionEvaluator(Aw.Judge.Core.Ports.IDecisionLog! log, Aw.Judge.Core.Ports.IInputRedactor! redactor, Aw.Kernel.Ids.IIdGenerator! ids, System.TimeProvider! clock) -> void
+Aw.Judge.Core.Evaluation.QuestionOverride
+Aw.Judge.Core.Evaluation.QuestionOverride.<Clone>$() -> Aw.Judge.Core.Evaluation.QuestionOverride!
+Aw.Judge.Core.Evaluation.QuestionOverride.Deconstruct(out bool Enabled, out double? Threshold, out System.Collections.Generic.IReadOnlyList<Aw.Judge.Core.Providers.ProviderName>? Providers) -> void
+Aw.Judge.Core.Evaluation.QuestionOverride.Enabled.get -> bool
+Aw.Judge.Core.Evaluation.QuestionOverride.Enabled.init -> void
+Aw.Judge.Core.Evaluation.QuestionOverride.Equals(Aw.Judge.Core.Evaluation.QuestionOverride? other) -> bool
+Aw.Judge.Core.Evaluation.QuestionOverride.Providers.get -> System.Collections.Generic.IReadOnlyList<Aw.Judge.Core.Providers.ProviderName>?
+Aw.Judge.Core.Evaluation.QuestionOverride.Providers.init -> void
+Aw.Judge.Core.Evaluation.QuestionOverride.QuestionOverride(bool Enabled, double? Threshold = null, System.Collections.Generic.IReadOnlyList<Aw.Judge.Core.Providers.ProviderName>? Providers = null) -> void
+Aw.Judge.Core.Evaluation.QuestionOverride.Threshold.get -> double?
+Aw.Judge.Core.Evaluation.QuestionOverride.Threshold.init -> void
 Aw.Judge.Core.Ids.AgentId
 Aw.Judge.Core.Ids.AgentId.AgentId() -> void
 Aw.Judge.Core.Ids.AgentId.Equals(Aw.Judge.Core.Ids.AgentId other) -> bool
@@ -190,6 +243,8 @@ Aw.Judge.Core.Ports.IDecisionLog.Record(Aw.Judge.Core.Decisions.DecisionRecord! 
 Aw.Judge.Core.Ports.IDecisionLog.RecordFailure(Aw.Judge.Core.Decisions.FailureRecord! failure, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Kernel.Unit>!>
 Aw.Judge.Core.Ports.IExecutableLocator
 Aw.Judge.Core.Ports.IExecutableLocator.IsOnPath(string! name) -> bool
+Aw.Judge.Core.Ports.IInputRedactor
+Aw.Judge.Core.Ports.IInputRedactor.Redact(System.Text.Json.Nodes.JsonNode? input) -> System.Text.Json.Nodes.JsonNode?
 Aw.Judge.Core.Ports.IModelProvider
 Aw.Judge.Core.Ports.IModelProvider.Classes.get -> System.Collections.Generic.IReadOnlySet<Aw.Judge.Core.Providers.ContentClass>!
 Aw.Judge.Core.Ports.IModelProvider.Decide(Aw.Judge.Core.Providers.QuestionRef! question, System.Text.Json.Nodes.JsonNode? input, System.TimeSpan budget, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Judge.Core.Providers.ProviderResult!>
@@ -275,7 +330,46 @@ Aw.Judge.Core.Providers.QuestionRef.Outputs.init -> void
 Aw.Judge.Core.Providers.QuestionRef.Prompt.get -> string!
 Aw.Judge.Core.Providers.QuestionRef.Prompt.init -> void
 Aw.Judge.Core.Providers.QuestionRef.QuestionRef() -> void
+Aw.Judge.Core.Questions.QuestionDefinition<TInput>
+Aw.Judge.Core.Questions.QuestionDefinition<TInput>.ContentClass.get -> Aw.Judge.Core.Providers.ContentClass
+Aw.Judge.Core.Questions.QuestionDefinition<TInput>.ContentClass.init -> void
+Aw.Judge.Core.Questions.QuestionDefinition<TInput>.Criteria.get -> System.Collections.Generic.IReadOnlyDictionary<string!, string!>?
+Aw.Judge.Core.Questions.QuestionDefinition<TInput>.Criteria.init -> void
+Aw.Judge.Core.Questions.QuestionDefinition<TInput>.ExtraProperties.get -> System.Collections.Generic.IReadOnlyDictionary<string!, System.Text.Json.Nodes.JsonObject!>?
+Aw.Judge.Core.Questions.QuestionDefinition<TInput>.ExtraProperties.init -> void
+Aw.Judge.Core.Questions.QuestionDefinition<TInput>.FallbackRules.get -> System.Func<TInput!, string?>?
+Aw.Judge.Core.Questions.QuestionDefinition<TInput>.FallbackRules.init -> void
+Aw.Judge.Core.Questions.QuestionDefinition<TInput>.Name.get -> string!
+Aw.Judge.Core.Questions.QuestionDefinition<TInput>.Name.init -> void
+Aw.Judge.Core.Questions.QuestionDefinition<TInput>.Outputs.get -> System.Collections.Generic.IReadOnlyList<string!>!
+Aw.Judge.Core.Questions.QuestionDefinition<TInput>.Outputs.init -> void
+Aw.Judge.Core.Questions.QuestionDefinition<TInput>.Parse.get -> System.Func<System.Text.Json.Nodes.JsonNode?, TInput?>!
+Aw.Judge.Core.Questions.QuestionDefinition<TInput>.Parse.init -> void
+Aw.Judge.Core.Questions.QuestionDefinition<TInput>.PreRules.get -> System.Func<TInput!, string?>?
+Aw.Judge.Core.Questions.QuestionDefinition<TInput>.PreRules.init -> void
+Aw.Judge.Core.Questions.QuestionDefinition<TInput>.Prompt.get -> System.Func<TInput!, string!>!
+Aw.Judge.Core.Questions.QuestionDefinition<TInput>.Prompt.init -> void
+Aw.Judge.Core.Questions.QuestionDefinition<TInput>.QuestionDefinition() -> void
+Aw.Judge.Core.Questions.QuestionDefinition<TInput>.Threshold.get -> double
+Aw.Judge.Core.Questions.QuestionDefinition<TInput>.Threshold.init -> void
+Aw.Judge.Core.Questions.QuestionDefinition<TInput>.TimeBudget.get -> System.TimeSpan
+Aw.Judge.Core.Questions.QuestionDefinition<TInput>.TimeBudget.init -> void
+Aw.Judge.Core.Questions.QuestionDefinition<TInput>.ToJson.get -> System.Func<TInput!, System.Text.Json.Nodes.JsonNode?>!
+Aw.Judge.Core.Questions.QuestionDefinition<TInput>.ToJson.init -> void
+Aw.Judge.Core.Questions.QuestionDefinition<TInput>.ToRef(TInput! input) -> Aw.Judge.Core.Providers.QuestionRef!
+abstract Aw.Judge.Core.Evaluation.EvaluationOutcome.<Clone>$() -> Aw.Judge.Core.Evaluation.EvaluationOutcome!
 abstract Aw.Judge.Core.Providers.ProviderResult.<Clone>$() -> Aw.Judge.Core.Providers.ProviderResult!
+const Aw.Judge.Core.Evaluation.EvaluationReasons.BelowThreshold = "below-threshold" -> string!
+const Aw.Judge.Core.Evaluation.EvaluationReasons.DecisionWriteFailed = "decision-write-failed" -> string!
+const Aw.Judge.Core.Evaluation.EvaluationReasons.FallbackAfterUndecided = "fallback-after-undecided" -> string!
+const Aw.Judge.Core.Evaluation.EvaluationReasons.InvalidInput = "invalid-input" -> string!
+const Aw.Judge.Core.Evaluation.EvaluationReasons.NoProvider = "none" -> string!
+const Aw.Judge.Core.Evaluation.EvaluationReasons.NoProviderDecided = "no-provider-decided" -> string!
+const Aw.Judge.Core.Evaluation.EvaluationReasons.OutOfEnum = "out-of-enum" -> string!
+const Aw.Judge.Core.Evaluation.EvaluationReasons.PreRule = "pre-rule" -> string!
+const Aw.Judge.Core.Evaluation.EvaluationReasons.ProviderThrew = "provider-threw" -> string!
+const Aw.Judge.Core.Evaluation.EvaluationReasons.QuestionDisabled = "question-disabled" -> string!
+const Aw.Judge.Core.Evaluation.InputCap.MaxChars = 16000 -> int
 const Aw.Judge.Core.Providers.ProviderUnavailable.Timeout = "timeout" -> string!
 override Aw.Judge.Core.Briefs.Brief.Equals(object? obj) -> bool
 override Aw.Judge.Core.Briefs.Brief.GetHashCode() -> int
@@ -292,6 +386,23 @@ override Aw.Judge.Core.Decisions.FailureRecord.ToString() -> string!
 override Aw.Judge.Core.Decisions.SkippedProvider.Equals(object? obj) -> bool
 override Aw.Judge.Core.Decisions.SkippedProvider.GetHashCode() -> int
 override Aw.Judge.Core.Decisions.SkippedProvider.ToString() -> string!
+override Aw.Judge.Core.Evaluation.DecidedOutcome.<Clone>$() -> Aw.Judge.Core.Evaluation.DecidedOutcome!
+override Aw.Judge.Core.Evaluation.DecidedOutcome.Equals(object? obj) -> bool
+override Aw.Judge.Core.Evaluation.DecidedOutcome.GetHashCode() -> int
+override Aw.Judge.Core.Evaluation.DecidedOutcome.ToString() -> string!
+override Aw.Judge.Core.Evaluation.EscalatedOutcome.<Clone>$() -> Aw.Judge.Core.Evaluation.EscalatedOutcome!
+override Aw.Judge.Core.Evaluation.EscalatedOutcome.Equals(object? obj) -> bool
+override Aw.Judge.Core.Evaluation.EscalatedOutcome.GetHashCode() -> int
+override Aw.Judge.Core.Evaluation.EscalatedOutcome.ToString() -> string!
+override Aw.Judge.Core.Evaluation.EvaluationContext.Equals(object? obj) -> bool
+override Aw.Judge.Core.Evaluation.EvaluationContext.GetHashCode() -> int
+override Aw.Judge.Core.Evaluation.EvaluationContext.ToString() -> string!
+override Aw.Judge.Core.Evaluation.EvaluationOutcome.Equals(object? obj) -> bool
+override Aw.Judge.Core.Evaluation.EvaluationOutcome.GetHashCode() -> int
+override Aw.Judge.Core.Evaluation.EvaluationOutcome.ToString() -> string!
+override Aw.Judge.Core.Evaluation.QuestionOverride.Equals(object? obj) -> bool
+override Aw.Judge.Core.Evaluation.QuestionOverride.GetHashCode() -> int
+override Aw.Judge.Core.Evaluation.QuestionOverride.ToString() -> string!
 override Aw.Judge.Core.Ids.AgentId.Equals(object? obj) -> bool
 override Aw.Judge.Core.Ids.AgentId.GetHashCode() -> int
 override Aw.Judge.Core.Ids.AgentId.ToString() -> string!
@@ -331,6 +442,11 @@ override Aw.Judge.Core.Providers.ProvidersAllowlist.ToString() -> string!
 override Aw.Judge.Core.Providers.QuestionRef.Equals(object? obj) -> bool
 override Aw.Judge.Core.Providers.QuestionRef.GetHashCode() -> int
 override Aw.Judge.Core.Providers.QuestionRef.ToString() -> string!
+override Aw.Judge.Core.Questions.QuestionDefinition<TInput>.Equals(object? obj) -> bool
+override Aw.Judge.Core.Questions.QuestionDefinition<TInput>.GetHashCode() -> int
+override Aw.Judge.Core.Questions.QuestionDefinition<TInput>.ToString() -> string!
+override sealed Aw.Judge.Core.Evaluation.DecidedOutcome.Equals(Aw.Judge.Core.Evaluation.EvaluationOutcome? other) -> bool
+override sealed Aw.Judge.Core.Evaluation.EscalatedOutcome.Equals(Aw.Judge.Core.Evaluation.EvaluationOutcome? other) -> bool
 override sealed Aw.Judge.Core.Providers.ProviderDecided.Equals(Aw.Judge.Core.Providers.ProviderResult? other) -> bool
 override sealed Aw.Judge.Core.Providers.ProviderErrored.Equals(Aw.Judge.Core.Providers.ProviderResult? other) -> bool
 override sealed Aw.Judge.Core.Providers.ProviderUnavailable.Equals(Aw.Judge.Core.Providers.ProviderResult? other) -> bool
@@ -347,6 +463,20 @@ static Aw.Judge.Core.Decisions.SkippedProvider.operator ==(Aw.Judge.Core.Decisio
 static Aw.Judge.Core.Evaluation.AgentCliResolution.Resolve(Aw.Judge.Core.Ports.IExecutableLocator! locator, string? hostProvider, System.Collections.Generic.IReadOnlyList<Aw.Judge.Core.Providers.AgentCliName>? configured) -> System.Collections.Generic.IReadOnlyList<Aw.Judge.Core.Providers.AgentCliName>!
 static Aw.Judge.Core.Evaluation.ChainRouting.Candidates(Aw.Judge.Core.Providers.ChainSpec! chain, Aw.Judge.Core.Providers.ContentClass contentClass, System.Collections.Generic.IReadOnlyList<Aw.Judge.Core.Ports.IModelProvider!>! providers, System.Collections.Generic.IReadOnlyList<Aw.Judge.Core.Providers.ProviderName>? questionProviders) -> System.Collections.Generic.IReadOnlyList<Aw.Judge.Core.Ports.IModelProvider!>!
 static Aw.Judge.Core.Evaluation.ChainRouting.ProvidersFor(Aw.Judge.Core.Providers.ChainSpec! chain, Aw.Judge.Core.Providers.ContentClass contentClass, System.Collections.Generic.IReadOnlyList<Aw.Judge.Core.Ports.IModelProvider!>! providers) -> System.Collections.Generic.IReadOnlyList<Aw.Judge.Core.Ports.IModelProvider!>!
+static Aw.Judge.Core.Evaluation.DecidedOutcome.operator !=(Aw.Judge.Core.Evaluation.DecidedOutcome? left, Aw.Judge.Core.Evaluation.DecidedOutcome? right) -> bool
+static Aw.Judge.Core.Evaluation.DecidedOutcome.operator ==(Aw.Judge.Core.Evaluation.DecidedOutcome? left, Aw.Judge.Core.Evaluation.DecidedOutcome? right) -> bool
+static Aw.Judge.Core.Evaluation.EscalatedOutcome.operator !=(Aw.Judge.Core.Evaluation.EscalatedOutcome? left, Aw.Judge.Core.Evaluation.EscalatedOutcome? right) -> bool
+static Aw.Judge.Core.Evaluation.EscalatedOutcome.operator ==(Aw.Judge.Core.Evaluation.EscalatedOutcome? left, Aw.Judge.Core.Evaluation.EscalatedOutcome? right) -> bool
+static Aw.Judge.Core.Evaluation.EvaluationContext.operator !=(Aw.Judge.Core.Evaluation.EvaluationContext? left, Aw.Judge.Core.Evaluation.EvaluationContext? right) -> bool
+static Aw.Judge.Core.Evaluation.EvaluationContext.operator ==(Aw.Judge.Core.Evaluation.EvaluationContext? left, Aw.Judge.Core.Evaluation.EvaluationContext? right) -> bool
+static Aw.Judge.Core.Evaluation.EvaluationOutcome.operator !=(Aw.Judge.Core.Evaluation.EvaluationOutcome? left, Aw.Judge.Core.Evaluation.EvaluationOutcome? right) -> bool
+static Aw.Judge.Core.Evaluation.EvaluationOutcome.operator ==(Aw.Judge.Core.Evaluation.EvaluationOutcome? left, Aw.Judge.Core.Evaluation.EvaluationOutcome? right) -> bool
+static Aw.Judge.Core.Evaluation.InputCap.Truncate(string! text, int maxChars) -> string!
+static Aw.Judge.Core.Evaluation.InputCap.Write(System.Text.Json.Nodes.JsonNode? value, int maxChars) -> string!
+static Aw.Judge.Core.Evaluation.InputJson.Digest(System.Text.Json.Nodes.JsonNode? node) -> string!
+static Aw.Judge.Core.Evaluation.InputJson.Write(System.Text.Json.Nodes.JsonNode? node) -> string!
+static Aw.Judge.Core.Evaluation.QuestionOverride.operator !=(Aw.Judge.Core.Evaluation.QuestionOverride? left, Aw.Judge.Core.Evaluation.QuestionOverride? right) -> bool
+static Aw.Judge.Core.Evaluation.QuestionOverride.operator ==(Aw.Judge.Core.Evaluation.QuestionOverride? left, Aw.Judge.Core.Evaluation.QuestionOverride? right) -> bool
 static Aw.Judge.Core.Ids.AgentId.From(string! value) -> Aw.Judge.Core.Ids.AgentId
 static Aw.Judge.Core.Ids.AgentId.Parse(string! s, System.IFormatProvider? provider) -> Aw.Judge.Core.Ids.AgentId
 static Aw.Judge.Core.Ids.AgentId.TryFrom(string? value, out Aw.Judge.Core.Ids.AgentId vo) -> bool
@@ -422,6 +552,13 @@ static readonly Aw.Judge.Core.JudgeErrors.DecisionExists -> Aw.Kernel.ErrorDefin
 static readonly Aw.Judge.Core.JudgeErrors.Invalid -> Aw.Kernel.ErrorDefinition!
 static readonly Aw.Judge.Core.JudgeErrors.ProvidersFlag -> Aw.Kernel.ErrorDefinition!
 static readonly Aw.Judge.Core.JudgeErrors.UnknownDecision -> Aw.Kernel.ErrorDefinition!
+virtual Aw.Judge.Core.Evaluation.EvaluationOutcome.EqualityContract.get -> System.Type!
+virtual Aw.Judge.Core.Evaluation.EvaluationOutcome.Equals(Aw.Judge.Core.Evaluation.EvaluationOutcome? other) -> bool
+virtual Aw.Judge.Core.Evaluation.EvaluationOutcome.PrintMembers(System.Text.StringBuilder! builder) -> bool
 virtual Aw.Judge.Core.Providers.ProviderResult.EqualityContract.get -> System.Type!
 virtual Aw.Judge.Core.Providers.ProviderResult.Equals(Aw.Judge.Core.Providers.ProviderResult? other) -> bool
 virtual Aw.Judge.Core.Providers.ProviderResult.PrintMembers(System.Text.StringBuilder! builder) -> bool
+~Aw.Judge.Core.Questions.QuestionDefinition<TInput>.<Clone>$() -> Aw.Judge.Core.Questions.QuestionDefinition<TInput>!
+~Aw.Judge.Core.Questions.QuestionDefinition<TInput>.Equals(Aw.Judge.Core.Questions.QuestionDefinition<TInput>? other) -> bool
+~static Aw.Judge.Core.Questions.QuestionDefinition<TInput>.operator !=(Aw.Judge.Core.Questions.QuestionDefinition<TInput>? left, Aw.Judge.Core.Questions.QuestionDefinition<TInput>? right) -> bool
+~static Aw.Judge.Core.Questions.QuestionDefinition<TInput>.operator ==(Aw.Judge.Core.Questions.QuestionDefinition<TInput>? left, Aw.Judge.Core.Questions.QuestionDefinition<TInput>? right) -> bool
