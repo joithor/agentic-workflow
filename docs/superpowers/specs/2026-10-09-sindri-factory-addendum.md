@@ -218,11 +218,11 @@ skills (`/officeHours`, brainstorming, `/autoplan`, `/archReview`). The studio a
 
 **Handoff packet:** a directory with a manifest, validated by a typed C# schema (System.Text.Json source-generated
 records, with a generated JSON Schema for editors; see the readiness design §4b and §4c). Each schema file carries
-`schemaVersion`. A minimal version ships in readiness step R1a so the C# ports themselves run as packets.
+`schemaVersion`. A minimal version ships in readiness step R1b (#142) so the C# ports themselves run as packets.
 
 | Part | Contents |
 |---|---|
-| `packet.yaml` | id, repo, base sha, status, hash, links to everything below |
+| `packet.yaml` (`packet.json` in the R1b build, #142) | id, repo, base sha, status, hash, links to everything below |
 | Design | Design docs, ADRs, product-graph delta, data-model delta |
 | Decision log | Answered questions, plus deferred ones with an owner and a "build may assume" default |
 | Out of scope | An explicit list. The scope-expansion check reads it |
@@ -246,6 +246,65 @@ retrieval or pruning scoped to the edit.
 **Freeze and amend:** `sindri packet freeze` records the hash in the ledger, and builds run against that hash.
 Any later change is an **amendment**: a scope-expansion or packet-miss item goes back to the desk queue, and only
 the affected tasks are re-planned and re-frozen.
+
+**What R1b builds (`Aw.Packets`, #142).** Before the switch the checks and the freeze run as the standalone NativeAOT
+CLI `aw-packets validate|freeze <packet-dir> [--repo <dir>] [--json]` (readiness design §4c). After it,
+`sindri packet validate|freeze` runs this CLI through a planned `cli` edge, as `sindri readiness check` does
+(readiness design §8): the use cases and adapters live in `Aw.Packets.App`, and a `project` edge could reach only
+`Aw.Packets.Core`; #142's `deps.yaml` declares that `cli` edge.
+`--repo` is a directory inside the repository the packet builds (default: the packet directory); the base commit's
+file list comes from git.
+- **The manifest is `packet.json` today, not `packet.yaml`:** the build reads typed, source-generated JSON under
+  NativeAOT and carries no YAML library. Keeping JSON or adding a YAML reader is open (readiness design §9 R14).
+- **Rule ids,** in the order the checks report them:
+
+  | Rule | Check |
+  |---|---|
+  | `PKT-ID-001` | Task, workstream, question and example ids are unique |
+  | `PKT-WS-001` | Every task is in a declared workstream |
+  | `PKT-GRAPH-001` | Every dependency names a task in the packet |
+  | `PKT-GRAPH-002` | The task graph is acyclic; each strongly connected group is reported once, with one cycle through it |
+  | `PKT-BASE-001` | `baseSha` is a full commit sha that exists in the repository |
+  | `PKT-SCOPE-001` | Every write scope is a relative glob matching a file at the base commit, or `new:` a path that can be created there |
+  | `PKT-SCOPE-002` | Two tasks no dependency chain orders don't write the same path |
+  | `PKT-ACC-001` | Every task has a visible acceptance example, and every visible one has text |
+  | `PKT-EVID-001` | Every acceptance example names at least one kebab-case evidence kind (§17.11) |
+  | `PKT-DEC-001` | Every question is answered, or deferred with an owner and a `buildMayAssume` default |
+  | `PKT-HOLD-001` | Every task holds at least one acceptance example out |
+  | `PKT-HOLD-002` | No held-out example keeps its text in the packet; the packet keeps its id and evidence kinds (§17.19) |
+  | `PKT-SIZE-001` | **Unchecked:** the size-class budgets aren't defined (readiness design §9 R15) |
+  | `PKT-FLOW-001` | **Unchecked** until workflow generation (§17.7) exists |
+
+  This is the R1b set, not the whole `packet validate` set. Three checks the later sections add get `PKT-*` ids at
+  F0: measurable acceptance examples (§17.23.14), a named oracle before a migration (§17.24.2), and `freeze`
+  refusing a packet with `proposed` items not yet confirmed or rejected (§17.26.4). The §17.26.4 editing (`packet
+  edit`, `packet undo`, `source:` provenance on every item, change sets and draft revisions) is F0 too, not R1b.
+  Because #142 refuses an unknown member, F0 extends the packet schema with the provenance and status fields.
+- **Malformed packets** are refused before any rule runs (`AW-PACKETS-003`, or `-004` for an unknown
+  `schemaVersion`): a byte order mark, a duplicate key, an unknown member (an optional top-level `$schema` editor hint
+  is allowed), a null in a list, more than 2,000 tasks, or a link that leaves the packet directory (`..`, a root, a
+  `:`, or a symbolic link on the way).
+- **Write-scope globs** are repo-relative: `*` and `?` stay inside one path segment, and `**` as a whole segment
+  crosses segments. An entry is at most 1,024 characters, and matching is a two-pointer walk with no regex.
+- **Output:** the text form lists every rule as `pass`, `FAIL` (subject, what was found, the fix) or `unchecked` (the
+  reason). A rule reports at most 50 failures, then one `omitted` record whose `omitted` field counts the rest.
+  `--json` writes one document, `schemaVersion` 1. For `validate` it holds `packet`, `passed` and `checks[]`: one
+  record per failure and one per passing or unchecked rule, each with `rule`, `state`, `subject`, `message` and `fix`.
+  For `freeze` it holds `packet`, `frozen`, `hash` (null when a check failed), `digestVersion`, `location` (the
+  record's path under `packets/`, null when nothing was frozen), `alreadyFrozen` and the same `checks[]`; it has no
+  `passed`.
+- **Exit codes:** 0 when every implemented check passes (for `freeze`, the hash is recorded); 1 when a check fails or
+  the packet is malformed; 2 for a usage error or when the tool can't do its job (no packet, an unreadable repository
+  or packet file, an unwritable freeze log).
+- **Freeze:** a packet with a failed check isn't frozen and nothing is written. Otherwise the record (`FreezeRecord`:
+  `schemaVersion` 1, repo, packet, hash, `digestVersion`, `baseSha`, `frozenAt`, the files the hash covers) goes to
+  `packets/<owner>/<name>/<id>/frozen/<hex>.json` under the state directory, per repository because a packet id is
+  unique only within one. The repository is a `RepoSlug` (`owner/name`): each side is letters, digits, `.`, `_` and
+  `-`, never ends in `.`, and isn't a Windows device name (`con`, `prn`, `aux`, `nul`, `com1`–`com9`, `lpt1`–`lpt9`,
+  with or without an extension), because the two sides are also directory names under `packets/` on every OS. Freezing
+  the same hash again writes nothing. The packet directory is never changed. Until sindri's C# ledger exists this
+  record stands in for "records the hash in the ledger"; the ledger takes over when sindri is ported.
+- **The hash** is digest v1 (readiness design §4c, Digests) over the packet's files.
 
 ## 17.5 Narrow scope and sandbox per session
 
@@ -302,6 +361,16 @@ check: { type: eslint, rule: "no-restricted-imports" }       # deterministic | j
 source: { type: desk, ref: "decision-log#D-12" }             # desk | correction | adr | review | import
 status: active          # proposed | active | retired
 ```
+
+**Recorded shape in this repo (readiness R1b, #137):** the C# engineering rules are records in
+`rules/engineering/csharp/<slug>.yaml` (schema `schemas/rule-record.schema.json`, check `node scripts/check-rules.mjs`).
+They differ from the sketch above in one open way: `checks` is a **list** (a rule can be enforced by several checks,
+each with its own `type`, id, `status` and, while its PR is open, `pendingPr`), and `check.type` takes this repo's
+check kinds (`analyzer`, `compiler`, `banned-symbols`, `archunit`, `check-deps`, `lane-cap`, `check-rules`,
+`build-setting`, `test`, `script`, `ci`, `review`) instead of `eslint`.
+They add `section` (the readiness spec section), `gap` (`closed`, `partial`, `pending`, `open`), `gapNote` and
+`relatedIds`. Whether to keep the list form or split to one record per check is an open owner question (readiness
+spec §9 R12).
 
 **Layers** (a later layer wins on the same id): core defaults → `rules/` in this repo (the human's personal
 taste, safe to be public) → profile overlay (workplace and repo specifics, private) → packet (project-specific).
@@ -668,6 +737,9 @@ These resolve the /autoplan findings C1–C17. Where a rule here conflicts with 
   hooks are in root-owned managed settings that the overlay can't disable.
 - Rule checks that run repo-controlled config (for example a repo's eslint or analyzer config) run in the
   **phase-2** verifier, never in the phase-1 verifier, which runs no repo code.
+- **The holdout store's path and format are open** (readiness design §9 R16). The R1b packet build (#142) checks only
+  the packet side: each held-out acceptance example is named by its id in the packet, with its evidence kinds and no
+  text (`PKT-HOLD-002`). The store side and the canary are checked once the store exists.
 
 ### Hosts and the lease (C6, C17, tension 3)
 - One **shared lease** decides the active factory host. It lives on the always-on box (or another shared store),
