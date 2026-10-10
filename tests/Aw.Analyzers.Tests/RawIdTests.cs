@@ -102,6 +102,44 @@ public sealed class RawIdTests
     }
 
     [Fact]
+    public async Task Checks_extension_receivers_operators_conversions_and_type_arguments_an_implementation_adds()
+    {
+        var found = await AnalyzerHarness.Run(new RawIdAnalyzer(), "Aw.Probe.Core", """
+            using System;
+            using System.Collections.Generic;
+            namespace Aw.Probe.Core;
+            public static class Ext
+            {
+                extension(Guid run) { public bool IsNew() => false; }
+                extension(string ownerId) { public bool IsOwner() => ownerId.Length > 0; }
+            }
+            public sealed class W { public static W operator +(W a, Guid b) => a; public static explicit operator Guid(W w) => default; }
+            public interface IMap<T> { IReadOnlyDictionary<Guid, T> Map(); }
+            public sealed class M2 : IMap<Guid> { public IReadOnlyDictionary<Guid, Guid> Map() => new Dictionary<Guid, Guid>(); }
+            public sealed class M3 : IMap<int> { public IReadOnlyDictionary<Guid, int> Map() => new Dictionary<Guid, int>(); }
+            """);
+
+        // Lines 6-7: each extension block's receiver, once. Line 9: the operator's parameter and the conversion's
+        // result. Line 11: T = Guid adds a raw id the base (line 10) doesn't have; M3 (line 12) adds none.
+        Assert.Equal(["AW1001@10", "AW1001@11", "AW1001@6", "AW1001@7", "AW1001@9", "AW1001@9"], found);
+    }
+
+    [Fact]
+    public async Task A_partial_member_is_reported_once()
+    {
+        var found = await AnalyzerHarness.Run(new RawIdAnalyzer(), "Aw.Probe.Core", """
+            namespace Aw.Probe.Core;
+            public sealed partial class P
+            {
+                public partial void M(string ownerId);
+                public partial void M(string ownerId) { }
+            }
+            """);
+
+        Assert.Equal(["AW1001@4"], found);
+    }
+
+    [Fact]
     public async Task Applies_to_Features_assemblies()
     {
         var found = await AnalyzerHarness.Run(

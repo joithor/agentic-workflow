@@ -26,6 +26,21 @@ public sealed class GenericArityTests
         """;
 
     [Fact]
+    public async Task A_partial_method_is_reported_once()
+    {
+        var found = await AnalyzerHarness.Run(new GenericArityAnalyzer(), "Aw.Probe", """
+            namespace Aw.Probe;
+            internal sealed partial class P
+            {
+                internal partial void G<T1, T2, T3, T4>();
+                internal partial void G<T1, T2, T3, T4>() { }
+            }
+            """);
+
+        Assert.Equal(["AW1009@4"], found);
+    }
+
+    [Fact]
     public async Task Flags_types_methods_and_delegates_over_three_type_parameters()
     {
         var found = await AnalyzerHarness.Run(new GenericArityAnalyzer(), "Aw.Probe", Sample);

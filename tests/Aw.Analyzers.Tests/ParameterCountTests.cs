@@ -37,6 +37,21 @@ public sealed class ParameterCountTests
         Assert.Equal(["AW1006@10", "AW1006@14", "AW1006@18", "AW1006@2", "AW1006@3", "AW1006@7"], found);
     }
 
+    [Fact]
+    public async Task A_partial_method_is_reported_once()
+    {
+        var found = await AnalyzerHarness.Run(new ParameterCountAnalyzer(), "Aw.Probe", """
+            namespace Aw.Probe;
+            internal sealed partial class P
+            {
+                internal partial void M(int a, int b, int c, int d, int e, int f);
+                internal partial void M(int a, int b, int c, int d, int e, int f) { }
+            }
+            """);
+
+        Assert.Equal(["AW1006@4"], found);
+    }
+
     private const string Constructors = """
         namespace Aw.Probe;
         internal readonly struct Point(int a, int b, int c, int d, int e, int f) { internal int S => a + b + c + d + e + f; }
