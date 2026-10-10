@@ -362,8 +362,19 @@ jobs:
       - name: Scaffold, build and test a small cli and a full http package, then remove them
         if: env.CHANGED == 'true'
         # docs/csharp/scaffolds/new-package.md "Done criteria": the generators' own CI test, against the real root
-        # files. Each package lives in a throwaway git worktree that the script removes.
-        run: bash scripts/scaffold/e2e.sh
+        # files. Each package lives in a throwaway git worktree that the script removes. A NuGet feed error (the
+        # generators restore new projects over the network) gets one retry, like the .NET job's restore.
+        run: |
+          set +e
+          bash scripts/scaffold/e2e.sh 2>&1 | tee "$RUNNER_TEMP/scaffold-e2e.log"
+          code="${PIPESTATUS[0]}"
+          if [ "$code" -ne 0 ] && grep -qE 'NU1900|NU1301|Unable to load the service index' "$RUNNER_TEMP/scaffold-e2e.log"; then
+            echo "::warning::NuGet feed error during the scaffold e2e — retrying once in 30s"
+            sleep 30
+            bash scripts/scaffold/e2e.sh
+            code=$?
+          fi
+          exit "$code"
 
   ci-result:
     name: CI result

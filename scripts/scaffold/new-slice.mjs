@@ -19,7 +19,7 @@ import { Journal, ScaffoldError, UsageError, camel, kebab, list, parseArgs, with
 import { byNamespace, usingsBlock } from "./lib/package-templates.mjs";
 import { nodeOf, packageShape, readDeps } from "./lib/repo.mjs";
 import * as T from "./lib/slice-templates.mjs";
-import { build, expectOnlyRed, formatClean, generatedPublicApi, publicApiFix } from "./lib/checks.mjs";
+import { build, expectOnlyRed, formatClean, generatedPublicApi, noStrayChanges, publicApiFix, strayChanges } from "./lib/checks.mjs";
 
 const PRIMS = ["string", "Guid", "int"];
 const METHODS = ["GET", "POST", "PUT", "PATCH", "DELETE"];
@@ -55,6 +55,8 @@ export function resolveSlice(journal, input) {
     if (existingIds.has(m[1]) && existingIds.get(m[1]) !== m[2]) throw new ScaffoldError("NS-IDS", `${m[1]} already exists as a ${existingIds.get(m[1])} id`, `pass ${m[1]}:${existingIds.get(m[1])} or drop it (existing ids are reused)`);
     return { name: m[1], prim: m[2], isNew: !existingIds.has(m[1]) };
   });
+  const dupe = (names) => names.find((n, i) => names.indexOf(n) !== i);
+  if (dupe(ids.map((i) => i.name))) throw new ScaffoldError("NS-IDS", `${dupe(ids.map((i) => i.name))} is listed twice`, "list each id once");
   const known = new Map([...existingIds].map(([name, prim]) => [name, prim]));
   for (const id of ids) known.set(id.name, id.prim);
 
@@ -81,6 +83,11 @@ export function resolveSlice(journal, input) {
       routeIds.push(named);
       return `{${camel(named)}}`;
     });
+    if (dupe(routeIds)) throw new ScaffoldError("NS-ROUTE", `the route names ${dupe(routeIds)} twice`, "use each id once in a route");
+    const loose = ids.filter((i) => !routeIds.includes(i.name)).map((i) => i.name);
+    if (["GET", "DELETE"].includes(method) && loose.length) {
+      throw new ScaffoldError("NS-ROUTE", `${method} has no body, and ${loose.join(", ")} ${loose.length > 1 ? "are" : "is"} not in the route`, `put {${camel(loose[0])}} in the route, or use POST`);
+    }
   }
 
   const requestIds = [...ids.map(({ name, prim }) => ({ name, prim }))];
@@ -88,6 +95,7 @@ export function resolveSlice(journal, input) {
 
   const ports = list(input.ports);
   for (const port of ports) if (!/^I[A-Z][A-Za-z0-9]{2,40}$/.test(port)) throw new ScaffoldError("NS-PORTS", `'${port}' is not an interface name`, "pass e.g. --ports IItemStore");
+  if (dupe(ports)) throw new ScaffoldError("NS-PORTS", `${dupe(ports)} is listed twice`, "list each port once");
   if (ports.length + 1 > 5) throw new ScaffoldError("NS-DEPS", `${ports.length + 1} constructor dependencies (ports + TimeProvider); the limit is 5`, "split the use case");
   const newPorts = ports.filter((port) => !journal.exists(`${coreDir}/${port}.cs`));
 
@@ -145,14 +153,21 @@ export function writeSlice(journal, s) {
   journal.create(`${d.features}/${s.slice}Service.cs`, T.service(s));
   journal.create(`${d.features}/${s.slice}Validator.cs`, T.validator(s));
 
-  journal.edit(d.registration, (text) => addUsings(text.replace(/^        return services;$/m, `${T.registration(s)}        return services;`), ["Aw.Kernel.Services", s.featuresNs]));
+  journal.insert(d.registration, /^ {8}return services;$/m, `${T.registration(s)}        return services;`, "NS-EDIT", `the ${s.slice} registration (before 'return services;')`);
+  journal.edit(d.registration, (text) => addUsings(text, ["Aw.Kernel.Services", s.featuresNs]));
 
+  // Vogen wraps a Guid or int id's generated ToString(string, IFormatProvider) in #nullable disable: RS0041 on Core,
+  // with nothing to fix in user code and no .editorconfig reach into generated files (docs/csharp/typed-ids.md).
+  const coreProject = d.coreProject;
+  if (s.ids.some((i) => i.isNew && i.prim !== "string") && !journal.read(coreProject).includes("RS0041")) {
+    journal.insert(coreProject, /(<RootNamespace>[^<]*<\/RootNamespace>\n)/, `$1${T.rs0041NoWarn}`, "NS-EDIT", "the RS0041 NoWarn (after RootNamespace)");
+  }
   for (const id of s.ids.filter((i) => i.isNew)) {
     journal.create(`${d.core}/Ids/${id.name}.cs`, T.typedId(s, id));
     journal.create(`${d.tests}/Ids/${id.name}Tests.cs`, T.idTests(s, id));
     journal.create(`${d.tests}/Ids/${id.name}Holder.cs`, T.idHolder(s, id));
     const ctx = `${d.tests}/Ids/IdsJsonContext.cs`;
-    if (journal.exists(ctx)) journal.edit(ctx, (text) => text.replace(/(\ninternal sealed partial class IdsJsonContext)/, `\n[JsonSerializable(typeof(${id.name}Holder))]$1`));
+    if (journal.exists(ctx)) journal.insert(ctx, /(\ninternal sealed partial class IdsJsonContext)/, `\n[JsonSerializable(typeof(${id.name}Holder))]$1`, "NS-EDIT", `${id.name}Holder in the id tests' JSON context`);
     else journal.create(ctx, T.idsJsonContext(s, [`${id.name}Holder`]));
   }
   for (const port of s.newPorts) {
@@ -165,7 +180,7 @@ export function writeSlice(journal, s) {
   const jsonUsings = [s.featuresNs];
   if (s.surface === "cli") {
     journal.create(`${d.commands}/${s.slice}Command.cs`, T.command(s));
-    journal.edit(`${d.commands}/CommandTable.cs`, (text) => text.replace(/^(\s*_ => CommandOutput\.Usage)/m, `${T.commandArm(s)}$1`));
+    journal.insert(`${d.commands}/CommandTable.cs`, /^(\s*_ => CommandOutput\.Usage)/m, `${T.commandArm(s)}$1`, "NS-EDIT", `the '${s.command}' arm (above '_ => CommandOutput.Usage')`);
   }
   if (s.surface === "http") {
     journal.create(`${d.endpoints}/${s.slice}Endpoint.cs`, T.endpoint(s));
@@ -174,24 +189,28 @@ export function writeSlice(journal, s) {
       jsonTypes.push(`${s.slice}Body`);
       jsonUsings.push(`Aw.${s.pkg}.Host.Endpoints`);
     }
-    journal.edit(`${d.endpoints}/EndpointTable.cs`, (text) => text.replace(/(_ = app\.MapGroup\("[^"]*"\)[^;]*);/, `$1${T.endpointCall(s)};`));
+    journal.insert(`${d.endpoints}/EndpointTable.cs`, /(_ = app\.MapGroup\("[^"]*"\)[^;]*);/, `$1${T.endpointCall(s)};`, "NS-EDIT", `Map${s.slice}() (on the '_ = app.MapGroup(...)' chain)`);
     for (const id of s.routeIds) {
       const rel = `${d.tests}/Ids/${id}RouteBindingTests.cs`;
       if (!journal.exists(rel)) journal.create(rel, T.routeBindingTests(s, { name: id, prim: s.requestIds.find((r) => r.name === id).prim }));
     }
   }
   if (s.surface !== "none") {
-    journal.edit(d.json, (text) => addUsings(text.replace(/(\n(?:internal|public) sealed partial class)/, `\n${jsonTypes.map((t) => `[JsonSerializable(typeof(${t}))]`).join("\n")}$1`), jsonUsings));
+    journal.insert(d.json, /(\n(?:internal|public) sealed partial class)/, `\n${jsonTypes.map((t) => `[JsonSerializable(typeof(${t}))]`).join("\n")}$1`, "NS-EDIT", "the slice's [JsonSerializable] lines (above the context class)");
+    journal.edit(d.json, (text) => addUsings(text, jsonUsings));
   }
 
   journal.create(`${d.tests}/${s.slice}/${s.slice}Tests.cs`, T.redTest(s));
   journal.create(`${d.testing}/${s.slice}RequestBuilder.cs`, T.requestBuilder(s));
-  journal.edit(`${d.testing}/A.cs`, (text) => text.replace(/\{\n\}\n?$|\n\}\n?$/, (end) => (end.startsWith("{") ? `{\n${T.builderFactory(s)}}\n` : `\n\n${T.builderFactory(s)}}\n`)));
+  journal.insert(`${d.testing}/A.cs`, /\{\n\}\n?$|\n\}\n?$/, (end) => (end.startsWith("{") ? `{\n${T.builderFactory(s)}}\n` : `\n\n${T.builderFactory(s)}}\n`), "NS-EDIT", "the builder factory (before A's closing brace)");
 }
 
 /** The public API steps (before the build): the RS0016 code fix, then Vogen's generated members from the build. */
 export function sliceApi(journal, s, log) {
   const root = journal.root;
+  // dotnet format rewrites the PublicAPI files outside the journal: record them first, so a revert restores them.
+  journal.watch(`${s.dirs.core}/PublicAPI.Unshipped.txt`);
+  if (s.dirs.featuresProject) journal.watch(`src/${s.pkg}/Aw.${s.pkg}.Features/PublicAPI.Unshipped.txt`);
   if (s.ids.some((i) => i.isNew) || s.newPorts.length > 0) {
     const api = `${s.dirs.core}/PublicAPI.Unshipped.txt`;
     publicApiFix(root, s.dirs.coreProject, log);
@@ -225,6 +244,7 @@ function main(argv) {
   const root = path.resolve(input.root ?? process.cwd());
   const journal = new Journal(root);
   const log = (line) => console.error(line);
+  const before = input.filesOnly ? [] : strayChanges(journal);
   try {
     const s = resolveSlice(journal, input);
     writeSlice(journal, s);
@@ -235,6 +255,7 @@ function main(argv) {
         expectOnlyRed(root, `${s.slice}Tests.${s.slice}_${s.behavior}`, log);
         formatClean(root, log);
       });
+      noStrayChanges(journal, before);
     }
     console.log(`new-slice: wrote ${journal.touched().length} files for ${s.pkg}.${s.slice}`);
     for (const f of journal.touched()) console.log(`  ${f}`);
@@ -243,13 +264,11 @@ function main(argv) {
     return 0;
   } catch (e) {
     journal.revert();
-    if (e instanceof ScaffoldError) {
-      console.error(e.message);
-      if (e.fix) console.error(`fix: ${e.fix}`);
-      if (journal.touched().length) console.error(`reverted ${journal.touched().length} files`);
-      return 1;
-    }
-    throw e;
+    const err = e instanceof ScaffoldError ? e : new ScaffoldError("SCAFFOLD-INTERNAL", e.message, "a generator bug: the files were reverted; report the message");
+    console.error(err.message);
+    if (err.fix) console.error(`fix: ${err.fix}`);
+    if (journal.touched().length) console.error(`reverted ${journal.touched().length} files`);
+    return 1;
   }
 }
 

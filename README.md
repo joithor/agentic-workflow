@@ -187,6 +187,7 @@ cd mcp-bridge && npm start    # Fastify on http://127.0.0.1:3100
 | Ideation & planning | `withInterview`, `enhancePrompt`, `officeHours`, `autoplan`, `productReview`, `archReview`, `planDesignReview`, `planDevexReview` |
 | Design | `design-analyze`, `design-language`, `design-evolve`, `design-shotgun`, `design-mockup`, `design-implement`, `design-refine`, `design-verify` (dispatchers auto-detect web/iOS and route to their `-web` / `-ios` sub-skills) |
 | Build & verify | `specToProvenPR`, `verify-app` (→ `verify-web`, `verify-ios`), `ui-evidence` |
+| C# scaffolds | `new-package`, `new-slice` |
 | Review | `review`, `postReview`, `addressReview`, `cso` |
 | Debug & QA | `rootCause`, `bugHunt`, `bugReport`, `bugFixOrchestrator`, `testAudit` |
 | Ship & operate | `shipRelease`, `landAndDeploy`, `canary`, `syncDocs`, `weeklyRetro`, `prismStatus`, `judge` |

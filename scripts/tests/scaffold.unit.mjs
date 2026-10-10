@@ -28,8 +28,10 @@ const t = (name, fn) => {
   }
 };
 
+const trees = [];
 function tree() {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), "aw-scaffold-unit-"));
+  trees.push(dir);
   for (const rel of SEED) {
     fs.mkdirSync(path.dirname(path.join(dir, rel)), { recursive: true });
     fs.copyFileSync(path.join(REPO, rel), path.join(dir, rel));
@@ -60,6 +62,7 @@ const pkg = (dir, extra = {}) => {
   const args = Object.entries(base).flatMap(([k, v]) => (v === undefined ? [] : [`--${k}`, v]));
   return run(NEW_PACKAGE, dir, args);
 };
+const slice = (d, extra) => run(NEW_SLICE, d, Object.entries(extra).flatMap(([k, v]) => [`--${k}`, v]));
 const read = (dir, rel) => fs.readFileSync(path.join(dir, rel), "utf8");
 const exists = (dir, rel) => fs.existsSync(path.join(dir, rel));
 const refused = (r, rule) => {
@@ -110,6 +113,14 @@ t("NP-PINS: a missing pin stops with the pin commit to make", () =>
 t("a bad first slice reverts the whole package (NS-NAME)", () => untouched((d) => refused(pkg(d, { "first-slice": "x" }), "NS-NAME")));
 t("a refusal after the package files are written reverts them (NS-ROUTE)", () =>
   untouched((d) => refused(pkg(d, { name: "Demohttp", note: "x", "error-prefix": "DEMOHTTP", shape: "full", host: "http", binary: undefined, "first-slice": "StartItem", behavior: "starts_an_item", route: "POST /items/{nope}" }), "NS-ROUTE")));
+t("NP-SMALL-NONE: a small package needs an entry point", () => untouched((d) => refused(pkg(d, { host: "none" }), "NP-SMALL-NONE")));
+t("NP-DEPENDS: a declared but unported package", () => untouched((d) => refused(pkg(d, { name: "Scorerx", tier: "2", note: "x", "error-prefix": "SCORERX", depends: "Judge" }), "NP-DEPENDS")));
+t("NP-EXISTS: the tests project already exists (Architecture)", () => untouched((d) => refused(pkg(d, { name: "Architecture", note: "x", "error-prefix": "ARCHX" }), "NP-EXISTS")));
+t("NS-IDS: an id listed twice is refused, not a crash", () => untouched((d) => refused(pkg(d, { ids: "ThingId:string,ThingId:string" }), "NS-IDS")));
+t("NS-ROUTE: a GET with an id outside the route", () =>
+  untouched((d) => refused(pkg(d, { name: "Demohttp", note: "x", "error-prefix": "DEMOHTTP", shape: "full", host: "http", binary: undefined, "first-slice": "GetItem", behavior: "gets_an_item", route: "GET /items", ids: "ItemId:string" }), "NS-ROUTE")));
+t("NS-ROUTE: the same id twice in a route", () =>
+  untouched((d) => refused(pkg(d, { name: "Demohttp", note: "x", "error-prefix": "DEMOHTTP", shape: "full", host: "http", binary: undefined, "first-slice": "GetItem", behavior: "gets_an_item", route: "GET /a/{itemId}/{itemId}", ids: "ItemId:string" }), "NS-ROUTE")));
 t("usage error: unknown option exits 2", () => untouched((d) => assert.equal(run(NEW_PACKAGE, d, ["--nope", "x"]).code, 2)));
 
 // ---- /new-package output: small cli ----
@@ -138,6 +149,8 @@ t("small cli: the projects, the deps edge, the registry and the red test", () =>
   assert.match(read(d, "tests/Aw.Architecture.Tests/Aw.Architecture.Tests.csproj"), /src\/Readiness\/Aw\.Readiness\.App\/Aw\.Readiness\.App\.csproj/);
   assert.match(read(d, "AgenticWorkflow.slnx"), /<Folder Name="\/src\/Readiness\/">/);
   assert.match(read(d, "src/Readiness/Aw.Readiness.App/PublicAPI.Unshipped.txt"), /^#nullable enable\n$/);
+  assert.match(read(d, "tests/Aw.Readiness.Testing/.editorconfig"), /dotnet_diagnostic\.MA0182\.severity = none/);
+  assert.doesNotMatch(read(d, "src/Readiness/Aw.Readiness.Core/Aw.Readiness.Core.csproj"), /RS0041/, "no Guid/int id yet");
   const red = read(d, "tests/Aw.Readiness.Tests/CheckRepo/CheckRepoTests.cs");
   assert.match(red, /public async Task CheckRepo_reports_level_one_for_an_empty_repo\(\)/);
   assert.match(red, /Assert\.Fail\("red: assert reports_level_one_for_an_empty_repo"\)/);
@@ -163,10 +176,23 @@ t("full http: Host, loopback, endpoint, id, route binding test, undeclared node 
   assert.match(read(d, "deps.yaml"), /- from: Demohttp\n {4}to: Kernel\n {4}kind: project\n {4}status: current/);
   assert.doesNotMatch(read(d, `${host}/Composition.cs`), /using Microsoft\.Extensions\.DependencyInjection;/, "the Web SDK's implicit usings cover it");
   assert.match(read(d, "src/Demohttp/Aw.Demohttp.Core/Ids/ItemId.cs"), /\[JsonConverter\(typeof\(StringIdJsonConverter<ItemId>\)\)\]/);
+  assert.match(read(d, "src/Demohttp/Aw.Demohttp.Core/Aw.Demohttp.Core.csproj"), /<NoWarn>\$\(NoWarn\);RS0041<\/NoWarn>/, "OwnerId is a Guid id");
+  assert.ok(!exists(d, "tests/Aw.Demohttp.Testing/.editorconfig"), "full-shape builders are public");
+  assert.match(read(d, `${host}/Program.cs`), /Pipeline\.Configure\(app\)/);
+  assert.match(read(d, "tests/Aw.Demohttp.Tests/LoopbackBindingTests.cs"), /Pipeline\.Configure\(app\)/);
+  assert.match(read(d, "tests/Aw.Demohttp.Tests/LoopbackBindingTests.cs"), /"ASPNETCORE_PREFERHOSTINGURLS=true;ASPNETCORE_URLS=http:\/\/0\.0\.0\.0:0"/);
+  // a second http slice: GET by a route id that already exists, chained on the same group, its own JSON lines
+  const r2 = slice(d, { package: "Demohttp", slice: "GetItem", behavior: "gets_an_item", surface: "http", route: "GET /items/{itemId}" });
+  assert.equal(r2.code, 0, r2.out);
+  assert.match(read(d, `${host}/Endpoints/EndpointTable.cs`), /MapGroup\("\/demohttp"\)\.MapStartItem\(\)\.MapGetItem\(\);/);
+  assert.match(read(d, `${host}/Endpoints/GetItemEndpoint.cs`), /MapGet\("\/items\/\{itemId\}", static async \(ItemId itemId, IService<GetItemRequest, GetItemResponse> service, CancellationToken ct\)/);
+  assert.match(read(d, `${host}/Endpoints/GetItemEndpoint.cs`), /new GetItemRequest\(itemId\)/);
+  assert.ok(!exists(d, `${host}/Endpoints/GetItemBody.cs`), "GET has no body");
+  assert.match(read(d, `${host}/DemohttpJsonContext.cs`), /typeof\(GetItemResponse\)[\s\S]*typeof\(StartItemBody\)|typeof\(StartItemBody\)[\s\S]*typeof\(GetItemResponse\)/);
+  assert.equal((read(d, "tests/Aw.Demohttp.Tests/Ids/IdsJsonContext.cs").match(/JsonSerializable/g) ?? []).length, 2, "ItemId reused, not redeclared");
 });
 
 // ---- /new-slice ----
-const slice = (d, extra) => run(NEW_SLICE, d, Object.entries(extra).flatMap(([k, v]) => [`--${k}`, v]));
 t("new-slice: a second cli slice adds one command arm, one registration and one red test", () => {
   const d = tree();
   assert.equal(pkg(d).code, 0);
@@ -179,6 +205,36 @@ t("new-slice: a second cli slice adds one command arm, one registration and one 
   assert.match(read(d, "src/Readiness/Aw.Readiness.App/Commands/ListReposCommand.cs"), /RepoId\.TryParse\(args\[0\], CultureInfo\.InvariantCulture, out var repoId\)/);
   assert.match(r.out, /^Commit: test: red ListRepos test \(lists_nothing_for_an_empty_profile\)$/m);
 });
+const sliceRefused = (extra, rule) => {
+  const d = tree();
+  assert.equal(pkg(d).code, 0);
+  const before = hashTree(d);
+  refused(slice(d, extra), rule);
+  assert.equal(hashTree(d), before, "the tree changed");
+};
+const base = { package: "Readiness", slice: "Other", behavior: "does_something", surface: "cli" };
+t("NS-NAME (new-slice)", () => sliceRefused({ ...base, slice: "other" }, "NS-NAME"));
+t("NS-BEHAVIOR (new-slice)", () => sliceRefused({ ...base, behavior: "Does Something" }, "NS-BEHAVIOR"));
+t("NS-IDS: malformed", () => sliceRefused({ ...base, ids: "Thing:string" }, "NS-IDS"));
+t("NS-IDS: an existing id with another primitive", () => {
+  const d = tree();
+  assert.equal(pkg(d).code, 0);
+  assert.equal(slice(d, { ...base, ids: "ThingId:string" }).code, 0);
+  const before = hashTree(d);
+  refused(slice(d, { ...base, slice: "Third", command: "third", ids: "ThingId:Guid" }), "NS-IDS");
+  assert.equal(hashTree(d), before);
+});
+t("NS-PORTS: not an interface name", () => sliceRefused({ ...base, ports: "ThingStore" }, "NS-PORTS"));
+t("NS-PORTS: listed twice", () => sliceRefused({ ...base, ports: "IThingStore,IThingStore" }, "NS-PORTS"));
+t("NS-EDIT: a hand-edited anchor is refused, not skipped", () => {
+  const d = tree();
+  assert.equal(pkg(d).code, 0);
+  const table = path.join(d, "src/Readiness/Aw.Readiness.App/Commands/CommandTable.cs");
+  fs.writeFileSync(table, fs.readFileSync(table, "utf8").replace("_ => CommandOutput.Usage", "_ => Fallback"));
+  const before = hashTree(d);
+  refused(slice(d, base), "NS-EDIT");
+  assert.equal(hashTree(d), before);
+});
 t("NS-EXISTS: the slice folder exists", () => {
   const d = tree();
   assert.equal(pkg(d).code, 0);
@@ -186,21 +242,9 @@ t("NS-EXISTS: the slice folder exists", () => {
   refused(slice(d, { package: "Readiness", slice: "CheckRepo", behavior: "again", surface: "cli" }), "NS-EXISTS");
   assert.equal(hashTree(d), before);
 });
-t("NS-SURFACE: surface doesn't match the host", () => {
-  const d = tree();
-  assert.equal(pkg(d).code, 0);
-  refused(slice(d, { package: "Readiness", slice: "Other", behavior: "does_something", surface: "http", route: "GET /x" }), "NS-SURFACE");
-});
-t("NS-DEPS: ports + TimeProvider over 5", () => {
-  const d = tree();
-  assert.equal(pkg(d).code, 0);
-  refused(slice(d, { package: "Readiness", slice: "Other", behavior: "does_something", surface: "cli", ports: "IA1x,IB1x,IC1x,ID1x,IE1x" }), "NS-DEPS");
-});
-t("NS-COMMAND: the command is taken", () => {
-  const d = tree();
-  assert.equal(pkg(d).code, 0);
-  refused(slice(d, { package: "Readiness", slice: "Other", behavior: "does_something", surface: "cli", command: "check-repo" }), "NS-COMMAND");
-});
+t("NS-SURFACE: surface doesn't match the host", () => sliceRefused({ ...base, surface: "http", route: "GET /x" }, "NS-SURFACE"));
+t("NS-DEPS: ports + TimeProvider over 5", () => sliceRefused({ ...base, ports: "IA1x,IB1x,IC1x,ID1x,IE1x" }, "NS-DEPS"));
+t("NS-COMMAND: the command is taken", () => sliceRefused({ ...base, command: "check-repo" }, "NS-COMMAND"));
 t("NS-PACKAGE: no such package", () => untouched((d) => refused(slice(d, { package: "Nothere", slice: "Other", behavior: "does_something", surface: "cli" }), "NS-PACKAGE")));
 t("new-slice: a new port gets its interface, fake and contract base", () => {
   const d = tree();
@@ -212,6 +256,7 @@ t("new-slice: a new port gets its interface, fake and contract base", () => {
   assert.ok(exists(d, "tests/Aw.Readiness.Testing/RepoReaderContract.cs"));
 });
 
+for (const dir of trees) fs.rmSync(dir, { recursive: true, force: true });
 if (failures.length) {
   for (const f of failures) console.error(`FAIL ${f}`);
   console.error(`${passed} passed, ${failures.length} failed`);

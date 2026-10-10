@@ -130,7 +130,8 @@ export const endpoint = (s) => {
     "CancellationToken ct",
   ].join(", ");
   const routeArgs = s.routeIds.map((id) => camel(id)).join(", ");
-  const make = hasBody(s) ? `body.ToRequest(${routeArgs})` : `new ${s.slice}Request(${routeArgs})`;
+  // Without a body every request field is a route value (resolveSlice refuses others), in the request's own order.
+  const make = hasBody(s) ? `body.ToRequest(${routeArgs})` : `new ${s.slice}Request(${s.requestIds.map((id) => camel(id.name)).join(", ")})`;
   return `${usingsBlock([s.featuresNs, "Aw.Kernel.Services", ...(s.routeIds.length ? [idsNs(s)] : [])])}
 
 namespace Aw.${s.pkg}.Host.Endpoints;
@@ -376,4 +377,14 @@ public sealed class ${id.name}RouteBindingTests
         return app;
     }
 }
+`;
+
+/**
+ * Added to Core's csproj with its first Guid or int id: Vogen 8.0.7 wraps such an id's generated
+ * ToString(string, IFormatProvider) in #nullable disable, which RS0041 rejects with nothing to fix in user code.
+ */
+export const rs0041NoWarn = `    <!-- RS0041 (oblivious types in the public API): Vogen 8.0.7 wraps a Guid or int id's generated
+         ToString(string, IFormatProvider) in #nullable disable, and .editorconfig sections can't reach generated files.
+         RS0016 still tracks those members, declared with the '~' marker (docs/csharp/typed-ids.md). -->
+    <NoWarn>$(NoWarn);RS0041</NoWarn>
 `;

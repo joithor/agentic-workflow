@@ -38,8 +38,9 @@ export function build(root, log) {
 export function unitLaneFailures(root, log) {
   const r = run(root, "dotnet", ["test", "--solution", "AgenticWorkflow.slnx", "--filter-trait", "Lane=unit", "--ignore-exit-code", "8"], { log });
   const failed = [...r.out.matchAll(/^\s*failed (\S+)/gm)].map((m) => m[1]);
-  const summary = r.out.match(/^\s*failed: (\d+)/gm);
-  return { code: r.code, failed: [...new Set(failed)], out: r.out, summary };
+  // The run summary's "failed: N" line (one per run; per-project summaries print "failed with N error(s)").
+  const failedCount = [...r.out.matchAll(/^\s*failed: (\d+)$/gm)].reduce((sum, m) => sum + Number(m[1]), 0);
+  return { code: r.code, failed: [...new Set(failed)], failedCount, out: r.out };
 }
 
 /** The lane run must fail on exactly the one red test the scaffold wrote, and nothing else. */
@@ -49,10 +50,11 @@ export function expectOnlyRed(root, redTest, log) {
   // The red test fails for the right reason: the parameterless stub's NotSupportedException, not a build or DI problem.
   const slice = redTest.split(".")[0].replace(/Tests$/, "");
   const sawRed = lane.failed.some((name) => name.endsWith(redTest)) && lane.out.includes(`NotSupportedException : ${slice}: make ${slice}Tests pass`);
-  if (others.length > 0 || !sawRed) {
+  // Exit 2 is "some tests failed"; anything else (a crashed or aborted test host) is not the red test.
+  if (others.length > 0 || !sawRed || lane.code !== 2 || lane.failedCount !== 1) {
     throw new ScaffoldError(
       "SCAFFOLD-RED",
-      `expected exactly one failing test (${redTest}); failing: ${lane.failed.length ? lane.failed.join(", ") : "none"}\n${tail(lane.out)}`,
+      `expected exactly one failing test (${redTest}) and exit 2; failing: ${lane.failed.length ? lane.failed.join(", ") : "none"} (summary failed: ${lane.failedCount}, exit ${lane.code})\n${tail(lane.out)}`,
       "every other test must pass and the red test must fail with the stub's NotSupportedException",
     );
   }
@@ -65,4 +67,22 @@ export function formatClean(root, log) {
 
 export function depsClean(root, log) {
   return mustPass(root, "SCAFFOLD-DEPS", "node", ["scripts/check-deps.mjs"], "declare the package and its edges in deps.yaml", log);
+}
+
+/** Done criterion: git status shows only the files the scaffold wrote. Returns the changed paths it didn't write. */
+export function strayChanges(journal) {
+  const r = run(journal.root, "git", ["status", "--porcelain", "--untracked-files=all"], { log: () => {} });
+  if (r.code !== 0) return [];
+  const touched = new Set(journal.touched());
+  return r.out
+    .split("\n")
+    .filter(Boolean)
+    .map((l) => l.slice(3).replace(/^"|"$/g, ""))
+    .filter((f) => !touched.has(f));
+}
+
+/** Fails SCAFFOLD-STRAY when a path changed during the run that the scaffold didn't write and wasn't changed before. */
+export function noStrayChanges(journal, before) {
+  const stray = strayChanges(journal).filter((f) => !before.includes(f));
+  if (stray.length) throw new ScaffoldError("SCAFFOLD-STRAY", `files changed that the scaffold didn't write: ${stray.join(", ")}`, "a command rewrote an existing file (usually a lock file or a PublicAPI file): find out why before committing");
 }

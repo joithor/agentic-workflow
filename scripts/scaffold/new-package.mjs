@@ -15,10 +15,10 @@
 
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { Journal, ScaffoldError, UsageError, list, lower, parseArgs, run, withHeavyLock } from "./lib/common.mjs";
+import { Journal, ScaffoldError, UsageError, list, lower, parseArgs, withHeavyLock } from "./lib/common.mjs";
 import * as P from "./lib/package-templates.mjs";
 import * as R from "./lib/repo.mjs";
-import { build, depsClean, expectOnlyRed, formatClean, mustPass, publicApiFix } from "./lib/checks.mjs";
+import { build, depsClean, expectOnlyRed, formatClean, mustPass, noStrayChanges, publicApiFix, strayChanges } from "./lib/checks.mjs";
 import { resolveSlice, sliceApi, writeSlice, nextSteps } from "./new-slice.mjs";
 
 const KNOWN = ["name", "tier", "errorPrefix", "note", "shape", "host", "depends", "firstSlice", "behavior", "binary", "command", "route", "ids", "ports", "root"];
@@ -31,10 +31,13 @@ export function resolvePackage(journal, input) {
   if (missing.length) throw new ScaffoldError("NP-INPUT", `missing ${missing.map((k) => `--${k.replace(/[A-Z]/g, (c) => `-${c.toLowerCase()}`)}`).join(", ")}`, "ask the user for each missing input; never guess a tier or a prefix");
   const { name, errorPrefix, shape, host } = input;
   if (!/^[A-Z][A-Za-z0-9]{2,30}$/.test(name) || RESERVED.includes(name)) throw new ScaffoldError("NP-NAME", `'${name}' must match ^[A-Z][A-Za-z0-9]{2,30}$ and not be ${RESERVED.join(", ")}`, "pick a PascalCase domain name");
-  if (journal.exists(`src/${name}`)) throw new ScaffoldError("NP-EXISTS", `src/${name} already exists`, "pick another name; to add a use case to it, run /new-slice");
+  for (const dir of [`src/${name}`, `tests/Aw.${name}.Tests`, `tests/Aw.${name}.Testing`]) {
+    if (journal.exists(dir)) throw new ScaffoldError("NP-EXISTS", `${dir} already exists`, "pick another name; to add a use case to an existing package, run /new-slice");
+  }
   if (!["small", "full"].includes(shape)) throw new ScaffoldError("NP-INPUT", `--shape '${shape}' is not small or full`, "small unless the package is expected over ~1,500 lines");
   if (!["cli", "http", "none"].includes(host)) throw new ScaffoldError("NP-INPUT", `--host '${host}' is not cli, http or none`, "pick the package's entry point");
   if (shape === "small" && host === "http") throw new ScaffoldError("NP-SMALL-HTTP", "shape small with host http: the Web SDK's generated public Program would land in App, a library with RS0016 on", "use --shape full for an http package");
+  if (shape === "small" && host === "none") throw new ScaffoldError("NP-SMALL-NONE", "shape small with host none: nothing outside the package references App, so an App with no entry point can't be composed (its internal Add…() methods are never called)", "use --shape full for a library package, or --host cli");
 
   const tier = Number(input.tier);
   if (!/^[0-3]$/.test(String(input.tier))) throw new ScaffoldError("NP-TIER", `--tier '${input.tier}' is not 0–3`, "read the tier from deps.yaml");
@@ -57,14 +60,15 @@ export function resolvePackage(journal, input) {
   if (inUse.has(errorPrefix) || errorPrefix === "KERNEL") throw new ScaffoldError("NP-PREFIX", `AW-${errorPrefix}- is taken (${inUse.get(errorPrefix) ?? "Aw.Kernel"})`, "ask the user for another prefix; never derive one");
 
   const depends = list(input.depends);
+  const refs = 2 + depends.length;
+  if (refs > 4) throw new ScaffoldError("NP-FANOUT", `${shape === "small" ? "App" : "Features"} would hold ${refs} in-repo references (Core, Aw.Kernel and ${depends.length} depends); the limit is 4`, "depend on fewer packages, or reach one through its CLI");
   for (const d of depends) {
     const node = R.nodeOf(deps, d);
     if (!node || node.kind !== "package") throw new ScaffoldError("NP-DEPENDS", `'${d}' is not a package in deps.yaml`, "depend only on declared packages");
     if (!(node.tier < tier)) throw new ScaffoldError("NP-DEPENDS", `${d} is tier ${node.tier}, not below ${name}'s tier ${tier}`, "project edges point strictly down the tiers; use a CLI or HTTP contract instead");
     if (node.tier === 0) throw new ScaffoldError("NP-DEPENDS", `${d} is a tier-0 package; Features reference only another package's Core`, "add tier-0 libraries by hand to the project that needs them, with a deps.yaml edge");
+    if (!journal.exists(`src/${d}/Aw.${d}.Core/Aw.${d}.Core.csproj`)) throw new ScaffoldError("NP-DEPENDS", `${d} is declared but not ported yet (no src/${d}/Aw.${d}.Core)`, `port ${d} first, or reach it through its CLI until then`);
   }
-  const refs = 2 + depends.length;
-  if (refs > 4) throw new ScaffoldError("NP-FANOUT", `${shape === "small" ? "App" : "Features"} would hold ${refs} in-repo references (Core, Aw.Kernel and ${depends.length} depends); the limit is 4`, "depend on fewer packages, or reach one through its CLI");
 
   const missingPins = R.missingPins(journal, host);
   if (missingPins.length) {
@@ -134,6 +138,7 @@ export function writePackage(journal, p) {
       } else {
         journal.create(`${host}/Program.cs`, P.programHttp(p));
         journal.create(`${host}/LoopbackBinding.cs`, P.loopbackBinding(p));
+        journal.create(`${host}/Pipeline.cs`, P.pipeline(p));
         journal.create(`${host}/LoopbackGuard.cs`, P.loopbackGuard(p));
         journal.create(`${host}/ValueObjectValidation.cs`, P.valueObjectValidation(p));
         journal.create(`${host}/HttpResults.cs`, P.httpResults(p));
@@ -166,10 +171,12 @@ export function writePackage(journal, p) {
   if (p.host === "http") {
     journal.create(`${t}/ProcessEnvironment.cs`, P.loopbackCollection(p));
     journal.create(`${t}/LoopbackBindingTests.cs`, P.loopbackTests(p));
+    journal.create(`${t}/HttpJsonProfileTests.cs`, P.httpJsonProfileTests(p));
   }
   const testing = `tests/Aw.${p.name}.Testing`;
   journal.create(`${testing}/Aw.${p.name}.Testing.csproj`, P.testingCsproj(p));
   journal.create(`${testing}/A.cs`, P.builderRoot(p));
+  if (p.shape === "small") journal.create(`${testing}/.editorconfig`, P.smallTestingEditorconfig());
 
   R.addToSolution(journal, p.name, prod.map((x) => x.path), tests.map((x) => x.path));
   if (!p.declared) R.addDepsNode(journal, p);
@@ -199,18 +206,6 @@ export function checkPackage(journal, p, s, log) {
   return lane;
 }
 
-/** Done criterion 3: git status shows only the files the scaffold wrote. Returns the unexpected paths. */
-export function unexpectedChanges(journal) {
-  const r = run(journal.root, "git", ["status", "--porcelain", "--untracked-files=all"], { log: () => {} });
-  if (r.code !== 0) return [];
-  const touched = new Set(journal.touched());
-  return r.out
-    .split("\n")
-    .filter(Boolean)
-    .map((l) => l.slice(3).replace(/^"|"$/g, ""))
-    .filter((f) => !touched.has(f));
-}
-
 export function main(argv, { log = (line) => console.error(line), out = (line) => console.log(line) } = {}) {
   let input;
   try {
@@ -224,7 +219,7 @@ export function main(argv, { log = (line) => console.error(line), out = (line) =
   }
   const root = path.resolve(input.root ?? process.cwd());
   const journal = new Journal(root);
-  const before = input.filesOnly ? [] : unexpectedChanges(journal);
+  const before = input.filesOnly ? [] : strayChanges(journal);
   try {
     const p = resolvePackage(journal, input);
     if (!/^[A-Z][A-Za-z0-9]{2,40}$/.test(input.firstSlice)) throw new ScaffoldError("NS-NAME", `'${input.firstSlice}' is not a PascalCase use case name`, "pass e.g. --first-slice CheckRepo");
@@ -234,8 +229,7 @@ export function main(argv, { log = (line) => console.error(line), out = (line) =
     writeSlice(journal, s);
     if (!input.filesOnly) {
       withHeavyLock(() => checkPackage(journal, p, s, log));
-      const stray = unexpectedChanges(journal).filter((f) => !before.includes(f));
-      if (stray.length) throw new ScaffoldError("SCAFFOLD-STRAY", `files changed that the scaffold didn't write: ${stray.join(", ")}`, "a command rewrote an existing file (usually a lock file): find out why before committing");
+      noStrayChanges(journal, before);
     }
     out(`new-package: ${p.name} (${p.shape}, host ${p.host}, tier ${p.tier}) — ${journal.touched().length} files`);
     for (const f of journal.touched()) out(`  ${f}`);
@@ -247,13 +241,11 @@ export function main(argv, { log = (line) => console.error(line), out = (line) =
     return 0;
   } catch (e) {
     journal.revert();
-    if (e instanceof ScaffoldError) {
-      log(e.message);
-      if (e.fix) log(`fix: ${e.fix}`);
-      if (journal.touched().length) log(`reverted ${journal.touched().length} files`);
-      return 1;
-    }
-    throw e;
+    const err = e instanceof ScaffoldError ? e : new ScaffoldError("SCAFFOLD-INTERNAL", e.message, "a generator bug: the files were reverted; report the message");
+    log(err.message);
+    if (err.fix) log(`fix: ${err.fix}`);
+    if (journal.touched().length) log(`reverted ${journal.touched().length} files`);
+    return 1;
   }
 }
 
