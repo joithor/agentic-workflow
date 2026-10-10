@@ -140,6 +140,244 @@ gets CI and golden contract tests as a safety net. The standards in §4 still ap
 - Rewrite fatigue: the rewrite is time-boxed per package, and a package that overruns 2× its estimate is reviewed
   before more work goes into it.
 
+## 4b. C# code standards and package organization
+
+The human's preferences set the shape:
+- minimal endpoints;
+- services;
+- the repository pattern over a SQL database;
+- strong generics and strong typing used through dependency injection;
+- test-driven development;
+- no spaghetti.
+
+The research behind these choices is listed in Sources at the end of this section. Every rule below becomes a
+rule record (addendum §17.6) with the check named in its row. A rule with no check is a gap to close in R1.
+
+### 4b.1 Architectural shape: feature slices on a clean dependency direction
+
+Two common .NET shapes trade off differently. Clean Architecture controls complexity with layers, and fits
+features that share a rich domain. Vertical slices control it by isolating features, and fit features of very
+different complexity. The usual middle ground, used here: **organize by feature, and keep the clean dependency
+direction.**
+
+```
+Host ──► Features ──► Core ◄── Infrastructure
+ │                     ▲            │
+ └──── composes ───────┴────────────┘   (Host is the only place that knows every project)
+```
+
+| Project (per package) | Holds | May reference |
+|---|---|---|
+| `Aw.<Pkg>.Core` | Domain types, strongly typed ids and value objects, pure logic, **port interfaces** (repositories, clock, process runner), errors | `Aw.Kernel` only |
+| `Aw.<Pkg>.Features` | One folder per use case (a slice): request and response records, the service (handler), the validator, and the endpoint or CLI mapping | `Core`, `Aw.Kernel` |
+| `Aw.<Pkg>.Infrastructure` | Repository implementations over SQL, external adapters (git, containers, model CLIs, HTTP), migrations | `Core`, `Aw.Kernel` |
+| `Aw.<Pkg>.Host` | The composition root: the minimal API app or the CLI `Main`, DI registration, configuration, the JSON context | everything in the package |
+| `Aw.Kernel` (shared, one per repo) | `Result<T>`, `Error`, `TimeProvider`-based clock helpers, id and value-object conventions, the logging setup, the generic `IService<TReq, TRes>` pipeline, test-contract base classes | the BCL only |
+
+**Rules** (enforced by project references, which fail the build, and ArchUnitNET tests):
+- `Core` has no I/O. It doesn't reference `System.IO`, `System.Net`, `Microsoft.Data.*`, `System.Diagnostics.Process`,
+  `Console`, `DateTime.Now`/`UtcNow` or `Guid.NewGuid`. They're banned through `BannedSymbols.txt` (the
+  BannedApiAnalyzers package), and time and ids come from injected ports (`TimeProvider`, `IIdGenerator`).
+- One slice never references another slice's types. Shared behavior moves into `Core` as a domain service or a port.
+  A second use of the same logic is the trigger to move it (the "generalize at the second case" signal, §6.2).
+- `Infrastructure` row and DTO types are `internal`. They never leave the project, and repositories return `Core` types.
+- Packages reference other packages only through their `Core` project's public surface, or through a CLI or HTTP
+  contract. Their `Infrastructure` and `Features` are never referenced.
+
+### 4b.2 Request flow: minimal endpoint → service → repository → SQL
+
+```csharp
+// Features/StartItem/StartItem.cs — one slice, one file per public type in practice
+public sealed record StartItemRequest(ItemId Item, SizeClass Size);
+public sealed record StartItemResponse(SessionId Session);
+
+internal sealed class StartItemService(IItemRepository items, ISessionLauncher launcher, TimeProvider clock)
+    : IService<StartItemRequest, StartItemResponse>
+{
+    public async ValueTask<Result<StartItemResponse>> Handle(StartItemRequest req, CancellationToken ct)
+    {
+        var item = await items.Get(req.Item, ct);                 // Result<Item>
+        if (item.IsError) return item.Error;
+        // pure decisions live on the domain type, not in the service
+        var plan = item.Value.PlanStart(req.Size, clock.GetUtcNow());
+        if (plan.IsError) return plan.Error;
+        return (await launcher.Start(plan.Value, ct)).Map(s => new StartItemResponse(s));
+    }
+}
+
+// Host/Endpoints.cs — minimal endpoint: bind, call, map. No logic.
+group.MapPost("/items/{id}/start", async (ItemId id, StartItemBody body, IService<StartItemRequest, StartItemResponse> svc, CancellationToken ct)
+    => (await svc.Handle(new(id, body.Size), ct)).ToHttpResult());   // TypedResults + ProblemDetails
+```
+
+- **Endpoints and CLI commands** only bind input, call one service, and map the `Result` to HTTP (`TypedResults`,
+  `ProblemDetails`) or to an exit code and output. They contain no branching on domain state. Group endpoints per
+  feature with `MapGroup`. Use `WebApplication.CreateSlimBuilder` and the request-delegate source generator, so
+  endpoints are AOT-compatible.
+- **Services** implement the generic `IService<TRequest, TResponse>` and do one use case each. There are no "manager"
+  or god services. A service with more than 5 constructor dependencies is a split signal, and it's an analyzer error
+  over 7.
+- **Cross-cutting behavior** (validation, logging, transactions, budgets) is a generic decorator
+  `Decorated<TReq, TRes>` around `IService<,>`, registered explicitly. There's no MediatR or AutoMapper: both moved to
+  commercial licences in 2025, and explicit code is easier for agents to follow. Mapping is hand-written.
+- **Repositories:** one interface per aggregate in `Core`, named by intent (`IItemRepository.Get`, `.SaveStarted`,
+  `.ListStartable`).
+  - A small generic base, `IReadRepository<TEntity, TId>`, covers `Get` and `Exists` for consistency, but there's no
+    generic `IRepository<T>` exposing `IQueryable` or arbitrary filters. Queries are named methods, so the SQL lives
+    in one place.
+  - Writes run inside an `IUnitOfWork` (one SQLite transaction) passed by the transaction decorator.
+- **SQL:**
+  - Data access is plain ADO.NET over `Microsoft.Data.Sqlite`, with typed parameter binding and an
+    `IRowMapper<T>` per row type.
+  - SQL lives in `const string` fields next to the repository, or in embedded `.sql` files. Schema changes are numbered
+    SQL migration files, and a migration test runs each one on a copy of the previous schema.
+  - Why not EF Core: its NativeAOT support is officially experimental in EF Core 10.
+  - Why not Dapper.AOT: reports on .NET 10 conflict.
+  - R1 includes a one-day spike that re-checks both. If either passes the AOT golden tests, it may replace the
+    hand-written mappers (decision R8).
+
+### 4b.3 Types, generics and errors
+
+- **Strongly typed ids and value objects** for every id and every constrained primitive (`ItemId`, `RepoSlug`,
+  `SizeClass`, `TokenBudget`). They're generated with Vogen (System.Text.Json and ADO.NET conversions, with
+  analyzers that ban `default` instances), or written by hand as `readonly record struct` if the R1 spike finds an
+  AOT problem. A raw `string` or `Guid` in a public signature of `Core` or `Features` is an analyzer error.
+- **`Result<T>` and `Error`** live in `Aw.Kernel`:
+  - expected failures (not found, invalid, conflict, rate-limited, budget exceeded) are `Error` records with a stable
+    code from the error catalogue (`SND-…`, `AW-…`);
+  - exceptions are only for bugs and broken invariants;
+  - analyzers flag a `catch (Exception)` outside `Host` and `Infrastructure` boundary adapters.
+- **Generics carry the design:** `IService<TReq, TRes>`, `IReadRepository<TEntity, TId>`, `IRowMapper<T>`,
+  `IValidator<T>`, `Decorated<TReq, TRes>`, and generic contract-test base classes (§4b.5). They're constrained (for
+  example `where TId : struct, IEquatable<TId>`). Generic types never take more than 3 type parameters.
+- **Nullable** is on everywhere. `!` needs a `// why:` comment, checked by a custom analyzer. `required` members and
+  primary constructors are preferred, and records are immutable by default.
+- **Visibility:** classes are `internal sealed` by default. Public API is tracked with `PublicApiAnalyzers`
+  (`PublicAPI.Shipped.txt`), so a change to a package's public surface shows in the diff.
+- **JSON:** System.Text.Json with one source-generated `JsonSerializerContext` per package. No reflection-based
+  serialization (it's AOT- and trim-analyzer enforced).
+
+### 4b.4 Dependency injection
+
+- `Microsoft.Extensions.DependencyInjection`. Registration lives **only** in `Host`. Each project exposes one explicit
+  extension method (`services.AddSindriCore()`, `AddSindriInfrastructure(config)`). There's no assembly scanning,
+  because it's reflection and not AOT-safe.
+- Constructor injection only: no service locator, and no `IServiceProvider` outside `Host`.
+- Lifetimes: services and repositories are scoped per request or command, pure domain services are singletons, and
+  `TimeProvider` is a singleton (a `FakeTimeProvider` in tests).
+- A DI validation test builds the container with `ValidateOnBuild` and `ValidateScopes` for every host.
+
+### 4b.5 Test-driven development without spaghetti
+
+- **Red first.** Every slice starts with a failing test that names the behavior (`StartItem_parks_when_budget_is_exhausted`).
+  The commit history shows the red test before the code (the existing `/specToProvenPR` red-commit rule).
+- **Tests by feature, not by layer:** `StartItemTests`, not `ItemRepositoryTests` plus `ItemServiceTests`.
+- **Lanes:**
+  - `unit`: `Core` logic and services with in-memory fakes. No I/O, under 10 s per package.
+  - `integration`: repositories on a real temp SQLite file; endpoints through `WebApplicationFactory`. Under 60 s.
+  - `heavy`: real containers, browsers and index builds. Nightly or alone.
+
+  Lanes are test traits. CI fails a test that runs over its lane's time.
+- **Fakes, not mocks.** Each port has one in-memory fake in a shared `Aw.<Pkg>.Testing` project. A generic contract-test
+  base class (`ReadRepositoryContract<TEntity, TId>`, `ItemRepositoryContract`) runs the **same tests against the fake
+  and the SQL implementation**, so the fake can't drift. Mocking libraries are not used.
+- **Test data:** builders with sensible defaults (`AnItem().WithSize(S).Build()`), deterministic ids and
+  `FakeTimeProvider`, and no shared mutable fixtures. Golden files are used for CLI output and JSON contracts.
+- **Architecture tests** (ArchUnitNET, which is maintained; NetArchTest's last release was in 2023) run in the unit
+  lane. They cover the dependency directions, no slice-to-slice references, the `internal` row types and the naming
+  rules.
+- **Framework:** xUnit v3 by default, or TUnit if it holds the lane budgets better under AOT (decision R7, settled
+  in the R1 spike).
+
+### 4b.6 Build settings and analyzers (repo root)
+
+- `global.json` pins the .NET SDK.
+- `Directory.Build.props`:
+  - language and nullable: `Nullable=enable`, `LangVersion=latest`, `ImplicitUsings=enable`;
+  - warnings: `TreatWarningsAsErrors=true`, `EnforceCodeStyleInBuild=true`, `AnalysisLevel=latest-recommended`
+    (raised to `latest-all` per category where the noise is acceptable, decided during R1);
+  - `IsAotCompatible=true` on every non-test project, which turns on the trim and AOT analyzers;
+  - `GenerateDocumentationFile=true` for public API;
+  - `RestorePackagesWithLockFile=true`, plus `RestoreLockedMode` in CI.
+- `Directory.Packages.props`: Central Package Management with exact versions. Analyzers are added as
+  `GlobalPackageReference`: `Microsoft.CodeAnalysis.NetAnalyzers`, `Meziantou.Analyzer`, `Roslynator.Analyzers`,
+  `Microsoft.CodeAnalysis.BannedApiAnalyzers`, `Microsoft.CodeAnalysis.PublicApiAnalyzers`. New packages follow
+  the same 14-day minimum age as the existing pins.
+- `.editorconfig` sets every rule's severity explicitly (no "suggestion" level for anything agents should obey).
+  The size limits: file ≤ 300 lines, method ≤ 40 lines, cyclomatic complexity ≤ 10, parameters ≤ 5. Existing
+  violations go into a ratchet baseline that only shrinks.
+- `Aw.Analyzers`: a small in-repo analyzer project for the rules no package covers:
+  - no raw ids in public signatures;
+  - `!` needs a reason;
+  - no cross-slice references (fast feedback; the architecture test is authoritative);
+  - endpoint lambdas call exactly one service.
+
+### 4b.7 Repository tree
+
+```
+agentic-workflow/
+├── global.json · Directory.Build.props · Directory.Packages.props · .editorconfig · BannedSymbols.txt
+├── AgenticWorkflow.slnx
+├── src/
+│   ├── Aw.Kernel/                     # Result, Error, IService<,>, decorators, contracts
+│   ├── Aw.Analyzers/                  # repo-specific Roslyn rules
+│   ├── Sindri/   (Sindri.Core · Sindri.Features · Sindri.Infrastructure · Sindri.Host)
+│   ├── Judge/    (same four projects)
+│   ├── Scorer/   (…)
+│   └── Bridge/   (…)                  # minimal API host
+├── tests/
+│   ├── Aw.Architecture.Tests/         # one assembly for every rule in §4b.1
+│   ├── Sindri.Tests/                  # by feature; lanes as traits
+│   ├── Sindri.Testing/                # fakes + builders + contract bases
+│   └── …
+├── tools/ts-indexer/                  # the pinned Node sidecar (§4a)
+├── mods/                              # Claude Code mods (TypeScript, thin)
+├── skills/ · config/ · providers/ · scripts/   # unchanged locations
+```
+
+The skill packages that hold code today (`skills/ui-evidence`, `skills/bugFixOrchestrator`) move their code into
+`src/` as packages and keep only `SKILL.md` and scripts under `skills/`.
+
+### 4b.8 Mapping from the ring-2 handbook's standards
+
+| Handbook standard (TypeScript) | C# equivalent here |
+|---|---|
+| Four layers, allowed dependency directions, enforced by dependency-cruiser | Four projects per package, project references and ArchUnitNET (§4b.1) |
+| Public API surface per package | `internal` by default and PublicApiAnalyzers |
+| Internal folder template per package | Feature-slice folders (§4b.2) |
+| DI only at composition roots; ports passed in | DI only in `Host`; explicit `Add…()` methods (§4b.4) |
+| Error taxonomy and `AppResult` | `Result<T>` and `Error` with catalogue codes (§4b.3) |
+| zod at boundaries only | Source-generated JSON and `IValidator<T>` at endpoints and CLI inputs |
+| Branded ids | Vogen strongly typed ids (§4b.3) |
+| ORM types never leave the database adapter | `internal` row types in `Infrastructure` |
+| Keeping type-check fast | Build time per project recorded in CI; a regression over 20% fails |
+| Module size and complexity budgets | `.editorconfig` limits and a ratchet baseline (§4b.6) |
+| Ports for time, randomness and processes; fakes vs real services | `TimeProvider`, `IIdGenerator` and process ports; fakes with shared contract tests (§4b.5) |
+| Test pyramid, budgets, builders, deterministic ids and clock, golden files, mocks policy | §4b.5 lanes, builders, `FakeTimeProvider`, golden files, no mocking libraries |
+| Tenancy at the architecture level | Not applicable to this toolkit. The ring split (work vs personal) plays that role in profiles and accounts |
+
+### 4b.9 Agent readiness of the code itself
+
+- `AGENTS.md` lists the one-line commands: `dotnet build`, `dotnet test --filter Lane=unit`, `dotnet format --verify-no-changes`.
+  It also has the slice recipe ("to add a use case: test, request and response, service, endpoint, registration")
+  and points to the `/new-package` and `/new-slice` scaffolds.
+- The scaffolds produce compliant code with a red test, so an agent's first move is always the TDD step.
+- Rule records carry the analyzer ID that enforces each rule. A denial or build error names the rule, and
+  `sindri rules explain <id>` shows the why.
+
+**Sources:**
+[Vertical slice vs Clean Architecture](https://milanjovanovic.tech/blog/vertical-slice-vs-clean-architecture) ·
+[Testing vertical slices](https://milanjovanovic.tech/blog/testing-vertical-slices-dotnet) ·
+[.NET 10 clean architecture template (minimal APIs, Result, no MediatR)](https://codewithmukesh.com/resources/clean-architecture-template/) ·
+[Clean architecture in .NET 10](https://codewithmukesh.com/blog/clean-architecture-dotnet/) ·
+[EF Core 10 NativeAOT status](https://www.c-sharpcorner.com/article/ef-core-10-nativeaot-whats-actually-broken-and-why2/) ·
+[Dapper.AOT on .NET 10 report](https://www.c-sharpcorner.com/article/dapper-aot-is-broken-on-net-10-heres-the-proof) ·
+[Data access in Native AOT](https://www.thinktecture.com/en/net/data-access-in-net-native-aot-with-sessions/) ·
+[NetArchTest](https://github.com/BenMorris/NetArchTest) ·
+[Architectural tests in .NET](https://mareks-082.medium.com/architectural-tests-in-net-1bd5d19b0ba8) ·
+[Vogen value objects](https://docsearch.algolia.com/mcp/docs/repo/stevedunn/vogen) ·
+[Directory.Build organization and Central Package Management](https://tessl.io/registry/skills/github/dotnet/skills/directory-build-organization)
+
 ## 5. Criteria plan by level
 
 Each row is a criterion family, the change that satisfies it, and its owner workstream (§6).
@@ -205,7 +443,9 @@ next PR shows it passing.
 | R4 | Score of record | Factory's `/readiness-report` once Droid is installed; our check until then |
 | R5 | Tighter TS flags | Superseded by R6 for the rewritten packages; applies only to the TS that stays (mods, the TS-indexer sidecar) |
 | R6 | Language and runtime | **Decided:** C# on .NET 10 LTS, NativeAOT CLIs, strangler rewrite per package (§4a) |
-| R7 | Test framework | xUnit (most common, best tooling) or TUnit (faster, source-generated); recommend xUnit unless lane budgets fail |
+| R7 | Test framework | xUnit v3 (most common, best tooling) or TUnit (faster, source-generated); recommend xUnit v3 unless lane budgets fail in the R1 spike |
+| R8 | Data access under NativeAOT | Hand-written ADO.NET with `IRowMapper<T>` (§4b.2) unless the R1 spike shows EF Core 10 or Dapper.AOT passing the AOT golden tests |
+| R9 | Strongly typed ids | Vogen, or hand-written `readonly record struct` if the spike finds an AOT problem |
 
 ## 10. Rollout and sizing (rough, one builder with agents)
 
