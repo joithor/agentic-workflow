@@ -62,6 +62,10 @@ expect "a workflow change runs everything" \
   "$(printf '.github/workflows/ci.yml\n')" \
   "$(printf 'bash=true\ndotnet=true\ngolden=true\npackages=%s' "$ALL")"
 
+expect "a Node version change runs everything" \
+  "$(printf '.nvmrc\n')" \
+  "$(printf 'bash=true\ndotnet=true\ngolden=true\npackages=%s' "$ALL")"
+
 expect "a CI script change runs everything" \
   "$(printf 'scripts/ci/bash-tests.sh\n')" \
   "$(printf 'bash=true\ndotnet=true\ngolden=true\npackages=%s' "$ALL")"
