@@ -25,13 +25,6 @@
     <PackageVersion Include="xunit.v3.extensibility.core" Version="[4.0.1]" />
     <!-- FakeTimeProvider for test projects (spec §4b.4, §4b.5). 10.10.0 published 2026-09-09. -->
     <PackageVersion Include="Microsoft.Extensions.TimeProvider.Testing" Version="[10.10.0]" />
-    <!-- Data (Aw.Kernel.Data, decision R8). Microsoft.Data.Sqlite 10.0.12 published 2026-09-08. -->
-    <PackageVersion Include="Microsoft.Data.Sqlite" Version="[10.0.12]" />
-    <!-- Data (Aw.Kernel.Data, decision R8): ADO.NET over the OS libsqlite3, one file per AOT tool.
-         Microsoft.Data.Sqlite.Core 10.0.12 published 2026-09-08; SQLitePCLRaw.provider.sqlite3 2.1.12 published 2026-07-14.
-         A tool that must ship the bundled library instead adds SQLitePCLRaw.bundle_e_sqlite3 (see docs/csharp/kernel-data.md). -->
-    <PackageVersion Include="Microsoft.Data.Sqlite.Core" Version="[10.0.12]" />
-    <PackageVersion Include="SQLitePCLRaw.provider.sqlite3" Version="[2.1.12]" />
     <!-- Data (Aw.Kernel.Data, decision R8). Microsoft.Data.Sqlite 10.0.12 published 2026-09-08; it bundles e_sqlite3,
          which ships as a libe_sqlite3 file beside each AOT tool (docs/csharp/kernel-data.md). -->
     <PackageVersion Include="Microsoft.Data.Sqlite" Version="[10.0.12]" />
