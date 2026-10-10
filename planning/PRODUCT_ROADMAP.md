@@ -97,21 +97,18 @@ Improvements identified from code review and gap analysis of the current impleme
 **1. ESLint and Prettier**
 No linter or formatter is currently configured. Add `eslint` with `@typescript-eslint/parser` and `prettier` with a shared config. Add `npm run lint` and `npm run format` scripts. Enforce consistent code style across contributions.
 
-**2. CI/CD Pipeline**
-No continuous integration exists. Add a GitHub Actions workflow that runs on pull requests:
-- `npm run typecheck` — TypeScript compilation check
-- `npm run lint` — ESLint
-- `npm run test` — Vitest
-- Build verification (`npm run build`)
+**2. CI/CD Pipeline** — delivered
+`.github/workflows/ci.yml` runs on pull requests: typecheck, tests and builds for every TypeScript package, the bash
+suites, the repo checks and the C# build. What it still lacks is a lint step (`npm run lint`), which waits on item 1.
 
 ### Success Criteria
 
 - [ ] ESLint and Prettier pass with zero warnings on the entire codebase
-- [ ] CI pipeline runs on every PR and blocks merge on failure
+- [x] CI pipeline runs on every PR and blocks merge on failure
 
 ### Timeline
 
-Estimated 2-4 weeks of focused development. Each item is independent and can be delivered incrementally. Recommended order: ESLint/Prettier first (establishes standards for subsequent work), then CI/CD.
+Estimated 2-4 weeks of focused development. Each item is independent and can be delivered incrementally. CI/CD is done; ESLint/Prettier remains, and its step then joins CI.
 
 ---
 

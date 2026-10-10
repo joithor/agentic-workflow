@@ -12,7 +12,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - The MCP bridge (`mcp-bridge/`, the `agentic-bridge` server: Fastify REST on port 3100 and stdio MCP over SQLite).
   It was never used (its database held no message or task) and nothing called it; agent handoffs run on Prism
   handoffs, judge's outbox and Sindri's ledger. Its rules (`bridge-services`, `bridge-transport`, `database`), CI job,
-  `area:bridge` label, `deps.yaml` node and docs (`planning/API_CONTRACT.md`, `planning/ERD.md`) go with it.
+  `area:bridge` label, `deps.yaml` node and the bridge sections of `planning/API_CONTRACT.md` and `planning/ERD.md`
+  (the Sindri sections stay) go with it.
 
 ### Changed
 

@@ -26,8 +26,9 @@ Sources: [Factory agent readiness](https://factory.com/product/agent-readiness),
 - **Nine pillars:** Style & Validation · Build System · Testing · Documentation · Development Environment ·
   Debugging & Observability · Security · Task Discovery · Product & Experimentation.
 - **Scope:** some criteria are evaluated once per repo (for example CODEOWNERS and branch protection). Others are
-  evaluated per app, and a monorepo reports them as fractions such as `3 / 4`. Here the apps are `mcp-bridge`,
-  `scorer`, `judge`, `sindri`, `skills/ui-evidence`, `skills/bugFixOrchestrator` and the `mods/aw-live` plugin.
+  evaluated per app, and a monorepo reports them as fractions such as `3 / 4`. Here the apps are `scorer`, `judge`,
+  `sindri`, `skills/ui-evidence`, `skills/bugFixOrchestrator` and the `mods/aw-live` plugin (`mcp-bridge` was one
+  until it was retired in R2 stage B).
 - **Tools:** `/readiness-report` and `/readiness-fix` (Factory app or Droid CLI), plus a Readiness Reports API.
 - **Gap:** Factory doesn't publish the full criteria list, and its own report needs a paid Factory account, which
   this project won't use (decision R4). **Our check is the score of record.** It covers every criterion we can
@@ -707,7 +708,8 @@ assert that no tested path fails open against the C# binaries.
   path; open bug-fix runs restart at the switch. Skill and workflow state is runtime-neutral and
   stays where it is through the switch and a rollback: `<repo-slug>/` (plans, reviews, proof, verification,
   design), `digests/`, `external-skills/`, `providers/`, `toolkit/` and `logs/`. The switch then installs the C#
-  binaries and rewrites hooks, MCP registration and launchd jobs to call them. The ported packages start with empty
+  binaries and rewrites hooks and launchd jobs to call them (no C# package is an MCP server since the bridge was
+  retired, so MCP registration doesn't change). The ported packages start with empty
   namespaces (Readiness and Packets keep theirs, below), so they can never see TS files; nothing is migrated. The C#
   build refuses to start if TS-schema files remain in its packages' namespaces. The check excludes `judge/sessions`,
   `judge/outbox` and `judge/teammate-names.jsonl`, which the hooks write in the frozen shape on both runtimes.

@@ -2,7 +2,7 @@
 
 ## Overview
 
-The multi-agent bridge space is emerging rapidly alongside Claude Code and OpenAI Codex adoption. Several projects attempt to solve similar problems — enabling communication between AI coding agents. This analysis compares agentic-workflow against five discovered alternatives. Agentic-workflow's own MCP bridge was retired on 2026-10-10 (it was never used); agents now hand off through Prism handoffs, judge's outbox and teammate names, and Sindri's ledger, so the bridge-era rows in the matrix below are marked retired.
+The multi-agent bridge space is emerging rapidly alongside Claude Code and OpenAI Codex adoption. Several projects attempt to solve similar problems — enabling communication between AI coding agents. This analysis compares agentic-workflow against five discovered alternatives. Agentic-workflow's own MCP bridge was retired on 2026-10-10 (it was never used); agents now hand off through Prism handoffs, judge's outbox and teammate names, and Sindri's ledger, so the matrix's messaging rows (persistence, tasks, REST, history, offline) say what replaced the bridge.
 
 ---
 
@@ -99,19 +99,19 @@ The multi-agent bridge space is emerging rapidly alongside Claude Code and OpenA
 
 | Capability | agentic-workflow | codex-bridge | claude-codex-bridge | codex-mcp-server | claude-code-mcp | ai-cli-mcp |
 |---|---|---|---|---|---|---|
-| **Language** | TypeScript | Python | Mixed | TypeScript | TypeScript | TypeScript |
-| **Message Persistence** | Retired (bridge removed) | None (stateless) | Planning docs only | Session-scoped | None | Orchestrator state |
-| **Task Management** | Retired (bridge removed) | None | Planning tasks | None | None | Dispatch queue |
-| **MCP Protocol** | Retired (bridge removed) | No | Partial | Yes (stdio) | Yes (server) | Yes |
-| **REST API** | Retired (bridge removed) | No | No | No | No | Partial |
-| **Conversation History** | Retired (bridge removed) | None | Planning history | Session-scoped | None | Limited |
-| **Offline Tolerance** | Retired (bridge removed) | No (real-time only) | Partial | Session-dependent | No | Orchestrator buffers |
-| **Skill System** | 34 skills + bootstrap | None | Workflow templates | None | None | Agent registry |
+| **Language** | TypeScript (C# port in progress) | Python | Mixed | TypeScript | TypeScript | TypeScript |
+| **Message Persistence** | No bus; Prism handoffs and judge's outbox persist handoffs | None (stateless) | Planning docs only | Session-scoped | None | Orchestrator state |
+| **Task Management** | Sindri backlog and ledger (no agent task queue) | None | Planning tasks | None | None | Dispatch queue |
+| **MCP Protocol** | Client: registers serena, prism, context7 and others with every provider; ships no server | No | Partial | Yes (stdio) | Yes (server) | Yes |
+| **REST API** | None (retired with the bridge) | No | No | No | No | Partial |
+| **Conversation History** | Delegated to prism-mcp | None | Planning history | Session-scoped | None | Limited |
+| **Offline Tolerance** | Yes for handoffs (Prism, judge's outbox); no live messaging | No (real-time only) | Partial | Session-dependent | No | Orchestrator buffers |
+| **Skill System** | 52 skills + bootstrap | None | Workflow templates | None | None | Agent registry |
 | **Multi-Model** | Claude Code + Codex + Cursor | Claude + Codex | Claude + Codex | Claude + Codex | Claude only | Claude + Codex + Gemini |
-| **Type Safety** | Retired (bridge removed) | Runtime only | Partial | TypeScript | TypeScript | TypeScript |
-| **Transaction Safety** | Retired (bridge removed) | N/A | None | None | N/A | None |
+| **Type Safety** | TypeScript strict + Zod; the C# port runs nullable with warnings as errors | Runtime only | Partial | TypeScript | TypeScript | TypeScript |
+| **Transaction Safety** | Sindri ledger: SQLite WAL, migrations in one transaction | N/A | None | None | N/A | None |
 | **Setup Complexity** | Low (setup.sh) | Low (pip install) | Medium | Low | Low | Medium-High |
-| **Architecture** | Retired (bridge removed) | Relay | Planning coordinator | Session server | Tool server | Central orchestrator |
+| **Architecture** | Skills, hooks and local CLIs (judge, scorer, sindri); no server | Relay | Planning coordinator | Session server | Tool server | Central orchestrator |
 
 ## Differentiation Summary
 
@@ -123,8 +123,8 @@ Agentic-workflow's remaining differentiator is its integrated skill library. Sto
 
 **Where agentic-workflow trails:**
 - Multi-model support covers Claude Code, Codex, and Cursor; ai-cli-mcp additionally covers Gemini CLI (the protocol itself is model-agnostic)
-- No planning-first workflow pattern like claude-codex-bridge (agents communicate freely without structured negotiation)
-- No centralized orchestration — coordination is emergent from agent behavior rather than centrally managed
+- No planning-first negotiation between agents like claude-codex-bridge; plans come from skills (`/officeHours`, `/autoplan`), not from a protocol
+- No live agent-to-agent messaging since the bridge was retired: agents hand off asynchronously (Prism handoffs, judge's outbox), and agent teams coordinate through the host
 
 ## Strategic Recommendation
 

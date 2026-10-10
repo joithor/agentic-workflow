@@ -10,8 +10,10 @@ Domain-specific rules live in `.agents/rules/` — one file per rule, the only c
 |----------|---------|
 | `planning/ARCHITECTURE.md` | System components and data flow |
 | `planning/PROVIDERS.md` | Claude Code / Codex / Cursor support matrix and canonical layout |
+| `planning/API_CONTRACT.md` | Sindri CLI output contract |
 | `planning/CODE_STYLE.md` | Code style: C# by its rule files, TypeScript for bug fixes |
 | `planning/TESTING.md` | Test strategy and coverage targets |
+| `planning/ERD.md` | Sindri ledger and code-index SQLite schemas |
 | `skills/_shared/capabilities.md` | Capability → tool map used by all skill text |
 
 ## Tech Stack
@@ -34,7 +36,7 @@ Domain-specific rules live in `.agents/rules/` — one file per rule, the only c
 | Language | C# (latest), nullable on, warnings as errors |
 | HTTP (an http host) | ASP.NET Core minimal APIs (`CreateSlimBuilder`), loopback only |
 | Database | `Microsoft.Data.Sqlite` with its bundled `e_sqlite3` (shipped beside each AOT tool), new C# schemas, WAL mode |
-| MCP | Official MCP C# SDK |
+| MCP | Official MCP C# SDK (approved in the AOT spike; no package uses it since the bridge was retired) |
 | JSON | System.Text.Json, one source-generated context per package |
 | Logging | `Aw.Kernel.Telemetry`: JSON lines on stderr (`AW_LOG_LEVEL`), OpenTelemetry spans and metrics, exporting off by default, scrubbed by `Aw.Redaction` |
 | Analyzers | NetAnalyzers, Meziantou, Roslynator, BannedApiAnalyzers, PublicApiAnalyzers (one owner per rule, `.editorconfig`) |

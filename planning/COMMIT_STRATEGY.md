@@ -26,8 +26,8 @@ Or with an optional scope:
 | `fix` | Bug fix or correctness improvement | `fix: address review findings -- atomicity, security, DX` |
 | `docs` | Documentation-only changes | `docs: add planning documents` |
 | `chore` | Build config, dependencies, tooling | `chore: upgrade vitest to v3` |
-| `refactor` | Code restructuring without behavior change | `refactor: extract message validation to shared helper` |
-| `test` | Adding or updating tests | `test: add edge case for empty conversation` |
+| `refactor` | Code restructuring without behavior change | `refactor: extract transcript parsing to a shared helper` |
+| `test` | Adding or updating tests | `test: add edge case for an empty transcript` |
 | `style` | Formatting, whitespace (no logic change) | `style: fix trailing commas in schemas` |
 
 ### Scope (optional)
@@ -36,8 +36,8 @@ Scope narrows the area of change. Use the package or module name:
 
 ```
 feat(scorer): add live session view
-fix(db): handle null analysis in task update
-test(services): cover reportStatus error path
+fix(sindri): refuse a ledger newer than the binary
+test(judge): cover the empty outbox path
 ```
 
 ---
@@ -47,8 +47,8 @@ test(services): cover reportStatus error path
 | Rule | Correct | Incorrect |
 |------|---------|-----------|
 | Lowercase first word | `fix: address review findings` | `Fix: Address review findings` |
-| No period at end | `feat: add task assignment` | `feat: add task assignment.` |
-| Imperative mood | `fix: validate task existence before write` | `fix: validated task existence before write` |
+| No period at end | `feat: add scorer audit` | `feat: add scorer audit.` |
+| Imperative mood | `fix: validate the profile before a ledger write` | `fix: validated the profile before a ledger write` |
 | Concise (under 72 chars) | `fix: address review findings` | `fix: I fixed the review findings that were found during the code review` |
 | Describe the "why" when possible | `fix: address review findings -- atomicity, security, DX` | `fix: change some code` |
 
@@ -63,10 +63,10 @@ For non-trivial changes, add a body separated by a blank line. Use the body to e
 ```
 fix: address review findings -- atomicity, security, DX
 
-- Wrap reportStatus in db.transaction() for atomic message + task update
-- Validate task existence before any writes to prevent orphaned messages
-- Restrict default bind to loopback (127.0.0.1) with ALLOW_REMOTE escape hatch
-- Add getUnread mark-read atomicity via transaction
+- Run each ledger migration in one IMMEDIATE transaction
+- Back up ledger.db before migrating so a failed run can be restored
+- Scrub secrets from judge outbox lines before they are written
+- Add --json to every sindri read command
 ```
 
 Body guidelines:
@@ -81,18 +81,18 @@ Body guidelines:
 ### Good: atomic and focused
 
 ```
-feat: add batch message endpoint
+feat: add scorer live view
 
-Adds POST /messages/batch for sending multiple context messages
-in a single transaction. Includes Zod validation and tests.
+Adds `scorer live --session <id>` for this session's numbers, read
+by the aw-live mod. Includes tests.
 ```
 
 ```
 fix: address review findings -- atomicity, security, DX
 
-- Wrap reportStatus in db.transaction() for atomic message + task update
-- Validate task existence before any writes to prevent orphaned messages
-- Restrict default bind to loopback (127.0.0.1) with ALLOW_REMOTE escape hatch
+- Run each ledger migration in one IMMEDIATE transaction
+- Back up ledger.db before migrating so a failed run can be restored
+- Scrub secrets from judge outbox lines before they are written
 ```
 
 ### Bad: vague or mixed
@@ -117,12 +117,12 @@ Branches use a type prefix followed by a `/` and a kebab-case descriptor:
 
 | Pattern | Example |
 |---------|---------|
-| `feat/<description>` | `feat/batch-messages` |
-| `fix/<description>` | `fix/orphaned-message-on-failed-task` |
+| `feat/<description>` | `feat/scorer-live-view` |
+| `fix/<description>` | `fix/ledger-newer-than-binary` |
 | `docs/<description>` | `docs/planning-docs` |
 | `chore/<description>` | `chore/upgrade-fastify-v5` |
 | `refactor/<description>` | `refactor/extract-validation` |
-| `test/<description>` | `test/report-status-edge-cases` |
+| `test/<description>` | `test/judge-outbox-edge-cases` |
 
 Branch names should be short but descriptive. Use the same type prefixes as commit messages.
 

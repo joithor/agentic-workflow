@@ -217,6 +217,8 @@ agentic-workflow/
 │   └── project.yml                      #   Language servers, ignored_paths, read_only flag
 ├── .claude/
 │   ├── rules/                           # Generated from .agents/rules/ (auto-loaded by Claude Code)
+│   │   ├── csharp.md                    #   C# build: package shape, dependency rules, types, errors, DI, AOT
+│   │   ├── csharp-testing.md            #   C# tests: TDD order, lanes and budgets, fakes, builders
 │   │   ├── design.md                    #   Design pipeline, artifact formats, design principles
 │   │   ├── hooks.md                     #   Hook protocols, PreToolUse/SessionStart patterns, adding new hooks
 │   │   ├── mcp-servers.md               #   MCP server usage guide (Serena vs Grep/Read decision table)
@@ -346,7 +348,7 @@ Archived configuration for replication across machines. `settings.json`, the sta
 - **config/settings.json** — Sets model to `opus`, enables plugins (github, superpowers, compound-engineering, swift-lsp, playwright), enables experimental agent teams flag, sets effort level to `high`.
 - **config/mcp.json** — Registers the `xcodebuildmcp` MCP server (`npx -y xcodebuildmcp@2.3.0 mcp`) for iOS Simulator control.
 - **`.claude/settings.json`** — Project-level settings: disables bypass-permissions mode (`"disable"` string, not boolean per Claude Code 1.x schema).
-- **`.agents/rules/`** — Canonical glob-scoped rule files. `scripts/sync-rules.sh` emits them as `.claude/rules/` (Claude Code), `.cursor/rules/*.mdc` (Cursor), and a rules index in `AGENTS.md` (Codex). Detailed domain rules were moved out of the monolithic instructions file into these files: `design.md`, `hooks.md`, `mcp-servers.md`, `skills.md`, `testing.md`.
+- **`.agents/rules/`** — Canonical glob-scoped rule files. `scripts/sync-rules.sh` emits them as `.claude/rules/` (Claude Code), `.cursor/rules/*.mdc` (Cursor), and a rules index in `AGENTS.md` (Codex). Detailed domain rules were moved out of the monolithic instructions file into these files: `csharp.md`, `csharp-testing.md`, `design.md`, `hooks.md`, `mcp-servers.md`, `skills.md`, `testing.md`.
 
 ## Scorer
 
