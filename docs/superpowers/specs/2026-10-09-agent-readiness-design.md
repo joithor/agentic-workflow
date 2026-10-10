@@ -376,7 +376,8 @@ group.MapPost("/items/{id}/start", async (ItemId id, StartItemBody body, IServic
   - the placement check (AW0002): every `*.Tests` and `*.Testing` project, including `Aw.Kernel.Testing`, lives
     under `tests/`, and nothing else does.
 - Test projects (under `tests/`) get their analyzer policy from `tests/.editorconfig`: CA1707, CA2007, CA1515,
-  RS0016, RS0017, RS0036, RS0037 and CS1591 off, each with its reason. CA2007 elsewhere applies to libraries only
+  RS0016, RS0017, RS0036, RS0037 and CS1591 off, each with its reason, plus xUnit1051 off (MA0040 owns the
+  pass-a-`CancellationToken` rule). `GenerateDocumentationFile` stays on there too. CA2007 elsewhere applies to libraries only
   (`output_kind = DynamicallyLinkedLibrary`): hosts have no SynchronizationContext.
 - `Directory.Packages.props`: Central Package Management with exact versions (`[x.y.z]`; a bare version is a
   minimum). Analyzers are added as
