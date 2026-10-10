@@ -88,8 +88,10 @@ addendum) with deterministic checks wherever possible.
 ## 4a. Language: C# on .NET (decided 2026-10-09)
 
 The human decided to rewrite the toolkit's TypeScript packages in **C# on .NET 10 (LTS)**, running the same on
-Linux and macOS. The readiness work is done on the C# code: the TypeScript is not hardened first and then
-rewritten. The standards in §4 still apply, expressed in .NET tooling.
+Linux and macOS. **The readiness foundation comes first** (rollout R1): the standards, rules, template, shared
+building blocks and CI checks are set up for C# before any package is ported, so each ported package is
+compliant from its first commit. The TypeScript is not linted or refactored, since it is being replaced. It only
+gets CI and golden contract tests as a safety net. The standards in §4 still apply, expressed in .NET tooling.
 
 **What moves, and to what:**
 
@@ -210,9 +212,9 @@ next PR shows it passing.
 | Step | Contents | Size | Exit |
 |---|---|---|---|
 | R0 | Baseline: run Factory's report if possible, plus our check; record the level per pillar | XS | Baseline in the ledger |
-| R1 | Language-neutral first: W3 CI for the existing TS (so the rewrite has a safety net), W4 security, W6 templates; golden contract tests for every package (§4a step 1); the .NET solution skeleton with analyzers, AOT and architecture tests | M (1–2 weeks) | CI required on `main`; golden tests green on TS |
-| R2 | The strangler rewrite (§4a), one package per packet; W5 devcontainer (.NET + Node sidecar + uv); W7 observability in .NET (`ILogger` JSON, OpenTelemetry); W8 | L–XL (4–8 weeks, estimate per package in each packet) | All packages on C#; golden tests green; Level 3 passed |
-| R3 | Fast CI, flake quarantine, W9, W10 shape budgets on the C# code | M | Level 4 passed. **Factory work (F0) starts here** |
+| R1 | **Readiness foundation, before any port.** Everything a ported package must meet exists and is enforced first:<br>• the .NET solution template: `Directory.Build.props` (nullable, warnings as errors, analyzers, AOT), `.editorconfig` severities, the layer-per-project layout, architecture tests, and size and complexity rules;<br>• the shared building blocks every package uses: `Result`, error codes, CLI output, JSON logging with OpenTelemetry, SQLite access, the `deps` port pattern;<br>• test lanes with time budgets, and the flake quarantine;<br>• CI with fast required checks, plus AOT builds on Linux and macOS;<br>• W4 security, W6 templates, W5 devcontainer (.NET, the Node sidecar, uv);<br>• the rules from the ring-2 handbook's standards ported to rule records (§17.6) with Roslyn or architecture-test checks;<br>• `AGENTS.md` and `.agents/rules/` rewritten for C#, and a `/new-package` scaffold that creates a compliant project;<br>• golden contract tests for every TS package (§4a step 1), run in CI as the rewrite's safety net | M–L (2–3 weeks) | A scaffolded empty package passes every check; golden tests green on TS; the readiness check reports Level 4 for the template |
+| R2 | The strangler rewrite (§4a), one package per packet. Each package is scaffolded from the template, so it is born compliant, and cuts over only when its golden tests and every R1 check pass | L–XL (4–8 weeks, estimate per package in each packet) | All packages on C#. The per-app readiness fraction rises with each cutover |
+| R3 | Remaining Level 4 criteria that need real usage data (deploy and promotion frequency, flake rates, doc freshness over time), and W9 | S–M | Level 4 passed. **Factory work (F0) starts here** |
 | R4 | Addendum F0–F3 plus the readiness module | With the addendum | Level 5 passed |
 
 Workstreams W1 (npm workspace) and W2 (Biome and typescript-eslint) apply only to the TypeScript that stays
