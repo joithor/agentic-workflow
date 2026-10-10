@@ -59,11 +59,18 @@ PY
 start_server() { # $1 = mode (ok|err)
   stop_server
   SRV="$WORK/srv-$1-$RANDOM"; mkdir -p "$SRV"
-  python3 "$FAKE" "$SRV" "$WORK/pub.pem" "$1" &
+  python3 "$FAKE" "$SRV" "$WORK/pub.pem" "$1" 2>"$SRV/stderr" &
   SERVER_PID=$!
-  for _ in $(seq 1 50); do [ -s "$SRV/port" ] && break; sleep 0.1; done
+  # Up to 30 s: a cold CI runner's first python3 start can take several seconds.
+  for _ in $(seq 1 300); do
+    [ -s "$SRV/port" ] && break
+    kill -0 "$SERVER_PID" 2>/dev/null || break
+    sleep 0.1
+  done
   if ! [ -s "$SRV/port" ] || ! kill -0 "$SERVER_PID" 2>/dev/null; then
-    echo "not ok - fake server ($1) did not start"; exit 1
+    echo "not ok - fake server ($1) did not start"
+    sed 's/^/# server stderr: /' "$SRV/stderr" 2>/dev/null
+    exit 1
   fi
   export AGENT_APP_API_URL="http://127.0.0.1:$(cat "$SRV/port")"
 }
