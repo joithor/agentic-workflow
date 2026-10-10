@@ -86,13 +86,11 @@ public sealed class MigrationSafetyTests
         Assert.Equal(1L, await Scalar(db, "SELECT count(*) FROM schema_version"));
     }
 
-    [Theory]
-    [InlineData("PRAGMA user_version = 3;")]
-    [InlineData("CREATE TABLE events (id INTEGER PRIMARY KEY);")]
-    public async Task A_database_the_runner_does_not_manage_is_refused_and_left_byte_for_byte_unchanged(string foreign)
+    [Fact]
+    public async Task A_database_the_runner_does_not_manage_is_refused_and_left_byte_for_byte_unchanged()
     {
         using var db = new TempDatabase();
-        await Exec(db.Path, foreign + " PRAGMA journal_mode = DELETE;");
+        await Exec(db.Path, "CREATE TABLE events (id INTEGER PRIMARY KEY); PRAGMA journal_mode = DELETE;");
         var before = Hash(db.Path);
 
         var refused = await Runner(db).Migrate([Schema.Items], Ct);

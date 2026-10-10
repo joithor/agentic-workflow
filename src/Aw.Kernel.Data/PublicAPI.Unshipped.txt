@@ -69,7 +69,6 @@ Aw.Kernel.Data.SqliteReadSession
 Aw.Kernel.Data.SqliteReadSession.Connection.get -> Microsoft.Data.Sqlite.SqliteConnection!
 Aw.Kernel.Data.SqliteReadSession.DisposeAsync() -> System.Threading.Tasks.ValueTask
 Aw.Kernel.Data.SqliteReadSession.Transaction.get -> Microsoft.Data.Sqlite.SqliteTransaction?
-Aw.Kernel.Data.SqliteRuntime
 Aw.Kernel.Data.SqliteUnitOfWork
 Aw.Kernel.Data.SqliteUnitOfWork.Commit(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Kernel.Unit>!>
 Aw.Kernel.Data.SqliteUnitOfWork.Connection.get -> Microsoft.Data.Sqlite.SqliteConnection!
@@ -83,7 +82,6 @@ Aw.Kernel.Data.SqliteUnitOfWorkFactory.SqliteUnitOfWorkFactory(Aw.Kernel.Data.IS
 abstract Aw.Kernel.Data.SqliteReadRepository<TEntity, TId>.BindId(Microsoft.Data.Sqlite.SqliteCommand! command, TId id) -> void
 abstract Aw.Kernel.Data.SqliteReadRepository<TEntity, TId>.ExistsSql.get -> string!
 abstract Aw.Kernel.Data.SqliteReadRepository<TEntity, TId>.GetSql.get -> string!
-const Aw.Kernel.Data.SqliteRuntime.MinimumVersion = "3.38.0" -> string!
 override Aw.Kernel.Data.Migration.Equals(object? obj) -> bool
 override Aw.Kernel.Data.Migration.GetHashCode() -> int
 override Aw.Kernel.Data.Migration.ToString() -> string!
@@ -122,9 +120,6 @@ static Aw.Kernel.Data.SqliteQueries.Exists(Aw.Kernel.Data.ISqliteSession! sessio
 static Aw.Kernel.Data.SqliteQueries.List<T>(Aw.Kernel.Data.ISqliteSession! session, Aw.Kernel.Data.SqlStatement! statement, Aw.Kernel.Data.IRowMapper<T>! mapper, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<System.Collections.Generic.IReadOnlyList<T>!>!>
 static Aw.Kernel.Data.SqliteQueries.One<T>(Aw.Kernel.Data.ISqliteSession! session, Aw.Kernel.Data.SqlStatement! statement, Aw.Kernel.Data.IRowMapper<T>! mapper, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<T>!>
 static Aw.Kernel.Data.SqliteRead.GetGuid(Microsoft.Data.Sqlite.SqliteDataReader! reader, int ordinal) -> System.Guid
-static Aw.Kernel.Data.SqliteRuntime.Check() -> Aw.Kernel.Result<string!>!
-static Aw.Kernel.Data.SqliteRuntime.Initialize(SQLitePCL.ISQLite3Provider! provider) -> void
-static Aw.Kernel.Data.SqliteRuntime.Version.get -> string!
 static readonly Aw.Kernel.Data.DataErrors.Busy -> Aw.Kernel.ErrorDefinition!
 static readonly Aw.Kernel.Data.DataErrors.Constraint -> Aw.Kernel.ErrorDefinition!
 static readonly Aw.Kernel.Data.DataErrors.Damaged -> Aw.Kernel.ErrorDefinition!

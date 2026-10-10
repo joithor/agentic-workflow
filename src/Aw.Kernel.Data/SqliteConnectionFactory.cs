@@ -25,12 +25,6 @@ public sealed class SqliteConnectionFactory(SqliteOptions options) : ISqliteConn
         Func<SqliteConnection, CancellationToken, Task<Result<Unit>>> pragmas,
         CancellationToken cancellationToken)
     {
-        var runtime = SqliteRuntime.Check();
-        if (runtime.IsError)
-        {
-            return runtime.Error;
-        }
-
         var connection = new SqliteConnection(ConnectionString(mode));
         var handedOver = false;
         try

@@ -6,9 +6,9 @@ namespace Aw.Kernel.Data;
 /// <summary>
 /// Brings a database's schema up to date from numbered migrations (spec §4b.2).
 /// <list type="bullet">
-/// <item>It checks the migration set, then refuses a database it didn't create (tables or a user_version but no
-/// schema_version, for example a file the TS build wrote) on a read-only connection, so a refused file is left
-/// byte-for-byte unchanged (AW-DATA-009).</item>
+/// <item>It checks the migration set, then refuses a database it didn't create (user tables but no schema_version:
+/// usually a path pointing at the wrong file) on a read-only connection, so a refused file is left byte-for-byte
+/// unchanged (AW-DATA-009).</item>
 /// <item>It refuses an applied history that doesn't match the build (AW-DATA-006) or is newer (AW-DATA-007).</item>
 /// <item>Before upgrading a database that already has migrations, it writes a consistent copy with VACUUM INTO to
 /// 'file.bak-vN' (the first backup of a version is kept), as the TS ledger does.</item>
@@ -16,9 +16,8 @@ namespace Aw.Kernel.Data;
 /// table-rebuild recipe needs that; the pragma is a no-op inside a transaction, so it's switched before BEGIN) and a
 /// foreign_key_check before commit. Violations roll back as AW-DATA-004.</item>
 /// </list>
-/// A migration whose SQL fails is a bug: it rolls back and the exception propagates. The runner does not write
-/// PRAGMA user_version: rollback to the TS build restores the backed-up state dir (spec §4c), so TS never reads a file
-/// this runner wrote, and adopting a TS file is the package's first-run migration, not this runner's job.
+/// A migration whose SQL fails is a bug: it rolls back and the exception propagates. The C# build starts from fresh
+/// state (no TS-written database is read or migrated), so the runner keeps its version only in schema_version.
 /// </summary>
 /// <param name="connections">Opens the database.</param>
 /// <param name="clock">Stamps applied_at (UTC, millisecond precision, like Node's toISOString).</param>
@@ -35,8 +34,7 @@ public sealed class MigrationRunner(ISqliteConnectionFactory connections, TimePr
     internal const string InsertApplied = "INSERT INTO schema_version (version, name, checksum, applied_at) VALUES ($v, $n, $c, $t)";
 
     internal const string SelectOwnership =
-        "SELECT (SELECT user_version FROM pragma_user_version), " +
-        "EXISTS (SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = 'schema_version'), " +
+        "SELECT EXISTS (SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = 'schema_version'), " +
         "EXISTS (SELECT 1 FROM sqlite_master WHERE type = 'table' AND name <> 'schema_version' AND name NOT LIKE 'sqlite\\_%' ESCAPE '\\')";
 
     internal const string SelectViolations = "SELECT \"table\", parent FROM pragma_foreign_key_check LIMIT 5";
@@ -136,11 +134,11 @@ public sealed class MigrationRunner(ISqliteConnectionFactory connections, TimePr
             var reader = await command.ExecuteReaderAsync(cancellationToken).ConfigureAwait(false);
             await using var readerScope = reader.ConfigureAwait(false);
             _ = await reader.ReadAsync(cancellationToken).ConfigureAwait(false);
-            var (userVersion, managed, hasTables) = (reader.GetInt64(0), reader.GetInt64(1) == 1, reader.GetInt64(2) == 1);
-            return managed || (userVersion == 0 && !hasTables)
+            var (managed, hasTables) = (reader.GetInt64(0) == 1, reader.GetInt64(1) == 1);
+            return managed || !hasTables
                 ? Results.Ok()
                 : DataErrors.ForeignDatabase.With(
-                    $"{connection.DataSource} has {(hasTables ? "tables" : "no tables")} and user_version {userVersion.ToString(CultureInfo.InvariantCulture)} but no schema_version table, so this runner didn't create it. Nothing was written. Point the package at its own file, or adopt this one with the package's first-run migration.");
+                    $"{connection.DataSource} has tables but no schema_version table, so this runner didn't create it. Nothing was written. Check the path points at this package's own database.");
         }
         catch (SqliteException exception) when (SqliteErrors.TryMap(exception, "Checking the database", out var error))
         {

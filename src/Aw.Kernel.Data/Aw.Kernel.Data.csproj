@@ -1,6 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <!-- Aw.Kernel.Data: tier 0 (deps.yaml), Aw.Kernel plus one external dependency, Microsoft.Data.Sqlite
-       (spec §4b.1), as Microsoft.Data.Sqlite.Core over the OS libsqlite3 (SQLitePCLRaw's sqlite3 provider). Hand-written ADO.NET with an IRowMapper<T> per row type, the unit of work, and the
+       (spec §4b.1). Hand-written ADO.NET with an IRowMapper<T> per row type, the unit of work, and the
        migrations runner (spec §4b.2; decision R8 in docs/readiness/aot-spike.md). -->
   <PropertyGroup>
     <TargetFramework>net10.0</TargetFramework>
@@ -8,8 +8,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.Data.Sqlite.Core" />
-    <PackageReference Include="SQLitePCLRaw.provider.sqlite3" />
+    <PackageReference Include="Microsoft.Data.Sqlite" />
   </ItemGroup>
 
   <ItemGroup>
