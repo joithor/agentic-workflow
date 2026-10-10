@@ -308,7 +308,7 @@ jobs:
         # Each publishes for the runner's own RID (linux-x64), runs the native binary and
         # compares its output; clang and zlib1g-dev are on ubuntu runners.
         run: |
-          for smoke in src/Aw.Kernel.AotSmoke/run.sh src/Aw.Kernel.Data.AotSmoke/run.sh; do
+          for smoke in src/Aw.Kernel.AotSmoke/run.sh src/Aw.Kernel.Data.AotSmoke/run.sh src/Packets/AotSmoke/run.sh; do
             if [ -f "$smoke" ]; then
               bash "$smoke"
             else
@@ -323,6 +323,8 @@ jobs:
           path: |
             TestResults
             artifacts/aot-smoke
+            artifacts/aot-packets-smoke/*.txt
+            artifacts/aot-packets-smoke/publish.log
           if-no-files-found: ignore
           retention-days: 7
 

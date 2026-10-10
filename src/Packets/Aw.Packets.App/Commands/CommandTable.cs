@@ -10,7 +10,7 @@ internal static class CommandTable
     {
         if (args.Length == 0)
         {
-            return CommandOutput.Usage("aw-packets <command> [arguments]");
+            return CommandOutput.Usage("validate|freeze <packet-dir> [--repo <dir>] [--json]");
         }
 
         var scope = provider.CreateAsyncScope();

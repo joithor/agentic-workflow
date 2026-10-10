@@ -1,0 +1,21 @@
+{
+  "schemaVersion": 1,
+  "workstreams": [{ "id": "ws1", "title": "the work" }],
+  "tasks": [
+    {
+      "id": "t1", "workstream": "ws1", "title": "core", "deps": [], "size": "S",
+      "writeScope": ["src/**", "new: src/c.cs"], "readSeeds": ["README.md"],
+      "acceptance": [
+        { "id": "e1", "text": "it builds", "evidence": ["test"] },
+        { "id": "h1", "text": "held out", "evidence": ["cli-transcript"], "holdout": true }
+      ],
+      "budget": { "tokens": 100000 }
+    },
+    {
+      "id": "t2", "workstream": "ws1", "title": "docs", "deps": ["t1"], "size": "XS",
+      "writeScope": ["docs/**", "src/a.cs"], "readSeeds": [],
+      "acceptance": [{ "id": "e2", "text": "it reads", "evidence": ["docs"] }],
+      "budget": {}
+    }
+  ]
+}
