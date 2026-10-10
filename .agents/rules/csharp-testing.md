@@ -89,7 +89,7 @@ ArchUnitNET (not NetArchTest), in the `unit` lane, in `tests/Aw.Architecture.Tes
 | Rule id | Rule |
 |---|---|
 | `ARCH-DIR-001`…`005` | Dependency direction: Core → nothing else in its package; Features → Core, Features; Infrastructure → Core, Infrastructure; another package only through its Core; Core and Features use no tier-0 package but `Aw.Kernel` |
-| `ARCH-PLACE-001` | Every namespace under a package root names a layer (small shape: `App`, `App.Features`, `App.Infrastructure`, `App.Commands`) |
+| `ARCH-PLACE-001` | Every type of a package sits in a layer namespace (small shape: `App`, `App.Features`, `App.Infrastructure`, `App.Commands`): not the bare root, an unknown folder, or a namespace outside the root in a Core, Features or Infrastructure assembly |
 | `ARCH-SLICE-001` | No slice uses another slice (`Features.<Slice>`, `App.Features.<Slice>`) |
 | `ARCH-INFRA-001` | Only the `*ServiceCollectionExtensions` class is public in Infrastructure |
 | `ARCH-CYCLE-001` | No namespace cycles in any assembly |
@@ -105,8 +105,9 @@ A type outside every package root in a package's `Host` or `App` assembly (the t
 output) counts as Host. ArchUnitNET records no dependencies from a top-level-statement body (`<Main>$`), so what
 `Program` itself calls is checked by review, not by these rules. A new package registers each production project in `tests/Aw.Architecture.Tests/Packages.cs`
 (one line, the project name) and adds a `ProjectReference` to it in `Aw.Architecture.Tests.csproj`; `/new-package` does
-both. Each rule is proven by a fixture
-package under `tests/Aw.Architecture.Tests/Fixtures/` that breaks it.
+both. Each rule is proven red by a fixture: a package under
+`tests/Aw.Architecture.Tests/Fixtures/`, the guard fixtures under `TypedIds/GuardFixtures/`, or a unit case in
+`RegistryTests` or `FixtureTests`.
 
 ## Hosts
 
