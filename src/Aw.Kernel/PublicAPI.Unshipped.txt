@@ -214,3 +214,26 @@ Aw.Kernel.Persistence.IUnitOfWork
 Aw.Kernel.Persistence.IUnitOfWork.Commit(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Kernel.Unit>!>
 Aw.Kernel.Persistence.IUnitOfWorkFactory
 Aw.Kernel.Persistence.IUnitOfWorkFactory.Begin(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Kernel.Persistence.IUnitOfWork!>!>
+Aw.Kernel.Ids.IdGeneratorExtensions
+Aw.Kernel.Ids.ITypedId<TSelf, TValue>
+Aw.Kernel.Ids.ITypedId<TSelf, TValue>.TryFrom(TValue value, out TSelf id) -> bool
+Aw.Kernel.Ids.ITypedId<TSelf, TValue>.Value.get -> TValue
+Aw.Kernel.Json.GuidIdJsonConverter<TId>
+Aw.Kernel.Json.GuidIdJsonConverter<TId>.GuidIdJsonConverter() -> void
+Aw.Kernel.Json.Int32IdJsonConverter<TId>
+Aw.Kernel.Json.Int32IdJsonConverter<TId>.Int32IdJsonConverter() -> void
+Aw.Kernel.Json.StringIdJsonConverter<TId>
+Aw.Kernel.Json.StringIdJsonConverter<TId>.StringIdJsonConverter() -> void
+override Aw.Kernel.Json.GuidIdJsonConverter<TId>.Read(ref System.Text.Json.Utf8JsonReader reader, System.Type! typeToConvert, System.Text.Json.JsonSerializerOptions! options) -> TId
+override Aw.Kernel.Json.GuidIdJsonConverter<TId>.ReadAsPropertyName(ref System.Text.Json.Utf8JsonReader reader, System.Type! typeToConvert, System.Text.Json.JsonSerializerOptions! options) -> TId
+override Aw.Kernel.Json.GuidIdJsonConverter<TId>.Write(System.Text.Json.Utf8JsonWriter! writer, TId value, System.Text.Json.JsonSerializerOptions! options) -> void
+override Aw.Kernel.Json.GuidIdJsonConverter<TId>.WriteAsPropertyName(System.Text.Json.Utf8JsonWriter! writer, TId value, System.Text.Json.JsonSerializerOptions! options) -> void
+override Aw.Kernel.Json.Int32IdJsonConverter<TId>.Read(ref System.Text.Json.Utf8JsonReader reader, System.Type! typeToConvert, System.Text.Json.JsonSerializerOptions! options) -> TId
+override Aw.Kernel.Json.Int32IdJsonConverter<TId>.ReadAsPropertyName(ref System.Text.Json.Utf8JsonReader reader, System.Type! typeToConvert, System.Text.Json.JsonSerializerOptions! options) -> TId
+override Aw.Kernel.Json.Int32IdJsonConverter<TId>.Write(System.Text.Json.Utf8JsonWriter! writer, TId value, System.Text.Json.JsonSerializerOptions! options) -> void
+override Aw.Kernel.Json.Int32IdJsonConverter<TId>.WriteAsPropertyName(System.Text.Json.Utf8JsonWriter! writer, TId value, System.Text.Json.JsonSerializerOptions! options) -> void
+override Aw.Kernel.Json.StringIdJsonConverter<TId>.Read(ref System.Text.Json.Utf8JsonReader reader, System.Type! typeToConvert, System.Text.Json.JsonSerializerOptions! options) -> TId
+override Aw.Kernel.Json.StringIdJsonConverter<TId>.ReadAsPropertyName(ref System.Text.Json.Utf8JsonReader reader, System.Type! typeToConvert, System.Text.Json.JsonSerializerOptions! options) -> TId
+override Aw.Kernel.Json.StringIdJsonConverter<TId>.Write(System.Text.Json.Utf8JsonWriter! writer, TId value, System.Text.Json.JsonSerializerOptions! options) -> void
+override Aw.Kernel.Json.StringIdJsonConverter<TId>.WriteAsPropertyName(System.Text.Json.Utf8JsonWriter! writer, TId value, System.Text.Json.JsonSerializerOptions! options) -> void
+static Aw.Kernel.Ids.IdGeneratorExtensions.New<TId>(this Aw.Kernel.Ids.IIdGenerator! generator) -> TId

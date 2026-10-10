@@ -28,5 +28,7 @@
     <!-- Data (Aw.Kernel.Data, decision R8). Microsoft.Data.Sqlite 10.0.12 published 2026-09-08; it bundles e_sqlite3,
          which ships as a libe_sqlite3 file beside each AOT tool (docs/csharp/kernel-data.md). -->
     <PackageVersion Include="Microsoft.Data.Sqlite" Version="[10.0.12]" />
+    <!-- Typed ids (decision R9, docs/csharp/typed-ids.md). Vogen 8.0.7 published 2026-07-21. -->
+    <PackageVersion Include="Vogen" Version="[8.0.7]" />
   </ItemGroup>
 </Project>
