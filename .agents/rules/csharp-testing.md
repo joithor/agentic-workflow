@@ -88,4 +88,4 @@ ArchUnitNET (not NetArchTest), in the `unit` lane: dependency directions, no sli
 
 ## Hosts
 
-Every host has a DI validation test that calls the host's own `Compose` method (the one `Program.cs` calls), replacing only the `TimeProvider` and settings, builds the container with `ValidateOnBuild` and `ValidateScopes`, and then resolves every registered `IService<,>` inside a scope (decorators are factory registrations that `ValidateOnBuild` can't see into).
+Every host has a DI validation test that calls the host's own `Compose` method (the one `Program.cs` calls), passing a test environment (a lambda, e.g. pointing `AW_STATE_DIR` at a temp directory) and a `FakeTimeProvider`, builds the container with `ValidateOnBuild` and `ValidateScopes`, and then resolves every registered `IService<,>` inside a scope (decorators are factory registrations that `ValidateOnBuild` can't see into).
