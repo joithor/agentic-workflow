@@ -63,6 +63,17 @@ printf '#!/usr/bin/env bash\nbeta report --json\n' > "$d/hooks/other.sh"
 run "$d"
 expect "undeclared cli edge from a shell script fails" 1 "DEPS-EDGE-001" "Hooks -> Beta (cli)" "hooks/other.sh:2"
 
+d="$(fixture bin-helper)"
+printf '#!/usr/bin/env bash\nbin="$(find_bin beta)" || exit 0\n' > "$d/hooks/status.sh"
+run "$d"
+expect "a *_bin helper naming another package's binary is a cli edge" 1 "DEPS-EDGE-001" "Hooks -> Beta (cli)" "hooks/status.sh:2"
+
+d="$(fixture scan-file)"
+perl -pi -e 's/^    scan: \[hooks\]\n/    scan: [hooks, statusline.sh]\n/' "$d/deps.yaml"
+printf '#!/usr/bin/env bash\nbeta live --json\n' > "$d/statusline.sh"
+run "$d"
+expect "a single file in scan is scanned" 1 "DEPS-EDGE-001" "Hooks -> Beta (cli)" "statusline.sh:2"
+
 d="$(fixture undeclared-file)"
 printf 'const o = path.join(stateDir, "alpha", "outbox");\n' > "$d/delta/src/read.ts"
 run "$d"
@@ -92,6 +103,9 @@ expect "same-tier cli edge is allowed (a contract, §4b.1a)" 0 "deps: ok"
 
 d="$(fixture project-into-shell)"; edge "$d" Beta Hooks project planned; run "$d"
 expect "project edge into a shell node fails" 1 "DEPS-KIND-001" "Beta -> Hooks (project)"
+
+d="$(fixture file-into-shell)"; edge "$d" Beta Hooks file planned; run "$d"
+expect "any edge into a shell node fails" 1 "DEPS-KIND-002" "Beta -> Hooks (file)"
 
 d="$(fixture unknown)"; edge "$d" Beta Zeta cli planned; run "$d"
 expect "unknown package fails" 1 "DEPS-REF-001" "Zeta"

@@ -155,6 +155,7 @@ const Q = "[\"'`]";
 
 function walk(dir, out = []) {
   if (!fs.existsSync(dir)) return out;
+  if (fs.statSync(dir).isFile()) return [...out, dir];
   for (const e of fs.readdirSync(dir, { withFileTypes: true }).sort((a, b) => a.name.localeCompare(b.name))) {
     const p = path.join(dir, e.name);
     if (e.isDirectory()) { if (!SKIP_DIRS.has(e.name)) walk(p, out); } else if (!TEST_FILE.test(e.name) && (TS_FILE.test(e.name) || e.name.endsWith(".sh"))) out.push(p);
@@ -175,7 +176,7 @@ function matchersFor(node) {
     const e = esc(b);
     m.push({ kind: "cli", what: `launches \`${b}\``,
       ts: new RegExp(`\\b(?:spawn|spawnSync|execFile|execFileSync|exec|execSync|execa)\\(\\s*${Q}${e}${Q}|\\b\\w*[Bb]in\\w*\\s*[:=]\\s*${Q}${e}${Q}|\\b\\w*[Bb]in\\w*\\([^\\n]*${Q}${e}${Q}`),
-      sh: new RegExp(`(?:^\\s*|[;&|({]\\s*|\\$\\(\\s*|\\b(?:command -v|exec|if|then|do|else|time|nice|timeout\\s+\\S+)\\s+)${e}(?=\\s|$|\\))`) });
+      sh: new RegExp(`(?:^\\s*|[;&|({]\\s*|\\$\\(\\s*|\\b(?:command -v|exec|if|then|do|else|time|nice|timeout\\s+\\S+|\\w*_bin)\\s+)${e}(?=\\s|$|\\))`) });
   }
   for (const p of node.binPaths ?? []) m.push({ kind: "cli", what: `launches ${p}`, ...pathPatterns(p) });
   for (const p of node.db ?? []) m.push({ kind: "db", what: `opens ${p}`, ...pathPatterns(p) });
@@ -294,7 +295,11 @@ export function check(root, today = new Date().toISOString().slice(0, 10)) {
       fail("DEPS-KIND-001", "project edge outside the C# packages", edgeText(e), `project edges connect kind: package nodes (${e.from} is ${a.kind}, ${e.to} is ${b.kind})`, "use a cli or file edge to reach a shell or mod node");
       continue;
     }
-    if (a.kind !== "package" || b.kind !== "package") continue;
+    if (b.kind !== "package") {
+      fail("DEPS-KIND-002", "edge into a shell or mod node", edgeText(e), `shell and mod nodes only consume packages; nothing depends on them (${e.to} is ${b.kind})`, `move the shared state or contract into a package and point the edge the other way (${e.to} -> <package>)`);
+      continue;
+    }
+    if (a.kind !== "package") continue;
     if (e.kind === "project" && rank(a) <= rank(b)) fail("DEPS-TIER-001", "project edge does not point to a lower tier", `${e.from} (${tierLabel(a)}) -> ${e.to} (${tierLabel(b)})`, "a project edge points strictly down the tiers (§4b.1a)", `call ${e.to} through its CLI (kind: cli), or move the shared code down a tier`);
     if ((e.kind === "db" || e.kind === "file") && rank(a) < rank(b)) fail("DEPS-TIER-002", `${e.kind} edge points to a higher tier`, `${e.from} (${tierLabel(a)}) -> ${e.to} (${tierLabel(b)})`, "db and file edges point down or across, never up", `ask ${e.to} through its CLI instead`);
   }
