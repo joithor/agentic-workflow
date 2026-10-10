@@ -13,7 +13,8 @@
 # So this script:
 #   1. reads the projects from AgenticWorkflow.slnx (a missing or unparsable file fails) and fails if any of
 #      them has no packages.lock.json in the git index next to it;
-#   2. restores the solution with CI=true, --locked-mode and DOTNET_NUGET_SIGNATURE_VERIFICATION=true;
+#   2. restores the solution with CI=true, --locked-mode and DOTNET_NUGET_SIGNATURE_VERIFICATION=true,
+#      retrying once (a transient advisory-feed failure, NU1900, is an error);
 #   3. fails if restore changed any lock file (compared by content hash before and after);
 #   4. runs `dotnet nuget verify --all` with the repo nuget.config over every package the lock files name.
 #      The one carve-out: packages signed years ago can carry an expired signature whose timestamp chains
@@ -64,9 +65,17 @@ done <<< "$projects"
 hash_locks() { for f in "${locks[@]}"; do git hash-object "$f"; done; }
 
 # 2. Locked, signature-verified restore.
+# Restore is retried once: NuGet audit's advisory feed can fail transiently (NU1900, an error under
+# TreatWarningsAsErrors). A persistent outage stays a red build, so the high/critical gate is never skipped.
 before="$(hash_locks)"
-CI=true DOTNET_NUGET_SIGNATURE_VERIFICATION=true \
-  "$DOTNET" restore AgenticWorkflow.slnx --locked-mode
+restore() {
+  CI=true DOTNET_NUGET_SIGNATURE_VERIFICATION=true \
+    "$DOTNET" restore AgenticWorkflow.slnx --locked-mode
+}
+if ! restore; then
+  echo "dotnet-verify-packages: restore failed; retrying once" >&2
+  restore || fail "restore failed twice (see above)"
+fi
 
 # 3. Restore must not have changed a lock file.
 if [ "$(hash_locks)" != "$before" ]; then

@@ -27,7 +27,9 @@
 
   <!-- NuGet audit (spec §4d): advisory data is fetched live, so with warnings as errors any new advisory would turn
        every branch red with no change in the repo. High and critical advisories (NU1903, NU1904) fail the build;
-       low and moderate (NU1901, NU1902) stay visible warnings and are left to Dependabot. -->
+       low and moderate (NU1901, NU1902) stay visible warnings and are left to Dependabot. NU1900 (the advisory feed
+       could not be read) stays an error, so the high/critical gate is never silently skipped: a persistent
+       advisory-feed outage is a deliberate red build; restore is retried once (scripts/dotnet-verify-packages.sh). -->
   <PropertyGroup Label="NuGet audit">
     <NuGetAudit>true</NuGetAudit>
     <NuGetAuditMode>all</NuGetAuditMode>
