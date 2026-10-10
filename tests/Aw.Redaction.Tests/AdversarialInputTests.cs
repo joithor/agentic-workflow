@@ -51,7 +51,7 @@ public sealed class AdversarialInputTests
     [Fact]
     public void A_very_long_timeout_is_capped_instead_of_throwing()
     {
-        var redactor = Redactor.Create(TimeSpan.FromDays(20));
+        var redactor = Redactor.Create(TimeSpan.FromDays(30));
 
         var result = redactor.Scrub(new string('x', 300_000));
 

@@ -55,6 +55,15 @@ public static class Corpus
         new SecretCase("pair-at-a-later-line-start", Join("x\napi", "_key=", Body, " && make"), "secret-assignment", Tail),
         new SecretCase("pair-after-comma", Join("opts=a,tok", "en=", Body), "secret-assignment", Tail),
         new SecretCase("url-empty-username", Join("redis://:", Body, "@cache:6379"), "credentialed-url", Tail),
+        new SecretCase("jwt-after-hyphen-default", Join("export AUTH=${AUTH:-ey", "J", Body, ".ey", "J", Body, ".", Body, "}"), "jwt", Tail),
+        new SecretCase("jwt-after-word-hyphen", Join("session-ey", "J", Body, ".", Body, ".", Body), "jwt", Tail),
+        new SecretCase("quoted-curl-data", Join("curl -d \"client", "_secret=", Body, "&grant_type=x\""), "secret-assignment", Tail),
+        new SecretCase("single-quoted-pair", Join("curl --data 'pass", "word=", Body, "' https://x"), "secret-assignment", Tail),
+        new SecretCase("map-tostring", Join("{access", "_token=", Body, ", expires_in=3599}"), "secret-assignment", Tail),
+        new SecretCase("bracket-tostring", Join("Creds@1a2b[tok", "en=", Body, ",user=x]"), "secret-assignment", Tail),
+        new SecretCase("env-quoted-dotted", Join("export API_TOK", "EN=\"Ab3d.", Body, "\""), "secret-assignment", Tail),
+        new SecretCase("basic-auth-header", Join("> Authorization: Bas", "ic dXNlcjpw", "YXNzd29yZDEyMzQ="), "basic-auth", "YXNzd29yZDEy"),
+        new SecretCase("lowercase-dotted-google-token", Join("access", "_token=ya", "29.", Body), "google-oauth-token", Tail),
         new SecretCase("env-dotted-value", Join("API", "_KEY=Ab3dE6gH9jK2mN5p.", Body), "secret-assignment", Tail),
     ];
 
