@@ -87,7 +87,7 @@ A package under ~1,500 lines may use two projects, `Core` and `App`, with the sa
 ## Types and errors (§4b.3)
 
 - Every id and constrained primitive is a strongly typed value (`ItemId`, `RepoSlug`, `SizeClass`, `TokenBudget`). **Decided (R9):** Vogen generates validation and equality with its own STJ generation off, because source generators can't see each other's output (a Vogen converter is invisible to the STJ source generator, which then writes the id as `{}`; a Vogen-only parse method is invisible to the request-delegate generator). So:
-  - every assembly that declares ids sets `[assembly: VogenDefaults(conversions: Conversions.None, systemTextJsonConverterFactoryGeneration: SystemTextJsonConverterFactoryGeneration.Omit, …)]`;
+  - every assembly that declares ids sets `[assembly: VogenDefaults(...)]` with all six arguments of `docs/csharp/typed-ids.md` step 2, verbatim (`Conversions.None`, the STJ factory and primitive equality `Omit`, both casts `CastOperator.None`, `TryFromGeneration.GenerateBoolMethod`); `TypedIdGuard.CheckDefaults` checks each one;
   - each id carries a user-code `[JsonConverter]`, e.g. `[JsonConverter(typeof(StringIdJsonConverter<ItemId>))]`, that reads with `TryFrom` and throws `JsonException` (a 400, never Vogen's exception);
   - `IParsable<T>` is declared in user code: through the Kernel's `ITypedId<TSelf, TValue>` (an id in that form goes behind an endpoint only once an RDG route-binding test passes for it) or a hand-written `TryParse`;
   - the Host maps Vogen's validation exception to a 400;

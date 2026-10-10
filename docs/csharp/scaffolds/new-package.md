@@ -44,11 +44,11 @@ The scaffold itself never edits `Directory.Packages.props`, so its whole-solutio
 ```
 src/<Name>/
 ├── Aw.<Name>.Core/
-│   ├── Aw.<Name>.Core.csproj          # refs Aw.Kernel + DI.Abstractions; InternalsVisibleTo Aw.<Name>.Tests, Aw.<Name>.Testing
+│   ├── Aw.<Name>.Core.csproj          # refs Aw.Kernel + DI.Abstractions + Vogen (R9); InternalsVisibleTo Aw.<Name>.Tests, Aw.<Name>.Testing
 │   ├── packages.lock.json             # written by the first restore
 │   ├── PublicAPI.Shipped.txt          # "#nullable enable" only
 │   ├── PublicAPI.Unshipped.txt        # "#nullable enable", then every public symbol, annotated (below)
-│   ├── VogenDefaults.cs               # [assembly: VogenDefaults(conversions: Conversions.None, …Omit, …)] (R9)
+│   ├── VogenDefaults.cs               # the six-argument VogenDefaults block, verbatim (template below, R9)
 │   ├── <Name>Errors.cs                # KernelErrors shape: public static readonly ErrorDefinition fields + All (below)
 │   └── <Name>CoreServiceCollectionExtensions.cs   # public static Add<Name>Core(this IServiceCollection)
 ├── Aw.<Name>.Features/
@@ -199,6 +199,28 @@ await using (provider.ConfigureAwait(false))
 `CommandTable.Run(string[] args, IServiceProvider provider, JsonSerializerOptions json)` binds the arguments, opens a scope (`var scope = provider.CreateAsyncScope(); await using
 (scope.ConfigureAwait(false)) { … }`), resolves one `IService<TReq, TRes>`, calls it, and maps the `Result` to an exit
 code and output (written with `AwJson.Serialize(response, json)`). It is generated in the Host; it moves into a Kernel part only when a second CLI package proves the shape.
+
+### Template: `VogenDefaults.cs` (Core, R9)
+
+Verbatim from `docs/csharp/typed-ids.md` step 2. `TypedIdGuard.CheckDefaults` fails unless all six arguments are set,
+and `TryFromGeneration.GenerateBoolMethod` is what `ITypedId`'s `static abstract bool TryFrom` binds to:
+
+```csharp
+using Vogen;
+
+// No Vogen conversions: the System.Text.Json source generator can't see Vogen's converters and silently writes {}.
+// The rest keeps an id's public surface to what ITypedId needs (Value, the bool TryFrom, IParsable).
+[assembly: VogenDefaults(
+    conversions: Conversions.None,
+    systemTextJsonConverterFactoryGeneration: SystemTextJsonConverterFactoryGeneration.Omit,
+    primitiveEqualityGeneration: PrimitiveEqualityGeneration.Omit,
+    toPrimitiveCasting: CastOperator.None,
+    fromPrimitiveCasting: CastOperator.None,
+    tryFromGeneration: TryFromGeneration.GenerateBoolMethod)]
+```
+
+The Core csproj carries `<PackageReference Include="Vogen" />` (version from `Directory.Packages.props`); Vogen's
+generated members are part of each id's public API, so the reference flows to every project that references this `Core`.
 
 ### Template: `<Name>Errors.cs`
 

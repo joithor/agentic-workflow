@@ -111,7 +111,7 @@ public readonly partial struct <Id> : ITypedId<<Id>, string>
 `ITypedId<TSelf, TValue>` declares `IParsable<TSelf>` in user code, and the converter reads with `TryFrom` and throws
 `JsonException` (a 400). `ITypedId` and the `StringIdJsonConverter`/`GuidIdJsonConverter`/`Int32IdJsonConverter` ship
 with the typed-ids PR (#100, C3); the recipe is `docs/csharp/typed-ids.md`. The package's `VogenDefaults.cs` (from
-`/new-package`) applies `Conversions.None` and the STJ factory `Omit`. **Before an id in this form binds a route** (an
+`/new-package`) sets all six arguments of `docs/csharp/typed-ids.md` step 2, verbatim. **Before an id in this form binds a route** (an
 http slice whose `route` has `{id}`), the generator adds an RDG route-binding test for it in
 `tests/Aw.<Pkg>.Tests/Ids/<Id>RouteBindingTests.cs` (Lane=integration): an id in the `ITypedId` form is used behind an
 endpoint only once that test passes; otherwise the id gets a hand-written `TryParse` instead. The architecture test
