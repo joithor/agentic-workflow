@@ -73,8 +73,8 @@ export async function loadDerivedSet(deps: Deps, loaded: LoadedProfile): Promise
     }
     if (r.state !== "ok") throw new SindriError("SND-EVOLVE-017", `repo ${name} is private but has no built code index`, { fix: `sindri index build --repo ${name}, then rerun sindri evolve publish` });
     // The index skips denyPaths, secret globs, oversized and non-source files; their names still count, so every
-    // tracked path is read from git too (names only, never contents). Fail closed when git can't list them.
-    const ls = await deps.git.run(["ls-files", "-z"], loaded.repos[name].path, { foreign: true });
+    // tracked path is read from git too, submodules included (names only, never contents). Fail closed when git can't list them.
+    const ls = await deps.git.run(["ls-files", "-z", "--recurse-submodules"], loaded.repos[name].path, { foreign: true });
     if (!ls.ok) {
       throw new SindriError("SND-EVOLVE-019", `couldn't list the tracked files of private repo ${name}, so publish can't check proposals for their names`, {
         fix: `check that repos/${name}.yaml's path is that repo's git checkout on this machine, then rerun sindri evolve publish`,

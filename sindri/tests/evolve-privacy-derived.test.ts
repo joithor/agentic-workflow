@@ -6,7 +6,7 @@ import { indexPath, openIndex, type IndexDb } from "../src/index/db.js";
 import { buildDerivedSet, identifierProblem, identifierTokens, loadDerivedSet, privateRepos, unsetPrivateRepos, vocabularyOf, wordsFile } from "../src/evolve/privacy-derived.js";
 import { SindriError } from "../src/errors.js";
 import { seedIndex } from "./index-fixtures.js";
-import { gitRepo, makeDeps, tempDir } from "./helpers.js";
+import { git, gitRepo, makeDeps, tempDir } from "./helpers.js";
 
 const WORDS = new Set(["schedule", "nurse", "shift", "patient", "query", "utils"]);
 
@@ -168,6 +168,20 @@ describe("loadDerivedSet", () => {
     fs.writeFileSync(path.join(repo, "untrackedPlumbus.txt"), "x\n");
     const set = await loadDerivedSet(deps, loaded(deps, { toolkit: {}, globex: { private: true, path: repo } }));
     expect([...set].sort()).toEqual(["config", "customer", "quarblescheduler", "vexillakeys", "zorbbillingmigration"]);
+  });
+
+  it("adds the tracked file names inside a private repo's submodules (git ls-files --recurse-submodules)", async () => {
+    const words = path.join(tempDir("w-"), "words");
+    fs.writeFileSync(words, "nurse\nvendor\ninner\n");
+    const deps = makeDeps({ env: { SINDRI_WORDS: words } });
+    seedIndex(openIndex(indexPath(deps, "globex")), { files: ["a.ts"], symbols: ["quarbleScheduler"] }).close();
+    const sub = gitRepo({ "plumbob-kit/frobnitzWidget.ts": "x\n" });
+    const repo = gitRepo({ "nurse.md": "x\n" });
+    git(repo, "-c", "protocol.file.allow=always", "submodule", "add", "-q", sub, "vendor/inner");
+    git(repo, "commit", "-qm", "sub");
+    const set = await loadDerivedSet(deps, loaded(deps, { toolkit: {}, globex: { private: true, path: repo } }));
+    expect(set.has("frobnitzwidget")).toBe(true);
+    expect(set.has("plumbob")).toBe(true);
   });
 
   it("refuses with SND-EVOLVE-019 when a private repo's tracked files can't be listed (fail closed)", async () => {
