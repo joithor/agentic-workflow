@@ -115,11 +115,11 @@ tests/
 - Public API files, **library projects only** (`Core`, `Features`, `Infrastructure`, `App`; `Directory.Build.targets` turns these analyzers off for `*.Host`) (`RS0016`/`RS0017`/`RS0036`/`RS0037`): both files start with `#nullable enable`; `App`'s files hold only that line (its types are `internal`, below); Shipped has nothing
   else; Unshipped lists every public symbol with nullability annotations, e.g.
   `static Aw.<Name>.Core.<Name>CoreServiceCollectionExtensions.Add<Name>Core(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!`.
-  Records also list their compiler-generated members (about 12 lines each). The generator writes these lines from the
-  `RS0016` code fix (`dotnet format analyzers <project> --diagnostics RS0016`), never by hand, and then checks the header.
-  The code fix skips source-generated code, so a typed id's Vogen-generated members (about 17 lines for a string id)
-  are recorded from the build's `RS0016` output instead, with the step in `docs/csharp/typed-ids.md` ("Public ids and
-  PublicAPI files"), and reviewed. `/new-slice` runs both steps on `Core` when it adds ids.
+  Records also list their compiler-generated members (about 12 lines each), and a typed id its Vogen-generated
+  members (about 17 lines for a string id). The generator writes these lines from the build's `RS0016` diagnostics,
+  never by hand: it builds each library project in reference order and appends the symbols the build reports for it
+  (`declarePublicApi`, `docs/csharp/scaffolds/new-slice.md` "Commands the generator runs"; the `RS0016` code fix,
+  `dotnet format analyzers --diagnostics RS0016`, changes nothing on .NET 10). The lines are reviewed.
 - One top-level type per file, named after it (`MA0048`); no `TODO` comments (`MA0026`); no discarded results (`IDE0058`).
 - Library code uses `.ConfigureAwait(false)` on every `await`, `await using` and `await foreach` (`CA2007`); the Host
   templates do the same.
@@ -482,7 +482,7 @@ with the `NotSupportedException` thrown by the parameterless service stub. The s
 ```bash
 for p in src/<Name>/*/*.csproj tests/Aw.<Name>.*/*.csproj tests/Aw.Architecture.Tests/Aw.Architecture.Tests.csproj; do dotnet restore "$p" --force; done   # the new projects, plus the architecture tests that now reference them: writes their packages.lock.json (--force: a no-op cache from an earlier, reverted run would skip the lock file)
 dotnet restore --locked-mode                            # whole solution; must pass — no other lock file changes here
-dotnet format analyzers <each new library project> --diagnostics RS0016 --severity error   # writes the PublicAPI.Unshipped.txt lines (Core, Features, Infrastructure; not hosts or App)
+dotnet build <each new library project>                # in order Core, Features, Infrastructure (not hosts or App): its RS0016 symbols go into PublicAPI.Unshipped.txt (new-slice.md)
 dotnet build -warnaserror                               # must report 0 warnings, 0 errors
 dotnet test --solution AgenticWorkflow.slnx --filter-trait "Lane=unit" --ignore-exit-code 8   # HostTests pass; the slice test fails (expected); exit 8 = empty lane in some project
 dotnet format --verify-no-changes

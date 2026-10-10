@@ -5,8 +5,11 @@
 # (restores, RS0016, build -warnaserror, the unit lane with exactly one red test, format, check-deps). Then, by hand:
 # (a) makes its first slice green and adds a second slice with /new-slice (exactly one new red test), then
 # NativeAOT-publishes its App for the runner's RID (no IL2xxx/IL3xxx warning) and runs the native binary (usage exit 2
-# and the AW-TELEMETRY-001 line for an unknown AW_LOG_LEVEL); (b) runs its integration lane (loopback binding, id route
-# binding, Kernel telemetry as the only logger) green. The worktrees are removed afterwards.
+# and the AW-TELEMETRY-001 line for an unknown AW_LOG_LEVEL); (b) makes its first slice green, adds a second with a new
+# Guid id and a new port (Core's and Features' PublicAPI lines come from the build's RS0016 diagnostics), makes that
+# green and adds a third reusing the port (which must leave the port, its fake and its contract base alone), then runs
+# its integration lane (loopback binding, id route binding, Kernel telemetry as the only logger) green. The worktrees
+# are removed afterwards.
 #
 # Needs the NativeAOT toolchain for the AOT step: the Xcode command-line tools on macOS, clang and zlib on Linux.
 # Usage: scripts/scaffold/e2e.sh            (from the repo root; needs the .NET SDK from global.json and node)
@@ -74,6 +77,12 @@ HTTP="Scaffoldprobe"
 
 gen() { env -u CI node "$@"; }
 
+# green <tree> <features dir> <tests dir> <Slice> <behavior> — make a scaffolded red slice pass, as its implementer would.
+green() {
+  perl -0pi -e "s/=> throw new NotSupportedException\\(\"$4: make $4Tests pass\"\\);/=> ValueTask.FromResult<Result<$4Response>>(new $4Response());/" "$1/$2/$4/$4Service.cs"
+  perl -0pi -e "s/\\n        Assert\\.Fail\\(\"red: assert $5\"\\);//" "$1/$3/$4/$4Tests.cs"
+}
+
 # ---- (a) small CLI package, declared ----
 tree small
 A="$TMP/small"
@@ -83,10 +92,7 @@ step "(a) /new-package: $SMALL, small, cli, tier $SMALL_TIER ($SMALL_KIND)"
 (cd "$A" && git status --porcelain --untracked-files=all | grep -q "src/$SMALL/") || fail "(a) wrote no src/$SMALL"
 
 step "(a) make CheckThing green by hand, then /new-slice ListThings with a typed id and a new port"
-SVC="$A/src/$SMALL/Aw.$SMALL.App/Features/CheckThing/CheckThingService.cs"
-RED="$A/tests/Aw.$SMALL.Tests/CheckThing/CheckThingTests.cs"
-perl -0pi -e 's/=> throw new NotSupportedException\("CheckThing: make CheckThingTests pass"\);/=> ValueTask.FromResult<Result<CheckThingResponse>>(new CheckThingResponse());/' "$SVC"
-perl -0pi -e 's/\n        Assert\.Fail\("red: assert reports_nothing_for_an_empty_tree"\);//' "$RED"
+green "$A" "src/$SMALL/Aw.$SMALL.App/Features" "tests/Aw.$SMALL.Tests" CheckThing reports_nothing_for_an_empty_tree
 (cd "$A" && gen scripts/scaffold/new-slice.mjs --package "$SMALL" --slice ListThings --behavior lists_nothing_for_an_empty_tree \
   --surface cli --command list --ids ThingId:string --ports IThingStore) || fail "(a) new-slice"
 
@@ -108,6 +114,19 @@ step "(b) /new-package: $HTTP, full, http, tier 1 (not in deps.yaml)"
 (cd "$B" && gen scripts/scaffold/new-package.mjs --name "$HTTP" --tier 1 --error-prefix E2EHTTP --note "scaffold e2e probe" \
   --shape full --host http --first-slice StartItem --behavior starts_an_item --route "POST /items/{itemId}/start" \
   --ids ItemId:string,OwnerId:Guid) || fail "(b) new-package"
+step "(b) make StartItem green, then /new-slice ListItems with a new Guid id and a new port (Core and Features PublicAPI)"
+green "$B" "src/$HTTP/Aw.$HTTP.Features" "tests/Aw.$HTTP.Tests" StartItem starts_an_item
+(cd "$B" && gen scripts/scaffold/new-slice.mjs --package "$HTTP" --slice ListItems --behavior lists_nothing_for_an_owner \
+  --surface http --route "POST /items/{itemId}/list" --ids BatchId:Guid --ports IItemStore) || fail "(b) new-slice ListItems"
+grep -qx "Aw.$HTTP.Core.Ports.IItemStore" "$B/src/$HTTP/Aw.$HTTP.Core/PublicAPI.Unshipped.txt" || fail "(b) IItemStore not declared in Core's PublicAPI"
+grep -qx "Aw.$HTTP.Features.ListItems.ListItemsRequest" "$B/src/$HTTP/Aw.$HTTP.Features/PublicAPI.Unshipped.txt" || fail "(b) ListItemsRequest not declared in Features' PublicAPI"
+step "(b) make ListItems green, then /new-slice CountItems reusing IItemStore: its port, fake and contract stay as they are"
+green "$B" "src/$HTTP/Aw.$HTTP.Features" "tests/Aw.$HTTP.Tests" ListItems lists_nothing_for_an_owner
+(cd "$B" && git add -A && git -c user.name=e2e -c user.email=e2e@localhost commit --quiet -m "e2e: ListItems green") || fail "(b) commit"
+(cd "$B" && gen scripts/scaffold/new-slice.mjs --package "$HTTP" --slice CountItems --behavior counts_nothing \
+  --surface http --route "POST /items/{itemId}/count" --ports IItemStore) || fail "(b) new-slice CountItems"
+reused="$(cd "$B" && git status --porcelain -- "src/$HTTP/Aw.$HTTP.Core/Ports" "tests/Aw.$HTTP.Testing/InMemoryItemStore.cs" "tests/Aw.$HTTP.Testing/ItemStoreContract.cs")"
+[ -z "$reused" ] || fail "(b) CountItems rewrote the existing port or its fake: $reused"
 step "(b) integration lane: loopback binding and id route binding"
 (cd "$B" && env -u CI dotnet test --project "tests/Aw.$HTTP.Tests" --filter-trait "Lane=integration") || fail "(b) integration lane"
 step "(b) check-deps with the new node"
