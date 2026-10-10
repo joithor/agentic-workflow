@@ -101,7 +101,7 @@ export type SaveOutcome = { kind: "saved" | "duplicate" | "previously-rejected";
 
 // `sessions`: the transcript sessions (prefixes as sessionOf gives them) whose text the caller sent to the model for
 // this proposal, decided by code, never read from the model's answer (security-sentinel-0). Only ever added to: a
-// re-proposal merged into an open one adds its sessions, so the verbatim layer checks every source it was built from.
+// re-proposal merged into an open one with recorded sources adds its sessions, so the verbatim layer checks every source it was built from.
 export function saveProposal(db: Ledger, p: Proposal, source: string, tier: Tier, epoch: number, now: Date, sessions: readonly string[] = []): SaveOutcome {
   const clean = scrubber.scrubDeep(p);
   const norm = normTitle(clean.title);
@@ -116,7 +116,10 @@ export function saveProposal(db: Ledger, p: Proposal, source: string, tier: Tier
     const older = ProposalSchema.parse(JSON.parse(open.body));
     const merged = { ...older, evidence: [...new Set([...older.evidence, ...clean.evidence])].slice(-20) };
     db.prepare("UPDATE proposals SET body = ?, updated_at = ?, epoch = ? WHERE id = ?").run(JSON.stringify(merged), ts, epoch, open.id);
-    addSources(open.id);
+    // Only into a proposal whose sources were recorded (NO_TRANSCRIPT counts): one saved before provenance existed keeps
+    // its original text, drafted from sessions nobody recorded, so it stays unrecorded and held (run 4
+    // kieran-typescript-reviewer-1, security-sentinel-3).
+    if (proposalSources(db, open.id).length > 0) addSources(open.id);
     return { kind: "duplicate", id: open.id };
   }
   const rejected = prior.find((r) => r.status === "rejected");

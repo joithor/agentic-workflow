@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import { discover, isAddedTestAllowed, isEvalMachinery } from "../src/evolve/registry.js";
-import { classifyTier, findMerged, getProposal, inFlightCount, listProposals, parseEach, proposalSources, ProposalSchema, readPublic, readsTranscripts, reduceEvidence, renderSaved, saveProposal, savePublic, getPublic, setTier, type Proposal } from "../src/evolve/proposals.js";
+import { classifyTier, findMerged, getProposal, inFlightCount, listProposals, NO_TRANSCRIPT, parseEach, proposalSources, ProposalSchema, readPublic, readsTranscripts, reduceEvidence, renderSaved, saveProposal, savePublic, getPublic, setTier, type Proposal } from "../src/evolve/proposals.js";
 import { realGitRunner } from "../src/git-real.js";
 import { bumpEpoch, openMemoryLedger } from "../src/ledger/db.js";
 import { git, setStatus } from "./evolve-fixtures.js";
@@ -189,6 +189,17 @@ describe("proposal storage, dedupe and merge tracking", () => {
     setStatus(db, first.id, "rejected", epoch, now);
     expect(saveProposal(db, prop(), "reflect:pr-2", "code", epoch, now, ["dddd4444"]).kind).toBe("previously-rejected");
     expect(proposalSources(db, first.id)).toEqual(["aaaa1111", "bbbb2222", "cccc3333"]); // nothing added to a rejected one
+  });
+
+  it("never adds sources to an open proposal saved without any (a pre-provenance one stays unrecorded; run 4 kieran-typescript-reviewer-1, security-sentinel-3)", () => {
+    const { db, epoch } = setup();
+    const legacy = saveProposal(db, prop(), "reflect:pr-1", "code", epoch, now); // as a v4 ledger left it: no source rows
+    expect(saveProposal(db, prop(), "correct:2026-W41", "code", epoch, now, ["cccc3333"])).toEqual({ kind: "duplicate", id: legacy.id });
+    expect(saveProposal(db, prop(), "reflect:pr-2", "code", epoch, now, [NO_TRANSCRIPT])).toEqual({ kind: "duplicate", id: legacy.id });
+    expect(proposalSources(db, legacy.id)).toEqual([]);
+    const marked = saveProposal(db, prop({ title: "Another change" }), "reflect:pr-3", "code", epoch, now, [NO_TRANSCRIPT]);
+    saveProposal(db, prop({ title: "Another change" }), "correct:2026-W41", "code", epoch, now, ["dddd4444"]); // the `-` marker counts as recorded
+    expect(proposalSources(db, marked.id)).toEqual([NO_TRANSCRIPT, "dddd4444"]);
   });
 
   it("says which sources read transcripts: every source but telemetry (fail closed)", () => {

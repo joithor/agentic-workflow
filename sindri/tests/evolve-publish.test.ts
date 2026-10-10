@@ -566,6 +566,17 @@ describe("publish gate layers (privacy B1)", () => {
     fx.close();
   });
 
+  it("verbatim: a pre-provenance proposal merged with a re-proposal that records sources is still held as unrecorded (run 4 kieran-typescript-reviewer-1, security-sentinel-3)", async () => {
+    const { fx, save } = await ready({ extraYaml: PATTERNS });
+    git(fx.repo, "update-ref", "refs/remotes/origin/main", "HEAD");
+    const id = save("Alpha change here", { evidence: ["pr:12"] }, "code", { sessions: [] }); // saved before v5: no source rows
+    expect(save("Alpha change here", { evidence: ["pr:13"] }, "code", { source: "correct:2026-W41", sessions: ["5e55a1d0"] })).toBe(id);
+    await stage([], fx.ctx);
+    const out = JSON.parse((await publish(["--json", "--dry-run"], fx.ctx)).stdout) as { held: { id: string; layer: string; why: string }[] };
+    expect(out.held).toEqual([{ id, layer: "verbatim", why: "its source transcripts weren't recorded, so copied text can't be checked" }]);
+    fx.close();
+  });
+
   it("verbatim: a run in a staged but uncommitted toolkit file isn't public, so the copy still holds (security-sentinel-0)", async () => {
     const held = await heldLayer(
       { rationale: "The overnight rota swap left two shifts without cover.", evidence: ["transcript:5e55a1d0#1"] },
