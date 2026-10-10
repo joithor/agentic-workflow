@@ -38,6 +38,12 @@
     <PackageVersion Include="Microsoft.Data.Sqlite" Version="[10.0.12]" />
     <!-- Typed ids (decision R9, docs/csharp/typed-ids.md). Vogen 8.0.7 published 2026-07-21. -->
     <PackageVersion Include="Vogen" Version="[8.0.7]" />
+    <!-- Telemetry (Aw.Kernel.Telemetry's one external dependency, spec §4b.1): spans, metrics and the processor and
+         exporter seams. OpenTelemetry 1.19.1 published 2026-09-21. It brings Microsoft.Extensions.Logging,
+         .Configuration (with the EnvironmentVariables provider), .Options and .DependencyInjection transitively (pinned
+         by the lock files; nothing may use IConfiguration). No exporter package: exporting is off by default and an
+         exporter is an adapter the host opts into (docs/csharp/telemetry.md). -->
+    <PackageVersion Include="OpenTelemetry" Version="[1.19.1]" />
     <!-- Architecture tests (spec §4b.5: ArchUnitNET, maintained; NetArchTest's last release was 2023). The core
          package only: the xUnit adapter pulls System.Net.Http 4.3.4. 0.13.4 published 2026-08-20. -->
     <PackageVersion Include="TngTech.ArchUnitNET" Version="[0.13.4]" />

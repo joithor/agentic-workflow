@@ -1,0 +1,41 @@
+using Microsoft.Extensions.Logging;
+
+namespace Aw.Kernel.Telemetry.Tests;
+
+/// <summary>
+/// The two ways code logs: source-generated [LoggerMessage] methods (structured fields, the production idiom) and
+/// <see cref="Emit"/>, which hands the logger finished text through ILogger.Log (no template), for messages built at
+/// run time such as a secret pasted into the text.
+/// </summary>
+internal static partial class Log
+{
+    [LoggerMessage(EventId = 7, EventName = "ItemStarted", Level = LogLevel.Information, Message = "Started {Item} in {Ms} ms")]
+    public static partial void ItemStarted(ILogger logger, string item, int ms);
+
+    [LoggerMessage(Level = LogLevel.Information, Message = "env {Pair} token {Token}")]
+    public static partial void EnvAndToken(ILogger logger, string pair, string token);
+
+    [LoggerMessage(Level = LogLevel.Information, Message = "login {Password}")]
+    public static partial void Login(ILogger logger, string password);
+
+    [LoggerMessage(Level = LogLevel.Information, Message = "{{took {Ms:N2}}} as {Token}")]
+    public static partial void LoginWithFormat(ILogger logger, double ms, string token);
+
+    // Parameters in a different order from the template's holes: the generator builds the state in parameter order.
+    [LoggerMessage(Level = LogLevel.Information, Message = "{User} signed in with {Password}")]
+    public static partial void SignIn(ILogger logger, string password, string user);
+
+    [LoggerMessage(Level = LogLevel.Error, Message = "failed")]
+    public static partial void Failed(ILogger logger, Exception exception);
+
+    /// <summary>Logs the state Microsoft.Extensions.Logging builds for a template: the fields in hole order, then the template.</summary>
+    public static void EmitTemplate(this ILogger logger, string template, params (string Key, object? Value)[] fields)
+    {
+        IReadOnlyList<KeyValuePair<string, object?>> state =
+            [.. fields.Select(f => new KeyValuePair<string, object?>(f.Key, f.Value)), new("{OriginalFormat}", template)];
+        logger.Log(LogLevel.Information, default, state, exception: null, (s, _) => string.Join(' ', s.Select(f => f.Value)));
+    }
+
+    public static void Emit(this ILogger logger, LogLevel level, string text, EventId eventId = default) =>
+        logger.Log(level, eventId, text, exception: null, static (state, _) => state);
+}

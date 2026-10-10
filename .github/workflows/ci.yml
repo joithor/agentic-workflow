@@ -330,6 +330,7 @@ jobs:
             artifacts/aot-*/publish.log
             artifacts/aot-data-smoke
             artifacts/aot-redaction-smoke
+            artifacts/aot-telemetry-smoke
           if-no-files-found: ignore
           retention-days: 7
 

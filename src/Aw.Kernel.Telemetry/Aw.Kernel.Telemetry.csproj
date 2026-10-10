@@ -1,0 +1,25 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- Aw.Kernel.Telemetry: tier 0, sublevel 1 (deps.yaml KernelTelemetry), spec §4b.1, §4d "runtime hardening".
+       JSON-lines logging and OpenTelemetry spans and metrics, with Aw.Redaction's scrubber on every log and export
+       path. Aw.Kernel and Aw.Redaction plus ONE external dependency: OpenTelemetry (its closure brings
+       Microsoft.Extensions.Logging, .Configuration, .Options and .DependencyInjection; see docs/csharp/telemetry.md). Exporting is off by default; an exporter is an adapter the host opts into
+       (docs/csharp/telemetry.md). -->
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <RootNamespace>Aw.Kernel.Telemetry</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="OpenTelemetry" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../Aw.Kernel/Aw.Kernel.csproj" />
+    <ProjectReference Include="../Redaction/Aw.Redaction/Aw.Redaction.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="Aw.Kernel.Telemetry.Tests" />
+    <InternalsVisibleTo Include="Aw.Kernel.Telemetry.Testing" />
+  </ItemGroup>
+</Project>

@@ -14,6 +14,7 @@ internal static class Packages
     [
         "Aw.Kernel",
         "Aw.Kernel.Data",
+        "Aw.Kernel.Telemetry",
         "Aw.Packets.Core",
         "Aw.Packets.App",
         "Aw.Readiness.Core",

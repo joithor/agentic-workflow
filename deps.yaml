@@ -318,17 +318,17 @@ edges:
     kind: project
     status: current
     note: "fakes and builders"
-  # ---- planned: the C# project references the ports create (§4b.1, §4b.1a) ----
   - from: KernelTelemetry
     to: Kernel
     kind: project
-    status: planned
+    status: current
     note: "kernel family"
   - from: KernelTelemetry
     to: Redaction
     kind: project
-    status: planned
+    status: current
     note: "the scrubbing processor on logs and OTel exports"
+  # ---- planned: the C# project references the ports create (§4b.1, §4b.1a) ----
   - from: KernelTesting
     to: KernelData
     kind: project
