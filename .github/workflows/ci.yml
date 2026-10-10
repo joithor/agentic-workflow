@@ -256,14 +256,33 @@ jobs:
       - uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
         if: steps.sln.outputs.run == 'true'
         with:
+          # With rollForward: disable, setup-dotnet v6 installs sdk.version exactly
+          # (only latestPatch/latestFeature/latestMinor/latestMajor widen it).
           global-json-file: global.json
           cache: true
           cache-dependency-path: "**/packages.lock.json"
-      - name: dotnet restore (locked)
+      - name: The SDK is exactly the global.json pin
+        if: steps.sln.outputs.run == 'true'
+        run: |
+          want="$(jq -r .sdk.version global.json)"
+          got="$(dotnet --version)"
+          echo "global.json pins $want; dotnet --version is $got"
+          if [ "$want" != "$got" ]; then
+            echo "::error::SDK $got is not the global.json pin $want"
+            exit 1
+          fi
+      - name: dotnet restore (locked, one retry)
         if: steps.sln.outputs.run == 'true'
         env:
           SLN: ${{ steps.sln.outputs.sln }}
-        run: dotnet restore "$SLN" --locked-mode
+        # NU1900 (vulnerability feed unreachable) is an error by design; a feed outage
+        # gets one retry before the job fails.
+        run: |
+          if ! dotnet restore "$SLN" --locked-mode; then
+            echo "::warning::dotnet restore failed — retrying once in 30s (NU1900 feed outages are transient)"
+            sleep 30
+            dotnet restore "$SLN" --locked-mode
+          fi
       - name: dotnet build
         if: steps.sln.outputs.run == 'true'
         env:
@@ -273,13 +292,30 @@ jobs:
         if: steps.sln.outputs.run == 'true'
         env:
           SLN: ${{ steps.sln.outputs.sln }}
-        run: dotnet test "$SLN" --no-build --no-restore --configuration Release --results-directory TestResults
-      - name: Upload test results on failure
+        # Microsoft.Testing.Platform (global.json test.runner): --solution, and MTP options
+        # only. VSTest options (--logger, --collect, --settings, --blame) make MTP run zero
+        # tests (exit 5). A lane step that may select no tests adds --ignore-exit-code 8.
+        run: dotnet test --solution "$SLN" --no-build --configuration Release --results-directory TestResults
+      - name: NativeAOT smoke tests
+        if: steps.sln.outputs.run == 'true'
+        # Each publishes for the runner's own RID (linux-x64), runs the native binary and
+        # compares its output; clang and zlib1g-dev are on ubuntu runners.
+        run: |
+          for smoke in src/Aw.Kernel.AotSmoke/run.sh src/Aw.Kernel.Data.AotSmoke/run.sh; do
+            if [ -f "$smoke" ]; then
+              bash "$smoke"
+            else
+              echo "no-op: $smoke not present yet"
+            fi
+          done
+      - name: Upload test and AOT smoke output on failure
         if: failure() && steps.sln.outputs.run == 'true'
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
-          name: dotnet-test-results
-          path: TestResults
+          name: dotnet-results
+          path: |
+            TestResults
+            artifacts/aot-smoke
           if-no-files-found: ignore
           retention-days: 7
 
