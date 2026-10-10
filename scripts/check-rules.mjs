@@ -4,7 +4,7 @@
 //
 //   node scripts/check-rules.mjs [--root DIR] [--json]
 //
-// Reads rules/engineering/csharp.inventory.yaml (the §4b rule list) and rules/engineering/csharp/*.yaml (one
+// Reads rules/engineering/csharp.inventory.yaml (the §4b rule list, plus rules csharp.md adds under a §4b heading) and rules/engineering/csharp/*.yaml (one
 // record per rule), validates each record against schemas/rule-record.schema.json, and checks that:
 // every check a record calls active really exists in the tree; a pending check (in an open PR) doesn't yet
 // (it warns once it does, so the record gets flipped); the gap status agrees with the checks; every inventory

@@ -12,13 +12,14 @@ mappings (`select: { … }`), which the YAML subset below doesn't allow; write `
 | Path | What |
 |---|---|
 | `rules/engineering/csharp/<slug>.yaml` | One record per rule; the file name is the id's last part |
-| `rules/engineering/csharp.inventory.yaml` | The §4b rule list: every record id with its spec section |
+| `rules/engineering/csharp.inventory.yaml` | The §4b rule list, every record id with its spec section. It also holds the few rules `.agents/rules/csharp.md` adds under a §4b heading (no TODO comments, file name matches the type, suppressions need a justification); those records cite `.agents/rules/csharp.md` as their `source` |
 | `schemas/rule-record.schema.json` | The record schema (JSON Schema, for editors and the check) |
 | `scripts/check-rules.mjs` | The check (`node scripts/check-rules.mjs [--json]`; merge gate item 9, CI "Rule records name real checks") |
 | `scripts/tests/check-rules.test.sh` | Its tests, on the fixture repo in `scripts/tests/fixtures/check-rules/base` |
 
 Ids are matched as whole tokens (`CA103` never matches `CA1031`) in the files' live text: comments are stripped
-first (`#` and `;` lines in `.editorconfig`, `<!-- -->` in MSBuild files, `//` and `/* */` in code).
+first (`#` and `;` lines and ` #…` outside quotes in `.editorconfig` and YAML, `<!-- -->` outside CDATA in MSBuild
+files, `//` and `/* */` outside string literals in code).
 
 Records use the same YAML subset as `deps.yaml` (block mappings and sequences, quoted scalars, flow lists of scalars,
 comments; no flow mappings, anchors or block scalars), so the check needs no install step.
@@ -57,17 +58,17 @@ The id is `<kind>.csharp.<slug>`, and the file is `rules/engineering/csharp/<slu
 
 | `type` | `id` | Exists when |
 |---|---|---|
-| `analyzer` | a Roslyn diagnostic id (`CA1031`, `MA0051`, `AW1005`) | the root `.editorconfig` sets `dotnet_diagnostic.<id>.severity` to `error` or `warning` (or the check's `severity`); or, with `via: baseline` and `package`, the root `.editorconfig` has the bulk `dotnet_analyzer_diagnostic.severity = error` line, sets no severity for the id, and `Directory.Packages.props` references the package. An `AW` id also needs its descriptor in `src/Aw.Analyzers`. A rule the root sets to `none`, `silent` or `suggestion` isn't a check |
+| `analyzer` | a Roslyn diagnostic id (`CA1031`, `MA0051`, `AW1005`) | a general C# section of the root `.editorconfig` (`[*]`, `[*.cs]`, `[**.cs]`, `[*.{…,cs,…}]`; keys are case-insensitive, the last line wins) sets `dotnet_diagnostic.<id>.severity` to `error` or `warning`, or to the check's `severity`. Or, with `via: baseline`, `package` and `category`: that section has the bulk `dotnet_analyzer_diagnostic.severity = error` line, sets no severity for the id and nothing below `error` for its category, and `Directory.Packages.props` has a `GlobalPackageReference` to the package. `via: baseline` is only for rules the package enables by default (the bulk line doesn't switch on a disabled rule); check the package's documentation `.md`. An `AW` id also needs its descriptor in `src/Aw.Analyzers`. A rule set below the check's severity isn't a check, and a check at `severity: suggestion` exists but never counts as enforcing (it can't make a rule `closed` or `partial`). A narrower section (a path glob) neither enables nor disables a rule |
 | `compiler` | a `CS…` or `IL…` id | always (the compiler and trim analyzers); only the form is checked |
 | `banned-symbols` | `RS0030`, with `entries` (required) | `BannedSymbols.txt` lists every entry and an `AdditionalFiles` item in `Directory.Build.props` wires the file |
 | `archunit` | `ARCH-…` | it appears under `tests/Aw.Architecture.Tests` |
 | `check-deps` | `DEPS-…` | it appears in `scripts/check-deps.mjs` or `scripts/deps/` |
 | `lane-cap` | `LANE-…` | it appears under `tests/` |
-| `check-rules` | `RULE-…` | it appears in `scripts/check-rules.mjs` |
+| `check-rules` | `RULE-…` | it appears in `scripts/check-rules.mjs` or `scripts/rules/` |
 | `build-setting` | a literal (`<IsAotCompatible>true</IsAotCompatible>`, `AW0001`) | it appears in `Directory.Build.*`, `Directory.Packages.props`, `global.json`, `.editorconfig` or `nuget.config` |
 | `test` | a class or member name, with `ref` | `ref` (a file or directory) exists and contains the name |
-| `script` | a name, with `ref` | `ref` exists |
-| `ci` | a workflow step name, with `ref` | the workflow file has a step named exactly that |
+| `script` | a name, with `ref` | `ref` exists (only that: it doesn't prove CI runs it, so pair it with a `ci` check or call the rule `partial`) |
+| `ci` | a workflow step name, with `ref` | the workflow file has a step (a `name:` of an item in a `steps:` list, not a job) named exactly that |
 | `review` | a short label | never looked up: it isn't a deterministic check |
 
 ### Gap status
@@ -108,8 +109,8 @@ failed, 2 a tool error (a missing `rules/` directory or schema, an unknown argum
 
 ## What isn't a record
 
-§4b.7 (the repository tree) is a layout description; its one rule, test projects under `tests/`, is the
-`tests-live-under-tests` record. §4b.8 maps the ring-2 handbook's standards to the C# rules above, so its rows are
+§4b.7 (the repository tree) is a layout description; it restates §4b.6's placement rule (test projects under
+`tests/`, AW0002), which is the `tests-live-under-tests` record. §4b.8 maps the ring-2 handbook's standards to the C# rules above, so its rows are
 covered by those records; its two new requirements are records of their own (`build-time-regression`,
 `validate-at-boundaries`). §4b's opening list of preferences (minimal endpoints, services, the repository pattern,
 strong typing, TDD) is spelled out by the rules in §4b.1–§4b.6.
