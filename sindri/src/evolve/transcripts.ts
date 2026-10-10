@@ -112,8 +112,9 @@ const tsOf = (e: RawEntry): string => (typeof e.timestamp === "string" ? e.times
 // already seen (same timestamp and text) in an earlier file of this scan is a copy and is skipped.
 // "Earlier" is by each file's first timestamp, then its last (a resumed session starts with copies
 // of the original's lines but runs longer), then name: file names are random, so they don't say
-// which file is the original.
-export function readRepoSessions(dir: string, repo: string, since: Date, maxFiles = 500): { lines: SessionLine[]; files: number; skipped: number } {
+// which file is the original. `dedupe: false` keeps every line of every file (the verbatim gate wants all of what a
+// session holds, its copied prefix included).
+export function readRepoSessions(dir: string, repo: string, since: Date, maxFiles = 500, o: { dedupe: boolean } = { dedupe: true }): { lines: SessionLine[]; files: number; skipped: number } {
   if (!fs.existsSync(dir)) return { lines: [], files: 0, skipped: 0 };
   const all: string[] = [];
   walk(dir, all);
@@ -143,7 +144,7 @@ export function readRepoSessions(dir: string, repo: string, since: Date, maxFile
       const ts = tsOf(e);
       const type = typeof e.type === "string" ? e.type : "";
       const blocks = blocksOf(e);
-      const key = type === "assistant" ? null : dedupeKey(ts, blocks);
+      const key = type === "assistant" || !o.dedupe ? null : dedupeKey(ts, blocks);
       if (key !== null) {
         if (seen.has(key)) continue;
         own.push(key);
@@ -180,23 +181,46 @@ export function resolveRefs(dir: string, repo: string, refs: readonly string[], 
   return out;
 }
 
-// One line's text blocks on a single line, control characters spaced out, scrubbed ("" when it has no text).
-function lineText(line: SessionLine, scrub: Scrubber): string {
-  const text = line.blocks.map((b) => b.text).join(" ").replace(/[\u0000-\u001f\u007f]+/g, " ").trim();
+// Blocks on a single line, control characters spaced out, scrubbed ("" when there is no text).
+function blocksText(blocks: readonly Block[], scrub: Scrubber): string {
+  const text = blocks.map((b) => b.text).join(" ").replace(/[\u0000-\u001f\u007f]+/g, " ").trim();
   return text === "" ? "" : scrub.scrub(text).text;
+}
+const lineText = (line: SessionLine, scrub: Scrubber): string => blocksText(line.blocks, scrub);
+
+// A text block the harness writes rather than a person or the model: a tag-led block (<system-reminder>,
+// <command-name>, <local-command-stdout>, ...) or an interruption marker.
+const harnessText = (text: string): boolean => {
+  const t = text.trim();
+  return t.startsWith("<") || /^\[Request interrupted by user[^\]]*\]$/.test(t);
+};
+
+// The conversation text of a line: the text blocks of a human or assistant turn, without tool results, tool input,
+// harness-injected (isMeta) lines or harness boilerplate blocks. "" for every other line.
+function turnText(line: SessionLine, scrub: Scrubber): string {
+  if ((line.type !== "user" && line.type !== "assistant") || line.meta) return "";
+  return blocksText(line.blocks.filter((b) => !b.toolResult && !harnessText(b.text)), scrub);
+}
+
+// One session line as the verbatim gate compares it: `text` is everything the line holds (8-word runs cover tool
+// results and harness lines too); `turn` is its conversation text only (the whole-short-turn rule reads just that).
+export interface SessionText {
+  text: string;
+  turn: string;
 }
 
 // Every line of the given sessions (prefixes as sessionOf gives them), scrubbed and keyed by line number, in one
 // scan of this repo's sessions. The verbatim gate reads it: a rewrite can copy any turn of a session its evidence
-// cites, not only the cited line. A prefix with no line in this repo is absent; a line with no text maps to "".
-export function sessionTexts(dir: string, repo: string, sessions: readonly string[], scrub: Scrubber = scrubber): Map<string, Map<number, string>> {
+// cites, not only the cited line. Nothing is deduped: a resumed session keeps the lines it copied from the original.
+// A prefix with no line in this repo is absent; a line with no text maps to empty strings.
+export function sessionTexts(dir: string, repo: string, sessions: readonly string[], scrub: Scrubber = scrubber): Map<string, Map<number, SessionText>> {
   const want = new Set(sessions);
-  const out = new Map<string, Map<number, string>>();
+  const out = new Map<string, Map<number, SessionText>>();
   if (want.size === 0) return out;
-  for (const line of readRepoSessions(dir, repo, new Date(0), Infinity).lines) {
+  for (const line of readRepoSessions(dir, repo, new Date(0), Infinity, { dedupe: false }).lines) {
     if (!want.has(line.session)) continue;
-    const lines = out.get(line.session) ?? new Map<number, string>();
-    out.set(line.session, lines.set(line.n, lineText(line, scrub)));
+    const lines = out.get(line.session) ?? new Map<number, SessionText>();
+    out.set(line.session, lines.set(line.n, { text: lineText(line, scrub), turn: turnText(line, scrub) }));
   }
   return out;
 }

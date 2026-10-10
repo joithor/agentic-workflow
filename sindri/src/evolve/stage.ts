@@ -246,7 +246,8 @@ export async function publishProposals(ctx: EvolveCtx, o: { dryRun: boolean; noP
   });
   // Every line of every session the listed proposals' evidence cites, read in one scan: a rewrite can copy an uncited
   // turn of a cited session as easily as the cited line (privacy spec §5.5 amendment). A ref whose session isn't among
-  // this repo's sessions brings in nothing (Review Focus 1).
+  // this repo's sessions brings in nothing (Review Focus 1); a proposal none of whose cited sessions resolves holds.
+  // Nothing is deduped here: a resumed session keeps the turns it copied (security-sentinel-2).
   const cited = (refs: readonly string[]): { session: string; n: number }[] => refs.flatMap((r) => parseTranscriptRef(r) ?? []);
   const sessions = sessionTexts(transcriptsDir(ctx), ctx.repo, open.flatMap((l) => cited(l.refs).map((c) => c.session)), scrubber);
   const gate: GateCtx = {
@@ -264,8 +265,8 @@ export async function publishProposals(ctx: EvolveCtx, o: { dryRun: boolean; noP
     const md = renderTask(first + ready.length, s.id, pub, t.tier, t.why, s.source);
     const raw = [pub.title, pub.rationale, ...pub.evidence, pub.change.type === "describe" ? `${pub.change.description}\n${pub.change.files.join("\n")}` : pub.change.text, s.source].join("\n");
     // Fail closed: a cited session among this repo's sessions brings in every line, even when the cited line number
-    // doesn't resolve (a later scan can dedupe it, or the transcript was compacted). The verbatim checker skips a
-    // session that isn't there.
+    // doesn't resolve (the transcript was compacted). A cited session that isn't there is skipped while another one
+    // resolves; when none of them does (deleted, moved, another transcripts dir), the verbatim layer holds (security-sentinel-1).
     const hit = await runGate({ text: `${raw}\n${md}`, sessions: cited(refs).map((c) => c.session) }, gate);
     if (hit !== null) held.push({ id: s.id, ...hit });
     else ready.push({ s, pub, t });

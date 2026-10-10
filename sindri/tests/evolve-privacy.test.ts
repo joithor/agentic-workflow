@@ -212,8 +212,11 @@ describe("termProblem and personalProblem split privacyProblem (privacy B1)", ()
   });
 });
 
+// Session lines that are all conversation turns: the same text for the 8-word runs and the short-turn rule.
+const turns = (xs: readonly string[]): { text: string; turn: string }[] => xs.map((t) => ({ text: t, turn: t }));
+
 describe("copiedFrom (privacy B1, verbatim overlap)", () => {
-  const copiedRun = (text: string, sources: readonly string[], isPublic: (run: string) => boolean): boolean => copiedFrom(text, sources.map((x) => shingleSession([x])), isPublic);
+  const copiedRun = (text: string, sources: readonly string[], isPublic: (run: string) => boolean): boolean => copiedFrom(text, sources.map((x) => shingleSession(turns([x]))), isPublic);
   const src = "the overnight rota swap left two shifts without a charge nurse on the ward";
   const never = (): boolean => false;
   it("finds a run of RUN_WORDS words copied from a source, ignoring case and punctuation", () => {
@@ -235,27 +238,40 @@ describe("copiedFrom (privacy B1, verbatim overlap)", () => {
   });
 
   it("finds a run that spans two turns of one session (joined across turns)", () => {
-    const session = shingleSession(["please check why the overnight rota swap", "left two shifts without cover again"]);
+    const session = shingleSession(turns(["please check why the overnight rota swap", "left two shifts without cover again"]));
     expect(copiedFrom("Fix: the overnight rota swap left two shifts without a lead", [session], never)).toBe(true);
     // Sessions are never joined to each other.
-    const apart = [shingleSession(["please check why the overnight rota swap"]), shingleSession(["left two shifts without cover again"])];
+    const apart = [shingleSession(turns(["please check why the overnight rota swap"])), shingleSession(turns(["left two shifts without cover again"]))];
     expect(copiedFrom("Fix: the overnight rota swap left two shifts without a lead", apart, never)).toBe(false);
   });
 
   it("finds a short turn (4 to 7 words) copied whole, ignoring case and punctuation", () => {
     for (const turn of ["fix the zorb reconcile cron", "Fix the zorb reconcile cron for payroll!", "migrate the ledger sync first"]) {
-      expect(copiedFrom(`Title: ${turn.toUpperCase()} soon`, [shingleSession([turn])], never), turn).toBe(true);
+      expect(copiedFrom(`Title: ${turn.toUpperCase()} soon`, [shingleSession(turns([turn]))], never), turn).toBe(true);
     }
   });
 
   it("passes a 3-word turn copied whole, and a short turn copied only in part (near misses)", () => {
-    expect(copiedFrom("Please retry flaky checks today", [shingleSession(["retry flaky checks"])], never)).toBe(false);
-    expect(copiedFrom("fix the zorb reconcile job", [shingleSession(["fix the zorb reconcile cron"])], never)).toBe(false);
-    expect(copiedFrom("prefix the zorb reconcile cronjob", [shingleSession(["fix the zorb reconcile cron"])], never)).toBe(false); // whole words only
+    expect(copiedFrom("Please retry flaky checks today", [shingleSession(turns(["retry flaky checks"]))], never)).toBe(false);
+    expect(copiedFrom("fix the zorb reconcile job", [shingleSession(turns(["fix the zorb reconcile cron"]))], never)).toBe(false);
+    expect(copiedFrom("prefix the zorb reconcile cronjob", [shingleSession(turns(["fix the zorb reconcile cron"]))], never)).toBe(false); // whole words only
+  });
+
+  it("reads whole short turns only from conversation text: a tool result or harness line of 4 to 7 words never holds, but its 8-word runs still do (kieran-typescript-reviewer-1)", () => {
+    const session = shingleSession([
+      { text: "[Request interrupted by user]", turn: "" },
+      { text: "Tool ran without output or errors", turn: "" },
+      { text: "the overnight rota swap left two shifts without a charge nurse", turn: "" },
+      { text: "fix the zorb reconcile cron", turn: "fix the zorb reconcile cron" },
+    ]);
+    expect(copiedFrom("When the tool ran without output or errors, the agent should verify.", [session], never)).toBe(false);
+    expect(copiedFrom("Handle a request interrupted by user cleanly.", [session], never)).toBe(false);
+    expect(copiedFrom("Fix: the overnight rota swap left two shifts without a lead", [session], never)).toBe(true);
+    expect(copiedFrom("Title: fix the zorb reconcile cron", [session], never)).toBe(true);
   });
 
   it("passes a short turn the toolkit's own text already holds", () => {
     const pub = ` ${runWords("Run the done gate first")} `;
-    expect(copiedFrom("Always run the done gate first.", [shingleSession(["run the done gate first"])], (t) => pub.includes(` ${t} `))).toBe(false);
+    expect(copiedFrom("Always run the done gate first.", [shingleSession(turns(["run the done gate first"]))], (t) => pub.includes(` ${t} `))).toBe(false);
   });
 });

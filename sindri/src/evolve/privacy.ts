@@ -87,17 +87,18 @@ function runsOfWords(w: readonly string[]): Set<string> {
 }
 
 // One session's text as the verbatim layer compares it, computed once per session per publish run.
-// `runs` come from the session's lines joined in order, so a quote that crosses from one turn into the next is a run
-// too (sessions are never joined to each other); `short` holds each turn of SHORT_MIN to RUN_WORDS - 1 words, whole.
+// `runs` come from every line's whole text (tool results and harness lines included) joined in order, so a quote that
+// crosses from one turn into the next is a run too (sessions are never joined to each other); `short` holds each human
+// or assistant conversation turn (`turn`: no tool results, tool input or harness boilerplate) of SHORT_MIN to
+// RUN_WORDS - 1 words, whole, so a fixed harness line such as a tool's "ran without output" never holds a proposal.
 export interface SessionShingles {
   runs: ReadonlySet<string>;
   short: readonly string[];
 }
 
-export function shingleSession(lines: readonly string[]): SessionShingles {
-  const perLine = lines.map(wordsOf);
-  const short = perLine.filter((w) => w.length >= SHORT_MIN && w.length < RUN_WORDS).map((w) => w.join(" "));
-  return { runs: runsOfWords(perLine.flat()), short: [...new Set(short)] };
+export function shingleSession(lines: readonly { text: string; turn: string }[]): SessionShingles {
+  const short = lines.map((l) => wordsOf(l.turn)).filter((w) => w.length >= SHORT_MIN && w.length < RUN_WORDS).map((w) => w.join(" "));
+  return { runs: runsOfWords(lines.flatMap((l) => wordsOf(l.text))), short: [...new Set(short)] };
 }
 
 // `isPublic(run)` says whether a run (or a whole short turn) already appears in the toolkit's own public text; those
