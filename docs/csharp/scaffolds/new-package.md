@@ -320,8 +320,9 @@ await using (provider.ConfigureAwait(false))
 }
 ```
 
-The container disposes only what it has resolved, so `Program.cs` resolves `TelemetryRuntime` right after building it;
-the http `Program.cs` does the same with `app.Services` before `Pipeline.Configure(app)`.
+The container disposes only what it has resolved, so `Program.cs` resolves `TelemetryRuntime` right after building it.
+An http host resolves it inside `LoopbackBinding.Build` instead, right after `builder.Build()`: `Program.cs` and every
+test that builds the host go through that method, so each app disposes its own runtime, whoever built it.
 
 `CommandTable.Run(string[] args, IServiceProvider provider, JsonSerializerOptions json)` binds the arguments, opens a scope (`var scope = provider.CreateAsyncScope(); await using
 (scope.ConfigureAwait(false)) { … }`), resolves one `IService<TReq, TRes>`, calls it, and maps the `Result` to an exit

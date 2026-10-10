@@ -342,12 +342,11 @@ internal static class CommandOutput
 
 // ---------------------------------------------------------------- Host (http)
 
-export const programHttp = (p) => `${usingsBlock([`Aw.${p.name}.Host`, "Aw.Kernel.Telemetry"])}
+export const programHttp = (p) => `using Aw.${p.name}.Host;
 
-var app = LoopbackBinding.Build(args, Environment.GetEnvironmentVariable, TimeProvider.System);
+var app = LoopbackBinding.Build(args, Environment.GetEnvironmentVariable, TimeProvider.System);   // also resolves the telemetry runtime
 await using (app.ConfigureAwait(false))
 {
-    _ = app.Services.GetRequiredService<TelemetryRuntime>();   // resolved so the container disposes it on exit, which flushes
     _ = Pipeline.Configure(app);
     await app.RunAsync().ConfigureAwait(false);
 }
@@ -370,6 +369,7 @@ export const loopbackBinding = (p) => `using System.Globalization;
 using System.Net;
 using System.Text.Json;
 using Aw.Kernel.Json;
+using Aw.Kernel.Telemetry;
 
 namespace Aw.${p.name}.Host;
 
@@ -398,7 +398,9 @@ internal static class LoopbackBinding
         _ = Composition.Compose(builder.Services, environment, clock);
         _ = builder.Services.ConfigureHttpJsonOptions(o => CopyProfile(o.SerializerOptions));
         _ = builder.Services.AddProblemDetails();   // its post-configure step adds ProblemDetails' JSON context to the chain
-        return builder.Build();
+        var app = builder.Build();
+        _ = app.Services.GetRequiredService<TelemetryRuntime>();   // resolved here, so the container disposes it with the app (Program.cs and every test)
+        return app;
     }
 
     private static int PortFrom(Func<string, string?> environment)

@@ -358,7 +358,8 @@ group.MapPost("/items/{id}/start", async (ItemId id, StartItemBody body, IServic
 - Composition shape: decorators are registered in the owning project's `Add…()` method, outermost first, never in
   `Host`; each host has one `Compose` method that `Program.cs` and the DI validation test both call. Hosts start
   telemetry there with `AddKernelTelemetry(TelemetryOptions.FromEnvironment(service, environment, clock))`, and
-  `Program.cs` resolves `TelemetryRuntime` once the container is built (one runtime per process; R1b, #136).
+  `Program.cs` resolves `TelemetryRuntime` once the container is built (one runtime per process; R1b, #136; an http host
+  does it in `LoopbackBinding.Build`, which `Program.cs` and its tests share).
   `Compose` may also register the package's JSON options (`AwJson.CreateOptions` over the package's
   source-generated context) as a singleton, for an `Infrastructure` adapter that persists JSON; `Aw.Readiness.App`'s
   run history (`JsonRunHistory`) takes them this way (R1b, #141, on main), so `Infrastructure` never reaches for the

@@ -222,7 +222,9 @@ t("full http: Host, loopback, endpoint, id, route binding test, undeclared node 
   assert.match(read(d, `${host}/Program.cs`), /Pipeline\.Configure\(app\)/);
   // telemetry: the binary name defaults to the lowercase package name; ASP.NET's own providers are cleared
   assert.match(read(d, `${host}/Composition.cs`), /\.AddKernelTelemetry\(TelemetryOptions\.FromEnvironment\("demohttp", environment, clock\)\)/);
-  assert.match(read(d, `${host}/Program.cs`), /_ = app\.Services\.GetRequiredService<TelemetryRuntime>\(\);/);
+  // the http host resolves the runtime in LoopbackBinding.Build, so Program.cs and every test that builds a host dispose it
+  assert.match(read(d, `${host}/LoopbackBinding.cs`), /var app = builder\.Build\(\);\n {8}_ = app\.Services\.GetRequiredService<TelemetryRuntime>\(\);/);
+  assert.doesNotMatch(read(d, `${host}/Program.cs`), /TelemetryRuntime/);
   assert.match(read(d, `${host}/LoopbackBinding.cs`), /_ = builder\.Logging\.ClearProviders\(\);/);
   assert.match(read(d, `${host}/Aw.Demohttp.Host.csproj`), /<ProjectReference Include="\.\.\/\.\.\/Aw\.Kernel\.Telemetry\/Aw\.Kernel\.Telemetry\.csproj" \/>/);
   assert.match(read(d, "deps.yaml"), /- from: Demohttp\n {4}to: KernelTelemetry\n {4}kind: project\n {4}status: current/);

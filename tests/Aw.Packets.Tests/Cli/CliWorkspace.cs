@@ -65,6 +65,8 @@ internal sealed class CliWorkspace : IDisposable
 
         start.Environment["AW_STATE_DIR"] = State;
         start.Environment["GIT_CONFIG_GLOBAL"] = "/dev/null";
+        // The tests compare stderr, so pin a level that writes no log lines (docs/csharp/telemetry.md, the CLI stderr contract).
+        start.Environment["AW_LOG_LEVEL"] = "none";
         using var process = Process.Start(start)!;
         var output = process.StandardOutput.ReadToEndAsync(TestContext.Current.CancellationToken);
         var error = process.StandardError.ReadToEnd();
