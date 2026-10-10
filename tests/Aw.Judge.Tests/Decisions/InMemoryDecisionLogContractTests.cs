@@ -11,5 +11,5 @@ public sealed class InMemoryDecisionLogContractTests : DecisionLogContract
         ValueTask.FromResult<IDecisionLog>(new InMemoryDecisionLog());
 
     protected override ValueTask<IDecisionLog> CreateUnavailable(CancellationToken cancellationToken) =>
-        ValueTask.FromResult<IDecisionLog>(new InMemoryDecisionLog());
+        ValueTask.FromResult<IDecisionLog>(new InMemoryDecisionLog { Unavailable = true });
 }

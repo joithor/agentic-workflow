@@ -6,11 +6,15 @@ using Aw.Kernel.Testing;
 namespace Aw.Judge.Tests.Decisions;
 
 [Lane(TestLane.Integration)]
-public sealed class SqliteDecisionLogContractTests : DecisionLogContract
+public sealed class SqliteDecisionLogContractTests : DecisionLogContract, IDisposable
 {
+    private readonly TempStateDirectory _state = new();
+
     protected override ValueTask<IDecisionLog> Create(CancellationToken cancellationToken) =>
-        ValueTask.FromResult<IDecisionLog>(new SqliteDecisionLog());
+        ValueTask.FromResult<IDecisionLog>(new SqliteDecisionLog(_state.Database()));
 
     protected override ValueTask<IDecisionLog> CreateUnavailable(CancellationToken cancellationToken) =>
-        ValueTask.FromResult<IDecisionLog>(new SqliteDecisionLog());
+        ValueTask.FromResult<IDecisionLog>(new SqliteDecisionLog(_state.UnopenableDatabase()));
+
+    public void Dispose() => _state.Dispose();
 }

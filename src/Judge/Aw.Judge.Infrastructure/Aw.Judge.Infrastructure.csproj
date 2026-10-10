@@ -19,6 +19,11 @@
   </ItemGroup>
 
   <ItemGroup>
+    <!-- The schema migrations, loaded by Aw.Kernel.Data's EmbeddedMigrations under JudgeDatabase.ResourcePrefix. -->
+    <EmbeddedResource Include="Sqlite/Migrations/*.sql" LogicalName="Aw.Judge.Infrastructure.Sqlite.Migrations.%(Filename)%(Extension)" />
+  </ItemGroup>
+
+  <ItemGroup>
     <InternalsVisibleTo Include="Aw.Judge.Tests" />
     <InternalsVisibleTo Include="Aw.Judge.Testing" />
   </ItemGroup>
