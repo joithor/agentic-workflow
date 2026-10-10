@@ -2,7 +2,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
 
-import { excerptFor, parseSince, readRepoSessions, sessionOf, textBlocks, toolNames, transcriptsDir } from "../src/evolve/transcripts.js";
+import { excerptFor, parseSince, resolveRefs, readRepoSessions, sessionTexts, sessionOf, textBlocks, toolNames, transcriptsDir } from "../src/evolve/transcripts.js";
 import { compileExtraPatterns, makeScrubber } from "../src/scrub/scrub.js";
 import { evolveFixture } from "./evolve-fixtures.js";
 import { tempDir } from "./helpers.js";
@@ -223,5 +223,109 @@ describe("excerptFor and transcriptsDir", () => {
     const ctx = { ...fx.ctx, loaded: { ...fx.ctx.loaded, profile: { ...fx.ctx.loaded.profile, sources: { ...fx.ctx.loaded.profile.sources, transcripts: { enabled: true, dir: "~/sessions" } } } } };
     expect(transcriptsDir(ctx)).toBe(path.join(fx.deps.home, "sessions"));
     fx.close();
+  });
+});
+
+describe("resolveRefs (privacy B1)", () => {
+  it("returns the full scrubbed text of every resolvable transcript ref in one scan, tool results included", () => {
+    const d = tempDir();
+    fs.mkdirSync(path.join(d, "proj"));
+    fs.writeFileSync(
+      path.join(d, "proj", "5e55a1d0-1111.jsonl"),
+      [
+        line({ type: "user", cwd: "/repo", message: { content: "first line\twith a tab" } }),
+        line({ type: "user", cwd: "/repo", message: { content: [{ type: "tool_result", content: "x".repeat(500) }] } }),
+      ].join("\n"),
+    );
+    const session = "5e55a1d0";
+    const m = resolveRefs(d, "/repo", [`transcript:${session}#1`, `transcript:${session}#2`, "pr:12", "transcript:zzzzzzzz#9"]);
+    expect(m.get(`transcript:${session}#1`)).toBe("first line with a tab");
+    expect(m.get(`transcript:${session}#2`)).toHaveLength(500); // not cut to the 300-character excerpt
+    expect(m.has("pr:12")).toBe(false);
+    expect(m.size).toBe(2);
+  });
+
+  it("returns an empty map for no refs without reading anything", () => {
+    expect(resolveRefs("/nonexistent", "/nonexistent", []).size).toBe(0);
+  });
+});
+
+describe("sessionTexts (privacy B1, verbatim gate)", () => {
+  it("returns every line of the asked sessions of this repo, scrubbed, by line number, in one scan", () => {
+    const d = tempDir();
+    const secret = "AKIA" + "ABCDEFGHIJKLMNOP";
+    fs.mkdirSync(path.join(d, "proj"));
+    fs.writeFileSync(
+      path.join(d, "proj", "5e55a1d0-1111.jsonl"),
+      [
+        line({ type: "user", cwd: "/repo", message: { content: "first line\twith a tab" } }),
+        line({ type: "assistant", cwd: "/repo", message: { content: [{ type: "tool_use", name: "Edit" }] } }),
+        line({ type: "user", cwd: "/repo", message: { content: [{ type: "tool_result", content: `key ${secret}` }] } }),
+      ].join("\n"),
+    );
+    fs.writeFileSync(path.join(d, "proj", "0ddba11e-2222.jsonl"), line({ type: "user", cwd: "/repo", message: { content: "a session nobody asked for" } }));
+    fs.writeFileSync(path.join(d, "proj", "5e55a1d0-3333.jsonl"), line({ type: "user", cwd: "/elsewhere", message: { content: "another repo's session" } }));
+    const m = sessionTexts(d, "/repo", ["5e55a1d0", "zzzzzzzz"]);
+    const file = path.join(d, "proj", "5e55a1d0-1111.jsonl");
+    expect([...m.keys()]).toEqual([file]); // unknown prefixes are absent; other sessions aren't read in
+    expect(m.get(file)!.session).toBe("5e55a1d0");
+    const lines = m.get(file)!.lines;
+    expect([...lines.keys()]).toEqual([1, 2, 3]); // a line with no text is still a line of the session
+    expect(lines.get(1)).toEqual({ text: "first line with a tab", turn: "first line with a tab" });
+    expect(lines.get(2)).toEqual({ text: "", turn: "" });
+    expect(lines.get(3)!.text).toMatch(/^key /);
+    expect(lines.get(3)!.text).not.toContain(secret);
+    expect(lines.get(3)!.turn).toBe(""); // a tool result is never a conversation turn
+    expect(JSON.stringify([...lines.values()])).not.toMatch(/another repo|nobody asked/);
+  });
+
+  it("keys by the session file, so two files sharing an 8-character prefix keep their own lines (kieran-typescript-reviewer-3)", () => {
+    const d = tempDir();
+    fs.mkdirSync(path.join(d, "proj"));
+    fs.writeFileSync(path.join(d, "proj", "abcd1234-0001.jsonl"), line({ type: "user", cwd: "/repo", message: { content: "line one of the first file" } }));
+    fs.writeFileSync(path.join(d, "proj", "abcd1234-0002.jsonl"), line({ type: "user", cwd: "/repo", message: { content: "line one of the second file" } }));
+    const m = sessionTexts(d, "/repo", ["abcd1234"]);
+    expect([...m.values()].map((f) => f.session)).toEqual(["abcd1234", "abcd1234"]);
+    expect([...m.values()].map((f) => f.lines.get(1)!.turn).sort()).toEqual(["line one of the first file", "line one of the second file"]);
+  });
+
+  it("keeps a resumed session's copied lines: nothing is deduped against an earlier file (security-sentinel-2)", () => {
+    const d = tempDir();
+    fs.mkdirSync(path.join(d, "proj"));
+    const copied = line({ type: "user", timestamp: "2026-10-08T10:00:00Z", cwd: "/repo", message: { content: "migrate the zorb ledger sync" } });
+    fs.writeFileSync(path.join(d, "proj", "aaaa1111-0001.jsonl"), copied);
+    fs.writeFileSync(path.join(d, "proj", "bbbb2222-0002.jsonl"), [copied, line({ type: "user", timestamp: "2026-10-09T10:00:00Z", cwd: "/repo", message: { content: "and then the next step" } })].join("\n"));
+    const m = sessionTexts(d, "/repo", ["bbbb2222"]);
+    expect([...m.get(path.join(d, "proj", "bbbb2222-0002.jsonl"))!.lines.values()].map((l) => l.turn)).toEqual(["migrate the zorb ledger sync", "and then the next step"]);
+    // reflect and correct still read each turn once
+    expect(readRepoSessions(d, "/repo", new Date(0)).lines.filter((l) => l.session === "bbbb2222").map((l) => l.n)).toEqual([2]);
+  });
+
+  it("gives a turn only for human and assistant text: no tool results, isMeta lines, tag-led harness blocks or interruption markers (kieran-typescript-reviewer-1)", () => {
+    const d = tempDir();
+    fs.mkdirSync(path.join(d, "proj"));
+    fs.writeFileSync(
+      path.join(d, "proj", "c0ffee00-1111.jsonl"),
+      [
+        line({ type: "user", cwd: "/repo", message: { content: [{ type: "text", text: "[Request interrupted by user]" }] } }),
+        line({ type: "user", cwd: "/repo", message: { content: [{ type: "text", text: "[Request interrupted by user for tool use]" }] } }),
+        line({ type: "user", cwd: "/repo", isMeta: true, message: { content: "Caveat: The messages below were generated by the user while running local commands." } }),
+        line({ type: "user", cwd: "/repo", message: { content: [{ type: "text", text: "<system-reminder>be brief</system-reminder>" }, { type: "text", text: "fix the zorb reconcile cron" }] } }),
+        line({ type: "user", cwd: "/repo", message: { content: "<command-name>/clear</command-name>" } }),
+        line({ type: "assistant", cwd: "/repo", message: { content: [{ type: "text", text: "I will retry the check" }, { type: "tool_use", name: "Bash", input: { command: "npm test" } }] } }),
+        line({ type: "user", cwd: "/repo", message: { content: [{ type: "tool_result", content: "Tool ran without output or errors" }] } }),
+        line({ type: "summary", cwd: "/repo", content: "a summary entry of five words" }),
+      ].join("\n"),
+    );
+    const lines = [...[...sessionTexts(d, "/repo", ["c0ffee00"]).values()][0].lines.values()];
+    expect(lines.map((l) => l.turn)).toEqual(["", "", "", "fix the zorb reconcile cron", "", "I will retry the check", "", ""]);
+    expect(lines.map((l) => l.text)).toEqual([
+      "[Request interrupted by user]", "[Request interrupted by user for tool use]", "Caveat: The messages below were generated by the user while running local commands.",
+      "<system-reminder>be brief</system-reminder> fix the zorb reconcile cron", "<command-name>/clear</command-name>", "I will retry the check", "Tool ran without output or errors", "a summary entry of five words",
+    ]);
+  });
+
+  it("returns an empty map for no sessions without reading anything", () => {
+    expect(sessionTexts("/nonexistent", "/nonexistent", []).size).toBe(0);
   });
 });

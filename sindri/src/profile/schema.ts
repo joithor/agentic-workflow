@@ -156,11 +156,21 @@ const EvolveSchema = z
     maxTokensPerJob: z.number().int().positive().default(600_000).describe("Token budget for one reflect, correct, telemetry or weekly step"),
     maxTokensPerCompare: z.number().int().positive().default(3_000_000).describe("Token budget for one offline comparison (about 100000 tokens per holdout item)"),
     maxCorrectTurns: z.number().int().min(1).max(2000).default(400).describe("How many of the newest human turns `correct` sends to the labeling model per run (20 per call)"),
+    maxGeneralizeAttempts: z.number().int().min(1).default(3).describe("How many times stage's generalization pass may hold one proposal on its content (the judge found a leak, the rewrite changed what it must keep, or a call answered out of schema) before stage stops retrying it; a failed model call (an error, a timeout) doesn't count. Then sindri evolve retry <id> to try again, or reject it"),
     prAuthors: z.array(z.string().regex(/^[A-Za-z0-9-]{1,39}$/, "must be a GitHub login")).default([]).describe("GitHub logins whose merged PRs reflect may read; empty means only the authenticated gh user"),
   })
   .strict()
   .describe("Self-evolution budgets and limits (sindri evolve)")
   .default({});
+
+const validRegex = (p: string): boolean => {
+  try {
+    new RegExp(p, "iu");
+    return true;
+  } catch {
+    return false;
+  }
+};
 
 const PrivacySchema = z
   .object({
@@ -169,6 +179,10 @@ const PrivacySchema = z
       .max(500)
       .default([])
       .describe("Workplace words that must never appear in a published proposal task (whole words, case-insensitive). Changing this list needs profile approval"),
+    denyPatterns: z
+      .array(z.string().min(1).refine(validRegex, "must be a valid regular expression"))
+      .default([])
+      .describe("Regular expressions (case-insensitive, Unicode) a published proposal task must never match, such as ticket keys (ABC-\\d+). Publish only: the scrubber never uses them. Changing this list needs profile approval"),
   })
   .strict()
   .describe("Privacy gate for published proposal tasks")
@@ -229,6 +243,10 @@ export const RepoSchema = z
     protectedPaths: z.array(z.string().min(1)).default([]).describe("Globs; a diff touching one parks for approval (spec §8.5)"),
     overrides: z.object({ autoStartMaxSize: SizeSchema.optional() }).strict().default({}).describe("Per-repo values that win over profile.yaml"),
     index: z.object({ denyPaths: z.array(z.string().min(1)).default([]) }).strict().default({}).describe("index.denyPaths for this repo, added to the profile's"),
+    private: z
+      .boolean()
+      .optional()
+      .describe("true: sindri evolve publish holds any proposal that names this repo's code identifiers (read from its index). Unset counts as false, and sindri doctor warns until it is set"),
   })
   .strict();
 

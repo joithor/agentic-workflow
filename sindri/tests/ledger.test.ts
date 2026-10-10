@@ -1,7 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import Database from "better-sqlite3";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
 import { SindriError } from "../src/errors.js";
 import {
@@ -19,6 +19,26 @@ const item = (over: Partial<ObservedItem> = {}): ObservedItem => ({
 function ctx(db: ReturnType<typeof openMemoryLedger>, now = "2026-10-08T12:00:00.000Z"): WriteCtx {
   return { epoch: currentEpoch(db), tickId: "tick-1", now: new Date(now), scrubber: makeScrubber() };
 }
+
+describe("ledger v5 (privacy B1)", () => {
+  it("adds proposal_public and backs up a v4 ledger as .bak-v4", () => {
+    const file = path.join(tempDir(), "ledger.db");
+    const v4 = openLedger(file);
+    v4.exec("DROP TABLE proposal_sources; DROP TABLE proposal_public;");
+    v4.pragma("user_version = 4");
+    v4.close();
+    const v5 = openLedger(file);
+    expect(schemaVersion(v5)).toBe(5);
+    expect(LEDGER_SCHEMA_VERSION).toBe(5);
+    expect(fs.existsSync(`${file}.bak-v4`)).toBe(true);
+    expect(v5.prepare("SELECT name FROM sqlite_master WHERE name = 'proposal_public'").get()).toBeDefined();
+    // proposal_sources (security-sentinel-0): one row per (proposal, source session); the pair is the key.
+    v5.prepare("INSERT INTO proposals (id, artifact_id, source, kind, tier, status, title, norm_title, body, created_at, updated_at, epoch) VALUES ('p1', 'a', 's', 'k', 'code', 'proposed', 't', 't', '{}', '', '', 0)").run();
+    v5.prepare("INSERT INTO proposal_sources (proposal_id, session) VALUES ('p1', 'aaaa1111')").run();
+    expect(() => v5.prepare("INSERT INTO proposal_sources (proposal_id, session) VALUES ('p1', 'aaaa1111')").run()).toThrow(/UNIQUE|PRIMARY KEY/);
+    v5.close();
+  });
+});
 
 describe("ledger db", () => {
   it("creates a WAL ledger with private permissions and migrates idempotently", () => {
@@ -63,6 +83,74 @@ describe("ledger db", () => {
     db.close();
   });
 
+  it("never overwrites an existing backup of the same version: a racing opener can't replace .bak-v<N> with a newer copy", () => {
+    const dir = tempDir();
+    const file = path.join(dir, "ledger.db");
+    const db = new Database(file);
+    const steps = ["CREATE TABLE a (x INTEGER);", "CREATE TABLE b (y INTEGER);"];
+    migrateWith(db, file, steps.slice(0, 1));
+    fs.writeFileSync(`${file}.bak-v1`, "the first opener's genuine v1 backup");
+    migrateWith(db, file, steps);
+    expect(fs.readFileSync(`${file}.bak-v1`, "utf8")).toBe("the first opener's genuine v1 backup");
+    expect(schemaVersion(db)).toBe(2);
+    expect(fs.readdirSync(dir).filter((f) => f.includes(".tmp-"))).toEqual([]); // the unused copy is removed
+    db.close();
+  });
+
+  it("rethrows a backup error other than an existing backup, and leaves no temp copy and no half-written backup", () => {
+    const dir = tempDir();
+    const file = path.join(dir, "ledger.db");
+    const db = new Database(file);
+    const steps = ["CREATE TABLE a (x INTEGER);", "CREATE TABLE b (y INTEGER);"];
+    migrateWith(db, file, steps.slice(0, 1));
+    const spy = vi.spyOn(fs, "copyFileSync").mockImplementationOnce((_src, dst) => {
+      fs.writeFileSync(dst as string, "half a backup"); // the copy created the file, then failed part way
+      throw Object.assign(new Error("EIO: i/o error"), { code: "EIO" });
+    });
+    expect(() => migrateWith(db, file, steps)).toThrow(/EIO/);
+    spy.mockRestore();
+    expect(schemaVersion(db)).toBe(1); // no migration without a backup
+    expect(fs.readdirSync(dir).filter((f) => f.includes(".tmp-") || f.includes(".bak-"))).toEqual([]);
+    db.close();
+  });
+
+  it("makes the backup without a hard link, so it works where the filesystem has none (data-integrity-guardian-4)", () => {
+    const dir = tempDir();
+    const file = path.join(dir, "ledger.db");
+    const db = new Database(file);
+    const steps = ["CREATE TABLE a (x INTEGER);", "CREATE TABLE b (y INTEGER);"];
+    migrateWith(db, file, steps.slice(0, 1));
+    db.prepare("INSERT INTO a VALUES (7)").run();
+    const spy = vi.spyOn(fs, "linkSync").mockImplementation(() => { throw Object.assign(new Error("EPERM: operation not permitted"), { code: "EPERM" }); });
+    migrateWith(db, file, steps);
+    spy.mockRestore();
+    expect(schemaVersion(db)).toBe(2);
+    const bak = new Database(`${file}.bak-v1`, { readonly: true });
+    expect(bak.prepare("SELECT x FROM a").pluck().all()).toEqual([7]);
+    expect(schemaVersion(bak)).toBe(1);
+    bak.close();
+    expect(fs.readdirSync(dir).filter((f) => f.includes(".tmp-"))).toEqual([]);
+    db.close();
+  });
+
+  it("keeps an existing backup when another opener writes it between the check and the copy (exclusive copy)", () => {
+    const dir = tempDir();
+    const file = path.join(dir, "ledger.db");
+    const db = new Database(file);
+    const steps = ["CREATE TABLE a (x INTEGER);", "CREATE TABLE b (y INTEGER);"];
+    migrateWith(db, file, steps.slice(0, 1));
+    const real = fs.copyFileSync;
+    const spy = vi.spyOn(fs, "copyFileSync").mockImplementationOnce((src, dst, mode) => {
+      fs.writeFileSync(dst as string, "the racing opener's genuine v1 backup");
+      real(src, dst, mode);
+    });
+    migrateWith(db, file, steps);
+    spy.mockRestore();
+    expect(fs.readFileSync(`${file}.bak-v1`, "utf8")).toBe("the racing opener's genuine v1 backup");
+    expect(schemaVersion(db)).toBe(2);
+    db.close();
+  });
+
   it("backs up a consistent snapshot, WAL frames included, while a reader holds a snapshot open", () => {
     const file = path.join(tempDir(), "ledger.db");
     const steps = ["CREATE TABLE a (x INTEGER);", "CREATE TABLE b (y INTEGER);"];
@@ -83,7 +171,7 @@ describe("ledger db", () => {
     expect(bak.prepare("SELECT x FROM a ORDER BY x").pluck().all()).toEqual([1, 2]);
     expect(schemaVersion(bak)).toBe(1);
     bak.close();
-    // A second backup of the same version replaces the first; no temp file is left behind.
+    // A later backup of the same version keeps the first; no temp file is left behind.
     migrator.pragma("user_version = 1");
     migrateWith(migrator, file, steps.slice(0, 1).concat(["CREATE TABLE c (z INTEGER);"]));
     expect(fs.readdirSync(path.dirname(file)).filter((n) => n.includes(".bak-v1")).sort()).toEqual(["ledger.db.bak-v1"]);

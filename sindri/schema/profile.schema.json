@@ -538,6 +538,12 @@
           "default": 400,
           "description": "How many of the newest human turns `correct` sends to the labeling model per run (20 per call)"
         },
+        "maxGeneralizeAttempts": {
+          "type": "integer",
+          "minimum": 1,
+          "default": 3,
+          "description": "How many times stage's generalization pass may hold one proposal on its content (the judge found a leak, the rewrite changed what it must keep, or a call answered out of schema) before stage stops retrying it; a failed model call (an error, a timeout) doesn't count. Then sindri evolve retry <id> to try again, or reject it"
+        },
         "prAuthors": {
           "type": "array",
           "items": {
@@ -565,6 +571,15 @@
           "maxItems": 500,
           "default": [],
           "description": "Workplace words that must never appear in a published proposal task (whole words, case-insensitive). Changing this list needs profile approval"
+        },
+        "denyPatterns": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "default": [],
+          "description": "Regular expressions (case-insensitive, Unicode) a published proposal task must never match, such as ticket keys (ABC-\\d+). Publish only: the scrubber never uses them. Changing this list needs profile approval"
         }
       },
       "additionalProperties": false,

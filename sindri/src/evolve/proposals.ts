@@ -83,22 +83,49 @@ export function classifyTier(p: Proposal, artifacts: readonly Artifact[], extraP
   return { tier: "code", why: "a repo change, built and merged as an ordinary work item" };
 }
 
+const STRICTNESS: Record<Tier, number> = { "self-adopt": 0, code: 1, approval: 2 };
+
+// The tier a public version ships at: the stricter of the original's and the rewrite's. The rewrite model sees
+// untrusted transcript text and may change the file list, so a rewrite can raise the tier, never lower it.
+export function publicTier(original: Proposal, pub: Proposal, artifacts: readonly Artifact[], extraProtected: readonly string[] = []): { tier: Tier; why: string } {
+  const a = classifyTier(original, artifacts, extraProtected);
+  const b = classifyTier(pub, artifacts, extraProtected);
+  return STRICTNESS[a.tier] > STRICTNESS[b.tier] ? a : b;
+}
+
 const scrubber = makeScrubber();
 // NFKC, lower case, whitespace to one space, then only letters, digits and spaces: punctuation and zero-width variants dedupe.
 export const normTitle = (t: string): string => t.normalize("NFKC").toLowerCase().replace(/\s+/g, " ").replace(/[^\p{L}\p{N} ]/gu, "").replace(/ +/g, " ").trim();
 
 export type SaveOutcome = { kind: "saved" | "duplicate" | "previously-rejected"; id: string };
 
-export function saveProposal(db: Ledger, p: Proposal, source: string, tier: Tier, epoch: number, now: Date): SaveOutcome {
+// `sessions`: the transcript sessions (prefixes as sessionOf gives them) whose text the caller sent to the model for
+// this proposal, decided by code, never read from the model's answer (security-sentinel-0). Only ever added to: a
+// re-proposal merged into an open one adds its sessions, so the verbatim layer checks every source it was built from.
+// The merge rule (run 5 security-sentinel-0, kieran-typescript-reviewer-0), decided the way publish decides "unrecorded":
+// - the open row is legacy when it reads transcripts and has no source rows (saved before provenance existed): publish
+//   holds it as unrecorded, so a re-proposal's sessions are not added (they'd make it look recorded);
+// - every other open row, an open `telemetry:` one included (it has no rows by design), gets the re-proposal's
+//   sessions, so publish checks them whatever the row's own source kind;
+// - a re-proposal that reads transcripts but records no session has unknown provenance: its evidence merges only into a
+//   legacy row (held anyway), never into one publish would check as recorded.
+export function saveProposal(db: Ledger, p: Proposal, source: string, tier: Tier, epoch: number, now: Date, sessions: readonly string[] = []): SaveOutcome {
   const clean = scrubber.scrubDeep(p);
   const norm = normTitle(clean.title);
-  const prior = db.prepare("SELECT id, status, body FROM proposals WHERE artifact_id = ? COLLATE NOCASE AND norm_title = ? ORDER BY created_at DESC, id DESC").all(p.artifact, norm) as { id: string; status: ProposalStatus; body: string }[];
+  const prior = db.prepare("SELECT id, status, source, body FROM proposals WHERE artifact_id = ? COLLATE NOCASE AND norm_title = ? ORDER BY created_at DESC, id DESC").all(p.artifact, norm) as { id: string; status: ProposalStatus; source: string; body: string }[];
   const open = prior.find((r) => !TERMINAL.includes(r.status));
   const ts = now.toISOString();
+  const addSources = (id: string): void => {
+    const add = db.prepare("INSERT OR IGNORE INTO proposal_sources (proposal_id, session) VALUES (?, ?)");
+    for (const s of new Set(sessions)) add.run(id, s);
+  };
   if (open !== undefined) {
+    const legacy = readsTranscripts(open.source) && proposalSources(db, open.id).length === 0;
+    if (readsTranscripts(source) && sessions.length === 0 && !legacy) return { kind: "duplicate", id: open.id };
     const older = ProposalSchema.parse(JSON.parse(open.body));
     const merged = { ...older, evidence: [...new Set([...older.evidence, ...clean.evidence])].slice(-20) };
     db.prepare("UPDATE proposals SET body = ?, updated_at = ?, epoch = ? WHERE id = ?").run(JSON.stringify(merged), ts, epoch, open.id);
+    if (!legacy) addSources(open.id);
     return { kind: "duplicate", id: open.id };
   }
   const rejected = prior.find((r) => r.status === "rejected");
@@ -107,8 +134,22 @@ export function saveProposal(db: Ledger, p: Proposal, source: string, tier: Tier
   db.prepare(
     "INSERT INTO proposals (id, artifact_id, source, kind, tier, status, title, norm_title, body, created_at, updated_at, epoch) VALUES (?, ?, ?, ?, ?, 'proposed', ?, ?, ?, ?, ?, ?)",
   ).run(id, p.artifact, scrubber.scrub(source).text, p.kind, tier, clean.title, norm, JSON.stringify(clean), ts, ts, epoch);
+  addSources(id);
   return { kind: "saved", id };
 }
+
+// The source row a transcript-reading command records when the model read no transcript text at all (reflect on a PR
+// with no session on its branch). Never a session prefix (sessionOf gives letters, digits and dots only), so nothing
+// resolves through it; it tells publish that provenance was recorded, and there was none.
+export const NO_TRANSCRIPT = "-";
+
+// The recorded source sessions of a proposal, sorted (NO_TRANSCRIPT included when it was recorded).
+export const proposalSources = (db: Ledger, id: string): string[] =>
+  (db.prepare("SELECT session FROM proposal_sources WHERE proposal_id = ? ORDER BY session").all(id) as { session: string }[]).map((r) => r.session);
+
+// Whether a proposal's source fed transcript text to the model: every source but telemetry, whose text is fixed
+// (fail closed: an unknown source kind counts as reading transcripts).
+export const readsTranscripts = (source: string): boolean => !source.startsWith("telemetry:");
 
 export interface StoredProposal {
   id: string;
@@ -129,6 +170,47 @@ export function getProposal(db: Ledger, id: string): StoredProposal | null {
     ? null
     : { id: r.id, artifact: r.artifact_id, source: r.source, tier: r.tier, status: r.status, createdAt: r.created_at, updatedAt: r.updated_at, proposal: ProposalSchema.parse(JSON.parse(r.body)) };
 }
+
+// The generalized version publish renders (privacy spec 5.1). The original stays in `proposals`, local only.
+// INSERT OR REPLACE on purpose: re-generalizing a proposal (a held retry, a v4-era staged row) replaces its row.
+// Returns the version as stored (scrubbed, decoded from the stored body): stage renders its preview from it, so the
+// preview and publish read one source. Null, and nothing stored, when the scrubbed version no longer parses (a
+// redaction inside a file path, say): the caller holds the proposal.
+export function savePublic(db: Ledger, id: string, p: Proposal, o: { category: string; model: string }, epoch: number, now: Date): Proposal | null {
+  const parsed = ProposalSchema.safeParse(scrubber.scrubDeep(p));
+  if (!parsed.success) return null;
+  const body = JSON.stringify(parsed.data);
+  db.prepare("INSERT OR REPLACE INTO proposal_public (proposal_id, body, judge_category, model, created_at, epoch) VALUES (?, ?, ?, ?, ?, ?)")
+    .run(id, body, o.category, o.model, now.toISOString(), epoch);
+  return ProposalSchema.parse(JSON.parse(body));
+}
+
+// A proposal's public row: none, one that parses, or one that no longer does (a body written by another build, or edited
+// by hand). Never throws: publish holds an unreadable one and stage regenerates it like a missing one
+// (kieran-typescript-reviewer-1).
+export type PublicRow = { state: "none" } | { state: "ok"; value: Proposal } | { state: "unreadable" };
+
+export function readPublic(db: Ledger, id: string): PublicRow {
+  const r = db.prepare("SELECT body FROM proposal_public WHERE proposal_id = ?").get(id) as { body: string } | undefined;
+  if (r === undefined) return { state: "none" };
+  let raw: unknown;
+  try {
+    raw = JSON.parse(r.body);
+  } catch {
+    return { state: "unreadable" };
+  }
+  const parsed = ProposalSchema.safeParse(raw);
+  return parsed.success ? { state: "ok", value: parsed.data } : { state: "unreadable" };
+}
+
+// The public version when its row parses; null when there is none or it is unreadable.
+export function getPublic(db: Ledger, id: string): Proposal | null {
+  const r = readPublic(db, id);
+  return r.state === "ok" ? r.value : null;
+}
+
+// Whether a public row exists, without reading its body: a body that no longer parses can't make the check throw.
+export const hasPublic = (db: Ledger, id: string): boolean => db.prepare("SELECT 1 FROM proposal_public WHERE proposal_id = ? LIMIT 1").get(id) !== undefined;
 
 export function listProposals(db: Ledger, statuses?: readonly ProposalStatus[]): { id: string; artifact: string; tier: Tier; status: ProposalStatus; title: string; source: string; createdAt: string }[] {
   const where = statuses === undefined ? "" : `WHERE status IN (${statuses.map(() => "?").join(",")})`;
@@ -213,11 +295,21 @@ export async function findMerged(db: Ledger, git: GitRunner, repo: string, defau
   return found;
 }
 
-export function nextFor(s: { id: string; status: ProposalStatus; tier: Tier }): string {
+// Held by stage's generalization pass rather than by publish's gate: status held and no readable public version. The one
+// place this is decided (show, retry).
+export const heldByGeneralize = (db: Ledger, s: { id: string; status: ProposalStatus }): boolean => s.status === "held" && readPublic(db, s.id).state !== "ok";
+
+// `generalize`: for a proposal held by the generalization pass, its content holds and evolve.maxGeneralizeAttempts. Under
+// the cap stage retries it; at the cap stage gave up, and retry is the way out that keeps its title usable
+// (architecture-strategist-0). A proposal held by publish's gate is reworded by rejecting it.
+export function nextFor(s: { id: string; status: ProposalStatus; tier: Tier }, generalize: { holds: number; max: number } | null = null): string {
   if (s.status === "proposed") return s.tier === "self-adopt" ? `sindri evolve compare ${s.id}` : "sindri evolve stage";
   if (s.status === "won") return `sindri evolve adopt ${s.id}`;
   if (s.status === "staged") return "sindri evolve publish";
-  if (s.status === "held") return `sindri evolve reject ${s.id} --reason "..."`;
+  if (s.status === "held") {
+    if (generalize === null) return `sindri evolve reject ${s.id} --reason "..."`;
+    return generalize.holds >= generalize.max ? `sindri evolve retry ${s.id} (or sindri evolve reject ${s.id} --reason "...")` : "sindri evolve stage";
+  }
   if (s.status === "published" || s.status === "insufficient-corpus") return "sindri evolve status";
   return "sindri evolve proposals";
 }

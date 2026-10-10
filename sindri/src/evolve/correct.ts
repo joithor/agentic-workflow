@@ -9,7 +9,7 @@ import { mentionsHoldout } from "./corpus.js";
 import { TRANSCRIPTS_CLAUSE } from "./prompts.js";
 import { parseEach, ProposalSchema, type Proposal } from "./proposals.js";
 import type { Artifact } from "./registry.js";
-import { readRepoSessions } from "./transcripts.js";
+import { readRepoSessions, sessionOf } from "./transcripts.js";
 
 // Port of pstack `correct` (MIT, © 2026 Lauren Tan). A model labels each human turn; a keyword
 // regex missed most corrections (it caught 5 of 45 wrong-approach ones, and about half of real
@@ -204,11 +204,18 @@ export function clusterCorrections(cs: Correction[]): Cluster[] {
 const Answer = z.object({ proposal: z.unknown() }).refine((v) => v.proposal !== undefined, "proposal is required");
 const ANSWER_SCHEMA = zodToJsonSchema(z.object({ proposal: ProposalSchema }), { $refStrategy: "none" }) as Record<string, unknown>;
 
+// A proposal with the sessions whose turns its class sent to the model: its provenance, recorded by code when it is
+// saved (security-sentinel-0), never taken from the model's evidence.
+export interface Sourced {
+  proposal: Proposal;
+  sessions: string[];
+}
+
 export async function correct(o: {
   runner: ModelRunner; model: string; budget: Budget; prompt: string; clusters: Cluster[]; artifacts: readonly Artifact[];
-}): Promise<{ proposals: Proposal[]; dropped: { title: string; why: string }[]; incomplete: boolean; notes: string[] }> {
+}): Promise<{ proposals: Sourced[]; dropped: { title: string; why: string }[]; incomplete: boolean; notes: string[] }> {
   const known = new Set(o.artifacts.map((a) => a.id));
-  const proposals: Proposal[] = [];
+  const proposals: Sourced[] = [];
   const dropped: { title: string; why: string }[] = [];
   const notes: string[] = [];
   for (const [i, cluster] of o.clusters.slice(0, 5).entries()) {
@@ -225,8 +232,9 @@ export async function correct(o: {
     }
     const parsed = parseEach([a.value.proposal]);
     dropped.push(...parsed.dropped);
+    const sessions = [...new Set(cluster.items.map((x) => sessionOf(x.session)))];
     for (const p of parsed.ok) {
-      if (known.has(p.artifact)) proposals.push(p);
+      if (known.has(p.artifact)) proposals.push({ proposal: p, sessions });
       else dropped.push({ title: p.title, why: `unknown artifact ${p.artifact}` });
     }
   }

@@ -33,14 +33,14 @@ describe("askModel", () => {
     budget.spend({ inputTokens: 1, outputTokens: 0 });
     let called = false;
     const r = await askModel(runner(() => { called = true; return 1; }), budget, call);
-    expect(r).toEqual({ ok: false, why: "token budget exhausted" });
+    expect(r).toEqual({ ok: false, why: "token budget exhausted", content: false });
     expect(called).toBe(false);
   });
 
   it("turns model failures and schema mismatches into a result, and rethrows anything else", async () => {
     const failing = (code: "SND-SCOPE-002" | "SND-SCOPE-004"): ModelRunner => ({ run: async () => { throw new SindriError(code, "bad answer"); } });
-    expect(await askModel(failing("SND-SCOPE-002"), new Budget(10), call)).toEqual({ ok: false, why: "bad answer" });
-    expect(await askModel(failing("SND-SCOPE-004"), new Budget(10), call)).toEqual({ ok: false, why: "bad answer" });
+    expect(await askModel(failing("SND-SCOPE-002"), new Budget(10), call)).toEqual({ ok: false, why: "bad answer", content: false }); // a failed call
+    expect(await askModel(failing("SND-SCOPE-004"), new Budget(10), call)).toEqual({ ok: false, why: "bad answer", content: true });
     const bug: ModelRunner = { run: async () => { throw new SindriError("SND-CLI-002", "not a model failure"); } };
     await expect(askModel(bug, new Budget(10), call)).rejects.toThrow("not a model failure");
     const plain: ModelRunner = { run: async () => { throw new Error("boom"); } };
@@ -50,7 +50,7 @@ describe("askModel", () => {
   it("charges the usage of a failed or invalid answer to the budget", async () => {
     const budget = new Budget(100);
     const invalid: ModelRunner = { run: async () => { throw new ModelAnswerError("junk", { inputTokens: 4, outputTokens: 6 }); } };
-    expect(await askModel(invalid, budget, call)).toEqual({ ok: false, why: "junk" });
+    expect(await askModel(invalid, budget, call)).toEqual({ ok: false, why: "junk", content: true });
     expect(budget.used).toBe(10);
   });
 });

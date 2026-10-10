@@ -146,6 +146,20 @@ const MIGRATIONS: readonly string[] = [
     seq INTEGER PRIMARY KEY AUTOINCREMENT, ts TEXT NOT NULL, verb TEXT NOT NULL, actor TEXT NOT NULL, detail TEXT NOT NULL, epoch INTEGER NOT NULL
   );
   `,
+  // v5: the generalized proposal publish renders (evolve privacy B1). judge_category is always 'none' today: only a
+  // clean verdict (leaks false, category none) is ever stored, every other one holds. It stays as an audit column so a
+  // future judge with graded clean categories needs no migration. proposal_sources is the verbatim layer's provenance.
+  `
+  CREATE TABLE proposal_public (
+    proposal_id TEXT PRIMARY KEY REFERENCES proposals(id), body TEXT NOT NULL, judge_category TEXT NOT NULL, model TEXT NOT NULL,
+    created_at TEXT NOT NULL, epoch INTEGER NOT NULL
+  );
+  -- The transcript sessions whose text code sent to the model for a proposal (security-sentinel-0): written by reflect
+  -- and correct when they save, never by a model, and only ever added to (a re-proposal adds its sessions).
+  CREATE TABLE proposal_sources (
+    proposal_id TEXT NOT NULL REFERENCES proposals(id), session TEXT NOT NULL, PRIMARY KEY (proposal_id, session)
+  );
+  `,
 ];
 
 export const LEDGER_SCHEMA_VERSION = MIGRATIONS.length;
@@ -160,7 +174,7 @@ export function schemaVersion(db: Ledger): number {
 // read transaction, so a consistent copy with the WAL's newest frames whatever other
 // connections hold open (a checkpoint plus a file copy misses frames a reader pins and can
 // tear). It is the synchronous form of better-sqlite3's async db.backup(), which openLedger
-// can't await. Written to a unique temp name, then renamed: VACUUM INTO refuses an
+// can't await. Written to a unique temp name, then copied exclusively into place (never over an existing backup): VACUUM INTO refuses an
 // existing file, and a racing opener's backup must not fail this one.
 export function migrateWith(db: Ledger, file: string | null, migrations: readonly string[]): void {
   const before = schemaVersion(db);
@@ -171,7 +185,23 @@ export function migrateWith(db: Ledger, file: string | null, migrations: readonl
     const bak = `${file}.bak-v${before}`;
     const tmp = `${bak}.tmp-${process.pid}-${randomBytes(4).toString("hex")}`;
     db.prepare("VACUUM INTO ?").run(tmp);
-    fs.renameSync(tmp, bak);
+    // Exclusive: COPYFILE_EXCL fails on an existing backup, where a rename would replace it. An opener that read
+    // `before` just ahead of another opener's migration could otherwise put a newer copy over the genuine
+    // .bak-v<before>; the first backup of a version is the one kept. No hard link, so filesystems without them
+    // (FAT, exFAT, some network mounts) work. COPYFILE_FICLONE clones where the filesystem can (APFS, Btrfs: the
+    // backup appears whole at once) and copies otherwise; a copy that fails part way removes the half-written
+    // backup it created, so only a complete one is ever left under the final name.
+    const existed = fs.existsSync(bak);
+    try {
+      if (!existed) fs.copyFileSync(tmp, bak, fs.constants.COPYFILE_EXCL | fs.constants.COPYFILE_FICLONE);
+    } catch (e) {
+      if ((e as NodeJS.ErrnoException).code !== "EEXIST") {
+        fs.rmSync(bak, { force: true }); // it didn't exist before this copy, so it is this copy's partial output
+        throw e;
+      }
+    } finally {
+      fs.rmSync(tmp, { force: true });
+    }
   }
   db.transaction(() => {
     for (let v = schemaVersion(db); v < migrations.length; v++) db.exec(migrations[v]);

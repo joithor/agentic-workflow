@@ -16,7 +16,7 @@ import { GRAPHIFY_PIN } from "../src/index/pins.js";
 import { runCli } from "../src/main.js";
 import { preCommitHook } from "../src/scrub/commands.js";
 import { fakeSystem, makeDeps, tempDir } from "./helpers.js";
-import { approvedIndexDeps, BODY, fakeIndexIo, ring0Name, ring0Repo } from "./index-fixtures.js";
+import { approvedIndexDeps, BODY, fakeIndexIo, OFF as OFF_INDEX, ring0Name, ring0Repo, seedIndex } from "./index-fixtures.js";
 
 // Plan 2's tests never touch the machine's Ollama or graphify: nothing is installed, nothing answers.
 const offline: IndexProbes = { has: () => false, run: async () => ({ code: 127, stdout: "", stderr: "" }), getJson: async () => null };
@@ -336,6 +336,61 @@ describe("doctor index checks", () => {
     expect((await checks(on, offline))[`index:${ring0Name(on)}`].detail).toBe("embeddings pending: not built yet (sindri index build); graph pending: not built yet (sindri index build)");
   });
 
+  it("reports an index whose layers table is gone as damaged instead of throwing", async () => {
+    const d = await approvedIndexDeps(ring0Repo({ "src/a.ts": "export const a = 1;\n" }));
+    const name = ring0Name(d);
+    await makeIndexCommand(fakeIndexIo())(["build", "--repo", name], d);
+    const db = openIndex(indexPath(d, name));
+    db.exec("DROP TABLE layers");
+    db.close();
+    expect((await checks(d, offline))[`index:${name}`]).toMatchObject({
+      status: "warn", detail: "damaged (no usable layers table)", fix: `rm ${indexPath(d, name)}, then sindri index build --repo ${name}`,
+    });
+    // The fix clears the warning.
+    fs.rmSync(indexPath(d, name));
+    await makeIndexCommand(fakeIndexIo())(["build", "--repo", name], d);
+    expect((await checks(d, offline))[`index:${name}`]).toMatchObject({ status: "ok" });
+  });
+
+  it("reports an index whose meta table is gone as damaged instead of throwing (M4)", async () => {
+    const d = await approvedIndexDeps(ring0Repo({ "src/a.ts": "export const a = 1;\n" }));
+    const name = ring0Name(d);
+    await makeIndexCommand(fakeIndexIo())(["build", "--repo", name], d);
+    const db = openIndex(indexPath(d, name));
+    db.exec("DROP TABLE meta");
+    db.close();
+    expect((await checks(d, offline))[`index:${name}`]).toMatchObject({
+      status: "warn", detail: "damaged (no usable meta table)", fix: `rm ${indexPath(d, name)}, then sindri index build --repo ${name}`,
+    });
+  });
+
+  it("reports an index file that isn't a database, or lacks its symbols table, as damaged instead of aborting", async () => {
+    const d = await approvedIndexDeps(ring0Repo({ "src/a.ts": "export const a = 1;\n" }));
+    const name = ring0Name(d);
+    await makeIndexCommand(fakeIndexIo())(["build", "--repo", name], d);
+    const db = openIndex(indexPath(d, name));
+    db.exec("DROP TABLE symbols");
+    db.close();
+    expect((await checks(d, offline))[`index:${name}`]).toMatchObject({ status: "warn", detail: "damaged (no usable symbols table)" });
+    fs.writeFileSync(indexPath(d, name), "a text file where the index should be, long enough to fill a page".repeat(5));
+    expect((await checks(d, offline))[`index:${name}`]).toMatchObject({
+      status: "warn", detail: "damaged (not a database)", fix: `rm ${indexPath(d, name)}, then sindri index build --repo ${name}`,
+    });
+  });
+
+  it("rethrows an index read error that is not a missing table, rather than advising rm (M4)", async () => {
+    for (const table of ["layers", "meta"]) {
+      const d = await approvedIndexDeps(ring0Repo({ "src/a.ts": "export const a = 1;\n" }));
+      const name = ring0Name(d);
+      await makeIndexCommand(fakeIndexIo())(["build", "--repo", name], d);
+      const db = openIndex(indexPath(d, name));
+      // A view that fails when read, with an error other than "no such table" (as SQLITE_BUSY or an I/O error would).
+      db.exec(`DROP TABLE ${table}; CREATE VIEW ${table} AS SELECT json('{') AS layer, json('{') AS key, 'v' AS value`);
+      db.close();
+      await expect(checks(d, offline)).rejects.toThrow(/malformed JSON/);
+    }
+  });
+
   it("gives each down layer the fix that helps: raise the cap, rebuild, or set up", async () => {
     const d = await approvedIndexDeps(ring0Repo({ "src/a.ts": "export const a = 1;\n" }));
     const name = ring0Name(d);
@@ -422,5 +477,82 @@ describe("doctor and the prompt overlay", () => {
     const r = await runCli(["doctor", "--json"], d);
     expect((JSON.parse(r.stdout) as { name: string; status: string }[]).find((x) => x.name === "evolve-overlay")?.status).toBe("warn");
     expect(r.exitCode).toBe(1);
+  });
+});
+
+describe("doctor privacy checks (privacy B1)", () => {
+  async function depsWithRepos(repos: Record<string, { private?: boolean }>, env: Record<string, string> = {}): Promise<Deps> {
+    const d = await approvedIndexDeps(ring0Repo({ "src/a.ts": "export const a = 1;\n" }), {
+      extraRepos: Object.entries(repos).map(([name, o]) => ({ name, path: tempDir("sindri-priv-"), ...o })),
+    });
+    return { ...d, env: { ...d.env, ...env } };
+  }
+
+  it("warns on a non-toolkit repo with private unset, and says nothing about the toolkit repo", async () => {
+    const d = await depsWithRepos({ other: {} });
+    const c = await byName(d);
+    expect(c["privacy:other"]).toMatchObject({ status: "warn", detail: "private: is not set, so sindri evolve publish treats this repo as public", fix: "set private: true (or false) in repos/other.yaml, then sindri profile approve" });
+    expect(c[`privacy:${ring0Name(d)}`]).toBeUndefined();
+  });
+
+  it("warns on a private repo with no index and on a missing word list; ok once both exist", async () => {
+    const deps = await depsWithRepos({ globex: { private: true } }, { SINDRI_WORDS: "/nonexistent" });
+    let c = await byName(deps);
+    expect(c["privacy:globex"]).toMatchObject({ status: "warn", fix: "sindri index build --repo globex" });
+    expect(c["privacy:globex"].detail).toContain("SND-EVOLVE-017");
+    expect(c["privacy:words"].detail).toBe("/nonexistent is missing: sindri evolve publish will refuse (SND-EVOLVE-018)");
+    seedIndex(openIndex(indexPath(deps, "globex")), { files: ["a.ts"], symbols: ["x"] }).close();
+    const words = path.join(tempDir("w-"), "words");
+    fs.writeFileSync(words, "word\n");
+    c = await byName({ ...deps, env: { ...deps.env, SINDRI_WORDS: words } });
+    expect(c["privacy:globex"]).toMatchObject({ status: "ok", detail: "private; its identifiers are held at publish" });
+    expect(c["privacy:words"]).toBeUndefined();
+  });
+
+  it("warns on a private repo whose structure layer is not ok", async () => {
+    const deps = await depsWithRepos({ globex: { private: true } });
+    seedIndex(openIndex(indexPath(deps, "globex")), { files: ["a.ts"], symbols: ["x"], structure: "pending" }).close();
+    expect((await byName(deps))["privacy:globex"].detail).toContain("SND-EVOLVE-017");
+  });
+
+  it("warns on a private repo whose index is unusable, as publish would refuse it (one shared readiness test)", async () => {
+    const deps = await depsWithRepos({ globex: { private: true } });
+    const db = seedIndex(openIndex(indexPath(deps, "globex")), { files: ["a.ts"], symbols: ["x"] });
+    db.exec("DROP TABLE files");
+    db.close();
+    expect((await byName(deps))["privacy:globex"]).toMatchObject({ status: "warn", detail: "private, but no usable code index: sindri evolve publish will refuse (SND-EVOLVE-017)" });
+  });
+
+  it("never checks the toolkit repo as private, even when it sets private: true", async () => {
+    const d = await depsWithRepos({}, { SINDRI_WORDS: "/nonexistent" });
+    const name = ring0Name(d);
+    fs.appendFileSync(path.join(d.env.AW_STATE_DIR as string, "profile", "repos", `${name}.yaml`), "private: true\n");
+    const hash = (JSON.parse((await runCli(["profile", "approve", "--json"], d)).stdout) as { hash: string }).hash;
+    expect((await runCli(["profile", "approve", hash], { ...d, isTTY: true, prompt: async () => hash.slice(0, 6) })).exitCode).toBe(0);
+    const c = await byName(d);
+    expect(c.profile).toMatchObject({ status: "ok" });
+    expect(c[`privacy:${name}`]).toBeUndefined();
+    expect(c["privacy:words"]).toBeUndefined();
+  });
+
+  it("warns privacy:judge, once publishing is set up, when the rewriter and the judge are the same model; ok when they differ", async () => {
+    const repo = (): string => ring0Repo({ "src/a.ts": "export const a = 1;\n" });
+    const TERMS = "privacy:\n  denyTerms:\n    - Initech\n";
+    // No privacy.denyTerms: publish refuses anyway, so a fresh install stays all ok (spec §13.3).
+    expect((await byName(await depsWithRepos({})))["privacy:judge"]).toBeUndefined();
+    const same = await byName(await approvedIndexDeps(repo(), { index: `${OFF_INDEX}${TERMS}` }));
+    expect(same["privacy:judge"]).toMatchObject({
+      status: "warn",
+      detail: "models.challenger and models.adjudicator are both opus, so the generalize judge shares the rewriter's blind spots",
+      fix: "set models.adjudicator (or models.challenger) to a different model in the private profile, then sindri profile approve",
+    });
+    const d = await approvedIndexDeps(repo(), { index: `${OFF_INDEX}${TERMS}models:\n  adjudicator: haiku\n` });
+    expect((await byName(d))["privacy:judge"]).toMatchObject({ status: "ok", detail: "the generalize rewriter (opus) and judge (haiku) are different models" });
+  });
+
+  it("is silent for a repo marked private: false", async () => {
+    const c = await byName(await depsWithRepos({ other: { private: false } }));
+    expect(c["privacy:other"]).toBeUndefined();
+    expect(c["privacy:words"]).toBeUndefined();
   });
 });

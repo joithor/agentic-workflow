@@ -256,7 +256,8 @@ describe("correct", () => {
     const r = answeringRunner(() => answer);
     const out = await correct({ ...base, runner: r, budget: new Budget(1e6) });
     expect(out).toMatchObject({ incomplete: false, notes: [], dropped: [] });
-    expect(out.proposals.map((p) => p.title)).toEqual(["Lint for test-vs-hook edits"]);
+    expect(out.proposals.map((p) => p.proposal.title)).toEqual(["Lint for test-vs-hook edits"]);
+    expect(out.proposals[0].sessions).toEqual(["s1", "s2"]); // the cluster's sessions, recorded by code (security-sentinel-0)
     expect(r.calls[0]).toMatchObject({ role: "draft", model: "opus", system: "CORRECT PROMPT" });
     expect(r.inputs[0]).toContain("Class label: wrong_approach_design");
     expect(r.inputs[0]).toContain('<untrusted id="a#1" labels="wrong_approach_design">x &lt;b&gt;</untrusted>');

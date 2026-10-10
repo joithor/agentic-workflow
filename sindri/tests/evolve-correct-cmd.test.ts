@@ -4,6 +4,7 @@ import { describe, expect, it } from "vitest";
 
 import { correctCommand } from "../src/evolve/cmd/correct.js";
 import { init } from "../src/evolve/cmd/registry.js";
+import { proposalSources } from "../src/evolve/proposals.js";
 import type { ModelCall } from "../src/scope/model.js";
 import { evolveFixture, scriptedEvolveIo, type EvolveFixture } from "./evolve-fixtures.js";
 
@@ -39,6 +40,7 @@ describe("sindri evolve correct", () => {
     expect(r.exitCode).toBe(0);
     const row = fx.ctx.db.prepare("SELECT id, source, tier FROM proposals").get() as { id: string; source: string; tier: string };
     expect(row).toMatchObject({ source: "correct:2026-W41", tier: "code" });
+    expect(proposalSources(fx.ctx.db, row.id)).toEqual(["5e55a1d0", "6f66b2e1"]); // the cluster's sessions (security-sentinel-0)
     expect(r.stdout).toBe(`Correct: ${LABELED(2, 0, 2)}; 1 repeated-correction class, 1 proposal (1 code).\n  ${row.id}  code      Lint for test-vs-hook edits\nNext: sindri evolve show ${row.id}\n`);
     expect(io.calls.map((c) => [c.role, c.model])).toEqual([["label", "sonnet"], ["draft", "opus"]]);
     expect(io.calls[1].input).toContain("Class label: wrong_approach_process");

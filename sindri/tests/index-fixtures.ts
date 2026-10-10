@@ -2,6 +2,7 @@ import fs from "node:fs";
 import path from "node:path";
 import YAML from "yaml";
 
+import type { IndexDb } from "../src/index/db.js";
 import type { Deps } from "../src/deps.js";
 import type { GitRunner } from "../src/git.js";
 import { realGitRunner } from "../src/git-real.js";
@@ -20,7 +21,7 @@ export const ring0Repo = (files: Record<string, string>): string => gitRepo({ ..
 
 // Deps with this repo as ring 0 and an approved profile. `index` is appended to profile.yaml
 // before approval; `extraRepos` adds repos whose path is a plain (non-git) temp dir, or the given path.
-export async function approvedIndexDeps(root: string, o: { index?: string; extraRepos?: (string | { name: string; path: string })[] } = {}): Promise<Deps> {
+export async function approvedIndexDeps(root: string, o: { index?: string; extraRepos?: (string | { name: string; path: string; private?: boolean })[] } = {}): Promise<Deps> {
   const d = makeDeps({ cwd: root });
   await runCli(["profile", "init", "--ring0"], d);
   const dir = path.join(d.env.AW_STATE_DIR as string, "profile");
@@ -28,8 +29,8 @@ export async function approvedIndexDeps(root: string, o: { index?: string; extra
   if (o.extraRepos !== undefined) {
     const doc = YAML.parseDocument(fs.readFileSync(path.join(dir, "profile.yaml"), "utf8"));
     for (const extra of o.extraRepos) {
-      const { name, path: repoPath } = typeof extra === "string" ? { name: extra, path: tempDir("sindri-ghost-") } : extra;
-      fs.writeFileSync(path.join(dir, "repos", `${name}.yaml`), YAML.stringify({ schemaVersion: 1, name, path: repoPath, defaultBranch: "main", protectedPaths: [] }));
+      const { name, path: repoPath, private: isPrivate } = typeof extra === "string" ? { name: extra, path: tempDir("sindri-ghost-"), private: undefined } : { private: undefined, ...extra };
+      fs.writeFileSync(path.join(dir, "repos", `${name}.yaml`), YAML.stringify({ schemaVersion: 1, name, path: repoPath, defaultBranch: "main", protectedPaths: [], ...(isPrivate === undefined ? {} : { private: isPrivate }) }));
       doc.addIn(["repos"], name);
     }
     fs.writeFileSync(path.join(dir, "profile.yaml"), doc.toString());
@@ -100,3 +101,31 @@ export function embedFetch(vec: (text: string) => number[] = () => [1, 0, 0]): F
     return { ok: true, status: 200, json: async () => ({ embeddings: input.map(vec) }) };
   };
 }
+
+// A minimal index: files, symbols and a structure layer with the given status.
+// An index whose header and the first page of every table are fine, but whose later pages are garbage: the `LIMIT 1`
+// probes pass and a full scan of symbols throws SQLITE_CORRUPT.
+export function seedCorruptIndex(db: IndexDb, file: string): void {
+  seedIndex(db, { files: ["a.ts"], symbols: Array.from({ length: 3000 }, (_, i) => `symbolName${i}`.padEnd(200, "x")) });
+  db.pragma("wal_checkpoint(TRUNCATE)");
+  db.pragma("journal_mode = DELETE");
+  db.close();
+  const buf = fs.readFileSync(file);
+  const page = buf.readUInt16BE(16);
+  const pages = buf.length / page;
+  for (let p = Math.floor(pages * 0.6); p < Math.floor(pages * 0.8); p++) buf.fill(0xab, p * page, p * page + page);
+  fs.writeFileSync(file, buf);
+}
+
+export function seedIndex(db: IndexDb, o: { files: string[]; symbols: string[]; structure?: "ok" | "pending" }): IndexDb {
+  const now = "2026-10-09T00:00:00Z";
+  for (const f of o.files) db.prepare("INSERT INTO files (path, hash, size) VALUES (?, 'h', 1)").run(f);
+  for (const [i, name] of o.symbols.entries()) {
+    db.prepare(
+      "INSERT INTO symbols (file, name, kind, start_line, end_line, exported, utility, signature, ast_hash, token_count, complexity, callees, minhash, body) VALUES (?, ?, 'function', 1, 2, 1, 0, '', ?, 1, 1, '[]', ?, '')",
+    ).run(o.files[0], name, `a${i}`, Buffer.alloc(4));
+  }
+  db.prepare("INSERT INTO layers (layer, stamp, status, detail, built_at) VALUES ('structure', 's', ?, '', ?)").run(o.structure ?? "ok", now);
+  return db;
+}
+

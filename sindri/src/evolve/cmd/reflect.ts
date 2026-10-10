@@ -9,7 +9,7 @@ import { terminalSafe } from "../invisible.js";
 import { repoConfig, type EvolveCtx } from "../ctx.js";
 import { allowedAuthors, ghRepoOf, prContext } from "../github.js";
 import { loadPrompt } from "../overlay.js";
-import { classifyTier, renderSaved, saveProposal } from "../proposals.js";
+import { classifyTier, NO_TRANSCRIPT, renderSaved, saveProposal } from "../proposals.js";
 import { branchTranscript, reflect } from "../reflect.js";
 import { loadRegistry } from "../registry.js";
 import { transcriptsDir } from "../transcripts.js";
@@ -45,13 +45,16 @@ export async function reflectCommand(args: string[], ctx: EvolveCtx, budget: Bud
       judgment: loadPrompt(ctx.deps, "reflect.judgment"), tooling: loadPrompt(ctx.deps, "reflect.tooling"),
       divergent: loadPrompt(ctx.deps, "reflect.divergent"), synthesize: loadPrompt(ctx.deps, "reflect.synthesize"),
     },
-    pr: view, transcript, artifacts: registry,
+    pr: view, transcript: transcript.text, artifacts: registry,
   });
   const extra = repoConfig(ctx.loaded).protectedPaths;
   const saved = await ctx.writeRetry((epoch) => {
     const out = result.accepted.map((p) => {
       const t = classifyTier(p, registry, extra);
-      return { title: p.title, tier: t.tier, outcome: saveProposal(ctx.db, p, `reflect:pr-${pr}`, t.tier, epoch, ctx.deps.now()) };
+      // Every accepted proposal records every session of the transcript the models read (security-sentinel-0); with no
+      // branch session, it records that none was read, so publish doesn't take it for one saved before provenance existed.
+      const sources = transcript.sessions.length > 0 ? transcript.sessions : [NO_TRANSCRIPT];
+      return { title: p.title, tier: t.tier, outcome: saveProposal(ctx.db, p, `reflect:pr-${pr}`, t.tier, epoch, ctx.deps.now(), sources) };
     });
     if (!result.incomplete) auditMarker(ctx.db, ctx.deps, "reflect", `pr-${pr}`, epoch);
     return out;

@@ -80,7 +80,15 @@ private context (for example, session-start memory output).
   `generalize: rewrite failed` / `generalize: judge failed`. The next `stage` retries every held
   proposal that has no `proposal_public` row (publish-gate holds always have one). Nothing is staged from the original text.
 - **Budget.** Two calls per staged proposal, at most `evolve.maxOpenProposals` per run, under the
-  existing evolve budget. Calls use the evolve model config (`role: "draft"`).
+  existing evolve budget. *(Amended during implementation; this replaces "Calls use the evolve model
+  config (`role: "draft"`)".)* The two calls use separate roles and models: the rewrite runs as role
+  `generalize.rewrite` on `models.challenger`, and the judge as role `generalize.judge` on
+  `models.adjudicator`, so the judge can run on a different model from the rewrite. Slots go to `proposed` proposals
+  first (most evidence first), then to held retries with whatever slots remain, so a proposal the
+  judge keeps flagging can't starve new ones. *(Also amended during implementation.)* When the
+  budget is gone before a proposal's rewrite or judge call, nothing is decided: the proposal keeps
+  its status (`proposed` stays proposed, a held retry stays held) and counts as waiting; only a
+  failed or invalid call holds it.
 - **Storage.** Ledger migration v4 → v5 (backup `ledger.db.bak-v4`, the existing `migrateWith`
   pattern) adds `proposal_public (proposal_id TEXT PRIMARY KEY REFERENCES proposals(id), body TEXT NOT
   NULL, judge_category TEXT NOT NULL, model TEXT NOT NULL, created_at TEXT NOT NULL, epoch INTEGER NOT NULL)`. The original
@@ -90,7 +98,9 @@ private context (for example, session-start memory output).
 ### 5.2 `privacy.denyTerms` (obvious names)
 
 Unchanged in code. `SND-EVOLVE-015` (publish refuses while the list is empty) stays. The owner's
-names go into the private profile and are approved once, together with `denyPatterns`.
+names go into the private profile and are approved once, together with `denyPatterns`. *(Amended in review run 3, security-sentinel-2: a case boundary in a term as written, a lower-case letter or digit before a capital, counts as a separator, so `AcmeCare` is two-part and also holds `Acme Care`, `acme-care` and `acme‑care`; `Acme` stays whole-word and doesn't hold `Acmeville`. Run 4, security-sentinel-2: the end of an upper-case run before a
+capitalized word is a boundary too, so `GLXCare` holds `GLX Care` and `glx-care` and `IBMWatson` holds `IBM Watson`; `GLX`
+alone doesn't hold `GLXville`. Run 5, security-sentinel-1: a letter next to a digit is a boundary too, and the candidate text is split at the same boundaries before lowercasing and checked both as written and split, so `Acme` holds `AcmeClient`, `ACMEClient`, `useAcme` and `acme2` but still not `Acmeville` or `acmeville`.)*
 
 ### 5.3 `privacy.denyPatterns`
 
@@ -106,10 +116,14 @@ names go into the private profile and are approved once, together with `denyPatt
 
 At publish, for each repo with `private: true`:
 
-1. Open `index/<repo>.db` read-only. Missing DB or no built symbols layer → `SND-EVOLVE-017`, publish
-   refuses.
+1. Open `index/<repo>.db` read-only. Missing DB, no built symbols layer, or an unusable index (a missing
+   `meta`, `layers`, `files` or `symbols` table, or a file that isn't a SQLite database) →
+   `SND-EVOLVE-017`, publish refuses.
 2. Collect symbol names (`symbols.name`) and file path segments (each directory and the basename
-   without extension, from `files.path`).
+   without extension, from `files.path` and from every path `git ls-files` lists in the repo; a failed
+   listing → `SND-EVOLVE-019`, publish refuses). *(Amended in review: the index leaves out
+   `index.denyPaths`, secret globs, oversized and non-source files, exactly the paths an owner marks
+   sensitive, so their names never reached the set. Names only; no file is read.)*
 3. Keep tokens that are ≥ 5 characters, not in `/usr/share/dict/words` (case-insensitive), and not in
    the toolkit repo's own index vocabulary (its symbol names and path segments). A missing word list →
    `SND-EVOLVE-018`.
@@ -118,17 +132,39 @@ At publish, for each repo with `private: true`:
 The candidate text (raw proposal fields plus the rendered task) is tokenized into identifiers
 (`[A-Za-z_$][A-Za-z0-9_$]*`) and path segments, lowercased and checked against the set. A hit holds
 the proposal with `contains a private-repo identifier`. The set is never written, logged or printed.
+*(Amended in review run 3, security-sentinel-1: both sides also add the joined form of every name spelled with
+separators (identifier characters joined by `-`, `_`, `.` or a case change, lowercased, every non-letter/non-digit
+removed), filtered like the plain tokens (5+ characters, not English, not in the toolkit's joined vocabulary), so
+`nova-ledger`, `nova_ledger`, `novaLedger` and `NovaLedger` are one name.)*
+*(Amended in review run 4, security-sentinel-0: the parts of a name join across one shared class, used on both
+sides and folded by the terms layer too: every Unicode dash (`\p{Pd}`), the minus sign, `.`, `_`, the middle dot and the
+hyphenation point; a space and `/` stay boundaries. A directory's dot is part of its name, never an extension.)*
+*(Amended in review run 4, kieran-typescript-reviewer-0: on the candidate side only, each contiguous run of 2 to 8
+parts of a separated name also counts in its joined form, besides the whole name, so `nova-ledger.ts`,
+`@acme/nova-ledger-client` and `nova-ledger-v2` hold for a private `nova-ledger`. The set side keeps whole names.)*
+*(Amended in review run 5, security-sentinel-2 and kieran-typescript-reviewer-1: on the candidate side, parts also split at
+case and letter-digit boundaries, by the terms layer's rules, before lowercasing, and the 2-to-8-part runs cross both kinds
+of boundary, so `NovaLedgerClient`, `novaLedgerService`, `createNovaLedger()`, `useNovaLedger` and `NOVALedger` hold for a
+private `nova-ledger`; `SupernovaLedger` doesn't. Single parts are checked as before; the set side still keeps whole names.)*
 False positives (public library names used in a private repo) hold a proposal; they never leak one.
 `publish --dry-run` reports held counts per layer so the noise is visible before a real run.
 
 ### 5.5 Verbatim overlap
 
 Shingle the rendered task into runs of 8 normalized words (`normalizeForPrivacy`, split on spaces).
-Shingle every transcript line behind the proposal's evidence refs (resolved locally; the rewrite keeps
-them unchanged). A shared shingle holds the proposal with `copies transcript text`, unless the
-shingle also appears in a file `git ls-files` lists in the toolkit repo (working-tree text) (so quoting the toolkit's own
-public skill text passes). Toolkit shingles are computed once per publish run from `git ls-files` text
-files.
+Shingle every line of each session the proposal's transcript evidence refs point into (the union of the
+original's and the public version's refs; resolved locally in one scan; a ref whose session isn't among the repo's sessions brings in nothing, and
+one whose session is there brings in all its lines even when the cited line number doesn't resolve, which
+fails closed (amended in review: a session kept out because one line was deduped or compacted away let a
+copy pass)). *(Amended during implementation; this replaces "every transcript
+line behind the proposal's evidence refs". The hand test found a public title that copied an uncited
+turn of a cited session verbatim and passed, because only the cited lines were compared.)* *(Amended in review: each cited session is shingled as its lines joined in order, so a quote that crosses from one turn into the next is a shingle too (sessions are never joined to each other); and a whole turn of 4 to 7 normalized words that appears as a contiguous run in the candidate holds as well, since a turn under 8 words has no shingle and short prompts copied into titles are the likeliest leak.)* *(Amended in review run 2: the whole-short-turn rule reads only human and assistant text turns, never tool results, tool input or harness boilerplate such as `<system-reminder>` blocks, `isMeta` lines or `[Request interrupted by user]`, while 8-word shingles still cover every line; the cited sessions are read without the resumed-session dedupe, so a resumed session keeps the turns it copied; and a proposal that cites at least one session, none of which resolves at publish (the transcript was deleted or moved, or the transcripts dir changed or is gone), holds with `evidence transcripts are missing, so copied text can't be checked`. Some cited sessions resolving is enough to check those.)* *(Amended in review run 3, security-sentinel-0: the sessions checked are no longer only the ones the model chose to cite. When `reflect` or `correct` saves a proposal, code records the transcript sessions whose text it sent to the model for it (the branch transcript's sessions for reflect, the cluster's sessions for correct) in `proposal_sources`; a re-proposal adds its sessions to every open proposal but a pre-provenance one (it reads transcripts and has no recorded source; the `-` marker counts as recorded), which stays unrecorded (run 4, kieran-typescript-reviewer-1 and security-sentinel-3). An open `telemetry:` proposal has no recorded source by design, so a transcript re-proposal merged into it adds its sessions and publish checks them like any recorded source; a re-proposal that reads transcripts but records no session merges its evidence only into a pre-provenance proposal, never into one publish checks as recorded (run 5, security-sentinel-0 and kieran-typescript-reviewer-0). The verbatim layer checks the union of the cited sessions and the recorded ones, and the missing rule applies to that union. A proposal whose source reads transcripts (every source but `telemetry:`) with no recorded source session (one saved before provenance existed) holds with `its source transcripts weren't recorded, so copied text can't be checked`; `sindri evolve reject` and a rerun regenerate it. Telemetry proposals are unaffected. The generalization rewrite and judge also get the recorded sessions' turns, after the cited lines, within the same bound. A session prefix resolves to every transcript file that has it, each shingled on its own.)* *(Amended in review run 4, security-sentinel-1: partial resolution is tolerated for cited refs only. Every recorded source session (the `-` marker aside) must resolve at publish; one that doesn't (cleaned up after the host's retention period, moved) holds with `a source transcript it was built from is missing, so copied text can't be checked`, even when other sessions resolve. `sindri evolve reject` it.)* A shared shingle, or such a short turn, holds the proposal with `copies transcript text`, unless the
+shingle also appears in the toolkit repo's text at the remote default branch, `origin/<defaultBranch>` (so quoting
+the toolkit's own public skill text passes). Toolkit shingles are computed once per publish run from the text
+files (non-binary, at most 1 MB, no symlinks) in that ref's tree, read with `git ls-tree` and `git grep`; if the
+ref doesn't exist nothing is exempt. *(Amendment, from review: this replaces "a file `git ls-files` lists in the
+toolkit repo (working-tree text)". Working-tree text counted uncommitted, staged-only and unpushed edits as public,
+so a note an agent wrote on a branch could exempt the transcript runs it quoted.)*
 
 ### 5.6 Gate order and reasons
 

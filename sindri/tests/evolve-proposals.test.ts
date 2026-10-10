@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import { discover, isAddedTestAllowed, isEvalMachinery } from "../src/evolve/registry.js";
-import { classifyTier, findMerged, getProposal, inFlightCount, listProposals, parseEach, ProposalSchema, reduceEvidence, renderSaved, saveProposal, setTier, type Proposal } from "../src/evolve/proposals.js";
+import { classifyTier, findMerged, getProposal, inFlightCount, listProposals, NO_TRANSCRIPT, parseEach, proposalSources, ProposalSchema, readPublic, readsTranscripts, reduceEvidence, renderSaved, saveProposal, savePublic, getPublic, setTier, type Proposal } from "../src/evolve/proposals.js";
 import { realGitRunner } from "../src/git-real.js";
 import { bumpEpoch, openMemoryLedger } from "../src/ledger/db.js";
 import { git, setStatus } from "./evolve-fixtures.js";
@@ -178,6 +178,63 @@ describe("proposal storage, dedupe and merge tracking", () => {
     expect(saveProposal(db, prop({ artifact: "skill:Review" }), "s", "code", epoch, now)).toEqual({ kind: "previously-rejected", id: first.id });
   });
 
+  it("records the source sessions code sent to the model, and a re-proposal adds its own (security-sentinel-0)", () => {
+    const { db, epoch } = setup();
+    const first = saveProposal(db, prop(), "reflect:pr-1", "code", epoch, now, ["bbbb2222", "aaaa1111", "aaaa1111"]);
+    expect(proposalSources(db, first.id)).toEqual(["aaaa1111", "bbbb2222"]);
+    expect(saveProposal(db, prop(), "correct:2026-W41", "code", epoch, now, ["cccc3333", "aaaa1111"])).toEqual({ kind: "duplicate", id: first.id });
+    expect(proposalSources(db, first.id)).toEqual(["aaaa1111", "bbbb2222", "cccc3333"]);
+    const bare = saveProposal(db, prop({ title: "A telemetry proposal" }), "telemetry:done-gate", "code", epoch, now);
+    expect(proposalSources(db, bare.id)).toEqual([]);
+    setStatus(db, first.id, "rejected", epoch, now);
+    expect(saveProposal(db, prop(), "reflect:pr-2", "code", epoch, now, ["dddd4444"]).kind).toBe("previously-rejected");
+    expect(proposalSources(db, first.id)).toEqual(["aaaa1111", "bbbb2222", "cccc3333"]); // nothing added to a rejected one
+  });
+
+  it("never adds sources to an open proposal saved without any (a pre-provenance one stays unrecorded; run 4 kieran-typescript-reviewer-1, security-sentinel-3)", () => {
+    const { db, epoch } = setup();
+    const legacy = saveProposal(db, prop(), "reflect:pr-1", "code", epoch, now); // as a v4 ledger left it: no source rows
+    expect(saveProposal(db, prop(), "correct:2026-W41", "code", epoch, now, ["cccc3333"])).toEqual({ kind: "duplicate", id: legacy.id });
+    expect(saveProposal(db, prop(), "reflect:pr-2", "code", epoch, now, [NO_TRANSCRIPT])).toEqual({ kind: "duplicate", id: legacy.id });
+    expect(proposalSources(db, legacy.id)).toEqual([]);
+    const marked = saveProposal(db, prop({ title: "Another change" }), "reflect:pr-3", "code", epoch, now, [NO_TRANSCRIPT]);
+    saveProposal(db, prop({ title: "Another change" }), "correct:2026-W41", "code", epoch, now, ["dddd4444"]); // the `-` marker counts as recorded
+    expect(proposalSources(db, marked.id)).toEqual([NO_TRANSCRIPT, "dddd4444"]);
+  });
+
+  it("adds a transcript re-proposal's sources to an open telemetry proposal, which has none by design (run 5 security-sentinel-0, kieran-typescript-reviewer-0)", () => {
+    const { db, epoch } = setup();
+    const tel = saveProposal(db, prop({ evidence: ["transcript:aaaa#1"] }), "telemetry:safety", "code", epoch, now);
+    expect(proposalSources(db, tel.id)).toEqual([]);
+    const copied = "user said deploy the billing fix before the freeze";
+    expect(saveProposal(db, prop({ evidence: [copied] }), "correct:2026-W41", "code", epoch, now, ["bbbb1111", "cccc3333"])).toEqual({ kind: "duplicate", id: tel.id });
+    expect(proposalSources(db, tel.id)).toEqual(["bbbb1111", "cccc3333"]);
+    expect(getProposal(db, tel.id)?.proposal.evidence).toEqual(["transcript:aaaa#1", copied]);
+    saveProposal(db, prop({ evidence: ["pr:9"] }), "reflect:pr-9", "code", epoch, now, [NO_TRANSCRIPT]);
+    expect(proposalSources(db, tel.id)).toEqual([NO_TRANSCRIPT, "bbbb1111", "cccc3333"]);
+    const other = saveProposal(db, prop({ title: "Reduce false positives in the done hook" }), "telemetry:done", "code", epoch, now);
+    expect(saveProposal(db, prop({ title: "Reduce false positives in the done hook" }), "reflect:pr-11", "code", epoch, now, ["eeee5555"]).id).toBe(other.id);
+    expect(proposalSources(db, other.id)).toEqual(["eeee5555"]); // a reflect re-proposal records its sessions the same way
+    saveProposal(db, prop({ evidence: ["pr:10"] }), "telemetry:safety", "code", epoch, now); // another telemetry run adds evidence, no sources
+    expect(getProposal(db, tel.id)?.proposal.evidence).toEqual(["transcript:aaaa#1", copied, "pr:9", "pr:10"]);
+  });
+
+  it("never merges the evidence of a transcript-reading re-proposal that records no session into a proposal publish would check as recorded", () => {
+    const { db, epoch } = setup();
+    const tel = saveProposal(db, prop({ evidence: ["pr:1"] }), "telemetry:safety", "code", epoch, now);
+    expect(saveProposal(db, prop({ evidence: ["text the model wrote after reading a session"] }), "reflect:pr-2", "code", epoch, now, [])).toEqual({ kind: "duplicate", id: tel.id });
+    expect(getProposal(db, tel.id)?.proposal.evidence).toEqual(["pr:1"]);
+    expect(proposalSources(db, tel.id)).toEqual([]);
+    const rec = saveProposal(db, prop({ title: "Another change", evidence: ["pr:3"] }), "correct:2026-W41", "code", epoch, now, ["aaaa1111"]);
+    expect(saveProposal(db, prop({ title: "Another change", evidence: ["more model text"] }), "correct:2026-W42", "code", epoch, now)).toEqual({ kind: "duplicate", id: rec.id });
+    expect(getProposal(db, rec.id)?.proposal.evidence).toEqual(["pr:3"]);
+  });
+
+  it("says which sources read transcripts: every source but telemetry (fail closed)", () => {
+    expect(["reflect:pr-1", "correct:2026-W41", "correct", "anything"].map(readsTranscripts)).toEqual([true, true, true, true]);
+    expect(readsTranscripts("telemetry:done-gate")).toBe(false);
+  });
+
   it("keeps the newest 20 evidence entries when merging a duplicate", () => {
     const { db, epoch } = setup();
     const refs = (from: number, to: number) => Array.from({ length: to - from + 1 }, (_, i) => `pr:${from + i}`);
@@ -214,5 +271,46 @@ describe("proposal storage, dedupe and merge tracking", () => {
     expect(await findMerged(db, realGitRunner(), root, "main")).toEqual([]);
     expect(getProposal(db, a)?.status).toBe("merged");
     expect(getProposal(db, b)?.status).toBe("published");
+  });
+});
+
+describe("proposal_public (privacy B1)", () => {
+  const now = new Date("2026-10-08T00:00:00Z");
+  const setup = () => {
+    const db = openMemoryLedger();
+    return { db, epoch: bumpEpoch(db) };
+  };
+
+  it("stores and replaces the generalized version beside the original, which stays unchanged", () => {
+    const { db, epoch } = setup();
+    const p = prop({ title: "Original title here" });
+    const { id } = saveProposal(db, p, "reflect:pr-1", "code", epoch, now);
+    expect(getPublic(db, id)).toBeNull();
+    savePublic(db, id, { ...p, title: "Generic title here" }, { category: "none", model: "opus" }, epoch, new Date(0));
+    savePublic(db, id, { ...p, title: "Second generic title" }, { category: "none", model: "opus" }, epoch, new Date(1));
+    expect(getPublic(db, id)?.title).toBe("Second generic title");
+    expect(getProposal(db, id)?.proposal.title).toBe("Original title here");
+  });
+
+  it("reads a public row as none, ok or unreadable, never throwing on a row that no longer parses (kieran-typescript-reviewer-1)", () => {
+    const { db, epoch } = setup();
+    const p = prop();
+    const { id } = saveProposal(db, p, "reflect:pr-1", "code", epoch, now);
+    expect(readPublic(db, id)).toEqual({ state: "none" });
+    savePublic(db, id, p, { category: "none", model: "opus" }, epoch, now);
+    expect(readPublic(db, id)).toEqual({ state: "ok", value: p });
+    for (const body of ['{"drifted":true}', "not json"]) {
+      db.prepare("UPDATE proposal_public SET body = ? WHERE proposal_id = ?").run(body, id);
+      expect(readPublic(db, id)).toEqual({ state: "unreadable" });
+    }
+  });
+
+  it("scrubs the generalized body", () => {
+    const { db, epoch } = setup();
+    const secret = "AKIA" + "ABCDEFGHIJKLMNOP";
+    const p = prop();
+    const { id } = saveProposal(db, p, "reflect:pr-1", "code", epoch, now);
+    savePublic(db, id, { ...p, rationale: `because ${secret}` }, { category: "none", model: "opus" }, epoch, now);
+    expect(JSON.stringify(getPublic(db, id))).not.toContain(secret);
   });
 });

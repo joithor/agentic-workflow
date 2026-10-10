@@ -42,3 +42,4 @@ A changed profile takes effect only after `sindri profile approve <hash>` (spec 
 | `protectedPaths` | string[] | no | `[]` | Globs; a diff touching one parks for approval (spec §8.5) |
 | `overrides` | object | no | `{}` | Per-repo values that win over profile.yaml |
 | `index` | object | no | `{}` | index.denyPaths for this repo, added to the profile's |
+| `private` | boolean | no |  | true: sindri evolve publish holds any proposal that names this repo's code identifiers (read from its index). Unset counts as false, and sindri doctor warns until it is set |

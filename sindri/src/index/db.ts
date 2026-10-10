@@ -60,7 +60,14 @@ export function openIndex(file: string): IndexDb {
 export function openIndexReadOnly(file: string): IndexDb | null {
   if (!fs.existsSync(file)) return null;
   const db = new Database(file, { readonly: true });
-  if (db.pragma("user_version", { simple: true }) !== INDEX_SCHEMA_VERSION) {
+  let version: unknown;
+  try {
+    version = db.pragma("user_version", { simple: true }); // the first read: a file that isn't a database throws here
+  } catch (e) {
+    db.close();
+    throw e;
+  }
+  if (version !== INDEX_SCHEMA_VERSION) {
     db.close();
     return null;
   }

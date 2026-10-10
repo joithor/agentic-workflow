@@ -4,13 +4,15 @@ import path from "node:path";
 import { parseFlags } from "../args.js";
 import { awStateDir, stateDir, type Deps } from "../deps.js";
 import { SindriError } from "../errors.js";
-import { indexPath, layers, meta, openIndexReadOnly } from "../index/db.js";
+import { indexPath, layers, meta } from "../index/db.js";
+import { indexBuilt, readIndex } from "../index/health.js";
 import { GRAPH_OVER_CAP } from "../index/graph.js";
 import { heavyLockDir, heavyLockState } from "../index/heavy-lock.js";
 import type { IndexProbes } from "../index/io.js";
 import { GRAPHIFY_PIN } from "../index/pins.js";
 import { hasModel, installedGraphify, sandboxedVersionArgv, tagsUrl } from "../index/setup.js";
 import { evolveOverlayCheck } from "../evolve/overlay.js";
+import { privateRepos, unsetPrivateRepos, wordsFile } from "../evolve/privacy-derived.js";
 import { LEDGER_SCHEMA_VERSION, ledgerPath, readLedger, schemaVersion } from "../ledger/db.js";
 import { inspectLock } from "../lock/lock.js";
 import type { Command } from "../main.js";
@@ -177,16 +179,20 @@ async function indexChecks(deps: Deps, loaded: LoadedProfile, probes: IndexProbe
   const out: Check[] = [];
   const ix = loaded.profile.index;
   for (const repo of Object.keys(loaded.repos).sort()) {
-    const db = openIndexReadOnly(indexPath(deps, repo));
-    if (db === null) {
-      out.push({ name: `index:${repo}`, status: "warn", detail: "no index", fix: `sindri index build --repo ${repo}` });
+    const r = readIndex(indexPath(deps, repo), (db) => ({ m: meta(db), all: layers(db) }));
+    const rebuild = `sindri index build --repo ${repo}`;
+    if (r.state === "missing") {
+      out.push({ name: `index:${repo}`, status: "warn", detail: "no index", fix: rebuild });
       continue;
     }
-    const m = meta(db);
-    const down = layers(db).filter((l) => l.status === "unavailable" || l.status === "pending");
-    db.close();
+    // A rebuild keeps a same-version index file, so a damaged one needs the file removed first.
+    if (r.state === "damaged") {
+      out.push({ name: `index:${repo}`, status: "warn", detail: `damaged (${r.detail})`, fix: `rm ${indexPath(deps, repo)}, then ${rebuild}` });
+      continue;
+    }
+    const { m, all } = r.value;
+    const down = all.filter((l) => l.status === "unavailable" || l.status === "pending");
     const ageH = m.builtAt === null ? null : (deps.now().getTime() - Date.parse(m.builtAt)) / 3_600_000;
-    const rebuild = `sindri index build --repo ${repo}`;
     if (ageH === null) out.push({ name: `index:${repo}`, status: "warn", detail: "never built", fix: rebuild });
     else if (ageH > ix.maxAgeHours) out.push({ name: `index:${repo}`, status: "warn", detail: `stale (built ${Math.floor(ageH)} h ago)`, fix: rebuild });
     else if (down.length > 0) out.push({ name: `index:${repo}`, status: "warn", detail: down.map((l) => `${l.layer} ${l.status}: ${l.detail}`).join("; "), fix: [...new Set(down.map((l) => layerFix(l, repo)))].join("; ") });
@@ -230,6 +236,34 @@ async function indexChecks(deps: Deps, loaded: LoadedProfile, probes: IndexProbe
   return out;
 }
 
+// Publish treats a repo as public unless it says otherwise; a private repo needs a built index and a word list or publish refuses.
+// The tracker repo is the publish target, so it is skipped even if it sets the flag. Nothing here names a derived identifier.
+function privacyChecks(deps: Deps, loaded: LoadedProfile): Check[] {
+  const out: Check[] = [];
+  for (const repo of unsetPrivateRepos(loaded)) {
+    out.push({ name: `privacy:${repo}`, status: "warn", detail: "private: is not set, so sindri evolve publish treats this repo as public", fix: `set private: true (or false) in repos/${repo}.yaml, then sindri profile approve` });
+  }
+  const priv = privateRepos(loaded);
+  for (const repo of priv) {
+    out.push(indexBuilt(indexPath(deps, repo))
+      ? { name: `privacy:${repo}`, status: "ok", detail: "private; its identifiers are held at publish" }
+      : { name: `privacy:${repo}`, status: "warn", detail: "private, but no usable code index: sindri evolve publish will refuse (SND-EVOLVE-017)", fix: `sindri index build --repo ${repo}` });
+  }
+  const wf = wordsFile(deps);
+  if (priv.length > 0 && !fs.existsSync(wf)) {
+    out.push({ name: "privacy:words", status: "warn", detail: `${wf} is missing: sindri evolve publish will refuse (SND-EVOLVE-018)`, fix: "install a word list at /usr/share/dict/words, or set SINDRI_WORDS" });
+  }
+  // Judge independence: stage's generalize rewrite runs on models.challenger and its judge on models.adjudicator.
+  // Checked once publishing is set up (privacy.denyTerms is set; publish refuses without it), so a fresh install with
+  // the default models stays all ok.
+  const { challenger, adjudicator } = loaded.profile.models;
+  if (loaded.profile.privacy.denyTerms.length === 0) return out;
+  out.push(challenger === adjudicator
+    ? { name: "privacy:judge", status: "warn", detail: `models.challenger and models.adjudicator are both ${challenger}, so the generalize judge shares the rewriter's blind spots`, fix: "set models.adjudicator (or models.challenger) to a different model in the private profile, then sindri profile approve" }
+    : { name: "privacy:judge", status: "ok", detail: `the generalize rewriter (${challenger}) and judge (${adjudicator}) are different models` });
+  return out;
+}
+
 export async function runChecks(deps: Deps, nodeVersion: string = process.versions.node, probes: IndexProbes = deps.io.probes): Promise<Check[]> {
   const [major, minor] = nodeVersion.split(".").map(Number);
   const checks: Check[] = [
@@ -246,7 +280,7 @@ export async function runChecks(deps: Deps, nodeVersion: string = process.versio
   if (!r.ok) return [...checks, { name: "profile", status: "fail", detail: `${r.issues.length} issue(s) in ${root}`, fix: "sindri profile validate" }];
   const profile = await profileChecks(deps, r.value);
   // Like the profile checks, the index checks read the approved profile when there is one.
-  return [...checks, { name: "profile", status: "ok", detail: root }, ...profile.checks, ...(await indexChecks(deps, profile.used, probes))];
+  return [...checks, { name: "profile", status: "ok", detail: root }, ...profile.checks, ...(await indexChecks(deps, profile.used, probes)), ...privacyChecks(deps, profile.used)];
 }
 
 export const doctorCommand: Command = async (args, deps) => {

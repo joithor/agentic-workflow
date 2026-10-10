@@ -273,6 +273,18 @@ erDiagram
         text updated_at
         int epoch
     }
+    proposal_public {
+        text proposal_id PK, FK
+        text body
+        text judge_category
+        text model
+        text created_at
+        int epoch
+    }
+    proposal_sources {
+        text proposal_id PK, FK
+        text session PK
+    }
     comparisons {
         int seq PK
         text proposal_id FK
@@ -313,6 +325,8 @@ erDiagram
     artifacts ||--o{ suite_runs : "has runs"
     artifacts ||--o{ proposals : "is changed by"
     proposals ||--o{ comparisons : "is compared in"
+    proposals ||--o| proposal_public : "has a generalized version"
+    proposals ||--o{ proposal_sources : "was built from"
 ```
 
 Items are keyed by `(source, id)`: an item id is unique only within its tracker source, so two repos with a same-named plan file never share a row, and `markMissing` closes only its own source's items. `item_events` references that composite key.
@@ -323,7 +337,9 @@ Ledger v2 adds `shape_runs` and `shape_signals` (record-only shape signals; outc
 
 Ledger v3 adds `scope_runs` (one row per `sindri scope` run or backtest) and `model_calls` (one row per model call, keyed by `(run_id, seq)`, written in the same transaction as the run's row). `model_calls` audits every Step, not only scoping: `run_id` is a plain correlation id with no foreign key to `scope_runs` (a later Step such as triage or reflect has no `scope_runs` parent), and `step` names the Step that made the call (`scope` or `backtest` today; the column defaults to `scope`). The v2 to v3 migration keeps all rows and leaves `ledger.db.bak-v2`.
 
-Ledger v4 adds the self-evolution tables (`artifacts`, `suite_runs`, `proposals`, `comparisons`, `hook_samples`, `adoptions`, `evolve_audit`; see `docs/sindri/evolve.md`). The relationships are logical: no foreign keys are declared. `comparisons` rows with `item_id = '*'` are run markers (`running`, `errored`) or the run's summary. `evolve_audit` also holds the markers that say a reflect or correct run completed. The v3 to v4 migration keeps all rows and leaves `ledger.db.bak-v3`. Evolve's model calls are not written to `model_calls`.
+Ledger v4 adds the self-evolution tables (`artifacts`, `suite_runs`, `proposals`, `comparisons`, `hook_samples`, `adoptions`, `evolve_audit`; see `docs/sindri/evolve.md`). The relationships are logical: no foreign keys are declared (v5 declares the first two foreign keys on the evolve tables, `proposal_public.proposal_id` and `proposal_sources.proposal_id`; the others stay logical). `comparisons` rows with `item_id = '*'` are run markers (`running`, `errored`) or the run's summary. `evolve_audit` also holds the markers that say a reflect or correct run completed, and the two verbs `stage`'s generalize retry cap reads: `generalize-hold` (detail `<proposal id>: <reason>`, one per hold on a proposal's content; a failed model call writes none) and `generalize-retry` (detail `<proposal id>`, written by `sindri evolve retry`). The cap counts a proposal's `generalize-hold` rows after its latest `generalize-retry` row, by verb in SQL; deleting or pruning those rows resets it. The v3 to v4 migration keeps all rows and leaves `ledger.db.bak-v3`. Evolve's model calls are not written to `model_calls`.
+
+Ledger v5 adds `proposal_public` (one row per proposal: the generalized, scrubbed `body` that `sindri evolve publish` renders, the judge's `judge_category`, the generalizing `model`, `created_at`, `epoch`). `proposal_id` is the primary key and references `proposals(id)`; the original proposal stays in `proposals`, local only. v5 also adds `proposal_sources` (primary key `(proposal_id, session)`, `proposal_id` references `proposals(id)`): the transcript sessions (prefixes as `transcript:<session>#<line>` refs use them) whose text `reflect` or `correct` sent to the model for a proposal, written by code when the proposal is saved, never taken from the model's answer, and only ever added to (a re-proposal merged into an open one adds its sessions, unless that one is a `reflect`/`correct` proposal with no row, which keeps none; an open `telemetry:` proposal, which has none by design, gets them). The verbatim layer checks them with the sessions the evidence cites. The row `-` records that the model read no transcript (`reflect` on a PR with no session on its branch); a `reflect`/`correct` proposal with no row at all holds at publish. The v4 to v5 migration keeps all rows and leaves `ledger.db.bak-v4`. A backup is never overwritten: the first copy of a version is kept (an exclusive copy, `COPYFILE_EXCL`, with no hard link, so filesystems without hard links work; a copy that fails part way removes its half-written file), so a racing opener can't replace it with a newer one. The only rollback is restoring that copy, which loses the writes made since (an older sindri refuses the newer ledger with `SND-LEDGER-001`). Keeping the first `.bak-v<N>` is deliberate: it is the only copy of the pre-upgrade ledger. Restoring a backup by hand is outside sindri's supported flows; after one, delete the stale `.bak-v<N>` before upgrading again, or the upgrade keeps the old file.
 
 ## Sindri code index
 
