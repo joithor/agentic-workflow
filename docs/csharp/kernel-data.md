@@ -15,16 +15,24 @@ SQLite access for every C# package: hand-written ADO.NET over `Microsoft.Data.Sq
 |---|---|
 | `SqliteConnectionFactory` / `SqliteOptions` | `Open`: read-write, creates the file, sets `busy_timeout`, `journal_mode=WAL` (checked: a connection that can't get WAL is refused), `foreign_keys=ON`, `synchronous=NORMAL`. `OpenReadOnly`: `query_only`, never creates the file, doesn't touch the journal mode. Pooling is off |
 | `SqliteBind` | Typed parameters: text, integer (`int`, `long`), real, boolean (0/1), blob, `DateTimeOffset` (UTC round-trip text, `2026-10-10T07:05:07.0420000Z`, the same text AwJson writes), `Guid` (lowercase hyphenated text), and `BindId(name, id, accessor)` for typed ids stored as text, integer or Guid. Cast a bare `null` (`(string?)null`) |
-| `SqliteRead` | `GetGuid`: reads lowercase hyphenated text strictly; a BLOB, upper case or braces throw `InvalidDataException` |
+| `SqliteRead` | `GetGuid`: reads lowercase hyphenated text strictly; a BLOB, upper case or braces throw `InvalidDataException`. `GetTimestamp`: reads only the UTC round-trip text `SqliteBind` writes |
 | `IRowMapper<T>` | Maps one row, columns by ordinal |
 | `SqlStatement`, `SqliteQueries` | `One`, `List`, `Exists`, `Execute`, each returning `Result<T>` |
 | `SqliteUnitOfWork` / `SqliteUnitOfWorkFactory.BeginSession` | One `BEGIN IMMEDIATE` per use case; disposing without `Commit` rolls back. Implements `Aw.Kernel.Persistence.IUnitOfWork` |
 | `SqliteReadSession` / `BeginRead` | A deferred transaction on a read-only connection: one snapshot, no write lock, reads beside a writer, no file created. For status, doctor and report commands |
 | `SqliteReadRepository<TEntity,TId>` | Implements `IReadRepository` from a repository's two SQL constants and its id binder |
+| `SqliteOutbox` / `SqliteOutboxSchema` | Implements `Aw.Kernel.Outbox.IOutbox` on the session it's given (normally the use case's `SqliteUnitOfWork`, so a command commits or rolls back with the state change). A package adds `SqliteOutboxSchema.CreateMigration(<version>)` to its migration set to create `outbox_commands`. Time from the injected `TimeProvider`, retries from `OutboxRetryPolicy` |
 | `Migration`, `EmbeddedMigrations`, `MigrationRunner` | See below |
 
 Every path that fails closes the connection it opened, cancellation included; disposing a session closes the
 connection even if the rollback throws.
+
+## Contracts
+
+`SqliteUnitOfWorkFactory` and `SqliteOutbox` pass the shared port contracts in `Aw.Kernel.Testing` (`UnitOfWorkContract`,
+`OutboxContract`), the same suites the in-memory fakes (`InMemoryUnitOfWorkFactory`, `InMemoryOutbox`) pass
+(`tests/Aw.Kernel.Data.Tests/Sqlite*ContractTests.cs`, integration lane). A new adapter for either port (another engine)
+binds the same base.
 
 ## Errors
 

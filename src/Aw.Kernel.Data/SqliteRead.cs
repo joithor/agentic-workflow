@@ -28,4 +28,26 @@ public static class SqliteRead
         throw new InvalidDataException(
             $"Column {reader.GetName(ordinal)} holds {value.GetType().Name} '{value}', not a lowercase hyphenated Guid.");
     }
+
+    /// <summary>
+    /// Reads a timestamp stored as UTC round-trip TEXT ('2026-10-10T07:05:07.0420000Z', what <see cref="SqliteBind"/>
+    /// writes) as a <see cref="DateTimeOffset"/> at offset zero. Any other text is a data bug and throws.
+    /// </summary>
+    /// <param name="reader">A reader on a row.</param>
+    /// <param name="ordinal">The column.</param>
+    /// <returns>The timestamp.</returns>
+    /// <exception cref="InvalidDataException">The column isn't UTC round-trip text.</exception>
+    public static DateTimeOffset GetTimestamp(SqliteDataReader reader, int ordinal)
+    {
+        ArgumentNullException.ThrowIfNull(reader);
+        var value = reader.GetValue(ordinal);
+        if (value is string text
+            && DateTimeOffset.TryParseExact(text, "yyyy-MM-dd'T'HH:mm:ss.fffffff'Z'", CultureInfo.InvariantCulture, DateTimeStyles.AssumeUniversal | DateTimeStyles.AdjustToUniversal, out var timestamp))
+        {
+            return timestamp;
+        }
+
+        throw new InvalidDataException(
+            $"Column {reader.GetName(ordinal)} holds {value.GetType().Name} '{value}', not a UTC round-trip timestamp.");
+    }
 }

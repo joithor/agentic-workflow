@@ -4,6 +4,7 @@ namespace Aw.Kernel.Outbox;
 /// The transactional outbox port. Implementations live in a package's Infrastructure (or Aw.Kernel.Data) and
 /// store commands in the <see cref="OutboxTables.Commands"/> table, with per-command delivery state: the attempt
 /// count, the last error, the next attempt time and, once the retry policy gives up, the dead-letter time.
+/// Every implementation passes Aw.Kernel.Testing's OutboxContract; Aw.Kernel.Data ships the SQLite one (SqliteOutbox).
 /// </summary>
 public interface IOutbox
 {
