@@ -472,7 +472,7 @@ for p in Core Infrastructure; do
   csproj "$d" "src/Beta/Aw.Beta.$p/Aw.Beta.$p.csproj" ../../Aw.Kernel/Aw.Kernel.csproj
 done
 
-d="$(fixture kernel-testing-tests)"; perl -0pi -e 's/(  - id: Alpha\n)/  - id: KTest\n    kind: package\n    tier: 0\n    test: true\n    projectPrefix: Aw.KTest\n    ts: null\n    src: tests\/Aw.KTest.Testing\n    note: test support\n$1/' "$d/deps.yaml"
+d="$(fixture kernel-testing-tests)"; perl -0pi -e 's/(  - id: Alpha\n)/  - id: KTest\n    kind: package\n    tier: 0\n    sublevel: 2\n    test: true\n    projectPrefix: Aw.KTest\n    ts: null\n    src: tests\/Aw.KTest.Testing\n    note: test support\n$1/' "$d/deps.yaml"
 edge "$d" KTest Kernel project current
 csproj "$d" src/Aw.Kernel/Aw.Kernel.csproj; csproj "$d" tests/Aw.KTest.Testing/Aw.KTest.Testing.csproj ../../src/Aw.Kernel/Aw.Kernel.csproj
 csproj "$d" tests/Aw.Beta.Tests/Aw.Beta.Tests.csproj ../Aw.KTest.Testing/Aw.KTest.Testing.csproj; run "$d"
