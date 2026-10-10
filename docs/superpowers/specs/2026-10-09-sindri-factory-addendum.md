@@ -12,6 +12,14 @@ Revision 2 adds:
 Amends: `2026-10-07-sindri-design.md` (revision 7) and the Plan 6 dashboard spec. Where they disagree, this
 addendum wins for the sections it names. Everything else in the main spec stands.
 
+## Core tenet: Sindri grows Sindri
+
+Everything this addendum defines is a **starting point**, not a finished design. That covers the lenses,
+evidence kinds, standing workflows, context-graph components, rules, budgets and surfaces. Sindri improves,
+grows, enhances and evolves Sindri: it measures its own parts (§7.4, §7.7), proposes changes to them, **finds new
+capabilities worth adding** (§17.18), and builds the approved ones through its own factory (§7.6). The human
+approves direction. Sindri does the finding, the building and the proving.
+
 ## 17.0 Why this addendum
 
 Plans 1–6 built the control room: measurement, the ledger, the code index, scoping, offline self-evolution and
@@ -59,6 +67,9 @@ profiles and repos. This document is generic.
     `sindri packet validate` and is frozen by hash (§17.4).
 15. **Context is budgeted.** Every session starts from an injection plan with a token budget per section.
     Anything loaded that the plan didn't name is a defect with a metric.
+16. **Nothing here is final.** Every catalog, schema, threshold and surface in §17 is a registered artifact
+    that Sindri may propose to change, extend or replace through §7.4, §17.14 and §17.18. A part with no eval
+    suite or telemetry is itself a gap that Sindri proposes to fill.
 
 ## 17.2 Metrics, revised
 
@@ -501,6 +512,64 @@ holds on ring 1.
 | F7 | Swappable host handover and subscription capacity routing | Builds continue when the laptop closes or a window runs out |
 
 F5 can run in parallel with F1–F4, because it doesn't depend on them.
+
+## 17.18 Capability scouting: Sindri finds what to add next
+
+Self-evolution (§7.4) improves what exists. Scouting finds what **doesn't exist yet** and brings it to the human as
+ideas to approve. Examples: generating explainer videos from code and evidence, adding narration with a voice
+clone, a new evidence kind, a better memory store, a new lens, a standing workflow nobody asked for yet.
+
+**Sources** (read-only; scouting never installs or runs anything it finds):
+
+| Source | Finds |
+|---|---|
+| **Internal gaps** | Packet misses, parks by reason, repeated scope-expansion requests, lenses with no evidence kind, evidence kinds with low precision, slow decisions, standing-workflow misses, steering turns the audit still sees |
+| **Upstream changes** | New releases of pinned dependencies and vendored packs (§16), provider CLI changelogs (new hooks, flags or SDK features), new MCP servers |
+| **Ecosystem** | Skill and subagent catalogs, agent-tooling repos, papers and posts on agent harnesses, memory, retrieval and evals |
+| **The human's notes** | The notes dir and the desk decision log ("would be nice if…", links saved for later) |
+
+**Scout job:** a weekly bounded job, plus one on demand (`sindri scout [--topic <text>]`). It runs read-only with
+network limited to an allowlist of sources, and it writes **idea cards**. Fetched text is untrusted data
+(invariant 7): it's summarized and cited, and it never becomes instructions.
+
+**Idea card:**
+
+| Field | Contents |
+|---|---|
+| What | One sentence, plus where it would plug in (lens, evidence kind, standing workflow, context-graph component, surface, skill) |
+| Why | The internal gap or metric it targets (§17.2), with citations |
+| Evidence | Links, licence, maturity, maintenance signals, prior art in this repo |
+| Cost and risk | Effort size, recurring cost, new egress or data flows, trust tier (§8.3), and whether it touches a protected surface |
+| Eval plan | How Sindri would prove it helps: a backtest arm, an A/B, an evidence-precision check, or decision latency |
+| Dedupe | Links to earlier cards on the same idea and how they were decided |
+
+**Human decision (swipe inbox, §17.12):** `build` (it becomes a work item that the factory scopes, builds and
+proves like any other, with protected surfaces still approval-tier), `later` (resurfaces when its cited gap
+grows), or `no` (recorded with an optional reason, so the same idea isn't proposed again unless its evidence
+changes materially).
+
+**Ranking:** expected effect on the §17.2 metrics and on the gaps cited, divided by cost. Ideas tied to a
+measured gap rank above ideas that are only novel. The inbox shows at most `scout.maxCardsPerWeek` (default 5),
+and digests list the rest.
+
+**Guardrails:**
+- Scouting proposes. It never adopts. Every `build` passes through the normal Steps, evals and merge rules.
+- New external services (for example a voice-cloning API) are new egress and new data flows. Their card must
+  say what data leaves the machine. Building one is approval-tier, and the integration runs only on artifacts
+  that are safe to send: never workplace code or ring-1 data unless the workplace profile allows that provider.
+- Likeness: a voice clone may only be of a person who gave consent, by default only the human's own voice. The
+  consent record is a profile entry.
+- The scout's own precision is tracked: the share of cards approved, and the share of built ideas that kept
+  their eval gain. It's tuned like any other artifact. If fewer than one card in ten is approved over two months,
+  the weekly cadence drops to monthly.
+
+**Starting idea backlog** (seed cards, to be re-ranked by the scout once it runs):
+- explainer videos generated from code, the packet and evidence (Scene Plan JSON rendered by a pinned renderer;
+  the `narrative` evidence kind, §17.11);
+- narration for those videos with a consented voice clone of the human;
+- a native phone app, if the PWA's decision latency stalls (§17.17 Q4);
+- marketplace memory or consolidation stores as context-graph arms (§17.3);
+- importing community lens and subagent definitions as trust-tiered packs (§17.7).
 
 ## 17.17 Decisions
 
