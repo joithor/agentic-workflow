@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Tests for scripts/ci/no-any.mjs — merge gate 6: no `any` type outside the Fastify
+# Tests for scripts/ci/no-any.mjs — merge gate 7: no `any` type outside the Fastify
 # boundary. It parses TypeScript (so strings and comments never count) and holds
 # existing violations to a ratchet baseline that may only shrink.
 set -euo pipefail
@@ -38,7 +38,7 @@ test_any_in_type_positions_fails_with_location_and_fix() {
   [ "$rc" = "1" ] || fail "expected exit 1, got $rc: $out"
   echo "$out" | grep -q 'pkg/src/bad.ts:1:' || fail "no location for line 1: $out"
   echo "$out" | grep -q 'pkg/src/bad.ts:3:' || fail "no location for line 3: $out"
-  echo "$out" | grep -q 'AW-GATE-6' || fail "no rule id: $out"
+  echo "$out" | grep -q 'AW-GATE-7' || fail "no rule id: $out"
   echo "$out" | grep -q 'unknown' || fail "no fix hint: $out"
   echo "PASS: test_any_in_type_positions_fails_with_location_and_fix"
 }
@@ -119,7 +119,7 @@ test_declaration_files_count() {
 test_the_repo_passes_with_its_baseline() {
   local rc=0 out
   out="$(node "$CHECK" --root "$ROOT" --baseline "$ROOT/scripts/ci/no-any-baseline.json" 2>&1)" || rc=$?
-  [ "$rc" = "0" ] || fail "the repo fails gate 6: $out"
+  [ "$rc" = "0" ] || fail "the repo fails gate 7: $out"
   echo "PASS: test_the_repo_passes_with_its_baseline"
 }
 

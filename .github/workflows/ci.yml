@@ -148,7 +148,7 @@ jobs:
           for pkg in judge scorer sindri; do
             (cd "$pkg" && npm ci --no-audit --no-fund && npm run build)
           done
-      - name: Install the CI tools (the gate 6 checker's tests need typescript)
+      - name: Install the CI tools (the gate 7 checker's tests need typescript)
         if: env.CHANGED == 'true'
         run: npm ci --prefix .github/ci-tools --ignore-scripts --no-audit --no-fund
       - name: Run every tracked bash test suite
@@ -188,7 +188,7 @@ jobs:
           npm ci --prefix .github/ci-tools --ignore-scripts --no-audit --no-fund
           (cd .github/ci-tools && node node_modules/@anthropic-ai/claude-code/install.cjs)
       - name: No any types outside the Fastify boundary
-        # Merge gate 6: parses the TS (strings and comments never count) and holds existing
+        # Merge gate 7: parses the TS (strings and comments never count) and holds existing
         # violations to scripts/ci/no-any-baseline.json, which may only shrink.
         # On a PR the baseline is also checked against the base branch's copy, so a PR
         # can't raise a count or baseline a new file in its own diff.

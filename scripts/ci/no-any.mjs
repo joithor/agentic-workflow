@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// scripts/ci/no-any.mjs — merge gate 6 (AGENTS.md): no `any` type outside the Fastify
+// scripts/ci/no-any.mjs — merge gate 7 (AGENTS.md): no `any` type outside the Fastify
 // integration boundary. Parses every tracked .ts/.tsx file with the TypeScript compiler
 // (pinned in .github/ci-tools), so `any` inside strings and comments never counts.
 // Existing violations live in a ratchet baseline (path -> count) that may only shrink:
@@ -16,7 +16,7 @@ import { fileURLToPath } from "node:url";
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const REPO = path.resolve(HERE, "../..");
-const RULE = "AW-GATE-6";
+const RULE = "AW-GATE-7";
 // The Fastify integration boundary: the bridge's server, routes and transport.
 const BOUNDARY = ["mcp-bridge/src/server.ts", "mcp-bridge/src/routes/", "mcp-bridge/src/transport/"];
 
