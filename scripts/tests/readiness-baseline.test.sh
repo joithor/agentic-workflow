@@ -13,7 +13,7 @@ make_tree() {
   local root="$1"
   mkdir -p "$root/judge/tests" "$root/judge/src"
   echo "# demo" > "$root/README.md"
-  printf '# Agents\n\n```bash\ncd judge && npm run build\n```\n' > "$root/AGENTS.md"
+  printf '# Agents\n\n## Commands\n\n```bash\ncd judge && npm run build\n```\n' > "$root/AGENTS.md"
   echo '{"name":"judge","scripts":{"build":"tsc","test":"vitest run"}}' > "$root/judge/package.json"
   echo '{}' > "$root/judge/package-lock.json"
   echo '{"compilerOptions":{"strict": true}}' > "$root/judge/tsconfig.json"
@@ -304,6 +304,78 @@ test_walk_sorted_and_skips_symlinks() {
   echo "PASS: test_walk_sorted_and_skips_symlinks"
 }
 
+test_unreadable_files_have_their_own_reason() {
+  local t="$TMP/perm"; make_tree "$t"
+  chmod 000 "$t/AGENTS.md" "$t/judge/package.json"
+  local rc=0
+  node "$SCRIPT" --root "$t" --no-remote --date 2026-10-10 --out "$t/o.md" 2>"$TMP/err" || rc=$?
+  chmod 644 "$t/AGENTS.md" "$t/judge/package.json"
+  [ "$rc" -eq 0 ] || fail "unreadable files should not abort the run, got $rc ($(head -c 300 "$TMP/err"))"
+  row "$t/o.md" DOC-1 | grep -E '\| unknown \|.*AGENTS.md is not readable' >/dev/null || fail "DOC-1 should be unknown: $(row "$t/o.md" DOC-1)"
+  for id in BS-1 BS-2; do
+    row "$t/o.md" "$id" | grep -E 'fail: .*judge \(package.json is not readable' >/dev/null || fail "$id should say not readable: $(row "$t/o.md" "$id")"
+    row "$t/o.md" "$id" | grep -F 'not valid JSON' >/dev/null && fail "$id should not claim bad JSON"
+  done
+  echo "PASS: test_unreadable_files_have_their_own_reason"
+}
+
+test_bs1_needs_the_commands_block() {
+  local t="$TMP/bs1"; make_tree "$t"
+  # judge named only in a directory tree; a build mention elsewhere; no Commands block -> not documented
+  printf '# Agents\n\n```\njudge/   # the judge CLI\n```\n\nRun npm run build in a package.\n' > "$t/AGENTS.md"
+  node "$SCRIPT" --root "$t" --no-remote --date 2026-10-10 --out "$t/a.md"
+  row "$t/a.md" BS-1 | grep -E 'fail: .*judge \(scripts.build not documented' >/dev/null || fail "BS-1 should not credit a tree mention: $(row "$t/a.md" BS-1)"
+  # the package line sits in the Commands block under a comment that names build -> documented
+  printf '# Agents\n\n## Commands\n\n```bash\n# TypeScript packages (each has test, typecheck, build)\ncd judge && npm test\n```\n' > "$t/AGENTS.md"
+  node "$SCRIPT" --root "$t" --no-remote --date 2026-10-10 --out "$t/b.md"
+  row "$t/b.md" BS-1 | grep -E 'pass: judge \(heuristic: ' >/dev/null || fail "BS-1 should credit the Commands block: $(row "$t/b.md" BS-1)"
+  echo "PASS: test_bs1_needs_the_commands_block"
+}
+
+test_sv2_reads_compiler_options() {
+  local t="$TMP/sv2"; make_tree "$t"
+  # strict only in a comment and in a nested object -> not strict
+  printf '{\n  // "strict": true,\n  "compilerOptions": { "paths": { "x": ["src/**/*"] }, "plugins": [{ "strict": true }] },\n  "include": ["src/**/*"]\n}\n' > "$t/judge/tsconfig.json"
+  node "$SCRIPT" --root "$t" --no-remote --date 2026-10-10 --out "$t/a.md"
+  row "$t/a.md" SV-2 | grep -E 'fail: .*judge \(' >/dev/null || fail "SV-2 should not credit a comment or nested key: $(row "$t/a.md" SV-2)"
+  # strict inherited through a relative extends -> strict
+  echo '{ "compilerOptions": { "strict": true, }, }' > "$t/judge/tsconfig.base.json"
+  printf '{\n  /* base */ "extends": "./tsconfig.base.json",\n  "compilerOptions": { "outDir": "dist" }\n}\n' > "$t/judge/tsconfig.json"
+  node "$SCRIPT" --root "$t" --no-remote --date 2026-10-10 --out "$t/b.md"
+  row "$t/b.md" SV-2 | grep -F 'pass: judge (compilerOptions.strict via ./tsconfig.base.json)' >/dev/null || fail "SV-2 should follow extends: $(row "$t/b.md" SV-2)"
+  echo "PASS: test_sv2_reads_compiler_options"
+}
+
+test_ts2_evidence_says_heuristic() {
+  local t="$TMP/ts2"; make_tree "$t"
+  echo '{"name":"judge","scripts":{"build":"tsc","test":"vitest run","test:heavy":"vitest run heavy"}}' > "$t/judge/package.json"
+  node "$SCRIPT" --root "$t" --no-remote --date 2026-10-10 --out "$t/o.md"
+  row "$t/o.md" TS-2 | grep -F 'judge (heuristic: matched script test:heavy)' >/dev/null || fail "TS-2 evidence should say heuristic: $(row "$t/o.md" TS-2)"
+  echo "PASS: test_ts2_evidence_says_heuristic"
+}
+
+test_non_github_origin_is_not_sent_to_gh() {
+  local t="$TMP/gl"; make_tree "$t"; make_gh_stub "$TMP/stub"
+  git -C "$t" init -q && git -C "$t" remote add origin https://gitlab.example.com/team/proj.git
+  export GH_LOG="$TMP/gl.log"; : > "$GH_LOG"
+  local rc=0
+  PATH="$TMP/stub:$PATH" node "$SCRIPT" --root "$t" --date 2026-10-10 --out "$t/o.md" 2>"$TMP/err" || rc=$?
+  [ "$rc" -eq 0 ] || fail "non-GitHub origin run should exit 0, got $rc"
+  [ ! -s "$GH_LOG" ] || fail "gh should not be called for a non-GitHub origin: $(head -c 300 "$GH_LOG")"
+  row "$t/o.md" SEC-1 | grep -E '\| unknown \|.*origin is not a GitHub URL \(gitlab.example.com\)' >/dev/null || fail "SEC-1 should say why: $(row "$t/o.md" SEC-1)"
+  echo "PASS: test_non_github_origin_is_not_sent_to_gh"
+}
+
+test_outside_a_repo_prints_only_our_error() {
+  mkdir -p "$TMP/norepo"
+  local rc=0
+  (cd "$TMP/norepo" && GIT_CEILING_DIRECTORIES="$TMP" node "$SCRIPT" --no-remote >/dev/null 2>"$TMP/err") || rc=$?
+  [ "$rc" -eq 2 ] || fail "outside a repo should exit 2, got $rc"
+  [ "$(wc -l < "$TMP/err" | tr -d ' ')" = "1" ] || fail "stderr should be one line: $(head -c 300 "$TMP/err")"
+  grep -q '^readiness-baseline: not in a git repo' "$TMP/err" || fail "stderr should be our message: $(head -c 300 "$TMP/err")"
+  echo "PASS: test_outside_a_repo_prints_only_our_error"
+}
+
 test_codeowners_flips_sec3
 test_env_template_flips_de2
 test_no_remote_marks_remote_unknown
@@ -324,3 +396,9 @@ test_unexpected_shapes_and_fs_errors_are_unknown
 test_malformed_package_json_fails
 test_runtime_pin_flips_bs5
 test_dependency_bot_flips_sec4
+test_unreadable_files_have_their_own_reason
+test_bs1_needs_the_commands_block
+test_sv2_reads_compiler_options
+test_ts2_evidence_says_heuristic
+test_non_github_origin_is_not_sent_to_gh
+test_outside_a_repo_prints_only_our_error
