@@ -166,6 +166,10 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
+          # The no-any step reads the base branch's baseline. The repo is private and the
+          # token isn't persisted, so a later `git fetch` can't authenticate; fetch every
+          # branch here, while checkout still holds the token.
+          fetch-depth: 0
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
           node-version-file: .nvmrc
@@ -197,8 +201,7 @@ jobs:
         run: |
           args=()
           if [ -n "$BASE_REF" ]; then
-            git fetch --no-tags --depth=1 origin "refs/heads/$BASE_REF"
-            if git show "FETCH_HEAD:scripts/ci/no-any-baseline.json" > "$RUNNER_TEMP/base-no-any.json" 2>/dev/null; then
+            if git show "origin/$BASE_REF:scripts/ci/no-any-baseline.json" > "$RUNNER_TEMP/base-no-any.json" 2>/dev/null; then
               args=(--base-baseline "$RUNNER_TEMP/base-no-any.json")
             else
               echo "no-op: $BASE_REF has no no-any baseline yet — the base comparison starts once it does"
