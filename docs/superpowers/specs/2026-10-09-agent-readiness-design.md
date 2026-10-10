@@ -481,7 +481,8 @@ seams go into the C# schemas **from the first commit**, and the C# build starts 
 **Every external technology sits behind a port** (database, cache, queue or bus, file system, processes, HTTP, git,
 containers, model CLIs, secrets, clock and ids). `Core` declares the port, named for what the code needs
 (`IItemStore`, not `ISqliteItems`); each technology is one `Infrastructure` adapter; only the host's `Compose`
-picks the adapter. Every port has a contract-test suite that its in-memory fake and every real adapter pass. In
+picks the adapter. Every port has a contract-test suite that its in-memory fake and every real adapter pass (BCL
+ports such as `TimeProvider`, faked by `FakeTimeProvider`, are exempt). In
 R1b the Kernel ports have theirs in `Aw.Kernel.Testing`: `ReadRepositoryContract`, and `UnitOfWorkContract` and
 `OutboxContract` (R1b, #133), run against the fakes and against `Aw.Kernel.Data`'s SQLite adapters, which include
 the transactional outbox `SqliteOutbox` with its table from `SqliteOutboxSchema.CreateMigration`. Logging's port
@@ -554,8 +555,8 @@ The skill packages that hold code today (`skills/ui-evidence`, `skills/bugFixOrc
 
 ### 4b.10 Checks of record (R1b)
 
-The rule ids the R1b template PRs added. Each failure message names the rule id, what was found, the limit and the
-fix (§8). Where a check is still in an open PR, the PR is named; the rule record (§4b intro) says `pending` until it
+The rule ids the R1b template PRs added. Each failure message names the rule id, what was found (the measured value and
+the limit, where the rule has one) and the fix (§8). Where a check is still in an open PR, the PR is named; the rule record (§4b intro) says `pending` until it
 merges.
 
 | Area | Ids | Check | PR |
