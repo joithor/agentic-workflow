@@ -14,6 +14,7 @@ import { getProposal, getPublic, ProposalSchema, savePublic, saveProposal, stage
 import { PROMPTS } from "../src/evolve/prompts.js";
 import { quote } from "../src/evolve/render.js";
 import { stageProposals } from "../src/evolve/stage.js";
+import { SindriError } from "../src/errors.js";
 import { Budget } from "../src/scope/model.js";
 import { evolveFixture, generalizingScript, git, scriptedEvolveIo, setStatus, unescapeFence, withDeps } from "./evolve-fixtures.js";
 
@@ -431,7 +432,8 @@ describe("stage generalizes first (privacy B1)", () => {
   });
 
   it("counts only content holds toward the cap: a failed rewrite or judge call holds without spending an attempt (architecture-strategist-0)", async () => {
-    const down = scriptedEvolveIo((c) => (c.role === GENERALIZE_ROLES.judge ? { leaks: "maybe" } : generalizingScript()(c)));
+    const fail = (): never => { throw new SindriError("SND-SCOPE-002", "model job failed (claude exited 1)"); };
+    const down = scriptedEvolveIo((c) => (c.role === GENERALIZE_ROLES.judge ? fail() : generalizingScript()(c)));
     const fx = await evolveFixture({ files: FILES, extraYaml: "evolve:\n  maxOpenProposals: 2\n  maxGeneralizeAttempts: 1\n", prompts: () => PROMPTS, io: down });
     await init([], fx.ctx);
     const id = fx.ctx.write((epoch) => saveProposal(fx.ctx.db, ProposalSchema.parse({
@@ -443,12 +445,28 @@ describe("stage generalizes first (privacy B1)", () => {
       expect(o.held).toEqual([{ id, why: "generalize: the judge failed" }]);
       expect(o.gaveUp).toEqual([]);
     }
-    const rewriteDown = scriptedEvolveIo(() => ({ nope: 1 }));
+    const rewriteDown = scriptedEvolveIo(fail);
     expect((await stageProposals({ ...fx.ctx, io: rewriteDown })).held).toEqual([{ id, why: "generalize: the rewrite failed" }]);
     expect(getProposal(fx.ctx.db, id)?.status).toBe("held");
     expect(fx.ctx.db.prepare("SELECT COUNT(*) AS c FROM evolve_audit WHERE verb = 'generalize-hold'").get()).toEqual({ c: 0 });
     const up = await stageProposals({ ...fx.ctx, io: scriptedEvolveIo(generalizingScript()) });
     expect(up.staged.map((x) => x.id)).toEqual([id]);
+    fx.close();
+  });
+
+  it("counts an out-of-schema answer toward the cap: a rewriter that always answers off-schema gives up (kieran-typescript-reviewer-2)", async () => {
+    const offSchema = scriptedEvolveIo(() => ({ nope: 1 }));
+    const fx = await evolveFixture({ files: FILES, extraYaml: "evolve:\n  maxOpenProposals: 2\n  maxGeneralizeAttempts: 2\n", prompts: () => PROMPTS, io: offSchema });
+    await init([], fx.ctx);
+    const id = fx.ctx.write((epoch) => saveProposal(fx.ctx.db, ProposalSchema.parse({
+      artifact: "skill:review", kind: "skill-edit", title: "Alpha change here", rationale: "r", evidence: ["pr:1"],
+      change: { type: "describe", files: ["skills/review/SKILL.md"], description: "d" },
+    }), "reflect:pr-1", "code", epoch, fx.deps.now()).id);
+    for (let run = 0; run < 2; run++) expect((await stageProposals(fx.ctx)).held).toEqual([{ id, why: "generalize: the rewrite failed" }]);
+    const calls = offSchema.calls.length;
+    const o = await stageProposals(fx.ctx);
+    expect(o.gaveUp).toEqual([id]);
+    expect(offSchema.calls).toHaveLength(calls); // no more model calls once it gave up
     fx.close();
   });
 

@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import { generalize, GENERALIZE_ROLES, JUDGE_SYSTEM, REWRITE_SYSTEM } from "../src/evolve/generalize.js";
 import { ProposalSchema } from "../src/evolve/proposals.js";
 import { TRANSCRIPTS_CLAUSE } from "../src/evolve/prompts.js";
+import { SindriError } from "../src/errors.js";
 import { Budget } from "../src/scope/model.js";
 import { answeringRunner } from "./evolve-fixtures.js";
 
@@ -57,9 +58,15 @@ describe("generalize (privacy B1)", () => {
     expect(await result).toEqual({ ok: false, why: "generalize: the judge found tickets", transient: false });
   });
 
-  it("holds when either call fails or answers out of schema", async () => {
-    expect(await run(() => ({ nope: 1 })).result).toEqual({ ok: false, why: "generalize: the rewrite failed", transient: true });
-    expect(await run((role) => (role === GENERALIZE_ROLES.rewrite ? GENERIC : { leaks: "maybe" })).result).toEqual({ ok: false, why: "generalize: the judge failed", transient: true });
+  it("holds when either call answers out of schema, and counts that as a content failure (kieran-typescript-reviewer-2)", async () => {
+    expect(await run(() => ({ nope: 1 })).result).toEqual({ ok: false, why: "generalize: the rewrite failed", transient: false });
+    expect(await run((role) => (role === GENERALIZE_ROLES.rewrite ? GENERIC : { leaks: "maybe" })).result).toEqual({ ok: false, why: "generalize: the judge failed", transient: false });
+  });
+
+  it("holds as transient only when a call itself fails (process error, timeout, non-zero exit)", async () => {
+    const down = (): never => { throw new SindriError("SND-SCOPE-002", "model job timed out after 600000 ms"); };
+    expect(await run(down).result).toEqual({ ok: false, why: "generalize: the rewrite failed", transient: true });
+    expect(await run((role) => (role === GENERALIZE_ROLES.rewrite ? GENERIC : down())).result).toEqual({ ok: false, why: "generalize: the judge failed", transient: true });
   });
 
   it("reports a call the budget refused as not attempted, never as a failure (M1)", async () => {
