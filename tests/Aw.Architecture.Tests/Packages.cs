@@ -18,5 +18,6 @@ internal static class Packages
         "Aw.Packets.App",
         "Aw.Readiness.Core",
         "Aw.Readiness.App",
+        "Aw.Redaction",
     ];
 }
