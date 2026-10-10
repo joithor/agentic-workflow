@@ -33,8 +33,10 @@ const EVIDENCE_CHARS = 2_000;
 const EVIDENCE_TOTAL = 40_000;
 
 // `budget: true`: the token budget was gone before a call (the rewrite or the judge), so nothing was decided; stage
-// leaves the proposal as it was. Any other failure holds it, with a fixed reason.
-export type Generalized = { ok: true; proposal: Proposal; category: string; model: string } | { ok: false; why: string } | { ok: false; budget: true };
+// leaves the proposal as it was. Any other failure holds it, with a fixed reason. `transient: true` marks a failed
+// call (a timeout, an outage, an answer out of schema), not a verdict on the content: it never counts toward
+// evolve.maxGeneralizeAttempts.
+export type Generalized = { ok: true; proposal: Proposal; category: string; model: string } | { ok: false; why: string; transient: boolean } | { ok: false; budget: true };
 
 const esc = (s: string): string => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 
@@ -61,21 +63,21 @@ export async function generalize(o: {
     role: GENERALIZE_ROLES.rewrite, model: o.models.rewriter, system: REWRITE_SYSTEM, schema: PROPOSAL_SCHEMA, parse: (v) => ProposalSchema.parse(v), timeoutMs: 600_000,
     input: `<untrusted id="proposal">${esc(JSON.stringify(o.proposal))}</untrusted>\n\n${evidence}`,
   });
-  if (!rewrite.ok) return { ok: false, why: "generalize: the rewrite failed" };
+  if (!rewrite.ok) return { ok: false, why: "generalize: the rewrite failed", transient: true };
   const p = rewrite.value;
   if (p.artifact !== o.proposal.artifact || p.kind !== o.proposal.kind || !sameRefs(p.evidence, o.proposal.evidence)) {
-    return { ok: false, why: "generalize: the rewrite changed the artifact, kind or evidence" };
+    return { ok: false, why: "generalize: the rewrite changed the artifact, kind or evidence", transient: false };
   }
-  if (p.change.type !== o.proposal.change.type) return { ok: false, why: "generalize: the rewrite changed the change type" };
+  if (p.change.type !== o.proposal.change.type) return { ok: false, why: "generalize: the rewrite changed the change type", transient: false };
   if (o.budget.exhausted()) return { ok: false, budget: true };
   const judged = await askModel(o.runner, o.budget, {
     role: GENERALIZE_ROLES.judge, model: o.models.judge, system: JUDGE_SYSTEM, schema: VERDICT_SCHEMA, parse: (v) => Verdict.parse(v), timeoutMs: 600_000,
     input: `<untrusted id="candidate">${esc(JSON.stringify(p))}</untrusted>\n\n${evidence}`,
   });
-  if (!judged.ok) return { ok: false, why: "generalize: the judge failed" };
+  if (!judged.ok) return { ok: false, why: "generalize: the judge failed", transient: true };
   // Either half of a verdict that isn't clean holds. A leak without a category says so, never "found none".
   if (judged.value.leaks || judged.value.category !== "none") {
-    return { ok: false, why: judged.value.category === "none" ? "generalize: the judge found a leak (no category)" : `generalize: the judge found ${judged.value.category}` };
+    return { ok: false, why: judged.value.category === "none" ? "generalize: the judge found a leak (no category)" : `generalize: the judge found ${judged.value.category}`, transient: false };
   }
   return { ok: true, proposal: p, category: judged.value.category, model: o.models.rewriter };
 }

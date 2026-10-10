@@ -542,7 +542,7 @@
           "type": "integer",
           "minimum": 1,
           "default": 3,
-          "description": "How many times stage's generalization pass may hold one proposal before stage stops retrying it (reject it or reword it)"
+          "description": "How many times stage's generalization pass may hold one proposal on its content (the judge found a leak, or the rewrite changed what it must keep) before stage stops retrying it; a failed model call doesn't count. Then sindri evolve retry <id> to try again, or reject it"
         },
         "prAuthors": {
           "type": "array",

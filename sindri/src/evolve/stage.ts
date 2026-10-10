@@ -5,6 +5,7 @@ import { wildcard } from "../adapters/plan-file/tracker.js";
 import { parsePlan } from "../adapters/plan-file/parse.js";
 import { SindriError } from "../errors.js";
 import { ulid } from "../ids.js";
+import type { Ledger } from "../ledger/db.js";
 import { audit, auditMarker } from "./audit.js";
 import { repoConfig, type EvolveCtx } from "./ctx.js";
 import { profileScrubber } from "../scope/commands.js";
@@ -23,7 +24,8 @@ import { isoWeekMonday } from "./week.js";
 
 export interface StageOutcome {
   staged: { id: string; tier: Tier }[];
-  held: { id: string; why: string }[];
+  held: { id: string; why: string }[]; // every held proposal, the given-up ones included
+  gaveUp: string[]; // ids of the held proposals at evolve.maxGeneralizeAttempts: stage no longer retries them
   waiting: number;
   inFlight: number;
   cap: number;
@@ -43,11 +45,16 @@ export async function markMerged(ctx: EvolveCtx): Promise<void> {
 // Retried by stage: an open proposal past `proposed` with no public row. Held at stage (the generalization pass refused
 // it), or staged by a v4 build before public rows existed; such a staged row doesn't hold a cap slot while it waits.
 const retries = (ctx: EvolveCtx): StoredProposal[] => listStored(ctx.db, ["held", "staged"]).filter((s) => !hasPublic(ctx.db, s.id));
-// How many times stage's generalization pass held this proposal (its `generalize-hold` audit rows).
-const holdsOf = (ctx: EvolveCtx, id: string): number =>
-  (ctx.db.prepare("SELECT COUNT(*) AS c FROM evolve_audit WHERE verb = 'generalize-hold' AND substr(detail, 1, length(?) + 1) = ? || ':'").get(id, id) as { c: number }).c;
-// At evolve.maxGeneralizeAttempts holds stage stops retrying a proposal (no model calls) until it is rejected.
-const gaveUp = (ctx: EvolveCtx, s: StoredProposal): boolean => holdsOf(ctx, s.id) >= ctx.loaded.profile.evolve.maxGeneralizeAttempts;
+// How many times stage's generalization pass held this proposal on its content (its `generalize-hold` audit rows)
+// since the latest `sindri evolve retry` of it (its latest `generalize-retry` row). Filtered by verb in SQL; failed
+// model calls write no `generalize-hold` row, so they never count.
+export const generalizeHolds = (db: Ledger, id: string): number =>
+  (db.prepare(
+    "SELECT COUNT(*) AS c FROM evolve_audit WHERE verb = 'generalize-hold' AND substr(detail, 1, length(?) + 1) = ? || ':' " +
+    "AND seq > COALESCE((SELECT MAX(seq) FROM evolve_audit WHERE verb = 'generalize-retry' AND detail = ?), 0)",
+  ).get(id, id, id) as { c: number }).c;
+// At evolve.maxGeneralizeAttempts holds stage stops retrying a proposal (no model calls) until it is retried or rejected.
+const gaveUp = (ctx: EvolveCtx, s: StoredProposal): boolean => generalizeHolds(ctx.db, s.id) >= ctx.loaded.profile.evolve.maxGeneralizeAttempts;
 const slotsFree = (ctx: EvolveCtx, cap: number, retry: readonly StoredProposal[]): { inFlight: number; free: number } => {
   const inFlight = inFlightCount(ctx.db) - retry.filter((s) => s.status === "staged").length;
   return { inFlight, free: Math.max(0, cap - inFlight) };
@@ -128,7 +135,7 @@ export async function stageProposals(ctx: EvolveCtx, budget: Budget = new Budget
     const staged: StageOutcome["staged"] = [];
     const max = ctx.loaded.profile.evolve.maxGeneralizeAttempts;
     // Stays held, costs nothing and takes no slot; reported on every run so it doesn't go unnoticed.
-    const held: StageOutcome["held"] = givenUp.map((c) => ({ id: c.s.id, why: `generalize: gave up after ${max} attempts; reject it or reword it` }));
+    const held: StageOutcome["held"] = givenUp.map((c) => ({ id: c.s.id, why: `generalize: gave up after ${max} attempts; sindri evolve retry ${c.s.id} to try again, or reject it` }));
     let waiting = candidates.length - take.length;
     for (const c of take) {
       const g = results.get(c.s.id);
@@ -136,19 +143,20 @@ export async function stageProposals(ctx: EvolveCtx, budget: Budget = new Budget
         waiting++; // not generalized this run: the budget ran out first, or it appeared after the snapshot; status unchanged
         continue;
       }
-      const hold = (why: string): void => {
+      // Only a hold on the content leaves a `generalize-hold` row (counted toward the cap); a failed call holds too, uncounted.
+      const hold = (why: string, counts: boolean): void => {
         transition(ctx.db, c.s.id, FROM, "held", epoch, ctx.deps.now());
-        auditMarker(ctx.db, ctx.deps, "generalize-hold", `${c.s.id}: ${why}`, epoch);
+        if (counts) auditMarker(ctx.db, ctx.deps, "generalize-hold", `${c.s.id}: ${why}`, epoch);
         held.push({ id: c.s.id, why });
       };
       if (!g.ok) {
-        hold(g.why);
+        hold(g.why, !g.transient);
         continue;
       }
       // The preview is rendered from the version as stored in proposal_public, the one publish renders (one source).
       const pub = savePublic(ctx.db, c.s.id, g.proposal, { category: g.category, model: g.model }, epoch, ctx.deps.now());
       if (pub === null) {
-        hold("generalize: the rewrite contains text the scrubber redacts");
+        hold("generalize: the rewrite contains text the scrubber redacts", true);
         continue;
       }
       const t = publicTier(c.s.proposal, pub, registry, extra); // a rewrite can raise the tier, never lower it
@@ -166,7 +174,7 @@ export async function stageProposals(ctx: EvolveCtx, budget: Budget = new Budget
       const id = /^(.+)\.md$/.exec(f)?.[1];
       if (id !== undefined && !hasPublic(ctx.db, id)) fs.rmSync(path.join(dir, f), { force: true });
     }
-    return { staged, held, waiting, inFlight, cap, reclassified, selfAdopt: freshC.length + heldC.length - candidates.length, duplicates: duplicates.length, dir };
+    return { staged, held, gaveUp: givenUp.map((c) => c.s.id), waiting, inFlight, cap, reclassified, selfAdopt: freshC.length + heldC.length - candidates.length, duplicates: duplicates.length, dir };
   });
 }
 

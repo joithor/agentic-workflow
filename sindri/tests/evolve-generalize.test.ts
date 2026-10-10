@@ -43,7 +43,7 @@ describe("generalize (privacy B1)", () => {
   it("fails when the rewrite changes the artifact, the kind or the evidence refs", async () => {
     for (const bad of [{ ...GENERIC, artifact: "skill:other" }, { ...GENERIC, kind: "docs" }, { ...GENERIC, evidence: ["pr:12"] }]) {
       const { result } = run((role) => (role === GENERALIZE_ROLES.rewrite ? bad : { leaks: false, category: "none" }));
-      expect(await result).toEqual({ ok: false, why: "generalize: the rewrite changed the artifact, kind or evidence" });
+      expect(await result).toEqual({ ok: false, why: "generalize: the rewrite changed the artifact, kind or evidence", transient: false });
     }
   });
 
@@ -54,12 +54,12 @@ describe("generalize (privacy B1)", () => {
 
   it("holds on a judge that finds a leak, naming only the category", async () => {
     const { result } = run((role) => (role === GENERALIZE_ROLES.rewrite ? GENERIC : { leaks: true, category: "tickets" }));
-    expect(await result).toEqual({ ok: false, why: "generalize: the judge found tickets" });
+    expect(await result).toEqual({ ok: false, why: "generalize: the judge found tickets", transient: false });
   });
 
   it("holds when either call fails or answers out of schema", async () => {
-    expect(await run(() => ({ nope: 1 })).result).toEqual({ ok: false, why: "generalize: the rewrite failed" });
-    expect(await run((role) => (role === GENERALIZE_ROLES.rewrite ? GENERIC : { leaks: "maybe" })).result).toEqual({ ok: false, why: "generalize: the judge failed" });
+    expect(await run(() => ({ nope: 1 })).result).toEqual({ ok: false, why: "generalize: the rewrite failed", transient: true });
+    expect(await run((role) => (role === GENERALIZE_ROLES.rewrite ? GENERIC : { leaks: "maybe" })).result).toEqual({ ok: false, why: "generalize: the judge failed", transient: true });
   });
 
   it("reports a call the budget refused as not attempted, never as a failure (M1)", async () => {
@@ -91,17 +91,17 @@ describe("generalize (privacy B1)", () => {
   });
   it("holds a contradictory judge answer: leaks false with a category other than none", async () => {
     const { result } = run((role) => (role === GENERALIZE_ROLES.rewrite ? GENERIC : { leaks: false, category: "tickets" }));
-    expect(await result).toEqual({ ok: false, why: "generalize: the judge found tickets" });
+    expect(await result).toEqual({ ok: false, why: "generalize: the judge found tickets", transient: false });
   });
 
   it("holds a contradictory judge answer the other way round: leaks true with category none, saying so (not 'found none')", async () => {
     const { result } = run((role) => (role === GENERALIZE_ROLES.rewrite ? GENERIC : { leaks: true, category: "none" }));
-    expect(await result).toEqual({ ok: false, why: "generalize: the judge found a leak (no category)" });
+    expect(await result).toEqual({ ok: false, why: "generalize: the judge found a leak (no category)", transient: false });
   });
 
   it("fails when the rewrite changes the change type", async () => {
     const { result } = run((role) => (role === GENERALIZE_ROLES.rewrite ? { ...GENERIC, change: { type: "replace-prompt", text: "Retry once." } } : { leaks: false, category: "none" }));
-    expect(await result).toEqual({ ok: false, why: "generalize: the rewrite changed the change type" });
+    expect(await result).toEqual({ ok: false, why: "generalize: the rewrite changed the change type", transient: false });
   });
 
   it("escapes quotes in evidence ids so an id can't inject attributes into the fence", async () => {

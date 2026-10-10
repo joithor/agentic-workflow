@@ -3,11 +3,12 @@ import fs from "node:fs";
 import { parseFlags } from "../../args.js";
 import { SindriError } from "../../errors.js";
 import { success, type CommandResult } from "../../output.js";
-import { audit } from "../audit.js";
+import { audit, auditMarker } from "../audit.js";
+import { generalizeHolds } from "../stage.js";
 import { terminalSafe } from "../invisible.js";
 import { repoConfig, type EvolveCtx } from "../ctx.js";
 import {
-  classifyTier, getProposal, latestComparison, listProposals, nextFor, owns, reduceEvidence, runningComparison, stagedFile, STATUSES, TERMINAL, transition, OPEN, type ProposalStatus,
+  classifyTier, getProposal, hasPublic, latestComparison, listProposals, nextFor, owns, reduceEvidence, runningComparison, stagedFile, STATUSES, TERMINAL, transition, OPEN, type ProposalStatus,
 } from "../proposals.js";
 import { isAddedTestAllowed, isProtectedPath, loadRegistry } from "../registry.js";
 import { excerptFor, transcriptsDir } from "../transcripts.js";
@@ -82,6 +83,39 @@ export async function reject(args: string[], ctx: EvolveCtx): Promise<CommandRes
   if (was !== null) return success(`Proposal ${id} is already ${was}; nothing to do.\nNext: sindri evolve proposals`, { id, status: was }, values.json === true);
   fs.rmSync(stagedFile(ctx.deps, id), { force: true });
   return success(`Rejected ${id}. The same proposal won't be saved again.\nNext: sindri evolve proposals`, { id, status: "rejected" }, values.json === true);
+}
+
+// The way out of the generalize retry cap other than reject: a held proposal stage gave up on (evolve.maxGeneralizeAttempts
+// content holds) gets an audited `generalize-retry` row, and its holds count again only after it, so the next stage
+// generalizes it again. Its title stays usable: a rejected one can never be saved again.
+export async function retry(args: string[], ctx: EvolveCtx): Promise<CommandResult> {
+  const { values, positionals } = parseFlags(args, { json: { type: "boolean" } });
+  const json = values.json === true;
+  const id = positionals[0];
+  if (id === undefined) throw new SindriError("SND-CLI-002", "usage: sindri evolve retry <id>");
+  if (getProposal(ctx.db, id) === null) throw new SindriError("SND-EVOLVE-008", `no such proposal: ${id}`);
+  const max = ctx.loaded.profile.evolve.maxGeneralizeAttempts;
+  // Decided inside the write, so a reject or a stage run that committed since can't be overwritten.
+  const r = ctx.write((epoch): { kind: "not-generalize-held"; status: string } | { kind: "under-cap" | "retried"; holds: number } => {
+    const status = (ctx.db.prepare("SELECT status FROM proposals WHERE id = ?").get(id) as { status: ProposalStatus }).status;
+    // A held proposal with a public row was held by publish's gate, not by the generalization pass.
+    if (status !== "held") return { kind: "not-generalize-held", status };
+    if (hasPublic(ctx.db, id)) return { kind: "not-generalize-held", status: "held by publish's privacy gate" };
+    const holds = generalizeHolds(ctx.db, id);
+    if (holds < max) return { kind: "under-cap", holds };
+    auditMarker(ctx.db, ctx.deps, "generalize-retry", id, epoch);
+    return { kind: "retried", holds };
+  });
+  if (r.kind === "not-generalize-held") {
+    return success(`Proposal ${id} is ${r.status}, not held by the generalization pass; nothing to do.\nNext: sindri evolve proposals`, { id, retried: false, status: r.status }, json);
+  }
+  if (r.kind === "under-cap") {
+    return success(`Proposal ${id} has ${r.holds} of ${max} generalize holds; stage already retries it. Nothing to do.\nNext: sindri evolve stage`, { id, retried: false, holds: r.holds, max }, json);
+  }
+  return success(
+    `Proposal ${id} will be generalized again by the next sindri evolve stage; its ${r.holds} earlier hold(s) no longer count toward evolve.maxGeneralizeAttempts (${max}).\nNext: sindri evolve stage`,
+    { id, retried: true, holds: r.holds, max }, json,
+  );
 }
 
 // The merge-gate check for H4: recompute the tier from the files the PR really changed.
