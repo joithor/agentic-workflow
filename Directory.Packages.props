@@ -21,5 +21,9 @@
   <ItemGroup Label="Packages">
     <!-- Tests. xunit.v3 4.0.1 published 2026-09-12. -->
     <PackageVersion Include="xunit.v3" Version="[4.0.1]" />
+    <!-- Aw.Kernel.Testing's one external dependency; the same exact version xunit.v3 4.0.1 pins. Published 2026-09-12. -->
+    <PackageVersion Include="xunit.v3.extensibility.core" Version="[4.0.1]" />
+    <!-- FakeTimeProvider for test projects (spec §4b.4, §4b.5). 10.10.0 published 2026-09-09. -->
+    <PackageVersion Include="Microsoft.Extensions.TimeProvider.Testing" Version="[10.10.0]" />
   </ItemGroup>
 </Project>

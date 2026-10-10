@@ -1,0 +1,26 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- Aw.Kernel.Testing: tier 0 (deps.yaml KernelTesting), referenced by test projects only (spec §4b.1, §4b.5).
+       Deterministic ids, lane traits, the builder base, generic contract-test bases and the golden-file check.
+       Aw.Kernel plus ONE external dependency: xunit.v3.extensibility.core (Fact, Trait, ITraitAttribute), which the
+       xunit.v3 package every test project uses already pins to the same exact version. FakeTimeProvider comes from
+       Microsoft.Extensions.TimeProvider.Testing in the test projects themselves (decision recorded in KnownInstants). -->
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <RootNamespace>Aw.Kernel.Testing</RootNamespace>
+    <!-- The *.Testing role turns the documentation file off; this is shipped public API, so it keeps XML docs
+         (and IDE0005 needs the documentation file to run in build). -->
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="xunit.v3.extensibility.core" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../Aw.Kernel/Aw.Kernel.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="Aw.Kernel.Testing.Tests" />
+  </ItemGroup>
+</Project>
