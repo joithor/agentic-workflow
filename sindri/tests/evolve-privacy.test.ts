@@ -109,6 +109,22 @@ describe("termProblem: joined, hyphenated and underscored variants (security-sen
     expect(termProblem("the GLXCARE flag", ["GLXCARE"])).toBe(HELD);
     expect(termProblem("the glx care flag", ["GLXCARE"])).toBeNull(); // no lower-case letter: one word, never split
   });
+
+  it("splits the text at case and letter-digit boundaries too, so a one-word term glued to another word holds (run 5 security-sentinel-1)", () => {
+    const glued = [
+      "Use the AcmeClient wrapper", "ACMEClient", "the acme2 service", "useAcme", "v2acme", "the Acme2Client build", "createAcme()",
+      "ＡｃｍｅClient", "Acme​Client", "AcméClient", "> AcmeClient", "AcmeClient2",
+    ];
+    for (const text of glued) expect(termProblem(text, ["Acme"]), JSON.stringify(text)).toBe(HELD);
+    for (const text of ["the Acmeville depot", "acmeville", "ACMEVILLE", "the acmeclient wrapper", "Acmes", "the ACMECARE flag"]) {
+      expect(termProblem(text, ["Acme"]), JSON.stringify(text)).toBeNull(); // no boundary written into the word: whole words as before
+    }
+    expect(termProblem("the ACMECARE flag", ["ACME"])).toBeNull();
+    expect(termProblem("the Acme2 build", ["acme2"])).toBe(HELD); // a term with a digit is split the same way
+    expect(termProblem("the acme-2 build", ["Acme2"])).toBe(HELD);
+    expect(privacyProblem("Use the AcmeClient wrapper", ["Acme"])).toBe(HELD);
+    expect(privacyProblem("Use the AcmeClient wrapper", ["Acme"])).not.toMatch(/acme/i);
+  });
 });
 
 describe("privacyProblem (Review Focus 6)", () => {

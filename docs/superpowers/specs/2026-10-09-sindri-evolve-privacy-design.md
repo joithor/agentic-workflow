@@ -100,7 +100,7 @@ private context (for example, session-start memory output).
 Unchanged in code. `SND-EVOLVE-015` (publish refuses while the list is empty) stays. The owner's
 names go into the private profile and are approved once, together with `denyPatterns`. *(Amended in review run 3, security-sentinel-2: a case boundary in a term as written, a lower-case letter or digit before a capital, counts as a separator, so `AcmeCare` is two-part and also holds `Acme Care`, `acme-care` and `acme‑care`; `Acme` stays whole-word and doesn't hold `Acmeville`. Run 4, security-sentinel-2: the end of an upper-case run before a
 capitalized word is a boundary too, so `GLXCare` holds `GLX Care` and `glx-care` and `IBMWatson` holds `IBM Watson`; `GLX`
-alone doesn't hold `GLXville`.)*
+alone doesn't hold `GLXville`. Run 5, security-sentinel-1: a letter next to a digit is a boundary too, and the candidate text is split at the same boundaries before lowercasing and checked both as written and split, so `Acme` holds `AcmeClient`, `ACMEClient`, `useAcme` and `acme2` but still not `Acmeville` or `acmeville`.)*
 
 ### 5.3 `privacy.denyPatterns`
 

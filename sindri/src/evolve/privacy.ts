@@ -21,12 +21,14 @@ const escapeRe = (s: string): string => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")
 // Case and quote prefixes stay; invisibles go. Used where case matters (the home-path check).
 const visibleForm = (text: string): string => stripInvisible(text.normalize("NFKC"), WHITESPACE);
 
+// The two halves of normalizeForPrivacy: the visible letters (case kept, so a case boundary can still be found), then the
+// rest (quote prefixes gone, lower case, whitespace to one space).
+const visibleLetters = (text: string): string =>
+  stripInvisible(text.replace(/[\u0131\u0130]/g, "i").normalize("NFKD"), WHITESPACE).replace(/\p{M}/gu, "").normalize("NFKC");
+const finish = (text: string): string => text.replace(/^[ \t]*>+[ \t]?/gm, "").toLowerCase().replace(/[\s\u0085]+/g, " ").trim();
+
 export function normalizeForPrivacy(text: string): string {
-  return stripInvisible(text.replace(/[\u0131\u0130]/g, "i").normalize("NFKD"), WHITESPACE).replace(/\p{M}/gu, "").normalize("NFKC")
-    .replace(/^[ \t]*>+[ \t]?/gm, "")
-    .toLowerCase()
-    .replace(/[\s\u0085]+/g, " ")
-    .trim();
+  return finish(visibleLetters(text));
 }
 
 // Separators a multi-part name is written with: every character that is not a letter or a digit (spaces, ASCII and
@@ -45,14 +47,21 @@ export const NAME_JOINER = /[\p{Pd}\u2212._\u00B7\u2027]/u;
 // is accepted). A term without separators stays whole-word: "acme" doesn't hold "acmeville". A case boundary in the term
 // as written (a lower-case letter or a digit before a capital) counts as a separator, so "AcmeCare" is the two-part
 // "acme care" and holds "Acme Care" and "acme-care" too (security-sentinel-2); so does the end of an upper-case run
-// before a capitalized word, so "GLXCare" is "glx care" and "IBMWatson" is "ibm watson" (run 4 security-sentinel-2).
-// An all-capitals term has no boundary and stays one word.
-const splitCase = (d: string): string => d.replace(/([\p{Ll}\p{N}])(\p{Lu})/gu, "$1 $2").replace(/(\p{Lu})(\p{Lu}\p{Ll})/gu, "$1 $2");
+// before a capitalized word, so "GLXCare" is "glx care" and "IBMWatson" is "ibm watson" (run 4 security-sentinel-2),
+// and a letter next to a digit, so "Acme2" is "acme 2". An all-capitals term has no boundary and stays one word.
+// The text is split the same way and checked both as written and split (run 5 security-sentinel-1), so "Acme" holds
+// "AcmeClient", "ACMEClient", "useAcme" and "acme2", and still not "Acmeville": splitting only ever adds holds.
+const CASE_BOUNDARY = /(?<=[\p{Ll}\p{N}])(?=\p{Lu})|(?<=\p{Lu})(?=\p{Lu}\p{Ll})|(?<=\p{L})(?=\p{N})|(?<=\p{N})(?=\p{L})/gu;
+// `text` with `sep` at each case and letter-digit boundary; the identifiers layer splits its candidates with the same rules.
+export const splitCase = (text: string, sep = " "): string => text.replace(CASE_BOUNDARY, sep);
+const splitForm = (text: string): string => finish(splitCase(visibleLetters(text)));
 export function termProblem(text: string, denyTerms: readonly string[]): string | null {
   const t = normalizeForPrivacy(text);
+  const tSplit = splitForm(text);
   const joined = t.replace(SEPARATORS, "");
-  for (const term of denyTerms.map((d) => normalizeForPrivacy(splitCase(d))).filter((x) => x !== "")) {
-    if (new RegExp(`(?<![a-z0-9])${escapeRe(term)}(?![a-z0-9])`).test(t)) return "contains a private term";
+  for (const term of denyTerms.map(splitForm).filter((x) => x !== "")) {
+    const whole = new RegExp(`(?<![a-z0-9])${escapeRe(term)}(?![a-z0-9])`);
+    if (whole.test(t) || whole.test(tSplit)) return "contains a private term";
     const bare = term.replace(SEPARATORS, "");
     if (bare !== term && bare !== "" && joined.includes(bare)) return "contains a private term";
   }
