@@ -20,6 +20,34 @@ grows, enhances and evolves Sindri: it measures its own parts (§7.4, §7.7), pr
 capabilities worth adding** (§17.18), and builds the approved ones through its own factory (§7.6). The human
 approves direction. Sindri does the finding, the building and the proving.
 
+### Architectural principles that follow from the tenet
+
+Sindri can only evolve parts it can isolate, measure and swap, and it can only afford to run them if most decisions
+cost no model turn. Three principles follow, and every section below applies them.
+
+1. **Modularity.** Every part is a module with a typed contract, its own eval suite and telemetry, and a
+   registry entry. Parts include lenses, evidence providers, standing workflows, context-graph components, rule
+   packs, decision questions, prompts and surfaces. A module can be proposed, A/B tested, adopted or reverted
+   without touching its neighbours. A part that can't be swapped alone is a design defect.
+2. **Context management.** No session gathers its own context. Context is assembled by code into a budgeted,
+   cited injection plan (§17.5, §17.8), and measured for size and relevance (§17.2). Modules declare what context
+   they need. They never load "everything that might help".
+3. **The decision ladder.** Each decision takes the cheapest rung that can make it with enough confidence:
+
+   | Rung | Example | Cost |
+   |---|---|---|
+   | 1. Deterministic code | Selector matching, schema checks, path guards, routing tables, lens triggers | ~0 |
+   | 2. A decision model | A judge question on Jev, with calibrated thresholds (the existing `judge` chain) | A fraction of a cent, milliseconds |
+   | 3. A small model, one bounded call | Classification or extraction with no tools | Low |
+   | 4. An agent turn or session | Design, implementation, open-ended investigation | High |
+
+   - A decision escalates a rung only when the lower rung is below its threshold (invariant 4).
+   - Every decision records which rung made it, the cost, and the later outcome.
+   - Self-evolution pushes decisions **down** the ladder. A rung-3 or rung-4 decision that keeps getting the same
+     answer becomes a proposed judge question. A judge question that is reliably confident becomes a proposed
+     rule or code path.
+   - "Agent turns that a cheaper rung could have made" is a tracked metric (§17.2).
+
 ## 17.0 Why this addendum
 
 Plans 1–6 built the control room: measurement, the ledger, the code index, scoping, offline self-evolution and
@@ -84,6 +112,7 @@ These replace the "human turns per merged PR" row of §2 and its use in the auto
 | Context relevance (share of injected sections the session cited or used) | ≥ 0.6 per lens after calibration | Invariant 15 |
 | Out-of-scope attempts per task (denied by the sandbox policy) | Tracked; a rising rate is a workflow-generator defect | Invariant 13 |
 | Phone decisions per merged PR, and median decision latency | Tracked | Measures the review surface |
+| Decisions by ladder rung, cost per decision, and agent turns a lower rung could have made (judged after the fact) | The share made at rungs 1–2 rises month over month | The decision ladder |
 
 Auto-start's kill criterion keeps the rework comparison and drops the −20% total-turns condition.
 
