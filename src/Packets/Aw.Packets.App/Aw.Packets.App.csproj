@@ -1,11 +1,14 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <!-- Aw.Packets.App (scaffolded by /new-package, small shape): features, infrastructure and the CLI host in one
        project, with the same dependency direction by namespace (spec §4b.1; ARCH-* in tests/Aw.Architecture.Tests).
-       Nothing outside the package references it, so its types are internal (CA1515). NativeAOT entry point 'aw-packets'. -->
+       Nothing outside the package references it, so its types are internal (CA1515). NativeAOT entry point 'aw-packets':
+       PublishAot only under a runtime identifier (a publish with -r), so a plain restore never writes the host's
+       ILCompiler pack into packages.lock.json, which stays RID-free for CI's locked restore on any OS. -->
   <PropertyGroup>
     <TargetFramework>net10.0</TargetFramework>
     <OutputType>Exe</OutputType>
-    <PublishAot>true</PublishAot>
+    <AwAotEntryPoint>true</AwAotEntryPoint>
+    <PublishAot Condition="'$(RuntimeIdentifier)' != ''">true</PublishAot>
     <AssemblyName>aw-packets</AssemblyName>
     <RootNamespace>Aw.Packets.App</RootNamespace>
   </PropertyGroup>

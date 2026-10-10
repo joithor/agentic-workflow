@@ -11,7 +11,7 @@ public sealed class CanonicalJsonTests
     [InlineData("{\"b\":1,\"a\":[{\"d\":null,\"c\":\"é\"}]}", "{\"a\":[{\"c\":\"é\",\"d\":null}],\"b\":1}")]
     [InlineData("{ \"B\" : true, \"a\" : \"<&>\", \"_\": 10 }", "{\"B\":true,\"_\":10,\"a\":\"<&>\"}")]
     [InlineData("[ \"line\\nbreak\", \"quote\\\"\" ]", "[\"line\\nbreak\",\"quote\\\"\"]")]
-    public void Canonical_json_sorts_keys_by_ordinal_drops_whitespace_and_escapes_only_what_json_requires(string input, string expected) =>
+    public void Canonical_json_sorts_keys_by_ordinal_drops_whitespace_and_escapes_as_the_kernel_profile_does(string input, string expected) =>
         Assert.Equal(expected, Encoding.UTF8.GetString(PacketDigest.Canonical(JsonNode.Parse(input)!)));
 
     [Fact, Trait("Lane", "unit")]

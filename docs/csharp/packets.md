@@ -81,18 +81,20 @@ Errors go to stderr as `aw-packets: <code> <message>` (with `--json`, the `Error
 | `IPacketSource` | `FileSystemPacketSource` | `InMemoryPacketSource`, `PacketSourceContract` |
 | `IRepoSnapshot` | `GitRepoSnapshot` (`git ls-tree -r -z`, 30 s limit per run) | `InMemoryRepoSnapshot`, `RepoSnapshotContract` |
 | `IFreezeLog` | `FileFreezeLog` (temp file, then move) | `InMemoryFreezeLog`, `FreezeLogContract` |
+| `TimeProvider` (BCL) | `TimeProvider.System` | `FakeTimeProvider` |
 
 Every `IPacketSource` adapter reads through `PacketReader` (in `Aw.Packets.Core`), so parsing, link safety and the
 errors are the same whatever supplies the bytes; `PacketSourceContract` checks them on each adapter.
-| `TimeProvider` (BCL) | `TimeProvider.System` | `FakeTimeProvider` |
 
-## Open questions (the unchecked rules)
+## Open questions
 
-- **Size classes (`PKT-SIZE-001`):** what are the budgets (tokens, turns, wall minutes) for `XS`, `S`, `M`, `L` and
-  `XL`, and is a task over its class's budget a failure or a split signal?
+- **Size classes (`PKT-SIZE-001`):** addendum §17.5 sets a session's budget "by size class and lens", and sindri's
+  profile already has a per-size `sizeBudget`. Do the packet-time budgets live in the profile next to it, which lens
+  does a packet-time check use, and is a task over its budget a failure or a split signal?
 - **Holdout store (`PKT-HOLD-002` checks the packet side today):** addendum §17.19 puts held-out examples in
   sindri-private state with a canary per set. What is that store's path and format, and how does a packet name a set
   (by example id, as now)? The store side and the canary are checked once the store exists.
-- **Workflow coverage (`PKT-FLOW-001`):** the §17.7 coverage checks need the lens catalog and workflow generation (F3).
+- **Workflow coverage (`PKT-FLOW-001`)** is not an open question: §17.4's Workflow part is the frozen output of
+  workflow generation (§17.7), which the rollout puts in F3; the rule stays `unchecked` until then.
 - **`packet.yaml` vs `packet.json`:** the addendum names `packet.yaml`; this build reads `packet.json` (typed,
   source-generated JSON under NativeAOT with no YAML library). Keep JSON, or add a YAML reader?

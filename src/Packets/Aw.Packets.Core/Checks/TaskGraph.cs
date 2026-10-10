@@ -38,39 +38,41 @@ internal sealed class TaskGraph
     /// <summary>True when a chain of dependencies orders <paramref name="a"/> and <paramref name="b"/> either way.</summary>
     internal bool Ordered(TaskId a, TaskId b) => Reach(a).Contains(b) || Reach(b).Contains(a);
 
-    // One cycle through the group, from its smallest id: a depth-first walk inside the group, deps in declared order.
+    // One cycle through the group, from its smallest id: a depth-first walk inside the group (deps in declared order),
+    // iterative so a long chain can't overflow the stack. Every member of a strongly connected group reaches the start.
     private List<TaskId> PathThrough(List<TaskId> group)
     {
         var members = group.ToHashSet();
         var start = group.MinBy(static id => id.Value, StringComparer.Ordinal);
         var path = new List<TaskId> { start };
         var seen = new HashSet<TaskId> { start };
-        return Extend(start, start, members, path, seen) ? path : [start, start];
-    }
-
-    private bool Extend(TaskId node, TaskId start, HashSet<TaskId> members, List<TaskId> path, HashSet<TaskId> seen)
-    {
-        foreach (var dep in _deps[node].Where(members.Contains))
+        var next = new Stack<int>();
+        next.Push(0);
+        while (next.TryPop(out var at))
         {
+            var deps = _deps[path[^1]];
+            if (at >= deps.Count)
+            {
+                path.RemoveAt(path.Count - 1);
+                continue;
+            }
+
+            next.Push(at + 1);
+            var dep = deps[at];
             if (dep == start)
             {
                 path.Add(start);
-                return true;
+                return path;
             }
 
-            if (seen.Add(dep))
+            if (members.Contains(dep) && seen.Add(dep))
             {
                 path.Add(dep);
-                if (Extend(dep, start, members, path, seen))
-                {
-                    return true;
-                }
-
-                path.RemoveAt(path.Count - 1);
+                next.Push(0);
             }
         }
 
-        return false;
+        return [start, start];
     }
 
     private HashSet<TaskId> Reach(TaskId from)

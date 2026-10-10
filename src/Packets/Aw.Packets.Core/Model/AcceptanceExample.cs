@@ -1,8 +1,10 @@
+using System.Text.Json.Serialization;
 using Aw.Packets.Core.Ids;
 
 namespace Aw.Packets.Core.Model;
 
 /// <summary>An acceptance example and the evidence kinds (addendum §17.11) that prove it.</summary>
+[JsonUnmappedMemberHandling(JsonUnmappedMemberHandling.Disallow)]
 public sealed record AcceptanceExample
 {
     /// <summary>The example id.</summary>

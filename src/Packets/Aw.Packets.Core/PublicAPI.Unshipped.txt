@@ -91,11 +91,13 @@ Aw.Packets.Core.Model.AcceptanceExample.Text.get -> string?
 Aw.Packets.Core.Model.AcceptanceExample.Text.init -> void
 Aw.Packets.Core.Model.DecisionLog
 Aw.Packets.Core.Model.DecisionLog.<Clone>$() -> Aw.Packets.Core.Model.DecisionLog!
-Aw.Packets.Core.Model.DecisionLog.DecisionLog(int SchemaVersion, System.Collections.Generic.IReadOnlyList<Aw.Packets.Core.Model.Question!>! Questions) -> void
-Aw.Packets.Core.Model.DecisionLog.Deconstruct(out int SchemaVersion, out System.Collections.Generic.IReadOnlyList<Aw.Packets.Core.Model.Question!>! Questions) -> void
+Aw.Packets.Core.Model.DecisionLog.DecisionLog(int SchemaVersion, System.Collections.Generic.IReadOnlyList<Aw.Packets.Core.Model.Question!>! Questions, string? Schema = null) -> void
+Aw.Packets.Core.Model.DecisionLog.Deconstruct(out int SchemaVersion, out System.Collections.Generic.IReadOnlyList<Aw.Packets.Core.Model.Question!>! Questions, out string? Schema) -> void
 Aw.Packets.Core.Model.DecisionLog.Equals(Aw.Packets.Core.Model.DecisionLog? other) -> bool
 Aw.Packets.Core.Model.DecisionLog.Questions.get -> System.Collections.Generic.IReadOnlyList<Aw.Packets.Core.Model.Question!>!
 Aw.Packets.Core.Model.DecisionLog.Questions.init -> void
+Aw.Packets.Core.Model.DecisionLog.Schema.get -> string?
+Aw.Packets.Core.Model.DecisionLog.Schema.init -> void
 Aw.Packets.Core.Model.DecisionLog.SchemaVersion.get -> int
 Aw.Packets.Core.Model.DecisionLog.SchemaVersion.init -> void
 Aw.Packets.Core.Model.Deferral
@@ -145,11 +147,13 @@ Aw.Packets.Core.Model.LoadedPacket.Packet.get -> Aw.Packets.Core.Model.Packet!
 Aw.Packets.Core.Model.LoadedPacket.Packet.init -> void
 Aw.Packets.Core.Model.OutOfScope
 Aw.Packets.Core.Model.OutOfScope.<Clone>$() -> Aw.Packets.Core.Model.OutOfScope!
-Aw.Packets.Core.Model.OutOfScope.Deconstruct(out int SchemaVersion, out System.Collections.Generic.IReadOnlyList<string!>! Items) -> void
+Aw.Packets.Core.Model.OutOfScope.Deconstruct(out int SchemaVersion, out System.Collections.Generic.IReadOnlyList<string!>! Items, out string? Schema) -> void
 Aw.Packets.Core.Model.OutOfScope.Equals(Aw.Packets.Core.Model.OutOfScope? other) -> bool
 Aw.Packets.Core.Model.OutOfScope.Items.get -> System.Collections.Generic.IReadOnlyList<string!>!
 Aw.Packets.Core.Model.OutOfScope.Items.init -> void
-Aw.Packets.Core.Model.OutOfScope.OutOfScope(int SchemaVersion, System.Collections.Generic.IReadOnlyList<string!>! Items) -> void
+Aw.Packets.Core.Model.OutOfScope.OutOfScope(int SchemaVersion, System.Collections.Generic.IReadOnlyList<string!>! Items, string? Schema = null) -> void
+Aw.Packets.Core.Model.OutOfScope.Schema.get -> string?
+Aw.Packets.Core.Model.OutOfScope.Schema.init -> void
 Aw.Packets.Core.Model.OutOfScope.SchemaVersion.get -> int
 Aw.Packets.Core.Model.OutOfScope.SchemaVersion.init -> void
 Aw.Packets.Core.Model.Packet
@@ -195,6 +199,8 @@ Aw.Packets.Core.Model.PacketManifest.Links.init -> void
 Aw.Packets.Core.Model.PacketManifest.PacketManifest() -> void
 Aw.Packets.Core.Model.PacketManifest.Repo.get -> Aw.Packets.Core.Values.RepoSlug
 Aw.Packets.Core.Model.PacketManifest.Repo.init -> void
+Aw.Packets.Core.Model.PacketManifest.Schema.get -> string?
+Aw.Packets.Core.Model.PacketManifest.Schema.init -> void
 Aw.Packets.Core.Model.PacketManifest.SchemaVersion.get -> int
 Aw.Packets.Core.Model.PacketManifest.SchemaVersion.init -> void
 Aw.Packets.Core.Model.PacketManifest.Status.get -> Aw.Packets.Core.Model.PacketStatus
@@ -261,11 +267,13 @@ Aw.Packets.Core.Model.TaskBudget.WallMinutes.get -> int?
 Aw.Packets.Core.Model.TaskBudget.WallMinutes.init -> void
 Aw.Packets.Core.Model.TaskPlan
 Aw.Packets.Core.Model.TaskPlan.<Clone>$() -> Aw.Packets.Core.Model.TaskPlan!
-Aw.Packets.Core.Model.TaskPlan.Deconstruct(out int SchemaVersion, out System.Collections.Generic.IReadOnlyList<Aw.Packets.Core.Model.Workstream!>! Workstreams, out System.Collections.Generic.IReadOnlyList<Aw.Packets.Core.Model.PacketTask!>! Tasks) -> void
+Aw.Packets.Core.Model.TaskPlan.Deconstruct(out int SchemaVersion, out System.Collections.Generic.IReadOnlyList<Aw.Packets.Core.Model.Workstream!>! Workstreams, out System.Collections.Generic.IReadOnlyList<Aw.Packets.Core.Model.PacketTask!>! Tasks, out string? Schema) -> void
 Aw.Packets.Core.Model.TaskPlan.Equals(Aw.Packets.Core.Model.TaskPlan? other) -> bool
+Aw.Packets.Core.Model.TaskPlan.Schema.get -> string?
+Aw.Packets.Core.Model.TaskPlan.Schema.init -> void
 Aw.Packets.Core.Model.TaskPlan.SchemaVersion.get -> int
 Aw.Packets.Core.Model.TaskPlan.SchemaVersion.init -> void
-Aw.Packets.Core.Model.TaskPlan.TaskPlan(int SchemaVersion, System.Collections.Generic.IReadOnlyList<Aw.Packets.Core.Model.Workstream!>! Workstreams, System.Collections.Generic.IReadOnlyList<Aw.Packets.Core.Model.PacketTask!>! Tasks) -> void
+Aw.Packets.Core.Model.TaskPlan.TaskPlan(int SchemaVersion, System.Collections.Generic.IReadOnlyList<Aw.Packets.Core.Model.Workstream!>! Workstreams, System.Collections.Generic.IReadOnlyList<Aw.Packets.Core.Model.PacketTask!>! Tasks, string? Schema = null) -> void
 Aw.Packets.Core.Model.TaskPlan.Tasks.get -> System.Collections.Generic.IReadOnlyList<Aw.Packets.Core.Model.PacketTask!>!
 Aw.Packets.Core.Model.TaskPlan.Tasks.init -> void
 Aw.Packets.Core.Model.TaskPlan.Workstreams.get -> System.Collections.Generic.IReadOnlyList<Aw.Packets.Core.Model.Workstream!>!

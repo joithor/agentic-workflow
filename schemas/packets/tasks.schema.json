@@ -23,7 +23,8 @@
         "required": [
           "id",
           "title"
-        ]
+        ],
+        "additionalProperties": false
       }
     },
     "tasks": {
@@ -98,7 +99,8 @@
               "required": [
                 "id",
                 "evidence"
-              ]
+              ],
+              "additionalProperties": false
             }
           },
           "rules": {
@@ -128,7 +130,8 @@
                   "null"
                 ]
               }
-            }
+            },
+            "additionalProperties": false
           }
         },
         "required": [
@@ -141,13 +144,22 @@
           "readSeeds",
           "acceptance",
           "budget"
-        ]
+        ],
+        "additionalProperties": false
       }
+    },
+    "$schema": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "default": null
     }
   },
   "required": [
     "schemaVersion",
     "workstreams",
     "tasks"
-  ]
+  ],
+  "additionalProperties": false
 }

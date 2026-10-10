@@ -4,6 +4,12 @@
   "title": "Packet packet file (schemaVersion 1)",
   "type": "object",
   "properties": {
+    "$schema": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
     "schemaVersion": {
       "type": "integer"
     },
@@ -68,7 +74,8 @@
         "tasks",
         "design",
         "plans"
-      ]
+      ],
+      "additionalProperties": false
     }
   },
   "required": [
@@ -78,5 +85,6 @@
     "baseSha",
     "status",
     "links"
-  ]
+  ],
+  "additionalProperties": false
 }

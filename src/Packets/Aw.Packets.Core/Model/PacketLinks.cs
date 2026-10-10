@@ -1,6 +1,9 @@
+using System.Text.Json.Serialization;
+
 namespace Aw.Packets.Core.Model;
 
 /// <summary>The files a packet manifest links to, each relative to the packet directory.</summary>
+[JsonUnmappedMemberHandling(JsonUnmappedMemberHandling.Disallow)]
 public sealed record PacketLinks
 {
     /// <summary>The decision log (JSON, <see cref="DecisionLog"/>).</summary>

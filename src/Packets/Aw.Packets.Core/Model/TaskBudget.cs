@@ -1,6 +1,9 @@
+using System.Text.Json.Serialization;
+
 namespace Aw.Packets.Core.Model;
 
 /// <summary>A task's budget. Each limit is optional until the size-class budgets are defined.</summary>
+[JsonUnmappedMemberHandling(JsonUnmappedMemberHandling.Disallow)]
 public sealed record TaskBudget
 {
     /// <summary>Model tokens.</summary>

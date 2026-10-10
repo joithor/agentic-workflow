@@ -11,6 +11,9 @@ namespace Aw.Packets.Core.Checks;
 internal sealed class ScopeGlob
 {
     private const string NewPrefix = "new:";
+
+    /// <summary>The longest entry accepted; a longer one is a PKT-SCOPE-001 failure.</summary>
+    internal const int MaxLength = 1024;
     private static readonly TimeSpan _timeout = TimeSpan.FromSeconds(1);
     private readonly Regex? _pattern;
 
@@ -33,13 +36,30 @@ internal sealed class ScopeGlob
     public static ScopeGlob? Parse(string entry)
     {
         ArgumentNullException.ThrowIfNull(entry);
+        if (entry.Length > MaxLength)
+        {
+            return null;
+        }
+
         if (entry.StartsWith(NewPrefix, StringComparison.Ordinal))
         {
             var path = entry[NewPrefix.Length..].Trim();
             return RelativePath.IsSafe(path) ? new ScopeGlob(entry, path, pattern: null) : null;
         }
 
-        return entry.Trim().Length == 0 ? null : new ScopeGlob(entry, newPath: null, ToRegex(Collapse(entry.Trim())));
+        if (entry.Trim().Length == 0)
+        {
+            return null;
+        }
+
+        try
+        {
+            return new ScopeGlob(entry, newPath: null, ToRegex(Collapse(entry.Trim())));
+        }
+        catch (NotSupportedException)
+        {
+            return null;   // the NonBacktracking engine refuses a pattern whose automaton is too large
+        }
     }
 
     /// <summary>True when the glob matches <paramref name="path"/>, or a 'new:' entry declares exactly it.</summary>

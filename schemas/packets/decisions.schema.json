@@ -47,7 +47,8 @@
             "required": [
               "owner",
               "buildMayAssume"
-            ]
+            ],
+            "additionalProperties": false
           },
           "affects": {
             "type": "array",
@@ -59,12 +60,21 @@
         "required": [
           "id",
           "text"
-        ]
+        ],
+        "additionalProperties": false
       }
+    },
+    "$schema": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "default": null
     }
   },
   "required": [
     "schemaVersion",
     "questions"
-  ]
+  ],
+  "additionalProperties": false
 }

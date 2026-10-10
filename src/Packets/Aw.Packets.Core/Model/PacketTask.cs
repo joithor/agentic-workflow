@@ -1,8 +1,10 @@
+using System.Text.Json.Serialization;
 using Aw.Packets.Core.Ids;
 
 namespace Aw.Packets.Core.Model;
 
 /// <summary>One task (addendum §17.4): dependencies, size, write scope, read seeds, acceptance, rules and budget.</summary>
+[JsonUnmappedMemberHandling(JsonUnmappedMemberHandling.Disallow)]
 public sealed record PacketTask
 {
     /// <summary>The task id.</summary>

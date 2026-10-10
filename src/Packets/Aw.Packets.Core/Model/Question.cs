@@ -1,8 +1,10 @@
+using System.Text.Json.Serialization;
 using Aw.Packets.Core.Ids;
 
 namespace Aw.Packets.Core.Model;
 
 /// <summary>One decision-log entry: a question, answered or deferred.</summary>
+[JsonUnmappedMemberHandling(JsonUnmappedMemberHandling.Disallow)]
 public sealed record Question
 {
     /// <summary>The question id.</summary>

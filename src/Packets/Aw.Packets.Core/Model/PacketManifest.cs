@@ -1,11 +1,17 @@
+using System.Text.Json.Serialization;
 using Aw.Packets.Core.Ids;
 using Aw.Packets.Core.Values;
 
 namespace Aw.Packets.Core.Model;
 
 /// <summary>The packet manifest, packet.json (addendum §17.4): id, repo, base sha, status, hash and links.</summary>
+[JsonUnmappedMemberHandling(JsonUnmappedMemberHandling.Disallow)]
 public sealed record PacketManifest
 {
+    /// <summary>An editor hint ('$schema'), for example the path of schemas/packets/packet.schema.json; not checked.</summary>
+    [JsonPropertyName("$schema"), JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public string? Schema { get; init; }
+
     /// <summary>The manifest schema version; this build reads version 1.</summary>
     public required int SchemaVersion { get; init; }
 

@@ -12,10 +12,18 @@
       "items": {
         "type": "string"
       }
+    },
+    "$schema": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "default": null
     }
   },
   "required": [
     "schemaVersion",
     "items"
-  ]
+  ],
+  "additionalProperties": false
 }

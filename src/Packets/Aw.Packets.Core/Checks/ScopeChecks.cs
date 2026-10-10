@@ -34,7 +34,7 @@ internal static class ScopeChecks
             {
                 var problem = glob switch
                 {
-                    null => "isn't a glob or a safe 'new: <relative path>'",
+                    null => $"isn't a glob or a safe 'new: <relative path>' of at most {ScopeGlob.MaxLength} characters",
                     { NewPath: { } path } when files.Contains(path) => $"declares '{path}' new, but it exists at {Short(sha)}",
                     { NewPath: null } when !files.Any(glob.Matches) => $"matches no file at {Short(sha)}",
                     _ => null,

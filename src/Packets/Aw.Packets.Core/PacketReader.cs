@@ -126,11 +126,46 @@ public static class PacketReader
         try
         {
             using var document = JsonDocument.Parse(bytes.ToArray(), _strict);   // throws on a duplicate key at any depth
-            return Unit.Value;
+            return NullInList(document.RootElement, "$") is { } where
+                ? PacketsErrors.Malformed.With($"{path}: {where} is null; lists hold values, never null.")
+                : Unit.Value;
         }
         catch (JsonException ex)
         {
             return PacketsErrors.Malformed.With($"{path}: {ex.Message}");
         }
+    }
+
+    // The JSON path of the first null inside an array, or null. Iterative, so a deep document can't overflow the stack.
+    private static string? NullInList(JsonElement root, string rootPath)
+    {
+        var pending = new Stack<(JsonElement Element, string Path)>();
+        pending.Push((root, rootPath));
+        while (pending.TryPop(out var next))
+        {
+            if (next.Element.ValueKind == JsonValueKind.Object)
+            {
+                foreach (var property in next.Element.EnumerateObject())
+                {
+                    pending.Push((property.Value, $"{next.Path}.{property.Name}"));
+                }
+            }
+            else if (next.Element.ValueKind == JsonValueKind.Array)
+            {
+                var index = 0;
+                foreach (var item in next.Element.EnumerateArray())
+                {
+                    var itemPath = string.Create(CultureInfo.InvariantCulture, $"{next.Path}[{index++}]");
+                    if (item.ValueKind == JsonValueKind.Null)
+                    {
+                        return itemPath;
+                    }
+
+                    pending.Push((item, itemPath));
+                }
+            }
+        }
+
+        return null;
     }
 }
