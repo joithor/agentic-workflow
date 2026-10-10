@@ -398,7 +398,7 @@ aw_remove_retired_dir() {
   [ -z "$(git -C "$repo" ls-files -- "$rel")" ] || return 0
   [ -z "$(git -C "$repo" ls-files --others --exclude-standard -- "$rel")" ] || return 0
   if aw_dry; then
-    echo "  [dry-run] would remove $repo/$rel (retired; only untracked files left)"
+    echo "  [dry-run] would remove $repo/$rel (retired; only ignored build output left)"
   else
     rm -rf "${repo:?}/${rel:?}" && echo "  removed $repo/$rel (retired)"
   fi
