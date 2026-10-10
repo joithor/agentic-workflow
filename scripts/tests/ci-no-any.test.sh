@@ -1,6 +1,5 @@
 #!/usr/bin/env bash
-# Tests for scripts/ci/no-any.mjs — merge gate 7: no `any` type outside the Fastify
-# boundary. It parses TypeScript (so strings and comments never count) and holds
+# Tests for scripts/ci/no-any.mjs — merge gate 7: no `any` type in TypeScript source. It parses TypeScript (so strings and comments never count) and holds
 # existing violations to a ratchet baseline that may only shrink.
 set -euo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
@@ -11,9 +10,8 @@ fail() { echo "FAIL: $*"; exit 1; }
 repo() {
   local r; r="$(mktemp -d)"
   git -C "$r" init -q
-  mkdir -p "$r/pkg/src" "$r/mcp-bridge/src/routes"
+  mkdir -p "$r/pkg/src"
   printf 'export const s = "x: any";\n// note: any caller\nexport const company = 1;\n' > "$r/pkg/src/clean.ts"
-  printf 'export const r: any = 1;\n' > "$r/mcp-bridge/src/routes/boundary.ts"
   printf '{}\n' > "$r/baseline.json"
   echo "$r"
 }
@@ -23,11 +21,11 @@ run() { # repo [extra args...] -> sets out, rc
   rc=0; out="$(node "$CHECK" --root "$r" --baseline "$r/baseline.json" "$@" 2>&1)" || rc=$?
 }
 
-test_strings_comments_and_the_boundary_pass() {
+test_strings_and_comments_pass() {
   local r; r="$(repo)"; git -C "$r" add -A
   run "$r"; rm -rf "$r"
   [ "$rc" = "0" ] || fail "clean tree failed ($rc): $out"
-  echo "PASS: test_strings_comments_and_the_boundary_pass"
+  echo "PASS: test_strings_and_comments_pass"
 }
 
 test_any_in_type_positions_fails_with_location_and_fix() {
@@ -123,7 +121,7 @@ test_the_repo_passes_with_its_baseline() {
   echo "PASS: test_the_repo_passes_with_its_baseline"
 }
 
-test_strings_comments_and_the_boundary_pass
+test_strings_and_comments_pass
 test_any_in_type_positions_fails_with_location_and_fix
 test_baseline_holds_existing_count_and_fails_growth
 test_a_shrunk_but_unlowered_baseline_fails

@@ -34,9 +34,6 @@
 - name: "area:judge"
   color: 1d76db
   description: judge (decisions, health, prompt sorter)
-- name: "area:bridge"
-  color: 1d76db
-  description: mcp-bridge (MCP + REST)
 - name: "area:scorer"
   color: 1d76db
   description: scorer (cost and involvement reports)

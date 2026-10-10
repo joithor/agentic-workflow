@@ -19,7 +19,6 @@ updates:
         patterns: ["*"]
   - package-ecosystem: npm
     directories:
-      - /mcp-bridge
       - /scorer
       - /judge
       - /sindri

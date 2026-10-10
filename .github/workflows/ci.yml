@@ -62,7 +62,6 @@ jobs:
       fail-fast: false
       matrix:
         package:
-          - mcp-bridge
           - scorer
           - judge
           - sindri

@@ -16,15 +16,15 @@ expect() {
   echo "PASS: $name"
 }
 
-ALL='["mcp-bridge","scorer","judge","sindri","skills/ui-evidence","skills/bugFixOrchestrator"]'
+ALL='["scorer","judge","sindri","skills/ui-evidence","skills/bugFixOrchestrator"]'
 
 expect "docs-only change runs nothing area-specific" \
   "$(printf 'docs/readme.md\nplanning/TESTING.md\n')" \
   "$(printf 'bash=false\ndotnet=false\npackages=[]')"
 
 expect "one package change runs that package and the bash tests" \
-  "$(printf 'mcp-bridge/src/index.ts\n')" \
-  "$(printf 'bash=true\ndotnet=false\npackages=["mcp-bridge"]')"
+  "$(printf 'scorer/src/index.ts\n')" \
+  "$(printf 'bash=true\ndotnet=false\npackages=["scorer"]')"
 
 expect "nested skill package is matched by its full path" \
   "$(printf 'skills/ui-evidence/src/run.ts\nskills/review/SKILL.md\n')" \
@@ -111,8 +111,8 @@ scratch_repo() {
   git -C "$repo" config user.name ci
   git -C "$repo" config diff.renames true
   git -C "$repo" config core.quotePath true
-  mkdir -p "$repo/mcp-bridge/src" "$repo/docs"
-  printf 'export const db = 1;\n' > "$repo/mcp-bridge/src/db.ts"
+  mkdir -p "$repo/scorer/src" "$repo/docs"
+  printf 'export const db = 1;\n' > "$repo/scorer/src/db.ts"
   printf '# readme\n' > "$repo/docs/readme.md"
   git -C "$repo" add -A && git -C "$repo" commit -qm base
   echo "$repo"
@@ -121,23 +121,23 @@ scratch_repo() {
 test_rename_out_of_a_package_selects_the_package() {
   local repo base got
   repo="$(scratch_repo)"; base="$(git -C "$repo" rev-parse HEAD)"
-  git -C "$repo" mv mcp-bridge/src/db.ts docs/db.ts && git -C "$repo" commit -qm move
+  git -C "$repo" mv scorer/src/db.ts docs/db.ts && git -C "$repo" commit -qm move
   got="$(cd "$repo" && main pull_request "$base" trunk trunk)"
   rm -rf "$repo"
-  [ "$got" = "$(printf 'bash=true\ndotnet=false\npackages=["mcp-bridge"]')" ] \
-    || { echo "FAIL: a rename out of mcp-bridge must select it, got: $got"; exit 1; }
+  [ "$got" = "$(printf 'bash=true\ndotnet=false\npackages=["scorer"]')" ] \
+    || { echo "FAIL: a rename out of scorer must select it, got: $got"; exit 1; }
   echo "PASS: test_rename_out_of_a_package_selects_the_package"
 }
 
 test_non_ascii_filename_in_a_package_selects_the_package() {
   local repo base got
   repo="$(scratch_repo)"; base="$(git -C "$repo" rev-parse HEAD)"
-  printf 'export const e = 1;\n' > "$repo/mcp-bridge/src/$(printf '\303\251').ts"
+  printf 'export const e = 1;\n' > "$repo/scorer/src/$(printf '\303\251').ts"
   git -C "$repo" add -A && git -C "$repo" commit -qm accent
   got="$(cd "$repo" && main pull_request "$base" trunk trunk)"
   rm -rf "$repo"
-  [ "$got" = "$(printf 'bash=true\ndotnet=false\npackages=["mcp-bridge"]')" ] \
-    || { echo "FAIL: a non-ASCII file in mcp-bridge must select it, got: $got"; exit 1; }
+  [ "$got" = "$(printf 'bash=true\ndotnet=false\npackages=["scorer"]')" ] \
+    || { echo "FAIL: a non-ASCII file in scorer must select it, got: $got"; exit 1; }
   echo "PASS: test_non_ascii_filename_in_a_package_selects_the_package"
 }
 

@@ -14,7 +14,7 @@
 # (based on another branch) runs everything too, because when its parent merges
 # GitHub retargets it without a new run, and a narrowed result would carry over.
 
-TS_PACKAGES=(mcp-bridge scorer judge sindri skills/ui-evidence skills/bugFixOrchestrator)
+TS_PACKAGES=(scorer judge sindri skills/ui-evidence skills/bugFixOrchestrator)
 
 # Packages whose tests import another package's source: a change to the key also
 # runs the listed dependents (scorer's tests import judge/src/db.ts).

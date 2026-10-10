@@ -98,7 +98,7 @@ t("NP-SMALL-HTTP", () => untouched((d) => refused(pkg(d, { host: "http" }), "NP-
 t("NP-DEPENDS: not a lower tier", () => untouched((d) => refused(pkg(d, { depends: "Packets" }), "NP-DEPENDS")));
 t("NP-DEPENDS: unknown package", () => untouched((d) => refused(pkg(d, { depends: "Nope" }), "NP-DEPENDS")));
 t("NP-FANOUT: more than 4 references", () =>
-  untouched((d) => refused(pkg(d, { name: "Fanout", tier: "3", note: "x", "error-prefix": "FANOUT", depends: "Judge,Bridge,Packets" }), "NP-FANOUT")));
+  untouched((d) => refused(pkg(d, { name: "Fanout", tier: "3", note: "x", "error-prefix": "FANOUT", depends: "Judge,Scorer,Packets" }), "NP-FANOUT")));
 // A small App is its own host, so it also references Aw.Kernel.Telemetry: Core + Kernel + Telemetry + 2 depends = 5.
 t("NP-FANOUT: a small App with 2 depends counts the telemetry reference", () =>
   untouched((d) => {

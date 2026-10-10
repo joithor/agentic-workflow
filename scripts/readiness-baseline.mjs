@@ -14,7 +14,7 @@ import { dirname, join, relative } from 'node:path';
 import { pathToFileURL } from 'node:url';
 
 const APPS = [
-  'mcp-bridge', 'scorer', 'judge', 'sindri',
+  'scorer', 'judge', 'sindri',
   'skills/ui-evidence', 'skills/bugFixOrchestrator', 'mods/aw-live',
 ];
 
