@@ -26,6 +26,15 @@ checks:
   - type: check-deps
     id: "DEPS-EXC-003"
     status: active
+  - type: build-setting
+    id: "packageFanOut: 4"
+    status: active
+  - type: build-setting
+    id: "projectFanOut: 4"
+    status: active
+  - type: build-setting
+    id: "thirdPartyFanOut: 6"
+    status: active
 gap: closed
 source:
   type: adr

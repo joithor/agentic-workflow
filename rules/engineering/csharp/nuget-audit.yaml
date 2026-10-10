@@ -9,6 +9,15 @@ select:
   paths: ["Directory.Build.props"]
 checks:
   - type: build-setting
+    id: "<NuGetAudit>true</NuGetAudit>"
+    status: active
+  - type: build-setting
+    id: "<NuGetAuditMode>all</NuGetAuditMode>"
+    status: active
+  - type: build-setting
+    id: "<NuGetAuditLevel>low</NuGetAuditLevel>"
+    status: active
+  - type: build-setting
     id: "<WarningsNotAsErrors>$(WarningsNotAsErrors);NU1901;NU1902</WarningsNotAsErrors>"
     status: active
   - type: build-setting
