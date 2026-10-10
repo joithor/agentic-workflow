@@ -12,8 +12,8 @@ namespace Aw.Readiness.App.Features.CheckRepo;
 /// <param name="Level">The overall level reached.</param>
 /// <param name="Holds">True when the level reaches the target. Unread criteria count as not passing, so the level is a
 /// lower bound and a target it reaches holds whatever they turn out to be.</param>
-/// <param name="Unconfirmed">When the target doesn't hold: the criteria below its level whose data wasn't read
-/// (offline, gh failing), which could still raise the level once read. Empty when it holds.</param>
+/// <param name="Unconfirmed">When the target doesn't hold: the unread criteria (offline, gh failing) at or above the
+/// level reached and below the target, which could still raise the level once read. Empty when it holds.</param>
 /// <param name="RecordedTo">Where the run was recorded.</param>
 /// <param name="Delta">What changed since the previous run.</param>
 /// <param name="Pillars">The level per pillar.</param>

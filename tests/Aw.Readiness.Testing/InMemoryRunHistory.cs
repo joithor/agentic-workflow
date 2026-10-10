@@ -16,11 +16,20 @@ public sealed class InMemoryRunHistory : IRunHistory
     public bool Unavailable { get; set; }
 
     /// <inheritdoc/>
-    public ValueTask<Result<RunRecord?>> Latest(RepoName repo, string scope, CancellationToken cancellationToken) =>
-        ValueTask.FromResult(Unavailable
-            ? Results.Failure<RunRecord?>(Down())
-            : Results.Success(_runs.Where(r => r.Repo == repo && string.Equals(r.Scope, scope, StringComparison.Ordinal))
-                .OrderBy(r => r.RecordedAt).LastOrDefault()));   // OrderBy is stable: of two at one instant, the last saved
+    public ValueTask<Result<RunRecord?>> Latest(RepoName repo, string scope, CancellationToken cancellationToken)
+    {
+        if (Unavailable)
+        {
+            return ValueTask.FromResult(Results.Failure<RunRecord?>(Down()));
+        }
+
+        // OrderBy is stable: of two at one instant, the last saved.
+        var latest = _runs.Where(r => r.Repo == repo && string.Equals(r.Scope, scope, StringComparison.Ordinal))
+            .OrderBy(r => r.RecordedAt).LastOrDefault();
+        return ValueTask.FromResult(latest is null || latest.SchemaVersion == RunRecord.CurrentSchemaVersion
+            ? Results.Success(latest)
+            : Results.Failure<RunRecord?>(RunRecord.UnsupportedVersion(latest.SchemaVersion, "memory")));
+    }
 
     /// <inheritdoc/>
     public ValueTask<Result<string>> Save(RunRecord run, CancellationToken cancellationToken)

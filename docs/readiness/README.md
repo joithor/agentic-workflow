@@ -26,8 +26,9 @@ artifacts/aot-readiness/bin/aw-readiness check [--json] [--root DIR] [--no-remot
   can't be reproduced yet (TD-4, PE-3), or its data couldn't be read this run (`--no-remote`, gh missing, failing or
   not an admin). An **unread** criterion counts as not passing, so the level is a lower bound: a run that couldn't
   read the host never scores higher than one that could, and a target the level reaches holds whatever the unread
-  criteria turn out to be. When the target isn't reached, the unread criteria below it are listed under `unconfirmed`
-  ("does not hold; … weren't read and could raise the level").
+  criteria turn out to be. When the target isn't reached, the unread criteria at or above the level reached and below
+  the target (the only ones that could still raise it) are listed under `unconfirmed` ("does not hold; … weren't read
+  and could raise the level").
 - **Levels:** every repo starts at Level 1; Level N+1 unlocks when at least 80% of the scored Level N criteria pass.
   A level with nothing scored neither unlocks nor blocks: the climb skips it, so the level is one above the highest
   scored level that passed with every scored level below it passing (the R0 baseline's rule; with L1 passing, L2

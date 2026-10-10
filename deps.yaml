@@ -434,9 +434,9 @@ edges:
     note: "every port and factory run is a packet"
   - from: Sindri
     to: Readiness
-    kind: project
+    kind: cli
     status: planned
-    note: "sindri readiness check (§8)"
+    note: "sindri readiness check (§8): runs aw-readiness check --json (schema v1, tests/Aw.Readiness.Tests/Golden/report.json); a project edge could reach only Aw.Readiness.Core and would re-implement the adapters"
   - from: Sindri
     to: Scorer
     kind: cli

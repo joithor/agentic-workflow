@@ -37,7 +37,7 @@ public static class TemplateReadiness
     /// <param name="reached">The level the run reached (a lower bound).</param>
     /// <returns>Their ids, in report order.</returns>
     public static IReadOnlyList<CriterionId> Unconfirmed(IEnumerable<Finding> findings, ReadinessTarget target, int reached) =>
-        throw new NotSupportedException("red: Unconfirmed " + target.Ring.ToString(System.Globalization.CultureInfo.InvariantCulture) + reached.ToString(System.Globalization.CultureInfo.InvariantCulture) + findings.GetType().Name);
+        [.. findings.Where(f => f.Unread && f.Criterion.Level >= reached && f.Criterion.Level < target.Level).Select(f => f.Criterion.Id)];
 
     private static Finding Decide(CatalogueEntry entry, RepoContext context)
     {

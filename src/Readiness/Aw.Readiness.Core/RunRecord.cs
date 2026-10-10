@@ -14,6 +14,15 @@ public sealed record RunRecord(
     /// <summary>The record format this build writes.</summary>
     public const int CurrentSchemaVersion = 1;
 
+    /// <summary>AW-READINESS-004 for a record in a format this build doesn't read: it's never diffed as if it were the
+    /// current format.</summary>
+    /// <param name="found">The record's schemaVersion.</param>
+    /// <param name="where">Where the record is.</param>
+    /// <returns>The error.</returns>
+    public static Kernel.Error UnsupportedVersion(int found, string where) => ReadinessErrors.HistoryUnavailable.With(
+        string.Create(System.Globalization.CultureInfo.InvariantCulture,
+            $"{where} is a schemaVersion {found} run; this build reads {CurrentSchemaVersion}; fix: use the aw-readiness that wrote it, or move the file out of the history"));
+
     /// <summary>The run's record from its findings.</summary>
     /// <param name="repo">The repo.</param>
     /// <param name="scope">What was checked.</param>

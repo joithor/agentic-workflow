@@ -29,9 +29,9 @@ internal sealed class JsonRunHistory(ReadinessSettings settings, JsonSerializerO
 
             var bytes = await File.ReadAllBytesAsync(newest, cancellationToken).ConfigureAwait(false);
             var run = AwJson.Deserialize<RunRecord>(bytes, json);
-            return run.IsSuccess
-                ? Results.Success<RunRecord?>(run.Value)
-                : Down($"{newest} is not a readable run ({run.Error.Message}); fix: move it out of {directory}");
+            return run.IsError ? Down($"{newest} is not a readable run ({run.Error.Message}); fix: move it out of {directory}")
+                : run.Value.SchemaVersion != RunRecord.CurrentSchemaVersion ? Results.Failure<RunRecord?>(RunRecord.UnsupportedVersion(run.Value.SchemaVersion, newest))
+                : Results.Success<RunRecord?>(run.Value);
         }
         catch (Exception e) when (e is IOException or UnauthorizedAccessException)
         {

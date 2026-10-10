@@ -323,6 +323,7 @@ static Aw.Readiness.Core.RunDelta.operator ==(Aw.Readiness.Core.RunDelta? left, 
 static Aw.Readiness.Core.RunRecord.From(Aw.Readiness.Core.RepoName repo, string! scope, System.DateTimeOffset recordedAt, int level, System.Collections.Generic.IEnumerable<Aw.Readiness.Core.Finding!>! findings) -> Aw.Readiness.Core.RunRecord!
 static Aw.Readiness.Core.RunRecord.operator !=(Aw.Readiness.Core.RunRecord? left, Aw.Readiness.Core.RunRecord? right) -> bool
 static Aw.Readiness.Core.RunRecord.operator ==(Aw.Readiness.Core.RunRecord? left, Aw.Readiness.Core.RunRecord? right) -> bool
+static Aw.Readiness.Core.RunRecord.UnsupportedVersion(int found, string! where) -> Aw.Kernel.Error!
 static Aw.Readiness.Core.Scoring.LevelTally.operator !=(Aw.Readiness.Core.Scoring.LevelTally? left, Aw.Readiness.Core.Scoring.LevelTally? right) -> bool
 static Aw.Readiness.Core.Scoring.LevelTally.operator ==(Aw.Readiness.Core.Scoring.LevelTally? left, Aw.Readiness.Core.Scoring.LevelTally? right) -> bool
 static Aw.Readiness.Core.Scoring.PillarScore.operator !=(Aw.Readiness.Core.Scoring.PillarScore? left, Aw.Readiness.Core.Scoring.PillarScore? right) -> bool
