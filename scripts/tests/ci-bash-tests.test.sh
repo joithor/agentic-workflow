@@ -102,6 +102,7 @@ rmdir "$MARK/active-$1"'
   printf '%s\n' "set -- s1" "$ser" > "$d/t/s1.test.sh"
   printf '%s\n' "set -- s2" "$ser" > "$d/t/s2.test.sh"
   printf '%s\n' 'echo "should never run"; exit 1' > "$d/t/skipped.test.sh"
+  printf '%s\n' 'echo "ok - a path with a space runs"' > "$d/t/with space.test.sh"
   git -C "$d" add t
 }
 
@@ -130,7 +131,9 @@ $out"
   printf '%s\n' "$out" | grep -qE '^PASS +ser +t/s2\.test\.sh +[0-9]+s$' || fail "summary lacks a ser row with a duration:
 $out"
   if printf '%s\n' "$out" | grep -q 'should never run'; then fail "an excluded suite ran"; fi
-  printf '%s\n' "$out" | grep -q '4 run, 0 failed, 1 excluded' || fail "summary counts are wrong:
+  printf '%s\n' "$out" | grep -qE '^PASS +par +t/with space\.test\.sh +[0-9]+s$' || fail "a suite whose path has a space did not run as one suite:
+$out"
+  printf '%s\n' "$out" | grep -q '5 run, 0 failed, 1 excluded' || fail "summary counts are wrong:
 $out"
   rm -rf "$d" "$m"
   echo "PASS: test_pool_runs_in_parallel_and_serial_suites_run_alone"

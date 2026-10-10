@@ -82,7 +82,9 @@ run_check() { # <fixture> [args...]; sets OUT and RC
 test_sums_each_package_and_passes_under_budget() {
   local d="$WORK/ok"; make_fixture "$d"; : > "$WORK/log"
   export STUB_Aw_Foo_Tests_unit=0.3 STUB_Aw_Foo_Core_Tests_unit=0.3 STUB_Aw_Foo_Data_Tests_integration=0.2
-  run_check "$d" --budget unit=2,integration=2
+  # Budgets the stubs can't approach: this suite runs in the parallel pool, so only lower
+  # bounds on the measured sums are asserted.
+  run_check "$d" --budget unit=60,integration=60
   unset STUB_Aw_Foo_Tests_unit STUB_Aw_Foo_Core_Tests_unit STUB_Aw_Foo_Data_Tests_integration
   [ "$RC" -eq 0 ] || fail "under budget must exit 0, got $RC:
 $OUT"
@@ -90,7 +92,7 @@ $OUT"
   # this suite runs in the parallel pool); FooData is its own package.
   at_least "$(secs_of Foo unit)" 0.6 || fail "Foo unit should sum both projects (>= 0.6 s):
 $OUT"
-  printf '%s\n' "$OUT" | grep -qE '^ok +Foo +unit .* limit 2 s +\(2 projects\)' || fail "Foo unit row should name its limit and 2 projects:
+  printf '%s\n' "$OUT" | grep -qE '^ok +Foo +unit .* limit 60 s +\(2 projects\)' || fail "Foo unit row should name its limit and 2 projects:
 $OUT"
   at_least "$(secs_of FooData integration)" 0.2 || fail "Aw.Foo.Data.Tests should count for FooData (longest prefix):
 $OUT"
