@@ -208,6 +208,9 @@ jobs:
             fi
           fi
           node scripts/ci/no-any.mjs "${args[@]}"
+      - name: Every env var the code reads is in .env.example
+        # A C# change runs only the .NET job, so the env scan runs here, where every PR passes.
+        run: scripts/check-env-example.sh
       - name: deps.yaml matches the code
         run: |
           if [ -f scripts/check-deps.mjs ]; then

@@ -1,0 +1,49 @@
+name: Bug
+description: Something works differently from its spec or docs.
+labels: ["type:bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Never paste a secret, a token, a private path or a work-repo name. Scrub logs first (`sindri scrub`).
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened
+      description: The observed behavior, with the exact command and its output.
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: What should happen
+      description: The expected behavior, and where it is specified (spec section, rule, docs).
+    validations:
+      required: true
+  - type: textarea
+    id: repro
+    attributes:
+      label: Steps to reproduce
+      description: The smallest sequence of commands that shows it.
+      render: shell
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Commit
+      description: "`git rev-parse --short HEAD` of the toolkit checkout."
+    validations:
+      required: true
+  - type: dropdown
+    id: provider
+    attributes:
+      label: Provider
+      options: [Claude Code, Codex, Cursor, none / not provider-specific]
+    validations:
+      required: true
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Evidence
+      description: Log lines (scrubbed), rule ids, exit codes.

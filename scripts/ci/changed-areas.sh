@@ -49,9 +49,11 @@ classify_changes() {
     esac
     case "$file" in
       scripts/dotnet-verify-packages.sh) dotnet=true ;;  # the .NET job runs it; its bash test runs below
+      # global.json also pins the devcontainer's base image, which a bash suite checks (repo-templates).
+      global.json|docs/devcontainer.md) bash=true ;;
     esac
     case "$file" in
-      config/*|scripts/*|providers/*|setup.sh|mods/*|skills/*|.agents/*|AGENTS.md|CLAUDE.md|.claude/*|.cursor/*)
+      config/*|scripts/*|providers/*|setup.sh|mods/*|skills/*|.agents/*|AGENTS.md|CLAUDE.md|.claude/*|.cursor/*|.devcontainer/*|.env.example)
         bash=true ;;
       src/*|tests/*|schemas/packets/*|*.cs|*.csproj|*.props|*.targets|*.slnx|global.json|nuget.config|.editorconfig|BannedSymbols.txt|packages.lock.json|.config/dotnet-tools.json)
         dotnet=true ;;
