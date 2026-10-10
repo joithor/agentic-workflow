@@ -9,7 +9,9 @@ import { check, dirtyOf } from "./check.js";
 import { correctCommand } from "./correct.js";
 import { Budget } from "../../scope/model.js";
 import { reflectCommand, reflectedBefore } from "./reflect.js";
-import { stage } from "./stage.js";
+import { stageReport } from "./stage.js";
+import { stageProposals } from "../stage.js";
+import { terminalSafe } from "../invisible.js";
 import { telemetry } from "./telemetry.js";
 import { repoConfig, type EvolveCtx } from "../ctx.js";
 import { allowedAuthors, ghJson, ghRepoOf } from "../github.js";
@@ -18,11 +20,18 @@ const PrList = z.array(z.object({ number: z.number().int().positive(), author: z
 
 const messageOf = (e: unknown): string => (e instanceof SindriError ? `${e.code} ${e.message}` : e instanceof Error ? e.message : String(e));
 
-// The last line of a step's output that isn't a "Next:" pointer or a per-proposal "held <id>: why" detail line.
-// Steps throw on error, so stdout is all there is.
+// The last line of a step's output that isn't a "Next:" pointer. Steps throw on error, so stdout is all there is.
 function summaryOf(r: CommandResult): string {
-  const lines = r.stdout.split("\n").filter((l) => l !== "" && !l.startsWith("Next:") && !l.startsWith("held "));
+  const lines = r.stdout.split("\n").filter((l) => l !== "" && !l.startsWith("Next:"));
   return lines[lines.length - 1];
+}
+
+type StepResult = { exitCode: ExitCode; line: string };
+const fromCommand = (r: CommandResult): StepResult => ({ exitCode: r.exitCode, line: summaryOf(r) });
+
+// Stage's digest line comes from its structured outcome (the held count included), not from its printed text.
+async function stageStep(ctx: EvolveCtx): Promise<StepResult> {
+  return { exitCode: 0, line: terminalSafe(stageReport(await stageProposals(ctx)).summary) };
 }
 
 const WINDOW_DAYS = 14; // the marker dedupes, so a wider window only costs one list call and survives a missed week
@@ -94,18 +103,18 @@ export async function weekly(args: string[], ctx: EvolveCtx): Promise<CommandRes
     }
     return success(`Weekly plan (dry run): telemetry --since 7d; ${reflectPlan}; correct --since 7d; check --changed; stage. Nothing ran.\nNext: sindri evolve weekly`, { dryRun: true, prs }, json);
   }
-  const steps: { name: string; run: () => Promise<CommandResult> }[] = [
-    { name: "telemetry", run: () => telemetry(["--since", "7d"], ctx) },
-    { name: "reflect", run: () => reflectStep(ctx) },
-    { name: "correct", run: () => correctCommand(["--since", "7d"], ctx) },
-    { name: "check", run: () => checkStep(ctx) },
-    { name: "stage", run: () => stage([], ctx) },
+  const steps: { name: string; run: () => Promise<StepResult> }[] = [
+    { name: "telemetry", run: async () => fromCommand(await telemetry(["--since", "7d"], ctx)) },
+    { name: "reflect", run: async () => fromCommand(await reflectStep(ctx)) },
+    { name: "correct", run: async () => fromCommand(await correctCommand(["--since", "7d"], ctx)) },
+    { name: "check", run: async () => fromCommand(await checkStep(ctx)) },
+    { name: "stage", run: () => stageStep(ctx) },
   ];
   const results: { name: string; state: "ok" | "attn" | "FAIL"; line: string }[] = [];
   for (const s of steps) {
     try {
       const r = await s.run();
-      results.push({ name: s.name, state: STATE[r.exitCode], line: summaryOf(r) });
+      results.push({ name: s.name, state: STATE[r.exitCode], line: r.line });
     } catch (e) {
       results.push({ name: s.name, state: "FAIL", line: messageOf(e) });
     }

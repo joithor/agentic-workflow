@@ -5,7 +5,7 @@ import { wildcard } from "../adapters/plan-file/tracker.js";
 import { parsePlan } from "../adapters/plan-file/parse.js";
 import { SindriError } from "../errors.js";
 import { ulid } from "../ids.js";
-import { audit } from "./audit.js";
+import { audit, auditMarker } from "./audit.js";
 import { repoConfig, type EvolveCtx } from "./ctx.js";
 import { profileScrubber } from "../scope/commands.js";
 import { copiedRun, patternProblem, personalProblem, termProblem, toolkitCorpus, type HoldLayer } from "./privacy.js";
@@ -42,6 +42,11 @@ export async function markMerged(ctx: EvolveCtx): Promise<void> {
 // Retried by stage: an open proposal past `proposed` with no public row. Held at stage (the generalization pass refused
 // it), or staged by a v4 build before public rows existed; such a staged row doesn't hold a cap slot while it waits.
 const retries = (ctx: EvolveCtx): StoredProposal[] => listStored(ctx.db, ["held", "staged"]).filter((s) => getPublic(ctx.db, s.id) === null);
+// How many times stage's generalization pass held this proposal (its `generalize-hold` audit rows).
+const holdsOf = (ctx: EvolveCtx, id: string): number =>
+  (ctx.db.prepare("SELECT COUNT(*) AS c FROM evolve_audit WHERE verb = 'generalize-hold' AND substr(detail, 1, length(?) + 1) = ? || ':'").get(id, id) as { c: number }).c;
+// At evolve.maxGeneralizeAttempts holds stage stops retrying a proposal (no model calls) until it is rejected.
+const gaveUp = (ctx: EvolveCtx, s: StoredProposal): boolean => holdsOf(ctx, s.id) >= ctx.loaded.profile.evolve.maxGeneralizeAttempts;
 const slotsFree = (ctx: EvolveCtx, cap: number, retry: readonly StoredProposal[]): { inFlight: number; free: number } => {
   const inFlight = inFlightCount(ctx.db) - retry.filter((s) => s.status === "staged").length;
   return { inFlight, free: Math.max(0, cap - inFlight) };
@@ -77,7 +82,8 @@ export async function stageProposals(ctx: EvolveCtx, budget: Budget = new Budget
   const eligible = notSelfAdopt(registry, extra);
   const unshipped = (s: StoredProposal): boolean => shippedDuplicate(ctx, s) === undefined && eligible(s);
   const retry = retries(ctx);
-  const snapshot = slotOrder(listStored(ctx.db, ["proposed"]).filter(unshipped), retry.filter(unshipped), (s) => s).slice(0, slotsFree(ctx, cap, retry).free);
+  const snapshot = slotOrder(listStored(ctx.db, ["proposed"]).filter(unshipped), retry.filter((s) => unshipped(s) && !gaveUp(ctx, s)), (s) => s)
+    .slice(0, slotsFree(ctx, cap, retry).free);
   const refsOf = (s: StoredProposal): string[] => reduceEvidence(s.proposal.evidence).refs;
   const evidence = resolveRefs(transcriptsDir(ctx), ctx.repo, snapshot.flatMap(refsOf), scrub);
   const runner = ctx.io.runner(ctx.loaded, scrub);
@@ -104,7 +110,9 @@ export async function stageProposals(ctx: EvolveCtx, budget: Budget = new Budget
     });
     const classify = (s: StoredProposal) => ({ s, t: classifyTier(s.proposal, registry, extra) });
     const freshC = notShipped(listStored(ctx.db, ["proposed"])).map(classify);
-    const heldC = notShipped(retryNow).map(classify);
+    const retryC = notShipped(retryNow).map(classify);
+    const heldC = retryC.filter((c) => !gaveUp(ctx, c.s));
+    const givenUp = retryC.filter((c) => gaveUp(ctx, c.s));
     const keep = (c: ReturnType<typeof classify>): boolean => c.t.tier !== "self-adopt";
     const candidates = slotOrder(freshC.filter(keep), heldC.filter(keep), (c) => c.s);
     const take = candidates.slice(0, free);
@@ -117,7 +125,9 @@ export async function stageProposals(ctx: EvolveCtx, budget: Budget = new Budget
     // The candidates were read under this lock, so each transition below applies.
     const FROM = ["proposed", "held", "staged"] as const;
     const staged: StageOutcome["staged"] = [];
-    const held: StageOutcome["held"] = [];
+    const max = ctx.loaded.profile.evolve.maxGeneralizeAttempts;
+    // Stays held, costs nothing and takes no slot; reported on every run so it doesn't go unnoticed.
+    const held: StageOutcome["held"] = givenUp.map((c) => ({ id: c.s.id, why: `generalize: gave up after ${max} attempts; reject it or reword it` }));
     let waiting = candidates.length - take.length;
     for (const c of take) {
       const g = results.get(c.s.id);
@@ -127,6 +137,7 @@ export async function stageProposals(ctx: EvolveCtx, budget: Budget = new Budget
       }
       if (!g.ok) {
         transition(ctx.db, c.s.id, FROM, "held", epoch, ctx.deps.now());
+        auditMarker(ctx.db, ctx.deps, "generalize-hold", `${c.s.id}: ${g.why}`, epoch);
         held.push({ id: c.s.id, why: g.why });
         continue;
       }

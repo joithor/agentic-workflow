@@ -41,7 +41,7 @@ describe("ledger v4", () => {
 describe("evolve and privacy profile keys", () => {
   it("defaults the budgets, the cap and the deny list", () => {
     const p = ProfileSchema.parse(base);
-    expect(p.evolve).toEqual({ maxOpenProposals: 10, maxTokensPerJob: 600000, maxTokensPerCompare: 3000000, maxCorrectTurns: 400, prAuthors: [] });
+    expect(p.evolve).toEqual({ maxOpenProposals: 10, maxTokensPerJob: 600000, maxTokensPerCompare: 3000000, maxCorrectTurns: 400, maxGeneralizeAttempts: 3, prAuthors: [] });
     expect(p.privacy).toEqual({ denyTerms: [], denyPatterns: [] });
   });
 
@@ -55,6 +55,11 @@ describe("evolve and privacy profile keys", () => {
     expect(ProfileSchema.safeParse({ ...base, evolve: { prAuthors: ["not a login!"] } }).success).toBe(false);
     expect(ProfileSchema.parse({ ...base, evolve: { maxCorrectTurns: 2000 } }).evolve.maxCorrectTurns).toBe(2000);
     for (const bad of [0, 2001, 1.5]) expect(ProfileSchema.safeParse({ ...base, evolve: { maxCorrectTurns: bad } }).success, String(bad)).toBe(false);
+  });
+
+  it("accepts evolve.maxGeneralizeAttempts of 1 or more, whole numbers only", () => {
+    expect(ProfileSchema.parse({ ...base, evolve: { maxGeneralizeAttempts: 1 } }).evolve.maxGeneralizeAttempts).toBe(1);
+    for (const bad of [0, -1, 2.5]) expect(ProfileSchema.safeParse({ ...base, evolve: { maxGeneralizeAttempts: bad } }).success, String(bad)).toBe(false);
   });
 });
 

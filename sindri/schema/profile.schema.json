@@ -538,6 +538,12 @@
           "default": 400,
           "description": "How many of the newest human turns `correct` sends to the labeling model per run (20 per call)"
         },
+        "maxGeneralizeAttempts": {
+          "type": "integer",
+          "minimum": 1,
+          "default": 3,
+          "description": "How many times stage's generalization pass may hold one proposal before stage stops retrying it (reject it or reword it)"
+        },
         "prAuthors": {
           "type": "array",
           "items": {

@@ -121,8 +121,9 @@ describe("sindri evolve weekly", () => {
     }
     const r = await weekly([], { ...fx.ctx, io });
     const stageLine = r.stdout.split("\n").find((l) => l.includes(" stage: "));
-    expect(stageLine).toMatch(/^ok {3}stage: Staged 1 proposal\(s\) \(0 approval tier\) in .*\.$/);
-    expect(r.stdout).not.toContain("held ");
+    // From stage's structured outcome: the held count, never a per-proposal line.
+    expect(stageLine).toMatch(/^ok {3}stage: Staged 1 proposal\(s\) \(0 approval tier\) in .*; 1 held by the generalization pass\.$/);
+    expect(r.stdout).not.toMatch(/held \w{26}/);
     expect(fx.ctx.db.prepare("SELECT title, status FROM proposals ORDER BY title").all()).toEqual([
       { title: "Leaky review idea", status: "held" },
       { title: "Tighten review scope", status: "staged" },

@@ -326,13 +326,46 @@ describe("stage generalizes first (privacy B1)", () => {
     const b = save("Beta change here", {}, "code");
     const held = `held ${a}: generalize: the judge found people`;
     const dir = path.dirname(stagedFile(fx.deps, a));
-    expect((await stage([], fx.ctx)).stdout).toBe(`Staged 1 proposal(s) (0 approval tier) in ${dir}.\n${held}\nNext: sindri evolve publish\n`);
+    expect((await stage([], fx.ctx)).stdout).toBe(`Staged 1 proposal(s) (0 approval tier) in ${dir}; 1 held by the generalization pass.\n${held}\nNext: sindri evolve publish\n`);
     // Held at stage: retried (and held again) on the next run, which has nothing else to stage.
     expect((await stage([], fx.ctx)).stdout).toBe(`Nothing to stage; 1 held by the generalization pass.\n${held}\nNext: sindri evolve proposals\n`);
     // One free slot: the new proposal takes it ahead of the held retry, which has more evidence but waits (I1).
     const e = save("Epsilon change here", {}, "code");
     expect((await stage([], fx.ctx)).stdout).toBe(`Staged 1 proposal(s) (0 approval tier) in ${dir}; 1 more waiting (cap 2, 2 in flight).\nNext: sindri evolve publish\n`);
     expect([a, b, e].map((id) => getProposal(fx.ctx.db, id)?.status)).toEqual(["held", "staged", "staged"]);
+    fx.close();
+  });
+
+  it("gives up on a proposal after evolve.maxGeneralizeAttempts holds: no more model calls until it is rejected", async () => {
+    const io = scriptedEvolveIo((c) => (c.role === GENERALIZE_ROLES.judge ? { leaks: true, category: "domain" } : generalizingScript()(c)));
+    const fx = await evolveFixture({ files: FILES, extraYaml: "evolve:\n  maxOpenProposals: 2\n  maxGeneralizeAttempts: 2\n", prompts: () => PROMPTS, io });
+    await init([], fx.ctx);
+    const id = fx.ctx.write((epoch) => saveProposal(fx.ctx.db, ProposalSchema.parse({
+      artifact: "skill:review", kind: "skill-edit", title: "Alpha change here", rationale: "r", evidence: ["pr:1"],
+      change: { type: "describe", files: ["skills/review/SKILL.md"], description: "d" },
+    }), "reflect:pr-1", "code", epoch, fx.deps.now()).id);
+    const judged = `held ${id}: generalize: the judge found domain`;
+    const gaveUp = `held ${id}: generalize: gave up after 2 attempts; reject it or reword it`;
+    expect((await stage([], fx.ctx)).stdout).toContain(judged);
+    expect((await stage([], fx.ctx)).stdout).toContain(judged);
+    expect(io.calls).toHaveLength(4);
+    const out = await stage([], fx.ctx);
+    expect(out.stdout).toBe(`Nothing to stage; 1 held by the generalization pass.\n${gaveUp}\nNext: sindri evolve proposals\n`);
+    expect(io.calls).toHaveLength(4); // no model call once it gave up
+    expect(getProposal(fx.ctx.db, id)?.status).toBe("held");
+    expect(fx.ctx.db.prepare("SELECT verb, detail FROM evolve_audit ORDER BY seq").all()).toEqual([
+      { verb: "generalize-hold", detail: `${id}: generalize: the judge found domain` },
+      { verb: "generalize-hold", detail: `${id}: generalize: the judge found domain` },
+    ]);
+    // A given-up proposal doesn't take a slot: a new one still stages.
+    const fresh = fx.ctx.write((epoch) => saveProposal(fx.ctx.db, ProposalSchema.parse({
+      artifact: "skill:review", kind: "skill-edit", title: "Fresh change here", rationale: "r", evidence: ["pr:1"],
+      change: { type: "describe", files: ["skills/review/SKILL.md"], description: "d" },
+    }), "reflect:pr-1", "code", epoch, fx.deps.now()).id);
+    const ok = scriptedEvolveIo(generalizingScript());
+    const o = await stageProposals({ ...fx.ctx, io: ok });
+    expect(o).toMatchObject({ staged: [{ id: fresh }], held: [{ id, why: "generalize: gave up after 2 attempts; reject it or reword it" }], waiting: 0 });
+    expect(ok.calls.every((c) => c.input.includes("Fresh change here"))).toBe(true);
     fx.close();
   });
 
