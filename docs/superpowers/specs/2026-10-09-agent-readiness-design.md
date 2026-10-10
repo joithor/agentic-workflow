@@ -85,6 +85,59 @@ addendum) with deterministic checks wherever possible.
   for the type-aware rules Biome lacks (floating promises, unsafe `any`) and `dependency-cruiser` for boundaries.
 - `shellcheck` and `shfmt` for the bash in `config/`, `scripts/` and `providers/`.
 
+## 4a. Language: C# on .NET (decided 2026-10-09)
+
+The human decided to rewrite the toolkit's TypeScript packages in **C# on .NET 10 (LTS)**, running the same on
+Linux and macOS. The readiness work is done on the C# code: the TypeScript is not hardened first and then
+rewritten. The standards in §4 still apply, expressed in .NET tooling.
+
+**What moves, and to what:**
+
+| Today (TS) | C# / .NET |
+|---|---|
+| `tsc` strict | Nullable reference types enabled, `TreatWarningsAsErrors`, `AnalysisLevel latest-all` |
+| Biome / typescript-eslint (planned) | Roslyn analyzers (built-in + `Microsoft.CodeAnalysis.NetAnalyzers`), `.editorconfig` severities, `dotnet format` in pre-commit and CI |
+| dependency-cruiser (planned) | One project per layer (`Core`, `UseCases`, `Adapters`, `Cli`) with project references as the boundary, plus architecture tests (for example NetArchTest) |
+| Zod schemas, JSON Schema export | Records with `System.Text.Json` source generation; validators per schema; JSON Schema generated from the types for editor autocomplete |
+| Vitest | xUnit (or TUnit), with the lanes and time budgets in §4 |
+| better-sqlite3 | `Microsoft.Data.Sqlite`, same files and schemas, WAL mode |
+| Fastify (bridge) | ASP.NET Core minimal APIs |
+| `@modelcontextprotocol/sdk` | The official MCP C# SDK |
+| Node CLIs started per hook call | **NativeAOT** single-file binaries for every CLI and hook entry point, so startup stays fast. Reflection-free JSON (source generators) is required for AOT |
+| Playwright (ui-evidence) | Playwright for .NET |
+
+**What stays outside C#, on purpose:**
+- **Claude Code mods** (`mods/aw-live`) run in-process in Claude Code, so they stay TypeScript. They stay thin and
+  call the C# CLIs.
+- **Indexing TypeScript repos** needs the TypeScript compiler API. It becomes a small, pinned Node sidecar behind
+  the `Index` adapter. C# repos get a Roslyn indexer. Work and product repos that are TS keep full support.
+- **graphify** (Python) stays an external, sandboxed tool behind its adapter.
+- **Bash** for installers and `setup.sh`, checked with shellcheck and shfmt.
+- **Agent sessions** are started through the `claude` CLI (as today), so there's no dependency on an Agent SDK.
+
+**How the rewrite runs (strangler, never big-bang):**
+1. **Freeze the contracts first.** Each package's external surface is captured as golden tests: CLI arguments,
+   output and exit codes, JSON files, the ledger and SQLite schemas, MCP tool schemas and HTTP routes. They run
+   against the TS and the C# builds alike.
+2. **One package at a time,** smallest and least shared first: `judge` → `scorer` → `skills/bugFixOrchestrator`
+   state CLI → `mcp-bridge` → `skills/ui-evidence` → `sindri` (by module: profile and ledger, scrub, observe,
+   index, scope, evolve).
+3. **Cut over per package** when its golden tests pass on C#, its own new unit tests meet the lanes, and an
+   install on both macOS and Linux works. The TS package is deleted in the same PR series, never kept alongside
+   it for long.
+4. **Shared data stays compatible.** The ledger, index and state files keep their schemas and versions, so a C#
+   `sindri` reads what the TS one wrote, and the reverse during cutover.
+5. **Each package rewrite is a packet** (addendum §17.4), built with today's skills on the host. That makes the
+   rewrite the first real test of the packet format and the thin end-to-end slice (F0.5), before the factory
+   exists.
+
+**Risks to watch:**
+- NativeAOT limits (reflection, some libraries). Every CLI builds AOT in CI from day one.
+- The Plan 5 evolve suites and judge calibration data have TS-specific fixtures. They're ported as golden data,
+  and their pass rates must not drop at cutover.
+- Rewrite fatigue: the rewrite is time-boxed per package, and a package that overruns 2× its estimate is reviewed
+  before more work goes into it.
+
 ## 5. Criteria plan by level
 
 Each row is a criterion family, the change that satisfies it, and its owner workstream (§6).
@@ -148,14 +201,19 @@ next PR shows it passing.
 | R2 | One lockfile vs per-package | Keep per-package lockfiles for now (`setup.sh` builds each); revisit after W1 |
 | R3 | Branch protection for a solo maintainer | Required checks and no force pushes; admins may bypass only through a recorded label. The factory's own merges still go through the checks |
 | R4 | Score of record | Factory's `/readiness-report` once Droid is installed; our check until then |
-| R5 | Tighter TS flags | Adopt with a per-package ratchet, not a big-bang fix |
+| R5 | Tighter TS flags | Superseded by R6 for the rewritten packages; applies only to the TS that stays (mods, the TS-indexer sidecar) |
+| R6 | Language and runtime | **Decided:** C# on .NET 10 LTS, NativeAOT CLIs, strangler rewrite per package (§4a) |
+| R7 | Test framework | xUnit (most common, best tooling) or TUnit (faster, source-generated); recommend xUnit unless lane budgets fail |
 
 ## 10. Rollout and sizing (rough, one builder with agents)
 
 | Step | Contents | Size | Exit |
 |---|---|---|---|
 | R0 | Baseline: run Factory's report if possible, plus our check; record the level per pillar | XS | Baseline in the ledger |
-| R1 | W1–W4 | M (1–2 weeks) | Level 2 passed, CI required on `main` |
-| R2 | W5–W8 | M | Level 3 passed |
-| R3 | W10 ratchets driven to targets, fast CI, flake quarantine, W9 | L (2–3 weeks) | Level 4 passed. **Factory work (F0) starts here** |
+| R1 | Language-neutral first: W3 CI for the existing TS (so the rewrite has a safety net), W4 security, W6 templates; golden contract tests for every package (§4a step 1); the .NET solution skeleton with analyzers, AOT and architecture tests | M (1–2 weeks) | CI required on `main`; golden tests green on TS |
+| R2 | The strangler rewrite (§4a), one package per packet; W5 devcontainer (.NET + Node sidecar + uv); W7 observability in .NET (`ILogger` JSON, OpenTelemetry); W8 | L–XL (4–8 weeks, estimate per package in each packet) | All packages on C#; golden tests green; Level 3 passed |
+| R3 | Fast CI, flake quarantine, W9, W10 shape budgets on the C# code | M | Level 4 passed. **Factory work (F0) starts here** |
 | R4 | Addendum F0–F3 plus the readiness module | With the addendum | Level 5 passed |
+
+Workstreams W1 (npm workspace) and W2 (Biome and typescript-eslint) apply only to the TypeScript that stays
+(§4a). For everything else, the .NET solution and analyzers replace them.
