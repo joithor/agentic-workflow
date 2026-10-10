@@ -1,27 +1,26 @@
-using System.Text;
-using System.Text.RegularExpressions;
 using Aw.Packets.Core.Model;
 
 namespace Aw.Packets.Core.Checks;
 
 /// <summary>
-/// One write-scope entry: a repo-relative glob ('*' and '?' stay inside a path segment, '**' crosses segments), or
-/// 'new: &lt;path&gt;' for a file the task creates.
+/// One write-scope entry: a repo-relative glob, or 'new: &lt;path&gt;' for a file the task creates. In a glob, '*' and '?'
+/// stay inside one path segment and a whole '**' segment matches any number of segments (none included). Matching is
+/// a two-pointer walk over segments and characters: no regex, so it can't time out or grow with the pattern.
 /// </summary>
 internal sealed class ScopeGlob
 {
-    private const string NewPrefix = "new:";
-
     /// <summary>The longest entry accepted; a longer one is a PKT-SCOPE-001 failure.</summary>
     internal const int MaxLength = 1024;
-    private static readonly TimeSpan _timeout = TimeSpan.FromSeconds(1);
-    private readonly Regex? _pattern;
 
-    private ScopeGlob(string entry, string? newPath, Regex? pattern)
+    private const string NewPrefix = "new:";
+    private const string AnySegments = "**";
+    private readonly string[]? _segments;
+
+    private ScopeGlob(string entry, string? newPath, string[]? segments)
     {
         Entry = entry;
         NewPath = newPath;
-        _pattern = pattern;
+        _segments = segments;
     }
 
     /// <summary>The entry as written.</summary>
@@ -30,7 +29,7 @@ internal sealed class ScopeGlob
     /// <summary>The path a 'new:' entry declares; null for a glob.</summary>
     public string? NewPath { get; }
 
-    /// <summary>Parses one entry; null when it is empty or a 'new:' path isn't a safe relative path.</summary>
+    /// <summary>Parses one entry; null when it is empty, too long, or a 'new:' path isn't a safe relative path.</summary>
     /// <param name="entry">The entry.</param>
     /// <returns>The scope, or null.</returns>
     public static ScopeGlob? Parse(string entry)
@@ -44,69 +43,80 @@ internal sealed class ScopeGlob
         if (entry.StartsWith(NewPrefix, StringComparison.Ordinal))
         {
             var path = entry[NewPrefix.Length..].Trim();
-            return RelativePath.IsSafe(path) ? new ScopeGlob(entry, path, pattern: null) : null;
+            return RelativePath.IsSafe(path) ? new ScopeGlob(entry, path, segments: null) : null;
         }
 
-        if (entry.Trim().Length == 0)
-        {
-            return null;
-        }
-
-        try
-        {
-            return new ScopeGlob(entry, newPath: null, ToRegex(Collapse(entry.Trim())));
-        }
-        catch (NotSupportedException)
-        {
-            return null;   // the NonBacktracking engine refuses a pattern whose automaton is too large
-        }
+        var glob = entry.Trim();
+        return glob.Length == 0 ? null : new ScopeGlob(entry, newPath: null, glob.Split('/'));
     }
 
     /// <summary>True when the glob matches <paramref name="path"/>, or a 'new:' entry declares exactly it.</summary>
     /// <param name="path">A repo-relative path with '/' separators.</param>
     /// <returns>Whether it matches.</returns>
     public bool Matches(string path) =>
-        _pattern?.IsMatch(path) ?? string.Equals(NewPath, path, StringComparison.Ordinal);
+        _segments is null ? string.Equals(NewPath, path, StringComparison.Ordinal) : MatchSegments(_segments, path.Split('/'));
 
-    // '**/**/' matches what '**/' matches: collapse the runs, so the pattern stays small.
-    private static string Collapse(string glob)
+    // '**' over segments, like '*' over characters: on a mismatch, retry from the last '**' one segment later.
+    private static bool MatchSegments(string[] glob, string[] path)
     {
-        var collapsed = glob;
-        while (collapsed.Contains("**/**/", StringComparison.Ordinal))
+        int g = 0, p = 0, star = -1, resume = 0;
+        while (p < path.Length)
         {
-            collapsed = collapsed.Replace("**/**/", "**/", StringComparison.Ordinal);
-        }
-
-        return collapsed;
-    }
-
-    // NonBacktracking: matching is linear in the path's length whatever the glob (these patterns have no lookarounds).
-    private static Regex ToRegex(string glob)
-    {
-        var pattern = new StringBuilder("^");
-        for (var i = 0; i < glob.Length; i++)
-        {
-            if (string.CompareOrdinal(glob, i, "**/", 0, 3) == 0)
+            if (g < glob.Length && glob[g] == AnySegments)
             {
-                _ = pattern.Append("(?:[^/]*/)*");
-                i += 2;
+                (star, resume) = (g++, p);
             }
-            else if (string.CompareOrdinal(glob, i, "**", 0, 2) == 0)
+            else if (g < glob.Length && MatchSegment(glob[g], path[p]))
             {
-                _ = pattern.Append(".*");
-                i++;
+                (g, p) = (g + 1, p + 1);
+            }
+            else if (star >= 0)
+            {
+                (g, p) = (star + 1, ++resume);
             }
             else
             {
-                _ = pattern.Append(glob[i] switch
-                {
-                    '*' => "[^/]*",
-                    '?' => "[^/]",
-                    _ => Regex.Escape(glob[i].ToString()),
-                });
+                return false;
             }
         }
 
-        return new Regex(pattern.Append('$').ToString(), RegexOptions.CultureInvariant | RegexOptions.NonBacktracking, _timeout);
+        while (g < glob.Length && glob[g] == AnySegments)
+        {
+            g++;
+        }
+
+        return g == glob.Length;
+    }
+
+    // '*' (any run) and '?' (one character) inside one segment.
+    private static bool MatchSegment(string glob, string text)
+    {
+        int g = 0, t = 0, star = -1, resume = 0;
+        while (t < text.Length)
+        {
+            if (g < glob.Length && glob[g] == '*')
+            {
+                (star, resume) = (g++, t);
+            }
+            else if (g < glob.Length && (glob[g] == '?' || glob[g] == text[t]))
+            {
+                (g, t) = (g + 1, t + 1);
+            }
+            else if (star >= 0)
+            {
+                (g, t) = (star + 1, ++resume);
+            }
+            else
+            {
+                return false;
+            }
+        }
+
+        while (g < glob.Length && glob[g] == '*')
+        {
+            g++;
+        }
+
+        return g == glob.Length;
     }
 }

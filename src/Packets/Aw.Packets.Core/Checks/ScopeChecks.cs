@@ -21,7 +21,10 @@ internal static class ScopeChecks
             return;
         }
 
-        var scopes = packet.Tasks.Tasks.ToDictionary(static t => t, static t => t.WriteScope.Select(e => (e, ScopeGlob.Parse(e))).ToList());
+        var parsed = new Dictionary<string, ScopeGlob?>(StringComparer.Ordinal);   // one regex per distinct entry
+        var scopes = packet.Tasks.Tasks.ToDictionary(
+            static t => t,
+            t => t.WriteScope.Select(e => (e, parsed.TryGetValue(e, out var known) ? known : parsed[e] = ScopeGlob.Parse(e))).ToList());
         checks.Rule(PacketRules.ScopeExists, "every write scope exists at the base commit or is declared new", Missing(scopes, files, sha));
         checks.Rule(PacketRules.ScopeOverlap, "no two unordered tasks share a write scope", Overlaps(packet, scopes, files));
     }
@@ -63,7 +66,7 @@ internal static class ScopeChecks
             {
                 var (a, b) = (tasks[i], tasks[j]);
                 // the shared path first: reachability is only computed for tasks that share one
-                if (a.Id != b.Id && writes[a].FirstOrDefault(writes[b].Contains) is { } path && !graph.Ordered(a.Id, b.Id))
+                if (a.Id != b.Id && FirstShared(writes[a], writes[b]) is { } path && !graph.Ordered(a.Id, b.Id))
                 {
                     yield return ($"tasks {a.Id.Value}, {b.Id.Value}",
                         $"tasks {a.Id.Value} and {b.Id.Value} can run at the same time and both write '{path}'",
@@ -76,9 +79,26 @@ internal static class ScopeChecks
     private static List<ScopeGlob> Globs(List<(string Entry, ScopeGlob? Glob)> entries) =>
         [.. entries.Select(static e => e.Glob).OfType<ScopeGlob>()];
 
-    // The paths (sorted by ordinal) a task's scope matches: base files and every declared new path.
-    private static SortedSet<string> Written(List<ScopeGlob> globs, List<string> paths) =>
-        new(paths.Where(p => globs.Exists(g => g.Matches(p))), StringComparer.Ordinal);
+    // The paths a task's scope matches (base files and every declared new path), in ordinal order and as a set.
+    private static (string[] Sorted, HashSet<string> Set) Written(List<ScopeGlob> globs, List<string> paths)
+    {
+        var sorted = paths.Where(p => globs.Exists(g => g.Matches(p))).ToArray();
+        return (sorted, new HashSet<string>(sorted, StringComparer.Ordinal));
+    }
+
+    // The first path (ordinal) both tasks write; allocation-free, because it runs for every pair of tasks.
+    private static string? FirstShared((string[] Sorted, HashSet<string> Set) a, (string[] Sorted, HashSet<string> Set) b)
+    {
+        foreach (var path in a.Sorted)
+        {
+            if (b.Set.Contains(path))
+            {
+                return path;
+            }
+        }
+
+        return null;
+    }
 
     // An entry as a message shows it: a long one is cut, with its length.
     private static string Shown(string entry) =>

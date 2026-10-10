@@ -302,4 +302,22 @@ public sealed class ValidatePacketTests
         Assert.True(report.Passed, string.Join("; ", report.Checks.Where(static c => c.State == CheckState.Fail).Select(static c => c.Rule)));
         Assert.True(started.Elapsed < TimeSpan.FromSeconds(5), started.Elapsed.ToString());
     }
+
+    [Theory, Trait("Lane", "unit")]
+    [InlineData("src/**", "src/a.cs", true)]
+    [InlineData("src/**", "src/deep/x/y.cs", true)]
+    [InlineData("**", "README.md", true)]
+    [InlineData("**/guide.md", "docs/guide.md", true)]
+    [InlineData("**/guide.md", "guide.md", true)]
+    [InlineData("src/*.cs", "src/a.cs", true)]
+    [InlineData("src/*.cs", "src/deep/a.cs", false)]
+    [InlineData("src/?.cs", "src/a.cs", true)]
+    [InlineData("src/?.cs", "src/ab.cs", false)]
+    [InlineData("a/**/b/**/c", "a/x/b/y/z/c", true)]
+    [InlineData("a/**/b/**/c", "a/x/c", false)]
+    [InlineData("*a*b*", "xaybz", true)]
+    [InlineData("*a*b*", "xbya", false)]
+    [InlineData("docs/*", "docs", false)]
+    public void Glob_semantics(string glob, string path, bool matches) =>
+        Assert.Equal(matches, ScopeGlob.Parse(glob)?.Matches(path));
 }

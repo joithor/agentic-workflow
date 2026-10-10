@@ -23,7 +23,7 @@ in `schemas/packets/` (`PacketSchemaTests` fails when a record changes and the s
 relative paths with `/` inside the packet directory; `..`, a root or a `:` is refused, and so is a symbolic link anywhere between the packet directory and the file (a linked file or a linked sub-directory). Every JSON file is UTF-8 without a byte order mark, with no duplicate keys, no unknown members (an optional `$schema` editor hint is allowed at the top of each file) and no null in a list; a packet holds at most 2,000 tasks (`PacketReader.MaxTasks`). Anything else is AW-PACKETS-003.
 
 Write-scope globs are repo-relative: `*` and `?` stay inside one path segment, `**` crosses segments (`src/**`,
-`**/guide.md`); matching is linear in the path's length whatever the glob. `new: src/c.cs` declares a file the task creates.
+`**/guide.md`; `**` only as a whole segment, inside one it acts as `*`); entries are at most 1,024 characters, and matching is a two-pointer walk with no regex, so it can't time out or grow with the pattern. `new: src/c.cs` declares a file the task creates.
 
 ## Checks (`aw-packets validate <packet-dir> [--repo <dir>] [--json]`)
 
