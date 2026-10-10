@@ -39,3 +39,15 @@ updates:
       npm-minor-and-patch:
         patterns: ["*"]
         update-types: ["minor", "patch"]
+  # The C# build (spec §4b.6): versions live in Directory.Packages.props (central package management), so one
+  # entry at the root covers every project. Lock files must be refreshed with the bump (scripts/dotnet-verify-packages.sh).
+  - package-ecosystem: nuget
+    directory: /
+    schedule:
+      interval: weekly
+    cooldown:
+      default-days: 14
+    open-pull-requests-limit: 5
+    groups:
+      nuget-minor-and-patch:
+        update-types: ["minor", "patch"]

@@ -158,7 +158,9 @@ packages:
     projectPrefix: Aw.Readiness
     ts: null
     src: src/Readiness
-    note: "the readiness check of record (decision R4, §8)"
+    bins: [aw-readiness]
+    namespace: readiness
+    note: "the readiness check of record (decision R4, §8); a standalone NativeAOT CLI before the switch, writing only under readiness/ (§4c)"
 
   # ---- tier 2 ----
   - id: Scorer

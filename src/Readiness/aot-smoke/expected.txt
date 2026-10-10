@@ -1,0 +1,149 @@
+== first run
+aw-readiness: smoke (csharp-template)
+Level 2 of 5; target 2 (ring 0): holds
+first run: baseline recorded (<state>/readiness/runs/smoke/<run>.json)
+
+pillar                       L1      L2      L3      L4      L5      level
+Style & Validation           3/3     0/1     -       -       -       2
+Build System                 -       1/4     -       -       -       1
+Testing                      1/1     -       1/2     0/2     -       2
+Documentation                1/1     1/1     -       0/1     -       3
+Development Environment      -       0/3     -       -       -       1
+Debugging & Observability    -       -       0/3     -       -       1
+Security                     -       -       0/2     -       -       1
+Task Discovery               -       -       0/3     -       -       1
+Product & Experimentation    -       -       -       0/2     -       1
+overall                      5/5     2/9     1/10    0/5     -       2
+
+pass  SV-1 (L1) Linter configured (Roslyn analyzers): NetAnalyzers is a GlobalPackageReference; .editorconfig sets analyzer severities
+pass  SV-2 (L1) Type checker strict (nullable, warnings as errors): Directory.Build.props: Nullable=enable, TreatWarningsAsErrors=true
+pass  SV-3 (L1) Code formatter (dotnet format over .editorconfig): .editorconfig present; AGENTS.md lists dotnet format
+FAIL  SV-4 (L2) Pre-commit hooks (tracked config): no tracked hook config (.pre-commit-config.yaml, .githooks/, lefthook.yml, .husky/); hooks installed per clone are not reproducible
+      fix: commit a hook config (.pre-commit-config.yaml, .githooks/, lefthook.yml or .husky/) that runs format and the scrubber
+pass  BS-1 (L2) Build command documented: AGENTS.md lists 'dotnet build'
+FAIL  BS-2 (L2) Dependencies pinned (central versions, lock files): Directory.Packages.props or Directory.Build.props doesn't turn on central versions and lock files
+      fix: turn on central package management and lock files, then run a restore and commit every packages.lock.json
+FAIL  BS-3 (L2) VCS CLI tools documented: neither README.md nor AGENTS.md names the gh CLI
+      fix: say in README.md or AGENTS.md that PRs and issues go through the gh CLI
+unknown  BS-4 (L4) Regular deployment frequency (≥3 releases in 90 days): not read: --no-remote
+FAIL  BS-5 (L2) Runtime version pinned (global.json): no global.json
+      fix: pin the SDK in global.json with "rollForward": "disable"
+pass  TS-1 (L1) Unit tests exist (unit lane): 1 test files in the unit lane
+FAIL  TS-2 (L3) Integration tests exist (integration lane): no test under tests/ carries the integration lane
+      fix: add a test with Trait("Lane", "integration") under tests/ (real SQLite or WebApplicationFactory)
+pass  TS-3 (L3) Tests runnable locally (one command): AGENTS.md lists 'dotnet test --solution AgenticWorkflow.slnx'
+FAIL  TS-4 (L4) Fast CI feedback (PR CI, affected areas, lane budgets): no workflow has: pull_request, dotnet test, changed-areas, LaneCap
+      fix: run dotnet test on pull_request with changed-area detection and the per-test lane cap (Aw.LaneCap.Testing)
+FAIL  TS-5 (L4) Flaky test detection (quarantine): no workflow runs a quarantine job
+      fix: add the quarantine job (spec §4e B11: in on 2 flaky failures in 7 days, out after 20 green runs)
+pass  DOC-1 (L2) AGENTS.md (covers the C# build): AGENTS.md present and lists dotnet commands
+pass  DOC-2 (L1) README: README.md present
+FAIL  DOC-3 (L4) Documentation freshness checked automatically: no workflow runs scripts/sync-rules.sh --check
+      fix: run scripts/sync-rules.sh --check in CI (and, W8, the AGENTS.md command executor)
+FAIL  DE-1 (L2) Devcontainer: no .devcontainer/devcontainer.json or .devcontainer.json
+      fix: add .devcontainer/devcontainer.json for humans (spec §4d: never the agent sandbox)
+FAIL  DE-2 (L2) Environment template: no .env.example
+      fix: add .env.example covering every variable the packages read
+FAIL  DE-3 (L2) Local services setup: no setup.sh
+      fix: keep setup.sh (one-command setup)
+FAIL  OBS-1 (L3) Structured logging (one shared JSON-lines logger): no src/Aw.Kernel.Telemetry project
+      fix: build Aw.Kernel.Telemetry's JSON-lines logger provider (spec §4b.1, W7)
+FAIL  OBS-2 (L3) Distributed tracing (OpenTelemetry spans): no src/Aw.Kernel.Telemetry project
+      fix: register the ActivitySources in Aw.Kernel.Telemetry's tracer provider (AddSource)
+FAIL  OBS-3 (L3) Metrics collection (OpenTelemetry meters): no src/Aw.Kernel.Telemetry project
+      fix: register the Meters in Aw.Kernel.Telemetry's meter provider (AddMeter)
+unknown  SEC-1 (L2) Branch protection on the default branch: not read: --no-remote
+unknown  SEC-2 (L3) Secret scanning and push protection: not read: --no-remote
+FAIL  SEC-3 (L3) CODEOWNERS: no .github/CODEOWNERS or CODEOWNERS or docs/CODEOWNERS
+      fix: add CODEOWNERS for the protected modules, backed by a required check (spec §4d)
+FAIL  SEC-4 (L3) Dependency update bot covers the C# packages: no .github/dependabot.yml
+      fix: add a 'package-ecosystem: nuget' entry to .github/dependabot.yml (grouped, 14-day cooldown)
+FAIL  TD-1 (L3) Issue templates: no issue templates under .github/ISSUE_TEMPLATE/
+      fix: add issue forms under .github/ISSUE_TEMPLATE/
+FAIL  TD-2 (L3) Issue labeling system (label scheme file): no .github/labels.yml
+      fix: keep .github/labels.yml with the type:, area:, size: and ring: families (spec §5 L3)
+FAIL  TD-3 (L3) PR template: no .github/pull_request_template.md or .github/PULL_REQUEST_TEMPLATE.md or .github/PULL_REQUEST_TEMPLATE
+      fix: add .github/pull_request_template.md with the evidence section
+unknown  TD-4 (L5) Complex requirements decomposed into parallel execution: no observable artifact yet: frozen packets and generated workflows (addendum F0-F3) are not built
+FAIL  PE-1 (L4) Product analytics instrumentation: no docs/readiness/product-signals.md
+      fix: write docs/readiness/product-signals.md mapping scorer and ledger telemetry to product analytics (W9)
+FAIL  PE-2 (L4) Experiment infrastructure: no docs/readiness/product-signals.md
+      fix: list evolve's A/B and the judge's shadow modes as experiments in docs/readiness/product-signals.md (W9)
+unknown  PE-3 (L5) Self-improving systems: no observable artifact yet: the weekly readiness workflow (§8) is not built
+exit=0
+== second run
+aw-readiness: smoke (csharp-template)
+Level 2 of 5; target 2 (ring 0): holds
+since <time>: no change (level 2)
+
+pillar                       L1      L2      L3      L4      L5      level
+Style & Validation           3/3     0/1     -       -       -       2
+Build System                 -       1/4     -       -       -       1
+Testing                      1/1     -       1/2     0/2     -       2
+Documentation                1/1     1/1     -       0/1     -       3
+Development Environment      -       0/3     -       -       -       1
+Debugging & Observability    -       -       0/3     -       -       1
+Security                     -       -       0/2     -       -       1
+Task Discovery               -       -       0/3     -       -       1
+Product & Experimentation    -       -       -       0/2     -       1
+overall                      5/5     2/9     1/10    0/5     -       2
+
+pass  SV-1 (L1) Linter configured (Roslyn analyzers): NetAnalyzers is a GlobalPackageReference; .editorconfig sets analyzer severities
+pass  SV-2 (L1) Type checker strict (nullable, warnings as errors): Directory.Build.props: Nullable=enable, TreatWarningsAsErrors=true
+pass  SV-3 (L1) Code formatter (dotnet format over .editorconfig): .editorconfig present; AGENTS.md lists dotnet format
+FAIL  SV-4 (L2) Pre-commit hooks (tracked config): no tracked hook config (.pre-commit-config.yaml, .githooks/, lefthook.yml, .husky/); hooks installed per clone are not reproducible
+      fix: commit a hook config (.pre-commit-config.yaml, .githooks/, lefthook.yml or .husky/) that runs format and the scrubber
+pass  BS-1 (L2) Build command documented: AGENTS.md lists 'dotnet build'
+FAIL  BS-2 (L2) Dependencies pinned (central versions, lock files): Directory.Packages.props or Directory.Build.props doesn't turn on central versions and lock files
+      fix: turn on central package management and lock files, then run a restore and commit every packages.lock.json
+FAIL  BS-3 (L2) VCS CLI tools documented: neither README.md nor AGENTS.md names the gh CLI
+      fix: say in README.md or AGENTS.md that PRs and issues go through the gh CLI
+unknown  BS-4 (L4) Regular deployment frequency (≥3 releases in 90 days): not read: --no-remote
+FAIL  BS-5 (L2) Runtime version pinned (global.json): no global.json
+      fix: pin the SDK in global.json with "rollForward": "disable"
+pass  TS-1 (L1) Unit tests exist (unit lane): 1 test files in the unit lane
+FAIL  TS-2 (L3) Integration tests exist (integration lane): no test under tests/ carries the integration lane
+      fix: add a test with Trait("Lane", "integration") under tests/ (real SQLite or WebApplicationFactory)
+pass  TS-3 (L3) Tests runnable locally (one command): AGENTS.md lists 'dotnet test --solution AgenticWorkflow.slnx'
+FAIL  TS-4 (L4) Fast CI feedback (PR CI, affected areas, lane budgets): no workflow has: pull_request, dotnet test, changed-areas, LaneCap
+      fix: run dotnet test on pull_request with changed-area detection and the per-test lane cap (Aw.LaneCap.Testing)
+FAIL  TS-5 (L4) Flaky test detection (quarantine): no workflow runs a quarantine job
+      fix: add the quarantine job (spec §4e B11: in on 2 flaky failures in 7 days, out after 20 green runs)
+pass  DOC-1 (L2) AGENTS.md (covers the C# build): AGENTS.md present and lists dotnet commands
+pass  DOC-2 (L1) README: README.md present
+FAIL  DOC-3 (L4) Documentation freshness checked automatically: no workflow runs scripts/sync-rules.sh --check
+      fix: run scripts/sync-rules.sh --check in CI (and, W8, the AGENTS.md command executor)
+FAIL  DE-1 (L2) Devcontainer: no .devcontainer/devcontainer.json or .devcontainer.json
+      fix: add .devcontainer/devcontainer.json for humans (spec §4d: never the agent sandbox)
+FAIL  DE-2 (L2) Environment template: no .env.example
+      fix: add .env.example covering every variable the packages read
+FAIL  DE-3 (L2) Local services setup: no setup.sh
+      fix: keep setup.sh (one-command setup)
+FAIL  OBS-1 (L3) Structured logging (one shared JSON-lines logger): no src/Aw.Kernel.Telemetry project
+      fix: build Aw.Kernel.Telemetry's JSON-lines logger provider (spec §4b.1, W7)
+FAIL  OBS-2 (L3) Distributed tracing (OpenTelemetry spans): no src/Aw.Kernel.Telemetry project
+      fix: register the ActivitySources in Aw.Kernel.Telemetry's tracer provider (AddSource)
+FAIL  OBS-3 (L3) Metrics collection (OpenTelemetry meters): no src/Aw.Kernel.Telemetry project
+      fix: register the Meters in Aw.Kernel.Telemetry's meter provider (AddMeter)
+unknown  SEC-1 (L2) Branch protection on the default branch: not read: --no-remote
+unknown  SEC-2 (L3) Secret scanning and push protection: not read: --no-remote
+FAIL  SEC-3 (L3) CODEOWNERS: no .github/CODEOWNERS or CODEOWNERS or docs/CODEOWNERS
+      fix: add CODEOWNERS for the protected modules, backed by a required check (spec §4d)
+FAIL  SEC-4 (L3) Dependency update bot covers the C# packages: no .github/dependabot.yml
+      fix: add a 'package-ecosystem: nuget' entry to .github/dependabot.yml (grouped, 14-day cooldown)
+FAIL  TD-1 (L3) Issue templates: no issue templates under .github/ISSUE_TEMPLATE/
+      fix: add issue forms under .github/ISSUE_TEMPLATE/
+FAIL  TD-2 (L3) Issue labeling system (label scheme file): no .github/labels.yml
+      fix: keep .github/labels.yml with the type:, area:, size: and ring: families (spec §5 L3)
+FAIL  TD-3 (L3) PR template: no .github/pull_request_template.md or .github/PULL_REQUEST_TEMPLATE.md or .github/PULL_REQUEST_TEMPLATE
+      fix: add .github/pull_request_template.md with the evidence section
+unknown  TD-4 (L5) Complex requirements decomposed into parallel execution: no observable artifact yet: frozen packets and generated workflows (addendum F0-F3) are not built
+FAIL  PE-1 (L4) Product analytics instrumentation: no docs/readiness/product-signals.md
+      fix: write docs/readiness/product-signals.md mapping scorer and ledger telemetry to product analytics (W9)
+FAIL  PE-2 (L4) Experiment infrastructure: no docs/readiness/product-signals.md
+      fix: list evolve's A/B and the judge's shadow modes as experiments in docs/readiness/product-signals.md (W9)
+unknown  PE-3 (L5) Self-improving systems: no observable artifact yet: the weekly readiness workflow (§8) is not built
+exit=0
+== bad flag
+{"code":"AW-READINESS-001","kind":"invalid","message":"unknown argument '--bogus'; usage: aw-readiness check [--json] [--root DIR] [--no-remote]"}
+exit=2

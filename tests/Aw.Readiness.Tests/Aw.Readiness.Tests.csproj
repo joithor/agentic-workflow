@@ -21,4 +21,9 @@
   <ItemGroup>
     <Using Include="Xunit" />
   </ItemGroup>
+
+  <!-- Golden files (the JSON report and the text report) are read and rewritten in the source tree. -->
+  <ItemGroup>
+    <AssemblyMetadata Include="AwGoldenSourceRoot" Value="$(MSBuildProjectDirectory)" />
+  </ItemGroup>
 </Project>
