@@ -3,8 +3,8 @@
 Status: **spec only** (R1b). The generator isn't built yet; this file is its contract. When it ships it becomes a skill
 under `skills/new-package/` whose `SKILL.md` points here, and the first two packages built with it are `Aw.Readiness`
 and `Aw.Packets` (spec §10 R1b). Rules it must satisfy: `.agents/rules/csharp.md`, `.agents/rules/csharp-testing.md`,
-spec §4b, and the root build settings (`Directory.Build.props`, `.editorconfig`, `Directory.Packages.props` from the
-.NET solution PR #89).
+spec §4b, and the root build settings (`Directory.Build.props`, `.editorconfig`, `tests/.editorconfig`,
+`Directory.Packages.props` from the .NET solution PR #89).
 
 ## Purpose
 
@@ -17,26 +17,36 @@ first move is the TDD step.
 | Input | Form | Rule |
 |---|---|---|
 | `name` | PascalCase, e.g. `Readiness` | `^[A-Z][A-Za-z0-9]{2,30}$`; not `Common`, `Shared`, `Utils`, `Helpers`; no existing `src/<Name>/` |
-| `tier` | `0`–`3` | Must match the tier table in spec §4b.1a / `deps.yaml`. Tier 0 is reserved for `Aw.Kernel*` and `Redaction` |
+| `tier` | `0`–`3` | Must match `deps.yaml` (the tier table of record). Tier 0 is reserved for `Aw.Kernel*` and `Redaction` |
 | `errorPrefix` | e.g. `RDY` | `^[A-Z]{2,4}$`; unique across the error catalogues (`src/**/*Errors.cs`); never derived or guessed |
+| `note` | one line: what the package is for | Used for the `deps.yaml` node when the package isn't declared yet |
 | `shape` | `small` (Core + App) or `full` (Core, Features, Infrastructure, Host) | `small` unless the package is expected over ~1,500 lines |
 | `host` | `cli`, `http` or `none` | `cli` → NativeAOT console app; `http` → minimal API with `CreateSlimBuilder`; `none` → library |
-| `depends` | list of package names | Each must be in a lower tier (checked against `deps.yaml`). Declared as `project` edges from this package's `Features` (`App` in the small shape) to their `Core`. Refused with `NP-FANOUT` if that project would hold more than 4 in-repo references |
+| `depends` | list of package names | Each must be in a lower tier (checked against `deps.yaml`). Project edges from this package's `Features` (`App` in the small shape) to their `Core`. Refused with `NP-FANOUT` if that project would hold more than 4 in-repo references |
 | `firstSlice` | PascalCase use-case name, e.g. `CheckRepo`, plus its `behavior` | Passed to `/new-slice` to generate the first red test |
 
 Inputs come from the arguments, then **Ask the user** for anything missing. Refuse (exit with the rule id) on any rule
 violation; never guess a tier or a prefix.
+
+## Before the scaffold: package pins
+
+The templates need `Microsoft.Extensions.DependencyInjection.Abstractions` (Core, Features, Infrastructure),
+`Microsoft.Extensions.DependencyInjection` (Host, tests), `Microsoft.Extensions.TimeProvider.Testing` (tests) and, for
+`host: http`, `Microsoft.AspNetCore.Mvc.Testing` (integration tests); `xunit.v3` is already pinned. If any isn't in
+`Directory.Packages.props`, the generator **stops** and prints the pin commit to make first: add each `PackageVersion`
+(exact version, at least 14 days old), refresh the lock files it changes (with `CentralPackageTransitivePinningEnabled`
+a new pin can turn an existing project's `Transitive` entry into `CentralTransitive`), and commit that on its own.
+The scaffold itself never edits `Directory.Packages.props`, so its whole-solution locked restore can't fail on NU1004.
 
 ## Generated files (`shape: full`, `host: cli`)
 
 ```
 src/<Name>/
 ├── Aw.<Name>.Core/
-│   ├── Aw.<Name>.Core.csproj          # refs Aw.Kernel + Microsoft.Extensions.DependencyInjection.Abstractions;
-│   │                                  # InternalsVisibleTo Aw.<Name>.Tests, Aw.<Name>.Testing
+│   ├── Aw.<Name>.Core.csproj          # refs Aw.Kernel + DI.Abstractions; InternalsVisibleTo Aw.<Name>.Tests, Aw.<Name>.Testing
 │   ├── packages.lock.json             # written by the first restore
-│   ├── PublicAPI.Shipped.txt          # empty
-│   ├── PublicAPI.Unshipped.txt        # every public symbol below, one per line
+│   ├── PublicAPI.Shipped.txt          # "#nullable enable" only
+│   ├── PublicAPI.Unshipped.txt        # "#nullable enable", then every public symbol, annotated (below)
 │   ├── <Name>Errors.cs                # public static class <Name>Errors — codes "<errorPrefix>-001"…
 │   └── <Name>CoreServiceCollectionExtensions.cs   # public static Add<Name>Core(this IServiceCollection)
 ├── Aw.<Name>.Features/
@@ -54,9 +64,10 @@ src/<Name>/
 │   └── <Name>InfrastructureServiceCollectionExtensions.cs   # public static Add<Name>Infrastructure(this IServiceCollection, <Name>Settings)
 └── Aw.<Name>.Host/
     ├── Aw.<Name>.Host.csproj          # OutputType=Exe; PublishAot=true (cli); AssemblyName=<name lowercase>;
-    │                                  # InternalsVisibleTo Aw.<Name>.Tests
+    │                                  # refs DI; InternalsVisibleTo Aw.<Name>.Tests
     ├── .editorconfig                  # root = false; [*.cs] dotnet_diagnostic.CA1031.severity = none  (composition root)
     ├── packages.lock.json
+    ├── PublicAPI.Shipped.txt · PublicAPI.Unshipped.txt   # "#nullable enable" only (cli: no public surface)
     ├── Program.cs                     # calls Composition.Compose, then the command table
     ├── Composition.cs                 # internal static class Composition { Compose(...) }
     ├── SettingsFromEnvironment.cs     # internal static: builds <Name>Settings from environment variables
@@ -64,26 +75,49 @@ src/<Name>/
     └── <Name>JsonContext.cs           # internal partial class, [JsonSerializable] source-generated, Kernel JSON options
 tests/
 ├── Aw.<Name>.Tests/
-│   ├── Aw.<Name>.Tests.csproj         # xUnit v3 (or the R7 choice); refs every src project above
+│   ├── Aw.<Name>.Tests.csproj         # xUnit v3 (or the R7 choice) + DI + TimeProvider.Testing; <Using Include="Xunit" />;
+│   │                                  # refs every src project above and Aw.<Name>.Testing
 │   ├── packages.lock.json
 │   ├── HostTests.cs                   # DI validation over Composition.Compose (Lane=unit) — green
 │   └── <FirstSlice>/<FirstSlice>Tests.cs   # from /new-slice — RED
 └── Aw.<Name>.Testing/
-    ├── Aw.<Name>.Testing.csproj
+    ├── Aw.<Name>.Testing.csproj       # refs Core and Features (builders, fakes)
     ├── packages.lock.json
     └── A.cs                           # builder root: public static class A
 ```
 
-Every public type and member gets a `///` summary (CS1591 is an error in non-test projects) and a line in its project's
-`PublicAPI.Unshipped.txt` (RS0016). Every file holds one top-level type named after the file (MA0048). Non-test code
-awaits with `.ConfigureAwait(false)` (CA2007). Test projects need neither: `CA2007` and `CA1515` are off there (set in
-`Directory.Build.props`/`.editorconfig` by #89).
+**Analyzer obligations the templates meet** (root settings from #89):
 
-`shape: small` replaces `Features`, `Infrastructure` and `Host` with one `Aw.<Name>.App` project: same files, same
-`Add…()` methods, one `.editorconfig` lowering CA1031, `OutputType=Exe` when `host` isn't `none`.
+- Every public type and member has a `///` summary (`CS1591` is an error in non-test projects).
+- Public API files (`RS0016`/`RS0017`/`RS0036`/`RS0037`): both files start with `#nullable enable`; Shipped has nothing
+  else; Unshipped lists every public symbol with nullability annotations, e.g.
+  `static Aw.<Name>.Core.<Name>CoreServiceCollectionExtensions.Add<Name>Core(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!`.
+  Records also list their compiler-generated members (about 12 lines each). The generator writes these lines from the
+  `RS0016` code fix (`dotnet format analyzers <project> --diagnostics RS0016`), never by hand, and then checks the header.
+- One top-level type per file, named after it (`MA0048`); no `TODO` comments (`MA0026`); no discarded results (`IDE0058`).
+- Library code uses `.ConfigureAwait(false)` on every `await`, `await using` and `await foreach` (`CA2007`); the Host
+  templates do the same.
+- Usings: the generator emits exactly the namespaces each file uses (`IDE0005` and `IDE0161` are errors); the
+  templates below show them.
+- Test projects follow the test policy set by #89 in `tests/.editorconfig` (`root = false`): `CA1707`, `RS0016`,
+  `RS0017`, `RS0036`, `RS0037`, `CA2007` and `CA1515` off; `GenerateDocumentationFile=true` with `CS1591` off.
 
-`host: http` uses `Microsoft.NET.Sdk.Web` for Host (which turns the request-delegate generator on with `PublishAot`),
-and adds:
+**`shape: small`** replaces `Features`, `Infrastructure` and `Host` with one `Aw.<Name>.App` project: same files under
+`Features/`, `Infrastructure/`, `Commands/` (or `Endpoints/`), same `Add…()` methods, `OutputType=Exe` when `host`
+isn't `none`. Because `App` matches none of the role suffixes in `Directory.Build.props`, its csproj sets
+`IsAotCompatible=true` itself (so a `host: none` library still gets the trim and AOT analyzers). Its `.editorconfig`
+lowers `CA1031` only for the boundary folders:
+
+```ini
+root = false
+[{Infrastructure/**.cs,Commands/**.cs,Endpoints/**.cs,Program.cs,Composition.cs}]
+dotnet_diagnostic.CA1031.severity = none
+```
+
+**`host: none`** generates no Host and no `HostTests`: there is no composition root to validate. The hosts that compose
+the library carry the DI validation.
+
+**`host: http`** uses `Microsoft.NET.Sdk.Web` for Host (its request-delegate generator runs with `PublishAot`), and adds:
 
 ```
 Aw.<Name>.Host/
@@ -93,24 +127,30 @@ Aw.<Name>.Host/
 tests/Aw.<Name>.Tests/LoopbackBindingTests.cs   # tries to override the bind (Lane=integration)
 ```
 
-`HttpResults` lives in each HTTP host for now. The second HTTP package moves it into a tier-0 Kernel part (second use →
-generalize); it can't go in `Aw.Kernel`, which is BCL-only.
+The Web SDK emits a `public partial class Program` (and `WebApplicationFactory<Program>` needs it public), so the http
+Host's `PublicAPI.Unshipped.txt` lists `Program` and `Program.Program() -> void`. `HttpResults` lives in each HTTP host
+for now; the second HTTP package moves it into a tier-0 Kernel part (second use → generalize). It can't go in
+`Aw.Kernel`, which is BCL-only.
 
 ### Files edited
 
 | File | Change |
 |---|---|
 | `AgenticWorkflow.slnx` | Adds every new project under `/src/<Name>/` and `/tests/` folders |
-| `deps.yaml` | Adds the package with its `tier`, and one `project` edge per `depends` entry |
+| `deps.yaml` | **Declared already** (as `Readiness` and `Packets` are): check that `tier`, `src` (`src/<Name>`) and `projectPrefix` (`Aw.<Name>`) match the inputs (else refuse `NP-DEPS-MISMATCH`), then switch the matching `planned` project edges to `current`. **Not declared:** add the node (`id: <Name>`, `kind: package`, `tier`, `projectPrefix: Aw.<Name>`, `ts: null`, `src: src/<Name>`, `note`) and one edge per `depends` entry (`kind: project`, `status: current`, `note`) |
 | `tests/Aw.Architecture.Tests/Packages.cs` | Registers the package's assemblies so every §4b.1 rule covers them |
-| `Directory.Packages.props` | Nothing unless a new package version is needed (then it must be ≥ 14 days old) |
 
-No other file changes. In particular the scaffold never touches `setup.sh`, `providers/`, `config/` or MCP
-registration: nothing is installed before the cutover.
+No other file changes. In particular the scaffold never touches `Directory.Packages.props` (see "Before the scaffold"),
+`setup.sh`, `providers/`, `config/` or MCP registration: nothing is installed before the cutover.
 
 ### Template: `Composition.cs`
 
 ```csharp
+using Aw.<Name>.Core;
+using Aw.<Name>.Features;
+using Aw.<Name>.Infrastructure;
+using Microsoft.Extensions.DependencyInjection;
+
 namespace Aw.<Name>.Host;
 
 /// <summary>The one composition root, shared by Program.cs and the DI validation test.</summary>
@@ -129,19 +169,29 @@ internal static class Composition
 
 ```csharp
 using Aw.<Name>.Host;
+using Aw.<Name>.Host.Commands;
 using Microsoft.Extensions.DependencyInjection;
 
 var services = Composition.Compose(new ServiceCollection(), SettingsFromEnvironment.Read(), TimeProvider.System);
-await using var provider = services.BuildServiceProvider();   // validation runs in HostTests, not at CLI startup
-return await CommandTable.Run(args, provider, <Name>JsonContext.Default).ConfigureAwait(false);
+var provider = services.BuildServiceProvider();   // validation runs in HostTests, not at CLI startup
+await using (provider.ConfigureAwait(false))
+{
+    return await CommandTable.Run(args, provider, <Name>JsonContext.Default).ConfigureAwait(false);
+}
 ```
 
-`CommandTable.Run` binds the arguments, resolves one `IService<TReq, TRes>`, calls it, and maps the `Result` to an exit
+`CommandTable.Run` binds the arguments, opens a scope (`var scope = provider.CreateAsyncScope(); await using
+(scope.ConfigureAwait(false)) { … }`), resolves one `IService<TReq, TRes>`, calls it, and maps the `Result` to an exit
 code and output. It is generated in the Host; it moves into a Kernel part only when a second CLI package proves the shape.
 
 ### Template: `HostTests.cs`
 
 ```csharp
+using Aw.<Name>.Host;
+using Aw.<Name>.Infrastructure;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Time.Testing;
+
 namespace Aw.<Name>.Tests;
 
 public sealed class HostTests
@@ -165,7 +215,7 @@ public sealed class HostTests
 The last step calls `/new-slice <Name> <firstSlice> <behavior>`, which writes
 `tests/Aw.<Name>.Tests/<FirstSlice>/<FirstSlice>Tests.cs` with one failing test and the stubs it needs to compile. The
 package is left **red on purpose**: `dotnet build` passes with zero warnings, `HostTests` passes, the slice test fails
-with `NotImplementedException` from the generated service stub. The scaffold's commit message is
+with the `NotSupportedException` thrown by the parameterless service stub. The scaffold's commit message is
 `test: <name> package scaffold with a red <firstSlice> test`.
 
 ## Commands the generator runs (in order)
@@ -173,10 +223,11 @@ with `NotImplementedException` from the generated service stub. The scaffold's c
 ```bash
 for p in src/<Name>/*/*.csproj tests/Aw.<Name>.*/*.csproj; do dotnet restore "$p"; done   # new projects only: writes their packages.lock.json
 dotnet restore --locked-mode                            # whole solution; must pass — existing lock files never change here
+dotnet format analyzers <each new src project> --diagnostics RS0016   # writes the PublicAPI.Unshipped.txt lines
 dotnet build -warnaserror                               # must report 0 warnings, 0 errors
 dotnet test --filter-trait "Lane=unit"                  # HostTests pass; the slice test fails (expected)
 dotnet format --verify-no-changes
-node scripts/check-deps.mjs                             # the new package and edges are declared (once the deps-graph PR #92 merges)
+node scripts/check-deps.mjs                             # the package and edges are declared (once the deps-graph PR #92 merges)
 ```
 
 All of them run under the heavy-job lock.
@@ -188,15 +239,15 @@ All of them run under the heavy-job lock.
 2. `tests/Aw.Architecture.Tests` passes with the new assemblies registered.
 3. `git status` shows only the files listed above (including each new project's `packages.lock.json`).
 4. The generator prints the next step: "Make `<FirstSlice>Tests` pass: replace the `Assert.Fail` with the real
-   assertion, then implement the service in `Features/<FirstSlice>/` (see `/new-slice`)."
+   assertion, add the ports the service needs, then implement it in `Features/<FirstSlice>/` (see `/new-slice`)."
 
 The generator's own test suite builds a scaffolded package against the real root files (`Directory.Build.props`,
-`.editorconfig`, `Directory.Packages.props`) and asserts criterion 1, so template drift from the root settings fails
-the generator's CI, not the first user.
+`.editorconfig`, `tests/.editorconfig`, `Directory.Packages.props`) and asserts criterion 1, so template drift from the
+root settings fails the generator's CI, not the first user.
 
 ## Failure behavior
 
 - Any check fails other than the expected red test → the generator reverts everything it created or edited (it
   records the file list before writing) and prints the rule id, the measured value and the fix.
 - Re-running with the same `name` refuses: `NP-EXISTS: src/<Name> already exists`. A taken `errorPrefix` refuses with
-  `NP-PREFIX`.
+  `NP-PREFIX`; a missing package pin stops with `NP-PINS` and the pin commit to make.
