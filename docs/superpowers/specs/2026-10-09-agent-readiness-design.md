@@ -82,8 +82,7 @@ gets CI as a safety net until the switch. The standards in §4 still apply, expr
 | Zod schemas, JSON Schema export | Records with `System.Text.Json` source generation; validators per schema; JSON Schema generated from the types for editor autocomplete |
 | Vitest | xUnit v3 on Microsoft.Testing.Platform (R7), with the lanes and time budgets in §4b.5 |
 | better-sqlite3 | `Microsoft.Data.Sqlite` with its bundled SQLite (§4b.2), new C# schemas, WAL mode |
-| Fastify (bridge) | ASP.NET Core minimal APIs |
-| `@modelcontextprotocol/sdk` | The official MCP C# SDK |
+| Fastify (bridge; retired 2026-10-10, not ported) | — (an http host, if one is ever needed, uses ASP.NET Core minimal APIs) |
 | Node CLIs started per hook call | **NativeAOT** binaries for hook and CLI entry points only (§4b.6 AOT table), so startup stays fast; a tool that opens a database ships the bundled SQLite library beside it. Reflection-free JSON (source generators) is required for them |
 | Playwright (ui-evidence) | Playwright for .NET |
 
@@ -103,7 +102,7 @@ gets CI as a safety net until the switch. The standards in §4 still apply, expr
    is free to fix what the TS got wrong, except on the hook-facing CLI and file surface, which is frozen until the
    switch (§4c).
 2. **One package at a time,** lowest tier first, in the §10 R2 order: `Redaction` (ported in R1b, #130, not yet
-   merged) → `judge` and `mcp-bridge` → `scorer`, `skills/ui-evidence` and the `skills/bugFixOrchestrator` state CLI →
+   merged) → `judge` (the MCP bridge was retired on 2026-10-10 instead of ported: it was never used) → `scorer`, `skills/ui-evidence` and the `skills/bugFixOrchestrator` state CLI →
    `sindri` (by module: profile and ledger, scrub, observe, index, scope, evolve). Sindri's code outside those
    directories goes with a module: the CLI, errors, ids, output, lock, doctor and docs code goes with profile and
    ledger, the first module ported, which also builds Sindri's host; `secrets.ts` goes with scrub; `adapters` goes
@@ -198,7 +197,7 @@ declaration.
 | Tier | Packages | May depend on |
 |---|---|---|
 | 0 | `Aw.Kernel` and its `Data`, `Telemetry`, `Testing` parts, `Analyzers` (build-time only and edge-less: referenced only as an analyzer), and `Redaction` (the scrubbing patterns now copied between judge and sindri; moved here by §4e B10) | the BCL plus one external package each, and lower tier-0 sublevels (below) |
-| 1 | `Judge`, `Bridge`, `Packets`, `Readiness` | Tier 0 |
+| 1 | `Judge`, `Packets`, `Readiness` | Tier 0 |
 | 2 | `Scorer`, `Evidence` (ui-evidence), `BugFix` | Tiers 0–1 (today they call judge, and scorer reads `judge.db`) |
 | 3 | `Sindri` | Tiers 0–2, **only through their `Core` contracts or their CLIs** (every package reaches a non-tier-0 package only through its `Core`; `deps.yaml` check DEPS-PROJ-007) |
 | — | Every `Host` | Its own package's projects, plus the tier-0 and lower-tier `Core`s it composes |
@@ -499,7 +498,6 @@ group.MapPost("/items/{id}/start", async (ItemId id, StartItemBody body, IServic
 | Entry point | Build | Why |
 |---|---|---|
 | Hook binaries, `judge`, `sindri`, `scorer`, `bugfix-state` CLIs | NativeAOT | Run per hook call or per command; startup matters |
-| `Bridge` hosts: REST (minimal API) and stdio MCP, two entry points as today | NativeAOT (decided: the MCP C# SDK passed the R1a spike with 0 warnings) | MCP tools use the SDK's low-level list/call handlers, so tool schemas and error shapes are explicit in code |
 | `Evidence` (ui-evidence) | Framework-dependent | Playwright for .NET doesn't support NativeAOT |
 | `aw-readiness` (`Aw.Readiness.App`, #141 on main) and `aw-packets` (`Aw.Packets.App`, #142): small-shape packages, so the entry point is `App` | NativeAOT | Standalone CLIs before the switch (§4c); sindri runs them per check after it |
 
@@ -537,7 +535,6 @@ agentic-workflow/
 │   ├── Sindri/   (Aw.Sindri.Core · Aw.Sindri.Features · Aw.Sindri.Infrastructure · Aw.Sindri.Host)
 │   ├── Judge/    (Aw.Judge.Core · … · Aw.Judge.Host)
 │   ├── Scorer/   (…)
-│   ├── Bridge/   (…)                  # minimal API host
 │   └── …
 ├── tests/
 │   ├── .editorconfig                  # the test-project analyzer policy (§4b.6)
@@ -704,9 +701,8 @@ assert that no tested path fails open against the C# binaries.
   a hand test or a dev session, without touching the real install.
 - **The switch:** `./setup.sh --runtime cs` **moves** only the TS packages' state aside to one timestamped archive:
   the namespaces and files `deps.yaml` lists for them (`judge/`, `scorer/`, `sindri/`, `ui-evidence/`,
-  `context-guard/`, `locks/` and the hook-owned files under `judge/`), plus two fixed extras the switch names itself
-  because `deps.yaml` can't express them: the per-repo bug-fix run state `<repo-slug>/bugfix/` and the bridge's
-  `bridge.db` (outside the state root). The C# BugFix writes to its own namespace, `bugfix/<repo-slug>/<ticket-slug>`
+  `context-guard/`, `locks/` and the hook-owned files under `judge/`), plus one fixed extra the switch names itself
+  because `deps.yaml` can't express it: the per-repo bug-fix run state `<repo-slug>/bugfix/`. The C# BugFix writes to its own namespace, `bugfix/<repo-slug>/<ticket-slug>`
   (so tickets don't collide across repos), and the bugFixOrchestrator skill text changes at the switch to pass that
   path; open bug-fix runs restart at the switch. Skill and workflow state is runtime-neutral and
   stays where it is through the switch and a rollback: `<repo-slug>/` (plans, reviews, proof, verification,
@@ -724,8 +720,8 @@ assert that no tested path fails open against the C# binaries.
 - **Hooks during the port:** the hook-facing CLI and file surface (the `deps.yaml` Hooks, Statusline and AwLive edges)
   is frozen until the switch.
 - **Rollback:** `./setup.sh --runtime ts --restore <archive>` reinstalls the TS build, moves the archived TS
-  namespaces and files (including `bridge.db` and `<repo-slug>/bugfix/`) back, and discards the C# packages'
-  post-switch state, including the C# bridge database (never skill and workflow state).
+  namespaces and files (including `<repo-slug>/bugfix/`) back, and discards the C# packages'
+  post-switch state (never skill and workflow state).
   The TS build stays in the repo, tagged, for 14 days after the switch, then it's deleted.
 - **The switch happens on the always-on box first**, then the laptop after a day with no rollback.
 - **TS stays frozen to bug fixes** once porting starts.
@@ -786,21 +782,21 @@ are `aw-packets validate` and `aw-packets freeze`, with the rule ids, output, ex
   stdin and stdout only (a versioned JSON protocol with its own contract tests).
 
 **Runtime hardening (A16).**
-- The bridge binds to loopback **in code**, and nothing outside the code can change it:
+- An http host (the `/new-package` http shape; the bridge, the one planned, was retired) binds to loopback **in code**,
+  and nothing outside the code can change it:
   - no command-line args or environment variables reach the web host's configuration (an http host clears the
     configuration sources: `CreateSlimBuilder` still reads `ASPNETCORE_*`, `DOTNET_*` and unprefixed environment
     variables), `PreferHostingUrls` is pinned off, and Kestrel listens with `Listen(IPAddress.Loopback, port)` only;
   - the http host's JSON options are the `AwJson` profile with the resolver chain replaced, plus `AddProblemDetails()`
     so error results serialize;
-  - a test starts the bridge with each override vector (`ASPNETCORE_URLS`, `DOTNET_URLS`, `ASPNETCORE_HTTP_PORTS`,
+  - a test starts the host with each override vector (`ASPNETCORE_URLS`, `DOTNET_URLS`, `ASPNETCORE_HTTP_PORTS`,
     `ASPNETCORE_PREFERHOSTINGURLS`, `ASPNETCORE_Kestrel__Endpoints__*` and the unprefixed
     `Kestrel__Endpoints__*` in the environment and on the command line, `--urls`) and
     checks the only listener is `127.0.0.1:<port>` (the R1a spike found two of them binding all interfaces in a
     default `CreateSlimBuilder(args)` host);
   - requests with a non-loopback `Host` get 400 (B12, DNS rebinding) and a browser `Origin` that isn't loopback gets
     403 (the MCP Streamable HTTP rule);
-  - not carried over from the TS bridge: the `HOST` variable, the `ALLOW_REMOTE` escape hatch and wildcard CORS
-    (`@fastify/cors` with `origin: true` today).
+  - none of the retired TS bridge's escape hatches: no `HOST` variable, no `ALLOW_REMOTE`, no wildcard CORS.
 - The scrubber runs as a processor on logs and OpenTelemetry exports, so new logging can't carry secrets out
   (`Aw.Kernel.Telemetry`, R1b, #136). Per path: log text and fields are scrubbed and secret-named fields, entries and
   holes withheld whole; with a trace exporter, span display names, tag values and status descriptions are rewritten in
@@ -827,7 +823,7 @@ are `aw-packets validate` and `aw-packets freeze`, with the rule ids, output, ex
 - **Quarantine (B11):** a test enters on 2 flaky failures in 7 days and leaves after 20 green runs in a row.
 - **Hook and dispatcher safety (B12):** the outbox dispatcher re-runs the gate checks on each command at dispatch
   time. `actor` is set by the host process, never by the caller. `detect-secrets.sh` is retired into the
-  `Redaction` package's patterns. The bridge checks the `Host` header (DNS rebinding).
+  `Redaction` package's patterns. An http host checks the `Host` header (DNS rebinding).
 - **Text fixes (B13):** stale `§4` references point to §4b; the colour rule reads "colour is never the only carrier of
   meaning"; test-lane filters use xUnit v3 trait syntax; a doc-migration checklist (README, ARCHITECTURE, TESTING,
   CODE_STYLE, ERD, AGENTS.md, rules) and a CI job graph are R1b deliverables.
@@ -843,7 +839,7 @@ Each row is a criterion family, the change that satisfies it, and its owner work
 | 2 | Pinned dependencies, documented build | `global.json`, Central Package Management, locked restore (§4b.6) | W1 |
 | 3 | Integration tests, tests runnable locally | Lanes, one root `test` command | W3 |
 | 3 | Secret scanning, CODEOWNERS | GitHub secret scanning + push protection, a scrub job in CI, CODEOWNERS backed by a check (§4d) | W4 |
-| 3 | Structured logging, tracing, metrics | One logger module (JSON lines, levels, ids; `Aw.Kernel.Telemetry`); OTel spans and metrics in bridge and sindri (exporter off by default; the OTLP adapter and a local collector, run on the host, arrive with the first exporting host) | W7 |
+| 3 | Structured logging, tracing, metrics | One logger module (JSON lines, levels, ids; `Aw.Kernel.Telemetry`); OTel spans and metrics in sindri and the C# hosts (exporter off by default; the OTLP adapter and a local collector, run on the host, arrive with the first exporting host) | W7 |
 | 3 | Issue and PR templates, labels | Templates; label scheme (`type:`, `area:`, `size:`, `ring:`) in `.github/labels.yml`, synced to the repo by the owner. The criterion (TD-2) passes only when labels of each family are on the repo, not only in the file (R1b, #141, on main), so it waits on that owner step | W6 |
 | 4 | Fast CI feedback | Required CI under 5 minutes for lint, types and unit tests; affected-package detection; heavy lanes nightly | W3 |
 | 4 | Flaky-test detection | The quarantine job (§4e B11, §8) | W3 |
@@ -863,7 +859,7 @@ Each row is a criterion family, the change that satisfies it, and its owner work
 | W4 Security | Branch protection with required checks and linear history; CODEOWNERS; secret scanning and push protection; Dependabot (or Renovate) with grouped updates; scrub job in CI | Single maintainer: CODEOWNERS is for the protected modules (§7.7) |
 | W5 Dev environment | Devcontainer for humans (.NET SDK, Node, uv; no Docker-in-Docker, §4d: Serena, the sindri containers and the optional collector run on the host; Ollama optional); `.env.example` covering every env var the packages read, enforced by `scripts/check-env-example.sh` (ENV-EXAMPLE-001…004) with `scripts/env-scan-ignore.txt` for OS and host variables | |
 | W6 Task discovery | Issue templates (bug, feature, skill change, idea card), PR template with the evidence section, label sync | Matches the addendum's work-item kinds |
-| W7 Observability | One shared logging module; OTel in bridge and sindri; `doctor` reports exporter state (`TelemetryRuntime.IsExporting`). The OTLP adapter must set `service.name` on the resource explicitly | |
+| W7 Observability | One shared logging module; OTel in sindri and the C# hosts; `doctor` reports exporter state (`TelemetryRuntime.IsExporting`). The OTLP adapter must set `service.name` on the resource explicitly | |
 | W8 Docs and delivery | `AGENTS.md` command executor; freshness check; promotion metrics | |
 | W9 Product signals | A page that maps existing telemetry and experiment machinery onto the pillar | Mostly documentation of what exists |
 | W10 Code shape | The §4b shape applied in each port; `deps.yaml` edges and tiers; merging duplicate logic (redaction, labeler, locks, `Result`, error codes, CLI output) found by the code index's clone layer | Happens inside the ports, not as a separate refactor of the TS |
@@ -969,7 +965,7 @@ about 49 commits in 60 days. The step sizes below are rough; each R2 packet's ow
 | R0 | Baseline: a quick manual pass over the nine pillars, recorded per criterion | XS | Baseline recorded |
 | R1a | **Safety and measurement:**<br>• CI hardened for a public repo, the agent App, the `main` and tag rulesets, the `main`-only key environment (§4d);<br>• fail-open logging in every hook (§4c, B5);<br>• the AOT spike (R7, R8, R9, the MCP C# SDK);<br>• the readiness baseline by a throwaway script (B2) | M (1–2 weeks) | Fail-open logging live; baseline recorded; agents can't bypass `main` |
 | R1b | **The template:**<br>• `Directory.Build.props`, Central Package Management, analyzers with one owner per rule, the ratchet baseline, `.editorconfig`;<br>• `Aw.Kernel` and its `Data`, `Telemetry` and `Testing` parts;<br>• `deps.yaml` with every edge kind and its checks (§4b.1a);<br>• the `/new-package` and `/new-slice` scaffolds (inputs, generated files, a red test) and `AGENTS.md` for C#;<br>• rule records for the §4b rules;<br>• W5 devcontainer and W6 templates;<br>• **`Aw.Readiness` and `Aw.Packets` as the first two standalone packages built from the template** (B2) | M (1–2 weeks) | A scaffolded package passes every check; `Aw.Readiness` reports Level 4 for the template; the R2 estimate is fixed here as the stop-rule baseline (round-2 review item B9: the 1.5× stop rule had no fixed baseline), in `docs/readiness/r2-estimate.md` (#144) |
-| R2 | **The ports, one packet per package:** `Redaction` is ported in R1b (#130, not yet merged; any rework it needs before merging counts toward R1b), so R2 starts at `Judge` and `Bridge` → `Scorer`, `Evidence` and `BugFix` → `Sindri` (by module inside its packet). Then **the switch**: `./setup.sh --runtime cs` on the always-on box, then the laptop. **In parallel,** new factory code (addendum F0 schemas, rule records) is written in C# from the start | L–XL (6–10 calendar weeks, including merge waits and the switch; the stop rules compare against the fixed baseline instead: 54.0 agent-hours expected, band 19.3–118.4 h, #144) | All packages done (§4a step 3); the switch done on both hosts; TS deleted 14 days later |
+| R2 | **The ports, one packet per package:** `Redaction` is ported in R1b (#130, not yet merged; any rework it needs before merging counts toward R1b), so R2 starts at `Judge` (the MCP bridge was retired 2026-10-10 instead of ported) → `Scorer`, `Evidence` and `BugFix` → `Sindri` (by module inside its packet). Then **the switch**: `./setup.sh --runtime cs` on the always-on box, then the laptop. **In parallel,** new factory code (addendum F0 schemas, rule records) is written in C# from the start | L–XL (6–10 calendar weeks, including merge waits and the switch; the stop rules compare against the fixed baseline instead: 51.5 agent-hours expected, band 18.4–112.9 h, #144 re-planned 2026-10-10 without Bridge) | All packages done (§4a step 3); the switch done on both hosts; TS deleted 14 days later |
 | R3 | Remaining Level 4 criteria that need usage data (promotion frequency, flake rates, doc freshness over time), and W9 | S–M | Level 4 passed. **Factory work (F0) starts here** |
 | R4 | Addendum F0–F3 plus the readiness module's weekly workflow | With the addendum | Level 5 passed |
 
@@ -995,7 +991,8 @@ measured tree; its `aw-packets validate` and `aw-packets freeze` are the R1b pac
   one packet, so the rule applies to its total, not per module.
 - **R2 as a whole** overrunning 1.5× its summed estimate triggers a re-plan with the human: reorder, cut scope, or
   run more packets in parallel. The port itself is decided and isn't reopened. The summed estimate excludes
-  Redaction (ported in R1b, #130): 54.0 h expected, so the re-plan point is 81.1 h.
+  Redaction (ported in R1b, #130) and, since the owner's re-plan of 2026-10-10, the retired Bridge: 51.5 h expected,
+  so the re-plan point is 77.2 h.
 - CI cost while both builds exist: TS jobs run only on PRs that touch TS (bug fixes), and the C# jobs run on everything
   else.
 

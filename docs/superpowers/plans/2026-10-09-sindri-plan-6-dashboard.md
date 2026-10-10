@@ -2,6 +2,13 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
+> **Amendment 2026-10-10 (MCP bridge retired):** the toolkit's MCP bridge was retired before this plan ran
+> (`mcp-bridge/` and its `bridge.db` are gone). When executing, drop the bridge fleet source everywhere it
+> appears: Task 7's `sindri/src/fleet/bridge.ts` and `tests/fleet-bridge.test.ts`, the `bridge` switch in
+> `fleet.sources`, the `bridge` need kind and its needs-you category, `AW_BRIDGE_DB`, and every test row, fixture or
+> doc line that names it; and leave `mcp-bridge` out of the merge-gate package loop. The spec's needs-you list no
+> longer has the bridge item.
+
 **Goal:** Give the builder one place to see every agent on the machine and what needs them (spec §1). This plan builds:
 - **`sindri fleet`**, a read-only collector. It covers Claude Code, Codex and Cursor sessions (including ones Sindri didn't start), Sindri's own jobs, the onboarded repos, gh pull requests and bridge messages. It gives exactly one state per session and one sorted "needs you" list.
 - **The `aw:fleet` hook**, installed for every provider. It appends one short line per event to a spool, which is the authoritative "waiting on you" signal.

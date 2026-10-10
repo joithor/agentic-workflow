@@ -20,12 +20,16 @@ threshold can differ by 0.1 h from twice the rounded figure. Elapsed times are e
 | Packet | Estimate (expected) | Stop or re-plan at |
 |---|---|---|
 | Judge | 8.9 h | 17.8 h |
-| Bridge | 2.5 h | 5.1 h |
 | Scorer | 7.3 h | 14.7 h |
 | Evidence | 3.7 h | 7.4 h |
 | BugFix | 2.0 h | 4.1 h |
 | Sindri (one packet, six modules) | 29.5 h | 59.0 h |
-| **R2 summed (excluding Redaction)** | **54.0 h** | **81.1 h** (1.5×) |
+| **R2 summed (excluding Redaction; Bridge retired)** | **51.5 h** | **77.2 h** (1.5×) |
+
+**Re-plan with the owner, 2026-10-10:** the MCP bridge is retired instead of ported (it was never used: its database
+held no message or task, and nothing called it), so the Bridge packet (2.5 h expected, 5.1 h review point) leaves
+R2. The R2 total drops from 54.0 h (band 19.3–118.4 h, re-plan at 81.1 h) to 51.5 h (band 18.4–112.9 h, re-plan at
+77.2 h), each recomputed from the unrounded figures without Bridge's lines. The per-packet estimates don't change.
 
 **The unit is agent elapsed hours.** A packet's clock starts when its verification plan is created (the
 `created` line of `verification-plan.md` in the packet's proof directory). It stops at the packet's last commit
@@ -116,7 +120,6 @@ module ported, which also builds Sindri's host.
 | Packet | TS paths | TS source | TS tests |
 |---|---|---|---|
 | Judge | `judge/src`, `judge/tests` | 4,136 | 4,942 |
-| Bridge | `mcp-bridge/src`, `mcp-bridge/tests` | 1,018 | 1,403 |
 | Scorer | `scorer/src`, `scorer/tests` | 3,468 | 3,986 |
 | Evidence | `skills/ui-evidence/src`, `skills/ui-evidence/scripts`, `skills/ui-evidence/tests` | 1,862 | 1,788 |
 | BugFix | `skills/bugFixOrchestrator/src`, `skills/bugFixOrchestrator/tests` | 888 | 999 |
@@ -136,7 +139,6 @@ Cross-check: the six sindri modules sum to the whole of `sindri/src` and `sindri
 |---|---|---|---|---|
 | Redaction | measured in R1b (#130), not yet merged | 1,108 measured | 1.3 measured | — |
 | Judge | 9,078 | 9,394 / 12,117 / 16,656 | 3.2 / 8.9 / 19.5 | 17.8 h |
-| Bridge | 2,421 | 2,737 / 3,463 / 4,674 | 0.9 / 2.5 / 5.5 | 5.1 h |
 | Scorer | 7,454 | 7,770 / 10,006 / 13,733 | 2.6 / 7.3 / 16.1 | 14.7 h |
 | Evidence | 3,650 | 3,966 / 5,061 / 6,886 | 1.3 / 3.7 / 8.1 | 7.4 h |
 | BugFix | 1,887 | 2,203 / 2,769 / 3,713 | 0.7 / 2.0 / 4.3 | 4.1 h |
@@ -147,7 +149,7 @@ Cross-check: the six sindri modules sum to the whole of `sindri/src` and `sindri
 | Sindri: scope | 4,405 | 4,405 / 5,726 / 7,929 | 1.5 / 4.2 / 9.3 | — |
 | Sindri: evolve | 11,708 | 11,708 / 15,220 / 21,074 | 4.0 / 11.2 / 24.7 | — |
 | **Sindri packet** | 30,661 | 30,977 / 40,175 / 55,506 | 10.5 / 29.5 / 64.9 | 59.0 h |
-| **R2 (excluding Redaction)** | 55,151 | 57,047 / 73,592 / 101,168 | 19.3 / 54.0 / 118.4 | 81.1 h (1.5×) |
+| **R2 (excluding Redaction; Bridge retired)** | 52,730 | 54,310 / 70,129 / 96,494 | 18.4 / 51.5 / 112.9 | 77.2 h (1.5×) |
 
 Sindri is one packet with six modules (§10 R2: "by module inside its packet"), so the 2× rule applies to the
 Sindri total. The module rows are for tracking progress inside it and aren't separate stop points. The template's
@@ -159,7 +161,6 @@ The baseline packages had no existing behavior to match. Some ports have costs t
 the likeliest reasons for a packet to land near its high end:
 - **Judge:** the hook-facing CLI and file surface is frozen until the switch, and CI runs the real hook scripts
   against the C# binary (§4a step 3, §4c).
-- **Bridge:** the MCP C# SDK and two entry points, REST and stdio (`docs/readiness/aot-spike.md`).
 - **Evidence:** Playwright for .NET and its browser tests.
 - **Sindri: index:** a pinned Node sidecar for indexing TS repos and graphify behind its adapter (§4a).
 
