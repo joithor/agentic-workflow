@@ -266,6 +266,43 @@ printf 'dotnet_diagnostic.AW1008.severity = suggestion\n' >> "$d/.editorconfig"
 addcheck "$(rec "$d" no-catch-exception)" "  - type: analyzer" '    id: "AW1008"' "    severity: suggestion" "    status: pending" "    pendingPr: 132"; run "$d"
 expect "a pending suggestion-level check that now exists still warns to flip it" 0 "WARN RULE-CHECK-002" "AW1008"
 
+# ---- review run 3: lexers, build settings in editorconfig and nuget.config, step lists, section globs ----
+d="$(fixture regex-id)"; printf 'if (/^#\\//.test(l)) fail("DEPS-CYCLE-001");\n' > "$d/scripts/check-deps.mjs"; run "$d"
+expect "an id after a regex literal on the same line is live" 0 "rules: ok"
+
+d="$(fixture regex-quote)"; printf 'const q = /["]/; // DEPS-CYCLE-001\n' > "$d/scripts/check-deps.mjs"; run "$d"
+expect "a quote inside a regex literal doesn't turn a comment into code" 1 "RULE-CHECK-001" "DEPS-CYCLE-001"
+
+d="$(fixture cs-raw)"; printf 'const string G = """\n  glob: src/*\n  """;\nconst string Id = "ARCH-SLICE-001";\n' > "$d/tests/Aw.Architecture.Tests/Raw.cs"; run "$d"
+expect "a C# raw string literal doesn't open a comment" 0 "WARN RULE-CHECK-002" "ARCH-SLICE-001"
+
+d="$(fixture cs-verbatim-interp)"; printf 'const string P = $@"C:\\dir\\"; // ARCH-SLICE-001\n' > "$d/tests/Aw.Architecture.Tests/Path.cs"; run "$d"
+refuse "a comment after a C# \$@ verbatim string stays a comment" "ARCH-SLICE-001 (PR #131) — fix"
+
+d="$(fixture setting-override)"; addcheck "$(rec "$d" no-catch-exception)" "  - type: build-setting" '    id: "dotnet_analyzer_diagnostic.severity = error"' "    status: active"
+printf '[*.cs]\ndotnet_analyzer_diagnostic.severity = none\n' >> "$d/.editorconfig"; run "$d"
+expect "an editorconfig build setting overridden later in a general section fails" 1 "RULE-CHECK-001" "dotnet_analyzer_diagnostic.severity = error"
+
+d="$(fixture setting-narrow)"; addcheck "$(rec "$d" no-catch-exception)" "  - type: build-setting" '    id: "dotnet_analyzer_diagnostic.category-roslynator.severity = none"' "    status: active"
+printf '[tests/**.cs]\ndotnet_analyzer_diagnostic.category-roslynator.severity = none\n' >> "$d/.editorconfig"; run "$d"
+expect "an editorconfig build setting only under a narrower section fails" 1 "RULE-CHECK-001" "category-roslynator"
+
+d="$(fixture nuget-comment)"; printf '<configuration>\n  <!-- <add key="x" value="AW0042" /> -->\n</configuration>\n' > "$d/nuget.config"
+addcheck "$(rec "$d" no-catch-exception)" "  - type: build-setting" '    id: "AW0042"' "    status: active"; run "$d"
+expect "a build setting found only in a nuget.config comment fails" 1 "RULE-CHECK-001" "AW0042"
+
+d="$(fixture steps-flush)"; printf 'jobs:\n  dotnet:\n    steps:\n    - name: The SDK is exactly the global.json pin\n' > "$d/.github/workflows/ci.yml"; run "$d"
+expect "a steps list at the same indent as steps: is read" 0 "rules: ok"
+
+d="$(fixture glob-any)"; printf '[**]\ndotnet_diagnostic.CA1031.severity = none\n' >> "$d/.editorconfig"; run "$d"
+expect "[**] is a general section" 1 "RULE-CHECK-001" "CA1031"
+
+d="$(fixture glob-list)"; printf '[{*.cs,*.vb}]\ndotnet_diagnostic.CA1031.severity = none\n' >> "$d/.editorconfig"; run "$d"
+expect "[{*.cs,*.vb}] is a general section" 1 "RULE-CHECK-001" "CA1031"
+
+d="$(fixture glob-csold)"; printf '[*.{cs-old}]\ndotnet_diagnostic.CA1031.severity = none\n' >> "$d/.editorconfig"; run "$d"
+expect "[*.{cs-old}] is not a C# section" 0 "rules: ok"
+
 d="$(fixture norecords)"; mv "$d/rules" "$d/rules.gone"; run "$d"
 expect "a tree with no rules directory is a tool error" 2 "check-rules: error"
 
