@@ -208,9 +208,17 @@ export async function publishProposals(ctx: EvolveCtx, o: { dryRun: boolean; noP
       fix: "add your workplace's names to privacy.denyTerms in the private profile, then sindri profile approve; or pass --no-privacy-terms to publish with the private-terms layer skipped (the other five layers still run)",
     });
   }
+  // Only the public version is ever rendered or checked (privacy spec §5.1); the original never reaches the repo.
+  // A proposal released by a profile change publishes from the public row it already has: no model call.
+  // The verbatim gate checks the union of the original's and the public version's evidence: a merged re-proposal can
+  // add refs to the original after its public row was written (fail closed).
+  const open = listStored(ctx.db, ["staged", "held"]).map((s) => {
+    const pub = getPublic(ctx.db, s.id);
+    return { s, pub, refs: [...new Set([...reduceEvidence(s.proposal.evidence).refs, ...reduceEvidence(pub?.evidence ?? []).refs])] };
+  });
   // May throw SND-EVOLVE-017/018/019 (a private repo without a usable index, no word list, unlistable tracked files),
-  // also on --dry-run, before any write.
-  const derived = await loadDerivedSet(ctx.deps, ctx.loaded);
+  // also on --dry-run, before any write; only when there is a proposal to check (architecture-strategist-2).
+  const derived = open.length > 0 ? await loadDerivedSet(ctx.deps, ctx.loaded) : new Set<string>();
   const cfg = repoConfig(ctx.loaded);
   const monday = isoWeekMonday(ctx.deps.now());
   if (!o.dryRun) {
@@ -236,14 +244,6 @@ export async function publishProposals(ctx: EvolveCtx, o: { dryRun: boolean; noP
   const scrubber = profileScrubber(ctx.loaded);
   const patterns = ctx.loaded.profile.privacy.denyPatterns;
   const user = ctx.deps.system.username();
-  // Only the public version is ever rendered or checked (privacy spec §5.1); the original never reaches the repo.
-  // A proposal released by a profile change publishes from the public row it already has: no model call.
-  // The verbatim gate checks the union of the original's and the public version's evidence: a merged re-proposal can
-  // add refs to the original after its public row was written (fail closed).
-  const open = listStored(ctx.db, ["staged", "held"]).map((s) => {
-    const pub = getPublic(ctx.db, s.id);
-    return { s, pub, refs: [...new Set([...reduceEvidence(s.proposal.evidence).refs, ...reduceEvidence(pub?.evidence ?? []).refs])] };
-  });
   // Every line of every session the listed proposals' evidence cites, read in one scan: a rewrite can copy an uncited
   // turn of a cited session as easily as the cited line (privacy spec §5.5 amendment). A ref whose session isn't among
   // this repo's sessions brings in nothing (Review Focus 1); a proposal none of whose cited sessions resolves holds.

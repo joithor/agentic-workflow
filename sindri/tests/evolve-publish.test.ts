@@ -639,6 +639,19 @@ describe("publish gate layers (privacy B1)", () => {
     fx.close();
   });
 
+  it("with nothing staged or held, needs no index or word list: it says nothing is staged (architecture-strategist-2)", async () => {
+    const { fx } = await ready();
+    const name = fx.ctx.loaded.profile.tracker.repo;
+    const loaded = { ...fx.ctx.loaded, repos: { ...fx.ctx.loaded.repos, globex: { ...fx.ctx.loaded.repos[name], private: true } } };
+    const ctx = { ...withDeps(fx.ctx, { env: { ...fx.deps.env, SINDRI_WORDS: path.join(fx.transcripts, "no-words") } }), loaded };
+    for (const args of [["--dry-run"], []]) {
+      const r = await publish(args, ctx);
+      expect(r.exitCode).toBe(0);
+      expect(r.stdout).toBe("Nothing is staged.\nNext: sindri evolve stage\n");
+    }
+    fx.close();
+  });
+
   it("reports how many non-toolkit repos leave private: unset, by count only, and still publishes", async () => {
     const fx = await evolveFixture({ files: FILES, extraYaml: DENY, extraRepos: [{ name: "initrode" }, { name: "zylo" }, { name: "vandelay", private: false }] });
     await init([], fx.ctx);
