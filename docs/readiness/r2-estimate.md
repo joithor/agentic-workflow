@@ -142,7 +142,7 @@ Sindri is one packet with six modules (§10 R2: "by module inside its packet"), 
 Sindri total. The module rows are for tracking progress inside it and aren't separate stop points. The template's
 316 lines count once, on its first module.
 
-## What the band doesn't capture
+## Port costs the baseline didn't have
 
 The baseline packages had no existing behavior to match. Some ports have costs that new code didn't, and they're
 the likeliest reasons for a packet to land near its high end:
