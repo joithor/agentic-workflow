@@ -172,6 +172,7 @@ t("full http: Host, loopback, endpoint, id, route binding test, undeclared node 
   for (const f of [`${host}/LoopbackBinding.cs`, `${host}/LoopbackGuard.cs`, `${host}/ValueObjectValidation.cs`, `${host}/HttpResults.cs`, `${host}/Endpoints/StartItemEndpoint.cs`, `${host}/Endpoints/StartItemBody.cs`, "src/Demohttp/Aw.Demohttp.Core/Ids/ItemId.cs", "tests/Aw.Demohttp.Tests/LoopbackBindingTests.cs", "tests/Aw.Demohttp.Tests/Ids/ItemIdRouteBindingTests.cs", "tests/Aw.Demohttp.Tests/Ids/ItemIdTests.cs"])
     assert.ok(exists(d, f), `missing ${f}`);
   assert.match(read(d, `${host}/Aw.Demohttp.Host.csproj`), /Sdk="Microsoft\.NET\.Sdk\.Web"/);
+  assert.match(read(d, `${host}/Aw.Demohttp.Host.csproj`), /<AwAotEntryPoint>true<\/AwAotEntryPoint>/);
   assert.match(read(d, `${host}/Endpoints/EndpointTable.cs`), /MapGroup\("\/demohttp"\)\.MapStartItem\(\);/);
   assert.match(read(d, `${host}/Endpoints/StartItemEndpoint.cs`), /MapPost\("\/items\/\{itemId\}\/start", static async \(ItemId itemId, StartItemBody body,/);
   assert.match(read(d, "deps.yaml"), /- id: Demohttp\n {4}kind: package\n {4}tier: 1\n/);

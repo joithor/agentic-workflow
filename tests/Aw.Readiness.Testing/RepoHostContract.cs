@@ -81,7 +81,19 @@ public abstract class RepoHostContract
         AssertEvidence(facts);
     }
 
-    /// <summary>A non-admin login can't see secret scanning: unknown, not 'off'.</summary>
+    /// <summary>A ruleset whose rules protect nothing (no required checks, PRs, force-push or deletion rules) isn't
+    /// protection.</summary>
+    /// <returns>The test.</returns>
+    [Fact]
+    public async Task A_ruleset_without_protective_rules_is_not_protection()
+    {
+        var facts = await HostFor(HostScenario.WeakRuleset).Read(Root, CancellationToken.None);
+
+        Expect.Equal(expected: false, facts.BranchProtection.Holds, "BranchProtection with only a non-protective rule");
+        AssertEvidence(facts);
+    }
+
+    /// <summary>A non-admin login can see neither protection nor secret scanning: unknown, not 'off'.</summary>
     /// <returns>The test.</returns>
     [Fact]
     public async Task A_non_admin_login_leaves_secret_scanning_unknown()
@@ -89,7 +101,7 @@ public abstract class RepoHostContract
         var facts = await HostFor(HostScenario.NotAdmin).Read(Root, CancellationToken.None);
 
         Expect.Equal(expected: null, facts.SecretScanning.Holds, "SecretScanning for a non-admin");
-        Expect.Equal(expected: true, facts.BranchProtection.Holds, "BranchProtection");
+        Expect.Equal(expected: null, facts.BranchProtection.Holds, "BranchProtection for a non-admin (GitHub answers 404)");
         AssertEvidence(facts);
     }
 

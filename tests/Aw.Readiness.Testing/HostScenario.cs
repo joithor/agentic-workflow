@@ -18,6 +18,10 @@ public enum HostScenario
     /// <summary>Like Bare, but the plan can't protect branches at all (HTTP 403 "Upgrade to GitHub Pro").</summary>
     PlanCannotProtect = 5,
 
-    /// <summary>Like Ready, but the login isn't a repo admin, so secret scanning isn't reported.</summary>
+    /// <summary>Like Ready, but the login isn't a repo admin: GitHub answers the protection endpoint with a plain 404
+    /// and doesn't report secret scanning, so neither can be known.</summary>
     NotAdmin = 6,
+
+    /// <summary>Like Bare, but main has a ruleset whose only rule protects nothing (copilot_code_review).</summary>
+    WeakRuleset = 7,
 }

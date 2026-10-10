@@ -60,6 +60,15 @@ public sealed class ReportTextTests
     }
 
     [Fact, Trait("Lane", "unit")]
+    public void A_level_move_without_a_compared_change_is_reported_as_a_move()
+    {
+        var text = ReportText.Render(Report(new RunDelta(RepoHostContract.Now.AddDays(-1), 3, 4, [])));
+
+        Assert.Contains("level 3 -> 4, no compared change (criteria unread on either run aren't compared)", text, StringComparison.Ordinal);
+        Assert.DoesNotContain("no change (level", text, StringComparison.Ordinal);
+    }
+
+    [Fact, Trait("Lane", "unit")]
     public void An_unchanged_run_says_so_and_unknowns_are_words()
     {
         var text = ReportText.Render(Report(new RunDelta(RepoHostContract.Now.AddDays(-1), 4, 4, []), unknownHost: true));

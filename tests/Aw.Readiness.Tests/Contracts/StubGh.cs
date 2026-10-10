@@ -23,8 +23,7 @@ internal static class StubGh
             ? "{\"permissions\":{\"admin\":false}}"
             : "{\"permissions\":{\"admin\":" + admin + "},\"security_and_analysis\":{\"secret_scanning\":{\"status\":\"" + status + "\"},\"secret_scanning_push_protection\":{\"status\":\"" + status + "\"}}}";
         var protection = Protection(scenario);
-        // Rulesets: no branch protection (404) but ruleset rules apply to main.
-        var rules = scenario == HostScenario.Rulesets ? "[{\"type\":\"pull_request\"},{\"type\":\"non_fast_forward\"}]" : "[]";
+        var rules = Rules(scenario);
         string[] script =
         [
             "#!/bin/sh",
@@ -49,11 +48,21 @@ internal static class StubGh
 
     private static string Protection(HostScenario scenario) => scenario switch
     {
-        HostScenario.Ready or HostScenario.NotAdmin => "echo '{\"url\":\"x\"}'",
+        HostScenario.Ready => "echo '{\"url\":\"x\"}'",
+        HostScenario.NotAdmin => "echo '{\"message\":\"Not Found\",\"status\":\"404\"}'; echo 'gh: Not Found (HTTP 404)' >&2; exit 1",
         HostScenario.PlanCannotProtect =>
             "echo '{\"message\":\"Upgrade to GitHub Pro or make this repository public to enable this feature.\",\"status\":\"403\"}'; echo 'gh: Upgrade to GitHub Pro or make this repository public to enable this feature. (HTTP 403)' >&2; exit 1",
-        HostScenario.Bare or HostScenario.Rulesets or HostScenario.Unreachable =>
+        HostScenario.Bare or HostScenario.Rulesets or HostScenario.WeakRuleset or HostScenario.Unreachable =>
             "echo '{\"message\":\"Branch not protected\",\"status\":\"404\"}'; echo 'gh: Branch not protected (HTTP 404)' >&2; exit 1",
+        _ => throw new ArgumentOutOfRangeException(nameof(scenario), scenario, message: null),
+    };
+
+    // Rulesets: no branch protection (404) but protective ruleset rules on main; WeakRuleset: a rule that protects nothing.
+    private static string Rules(HostScenario scenario) => scenario switch
+    {
+        HostScenario.Rulesets => "[{\"type\":\"pull_request\"},{\"type\":\"non_fast_forward\"}]",
+        HostScenario.WeakRuleset => "[{\"type\":\"copilot_code_review\"}]",
+        HostScenario.Ready or HostScenario.Bare or HostScenario.Unreachable or HostScenario.PlanCannotProtect or HostScenario.NotAdmin => "[]",
         _ => throw new ArgumentOutOfRangeException(nameof(scenario), scenario, message: null),
     };
 }

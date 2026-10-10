@@ -63,6 +63,16 @@ public sealed class ReadinessScoringTests
     }
 
     [Fact, Trait("Lane", "unit")]
+    public void An_unread_criterion_counts_as_not_passing_so_offline_never_scores_higher()
+    {
+        Finding[] online = [A.Finding("TS-1", CriterionState.Pass), A.Finding("TS-2", CriterionState.Fail)];
+        Finding[] offline = [A.Finding("TS-1", CriterionState.Pass), A.Finding("TS-2", CriterionState.Unknown) with { Unread = true }];
+
+        Assert.Equal(ReadinessScoring.Score(online).Level, ReadinessScoring.Score(offline).Level);
+        Assert.Equal(new LevelTally(1, 1, 2), ReadinessScoring.Score(offline).Tallies[0]);
+    }
+
+    [Fact, Trait("Lane", "unit")]
     public void Unknown_and_not_applicable_are_not_scored()
     {
         Finding[] findings = [

@@ -36,6 +36,18 @@ public sealed class GhCliTests : IDisposable
         Assert.Equal(Path.Combine(bin, "gh"), found);
     }
 
+    [Fact]
+    public void The_search_path_comes_from_the_environment_composition_passes()
+    {
+        var bin = Directory.CreateDirectory(Path.Combine(_dir.Path, "envbin")).FullName;
+        _ = Script("envbin/gh", "echo env");
+
+        var settings = SettingsFromEnvironment.Read(name => name == "PATH" ? bin : null);
+
+        Assert.Equal(bin, settings.GhSearchPath);
+        Assert.Equal(Path.Combine(bin, "gh"), GhCli.Resolve(settings.GhBinary, settings.GhSearchPath));
+    }
+
     [Theory]
     [InlineData("gh")]
     [InlineData("relative/gh")]
@@ -47,7 +59,7 @@ public sealed class GhCliTests : IDisposable
     {
         var marker = Path.Combine(_dir.Path, "still-running");
         var gh = Script("gh-hangs", $"sleep 5; touch '{marker}'");
-        var cli = new GhCli(new ReadinessSettings(_dir.Path, gh, TimeSpan.FromMilliseconds(300)));
+        var cli = new GhCli(new ReadinessSettings(_dir.Path, gh, GhSearchPath: "", TimeSpan.FromMilliseconds(300)));
 
         var reply = await cli.Run(_dir.Path, ["repo", "view"], CancellationToken.None);
         await Task.Delay(TimeSpan.FromSeconds(6), TestContext.Current.CancellationToken);
