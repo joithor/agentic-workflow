@@ -39,7 +39,7 @@ alwaysApply: false
 
 # C# Rules
 
-The TypeScript packages are being rewritten in C# on .NET 10 (spec `docs/superpowers/specs/2026-10-09-agent-readiness-design.md`, §4a–§4e; the spec's §4b is the source of truth for every number here). The port is decided — don't reopen it. **Clean cutover:** the C# build keeps no backward compatibility with the TS build (no byte-compatible JSON, no golden replay against TS output, no migration of TS state); its contracts are defined by its own tests. The one exception is the **hook-facing CLI and file surface** (the `deps.yaml` Hooks, Statusline and AwLive edges: the CLI flags and output the hooks call, and the files they write, such as `judge/sessions`, `judge/outbox` and `judge/teammate-names.jsonl`): it stays frozen until the switch, checked in CI by running the real hook scripts against the C# binaries. The installed toolkit stays TypeScript until the C# build is complete; before the switch nothing in `setup.sh`, the providers, MCP registration or launchd points at the C# build. Separately, `aw-readiness` and `aw-packets` run before the switch as standalone NativeAOT CLIs that write only under `readiness/` and `packets/` (spec §4c); nothing installs or schedules them. There are no per-package shims.
+The TypeScript packages are being rewritten in C# on .NET 10 (spec `docs/superpowers/specs/2026-10-09-agent-readiness-design.md`, §4a–§4e; the spec's §4b is the source of truth for every number here). The port is decided — don't reopen it. **Clean cutover, and a reimplementation, not a translation:** each package is rebuilt as idiomatic C# with the TS package as a guideline for *what* it does, never for *how* ("Porting a TS package" below). The C# build keeps no backward compatibility with the TS build (no byte-compatible JSON, no golden replay against TS output, no migration of TS state); its contracts are defined by its own tests. The one exception is the **hook contract** (spec §4c; the `deps.yaml` Hooks, Statusline and AwLive edges): only what the bash hooks and statusline that keep running read — the commands and arguments they call, the JSON fields they `jq`, the exit codes and stderr prefixes they branch on, and the files they write, such as `judge/sessions`, `judge/outbox` and `judge/teammate-names.jsonl`. It stays frozen until the switch, checked in CI by running the real hook scripts against the C# binaries; the rest of each command is the C# package's own design. The installed toolkit stays TypeScript until the C# build is complete; before the switch nothing in `setup.sh`, the providers, MCP registration or launchd points at the C# build. Separately, `aw-readiness` and `aw-packets` run before the switch as standalone NativeAOT CLIs that write only under `readiness/` and `packets/` (spec §4c); nothing installs or schedules them. There are no per-package shims.
 
 Each rule names the check that enforces it. "Gap — R1b" means the check doesn't exist yet: follow the rule by hand and don't add new violations.
 
@@ -189,6 +189,26 @@ where one fits. BCL ports (`TimeProvider`, faked by `FakeTimeProvider`) are exem
 Name ports for what the code needs (`IItemStore`, `IJobQueue`), not for the technology (`ISqliteItems`,
 `IRedisCache`). Don't add a port for something with one obvious BCL implementation and no I/O (collections,
 `JsonSerializer` through AwJson, `CancellationToken`).
+
+## Porting a TS package (spec §4a step 1)
+
+A port is a **reimplementation in idiomatic C#**. Read the TS package to learn what it does (its use cases, rules,
+failure modes and the reasons behind them), then design the C# package the way this file says, as if it were new.
+The TS code is a guideline, not a spec, and never a target to match.
+
+| Don't | Do |
+|---|---|
+| Emulate JavaScript (`JSON.parse`/`JSON.stringify`, number text, key order, escaping) or match TS output byte for byte | Serialize with the Kernel `AwJson` profile and the package's source-generated context; let the format be whatever that writes |
+| Walk `JsonDocument`/`JsonElement` field by field, or copy TS's per-field leniency (wrong types silently defaulted) | Deserialize input into typed records through `AwJson` (required and nullable are enforced by the profile); a bad document is one clear error |
+| Keep a TS quirk because "TS did it": a status smuggled into another field, a silent exit, an unknown argument treated as a known one, three output envelopes for one concept | Model it properly (a column, a field, an error from the catalogue), with one consistent output and exit-code scheme documented in `docs/csharp/<package>.md` |
+| Mirror the TS file layout, function by function | Use the §4b shape: slices in `Features`, pure decisions on `Core` types, technology behind ports |
+| Write plans, briefs or tests that say "exactly as TS", "same output as TS" or compare with TS output | State the C# contract and test it; compare with TS only on the hook contract, in the real-hook check |
+| Port TS state formats or digests so they "line up" | Design new schemas and digests (§4c: the C# build starts with fresh state) |
+
+The **hook contract** is the only exception, and it is narrow: list exactly what the hooks read (the commands and
+arguments, the `jq` fields, the exit codes and stderr prefixes, the files) in the package doc, keep those, and design
+everything around them freely. The tier-2 callers of a package's CLI (ui-evidence, bugfix) are ported to C# too, so
+they follow the C# contract, not the TS one.
 
 ## Adding code
 

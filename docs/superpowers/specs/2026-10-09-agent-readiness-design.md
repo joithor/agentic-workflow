@@ -1,8 +1,9 @@
 # Agent readiness for agentic-workflow — design
 
-Status: draft for review, revision 6 · 2026-10-10 (rounds 1–2 applied; owner decision: **one clean cutover, no backward
+Status: draft for review, revision 7 · 2026-10-10 (rounds 1–2 applied; owner decision: **one clean cutover, no backward
 compatibility** — no TS parity, no data migration, no replay; decisions from the R1a PRs and the R1b template PRs
-folded in; R1b checks of record in §4b.10)
+folded in; R1b checks of record in §4b.10; rev 7: each package is a **reimplementation in idiomatic C#, not a
+translation** of the TS, and the hook contract is only what the hooks read, §4a step 1 and §4c)
 Target: **Level 5 (Autonomous)** on Factory's agent-readiness framework. Level 4 is a prerequisite for the
 factory work in `2026-10-09-sindri-factory-addendum.md` (§17.16). Level 5 is reached together with that work.
 
@@ -97,11 +98,21 @@ gets CI as a safety net until the switch. The standards in §4 still apply, expr
 - **Agent sessions** are started through the `claude` CLI (as today), so there's no dependency on an Agent SDK.
 
 **How the rewrite runs (strangler, never big-bang):**
-1. **Contracts are designed, not recorded.** Each package's external surface (CLI arguments, output and exit
-   codes, JSON files, SQLite schemas, MCP tool schemas and HTTP routes) is defined by the C# package's own tests.
-   The TS behavior is the reference for what the contract should do, not a byte-for-byte target, and the C# build
-   is free to fix what the TS got wrong, except on the hook-facing CLI and file surface, which is frozen until the
-   switch (§4c).
+1. **A reimplementation, not a translation (owner, 2026-10-10).** Each package is rebuilt as idiomatic C# in the
+   §4b shape, with the TS package as a guideline for *what* it does, never for *how*. Its external surface (CLI
+   arguments, output and exit codes, JSON files, SQLite schemas, MCP tool schemas and HTTP routes) is designed fresh
+   and defined by the C# package's own tests and its doc under `docs/csharp/`. Nothing reproduces TS formatting,
+   quirks or workarounds:
+   - no JS-semantics layer (no `JSON.parse`/`JSON.stringify` emulation, no matching of key order, escaping or number
+     text);
+   - JSON is type-driven: records (de)serialized through the Kernel `AwJson` profile, not `JsonDocument` walking or
+     per-field leniency copied from TS;
+   - no marker hacks (a status smuggled into another field), no exit codes, messages or silent failures kept only
+     because TS had them, no TS structure mirrored file by file;
+   - tests compare C# behavior with the C# contract, never with TS output.
+   The tier-2 callers of a package's CLI (ui-evidence, bugfix) are ported too, so they follow the C# contract. The
+   one compatibility target is the **hook contract** (§4c): what the bash hooks and the statusline that keep running
+   actually read, and nothing more. `.agents/rules/csharp.md` "Porting a TS package" is the working checklist.
 2. **One package at a time,** lowest tier first, in the §10 R2 order: `Redaction` (ported in R1b, #130, not yet
    merged) → `judge` (the MCP bridge was retired on 2026-10-10 instead of ported: it was never used) → `scorer`, `skills/ui-evidence` and the `skills/bugFixOrchestrator` state CLI →
    `sindri` (by module: profile and ledger, scrub, observe, index, scope, evolve). Sindri's code outside those
@@ -123,7 +134,8 @@ gets CI as a safety net until the switch. The standards in §4 still apply, expr
 **Risks to watch:**
 - NativeAOT limits (reflection, some libraries). Every CLI builds AOT in CI from day one.
 - The Plan 5 evolve suites and judge calibration data have TS-specific fixtures. They're ported as test data where
-  they still apply, and their pass rates are re-baselined on the C# build before the switch.
+  they still apply (as data for C# tests, not as TS-behavior oracles), and their pass rates are re-baselined on the C#
+  build before the switch.
 - Rewrite fatigue: the rewrite is time-boxed per package, and a package that overruns 2× its estimate is reviewed
   before more work goes into it.
 
@@ -661,7 +673,7 @@ against it. It is proven by its own tests.
 - a startup-time budget per CLI;
 - the AOT CI job: every NativeAOT entry point is published and smoke-tested;
 - **the real hook scripts** in `config/hooks/` run against the C# binaries in CI, because their behavior is what
-  users depend on.
+  users depend on. They check the hook contract (§4c) only: what the hooks read, not the rest of a command's output.
 
 **Digests.** New C# digests over JSON use one canonical form (sorted keys, the Kernel profile) and carry a
 `digestVersion` field. Nothing reproduces TS digest bytes (B4). Digest v1, as `Aw.Packets` builds it for the packet
@@ -719,8 +731,18 @@ assert that no tested path fails open against the C# binaries.
   host runs them as `sindri readiness …` and `sindri packet …` through planned `cli` edges to the two binaries
   (§8, addendum §17.4): each package's use cases and adapters live in its `App`, and a `project` edge reaches only
   `Core`. When sindri's C# ledger first runs, it imports Readiness's history into the ledger and keeps the files.
-- **Hooks during the port:** the hook-facing CLI and file surface (the `deps.yaml` Hooks, Statusline and AwLive edges)
-  is frozen until the switch.
+- **Hooks during the port: the hook contract.** The hooks stay bash and keep running through the switch, so what they
+  depend on is frozen until then (the `deps.yaml` Hooks, Statusline and AwLive edges). That is exactly:
+  - the commands and arguments a hook or the statusline calls (for Judge: `wake-gate`, `brief-scope`, `ask-check`,
+    `prompt-sort`, `brief save|get|map-by-name|map-by-dispatch|set-agent-id`, `health`) and the environment
+    variables they set (`AW_STATE_DIR`, `AW_SESSION_ID`, `AW_PROVIDER`, `AW_JUDGE_PROVIDERS`);
+  - the input JSON fields hooks send, the output fields they read with `jq` (e.g. `.decision`,
+    `.acceptanceCriteria`, `.status`, `.failures24h`), the exit codes they branch on (`ask-check`: 0 ask, 2 continue)
+    and the stderr prefixes they match (`no brief for`);
+  - the files the hooks themselves write and read (`judge/sessions`, `judge/outbox`, `judge/teammate-names.jsonl`).
+  Everything else is the C# package's own design: the rest of each output and its formatting, other commands, error
+  wording, exit codes no hook reads, config and database formats. The check runs the real hook scripts against the C#
+  binary and compares only these points.
 - **Rollback:** `./setup.sh --runtime ts --restore <archive>` reinstalls the TS build, moves the archived TS
   namespaces and files (including `<repo-slug>/bugfix/`) back, and discards the C# packages'
   post-switch state (never skill and workflow state).
