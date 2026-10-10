@@ -155,7 +155,7 @@ The setup script:
 - Symlinks native skills, `/bootstrap`, and the external design packs (cloned at pinned commits from `EXTERNAL_PINS.env`) into each selected provider's skills directory
 - Installs the safety hooks (`block-destructive.sh`, `block-push-main.sh`, `detect-secrets.sh`, `rtk-rewrite.sh`) and session-context hooks for each provider. Claude Code uses them natively; Codex and Cursor go through their hook adapters.
 - Builds the Serena Docker images (base TS/Python image; opt-in C# and Swift extensions) and installs the `serena-docker` wrapper to `~/.local/bin/`
-- Registers the MCP servers (`serena`, `headroom`, `prism-mcp`, and `xcodebuildmcp` on macOS) with each selected provider, and removes an old `agentic-bridge` registration (the MCP bridge was retired)
+- Registers the MCP servers (`serena`, `headroom`, `prism-mcp`, and `xcodebuildmcp` on macOS) with each selected provider, and removes an old `agentic-bridge` registration and the leftover `mcp-bridge/` build output (the MCP bridge was retired)
 - Configures `prism-mcp` (persistent memory, downloaded on first use) with its Mind Palace dashboard at `http://localhost:7180` (`PRISM_DASHBOARD_PORT`). The `prism-context.sh` session-start hook warns if the dashboard is unreachable; `/prismStatus` runs a full health check
 - Installs rtk and headroom
 - **Claude Code only:** copies `settings.json`, installs the statusline and shell integration, and adds plugin marketplaces and plugins

@@ -1,5 +1,5 @@
 ---
-description: Test infrastructure, shared helpers, and coverage policy
+description: Test infrastructure, coverage policy, and test count baseline
 globs:
   - "**/*.test.ts"
   - "**/*.spec.ts"

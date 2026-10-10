@@ -387,13 +387,16 @@ aw_mcp_retire_cli() {
   done
 }
 
-# Remove a retired package's directory from the toolkit checkout once git tracks nothing in it (what is left is
-# ignored build output: dist/, node_modules/, a database). A directory with tracked files is kept.
+# Remove a retired package's directory from the toolkit checkout once everything left in it is ignored build output
+# (dist/, node_modules/, a database). Kept: a directory with tracked files or with untracked files git doesn't ignore
+# (someone's uncommitted work), and anything outside a git checkout.
 #   aw_remove_retired_dir <repo> <relative-dir>
 aw_remove_retired_dir() {
   local repo="$1" rel="$2"
   [ -d "$repo/$rel" ] || return 0
-  [ -z "$(git -C "$repo" ls-files -- "$rel" 2>/dev/null)" ] || return 0
+  git -C "$repo" rev-parse --git-dir >/dev/null 2>&1 || return 0
+  [ -z "$(git -C "$repo" ls-files -- "$rel")" ] || return 0
+  [ -z "$(git -C "$repo" ls-files --others --exclude-standard -- "$rel")" ] || return 0
   if aw_dry; then
     echo "  [dry-run] would remove $repo/$rel (retired; only untracked files left)"
   else

@@ -17,6 +17,7 @@ provider. Skill text names capabilities, not tools — see `skills/_shared/capab
 | Subagents | `Agent` | `spawn_agent` / `wait_agent` / `send_message` (feature `multi_agent` stable) | `Task` |
 | Hooks | `settings.json` `hooks` (PreToolUse, SessionStart, Stop, …); canonical scripts run directly | `~/.codex/hooks.json` via `adapters/codex.sh`; **trust required**: run `/hooks` in `codex` and trust the `aw:*` entries | `~/.cursor/hooks.json` (`beforeShellExecution`, `sessionStart`, `stop`, …) via `adapters/cursor.sh`; user hooks run from `~/.cursor/` (adapter cds to the workspace root); invalid hook JSON blocks (adapter always prints valid JSON) |
 | MCP register | `claude mcp add --scope user` | `codex mcp add` | jq merge into `~/.cursor/mcp.json` `mcpServers`; new servers may need `cursor-agent mcp enable <name>` |
+| MCP retire | `claude mcp remove --scope user`, and `--scope local` from each project directory in `~/.claude.json` that still exists and is its git root | `codex mcp remove` | jq delete from `~/.cursor/mcp.json` `mcpServers` |
 | Transcripts | `~/.claude/projects/<proj>/<session>.jsonl` | `~/.codex/sessions/YYYY/MM/DD/rollout-*.jsonl` | `~/.cursor/projects/<proj>/agent-transcripts/<id>/<id>.jsonl` |
 | Repo instructions | `CLAUDE.md`, `.claude/rules/*.md` (`paths:` frontmatter) | `AGENTS.md` (nested) | `AGENTS.md`, `.cursor/rules/*.mdc` (`globs:`, `alwaysApply:`) |
 
@@ -39,6 +40,10 @@ relying on them; record corrections here.
 | Live pane | `mods/aw-live` (a Claude Code mod) + `scorer live` | Claude only. Codex and Cursor keep the statusline segments and the daily report |
 
 ## Notes
+
+**Retired servers and packages.** On every run `setup.sh` removes the names in `AW_MCP_RETIRED` that aren't in
+`AW_MCP_SERVERS` from each provider (the `MCP retire` row; dry-run only prints), and `aw_remove_retired_dir` deletes a
+retired package's directory (`mcp-bridge/`) once everything left in it is ignored build output.
 
 **AW_PROVIDER.** The Codex and Cursor hook adapters export `AW_PROVIDER=codex|cursor` so
 canonical hooks, and the `judge` they call, know the host. Unset means Claude Code.

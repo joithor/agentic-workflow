@@ -225,5 +225,5 @@ Domain rules live in `.agents/rules/`. Before editing a file, read every rule be
 | `hooks` | Safety and context hooks — per-provider adapters, protocols, installation | `config/hooks/**`, `config/settings.json` | `.agents/rules/hooks.md` |
 | `mcp-servers` | MCP servers registered globally with every provider — available in every session | always | `.agents/rules/mcp-servers.md` |
 | `skills` | Skill structure, preamble, output directories, pipeline, and installation | `skills/**`, `bootstrap/**` | `.agents/rules/skills.md` |
-| `testing` | Test infrastructure, shared helpers, and coverage policy | `**/*.test.ts`, `**/*.spec.ts`, `**/vitest.config.ts` | `.agents/rules/testing.md` |
+| `testing` | Test infrastructure, coverage policy, and test count baseline | `**/*.test.ts`, `**/*.spec.ts`, `**/vitest.config.ts` | `.agents/rules/testing.md` |
 <!-- === RULES INDEX END === -->
