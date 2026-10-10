@@ -240,7 +240,9 @@ const CRITERIA = [
     if (!p.scripts?.build) return { pass: false, why: 'no build script' };
     // Documented: a Commands code block lists the package, and either that line names build or the block says
     // each package has a build script.
-    const documented = commandBlocks(read(join(ctx.root, 'AGENTS.md'))).some((b) => b.some((l) => l.includes(rel))
+    const agents = readState(join(ctx.root, 'AGENTS.md'));
+    if (agents.error) return { pass: false, why: `AGENTS.md is not readable (${agents.error})` };
+    const documented = commandBlocks(agents.text ?? '').some((b) => b.some((l) => l.includes(rel))
       && (b.some((l) => l.includes(rel) && /\bbuild\b/.test(l)) || b.some((l) => /each has [^\n]*\bbuild\b/.test(l))));
     return documented ? { pass: true, why: `heuristic: AGENTS.md Commands block lists ${rel} and build; no single root build command` }
       : { pass: false, why: 'scripts.build not documented in AGENTS.md' };
@@ -253,8 +255,11 @@ const CRITERIA = [
     return f ? { pass: true, why: f } : { pass: false, why: 'no lockfile' };
   } },
   { id: 'BS-3', pillar: 1, level: 2, src: 'inferred', name: 'VCS CLI tools documented', check: (ctx) => {
-    const hit = ['AGENTS.md', 'README.md'].find((f) => /`gh[ `]|\bgh (pr|api|repo|issue)\b/.test(read(join(ctx.root, f))));
-    return hit ? { state: 'pass', evidence: `${hit} documents the gh CLI` } : { state: 'fail', evidence: 'gh CLI not documented' };
+    const docs = ['AGENTS.md', 'README.md'].map((f) => ({ f, ...readState(join(ctx.root, f)) }));
+    const hit = docs.find((d) => /`gh[ `]|\bgh (pr|api|repo|issue)\b/.test(d.text ?? ''));
+    if (hit) return { state: 'pass', evidence: `${hit.f} documents the gh CLI` };
+    const unreadable = docs.filter((d) => d.error).map((d) => `${d.f} is not readable (${d.error})`);
+    return unreadable.length ? { state: 'unknown', evidence: unreadable.join('; ') } : { state: 'fail', evidence: 'gh CLI not documented' };
   } },
   { id: 'BS-4', pillar: 1, level: 4, src: 'F-level', name: 'Regular deployment frequency (≥3 releases in 90 days)', check: (ctx) => {
     if (!ctx.remote) return remoteUnknown(ctx);
