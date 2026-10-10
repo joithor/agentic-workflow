@@ -17,7 +17,10 @@ check() {
 
 WORK="$(mktemp -d)"
 SERVER_PID=""
-stop_server() { [ -n "$SERVER_PID" ] && kill "$SERVER_PID" 2>/dev/null && wait "$SERVER_PID" 2>/dev/null; SERVER_PID=""; return 0; }
+stop_server() {
+  if [ -n "$SERVER_PID" ]; then kill "$SERVER_PID" 2>/dev/null || true; wait "$SERVER_PID" 2>/dev/null || true; fi
+  SERVER_PID=""
+}
 trap 'stop_server; rm -rf "$WORK"' EXIT
 
 openssl genrsa -out "$WORK/key.pem" 2048 2>/dev/null
@@ -25,6 +28,30 @@ openssl rsa -in "$WORK/key.pem" -pubout -out "$WORK/pub.pem" 2>/dev/null
 KEY_LINE="$(sed -n 2p "$WORK/key.pem")"   # a line of key material to grep for
 CANNED="ghs_fixtureToken0123456789abcdefABCDEF"
 LEAK="ghs_leakyBodyToken9876543210zyxwvuZYXW"
+
+# run_tty <outfile> <cmd...>: run cmd with stdout+stderr on a fresh pty (stdin
+# /dev/null), copy what it printed to <outfile>, return its exit code. Unlike
+# script(1), it waits for the child however stdin behaves.
+run_tty() {
+  python3 - "$@" <<'PY'
+import os, subprocess, sys
+out, cmd = sys.argv[1], sys.argv[2:]
+m, s = os.openpty()
+p = subprocess.Popen(cmd, stdin=subprocess.DEVNULL, stdout=s, stderr=s)
+os.close(s)
+buf = b""
+while True:
+    try:
+        chunk = os.read(m, 4096)
+    except OSError:
+        break
+    if not chunk:
+        break
+    buf += chunk
+open(out, "wb").write(buf)
+sys.exit(p.wait())
+PY
+}
 
 start_server() { # $1 = mode (ok|err)
   stop_server
@@ -75,13 +102,13 @@ check "AGENT_APP_INSTALLATION_ID env picks the path" "$(jq -r .path <<<"$req")" 
 check "AGENT_APP_ID env sets iss" "$(jq -r .claims.iss <<<"$req")" "99"
 
 # --- refuses a terminal on stdout ---
-rc=0; script -q "$WORK/tty.out" bash "$SCRIPT" >/dev/null 2>&1 || rc=$?
+rc=0; run_tty "$WORK/tty.out" bash "$SCRIPT" || rc=$?
 check "TTY stdout: exits non-zero" "$([ "$rc" -ne 0 ] && echo yes || echo no)" "yes"
 check "TTY stdout: says why" "$(grep -c 'refusing to print a token to a terminal' "$WORK/tty.out")" "1"
 check "TTY stdout: token never reaches the terminal" "$(grep -c "$CANNED" "$WORK/tty.out" || true)" "0"
 n_before="$(wc -l <"$SRV/requests.jsonl" | tr -d ' ')"
 check "TTY stdout: refused before calling the API" "$n_before" "3"
-script -q "$WORK/tty2.out" bash "$SCRIPT" --force-tty >/dev/null 2>&1 || true
+run_tty "$WORK/tty2.out" bash "$SCRIPT" --force-tty || true
 check "--force-tty prints to the terminal" "$(grep -c "$CANNED" "$WORK/tty2.out")" "1"
 
 # --- API error: status + message only, body redacted ---
