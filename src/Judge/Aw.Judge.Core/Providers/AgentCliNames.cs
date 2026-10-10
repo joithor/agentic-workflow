@@ -46,6 +46,23 @@ public static class AgentCliNames
     /// </summary>
     /// <param name="value">The variable's value, or null when unset.</param>
     /// <returns>The agent CLI, or null when unset or unknown.</returns>
-    public static AgentCliName? FromHost(string? value) =>
-        throw new NotSupportedException("red: read AW_PROVIDER");
+    public static AgentCliName? FromHost(string? value)
+    {
+        if (value is null)
+        {
+            return null;
+        }
+
+        var trimmed = value.Trim();
+        var candidate = trimmed.EndsWith("-cli", StringComparison.OrdinalIgnoreCase) ? trimmed : trimmed + "-cli";
+        foreach (var name in DefaultOrder)
+        {
+            if (string.Equals(ProviderNames.Name(Provider(name)), candidate, StringComparison.OrdinalIgnoreCase))
+            {
+                return name;
+            }
+        }
+
+        return null;
+    }
 }

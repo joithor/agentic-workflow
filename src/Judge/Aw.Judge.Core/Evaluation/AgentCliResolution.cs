@@ -14,6 +14,15 @@ public static class AgentCliResolution
     /// <param name="hostProvider">AW_PROVIDER, or null when unset.</param>
     /// <param name="configured">The config file's agent-CLI list, or null when it has none.</param>
     /// <returns>The installed agent CLIs, in priority order.</returns>
-    public static IReadOnlyList<AgentCliName> Resolve(IExecutableLocator locator, string? hostProvider, IReadOnlyList<AgentCliName>? configured) =>
-        throw new NotSupportedException("red: resolve the agent CLIs");
+    public static IReadOnlyList<AgentCliName> Resolve(IExecutableLocator locator, string? hostProvider, IReadOnlyList<AgentCliName>? configured)
+    {
+        ArgumentNullException.ThrowIfNull(locator);
+        var order = configured ?? Preferred(hostProvider);
+        return [.. order.Distinct().Where(name => locator.IsOnPath(AgentCliNames.Binary(name)))];
+    }
+
+    private static IReadOnlyList<AgentCliName> Preferred(string? hostProvider) =>
+        AgentCliNames.FromHost(hostProvider) is { } first
+            ? [first, .. AgentCliNames.DefaultOrder.Where(n => n != first)]
+            : AgentCliNames.DefaultOrder;
 }

@@ -11,8 +11,15 @@ public static class ChainRouting
     /// <param name="contentClass">The class.</param>
     /// <param name="providers">Every available provider.</param>
     /// <returns>The candidates.</returns>
-    public static IReadOnlyList<IModelProvider> ProvidersFor(ChainSpec chain, ContentClass contentClass, IReadOnlyList<IModelProvider> providers) =>
-        throw new NotSupportedException("red: pick the providers for a class");
+    public static IReadOnlyList<IModelProvider> ProvidersFor(ChainSpec chain, ContentClass contentClass, IReadOnlyList<IModelProvider> providers)
+    {
+        ArgumentNullException.ThrowIfNull(chain);
+        ArgumentNullException.ThrowIfNull(providers);
+        return [.. chain.For(contentClass)
+            .Select(name => providers.FirstOrDefault(p => p.Name == name))
+            .OfType<IModelProvider>()
+            .Where(p => p.Classes.Contains(contentClass))];
+    }
 
     /// <summary>
     /// The candidates for a question: <see cref="ProvidersFor"/>, then, when the question has its own provider list, that
@@ -24,6 +31,11 @@ public static class ChainRouting
     /// <param name="questionProviders">The question's own list, or null.</param>
     /// <returns>The candidates, in the order to try them.</returns>
     public static IReadOnlyList<IModelProvider> Candidates(
-        ChainSpec chain, ContentClass contentClass, IReadOnlyList<IModelProvider> providers, IReadOnlyList<ProviderName>? questionProviders) =>
-        throw new NotSupportedException("red: apply the question provider list");
+        ChainSpec chain, ContentClass contentClass, IReadOnlyList<IModelProvider> providers, IReadOnlyList<ProviderName>? questionProviders)
+    {
+        var candidates = ProvidersFor(chain, contentClass, providers);
+        return questionProviders is null
+            ? candidates
+            : [.. questionProviders.SelectMany(name => candidates.Where(p => p.Name == name))];
+    }
 }
