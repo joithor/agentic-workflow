@@ -30,6 +30,20 @@ Domain-specific rules live in `.agents/rules/` — one file per rule, the only c
 | Test | Vitest (in-memory SQLite) |
 | Build | tsc (ESM, Node16 module resolution) |
 
+**C# build — in progress, not installed until the cutover.** The TypeScript packages are being ported to C# (spec `docs/superpowers/specs/2026-10-09-agent-readiness-design.md` §4a–§4e). The installed toolkit stays TypeScript until every package passes its golden tests against the C# build; then one reversible switch moves the install. Nothing in `setup.sh`, the providers, MCP registration or launchd points at `src/` before that.
+
+| Layer | Technology (C# build) |
+|-------|------------|
+| Runtime | .NET 10 (LTS), SDK pinned in `global.json`; NativeAOT for hook and CLI entry points |
+| Language | C# (latest), nullable on, warnings as errors |
+| HTTP (bridge) | ASP.NET Core minimal APIs (`CreateSlimBuilder`) |
+| Database | `Microsoft.Data.Sqlite`, same files and schemas, WAL mode |
+| MCP | Official MCP C# SDK |
+| JSON | System.Text.Json, one source-generated context per package |
+| Analyzers | NetAnalyzers, Meziantou, Roslynator, BannedApiAnalyzers, PublicApiAnalyzers (one owner per rule, `.editorconfig`) |
+| Test | xUnit v3 on Microsoft.Testing.Platform (decision R7), lanes `unit` / `integration` / `heavy` |
+| Packages | Central Package Management (`Directory.Packages.props`), locked restore, nuget.org only (`nuget.config`) |
+
 ## Directory Structure
 
 ```
@@ -44,6 +58,11 @@ agentic-workflow/
 ├── sindri/        # Sindri core: profile, ledger, lock, scrubber, plan-file tracker, observe, doctor (CLI)
 ├── mods/          # Claude Code mods (in-process function hooks): aw-live /live pane. Claude-only
 ├── planning/      # Project documentation
+├── src/           # C# build (in progress): Aw.Kernel, Aw.Analyzers, then one package per port — Core · Features · Infrastructure · Host
+├── tests/         # C# tests: <Pkg>.Tests (by feature), <Pkg>.Testing (fakes, builders, contract bases), Aw.Architecture.Tests
+├── spikes/        # Throwaway C# spikes (AOT spike); never part of the solution
+├── global.json · AgenticWorkflow.slnx · Directory.Build.props · Directory.Packages.props · nuget.config · BannedSymbols.txt
+├── deps.yaml      # Declared package tiers and every dependency edge (project, cli, db, file)
 ├── .agents/rules/ # Glob-scoped domain rules (.claude/rules and .cursor/rules link here)
 ├── .serena/       # Serena LSP project configuration
 ├── scripts/       # Utility scripts (sync-rules.sh, serena-docker, probe.sh, install-scorer.sh)
@@ -65,6 +84,15 @@ scorer --since 7d [--provider claude|codex|cursor|all]  # Report to ~/.agentic-w
 scorer live --session <id> [--cwd DIR] [--json]  # This session's numbers (the aw-live mod calls it)
 scorer probe                            # Summarize the hook-input probe
 scorer audit [--since 60d; default 1d] [--items FILE] [--max-size XS] [--label N]   # Human-turn baseline → ~/.agentic-workflow/audit/; --label sends sampled turn text to your Claude login's provider
+
+# C# build (in progress; the merge-gate lines below apply once src/ has projects)
+dotnet build -warnaserror               # Whole solution (AgenticWorkflow.slnx); zero warnings
+dotnet test --filter-trait "Lane=unit"  # Unit lane (< 10 s per package); xUnit v3 on Microsoft.Testing.Platform
+dotnet test --filter-trait "Lane=integration"   # Temp SQLite files, WebApplicationFactory (< 60 s per package)
+dotnet test --filter-not-trait "Lane=heavy"     # Everything except containers, browsers and index builds
+dotnet format --verify-no-changes       # Style and analyzer fixes are applied (CI and pre-commit)
+# Add a package: /new-package (spec docs/csharp/scaffolds/new-package.md)
+# Add a use case: /new-slice (spec docs/csharp/scaffolds/new-slice.md) — test, request and response, service, endpoint, registration
 
 # Rules (edit .agents/rules/, then regenerate)
 scripts/sync-rules.sh                   # Link .claude/rules, .cursor/rules, CLAUDE.md; refresh Rules Index
@@ -121,6 +149,19 @@ Before merging any PR:
 4. `./setup.sh --providers claude,codex,cursor --dry-run` runs cleanly
 5. No `/* v8 ignore */` annotations in source files (prohibited — write the test instead)
 6. No `any` types outside of Fastify integration boundaries
+7. C# build (active once `src/` has projects): `dotnet build -warnaserror` reports zero warnings, `dotnet test` passes in every lane CI runs, `dotnet format --verify-no-changes` is clean, `baseline.globalconfig` didn't grow, and `deps.yaml` matches the real dependency edges
+
+## C# slice recipe
+
+To add a use case to a C# package: **test, request and response, service, endpoint, registration.**
+
+1. Write the failing test that names the behavior (`StartItem_parks_when_budget_is_exhausted`) in `tests/<Pkg>.Tests/<Slice>/` and commit it red.
+2. Add the request and response records in `src/<Pkg>/Aw.<Pkg>.Features/<Slice>/`.
+3. Implement the service (`IService<TRequest, TResponse>`); pure decisions live on the domain type in `Core`.
+4. Map the endpoint or CLI command: bind, call one service, map the `Result`.
+5. Register it explicitly in the project's `Add…()` method; add the types to the package's JSON context.
+
+`/new-slice` generates steps 1–5 as stubs with the red test. Full rules: `.agents/rules/csharp.md` and `.agents/rules/csharp-testing.md`.
 
 ## Commit Conventions
 
