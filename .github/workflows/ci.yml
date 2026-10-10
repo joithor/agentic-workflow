@@ -316,7 +316,7 @@ jobs:
         if: steps.sln.outputs.run == 'true'
         # Times each test project's unit and integration lanes against the Release build
         # above (--no-build: compile time is not part of the budget), sums them per
-        # deps.yaml package and fails a package over its budget (LANE-PKG-001, §4b.5).
+        # deps.yaml package and fails a package at or over its budget (LANE-PKG-001, §4b.5).
         run: node scripts/ci/lane-budgets.mjs --configuration Release
       - name: Upload test and AOT smoke output on failure
         if: failure() && steps.sln.outputs.run == 'true'

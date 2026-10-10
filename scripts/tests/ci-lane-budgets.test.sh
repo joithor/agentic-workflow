@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
 # Tests for scripts/ci/lane-budgets.mjs — the per-package lane budget check (spec §4b.5,
 # .agents/rules/csharp-testing.md "Lane budgets"). It times
-# `dotnet test --project <test project> --filter-trait "Lane=<lane>" --ignore-exit-code 8`
+# `dotnet test --project <test project> --no-build --configuration <C> --filter-trait "Lane=<lane>" --ignore-exit-code 8`
 # per test project, sums the wall clock per package (the deps.yaml projectPrefix, longest
-# wins) and fails a package over its lane budget. A stub `dotnet` stands in for the SDK.
+# wins) and fails a package at or over its lane budget. A stub `dotnet` stands in for the SDK.
 set -euo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 CHECK="$ROOT/scripts/ci/lane-budgets.mjs"
