@@ -68,7 +68,7 @@ export function readFailOpenLog(file: string, since: Date, until: Date): FailOpe
 }
 
 export function renderFailOpenSection(rows: readonly FailOpenRow[]): string {
-  const lines = ["## Hook fail-open", "", "A hook that fails open allows because of its own error (judge missing, input it can't read). The cutover needs zero of these.", ""];
+  const lines = ["## Hook fail-open", "", "A hook that fails open allows because of its own error (judge missing, input it can't read). Each one is a check that didn't run.", ""];
   if (rows.length === 0) {
     lines.push("No hook failed open in this window.");
   } else {
