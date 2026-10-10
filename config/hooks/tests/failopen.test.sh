@@ -3,10 +3,12 @@
 # (spec 2026-10-09-agent-readiness-design.md §4c, B5).
 #
 # Each case runs the real hook twice from an installed-style layout (hooks next
-# to lib/): once with lib/failopen.sh present and once without it. Logging is
-# the only allowed difference, so:
-#   - stdout, stderr (stage path normalized) and the exit code must be
-#     byte-identical between the two runs;
+# to lib/): the current hook with lib/failopen.sh, and the baseline copy of the
+# same hook from before the logging was added (fixtures/failopen-baseline/,
+# origin/main at 2004bdc). Logging is the only allowed difference, so:
+#   - stdout, stderr (stage path and bash's "line N:" normalized) and the exit
+#     code must be byte-identical between the two runs;
+#   - every run is bounded (10 s): a hang counts as exit 142 and fails;
 #   - the run with the lib appends exactly the expected HOOK-FAILOPEN lines
 #     ("-" = a normal path that must log nothing, "?" = don't check the log);
 #   - no log line ever carries payload content.
@@ -18,15 +20,25 @@ LIBDIR="$ROOT/config/lib"
 fail=0
 SECRET="SENTINEL-PAYLOAD-7f3a"
 
-# stage <with-failopen 0|1> <with-locks 0|1> — a temp hooks dir laid out the way
-# the installers lay it out (hooks, adapters/, lib/).
-stage() {
+BASELINE="$HOOKS/tests/fixtures/failopen-baseline"
+
+# stage_current <with-locks 0|1> / stage_baseline <with-locks 0|1> — a temp
+# hooks dir laid out the way the installers lay it out (hooks, adapters/, lib/).
+stage_current() {
   local d; d="$(mktemp -d)"
   cp "$HOOKS"/*.sh "$d/"
   mkdir -p "$d/lib" "$d/adapters"
   cp "$HOOKS/adapters/"*.sh "$d/adapters/"
-  [ "$2" = 1 ] && cp "$LIBDIR/locks.sh" "$d/lib/locks.sh"
-  [ "$1" = 1 ] && cp "$LIBDIR/failopen.sh" "$d/lib/failopen.sh"
+  [ "$1" = 1 ] && cp "$LIBDIR/locks.sh" "$d/lib/locks.sh"
+  cp "$LIBDIR/failopen.sh" "$d/lib/failopen.sh"
+  printf '%s' "$d"
+}
+stage_baseline() {
+  local d; d="$(mktemp -d)"
+  cp "$BASELINE"/*.sh "$d/"
+  mkdir -p "$d/lib" "$d/adapters"
+  cp "$BASELINE/adapters/"*.sh "$d/adapters/"
+  [ "$1" = 1 ] && cp "$BASELINE/lib/locks.sh" "$d/lib/locks.sh"
   printf '%s' "$d"
 }
 
@@ -69,25 +81,57 @@ exec "$(command -v jq)" "\$@"
 EOF
 chmod +x "$JQ_FAIL_BIN/jq"
 
-# check_pair <name> <want> <with-dir> <without-dir> <state-with> <state-without> <out/err/rc files…>
-compare_runs() {
-  local name="$1" want="$2" with="$3" without="$4" st_with="$5" st_without="$6"
-  local o1="$7" e1="$8" r1="$9" o2="${10}" e2="${11}" r2="${12}" log got lines
-  sed "s#$with#<stage>#g" "$e1" > "$e1.n"; sed "s#$without#<stage>#g" "$e2" > "$e2.n"
-  if ! cmp -s "$o1" "$o2" || ! cmp -s "$e1.n" "$e2.n" || [ "$r1" != "$r2" ]; then
-    echo "FAIL: $name — logging changed the decision"
-    echo "  with lib:    rc=$r1 out=$(cat "$o1") err=$(cat "$e1.n")"
-    echo "  without lib: rc=$r2 out=$(cat "$o2") err=$(cat "$e2.n")"
+# bounded <out-prefix> <stdin-file> <cmd...> — run with a 10 s watchdog; writes
+# <out>.o, <out>.e and <out>.r (142 when the watchdog had to kill it).
+bounded() {
+  local out="$1" in="$2"; shift 2
+  "$@" < "$in" > "$out.o" 2> "$out.e" &
+  local p=$! i=0
+  while kill -0 "$p" 2>/dev/null; do
+    if [ "$i" -ge 200 ]; then kill -9 "$p" 2>/dev/null; wait "$p" 2>/dev/null; echo 142 > "$out.r"; return; fi
+    sleep 0.05; i=$((i + 1))
+  done
+  wait "$p"; echo $? > "$out.r"
+}
+
+# run_case <name> <hook path inside the stage dir> <stdin> <expected> [VAR=value ...]
+# Env: CASE_PATH (default fake judge on PATH), LOCKS (default 1), WANT_RC,
+# NO_HOME=1 (HOME and AW_STATE_DIR unset), FIFO_LOG=1 (logs/failopen.log is a
+# FIFO), HOOK_ARGS (adapter argv), INJECT (a line inserted after INPUT=$(cat)
+# in both copies of the hook).
+run_case() {
+  local name="$1" hook="$2" input="$3" want="$4"; shift 4
+  local cur base st t envs=() log got r1 r2
+  cur="$(stage_current "${LOCKS:-1}")"; base="$(stage_baseline "${LOCKS:-1}")"
+  st="$(mktemp -d)"; t="$(mktemp -d)"
+  if [ -n "${INJECT:-}" ]; then
+    for d in "$cur" "$base"; do
+      sed -i.bak "/^INPUT=/a\\
+$INJECT
+" "$d/$hook"
+    done
+  fi
+  if [ "${FIFO_LOG:-0}" = 1 ]; then mkdir -p "$st/logs"; mkfifo "$st/logs/failopen.log"; fi
+  printf '%s' "$input" > "$t/in"
+  if [ "${NO_HOME:-0}" = 1 ]; then envs=(-u HOME -u AW_STATE_DIR); else envs=(AW_STATE_DIR="$st"); fi
+  # shellcheck disable=SC2086
+  bounded "$t/1" "$t/in" env ${envs[@]+"${envs[@]}"} PATH="${CASE_PATH:-$FAKE_BIN:$BASE_PATH}" "$@" bash "$cur/$hook" ${HOOK_ARGS:-}
+  # shellcheck disable=SC2086
+  bounded "$t/2" "$t/in" env ${envs[@]+"${envs[@]}"} PATH="${CASE_PATH:-$FAKE_BIN:$BASE_PATH}" "$@" bash "$base/$hook" ${HOOK_ARGS:-}
+  r1="$(cat "$t/1.r")"; r2="$(cat "$t/2.r")"
+  sed -e "s#$cur#<stage>#g" -e 's#line [0-9]*:#line N:#g' "$t/1.e" > "$t/1.en"
+  sed -e "s#$base#<stage>#g" -e 's#line [0-9]*:#line N:#g' "$t/2.e" > "$t/2.en"
+  if ! cmp -s "$t/1.o" "$t/2.o" || ! cmp -s "$t/1.en" "$t/2.en" || [ "$r1" != "$r2" ]; then
+    echo "FAIL: $name — differs from the baseline (origin/main) hook"
+    echo "  current:  rc=$r1 out=$(cat "$t/1.o") err=$(cat "$t/1.en")"
+    echo "  baseline: rc=$r2 out=$(cat "$t/2.o") err=$(cat "$t/2.en")"
     fail=1; return
   fi
   if [ -n "${WANT_RC:-}" ] && [ "$r1" != "$WANT_RC" ]; then
     echo "FAIL: $name — expected exit $WANT_RC, got $r1"; fail=1; return
   fi
-  if [ -s "$st_without/logs/failopen.log" ]; then
-    echo "FAIL: $name — logged without the lib installed"; fail=1; return
-  fi
-  log="$st_with/logs/failopen.log"
-  got="$(jq -r 'select(.event == "HOOK-FAILOPEN") | .hook + " " + .cause' "$log" 2>/dev/null | paste -sd';' -)"
+  log="$st/logs/failopen.log"
+  got=""; [ -f "$log" ] && got="$(jq -r 'select(.event == "HOOK-FAILOPEN") | .hook + " " + .cause' "$log" 2>/dev/null | paste -sd';' -)"
   case "$want" in
     "?") ;;
     "-") [ -z "$got" ] || { echo "FAIL: $name — expected no HOOK-FAILOPEN, got: $got"; fail=1; return; } ;;
@@ -97,27 +141,6 @@ compare_runs() {
     echo "FAIL: $name — payload content reached the log"; fail=1; return
   fi
   echo "PASS: $name (rc=$r1)"
-}
-
-# run_case <name> <hook path inside the stage dir> <stdin> <expected> [VAR=value ...]
-# Env: CASE_PATH (default fake judge on PATH), LOCKS (default 1), WANT_RC,
-# NO_HOME=1 (run with HOME and AW_STATE_DIR unset), HOOK_ARGS (adapter argv).
-run_case() {
-  local name="$1" hook="$2" input="$3" want="$4"; shift 4
-  local with without st_with st_without t unset_env=()
-  with="$(stage 1 "${LOCKS:-1}")"; without="$(stage 0 "${LOCKS:-1}")"
-  st_with="$(mktemp -d)"; st_without="$(mktemp -d)"; t="$(mktemp -d)"
-  [ "${NO_HOME:-0}" = 1 ] && unset_env=(-u HOME -u AW_STATE_DIR)
-  local env_with=(AW_STATE_DIR="$st_with") env_without=(AW_STATE_DIR="$st_without")
-  [ "${NO_HOME:-0}" = 1 ] && { env_with=(); env_without=(); }
-  # shellcheck disable=SC2086
-  printf '%s' "$input" | env ${unset_env[@]+"${unset_env[@]}"} PATH="${CASE_PATH:-$FAKE_BIN:$BASE_PATH}" ${env_with[@]+"${env_with[@]}"} "$@" \
-    bash "$with/$hook" ${HOOK_ARGS:-} > "$t/o1" 2> "$t/e1"; echo $? > "$t/r1"
-  # shellcheck disable=SC2086
-  printf '%s' "$input" | env ${unset_env[@]+"${unset_env[@]}"} PATH="${CASE_PATH:-$FAKE_BIN:$BASE_PATH}" ${env_without[@]+"${env_without[@]}"} "$@" \
-    bash "$without/$hook" ${HOOK_ARGS:-} > "$t/o2" 2> "$t/e2"; echo $? > "$t/r2"
-  compare_runs "$name" "$want" "$with" "$without" "$st_with" "$st_without" \
-    "$t/o1" "$t/e1" "$(cat "$t/r1")" "$t/o2" "$t/e2" "$(cat "$t/r2")"
 }
 
 SEND="{\"session_id\":\"s1\",\"tool_name\":\"SendMessage\",\"tool_input\":{\"to\":\"main\",\"message\":\"$SECRET progress\"}}"
@@ -188,17 +211,45 @@ for h in block-destructive block-push-main detect-secrets; do
   run_case "$h: empty stdin" "$h.sh" "" "$h empty-input"
   run_case "$h: Bash call without a command string" "$h.sh" '{"tool_name":"Bash","tool_input":{"cmd":"x"}}' "$h field-missing"
   run_case "$h: normal command logs nothing" "$h.sh" '{"tool_name":"Bash","tool_input":{"command":"ls"}}' "-"
-  # A crash under Claude Code (set -e abort; here cat is missing) is counted by the EXIT trap.
-  CASE_PATH="$NO_CAT" WANT_RC=127 run_case "$h: crash is counted, exit code kept" "$h.sh" '{"tool_input":{"command":"ls"}}' "$h exit-127"
-  CASE_PATH="$NO_CAT" WANT_RC=127 run_case "$h: crash under an adapter is left to the adapter" "$h.sh" '{"tool_input":{"command":"ls"}}' "-" AW_PROVIDER=codex
+  # These three run under set -e. On bash 3.2 an EXIT trap there turns a set -u
+  # abort into exit 0, so they have no crash trap: a crash keeps its exit code
+  # and is not counted (documented in .agents/rules/hooks.md).
+  CASE_PATH="$NO_CAT" WANT_RC=127 run_case "$h: crash keeps its exit code (not counted)" "$h.sh" '{"tool_input":{"command":"ls"}}' "-"
+  INJECT=': "$AW_NOPE_UNSET"' WANT_RC=1 run_case "$h: set -u abort keeps exit 1" "$h.sh" '{"tool_input":{"command":"ls"}}' "-"
 done
+# The other fail-open hooks don't use set -e, so their EXIT trap sees the real code.
+INJECT='exit 3' WANT_RC=3 run_case "send-gate: crash is counted, exit code kept" send-gate.sh "$SEND" "send-gate exit-3"
+INJECT='exit 3' WANT_RC=3 run_case "send-gate: crash under an adapter is left to the adapter" send-gate.sh "$SEND" "-" AW_PROVIDER=codex
+INJECT=': "${AW_NOPE_UNSET:?}"' WANT_RC=1 run_case "scope-gate: unbound abort keeps exit 1 and is counted" scope-gate.sh "$AGENT" "scope-gate exit-1"
 run_case "block-destructive: deny logs nothing" block-destructive.sh '{"tool_input":{"command":"rm -rf /tmp/x"}}' "-"
 
 # --- The logger can never change a decision, even when it can't run ---
+# Every fail-open hook and both adapters, on an unreadable payload and on a
+# payload that reaches its judge/state failure path, with HOME unset, with
+# date missing, and with logs/failopen.log replaced by a FIFO.
 NO_DATE="$(path_without date judge)"
-for h in block-destructive scope-gate send-gate external-write-guard done-gate outbox-flush; do
-  NO_HOME=1 run_case "$h: HOME and AW_STATE_DIR unset" "$h.sh" "$SECRET" "?"
-  CASE_PATH="$NO_DATE" run_case "$h: date missing" "$h.sh" "$SECRET" "?"
+OUTBOX2="$(mktemp -d)"; printf 'not json\n' > "$OUTBOX2/s1.jsonl"
+CLAIM2="$(mktemp)"; echo '{"type":"assistant","message":{"content":[{"type":"text","text":"All done."}]}}' > "$CLAIM2"
+hostile() {
+  local label="$1" hook="$2" input="$3"; shift 3
+  NO_HOME=1 run_case "$label, HOME unset" "$hook" "$input" "?" "$@"
+  CASE_PATH="$FAKE_BIN:$NO_DATE" run_case "$label, date missing" "$hook" "$input" "?" "$@"
+  FIFO_LOG=1 run_case "$label, log is a FIFO" "$hook" "$input" "?" "$@"
+}
+for h in send-gate scope-gate external-write-guard done-gate outbox-flush block-destructive block-push-main detect-secrets; do
+  hostile "$h: unreadable payload" "$h.sh" "$SECRET"
+done
+hostile "send-gate: judge fails" send-gate.sh "$SEND" JUDGE_MODE=exit1
+hostile "scope-gate: judge fails" scope-gate.sh "$AGENT" JUDGE_MODE=exit1
+hostile "external-write-guard: matched write, no session" external-write-guard.sh '{"tool_name":"Bash","tool_input":{"command":"gh pr merge 1"}}'
+hostile "done-gate: brief judge fails, then RF-2 denies" done-gate.sh "{\"session_id\":\"s1\",\"transcript_path\":\"$CLAIM2\"}" JUDGE_MODE=exit1
+hostile "outbox-flush: outbox unreadable" outbox-flush.sh '{"session_id":"s1","teammate_name":"t"}' AW_OUTBOX_DIR="$OUTBOX2"
+for h in block-destructive block-push-main detect-secrets; do
+  hostile "$h: Bash call without a command" "$h.sh" '{"tool_name":"Bash","tool_input":{"cmd":"x"}}'
+done
+for p in codex cursor; do
+  HOOK_ARGS="block-destructive.sh" hostile "$p adapter: garbage host payload" "adapters/$p.sh" "$SECRET {"
+  HOOK_ARGS="/nonexistent/hook.sh" hostile "$p adapter: hook script missing" "adapters/$p.sh" '{"hook_event_name":"PreToolUse","tool_name":"Bash","tool_input":{"command":"ls"}}'
 done
 
 # --- Provider adapters ---
@@ -212,6 +263,9 @@ for p in codex cursor; do
   HOOK_ARGS="block-destructive.sh" run_case "$p adapter: empty host payload" "adapters/$p.sh" "" "$p-adapter empty-input"
   HOOK_ARGS="block-destructive.sh" run_case "$p adapter: allowing hook logs nothing" "adapters/$p.sh" "$PRE" "-"
 done
+# One bad host payload is one event: the hook behind the adapter doesn't add field-missing.
+HOOK_ARGS="--event beforeShellExecution block-destructive.sh" run_case "cursor adapter: garbage shell payload counts once" adapters/cursor.sh "$SECRET" "cursor-adapter input-unparsable"
+HOOK_ARGS="--event beforeShellExecution block-destructive.sh" run_case "cursor adapter: empty shell payload counts once" adapters/cursor.sh "" "cursor-adapter empty-input"
 HOOK_ARGS="block-destructive.sh" CASE_PATH="$JQ_FAIL_BIN:$FAKE_BIN:$BASE_PATH" run_case "codex adapter: payload normalization fails" \
   adapters/codex.sh "$PRE" "codex-adapter payload-unparsable" FAIL_JQ_ON='.prompt_id = (.prompt_id'
 HOOK_ARGS="block-destructive.sh" CASE_PATH="$JQ_FAIL_BIN:$FAKE_BIN:$BASE_PATH" run_case "cursor adapter: payload normalization fails" \

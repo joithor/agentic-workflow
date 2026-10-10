@@ -89,6 +89,46 @@ check "rotation: old log moved to failopen.log.1" "$(wc -c < "$state5/logs/failo
 check "rotation: new log holds only the new event" "$(jq -r .cause "$state5/logs/failopen.log")" "c"
 check "new log is private to the user" "$(stat -f %Lp "$state5/logs/failopen.log" 2>/dev/null || stat -c %a "$state5/logs/failopen.log")" "600"
 
+# bounded <seconds> <cmd...> — prints "rc=<n>" or "rc=hung" when it had to be killed.
+bounded() {
+  local limit=$(( $1 * 20 )) i=0; shift
+  "$@" > /dev/null 2>&1 &
+  local p=$!
+  while kill -0 "$p" 2>/dev/null; do
+    if [ "$i" -ge "$limit" ]; then kill -9 "$p" 2>/dev/null; wait "$p" 2>/dev/null; echo "rc=hung"; return; fi
+    sleep 0.05; i=$((i + 1))
+  done
+  wait "$p"; echo "rc=$?"
+}
+
+# A FIFO (or any non-regular file) at the log path is never opened: opening it
+# would block the hook until the host's timeout.
+state6="$(mktemp -d)"; mkdir -p "$state6/logs"; mkfifo "$state6/logs/failopen.log"
+check "FIFO log: returns at once, writes nothing" \
+  "$(bounded 3 env AW_STATE_DIR="$state6" bash -c 'set -euo pipefail; . "$0"; aw_failopen h c' "$LIB")" "rc=0"
+check "FIFO log: still a FIFO" "$([ -p "$state6/logs/failopen.log" ] && echo fifo)" "fifo"
+
+# A non-regular failopen.log.1 is never replaced by a rotation; the event still lands.
+state7="$(mktemp -d)"; mkdir -p "$state7/logs"; head -c 300 /dev/zero | tr '\0' 'x' > "$state7/logs/failopen.log"
+mkfifo "$state7/logs/failopen.log.1"
+check "FIFO .1: no rotation, returns at once" \
+  "$(bounded 3 env AW_STATE_DIR="$state7" AW_FAILOPEN_MAX_BYTES=200 bash -c '. "$0"; aw_failopen h c' "$LIB")" "rc=0"
+check "FIFO .1: left alone" "$([ -p "$state7/logs/failopen.log.1" ] && echo fifo)" "fifo"
+check "FIFO .1: event appended to the live log" "$(tail -n 1 "$state7/logs/failopen.log" | sed 's/^x*//' | jq -r .cause)" "c"
+
+# A rotation already in progress (its lock dir is fresh) is left to that writer.
+state8="$(mktemp -d)"; mkdir -p "$state8/logs/failopen.log.rotating"; head -c 300 /dev/zero | tr '\0' 'x' > "$state8/logs/failopen.log"
+AW_FAILOPEN_MAX_BYTES=200 run_lib "$state8" h c > /dev/null
+check "rotation lock held: no second rotation" "$([ -e "$state8/logs/failopen.log.1" ] && echo rotated || echo kept)" "kept"
+
+# An adapter that already logged the host payload sets AW_FAILOPEN_INPUT_LOGGED,
+# so the hook behind it doesn't count the same payload again.
+state9="$(mktemp -d)"
+AW_FAILOPEN_INPUT_LOGGED=1 run_lib "$state9" h input '{"tool_name":"Bash"}' '.tool_name == "Bash"' > /dev/null
+check "input already logged by the adapter: nothing more" "$([ -e "$state9/logs/failopen.log" ] && echo logged || echo none)" "none"
+AW_FAILOPEN_INPUT_LOGGED=1 run_lib "$state9" h judge-exit-1 > /dev/null
+check "the flag only silences input causes" "$(jq -r .cause "$state9/logs/failopen.log")" "judge-exit-1"
+
 # Logging must never fail or slow the hook down when the log can't be written.
 ro="$(mktemp -d)"; chmod 500 "$ro"
 check "unwritable state dir: silent, returns 0" "$(run_lib "$ro/nested" h c)" "rc=0|0"
