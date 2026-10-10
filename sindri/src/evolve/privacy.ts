@@ -29,8 +29,10 @@ export function normalizeForPrivacy(text: string): string {
     .trim();
 }
 
-// Separators a multi-part name is written with: "acme care", "acme-care", "acme_care", "acme.care", "AcmeCare".
-const SEPARATORS = /[\s._-]+/g;
+// Separators a multi-part name is written with: every character that is not a letter or a digit (spaces, ASCII and
+// Unicode dashes, slashes, dots, underscores, middle dots, apostrophes and other punctuation, symbols and spaces), so
+// "acme care", "acme-care", "acme\u2011care", "acme/care", "AcmeCare" all join to "acmecare".
+const SEPARATORS = /[^\p{L}\p{N}]+/gu;
 
 // Whole words; and a term with separators also matches with them removed on both sides, so every joined or
 // re-separated spelling holds without the owner listing it (holds only: a false positive such as "acme carefully"

@@ -74,6 +74,13 @@ describe("termProblem: joined, hyphenated and underscored variants (security-sen
     for (const text of ["the Acme Care team", "AcmeCare", "acme_care"]) expect(termProblem(text, ["acme-care"]), text).toBe(HELD);
   });
 
+  it("holds a multi-part term behind any Unicode dash, slash, dot or other punctuation, symbol or space separator", () => {
+    const spellings = ["Acme\u2011Care", "Acme\u2013Care", "Acme\u2014Care", "Acme/Care", "Acme\u00b7Care", "Acme\u2010Care", "acme:care", "Acme+Care", "Acme'Care", "Acme\u2009Care", "Acme\u3000Care"];
+    for (const text of spellings) expect(termProblem(`the ${text} team`, ["Acme Care"]), JSON.stringify(text)).toBe(HELD);
+    // The term's own separators are stripped the same way.
+    for (const term of ["Acme\u2013Care", "Acme/Care", "Acme\u00b7Care"]) expect(termProblem("the AcmeCare team", [term]), JSON.stringify(term)).toBe(HELD);
+  });
+
   it("accepts the false positives of a joined match (acceptable for holds), but leaves single-word terms whole-word", () => {
     expect(termProblem("acme carefully", ["Acme Care"])).toBe(HELD); // joined match: a false positive that holds
     expect(termProblem("the Acmeville depot", ["Acme"])).toBeNull(); // no separator in the term: whole words as before
