@@ -1,27 +1,29 @@
-# CI — the AGENTS.md merge gate, run on every PR to main and every push to main.
+# CI — the AGENTS.md merge gate, run on every PR, every push to main and every merge-queue group.
 #
 # Rules (docs/superpowers/specs/2026-10-09-agent-readiness-design.md §4d):
-# - workflow-level `permissions: read-all`; no job asks for more
+# - workflow-level `permissions: contents: read`; no job asks for more
 # - every action pinned to a full commit SHA (tag in the trailing comment)
 # - no pull_request_target, no workflow_run, no secrets
 # - path filtering happens inside each job (step-level `if:`), so a job whose
 #   area didn't change still reports success with a no-op line, never "skipped"
+# - `CI result` is the one check to require: it fails unless every job succeeded,
+#   so a job skipped because `changes` failed can't pass for it
 name: CI
 
 on:
   pull_request:
-    branches: [main]
   push:
     branches: [main]
+  merge_group:
   workflow_dispatch:
 
-# zizmor flags read-all as broad; spec §4d mandates read-all at the workflow level
-# (no job asks for any write scope), so the finding is acknowledged here.
-permissions: read-all # zizmor: ignore[excessive-permissions]
+permissions:
+  contents: read
 
 concurrency:
-  group: ci-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
-  cancel-in-progress: true
+  group: ci-${{ github.workflow }}-${{ github.event.pull_request.number || github.sha }}
+  # Only superseded PR runs are cancelled; every main commit keeps its own result.
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 env:
   NODE_VERSION: "22"
@@ -35,6 +37,7 @@ jobs:
     outputs:
       bash: ${{ steps.detect.outputs.bash }}
       dotnet: ${{ steps.detect.outputs.dotnet }}
+      golden: ${{ steps.detect.outputs.golden }}
       packages: ${{ steps.detect.outputs.packages }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -49,20 +52,24 @@ jobs:
         run: bash scripts/ci/changed-areas.sh "$EVENT_NAME" "${BASE_SHA:-}" >> "$GITHUB_OUTPUT"
 
   ts:
-    name: TS ${{ matrix.package }}
+    name: TS ${{ matrix.package }} (Node ${{ matrix.node }})
     needs: changes
     runs-on: ubuntu-24.04
     timeout-minutes: 20
     strategy:
       fail-fast: false
       matrix:
-        package:
-          - mcp-bridge
-          - scorer
-          - judge
-          - sindri
-          - skills/ui-evidence
-          - skills/bugFixOrchestrator
+        include:
+          # Node 22 runs typecheck + tests with the 100% coverage thresholds.
+          - { package: mcp-bridge, node: "22" }
+          - { package: scorer, node: "22" }
+          - { package: judge, node: "22" }
+          - { package: sindri, node: "22" }
+          - { package: skills/ui-evidence, node: "22" }
+          - { package: skills/bugFixOrchestrator, node: "22" }
+          # The engines floor (>= 20): the native-module package and the largest one.
+          - { package: mcp-bridge, node: "20" }
+          - { package: sindri, node: "20" }
     env:
       CHANGED: ${{ contains(fromJSON(needs.changes.outputs.packages), matrix.package) }}
     defaults:
@@ -83,7 +90,11 @@ jobs:
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         if: env.CHANGED == 'true'
         with:
-          node-version: ${{ env.NODE_VERSION }}
+          node-version: ${{ matrix.node }}
+          cache: npm
+          cache-dependency-path: |
+            ${{ matrix.package }}/package-lock.json
+            judge/package-lock.json
       - name: npm ci
         if: env.CHANGED == 'true'
         run: npm ci --no-audit --no-fund
@@ -99,14 +110,19 @@ jobs:
       - name: Typecheck
         if: env.CHANGED == 'true'
         run: npm run typecheck
-      - name: Test
-        if: env.CHANGED == 'true'
+      - name: Test with coverage thresholds
+        if: env.CHANGED == 'true' && matrix.node == env.NODE_VERSION
+        run: npm run test:coverage
+      - name: Test on the engines floor
+        if: env.CHANGED == 'true' && matrix.node != env.NODE_VERSION
         run: npm test
 
   bash-tests:
     name: Bash tests
     needs: changes
     # The hooks and installers target the owner's macOS boxes (launchd, BSD userland).
+    # macos-15 is a moving image label: BSD tool updates on it are accepted churn,
+    # and they're what this job exists to catch.
     runs-on: macos-15
     timeout-minutes: 30
     env:
@@ -124,15 +140,23 @@ jobs:
         if: env.CHANGED == 'true'
         with:
           node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+          cache-dependency-path: |
+            judge/package-lock.json
+            scorer/package-lock.json
+            sindri/package-lock.json
       - name: Build the CLIs the tests call
         if: env.CHANGED == 'true'
         run: |
           for pkg in judge scorer sindri; do
             (cd "$pkg" && npm ci --no-audit --no-fund && npm run build)
           done
-      - name: Run every bash test in AGENTS.md
+      - name: Run every tracked bash test suite
         if: env.CHANGED == 'true'
         run: bash scripts/ci/bash-tests.sh
+      - name: setup.sh dry run on macOS (every provider)
+        if: env.CHANGED == 'true'
+        run: ./setup.sh --providers claude,codex,cursor --dry-run
 
   gate:
     name: Merge gate checks
@@ -145,6 +169,8 @@ jobs:
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
           node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+          cache-dependency-path: .github/ci-tools/package-lock.json
       - name: Rules links and index are current
         run: scripts/sync-rules.sh --check
       - name: setup.sh dry run (every provider)
@@ -155,16 +181,75 @@ jobs:
             echo "::error::coverage-ignore annotations are prohibited (AGENTS.md merge gate 5) — write the test instead"
             exit 1
           fi
-      - name: Install Claude Code (plugin validator) from the CI tools lockfile
+      - name: Install the CI tools (claude, typescript) from their lockfile
         # Scripts stay off for the whole tree; only claude-code's own installer runs, and it
         # links the platform binary that the lockfile already pinned by integrity hash.
         run: |
           npm ci --prefix .github/ci-tools --ignore-scripts --no-audit --no-fund
           (cd .github/ci-tools && node node_modules/@anthropic-ai/claude-code/install.cjs)
+      - name: No any types outside the Fastify boundary
+        # Merge gate 6: parses the TS (strings and comments never count) and holds existing
+        # violations to scripts/ci/no-any-baseline.json, which may only shrink.
+        run: node scripts/ci/no-any.mjs
+      - name: deps.yaml matches the code
+        run: |
+          if [ -f scripts/check-deps.mjs ]; then
+            node scripts/check-deps.mjs
+          else
+            echo "no-op: scripts/check-deps.mjs not present yet — the deps.yaml check starts when it lands"
+          fi
       - name: claude plugin validate mods/aw-live
         run: .github/ci-tools/node_modules/.bin/claude plugin validate mods/aw-live
       - name: claude plugin test mods/aw-live
         run: .github/ci-tools/node_modules/.bin/claude plugin test mods/aw-live
+
+  golden:
+    name: Golden harness replay
+    needs: changes
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    env:
+      CHANGED: ${{ needs.changes.outputs.golden }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Detect the harness
+        id: harness
+        run: |
+          if [ -f golden/package.json ] && [ "$CHANGED" = "true" ]; then
+            echo "run=true" >> "$GITHUB_OUTPUT"
+          elif [ -f golden/package.json ]; then
+            echo "no-op: no harness, recording, judge, scrubber or hook change — replay not needed"
+          else
+            echo "no-op: golden/ not present yet — replay starts when the harness lands"
+          fi
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        if: steps.harness.outputs.run == 'true'
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+          cache-dependency-path: |
+            golden/package-lock.json
+            judge/package-lock.json
+            sindri/package-lock.json
+      - name: Harness typecheck and tests
+        if: steps.harness.outputs.run == 'true'
+        working-directory: golden
+        run: |
+          npm ci --no-audit --no-fund
+          npm run typecheck
+          npm test
+          npm run build
+      - name: Build judge and sindri (the recorded binaries)
+        if: steps.harness.outputs.run == 'true'
+        run: |
+          for pkg in judge sindri; do
+            (cd "$pkg" && npm ci --no-audit --no-fund && npm run build)
+          done
+      - name: Replay every golden suite
+        if: steps.harness.outputs.run == 'true'
+        run: node golden/dist/cli.js replay goldens/*/*.suite.json
 
   dotnet:
     name: .NET build and test
@@ -182,23 +267,72 @@ jobs:
       - name: Detect the solution
         id: sln
         run: |
-          if [ -d src ] && [ "$CHANGED" = "true" ]; then
-            echo "run=true" >> "$GITHUB_OUTPUT"
-          elif [ -d src ]; then
-            echo "no-op: no .NET change — dotnet build/test not needed"
-          else
+          if [ ! -d src ]; then
             echo "no-op: src/ not present — dotnet build/test no-op until the first C# project lands"
+            exit 0
           fi
+          if [ "$CHANGED" != "true" ]; then
+            echo "no-op: no .NET change — dotnet build/test not needed"
+            exit 0
+          fi
+          if [ ! -f global.json ]; then
+            echo "::error::src/ exists but global.json doesn't — the SDK must be pinned before C# builds"
+            exit 1
+          fi
+          shopt -s nullglob
+          slns=(*.slnx)
+          if [ "${#slns[@]}" -ne 1 ]; then
+            echo "::error::expected exactly one .slnx at the repo root, found ${#slns[@]}"
+            exit 1
+          fi
+          echo "run=true" >> "$GITHUB_OUTPUT"
+          echo "sln=${slns[0]}" >> "$GITHUB_OUTPUT"
       - uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
         if: steps.sln.outputs.run == 'true'
         with:
           global-json-file: global.json
+          cache: true
+          cache-dependency-path: "**/packages.lock.json"
       - name: dotnet restore (locked)
         if: steps.sln.outputs.run == 'true'
-        run: dotnet restore --locked-mode
+        env:
+          SLN: ${{ steps.sln.outputs.sln }}
+        run: dotnet restore "$SLN" --locked-mode
       - name: dotnet build
         if: steps.sln.outputs.run == 'true'
-        run: dotnet build --no-restore --configuration Release -warnaserror
+        env:
+          SLN: ${{ steps.sln.outputs.sln }}
+        run: dotnet build "$SLN" --no-restore --configuration Release -warnaserror
       - name: dotnet test
         if: steps.sln.outputs.run == 'true'
-        run: dotnet test --no-build --configuration Release
+        env:
+          SLN: ${{ steps.sln.outputs.sln }}
+        run: dotnet test "$SLN" --no-build --no-restore --configuration Release --results-directory TestResults
+      - name: Upload test results on failure
+        if: failure() && steps.sln.outputs.run == 'true'
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: dotnet-test-results
+          path: TestResults
+          if-no-files-found: ignore
+          retention-days: 7
+
+  ci-result:
+    name: CI result
+    needs: [changes, ts, bash-tests, gate, golden, dotnet]
+    # The one job-level `if:` in this file: it must run (and fail) even when a need
+    # failed or was skipped, since GitHub counts a skipped required check as passing.
+    if: always()
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - name: Every job succeeded
+        env:
+          NEEDS: ${{ toJSON(needs) }}
+        run: |
+          echo "$NEEDS" | jq -r 'to_entries[] | "\(.key): \(.value.result)"'
+          bad="$(echo "$NEEDS" | jq -r '[to_entries[] | select(.value.result != "success") | .key] | join(", ")')"
+          if [ -n "$bad" ]; then
+            echo "::error::not successful: $bad"
+            exit 1
+          fi
