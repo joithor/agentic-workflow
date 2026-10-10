@@ -8,6 +8,7 @@
     <Project Path="tests/Aw.Kernel.Tests/Aw.Kernel.Tests.csproj" />
     <Project Path="tests/Aw.Kernel.Testing.Tests/Aw.Kernel.Testing.Tests.csproj" />
     <Project Path="tests/Aw.Kernel.Data.Tests/Aw.Kernel.Data.Tests.csproj" />
+    <Project Path="tests/Aw.Architecture.Tests/Aw.Architecture.Tests.csproj" />
     <Project Path="tests/Aw.LaneCap.Testing/Aw.LaneCap.Testing.csproj" />
   </Folder>
 </Solution>

@@ -128,8 +128,8 @@ endpoint only once that test passes; otherwise the id gets a hand-written `TryPa
 `/new-package`, `docs/csharp/typed-ids.md` step 4), and asserts through `WebApplicationFactory`: valid text → 200 with
 the id's value; text the type refuses → 400; an empty `?id=` → 400; and the endpoint's `ParameterBindingMetadata`
 reports the id as route/query with `hasTryParse: true`, so losing `IParsable` is a red test, not a production 500. The architecture check
-for the package's ids is a gap — R1b (TypedIdGuard moves to Aw.Architecture.Tests); today `TypedIdGuard` is internal
-to `tests/Aw.Kernel.Tests` and covers only the Kernel's ids.
+for the package's ids is `TypedIdGuard` in `tests/Aw.Architecture.Tests` (`ARCH-ID-001`, `ARCH-ID-002`), which covers
+every assembly `/new-package` registered in `Packages.cs`.
 
 ### Template: `<Slice>Validator.cs`
 

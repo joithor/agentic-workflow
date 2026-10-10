@@ -117,7 +117,7 @@ JSON; never `AddWithValue` with a `Guid`, which Microsoft.Data.Sqlite stores as 
 
 ## The guard
 
-`TypedIdGuard` (`tests/Aw.Kernel.Tests/TypedIds/TypedIdGuard.cs`) finds the silent failures. It matches Vogen's
+`TypedIdGuard` (`tests/Aw.Architecture.Tests/TypedIds/TypedIdGuard.cs`) finds the silent failures. It matches Vogen's
 attributes by name, never references Vogen, and runs over any assembly:
 
 - `CheckDefaults(assembly)`: the assembly has `VogenDefaults` with every argument above.
@@ -126,9 +126,9 @@ attributes by name, never references Vogen, and runs over any assembly:
   assembly (Features request and response records, Host bodies, Infrastructure DTOs), is required on read by the
   constructor System.Text.Json actually uses, `required` or `[JsonRequired]`. Nullable ids (`RunId?`) are exempt.
 
-Until `Aw.Architecture.Tests` exists, it covers only the Kernel's own ids (it is internal to `tests/Aw.Kernel.Tests`,
-which nothing may reference); a package's ids are a gap until then. **In R1b it moves to `Aw.Architecture.Tests`**, which runs it over every `Aw.*` assembly so
-no package can forget it. A compile-time version (converter presence) is a candidate `Aw.Analyzers` rule.
+`Aw.Architecture.Tests` runs it over every `Aw.*` assembly registered in its `Packages.cs`, so no package can forget
+it: `ARCH-ID-001` (the defaults, for each assembly that declares a value object) and `ARCH-ID-002` (every id and id
+property). A compile-time version (converter presence) is a candidate `Aw.Analyzers` rule.
 
 ## Public ids and PublicAPI files
 
