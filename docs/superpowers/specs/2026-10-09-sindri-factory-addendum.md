@@ -10,6 +10,8 @@ executor escalation, `spec-conflict`, DORA keys and postmortems, sealed artifact
 field harvest (§17.25), which makes finding and building other factories' practices part of Sindri grows Sindri,
 and scoping v2 (§17.26): tracker intake by assignee, a challenger that retrieves every round, candidate files per
 surface, and a packet the studio edits with the same pipeline (add, remove, prune, ask), with edits as labels.
+§17.27 makes every action manageable from the UI: one command layer with the CLI and UI as clients, authority by
+action class and surface, a scope button, and a parity test so UI actions marked pending can't slip.
 Revision 2 adds:
 - development lenses and workflow generation (§17.7)
 - lean session bootstrap (§17.8)
@@ -515,7 +517,8 @@ with `tailscale serve` (tailnet only), never `funnel`.
 - Typing into a session through Warp remote control is in-pane input: a **takeover** (§8.2 W6), never an
   authenticated decision.
 
-This replaces Plan 6's "no actions from the browser" for the listed kinds only. Plan 6's rule that the browser
+This replaces Plan 6's "no actions from the browser" for the listed kinds only. §17.27 later extends UI actions to
+every command, by action class. Plan 6's rule that the browser
 can't bypass a CLI gate still holds: the phone path is the same gate with a second authenticator.
 
 ## 17.13 Swappable factory host
@@ -1540,17 +1543,31 @@ packet, and **every edit re-runs the relevant part of the same pipeline, scoped 
 | **"Something's missing around X"** (free text) | The challenger turns the text into expansion queries, and one retrieval round runs | New candidates, cited |
 | **Narrow or widen** a write scope | `packet validate`'s write-scope rules (exists or declared new, no overlap with concurrent tasks) plus a neighbours query on the new paths | Validation result and any newly reachable tests or callers |
 | **Run the open queries** of a capped map | One round per query | As for Add |
+| **Several at once** ("add X but remove Y") | All the edits are planned as **one change set** and re-run together: retrieval seeded by X skips Y and anything removed with it, and the dependency check for Y counts X as present | One combined preview of everything the change set adds, removes and leaves uncovered |
+| **Restore** ("remove A — actually A was right") | Brings A back from its tombstone with its citations and provenance. If A's removal took knock-on items with it, they are offered back too, one by one | A, plus the knock-on items to accept or leave out, and any coverage A's return closes |
+| **Undo** a change set, or go back to a revision | Reverts every edit in that change set (or every change set after the revision), then re-runs the checks | The packet as it was, with the reverted change sets kept in history |
 
-Commands: `sindri packet edit <id> add|remove|prune|ask|narrow|widen …` from a terminal, and the same verbs in
-the studio's walkthrough page (§17.4). Both go through one code path. The studio agent proposes edits with the
-same verbs. Nothing changes until the human accepts a proposal.
+Commands: `sindri packet edit <id> add|remove|prune|ask|narrow|widen|restore …` and `sindri packet undo <id>
+<change-set | --to <revision>>` from a terminal, and the same verbs in the studio view (§17.27). They all go through
+one code path. The studio agent turns what you say ("add the export job but drop the admin screen") into one change
+set using the same verbs. Nothing changes until you accept it, and you can accept part of a change set.
+
+**Change sets and revisions.** Every accepted change set makes a new **draft revision** of the map and packet. The
+revisions form an append-only history, so nothing you remove is lost and any earlier state can be restored. Each
+change set records:
+- what you said or typed;
+- the edits it made;
+- what it re-ran;
+- the knock-on items it took or added.
 
 **Rules for edits:**
 - **Provenance on everything.** Every item in the map and packet carries `source: retrieval | model | human` and,
   for retrieval, the query that found it.
 - **Tombstones.** An item the human removes is kept with its reason, and the loop never re-proposes it unless new
   evidence appears (a record the run hadn't seen when it was removed). Without this, every re-run would argue with
-  the human.
+  the human. A tombstone is never final. `restore` clears it, and the item comes back as human-pinned.
+- **Changing your mind is normal.** Restore, undo and re-remove are ordinary edits. Each one goes in the decision log
+  with your reason ("A was right once we chose the export design"), so the packet records why the design moved.
 - **Human adds are pinned.** The prune pass never drops a human-added item. It may flag one as weak, with the
   reason.
 - **Decision log.** Each accepted or rejected proposal is a decision-log record (§17.4), with the asker
@@ -1563,7 +1580,12 @@ same verbs. Nothing changes until the human accepts a proposal.
 ### 17.26.5 Edits are labels
 
 The human's edits are the best signal of what preprocessing got wrong. They are outcome labels, so invariant 9
-holds:
+holds.
+
+Labels are computed **at freeze, from the net difference** between the preprocessed map and the frozen packet, not
+from each edit. An item removed and then restored produces no label, and neither does a change set that was undone,
+so changing your mind while designing never teaches the loop the wrong lesson. Each freeze or amendment labels only
+its own net difference. The net difference gives:
 - an **add** that wasn't in the map is a **recall miss**, tagged with the query types that could have found it;
 - a **remove** of a retrieved or model item is a **precision miss**, with its reason;
 - a proposal **accepted** after an Add or Ask counts as a recall hit for that query type;
@@ -1580,11 +1602,94 @@ per-query-type budgets, judged on recall and precision together (§7.4). Metrics
 | Step | Adds |
 |---|---|
 | Scoping v2a (any time after Plan 3; it needs only the code index and the tracker) | The retrieving loop with typed queries over the index, tracker and notes; the prune pass; convergence; the queries recorded in the map; candidate files per surface |
-| F0 | `packet init --from-scope` carries the candidates as `proposed`; `packet edit` verbs with provenance, tombstones and pinned human adds; `freeze` refuses unconfirmed `proposed` items |
+| F0 | `packet init --from-scope` carries the candidates as `proposed`; `packet edit` verbs (including restore) with provenance, tombstones and pinned human adds; change sets, draft revisions and `packet undo`; `freeze` refuses unconfirmed `proposed` items; labels from the net difference at freeze |
 | F2 | Tracker intake with the `intake` filter and `scopeOnArrival`, behind review back-pressure |
 | F4 | The same edit verbs on the studio's walkthrough page and the phone (keep or drop a surface is already a phone decision, §17.12) |
 | F5 | Context-graph components join the retrieval round as query targets, each kept only if its backtest arm helps |
 | F6 | Edit labels feed evolve's scoping proposals |
+
+## 17.27 Every step is manageable from the UI
+
+Every Sindri action is manageable from the UI, not only from a terminal. That covers starting a scope, editing a
+packet, approving, adopting and promoting. The UI can lag the CLI while it is built, but no action is terminal-only
+by design.
+
+This amends:
+- the Plan 6 dashboard spec, which is "read-mostly" with actions limited to attach;
+- §17.12, where "host CLI verbs stay the authority".
+
+Safety doesn't change, because UI actions go through the same gates as CLI verbs (below).
+
+### 17.27.1 One command layer, two clients
+
+- Every action is a **command**: a typed request handled by one handler. The handler does the validation, writes
+  the ledger record and the audit entry, and returns `SND-*` errors. Readiness §4b.1 already shapes each use case
+  as a slice with "an endpoint or CLI mapping". This makes both mappings required.
+- The CLI and the UI are two clients of the same handlers. The UI holds **no logic of its own**: no extra checks,
+  shortcuts or UI-only state changes. A rule that is true in the terminal is true in the browser.
+- Long-running commands (scope, backtest, harvest, index build, evolve check) run as ledger jobs. Both clients
+  follow the same progress events, for example `gathering…`, `round 2: 14 queries, 9 new records`,
+  `pruned 3`. Both can cancel the job.
+- **The authority is the command layer.** "CLI verbs are the authority" now means the handlers they call, which
+  the UI calls too.
+
+### 17.27.2 Which surface may run which action
+
+Every UI action carries the same identity and gate as its CLI verb, plus the authenticator its class requires:
+
+| Action class | Examples | Terminal | Dashboard on the host (loopback) | Dashboard over the tailnet (desk view) | Phone (swipe inbox) |
+|---|---|---|---|---|---|
+| Read and watch | Status, timelines, maps, receipts, metrics | yes | yes | yes | yes |
+| Read-only jobs | Scope, backtest, harvest, index build, `doctor`, `verify` | yes | yes | yes, passkey | From a card only (for example "run the open queries") |
+| Non-protected decisions | The §17.12 list: undraft, accept evidence, keep or drop a surface, prompt-text rules, idea and practice cards | yes | yes | yes, passkey | yes, passkey |
+| Desk actions | Answer questions; edit, freeze and amend packets; start an item; hand back a takeover | yes | yes, passkey | yes, passkey | no |
+| Protected (approval tier) | Allowlists, egress, trust lists, tier raises, consequence tiers, `review.maxPending`, gate loosening, evolve adoption, `channel promote`, `profile approve` | yes | yes: passkey plus a **typed confirmation bound to the hash of the full diff**, which is shown in full on the page | no | no |
+
+- Every UI action writes a **signed decision record** (kind, item, choice, device, time), as phone decisions
+  already do (§17.12).
+- Protected actions keep the rule that the confirmation is typed against the exact content. For example, evolve
+  adoption types the variant's sha256 (§7.4). A button alone never adopts, promotes or widens anything.
+- The phone stays limited to binary, non-protected decisions (§17.12, §17.19 C8).
+- Live session input is still a takeover, never a decision (§8.2).
+
+### 17.27.3 The scope button (and its neighbours)
+
+| Where | Button | What it does |
+|---|---|---|
+| A tracker item or project in the backlog view, a spec section, or an uploaded brief | **Scope** | Shows a dry-run first (which sources would be read, with counts, and the token budget; no model is called). On confirm it starts the scoping job, shows progress per round with its queries, and opens the map when done |
+| A scope map | **Edit** verbs from §17.26.4: add, remove, too much, missing around X, run open queries | The same commands as `sindri packet edit` |
+| A scope map | **Create packet** | `packet init --from-scope`, then opens the studio view |
+| A packet | **Validate**, **Freeze** (desk), **Amend** | The same commands; freeze shows `validate`'s result and the unconfirmed proposals first |
+| A past tracker project | **Backtest** | `sindri scope --backtest`, then the recall and precision report |
+| An item in `status` | **Start** (desk), **Hold**, **Re-scope** | The same router commands, behind review back-pressure |
+
+The same pattern applies everywhere else: every view that shows a thing Sindri can act on offers that action.
+Examples:
+- an evolve proposal offers compare, adopt (protected) and revert;
+- a channel build offers promote (protected) and rollback;
+- a gate record offers propose loosening (approval tier);
+- a receipt offers verify;
+- the field registry offers add and remove a source;
+- a repo offers onboard and index build.
+
+### 17.27.4 Parity is tracked, so "later" doesn't become "never"
+
+- Each command declares its CLI form and its UI action in a **command registry** (a registered artifact). Until
+  the UI action exists, the declaration is `ui: pending` with the rollout step it is due in.
+- A test fails when a command has no CLI form, or when a `pending` UI action is past its due step.
+- `doctor` lists the pending UI actions. The guide's catalog shows each command's UI status.
+- Adding a command without a UI declaration fails the same test. A new verb must at least say when its button
+  arrives.
+
+### 17.27.5 Rollout
+
+| Step | Adds |
+|---|---|
+| Plan 6 | The dashboard reads the command registry and shows each action's status. Its server is built on the command layer, so actions can be added without a second implementation |
+| F0 | The command registry and the parity test. Every existing verb is declared, mostly as `ui: pending` |
+| F2 | Passkey enrolment on the host dashboard. Desk actions (start, hand back, answer) and read-only jobs |
+| F4 | The scope button, map editing and packet validate, freeze and amend in the studio view; the tailnet desk view; protected actions with typed hash confirmation |
+| Every F-step | Its "Turn it on" task (§13.3) ships its commands' UI actions, or records `ui: pending` with a due step the parity test enforces |
 
 ## 17.17 Decisions
 
