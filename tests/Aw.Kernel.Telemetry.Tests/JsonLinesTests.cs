@@ -141,4 +141,17 @@ public sealed class JsonLinesTests
         Assert.Equal("1", fields.GetProperty("A").GetString());
         Assert.Equal("2", fields.GetProperty("A_2").GetString());
     }
+
+    [Fact]
+    public void A_numbered_key_never_collides_with_a_real_field_name()
+    {
+        using var h = new Harness();
+
+        h.Logger().EmitTemplate("{A} {A_2} {A}", ("A", 1), ("A_2", 2), ("A", 3));
+
+        var raw = Assert.Single(h.Sink.Lines);
+        var fields = JsonDocument.Parse(raw).RootElement.GetProperty("fields").EnumerateObject().Select(p => p.Name).ToList();
+        Assert.Equal(fields.Count, fields.Distinct(StringComparer.Ordinal).Count());
+        Assert.Equal(3, fields.Count);
+    }
 }

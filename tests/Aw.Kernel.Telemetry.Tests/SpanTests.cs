@@ -253,4 +253,59 @@ public sealed class SpanTests
         var creds = Assert.IsType<string[]>(Assert.Single(h.Spans!.Exported).GetTagItem("creds"));
         Assert.Equal("[password, [REDACTED:secret-field]]", Assert.Single(creds));
     }
+
+    [Fact]
+    public void A_repeated_tag_key_whose_later_value_carries_a_secret_drops_the_span()
+    {
+        using var h = new Harness(export: true);
+        using (var span = h.Source.StartActivity("work"))
+        {
+            _ = span!.AddTag("password", "first-plain").AddTag("password", "second-plain");
+        }
+
+        using (var span = h.Source.StartActivity("work"))
+        {
+            _ = span!.AddTag("note", "clean").AddTag("note", Secrets.Bearer);
+        }
+
+        h.Runtime.Flush();
+
+        Assert.Empty(h.Spans!.Exported);
+        Assert.Equal(2, h.Runtime.Withheld.Spans);
+    }
+
+    [Fact]
+    public void A_span_whose_link_trace_state_or_source_tags_carry_a_secret_is_dropped()
+    {
+        using var h = new Harness(export: true);
+        var context = new ActivityContext(ActivityTraceId.CreateRandom(), ActivitySpanId.CreateRandom(), ActivityTraceFlags.Recorded, "vendor=" + Secrets.GithubToken);
+        using (h.Source.StartActivity("work", ActivityKind.Internal, parentContext: default, links: [new ActivityLink(context)]))
+        {
+        }
+
+        using var tagged = new ActivitySource(h.Source.Name, "1.0", [new("api_key", "zq81-plain")]);
+        using (tagged.StartActivity("work"))
+        {
+        }
+
+        h.Runtime.Flush();
+
+        Assert.Empty(h.Spans!.Exported);
+        Assert.Equal(2, h.Runtime.Withheld.Spans);
+    }
+
+    [Fact]
+    public void A_list_tag_holding_objects_is_replaced_by_its_rendered_strings()
+    {
+        using var h = new Harness(export: true);
+        using (var span = h.Source.StartActivity("work"))
+        {
+            _ = span!.SetTag("items", new object[] { new Dictionary<string, string>(StringComparer.Ordinal) { ["password"] = "hunter2-plain" } });
+        }
+
+        h.Runtime.Flush();
+
+        var items = Assert.IsType<string[]>(Assert.Single(h.Spans!.Exported).GetTagItem("items"));
+        Assert.DoesNotContain("hunter2", Assert.Single(items), StringComparison.Ordinal);
+    }
 }

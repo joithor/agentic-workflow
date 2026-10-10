@@ -50,4 +50,25 @@ public sealed class RegistrationTests
         using var provider = services.BuildServiceProvider();
         Assert.NotNull(provider.GetRequiredService<TelemetryRuntime>());
     }
+
+    [Fact]
+    public void AddKernelTelemetry_twice_is_refused()
+    {
+        var services = new ServiceCollection().AddKernelTelemetry(new TelemetryOptions { ServiceName = "aw-demo", Sink = new InMemoryLogSink(), SourcePattern = "Aw.Test.Twice" });
+
+        _ = Assert.Throws<InvalidOperationException>(() => services.AddKernelTelemetry(new TelemetryOptions { ServiceName = "aw-demo", SourcePattern = "Aw.Test.Twice" }));
+    }
+
+    [Fact]
+    public void Disposing_the_container_after_resolving_the_runtime_stops_telemetry()
+    {
+        using var source = new System.Diagnostics.ActivitySource("Aw.Test.Owned");
+        var services = new ServiceCollection().AddKernelTelemetry(new TelemetryOptions { ServiceName = "aw-demo", Sink = new InMemoryLogSink(), SourcePattern = "Aw.Test.Owned" });
+        var provider = services.BuildServiceProvider();
+        _ = provider.GetRequiredService<TelemetryRuntime>();
+
+        provider.Dispose();
+
+        Assert.False(source.HasListeners());
+    }
 }

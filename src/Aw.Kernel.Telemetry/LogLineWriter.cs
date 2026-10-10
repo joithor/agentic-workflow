@@ -80,10 +80,11 @@ internal static class LogLineWriter
         }
     }
 
-    // A name the template repeats ("{A} then {A}") gets a numbered key (A, A_2), so no JSON property repeats.
+    // A name the template repeats ("{A} then {A}") gets the first free numbered key (A, A_2, A_3, …), so no JSON
+    // property repeats, even next to a field really named A_2.
     private static void WriteFields(Utf8JsonWriter json, IReadOnlyList<KeyValuePair<string, object?>> fields, Scrubber scrubber, ref ScrubTally tally)
     {
-        var seen = new Dictionary<string, int>(StringComparer.Ordinal);
+        var seen = new HashSet<string>(StringComparer.Ordinal);
         foreach (var (key, value) in fields)
         {
             if (key == MessageText.TemplateKey)
@@ -97,8 +98,12 @@ internal static class LogLineWriter
             }
 
             var safeKey = scrubber.Scrub(key, ref tally);
-            var count = seen[safeKey] = seen.GetValueOrDefault(safeKey) + 1;
-            var name = count == 1 ? safeKey : string.Create(System.Globalization.CultureInfo.InvariantCulture, $"{safeKey}_{count}");
+            var name = safeKey;
+            for (var n = 2; !seen.Add(name); n++)
+            {
+                name = string.Create(System.Globalization.CultureInfo.InvariantCulture, $"{safeKey}_{n}");
+            }
+
             json.WriteString(name, scrubber.ScrubField(key, value, ref tally));
         }
 

@@ -5,10 +5,10 @@ namespace Aw.Kernel.Telemetry;
 
 /// <summary>
 /// The message text of a log call. When a structured field has a secret's name (password, token, …), or holds a
-/// dictionary with a secret-named entry, its value is withheld from the message too: the message is rendered again from
+/// dictionary, key-value entry or object with a secret-named entry or member, its value is withheld from the message too: the message is rendered again from
 /// its template, the way the log formatter does (alignment and format applied; null is "(null)"; a list is its elements
 /// joined with ", "), with that value withheld. Each hole takes the field of its own name (the k-th hole named N takes
-/// the k-th field named N, ignoring a '@' or '$' prefix), never a field by position: a source-generated
+/// the k-th field named N, ignoring spaces and a '@' or '$' prefix), never a field by position: a source-generated
 /// [LoggerMessage] state lists its fields in parameter order, which can differ from the template's.
 /// </summary>
 internal static class MessageText
@@ -19,7 +19,7 @@ internal static class MessageText
     public static string Render(string formatted, IReadOnlyList<KeyValuePair<string, object?>> fields, Scrubber scrubber)
     {
         if (fields.FirstOrDefault(f => f.Key == TemplateKey).Value is not string template
-            || !fields.Any(f => f.Key != TemplateKey && (scrubber.IsSecretName(f.Key) || scrubber.HasSecretEntries(f.Value))))
+            || !fields.Any(f => f.Key != TemplateKey && (scrubber.IsSecretName(f.Key) || scrubber.Withholds(f.Value))))
         {
             return formatted;
         }
@@ -69,15 +69,15 @@ internal static class MessageText
         var occurrence = seen[name] = seen.GetValueOrDefault(name) + 1;
         var named = values.Where(f => Bare(f.Key) == name).ToList();
         var value = named.Count == 0 ? null : named[Math.Min(occurrence, named.Count) - 1].Value;
-        var text = value switch
+        object text = value switch
         {
             null => NullText,
-            string or System.Collections.IEnumerable => scrubber.Render(value),
-            var other => other,
+            IFormattable formattable when !scrubber.Withholds(formattable) => formattable,
+            _ => scrubber.Render(value),
         };
         return end < 0 ? Convert.ToString(text, CultureInfo.InvariantCulture) ?? NullText
             : string.Format(CultureInfo.InvariantCulture, "{0" + hole[end..] + "}", text);
     }
 
-    private static string Bare(string name) => name.TrimStart('@', '$');
+    private static string Bare(string name) => Scrubber.Bare(name);
 }

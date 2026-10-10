@@ -8,8 +8,9 @@ namespace Aw.Kernel.Telemetry;
 /// The span processor in front of the export processor (installed only when a trace exporter is): scrubs a span before
 /// the exporter sees it. The display name, tag values (a tag with a secret's name is withheld whole, whatever its type;
 /// a list is scrubbed element by element) and the status description are rewritten in place. The operation name,
-/// trace state, tag keys, events and links can't be rewritten, so a span with a secret in any of them, or whose scrub
-/// was blocked or failed, is dropped: it is marked not recorded, which the export processor skips, and counted.
+/// trace state, tag keys, a repeated tag key's values, the source's tags, events and links (their tags and trace
+/// state) can't be rewritten, so a span with a secret in any of them, or whose scrub was blocked or failed, is
+/// dropped: it is marked not recorded, which the export processor skips, and counted.
 /// </summary>
 internal sealed class ScrubbingActivityProcessor(Scrubber scrubber, Withheld withheld) : BaseProcessor<Activity>
 {
@@ -40,10 +41,8 @@ internal sealed class ScrubbingActivityProcessor(Scrubber scrubber, Withheld wit
         var tally = default(ScrubTally);
         var unwritable = default(ScrubTally);
         _ = scrubber.Scrub(data.OperationName, ref unwritable);
-        if (data.TraceStateString is { } traceState)
-        {
-            _ = scrubber.Scrub(traceState, ref unwritable);
-        }
+        ScrubOptional(data.TraceStateString, ref unwritable);
+        ScrubAll(data.Source.Tags, ref unwritable);
 
         data.DisplayName = scrubber.Scrub(data.DisplayName, ref tally);
         ScrubTags(data, ref tally, ref unwritable);
@@ -60,26 +59,47 @@ internal sealed class ScrubbingActivityProcessor(Scrubber scrubber, Withheld wit
 
         foreach (var link in data.Links)
         {
+            ScrubOptional(link.Context.TraceState, ref unwritable);
             ScrubAll(link.Tags, ref unwritable);
         }
 
         return !tally.Blocked && unwritable.Clean;
     }
 
+    // SetTag rewrites only the first tag with a key, and AddTag allows repeats: a repeated key that needs rewriting
+    // can't be rewritten in place, so it counts as unwritable.
     private void ScrubTags(Activity data, ref ScrubTally tally, ref ScrubTally unwritable)
     {
-        foreach (var (key, value) in data.TagObjects.ToList())
+        var tags = data.TagObjects.ToList();
+        var repeated = tags.GroupBy(t => t.Key, StringComparer.Ordinal).Where(g => g.Skip(1).Any()).Select(g => g.Key).ToHashSet(StringComparer.Ordinal);
+        foreach (var (key, value) in tags)
         {
             _ = scrubber.Scrub(key, ref unwritable);
 
             // A fresh tally per tag: the record's tally may already say "redacted" from the name.
             var tag = default(ScrubTally);
             var scrubbed = scrubber.ScrubValue(key, value, ref tag);
-            if (!tag.Clean)
+            if (tag.Clean)
             {
-                _ = data.SetTag(key, scrubbed);
-                tally = tally with { Redacted = tally.Redacted || tag.Redacted, Blocked = tally.Blocked || tag.Blocked };
+                continue;
             }
+
+            if (repeated.Contains(key))
+            {
+                unwritable = unwritable with { Redacted = true, Blocked = unwritable.Blocked || tag.Blocked };
+                continue;
+            }
+
+            _ = data.SetTag(key, scrubbed);
+            tally = tally with { Redacted = tally.Redacted || tag.Redacted, Blocked = tally.Blocked || tag.Blocked };
+        }
+    }
+
+    private void ScrubOptional(string? text, ref ScrubTally tally)
+    {
+        if (text is not null)
+        {
+            _ = scrubber.Scrub(text, ref tally);
         }
     }
 

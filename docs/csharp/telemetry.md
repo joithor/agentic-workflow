@@ -13,6 +13,11 @@ external dependency is `OpenTelemetry`. Its closure (see `src/Aw.Kernel.Telemetr
 // Composition.Compose(services, environment, clock) — the signature every Host has (csharp.md DI rules):
 services.AddKernelTelemetry(TelemetryOptions.FromEnvironment("aw-readiness", environment, clock));
 // A host that exports picks the adapter here too: … with { TraceExporter = <adapter from Infrastructure> }.
+
+// Program.cs, right after building the container: resolving the runtime hands it to the container, which then
+// disposes (and flushes) it on exit.
+using var provider = services.BuildServiceProvider();
+_ = provider.GetRequiredService<TelemetryRuntime>();
 ```
 
 `FromEnvironment` reads `AW_LOG_LEVEL` and takes the host's clock (a `FakeTimeProvider` in the DI validation test). It
@@ -21,7 +26,8 @@ never fails the host: an unknown level stays at information and sets `TelemetryO
 as its first line, a warning whose `eventName` is the code. Without DI, `using var telemetry =
 TelemetryRuntime.Start(options)` and `telemetry.LoggerFactory`. `AddKernelTelemetry` starts the runtime right away (so
 spans are recorded and the problem line is written while Compose runs, before anything resolves a logger) and
-registers it as a singleton the container disposes; disposing the runtime flushes it. Run **one runtime per process**: the withheld counter is process-wide.
+registers it as a singleton. The container disposes a singleton only once something has resolved it, hence the
+resolve in Program.cs; disposing the runtime flushes it. A second `AddKernelTelemetry` call throws. Run **one runtime per process**: the withheld counter is process-wide.
 
 OpenTelemetry's SDK reads some standard `OTEL_*` variables. The resource is exactly `service.name` from `ServiceName`
 (`ResourceBuilder.CreateEmpty()`, so `OTEL_SERVICE_NAME` and `OTEL_RESOURCE_ATTRIBUTES` are ignored), and the sampler
@@ -65,8 +71,8 @@ prefixes) is removed.
 
 | Path | What happens |
 |---|---|
-| Log line | category, event name, message, exception (`ToString()`, inner exceptions included), every field key and value scrubbed; a field with a secret's **name** is withheld whole (`[REDACTED:secret-field]`), and so is a dictionary's or key-value list's entry with a secret's name (`[password, [REDACTED:secret-field]]`); a `char[]` is scrubbed as one string. The message is rendered again from its template when it holds such a value, as the formatter does (alignment and format applied), each hole taking the field of its own name: a source-generated `[LoggerMessage]` lists fields in parameter order, so position would put a value in the wrong hole |
-| Span (only with a trace exporter) | the scrubbing processor runs before the export processor: display name, tag values and status description are rewritten in place. A tag with a secret's name is withheld whatever its type; numbers and flags are kept; a list is scrubbed element by element, with secret-named dictionary entries withheld (the tag becomes a string array); any other object is scrubbed as its text. The operation name, trace state, tag keys, events and links can't be rewritten, so a span with a secret in any of them is **dropped** (marked not recorded). Without an exporter nothing leaves the process, so spans aren't touched |
+| Log line | category, event name, message, exception (`ToString()`, inner exceptions included), every field key and value scrubbed; a field with a secret's **name** is withheld whole (`[REDACTED:secret-field]`), and so is a secret-named entry of a dictionary, a `KeyValuePair<string, T>` (alone or in a list) or a `(string, T)` tuple (`[password, [REDACTED:secret-field]]`), and a secret-named member in an object's text as records and anonymous objects print it (`LoginRequest { User = alice, Password = [REDACTED:secret-field] }`); a `char[]` is scrubbed as one string. Any other object is written as its `ToString()` and only regex-scrubbed, so don't log objects that hold secrets in other shapes. The message is rendered again from its template when it holds such a value, as the formatter does (alignment and format applied), each hole taking the field of its own name: a source-generated `[LoggerMessage]` lists fields in parameter order, so position would put a value in the wrong hole |
+| Span (only with a trace exporter) | the scrubbing processor runs before the export processor: display name, tag values and status description are rewritten in place. A tag with a secret's name is withheld whatever its type; numbers and flags are kept; a list is scrubbed element by element, with secret-named dictionary entries withheld (the tag becomes a string array); any other object is scrubbed as its text. A list holding anything but text, numbers and flags always becomes its rendered strings. The operation name, trace state, tag keys, a repeated tag key's values (`AddTag` allows repeats, `SetTag` rewrites only the first), the source's tags, events, and links (their tags and trace state) can't be rewritten, so a span with a secret in any of them is **dropped** (marked not recorded). Without an exporter nothing leaves the process, so spans aren't touched |
 | Metric | the exporter is wrapped: an instrument whose meter tags or any point's tags carry a secret (in a key, a value, a list element, or as a secret's name) is **withheld** from every export for the life of the process (cumulative points come back each time) and counted once. Metric tags should be small fixed sets |
 | Blocked scrub (a match timeout) | never passes raw text: a log line is written with `[REDACTED:blocked]` in place of the text; a span or metric instrument is dropped |
 | Failure (the sink or a value's `ToString()` throws) | never thrown into the caller: the log line or span is dropped and counted as `failure`; `Flush` and `Dispose` never throw (a writer the host already closed is counted too) |

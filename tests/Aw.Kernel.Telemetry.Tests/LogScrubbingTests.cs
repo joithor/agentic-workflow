@@ -171,4 +171,43 @@ public sealed class LogScrubbingTests
         _ = Assert.Single(h.Lines());
         Assert.DoesNotContain(Secrets.Body, h.Sink.Text, StringComparison.Ordinal);
     }
+
+    [Fact]
+    public void Key_value_shapes_of_any_value_type_withhold_secret_named_entries()
+    {
+        using var h = new Harness();
+        var ints = new List<KeyValuePair<string, int>> { new("password", 98765), new("n", 1) };
+        var tuples = new List<(string, string)> { ("password", "hunter2-plain") };
+        var pair = new KeyValuePair<string, string>("password", "hunter2-plain");
+
+        h.Logger().EmitTemplate("{Ints} {Tuples} {Pair}", ("Ints", ints), ("Tuples", tuples), ("Pair", pair));
+
+        var line = Assert.Single(h.Lines());
+        Assert.DoesNotContain("98765", h.Sink.Text, StringComparison.Ordinal);
+        Assert.DoesNotContain("hunter2", h.Sink.Text, StringComparison.Ordinal);
+        Assert.Contains("[n, 1]", line.GetProperty("message").GetString(), StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void A_record_with_a_secret_named_member_is_withheld_in_its_text()
+    {
+        using var h = new Harness();
+
+        h.Logger().EmitTemplate("login {Request}", ("Request", new LoginRequest("alice", "hunter2-plain")));
+
+        var line = Assert.Single(h.Lines());
+        Assert.Equal("login LoginRequest { User = alice, Password = [REDACTED:secret-field] }", line.GetProperty("message").GetString());
+        Assert.DoesNotContain("hunter2", h.Sink.Text, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void A_hole_name_with_spaces_is_still_recognised_as_a_secret_name()
+    {
+        using var h = new Harness();
+
+        h.Logger().EmitTemplate("login { Password }", (" Password ", "hunter2-plain"));
+
+        _ = Assert.Single(h.Lines());
+        Assert.DoesNotContain("hunter2", h.Sink.Text, StringComparison.Ordinal);
+    }
 }

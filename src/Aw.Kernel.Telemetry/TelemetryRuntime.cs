@@ -18,6 +18,7 @@ public sealed class TelemetryRuntime : IDisposable
     private readonly Withheld _withheld;
     private readonly TracerProvider _tracer;
     private readonly MeterProvider? _meter;
+    private int _disposed;
 
     private TelemetryRuntime(TelemetryOptions options, ILogSink sink, Withheld withheld)
     {
@@ -71,6 +72,11 @@ public sealed class TelemetryRuntime : IDisposable
     /// <inheritdoc />
     public void Dispose()
     {
+        if (Interlocked.Exchange(ref _disposed, 1) == 1)
+        {
+            return;
+        }
+
         _tracer.Dispose();
         _meter?.Dispose();
         LoggerFactory.Dispose();
