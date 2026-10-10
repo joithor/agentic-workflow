@@ -303,6 +303,39 @@ expect "[{*.cs,*.vb}] is a general section" 1 "RULE-CHECK-001" "CA1031"
 d="$(fixture glob-csold)"; printf '[*.{cs-old}]\ndotnet_diagnostic.CA1031.severity = none\n' >> "$d/.editorconfig"; run "$d"
 expect "[*.{cs-old}] is not a C# section" 0 "rules: ok"
 
+# ---- review run 4: verbatim strings that open with a quote, Roslyn's property syntax, nested braces, path globs,
+# unreadable code, non-dotnet editorconfig settings, CodeMetricsConfig ----
+d="$(fixture verbatim-quote)"; printf 'var s = @"""quoted"" // x"; // ARCH-SLICE-001\nvar t = 1;\n' > "$d/tests/Aw.Architecture.Tests/V.cs"; run "$d"
+refuse "a verbatim string opening with an escaped quote isn't a raw string" "ARCH-SLICE-001 (PR #131) — fix"
+
+d="$(fixture inline-semicolon)"; sub "$d/.editorconfig" "dotnet_diagnostic.CA1031.severity = error    # no catch (Exception) outside boundaries" "dotnet_diagnostic.CA1031.severity = error ; why"; run "$d"
+expect "an inline ; comment ends an editorconfig value" 0 "rules: ok"
+
+d="$(fixture colon-sep)"; printf 'dotnet_diagnostic.CA1031.severity : none\n' >> "$d/.editorconfig"; run "$d"
+expect "a key: value property line counts" 1 "RULE-CHECK-001" "CA1031"
+
+d="$(fixture nested-braces)"; printf '[{*.{cs,vb}}]\ndotnet_diagnostic.CA1031.severity = none\n' >> "$d/.editorconfig"; run "$d"
+expect "[{*.{cs,vb}}] is a general section" 1 "RULE-CHECK-001" "CA1031"
+
+d="$(fixture nested-narrow)"; printf '[{src/{a,*.cs,b}}]\ndotnet_diagnostic.CA1031.severity = none\n' >> "$d/.editorconfig"; run "$d"
+expect "[{src/{a,*.cs,b}}] is a narrow section" 0 "rules: ok"
+
+d="$(fixture one-level)"; drop "$d/.editorconfig" 'CA1031'; printf '[*/*.cs]\ndotnet_diagnostic.CA1031.severity = error\n' >> "$d/.editorconfig"; run "$d"
+expect "[*/*.cs] is a narrow section" 1 "RULE-CHECK-001" "CA1031"
+
+d="$(fixture lexer-fails)"; printf 'const s = `abc ${ x }; // DEPS-CYCLE-001\n' > "$d/scripts/check-deps.mjs"; run "$d"
+expect "an id in code the lexer can't read doesn't count" 1 "RULE-CHECK-001" "DEPS-CYCLE-001"
+
+d="$(fixture ma-setting)"; printf 'MA0051.maximum_lines_per_method = 40\n' >> "$d/.editorconfig"
+addcheck "$(rec "$d" no-catch-exception)" "  - type: build-setting" '    id: "MA0051.maximum_lines_per_method = 40"' "    status: active"; run "$d"
+expect "an editorconfig setting is found in a general section" 0 "rules: ok"
+printf '[*.cs]\nMA0051.maximum_lines_per_method = 60\n' >> "$d/.editorconfig"; run "$d"
+expect "an editorconfig setting overridden later fails" 1 "RULE-CHECK-001" "maximum_lines_per_method"
+
+d="$(fixture metrics)"; printf '# limits\nCA1502: 10\n' > "$d/CodeMetricsConfig.txt"
+addcheck "$(rec "$d" no-catch-exception)" "  - type: build-setting" '    id: "CA1502: 10"' "    status: active"; run "$d"
+expect "a CodeMetricsConfig.txt limit is a build setting" 0 "rules: ok"
+
 d="$(fixture norecords)"; mv "$d/rules" "$d/rules.gone"; run "$d"
 expect "a tree with no rules directory is a tool error" 2 "check-rules: error"
 
