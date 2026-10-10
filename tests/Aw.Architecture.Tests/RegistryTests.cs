@@ -23,6 +23,15 @@ public sealed class RegistryTests
                 .Select(n => new Violation(StaleId, $"{n} doesn't load", AddReference(n)))));
 
     [Fact]
+    public void Every_registered_assembly_is_in_the_architecture_model()
+    {
+        var loaded = Production.Architecture.Assemblies.Select(a => a.Name.Split(',')[0]).ToHashSet(StringComparer.Ordinal);
+
+        Assert.All(Packages.Production, n => Assert.Contains(n, loaded));
+        Assert.NotEmpty(Production.Edges);
+    }
+
+    [Fact]
     public void A_project_missing_from_the_registry_is_reported_with_the_line_to_add() =>
         Verify.Exactly(Missing(["Aw.Kernel", "Aw.Demo.Core"], ["Aw.Kernel"]), MissingId, "Aw.Demo.Core");
 

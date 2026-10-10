@@ -2,16 +2,21 @@ using ArchUnitNET.Domain;
 
 namespace Aw.Architecture.Tests.Rules;
 
-/// <summary>Red stub.</summary>
+/// <summary>Infrastructure row and DTO types never leave the project (spec §4b.1).</summary>
 public static class InfrastructureRules
 {
-    /// <summary>A public type in Infrastructure.</summary>
+    /// <summary>A public type in Infrastructure other than its registration class.</summary>
     public const string Id = "ARCH-INFRA-001";
 
-    /// <summary>Red stub.</summary>
-    /// <param name="types">The types.</param>
-    /// <param name="roots">The roots.</param>
-    /// <returns>Nothing yet.</returns>
+    /// <summary>Checks that Infrastructure exposes only its *ServiceCollectionExtensions registration class.</summary>
+    /// <param name="types">The types to check.</param>
+    /// <param name="roots">The package roots in scope.</param>
+    /// <returns>One violation per public Infrastructure type.</returns>
     public static IEnumerable<Violation> Check(IEnumerable<IType> types, IReadOnlyList<string> roots) =>
-        types.Take(roots.Count * 0).Select(_ => new Violation(Id, string.Empty, string.Empty));
+        types
+            .Where(t => !t.IsNested && t.Visibility == Visibility.Public
+                && Place.Of(t, roots) is { Layer: Layer.Infrastructure }
+                && !TypeNames.TopLevel(t).EndsWith("ServiceCollectionExtensions", StringComparison.Ordinal))
+            .Select(t => new Violation(Id, $"{t.FullName} is public in Infrastructure",
+                "make it internal: rows, DTOs, repositories and adapters stay inside Infrastructure, which returns Core types"));
 }
