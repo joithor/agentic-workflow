@@ -20,5 +20,9 @@ internal static class Packages
         "Aw.Readiness.Core",
         "Aw.Readiness.App",
         "Aw.Redaction",
+        "Aw.Judge.Core",
+        "Aw.Judge.Features",
+        "Aw.Judge.Infrastructure",
+        "Aw.Judge.Host",
     ];
 }

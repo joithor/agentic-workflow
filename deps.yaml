@@ -329,7 +329,7 @@ edges:
   - from: Judge
     to: Kernel
     kind: project
-    status: planned
+    status: current
     note: "Result, IService, ports"
   - from: Judge
     to: KernelData
@@ -339,7 +339,7 @@ edges:
   - from: Judge
     to: KernelTelemetry
     kind: project
-    status: planned
+    status: current
     note: "logging"
   - from: Judge
     to: Redaction

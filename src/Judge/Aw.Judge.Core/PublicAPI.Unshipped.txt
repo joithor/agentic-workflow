@@ -1,0 +1,6 @@
+#nullable enable
+Aw.Judge.Core.JudgeCoreServiceCollectionExtensions
+Aw.Judge.Core.JudgeErrors
+static Aw.Judge.Core.JudgeCoreServiceCollectionExtensions.AddJudgeCore(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
+static Aw.Judge.Core.JudgeErrors.All.get -> System.Collections.Generic.IReadOnlyList<Aw.Kernel.ErrorDefinition!>!
+static readonly Aw.Judge.Core.JudgeErrors.Invalid -> Aw.Kernel.ErrorDefinition!

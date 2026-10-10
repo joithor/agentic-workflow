@@ -1,0 +1,21 @@
+#nullable enable
+Aw.Judge.Features.GetHealth.GetHealthRequest
+Aw.Judge.Features.GetHealth.GetHealthRequest.<Clone>$() -> Aw.Judge.Features.GetHealth.GetHealthRequest!
+Aw.Judge.Features.GetHealth.GetHealthRequest.Equals(Aw.Judge.Features.GetHealth.GetHealthRequest? other) -> bool
+Aw.Judge.Features.GetHealth.GetHealthRequest.GetHealthRequest() -> void
+Aw.Judge.Features.GetHealth.GetHealthResponse
+Aw.Judge.Features.GetHealth.GetHealthResponse.<Clone>$() -> Aw.Judge.Features.GetHealth.GetHealthResponse!
+Aw.Judge.Features.GetHealth.GetHealthResponse.Equals(Aw.Judge.Features.GetHealth.GetHealthResponse? other) -> bool
+Aw.Judge.Features.GetHealth.GetHealthResponse.GetHealthResponse() -> void
+Aw.Judge.Features.JudgeFeaturesServiceCollectionExtensions
+override Aw.Judge.Features.GetHealth.GetHealthRequest.Equals(object? obj) -> bool
+override Aw.Judge.Features.GetHealth.GetHealthRequest.GetHashCode() -> int
+override Aw.Judge.Features.GetHealth.GetHealthRequest.ToString() -> string!
+override Aw.Judge.Features.GetHealth.GetHealthResponse.Equals(object? obj) -> bool
+override Aw.Judge.Features.GetHealth.GetHealthResponse.GetHashCode() -> int
+override Aw.Judge.Features.GetHealth.GetHealthResponse.ToString() -> string!
+static Aw.Judge.Features.GetHealth.GetHealthRequest.operator !=(Aw.Judge.Features.GetHealth.GetHealthRequest? left, Aw.Judge.Features.GetHealth.GetHealthRequest? right) -> bool
+static Aw.Judge.Features.GetHealth.GetHealthRequest.operator ==(Aw.Judge.Features.GetHealth.GetHealthRequest? left, Aw.Judge.Features.GetHealth.GetHealthRequest? right) -> bool
+static Aw.Judge.Features.GetHealth.GetHealthResponse.operator !=(Aw.Judge.Features.GetHealth.GetHealthResponse? left, Aw.Judge.Features.GetHealth.GetHealthResponse? right) -> bool
+static Aw.Judge.Features.GetHealth.GetHealthResponse.operator ==(Aw.Judge.Features.GetHealth.GetHealthResponse? left, Aw.Judge.Features.GetHealth.GetHealthResponse? right) -> bool
+static Aw.Judge.Features.JudgeFeaturesServiceCollectionExtensions.AddJudgeFeatures(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
