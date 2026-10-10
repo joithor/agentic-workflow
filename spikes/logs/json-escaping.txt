@@ -1,21 +1,0 @@
-STJ reader rejects "lone \ud800 surrogate": Cannot read incomplete UTF-16 JSON text as string with missing low surrogate.
-input (JSON literal)         node JSON.stringify            STJ default                        STJ relaxed
-"plain"                      "plain"                        =                                  =
-"it's"                       "it's"                         "it\u0027s"                        =
-"a<b>c&d"                    "a<b>c&d"                      "a\u003Cb\u003Ec\u0026d"           =
-"1+1"                        "1+1"                          "1\u002B1"                         =
-"back`tick"                  "back`tick"                    "back\u0060tick"                   =
-"caf\u00e9"                  "café"                         "caf\u00E9"                        =
-"\u65e5\u672c"               "日本"                           "\u65E5\u672C"                     =
-"emoji \ud83d\ude00"         "emoji 😀"                      "emoji \uD83D\uDE00"               "emoji \uD83D\uDE00"
-"line\u2028sep\u2029"        "line sep "                    "line\u2028sep\u2029"              "line\u2028sep\u2029"
-"tab\tnl\n"                  "tab\tnl\n"                    =                                  =
-"ctl\u0001\u001f"            "ctl\u0001\u001f"              "ctl\u0001\u001F"                  "ctl\u0001\u001F"
-"del\u007f"                  "del"                         "del\u007F"                        "del\u007F"
-"quote\"back\\slash"         "quote\"back\\slash"           "quote\u0022back\\slash"           =
-"lone \ud800 surrogate"      "lone \ud800 surrogate"        "lone \uFFFD surrogate"            "lone \uFFFD surrogate"
-"nbsp\u00a0"                 "nbsp "                        "nbsp\u00A0"                       "nbsp\u00A0"
-"zwj\u200d"                  "zwj‍"                         "zwj\u200D"                        =
-"bom\ufeff"                  "bom﻿"                         "bom\uFEFF"                        "bom\uFEFF"
-"</script>"                  "</script>"                    "\u003C/script\u003E"              =
-differences from node: default 16/18, relaxed 7/18

@@ -1,6 +1,0 @@
-vogen: json {"id":{},"budget":{},"name":"alpha"}
-vogen: db item-1 1200
-vogen: FAIL json shape
-vogen: FAIL json round trip
-vogen: FAILED 2
-exit=1

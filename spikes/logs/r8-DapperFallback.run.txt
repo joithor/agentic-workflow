@@ -1,2 +1,0 @@
-dapper-fallback: intercepted Query<Row>: 1 row(s), first alpha
-dapper-fallback: generic Query<T> threw PlatformNotSupportedException: Dynamic code generation is not supported on this platform.

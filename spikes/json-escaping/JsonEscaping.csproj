@@ -1,7 +1,0 @@
-<Project Sdk="Microsoft.NET.Sdk">
-  <!-- §4c probe: which encoder writes the same bytes as Node's JSON.stringify? Compared by scripts/check-escaping.sh. -->
-  <PropertyGroup>
-    <OutputType>Exe</OutputType>
-    <RootNamespace>Spike.Json</RootNamespace>
-  </PropertyGroup>
-</Project>

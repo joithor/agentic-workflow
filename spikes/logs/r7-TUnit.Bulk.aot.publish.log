@@ -1,5 +1,0 @@
-  Determining projects to restore...
-  Restored <repo>/spikes/r7-tests/TUnit.Bulk/TUnit.Bulk.csproj (in 141 ms).
-  TUnit.Bulk -> <repo>/spikes/r7-tests/TUnit.Bulk/bin/Release/net10.0/osx-arm64/TUnit.Bulk.dll
-  Generating native code
-  TUnit.Bulk -> <repo>/spikes/r7-tests/TUnit.Bulk/bin/Release/net10.0/osx-arm64/publish/

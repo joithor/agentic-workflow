@@ -1,7 +1,0 @@
-  Determining projects to restore...
-  Restored <repo>/spikes/r8-data/DapperAot/DapperAot.csproj (in 110 ms).
-  DapperAot -> <repo>/spikes/r8-data/DapperAot/bin/Release/net10.0/osx-arm64/DapperAot.dll
-  Generating native code
-~/.nuget/packages/dapper/2.1.89/lib/net10.0/Dapper.dll : error IL3053: Assembly 'Dapper' produced AOT analysis warnings. [<repo>/spikes/r8-data/DapperAot/DapperAot.csproj]
-~/.nuget/packages/dapper/2.1.89/lib/net10.0/Dapper.dll : error IL2104: Assembly 'Dapper' produced trim warnings. For more information see https://aka.ms/il2104 [<repo>/spikes/r8-data/DapperAot/DapperAot.csproj]
-~/.nuget/packages/microsoft.dotnet.ilcompiler/10.0.12/build/Microsoft.NETCore.Native.targets(330,5): error MSB3077: The command ""~/.nuget/packages/runtime.osx-arm64.microsoft.dotnet.ilcompiler/10.0.12/tools/ilc" @"obj/Release/net10.0/osx-arm64/native/DapperAot.ilc.rsp"" exited with return value 0, but errors were detected during execution. ExitCode was set to -1. [<repo>/spikes/r8-data/DapperAot/DapperAot.csproj]

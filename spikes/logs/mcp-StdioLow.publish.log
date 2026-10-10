@@ -1,5 +1,0 @@
-  Determining projects to restore...
-  Restored <repo>/spikes/mcp/StdioLow/StdioLow.csproj (in 178 ms).
-  StdioLow -> <repo>/spikes/mcp/StdioLow/bin/Release/net10.0/osx-arm64/StdioLow.dll
-  Generating native code
-  StdioLow -> <repo>/spikes/mcp/StdioLow/bin/Release/net10.0/osx-arm64/publish/
