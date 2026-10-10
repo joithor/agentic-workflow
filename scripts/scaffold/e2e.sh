@@ -17,22 +17,21 @@ set -euo pipefail
 ROOT="$(git rev-parse --show-toplevel)"
 cd "$ROOT"
 TMP="$(mktemp -d "${TMPDIR:-/tmp}/aw-scaffold-e2e.XXXXXX")"
-TREES=()
 cleanup() {
-  for tree in "${TREES[@]}"; do git -C "$ROOT" worktree remove --force "$tree" >/dev/null 2>&1 || true; done
+  local dir
+  for dir in "$TMP/small" "$TMP/http"; do
+    if [ -d "$dir" ]; then git -C "$ROOT" worktree remove --force "$dir" >/dev/null 2>&1 || true; fi
+  done
   rm -rf "$TMP"
+  git -C "$ROOT" worktree prune
 }
 trap cleanup EXIT
 
 step() { printf '\n== %s\n' "$*"; }
 fail() { printf 'FAIL: %s\n' "$*" >&2; exit 1; }
 
-tree() {
-  local dir="$TMP/$1"
-  git worktree add --quiet --detach "$dir" HEAD
-  TREES+=("$dir")
-  echo "$dir"
-}
+# tree <name> — a throwaway worktree of HEAD at $TMP/<name>; cleanup removes it.
+tree() { git worktree add --quiet --detach "$TMP/$1" HEAD; }
 
 # The first package deps.yaml declares (tier 1-3) that has no src/ directory yet, so the declared-node path
 # (NP-DEPS-MISMATCH checks, a planned edge flipping to current) is exercised whichever packages have been ported.
@@ -50,7 +49,8 @@ HTTP="Scaffoldprobe"
 gen() { env -u CI AW_HEAVY_LOCK_HELD="${AW_HEAVY_LOCK_HELD:-}" node "$@"; }
 
 # ---- (a) small CLI package, declared ----
-A="$(tree small)"
+tree small
+A="$TMP/small"
 step "(a) /new-package: $SMALL, small, cli, tier $SMALL_TIER (declared in deps.yaml)"
 (cd "$A" && gen scripts/scaffold/new-package.mjs --name "$SMALL" --tier "$SMALL_TIER" --error-prefix E2ESMALL \
   --shape small --host cli --first-slice CheckThing --behavior reports_nothing_for_an_empty_tree) || fail "(a) new-package"
@@ -65,7 +65,8 @@ perl -0pi -e 's/\n        Assert\.Fail\("red: assert reports_nothing_for_an_empt
   --surface cli --command list --ids ThingId:string) || fail "(a) new-slice"
 
 # ---- (b) full http package, not declared ----
-B="$(tree http)"
+tree http
+B="$TMP/http"
 step "(b) /new-package: $HTTP, full, http, tier 1 (not in deps.yaml)"
 (cd "$B" && gen scripts/scaffold/new-package.mjs --name "$HTTP" --tier 1 --error-prefix E2EHTTP --note "scaffold e2e probe" \
   --shape full --host http --first-slice StartItem --behavior starts_an_item --route "POST /items/{itemId}/start" \
@@ -75,4 +76,4 @@ step "(b) integration lane: loopback binding and id route binding"
 step "(b) check-deps with the new node"
 (cd "$B" && node scripts/check-deps.mjs) || fail "(b) check-deps"
 
-step "both packages scaffolded, built, tested and removed"
+step "both packages scaffolded, built and tested; the worktrees are removed on exit"
