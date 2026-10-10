@@ -65,6 +65,23 @@ describe("toolkitCorpus (spec §5.5, read from origin/<default branch>)", () => 
   });
 });
 
+describe("termProblem: joined, hyphenated and underscored variants (security-sentinel-4)", () => {
+  const HELD = "contains a private term";
+  it("holds a multi-part term written with its separators removed or swapped, without the owner listing each variant", () => {
+    for (const text of ["the AcmeCare portal", "the acme-care portal", "the ACME_CARE flag", "acme.care.example", "AcMe CaRe"]) {
+      expect(termProblem(text, ["Acme Care"]), text).toBe(HELD);
+    }
+    for (const text of ["the Acme Care team", "AcmeCare", "acme_care"]) expect(termProblem(text, ["acme-care"]), text).toBe(HELD);
+  });
+
+  it("accepts the false positives of a joined match (acceptable for holds), but leaves single-word terms whole-word", () => {
+    expect(termProblem("acme carefully", ["Acme Care"])).toBe(HELD); // joined match: a false positive that holds
+    expect(termProblem("the Acmeville depot", ["Acme"])).toBeNull(); // no separator in the term: whole words as before
+    expect(termProblem("acme and care", ["Acme Care"])).toBeNull();
+    expect(termProblem("plain text", ["- _"])).toBeNull(); // a term of separators only never matches everything
+  });
+});
+
 describe("privacyProblem (Review Focus 6)", () => {
   it("finds profile deny terms as whole words, case-insensitively, without echoing them", () => {
     expect(privacyProblem("Fix the ACME care scheduler", ["acme care"])).toBe("contains a private term");

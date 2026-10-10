@@ -29,10 +29,19 @@ export function normalizeForPrivacy(text: string): string {
     .trim();
 }
 
+// Separators a multi-part name is written with: "acme care", "acme-care", "acme_care", "acme.care", "AcmeCare".
+const SEPARATORS = /[\s._-]+/g;
+
+// Whole words; and a term with separators also matches with them removed on both sides, so every joined or
+// re-separated spelling holds without the owner listing it (holds only: a false positive such as "acme carefully"
+// is accepted). A term without separators stays whole-word: "acme" doesn't hold "acmeville".
 export function termProblem(text: string, denyTerms: readonly string[]): string | null {
   const t = normalizeForPrivacy(text);
+  const joined = t.replace(SEPARATORS, "");
   for (const term of denyTerms.map(normalizeForPrivacy).filter((x) => x !== "")) {
     if (new RegExp(`(?<![a-z0-9])${escapeRe(term)}(?![a-z0-9])`).test(t)) return "contains a private term";
+    const bare = term.replace(SEPARATORS, "");
+    if (bare !== term && bare !== "" && joined.includes(bare)) return "contains a private term";
   }
   return null;
 }
