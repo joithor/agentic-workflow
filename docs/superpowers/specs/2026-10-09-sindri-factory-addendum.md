@@ -1,0 +1,543 @@
+# Sindri — factory addendum (§17)
+
+Status: draft for review, revision 2 · 2026-10-09
+Revision 2 adds:
+- development lenses and workflow generation (§17.7)
+- lean session bootstrap (§17.8)
+- standing workflows (§17.9)
+- the context graph as the part Sindri builds, with pluggable components (§17.3)
+- a sandbox policy compiled per task (§17.5)
+- the human's answers to Q1, Q3 and Q5, with options for Q2 and Q4 (§17.17)
+
+Amends: `2026-10-07-sindri-design.md` (revision 7) and the Plan 6 dashboard spec. Where they disagree, this
+addendum wins for the sections it names. Everything else in the main spec stands.
+
+## 17.0 Why this addendum
+
+Plans 1–6 built the control room: measurement, the ledger, the code index, scoping, offline self-evolution and
+the dashboard. Nothing yet takes a designed project to merged code without the human dispatching it, and every
+agent session still starts heavy: memory bootstrap on the first turn, then every skill and subagent definition
+loaded whether or not the task needs it. This addendum defines the production line and the context discipline
+it depends on.
+
+**The target pipeline:**
+
+```
+ scope ──► design studio ──► handoff packet ──► workflow generation ──► factory build ──► review anywhere ──► human merges
+(sindri    (human SME + agent,  (frozen, schema-    (deliverable → lenses,   (Sindri supervises;    (phone or desk;      (epic → default
+ scope)     at the desk)         validated)          steps, injection plan)   narrow sessions)       signed decisions)    branch)
+```
+
+Next to the pipeline, **standing workflows** (§17.9) run on events: PR babysitting, triage, incidents,
+documentation, cleanup, digests and performance watching.
+
+**Changed assumptions:**
+
+| Main spec | Changed to | Section |
+|---|---|---|
+| Fewer human turns per merged PR is the headline metric (§2) | Build-side turns go toward 0. Product and design turns are the human's job and are expected to rise | §17.2 |
+| `full` mode is deferred; scoping output goes to the human for approval (§4, §7.1) | Scoping feeds a design studio with the human. The build starts only from a frozen handoff packet, then runs without the human until review | §17.4 |
+| The v1 worker wraps `/bugFixOrchestrator` (§11.4) | A workflow generator turns each deliverable into Steps run by **lenses** (QA, UI, UX, architecture, data, language, security, performance and more), handed off automatically | §17.7 |
+| Sessions inherit the host's full skill set and memory bootstrap | Sindri sessions load only what the Step's injection plan names | §17.8 |
+| The human always merges (§2 non-goals) | Task PRs merge into a stacked epic branch under the deterministic gate; the epic → default-branch PR is always the human's | §17.10 |
+| Approvals come only from host CLI verbs (§8.2, §10) | CLI verbs stay authoritative. A tailnet-only surface adds signed phone decisions for non-protected kinds | §17.12 |
+| macOS first, Linux built-ins later (§12) | The factory host is swappable between a laptop and an always-on Linux box | §17.13 |
+
+**Rings:** ring 0 is this toolkit; **ring 1** is workplace repos, where the factory is tested and improved
+first; **ring 2** is a private product repo, started after ring 1 holds. Ring specifics stay in their private
+profiles and repos. This document is generic.
+
+## 17.1 New invariants
+
+12. **The human is the product SME.** Sindri batches, contextualizes and cites product questions. It never
+    answers them, and it doesn't count product or design turns as cost.
+13. **Agents don't decide their own scope.** A session's write scope, sandbox policy, context, rules, lenses and
+    next handoff come from the frozen packet and its frozen workflow, computed by Sindri code. A model may
+    *propose* a workflow at planning time (§17.7); it is validated and frozen before any session uses it.
+    Widening scope is a scope-expansion request (§6.1), never a silent edit.
+14. **No build without a frozen packet.** A build Step starts only from a handoff packet that passes
+    `sindri packet validate` and is frozen by hash (§17.4).
+15. **Context is budgeted.** Every session starts from an injection plan with a token budget per section.
+    Anything loaded that the plan didn't name is a defect with a metric.
+
+## 17.2 Metrics, revised
+
+These replace the "human turns per merged PR" row of §2 and its use in the auto-start kill criterion.
+
+| Measure | Target | Why |
+|---|---|---|
+| Shipping direction, continuity, QA direction, recipes, dispatch turns | → 0 per merged PR (step-0 baseline, then −75% after 4 weeks of factory builds) | The factory's job |
+| Mid-build product questions (asked after the packet froze) | Tracked. Each one is a **packet miss** fed to scoping backtests and evolve | The question belonged at the desk |
+| Product and design turns at the desk | Tracked, no target. Expected to rise | The human's job |
+| Tokens in context at a session's first model call | ≤ the injection plan's budget; tracked per role and lens | Invariant 15 |
+| Context relevance (share of injected sections the session cited or used) | ≥ 0.6 per lens after calibration | Invariant 15 |
+| Out-of-scope attempts per task (denied by the sandbox policy) | Tracked; a rising rate is a workflow-generator defect | Invariant 13 |
+| Phone decisions per merged PR, and median decision latency | Tracked | Measures the review surface |
+
+Auto-start's kill criterion keeps the rework comparison and drops the −20% total-turns condition.
+
+## 17.3 Knowledge layer: the context graph
+
+A human engineer brings six kinds of context to a requirement. The factory needs all six, joined:
+
+| Dimension | Examples |
+|---|---|
+| **Product surfaces and behavior** | Screens and routes, actions, features, entities, flows, the rules attached to them |
+| **Codebase** | Symbols, modules, call graph, clones, dependencies, ownership, history |
+| **Requirements and conversations** | Tickets, specs, ADRs, chat threads, meeting notes, decisions |
+| **User behavior** | Session replays, funnels, journeys, feature usage |
+| **Telemetry and operations** | Traces, metrics, logs, errors, incidents, deploys, performance baselines |
+| **Design** | Design files, tokens, design-system components, mockups |
+
+**What exists elsewhere, and what doesn't.** Each component is being improved quickly by people focused on it:
+connectors, memory, retrieval, storage, and offline consolidation ("dreaming"). Org-knowledge engines join
+conversations and docs. Code engines index code. Analytics tools hold behavior and telemetry. **No product joins
+all six into one graph keyed by product surface and code symbol.** That join is the part Sindri builds.
+
+**Decision:** Sindri builds the **context graph**: the entity and link model, fusion, the query planner and the
+evals. Every other component is a pluggable, pinned, swappable adapter. Each adapter pin is a registered artifact
+(§7.4), so evolve proposes upgrades and swaps, and the backtest decides them (see Proof below).
+
+```
+ connectors ──► ingest + scrub ──► component stores ──► entity extraction ──► CONTEXT GRAPH (Sindri)
+ (adapters)     (§8.3, §8.4)       (memory, vector,     (deterministic first,   entities · typed edges ·
+                                    FTS, code index,     model-suggested         provenance · freshness
+                                    analytics APIs)      flagged)                       │
+                                                                                         ▼
+                              query planner: seeds → graph expansion → per-component search → fusion (RRF)
+                                                                                         │
+                                                                                         ▼
+                                                     injection plan sections (§17.8), cited, budgeted
+```
+
+**Component interfaces** (all return cited, scrubbed, trust-tagged records with stable refs):
+
+| Component | Interface | Notes |
+|---|---|---|
+| `Connector` | `sync(cursor)`, `fetch(ref)` | One per source system. Read-only. MCP servers count, through a read-only MCP client with a server and tool allowlist |
+| `MemoryStore` | `search(q)`, `write(rec)` (sindri-owned facts only), `consolidate()` | `consolidate` is the "dreaming" pass: dedupe, merge, decay, propose edges. It runs as a heavy job |
+| `Retriever` | `search(q, k)` over FTS and vectors | Local by default: embeddings on loopback (§6.2) |
+| `CodeGraph` | the existing code index and graphify | Unchanged |
+| `ProductGraph` | `nodes(filter)`, `edges(node)` | Sindri-owned. Built from packets, routes, UI code and docs |
+| `BehaviorSource` | `journeys(surface)`, `usage(surface)` | Summaries only: structure and counts, never values typed by users |
+| `TelemetrySource` | `query(surface, window)` | Errors, latency, traces linked to routes and symbols |
+
+**The context graph itself:**
+- **Entities:** product nodes, code symbols and modules, records (tickets, threads, docs), journeys, telemetry
+  series, incidents, decisions, rules.
+- **Edges:** `implements`, `mentions`, `decides`, `exercises` (a journey through a surface), `observes`
+  (telemetry on a route or symbol), `violates`, `supersedes`.
+- **Deterministic links first:** explicit ids (ticket keys, PR numbers), paths, symbol names, route patterns,
+  flag keys, component names, span names. Model-suggested links carry `provenance: model` and a confidence. They
+  are used for recall, never as the only evidence for a surface.
+- **Freshness:** every edge stores the source refs and the commit sha it was computed at, and is rebuilt with the
+  index (§6.2 freshness rules).
+
+**Query planner:** seeds come from the task or brief text and the packet's product nodes. They are expanded
+through the product and code graphs (bounded depth), then sent to each component with the expanded entity set.
+Results are fused with reciprocal rank fusion under per-dimension budgets that the injection plan sets.
+
+**Proof:** `sindri scope --backtest` gains one arm per dimension plus `all`. A component or dimension is enabled
+for a repo only when its arm improves recall without dropping precision below the §7.5 bar. Swapping an adapter
+(a new memory store, say) is an evolve proposal judged on the same arms.
+
+**Separation:** work and personal sources never mix. A profile names its connectors. Ring-1 profiles can't name
+personal stores (for example Prism).
+
+**Reuse:** the context graph is a separable package with no Sindri imports, so a ring-2 product with the same
+problem can lift it after an ownership check.
+
+## 17.4 Design studio and the handoff packet
+
+**Design studio:** desk sessions where the human and an agent turn a scope map into a design, using the existing
+skills (`/officeHours`, brainstorming, `/autoplan`, `/archReview`). The studio adds:
+- a running **decision log**: each answered question is a record with its asker, answer and the product nodes it
+  affects;
+- `/rule` capture: "I always want X" said at the desk becomes a proposed rule (§17.6);
+- a local **visual walkthrough** (HTML) generated from the packet. It is never published unless the human
+  publishes it.
+
+**Handoff packet:** a directory with a manifest, validated by a Zod schema (`sindri/packet/`, with a JSON Schema
+export like the profile's).
+
+| Part | Contents |
+|---|---|
+| `packet.yaml` | id, repo, base sha, status, hash, links to everything below |
+| Design | Design docs, ADRs, product-graph delta, data-model delta |
+| Decision log | Answered questions, plus deferred ones with an owner and a "build may assume" default |
+| Out of scope | An explicit list. The scope-expansion check reads it |
+| Workstreams → tasks | Per task: id, deps, size, **write scope** (globs or "new: path"), **read seeds** (symbols, product nodes, refs), acceptance examples (a share held out), evidence plan (§17.11), rule selectors (§17.6), budget |
+| Workflow | The frozen output of workflow generation (§17.7) |
+| Plans | Generated plan files, so the plan-file tracker and `observe` pick them up |
+
+**Deterministic checks** (`sindri packet validate`):
+- the task graph is acyclic, and every task is in a workstream;
+- every write scope exists at the base sha or is declared new;
+- concurrent tasks don't have overlapping write scopes unless a dependency orders them;
+- every acceptance example maps to at least one evidence kind;
+- every open question is answered, or deferred with a default;
+- every task fits its size class's budget, or is split;
+- the holdout share exists and is stored where the implementer can't read it;
+- the workflow passes its coverage checks (§17.7).
+
+**Freeze and amend:** `sindri packet freeze` records the hash in the ledger, and builds run against that hash.
+Any later change is an **amendment**: a scope-expansion or packet-miss item goes back to the desk queue, and only
+the affected tasks are re-planned and re-frozen.
+
+## 17.5 Narrow scope and sandbox per session
+
+**Task compiler:** for each Step in the frozen workflow, Sindri code (no model) computes a **session spec**:
+
+| Field | Computed from |
+|---|---|
+| `write` | The task's write scope, plus its tests by the repo's test-path convention |
+| `read` | The context-graph query for the task's seeds (§17.3), within the injection plan's budget |
+| `rules` | Rule selection (§17.6) for the repo, paths, task kind, lens and stage |
+| `skills`, `agents`, `mcp` | The lens definition's allowlist (§17.7) |
+| `sandbox` | The sandbox policy below |
+| `evidence` | The evidence plan's providers (§17.11) |
+| `budget` | Tokens, turns and wall time by size class and lens |
+| `next` | The workflow's next Step and its input schema |
+
+**Sandbox policy, compiled from the scope:** every session runs with a policy generated from its session spec.
+Out-of-scope actions are refused by the gate (§8.1) and the container, never left to the agent.
+
+| Control | Compiled from | Enforced by |
+|---|---|---|
+| File writes | `write` globs | `PreToolUse` gate on edit tools and on Bash commands with write targets; the `PostToolUse` working-tree check (§5.3) for scripts and codegen; the sindri-side verifier refuses a bundle with out-of-scope paths (§8.5) |
+| File reads | Repo plus `read` refs; secrets and deny paths from the profile | Mounts (§8.2) and the gate |
+| Commands | The lens's command allowlist (for example only the data lens may run migrations, only the performance lens may run load tests) | The gate (`SND-GATE-1xx`) |
+| Network | Model proxy; package registry only when the task may change dependencies; the environment endpoints the evidence plan needs | The egress proxy (§8.2) |
+| MCP servers and tools | The lens's allowlist, read-only by default | The image's managed settings and the gate |
+| Skills and subagents | The lens's allowlist | Session image settings (§17.8) |
+| Budgets | `budget` | The model proxy and the tick |
+
+A denied action returns `SND-SCOPE-1xx` with the reason and turns into a scope-expansion request. Three denials
+of the same kind in one Step park the Step with a `scope-mismatch` reason, which counts against the workflow
+generator (§17.2).
+
+**Context discipline:**
+- The pack is assembled in budgeted sections: task and acceptance, rules, write-scope code, read context, refs.
+  A section over budget is cut by rank, never by position.
+- `session.maxContextTokens` (§7.2) is set per lens. Crossing it checkpoints and relaunches from pack plus
+  checkpoint instead of compacting into a mixed context.
+- A task whose pack can't fit with at least half the window free is split by the compiler (by write scope) or
+  sent back to the desk. A session never finds out mid-task that it needs more context.
+
+## 17.6 Rules and taste: a growing, selectively injected library
+
+**Rule record** (a registered artifact, §7.4):
+
+```yaml
+id: taste.ts.no-barrel-files
+kind: taste            # taste | engineering | process | product-precedent | security | lens
+text: "Import from the module file, not an index barrel."   # one or two imperative sentences
+why: "Barrels hide cycles and slow type-checking."
+select: { repos: ["*"], languages: [ts], paths: ["**/*.ts"], taskKinds: [feature, refactor], lenses: [implementer, architecture], stages: [build, review] }
+check: { type: eslint, rule: "no-restricted-imports" }       # deterministic | judge | none
+source: { type: desk, ref: "decision-log#D-12" }             # desk | correction | adr | review | import
+status: active          # proposed | active | retired
+```
+
+**Layers** (a later layer wins on the same id): core defaults → `rules/` in this repo (the human's personal
+taste, safe to be public) → profile overlay (workplace and repo specifics, private) → packet (project-specific).
+
+**Selection is deterministic:** match selectors against the session spec, rank by specificity and recent
+violations, then fill the lens's rules budget. A session never carries the whole library.
+
+**Enforcement ladder:** injected text → a judge `rule-check` question in the verifier → a deterministic check.
+A rule with a `check` is enforced at commit and by the sindri-side verifier. A rule that keeps being judged
+becomes a proposal to write its check.
+
+**Growth** (self-adopt tier, §7.4):
+- `correct` gains a `taste` label class next to design and process; each one drafts a rule proposal citing the
+  turn.
+- Review findings the human accepts or rejects become rule proposals or retirements.
+- `/rule` at the desk lands as `proposed`, and the phone inbox approves or rejects proposed rules.
+- A rule whose fires are overturned more than half the time over 20 fires is proposed for retirement.
+
+**Product precedents** (`kind: product-precedent`) record how the human answered a recurring product question.
+Agents cite them when they ask; they never answer for the human (invariant 12).
+
+## 17.7 Development lenses and workflow generation
+
+**Lenses:** a lens is a development discipline with its own questions, rules, tools and evidence. Each lens is a
+registered artifact:
+
+```yaml
+id: lens.data
+title: Database and data
+triggers: { changeClasses: [schema, migration, query], paths: ["**/migrations/**", "**/*.prisma", "**/*.sql"], productTags: [reporting] }
+questions: ["Is the migration reversible?", "Do new queries have indexes?", "Is tenancy enforced?"]
+rules: { select: { lenses: [data] } }
+skills: [archReview]          # only these are loaded
+agents: [database-administrator]
+mcp: []                       # read-only by default
+commands: ["<repo migrate cmd> --dry-run", "<repo test:db cmd>"]
+evidence: [migration, test]
+model: { tier: standard, challenger: different }
+budget: { tokens: 120k }
+```
+
+**Initial lens catalog** (an open list; lens definitions can be imported from community subagent catalogs as a
+trust-tiered pack under §8.3, then evaluated like any other artifact):
+
+| Lens | Typical triggers | Evidence |
+|---|---|---|
+| Product / PM (acceptance examples, holdouts) | Every feature task | Acceptance examples |
+| System architecture | New modules, cross-package changes, new dependencies | Shape signals, `/archReview` notes |
+| Implementer (per language: TS, Swift, Python, SQL, …) | Every code task; language picked from the paths | `test` |
+| QA and evaluator | Every task | Held-out examples, the evidence plan |
+| UI design | Components, styles, tokens | `design-parity`, `a11y` |
+| UX design | Flows, navigation, forms, empty and error states | `ui-browser`, `behavior-sim` |
+| Database and data | Schema, migrations, queries | `migration`, `test` |
+| Security | Auth, input handling, secrets, dependencies, permissions | `security` |
+| Performance | Hot paths, queries, bundles, build time | `perf`, `trace` |
+| Infrastructure and deploy | CI, containers, IaC, environments | `cli-transcript`, deploy dry-run |
+| Integrations | Third-party APIs, webhooks, connectors | `api-transcript` against mocks |
+| Accessibility | UI | `a11y` |
+| Documentation | Public APIs, user-facing behavior | `docs` |
+
+**Workflow generation:** a meta-orchestrator Step that runs **once per deliverable** at packet time, not once
+per agent turn.
+1. **Inputs:** the packet, the context-graph query for its surfaces, and the lens catalog.
+2. **Deterministic first pass:** lens triggers are matched against each task's write scope, change classes and
+   product nodes. This yields the required lenses per task.
+3. **Model pass** (bounded job, read-only): proposes the Step graph. That covers the order of lenses per task,
+   which lenses review rather than build, where parallel work is safe, and the injection plan per Step
+   (§17.8). It may add lenses, never remove a required one.
+4. **Coverage checks** (deterministic): every required lens appears; every acceptance example has an evaluator
+   Step; every Step's injection plan fits its budget; write scopes of parallel Steps don't overlap; every Step
+   has a valid next handoff.
+5. **Direction check** (§6.1) on a different model: "is this the right workflow for this deliverable?"
+6. **Freeze** with the packet. From then on, injection and handoff are deterministic.
+
+**Handoff is an artifact plus a ledger transition.** Each Step ends by writing an output that matches the next
+Step's input schema. Sindri validates it, records the transition and starts the next Step. No human paste, and no
+agent picks the next step. Verdicts are computed by a script from the evaluator's checks (invariant 3).
+Information barriers stay: the implementer can't read held-out examples or evaluator notes.
+
+**Existing skills become Step implementations in sindri mode:** `/specToProvenPR` (feature tasks),
+`/bugFixOrchestrator` (bug tasks), `/review` and `/addressReview` (review loop), and the evidence providers. In
+sindri mode there is no "ask the user" (`--permission-prompts none`; the preamble's asks become parks), evidence
+and review state are keyed by worktree, and outward writes go through the write shim (§11.4). The interactive
+mode stays for desk use.
+
+## 17.8 Lean session bootstrap
+
+Today every session runs the memory bootstrap on its first turn, then loads every installed skill's and
+subagent's description into context. Sindri sessions start from an **injection plan** instead.
+
+| Today (host sessions) | Sindri sessions |
+|---|---|
+| Memory bootstrap on the first turn (Prism `session_bootstrap`) | No memory bootstrap. Memory arrives through the context graph as cited pack sections |
+| All skills and subagents listed | Only the lens's `skills` and `agents`, set in the session image's managed settings |
+| All MCP servers connected | Only the lens's `mcp` allowlist |
+| Global rules and CLAUDE.md in full | Selected rules (§17.6) plus the repo's agent file trimmed to the sections the injection plan names |
+| Context grows by tool output | Per-section budgets, relaunch on overflow (§17.5) |
+
+**Mechanism:** the session image is built per (repo, toolchain). At launch, Sindri writes a per-session settings
+overlay that enables only the planned skills, agents, MCP servers and hooks. The `SessionStart` hook injects the
+pack. `doctor` measures first-call context tokens per lens against the plan's budget.
+
+**Host sessions (optional):** a `lean` profile for the human's own sessions applies the same idea at the desk.
+Its contents are a minimal index of skills, memory loaded on demand, and lenses invoked by name. It is opt-in
+and measured the same way.
+
+## 17.9 Standing workflows
+
+Some work isn't a packet. Standing workflows are workflow templates fired by events, using the same lenses,
+sandbox policies, budgets and handoffs. Each one has an **autonomy tier**: `report` (writes a digest or comment
+only), `propose` (opens a draft PR or an item for the human), or `act` (performs allowlisted actions).
+
+| Workflow | Fires on | Lenses | Default tier |
+|---|---|---|---|
+| PR babysitter | A sindri PR's CI, review threads or conflicts change | Implementer, QA | `act` (fix rounds within the ship contract) |
+| Triager | A new tracker item, alert or failed run | Product, the matching lens | `propose` (size, route, missing info; never answers product questions) |
+| Inspector | A merge to the default branch; nightly | QA, security, performance | `report` → `propose` |
+| Incident investigator | An alert or error spike from telemetry | Telemetry, the matching lens | `report` (a cited timeline and hypotheses) |
+| Incident resolver | The human accepts an investigation's hypothesis | Implementer, QA | `propose` (fix PR; never deploys) |
+| Incident comms manager | Incident state changes | Documentation | `propose` (drafts updates; the human sends) |
+| Documentation maintainer | Merges that change public behavior | Documentation | `propose` |
+| Codebase cleanup | Weekly; shape-signal trends (§6.2) | Architecture, implementer | `propose` |
+| Daily digest | Daily | — | `report` |
+| Performance watcher | Deploys; nightly benchmarks | Performance | `report` → `propose` |
+| Skill maintainer | Skill-change items (§17.14) | Implementer, QA | `propose` |
+
+A workflow moves up a tier only through an approval-tier profile change, after its `report` output has a measured
+precision bar like direction checks (§6.1).
+
+## 17.10 Stacked epics
+
+- Each packet gets an epic branch. Task PRs are opened as a stack against it in dependency order (§7.3's stack
+  machine).
+- With `epicMerge: auto`, a task PR merges into the epic once the deterministic ship gate passes: CI green,
+  threads resolved, evidence plan satisfied, and the review-round cap not exceeded.
+- The epic → default-branch PR is always the human's. It carries the packet's walkthrough and the evidence
+  roll-up.
+- Protected modules (§7.7) always wait for the human, even inside an epic.
+
+## 17.11 Ship contract and evidence providers
+
+**Ship contract** (`skills/_shared/ship-contract.md`, read by every worker and by Sindri's ship Step):
+- `maxReviewRounds` defaults to 3 (repo override in the profile). When it's exhausted, the item parks with the
+  open findings.
+- The evidence plan must be satisfied: every acceptance example has a passing artifact from a provider.
+- Publish rules (PR body sections, attachments, tracker comment) are shared, not per skill.
+
+**Evidence provider contract** (`sindri/evidence/`, also callable from skills through a CLI):
+
+```ts
+interface EvidenceProvider {
+  kind: string;
+  applies(task: SessionSpec, changed: ChangedFiles): boolean;
+  plan(task: SessionSpec): Promise<Result<EvidencePlanItem[]>>;
+  run(item: EvidencePlanItem, at: "base" | "head"): Promise<Result<EvidenceArtifact>>;
+  verify(base: EvidenceArtifact | null, head: EvidenceArtifact): Promise<Result<Verdict>>;  // script first, judge only to explain
+  publish(a: EvidenceArtifact): Promise<Result<PublishedRef>>;  // ask-first rules stay per provider
+}
+```
+
+**Initial kinds** (an open list; a new kind is a registered artifact with its own eval suite):
+
+| Kind | Typical change |
+|---|---|
+| `ui-browser` (ui-evidence, Playwright) | Web UI flows |
+| `behavior-sim` (seeded, human-paced sessions checked against invariants) | Interaction-heavy UI |
+| `ios-sim` (XcodeBuildMCP) | iOS |
+| `test` (unit, integration, contract) | Logic and APIs |
+| `api-transcript` (recorded request and response against a mock or preview) | Endpoints, webhooks, integrations |
+| `cli-transcript` | CLIs, scripts, installers, infrastructure |
+| `migration` (dry-run, rollback, schema diff) | Database changes |
+| `perf` (benchmark, bundle size, type-check time) | Hot paths, build budgets |
+| `a11y` (axe scan) | UI |
+| `design-parity` (pixel diff against a mockup or design file) | UI with a design source |
+| `security` (`/cso` diff mode, dependency audit) | Auth, input handling, dependencies |
+| `trace` (log or telemetry query on a preview) | Jobs, async flows |
+| `docs` (render and link check) | Docs |
+| `recording` (screen or simulator video of the flow) | Any UI, as proof |
+| `narrative` (explainer video from a Scene Plan JSON, rendered by a pinned renderer) | Optional and non-gating |
+
+Selection = the packet's evidence plan ∪ providers whose `applies` matches the changed file classes. The
+`narrative` kind takes JSON only: agents never write renderer code that runs on the host (§8.2).
+
+## 17.12 Review from anywhere
+
+**Network:** the hosts sit on a Tailscale tailnet. Nothing listens on a public interface. The dashboard is served
+with `tailscale serve` (tailnet only), never `funnel`.
+
+**Surfaces, matched to the decision:**
+
+| Surface | Decisions | Where |
+|---|---|---|
+| **Swipe inbox** (mobile view of the Plan 6 dashboard) | Binary, low-context: undraft a PR, accept evidence, approve or reject a rule or evolve proposal, keep or drop a scope surface, resolve `shape-unresolved`, raise a standing workflow's tier | Phone |
+| **Walkthrough pages** (HTML from the packet, the scope map, or a PR with its evidence) | Read and comment: designs, scope maps, PR walkthroughs, incident timelines | Phone or desk |
+| **Desk queue** | Open questions, design revisions, amendments, packet freezes, protected-surface approvals | Desk |
+| **Live session** (Warp remote control, or `sindri attach` over Tailscale SSH) | Watching or taking over a running session | Either |
+
+**Authentication:**
+- Host CLI verbs (`approve`, `answer`, `decide`, `handback`) stay the authority.
+- A phone decision needs the tailnet identity **and** a passkey (WebAuthn) bound to an enrolled device. Each
+  decision is a signed ledger record (kind, item, choice, device, time). It goes through the same code path as
+  the CLI verb.
+- Phone decisions are limited to the non-protected kinds listed above. Protected surfaces (§7.4 approval tier)
+  and packet freezes stay at the desk.
+- Free-text feedback from the phone is an `answer` record from an authenticated human.
+- Typing into a session through Warp remote control is in-pane input: a **takeover** (§8.2 W6), never an
+  authenticated decision.
+
+This replaces Plan 6's "no actions from the browser" for the listed kinds only. Plan 6's rule that the browser
+can't bypass a CLI gate still holds: the phone path is the same gate with a second authenticator.
+
+## 17.13 Swappable factory host
+
+- The factory host can be the always-on Linux box or the laptop. Neither is the default. The profile lists both,
+  and `sindri host handover <to>` moves the active role in either direction.
+- **Handover:** running Steps checkpoint at their next safe point (WIP bundle, §8.2). The ledger, mirrors and
+  index are synced to the target with a fenced epoch bump (§9.1), and the target resumes. A host that wakes up
+  with a stale epoch stays passive (invariant 1).
+- Linux built-ins from §12 move from "later" to a factory prerequisite: the systemd scheduler, the Docker sandbox,
+  and a notifier the phone can reach (ntfy on the tailnet, or the dashboard's push).
+- The desk reads the active host's dashboard over the tailnet, wherever it is.
+
+## 17.14 Factory-mode skill maintenance
+
+A **skill change** (including a lens or workflow template) is a work-item kind. Sources: a one-line human
+request (desk or phone), evolve proposals, hook false-positive telemetry, and Steps that park on the same skill
+twice.
+- **Worker:** skill TDD. Write pressure scenarios that fail on the current text, edit the skill and show they
+  pass. Then run the skill's eval suite (replayed sessions where one exists) and the skill lint: preamble,
+  frontmatter, size budget, and no interactive asks on sindri-mode paths.
+- **Modularity first:** shared contracts (ship contract, evidence providers, autonomy brief, rule selection, lens
+  schema) live in `skills/_shared/` and are referenced, not copied.
+- **Ship:** a PR to this repo with a human merge (§7.7). The overlay version applies until the merge (§7.4).
+
+## 17.15 Subscription capacity and handoff
+
+- The model proxy (§8.2) keeps a **quota ledger per account** (subscription or API key) and per provider.
+- **Routing for a new Step:** first the lens's allowed providers (profile), then the account with the most window
+  left that still keeps `quota.reserveForHuman`.
+- **On a rate limit,** a running Step checkpoints. It relaunches from pack plus checkpoint on the next allowed
+  account, or waits for its window. Today it can only pause.
+- **Accounts are tagged `work` or `personal`.** A ring-1 item never runs on a personal account, and the reverse
+  also holds.
+- Unattended subscription use needs confirmed plan terms (§13 step 4). API-key mode is the fallback.
+
+## 17.16 Rollout changes
+
+These steps come after Plan 6 and replace the order of §13 steps 3a–6 for factory work. Every step ends with a
+"Turn it on" task (§13.3). Ring 1 (workplace repos) gets each step after ring 0 holds. Ring 2 starts after F3
+holds on ring 1.
+
+| Step | Contents | First value |
+|---|---|---|
+| F0 | Metrics revision (§17.2); packet schema with `validate` and `freeze`; rule, lens and workflow schemas and loaders | Packets, rules and lenses are checkable |
+| F1 | Lean session bootstrap (§17.8) with first-call token measurement; ship contract; evidence providers `test`, `ui-browser`, `api-transcript` and `cli-transcript`; sindri mode in `/specToProvenPR` and `/bugFixOrchestrator` | Sessions start small; any task kind can be proven |
+| F2 | Task compiler and compiled sandbox policy (§17.5); roles and automatic handoff; stacked epics (main spec step 3a, expanded) | A frozen packet builds task by task in scope, with no pasted prompts |
+| F3 | Workflow generation and the initial lens catalog (§17.7) | Any deliverable gets the right lenses, decided once at freeze time |
+| F4 | Review anywhere (§17.12) and standing workflows at the `report` tier (§17.9) | Approvals from the phone; digests, triage and inspection running |
+| F5 | Context graph with first adapters, the query planner, and backtest arms per dimension (§17.3) | Measured scoping and pack precision per repo |
+| F6 | Skill-change items, rule growth into self-adopt, standing workflows promoted by tier | The factory maintains its own skills, taste and lenses |
+| F7 | Swappable host handover and subscription capacity routing | Builds continue when the laptop closes or a window runs out |
+
+F5 can run in parallel with F1–F4, because it doesn't depend on them.
+
+## 17.17 Decisions
+
+**Decided by the human (2026-10-09):**
+- **Q1:** stacked PRs into epic branches, with `epicMerge: auto` into the epic only (§17.10).
+- **Q3:** the factory host is swappable between the laptop and the Linux box; neither is the default (§17.13).
+- **Q5:** ring 1 (workplace repos) comes first, to test and improve the factory. Ring 2 starts after F3 holds on
+  ring 1. Ring-1 runs follow the workplace's agent policy: human-gated, `assist` mode, and work accounts only.
+
+**Q2: component options for the context graph.** These are candidates to evaluate as backtest arms, not
+decisions. None was re-verified for this revision.
+
+| Component | Candidates |
+|---|---|
+| Connectors | MCP servers (read-only client); unified-API connector platforms; per-source native adapters (as Linear today); the workplace knowledge engine's connectors (ConnectAI) |
+| Memory and consolidation ("dreaming") | Prism (personal only); memory-layer libraries with consolidation passes (for example Mem0, Zep/Graphiti, Letta, Cognee) |
+| Retrieval and storage | SQLite FTS5 + sqlite-vec (local, matches the ledger); LanceDB; Postgres + pgvector (for a shared box) |
+| Org knowledge (conversations, decisions) | ConnectAI (workplace source of record today); commercial engines with MCP read surfaces (for example Unblocked, Glean, Falconer); notes vault |
+| Codebase | The existing index + graphify; Serena (LSP); hosted code engines as an arm only if the profile allows code to leave the machine |
+| Product graph | Sindri-owned (no external candidate joins product nodes to code) |
+| User behavior | Product analytics APIs (for example PostHog), browser session-replay data, OTel browser spans |
+| Telemetry and operations | OTel backends, error trackers, deploy logs, through `TelemetrySource` adapters |
+| Design | Design-file APIs, `design-tokens.json`, design-system component inventories |
+
+The recommendation is to build the context graph, query planner and evals first over the sources already
+reachable (code index, graphify, Linear, notes, ConnectAI through MCP). Then add one component per arm and keep
+it only when the backtest says it helps.
+
+**Q4: the review surface.** Pros and cons:
+
+| Option | Pros | Cons |
+|---|---|---|
+| **PWA on the tailnet** (the Plan 6 dashboard, made mobile) | One codebase with the dashboard. No app store. Tailnet-only by construction. WebAuthn passkeys work in mobile Safari and Chrome. Ships fastest | Web push on iOS needs the PWA installed to the home screen, and is less reliable than native. No background refresh. Swipe gestures need care to feel native |
+| **Native iOS app** | Best swipe feel, reliable push, Face ID, offline queue of decisions | A second codebase, App Store or TestFlight distribution, and the tailnet still has to be on. Slowest to build |
+| **Warp remote control only** | Exists today. Full fidelity on live sessions | A terminal on a phone: no structured decisions, and in-pane input is a takeover, not an approval (§8.2). Fine for watching, poor for reviewing |
+| **Chat bot** (a DM channel) | Push and replies come free, and it's familiar | Decisions leave the tailnet through a third party. Weak authentication for signed decisions. Rich walkthroughs don't fit |
+| **GitHub mobile** | Already installed. Good for reading PR diffs and comments | It sees only GitHub objects: no packets, rules, lenses or evidence roll-ups, and no Sindri decisions |
+
+The recommendation is the PWA first, with Warp remote control for live sessions. Build native only if push
+reliability or swipe feel measurably slows decisions (§17.2 decision latency).
