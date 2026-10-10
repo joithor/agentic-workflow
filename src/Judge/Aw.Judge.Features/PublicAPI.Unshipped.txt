@@ -24,3 +24,41 @@ Aw.Judge.Features.GetHealth.GetHealthResponse.Failures24h.init -> void
 Aw.Judge.Features.GetHealth.GetHealthResponse.GetHealthResponse(Aw.Judge.Core.Health.HealthStatus Status, int Failures24h) -> void
 Aw.Judge.Features.GetHealth.GetHealthResponse.Status.get -> Aw.Judge.Core.Health.HealthStatus
 Aw.Judge.Features.GetHealth.GetHealthResponse.Status.init -> void
+Aw.Judge.Features.SaveBrief.SaveBriefRequest
+Aw.Judge.Features.SaveBrief.SaveBriefRequest.<Clone>$() -> Aw.Judge.Features.SaveBrief.SaveBriefRequest!
+Aw.Judge.Features.SaveBrief.SaveBriefRequest.AcceptanceCriteria.get -> string!
+Aw.Judge.Features.SaveBrief.SaveBriefRequest.AcceptanceCriteria.init -> void
+Aw.Judge.Features.SaveBrief.SaveBriefRequest.Deconstruct(out Aw.Judge.Core.Ids.ToolUseId ToolUseId, out Aw.Judge.Core.Ids.SessionId SessionId, out Aw.Judge.Core.Ids.PromptId PromptId, out string? DispatchName, out string! SubagentType, out string! Goal, out string! AcceptanceCriteria, out string! ProofCommand) -> void
+Aw.Judge.Features.SaveBrief.SaveBriefRequest.DispatchName.get -> string?
+Aw.Judge.Features.SaveBrief.SaveBriefRequest.DispatchName.init -> void
+Aw.Judge.Features.SaveBrief.SaveBriefRequest.Equals(Aw.Judge.Features.SaveBrief.SaveBriefRequest? other) -> bool
+Aw.Judge.Features.SaveBrief.SaveBriefRequest.Goal.get -> string!
+Aw.Judge.Features.SaveBrief.SaveBriefRequest.Goal.init -> void
+Aw.Judge.Features.SaveBrief.SaveBriefRequest.PromptId.get -> Aw.Judge.Core.Ids.PromptId
+Aw.Judge.Features.SaveBrief.SaveBriefRequest.PromptId.init -> void
+Aw.Judge.Features.SaveBrief.SaveBriefRequest.ProofCommand.get -> string!
+Aw.Judge.Features.SaveBrief.SaveBriefRequest.ProofCommand.init -> void
+Aw.Judge.Features.SaveBrief.SaveBriefRequest.SaveBriefRequest(Aw.Judge.Core.Ids.ToolUseId ToolUseId, Aw.Judge.Core.Ids.SessionId SessionId, Aw.Judge.Core.Ids.PromptId PromptId, string? DispatchName, string! SubagentType, string! Goal, string! AcceptanceCriteria, string! ProofCommand) -> void
+Aw.Judge.Features.SaveBrief.SaveBriefRequest.SessionId.get -> Aw.Judge.Core.Ids.SessionId
+Aw.Judge.Features.SaveBrief.SaveBriefRequest.SessionId.init -> void
+Aw.Judge.Features.SaveBrief.SaveBriefRequest.SubagentType.get -> string!
+Aw.Judge.Features.SaveBrief.SaveBriefRequest.SubagentType.init -> void
+Aw.Judge.Features.SaveBrief.SaveBriefRequest.ToolUseId.get -> Aw.Judge.Core.Ids.ToolUseId
+Aw.Judge.Features.SaveBrief.SaveBriefRequest.ToolUseId.init -> void
+Aw.Judge.Features.SaveBrief.SaveBriefResponse
+Aw.Judge.Features.SaveBrief.SaveBriefResponse.<Clone>$() -> Aw.Judge.Features.SaveBrief.SaveBriefResponse!
+Aw.Judge.Features.SaveBrief.SaveBriefResponse.Brief.get -> Aw.Judge.Core.Briefs.Brief!
+Aw.Judge.Features.SaveBrief.SaveBriefResponse.Brief.init -> void
+Aw.Judge.Features.SaveBrief.SaveBriefResponse.Deconstruct(out Aw.Judge.Core.Briefs.Brief! Brief) -> void
+Aw.Judge.Features.SaveBrief.SaveBriefResponse.Equals(Aw.Judge.Features.SaveBrief.SaveBriefResponse? other) -> bool
+Aw.Judge.Features.SaveBrief.SaveBriefResponse.SaveBriefResponse(Aw.Judge.Core.Briefs.Brief! Brief) -> void
+override Aw.Judge.Features.SaveBrief.SaveBriefRequest.Equals(object? obj) -> bool
+override Aw.Judge.Features.SaveBrief.SaveBriefRequest.GetHashCode() -> int
+override Aw.Judge.Features.SaveBrief.SaveBriefRequest.ToString() -> string!
+override Aw.Judge.Features.SaveBrief.SaveBriefResponse.Equals(object? obj) -> bool
+override Aw.Judge.Features.SaveBrief.SaveBriefResponse.GetHashCode() -> int
+override Aw.Judge.Features.SaveBrief.SaveBriefResponse.ToString() -> string!
+static Aw.Judge.Features.SaveBrief.SaveBriefRequest.operator !=(Aw.Judge.Features.SaveBrief.SaveBriefRequest? left, Aw.Judge.Features.SaveBrief.SaveBriefRequest? right) -> bool
+static Aw.Judge.Features.SaveBrief.SaveBriefRequest.operator ==(Aw.Judge.Features.SaveBrief.SaveBriefRequest? left, Aw.Judge.Features.SaveBrief.SaveBriefRequest? right) -> bool
+static Aw.Judge.Features.SaveBrief.SaveBriefResponse.operator !=(Aw.Judge.Features.SaveBrief.SaveBriefResponse? left, Aw.Judge.Features.SaveBrief.SaveBriefResponse? right) -> bool
+static Aw.Judge.Features.SaveBrief.SaveBriefResponse.operator ==(Aw.Judge.Features.SaveBrief.SaveBriefResponse? left, Aw.Judge.Features.SaveBrief.SaveBriefResponse? right) -> bool

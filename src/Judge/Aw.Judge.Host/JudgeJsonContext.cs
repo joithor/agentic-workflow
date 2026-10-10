@@ -1,5 +1,6 @@
 using System.Text.Json.Serialization;
 using Aw.Judge.Features.GetHealth;
+using Aw.Judge.Features.SaveBrief;
 using Aw.Kernel;
 
 namespace Aw.Judge.Host;
@@ -8,4 +9,6 @@ namespace Aw.Judge.Host;
 [JsonSerializable(typeof(Error))]
 [JsonSerializable(typeof(GetHealthRequest))]
 [JsonSerializable(typeof(GetHealthResponse))]
+[JsonSerializable(typeof(SaveBriefRequest))]
+[JsonSerializable(typeof(SaveBriefResponse))]
 internal sealed partial class JudgeJsonContext : JsonSerializerContext;

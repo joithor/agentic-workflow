@@ -1,4 +1,5 @@
 using Aw.Judge.Features.GetHealth;
+using Aw.Judge.Features.SaveBrief;
 using Aw.Kernel.Services;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -19,6 +20,13 @@ public static class JudgeFeaturesServiceCollectionExtensions
                 new ValidatingService<GetHealthRequest, GetHealthResponse>(
                     sp.GetRequiredService<GetHealthService>(),
                     sp.GetRequiredService<IValidator<GetHealthRequest>>()));
+        _ = services
+            .AddScoped<SaveBriefService>()
+            .AddScoped<IValidator<SaveBriefRequest>, SaveBriefValidator>()
+            .AddScoped<IService<SaveBriefRequest, SaveBriefResponse>>(static sp =>
+                new ValidatingService<SaveBriefRequest, SaveBriefResponse>(
+                    sp.GetRequiredService<SaveBriefService>(),
+                    sp.GetRequiredService<IValidator<SaveBriefRequest>>()));
         return services;
     }
 }

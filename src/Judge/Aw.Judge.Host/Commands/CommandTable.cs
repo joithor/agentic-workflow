@@ -8,7 +8,7 @@ namespace Aw.Judge.Host.Commands;
 internal static class CommandTable
 {
     // The first words the switch routes; any other is a question (TS cli.ts's default branch).
-    private static readonly FrozenSet<string> _routed = FrozenSet.Create(StringComparer.Ordinal, GetHealthCommand.Name);
+    private static readonly FrozenSet<string> _routed = FrozenSet.Create(StringComparer.Ordinal, GetHealthCommand.Name, BriefCommands.Name);
 
     internal static async Task<int> Run(string[] args, IServiceProvider provider, JsonSerializerOptions json)
     {
@@ -30,6 +30,7 @@ internal static class CommandTable
             return args[0] switch
             {
                 GetHealthCommand.Name => await GetHealthCommand.Run(scope.ServiceProvider).ConfigureAwait(false),
+                BriefCommands.Name => await BriefCommands.Run(rest, scope.ServiceProvider).ConfigureAwait(false),
                 _ => CommandOutput.Usage($"unknown command '{args[0]}'"),
             };
         }
