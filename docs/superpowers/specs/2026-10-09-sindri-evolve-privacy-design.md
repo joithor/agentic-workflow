@@ -139,6 +139,9 @@ removed), filtered like the plain tokens (5+ characters, not English, not in the
 *(Amended in review run 4, security-sentinel-0: the parts of a name join across one shared class, used on both
 sides and folded by the terms layer too: every Unicode dash (`\p{Pd}`), the minus sign, `.`, `_`, the middle dot and the
 hyphenation point; a space and `/` stay boundaries. A directory's dot is part of its name, never an extension.)*
+*(Amended in review run 4, kieran-typescript-reviewer-0: on the candidate side only, each contiguous run of 2 to 8
+parts of a separated name also counts in its joined form, besides the whole name, so `nova-ledger.ts`,
+`@acme/nova-ledger-client` and `nova-ledger-v2` hold for a private `nova-ledger`. The set side keeps whole names.)*
 False positives (public library names used in a private repo) hold a proposal; they never leak one.
 `publish --dry-run` reports held counts per layer so the noise is visible before a real run.
 

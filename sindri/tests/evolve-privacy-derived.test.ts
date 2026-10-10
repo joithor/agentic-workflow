@@ -93,6 +93,27 @@ describe("identifier folding across separators (security-sentinel-1)", () => {
     }
   });
 
+  it("holds a private name followed or preceded by more parts: each contiguous run of 2+ parts counts on the candidate side (run 4 kieran-typescript-reviewer-0)", () => {
+    const d = derivedFrom({ files: ["packages/nova-ledger/src/main.ts"] });
+    for (const text of ["update nova-ledger.ts", "see nova-ledger.md", "the @acme/nova-ledger-client wrapper", "bump @acme/nova-ledger-v2", "old-nova-ledger-v2.ts", "nova‑ledger.test.ts"]) {
+      expect(identifierProblem(text, d), JSON.stringify(text)).toBe("contains a private-repo identifier");
+    }
+    expect(identifierProblem("update supernova-ledger.ts", d)).toBeNull(); // an unrelated joined word doesn't hold
+    expect(identifierProblem("update nova-ledgers.ts", d)).toBeNull();
+    expect(identifierProblem("a nova-x-ledger note", d)).toBeNull(); // parts are contiguous, never skipped
+  });
+
+  it("keeps the set side to whole runs and bounds the candidate side's runs to 8 parts plus the whole run", () => {
+    expect(identifierTokens("glx-rota-utils")).toEqual(["utils", "glxrotautils"]); // set side: the whole run only, no glxrota
+    const d = new Set(["glxrota"]);
+    expect(identifierProblem("glx-rota-utils", d)).toBe("contains a private-repo identifier");
+    const parts = Array.from({ length: 12 }, (_, i) => `p${String.fromCharCode(97 + i)}`);
+    const long = parts.join("-");
+    expect(identifierProblem(long, new Set([parts.join("")]))).toBe("contains a private-repo identifier"); // the whole run, 12 parts
+    expect(identifierProblem(long, new Set([parts.slice(2, 10).join("")]))).toBe("contains a private-repo identifier"); // 8 parts
+    expect(identifierProblem(long, new Set([parts.slice(1, 10).join("")]))).toBeNull(); // 9 parts, not the whole run: past the bound
+  });
+
   it("matches snake_case against camelCase both ways", () => {
     expect(identifierProblem("rename order_sync_worker", derivedFrom({ symbols: ["OrderSyncWorker"] }))).toBe("contains a private-repo identifier");
     expect(identifierProblem("rename OrderSyncWorker", derivedFrom({ files: ["src/order_sync_worker.py"] }))).toBe("contains a private-repo identifier");
