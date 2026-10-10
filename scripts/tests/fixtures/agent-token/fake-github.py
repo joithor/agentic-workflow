@@ -4,16 +4,21 @@
 Binds 127.0.0.1 on a free port (written to <dir>/port), verifies the RS256 JWT
 with the fixture public key through `openssl dgst -verify` (not the signer's
 code path), snapshots every process argv while the request is in flight, and
-answers by MODE: ok -> 201 with a canned token, err -> 401 with a body that
-carries a token-shaped string the script must not echo.
+answers by MODE: ok -> 201 with a canned token; err -> 401 with a body that
+carries a token-shaped string the script must not echo; errmsg -> 401 whose
+message itself holds token shapes and terminal control characters; slow ->
+writes <dir>/inflight, then holds the request for 10 s before answering ok.
 Usage: fake-github.py <dir> <public.pem> <mode>
 """
-import base64, json, os, subprocess, sys, tempfile
+import base64, json, os, subprocess, sys, tempfile, time
 from http.server import BaseHTTPRequestHandler, HTTPServer
 
 DIR, PUB, MODE = sys.argv[1], sys.argv[2], sys.argv[3]
 CANNED = "ghs_fixtureToken0123456789abcdefABCDEF"
 LEAK = "ghs_leakyBodyToken9876543210zyxwvuZYXW"
+# Token shapes with '-' and '.' and a fine-grained PAT, plus ESC and BEL.
+MSG = ("Bad credentials ghs_abc-def.ghi github_pat_11AA22_bb-cc.dd "
+       "\u001b]0;pwned\u0007\u001b[2Jdone")
 
 
 def b64d(s):
@@ -38,17 +43,26 @@ class H(BaseHTTPRequestHandler):
     def do_POST(self):
         auth = self.headers.get("Authorization", "")
         body = self.rfile.read(int(self.headers.get("Content-Length", 0) or 0)).decode()
+        jwt = auth[7:] if auth.startswith("Bearer ") else auth
         argv = subprocess.run(["ps", "-axww", "-o", "args="], capture_output=True, text=True).stdout
+        # Look for this run's exact header and JWT only: other processes on the
+        # machine may legitimately carry a "Bearer " of their own.
         rec = {"path": self.path, "accept": self.headers.get("Accept"), "body": body,
-               "argv_has_bearer": "Bearer " in argv, "argv_has_jwt": auth[7:] in argv if auth else False}
+               "argv_has_bearer": bool(jwt) and ("Bearer " + jwt) in argv,
+               "argv_has_jwt": bool(jwt) and jwt in argv}
         try:
-            rec["header"], rec["claims"], rec["verify"] = verify(auth.removeprefix("Bearer "))
+            rec["header"], rec["claims"], rec["verify"] = verify(jwt)
         except Exception as e:  # malformed JWT is a test failure, recorded
             rec["verify"] = f"error: {e}"
         with open(os.path.join(DIR, "requests.jsonl"), "a") as f:
             f.write(json.dumps(rec) + "\n")
-        if MODE == "ok":
+        if MODE == "slow":
+            open(os.path.join(DIR, "inflight"), "w").close()
+            time.sleep(10)
+        if MODE in ("ok", "slow"):
             code, out = 201, {"token": CANNED, "expires_at": "2099-01-01T00:00:00Z"}
+        elif MODE == "errmsg":
+            code, out = 401, {"message": MSG}
         else:
             code, out = 401, {"message": "Bad credentials", "token": LEAK,
                               "documentation_url": "https://docs.github.com/rest"}

@@ -59,6 +59,9 @@ start_server() { # $1 = mode (ok|err)
   python3 "$FAKE" "$SRV" "$WORK/pub.pem" "$1" &
   SERVER_PID=$!
   for _ in $(seq 1 50); do [ -s "$SRV/port" ] && break; sleep 0.1; done
+  if ! [ -s "$SRV/port" ] || ! kill -0 "$SERVER_PID" 2>/dev/null; then
+    echo "not ok - fake server ($1) did not start"; exit 1
+  fi
   export AGENT_APP_API_URL="http://127.0.0.1:$(cat "$SRV/port")"
 }
 
@@ -96,7 +99,8 @@ check "--app-id sets iss" "$(jq -r .claims.iss <<<"$req")" "42"
 check "--repo narrows the token" "$(jq -c '.body|fromjson' <<<"$req")" '{"repositories":["agentic-workflow"]}'
 
 # --- env overrides for ids ---
-AGENT_APP_ID=99 AGENT_APP_INSTALLATION_ID=11 bash "$SCRIPT" >/dev/null 2>&1
+rc=0; AGENT_APP_ID=99 AGENT_APP_INSTALLATION_ID=11 bash "$SCRIPT" >/dev/null 2>"$WORK/err" || rc=$?
+check "env ids: exits 0" "$rc" "0"
 req="$(tail -1 "$SRV/requests.jsonl")"
 check "AGENT_APP_INSTALLATION_ID env picks the path" "$(jq -r .path <<<"$req")" "/app/installations/11/access_tokens"
 check "AGENT_APP_ID env sets iss" "$(jq -r .claims.iss <<<"$req")" "99"
@@ -139,8 +143,102 @@ rc=0; bash "$SCRIPT" --bogus >/dev/null 2>"$WORK/err" || rc=$?
 check "unknown flag: exit 2" "$rc" "2"
 check "unknown flag: usage on stderr" "$(grep -c '^usage: agent-token.sh' "$WORK/err")" "1"
 
+# --- keychain path, with a stub `security` on PATH (never the real keychain) ---
+start_server ok
+mkdir -p "$WORK/kc-hex" "$WORK/kc-fail"
+cat >"$WORK/kc-hex/security" <<STUB
+#!/bin/sh
+echo "\$*" >"$WORK/kc-args"
+xxd -p "$WORK/key.pem" | tr -d '\n'; echo
+STUB
+printf '#!/bin/sh\necho "security: item not found" >&2\nexit 44\n' >"$WORK/kc-fail/security"
+chmod +x "$WORK/kc-hex/security" "$WORK/kc-fail/security"
+rc=0; out="$(env -u AGENT_APP_KEY_FILE AGENT_APP_KEYCHAIN_SERVICE=other-item AGENT_APP_KEYCHAIN_ACCOUNT=other \
+  PATH="$WORK/kc-hex:$PATH" bash "$SCRIPT" 2>"$WORK/err")" || rc=$?
+req="$(tail -1 "$SRV/requests.jsonl")"
+check "keychain hex: exits 0" "$rc" "0"
+check "keychain hex: stdout is the token" "$out" "$CANNED"
+check "keychain hex: decoded key signs a valid JWT" "$(jq -r .verify <<<"$req")" "Verified OK"
+check "keychain: reads only the App's item (env cannot redirect it)" "$(cat "$WORK/kc-args")" \
+  "find-generic-password -s agentic-workflow-agent-app -a private-key -w"
+check "keychain hex: temp dir removed" "$(find "$TMPDIR" -mindepth 1 | wc -l | tr -d ' ')" "0"
+n="$(wc -l <"$SRV/requests.jsonl" | tr -d ' ')"
+rc=0; out="$(env -u AGENT_APP_KEY_FILE PATH="$WORK/kc-fail:$PATH" bash "$SCRIPT" 2>"$WORK/err")" || rc=$?
+check "keychain failure: exits non-zero" "$([ "$rc" -ne 0 ] && echo yes || echo no)" "yes"
+check "keychain failure: stdout empty" "$out" ""
+check "keychain failure: says so" "$(grep -c 'could not read the App key from the keychain' "$WORK/err")" "1"
+check "keychain failure: API not called" "$(wc -l <"$SRV/requests.jsonl" | tr -d ' ')" "$n"
+
+# --- API URL: only GitHub over https, or loopback http for tests ---
+for url in "http://api.github.com" "https://evil.example" "http://10.0.0.1:8080" \
+  "https://api.github.com.evil.example" "http://127.0.0.1:1\"x" \
+  $'http://127.0.0.1:1"\ntrace-ascii = "'"$WORK"'/trace'; do
+  rc=0; out="$(AGENT_APP_API_URL="$url" bash "$SCRIPT" 2>"$WORK/err")" || rc=$?
+  check "API URL rejected ($(printf '%q' "$url")): exit 2" "$rc" "2"
+  check "API URL rejected: says why" "$(grep -c 'AGENT_APP_API_URL must be https://api.github.com' "$WORK/err")" "1"
+done
+check "API URL rejected: no request reached the fake" "$(wc -l <"$SRV/requests.jsonl" | tr -d ' ')" "$n"
+check "curl config injection wrote no trace file" "$([ -e "$WORK/trace" ] && echo written || echo none)" "none"
+rc=0; out="$(AGENT_APP_API_URL="http://localhost:$(cat "$SRV/port")" bash "$SCRIPT" 2>/dev/null)" || rc=$?
+check "API URL: http://localhost:<port> accepted" "$out" "$CANNED"
+
+# --- --repo names are validated before they reach the request ---
+rc=0; bash "$SCRIPT" --repo 'a"b' >/dev/null 2>"$WORK/err" || rc=$?
+check "bad --repo name: exit 2" "$rc" "2"
+check "bad --repo name: says why" "$(grep -c 'invalid repository name' "$WORK/err")" "1"
+
+# --- the user's ~/.curlrc is ignored (curl -q) ---
+mkdir -p "$WORK/home"
+printf 'trace-ascii = "%s/rc-trace"\n' "$WORK" >"$WORK/home/.curlrc"
+rc=0; out="$(HOME="$WORK/home" bash "$SCRIPT" 2>/dev/null)" || rc=$?
+check "~/.curlrc ignored: token still minted" "$out" "$CANNED"
+check "~/.curlrc ignored: no trace written" "$([ -e "$WORK/rc-trace" ] && echo written || echo none)" "none"
+
+# --- a weird TMPDIR (quote, newline) cannot inject curl directives ---
+odd="$WORK/odd\"dir"$'\n'"x"; mkdir -p "$odd"
+rc=0; out="$(TMPDIR="$odd" bash "$SCRIPT" 2>"$WORK/err")" || rc=$?
+check "odd TMPDIR: token minted" "$out" "$CANNED"
+check "odd TMPDIR: temp dir removed" "$(find "$odd" -mindepth 1 | wc -l | tr -d ' ')" "0"
+
+# --- inherited xtrace never traces the JWT or the token ---
+rc=0; out="$(bash -x "$SCRIPT" 2>"$WORK/xtrace")" || rc=$?
+check "bash -x: token still on stdout" "$out" "$CANNED"
+check "bash -x: token not traced" "$(grep -c "$CANNED" "$WORK/xtrace" || true)" "0"
+check "bash -x: JWT not traced" "$(grep -c -e 'eyJ' -e 'Bearer' "$WORK/xtrace" || true)" "0"
+rc=0; out="$(env SHELLOPTS=xtrace bash "$SCRIPT" 2>"$WORK/xtrace2")" || rc=$?
+check "SHELLOPTS=xtrace: token not traced" "$(grep -c -e "$CANNED" -e 'eyJ' "$WORK/xtrace2" || true)" "0"
+
+# --- missing jq fails up front, before any token is minted ---
+mkdir -p "$WORK/nojq"
+for c in mktemp cat grep openssl tr date curl rm sed xxd; do ln -sf "$(command -v "$c")" "$WORK/nojq/$c"; done
+n="$(wc -l <"$SRV/requests.jsonl" | tr -d ' ')"
+rc=0; out="$(PATH="$WORK/nojq" "$(command -v bash)" "$SCRIPT" 2>"$WORK/err")" || rc=$?
+check "no jq: exits non-zero" "$([ "$rc" -ne 0 ] && echo yes || echo no)" "yes"
+check "no jq: says jq is required" "$(grep -c 'jq is required' "$WORK/err")" "1"
+check "no jq: API not called" "$(wc -l <"$SRV/requests.jsonl" | tr -d ' ')" "$n"
+
+# --- API error message: token shapes redacted, control characters stripped ---
+start_server errmsg
+rc=0; out="$(bash "$SCRIPT" 2>"$WORK/err")" || rc=$?
+check "errmsg: exits non-zero" "$([ "$rc" -ne 0 ] && echo yes || echo no)" "yes"
+check "errmsg: no token shape survives" "$(grep -c -e 'ghs_abc' -e 'def.ghi' -e 'github_pat_' -e 'bb-cc' "$WORK/err" || true)" "0"
+check "errmsg: no control characters" "$(LC_ALL=C tr -d '\n' <"$WORK/err" | LC_ALL=C grep -c '[[:cntrl:]]' || true)" "0"
+check "errmsg: still names status and message" "$(grep -c 'GitHub returned HTTP 401: Bad credentials' "$WORK/err")" "1"
+
+# --- SIGTERM mid-request: exits 143, prints nothing, cleans up ---
+start_server slow
+bash "$SCRIPT" >"$WORK/term.out" 2>"$WORK/term.err" &
+TPID=$!
+for _ in $(seq 1 100); do [ -e "$SRV/inflight" ] && break; sleep 0.1; done
+kill -TERM "$TPID"
+rc=0; wait "$TPID" || rc=$?
+check "SIGTERM: exit 143" "$rc" "143"
+check "SIGTERM: stdout empty" "$(wc -c <"$WORK/term.out" | tr -d ' ')" "0"
+check "SIGTERM: temp dir removed" "$(find "$TMPDIR" -mindepth 1 | wc -l | tr -d ' ')" "0"
+stop_server
+
 # --- key material never in any output across all runs ---
-leaks="$(cat "$WORK"/err "$WORK"/tty.out "$WORK"/tty2.out | grep -c -e "$KEY_LINE" -e 'PRIVATE KEY' || true)"
+leaks="$(cat "$WORK"/err "$WORK"/tty.out "$WORK"/tty2.out "$WORK"/xtrace "$WORK"/xtrace2 "$WORK"/term.err | grep -c -e "$KEY_LINE" -e 'PRIVATE KEY' || true)"
 check "key material never printed" "$leaks" "0"
 
 exit "$fail"
