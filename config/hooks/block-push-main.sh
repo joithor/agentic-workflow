@@ -13,10 +13,9 @@ failopen() {
     done
   ) > /dev/null 2>&1 || true
 }
-# A crash (exit other than 0 or 2) lets the call through under Claude Code; count
-# it. Under an adapter (AW_PROVIDER set) the adapter logs hook-exit-<N> instead.
-# The trap doesn't call exit, so the hook's exit status is unchanged.
-trap 'aw_rc=$?; [ -n "${AW_PROVIDER:-}" ] || case "$aw_rc" in 0|2) ;; *) failopen "exit-$aw_rc" ;; esac' EXIT
+# No EXIT trap here: this hook runs under set -e, and on bash 3.2 an EXIT trap
+# turns a set -u abort into exit 0. A crash keeps its exit code and is not
+# counted (see "Fail-open logging" in .agents/rules/hooks.md).
 
 # PreToolUse hook: Block git push to main/master
 # Exit 2 = deny, Exit 0 = allow.
