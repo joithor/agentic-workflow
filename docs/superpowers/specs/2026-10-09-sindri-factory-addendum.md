@@ -7,7 +7,9 @@ removal criteria, escaped-defect tracing, comprehension drift, a PR lease, signe
 detection, the implementer's plan review, feedback-loop classes and factory/human cohorts; invariants 17–19.
 It also adds a second field pass (§17.24: failure ownership, migration oracles, the critic lens, context assertions,
 executor escalation, `spec-conflict`, DORA keys and postmortems, sealed artifacts, one live variant per artifact) and
-field harvest (§17.25), which makes finding and building other factories' practices part of Sindri grows Sindri.
+field harvest (§17.25), which makes finding and building other factories' practices part of Sindri grows Sindri,
+and scoping v2 (§17.26): tracker intake by assignee, a challenger that retrieves every round, candidate files per
+surface, and a packet the studio edits with the same pipeline (add, remove, prune, ask), with edits as labels.
 Revision 2 adds:
 - development lenses and workflow generation (§17.7)
 - lean session bootstrap (§17.8)
@@ -235,6 +237,9 @@ records, with a generated JSON Schema for editors; see the readiness design §4b
 - every task fits its size class's budget, or is split;
 - the holdout share exists and is stored where the implementer can't read it;
 - the workflow passes its coverage checks (§17.7).
+
+**Editing before freeze** uses the scoping pipeline itself (§17.26.4): adds, removals and "too much" re-run
+retrieval or pruning scoped to the edit.
 
 **Freeze and amend:** `sindri packet freeze` records the hash in the ledger, and builds run against that hash.
 Any later change is an **amendment**: a scope-expansion or packet-miss item goes back to the desk queue, and only
@@ -1412,6 +1417,174 @@ The spec edit and the build are separate PRs, so the design can land before the 
 **Seed run.** §17.23 and §17.24 are the first harvest, done by hand on 2026-10-10. Their source list is the
 registry's starting content, and their "already covered" findings are the gap checker's first labelled examples.
 F6 adds the harvest job; until then, `sindri scout --topic software-factory` (§17.18) runs it on demand.
+
+## 17.26 Scoping v2: tracker intake, a retrieving loop, and a packet you edit with the same machinery
+
+This amends §7.1 (intake), §7.5 (the scoping harness) and §17.4 (design studio, packet, amend). Where it conflicts
+with them, this section wins.
+
+The v1 harness (Plan 4) has three limits:
+- it starts only by hand;
+- its challenger re-reads the drafter's evidence pack, so it can find only what was already gathered (§7.5
+  amendment 14);
+- the map leaves preprocessing as a one-shot result: the studio can edit it, but nothing re-runs the search
+  around an edit.
+
+Scoping v2 fixes all three. The principle: **the same pipeline runs at intake, in the loop, and at the desk.** A
+human edit is just another seed for it.
+
+### 17.26.1 Two triggers
+
+| Trigger | How |
+|---|---|
+| Human | `sindri scope <brief | spec section | tracker project | tracker item>`, as today |
+| Tracker intake | The tick (§7.1) scans the tracker with the profile's `intake` filter. Items that triage routes to the scoping queue get a scoping job without a human starting it |
+
+```yaml
+intake:
+  tracker: linear
+  filter:
+    assignee: me            # me | unassigned | any
+    kinds: [project, issue] # projects always scope; issues scope only when triage sizes them above autoStartMaxSize or marks them ambiguous
+    states: [backlog, todo]
+    teams: [<team key>]
+  scopeOnArrival: true      # false: list in `status` as scopable; the human runs `sindri scope`
+```
+
+- `assignee: me` is matched against the tracker identity in the profile. Assigning an item to yourself in the
+  tracker is the way to say "Sindri, scope this".
+- Intake scoping runs host-side and read-only, exactly as the manual command does. It writes the map to the notes
+  dir and adds a **desk-queue entry**: "scope map ready". It never creates tracker issues, writes to the tracker or
+  starts a build.
+- A finished map is a pending decision, so it counts toward `review.maxPending` (§17.23.1). When the queue is full,
+  intake keeps the item `held: review-backpressure` and doesn't scope it yet. That keeps the desk from filling up
+  with maps nobody reads.
+- An item whose text changes after its map was written gets a `map stale` marker. It's re-scoped only on request
+  or when the item changes state.
+- Ring-1 profiles default to `scopeOnArrival: false`, and intake follows the workplace's agent policy (§17.17 Q5).
+
+### 17.26.2 The loop retrieves every round
+
+```
+ brief + intake record
+        │
+        ▼
+ seed queries ──► retrieve (all sources) ──► draft / revise map ──► deterministic checks
+        ▲                                                                   │
+        │                                                                   ▼
+ expansion queries ◄── challenger: gaps as queries ◄── prune pass ◄── challenger: what's missing?
+ (recorded in the map)                                 (what's not supported?)
+```
+
+**Each round:**
+1. **Challenge for recall.** The challenger (a different model from the drafter) doesn't just name missing
+   surfaces. It writes **expansion queries** that would find evidence for them, each typed:
+   - `symbol` (a name or pattern);
+   - `neighbours` (callers, callees or module neighbours of a symbol already in the map);
+   - `similar` (embedding search from a surface's text or a cited symbol);
+   - `tracker` (a search over issues, comments and linked docs);
+   - `notes`;
+   - `route` or `flag` (a pattern over routes, feature-flag keys and config).
+2. **Retrieve.** Sindri code, not the model, runs each query against the sources. Today those are the Plan 3 index
+   (symbols, the call and module graph, per-symbol embeddings, the deps layer), the tracker, notes and transcripts
+   (opt-in). After F5 the context graph's components are added (§17.3). Results are scrubbed, fenced as untrusted,
+   deduplicated against what the run already holds, and cut to the round's budget by rank.
+3. **Revise.** The drafter revises the map with only the new evidence plus the current map. It doesn't re-read
+   the whole pack. A surface it adds must cite one of the retrieved records.
+4. **Prune for precision.** A pruning pass on the challenger model marks surfaces as `weak` when:
+   - their only evidence is a keyword match;
+   - their citations don't support the claim;
+   - they come only from `provenance: model` links (§17.3).
+
+   Code checks the citations first. The model only reads the ones code can't decide. A weak surface is moved to a
+   **Considered and dropped** list with its reason, not deleted, so the human can see it and bring it back.
+5. **Deterministic checks**, as in §7.5.
+
+**Stopping:**
+- The loop stops when a round adds no new surface and drops none, or at `scope.maxRounds` (default 5 for v2), or
+  at the token budget.
+- **Retrieval convergence** also stops it: the expansion queries return no record the run hasn't already seen.
+  That is the honest signal of "exhaustive given these sources". The map states it as `converged` or
+  `capped (rounds | budget)`.
+- A capped map lists its open expansion queries, so the studio can run them later.
+
+**Recorded in the map:**
+- every query, its round, its type and how many records it returned;
+- which surfaces it led to.
+
+The backtest (§7.5) reads this to show which query types earned their recall. Evolve tunes the challenger's query
+prompt against recall and precision, never one without the other (the pass bar is unchanged).
+
+**Code tools.** The loop still gives models **no tools**. "Agent turns that explore the code" are replaced by typed
+queries that Sindri runs. That keeps scoping read-only, budgeted and replayable, and keeps exploration out of the
+model's hands (invariant 13).
+
+### 17.26.3 The map carries the file level, as candidates
+
+Each surface in a v2 map also lists **candidate files and symbols**: the code its citations and retrievals point
+to, ranked, with the query that found each one. These are candidates, not write scopes. They seed the design
+studio, so the packet's write scopes and read seeds start from evidence instead of a blank page. `packet init
+--from-scope` (§17.4) copies them into each task as **proposed** write scope and read seeds, marked `proposed`
+until the human or the studio confirms them.
+
+### 17.26.4 The packet is edited with the same machinery
+
+Preprocessing can miss things or find too much. In the design studio, the human and the agent edit the map and the
+packet, and **every edit re-runs the relevant part of the same pipeline, scoped to the edit**:
+
+| Edit | What re-runs | What you get back |
+|---|---|---|
+| **Add** a surface, file, symbol, route, ticket or product node | A retrieval round seeded by the addition: its neighbours, similar symbols, tests by convention, tickets that mention it, and the challenger's recall pass on just that area | Proposed related surfaces, files and read seeds, each cited. Accept them one by one, or all |
+| **Remove** a surface, file or task | A dependency check: what cites it, which workstreams, tasks, acceptance examples or evidence items lose coverage, and which remaining items only existed because of it | A list of knock-on removals and coverage gaps to accept or reject |
+| **"Too much"** on a surface, workstream or the whole map | The prune pass at a stricter bar | A shorter list with each dropped item's reason |
+| **"Something's missing around X"** (free text) | The challenger turns the text into expansion queries, and one retrieval round runs | New candidates, cited |
+| **Narrow or widen** a write scope | `packet validate`'s write-scope rules (exists or declared new, no overlap with concurrent tasks) plus a neighbours query on the new paths | Validation result and any newly reachable tests or callers |
+| **Run the open queries** of a capped map | One round per query | As for Add |
+
+Commands: `sindri packet edit <id> add|remove|prune|ask|narrow|widen …` from a terminal, and the same verbs in
+the studio's walkthrough page (§17.4). Both go through one code path. The studio agent proposes edits with the
+same verbs. Nothing changes until the human accepts a proposal.
+
+**Rules for edits:**
+- **Provenance on everything.** Every item in the map and packet carries `source: retrieval | model | human` and,
+  for retrieval, the query that found it.
+- **Tombstones.** An item the human removes is kept with its reason, and the loop never re-proposes it unless new
+  evidence appears (a record the run hadn't seen when it was removed). Without this, every re-run would argue with
+  the human.
+- **Human adds are pinned.** The prune pass never drops a human-added item. It may flag one as weak, with the
+  reason.
+- **Decision log.** Each accepted or rejected proposal is a decision-log record (§17.4), with the asker
+  (`retrieval`, `challenger`, `studio agent` or `human`).
+- **Same checks before freeze.** After any edit, the deterministic scoping checks and `packet validate` run again.
+  `freeze` refuses a packet with `proposed` items not yet confirmed or rejected.
+- **After freeze**, an amendment (§17.4) uses the same verbs on a new draft revision. Only the tasks the edit
+  touches are re-planned.
+
+### 17.26.5 Edits are labels
+
+The human's edits are the best signal of what preprocessing got wrong. They are outcome labels, so invariant 9
+holds:
+- an **add** that wasn't in the map is a **recall miss**, tagged with the query types that could have found it;
+- a **remove** of a retrieved or model item is a **precision miss**, with its reason;
+- a proposal **accepted** after an Add or Ask counts as a recall hit for that query type;
+- mid-build packet misses (§17.2) are recall misses found late, and they weigh more.
+
+These labels join the backtest corpus. Evolve proposes changes to the challenger's query prompt, the prune bar and
+per-query-type budgets, judged on recall and precision together (§7.4). Metrics, added to §17.2:
+- recall and precision misses per packet, at the desk and after freeze;
+- the share of maps that converged rather than capped;
+- the share of `proposed` candidates the human confirmed.
+
+### 17.26.6 Rollout
+
+| Step | Adds |
+|---|---|
+| Scoping v2a (any time after Plan 3; it needs only the code index and the tracker) | The retrieving loop with typed queries over the index, tracker and notes; the prune pass; convergence; the queries recorded in the map; candidate files per surface |
+| F0 | `packet init --from-scope` carries the candidates as `proposed`; `packet edit` verbs with provenance, tombstones and pinned human adds; `freeze` refuses unconfirmed `proposed` items |
+| F2 | Tracker intake with the `intake` filter and `scopeOnArrival`, behind review back-pressure |
+| F4 | The same edit verbs on the studio's walkthrough page and the phone (keep or drop a surface is already a phone decision, §17.12) |
+| F5 | Context-graph components join the retrieval round as query targets, each kept only if its backtest arm helps |
+| F6 | Edit labels feed evolve's scoping proposals |
 
 ## 17.17 Decisions
 

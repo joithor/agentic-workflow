@@ -407,6 +407,25 @@ svg .dim { opacity: .25; }
     </svg>
     <figcaption>Labels come from an adjudicator model, never a person; only answers that agree in both orders count (invariant 9).</figcaption>
   </figure>
+  <h3>Scoping v2: intake, a loop that retrieves, and edits that re-run it <span class="ref">§17.26</span></h3>
+  <p>Today scoping starts by hand, and its challenger re-reads the drafter's evidence, so it can only find what was already gathered. In v2 the same pipeline runs at intake, in every round, and at the desk. A human edit is just another seed.</p>
+  <ul class="clean">
+    <li><b>Two triggers.</b> <code>sindri scope</code> by hand, or tracker intake: assign an item to yourself and, if triage routes it to scoping, a map is waiting in the desk queue. Intake holds while review is full (invariant 18).</li>
+    <li><b>Every round retrieves.</b> The challenger writes typed {{expansion query|expansion queries}} (symbol, neighbours, similar, tracker, notes, route or flag). Sindri runs them against the code index, call graph, embeddings and tracker, and the drafter revises with only the new evidence. Models still get no tools.</li>
+    <li><b>Every round prunes.</b> Surfaces with keyword-only or unsupporting evidence move to a <i>Considered and dropped</i> list with a reason, so you can bring them back.</li>
+    <li><b>Honest stopping.</b> The map says <code>converged</code> (queries found nothing new) or <code>capped</code>, and lists its open queries.</li>
+    <li><b>File-level candidates.</b> Each surface lists ranked candidate files and symbols with the query that found them. They become <i>proposed</i> write scopes and read seeds in the packet.</li>
+  </ul>
+  <div class="tablewrap"><table>
+    <thead><tr><th>Studio edit</th><th>What re-runs</th><th>You get back</th></tr></thead>
+    <tbody>
+      <tr><td>Add a surface, file, symbol or ticket</td><td>A retrieval round seeded by it: neighbours, similar code, tests, tickets that mention it</td><td>Cited related candidates to accept one by one</td></tr>
+      <tr><td>Remove</td><td>A dependency check on what cites it and what loses coverage</td><td>Knock-on removals and coverage gaps</td></tr>
+      <tr><td>"Too much"</td><td>The prune pass at a stricter bar</td><td>A shorter list, each drop with its reason</td></tr>
+      <tr><td>"Something's missing around X"</td><td>Your text becomes expansion queries; one round runs</td><td>New cited candidates</td></tr>
+      <tr><td>Narrow or widen a write scope</td><td><code>packet validate</code> plus a neighbours query on the new paths</td><td>Validation and newly reachable tests or callers</td></tr>
+    </tbody></table></div>
+  <p style="font-size:14.5px">Everything carries its provenance (retrieval, model or human). A removed item leaves a {{tombstone}}, so the loop doesn't re-propose it without new evidence. Human adds are never pruned. <code>freeze</code> refuses unconfirmed proposals. Each add is a recall miss and each removal a precision miss: outcome labels the backtest and evolve learn from.</p>
   <h3>Direction checks: "is this the right path at all?" <span class="ref">§6.1</span></h3>
   <div class="tablewrap"><table>
     <thead><tr><th>Checkpoint</th><th>Fired by</th><th>Question</th></tr></thead>
@@ -954,6 +973,8 @@ status: active  # proposed | active | retired</code></pre>
     "oracle": ["Oracle", "What proves a migration didn't change behaviour, usually characterization or golden tests pinned before the move.", "§17.24.2"],
     "critic lens": ["Critic lens", "A review-only lens that argues against a change: hidden assumptions, one-caller abstractions, untested behaviour changes, orphans.", "§17.24.3"],
     "seal": ["Seal", "Generator id, version and source hashes on a generated artifact; a seal check fails when it is stale or hand-edited.", "§17.24.8"],
+    "expansion query": ["Expansion query", "A typed query (symbol, neighbours, similar, tracker, notes, route or flag) the scoping challenger writes and Sindri runs, so each round gathers new evidence.", "§17.26.2"],
+    "tombstone": ["Tombstone", "A removed map or packet item kept with its reason, so scoping doesn't re-propose it unless new evidence appears.", "§17.26.4"],
     "holdout": ["Holdout", "Acceptance examples (or eval corpus) the implementer never sees. Mounted only into evaluator Steps; a canary example detects leaks.", "§17.4, §17.19"]
   };
 
@@ -1021,11 +1042,16 @@ status: active  # proposed | active | retired</code></pre>
     ["scoping","built","Backtests with a baseline","Recall, precision and a brief-only baseline against a pass bar, judged twice in reversed order.","§7.5, Plan 4"],
     ["scoping","built","Repo onboarding","<code>sindri repo onboard</code>: add, approve at a terminal, install the hook, build the index.","Plan 4"],
     ["scoping","built","Record-only shape signals","The pre-commit hook records signals; reconcile labels their outcomes. Nothing blocks a commit yet.","§6.2, Plan 3"],
+    ["scoping","designed","Tracker intake","An intake filter (assignee: me) starts scoping for items triage routes there; the map waits in the desk queue, behind review back-pressure.","§17.26.1"],
+    ["scoping","designed","Retrieving challenger","Typed expansion queries run by Sindri every round, a prune pass, convergence, and every query recorded in the map.","§17.26.2"],
+    ["scoping","designed","Candidate files per surface","Ranked files and symbols with the query that found each, carried into the packet as proposed scope.","§17.26.3"],
     ["scoping","designed","Direction checks","Approach, scoping, drift, shape and scope-expansion checkpoints, sindri-relayed, shadow first.","§6.1"],
     ["scoping","designed","Shape enforcement","Each index layer enforces once its precision reaches 0.7 over 30 signals on real commits.","§13 step 3b"],
 
     ["packets","designed","Packet schema and deterministic checks","Acyclic tasks, existing or declared write scopes, no overlapping concurrent scopes, answered or defaulted questions, a hidden holdout.","§17.4"],
     ["packets","designed","Freeze and amend","The hash is recorded; later changes are amendments that re-plan only the affected tasks.","§17.4"],
+    ["packets","designed","Edit with the same machinery","add, remove, prune, ask, narrow and widen re-run retrieval or pruning scoped to the edit; provenance, tombstones and pinned human adds.","§17.26.4"],
+    ["packets","designed","Edits are labels","Adds are recall misses and removals precision misses, feeding the backtest corpus and evolve.","§17.26.5"],
     ["packets","designed","Micro-packets","Small tracker items get an auto-generated one-task packet without a desk step.","§17.19 C12"],
     ["packets","designed","Task compiler","Code, not a model, computes each Step's session spec.","§17.5"],
     ["packets","designed","Compiled sandbox policy","Denials return <code>SND-SCOPE-1xx</code> and become scope-expansion requests; three of a kind park the Step.","§17.5"],
