@@ -11,7 +11,8 @@ dependencies). `Aw.Readiness` replaces it in R1b and becomes the score of record
 report or Droid is used.
 
 It is **not** the §8 output contract, so don't wire it into CI as one. It has no `--json` (versioned schema), no
-delta since the last run and no "first run records a baseline"; its exit codes mean 0 = report written and
+delta since the last run and no "first run records a baseline"; it writes nothing to the ledger; its rows give the
+measured value and evidence but no limit or fix command; and its exit codes mean 0 = report written and
 2 = tool error, not 0 = target level holds and 1 = it doesn't. `Aw.Readiness` implements those and diffs its first
 run against `baseline-2026-10.md` as the previous run.
 

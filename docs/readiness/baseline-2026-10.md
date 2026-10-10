@@ -6,27 +6,27 @@
 
 Repository: `jthorare/agentic-workflow` · Apps (7): `mcp-bridge`, `scorer`, `judge`, `sindri`, `skills/ui-evidence`, `skills/bugFixOrchestrator`, `mods/aw-live`
 
-Generated: 2026-10-10T06:57:11.870Z
+Generated: 2026-10-10T07:06:01.693Z
 
 ## Summary
 
 **Overall level: 1** (of 5). Cells show passed credit / scored criteria at that level; `skip`
-is a level with nothing scored that the walk passed; `—` is nothing scored and not reached.
+is a level with nothing scored below the reached one (or an empty Level 1); `—` is nothing scored.
 
 | Pillar | L1 | L2 | L3 | L4 | L5 | Level |
 |---|---|---|---|---|---|---|
 | Style & Validation | 0.86 / 3 (29%) | 0 / 1 (0%) | — | — | — | 1 |
-| Build System | skip | 3 / 3 (100%) | skip | 0 / 1 (0%) | — | 3 |
-| Testing | 1 / 1 (100%) | skip | 1.43 / 2 (71%) | 0 / 2 (0%) | — | 2 |
-| Documentation | 1 / 1 (100%) | 1 / 1 (100%) | skip | 0 / 1 (0%) | — | 3 |
+| Build System | skip | 3 / 4 (75%) | — | 0 / 1 (0%) | — | 1 |
+| Testing | 1 / 1 (100%) | — | 1.43 / 2 (71%) | 0 / 2 (0%) | — | 2 |
+| Documentation | 1 / 1 (100%) | 1 / 1 (100%) | — | 0 / 1 (0%) | — | 3 |
 | Development Environment | skip | 1 / 3 (33%) | — | — | — | 1 |
-| Debugging & Observability | skip | skip | 0.14 / 3 (5%) | — | — | 1 |
-| Security | skip | 0 / 1 (0%) | 0 / 2 (0%) | — | — | 1 |
-| Task Discovery | skip | skip | 0 / 3 (0%) | — | — | 1 |
-| Product & Experimentation | skip | skip | skip | 0 / 2 (0%) | — | 1 |
-| **Overall** | 2.86 / 5 (57%) | 5 / 9 (56%) | 1.57 / 10 (16%) | 0 / 6 (0%) | — | **1** |
+| Debugging & Observability | skip | — | 0.14 / 3 (5%) | — | — | 1 |
+| Security | skip | 0 / 1 (0%) | 0 / 3 (0%) | — | — | 1 |
+| Task Discovery | skip | — | 0 / 3 (0%) | — | — | 1 |
+| Product & Experimentation | skip | — | — | 0 / 2 (0%) | — | 1 |
+| **Overall** | 2.86 / 5 (57%) | 5 / 10 (50%) | 1.57 / 11 (14%) | 0 / 6 (0%) | — | **1** |
 
-Criteria: 32 (pass 8 · fail 22 · n/a 0 · unknown 2).
+Criteria: 34 (pass 8 · fail 24 · n/a 0 · unknown 2).
 
 ## How it scores
 
@@ -40,11 +40,12 @@ Criteria: 32 (pass 8 · fail 22 · n/a 0 · unknown 2).
   denominator). They count as fractional credit and show `pass` only when every applicable app passes.
 - **Levels:** every repo starts at Level 1. Level N+1 unlocks when at least 80% of the scored Level N criteria
   pass and every lower level with scored criteria also reached 80%. Levels with nothing scored (in a pillar, or
-  overall) neither unlock nor block; the summary shows the ones the walk passed as `skip`. A pillar with nothing
-  scored has no level (`—`).
+  overall) neither unlock nor block; the summary shows the ones below the reached level (and an empty Level 1)
+  as `skip`. A pillar with nothing scored has no level (`—`).
 - **Remote data** comes from read-only `gh api` GETs (default branch, branch protection, rulesets, secret
   scanning, labels, releases).
-- **Not the §8 contract:** this R0 script has no `--json`, no delta since the last run, and its exit codes mean
+- **Not the §8 contract:** this R0 script has no `--json`, no delta since the last run, writes nothing to the
+  ledger, and its rows name the measured value and evidence but no limit or fix command. Its exit codes mean
   "report written" (0) or "tool error" (2), not "target level holds". `Aw.Readiness` (R1b) implements §8 and
   treats this file as its first previous run.
 
@@ -67,6 +68,7 @@ Criteria: 32 (pass 8 · fail 22 · n/a 0 · unknown 2).
 | BS-2 | Dependencies pinned (lockfile) | 2 | app | pass | 6 / 6 | pass: mcp-bridge (package-lock.json), scorer (package-lock.json), judge (package-lock.json), sindri (package-lock.json), skills/ui-evidence (package-lock.json), skills/bugFixOrchestrator (package-lock.json); n/a: mods/aw-live (no package.json, no dependencies to pin) | S5 |
 | BS-3 | VCS CLI tools documented | 2 | repo | pass | 1 / 1 | README.md documents the gh CLI | inferred |
 | BS-4 | Regular deployment frequency (≥3 releases in 90 days) | 4 | repo | fail | 0 / 1 | 0 releases published in the 90 days before 2026-10-10 | F-level |
+| BS-5 | Runtime version pinned | 2 | repo | fail | 0 / 1 | engines.node is a range (>=20, >=20.11); no .nvmrc, .node-version, .tool-versions or global.json (spec §3) | S5 |
 
 ### Testing
 
@@ -109,6 +111,7 @@ Criteria: 32 (pass 8 · fail 22 · n/a 0 · unknown 2).
 | SEC-1 | Branch protection on the default branch | 2 | repo | fail | 0 / 1 | main: protection "gh: Branch not protected (HTTP 404)"; rulesets: none | F-level |
 | SEC-2 | Secret scanning | 3 | repo | fail | 0 / 1 | secret_scanning disabled, push_protection disabled | F-level |
 | SEC-3 | CODEOWNERS | 3 | repo | fail | 0 / 1 | no CODEOWNERS | S5 |
+| SEC-4 | Dependency update bot | 3 | repo | fail | 0 / 1 | no Dependabot or Renovate config (spec §3: no dependency update bot) | inferred |
 
 ### Task Discovery
 
