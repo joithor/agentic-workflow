@@ -282,7 +282,7 @@ override Aw.Readiness.Core.StateChange.GetHashCode() -> int
 override Aw.Readiness.Core.StateChange.ToString() -> string!
 static Aw.Readiness.Core.Criteria.TemplateReadiness.Criteria.get -> System.Collections.Generic.IReadOnlyList<Aw.Readiness.Core.Criterion!>!
 static Aw.Readiness.Core.Criteria.TemplateReadiness.Evaluate(Aw.Readiness.Core.Ports.IRepoTree! tree, Aw.Readiness.Core.Ports.HostFacts! host, System.DateTimeOffset now) -> System.Collections.Generic.IReadOnlyList<Aw.Readiness.Core.Finding!>!
-static Aw.Readiness.Core.Criteria.TemplateReadiness.Unconfirmed(System.Collections.Generic.IEnumerable<Aw.Readiness.Core.Finding!>! findings, Aw.Readiness.Core.ReadinessTarget! target) -> System.Collections.Generic.IReadOnlyList<Aw.Readiness.Core.CriterionId>!
+static Aw.Readiness.Core.Criteria.TemplateReadiness.Unconfirmed(System.Collections.Generic.IEnumerable<Aw.Readiness.Core.Finding!>! findings, Aw.Readiness.Core.ReadinessTarget! target, int reached) -> System.Collections.Generic.IReadOnlyList<Aw.Readiness.Core.CriterionId>!
 static Aw.Readiness.Core.Criterion.operator !=(Aw.Readiness.Core.Criterion? left, Aw.Readiness.Core.Criterion? right) -> bool
 static Aw.Readiness.Core.Criterion.operator ==(Aw.Readiness.Core.Criterion? left, Aw.Readiness.Core.Criterion? right) -> bool
 static Aw.Readiness.Core.CriterionId.From(string! value) -> Aw.Readiness.Core.CriterionId

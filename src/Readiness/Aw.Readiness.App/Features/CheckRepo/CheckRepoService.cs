@@ -50,7 +50,7 @@ internal sealed class CheckRepoService(IRepoReader reader, IRepoHost host, IRunH
         var card = ReadinessScoring.Score(findings);
         var run = RunRecord.From(config.Repo, config.Scope, now, card.Level, findings);
         var holds = card.Level >= config.Target.Level;
-        var unconfirmed = holds ? [] : TemplateReadiness.Unconfirmed(findings, config.Target);
+        var unconfirmed = holds ? [] : TemplateReadiness.Unconfirmed(findings, config.Target, card.Level);
         var saved = await history.Save(run, cancellationToken).ConfigureAwait(false);
         if (saved.IsError)
         {

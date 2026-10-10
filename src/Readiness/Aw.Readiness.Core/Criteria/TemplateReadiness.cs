@@ -29,13 +29,15 @@ public static class TemplateReadiness
         return [.. _catalogue.Select(e => Decide(e, context))];
     }
 
-    /// <summary>The criteria that gate a target (their level is below it) but weren't read this run. They count as not
-    /// passing, so when the level misses the target these are what could still raise it once read.</summary>
+    /// <summary>When the level misses the target: the unread criteria at or above the level reached and below the
+    /// target. They count as not passing; reading them is what could still raise the level (an unread criterion in a
+    /// level that already unlocks can't).</summary>
     /// <param name="findings">The run's findings.</param>
     /// <param name="target">The target.</param>
+    /// <param name="reached">The level the run reached (a lower bound).</param>
     /// <returns>Their ids, in report order.</returns>
-    public static IReadOnlyList<CriterionId> Unconfirmed(IEnumerable<Finding> findings, ReadinessTarget target) =>
-        [.. findings.Where(f => f.Unread && f.Criterion.Level < target.Level).Select(f => f.Criterion.Id)];
+    public static IReadOnlyList<CriterionId> Unconfirmed(IEnumerable<Finding> findings, ReadinessTarget target, int reached) =>
+        throw new NotSupportedException("red: Unconfirmed " + target.Ring.ToString(System.Globalization.CultureInfo.InvariantCulture) + reached.ToString(System.Globalization.CultureInfo.InvariantCulture) + findings.GetType().Name);
 
     private static Finding Decide(CatalogueEntry entry, RepoContext context)
     {

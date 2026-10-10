@@ -138,6 +138,20 @@ public sealed class TemplateReadinessTests
     }
 
     [Fact, Trait("Lane", "unit")]
+    public void Unconfirmed_lists_only_unread_criteria_from_the_reached_level_up_to_the_target()
+    {
+        Finding[] findings = [
+            A.Finding("SEC-1", CriterionState.Unknown, Pillar.Security, level: 2) with { Unread = true },
+            A.Finding("SEC-2", CriterionState.Unknown, Pillar.Security, level: 3) with { Unread = true },
+            A.Finding("BS-4", CriterionState.Unknown, Pillar.BuildSystem, level: 4) with { Unread = true },
+        ];
+
+        var unconfirmed = TemplateReadiness.Unconfirmed(findings, new ReadinessTarget(0, 4), reached: 3);
+
+        Assert.Equal(["SEC-2"], [.. unconfirmed.Select(id => id.Value)]);
+    }
+
+    [Fact, Trait("Lane", "unit")]
     public void Host_criteria_are_unknown_when_the_host_could_not_be_read()
     {
         var findings = TemplateReadiness.Evaluate(A.ReadyTemplate(), HostFacts.Unknown("--no-remote"), _now);

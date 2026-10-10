@@ -70,6 +70,22 @@ public abstract class RunHistoryContract
         Expect.Equal(4, latest.Value.Level, "Latest's level");
     }
 
+    /// <summary>A run in a record format this build doesn't read is refused (AW-READINESS-004 naming the versions),
+    /// never diffed as if it were the current format.</summary>
+    /// <returns>The test.</returns>
+    [Fact]
+    public async Task A_run_in_an_unsupported_schema_version_is_refused()
+    {
+        var history = NewHistory();
+        _ = await history.Save(Run(_repo, 0, 3, CriterionState.Pass) with { SchemaVersion = 99 }, CancellationToken.None);
+
+        var latest = await history.Latest(_repo, Scope, CancellationToken.None);
+
+        Expect.True(latest.IsError, "Latest returned a schemaVersion 99 run as if it were readable");
+        Expect.Equal("AW-READINESS-004", latest.Error.Code, "error code");
+        Expect.True(latest.Error.Message.Contains("99", StringComparison.Ordinal), "the message doesn't name the version found");
+    }
+
     /// <summary>Two runs at the same instant are both kept.</summary>
     /// <returns>The test.</returns>
     [Fact]
