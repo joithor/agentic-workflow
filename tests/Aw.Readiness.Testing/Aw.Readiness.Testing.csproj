@@ -6,6 +6,15 @@
     <RootNamespace>Aw.Readiness.Testing</RootNamespace>
   </PropertyGroup>
 
+  <!-- The contract bases (RepoTreeContract, RunHistoryContract, RepoHostContract) carry [Fact]s. -->
+  <ItemGroup>
+    <PackageReference Include="xunit.v3.extensibility.core" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Using Include="Xunit" />
+  </ItemGroup>
+
   <ItemGroup>
     <ProjectReference Include="../../src/Readiness/Aw.Readiness.Core/Aw.Readiness.Core.csproj" />
     <ProjectReference Include="../../src/Readiness/Aw.Readiness.App/Aw.Readiness.App.csproj" />
