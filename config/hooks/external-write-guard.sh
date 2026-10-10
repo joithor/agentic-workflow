@@ -23,7 +23,7 @@ failopen() {
     done
   ) > /dev/null 2>&1 || true
 }
-# No EXIT trap: on bash 3.2 a trap defers SIGTERM until a running $(judge …)
+# No EXIT trap: on bash 3.2 a trap defers SIGTERM until a running command
 # returns, so the host's timeout kill would take longer. A crash keeps its exit
 # code and is not counted under Claude Code (see "Fail-open logging" in
 # .agents/rules/hooks.md); under Codex/Cursor the adapter counts it.
