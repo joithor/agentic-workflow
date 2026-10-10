@@ -1,0 +1,21 @@
+#nullable enable
+Aw.Evidence.Features.EvidenceFeaturesServiceCollectionExtensions
+Aw.Evidence.Features.RunScript.RunScriptRequest
+Aw.Evidence.Features.RunScript.RunScriptRequest.<Clone>$() -> Aw.Evidence.Features.RunScript.RunScriptRequest!
+Aw.Evidence.Features.RunScript.RunScriptRequest.Equals(Aw.Evidence.Features.RunScript.RunScriptRequest? other) -> bool
+Aw.Evidence.Features.RunScript.RunScriptRequest.RunScriptRequest() -> void
+Aw.Evidence.Features.RunScript.RunScriptResponse
+Aw.Evidence.Features.RunScript.RunScriptResponse.<Clone>$() -> Aw.Evidence.Features.RunScript.RunScriptResponse!
+Aw.Evidence.Features.RunScript.RunScriptResponse.Equals(Aw.Evidence.Features.RunScript.RunScriptResponse? other) -> bool
+Aw.Evidence.Features.RunScript.RunScriptResponse.RunScriptResponse() -> void
+override Aw.Evidence.Features.RunScript.RunScriptRequest.Equals(object? obj) -> bool
+override Aw.Evidence.Features.RunScript.RunScriptRequest.GetHashCode() -> int
+override Aw.Evidence.Features.RunScript.RunScriptRequest.ToString() -> string!
+override Aw.Evidence.Features.RunScript.RunScriptResponse.Equals(object? obj) -> bool
+override Aw.Evidence.Features.RunScript.RunScriptResponse.GetHashCode() -> int
+override Aw.Evidence.Features.RunScript.RunScriptResponse.ToString() -> string!
+static Aw.Evidence.Features.EvidenceFeaturesServiceCollectionExtensions.AddEvidenceFeatures(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
+static Aw.Evidence.Features.RunScript.RunScriptRequest.operator !=(Aw.Evidence.Features.RunScript.RunScriptRequest? left, Aw.Evidence.Features.RunScript.RunScriptRequest? right) -> bool
+static Aw.Evidence.Features.RunScript.RunScriptRequest.operator ==(Aw.Evidence.Features.RunScript.RunScriptRequest? left, Aw.Evidence.Features.RunScript.RunScriptRequest? right) -> bool
+static Aw.Evidence.Features.RunScript.RunScriptResponse.operator !=(Aw.Evidence.Features.RunScript.RunScriptResponse? left, Aw.Evidence.Features.RunScript.RunScriptResponse? right) -> bool
+static Aw.Evidence.Features.RunScript.RunScriptResponse.operator ==(Aw.Evidence.Features.RunScript.RunScriptResponse? left, Aw.Evidence.Features.RunScript.RunScriptResponse? right) -> bool

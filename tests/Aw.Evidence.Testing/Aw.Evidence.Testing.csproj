@@ -1,0 +1,14 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- Aw.Evidence.Testing (scaffolded by /new-package): builders, in-memory fakes and contract bases for Evidence's
+       ports (spec §4b.5). Test support: only *.Tests and *.Testing projects reference it. -->
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <RootNamespace>Aw.Evidence.Testing</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../../src/Evidence/Aw.Evidence.Core/Aw.Evidence.Core.csproj" />
+    <ProjectReference Include="../../src/Evidence/Aw.Evidence.Features/Aw.Evidence.Features.csproj" />
+    <ProjectReference Include="../Aw.Kernel.Testing/Aw.Kernel.Testing.csproj" />
+  </ItemGroup>
+</Project>

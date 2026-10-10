@@ -1,0 +1,6 @@
+#nullable enable
+Aw.Evidence.Core.EvidenceCoreServiceCollectionExtensions
+Aw.Evidence.Core.EvidenceErrors
+static Aw.Evidence.Core.EvidenceCoreServiceCollectionExtensions.AddEvidenceCore(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
+static Aw.Evidence.Core.EvidenceErrors.All.get -> System.Collections.Generic.IReadOnlyList<Aw.Kernel.ErrorDefinition!>!
+static readonly Aw.Evidence.Core.EvidenceErrors.Invalid -> Aw.Kernel.ErrorDefinition!

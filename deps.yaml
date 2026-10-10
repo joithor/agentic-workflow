@@ -384,12 +384,12 @@ edges:
   - from: Evidence
     to: Kernel
     kind: project
-    status: planned
+    status: current
     note: "Result, IService, ports"
   - from: Evidence
     to: KernelTelemetry
     kind: project
-    status: planned
+    status: current
     note: "logging"
   - from: BugFix
     to: Kernel

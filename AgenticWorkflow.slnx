@@ -6,6 +6,12 @@
     <Project Path="src/Aw.Kernel.Telemetry/Aw.Kernel.Telemetry.csproj" />
     <Project Path="src/Redaction/Aw.Redaction/Aw.Redaction.csproj" />
   </Folder>
+  <Folder Name="/src/Evidence/">
+    <Project Path="src/Evidence/Aw.Evidence.Core/Aw.Evidence.Core.csproj" />
+    <Project Path="src/Evidence/Aw.Evidence.Features/Aw.Evidence.Features.csproj" />
+    <Project Path="src/Evidence/Aw.Evidence.Infrastructure/Aw.Evidence.Infrastructure.csproj" />
+    <Project Path="src/Evidence/Aw.Evidence.Host/Aw.Evidence.Host.csproj" />
+  </Folder>
   <Folder Name="/src/Packets/">
     <Project Path="src/Packets/Aw.Packets.Core/Aw.Packets.Core.csproj" />
     <Project Path="src/Packets/Aw.Packets.App/Aw.Packets.App.csproj" />
@@ -29,5 +35,7 @@
     <Project Path="tests/Aw.Packets.Testing/Aw.Packets.Testing.csproj" />
     <Project Path="tests/Aw.Readiness.Tests/Aw.Readiness.Tests.csproj" />
     <Project Path="tests/Aw.Readiness.Testing/Aw.Readiness.Testing.csproj" />
+    <Project Path="tests/Aw.Evidence.Tests/Aw.Evidence.Tests.csproj" />
+    <Project Path="tests/Aw.Evidence.Testing/Aw.Evidence.Testing.csproj" />
   </Folder>
 </Solution>
