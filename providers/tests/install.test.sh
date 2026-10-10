@@ -136,6 +136,10 @@ test_cursor_retires_stale_servers() {
   out="$(cursor_register_mcp)"
   echo "$out" | grep -q "up to date" || fail "second run should be a no-op: $out"
   ! echo "$out" | grep -q "removed" || fail "second run should remove nothing: $out"
+  AW_MCP_RETIRED="sample-server"
+  out="$(cursor_register_mcp)"
+  ! echo "$out" | grep -q "sample-server: removed" || fail "a shipped server is not retired, so don't report it removed: $out"
+  jq -e '.mcpServers | has("sample-server")' "$f" >/dev/null || fail "a shipped server must stay"
   teardown_env
   echo "PASS: test_cursor_retires_stale_servers"
 }
@@ -177,6 +181,34 @@ test_cli_retire_skips_shipped_servers() {
   AW_MCP_SERVERS=""; AW_MCP_RETIRED=""
   teardown_env
   echo "PASS: test_cli_retire_skips_shipped_servers"
+}
+
+# Claude: a retired server is removed from every scope ~/.claude.json holds it in (user, and local scope under any
+# project), each local one from its own project directory; dry-run sees a local-only entry and runs nothing.
+test_claude_retire_removes_user_and_local_scopes() {
+  setup_env
+  local proj="$SANDBOX/proj" bin="$SANDBOX/bin" calls="$SANDBOX/calls" out
+  mkdir -p "$proj" "$bin"
+  printf '#!/usr/bin/env bash\necho "$PWD $*" >>"%s"\n' "$calls" >"$bin/claude"; chmod +x "$bin/claude"
+  jq -n --arg p "$proj" '{mcpServers: {"agentic-bridge": {command: "node"}},
+    projects: {($p): {mcpServers: {"agentic-bridge": {command: "node"}}}}}' >"$HOME/.claude.json"
+  AW_MCP_SERVERS='[]'; AW_MCP_RETIRED="agentic-bridge"
+  out="$(PATH="$bin:$PATH" claude_retire_mcp)"
+  grep -qx "$proj mcp remove --scope local agentic-bridge" "$calls" || fail "local scope not removed from its project: $(cat "$calls")"
+  grep -q " mcp remove --scope user agentic-bridge$" "$calls" || fail "user scope not removed: $(cat "$calls")"
+  echo "$out" | grep -q "agentic-bridge: removed from Claude Code (retired)" || fail "removal not reported: $out"
+  rm -f "$calls"
+  jq -n --arg p "$proj" '{projects: {($p): {mcpServers: {"agentic-bridge": {command: "node"}}}}}' >"$HOME/.claude.json"
+  AW_DRY_RUN=1
+  out="$(PATH="$bin:$PATH" claude_retire_mcp)"
+  [ ! -s "$calls" ] || fail "dry run ran claude: $(cat "$calls")"
+  echo "$out" | grep -q "would remove agentic-bridge from Claude Code (retired)" || fail "dry run missed the local-only entry: $out"
+  AW_DRY_RUN=0
+  jq -n '{projects: {"/no/such/dir": {mcpServers: {"agentic-bridge": {command: "node"}}}}}' >"$HOME/.claude.json"
+  [ -z "$(PATH="$bin:$PATH" claude_retire_mcp)" ] && [ ! -s "$calls" ] || fail "an entry under a deleted project should be left alone"
+  AW_MCP_SERVERS=""; AW_MCP_RETIRED=""
+  teardown_env
+  echo "PASS: test_claude_retire_removes_user_and_local_scopes"
 }
 
 test_dry_run_writes_nothing() {
@@ -295,6 +327,7 @@ test_cursor_mcp_merge_preserves_and_is_idempotent
 test_cursor_retires_stale_servers
 test_cli_retire_removes_only_registered
 test_cli_retire_skips_shipped_servers
+test_claude_retire_removes_user_and_local_scopes
 test_dry_run_writes_nothing
 test_agents_render_per_provider
 test_builds_skill_packages_and_warns_on_failure

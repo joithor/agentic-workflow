@@ -45,10 +45,12 @@ cursor_register_mcp() {
   else
     echo '{}' > "$tmp"
   fi
-  # Servers the toolkit no longer ships (AW_MCP_RETIRED) go first, then ours are upserted.
+  # Servers the toolkit no longer ships (AW_MCP_RETIRED, less any name still in AW_MCP_SERVERS) go first, then ours
+  # are upserted.
   local retired name
-  retired="$(printf '%s\n' ${AW_MCP_RETIRED:-} | jq -R . | jq -sc 'map(select(. != ""))')"
-  for name in ${AW_MCP_RETIRED:-}; do
+  retired="$(printf '%s\n' ${AW_MCP_RETIRED:-} | jq -R . | jq -sc --argjson ours "$servers" \
+    'map(select(. as $n | $n != "" and ($ours | has($n) | not)))')"
+  for name in $(printf '%s' "$retired" | jq -r '.[]'); do
     if jq -e --arg n "$name" '(.mcpServers // {}) | has($n)' "$tmp" &>/dev/null; then
       if aw_dry; then echo "  [dry-run] would remove $name from $mcp_file (retired)"; else echo "  $name: removed (retired)"; fi
     fi

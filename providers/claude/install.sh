@@ -214,11 +214,44 @@ claude_mcp_add() {
     -- "$AW_MCP_CMD" ${AW_MCP_ARGV[@]+"${AW_MCP_ARGV[@]}"}
 }
 
-claude_mcp_remove() { aw_run claude mcp remove --scope user "$AW_MCP_NAME"; }
+# A retired server can sit in user scope and in local scope under any project (old installs ran `claude mcp add`
+# without --scope from the repo), all in ~/.claude.json. Read it with jq so dry-run sees every scope too.
+claude_mcp_local_projects() {
+  [ -f "$HOME/.claude.json" ] || return 0
+  jq -r --arg n "$1" '(.projects // {}) | to_entries[] | select(.value.mcpServers[$n] != null) | .key' "$HOME/.claude.json"
+}
+
+# Present = a user entry, or a local one under a project directory that still exists (one under a deleted directory
+# can't be removed with the CLI and is never loaded, so it is left alone).
+claude_mcp_present_any_scope() {
+  local proj
+  jq -e --arg n "$1" '.mcpServers[$n] != null' "$HOME/.claude.json" &>/dev/null && return 0
+  while IFS= read -r proj; do
+    [ -d "$proj" ] && return 0
+  done < <(claude_mcp_local_projects "$1")
+  return 1
+}
+
+# Each local entry is removed from its own project directory; succeeds only if every removal does.
+claude_mcp_remove() {
+  local proj rc=0
+  while IFS= read -r proj; do
+    [ -d "$proj" ] || continue
+    (cd "$proj" && aw_run claude mcp remove --scope local "$AW_MCP_NAME") || rc=1
+  done < <(claude_mcp_local_projects "$AW_MCP_NAME")
+  if jq -e --arg n "$AW_MCP_NAME" '.mcpServers[$n] != null' "$HOME/.claude.json" &>/dev/null; then
+    aw_run claude mcp remove --scope user "$AW_MCP_NAME" || rc=1
+  fi
+  return "$rc"
+}
+
+claude_retire_mcp() {
+  aw_mcp_retire_cli "Claude Code" claude_mcp_present_any_scope claude_mcp_remove
+}
 
 claude_register_mcp() {
   aw_mcp_register_cli "Claude Code" claude_mcp_present claude_mcp_add
-  aw_mcp_retire_cli "Claude Code" claude_mcp_present claude_mcp_remove
+  claude_retire_mcp
 }
 
 claude_install_plugins() {
