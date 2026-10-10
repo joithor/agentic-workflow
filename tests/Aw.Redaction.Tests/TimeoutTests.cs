@@ -8,7 +8,7 @@ public sealed class TimeoutTests
     [Fact]
     public void A_pattern_that_times_out_blocks_and_withholds_the_whole_text()
     {
-        var slow = new RedactionRule("slow", "^(a+)+$", RegexOptions.None);
+        var slow = new RedactionRule("slow", "^(?:a|aa)+$", RegexOptions.None);
         var redactor = new Redactor([slow], TimeSpan.FromMilliseconds(1));
         var input = new string('a', 40) + "!";
 
