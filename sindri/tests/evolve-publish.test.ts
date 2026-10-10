@@ -455,9 +455,17 @@ describe("publish gate layers (privacy B1)", () => {
     expect(held).toEqual([]);
   });
 
-  it("verbatim: an evidence ref that doesn't resolve is skipped; only the resolving ones are checked (Review Focus 1)", async () => {
+  it("verbatim: a cited session that exists brings in all its lines even when the cited line doesn't resolve (fail closed)", async () => {
     const held = await heldLayer(
       { rationale: "The overnight rota swap left two shifts without cover.", evidence: ["transcript:0badc0de#9", "transcript:5e55a1d0#2"] },
+      { files: (fx) => ({ [SESSION]: transcriptLine(fx, COPIED) }) },
+    );
+    expect(held).toEqual([{ layer: "verbatim", why: "copies transcript text" }]);
+  });
+
+  it("verbatim: a ref whose session isn't among this repo's sessions brings in nothing (Review Focus 1)", async () => {
+    const held = await heldLayer(
+      { rationale: "The overnight rota swap left two shifts without cover.", evidence: ["transcript:0badc0de#1"] },
       { files: (fx) => ({ [SESSION]: transcriptLine(fx, COPIED) }) },
     );
     expect(held).toEqual([]);
@@ -494,15 +502,15 @@ describe("publish gate layers (privacy B1)", () => {
 
   it("verbatim: checks the original's evidence too, so a ref merged in after generalization still counts (fail closed)", async () => {
     const { fx, save } = await ready({ extraYaml: PATTERNS });
-    fs.writeFileSync(path.join(fx.transcripts, SESSION), transcriptLine(fx, COPIED));
+    fs.writeFileSync(path.join(fx.transcripts, "abcd1234-0000-4000-8000-000000000003.jsonl"), transcriptLine(fx, COPIED)); // a session the first evidence doesn't cite
     const id = save("Alpha change here");
     await stage([], fx.ctx);
     const pub = { ...getProposal(fx.ctx.db, id)!.proposal, title: "The overnight rota swap left two shifts without cover" };
     fx.ctx.write((epoch) => savePublic(fx.ctx.db, id, pub, { category: "none", model: "m" }, epoch, fx.deps.now()));
     const before = JSON.parse((await publish(["--json", "--dry-run"], fx.ctx)).stdout) as { held: unknown[] };
-    expect(before.held).toEqual([]); // the public version's refs don't reach that line
-    expect(save("Alpha change here", { evidence: ["transcript:5e55a1d0#1"] })).toBe(id); // a re-proposal merges its evidence into the original
-    expect(getProposal(fx.ctx.db, id)!.proposal.evidence).toContain("transcript:5e55a1d0#1");
+    expect(before.held).toEqual([]); // the public version's refs don't reach that session
+    expect(save("Alpha change here", { evidence: ["transcript:abcd1234#1"] })).toBe(id); // a re-proposal merges its evidence into the original
+    expect(getProposal(fx.ctx.db, id)!.proposal.evidence).toContain("transcript:abcd1234#1");
     const after = JSON.parse((await publish(["--json", "--dry-run"], fx.ctx)).stdout) as { held: { id: string; layer: string; why: string }[] };
     expect(after.held).toEqual([{ id, layer: "verbatim", why: "copies transcript text" }]);
     fx.close();

@@ -137,8 +137,10 @@ False positives (public library names used in a private repo) hold a proposal; t
 
 Shingle the rendered task into runs of 8 normalized words (`normalizeForPrivacy`, split on spaces).
 Shingle every line of each session the proposal's transcript evidence refs point into (the union of the
-original's and the public version's refs; resolved locally in one scan; a ref whose line isn't in the
-repo's sessions brings in nothing). *(Amended during implementation; this replaces "every transcript
+original's and the public version's refs; resolved locally in one scan; a ref whose session isn't among the repo's sessions brings in nothing, and
+one whose session is there brings in all its lines even when the cited line number doesn't resolve, which
+fails closed (amended in review: a session kept out because one line was deduped or compacted away let a
+copy pass)). *(Amended during implementation; this replaces "every transcript
 line behind the proposal's evidence refs". The hand test found a public title that copied an uncited
 turn of a cited session verbatim and passed, because only the cited lines were compared.)* A shared shingle holds the proposal with `copies transcript text`, unless the
 shingle also appears in a file `git ls-files` lists in the toolkit repo (working-tree text) (so quoting the toolkit's own

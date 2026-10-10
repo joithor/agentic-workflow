@@ -245,8 +245,8 @@ export async function publishProposals(ctx: EvolveCtx, o: { dryRun: boolean; noP
     return { s, pub, refs: [...new Set([...reduceEvidence(s.proposal.evidence).refs, ...reduceEvidence(pub?.evidence ?? []).refs])] };
   });
   // Every line of every session the listed proposals' evidence cites, read in one scan: a rewrite can copy an uncited
-  // turn of a cited session as easily as the cited line (privacy spec §5.5 amendment). A ref whose line isn't in this
-  // repo's sessions doesn't resolve and brings in nothing (Review Focus 1).
+  // turn of a cited session as easily as the cited line (privacy spec §5.5 amendment). A ref whose session isn't among
+  // this repo's sessions brings in nothing (Review Focus 1).
   const cited = (refs: readonly string[]): { session: string; n: number }[] => refs.flatMap((r) => parseTranscriptRef(r) ?? []);
   const sessions = sessionTexts(transcriptsDir(ctx), ctx.repo, open.flatMap((l) => cited(l.refs).map((c) => c.session)), scrubber);
   const gate: GateCtx = {
@@ -263,10 +263,10 @@ export async function publishProposals(ctx: EvolveCtx, o: { dryRun: boolean; noP
     const t = publicTier(s.proposal, pub, registry, cfg.protectedPaths); // re-tiered from the public version, never below the original (Review Focus 2)
     const md = renderTask(first + ready.length, s.id, pub, t.tier, t.why, s.source);
     const raw = [pub.title, pub.rationale, ...pub.evidence, pub.change.type === "describe" ? `${pub.change.description}\n${pub.change.files.join("\n")}` : pub.change.text, s.source].join("\n");
-    const mine = cited(refs);
-    // A cited session counts while its cited line resolves (Review Focus 1).
-    const citedSessions = [...sessions].filter(([session, lines]) => mine.some((c) => c.session === session && lines.has(c.n))).map(([session]) => session);
-    const hit = await runGate({ text: `${raw}\n${md}`, sessions: citedSessions }, gate);
+    // Fail closed: a cited session among this repo's sessions brings in every line, even when the cited line number
+    // doesn't resolve (a later scan can dedupe it, or the transcript was compacted). The verbatim checker skips a
+    // session that isn't there.
+    const hit = await runGate({ text: `${raw}\n${md}`, sessions: cited(refs).map((c) => c.session) }, gate);
     if (hit !== null) held.push({ id: s.id, ...hit });
     else ready.push({ s, pub, t });
   }
