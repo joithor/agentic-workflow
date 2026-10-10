@@ -1,0 +1,339 @@
+#nullable enable
+Aw.Readiness.Core.Criteria.TemplateReadiness
+Aw.Readiness.Core.Criterion
+Aw.Readiness.Core.Criterion.<Clone>$() -> Aw.Readiness.Core.Criterion!
+Aw.Readiness.Core.Criterion.Criterion(Aw.Readiness.Core.CriterionId Id, Aw.Readiness.Core.Pillar Pillar, int Level, string! Title, string! Fix) -> void
+Aw.Readiness.Core.Criterion.Deconstruct(out Aw.Readiness.Core.CriterionId Id, out Aw.Readiness.Core.Pillar Pillar, out int Level, out string! Title, out string! Fix) -> void
+Aw.Readiness.Core.Criterion.Equals(Aw.Readiness.Core.Criterion? other) -> bool
+Aw.Readiness.Core.Criterion.Fix.get -> string!
+Aw.Readiness.Core.Criterion.Fix.init -> void
+Aw.Readiness.Core.Criterion.Id.get -> Aw.Readiness.Core.CriterionId
+Aw.Readiness.Core.Criterion.Id.init -> void
+Aw.Readiness.Core.Criterion.Level.get -> int
+Aw.Readiness.Core.Criterion.Level.init -> void
+Aw.Readiness.Core.Criterion.Pillar.get -> Aw.Readiness.Core.Pillar
+Aw.Readiness.Core.Criterion.Pillar.init -> void
+Aw.Readiness.Core.Criterion.Title.get -> string!
+Aw.Readiness.Core.Criterion.Title.init -> void
+Aw.Readiness.Core.CriterionId
+Aw.Readiness.Core.CriterionId.CriterionId() -> void
+Aw.Readiness.Core.CriterionId.Equals(Aw.Readiness.Core.CriterionId other, System.Collections.Generic.IEqualityComparer<Aw.Readiness.Core.CriterionId>! comparer) -> bool
+Aw.Readiness.Core.CriterionId.Equals(Aw.Readiness.Core.CriterionId other) -> bool
+Aw.Readiness.Core.CriterionId.GetTypeCode() -> System.TypeCode
+Aw.Readiness.Core.CriterionId.IsInitialized() -> bool
+Aw.Readiness.Core.CriterionId.ToString(System.IFormatProvider? provider) -> string!
+Aw.Readiness.Core.CriterionId.Value.get -> string!
+Aw.Readiness.Core.CriterionState
+Aw.Readiness.Core.CriterionState.Fail = 2 -> Aw.Readiness.Core.CriterionState
+Aw.Readiness.Core.CriterionState.NotApplicable = 3 -> Aw.Readiness.Core.CriterionState
+Aw.Readiness.Core.CriterionState.Pass = 1 -> Aw.Readiness.Core.CriterionState
+Aw.Readiness.Core.CriterionState.Unknown = 4 -> Aw.Readiness.Core.CriterionState
+Aw.Readiness.Core.Finding
+Aw.Readiness.Core.Finding.<Clone>$() -> Aw.Readiness.Core.Finding!
+Aw.Readiness.Core.Finding.Criterion.get -> Aw.Readiness.Core.Criterion!
+Aw.Readiness.Core.Finding.Criterion.init -> void
+Aw.Readiness.Core.Finding.Deconstruct(out Aw.Readiness.Core.Criterion! Criterion, out Aw.Readiness.Core.CriterionState State, out string! Evidence, out bool Unread) -> void
+Aw.Readiness.Core.Finding.Equals(Aw.Readiness.Core.Finding? other) -> bool
+Aw.Readiness.Core.Finding.Evidence.get -> string!
+Aw.Readiness.Core.Finding.Evidence.init -> void
+Aw.Readiness.Core.Finding.Finding(Aw.Readiness.Core.Criterion! Criterion, Aw.Readiness.Core.CriterionState State, string! Evidence, bool Unread = false) -> void
+Aw.Readiness.Core.Finding.State.get -> Aw.Readiness.Core.CriterionState
+Aw.Readiness.Core.Finding.State.init -> void
+Aw.Readiness.Core.Finding.Unread.get -> bool
+Aw.Readiness.Core.Finding.Unread.init -> void
+Aw.Readiness.Core.Pillar
+Aw.Readiness.Core.Pillar.BuildSystem = 2 -> Aw.Readiness.Core.Pillar
+Aw.Readiness.Core.Pillar.DebuggingAndObservability = 6 -> Aw.Readiness.Core.Pillar
+Aw.Readiness.Core.Pillar.DevelopmentEnvironment = 5 -> Aw.Readiness.Core.Pillar
+Aw.Readiness.Core.Pillar.Documentation = 4 -> Aw.Readiness.Core.Pillar
+Aw.Readiness.Core.Pillar.ProductAndExperimentation = 9 -> Aw.Readiness.Core.Pillar
+Aw.Readiness.Core.Pillar.Security = 7 -> Aw.Readiness.Core.Pillar
+Aw.Readiness.Core.Pillar.StyleAndValidation = 1 -> Aw.Readiness.Core.Pillar
+Aw.Readiness.Core.Pillar.TaskDiscovery = 8 -> Aw.Readiness.Core.Pillar
+Aw.Readiness.Core.Pillar.Testing = 3 -> Aw.Readiness.Core.Pillar
+Aw.Readiness.Core.Ports.HostFact
+Aw.Readiness.Core.Ports.HostFact.<Clone>$() -> Aw.Readiness.Core.Ports.HostFact!
+Aw.Readiness.Core.Ports.HostFact.Deconstruct(out bool? Holds, out string! Evidence) -> void
+Aw.Readiness.Core.Ports.HostFact.Equals(Aw.Readiness.Core.Ports.HostFact? other) -> bool
+Aw.Readiness.Core.Ports.HostFact.Evidence.get -> string!
+Aw.Readiness.Core.Ports.HostFact.Evidence.init -> void
+Aw.Readiness.Core.Ports.HostFact.Holds.get -> bool?
+Aw.Readiness.Core.Ports.HostFact.Holds.init -> void
+Aw.Readiness.Core.Ports.HostFact.HostFact(bool? Holds, string! Evidence) -> void
+Aw.Readiness.Core.Ports.HostFacts
+Aw.Readiness.Core.Ports.HostFacts.<Clone>$() -> Aw.Readiness.Core.Ports.HostFacts!
+Aw.Readiness.Core.Ports.HostFacts.BranchProtection.get -> Aw.Readiness.Core.Ports.HostFact!
+Aw.Readiness.Core.Ports.HostFacts.BranchProtection.init -> void
+Aw.Readiness.Core.Ports.HostFacts.Deconstruct(out Aw.Readiness.Core.Ports.HostFact! BranchProtection, out Aw.Readiness.Core.Ports.HostFact! SecretScanning, out Aw.Readiness.Core.Ports.HostReleases! Releases, out Aw.Readiness.Core.Ports.HostLabels! Labels) -> void
+Aw.Readiness.Core.Ports.HostFacts.Equals(Aw.Readiness.Core.Ports.HostFacts? other) -> bool
+Aw.Readiness.Core.Ports.HostFacts.HostFacts(Aw.Readiness.Core.Ports.HostFact! BranchProtection, Aw.Readiness.Core.Ports.HostFact! SecretScanning, Aw.Readiness.Core.Ports.HostReleases! Releases, Aw.Readiness.Core.Ports.HostLabels! Labels) -> void
+Aw.Readiness.Core.Ports.HostFacts.Labels.get -> Aw.Readiness.Core.Ports.HostLabels!
+Aw.Readiness.Core.Ports.HostFacts.Labels.init -> void
+Aw.Readiness.Core.Ports.HostFacts.Releases.get -> Aw.Readiness.Core.Ports.HostReleases!
+Aw.Readiness.Core.Ports.HostFacts.Releases.init -> void
+Aw.Readiness.Core.Ports.HostFacts.SecretScanning.get -> Aw.Readiness.Core.Ports.HostFact!
+Aw.Readiness.Core.Ports.HostFacts.SecretScanning.init -> void
+Aw.Readiness.Core.Ports.HostLabels
+Aw.Readiness.Core.Ports.HostLabels.<Clone>$() -> Aw.Readiness.Core.Ports.HostLabels!
+Aw.Readiness.Core.Ports.HostLabels.Deconstruct(out System.Collections.Generic.IReadOnlyList<string!>? Names, out string! Evidence) -> void
+Aw.Readiness.Core.Ports.HostLabels.Equals(Aw.Readiness.Core.Ports.HostLabels? other) -> bool
+Aw.Readiness.Core.Ports.HostLabels.Evidence.get -> string!
+Aw.Readiness.Core.Ports.HostLabels.Evidence.init -> void
+Aw.Readiness.Core.Ports.HostLabels.HostLabels(System.Collections.Generic.IReadOnlyList<string!>? Names, string! Evidence) -> void
+Aw.Readiness.Core.Ports.HostLabels.Names.get -> System.Collections.Generic.IReadOnlyList<string!>?
+Aw.Readiness.Core.Ports.HostLabels.Names.init -> void
+Aw.Readiness.Core.Ports.HostReleases
+Aw.Readiness.Core.Ports.HostReleases.<Clone>$() -> Aw.Readiness.Core.Ports.HostReleases!
+Aw.Readiness.Core.Ports.HostReleases.Deconstruct(out System.Collections.Generic.IReadOnlyList<System.DateTimeOffset>? PublishedAt, out string! Evidence) -> void
+Aw.Readiness.Core.Ports.HostReleases.Equals(Aw.Readiness.Core.Ports.HostReleases? other) -> bool
+Aw.Readiness.Core.Ports.HostReleases.Evidence.get -> string!
+Aw.Readiness.Core.Ports.HostReleases.Evidence.init -> void
+Aw.Readiness.Core.Ports.HostReleases.HostReleases(System.Collections.Generic.IReadOnlyList<System.DateTimeOffset>? PublishedAt, string! Evidence) -> void
+Aw.Readiness.Core.Ports.HostReleases.PublishedAt.get -> System.Collections.Generic.IReadOnlyList<System.DateTimeOffset>?
+Aw.Readiness.Core.Ports.HostReleases.PublishedAt.init -> void
+Aw.Readiness.Core.Ports.IRepoHost
+Aw.Readiness.Core.Ports.IRepoHost.Read(string! root, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Readiness.Core.Ports.HostFacts!>
+Aw.Readiness.Core.Ports.IRepoReader
+Aw.Readiness.Core.Ports.IRepoReader.Open(string! root) -> Aw.Kernel.Result<Aw.Readiness.Core.Ports.IRepoTree!>!
+Aw.Readiness.Core.Ports.IRepoTree
+Aw.Readiness.Core.Ports.IRepoTree.Exists(string! path) -> bool
+Aw.Readiness.Core.Ports.IRepoTree.Files(string! directory, string! suffix) -> System.Collections.Generic.IReadOnlyList<string!>!
+Aw.Readiness.Core.Ports.IRepoTree.ReadText(string! path) -> string?
+Aw.Readiness.Core.Ports.IRunHistory
+Aw.Readiness.Core.Ports.IRunHistory.Latest(Aw.Readiness.Core.RepoName repo, string! scope, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Readiness.Core.RunRecord?>!>
+Aw.Readiness.Core.Ports.IRunHistory.Save(Aw.Readiness.Core.RunRecord! run, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<string!>!>
+Aw.Readiness.Core.ReadinessConfig
+Aw.Readiness.Core.ReadinessConfig.<Clone>$() -> Aw.Readiness.Core.ReadinessConfig!
+Aw.Readiness.Core.ReadinessConfig.Deconstruct(out Aw.Readiness.Core.RepoName Repo, out int Ring, out string! Scope, out System.Collections.Generic.IReadOnlyList<Aw.Readiness.Core.ReadinessTarget!>! Targets) -> void
+Aw.Readiness.Core.ReadinessConfig.Equals(Aw.Readiness.Core.ReadinessConfig? other) -> bool
+Aw.Readiness.Core.ReadinessConfig.ReadinessConfig(Aw.Readiness.Core.RepoName Repo, int Ring, string! Scope, System.Collections.Generic.IReadOnlyList<Aw.Readiness.Core.ReadinessTarget!>! Targets) -> void
+Aw.Readiness.Core.ReadinessConfig.Repo.get -> Aw.Readiness.Core.RepoName
+Aw.Readiness.Core.ReadinessConfig.Repo.init -> void
+Aw.Readiness.Core.ReadinessConfig.Ring.get -> int
+Aw.Readiness.Core.ReadinessConfig.Ring.init -> void
+Aw.Readiness.Core.ReadinessConfig.Scope.get -> string!
+Aw.Readiness.Core.ReadinessConfig.Scope.init -> void
+Aw.Readiness.Core.ReadinessConfig.Target.get -> Aw.Readiness.Core.ReadinessTarget!
+Aw.Readiness.Core.ReadinessConfig.Targets.get -> System.Collections.Generic.IReadOnlyList<Aw.Readiness.Core.ReadinessTarget!>!
+Aw.Readiness.Core.ReadinessConfig.Targets.init -> void
+Aw.Readiness.Core.ReadinessCoreServiceCollectionExtensions
+Aw.Readiness.Core.ReadinessErrors
+Aw.Readiness.Core.ReadinessTarget
+Aw.Readiness.Core.ReadinessTarget.<Clone>$() -> Aw.Readiness.Core.ReadinessTarget!
+Aw.Readiness.Core.ReadinessTarget.Deconstruct(out int Ring, out int Level) -> void
+Aw.Readiness.Core.ReadinessTarget.Equals(Aw.Readiness.Core.ReadinessTarget? other) -> bool
+Aw.Readiness.Core.ReadinessTarget.Level.get -> int
+Aw.Readiness.Core.ReadinessTarget.Level.init -> void
+Aw.Readiness.Core.ReadinessTarget.ReadinessTarget(int Ring, int Level) -> void
+Aw.Readiness.Core.ReadinessTarget.Ring.get -> int
+Aw.Readiness.Core.ReadinessTarget.Ring.init -> void
+Aw.Readiness.Core.RecordedState
+Aw.Readiness.Core.RecordedState.<Clone>$() -> Aw.Readiness.Core.RecordedState!
+Aw.Readiness.Core.RecordedState.Deconstruct(out Aw.Readiness.Core.CriterionId Id, out Aw.Readiness.Core.CriterionState State, out bool Unread) -> void
+Aw.Readiness.Core.RecordedState.Equals(Aw.Readiness.Core.RecordedState? other) -> bool
+Aw.Readiness.Core.RecordedState.Id.get -> Aw.Readiness.Core.CriterionId
+Aw.Readiness.Core.RecordedState.Id.init -> void
+Aw.Readiness.Core.RecordedState.RecordedState(Aw.Readiness.Core.CriterionId Id, Aw.Readiness.Core.CriterionState State, bool Unread = false) -> void
+Aw.Readiness.Core.RecordedState.State.get -> Aw.Readiness.Core.CriterionState
+Aw.Readiness.Core.RecordedState.State.init -> void
+Aw.Readiness.Core.RecordedState.Unread.get -> bool
+Aw.Readiness.Core.RecordedState.Unread.init -> void
+Aw.Readiness.Core.RepoName
+Aw.Readiness.Core.RepoName.Equals(Aw.Readiness.Core.RepoName other, System.Collections.Generic.IEqualityComparer<Aw.Readiness.Core.RepoName>! comparer) -> bool
+Aw.Readiness.Core.RepoName.Equals(Aw.Readiness.Core.RepoName other) -> bool
+Aw.Readiness.Core.RepoName.GetTypeCode() -> System.TypeCode
+Aw.Readiness.Core.RepoName.IsInitialized() -> bool
+Aw.Readiness.Core.RepoName.RepoName() -> void
+Aw.Readiness.Core.RepoName.ToString(System.IFormatProvider? provider) -> string!
+Aw.Readiness.Core.RepoName.Value.get -> string!
+Aw.Readiness.Core.RunDelta
+Aw.Readiness.Core.RunDelta.<Clone>$() -> Aw.Readiness.Core.RunDelta!
+Aw.Readiness.Core.RunDelta.Changes.get -> System.Collections.Generic.IReadOnlyList<Aw.Readiness.Core.StateChange!>!
+Aw.Readiness.Core.RunDelta.Changes.init -> void
+Aw.Readiness.Core.RunDelta.Deconstruct(out System.DateTimeOffset? Since, out int? LevelBefore, out int LevelAfter, out System.Collections.Generic.IReadOnlyList<Aw.Readiness.Core.StateChange!>! Changes) -> void
+Aw.Readiness.Core.RunDelta.Equals(Aw.Readiness.Core.RunDelta? other) -> bool
+Aw.Readiness.Core.RunDelta.IsFirstRun.get -> bool
+Aw.Readiness.Core.RunDelta.LevelAfter.get -> int
+Aw.Readiness.Core.RunDelta.LevelAfter.init -> void
+Aw.Readiness.Core.RunDelta.LevelBefore.get -> int?
+Aw.Readiness.Core.RunDelta.LevelBefore.init -> void
+Aw.Readiness.Core.RunDelta.RunDelta(System.DateTimeOffset? Since, int? LevelBefore, int LevelAfter, System.Collections.Generic.IReadOnlyList<Aw.Readiness.Core.StateChange!>! Changes) -> void
+Aw.Readiness.Core.RunDelta.Since.get -> System.DateTimeOffset?
+Aw.Readiness.Core.RunDelta.Since.init -> void
+Aw.Readiness.Core.RunRecord
+Aw.Readiness.Core.RunRecord.<Clone>$() -> Aw.Readiness.Core.RunRecord!
+Aw.Readiness.Core.RunRecord.Deconstruct(out int SchemaVersion, out Aw.Readiness.Core.RepoName Repo, out string! Scope, out System.DateTimeOffset RecordedAt, out int Level, out System.Collections.Generic.IReadOnlyList<Aw.Readiness.Core.RecordedState!>! States) -> void
+Aw.Readiness.Core.RunRecord.Equals(Aw.Readiness.Core.RunRecord? other) -> bool
+Aw.Readiness.Core.RunRecord.Level.get -> int
+Aw.Readiness.Core.RunRecord.Level.init -> void
+Aw.Readiness.Core.RunRecord.RecordedAt.get -> System.DateTimeOffset
+Aw.Readiness.Core.RunRecord.RecordedAt.init -> void
+Aw.Readiness.Core.RunRecord.Repo.get -> Aw.Readiness.Core.RepoName
+Aw.Readiness.Core.RunRecord.Repo.init -> void
+Aw.Readiness.Core.RunRecord.RunRecord(int SchemaVersion, Aw.Readiness.Core.RepoName Repo, string! Scope, System.DateTimeOffset RecordedAt, int Level, System.Collections.Generic.IReadOnlyList<Aw.Readiness.Core.RecordedState!>! States) -> void
+Aw.Readiness.Core.RunRecord.SchemaVersion.get -> int
+Aw.Readiness.Core.RunRecord.SchemaVersion.init -> void
+Aw.Readiness.Core.RunRecord.Scope.get -> string!
+Aw.Readiness.Core.RunRecord.Scope.init -> void
+Aw.Readiness.Core.RunRecord.States.get -> System.Collections.Generic.IReadOnlyList<Aw.Readiness.Core.RecordedState!>!
+Aw.Readiness.Core.RunRecord.States.init -> void
+Aw.Readiness.Core.Scoring.LevelTally
+Aw.Readiness.Core.Scoring.LevelTally.<Clone>$() -> Aw.Readiness.Core.Scoring.LevelTally!
+Aw.Readiness.Core.Scoring.LevelTally.Deconstruct(out int Level, out int Passed, out int Scored) -> void
+Aw.Readiness.Core.Scoring.LevelTally.Equals(Aw.Readiness.Core.Scoring.LevelTally? other) -> bool
+Aw.Readiness.Core.Scoring.LevelTally.IsEmpty.get -> bool
+Aw.Readiness.Core.Scoring.LevelTally.Level.get -> int
+Aw.Readiness.Core.Scoring.LevelTally.Level.init -> void
+Aw.Readiness.Core.Scoring.LevelTally.LevelTally(int Level, int Passed, int Scored) -> void
+Aw.Readiness.Core.Scoring.LevelTally.Passed.get -> int
+Aw.Readiness.Core.Scoring.LevelTally.Passed.init -> void
+Aw.Readiness.Core.Scoring.LevelTally.Scored.get -> int
+Aw.Readiness.Core.Scoring.LevelTally.Scored.init -> void
+Aw.Readiness.Core.Scoring.LevelTally.Unlocks.get -> bool
+Aw.Readiness.Core.Scoring.PillarScore
+Aw.Readiness.Core.Scoring.PillarScore.<Clone>$() -> Aw.Readiness.Core.Scoring.PillarScore!
+Aw.Readiness.Core.Scoring.PillarScore.Deconstruct(out Aw.Readiness.Core.Pillar Pillar, out int? Level, out System.Collections.Generic.IReadOnlyList<Aw.Readiness.Core.Scoring.LevelTally!>! Tallies) -> void
+Aw.Readiness.Core.Scoring.PillarScore.Equals(Aw.Readiness.Core.Scoring.PillarScore? other) -> bool
+Aw.Readiness.Core.Scoring.PillarScore.Level.get -> int?
+Aw.Readiness.Core.Scoring.PillarScore.Level.init -> void
+Aw.Readiness.Core.Scoring.PillarScore.Pillar.get -> Aw.Readiness.Core.Pillar
+Aw.Readiness.Core.Scoring.PillarScore.Pillar.init -> void
+Aw.Readiness.Core.Scoring.PillarScore.PillarScore(Aw.Readiness.Core.Pillar Pillar, int? Level, System.Collections.Generic.IReadOnlyList<Aw.Readiness.Core.Scoring.LevelTally!>! Tallies) -> void
+Aw.Readiness.Core.Scoring.PillarScore.Tallies.get -> System.Collections.Generic.IReadOnlyList<Aw.Readiness.Core.Scoring.LevelTally!>!
+Aw.Readiness.Core.Scoring.PillarScore.Tallies.init -> void
+Aw.Readiness.Core.Scoring.ReadinessScoring
+Aw.Readiness.Core.Scoring.Scorecard
+Aw.Readiness.Core.Scoring.Scorecard.<Clone>$() -> Aw.Readiness.Core.Scoring.Scorecard!
+Aw.Readiness.Core.Scoring.Scorecard.Deconstruct(out System.Collections.Generic.IReadOnlyList<Aw.Readiness.Core.Scoring.PillarScore!>! Pillars, out int Level, out System.Collections.Generic.IReadOnlyList<Aw.Readiness.Core.Scoring.LevelTally!>! Tallies) -> void
+Aw.Readiness.Core.Scoring.Scorecard.Equals(Aw.Readiness.Core.Scoring.Scorecard? other) -> bool
+Aw.Readiness.Core.Scoring.Scorecard.Level.get -> int
+Aw.Readiness.Core.Scoring.Scorecard.Level.init -> void
+Aw.Readiness.Core.Scoring.Scorecard.Pillars.get -> System.Collections.Generic.IReadOnlyList<Aw.Readiness.Core.Scoring.PillarScore!>!
+Aw.Readiness.Core.Scoring.Scorecard.Pillars.init -> void
+Aw.Readiness.Core.Scoring.Scorecard.Scorecard(System.Collections.Generic.IReadOnlyList<Aw.Readiness.Core.Scoring.PillarScore!>! Pillars, int Level, System.Collections.Generic.IReadOnlyList<Aw.Readiness.Core.Scoring.LevelTally!>! Tallies) -> void
+Aw.Readiness.Core.Scoring.Scorecard.Tallies.get -> System.Collections.Generic.IReadOnlyList<Aw.Readiness.Core.Scoring.LevelTally!>!
+Aw.Readiness.Core.Scoring.Scorecard.Tallies.init -> void
+Aw.Readiness.Core.StateChange
+Aw.Readiness.Core.StateChange.<Clone>$() -> Aw.Readiness.Core.StateChange!
+Aw.Readiness.Core.StateChange.After.get -> Aw.Readiness.Core.CriterionState?
+Aw.Readiness.Core.StateChange.After.init -> void
+Aw.Readiness.Core.StateChange.Before.get -> Aw.Readiness.Core.CriterionState?
+Aw.Readiness.Core.StateChange.Before.init -> void
+Aw.Readiness.Core.StateChange.Deconstruct(out Aw.Readiness.Core.CriterionId Id, out Aw.Readiness.Core.CriterionState? Before, out Aw.Readiness.Core.CriterionState? After) -> void
+Aw.Readiness.Core.StateChange.Equals(Aw.Readiness.Core.StateChange? other) -> bool
+Aw.Readiness.Core.StateChange.Id.get -> Aw.Readiness.Core.CriterionId
+Aw.Readiness.Core.StateChange.Id.init -> void
+Aw.Readiness.Core.StateChange.StateChange(Aw.Readiness.Core.CriterionId Id, Aw.Readiness.Core.CriterionState? Before, Aw.Readiness.Core.CriterionState? After) -> void
+const Aw.Readiness.Core.ReadinessConfig.CSharpTemplateScope = "csharp-template" -> string!
+const Aw.Readiness.Core.ReadinessConfig.FileName = "readiness.yaml" -> string!
+const Aw.Readiness.Core.RunRecord.CurrentSchemaVersion = 1 -> int
+const Aw.Readiness.Core.Scoring.LevelTally.UnlockPercent = 80 -> int
+const Aw.Readiness.Core.Scoring.ReadinessScoring.MaxLevel = 5 -> int
+override Aw.Readiness.Core.Criterion.Equals(object? obj) -> bool
+override Aw.Readiness.Core.Criterion.GetHashCode() -> int
+override Aw.Readiness.Core.Criterion.ToString() -> string!
+override Aw.Readiness.Core.CriterionId.Equals(object? obj) -> bool
+override Aw.Readiness.Core.CriterionId.GetHashCode() -> int
+override Aw.Readiness.Core.CriterionId.ToString() -> string!
+override Aw.Readiness.Core.Finding.Equals(object? obj) -> bool
+override Aw.Readiness.Core.Finding.GetHashCode() -> int
+override Aw.Readiness.Core.Finding.ToString() -> string!
+override Aw.Readiness.Core.Ports.HostFact.Equals(object? obj) -> bool
+override Aw.Readiness.Core.Ports.HostFact.GetHashCode() -> int
+override Aw.Readiness.Core.Ports.HostFact.ToString() -> string!
+override Aw.Readiness.Core.Ports.HostFacts.Equals(object? obj) -> bool
+override Aw.Readiness.Core.Ports.HostFacts.GetHashCode() -> int
+override Aw.Readiness.Core.Ports.HostFacts.ToString() -> string!
+override Aw.Readiness.Core.Ports.HostLabels.Equals(object? obj) -> bool
+override Aw.Readiness.Core.Ports.HostLabels.GetHashCode() -> int
+override Aw.Readiness.Core.Ports.HostLabels.ToString() -> string!
+override Aw.Readiness.Core.Ports.HostReleases.Equals(object? obj) -> bool
+override Aw.Readiness.Core.Ports.HostReleases.GetHashCode() -> int
+override Aw.Readiness.Core.Ports.HostReleases.ToString() -> string!
+override Aw.Readiness.Core.ReadinessConfig.Equals(object? obj) -> bool
+override Aw.Readiness.Core.ReadinessConfig.GetHashCode() -> int
+override Aw.Readiness.Core.ReadinessConfig.ToString() -> string!
+override Aw.Readiness.Core.ReadinessTarget.Equals(object? obj) -> bool
+override Aw.Readiness.Core.ReadinessTarget.GetHashCode() -> int
+override Aw.Readiness.Core.ReadinessTarget.ToString() -> string!
+override Aw.Readiness.Core.RecordedState.Equals(object? obj) -> bool
+override Aw.Readiness.Core.RecordedState.GetHashCode() -> int
+override Aw.Readiness.Core.RecordedState.ToString() -> string!
+override Aw.Readiness.Core.RepoName.Equals(object? obj) -> bool
+override Aw.Readiness.Core.RepoName.GetHashCode() -> int
+override Aw.Readiness.Core.RepoName.ToString() -> string!
+override Aw.Readiness.Core.RunDelta.Equals(object? obj) -> bool
+override Aw.Readiness.Core.RunDelta.GetHashCode() -> int
+override Aw.Readiness.Core.RunDelta.ToString() -> string!
+override Aw.Readiness.Core.RunRecord.Equals(object? obj) -> bool
+override Aw.Readiness.Core.RunRecord.GetHashCode() -> int
+override Aw.Readiness.Core.RunRecord.ToString() -> string!
+override Aw.Readiness.Core.Scoring.LevelTally.Equals(object? obj) -> bool
+override Aw.Readiness.Core.Scoring.LevelTally.GetHashCode() -> int
+override Aw.Readiness.Core.Scoring.LevelTally.ToString() -> string!
+override Aw.Readiness.Core.Scoring.PillarScore.Equals(object? obj) -> bool
+override Aw.Readiness.Core.Scoring.PillarScore.GetHashCode() -> int
+override Aw.Readiness.Core.Scoring.PillarScore.ToString() -> string!
+override Aw.Readiness.Core.Scoring.Scorecard.Equals(object? obj) -> bool
+override Aw.Readiness.Core.Scoring.Scorecard.GetHashCode() -> int
+override Aw.Readiness.Core.Scoring.Scorecard.ToString() -> string!
+override Aw.Readiness.Core.StateChange.Equals(object? obj) -> bool
+override Aw.Readiness.Core.StateChange.GetHashCode() -> int
+override Aw.Readiness.Core.StateChange.ToString() -> string!
+static Aw.Readiness.Core.Criteria.TemplateReadiness.Criteria.get -> System.Collections.Generic.IReadOnlyList<Aw.Readiness.Core.Criterion!>!
+static Aw.Readiness.Core.Criteria.TemplateReadiness.Evaluate(Aw.Readiness.Core.Ports.IRepoTree! tree, Aw.Readiness.Core.Ports.HostFacts! host, System.DateTimeOffset now) -> System.Collections.Generic.IReadOnlyList<Aw.Readiness.Core.Finding!>!
+static Aw.Readiness.Core.Criteria.TemplateReadiness.Unconfirmed(System.Collections.Generic.IEnumerable<Aw.Readiness.Core.Finding!>! findings, Aw.Readiness.Core.ReadinessTarget! target, int reached) -> System.Collections.Generic.IReadOnlyList<Aw.Readiness.Core.CriterionId>!
+static Aw.Readiness.Core.Criterion.operator !=(Aw.Readiness.Core.Criterion? left, Aw.Readiness.Core.Criterion? right) -> bool
+static Aw.Readiness.Core.Criterion.operator ==(Aw.Readiness.Core.Criterion? left, Aw.Readiness.Core.Criterion? right) -> bool
+static Aw.Readiness.Core.CriterionId.From(string! value) -> Aw.Readiness.Core.CriterionId
+static Aw.Readiness.Core.CriterionId.operator !=(Aw.Readiness.Core.CriterionId left, Aw.Readiness.Core.CriterionId right) -> bool
+static Aw.Readiness.Core.CriterionId.operator ==(Aw.Readiness.Core.CriterionId left, Aw.Readiness.Core.CriterionId right) -> bool
+static Aw.Readiness.Core.CriterionId.Parse(string! s, System.IFormatProvider? provider) -> Aw.Readiness.Core.CriterionId
+static Aw.Readiness.Core.CriterionId.TryFrom(string? value, out Aw.Readiness.Core.CriterionId vo) -> bool
+static Aw.Readiness.Core.CriterionId.TryParse(string? s, System.IFormatProvider? provider, out Aw.Readiness.Core.CriterionId result) -> bool
+static Aw.Readiness.Core.Finding.operator !=(Aw.Readiness.Core.Finding? left, Aw.Readiness.Core.Finding? right) -> bool
+static Aw.Readiness.Core.Finding.operator ==(Aw.Readiness.Core.Finding? left, Aw.Readiness.Core.Finding? right) -> bool
+static Aw.Readiness.Core.Ports.HostFact.operator !=(Aw.Readiness.Core.Ports.HostFact? left, Aw.Readiness.Core.Ports.HostFact? right) -> bool
+static Aw.Readiness.Core.Ports.HostFact.operator ==(Aw.Readiness.Core.Ports.HostFact? left, Aw.Readiness.Core.Ports.HostFact? right) -> bool
+static Aw.Readiness.Core.Ports.HostFacts.operator !=(Aw.Readiness.Core.Ports.HostFacts? left, Aw.Readiness.Core.Ports.HostFacts? right) -> bool
+static Aw.Readiness.Core.Ports.HostFacts.operator ==(Aw.Readiness.Core.Ports.HostFacts? left, Aw.Readiness.Core.Ports.HostFacts? right) -> bool
+static Aw.Readiness.Core.Ports.HostFacts.Unknown(string! reason) -> Aw.Readiness.Core.Ports.HostFacts!
+static Aw.Readiness.Core.Ports.HostLabels.operator !=(Aw.Readiness.Core.Ports.HostLabels? left, Aw.Readiness.Core.Ports.HostLabels? right) -> bool
+static Aw.Readiness.Core.Ports.HostLabels.operator ==(Aw.Readiness.Core.Ports.HostLabels? left, Aw.Readiness.Core.Ports.HostLabels? right) -> bool
+static Aw.Readiness.Core.Ports.HostReleases.operator !=(Aw.Readiness.Core.Ports.HostReleases? left, Aw.Readiness.Core.Ports.HostReleases? right) -> bool
+static Aw.Readiness.Core.Ports.HostReleases.operator ==(Aw.Readiness.Core.Ports.HostReleases? left, Aw.Readiness.Core.Ports.HostReleases? right) -> bool
+static Aw.Readiness.Core.ReadinessConfig.operator !=(Aw.Readiness.Core.ReadinessConfig? left, Aw.Readiness.Core.ReadinessConfig? right) -> bool
+static Aw.Readiness.Core.ReadinessConfig.operator ==(Aw.Readiness.Core.ReadinessConfig? left, Aw.Readiness.Core.ReadinessConfig? right) -> bool
+static Aw.Readiness.Core.ReadinessConfig.Parse(string! text) -> Aw.Kernel.Result<Aw.Readiness.Core.ReadinessConfig!>!
+static Aw.Readiness.Core.ReadinessCoreServiceCollectionExtensions.AddReadinessCore(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
+static Aw.Readiness.Core.ReadinessErrors.All.get -> System.Collections.Generic.IReadOnlyList<Aw.Kernel.ErrorDefinition!>!
+static Aw.Readiness.Core.ReadinessTarget.operator !=(Aw.Readiness.Core.ReadinessTarget? left, Aw.Readiness.Core.ReadinessTarget? right) -> bool
+static Aw.Readiness.Core.ReadinessTarget.operator ==(Aw.Readiness.Core.ReadinessTarget? left, Aw.Readiness.Core.ReadinessTarget? right) -> bool
+static Aw.Readiness.Core.RecordedState.operator !=(Aw.Readiness.Core.RecordedState? left, Aw.Readiness.Core.RecordedState? right) -> bool
+static Aw.Readiness.Core.RecordedState.operator ==(Aw.Readiness.Core.RecordedState? left, Aw.Readiness.Core.RecordedState? right) -> bool
+static Aw.Readiness.Core.RepoName.From(string! value) -> Aw.Readiness.Core.RepoName
+static Aw.Readiness.Core.RepoName.operator !=(Aw.Readiness.Core.RepoName left, Aw.Readiness.Core.RepoName right) -> bool
+static Aw.Readiness.Core.RepoName.operator ==(Aw.Readiness.Core.RepoName left, Aw.Readiness.Core.RepoName right) -> bool
+static Aw.Readiness.Core.RepoName.Parse(string! s, System.IFormatProvider? provider) -> Aw.Readiness.Core.RepoName
+static Aw.Readiness.Core.RepoName.TryFrom(string? value, out Aw.Readiness.Core.RepoName vo) -> bool
+static Aw.Readiness.Core.RepoName.TryParse(string? s, System.IFormatProvider? provider, out Aw.Readiness.Core.RepoName result) -> bool
+static Aw.Readiness.Core.RunDelta.Between(Aw.Readiness.Core.RunRecord? previous, Aw.Readiness.Core.RunRecord! current) -> Aw.Readiness.Core.RunDelta!
+static Aw.Readiness.Core.RunDelta.operator !=(Aw.Readiness.Core.RunDelta? left, Aw.Readiness.Core.RunDelta? right) -> bool
+static Aw.Readiness.Core.RunDelta.operator ==(Aw.Readiness.Core.RunDelta? left, Aw.Readiness.Core.RunDelta? right) -> bool
+static Aw.Readiness.Core.RunRecord.From(Aw.Readiness.Core.RepoName repo, string! scope, System.DateTimeOffset recordedAt, int level, System.Collections.Generic.IEnumerable<Aw.Readiness.Core.Finding!>! findings) -> Aw.Readiness.Core.RunRecord!
+static Aw.Readiness.Core.RunRecord.operator !=(Aw.Readiness.Core.RunRecord? left, Aw.Readiness.Core.RunRecord? right) -> bool
+static Aw.Readiness.Core.RunRecord.operator ==(Aw.Readiness.Core.RunRecord? left, Aw.Readiness.Core.RunRecord? right) -> bool
+static Aw.Readiness.Core.RunRecord.UnsupportedVersion(int found, string! where) -> Aw.Kernel.Error!
+static Aw.Readiness.Core.Scoring.LevelTally.operator !=(Aw.Readiness.Core.Scoring.LevelTally? left, Aw.Readiness.Core.Scoring.LevelTally? right) -> bool
+static Aw.Readiness.Core.Scoring.LevelTally.operator ==(Aw.Readiness.Core.Scoring.LevelTally? left, Aw.Readiness.Core.Scoring.LevelTally? right) -> bool
+static Aw.Readiness.Core.Scoring.PillarScore.operator !=(Aw.Readiness.Core.Scoring.PillarScore? left, Aw.Readiness.Core.Scoring.PillarScore? right) -> bool
+static Aw.Readiness.Core.Scoring.PillarScore.operator ==(Aw.Readiness.Core.Scoring.PillarScore? left, Aw.Readiness.Core.Scoring.PillarScore? right) -> bool
+static Aw.Readiness.Core.Scoring.ReadinessScoring.Score(System.Collections.Generic.IReadOnlyList<Aw.Readiness.Core.Finding!>! findings) -> Aw.Readiness.Core.Scoring.Scorecard!
+static Aw.Readiness.Core.Scoring.Scorecard.operator !=(Aw.Readiness.Core.Scoring.Scorecard? left, Aw.Readiness.Core.Scoring.Scorecard? right) -> bool
+static Aw.Readiness.Core.Scoring.Scorecard.operator ==(Aw.Readiness.Core.Scoring.Scorecard? left, Aw.Readiness.Core.Scoring.Scorecard? right) -> bool
+static Aw.Readiness.Core.StateChange.operator !=(Aw.Readiness.Core.StateChange? left, Aw.Readiness.Core.StateChange? right) -> bool
+static Aw.Readiness.Core.StateChange.operator ==(Aw.Readiness.Core.StateChange? left, Aw.Readiness.Core.StateChange? right) -> bool
+static readonly Aw.Readiness.Core.ReadinessErrors.ConfigInvalid -> Aw.Kernel.ErrorDefinition!
+static readonly Aw.Readiness.Core.ReadinessErrors.HistoryUnavailable -> Aw.Kernel.ErrorDefinition!
+static readonly Aw.Readiness.Core.ReadinessErrors.Invalid -> Aw.Kernel.ErrorDefinition!
+static readonly Aw.Readiness.Core.ReadinessErrors.RootNotFound -> Aw.Kernel.ErrorDefinition!

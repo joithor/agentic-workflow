@@ -238,6 +238,14 @@
           "Microsoft.Extensions.DependencyInjection": "[10.0.12, 10.0.12]"
         }
       },
+      "aw-readiness": {
+        "type": "Project",
+        "dependencies": {
+          "Aw.Kernel": "[1.0.0, )",
+          "Aw.Readiness.Core": "[1.0.0, )",
+          "Microsoft.Extensions.DependencyInjection": "[10.0.12, 10.0.12]"
+        }
+      },
       "aw.kernel": {
         "type": "Project"
       },
@@ -249,6 +257,14 @@
         }
       },
       "aw.packets.core": {
+        "type": "Project",
+        "dependencies": {
+          "Aw.Kernel": "[1.0.0, )",
+          "Microsoft.Extensions.DependencyInjection.Abstractions": "[10.0.12, 10.0.12]",
+          "Vogen": "[8.0.7, 8.0.7]"
+        }
+      },
+      "aw.readiness.core": {
         "type": "Project",
         "dependencies": {
           "Aw.Kernel": "[1.0.0, )",
