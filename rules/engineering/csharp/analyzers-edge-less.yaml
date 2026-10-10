@@ -14,7 +14,8 @@ checks:
   - type: check-deps
     id: "DEPS-PROJ-006"
     status: active
-gap: closed
+gap: partial
+gapNote: "DEPS-PROJ-006 checks OutputItemType=Analyzer only; ReferenceOutputAssembly=false (without it the analyzer is also a compile and runtime reference) is reviewed."
 source:
   type: adr
   ref: "docs/superpowers/specs/2026-10-09-agent-readiness-design.md#4b1a"

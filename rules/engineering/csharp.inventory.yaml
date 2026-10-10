@@ -1,5 +1,5 @@
-# The §4b rule list (readiness spec), plus the rules .agents/rules/csharp.md adds under a §4b heading (their
-# source is that file): one record per entry in rules/engineering/csharp/<slug>.yaml.
+# The §4b rule list (readiness spec), plus the rules .agents/rules/csharp.md states under a §4b heading beyond
+# the spec (their source is that file; §4d rules such as nuget.config source mapping are out of scope): one record per entry in rules/engineering/csharp/<slug>.yaml.
 # Checked by node scripts/check-rules.mjs; see docs/csharp/rule-records.md.
 version: 1
 spec: docs/superpowers/specs/2026-10-09-agent-readiness-design.md

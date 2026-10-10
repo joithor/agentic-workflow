@@ -23,6 +23,6 @@ checks:
 gap: pending
 gapNote: "BannedSymbols covers Core's BCL I/O only; Aw.Kernel.Data, SQLitePCL, Npgsql, cache and queue clients, and Features/Commands/Host need the ArchUnitNET rules."
 source:
-  type: adr
-  ref: "docs/superpowers/specs/2026-10-09-agent-readiness-design.md#4b1"
+  type: import
+  ref: ".agents/rules/csharp.md"
 status: active

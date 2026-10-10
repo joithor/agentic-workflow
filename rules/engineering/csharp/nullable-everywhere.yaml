@@ -20,7 +20,8 @@ checks:
   - type: build-setting
     id: "<TreatWarningsAsErrors>true</TreatWarningsAsErrors>"
     status: active
-gap: closed
+gap: partial
+gapNote: "The root build files set these; a per-project override (<Nullable>disable</Nullable> in a .csproj, #nullable disable) is forbidden by csharp.md and reviewed, not checked."
 source:
   type: adr
   ref: "docs/superpowers/specs/2026-10-09-agent-readiness-design.md#4b3"

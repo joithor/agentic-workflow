@@ -17,7 +17,8 @@ checks:
   - type: check-deps
     id: "DEPS-PROJ-004"
     status: active
-gap: closed
+gap: partial
+gapNote: "The checks cover test-support projects (deps.yaml test: true, *.Testing, *.Tests); a test NuGet package (e.g. Microsoft.Extensions.TimeProvider.Testing) referenced from production code is reviewed."
 source:
   type: adr
   ref: "docs/superpowers/specs/2026-10-09-agent-readiness-design.md#4b1a"
