@@ -22,7 +22,7 @@ Each rule names the check that enforces it. "Gap — R1b" means the check doesn'
 | Rule | Check |
 |---|---|
 | Red test committed before the code | Commit history (the `/specToProvenPR` red-commit rule); review |
-| Every test has exactly one `Lane` trait | Gap — R1b. Planned check: a CI step asserting the unfiltered test count equals the sum of the three lane counts (a test with no `Lane` trait runs in no lane; one with several runs twice). `Aw.Architecture.Tests` can't load the `Aw.*.Tests` assemblies: they are leaves nothing may reference (`DEPS-PROJ-003`) |
+| Every test has exactly one `Lane` trait | Gap — R1b. Planned check: a CI step after the solution build that reads the built `Aw.*.Tests` assemblies (by path, with Mono.Cecil or reflection) and names each test with zero or several `Lane` traits. It can't be an `Aw.Architecture.Tests` rule over a `ProjectReference`: the `*.Tests` projects are leaves nothing may reference (`DEPS-PROJ-003`). A count check alone (unit + integration + heavy = unfiltered) misses a test with no trait offset by one with two |
 | Lane budgets (below) | Gap — R1b. Planned check: the CI lane job takes the wall clock of `dotnet test --project <test project> --filter-trait "Lane=<lane>" --ignore-exit-code 8` per test project, sums it per package, and fails a package over its budget; each test's own time from xUnit's CTRF report is checked against the same budget as a per-test cap (`Aw.Kernel.Testing` ships that check). Failures print the rule id, the measured seconds, the limit and the package |
 | No mocking libraries | Not in `Directory.Packages.props`; review rejects them |
 | A fake and its SQL implementation pass the same contract tests | The contract-test base (per port); review checks every new port has one |
@@ -88,20 +88,23 @@ ArchUnitNET (not NetArchTest), in the `unit` lane, in `tests/Aw.Architecture.Tes
 
 | Rule id | Rule |
 |---|---|
-| `ARCH-DIR-001`…`004` | Dependency direction: Core → nothing else in its package; Features → Core, Features; Infrastructure → Core, Infrastructure; another package only through its Core |
+| `ARCH-DIR-001`…`005` | Dependency direction: Core → nothing else in its package; Features → Core, Features; Infrastructure → Core, Infrastructure; another package only through its Core; Core and Features use no tier-0 package but `Aw.Kernel` |
+| `ARCH-PLACE-001` | Every namespace under a package root names a layer (small shape: `App`, `App.Features`, `App.Infrastructure`, `App.Commands`) |
 | `ARCH-SLICE-001` | No slice uses another slice (`Features.<Slice>`, `App.Features.<Slice>`) |
 | `ARCH-INFRA-001` | Only the `*ServiceCollectionExtensions` class is public in Infrastructure |
 | `ARCH-CYCLE-001` | No namespace cycles in any assembly |
 | `ARCH-NAME-001` | No `Common`, `Shared`, `Utils` or `Helpers` namespace or project |
-| `ARCH-DI-001` | `IServiceProvider` only in Host (small shape: `Composition`, `Commands`) and inside `*ServiceCollectionExtensions` |
-| `ARCH-PORT-001`, `002` | No technology type in Core, Features or Commands/Endpoints; only `Composition` uses Infrastructure |
+| `ARCH-DI-001` | Service-locator types only in Host (with `Program`; small shape: the `App` root namespace and `App.Commands`) and `*ServiceCollectionExtensions` classes |
+| `ARCH-PORT-001`, `002` | No technology type in Core, Features or the small shape's `App.Commands`; only `Composition` uses Infrastructure |
 | `ARCH-ID-001`, `002` | `TypedIdGuard`: the VogenDefaults block, and every id and id property (`docs/csharp/typed-ids.md`) |
-| `ARCH-REG-001`, `002` | `Packages.cs` lists every production project in the solution, and every line loads |
+| `ARCH-REG-001`, `002` | `Packages.cs` lists every production project in the solution (by project name; analyzers excluded), and each one's assembly (its `<AssemblyName>` if set) loads |
 
 The layer rules apply to shaped packages (assemblies named `Aw.<Pkg>.Core`, `.Features`, `.Infrastructure`, `.Host`
 or `.App`); tier-0 packages (`Aw.Kernel`, `Aw.Kernel.Data`) get the cycle, naming, service-provider and typed-id rules.
-A new package registers each production project in `tests/Aw.Architecture.Tests/Packages.cs` (one line) and adds a
-`ProjectReference` to it in `Aw.Architecture.Tests.csproj`; `/new-package` does both. Each rule is proven by a fixture
+A type outside every package root in a package's `Host` or `App` assembly (the top-level-statement `Program`, generator
+output) counts as Host. A new package registers each production project in `tests/Aw.Architecture.Tests/Packages.cs`
+(one line, the project name) and adds a `ProjectReference` to it in `Aw.Architecture.Tests.csproj`; `/new-package` does
+both. Each rule is proven by a fixture
 package under `tests/Aw.Architecture.Tests/Fixtures/` that breaks it.
 
 ## Hosts

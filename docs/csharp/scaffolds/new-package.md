@@ -200,8 +200,9 @@ for now; the second HTTP package moves it into a tier-0 Kernel part (second use 
 |---|---|
 | `AgenticWorkflow.slnx` | Adds every new project under `/src/<Name>/` and `/tests/` folders |
 | `deps.yaml` | **The node:** if the package is declared already (as `Readiness` and `Packets` are), check that `tier`, `src` (`src/<Name>`) and `projectPrefix` (`Aw.<Name>`) match the inputs, else refuse `NP-DEPS-MISMATCH`. If it isn't declared, add it (`id: <Name>`, `kind: package`, `tier`, `projectPrefix: Aw.<Name>`, `ts: null`, `src: src/<Name>`, `note`). **The edges, one rule for both cases:** for every cross-package project edge the scaffold creates (always `<Name> → Kernel`, since `Core`, `Features` and `Infrastructure` reference `Aw.Kernel`, plus one per `depends` entry), a `planned` edge in `deps.yaml` becomes `current`, and a missing edge is added as `current` with a note. Planned edges the scaffold doesn't create stay `planned` (otherwise `DEPS-STALE-001`) |
-| `tests/Aw.Architecture.Tests/Packages.cs` | One line per new production project (`"Aw.<Name>.Core",` …, or `Core` and `App` in the small shape), appended to `Packages.Production`, so every §4b.1 rule covers them (`ARCH-REG-001` fails otherwise) |
-| `tests/Aw.Architecture.Tests/Aw.Architecture.Tests.csproj` | One `ProjectReference` per new production project in the `Registered packages` item group, so each registered name loads (`ARCH-REG-002`) |
+| `tests/Aw.Architecture.Tests/Packages.cs` | One line per new production project, by project name (`"Aw.<Name>.Core",` … `"Aw.<Name>.Host",` even though the Host sets `AssemblyName`; `Core` and `App` in the small shape), appended to `Packages.Production`, so every §4b.1 rule covers them (`ARCH-REG-001` fails otherwise) |
+| `tests/Aw.Architecture.Tests/Aw.Architecture.Tests.csproj` | One `ProjectReference` per new production project in the `Registered packages` item group, so each registered project's assembly loads (`ARCH-REG-002`) |
+| `tests/Aw.Architecture.Tests/packages.lock.json` | Rewritten by the unlocked restore below: it lists the new projects and any new transitive packages |
 
 No other file changes. In particular the scaffold never touches `Directory.Packages.props` (see "Before the scaffold"),
 `setup.sh`, `providers/`, `config/` or MCP registration: nothing is installed before the cutover.
@@ -367,8 +368,8 @@ with the `NotSupportedException` thrown by the parameterless service stub. The s
 ## Commands the generator runs (in order)
 
 ```bash
-for p in src/<Name>/*/*.csproj tests/Aw.<Name>.*/*.csproj; do dotnet restore "$p"; done   # new projects only: writes their packages.lock.json
-dotnet restore --locked-mode                            # whole solution; must pass — existing lock files never change here
+for p in src/<Name>/*/*.csproj tests/Aw.<Name>.*/*.csproj tests/Aw.Architecture.Tests/Aw.Architecture.Tests.csproj; do dotnet restore "$p"; done   # the new projects, plus the architecture tests that now reference them: writes their packages.lock.json
+dotnet restore --locked-mode                            # whole solution; must pass — no other lock file changes here
 dotnet format analyzers <each new library project> --diagnostics RS0016   # writes the PublicAPI.Unshipped.txt lines (not hosts)
 dotnet build -warnaserror                               # must report 0 warnings, 0 errors
 dotnet test --solution AgenticWorkflow.slnx --filter-trait "Lane=unit" --ignore-exit-code 8   # HostTests pass; the slice test fails (expected); exit 8 = empty lane in some project
