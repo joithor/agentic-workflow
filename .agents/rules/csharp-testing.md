@@ -89,7 +89,7 @@ ArchUnitNET (not NetArchTest), in the `unit` lane, in `tests/Aw.Architecture.Tes
 | Rule id | Rule |
 |---|---|
 | `ARCH-DIR-001`…`005` | Dependency direction: Core → nothing else in its package; Features → Core, Features; Infrastructure → Core, Infrastructure; another package only through its Core; Core and Features use no tier-0 package but `Aw.Kernel` |
-| `ARCH-PLACE-001` | Every type of a package sits in a layer namespace (small shape: `App`, `App.Features`, `App.Infrastructure`, `App.Commands`): not the bare root, an unknown folder, or a namespace outside the root in a Core, Features or Infrastructure assembly |
+| `ARCH-PLACE-001` | Every type of a Core, Features or Infrastructure project sits in that project's layer namespace (small shape: `App`, `App.Features`, `App.Infrastructure`, `App.Commands`): not the bare root, an unknown folder, another layer's namespace or one outside the root. In a Host or App project, anything outside the root counts as Host. IDE0130 (namespace matches folder) catches most of this at build time; this is the backstop |
 | `ARCH-SLICE-001` | No slice uses another slice (`Features.<Slice>`, `App.Features.<Slice>`) |
 | `ARCH-INFRA-001` | Only the `*ServiceCollectionExtensions` class is public in Infrastructure |
 | `ARCH-CYCLE-001` | No namespace cycles in any assembly |
@@ -100,7 +100,7 @@ ArchUnitNET (not NetArchTest), in the `unit` lane, in `tests/Aw.Architecture.Tes
 | `ARCH-REG-001`, `002` | `Packages.cs` lists every production project in the solution (by project name; analyzers excluded), and each one's assembly (its `<AssemblyName>` if set) loads |
 
 The layer rules apply to shaped packages (assemblies named `Aw.<Pkg>.Core`, `.Features`, `.Infrastructure`, `.Host`
-or `.App`); tier-0 packages (`Aw.Kernel`, `Aw.Kernel.Data`) get the cycle, naming, service-provider and typed-id rules.
+or `.App`, and not tier 0 in `deps.yaml`, which `RegistryTests` checks against `Rules/TierZero.cs`); tier-0 packages (`Aw.Kernel`, `Aw.Kernel.Data`) get the cycle, naming, service-provider and typed-id rules.
 A type outside every package root in a package's `Host` or `App` assembly (the top-level-statement `Program`, generator
 output) counts as Host. ArchUnitNET records no dependencies from a top-level-statement body (`<Main>$`), so what
 `Program` itself calls is checked by review, not by these rules. A new package registers each production project in `tests/Aw.Architecture.Tests/Packages.cs`
