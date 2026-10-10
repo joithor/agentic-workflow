@@ -103,6 +103,32 @@ describe("identifier folding across separators (security-sentinel-1)", () => {
     expect(identifierProblem("a nova-x-ledger note", d)).toBeNull(); // parts are contiguous, never skipped
   });
 
+  it("splits candidate parts at case and letter-digit boundaries too, so a camelCase or PascalCase name around a private one holds (run 5 security-sentinel-2, kieran-typescript-reviewer-1)", () => {
+    const d = derivedFrom({ files: ["services/nova-ledger/index.ts"] });
+    expect(d.has("novaledger")).toBe(true);
+    const held = [
+      "NovaLedgerClient", "novaLedgerService", "createNovaLedger()", "useNovaLedger", "NOVALedger", "nova_ledgerClient", "@acme/novaLedger-client",
+      "createNovaLedgerV2", "NovaLedger2Client", "the NovaLedgerClient wrapper", "Nova​LedgerClient", "ŃovaLedgerClient", "ＮｏｖａLedgerClient",
+      "nova-ledgerClient", "my.NovaLedger.ts",
+    ];
+    for (const text of held) expect(identifierProblem(text, d), JSON.stringify(text)).toBe("contains a private-repo identifier");
+    for (const text of ["SupernovaLedger", "SupernovaLedgerClient", "useLedgerNova", "NovaXLedger", "LedgerClient", "novaLedgers"]) {
+      expect(identifierProblem(text, d), JSON.stringify(text)).toBeNull(); // an unrelated camelCase identifier doesn't hold
+    }
+    expect(identifierProblem("NovaLedgerClient", derivedFrom({ symbols: ["NovaLedger"] }))).toBe("contains a private-repo identifier");
+    expect(identifierTokens("NovaLedgerClient")).toEqual(["novaledgerclient"]); // the set side stays whole-token
+  });
+
+  it("bounds case-split candidate runs to 8 parts plus the whole run, like separator runs", () => {
+    const parts = Array.from({ length: 12 }, (_, i) => `P${String.fromCharCode(97 + i)}x`);
+    const camel = parts.join("");
+    const lower = (xs: string[]): string => xs.join("").toLowerCase();
+    expect(identifierProblem(camel, new Set([lower(parts)]))).toBe("contains a private-repo identifier");
+    expect(identifierProblem(camel, new Set([lower(parts.slice(2, 10))]))).toBe("contains a private-repo identifier");
+    expect(identifierProblem(camel, new Set([lower(parts.slice(1, 10))]))).toBeNull();
+    expect(identifierProblem(`see ${parts.slice(0, 6).join("")}-${parts.slice(6).join("_")}`, new Set([lower(parts.slice(4, 8))]))).toBe("contains a private-repo identifier"); // across both kinds
+  });
+
   it("keeps the set side to whole runs and bounds the candidate side's runs to 8 parts plus the whole run", () => {
     expect(identifierTokens("glx-rota-utils")).toEqual(["utils", "glxrotautils"]); // set side: the whole run only, no glxrota
     const d = new Set(["glxrota"]);

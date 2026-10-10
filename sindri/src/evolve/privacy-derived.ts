@@ -7,7 +7,7 @@ import { indexPath, type IndexDb } from "../index/db.js";
 import { readBuiltIndex, readIndex } from "../index/health.js";
 import type { LoadedProfile } from "../profile/load.js";
 import { stripInvisible, WHITESPACE } from "./invisible.js";
-import { NAME_JOINER } from "./privacy.js";
+import { NAME_JOINER, splitCase } from "./privacy.js";
 
 // Layer 3 of the publish gate (spec §5.4): code identifiers from private repos' indexes, minus English
 // words and the toolkit's own vocabulary. Built in memory at publish; never written, logged or printed.
@@ -30,7 +30,8 @@ const joinedForm = (run: string): string => run.replace(/[^\p{L}\p{N}]/gu, "");
 // form of every name spelled with separators (security-sentinel-1): `nova-ledger`, `nova_ledger`, `novaLedger` and
 // `NovaLedger` all give `novaledger`, on the derived set's side and the candidate's alike, so no spelling of a private
 // name slips past another. Both kinds need at least 5 characters, and a joined form needs a letter.
-const fold = (text: string): string => stripInvisible(text.normalize("NFKD"), WHITESPACE).replace(/\p{M}/gu, "").toLowerCase();
+const letters = (text: string): string => stripInvisible(text.normalize("NFKD"), WHITESPACE).replace(/\p{M}/gu, "");
+const fold = (text: string): string => letters(text).toLowerCase();
 const plainTokens = (folded: string): string[] => (folded.match(IDENT) ?? []).filter((t) => t.length >= MIN_IDENTIFIER);
 const keepJoined = (t: string): boolean => t.length >= MIN_IDENTIFIER && /\p{L}/u.test(t);
 
@@ -44,12 +45,16 @@ export function identifierTokens(text: string): string[] {
 // (`nova-ledger.ts`, `@acme/nova-ledger-client`, `nova-ledger-v2`), so besides the whole run, the joined form of each
 // contiguous sub-run of 2 to MAX_SUB_PARTS parts counts too. The derived set keeps whole runs only, so a private
 // `glx-rota-utils` never puts `glxrota` in the set. Bounded: a run of n parts gives under n * MAX_SUB_PARTS forms.
+// Parts also split at case and letter-digit boundaries, by the terms layer's rules, on the text before it is lowercased
+// (run 5 security-sentinel-2, kieran-typescript-reviewer-1): `NovaLedgerClient`, `useNovaLedger`, `createNovaLedgerV2`
+// and `nova_ledgerClient` hold for a private `novaledger`, `SupernovaLedger` doesn't (its part is `supernova`). Sub-runs
+// cross both kinds of boundary; the whole token still counts as written. The set side stays whole-token.
 const MAX_SUB_PARTS = 8;
 const JOINERS = new RegExp(`${NAME_JOINER.source}+`, "u");
 function candidateTokens(text: string): string[] {
   const visible = fold(text);
   const joined: string[] = [];
-  for (const run of visible.match(SPELLED) ?? []) {
+  for (const run of splitCase(letters(text), "_").toLowerCase().match(SPELLED) ?? []) {
     joined.push(joinedForm(run));
     const parts = run.split(JOINERS);
     for (let i = 0; i < parts.length; i++) {

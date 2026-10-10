@@ -142,6 +142,10 @@ hyphenation point; a space and `/` stay boundaries. A directory's dot is part of
 *(Amended in review run 4, kieran-typescript-reviewer-0: on the candidate side only, each contiguous run of 2 to 8
 parts of a separated name also counts in its joined form, besides the whole name, so `nova-ledger.ts`,
 `@acme/nova-ledger-client` and `nova-ledger-v2` hold for a private `nova-ledger`. The set side keeps whole names.)*
+*(Amended in review run 5, security-sentinel-2 and kieran-typescript-reviewer-1: on the candidate side, parts also split at
+case and letter-digit boundaries, by the terms layer's rules, before lowercasing, and the 2-to-8-part runs cross both kinds
+of boundary, so `NovaLedgerClient`, `novaLedgerService`, `createNovaLedger()`, `useNovaLedger` and `NOVALedger` hold for a
+private `nova-ledger`; `SupernovaLedger` doesn't. Single parts are checked as before; the set side still keeps whole names.)*
 False positives (public library names used in a private repo) hold a proposal; they never leak one.
 `publish --dry-run` reports held counts per layer so the noise is visible before a real run.
 
