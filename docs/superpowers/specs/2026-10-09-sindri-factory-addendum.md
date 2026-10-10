@@ -525,6 +525,11 @@ twice.
 
 ## 17.16 Rollout changes
 
+**Prerequisite: agent readiness.** Before F0, this repo reaches agent-readiness Level 4 under
+`2026-10-09-agent-readiness-design.md`, including the refactoring that design defines. Level 5 is reached
+together with the F-steps, because its criteria (self-improving systems, requirements decomposed into
+parallel execution) are what the factory delivers.
+
 These steps come after Plan 6 and replace the order of §13 steps 3a–6 for factory work. Every step ends with a
 "Turn it on" task (§13.3). Ring 1 (workplace repos) gets each step after ring 0 holds. Ring 2 starts after F3
 holds on ring 1.
@@ -554,6 +559,7 @@ clone, a new evidence kind, a better memory store, a new lens, a standing workfl
 |---|---|
 | **Internal gaps** | Packet misses, parks by reason, repeated scope-expansion requests, lenses with no evidence kind, evidence kinds with low precision, slow decisions, standing-workflow misses, steering turns the audit still sees |
 | **Upstream changes** | New releases of pinned dependencies and vendored packs (§16), provider CLI changelogs (new hooks, flags or SDK features), new MCP servers |
+| **The software-factory field** | What other agent factories and agentic dev platforms ship and publish: their tenets and frameworks (for example agent-readiness levels and criteria), orchestration and handoff models, review surfaces, evals, case studies and benchmarks. For example Factory (Droids, agent readiness), Warp (agents and remote control), coding-agent vendors' changelogs and engineering blogs. Each card says which of Sindri's principles or metrics the advance bears on, and whether Sindri already does it, does it worse, or lacks it |
 | **Ecosystem** | Skill and subagent catalogs, agent-tooling repos, papers and posts on agent harnesses, memory, retrieval and evals |
 | **The human's notes** | The notes dir and the desk decision log ("would be nice if…", links saved for later) |
 
