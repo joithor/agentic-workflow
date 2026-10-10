@@ -1,5 +1,5 @@
 loaded 1:runs,2:steps
 migrate 0->2
-row 0f8fad5b-d9cb-469f-a165-70867728950e|canary|2026-10-10T07:05:07.042Z
+row 0f8fad5b-d9cb-469f-a165-70867728950e|canary|2026-10-10T07:05:07.0420000Z
 missing AW-DATA-001
 rerun applied 0

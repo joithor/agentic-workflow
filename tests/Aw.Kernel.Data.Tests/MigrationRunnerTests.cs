@@ -37,7 +37,7 @@ public sealed class MigrationRunnerTests
         var applied = await Applied(db);
         Assert.Equal([1L, 2L], applied.Select(r => r.Version));
         Assert.Equal(["items", "tags"], applied.Select(r => r.Name), StringComparer.Ordinal);
-        Assert.All(applied, r => Assert.Equal("2026-10-09T12:00:00.123Z", r.AppliedAt));
+        Assert.All(applied, r => Assert.Equal("2026-10-09T12:00:00.1230000Z", r.AppliedAt));
         Assert.Equal(Schema.Items.Checksum, applied[0].Checksum);
     }
 

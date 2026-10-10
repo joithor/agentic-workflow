@@ -67,7 +67,7 @@ public sealed class BindTests
     }
 
     [Fact]
-    public async Task Int_binds_as_integer_and_timestamps_as_utc_iso_text_with_milliseconds()
+    public async Task Int_binds_as_integer_and_timestamps_as_utc_round_trip_text_like_AwJson()
     {
         using var db = new TempDatabase();
         var ct = TestContext.Current.CancellationToken;
@@ -77,7 +77,7 @@ public sealed class BindTests
 
         _ = await SqliteQueries.Execute(work, new SqlStatement("INSERT INTO v VALUES ($i, $t)", c => c.Bind("$i", 7).Bind("$t", at)), ct);
 
-        Assert.True((await SqliteQueries.Exists(work, new SqlStatement("SELECT EXISTS (SELECT 1 FROM v WHERE typeof(i) = 'integer' AND i = 7 AND t = '2026-10-10T07:05:07.042Z')"), ct)).Value);
+        Assert.True((await SqliteQueries.Exists(work, new SqlStatement("SELECT EXISTS (SELECT 1 FROM v WHERE typeof(i) = 'integer' AND i = 7 AND t = '2026-10-10T07:05:07.0420000Z')"), ct)).Value);
     }
 
     private const string Upper = "0F8FAD5B-D9CB-469F-A165-70867728950E";
