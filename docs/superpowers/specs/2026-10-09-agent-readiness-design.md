@@ -163,7 +163,10 @@ Host ──► Features ──► Core ◄── Infrastructure
 
 **Small packages:** a package under about 1,500 lines may use two projects, `Core` and `App` (features,
 infrastructure and host together), with the same dependency direction. It splits into four when it crosses the
-threshold.
+threshold. The proposed measure is **code lines**: non-blank lines of the package's `src/` C# files that aren't
+comments or doc comments, generated files excluded (owner to confirm, §9 R17). `Aw.Packets` (#142) measures 1,841
+code lines (1,274 in `Core`, 567 in `App`; 2,215 counting doc comments) and ships in the small shape; whether it
+splits now is §9 R17.
 
 **Rules** (enforced by project references, which fail the build, and ArchUnitNET tests):
 - `Core` has no I/O. It doesn't reference `System.IO`, `System.Net`, `Microsoft.Data.*`, `System.Diagnostics.Process`,
@@ -634,7 +637,15 @@ against it. It is proven by its own tests.
   users depend on.
 
 **Digests.** New C# digests over JSON use one canonical form (sorted keys, the Kernel profile) and carry a
-`digestVersion` field. Nothing reproduces TS digest bytes (B4).
+`digestVersion` field. Nothing reproduces TS digest bytes (B4). Digest v1, as `Aw.Packets` builds it for the packet
+hash (`PacketDigest`, #142):
+- SHA-256 over the canonical JSON of `{"digestVersion":1,"files":{<path>:<entry>}}`, written `sha256:<hex>`. A JSON
+  packet file's entry is the file itself without its `$schema` editor hint (`packet.json` also without `status` and
+  `hash`); any other linked file's entry is `sha256:<hex of its bytes>`.
+- Canonical JSON sorts object keys by ordinal, drops whitespace, keeps numbers as written, and writes strings as the
+  Kernel profile's relaxed encoder does: `"` and `\` escaped, control characters in their short or `\u00XX` form,
+  U+2028, U+2029 and characters outside the Basic Multilingual Plane as `\u` escapes, everything else as UTF-8.
+- `CanonicalJsonTests` (#142) pins examples and one packet's hash. Changing these bytes needs a new `digestVersion`.
 
 **Fail-open is visible (A1, B5).** Some hooks treat a judge error as "allow". Every hook that can fail open logs a
 `HOOK-FAILOPEN` event with its cause (payload content never), the daily digest lists them, and the hook CI tests
@@ -678,7 +689,7 @@ assert that no tested path fails open against the C# binaries.
 - **State written before the switch:** `Aw.Readiness` and `Aw.Packets` run before the switch as their own
   NativeAOT CLIs (`aw-readiness check`, `aw-packets validate|freeze`) and write only under their own namespaces
   (`readiness/`, `packets/`), which the TS build never touches and the switch keeps. After the switch, sindri's C#
-  host exposes them as `sindri readiness …` and `sindri packets …`. When
+  host exposes them as `sindri readiness …` and `sindri packet …` (addendum §17.4). When
   sindri's C# ledger first runs, it imports Readiness's history into the ledger and keeps the file.
 - **Hooks during the port:** the hook-facing CLI and file surface (the `deps.yaml` Hooks, Statusline and AwLive edges)
   is frozen until the switch.
@@ -700,7 +711,9 @@ assert that no tested path fails open against the C# binaries.
 
 **Packets for ports (A6, B2).** `Aw.Packets` (schema, `validate`, `freeze`) is a standalone C# package built at the end
 of R1b, before any port, so every port runs as a packet. It doesn't depend on sindri, so it runs while sindri is
-still TS.
+still TS. It exists as of #142 (`src/Packets`, tier 1, small shape, generated with `/new-package`); its R1b commands
+are `aw-packets validate` and `aw-packets freeze`, with the rule ids, output, exit codes and freeze path in addendum
+§17.4.
 
 ## 4d. CI, identity and supply chain (public repo)
 
@@ -907,6 +920,10 @@ next PR shows it passing.
 | R11 | AW1008 at `suggestion` | **Open (owner).** The 6–7 constructor-dependency split signal is reported at `suggestion`. Keep it as a recorded exception to "never suggestion", or raise it to `warning` |
 | R12 | Rule record shape | **Open (owner).** R1b records carry a `checks` list (one record per rule, several checks each) plus `section`, `gap`, `gapNote`, `relatedIds` (addendum §17.6). Keep the list form, or one record per check |
 | R13 | How hosts are kept off `IConfiguration` | **Open (owner).** An architecture rule over host assemblies is proposed; `BannedSymbols.txt` doesn't apply to hosts |
+| R14 | Packet manifest format | **Open (owner).** Addendum §17.4 names `packet.yaml`; the R1b build (#142) reads `packet.json` (typed, source-generated JSON under NativeAOT, no YAML library). Keep JSON, or add a YAML reader |
+| R15 | Size-class budgets (`PKT-SIZE-001`) | **Open (owner).** Addendum §17.5 sets budgets "by size class and lens", and sindri's profile already has a per-size `sizeBudget`. Do packet-time budgets live in the profile next to it, which lens does a packet-time check use, and is a task over budget a failure or a split signal? The rule reports `unchecked` until then |
+| R16 | Holdout store | **Open (owner).** Path and format of the sindri-private store (addendum §17.19), and how a packet names a set. #142 names each held-out example by id and checks only the packet side (`PKT-HOLD-002`) |
+| R17 | Small-shape threshold | **Open (owner).** Confirm code lines as the §4b.1 measure, and whether `Aw.Packets` (1,841 code lines, #142) splits into four projects now or at its next slice |
 
 ## 10. Rollout and sizing (rough, one builder with agents)
 
@@ -931,6 +948,9 @@ the R1b stage PRs merged **and** the owner's label sync (§5 Level 3, TD-2):
   scanning unavailable, SEC-3 no CODEOWNERS, TD-2 labels not on the repo);
 - the same tree with `.github/labels.yml` applied to the repo (simulated): Level 4 holds. A CODEOWNERS file backed by
   a required check (SEC-3) would also reach it.
+
+`Aw.Packets`, the second standalone package, is #142 (stacked on #139, like #141). It wasn't in the measured tree; its
+`aw-packets validate` and `aw-packets freeze` are the R1b packet commands (addendum §17.4).
 
 **Stop rules:**
 - A package that overruns its packet's estimate by 2× is reviewed with the human before more work goes in.
