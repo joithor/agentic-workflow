@@ -320,7 +320,8 @@ export function check(root, today = new Date().toISOString().slice(0, 10)) {
   for (const e of edges.filter((x) => x.status === "current" && x.kind !== "project")) {
     if (!found.has(edgeKey(e))) fail("DEPS-STALE-001", "declared current edge not found in source", `${edgeText(e)}: no match under ${byId.get(e.from).scan?.join(", ") ?? "(no scan dirs)"}`, "a status: current edge exists in the source today", "set status: planned if it is still intended, or delete the edge");
   }
-  info.push(`scan: ${found.size} cli/db/file edges found in source, all declared` + (fails.some((f) => f.rule === "DEPS-EDGE-001") ? " except the failures below" : ""));
+  const undeclared = [...found.keys()].filter((k) => !declared.has(k)).length;
+  info.push(`scan: ${found.size} cli/db/file edges found in source, ${undeclared === 0 ? "all declared" : `${undeclared} undeclared (DEPS-EDGE-001 above)`}`);
 
   const projects = csprojs(path.join(root, "src"));
   if (projects.length === 0) info.push("project references: no C# projects yet — skipped, ok");
