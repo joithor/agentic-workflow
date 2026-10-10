@@ -1,5 +1,6 @@
 using Aw.Judge.Features.GetBrief;
 using Aw.Judge.Features.GetHealth;
+using Aw.Judge.Features.MapBriefByDispatch;
 using Aw.Judge.Features.MapBriefByName;
 using Aw.Judge.Features.SaveBrief;
 using Aw.Kernel.Services;
@@ -43,6 +44,13 @@ public static class JudgeFeaturesServiceCollectionExtensions
                 new ValidatingService<MapBriefByNameRequest, MapBriefByNameResponse>(
                     sp.GetRequiredService<MapBriefByNameService>(),
                     sp.GetRequiredService<IValidator<MapBriefByNameRequest>>()));
+        _ = services
+            .AddScoped<MapBriefByDispatchService>()
+            .AddScoped<IValidator<MapBriefByDispatchRequest>, MapBriefByDispatchValidator>()
+            .AddScoped<IService<MapBriefByDispatchRequest, MapBriefByDispatchResponse>>(static sp =>
+                new ValidatingService<MapBriefByDispatchRequest, MapBriefByDispatchResponse>(
+                    sp.GetRequiredService<MapBriefByDispatchService>(),
+                    sp.GetRequiredService<IValidator<MapBriefByDispatchRequest>>()));
         return services;
     }
 }

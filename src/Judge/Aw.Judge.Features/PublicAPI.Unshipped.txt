@@ -110,3 +110,31 @@ static Aw.Judge.Features.MapBriefByName.MapBriefByNameRequest.operator !=(Aw.Jud
 static Aw.Judge.Features.MapBriefByName.MapBriefByNameRequest.operator ==(Aw.Judge.Features.MapBriefByName.MapBriefByNameRequest? left, Aw.Judge.Features.MapBriefByName.MapBriefByNameRequest? right) -> bool
 static Aw.Judge.Features.MapBriefByName.MapBriefByNameResponse.operator !=(Aw.Judge.Features.MapBriefByName.MapBriefByNameResponse? left, Aw.Judge.Features.MapBriefByName.MapBriefByNameResponse? right) -> bool
 static Aw.Judge.Features.MapBriefByName.MapBriefByNameResponse.operator ==(Aw.Judge.Features.MapBriefByName.MapBriefByNameResponse? left, Aw.Judge.Features.MapBriefByName.MapBriefByNameResponse? right) -> bool
+Aw.Judge.Features.MapBriefByDispatch.MapBriefByDispatchRequest
+Aw.Judge.Features.MapBriefByDispatch.MapBriefByDispatchRequest.<Clone>$() -> Aw.Judge.Features.MapBriefByDispatch.MapBriefByDispatchRequest!
+Aw.Judge.Features.MapBriefByDispatch.MapBriefByDispatchRequest.Deconstruct(out Aw.Judge.Core.Ids.SessionId SessionId, out Aw.Judge.Core.Ids.PromptId PromptId, out string! SubagentType) -> void
+Aw.Judge.Features.MapBriefByDispatch.MapBriefByDispatchRequest.Equals(Aw.Judge.Features.MapBriefByDispatch.MapBriefByDispatchRequest? other) -> bool
+Aw.Judge.Features.MapBriefByDispatch.MapBriefByDispatchRequest.MapBriefByDispatchRequest(Aw.Judge.Core.Ids.SessionId SessionId, Aw.Judge.Core.Ids.PromptId PromptId, string! SubagentType) -> void
+Aw.Judge.Features.MapBriefByDispatch.MapBriefByDispatchRequest.PromptId.get -> Aw.Judge.Core.Ids.PromptId
+Aw.Judge.Features.MapBriefByDispatch.MapBriefByDispatchRequest.PromptId.init -> void
+Aw.Judge.Features.MapBriefByDispatch.MapBriefByDispatchRequest.SessionId.get -> Aw.Judge.Core.Ids.SessionId
+Aw.Judge.Features.MapBriefByDispatch.MapBriefByDispatchRequest.SessionId.init -> void
+Aw.Judge.Features.MapBriefByDispatch.MapBriefByDispatchRequest.SubagentType.get -> string!
+Aw.Judge.Features.MapBriefByDispatch.MapBriefByDispatchRequest.SubagentType.init -> void
+Aw.Judge.Features.MapBriefByDispatch.MapBriefByDispatchResponse
+Aw.Judge.Features.MapBriefByDispatch.MapBriefByDispatchResponse.<Clone>$() -> Aw.Judge.Features.MapBriefByDispatch.MapBriefByDispatchResponse!
+Aw.Judge.Features.MapBriefByDispatch.MapBriefByDispatchResponse.Deconstruct(out Aw.Judge.Core.Ids.ToolUseId? ToolUseId) -> void
+Aw.Judge.Features.MapBriefByDispatch.MapBriefByDispatchResponse.Equals(Aw.Judge.Features.MapBriefByDispatch.MapBriefByDispatchResponse? other) -> bool
+Aw.Judge.Features.MapBriefByDispatch.MapBriefByDispatchResponse.MapBriefByDispatchResponse(Aw.Judge.Core.Ids.ToolUseId? ToolUseId) -> void
+Aw.Judge.Features.MapBriefByDispatch.MapBriefByDispatchResponse.ToolUseId.get -> Aw.Judge.Core.Ids.ToolUseId?
+Aw.Judge.Features.MapBriefByDispatch.MapBriefByDispatchResponse.ToolUseId.init -> void
+override Aw.Judge.Features.MapBriefByDispatch.MapBriefByDispatchRequest.Equals(object? obj) -> bool
+override Aw.Judge.Features.MapBriefByDispatch.MapBriefByDispatchRequest.GetHashCode() -> int
+override Aw.Judge.Features.MapBriefByDispatch.MapBriefByDispatchRequest.ToString() -> string!
+override Aw.Judge.Features.MapBriefByDispatch.MapBriefByDispatchResponse.Equals(object? obj) -> bool
+override Aw.Judge.Features.MapBriefByDispatch.MapBriefByDispatchResponse.GetHashCode() -> int
+override Aw.Judge.Features.MapBriefByDispatch.MapBriefByDispatchResponse.ToString() -> string!
+static Aw.Judge.Features.MapBriefByDispatch.MapBriefByDispatchRequest.operator !=(Aw.Judge.Features.MapBriefByDispatch.MapBriefByDispatchRequest? left, Aw.Judge.Features.MapBriefByDispatch.MapBriefByDispatchRequest? right) -> bool
+static Aw.Judge.Features.MapBriefByDispatch.MapBriefByDispatchRequest.operator ==(Aw.Judge.Features.MapBriefByDispatch.MapBriefByDispatchRequest? left, Aw.Judge.Features.MapBriefByDispatch.MapBriefByDispatchRequest? right) -> bool
+static Aw.Judge.Features.MapBriefByDispatch.MapBriefByDispatchResponse.operator !=(Aw.Judge.Features.MapBriefByDispatch.MapBriefByDispatchResponse? left, Aw.Judge.Features.MapBriefByDispatch.MapBriefByDispatchResponse? right) -> bool
+static Aw.Judge.Features.MapBriefByDispatch.MapBriefByDispatchResponse.operator ==(Aw.Judge.Features.MapBriefByDispatch.MapBriefByDispatchResponse? left, Aw.Judge.Features.MapBriefByDispatch.MapBriefByDispatchResponse? right) -> bool

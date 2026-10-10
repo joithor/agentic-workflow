@@ -26,4 +26,8 @@ public static class A
     /// <summary>A MapBriefByNameRequest builder with deterministic defaults.</summary>
     /// <returns>A new builder.</returns>
     public static MapBriefByNameRequestBuilder MapBriefByNameRequest() => new();
+
+    /// <summary>A MapBriefByDispatchRequest builder with deterministic defaults.</summary>
+    /// <returns>A new builder.</returns>
+    public static MapBriefByDispatchRequestBuilder MapBriefByDispatchRequest() => new();
 }

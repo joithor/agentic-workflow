@@ -1,6 +1,7 @@
 using System.Text.Json.Serialization;
 using Aw.Judge.Features.GetBrief;
 using Aw.Judge.Features.GetHealth;
+using Aw.Judge.Features.MapBriefByDispatch;
 using Aw.Judge.Features.MapBriefByName;
 using Aw.Judge.Features.SaveBrief;
 using Aw.Judge.Host.Commands;
@@ -20,4 +21,6 @@ namespace Aw.Judge.Host;
 [JsonSerializable(typeof(GetBriefResponse))]
 [JsonSerializable(typeof(MapBriefByNameRequest))]
 [JsonSerializable(typeof(MapBriefByNameResponse))]
+[JsonSerializable(typeof(MapBriefByDispatchRequest))]
+[JsonSerializable(typeof(MapBriefByDispatchResponse))]
 internal sealed partial class JudgeJsonContext : JsonSerializerContext;
