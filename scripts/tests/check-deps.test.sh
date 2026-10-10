@@ -122,14 +122,14 @@ expect "YAML outside the subset fails" 1 "DEPS-YAML-001" "anchor"
 d="$(fixture yaml-dup)"; perl -pi -e 's/^    note: delta\n/    note: delta\n    note: again\n/' "$d/deps.yaml"; run "$d"
 expect "duplicate key fails" 1 "DEPS-YAML-001" "duplicate key"
 
-d="$(fixture fanout)"; perl -pi -e 's/projectFanOut: 4/projectFanOut: 1/' "$d/deps.yaml"; edge "$d" Beta Alpha project planned; run "$d"
+d="$(fixture fanout)"; perl -pi -e 's/packageFanOut: 4/packageFanOut: 1/' "$d/deps.yaml"; edge "$d" Beta Alpha project planned; run "$d"
 expect "fan-out over the limit fails" 1 "DEPS-FANOUT-001" "Beta has 2 project edges" "limit: 1"
 
-d="$(fixture fanout-exc)"; perl -pi -e 's/projectFanOut: 4/projectFanOut: 1/' "$d/deps.yaml"; edge "$d" Beta Alpha project planned
-perl -pi -e 's/^exceptions: \[\]\n/exceptions:\n  - rule: DEPS-FANOUT-001\n    subject: Beta\n    reason: test\n    recorded: 2026-10-10\n    expires: 2099-01-01\n/' "$d/deps.yaml"; run "$d"
-expect "an unexpired exception silences fan-out" 0 "deps: ok" "exception DEPS-FANOUT-001 Beta (expires 2099-01-01)"
+d="$(fixture fanout-exc)"; perl -pi -e 's/packageFanOut: 4/packageFanOut: 1/' "$d/deps.yaml"; edge "$d" Beta Alpha project planned
+perl -pi -e 's/^exceptions: \[\]\n/exceptions:\n  - rule: DEPS-FANOUT-001\n    subject: Beta\n    reason: test\n    recorded: 2026-10-10\n    expires: 2027-01-01\n/' "$d/deps.yaml"; run "$d"
+expect "an unexpired exception silences fan-out" 0 "deps: ok" "exception DEPS-FANOUT-001 Beta (expires 2027-01-01)"
 
-d="$(fixture fanout-expired)"; perl -pi -e 's/projectFanOut: 4/projectFanOut: 1/' "$d/deps.yaml"; edge "$d" Beta Alpha project planned
+d="$(fixture fanout-expired)"; perl -pi -e 's/packageFanOut: 4/packageFanOut: 1/' "$d/deps.yaml"; edge "$d" Beta Alpha project planned
 perl -pi -e 's/^exceptions: \[\]\n/exceptions:\n  - rule: DEPS-FANOUT-001\n    subject: Beta\n    reason: test\n    recorded: 2020-01-01\n    expires: 2020-06-01\n/' "$d/deps.yaml"; run "$d"
 expect "an expired exception fails and no longer silences" 1 "DEPS-EXC-001" "DEPS-FANOUT-001"
 
@@ -160,6 +160,171 @@ expect "missing deps.yaml is a tool error (exit 2)" 2 "deps.yaml not found"
 
 run "$BASE" --bogus
 expect "unknown flag is a tool error (exit 2)" 2 "unknown argument"
+
+# ---- review run 1 (PR #92): scan shapes ----
+d="$(fixture ts-shapes)"
+cat > "$d/delta/src/calls.ts" <<'TS'
+import { execSync, execFile } from "node:child_process";
+export const a = () => execSync("alpha report --json");
+export const b = (x: string) => execSync(`alpha report ${x}`);
+export const c = () => execFileAsync("alpha", ["x"]);
+export const d = () => execFile(
+  "alpha",
+  ["x"],
+);
+const cmd = process.env.ALPHA_BIN ?? "alpha";
+export const e = () => execFile(cmd, ["health"]);
+TS
+run "$d"
+expect "exec strings, *Async, wrapped calls and env fallbacks are cli edges" 1 \
+  "Delta -> Alpha (cli): delta/src/calls.ts:2" "1 undeclared"
+
+d="$(fixture ts-each)"
+for shape in 'execSync(`alpha report ${x}`);' 'await execFileAsync("alpha", []);' $'execFile(\n  "alpha",\n  [],\n);' 'const c = process.env.ALPHA_BIN || "alpha";' 'spawn(process.env.ALPHA_BIN!, []);'; do
+  printf '%s\n' "$shape" > "$d/delta/src/calls.ts"; run "$d"
+  expect "ts shape is a cli edge: $(printf '%s' "$shape" | head -1)" 1 "Delta -> Alpha (cli)"
+done
+
+d="$(fixture ts-comments)"
+printf 'export const x = 1; // execFile("alpha", [])\n/* spawn("alpha")\n   execSync("alpha x") */\nconst s = "see execFile(\\"alpha\\") in docs";\n' > "$d/delta/src/calls.ts"
+run "$d"
+expect "calls inside comments are not edges" 0 "deps: ok"
+
+d="$(fixture sh-shapes)"
+for shape in 'FOO=1 beta x' 'env FOO=1 beta x' 'sudo beta x' 'nohup beta x &' 'printf x | xargs beta' '! beta x' 'out=`beta x`' '"$DIR/beta" x' '$HOME/.local/bin/beta x' '"$BETA_BIN" x' 'which beta' 'exec beta x'; do
+  printf '#!/usr/bin/env bash\n%s\n' "$shape" > "$d/hooks/other.sh"; run "$d"
+  expect "shell shape is a cli edge: $shape" 1 "Hooks -> Beta (cli)"
+done
+
+d="$(fixture sh-prose)"
+printf '#!/usr/bin/env bash\necho "then beta first"\nprintf "%%s\\n" "do beta"\ncat <<EOF\n  beta doctor\nEOF\ncat <<'"'"'X'"'"'\nbeta report\nX\nlog "if beta fails"\n' > "$d/hooks/other.sh"
+run "$d"
+expect "echo, printf, log lines and heredoc bodies are not launches" 0 "deps: ok"
+
+d="$(fixture binpath)"; perl -pi -e 's/^    bins: \[beta\]\n/    bins: [beta]\n    binPaths: [beta\/dist\/bin.js]\n/' "$d/deps.yaml"
+printf 'const p = path.join(root, "beta", "dist", "bin.js");\n' > "$d/delta/src/run.ts"; run "$d"
+expect "a binPaths entry is a cli edge" 1 "Delta -> Beta (cli)" "launches beta/dist/bin.js"
+
+d="$(fixture walk-skip)"; mkdir -p "$d/delta/src/node_modules/x" "$d/delta/src/dist"
+printf 'execFile("alpha", []);\n' > "$d/delta/src/node_modules/x/i.ts"; cp "$d/delta/src/node_modules/x/i.ts" "$d/delta/src/dist/i.js"
+printf '#!/usr/bin/env bash\nbeta x\n' > "$d/hooks/gate.test.sh"; run "$d"
+expect "node_modules, dist and *.test.sh are not scanned" 0 "deps: ok"
+
+# ---- namespaces ----
+d="$(fixture ns-hook)"; printf '#!/usr/bin/env bash\nT="$AW_STATE_DIR/alpha/names.jsonl"\n' > "$d/hooks/names.sh"; run "$d"
+expect "a hook using an unlisted file in alpha's namespace is the declared file edge" 0 "deps: ok"
+d="$(fixture ns-ts)"; printf 'const c = path.join(stateDir, "alpha", "config.json");\n' > "$d/delta/src/cfg.ts"; run "$d"
+expect "any file in another package's namespace is a file edge" 1 "Delta -> Alpha (file): delta/src/cfg.ts:1" "uses alpha/ (namespace)"
+d="$(fixture ns-db)"; run "$d"
+refuse "a db path does not also count as a namespace file edge" "Beta -> Alpha (file)"
+
+# ---- status both ways ----
+d="$(fixture planned-found)"; edge "$d" Delta Alpha cli planned; printf 'execFile("alpha", []);\n' > "$d/delta/src/run.ts"; run "$d"
+expect "a planned edge the scan finds must become current" 1 "DEPS-STALE-002" "Delta -> Alpha (cli)" "status: current"
+d="$(fixture stale-db)"; printf 'export const ask = () => execFile("alpha", []);\n' > "$d/beta/src/run.ts"; run "$d"
+expect "a current db edge the scan no longer finds is stale" 1 "DEPS-STALE-001" "Beta -> Alpha (db)"
+d="$(fixture stale-file)"; perl -ni -e 'print unless /alpha\/outbox/' "$d/hooks/gate.sh"; run "$d"
+expect "a current file edge the scan no longer finds is stale" 1 "DEPS-STALE-001" "Hooks -> Alpha (file)"
+d="$(fixture proj-planned-real)"
+csproj "$d" src/Beta/Aw.Beta.Core/Aw.Beta.Core.csproj ../../Aw.Kernel/Aw.Kernel.csproj; csproj "$d" src/Aw.Kernel/Aw.Kernel.csproj; run "$d"
+expect "a planned project edge with a real reference must become current" 1 "DEPS-STALE-002" "Beta -> Kernel (project)"
+d="$(fixture proj-current-missing)"; perl -0pi -e 's/kind: project\n    status: planned/kind: project\n    status: current/' "$d/deps.yaml"
+csproj "$d" src/Beta/Aw.Beta.Core/Aw.Beta.Core.csproj; csproj "$d" src/Aw.Kernel/Aw.Kernel.csproj; run "$d"
+expect "a current project edge without a reference is stale" 1 "DEPS-STALE-001" "Beta -> Kernel (project)"
+d="$(fixture proj-current-noproj)"; perl -0pi -e 's/kind: project\n    status: planned/kind: project\n    status: current/' "$d/deps.yaml"; run "$d"
+expect "a current project edge is stale while its package has no projects" 1 "DEPS-STALE-001" "Beta -> Kernel (project)"
+
+# ---- tiers and sublevels ----
+d="$(fixture sublevel)"; perl -pi -e 's/^    projectPrefix: Aw.Delta\n/    projectPrefix: Aw.Delta\n    sublevel: 1\n/' "$d/deps.yaml"; edge "$d" Delta Beta project planned; run "$d"
+expect "sublevel outside tier 0 fails" 1 "DEPS-SCHEMA-001" "/packages/3"
+refuse "sublevel outside tier 0 does not unlock a same-tier project edge" "deps: ok"
+
+# ---- references and invariants ----
+d="$(fixture dup-id)"; perl -0pi -e 's/  - id: Delta\n/  - id: Beta\n/' "$d/deps.yaml"; run "$d"
+expect "duplicate package id fails" 1 "DEPS-REF-002" "Beta"
+d="$(fixture dup-edge)"; edge "$d" Beta Alpha cli current; run "$d"
+expect "duplicate edge fails" 1 "DEPS-REF-003" "Beta -> Alpha (cli)"
+d="$(fixture dup-prefix)"; perl -pi -e 's/projectPrefix: Aw.Delta/projectPrefix: Aw.Beta/' "$d/deps.yaml"; run "$d"
+expect "two packages with one projectPrefix fails" 1 "DEPS-REF-004" "Aw.Beta"
+d="$(fixture exc-unknown)"; perl -pi -e 's/^exceptions: \[\]\n/exceptions:\n  - rule: DEPS-FANOUT-001\n    subject: Zeta\n    reason: test\n    recorded: 2026-10-10\n    expires: 2026-12-01\n/' "$d/deps.yaml"; run "$d"
+expect "an exception for an unknown package fails" 1 "DEPS-REF-001" "Zeta"
+d="$(fixture self-loop)"; edge "$d" Delta Delta cli planned; run "$d"
+expect "a self-loop is a cycle" 1 "DEPS-CYCLE-001" "Delta -> Delta"
+d="$(fixture cycle3)"; edge "$d" Alpha Delta cli planned; edge "$d" Delta Beta cli planned; run "$d"
+expect "a three-node cycle reports its path" 1 "DEPS-CYCLE-001" "Alpha -> Delta -> Beta -> Alpha"
+
+# ---- exceptions ----
+d="$(fixture exc-unused)"; perl -pi -e 's/^exceptions: \[\]\n/exceptions:\n  - rule: DEPS-FANOUT-001\n    subject: Beta\n    reason: test\n    recorded: 2026-10-10\n    expires: 2026-12-01\n/' "$d/deps.yaml"; run "$d"
+expect "an exception that suppresses nothing fails" 1 "DEPS-EXC-002" "DEPS-FANOUT-001 for Beta"
+d="$(fixture exc-rule)"; perl -pi -e 's/^exceptions: \[\]\n/exceptions:\n  - rule: DEPS-TIER-001\n    subject: Beta\n    reason: test\n    recorded: 2026-10-10\n    expires: 2026-12-01\n/' "$d/deps.yaml"; run "$d"
+expect "an exception for a rule that takes none fails the schema" 1 "DEPS-SCHEMA-001" "/exceptions/0/rule"
+for dates in "2026-13-45 2026-12-01" "2026-12-01 2026-11-01" "2026-10-10 2027-10-10"; do
+  set -- $dates; d="$(fixture "exc-dates-$1-$2")"; perl -pi -e 's/packageFanOut: 4/packageFanOut: 1/' "$d/deps.yaml"; edge "$d" Beta Alpha project planned
+  perl -pi -e "s/^exceptions: \[\]\n/exceptions:\n  - rule: DEPS-FANOUT-001\n    subject: Beta\n    reason: test\n    recorded: $1\n    expires: $2\n/" "$d/deps.yaml"; run "$d"
+  expect "bad exception dates fail (recorded $1, expires $2)" 1 "DEPS-EXC-003"
+done
+
+# ---- schema: consumer nodes ----
+d="$(fixture shell-files)"; perl -pi -e 's/^    scan: \[hooks\]\n/    scan: [hooks]\n    files: [hooks-state]\n/' "$d/deps.yaml"; run "$d"
+expect "a shell node cannot own bins, db or files" 1 "DEPS-SCHEMA-001" "/packages/4"
+
+# ---- C# projects ----
+d="$(fixture csproj-variants)"
+mkdir -p "$d/src/Beta/Aw.Beta.Core" "$d/src/Delta/Aw.Delta.Core" "$d/src/Beta/tests/Aw.Beta.Tests" "$d/tests/Aw.Delta.Tests"
+printf '<Project>\n  <ItemGroup>\n    <ProjectReference Condition="true" Include="..\\..\\Delta\\Aw.Delta.Core\\Aw.Delta.Core.csproj" />\n  </ItemGroup>\n</Project>\n' > "$d/src/Beta/Aw.Beta.Core/Aw.Beta.Core.csproj"
+printf '<Project />\n' > "$d/src/Delta/Aw.Delta.Core/Aw.Delta.Core.csproj"
+run "$d"
+expect "Include after another attribute, with backslashes, is read" 1 "DEPS-PROJ-001" "Aw.Beta.Core -> Aw.Delta.Core"
+printf "<Project><ItemGroup><ProjectReference Include='../../Delta/Aw.Delta.Core/Aw.Delta.Core.csproj'/></ItemGroup></Project>\n" > "$d/src/Beta/Aw.Beta.Core/Aw.Beta.Core.csproj"; run "$d"
+expect "single-quoted Include is read" 1 "DEPS-PROJ-001" "Aw.Beta.Core -> Aw.Delta.Core"
+printf '<Project><!-- <ProjectReference Include="../../Delta/Aw.Delta.Core/Aw.Delta.Core.csproj" /> --></Project>\n' > "$d/src/Beta/Aw.Beta.Core/Aw.Beta.Core.csproj"; run "$d"
+expect "a commented-out ProjectReference is ignored" 0 "deps: ok"
+printf '<Project><ItemGroup><ProjectReference Include="../../../Delta/Aw.Delta.Core/Aw.Delta.Core.csproj" /></ItemGroup></Project>\n' > "$d/src/Beta/tests/Aw.Beta.Tests/Aw.Beta.Tests.CSPROJ"; run "$d"
+expect "projects under tests/ dirs and .CSPROJ are read; test projects may reference any package" 0 "checked 3 C# projects"
+printf '<Project><ItemGroup><ProjectReference Include="../../src/Beta/tests/Aw.Beta.Tests/Aw.Beta.Tests.CSPROJ" /></ItemGroup></Project>\n' > "$d/tests/Aw.Delta.Tests/Aw.Delta.Tests.csproj"
+printf '<Project><ItemGroup><ProjectReference Include="../../Beta/tests/Aw.Beta.Tests/Aw.Beta.Tests.CSPROJ" /></ItemGroup></Project>\n' > "$d/src/Delta/Aw.Delta.Core/Aw.Delta.Core.csproj"; run "$d"
+expect "top-level tests/ is walked; nothing may reference a test project" 1 "DEPS-PROJ-003" "Aw.Delta.Core -> Aw.Beta.Tests" "checked 4 C# projects"
+d="$(fixture csproj-dbp)"; csproj "$d" src/Aw.Kernel/Aw.Kernel.csproj
+printf '<Project><ItemGroup><ProjectReference Include="Aw.Kernel/Aw.Kernel.csproj" /></ItemGroup></Project>\n' > "$d/src/Directory.Build.props"; run "$d"
+expect "a ProjectReference in Directory.Build.props fails" 1 "DEPS-PROJ-005" "src/Directory.Build.props"
+d="$(fixture csproj-testing)"; perl -0pi -e 's/(  - id: Alpha\n)/  - id: KTest\n    kind: package\n    tier: 0\n    test: true\n    projectPrefix: Aw.KTest\n    ts: null\n    src: src\/KTest\n    note: test support\n$1/' "$d/deps.yaml"
+csproj "$d" src/KTest/Aw.KTest/Aw.KTest.csproj; csproj "$d" src/Beta/Aw.Beta.Tests/Aw.Beta.Tests.csproj ../../KTest/Aw.KTest/Aw.KTest.csproj; run "$d"
+expect "a test project may reference a test-support package without a declared edge" 0 "deps: ok"
+csproj "$d" src/Beta/Aw.Beta.Core/Aw.Beta.Core.csproj ../../KTest/Aw.KTest/Aw.KTest.csproj; run "$d"
+expect "a production project referencing a test-support package fails" 1 "DEPS-PROJ-001" "Aw.Beta.Core -> Aw.KTest"
+
+# ---- real per-project fan-out ----
+d="$(fixture proj-fanout)"; perl -pi -e 's/^  projectFanOut: 4\n/  projectFanOut: 1\n/; s/thirdPartyFanOut: 6/thirdPartyFanOut: 1/' "$d/deps.yaml"
+perl -0pi -e 's/kind: project\n    status: planned/kind: project\n    status: current/' "$d/deps.yaml"; edge "$d" Beta Alpha project current
+csproj "$d" src/Aw.Kernel/Aw.Kernel.csproj; csproj "$d" src/Alpha/Aw.Alpha.Core/Aw.Alpha.Core.csproj
+csproj "$d" src/Beta/Aw.Beta.Core/Aw.Beta.Core.csproj ../../Aw.Kernel/Aw.Kernel.csproj ../../Alpha/Aw.Alpha.Core/Aw.Alpha.Core.csproj
+csproj "$d" src/Beta/Aw.Beta.Host/Aw.Beta.Host.csproj ../../Aw.Kernel/Aw.Kernel.csproj ../../Alpha/Aw.Alpha.Core/Aw.Alpha.Core.csproj ../Aw.Beta.Core/Aw.Beta.Core.csproj
+run "$d"
+expect "a project over the in-repo fan-out fails; Host is exempt" 1 "DEPS-FANOUT-002" "Aw.Beta.Core references 2 in-repo projects"
+refuse "Host projects are exempt from fan-out" "Aw.Beta.Host references"
+printf '<Project><ItemGroup><PackageReference Include="A" /><PackageReference Include="B" /><PackageReference Include="An.Analyzer" PrivateAssets="all" /></ItemGroup></Project>\n' > "$d/src/Alpha/Aw.Alpha.Core/Aw.Alpha.Core.csproj"; run "$d"
+expect "a project over the third-party fan-out fails; analyzers excluded" 1 "DEPS-FANOUT-003" "Aw.Alpha.Core references 2 third-party packages (A, B)"
+
+# ---- arguments ----
+run "$BASE" --root
+expect "--root without a value is a tool error" 2 "--root needs a value"
+d="$(fixture args)"; run "$d" --mermaid --base-file
+expect "--base-file without a value is a tool error" 2 "--base-file needs a value"
+run "$d" --base-file "$d/deps.yaml"
+expect "--base-file without --mermaid is a tool error" 2 "--base-file needs --mermaid"
+run "$d" --mermaid --base-file "$TMPROOT/nope.yaml"
+expect "a missing base file is a clean tool error" 2 "base file not found"
+refuse "a missing base file prints no stack" "    at "
+d="$(fixture mermaid-bad)"; perl -pi -e 's/^    tier: 2\n/    tier: 7\n/' "$d/deps.yaml"; run "$d" --mermaid
+expect "--mermaid on an invalid deps.yaml skips the graph" 1 "DEPS-SCHEMA-001" "mermaid: skipped"
+
+# ---- fix lines ----
+d="$(fixture fixcmd)"; printf 'execFile("beta", []);\n' > "$d/alpha/src/call.ts"; run "$d"
+expect "fix prints the YAML to paste and the rerun command" 1 "      - from: Alpha" "rerun: node scripts/check-deps.mjs"
+
+# ---- parser, validator and schema drift (node unit table) ----
+set +e; UNIT="$(node "$HERE/check-deps.unit.mjs" 2>&1)"; UCODE=$?; set -e
+if [ "$UCODE" = 0 ]; then ok "parser/validator unit table ($(printf '%s' "$UNIT" | tail -1))"; else fail "parser/validator unit table"; printf '%s\n' "$UNIT" | sed 's/^/       | /'; fi
 
 echo
 echo "check-deps: $PASS passed, $FAIL failed"
