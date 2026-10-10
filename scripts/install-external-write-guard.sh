@@ -61,6 +61,7 @@ if ! command -v "$JUDGE_BIN" > /dev/null 2>&1; then
 fi
 
 mkdir -p "$HOOKS_DIR"
+aw_install_failopen_lib "$HOOKS_DIR"
 
 cp "$ROOT/config/hooks/external-write-guard.sh" "$HOOKS_DIR/external-write-guard.sh"
 chmod +x "$HOOKS_DIR/external-write-guard.sh"

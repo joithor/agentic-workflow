@@ -80,6 +80,7 @@ mkdir -p "$HOOKS_DIR"
 # "$(dirname "${BASH_SOURCE[0]}")/lib/locks.sh" first — i.e. right here.
 mkdir -p "$HOOKS_DIR/lib"
 cp "$ROOT/config/lib/locks.sh" "$HOOKS_DIR/lib/locks.sh"
+aw_install_failopen_lib "$HOOKS_DIR"
 
 cp "$ROOT/config/hooks/send-gate.sh" "$HOOKS_DIR/send-gate.sh"
 chmod +x "$HOOKS_DIR/send-gate.sh"

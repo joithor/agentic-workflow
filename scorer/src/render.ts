@@ -1,4 +1,5 @@
 import type { Verdict } from "./format-health.js";
+import { renderFailOpenSection, type FailOpenRow } from "./hook-failopen.js";
 import { renderJudgeSection, type JudgeReportRow } from "./judge-section.js";
 import type { Metrics } from "./metrics.js";
 import type { Known } from "./ui-evidence-cost.js";
@@ -29,8 +30,8 @@ const NO_MERGES = "n/a (no merged PRs)";
 // the user's /context reading, 2026-09-27 — see the plan's "Spec correction" section.
 const CONTEXT_CALIBRATION: Record<string, number> = { skill_listing: 10000, instructions: 5600, mcp_instructions: 3100 };
 
-export function renderReport(m: Metrics, v: Verdict, judgeRows: JudgeReportRow[] = []): string {
-  const lines = [`# Scorer report — ${m.until.slice(0, 10)}`, "", `Window: ${m.since} → ${m.until}`, "", renderJudgeSection(judgeRows), ""];
+export function renderReport(m: Metrics, v: Verdict, judgeRows: JudgeReportRow[] = [], failOpen: readonly FailOpenRow[] = []): string {
+  const lines = [`# Scorer report — ${m.until.slice(0, 10)}`, "", `Window: ${m.since} → ${m.until}`, "", renderJudgeSection(judgeRows), "", renderFailOpenSection(failOpen), ""];
   if (v.status === "unknown-format") {
     lines.push("## ⚠ UNKNOWN TRANSCRIPT FORMAT", "", "The transcript JSONL no longer matches what the scorer parses. No numbers are shown, because they would be wrong. Fix `scorer/src/transcript/parse-line.ts` against a current transcript.", "", ...v.problems.map((p) => `- ${p}`), "");
     return lines.join("\n");

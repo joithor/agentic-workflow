@@ -156,6 +156,24 @@ test_send_gate_fails_open_loudly_when_locks_lib_is_missing() {
   echo "PASS: test_send_gate_fails_open_loudly_when_locks_lib_is_missing"
 }
 
+# HOOK-FAILOPEN (spec §4c, B5): every installer that copies a fail-open hook
+# also installs lib/failopen.sh, so the INSTALLED copy logs its fail-open
+# events — not only a repo checkout, where ../lib/failopen.sh happens to exist.
+test_installed_fail_open_hooks_log_hook_failopen() {
+  local pair installer hook
+  for pair in install-scope-gate:scope-gate install-done-gate:done-gate \
+              install-external-write-guard:external-write-guard install-wake-gating:send-gate; do
+    installer="${pair%%:*}"; hook="${pair#*:}"
+    install_full_envelope "$installer"
+    [ -f "$HOOKS_DIR/lib/failopen.sh" ] || { echo "FAIL: $installer did not install lib/failopen.sh"; exit 1; }
+    printf 'not json' | AW_STATE_DIR="$STATE_DIR" PATH="$BIN_DIR:$PATH" bash "$HOOKS_DIR/$hook.sh" > /dev/null 2>&1 || true
+    jq -e --arg h "$hook" 'select(.event == "HOOK-FAILOPEN" and .hook == $h and .cause == "input-unparsable")' \
+      "$STATE_DIR/logs/failopen.log" > /dev/null 2>&1 \
+      || { echo "FAIL: installed $hook.sh did not log HOOK-FAILOPEN to $STATE_DIR/logs/failopen.log"; exit 1; }
+  done
+  echo "PASS: test_installed_fail_open_hooks_log_hook_failopen"
+}
+
 test_judge_health_hook_installed_runs_clean
 test_context_guard_hook_installed_runs_clean
 test_scope_gate_hook_installed_runs_clean
@@ -163,4 +181,5 @@ test_done_gate_hook_installed_runs_clean
 test_external_write_guard_hook_installed_runs_clean
 test_installed_send_gate_batches_then_attaches_the_digest
 test_send_gate_fails_open_loudly_when_locks_lib_is_missing
+test_installed_fail_open_hooks_log_hook_failopen
 echo "All installed-hooks-smoke tests passed."

@@ -135,7 +135,7 @@ test_installs_lib_locks_alongside_send_gate() {
   echo "PASS: test_installs_lib_locks_alongside_send_gate"
 }
 
-test_uninstall_removes_lib_locks_and_empty_lib_dir() {
+test_uninstall_removes_lib_locks_keeps_shared_failopen() {
   local settings home bin_dir
   settings="$(mktemp -d)/settings.json"; home="$(mktemp -d)"
   echo '{}' > "$settings"
@@ -143,8 +143,11 @@ test_uninstall_removes_lib_locks_and_empty_lib_dir() {
   PATH="$bin_dir:$PATH" CLAUDE_SETTINGS_FILE="$settings" HOME="$home" bash "$ROOT/scripts/install-wake-gating.sh" > /dev/null
   PATH="$bin_dir:$PATH" CLAUDE_SETTINGS_FILE="$settings" HOME="$home" bash "$ROOT/scripts/install-wake-gating.sh" --uninstall > /dev/null
   [ -f "$home/.claude/hooks/lib/locks.sh" ] && { echo "FAIL: expected lib/locks.sh to be removed"; exit 1; }
-  [ -d "$home/.claude/hooks/lib" ] && { echo "FAIL: expected the now-empty hooks/lib dir to be removed"; exit 1; }
-  echo "PASS: test_uninstall_removes_lib_locks_and_empty_lib_dir"
+  # lib/failopen.sh is shared by every fail-open lever hook (scope-gate,
+  # done-gate, …), so uninstalling wake gating leaves it and the lib dir.
+  [ "$(ls -A "$home/.claude/hooks/lib")" = "failopen.sh" ] \
+    || { echo "FAIL: expected hooks/lib to hold only the shared failopen.sh, got: $(ls -A "$home/.claude/hooks/lib")"; exit 1; }
+  echo "PASS: test_uninstall_removes_lib_locks_keeps_shared_failopen"
 }
 
 test_uninstall_leaves_lib_dir_if_something_else_lives_there() {
@@ -166,7 +169,7 @@ test_installs_exactly_its_three_entries
 test_is_idempotent
 test_uninstall_restores_settings_byte_for_byte
 test_installs_lib_locks_alongside_send_gate
-test_uninstall_removes_lib_locks_and_empty_lib_dir
+test_uninstall_removes_lib_locks_keeps_shared_failopen
 test_uninstall_leaves_lib_dir_if_something_else_lives_there
 test_uninstall_removes_empty_state_dirs_but_keeps_queued_items
 test_uninstall_removes_empty_outbox_and_teammate_names
