@@ -57,6 +57,7 @@ classify_changes() {
         dotnet=true ;;
     esac
     case "$file" in
+      schemas/packets/*) ;;  # the packet schemas belong to Aw.Packets (its golden test, the dotnet area above)
       schemas/*|rules/*|deps.yaml) bash=true ;;  # check-deps and check-rules (and their suites) read these
     esac
     for pkg in "${TS_PACKAGES[@]}"; do
