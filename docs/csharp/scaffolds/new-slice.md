@@ -27,7 +27,9 @@ dependencies (§4b.2 split signal). The red stub takes none; the limit is checke
 
 ## Generated files
 
-Paths are for `shape: full`; in a `small` package, `Features/` and the Host files live inside `Aw.<Pkg>.App/`.
+Paths are for `shape: full`; in a `small` package, `Features/` and the Host files live inside `Aw.<Pkg>.App/`, and the
+request and response are `internal sealed record`s (`App` is an Exe under `host: cli`, where `CA1515` rejects public
+types; tests reach them through `App`'s `InternalsVisibleTo`).
 
 ```
 src/<Pkg>/Aw.<Pkg>.Features/<Slice>/
@@ -48,6 +50,7 @@ tests/Aw.<Pkg>.Tests/Ids/
 └── <Id>RouteBindingTests.cs # http, when a `{name}` in `route` uses the id: route/query binding, refused → 400, `?id=` → 400 (Lane=integration)
 tests/Aw.<Pkg>.Testing/
 └── <Slice>RequestBuilder.cs # public sealed class with deterministic defaults; A.<Slice>Request() returns it
+                             # (small: both internal, since the record is; Testing's InternalsVisibleTo reaches Tests)
 ```
 
 `<Conv>` by primitive: `string` → `StringIdJsonConverter`, `Guid` → `GuidIdJsonConverter`, `int` → `Int32IdJsonConverter`
@@ -65,7 +68,7 @@ IL2026/IL3050 (errors under warnings-as-errors). The test reaches the `internal`
 | File | Change |
 |---|---|
 | `src/<Pkg>/Aw.<Pkg>.Features/<Pkg>FeaturesServiceCollectionExtensions.cs` | Registers the service, its validator, and the validation decorator as the `IService<,>` (template below) |
-| `src/<Pkg>/Aw.<Pkg>.Features/PublicAPI.Unshipped.txt` | The request and response records and all their members, compiler-generated ones included, annotated — written by the `RS0016` code fix (`dotnet format analyzers <project> --diagnostics RS0016`) |
+| `src/<Pkg>/Aw.<Pkg>.Features/PublicAPI.Unshipped.txt` | `shape: full` only: the request and response records and all their members, compiler-generated ones included, annotated — written by the `RS0016` code fix (`dotnet format analyzers <project> --diagnostics RS0016`). In a `small` package the records are `internal`, so `App`'s PublicAPI files stay at `#nullable enable` and this step is skipped |
 | `src/<Pkg>/Aw.<Pkg>.Host/Endpoints/EndpointTable.cs` or `Commands/CommandTable.cs` | One line mapping the route or command |
 | `src/<Pkg>/Aw.<Pkg>.Host/<Pkg>JsonContext.cs` | `[JsonSerializable]` for `<Slice>Request`, `<Slice>Response`, and `<Slice>Body` (http) |
 | `src/<Pkg>/Aw.<Pkg>.Core/PublicAPI.Unshipped.txt` | When `ids` is non-empty or a new port interface is added. Each new id adds its type (from the `RS0016` code fix) and its Vogen-generated members (about 17 lines for a string id), which the code fix skips: those are recorded from the build's `RS0016` output (`docs/csharp/typed-ids.md`, "Public ids and PublicAPI files") and reviewed |
@@ -115,8 +118,8 @@ public readonly partial struct <Id> : ITypedId<<Id>, string>
 ```
 
 `ITypedId<TSelf, TValue>` declares `IParsable<TSelf>` in user code, and the converter reads with `TryFrom` and throws
-`JsonException` (AW-KERNEL-001 through `AwJson.Deserialize`, a 400 in ASP.NET body binding). `ITypedId` and the `StringIdJsonConverter`/`GuidIdJsonConverter`/`Int32IdJsonConverter` ship
-with the typed-ids PR (#100, C3); the recipe is `docs/csharp/typed-ids.md`. The package's `VogenDefaults.cs` (from
+`JsonException` (AW-KERNEL-001 through `AwJson.Deserialize`, a 400 in ASP.NET body binding). `ITypedId` is in `Aw.Kernel.Ids`, the `StringIdJsonConverter`/`GuidIdJsonConverter`/`Int32IdJsonConverter` are in
+`Aw.Kernel.Json`, and the recipe is `docs/csharp/typed-ids.md`. The package's `VogenDefaults.cs` (from
 `/new-package`) sets all six arguments of `docs/csharp/typed-ids.md` step 2, verbatim. **Before an id in this form binds a route** (an
 http slice whose `route` has `{id}`), the generator adds an RDG route-binding test for it in
 `tests/Aw.<Pkg>.Tests/Ids/<Id>RouteBindingTests.cs` (Lane=integration): an id in the `ITypedId` form is used behind an
@@ -124,8 +127,9 @@ endpoint only once that test passes; otherwise the id gets a hand-written `TryPa
 `/items/{id}` and `/items?id=` endpoints with the id, runs the Host's `ValueObjectValidation` middleware (from
 `/new-package`, `docs/csharp/typed-ids.md` step 4), and asserts through `WebApplicationFactory`: valid text → 200 with
 the id's value; text the type refuses → 400; an empty `?id=` → 400; and the endpoint's `ParameterBindingMetadata`
-reports the id as route/query with `hasTryParse: true`, so losing `IParsable` is a red test, not a production 500. The architecture test
-(`TypedIdGuard`, #100) covers every id in the assembly.
+reports the id as route/query with `hasTryParse: true`, so losing `IParsable` is a red test, not a production 500. The architecture check
+for the package's ids is a gap — R1b (TypedIdGuard moves to Aw.Architecture.Tests); today `TypedIdGuard` is internal
+to `tests/Aw.Kernel.Tests` and covers only the Kernel's ids.
 
 ### Template: `<Slice>Validator.cs`
 
@@ -242,7 +246,7 @@ dotnet format analyzers src/<Pkg>/Aw.<Pkg>.Core --diagnostics RS0016       # eac
 dotnet build src/<Pkg>/Aw.<Pkg>.Core 2>&1 \
   | sed -n "s/.*RS0016: Symbol '\(.*\)' is not part of the declared public API.*/\1/p" | sort -u \
   >> src/<Pkg>/Aw.<Pkg>.Core/PublicAPI.Unshipped.txt                      # Vogen's generated members (typed-ids.md); review them
-dotnet format analyzers src/<Pkg>/Aw.<Pkg>.Features --diagnostics RS0016   # PublicAPI lines for the new records
+dotnet format analyzers src/<Pkg>/Aw.<Pkg>.Features --diagnostics RS0016   # PublicAPI lines for the new records (shape: full; skipped for App)
 dotnet build -warnaserror                                         # 0 warnings
 dotnet test --solution AgenticWorkflow.slnx --filter-trait "Lane=unit" --ignore-exit-code 8   # exactly one failure: <Slice>Tests.<Slice>_<behavior>; exit 8 = empty lane in some project
 dotnet format --verify-no-changes

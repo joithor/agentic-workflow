@@ -91,7 +91,7 @@ tests/
 **Analyzer obligations the templates meet** (root settings from #89):
 
 - Every public type and member has a `///` summary (`CS1591` is an error in non-test projects).
-- Public API files, **library projects only** (`Core`, `Features`, `Infrastructure`, `App`; `Directory.Build.targets` turns these analyzers off for `*.Host`) (`RS0016`/`RS0017`/`RS0036`/`RS0037`): both files start with `#nullable enable`; Shipped has nothing
+- Public API files, **library projects only** (`Core`, `Features`, `Infrastructure`, `App`; `Directory.Build.targets` turns these analyzers off for `*.Host`) (`RS0016`/`RS0017`/`RS0036`/`RS0037`): both files start with `#nullable enable`; `App`'s files hold only that line (its types are `internal`, below); Shipped has nothing
   else; Unshipped lists every public symbol with nullability annotations, e.g.
   `static Aw.<Name>.Core.<Name>CoreServiceCollectionExtensions.Add<Name>Core(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!`.
   Records also list their compiler-generated members (about 12 lines each). The generator writes these lines from the
@@ -110,7 +110,12 @@ tests/
 **`shape: small`** replaces `Features`, `Infrastructure` and `Host` with one `Aw.<Name>.App` project: same files under
 `Features/`, `Infrastructure/`, `Commands/`, same `Add…()` methods, `OutputType=Exe` when `host`
 is `cli` (then `PublishAot=true` too; `http` is refused for `small`, see Inputs). `App` is a library under `Directory.Build.props`' project roles, so it gets
-`IsAotCompatible=true` from the root. Its `.editorconfig` lowers `CA1031` only for the boundary folders:
+`IsAotCompatible=true` from the root. Nothing outside the package references `App`, and with `host: cli` it is an Exe,
+where `CA1515` (an error under the root `.editorconfig`) rejects public types. So `App`'s types, its `Add…()` methods
+and its slice request and response records are `internal`; `App` declares `InternalsVisibleTo Aw.<Name>.Tests,
+Aw.<Name>.Testing`, and its PublicAPI files stay at `#nullable enable` only. `Aw.<Name>.Testing` declares
+`InternalsVisibleTo Aw.<Name>.Tests`, because its builders over those internal records are internal too. Its `.editorconfig` lowers `CA1031` only
+for the boundary folders:
 
 ```ini
 root = false
@@ -195,7 +200,7 @@ for now; the second HTTP package moves it into a tier-0 Kernel part (second use 
 |---|---|
 | `AgenticWorkflow.slnx` | Adds every new project under `/src/<Name>/` and `/tests/` folders |
 | `deps.yaml` | **The node:** if the package is declared already (as `Readiness` and `Packets` are), check that `tier`, `src` (`src/<Name>`) and `projectPrefix` (`Aw.<Name>`) match the inputs, else refuse `NP-DEPS-MISMATCH`. If it isn't declared, add it (`id: <Name>`, `kind: package`, `tier`, `projectPrefix: Aw.<Name>`, `ts: null`, `src: src/<Name>`, `note`). **The edges, one rule for both cases:** for every cross-package project edge the scaffold creates (always `<Name> → Kernel`, since `Core`, `Features` and `Infrastructure` reference `Aw.Kernel`, plus one per `depends` entry), a `planned` edge in `deps.yaml` becomes `current`, and a missing edge is added as `current` with a note. Planned edges the scaffold doesn't create stay `planned` (otherwise `DEPS-STALE-001`) |
-| `tests/Aw.Architecture.Tests/Packages.cs` | Registers the package's assemblies so every §4b.1 rule covers them |
+| `tests/Aw.Architecture.Tests/Packages.cs` | Only once that project exists (R1b): registers the package's assemblies so every §4b.1 rule covers them. Until then the generator skips this edit and prints `skipped: tests/Aw.Architecture.Tests doesn't exist yet (R1b)` |
 
 No other file changes. In particular the scaffold never touches `Directory.Packages.props` (see "Before the scaffold"),
 `setup.sh`, `providers/`, `config/` or MCP registration: nothing is installed before the cutover.
@@ -273,8 +278,8 @@ adds it here.
 
 ### Template: `VogenDefaults.cs` (Core, R9)
 
-Verbatim from `docs/csharp/typed-ids.md` step 2. `TypedIdGuard.CheckDefaults` fails unless all six arguments are set,
-and `TryFromGeneration.GenerateBoolMethod` is what `ITypedId`'s `static abstract bool TryFrom` binds to:
+Verbatim from `docs/csharp/typed-ids.md` step 2. `TypedIdGuard.CheckDefaults` checks all six arguments
+(for a package's assembly that check is a gap — R1b (TypedIdGuard moves to Aw.Architecture.Tests)), and `TryFromGeneration.GenerateBoolMethod` is what `ITypedId`'s `static abstract bool TryFrom` binds to:
 
 ```csharp
 using Vogen;
@@ -367,7 +372,7 @@ dotnet format analyzers <each new library project> --diagnostics RS0016   # writ
 dotnet build -warnaserror                               # must report 0 warnings, 0 errors
 dotnet test --solution AgenticWorkflow.slnx --filter-trait "Lane=unit" --ignore-exit-code 8   # HostTests pass; the slice test fails (expected); exit 8 = empty lane in some project
 dotnet format --verify-no-changes
-node scripts/check-deps.mjs                             # the package and edges are declared (once the deps-graph PR #92 merges)
+node scripts/check-deps.mjs                             # the package and edges are declared
 ```
 
 All of them run under the heavy-job lock.
@@ -376,7 +381,8 @@ All of them run under the heavy-job lock.
 
 1. The commands above produce exactly: both restores succeed; build 0 warnings; one failing test (the slice's), every
    other test green; format clean; deps check green.
-2. `tests/Aw.Architecture.Tests` passes with the new assemblies registered.
+2. Once `tests/Aw.Architecture.Tests` exists (R1b): it passes with the new assemblies registered. Until then this
+   criterion doesn't apply, and the generator's output says it was skipped.
 3. `git status` shows only the files listed above (including each new project's `packages.lock.json`).
 4. The generator prints the next step: "Make `<FirstSlice>Tests` pass: replace the `Assert.Fail` with the real
    assertion, add the ports the service needs, then implement it in `Features/<FirstSlice>/` (see `/new-slice`)."
