@@ -58,6 +58,13 @@ Aw.Kernel.Data.SqliteOptions.BusyTimeout.init -> void
 Aw.Kernel.Data.SqliteOptions.DatabasePath.get -> string!
 Aw.Kernel.Data.SqliteOptions.Equals(Aw.Kernel.Data.SqliteOptions? other) -> bool
 Aw.Kernel.Data.SqliteOptions.SqliteOptions(string! databasePath) -> void
+Aw.Kernel.Data.SqliteOutbox
+Aw.Kernel.Data.SqliteOutbox.Enqueue(Aw.Kernel.Outbox.OutboxCommand! command, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Kernel.Unit>!>
+Aw.Kernel.Data.SqliteOutbox.MarkDispatched(System.Guid id, System.DateTimeOffset dispatchedAt, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Kernel.Unit>!>
+Aw.Kernel.Data.SqliteOutbox.MarkFailed(System.Guid id, Aw.Kernel.Error! error, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Kernel.Unit>!>
+Aw.Kernel.Data.SqliteOutbox.ReadPending(int max, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<System.Collections.Generic.IReadOnlyList<Aw.Kernel.Outbox.OutboxCommand!>!>!>
+Aw.Kernel.Data.SqliteOutbox.SqliteOutbox(Aw.Kernel.Data.ISqliteSession! session, System.TimeProvider! clock, Aw.Kernel.Outbox.OutboxRetryPolicy! policy) -> void
+Aw.Kernel.Data.SqliteOutboxSchema
 Aw.Kernel.Data.SqliteQueries
 Aw.Kernel.Data.SqliteRead
 Aw.Kernel.Data.SqliteReadRepository<TEntity, TId>
@@ -115,6 +122,7 @@ static Aw.Kernel.Data.SqliteBind.BindId<TId>(this Microsoft.Data.Sqlite.SqliteCo
 static Aw.Kernel.Data.SqliteBind.BindId<TId>(this Microsoft.Data.Sqlite.SqliteCommand! command, string! name, TId id, System.Func<TId, string!>! value) -> Microsoft.Data.Sqlite.SqliteCommand!
 static Aw.Kernel.Data.SqliteOptions.operator !=(Aw.Kernel.Data.SqliteOptions? left, Aw.Kernel.Data.SqliteOptions? right) -> bool
 static Aw.Kernel.Data.SqliteOptions.operator ==(Aw.Kernel.Data.SqliteOptions? left, Aw.Kernel.Data.SqliteOptions? right) -> bool
+static Aw.Kernel.Data.SqliteOutboxSchema.CreateMigration(int version) -> Aw.Kernel.Data.Migration!
 static Aw.Kernel.Data.SqliteQueries.Execute(Aw.Kernel.Data.ISqliteSession! session, Aw.Kernel.Data.SqlStatement! statement, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<int>!>
 static Aw.Kernel.Data.SqliteQueries.Exists(Aw.Kernel.Data.ISqliteSession! session, Aw.Kernel.Data.SqlStatement! statement, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<bool>!>
 static Aw.Kernel.Data.SqliteQueries.List<T>(Aw.Kernel.Data.ISqliteSession! session, Aw.Kernel.Data.SqlStatement! statement, Aw.Kernel.Data.IRowMapper<T>! mapper, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<System.Collections.Generic.IReadOnlyList<T>!>!>
