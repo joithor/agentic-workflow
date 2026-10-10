@@ -1,0 +1,156 @@
+<section class="module" id="module-3" style="background: var(--color-bg)">
+  <div class="module-content">
+    <header class="module-header animate-in">
+      <span class="module-number">03</span>
+      <h1 class="module-title">Survey before you dig</h1>
+      <p class="module-subtitle">Find every surface a project touches before the code does, and prove it on old projects.</p>
+    </header>
+
+    <div class="module-body">
+
+      <section class="screen animate-in">
+        <h2 class="screen-heading">Call before you dig</h2>
+        <p>Before a crew digs, a surveyor marks every buried pipe and cable with paint. Hitting one mid-dig is how a two-day job becomes a two-week one. Projects sprawl the same way, when the surfaces and implications are found during implementation.</p>
+        <p><code>sindri scope</code> is the surveyor. It turns a brief into a cited <span class="term" data-definition="Sindri's survey of a project: every surface it touches (UI, API, job, data, integration), implications, workstreams with dependencies, acceptance checks and open product questions. Every entry cites a source.">scope map</span> up front. <span class="status built">built</span> <span class="ref">§7.5 · Plan 4</span></p>
+        <div class="pattern-cards">
+          <div class="pattern-card" style="border-top: 3px solid var(--color-actor-1)"><div class="pattern-icon" style="background: var(--color-actor-1)">🧭</div><h4 class="pattern-title">Surfaces</h4><p class="pattern-desc">UI, API, job, data, integration. Each one cites a source.</p></div>
+          <div class="pattern-card" style="border-top: 3px solid var(--color-actor-2)"><div class="pattern-icon" style="background: var(--color-actor-2)">⚠️</div><h4 class="pattern-title">Implications</h4><p class="pattern-desc">Migration, permissions, reporting, notifications, mobile, flags.</p></div>
+          <div class="pattern-card" style="border-top: 3px solid var(--color-actor-3)"><div class="pattern-icon" style="background: var(--color-actor-3)">🔀</div><h4 class="pattern-title">Workstreams</h4><p class="pattern-desc">With dependencies, and acceptance checks for each.</p></div>
+          <div class="pattern-card" style="border-top: 3px solid var(--color-actor-4)"><div class="pattern-icon" style="background: var(--color-actor-4)">❓</div><h4 class="pattern-title">Questions</h4><p class="pattern-desc">Open product questions, batched for you to answer at once.</p></div>
+        </div>
+      </section>
+
+      <section class="screen animate-in">
+        <h2 class="screen-heading">No paint mark without a source</h2>
+        <p>The model drafts the map, but code checks it. A surface that cites nothing, or cites something that isn't a real source, is rejected:</p>
+        <div class="translation-block animate-in">
+          <div class="translation-code">
+            <span class="translation-label">sindri/src/scope/map.ts</span>
+            <pre><code><span class="code-line">  <span class="code-keyword">for</span> (<span class="code-keyword">const</span> s <span class="code-keyword">of</span> map.surfaces) {</span>
+<span class="code-line">    <span class="code-keyword">if</span> (seen.<span class="code-function">has</span>(s.id)) reasons.<span class="code-function">push</span>(<span class="code-string">`duplicate surface id ${s.id}`</span>);</span>
+<span class="code-line">    seen.<span class="code-function">add</span>(s.id);</span>
+<span class="code-line">    <span class="code-keyword">if</span> (s.citations.length === <span class="code-number">0</span>) reasons.<span class="code-function">push</span>(<span class="code-string">`surface ${s.id} cites no source`</span>);</span>
+<span class="code-line">    <span class="code-keyword">for</span> (<span class="code-keyword">const</span> c <span class="code-keyword">of</span> s.citations) <span class="code-keyword">if</span> (!known.<span class="code-function">has</span>(c)) reasons.<span class="code-function">push</span>(<span class="code-string">`surface ${s.id} cites ${c}, which is not a source reference`</span>);</span>
+<span class="code-line">    <span class="code-keyword">if</span> (!inStream.<span class="code-function">has</span>(s.id)) reasons.<span class="code-function">push</span>(<span class="code-string">`surface ${s.id} is in no workstream`</span>);</span></code></pre>
+          </div>
+          <div class="translation-english">
+            <span class="translation-label">PLAIN ENGLISH</span>
+            <div class="translation-lines">
+              <p class="tl">Walk every surface the model proposed.</p>
+              <p class="tl">The same id twice? Write down why that's wrong.</p>
+              <p class="tl">Remember we've seen this one.</p>
+              <p class="tl">No citation at all: rejected.</p>
+              <p class="tl">A citation the model invented (not a real source): rejected. This is how <span class="term" data-definition="When a model states something confidently that isn't true or has no basis, such as citing a file or ticket that doesn't exist.">hallucinated</span> references get caught.</p>
+              <p class="tl">A surface no workstream owns would fall through the cracks: rejected.</p>
+            </div>
+          </div>
+        </div>
+        <p>The full check also refuses dependency cycles and workstreams without acceptance checks. Then a different model runs an adversarial "what's missing?" pass until nothing new appears.</p>
+      </section>
+
+      <section class="screen animate-in">
+        <h2 class="screen-heading">Proving it on yesterday's projects</h2>
+        <p>How do you know the surveyor is any good? Hand it an old project's original brief, with sources cut to that date, and compare its map to the issues people actually filed later. That's the <span class="term" data-definition="Re-running a method on past data where you already know the answer. Here: scope an old brief and check the map against the issues filed after it.">backtest</span>.</p>
+        <div class="step-cards">
+          <div class="step-card"><div class="step-num">1</div><div class="step-body"><strong>Original brief</strong><p>Sources cut to the brief's creation date, so there's no peeking at the future.</p></div></div>
+          <div class="step-card"><div class="step-num">2</div><div class="step-body"><strong>sindri scope → map surfaces</strong><p>Plus a brief-only baseline to beat.</p></div></div>
+          <div class="step-card"><div class="step-num">3</div><div class="step-body"><strong>Adjudicator, twice, order reversed</strong><p>A model labels matches, never a person (invariant 9). Only answers that agree in both orders count.</p></div></div>
+        </div>
+        <div class="translation-block animate-in">
+          <div class="translation-code">
+            <span class="translation-label">sindri/src/scope/backtest.ts</span>
+            <pre><code><span class="code-line">  <span class="code-keyword">const</span> recall = <span class="code-function">verdict</span>(r, PASS_BAR.recall);</span>
+<span class="code-line">  <span class="code-keyword">const</span> precision = <span class="code-function">verdict</span>(p, PASS_BAR.precision);</span>
+<span class="code-line">  <span class="code-keyword">const</span> beatsBaseline: Verdict = r === <span class="code-keyword">null</span> || b === <span class="code-keyword">null</span> ? <span class="code-string">"not measured"</span> : r &gt; b ? <span class="code-string">"met"</span> : <span class="code-string">"not met"</span>;</span>
+<span class="code-line">  <span class="code-keyword">const</span> all = [recall, precision, beatsBaseline];</span>
+<span class="code-line">  <span class="code-keyword">const</span> overall = all.<span class="code-function">includes</span>(<span class="code-string">"not measured"</span>) ? <span class="code-string">"NOT MEASURED"</span> : all.<span class="code-function">every</span>((v) =&gt; v === <span class="code-string">"met"</span>) ? <span class="code-string">"PASS"</span> : <span class="code-string">"NOT PASSED"</span>;</span></code></pre>
+          </div>
+          <div class="translation-english">
+            <span class="translation-label">PLAIN ENGLISH</span>
+            <div class="translation-lines">
+              <p class="tl"><span class="term" data-definition="Of the things that really mattered, how many did we find? Missing a real surface lowers recall.">Recall</span> must reach the bar (0.60)…</p>
+              <p class="tl">…and so must <span class="term" data-definition="Of the things we flagged, how many were real? Flagging imaginary surfaces lowers precision.">precision</span>.</p>
+              <p class="tl">Sindri must also find more than the brief alone would. If either number is missing, say so.</p>
+              <p class="tl">Collect the three verdicts.</p>
+              <p class="tl">Any unknown → <strong>NOT MEASURED</strong>, never a quiet pass. All met → <strong>PASS</strong>.</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="screen animate-in">
+        <h2 class="screen-heading">Scoping v2: a surveyor who keeps digging <span class="status designed">designed</span></h2>
+        <p>Today's challenger only re-reads the drafter's evidence, so it can only find what was already gathered. In v2, each round the challenger writes typed <span class="term" data-definition="A typed request the challenger writes (symbol, neighbours, similar, tracker, notes, route or flag). Sindri runs it against the code index, call graph, embeddings and tracker. The model itself still gets no tools.">expansion queries</span>, Sindri runs them, and the drafter revises with only the new evidence. Weak surfaces get pruned with a reason. The map says honestly whether it <em>converged</em> or was <em>capped</em>. <span class="ref">§17.26</span></p>
+        <p>Your studio edits are just more seeds. Match each edit to what Sindri re-runs:</p>
+        <div class="dnd-container" id="dnd-m3">
+          <div class="dnd-chips">
+            <div class="dnd-chip" draggable="true" data-answer="add">Add a surface or file</div>
+            <div class="dnd-chip" draggable="true" data-answer="remove">Remove one</div>
+            <div class="dnd-chip" draggable="true" data-answer="much">"Too much"</div>
+            <div class="dnd-chip" draggable="true" data-answer="missing">"Something's missing around X"</div>
+          </div>
+          <div class="dnd-zones">
+            <div class="dnd-zone" data-correct="add"><p class="dnd-zone-label">A retrieval round seeded by it: neighbours, similar code, tests, tickets that mention it</p><div class="dnd-zone-target">Drop here</div></div>
+            <div class="dnd-zone" data-correct="remove"><p class="dnd-zone-label">A dependency check on what cites it and what loses coverage</p><div class="dnd-zone-target">Drop here</div></div>
+            <div class="dnd-zone" data-correct="much"><p class="dnd-zone-label">The prune pass at a stricter bar</p><div class="dnd-zone-target">Drop here</div></div>
+            <div class="dnd-zone" data-correct="missing"><p class="dnd-zone-label">Your text becomes expansion queries; one round runs</p><div class="dnd-zone-target">Drop here</div></div>
+          </div>
+          <button class="btn" onclick="checkDnD('dnd-m3')">Check Matches</button>
+          <button class="btn" onclick="resetDnD('dnd-m3')">Reset</button>
+        </div>
+        <div class="callout callout-info">
+          <div class="callout-icon">🪦</div>
+          <div class="callout-content">
+            <strong class="callout-title">Removals leave a tombstone</strong>
+            <p>A removed item leaves a <span class="term" data-definition="A record that an item was removed and why, so the loop doesn't propose it again without new evidence. You can restore from it.">tombstone</span>, so the loop doesn't re-propose it without new evidence. Human adds are never pruned. And because labels come from the net difference at freeze, removing and then restoring something teaches nothing wrong.</p>
+          </div>
+        </div>
+      </section>
+
+      <section class="screen animate-in">
+        <h2 class="screen-heading">"Is this the right path at all?"</h2>
+        <p>Before more effort is committed, a <span class="term" data-definition="A checkpoint where a different model asks whether the current path is right: keep going, change approach, or stop and ask.">direction check</span> on a different model asks a pointed question. No path goes unchallenged. <span class="ref">§6.1</span></p>
+        <div class="badge-list">
+          <div class="badge-item"><code class="badge-code">approach</code><span class="badge-desc">First non-test source edit: does this solve the item as written? Is there a simpler path?</span></div>
+          <div class="badge-item"><code class="badge-code">scoping</code><span class="badge-desc">Before a proposal reaches you: right workstreams? Anything solving the wrong problem?</span></div>
+          <div class="badge-item"><code class="badge-code">drift</code><span class="badge-desc">2 failed rounds, a diff outside predicted files, or 2× time: keep going, change, or stop?</span></div>
+          <div class="badge-item"><code class="badge-code">shape</code><span class="badge-desc">A commit with a shape signal: reuse, generalize, or keep it with a reason?</span></div>
+          <div class="badge-item"><code class="badge-code">scope expansion</code><span class="badge-desc">A session wants a wider change: needed here, or a separate item?</span></div>
+        </div>
+      </section>
+
+      <section class="screen animate-in">
+        <h2 class="screen-heading">Check your understanding</h2>
+        <div class="quiz-container" id="quiz-m3">
+          <div class="quiz-question-block" data-correct="b"
+               data-explanation-right="High recall, low precision: it found the real surfaces but also flagged plenty of imaginary ones. The fix is pruning, not more searching."
+               data-explanation-wrong="Recall measures what it found of what was real; precision measures how much of what it flagged was real. 0.85 / 0.40 means lots of false alarms.">
+            <div class="scenario-block"><div class="scenario-context"><span class="scenario-label">Scenario</span>
+              <p>A backtest reports recall 0.85, precision 0.40. What's the map doing wrong?</p></div></div>
+            <div class="quiz-options">
+              <button class="quiz-option" data-value="a" onclick="selectOption(this)"><div class="quiz-option-radio"></div><span>Missing most of the real surfaces.</span></button>
+              <button class="quiz-option" data-value="b" onclick="selectOption(this)"><div class="quiz-option-radio"></div><span>Finding the real ones, but padding the map with surfaces nobody needed.</span></button>
+              <button class="quiz-option" data-value="c" onclick="selectOption(this)"><div class="quiz-option-radio"></div><span>Nothing, 0.85 is above the bar so it passes.</span></button>
+            </div>
+            <div class="quiz-feedback"></div>
+          </div>
+          <div class="quiz-question-block" data-correct="c"
+               data-explanation-right="Correct. Silence is never a pass. If some issues couldn't be judged, the number isn't known, and the report says NOT MEASURED."
+               data-explanation-wrong="Look at the first branch of overall: any 'not measured' wins. An unjudged issue makes the number unknown, not zero and not a pass.">
+            <div class="scenario-block"><div class="scenario-context"><span class="scenario-label">Debugging</span>
+              <p>The adjudicator timed out on 3 of 40 issues. Recall on the other 37 is 0.70. What does the backtest report?</p></div></div>
+            <div class="quiz-options">
+              <button class="quiz-option" data-value="a" onclick="selectOption(this)"><div class="quiz-option-radio"></div><span>PASS on recall, since 0.70 ≥ 0.60.</span></button>
+              <button class="quiz-option" data-value="b" onclick="selectOption(this)"><div class="quiz-option-radio"></div><span>NOT PASSED, since the timeouts count as misses.</span></button>
+              <button class="quiz-option" data-value="c" onclick="selectOption(this)"><div class="quiz-option-radio"></div><span>NOT MEASURED, with a note that some issues couldn't be judged.</span></button>
+            </div>
+            <div class="quiz-feedback"></div>
+          </div>
+          <button class="quiz-check-btn" onclick="checkQuiz('quiz-m3')">Check Answers</button>
+          <button class="quiz-reset-btn" onclick="resetQuiz('quiz-m3')">Try Again</button>
+        </div>
+      </section>
+
+    </div>
+  </div>
+</section>

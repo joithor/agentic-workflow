@@ -1,0 +1,182 @@
+<section class="module" id="module-2" style="background: var(--color-bg-warm)">
+  <div class="module-content">
+    <header class="module-header animate-in">
+      <span class="module-number">02</span>
+      <h1 class="module-title">The night watch</h1>
+      <p class="module-subtitle">A short tick, a single writer, bounded work, and the cheapest rung first.</p>
+    </header>
+
+    <div class="module-body">
+
+      <section class="screen animate-in">
+        <h2 class="screen-heading">A watchman doing rounds</h2>
+        <p>A night watchman doesn't sit in one room waiting for trouble. Every few minutes they walk the building, check each door, write in the logbook and move on. That's the <span class="term" data-definition="One short, deterministic pass of Sindri: read the ledger, check what finished, start what's due, notify, exit. macOS's launchd fires it on a schedule.">tick</span>.</p>
+        <p><span class="term" data-definition="macOS's built-in scheduler, the thing that starts programs at boot or on a timer. Sindri uses it instead of a long-running server process.">launchd</span> fires a short deterministic tick. It never waits on a model: model work runs in bounded jobs and sessions that end, and the next tick reads their results from the <span class="term" data-definition="Sindri's single SQLite database: items, events, decisions and adoptions. The one source of truth, kept outside every session's working tree.">ledger</span>. <span class="status designed">designed</span> <span class="ref">§5</span></p>
+        <div class="icon-rows">
+          <div class="icon-row"><div class="icon-circle" style="background: var(--color-actor-4)">⏰</div><div><strong>launchd</strong> <span class="status built">built</span><p>Already runs the hourly <code>sindri observe</code>, index builds and the Monday evolve job.</p></div></div>
+          <div class="icon-row"><div class="icon-circle" style="background: var(--color-actor-1)">🔦</div><div><strong>sindri tick</strong> <span class="status designed">designed</span><p>Reconciles, scans trackers, spawns jobs, routes items, starts sessions under the cap, notifies.</p></div></div>
+          <div class="icon-row"><div class="icon-circle" style="background: var(--color-actor-2)">📒</div><div><strong>ledger.db</strong> <span class="status built">built</span><p>SQLite, one writer, mode 0600. Hooks never write it; they drop files in a <span class="term" data-definition="A folder hooks append small files to. The tick reads them into the ledger and deletes them only after the database write commits, so nothing is lost if it crashes halfway.">spool</span>.</p></div></div>
+          <div class="icon-row"><div class="icon-circle" style="background: var(--color-actor-3)">⚖️</div><div><strong>judge</strong> <span class="status built">built</span><p>The cheap decision engine: questions answered on a provider chain, in milliseconds.</p></div></div>
+        </div>
+      </section>
+
+      <section class="screen animate-in">
+        <h2 class="screen-heading">One round, as a conversation</h2>
+        <div class="chat-window" id="chat-m2">
+          <div class="chat-messages">
+            <div class="chat-message" data-msg="0" data-sender="launchd" style="display:none">
+              <div class="chat-avatar" style="background: var(--color-actor-4)">⏰</div>
+              <div class="chat-bubble"><span class="chat-sender" style="color: var(--color-actor-4)">launchd</span><p>Time. Tick, you're up.</p></div>
+            </div>
+            <div class="chat-message" data-msg="1" data-sender="tick" style="display:none">
+              <div class="chat-avatar" style="background: var(--color-actor-1)">🔦</div>
+              <div class="chat-bubble"><span class="chat-sender" style="color: var(--color-actor-1)">tick</span><p>Taking the lock first. Ledger, what changed since my last round?</p></div>
+            </div>
+            <div class="chat-message" data-msg="2" data-sender="ledger" style="display:none">
+              <div class="chat-avatar" style="background: var(--color-actor-2)">📒</div>
+              <div class="chat-bubble"><span class="chat-sender" style="color: var(--color-actor-2)">ledger</span><p>The scoping job for T-41 finished. Session T-38 failed its verifier twice. Two spool files from hooks.</p></div>
+            </div>
+            <div class="chat-message" data-msg="3" data-sender="tick" style="display:none">
+              <div class="chat-avatar" style="background: var(--color-actor-1)">🔦</div>
+              <div class="chat-bubble"><span class="chat-sender" style="color: var(--color-actor-1)">tick</span><p>Judge: is T-42 an XS, clear, trusted item?</p></div>
+            </div>
+            <div class="chat-message" data-msg="4" data-sender="judge" style="display:none">
+              <div class="chat-avatar" style="background: var(--color-actor-3)">⚖️</div>
+              <div class="chat-bubble"><span class="chat-sender" style="color: var(--color-actor-3)">judge</span><p>Size XS, ambiguity low, confidence 0.91. Above threshold.</p></div>
+            </div>
+            <div class="chat-message" data-msg="5" data-sender="tick" style="display:none">
+              <div class="chat-avatar" style="background: var(--color-actor-1)">🔦</div>
+              <div class="chat-bubble"><span class="chat-sender" style="color: var(--color-actor-1)">tick</span><p>Starting a session for T-42 under the cap. T-38 is out of rounds: parking it and telling the human why. Done, see you next round.</p></div>
+            </div>
+          </div>
+          <div class="chat-typing" style="display:none">
+            <div class="chat-avatar" id="chat-m2-typing-avatar">?</div>
+            <div class="chat-typing-dots"><span class="typing-dot"></span><span class="typing-dot"></span><span class="typing-dot"></span></div>
+          </div>
+          <div class="chat-controls">
+            <button class="btn chat-next-btn">Next Message</button>
+            <button class="btn chat-all-btn">Play All</button>
+            <button class="btn chat-reset-btn">Replay</button>
+            <span class="chat-progress"></span>
+          </div>
+        </div>
+        <p>Notice what the tick never does: think hard, or wait. It asks, decides, starts and leaves.</p>
+      </section>
+
+      <section class="screen animate-in">
+        <h2 class="screen-heading">Only one watchman holds the key</h2>
+        <p>Two ticks running at once would double-start sessions. So the first thing a tick does is take a lock, using a trick the filesystem guarantees: renaming a folder onto a name that already exists fails. <span class="status built">built</span></p>
+        <div class="translation-block animate-in">
+          <div class="translation-code">
+            <span class="translation-label">sindri/src/lock/lock.ts</span>
+            <pre><code><span class="code-line">    <span class="code-keyword">for</span> (<span class="code-keyword">let</span> attempt = <span class="code-number">0</span>; attempt &lt; <span class="code-number">3</span>; attempt++) {</span>
+<span class="code-line">      <span class="code-comment">// Atomic: rename fails while sindri.lock exists (it is never empty).</span></span>
+<span class="code-line">      <span class="code-keyword">if</span> (<span class="code-function">tryRename</span>(tmp, lockPath)) <span class="code-keyword">return</span> <span class="code-function">won</span>(o, lockPath, me);</span>
+<span class="code-line">      <span class="code-keyword">const</span> holder = <span class="code-function">readOwner</span>(lockPath);</span>
+<span class="code-line">      <span class="code-keyword">const</span> age = <span class="code-function">ageMs</span>(lockPath, o.now);</span>
+<span class="code-line">      <span class="code-keyword">if</span> (age === <span class="code-keyword">null</span>) <span class="code-keyword">continue</span>; <span class="code-comment">// released in between: try again</span></span>
+<span class="code-line">      <span class="code-keyword">if</span> (!<span class="code-function">provablyDead</span>(holder, age, o.sys)) <span class="code-keyword">return</span> { <span class="code-property">ok</span>: <span class="code-keyword">false</span>, <span class="code-property">heldBy</span>: holder, <span class="code-property">detail</span>: <span class="code-function">describe</span>(holder) };</span></code></pre>
+          </div>
+          <div class="translation-english">
+            <span class="translation-label">PLAIN ENGLISH</span>
+            <div class="translation-lines">
+              <p class="tl">Try up to three times.</p>
+              <p class="tl">Renaming can't half-succeed, so two ticks can't both win.</p>
+              <p class="tl">If our folder became <code>sindri.lock</code>, we hold the key.</p>
+              <p class="tl">Otherwise, who holds it?</p>
+              <p class="tl">And how old is their lock?</p>
+              <p class="tl">If it vanished while we looked, just try again.</p>
+              <p class="tl">Unless the holder is <em>provably</em> dead (wrong process, rebooted host), back off and report who has it.</p>
+            </div>
+          </div>
+        </div>
+        <p>A stale lock can be taken over, which raises a risk: the old holder wakes up and writes anyway. So every write carries an <span class="term" data-definition="A counter bumped each time the lock changes hands. A writer stamps its writes with the epoch it got the lock under; the database refuses writes from an old epoch. This is called fencing.">epoch</span>, and the ledger refuses old ones (<code>fenced()</code> in <code>ledger/db.ts</code>, error <code>SND-LOCK-003</code>).</p>
+      </section>
+
+      <section class="screen animate-in">
+        <h2 class="screen-heading">Every unit of work is a Step</h2>
+        <p>A <span class="term" data-definition="Sindri's unit of work: inputs, an output schema, deterministic checks, a verifier, max rounds, a budget and an escalation path.">Step</span> is like an exam where someone else does the marking. The producer never verifies itself (invariant 3).</p>
+        <div class="flow-steps">
+          <div class="flow-step"><div class="flow-step-num">1</div><p>Produce</p></div>
+          <div class="flow-arrow">→</div>
+          <div class="flow-step"><div class="flow-step-num">2</div><p>Deterministic checks</p></div>
+          <div class="flow-arrow">→</div>
+          <div class="flow-step"><div class="flow-step-num">3</div><p>Separate verifier</p></div>
+          <div class="flow-arrow">→</div>
+          <div class="flow-step"><div class="flow-step-num">4</div><p>Pass → ledger + hand off</p></div>
+        </div>
+        <div class="badge-list">
+          <div class="badge-item"><code class="badge-code">fail</code><span class="badge-desc">Revise, with the verifier's reasons attached</span></div>
+          <div class="badge-item"><code class="badge-code">rounds or budget gone</code><span class="badge-desc">Park and notify. Escalate, never guess (invariant 4)</span></div>
+        </div>
+      </section>
+
+      <section class="screen animate-in">
+        <h2 class="screen-heading">Cheapest rung first</h2>
+        <p>At a clinic, the receptionist answers what they can, the nurse takes the next layer, and the surgeon gets paged only when needed. Each decision takes the cheapest <span class="term" data-definition="One level of the decision ladder: deterministic code, a decision model, one small-model call, or an agent turn. Each costs more than the one before.">rung</span> that can make it with enough confidence. Pick one:</p>
+        <div class="arch-diagram">
+          <div class="arch-zone">
+            <h4 class="arch-zone-label">The decision ladder <span class="ref">§17 principle 3</span></h4>
+            <div class="arch-component" data-desc="Rung 1, deterministic code, cost about zero. Selector matching, schema checks, path guards, routing tables, lens triggers, rule checks with a deterministic check."><div class="arch-icon">⚙️</div><span>1 · Code</span></div>
+            <div class="arch-component" data-desc="Rung 2, a decision model: a fraction of a cent, milliseconds. A judge question with calibrated thresholds for sizing, ambiguity, pack probes and direction verdicts. The judge chain is built (Plan 1)."><div class="arch-icon">⚖️</div><span>2 · Decision model</span></div>
+            <div class="arch-component" data-desc="Rung 3, one small-model call with no tools, low cost. Classification or extraction: turn labels, correction classes."><div class="arch-icon">🔎</div><span>3 · Small model</span></div>
+            <div class="arch-component" data-desc="Rung 4, an agent turn or session, high cost. Design, implementation, open-ended investigation. The only rung that writes code."><div class="arch-icon">🧠</div><span>4 · Agent</span></div>
+          </div>
+          <div class="arch-description">Click a rung to see what it decides</div>
+        </div>
+        <div class="callout callout-accent">
+          <div class="callout-icon">📉</div>
+          <div class="callout-content">
+            <strong class="callout-title">The metric that matters</strong>
+            <p>Every decision records its rung, cost and later outcome. "Agent turns a cheaper rung could have made" is tracked, and self-evolution keeps pushing repeated answers down a rung.</p>
+          </div>
+        </div>
+      </section>
+
+      <section class="screen animate-in">
+        <h2 class="screen-heading">Check your understanding</h2>
+        <div class="quiz-container" id="quiz-m2">
+          <div class="quiz-question-block" data-correct="b"
+               data-explanation-right="Nothing long-lived holds a model (invariant 2). The review runs as a bounded job, and a later tick reads its result from the ledger."
+               data-explanation-wrong="If the tick waits on a model, one slow call stalls every other item. Model work runs in a bounded job that ends; the next tick picks up the result.">
+            <div class="scenario-block"><div class="scenario-context"><span class="scenario-label">Scenario</span>
+              <p>You want the tick to ask an agent to review a risky diff. Where does that call go?</p></div></div>
+            <div class="quiz-options">
+              <button class="quiz-option" data-value="a" onclick="selectOption(this)"><div class="quiz-option-radio"></div><span>Inside the tick, awaiting the reply before moving on.</span></button>
+              <button class="quiz-option" data-value="b" onclick="selectOption(this)"><div class="quiz-option-radio"></div><span>A bounded job the tick spawns; the next tick reads the verdict from the ledger.</span></button>
+              <button class="quiz-option" data-value="c" onclick="selectOption(this)"><div class="quiz-option-radio"></div><span>A hook that writes the verdict straight into ledger.db.</span></button>
+            </div>
+            <div class="quiz-feedback"></div>
+          </div>
+          <div class="quiz-question-block" data-correct="a"
+               data-explanation-right="A deterministic glob is rung 1: it costs nothing and is always right. Climbing to a model would be paying for a guess."
+               data-explanation-wrong="Ask whether code alone can decide it. A path pattern can, so it belongs on rung 1, not a model.">
+            <div class="scenario-block"><div class="scenario-context"><span class="scenario-label">Scenario</span>
+              <p>"Does this change touch a migration?" Today an agent answers it every time. What should evolve propose?</p></div></div>
+            <div class="quiz-options">
+              <button class="quiz-option" data-value="a" onclick="selectOption(this)"><div class="quiz-option-radio"></div><span>Move it to rung 1: a path check on the migrations folder.</span></button>
+              <button class="quiz-option" data-value="b" onclick="selectOption(this)"><div class="quiz-option-radio"></div><span>Keep it on the agent; migrations are risky.</span></button>
+              <button class="quiz-option" data-value="c" onclick="selectOption(this)"><div class="quiz-option-radio"></div><span>Ask two agents and take the majority.</span></button>
+            </div>
+            <div class="quiz-feedback"></div>
+          </div>
+          <div class="quiz-question-block" data-correct="c"
+               data-explanation-right="That's what fencing is for: the takeover bumped the epoch, so the old writer's stamp no longer matches and the write is refused."
+               data-explanation-wrong="The lock alone can't stop a writer that already thinks it holds it. The epoch stamp on each write is what catches it.">
+            <div class="scenario-block"><div class="scenario-context"><span class="scenario-label">Debugging</span>
+              <p>The log shows <code>SND-LOCK-003: stale epoch 7 (current 8)</code>. What happened?</p></div></div>
+            <div class="quiz-options">
+              <button class="quiz-option" data-value="a" onclick="selectOption(this)"><div class="quiz-option-radio"></div><span>The ledger is corrupt and needs a restore.</span></button>
+              <button class="quiz-option" data-value="b" onclick="selectOption(this)"><div class="quiz-option-radio"></div><span>Two ticks wrote at once and both succeeded.</span></button>
+              <button class="quiz-option" data-value="c" onclick="selectOption(this)"><div class="quiz-option-radio"></div><span>A paused tick woke after another took over its lock, and its write was safely refused.</span></button>
+            </div>
+            <div class="quiz-feedback"></div>
+          </div>
+          <button class="quiz-check-btn" onclick="checkQuiz('quiz-m2')">Check Answers</button>
+          <button class="quiz-reset-btn" onclick="resetQuiz('quiz-m2')">Try Again</button>
+        </div>
+      </section>
+
+    </div>
+  </div>
+</section>

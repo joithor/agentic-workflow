@@ -1,0 +1,150 @@
+<section class="module" id="module-5" style="background: var(--color-bg)">
+  <div class="module-content">
+    <header class="module-header animate-in">
+      <span class="module-number">05</span>
+      <h1 class="module-title">Where the human decides</h1>
+      <p class="module-subtitle">Locked doors instead of signs, the right screen for each call, and verdicts that admit what they didn't prove.</p>
+    </header>
+
+    <div class="module-body">
+
+      <section class="screen animate-in">
+        <h2 class="screen-heading">A sign versus a locked door</h2>
+        <p>"Staff only" on a door stops polite visitors. A lock stops everyone. Sindri uses both, and never confuses them: <span class="term" data-definition="Small scripts the agent host runs before or after a tool call. Sindri's hooks nudge and block agent behaviour, but a hook can be bypassed, so it is never the security boundary.">hooks</span> force <em>patterns</em> on a cooperative agent; the <span class="term" data-definition="An isolated environment a session runs in: a dedicated container and OS user, only the repo and allowed refs mounted, an egress allowlist, and no credentials it shouldn't have.">sandbox</span> enforces <em>security</em> against a hostile one. A hook that fails open costs a missed nudge, never a breach. <span class="ref">§5.3, §17.19 C3–C5</span></p>
+        <div class="badge-list">
+          <div class="badge-item"><code class="badge-code">writes</code><span class="badge-desc"><strong>Sign:</strong> a pre-tool path guard. <strong>Lock:</strong> Sindri's verifier refuses any bundle with out-of-scope paths.</span></div>
+          <div class="badge-item"><code class="badge-code">commands</code><span class="badge-desc"><strong>Sign:</strong> a gate on command strings (easily evaded). <strong>Lock:</strong> missing credentials and network make the command fail anyway.</span></div>
+          <div class="badge-item"><code class="badge-code">network</code><span class="badge-desc"><strong>Lock only:</strong> a per-task egress proxy allowlist.</span></div>
+          <div class="badge-item"><code class="badge-code">reads</code><span class="badge-desc"><strong>Lock:</strong> mounts. Only the repo, pack and allowed refs exist in the container.</span></div>
+          <div class="badge-item"><code class="badge-code">holdouts</code><span class="badge-desc"><strong>Lock:</strong> mounted only into evaluator Steps, with a canary example to detect leaks.</span></div>
+        </div>
+        <div class="callout callout-warning">
+          <div class="callout-icon">⛔</div>
+          <div class="callout-content">
+            <strong class="callout-title">Always denied in sessions (v1)</strong>
+            <p>Undraft, merge, close or cancel items, create items, chat posts, <code>gh api</code> writes, workflow triggers, production-mutating MCP tools, <code>kubectl</code> or exec tools. A denied call parks the item with a typed reason; the session never sits on a permission prompt. <span class="ref">§8.1</span></p>
+          </div>
+        </div>
+      </section>
+
+      <section class="screen animate-in">
+        <h2 class="screen-heading">Nothing secret gets written down</h2>
+        <p>No secrets in packs, ledger, logs, notifications or the eval corpus (invariant 8). Everything passes through the scrubber first, which replaces each secret with a <code>[REDACTED:kind]</code> placeholder. <span class="status built">built</span></p>
+        <div class="translation-block animate-in">
+          <div class="translation-code">
+            <span class="translation-label">sindri/src/scrub/scrub.ts</span>
+            <pre><code><span class="code-line"><span class="code-keyword">export function</span> <span class="code-function">makeScrubber</span>(extra: <span class="code-keyword">readonly</span> ScrubPattern[] = []): Scrubber {</span>
+<span class="code-line">  <span class="code-keyword">const</span> patterns = [...BUILTIN_PATTERNS, ...extra].<span class="code-function">map</span>((p, order) =&gt; ({ ...p, <span class="code-property">re</span>: <span class="code-function">withFlags</span>(p.re), order }));</span>
+<span class="code-line">  <span class="code-comment">// Only a placeholder naming one of this scrubber's kinds is skipped, so a crafted</span></span>
+<span class="code-line">  <span class="code-comment">// "[REDACTED:&lt;secret&gt;]" is still scanned.</span></span>
+<span class="code-line">  <span class="code-keyword">const</span> kinds = [...<span class="code-keyword">new</span> <span class="code-function">Set</span>(patterns.<span class="code-function">map</span>((p) =&gt; p.kind))].<span class="code-function">map</span>(escapeRe).<span class="code-function">join</span>(<span class="code-string">"|"</span>);</span>
+<span class="code-line">  <span class="code-keyword">const</span> PLACEHOLDER = <span class="code-keyword">new</span> <span class="code-function">RegExp</span>(<span class="code-string">`\\[REDACTED:(?:${kinds})\\]`</span>, <span class="code-string">"g"</span>);</span></code></pre>
+          </div>
+          <div class="translation-english">
+            <span class="translation-label">PLAIN ENGLISH</span>
+            <div class="translation-lines">
+              <p class="tl">Build a scrubber from the built-in secret patterns plus any extras.</p>
+              <p class="tl">Compile each <span class="term" data-definition="A regular expression: a pattern language for matching text, such as 'anything that looks like an API key'.">regex</span> and remember its order.</p>
+              <p class="tl">The clever part: scrubbing twice shouldn't double-redact, so existing placeholders are skipped…</p>
+              <p class="tl">…but only real ones. An attacker can't hide a key by writing <code>[REDACTED:sk-live-…]</code> around it.</p>
+              <p class="tl">List the exact kinds this scrubber knows.</p>
+              <p class="tl">A placeholder counts only if it names one of those kinds.</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="screen animate-in">
+        <h2 class="screen-heading">The right screen for each decision</h2>
+        <p>A newsroom editor approves a headline from their phone, but rewrites a story at the desk. One command layer is the authority; the CLI and the dashboard are two clients of the same handler, with the same checks and the same ledger record. <span class="ref">§10, §17.12, §17.27</span></p>
+        <div class="arch-diagram">
+          <div class="arch-zone">
+            <h4 class="arch-zone-label">Pick a surface</h4>
+            <div class="arch-component" data-desc="Host dashboard (Plan 6, specced). A loopback page showing every agent on the machine, one state per session written as text: approval, input, plan ready, auth, working, background, ready, stuck, interrupted, failed, limited, crashed, ended. One attention colour means only 'needs you'."><div class="arch-icon">🖥️</div><span>Dashboard</span></div>
+            <div class="arch-component" data-desc="Phone, over a tailnet (designed). Binary, low-context decisions in a swipe inbox, each signed with a passkey over (item id, item version, nonce, choice). A changed item or reused nonce is refused, and every choice can be undone for 10 seconds."><div class="arch-icon">📱</div><span>Phone</span></div>
+            <div class="arch-component" data-desc="The desk (designed). Open product questions, packet edits, freezes and protected approvals, which need a passkey plus typed confirmation of the full diff's hash. Never from the phone."><div class="arch-icon">🪑</div><span>Desk</span></div>
+          </div>
+          <div class="arch-description">Click a surface to see what it handles</div>
+        </div>
+        <p>A <span class="term" data-definition="A private network between your own devices (for example with Tailscale), so the phone can reach the dashboard without exposing it to the internet.">tailnet</span> carries phone decisions. A <span class="term" data-definition="A table declaring each command's CLI form and UI action, or 'ui: pending' with the step it is due. A test fails when a pending action passes its step, so 'later' can't become 'never'.">command registry</span> keeps the UI honest about what it can't do yet.</p>
+      </section>
+
+      <section class="screen animate-in">
+        <h2 class="screen-heading">Production stops when review is full</h2>
+        <p>A conveyor belt that outruns the inspector just builds a pile. When the pending-decision queue reaches its limit (default 3 per ring), no new Step that needs a human decision starts (invariant 18). This is <span class="term" data-definition="Slowing the producer when the consumer is full. Here the consumer is you: Sindri stops starting work that will need your decision until you clear the queue.">back-pressure</span>. Autonomy also follows who gets hurt, not just size:</p>
+        <div class="icon-rows">
+          <div class="icon-row"><div class="icon-circle" style="background: var(--color-success-light)">🧪</div><div><strong>sandbox</strong><p>Auto-start ≤ S, epicMerge auto allowed, fast evidence, sampled human reads</p></div></div>
+          <div class="icon-row"><div class="icon-circle" style="background: var(--color-info-light)">🏠</div><div><strong>personal</strong><p>Auto-start ≤ XS, auto merge allowed, full evidence, samples plus every protected path</p></div></div>
+          <div class="icon-row"><div class="icon-circle" style="background: var(--color-accent-light)">👥</div><div><strong>shared</strong><p>Auto-start off by default, no auto merge, full evidence, a human reads every PR</p></div></div>
+          <div class="icon-row"><div class="icon-circle" style="background: var(--color-error-light)">🏭</div><div><strong>production</strong><p>Off, off, deep evidence including mutation testing, a human reads every diff</p></div></div>
+        </div>
+      </section>
+
+      <section class="screen animate-in">
+        <h2 class="screen-heading">Every verdict says what it didn't prove</h2>
+        <p>Silence is never a pass (invariant 19). Each item ends in one of five closed outcomes, plus a script-written <span class="term" data-definition="The list of planned checks that didn't run or couldn't decide, attached to every outcome so a missing check can't pass quietly.">not proven</span> list. Match each situation to its outcome:</p>
+        <div class="dnd-container" id="dnd-m5">
+          <div class="dnd-chips">
+            <div class="dnd-chip" draggable="true" data-answer="verified">verified</div>
+            <div class="dnd-chip" draggable="true" data-answer="already">already-satisfied</div>
+            <div class="dnd-chip" draggable="true" data-answer="blocked">blocked</div>
+            <div class="dnd-chip" draggable="true" data-answer="unverified">unverified</div>
+            <div class="dnd-chip" draggable="true" data-answer="failed">failed</div>
+          </div>
+          <div class="dnd-zones">
+            <div class="dnd-zone" data-correct="already"><p class="dnd-zone-label">The bug's reproduce check already passes on the base branch. Closed with evidence, no PR.</p><div class="dnd-zone-target">Drop here</div></div>
+            <div class="dnd-zone" data-correct="unverified"><p class="dnd-zone-label">Built, but the browser evidence couldn't run. The PR stays draft and the gap is named.</p><div class="dnd-zone-target">Drop here</div></div>
+            <div class="dnd-zone" data-correct="blocked"><p class="dnd-zone-label">It needs a product answer before it can go on. Parks as needs-answer.</p><div class="dnd-zone-target">Drop here</div></div>
+            <div class="dnd-zone" data-correct="failed"><p class="dnd-zone-label">Still red after the round cap, or the same findings twice. Parks with the findings.</p><div class="dnd-zone-target">Drop here</div></div>
+            <div class="dnd-zone" data-correct="verified"><p class="dnd-zone-label">Every required evidence item passed. The PR proceeds under the ship contract.</p><div class="dnd-zone-target">Drop here</div></div>
+          </div>
+          <button class="btn" onclick="checkDnD('dnd-m5')">Check Matches</button>
+          <button class="btn" onclick="resetDnD('dnd-m5')">Reset</button>
+        </div>
+      </section>
+
+      <section class="screen animate-in">
+        <h2 class="screen-heading">Rings: home first, then work</h2>
+        <p>Each piece switches on first on ring 0, then ring 1. Ring 2 starts only after the factory holds on ring 1. Work and personal never mix: not in data, accounts or hosts. <span class="ref">§13.3, §17.19 C10</span></p>
+        <div class="step-cards">
+          <div class="step-card"><div class="step-num">0</div><div class="step-body"><strong>Ring 0: this toolkit</strong><p>Sindri builds Sindri from its own plan files. Every new piece runs here first.</p></div></div>
+          <div class="step-card"><div class="step-num">1</div><div class="step-body"><strong>Ring 1: workplace repos, on work hosts only</strong><p>Where the factory is tested and improved first. Assist mode, packets, compiler, evidence and lenses on. Auto merge, phone decisions and standing workflows above "report" stay off until the workplace allows them.</p></div></div>
+          <div class="step-card"><div class="step-num">2</div><div class="step-body"><strong>Ring 2: a private product repo</strong><p>Started only after ring 1 holds.</p></div></div>
+        </div>
+      </section>
+
+      <section class="screen animate-in">
+        <h2 class="screen-heading">Check your understanding</h2>
+        <div class="quiz-container" id="quiz-m5">
+          <div class="quiz-question-block" data-correct="b"
+               data-explanation-right="The hook was a sign; the boundary is what holds. With no credentials or network in the container the push fails, and Sindri re-verifies anything a session hands back."
+               data-explanation-wrong="Hooks only nudge cooperative agents. The security comes from the container: no credentials, an egress allowlist and Sindri-side re-verification.">
+            <div class="scenario-block"><div class="scenario-context"><span class="scenario-label">Scenario</span>
+              <p>A prompt-injected session base64-encodes <code>git push --force</code> to slip past the command hook. What stops it?</p></div></div>
+            <div class="quiz-options">
+              <button class="quiz-option" data-value="a" onclick="selectOption(this)"><div class="quiz-option-radio"></div><span>A better regex in the hook.</span></button>
+              <button class="quiz-option" data-value="b" onclick="selectOption(this)"><div class="quiz-option-radio"></div><span>The sandbox: the session has no push credentials or network to use.</span></button>
+              <button class="quiz-option" data-value="c" onclick="selectOption(this)"><div class="quiz-option-radio"></div><span>Nothing. That's why sessions are reviewed.</span></button>
+            </div>
+            <div class="quiz-feedback"></div>
+          </div>
+          <div class="quiz-question-block" data-correct="c"
+               data-explanation-right="Back-pressure is working as designed. Clear the queue and work resumes; more machines wouldn't help, because human review is the real ceiling."
+               data-explanation-wrong="The queue is at its limit, so Sindri won't start more work that needs you. Answering the pending decisions is what unblocks it.">
+            <div class="scenario-block"><div class="scenario-context"><span class="scenario-label">Debugging</span>
+              <p>You were away for a weekend. Monday, nothing new has started, though the backlog is full of ready items. Three phone decisions are waiting. Why?</p></div></div>
+            <div class="quiz-options">
+              <button class="quiz-option" data-value="a" onclick="selectOption(this)"><div class="quiz-option-radio"></div><span>The tick crashed and needs a restart.</span></button>
+              <button class="quiz-option" data-value="b" onclick="selectOption(this)"><div class="quiz-option-radio"></div><span>Model quota ran out over the weekend.</span></button>
+              <button class="quiz-option" data-value="c" onclick="selectOption(this)"><div class="quiz-option-radio"></div><span>Review is full: three pending decisions is the limit, so production stopped.</span></button>
+            </div>
+            <div class="quiz-feedback"></div>
+          </div>
+          <button class="quiz-check-btn" onclick="checkQuiz('quiz-m5')">Check Answers</button>
+          <button class="quiz-reset-btn" onclick="resetQuiz('quiz-m5')">Try Again</button>
+        </div>
+      </section>
+
+    </div>
+  </div>
+</section>
