@@ -1,4 +1,5 @@
 using Aw.Judge.Core.Errors;
+using System.Text.Json;
 using Aw.Judge.Core.Decisions;
 using Aw.Judge.Core.Ids;
 using Aw.Judge.Core.Ports;
@@ -9,8 +10,11 @@ namespace Aw.Judge.Infrastructure.Sqlite;
 
 /// <summary>IDecisionLog over decisions.sqlite (the decisions, decision_details and failures tables).</summary>
 /// <param name="database">The judge database.</param>
-internal sealed class SqliteDecisionLog(JudgeDatabase database) : IDecisionLog
+/// <param name="json">The host's Kernel JSON profile, for the JSON text columns.</param>
+internal sealed class SqliteDecisionLog(JudgeDatabase database, JsonSerializerOptions json) : IDecisionLog
 {
+    private readonly DecisionJson _json = new(json);
+
     public async ValueTask<Result<Unit>> Record(DecisionRecord decision, CancellationToken cancellationToken)
     {
         var begun = await database.BeginWrite(cancellationToken).ConfigureAwait(false);
@@ -22,7 +26,7 @@ internal sealed class SqliteDecisionLog(JudgeDatabase database) : IDecisionLog
         var work = begun.Value;
         await using (work.ConfigureAwait(false))
         {
-            var inserted = await SqliteQueries.Execute(work, DecisionSql.Insert(decision), cancellationToken).ConfigureAwait(false);
+            var inserted = await SqliteQueries.Execute(work, DecisionSql.Insert(decision, _json), cancellationToken).ConfigureAwait(false);
             if (inserted.IsError)
             {
                 return inserted.Error.Code == DataErrors.Constraint.Code
@@ -32,7 +36,7 @@ internal sealed class SqliteDecisionLog(JudgeDatabase database) : IDecisionLog
 
             if (decision.Details is { } details)
             {
-                var detailed = await SqliteQueries.Execute(work, DecisionSql.Insert(decision.Id, details), cancellationToken).ConfigureAwait(false);
+                var detailed = await SqliteQueries.Execute(work, DecisionSql.Insert(decision.Id, details, _json), cancellationToken).ConfigureAwait(false);
                 if (detailed.IsError)
                 {
                     return detailed.Error;
@@ -56,7 +60,7 @@ internal sealed class SqliteDecisionLog(JudgeDatabase database) : IDecisionLog
 
         await using (begun.Value.ConfigureAwait(false))
         {
-            var found = await SqliteQueries.One(begun.Value, DecisionSql.ById(DecisionSql.Find, id), DecisionMapper.Instance, cancellationToken).ConfigureAwait(false);
+            var found = await SqliteQueries.One(begun.Value, DecisionSql.ById(DecisionSql.Find, id), new DecisionMapper(_json), cancellationToken).ConfigureAwait(false);
             return found.IsError && found.Error.Code == DataErrors.NotFound.Code ? Unknown(id) : found;
         }
     }

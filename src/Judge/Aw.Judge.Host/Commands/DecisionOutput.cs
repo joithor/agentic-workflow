@@ -17,11 +17,11 @@ internal sealed record DecisionOutput(
     [property: JsonPropertyName("input_digest")] string InputDigest,
     [property: JsonPropertyName("undone_at")] DateTimeOffset? UndoneAt,
     [property: JsonPropertyName("chain_position")] int ChainPosition,
-    [property: JsonPropertyName("skipped")] IReadOnlyList<SkippedOutput> Skipped,
+    [property: JsonPropertyName("skipped")] IReadOnlyList<SkippedProvider> Skipped,
     [property: JsonPropertyName("outcome")] string Outcome)
 {
     internal static DecisionOutput From(DecisionRecord d) => new(
         d.Id.Value, d.Ts, d.Question, d.ContentClass, d.Provider, d.Decision, d.Confidence, d.ReasonCode, d.LatencyMs,
-        d.InputDigest, d.UndoneAt, d.ChainPosition, [.. d.Skipped.Select(static s => new SkippedOutput(s.Provider, Frozen.Text(s.Reason)))],
+        d.InputDigest, d.UndoneAt, d.ChainPosition, d.Skipped,
         Frozen.Text(d.Outcome));
 }

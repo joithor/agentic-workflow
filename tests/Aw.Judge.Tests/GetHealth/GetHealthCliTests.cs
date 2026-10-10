@@ -1,5 +1,4 @@
 using Aw.Judge.Core.Decisions;
-using Aw.Judge.Infrastructure.Sqlite;
 
 namespace Aw.Judge.Tests.GetHealth;
 
@@ -20,7 +19,7 @@ public sealed class GetHealthCliTests : IDisposable
     public async Task Health_prints_degraded_with_the_failure_count()
     {
         var cli = new JudgeCli(_state);
-        var log = new SqliteDecisionLog(_state.Database());
+        var log = _state.DecisionLog();
         _ = await log.RecordFailure(new FailureRecord(cli.Clock.GetUtcNow().AddHours(-1), "wake-gate", "claude-cli", "timeout"), CancellationToken.None);
 
         var run = await cli.Run("health");

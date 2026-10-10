@@ -1,4 +1,3 @@
-using Aw.Judge.Infrastructure.Sqlite;
 using Aw.Judge.Testing;
 
 namespace Aw.Judge.Tests.ApproveDecision;
@@ -11,7 +10,7 @@ public sealed class ApproveDecisionCliTests : IDisposable
     [Fact, Trait("Lane", "integration")]
     public async Task Approve_prints_the_row_with_the_reason_code_prefixed()
     {
-        _ = await new SqliteDecisionLog(_state.Database()).Record(A.Decision().WithId("d-1").Build(), CancellationToken.None);
+        _ = await _state.DecisionLog().Record(A.Decision().WithId("d-1").Build(), CancellationToken.None);
 
         var run = await new JudgeCli(_state).Run("approve", "d-1");
 

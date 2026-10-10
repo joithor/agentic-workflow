@@ -1,4 +1,3 @@
-using Aw.Judge.Infrastructure.Sqlite;
 using Aw.Judge.Testing;
 
 namespace Aw.Judge.Tests.UndoDecision;
@@ -11,7 +10,7 @@ public sealed class UndoDecisionCliTests : IDisposable
     [Fact, Trait("Lane", "integration")]
     public async Task Undo_prints_the_row_with_undone_at_set_and_why_shows_it_after()
     {
-        _ = await new SqliteDecisionLog(_state.Database()).Record(A.Decision().WithId("d-1").Build(), CancellationToken.None);
+        _ = await _state.DecisionLog().Record(A.Decision().WithId("d-1").Build(), CancellationToken.None);
         var cli = new JudgeCli(_state);
         cli.Clock.Advance(TimeSpan.FromMinutes(3));
 

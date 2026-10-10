@@ -2,7 +2,7 @@ using Aw.Judge.Core.Decisions;
 
 namespace Aw.Judge.Infrastructure.Sqlite;
 
-/// <summary>The stored text of the decision enums ('decided', 'below_threshold', 'overrode', as the TS judge wrote them).</summary>
+/// <summary>The stored text of the decision enums ('decided', 'overrode'); SkipReason is stored through its JSON names.</summary>
 internal static class DecisionText
 {
     internal static string Of(DecisionOutcome outcome) => outcome switch
@@ -19,24 +19,6 @@ internal static class DecisionText
         "escalated" => DecisionOutcome.Escalated,
         "failed" => DecisionOutcome.Failed,
         _ => throw new InvalidDataException($"Stored outcome '{text}' is not decided, escalated or failed."),
-    };
-
-    internal static string Of(SkipReason reason) => reason switch
-    {
-        SkipReason.Unavailable => "unavailable",
-        SkipReason.Failed => "failed",
-        SkipReason.Timeout => "timeout",
-        SkipReason.BelowThreshold => "below_threshold",
-        _ => throw new ArgumentOutOfRangeException(nameof(reason), reason, "Not a skip reason."),
-    };
-
-    internal static SkipReason Reason(string text) => text switch
-    {
-        "unavailable" => SkipReason.Unavailable,
-        "failed" => SkipReason.Failed,
-        "timeout" => SkipReason.Timeout,
-        "below_threshold" => SkipReason.BelowThreshold,
-        _ => throw new InvalidDataException($"Stored skip reason '{text}' is not unavailable, failed, timeout or below_threshold."),
     };
 
     internal static string Of(Agreement agreement) => agreement switch

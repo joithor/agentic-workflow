@@ -39,15 +39,15 @@ internal static class DecisionSql
     internal const string PruneDetailsBefore =
         "DELETE FROM decision_details WHERE id IN (SELECT id FROM decisions WHERE ts < $before)";
 
-    internal static SqlStatement Insert(DecisionRecord d) => new(InsertDecision, c => c
+    internal static SqlStatement Insert(DecisionRecord d, DecisionJson json) => new(InsertDecision, c => c
         .Bind("$id", d.Id.Value).Bind("$ts", d.Ts).Bind("$question", d.Question).Bind("$content_class", d.ContentClass)
         .Bind("$provider", d.Provider).Bind("$decision", d.Decision).Bind("$confidence", d.Confidence)
         .Bind("$reason_code", d.ReasonCode).Bind("$latency_ms", d.LatencyMs).Bind("$input_digest", d.InputDigest)
         .BindNullable("$undone_at", d.UndoneAt).Bind("$chain_position", d.ChainPosition)
-        .Bind("$skipped", DecisionJson.Skipped(d.Skipped)).Bind("$outcome", DecisionText.Of(d.Outcome)), "decision " + d.Id.Value);
+        .Bind("$skipped", json.Skipped(d.Skipped)).Bind("$outcome", DecisionText.Of(d.Outcome)), "decision " + d.Id.Value);
 
-    internal static SqlStatement Insert(DecisionId id, DecisionDetails x) => new(InsertDetails, c => c
-        .Bind("$id", id.Value).Bind("$input_json", x.InputJson).Bind("$probabilities", DecisionJson.Probabilities(x.Probabilities))
+    internal static SqlStatement Insert(DecisionId id, DecisionDetails x, DecisionJson json) => new(InsertDetails, c => c
+        .Bind("$id", id.Value).Bind("$input_json", x.InputJson).Bind("$probabilities", json.Probabilities(x.Probabilities))
         .Bind("$rules_opinion", x.RulesOpinion).Bind("$agreement", x.Agreement is { } a ? DecisionText.Of(a) : null)
         .Bind("$session_id", x.SessionId?.Value), "decision details " + id.Value);
 

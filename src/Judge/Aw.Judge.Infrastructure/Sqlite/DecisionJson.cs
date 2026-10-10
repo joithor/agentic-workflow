@@ -1,67 +1,32 @@
-using System.Buffers;
 using System.Text;
 using System.Text.Json;
 using Aw.Judge.Core.Decisions;
+using Aw.Kernel.Json;
 
 namespace Aw.Judge.Infrastructure.Sqlite;
 
-/// <summary>The JSON text columns: decisions.skipped ('[{"provider","reason"}]') and decision_details.probabilities.</summary>
-internal static class DecisionJson
+/// <summary>
+/// The JSON text columns, written and read as their typed values through the host's AwJson profile:
+/// decisions.skipped (a list of <see cref="SkippedProvider"/>) and decision_details.probabilities (option to probability).
+/// </summary>
+/// <param name="json">The host's Kernel JSON profile (its context knows both column types).</param>
+internal sealed class DecisionJson(JsonSerializerOptions json)
 {
-    internal static string Skipped(IReadOnlyList<SkippedProvider> skipped) => Write(writer =>
+    internal string Skipped(IReadOnlyList<SkippedProvider> skipped) => Write(skipped);
+
+    internal IReadOnlyList<SkippedProvider> Skipped(string text) => Read<IReadOnlyList<SkippedProvider>>(text, "skipped");
+
+    internal string? Probabilities(IReadOnlyDictionary<string, double>? probabilities) => probabilities is null ? null : Write(probabilities);
+
+    internal IReadOnlyDictionary<string, double>? Probabilities(string? text) =>
+        text is null ? null : Read<IReadOnlyDictionary<string, double>>(text, "probabilities");
+
+    private string Write<T>(T value) => Encoding.UTF8.GetString(AwJson.Serialize(value, json));
+
+    // The judge wrote every stored value itself: one it can't read back is a corrupt database, not an expected error.
+    private T Read<T>(string text, string column)
     {
-        writer.WriteStartArray();
-        foreach (var provider in skipped)
-        {
-            writer.WriteStartObject();
-            writer.WriteString("provider", provider.Provider);
-            writer.WriteString("reason", DecisionText.Of(provider.Reason));
-            writer.WriteEndObject();
-        }
-
-        writer.WriteEndArray();
-    });
-
-    internal static IReadOnlyList<SkippedProvider> Skipped(string json)
-    {
-        using var document = JsonDocument.Parse(json);
-        return [.. document.RootElement.EnumerateArray().Select(element => new SkippedProvider(
-            Text(element, "provider"), DecisionText.Reason(Text(element, "reason"))))];
-    }
-
-    internal static string? Probabilities(IReadOnlyDictionary<string, double>? probabilities) => probabilities is null ? null : Write(writer =>
-    {
-        writer.WriteStartObject();
-        foreach (var (option, probability) in probabilities)
-        {
-            writer.WriteNumber(option, probability);
-        }
-
-        writer.WriteEndObject();
-    });
-
-    internal static IReadOnlyDictionary<string, double>? Probabilities(string? json)
-    {
-        if (json is null)
-        {
-            return null;
-        }
-
-        using var document = JsonDocument.Parse(json);
-        return document.RootElement.EnumerateObject().ToDictionary(p => p.Name, p => p.Value.GetDouble(), StringComparer.Ordinal);
-    }
-
-    private static string Text(JsonElement element, string property) =>
-        element.GetProperty(property).GetString() ?? throw new InvalidDataException($"Stored skipped entry has a null '{property}'.");
-
-    private static string Write(Action<Utf8JsonWriter> write)
-    {
-        var buffer = new ArrayBufferWriter<byte>();
-        using (var writer = new Utf8JsonWriter(buffer))
-        {
-            write(writer);
-        }
-
-        return Encoding.UTF8.GetString(buffer.WrittenSpan);
+        var read = AwJson.Deserialize<T>(Encoding.UTF8.GetBytes(text), json);
+        return read.IsSuccess ? read.Value : throw new InvalidDataException($"Stored {column} column: {read.Error.Message}");
     }
 }

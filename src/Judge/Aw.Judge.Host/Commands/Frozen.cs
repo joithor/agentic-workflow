@@ -21,13 +21,4 @@ internal static class Frozen
         DecisionOutcome.Failed => "failed",
         _ => throw new ArgumentOutOfRangeException(nameof(outcome), outcome, "Not a decision outcome."),
     };
-
-    internal static string Text(SkipReason reason) => reason switch
-    {
-        SkipReason.Unavailable => "unavailable",
-        SkipReason.Failed => "failed",
-        SkipReason.Timeout => "timeout",
-        SkipReason.BelowThreshold => "below_threshold",
-        _ => throw new ArgumentOutOfRangeException(nameof(reason), reason, "Not a skip reason."),
-    };
 }

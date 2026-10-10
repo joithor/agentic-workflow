@@ -1,4 +1,6 @@
+using Aw.Judge.Host;
 using Aw.Judge.Infrastructure.Sqlite;
+using Aw.Kernel.Json;
 using Microsoft.Extensions.Time.Testing;
 
 namespace Aw.Judge.Tests;
@@ -16,6 +18,9 @@ public sealed class TempStateDirectory : IDisposable
     /// <summary>The judge database under this state directory ($AW_STATE_DIR/judge/decisions.sqlite).</summary>
     internal JudgeDatabase Database() =>
         new(JudgeDatabase.OptionsFor(System.IO.Path.Combine(Path, "judge")), new FakeTimeProvider());
+
+    /// <summary>The SQLite decision log over <see cref="Database"/>, with the package's JSON profile.</summary>
+    internal SqliteDecisionLog DecisionLog() => new(Database(), AwJson.CreateOptions(JudgeJsonContext.Default));
 
     /// <summary>A judge database whose directory can't be created: its parent is a regular file.</summary>
     internal JudgeDatabase UnopenableDatabase()
