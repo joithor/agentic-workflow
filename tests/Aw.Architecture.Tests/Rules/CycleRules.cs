@@ -21,9 +21,12 @@ public static class CycleRules
     {
         var inSet = types.Select(TypeNames.NamespaceOf).ToHashSet(StringComparer.Ordinal);
         var graph = inSet.ToDictionary(n => n, _ => new HashSet<string>(StringComparer.Ordinal), StringComparer.Ordinal);
-        foreach (var (from, to) in types.SelectMany(t => t.Dependencies.Select(d => (TypeNames.NamespaceOf(t), TypeNames.NamespaceOf(d.Target)))))
+        foreach (var (from, to) in types.SelectMany(t => t.Dependencies
+            .Where(d => d.Target is not GenericParameter)
+            .Select(d => (TypeNames.NamespaceOf(t), TypeNames.NamespaceOf(d.Target)))))
         {
-            if (from != to && inSet.Contains(to))
+            // The global namespace (Program, <PrivateImplementationDetails>) isn't a feature folder; it joins no cycle.
+            if (from != to && from.Length > 0 && to.Length > 0 && inSet.Contains(to))
             {
                 _ = graph[from].Add(to);
             }

@@ -20,7 +20,7 @@ public static class PortRules
 
     private static Violation? Judge(Edge e) => e switch
     {
-        { From.Layer: Layer.Core or Layer.Features or Layer.Commands } when Technology.Is(e.Target.FullName) =>
+        { From.Layer: Layer.Core or Layer.Features or Layer.Commands } when Technology.Reaches(e) =>
             new Violation(TechnologyId, $"{e.Text}: {e.From.Layer} uses a technology type",
                 "declare a port in Core (named for what the code needs), implement it in Infrastructure, and pick the adapter in Composition"),
         { From: { Layer: Layer.Host or Layer.Commands, IsComposition: false } from, To: { Layer: Layer.Infrastructure } to }

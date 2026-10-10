@@ -12,7 +12,8 @@ public sealed record Place(string Root, Layer Layer, string? Slice, bool IsCompo
     /// <summary>
     /// The type's place, or null when it isn't in a shaped package (a tier-0 package such as Aw.Kernel) or sits in a
     /// namespace under a package root that names no layer (ARCH-PLACE-001 reports those). A type outside every root
-    /// that lives in a package's Host or App assembly (the top-level-statement Program, generator output) is Host.
+    /// that lives in a package's Host or App assembly (the top-level-statement Program, generator output) is Host; one in a
+    /// Core, Features or Infrastructure assembly gets no place and ARCH-PLACE-001 reports it.
     /// </summary>
     /// <param name="type">The type.</param>
     /// <param name="scope">The shaped packages in scope.</param>

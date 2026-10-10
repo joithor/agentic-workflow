@@ -30,7 +30,7 @@ internal static class Verify
 
         // Each expected text claims a distinct violation, so one violation can't satisfy two expectations.
         var unclaimed = new List<Violation>(list);
-        foreach (var f in found)
+        foreach (var f in found.OrderByDescending(f => f.Length))
         {
             var match = unclaimed.FirstOrDefault(v => v.Found.Contains(f, StringComparison.Ordinal));
             if (match is null)

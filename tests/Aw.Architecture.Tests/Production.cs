@@ -42,11 +42,20 @@ internal static class Production
     /// or App assemblies, by the name each builds (a Host may rename its binary). Tier-0 packages (Aw.Kernel,
     /// Aw.Kernel.Data) have no layers, so only the cycle, naming, service-provider and typed-id rules cover them.
     /// </summary>
-    public static Scope Scope { get; } = Scope.Of(
-        RootsOf(Packages.Production),
-        Packages.Production
-            .Where(p => p.EndsWith(".Host", StringComparison.Ordinal) || p.EndsWith(".App", StringComparison.Ordinal))
-            .Select(p => KeyValuePair.Create(Solution.AssemblyOf(p), p[..p.LastIndexOf('.')])));
+    public static Scope Scope { get; } = ScopeOf(Packages.Production.Select(p => (p, Solution.AssemblyOf(p))));
+
+    /// <summary>The scope of registered projects: roots from the project names, Hosts and Apps by the assembly each builds.</summary>
+    /// <param name="projects">(project name, assembly name) pairs.</param>
+    /// <returns>The scope.</returns>
+    public static Scope ScopeOf(IEnumerable<(string Project, string Assembly)> projects)
+    {
+        List<(string Project, string Assembly)> list = [.. projects];
+        var roots = RootsOf(list.Select(p => p.Project));
+        return Scope.Of(roots, list
+            .Where(p => p.Project.EndsWith(".Host", StringComparison.Ordinal) || p.Project.EndsWith(".App", StringComparison.Ordinal))
+            .Select(p => KeyValuePair.Create(p.Assembly, p.Project[..p.Project.LastIndexOf('.')]))
+            .Where(p => roots.Contains(p.Value, StringComparer.Ordinal)));
+    }
 
     /// <summary>Whether a registered project's assembly loaded.</summary>
     /// <param name="project">A Packages.cs line.</param>
@@ -58,6 +67,7 @@ internal static class Production
     /// <returns>Distinct roots, sorted.</returns>
     public static IReadOnlyList<string> RootsOf(IEnumerable<string> assemblyNames) =>
         [.. assemblyNames
+            .Where(n => !TierZero.Contains(n))
             .Select(n => n.Split('.'))
             .Where(s => s.Length > 2 && _layerProjects.Contains(s[^1], StringComparer.Ordinal))
             .Select(s => string.Join('.', s[..^1]))

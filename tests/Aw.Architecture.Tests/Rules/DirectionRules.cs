@@ -34,12 +34,11 @@ public static class DirectionRules
             _ => null,
         }).OfType<Violation>();
 
-    // Another Aw.* assembly that no shaped package owns: a tier-0 package other than Aw.Kernel. The origin's own
-    // assembly is excluded (compiler-generated helpers such as <PrivateImplementationDetails> live there unplaced).
+    // A tier-0 package other than Aw.Kernel (TierZero, checked against deps.yaml).
     private static bool IsOtherTierZero(Edge e)
     {
         var target = TypeNames.AssemblyOf(e.Target);
-        return target.StartsWith("Aw.", StringComparison.Ordinal) && target != "Aw.Kernel" && target != TypeNames.AssemblyOf(e.Origin);
+        return TierZero.Contains(target) && target != TierZero.Kernel;
     }
 
     private static Violation? Judge(Edge e, Place from, Place to)

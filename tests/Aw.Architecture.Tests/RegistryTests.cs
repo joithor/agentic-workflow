@@ -56,6 +56,20 @@ public sealed class RegistryTests
             "src/Aw.Kernel/Aw.Kernel.csproj", "src/Aw.Analyzers/Aw.Analyzers.csproj", "tests/Aw.Kernel.Tests/Aw.Kernel.Tests.csproj",
             "src/Judge/Aw.Judge.Host/Aw.Judge.Host.csproj"]));
 
+    [Fact]
+    public void The_tier_zero_list_matches_deps_yaml()
+    {
+        var blocks = File.ReadAllText(Path.Combine(Solution.RepoRoot, "deps.yaml")).Split("\n  - id: ");
+        var declared = blocks
+            .Where(b => b.Contains("\n    tier: 0\n", StringComparison.Ordinal))
+            .Select(b => b.Split('\n').Select(l => l.Trim()).First(l => l.StartsWith("projectPrefix: ", StringComparison.Ordinal))["projectPrefix: ".Length..])
+            .ToList();
+
+        Assert.NotEmpty(declared);
+        Assert.All(declared, p => Assert.True(TierZero.Contains(p), $"{p} is tier 0 in deps.yaml; add its prefix to TierZero.Prefixes"));
+        Assert.All(TierZero.Prefixes, p => Assert.Contains(p, declared, StringComparer.Ordinal));
+    }
+
     private static IEnumerable<Violation> Missing(IEnumerable<string> projects, IReadOnlyList<string> registered) =>
         projects.Where(p => !registered.Contains(p, StringComparer.Ordinal))
             .Select(p => new Violation(MissingId, $"{p} is in AgenticWorkflow.slnx but not in Packages.cs",

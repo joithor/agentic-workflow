@@ -78,6 +78,7 @@ public sealed class FixtureTests
     [InlineData("Microsoft.Extensions.DependencyInjection.IServiceScopeFactory", true)]
     [InlineData("Microsoft.Extensions.DependencyInjection.AsyncServiceScope", true)]
     [InlineData("Microsoft.Extensions.DependencyInjection.ActivatorUtilities", true)]
+    [InlineData("Microsoft.Extensions.DependencyInjection.ServiceProviderServiceExtensions", true)]
     [InlineData("Microsoft.Extensions.DependencyInjection.IServiceCollection", false)]
     public void Service_locator_types_are_matched_by_name(string fullName, bool expected) =>
         Assert.Equal(expected, ServiceProviderRules.IsLocator(fullName));
@@ -98,7 +99,35 @@ public sealed class FixtureTests
     [Fact]
     public void A_namespace_under_a_package_root_that_names_no_layer_is_reported_in_both_shapes() =>
         Verify.Exactly(PlacementRules.Check(FixtureSet.Types("Placement", "PlacementSmall"), FixtureSet.Roots("Placement", "PlacementSmall")),
-            PlacementRules.Id, "Placement.Domain names no layer", "PlacementSmall.App.Ids names no layer");
+            PlacementRules.Id, "Placement.Domain' in", "PlacementSmall.App.Ids' in", "Fixtures.Placement' in");
+
+    [Fact]
+    public void A_namespace_outside_the_root_in_a_layer_assembly_is_reported()
+    {
+        var scope = new Scope(["Aw.Fx"], new Dictionary<string, string>(StringComparer.Ordinal), new Dictionary<string, string>(StringComparer.Ordinal) { ["Aw.Architecture.Tests"] = "Aw.Fx" });
+
+        Verify.Exactly(PlacementRules.Check([FixtureSet.Named(typeof(Verify).FullName!)], scope), PlacementRules.Id,
+            "namespace 'Aw.Architecture.Tests' in Aw.Architecture.Tests names no layer of package Aw.Fx");
+    }
+
+    [Fact]
+    public void A_type_outside_every_root_in_a_host_assembly_is_host()
+    {
+        var scope = new Scope(["Aw.Fx"], new Dictionary<string, string>(StringComparer.Ordinal) { ["Aw.Architecture.Tests"] = "Aw.Fx" }, new Dictionary<string, string>(StringComparer.Ordinal));
+
+        Assert.Equal(new Place("Aw.Fx", Layer.Host, Slice: null, IsComposition: false), Place.Of(FixtureSet.Named(typeof(Verify).FullName!), scope));
+    }
+
+    [Fact]
+    public void The_production_scope_maps_a_renamed_host_and_leaves_tier_zero_out()
+    {
+        var scope = Production.ScopeOf([("Aw.Judge.Core", "Aw.Judge.Core"), ("Aw.Judge.Host", "judge"), ("Aw.Redaction.Core", "Aw.Redaction.Core")]);
+
+        Assert.Equal(["Aw.Judge"], scope.Roots);
+        Assert.Equal("Aw.Judge", scope.HostRootOf("judge"));
+        Assert.Equal("Aw.Judge", scope.LayerRootOf("Aw.Judge.Core"));
+        Assert.Null(scope.LayerRootOf("Aw.Redaction.Core"));
+    }
 
     [Theory]
     [InlineData("Aw.Judge.Host", "Aw.Judge")]
@@ -106,7 +135,7 @@ public sealed class FixtureTests
     [InlineData("judge", "Aw.Judge")]
     [InlineData("Aw.Judge.Core", null)]
     [InlineData("Aw.Kernel", null)]
-    public void Program_and_generator_output_sit_in_host_by_their_assembly_even_when_it_is_renamed(string assembly, string? root) =>
+    public void Scope_maps_host_assemblies_by_the_name_they_build(string assembly, string? root) =>
         Assert.Equal(root, Scope.Of(["Aw.Judge"], [KeyValuePair.Create("judge", "Aw.Judge")]).HostRootOf(assembly));
 
     [Fact]
@@ -133,7 +162,6 @@ public sealed class FixtureTests
     [InlineData("System.IO.File", true)]
     [InlineData("System.Net.Http.HttpClient", true)]
     [InlineData("Aw.Kernel.Data.SqliteUnitOfWork", true)]
-    [InlineData("System.Environment", true)]
     [InlineData("Microsoft.EntityFrameworkCore.DbContext", true)]
     [InlineData("System.Net.Dns", true)]
     [InlineData("System.Net.WebUtility", false)]
@@ -144,4 +172,14 @@ public sealed class FixtureTests
     [InlineData("System.Netstandard.Thing", false)]
     public void Technology_is_matched_by_namespace_or_type(string fullName, bool expected) =>
         Assert.Equal(expected, Technology.Is(fullName));
+
+    [Theory]
+    [InlineData("System.Environment", "GetEnvironmentVariable(System.String)", true)]
+    [InlineData("System.Environment", "GetFolderPath(System.Environment+SpecialFolder)", true)]
+    [InlineData("System.Environment", "set_CurrentDirectory(System.String)", true)]
+    [InlineData("System.Environment", "get_NewLine()", false)]
+    [InlineData("System.Environment", "get_ProcessorCount()", false)]
+    [InlineData("System.Console", "GetEnvironmentVariable(System.String)", false)]
+    public void Only_environment_reads_and_writes_are_technology(string type, string member, bool expected) =>
+        Assert.Equal(expected, Technology.IsEnvironmentAccess(type, member));
 }

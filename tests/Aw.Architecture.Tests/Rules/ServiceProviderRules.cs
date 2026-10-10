@@ -5,6 +5,9 @@ namespace Aw.Architecture.Tests.Rules;
 /// small shape the App root namespace and App.Commands) or inside a *ServiceCollectionExtensions class, where a
 /// registration factory lambda resolves a decorator's parts. The class-level match is wider than "only the lambda":
 /// the rule can't tell a lambda from another member of that class, so review keeps those classes to registrations.
+/// ArchUnitNET records a call by the type that declares the called method, so the extension classes behind
+/// GetService&lt;T&gt;/GetRequiredService&lt;T&gt; are listed too; a call through a type that implements IServiceProvider
+/// (ValidationContext.GetService, for one) binds to that type and isn't caught.
 /// </summary>
 public static class ServiceProviderRules
 {
@@ -17,6 +20,8 @@ public static class ServiceProviderRules
         "Microsoft.Extensions.DependencyInjection.IServiceScopeFactory", "Microsoft.Extensions.DependencyInjection.IServiceScope",
         "Microsoft.Extensions.DependencyInjection.AsyncServiceScope", "Microsoft.Extensions.DependencyInjection.ActivatorUtilities",
         "Microsoft.Extensions.DependencyInjection.IServiceProviderIsService",
+        "Microsoft.Extensions.DependencyInjection.ServiceProviderServiceExtensions",
+        "Microsoft.Extensions.DependencyInjection.ServiceProviderKeyedServiceExtensions",
     ];
 
     /// <summary>Whether a type (by full name) is a service-locator handle.</summary>
