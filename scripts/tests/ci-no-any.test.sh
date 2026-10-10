@@ -18,8 +18,9 @@ repo() {
   echo "$r"
 }
 
-run() { # repo -> sets out, rc
-  rc=0; out="$(node "$CHECK" --root "$1" --baseline "$1/baseline.json" 2>&1)" || rc=$?
+run() { # repo [extra args...] -> sets out, rc
+  local r="$1"; shift
+  rc=0; out="$(node "$CHECK" --root "$r" --baseline "$r/baseline.json" "$@" 2>&1)" || rc=$?
 }
 
 test_strings_comments_and_the_boundary_pass() {
@@ -56,15 +57,53 @@ test_baseline_holds_existing_count_and_fails_growth() {
   echo "PASS: test_baseline_holds_existing_count_and_fails_growth"
 }
 
-test_a_shrunk_baseline_is_reported() {
+test_a_shrunk_but_unlowered_baseline_fails() {
   local r; r="$(repo)"
   printf 'export const m: Map<string, any> = new Map();\n' > "$r/pkg/src/legacy.ts"
   printf '{"pkg/src/legacy.ts": 2}\n' > "$r/baseline.json"
   git -C "$r" add -A
   run "$r"; rm -rf "$r"
-  [ "$rc" = "0" ] || fail "a shrinking file failed: $out"
-  echo "$out" | grep -q 'lower the baseline' || fail "no shrink note: $out"
-  echo "PASS: test_a_shrunk_baseline_is_reported"
+  [ "$rc" = "1" ] || fail "a stale baseline passed ($rc): $out"
+  echo "$out" | grep -q 'lower the baseline' || fail "no lower-the-baseline fix: $out"
+  echo "PASS: test_a_shrunk_but_unlowered_baseline_fails"
+}
+
+test_the_baseline_may_not_rise_above_the_base_branch() {
+  local r; r="$(repo)"
+  printf 'export const m: Map<any, any> = new Map();\nexport const n: any = 1;\n' > "$r/pkg/src/legacy.ts"
+  printf '{"pkg/src/legacy.ts": 3}\n' > "$r/baseline.json"
+  printf '{"pkg/src/legacy.ts": 2}\n' > "$r/base.json"
+  git -C "$r" add -A
+  run "$r" --base-baseline "$r/base.json"
+  [ "$rc" = "1" ] || { rm -rf "$r"; fail "a raised baseline passed: $out"; }
+  echo "$out" | grep -q 'raises the baseline' || { rm -rf "$r"; fail "no raise message: $out"; }
+  printf 'export const m: Map<any, any> = new Map();\n' > "$r/pkg/src/legacy.ts"
+  printf '{"pkg/src/legacy.ts": 2}\n' > "$r/baseline.json"
+  run "$r" --base-baseline "$r/base.json"; rm -rf "$r"
+  [ "$rc" = "0" ] || fail "an unchanged baseline failed: $out"
+  echo "PASS: test_the_baseline_may_not_rise_above_the_base_branch"
+}
+
+test_a_new_baseline_key_fails() {
+  local r; r="$(repo)"
+  printf 'export const n: any = 1;\n' > "$r/pkg/src/fresh.ts"
+  printf '{"pkg/src/fresh.ts": 1}\n' > "$r/baseline.json"
+  printf '{}\n' > "$r/base.json"
+  git -C "$r" add -A
+  run "$r" --base-baseline "$r/base.json"; rm -rf "$r"
+  [ "$rc" = "1" ] || fail "a new baseline key passed: $out"
+  echo "$out" | grep -q 'pkg/src/fresh.ts' || fail "the new key isn't named: $out"
+  echo "PASS: test_a_new_baseline_key_fails"
+}
+
+test_declaration_files_count() {
+  local r; r="$(repo)"
+  printf 'declare module "shim" {\n  const v: any;\n  export default v;\n}\n' > "$r/pkg/src/shim.d.ts"
+  git -C "$r" add -A
+  run "$r"; rm -rf "$r"
+  [ "$rc" = "1" ] || fail "any in a .d.ts passed: $out"
+  echo "$out" | grep -q 'pkg/src/shim.d.ts:2:' || fail "no .d.ts location: $out"
+  echo "PASS: test_declaration_files_count"
 }
 
 test_the_repo_passes_with_its_baseline() {
@@ -77,5 +116,8 @@ test_the_repo_passes_with_its_baseline() {
 test_strings_comments_and_the_boundary_pass
 test_any_in_type_positions_fails_with_location_and_fix
 test_baseline_holds_existing_count_and_fails_growth
-test_a_shrunk_baseline_is_reported
+test_a_shrunk_but_unlowered_baseline_fails
+test_the_baseline_may_not_rise_above_the_base_branch
+test_a_new_baseline_key_fails
+test_declaration_files_count
 test_the_repo_passes_with_its_baseline
