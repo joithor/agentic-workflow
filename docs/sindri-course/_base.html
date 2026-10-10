@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>How Sindri Works</title>
+
+  <!-- Google Fonts: Bricolage Grotesque · DM Sans · JetBrains Mono -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,700;12..96,800&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400;1,9..40,500&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="styles.css">
+
+  <!--
+    CUSTOMIZE PER COURSE — change only the three accent variables below.
+    Options:
+      vermillion  #D94F30 / #C4432A / #FDEEE9 / #E8836C  (default)
+      coral       #E06B56 / #C85A47 / #FDECEA / #E89585
+      teal        #2A7B9B / #1F6280 / #E4F2F7 / #5A9DB8
+      amber       #D4A843 / #BF9530 / #FDF5E0 / #E0C070
+      forest      #2D8B55 / #226B41 / #E8F5EE / #5AAD7A
+  -->
+  <style>
+    :root {
+      --color-accent:       #D94F30;
+      --color-accent-hover: #C4432A;
+      --color-accent-light: #FDEEE9;
+      --color-accent-muted: #E8836C;
+    }
+    /* Sindri-only: build-status chips (built / specced / designed / dream) */
+    .status { display: inline-block; font: 600 0.7rem/1 var(--font-mono); letter-spacing: .04em; text-transform: uppercase;
+      padding: 3px 7px; border-radius: 99px; vertical-align: middle; margin-left: 6px; white-space: nowrap; }
+    .status.built    { background: #E8F5EE; color: #226B41; }
+    .status.specced  { background: #E4F2F7; color: #1F6280; }
+    .status.designed { background: #FDF5E0; color: #8A6A1C; }
+    .status.dream    { background: #EFEBF7; color: #5E528A; }
+    .bars { display: flex; flex-direction: column; gap: 6px; margin: var(--space-6) 0; }
+    .bar-row { display: grid; grid-template-columns: minmax(120px, 15rem) 1fr 3rem; gap: 10px; align-items: center; font-size: var(--text-sm); }
+    .bar-track { height: 14px; background: var(--color-border-light); border-radius: 99px; overflow: hidden; }
+    .bar-fill { height: 100%; background: var(--color-accent); border-radius: 99px; }
+    .bar-fill.cool { background: var(--color-actor-2); }
+    .bar-row span:last-child { font-family: var(--font-mono); color: var(--color-text-secondary); text-align: right; }
+    .ref { font: 500 0.72rem var(--font-mono); color: var(--color-text-muted); }
+    @media (max-width: 560px) { .bar-row { grid-template-columns: 1fr 3rem; } .bar-row .bar-track { grid-column: 1 / -1; grid-row: 2; } }
+  </style>
+
+  <script src="main.js" defer></script>
+</head>
+<body>
+
+  <nav class="nav" id="nav">
+    <div class="progress-bar" id="progress-bar" role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"></div>
+    <div class="nav-inner">
+      <span class="nav-title">How Sindri Works</span>
+      <div class="nav-dots" id="nav-dots" role="tablist">
+        <button class="nav-dot" data-target="module-1" data-tooltip="Why Sindri exists" role="tab" aria-label="Module 1: Why Sindri exists"></button>
+        <button class="nav-dot" data-target="module-2" data-tooltip="The night watch" role="tab" aria-label="Module 2: The night watch"></button>
+        <button class="nav-dot" data-target="module-3" data-tooltip="Survey before you dig" role="tab" aria-label="Module 3: Survey before you dig"></button>
+        <button class="nav-dot" data-target="module-4" data-tooltip="Sealed blueprints, narrow crews" role="tab" aria-label="Module 4: Sealed blueprints, narrow crews"></button>
+        <button class="nav-dot" data-target="module-5" data-tooltip="Where the human decides" role="tab" aria-label="Module 5: Where the human decides"></button>
+        <button class="nav-dot" data-target="module-6" data-tooltip="The ring that multiplies" role="tab" aria-label="Module 6: The ring that multiplies"></button>
+      </div>
+    </div>
+  </nav>
+
+  <main id="main">
+    <!-- modules/*.html content is assembled here by build.sh -->

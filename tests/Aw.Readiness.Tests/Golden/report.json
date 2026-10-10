@@ -1,0 +1,848 @@
+{
+  "schemaVersion": 1,
+  "repo": "agentic-workflow",
+  "scope": "csharp-template",
+  "recordedAt": "2026-10-10T12:00:00.0000000Z",
+  "target": {
+    "ring": 0,
+    "level": 4
+  },
+  "level": 3,
+  "holds": false,
+  "unconfirmed": [
+    "SEC-2",
+    "TD-2"
+  ],
+  "recordedTo": "<state>/readiness/runs/agentic-workflow/csharp-template/run.json",
+  "delta": {
+    "since": "2026-10-09T12:00:00.0000000Z",
+    "levelBefore": 4,
+    "levelAfter": 3,
+    "changes": [
+      {
+        "id": "SEC-3",
+        "before": "pass",
+        "after": "fail"
+      }
+    ],
+    "isFirstRun": false
+  },
+  "pillars": [
+    {
+      "pillar": "styleAndValidation",
+      "level": 3,
+      "tallies": [
+        {
+          "level": 1,
+          "passed": 3,
+          "scored": 3,
+          "isEmpty": false,
+          "unlocks": true
+        },
+        {
+          "level": 2,
+          "passed": 1,
+          "scored": 1,
+          "isEmpty": false,
+          "unlocks": true
+        },
+        {
+          "level": 3,
+          "passed": 0,
+          "scored": 0,
+          "isEmpty": true,
+          "unlocks": false
+        },
+        {
+          "level": 4,
+          "passed": 0,
+          "scored": 0,
+          "isEmpty": true,
+          "unlocks": false
+        },
+        {
+          "level": 5,
+          "passed": 0,
+          "scored": 0,
+          "isEmpty": true,
+          "unlocks": false
+        }
+      ]
+    },
+    {
+      "pillar": "buildSystem",
+      "level": 3,
+      "tallies": [
+        {
+          "level": 1,
+          "passed": 0,
+          "scored": 0,
+          "isEmpty": true,
+          "unlocks": false
+        },
+        {
+          "level": 2,
+          "passed": 4,
+          "scored": 4,
+          "isEmpty": false,
+          "unlocks": true
+        },
+        {
+          "level": 3,
+          "passed": 0,
+          "scored": 0,
+          "isEmpty": true,
+          "unlocks": false
+        },
+        {
+          "level": 4,
+          "passed": 0,
+          "scored": 1,
+          "isEmpty": false,
+          "unlocks": false
+        },
+        {
+          "level": 5,
+          "passed": 0,
+          "scored": 0,
+          "isEmpty": true,
+          "unlocks": false
+        }
+      ]
+    },
+    {
+      "pillar": "testing",
+      "level": 5,
+      "tallies": [
+        {
+          "level": 1,
+          "passed": 1,
+          "scored": 1,
+          "isEmpty": false,
+          "unlocks": true
+        },
+        {
+          "level": 2,
+          "passed": 0,
+          "scored": 0,
+          "isEmpty": true,
+          "unlocks": false
+        },
+        {
+          "level": 3,
+          "passed": 2,
+          "scored": 2,
+          "isEmpty": false,
+          "unlocks": true
+        },
+        {
+          "level": 4,
+          "passed": 2,
+          "scored": 2,
+          "isEmpty": false,
+          "unlocks": true
+        },
+        {
+          "level": 5,
+          "passed": 0,
+          "scored": 0,
+          "isEmpty": true,
+          "unlocks": false
+        }
+      ]
+    },
+    {
+      "pillar": "documentation",
+      "level": 5,
+      "tallies": [
+        {
+          "level": 1,
+          "passed": 1,
+          "scored": 1,
+          "isEmpty": false,
+          "unlocks": true
+        },
+        {
+          "level": 2,
+          "passed": 1,
+          "scored": 1,
+          "isEmpty": false,
+          "unlocks": true
+        },
+        {
+          "level": 3,
+          "passed": 0,
+          "scored": 0,
+          "isEmpty": true,
+          "unlocks": false
+        },
+        {
+          "level": 4,
+          "passed": 1,
+          "scored": 1,
+          "isEmpty": false,
+          "unlocks": true
+        },
+        {
+          "level": 5,
+          "passed": 0,
+          "scored": 0,
+          "isEmpty": true,
+          "unlocks": false
+        }
+      ]
+    },
+    {
+      "pillar": "developmentEnvironment",
+      "level": 3,
+      "tallies": [
+        {
+          "level": 1,
+          "passed": 0,
+          "scored": 0,
+          "isEmpty": true,
+          "unlocks": false
+        },
+        {
+          "level": 2,
+          "passed": 3,
+          "scored": 3,
+          "isEmpty": false,
+          "unlocks": true
+        },
+        {
+          "level": 3,
+          "passed": 0,
+          "scored": 0,
+          "isEmpty": true,
+          "unlocks": false
+        },
+        {
+          "level": 4,
+          "passed": 0,
+          "scored": 0,
+          "isEmpty": true,
+          "unlocks": false
+        },
+        {
+          "level": 5,
+          "passed": 0,
+          "scored": 0,
+          "isEmpty": true,
+          "unlocks": false
+        }
+      ]
+    },
+    {
+      "pillar": "debuggingAndObservability",
+      "level": 4,
+      "tallies": [
+        {
+          "level": 1,
+          "passed": 0,
+          "scored": 0,
+          "isEmpty": true,
+          "unlocks": false
+        },
+        {
+          "level": 2,
+          "passed": 0,
+          "scored": 0,
+          "isEmpty": true,
+          "unlocks": false
+        },
+        {
+          "level": 3,
+          "passed": 3,
+          "scored": 3,
+          "isEmpty": false,
+          "unlocks": true
+        },
+        {
+          "level": 4,
+          "passed": 0,
+          "scored": 0,
+          "isEmpty": true,
+          "unlocks": false
+        },
+        {
+          "level": 5,
+          "passed": 0,
+          "scored": 0,
+          "isEmpty": true,
+          "unlocks": false
+        }
+      ]
+    },
+    {
+      "pillar": "security",
+      "level": 1,
+      "tallies": [
+        {
+          "level": 1,
+          "passed": 0,
+          "scored": 0,
+          "isEmpty": true,
+          "unlocks": false
+        },
+        {
+          "level": 2,
+          "passed": 0,
+          "scored": 1,
+          "isEmpty": false,
+          "unlocks": false
+        },
+        {
+          "level": 3,
+          "passed": 1,
+          "scored": 3,
+          "isEmpty": false,
+          "unlocks": false
+        },
+        {
+          "level": 4,
+          "passed": 0,
+          "scored": 0,
+          "isEmpty": true,
+          "unlocks": false
+        },
+        {
+          "level": 5,
+          "passed": 0,
+          "scored": 0,
+          "isEmpty": true,
+          "unlocks": false
+        }
+      ]
+    },
+    {
+      "pillar": "taskDiscovery",
+      "level": 1,
+      "tallies": [
+        {
+          "level": 1,
+          "passed": 0,
+          "scored": 0,
+          "isEmpty": true,
+          "unlocks": false
+        },
+        {
+          "level": 2,
+          "passed": 0,
+          "scored": 0,
+          "isEmpty": true,
+          "unlocks": false
+        },
+        {
+          "level": 3,
+          "passed": 2,
+          "scored": 3,
+          "isEmpty": false,
+          "unlocks": false
+        },
+        {
+          "level": 4,
+          "passed": 0,
+          "scored": 0,
+          "isEmpty": true,
+          "unlocks": false
+        },
+        {
+          "level": 5,
+          "passed": 0,
+          "scored": 0,
+          "isEmpty": true,
+          "unlocks": false
+        }
+      ]
+    },
+    {
+      "pillar": "productAndExperimentation",
+      "level": 5,
+      "tallies": [
+        {
+          "level": 1,
+          "passed": 0,
+          "scored": 0,
+          "isEmpty": true,
+          "unlocks": false
+        },
+        {
+          "level": 2,
+          "passed": 0,
+          "scored": 0,
+          "isEmpty": true,
+          "unlocks": false
+        },
+        {
+          "level": 3,
+          "passed": 0,
+          "scored": 0,
+          "isEmpty": true,
+          "unlocks": false
+        },
+        {
+          "level": 4,
+          "passed": 2,
+          "scored": 2,
+          "isEmpty": false,
+          "unlocks": true
+        },
+        {
+          "level": 5,
+          "passed": 0,
+          "scored": 0,
+          "isEmpty": true,
+          "unlocks": false
+        }
+      ]
+    }
+  ],
+  "tallies": [
+    {
+      "level": 1,
+      "passed": 5,
+      "scored": 5,
+      "isEmpty": false,
+      "unlocks": true
+    },
+    {
+      "level": 2,
+      "passed": 9,
+      "scored": 10,
+      "isEmpty": false,
+      "unlocks": true
+    },
+    {
+      "level": 3,
+      "passed": 8,
+      "scored": 11,
+      "isEmpty": false,
+      "unlocks": false
+    },
+    {
+      "level": 4,
+      "passed": 5,
+      "scored": 6,
+      "isEmpty": false,
+      "unlocks": true
+    },
+    {
+      "level": 5,
+      "passed": 0,
+      "scored": 0,
+      "isEmpty": true,
+      "unlocks": false
+    }
+  ],
+  "findings": [
+    {
+      "criterion": {
+        "id": "SV-1",
+        "pillar": "styleAndValidation",
+        "level": 1,
+        "title": "Linter configured (Roslyn analyzers)",
+        "fix": "add Microsoft.CodeAnalysis.NetAnalyzers as a GlobalPackageReference in Directory.Packages.props (spec §4b.6)"
+      },
+      "state": "pass",
+      "evidence": "NetAnalyzers is a GlobalPackageReference; .editorconfig sets analyzer severities",
+      "unread": false
+    },
+    {
+      "criterion": {
+        "id": "SV-2",
+        "pillar": "styleAndValidation",
+        "level": 1,
+        "title": "Type checker strict (nullable, warnings as errors)",
+        "fix": "set <Nullable>enable</Nullable> and <TreatWarningsAsErrors>true</TreatWarningsAsErrors> in Directory.Build.props"
+      },
+      "state": "pass",
+      "evidence": "Directory.Build.props: Nullable=enable, TreatWarningsAsErrors=true",
+      "unread": false
+    },
+    {
+      "criterion": {
+        "id": "SV-3",
+        "pillar": "styleAndValidation",
+        "level": 1,
+        "title": "Code formatter (dotnet format over .editorconfig)",
+        "fix": "keep .editorconfig at the root and list 'dotnet format --verify-no-changes' in AGENTS.md"
+      },
+      "state": "pass",
+      "evidence": ".editorconfig present; AGENTS.md lists dotnet format",
+      "unread": false
+    },
+    {
+      "criterion": {
+        "id": "SV-4",
+        "pillar": "styleAndValidation",
+        "level": 2,
+        "title": "Pre-commit hooks (tracked config)",
+        "fix": "commit a hook config (.pre-commit-config.yaml, .githooks/, lefthook.yml or .husky/) that runs format and the scrubber"
+      },
+      "state": "pass",
+      "evidence": "tracked hook config: .pre-commit-config.yaml",
+      "unread": false
+    },
+    {
+      "criterion": {
+        "id": "BS-1",
+        "pillar": "buildSystem",
+        "level": 2,
+        "title": "Build command documented",
+        "fix": "list 'dotnet build -warnaserror' in AGENTS.md"
+      },
+      "state": "pass",
+      "evidence": "AGENTS.md lists 'dotnet build'",
+      "unread": false
+    },
+    {
+      "criterion": {
+        "id": "BS-2",
+        "pillar": "buildSystem",
+        "level": 2,
+        "title": "Dependencies pinned (central versions, lock files)",
+        "fix": "turn on central package management and lock files, then run a restore and commit every packages.lock.json"
+      },
+      "state": "pass",
+      "evidence": "central versions, lock files on, 3 projects locked",
+      "unread": false
+    },
+    {
+      "criterion": {
+        "id": "BS-3",
+        "pillar": "buildSystem",
+        "level": 2,
+        "title": "VCS CLI tools documented",
+        "fix": "say in README.md or AGENTS.md that PRs and issues go through the gh CLI"
+      },
+      "state": "pass",
+      "evidence": "README.md documents the gh CLI",
+      "unread": false
+    },
+    {
+      "criterion": {
+        "id": "BS-4",
+        "pillar": "buildSystem",
+        "level": 4,
+        "title": "Regular deployment frequency (≥3 releases in 90 days)",
+        "fix": "promote a stable channel at least three times in 90 days (spec §5, W8)"
+      },
+      "state": "unknown",
+      "evidence": "host unreachable (test)",
+      "unread": true
+    },
+    {
+      "criterion": {
+        "id": "BS-5",
+        "pillar": "buildSystem",
+        "level": 2,
+        "title": "Runtime version pinned (global.json)",
+        "fix": "pin the SDK in global.json with \"rollForward\": \"disable\""
+      },
+      "state": "pass",
+      "evidence": "global.json pins the SDK version with rollForward disable",
+      "unread": false
+    },
+    {
+      "criterion": {
+        "id": "TS-1",
+        "pillar": "testing",
+        "level": 1,
+        "title": "Unit tests exist (unit lane)",
+        "fix": "add a test with Trait(\"Lane\", \"unit\") under tests/ (spec §4b.5)"
+      },
+      "state": "pass",
+      "evidence": "1 test files in the unit lane",
+      "unread": false
+    },
+    {
+      "criterion": {
+        "id": "TS-2",
+        "pillar": "testing",
+        "level": 3,
+        "title": "Integration tests exist (integration lane)",
+        "fix": "add a test with Trait(\"Lane\", \"integration\") under tests/ (real SQLite or WebApplicationFactory)"
+      },
+      "state": "pass",
+      "evidence": "1 test files in the integration lane",
+      "unread": false
+    },
+    {
+      "criterion": {
+        "id": "TS-3",
+        "pillar": "testing",
+        "level": 3,
+        "title": "Tests runnable locally (one command)",
+        "fix": "list 'dotnet test --solution AgenticWorkflow.slnx' in AGENTS.md"
+      },
+      "state": "pass",
+      "evidence": "AGENTS.md lists 'dotnet test --solution AgenticWorkflow.slnx'",
+      "unread": false
+    },
+    {
+      "criterion": {
+        "id": "TS-4",
+        "pillar": "testing",
+        "level": 4,
+        "title": "Fast CI feedback (PR CI, affected areas, lane budgets)",
+        "fix": "run dotnet test on pull_request with changed-area detection and the per-test lane cap (Aw.LaneCap.Testing)"
+      },
+      "state": "pass",
+      "evidence": "CI is configured to run dotnet test on pull_request with changed-area detection and the per-test lane cap (config only: no run or its time is checked)",
+      "unread": false
+    },
+    {
+      "criterion": {
+        "id": "TS-5",
+        "pillar": "testing",
+        "level": 4,
+        "title": "Flaky test detection (quarantine)",
+        "fix": "add the quarantine job (spec §4e B11: in on 2 flaky failures in 7 days, out after 20 green runs)"
+      },
+      "state": "pass",
+      "evidence": "quarantine job in: .github/workflows/ci.yml",
+      "unread": false
+    },
+    {
+      "criterion": {
+        "id": "DOC-1",
+        "pillar": "documentation",
+        "level": 2,
+        "title": "AGENTS.md (covers the C# build)",
+        "fix": "keep AGENTS.md at the root with the dotnet commands"
+      },
+      "state": "pass",
+      "evidence": "AGENTS.md present and lists dotnet commands",
+      "unread": false
+    },
+    {
+      "criterion": {
+        "id": "DOC-2",
+        "pillar": "documentation",
+        "level": 1,
+        "title": "README",
+        "fix": "add README.md at the root"
+      },
+      "state": "pass",
+      "evidence": "README.md present",
+      "unread": false
+    },
+    {
+      "criterion": {
+        "id": "DOC-3",
+        "pillar": "documentation",
+        "level": 4,
+        "title": "Documentation freshness checked automatically",
+        "fix": "run scripts/sync-rules.sh --check in CI (and, W8, the AGENTS.md command executor)"
+      },
+      "state": "pass",
+      "evidence": "sync-rules --check in: .github/workflows/ci.yml; the AGENTS.md command executor (W8) isn't built yet",
+      "unread": false
+    },
+    {
+      "criterion": {
+        "id": "DE-1",
+        "pillar": "developmentEnvironment",
+        "level": 2,
+        "title": "Devcontainer",
+        "fix": "add .devcontainer/devcontainer.json for humans (spec §4d: never the agent sandbox)"
+      },
+      "state": "pass",
+      "evidence": ".devcontainer/devcontainer.json present",
+      "unread": false
+    },
+    {
+      "criterion": {
+        "id": "DE-2",
+        "pillar": "developmentEnvironment",
+        "level": 2,
+        "title": "Environment template",
+        "fix": "add .env.example covering every variable the packages read"
+      },
+      "state": "pass",
+      "evidence": ".env.example present",
+      "unread": false
+    },
+    {
+      "criterion": {
+        "id": "DE-3",
+        "pillar": "developmentEnvironment",
+        "level": 2,
+        "title": "Local services setup",
+        "fix": "keep setup.sh (one-command setup)"
+      },
+      "state": "pass",
+      "evidence": "setup.sh present",
+      "unread": false
+    },
+    {
+      "criterion": {
+        "id": "OBS-1",
+        "pillar": "debuggingAndObservability",
+        "level": 3,
+        "title": "Structured logging (one shared JSON-lines logger)",
+        "fix": "build Aw.Kernel.Telemetry's JSON-lines logger provider (spec §4b.1, W7)"
+      },
+      "state": "pass",
+      "evidence": "Aw.Kernel.Telemetry has a logger provider: src/Aw.Kernel.Telemetry/JsonLinesLoggerProvider.cs",
+      "unread": false
+    },
+    {
+      "criterion": {
+        "id": "OBS-2",
+        "pillar": "debuggingAndObservability",
+        "level": 3,
+        "title": "Distributed tracing (OpenTelemetry spans)",
+        "fix": "register the ActivitySources in Aw.Kernel.Telemetry's tracer provider (AddSource)"
+      },
+      "state": "pass",
+      "evidence": "Aw.Kernel.Telemetry has a tracer provider: src/Aw.Kernel.Telemetry/TelemetryRuntime.cs",
+      "unread": false
+    },
+    {
+      "criterion": {
+        "id": "OBS-3",
+        "pillar": "debuggingAndObservability",
+        "level": 3,
+        "title": "Metrics collection (OpenTelemetry meters)",
+        "fix": "register the Meters in Aw.Kernel.Telemetry's meter provider (AddMeter)"
+      },
+      "state": "pass",
+      "evidence": "Aw.Kernel.Telemetry has a meter provider: src/Aw.Kernel.Telemetry/TelemetryRuntime.cs",
+      "unread": false
+    },
+    {
+      "criterion": {
+        "id": "SEC-1",
+        "pillar": "security",
+        "level": 2,
+        "title": "Branch protection on the default branch",
+        "fix": "protect main with a ruleset: required checks, linear history, no force pushes, empty bypass list (spec §4d)"
+      },
+      "state": "unknown",
+      "evidence": "host unreachable (test)",
+      "unread": true
+    },
+    {
+      "criterion": {
+        "id": "SEC-2",
+        "pillar": "security",
+        "level": 3,
+        "title": "Secret scanning and push protection",
+        "fix": "turn on GitHub secret scanning and push protection (spec §5 L3)"
+      },
+      "state": "unknown",
+      "evidence": "host unreachable (test)",
+      "unread": true
+    },
+    {
+      "criterion": {
+        "id": "SEC-3",
+        "pillar": "security",
+        "level": 3,
+        "title": "CODEOWNERS",
+        "fix": "add CODEOWNERS for the protected modules, backed by a required check (spec §4d)"
+      },
+      "state": "fail",
+      "evidence": "no .github/CODEOWNERS or CODEOWNERS or docs/CODEOWNERS",
+      "unread": false
+    },
+    {
+      "criterion": {
+        "id": "SEC-4",
+        "pillar": "security",
+        "level": 3,
+        "title": "Dependency update bot covers the C# packages",
+        "fix": "add a 'package-ecosystem: nuget' entry to .github/dependabot.yml (grouped, 14-day cooldown)"
+      },
+      "state": "pass",
+      "evidence": ".github/dependabot.yml updates nuget packages",
+      "unread": false
+    },
+    {
+      "criterion": {
+        "id": "TD-1",
+        "pillar": "taskDiscovery",
+        "level": 3,
+        "title": "Issue templates",
+        "fix": "add issue forms under .github/ISSUE_TEMPLATE/"
+      },
+      "state": "pass",
+      "evidence": "issue templates: .github/ISSUE_TEMPLATE/bug.yml",
+      "unread": false
+    },
+    {
+      "criterion": {
+        "id": "TD-2",
+        "pillar": "taskDiscovery",
+        "level": 3,
+        "title": "Issue labeling system (scheme file, applied to the repo)",
+        "fix": "keep .github/labels.yml with the type:, area:, size: and ring: families and apply it to the repo (gh label create … --force per entry; spec §5 L3)"
+      },
+      "state": "unknown",
+      "evidence": ".github/labels.yml defines the four families; the repo's labels weren't read (host unreachable (test))",
+      "unread": true
+    },
+    {
+      "criterion": {
+        "id": "TD-3",
+        "pillar": "taskDiscovery",
+        "level": 3,
+        "title": "PR template",
+        "fix": "add .github/pull_request_template.md with the evidence section"
+      },
+      "state": "pass",
+      "evidence": ".github/pull_request_template.md present",
+      "unread": false
+    },
+    {
+      "criterion": {
+        "id": "TD-4",
+        "pillar": "taskDiscovery",
+        "level": 5,
+        "title": "Complex requirements decomposed into parallel execution",
+        "fix": "build packets, workflow generation and stacked epics (factory addendum F0-F3)"
+      },
+      "state": "unknown",
+      "evidence": "no observable artifact yet: frozen packets and generated workflows (addendum F0-F3) are not built",
+      "unread": false
+    },
+    {
+      "criterion": {
+        "id": "PE-1",
+        "pillar": "productAndExperimentation",
+        "level": 4,
+        "title": "Product analytics instrumentation",
+        "fix": "write docs/readiness/product-signals.md mapping scorer and ledger telemetry to product analytics (W9)"
+      },
+      "state": "pass",
+      "evidence": "docs/readiness/product-signals.md present",
+      "unread": false
+    },
+    {
+      "criterion": {
+        "id": "PE-2",
+        "pillar": "productAndExperimentation",
+        "level": 4,
+        "title": "Experiment infrastructure",
+        "fix": "list evolve's A/B and the judge's shadow modes as experiments in docs/readiness/product-signals.md (W9)"
+      },
+      "state": "pass",
+      "evidence": "docs/readiness/product-signals.md present",
+      "unread": false
+    },
+    {
+      "criterion": {
+        "id": "PE-3",
+        "pillar": "productAndExperimentation",
+        "level": 5,
+        "title": "Self-improving systems",
+        "fix": "the readiness module proposes its own fixes weekly (spec §8)"
+      },
+      "state": "unknown",
+      "evidence": "no observable artifact yet: the weekly readiness workflow (§8) is not built",
+      "unread": false
+    }
+  ]
+}

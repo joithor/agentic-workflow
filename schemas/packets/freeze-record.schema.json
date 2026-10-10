@@ -1,0 +1,48 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/jthorare/agentic-workflow/schemas/packets/freeze-record.schema.json",
+  "title": "Packet freeze-record file (schemaVersion 1)",
+  "type": "object",
+  "properties": {
+    "schemaVersion": {
+      "type": "integer"
+    },
+    "repo": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9._-]*[A-Za-z0-9_-]/[A-Za-z0-9._-]*[A-Za-z0-9_-]$",
+      "description": "owner/name; aw-packets also refuses Windows device names (con, prn, aux, nul, com1-9, lpt1-9) on either side"
+    },
+    "packet": {
+      "type": "string",
+      "pattern": "^[a-z0-9][a-z0-9-]{0,63}$"
+    },
+    "hash": {
+      "type": "string",
+      "pattern": "^sha256:[0-9a-f]{64}$"
+    },
+    "digestVersion": {
+      "type": "integer"
+    },
+    "baseSha": {
+      "type": "string",
+      "pattern": "^(?:[0-9a-f]{40}|[0-9a-f]{64})$"
+    },
+    "frozenAt": true,
+    "files": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    }
+  },
+  "required": [
+    "schemaVersion",
+    "repo",
+    "packet",
+    "hash",
+    "digestVersion",
+    "baseSha",
+    "frozenAt",
+    "files"
+  ]
+}

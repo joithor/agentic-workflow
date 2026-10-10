@@ -1,0 +1,162 @@
+<section class="module" id="module-6" style="background: var(--color-bg-warm)">
+  <div class="module-content">
+    <header class="module-header animate-in">
+      <span class="module-number">06</span>
+      <h1 class="module-title">The ring that multiplies</h1>
+      <p class="module-subtitle">How Sindri improves what exists, finds what doesn't, and never lets a change grade itself.</p>
+    </header>
+
+    <div class="module-body">
+
+      <section class="screen animate-in">
+        <h2 class="screen-heading">A sourdough starter</h2>
+        <p>A baker never replaces the whole starter on a hunch. They feed a small portion in a second jar, bake a test loaf, and only then trust it. Everything that shapes agent behaviour in Sindri (skills, prompts, rubrics, thresholds) is a <span class="term" data-definition="Any piece of agent-shaping text or config that Sindri tracks with an id, a version, an eval suite and an adoption history, so it can be swapped and measured on its own.">registered artifact</span> with an <span class="term" data-definition="A fixed set of test cases that scores an artifact. A proposed change has to beat the current version on it before it's adopted.">eval suite</span>, and changes get the test-jar treatment. <span class="status built">built</span> <span class="ref">§7.4, §7.7</span></p>
+        <div class="flow-steps">
+          <div class="flow-step"><div class="flow-step-num">1</div><p><strong>Signals</strong><br>steering, reflection, overturned decisions</p></div>
+          <div class="flow-arrow">→</div>
+          <div class="flow-step"><div class="flow-step-num">2</div><p><strong>Proposal</strong><br>a changed artifact</p></div>
+          <div class="flow-arrow">→</div>
+          <div class="flow-step"><div class="flow-step-num">3</div><p><strong>Blinded comparison</strong><br>offline, old vs new</p></div>
+          <div class="flow-arrow">→</div>
+          <div class="flow-step"><div class="flow-step-num">4</div><p><strong>Adopt</strong><br>by tier</p></div>
+        </div>
+        <div class="pattern-cards">
+          <div class="pattern-card" style="border-top: 3px solid var(--color-actor-5)"><h4 class="pattern-title">Self-adopt</h4><p class="pattern-desc">Prompt text. Automatic after both evals: 25% canary for a week, then 100%, auto-revert on regression.</p></div>
+          <div class="pattern-card" style="border-top: 3px solid var(--color-actor-4)"><h4 class="pattern-title">Approval</h4><p class="pattern-desc">Protected surfaces and every capability field. You see the diff, source turns and eval results.</p></div>
+          <div class="pattern-card" style="border-top: 3px solid var(--color-actor-1)"><h4 class="pattern-title">Code</h4><p class="pattern-desc">Anything in the core repo: a normal work item and PR. You merge.</p></div>
+        </div>
+      </section>
+
+      <section class="screen animate-in">
+        <h2 class="screen-heading">Two jars: stable and next</h2>
+        <p>The harness always runs from a pinned <strong>stable</strong> install of itself. Changes land on <strong>next</strong>, are evaluated by stable, soak, then promote. A change may never modify the eval suite that judges it (invariant 11). Here's the gate:</p>
+        <div class="translation-block animate-in">
+          <div class="translation-code">
+            <span class="translation-label">sindri/src/evolve/channel.ts</span>
+            <pre><code><span class="code-line">  <span class="code-keyword">if</span> (c.next === <span class="code-keyword">null</span>) <span class="code-keyword">return</span> { <span class="code-property">ok</span>: <span class="code-keyword">false</span>, <span class="code-property">why</span>: <span class="code-string">"nothing is installed on next"</span>, <span class="code-property">next</span>: <span class="code-string">"scripts/install-sindri.sh --channel next --ref &lt;sha&gt;"</span> };</span>
+<span class="code-line">  <span class="code-keyword">if</span> (c.next.sha !== sha) <span class="code-keyword">return</span> { <span class="code-property">ok</span>: <span class="code-keyword">false</span>, <span class="code-property">why</span>: <span class="code-string">`${sha} is not what next runs (${c.next.sha})`</span>, <span class="code-property">next</span>: <span class="code-string">`sindri channel promote ${c.next.sha}`</span> };</span>
+<span class="code-line">  <span class="code-keyword">if</span> (c.stable !== <span class="code-keyword">null</span> &amp;&amp; c.stable.sha === sha) <span class="code-keyword">return</span> { <span class="code-property">ok</span>: <span class="code-keyword">false</span>, <span class="code-property">why</span>: <span class="code-string">`${sha} is already stable`</span>, <span class="code-property">next</span>: <span class="code-string">"sindri channel status"</span> };</span>
+<span class="code-line">  <span class="code-keyword">const</span> days = Math.<span class="code-function">floor</span>((now.<span class="code-function">getTime</span>() - Date.<span class="code-function">parse</span>(c.next.installedAt)) / <span class="code-number">86_400_000</span>);</span>
+<span class="code-line">  <span class="code-keyword">if</span> (!Number.<span class="code-function">isFinite</span>(days)) <span class="code-keyword">return</span> { <span class="code-property">ok</span>: <span class="code-keyword">false</span>, <span class="code-property">why</span>: <span class="code-string">`next has no readable install time (${JSON.stringify(c.next.installedAt)}), so its soak can't be checked`</span>, <span class="code-property">next</span>: <span class="code-string">"scripts/install-sindri.sh --channel next --ref &lt;sha&gt;"</span> };</span>
+<span class="code-line">  <span class="code-keyword">if</span> (days &lt; SOAK_DAYS) <span class="code-keyword">return</span> { <span class="code-property">ok</span>: <span class="code-keyword">false</span>, <span class="code-property">why</span>: <span class="code-string">`next has soaked ${days} of ${SOAK_DAYS} days`</span>, <span class="code-property">next</span>: <span class="code-string">"sindri channel status (after the soak)"</span> };</span></code></pre>
+          </div>
+          <div class="translation-english">
+            <span class="translation-label">PLAIN ENGLISH</span>
+            <div class="translation-lines">
+              <p class="tl">Nothing on next? Nothing to promote. Here's the command to install it.</p>
+              <p class="tl">You can only promote exactly what next is running, never some other commit.</p>
+              <p class="tl">Already stable? Nothing to do.</p>
+              <p class="tl">How many whole days has next been running?</p>
+              <p class="tl">If the install time is unreadable, refuse. An unknown soak is not a passed soak.</p>
+              <p class="tl">Not soaked long enough (<code>SOAK_DAYS</code> is 3)? Wait.</p>
+            </div>
+          </div>
+        </div>
+        <p>Every refusal says <em>why</em> and gives the exact <code>next</code> command to run. The function's last check needs a passing <code>package:sindri</code> suite run at that sha.</p>
+      </section>
+
+      <section class="screen animate-in">
+        <h2 class="screen-heading">Looking outward: the scout and the harvest</h2>
+        <p>Improving what exists isn't enough. The scout reads internal gaps, upstream changes, other software factories and your notes, and writes <span class="term" data-definition="A short proposal for something Sindri doesn't have yet: what it is, where it came from, fit, cost and an eval plan. You answer build, later or no.">idea cards</span>. From F6, a weekly <span class="term" data-definition="Sindri reading other software factories in a field registry, writing practice cards with file-and-line citations and a licence, and checking each against its own spec.">field harvest</span> does the reading itself. <span class="status designed">designed</span> <span class="ref">§17.18, §17.25</span></p>
+        <div class="chat-window" id="chat-m6">
+          <div class="chat-messages">
+            <div class="chat-message" data-msg="0" data-sender="harvest" style="display:none">
+              <div class="chat-avatar" style="background: var(--color-actor-5)">🌾</div>
+              <div class="chat-bubble"><span class="chat-sender" style="color: var(--color-actor-5)">harvest</span><p>Weekly pass done. Shallow-cloned 8 registry repos into scratch, read only what changed since last SHA. Never ran, built or installed any of it.</p></div>
+            </div>
+            <div class="chat-message" data-msg="1" data-sender="harvest" style="display:none">
+              <div class="chat-avatar" style="background: var(--color-actor-5)">🌾</div>
+              <div class="chat-bubble"><span class="chat-sender" style="color: var(--color-actor-5)">harvest</span><p>Practice card: "no-progress detection: stop a loop that repeats the same findings". Citation: planwright, file and line. Licence noted, no code stored. Gap check: <b>missing</b>, checked against §6.</p></div>
+            </div>
+            <div class="chat-message" data-msg="2" data-sender="blind" style="display:none">
+              <div class="chat-avatar" style="background: var(--color-actor-3)">🙈</div>
+              <div class="chat-bubble"><span class="chat-sender" style="color: var(--color-actor-3)">second model (blind)</span><p>Read §6 without seeing that verdict. I agree: Sindri spends every round even when findings repeat. Missing.</p></div>
+            </div>
+            <div class="chat-message" data-msg="3" data-sender="inbox" style="display:none">
+              <div class="chat-avatar" style="background: var(--color-actor-2)">📱</div>
+              <div class="chat-bubble"><span class="chat-sender" style="color: var(--color-actor-2)">swipe inbox</span><p>New card for you: build, later or no?</p></div>
+            </div>
+            <div class="chat-message" data-msg="4" data-sender="you" style="display:none">
+              <div class="chat-avatar" style="background: var(--color-actor-1)">🙂</div>
+              <div class="chat-bubble"><span class="chat-sender" style="color: var(--color-actor-1)">you</span><p>Build.</p></div>
+            </div>
+            <div class="chat-message" data-msg="5" data-sender="harvest" style="display:none">
+              <div class="chat-avatar" style="background: var(--color-actor-5)">🌾</div>
+              <div class="chat-bubble"><span class="chat-sender" style="color: var(--color-actor-5)">harvest</span><p>Drafting the spec section, then the guide update, then the mechanism, as separate PRs through the factory. Normal evals and merge rules. Harvest proposes; it never adopts.</p></div>
+            </div>
+          </div>
+          <div class="chat-typing" style="display:none">
+            <div class="chat-avatar" id="chat-m6-typing-avatar">?</div>
+            <div class="chat-typing-dots"><span class="typing-dot"></span><span class="typing-dot"></span><span class="typing-dot"></span></div>
+          </div>
+          <div class="chat-controls">
+            <button class="btn chat-next-btn">Next Message</button>
+            <button class="btn chat-all-btn">Play All</button>
+            <button class="btn chat-reset-btn">Replay</button>
+            <span class="chat-progress"></span>
+          </div>
+        </div>
+        <div class="callout callout-info">
+          <div class="callout-icon">🔒</div>
+          <div class="callout-content">
+            <strong class="callout-title">Never loosened, whatever the evidence</strong>
+            <p>The human merges to the default branch. Existing tests are read-only to sessions. The producer never verifies its own work. Protected modules need approval. Models never grant capabilities. <span class="ref">§17.23.8</span></p>
+          </div>
+        </div>
+      </section>
+
+      <section class="screen animate-in">
+        <h2 class="screen-heading">What ships when</h2>
+        <p>Sindri bootstraps itself: every step ends with a "Turn it on" task, and the next plan's work runs on it. <span class="ref">§13, §17.16</span></p>
+        <div class="step-cards">
+          <div class="step-card"><div class="step-num">1–5</div><div class="step-body"><strong>Plans 1–5: the control room <span class="status built">built</span></strong><p>Measurement, the ledger, the code index, the scoping harness, offline self-evolution.</p></div></div>
+          <div class="step-card"><div class="step-num">6</div><div class="step-body"><strong>Plan 6: the dashboard <span class="status specced">specced</span></strong><p>Every agent on the machine, one state each.</p></div></div>
+          <div class="step-card"><div class="step-num">R</div><div class="step-body"><strong>Agent readiness and the C# port <span class="status specced">specced</span></strong><p>The repo reaches Level 4 on Factory's agent-readiness framework, so agents build on a codebase that checks what they do.</p></div></div>
+          <div class="step-card"><div class="step-num">F</div><div class="step-body"><strong>The factory, F0 onward <span class="status designed">designed</span></strong><p>Packets, task compiler, lenses, evidence, review anywhere. Level 5 arrives with it.</p></div></div>
+        </div>
+        <div class="badge-list">
+          <div class="badge-item"><code class="badge-code">1 working day</code><span class="badge-desc">A piece not switched on within a day of its plan merging becomes a ring-0 work item of its own.</span></div>
+          <div class="badge-item"><code class="badge-code">no hand-starts</code><span class="badge-desc">No later plan is started by hand if the pieces before it could start it.</span></div>
+        </div>
+      </section>
+
+      <section class="screen animate-in">
+        <h2 class="screen-heading">Check your understanding</h2>
+        <div class="quiz-container" id="quiz-m6">
+          <div class="quiz-question-block" data-correct="b"
+               data-explanation-right="A change that edits its own judge could make itself look good. Invariant 11 forbids it: the suite change is a separate, approval-tier proposal."
+               data-explanation-wrong="Think about who grades the change. If the proposal can rewrite its own eval, the comparison means nothing, so that's refused.">
+            <div class="scenario-block"><div class="scenario-context"><span class="scenario-label">Scenario</span>
+              <p>A proposal improves the scoping prompt and, in the same diff, relaxes two cases in the scoping eval suite. What happens?</p></div></div>
+            <div class="quiz-options">
+              <button class="quiz-option" data-value="a" onclick="selectOption(this)"><div class="quiz-option-radio"></div><span>It self-adopts if the new suite passes.</span></button>
+              <button class="quiz-option" data-value="b" onclick="selectOption(this)"><div class="quiz-option-radio"></div><span>Refused: a change may never modify the eval suite that judges it.</span></button>
+              <button class="quiz-option" data-value="c" onclick="selectOption(this)"><div class="quiz-option-radio"></div><span>It goes to a 25% canary to see how it does.</span></button>
+            </div>
+            <div class="quiz-feedback"></div>
+          </div>
+          <div class="quiz-question-block" data-correct="a"
+               data-explanation-right="next was reinstalled yesterday, so its soak clock restarted. canPromote refuses with 'next has soaked N of 3 days' and tells you to check back after the soak."
+               data-explanation-wrong="The soak is measured from next's install time. A fresh install restarts the clock, however good the suite looks.">
+            <div class="scenario-block"><div class="scenario-context"><span class="scenario-label">Debugging</span>
+              <p>The suite passed and next ran fine for a week, but yesterday you reinstalled next at the same sha. <code>sindri channel promote</code> refuses. Why?</p></div></div>
+            <div class="quiz-options">
+              <button class="quiz-option" data-value="a" onclick="selectOption(this)"><div class="quiz-option-radio"></div><span>The soak counts from the install time, so it's under 3 days again.</span></button>
+              <button class="quiz-option" data-value="b" onclick="selectOption(this)"><div class="quiz-option-radio"></div><span>That sha is already stable.</span></button>
+              <button class="quiz-option" data-value="c" onclick="selectOption(this)"><div class="quiz-option-radio"></div><span>The suite result expired after a week.</span></button>
+            </div>
+            <div class="quiz-feedback"></div>
+          </div>
+          <button class="quiz-check-btn" onclick="checkQuiz('quiz-m6')">Check Answers</button>
+          <button class="quiz-reset-btn" onclick="resetQuiz('quiz-m6')">Try Again</button>
+        </div>
+      </section>
+
+      <section class="screen animate-in">
+        <h2 class="screen-heading">Where to go next</h2>
+        <p>This course covers the ideas. For every chapter, catalog row and section reference, open the full reference guide, <a href="../sindri.html">docs/sindri.html</a>, or read the specs in <code>docs/superpowers/specs/</code>.</p>
+      </section>
+
+    </div>
+  </div>
+</section>

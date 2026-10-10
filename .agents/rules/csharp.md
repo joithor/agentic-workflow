@@ -60,14 +60,14 @@ A package under ~1,500 lines may use two projects, `Core` and `App`, with the sa
 
 | Rule | Check |
 |---|---|
-| Dependency direction above | Project references (the build fails) + ArchUnitNET in `tests/Aw.Architecture.Tests` (gap — R1b) |
+| Dependency direction above | Project references (the build fails) + ArchUnitNET in `tests/Aw.Architecture.Tests`: `ARCH-DIR-001` (Core depends on nothing else in its package), `ARCH-DIR-002` (Features: Core and Features only), `ARCH-DIR-003` (Infrastructure: Core and Infrastructure only), `ARCH-DIR-004` (another package only through its Core), `ARCH-DIR-005` (Core and Features use `Aw.Kernel` and no other tier-0 package; the tier-0 list is checked against `deps.yaml`); `ARCH-PLACE-001` (every type of a Core, Features or Infrastructure project sits in that project's layer namespace: not the bare root, an unknown folder, another layer's namespace or one outside the root; in a Host or App project anything outside the root counts as Host) |
 | `Core` has no I/O: no `System.IO`, `System.Net`, `Microsoft.Data.*`, `System.Diagnostics.Process`, `Console`, `DateTime.Now/UtcNow`, `DateTimeOffset.Now/UtcNow`, `Guid.NewGuid` — use `TimeProvider` and `IIdGenerator` ports | `BannedSymbols.txt` → `RS0030` (BannedApiAnalyzers, wired for `*.Core` in `Directory.Build.props`; another project opts in with `AwBannedSymbols=true`, as `Aw.Kernel` does) |
-| A slice never references another slice's types; the second use moves the logic into `Core` | ArchUnitNET (gap — R1b); `Aw.Analyzers` fast check (gap — R1b) |
-| `Infrastructure` row/DTO types are `internal`; repositories return `Core` types | ArchUnitNET (gap — R1b) |
-| External technology sits behind ports (Seams below): no technology package or type (`Microsoft.Data.*`, `Aw.Kernel.Data`, `SQLitePCLRaw`, `Npgsql`, cache and queue clients, `System.Net.Http`, `System.Diagnostics.Process`, file I/O) in `Core` or `Features`; `Host` uses `Infrastructure` types only in `Composition`. In the small shape the rule applies by namespace: `Aw.<Pkg>.App.Features.*` and `Commands` use no technology type, and only `Composition` uses `Aw.<Pkg>.App.Infrastructure.*` | `Core`: `BannedSymbols.txt` → `RS0030` covers only `N:System.IO`, `N:System.Net` (so `System.Net.Http`), `N:Microsoft.Data` and `T:System.Diagnostics.Process`; `Aw.Kernel.Data`, `SQLitePCL`, `Npgsql` and cache or queue client packages are not banned (gap — R1b). `Features`, `Commands` and `Host` in both shapes: a namespace-based ArchUnitNET dependency rule (gap — R1b) |
+| A slice never references another slice's types; the second use moves the logic into `Core` | ArchUnitNET `ARCH-SLICE-001` (both shapes); `Aw.Analyzers` fast check (gap — R1b) |
+| `Infrastructure` row/DTO types are `internal`; repositories return `Core` types | ArchUnitNET `ARCH-INFRA-001` (only the `*ServiceCollectionExtensions` registration class is public in Infrastructure); `ARCH-DIR-001` keeps Infrastructure types out of Core signatures |
+| External technology sits behind ports (Seams below): no technology package or type (`Microsoft.Data.*`, `Aw.Kernel.Data`, `SQLitePCLRaw`, `Npgsql`, cache and queue clients, `System.Net.Http`, `System.Diagnostics.Process`, file I/O) in `Core` or `Features`; `Host` uses `Infrastructure` types only in `Composition`. In the small shape the rule applies by namespace: `Aw.<Pkg>.App.Features.*` and `Commands` use no technology type, and only `Composition` uses `Aw.<Pkg>.App.Infrastructure.*` | `Core`: `BannedSymbols.txt` → `RS0030` bans the BCL's I/O (`N:System.IO`, `N:System.Net` (so `System.Net.Http`), `N:Microsoft.Data`, `T:System.Diagnostics.Process`, `T:System.Console`, `T:System.Environment` whole) plus the clock and random-id APIs; `Aw.Kernel.Data`, `SQLitePCL`, `Npgsql` and cache or queue client packages aren't in that list. ArchUnitNET covers all of them by namespace in both shapes: `ARCH-PORT-001` (no technology type in `Core`, `Features` or the small shape's `App.Features` and `App.Commands`; the list is `tests/Aw.Architecture.Tests/Rules/Technology.cs`; in `Features` and `App.Commands` it also counts every `System.Environment` member that reads the host, all but pure ones such as `NewLine` and `ProcessorCount`; Core already bans the whole type) and `ARCH-PORT-002` (only `Composition` uses `Infrastructure`: the rest of `Host` and the small shape's `App` and `App.Commands` don't). ArchUnitNET doesn't see the body of a top-level-statement `Program` (`<Main>$`), so `Program` stays the scaffold's two calls (`Composition.Compose`, the command table) and review checks it |
 | Packages reference other packages only through their `Core` public surface (the reference sits in `Features` (`App` in the small shape) or `Host`) or a CLI/HTTP contract | `node scripts/check-deps.mjs` against `deps.yaml` |
-| No namespace cycles inside a project | ArchUnitNET slice-cycle rule (gap — R1b) |
-| No `Common`, `Shared`, `Utils`, `Helpers` project or namespace | ArchUnitNET naming rule (gap — R1b) |
+| No namespace cycles inside a project | ArchUnitNET `ARCH-CYCLE-001` (namespace graph per assembly) |
+| No `Common`, `Shared`, `Utils`, `Helpers` project or namespace | ArchUnitNET `ARCH-NAME-001` (every registered namespace, every project in `AgenticWorkflow.slnx`) |
 
 ## Dependency graph (§4b.1a, §4e)
 
@@ -88,12 +88,12 @@ A package under ~1,500 lines may use two projects, `Core` and `App`, with the sa
 ## Types and errors (§4b.3)
 
 - Every id and constrained primitive is a strongly typed value (`ItemId`, `RepoSlug`, `SizeClass`, `TokenBudget`). **Decided (R9):** Vogen generates validation and equality with its own STJ generation off, because source generators can't see each other's output (a Vogen converter is invisible to the STJ source generator, which then writes the id as `{}`; a Vogen-only parse method is invisible to the request-delegate generator). So:
-  - every assembly that declares ids sets `[assembly: VogenDefaults(...)]` with all six arguments of `docs/csharp/typed-ids.md` step 2, verbatim (`Conversions.None`, the STJ factory and primitive equality `Omit`, both casts `CastOperator.None`, `TryFromGeneration.GenerateBoolMethod`); `TypedIdGuard.CheckDefaults` checks each one (for a package's assembly, a gap — R1b, below);
+  - every assembly that declares ids sets `[assembly: VogenDefaults(...)]` with all six arguments of `docs/csharp/typed-ids.md` step 2, verbatim (`Conversions.None`, the STJ factory and primitive equality `Omit`, both casts `CastOperator.None`, `TryFromGeneration.GenerateBoolMethod`); `TypedIdGuard.CheckDefaults` checks each one in every registered assembly that declares ids (`ARCH-ID-001`);
   - each id carries a user-code `[JsonConverter]`, e.g. `[JsonConverter(typeof(StringIdJsonConverter<ItemId>))]`, that reads with `TryFrom` and throws `JsonException` (a 400, never Vogen's exception);
   - `IParsable<T>` is declared in user code: through the Kernel's `ITypedId<TSelf, TValue>` (an id in that form goes behind an endpoint only once an RDG route-binding test passes for it) or a hand-written `TryParse`;
   - the Host maps Vogen's validation exception to a 400;
   - each id has a JSON round-trip test, and an architecture test checks every id follows these rules.
-  `ITypedId` is in `Aw.Kernel.Ids`, the `StringIdJsonConverter`/`GuidIdJsonConverter`/`Int32IdJsonConverter` are in `Aw.Kernel.Json`, and the recipe is `docs/csharp/typed-ids.md`. No raw `string`/`Guid` ids in public `Core`/`Features` signatures. Check: `TypedIdGuard` covers the Kernel's own ids today (it's internal to `tests/Aw.Kernel.Tests`); the check for a package's ids is a gap — R1b (TypedIdGuard moves to Aw.Architecture.Tests); the raw-id ban in `Aw.Analyzers` is a gap — R1b.
+  `ITypedId` is in `Aw.Kernel.Ids`, the `StringIdJsonConverter`/`GuidIdJsonConverter`/`Int32IdJsonConverter` are in `Aw.Kernel.Json`, and the recipe is `docs/csharp/typed-ids.md`. No raw `string`/`Guid` ids in public `Core`/`Features` signatures. Check: `TypedIdGuard` in `tests/Aw.Architecture.Tests` runs over every registered `Aw.*` assembly (`ARCH-ID-001` defaults, `ARCH-ID-002` ids and id properties); the raw-id ban in `Aw.Analyzers` is a gap — R1b.
 - Expected failures are `Error` records with a stable catalogue code (`SND-…`, `AW-…`) returned in `Result<T>` from `Aw.Kernel`. Exceptions are for bugs and broken invariants only. No `catch (Exception)` outside `Host` and `Infrastructure` boundary adapters. Check: `CA1031` at error in the root `.editorconfig`; `Host` and `Infrastructure` projects lower it in their own project-level `.editorconfig` (`/new-package` generates it).
 - Generic types take ≤ 3 type parameters and are constrained (`where TId : struct, IEquatable<TId>`).
 - Nullable is on everywhere (`Nullable=enable` + `TreatWarningsAsErrors`). A `!` needs a `// why:` comment. Check: compiler for nullability; `Aw.Analyzers` for the comment (gap — R1b).
@@ -109,7 +109,7 @@ A package under ~1,500 lines may use two projects, `Core` and `App`, with the sa
 
 - `Microsoft.Extensions.DependencyInjection`. **Each project owns one explicit, public extension method** that registers its own types (`services.AddSindriCore()`, `AddSindriFeatures()`, `AddSindriInfrastructure(environment)`); **only `Host` calls them and builds the container.** No assembly scanning (reflection, not AOT-safe).
 - So `Core`, `Features` and `Infrastructure` may reference `Microsoft.Extensions.DependencyInjection.Abstractions` (for `Core`, alongside Vogen for its typed ids, its only packages besides `Aw.Kernel`). `Aw.Kernel` stays BCL-only: no `IConfiguration` in Kernel signatures. `Host` never builds an `Infrastructure` settings type: `Composition` passes the environment (a `Func<string, string?>`, `Environment.GetEnvironmentVariable` in `Program.cs`, a lambda in tests; no `IConfiguration`, which the AOT CLI hosts don't reference) to `Add<Name>Infrastructure(environment)`, and `Infrastructure` reads its own settings (an `internal` `<Name>Settings` record: the state directory, a connection string). A technology swap changes `Infrastructure` and the one `Add…()` call in `Composition`, never the rest of `Host`.
-- Decorators are registered in the **owning project's `Add…()` method** (outermost first), never in `Host`: `Compose` only calls the projects' `Add…()` methods (choosing one where `Infrastructure` offers several, Seams below), registers the clock, and passes the environment to the `Infrastructure` `Add…()` it picks.
+- Decorators are registered in the **owning project's `Add…()` method** (outermost first), never in `Host`: `Compose` only calls the projects' `Add…()` methods (choosing one where `Infrastructure` offers several, Seams below), registers the clock, and passes the environment to the `Infrastructure` `Add…()` it picks. It may also register the package's AwJson options (`AwJson.CreateOptions(<Name>JsonContext.Default)`) as a singleton, for an `Infrastructure` adapter that persists JSON: the adapter takes `JsonSerializerOptions` and never references the host's context (which `ARCH-DIR-003` refuses).
 - Each `Host` exposes one `internal static IServiceCollection Compose(IServiceCollection, Func<string, string?> environment, TimeProvider)` that `Program.cs` and the DI validation test both call, so the test covers the real composition.
 - Constructor injection only; no service locator; no `IServiceProvider` outside `Host`, with **one exception**: the `IServiceProvider` parameter of a registration factory lambda inside a project's own `Add…()` method. M.E.DI has no decorator support, so that's how a decorator wraps its service:
 
@@ -122,7 +122,7 @@ A package under ~1,500 lines may use two projects, `Core` and `App`, with the sa
           sp.GetRequiredService<IValidator<StartItemRequest>>()));
   ```
 
-  The lambda only resolves and constructs; it holds no logic. The planned ArchUnitNET rule allows exactly this (an `IServiceProvider` use inside a `*ServiceCollectionExtensions` type) and nothing else. Check: ArchUnitNET (gap — R1b).
+  The lambda only resolves and constructs; it holds no logic. Check: ArchUnitNET `ARCH-DI-001`. It flags the locator types (`IServiceProvider`, `IKeyedServiceProvider`, `IServiceScopeFactory`, `IServiceScope`, `AsyncServiceScope`, `ActivatorUtilities`, `IServiceProviderIsService`, and the extension classes behind `GetService<T>`/`GetRequiredService<T>`) anywhere except `Host` (with `Program`; in the small shape the `App` root namespace and `App.Commands`) and `*ServiceCollectionExtensions` classes. It can't tell the factory lambda from another member of that class, so keep those classes to registrations.
 - Lifetimes: services and repositories scoped per request/command; pure domain services singletons; `TimeProvider` singleton (`FakeTimeProvider` in tests).
 - Every host has a DI validation test over `Compose`: it builds with `ValidateOnBuild` + `ValidateScopes`, then **resolves every registered `IService<,>` inside a scope**, because `ValidateOnBuild` can't see what a factory lambda resolves (a missing validator would otherwise fail only at run time). Production `Program.cs` skips the validation flags (CLI startup time); the test carries them. Check: that test (per host).
 
@@ -151,7 +151,7 @@ A package under ~1,500 lines may use two projects, `Core` and `App`, with the sa
 | `Bridge` hosts: REST (minimal API) and stdio MCP, two entry points | NativeAOT (decided: the MCP C# SDK passed the R1a spike with 0 warnings) |
 | `Evidence` (ui-evidence) | Framework-dependent (Playwright for .NET has no NativeAOT) |
 
-Every library project (see Project roles above: everything except `*.Tests`, `*.Testing`, `*.Host`, `*.Analyzers`) gets `IsAotCompatible=true` from the root build files; `Evidence`'s libraries opt out with `AwAotCompatible=false` and the reason. `PublishAot=true` only on the entry points above (a Host, or a small package's `App`), in their own project files. AOT publishing runs in its own CI job and in releases; local builds and tests are JIT.
+Every library project (see Project roles above: everything except `*.Tests`, `*.Testing`, `*.Host`, `*.Analyzers`) gets `IsAotCompatible=true` from the root build files; `Evidence`'s libraries opt out with `AwAotCompatible=false` and the reason. `PublishAot=true` only on the entry points above (a Host, or a small package's `App`), in their own project files, and only under a runtime identifier: `<AwAotEntryPoint>true</AwAotEntryPoint>` plus `<PublishAot Condition="'$(RuntimeIdentifier)' != ''">true</PublishAot>` (what `/new-package` generates). An unconditional `PublishAot` makes a plain restore put the host's ILCompiler pack under a host-RID section of `packages.lock.json`, so the committed lock file would differ between macOS and Linux and CI's locked restore would refuse it; `AwAotEntryPoint` keeps `InvariantGlobalization` and the trim, AOT and single-file analyzers on in every build, JIT included (`Directory.Build.targets`; a Host isn't a library, so `IsAotCompatible` doesn't cover it). AOT publishing (`dotnet publish -r <rid>`, with the committed lock files set aside; e.g. `src/Readiness/aot-smoke/run.sh`) runs in its own CI job and in releases; local builds and tests are JIT.
 
 ## Seams (§4b.6, factory addendum §17.20–17.21)
 
@@ -164,7 +164,7 @@ or uses a Kernel one that exists today (`IReadRepository`, `IUnitOfWork`/`IUnitO
 `Core` and `Features` never reference a technology package or its types (`Microsoft.Data.*`, `Npgsql`, a Redis or
 queue client, `System.Net.Http`, `System.IO` file access, `System.Diagnostics.Process`); they see only the port.
 In the small shape this holds by namespace: `Aw.<Pkg>.App.Features.*` and `Commands` use no technology type, and only
-`Composition` uses `Aw.<Pkg>.App.Infrastructure.*`.
+`Composition` uses `Aw.<Pkg>.App.Infrastructure.*`. Check: `ARCH-PORT-001` and `ARCH-PORT-002` (`tests/Aw.Architecture.Tests`).
 
 **Picking an adapter.** Each real implementation of a port is an `Infrastructure` adapter. A second technology for the
 same port lives in the same `Infrastructure` project behind its own registration method, `Add<Name><Tech>Infrastructure()`
@@ -175,8 +175,10 @@ is SQLite-specific today; a second engine needs its own data package, `Aw.Kernel
 
 **Contracts.** Every port has a contract test suite that the in-memory fake and every real adapter pass, so a new
 adapter (PostgreSQL instead of SQLite, a remote queue instead of the outbox table) is proven by the same tests. A Kernel
-port's suite is an `Aw.Kernel.Testing` base: today only `ReadRepositoryContract`, with `IUnitOfWork` and `IOutbox`
-contracts planned. A package's own port's suite lives in `Aw.<Pkg>.Testing` (spec §4b.5) and derives from a Kernel base
+port's suite is an `Aw.Kernel.Testing` base: `ReadRepositoryContract`, `UnitOfWorkContract` and `OutboxContract`, which the
+in-memory fakes (`InMemoryUnitOfWorkFactory`, `InMemoryOutbox`) and the `Aw.Kernel.Data` adapters (`SqliteReadRepository`,
+`SqliteUnitOfWorkFactory`, `SqliteOutbox`) pass. `IIdGenerator` has a fake (`SequentialIdGenerator`) and no real adapter yet;
+its contract base lands with its first real adapter. A package's own port's suite lives in `Aw.<Pkg>.Testing` (spec §4b.5) and derives from a Kernel base
 where one fits. BCL ports (`TimeProvider`, faked by `FakeTimeProvider`) are exempt.
 
 Name ports for what the code needs (`IItemStore`, `IJobQueue`), not for the technology (`ISqliteItems`,
@@ -185,7 +187,7 @@ Name ports for what the code needs (`IItemStore`, `IJobQueue`), not for the tech
 
 ## Adding code
 
-- **New package:** `/new-package` (spec: `docs/csharp/scaffolds/new-package.md`).
-- **New use case:** `/new-slice` (spec: `docs/csharp/scaffolds/new-slice.md`).
+- **New package:** `/new-package` (generator `scripts/scaffold/new-package.mjs`; contract `docs/csharp/scaffolds/new-package.md`).
+- **New use case:** `/new-slice` (generator `scripts/scaffold/new-slice.mjs`; contract `docs/csharp/scaffolds/new-slice.md`).
 - **By hand**, the slice recipe is: (1) the failing test plus request and response records and a parameterless service stub whose `Handle` throws `NotSupportedException`, committed red but compiling; (2) the real assertion and the ports the service needs; (3) the service, with pure decisions on the domain type in `Core`; (4) the endpoint or CLI command in `Host`; (5) the explicit registration and the JSON context entries.
 - Test rules: `.agents/rules/csharp-testing.md`.
