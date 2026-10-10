@@ -214,8 +214,11 @@ claude_mcp_add() {
     -- "$AW_MCP_CMD" ${AW_MCP_ARGV[@]+"${AW_MCP_ARGV[@]}"}
 }
 
+claude_mcp_remove() { aw_run claude mcp remove --scope user "$AW_MCP_NAME"; }
+
 claude_register_mcp() {
   aw_mcp_register_cli "Claude Code" claude_mcp_present claude_mcp_add
+  aw_mcp_retire_cli "Claude Code" claude_mcp_present claude_mcp_remove
 }
 
 claude_install_plugins() {

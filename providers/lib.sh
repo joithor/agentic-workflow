@@ -365,6 +365,25 @@ aw_mcp_register_cli() {
   done < <(aw_mcp_each)
 }
 
+# Remove MCP servers the toolkit no longer ships (AW_MCP_RETIRED, space separated) from a CLI-based provider, so a
+# re-run of setup.sh cleans an existing install. Only a registered server is removed; dry-run prints instead.
+#   aw_mcp_retire_cli <label> <present-fn> <remove-fn>
+# <remove-fn> reads AW_MCP_NAME and must run the provider's remove command (via aw_run).
+aw_mcp_retire_cli() {
+  local label="$1" present_fn="$2" remove_fn="$3" name
+  for name in ${AW_MCP_RETIRED:-}; do
+    "$present_fn" "$name" </dev/null || continue
+    AW_MCP_NAME="$name"
+    if aw_dry; then
+      echo "  [dry-run] would remove $name from $label (retired)"
+    elif "$remove_fn" </dev/null >/dev/null 2>&1; then
+      echo "  $name: removed from $label (retired)"
+    else
+      echo "  WARN: $name removal failed in $label (non-fatal)"
+    fi
+  done
+}
+
 # Cheap-agent-harness lever hooks for one provider. Each scripts/install-*.sh
 # takes --provider (default claude) and no-ops with a note where a lever is
 # unsupported on that provider.

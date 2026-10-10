@@ -30,8 +30,11 @@ codex_mcp_add() {
     -- "$AW_MCP_CMD" ${AW_MCP_ARGV[@]+"${AW_MCP_ARGV[@]}"}
 }
 
+codex_mcp_remove() { aw_run codex mcp remove "$AW_MCP_NAME"; }
+
 codex_register_mcp() {
   aw_mcp_register_cli "Codex" codex_mcp_present codex_mcp_add
+  aw_mcp_retire_cli "Codex" codex_mcp_present codex_mcp_remove
 }
 
 codex_install_hooks() {
