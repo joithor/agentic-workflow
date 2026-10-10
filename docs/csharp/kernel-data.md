@@ -40,7 +40,7 @@ Expected store failures are `Result` errors; everything else (broken SQL, a mapp
 | AW-DATA-006 | conflict | The applied history doesn't match the build: an applied migration's text or name changed, or `schema_version` isn't exactly 1..n |
 | AW-DATA-007 | conflict | The database has a migration this build doesn't know |
 | AW-DATA-008 | invalid | The file is damaged or isn't a SQLite database. Not retryable: restore from a backup |
-| AW-DATA-009 | conflict | The database has tables but no `schema_version`: this runner didn't create it (usually the wrong path). Nothing is written |
+| AW-DATA-009 | conflict | The database has tables but no `schema_version`, or a `schema_version` whose columns aren't exactly `version, name, checksum, applied_at`: this runner didn't create it (usually the wrong path). Nothing is written |
 
 ## Migrations
 
@@ -48,8 +48,9 @@ Expected store failures are `Result` errors; everything else (broken SQL, a mapp
   migration never changes: add a new one.
 - The checksum is SHA-256 of the UTF-8 text without a leading BOM and with CRLF or lone CR turned into LF, so line
   endings or a different loader never look like an edit.
-- Before anything is written, the runner checks the set, then checks the file on a read-only connection (AW-DATA-009
-  leaves it byte-for-byte unchanged).
+- Before anything is written, the runner checks the set, then checks the file on a read-only connection: who owns it
+  (AW-DATA-009) and its applied history (AW-DATA-006, AW-DATA-007). A refused file is left byte-for-byte unchanged; only
+  after these checks does the read-write open switch it to WAL.
 - Before upgrading a database that already has migrations, it writes a consistent copy with `VACUUM INTO` to
   `<file>.bak-v<N>`. The first backup of a version is kept; the copy is moved into place atomically.
 - Each migration runs in its own transaction with its `schema_version` row. `foreign_keys` is switched off before

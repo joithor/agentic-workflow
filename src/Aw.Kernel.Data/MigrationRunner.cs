@@ -6,12 +6,12 @@ namespace Aw.Kernel.Data;
 /// <summary>
 /// Brings a database's schema up to date from numbered migrations (spec §4b.2).
 /// <list type="bullet">
-/// <item>It checks the migration set, then refuses a database it didn't create (user tables but no schema_version:
-/// usually a path pointing at the wrong file) on a read-only connection, so a refused file is left byte-for-byte
-/// unchanged (AW-DATA-009).</item>
-/// <item>It refuses an applied history that doesn't match the build (AW-DATA-006) or is newer (AW-DATA-007).</item>
+/// <item>It checks the migration set, then, on a read-only connection, refuses a database it didn't create (user
+/// tables but no schema_version, or a schema_version with other columns: usually a path pointing at the wrong file,
+/// AW-DATA-009) and an applied history that doesn't match the build (AW-DATA-006, AW-DATA-007). A refused file is left
+/// byte-for-byte unchanged: only then does the read-write open switch it to WAL.</item>
 /// <item>Before upgrading a database that already has migrations, it writes a consistent copy with VACUUM INTO to
-/// 'file.bak-vN' (the first backup of a version is kept), as the TS ledger does.</item>
+/// 'file.bak-vN' (the first backup of a version is kept).</item>
 /// <item>Each migration runs in its own transaction with its schema_version row, with foreign keys off (the SQLite
 /// table-rebuild recipe needs that; the pragma is a no-op inside a transaction, so it's switched before BEGIN) and a
 /// foreign_key_check before commit. Violations roll back as AW-DATA-004.</item>
@@ -33,8 +33,10 @@ public sealed class MigrationRunner(ISqliteConnectionFactory connections, TimePr
 
     internal const string InsertApplied = "INSERT INTO schema_version (version, name, checksum, applied_at) VALUES ($v, $n, $c, $t)";
 
+    internal const string VersionColumns = "version,name,checksum,applied_at";
+
     internal const string SelectOwnership =
-        "SELECT EXISTS (SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = 'schema_version'), " +
+        "SELECT (SELECT group_concat(name, ',') FROM (SELECT name FROM pragma_table_info('schema_version') ORDER BY cid)), " +
         "EXISTS (SELECT 1 FROM sqlite_master WHERE type = 'table' AND name <> 'schema_version' AND name NOT LIKE 'sqlite\\_%' ESCAPE '\\')";
 
     internal const string SelectViolations = "SELECT \"table\", parent FROM pragma_foreign_key_check LIMIT 5";
@@ -53,7 +55,7 @@ public sealed class MigrationRunner(ISqliteConnectionFactory connections, TimePr
             return sequence.Error;
         }
 
-        var ownership = await CheckOwnership(cancellationToken).ConfigureAwait(false);
+        var ownership = await Inspect(migrations, cancellationToken).ConfigureAwait(false);
         if (ownership.IsError)
         {
             return ownership.Error;
@@ -114,7 +116,9 @@ public sealed class MigrationRunner(ISqliteConnectionFactory connections, TimePr
         return Results.Ok();
     }
 
-    private async Task<Result<Unit>> CheckOwnership(CancellationToken cancellationToken)
+    // Everything that can refuse the file runs on a read-only connection first: the read-write open switches the
+    // journal to WAL, which rewrites the header, so a refused file must never get that far.
+    private async Task<Result<Unit>> Inspect(IReadOnlyList<Migration> migrations, CancellationToken cancellationToken)
     {
         var opened = await connections.OpenReadOnly(cancellationToken).ConfigureAwait(false);
         if (opened.IsError)
@@ -126,24 +130,45 @@ public sealed class MigrationRunner(ISqliteConnectionFactory connections, TimePr
 
         var connection = opened.Value;
         await using var connectionScope = connection.ConfigureAwait(false);
-        var command = connection.CreateCommand();
-        await using var commandScope = command.ConfigureAwait(false);
-        command.CommandText = SelectOwnership;
         try
         {
-            var reader = await command.ExecuteReaderAsync(cancellationToken).ConfigureAwait(false);
-            await using var readerScope = reader.ConfigureAwait(false);
-            _ = await reader.ReadAsync(cancellationToken).ConfigureAwait(false);
-            var (managed, hasTables) = (reader.GetInt64(0) == 1, reader.GetInt64(1) == 1);
-            return managed || !hasTables
-                ? Results.Ok()
-                : DataErrors.ForeignDatabase.With(
-                    $"{connection.DataSource} has tables but no schema_version table, so this runner didn't create it. Nothing was written. Check the path points at this package's own database.");
+            var ownership = await CheckOwnership(connection, cancellationToken).ConfigureAwait(false);
+            if (ownership.IsError || !ownership.Value)
+            {
+                return ownership.IsError ? ownership.Error : Results.Ok();
+            }
+
+            var applied = await CheckApplied(connection, migrations, cancellationToken).ConfigureAwait(false);
+            return applied.IsError ? applied.Error : Results.Ok();
         }
         catch (SqliteException exception) when (SqliteErrors.TryMap(exception, "Checking the database", out var error))
         {
             return error;
         }
+    }
+
+    // True when the file has this runner's schema_version (exact columns, in order); false for a new, empty file.
+    private static async Task<Result<bool>> CheckOwnership(SqliteConnection connection, CancellationToken cancellationToken)
+    {
+        var command = connection.CreateCommand();
+        await using var commandScope = command.ConfigureAwait(false);
+        command.CommandText = SelectOwnership;
+        var reader = await command.ExecuteReaderAsync(cancellationToken).ConfigureAwait(false);
+        await using var readerScope = reader.ConfigureAwait(false);
+        _ = await reader.ReadAsync(cancellationToken).ConfigureAwait(false);
+        var (columns, hasTables) = (reader.IsDBNull(0) ? null : reader.GetString(0), reader.GetInt64(1) == 1);
+        if (columns is null)
+        {
+            return hasTables
+                ? DataErrors.ForeignDatabase.With(
+                    $"{connection.DataSource} has tables but no schema_version table, so this runner didn't create it. Nothing was written. Check the path points at this package's own database.")
+                : false;
+        }
+
+        return string.Equals(columns, VersionColumns, StringComparison.Ordinal)
+            ? true
+            : DataErrors.ForeignDatabase.With(
+                $"{connection.DataSource} has a schema_version table with columns ({columns}), not this runner's ({VersionColumns}), so this runner didn't create it. Nothing was written. Check the path points at this package's own database.");
     }
 
     private static async Task<Result<int>> CheckApplied(SqliteConnection connection, IReadOnlyList<Migration> migrations, CancellationToken cancellationToken)
