@@ -17,10 +17,10 @@ failopen() {
     done
   ) > /dev/null 2>&1 || true
 }
-# A crash (exit other than 0 or 2) lets the call through under Claude Code; count
-# it. Under an adapter (AW_PROVIDER set) the adapter logs hook-exit-<N> instead.
-# The trap doesn't call exit, so the hook's exit status is unchanged.
-trap 'aw_rc=$?; [ -n "${AW_PROVIDER:-}" ] || case "$aw_rc" in 0|2) ;; *) failopen "exit-$aw_rc" ;; esac' EXIT
+# No EXIT trap: on bash 3.2 a trap defers SIGTERM until a running $(judge …)
+# returns, so the host's timeout kill would take longer. A crash keeps its exit
+# code and is not counted under Claude Code (see "Fail-open logging" in
+# .agents/rules/hooks.md); under Codex/Cursor the adapter counts it.
 [ -n "${AW_JUDGE_CHILD:-}" ] && exit 0
 
 INPUT="$(cat 2>/dev/null || true)"

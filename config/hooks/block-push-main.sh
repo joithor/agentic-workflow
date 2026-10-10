@@ -13,9 +13,10 @@ failopen() {
     done
   ) > /dev/null 2>&1 || true
 }
-# No EXIT trap here: this hook runs under set -e, and on bash 3.2 an EXIT trap
-# turns a set -u abort into exit 0. A crash keeps its exit code and is not
-# counted (see "Fail-open logging" in .agents/rules/hooks.md).
+# No EXIT trap: on bash 3.2 a trap turns a set -u abort under set -e into exit 0
+# and defers SIGTERM. A crash keeps its exit code and is not counted under
+# Claude Code (see "Fail-open logging" in .agents/rules/hooks.md); under
+# Codex/Cursor the adapter counts it.
 
 # PreToolUse hook: Block git push to main/master
 # Exit 2 = deny, Exit 0 = allow.
