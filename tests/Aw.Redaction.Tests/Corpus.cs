@@ -64,6 +64,10 @@ public static class Corpus
         new SecretCase("env-quoted-dotted", Join("export API_TOK", "EN=\"Ab3d.", Body, "\""), "secret-assignment", Tail),
         new SecretCase("basic-auth-header", Join("> Authorization: Bas", "ic dXNlcjpw", "YXNzd29yZDEyMzQ="), "basic-auth", "YXNzd29yZDEy"),
         new SecretCase("lowercase-dotted-google-token", Join("access", "_token=ya", "29.", Body), "google-oauth-token", Tail),
+        new SecretCase("basic-auth-json", Join("{\"Authorization\":\"Bas", "ic dXNlcjpw", "YXNzd29yZDEyMzQ=\"}"), "basic-auth", "YXNzd29yZDEy"),
+        new SecretCase("basic-auth-js-object", Join("headers: { Authorization: 'Bas", "ic dXNlcjpw", "YXNzd29yZDEyMzQ=' }"), "basic-auth", "YXNzd29yZDEy"),
+        new SecretCase("basic-auth-json-array", Join("\"headers\":{\"Authorization\":[\"Bas", "ic dXNlcjpw", "YXNzd29yZDEyMzQ=\"]}"), "basic-auth", "YXNzd29yZDEy"),
+        new SecretCase("npmrc-scoped-token", Join("//registry.example.org/:_auth", "Token=", Body), "secret-assignment", Tail),
         new SecretCase("env-dotted-value", Join("API", "_KEY=Ab3dE6gH9jK2mN5p.", Body), "secret-assignment", Tail),
     ];
 

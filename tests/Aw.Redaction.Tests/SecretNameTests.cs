@@ -13,6 +13,9 @@ public sealed class SecretNameTests
     [InlineData("proxy-authorization")]
     [InlineData("Cookie")]
     [InlineData("set-cookie")]
+    [InlineData("http.request.header.cookie")]
+    [InlineData("http.request.header.authorization")]
+    [InlineData("http.response.header.set-cookie")]
     public void A_name_that_holds_a_secret_is_recognized(string name) =>
         Assert.True(Redactor.Default.IsSecretName(name));
 
