@@ -342,7 +342,8 @@ group.MapPost("/items/{id}/start", async (ItemId id, StartItemBody body, IServic
   - `integration`: repositories on a real temp SQLite file; endpoints through `WebApplicationFactory`. Under 60 s.
   - `heavy`: real containers, browsers and index builds. Nightly or alone.
 
-  Lanes are test traits. A lane's budget is the wall clock of `dotnet test --filter-trait "Lane=<lane>"` per test
+  Lanes are test traits, run from the repo root with `dotnet test --solution AgenticWorkflow.slnx --filter-trait
+  "Lane=<lane>"` (Microsoft.Testing.Platform options only, no `--logger`). A lane's budget is that command's wall clock per test
   project, summed per package; CI fails a package over its budget. Each test's own time from xUnit's CTRF report
   is checked against the same budget as an extra per-test cap (`Aw.Kernel.Testing` ships the check).
 - **Fakes, not mocks.** Each port has one in-memory fake in a shared `Aw.<Pkg>.Testing` project. A generic contract-test
@@ -481,7 +482,9 @@ The skill packages that hold code today (`skills/ui-evidence`, `skills/bugFixOrc
 
 ### 4b.9 Agent readiness of the code itself
 
-- `AGENTS.md` lists the one-line commands: `dotnet build`, `dotnet test --filter-trait "Lane=unit"`, `dotnet format --verify-no-changes`.
+- `AGENTS.md` lists the one-line commands, run from the repo root: `dotnet build`, `dotnet test --solution
+  AgenticWorkflow.slnx` (all tests), `dotnet test --solution AgenticWorkflow.slnx --filter-trait "Lane=unit"` (the unit
+  lane), `dotnet format --verify-no-changes`. Test options are Microsoft.Testing.Platform options only (no `--logger`).
   It also has the slice recipe ("to add a use case: test, request and response, service, endpoint, registration")
   and points to the `/new-package` and `/new-slice` scaffolds.
 - The scaffolds produce compliant code with a red test, so an agent's first move is always the TDD step.
