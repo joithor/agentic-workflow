@@ -6,7 +6,7 @@ namespace Aw.Kernel.Telemetry.Tests;
 public sealed class MessageTextTests
 {
     private static readonly string[] _items = ["a", "b"];
-    private static readonly Scrubber _scrubber = new(Aw.Redaction.Redactor.Default);
+    private static readonly Scrubber _scrubber = new(Redaction.Redactor.Default);
 
     [Fact]
     public void Without_a_secret_name_the_formatted_text_is_kept() =>
