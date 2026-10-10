@@ -114,8 +114,8 @@ export async function stageProposals(ctx: EvolveCtx, budget: Budget = new Budget
     let waiting = candidates.length - take.length;
     for (const c of take) {
       const g = results.get(c.s.id);
-      if (g === undefined) {
-        waiting++; // not generalized this run: the budget ran out first, or it appeared after the snapshot
+      if (g === undefined || "budget" in g) {
+        waiting++; // not generalized this run: the budget ran out first, or it appeared after the snapshot; status unchanged
         continue;
       }
       if (!g.ok) {

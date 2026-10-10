@@ -188,15 +188,23 @@ describe("stage generalizes first (privacy B1)", () => {
     fx.close();
   });
 
-  it("leaves proposals it couldn't generalize before the budget ran out as proposed (Review Focus 4)", async () => {
-    const { fx, save } = await ready();
+  it("leaves proposals the budget ran out on, even between the rewrite and the judge, as they were (Review Focus 4, M1)", async () => {
+    const { fx, save } = await ready(3);
     const a = save("Alpha change here", { evidence: ["pr:1", "pr:2"] }, "code");
     const b = save("Beta change here", {}, "code");
     const budget = new Budget(2); // the pass-through runner spends 2 tokens per call: one rewrite fits, nothing after it
     const o = await stageProposals(fx.ctx, budget);
-    expect(getProposal(fx.ctx.db, a)?.status).toBe("held"); // its judge call found the budget gone
+    expect(getProposal(fx.ctx.db, a)?.status).toBe("proposed"); // its judge call found the budget gone: not a judge failure
     expect(getProposal(fx.ctx.db, b)?.status).toBe("proposed");
-    expect(o.waiting).toBe(1);
+    expect(o).toMatchObject({ staged: [], held: [], waiting: 2 });
+    // A held retry the budget doesn't reach stays held, and is not reported as held again.
+    const leaky = scriptedEvolveIo((c) => (c.role === GENERALIZE_ROLES.judge && c.input.includes("Gamma") ? { leaks: true, category: "people" } : generalizingScript()(c)));
+    const g = save("Gamma change here", {}, "code");
+    fx.ctx.write((epoch) => { setStatus(fx.ctx.db, a, "rejected", epoch, fx.deps.now()); setStatus(fx.ctx.db, b, "rejected", epoch, fx.deps.now()); });
+    expect((await stageProposals({ ...fx.ctx, io: leaky })).held.map((h) => h.id)).toEqual([g]);
+    const again = await stageProposals({ ...fx.ctx, io: leaky }, new Budget(2));
+    expect(again).toMatchObject({ held: [], waiting: 1 });
+    expect(getProposal(fx.ctx.db, g)?.status).toBe("held");
     fx.close();
   });
 

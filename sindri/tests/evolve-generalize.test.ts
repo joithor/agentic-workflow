@@ -57,12 +57,21 @@ describe("generalize (privacy B1)", () => {
     expect(await result).toEqual({ ok: false, why: "generalize: the judge found tickets" });
   });
 
-  it("holds when either call fails or answers out of schema, and when the budget is gone", async () => {
+  it("holds when either call fails or answers out of schema", async () => {
     expect(await run(() => ({ nope: 1 })).result).toEqual({ ok: false, why: "generalize: the rewrite failed" });
     expect(await run((role) => (role === GENERALIZE_ROLES.rewrite ? GENERIC : { leaks: "maybe" })).result).toEqual({ ok: false, why: "generalize: the judge failed" });
+  });
+
+  it("reports a call the budget refused as not attempted, never as a failure (M1)", async () => {
     const spent = new Budget(1);
     spent.spend({ inputTokens: 5, outputTokens: 5 });
-    expect(await run(() => GENERIC, spent).result).toEqual({ ok: false, why: "generalize: the rewrite failed" });
+    const before = run(() => GENERIC, spent);
+    expect(await before.result).toEqual({ ok: false, budget: true });
+    expect(before.runner.calls).toEqual([]);
+    // The rewrite spends the last of the budget (the runner charges 2 per call): the judge is never asked.
+    const between = run((role) => (role === GENERALIZE_ROLES.rewrite ? GENERIC : { leaks: false, category: "none" }), new Budget(2));
+    expect(await between.result).toEqual({ ok: false, budget: true });
+    expect(between.runner.calls.map((c) => c.role)).toEqual([GENERALIZE_ROLES.rewrite]);
   });
 
   it("runs with no resolvable evidence (Review Focus 1)", async () => {

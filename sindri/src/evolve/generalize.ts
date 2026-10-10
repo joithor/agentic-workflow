@@ -32,7 +32,9 @@ const VERDICT_SCHEMA = zodToJsonSchema(Verdict, { $refStrategy: "none" }) as Rec
 const EVIDENCE_CHARS = 2_000;
 const EVIDENCE_TOTAL = 40_000;
 
-export type Generalized = { ok: true; proposal: Proposal; category: string; model: string } | { ok: false; why: string };
+// `budget: true`: the token budget was gone before a call (the rewrite or the judge), so nothing was decided; stage
+// leaves the proposal as it was. Any other failure holds it, with a fixed reason.
+export type Generalized = { ok: true; proposal: Proposal; category: string; model: string } | { ok: false; why: string } | { ok: false; budget: true };
 
 const esc = (s: string): string => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 
@@ -53,6 +55,7 @@ const sameRefs = (a: readonly string[], b: readonly string[]): boolean => a.leng
 export async function generalize(o: {
   runner: ModelRunner; budget: Budget; models: { rewriter: string; judge: string }; proposal: Proposal; evidence: ReadonlyMap<string, string>;
 }): Promise<Generalized> {
+  if (o.budget.exhausted()) return { ok: false, budget: true };
   const evidence = `Transcript lines behind the evidence (every line is fenced):\n${evidenceBlock(o.evidence)}`;
   const rewrite = await askModel(o.runner, o.budget, {
     role: GENERALIZE_ROLES.rewrite, model: o.models.rewriter, system: REWRITE_SYSTEM, schema: PROPOSAL_SCHEMA, parse: (v) => ProposalSchema.parse(v), timeoutMs: 600_000,
@@ -64,6 +67,7 @@ export async function generalize(o: {
     return { ok: false, why: "generalize: the rewrite changed the artifact, kind or evidence" };
   }
   if (p.change.type !== o.proposal.change.type) return { ok: false, why: "generalize: the rewrite changed the change type" };
+  if (o.budget.exhausted()) return { ok: false, budget: true };
   const judged = await askModel(o.runner, o.budget, {
     role: GENERALIZE_ROLES.judge, model: o.models.judge, system: JUDGE_SYSTEM, schema: VERDICT_SCHEMA, parse: (v) => Verdict.parse(v), timeoutMs: 600_000,
     input: `<untrusted id="candidate">${esc(JSON.stringify(p))}</untrusted>\n\n${evidence}`,
