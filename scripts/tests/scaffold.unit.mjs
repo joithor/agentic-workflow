@@ -282,11 +282,12 @@ t("SIGTERM to the generator alone stops a running command and what it started, a
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), "aw-scaffold-unit-sig-"));
   trees.push(dir);
   const script = path.join(dir, "probe.mjs");
+  const token = `31.${process.pid}${Date.now() % 100000}`;   // a sleep no other process on the box is running
   fs.writeFileSync(script, `import { run, trapSignals } from ${JSON.stringify(path.join(REPO, "scripts/scaffold/lib/common.mjs"))};
 trapSignals(() => {});
 const start = Date.now();
 try {
-  await run(".", "sh", ["-c", "sleep 31 & wait"], { log: () => {} });   // a grandchild, like dotnet's build nodes
+  await run(".", "sh", ["-c", "sleep ${token} & wait"], { log: () => {} });   // a grandchild, like dotnet's build nodes
   console.log("not interrupted");
 } catch (e) {
   // A shell's background job ignores SIGINT, so this probe waits for the SIGKILL 10 s later; still well under 31 s.
@@ -299,7 +300,7 @@ try {
   spawnSync("node", [script], { cwd: dir, stdio: ["ignore", fd, fd], timeout: 1000, killSignal: "SIGTERM" });
   fs.closeSync(fd);
   assert.match(fs.readFileSync(out, "utf8"), /^SCAFFOLD-INTERRUPTED: interrupted \(SIGTERM\) fast$/m);
-  const left = spawnSync("pgrep", ["-f", "sleep 31"], { encoding: "utf8" });
+  const left = spawnSync("pgrep", ["-f", `^sleep ${token}$`], { encoding: "utf8" });
   assert.equal(left.stdout.trim(), "", "the grandchild outlived the interrupt");
 });
 
