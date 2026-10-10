@@ -40,7 +40,8 @@ PROBE_DIR="$(mktemp -d "${TMPDIR:-/tmp}/repo-templates-probe.XXXXXX")"
 trap 'rm -rf "$PROBE_DIR"' EXIT
 for snippet in '"runArgs": ["--privileged"]' '"capAdd": ["SYS_ADMIN"]' '"securityOpt": ["seccomp=unconfined"]' \
                '"dockerComposeFile": "compose.yml"' '"mounts": ["source=/var/run/docker.sock,target=/var/run/docker.sock,type=bind"]' \
-               '"features": {"ghcr.io/devcontainers/features/docker-in-docker:2": {}}' 'cap_add: [SYS_ADMIN]'; do
+               '"features": {"ghcr.io/devcontainers/features/docker-in-docker:2": {}}' 'cap_add: [SYS_ADMIN]' \
+               '"workspaceMount": "source=/,target=/workspaces/host,type=bind"' '"initializeCommand": "touch /tmp/x"'; do
   printf '{\n  %s\n}\n' "$snippet" > "$PROBE_DIR/devcontainer.json"
   check "the privilege check catches: $snippet" "privilege_hits '$PROBE_DIR' > /dev/null"
 done
