@@ -114,7 +114,7 @@ export function check(root, { strict = false } = {}) {
     for (const c of rec.checks) {
       const { found, where } = existsCheck(tree, c);
       if (c.status === "active" && !found) fail("RULE-CHECK-001", "active check not found", `${rec.id}: ${c.type} ${c.id} (searched ${where})`, "every active check exists in the tree", `add the check, fix its id, or mark it status: pending with pendingPr`);
-      if (c.status === "pending" && found && deterministic(c)) {
+      if (c.status === "pending" && found && c.type !== "review") {
         const msg = `pending check now exists: ${rec.id}: ${c.type} ${c.id} (PR #${c.pendingPr})`;
         const fix = `set status: active, drop pendingPr, and update gap in ${rel}${c.note ? ` (the check's note says what it doesn't cover)` : ""}`;
         if (strict) fail("RULE-CHECK-002", "pending check now exists", msg, "--strict: no pending check that already exists", fix);
