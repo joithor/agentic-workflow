@@ -46,7 +46,9 @@ agentic-workflow/
 ├── planning/      # Project documentation
 ├── .agents/rules/ # Glob-scoped domain rules (.claude/rules and .cursor/rules link here)
 ├── .serena/       # Serena LSP project configuration
-├── scripts/       # Utility scripts (sync-rules.sh, serena-docker, probe.sh, install-scorer.sh)
+├── scripts/       # Utility scripts (sync-rules.sh, check-deps.mjs, serena-docker, probe.sh, install-scorer.sh)
+├── schemas/       # JSON Schemas for repo config (deps.schema.json)
+├── deps.yaml      # Declared package graph: tiers and every project/cli/db/file edge (spec §4b.1a)
 └── setup.sh       # One-command setup for every installed provider
 ```
 
@@ -70,9 +72,14 @@ scorer audit [--since 60d; default 1d] [--items FILE] [--max-size XS] [--label N
 scripts/sync-rules.sh                   # Link .claude/rules, .cursor/rules, CLAUDE.md; refresh Rules Index
 scripts/sync-rules.sh --check           # Exit 1 if links or the Rules Index are out of date
 
+# Dependency graph (deps.yaml + schemas/deps.schema.json)
+node scripts/check-deps.mjs             # Schema, tiers, cycles, fan-out, undeclared cli/db/file edges; exit 1 on drift
+node scripts/check-deps.mjs --mermaid [--base-file F]   # Also print the Mermaid graph and the edge list (added/removed vs F)
+
 # Bash tests
 bash providers/tests/install.test.sh
 bash scripts/tests/sync-rules.test.sh
+bash scripts/tests/check-deps.test.sh
 bash scripts/tests/probe.test.sh
 bash scripts/tests/find-duplicate-skills.test.sh
 bash scripts/tests/install-scorer-audit.test.sh
@@ -118,9 +125,10 @@ Before merging any PR:
 1. `npm run typecheck` passes with zero errors in `mcp-bridge`, `scorer`, `judge`, `sindri`, `skills/ui-evidence`, and `skills/bugFixOrchestrator`
 2. `npm test` passes in `mcp-bridge`, `scorer`, `judge`, `sindri`, `skills/ui-evidence`, and `skills/bugFixOrchestrator`, every bash test listed above passes, and `claude plugin validate mods/aw-live` and `claude plugin test mods/aw-live` pass
 3. `scripts/sync-rules.sh --check` passes (rule links and Rules Index match `.agents/rules/`)
-4. `./setup.sh --providers claude,codex,cursor --dry-run` runs cleanly
-5. No `/* v8 ignore */` annotations in source files (prohibited — write the test instead)
-6. No `any` types outside of Fastify integration boundaries
+4. `node scripts/check-deps.mjs` passes (`deps.yaml` declares every edge the code has; a new edge is a reviewed change to it)
+5. `./setup.sh --providers claude,codex,cursor --dry-run` runs cleanly
+6. No `/* v8 ignore */` annotations in source files (prohibited — write the test instead)
+7. No `any` types outside of Fastify integration boundaries
 
 ## Commit Conventions
 
