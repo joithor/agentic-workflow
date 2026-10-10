@@ -1,0 +1,63 @@
+#nullable enable
+Aw.Kernel.Telemetry.ILogSink
+Aw.Kernel.Telemetry.ILogSink.Flush() -> void
+Aw.Kernel.Telemetry.ILogSink.WriteLine(string! line) -> void
+Aw.Kernel.Telemetry.KernelTelemetryServiceCollectionExtensions
+Aw.Kernel.Telemetry.TelemetryErrors
+Aw.Kernel.Telemetry.TelemetryOptions
+Aw.Kernel.Telemetry.TelemetryOptions.<Clone>$() -> Aw.Kernel.Telemetry.TelemetryOptions!
+Aw.Kernel.Telemetry.TelemetryOptions.Clock.get -> System.TimeProvider!
+Aw.Kernel.Telemetry.TelemetryOptions.Clock.init -> void
+Aw.Kernel.Telemetry.TelemetryOptions.Equals(Aw.Kernel.Telemetry.TelemetryOptions? other) -> bool
+Aw.Kernel.Telemetry.TelemetryOptions.MetricExporter.get -> OpenTelemetry.BaseExporter<OpenTelemetry.Metrics.Metric!>?
+Aw.Kernel.Telemetry.TelemetryOptions.MetricExporter.init -> void
+Aw.Kernel.Telemetry.TelemetryOptions.MinimumLevel.get -> Microsoft.Extensions.Logging.LogLevel
+Aw.Kernel.Telemetry.TelemetryOptions.MinimumLevel.init -> void
+Aw.Kernel.Telemetry.TelemetryOptions.Redactor.get -> Aw.Redaction.IRedactor!
+Aw.Kernel.Telemetry.TelemetryOptions.Redactor.init -> void
+Aw.Kernel.Telemetry.TelemetryOptions.ServiceName.get -> string!
+Aw.Kernel.Telemetry.TelemetryOptions.ServiceName.init -> void
+Aw.Kernel.Telemetry.TelemetryOptions.Sink.get -> Aw.Kernel.Telemetry.ILogSink?
+Aw.Kernel.Telemetry.TelemetryOptions.Sink.init -> void
+Aw.Kernel.Telemetry.TelemetryOptions.SourcePattern.get -> string!
+Aw.Kernel.Telemetry.TelemetryOptions.SourcePattern.init -> void
+Aw.Kernel.Telemetry.TelemetryOptions.TelemetryOptions() -> void
+Aw.Kernel.Telemetry.TelemetryOptions.TraceExporter.get -> OpenTelemetry.BaseExporter<System.Diagnostics.Activity!>?
+Aw.Kernel.Telemetry.TelemetryOptions.TraceExporter.init -> void
+Aw.Kernel.Telemetry.TelemetryRuntime
+Aw.Kernel.Telemetry.TelemetryRuntime.Dispose() -> void
+Aw.Kernel.Telemetry.TelemetryRuntime.Flush() -> void
+Aw.Kernel.Telemetry.TelemetryRuntime.IsExporting.get -> bool
+Aw.Kernel.Telemetry.TelemetryRuntime.LoggerFactory.get -> Microsoft.Extensions.Logging.ILoggerFactory!
+Aw.Kernel.Telemetry.TelemetryRuntime.Withheld.get -> Aw.Kernel.Telemetry.WithheldCounts
+Aw.Kernel.Telemetry.TextWriterLogSink
+Aw.Kernel.Telemetry.TextWriterLogSink.Flush() -> void
+Aw.Kernel.Telemetry.TextWriterLogSink.TextWriterLogSink(System.IO.TextWriter! writer) -> void
+Aw.Kernel.Telemetry.TextWriterLogSink.WriteLine(string! line) -> void
+Aw.Kernel.Telemetry.WithheldCounts
+Aw.Kernel.Telemetry.WithheldCounts.Deconstruct(out long Logs, out long Spans, out long Metrics) -> void
+Aw.Kernel.Telemetry.WithheldCounts.Equals(Aw.Kernel.Telemetry.WithheldCounts other) -> bool
+Aw.Kernel.Telemetry.WithheldCounts.Logs.get -> long
+Aw.Kernel.Telemetry.WithheldCounts.Logs.init -> void
+Aw.Kernel.Telemetry.WithheldCounts.Metrics.get -> long
+Aw.Kernel.Telemetry.WithheldCounts.Metrics.init -> void
+Aw.Kernel.Telemetry.WithheldCounts.Spans.get -> long
+Aw.Kernel.Telemetry.WithheldCounts.Spans.init -> void
+Aw.Kernel.Telemetry.WithheldCounts.WithheldCounts() -> void
+Aw.Kernel.Telemetry.WithheldCounts.WithheldCounts(long Logs, long Spans, long Metrics) -> void
+const Aw.Kernel.Telemetry.TelemetryOptions.LevelVariable = "AW_LOG_LEVEL" -> string!
+override Aw.Kernel.Telemetry.TelemetryOptions.Equals(object? obj) -> bool
+override Aw.Kernel.Telemetry.TelemetryOptions.GetHashCode() -> int
+override Aw.Kernel.Telemetry.TelemetryOptions.ToString() -> string!
+override Aw.Kernel.Telemetry.WithheldCounts.GetHashCode() -> int
+static Aw.Kernel.Telemetry.KernelTelemetryServiceCollectionExtensions.AddKernelTelemetry(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services, Aw.Kernel.Telemetry.TelemetryOptions! options) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
+static Aw.Kernel.Telemetry.TelemetryErrors.All.get -> System.Collections.Generic.IReadOnlyList<Aw.Kernel.ErrorDefinition!>!
+static Aw.Kernel.Telemetry.TelemetryOptions.FromEnvironment(string! serviceName, System.Func<string!, string?>! environment) -> Aw.Kernel.Result<Aw.Kernel.Telemetry.TelemetryOptions!>!
+static Aw.Kernel.Telemetry.TelemetryOptions.operator !=(Aw.Kernel.Telemetry.TelemetryOptions? left, Aw.Kernel.Telemetry.TelemetryOptions? right) -> bool
+static Aw.Kernel.Telemetry.TelemetryOptions.operator ==(Aw.Kernel.Telemetry.TelemetryOptions? left, Aw.Kernel.Telemetry.TelemetryOptions? right) -> bool
+static Aw.Kernel.Telemetry.TelemetryRuntime.Start(Aw.Kernel.Telemetry.TelemetryOptions! options) -> Aw.Kernel.Telemetry.TelemetryRuntime!
+static Aw.Kernel.Telemetry.WithheldCounts.operator !=(Aw.Kernel.Telemetry.WithheldCounts left, Aw.Kernel.Telemetry.WithheldCounts right) -> bool
+static Aw.Kernel.Telemetry.WithheldCounts.operator ==(Aw.Kernel.Telemetry.WithheldCounts left, Aw.Kernel.Telemetry.WithheldCounts right) -> bool
+static readonly Aw.Kernel.Telemetry.TelemetryErrors.InvalidSetting -> Aw.Kernel.ErrorDefinition!
+~override Aw.Kernel.Telemetry.WithheldCounts.Equals(object obj) -> bool
+~override Aw.Kernel.Telemetry.WithheldCounts.ToString() -> string

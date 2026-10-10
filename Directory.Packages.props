@@ -30,5 +30,9 @@
     <PackageVersion Include="Microsoft.Data.Sqlite" Version="[10.0.12]" />
     <!-- Typed ids (decision R9, docs/csharp/typed-ids.md). Vogen 8.0.7 published 2026-07-21. -->
     <PackageVersion Include="Vogen" Version="[8.0.7]" />
+    <!-- Telemetry (Aw.Kernel.Telemetry's one external dependency, spec §4b.1): spans, metrics and the processor and
+         exporter seams. OpenTelemetry 1.19.1 published 2026-09-21. No exporter package: exporting is off by default
+         and an exporter is an adapter the host opts into (docs/csharp/telemetry.md). -->
+    <PackageVersion Include="OpenTelemetry" Version="[1.19.1]" />
   </ItemGroup>
 </Project>
