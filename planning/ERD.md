@@ -1,8 +1,8 @@
 # Entity-Relationship Diagram -- Sindri
 
-Sindri's SQLite stores. The MCP bridge's database left with the bridge (R2 stage B). Judge (`decisions.sqlite`:
-`decisions`, `failures`, `briefs`) and scorer (`scorer.sqlite`: `files`, `calls`; one live file per session) keep their
-own SQLite stores, defined by the migrations in their `src/db.ts`; this file doesn't document them yet.
+Sindri's SQLite stores. The MCP bridge's database left with the bridge (R2 stage B). Judge (`decisions.sqlite`) and
+scorer (`scorer.sqlite`, plus one live file per session) keep their own SQLite stores, defined by the migrations in
+their `src/db.ts`; this file doesn't document them yet.
 
 ## Sindri ledger
 
