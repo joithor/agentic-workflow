@@ -103,6 +103,20 @@ export function embedFetch(vec: (text: string) => number[] = () => [1, 0, 0]): F
 }
 
 // A minimal index: files, symbols and a structure layer with the given status.
+// An index whose header and the first page of every table are fine, but whose later pages are garbage: the `LIMIT 1`
+// probes pass and a full scan of symbols throws SQLITE_CORRUPT.
+export function seedCorruptIndex(db: IndexDb, file: string): void {
+  seedIndex(db, { files: ["a.ts"], symbols: Array.from({ length: 3000 }, (_, i) => `symbolName${i}`.padEnd(200, "x")) });
+  db.pragma("wal_checkpoint(TRUNCATE)");
+  db.pragma("journal_mode = DELETE");
+  db.close();
+  const buf = fs.readFileSync(file);
+  const page = buf.readUInt16BE(16);
+  const pages = buf.length / page;
+  for (let p = Math.floor(pages * 0.6); p < Math.floor(pages * 0.8); p++) buf.fill(0xab, p * page, p * page + page);
+  fs.writeFileSync(file, buf);
+}
+
 export function seedIndex(db: IndexDb, o: { files: string[]; symbols: string[]; structure?: "ok" | "pending" }): IndexDb {
   const now = "2026-10-09T00:00:00Z";
   for (const f of o.files) db.prepare("INSERT INTO files (path, hash, size) VALUES (?, 'h', 1)").run(f);

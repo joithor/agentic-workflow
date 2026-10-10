@@ -5,7 +5,7 @@ import { describe, expect, it } from "vitest";
 import { indexPath, openIndex, type IndexDb } from "../src/index/db.js";
 import { buildDerivedSet, identifierProblem, identifierTokens, loadDerivedSet, privateRepos, unsetPrivateRepos, vocabularyOf, wordsFile } from "../src/evolve/privacy-derived.js";
 import { SindriError } from "../src/errors.js";
-import { seedIndex } from "./index-fixtures.js";
+import { seedCorruptIndex, seedIndex } from "./index-fixtures.js";
 import { git, gitRepo, makeDeps, tempDir } from "./helpers.js";
 
 const WORDS = new Set(["schedule", "nurse", "shift", "patient", "query", "utils"]);
@@ -157,6 +157,16 @@ describe("loadDerivedSet", () => {
     fs.writeFileSync(indexPath(deps, "toolkit"), "not a database either, just a page of plain text".repeat(6));
     seedIndex(openIndex(indexPath(deps, "globex")), { files: ["a.ts"], symbols: ["renderTask"] }).close();
     expect([...(await loadDerivedSet(deps, loaded(deps, { toolkit: {}, globex: { private: true } })))]).toEqual(["rendertask"]);
+  });
+
+  it("refuses with SND-EVOLVE-017, not an internal error, when the private index is corrupt past its first pages", async () => {
+    const words = path.join(tempDir("w-"), "words");
+    fs.writeFileSync(words, "nurse\n");
+    const deps = makeDeps({ env: { SINDRI_WORDS: words } });
+    seedCorruptIndex(openIndex(indexPath(deps, "globex")), indexPath(deps, "globex"));
+    await expect(loadDerivedSet(deps, loaded(deps, { toolkit: {}, globex: { private: true } }))).rejects.toThrow(expect.objectContaining({
+      code: "SND-EVOLVE-017", message: "repo globex is private but its code index is unusable (unreadable pages)",
+    }) as SindriError);
   });
 
   it("adds the path segments of every tracked file of a private repo, also those its index skips (denyPaths, secrets, non-source)", async () => {

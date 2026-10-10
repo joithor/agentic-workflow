@@ -5,7 +5,8 @@ import { describe, expect, it } from "vitest";
 
 import { openIndex } from "../src/index/db.js";
 import { damageAsNull, indexBuilt, readBuiltIndex, readIndex } from "../src/index/health.js";
-import { seedIndex } from "./index-fixtures.js";
+import { seedCorruptIndex, seedIndex } from "./index-fixtures.js";
+import { vocabularyOf } from "../src/evolve/privacy-derived.js";
 import { tempDir } from "./helpers.js";
 
 const fresh = (): string => path.join(tempDir("ix-"), "i.db");
@@ -23,6 +24,16 @@ describe("damageAsNull", () => {
     for (const code of ["SQLITE_NOTADB", "SQLITE_CORRUPT"]) expect(damageAsNull(() => { throw Object.assign(new Error("damaged"), { code }); })).toBeNull();
     expect(() => damageAsNull(() => { throw Object.assign(new Error("database is locked"), { code: "SQLITE_BUSY" }); })).toThrow(/locked/);
     expect(() => damageAsNull(() => { throw "not an Error"; })).toThrow();
+  });
+
+  it("treats every extended SQLITE_CORRUPT code as damage, and a code that isn't a string as an ordinary error", () => {
+    for (const code of ["SQLITE_CORRUPT_INDEX", "SQLITE_CORRUPT_VTAB", "SQLITE_CORRUPT_SEQUENCE"]) {
+      expect(damageAsNull(() => { throw Object.assign(new Error("damaged"), { code }); }), code).toBeNull();
+    }
+    for (const code of [11, undefined, null, { toString: () => "SQLITE_CORRUPT" }]) {
+      expect(() => damageAsNull(() => { throw Object.assign(new Error("odd"), { code }); })).toThrow(/odd/);
+    }
+    expect(() => damageAsNull(() => { throw Object.assign(new Error("busy"), { code: "SQLITE_BUSY_SNAPSHOT" }); })).toThrow(/busy/);
   });
 });
 
@@ -47,6 +58,21 @@ describe("readIndex", () => {
       db.close();
       expect(readIndex(f, () => { throw new Error("must not read"); })).toEqual({ state: "damaged", detail: `no usable ${table} table` });
     }
+  });
+
+  it("says damaged when the read itself meets corruption past the first page of each table, and closes the index", () => {
+    const f = fresh();
+    seedCorruptIndex(openIndex(f), f);
+    let held: Database.Database | null = null;
+    expect(readIndex(f, (db) => { held = db; return vocabularyOf(db); })).toEqual({ state: "damaged", detail: "unreadable pages" });
+    expect(held!.open).toBe(false);
+    expect(readBuiltIndex(f, vocabularyOf)).toEqual({ state: "damaged", detail: "unreadable pages" });
+  });
+
+  it("rethrows a busy or locked error from the read (never reported as damage)", () => {
+    const f = fresh();
+    seedIndex(openIndex(f), { files: ["a.ts"], symbols: ["x"] }).close();
+    expect(() => readIndex(f, () => { throw Object.assign(new Error("database is locked"), { code: "SQLITE_BUSY" }); })).toThrow(/locked/);
   });
 
   it("runs the read on a usable index and closes it", () => {
