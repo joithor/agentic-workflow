@@ -17,7 +17,13 @@ public sealed class SqliteOutboxTests
     private static async Task<TempDatabase> Migrated()
     {
         var db = new TempDatabase();
-        Assert.True((await new MigrationRunner(db.Factory(), new FixedClock(_now)).Migrate([SqliteOutboxSchema.CreateMigration(1)], Ct)).IsSuccess);
+        var migrated = await new MigrationRunner(db.Factory(), new FixedClock(_now)).Migrate([SqliteOutboxSchema.CreateMigration(1)], Ct);
+        if (migrated.IsError)
+        {
+            db.Dispose();
+            Assert.Fail(migrated.Error.Message);
+        }
+
         return db;
     }
 
@@ -63,19 +69,19 @@ public sealed class SqliteOutboxTests
         _ = await outbox.Enqueue(Command(1), Ct);
 
         _ = await outbox.MarkFailed(Command(1).Id, KernelErrors.Unavailable.With("first"), Ct);
-        Assert.Equal(("1", "AW-KERNEL-006", "first", "2026-01-01T00:00:30.0000000Z", null), await Row(session));
+        Assert.Equal(new OutboxRow(1, "AW-KERNEL-006", "first", "2026-01-01T00:00:30.0000000Z", DeadLetteredAt: null), await Row(session));
 
         _ = await outbox.MarkFailed(Command(1).Id, KernelErrors.Timeout.With("second"), Ct);
-        Assert.Equal(("2", "AW-KERNEL-007", "second", null, "2026-01-01T00:00:00.0000000Z"), await Row(session));
+        Assert.Equal(new OutboxRow(2, "AW-KERNEL-007", "second", NextAttemptAt: null, "2026-01-01T00:00:00.0000000Z"), await Row(session));
     }
 
-    private static async Task<(string, string?, string?, string?, string?)> Row(ConnectionSession session)
+    private static async Task<OutboxRow> Row(ConnectionSession session)
     {
         await using var command = session.Connection.CreateCommand();
         command.CommandText = "SELECT attempts, last_error_code, last_error_message, next_attempt_at, dead_lettered_at FROM outbox_commands";
         await using var reader = await command.ExecuteReaderAsync(Ct);
         Assert.True(await reader.ReadAsync(Ct));
         string? Text(int i) => reader.IsDBNull(i) ? null : reader.GetString(i);
-        return (reader.GetInt64(0).ToString(System.Globalization.CultureInfo.InvariantCulture), Text(1), Text(2), Text(3), Text(4));
+        return new OutboxRow(reader.GetInt64(0), Text(1), Text(2), Text(3), Text(4));
     }
 }

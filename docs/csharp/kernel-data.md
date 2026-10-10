@@ -29,8 +29,8 @@ connection even if the rollback throws.
 
 ## Contracts
 
-`SqliteUnitOfWorkFactory` and `SqliteOutbox` pass the shared port contracts in `Aw.Kernel.Testing` (`UnitOfWorkContract`,
-`OutboxContract`), the same suites the in-memory fakes (`InMemoryUnitOfWorkFactory`, `InMemoryOutbox`) pass
+`SqliteReadRepository`, `SqliteUnitOfWorkFactory` and `SqliteOutbox` pass the shared port contracts in `Aw.Kernel.Testing`
+(`ReadRepositoryContract`, `UnitOfWorkContract`, `OutboxContract`), the same suites the in-memory fakes pass
 (`tests/Aw.Kernel.Data.Tests/Sqlite*ContractTests.cs`, integration lane). A new adapter for either port (another engine)
 binds the same base.
 
@@ -54,6 +54,11 @@ Expected store failures are `Result` errors; everything else (broken SQL, a mapp
 
 - One file per change, `NNNN_name.sql`, embedded as a resource. Versions run 1, 2, 3 with no gaps. An applied
   migration never changes: add a new one.
+- A package that uses the outbox adds the one migration Kernel.Data provides in code: load its own set with
+  `EmbeddedMigrations`, insert `SqliteOutboxSchema.CreateMigration(<n>)` at the version it picks, and pass the list to
+  `MigrationRunner.Migrate`. The SQL belongs to Kernel.Data but is recorded in the package's `schema_version`, so
+  Kernel.Data never changes it in place: a later change to `outbox_commands` ships as a new Kernel.Data migration that
+  each package adds as its own next version.
 - The checksum is SHA-256 of the UTF-8 text without a leading BOM and with CRLF or lone CR turned into LF, so line
   endings or a different loader never look like an edit.
 - Before anything is written, the runner checks the set, then checks the file on a read-only connection: who owns it

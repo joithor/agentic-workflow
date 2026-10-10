@@ -7,7 +7,7 @@ namespace Aw.Kernel.Testing;
 /// The per-test lane cap (spec §4b.5): each test's own time in xUnit's CTRF report ('--report-xunit-ctrf') is checked
 /// against its lane's budget (<see cref="Lanes.BudgetOf"/>: unit 10 s, integration 60 s, heavy none), and every test
 /// must carry exactly one known 'Lane' trait. The per-package wall clock of a lane run is the CI lane job's check; this
-/// is the extra per-test cap. Run it through 'scripts/ci/lane-cap.cs' (see <see cref="Run"/>).
+/// is the extra per-test cap. CI runs it as 'dotnet run --project tests/Aw.LaneCap.Testing -- &lt;dir&gt;' (see <see cref="Run"/>).
 /// </summary>
 public static class LaneCap
 {
@@ -59,12 +59,13 @@ public static class LaneCap
     }
 
     /// <summary>
-    /// The command-line check: 'lane-cap &lt;report-or-directory&gt;...'. A directory stands for every '*.ctrf' and
-    /// '*.json' file in it, which is what 'dotnet test --solution --report-xunit-ctrf --results-directory &lt;dir&gt;' writes
+    /// The command-line check: 'lane-cap &lt;report-or-directory&gt;...'. A directory stands for every '*.ctrf' file in
+    /// it (other files, such as coverage JSON, are skipped), which is what 'dotnet test --solution --report-xunit-ctrf --results-directory &lt;dir&gt;' writes
     /// (one report per test project; a fixed '--report-xunit-ctrf-filename' would make the projects overwrite each
     /// other's report). Prints each violation (rule id, package, test, measured
     /// seconds, limit, fix) and one summary line per report, plain text with no colour. Exit codes: 0 every report
-    /// passes, 1 a test breaks a lane rule, 2 a usage or input error (missing file, not CTRF).
+    /// passes, 1 a test breaks a lane rule, 2 a usage or input error (missing file, not CTRF, or no test in any report:
+    /// a crashed or misfiltered lane).
     /// </summary>
     /// <param name="args">The CTRF report paths.</param>
     /// <param name="output">Where results go.</param>
@@ -81,7 +82,27 @@ public static class LaneCap
             return 2;
         }
 
+        var (failed, total, readError) = CheckAll(paths, output);
+        if (readError is not null)
+        {
+            error.WriteLine(readError);
+            return 2;
+        }
+
+        if (total == 0)
+        {
+            error.WriteLine("lane-cap: no tests in any report; a lane run that ran nothing is a broken run (check the filter and the test host)");
+            return 2;
+        }
+
+        output.WriteLine(failed ? "FAIL: a test breaks a lane rule (spec §4b.5)" : "OK");
+        return failed ? 1 : 0;
+    }
+
+    private static (bool Failed, int Total, string? Error) CheckAll(List<string> paths, TextWriter output)
+    {
         var failed = false;
+        var total = 0;
         foreach (var path in paths)
         {
             LaneCapReport report;
@@ -91,8 +112,7 @@ public static class LaneCap
             }
             catch (Exception e) when (e is IOException or UnauthorizedAccessException or InvalidDataException)
             {
-                error.WriteLine($"lane-cap: {path}: {e.Message}");
-                return 2;
+                return (failed, total, $"lane-cap: {path}: {e.Message}");
             }
 
             foreach (var violation in report.Violations)
@@ -102,10 +122,10 @@ public static class LaneCap
 
             output.WriteLine(Summary(path, report));
             failed |= !report.Passed;
+            total += report.Tests;
         }
 
-        output.WriteLine(failed ? "FAIL: a test breaks a lane rule (spec §4b.5)" : "OK");
-        return failed ? 1 : 0;
+        return (failed, total, null);
     }
 
     private static List<string>? ReportPaths(IReadOnlyList<string> args, TextWriter error)
@@ -126,12 +146,12 @@ public static class LaneCap
             }
 
             var reports = Directory.EnumerateFiles(arg)
-                .Where(f => f.EndsWith(".ctrf", StringComparison.Ordinal) || f.EndsWith(".json", StringComparison.Ordinal))
+                .Where(f => f.EndsWith(".ctrf", StringComparison.Ordinal))
                 .Order(StringComparer.Ordinal)
                 .ToList();
             if (reports.Count == 0)
             {
-                error.WriteLine($"lane-cap: {arg}: no CTRF reports (*.ctrf or *.json) in this directory");
+                error.WriteLine($"lane-cap: {arg}: no CTRF reports (*.ctrf) in this directory");
                 return null;
             }
 
@@ -172,15 +192,25 @@ public static class LaneCap
         {
             foreach (var suite in suites.EnumerateArray())
             {
-                if (suite.TryGetProperty("id", out var id) && id.ValueKind == JsonValueKind.String
-                    && suite.TryGetProperty("filePath", out var file) && file.ValueKind == JsonValueKind.String)
-                {
-                    packages[id.GetString()!] = Path.GetFileNameWithoutExtension(file.GetString()!); // why: ValueKind checked as String
-                }
+                AddSuite(packages, suite);
             }
         }
 
         return packages;
+    }
+
+    private static void AddSuite(Dictionary<string, string> packages, JsonElement suite)
+    {
+        if (suite.ValueKind != JsonValueKind.Object)
+        {
+            throw new InvalidDataException($"not a CTRF report: results.extra.suites holds {Shorten(suite)}, not a suite object");
+        }
+
+        if (suite.TryGetProperty("id", out var id) && id.ValueKind == JsonValueKind.String
+            && suite.TryGetProperty("filePath", out var file) && file.ValueKind == JsonValueKind.String)
+        {
+            packages[id.GetString()!] = Path.GetFileNameWithoutExtension(file.GetString()!); // why: ValueKind checked as String
+        }
     }
 
     private static string PackageOf(JsonElement test, Dictionary<string, string> packages) =>
