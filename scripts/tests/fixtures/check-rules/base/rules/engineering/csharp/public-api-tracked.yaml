@@ -12,6 +12,7 @@ checks:
     id: "RS0016"
     via: baseline
     package: Microsoft.CodeAnalysis.PublicApiAnalyzers
+    category: ApiDesign
     status: active
 gap: closed
 source:

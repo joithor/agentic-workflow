@@ -225,6 +225,42 @@ expect "--root without a value is a tool error" 2 "check-rules: error" "--root"
 d="$(fixture badarg)"; run "$d" --bogus
 expect "an unknown argument is a tool error" 2 "check-rules: error" "--bogus"
 
+# ---- review run 2: editorconfig sections, case, categories; suggestion; packages; CI steps; strings ----
+d="$(fixture section-only)"; drop "$d/.editorconfig" 'CA1031'; printf '[tests/**.cs]\ndotnet_diagnostic.CA1031.severity = error\n' >> "$d/.editorconfig"; run "$d"
+expect "a severity set only under a narrower section doesn't count" 1 "RULE-CHECK-001" "CA1031"
+
+d="$(fixture narrow-off)"; printf '[src/Legacy/**.cs]\ndotnet_diagnostic.CA1031.severity = none\n' >> "$d/.editorconfig"; run "$d"
+expect "a rule switched off under a narrower section doesn't fail the check" 0 "rules: ok"
+
+d="$(fixture lowercase)"; printf 'dotnet_diagnostic.ca1031.severity = none\n' >> "$d/.editorconfig"; run "$d"
+expect "editorconfig keys match case-insensitively (a later lowercase none wins)" 1 "RULE-CHECK-001" "CA1031" "severity none"
+
+d="$(fixture category-off)"; printf 'dotnet_analyzer_diagnostic.category-ApiDesign.severity = none\n' >> "$d/.editorconfig"; run "$d"
+expect "a baseline check whose category is switched off fails" 1 "RULE-CHECK-001" "RS0016" "category-ApiDesign"
+
+d="$(fixture category-missing)"; drop "$(rec "$d" public-api-tracked)" 'category:'; run "$d"
+expect "a baseline check names its category" 1 "RULE-SCHEMA-001" "category"
+
+d="$(fixture suggestion)"; sub "$d/.editorconfig" "dotnet_diagnostic.CA1031.severity = error" "dotnet_diagnostic.CA1031.severity = suggestion"
+f="$(rec "$d" no-catch-exception)"; awk '{print} /^    id: CA1031$/ {print "    severity: suggestion"}' "$f" > "$f.new" && mv "$f.new" "$f"; run "$d"
+expect "a suggestion-severity check can't close a rule" 1 "RULE-GAP-001" "no-catch-exception"
+
+d="$(fixture version-only)"; printf '<Project>\n  <ItemGroup>\n    <PackageVersion Include="Microsoft.CodeAnalysis.PublicApiAnalyzers" Version="[5.6.0]" />\n  </ItemGroup>\n</Project>\n' > "$d/Directory.Packages.props"; run "$d"
+expect "a version-only PackageVersion isn't a referenced analyzer" 1 "RULE-CHECK-001" "RS0016" "GlobalPackageReference"
+
+d="$(fixture job-name)"; printf 'name: CI\njobs:\n  dotnet:\n    name: The SDK is exactly the global.json pin\n    steps:\n      - name: Something else\n' > "$d/.github/workflows/ci.yml"; run "$d"
+expect "a job name isn't a step" 1 "RULE-CHECK-001" "The SDK is exactly the global.json pin"
+
+d="$(fixture quoted-hash)"; printf 'jobs:\n  dotnet:\n    steps:\n      - name: "Lane #2 caps"\n' > "$d/.github/workflows/ci.yml"
+sub "$(rec "$d" sdk-pinned)" '"The SDK is exactly the global.json pin"' '"Lane #2 caps"'; run "$d"
+expect "a # inside a quoted step name isn't a comment" 0 "rules: ok"
+
+d="$(fixture strings)"; printf 'const GLOB = "src/*.cs";\nconst SEP = "a//b"; fail("DEPS-CYCLE-001");\n/** done */\n' > "$d/scripts/check-deps.mjs"; run "$d"
+expect "comment markers inside strings don't hide ids" 0 "rules: ok"
+
+d="$(fixture rcs)"; printf '| x | `RCS1075` `SYSLIB1045` |\n' >> "$d/.agents/rules/csharp.md"; run "$d"
+expect "RCS and SYSLIB ids in the rules docs need a record" 1 "RULE-COVER-002" "RCS1075" "SYSLIB1045"
+
 d="$(fixture norecords)"; mv "$d/rules" "$d/rules.gone"; run "$d"
 expect "a tree with no rules directory is a tool error" 2 "check-rules: error"
 
