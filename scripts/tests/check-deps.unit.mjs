@@ -11,18 +11,19 @@ const SCHEMA = JSON.parse(fs.readFileSync(path.join(HERE, "..", "..", "schemas",
 let passed = 0;
 const failures = [];
 const t = (name, fn) => { try { fn(); passed++; } catch (e) { failures.push(`${name}: ${e.message}`); } };
+const y = (text) => JSON.parse(JSON.stringify(parseYaml(text)));
 const yamlError = (text, re) => assert.throws(() => parseYaml(text), (e) => e.constructor.name === "YamlError" && re.test(e.message));
 
 // ---- parser ----
-t("CRLF line endings", () => assert.deepEqual(parseYaml("a: 1\r\nb: x\r\n"), { a: 1, b: "x" }));
-t("# inside quotes is not a comment", () => assert.deepEqual(parseYaml("a: 'x # y'\nb: \"p # q\" # c\n"), { a: "x # y", b: "p # q" }));
-t("'' escape in single quotes", () => assert.deepEqual(parseYaml("a: 'it''s'\n"), { a: "it's" }));
-t("flow sequence with a quoted comma", () => assert.deepEqual(parseYaml("a: [x, 'y, z', \"w\"]\n"), { a: ["x", "y, z", "w"] }));
-t("empty flow sequence", () => assert.deepEqual(parseYaml("a: []\n"), { a: [] }));
-t("empty value is null", () => assert.deepEqual(parseYaml("a:\nb: 1\n"), { a: null, b: 1 }));
-t("sequence of maps with extra indent", () => assert.deepEqual(parseYaml("items:\n    - a: 1\n      b: 2\n    - a: 3\n"), { items: [{ a: 1, b: 2 }, { a: 3 }] }));
-t("nested sequence", () => assert.deepEqual(parseYaml("a:\n  -\n    - 1\n    - 2\n"), { a: [[1, 2]] }));
-t("plain scalar with a quote mid-value: ' #' still starts a comment", () => assert.deepEqual(parseYaml("note: say \"hi # there\"\n"), { note: "say \"hi" }));
+t("CRLF line endings", () => assert.deepEqual(y("a: 1\r\nb: x\r\n"), { a: 1, b: "x" }));
+t("# inside quotes is not a comment", () => assert.deepEqual(y("a: 'x # y'\nb: \"p # q\" # c\n"), { a: "x # y", b: "p # q" }));
+t("'' escape in single quotes", () => assert.deepEqual(y("a: 'it''s'\n"), { a: "it's" }));
+t("flow sequence with a quoted comma", () => assert.deepEqual(y("a: [x, 'y, z', \"w\"]\n"), { a: ["x", "y, z", "w"] }));
+t("empty flow sequence", () => assert.deepEqual(y("a: []\n"), { a: [] }));
+t("empty value is null", () => assert.deepEqual(y("a:\nb: 1\n"), { a: null, b: 1 }));
+t("sequence of maps with extra indent", () => assert.deepEqual(y("items:\n    - a: 1\n      b: 2\n    - a: 3\n"), { items: [{ a: 1, b: 2 }, { a: 3 }] }));
+t("nested sequence", () => assert.deepEqual(y("a:\n  -\n    - 1\n    - 2\n"), { a: [[1, 2]] }));
+t("plain scalar with a quote mid-value: ' #' still starts a comment", () => assert.deepEqual(y("note: say \"hi # there\"\n"), { note: "say \"hi" }));
 t("tab indentation is rejected", () => yamlError("a:\n\t- 1\n", /tab indentation/));
 t("block scalar is rejected", () => yamlError("a: |\n  x\n", /block scalar/));
 t("multiple documents are rejected", () => yamlError("---\na: 1\n", /multiple documents/));

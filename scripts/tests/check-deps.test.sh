@@ -101,8 +101,8 @@ expect "db edge to a higher tier fails" 1 "DEPS-TIER-002" "Kernel (tier 0) -> Al
 d="$(fixture same-tier-cli)"; edge "$d" Delta Beta cli planned; run "$d"
 expect "same-tier cli edge is allowed (a contract, §4b.1a)" 0 "deps: ok"
 
-d="$(fixture project-into-shell)"; edge "$d" Beta Hooks project planned; run "$d"
-expect "project edge into a shell node fails" 1 "DEPS-KIND-001" "Beta -> Hooks (project)"
+d="$(fixture project-from-shell)"; edge "$d" Hooks Kernel project planned; run "$d"
+expect "project edge from a shell node fails" 1 "DEPS-KIND-001" "Hooks -> Kernel (project)"
 
 d="$(fixture file-into-shell)"; edge "$d" Beta Hooks file planned; run "$d"
 expect "any edge into a shell node fails" 1 "DEPS-KIND-002" "Beta -> Hooks (file)"
@@ -139,7 +139,7 @@ csproj "$d" src/Delta/Aw.Delta.Core/Aw.Delta.Core.csproj
 run "$d"
 expect "undeclared ProjectReference fails once src/ has projects" 1 "DEPS-PROJ-001" "Aw.Beta.Core -> Aw.Delta.Core"
 
-d="$(fixture proj-declared)"
+d="$(fixture proj-declared)"; perl -0pi -e 's/kind: project\n    status: planned/kind: project\n    status: current/' "$d/deps.yaml"
 csproj "$d" src/Beta/Aw.Beta.Core/Aw.Beta.Core.csproj ../../Aw.Kernel/Aw.Kernel.csproj
 csproj "$d" src/Aw.Kernel/Aw.Kernel.csproj
 csproj "$d" src/Beta/Aw.Beta.Host/Aw.Beta.Host.csproj ../Aw.Beta.Core/Aw.Beta.Core.csproj
