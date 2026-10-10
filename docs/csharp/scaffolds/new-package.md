@@ -174,7 +174,8 @@ tests/Aw.<Name>.Tests/HttpJsonProfileTests.cs   # the http JSON options equal th
 `LoopbackBinding.Build(args, environment, clock)` refuses any command-line argument (`ArgumentException`), builds the
 host with `WebApplication.CreateSlimBuilder(new WebApplicationOptions { Args = [] })`, clears every configuration source
 (`ASPNETCORE_*`/`DOTNET_*` environment variables reach the host's configuration otherwise, even with `Args = []`) and adds
-an empty in-memory one (the host writes its own settings), pins `PreferHostingUrls` off, and listens with
+an empty in-memory one (the host writes its own settings), clears ASP.NET's logging providers (so Kernel telemetry,
+started in `Compose`, is the only logger and ASP.NET's own log lines are scrubbed JSON too), pins `PreferHostingUrls` off, and listens with
 `Listen(IPAddress.Loopback, port)` only. The port is `AW_<NAME>_PORT` from the environment `Composition` gets, `0` (a free
 port) by default. `LoopbackBindingTests` starts the host once per
 override vector and checks the only listener is `127.0.0.1:<port>`: `ASPNETCORE_URLS`, `DOTNET_URLS`,
@@ -251,7 +252,7 @@ for now; the second HTTP package moves it into a tier-0 Kernel part (second use 
 | File | Change |
 |---|---|
 | `AgenticWorkflow.slnx` | Adds every new project under `/src/<Name>/` and `/tests/` folders |
-| `deps.yaml` | **The node:** if the package is declared already (as `Readiness` and `Packets` are), check that `tier`, `src` (`src/<Name>`) and `projectPrefix` (`Aw.<Name>`) match the inputs, else refuse `NP-DEPS-MISMATCH`. If it isn't declared, add it (`id: <Name>`, `kind: package`, `tier`, `projectPrefix: Aw.<Name>`, `ts: null`, `src: src/<Name>`, `note`). **The edges, one rule for both cases:** for every cross-package project edge the scaffold creates (always `<Name> → Kernel`, since `Core`, `Features` and `Infrastructure` reference `Aw.Kernel`, plus one per `depends` entry), a `planned` edge in `deps.yaml` becomes `current`, and a missing edge is added as `current` with a note. Planned edges the scaffold doesn't create stay `planned` (otherwise `DEPS-STALE-001`) |
+| `deps.yaml` | **The node:** if the package is declared already (as `Readiness` and `Packets` are), check that `tier`, `src` (`src/<Name>`) and `projectPrefix` (`Aw.<Name>`) match the inputs, else refuse `NP-DEPS-MISMATCH`. If it isn't declared, add it (`id: <Name>`, `kind: package`, `tier`, `projectPrefix: Aw.<Name>`, `ts: null`, `src: src/<Name>`, `note`). **The edges, one rule for both cases:** for every cross-package project edge the scaffold creates (always `<Name> → Kernel`, since `Core`, `Features` and `Infrastructure` reference `Aw.Kernel`; `<Name> → KernelTelemetry` for every package with a host, since the host references `Aw.Kernel.Telemetry`; plus one per `depends` entry), a `planned` edge in `deps.yaml` becomes `current`, and a missing edge is added as `current` with a note. Planned edges the scaffold doesn't create stay `planned` (otherwise `DEPS-STALE-001`) |
 | `tests/Aw.Architecture.Tests/Packages.cs` | One line per new production project, by project name (`"Aw.<Name>.Core",` … `"Aw.<Name>.Host",` even though the Host sets `AssemblyName`; `Core` and `App` in the small shape), appended to `Packages.Production`, so every §4b.1 rule covers them (`ARCH-REG-001` fails otherwise) |
 | `tests/Aw.Architecture.Tests/Aw.Architecture.Tests.csproj` | One `ProjectReference` per new production project in the `Registered packages` item group, so each registered project's assembly loads (`ARCH-REG-002`) |
 | `tests/Aw.Architecture.Tests/packages.lock.json` | Rewritten by the unlocked restore below: it lists the new projects and any new transitive packages |
@@ -265,6 +266,7 @@ No other file changes. In particular the scaffold never touches `Directory.Packa
 using Aw.<Name>.Core;
 using Aw.<Name>.Features;
 using Aw.<Name>.Infrastructure;
+using Aw.Kernel.Telemetry;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Aw.<Name>.Host;
@@ -275,6 +277,7 @@ internal static class Composition
     internal static IServiceCollection Compose(IServiceCollection services, Func<string, string?> environment, TimeProvider clock)
         => services
             .AddSingleton(clock)
+            .AddKernelTelemetry(TelemetryOptions.FromEnvironment("<binary>", environment, clock))   // JSON lines on stderr (AW_LOG_LEVEL); exports off
             .Add<Name>Core()
             .Add<Name>Features()
             .Add<Name>Infrastructure(environment);
@@ -285,7 +288,14 @@ internal static class Composition
 technology (`.agents/rules/csharp.md`, Seams) changes `Infrastructure` and this one `Add…()` call, not the rest of
 `Host`. When `Infrastructure` offers more than one adapter for a port (`Add<Name>SqliteInfrastructure(environment)`,
 `Add<Name>PostgresInfrastructure(environment)`), this is where one is picked. The environment is a `Func<string, string?>` rather
-than `IConfiguration`: the AOT CLI hosts reference only `Microsoft.Extensions.DependencyInjection`.
+than `IConfiguration`: settings never bind from configuration (spec §4b.4), even though `Aw.Kernel.Telemetry`'s
+OpenTelemetry closure brings the configuration assemblies into every host.
+
+`AddKernelTelemetry` starts the process's one `TelemetryRuntime` (spec §4b.4; recipe `docs/csharp/telemetry.md`): log
+lines are scrubbed JSON on standard error at the `AW_LOG_LEVEL` level (default information; an unknown level writes one
+`AW-TELEMETRY-001` warning and carries on), spans are recorded so log lines carry trace ids, and nothing is exported. The
+service name is the package's `binary` input. Only the host project references `Aw.Kernel.Telemetry` (the `App` exe in the
+small shape), and the scaffold declares its `<Name> → KernelTelemetry` project edge.
 
 `using Microsoft.Extensions.DependencyInjection;` is emitted only for a `Microsoft.NET.Sdk` host (`host: cli`). For
 `host: http` the Web SDK's implicit usings already include it, and a duplicate fails the build (`IDE0005` is an error).
@@ -296,6 +306,7 @@ than `IConfiguration`: the AOT CLI hosts reference only `Microsoft.Extensions.De
 using Aw.<Name>.Host;
 using Aw.<Name>.Host.Commands;
 using Aw.Kernel.Json;
+using Aw.Kernel.Telemetry;
 using Microsoft.Extensions.DependencyInjection;
 
 var services = Composition.Compose(new ServiceCollection(), Environment.GetEnvironmentVariable, TimeProvider.System);
@@ -303,9 +314,13 @@ var json = AwJson.CreateOptions(<Name>JsonContext.Default);   // the one Kernel 
 var provider = services.BuildServiceProvider();   // validation runs in HostTests, not at CLI startup
 await using (provider.ConfigureAwait(false))
 {
+    _ = provider.GetRequiredService<TelemetryRuntime>();   // resolved so the container disposes it on exit, which flushes
     return await CommandTable.Run(args, provider, json).ConfigureAwait(false);
 }
 ```
+
+The container disposes only what it has resolved, so `Program.cs` resolves `TelemetryRuntime` right after building it;
+the http `Program.cs` does the same with `app.Services` before `Pipeline.Configure(app)`.
 
 `CommandTable.Run(string[] args, IServiceProvider provider, JsonSerializerOptions json)` binds the arguments, opens a scope (`var scope = provider.CreateAsyncScope(); await using
 (scope.ConfigureAwait(false)) { … }`), resolves one `IService<TReq, TRes>`, calls it, and maps the `Result` to an exit
@@ -378,19 +393,21 @@ public static class <Name>Errors
 ```csharp
 using Aw.<Name>.Host;
 using Aw.Kernel.Services;
+using Aw.Kernel.Telemetry;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Time.Testing;
 
 namespace Aw.<Name>.Tests;
 
 public sealed class HostTests
 {
+    private static readonly string _stateRoot = Path.Combine(Path.GetTempPath(), "aw-<name>-di-test");
+
     [Fact, Trait("Lane", "unit")]
     public void Every_registered_service_resolves_in_a_scope()
     {
-        var stateRoot = Path.Combine(Path.GetTempPath(), "aw-<name>-di-test");
-        var services = Composition.Compose(
-            new ServiceCollection(), name => name == "AW_STATE_DIR" ? stateRoot : null, new FakeTimeProvider());
+        var services = Compose();
         var serviceTypes = services
             .Select(d => d.ServiceType)
             .Where(t => t.IsGenericType && t.GetGenericTypeDefinition() == typeof(IService<,>))
@@ -403,11 +420,30 @@ public sealed class HostTests
         Assert.NotEmpty(serviceTypes);
         Assert.All(serviceTypes, t => Assert.NotNull(scope.ServiceProvider.GetRequiredService(t)));
     }
+
+    [Fact, Trait("Lane", "unit")]
+    public void Telemetry_is_composed_and_exports_nothing()
+    {
+        using var provider = Compose().BuildServiceProvider(
+            new ServiceProviderOptions { ValidateOnBuild = true, ValidateScopes = true });
+
+        var runtime = provider.GetRequiredService<TelemetryRuntime>();
+
+        Assert.False(runtime.IsExporting);
+        Assert.Same(runtime.LoggerFactory, provider.GetRequiredService<ILoggerFactory>());
+        Assert.NotNull(provider.GetRequiredService<ILogger<HostTests>>());
+    }
+
+    private static IServiceCollection Compose()
+        => Composition.Compose(
+            new ServiceCollection(), name => name == "AW_STATE_DIR" ? _stateRoot : null, new FakeTimeProvider());
 }
 ```
 
 `ValidateOnBuild` can't see inside the decorator factories `/new-slice` registers, so the test resolves every
 `IService<,>` in a scope: a missing inner service or validator registration fails here, not at the first command.
+`Telemetry_is_composed_and_exports_nothing` pins the telemetry contract: one runtime, its logger factory is the only
+`ILoggerFactory`, and exporting is off by default.
 
 ## The red test
 

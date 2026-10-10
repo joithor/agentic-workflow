@@ -183,6 +183,7 @@ export function writePackage(journal, p) {
   R.addToSolution(journal, p.name, prod.map((x) => x.path), tests.map((x) => x.path));
   if (!p.declared) R.addDepsNode(journal, p);
   const edges = [R.ensureProjectEdge(journal, p.name, "Kernel", "Result, IService, ports (scaffolded by /new-package)")];
+  if (p.host !== "none") edges.push(R.ensureProjectEdge(journal, p.name, "KernelTelemetry", "the host starts Kernel telemetry in Compose (scaffolded by /new-package)"));
   for (const d of p.depends) edges.push(R.ensureProjectEdge(journal, p.name, d, `${p.name}'s Features reference ${d}'s Core (scaffolded by /new-package)`));
   R.registerWithArchitectureTests(journal, prod);
   return { prod, tests, edges };
