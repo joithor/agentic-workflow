@@ -1,0 +1,20 @@
+schemaVersion: 1
+id: engineering.csharp.ratchet-baseline-shrinks
+kind: engineering
+section: "4b.6"
+text: "Existing violations live only in the generated ratchet block after the sentinel line in the root .editorconfig, and that block may only shrink."
+why: "Legacy debt is visible and can't grow."
+select:
+  languages: [csharp]
+  paths: [".editorconfig"]
+checks:
+  - type: review
+    id: "ratchet block"
+    status: active
+    note: "the growth check is workstream W2"
+gap: open
+gapNote: "The growth check (W2) isn't built; review checks the block."
+source:
+  type: adr
+  ref: "docs/superpowers/specs/2026-10-09-agent-readiness-design.md#4b6"
+status: active

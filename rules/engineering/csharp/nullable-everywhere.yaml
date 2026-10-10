@@ -1,0 +1,28 @@
+schemaVersion: 1
+id: engineering.csharp.nullable-everywhere
+kind: engineering
+section: "4b.3"
+text: "Nullable reference types, the latest language version and implicit usings are on everywhere, and warnings are errors."
+why: "Null bugs become compile errors, and every project reads the same."
+select:
+  languages: [csharp]
+  paths: ["src/**", "tests/**"]
+checks:
+  - type: build-setting
+    id: "<Nullable>enable</Nullable>"
+    status: active
+  - type: build-setting
+    id: "<LangVersion>latest</LangVersion>"
+    status: active
+  - type: build-setting
+    id: "<ImplicitUsings>enable</ImplicitUsings>"
+    status: active
+  - type: build-setting
+    id: "<TreatWarningsAsErrors>true</TreatWarningsAsErrors>"
+    status: active
+gap: partial
+gapNote: "The root build files set these; a per-project override (<Nullable>disable</Nullable> in a .csproj, #nullable disable) is forbidden by csharp.md and reviewed, not checked."
+source:
+  type: adr
+  ref: "docs/superpowers/specs/2026-10-09-agent-readiness-design.md#4b3"
+status: active

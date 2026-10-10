@@ -1,0 +1,26 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- Aw.Analyzers: tier 0, build-time only and edge-less (deps.yaml node Analyzers, analyzer: true). The rules no
+       pinned analyzer pack or ArchUnitNET test covers (spec §4b.6, .agents/rules/csharp.md). Production projects
+       get it from Directory.Build.targets as an analyzer reference (OutputItemType="Analyzer",
+       ReferenceOutputAssembly="false"); nothing references it at run time. Roslyn loads analyzers built for
+       netstandard2.0. The compiler API is pinned to the .NET 10.0.100 SDK's Roslyn (5.0.0): an analyzer must not
+       reference a newer compiler than the one that loads it, so every supported SDK can load this one. -->
+  <PropertyGroup>
+    <TargetFramework>netstandard2.0</TargetFramework>
+    <RootNamespace>Aw.Analyzers</RootNamespace>
+    <EnforceExtendedAnalyzerRules>true</EnforceExtendedAnalyzerRules>
+    <IsRoslynComponent>true</IsRoslynComponent>
+    <IncludeBuildOutput>false</IncludeBuildOutput>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- PrivateAssets=all: the compiler API is the host's; it must never flow into a project that loads the analyzer. -->
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp" PrivateAssets="all" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <AdditionalFiles Include="AnalyzerReleases.Shipped.md" />
+    <AdditionalFiles Include="AnalyzerReleases.Unshipped.md" />
+    <InternalsVisibleTo Include="Aw.Analyzers.Tests" />
+  </ItemGroup>
+</Project>

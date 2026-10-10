@@ -1,0 +1,20 @@
+schemaVersion: 1
+id: engineering.csharp.tier-zero-minimal-deps
+kind: engineering
+section: "4b.1a"
+text: "A tier-0 package depends on the BCL plus at most one external package (and lower tier-0 sublevels); Aw.Kernel depends on the BCL only."
+why: "The building blocks every package shares stay small and stable."
+select:
+  languages: [csharp]
+  paths: ["src/Aw.Kernel*/**", "src/Redaction/**", "Directory.Packages.props"]
+checks:
+  - type: review
+    id: "tier-0 package references"
+    status: active
+    note: "reviewed"
+gap: open
+gapNote: "DEPS-FANOUT-003 caps third-party packages at 6 per project; nothing enforces one per tier-0 package or BCL-only for Aw.Kernel."
+source:
+  type: adr
+  ref: "docs/superpowers/specs/2026-10-09-agent-readiness-design.md#4b1a"
+status: active

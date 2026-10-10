@@ -1,0 +1,25 @@
+schemaVersion: 1
+id: engineering.csharp.test-support-only-in-tests
+kind: engineering
+section: "4b.1a"
+text: "Only *.Tests and *.Testing projects reference test-support packages; production code never does, and nothing references a *.Tests leaf."
+why: "Fakes and builders can never ship in a production binary."
+select:
+  languages: [csharp]
+  paths: ["src/**", "tests/**"]
+checks:
+  - type: check-deps
+    id: "DEPS-KIND-003"
+    status: active
+  - type: check-deps
+    id: "DEPS-PROJ-003"
+    status: active
+  - type: check-deps
+    id: "DEPS-PROJ-004"
+    status: active
+gap: partial
+gapNote: "The checks cover test-support projects (deps.yaml test: true, *.Testing, *.Tests); a test NuGet package (e.g. Microsoft.Extensions.TimeProvider.Testing) referenced from production code is reviewed."
+source:
+  type: import
+  ref: ".agents/rules/csharp.md"
+status: active

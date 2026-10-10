@@ -1,0 +1,33 @@
+schemaVersion: 1
+id: engineering.csharp.fakes-with-contract-tests
+kind: engineering
+section: "4b.5"
+text: "Each port has one in-memory fake, and a generic contract-test base runs the same tests against the fake and every real adapter; no mocking libraries."
+why: "A fake that drifts from the real adapter makes tests lie."
+select:
+  languages: [csharp]
+  paths: ["tests/**"]
+checks:
+  - type: test
+    id: "ReadRepositoryContract"
+    ref: tests/Aw.Kernel.Testing/ReadRepositoryContract.cs
+    status: active
+  - type: test
+    id: "ContractCatchesBrokenFakesTests"
+    ref: tests/Aw.Kernel.Testing.Tests/ContractCatchesBrokenFakesTests.cs
+    status: active
+  - type: test
+    id: "OutboxContract"
+    ref: tests/Aw.Kernel.Testing/OutboxContract.cs
+    status: pending
+    pendingPr: 133
+  - type: review
+    id: "no mocking library pins"
+    status: active
+    note: "Directory.Packages.props is reviewed"
+gap: pending
+gapNote: "Only IReadRepository has a contract base on main; nothing rejects a mocking-library pin."
+source:
+  type: adr
+  ref: "docs/superpowers/specs/2026-10-09-agent-readiness-design.md#4b5"
+status: active

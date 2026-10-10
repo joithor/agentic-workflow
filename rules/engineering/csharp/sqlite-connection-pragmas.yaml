@@ -1,0 +1,24 @@
+schemaVersion: 1
+id: engineering.csharp.sqlite-connection-pragmas
+kind: engineering
+section: "4b.2"
+text: "Open connections through Aw.Kernel.Data's SqliteConnectionFactory: read-write gets WAL, busy_timeout, foreign_keys=on and synchronous=NORMAL; read-only gets busy_timeout and query_only; SQLite is the bundled e_sqlite3."
+why: "The same SQLite and settings on every machine; read-only opens never rewrite a file header."
+select:
+  languages: [csharp]
+  paths: ["src/**"]
+checks:
+  - type: test
+    id: "ConnectionFactoryTests"
+    ref: tests/Aw.Kernel.Data.Tests/ConnectionFactoryTests.cs
+    status: active
+  - type: ci
+    id: "NativeAOT smoke tests"
+    ref: .github/workflows/ci.yml
+    status: active
+gap: partial
+gapNote: "Kernel.Data's factory is tested; nothing stops a package from opening a SqliteConnection itself."
+source:
+  type: adr
+  ref: "docs/superpowers/specs/2026-10-09-agent-readiness-design.md#4b2"
+status: active

@@ -22,7 +22,7 @@ public sealed class SqliteReadSession : ISqliteSession, IAsyncDisposable
     public SqliteTransaction? Transaction { get; }
 
     /// <inheritdoc />
-    public ValueTask DisposeAsync() => SqliteTransactions.Close(Connection, Transaction!);
+    public ValueTask DisposeAsync() => SqliteTransactions.Close(Connection, Transaction!); // why: Begin always opens a read session with its transaction
 
     internal static async ValueTask<Result<SqliteReadSession>> Begin(ISqliteConnectionFactory connections, CancellationToken cancellationToken) =>
         (await SqliteTransactions.Begin(await connections.OpenReadOnly(cancellationToken).ConfigureAwait(false), deferred: true, cancellationToken).ConfigureAwait(false))

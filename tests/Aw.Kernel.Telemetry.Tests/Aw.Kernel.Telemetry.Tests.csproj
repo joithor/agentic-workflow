@@ -1,0 +1,21 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- Aw.Kernel.Telemetry's tests: the JSON-lines shape, the scrubber on every log and export path, exporting off by
+       default, and the ILogSink contract over the fake and the real sinks. Lanes are traits (spec §4b.5). -->
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <OutputType>Exe</OutputType>
+    <RootNamespace>Aw.Kernel.Telemetry.Tests</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="xunit.v3" />
+    <PackageReference Include="Microsoft.Extensions.TimeProvider.Testing" />
+    <Using Include="Xunit" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../../src/Aw.Kernel.Telemetry/Aw.Kernel.Telemetry.csproj" />
+    <ProjectReference Include="../Aw.Kernel.Telemetry.Testing/Aw.Kernel.Telemetry.Testing.csproj" />
+    <ProjectReference Include="../Aw.Kernel.Testing/Aw.Kernel.Testing.csproj" />
+  </ItemGroup>
+</Project>

@@ -48,14 +48,25 @@ classify_changes() {
       spikes/*) continue ;;  # throwaway spike projects: no area, never the dotnet job
     esac
     case "$file" in
+      scripts/dotnet-verify-packages.sh) dotnet=true ;;  # the .NET job runs it; its bash test runs below
       # global.json also pins the devcontainer's base image, which a bash suite checks (repo-templates).
       global.json|docs/devcontainer.md) bash=true ;;
     esac
     case "$file" in
       config/*|scripts/*|providers/*|setup.sh|mods/*|skills/*|.agents/*|AGENTS.md|CLAUDE.md|.claude/*|.cursor/*|.devcontainer/*|.env.example)
         bash=true ;;
-      src/*|tests/*|*.cs|*.csproj|*.props|*.targets|*.slnx|global.json|nuget.config|.editorconfig|BannedSymbols.txt|packages.lock.json|.config/dotnet-tools.json)
+      src/*|tests/*|schemas/packets/*|*.cs|*.csproj|*.props|*.targets|*.slnx|global.json|nuget.config|.editorconfig|BannedSymbols.txt|packages.lock.json|.config/dotnet-tools.json)
         dotnet=true ;;
+    esac
+    case "$file" in
+      # scripts/ci/lane-budgets.mjs groups test projects by deps.yaml package; check-deps and check-rules read it too
+      deps.yaml) dotnet=true; bash=true ;;
+      # lane-budgets.mjs reads deps.yaml through this parser (scripts/* already runs the bash tests)
+      scripts/deps/*) dotnet=true ;;
+      schemas/packets/*) ;;  # the packet schemas belong to Aw.Packets (its golden test, the dotnet area above)
+      schemas/*|rules/*) bash=true ;;  # check-deps and check-rules (and their suites) read these
+      # scripts/tests/ci-lane-budgets.test.sh checks lane-budgets.mjs against these numbers
+      tests/Aw.Kernel.Testing/Lanes.cs) bash=true ;;
     esac
     for pkg in "${TS_PACKAGES[@]}"; do
       case "$file" in

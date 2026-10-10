@@ -1,0 +1,152 @@
+# The §4b rule list (readiness spec), plus the rules the C# rules docs (.agents/rules/csharp.md, csharp-testing.md)
+# state under a §4b heading beyond the spec; those records cite that doc as their source, and docs/csharp/rule-records.md
+# lists them. One record per entry in rules/engineering/csharp/<slug>.yaml. Checked by node scripts/check-rules.mjs.
+version: 1
+spec: docs/superpowers/specs/2026-10-09-agent-readiness-design.md
+records:
+  - id: engineering.csharp.dependency-direction
+    section: "4b.1"
+  - id: engineering.csharp.core-no-io
+    section: "4b.1"
+  - id: engineering.csharp.logging-source-generated
+    section: "4b.1"
+  - id: engineering.csharp.slice-isolation
+    section: "4b.1"
+  - id: engineering.csharp.infrastructure-rows-internal
+    section: "4b.1"
+  - id: engineering.csharp.technology-behind-ports
+    section: "4b.1"
+  - id: engineering.csharp.cross-package-through-core
+    section: "4b.1"
+  - id: engineering.csharp.small-package-shape
+    section: "4b.1"
+  - id: engineering.csharp.declared-graph
+    section: "4b.1a"
+  - id: engineering.csharp.tiers-point-down
+    section: "4b.1a"
+  - id: engineering.csharp.no-package-cycles
+    section: "4b.1a"
+  - id: engineering.csharp.tier-zero-minimal-deps
+    section: "4b.1a"
+  - id: engineering.csharp.no-namespace-cycles
+    section: "4b.1a"
+  - id: engineering.csharp.fan-out-limits
+    section: "4b.1a"
+  - id: engineering.csharp.test-support-only-in-tests
+    section: "4b.1a"
+  - id: engineering.csharp.analyzers-edge-less
+    section: "4b.1a"
+  - id: engineering.csharp.no-dumping-grounds
+    section: "4b.1a"
+  - id: engineering.csharp.graph-visible-in-prs
+    section: "4b.1a"
+  - id: engineering.csharp.endpoint-calls-one-service
+    section: "4b.2"
+  - id: engineering.csharp.service-one-use-case
+    section: "4b.2"
+  - id: engineering.csharp.explicit-decorators-no-mediatr
+    section: "4b.2"
+  - id: engineering.csharp.named-repositories
+    section: "4b.2"
+  - id: engineering.csharp.writes-in-unit-of-work
+    section: "4b.2"
+  - id: engineering.csharp.ado-net-row-mappers
+    section: "4b.2"
+  - id: engineering.csharp.sqlite-connection-pragmas
+    section: "4b.2"
+  - id: engineering.csharp.numbered-tested-migrations
+    section: "4b.2"
+  - id: engineering.csharp.typed-ids
+    section: "4b.3"
+  - id: engineering.csharp.no-raw-ids-in-public-signatures
+    section: "4b.3"
+  - id: engineering.csharp.result-and-error-catalogue
+    section: "4b.3"
+  - id: engineering.csharp.no-catch-exception
+    section: "4b.3"
+  - id: engineering.csharp.generic-arity
+    section: "4b.3"
+  - id: engineering.csharp.nullable-everywhere
+    section: "4b.3"
+  - id: engineering.csharp.null-forgiving-needs-why
+    section: "4b.3"
+  - id: engineering.csharp.internal-sealed-by-default
+    section: "4b.3"
+  - id: engineering.csharp.public-api-tracked
+    section: "4b.3"
+  - id: engineering.csharp.source-generated-json
+    section: "4b.3"
+  - id: engineering.csharp.explicit-di-registration
+    section: "4b.4"
+  - id: engineering.csharp.no-service-locator
+    section: "4b.4"
+  - id: engineering.csharp.di-validation-per-host
+    section: "4b.4"
+  - id: engineering.csharp.di-lifetimes
+    section: "4b.4"
+  - id: engineering.csharp.red-test-first
+    section: "4b.5"
+  - id: engineering.csharp.tests-by-feature
+    section: "4b.5"
+  - id: engineering.csharp.one-lane-trait-per-test
+    section: "4b.5"
+  - id: engineering.csharp.lane-budgets
+    section: "4b.5"
+  - id: engineering.csharp.fakes-with-contract-tests
+    section: "4b.5"
+  - id: engineering.csharp.deterministic-test-data
+    section: "4b.5"
+  - id: engineering.csharp.golden-files
+    section: "4b.5"
+  - id: engineering.csharp.architecture-tests
+    section: "4b.5"
+  - id: engineering.csharp.tests-live-under-tests
+    section: "4b.6"
+  - id: engineering.csharp.sdk-pinned
+    section: "4b.6"
+  - id: engineering.csharp.warnings-are-errors
+    section: "4b.6"
+  - id: engineering.csharp.nuget-audit
+    section: "4b.6"
+  - id: engineering.csharp.locked-restore
+    section: "4b.6"
+  - id: engineering.csharp.aot-compatible-libraries
+    section: "4b.6"
+  - id: engineering.csharp.central-package-management
+    section: "4b.6"
+  - id: engineering.csharp.one-owner-per-rule
+    section: "4b.6"
+  - id: engineering.csharp.ratchet-baseline-shrinks
+    section: "4b.6"
+  - id: engineering.csharp.file-length
+    section: "4b.6"
+  - id: engineering.csharp.method-length
+    section: "4b.6"
+  - id: engineering.csharp.cyclomatic-complexity
+    section: "4b.6"
+  - id: engineering.csharp.parameter-count
+    section: "4b.6"
+  - id: engineering.csharp.no-todo-comments
+    section: "4b.6"
+  - id: engineering.csharp.file-name-matches-type
+    section: "4b.6"
+  - id: engineering.csharp.suppressions-need-justification
+    section: "4b.6"
+  - id: engineering.csharp.distribution-seams
+    section: "4b.6"
+  - id: engineering.csharp.nuget-source-mapping
+    section: "4b.6"
+  - id: engineering.csharp.ports-named-for-need
+    section: "4b.6"
+  - id: engineering.csharp.di-composition-shape
+    section: "4b.4"
+  - id: engineering.csharp.build-time-regression
+    section: "4b.8"
+  - id: engineering.csharp.validate-at-boundaries
+    section: "4b.8"
+  - id: engineering.csharp.agents-md-commands
+    section: "4b.9"
+  - id: engineering.csharp.scaffolds-produce-compliant-code
+    section: "4b.9"
+  - id: engineering.csharp.rule-records-name-their-check
+    section: "4b.9"

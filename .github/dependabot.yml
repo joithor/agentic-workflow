@@ -39,3 +39,17 @@ updates:
       npm-minor-and-patch:
         patterns: ["*"]
         update-types: ["minor", "patch"]
+  # The C# build (spec §4b.6), not in maintenance: versions live in Directory.Packages.props (central package
+  # management), so one root entry covers every project. One grouped minor/patch PR a month, majors one at a time.
+  # The bump must refresh the lock files (scripts/dotnet-verify-packages.sh fails on a stale one).
+  - package-ecosystem: nuget
+    directory: /
+    schedule:
+      interval: monthly
+    cooldown:
+      default-days: 14
+    open-pull-requests-limit: 1
+    groups:
+      nuget-minor-and-patch:
+        patterns: ["*"]
+        update-types: ["minor", "patch"]

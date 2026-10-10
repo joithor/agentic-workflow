@@ -1,0 +1,29 @@
+schemaVersion: 1
+id: engineering.csharp.aot-compatible-libraries
+kind: engineering
+section: "4b.6"
+text: "Every library project is IsAotCompatible; PublishAot only on the listed entry points; InvariantGlobalization on every AOT project; the request-delegate generator on every Host."
+why: "CLIs start fast per hook call, and AOT problems surface in every build, not at publish."
+select:
+  languages: [csharp]
+  paths: ["src/**"]
+checks:
+  - type: build-setting
+    id: "<IsAotCompatible>true</IsAotCompatible>"
+    status: active
+  - type: build-setting
+    id: "<InvariantGlobalization>true</InvariantGlobalization>"
+    status: active
+  - type: build-setting
+    id: "<EnableRequestDelegateGenerator>true</EnableRequestDelegateGenerator>"
+    status: active
+  - type: ci
+    id: "NativeAOT smoke tests"
+    ref: .github/workflows/ci.yml
+    status: active
+gap: partial
+gapNote: "PublishAot on the listed entry points only (the §4b.6 AOT table) is reviewed; nothing rejects PublishAot elsewhere."
+source:
+  type: adr
+  ref: "docs/superpowers/specs/2026-10-09-agent-readiness-design.md#4b6"
+status: active

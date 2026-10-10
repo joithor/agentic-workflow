@@ -77,7 +77,9 @@ With it, binding goes through Vogen's generated, validating `TryParse`; nothing 
 **Committed route-binding test (required before an id is used behind an endpoint).** The proof above is a throwaway
 probe. The first package with `host: http` (or an `Aw.Host.Tests` project, if one exists first) commits a test that
 compiles a minimal API through the request-delegate generator, with `ITypedId` ids as a route parameter
-(`/items/{id}`) and a query parameter (`/items?id=`), and the host's 400 middleware. Through `WebApplicationFactory`
+(`/__probe/items/{id}`) and a query parameter (`/__probe/items?id=`; a prefix no package group can take), and the
+host's 400 middleware (`/new-package` generates the middleware, `docs/csharp/scaffolds/new-package.md`; `/new-slice`
+generates this test, `docs/csharp/scaffolds/new-slice.md`). Through the host listening on loopback
 it asserts: valid text → 200 with the id's value; text the type refuses → 400; an empty `?id=` → 400; and it fails if
 the id binds as a body (the endpoint's `ParameterBindingMetadata` reports the parameter as route/query with
 `hasTryParse: true`), so losing `IParsable` turns into a red test, not a production 500.
@@ -117,7 +119,7 @@ JSON; never `AddWithValue` with a `Guid`, which Microsoft.Data.Sqlite stores as 
 
 ## The guard
 
-`TypedIdGuard` (`tests/Aw.Kernel.Tests/TypedIds/TypedIdGuard.cs`) finds the silent failures. It matches Vogen's
+`TypedIdGuard` (`tests/Aw.Architecture.Tests/TypedIds/TypedIdGuard.cs`) finds the silent failures. It matches Vogen's
 attributes by name, never references Vogen, and runs over any assembly:
 
 - `CheckDefaults(assembly)`: the assembly has `VogenDefaults` with every argument above.
@@ -126,9 +128,9 @@ attributes by name, never references Vogen, and runs over any assembly:
   assembly (Features request and response records, Host bodies, Infrastructure DTOs), is required on read by the
   constructor System.Text.Json actually uses, `required` or `[JsonRequired]`. Nullable ids (`RunId?`) are exempt.
 
-Until `Aw.Architecture.Tests` exists, it covers only the Kernel's own ids (it is internal to `tests/Aw.Kernel.Tests`,
-which nothing may reference); a package's ids are a gap until then. **In R1b it moves to `Aw.Architecture.Tests`**, which runs it over every `Aw.*` assembly so
-no package can forget it. A compile-time version (converter presence) is a candidate `Aw.Analyzers` rule.
+`Aw.Architecture.Tests` runs it over every `Aw.*` assembly registered in its `Packages.cs`, so no package can forget
+it: `ARCH-ID-001` (the defaults, for each assembly that declares a value object) and `ARCH-ID-002` (every id and id
+property). A compile-time version (converter presence) is a candidate `Aw.Analyzers` rule.
 
 ## Public ids and PublicAPI files
 
@@ -144,10 +146,15 @@ dotnet build src/<Pkg>/Aw.<Pkg>.Core 2>&1 \
 
 Review the lines it adds; they are the id's public surface.
 
+A `Guid` or `int` id has one more wrinkle: Vogen 8.0.7 wraps its generated `ToString(string, IFormatProvider)` in
+`#nullable disable`, so the build reports it with the `~` (oblivious) marker and `RS0041` (oblivious types in the
+public API) fails the build with nothing to fix in user code. `.editorconfig` sections don't reach source-generated
+files, so the package's `Core` csproj carries `<NoWarn>$(NoWarn);RS0041</NoWarn>` with that reason; `/new-slice` adds
+it with the first `Guid` or `int` id (a `Core` with only string ids keeps RS0041 on). Record the `~` line as reported.
+`/new-slice` runs both steps and, for an http slice, generates the route-binding test above.
+
 ## Not covered yet
 
 - `long`-backed ids: add `Int64IdJsonConverter<TId>` with the first such id.
-- The "no raw `string`/`Guid` in public `Core`/`Features` signatures" analyzer: an `Aw.Analyzers` gap (R1b). It needs
-  an exemption for each id's generated `IParsable` string members.
 - `Aw.Kernel.Data` overloads constrained on `ITypedId` (`BindId<TId>`, `GetId<TId>`): a follow-up once this and
   `Aw.Kernel.Data` are both merged.

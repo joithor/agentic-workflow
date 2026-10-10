@@ -1,0 +1,23 @@
+schemaVersion: 1
+id: engineering.csharp.one-owner-per-rule
+kind: engineering
+section: "4b.6"
+text: "Where analyzer packs overlap, .editorconfig names one owning rule and turns the others off (e.g. CA2007 owns ConfigureAwait, MA0004 off); Roslynator is off except rules opted in by name."
+why: "One diagnostic per problem; duplicates train agents to ignore output."
+select:
+  languages: [csharp]
+  paths: [".editorconfig"]
+checks:
+  - type: analyzer
+    id: "CA2007"
+    status: active
+  - type: build-setting
+    id: "dotnet_analyzer_diagnostic.category-roslynator.severity = none"
+    status: active
+gap: partial
+gapNote: "The ownership choices are written down; nothing detects a new overlap."
+relatedIds: ["MA0004"]
+source:
+  type: adr
+  ref: "docs/superpowers/specs/2026-10-09-agent-readiness-design.md#4b6"
+status: active

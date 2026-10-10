@@ -1,0 +1,24 @@
+schemaVersion: 1
+id: engineering.csharp.numbered-tested-migrations
+kind: engineering
+section: "4b.2"
+text: "Schema changes are numbered SQL migration files, and a test runs each one on a copy of the previous schema."
+why: "A migration that only works on an empty database is found before it reaches a user."
+select:
+  languages: [csharp]
+  paths: ["src/**"]
+checks:
+  - type: test
+    id: "MigrationRunnerTests"
+    ref: tests/Aw.Kernel.Data.Tests/MigrationRunnerTests.cs
+    status: active
+  - type: test
+    id: "MigrationSafetyTests"
+    ref: tests/Aw.Kernel.Data.Tests/MigrationSafetyTests.cs
+    status: active
+gap: partial
+gapNote: "The runner is tested; each package's own migration tests are written per package."
+source:
+  type: adr
+  ref: "docs/superpowers/specs/2026-10-09-agent-readiness-design.md#4b2"
+status: active

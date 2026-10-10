@@ -1,0 +1,19 @@
+schemaVersion: 1
+id: engineering.csharp.slice-isolation
+kind: engineering
+section: "4b.1"
+text: "A slice never references another slice's types."
+why: "Slices stay independent; shared logic moves into Core at the second use."
+select:
+  languages: [csharp]
+  paths: ["src/**/*.Features/**"]
+checks:
+  - type: archunit
+    id: ARCH-SLICE-001
+    status: pending
+    pendingPr: 131
+gap: pending
+source:
+  type: adr
+  ref: "docs/spec.md#4b1"
+status: active

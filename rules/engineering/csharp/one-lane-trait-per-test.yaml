@@ -1,0 +1,20 @@
+schemaVersion: 1
+id: engineering.csharp.one-lane-trait-per-test
+kind: engineering
+section: "4b.5"
+text: "Every test carries exactly one Lane trait: unit, integration or heavy."
+why: "Lane runs and budgets only work if every test is in exactly one lane."
+select:
+  languages: [csharp]
+  paths: ["tests/**"]
+checks:
+  - type: lane-cap
+    id: "LANE-TEST-002"
+    status: pending
+    pendingPr: 133
+    note: "reads each test's lane from the CTRF report, so a test with no lane is caught only in an unfiltered run"
+gap: pending
+source:
+  type: import
+  ref: ".agents/rules/csharp-testing.md"
+status: active

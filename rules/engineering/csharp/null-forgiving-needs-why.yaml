@@ -1,0 +1,19 @@
+schemaVersion: 1
+id: engineering.csharp.null-forgiving-needs-why
+kind: engineering
+section: "4b.3"
+text: "A null-forgiving ! needs a // why: comment."
+why: "Each suppression of the nullability checker carries its reason."
+select:
+  languages: [csharp]
+  paths: ["src/**"]
+checks:
+  - type: analyzer
+    id: "AW1002"
+    status: pending
+    pendingPr: 132
+gap: pending
+source:
+  type: adr
+  ref: "docs/superpowers/specs/2026-10-09-agent-readiness-design.md#4b3"
+status: active

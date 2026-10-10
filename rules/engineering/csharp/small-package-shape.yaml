@@ -1,0 +1,20 @@
+schemaVersion: 1
+id: engineering.csharp.small-package-shape
+kind: engineering
+section: "4b.1"
+text: "A package under about 1,500 lines may use two projects, Core and App, with the same direction; split into four past the threshold."
+why: "Small packages avoid ceremony; the split keeps big ones navigable."
+select:
+  languages: [csharp]
+  paths: ["src/**"]
+checks:
+  - type: review
+    id: "package line count"
+    status: active
+    note: "the size threshold is checked by hand when a package grows"
+gap: open
+gapNote: "No check measures package size yet; review splits a small package that crosses ~1,500 lines."
+source:
+  type: adr
+  ref: "docs/superpowers/specs/2026-10-09-agent-readiness-design.md#4b1"
+status: active

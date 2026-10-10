@@ -1,0 +1,25 @@
+schemaVersion: 1
+id: engineering.csharp.writes-in-unit-of-work
+kind: engineering
+section: "4b.2"
+text: "Writes run inside an IUnitOfWork (one database transaction) passed by the transaction decorator."
+why: "One transaction per use case keeps state and the outbox consistent."
+select:
+  languages: [csharp]
+  paths: ["src/**"]
+checks:
+  - type: review
+    id: "unit-of-work use"
+    status: active
+    note: "checked in review"
+  - type: test
+    id: "UnitOfWorkContract"
+    ref: tests/Aw.Kernel.Testing/UnitOfWorkContract.cs
+    status: pending
+    pendingPr: 133
+    note: "proves the port's semantics, not that every write uses it"
+gap: pending
+source:
+  type: adr
+  ref: "docs/superpowers/specs/2026-10-09-agent-readiness-design.md#4b2"
+status: active

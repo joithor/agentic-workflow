@@ -1,0 +1,8 @@
+prose: The build passed; commit 0123456789abcdef0123456789abcdef01234567. | clean
+bearer: Authorization: Bearer [REDACTED:bearer] | redacted bearer@22-76
+env: CLIENT_SECRET=[REDACTED:secret-assignment] | redacted secret-assignment@14-42
+url: https://deploy:[REDACTED:credentialed-url]@example.com/repo.git | redacted credentialed-url@15-42
+lookalike: token [REDACTED:github-token] | redacted github-token@6-46
+zwj: x [REDACTED:github-token] y | redacted github-token@2-50
+escaped: {"note":"a\n[REDACTED:github-token]"} | redacted github-token@12-52
+unterminated: [REDACTED:private-key]\n\nafter | redacted private-key@0-86

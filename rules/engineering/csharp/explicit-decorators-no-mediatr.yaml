@@ -1,0 +1,20 @@
+schemaVersion: 1
+id: engineering.csharp.explicit-decorators-no-mediatr
+kind: engineering
+section: "4b.2"
+text: "Cross-cutting behavior is an explicitly registered Decorated<TReq, TRes>; no MediatR or AutoMapper, and mapping is hand-written."
+why: "Both libraries moved to commercial licences in 2025, and explicit code is easier for agents to follow."
+select:
+  languages: [csharp]
+  paths: ["Directory.Packages.props", "src/**"]
+checks:
+  - type: review
+    id: "Directory.Packages.props review"
+    status: active
+    note: "a new package pin is a reviewed change"
+gap: open
+gapNote: "No check rejects a MediatR or AutoMapper pin; Directory.Packages.props changes are reviewed."
+source:
+  type: adr
+  ref: "docs/superpowers/specs/2026-10-09-agent-readiness-design.md#4b2"
+status: active

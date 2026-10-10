@@ -1,0 +1,29 @@
+schemaVersion: 1
+id: engineering.csharp.locked-restore
+kind: engineering
+section: "4b.6"
+text: "Every project commits packages.lock.json; CI restores in locked mode, fails on a missing or changed lock file, and verifies signatures."
+why: "Restores are reproducible and a supply-chain change shows in the diff."
+select:
+  languages: [csharp]
+  paths: ["**/packages.lock.json", "Directory.Build.*"]
+checks:
+  - type: build-setting
+    id: "AW0001"
+    status: active
+  - type: script
+    id: "dotnet-verify-packages"
+    ref: scripts/dotnet-verify-packages.sh
+    status: active
+    note: "a script check proves the file exists, not that CI runs it"
+  - type: ci
+    id: "dotnet restore (locked, signature-verified) and the NuGet supply-chain check"
+    ref: .github/workflows/ci.yml
+    status: pending
+    pendingPr: 132
+gap: partial
+gapNote: "CI on main runs only the locked restore (and AW0001); a changed lock file and the signature check are scripts/dotnet-verify-packages.sh, a manual merge-gate item until #132's CI step lands."
+source:
+  type: adr
+  ref: "docs/superpowers/specs/2026-10-09-agent-readiness-design.md#4b6"
+status: active
