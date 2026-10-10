@@ -393,19 +393,21 @@ describe("heavy-job lock", () => {
     });
 
     it("backs off when the marked dir is not the one checked, or is gone", async () => {
-      const { d, dir } = setup();
+      const { d, root, dir } = setup();
       // Same inode, another birth time: a replacement on a filesystem that keeps birth times.
       const realStat = fs.statSync;
       let marked = false;
       aroundMark(() => { marked = true; }, true);
       vi.spyOn(fs, "statSync").mockImplementation(((p: fs.PathLike, o?: fs.StatSyncOptions) => {
         const st = realStat(p, o);
-        return st !== undefined && marked && String(p) === dir ? Object.assign(st, { birthtimeMs: st.birthtimeMs + 1 }) : st;
+        return st !== undefined && marked && String(p) === dir ? Object.assign(st, { birthtimeMs: Number(st.birthtimeMs) + 1 }) : st;
       }) as typeof fs.statSync);
       await expect(withHeavyLock(d, "x", 0, async () => 1)).rejects.toThrow("the heavy-job lock is busy");
       vi.restoreAllMocks();
       expect(fs.readdirSync(dir)).toEqual([]);
-      // Removed outright (rm -r) right after the mark.
+      // Removed outright (rm -r) right after the mark. (The backed-off mark left the old record
+      // older than the dir, which reads as no holder: write it again.)
+      fs.writeFileSync(holderPath(root), record(999));
       aroundMark(() => fs.rmSync(dir, { recursive: true }), true);
       await expect(withHeavyLock(d, "x", 0, async () => 1)).rejects.toThrow("the heavy-job lock is busy");
       vi.restoreAllMocks();

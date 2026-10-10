@@ -79,6 +79,21 @@ function dead(h: HeavyHolder, sys: SystemProbe): boolean {
   return !sys.pidAlive(h.pid);
 }
 
+// Same dir: inode and birth time (a filesystem that keeps no birth time reports 0 for both).
+const sameDir = (a: fs.Stats, b: fs.Stats): boolean => a.ino === b.ino && a.birthtimeMs === b.birthtimeMs;
+const sameFile = (a: fs.Stats, b: fs.Stats | undefined): boolean => b !== undefined && a.ino === b.ino && a.mtimeMs === b.mtimeMs;
+
+// Put a dir that changed hands back. rename() replaces an empty dir already at `dir` (another
+// holder's lock), so claim the name with mkdir first and rename onto that claim; when someone
+// else has the name, leave the moved dir aside and say so.
+function putBack(deps: Deps, stale: string, dir: string): void {
+  if (tryMkdir(dir)) {
+    fs.renameSync(stale, dir);
+    return;
+  }
+  deps.log(`the heavy-job lock changed hands during a takeover; left ${stale} aside`);
+}
+
 // false: the dir is gone (released between the recheck and the mark).
 function tryMark(file: string): boolean {
   try {
@@ -118,29 +133,39 @@ function reclaim(deps: Deps, dir: string, gone: HeavyHolder | null, me: HeavyHol
   }
   try {
     writeHolder(mutexRecord(dir), me);
+    // The age and the holder come from before the mark: writing it changes the dir's mtime.
     const st = fs.statSync(dir, { throwIfNoEntry: false });
     const now = st === undefined ? null : readHolder(dir);
     if (st === undefined || !due(st) || (gone === null ? now !== null : !sameHolder(now, gone))) return false; // released, or it changed hands
-    // Mark the checked dir with a name only this takeover knows. The inode number alone can't
-    // tell a replacement apart: Linux hands a freed inode to the next mkdir at once.
+    const record = fs.statSync(holderFile(dir), { throwIfNoEntry: false });
+    // A dir holding a file can't be rmdir'ed, so once marked it can't change hands. The mark's
+    // name is one only this takeover knows; the inode number alone can't tell a replacement
+    // apart, because Linux hands a freed inode to the next mkdir at once.
     const id = ulid(deps.now());
     const mark = `.reclaim-${id}`;
     if (!tryMark(path.join(dir, mark))) return false; // released in between
-    // The dir exists, so nobody else can enter while its dead holder's record goes.
-    fs.rmSync(holderFile(dir), { force: true });
     const stale = `${dir}.stale-${id}`;
-    if (!tryRename(dir, stale)) {
-      fs.rmSync(path.join(dir, mark), { force: true });
+    let moved = false;
+    try {
+      // The decisive check, now the dir is pinned: the marked dir is the one checked, and its
+      // holder record is the one checked (or its holder released it meanwhile).
+      const marked = fs.statSync(dir, { throwIfNoEntry: false });
+      const after = fs.statSync(holderFile(dir), { throwIfNoEntry: false });
+      if (marked === undefined || !sameDir(marked, st) || (after !== undefined && !sameFile(after, record))) return false;
+      // The dir exists, so nobody else can enter while its dead holder's record goes.
+      fs.rmSync(holderFile(dir), { force: true });
+      if (!tryRename(dir, stale)) return false;
+      moved = true;
+    } finally {
+      if (!moved) fs.rmSync(path.join(dir, mark), { force: true });
+    }
+    // Moved a dir other than the one marked (it changed hands in between): put it back.
+    if (!fs.existsSync(path.join(stale, mark))) {
+      putBack(deps, stale, dir);
       return false;
     }
-    // Moved a dir other than the one checked (it changed hands in between): put it back.
-    if (!fs.existsSync(path.join(stale, mark)) || fs.statSync(stale).ino !== st.ino) {
-      fs.rmSync(path.join(stale, mark), { force: true });
-      tryRename(stale, dir);
-      return false;
-    }
-    fs.rmSync(path.join(stale, mark));
-    fs.rmdirSync(stale);
+    // Ours, with anything a crashed takeover left in it.
+    fs.rmSync(stale, { recursive: true, force: true });
     if (!tryMkdir(dir)) return false; // a waiter that wasn't reclaiming got in first
     try {
       writeHolder(holderFile(dir), me);
