@@ -5,7 +5,6 @@
 #
 # Prints GitHub step outputs (key=value lines) naming which areas a change
 # touches, so each CI job can decide between real work and a no-op success:
-#   ts=true|false        any TS package changed
 #   bash=true|false      the bash tests need to run
 #   dotnet=true|false    the .NET solution needs to build
 #   packages=[...]       JSON array of the TS packages that changed
@@ -30,16 +29,15 @@ json_array() {
 }
 
 print_all() {
-  printf 'ts=true\nbash=true\ndotnet=true\npackages=%s' "$(json_array "${TS_PACKAGES[@]}")"
+  printf 'bash=true\ndotnet=true\npackages=%s' "$(json_array "${TS_PACKAGES[@]}")"
 }
 
-# Reads changed paths (one per line) on stdin and prints the outputs.
+# Reads changed paths, NUL-separated (git diff -z), on stdin and prints the outputs.
+# NUL separation means no quoting: a non-ASCII or oddly named path arrives verbatim.
 classify_changes() {
-  local ts=false bash=false dotnet=false file pkg
+  local bash=false dotnet=false file pkg
   local -a changed_packages=()
-  local files
-  files="$(cat)"
-  while IFS= read -r file; do
+  while IFS= read -r -d '' file || [ -n "$file" ]; do
     [ -n "$file" ] || continue
     case "$file" in
       .github/*|scripts/ci/*) print_all; return 0 ;;
@@ -47,13 +45,12 @@ classify_changes() {
     case "$file" in
       config/*|scripts/*|providers/*|setup.sh|mods/*|skills/*|.agents/*|AGENTS.md|CLAUDE.md|.claude/*|.cursor/*)
         bash=true ;;
-      src/*|tests/*|*.cs|*.csproj|*.props|*.targets|*.slnx|global.json|nuget.config|.editorconfig|BannedSymbols.txt|packages.lock.json)
+      src/*|tests/*|*.cs|*.csproj|*.props|*.targets|*.slnx|global.json|nuget.config|.editorconfig|BannedSymbols.txt|packages.lock.json|.config/dotnet-tools.json)
         dotnet=true ;;
     esac
     for pkg in "${TS_PACKAGES[@]}"; do
       case "$file" in
         "$pkg"/*)
-          ts=true
           bash=true
           local p
           for p in "$pkg" $(dependents_of "$pkg"); do
@@ -65,8 +62,8 @@ classify_changes() {
           ;;
       esac
     done
-  done <<< "$files"
-  printf 'ts=%s\nbash=%s\ndotnet=%s\npackages=%s' "$ts" "$bash" "$dotnet" \
+  done
+  printf 'bash=%s\ndotnet=%s\npackages=%s' "$bash" "$dotnet" \
     "$(json_array ${changed_packages[@]+"${changed_packages[@]}"})"
 }
 
@@ -76,7 +73,9 @@ main() {
     print_all
     return 0
   fi
-  git diff --name-only "$base" HEAD | classify_changes
+  # --no-renames lists both sides of a move, so a file moved out of a package still
+  # selects it; -z turns off path quoting (core.quotePath) for non-ASCII names.
+  git diff --no-renames --name-only -z "$base" HEAD | classify_changes
 }
 
 if [ "${BASH_SOURCE[0]}" = "$0" ]; then

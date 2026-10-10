@@ -33,7 +33,6 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 5
     outputs:
-      ts: ${{ steps.detect.outputs.ts }}
       bash: ${{ steps.detect.outputs.bash }}
       dotnet: ${{ steps.detect.outputs.dotnet }}
       packages: ${{ steps.detect.outputs.packages }}
