@@ -76,7 +76,7 @@ gets CI and golden contract tests as a safety net. The standards in §4 still ap
 | Biome / typescript-eslint (planned) | Roslyn analyzers (built-in + `Microsoft.CodeAnalysis.NetAnalyzers`), `.editorconfig` severities, `dotnet format` in pre-commit and CI |
 | dependency-cruiser (planned) | One project per layer (§4b.1) with project references as the boundary, plus ArchUnitNET architecture tests and `deps.yaml` (§4b.1a) |
 | Zod schemas, JSON Schema export | Records with `System.Text.Json` source generation; validators per schema; JSON Schema generated from the types for editor autocomplete |
-| Vitest | xUnit (or TUnit), with the lanes and time budgets in §4 |
+| Vitest | xUnit v3 on Microsoft.Testing.Platform (R7), with the lanes and time budgets in §4 |
 | better-sqlite3 | `Microsoft.Data.Sqlite`, same files and schemas, WAL mode |
 | Fastify (bridge) | ASP.NET Core minimal APIs |
 | `@modelcontextprotocol/sdk` | The official MCP C# SDK |
@@ -252,17 +252,37 @@ group.MapPost("/items/{id}/start", async (ItemId id, StartItemBody body, IServic
     `IRowMapper<T>` per row type.
   - SQL lives in `const string` fields next to the repository, or in embedded `.sql` files. Schema changes are numbered
     SQL migration files, and a migration test runs each one on a copy of the previous schema.
-  - Why not EF Core: its NativeAOT support is officially experimental in EF Core 10.
-  - Why not Dapper.AOT: reports on .NET 10 conflict.
-  - R1 includes a one-day spike that re-checks both. If either passes the AOT golden tests, it may replace the
-    hand-written mappers (decision R8).
+  - **Decided (R8, R1a spike, `docs/readiness/aot-spike.md`):** EF Core 10 and Dapper.AOT both run under NativeAOT,
+    but neither builds with `TreatWarningsAsErrors`. EF Core fails on IL2026/IL3050 in the `DbContext` constructor
+    and calls NativeAOT and query precompilation experimental. Dapper.AOT fails only on `Dapper.dll`'s
+    assembly-level IL2104/IL3053, and suppressing those hides any call its generator can't intercept: the spike's
+    generic `Query<T>` built clean and then threw `PlatformNotSupportedException` at runtime.
+  - **Native SQLite:** each AOT tool loads the OS `libsqlite3` (`SQLitePCLRaw.provider.sqlite3`), so a tool is one
+    file. `Aw.Kernel.Data` checks a minimum SQLite version at startup and `sindri doctor` reports it. The bundled
+    `e_sqlite3` (a second file next to each binary, listed in `binaries.lock`) is the fallback if a supported host's
+    SQLite is too old. Every connection sets `journal_mode=wal`, `busy_timeout` and `foreign_keys=on`.
 
 ### 4b.3 Types, generics and errors
 
 - **Strongly typed ids and value objects** for every id and every constrained primitive (`ItemId`, `RepoSlug`,
-  `SizeClass`, `TokenBudget`). They're generated with Vogen (System.Text.Json and ADO.NET conversions, with
-  analyzers that ban `default` instances), or written by hand as `readonly record struct` if the R1 spike finds an
-  AOT problem. A raw `string` or `Guid` in a public signature of `Core` or `Features` is an analyzer error.
+  `SizeClass`, `TokenBudget`). **Decided (R9):** Vogen generates validation, equality and the analyzer that bans
+  `default` literals (VOG009), with its own STJ and parsing generation **off**:
+  - every package sets `[assembly: VogenDefaults(conversions: Conversions.None, parsableForStrings: GenerateNothing,
+    parsableForPrimitives: GenerateNothing)]`. Source generators can't see each other's output: a Vogen-generated
+    STJ converter is invisible to the STJ source generator (the id serializes as `{}`, with no warning for string
+    ids), and a Vogen-generated `TryParse` is invisible to the request-delegate generator (a route id falls back to
+    JSON-body binding and every request is a 500);
+  - so each id declares, in user code next to it, a `JsonConverter` that uses `TryFrom` and throws `JsonException`
+    (a 400, never Vogen's exception) and an `IParsable<T>` `TryParse`. The scaffolds (`/new-slice`, `/new-package`)
+    generate both with the id;
+  - the Kernel JSON profile sets `RespectRequiredConstructorParameters` and `RespectNullableAnnotations`, because a
+    missing property otherwise deserializes to an uninitialized id without calling the converter;
+  - an uninitialized id can still reach a handler (the RDG passes one for an empty query value, `?id=`), so the
+    Host maps Vogen's validation exception to a 400 at the boundary;
+  - an architecture test fails if any value object lacks a user-code `[JsonConverter]` or has Vogen STJ
+    conversions on, and each id has a JSON round-trip test (including missing and null values).
+
+  A raw `string` or `Guid` in a public signature of `Core` or `Features` is an analyzer error.
 - **`Result<T>` and `Error`** live in `Aw.Kernel`:
   - expected failures (not found, invalid, conflict, rate-limited, budget exceeded) are `Error` records with a stable
     code from the error catalogue (`SND-…`, `AW-…`);
@@ -307,8 +327,10 @@ group.MapPost("/items/{id}/start", async (ItemId id, StartItemBody body, IServic
 - **Architecture tests** (ArchUnitNET, which is maintained; NetArchTest's last release was in 2023) run in the unit
   lane. They cover the dependency directions, no slice-to-slice references, the `internal` row types and the naming
   rules.
-- **Framework:** xUnit v3 by default, or TUnit if it holds the lane budgets better under AOT (decision R7, settled
-  in the R1 spike).
+- **Framework (decided, R7):** xUnit v3 on Microsoft.Testing.Platform. Tests run JIT (the AOT binaries are checked
+  black-box by the golden harness), and both frameworks were well inside the lane budgets in the R1a spike. Lane
+  budgets are enforced by running each lane with xUnit's CTRF reporter and failing the job when the lane's run
+  time or any single test is over budget (`Aw.Kernel.Testing` ships the check).
 
 ### 4b.6 Build settings and analyzers (repo root)
 
@@ -319,6 +341,10 @@ group.MapPost("/items/{id}/start", async (ItemId id, StartItemBody body, IServic
     (raised to `latest-all` per category where the noise is acceptable, decided during R1);
   - `IsAotCompatible=true` on `Core`, `Features`, `Infrastructure` and Kernel projects (it turns on the trim and AOT
     analyzers). `PublishAot=true` only on the entry points in the table below;
+  - `InvariantGlobalization=true` on every NativeAOT entry point: no ICU dependency (a Linux binary without it
+    needs `libicu` at runtime), and it matches §4c's culture-invariant rules;
+  - `EnableRequestDelegateGenerator=true` in every build of a host project, so JIT endpoint tests run the same
+    generated binding as the AOT binary;
   - `GenerateDocumentationFile=true` for public API;
   - `RestorePackagesWithLockFile=true`, plus `RestoreLockedMode` in CI.
 - `Directory.Packages.props`: Central Package Management with exact versions. Analyzers are added as
@@ -342,7 +368,7 @@ group.MapPost("/items/{id}/start", async (ItemId id, StartItemBody body, IServic
 | Entry point | Build | Why |
 |---|---|---|
 | Hook binaries, `judge`, `sindri`, `scorer`, `bugfix-state` CLIs | NativeAOT | Run per hook call or per command; startup matters |
-| `Bridge` host (MCP + HTTP) | NativeAOT if the MCP C# SDK passes the spike, else framework-dependent | Long-running; startup matters less |
+| `Bridge` hosts: REST (minimal API) and stdio MCP, two entry points as today | NativeAOT (decided: the MCP C# SDK passed the R1a spike with 0 warnings) | MCP tools use the SDK's low-level list/call handlers with the schemas recorded from the TS bridge, for golden parity |
 | `Evidence` (ui-evidence) | Framework-dependent | Playwright for .NET doesn't support NativeAOT |
 
 AOT publishing runs only in a separate CI job and in releases. Local builds and tests are JIT, so the inner loop
@@ -427,8 +453,12 @@ No package is ported until this contract and its harness exist. Every rule here 
 
 **Byte compatibility (A1).** `Aw.Kernel` defines one `JsonSerializerOptions` profile that matches what the TS
 packages write today:
-- camelCase names, JS-compatible escaping (no `\u0027` where Node writes `'`), the same null and
-  number handling, and `toISOString()`-identical timestamps (UTC, millisecond precision, `Z`);
+- camelCase names, JS-compatible escaping, the same null and number handling, and `toISOString()`-identical
+  timestamps (UTC, millisecond precision, `Z`). Escaping is a custom Node-equivalent encoder (`Aw.Kernel`'s
+  `NodeJsonEncoder`), because neither STJ encoder matches `JSON.stringify` (R1a spike corpus: the default differs
+  on 16 of 18 strings, `UnsafeRelaxedJsonEscaping` on 7). The corpus covers non-ASCII and emoji, `'`, `<>&`, `+`,
+  `` ` ``, U+2028/2029, U+007F, NBSP, BOM, control characters (lower-case hex) and lone surrogates, which Node
+  writes as `\udXXX`, STJ's writers replace with U+FFFD, and STJ's reader rejects;
 - digests reproduce the TS bytes exactly, including **key insertion order** where today's digests depend on it
   (judge's `input_digest`, `evaluate.ts:84`). A canonical sorted-key form is used only for new digests, which carry
   a `digestVersion` field (B4);
@@ -442,7 +472,9 @@ packages write today:
 - **the real hook scripts** in `config/hooks/` run against the C# binary, because their behavior is what users
   depend on.
 
-Outputs are compared after a declared normalization (ids, times), never by loose matching.
+Outputs are compared after a declared normalization (ids, times), never by loose matching. MCP and HTTP wire
+JSON is compared parsed and normalized, not as bytes, because the MCP SDK's protocol serializer isn't under Kernel
+control. Intended changes from the TS behavior are listed in the package's golden contract as declared divergences.
 
 **Fail-closed during cutover (A1).** Some hooks treat a judge error as "allow". A cutover run counts every
 fail-open event. A package cuts over only with **zero** fail-open events across the golden and replay corpus, and
@@ -474,7 +506,8 @@ hooks that call a ported binary log a `HOOK-FAILOPEN` event that the daily diges
   normalization doesn't explain blocks the switch.
 - **TS stays frozen to bug fixes** once porting starts. A bug fix to TS re-records the affected goldens in the same PR.
 - **Prebuilt binaries (B6).** Release builds per OS and architecture carry build-provenance attestations. A committed
-  `binaries.lock` maps each tool and platform to its expected SHA-256, so the check doesn't trust a checksum
+  `binaries.lock` maps each tool and platform to its expected SHA-256 (and any native library shipped next to a
+  tool, such as a bundled SQLite), so the check doesn't trust a checksum
   published in the same release. `setup.sh` installs the binaries the checkout's `binaries.lock` names and verifies
   them, and contributors build from source by default (`--prebuilt` opts in). Release tags are protected by a tag
   ruleset (only the owner creates `v*` tags), releases are immutable, and sindri's `stable` and `next` channels map to
@@ -520,8 +553,17 @@ still TS.
   stdin and stdout only (a versioned JSON protocol with its own golden tests).
 
 **Runtime hardening (A16).**
-- The bridge binds to loopback **in code**, ignoring `ASPNETCORE_URLS` and Kestrel URL settings, with a test that
-  tries to override it.
+- The bridge binds to loopback **in code**, and nothing outside the code can change it:
+  - no command-line args or environment variables reach the web host's configuration, `PreferHostingUrls` is pinned
+    off, and Kestrel listens with `Listen(IPAddress.Loopback, port)` only;
+  - a test starts the bridge with each override vector (`ASPNETCORE_URLS`, `DOTNET_URLS`, `ASPNETCORE_HTTP_PORTS`,
+    `ASPNETCORE_PREFERHOSTINGURLS`, `Kestrel__Endpoints__*` in the environment and on the command line, `--urls`) and
+    checks the only listener is `127.0.0.1:<port>` (the R1a spike found two of them binding all interfaces in a
+    default `CreateSlimBuilder(args)` host);
+  - requests with a non-loopback `Host` get 400 (B12, DNS rebinding) and a browser `Origin` that isn't loopback gets
+    403 (the MCP Streamable HTTP rule);
+  - declared divergences from the TS bridge: no `HOST` variable or `ALLOW_REMOTE` escape hatch, and no wildcard CORS
+    (`@fastify/cors` with `origin: true` today).
 - The scrubber runs as a processor on logs and OpenTelemetry exports, so new logging can't carry secrets out.
 - The devcontainer is for humans, and it is never the agent sandbox. Docker-in-Docker means root on the host, so
   agent sessions keep using the Sindri containers of the main spec §8.2.
@@ -623,9 +665,9 @@ next PR shows it passing.
 | R4 | Score of record | **Decided:** our own check (`Aw.Readiness`). No paid Factory account or Droid |
 | R5 | Tighter TS flags | Superseded by R6 for the rewritten packages; applies only to the TS that stays (mods, the TS-indexer sidecar) |
 | R6 | Language and runtime | **Decided:** C# on .NET 10 LTS, NativeAOT CLIs, strangler rewrite per package (§4a) |
-| R7 | Test framework | xUnit v3 (most common, best tooling) or TUnit (faster, source-generated); recommend xUnit v3 unless lane budgets fail in the R1 spike |
-| R8 | Data access under NativeAOT | Hand-written ADO.NET with `IRowMapper<T>` (§4b.2) unless the R1 spike shows EF Core 10 or Dapper.AOT passing the AOT golden tests |
-| R9 | Strongly typed ids | Vogen, or hand-written `readonly record struct` if the spike finds an AOT problem |
+| R7 | Test framework | **Decided (R1a spike):** xUnit v3 on Microsoft.Testing.Platform, lanes as traits, budgets checked from the CTRF report (§4b.5) |
+| R8 | Data access under NativeAOT | **Decided (R1a spike):** hand-written ADO.NET with `IRowMapper<T>` over the OS `libsqlite3` (§4b.2); EF Core 10 and Dapper.AOT fail warnings-as-errors |
+| R9 | Strongly typed ids | **Decided (R1a spike):** Vogen with its STJ and parsing generation off, plus a user-code converter and `TryParse` per id (§4b.3) |
 | R10 | Agent identity | A GitHub App installed on the repo (preferred) or a fine-grained token, with contents and pull-request write only |
 
 ## 10. Rollout and sizing (rough, one builder with agents)
@@ -652,7 +694,8 @@ Recent pace: about 49 commits in 60 days. The sizes below are estimates to be re
 **Dependencies, not a strict sequence.** R1a, R1b and R2 overlap:
 - R1b's build settings, analyzers, `deps.yaml`, the `Aw.Kernel` core, scaffold skeletons and C# `AGENTS.md` need
   nothing from R1a and can start at once.
-- `Aw.Kernel.Data`, `Aw.Kernel.Testing` and typed ids wait for the AOT spike's answers (R7–R9).
+- `Aw.Kernel.Data`, `Aw.Kernel.Testing` and typed ids waited for the AOT spike's answers (R7–R9); those are now
+  decided (`docs/readiness/aot-spike.md`).
 - A package's port starts when its golden recordings exist and enough of the template does to scaffold it. CI (R1a)
   runs its goldens.
 - The readiness baseline and the agent token helper block nothing.
