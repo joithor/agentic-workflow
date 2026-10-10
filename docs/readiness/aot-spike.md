@@ -1,8 +1,11 @@
 # R1a AOT spike: test framework, data access, typed ids and the MCP SDK under NativeAOT
 
-Spike for spec `docs/superpowers/specs/2026-10-09-agent-readiness-design.md` §4b.2, §4b.3, §4b.5, §4b.6, §4c and
-§4d, deciding R7, R8 and R9 and the Bridge host's build. The spec carries the decisions; this doc carries the
-evidence.
+Spike for spec `docs/superpowers/specs/2026-10-09-agent-readiness-design.md` (§4b.2, §4b.3, §4b.5, §4b.6, §4c,
+§4d), deciding R7, R8 and R9 and the Bridge host's build. This doc carries the evidence. The spec text itself,
+including these decisions, is owned by the consolidated spec PR (S1, `docs/readiness-spec-clean-cutover`), which
+also records the owner's decision of 2026-10-10: **clean cutover to C#**, with no Node/TS byte parity, no golden
+replay and no TS-state migration. Sections below that argued from TS parity are marked as superseded; their
+measurements stay as history.
 
 **Where the code is.** The spike code, its lock files, scripts and every log cited here are on the tag
 [`spike/r1a-aot-2026-10`](https://github.com/jthorare/agentic-workflow/tree/spike/r1a-aot-2026-10/spikes), not on
@@ -15,9 +18,9 @@ on purpose), and keeping it out of the tree keeps it out of the repo-wide .NET c
 | # | Question | Decision | Confidence |
 |---|---|---|---|
 | R7 | Test framework | **xUnit v3 on Microsoft.Testing.Platform.** Under JIT both frameworks run the same suites in about the same time (30 tests: 238 vs 222 ms per test-app run; 2,000 tests: 359 vs 369 ms; 0.06–0.07 ms per added test), far inside the 10 s unit budget, and lane filters work in both. Tests run JIT (§4b.6), so TUnit's working NativeAOT test runner (xUnit v3's crashes) isn't needed. Lane budgets are enforced from xUnit's CTRF report (`scripts/lane-budget.py`, proven to fail on an over-budget run) | High |
-| R8 | Data access under NativeAOT | **Hand-written ADO.NET with `IRowMapper<T>`, over the OS `libsqlite3`.** 0 warnings and one file per tool. EF Core 10 and Dapper.AOT both run but neither builds warnings-as-errors: EF fails on IL2026/IL3050 in the `DbContext` constructor and calls itself experimental; Dapper.AOT fails only on `Dapper.dll`'s assembly-level IL2104/IL3053, and suppressing those hides calls its generator can't intercept (a generic `Query<T>` then built clean and threw `PlatformNotSupportedException` at runtime). Startup doesn't separate ADO.NET and Dapper.AOT (6.3 vs 6.8 ms median, overlapping ranges); EF is about twice as slow (13.5 ms) | High |
-| R9 | Strongly typed ids | **Vogen with its STJ and parsing generation turned off, plus a user-code `JsonConverter` (via `TryFrom`, throwing `JsonException`) and `IParsable<T>` per id.** Source generators can't see each other's output, so Vogen's generated converter is invisible to the STJ generator (ids serialize as `{}`) and its generated `TryParse` is invisible to the request-delegate generator (route ids fall back to JSON-body binding: every request a 500). With both in user code: 0 warnings, JSON and route binding work under AOT, the VOG009 `default` ban holds, and bad input is a 400 | High |
-| MCP | MCP C# SDK 2.2.0 for the Bridge | **NativeAOT, two entry points as today (REST minimal API, stdio MCP), MCP tools on the SDK's low-level handlers.** All three spike servers publish with 0 warnings and pass every call. The low-level handlers can reproduce the TS bridge's schemas and `isError` replies exactly, which the attribute style can't. The HTTP host is loopback-only against 7 override vectors once no args or environment reach its configuration, and it rejects a foreign `Host` (400) and `Origin` (403) | High |
+| R8 | Data access under NativeAOT | **Hand-written ADO.NET with `IRowMapper<T>`, over the bundled `e_sqlite3` shipped side by side with each binary and listed in `binaries.lock`.** 0 warnings. EF Core 10 and Dapper.AOT both run but neither builds warnings-as-errors: EF fails on IL2026/IL3050 in the `DbContext` constructor and calls itself experimental; Dapper.AOT fails only on `Dapper.dll`'s assembly-level IL2104/IL3053, and suppressing those hides calls its generator can't intercept (a generic `Query<T>` then built clean and threw `PlatformNotSupportedException` at runtime). Startup doesn't separate ADO.NET and Dapper.AOT (6.3 vs 6.8 ms median, overlapping ranges); EF is about twice as slow (13.5 ms) | High |
+| R9 | Strongly typed ids | **Vogen with `conversions: None` and `systemTextJsonConverterFactoryGeneration: Omit`, a user-code `JsonConverter` (via `TryFrom`, throwing `JsonException`), and `IParsable<T>` declared in user code.** Root cause: generators don't see each other's output. The STJ generator can't see Vogen's converter (ids serialize as `{}`), and the request-delegate generator binds an id from a route only when `IParsable<T>` is declared in user code. Declaring the interface in user code over Vogen's generated members (C3's `ITypedId<TSelf,TValue> : IParsable<TSelf>`) and hand-writing `TryParse` (this spike's probe) both satisfy that. Only the hand-written form went through the RDG here. Result: 0 warnings, JSON and route binding work under AOT, the VOG009 `default` ban holds, and bad input is a 400 | High |
+| MCP | MCP C# SDK 2.2.0 for the Bridge | **NativeAOT, two entry points as today (REST minimal API, stdio MCP).** All three spike servers publish with 0 warnings and pass every call. With TS parity cut, the readable attribute style is the default for tools; the low-level handlers are for tools whose schema or error shape must be exact. The HTTP host is loopback-only against 7 override vectors once no args or environment reach its configuration, and it rejects a foreign `Host` (400) and `Origin` (403) | High |
 
 ## Environment and pins
 
@@ -99,20 +102,22 @@ Microsoft.EntityFrameworkCore.Tasks.targets(98,5): warning : Query precompilatio
 
 `EnsureCreated` isn't usable under AOT either, so the schema came from SQL anyway.
 
-**Native SQLite.** The bundled `e_sqlite3` makes every tool two files (1.62 MB of dylib next to each binary), each
-needing macOS signing and a Linux `.so`. (a′) uses the OS library through SQLitePCLRaw's `sqlite3` provider, one
-line at startup (`SQLitePCL.raw.SetProvider(new SQLite3Provider_sqlite3())`). It passes the same scenario and
-cross-check in one file. It starts slower here (10.0 vs 6.3 ms, wider range), which matters little for a CLI.
-The OS version varies by host, so `Aw.Kernel.Data` checks a minimum version at startup and `sindri doctor`
-reports it, with the bundled library as the fallback (listed in `binaries.lock` if used). Linux wasn't built (this
-box is macOS).
+**Native SQLite.** **Decided (owner, 2026-10-10): the bundled `e_sqlite3`, shipped side by side with each binary
+and listed in `binaries.lock`** (C1 #99 already builds it that way). Both determinism arguments about OS versus
+bundled SQLite were about TS parity and are moot under the clean cutover. The bundled build avoids loading a Linux
+`libsqlite3.so` the spike never probed (this box is macOS). Cost, measured: every tool is two files (1.62 MB of
+dylib next to each binary), each needing macOS signing and a Linux `.so`.
+
+*History:* variant (a′) loaded the OS library through SQLitePCLRaw's `sqlite3` provider
+(`SQLitePCL.raw.SetProvider(new SQLite3Provider_sqlite3())`, SQLite 3.51.0). It passed the same scenario and
+cross-check as one 2.60 MB file, starting slower (10.0 vs 6.3 ms). It isn't the decision.
 
 **Invariant globalization.** On macOS, turning ICU on costs 0.19 MB and no measurable startup. Both builds link
 the system `libicucore`, so there's no difference to see here. The reason for invariant mode is Linux, where an
 ICU build needs `libicu` installed and fails at startup without it. Invariant mode also matches §4c's
-culture-invariant rules. The spec now sets it on every NativeAOT entry point.
+culture-invariant rules. Recommended for every NativeAOT entry point; S1 owns where that's stated.
 
-**Decision:** keep §4b.2's ADO.NET + `IRowMapper<T>`, over the OS `libsqlite3`. Neither alternative passes the
+**Decision:** keep §4b.2's ADO.NET + `IRowMapper<T>`, over the bundled `e_sqlite3`. Neither alternative passes the
 warnings-as-errors build §4b.6 requires. Dapper.AOT's mapper savings would cost a suppression that hides exactly
 the failure AOT analysis exists to catch.
 
@@ -193,8 +198,20 @@ RDG empty values, arrays, unassigned fields). The probe's Host maps `Vogen.Value
   `…SystemTextJsonConverter`. It passes on the hybrid and reports four violations on (a)
   (`logs/r9-IdGuard.test.log`). In the product it belongs in `Aw.Architecture.Tests`, over every assembly.
 
-**Decision:** the hybrid (c). The spec's §4b.3 now states the whole pattern. The scaffolds generate each id with
-its converter, `TryParse` and a JSON round-trip test covering missing and null values.
+**Root cause, stated neutrally:** `IParsable<T>` must be **declared in user code** so the RDG sees it, and a
+converter must likewise come from user code (or be registered where the STJ generator can see it). Who supplies
+the `TryParse` *body* doesn't matter:
+- C3 (#100) declares `ITypedId<TSelf,TValue> : IParsable<TSelf>` in user code and keeps Vogen's generated members;
+- this probe turned Vogen's parse generation off and wrote `TryParse` by hand (through `TryFrom`, because VOG009
+  also bans `result = default`).
+
+Both satisfy the rule. Only the hand form has been through the RDG here (`RouteBind`), so C3's first endpoint test
+should exercise route and query binding, including `?id=`. Also set `systemTextJsonConverterFactoryGeneration: Omit`:
+with `Conversions.None` Vogen still emitted a `SystemTextJsonConverterFactory` into `RouteBind`'s generated
+sources, which nothing should register.
+
+**Decision:** the hybrid (c), in either `IParsable<T>` form. Each id gets its converter, its user-code `IParsable<T>`
+declaration, and a JSON round-trip test covering missing and null values.
 
 ## R7 — xUnit v3 vs TUnit
 
@@ -238,7 +255,11 @@ Unhandled exception. System.ArgumentException: The value cannot be an empty stri
 exit=134
 ```
 
-**Lane budgets.** §4b.5 says CI fails a test that runs over its lane's time. xUnit v3 has no per-trait budget, so
+**Lane budgets.** What a budget measures (wall clock or execution time, per package or per test assembly, with or
+without a per-test cap) is defined once in S1's §4b.5; this probe doesn't define it. It shows one mechanism and
+what it measures. CTRF's `summary.stop - summary.start` is execution time: it leaves out the test host's fixed
+startup and discovery (the 2,000-test run reports 0.147 s in CTRF against a 359 ms wall-clock test-app run). It's
+also one report per test assembly, so a per-package budget needs aggregation. xUnit v3 has no per-trait budget, so
 the spike runs each lane with its CTRF reporter
 (`--report-xunit-ctrf --report-xunit-ctrf-filename <lane>.json`), and `scripts/lane-budget.py` fails when the
 lane's run time or any single test is over budget (`logs/r7-lane-budget.txt`):
@@ -252,7 +273,8 @@ lane unit: 2000 tests, run 0.147 s (budget 0.01 s) FAIL: over budget        exit
 ```
 
 **Decision:** xUnit v3. §9's rule was "xUnit v3 unless lane budgets fail", and they don't. TUnit's real advantage
-is running tests as a native app, which §4b.6 doesn't use. `Aw.Kernel.Testing` ships the CTRF budget check.
+is running tests as a native app, which §4b.6 doesn't use. `Aw.Kernel.Testing` implements whatever budget S1's
+§4b.5 defines; the CTRF check above is one way to do it.
 
 ## MCP C# SDK 2.2.0 under NativeAOT
 
@@ -304,7 +326,7 @@ The 400 comes from `UseHostFiltering` with `AllowedHosts = 127.0.0.1, localhost,
 `CreateSlimBuilder` doesn't add by default. The 403 comes from a few lines of middleware that allow a missing
 `Origin` (non-browser clients) or a loopback one. Both are AOT-clean.
 
-**Parity with the TS bridge.** Today the bridge is two entry points: Fastify REST (`src/index.ts`) and stdio MCP
+**Parity with the TS bridge** (*superseded by the clean-cutover decision; kept as history*). Today the bridge is two entry points: Fastify REST (`src/index.ts`) and stdio MCP
 (`src/mcp.ts`). `scripts/capture-ts-bridge-mcp.py` records the TS MCP surface (`logs/ts-bridge-mcp-capture.txt`):
 - schemas carry `$schema`, `additionalProperties: false`, `format: "uuid"` and `minLength`;
 - bad arguments are an `isError` result with the zod text (`MCP error -32602: Input validation error: …`);
@@ -320,65 +342,94 @@ The low-level handlers (StdioLow) return whatever schema and result the code bui
 **Decision:**
 - **Builds:** keep two NativeAOT entry points, REST and stdio MCP. A single `WebApplication` with stdio would need
   console logging forced to stderr, because stdout carries JSON-RPC.
-- **Tools:** use the low-level handlers, with the schemas copied from the golden recording, so tools/list and
-  error replies match. Streamable HTTP MCP isn't part of the port. If it's added later, it comes with the Host and
-  Origin checks above.
-- **Declared divergences** for the Bridge's golden contract: no `HOST` variable or `ALLOW_REMOTE` escape hatch
-  (the TS server honors both); no wildcard CORS (`@fastify/cors` with `origin: true` reflects any origin today);
-  `Host`/`Origin` rejections are new.
+- **Tools:** both styles are AOT-clean. With TS parity cut, the attribute style is the readable default. The
+  low-level handlers remain for tools whose schema or error shape must be controlled exactly. Streamable HTTP MCP
+  isn't planned; if it's added, it comes with the Host and Origin checks above.
+- **Behavior changes from the TS bridge** (no longer "declared divergences", since there's no golden contract): no
+  `HOST` variable or `ALLOW_REMOTE` escape hatch; no wildcard CORS (`@fastify/cors` with `origin: true` reflects any
+  origin today); `Host`/`Origin` rejections are new.
 
-## JSON escaping (§4c)
+## JSON escaping (§4c), superseded
 
-The MCP SDK's serializer escapes `'` as `'`. That's harmless in JSON-RPC, but §4c writers must not use STJ's
-defaults. `bash scripts/check-escaping.sh` writes 18 strings through STJ's default encoder and through
-`UnsafeRelaxedJsonEscaping`, and compares the bytes with Node's `JSON.stringify` (`logs/json-escaping.txt`;
-excerpt, with Node's raw invisible characters described in parentheses):
+*Superseded by the owner decision of 2026-10-10: with no Node/TS byte parity there's no requirement to match
+`JSON.stringify` byte for byte, so this section is history, not a requirement.* The measurements stay because they
+describe STJ's behavior, which still matters for any file a human or another tool reads.
+
+The MCP SDK's serializer escapes `'` as `\u0027` (`logs/mcp-HttpSlim.drive.txt`:
+`An error occurred invoking \u0027upper\u0027.`). `bash scripts/check-escaping.sh` writes 18 strings through STJ's
+default encoder and through `UnsafeRelaxedJsonEscaping`, and compares the bytes with Node's `JSON.stringify`. This
+is `logs/json-escaping.txt` verbatim from the tag. Node's raw output contains invisible characters (U+2028/2029,
+U+007F, NBSP, ZWJ, BOM), which render as spaces or nothing:
 
 ```
-input (JSON literal)         node JSON.stringify            STJ default                        STJ relaxed
-"it's"                       "it's"                         "it's"                        =
-"a<b>c&d"                    "a<b>c&d"                      "a<b>c&d"           =
-"1+1"                        "1+1"                          "1+1"                         =
-"café"                  "café"                         "café"                        =
-"emoji 😀"         "emoji 😀"                      "emoji 😀"               "emoji 😀"
-"line sep "        (raw U+2028/2029)              "line sep "              "line sep "
-"ctl\u0001\u001f"            "ctl\u0001\u001f"              "ctl\u0001\u001F"                  "ctl\u0001\u001F"
-"del\u007f"                  (raw U+007F)                   "del\u007F"                        "del\u007F"
-"lone \ud800 surrogate"      "lone \ud800 surrogate"        "lone � surrogate"            "lone � surrogate"
-"bom﻿"                  (raw U+FEFF)                   "bom﻿"                        "bom﻿"
-differences from node: default 16/18, relaxed 7/18
 STJ reader rejects "lone \ud800 surrogate": Cannot read incomplete UTF-16 JSON text as string with missing low surrogate.
+input (JSON literal)         node JSON.stringify            STJ default                        STJ relaxed
+"plain"                      "plain"                        =                                  =
+"it's"                       "it's"                         "it\u0027s"                        =
+"a<b>c&d"                    "a<b>c&d"                      "a\u003Cb\u003Ec\u0026d"           =
+"1+1"                        "1+1"                          "1\u002B1"                         =
+"back`tick"                  "back`tick"                    "back\u0060tick"                   =
+"caf\u00e9"                  "café"                         "caf\u00E9"                        =
+"\u65e5\u672c"               "日本"                           "\u65E5\u672C"                     =
+"emoji \ud83d\ude00"         "emoji 😀"                      "emoji \uD83D\uDE00"               "emoji \uD83D\uDE00"
+"line\u2028sep\u2029"        "line sep "                    "line\u2028sep\u2029"              "line\u2028sep\u2029"
+"tab\tnl\n"                  "tab\tnl\n"                    =                                  =
+"ctl\u0001\u001f"            "ctl\u0001\u001f"              "ctl\u0001\u001F"                  "ctl\u0001\u001F"
+"del\u007f"                  "del"                         "del\u007F"                        "del\u007F"
+"quote\"back\\slash"         "quote\"back\\slash"           "quote\u0022back\\slash"           =
+"lone \ud800 surrogate"      "lone \ud800 surrogate"        "lone \uFFFD surrogate"            "lone \uFFFD surrogate"
+"nbsp\u00a0"                 "nbsp "                        "nbsp\u00A0"                       "nbsp\u00A0"
+"zwj\u200d"                  "zwj‍"                         "zwj\u200D"                        =
+"bom\ufeff"                  "bom﻿"                         "bom\uFEFF"                        "bom\uFEFF"
+"</script>"                  "</script>"                    "\u003C/script\u003E"              =
+differences from node: default 16/18, relaxed 7/18
 ```
 
-So neither encoder works: relaxed still escapes emoji, U+2028/2029, U+007F, NBSP and BOM, writes upper-case hex,
-and **replaces a lone surrogate with U+FFFD** (data loss). STJ's reader also rejects a lone surrogate that Node
-writes. `Aw.Kernel` (B2, `feat/readiness-b2-kernel-core`) already has a custom `NodeJsonEncoder`/`NodeJsonEscaping`
-with a byte-compat corpus. This corpus belongs in it, especially the lone-surrogate read and write cases. MCP and
-HTTP wire JSON, whose serializer the Kernel doesn't control, is compared parsed and normalized in the golden
-harness (spec §4c).
+What it showed:
+- STJ's default encoder differs on 16 of 18 strings, including `'` (`\u0027`), `<>&`, `+`, `` ` ``, `"`
+  (`\u0022`), all non-ASCII and emoji;
+- `UnsafeRelaxedJsonEscaping` differs on 7 (emoji, U+2028/2029, U+007F, NBSP, BOM, upper-case control-character
+  hex) and replaces a lone surrogate with U+FFFD (data loss);
+- STJ's reader rejects a lone surrogate that Node writes.
 
 ## Notes for Track C
 
 - **`Aw.Kernel.Data` (C1):**
-  - ADO.NET + `IRowMapper<T>`, SQL in `const string`s, over the OS `libsqlite3` via
-    `SQLitePCLRaw.provider.sqlite3`, with a minimum-version check (WAL and the JSON functions the schemas use) and a
-    `sindri doctor` line;
+  - ADO.NET + `IRowMapper<T>`, SQL in `const string`s, over the bundled `e_sqlite3` (`Microsoft.Data.Sqlite`'s
+    default bundle), shipped side by side with each AOT binary and listed in `binaries.lock`; no provider switch
+    and no OS-version check;
   - per-connection pragmas `journal_mode=wal`, `busy_timeout` and `foreign_keys=on`;
-  - typed ids bind through one helper (`AddId(name, id)` writing `id.Value`), so repositories never call `.Value`
-    by hand.
+  - typed ids bind through one helper (`AddId(name, id)` writing `id.Value`).
 - **`Aw.Kernel.Testing` (C2):** xUnit v3 on MTP; lanes as `[Trait("Lane", …)]`, filtered with `--filter-trait`;
-  the CTRF lane-budget check (`lane-budget.py`'s logic) as a CI step per lane; `[assembly: AssemblyTrait]` or an
-  architecture test so no test is left without a lane.
+  the budget check as S1's §4b.5 defines it (the CTRF probe above shows one mechanism and what it does and doesn't
+  measure); no test left without a lane.
 - **Typed ids (C3):**
-  - the hybrid exactly as in R9: `VogenDefaults` set once per package (or injected by props), and each id with its
-    user-code converter (`TryFrom` → `JsonException`), `IParsable<T>` (`TryParse` through `TryFrom`, because VOG009
-    also bans `result = default`) and a round-trip test covering missing and null values;
-  - the `IdGuard` rule in `Aw.Architecture.Tests`, and the Host mapping Vogen's validation exception to 400;
-  - `EnableRequestDelegateGenerator=true` in every host build, so JIT endpoint tests bind like AOT.
-- **Kernel JSON (B2):** `RespectRequiredConstructorParameters` and `RespectNullableAnnotations` on, and the escaping
-  corpus above in its golden tests.
-- **Bridge (R2):** as in the MCP decision above, with the 7-vector loopback test, the Host/Origin tests and the
-  declared divergences in its golden contract.
+  - `VogenDefaults(conversions: None, systemTextJsonConverterFactoryGeneration: Omit)`;
+  - a user-code converter (`TryFrom` → `JsonException`) and a user-code `IParsable<T>` declaration (the interface
+    form or a hand `TryParse`);
+  - a round-trip test covering missing and null values, and an endpoint test that binds an id from a route and from
+    a query, including `?id=`;
+  - the `IdGuard` rule in `Aw.Architecture.Tests`, the Host mapping Vogen's validation exception to 400, and
+    `EnableRequestDelegateGenerator=true` in every host build.
+- **Kernel JSON (B2):** `RespectRequiredConstructorParameters` and `RespectNullableAnnotations` on.
+- **Bridge (R2):** two NativeAOT entry points, the 7-vector loopback test and the Host/Origin tests.
+
+## Which numbers are transcripts
+
+These logs on the tag were made by commands typed by hand during the spike, not by a script on the tag. Adding
+producers would need a new tag, and the owner decision makes several of them moot, so they're marked here instead:
+- `logs/sizes.txt` (every binary and on-disk size): `stat -f %z` on each published binary and its
+  `libe_sqlite3.dylib`;
+- `logs/native-check.txt` (no CoreCLR/hostfxr/clrjit link): `file -b` and `otool -L | grep -ciE 'coreclr|hostfxr|libclrjit'` per binary;
+- `logs/mcp-stdio-startup.txt` ("9–10 ms, 5 runs"): `drive-stdio.py` run 5 times by hand, reading its own
+  `time-to-initialize-response` line, which is a different timing method from `timeit.py`;
+- `logs/ctrf/*.json` and `logs/r7-lane-budget.txt`: the test apps run by hand with
+  `--filter-trait "Lane=<lane>" --report-xunit-ctrf --report-xunit-ctrf-filename <lane>.json --results-directory logs/ctrf`,
+  then `lane-budget.py` with the five argument sets shown in the log;
+- `logs/r7-{XunitV3,TUnit}.aot-run.txt`: the published test apps run directly. The lane-filter totals in R7 are
+  from runs whose output wasn't kept.
+
+Everything else comes from the scripts named in Reproduce.
 
 ## Reproduce
 
