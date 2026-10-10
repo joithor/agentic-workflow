@@ -442,12 +442,12 @@ group.MapPost("/items/{id}/start", async (ItemId id, StartItemBody body, IServic
   (W2) will fail CI if that block grows. (Not a `baseline.globalconfig`: a global config can't lower a rule `.editorconfig` sets,
   and its sections need absolute paths.)
 - `.editorconfig` sets every rule's severity explicitly (no "suggestion" level for anything agents should obey).
+  The size limits: file ≤ 300 lines, method ≤ 40 lines, cyclomatic complexity ≤ 10, parameters ≤ 5. Existing
+  violations go into a ratchet baseline that only shrinks.
   Also from `.editorconfig`: no `TODO` comments (MA0026; finish the work or open a work item) and one top-level type
   per file, named after it (MA0048). A suppression (`#pragma warning disable`, `[SuppressMessage]`) or a project-level
   severity override needs a written reason and is reviewed like an override.
 - `nuget.config` maps every package source to nuget.org only (package source mapping).
-  The size limits: file ≤ 300 lines, method ≤ 40 lines, cyclomatic complexity ≤ 10, parameters ≤ 5. Existing
-  violations go into a ratchet baseline that only shrinks.
 - `Aw.Analyzers`: a small in-repo analyzer project for the rules no package covers:
   - no raw ids in public signatures;
   - `!` needs a reason;
