@@ -22,8 +22,8 @@ expect "docs-only change runs nothing area-specific" \
   "$(printf 'ts=false\nbash=false\ndotnet=false\npackages=[]')"
 
 expect "one package change runs that package and the bash tests" \
-  "$(printf 'judge/src/cli.ts\n')" \
-  "$(printf 'ts=true\nbash=true\ndotnet=false\npackages=["judge"]')"
+  "$(printf 'mcp-bridge/src/index.ts\n')" \
+  "$(printf 'ts=true\nbash=true\ndotnet=false\npackages=["mcp-bridge"]')"
 
 expect "nested skill package is matched by its full path" \
   "$(printf 'skills/ui-evidence/src/run.ts\nskills/review/SKILL.md\n')" \

@@ -15,6 +15,14 @@
 
 TS_PACKAGES=(mcp-bridge scorer judge sindri skills/ui-evidence skills/bugFixOrchestrator)
 
+# Packages whose tests import another package's source: a change to the key also
+# runs the listed dependents (scorer's tests import judge/src/db.ts).
+dependents_of() {
+  case "$1" in
+    judge) echo scorer ;;
+  esac
+}
+
 json_array() {
   local out="" item
   for item in "$@"; do out+="${out:+,}\"$item\""; done
@@ -47,10 +55,13 @@ classify_changes() {
         "$pkg"/*)
           ts=true
           bash=true
-          case " ${changed_packages[*]-} " in
-            *" $pkg "*) ;;
-            *) changed_packages+=("$pkg") ;;
-          esac
+          local p
+          for p in "$pkg" $(dependents_of "$pkg"); do
+            case " ${changed_packages[*]-} " in
+              *" $p "*) ;;
+              *) changed_packages+=("$p") ;;
+            esac
+          done
           ;;
       esac
     done
