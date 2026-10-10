@@ -77,17 +77,20 @@ scan() { # $1 = grep -E pattern, $2 = sed script that reduces a match to the nam
 LC_ALL=C sort -t "$(printf '\t')" -k1,1 -k2,2 -k3,3n "$TMP/reads.raw" |
   awk -F'\t' '!seen[$1]++ { printf "%s\t%s:%s\n", $1, $2, $3 }' > "$TMP/reads"
 
-# .env.example → "NAME<TAB>indirect(0|1)<TAB>has-value(0|1)" per entry.
+# .env.example → "NAME<TAB>indirect(0|1)<TAB>has-value(0|1)" per entry. A block (blank-line separated) is
+# held until it ends, so an "(indirect" comment anywhere in it covers every entry in it.
 awk '
+  function flush(  i) { for (i = 1; i <= n; i++) printf "%s\t%d\t%d\n", names[i], indirect, values[i]; n = 0; indirect = 0 }
   /^#[[:space:]]*[A-Z][A-Z0-9_]*=/ || /^[A-Z][A-Z0-9_]*=/ {
     line = $0; sub(/^#[[:space:]]*/, "", line)
     name = line; sub(/=.*/, "", name)
     value = line; sub(/^[^=]*=/, "", value); gsub(/[[:space:]]/, "", value)
-    printf "%s\t%d\t%d\n", name, indirect, (value != "")
+    names[++n] = name; values[n] = (value != "")
     next
   }
   /^#/ { if (index($0, "(indirect") > 0) indirect = 1; next }
-  /^[[:space:]]*$/ { indirect = 0; next }
+  /^[[:space:]]*$/ { flush(); next }
+  END { flush() }
 ' .env.example | LC_ALL=C sort -u > "$TMP/documented"
 
 # scripts/env-scan-ignore.txt → "NAME<TAB>has-reason(0|1)".

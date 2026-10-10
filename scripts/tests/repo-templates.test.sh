@@ -33,7 +33,7 @@ check "Node major matches .nvmrc ($nvm)" "grep -qE '^ARG NODE_VERSION=${nvm%%.*}
 check "Node tarball is checksum-verified" "grep -q 'sha256sum -c' $DF && grep -qE '^ARG NODE_SHA256_X64=[0-9a-f]{64}\$' $DF && grep -qE '^ARG NODE_SHA256_ARM64=[0-9a-f]{64}\$' $DF"
 # Comment lines may name what's excluded; only the configuration itself counts. The pattern is kept in this
 # variable so the probes below can prove it catches each way a devcontainer can gain privileges.
-PRIV_RE='docker-in-docker|docker-outside-of-docker|docker\.sock|privileged|"runArgs"|"mounts"|"features"|"capAdd"|"securityOpt"|"dockerComposeFile"|"workspaceMount"|"initializeCommand"|cap-add|cap_add|security_opt'
+PRIV_RE='docker-in-docker|docker-outside-of-docker|docker\.sock|privileged|"runArgs"|"mounts"|"features"|"capAdd"|"securityOpt"|"dockerComposeFile"|"workspaceMount"|"initializeCommand"|"containerUser"|cap-add|cap_add|security_opt'
 privilege_hits() { grep -hvE '^[[:space:]]*(#|//)' "$1"/* | grep -iE "$PRIV_RE"; }
 check "no Docker-in-Docker, host socket, privileged mode, capabilities or extra run args" "! privilege_hits .devcontainer"
 PROBE_DIR="$(mktemp -d "${TMPDIR:-/tmp}/repo-templates-probe.XXXXXX")"
@@ -47,7 +47,7 @@ for snippet in '"runArgs": ["--privileged"]' '"capAdd": ["SYS_ADMIN"]' '"securit
   check "the privilege check catches: $snippet" "privilege_hits '$PROBE_DIR' > /dev/null"
 done
 # runs_as_ubuntu <Dockerfile> <devcontainer.json>: the image's last USER and the devcontainer's user are ubuntu.
-runs_as_ubuntu() { grep -qE '^USER [a-z]+' "$1" && grep -q '"remoteUser": "ubuntu"' "$2"; }
+runs_as_ubuntu() { [ "$(grep -E '^USER ' "$1" | tail -1)" = "USER ubuntu" ] && grep -q '"remoteUser": "ubuntu"' "$2"; }
 check "the container runs as the non-root ubuntu user" "runs_as_ubuntu $DF $DC"
 printf 'FROM x\nUSER ubuntu\nRUN true\nUSER root\n' > "$PROBE_DIR/Dockerfile.root"
 printf '{\n  "remoteUser": "ubuntu"\n}\n' > "$PROBE_DIR/remote.json"
