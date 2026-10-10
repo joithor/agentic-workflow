@@ -99,7 +99,7 @@ At the default level, information, each request therefore writes its hosting and
 app would hold `Microsoft.AspNetCore` at warning. This is deliberate for now: these hosts are local, loopback-only and
 low-traffic, and the request lines carry the trace ids. A host that finds them too loud sets `AW_LOG_LEVEL=warning`;
 per-category minimums (`Microsoft.*` and `System.*` at warning) are a `TelemetryOptions` change for when the first
-http package (Bridge) needs them.
+http package needs them (none is planned in R2 since the bridge was retired; the scaffold's http shape stays).
 
 ## Scrubbing on every path
 

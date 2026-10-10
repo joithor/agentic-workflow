@@ -27,6 +27,7 @@ AW_FAILOPEN_INPUT_LOGGED # set by the adapters after they log a bad hook input o
 AW_HOOK_ADAPTER_FLAGS # passed by the hook installer to the adapter command line it writes
 AW_DRY_RUN # set by setup.sh --dry-run for the installers it calls
 AW_MCP_SERVERS # set by setup.sh (the MCP server list) for the provider installers
+AW_MCP_RETIRED # set by setup.sh (servers the toolkit no longer ships) for the provider installers to remove
 AW_EXTERNAL_SKILL_DIRS # set by setup.sh (fetched skill packs) for the provider installers
 WITH_SINDRI # set by setup.sh --with-sindri for the Claude installer
 AW_JUDGE_CHILD # recursion guard the judge sets on the agent CLIs it starts
