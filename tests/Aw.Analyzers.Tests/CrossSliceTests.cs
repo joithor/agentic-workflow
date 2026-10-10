@@ -34,6 +34,36 @@ public sealed class CrossSliceTests
     }
 
     [Fact]
+    public async Task Attributes_and_nested_types_report_once_per_reference_and_var_is_skipped()
+    {
+        var found = await AnalyzerHarness.Run(
+            new CrossSliceAnalyzer(),
+            "Aw.Probe.Features",
+            ("A.cs", """
+                namespace Aw.Probe.Features.A;
+                [Aw.Probe.Features.B.TagAttribute]
+                internal sealed class AService
+                {
+                    internal static int M() { var x = Aw.Probe.Features.B.Rules.Make(); return x.N + Aw.Probe.Features.B.Rules.Inner.K; }
+                }
+                """),
+            ("B.cs", """
+                namespace Aw.Probe.Features.B;
+                [System.AttributeUsage(System.AttributeTargets.Class)]
+                internal sealed class TagAttribute : System.Attribute { }
+                internal sealed record Box(int N);
+                internal static class Rules
+                {
+                    internal static Box Make() => new(1);
+                    internal static class Inner { internal const int K = 2; }
+                }
+                """));
+
+        // Line 2: the attribute. Line 5: 'Rules' and 'Rules.Inner' once each; 'var' names no type in the source.
+        Assert.Equal(["AW1003@2", "AW1003@5", "AW1003@5"], found);
+    }
+
+    [Fact]
     public async Task Applies_to_small_shape_App_features()
     {
         var found = await AnalyzerHarness.Run(

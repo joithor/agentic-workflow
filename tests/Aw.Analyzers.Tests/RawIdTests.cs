@@ -37,6 +37,30 @@ public sealed class RawIdTests
     }
 
     [Fact]
+    public async Task Finds_a_Guid_inside_any_type_argument_and_in_delegates_and_reports_overrides_at_the_base()
+    {
+        var found = await AnalyzerHarness.Run(new RawIdAnalyzer(), "Aw.Probe.Core", """
+            using System;
+            using System.Collections.Generic;
+            namespace Aw.Probe.Core;
+            public abstract class Store
+            {
+                public abstract IReadOnlyDictionary<Guid, int> Map { get; }
+                public abstract (Guid Run, int N) Pair();
+            }
+            public sealed class Concrete : Store
+            {
+                public override IReadOnlyDictionary<Guid, int> Map => new Dictionary<Guid, int>();
+                public override (Guid Run, int N) Pair() => default;
+            }
+            public delegate void Handler(Guid run);
+            """);
+
+        // Lines 11-12: overrides repeat the base's shape and are reported there (lines 6-7).
+        Assert.Equal(["AW1001@14", "AW1001@6", "AW1001@7"], found);
+    }
+
+    [Fact]
     public async Task Applies_to_Features_assemblies()
     {
         var found = await AnalyzerHarness.Run(

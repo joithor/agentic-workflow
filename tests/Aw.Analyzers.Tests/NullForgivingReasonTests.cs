@@ -30,8 +30,26 @@ public sealed class NullForgivingReasonTests
     {
         var found = await AnalyzerHarness.Run(new NullForgivingReasonAnalyzer(), "Aw.Probe", Sample);
 
-        // Line 14: '//why:' with no reason doesn't count.
+        // Line 14: '//why:' (no space) isn't the marker.
         Assert.Equal(["AW1002@10", "AW1002@14", "AW1002@4"], found);
+    }
+
+    [Fact]
+    public async Task A_reason_after_the_attributes_counts_and_an_empty_reason_does_not()
+    {
+        var found = await AnalyzerHarness.Run(new NullForgivingReasonAnalyzer(), "Aw.Probe", """
+            namespace Aw.Probe;
+            internal sealed class C
+            {
+                [System.Obsolete("probe")]
+                // why: set by Init before any read
+                internal string A { get; set; } = null!;
+                internal string B { get; set; } = null!; // why:
+            }
+            """);
+
+        // Line 7: the marker is right but the reason after it is empty.
+        Assert.Equal(["AW1002@7"], found);
     }
 
     [Fact]

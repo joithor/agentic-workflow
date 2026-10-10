@@ -17,6 +17,12 @@ public sealed class GenericArityTests
         internal delegate void Callback<T1, T2, T3, T4>(T1 a, T2 b, T3 c, T4 d);
         internal abstract class Base { internal abstract void Go<T1, T2, T3, T4>(); }
         internal sealed class Derived : Base { internal override void Go<T1, T2, T3, T4>() { } }
+        internal interface IWide { void Run<T1, T2, T3, T4>(); }
+        internal sealed class Wide : IWide
+        {
+            public void Run<T1, T2, T3, T4>() { }
+            internal static int Local() { return L<int, int, int, int>(); static int L<T1, T2, T3, T4>() => 1; }
+        }
         """;
 
     [Fact]
@@ -24,7 +30,8 @@ public sealed class GenericArityTests
     {
         var found = await AnalyzerHarness.Run(new GenericArityAnalyzer(), "Aw.Probe", Sample);
 
-        // The override (line 11) repeats the base's shape; the base declaration (line 10) is where it's fixed.
-        Assert.Equal(["AW1009@10", "AW1009@3", "AW1009@7", "AW1009@9"], found);
+        // The override (line 11) and the interface implementation (line 15) repeat their base's shape; the base
+        // declarations (lines 10, 12) are where it's fixed. Local functions count too (line 16).
+        Assert.Equal(["AW1009@10", "AW1009@12", "AW1009@16", "AW1009@3", "AW1009@7", "AW1009@9"], found);
     }
 }

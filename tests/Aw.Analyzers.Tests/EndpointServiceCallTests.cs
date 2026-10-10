@@ -21,7 +21,12 @@ public sealed class EndpointServiceCallTests
         }
         namespace Aw.Kernel.Services
         {
-            public interface IService<TRequest, TResponse> { ValueTask<TResponse> Handle(TRequest r, CancellationToken ct); }
+            public interface IService<in TRequest, TResponse> { ValueTask<TResponse> Handle(TRequest r, CancellationToken ct); }
+        }
+        namespace Aw.Probe.Host
+        {
+            public interface IStart : Aw.Kernel.Services.IService<int, int> { }
+            public sealed class NotAService { public ValueTask<int> Handle(int r, CancellationToken ct) => new(r); }
         }
         """;
 
@@ -39,6 +44,8 @@ public sealed class EndpointServiceCallTests
                 app.MapPost("/two", async (int id, IService<int, int> a, IService<int, string> b, System.Threading.CancellationToken ct) =>
                     await b.Handle(await a.Handle(id, ct), ct));
                 other.MapGet("/not-an-endpoint", () => 1);
+                app.MapGet("/derived", (int id, IStart svc, System.Threading.CancellationToken ct) => svc.Handle(id, ct));
+                app.MapGet("/other-handle", (int id, NotAService svc, System.Threading.CancellationToken ct) => svc.Handle(id, ct));
             }
         }
         internal sealed class Other { internal void MapGet(string p, System.Func<int> f) { } }
@@ -50,7 +57,9 @@ public sealed class EndpointServiceCallTests
         var found = await AnalyzerHarness.Run(
             new EndpointServiceCallAnalyzer(), "Aw.Probe.Host", ("Stubs.cs", Stubs), ("Endpoints.cs", Endpoints));
 
-        Assert.Equal(["AW1004@10", "AW1004@11"], found);
+        // Line 14: through an interface derived from IService<,> counts as one call. Line 15: a Handle method on
+        // some other type is not a service call.
+        Assert.Equal(["AW1004@10", "AW1004@11", "AW1004@15"], found);
     }
 
     [Fact]
