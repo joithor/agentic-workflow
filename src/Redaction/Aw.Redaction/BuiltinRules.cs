@@ -24,10 +24,12 @@ internal static class BuiltinRules
     /// <summary>The rules, in priority order.</summary>
     public static IReadOnlyList<RedactionRule> All { get; } =
     [
-        // A terminated block, or, when no END line follows, the base64 and header lines after BEGIN.
+        // A terminated block, or, when no END line follows, the encryption headers (and the blank line after them) and
+        // the base64 lines after BEGIN. A BEGIN line with no body after it is prose, not a key.
         new("private-key",
             "-----BEGIN [A-Z ]{0,40}PRIVATE KEY-----(?:.{0,16384}?-----END [A-Z ]{0,40}PRIVATE KEY-----"
-            + "|(?:\r?\n(?:[A-Za-z0-9+/=]{1,256}|Proc-Type:[^\r\n]{0,100}|DEK-Info:[^\r\n]{0,200})(?![^\r\n])){0,512})",
+            + "|(?:\r?\n(?:Proc-Type|DEK-Info|Comment):[^\r\n]{0,200}){0,8}(?:\r?\n(?=[\r\n]))?"
+            + "(?:\r?\n[A-Za-z0-9+/=]{1,256}(?![^\r\n])){1,512})",
             RegexOptions.Singleline),
         new("anthropic-key", Start + "sk-ant-[A-Za-z0-9_-]{20,}"),
         new("openai-key", Start + "sk-(?:proj-)?[A-Za-z0-9_-]{20,}"),
@@ -56,6 +58,14 @@ internal static class BuiltinRules
         new("secret-assignment",
             "(?<![A-Za-z0-9_-])(?:[A-Za-z0-9]+-)+(?:API-?KEY|SECRET|TOKEN|PASSWORD|ACCESS-?KEY|PRIVATE-?KEY):[ \t]*" + Value,
             RegexOptions.IgnoreCase),
+
+        // Config style (INI, YAML, .properties, .env in any case): a line that starts with the name may take an
+        // unquoted value, which must end the line (or meet a comment), so code such as `secret = hash_v2(input)` or
+        // `token = session.value` never matches.
+        new("secret-assignment",
+            "^[ \t]*(?:export[ \t]+)?(?:[A-Za-z0-9]+[_.-])*" + SecretWord + "[ \t]*[=:][ \t]*" + Value
+            + "(?=[ \t]*(?:[#;][^\r\n]*)?\r?$)",
+            RegexOptions.IgnoreCase | RegexOptions.Multiline),
 
         // ~/.aws/credentials (INI): these fixed keys at a line start take an unquoted value.
         new("secret-assignment",

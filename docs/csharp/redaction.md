@@ -24,14 +24,14 @@ ScrubResult result = redactor.Scrub(text);
 
 | Rule id | Catches |
 |---|---|
-| `private-key` | `-----BEGIN … PRIVATE KEY-----` through `-----END …-----`; without an END line, the base64 and `Proc-Type`/`DEK-Info` lines after BEGIN |
+| `private-key` | `-----BEGIN … PRIVATE KEY-----` through `-----END …-----`; without an END line, the `Proc-Type`/`DEK-Info`/`Comment` headers and the base64 lines after BEGIN (a BEGIN line with no body is left alone) |
 | `anthropic-key`, `openai-key` | `sk-ant-…`, `sk-…`, `sk-proj-…` |
 | `aws-access-key` | `AKIA…` and `ASIA…` (STS) access key ids |
 | `github-token` | `ghp_`, `gho_`, `ghu_`, `ghs_`, `ghr_`, `github_pat_` |
 | `slack-token`, `stripe-key`, `google-api-key`, `linear-key`, `jwt` | `xox[abprs]-`, `sk_live_`/`rk_test_`…, `AIza…`, `lin_api_`/`lin_oauth_`, three-part `eyJ…` tokens |
 | `bearer` | the token after `Bearer` (the word stays) |
 | `credentialed-url` | the password in `scheme://user:password@host` |
-| `secret-assignment` | the value of `NAME = "value"` (NAME ends in API_KEY, SECRET, TOKEN, PASSWORD, PRIVATE_KEY, ACCESS_KEY; any case, quoted value), `UPPER_SNAKE=value`, `X-Api-Key: value` headers, and `aws_secret_access_key` / `aws_session_token` lines; a value needs 20+ characters with a digit |
+| `secret-assignment` | the value of `NAME = "value"` (NAME ends in API_KEY, SECRET, TOKEN, PASSWORD, PRIVATE_KEY, ACCESS_KEY; any case, quoted value), `UPPER_SNAKE=value`, a config line in any case that starts with the name and ends with an unquoted value (INI, YAML, `.properties`, `.env`; `api_key=…`, `client_secret: …`, `db.password = …`), `X-Api-Key: value` headers, and `aws_secret_access_key` / `aws_session_token` lines; a value needs 20+ characters with a digit |
 | `ssn`, `mrn` | `123-45-6789`, `MRN: 12345678` |
 
 Overlapping hits merge into one placeholder named by the earlier rule (`Redactor.RuleIds` is the priority order). A
