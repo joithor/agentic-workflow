@@ -1,0 +1,5 @@
+# Aw.Analyzers only (the root .editorconfig still applies).
+[*.cs]
+# The compiler creates analyzers by reflection from [DiagnosticAnalyzer], so nothing in the assembly references
+# them; they stay internal (no public API to track) and MA0182 would flag every one.
+dotnet_diagnostic.MA0182.severity = none

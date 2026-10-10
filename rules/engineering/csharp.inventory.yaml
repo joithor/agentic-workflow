@@ -8,6 +8,8 @@ records:
     section: "4b.1"
   - id: engineering.csharp.core-no-io
     section: "4b.1"
+  - id: engineering.csharp.logging-source-generated
+    section: "4b.1"
   - id: engineering.csharp.slice-isolation
     section: "4b.1"
   - id: engineering.csharp.infrastructure-rows-internal

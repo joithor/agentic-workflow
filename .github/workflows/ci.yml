@@ -166,6 +166,10 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
+          # The no-any step reads the base branch's baseline. The repo is private and the
+          # token isn't persisted, so a later `git fetch` can't authenticate; fetch every
+          # branch here, while checkout still holds the token.
+          fetch-depth: 0
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
           node-version-file: .nvmrc
@@ -197,8 +201,7 @@ jobs:
         run: |
           args=()
           if [ -n "$BASE_REF" ]; then
-            git fetch --no-tags --depth=1 origin "refs/heads/$BASE_REF"
-            if git show "FETCH_HEAD:scripts/ci/no-any-baseline.json" > "$RUNNER_TEMP/base-no-any.json" 2>/dev/null; then
+            if git show "origin/$BASE_REF:scripts/ci/no-any-baseline.json" > "$RUNNER_TEMP/base-no-any.json" 2>/dev/null; then
               args=(--base-baseline "$RUNNER_TEMP/base-no-any.json")
             else
               echo "no-op: $BASE_REF has no no-any baseline yet — the base comparison starts once it does"
@@ -273,18 +276,13 @@ jobs:
             echo "::error::SDK $got is not the global.json pin $want"
             exit 1
           fi
-      - name: dotnet restore (locked, one retry)
+      - name: dotnet restore (locked, signature-verified) and the NuGet supply-chain check
         if: steps.sln.outputs.run == 'true'
-        env:
-          SLN: ${{ steps.sln.outputs.sln }}
-        # NU1900 (vulnerability feed unreachable) is an error by design; a feed outage
-        # gets one retry before the job fails.
-        run: |
-          if ! dotnet restore "$SLN" --locked-mode; then
-            echo "::warning::dotnet restore failed — retrying once in 30s (NU1900 feed outages are transient)"
-            sleep 30
-            dotnet restore "$SLN" --locked-mode
-          fi
+        # scripts/dotnet-verify-packages.sh (spec §4b.6, §4d; merge gate item 8): every solution project has a
+        # committed lock file; a locked, signature-verified restore (one retry: NU1900 feed outages are transient)
+        # leaves them unchanged; and `dotnet nuget verify --all` passes for every locked package (analyzers
+        # included: they run in every build). The build and test steps below use this restore.
+        run: bash scripts/dotnet-verify-packages.sh
       - name: dotnet build
         if: steps.sln.outputs.run == 'true'
         env:
@@ -297,18 +295,25 @@ jobs:
         # Microsoft.Testing.Platform (global.json test.runner): --solution, and MTP options
         # only. VSTest options (--logger, --collect, --settings, --blame) make MTP run zero
         # tests (exit 5). A lane step that may select no tests adds --ignore-exit-code 8.
-        run: dotnet test --solution "$SLN" --no-build --configuration Release --results-directory TestResults
+        # --report-xunit-ctrf writes one CTRF report per test project for the lane cap below; no
+        # --report-xunit-ctrf-filename, or every project would write the same file.
+        run: dotnet test --solution "$SLN" --no-build --configuration Release --results-directory TestResults --report-xunit-ctrf
+      - name: Per-test lane cap (LANE-TEST-001/002)
+        if: steps.sln.outputs.run == 'true'
+        # Each test's own time against its lane's budget (unit 10 s, integration 60 s), and exactly one
+        # known Lane trait per test: the run above is unfiltered, so a test with none shows up (spec §4b.5).
+        run: dotnet run --project tests/Aw.LaneCap.Testing --configuration Release --no-build -- TestResults
       - name: NativeAOT smoke tests
         if: steps.sln.outputs.run == 'true'
         # Each publishes for the runner's own RID (linux-x64), runs the native binary and
-        # compares its output; clang and zlib1g-dev are on ubuntu runners.
+        # compares its output; clang and zlib1g-dev are on ubuntu runners. The smokes are found by
+        # location (src/<Project>.AotSmoke/, src/<Pkg>/<Project>.AotSmoke/ or src/<Pkg>/aot-smoke/), so
+        # a new package's smoke needs no edit here.
         run: |
-          for smoke in src/Aw.Kernel.AotSmoke/run.sh src/Aw.Kernel.Data.AotSmoke/run.sh; do
-            if [ -f "$smoke" ]; then
-              bash "$smoke"
-            else
-              echo "no-op: $smoke not present yet"
-            fi
+          shopt -s nullglob
+          for smoke in src/*.AotSmoke/run.sh src/*/*.AotSmoke/run.sh src/*/aot-smoke/run.sh; do
+            echo "== $smoke"
+            bash "$smoke"
           done
       - name: Upload test and AOT smoke output on failure
         if: failure() && steps.sln.outputs.run == 'true'
@@ -318,12 +323,64 @@ jobs:
           path: |
             TestResults
             artifacts/aot-smoke
+            artifacts/aot-*/*.txt
+            artifacts/aot-*/publish.log
+            artifacts/aot-data-smoke
+            artifacts/aot-redaction-smoke
+            artifacts/aot-telemetry-smoke
           if-no-files-found: ignore
           retention-days: 7
 
+  scaffold:
+    name: C# scaffold generators
+    needs: changes
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    env:
+      # The generators live under scripts/ (bash area) and their templates must build against the root C# settings
+      # (dotnet area): either change runs them.
+      CHANGED: ${{ needs.changes.outputs.bash == 'true' || needs.changes.outputs.dotnet == 'true' }}
+      DOTNET_CLI_TELEMETRY_OPTOUT: "1"
+      DOTNET_NOLOGO: "1"
+    steps:
+      - name: No-op when unchanged
+        if: env.CHANGED != 'true'
+        run: |
+          echo "no-op: no script or .NET change — the scaffold end-to-end test is not needed"
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        if: env.CHANGED == 'true'
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        if: env.CHANGED == 'true'
+        with:
+          node-version-file: .nvmrc
+      - uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
+        if: env.CHANGED == 'true'
+        with:
+          global-json-file: global.json
+          cache: true
+          cache-dependency-path: "**/packages.lock.json"
+      - name: Scaffold, build and test a small cli and a full http package, then remove them
+        if: env.CHANGED == 'true'
+        # docs/csharp/scaffolds/new-package.md "Done criteria": the generators' own CI test, against the real root
+        # files. Each package lives in a throwaway git worktree that the script removes. A NuGet feed error (the
+        # generators restore new projects over the network) gets one retry, like the .NET job's restore.
+        run: |
+          set +e
+          bash scripts/scaffold/e2e.sh 2>&1 | tee "$RUNNER_TEMP/scaffold-e2e.log"
+          code="${PIPESTATUS[0]}"
+          if [ "$code" -ne 0 ] && grep -qE 'NU1900|NU1301|Unable to load the service index' "$RUNNER_TEMP/scaffold-e2e.log"; then
+            echo "::warning::NuGet feed error during the scaffold e2e — retrying once in 30s"
+            sleep 30
+            bash scripts/scaffold/e2e.sh
+            code=$?
+          fi
+          exit "$code"
+
   ci-result:
     name: CI result
-    needs: [changes, ts, bash-tests, gate, dotnet]
+    needs: [changes, ts, bash-tests, gate, dotnet, scaffold]
     # The one job-level `if:` in this file: it must run (and fail) even when a need
     # failed or was skipped, since GitHub counts a skipped required check as passing.
     if: always()

@@ -1,0 +1,107 @@
+# Aw.Redaction
+
+The one secret-pattern set (spec §4c "One pattern source", §4e B10). Tier 0, sublevel 0 in `deps.yaml`; the BCL
+only. It replaces the two TS copies (judge `src/redact.ts`, sindri `src/scrub/patterns.ts`) when those packages are
+ported, and the secret patterns of `config/hooks/detect-secrets.sh` when the hooks move to the C# binaries (spec §4e);
+the TS scrubbers and the hook stay frozen until then. `Aw.Kernel.Telemetry`'s scrubbing processor (readiness stage T2)
+is its first C# consumer, on every log and export path.
+
+## API
+
+```csharp
+IRedactor redactor = Redactor.Default;            // built-in rules, 1 s match timeout per pattern per 128 K characters
+ScrubResult result = redactor.Scrub(text);
+// result.Text     scrubbed text; each hit becomes [REDACTED:<rule>]
+// result.Hits     RedactionHit(Rule, Start, End) in input order: spans in the original text, never the value
+// result.Outcome  Clean (Text is the input, same instance) | Redacted | Blocked
+// result.BlockCode AW-REDACT-001 when Blocked
+bool whole = redactor.IsSecretName("client_secret");   // true: write ScrubResult.SecretFieldText instead of the value
+```
+
+- `Redactor.Create(TimeSpan)` gives the same rules with another per-pattern timeout.
+- `IsSecretName(name)` is for callers that see a key and its value apart (a telemetry attribute, a header, a JSON
+  field): the assignment rules need the name and the value in one string, so such a caller redacts the whole value of
+  a field whose name ends in a secret word (API_KEY, SECRET, TOKEN, PASSWORD, PRIVATE_KEY, ACCESS_KEY, any case and
+  separator) or is `Authorization`, `Proxy-Authorization`, `Cookie` or `Set-Cookie` (also with a dotted prefix, as in the
+  OpenTelemetry attribute `http.request.header.cookie`), writing
+  `ScrubResult.SecretFieldText` (`[REDACTED:secret-field]`, which later scrubs treat as a placeholder) in its place, and
+  scrubs every other value.
+- Register `IRedactor` as a singleton (`Redactor.Default`) in the composing `Add…()` method; tests use the real
+  redactor (it has no I/O, so it needs no fake).
+
+## Rules
+
+| Rule id | Catches |
+|---|---|
+| `private-key` | `-----BEGIN … PRIVATE KEY-----` (PEM, OpenSSH) and `-----BEGIN PGP PRIVATE KEY BLOCK-----` through the matching END line; without an END line (a truncated key), up to 8 armor header lines (`Proc-Type:`, `DEK-Info:`, `Charset:`, …), one blank line after them, and the base64 body: on the BEGIN line, on following lines of any length and number, or flattened onto one line with spaces. The first body run and each later one need 16+ base64 characters, so a BEGIN line followed by prose, or the short log lines after a truncated key, are left alone |
+| `anthropic-key`, `openai-key` | `sk-ant-…`, `sk-…`, `sk-proj-…` |
+| `aws-access-key` | `AKIA…` and `ASIA…` (STS) access key ids |
+| `github-token` | `ghp_`, `gho_`, `ghu_`, `ghs_`, `ghr_`, `github_pat_` |
+| `slack-token`, `stripe-key`, `google-api-key`, `linear-key`, `jwt` | `xox[abprs]-`, `sk_live_`/`rk_test_`…, `AIza…`, `lin_api_`/`lin_oauth_`, three-part `eyJ…` tokens of any length |
+| `google-oauth-token` | `ya29.…` access tokens, anywhere (so a dotted one in a lowercase pair is still caught) |
+| `basic-auth` | the credentials after `Authorization: Basic` (also `Proxy-Authorization`, and a quoted name or value as in a JSON, JS or Python header object) |
+| `bearer` | the token after `Bearer` (the word stays; the token may follow on the next line) |
+| `credentialed-url` | the password in `scheme://user:password@host` (the user may be empty: `redis://:password@host`), up to the last `@` before the host (an unencoded `@` in the password stays inside the redaction) |
+| `secret-assignment` | the value of `NAME = "value"` (NAME ends in API_KEY, SECRET, TOKEN, PASSWORD, PRIVATE_KEY, ACCESS_KEY; any case, quoted value), `UPPER_SNAKE=value` (quoted or not, dots allowed in the value), a shell pair `name=value` at a line start or after a space, `;`, `|`, `(`, comma, quote, `{`, `[` or `:` (`export api_key=…`, `curl -d "client_secret=…"`, `{access_token=…, expires_in=…}`, `Creds[token=…]`, a scoped `.npmrc` `//host/:_authToken=…`; the value stops at a dot, so `token=settings.value` keyword arguments stay), a query pair right after `?`, `&` or `#` (`?access_token=…`, a `#access_token=` redirect fragment; the value may hold dots), a config line in any case that starts with the name and ends with an unquoted value (INI, YAML, `.properties`, `.env`; `api_key=…`, `client_secret: …`, `db.password = …`), `X-Api-Key: value` headers, and `aws_secret_access_key` / `aws_session_token` lines. A value needs 20+ characters with a digit in its first 256 (the `aws_*` lines: 16+ base64 characters, no digit needed); in the code, env and header forms it may follow the separator on the next line |
+| `ssn`, `mrn` | `123-45-6789`, `MRN: 12345678` |
+
+Overlapping hits merge into one placeholder named by the earlier rule (`Redactor.RuleIds` is the priority order). A
+`[REDACTED:<rule>]` placeholder naming one of these rules is never matched again, so scrubbing is idempotent; a crafted
+placeholder holding anything else is still scanned. Not a rule: bare 40+ hex runs (judge's TS rule), which erase git
+SHAs and digests and match no secret format.
+
+## Evasions it folds away
+
+The rules run twice: on the text as written and on a folded copy. Hits from the folded pass are mapped back to the
+original spans, the two sets are united, and only the original is rewritten. The plain pass keeps the token
+boundaries the fold would change (Cyrillic prose glued to a token, a fullwidth letter right before it, a Windows path
+such as `C:\keys\rk_live_…` whose backslash-r the fold would decode). The fold:
+
+- zero-width characters (U+200B–U+200D, U+2060–U+2064, U+FEFF, U+180E) and soft hyphens are dropped, so a joiner
+  inside a token doesn't split it;
+- Unicode spaces (NBSP, the U+2000 block, U+2028/U+2029) become a space; fullwidth ASCII (U+FF01–U+FF5E) and Cyrillic and Greek
+  letters that look like Latin ones become ASCII (`gһp_`, `ΑΚΙΑ`);
+- JSON escapes (`\n`, `\r`, `\t`, `\"`, `\/`, `\\`, `\uXXXX`) are decoded, so a token right after an escaped newline
+  in serialized JSON still starts a word, and an escaped `client_secret` pair still matches.
+
+Not folded: mathematical alphanumeric look-alikes (astral code points) and base64-wrapped secrets.
+
+## Narrower than the hook, on purpose
+
+`detect-secrets.sh` blocks any `NAME=value` with a 20+ character value anywhere in a command, digits or not, and with
+no boundary before the name. Here a value needs a digit (logs and code are full of long all-letter identifiers), so
+`export TOKEN=<30 letters>` stays, and a pair needs one of the boundaries the `secret-assignment` row lists before its
+name;
+`PassThroughTests` pins the first choice. The hook's other shapes (AWS keys, GitHub tokens, bearer tokens, and pairs
+with a digit: `cd repo && api_key=…`, `curl -d "client_secret=…"`, `FOO=1 mytoken=…`, `x=1; Password=…`, dotted
+values in UPPER_SNAKE and query pairs) are covered by corpus cases. Also narrower: a dotted value in a lowercase shell or
+config pair (`access_token=ab12.cd34…`) is left alone, so keyword arguments that hold attribute access stay; the dotted
+token shapes that matter (JWTs, `ya29.`) have their own rules.
+
+## Timeouts block
+
+Every pattern is a `Regex` with a match timeout. The timeout is a budget per window of input: up to 128 K characters
+get the redactor's timeout (1 s for `Default`), and each doubling of the text doubles it (the rules are compiled once per
+size tier), so a large ordinary input is scrubbed and only a pathological match blocks. A timeout returns `ScrubOutcome.Blocked` with
+`Text = "[REDACTED:blocked]"` and `BlockCode = "AW-REDACT-001"`: the input is withheld, never passed on. The caller
+logs the block (Redaction has no logger) and refuses the commit, write or egress.
+
+The budget is per match call: .NET restarts the timeout on every match, so it does not bound a whole scan. Every rule
+is therefore written to stay linear on its own (no rule can restart at every position of a long run; see
+`AdversarialInputTests`).
+
+## Pattern rules
+
+Explicit ASCII classes (`[0-9]`, `[A-Za-z0-9_]`) and lookarounds instead of `\d`, `\s`, `\w` and `\b`, which are
+Unicode-aware in .NET; `RegexOptions.CultureInvariant` and `ExplicitCapture` on every pattern; the value of a pair is
+the named group `v`; no `RegexOptions.NonBacktracking` (the patterns use lookarounds). Overlong scans are bounded: the END search of a key block stops at the next BEGIN, JWT segments are atomic, and the
+placeholder check is a binary search, so a text full of BEGIN lines, token-like runs or placeholders stays linear
+(`AdversarialInputTests`). A new rule needs a
+corpus case in `tests/Aw.Redaction.Tests/Corpus.cs` (assembled from parts, so no scanner sees a whole token in the source) and,
+when it is a new kind, a row above.
+
+## AOT
+
+`src/Redaction/Aw.Redaction.AotSmoke/run.sh` publishes a NativeAOT canary, fails on any IL2xxx/IL3xxx warning and
+compares its output with `expected.txt`; CI's .NET job runs it. `Aw.Redaction.AotSmoke --stdin` scrubs standard input
+(text to stdout, outcome and hits to stderr; exit 3 when blocked).

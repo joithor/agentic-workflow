@@ -1,0 +1,135 @@
+using System.Buffers;
+using System.Text;
+using System.Text.Encodings.Web;
+using System.Text.Json;
+using System.Text.Json.Nodes;
+using System.Text.Json.Schema;
+using Aw.Kernel.Ids;
+using Aw.Kernel.Json;
+using Aw.Kernel.Testing;
+using Aw.Packets.App;
+using Aw.Packets.Core.Ids;
+using Aw.Packets.Core.Model;
+using Aw.Packets.Core.Values;
+
+namespace Aw.Packets.Tests.Schemas;
+
+/// <summary>
+/// The JSON Schemas for editors (addendum §17.4: typed records with a generated JSON Schema) are generated from the
+/// records and committed under schemas/packets/. A record change that isn't regenerated fails here; regenerate with
+/// AW_GOLDEN_UPDATE=1 (refused in CI) and review the diff.
+/// </summary>
+public sealed class PacketSchemaTests
+{
+    private static readonly JsonSerializerOptions _json = AwJson.CreateOptions(PacketsJsonContext.Default);
+
+    public static TheoryData<string> Files => ["packet", "decisions", "out-of-scope", "tasks", "freeze-record"];
+
+    [Theory, Trait("Lane", "integration")]   // reads (and in update mode writes) schemas/packets/
+    [MemberData(nameof(Files))]
+    public void The_committed_schema_is_generated_from_the_record(string name)
+    {
+        var type = name switch
+        {
+            "packet" => typeof(PacketManifest),
+            "decisions" => typeof(DecisionLog),
+            "out-of-scope" => typeof(OutOfScope),
+            "tasks" => typeof(TaskPlan),
+            _ => typeof(FreezeRecord),
+        };
+        var actual = Render(Generate(type, name));
+        var path = Path.GetFullPath(Path.Combine(Golden.SourcePath(typeof(PacketSchemaTests).Assembly, "Schemas"), "..", "..", "..", "schemas", "packets", $"{name}.schema.json"));
+
+        if (string.Equals(Environment.GetEnvironmentVariable(Golden.UpdateVariable), "1", StringComparison.Ordinal)
+            && !string.Equals(Environment.GetEnvironmentVariable("CI"), "true", StringComparison.Ordinal))
+        {
+            File.WriteAllText(path, actual);
+            Assert.Fail($"{path} regenerated; review the diff, then run again without {Golden.UpdateVariable}.");
+        }
+
+        Assert.True(File.Exists(path), $"{path} is missing; generate it with {Golden.UpdateVariable}=1.");
+        Assert.Equal(File.ReadAllText(path), actual);
+    }
+
+    private static JsonObject Generate(Type type, string name)
+    {
+        var schema = JsonSchemaExporter.GetJsonSchemaAsNode(_json, type, new JsonSchemaExporterOptions
+        {
+            TreatNullObliviousAsNonNullable = true,
+            TransformSchemaNode = static (context, node) => Transform(context.TypeInfo.Type, node),
+        });
+        var root = new JsonObject
+        {
+            ["$schema"] = "https://json-schema.org/draft/2020-12/schema",
+            ["$id"] = $"https://github.com/jthorare/agentic-workflow/schemas/packets/{name}.schema.json",
+            ["title"] = $"Packet {name} file (schemaVersion 1)",
+        };
+        foreach (var (key, value) in schema.AsObject().ToList())
+        {
+            root[key] = value?.DeepClone();
+        }
+
+        return root;
+    }
+
+    // A typed id has a user-code converter, so the exporter can't see its shape ('true'): describe it, and give a list
+    // of ids its item schema, which the exporter leaves out when the item schema is 'true'.
+    private static JsonNode Transform(Type type, JsonNode node)
+    {
+        if (IsTypedId(type))
+        {
+            var id = IdSchema(type);
+            if (type == typeof(RepoSlug))
+            {
+                id["description"] = "owner/name; aw-packets also refuses Windows device names (con, prn, aux, nul, com1-9, lpt1-9) on either side";
+            }
+
+            return id;
+        }
+
+        if (Nullable.GetUnderlyingType(type) is { } underlying && IsTypedId(underlying))
+        {
+            var nullable = IdSchema(underlying);
+            nullable["type"] = new JsonArray("string", "null");
+            return nullable;
+        }
+
+        if (node is JsonObject array && type.IsGenericType && type.GetGenericArguments() is [var item] && IsTypedId(item)
+            && typeof(IEnumerable<>).MakeGenericType(item).IsAssignableFrom(type))
+        {
+            array["items"] = IdSchema(item);
+        }
+
+        return node;
+    }
+
+    private static bool IsTypedId(Type type) =>
+        type.GetInterfaces().Any(static i => i.IsGenericType && i.GetGenericTypeDefinition() == typeof(ITypedId<,>));
+
+    private static JsonObject IdSchema(Type type) => new()
+    {
+        ["type"] = "string",
+        ["pattern"] = type == typeof(PacketId) ? "^[a-z0-9][a-z0-9-]{0,63}$"
+            : type == typeof(RepoSlug) ? "^[A-Za-z0-9._-]*[A-Za-z0-9_-]/[A-Za-z0-9._-]*[A-Za-z0-9_-]$"
+            : type == typeof(CommitSha) ? "^(?:[0-9a-f]{40}|[0-9a-f]{64})$"
+            : type == typeof(PacketHash) ? "^sha256:[0-9a-f]{64}$"
+            : "\\S",
+    };
+
+    private static string Render(JsonNode node)
+    {
+        var buffer = new ArrayBufferWriter<byte>();
+        using (var writer = new Utf8JsonWriter(buffer, new JsonWriterOptions
+        {
+            Indented = true,
+            IndentSize = 2,
+            NewLine = "\n",
+            Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping,
+        }))
+        {
+            node.WriteTo(writer);
+        }
+
+        return Encoding.UTF8.GetString(buffer.WrittenSpan) + "\n";
+    }
+}
