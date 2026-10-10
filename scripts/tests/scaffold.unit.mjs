@@ -257,6 +257,12 @@ t("new-slice: a new port gets its interface, fake and contract base", () => {
 });
 
 for (const dir of trees) fs.rmSync(dir, { recursive: true, force: true });
+const common = await import(path.join(REPO, "scripts/scaffold/lib/common.mjs"));
+t("run() strips ANSI colors (CI colors MTP's 'failed' lines, which the red-test check parses)", () => {
+  const r = common.run(REPO, "printf", ["\u001b[31mfailed Aw.X.Tests.T.T_does (1ms)\u001b[m\n  failed: 1\n"], { log: () => {} });
+  assert.equal(r.out, "failed Aw.X.Tests.T.T_does (1ms)\n  failed: 1\n");
+});
+
 if (failures.length) {
   for (const f of failures) console.error(`FAIL ${f}`);
   console.error(`${passed} passed, ${failures.length} failed`);
