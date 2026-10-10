@@ -316,6 +316,12 @@ test_unreadable_files_have_their_own_reason() {
     row "$t/o.md" "$id" | grep -E 'fail: .*judge \(package.json is not readable' >/dev/null || fail "$id should say not readable: $(row "$t/o.md" "$id")"
     row "$t/o.md" "$id" | grep -F 'not valid JSON' >/dev/null && fail "$id should not claim bad JSON"
   done
+  # only AGENTS.md unreadable: rows that read it name that cause, not "not documented"
+  chmod 000 "$t/AGENTS.md"
+  node "$SCRIPT" --root "$t" --no-remote --date 2026-10-10 --out "$t/p.md" 2>/dev/null || true
+  chmod 644 "$t/AGENTS.md"
+  row "$t/p.md" BS-1 | grep -E 'fail: .*judge \(AGENTS.md is not readable \(EACCES\)\)' >/dev/null || fail "BS-1 should blame the unreadable AGENTS.md: $(row "$t/p.md" BS-1)"
+  row "$t/p.md" BS-3 | grep -F 'AGENTS.md is not readable (EACCES)' >/dev/null || fail "BS-3 should blame the unreadable AGENTS.md: $(row "$t/p.md" BS-3)"
   echo "PASS: test_unreadable_files_have_their_own_reason"
 }
 
