@@ -101,11 +101,18 @@ export type SaveOutcome = { kind: "saved" | "duplicate" | "previously-rejected";
 
 // `sessions`: the transcript sessions (prefixes as sessionOf gives them) whose text the caller sent to the model for
 // this proposal, decided by code, never read from the model's answer (security-sentinel-0). Only ever added to: a
-// re-proposal merged into an open one with recorded sources adds its sessions, so the verbatim layer checks every source it was built from.
+// re-proposal merged into an open one adds its sessions, so the verbatim layer checks every source it was built from.
+// The merge rule (run 5 security-sentinel-0, kieran-typescript-reviewer-0), decided the way publish decides "unrecorded":
+// - the open row is legacy when it reads transcripts and has no source rows (saved before provenance existed): publish
+//   holds it as unrecorded, so a re-proposal's sessions are not added (they'd make it look recorded);
+// - every other open row, an open `telemetry:` one included (it has no rows by design), gets the re-proposal's
+//   sessions, so publish checks them whatever the row's own source kind;
+// - a re-proposal that reads transcripts but records no session has unknown provenance: its evidence merges only into a
+//   legacy row (held anyway), never into one publish would check as recorded.
 export function saveProposal(db: Ledger, p: Proposal, source: string, tier: Tier, epoch: number, now: Date, sessions: readonly string[] = []): SaveOutcome {
   const clean = scrubber.scrubDeep(p);
   const norm = normTitle(clean.title);
-  const prior = db.prepare("SELECT id, status, body FROM proposals WHERE artifact_id = ? COLLATE NOCASE AND norm_title = ? ORDER BY created_at DESC, id DESC").all(p.artifact, norm) as { id: string; status: ProposalStatus; body: string }[];
+  const prior = db.prepare("SELECT id, status, source, body FROM proposals WHERE artifact_id = ? COLLATE NOCASE AND norm_title = ? ORDER BY created_at DESC, id DESC").all(p.artifact, norm) as { id: string; status: ProposalStatus; source: string; body: string }[];
   const open = prior.find((r) => !TERMINAL.includes(r.status));
   const ts = now.toISOString();
   const addSources = (id: string): void => {
@@ -113,13 +120,12 @@ export function saveProposal(db: Ledger, p: Proposal, source: string, tier: Tier
     for (const s of new Set(sessions)) add.run(id, s);
   };
   if (open !== undefined) {
+    const legacy = readsTranscripts(open.source) && proposalSources(db, open.id).length === 0;
+    if (readsTranscripts(source) && sessions.length === 0 && !legacy) return { kind: "duplicate", id: open.id };
     const older = ProposalSchema.parse(JSON.parse(open.body));
     const merged = { ...older, evidence: [...new Set([...older.evidence, ...clean.evidence])].slice(-20) };
     db.prepare("UPDATE proposals SET body = ?, updated_at = ?, epoch = ? WHERE id = ?").run(JSON.stringify(merged), ts, epoch, open.id);
-    // Only into a proposal whose sources were recorded (NO_TRANSCRIPT counts): one saved before provenance existed keeps
-    // its original text, drafted from sessions nobody recorded, so it stays unrecorded and held (run 4
-    // kieran-typescript-reviewer-1, security-sentinel-3).
-    if (proposalSources(db, open.id).length > 0) addSources(open.id);
+    if (!legacy) addSources(open.id);
     return { kind: "duplicate", id: open.id };
   }
   const rejected = prior.find((r) => r.status === "rejected");

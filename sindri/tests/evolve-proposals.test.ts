@@ -202,6 +202,31 @@ describe("proposal storage, dedupe and merge tracking", () => {
     expect(proposalSources(db, marked.id)).toEqual([NO_TRANSCRIPT, "dddd4444"]);
   });
 
+  it("adds a transcript re-proposal's sources to an open telemetry proposal, which has none by design (run 5 security-sentinel-0, kieran-typescript-reviewer-0)", () => {
+    const { db, epoch } = setup();
+    const tel = saveProposal(db, prop({ evidence: ["transcript:aaaa#1"] }), "telemetry:safety", "code", epoch, now);
+    expect(proposalSources(db, tel.id)).toEqual([]);
+    const copied = "user said deploy the billing fix before the freeze";
+    expect(saveProposal(db, prop({ evidence: [copied] }), "correct:2026-W41", "code", epoch, now, ["bbbb1111", "cccc3333"])).toEqual({ kind: "duplicate", id: tel.id });
+    expect(proposalSources(db, tel.id)).toEqual(["bbbb1111", "cccc3333"]);
+    expect(getProposal(db, tel.id)?.proposal.evidence).toEqual(["transcript:aaaa#1", copied]);
+    saveProposal(db, prop({ evidence: ["pr:9"] }), "reflect:pr-9", "code", epoch, now, [NO_TRANSCRIPT]);
+    expect(proposalSources(db, tel.id)).toEqual([NO_TRANSCRIPT, "bbbb1111", "cccc3333"]);
+    saveProposal(db, prop({ evidence: ["pr:10"] }), "telemetry:safety", "code", epoch, now); // another telemetry run adds evidence, no sources
+    expect(getProposal(db, tel.id)?.proposal.evidence).toEqual(["transcript:aaaa#1", copied, "pr:9", "pr:10"]);
+  });
+
+  it("never merges the evidence of a transcript-reading re-proposal that records no session into a proposal publish would check as recorded", () => {
+    const { db, epoch } = setup();
+    const tel = saveProposal(db, prop({ evidence: ["pr:1"] }), "telemetry:safety", "code", epoch, now);
+    expect(saveProposal(db, prop({ evidence: ["text the model wrote after reading a session"] }), "reflect:pr-2", "code", epoch, now, [])).toEqual({ kind: "duplicate", id: tel.id });
+    expect(getProposal(db, tel.id)?.proposal.evidence).toEqual(["pr:1"]);
+    expect(proposalSources(db, tel.id)).toEqual([]);
+    const rec = saveProposal(db, prop({ title: "Another change", evidence: ["pr:3"] }), "correct:2026-W41", "code", epoch, now, ["aaaa1111"]);
+    expect(saveProposal(db, prop({ title: "Another change", evidence: ["more model text"] }), "correct:2026-W42", "code", epoch, now)).toEqual({ kind: "duplicate", id: rec.id });
+    expect(getProposal(db, rec.id)?.proposal.evidence).toEqual(["pr:3"]);
+  });
+
   it("says which sources read transcripts: every source but telemetry (fail closed)", () => {
     expect(["reflect:pr-1", "correct:2026-W41", "correct", "anything"].map(readsTranscripts)).toEqual([true, true, true, true]);
     expect(readsTranscripts("telemetry:done-gate")).toBe(false);

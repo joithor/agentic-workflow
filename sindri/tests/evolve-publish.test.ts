@@ -592,6 +592,39 @@ describe("publish gate layers (privacy B1)", () => {
     fx.close();
   });
 
+  it("verbatim: a correct re-proposal merged into an open telemetry proposal is checked against its source sessions (run 5 security-sentinel-0, kieran-typescript-reviewer-0)", async () => {
+    const other = "abcd1234-0000-4000-8000-000000000003.jsonl";
+    const run = async (removeSource: boolean): Promise<{ id: string; held: { id: string; layer: string; why: string }[] }> => {
+      const { fx, save } = await ready({ extraYaml: PATTERNS });
+      git(fx.repo, "update-ref", "refs/remotes/origin/main", "HEAD");
+      fs.writeFileSync(path.join(fx.transcripts, other), transcriptLine(fx, COPIED));
+      const id = save("Alpha change here", { evidence: ["pr:12"] }, "code", { source: "telemetry:safety", sessions: [] });
+      // the re-proposal's model-written evidence copies 8+ words of the session it was built from, which it doesn't cite
+      expect(save("Alpha change here", { evidence: [COPIED] }, "code", { source: "correct:2026-W41", sessions: ["abcd1234"] })).toBe(id);
+      await stage([], fx.ctx);
+      if (removeSource) fs.rmSync(path.join(fx.transcripts, other));
+      const out = JSON.parse((await publish(["--json", "--dry-run"], fx.ctx)).stdout) as { held: { id: string; layer: string; why: string }[] };
+      fx.close();
+      return { id, held: out.held };
+    };
+    const copied = await run(false);
+    expect(copied.held).toEqual([{ id: copied.id, layer: "verbatim", why: "copies transcript text" }]);
+    expect(JSON.stringify(copied.held)).not.toMatch(/overnight|abcd1234/);
+    const gone = await run(true);
+    expect(gone.held).toEqual([{ id: gone.id, layer: "verbatim", why: "a source transcript it was built from is missing, so copied text can't be checked" }]);
+  });
+
+  it("verbatim: a pre-provenance correct proposal merged with a recorded re-proposal stays held as unrecorded (run 5)", async () => {
+    const { fx, save } = await ready({ extraYaml: PATTERNS });
+    git(fx.repo, "update-ref", "refs/remotes/origin/main", "HEAD");
+    const id = save("Alpha change here", { evidence: ["pr:12"] }, "code", { source: "correct:2026-W40", sessions: [] });
+    expect(save("Alpha change here", { evidence: ["pr:13"] }, "code", { source: "reflect:pr-13", sessions: ["5e55a1d0"] })).toBe(id);
+    await stage([], fx.ctx);
+    const out = JSON.parse((await publish(["--json", "--dry-run"], fx.ctx)).stdout) as { held: { id: string; layer: string; why: string }[] };
+    expect(out.held).toEqual([{ id, layer: "verbatim", why: "its source transcripts weren't recorded, so copied text can't be checked" }]);
+    fx.close();
+  });
+
   it("verbatim: a run in a staged but uncommitted toolkit file isn't public, so the copy still holds (security-sentinel-0)", async () => {
     const held = await heldLayer(
       { rationale: "The overnight rota swap left two shifts without cover.", evidence: ["transcript:5e55a1d0#1"] },
