@@ -10,7 +10,8 @@ public sealed record RunDelta(DateTimeOffset? Since, int? LevelBefore, int Level
     /// <summary>True when there was no previous run, so this run is the baseline.</summary>
     public bool IsFirstRun => Since is null;
 
-    /// <summary>The delta from a previous run (or none) to this one.</summary>
+    /// <summary>The delta from a previous run (or none) to this one. A criterion unread on either run isn't compared,
+    /// so an offline run doesn't show host criteria flipping to and from unknown.</summary>
     /// <param name="previous">The previous run, or null.</param>
     /// <param name="current">This run.</param>
     /// <returns>The delta.</returns>
@@ -21,6 +22,7 @@ public sealed record RunDelta(DateTimeOffset? Since, int? LevelBefore, int Level
             return new RunDelta(Since: null, LevelBefore: null, current.Level, []);
         }
 
+        var unread = previous.States.Concat(current.States).Where(s => s.Unread).Select(s => s.Id.Value).ToHashSet(StringComparer.Ordinal);
         var before = previous.States.ToDictionary(s => s.Id.Value, s => s.State, StringComparer.Ordinal);
         var after = current.States.ToDictionary(s => s.Id.Value, s => s.State, StringComparer.Ordinal);
         var changes = before.Keys.Union(after.Keys, StringComparer.Ordinal)

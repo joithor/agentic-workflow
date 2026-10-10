@@ -27,6 +27,7 @@ public sealed class CheckRepoTests
         Assert.Equal(5, report.Level);
         Assert.Equal(new ReadinessTarget(0, 4), report.Target);
         Assert.True(report.Holds);
+        Assert.Empty(report.Unconfirmed);
         Assert.Equal(9, report.Pillars.Count);
         Assert.All(report.Pillars, p => Assert.NotNull(p.Level));
         Assert.Equal(34, report.Findings.Count);
@@ -58,6 +59,28 @@ public sealed class CheckRepoTests
         Assert.Equal(0, _host.Reads);
         Assert.All(result.Value.Findings.Where(f => _hostIds.Contains(f.Criterion.Id.Value, StringComparer.Ordinal)),
             f => Assert.Equal(CriterionState.Unknown, f.State));
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task Offline_the_target_is_not_confirmed_when_a_gating_criterion_was_not_read()
+    {
+        var result = await Service().Handle(A.CheckRepoRequest().AtRoot(Root).Offline().Build(), CancellationToken.None);
+
+        Assert.False(result.Value.Holds);
+        Assert.Equal<string>(["SEC-1", "SEC-2", "TD-2"], [.. result.Value.Unconfirmed.Select(id => id.Value)]);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task An_offline_run_does_not_show_host_criteria_as_changes_on_the_next_online_run()
+    {
+        _ = await Service().Handle(A.CheckRepoRequest().AtRoot(Root).Build(), CancellationToken.None);
+        _clock.Advance(TimeSpan.FromMinutes(1));
+        _ = await Service().Handle(A.CheckRepoRequest().AtRoot(Root).Offline().Build(), CancellationToken.None);
+        _clock.Advance(TimeSpan.FromMinutes(1));
+
+        var online = await Service().Handle(A.CheckRepoRequest().AtRoot(Root).Build(), CancellationToken.None);
+
+        Assert.Empty(online.Value.Delta.Changes);
     }
 
     [Fact, Trait("Lane", "unit")]

@@ -1,9 +1,10 @@
+using System.Text.RegularExpressions;
 using Aw.Readiness.Core.Ports;
 
 namespace Aw.Readiness.Core.Criteria;
 
 /// <summary>Security, Task Discovery and Product and Experimentation criteria for the C# template.</summary>
-internal static class SecurityAndTaskChecks
+internal static partial class SecurityAndTaskChecks
 {
     private const string ProductSignals = "docs/readiness/product-signals.md";
 
@@ -19,8 +20,9 @@ internal static class SecurityAndTaskChecks
             "add a 'package-ecosystem: nuget' entry to .github/dependabot.yml (grouped, 14-day cooldown)", NuGetUpdates);
         yield return CatalogueEntry.Of("TD-1", Pillar.TaskDiscovery, 3, "Issue templates",
             "add issue forms under .github/ISSUE_TEMPLATE/", IssueTemplates);
-        yield return CatalogueEntry.Of("TD-2", Pillar.TaskDiscovery, 3, "Issue labeling system (label scheme file)",
-            "keep .github/labels.yml with the type:, area:, size: and ring: families (spec §5 L3)", LabelScheme);
+        yield return CatalogueEntry.Of("TD-2", Pillar.TaskDiscovery, 3, "Issue labeling system (scheme file, applied to the repo)",
+            "keep .github/labels.yml with the type:, area:, size: and ring: families and apply it to the repo (gh label create … --force per entry; spec §5 L3)",
+            LabelScheme);
         yield return CatalogueEntry.Of("TD-3", Pillar.TaskDiscovery, 3, "PR template",
             "add .github/pull_request_template.md with the evidence section", c => Present(c, ".github/pull_request_template.md", ".github/PULL_REQUEST_TEMPLATE.md", ".github/PULL_REQUEST_TEMPLATE"));
         yield return CatalogueEntry.Of("TD-4", Pillar.TaskDiscovery, 5, "Complex requirements decomposed into parallel execution",
@@ -39,7 +41,7 @@ internal static class SecurityAndTaskChecks
     {
         true => Verdict.Pass(fact.Evidence),
         false => Verdict.Fail(fact.Evidence),
-        null => Verdict.Unknown(fact.Evidence),
+        null => Verdict.NotRead(fact.Evidence),
     };
 
     private static Verdict Present(RepoContext c, params string[] paths)
@@ -68,11 +70,30 @@ internal static class SecurityAndTaskChecks
     private static Verdict LabelScheme(RepoContext c)
     {
         const string scheme = ".github/labels.yml";
-        string[] families = ["type:", "area:", "size:", "ring:"];
-        var missing = families.Where(f => !c.Contains(scheme, $"\"{f}")).ToList();
-        return !c.Has(scheme)
-            ? Verdict.Fail($"no {scheme}")
-            : Verdict.When(missing.Count == 0, $"{scheme} defines the type:, area:, size: and ring: families (applying them to the repo is the owner's)",
-                $"{scheme} lacks the {string.Join(", ", missing)} families");
+        var text = c.Tree.ReadText(scheme);
+        if (text is null)
+        {
+            return Verdict.Fail($"no {scheme}");
+        }
+
+        var missing = _labelFamilies.Where(f => !LabelName.Matches(text).Any(m => m.Groups["name"].Value.StartsWith(f, StringComparison.Ordinal))).ToList();
+        if (missing.Count > 0)
+        {
+            return Verdict.Fail($"{scheme} lacks the {string.Join(", ", missing)} families");
+        }
+
+        if (c.Host.Labels.Names is not { } applied || !c.Host.Labels.Evidence.StartsWith('\u0001'))
+        {
+            return Verdict.NotRead($"{scheme} defines the four families; the repo's labels weren't read ({c.Host.Labels.Evidence})");
+        }
+
+        var unapplied = _labelFamilies.Where(f => !applied.Any(l => l.StartsWith(f, StringComparison.Ordinal))).ToList();
+        return Verdict.When(unapplied.Count == 0, $"{scheme} defines the four families and the repo has labels in each",
+            $"{scheme} defines the four families but they're not applied to the repo: no {string.Join(", ", unapplied)} labels ({c.Host.Labels.Evidence})");
     }
+
+    private static readonly string[] _labelFamilies = ["type:", "area:", "size:", "ring:"];
+
+    [GeneratedRegex(@"name:\s*[""']?(?<name>[^""'\r\n]+)", RegexOptions.CultureInvariant, matchTimeoutMilliseconds: 1000)]
+    private static partial Regex LabelName { get; }
 }

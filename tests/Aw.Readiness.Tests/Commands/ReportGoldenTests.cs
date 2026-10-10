@@ -25,7 +25,7 @@ public sealed class ReportGoldenTests
         var since = RepoHostContract.Now.AddDays(-1);
         var delta = new RunDelta(since, 4, card.Level, [new StateChange(CriterionId.From("SEC-3"), CriterionState.Pass, CriterionState.Fail)]);
         return new CheckRepoResponse(CheckRepoResponse.CurrentSchemaVersion, RepoName.From("agentic-workflow"), "csharp-template",
-            RepoHostContract.Now, new ReadinessTarget(0, 4), card.Level, card.Level >= 4, "<state>/readiness/runs/agentic-workflow/run.json",
+            RepoHostContract.Now, new ReadinessTarget(0, 4), card.Level, Holds: false, [CriterionId.From("SEC-1"), CriterionId.From("SEC-2"), CriterionId.From("TD-2")], "<state>/readiness/runs/agentic-workflow/csharp-template/run.json",
             delta, card.Pillars, card.Tallies, findings);
     }
 

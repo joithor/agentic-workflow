@@ -27,7 +27,8 @@ internal sealed class GhRepoHost(ReadinessSettings settings) : IRepoHost
         return new HostFacts(
             await Protection(root, api, branch, cancellationToken).ConfigureAwait(false),
             await Scanning(root, api, cancellationToken).ConfigureAwait(false),
-            await Releases(root, api, cancellationToken).ConfigureAwait(false));
+            await Releases(root, api, cancellationToken).ConfigureAwait(false),
+            await Labels(root, api, cancellationToken).ConfigureAwait(false));
     }
 
     private async Task<HostFact> Protection(string root, string api, string branch, CancellationToken ct)
@@ -72,6 +73,14 @@ internal sealed class GhRepoHost(ReadinessSettings settings) : IRepoHost
                 Holds: scanning == "enabled" && push == "enabled",
                 $"secret scanning {scanning}, push protection {push}"),
         };
+    }
+
+    private async Task<HostLabels> Labels(string root, string api, CancellationToken ct)
+    {
+        var labels = await _gh.Run(root, ["api", $"{api}/labels?per_page=100"], ct).ConfigureAwait(false);
+        return labels.Ok && GhJson.TryNames(labels.Stdout, out var names)
+            ? new HostLabels(names, string.Create(CultureInfo.InvariantCulture, $"{names.Count} labels on the repo (the first 100 read)"))
+            : new HostLabels(Names: null, $"gh couldn't read the labels: {labels.Reason}");
     }
 
     private async Task<HostReleases> Releases(string root, string api, CancellationToken ct)

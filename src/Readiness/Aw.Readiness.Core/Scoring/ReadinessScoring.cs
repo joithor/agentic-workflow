@@ -1,8 +1,10 @@
 namespace Aw.Readiness.Core.Scoring;
 
 /// <summary>Turns findings into levels (spec §2): every repo starts at Level 1, and Level N+1 unlocks when at least 80%
-/// of the scored Level N criteria pass. A level with nothing scored neither unlocks nor blocks; the first scored level
-/// below 80% stops the climb.</summary>
+/// of the scored Level N criteria pass. A level with nothing scored neither unlocks nor blocks: the climb skips it, so
+/// the level is one above the highest scored level that passed with every scored level below it passing (the R0
+/// baseline's rule). The first scored level below 80% stops the climb, so with L1 passing, L2 empty and L3 failing the
+/// level is 2: Level 3 is never awarded on an empty Level 2.</summary>
 public static class ReadinessScoring
 {
     /// <summary>The highest level.</summary>

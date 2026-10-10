@@ -29,9 +29,17 @@ public static class TemplateReadiness
         return [.. _catalogue.Select(e => Decide(e, context))];
     }
 
+    /// <summary>The criteria that gate a target (their level is below it) but weren't read this run: while any is
+    /// listed the target can't be confirmed, whatever the level.</summary>
+    /// <param name="findings">The run's findings.</param>
+    /// <param name="target">The target.</param>
+    /// <returns>Their ids, in report order.</returns>
+    public static IReadOnlyList<CriterionId> Unconfirmed(IEnumerable<Finding> findings, ReadinessTarget target) =>
+        [.. findings.Where(f => f.Unread && f.Criterion.Level < target.Level && target.Level < 0).Select(f => f.Criterion.Id)];
+
     private static Finding Decide(CatalogueEntry entry, RepoContext context)
     {
         var verdict = entry.Check(context);
-        return new Finding(entry.Criterion, verdict.State, verdict.Evidence);
+        return new Finding(entry.Criterion, verdict.State, verdict.Evidence, verdict.Unread);
     }
 }

@@ -8,15 +8,15 @@ using Aw.Readiness.Core.Ports;
 namespace Aw.Readiness.App.Infrastructure;
 
 /// <summary>The JSON-file adapter of <see cref="IRunHistory"/>: one file per run under
-/// &lt;state&gt;/readiness/runs/&lt;repo&gt;/&lt;UTC time&gt;.json, written to a temp file and moved into place. It writes
+/// &lt;state&gt;/readiness/runs/&lt;repo&gt;/&lt;scope&gt;/&lt;UTC time&gt;-NNN.json, written to a temp file and moved into place. It writes
 /// nowhere else (spec §4c: Readiness owns only readiness/).</summary>
 /// <param name="settings">Where the state directory is.</param>
 /// <param name="json">The package's JSON options (AwJson over its one context), registered by Composition.</param>
 internal sealed class JsonRunHistory(ReadinessSettings settings, JsonSerializerOptions json) : IRunHistory
 {
-    public async ValueTask<Result<RunRecord?>> Latest(RepoName repo, CancellationToken cancellationToken)
+    public async ValueTask<Result<RunRecord?>> Latest(RepoName repo, string scope, CancellationToken cancellationToken)
     {
-        var directory = DirectoryOf(repo);
+        var directory = DirectoryOf(repo, scope);
         try
         {
             var newest = Directory.Exists(directory)
@@ -41,7 +41,7 @@ internal sealed class JsonRunHistory(ReadinessSettings settings, JsonSerializerO
 
     public async ValueTask<Result<string>> Save(RunRecord run, CancellationToken cancellationToken)
     {
-        var directory = DirectoryOf(run.Repo);
+        var directory = DirectoryOf(run.Repo, run.Scope);
         try
         {
             _ = Directory.CreateDirectory(directory);
@@ -58,7 +58,10 @@ internal sealed class JsonRunHistory(ReadinessSettings settings, JsonSerializerO
         }
     }
 
-    private string DirectoryOf(RepoName repo) => Path.Combine(settings.StateDirectory, "runs", repo.Value);
+    private string DirectoryOf(RepoName repo, string scope) =>
+        scope.Length > 0 && scope.All(ch => ch is (>= 'a' and <= 'z') or (>= '0' and <= '9') or '-')
+            ? Path.Combine(settings.StateDirectory, "runs", repo.Value, scope)
+            : throw new ArgumentException($"scope '{scope}' must be a-z, 0-9 and '-'", nameof(scope));
 
     private static string FreePath(string directory, string stem)
     {

@@ -15,7 +15,7 @@ public sealed class ReportTextTests
         var findings = TemplateReadiness.Evaluate(A.ReadyTemplate().Without(".github/CODEOWNERS"), host, RepoHostContract.Now);
         var card = ReadinessScoring.Score(findings);
         return new CheckRepoResponse(CheckRepoResponse.CurrentSchemaVersion, RepoName.From("agentic-workflow"), "csharp-template",
-            RepoHostContract.Now, new ReadinessTarget(0, 4), card.Level, card.Level >= 4, "memory:1", delta, card.Pillars, card.Tallies, findings);
+            RepoHostContract.Now, new ReadinessTarget(0, 4), card.Level, card.Level >= 4, [], "memory:1", delta, card.Pillars, card.Tallies, findings);
     }
 
     [Fact, Trait("Lane", "unit")]
@@ -31,6 +31,20 @@ public sealed class ReportTextTests
         Assert.Contains("pass  SV-1", text, StringComparison.Ordinal);
         Assert.Contains("Security", text, StringComparison.Ordinal);
         Assert.DoesNotContain('\u001b', text);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public void An_unconfirmed_target_names_the_unread_criteria()
+    {
+        var report = Report(new RunDelta(Since: null, LevelBefore: null, 5, []), unknownHost: true) with
+        {
+            Holds = false,
+            Unconfirmed = [CriterionId.From("SEC-1"), CriterionId.From("SEC-2")],
+        };
+
+        var text = ReportText.Render(report);
+
+        Assert.Contains("target 4 (ring 0): not confirmed (SEC-1, SEC-2 weren't read)", text, StringComparison.Ordinal);
     }
 
     [Fact, Trait("Lane", "unit")]

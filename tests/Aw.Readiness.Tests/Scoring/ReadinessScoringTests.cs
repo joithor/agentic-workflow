@@ -54,6 +54,15 @@ public sealed class ReadinessScoringTests
     }
 
     [Fact, Trait("Lane", "unit")]
+    public void An_empty_level_awards_nothing_when_the_level_above_it_fails()
+    {
+        // L1 passes, L2 is empty, L3 fails: Level 2 (from L1). Level 3 isn't awarded on an empty L2 (the R0 rule).
+        Finding[] findings = [A.Finding("TS-1", CriterionState.Pass), A.Finding("TS-2", CriterionState.Fail, level: 3)];
+
+        Assert.Equal(2, ReadinessScoring.Score(findings).Level);
+    }
+
+    [Fact, Trait("Lane", "unit")]
     public void Unknown_and_not_applicable_are_not_scored()
     {
         Finding[] findings = [

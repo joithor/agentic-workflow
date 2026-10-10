@@ -11,4 +11,13 @@ public enum HostScenario
 
     /// <summary>The host can't be reached at all.</summary>
     Unreachable = 3,
+
+    /// <summary>Like Ready, but main is protected by ruleset rules instead of branch protection.</summary>
+    Rulesets = 4,
+
+    /// <summary>Like Bare, but the plan can't protect branches at all (HTTP 403 "Upgrade to GitHub Pro").</summary>
+    PlanCannotProtect = 5,
+
+    /// <summary>Like Ready, but the login isn't a repo admin, so secret scanning isn't reported.</summary>
+    NotAdmin = 6,
 }

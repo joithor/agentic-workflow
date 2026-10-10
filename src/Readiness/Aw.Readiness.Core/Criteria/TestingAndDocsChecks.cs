@@ -46,7 +46,7 @@ internal static class TestingAndDocsChecks
         string[] needles = ["pull_request", "dotnet test", "changed-areas", "LaneCap"];
         var missing = needles.Where(n => c.WorkflowsContaining(n).Count == 0).ToList();
         return Verdict.When(missing.Count == 0,
-            "CI runs dotnet test on pull_request with changed-area detection and the per-test lane cap (run time isn't measured offline)",
+            "CI is configured to run dotnet test on pull_request with changed-area detection and the per-test lane cap (config only: no run or its time is checked)",
             $"no workflow has: {string.Join(", ", missing)}");
     }
 

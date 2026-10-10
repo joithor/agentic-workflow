@@ -11,11 +11,17 @@ internal sealed class FileSystemRepoTree(string root) : IRepoTree
 
     public bool Exists(string path) => File.Exists(Full(path)) || Directory.Exists(Full(path));
 
+    /// <summary>The largest file a criterion reads; a bigger one reads as missing.</summary>
+    internal const long MaxReadBytes = 1024 * 1024;
+
     public string? ReadText(string path)
     {
         try
         {
-            return File.Exists(Full(path)) ? File.ReadAllText(Full(path)) : null;
+            var file = new FileInfo(Full(path));
+            return file.Exists && file.LinkTarget is null && file.Length <= MaxReadBytes && Inside(file.FullName)
+                ? File.ReadAllText(file.FullName)
+                : null;
         }
         catch (Exception e) when (e is IOException or UnauthorizedAccessException)
         {
@@ -61,6 +67,9 @@ internal sealed class FileSystemRepoTree(string root) : IRepoTree
     }
 
     private string Full(string path) => path.Length == 0 ? root : Path.Combine(root, path);
+
+    private bool Inside(string full) =>
+        full.StartsWith(root.TrimEnd(Path.DirectorySeparatorChar) + Path.DirectorySeparatorChar, StringComparison.Ordinal);
 
     private string Relative(string full) => Path.GetRelativePath(root, full).Replace('\\', '/');
 }

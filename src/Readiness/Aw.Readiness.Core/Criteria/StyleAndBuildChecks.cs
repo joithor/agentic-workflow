@@ -61,16 +61,24 @@ internal static partial class StyleAndBuildChecks
     {
         var central = c.Contains(Packages, "<ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>");
         var locks = c.Contains(BuildProps, "<RestorePackagesWithLockFile>true</RestorePackagesWithLockFile>");
+        if (!central || !locks)
+        {
+            return Verdict.Fail("Directory.Packages.props or Directory.Build.props doesn't turn on central versions and lock files");
+        }
+
+        // Only a project outside the solution may opt out (the AotSmoke canaries: a per-RID publish, never restored with it).
+        var solution = c.Tree.ReadText("AgenticWorkflow.slnx") ?? "";
         var all = c.Tree.Files("src", ".csproj").Concat(c.Tree.Files("tests", ".csproj")).ToList();
-        var optedOut = all.Where(p => c.Contains(p, "<RestorePackagesWithLockFile>false</RestorePackagesWithLockFile>")).ToList();
-        var projects = all.Except(optedOut, StringComparer.Ordinal).ToList();
-        var unlocked = projects.Where(p => !c.Has(p[..(p.LastIndexOf('/') + 1)] + "packages.lock.json")).ToList();
-        var exempt = optedOut.Count == 0 ? "" : $"; opted out: {string.Join(", ", optedOut)}";
-        return !central || !locks
-            ? Verdict.Fail("Directory.Packages.props or Directory.Build.props doesn't turn on central versions and lock files")
-            : Verdict.When(unlocked.Count == 0,
-                string.Create(CultureInfo.InvariantCulture, $"central versions, lock files on, {projects.Count} projects locked{exempt}"),
-                string.Create(CultureInfo.InvariantCulture, $"{unlocked.Count} of {projects.Count} projects have no packages.lock.json: {string.Join(", ", unlocked.Take(5))}{exempt}"));
+        var optsOut = all.Where(p => c.Contains(p, "<RestorePackagesWithLockFile>false</RestorePackagesWithLockFile>")).ToList();
+        var exempt = optsOut.Where(p => !solution.Contains($"\"{p}\"", StringComparison.Ordinal)).ToList();
+        var projects = all.Except(exempt, StringComparer.Ordinal).ToList();
+        var unlocked = projects.Where(p => optsOut.Contains(p, StringComparer.Ordinal)
+            || !c.Has(p[..(p.LastIndexOf('/') + 1)] + "packages.lock.json")).ToList();
+        var note = exempt.Count == 0 ? "" : $"; opted out (not in the solution): {string.Join(", ", exempt)}";
+        return Verdict.When(unlocked.Count == 0,
+            string.Create(CultureInfo.InvariantCulture, $"central versions, lock files on, {projects.Count} projects locked{note}"),
+            string.Create(CultureInfo.InvariantCulture,
+                $"{unlocked.Count} of {projects.Count} projects have no packages.lock.json or opt out inside the solution: {string.Join(", ", unlocked.Take(5))}{note}"));
     }
 
     private static Verdict VcsCli(RepoContext c)
@@ -83,7 +91,7 @@ internal static partial class StyleAndBuildChecks
     {
         if (c.Host.Releases.PublishedAt is not { } published)
         {
-            return Verdict.Unknown(c.Host.Releases.Evidence);
+            return Verdict.NotRead(c.Host.Releases.Evidence);
         }
 
         var recent = published.Count(p => p > c.Now.AddDays(-90) && p <= c.Now);

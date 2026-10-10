@@ -12,7 +12,7 @@ public sealed class RunDeltaTests
     [Fact, Trait("Lane", "unit")]
     public void No_previous_run_is_a_first_run_with_no_changes()
     {
-        var current = RunRecord.From(_repo, _now, 2, [A.Finding("SV-1", CriterionState.Pass)]);
+        var current = RunRecord.From(_repo, "csharp-template", _now, 2, [A.Finding("SV-1", CriterionState.Pass)]);
 
         var delta = RunDelta.Between(previous: null, current);
 
@@ -25,10 +25,10 @@ public sealed class RunDeltaTests
     [Fact, Trait("Lane", "unit")]
     public void Changed_added_and_removed_criteria_are_listed_in_id_order()
     {
-        var previous = RunRecord.From(_repo, _earlier, 2, [
+        var previous = RunRecord.From(_repo, "csharp-template", _earlier, 2, [
             A.Finding("TS-1", CriterionState.Fail), A.Finding("SV-1", CriterionState.Pass), A.Finding("PE-9", CriterionState.Fail),
         ]);
-        var current = RunRecord.From(_repo, _now, 3, [
+        var current = RunRecord.From(_repo, "csharp-template", _now, 3, [
             A.Finding("TS-1", CriterionState.Pass), A.Finding("SV-1", CriterionState.Pass), A.Finding("DE-1", CriterionState.Unknown),
         ]);
 
@@ -47,11 +47,21 @@ public sealed class RunDeltaTests
     }
 
     [Fact, Trait("Lane", "unit")]
+    public void A_criterion_unread_on_either_run_is_not_compared()
+    {
+        var previous = RunRecord.From(_repo, "csharp-template", _earlier, 4, [A.Finding("SEC-1", CriterionState.Fail)]);
+        var offline = RunRecord.From(_repo, "csharp-template", _now, 4, [A.Finding("SEC-1", CriterionState.Unknown) with { Unread = true }]);
+
+        Assert.Empty(RunDelta.Between(previous, offline).Changes);
+        Assert.Empty(RunDelta.Between(offline, previous).Changes);
+    }
+
+    [Fact, Trait("Lane", "unit")]
     public void An_unchanged_run_has_no_changes()
     {
         var findings = new[] { A.Finding("SV-1", CriterionState.Pass) };
 
-        var delta = RunDelta.Between(RunRecord.From(_repo, _earlier, 2, findings), RunRecord.From(_repo, _now, 2, findings));
+        var delta = RunDelta.Between(RunRecord.From(_repo, "csharp-template", _earlier, 2, findings), RunRecord.From(_repo, "csharp-template", _now, 2, findings));
 
         Assert.Empty(delta.Changes);
         Assert.Equal(2, delta.LevelBefore);

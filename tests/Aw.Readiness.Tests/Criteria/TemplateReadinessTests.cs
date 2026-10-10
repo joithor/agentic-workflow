@@ -9,12 +9,13 @@ public sealed class TemplateReadinessTests
 {
     private static readonly DateTimeOffset _now = new(2026, 10, 10, 12, 0, 0, TimeSpan.Zero);
 
-    private static readonly string[] _hostIds = ["BS-4", "SEC-1", "SEC-2"];
+    private static readonly string[] _hostIds = ["BS-4", "SEC-1", "SEC-2", "TD-2"];
 
     private static readonly HostFacts _hostReady = new(
         new HostFact(Holds: true, Evidence: "ruleset 'main'"),
         new HostFact(Holds: true, Evidence: "secret scanning and push protection enabled"),
-        new HostReleases([_now.AddDays(-1), _now.AddDays(-30), _now.AddDays(-89)], "3 releases"));
+        new HostReleases([_now.AddDays(-1), _now.AddDays(-30), _now.AddDays(-89)], "3 releases"),
+        new HostLabels(["type:bug", "area:kernel", "size:S", "ring:0"], "4 labels"));
 
     [Fact, Trait("Lane", "unit")]
     public void The_catalogue_has_the_r0_baselines_34_criteria_with_unique_ids()
@@ -82,12 +83,35 @@ public sealed class TemplateReadinessTests
     [InlineData("BS-5", "global.json", "{ \"sdk\": { \"version\": \"10.0.401\", \"rollForward\": \"latestFeature\" } }")]
     [InlineData("SEC-4", ".github/dependabot.yml", "updates:\n  - package-ecosystem: npm\n")]
     [InlineData("TD-2", ".github/labels.yml", "- name: \"type:bug\"\n")]
+    [InlineData("BS-2", "src/Aw.Kernel/Aw.Kernel.csproj", "<RestorePackagesWithLockFile>false</RestorePackagesWithLockFile>")]
     [InlineData("BS-3", "README.md", "# Repo\n\nThough the highlights are good.\n")]
     public void A_weaker_setting_fails_the_criterion(string id, string path, string text)
     {
         var findings = TemplateReadiness.Evaluate(A.ReadyTemplate().With(path, text), _hostReady, _now);
 
         Assert.Equal(CriterionState.Fail, findings.Single(f => f.Criterion.Id.Value == id).State);
+    }
+
+    [Theory, Trait("Lane", "unit")]
+    [InlineData("- name: type:bug\n- name: area:kernel\n- name: size:S\n- name: ring:0\n")]
+    [InlineData("- name: 'type:bug'\n- name: 'area:kernel'\n- name: 'size:S'\n- name: 'ring:0'\n")]
+    public void A_label_scheme_with_plain_or_single_quoted_names_counts(string scheme)
+    {
+        var finding = TemplateReadiness.Evaluate(A.ReadyTemplate().With(".github/labels.yml", scheme), _hostReady, _now)
+            .Single(f => f.Criterion.Id.Value == "TD-2");
+
+        Assert.Equal(CriterionState.Pass, finding.State);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public void Td2_fails_when_the_scheme_is_not_applied_to_the_repo()
+    {
+        var host = _hostReady with { Labels = new HostLabels(["bug", "documentation"], "2 labels") };
+
+        var finding = TemplateReadiness.Evaluate(A.ReadyTemplate(), host, _now).Single(f => f.Criterion.Id.Value == "TD-2");
+
+        Assert.Equal(CriterionState.Fail, finding.State);
+        Assert.Contains("not applied", finding.Evidence, StringComparison.Ordinal);
     }
 
     [Fact, Trait("Lane", "unit")]
@@ -110,7 +134,7 @@ public sealed class TemplateReadinessTests
         var finding = TemplateReadiness.Evaluate(tree, _hostReady, _now).Single(f => f.Criterion.Id.Value == "BS-2");
 
         Assert.Equal(CriterionState.Pass, finding.State);
-        Assert.Contains("opted out: src/Aw.Kernel.AotSmoke/Aw.Kernel.AotSmoke.csproj", finding.Evidence, StringComparison.Ordinal);
+        Assert.Contains("opted out (not in the solution): src/Aw.Kernel.AotSmoke/Aw.Kernel.AotSmoke.csproj", finding.Evidence, StringComparison.Ordinal);
     }
 
     [Fact, Trait("Lane", "unit")]
@@ -122,6 +146,7 @@ public sealed class TemplateReadinessTests
         {
             var finding = findings.Single(f => f.Criterion.Id.Value == id);
             Assert.Equal(CriterionState.Unknown, finding.State);
+            Assert.True(finding.Unread);
             Assert.Contains("--no-remote", finding.Evidence, StringComparison.Ordinal);
         }
     }
@@ -132,7 +157,8 @@ public sealed class TemplateReadinessTests
         var host = new HostFacts(
             new HostFact(Holds: false, Evidence: "not protected"),
             new HostFact(Holds: false, Evidence: "secret scanning disabled"),
-            new HostReleases([_now.AddDays(-1), _now.AddDays(-91), _now.AddDays(-200)], "3 releases"));
+            new HostReleases([_now.AddDays(-1), _now.AddDays(-91), _now.AddDays(-200)], "3 releases"),
+            new HostLabels(["bug", "type:bug"], "2 labels"));
 
         var findings = TemplateReadiness.Evaluate(A.ReadyTemplate(), host, _now);
 

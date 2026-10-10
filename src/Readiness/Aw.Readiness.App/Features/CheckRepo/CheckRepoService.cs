@@ -41,14 +41,15 @@ internal sealed class CheckRepoService(IRepoReader reader, IRepoHost host, IRunH
     private async Task<Result<CheckRepoResponse>> Record(
         ReadinessConfig config, IReadOnlyList<Finding> findings, DateTimeOffset now, CancellationToken cancellationToken)
     {
-        var previous = await history.Latest(config.Repo, cancellationToken).ConfigureAwait(false);
+        var previous = await history.Latest(config.Repo, config.Scope, cancellationToken).ConfigureAwait(false);
         if (previous.IsError)
         {
             return previous.Error;
         }
 
         var card = ReadinessScoring.Score(findings);
-        var run = RunRecord.From(config.Repo, now, card.Level, findings);
+        var run = RunRecord.From(config.Repo, config.Scope, now, card.Level, findings);
+        var unconfirmed = TemplateReadiness.Unconfirmed(findings, config.Target);
         var saved = await history.Save(run, cancellationToken).ConfigureAwait(false);
         if (saved.IsError)
         {
@@ -57,6 +58,7 @@ internal sealed class CheckRepoService(IRepoReader reader, IRepoHost host, IRunH
 
         return new CheckRepoResponse(
             CheckRepoResponse.CurrentSchemaVersion, config.Repo, config.Scope, now, config.Target, card.Level,
-            card.Level >= config.Target.Level, saved.Value, RunDelta.Between(previous.Value, run), card.Pillars, card.Tallies, findings);
+            card.Level >= config.Target.Level && unconfirmed.Count == 0, unconfirmed, saved.Value,
+            RunDelta.Between(previous.Value, run), card.Pillars, card.Tallies, findings);
     }
 }

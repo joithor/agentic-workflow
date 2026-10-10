@@ -14,12 +14,17 @@ internal static class ReportText
         var text = new StringBuilder();
         _ = text.Append(Inv($"aw-readiness: {report.Repo} ({report.Scope})\n"))
             .Append(Inv($"Level {report.Level} of {ReadinessScoring.MaxLevel}; target {report.Target.Level} (ring {report.Target.Ring}): "))
-            .Append(report.Holds ? "holds\n" : "does not hold\n")
+            .Append(Verdict(report)).Append('\n')
             .Append(Delta(report)).Append('\n');
         Pillars(text, report);
         Findings(text, report.Findings);
         return text.ToString();
     }
+
+    private static string Verdict(CheckRepoResponse report) =>
+        report.Holds ? "holds"
+        : report.Unconfirmed.Count > 0 ? $"not confirmed ({string.Join(", ", report.Unconfirmed)} weren't read)"
+        : "does not hold";
 
     private static string Delta(CheckRepoResponse report)
     {

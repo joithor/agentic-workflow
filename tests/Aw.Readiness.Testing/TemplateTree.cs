@@ -19,6 +19,7 @@ internal static class TemplateTree
             "<Nullable>enable</Nullable><TreatWarningsAsErrors>true</TreatWarningsAsErrors><RestorePackagesWithLockFile>true</RestorePackagesWithLockFile>")
         .With("Directory.Packages.props",
             "<ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally><GlobalPackageReference Include=\"Microsoft.CodeAnalysis.NetAnalyzers\" Version=\"[10.0.100]\" />")
+        .With("AgenticWorkflow.slnx", "<Solution>\n  <Project Path=\"src/Aw.Kernel/Aw.Kernel.csproj\" />\n</Solution>\n")
         .With("src/Aw.Kernel/Aw.Kernel.csproj", "<Project />")
         .With("src/Aw.Kernel/packages.lock.json", "{}")
         .With("tests/Aw.Kernel.Tests/Aw.Kernel.Tests.csproj", "<Project />")

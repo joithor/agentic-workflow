@@ -66,6 +66,26 @@ internal static class GhJson
         }
     }
 
+    internal static bool TryNames(string json, out List<string> names)
+    {
+        names = [];
+        if (!TryParse(json, out var doc))
+        {
+            return false;
+        }
+
+        using (doc)
+        {
+            if (doc.RootElement.ValueKind != JsonValueKind.Array)
+            {
+                return false;
+            }
+
+            names = [.. doc.RootElement.EnumerateArray().Select(r => Text(r, "name")).OfType<string>()];
+            return true;
+        }
+    }
+
     internal static bool TryPublished(string json, out List<DateTimeOffset> published)
     {
         published = [];

@@ -75,6 +75,26 @@ public sealed class ReadinessConfigTests
         Assert.Contains("ring 2", config.Error.Message, StringComparison.Ordinal);
     }
 
+    [Theory, Trait("Lane", "unit")]
+    [InlineData("    level: 4\n    level: 2\n", "level")]
+    [InlineData("    ring: 1\n", "ring")]
+    public void A_key_repeated_in_one_target_is_refused(string extra, string key)
+    {
+        var config = ReadinessConfig.Parse(Valid.Replace("    level: 4\n", extra.StartsWith("    level", StringComparison.Ordinal) ? extra : "    level: 4\n" + extra, StringComparison.Ordinal));
+
+        Assert.True(config.IsError);
+        Assert.Contains($"'{key}' is set twice in this target", config.Error.Message, StringComparison.Ordinal);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public void An_unindented_target_list_names_the_indentation_fix()
+    {
+        var config = ReadinessConfig.Parse(Valid.Replace("  - ring: 0\n    level: 4", "- ring: 0\n  level: 4", StringComparison.Ordinal));
+
+        Assert.True(config.IsError);
+        Assert.Contains("indent target items with spaces under 'targets:'", config.Error.Message, StringComparison.Ordinal);
+    }
+
     [Fact, Trait("Lane", "unit")]
     public void A_ring_listed_twice_is_refused()
     {

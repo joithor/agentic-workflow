@@ -16,10 +16,11 @@ public sealed class InMemoryRunHistory : IRunHistory
     public bool Unavailable { get; set; }
 
     /// <inheritdoc/>
-    public ValueTask<Result<RunRecord?>> Latest(RepoName repo, CancellationToken cancellationToken) =>
+    public ValueTask<Result<RunRecord?>> Latest(RepoName repo, string scope, CancellationToken cancellationToken) =>
         ValueTask.FromResult(Unavailable
             ? Results.Failure<RunRecord?>(Down())
-            : Results.Success(_runs.Where(r => r.Repo == repo).MaxBy(r => r.RecordedAt)));
+            : Results.Success(_runs.Where(r => r.Repo == repo && string.Equals(r.Scope, scope, StringComparison.Ordinal))
+                .OrderBy(r => r.RecordedAt).LastOrDefault()));   // OrderBy is stable: of two at one instant, the last saved
 
     /// <inheritdoc/>
     public ValueTask<Result<string>> Save(RunRecord run, CancellationToken cancellationToken)
