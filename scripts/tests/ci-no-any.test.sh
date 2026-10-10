@@ -96,6 +96,16 @@ test_a_new_baseline_key_fails() {
   echo "PASS: test_a_new_baseline_key_fails"
 }
 
+test_a_baseline_key_for_a_deleted_file_fails() {
+  local r; r="$(repo)"
+  printf '{"pkg/src/gone.ts": 1}\n' > "$r/baseline.json"
+  git -C "$r" add -A
+  run "$r"; rm -rf "$r"
+  [ "$rc" = "1" ] || fail "a baseline key for a deleted file passed: $out"
+  echo "$out" | grep -q 'pkg/src/gone.ts: not checked any more' || fail "the stale key isn't named: $out"
+  echo "PASS: test_a_baseline_key_for_a_deleted_file_fails"
+}
+
 test_declaration_files_count() {
   local r; r="$(repo)"
   printf 'declare module "shim" {\n  const v: any;\n  export default v;\n}\n' > "$r/pkg/src/shim.d.ts"
@@ -120,4 +130,5 @@ test_a_shrunk_but_unlowered_baseline_fails
 test_the_baseline_may_not_rise_above_the_base_branch
 test_a_new_baseline_key_fails
 test_declaration_files_count
+test_a_baseline_key_for_a_deleted_file_fails
 test_the_repo_passes_with_its_baseline

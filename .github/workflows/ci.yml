@@ -187,7 +187,21 @@ jobs:
       - name: No any types outside the Fastify boundary
         # Merge gate 6: parses the TS (strings and comments never count) and holds existing
         # violations to scripts/ci/no-any-baseline.json, which may only shrink.
-        run: node scripts/ci/no-any.mjs
+        # On a PR the baseline is also checked against the base branch's copy, so a PR
+        # can't raise a count or baseline a new file in its own diff.
+        env:
+          BASE_REF: ${{ github.base_ref }}
+        run: |
+          args=()
+          if [ -n "$BASE_REF" ]; then
+            git fetch --no-tags --depth=1 origin "refs/heads/$BASE_REF"
+            if git show "FETCH_HEAD:scripts/ci/no-any-baseline.json" > "$RUNNER_TEMP/base-no-any.json" 2>/dev/null; then
+              args=(--base-baseline "$RUNNER_TEMP/base-no-any.json")
+            else
+              echo "no-op: $BASE_REF has no no-any baseline yet — the base comparison starts once it does"
+            fi
+          fi
+          node scripts/ci/no-any.mjs "${args[@]}"
       - name: deps.yaml matches the code
         run: |
           if [ -f scripts/check-deps.mjs ]; then
