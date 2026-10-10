@@ -295,7 +295,14 @@ jobs:
         # Microsoft.Testing.Platform (global.json test.runner): --solution, and MTP options
         # only. VSTest options (--logger, --collect, --settings, --blame) make MTP run zero
         # tests (exit 5). A lane step that may select no tests adds --ignore-exit-code 8.
-        run: dotnet test --solution "$SLN" --no-build --configuration Release --results-directory TestResults
+        # --report-xunit-ctrf writes one CTRF report per test project for the lane cap below; no
+        # --report-xunit-ctrf-filename, or every project would write the same file.
+        run: dotnet test --solution "$SLN" --no-build --configuration Release --results-directory TestResults --report-xunit-ctrf
+      - name: Per-test lane cap (LANE-TEST-001/002)
+        if: steps.sln.outputs.run == 'true'
+        # Each test's own time against its lane's budget (unit 10 s, integration 60 s), and exactly one
+        # known Lane trait per test: the run above is unfiltered, so a test with none shows up (spec §4b.5).
+        run: dotnet run --project tests/Aw.LaneCap.Testing --configuration Release --no-build -- TestResults
       - name: NativeAOT smoke tests
         if: steps.sln.outputs.run == 'true'
         # Each publishes for the runner's own RID (linux-x64), runs the native binary and

@@ -177,7 +177,8 @@ is SQLite-specific today; a second engine needs its own data package, `Aw.Kernel
 adapter (PostgreSQL instead of SQLite, a remote queue instead of the outbox table) is proven by the same tests. A Kernel
 port's suite is an `Aw.Kernel.Testing` base: `ReadRepositoryContract`, `UnitOfWorkContract` and `OutboxContract`, which the
 in-memory fakes (`InMemoryUnitOfWorkFactory`, `InMemoryOutbox`) and the `Aw.Kernel.Data` adapters (`SqliteReadRepository`,
-`SqliteUnitOfWorkFactory`, `SqliteOutbox`) pass. A package's own port's suite lives in `Aw.<Pkg>.Testing` (spec §4b.5) and derives from a Kernel base
+`SqliteUnitOfWorkFactory`, `SqliteOutbox`) pass. `IIdGenerator` has a fake (`SequentialIdGenerator`) and no real adapter yet;
+its contract base lands with its first real adapter. A package's own port's suite lives in `Aw.<Pkg>.Testing` (spec §4b.5) and derives from a Kernel base
 where one fits. BCL ports (`TimeProvider`, faked by `FakeTimeProvider`) are exempt.
 
 Name ports for what the code needs (`IItemStore`, `IJobQueue`), not for the technology (`ISqliteItems`,

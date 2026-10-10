@@ -7,7 +7,8 @@ namespace Aw.Kernel.Testing;
 /// The per-test lane cap (spec §4b.5): each test's own time in xUnit's CTRF report ('--report-xunit-ctrf') is checked
 /// against its lane's budget (<see cref="Lanes.BudgetOf"/>: unit 10 s, integration 60 s, heavy none), and every test
 /// must carry exactly one known 'Lane' trait. The per-package wall clock of a lane run is the CI lane job's check; this
-/// is the extra per-test cap. CI runs it as 'dotnet run --project tests/Aw.LaneCap.Testing -- &lt;dir&gt;' (see <see cref="Run"/>).
+/// is the extra per-test cap. The CI .NET job runs it on the unfiltered test run's reports:
+/// 'dotnet run --project tests/Aw.LaneCap.Testing -- TestResults' (see <see cref="Run"/>).
 /// </summary>
 public static class LaneCap
 {

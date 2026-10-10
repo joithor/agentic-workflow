@@ -31,7 +31,7 @@ connection even if the rollback throws.
 
 `SqliteReadRepository`, `SqliteUnitOfWorkFactory` and `SqliteOutbox` pass the shared port contracts in `Aw.Kernel.Testing`
 (`ReadRepositoryContract`, `UnitOfWorkContract`, `OutboxContract`), the same suites the in-memory fakes pass
-(`tests/Aw.Kernel.Data.Tests/Sqlite*ContractTests.cs`, integration lane). A new adapter for either port (another engine)
+(`tests/Aw.Kernel.Data.Tests/Sqlite*ContractTests.cs`, integration lane). A new adapter for any of these ports (another engine)
 binds the same base.
 
 ## Errors
