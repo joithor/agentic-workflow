@@ -178,7 +178,7 @@ jobs:
       - name: No coverage-ignore annotations
         run: |
           if git grep -nE '(v8|c8|istanbul) ignore' -- '*.ts' '*.tsx' ':!**/node_modules/**'; then
-            echo "::error::coverage-ignore annotations are prohibited (AGENTS.md merge gate 5) — write the test instead"
+            echo "::error::coverage-ignore annotations are prohibited (AGENTS.md merge gate 6) — write the test instead"
             exit 1
           fi
       - name: Install the CI tools (claude, typescript) from their lockfile
