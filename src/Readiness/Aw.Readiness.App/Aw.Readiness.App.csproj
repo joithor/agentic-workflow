@@ -1,0 +1,31 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- Aw.Readiness.App (scaffolded by /new-package, small shape): features, infrastructure and the CLI host in one
+       project, with the same dependency direction by namespace (spec §4b.1; ARCH-* in tests/Aw.Architecture.Tests).
+       Nothing outside the package references it, so its types are internal (CA1515). NativeAOT entry point 'aw-readiness'. -->
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <OutputType>Exe</OutputType>
+    <!-- NativeAOT only when publishing for a runtime (dotnet publish -r <rid>, see src/Readiness/aot-smoke/run.sh).
+         PublishAot on a plain restore pulls the host's ILCompiler pack into packages.lock.json under a host-RID
+         section, so the committed lock file would differ between macOS and Linux and CI's locked restore would fail.
+         The trim and AOT analyzers still run in every build (AwAotEntryPoint and IsAotCompatible, Directory.Build.targets). -->
+    <AwAotEntryPoint>true</AwAotEntryPoint>
+    <PublishAot Condition="'$(RuntimeIdentifier)' != ''">true</PublishAot>
+    <AssemblyName>aw-readiness</AssemblyName>
+    <RootNamespace>Aw.Readiness.App</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../Aw.Readiness.Core/Aw.Readiness.Core.csproj" />
+    <ProjectReference Include="../../Aw.Kernel/Aw.Kernel.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="Aw.Readiness.Tests" />
+    <InternalsVisibleTo Include="Aw.Readiness.Testing" />
+  </ItemGroup>
+</Project>

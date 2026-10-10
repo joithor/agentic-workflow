@@ -158,7 +158,9 @@ packages:
     projectPrefix: Aw.Readiness
     ts: null
     src: src/Readiness
-    note: "the readiness check of record (decision R4, §8)"
+    bins: [aw-readiness]
+    namespace: readiness
+    note: "the readiness check of record (decision R4, §8); a standalone NativeAOT CLI before the switch, writing only under readiness/ (§4c)"
 
   # ---- tier 2 ----
   - id: Scorer
@@ -373,7 +375,7 @@ edges:
   - from: Readiness
     to: Kernel
     kind: project
-    status: planned
+    status: current
     note: "Result, JSON"
   - from: Scorer
     to: Kernel
@@ -432,9 +434,9 @@ edges:
     note: "every port and factory run is a packet"
   - from: Sindri
     to: Readiness
-    kind: project
+    kind: cli
     status: planned
-    note: "sindri readiness check (§8)"
+    note: "sindri readiness check (§8): runs aw-readiness check --json (schema v1, tests/Aw.Readiness.Tests/Golden/report.json); a project edge could reach only Aw.Readiness.Core and would re-implement the adapters"
   - from: Sindri
     to: Scorer
     kind: cli
