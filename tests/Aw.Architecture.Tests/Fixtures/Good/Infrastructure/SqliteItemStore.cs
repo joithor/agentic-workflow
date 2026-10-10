@@ -1,5 +1,5 @@
-using Aw.Kernel.Data;
 using Aw.Architecture.Tests.Fixtures.Good.Core;
+using Aw.Kernel.Data;
 
 namespace Aw.Architecture.Tests.Fixtures.Good.Infrastructure;
 

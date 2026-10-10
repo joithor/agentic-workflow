@@ -32,8 +32,8 @@ public sealed record Place(string Root, Layer Layer, string? Slice, bool IsCompo
             return null;
         }
 
-        var slice = layer == Rules.Layer.Features && segments.Length > sliceIndex ? segments[sliceIndex] : null;
-        var composition = layer == Rules.Layer.Host && TypeNames.TopLevel(type) == "Composition";
+        var slice = layer == Layer.Features && segments.Length > sliceIndex ? segments[sliceIndex] : null;
+        var composition = layer == Layer.Host && TypeNames.TopLevel(type) == "Composition";
         return new Place(root, layer.Value, slice, composition);
     }
 
@@ -41,12 +41,12 @@ public sealed record Place(string Root, Layer Layer, string? Slice, bool IsCompo
 
     private static Layer? LayerOf(string name, bool small, string[] segments) => name switch
     {
-        "Core" when !small => Rules.Layer.Core,
-        "Features" => Rules.Layer.Features,
-        "Infrastructure" => Rules.Layer.Infrastructure,
-        "Commands" when small => Rules.Layer.Commands,
-        "App" when small => Rules.Layer.Host,
-        "Host" when !small => segments.Length > 1 && _hostEntryPoints.Contains(segments[1], StringComparer.Ordinal) ? Rules.Layer.Commands : Rules.Layer.Host,
+        "Core" when !small => Layer.Core,
+        "Features" => Layer.Features,
+        "Infrastructure" => Layer.Infrastructure,
+        "Commands" when small => Layer.Commands,
+        "App" when small => Layer.Host,
+        "Host" when !small => segments.Length > 1 && _hostEntryPoints.Contains(segments[1], StringComparer.Ordinal) ? Layer.Commands : Layer.Host,
         _ => null,
     };
 }
