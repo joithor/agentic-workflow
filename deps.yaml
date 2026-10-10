@@ -151,7 +151,9 @@ packages:
     projectPrefix: Aw.Packets
     ts: null
     src: src/Packets
-    note: "packet schema, validate, freeze (§4c); built at the end of R1b, before any port"
+    bins: [aw-packets]
+    namespace: packets
+    note: "packet schema, validate, freeze (§4c); a standalone NativeAOT CLI before the switch, writing only under packets/"
   - id: Readiness
     kind: package
     tier: 1
