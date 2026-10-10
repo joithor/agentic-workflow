@@ -47,7 +47,22 @@ internal sealed class FileFreezeLog(PacketsSettings settings, JsonSerializerOpti
         }
         finally
         {
-            File.Delete(temporary);
+            RemoveIfLeft(temporary);
+        }
+    }
+
+    private static void RemoveIfLeft(string temporary)
+    {
+        try
+        {
+            if (File.Exists(temporary))
+            {
+                File.Delete(temporary);
+            }
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            // A temporary file that can't be removed is left beside the record; the record itself is already decided.
         }
     }
 }
