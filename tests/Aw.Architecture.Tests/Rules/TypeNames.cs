@@ -10,7 +10,7 @@ public static class TypeNames
     /// <returns>The outermost declaring type's name, without generic arity.</returns>
     public static string TopLevel(IType type)
     {
-        var ns = type.Namespace.FullName;
+        var ns = NamespaceOf(type);
         var full = type.FullName;
         var local = ns.Length > 0 && full.StartsWith(ns + ".", StringComparison.Ordinal) ? full[(ns.Length + 1)..] : full;
         var outer = local.Split('+', '/')[0];
@@ -22,5 +22,18 @@ public static class TypeNames
     /// <param name="type">The type.</param>
     /// <returns>Namespace plus top-level type name.</returns>
     public static string Qualified(IType type) =>
-        type.Namespace.FullName.Length == 0 ? TopLevel(type) : $"{type.Namespace.FullName}.{TopLevel(type)}";
+        NamespaceOf(type).Length == 0 ? TopLevel(type) : $"{NamespaceOf(type)}.{TopLevel(type)}";
+
+    /// <summary>
+    /// The type's namespace, or empty. ArchUnitNET gives some targets no namespace at all, such as the generic
+    /// parameter of a file-local generic method (the request-delegate generator's Cast&lt;T&gt;).
+    /// </summary>
+    /// <param name="type">The type.</param>
+    /// <returns>The namespace's full name, or the empty string.</returns>
+    public static string NamespaceOf(IType type) => type.Namespace?.FullName ?? string.Empty;
+
+    /// <summary>The short name of the type's assembly, or empty.</summary>
+    /// <param name="type">The type.</param>
+    /// <returns>The assembly name without version or culture.</returns>
+    public static string AssemblyOf(IType type) => type.Assembly?.Name?.Split(',')[0] ?? string.Empty;
 }

@@ -14,7 +14,7 @@ public static class NamingRules
     /// <param name="types">The types to check.</param>
     /// <returns>One violation per offending namespace.</returns>
     public static IEnumerable<Violation> CheckNamespaces(IEnumerable<IType> types) =>
-        types.Select(t => t.Namespace.FullName).Distinct(StringComparer.Ordinal).Where(IsBanned)
+        types.Select(TypeNames.NamespaceOf).Distinct(StringComparer.Ordinal).Where(IsBanned)
             .Select(ns => new Violation(Id, $"namespace {ns} is a dumping ground", Fix));
 
     /// <summary>Checks project names.</summary>

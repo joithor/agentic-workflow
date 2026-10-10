@@ -12,16 +12,16 @@ public static class CycleRules
     /// <param name="types">The types to check (their dependencies on types outside the set are ignored).</param>
     /// <returns>One violation per cycle (a strongly connected set of namespaces).</returns>
     public static IEnumerable<Violation> Check(IEnumerable<IType> types) =>
-        types.GroupBy(t => t.Assembly.Name, StringComparer.Ordinal)
+        types.GroupBy(TypeNames.AssemblyOf, StringComparer.Ordinal)
             .SelectMany(g => Cycles(Graph([.. g])).Select(c => new Violation(Id,
                 $"namespaces {string.Join(" <-> ", c)} depend on each other in {g.Key}",
                 "break the cycle: move the shared types into the lower namespace, or invert one dependency through a port")));
 
     private static Dictionary<string, HashSet<string>> Graph(List<IType> types)
     {
-        var inSet = types.Select(t => t.Namespace.FullName).ToHashSet(StringComparer.Ordinal);
+        var inSet = types.Select(TypeNames.NamespaceOf).ToHashSet(StringComparer.Ordinal);
         var graph = inSet.ToDictionary(n => n, _ => new HashSet<string>(StringComparer.Ordinal), StringComparer.Ordinal);
-        foreach (var (from, to) in types.SelectMany(t => t.Dependencies.Select(d => (t.Namespace.FullName, d.Target.Namespace.FullName))))
+        foreach (var (from, to) in types.SelectMany(t => t.Dependencies.Select(d => (TypeNames.NamespaceOf(t), TypeNames.NamespaceOf(d.Target)))))
         {
             if (from != to && inSet.Contains(to))
             {

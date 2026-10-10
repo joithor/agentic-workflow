@@ -18,11 +18,29 @@ public static class DirectionRules
     /// <summary>Another package is used only through its Core.</summary>
     public const string CrossPackageId = "ARCH-DIR-004";
 
+    /// <summary>Core and Features use Aw.Kernel and no other tier-0 package.</summary>
+    public const string TierZeroId = "ARCH-DIR-005";
+
     /// <summary>Checks every edge against the direction rules.</summary>
     /// <param name="edges">The dependencies to check.</param>
     /// <returns>One violation per offending edge.</returns>
     public static IEnumerable<Violation> Check(IEnumerable<Edge> edges) =>
-        edges.Select(e => e is { From: { } from, To: { } to } ? Judge(e, from, to) : null).OfType<Violation>();
+        edges.Select(e => e switch
+        {
+            { From: { } from, To: { } to } => Judge(e, from, to),
+            { From.Layer: Layer.Core or Layer.Features, To: null } when IsOtherTierZero(e) => new Violation(TierZeroId,
+                $"{e.Text}: {e.From.Layer} uses {TypeNames.AssemblyOf(e.Target)}",
+                "Core and Features use Aw.Kernel only; reach Aw.Kernel.Data, Aw.Kernel.Telemetry or Redaction through a Core port that Infrastructure implements"),
+            _ => null,
+        }).OfType<Violation>();
+
+    // Another Aw.* assembly that no shaped package owns: a tier-0 package other than Aw.Kernel. The origin's own
+    // assembly is excluded (compiler-generated helpers such as <PrivateImplementationDetails> live there unplaced).
+    private static bool IsOtherTierZero(Edge e)
+    {
+        var target = TypeNames.AssemblyOf(e.Target);
+        return target.StartsWith("Aw.", StringComparison.Ordinal) && target != "Aw.Kernel" && target != TypeNames.AssemblyOf(e.Origin);
+    }
 
     private static Violation? Judge(Edge e, Place from, Place to)
     {

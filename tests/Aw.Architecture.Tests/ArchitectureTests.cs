@@ -19,6 +19,10 @@ public sealed class ArchitectureTests
         Verify.None(InfrastructureRules.Check(Production.Architecture.Types, Production.Roots));
 
     [Fact]
+    public void Every_namespace_under_a_package_root_names_a_layer() =>
+        Verify.None(PlacementRules.Check(Production.Architecture.Types, Production.Roots));
+
+    [Fact]
     public void No_namespace_cycles_in_any_assembly() => Verify.None(CycleRules.Check(Production.Architecture.Types));
 
     [Fact]

@@ -19,6 +19,7 @@ public sealed class FixtureTests
             .. DirectionRules.Check(edges), .. SliceRules.Check(edges), .. ServiceProviderRules.Check(edges),
             .. PortRules.Check(edges), .. InfrastructureRules.Check(types, FixtureSet.Roots(_compliant)),
             .. CycleRules.Check(types), .. NamingRules.CheckNamespaces(types),
+            .. PlacementRules.Check(types, FixtureSet.Roots(_compliant)),
         ]);
     }
 
@@ -62,13 +63,60 @@ public sealed class FixtureTests
         Verify.Exactly(NamingRules.CheckProjects(["Aw.Judge.Core", "Aw.Shared", "Aw.Judge.Helpers.Tests"]), NamingRules.Id, "Aw.Shared", "Aw.Judge.Helpers.Tests");
 
     [Fact]
-    public void A_service_locator_in_features_is_reported_but_a_registration_lambda_is_not() =>
-        Verify.Exactly(ServiceProviderRules.Check(FixtureSet.Edges("Locator")), ServiceProviderRules.Id, "Run.RunService uses IServiceProvider");
+    public void A_service_locator_outside_host_is_reported_but_a_registration_lambda_is_not() =>
+        Verify.Exactly(ServiceProviderRules.Check(FixtureSet.Edges("Locator")), ServiceProviderRules.Id,
+            "Run.RunService uses IServiceProvider", "Locator.Core.Clock uses IServiceProvider", "Locator.Infrastructure.Store uses IServiceProvider");
+
+    [Fact]
+    public void A_service_locator_in_a_package_with_no_layers_is_reported() =>
+        Verify.Exactly(ServiceProviderRules.Check(Edge.All(FixtureSet.Types("Unrooted"), [])), ServiceProviderRules.Id,
+            "Unrooted.Tools.Locator uses IServiceProvider");
+
+    [Theory]
+    [InlineData("System.IServiceProvider", true)]
+    [InlineData("Microsoft.Extensions.DependencyInjection.IKeyedServiceProvider", true)]
+    [InlineData("Microsoft.Extensions.DependencyInjection.IServiceScopeFactory", true)]
+    [InlineData("Microsoft.Extensions.DependencyInjection.AsyncServiceScope", true)]
+    [InlineData("Microsoft.Extensions.DependencyInjection.ActivatorUtilities", true)]
+    [InlineData("Microsoft.Extensions.DependencyInjection.IServiceCollection", false)]
+    public void Service_locator_types_are_matched_by_name(string fullName, bool expected) =>
+        Assert.Equal(expected, ServiceProviderRules.IsLocator(fullName));
+
+    [Fact]
+    public void Small_shape_features_depending_on_commands_is_reported() =>
+        Verify.Exactly(DirectionRules.Check(FixtureSet.Edges("DirectionSmall")).Where(v => v.RuleId == DirectionRules.FeaturesId), DirectionRules.FeaturesId, "Go.GoService -> ");
+
+    [Fact]
+    public void Small_shape_infrastructure_depending_on_features_is_reported() =>
+        Verify.Exactly(DirectionRules.Check(FixtureSet.Edges("DirectionSmall")).Where(v => v.RuleId == DirectionRules.InfrastructureId),
+            DirectionRules.InfrastructureId, "Infrastructure.GoStore -> ");
+
+    [Fact]
+    public void Features_using_a_tier_zero_package_other_than_the_kernel_is_reported() =>
+        Verify.Exactly(DirectionRules.Check(FixtureSet.Edges("TierZero")), DirectionRules.TierZeroId, "uses Aw.Kernel.Data");
+
+    [Fact]
+    public void A_namespace_under_a_package_root_that_names_no_layer_is_reported_in_both_shapes() =>
+        Verify.Exactly(PlacementRules.Check(FixtureSet.Types("Placement", "PlacementSmall"), FixtureSet.Roots("Placement", "PlacementSmall")),
+            PlacementRules.Id, "Placement.Domain names no layer", "PlacementSmall.App.Ids names no layer");
+
+    [Theory]
+    [InlineData("Aw.Judge.Host", "Aw.Judge")]
+    [InlineData("Aw.Judge.App", "Aw.Judge")]
+    [InlineData("Aw.Judge.Core", null)]
+    [InlineData("Aw.Kernel", null)]
+    public void Program_and_generator_output_sit_in_host_by_their_assembly(string assembly, string? root) =>
+        Assert.Equal(root, Place.HostRootOfAssembly(assembly, ["Aw.Judge"]));
 
     [Fact]
     public void Technology_types_in_core_and_features_are_reported() =>
         Verify.Exactly(PortRules.Check(FixtureSet.Edges("Port")).Where(v => v.RuleId == PortRules.TechnologyId),
             PortRules.TechnologyId, "Port.Core.StoreOptions -> Aw.Kernel.Data.SqliteOptions", "Fetch.FetchService -> System.Net.Http.HttpClient");
+
+    [Fact]
+    public void Technology_types_in_small_shape_features_and_commands_are_reported() =>
+        Verify.Exactly(PortRules.Check(FixtureSet.Edges("PortSmall")).Where(v => v.RuleId == PortRules.TechnologyId),
+            PortRules.TechnologyId, "Go.GoService -> System.Environment", "Commands.ReadCommand -> System.IO.File");
 
     [Fact]
     public void Infrastructure_used_outside_composition_is_reported_in_both_shapes() =>
@@ -84,6 +132,11 @@ public sealed class FixtureTests
     [InlineData("System.IO.File", true)]
     [InlineData("System.Net.Http.HttpClient", true)]
     [InlineData("Aw.Kernel.Data.SqliteUnitOfWork", true)]
+    [InlineData("System.Environment", true)]
+    [InlineData("Microsoft.EntityFrameworkCore.DbContext", true)]
+    [InlineData("System.Net.Dns", true)]
+    [InlineData("System.Net.WebUtility", false)]
+    [InlineData("System.Net.Mime.MediaTypeNames", false)]
     [InlineData("System.IO.TextWriter", false)]
     [InlineData("System.Diagnostics.Stopwatch", false)]
     [InlineData("Aw.Kernel.Result`1", false)]

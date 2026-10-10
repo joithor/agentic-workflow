@@ -12,9 +12,9 @@ public enum Layer
     /// <summary>Aw.&lt;Pkg&gt;.Infrastructure, or App.Infrastructure in the small shape.</summary>
     Infrastructure,
 
-    /// <summary>Aw.&lt;Pkg&gt;.Host.Commands or Host.Endpoints, or App.Commands in the small shape.</summary>
+    /// <summary>App.Commands in the small shape (full-shape Host.Commands and Host.Endpoints are Host).</summary>
     Commands,
 
-    /// <summary>The rest of Aw.&lt;Pkg&gt;.Host, or the App root namespace (Composition) in the small shape.</summary>
+    /// <summary>Aw.&lt;Pkg&gt;.Host (with its Commands and Endpoints), or the small shape's App root namespace (Composition, Program).</summary>
     Host,
 }

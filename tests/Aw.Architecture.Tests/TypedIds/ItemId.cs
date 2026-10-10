@@ -5,6 +5,7 @@ using Vogen;
 
 namespace Aw.Architecture.Tests.TypedIds;
 
+// A copy of the example in tests/Aw.Kernel.Tests/TypedIds, as the guard tests' compliant case (that project can't be referenced).
 /// <summary>A string id: an item in a backlog.</summary>
 [ValueObject<string>(comparison: ComparisonGeneration.Omit)]
 [JsonConverter(typeof(StringIdJsonConverter<ItemId>))]

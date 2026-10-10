@@ -1,12 +1,12 @@
 namespace Aw.Architecture.Tests.Rules;
 
 /// <summary>
-/// Every external technology sits behind a port (csharp.md Seams): Core, Features and the Commands/Endpoints use no
-/// technology type, and only Composition uses Infrastructure.
+/// Every external technology sits behind a port (csharp.md Seams): Core, Features and the small shape's App.Commands use
+/// no technology type, and only Composition uses Infrastructure (Host, including Program, and App.Commands).
 /// </summary>
 public static class PortRules
 {
-    /// <summary>A technology type in Core, Features or Commands/Endpoints.</summary>
+    /// <summary>A technology type in Core, Features or the small shape's App.Commands.</summary>
     public const string TechnologyId = "ARCH-PORT-001";
 
     /// <summary>Infrastructure used outside Infrastructure and Composition.</summary>

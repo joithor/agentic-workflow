@@ -11,13 +11,13 @@ internal static class FixtureSet
 
     private static readonly Lazy<IReadOnlyList<IType>> _all = new(() =>
         [.. new ArchLoader().LoadAssemblies(typeof(FixtureSet).Assembly).Build().Types
-            .Where(t => t.Namespace.FullName.StartsWith(Prefix, StringComparison.Ordinal))]);
+            .Where(t => TypeNames.NamespaceOf(t).StartsWith(Prefix, StringComparison.Ordinal))]);
 
     /// <summary>The types of the named fixture packages.</summary>
     /// <param name="packages">Fixture folder names, e.g. Good.</param>
     /// <returns>Their types.</returns>
     public static IReadOnlyList<IType> Types(params string[] packages) =>
-        [.. _all.Value.Where(t => packages.Any(p => t.Namespace.FullName.StartsWith(Prefix + p + ".", StringComparison.Ordinal)))];
+        [.. _all.Value.Where(t => packages.Any(p => TypeNames.NamespaceOf(t).StartsWith(Prefix + p + ".", StringComparison.Ordinal)))];
 
     /// <summary>The package roots of the named fixture packages.</summary>
     /// <param name="packages">Fixture folder names.</param>

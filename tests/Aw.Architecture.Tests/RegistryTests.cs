@@ -1,3 +1,4 @@
+using System.Xml.Linq;
 using Aw.Architecture.Tests.Rules;
 
 namespace Aw.Architecture.Tests;
@@ -19,15 +20,15 @@ public sealed class RegistryTests
     [Fact]
     public void Every_registered_assembly_is_a_production_project_that_loads() =>
         Verify.None(Stale(Solution.ProductionProjects, Packages.Production)
-            .Concat(Packages.Production.Where(n => Production.Assemblies.All(a => a.GetName().Name != n))
-                .Select(n => new Violation(StaleId, $"{n} is in Packages.cs but doesn't load from the test output", $"add {AddReference(n)}"))));
+            .Concat(Packages.Production.Where(n => Solution.ProductionProjects.Contains(n, StringComparer.Ordinal) && !Production.Loaded(n))
+                .Select(n => new Violation(StaleId, $"{n} is in Packages.cs but its assembly {Solution.AssemblyOf(n)} doesn't load from the test output", $"add {AddReference(n)}"))));
 
     [Fact]
     public void Every_registered_assembly_is_in_the_architecture_model()
     {
         var loaded = Production.Architecture.Assemblies.Select(a => a.Name.Split(',')[0]).ToHashSet(StringComparer.Ordinal);
 
-        Assert.All(Packages.Production, n => Assert.Contains(n, loaded));
+        Assert.All(Packages.Production, n => Assert.Contains(Solution.AssemblyOf(n), loaded));
         Assert.NotEmpty(Production.Edges);
     }
 
@@ -38,6 +39,22 @@ public sealed class RegistryTests
     [Fact]
     public void A_registered_name_without_a_project_is_reported() =>
         Verify.Exactly(Stale(["Aw.Kernel"], ["Aw.Kernel", "Aw.Gone.Core"]), StaleId, "Aw.Gone.Core");
+
+    [Fact]
+    public void A_project_that_renames_its_assembly_is_loaded_by_the_new_name() =>
+        Assert.Equal("judge", Solution.AssemblyNameIn(XDocument.Parse(
+            "<Project><PropertyGroup><OutputType>Exe</OutputType><AssemblyName>judge</AssemblyName></PropertyGroup></Project>"),
+            "Aw.Judge.Host"));
+
+    [Fact]
+    public void A_project_without_an_assembly_name_builds_its_project_name() =>
+        Assert.Equal("Aw.Judge.Core", Solution.AssemblyNameIn(XDocument.Parse("<Project><PropertyGroup /></Project>"), "Aw.Judge.Core"));
+
+    [Fact]
+    public void Only_src_projects_that_are_not_analyzers_are_production_projects() =>
+        Assert.Equal(["Aw.Kernel", "Aw.Judge.Host"], Solution.ProductionOf([
+            "src/Aw.Kernel/Aw.Kernel.csproj", "src/Aw.Analyzers/Aw.Analyzers.csproj", "tests/Aw.Kernel.Tests/Aw.Kernel.Tests.csproj",
+            "src/Judge/Aw.Judge.Host/Aw.Judge.Host.csproj"]));
 
     private static IEnumerable<Violation> Missing(IEnumerable<string> projects, IReadOnlyList<string> registered) =>
         projects.Where(p => !registered.Contains(p, StringComparer.Ordinal))

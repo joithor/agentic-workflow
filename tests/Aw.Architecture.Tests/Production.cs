@@ -10,8 +10,9 @@ internal static class Production
 {
     private static readonly Lazy<ArchArchitecture> _loaded = new(Load);
 
-    /// <summary>The registered assemblies, loaded by name from the test's output directory.</summary>
-    public static IReadOnlyList<Assembly> Assemblies { get; } = [.. Packages.Production.Select(TryLoad).OfType<Assembly>()];
+    /// <summary>The registered projects' assemblies, loaded by assembly name from the test's output directory.</summary>
+    public static IReadOnlyList<Assembly> Assemblies { get; } =
+        [.. Packages.Production.Select(Solution.AssemblyOf).Select(TryLoad).OfType<Assembly>()];
 
     private static readonly string[] _layerProjects = ["Core", "Features", "Infrastructure", "Host", "App"];
 
@@ -41,6 +42,11 @@ internal static class Production
     /// (Aw.Kernel, Aw.Kernel.Data) have no layers, so only the cycle, naming and service-provider rules cover them.
     /// </summary>
     public static IReadOnlyList<string> Roots { get; } = RootsOf(Packages.Production);
+
+    /// <summary>Whether a registered project's assembly loaded.</summary>
+    /// <param name="project">A Packages.cs line.</param>
+    /// <returns>True when it is in <see cref="Assemblies"/>.</returns>
+    public static bool Loaded(string project) => Assemblies.Any(a => a.GetName().Name == Solution.AssemblyOf(project));
 
     /// <summary>The package roots a list of assembly names implies.</summary>
     /// <param name="assemblyNames">Assembly names.</param>

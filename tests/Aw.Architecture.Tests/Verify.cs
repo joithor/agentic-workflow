@@ -25,8 +25,22 @@ internal static class Verify
     {
         var list = violations.ToList();
         Assert.All(list, v => Assert.Equal(ruleId, v.RuleId));
-        Assert.Equal(found.Length, list.Count);
-        Assert.All(found, f => Assert.Contains(list, v => v.Found.Contains(f, StringComparison.Ordinal)));
         Assert.All(list, v => Assert.False(string.IsNullOrWhiteSpace(v.Fix)));
+        Assert.Equal(found.Length, list.Count);
+
+        // Each expected text claims a distinct violation, so one violation can't satisfy two expectations.
+        var unclaimed = new List<Violation>(list);
+        foreach (var f in found)
+        {
+            var match = unclaimed.FirstOrDefault(v => v.Found.Contains(f, StringComparison.Ordinal));
+            if (match is null)
+            {
+                Assert.Fail($"no unclaimed {ruleId} violation contains \"{f}\"; got:{Environment.NewLine}{string.Join(Environment.NewLine, list)}");
+            }
+            else
+            {
+                _ = unclaimed.Remove(match);
+            }
+        }
     }
 }

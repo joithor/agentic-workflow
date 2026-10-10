@@ -16,7 +16,7 @@ public sealed record Edge(IType Origin, Place? From, IType Target, Place? To)
     public static IReadOnlyList<Edge> All(IEnumerable<IType> types, IReadOnlyList<string> roots) =>
         [.. types
             .SelectMany(t => t.Dependencies.Select(d => (Origin: t, d.Target)))
-            .Where(p => !ReferenceEquals(p.Origin, p.Target))
+            .Where(p => !ReferenceEquals(p.Origin, p.Target) && p.Target is not GenericParameter)
             .DistinctBy(p => (TypeNames.Qualified(p.Origin), p.Target.FullName))
             .Select(p => new Edge(p.Origin, Place.Of(p.Origin, roots), p.Target, Place.Of(p.Target, roots)))];
 
