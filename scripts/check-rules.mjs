@@ -84,6 +84,9 @@ function existsCheck(root, c, cache) {
   }
 }
 
+// The YAML parser is shared with check-deps and prefixes its messages with "deps.yaml:<line>:".
+const yamlMessage = (e) => e.message.replace(/^deps\.yaml:/, `line `);
+
 function load(root, rel) {
   const text = readText(path.join(root, rel));
   if (text === null) throw new ToolError(`can't read ${rel}`);
@@ -99,7 +102,7 @@ export function check(root) {
   let inventory;
   try { inventory = parseYaml(load(root, INVENTORY)); } catch (e) {
     if (!(e instanceof YamlError)) throw e;
-    fail("RULE-YAML-001", "inventory is outside the YAML subset", `${INVENTORY}: ${e.message}`, "the YAML subset deps.yaml uses", "rewrite the line in plain block YAML");
+    fail("RULE-YAML-001", "inventory is outside the YAML subset", `${INVENTORY}: ${yamlMessage(e)}`, "the YAML subset deps.yaml uses", "rewrite the line in plain block YAML");
     return { fails, warns, records: [] };
   }
   const specText = load(root, inventory.spec);
@@ -108,16 +111,22 @@ export function check(root) {
 
   const records = [];
   const cache = new Map();
+  // Ids named by records that failed to parse or validate: still counted for RULE-COVER-002, so one broken
+  // record reports its own failure instead of a cascade of "no record names <id>".
+  const brokenNamed = new Set();
   for (const name of fs.readdirSync(path.join(root, RECORDS)).filter((n) => n.endsWith(".yaml")).sort()) {
     const rel = `${RECORDS}/${name}`;
     let rec;
-    try { rec = parseYaml(load(root, rel)); } catch (e) {
+    const raw = load(root, rel);
+    try { rec = parseYaml(raw); } catch (e) {
       if (!(e instanceof YamlError)) throw e;
-      fail("RULE-YAML-001", "record is outside the YAML subset", `${rel}: ${e.message}`, "the YAML subset deps.yaml uses (no flow mappings, anchors or block scalars)", "rewrite the record in plain block YAML");
+      for (const id of raw.match(DOC_ID) ?? []) brokenNamed.add(id);
+      fail("RULE-YAML-001", "record is outside the YAML subset", `${rel}: ${yamlMessage(e)}`, "the YAML subset deps.yaml uses (no flow mappings, anchors or block scalars)", "rewrite the record in plain block YAML");
       continue;
     }
     const errs = validate(schema, rec);
     if (errs.length) {
+      for (const id of raw.match(DOC_ID) ?? []) brokenNamed.add(id);
       for (const e of errs) fail("RULE-SCHEMA-001", "record does not match its schema", `${rel} ${e}`, SCHEMA, "fix the field (docs/csharp/rule-records.md lists every field)");
       continue;
     }
@@ -151,7 +160,7 @@ export function check(root) {
     if (!sections.has(section)) fail("RULE-COVER-004", "inventory section isn't a heading in the spec", `${id}: §${section}`, `a heading in ${inventory.spec}`, "fix the section number");
   }
   for (const { rec, rel } of records) if (!wanted.has(rec.id)) fail("RULE-COVER-003", "record isn't in the inventory", `${rec.id} (${rel})`, `listed in ${INVENTORY}`, `add it to ${INVENTORY} with its section, or delete the record`);
-  const named = new Set(records.flatMap(({ rec }) => [...rec.checks.map((c) => c.id), ...(rec.relatedIds ?? [])]));
+  const named = new Set([...brokenNamed, ...records.flatMap(({ rec }) => [...rec.checks.map((c) => c.id), ...(rec.relatedIds ?? [])])]);
   for (const doc of RULES_DOCS) {
     const text = readText(path.join(root, doc));
     if (text === null) continue;
