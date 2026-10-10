@@ -8,7 +8,7 @@ import { generalizeHolds } from "../stage.js";
 import { terminalSafe } from "../invisible.js";
 import { repoConfig, type EvolveCtx } from "../ctx.js";
 import {
-  classifyTier, getProposal, hasPublic, latestComparison, listProposals, nextFor, owns, reduceEvidence, runningComparison, stagedFile, STATUSES, TERMINAL, transition, OPEN, type ProposalStatus,
+  classifyTier, getProposal, heldByGeneralize, latestComparison, listProposals, nextFor, owns, reduceEvidence, runningComparison, stagedFile, STATUSES, TERMINAL, transition, OPEN, type ProposalStatus,
 } from "../proposals.js";
 import { isAddedTestAllowed, isProtectedPath, loadRegistry } from "../registry.js";
 import { excerptFor, transcriptsDir } from "../transcripts.js";
@@ -47,6 +47,8 @@ export async function show(args: string[], ctx: EvolveCtx): Promise<CommandResul
   const running = runningComparison(ctx.db, id);
   const indent = (t: string): string => t.split("\n").map((l) => `  ${l}`).join("\n");
   const dir = transcriptsDir(ctx);
+  const max = ctx.loaded.profile.evolve.maxGeneralizeAttempts;
+  const g = heldByGeneralize(ctx.db, s) ? { holds: generalizeHolds(ctx.db, id), max } : null;
   const excerpts = ev.refs.flatMap((r) => {
     const e = excerptFor(dir, ctx.repo, r, undefined, profileScrubber(ctx.loaded));
     return e === null ? [] : [`  ${r}: "${e}"`];
@@ -62,9 +64,11 @@ export async function show(args: string[], ctx: EvolveCtx): Promise<CommandResul
     ...(excerpts.length > 0 ? ["Excerpts:", ...excerpts] : []),
     ...(cmp === null ? [] : [`Comparison (run ${cmp.run}): ${cmp.line}`]),
     ...(running === null ? [] : [`A comparison is running (run ${running}).`]),
-    `Next: ${nextFor(s)}`,
+    ...(g === null ? [] : [`Generalize holds: ${g.holds} of ${g.max} (evolve.maxGeneralizeAttempts)`]),
+    `Next: ${nextFor(s, g)}`,
   ];
-  return success(terminalSafe(lines.join("\n")), { ...s, recomputed: now, evidence: ev.refs, comparison: cmp, running }, values.json === true);
+  const holds = g === null ? {} : { generalizeHolds: g.holds, maxGeneralizeAttempts: g.max };
+  return success(terminalSafe(lines.join("\n")), { ...s, recomputed: now, evidence: ev.refs, comparison: cmp, running, ...holds }, values.json === true);
 }
 
 export async function reject(args: string[], ctx: EvolveCtx): Promise<CommandResult> {
@@ -98,9 +102,9 @@ export async function retry(args: string[], ctx: EvolveCtx): Promise<CommandResu
   // Decided inside the write, so a reject or a stage run that committed since can't be overwritten.
   const r = ctx.write((epoch): { kind: "not-generalize-held"; status: string } | { kind: "under-cap" | "retried"; holds: number } => {
     const status = (ctx.db.prepare("SELECT status FROM proposals WHERE id = ?").get(id) as { status: ProposalStatus }).status;
-    // A held proposal with a public row was held by publish's gate, not by the generalization pass.
+    // A held proposal with a readable public row was held by publish's gate, not by the generalization pass.
     if (status !== "held") return { kind: "not-generalize-held", status };
-    if (hasPublic(ctx.db, id)) return { kind: "not-generalize-held", status: "held by publish's privacy gate" };
+    if (!heldByGeneralize(ctx.db, { id, status })) return { kind: "not-generalize-held", status: "held by publish's privacy gate" };
     const holds = generalizeHolds(ctx.db, id);
     if (holds < max) return { kind: "under-cap", holds };
     auditMarker(ctx.db, ctx.deps, "generalize-retry", id, epoch);

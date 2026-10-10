@@ -286,11 +286,21 @@ export async function findMerged(db: Ledger, git: GitRunner, repo: string, defau
   return found;
 }
 
-export function nextFor(s: { id: string; status: ProposalStatus; tier: Tier }): string {
+// Held by stage's generalization pass rather than by publish's gate: status held and no readable public version. The one
+// place this is decided (show, retry).
+export const heldByGeneralize = (db: Ledger, s: { id: string; status: ProposalStatus }): boolean => s.status === "held" && readPublic(db, s.id).state !== "ok";
+
+// `generalize`: for a proposal held by the generalization pass, its content holds and evolve.maxGeneralizeAttempts. Under
+// the cap stage retries it; at the cap stage gave up, and retry is the way out that keeps its title usable
+// (architecture-strategist-0). A proposal held by publish's gate is reworded by rejecting it.
+export function nextFor(s: { id: string; status: ProposalStatus; tier: Tier }, generalize: { holds: number; max: number } | null = null): string {
   if (s.status === "proposed") return s.tier === "self-adopt" ? `sindri evolve compare ${s.id}` : "sindri evolve stage";
   if (s.status === "won") return `sindri evolve adopt ${s.id}`;
   if (s.status === "staged") return "sindri evolve publish";
-  if (s.status === "held") return `sindri evolve reject ${s.id} --reason "..."`;
+  if (s.status === "held") {
+    if (generalize === null) return `sindri evolve reject ${s.id} --reason "..."`;
+    return generalize.holds >= generalize.max ? `sindri evolve retry ${s.id} (or sindri evolve reject ${s.id} --reason "...")` : "sindri evolve stage";
+  }
   if (s.status === "published" || s.status === "insufficient-corpus") return "sindri evolve status";
   return "sindri evolve proposals";
 }

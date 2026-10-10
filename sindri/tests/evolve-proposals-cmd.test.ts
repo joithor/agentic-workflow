@@ -6,7 +6,7 @@ import { audit } from "../src/evolve/audit.js";
 import { proposals, reject, show, tier } from "../src/evolve/cmd/proposals.js";
 import { init } from "../src/evolve/cmd/registry.js";
 import { status } from "../src/evolve/cmd/status.js";
-import { ProposalSchema, saveProposal, stagedFile, type Proposal, type ProposalStatus } from "../src/evolve/proposals.js";
+import { ProposalSchema, savePublic, saveProposal, stagedFile, type Proposal, type ProposalStatus } from "../src/evolve/proposals.js";
 import { evolveFixture, git, setStatus } from "./evolve-fixtures.js";
 
 const FILES = {
@@ -97,13 +97,37 @@ describe("sindri evolve show", () => {
   it("suggests the next command for each status", async () => {
     const { fx, save } = await ready();
     const cases: [ProposalStatus, string][] = [
-      ["won", "sindri evolve adopt"], ["staged", "sindri evolve publish"], ["held", "sindri evolve reject"], ["published", "sindri evolve status"],
+      ["won", "sindri evolve adopt"], ["staged", "sindri evolve publish"], ["held", "sindri evolve stage"], ["published", "sindri evolve status"],
       ["insufficient-corpus", "sindri evolve status"], ["rejected", "sindri evolve proposals"],
     ];
     for (const [s, expected] of cases) {
       const id = save({ title: `Proposal in state ${s}` }, "code", s);
       expect((await show([id], fx.ctx)).stdout).toContain(`Next: ${expected}`);
     }
+    fx.close();
+  });
+
+  it("points a held proposal at the way out that fits why it is held (architecture-strategist-0)", async () => {
+    const { fx, save } = await ready("evolve:\n  maxGeneralizeAttempts: 2\n");
+    const hold = (id: string) => fx.ctx.write((epoch) =>
+      fx.ctx.db.prepare("INSERT INTO evolve_audit (ts, verb, actor, detail, epoch) VALUES ('t', 'generalize-hold', 'a', ?, ?)").run(`${id}: generalize: the judge found domain`, epoch));
+    // Held by the generalization pass, under the cap: stage retries it.
+    const under = save({ title: "Held under the cap" }, "code", "held");
+    hold(under);
+    const u = await show([under, "--json"], fx.ctx);
+    expect((await show([under], fx.ctx)).stdout).toContain("Generalize holds: 1 of 2 (evolve.maxGeneralizeAttempts)\nNext: sindri evolve stage");
+    expect(JSON.parse(u.stdout)).toMatchObject({ generalizeHolds: 1, maxGeneralizeAttempts: 2 });
+    // At the cap: stage gave up, so retry (reject is the other way out).
+    const capped = save({ title: "Held at the cap" }, "code", "held");
+    hold(capped);
+    hold(capped);
+    expect((await show([capped], fx.ctx)).stdout).toContain(`Generalize holds: 2 of 2 (evolve.maxGeneralizeAttempts)\nNext: sindri evolve retry ${capped} (or sindri evolve reject ${capped} --reason "...")`);
+    // Held by publish's gate (it has a public version): reject or reword.
+    const gated = save({ title: "Held by the publish gate" }, "code", "held");
+    fx.ctx.write((epoch) => savePublic(fx.ctx.db, gated, prop({ title: "Held by the publish gate" }), { category: "none", model: "m" }, epoch, fx.deps.now()));
+    const g = (await show([gated], fx.ctx)).stdout;
+    expect(g).toContain(`Next: sindri evolve reject ${gated} --reason "..."`);
+    expect(g).not.toContain("Generalize holds");
     fx.close();
   });
 });
