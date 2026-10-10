@@ -1,0 +1,1102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>How Sindri Works</title>
+
+  <!-- Google Fonts: Bricolage Grotesque · DM Sans · JetBrains Mono -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,700;12..96,800&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400;1,9..40,500&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="styles.css">
+
+  <!--
+    CUSTOMIZE PER COURSE — change only the three accent variables below.
+    Options:
+      vermillion  #D94F30 / #C4432A / #FDEEE9 / #E8836C  (default)
+      coral       #E06B56 / #C85A47 / #FDECEA / #E89585
+      teal        #2A7B9B / #1F6280 / #E4F2F7 / #5A9DB8
+      amber       #D4A843 / #BF9530 / #FDF5E0 / #E0C070
+      forest      #2D8B55 / #226B41 / #E8F5EE / #5AAD7A
+  -->
+  <style>
+    :root {
+      --color-accent:       #D94F30;
+      --color-accent-hover: #C4432A;
+      --color-accent-light: #FDEEE9;
+      --color-accent-muted: #E8836C;
+    }
+    /* Sindri-only: build-status chips (built / specced / designed / dream) */
+    .status { display: inline-block; font: 600 0.7rem/1 var(--font-mono); letter-spacing: .04em; text-transform: uppercase;
+      padding: 3px 7px; border-radius: 99px; vertical-align: middle; margin-left: 6px; white-space: nowrap; }
+    .status.built    { background: #E8F5EE; color: #226B41; }
+    .status.specced  { background: #E4F2F7; color: #1F6280; }
+    .status.designed { background: #FDF5E0; color: #8A6A1C; }
+    .status.dream    { background: #EFEBF7; color: #5E528A; }
+    .bars { display: flex; flex-direction: column; gap: 6px; margin: var(--space-6) 0; }
+    .bar-row { display: grid; grid-template-columns: minmax(120px, 15rem) 1fr 3rem; gap: 10px; align-items: center; font-size: var(--text-sm); }
+    .bar-track { height: 14px; background: var(--color-border-light); border-radius: 99px; overflow: hidden; }
+    .bar-fill { height: 100%; background: var(--color-accent); border-radius: 99px; }
+    .bar-fill.cool { background: var(--color-actor-2); }
+    .bar-row span:last-child { font-family: var(--font-mono); color: var(--color-text-secondary); text-align: right; }
+    .ref { font: 500 0.72rem var(--font-mono); color: var(--color-text-muted); }
+    @media (max-width: 560px) { .bar-row { grid-template-columns: 1fr 3rem; } .bar-row .bar-track { grid-column: 1 / -1; grid-row: 2; } }
+  </style>
+
+  <script src="main.js" defer></script>
+</head>
+<body>
+
+  <nav class="nav" id="nav">
+    <div class="progress-bar" id="progress-bar" role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"></div>
+    <div class="nav-inner">
+      <span class="nav-title">How Sindri Works</span>
+      <div class="nav-dots" id="nav-dots" role="tablist">
+        <button class="nav-dot" data-target="module-1" data-tooltip="Why Sindri exists" role="tab" aria-label="Module 1: Why Sindri exists"></button>
+        <button class="nav-dot" data-target="module-2" data-tooltip="The night watch" role="tab" aria-label="Module 2: The night watch"></button>
+        <button class="nav-dot" data-target="module-3" data-tooltip="Survey before you dig" role="tab" aria-label="Module 3: Survey before you dig"></button>
+        <button class="nav-dot" data-target="module-4" data-tooltip="Sealed blueprints, narrow crews" role="tab" aria-label="Module 4: Sealed blueprints, narrow crews"></button>
+        <button class="nav-dot" data-target="module-5" data-tooltip="Where the human decides" role="tab" aria-label="Module 5: Where the human decides"></button>
+        <button class="nav-dot" data-target="module-6" data-tooltip="The ring that multiplies" role="tab" aria-label="Module 6: The ring that multiplies"></button>
+      </div>
+    </div>
+  </nav>
+
+  <main id="main">
+    <!-- modules/*.html content is assembled here by build.sh -->
+<section class="module" id="module-1" style="background: var(--color-bg)">
+  <div class="module-content">
+    <header class="module-header animate-in">
+      <span class="module-number">01</span>
+      <h1 class="module-title">Why Sindri exists</h1>
+      <p class="module-subtitle">You assign yourself a ticket. Here's everything that should happen next without you.</p>
+    </header>
+
+    <div class="module-body">
+
+      <section class="screen animate-in">
+        <h2 class="screen-heading">Start with something you already do</h2>
+        <p>Picture your Monday. You open the <span class="term" data-definition="The tool where work items live, such as Linear or GitHub Issues. Sindri also reads plain plan files as a tracker, so this repo can build itself without a tracker account.">tracker</span>, assign yourself a ticket, paste it into an agent session, and then spend the afternoon steering. "No, not that file." "You forgot the migration." "Did you actually run the tests?"</p>
+        <p><strong>Sindri</strong> is a local, always-on <span class="term" data-definition="The code that wraps a model and decides what it sees, what it may do, and when it stops. The model does the thinking; the harness does the bookkeeping and the guarding.">harness</span> that takes over that afternoon. It picks up the work, sizes it, starts agent sessions with cited context, keeps them on track and ships them through a fixed recipe. It asks you only when it has to.</p>
+        <div class="callout callout-accent">
+          <div class="callout-icon">⚒️</div>
+          <div class="callout-content">
+            <strong class="callout-title">The name</strong>
+            <p>Sindri is the dwarf smith who forged Draupnir, a ring that makes copies of itself. The core tenet is the same idea: <em>the human approves direction; Sindri does the finding, the building and the proving.</em> Then it uses that factory to improve itself.</p>
+          </div>
+        </div>
+      </section>
+
+      <section class="screen animate-in">
+        <h2 class="screen-heading">It started with a measurement</h2>
+        <p>A <span class="term" data-definition="A saved log of an agent session: every prompt, reply and tool call. The audit read a month of these to count where human effort went.">transcript</span> audit of one month of work (406 sessions, 2,911 human turns) asked a simple question: where did the human's turns go?</p>
+        <div class="bars" role="img" aria-label="Share of human turns by category">
+          <div class="bar-row"><span>Shipping direction</span><div class="bar-track"><div class="bar-fill" style="width:100%"></div></div><span>20%</span></div>
+          <div class="bar-row"><span>Product decisions</span><div class="bar-track"><div class="bar-fill cool" style="width:100%"></div></div><span>20%</span></div>
+          <div class="bar-row"><span>Keeping orchestrators on track</span><div class="bar-track"><div class="bar-fill" style="width:55%"></div></div><span>11%</span></div>
+          <div class="bar-row"><span>Research asks</span><div class="bar-track"><div class="bar-fill" style="width:50%"></div></div><span>10%</span></div>
+          <div class="bar-row"><span>Defects found by hand</span><div class="bar-track"><div class="bar-fill" style="width:27.5%"></div></div><span>5.5%</span></div>
+          <div class="bar-row"><span>Dispatch (pasting tickets)</span><div class="bar-track"><div class="bar-fill" style="width:27.5%"></div></div><span>5.5%</span></div>
+          <div class="bar-row"><span>Mid-flight scope discovery</span><div class="bar-track"><div class="bar-fill" style="width:20%"></div></div><span>4%</span></div>
+          <div class="bar-row"><span>QA direction</span><div class="bar-track"><div class="bar-fill" style="width:20%"></div></div><span>4%</span></div>
+          <div class="bar-row"><span>Evidence and env recipes</span><div class="bar-track"><div class="bar-fill" style="width:15%"></div></div><span>3%</span></div>
+        </div>
+        <p>Only the <strong style="color: var(--color-actor-2)">blue bar</strong> really needs a human: product judgment. Most of the rest is babysitting, which code can do. That's the whole pitch.</p>
+      </section>
+
+      <section class="screen animate-in">
+        <h2 class="screen-heading">The production line</h2>
+        <p>Think of it as a <strong>bakery</strong>. You choose what gets baked at the counter. The ovens run without you, and you taste the result before it goes in the window. Step through one ticket's trip:</p>
+
+        <div class="flow-animation" data-steps='[
+          {"highlight":"flow-m1-scope","label":"Scope: sindri scope turns the brief into a cited scope map of every surface it touches."},
+          {"highlight":"flow-m1-studio","label":"Studio: you and an agent settle the product questions at the desk.","packet":true,"from":"m1-scope","to":"m1-studio"},
+          {"highlight":"flow-m1-packet","label":"Packet: the plan is frozen by hash. Nothing builds without one.","packet":true,"from":"m1-studio","to":"m1-packet"},
+          {"highlight":"flow-m1-build","label":"Build: narrow sessions, each with only the tools and files its step needs.","packet":true,"from":"m1-packet","to":"m1-build"},
+          {"highlight":"flow-m1-review","label":"Review: proof arrives on your phone or desk, with what was and was not checked.","packet":true,"from":"m1-build","to":"m1-review"},
+          {"highlight":"flow-m1-merge","label":"Merge: the final merge to the default branch is always yours.","packet":true,"from":"m1-review","to":"m1-merge"}
+        ]'>
+          <div class="flow-actors">
+            <div class="flow-actor" id="flow-m1-scope"><div class="flow-actor-icon">🗺️</div><span>Scope</span></div>
+            <div class="flow-actor" id="flow-m1-studio"><div class="flow-actor-icon">💬</div><span>Studio</span></div>
+            <div class="flow-actor" id="flow-m1-packet"><div class="flow-actor-icon">📦</div><span>Packet</span></div>
+            <div class="flow-actor" id="flow-m1-build"><div class="flow-actor-icon">🏭</div><span>Build</span></div>
+            <div class="flow-actor" id="flow-m1-review"><div class="flow-actor-icon">📱</div><span>Review</span></div>
+            <div class="flow-actor" id="flow-m1-merge"><div class="flow-actor-icon">✅</div><span>Merge</span></div>
+          </div>
+          <div class="flow-packet"></div>
+          <div class="flow-step-label">Click "Next Step" to begin</div>
+          <div class="flow-controls">
+            <button class="btn flow-next-btn">Next Step</button>
+            <button class="btn flow-reset-btn">Restart</button>
+            <span class="flow-progress"></span>
+          </div>
+        </div>
+        <p>Scope and Studio are <strong>desk</strong> stages, where you're the product expert. Everything after the frozen <span class="term" data-definition="A schema-checked folder holding the design, decision log, tasks, write scopes and evidence plan for one deliverable. Freezing it records a hash, so the build runs against exactly what you approved.">packet</span> runs without you until review.</p>
+      </section>
+
+      <section class="screen animate-in">
+        <h2 class="screen-heading">Where the work comes from</h2>
+        <p>Before any of that, Sindri has to <em>find</em> work. The built plan-file <span class="term" data-definition="An adapter that turns some outside format into Sindri's work items. The plan-file adapter reads each '### Task N:' heading in a markdown plan as one item.">adapter</span> reads a markdown plan as a backlog, one item per <code>### Task N:</code> heading. Look at how it handles a missing folder:</p>
+        <div class="translation-block animate-in">
+          <div class="translation-code">
+            <span class="translation-label">sindri/src/adapters/plan-file/tracker.ts</span>
+            <pre><code><span class="code-line"><span class="code-comment">// A missing repo path or plan dir, an unreadable one, a plan dir with no matching</span></span>
+<span class="code-line"><span class="code-comment">// plan file, or a plan file too big to read is an error, never an empty backlog:</span></span>
+<span class="code-line"><span class="code-comment">// an empty scan would make observe mark every item removed.</span></span>
+<span class="code-line">  <span class="code-keyword">async function</span> <span class="code-function">all</span>(): Promise&lt;Result&lt;Entry[]&gt;&gt; {</span>
+<span class="code-line">    <span class="code-keyword">if</span> (!fs.<span class="code-function">existsSync</span>(dir)) {</span>
+<span class="code-line">      <span class="code-keyword">const</span> what = fs.<span class="code-function">existsSync</span>(o.repoPath) ? <span class="code-string">`plan dir not found: ${dir}`</span> : <span class="code-string">`repo path not found: ${o.repoPath}`</span>;</span>
+<span class="code-line">      <span class="code-keyword">return</span> <span class="code-function">err</span>({ <span class="code-property">kind</span>: <span class="code-string">"fatal"</span>, <span class="code-property">code</span>: <span class="code-string">"SND-TRACKER-001"</span>, <span class="code-property">message</span>: what });</span>
+<span class="code-line">    }</span></code></pre>
+          </div>
+          <div class="translation-english">
+            <span class="translation-label">PLAIN ENGLISH</span>
+            <div class="translation-lines">
+              <p class="tl">If we can't read the plans, that's a loud failure, not "you have no work".</p>
+              <p class="tl">Why so strict? An empty list would look like every task was deleted…</p>
+              <p class="tl">…and the hourly <code>observe</code> job would dutifully mark them all removed.</p>
+              <p class="tl">The scan returns a <span class="term" data-definition="A value that is either a success holding data or a failure holding an error. Callers have to look at which one they got; nothing is thrown past them.">Result</span>: success with entries, or a typed error.</p>
+              <p class="tl">Is the plan folder there?</p>
+              <p class="tl">Say exactly what's missing: the folder, or the whole repo.</p>
+              <p class="tl">Return a fatal error with a stable code (<code>SND-…</code>) you can look up.</p>
+            </div>
+          </div>
+        </div>
+        <div class="callout callout-info">
+          <div class="callout-icon">💡</div>
+          <div class="callout-content">
+            <strong class="callout-title">Pattern: fail loud, not empty</strong>
+            <p>"Nothing found" and "couldn't look" must never look the same. When you review agent code, ask: <em>what does this return when its input is missing?</em></p>
+          </div>
+        </div>
+      </section>
+
+      <section class="screen animate-in">
+        <h2 class="screen-heading">What's real today, and what isn't</h2>
+        <p>Sindri is part built, part plan. Every feature in this course carries one of four labels:</p>
+        <div class="pattern-cards">
+          <div class="pattern-card" style="border-top: 3px solid var(--color-actor-5)">
+            <h4 class="pattern-title">Built <span class="status built">built</span></h4>
+            <p class="pattern-desc">Shipped in Plans 1–5: measurement, the ledger, the code index, scoping and offline self-evolution.</p>
+          </div>
+          <div class="pattern-card" style="border-top: 3px solid var(--color-actor-2)">
+            <h4 class="pattern-title">Specced <span class="status specced">specced</span></h4>
+            <p class="pattern-desc">Has an approved spec and plan. Plan 6, the dashboard, is here.</p>
+          </div>
+          <div class="pattern-card" style="border-top: 3px solid var(--color-actor-4)">
+            <h4 class="pattern-title">Designed <span class="status designed">designed</span></h4>
+            <p class="pattern-desc">In a design spec but not planned yet: most of the factory addendum (§17).</p>
+          </div>
+          <div class="pattern-card" style="border-top: 3px solid var(--color-actor-3)">
+            <h4 class="pattern-title">Dream <span class="status dream">dream</span></h4>
+            <p class="pattern-desc">Vision, scouting seeds and deferred ideas.</p>
+          </div>
+        </div>
+        <div class="file-tree">
+          <div class="ft-folder open"><span class="ft-name">sindri/src/</span><span class="ft-desc">The built part, in TypeScript today (a C# port is in progress)</span>
+            <div class="ft-children">
+              <div class="ft-folder"><span class="ft-name">ledger/</span><span class="ft-desc">The one database everything writes to</span></div>
+              <div class="ft-folder"><span class="ft-name">lock/</span><span class="ft-desc">Makes sure only one Sindri runs at a time</span></div>
+              <div class="ft-folder"><span class="ft-name">scope/</span><span class="ft-desc">Brief → cited scope map, plus the backtest</span></div>
+              <div class="ft-folder"><span class="ft-name">index/</span><span class="ft-desc">The per-repo code index</span></div>
+              <div class="ft-folder"><span class="ft-name">evolve/</span><span class="ft-desc">Self-improvement: proposals, comparisons, channels</span></div>
+              <div class="ft-folder"><span class="ft-name">scrub/</span><span class="ft-desc">Strips secrets before anything is stored</span></div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="screen animate-in">
+        <h2 class="screen-heading">Check your understanding</h2>
+        <div class="quiz-container" id="quiz-m1">
+          <div class="quiz-question-block"
+               data-correct="b"
+               data-explanation-right="The audit says product judgment is the part only you can do. Sindri wants your turns there, and code handles the dispatching and nagging."
+               data-explanation-wrong="Look at the bars again. Babysitting work (dispatch, keeping sessions on track, finding defects by hand) is what Sindri automates. Product calls stay with the human, at the desk.">
+            <div class="scenario-block"><div class="scenario-context"><span class="scenario-label">Scenario</span>
+              <p>A month after Sindri is fully on, you run the audit again. Which result means it's working?</p></div></div>
+            <div class="quiz-options">
+              <button class="quiz-option" data-value="a" onclick="selectOption(this)"><div class="quiz-option-radio"></div><span>Total human turns drop to near zero.</span></button>
+              <button class="quiz-option" data-value="b" onclick="selectOption(this)"><div class="quiz-option-radio"></div><span>Fewer turns overall, and a much larger share of them are product decisions.</span></button>
+              <button class="quiz-option" data-value="c" onclick="selectOption(this)"><div class="quiz-option-radio"></div><span>More turns spent on QA direction, because Sindri ships more.</span></button>
+            </div>
+            <div class="quiz-feedback"></div>
+          </div>
+          <div class="quiz-question-block"
+               data-correct="c"
+               data-explanation-right="No build without a frozen packet (invariant 14). An unfrozen idea goes back to the desk, where questions get answered."
+               data-explanation-wrong="The build stage only accepts a frozen packet. A vague ticket gets scoped and settled at the desk first.">
+            <div class="scenario-block"><div class="scenario-context"><span class="scenario-label">Scenario</span>
+              <p>A teammate wants to skip the studio and hand a one-line ticket straight to the build stage. What happens?</p></div></div>
+            <div class="quiz-options">
+              <button class="quiz-option" data-value="a" onclick="selectOption(this)"><div class="quiz-option-radio"></div><span>The build agent works out the scope as it goes.</span></button>
+              <button class="quiz-option" data-value="b" onclick="selectOption(this)"><div class="quiz-option-radio"></div><span>It builds, but review gets stricter.</span></button>
+              <button class="quiz-option" data-value="c" onclick="selectOption(this)"><div class="quiz-option-radio"></div><span>It's refused: the build only starts from a frozen packet.</span></button>
+            </div>
+            <div class="quiz-feedback"></div>
+          </div>
+          <button class="quiz-check-btn" onclick="checkQuiz('quiz-m1')">Check Answers</button>
+          <button class="quiz-reset-btn" onclick="resetQuiz('quiz-m1')">Try Again</button>
+        </div>
+      </section>
+
+    </div>
+  </div>
+</section>
+<section class="module" id="module-2" style="background: var(--color-bg-warm)">
+  <div class="module-content">
+    <header class="module-header animate-in">
+      <span class="module-number">02</span>
+      <h1 class="module-title">The night watch</h1>
+      <p class="module-subtitle">A short tick, a single writer, bounded work, and the cheapest rung first.</p>
+    </header>
+
+    <div class="module-body">
+
+      <section class="screen animate-in">
+        <h2 class="screen-heading">A watchman doing rounds</h2>
+        <p>A night watchman doesn't sit in one room waiting for trouble. Every few minutes they walk the building, check each door, write in the logbook and move on. That's the <span class="term" data-definition="One short, deterministic pass of Sindri: read the ledger, check what finished, start what's due, notify, exit. macOS's launchd fires it on a schedule.">tick</span>.</p>
+        <p><span class="term" data-definition="macOS's built-in scheduler, the thing that starts programs at boot or on a timer. Sindri uses it instead of a long-running server process.">launchd</span> fires a short deterministic tick. It never waits on a model: model work runs in bounded jobs and sessions that end, and the next tick reads their results from the <span class="term" data-definition="Sindri's single SQLite database: items, events, decisions and adoptions. The one source of truth, kept outside every session's working tree.">ledger</span>. <span class="status designed">designed</span> <span class="ref">§5</span></p>
+        <div class="icon-rows">
+          <div class="icon-row"><div class="icon-circle" style="background: var(--color-actor-4)">⏰</div><div><strong>launchd</strong> <span class="status built">built</span><p>Already runs the hourly <code>sindri observe</code>, index builds and the Monday evolve job.</p></div></div>
+          <div class="icon-row"><div class="icon-circle" style="background: var(--color-actor-1)">🔦</div><div><strong>sindri tick</strong> <span class="status designed">designed</span><p>Reconciles, scans trackers, spawns jobs, routes items, starts sessions under the cap, notifies.</p></div></div>
+          <div class="icon-row"><div class="icon-circle" style="background: var(--color-actor-2)">📒</div><div><strong>ledger.db</strong> <span class="status built">built</span><p>SQLite, one writer, mode 0600. Hooks never write it; they drop files in a <span class="term" data-definition="A folder hooks append small files to. The tick reads them into the ledger and deletes them only after the database write commits, so nothing is lost if it crashes halfway.">spool</span>.</p></div></div>
+          <div class="icon-row"><div class="icon-circle" style="background: var(--color-actor-3)">⚖️</div><div><strong>judge</strong> <span class="status built">built</span><p>The cheap decision engine: questions answered on a provider chain, in milliseconds.</p></div></div>
+        </div>
+      </section>
+
+      <section class="screen animate-in">
+        <h2 class="screen-heading">One round, as a conversation</h2>
+        <div class="chat-window" id="chat-m2">
+          <div class="chat-messages">
+            <div class="chat-message" data-msg="0" data-sender="launchd" style="display:none">
+              <div class="chat-avatar" style="background: var(--color-actor-4)">⏰</div>
+              <div class="chat-bubble"><span class="chat-sender" style="color: var(--color-actor-4)">launchd</span><p>Time. Tick, you're up.</p></div>
+            </div>
+            <div class="chat-message" data-msg="1" data-sender="tick" style="display:none">
+              <div class="chat-avatar" style="background: var(--color-actor-1)">🔦</div>
+              <div class="chat-bubble"><span class="chat-sender" style="color: var(--color-actor-1)">tick</span><p>Taking the lock first. Ledger, what changed since my last round?</p></div>
+            </div>
+            <div class="chat-message" data-msg="2" data-sender="ledger" style="display:none">
+              <div class="chat-avatar" style="background: var(--color-actor-2)">📒</div>
+              <div class="chat-bubble"><span class="chat-sender" style="color: var(--color-actor-2)">ledger</span><p>The scoping job for T-41 finished. Session T-38 failed its verifier twice. Two spool files from hooks.</p></div>
+            </div>
+            <div class="chat-message" data-msg="3" data-sender="tick" style="display:none">
+              <div class="chat-avatar" style="background: var(--color-actor-1)">🔦</div>
+              <div class="chat-bubble"><span class="chat-sender" style="color: var(--color-actor-1)">tick</span><p>Judge: is T-42 an XS, clear, trusted item?</p></div>
+            </div>
+            <div class="chat-message" data-msg="4" data-sender="judge" style="display:none">
+              <div class="chat-avatar" style="background: var(--color-actor-3)">⚖️</div>
+              <div class="chat-bubble"><span class="chat-sender" style="color: var(--color-actor-3)">judge</span><p>Size XS, ambiguity low, confidence 0.91. Above threshold.</p></div>
+            </div>
+            <div class="chat-message" data-msg="5" data-sender="tick" style="display:none">
+              <div class="chat-avatar" style="background: var(--color-actor-1)">🔦</div>
+              <div class="chat-bubble"><span class="chat-sender" style="color: var(--color-actor-1)">tick</span><p>Starting a session for T-42 under the cap. T-38 is out of rounds: parking it and telling the human why. Done, see you next round.</p></div>
+            </div>
+          </div>
+          <div class="chat-typing" style="display:none">
+            <div class="chat-avatar" id="chat-m2-typing-avatar">?</div>
+            <div class="chat-typing-dots"><span class="typing-dot"></span><span class="typing-dot"></span><span class="typing-dot"></span></div>
+          </div>
+          <div class="chat-controls">
+            <button class="btn chat-next-btn">Next Message</button>
+            <button class="btn chat-all-btn">Play All</button>
+            <button class="btn chat-reset-btn">Replay</button>
+            <span class="chat-progress"></span>
+          </div>
+        </div>
+        <p>Notice what the tick never does: think hard, or wait. It asks, decides, starts and leaves.</p>
+      </section>
+
+      <section class="screen animate-in">
+        <h2 class="screen-heading">Only one watchman holds the key</h2>
+        <p>Two ticks running at once would double-start sessions. So the first thing a tick does is take a lock, using a trick the filesystem guarantees: renaming a folder onto a name that already exists fails. <span class="status built">built</span></p>
+        <div class="translation-block animate-in">
+          <div class="translation-code">
+            <span class="translation-label">sindri/src/lock/lock.ts</span>
+            <pre><code><span class="code-line">    <span class="code-keyword">for</span> (<span class="code-keyword">let</span> attempt = <span class="code-number">0</span>; attempt &lt; <span class="code-number">3</span>; attempt++) {</span>
+<span class="code-line">      <span class="code-comment">// Atomic: rename fails while sindri.lock exists (it is never empty).</span></span>
+<span class="code-line">      <span class="code-keyword">if</span> (<span class="code-function">tryRename</span>(tmp, lockPath)) <span class="code-keyword">return</span> <span class="code-function">won</span>(o, lockPath, me);</span>
+<span class="code-line">      <span class="code-keyword">const</span> holder = <span class="code-function">readOwner</span>(lockPath);</span>
+<span class="code-line">      <span class="code-keyword">const</span> age = <span class="code-function">ageMs</span>(lockPath, o.now);</span>
+<span class="code-line">      <span class="code-keyword">if</span> (age === <span class="code-keyword">null</span>) <span class="code-keyword">continue</span>; <span class="code-comment">// released in between: try again</span></span>
+<span class="code-line">      <span class="code-keyword">if</span> (!<span class="code-function">provablyDead</span>(holder, age, o.sys)) <span class="code-keyword">return</span> { <span class="code-property">ok</span>: <span class="code-keyword">false</span>, <span class="code-property">heldBy</span>: holder, <span class="code-property">detail</span>: <span class="code-function">describe</span>(holder) };</span></code></pre>
+          </div>
+          <div class="translation-english">
+            <span class="translation-label">PLAIN ENGLISH</span>
+            <div class="translation-lines">
+              <p class="tl">Try up to three times.</p>
+              <p class="tl">Renaming can't half-succeed, so two ticks can't both win.</p>
+              <p class="tl">If our folder became <code>sindri.lock</code>, we hold the key.</p>
+              <p class="tl">Otherwise, who holds it?</p>
+              <p class="tl">And how old is their lock?</p>
+              <p class="tl">If it vanished while we looked, just try again.</p>
+              <p class="tl">Unless the holder is <em>provably</em> dead (wrong process, rebooted host), back off and report who has it.</p>
+            </div>
+          </div>
+        </div>
+        <p>A stale lock can be taken over, which raises a risk: the old holder wakes up and writes anyway. So every write carries an <span class="term" data-definition="A counter bumped each time the lock changes hands. A writer stamps its writes with the epoch it got the lock under; the database refuses writes from an old epoch. This is called fencing.">epoch</span>, and the ledger refuses old ones (<code>fenced()</code> in <code>ledger/db.ts</code>, error <code>SND-LOCK-003</code>).</p>
+      </section>
+
+      <section class="screen animate-in">
+        <h2 class="screen-heading">Every unit of work is a Step</h2>
+        <p>A <span class="term" data-definition="Sindri's unit of work: inputs, an output schema, deterministic checks, a verifier, max rounds, a budget and an escalation path.">Step</span> is like an exam where someone else does the marking. The producer never verifies itself (invariant 3).</p>
+        <div class="flow-steps">
+          <div class="flow-step"><div class="flow-step-num">1</div><p>Produce</p></div>
+          <div class="flow-arrow">→</div>
+          <div class="flow-step"><div class="flow-step-num">2</div><p>Deterministic checks</p></div>
+          <div class="flow-arrow">→</div>
+          <div class="flow-step"><div class="flow-step-num">3</div><p>Separate verifier</p></div>
+          <div class="flow-arrow">→</div>
+          <div class="flow-step"><div class="flow-step-num">4</div><p>Pass → ledger + hand off</p></div>
+        </div>
+        <div class="badge-list">
+          <div class="badge-item"><code class="badge-code">fail</code><span class="badge-desc">Revise, with the verifier's reasons attached</span></div>
+          <div class="badge-item"><code class="badge-code">rounds or budget gone</code><span class="badge-desc">Park and notify. Escalate, never guess (invariant 4)</span></div>
+        </div>
+      </section>
+
+      <section class="screen animate-in">
+        <h2 class="screen-heading">Cheapest rung first</h2>
+        <p>At a clinic, the receptionist answers what they can, the nurse takes the next layer, and the surgeon gets paged only when needed. Each decision takes the cheapest <span class="term" data-definition="One level of the decision ladder: deterministic code, a decision model, one small-model call, or an agent turn. Each costs more than the one before.">rung</span> that can make it with enough confidence. Pick one:</p>
+        <div class="arch-diagram">
+          <div class="arch-zone">
+            <h4 class="arch-zone-label">The decision ladder <span class="ref">§17 principle 3</span></h4>
+            <div class="arch-component" data-desc="Rung 1, deterministic code, cost about zero. Selector matching, schema checks, path guards, routing tables, lens triggers, rule checks with a deterministic check."><div class="arch-icon">⚙️</div><span>1 · Code</span></div>
+            <div class="arch-component" data-desc="Rung 2, a decision model: a fraction of a cent, milliseconds. A judge question with calibrated thresholds for sizing, ambiguity, pack probes and direction verdicts. The judge chain is built (Plan 1)."><div class="arch-icon">⚖️</div><span>2 · Decision model</span></div>
+            <div class="arch-component" data-desc="Rung 3, one small-model call with no tools, low cost. Classification or extraction: turn labels, correction classes."><div class="arch-icon">🔎</div><span>3 · Small model</span></div>
+            <div class="arch-component" data-desc="Rung 4, an agent turn or session, high cost. Design, implementation, open-ended investigation. The only rung that writes code."><div class="arch-icon">🧠</div><span>4 · Agent</span></div>
+          </div>
+          <div class="arch-description">Click a rung to see what it decides</div>
+        </div>
+        <div class="callout callout-accent">
+          <div class="callout-icon">📉</div>
+          <div class="callout-content">
+            <strong class="callout-title">The metric that matters</strong>
+            <p>Every decision records its rung, cost and later outcome. "Agent turns a cheaper rung could have made" is tracked, and self-evolution keeps pushing repeated answers down a rung.</p>
+          </div>
+        </div>
+      </section>
+
+      <section class="screen animate-in">
+        <h2 class="screen-heading">Check your understanding</h2>
+        <div class="quiz-container" id="quiz-m2">
+          <div class="quiz-question-block" data-correct="b"
+               data-explanation-right="Nothing long-lived holds a model (invariant 2). The review runs as a bounded job, and a later tick reads its result from the ledger."
+               data-explanation-wrong="If the tick waits on a model, one slow call stalls every other item. Model work runs in a bounded job that ends; the next tick picks up the result.">
+            <div class="scenario-block"><div class="scenario-context"><span class="scenario-label">Scenario</span>
+              <p>You want the tick to ask an agent to review a risky diff. Where does that call go?</p></div></div>
+            <div class="quiz-options">
+              <button class="quiz-option" data-value="a" onclick="selectOption(this)"><div class="quiz-option-radio"></div><span>Inside the tick, awaiting the reply before moving on.</span></button>
+              <button class="quiz-option" data-value="b" onclick="selectOption(this)"><div class="quiz-option-radio"></div><span>A bounded job the tick spawns; the next tick reads the verdict from the ledger.</span></button>
+              <button class="quiz-option" data-value="c" onclick="selectOption(this)"><div class="quiz-option-radio"></div><span>A hook that writes the verdict straight into ledger.db.</span></button>
+            </div>
+            <div class="quiz-feedback"></div>
+          </div>
+          <div class="quiz-question-block" data-correct="a"
+               data-explanation-right="A deterministic glob is rung 1: it costs nothing and is always right. Climbing to a model would be paying for a guess."
+               data-explanation-wrong="Ask whether code alone can decide it. A path pattern can, so it belongs on rung 1, not a model.">
+            <div class="scenario-block"><div class="scenario-context"><span class="scenario-label">Scenario</span>
+              <p>"Does this change touch a migration?" Today an agent answers it every time. What should evolve propose?</p></div></div>
+            <div class="quiz-options">
+              <button class="quiz-option" data-value="a" onclick="selectOption(this)"><div class="quiz-option-radio"></div><span>Move it to rung 1: a path check on the migrations folder.</span></button>
+              <button class="quiz-option" data-value="b" onclick="selectOption(this)"><div class="quiz-option-radio"></div><span>Keep it on the agent; migrations are risky.</span></button>
+              <button class="quiz-option" data-value="c" onclick="selectOption(this)"><div class="quiz-option-radio"></div><span>Ask two agents and take the majority.</span></button>
+            </div>
+            <div class="quiz-feedback"></div>
+          </div>
+          <div class="quiz-question-block" data-correct="c"
+               data-explanation-right="That's what fencing is for: the takeover bumped the epoch, so the old writer's stamp no longer matches and the write is refused."
+               data-explanation-wrong="The lock alone can't stop a writer that already thinks it holds it. The epoch stamp on each write is what catches it.">
+            <div class="scenario-block"><div class="scenario-context"><span class="scenario-label">Debugging</span>
+              <p>The log shows <code>SND-LOCK-003: stale epoch 7 (current 8)</code>. What happened?</p></div></div>
+            <div class="quiz-options">
+              <button class="quiz-option" data-value="a" onclick="selectOption(this)"><div class="quiz-option-radio"></div><span>The ledger is corrupt and needs a restore.</span></button>
+              <button class="quiz-option" data-value="b" onclick="selectOption(this)"><div class="quiz-option-radio"></div><span>Two ticks wrote at once and both succeeded.</span></button>
+              <button class="quiz-option" data-value="c" onclick="selectOption(this)"><div class="quiz-option-radio"></div><span>A paused tick woke after another took over its lock, and its write was safely refused.</span></button>
+            </div>
+            <div class="quiz-feedback"></div>
+          </div>
+          <button class="quiz-check-btn" onclick="checkQuiz('quiz-m2')">Check Answers</button>
+          <button class="quiz-reset-btn" onclick="resetQuiz('quiz-m2')">Try Again</button>
+        </div>
+      </section>
+
+    </div>
+  </div>
+</section>
+<section class="module" id="module-3" style="background: var(--color-bg)">
+  <div class="module-content">
+    <header class="module-header animate-in">
+      <span class="module-number">03</span>
+      <h1 class="module-title">Survey before you dig</h1>
+      <p class="module-subtitle">Find every surface a project touches before the code does, and prove it on old projects.</p>
+    </header>
+
+    <div class="module-body">
+
+      <section class="screen animate-in">
+        <h2 class="screen-heading">Call before you dig</h2>
+        <p>Before a crew digs, a surveyor marks every buried pipe and cable with paint. Hitting one mid-dig is how a two-day job becomes a two-week one. Projects sprawl the same way, when the surfaces and implications are found during implementation.</p>
+        <p><code>sindri scope</code> is the surveyor. It turns a brief into a cited <span class="term" data-definition="Sindri's survey of a project: every surface it touches (UI, API, job, data, integration), implications, workstreams with dependencies, acceptance checks and open product questions. Every entry cites a source.">scope map</span> up front. <span class="status built">built</span> <span class="ref">§7.5 · Plan 4</span></p>
+        <div class="pattern-cards">
+          <div class="pattern-card" style="border-top: 3px solid var(--color-actor-1)"><div class="pattern-icon" style="background: var(--color-actor-1)">🧭</div><h4 class="pattern-title">Surfaces</h4><p class="pattern-desc">UI, API, job, data, integration. Each one cites a source.</p></div>
+          <div class="pattern-card" style="border-top: 3px solid var(--color-actor-2)"><div class="pattern-icon" style="background: var(--color-actor-2)">⚠️</div><h4 class="pattern-title">Implications</h4><p class="pattern-desc">Migration, permissions, reporting, notifications, mobile, flags.</p></div>
+          <div class="pattern-card" style="border-top: 3px solid var(--color-actor-3)"><div class="pattern-icon" style="background: var(--color-actor-3)">🔀</div><h4 class="pattern-title">Workstreams</h4><p class="pattern-desc">With dependencies, and acceptance checks for each.</p></div>
+          <div class="pattern-card" style="border-top: 3px solid var(--color-actor-4)"><div class="pattern-icon" style="background: var(--color-actor-4)">❓</div><h4 class="pattern-title">Questions</h4><p class="pattern-desc">Open product questions, batched for you to answer at once.</p></div>
+        </div>
+      </section>
+
+      <section class="screen animate-in">
+        <h2 class="screen-heading">No paint mark without a source</h2>
+        <p>The model drafts the map, but code checks it. A surface that cites nothing, or cites something that isn't a real source, is rejected:</p>
+        <div class="translation-block animate-in">
+          <div class="translation-code">
+            <span class="translation-label">sindri/src/scope/map.ts</span>
+            <pre><code><span class="code-line">  <span class="code-keyword">for</span> (<span class="code-keyword">const</span> s <span class="code-keyword">of</span> map.surfaces) {</span>
+<span class="code-line">    <span class="code-keyword">if</span> (seen.<span class="code-function">has</span>(s.id)) reasons.<span class="code-function">push</span>(<span class="code-string">`duplicate surface id ${s.id}`</span>);</span>
+<span class="code-line">    seen.<span class="code-function">add</span>(s.id);</span>
+<span class="code-line">    <span class="code-keyword">if</span> (s.citations.length === <span class="code-number">0</span>) reasons.<span class="code-function">push</span>(<span class="code-string">`surface ${s.id} cites no source`</span>);</span>
+<span class="code-line">    <span class="code-keyword">for</span> (<span class="code-keyword">const</span> c <span class="code-keyword">of</span> s.citations) <span class="code-keyword">if</span> (!known.<span class="code-function">has</span>(c)) reasons.<span class="code-function">push</span>(<span class="code-string">`surface ${s.id} cites ${c}, which is not a source reference`</span>);</span>
+<span class="code-line">    <span class="code-keyword">if</span> (!inStream.<span class="code-function">has</span>(s.id)) reasons.<span class="code-function">push</span>(<span class="code-string">`surface ${s.id} is in no workstream`</span>);</span></code></pre>
+          </div>
+          <div class="translation-english">
+            <span class="translation-label">PLAIN ENGLISH</span>
+            <div class="translation-lines">
+              <p class="tl">Walk every surface the model proposed.</p>
+              <p class="tl">The same id twice? Write down why that's wrong.</p>
+              <p class="tl">Remember we've seen this one.</p>
+              <p class="tl">No citation at all: rejected.</p>
+              <p class="tl">A citation the model invented (not a real source): rejected. This is how <span class="term" data-definition="When a model states something confidently that isn't true or has no basis, such as citing a file or ticket that doesn't exist.">hallucinated</span> references get caught.</p>
+              <p class="tl">A surface no workstream owns would fall through the cracks: rejected.</p>
+            </div>
+          </div>
+        </div>
+        <p>The full check also refuses dependency cycles and workstreams without acceptance checks. Then a different model runs an adversarial "what's missing?" pass until nothing new appears.</p>
+      </section>
+
+      <section class="screen animate-in">
+        <h2 class="screen-heading">Proving it on yesterday's projects</h2>
+        <p>How do you know the surveyor is any good? Hand it an old project's original brief, with sources cut to that date, and compare its map to the issues people actually filed later. That's the <span class="term" data-definition="Re-running a method on past data where you already know the answer. Here: scope an old brief and check the map against the issues filed after it.">backtest</span>.</p>
+        <div class="step-cards">
+          <div class="step-card"><div class="step-num">1</div><div class="step-body"><strong>Original brief</strong><p>Sources cut to the brief's creation date, so there's no peeking at the future.</p></div></div>
+          <div class="step-card"><div class="step-num">2</div><div class="step-body"><strong>sindri scope → map surfaces</strong><p>Plus a brief-only baseline to beat.</p></div></div>
+          <div class="step-card"><div class="step-num">3</div><div class="step-body"><strong>Adjudicator, twice, order reversed</strong><p>A model labels matches, never a person (invariant 9). Only answers that agree in both orders count.</p></div></div>
+        </div>
+        <div class="translation-block animate-in">
+          <div class="translation-code">
+            <span class="translation-label">sindri/src/scope/backtest.ts</span>
+            <pre><code><span class="code-line">  <span class="code-keyword">const</span> recall = <span class="code-function">verdict</span>(r, PASS_BAR.recall);</span>
+<span class="code-line">  <span class="code-keyword">const</span> precision = <span class="code-function">verdict</span>(p, PASS_BAR.precision);</span>
+<span class="code-line">  <span class="code-keyword">const</span> beatsBaseline: Verdict = r === <span class="code-keyword">null</span> || b === <span class="code-keyword">null</span> ? <span class="code-string">"not measured"</span> : r &gt; b ? <span class="code-string">"met"</span> : <span class="code-string">"not met"</span>;</span>
+<span class="code-line">  <span class="code-keyword">const</span> all = [recall, precision, beatsBaseline];</span>
+<span class="code-line">  <span class="code-keyword">const</span> overall = all.<span class="code-function">includes</span>(<span class="code-string">"not measured"</span>) ? <span class="code-string">"NOT MEASURED"</span> : all.<span class="code-function">every</span>((v) =&gt; v === <span class="code-string">"met"</span>) ? <span class="code-string">"PASS"</span> : <span class="code-string">"NOT PASSED"</span>;</span></code></pre>
+          </div>
+          <div class="translation-english">
+            <span class="translation-label">PLAIN ENGLISH</span>
+            <div class="translation-lines">
+              <p class="tl"><span class="term" data-definition="Of the things that really mattered, how many did we find? Missing a real surface lowers recall.">Recall</span> must reach the bar (0.60)…</p>
+              <p class="tl">…and so must <span class="term" data-definition="Of the things we flagged, how many were real? Flagging imaginary surfaces lowers precision.">precision</span>.</p>
+              <p class="tl">Sindri must also find more than the brief alone would. If either number is missing, say so.</p>
+              <p class="tl">Collect the three verdicts.</p>
+              <p class="tl">Any unknown → <strong>NOT MEASURED</strong>, never a quiet pass. All met → <strong>PASS</strong>.</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="screen animate-in">
+        <h2 class="screen-heading">Scoping v2: a surveyor who keeps digging <span class="status designed">designed</span></h2>
+        <p>Today's challenger only re-reads the drafter's evidence, so it can only find what was already gathered. In v2, each round the challenger writes typed <span class="term" data-definition="A typed request the challenger writes (symbol, neighbours, similar, tracker, notes, route or flag). Sindri runs it against the code index, call graph, embeddings and tracker. The model itself still gets no tools.">expansion queries</span>, Sindri runs them, and the drafter revises with only the new evidence. Weak surfaces get pruned with a reason. The map says honestly whether it <em>converged</em> or was <em>capped</em>. <span class="ref">§17.26</span></p>
+        <p>Your studio edits are just more seeds. Match each edit to what Sindri re-runs:</p>
+        <div class="dnd-container" id="dnd-m3">
+          <div class="dnd-chips">
+            <div class="dnd-chip" draggable="true" data-answer="add">Add a surface or file</div>
+            <div class="dnd-chip" draggable="true" data-answer="remove">Remove one</div>
+            <div class="dnd-chip" draggable="true" data-answer="much">"Too much"</div>
+            <div class="dnd-chip" draggable="true" data-answer="missing">"Something's missing around X"</div>
+          </div>
+          <div class="dnd-zones">
+            <div class="dnd-zone" data-correct="add"><p class="dnd-zone-label">A retrieval round seeded by it: neighbours, similar code, tests, tickets that mention it</p><div class="dnd-zone-target">Drop here</div></div>
+            <div class="dnd-zone" data-correct="remove"><p class="dnd-zone-label">A dependency check on what cites it and what loses coverage</p><div class="dnd-zone-target">Drop here</div></div>
+            <div class="dnd-zone" data-correct="much"><p class="dnd-zone-label">The prune pass at a stricter bar</p><div class="dnd-zone-target">Drop here</div></div>
+            <div class="dnd-zone" data-correct="missing"><p class="dnd-zone-label">Your text becomes expansion queries; one round runs</p><div class="dnd-zone-target">Drop here</div></div>
+          </div>
+          <button class="btn" onclick="checkDnD('dnd-m3')">Check Matches</button>
+          <button class="btn" onclick="resetDnD('dnd-m3')">Reset</button>
+        </div>
+        <div class="callout callout-info">
+          <div class="callout-icon">🪦</div>
+          <div class="callout-content">
+            <strong class="callout-title">Removals leave a tombstone</strong>
+            <p>A removed item leaves a <span class="term" data-definition="A record that an item was removed and why, so the loop doesn't propose it again without new evidence. You can restore from it.">tombstone</span>, so the loop doesn't re-propose it without new evidence. Human adds are never pruned. And because labels come from the net difference at freeze, removing and then restoring something teaches nothing wrong.</p>
+          </div>
+        </div>
+      </section>
+
+      <section class="screen animate-in">
+        <h2 class="screen-heading">"Is this the right path at all?"</h2>
+        <p>Before more effort is committed, a <span class="term" data-definition="A checkpoint where a different model asks whether the current path is right: keep going, change approach, or stop and ask.">direction check</span> on a different model asks a pointed question. No path goes unchallenged. <span class="ref">§6.1</span></p>
+        <div class="badge-list">
+          <div class="badge-item"><code class="badge-code">approach</code><span class="badge-desc">First non-test source edit: does this solve the item as written? Is there a simpler path?</span></div>
+          <div class="badge-item"><code class="badge-code">scoping</code><span class="badge-desc">Before a proposal reaches you: right workstreams? Anything solving the wrong problem?</span></div>
+          <div class="badge-item"><code class="badge-code">drift</code><span class="badge-desc">2 failed rounds, a diff outside predicted files, or 2× time: keep going, change, or stop?</span></div>
+          <div class="badge-item"><code class="badge-code">shape</code><span class="badge-desc">A commit with a shape signal: reuse, generalize, or keep it with a reason?</span></div>
+          <div class="badge-item"><code class="badge-code">scope expansion</code><span class="badge-desc">A session wants a wider change: needed here, or a separate item?</span></div>
+        </div>
+      </section>
+
+      <section class="screen animate-in">
+        <h2 class="screen-heading">Check your understanding</h2>
+        <div class="quiz-container" id="quiz-m3">
+          <div class="quiz-question-block" data-correct="b"
+               data-explanation-right="High recall, low precision: it found the real surfaces but also flagged plenty of imaginary ones. The fix is pruning, not more searching."
+               data-explanation-wrong="Recall measures what it found of what was real; precision measures how much of what it flagged was real. 0.85 / 0.40 means lots of false alarms.">
+            <div class="scenario-block"><div class="scenario-context"><span class="scenario-label">Scenario</span>
+              <p>A backtest reports recall 0.85, precision 0.40. What's the map doing wrong?</p></div></div>
+            <div class="quiz-options">
+              <button class="quiz-option" data-value="a" onclick="selectOption(this)"><div class="quiz-option-radio"></div><span>Missing most of the real surfaces.</span></button>
+              <button class="quiz-option" data-value="b" onclick="selectOption(this)"><div class="quiz-option-radio"></div><span>Finding the real ones, but padding the map with surfaces nobody needed.</span></button>
+              <button class="quiz-option" data-value="c" onclick="selectOption(this)"><div class="quiz-option-radio"></div><span>Nothing, 0.85 is above the bar so it passes.</span></button>
+            </div>
+            <div class="quiz-feedback"></div>
+          </div>
+          <div class="quiz-question-block" data-correct="c"
+               data-explanation-right="Correct. Silence is never a pass. If some issues couldn't be judged, the number isn't known, and the report says NOT MEASURED."
+               data-explanation-wrong="Look at the first branch of overall: any 'not measured' wins. An unjudged issue makes the number unknown, not zero and not a pass.">
+            <div class="scenario-block"><div class="scenario-context"><span class="scenario-label">Debugging</span>
+              <p>The adjudicator timed out on 3 of 40 issues. Recall on the other 37 is 0.70. What does the backtest report?</p></div></div>
+            <div class="quiz-options">
+              <button class="quiz-option" data-value="a" onclick="selectOption(this)"><div class="quiz-option-radio"></div><span>PASS on recall, since 0.70 ≥ 0.60.</span></button>
+              <button class="quiz-option" data-value="b" onclick="selectOption(this)"><div class="quiz-option-radio"></div><span>NOT PASSED, since the timeouts count as misses.</span></button>
+              <button class="quiz-option" data-value="c" onclick="selectOption(this)"><div class="quiz-option-radio"></div><span>NOT MEASURED, with a note that some issues couldn't be judged.</span></button>
+            </div>
+            <div class="quiz-feedback"></div>
+          </div>
+          <button class="quiz-check-btn" onclick="checkQuiz('quiz-m3')">Check Answers</button>
+          <button class="quiz-reset-btn" onclick="resetQuiz('quiz-m3')">Try Again</button>
+        </div>
+      </section>
+
+    </div>
+  </div>
+</section>
+<section class="module" id="module-4" style="background: var(--color-bg-warm)">
+  <div class="module-content">
+    <header class="module-header animate-in">
+      <span class="module-number">04</span>
+      <h1 class="module-title">Sealed blueprints, narrow crews</h1>
+      <p class="module-subtitle">Freeze the plan, compile each job's permissions, and let disciplines decide who looks at what.</p>
+    </header>
+
+    <div class="module-body">
+
+      <section class="screen animate-in">
+        <h2 class="screen-heading">The locked script and the call sheet</h2>
+        <p>On a film set, the script gets <em>locked</em> before shooting. After that, each person gets a call sheet: which scenes, which set, what time. Nobody wanders into another unit's scene. <span class="status designed">designed</span> <span class="ref">§17.4, §17.5</span></p>
+        <div class="flow-steps">
+          <div class="flow-step"><div class="flow-step-num">📦</div><p><strong>Packet</strong><br>the locked script</p></div>
+          <div class="flow-arrow">→</div>
+          <div class="flow-step"><div class="flow-step-num">⚙️</div><p><strong>Task compiler</strong><br>code, no model</p></div>
+          <div class="flow-arrow">→</div>
+          <div class="flow-step"><div class="flow-step-num">📋</div><p><strong>Session spec</strong><br>one call sheet per Step</p></div>
+          <div class="flow-arrow">→</div>
+          <div class="flow-step"><div class="flow-step-num">🔒</div><p><strong>Sandbox policy</strong><br>compiled from the spec</p></div>
+        </div>
+        <p>The <span class="term" data-definition="Deterministic code that reads a frozen packet and computes each Step's session spec. No model is involved, so a session's permissions can't be talked into existence.">task compiler</span> turns each Step into a <span class="term" data-definition="Everything one session is allowed and given: write scope, read seeds, rules, the lens's skills and MCP servers, sandbox, evidence plan, budget and the next Step.">session spec</span>. Agents don't decide their own scope (invariant 13).</p>
+        <div class="badge-list">
+          <div class="badge-item"><code class="badge-code">write</code><span class="badge-desc">The task's write scope plus its tests by the repo's test-path convention</span></div>
+          <div class="badge-item"><code class="badge-code">read</code><span class="badge-desc">A context-graph query for the task's seeds, within the injection budget</span></div>
+          <div class="badge-item"><code class="badge-code">rules</code><span class="badge-desc">Only the rules that match this repo, path, task kind, lens and stage</span></div>
+          <div class="badge-item"><code class="badge-code">skills · agents · mcp</code><span class="badge-desc">The lens's allowlist, under the profile's approved ceiling</span></div>
+          <div class="badge-item"><code class="badge-code">budget · next</code><span class="badge-desc">Tokens, turns and wall time; the next Step and its input schema</span></div>
+        </div>
+      </section>
+
+      <section class="screen animate-in">
+        <h2 class="screen-heading">Permissions are an intersection</h2>
+        <p>A session can do only what <em>all three</em> layers allow. Click through the layers to watch the allowed set shrink:</p>
+        <div class="layer-demo">
+          <div class="layer-tabs">
+            <button class="layer-tab active" onclick="showLayer('m4-profile', this)">Profile ceiling</button>
+            <button class="layer-tab" onclick="showLayer('m4-lens', this)">∩ Lens</button>
+            <button class="layer-tab" onclick="showLayer('m4-task', this)">∩ Task</button>
+          </div>
+          <div class="layer-viewport">
+            <div class="layer" id="m4-profile" style="display:block">
+              <div class="badge-list">
+                <div class="badge-item"><code class="badge-code">tools</code><span class="badge-desc">Read, Edit, Bash(npm test), Bash(dotnet test), playwright, context7</span></div>
+                <div class="badge-item"><code class="badge-code">writes</code><span class="badge-desc">anywhere in the repo</span></div>
+              </div>
+              <p>What you approved for this repo, once, as a profile change.</p>
+            </div>
+            <div class="layer" id="m4-lens" style="display:none">
+              <div class="badge-list">
+                <div class="badge-item"><code class="badge-code">tools</code><span class="badge-desc">Read, Edit, Bash(npm test) <s>dotnet test, playwright, context7</s></span></div>
+                <div class="badge-item"><code class="badge-code">writes</code><span class="badge-desc">source and test files</span></div>
+              </div>
+              <p>The implementer lens for a TypeScript task drops the tools it doesn't need.</p>
+            </div>
+            <div class="layer" id="m4-task" style="display:none">
+              <div class="badge-list">
+                <div class="badge-item"><code class="badge-code">tools</code><span class="badge-desc">Read, Edit, Bash(npm test)</span></div>
+                <div class="badge-item"><code class="badge-code">writes</code><span class="badge-desc">sindri/src/scope/** and its tests, nothing else</span></div>
+              </div>
+              <p>The task's write scope narrows it to one folder. This is the session's real policy.</p>
+            </div>
+          </div>
+        </div>
+        <div class="callout callout-warning">
+          <div class="callout-icon">🧱</div>
+          <div class="callout-content">
+            <strong class="callout-title">The capability ceiling</strong>
+            <p>Prompt text (instructions, rubrics, rule wording) may improve itself. Capability fields (tool, command, MCP, network, write-scope and budget allowlists) are always approval-tier. No model output may set them. <span class="ref">§17.19 C1–C2</span></p>
+          </div>
+        </div>
+      </section>
+
+      <section class="screen animate-in">
+        <h2 class="screen-heading">Lenses: the film crew's departments</h2>
+        <p>Sound doesn't light the set, and lighting doesn't mix audio. A <span class="term" data-definition="A development discipline as a module: its own questions, rules, tools and evidence. Workflow generation picks which lenses a deliverable needs.">lens</span> is a discipline with its own questions, rules, tools and evidence. Workflow generation picks the lenses once per deliverable, then freezes the order. <span class="ref">§17.7</span></p>
+        <div class="arch-diagram">
+          <div class="arch-zone">
+            <h4 class="arch-zone-label">F3 starts with these four</h4>
+            <div class="arch-component" data-desc="Implementer. Triggers on every code task; the language is picked from paths. Evidence: test."><div class="arch-icon">🛠️</div><span>Implementer</span></div>
+            <div class="arch-component" data-desc="QA and evaluator. Triggers on every task. Checks held-out acceptance examples the implementer never saw, against the evidence plan."><div class="arch-icon">🧪</div><span>QA</span></div>
+            <div class="arch-component" data-desc="System architecture. Triggers on new modules, cross-package changes and new dependencies. Evidence: shape signals and /archReview notes."><div class="arch-icon">🏛️</div><span>Architecture</span></div>
+            <div class="arch-component" data-desc="Security. Triggers on auth, input handling, secrets, dependencies and permissions. Evidence: security (/cso diff mode and a dependency audit)."><div class="arch-icon">🛡️</div><span>Security</span></div>
+          </div>
+          <div class="arch-zone">
+            <h4 class="arch-zone-label">Grown later by scouting</h4>
+            <div class="arch-component" data-desc="UI and UX design. Components, styles, tokens, flows, forms, empty and error states. Evidence: design-parity, a11y, ui-browser, behavior-sim."><div class="arch-icon">🎨</div><span>UI / UX</span></div>
+            <div class="arch-component" data-desc="Database and data. Schema, migrations, queries. Evidence: migration (dry-run, rollback, schema diff) and test."><div class="arch-icon">🗄️</div><span>Data</span></div>
+            <div class="arch-component" data-desc="Performance. Hot paths, queries, bundles, build time. Evidence: perf and trace."><div class="arch-icon">⚡</div><span>Performance</span></div>
+            <div class="arch-component" data-desc="Critic, review-only. Production tier and protected paths. Argues against the change: hidden assumptions, one-caller abstractions, behaviour changes behind a green suite."><div class="arch-icon">🗣️</div><span>Critic</span></div>
+          </div>
+          <div class="arch-description">Click a lens to see its triggers and evidence</div>
+        </div>
+        <p>Sessions start lean: only the lens's skills, agents and <span class="term" data-definition="Model Context Protocol: a standard way to plug external tools and data (GitHub, a browser, docs) into an agent. Each connected server adds tools the model can call, and tokens to every turn.">MCP</span> servers, and memory arrives as cited sections instead of a giant bootstrap. <span class="ref">§17.8</span></p>
+      </section>
+
+      <section class="screen animate-in">
+        <h2 class="screen-heading">Taste, written down</h2>
+        <p>"I always want X", said once at the desk, becomes a <span class="term" data-definition="A registered piece of taste or policy with selectors (which languages, paths, lenses it applies to), an optional deterministic check, and a source.">rule</span>: the style bible a director hands each department. Selectors mean a session carries only the few that apply. <span class="ref">§17.6</span></p>
+        <div class="translation-block animate-in">
+          <div class="translation-code">
+            <span class="translation-label">A rule record (spec §17.6)</span>
+            <pre><code><span class="code-line"><span class="code-property">id</span>: taste.ts.no-barrel-files</span>
+<span class="code-line"><span class="code-property">kind</span>: taste    <span class="code-comment"># taste | engineering | process | product-precedent | security | lens</span></span>
+<span class="code-line"><span class="code-property">text</span>: <span class="code-string">"Import from the module file, not an index barrel."</span></span>
+<span class="code-line"><span class="code-property">why</span>: <span class="code-string">"Barrels hide cycles and slow type-checking."</span></span>
+<span class="code-line"><span class="code-property">select</span>: { <span class="code-property">languages</span>: [ts], <span class="code-property">paths</span>: [<span class="code-string">"**/*.ts"</span>], <span class="code-property">lenses</span>: [implementer, architecture] }</span>
+<span class="code-line"><span class="code-property">check</span>: { <span class="code-property">type</span>: eslint, <span class="code-property">rule</span>: <span class="code-string">"no-restricted-imports"</span> }</span>
+<span class="code-line"><span class="code-property">source</span>: { <span class="code-property">type</span>: desk, <span class="code-property">ref</span>: <span class="code-string">"decision-log#D-12"</span> }</span>
+<span class="code-line"><span class="code-property">status</span>: active  <span class="code-comment"># proposed | active | retired</span></span></code></pre>
+          </div>
+          <div class="translation-english">
+            <span class="translation-label">PLAIN ENGLISH</span>
+            <div class="translation-lines">
+              <p class="tl">A stable name, so a later layer can override it.</p>
+              <p class="tl">What sort of rule this is.</p>
+              <p class="tl">The instruction a session actually reads.</p>
+              <p class="tl">The reason, so a model (or you) can judge edge cases.</p>
+              <p class="tl">Only TypeScript files, only for these two lenses. Everyone else never sees it.</p>
+              <p class="tl">A deterministic check: the top of the enforcement ladder.</p>
+              <p class="tl">Where it came from: decision D-12 at the desk.</p>
+              <p class="tl">Live now.</p>
+            </div>
+          </div>
+        </div>
+        <p>Rules climb an enforcement ladder: injected text → a judge rule-check in the verifier → a deterministic check at commit. A rule that keeps getting judged becomes a proposal to write its check. That's the decision ladder from module 2, applied to taste.</p>
+      </section>
+
+      <section class="screen animate-in">
+        <h2 class="screen-heading">From frozen packet to merged epic</h2>
+        <p>Each packet gets an <span class="term" data-definition="A long-lived branch for one packet. Task PRs stack against it and merge into it under a deterministic gate; the epic's PR into the default branch is always the human's.">epic</span> branch. Every acceptance example needs an artifact, like dailies on a shoot: footage you can actually watch, not a claim that the scene went fine. <span class="ref">§17.10, §17.11</span></p>
+        <div class="flow-animation" data-steps='[
+          {"highlight":"flow-m4-packet","label":"The packet passed sindri packet validate and its hash is in the ledger."},
+          {"highlight":"flow-m4-compiler","label":"The task compiler turns the next Step into a session spec. Policy = ceiling ∩ lens ∩ task.","packet":true,"from":"m4-packet","to":"m4-compiler"},
+          {"highlight":"flow-m4-session","label":"A lean container session starts with only its planned skills, agents and MCP.","packet":true,"from":"m4-compiler","to":"m4-session"},
+          {"highlight":"flow-m4-eval","label":"A QA Step checks held-out examples the implementer never saw. A script computes the verdict.","packet":true,"from":"m4-session","to":"m4-eval"},
+          {"highlight":"flow-m4-evidence","label":"Evidence providers run at base and head; each acceptance example gets an artifact.","packet":true,"from":"m4-eval","to":"m4-evidence"},
+          {"highlight":"flow-m4-epic","label":"Ship gate: CI green, threads resolved, evidence satisfied, at most 3 rounds. Merge into the epic.","packet":true,"from":"m4-evidence","to":"m4-epic"}
+        ]'>
+          <div class="flow-actors">
+            <div class="flow-actor" id="flow-m4-packet"><div class="flow-actor-icon">📦</div><span>Packet</span></div>
+            <div class="flow-actor" id="flow-m4-compiler"><div class="flow-actor-icon">⚙️</div><span>Compiler</span></div>
+            <div class="flow-actor" id="flow-m4-session"><div class="flow-actor-icon">🛠️</div><span>Session</span></div>
+            <div class="flow-actor" id="flow-m4-eval"><div class="flow-actor-icon">🧪</div><span>Evaluator</span></div>
+            <div class="flow-actor" id="flow-m4-evidence"><div class="flow-actor-icon">🎞️</div><span>Evidence</span></div>
+            <div class="flow-actor" id="flow-m4-epic"><div class="flow-actor-icon">🌿</div><span>Epic</span></div>
+          </div>
+          <div class="flow-packet"></div>
+          <div class="flow-step-label">Click "Next Step" to begin</div>
+          <div class="flow-controls">
+            <button class="btn flow-next-btn">Next Step</button>
+            <button class="btn flow-reset-btn">Restart</button>
+            <span class="flow-progress"></span>
+          </div>
+        </div>
+        <div class="callout callout-accent">
+          <div class="callout-icon">🧪</div>
+          <div class="callout-content">
+            <strong class="callout-title">Sessions don't edit the tests that judge them</strong>
+            <p>Existing tests are read-only unless the packet names the change (invariant 17), and every new test must fail with the non-test changes reverted. Otherwise an agent can "go green" by weakening an assertion.</p>
+          </div>
+        </div>
+      </section>
+
+      <section class="screen animate-in">
+        <h2 class="screen-heading">Check your understanding</h2>
+        <div class="quiz-container" id="quiz-m4">
+          <div class="quiz-question-block" data-correct="c"
+               data-explanation-right="The write scope is part of the frozen packet. Widening it is a scope-expansion check and, if needed, a desk amendment and re-freeze, never something the session grants itself."
+               data-explanation-wrong="Agents don't decide their own scope, and models never grant capabilities (invariant 13). The change goes back through the desk.">
+            <div class="scenario-block"><div class="scenario-context"><span class="scenario-label">Scenario</span>
+              <p>Mid-task, the implementer realizes the fix also needs a change in <code>judge/</code>, outside its write scope. What should happen?</p></div></div>
+            <div class="quiz-options">
+              <button class="quiz-option" data-value="a" onclick="selectOption(this)"><div class="quiz-option-radio"></div><span>It edits <code>judge/</code> anyway and explains in the PR.</span></button>
+              <button class="quiz-option" data-value="b" onclick="selectOption(this)"><div class="quiz-option-radio"></div><span>The verifier approves the wider scope if the tests pass.</span></button>
+              <button class="quiz-option" data-value="c" onclick="selectOption(this)"><div class="quiz-option-radio"></div><span>It proposes a scope expansion; the packet is amended at the desk, or it becomes a separate item.</span></button>
+            </div>
+            <div class="quiz-feedback"></div>
+          </div>
+          <div class="quiz-question-block" data-correct="a"
+               data-explanation-right="Exactly. That's a deterministic check, the top of the enforcement ladder. It costs nothing to run and can't be argued with."
+               data-explanation-wrong="When a judge keeps flagging the same thing, the ladder says climb down: write the check so code decides it for free.">
+            <div class="scenario-block"><div class="scenario-context"><span class="scenario-label">Scenario</span>
+              <p>The verifier's judge flags "used a barrel import" on twenty PRs in a month. What does Sindri propose?</p></div></div>
+            <div class="quiz-options">
+              <button class="quiz-option" data-value="a" onclick="selectOption(this)"><div class="quiz-option-radio"></div><span>Give the rule a <code>check:</code>, a lint rule that runs at commit.</span></button>
+              <button class="quiz-option" data-value="b" onclick="selectOption(this)"><div class="quiz-option-radio"></div><span>Inject the rule text into every session, in every repo.</span></button>
+              <button class="quiz-option" data-value="c" onclick="selectOption(this)"><div class="quiz-option-radio"></div><span>Retire the rule; it's clearly not working.</span></button>
+            </div>
+            <div class="quiz-feedback"></div>
+          </div>
+          <button class="quiz-check-btn" onclick="checkQuiz('quiz-m4')">Check Answers</button>
+          <button class="quiz-reset-btn" onclick="resetQuiz('quiz-m4')">Try Again</button>
+        </div>
+      </section>
+
+    </div>
+  </div>
+</section>
+<section class="module" id="module-5" style="background: var(--color-bg)">
+  <div class="module-content">
+    <header class="module-header animate-in">
+      <span class="module-number">05</span>
+      <h1 class="module-title">Where the human decides</h1>
+      <p class="module-subtitle">Locked doors instead of signs, the right screen for each call, and verdicts that admit what they didn't prove.</p>
+    </header>
+
+    <div class="module-body">
+
+      <section class="screen animate-in">
+        <h2 class="screen-heading">A sign versus a locked door</h2>
+        <p>"Staff only" on a door stops polite visitors. A lock stops everyone. Sindri uses both, and never confuses them: <span class="term" data-definition="Small scripts the agent host runs before or after a tool call. Sindri's hooks nudge and block agent behaviour, but a hook can be bypassed, so it is never the security boundary.">hooks</span> force <em>patterns</em> on a cooperative agent; the <span class="term" data-definition="An isolated environment a session runs in: a dedicated container and OS user, only the repo and allowed refs mounted, an egress allowlist, and no credentials it shouldn't have.">sandbox</span> enforces <em>security</em> against a hostile one. A hook that fails open costs a missed nudge, never a breach. <span class="ref">§5.3, §17.19 C3–C5</span></p>
+        <div class="badge-list">
+          <div class="badge-item"><code class="badge-code">writes</code><span class="badge-desc"><strong>Sign:</strong> a pre-tool path guard. <strong>Lock:</strong> Sindri's verifier refuses any bundle with out-of-scope paths.</span></div>
+          <div class="badge-item"><code class="badge-code">commands</code><span class="badge-desc"><strong>Sign:</strong> a gate on command strings (easily evaded). <strong>Lock:</strong> missing credentials and network make the command fail anyway.</span></div>
+          <div class="badge-item"><code class="badge-code">network</code><span class="badge-desc"><strong>Lock only:</strong> a per-task egress proxy allowlist.</span></div>
+          <div class="badge-item"><code class="badge-code">reads</code><span class="badge-desc"><strong>Lock:</strong> mounts. Only the repo, pack and allowed refs exist in the container.</span></div>
+          <div class="badge-item"><code class="badge-code">holdouts</code><span class="badge-desc"><strong>Lock:</strong> mounted only into evaluator Steps, with a canary example to detect leaks.</span></div>
+        </div>
+        <div class="callout callout-warning">
+          <div class="callout-icon">⛔</div>
+          <div class="callout-content">
+            <strong class="callout-title">Always denied in sessions (v1)</strong>
+            <p>Undraft, merge, close or cancel items, create items, chat posts, <code>gh api</code> writes, workflow triggers, production-mutating MCP tools, <code>kubectl</code> or exec tools. A denied call parks the item with a typed reason; the session never sits on a permission prompt. <span class="ref">§8.1</span></p>
+          </div>
+        </div>
+      </section>
+
+      <section class="screen animate-in">
+        <h2 class="screen-heading">Nothing secret gets written down</h2>
+        <p>No secrets in packs, ledger, logs, notifications or the eval corpus (invariant 8). Everything passes through the scrubber first, which replaces each secret with a <code>[REDACTED:kind]</code> placeholder. <span class="status built">built</span></p>
+        <div class="translation-block animate-in">
+          <div class="translation-code">
+            <span class="translation-label">sindri/src/scrub/scrub.ts</span>
+            <pre><code><span class="code-line"><span class="code-keyword">export function</span> <span class="code-function">makeScrubber</span>(extra: <span class="code-keyword">readonly</span> ScrubPattern[] = []): Scrubber {</span>
+<span class="code-line">  <span class="code-keyword">const</span> patterns = [...BUILTIN_PATTERNS, ...extra].<span class="code-function">map</span>((p, order) =&gt; ({ ...p, <span class="code-property">re</span>: <span class="code-function">withFlags</span>(p.re), order }));</span>
+<span class="code-line">  <span class="code-comment">// Only a placeholder naming one of this scrubber's kinds is skipped, so a crafted</span></span>
+<span class="code-line">  <span class="code-comment">// "[REDACTED:&lt;secret&gt;]" is still scanned.</span></span>
+<span class="code-line">  <span class="code-keyword">const</span> kinds = [...<span class="code-keyword">new</span> <span class="code-function">Set</span>(patterns.<span class="code-function">map</span>((p) =&gt; p.kind))].<span class="code-function">map</span>(escapeRe).<span class="code-function">join</span>(<span class="code-string">"|"</span>);</span>
+<span class="code-line">  <span class="code-keyword">const</span> PLACEHOLDER = <span class="code-keyword">new</span> <span class="code-function">RegExp</span>(<span class="code-string">`\\[REDACTED:(?:${kinds})\\]`</span>, <span class="code-string">"g"</span>);</span></code></pre>
+          </div>
+          <div class="translation-english">
+            <span class="translation-label">PLAIN ENGLISH</span>
+            <div class="translation-lines">
+              <p class="tl">Build a scrubber from the built-in secret patterns plus any extras.</p>
+              <p class="tl">Compile each <span class="term" data-definition="A regular expression: a pattern language for matching text, such as 'anything that looks like an API key'.">regex</span> and remember its order.</p>
+              <p class="tl">The clever part: scrubbing twice shouldn't double-redact, so existing placeholders are skipped…</p>
+              <p class="tl">…but only real ones. An attacker can't hide a key by writing <code>[REDACTED:sk-live-…]</code> around it.</p>
+              <p class="tl">List the exact kinds this scrubber knows.</p>
+              <p class="tl">A placeholder counts only if it names one of those kinds.</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="screen animate-in">
+        <h2 class="screen-heading">The right screen for each decision</h2>
+        <p>A newsroom editor approves a headline from their phone, but rewrites a story at the desk. One command layer is the authority; the CLI and the dashboard are two clients of the same handler, with the same checks and the same ledger record. <span class="ref">§10, §17.12, §17.27</span></p>
+        <div class="arch-diagram">
+          <div class="arch-zone">
+            <h4 class="arch-zone-label">Pick a surface</h4>
+            <div class="arch-component" data-desc="Host dashboard (Plan 6, specced). A loopback page showing every agent on the machine, one state per session written as text: approval, input, plan ready, auth, working, background, ready, stuck, interrupted, failed, limited, crashed, ended. One attention colour means only 'needs you'."><div class="arch-icon">🖥️</div><span>Dashboard</span></div>
+            <div class="arch-component" data-desc="Phone, over a tailnet (designed). Binary, low-context decisions in a swipe inbox, each signed with a passkey over (item id, item version, nonce, choice). A changed item or reused nonce is refused, and every choice can be undone for 10 seconds."><div class="arch-icon">📱</div><span>Phone</span></div>
+            <div class="arch-component" data-desc="The desk (designed). Open product questions, packet edits, freezes and protected approvals, which need a passkey plus typed confirmation of the full diff's hash. Never from the phone."><div class="arch-icon">🪑</div><span>Desk</span></div>
+          </div>
+          <div class="arch-description">Click a surface to see what it handles</div>
+        </div>
+        <p>A <span class="term" data-definition="A private network between your own devices (for example with Tailscale), so the phone can reach the dashboard without exposing it to the internet.">tailnet</span> carries phone decisions. A <span class="term" data-definition="A table declaring each command's CLI form and UI action, or 'ui: pending' with the step it is due. A test fails when a pending action passes its step, so 'later' can't become 'never'.">command registry</span> keeps the UI honest about what it can't do yet.</p>
+      </section>
+
+      <section class="screen animate-in">
+        <h2 class="screen-heading">Production stops when review is full</h2>
+        <p>A conveyor belt that outruns the inspector just builds a pile. When the pending-decision queue reaches its limit (default 3 per ring), no new Step that needs a human decision starts (invariant 18). This is <span class="term" data-definition="Slowing the producer when the consumer is full. Here the consumer is you: Sindri stops starting work that will need your decision until you clear the queue.">back-pressure</span>. Autonomy also follows who gets hurt, not just size:</p>
+        <div class="icon-rows">
+          <div class="icon-row"><div class="icon-circle" style="background: var(--color-success-light)">🧪</div><div><strong>sandbox</strong><p>Auto-start ≤ S, epicMerge auto allowed, fast evidence, sampled human reads</p></div></div>
+          <div class="icon-row"><div class="icon-circle" style="background: var(--color-info-light)">🏠</div><div><strong>personal</strong><p>Auto-start ≤ XS, auto merge allowed, full evidence, samples plus every protected path</p></div></div>
+          <div class="icon-row"><div class="icon-circle" style="background: var(--color-accent-light)">👥</div><div><strong>shared</strong><p>Auto-start off by default, no auto merge, full evidence, a human reads every PR</p></div></div>
+          <div class="icon-row"><div class="icon-circle" style="background: var(--color-error-light)">🏭</div><div><strong>production</strong><p>Off, off, deep evidence including mutation testing, a human reads every diff</p></div></div>
+        </div>
+      </section>
+
+      <section class="screen animate-in">
+        <h2 class="screen-heading">Every verdict says what it didn't prove</h2>
+        <p>Silence is never a pass (invariant 19). Each item ends in one of five closed outcomes, plus a script-written <span class="term" data-definition="The list of planned checks that didn't run or couldn't decide, attached to every outcome so a missing check can't pass quietly.">not proven</span> list. Match each situation to its outcome:</p>
+        <div class="dnd-container" id="dnd-m5">
+          <div class="dnd-chips">
+            <div class="dnd-chip" draggable="true" data-answer="verified">verified</div>
+            <div class="dnd-chip" draggable="true" data-answer="already">already-satisfied</div>
+            <div class="dnd-chip" draggable="true" data-answer="blocked">blocked</div>
+            <div class="dnd-chip" draggable="true" data-answer="unverified">unverified</div>
+            <div class="dnd-chip" draggable="true" data-answer="failed">failed</div>
+          </div>
+          <div class="dnd-zones">
+            <div class="dnd-zone" data-correct="already"><p class="dnd-zone-label">The bug's reproduce check already passes on the base branch. Closed with evidence, no PR.</p><div class="dnd-zone-target">Drop here</div></div>
+            <div class="dnd-zone" data-correct="unverified"><p class="dnd-zone-label">Built, but the browser evidence couldn't run. The PR stays draft and the gap is named.</p><div class="dnd-zone-target">Drop here</div></div>
+            <div class="dnd-zone" data-correct="blocked"><p class="dnd-zone-label">It needs a product answer before it can go on. Parks as needs-answer.</p><div class="dnd-zone-target">Drop here</div></div>
+            <div class="dnd-zone" data-correct="failed"><p class="dnd-zone-label">Still red after the round cap, or the same findings twice. Parks with the findings.</p><div class="dnd-zone-target">Drop here</div></div>
+            <div class="dnd-zone" data-correct="verified"><p class="dnd-zone-label">Every required evidence item passed. The PR proceeds under the ship contract.</p><div class="dnd-zone-target">Drop here</div></div>
+          </div>
+          <button class="btn" onclick="checkDnD('dnd-m5')">Check Matches</button>
+          <button class="btn" onclick="resetDnD('dnd-m5')">Reset</button>
+        </div>
+      </section>
+
+      <section class="screen animate-in">
+        <h2 class="screen-heading">Rings: home first, then work</h2>
+        <p>Each piece switches on first on ring 0, then ring 1. Ring 2 starts only after the factory holds on ring 1. Work and personal never mix: not in data, accounts or hosts. <span class="ref">§13.3, §17.19 C10</span></p>
+        <div class="step-cards">
+          <div class="step-card"><div class="step-num">0</div><div class="step-body"><strong>Ring 0: this toolkit</strong><p>Sindri builds Sindri from its own plan files. Every new piece runs here first.</p></div></div>
+          <div class="step-card"><div class="step-num">1</div><div class="step-body"><strong>Ring 1: workplace repos, on work hosts only</strong><p>Where the factory is tested and improved first. Assist mode, packets, compiler, evidence and lenses on. Auto merge, phone decisions and standing workflows above "report" stay off until the workplace allows them.</p></div></div>
+          <div class="step-card"><div class="step-num">2</div><div class="step-body"><strong>Ring 2: a private product repo</strong><p>Started only after ring 1 holds.</p></div></div>
+        </div>
+      </section>
+
+      <section class="screen animate-in">
+        <h2 class="screen-heading">Check your understanding</h2>
+        <div class="quiz-container" id="quiz-m5">
+          <div class="quiz-question-block" data-correct="b"
+               data-explanation-right="The hook was a sign; the boundary is what holds. With no credentials or network in the container the push fails, and Sindri re-verifies anything a session hands back."
+               data-explanation-wrong="Hooks only nudge cooperative agents. The security comes from the container: no credentials, an egress allowlist and Sindri-side re-verification.">
+            <div class="scenario-block"><div class="scenario-context"><span class="scenario-label">Scenario</span>
+              <p>A prompt-injected session base64-encodes <code>git push --force</code> to slip past the command hook. What stops it?</p></div></div>
+            <div class="quiz-options">
+              <button class="quiz-option" data-value="a" onclick="selectOption(this)"><div class="quiz-option-radio"></div><span>A better regex in the hook.</span></button>
+              <button class="quiz-option" data-value="b" onclick="selectOption(this)"><div class="quiz-option-radio"></div><span>The sandbox: the session has no push credentials or network to use.</span></button>
+              <button class="quiz-option" data-value="c" onclick="selectOption(this)"><div class="quiz-option-radio"></div><span>Nothing. That's why sessions are reviewed.</span></button>
+            </div>
+            <div class="quiz-feedback"></div>
+          </div>
+          <div class="quiz-question-block" data-correct="c"
+               data-explanation-right="Back-pressure is working as designed. Clear the queue and work resumes; more machines wouldn't help, because human review is the real ceiling."
+               data-explanation-wrong="The queue is at its limit, so Sindri won't start more work that needs you. Answering the pending decisions is what unblocks it.">
+            <div class="scenario-block"><div class="scenario-context"><span class="scenario-label">Debugging</span>
+              <p>You were away for a weekend. Monday, nothing new has started, though the backlog is full of ready items. Three phone decisions are waiting. Why?</p></div></div>
+            <div class="quiz-options">
+              <button class="quiz-option" data-value="a" onclick="selectOption(this)"><div class="quiz-option-radio"></div><span>The tick crashed and needs a restart.</span></button>
+              <button class="quiz-option" data-value="b" onclick="selectOption(this)"><div class="quiz-option-radio"></div><span>Model quota ran out over the weekend.</span></button>
+              <button class="quiz-option" data-value="c" onclick="selectOption(this)"><div class="quiz-option-radio"></div><span>Review is full: three pending decisions is the limit, so production stopped.</span></button>
+            </div>
+            <div class="quiz-feedback"></div>
+          </div>
+          <button class="quiz-check-btn" onclick="checkQuiz('quiz-m5')">Check Answers</button>
+          <button class="quiz-reset-btn" onclick="resetQuiz('quiz-m5')">Try Again</button>
+        </div>
+      </section>
+
+    </div>
+  </div>
+</section>
+<section class="module" id="module-6" style="background: var(--color-bg-warm)">
+  <div class="module-content">
+    <header class="module-header animate-in">
+      <span class="module-number">06</span>
+      <h1 class="module-title">The ring that multiplies</h1>
+      <p class="module-subtitle">How Sindri improves what exists, finds what doesn't, and never lets a change grade itself.</p>
+    </header>
+
+    <div class="module-body">
+
+      <section class="screen animate-in">
+        <h2 class="screen-heading">A sourdough starter</h2>
+        <p>A baker never replaces the whole starter on a hunch. They feed a small portion in a second jar, bake a test loaf, and only then trust it. Everything that shapes agent behaviour in Sindri (skills, prompts, rubrics, thresholds) is a <span class="term" data-definition="Any piece of agent-shaping text or config that Sindri tracks with an id, a version, an eval suite and an adoption history, so it can be swapped and measured on its own.">registered artifact</span> with an <span class="term" data-definition="A fixed set of test cases that scores an artifact. A proposed change has to beat the current version on it before it's adopted.">eval suite</span>, and changes get the test-jar treatment. <span class="status built">built</span> <span class="ref">§7.4, §7.7</span></p>
+        <div class="flow-steps">
+          <div class="flow-step"><div class="flow-step-num">1</div><p><strong>Signals</strong><br>steering, reflection, overturned decisions</p></div>
+          <div class="flow-arrow">→</div>
+          <div class="flow-step"><div class="flow-step-num">2</div><p><strong>Proposal</strong><br>a changed artifact</p></div>
+          <div class="flow-arrow">→</div>
+          <div class="flow-step"><div class="flow-step-num">3</div><p><strong>Blinded comparison</strong><br>offline, old vs new</p></div>
+          <div class="flow-arrow">→</div>
+          <div class="flow-step"><div class="flow-step-num">4</div><p><strong>Adopt</strong><br>by tier</p></div>
+        </div>
+        <div class="pattern-cards">
+          <div class="pattern-card" style="border-top: 3px solid var(--color-actor-5)"><h4 class="pattern-title">Self-adopt</h4><p class="pattern-desc">Prompt text. Automatic after both evals: 25% canary for a week, then 100%, auto-revert on regression.</p></div>
+          <div class="pattern-card" style="border-top: 3px solid var(--color-actor-4)"><h4 class="pattern-title">Approval</h4><p class="pattern-desc">Protected surfaces and every capability field. You see the diff, source turns and eval results.</p></div>
+          <div class="pattern-card" style="border-top: 3px solid var(--color-actor-1)"><h4 class="pattern-title">Code</h4><p class="pattern-desc">Anything in the core repo: a normal work item and PR. You merge.</p></div>
+        </div>
+      </section>
+
+      <section class="screen animate-in">
+        <h2 class="screen-heading">Two jars: stable and next</h2>
+        <p>The harness always runs from a pinned <strong>stable</strong> install of itself. Changes land on <strong>next</strong>, are evaluated by stable, soak, then promote. A change may never modify the eval suite that judges it (invariant 11). Here's the gate:</p>
+        <div class="translation-block animate-in">
+          <div class="translation-code">
+            <span class="translation-label">sindri/src/evolve/channel.ts</span>
+            <pre><code><span class="code-line">  <span class="code-keyword">if</span> (c.next === <span class="code-keyword">null</span>) <span class="code-keyword">return</span> { <span class="code-property">ok</span>: <span class="code-keyword">false</span>, <span class="code-property">why</span>: <span class="code-string">"nothing is installed on next"</span>, <span class="code-property">next</span>: <span class="code-string">"scripts/install-sindri.sh --channel next --ref &lt;sha&gt;"</span> };</span>
+<span class="code-line">  <span class="code-keyword">if</span> (c.next.sha !== sha) <span class="code-keyword">return</span> { <span class="code-property">ok</span>: <span class="code-keyword">false</span>, <span class="code-property">why</span>: <span class="code-string">`${sha} is not what next runs (${c.next.sha})`</span>, <span class="code-property">next</span>: <span class="code-string">`sindri channel promote ${c.next.sha}`</span> };</span>
+<span class="code-line">  <span class="code-keyword">if</span> (c.stable !== <span class="code-keyword">null</span> &amp;&amp; c.stable.sha === sha) <span class="code-keyword">return</span> { <span class="code-property">ok</span>: <span class="code-keyword">false</span>, <span class="code-property">why</span>: <span class="code-string">`${sha} is already stable`</span>, <span class="code-property">next</span>: <span class="code-string">"sindri channel status"</span> };</span>
+<span class="code-line">  <span class="code-keyword">const</span> days = Math.<span class="code-function">floor</span>((now.<span class="code-function">getTime</span>() - Date.<span class="code-function">parse</span>(c.next.installedAt)) / <span class="code-number">86_400_000</span>);</span>
+<span class="code-line">  <span class="code-keyword">if</span> (!Number.<span class="code-function">isFinite</span>(days)) <span class="code-keyword">return</span> { <span class="code-property">ok</span>: <span class="code-keyword">false</span>, <span class="code-property">why</span>: <span class="code-string">`next has no readable install time (${JSON.stringify(c.next.installedAt)}), so its soak can't be checked`</span>, <span class="code-property">next</span>: <span class="code-string">"scripts/install-sindri.sh --channel next --ref &lt;sha&gt;"</span> };</span>
+<span class="code-line">  <span class="code-keyword">if</span> (days &lt; SOAK_DAYS) <span class="code-keyword">return</span> { <span class="code-property">ok</span>: <span class="code-keyword">false</span>, <span class="code-property">why</span>: <span class="code-string">`next has soaked ${days} of ${SOAK_DAYS} days`</span>, <span class="code-property">next</span>: <span class="code-string">"sindri channel status (after the soak)"</span> };</span></code></pre>
+          </div>
+          <div class="translation-english">
+            <span class="translation-label">PLAIN ENGLISH</span>
+            <div class="translation-lines">
+              <p class="tl">Nothing on next? Nothing to promote. Here's the command to install it.</p>
+              <p class="tl">You can only promote exactly what next is running, never some other commit.</p>
+              <p class="tl">Already stable? Nothing to do.</p>
+              <p class="tl">How many whole days has next been running?</p>
+              <p class="tl">If the install time is unreadable, refuse. An unknown soak is not a passed soak.</p>
+              <p class="tl">Not soaked long enough (<code>SOAK_DAYS</code> is 3)? Wait.</p>
+            </div>
+          </div>
+        </div>
+        <p>Every refusal says <em>why</em> and gives the exact <code>next</code> command to run. The function's last check needs a passing <code>package:sindri</code> suite run at that sha.</p>
+      </section>
+
+      <section class="screen animate-in">
+        <h2 class="screen-heading">Looking outward: the scout and the harvest</h2>
+        <p>Improving what exists isn't enough. The scout reads internal gaps, upstream changes, other software factories and your notes, and writes <span class="term" data-definition="A short proposal for something Sindri doesn't have yet: what it is, where it came from, fit, cost and an eval plan. You answer build, later or no.">idea cards</span>. From F6, a weekly <span class="term" data-definition="Sindri reading other software factories in a field registry, writing practice cards with file-and-line citations and a licence, and checking each against its own spec.">field harvest</span> does the reading itself. <span class="status designed">designed</span> <span class="ref">§17.18, §17.25</span></p>
+        <div class="chat-window" id="chat-m6">
+          <div class="chat-messages">
+            <div class="chat-message" data-msg="0" data-sender="harvest" style="display:none">
+              <div class="chat-avatar" style="background: var(--color-actor-5)">🌾</div>
+              <div class="chat-bubble"><span class="chat-sender" style="color: var(--color-actor-5)">harvest</span><p>Weekly pass done. Shallow-cloned 8 registry repos into scratch, read only what changed since last SHA. Never ran, built or installed any of it.</p></div>
+            </div>
+            <div class="chat-message" data-msg="1" data-sender="harvest" style="display:none">
+              <div class="chat-avatar" style="background: var(--color-actor-5)">🌾</div>
+              <div class="chat-bubble"><span class="chat-sender" style="color: var(--color-actor-5)">harvest</span><p>Practice card: "no-progress detection: stop a loop that repeats the same findings". Citation: planwright, file and line. Licence noted, no code stored. Gap check: <b>missing</b>, checked against §6.</p></div>
+            </div>
+            <div class="chat-message" data-msg="2" data-sender="blind" style="display:none">
+              <div class="chat-avatar" style="background: var(--color-actor-3)">🙈</div>
+              <div class="chat-bubble"><span class="chat-sender" style="color: var(--color-actor-3)">second model (blind)</span><p>Read §6 without seeing that verdict. I agree: Sindri spends every round even when findings repeat. Missing.</p></div>
+            </div>
+            <div class="chat-message" data-msg="3" data-sender="inbox" style="display:none">
+              <div class="chat-avatar" style="background: var(--color-actor-2)">📱</div>
+              <div class="chat-bubble"><span class="chat-sender" style="color: var(--color-actor-2)">swipe inbox</span><p>New card for you: build, later or no?</p></div>
+            </div>
+            <div class="chat-message" data-msg="4" data-sender="you" style="display:none">
+              <div class="chat-avatar" style="background: var(--color-actor-1)">🙂</div>
+              <div class="chat-bubble"><span class="chat-sender" style="color: var(--color-actor-1)">you</span><p>Build.</p></div>
+            </div>
+            <div class="chat-message" data-msg="5" data-sender="harvest" style="display:none">
+              <div class="chat-avatar" style="background: var(--color-actor-5)">🌾</div>
+              <div class="chat-bubble"><span class="chat-sender" style="color: var(--color-actor-5)">harvest</span><p>Drafting the spec section, then the guide update, then the mechanism, as separate PRs through the factory. Normal evals and merge rules. Harvest proposes; it never adopts.</p></div>
+            </div>
+          </div>
+          <div class="chat-typing" style="display:none">
+            <div class="chat-avatar" id="chat-m6-typing-avatar">?</div>
+            <div class="chat-typing-dots"><span class="typing-dot"></span><span class="typing-dot"></span><span class="typing-dot"></span></div>
+          </div>
+          <div class="chat-controls">
+            <button class="btn chat-next-btn">Next Message</button>
+            <button class="btn chat-all-btn">Play All</button>
+            <button class="btn chat-reset-btn">Replay</button>
+            <span class="chat-progress"></span>
+          </div>
+        </div>
+        <div class="callout callout-info">
+          <div class="callout-icon">🔒</div>
+          <div class="callout-content">
+            <strong class="callout-title">Never loosened, whatever the evidence</strong>
+            <p>The human merges to the default branch. Existing tests are read-only to sessions. The producer never verifies its own work. Protected modules need approval. Models never grant capabilities. <span class="ref">§17.23.8</span></p>
+          </div>
+        </div>
+      </section>
+
+      <section class="screen animate-in">
+        <h2 class="screen-heading">What ships when</h2>
+        <p>Sindri bootstraps itself: every step ends with a "Turn it on" task, and the next plan's work runs on it. <span class="ref">§13, §17.16</span></p>
+        <div class="step-cards">
+          <div class="step-card"><div class="step-num">1–5</div><div class="step-body"><strong>Plans 1–5: the control room <span class="status built">built</span></strong><p>Measurement, the ledger, the code index, the scoping harness, offline self-evolution.</p></div></div>
+          <div class="step-card"><div class="step-num">6</div><div class="step-body"><strong>Plan 6: the dashboard <span class="status specced">specced</span></strong><p>Every agent on the machine, one state each.</p></div></div>
+          <div class="step-card"><div class="step-num">R</div><div class="step-body"><strong>Agent readiness and the C# port <span class="status specced">specced</span></strong><p>The repo reaches Level 4 on Factory's agent-readiness framework, so agents build on a codebase that checks what they do.</p></div></div>
+          <div class="step-card"><div class="step-num">F</div><div class="step-body"><strong>The factory, F0 onward <span class="status designed">designed</span></strong><p>Packets, task compiler, lenses, evidence, review anywhere. Level 5 arrives with it.</p></div></div>
+        </div>
+        <div class="badge-list">
+          <div class="badge-item"><code class="badge-code">1 working day</code><span class="badge-desc">A piece not switched on within a day of its plan merging becomes a ring-0 work item of its own.</span></div>
+          <div class="badge-item"><code class="badge-code">no hand-starts</code><span class="badge-desc">No later plan is started by hand if the pieces before it could start it.</span></div>
+        </div>
+      </section>
+
+      <section class="screen animate-in">
+        <h2 class="screen-heading">Check your understanding</h2>
+        <div class="quiz-container" id="quiz-m6">
+          <div class="quiz-question-block" data-correct="b"
+               data-explanation-right="A change that edits its own judge could make itself look good. Invariant 11 forbids it: the suite change is a separate, approval-tier proposal."
+               data-explanation-wrong="Think about who grades the change. If the proposal can rewrite its own eval, the comparison means nothing, so that's refused.">
+            <div class="scenario-block"><div class="scenario-context"><span class="scenario-label">Scenario</span>
+              <p>A proposal improves the scoping prompt and, in the same diff, relaxes two cases in the scoping eval suite. What happens?</p></div></div>
+            <div class="quiz-options">
+              <button class="quiz-option" data-value="a" onclick="selectOption(this)"><div class="quiz-option-radio"></div><span>It self-adopts if the new suite passes.</span></button>
+              <button class="quiz-option" data-value="b" onclick="selectOption(this)"><div class="quiz-option-radio"></div><span>Refused: a change may never modify the eval suite that judges it.</span></button>
+              <button class="quiz-option" data-value="c" onclick="selectOption(this)"><div class="quiz-option-radio"></div><span>It goes to a 25% canary to see how it does.</span></button>
+            </div>
+            <div class="quiz-feedback"></div>
+          </div>
+          <div class="quiz-question-block" data-correct="a"
+               data-explanation-right="next was reinstalled yesterday, so its soak clock restarted. canPromote refuses with 'next has soaked N of 3 days' and tells you to check back after the soak."
+               data-explanation-wrong="The soak is measured from next's install time. A fresh install restarts the clock, however good the suite looks.">
+            <div class="scenario-block"><div class="scenario-context"><span class="scenario-label">Debugging</span>
+              <p>The suite passed and next ran fine for a week, but yesterday you reinstalled next at the same sha. <code>sindri channel promote</code> refuses. Why?</p></div></div>
+            <div class="quiz-options">
+              <button class="quiz-option" data-value="a" onclick="selectOption(this)"><div class="quiz-option-radio"></div><span>The soak counts from the install time, so it's under 3 days again.</span></button>
+              <button class="quiz-option" data-value="b" onclick="selectOption(this)"><div class="quiz-option-radio"></div><span>That sha is already stable.</span></button>
+              <button class="quiz-option" data-value="c" onclick="selectOption(this)"><div class="quiz-option-radio"></div><span>The suite result expired after a week.</span></button>
+            </div>
+            <div class="quiz-feedback"></div>
+          </div>
+          <button class="quiz-check-btn" onclick="checkQuiz('quiz-m6')">Check Answers</button>
+          <button class="quiz-reset-btn" onclick="resetQuiz('quiz-m6')">Try Again</button>
+        </div>
+      </section>
+
+      <section class="screen animate-in">
+        <h2 class="screen-heading">Where to go next</h2>
+        <p>This course covers the ideas. For every chapter, catalog row and section reference, open the full reference guide, <a href="../sindri.html">docs/sindri.html</a>, or read the specs in <code>docs/superpowers/specs/</code>.</p>
+      </section>
+
+    </div>
+  </div>
+</section>
+  </main>
+
+</body>
+</html>

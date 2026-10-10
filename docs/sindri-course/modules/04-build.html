@@ -1,0 +1,200 @@
+<section class="module" id="module-4" style="background: var(--color-bg-warm)">
+  <div class="module-content">
+    <header class="module-header animate-in">
+      <span class="module-number">04</span>
+      <h1 class="module-title">Sealed blueprints, narrow crews</h1>
+      <p class="module-subtitle">Freeze the plan, compile each job's permissions, and let disciplines decide who looks at what.</p>
+    </header>
+
+    <div class="module-body">
+
+      <section class="screen animate-in">
+        <h2 class="screen-heading">The locked script and the call sheet</h2>
+        <p>On a film set, the script gets <em>locked</em> before shooting. After that, each person gets a call sheet: which scenes, which set, what time. Nobody wanders into another unit's scene. <span class="status designed">designed</span> <span class="ref">§17.4, §17.5</span></p>
+        <div class="flow-steps">
+          <div class="flow-step"><div class="flow-step-num">📦</div><p><strong>Packet</strong><br>the locked script</p></div>
+          <div class="flow-arrow">→</div>
+          <div class="flow-step"><div class="flow-step-num">⚙️</div><p><strong>Task compiler</strong><br>code, no model</p></div>
+          <div class="flow-arrow">→</div>
+          <div class="flow-step"><div class="flow-step-num">📋</div><p><strong>Session spec</strong><br>one call sheet per Step</p></div>
+          <div class="flow-arrow">→</div>
+          <div class="flow-step"><div class="flow-step-num">🔒</div><p><strong>Sandbox policy</strong><br>compiled from the spec</p></div>
+        </div>
+        <p>The <span class="term" data-definition="Deterministic code that reads a frozen packet and computes each Step's session spec. No model is involved, so a session's permissions can't be talked into existence.">task compiler</span> turns each Step into a <span class="term" data-definition="Everything one session is allowed and given: write scope, read seeds, rules, the lens's skills and MCP servers, sandbox, evidence plan, budget and the next Step.">session spec</span>. Agents don't decide their own scope (invariant 13).</p>
+        <div class="badge-list">
+          <div class="badge-item"><code class="badge-code">write</code><span class="badge-desc">The task's write scope plus its tests by the repo's test-path convention</span></div>
+          <div class="badge-item"><code class="badge-code">read</code><span class="badge-desc">A context-graph query for the task's seeds, within the injection budget</span></div>
+          <div class="badge-item"><code class="badge-code">rules</code><span class="badge-desc">Only the rules that match this repo, path, task kind, lens and stage</span></div>
+          <div class="badge-item"><code class="badge-code">skills · agents · mcp</code><span class="badge-desc">The lens's allowlist, under the profile's approved ceiling</span></div>
+          <div class="badge-item"><code class="badge-code">budget · next</code><span class="badge-desc">Tokens, turns and wall time; the next Step and its input schema</span></div>
+        </div>
+      </section>
+
+      <section class="screen animate-in">
+        <h2 class="screen-heading">Permissions are an intersection</h2>
+        <p>A session can do only what <em>all three</em> layers allow. Click through the layers to watch the allowed set shrink:</p>
+        <div class="layer-demo">
+          <div class="layer-tabs">
+            <button class="layer-tab active" onclick="showLayer('m4-profile', this)">Profile ceiling</button>
+            <button class="layer-tab" onclick="showLayer('m4-lens', this)">∩ Lens</button>
+            <button class="layer-tab" onclick="showLayer('m4-task', this)">∩ Task</button>
+          </div>
+          <div class="layer-viewport">
+            <div class="layer" id="m4-profile" style="display:block">
+              <div class="badge-list">
+                <div class="badge-item"><code class="badge-code">tools</code><span class="badge-desc">Read, Edit, Bash(npm test), Bash(dotnet test), playwright, context7</span></div>
+                <div class="badge-item"><code class="badge-code">writes</code><span class="badge-desc">anywhere in the repo</span></div>
+              </div>
+              <p>What you approved for this repo, once, as a profile change.</p>
+            </div>
+            <div class="layer" id="m4-lens" style="display:none">
+              <div class="badge-list">
+                <div class="badge-item"><code class="badge-code">tools</code><span class="badge-desc">Read, Edit, Bash(npm test) <s>dotnet test, playwright, context7</s></span></div>
+                <div class="badge-item"><code class="badge-code">writes</code><span class="badge-desc">source and test files</span></div>
+              </div>
+              <p>The implementer lens for a TypeScript task drops the tools it doesn't need.</p>
+            </div>
+            <div class="layer" id="m4-task" style="display:none">
+              <div class="badge-list">
+                <div class="badge-item"><code class="badge-code">tools</code><span class="badge-desc">Read, Edit, Bash(npm test)</span></div>
+                <div class="badge-item"><code class="badge-code">writes</code><span class="badge-desc">sindri/src/scope/** and its tests, nothing else</span></div>
+              </div>
+              <p>The task's write scope narrows it to one folder. This is the session's real policy.</p>
+            </div>
+          </div>
+        </div>
+        <div class="callout callout-warning">
+          <div class="callout-icon">🧱</div>
+          <div class="callout-content">
+            <strong class="callout-title">The capability ceiling</strong>
+            <p>Prompt text (instructions, rubrics, rule wording) may improve itself. Capability fields (tool, command, MCP, network, write-scope and budget allowlists) are always approval-tier. No model output may set them. <span class="ref">§17.19 C1–C2</span></p>
+          </div>
+        </div>
+      </section>
+
+      <section class="screen animate-in">
+        <h2 class="screen-heading">Lenses: the film crew's departments</h2>
+        <p>Sound doesn't light the set, and lighting doesn't mix audio. A <span class="term" data-definition="A development discipline as a module: its own questions, rules, tools and evidence. Workflow generation picks which lenses a deliverable needs.">lens</span> is a discipline with its own questions, rules, tools and evidence. Workflow generation picks the lenses once per deliverable, then freezes the order. <span class="ref">§17.7</span></p>
+        <div class="arch-diagram">
+          <div class="arch-zone">
+            <h4 class="arch-zone-label">F3 starts with these four</h4>
+            <div class="arch-component" data-desc="Implementer. Triggers on every code task; the language is picked from paths. Evidence: test."><div class="arch-icon">🛠️</div><span>Implementer</span></div>
+            <div class="arch-component" data-desc="QA and evaluator. Triggers on every task. Checks held-out acceptance examples the implementer never saw, against the evidence plan."><div class="arch-icon">🧪</div><span>QA</span></div>
+            <div class="arch-component" data-desc="System architecture. Triggers on new modules, cross-package changes and new dependencies. Evidence: shape signals and /archReview notes."><div class="arch-icon">🏛️</div><span>Architecture</span></div>
+            <div class="arch-component" data-desc="Security. Triggers on auth, input handling, secrets, dependencies and permissions. Evidence: security (/cso diff mode and a dependency audit)."><div class="arch-icon">🛡️</div><span>Security</span></div>
+          </div>
+          <div class="arch-zone">
+            <h4 class="arch-zone-label">Grown later by scouting</h4>
+            <div class="arch-component" data-desc="UI and UX design. Components, styles, tokens, flows, forms, empty and error states. Evidence: design-parity, a11y, ui-browser, behavior-sim."><div class="arch-icon">🎨</div><span>UI / UX</span></div>
+            <div class="arch-component" data-desc="Database and data. Schema, migrations, queries. Evidence: migration (dry-run, rollback, schema diff) and test."><div class="arch-icon">🗄️</div><span>Data</span></div>
+            <div class="arch-component" data-desc="Performance. Hot paths, queries, bundles, build time. Evidence: perf and trace."><div class="arch-icon">⚡</div><span>Performance</span></div>
+            <div class="arch-component" data-desc="Critic, review-only. Production tier and protected paths. Argues against the change: hidden assumptions, one-caller abstractions, behaviour changes behind a green suite."><div class="arch-icon">🗣️</div><span>Critic</span></div>
+          </div>
+          <div class="arch-description">Click a lens to see its triggers and evidence</div>
+        </div>
+        <p>Sessions start lean: only the lens's skills, agents and <span class="term" data-definition="Model Context Protocol: a standard way to plug external tools and data (GitHub, a browser, docs) into an agent. Each connected server adds tools the model can call, and tokens to every turn.">MCP</span> servers, and memory arrives as cited sections instead of a giant bootstrap. <span class="ref">§17.8</span></p>
+      </section>
+
+      <section class="screen animate-in">
+        <h2 class="screen-heading">Taste, written down</h2>
+        <p>"I always want X", said once at the desk, becomes a <span class="term" data-definition="A registered piece of taste or policy with selectors (which languages, paths, lenses it applies to), an optional deterministic check, and a source.">rule</span>: the style bible a director hands each department. Selectors mean a session carries only the few that apply. <span class="ref">§17.6</span></p>
+        <div class="translation-block animate-in">
+          <div class="translation-code">
+            <span class="translation-label">A rule record (spec §17.6)</span>
+            <pre><code><span class="code-line"><span class="code-property">id</span>: taste.ts.no-barrel-files</span>
+<span class="code-line"><span class="code-property">kind</span>: taste    <span class="code-comment"># taste | engineering | process | product-precedent | security | lens</span></span>
+<span class="code-line"><span class="code-property">text</span>: <span class="code-string">"Import from the module file, not an index barrel."</span></span>
+<span class="code-line"><span class="code-property">why</span>: <span class="code-string">"Barrels hide cycles and slow type-checking."</span></span>
+<span class="code-line"><span class="code-property">select</span>: { <span class="code-property">languages</span>: [ts], <span class="code-property">paths</span>: [<span class="code-string">"**/*.ts"</span>], <span class="code-property">lenses</span>: [implementer, architecture] }</span>
+<span class="code-line"><span class="code-property">check</span>: { <span class="code-property">type</span>: eslint, <span class="code-property">rule</span>: <span class="code-string">"no-restricted-imports"</span> }</span>
+<span class="code-line"><span class="code-property">source</span>: { <span class="code-property">type</span>: desk, <span class="code-property">ref</span>: <span class="code-string">"decision-log#D-12"</span> }</span>
+<span class="code-line"><span class="code-property">status</span>: active  <span class="code-comment"># proposed | active | retired</span></span></code></pre>
+          </div>
+          <div class="translation-english">
+            <span class="translation-label">PLAIN ENGLISH</span>
+            <div class="translation-lines">
+              <p class="tl">A stable name, so a later layer can override it.</p>
+              <p class="tl">What sort of rule this is.</p>
+              <p class="tl">The instruction a session actually reads.</p>
+              <p class="tl">The reason, so a model (or you) can judge edge cases.</p>
+              <p class="tl">Only TypeScript files, only for these two lenses. Everyone else never sees it.</p>
+              <p class="tl">A deterministic check: the top of the enforcement ladder.</p>
+              <p class="tl">Where it came from: decision D-12 at the desk.</p>
+              <p class="tl">Live now.</p>
+            </div>
+          </div>
+        </div>
+        <p>Rules climb an enforcement ladder: injected text → a judge rule-check in the verifier → a deterministic check at commit. A rule that keeps getting judged becomes a proposal to write its check. That's the decision ladder from module 2, applied to taste.</p>
+      </section>
+
+      <section class="screen animate-in">
+        <h2 class="screen-heading">From frozen packet to merged epic</h2>
+        <p>Each packet gets an <span class="term" data-definition="A long-lived branch for one packet. Task PRs stack against it and merge into it under a deterministic gate; the epic's PR into the default branch is always the human's.">epic</span> branch. Every acceptance example needs an artifact, like dailies on a shoot: footage you can actually watch, not a claim that the scene went fine. <span class="ref">§17.10, §17.11</span></p>
+        <div class="flow-animation" data-steps='[
+          {"highlight":"flow-m4-packet","label":"The packet passed sindri packet validate and its hash is in the ledger."},
+          {"highlight":"flow-m4-compiler","label":"The task compiler turns the next Step into a session spec. Policy = ceiling ∩ lens ∩ task.","packet":true,"from":"m4-packet","to":"m4-compiler"},
+          {"highlight":"flow-m4-session","label":"A lean container session starts with only its planned skills, agents and MCP.","packet":true,"from":"m4-compiler","to":"m4-session"},
+          {"highlight":"flow-m4-eval","label":"A QA Step checks held-out examples the implementer never saw. A script computes the verdict.","packet":true,"from":"m4-session","to":"m4-eval"},
+          {"highlight":"flow-m4-evidence","label":"Evidence providers run at base and head; each acceptance example gets an artifact.","packet":true,"from":"m4-eval","to":"m4-evidence"},
+          {"highlight":"flow-m4-epic","label":"Ship gate: CI green, threads resolved, evidence satisfied, at most 3 rounds. Merge into the epic.","packet":true,"from":"m4-evidence","to":"m4-epic"}
+        ]'>
+          <div class="flow-actors">
+            <div class="flow-actor" id="flow-m4-packet"><div class="flow-actor-icon">📦</div><span>Packet</span></div>
+            <div class="flow-actor" id="flow-m4-compiler"><div class="flow-actor-icon">⚙️</div><span>Compiler</span></div>
+            <div class="flow-actor" id="flow-m4-session"><div class="flow-actor-icon">🛠️</div><span>Session</span></div>
+            <div class="flow-actor" id="flow-m4-eval"><div class="flow-actor-icon">🧪</div><span>Evaluator</span></div>
+            <div class="flow-actor" id="flow-m4-evidence"><div class="flow-actor-icon">🎞️</div><span>Evidence</span></div>
+            <div class="flow-actor" id="flow-m4-epic"><div class="flow-actor-icon">🌿</div><span>Epic</span></div>
+          </div>
+          <div class="flow-packet"></div>
+          <div class="flow-step-label">Click "Next Step" to begin</div>
+          <div class="flow-controls">
+            <button class="btn flow-next-btn">Next Step</button>
+            <button class="btn flow-reset-btn">Restart</button>
+            <span class="flow-progress"></span>
+          </div>
+        </div>
+        <div class="callout callout-accent">
+          <div class="callout-icon">🧪</div>
+          <div class="callout-content">
+            <strong class="callout-title">Sessions don't edit the tests that judge them</strong>
+            <p>Existing tests are read-only unless the packet names the change (invariant 17), and every new test must fail with the non-test changes reverted. Otherwise an agent can "go green" by weakening an assertion.</p>
+          </div>
+        </div>
+      </section>
+
+      <section class="screen animate-in">
+        <h2 class="screen-heading">Check your understanding</h2>
+        <div class="quiz-container" id="quiz-m4">
+          <div class="quiz-question-block" data-correct="c"
+               data-explanation-right="The write scope is part of the frozen packet. Widening it is a scope-expansion check and, if needed, a desk amendment and re-freeze, never something the session grants itself."
+               data-explanation-wrong="Agents don't decide their own scope, and models never grant capabilities (invariant 13). The change goes back through the desk.">
+            <div class="scenario-block"><div class="scenario-context"><span class="scenario-label">Scenario</span>
+              <p>Mid-task, the implementer realizes the fix also needs a change in <code>judge/</code>, outside its write scope. What should happen?</p></div></div>
+            <div class="quiz-options">
+              <button class="quiz-option" data-value="a" onclick="selectOption(this)"><div class="quiz-option-radio"></div><span>It edits <code>judge/</code> anyway and explains in the PR.</span></button>
+              <button class="quiz-option" data-value="b" onclick="selectOption(this)"><div class="quiz-option-radio"></div><span>The verifier approves the wider scope if the tests pass.</span></button>
+              <button class="quiz-option" data-value="c" onclick="selectOption(this)"><div class="quiz-option-radio"></div><span>It proposes a scope expansion; the packet is amended at the desk, or it becomes a separate item.</span></button>
+            </div>
+            <div class="quiz-feedback"></div>
+          </div>
+          <div class="quiz-question-block" data-correct="a"
+               data-explanation-right="Exactly. That's a deterministic check, the top of the enforcement ladder. It costs nothing to run and can't be argued with."
+               data-explanation-wrong="When a judge keeps flagging the same thing, the ladder says climb down: write the check so code decides it for free.">
+            <div class="scenario-block"><div class="scenario-context"><span class="scenario-label">Scenario</span>
+              <p>The verifier's judge flags "used a barrel import" on twenty PRs in a month. What does Sindri propose?</p></div></div>
+            <div class="quiz-options">
+              <button class="quiz-option" data-value="a" onclick="selectOption(this)"><div class="quiz-option-radio"></div><span>Give the rule a <code>check:</code>, a lint rule that runs at commit.</span></button>
+              <button class="quiz-option" data-value="b" onclick="selectOption(this)"><div class="quiz-option-radio"></div><span>Inject the rule text into every session, in every repo.</span></button>
+              <button class="quiz-option" data-value="c" onclick="selectOption(this)"><div class="quiz-option-radio"></div><span>Retire the rule; it's clearly not working.</span></button>
+            </div>
+            <div class="quiz-feedback"></div>
+          </div>
+          <button class="quiz-check-btn" onclick="checkQuiz('quiz-m4')">Check Answers</button>
+          <button class="quiz-reset-btn" onclick="resetQuiz('quiz-m4')">Try Again</button>
+        </div>
+      </section>
+
+    </div>
+  </div>
+</section>

@@ -1,0 +1,180 @@
+<section class="module" id="module-1" style="background: var(--color-bg)">
+  <div class="module-content">
+    <header class="module-header animate-in">
+      <span class="module-number">01</span>
+      <h1 class="module-title">Why Sindri exists</h1>
+      <p class="module-subtitle">You assign yourself a ticket. Here's everything that should happen next without you.</p>
+    </header>
+
+    <div class="module-body">
+
+      <section class="screen animate-in">
+        <h2 class="screen-heading">Start with something you already do</h2>
+        <p>Picture your Monday. You open the <span class="term" data-definition="The tool where work items live, such as Linear or GitHub Issues. Sindri also reads plain plan files as a tracker, so this repo can build itself without a tracker account.">tracker</span>, assign yourself a ticket, paste it into an agent session, and then spend the afternoon steering. "No, not that file." "You forgot the migration." "Did you actually run the tests?"</p>
+        <p><strong>Sindri</strong> is a local, always-on <span class="term" data-definition="The code that wraps a model and decides what it sees, what it may do, and when it stops. The model does the thinking; the harness does the bookkeeping and the guarding.">harness</span> that takes over that afternoon. It picks up the work, sizes it, starts agent sessions with cited context, keeps them on track and ships them through a fixed recipe. It asks you only when it has to.</p>
+        <div class="callout callout-accent">
+          <div class="callout-icon">⚒️</div>
+          <div class="callout-content">
+            <strong class="callout-title">The name</strong>
+            <p>Sindri is the dwarf smith who forged Draupnir, a ring that makes copies of itself. The core tenet is the same idea: <em>the human approves direction; Sindri does the finding, the building and the proving.</em> Then it uses that factory to improve itself.</p>
+          </div>
+        </div>
+      </section>
+
+      <section class="screen animate-in">
+        <h2 class="screen-heading">It started with a measurement</h2>
+        <p>A <span class="term" data-definition="A saved log of an agent session: every prompt, reply and tool call. The audit read a month of these to count where human effort went.">transcript</span> audit of one month of work (406 sessions, 2,911 human turns) asked a simple question: where did the human's turns go?</p>
+        <div class="bars" role="img" aria-label="Share of human turns by category">
+          <div class="bar-row"><span>Shipping direction</span><div class="bar-track"><div class="bar-fill" style="width:100%"></div></div><span>20%</span></div>
+          <div class="bar-row"><span>Product decisions</span><div class="bar-track"><div class="bar-fill cool" style="width:100%"></div></div><span>20%</span></div>
+          <div class="bar-row"><span>Keeping orchestrators on track</span><div class="bar-track"><div class="bar-fill" style="width:55%"></div></div><span>11%</span></div>
+          <div class="bar-row"><span>Research asks</span><div class="bar-track"><div class="bar-fill" style="width:50%"></div></div><span>10%</span></div>
+          <div class="bar-row"><span>Defects found by hand</span><div class="bar-track"><div class="bar-fill" style="width:27.5%"></div></div><span>5.5%</span></div>
+          <div class="bar-row"><span>Dispatch (pasting tickets)</span><div class="bar-track"><div class="bar-fill" style="width:27.5%"></div></div><span>5.5%</span></div>
+          <div class="bar-row"><span>Mid-flight scope discovery</span><div class="bar-track"><div class="bar-fill" style="width:20%"></div></div><span>4%</span></div>
+          <div class="bar-row"><span>QA direction</span><div class="bar-track"><div class="bar-fill" style="width:20%"></div></div><span>4%</span></div>
+          <div class="bar-row"><span>Evidence and env recipes</span><div class="bar-track"><div class="bar-fill" style="width:15%"></div></div><span>3%</span></div>
+        </div>
+        <p>Only the <strong style="color: var(--color-actor-2)">blue bar</strong> really needs a human: product judgment. Most of the rest is babysitting, which code can do. That's the whole pitch.</p>
+      </section>
+
+      <section class="screen animate-in">
+        <h2 class="screen-heading">The production line</h2>
+        <p>Think of it as a <strong>bakery</strong>. You choose what gets baked at the counter. The ovens run without you, and you taste the result before it goes in the window. Step through one ticket's trip:</p>
+
+        <div class="flow-animation" data-steps='[
+          {"highlight":"flow-m1-scope","label":"Scope: sindri scope turns the brief into a cited scope map of every surface it touches."},
+          {"highlight":"flow-m1-studio","label":"Studio: you and an agent settle the product questions at the desk.","packet":true,"from":"m1-scope","to":"m1-studio"},
+          {"highlight":"flow-m1-packet","label":"Packet: the plan is frozen by hash. Nothing builds without one.","packet":true,"from":"m1-studio","to":"m1-packet"},
+          {"highlight":"flow-m1-build","label":"Build: narrow sessions, each with only the tools and files its step needs.","packet":true,"from":"m1-packet","to":"m1-build"},
+          {"highlight":"flow-m1-review","label":"Review: proof arrives on your phone or desk, with what was and was not checked.","packet":true,"from":"m1-build","to":"m1-review"},
+          {"highlight":"flow-m1-merge","label":"Merge: the final merge to the default branch is always yours.","packet":true,"from":"m1-review","to":"m1-merge"}
+        ]'>
+          <div class="flow-actors">
+            <div class="flow-actor" id="flow-m1-scope"><div class="flow-actor-icon">🗺️</div><span>Scope</span></div>
+            <div class="flow-actor" id="flow-m1-studio"><div class="flow-actor-icon">💬</div><span>Studio</span></div>
+            <div class="flow-actor" id="flow-m1-packet"><div class="flow-actor-icon">📦</div><span>Packet</span></div>
+            <div class="flow-actor" id="flow-m1-build"><div class="flow-actor-icon">🏭</div><span>Build</span></div>
+            <div class="flow-actor" id="flow-m1-review"><div class="flow-actor-icon">📱</div><span>Review</span></div>
+            <div class="flow-actor" id="flow-m1-merge"><div class="flow-actor-icon">✅</div><span>Merge</span></div>
+          </div>
+          <div class="flow-packet"></div>
+          <div class="flow-step-label">Click "Next Step" to begin</div>
+          <div class="flow-controls">
+            <button class="btn flow-next-btn">Next Step</button>
+            <button class="btn flow-reset-btn">Restart</button>
+            <span class="flow-progress"></span>
+          </div>
+        </div>
+        <p>Scope and Studio are <strong>desk</strong> stages, where you're the product expert. Everything after the frozen <span class="term" data-definition="A schema-checked folder holding the design, decision log, tasks, write scopes and evidence plan for one deliverable. Freezing it records a hash, so the build runs against exactly what you approved.">packet</span> runs without you until review.</p>
+      </section>
+
+      <section class="screen animate-in">
+        <h2 class="screen-heading">Where the work comes from</h2>
+        <p>Before any of that, Sindri has to <em>find</em> work. The built plan-file <span class="term" data-definition="An adapter that turns some outside format into Sindri's work items. The plan-file adapter reads each '### Task N:' heading in a markdown plan as one item.">adapter</span> reads a markdown plan as a backlog, one item per <code>### Task N:</code> heading. Look at how it handles a missing folder:</p>
+        <div class="translation-block animate-in">
+          <div class="translation-code">
+            <span class="translation-label">sindri/src/adapters/plan-file/tracker.ts</span>
+            <pre><code><span class="code-line"><span class="code-comment">// A missing repo path or plan dir, an unreadable one, a plan dir with no matching</span></span>
+<span class="code-line"><span class="code-comment">// plan file, or a plan file too big to read is an error, never an empty backlog:</span></span>
+<span class="code-line"><span class="code-comment">// an empty scan would make observe mark every item removed.</span></span>
+<span class="code-line">  <span class="code-keyword">async function</span> <span class="code-function">all</span>(): Promise&lt;Result&lt;Entry[]&gt;&gt; {</span>
+<span class="code-line">    <span class="code-keyword">if</span> (!fs.<span class="code-function">existsSync</span>(dir)) {</span>
+<span class="code-line">      <span class="code-keyword">const</span> what = fs.<span class="code-function">existsSync</span>(o.repoPath) ? <span class="code-string">`plan dir not found: ${dir}`</span> : <span class="code-string">`repo path not found: ${o.repoPath}`</span>;</span>
+<span class="code-line">      <span class="code-keyword">return</span> <span class="code-function">err</span>({ <span class="code-property">kind</span>: <span class="code-string">"fatal"</span>, <span class="code-property">code</span>: <span class="code-string">"SND-TRACKER-001"</span>, <span class="code-property">message</span>: what });</span>
+<span class="code-line">    }</span></code></pre>
+          </div>
+          <div class="translation-english">
+            <span class="translation-label">PLAIN ENGLISH</span>
+            <div class="translation-lines">
+              <p class="tl">If we can't read the plans, that's a loud failure, not "you have no work".</p>
+              <p class="tl">Why so strict? An empty list would look like every task was deleted…</p>
+              <p class="tl">…and the hourly <code>observe</code> job would dutifully mark them all removed.</p>
+              <p class="tl">The scan returns a <span class="term" data-definition="A value that is either a success holding data or a failure holding an error. Callers have to look at which one they got; nothing is thrown past them.">Result</span>: success with entries, or a typed error.</p>
+              <p class="tl">Is the plan folder there?</p>
+              <p class="tl">Say exactly what's missing: the folder, or the whole repo.</p>
+              <p class="tl">Return a fatal error with a stable code (<code>SND-…</code>) you can look up.</p>
+            </div>
+          </div>
+        </div>
+        <div class="callout callout-info">
+          <div class="callout-icon">💡</div>
+          <div class="callout-content">
+            <strong class="callout-title">Pattern: fail loud, not empty</strong>
+            <p>"Nothing found" and "couldn't look" must never look the same. When you review agent code, ask: <em>what does this return when its input is missing?</em></p>
+          </div>
+        </div>
+      </section>
+
+      <section class="screen animate-in">
+        <h2 class="screen-heading">What's real today, and what isn't</h2>
+        <p>Sindri is part built, part plan. Every feature in this course carries one of four labels:</p>
+        <div class="pattern-cards">
+          <div class="pattern-card" style="border-top: 3px solid var(--color-actor-5)">
+            <h4 class="pattern-title">Built <span class="status built">built</span></h4>
+            <p class="pattern-desc">Shipped in Plans 1–5: measurement, the ledger, the code index, scoping and offline self-evolution.</p>
+          </div>
+          <div class="pattern-card" style="border-top: 3px solid var(--color-actor-2)">
+            <h4 class="pattern-title">Specced <span class="status specced">specced</span></h4>
+            <p class="pattern-desc">Has an approved spec and plan. Plan 6, the dashboard, is here.</p>
+          </div>
+          <div class="pattern-card" style="border-top: 3px solid var(--color-actor-4)">
+            <h4 class="pattern-title">Designed <span class="status designed">designed</span></h4>
+            <p class="pattern-desc">In a design spec but not planned yet: most of the factory addendum (§17).</p>
+          </div>
+          <div class="pattern-card" style="border-top: 3px solid var(--color-actor-3)">
+            <h4 class="pattern-title">Dream <span class="status dream">dream</span></h4>
+            <p class="pattern-desc">Vision, scouting seeds and deferred ideas.</p>
+          </div>
+        </div>
+        <div class="file-tree">
+          <div class="ft-folder open"><span class="ft-name">sindri/src/</span><span class="ft-desc">The built part, in TypeScript today (a C# port is in progress)</span>
+            <div class="ft-children">
+              <div class="ft-folder"><span class="ft-name">ledger/</span><span class="ft-desc">The one database everything writes to</span></div>
+              <div class="ft-folder"><span class="ft-name">lock/</span><span class="ft-desc">Makes sure only one Sindri runs at a time</span></div>
+              <div class="ft-folder"><span class="ft-name">scope/</span><span class="ft-desc">Brief → cited scope map, plus the backtest</span></div>
+              <div class="ft-folder"><span class="ft-name">index/</span><span class="ft-desc">The per-repo code index</span></div>
+              <div class="ft-folder"><span class="ft-name">evolve/</span><span class="ft-desc">Self-improvement: proposals, comparisons, channels</span></div>
+              <div class="ft-folder"><span class="ft-name">scrub/</span><span class="ft-desc">Strips secrets before anything is stored</span></div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="screen animate-in">
+        <h2 class="screen-heading">Check your understanding</h2>
+        <div class="quiz-container" id="quiz-m1">
+          <div class="quiz-question-block"
+               data-correct="b"
+               data-explanation-right="The audit says product judgment is the part only you can do. Sindri wants your turns there, and code handles the dispatching and nagging."
+               data-explanation-wrong="Look at the bars again. Babysitting work (dispatch, keeping sessions on track, finding defects by hand) is what Sindri automates. Product calls stay with the human, at the desk.">
+            <div class="scenario-block"><div class="scenario-context"><span class="scenario-label">Scenario</span>
+              <p>A month after Sindri is fully on, you run the audit again. Which result means it's working?</p></div></div>
+            <div class="quiz-options">
+              <button class="quiz-option" data-value="a" onclick="selectOption(this)"><div class="quiz-option-radio"></div><span>Total human turns drop to near zero.</span></button>
+              <button class="quiz-option" data-value="b" onclick="selectOption(this)"><div class="quiz-option-radio"></div><span>Fewer turns overall, and a much larger share of them are product decisions.</span></button>
+              <button class="quiz-option" data-value="c" onclick="selectOption(this)"><div class="quiz-option-radio"></div><span>More turns spent on QA direction, because Sindri ships more.</span></button>
+            </div>
+            <div class="quiz-feedback"></div>
+          </div>
+          <div class="quiz-question-block"
+               data-correct="c"
+               data-explanation-right="No build without a frozen packet (invariant 14). An unfrozen idea goes back to the desk, where questions get answered."
+               data-explanation-wrong="The build stage only accepts a frozen packet. A vague ticket gets scoped and settled at the desk first.">
+            <div class="scenario-block"><div class="scenario-context"><span class="scenario-label">Scenario</span>
+              <p>A teammate wants to skip the studio and hand a one-line ticket straight to the build stage. What happens?</p></div></div>
+            <div class="quiz-options">
+              <button class="quiz-option" data-value="a" onclick="selectOption(this)"><div class="quiz-option-radio"></div><span>The build agent works out the scope as it goes.</span></button>
+              <button class="quiz-option" data-value="b" onclick="selectOption(this)"><div class="quiz-option-radio"></div><span>It builds, but review gets stricter.</span></button>
+              <button class="quiz-option" data-value="c" onclick="selectOption(this)"><div class="quiz-option-radio"></div><span>It's refused: the build only starts from a frozen packet.</span></button>
+            </div>
+            <div class="quiz-feedback"></div>
+          </div>
+          <button class="quiz-check-btn" onclick="checkQuiz('quiz-m1')">Check Answers</button>
+          <button class="quiz-reset-btn" onclick="resetQuiz('quiz-m1')">Try Again</button>
+        </div>
+      </section>
+
+    </div>
+  </div>
+</section>
