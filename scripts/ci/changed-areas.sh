@@ -56,6 +56,8 @@ classify_changes() {
     case "$file" in
       # scripts/ci/lane-budgets.mjs groups test projects by deps.yaml package (through its parser)
       deps.yaml|scripts/deps/*) dotnet=true ;;
+      # scripts/tests/ci-lane-budgets.test.sh checks lane-budgets.mjs against these numbers
+      tests/Aw.Kernel.Testing/Lanes.cs) bash=true ;;
     esac
     for pkg in "${TS_PACKAGES[@]}"; do
       case "$file" in
