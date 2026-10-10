@@ -27,9 +27,10 @@ Sources: [Factory agent readiness](https://factory.com/product/agent-readiness),
   evaluated per app, and a monorepo reports them as fractions such as `3 / 4`. Here the apps are `mcp-bridge`,
   `scorer`, `judge`, `sindri`, `skills/ui-evidence`, `skills/bugFixOrchestrator` and the `mods/aw-live` plugin.
 - **Tools:** `/readiness-report` and `/readiness-fix` (Factory app or Droid CLI), plus a Readiness Reports API.
-- **Gap:** Factory doesn't publish the full criteria list. Factory's own report is the score of record when we can
-  run it. Our own check (§8) tracks the criteria we can reproduce, and it marks every criterion where our check and
-  Factory's might disagree.
+- **Gap:** Factory doesn't publish the full criteria list, and its own report needs a paid Factory account, which
+  this project won't use (decision R4). **Our check is the score of record.** It covers every criterion we can
+  reproduce from Factory's public pillars, levels and published examples, and marks any criterion it can't
+  reproduce as `unknown`. Scouting (§17.18) watches Factory's public docs for criteria changes.
 
 ## 3. Where the repo stands (quick check, 2026-10-09)
 
@@ -607,8 +608,7 @@ next PR shows it passing.
   and lives in `overrides.yaml`. An expired override fails CI. Quarantined tests leave quarantine after 20 green
   runs in a row (A17).
 - **Dependency graph in PRs:** CI renders the graph and adds a plain-text list of added and removed edges (A19).
-- When the Factory CLI is available, `sindri readiness import <report>` stores Factory's report as the score of
-  record and lists every criterion where the two disagree.
+
 - A weekly standing workflow at the `propose` tier turns the top failing criteria into work items, so the factory
   keeps the repo ready as it changes.
 - Ring-1 repos get the same check through `sindri repo onboard` (record-only first).
@@ -621,7 +621,7 @@ next PR shows it passing.
 | R1 | Lint and format tooling | Settled by R6: .NET analyzers with one owner per rule (§4b.6); Biome only for the TS that stays |
 | R2 | One lockfile vs per-package | Settled by R6: Central Package Management with locked restore |
 | R3 | Branch protection for a solo maintainer | A ruleset with an empty bypass list and a separate agent identity (§4d) |
-| R4 | Score of record | Factory's `/readiness-report` once Droid is installed; our check until then |
+| R4 | Score of record | **Decided:** our own check (`Aw.Readiness`). No paid Factory account or Droid |
 | R5 | Tighter TS flags | Superseded by R6 for the rewritten packages; applies only to the TS that stays (mods, the TS-indexer sidecar) |
 | R6 | Language and runtime | **Decided:** C# on .NET 10 LTS, NativeAOT CLIs, strangler rewrite per package (§4a) |
 | R7 | Test framework | xUnit v3 (most common, best tooling) or TUnit (faster, source-generated); recommend xUnit v3 unless lane budgets fail in the R1 spike |
@@ -636,7 +636,7 @@ Recent pace: about 49 commits in 60 days. The sizes below are estimates to be re
 
 | Step | Contents | Size | Exit |
 |---|---|---|---|
-| R0 | Baseline: Factory's report if Droid is available, plus a quick manual pass over the pillars | XS | Baseline recorded |
+| R0 | Baseline: a quick manual pass over the nine pillars, recorded per criterion | XS | Baseline recorded |
 | R1a | **Safety and measurement first:**<br>• CI hardened for a public repo, the agent App, the `main` and tag rulesets, the `main`-only key environment (§4d);<br>• fail-open logging in every hook (§4c, B5);<br>• the cutover harness: byte-compat profile, golden harness running the real hooks, scrubber differential corpus, entry-point shims and `runtime.json`, install and MCP-registration migration, `binaries.lock` and release provenance;<br>• the AOT spike (R7, R8, R9, the MCP C# SDK);<br>• the readiness **baseline by a throwaway script** (B2);<br>• usage metrics collection starts here, for R3 (B9).<br>Golden recordings are made **per package when its port starts**, not all up front (B9) | M (1–2 weeks) | Shims and fail-open logging live; baseline recorded; agents can't bypass `main` |
 | R1b | **The template:**<br>• `Directory.Build.props`, Central Package Management, analyzers with one owner per rule, the ratchet baseline, `.editorconfig`;<br>• `Aw.Kernel` and its `Data`, `Telemetry` and `Testing` parts;<br>• `deps.yaml` with every edge kind and its checks (§4b.1a);<br>• the `/new-package` and `/new-slice` scaffolds (inputs, generated files, a red test) and `AGENTS.md` for C#;<br>• rule records for the §4b rules;<br>• W5 devcontainer and W6 templates;<br>• **`Aw.Readiness` and `Aw.Packets` as the first two standalone packages built from the template** (B2) | M (1–2 weeks) | A scaffolded package passes every check; `Aw.Readiness` reports Level 4 for the template; the R2 estimate is fixed here as the stop-rule baseline (B9) |
 | R2 | **The ports, one packet per package, whole:** `Judge` and `Redaction` → `Scorer` → `BugFix` → `Bridge` → `Evidence` → `Sindri`. Sindri is sized per module inside its packet. **In parallel,** new factory code (addendum F0 schemas, rule records) is written in C# from the start | L–XL (estimate 6–10 weeks; each packet carries its own) | Every package on C# by default through the shim; TS deleted 14 days after each cutover |
