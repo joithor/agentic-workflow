@@ -439,7 +439,7 @@ describe("doctor index checks", () => {
       hold(1, { kind: "index-build", pid: 7, host: "other", startedAt: "t" });
       expect(await lock()).toMatchObject({ status: "ok", detail: "held by index-build" });
       hold(7, null);
-      expect(await lock()).toMatchObject({ status: "warn", detail: "held for over 6 h", fix: `if that process is gone: rmdir ${dir} && rm -f ${holderFile}` });
+      expect(await lock()).toMatchObject({ status: "warn", detail: "held for over 6 h", fix: `if that process is gone: rm -r ${dir} && rm -f ${holderFile} (a crashed takeover can leave a .reclaim-* mark inside)` });
       hold(7, { kind: "index-build", pid: 7, host: "other", startedAt: "t" });
       expect((await lock()).detail).toBe("held for over 6 h by index-build (pid 7)");
       fs.rmSync(holderFile, { force: true });

@@ -415,12 +415,35 @@ describe("heavy-job lock", () => {
         const realStat = fs.statSync;
         vi.spyOn(fs, "statSync").mockImplementation(((p: fs.PathLike, o?: fs.StatSyncOptions) => {
           const st = realStat(p, o);
-          return st !== undefined && String(p) === dir ? Object.assign(st, { birthtimeMs: birth(st) }) : st;
+          // The platform-wide condition: the lock dir and its parent both lack a real birth time.
+          return st !== undefined && (String(p) === dir || String(p) === path.dirname(dir)) ? Object.assign(st, { birthtimeMs: birth(st) }) : st;
         }) as typeof fs.statSync);
         expect(await withHeavyLock(d, "x", 0, async () => 2)).toBe(2);
         vi.restoreAllMocks();
         expect(leftovers(dir)).toEqual([]);
       }
+    });
+
+    it("backs off on a replacement whose birth time equals its ctime when the filesystem keeps birth times", async () => {
+      const { d, root, dir } = setup();
+      const ino = fs.statSync(dir).ino;
+      // A record-less holder (locks.sh, the wrapper) takes the name between the recheck and the
+      // mark, reusing the inode; within one coarse timestamp tick its birth time equals the
+      // ctime the mark gives it. The parent shows the filesystem keeps real birth times.
+      aroundMark(() => {
+        fs.rmSync(holderPath(root));
+        fs.rmdirSync(dir);
+        fs.mkdirSync(dir);
+      });
+      const realStat = fs.statSync;
+      vi.spyOn(fs, "statSync").mockImplementation(((p: fs.PathLike, o?: fs.StatSyncOptions) => {
+        const st = realStat(p, o);
+        return st !== undefined && String(p) === dir ? Object.assign(st, { ino, birthtimeMs: st.ctimeMs }) : st;
+      }) as typeof fs.statSync);
+      await expect(withHeavyLock(d, "x", 0, async () => 1)).rejects.toThrow("the heavy-job lock is busy");
+      vi.restoreAllMocks();
+      expect(fs.readdirSync(dir)).toEqual([]);
+      expect(leftovers(dir)).toEqual([]);
     });
 
     it("backs off when a holder record appears on a lock that had none", async () => {
