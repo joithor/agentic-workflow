@@ -196,6 +196,13 @@
           "Microsoft.Data.Sqlite": "[10.0.12, 10.0.12]"
         }
       },
+      "aw.kernel.testing": {
+        "type": "Project",
+        "dependencies": {
+          "Aw.Kernel": "[1.0.0, )",
+          "xunit.v3.extensibility.core": "[4.0.1, 4.0.1]"
+        }
+      },
       "Microsoft.Data.Sqlite": {
         "type": "CentralTransitive",
         "requested": "[10.0.12, 10.0.12]",

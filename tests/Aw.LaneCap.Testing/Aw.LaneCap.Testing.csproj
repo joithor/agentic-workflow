@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- The per-test lane cap (spec §4b.5) as a CI command: an entry point over Aw.Kernel.Testing's LaneCap, nothing else.
+       Test tooling, so it lives under tests/ (AW0002) and is named *.Testing; no package owns it, like
+       Aw.Architecture.Tests (deps.yaml). JIT only (dotnet run), no PublishAot, so its lock file is the same on every OS.
+       Usage: see LaneCapCli.cs. -->
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <OutputType>Exe</OutputType>
+    <RootNamespace>Aw.LaneCap.Testing</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../Aw.Kernel.Testing/Aw.Kernel.Testing.csproj" />
+  </ItemGroup>
+</Project>

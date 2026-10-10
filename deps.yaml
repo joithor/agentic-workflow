@@ -39,8 +39,8 @@
 #           follows its owner: it may reference its own package, test-support packages (test: true, such
 #           as Aw.Kernel.Testing), analyzers (normally, to test them) and what its owner has a project edge
 #           to, needs no edge of its own, and is exempt from fan-out. Nothing references a leaf; only test
-#           code references test-support. Test assemblies no package owns (Aw.Architecture.Tests) may
-#           reference every package. Analyzer packages (analyzer: true, Aw.Analyzers) are referenced from
+#           code references test-support. Test assemblies no package owns (Aw.Architecture.Tests; the
+#           Aw.LaneCap.Testing CI tool) may reference every package. Analyzer packages (analyzer: true, Aw.Analyzers) are referenced from
 #           production code only with OutputItemType="Analyzer" (in a .csproj or a Directory.Build file);
 #           they need no edge and don't count as fan-out. Any other ProjectReference in a Directory.Build
 #           file fails.
@@ -119,7 +119,7 @@ packages:
     projectPrefix: Aw.Kernel.Testing
     ts: null
     src: tests/Aw.Kernel.Testing
-    note: "fakes base, builders, contract-test bases; lives under tests/ next to every package's Aw.<Pkg>.Testing, and only test code references it"
+    note: "fakes base, builders, contract-test bases and the Kernel ports' in-memory fakes, golden files, the CTRF lane cap (LaneCap); lives under tests/ next to every package's Aw.<Pkg>.Testing, and only test code references it"
 
   # ---- tier 1 ----
   - id: Judge
