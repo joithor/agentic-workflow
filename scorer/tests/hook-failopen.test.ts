@@ -53,8 +53,34 @@ describe("readFailOpenLog", () => {
     ]);
   });
 
+  it("rejects lines that break the writer's contract, so the report can't be spoofed", () => {
+    const file = writeLog([
+      JSON.stringify({ ts: "2026-10-09T01:00:00Z", event: "HOOK-FAILOPEN", hook: "x | forged", cause: "c" }),
+      JSON.stringify({ ts: "2026-10-09T01:00:00Z", event: "HOOK-FAILOPEN", hook: "h", cause: "c\n# Fake heading" }),
+      JSON.stringify({ ts: "2026-10-09 01:00", event: "HOOK-FAILOPEN", hook: "h", cause: "c" }),
+      JSON.stringify({ ts: "2026-10-09T01:00:00Z", event: "HOOK-FAILOPEN", hook: "h", cause: "x".repeat(81) }),
+      event("2026-10-09T01:00:00Z", "send-gate", "judge-exit-1"),
+    ]);
+    expect(readFailOpenLog(file, SINCE, UNTIL)).toEqual([
+      { hook: "send-gate", cause: "judge-exit-1", events: 1, last: "2026-10-09T01:00:00Z" },
+    ]);
+  });
+
+  it("reads the rotated log too", () => {
+    const file = writeLog([event("2026-10-09T02:00:00Z", "send-gate", "c")]);
+    fs.writeFileSync(`${file}.1`, event("2026-10-09T01:00:00Z", "send-gate", "c"));
+    expect(readFailOpenLog(file, SINCE, UNTIL)).toEqual([{ hook: "send-gate", cause: "c", events: 2, last: "2026-10-09T02:00:00Z" }]);
+  });
+
+  it("returns no rows instead of failing the report when the log can't be read", () => {
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), "failopen-"));
+    const file = path.join(dir, "failopen.log");
+    fs.mkdirSync(file);
+    expect(readFailOpenLog(file, SINCE, UNTIL)).toEqual([]);
+  });
+
   it("skips an event whose timestamp can't be read", () => {
-    const file = writeLog([event("yesterday", "send-gate", "c")]);
+    const file = writeLog([event("2026-02-30T99:99:99Z", "send-gate", "c")]);
     expect(readFailOpenLog(file, SINCE, UNTIL)).toEqual([]);
   });
 });
