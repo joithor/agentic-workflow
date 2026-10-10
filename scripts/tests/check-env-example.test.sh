@@ -74,6 +74,9 @@ expect_out "stale rule id" 'ENV-EXAMPLE-002: AW_T10_STALE'
 d="$(fixture indirect)"; printf '# Read through a configured name (indirect).\n# AW_T10_INDIRECT=\n' >> "$d/.env.example"; run "$d"
 expect_rc "an entry marked (indirect) is not stale" 0
 
+d="$(fixture indirect-after)"; printf '\n# Thing.\n# AW_T10_BLOCK=\n# (indirect: read by a tool)\n' >> "$d/.env.example"; run "$d"
+expect_rc "an (indirect marker anywhere in the block covers every entry in it" 0
+
 d="$(fixture tests-skipped)"; mkdir -p "$d/judge/tests" "$d/config/tests"
 printf 'process.env.AW_ONLY_IN_TEST = "1";\n' > "$d/judge/tests/a.test.ts"
 printf 'process.env.AW_ONLY_IN_TEST2 = "1";\n' > "$d/judge/src/b.test.ts"

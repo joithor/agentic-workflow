@@ -41,11 +41,17 @@ trap 'rm -rf "$PROBE_DIR"' EXIT
 for snippet in '"runArgs": ["--privileged"]' '"capAdd": ["SYS_ADMIN"]' '"securityOpt": ["seccomp=unconfined"]' \
                '"dockerComposeFile": "compose.yml"' '"mounts": ["source=/var/run/docker.sock,target=/var/run/docker.sock,type=bind"]' \
                '"features": {"ghcr.io/devcontainers/features/docker-in-docker:2": {}}' 'cap_add: [SYS_ADMIN]' \
-               '"workspaceMount": "source=/,target=/workspaces/host,type=bind"' '"initializeCommand": "touch /tmp/x"'; do
+               '"workspaceMount": "source=/,target=/workspaces/host,type=bind"' '"initializeCommand": "touch /tmp/x"' \
+               '"containerUser": "root"'; do
   printf '{\n  %s\n}\n' "$snippet" > "$PROBE_DIR/devcontainer.json"
   check "the privilege check catches: $snippet" "privilege_hits '$PROBE_DIR' > /dev/null"
 done
-check "the container runs as a non-root user" "grep -qE '^USER [a-z]+' $DF && grep -q '\"remoteUser\": \"ubuntu\"' $DC"
+# runs_as_ubuntu <Dockerfile> <devcontainer.json>: the image's last USER and the devcontainer's user are ubuntu.
+runs_as_ubuntu() { grep -qE '^USER [a-z]+' "$1" && grep -q '"remoteUser": "ubuntu"' "$2"; }
+check "the container runs as the non-root ubuntu user" "runs_as_ubuntu $DF $DC"
+printf 'FROM x\nUSER ubuntu\nRUN true\nUSER root\n' > "$PROBE_DIR/Dockerfile.root"
+printf '{\n  "remoteUser": "ubuntu"\n}\n' > "$PROBE_DIR/remote.json"
+check "a Dockerfile that ends as root fails the user check" "! runs_as_ubuntu '$PROBE_DIR/Dockerfile.root' '$PROBE_DIR/remote.json'"
 check "post-create script is executable and restores locked" \
   "[ -x .devcontainer/post-create.sh ] && grep -q 'dotnet restore AgenticWorkflow.slnx --locked-mode' .devcontainer/post-create.sh"
 check "docs say it is for humans and never the agent sandbox" \
