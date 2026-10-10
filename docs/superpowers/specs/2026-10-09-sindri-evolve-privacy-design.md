@@ -1,6 +1,6 @@
 # Sindri evolve: all-sessions input behind a hardened publish gate — design
 
-Status: approved in brainstorming 2026-10-09, awaiting written-spec review
+Status: approved 2026-10-09; plans: `docs/superpowers/plans/2026-10-09-sindri-evolve-privacy-b1-publish-gate.md`, `...-b2-all-sessions.md`
 Builds on: Plan 5 (self-evolution, #81, #82). Blocks: Plan 5 Task 14 (switch-on).
 
 ## 1. Why
@@ -82,8 +82,8 @@ private context (for example, session-start memory output).
 - **Budget.** Two calls per staged proposal, at most `evolve.maxOpenProposals` per run, under the
   existing evolve budget. Calls use the evolve model config (`role: "draft"`).
 - **Storage.** Ledger migration v4 → v5 (backup `ledger.db.bak-v4`, the existing `migrateWith`
-  pattern) adds `proposal_public (proposal_id TEXT PRIMARY KEY REFERENCES proposals(id), json TEXT NOT
-  NULL, judge_category TEXT NOT NULL, model TEXT NOT NULL, created_at TEXT NOT NULL)`. The original
+  pattern) adds `proposal_public (proposal_id TEXT PRIMARY KEY REFERENCES proposals(id), body TEXT NOT
+  NULL, judge_category TEXT NOT NULL, model TEXT NOT NULL, created_at TEXT NOT NULL, epoch INTEGER NOT NULL)`. The original
   proposal stays in `proposals`, local only.
 - **Publish reads only `proposal_public`.** A staged or held proposal with no row cannot be published.
 
@@ -106,13 +106,13 @@ names go into the private profile and are approved once, together with `denyPatt
 
 At publish, for each repo with `private: true`:
 
-1. Open `index/<repo>.db` read-only. Missing DB or no built symbols layer → `SND-EVOLVE-016`, publish
+1. Open `index/<repo>.db` read-only. Missing DB or no built symbols layer → `SND-EVOLVE-017`, publish
    refuses.
 2. Collect symbol names (`symbols.name`) and file path segments (each directory and the basename
    without extension, from `files.path`).
 3. Keep tokens that are ≥ 5 characters, not in `/usr/share/dict/words` (case-insensitive), and not in
    the toolkit repo's own index vocabulary (its symbol names and path segments). A missing word list →
-   `SND-EVOLVE-017`.
+   `SND-EVOLVE-018`.
 4. Lowercase into an in-memory set.
 
 The candidate text (raw proposal fields plus the rendered task) is tokenized into identifiers
@@ -126,7 +126,7 @@ False positives (public library names used in a private repo) hold a proposal; t
 Shingle the rendered task into runs of 8 normalized words (`normalizeForPrivacy`, split on spaces).
 Shingle every transcript line behind the proposal's evidence refs (resolved locally; the rewrite keeps
 them unchanged). A shared shingle holds the proposal with `copies transcript text`, unless the
-shingle also appears in a file tracked at the toolkit repo's HEAD (so quoting the toolkit's own
+shingle also appears in a file `git ls-files` lists in the toolkit repo (working-tree text) (so quoting the toolkit's own
 public skill text passes). Toolkit shingles are computed once per publish run from `git ls-files` text
 files.
 
@@ -147,10 +147,10 @@ Held proposals keep their local preview and leave the cap (unchanged).
   only from the point they ran in Codex, as the scorer does. Claude subagent files and linked
   worktrees are read.
 - Dedupe of resumed and forked copies (same timestamp and text) is kept and applied across providers.
-- Profile: `sources.transcripts` becomes `{ enabled, claude: {dir}, codex: {dir}, cursor: {dir} }`,
-  each dir defaulting to that provider's standard location; `enabled` keeps its scoping meaning and
-  evolve ignores it, as today. The old `sources.transcripts.dir` is migrated to `claude.dir` by
-  `sindri profile migrate`. A missing directory skips that provider.
+- Profile: `sources.transcripts.dir` stays the Claude dir; new `sources.transcripts.codex.dir` and
+  `sources.transcripts.cursor.dir` default to `~/.codex/sessions` and `~/.cursor/projects`. Additive, so no
+  profile migration. `enabled` keeps its scoping meaning and evolve ignores it, as today. A missing
+  directory skips that provider.
 - Each `SessionLine` gains `provider` and `repo`: the profile repo whose path, or any path from its
   `git worktree list --porcelain`, contains the line's cwd; otherwise `unknown`. Worktree lists are
   read once per run. Cursor lines, which carry no cwd, get the repo from their project directory where
@@ -164,8 +164,11 @@ Held proposals keep their local preview and leave the cap (unchanged).
 - **correct:** human turns from all sessions; the labeler, cap and scrubbing are unchanged.
 - **reflect:** `sindri evolve reflect [--repo <name>] --pr <n>`. `--repo` defaults to the toolkit repo.
   It uses that repo's `gh` remote and `evolve.prAuthors`, and builds the branch transcript from lines
-  with that `repo` and branch. The source key becomes `reflect:<repo>:pr-<n>`; the v5 migration rewrites
-  existing `reflect:pr-<n>` keys and their audit markers to `reflect:<toolkit>:pr-<n>`.
+  with that `repo` and branch. Toolkit PRs keep the key `reflect:pr-<n>`; other repos use
+  `reflect:<repo>:pr-<n>`, so no ledger migration is needed.
+- **Public provenance:** a task sourced from another repo's PR renders its source as `reflect on another
+  repo's PR`, and its `pr:` evidence refs are withheld, so the plan file never names a private repo or its
+  PR numbers.
 - **weekly:** lists merged PRs for every profile repo and reflects on the unreflected ones.
 
 ## 7. Profile and repo config
@@ -175,7 +178,7 @@ Held proposals keep their local preview and leave the cap (unchanged).
 | `privacy.denyTerms` | string[] | `[]` | Unchanged. |
 | `privacy.denyPatterns` | string[] | `[]` | Must compile; publish-only. |
 | `repos/<name>.yaml` `private` | boolean | `false` | Feeds §5.4. |
-| `sources.transcripts.{claude,codex,cursor}.dir` | string | provider default | B2. |
+| `sources.transcripts.{codex,cursor}.dir` | string | provider default | B2; `sources.transcripts.dir` stays Claude. |
 
 Any change needs `sindri profile approve`, as today. `docs/sindri/profile.md` is regenerated with
 `npm run gen`; `docs/sindri/evolve.md` gains a threat-model section (§2, §4, §5).
@@ -191,8 +194,8 @@ Any change needs `sindri profile approve`, as today. `docs/sindri/profile.md` is
 | Code | When | Fix hint |
 |---|---|---|
 | `SND-EVOLVE-015` | `denyTerms` empty (unchanged) | add names, approve |
-| `SND-EVOLVE-016` | a `private: true` repo has no built symbols index | `sindri index build --repo <name>` |
-| `SND-EVOLVE-017` | the English word list is missing | install a word list at `/usr/share/dict/words` |
+| `SND-EVOLVE-017` | a `private: true` repo has no built symbols index | `sindri index build --repo <name>` |
+| `SND-EVOLVE-018` | the English word list is missing | install a word list at `/usr/share/dict/words` |
 
 Generalization failures are held reasons, not errors (§5.1).
 
@@ -220,7 +223,7 @@ Vitest with in-memory SQLite and a fake `ModelRunner`, TDD with RED recorded per
 
 1. **PR B1**: §5, the `denyPatterns` and `private` schema keys, doctor checks for §5, docs. Works on
    today's toolkit-only input.
-2. **PR B2**: §6, the `sources.transcripts` reshape and migration, the remaining doctor check, docs.
+2. **PR B2**: §6, the additive `sources.transcripts` provider dirs, docs.
 3. **Task 14** (Plan 5) switch-on, using the private profile: names, patterns and `private: true`.
 
 Each PR: a fresh branch off `origin/main`, one implementer at a time, then review and fix rounds until
