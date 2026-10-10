@@ -37,9 +37,18 @@ public sealed class NodeJsonLimitsTests
     {
         var input = Golden("untyped.input.json");
         using var document = JsonDocument.Parse(input);
-        var wrapped = new Shapes.Wrapped("w", document.RootElement, JsonNode.Parse(input)!);
+        var wrapped = new Shapes.Wrapped("w", document.RootElement, JsonNode.Parse(Golden("untyped-paired.input.json"))!);
 
         Assert.Equal(Text(Golden("wrapped.compact.json")), Text(NodeJson.Serialize(wrapped, _options)));
+    }
+
+    [Fact]
+    public void Limit_a_JsonNode_holding_a_lone_surrogate_fails_loudly()
+    {
+        using var document = JsonDocument.Parse("{}"u8.ToArray());
+        var wrapped = new Shapes.Wrapped("w", document.RootElement, JsonNode.Parse(Golden("untyped.input.json"))!);
+
+        _ = Assert.Throws<JsonException>(() => NodeJson.Serialize(wrapped, _options));
     }
 
     [Fact]

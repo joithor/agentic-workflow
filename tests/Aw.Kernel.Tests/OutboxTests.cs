@@ -52,9 +52,15 @@ public sealed class OutboxTests
     [InlineData(1, 30)]
     [InlineData(2, 60)]
     [InlineData(4, 240)]
-    [InlineData(7, 3600)]
-    public void A_failed_attempt_is_retried_with_doubling_delay_up_to_the_cap(int failedAttempts, int delaySeconds) =>
+    [InlineData(7, 1920)]
+    public void A_failed_attempt_is_retried_with_doubling_delay(int failedAttempts, int delaySeconds) =>
         Assert.Equal(_now.AddSeconds(delaySeconds), OutboxRetryPolicy.Default.NextAttempt(failedAttempts, _now));
+
+    [Fact]
+    public void The_delay_stops_doubling_at_the_cap() =>
+        Assert.Equal(
+            _now.AddMinutes(1),
+            OutboxRetryPolicy.Create(10, TimeSpan.FromSeconds(30), TimeSpan.FromMinutes(1)).Value.NextAttempt(5, _now));
 
     [Fact]
     public void After_the_last_attempt_the_command_is_dead_lettered() =>

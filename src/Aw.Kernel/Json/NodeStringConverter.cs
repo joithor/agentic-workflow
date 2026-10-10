@@ -21,8 +21,17 @@ internal sealed class NodeStringConverter : JsonConverter<string>
     public override string ReadAsPropertyName(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options) =>
         ReadText(ref reader);
 
-    public override void WriteAsPropertyName(Utf8JsonWriter writer, string value, JsonSerializerOptions options) =>
+    // A lone surrogate can't go through the writer's name path: it would become U+FFFD where Node writes \udxxx,
+    // and a digest over it would change silently. Fail instead. (Untyped JSON keeps such keys: see NodeJsonValue.)
+    public override void WriteAsPropertyName(Utf8JsonWriter writer, string value, JsonSerializerOptions options)
+    {
+        if (NodeJsonEscaping.HasLoneSurrogate(value))
+        {
+            throw new JsonException("A property name with a lone surrogate can't be written byte-compatibly with Node.");
+        }
+
         writer.WritePropertyName(value);
+    }
 
     private static string ReadText(ref Utf8JsonReader reader)
     {

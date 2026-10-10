@@ -1,5 +1,6 @@
 using System.Globalization;
 using Aw.Kernel.Ids;
+using Aw.Kernel.Outbox;
 
 namespace Aw.Kernel.Events;
 
@@ -8,6 +9,12 @@ namespace Aw.Kernel.Events;
 /// and the correlation, causation and trace that tie events together. The Host builds it; callers never set
 /// <see cref="Actor"/> themselves (spec §4e, B12).
 /// </summary>
+/// <remarks>
+/// <see cref="Create"/> is public because Kernel can't name the host projects that may call it. Only Host projects
+/// call it: that rule is enforced by the in-repo analyzer (spec §4b.6, Aw.Analyzers) and the architecture test that
+/// checks Host-only registration, not by this type. Everything else receives a context and derives from it with
+/// <see cref="CausedBy{TPayload}"/>.
+/// </remarks>
 public sealed record EventContext
 {
     private EventContext(string actor, string tenant, int ring, Guid correlationId, Guid? causationId, string? traceId)
@@ -22,6 +29,8 @@ public sealed record EventContext
 
     /// <summary>The highest ring number (rings 0, 1 and 2).</summary>
     public const int MaxRing = 2;
+
+    private const int MaxTraceIdLength = 128;
 
     /// <summary>The process acting, for example 'host:sindri'. Set by the host process.</summary>
     public string Actor { get; }
@@ -50,19 +59,23 @@ public sealed record EventContext
     /// <returns>The context, or AW-KERNEL-001 when a field is missing or out of range.</returns>
     public static Result<EventContext> Create(string actor, string tenant, int ring, Guid correlationId, string? traceId = null)
     {
-        var problem = Problem(actor, tenant, ring);
+        var problem = Problem(actor, tenant, ring, correlationId, traceId);
         return problem is null
             ? new EventContext(actor, tenant, ring, correlationId, causationId: null, traceId)
             : KernelErrors.Invalid.With(problem);
     }
 
-    private static string? Problem(string actor, string tenant, int ring) =>
-        (string.IsNullOrWhiteSpace(actor) || string.IsNullOrWhiteSpace(tenant), ring is < 0 or > MaxRing) switch
-        {
-            (true, _) => "An event context needs an actor and a tenant.",
-            (_, true) => string.Create(CultureInfo.InvariantCulture, $"Ring {ring} is outside 0..{MaxRing}."),
-            _ => null,
-        };
+    private static string? Problem(string actor, string tenant, int ring, Guid correlationId, string? traceId) => true switch
+    {
+        _ when string.IsNullOrWhiteSpace(actor) || string.IsNullOrWhiteSpace(tenant) => "An event context needs an actor and a tenant.",
+        _ when ring is < 0 or > MaxRing => string.Create(CultureInfo.InvariantCulture, $"Ring {ring} is outside 0..{MaxRing}."),
+        _ when correlationId == Guid.Empty => "An event context needs a correlation id (Guid.Empty is not one).",
+        _ when traceId is not null && !IsTraceId(traceId) => "A trace id is 1 to 128 printable ASCII characters with no spaces.",
+        _ => null,
+    };
+
+    private static bool IsTraceId(string traceId) =>
+        traceId.Length is > 0 and <= MaxTraceIdLength && traceId.All(c => c is > ' ' and <= '~');
 
     /// <summary>The context for an event caused by <paramref name="cause"/>: same correlation, causation set.</summary>
     /// <param name="cause">The causing event.</param>
@@ -70,6 +83,16 @@ public sealed record EventContext
     /// <returns>The derived context.</returns>
     public EventContext CausedBy<TPayload>(EventEnvelope<TPayload> cause) =>
         new(Actor, Tenant, Ring, cause.CorrelationId, cause.Id, TraceId);
+
+    /// <summary>Records an outbound command for this context: new id, current time, and this context's seams.</summary>
+    /// <param name="kind">What to do, for example 'github.comment'.</param>
+    /// <param name="payloadJson">The command's data as JSON.</param>
+    /// <param name="clock">The clock.</param>
+    /// <param name="ids">The id source.</param>
+    /// <returns>The command, ready for <see cref="Outbox.IOutbox.Enqueue"/>.</returns>
+    public OutboxCommand Command(string kind, string payloadJson, TimeProvider clock, IIdGenerator ids) =>
+        new(ids.NewId(), kind, payloadJson, OutboxCommand.CurrentSchemaVersion, clock.GetUtcNow(), Actor, Tenant, Ring,
+            CorrelationId, CausationId, TraceId);
 
     /// <summary>Wraps <paramref name="payload"/> in an envelope with a new id and the current time.</summary>
     /// <param name="type">The event type, for example 'item.started'.</param>

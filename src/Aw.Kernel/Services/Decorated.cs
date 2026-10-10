@@ -2,7 +2,8 @@ namespace Aw.Kernel.Services;
 
 /// <summary>
 /// Base for cross-cutting behaviour around a service: validation, logging, transactions, budgets (spec §4b.2).
-/// Decorators are registered explicitly in the Host, outermost first; there is no MediatR-style pipeline.
+/// Decorators are registered explicitly in the owning project's Add…() method, outermost first; there is no
+/// MediatR-style pipeline.
 /// </summary>
 /// <param name="inner">The service this decorator wraps.</param>
 /// <typeparam name="TRequest">The request record.</typeparam>

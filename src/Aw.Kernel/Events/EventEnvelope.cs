@@ -27,5 +27,4 @@ public sealed record EventEnvelope<TPayload>(
     Guid CorrelationId,
     Guid? CausationId,
     string? TraceId,
-    TPayload Payload)
-;
+    TPayload Payload);

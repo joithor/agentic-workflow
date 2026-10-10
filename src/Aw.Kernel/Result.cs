@@ -4,6 +4,12 @@ namespace Aw.Kernel;
 /// The outcome of an operation that can fail in an expected way: a value, or an <see cref="Kernel.Error"/>
 /// with a catalogue code. Expected failures are never exceptions (spec §4b.3); exceptions are for bugs.
 /// </summary>
+/// <remarks>
+/// A null <see cref="Kernel.Error"/> is a bug and throws: it never turns into a success. When <typeparamref name="T"/>
+/// is <see cref="Kernel.Error"/> itself the two implicit conversions are ambiguous; use <see cref="Results.Success{T}"/>
+/// and <see cref="Results.Failure{T}"/> there. This is a class, so a method declared to return one can't return
+/// 'default' without a nullable warning (an error in this repo).
+/// </remarks>
 /// <typeparam name="T">The success value.</typeparam>
 public sealed class Result<T>
 {
@@ -14,6 +20,7 @@ public sealed class Result<T>
 
     internal Result(Error error)
     {
+        ArgumentNullException.ThrowIfNull(error);
         Failure = error;
     }
 

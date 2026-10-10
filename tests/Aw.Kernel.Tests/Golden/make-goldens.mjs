@@ -57,8 +57,11 @@ const untyped = JSON.parse(untypedInput);
 writeFileSync(join(here, "untyped.input.json"), untypedInput);
 writeFileSync(join(here, "untyped.compact.json"), JSON.stringify(untyped));
 writeFileSync(join(here, "untyped.indented.json"), JSON.stringify(untyped, null, 2));
-// The same untyped value inside a typed record (a JsonElement property and a JsonNode property).
-writeFileSync(join(here, "wrapped.compact.json"), JSON.stringify({ name: "w", data: untyped, node: untyped }));
+// The same untyped value inside a typed record: a JsonElement property, and a JsonNode property over the input
+// without lone surrogates (JsonNode unescapes strings itself and can't hold one; the C# writer then throws).
+const pairedInput = untypedInput.replace(String.raw` \ud800 lone`, "").replace(String.raw`"\udc00 key"`, `"key"`);
+writeFileSync(join(here, "untyped-paired.input.json"), pairedInput);
+writeFileSync(join(here, "wrapped.compact.json"), JSON.stringify({ name: "w", data: untyped, node: JSON.parse(pairedInput) }));
 
 // The event envelope as it is stored and sent. causationId and traceId are undefined, so they are left out.
 const envelope = {

@@ -28,8 +28,13 @@ public static partial class ErrorCatalogue
         return Results.Ok();
     }
 
-    private static bool IsWellFormed(string code)
+    private static bool IsWellFormed(string? code)
     {
+        if (code is null)
+        {
+            return false;
+        }
+
         try
         {
             return CodePattern.IsMatch(code);
@@ -41,7 +46,8 @@ public static partial class ErrorCatalogue
         }
     }
 
-    // Explicit ASCII classes and CultureInvariant, with a match timeout (spec §4c, regex parity).
-    [GeneratedRegex("^(AW|SND)-[A-Z0-9]+-[0-9]{3}$", RegexOptions.CultureInvariant | RegexOptions.ExplicitCapture, matchTimeoutMilliseconds: 100)]
+    // Explicit ASCII classes and CultureInvariant, with a match timeout (spec §4c, regex parity). \z, not $: in .NET
+    // $ also matches before a final newline, and JS $ (no m flag) does not.
+    [GeneratedRegex("^(AW|SND)-[A-Z0-9]+-[0-9]{3}\\z", RegexOptions.CultureInvariant | RegexOptions.ExplicitCapture, matchTimeoutMilliseconds: 100)]
     private static partial Regex CodePattern { get; }
 }

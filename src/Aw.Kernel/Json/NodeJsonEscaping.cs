@@ -47,6 +47,24 @@ internal static class NodeJsonEscaping
         return builder.Append('"').ToString();
     }
 
+    /// <summary>True when <paramref name="value"/> holds a surrogate that is not half of a pair.</summary>
+    public static bool HasLoneSurrogate(string value)
+    {
+        for (var i = 0; i < value.Length; i++)
+        {
+            if (char.IsHighSurrogate(value[i]) && i + 1 < value.Length && char.IsLowSurrogate(value[i + 1]))
+            {
+                i++;
+            }
+            else if (char.IsSurrogate(value[i]))
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
     /// <summary>Reverses JSON escapes in the raw text of a string token (quotes not included).</summary>
     public static string Unescape(string raw)
     {
