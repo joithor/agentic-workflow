@@ -30,18 +30,18 @@ Domain-specific rules live in `.agents/rules/` — one file per rule, the only c
 | Test | Vitest (in-memory SQLite) |
 | Build | tsc (ESM, Node16 module resolution) |
 
-**C# build — in progress, not installed until the cutover.** The TypeScript packages are being ported to C# (spec `docs/superpowers/specs/2026-10-09-agent-readiness-design.md` §4a–§4e). This is a clean cutover: the C# build doesn't keep byte or state compatibility with the TS build, and no TS state is migrated. The installed toolkit stays TypeScript until the C# build is complete; then one switch moves the install. Nothing in `setup.sh`, the providers, MCP registration or launchd points at `src/` before that.
+**C# build — in progress, not installed until the cutover.** The TypeScript packages are being ported to C# (spec `docs/superpowers/specs/2026-10-09-agent-readiness-design.md` §4a–§4e). This is a clean cutover: the C# build doesn't keep byte or state compatibility with the TS build, and no TS state is migrated. The one exception is the **hook-facing CLI and file surface** (the `deps.yaml` Hooks, Statusline and AwLive edges: the CLI flags and output the hooks call, and the files they write, such as `judge/sessions`, `judge/outbox` and `judge/teammate-names.jsonl`): it stays frozen until the switch, checked in CI by running the real hook scripts against the C# binaries. The installed toolkit stays TypeScript until the C# build is complete; then one switch moves the install. Before that, nothing in `setup.sh`, the providers, MCP registration or launchd points at the C# build, except the standalone `aw-readiness` and `aw-packets` CLIs (spec §4c).
 
 | Layer | Technology (C# build) |
 |-------|------------|
 | Runtime | .NET 10 (LTS), SDK pinned in `global.json`; NativeAOT for hook and CLI entry points |
 | Language | C# (latest), nullable on, warnings as errors |
 | HTTP (bridge) | ASP.NET Core minimal APIs (`CreateSlimBuilder`) |
-| Database | `Microsoft.Data.Sqlite`, same files and schemas, WAL mode |
+| Database | `Microsoft.Data.Sqlite` with its bundled `e_sqlite3` (shipped beside each AOT tool), new C# schemas, WAL mode |
 | MCP | Official MCP C# SDK |
 | JSON | System.Text.Json, one source-generated context per package |
 | Analyzers | NetAnalyzers, Meziantou, Roslynator, BannedApiAnalyzers, PublicApiAnalyzers (one owner per rule, `.editorconfig`) |
-| Test | xUnit v3 on Microsoft.Testing.Platform (default; decision R7 may pick TUnit), lanes `unit` / `integration` / `heavy` |
+| Test | xUnit v3 on Microsoft.Testing.Platform (decided, R7), lanes `unit` / `integration` / `heavy` |
 | Packages | Central Package Management (`Directory.Packages.props`), locked restore, nuget.org only (`nuget.config`) |
 
 ## Directory Structure
@@ -61,7 +61,7 @@ agentic-workflow/
 ├── src/           # C# build (in progress): Aw.Kernel, Aw.Analyzers, then one package per port — Core · Features · Infrastructure · Host
 ├── tests/         # C# tests: Aw.<Pkg>.Tests (by feature), Aw.<Pkg>.Testing (fakes, builders, contract bases), Aw.Architecture.Tests
 ├── spikes/        # Throwaway C# spikes (AOT spike); never part of the solution
-├── global.json · AgenticWorkflow.slnx · Directory.Build.props · Directory.Packages.props · nuget.config · BannedSymbols.txt
+├── global.json · AgenticWorkflow.slnx · Directory.Build.props · Directory.Build.targets · Directory.Packages.props · nuget.config · .editorconfig · CodeMetricsConfig.txt · BannedSymbols.txt
 ├── .agents/rules/ # Glob-scoped domain rules (.claude/rules and .cursor/rules link here)
 ├── .serena/       # Serena LSP project configuration
 ├── scripts/       # Utility scripts (sync-rules.sh, serena-docker, probe.sh, install-scorer.sh)
@@ -89,6 +89,7 @@ dotnet build -warnaserror               # Whole solution (AgenticWorkflow.slnx);
 # Lane runs (xUnit v3 on Microsoft.Testing.Platform, MTP options only). Exit 8 = no test matched the filter in some
 # project (e.g. an integration-only project in the unit lane): ignored for filtered runs only. The unfiltered
 # `dotnet test --solution AgenticWorkflow.slnx` keeps exit 8 as a failure.
+dotnet test --solution AgenticWorkflow.slnx                                                     # All lanes; exit 8 (a project with no tests) fails
 dotnet test --solution AgenticWorkflow.slnx --filter-trait "Lane=unit" --ignore-exit-code 8          # Unit lane (< 10 s per package)
 dotnet test --solution AgenticWorkflow.slnx --filter-trait "Lane=integration" --ignore-exit-code 8   # Temp SQLite files, WebApplicationFactory (< 60 s per package)
 dotnet test --solution AgenticWorkflow.slnx --filter-not-trait "Lane=heavy" --ignore-exit-code 8     # Everything except containers, browsers and index builds
@@ -152,7 +153,7 @@ Before merging any PR:
 4. `./setup.sh --providers claude,codex,cursor --dry-run` runs cleanly
 5. No `/* v8 ignore */` annotations in source files (prohibited — write the test instead)
 6. No `any` types outside of Fastify integration boundaries
-7. C# build (active once `src/` has projects): `dotnet build -warnaserror` reports zero warnings, `dotnet test` passes in every lane CI runs, `dotnet format --verify-no-changes` is clean, `scripts/dotnet-verify-packages.sh` passes, and the ratchet baseline block at the end of `.editorconfig` didn't grow
+7. C# build (active once `src/` has projects): `dotnet build -warnaserror` reports zero warnings; `dotnet test --solution AgenticWorkflow.slnx --filter-trait "Lane=unit" --ignore-exit-code 8` and `dotnet test --solution AgenticWorkflow.slnx --filter-trait "Lane=integration" --ignore-exit-code 8` pass within their budgets (the heavy lane runs nightly); `dotnet format --verify-no-changes` is clean, `scripts/dotnet-verify-packages.sh` passes, and the ratchet baseline block at the end of `.editorconfig` didn't grow
 
 ## C# slice recipe
 
@@ -183,7 +184,7 @@ Domain rules live in `.agents/rules/`. Before editing a file, read every rule be
 |------|-------------|------------|------|
 | `bridge-services` | MCP bridge service layer — AppResult, service contracts, MCP tools, route registration | `mcp-bridge/src/application/**`, `mcp-bridge/src/routes/**`, `mcp-bridge/src/server.ts`, `mcp-bridge/src/mcp.ts`, `mcp-bridge/src/index.ts` | `.agents/rules/bridge-services.md` |
 | `bridge-transport` | MCP bridge transport layer — typed routes, controller factories, Zod schemas | `mcp-bridge/src/transport/**` | `.agents/rules/bridge-transport.md` |
-| `csharp-testing` | C# tests — TDD order, lanes and time budgets, fakes with contract tests, builders, snapshot files, architecture tests | `tests/**`, `**/*Tests.cs`, `**/*.Tests.csproj`, `**/*.Testing.csproj` | `.agents/rules/csharp-testing.md` |
+| `csharp-testing` | C# tests — TDD order, lanes and time budgets, fakes with contract tests, builders, golden files, architecture tests | `tests/**`, `**/*Tests.cs`, `**/*.Tests.csproj`, `**/*.Testing.csproj` | `.agents/rules/csharp-testing.md` |
 | `csharp` | C# build (in progress) — package shape, dependency rules, types, errors, DI, JSON, AOT scope, analyzers | `src/**`, `**/*.cs`, `**/*.csproj`, `**/*.slnx`, `global.json`, `Directory.Build.props`, `Directory.Build.targets`, `Directory.Packages.props`, `nuget.config`, `BannedSymbols.txt`, `deps.yaml`, `schemas/deps.schema.json`, `**/.editorconfig`, `CodeMetricsConfig.txt`, `**/PublicAPI.*.txt`, `**/packages.lock.json` | `.agents/rules/csharp.md` |
 | `database` | Bridge SQLite database — client, prepared statements, schema, transactions | `mcp-bridge/src/db/**` | `.agents/rules/database.md` |
 | `design` | Design pipeline artifacts — tokens, .impeccable.md, DESIGN_SYSTEM.md, design-* skills | `design-tokens.json`, `.impeccable.md`, `planning/DESIGN_SYSTEM.md`, `skills/design-*/**` | `.agents/rules/design.md` |

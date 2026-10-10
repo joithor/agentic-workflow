@@ -1,5 +1,5 @@
 ---
-description: C# tests — TDD order, lanes and time budgets, fakes with contract tests, builders, snapshot files, architecture tests
+description: C# tests — TDD order, lanes and time budgets, fakes with contract tests, builders, golden files, architecture tests
 globs:
   - "tests/**"
   - "**/*Tests.cs"
@@ -23,7 +23,7 @@ Each rule names the check that enforces it. "Gap — R1b" means the check doesn'
 |---|---|
 | Red test committed before the code | Commit history (the `/specToProvenPR` red-commit rule); review |
 | Every test has exactly one `Lane` trait | Gap — R1b. Planned check: a reflection test in `Aw.Architecture.Tests` that loads every `Aw.*.Tests` assembly and fails on any `[Fact]`/`[Theory]` with zero or several `Lane` traits, plus a CI step asserting the unfiltered test count equals the sum of the three lane counts |
-| Lane budgets (below) | Gap — R1b. Planned check: the CI lane job times `dotnet test --solution AgenticWorkflow.slnx --filter-trait "Lane=<lane>" --ignore-exit-code 8` per test project and fails over the budget, printing the rule id, the measured seconds, the limit and the project |
+| Lane budgets (below) | Gap — R1b. Planned check: the CI lane job takes the wall clock of `dotnet test --project <test project> --filter-trait "Lane=<lane>" --ignore-exit-code 8` per test project, sums it per package, and fails a package over its budget; each test's own time from xUnit's CTRF report is checked against the same budget as a per-test cap (`Aw.Kernel.Testing` ships that check). Failures print the rule id, the measured seconds, the limit and the package |
 | No mocking libraries | Not in `Directory.Packages.props`; review rejects them |
 | A fake and its SQL implementation pass the same contract tests | The contract-test base (per port); review checks every new port has one |
 | Architecture rules (§4b.1) | ArchUnitNET in `tests/Aw.Architecture.Tests` (gap — R1b until it exists) |
@@ -68,7 +68,7 @@ dotnet test --solution AgenticWorkflow.slnx --filter-not-trait "Lane=heavy" --ig
 
 Exit code 8 means a test project had no test in the filtered lane (an integration-only project in the unit lane, for example). It is fine **only for filtered runs**, hence `--ignore-exit-code 8` there. The unfiltered `dotnet test --solution AgenticWorkflow.slnx` keeps 8 as a failure: a project with no tests at all is a mistake.
 
-The test framework is xUnit v3 unless the AOT spike picks TUnit (decision R7, `docs/readiness/aot-spike.md`, written by the R1a spike); if it changes, this section changes with it.
+The test framework is decided (R7, R1a spike): xUnit v3 on Microsoft.Testing.Platform, lanes as traits.
 
 ## Fakes, not mocks
 
@@ -80,7 +80,7 @@ The test framework is xUnit v3 unless the AOT spike picks TUnit (decision R7, `d
 - Builders with sensible defaults: `AnItem().WithSize(S).Build()`.
 - Deterministic ids (a fake `IIdGenerator`) and `FakeTimeProvider`; never the wall clock or `Guid.NewGuid` in a test.
 - No shared mutable fixtures; each test builds its own state.
-- Snapshot files for CLI output and JSON contracts. Compare after the declared normalization (ids, times), never by loose matching. Update a snapshot only in a reviewed change that says why the contract changed.
+- Golden files for CLI output and JSON contracts, recorded from the **C# build** (the golden-file assertions live in `Aw.Kernel.Testing`). Compare after the declared normalization (ids, times), never by loose matching. Update a golden file only in a reviewed change that says why the contract changed.
 
 ## Architecture tests
 

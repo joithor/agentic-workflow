@@ -18,7 +18,7 @@ first move is the TDD step.
 |---|---|---|
 | `name` | PascalCase, e.g. `Readiness` | `^[A-Z][A-Za-z0-9]{2,30}$`; not `Common`, `Shared`, `Utils`, `Helpers`; no existing `src/<Name>/` |
 | `tier` | `0`–`3` | Must match `deps.yaml` (the tier table of record). Tier 0 is reserved for `Aw.Kernel*`, `Redaction` and `Analyzers` |
-| `errorPrefix` | e.g. `RDY` | `^[A-Z]{2,4}$`; unique across the error catalogues (`src/**/*Errors.cs`); never derived or guessed |
+| `errorPrefix` | e.g. `READINESS` | `^[A-Z0-9]{2,16}$`; codes are `AW-<errorPrefix>-NNN` (the form `ErrorCatalogue.Validate` accepts: `^(AW\|SND)-[A-Z0-9]+-[0-9]{3}$`; `SND-` is reserved for Sindri). Unique: no `"AW-<errorPrefix>-` in `src/**/*Errors.cs`; never derived or guessed |
 | `note` | one line: what the package is for | Used for the `deps.yaml` node when the package isn't declared yet |
 | `shape` | `small` (Core + App) or `full` (Core, Features, Infrastructure, Host) | `small` unless the package is expected over ~1,500 lines |
 | `host` | `cli`, `http` or `none` | `cli` → NativeAOT console app; `http` → minimal API with `CreateSlimBuilder`; `none` → library |
@@ -26,13 +26,14 @@ first move is the TDD step.
 | `firstSlice` | PascalCase use-case name, e.g. `CheckRepo`, plus its `behavior` | Passed to `/new-slice` to generate the first red test |
 
 Inputs come from the arguments, then **Ask the user** for anything missing. Refuse (exit with the rule id) on any rule
-violation; never guess a tier or a prefix.
+violation; never guess a tier or a prefix. `Readiness` and `Packets` are `host: cli` packages that ship before the
+switch as the standalone NativeAOT CLIs `aw-readiness` and `aw-packets` (spec §4c).
 
 ## Before the scaffold: package pins
 
 The templates need `Microsoft.Extensions.DependencyInjection.Abstractions` (Core, Features, Infrastructure),
 `Microsoft.Extensions.DependencyInjection` (Host, tests), `Microsoft.Extensions.TimeProvider.Testing` (tests) and, for
-`host: http`, `Microsoft.AspNetCore.Mvc.Testing` (integration tests); `xunit.v3` is already pinned. If any isn't in
+`host: http`, `Microsoft.AspNetCore.Mvc.Testing` (integration tests), and `Vogen` (Core, for typed ids, R9); `xunit.v3` is already pinned. If any isn't in
 `Directory.Packages.props`, the generator **stops** and prints the pin commit to make first: add each `PackageVersion`
 (pinned as `[x.y.z]`, at least 14 days old), refresh the lock files it changes (with `CentralPackageTransitivePinningEnabled`
 a new pin can turn an existing project's `Transitive` entry into `CentralTransitive`), and commit that on its own.
@@ -47,7 +48,8 @@ src/<Name>/
 │   ├── packages.lock.json             # written by the first restore
 │   ├── PublicAPI.Shipped.txt          # "#nullable enable" only
 │   ├── PublicAPI.Unshipped.txt        # "#nullable enable", then every public symbol, annotated (below)
-│   ├── <Name>Errors.cs                # public static class <Name>Errors — codes "<errorPrefix>-001"…
+│   ├── VogenDefaults.cs               # [assembly: VogenDefaults(conversions: Conversions.None, …Omit, …)] (R9)
+│   ├── <Name>Errors.cs                # KernelErrors shape: public static readonly ErrorDefinition fields + All (below)
 │   └── <Name>CoreServiceCollectionExtensions.cs   # public static Add<Name>Core(this IServiceCollection)
 ├── Aw.<Name>.Features/
 │   ├── Aw.<Name>.Features.csproj      # refs Core, Aw.Kernel, DI.Abstractions, each `depends` Core;
@@ -67,18 +69,18 @@ src/<Name>/
     │                                  # refs DI; InternalsVisibleTo Aw.<Name>.Tests
     ├── .editorconfig                  # root = false; [*.cs] dotnet_diagnostic.CA1031.severity = none  (composition root)
     ├── packages.lock.json
-    ├── PublicAPI.Shipped.txt · PublicAPI.Unshipped.txt   # "#nullable enable" only (cli: no public surface)
     ├── Program.cs                     # calls Composition.Compose, then the command table
     ├── Composition.cs                 # internal static class Composition { Compose(...) }
     ├── SettingsFromEnvironment.cs     # internal static: builds <Name>Settings from environment variables
     ├── Commands/CommandTable.cs       # internal static: command name → handler; /new-slice adds one line per slice
-    └── <Name>JsonContext.cs           # internal partial class, [JsonSerializable] source-generated, Kernel JSON options
+    └── <Name>JsonContext.cs           # internal partial class, [JsonSerializable] source-generated; used only through AwJson.CreateOptions
 tests/
 ├── Aw.<Name>.Tests/
-│   ├── Aw.<Name>.Tests.csproj         # xUnit v3 (or the R7 choice) + DI + TimeProvider.Testing; <Using Include="Xunit" />;
+│   ├── Aw.<Name>.Tests.csproj         # xUnit v3 (R7) + DI + TimeProvider.Testing; <Using Include="Xunit" />;
 │   │                                  # refs every src project above and Aw.<Name>.Testing
 │   ├── packages.lock.json
 │   ├── HostTests.cs                   # DI validation over Composition.Compose (Lane=unit) — green
+│   ├── <Name>ErrorsTests.cs           # ErrorCatalogue.Validate(<Name>Errors.All) succeeds (Lane=unit) — green
 │   └── <FirstSlice>/<FirstSlice>Tests.cs   # from /new-slice — RED
 └── Aw.<Name>.Testing/
     ├── Aw.<Name>.Testing.csproj       # refs Core and Features (builders, fakes)
@@ -89,7 +91,7 @@ tests/
 **Analyzer obligations the templates meet** (root settings from #89):
 
 - Every public type and member has a `///` summary (`CS1591` is an error in non-test projects).
-- Public API files (`RS0016`/`RS0017`/`RS0036`/`RS0037`): both files start with `#nullable enable`; Shipped has nothing
+- Public API files, **library projects only** (`Core`, `Features`, `Infrastructure`, `App`; `Directory.Build.targets` turns these analyzers off for `*.Host`) (`RS0016`/`RS0017`/`RS0036`/`RS0037`): both files start with `#nullable enable`; Shipped has nothing
   else; Unshipped lists every public symbol with nullability annotations, e.g.
   `static Aw.<Name>.Core.<Name>CoreServiceCollectionExtensions.Add<Name>Core(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!`.
   Records also list their compiler-generated members (about 12 lines each). The generator writes these lines from the
@@ -122,12 +124,25 @@ the library carry the DI validation.
 Aw.<Name>.Host/
 ├── Endpoints/EndpointTable.cs         # internal static: MapGroup("/<name>"); /new-slice adds one Map<Slice>() line
 ├── HttpResults.cs                     # internal static: Result<T> → TypedResults / ProblemDetails (ToHttpResult)
-└── LoopbackBinding.cs                 # binds 127.0.0.1 in code, ignoring ASPNETCORE_URLS (spec §4d)
-tests/Aw.<Name>.Tests/LoopbackBindingTests.cs   # tries to override the bind (Lane=integration)
+├── LoopbackBinding.cs                 # the only listener: Listen(IPAddress.Loopback, port) (spec §4d, below)
+└── LoopbackGuard.cs                   # middleware: non-loopback Host → 400; non-loopback browser Origin → 403
+tests/Aw.<Name>.Tests/LoopbackBindingTests.cs   # every override vector, Host 400, Origin 403 (Lane=integration)
 ```
 
-The Web SDK emits a `public partial class Program` (and `WebApplicationFactory<Program>` needs it public), so the http
-Host's `PublicAPI.Unshipped.txt` lists `Program` and `Program.Program() -> void`. `HttpResults` lives in each HTTP host
+`LoopbackBinding` builds the host with `WebApplication.CreateSlimBuilder(new WebApplicationOptions { Args = [] })`: no
+command-line args and no environment variables reach the web host's configuration, `PreferHostingUrls` is pinned off,
+and Kestrel listens with `Listen(IPAddress.Loopback, port)` only. `LoopbackBindingTests` starts the host once per
+override vector and checks the only listener is `127.0.0.1:<port>`: `ASPNETCORE_URLS`, `DOTNET_URLS`,
+`ASPNETCORE_HTTP_PORTS`, `ASPNETCORE_PREFERHOSTINGURLS`, `Kestrel__Endpoints__*` (each in the environment and on the
+command line) and `--urls` (the R1a spike found two of these binding all interfaces in a default
+`CreateSlimBuilder(args)` host). It also sends a request with `Host: example.com` (expects 400) and one with
+`Origin: https://example.com` (expects 403). No `HOST` variable, no `ALLOW_REMOTE` switch, no wildcard CORS.
+
+The http Host applies the same JSON profile in `ConfigureHttpJsonOptions`: `o.SerializerOptions` is read-only, so it
+copies the settings and resolver of `AwJson.CreateOptions(<Name>JsonContext.Default)` into it. And
+`HttpResults` maps Vogen's validation exception to a 400 as well as `Result` errors to `ProblemDetails`.
+
+`HttpResults` lives in each HTTP host
 for now; the second HTTP package moves it into a tier-0 Kernel part (second use → generalize). It can't go in
 `Aw.Kernel`, which is BCL-only.
 
@@ -169,19 +184,42 @@ internal static class Composition
 ```csharp
 using Aw.<Name>.Host;
 using Aw.<Name>.Host.Commands;
+using Aw.Kernel.Json;
 using Microsoft.Extensions.DependencyInjection;
 
 var services = Composition.Compose(new ServiceCollection(), SettingsFromEnvironment.Read(), TimeProvider.System);
+var json = AwJson.CreateOptions(<Name>JsonContext.Default);   // the one Kernel JSON profile
 var provider = services.BuildServiceProvider();   // validation runs in HostTests, not at CLI startup
 await using (provider.ConfigureAwait(false))
 {
-    return await CommandTable.Run(args, provider, <Name>JsonContext.Default).ConfigureAwait(false);
+    return await CommandTable.Run(args, provider, json).ConfigureAwait(false);
 }
 ```
 
-`CommandTable.Run(string[] args, IServiceProvider provider, <Name>JsonContext json)` binds the arguments, opens a scope (`var scope = provider.CreateAsyncScope(); await using
+`CommandTable.Run(string[] args, IServiceProvider provider, JsonSerializerOptions json)` binds the arguments, opens a scope (`var scope = provider.CreateAsyncScope(); await using
 (scope.ConfigureAwait(false)) { … }`), resolves one `IService<TReq, TRes>`, calls it, and maps the `Result` to an exit
-code and output (serialized with `json.<Slice>Response`). It is generated in the Host; it moves into a Kernel part only when a second CLI package proves the shape.
+code and output (written with `AwJson.Serialize(response, json)`). It is generated in the Host; it moves into a Kernel part only when a second CLI package proves the shape.
+
+### Template: `<Name>Errors.cs`
+
+```csharp
+using Aw.Kernel;
+
+namespace Aw.<Name>.Core;
+
+/// <summary>The <Name> error catalogue (codes AW-<errorPrefix>-NNN).</summary>
+public static class <Name>Errors
+{
+    /// <summary>AW-<errorPrefix>-001.</summary>
+    public static readonly ErrorDefinition Invalid = new("AW-<errorPrefix>-001", ErrorKind.Invalid, "<Name> input failed validation");
+
+    /// <summary>Every <Name> error, for ErrorCatalogue.Validate.</summary>
+    public static IReadOnlyList<ErrorDefinition> All { get; } = [Invalid];
+}
+```
+
+`<Name>ErrorsTests` asserts `ErrorCatalogue.Validate(<Name>Errors.All)` succeeds (format, uniqueness), the same shape as
+`KernelErrors` in `Aw.Kernel`.
 
 ### Template: `HostTests.cs`
 
@@ -232,7 +270,7 @@ with the `NotSupportedException` thrown by the parameterless service stub. The s
 ```bash
 for p in src/<Name>/*/*.csproj tests/Aw.<Name>.*/*.csproj; do dotnet restore "$p"; done   # new projects only: writes their packages.lock.json
 dotnet restore --locked-mode                            # whole solution; must pass — existing lock files never change here
-dotnet format analyzers <each new src project> --diagnostics RS0016   # writes the PublicAPI.Unshipped.txt lines
+dotnet format analyzers <each new library project> --diagnostics RS0016   # writes the PublicAPI.Unshipped.txt lines (not hosts)
 dotnet build -warnaserror                               # must report 0 warnings, 0 errors
 dotnet test --solution AgenticWorkflow.slnx --filter-trait "Lane=unit" --ignore-exit-code 8   # HostTests pass; the slice test fails (expected); exit 8 = empty lane in some project
 dotnet format --verify-no-changes
