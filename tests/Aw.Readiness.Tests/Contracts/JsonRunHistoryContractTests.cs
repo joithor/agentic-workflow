@@ -1,4 +1,5 @@
 using Aw.Kernel.Testing;
+using Aw.Readiness.App;
 using Aw.Readiness.App.Infrastructure;
 using Aw.Readiness.Core.Ports;
 using Aw.Readiness.Testing;
@@ -12,7 +13,7 @@ public sealed class JsonRunHistoryContractTests : RunHistoryContract, IDisposabl
     private readonly TempDirectory _state = new();
 
     protected override IRunHistory NewHistory() =>
-        new JsonRunHistory(SettingsFromEnvironment.Read(name => name == "AW_STATE_DIR" ? _state.Path : null));
+        new JsonRunHistory(SettingsFromEnvironment.Read(name => name == "AW_STATE_DIR" ? _state.Path : null), Composition.Json);
 
     public void Dispose() => _state.Dispose();
 }

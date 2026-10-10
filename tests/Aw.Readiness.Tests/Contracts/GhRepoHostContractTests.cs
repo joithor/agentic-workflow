@@ -21,5 +21,7 @@ public sealed class GhRepoHostContractTests : RepoHostContract, IDisposable
         return new GhRepoHost(settings);
     }
 
+    protected override string Root => _bin.Path;
+
     public void Dispose() => _bin.Dispose();
 }

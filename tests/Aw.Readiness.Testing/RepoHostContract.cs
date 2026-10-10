@@ -14,12 +14,15 @@ public abstract class RepoHostContract
     /// <returns>The host.</returns>
     protected abstract IRepoHost HostFor(HostScenario scenario);
 
+    /// <summary>The checkout root the host is asked about (an adapter that runs in it needs a real directory).</summary>
+    protected virtual string Root => "/repo";
+
     /// <summary>The ready scenario's facts all hold.</summary>
     /// <returns>The test.</returns>
     [Fact]
     public async Task A_ready_repo_reports_protection_scanning_and_releases()
     {
-        var facts = await HostFor(HostScenario.Ready).Read("/repo", CancellationToken.None);
+        var facts = await HostFor(HostScenario.Ready).Read(Root, CancellationToken.None);
 
         Expect.Equal(expected: true, facts.BranchProtection.Holds, "BranchProtection");
         Expect.Equal(expected: true, facts.SecretScanning.Holds, "SecretScanning");
@@ -32,7 +35,7 @@ public abstract class RepoHostContract
     [Fact]
     public async Task A_bare_repo_reports_no_protection_no_scanning_and_no_releases()
     {
-        var facts = await HostFor(HostScenario.Bare).Read("/repo", CancellationToken.None);
+        var facts = await HostFor(HostScenario.Bare).Read(Root, CancellationToken.None);
 
         Expect.Equal(expected: false, facts.BranchProtection.Holds, "BranchProtection");
         Expect.Equal(expected: false, facts.SecretScanning.Holds, "SecretScanning");
@@ -45,7 +48,7 @@ public abstract class RepoHostContract
     [Fact]
     public async Task An_unreachable_host_is_unknown_not_a_failure()
     {
-        var facts = await HostFor(HostScenario.Unreachable).Read("/repo", CancellationToken.None);
+        var facts = await HostFor(HostScenario.Unreachable).Read(Root, CancellationToken.None);
 
         Expect.Equal(expected: null, facts.BranchProtection.Holds, "BranchProtection of an unreachable host");
         Expect.Equal(expected: null, facts.SecretScanning.Holds, "SecretScanning of an unreachable host");

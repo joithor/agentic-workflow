@@ -16,7 +16,7 @@ internal static class CheckRepoCommand
 
     internal static async Task<int> Run(IReadOnlyList<string> args, IServiceProvider services, JsonSerializerOptions json)
     {
-        var parsed = CheckArgs.Parse(args, Environment.CurrentDirectory);
+        var parsed = CheckArgs.Parse(args);
         if (parsed.IsError)
         {
             return ToolError(parsed.Error, json);

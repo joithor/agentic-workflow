@@ -15,8 +15,8 @@ internal static class StubGh
             ? $"[{{\"published_at\":\"{Day(1)}\"}},{{\"published_at\":\"{Day(30)}\"}},{{\"published_at\":\"{Day(60)}\"}},{{\"published_at\":\"{Day(200)}\"}},{{\"published_at\":null}}]"
             : "[]";
         var scanning = ready
-            ? "{\"security_and_analysis\":{\"secret_scanning\":{\"status\":\"enabled\"},\"secret_scanning_push_protection\":{\"status\":\"enabled\"}}}"
-            : "{\"security_and_analysis\":{\"secret_scanning\":{\"status\":\"disabled\"},\"secret_scanning_push_protection\":{\"status\":\"disabled\"}}}";
+            ? "{\"permissions\":{\"admin\":true},\"security_and_analysis\":{\"secret_scanning\":{\"status\":\"enabled\"},\"secret_scanning_push_protection\":{\"status\":\"enabled\"}}}"
+            : "{\"permissions\":{\"admin\":true},\"security_and_analysis\":{\"secret_scanning\":{\"status\":\"disabled\"},\"secret_scanning_push_protection\":{\"status\":\"disabled\"}}}";
         var protection = ready
             ? "echo '{\"url\":\"x\"}'"
             : "echo '{\"message\":\"Branch not protected\",\"status\":\"404\"}'; echo 'gh: Branch not protected (HTTP 404)' >&2; exit 1";
