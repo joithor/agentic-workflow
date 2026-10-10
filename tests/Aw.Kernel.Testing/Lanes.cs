@@ -2,7 +2,8 @@ namespace Aw.Kernel.Testing;
 
 /// <summary>
 /// The lane trait's key and values, and each lane's time budget (spec §4b.5). Each budget covers one package's whole
-/// run of that lane, not a single test. Nothing here enforces it: the planned CI lane job (gap — R1b) times
+/// run of that lane, and is also the cap on each single test, which <see cref="LaneCap"/> checks from xUnit's CTRF
+/// report. The per-package wall clock is the planned CI lane job's check (gap — R1b): it times
 /// 'dotnet test --filter-trait Lane=&lt;lane&gt;' per test project against these values.
 /// </summary>
 public static class Lanes
@@ -32,7 +33,8 @@ public static class Lanes
 
     /// <summary>
     /// The budget for one package's whole run of a lane (unit 10 s, integration 60 s; heavy has none and returns
-    /// <see cref="Timeout.InfiniteTimeSpan"/>). The value the planned CI lane job reads; not enforced here (gap — R1b).
+    /// <see cref="Timeout.InfiniteTimeSpan"/>). <see cref="LaneCap"/> applies it to each test; the planned CI lane job
+    /// (gap — R1b) applies it to a package's whole lane run.
     /// </summary>
     /// <param name="lane">The lane.</param>
     /// <returns>The budget.</returns>
