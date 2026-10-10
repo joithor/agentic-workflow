@@ -36,9 +36,11 @@ function parseEvent(line: string): FailOpenEvent | null {
 }
 
 // An unreadable log (a directory, no permission) yields no lines rather than
-// failing the whole daily report.
+// failing the whole daily report, and only a regular file is opened: a FIFO
+// would block the launchd report job forever.
 function readLines(file: string): string[] {
   try {
+    if (!fs.statSync(file).isFile()) return [];
     return fs.readFileSync(file, "utf8").split("\n");
   } catch {
     return [];
