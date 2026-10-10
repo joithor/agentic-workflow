@@ -14,7 +14,14 @@ internal static class Checks
 
     public static async Task<int> StdinMode()
     {
-        using var runtime = TelemetryRuntime.Start(new TelemetryOptions { ServiceName = Service, Sink = new TextWriterLogSink(Console.Out) });
+        var options = TelemetryOptions.FromEnvironment(Service, Environment.GetEnvironmentVariable);
+        if (options.IsError)
+        {
+            await Console.Error.WriteLineAsync($"{options.Error.Code}: {options.Error.Message}").ConfigureAwait(false);
+            return 2;
+        }
+
+        using var runtime = TelemetryRuntime.Start(options.Value with { Sink = new TextWriterLogSink(Console.Out) });
         var logger = runtime.LoggerFactory.CreateLogger("Aw.Smoke.Stdin");
         while (await Console.In.ReadLineAsync().ConfigureAwait(false) is { } text)
         {
