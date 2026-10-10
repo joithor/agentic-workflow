@@ -9,7 +9,7 @@ import { stripInvisible, WHITESPACE } from "./invisible.js";
 
 // Layer 3 of the publish gate (spec §5.4): code identifiers from private repos' indexes, minus English
 // words and the toolkit's own vocabulary. Built in memory at publish; never written, logged or printed.
-export const MIN_IDENTIFIER = 5;
+const MIN_IDENTIFIER = 5;
 const IDENT = /[A-Za-z_$][A-Za-z0-9_$]*/g;
 
 export const wordsFile = (deps: Deps): string => deps.env.SINDRI_WORDS ?? "/usr/share/dict/words";
@@ -35,10 +35,18 @@ export function buildDerivedSet(o: { privateDbs: readonly IndexDb[]; toolkit: In
   return out;
 }
 
-const structureOk = (db: IndexDb): boolean => layers(db).some((l) => l.layer === "structure" && l.status === "ok");
+// An index without a usable layers table counts as unbuilt: fail closed with the same code.
+function structureOk(db: IndexDb): boolean {
+  try {
+    return layers(db).some((l) => l.layer === "structure" && l.status === "ok");
+  } catch {
+    return false;
+  }
+}
 
 export function loadDerivedSet(deps: Deps, loaded: LoadedProfile): Set<string> {
-  const priv = Object.keys(loaded.repos).sort().filter((name) => loaded.repos[name].private === true);
+  // The tracker repo is the public publish target by definition, so it is never treated as private even if it sets the flag.
+  const priv = Object.keys(loaded.repos).sort().filter((name) => name !== loaded.profile.tracker.repo && loaded.repos[name].private === true);
   if (priv.length === 0) return new Set();
   const wf = wordsFile(deps);
   if (!fs.existsSync(wf)) throw new SindriError("SND-EVOLVE-018", `the word list ${wf} is missing, so publish can't tell private identifiers from English words`);

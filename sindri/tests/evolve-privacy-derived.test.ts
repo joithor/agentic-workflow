@@ -97,4 +97,29 @@ describe("loadDerivedSet", () => {
     const set = loadDerivedSet(deps, loaded(deps, { toolkit: {}, globex: { private: true } }));
     expect([...set]).toEqual(["quarblescheduler"]);
   });
+
+  it("never treats the tracker repo as private, subtracting its vocabulary instead", () => {
+    const words = path.join(tempDir("w-"), "words");
+    fs.writeFileSync(words, "nurse\n");
+    const deps = makeDeps({ env: { SINDRI_WORDS: words } });
+    seedIndex(openIndex(indexPath(deps, "toolkit")), { files: ["t.ts"], symbols: ["renderTask"] }).close();
+    seedIndex(openIndex(indexPath(deps, "globex")), { files: ["a.ts"], symbols: ["quarbleScheduler", "renderTask"] }).close();
+    const set = loadDerivedSet(deps, loaded(deps, { toolkit: { private: true }, globex: { private: true } }));
+    expect([...set]).toEqual(["quarblescheduler"]);
+  });
+
+  it("returns an empty set, without a word list, when only the tracker repo is marked private", () => {
+    const deps = makeDeps({ env: { SINDRI_WORDS: "/nonexistent" } });
+    expect(loadDerivedSet(deps, loaded(deps, { toolkit: { private: true } })).size).toBe(0);
+  });
+
+  it("refuses with SND-EVOLVE-017 when the private index has no usable layers table", () => {
+    const words = path.join(tempDir("w-"), "words");
+    fs.writeFileSync(words, "nurse\n");
+    const deps = makeDeps({ env: { SINDRI_WORDS: words } });
+    const db = seedIndex(openIndex(indexPath(deps, "globex")), { files: ["a.ts"], symbols: ["quarbleScheduler"] });
+    db.exec("DROP TABLE layers");
+    db.close();
+    expect(() => loadDerivedSet(deps, loaded(deps, { toolkit: {}, globex: { private: true } }))).toThrow(expect.objectContaining({ code: "SND-EVOLVE-017" }) as SindriError);
+  });
 });
