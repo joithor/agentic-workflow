@@ -225,7 +225,7 @@ public static class LaneCap
     private static string OverCapMessage(string package, string test, double seconds, string lane, TimeSpan cap) =>
         string.Create(
             CultureInfo.InvariantCulture,
-            $"{OverCap} {package} {test}: {Seconds(seconds)} s in lane {lane}, limit {cap.TotalSeconds:0} s per test. Fix: make the test faster, or if it does real I/O move it to a slower lane ([Lane(TestLane.Integration)] or Heavy).");
+            $"{OverCap} {package} {test}: {Seconds(seconds)} s in lane {lane}, limit {cap.TotalSeconds:0} s per test. Fix: make the test faster, or {(lane == Lanes.Unit ? "if it does real I/O move it to a slower lane ([Lane(TestLane.Integration)] or Heavy)" : "if it needs real containers, browsers or index builds move it to the heavy lane ([Lane(TestLane.Heavy)], nightly)")}.");
 
     private static string NotOneLaneMessage(string package, string test, List<string> lanes) =>
         $"{NotOneLane} {package} {test}: lane traits [{string.Join(", ", lanes)}], expected exactly one of {Lanes.Unit}, {Lanes.Integration}, {Lanes.Heavy}. "
