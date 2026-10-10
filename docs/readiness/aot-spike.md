@@ -17,7 +17,7 @@ on purpose), and keeping it out of the tree keeps it out of the repo-wide .NET c
 
 | # | Question | Decision | Confidence |
 |---|---|---|---|
-| R7 | Test framework | **xUnit v3 on Microsoft.Testing.Platform.** Under JIT both frameworks run the same suites in about the same time (30 tests: 238 vs 222 ms per test-app run; 2,000 tests: 359 vs 369 ms; 0.06–0.07 ms per added test), far inside the 10 s unit budget, and lane filters work in both. Tests run JIT (§4b.6), so TUnit's working NativeAOT test runner (xUnit v3's crashes) isn't needed. Lane budgets are enforced from xUnit's CTRF report (`scripts/lane-budget.py`, proven to fail on an over-budget run) | High |
+| R7 | Test framework | **xUnit v3 on Microsoft.Testing.Platform.** Under JIT both frameworks run the same suites in about the same time (30 tests: 238 vs 222 ms per test-app run; 2,000 tests: 359 vs 369 ms; 0.06–0.07 ms per added test), far inside the 10 s unit budget, and lane filters work in both. Tests run JIT (§4b.6), so TUnit's working NativeAOT test runner (xUnit v3's crashes) isn't needed. Lane budgets are checkable, for example from xUnit's CTRF report (`scripts/lane-budget.py`, proven to fail on an over-budget run). What is measured is defined in S1's §4b.5 (#102): wall clock per test project, summed per package, with CTRF as an extra per-test cap | High |
 | R8 | Data access under NativeAOT | **Hand-written ADO.NET with `IRowMapper<T>`, over the bundled `e_sqlite3` shipped side by side with each binary and listed in `binaries.lock`.** 0 warnings. EF Core 10 and Dapper.AOT both run but neither builds warnings-as-errors: EF fails on IL2026/IL3050 in the `DbContext` constructor and calls itself experimental; Dapper.AOT fails only on `Dapper.dll`'s assembly-level IL2104/IL3053, and suppressing those hides calls its generator can't intercept (a generic `Query<T>` then built clean and threw `PlatformNotSupportedException` at runtime). Startup doesn't separate ADO.NET and Dapper.AOT (6.3 vs 6.8 ms median, overlapping ranges); EF is about twice as slow (13.5 ms) | High |
 | R9 | Strongly typed ids | **Vogen with `conversions: None` and `systemTextJsonConverterFactoryGeneration: Omit`, a user-code `JsonConverter` (via `TryFrom`, throwing `JsonException`), and `IParsable<T>` declared in user code.** Root cause: generators don't see each other's output. The STJ generator can't see Vogen's converter (ids serialize as `{}`), and the request-delegate generator binds an id from a route only when `IParsable<T>` is declared in user code. Declaring the interface in user code over Vogen's generated members (C3's `ITypedId<TSelf,TValue> : IParsable<TSelf>`) and hand-writing `TryParse` (this spike's probe) both satisfy that. Only the hand-written form went through the RDG here. Result: 0 warnings, JSON and route binding work under AOT, the VOG009 `default` ban holds, and bad input is a 400 | High |
 | MCP | MCP C# SDK 2.2.0 for the Bridge | **NativeAOT, two entry points as today (REST minimal API, stdio MCP).** All three spike servers publish with 0 warnings and pass every call. With TS parity cut, the readable attribute style is the default for tools; the low-level handlers are for tools whose schema or error shape must be exact. The HTTP host is loopback-only against 7 override vectors once no args or environment reach its configuration, and it rejects a foreign `Host` (400) and `Origin` (403) | High |
@@ -399,7 +399,8 @@ What it showed:
     default bundle), shipped side by side with each AOT binary and listed in `binaries.lock`; no provider switch
     and no OS-version check;
   - per-connection pragmas `journal_mode=wal`, `busy_timeout` and `foreign_keys=on`;
-  - typed ids bind through one helper (`AddId(name, id)` writing `id.Value`).
+  - typed ids bind through one helper with #99's shape, `BindId(name, id, id => id.Value)`. The accessor keeps the
+    data layer free of any Vogen dependency.
 - **`Aw.Kernel.Testing` (C2):** xUnit v3 on MTP; lanes as `[Trait("Lane", …)]`, filtered with `--filter-trait`;
   the budget check as S1's §4b.5 defines it (the CTRF probe above shows one mechanism and what it does and doesn't
   measure); no test left without a lane.
@@ -429,7 +430,18 @@ producers would need a new tag, and the owner decision makes several of them moo
 - `logs/r7-{XunitV3,TUnit}.aot-run.txt`: the published test apps run directly. The lane-filter totals in R7 are
   from runs whose output wasn't kept.
 
-Everything else comes from the scripts named in Reproduce.
+- `logs/r8-DapperFallback.run.txt`: the published `DapperFallback` binary run directly.
+
+These logs are history from earlier code states, kept because the doc quotes them; rerunning the scripts on the
+tag doesn't reproduce them:
+- `logs/r9-VogenIds.run1-no-converters.txt` and `logs/r9-VogenIds.publish2.log`: Vogen-defaults variant (a) before
+  the runtime converters;
+- `logs/r9-RouteBind.run1.log` and `logs/r9-RouteBind.jit-rdg-before-fix.txt`: `RouteBind` before the user-code
+  `IParsable<T>`;
+- `logs/r9-RouteBind.emptyquery.log`: before the Host's 400 mapping;
+- `logs/r8-EfCore.attempt2-param-capture.publish.log`: EF before each query captured a local.
+
+The other logs on the tag come from the scripts named in Reproduce, run against the tagged code.
 
 ## Reproduce
 
