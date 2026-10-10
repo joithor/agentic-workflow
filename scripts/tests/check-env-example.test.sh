@@ -89,6 +89,14 @@ d="$(fixture ignore-no-reason)"; printf 'PATH\n' >> "$d/scripts/env-scan-ignore.
 expect_rc "an ignore entry without a reason fails" 1
 expect_out "ignore rule id" 'ENV-EXAMPLE-003: PATH'
 
+d="$(fixture ignore-dup-no-reason)"; printf 'HOME\n' >> "$d/scripts/env-scan-ignore.txt"; run "$d"
+expect_rc "a reasonless duplicate of a reasoned ignore entry still fails" 1
+expect_out "names the reasonless entry" 'ENV-EXAMPLE-003: HOME .*no reason'
+
+d="$(fixture problems-first)"; printf 'const x = process.env.AW_T10_PROBE;\n' >> "$d/judge/src/config.ts"; run "$d"
+expect_out "the summary line comes last" '^ENV-EXAMPLE: 1 problem\(s\); [0-9]+ names read$'
+if [ "$(printf '%s\n' "$OUT" | tail -1 | cut -c1-12)" = "ENV-EXAMPLE:" ]; then ok "summary is the last line"; else fail "summary is the last line"; fi
+
 d="$(fixture ignore-and-doc)"; printf 'AW_PORT # also documented\n' >> "$d/scripts/env-scan-ignore.txt"; run "$d"
 expect_rc "a name both ignored and documented fails" 1
 expect_out "conflict rule id" 'ENV-EXAMPLE-003: AW_PORT'
