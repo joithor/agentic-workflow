@@ -48,6 +48,12 @@ public static class Corpus
         new SecretCase("json-tab-escape", Join("{\"k\":\"a\\tsk-", "ant-", Body, Body, "\"}"), "anthropic-key", Tail),
         new SecretCase("json-unicode-zwj", Join("gh", "p_", "Ab3dE6gH9jK2mN5p", "\\u200d", Body), "github-token", Tail),
         new SecretCase("escaped-json-assignment", Join("{\\\"client", "_secret\\\": \\\"", Body, "Ab37\\\"}"), "secret-assignment", Tail),
+        new SecretCase("unterminated-encrypted-key", Join(
+            "-----BEGIN RSA PRIV", "ATE KEY-----\nProc-Type: 4,ENCRYPTED\nDEK-Info: AES-128-CBC,ABCDEF\n\n", Body, Body, "\n"),
+            "private-key", Tail),
+        new SecretCase("ini-lowercase", Join("api", "_key=", Body, "Ab37"), "secret-assignment", Tail),
+        new SecretCase("yaml-client-secret", Join("  client", "_secret: ", Body, "9  # rotated"), "secret-assignment", Tail),
+        new SecretCase("properties-dotted", Join("db.pass", "word = ", Body, "\r\nnext=1"), "secret-assignment", Tail),
         new SecretCase("escaped-private-key", Pem("-----END RSA PRIV" + "ATE KEY-----").Replace("\n", "\\n", StringComparison.Ordinal), "private-key", Tail),
     ];
 }
