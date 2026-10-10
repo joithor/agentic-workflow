@@ -46,6 +46,10 @@ expect "an AOT smoke script or its expected output runs dotnet" \
   "$(printf 'src/Aw.Kernel.AotSmoke/run.sh\nsrc/Aw.Kernel.Data.AotSmoke/expected.txt\n')" \
   "$(printf 'bash=false\ndotnet=true\npackages=[]')"
 
+expect "a packet JSON Schema change runs dotnet (its golden test compares it with the records)" \
+  "$(printf 'schemas/packets/tasks.schema.json\n')" \
+  "$(printf 'bash=false\ndotnet=true\npackages=[]')"
+
 expect "a .NET tool manifest change runs dotnet" \
   "$(printf '.config/dotnet-tools.json\n')" \
   "$(printf 'bash=false\ndotnet=true\npackages=[]')"

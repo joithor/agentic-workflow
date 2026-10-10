@@ -1,0 +1,11 @@
+# The fixture packages (Fixtures/<Case>/...) exist only for ArchUnitNET to read: each one breaks, or keeps, one
+# architecture rule. Nothing instantiates or calls them, so the "unused" and "make it static" rules would push them
+# away from the shapes they model (an internal sealed service with a constructor, a Composition class).
+root = false
+
+[*.cs]
+dotnet_diagnostic.MA0182.severity = none
+dotnet_diagnostic.MA0036.severity = none
+dotnet_diagnostic.MA0041.severity = none
+dotnet_diagnostic.CA1822.severity = none
+dotnet_diagnostic.CA1812.severity = none

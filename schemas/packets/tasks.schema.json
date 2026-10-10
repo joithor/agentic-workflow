@@ -1,0 +1,165 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/jthorare/agentic-workflow/schemas/packets/tasks.schema.json",
+  "title": "Packet tasks file (schemaVersion 1)",
+  "type": "object",
+  "properties": {
+    "schemaVersion": {
+      "type": "integer"
+    },
+    "workstreams": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "\\S"
+          },
+          "title": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "title"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "tasks": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "\\S"
+          },
+          "workstream": {
+            "type": "string",
+            "pattern": "\\S"
+          },
+          "title": {
+            "type": "string"
+          },
+          "deps": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "pattern": "\\S"
+            }
+          },
+          "size": {
+            "enum": [
+              "XS",
+              "S",
+              "M",
+              "L",
+              "XL"
+            ]
+          },
+          "writeScope": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "readSeeds": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "acceptance": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "pattern": "\\S"
+                },
+                "text": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "evidence": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "holdout": {
+                  "type": "boolean"
+                }
+              },
+              "required": [
+                "id",
+                "evidence"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "rules": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "budget": {
+            "type": "object",
+            "properties": {
+              "tokens": {
+                "type": [
+                  "integer",
+                  "null"
+                ]
+              },
+              "turns": {
+                "type": [
+                  "integer",
+                  "null"
+                ]
+              },
+              "wallMinutes": {
+                "type": [
+                  "integer",
+                  "null"
+                ]
+              }
+            },
+            "additionalProperties": false
+          }
+        },
+        "required": [
+          "id",
+          "workstream",
+          "title",
+          "deps",
+          "size",
+          "writeScope",
+          "readSeeds",
+          "acceptance",
+          "budget"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "$schema": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "default": null
+    }
+  },
+  "required": [
+    "schemaVersion",
+    "workstreams",
+    "tasks"
+  ],
+  "additionalProperties": false
+}

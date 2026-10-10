@@ -18,8 +18,12 @@
     <NoWarn>$(NoWarn);RS0016;RS0017;RS0036;RS0037</NoWarn>
   </PropertyGroup>
 
-  <!-- NativeAOT entry points (spec §4b.6): no ICU dependency in the single-file binary. -->
-  <PropertyGroup Condition="'$(PublishAot)' == 'true'">
+  <!-- NativeAOT entry points (spec §4b.6): no ICU dependency in the single-file binary. An entry point sets
+       AwAotEntryPoint=true and PublishAot only under a RuntimeIdentifier (so its packages.lock.json stays RID-free);
+       keying on AwAotEntryPoint too keeps the entry point's JIT runs on the same invariant globalization as the binary
+       (test projects are their own executables and keep ICU; product code uses the invariant culture and ordinal
+       comparisons throughout). -->
+  <PropertyGroup Condition="'$(PublishAot)' == 'true' or '$(AwAotEntryPoint)' == 'true'">
     <InvariantGlobalization>true</InvariantGlobalization>
   </PropertyGroup>
 
@@ -31,6 +35,14 @@
     <ProjectReference Include="$(MSBuildThisFileDirectory)src/Aw.Analyzers/Aw.Analyzers.csproj"
                       OutputItemType="Analyzer" ReferenceOutputAssembly="false" PrivateAssets="all" />
   </ItemGroup>
+  <!-- An entry point's PublishAot is off in a plain build (no RID), which would also switch off the trim, AOT and
+       single-file analyzers a Host relies on (a Host isn't a library, so IsAotCompatible doesn't cover it). They
+       add no package, so the lock file stays RID-free. -->
+  <PropertyGroup Condition="'$(AwAotEntryPoint)' == 'true'">
+    <EnableTrimAnalyzer>true</EnableTrimAnalyzer>
+    <EnableAotAnalyzer>true</EnableAotAnalyzer>
+    <EnableSingleFileAnalyzer>true</EnableSingleFileAnalyzer>
+  </PropertyGroup>
 
   <!-- Placement (AW0002): the test-project policy is tests/.editorconfig, so *.Tests and *.Testing projects
        (including Aw.Kernel.Testing) must live under tests/, and nothing else may: a library under tests/ would
