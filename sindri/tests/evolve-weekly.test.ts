@@ -8,7 +8,7 @@ import { init } from "../src/evolve/cmd/registry.js";
 import { weekly } from "../src/evolve/cmd/weekly.js";
 import { ProposalSchema, saveProposal } from "../src/evolve/proposals.js";
 import { heavyLockDir } from "../src/index/heavy-lock.js";
-import { evolveFixture, fakeProc, git, scriptedEvolveIo, withDeps } from "./evolve-fixtures.js";
+import { evolveFixture, fakeProc, generalizingScript, git, scriptedEvolveIo, withDeps } from "./evolve-fixtures.js";
 
 const FILES = { "judge/package.json": "{}", "skills/review/SKILL.md": "x\n" };
 const view = JSON.stringify({ title: "Fix", body: "B", headRefName: "feat/x", files: [{ path: "a.ts" }], state: "MERGED", mergedAt: "2026-10-07T00:00:00Z", author: { login: "joi-t" } });
@@ -29,7 +29,7 @@ function gh(list: string, over: { listCode?: number; open?: boolean; titles?: Re
 }
 
 async function ready(proc = gh(prs(12, 13)), extraYaml?: string) {
-  const io = scriptedEvolveIo((c) => (c.model === "sonnet" ? (c.input.includes('id="pr-title">Partial<') ? { findings: "bad" } : { findings: [] }) : { accepted: [], rejected: [], backlog: [] }), proc);
+  const io = scriptedEvolveIo(generalizingScript((c) => (c.model === "sonnet" ? (c.input.includes('id="pr-title">Partial<') ? { findings: "bad" } : { findings: [] }) : { accepted: [], rejected: [], backlog: [] })), proc);
   const fx = await evolveFixture({ files: FILES, io, extraYaml });
   git(fx.repo, "remote", "add", "origin", "https://github.com/acme/toolkit.git");
   await init([], fx.ctx);

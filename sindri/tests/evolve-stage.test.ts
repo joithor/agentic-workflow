@@ -7,14 +7,18 @@ import { stateDir } from "../src/deps.js";
 import { init } from "../src/evolve/cmd/registry.js";
 import { acquireTickLock } from "../src/lock/lock.js";
 import { stage } from "../src/evolve/cmd/stage.js";
-import { getProposal, ProposalSchema, saveProposal, stagedFile, type ProposalStatus, type Tier } from "../src/evolve/proposals.js";
+import type { EvolveIo } from "../src/evolve/ctx.js";
+import { GENERALIZE_ROLES } from "../src/evolve/generalize.js";
+import { getProposal, getPublic, ProposalSchema, saveProposal, stagedFile, type ProposalStatus, type Tier } from "../src/evolve/proposals.js";
 import { PROMPTS } from "../src/evolve/prompts.js";
-import { evolveFixture, git, withDeps, setStatus } from "./evolve-fixtures.js";
+import { stageProposals } from "../src/evolve/stage.js";
+import { Budget } from "../src/scope/model.js";
+import { evolveFixture, generalizingScript, git, scriptedEvolveIo, setStatus, unescapeFence, withDeps } from "./evolve-fixtures.js";
 
 const FILES = { "config/hooks/done-gate.sh": "#!/bin/sh\n", "skills/review/SKILL.md": "x\n", "sindri/package.json": "{}", "sindri/src/observe/observe.ts": "export const a = 1;\n" };
 
-async function ready(cap = 2) {
-  const fx = await evolveFixture({ files: FILES, extraYaml: `evolve:\n  maxOpenProposals: ${cap}\n`, prompts: () => PROMPTS });
+async function ready(cap = 2, io?: EvolveIo) {
+  const fx = await evolveFixture({ files: FILES, extraYaml: `evolve:\n  maxOpenProposals: ${cap}\n`, prompts: () => PROMPTS, io });
   await init([], fx.ctx);
   let n = 0;
   const save = (title: string, over: Record<string, unknown>, tier: Tier, status?: ProposalStatus) => {
@@ -151,6 +155,83 @@ describe("stage preview hardening (Task 10 fix round 1, m1)", () => {
     expect(r.stdout).not.toContain("Cap reached");
     expect(published.map((id) => getProposal(fx.ctx.db, id)?.status)).toEqual(Array(10).fill("merged"));
     expect(getProposal(fx.ctx.db, fresh)?.status).toBe("staged");
+    fx.close();
+  });
+});
+
+describe("stage generalizes first (privacy B1)", () => {
+  it("stages the generalized version and writes the preview from it", async () => {
+    const io = scriptedEvolveIo((c) => (c.role === GENERALIZE_ROLES.rewrite
+      ? { ...(JSON.parse(unescapeFence(/<untrusted id="proposal">([\s\S]*?)<\/untrusted>/.exec(c.input)![1])) as object), title: "Generic title for publishing" }
+      : { leaks: false, category: "none" }));
+    const { fx, save } = await ready(2, io);
+    const id = save("Globex quarbleScheduler retries", {}, "code");
+    const o = await stageProposals(fx.ctx);
+    expect(o.staged.map((s) => s.id)).toEqual([id]);
+    expect(getPublic(fx.ctx.db, id)?.title).toBe("Generic title for publishing");
+    expect(fs.readFileSync(stagedFile(fx.deps, id), "utf8")).toContain("Generic title for publishing");
+    expect(fs.readFileSync(stagedFile(fx.deps, id), "utf8")).not.toContain("quarbleScheduler");
+    fx.close();
+  });
+
+  it("holds a proposal the judge flags, keeps no public row, and retries it on the next stage", async () => {
+    const strict = scriptedEvolveIo(generalizingScript((c) => { throw new Error(`unexpected ${c.role}`); }));
+    const leaky = scriptedEvolveIo((c) => (c.role === GENERALIZE_ROLES.judge ? { leaks: true, category: "tickets" } : generalizingScript()(c)));
+    const { fx, save } = await ready(2, leaky);
+    const id = save("Alpha change here", {}, "code");
+    const first = await stageProposals(fx.ctx);
+    expect(first.held).toEqual([{ id, why: "generalize: the judge found tickets" }]);
+    expect(getProposal(fx.ctx.db, id)?.status).toBe("held");
+    expect(getPublic(fx.ctx.db, id)).toBeNull();
+    const second = await stageProposals({ ...fx.ctx, io: strict });
+    expect(second.staged.map((s) => s.id)).toEqual([id]);
+    fx.close();
+  });
+
+  it("leaves proposals it couldn't generalize before the budget ran out as proposed (Review Focus 4)", async () => {
+    const { fx, save } = await ready();
+    const a = save("Alpha change here", { evidence: ["pr:1", "pr:2"] }, "code");
+    const b = save("Beta change here", {}, "code");
+    const budget = new Budget(2); // the pass-through runner spends 2 tokens per call: one rewrite fits, nothing after it
+    const o = await stageProposals(fx.ctx, budget);
+    expect(getProposal(fx.ctx.db, a)?.status).toBe("held"); // its judge call found the budget gone
+    expect(getProposal(fx.ctx.db, b)?.status).toBe("proposed");
+    expect(o.waiting).toBe(1);
+    fx.close();
+  });
+
+  it("sends each proposal's own resolved transcript lines to both generalize calls, never another proposal's", async () => {
+    const io = scriptedEvolveIo(generalizingScript());
+    const { fx, save } = await ready(2, io);
+    const line = (text: string) => JSON.stringify({ type: "user", cwd: fx.repo, timestamp: "2026-10-05T10:00:00Z", message: { content: text } });
+    fs.writeFileSync(path.join(fx.transcripts, "5e55a1d0-a.jsonl"), `${line("the Initech billing retry broke")}\n${line("second line, for the other proposal")}\n`);
+    save("Alpha change here", { evidence: ["transcript:5e55a1d0#1", "pr:1"] }, "code");
+    save("Beta change here", { evidence: ["transcript:5e55a1d0#2"] }, "code");
+    await stageProposals(fx.ctx);
+    const inputs = io.calls.map((c) => ({ role: c.role, input: c.input }));
+    const alpha = inputs.filter((c) => c.input.includes("Alpha change here"));
+    expect(alpha.map((c) => c.role)).toEqual([GENERALIZE_ROLES.rewrite, GENERALIZE_ROLES.judge]);
+    for (const c of alpha) {
+      expect(c.input).toContain('<untrusted id="transcript:5e55a1d0#1">the Initech billing retry broke</untrusted>');
+      expect(c.input).not.toContain("second line");
+    }
+    fx.close();
+  });
+
+  it("prints held proposals under the summary line in every branch of the stage output", async () => {
+    const leakyFor = (title: string) => scriptedEvolveIo((c) => (c.role === GENERALIZE_ROLES.judge && c.input.includes(title) ? { leaks: true, category: "people" } : generalizingScript()(c)));
+    const { fx, save } = await ready(2, leakyFor("Alpha"));
+    const a = save("Alpha change here", { evidence: ["pr:1", "pr:2"] }, "code");
+    const b = save("Beta change here", {}, "code");
+    const held = `held ${a}: generalize: the judge found people`;
+    const dir = path.dirname(stagedFile(fx.deps, a));
+    expect((await stage([], fx.ctx)).stdout).toBe(`Staged 1 proposal(s) (0 approval tier) in ${dir}.\n${held}\nNext: sindri evolve publish\n`);
+    // Held at stage: retried (and held again) on the next run, which has nothing else to stage.
+    expect((await stage([], fx.ctx)).stdout).toBe(`Nothing to stage; 1 held by the generalization pass.\n${held}\nNext: sindri evolve proposals\n`);
+    // One free slot: the held proposal has more evidence, takes it, and is held again; the new one waits.
+    const e = save("Epsilon change here", {}, "code");
+    expect((await stage([], fx.ctx)).stdout).toBe(`Nothing staged; 1 held by the generalization pass; 1 waiting for the next run.\n${held}\nNext: rerun sindri evolve stage\n`);
+    expect([a, b, e].map((id) => getProposal(fx.ctx.db, id)?.status)).toEqual(["held", "staged", "proposed"]);
     fx.close();
   });
 });

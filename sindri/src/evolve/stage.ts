@@ -9,13 +9,19 @@ import { audit } from "./audit.js";
 import { repoConfig, type EvolveCtx } from "./ctx.js";
 import { profileScrubber } from "../scope/commands.js";
 import { privacyProblem } from "./privacy.js";
-import { classifyTier, findMerged, inFlightCount, listStored, normTitle, setTier, stagedFile, transition, type StoredProposal, type Tier } from "./proposals.js";
+import { Budget } from "../scope/model.js";
+import { generalize, type Generalized } from "./generalize.js";
+import {
+  classifyTier, findMerged, getPublic, inFlightCount, listStored, normTitle, reduceEvidence, savePublic, setTier, stagedFile, transition, type StoredProposal, type Tier,
+} from "./proposals.js";
 import { loadRegistry } from "./registry.js";
 import { renderTask } from "./render.js";
+import { resolveRefs, transcriptsDir } from "./transcripts.js";
 import { isoWeekMonday } from "./week.js";
 
 export interface StageOutcome {
   staged: { id: string; tier: Tier }[];
+  held: { id: string; why: string }[];
   waiting: number;
   inFlight: number;
   cap: number;
@@ -32,15 +38,40 @@ export async function markMerged(ctx: EvolveCtx): Promise<void> {
   if (ids.length > 0) await ctx.writeRetry((epoch) => ids.forEach((id) => transition(ctx.db, id, ["published"], "merged", epoch, ctx.deps.now())));
 }
 
-// Unattended: previews go under the state dir, never into the repo. Everything that depends on the ledger (which
-// proposals are still `proposed`, how many slots are free) is read inside the write, under the tick lock: a retry
-// after a held lock must not replay a snapshot taken before a reject, an adopt or another stage run committed.
-export async function stageProposals(ctx: EvolveCtx): Promise<StageOutcome> {
+// Held at stage: the generalization pass refused it and it has no public row yet, so the next stage retries it.
+const heldAtStage = (ctx: EvolveCtx): StoredProposal[] => listStored(ctx.db, ["held"]).filter((s) => getPublic(ctx.db, s.id) === null);
+const byEvidence = (a: StoredProposal, b: StoredProposal): number => b.proposal.evidence.length - a.proposal.evidence.length;
+
+// Unattended: previews go under the state dir, never into the repo. Generalization (privacy spec §5.1) runs first,
+// outside the tick lock, because it is model work; one budget covers every call. Everything that depends on the
+// ledger (which proposals are still open, how many slots are free) is then re-read inside the write, under the lock:
+// a retry after a held lock must not replay a snapshot taken before a reject, an adopt or another stage run
+// committed. Nothing is staged or previewed from the original text: a staged proposal always has a public row and
+// its preview is rendered from it. Proposals the budget didn't reach stay `proposed` (Review Focus 4).
+export async function stageProposals(ctx: EvolveCtx, budget: Budget = new Budget(ctx.loaded.profile.evolve.maxTokensPerJob)): Promise<StageOutcome> {
   await markMerged(ctx);
   const registry = loadRegistry(ctx.db);
   const extra = repoConfig(ctx.loaded).protectedPaths;
   const cap = ctx.loaded.profile.evolve.maxOpenProposals;
   const dir = path.dirname(stagedFile(ctx.deps, "x"));
+  const scrub = profileScrubber(ctx.loaded);
+  const snapshot = [...listStored(ctx.db, ["proposed"]), ...heldAtStage(ctx)]
+    .filter((s) => classifyTier(s.proposal, registry, extra).tier !== "self-adopt")
+    .sort(byEvidence)
+    .slice(0, Math.max(0, cap - inFlightCount(ctx.db)));
+  const refsOf = (s: StoredProposal): string[] => reduceEvidence(s.proposal.evidence).refs;
+  const evidence = resolveRefs(transcriptsDir(ctx), ctx.repo, snapshot.flatMap(refsOf), scrub);
+  const runner = ctx.io.runner(ctx.loaded, scrub);
+  const models = { rewriter: ctx.loaded.profile.models.challenger, judge: ctx.loaded.profile.models.adjudicator };
+  const results = new Map<string, Generalized>();
+  for (const s of snapshot) {
+    if (budget.exhausted()) break;
+    const mine = new Map(refsOf(s).flatMap((r) => {
+      const text = evidence.get(r);
+      return text === undefined ? [] : [[r, text] as const];
+    }));
+    results.set(s.id, await generalize({ runner, budget, models, proposal: s.proposal, evidence: mine }));
+  }
   return ctx.writeRetry((epoch) => {
     const inFlight = inFlightCount(ctx.db);
     // Reruns of reflect and correct can re-propose shipped work: reject it rather than stage it again.
@@ -51,27 +82,42 @@ export async function stageProposals(ctx: EvolveCtx): Promise<StageOutcome> {
       if (dup !== undefined) duplicates.push({ id: s.id, of: dup.id });
       return dup === undefined;
     });
-    const classified = fresh.map((s) => ({ s, t: classifyTier(s.proposal, registry, extra) }));
-    const candidates = classified.filter((c) => c.t.tier !== "self-adopt").sort((a, b) => b.s.proposal.evidence.length - a.s.proposal.evidence.length);
+    const classified = [...fresh, ...heldAtStage(ctx)].map((s) => ({ s, t: classifyTier(s.proposal, registry, extra) }));
+    const candidates = classified.filter((c) => c.t.tier !== "self-adopt").sort((a, b) => byEvidence(a.s, b.s));
     const take = candidates.slice(0, Math.max(0, cap - inFlight));
     let reclassified = 0;
     for (const d of duplicates) {
       transition(ctx.db, d.id, ["proposed"], "rejected", epoch, ctx.deps.now());
-      audit(ctx.db, ctx.deps, "reject", `${d.id}: duplicate of ${d.of}`, epoch, profileScrubber(ctx.loaded));
+      audit(ctx.db, ctx.deps, "reject", `${d.id}: duplicate of ${d.of}`, epoch, scrub);
     }
     fs.mkdirSync(dir, { recursive: true, mode: 0o700 });
-    for (const [i, c] of take.entries()) {
-      fs.writeFileSync(stagedFile(ctx.deps, c.s.id), renderTask(i + 1, c.s.id, c.s.proposal, c.t.tier, c.t.why, c.s.source), { mode: 0o600 });
-      if (c.t.tier !== c.s.tier) {
-        setTier(ctx.db, c.s.id, c.t.tier, epoch, ctx.deps.now());
+    // The candidates were read under this lock, so each transition below applies.
+    const FROM = ["proposed", "held"] as const;
+    const staged: StageOutcome["staged"] = [];
+    const held: StageOutcome["held"] = [];
+    let waiting = candidates.length - take.length;
+    for (const c of take) {
+      const g = results.get(c.s.id);
+      if (g === undefined) {
+        waiting++; // not generalized this run: the budget ran out first, or it appeared after the snapshot
+        continue;
+      }
+      if (!g.ok) {
+        transition(ctx.db, c.s.id, FROM, "held", epoch, ctx.deps.now());
+        held.push({ id: c.s.id, why: g.why });
+        continue;
+      }
+      const t = classifyTier(g.proposal, registry, extra);
+      transition(ctx.db, c.s.id, FROM, "staged", epoch, ctx.deps.now());
+      savePublic(ctx.db, c.s.id, g.proposal, { category: g.category, model: g.model }, epoch, ctx.deps.now());
+      fs.writeFileSync(stagedFile(ctx.deps, c.s.id), renderTask(staged.length + 1, c.s.id, g.proposal, t.tier, t.why, c.s.source), { mode: 0o600 });
+      if (t.tier !== c.s.tier) {
+        setTier(ctx.db, c.s.id, t.tier, epoch, ctx.deps.now());
         reclassified++;
       }
-      transition(ctx.db, c.s.id, ["proposed"], "staged", epoch, ctx.deps.now());
+      staged.push({ id: c.s.id, tier: t.tier });
     }
-    return {
-      staged: take.map((c) => ({ id: c.s.id, tier: c.t.tier })), waiting: candidates.length - take.length, inFlight, cap, reclassified,
-      selfAdopt: classified.length - candidates.length, duplicates: duplicates.length, dir,
-    };
+    return { staged, held, waiting, inFlight, cap, reclassified, selfAdopt: classified.length - candidates.length, duplicates: duplicates.length, dir };
   });
 }
 

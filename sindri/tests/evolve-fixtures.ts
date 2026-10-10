@@ -57,7 +57,7 @@ export function answeringRunner(
   };
 }
 
-const unescapeFence = (s: string): string => s.replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&quot;/g, '"').replace(/&amp;/g, "&");
+export const unescapeFence = (s: string): string => s.replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&quot;/g, '"').replace(/&amp;/g, "&");
 
 // Answers generalize calls by keeping the proposal as it is and judging it clean; any other call goes to `other`
 // (by default: fail the test, as before).

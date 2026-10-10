@@ -9,7 +9,9 @@ export async function stage(args: string[], ctx: EvolveCtx): Promise<CommandResu
   const o = await stageProposals(ctx);
   const dupes = o.duplicates > 0 ? [`${o.duplicates} duplicate(s) of merged or adopted work rejected`] : [];
   const extras = [...(o.selfAdopt > 0 ? [`${o.selfAdopt} prompt variant(s) wait for compare`] : []), ...dupes];
-  let text: string;
+  const heldNote = o.held.length > 0 ? [`${o.held.length} held by the generalization pass`] : [];
+  const heldLines = o.held.map((h) => `held ${h.id}: ${h.why}`);
+  let lines: string[];
   if (o.staged.length > 0) {
     const approval = o.staged.filter((s) => s.tier === "approval").length;
     const parts = [
@@ -17,13 +19,20 @@ export async function stage(args: string[], ctx: EvolveCtx): Promise<CommandResu
       ...(o.waiting > 0 ? [`${o.waiting} more waiting (cap ${o.cap}, ${o.inFlight + o.staged.length} in flight)`] : []),
       ...extras,
     ];
-    text = `${parts.join("; ")}.\nNext: sindri evolve publish`;
+    lines = [`${parts.join("; ")}.`, ...heldLines, "Next: sindri evolve publish"];
+  } else if (o.waiting > 0 && o.inFlight >= o.cap) {
+    lines = [
+      `Cap reached: ${o.inFlight} proposals are staged or published and not merged yet (evolve.maxOpenProposals is ${o.cap}); ${[`${o.waiting} waiting`, ...dupes].join("; ")}.`,
+      ...heldLines,
+      "Next: merge or reject some (sindri evolve proposals), then rerun sindri evolve stage",
+    ];
   } else if (o.waiting > 0) {
-    text = `Cap reached: ${o.inFlight} proposals are staged or published and not merged yet (evolve.maxOpenProposals is ${o.cap}); ${[`${o.waiting} waiting`, ...dupes].join("; ")}.\nNext: merge or reject some (sindri evolve proposals), then rerun sindri evolve stage`;
+    // Below the cap but nothing staged: held proposals took this run's slots, or the token budget ran out first.
+    lines = [`Nothing staged; ${[...heldNote, `${o.waiting} waiting for the next run`, ...extras].join("; ")}.`, ...heldLines, "Next: rerun sindri evolve stage"];
   } else {
-    text = `Nothing to stage${extras.map((e) => `; ${e}`).join("")}.\nNext: sindri evolve proposals`;
+    lines = [`Nothing to stage${[...heldNote, ...extras].map((e) => `; ${e}`).join("")}.`, ...heldLines, "Next: sindri evolve proposals"];
   }
-  return success(text, o, values.json === true);
+  return success(terminalSafe(lines.join("\n")), o, values.json === true);
 }
 
 export async function publish(args: string[], ctx: EvolveCtx): Promise<CommandResult> {
