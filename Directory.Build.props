@@ -12,7 +12,10 @@
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
     <MSBuildTreatWarningsAsErrors>true</MSBuildTreatWarningsAsErrors>
     <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
-    <EnableNETAnalyzers>true</EnableNETAnalyzers>
+    <!-- The pinned Microsoft.CodeAnalysis.NetAnalyzers package (Directory.Packages.props) owns the CA rules.
+         With the SDK's built-in copy also on, every CA diagnostic is reported twice. Code-style (IDE) rules
+         still run from the SDK through EnforceCodeStyleInBuild. -->
+    <EnableNETAnalyzers>false</EnableNETAnalyzers>
     <AnalysisLevel>latest-recommended</AnalysisLevel>
     <!-- Public API carries XML docs; IDE0005 (unused usings) also needs the documentation file to run in build. -->
     <GenerateDocumentationFile>true</GenerateDocumentationFile>

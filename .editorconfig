@@ -9,7 +9,8 @@
 # - Explicit lines below raise rules that are off by default, name ONE owning rule where analyzer
 #   packs overlap (the others are set to none with "owner: <id>"), and turn off rules that conflict
 #   with the house style, each with its reason.
-# - Existing violations (once code is ported) go into baseline.globalconfig, which may only shrink.
+# - Existing violations (once code is ported) go into the ratchet baseline at the end of this file,
+#   which may only shrink.
 root = true
 
 [*.{csproj,props,targets,slnx,xml,config}]
@@ -154,3 +155,12 @@ dotnet_naming_symbols.private_fields.applicable_kinds = field
 dotnet_naming_symbols.private_fields.applicable_accessibilities = private
 dotnet_naming_style.underscore_camel.capitalization = camel_case
 dotnet_naming_style.underscore_camel.required_prefix = _
+
+#### Ratchet baseline (spec §4b.6) ####
+# Existing violations, one section per file, lowering ONLY the named rule for ONLY that file. This block
+# may only shrink (the ratchet check fails CI if it grows); new code never gets an entry.
+# It lives here, last in the file, rather than in a .globalconfig: a global config cannot lower a rule
+# that this .editorconfig sets (editorconfig wins), and global-config sections need absolute paths.
+# Format:
+#   [src/Pkg/Pkg.Core/SomeFile.cs]
+#   dotnet_diagnostic.MA0051.severity = none   # existing: 52-line method; split tracked in its work item
