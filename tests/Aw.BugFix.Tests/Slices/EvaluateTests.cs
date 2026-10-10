@@ -91,7 +91,7 @@ public sealed class EvaluateTests : IDisposable
     public async Task Judge_is_asked_once_per_candidate_and_only_after_a_passing_run()
     {
         var c1 = await _w.Candidate();
-        Assert.Contains("no passing run", World.Refused(await Judge(c1), BugFixErrors.JudgeRefused).Message, StringComparison.Ordinal);
+        _ = World.Refused(await Judge(c1), BugFixErrors.WrongPhase);
         _ = World.Ok(await _w.RunAgainst(c1));
         _ = _w.Judge.Answers(A.Verdict(JudgeDecision.Partial));
         _ = World.Ok(await Judge(c1));
@@ -100,6 +100,18 @@ public sealed class EvaluateTests : IDisposable
 
         Assert.Contains("a verdict is never re-asked", error.Message, StringComparison.Ordinal);
         _ = Assert.Single(_w.Judge.Asked);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task Judge_refuses_a_candidate_whose_run_failed()
+    {
+        var c1 = await _w.Candidate();
+        _ = World.Ok(await _w.RunAgainst(c1, exitCode: 1));
+
+        var error = World.Refused(await Judge(c1), BugFixErrors.JudgeRefused);
+
+        Assert.Contains("no passing run", error.Message, StringComparison.Ordinal);
+        Assert.Empty(_w.Judge.Asked);
     }
 
     [Fact, Trait("Lane", "unit")]

@@ -59,7 +59,7 @@ public sealed record BugFixState(
     public Result<Unit> Require(params Phase[] allowed) =>
         allowed.Contains(Phase)
             ? Results.Ok()
-            : BugFixErrors.WrongPhase.With($"phase is {Name(Phase)}; this step needs {string.Join(" or ", allowed.Select(Name))}");
+            : BugFixErrors.WrongPhase.With($"phase is {Names.Of(Phase)}; this step needs {string.Join(" or ", allowed.Select(Names.Of))}");
 
     /// <summary>The state after a step: <paramref name="to"/> as the phase, with the step in the history.</summary>
     /// <param name="to">The phase after the step.</param>
@@ -83,18 +83,4 @@ public sealed record BugFixState(
     /// <returns>The new state.</returns>
     public BugFixState With(Candidate candidate) =>
         this with { Candidates = [.. Candidates.Select(c => c.Id == candidate.Id ? candidate : c)] };
-
-    /// <summary>The phase's name as the state file and messages write it.</summary>
-    /// <param name="phase">The phase.</param>
-    /// <returns>Its lower-case name.</returns>
-    public static string Name(Phase phase) => phase switch
-    {
-        Phase.Intake => "intake",
-        Phase.Investigate => "investigate",
-        Phase.Reproduce => "reproduce",
-        Phase.Fix => "fix",
-        Phase.Evaluate => "evaluate",
-        Phase.Report => "report",
-        _ => throw new ArgumentOutOfRangeException(nameof(phase), phase, "not a phase"),
-    };
 }

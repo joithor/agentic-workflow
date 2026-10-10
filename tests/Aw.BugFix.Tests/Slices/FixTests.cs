@@ -38,7 +38,7 @@ public sealed class FixTests : IDisposable
     public async Task Start_attempt_refuses_while_a_candidate_is_unevaluated_and_after_the_cap()
     {
         var c1 = await _w.Candidate();
-        _ = World.Refused(await _w.Start(), BugFixErrors.AttemptRefused);
+        _ = World.Refused(await _w.Start(), BugFixErrors.WrongPhase);
 
         _ = World.Ok(await _w.RunAgainst(c1, exitCode: 1));
         for (var attempt = 2; attempt <= BugFixState.MaxAttempts; attempt++)
@@ -159,6 +159,8 @@ public sealed class FixTests : IDisposable
         Assert.Contains("already pursued by c2", Refused(await _w.Record("h2", "/wt/h2", hypothesis: 1)), StringComparison.Ordinal);
         _ = World.Ok(await _w.Record("h2", "/wt/h2", hypothesis: 2));
         Assert.Contains("allows 2 candidate(s) per attempt", Refused(await _w.Record("h3", "/wt/h3", hypothesis: 2)), StringComparison.Ordinal);
+        _ = World.Ok(await RunAt(CandidateId.From("c2"), "/wt/h1", exitCode: 1));
+        Assert.Contains("c3 has not been evaluated yet", World.Refused(await _w.Start(), BugFixErrors.AttemptRefused).Message, StringComparison.Ordinal);
     }
 
     private static string Refused<T>(Kernel.Result<T> result) => World.Refused(result, BugFixErrors.CandidateRefused).Message;

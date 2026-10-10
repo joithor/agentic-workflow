@@ -229,6 +229,7 @@ Aw.BugFix.Core.Model.JudgeVerdict.InputSha256.init -> void
 Aw.BugFix.Core.Model.JudgeVerdict.JudgeVerdict(Aw.BugFix.Core.Model.JudgeDecision Decision, Aw.BugFix.Core.Ids.JudgeDecisionId? DecisionId, string! ReasonCode, string! InputSha256) -> void
 Aw.BugFix.Core.Model.JudgeVerdict.ReasonCode.get -> string!
 Aw.BugFix.Core.Model.JudgeVerdict.ReasonCode.init -> void
+Aw.BugFix.Core.Model.Names
 Aw.BugFix.Core.Model.Phase
 Aw.BugFix.Core.Model.Phase.Evaluate = 5 -> Aw.BugFix.Core.Model.Phase
 Aw.BugFix.Core.Model.Phase.Fix = 4 -> Aw.BugFix.Core.Model.Phase
@@ -489,7 +490,6 @@ static Aw.BugFix.Core.Ids.JudgeDecisionId.TryFrom(string? value, out Aw.BugFix.C
 static Aw.BugFix.Core.Ids.JudgeDecisionId.TryParse(string? s, System.IFormatProvider? provider, out Aw.BugFix.Core.Ids.JudgeDecisionId result) -> bool
 static Aw.BugFix.Core.Model.Baseline.operator !=(Aw.BugFix.Core.Model.Baseline? left, Aw.BugFix.Core.Model.Baseline? right) -> bool
 static Aw.BugFix.Core.Model.Baseline.operator ==(Aw.BugFix.Core.Model.Baseline? left, Aw.BugFix.Core.Model.Baseline? right) -> bool
-static Aw.BugFix.Core.Model.BugFixState.Name(Aw.BugFix.Core.Model.Phase phase) -> string!
 static Aw.BugFix.Core.Model.BugFixState.operator !=(Aw.BugFix.Core.Model.BugFixState? left, Aw.BugFix.Core.Model.BugFixState? right) -> bool
 static Aw.BugFix.Core.Model.BugFixState.operator ==(Aw.BugFix.Core.Model.BugFixState? left, Aw.BugFix.Core.Model.BugFixState? right) -> bool
 static Aw.BugFix.Core.Model.BugFixState.Start(Aw.BugFix.Core.Model.Ticket! ticket, System.DateTimeOffset at, string! ticketFile) -> Aw.BugFix.Core.Model.BugFixState!
@@ -515,6 +515,8 @@ static Aw.BugFix.Core.Model.JudgeAnswer.operator !=(Aw.BugFix.Core.Model.JudgeAn
 static Aw.BugFix.Core.Model.JudgeAnswer.operator ==(Aw.BugFix.Core.Model.JudgeAnswer? left, Aw.BugFix.Core.Model.JudgeAnswer? right) -> bool
 static Aw.BugFix.Core.Model.JudgeVerdict.operator !=(Aw.BugFix.Core.Model.JudgeVerdict? left, Aw.BugFix.Core.Model.JudgeVerdict? right) -> bool
 static Aw.BugFix.Core.Model.JudgeVerdict.operator ==(Aw.BugFix.Core.Model.JudgeVerdict? left, Aw.BugFix.Core.Model.JudgeVerdict? right) -> bool
+static Aw.BugFix.Core.Model.Names.Of(Aw.BugFix.Core.Model.FixMode mode) -> string!
+static Aw.BugFix.Core.Model.Names.Of(Aw.BugFix.Core.Model.Phase phase) -> string!
 static Aw.BugFix.Core.Model.RegisteredRun.operator !=(Aw.BugFix.Core.Model.RegisteredRun? left, Aw.BugFix.Core.Model.RegisteredRun? right) -> bool
 static Aw.BugFix.Core.Model.RegisteredRun.operator ==(Aw.BugFix.Core.Model.RegisteredRun? left, Aw.BugFix.Core.Model.RegisteredRun? right) -> bool
 static Aw.BugFix.Core.Model.ResolutionCheckInput.operator !=(Aw.BugFix.Core.Model.ResolutionCheckInput? left, Aw.BugFix.Core.Model.ResolutionCheckInput? right) -> bool
