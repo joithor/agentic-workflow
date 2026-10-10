@@ -1,0 +1,73 @@
+<Project>
+  <!-- Build settings for every C# project under this repo (agent-readiness spec §4b.6).
+       Analyzer severities live in .editorconfig; package versions in Directory.Packages.props. -->
+
+  <PropertyGroup Label="Language">
+    <Nullable>enable</Nullable>
+    <LangVersion>latest</LangVersion>
+    <ImplicitUsings>enable</ImplicitUsings>
+  </PropertyGroup>
+
+  <PropertyGroup Label="Warnings and analyzers">
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <MSBuildTreatWarningsAsErrors>true</MSBuildTreatWarningsAsErrors>
+    <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
+    <EnableNETAnalyzers>true</EnableNETAnalyzers>
+    <AnalysisLevel>latest-recommended</AnalysisLevel>
+    <!-- Public API carries XML docs; IDE0005 (unused usings) also needs the documentation file to run in build. -->
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+  </PropertyGroup>
+
+  <PropertyGroup Label="Reproducible output">
+    <Deterministic>true</Deterministic>
+    <!-- The C# build lands in its own directory (artifacts/), never next to the TS build (spec §4c). -->
+    <UseArtifactsOutput>true</UseArtifactsOutput>
+    <ArtifactsPath>$(MSBuildThisFileDirectory)artifacts</ArtifactsPath>
+  </PropertyGroup>
+
+  <PropertyGroup Label="Lock files">
+    <RestorePackagesWithLockFile>true</RestorePackagesWithLockFile>
+  </PropertyGroup>
+
+  <!-- CI (GitHub Actions sets CI=true): restore must match the committed packages.lock.json exactly. -->
+  <PropertyGroup Label="CI" Condition="'$(CI)' == 'true'">
+    <RestoreLockedMode>true</RestoreLockedMode>
+    <ContinuousIntegrationBuild>true</ContinuousIntegrationBuild>
+  </PropertyGroup>
+
+  <!-- Project roles, from the project name (spec §4b.1). Test projects (*.Tests, *.Testing) are never AOT-compatible. -->
+  <PropertyGroup Label="Project roles">
+    <_AwName>$(MSBuildProjectName)</_AwName>
+    <AwIsTestProject Condition="$(_AwName.EndsWith('.Tests')) or $(_AwName.EndsWith('.Testing'))">true</AwIsTestProject>
+    <AwIsCoreProject Condition="$(_AwName.EndsWith('.Core'))">true</AwIsCoreProject>
+    <AwIsAotLibrary Condition="'$(AwIsTestProject)' != 'true' and ($(_AwName.EndsWith('.Core')) or $(_AwName.EndsWith('.Features')) or $(_AwName.EndsWith('.Infrastructure')) or $(_AwName.StartsWith('Aw.Kernel')))">true</AwIsAotLibrary>
+    <!-- Core projects have no I/O, clock or random ids (spec §4b.1). Other projects may opt in with AwBannedSymbols=true. -->
+    <AwBannedSymbols Condition="'$(AwBannedSymbols)' == '' and '$(AwIsCoreProject)' == 'true'">true</AwBannedSymbols>
+  </PropertyGroup>
+
+  <!-- Turns on the trim and AOT analyzers. PublishAot is set only on entry points, in their own project files. -->
+  <PropertyGroup Condition="'$(AwIsAotLibrary)' == 'true'">
+    <IsAotCompatible>true</IsAotCompatible>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(AwIsTestProject)' == 'true'">
+    <GenerateDocumentationFile>false</GenerateDocumentationFile>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+
+  <ItemGroup Condition="'$(AwBannedSymbols)' == 'true'">
+    <AdditionalFiles Include="$(MSBuildThisFileDirectory)BannedSymbols.txt" Link="BannedSymbols.txt" />
+  </ItemGroup>
+
+  <!-- CA1502 (cyclomatic complexity) reads its limit from here. -->
+  <ItemGroup>
+    <AdditionalFiles Include="$(MSBuildThisFileDirectory)CodeMetricsConfig.txt" Link="CodeMetricsConfig.txt" />
+  </ItemGroup>
+
+  <!-- Public API tracking (spec §4b.3): a project that ships public API keeps PublicAPI.Shipped.txt and
+       PublicAPI.Unshipped.txt next to its .csproj; the analyzer then reports any surface change. -->
+  <ItemGroup>
+    <AdditionalFiles Include="PublicAPI.Shipped.txt" Condition="Exists('PublicAPI.Shipped.txt')" />
+    <AdditionalFiles Include="PublicAPI.Unshipped.txt" Condition="Exists('PublicAPI.Unshipped.txt')" />
+  </ItemGroup>
+</Project>

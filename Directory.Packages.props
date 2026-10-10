@@ -1,0 +1,21 @@
+<Project>
+  <!-- Central Package Management (agent-readiness spec §4b.6, §4d): every version lives here, exact,
+       and is at least 14 days old when pinned (the repo's existing pin policy). Analyzers run code in
+       every build, so they get the same review as runtime dependencies. -->
+  <PropertyGroup>
+    <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
+    <CentralPackageTransitivePinningEnabled>true</CentralPackageTransitivePinningEnabled>
+  </PropertyGroup>
+
+  <!-- Analyzers in every project. Severities and the one owner per overlapping rule: .editorconfig. -->
+  <ItemGroup Label="Analyzers">
+    <GlobalPackageReference Include="Microsoft.CodeAnalysis.NetAnalyzers" Version="10.0.401" />
+    <GlobalPackageReference Include="Meziantou.Analyzer" Version="3.0.290" />
+    <GlobalPackageReference Include="Roslynator.Analyzers" Version="5.0.0" />
+    <GlobalPackageReference Include="Microsoft.CodeAnalysis.BannedApiAnalyzers" Version="5.6.0" />
+    <GlobalPackageReference Include="Microsoft.CodeAnalysis.PublicApiAnalyzers" Version="5.6.0" />
+  </ItemGroup>
+
+  <ItemGroup Label="Packages">
+  </ItemGroup>
+</Project>
