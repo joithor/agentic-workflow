@@ -94,7 +94,7 @@ test_rename_out_of_a_package_selects_the_package() {
   local repo base got
   repo="$(scratch_repo)"; base="$(git -C "$repo" rev-parse HEAD)"
   git -C "$repo" mv mcp-bridge/src/db.ts docs/db.ts && git -C "$repo" commit -qm move
-  got="$(cd "$repo" && main pull_request "$base")"
+  got="$(cd "$repo" && main pull_request "$base" trunk trunk)"
   rm -rf "$repo"
   [ "$got" = "$(printf 'bash=true\ndotnet=false\ngolden=false\npackages=["mcp-bridge"]')" ] \
     || { echo "FAIL: a rename out of mcp-bridge must select it, got: $got"; exit 1; }
@@ -106,11 +106,33 @@ test_non_ascii_filename_in_a_package_selects_the_package() {
   repo="$(scratch_repo)"; base="$(git -C "$repo" rev-parse HEAD)"
   printf 'export const e = 1;\n' > "$repo/mcp-bridge/src/$(printf '\303\251').ts"
   git -C "$repo" add -A && git -C "$repo" commit -qm accent
-  got="$(cd "$repo" && main pull_request "$base")"
+  got="$(cd "$repo" && main pull_request "$base" trunk trunk)"
   rm -rf "$repo"
   [ "$got" = "$(printf 'bash=true\ndotnet=false\ngolden=false\npackages=["mcp-bridge"]')" ] \
     || { echo "FAIL: a non-ASCII file in mcp-bridge must select it, got: $got"; exit 1; }
   echo "PASS: test_non_ascii_filename_in_a_package_selects_the_package"
+}
+
+test_a_stacked_pr_runs_everything() {
+  local repo base got
+  repo="$(scratch_repo)"; base="$(git -C "$repo" rev-parse HEAD)"
+  printf '# more\n' >> "$repo/docs/readme.md"
+  git -C "$repo" add -A && git -C "$repo" commit -qm docs
+  # Based on another feature branch, not the default one: after the parent merges,
+  # GitHub retargets the PR without a new run, so the filter must not narrow here.
+  got="$(cd "$repo" && main pull_request "$base" feat/parent trunk)"
+  rm -rf "$repo"
+  [ "$got" = "$(printf 'bash=true\ndotnet=true\ngolden=true\npackages=%s' "$ALL")" ] \
+    || { echo "FAIL: a PR into a non-default branch must run everything, got: $got"; exit 1; }
+  echo "PASS: test_a_stacked_pr_runs_everything"
+}
+
+test_a_pr_with_an_unknown_default_branch_runs_everything() {
+  local got
+  got="$(main pull_request deadbeef feat/x "")"
+  [ "$got" = "$(printf 'bash=true\ndotnet=true\ngolden=true\npackages=%s' "$ALL")" ] \
+    || { echo "FAIL: an unknown default branch must fail closed, got: $got"; exit 1; }
+  echo "PASS: test_a_pr_with_an_unknown_default_branch_runs_everything"
 }
 
 test_non_pr_event_runs_everything() {
@@ -133,3 +155,5 @@ test_non_pr_event_runs_everything
 test_pr_without_base_fails_closed
 test_rename_out_of_a_package_selects_the_package
 test_non_ascii_filename_in_a_package_selects_the_package
+test_a_stacked_pr_runs_everything
+test_a_pr_with_an_unknown_default_branch_runs_everything
