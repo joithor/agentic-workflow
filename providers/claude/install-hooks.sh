@@ -52,6 +52,9 @@ for hook_file in "$SCRIPT_DIR/config/hooks/"*.sh; do
   chmod +x "$HOOKS_DIR/$hook_name"
   echo "  $hook_name: installed"
 done
+# The safety hooks log HOOK-FAILOPEN through lib/failopen.sh next to them.
+mkdir -p "$HOOKS_DIR/lib"
+cp "$SCRIPT_DIR/config/lib/failopen.sh" "$HOOKS_DIR/lib/failopen.sh"
 
 # Merge safety hooks into existing settings.json
 if [ -f "$SETTINGS_FILE" ] && command -v jq &>/dev/null; then

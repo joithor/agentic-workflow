@@ -49,6 +49,7 @@ if ! command -v "$JUDGE_BIN" > /dev/null 2>&1; then
 fi
 
 mkdir -p "$HOOKS_DIR"
+aw_install_failopen_lib "$HOOKS_DIR"
 
 # timeout: 12s = ask-check's own timeBudgetMs (10s, project rule for a
 # claude-cli-routed question) + 2s margin, so Claude Code never kills this
