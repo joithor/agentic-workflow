@@ -70,6 +70,9 @@ exit "${!e:-0}"
 STUB
 chmod +x "$WORK/dotnet"
 
+secs_of() { printf '%s\n' "$OUT" | sed -nE "s/^(ok|OVER) +$1 +$2 +([0-9.]+) s .*/\\2/p"; }
+at_least() { [ -n "$1" ] && awk -v a="$1" -v b="$2" 'BEGIN { exit !(a + 0 >= b + 0) }'; }
+
 run_check() { # <fixture> [args...]; sets OUT and RC
   local d="$1"; shift
   RC=0
@@ -83,10 +86,15 @@ test_sums_each_package_and_passes_under_budget() {
   unset STUB_Aw_Foo_Tests_unit STUB_Aw_Foo_Core_Tests_unit STUB_Aw_Foo_Data_Tests_integration
   [ "$RC" -eq 0 ] || fail "under budget must exit 0, got $RC:
 $OUT"
-  # Foo's unit lane is the sum of its two projects (0.6 s); FooData is its own package.
-  printf '%s\n' "$OUT" | grep -qE '^ok +Foo +unit +0\.[6-9][0-9]? s +limit 2 s' || fail "Foo unit should sum both projects:
+  # Foo's unit lane is the sum of its two projects (at least 0.6 s; no upper bound, because
+  # this suite runs in the parallel pool); FooData is its own package.
+  at_least "$(secs_of Foo unit)" 0.6 || fail "Foo unit should sum both projects (>= 0.6 s):
 $OUT"
-  printf '%s\n' "$OUT" | grep -qE '^ok +FooData +integration +0\.[2-9]' || fail "Aw.Foo.Data.Tests should count for FooData (longest prefix):
+  printf '%s\n' "$OUT" | grep -qE '^ok +Foo +unit .* limit 2 s +\(2 projects\)' || fail "Foo unit row should name its limit and 2 projects:
+$OUT"
+  at_least "$(secs_of FooData integration)" 0.2 || fail "Aw.Foo.Data.Tests should count for FooData (longest prefix):
+$OUT"
+  printf '%s\n' "$OUT" | grep -qE '^ok +FooData +integration .*\(1 project\)' || fail "FooData integration is its own one-project row:
 $OUT"
   printf '%s\n' "$OUT" | grep -qE '^ok +\(Aw\.Architecture\.Tests\) +unit' || fail "an unowned test assembly is its own row:
 $OUT"
@@ -142,6 +150,28 @@ test_tool_errors_exit_2() {
   echo "PASS: test_tool_errors_exit_2"
 }
 
+test_no_test_project_is_a_tool_error() {
+  local d="$WORK/empty"; make_fixture "$d"
+  printf '<Solution>\n  <Project Path="src/Aw.Foo/Aw.Foo.csproj" />\n</Solution>\n' > "$d/AgenticWorkflow.slnx"
+  run_check "$d"
+  [ "$RC" -eq 2 ] || fail "a solution with no *.Tests project must exit 2 (nothing timed is not a pass), got $RC:
+$OUT"
+  printf '%s\n' "$OUT" | grep -q 'no \*.Tests project' || fail "the error must say there is nothing to time:
+$OUT"
+  echo "PASS: test_no_test_project_is_a_tool_error"
+}
+
+test_path_need_not_be_the_first_attribute() {
+  local d="$WORK/attrs"; make_fixture "$d"; : > "$WORK/log"
+  printf '<Solution>\n  <Project Type="Classic C#" Path="tests/Aw.Foo.Tests/Aw.Foo.Tests.csproj" />\n</Solution>\n' > "$d/AgenticWorkflow.slnx"
+  run_check "$d"
+  [ "$RC" -eq 0 ] || fail "expected exit 0, got $RC:
+$OUT"
+  grep -qF -- '--project tests/Aw.Foo.Tests/Aw.Foo.Tests.csproj' "$WORK/log" || fail "a Project element with Path after another attribute was skipped:
+$OUT"
+  echo "PASS: test_path_need_not_be_the_first_attribute"
+}
+
 test_default_budgets_are_the_rule_numbers() {
   local d="$WORK/defaults"; make_fixture "$d"
   run_check "$d"
@@ -158,4 +188,6 @@ test_sums_each_package_and_passes_under_budget
 test_a_package_over_budget_fails_with_the_rule_id
 test_a_failing_test_run_fails_the_check
 test_tool_errors_exit_2
+test_no_test_project_is_a_tool_error
+test_path_need_not_be_the_first_attribute
 test_default_budgets_are_the_rule_numbers
