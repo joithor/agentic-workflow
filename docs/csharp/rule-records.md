@@ -18,7 +18,7 @@ mappings (`select: { … }`), which the YAML subset below doesn't allow; write `
 | `scripts/tests/check-rules.test.sh` | Its tests, on the fixture repo in `scripts/tests/fixtures/check-rules/base` |
 
 Ids are matched as whole tokens (`CA103` never matches `CA1031`) in the files' live text: comments are stripped
-first (`#` and `;` lines and ` #…` outside quotes in `.editorconfig` and YAML, `<!-- -->` outside CDATA in MSBuild
+first (`#` and `;` lines and ` #…` outside quotes in `.editorconfig`, YAML and `.txt` files, `<!-- -->` outside CDATA in MSBuild
 files and `nuget.config`, `//` and `/* */` outside string and regex literals in code: JavaScript through check-deps'
 lexer, C# with its verbatim, interpolated and raw strings).
 
@@ -70,7 +70,7 @@ The id is `<kind>.csharp.<slug>`, and the file is `rules/engineering/csharp/<slu
 | `check-deps` | `DEPS-…` | it appears in `scripts/check-deps.mjs` or `scripts/deps/` |
 | `lane-cap` | `LANE-…` | it appears under `tests/` |
 | `check-rules` | `RULE-…` | it appears in `scripts/check-rules.mjs` or `scripts/rules/` |
-| `build-setting` | a literal (`<IsAotCompatible>true</IsAotCompatible>`, `AW0001`), or an editorconfig property `dotnet_… = value` | the literal appears in `Directory.Build.*`, `Directory.Packages.props`, `global.json`, `.editorconfig` or `nuget.config`; an editorconfig property must be the value a general C# section of the root `.editorconfig` ends up with |
+| `build-setting` | a literal (`<IsAotCompatible>true</IsAotCompatible>`, `AW0001`, `CA1502: 10`, `projectFanOut: 4`), or an editorconfig property `<key> = <value>` (spaces around `=`) | the literal appears, bounded like a token (`CA1502: 10` never matches `CA1502: 100`), in `Directory.Build.*`, `Directory.Packages.props`, `global.json`, `.editorconfig`, `nuget.config`, `CodeMetricsConfig.txt` or `deps.yaml`; an editorconfig property must be the value a general C# section of the root `.editorconfig` ends up with |
 | `test` | a class or member name, with `ref` | `ref` (a file or directory) exists and contains the name |
 | `script` | a name, with `ref` | `ref` exists (only that: it doesn't prove CI runs it, so pair it with a `ci` check or call the rule `partial`) |
 | `ci` | a workflow step name, with `ref` | the workflow file has a step (a `name:` of an item in a `steps:` list, not a job) named exactly that |
