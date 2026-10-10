@@ -26,7 +26,7 @@ run_lib() {
 
 state="$(mktemp -d)"
 check "logs nothing to stdout or stderr, returns 0" "$(run_lib "$state" send-gate judge-exit-127)" "rc=0|0"
-log="$state/hooks/failopen.log"
+log="$state/logs/failopen.log"
 check "appends one line" "$(wc -l < "$log" | tr -d ' ')" "1"
 check "line is a HOOK-FAILOPEN event with hook and cause" \
   "$(jq -c '{event, hook, cause, provider}' "$log")" \
@@ -46,7 +46,7 @@ check "caps the cause at 80 characters" "$(tail -n 1 "$log" | jq -r '.cause | le
 
 # Input classification: "input <raw>" logs why the payload could not be read,
 # and logs nothing for a readable JSON object.
-state2="$(mktemp -d)"; log2="$state2/hooks/failopen.log"
+state2="$(mktemp -d)"; log2="$state2/logs/failopen.log"
 run_lib "$state2" h input '' > /dev/null
 check "input: empty payload -> empty-input" "$(tail -n 1 "$log2" | jq -r .cause)" "empty-input"
 run_lib "$state2" h input 'not json SENTINEL-SECRET' > /dev/null
@@ -58,6 +58,36 @@ BASH_BIN="$(command -v bash)"
 nojq="$(mktemp -d)"; for t in date mkdir; do ln -s "$(command -v "$t")" "$nojq/$t"; done
 AW_STATE_DIR="$state2" PATH="$nojq" "$BASH_BIN" -c '. "$0"; aw_failopen h input "{}"' "$LIB"
 check "input: jq missing -> jq-missing" "$(tail -n 1 "$log2" | jq -r .cause)" "jq-missing"
+
+# field-missing: a readable payload that names the hook's own tool but lacks the
+# field the hook checks (a host schema change) is logged; other payloads are not.
+state3="$(mktemp -d)"; log3="$state3/logs/failopen.log"
+run_lib "$state3" h input '{"tool_name":"Bash","tool_input":{"cmd":"x"}}' '.tool_name == "Bash"' > /dev/null
+check "input: own tool without the checked field -> field-missing" "$(tail -n 1 "$log3" | jq -r .cause)" "field-missing"
+run_lib "$state3" h input '{"tool_name":"Read","tool_input":{}}' '.tool_name == "Bash"' > /dev/null
+check "input: another tool's payload logs nothing" "$(wc -l < "$log3" | tr -d ' ')" "1"
+
+# No state dir and no HOME: nowhere to log, so skip quietly (never write under /).
+check "HOME and AW_STATE_DIR unset: silent, returns 0" \
+  "$(env -u HOME -u AW_STATE_DIR bash -c 'set -euo pipefail; . "$0"; aw_failopen h c; echo "rc=$?"' "$LIB" 2>&1)" "rc=0"
+
+# date missing: still returns 0 and prints nothing, even under set -e.
+nodate="$(mktemp -d)"; for t in mkdir wc mv; do ln -s "$(command -v "$t")" "$nodate/$t"; done
+check "date missing: silent, returns 0" \
+  "$(AW_STATE_DIR="$(mktemp -d)" PATH="$nodate" "$BASH_BIN" -c 'set -euo pipefail; . "$0"; aw_failopen h c; echo "rc=$?"' "$LIB" 2>&1)" "rc=0"
+
+# A symlinked log is never followed.
+state4="$(mktemp -d)"; mkdir -p "$state4/logs"; target="$(mktemp)"
+ln -s "$target" "$state4/logs/failopen.log"
+run_lib "$state4" h c > /dev/null
+check "symlinked log: target untouched" "$(wc -c < "$target" | tr -d ' ')" "0"
+
+# The log rotates once it passes AW_FAILOPEN_MAX_BYTES (default 1 MiB).
+state5="$(mktemp -d)"; mkdir -p "$state5/logs"; head -c 300 /dev/zero | tr '\0' 'x' > "$state5/logs/failopen.log"
+AW_FAILOPEN_MAX_BYTES=200 run_lib "$state5" h c > /dev/null
+check "rotation: old log moved to failopen.log.1" "$(wc -c < "$state5/logs/failopen.log.1" | tr -d ' ')" "300"
+check "rotation: new log holds only the new event" "$(jq -r .cause "$state5/logs/failopen.log")" "c"
+check "new log is private to the user" "$(stat -f %Lp "$state5/logs/failopen.log" 2>/dev/null || stat -c %a "$state5/logs/failopen.log")" "600"
 
 # Logging must never fail or slow the hook down when the log can't be written.
 ro="$(mktemp -d)"; chmod 500 "$ro"
