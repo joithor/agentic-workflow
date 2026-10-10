@@ -321,3 +321,7 @@ static Aw.Judge.Core.Config.ProvidersConfig.operator ==(Aw.Judge.Core.Config.Pro
 static Aw.Judge.Core.Config.QuestionConfig.operator !=(Aw.Judge.Core.Config.QuestionConfig? left, Aw.Judge.Core.Config.QuestionConfig? right) -> bool
 static Aw.Judge.Core.Config.QuestionConfig.operator ==(Aw.Judge.Core.Config.QuestionConfig? left, Aw.Judge.Core.Config.QuestionConfig? right) -> bool
 static readonly Aw.Judge.Core.JudgeErrors.NotANumber -> Aw.Kernel.ErrorDefinition!
+Aw.Judge.Core.Config.ProviderNames
+static Aw.Judge.Core.Config.ProviderNames.AgentClis.get -> System.Collections.Generic.IReadOnlyList<string!>!
+static Aw.Judge.Core.Config.ProviderNames.All.get -> System.Collections.Generic.IReadOnlyList<string!>!
+static Aw.Judge.Core.Config.ProviderNames.Scaffolds.get -> System.Collections.Generic.IReadOnlyList<string!>!
