@@ -120,10 +120,11 @@ Codex passes in `tool_input`. The adapters accept both spellings. Confirm with
 ## Fail-open logging
 
 When an adapter falls back to allow on its own error it logs a `HOOK-FAILOPEN` line (hook
-`codex-adapter` or `cursor-adapter`) through `aw_adapter_failopen` in `common.sh`: `args-invalid`
-(no hook script argument), `payload-unparsable`, `hook-script-missing`, `hook-exit-<N>` (the
-canonical hook exited with neither 0 nor 2), and `result-unparsable` (Cursor only). The output to
-the host is unchanged. See "Fail-open logging" in `.agents/rules/hooks.md`.
+`codex-adapter` or `cursor-adapter`) through `aw_adapter_failopen` in `common.sh`: `empty-input` / `input-unparsable` (the host
+payload, checked before it is normalized to `{}`), `args-invalid` (no hook script argument),
+`payload-unparsable`, `hook-script-missing`, `hook-exit-<N>` (the
+canonical hook exited with neither 0 nor 2), and `result-unparsable` (Cursor only). The log is
+`$AW_STATE_DIR/logs/failopen.log`, not the hooks install dir. The output to the host is unchanged. See "Fail-open logging" in `.agents/rules/hooks.md`.
 
 ## Tests
 

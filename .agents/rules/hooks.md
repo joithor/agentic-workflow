@@ -88,16 +88,28 @@ Tests (all run under a temp `HOME`): `config/hooks/tests/{codex-adapter,cursor-a
 
 ## Fail-open logging (HOOK-FAILOPEN)
 
-A hook **fails open** when its own error turns into an allow or a let-through: judge missing or erroring, a payload it can't read, unreadable state. Each such path calls `failopen <cause>` right before it allows, which appends one line to `${AW_STATE_DIR:-~/.agentic-workflow}/hooks/failopen.log`:
+A hook **fails open** when its own error turns into an allow or a let-through: judge missing or erroring, a payload it can't read, unreadable state. Each such path calls `failopen <cause>` right before it allows, which appends one line to `${AW_STATE_DIR:-~/.agentic-workflow}/logs/failopen.log`:
 
 ```json
 {"ts":"2026-10-10T06:30:00Z","event":"HOOK-FAILOPEN","hook":"send-gate","cause":"judge-exit-127","provider":"claude"}
 ```
 
-- The logger is `config/lib/failopen.sh` (`aw_failopen <hook> <cause>`; `aw_failopen <hook> input "$INPUT"` classifies an unreadable payload as `empty-input`, `jq-missing` or `input-unparsable` and logs nothing for a readable one). Installers copy it to `<hooks-dir>/lib/failopen.sh`; a hook looks there first, then at `../lib/` (a repo checkout).
-- **Logging only.** It never prints, never fails, and never changes a decision, exit code or stdout. Payload content never reaches the log. `config/hooks/tests/failopen.test.sh` runs every path with and without the lib and requires identical output.
-- Fail-open hooks: `send-gate`, `scope-gate`, `external-write-guard`, `done-gate`, `outbox-flush`, the three Bash safety hooks, and the Codex/Cursor adapters (`<provider>-adapter`). Advisory hooks with no allow/deny (context-guard, prompt-sort, done-gate-annotate, rtk-rewrite, the SessionStart hooks) and hooks that fail closed (turn-origin) don't log.
-- `scorer`'s daily report lists the events per hook and cause (`## Hook fail-open`). The C# cutover needs zero of them (spec §4c).
+- The logger is `config/lib/failopen.sh` (`aw_failopen <hook> <cause>`). `aw_failopen <hook> input "$INPUT" '<jq predicate>'` classifies a payload the hook couldn't use: `empty-input`, `jq-missing`, `input-unparsable`, or `field-missing` when the predicate holds (the payload names the hook's own tool but lacks the field it checks). It logs nothing for any other readable payload. Installers copy it to `<hooks-dir>/lib/failopen.sh`; a hook looks there first, then at `../lib/` (a repo checkout).
+- **Logging only.** Each hook's `failopen()` wrapper (and the adapters' `aw_adapter_failopen`) runs the logger in a subshell with `set +eu`, its output discarded and `|| true`. Nothing the logger hits (HOME unset, `date` missing, an unwritable dir) can change the hook's exit code, stdout or stderr. With neither `AW_STATE_DIR` nor `HOME` set, it logs nothing. Payload content never reaches the log. The log is created `0600`, never followed through a symlink, and rotated to `failopen.log.1` past `AW_FAILOPEN_MAX_BYTES` (default 1 MiB). `config/hooks/tests/failopen.test.sh` runs every documented cause with and without the lib (and with HOME unset and `date` missing). It requires identical stdout, stderr and exit code.
+- Fail-open hooks and their causes:
+  - `send-gate`: `locks-lib-missing`, `judge-exit-<N>`, `judge-output-unparsable`, `judge-decision-missing`
+  - `scope-gate`: the judge causes plus `judge-decision-unknown`
+  - `external-write-guard`: `session-id-missing`, `session-state-unreadable`
+  - `done-gate`: `transcript-unreadable`, `no-assistant-line`, `transcript-line-unparsable`, `judge-ask-check-exit-<N>`, `judge-brief-exit-<N>` (but not "no brief for …")
+  - `outbox-flush`: `outbox-unreadable`
+  - the three Bash safety hooks: the input causes only
+  - the Codex/Cursor adapters (`<provider>-adapter`): the input causes, `args-invalid`, `payload-unparsable`, `hook-script-missing`, `hook-exit-<N>`, and `result-unparsable` (Cursor only)
+
+  Every hook in that list also logs the input causes.
+- **Crashes.** Each fail-open hook has an `EXIT` trap that logs `exit-<N>` when the hook exits with anything but 0 or 2. Claude Code treats that as a non-blocking error and lets the call through. The trap doesn't call `exit`, so the status is unchanged. Under an adapter (`AW_PROVIDER` set) the adapter logs `hook-exit-<N>` instead, so a crash counts once.
+- **Not counted (known gap):** a hook killed by the host's own timeout (`SIGKILL`) runs no trap and can't log. Wrapping `judge` in a shorter timeout would turn that into `judge-exit-124`, but it would also change when a slow judge's decision is used. That is a decision change, so it is out of scope for logging-only work.
+- Advisory hooks with no allow/deny (context-guard, prompt-sort, done-gate-annotate, rtk-rewrite, the SessionStart hooks) don't log. Neither do hooks that fail closed (turn-origin; send-gate's unknown decision, which queues and denies).
+- `scorer`'s daily report lists the events per hook and cause (`## Hook fail-open`). It reads `failopen.log.1` and `failopen.log` as untrusted input. The C# cutover needs zero of them (spec §4c).
 - A new hook with a fail-open path must call `failopen` with a fixed cause word on it.
 
 ## Adding a New Hook
