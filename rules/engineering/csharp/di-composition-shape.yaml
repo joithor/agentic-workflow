@@ -1,0 +1,20 @@
+schemaVersion: 1
+id: engineering.csharp.di-composition-shape
+kind: engineering
+section: "4b.4"
+text: "Decorators are registered in the owning project's Add…() method, never in Host; each Host exposes one internal static Compose(IServiceCollection, Func<string, string?> environment, TimeProvider) that Program.cs and the DI test both call; Host never builds an Infrastructure settings type."
+why: "The DI test covers the real composition, and a technology swap changes Infrastructure and one Add…() call only."
+select:
+  languages: [csharp]
+  paths: ["src/**"]
+checks:
+  - type: review
+    id: "composition shape"
+    status: active
+    note: "checked in review; /new-package generates it"
+gap: open
+gapNote: "No host exists yet; the /new-package generator (stage T6) writes Compose and HostTests, and review checks hand-written hosts."
+source:
+  type: import
+  ref: ".agents/rules/csharp.md"
+status: active

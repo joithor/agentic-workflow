@@ -15,6 +15,6 @@ checks:
     note: "reads each test's lane from the CTRF report, so a test with no lane is caught only in an unfiltered run"
 gap: pending
 source:
-  type: adr
-  ref: "docs/superpowers/specs/2026-10-09-agent-readiness-design.md#4b5"
+  type: import
+  ref: ".agents/rules/csharp-testing.md"
 status: active

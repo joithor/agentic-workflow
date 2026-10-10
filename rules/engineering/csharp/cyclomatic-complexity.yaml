@@ -11,6 +11,12 @@ checks:
   - type: analyzer
     id: "CA1502"
     status: active
+  - type: build-setting
+    id: "CA1502: 10"
+    status: active
+  - type: build-setting
+    id: "CodeMetricsConfig.txt"
+    status: active
 gap: closed
 source:
   type: adr

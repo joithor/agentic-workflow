@@ -10,7 +10,7 @@ select:
 checks:
   - type: banned-symbols
     id: "RS0030"
-    entries: ["T:System.Console", "N:System.IO", "N:System.Net", "N:Microsoft.Data", "T:System.Diagnostics.Process", "P:System.DateTime.UtcNow", "M:System.Guid.NewGuid"]
+    entries: ["T:System.Console", "N:System.IO", "N:System.Net", "N:Microsoft.Data", "T:System.Diagnostics.Process", "T:System.Environment", "P:System.DateTime.Now", "P:System.DateTime.UtcNow", "P:System.DateTime.Today", "P:System.DateTimeOffset.Now", "P:System.DateTimeOffset.UtcNow", "P:System.TimeProvider.System", "T:System.Diagnostics.Stopwatch", "M:System.Guid.NewGuid", "M:System.Guid.CreateVersion7"]
     status: active
 gap: closed
 source:

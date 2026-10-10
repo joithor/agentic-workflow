@@ -11,6 +11,12 @@ checks:
   - type: build-setting
     id: "\"rollForward\": \"disable\""
     status: active
+  - type: build-setting
+    id: "\"allowPrerelease\": false"
+    status: active
+  - type: build-setting
+    id: "\"runner\": \"Microsoft.Testing.Platform\""
+    status: active
   - type: ci
     id: "The SDK is exactly the global.json pin"
     ref: .github/workflows/ci.yml

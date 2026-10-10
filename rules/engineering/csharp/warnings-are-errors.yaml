@@ -9,6 +9,9 @@ select:
   paths: ["Directory.Build.props", ".editorconfig"]
 checks:
   - type: build-setting
+    id: "<TreatWarningsAsErrors>true</TreatWarningsAsErrors>"
+    status: active
+  - type: build-setting
     id: "<EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>"
     status: active
   - type: build-setting
@@ -18,7 +21,7 @@ checks:
     id: "dotnet_analyzer_diagnostic.severity = error"
     status: active
 gap: partial
-gapNote: "The root files set these; a project-level override (NoWarn in a .csproj, a nested .editorconfig lowering a rule) is forbidden by csharp.md and reviewed, not checked; CI's -warnaserror catches a TreatWarningsAsErrors override only."
+gapNote: "The absence of AnalysisLevel is reviewed. The root files set the rest; a project-level override (NoWarn in a .csproj, a nested .editorconfig lowering a rule) is forbidden by csharp.md and reviewed, not checked; CI's -warnaserror catches a TreatWarningsAsErrors override only."
 source:
   type: adr
   ref: "docs/superpowers/specs/2026-10-09-agent-readiness-design.md#4b6"

@@ -1,6 +1,6 @@
-# The §4b rule list (readiness spec), plus the rules .agents/rules/csharp.md states under a §4b heading beyond
-# the spec (their source is that file; §4d rules such as nuget.config source mapping are out of scope): one record per entry in rules/engineering/csharp/<slug>.yaml.
-# Checked by node scripts/check-rules.mjs; see docs/csharp/rule-records.md.
+# The §4b rule list (readiness spec), plus the rules the C# rules docs (.agents/rules/csharp.md, csharp-testing.md)
+# state under a §4b heading beyond the spec; those records cite that doc as their source, and docs/csharp/rule-records.md
+# lists them. One record per entry in rules/engineering/csharp/<slug>.yaml. Checked by node scripts/check-rules.mjs.
 version: 1
 spec: docs/superpowers/specs/2026-10-09-agent-readiness-design.md
 records:
@@ -132,6 +132,12 @@ records:
     section: "4b.6"
   - id: engineering.csharp.distribution-seams
     section: "4b.6"
+  - id: engineering.csharp.nuget-source-mapping
+    section: "4b.6"
+  - id: engineering.csharp.ports-named-for-need
+    section: "4b.6"
+  - id: engineering.csharp.di-composition-shape
+    section: "4b.4"
   - id: engineering.csharp.build-time-regression
     section: "4b.8"
   - id: engineering.csharp.validate-at-boundaries

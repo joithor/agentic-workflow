@@ -2,7 +2,7 @@ schemaVersion: 1
 id: engineering.csharp.typed-ids
 kind: engineering
 section: "4b.3"
-text: "Every id and constrained primitive is a Vogen typed value with the six VogenDefaults arguments, a user-code [JsonConverter] and IParsable<T> declared in user code, plus a JSON round-trip test."
+text: "Every id and constrained primitive is a Vogen typed value with Vogen's STJ generation off (VogenDefaults), a user-code [JsonConverter] and IParsable<T> declared in user code, plus a JSON round-trip test; the Host maps Vogen's validation exception to a 400."
 why: "Decided in R9: source generators can't see each other's output, so Vogen's own STJ and parse generation would silently break JSON and route binding."
 select:
   languages: [csharp]
@@ -22,7 +22,7 @@ checks:
     status: pending
     pendingPr: 131
 gap: pending
-gapNote: "TypedIdGuard covers only Aw.Kernel's own ids on main; ARCH-ID-001/002 run it over every registered assembly."
+gapNote: "TypedIdGuard covers only Aw.Kernel's own ids on main; ARCH-ID-001/002 run it over every registered assembly. The Host's 400 mapping is reviewed until the first http host."
 source:
   type: adr
   ref: "docs/superpowers/specs/2026-10-09-agent-readiness-design.md#4b3"

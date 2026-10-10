@@ -11,6 +11,9 @@ checks:
   - type: analyzer
     id: "MA0051"
     status: active
+  - type: build-setting
+    id: "MA0051.maximum_lines_per_method = 40"
+    status: active
 gap: closed
 source:
   type: adr

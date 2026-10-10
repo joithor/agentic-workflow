@@ -1,0 +1,25 @@
+schemaVersion: 1
+id: engineering.csharp.nuget-source-mapping
+kind: engineering
+section: "4b.6"
+text: "nuget.config maps every package to nuget.org only, with signed-package validation; don't add sources."
+why: "One trusted source closes dependency-confusion attacks."
+select:
+  languages: [csharp]
+  paths: ["nuget.config"]
+checks:
+  - type: build-setting
+    id: "<packageSourceMapping>"
+    status: active
+  - type: build-setting
+    id: "<package pattern=\"*\" />"
+    status: active
+  - type: build-setting
+    id: "<add key=\"signatureValidationMode\" value=\"require\" />"
+    status: active
+gap: partial
+gapNote: "nuget.config's settings are pinned; a second <add> source isn't rejected by a check, and signatures are verified only by scripts/dotnet-verify-packages.sh."
+source:
+  type: import
+  ref: ".agents/rules/csharp.md"
+status: active
