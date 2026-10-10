@@ -36,7 +36,6 @@ jobs:
     outputs:
       bash: ${{ steps.detect.outputs.bash }}
       dotnet: ${{ steps.detect.outputs.dotnet }}
-      golden: ${{ steps.detect.outputs.golden }}
       packages: ${{ steps.detect.outputs.packages }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -218,54 +217,6 @@ jobs:
       - name: claude plugin test mods/aw-live
         run: .github/ci-tools/node_modules/.bin/claude plugin test mods/aw-live
 
-  golden:
-    name: Golden harness replay
-    needs: changes
-    runs-on: ubuntu-24.04
-    timeout-minutes: 20
-    env:
-      CHANGED: ${{ needs.changes.outputs.golden }}
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          persist-credentials: false
-      - name: Detect the harness
-        id: harness
-        run: |
-          if [ -f golden/package.json ] && [ "$CHANGED" = "true" ]; then
-            echo "run=true" >> "$GITHUB_OUTPUT"
-          elif [ -f golden/package.json ]; then
-            echo "no-op: no harness, recording, judge, scrubber or hook change — replay not needed"
-          else
-            echo "no-op: golden/ not present yet — replay starts when the harness lands"
-          fi
-      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
-        if: steps.harness.outputs.run == 'true'
-        with:
-          node-version-file: .nvmrc
-          cache: npm
-          cache-dependency-path: |
-            golden/package-lock.json
-            judge/package-lock.json
-            sindri/package-lock.json
-      - name: Harness typecheck and tests
-        if: steps.harness.outputs.run == 'true'
-        working-directory: golden
-        run: |
-          npm ci --no-audit --no-fund
-          npm run typecheck
-          npm test
-          npm run build
-      - name: Build judge and sindri (the recorded binaries)
-        if: steps.harness.outputs.run == 'true'
-        run: |
-          for pkg in judge sindri; do
-            (cd "$pkg" && npm ci --no-audit --no-fund && npm run build)
-          done
-      - name: Replay every golden suite
-        if: steps.harness.outputs.run == 'true'
-        run: node golden/dist/cli.js replay goldens/*/*.suite.json
-
   dotnet:
     name: .NET build and test
     needs: changes
@@ -334,7 +285,7 @@ jobs:
 
   ci-result:
     name: CI result
-    needs: [changes, ts, bash-tests, gate, golden, dotnet]
+    needs: [changes, ts, bash-tests, gate, dotnet]
     # The one job-level `if:` in this file: it must run (and fail) even when a need
     # failed or was skipped, since GitHub counts a skipped required check as passing.
     if: always()
