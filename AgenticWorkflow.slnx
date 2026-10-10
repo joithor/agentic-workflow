@@ -1,7 +1,6 @@
 <Solution>
   <Folder Name="/src/">
     <Project Path="src/Aw.Kernel/Aw.Kernel.csproj" />
-    <Project Path="src/Aw.Kernel.AotSmoke/Aw.Kernel.AotSmoke.csproj" />
   </Folder>
   <Folder Name="/tests/">
     <Project Path="tests/Aw.Kernel.Tests/Aw.Kernel.Tests.csproj" />

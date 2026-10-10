@@ -75,7 +75,7 @@ Aw.Kernel.Events.EventEnvelope<TPayload>.Type.init -> void
 Aw.Kernel.Events.EventSchema
 Aw.Kernel.Ids.IIdGenerator
 Aw.Kernel.Ids.IIdGenerator.NewId() -> System.Guid
-Aw.Kernel.Json.NodeJson
+Aw.Kernel.Json.AwJson
 Aw.Kernel.KernelErrors
 Aw.Kernel.Outbox.IOutbox
 Aw.Kernel.Outbox.IOutbox.Enqueue(Aw.Kernel.Outbox.OutboxCommand! command, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Kernel.Unit>!>
@@ -173,10 +173,9 @@ static Aw.Kernel.Events.EventContext.operator !=(Aw.Kernel.Events.EventContext? 
 static Aw.Kernel.Events.EventContext.operator ==(Aw.Kernel.Events.EventContext? left, Aw.Kernel.Events.EventContext? right) -> bool
 static Aw.Kernel.Events.EventEnvelope<TPayload>.operator !=(Aw.Kernel.Events.EventEnvelope<TPayload>? left, Aw.Kernel.Events.EventEnvelope<TPayload>? right) -> bool
 static Aw.Kernel.Events.EventEnvelope<TPayload>.operator ==(Aw.Kernel.Events.EventEnvelope<TPayload>? left, Aw.Kernel.Events.EventEnvelope<TPayload>? right) -> bool
-static Aw.Kernel.Json.NodeJson.CreateOptions(System.Text.Json.Serialization.Metadata.IJsonTypeInfoResolver! resolver) -> System.Text.Json.JsonSerializerOptions!
-static Aw.Kernel.Json.NodeJson.Deserialize<T>(System.ReadOnlySpan<byte> utf8Json, System.Text.Json.JsonSerializerOptions! options) -> Aw.Kernel.Result<T>!
-static Aw.Kernel.Json.NodeJson.Restringify(System.ReadOnlySpan<byte> utf8Json, bool indented = false) -> Aw.Kernel.Result<byte[]!>!
-static Aw.Kernel.Json.NodeJson.Serialize<T>(T value, System.Text.Json.JsonSerializerOptions! options, bool indented = false) -> byte[]!
+static Aw.Kernel.Json.AwJson.CreateOptions(System.Text.Json.Serialization.Metadata.IJsonTypeInfoResolver! resolver, bool indented = false) -> System.Text.Json.JsonSerializerOptions!
+static Aw.Kernel.Json.AwJson.Deserialize<T>(System.ReadOnlySpan<byte> utf8Json, System.Text.Json.JsonSerializerOptions! options) -> Aw.Kernel.Result<T>!
+static Aw.Kernel.Json.AwJson.Serialize<T>(T value, System.Text.Json.JsonSerializerOptions! options) -> byte[]!
 static Aw.Kernel.KernelErrors.All.get -> System.Collections.Generic.IReadOnlyList<Aw.Kernel.ErrorDefinition!>!
 static Aw.Kernel.Outbox.OutboxCommand.operator !=(Aw.Kernel.Outbox.OutboxCommand? left, Aw.Kernel.Outbox.OutboxCommand? right) -> bool
 static Aw.Kernel.Outbox.OutboxCommand.operator ==(Aw.Kernel.Outbox.OutboxCommand? left, Aw.Kernel.Outbox.OutboxCommand? right) -> bool

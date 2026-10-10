@@ -1,9 +1,10 @@
 namespace Aw.Kernel.AotSmoke;
 
 internal sealed record Sample(
-    string Id,
+    string Name,
     DateTimeOffset At,
-    IReadOnlyList<string> Texts,
-    IReadOnlyList<double> Numbers,
-    Error Error,
-    IReadOnlyDictionary<string, int> Keys);
+    decimal Money,
+    string? Note,
+    IReadOnlyList<string> Tags,
+    IReadOnlyDictionary<string, int> Counts,
+    Error Error);
