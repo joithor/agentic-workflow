@@ -6,8 +6,9 @@
 
 import fs from "node:fs";
 import path from "node:path";
+import { lexTs } from "../deps/scan.mjs";
 
-const TEXT_EXT = /\.(cs|mjs|js|md|props|targets|txt|json|yaml|yml)$|(^|\/)\.editorconfig$/;
+const TEXT_EXT = /\.(cs|mjs|js|md|props|targets|txt|json|yaml|yml|config)$|(^|\/)\.editorconfig$/;
 const SKIP_DIRS = new Set(["bin", "obj", "node_modules", "TestResults"]);
 const escapeRe = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 const token = (id) => new RegExp(`(^|[^A-Za-z0-9_])${escapeRe(id)}(?![A-Za-z0-9_])`, "m");
@@ -21,29 +22,37 @@ export const SEARCH = {
 };
 const BUILD_FILES = ["Directory.Build.props", "Directory.Build.targets", "Directory.Packages.props", "global.json", ".editorconfig", "nuget.config"];
 
-// stripCode(text) — C# or JavaScript without // and /* */ comments. String literals ("…", '…', `…`, C# @"…")
-// are copied as they are, so a comment marker inside a string never hides code.
-function stripCode(text) {
+// stripCs(text) — C# without // and /* */ comments. Strings are copied as they are: "…" (with \ escapes), verbatim
+// @"…", $@"…" and @$"…" ("" escapes), raw """…""" (closed by the same run of quotes) and char literals.
+function stripCs(text) {
   let out = "";
   let i = 0;
+  const copyTo = (j) => { out += text.slice(i, j); i = j; };
   while (i < text.length) {
     const c = text[i];
     const d = text[i + 1];
     if (c === "/" && d === "/") { while (i < text.length && text[i] !== "\n") i++; continue; }
     if (c === "/" && d === "*") { const e = text.indexOf("*/", i + 2); i = e < 0 ? text.length : e + 2; out += " "; continue; }
-    if (c === "@" && d === '"') {
-      let j = i + 2;
-      while (j < text.length && !(text[j] === '"' && text[j + 1] !== '"')) j += text[j] === '"' ? 2 : 1;
-      out += text.slice(i, j + 1); i = j + 1; continue;
+    const prefix = text.slice(i).match(/^(\$@|@\$|@|\$*)"/);
+    if (prefix) {
+      const q = text.slice(i + prefix[1].length).match(/^"+/)[0].length;
+      let j = i + prefix[1].length + q;
+      if (q >= 3) { const e = text.indexOf('"'.repeat(q), j); copyTo(e < 0 ? text.length : e + q); continue; }
+      if (q === 2) { copyTo(j); continue; } // "" is an empty string
+      if (prefix[1].includes("@")) { while (j < text.length && !(text[j] === '"' && text[j + 1] !== '"')) j += text[j] === '"' ? 2 : 1; }
+      else { while (j < text.length && text[j] !== '"' && text[j] !== "\n") j += text[j] === "\\" ? 2 : 1; }
+      copyTo(j + 1); continue;
     }
-    if (c === '"' || c === "'" || c === "`") {
-      let j = i + 1;
-      while (j < text.length && text[j] !== c && (c === "`" || text[j] !== "\n")) j += text[j] === "\\" ? 2 : 1;
-      out += text.slice(i, j + 1); i = j + 1; continue;
-    }
+    if (c === "'") { let j = i + 1; while (j < text.length && text[j] !== "'" && text[j] !== "\n") j += text[j] === "\\" ? 2 : 1; copyTo(j + 1); continue; }
     out += c; i++;
   }
   return out;
+}
+
+// stripJs(text) — JavaScript without comments, through check-deps' lexer (regex literals, template nesting). A file
+// the lexer can't read (an unterminated literal) is used as it is.
+function stripJs(text) {
+  try { return lexTs(text).code; } catch { return text; }
 }
 
 // stripHashComments(text) — .editorconfig, YAML and text files: a line starting with # or ; is a comment, and so is
@@ -63,8 +72,9 @@ function stripHashComments(text) {
 
 // stripComments(file, text) — the text without the comments its format allows.
 export function stripComments(file, text) {
-  if (/\.(cs|mjs|js)$/.test(file)) return stripCode(text);
-  if (/\.(props|targets|csproj|xml)$/.test(file)) {
+  if (/\.cs$/.test(file)) return stripCs(text);
+  if (/\.(mjs|js)$/.test(file)) return stripJs(text);
+  if (/\.(props|targets|csproj|xml|config)$/.test(file)) {
     return text.split(/(<!\[CDATA\[[\s\S]*?\]\]>)/).map((part) => (part.startsWith("<![CDATA[") ? part : part.replace(/<!--[\s\S]*?-->/g, ""))).join("");
   }
   if (/(^|\/)\.editorconfig$|\.(txt|ya?ml)$/.test(file)) return stripHashComments(text);
@@ -107,22 +117,36 @@ export class Tree {
 
 // A section that applies to C# files in general ([*], [*.cs], [**.cs], [**/*.cs], [*.{…,cs,…}]); a narrower section
 // (a path glob) neither enables nor disables a rule for the whole repo.
-const GENERAL_CS = /^\*$|^\*\*?(\/\*)?\.cs$|^\*\.\{[^}]*\bcs\b[^}]*\}$/;
+function isGeneralCs(glob) {
+  if (/^(\*|\*\*|\*\*\/\*)$/.test(glob)) return true;
+  const list = glob.match(/^\{(.*)\}$/);
+  if (list) return list[1].split(",").some((g) => isGeneralCs(g.trim()));
+  if (/^\*\*?(\/\*)?\.cs$/.test(glob)) return true;
+  const exts = glob.match(/^\*\*?(\/\*)?\.\{([^}]*)\}$/);
+  return Boolean(exts && exts[2].split(",").map((e) => e.trim()).includes("cs"));
+}
 
-// rootSeverities(tree) — what the root .editorconfig's general C# sections set: per-id severities (ids upper-cased;
-// editorconfig keys are case-insensitive), per-category severities (lower-cased) and the bulk severity. Last wins.
+// editorconfigKeys(tree) — the properties the root .editorconfig's general C# sections set, keys lower-cased
+// (editorconfig keys are case-insensitive), the last line winning.
+function editorconfigKeys(tree) {
+  const keys = new Map();
+  let applies = false;
+  for (const line of (tree.text(".editorconfig") ?? "").split("\n")) {
+    const section = line.match(/^\s*\[(.*)\]\s*$/);
+    if (section) { applies = isGeneralCs(section[1].trim()); continue; }
+    const kv = applies && line.match(/^\s*([^=]+?)\s*=\s*(.*?)\s*$/);
+    if (kv) keys.set(kv[1].toLowerCase(), kv[2]);
+  }
+  return keys;
+}
+
+// rootSeverities(tree) — per-id severities (ids upper-cased), per-category severities and the bulk severity.
 function rootSeverities(tree) {
   const ids = new Map();
   const categories = new Map();
   let bulk = null;
-  let applies = false;
-  for (const line of (tree.text(".editorconfig") ?? "").split("\n")) {
-    const section = line.match(/^\s*\[(.*)\]\s*$/);
-    if (section) { applies = GENERAL_CS.test(section[1].trim()); continue; }
-    const kv = applies && line.match(/^\s*([^=]+?)\s*=\s*(.*?)\s*$/);
-    if (!kv) continue;
-    const key = kv[1].toLowerCase();
-    const value = kv[2].toLowerCase();
+  for (const [key, raw] of editorconfigKeys(tree)) {
+    const value = raw.toLowerCase();
     const id = key.match(/^dotnet_diagnostic\.([a-z0-9_]+)\.severity$/);
     const cat = key.match(/^dotnet_analyzer_diagnostic\.category-(.+)\.severity$/);
     if (id) ids.set(id[1].toUpperCase(), value);
@@ -130,6 +154,18 @@ function rootSeverities(tree) {
     else if (key === "dotnet_analyzer_diagnostic.severity") bulk = value;
   }
   return { ids, categories, bulk };
+}
+
+// buildSetting(tree, c) — a literal in the root build files; an editorconfig property (`dotnet_… = value`) must be
+// the value a general C# section of the root .editorconfig ends up with.
+function buildSetting(tree, c) {
+  const prop = c.id.match(/^\s*(dotnet_[A-Za-z0-9_.-]+)\s*=\s*(.+?)\s*$/);
+  if (prop) {
+    const got = editorconfigKeys(tree).get(prop[1].toLowerCase());
+    const found = got !== undefined && got.toLowerCase() === prop[2].toLowerCase();
+    return { found, where: `.editorconfig (a general C# section ${got === undefined ? "doesn't set it" : `ends with ${prop[1]} = ${got}`})` };
+  }
+  return { found: tree.hasLiteral(BUILD_FILES, c.id), where: BUILD_FILES.join(", ") };
 }
 
 function analyzer(tree, c) {
@@ -173,7 +209,8 @@ function stepNames(text) {
   for (const line of text.split("\n")) {
     if (!line.trim()) continue;
     const indent = line.length - line.trimStart().length;
-    if (stepsIndent >= 0 && indent <= stepsIndent) stepsIndent = -1;
+    const flushItem = indent === stepsIndent && /^\s*-\s/.test(line);
+    if (stepsIndent >= 0 && indent <= stepsIndent && !flushItem) stepsIndent = -1;
     if (/^\s*steps:\s*$/.test(line)) { stepsIndent = indent; itemIndent = -1; continue; }
     if (stepsIndent < 0) continue;
     const item = line.match(/^(\s*)-\s+(.*)$/);
@@ -195,7 +232,7 @@ export function existsCheck(tree, c) {
     case "analyzer": return analyzer(tree, c);
     case "compiler": return { found: /^(CS|IL)[0-9]{4}$/.test(c.id), where: "the C# compiler and trim analyzers (a CS or IL id)" };
     case "banned-symbols": return bannedSymbols(tree, c);
-    case "build-setting": return { found: tree.hasLiteral(BUILD_FILES, c.id), where: BUILD_FILES.join(", ") };
+    case "build-setting": return buildSetting(tree, c);
     case "test": return { found: tree.exists(c.ref) && tree.hasToken([c.ref], c.id), where: c.ref };
     case "script": return { found: tree.exists(c.ref), where: c.ref };
     case "ci": return ciStep(tree, c);
