@@ -3,6 +3,7 @@ using Aw.Judge.Core.Config;
 using Aw.Judge.Features.ApproveDecision;
 using Aw.Judge.Features.ExplainDecision;
 using Aw.Judge.Features.GetBrief;
+using Aw.Judge.Features.GetConfig;
 using Aw.Judge.Features.GetHealth;
 using Aw.Judge.Features.MapBriefByDispatch;
 using Aw.Judge.Features.MapBriefByName;
@@ -38,4 +39,6 @@ namespace Aw.Judge.Host;
 [JsonSerializable(typeof(UndoDecisionResponse))]
 [JsonSerializable(typeof(ApproveDecisionRequest))]
 [JsonSerializable(typeof(ApproveDecisionResponse))]
+[JsonSerializable(typeof(GetConfigRequest))]
+[JsonSerializable(typeof(GetConfigResponse))]
 internal sealed partial class JudgeJsonContext : JsonSerializerContext;

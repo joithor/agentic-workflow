@@ -1,6 +1,7 @@
 using Aw.Judge.Features.ApproveDecision;
 using Aw.Judge.Features.ExplainDecision;
 using Aw.Judge.Features.GetBrief;
+using Aw.Judge.Features.GetConfig;
 using Aw.Judge.Features.GetHealth;
 using Aw.Judge.Features.MapBriefByDispatch;
 using Aw.Judge.Features.MapBriefByName;
@@ -43,6 +44,13 @@ public static class JudgeFeaturesServiceCollectionExtensions
                 new ValidatingService<ApproveDecisionRequest, ApproveDecisionResponse>(
                     sp.GetRequiredService<ApproveDecisionService>(),
                     sp.GetRequiredService<IValidator<ApproveDecisionRequest>>()));
+        _ = services
+            .AddScoped<GetConfigService>()
+            .AddScoped<IValidator<GetConfigRequest>, GetConfigValidator>()
+            .AddScoped<IService<GetConfigRequest, GetConfigResponse>>(static sp =>
+                new ValidatingService<GetConfigRequest, GetConfigResponse>(
+                    sp.GetRequiredService<GetConfigService>(),
+                    sp.GetRequiredService<IValidator<GetConfigRequest>>()));
         return services;
     }
 

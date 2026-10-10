@@ -46,4 +46,8 @@ public static class A
     /// <summary>A ApproveDecisionRequest builder with deterministic defaults.</summary>
     /// <returns>A new builder.</returns>
     public static ApproveDecisionRequestBuilder ApproveDecisionRequest() => new();
+
+    /// <summary>A GetConfigRequest builder with deterministic defaults.</summary>
+    /// <returns>A new builder.</returns>
+    public static GetConfigRequestBuilder GetConfigRequest() => new();
 }

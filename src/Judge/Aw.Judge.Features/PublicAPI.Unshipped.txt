@@ -233,3 +233,24 @@ static Aw.Judge.Features.ApproveDecision.ApproveDecisionRequest.operator !=(Aw.J
 static Aw.Judge.Features.ApproveDecision.ApproveDecisionRequest.operator ==(Aw.Judge.Features.ApproveDecision.ApproveDecisionRequest? left, Aw.Judge.Features.ApproveDecision.ApproveDecisionRequest? right) -> bool
 static Aw.Judge.Features.ApproveDecision.ApproveDecisionResponse.operator !=(Aw.Judge.Features.ApproveDecision.ApproveDecisionResponse? left, Aw.Judge.Features.ApproveDecision.ApproveDecisionResponse? right) -> bool
 static Aw.Judge.Features.ApproveDecision.ApproveDecisionResponse.operator ==(Aw.Judge.Features.ApproveDecision.ApproveDecisionResponse? left, Aw.Judge.Features.ApproveDecision.ApproveDecisionResponse? right) -> bool
+Aw.Judge.Features.GetConfig.GetConfigRequest
+Aw.Judge.Features.GetConfig.GetConfigRequest.<Clone>$() -> Aw.Judge.Features.GetConfig.GetConfigRequest!
+Aw.Judge.Features.GetConfig.GetConfigRequest.Equals(Aw.Judge.Features.GetConfig.GetConfigRequest? other) -> bool
+Aw.Judge.Features.GetConfig.GetConfigRequest.GetConfigRequest() -> void
+Aw.Judge.Features.GetConfig.GetConfigResponse
+Aw.Judge.Features.GetConfig.GetConfigResponse.<Clone>$() -> Aw.Judge.Features.GetConfig.GetConfigResponse!
+Aw.Judge.Features.GetConfig.GetConfigResponse.Config.get -> Aw.Judge.Core.Config.JudgeConfig!
+Aw.Judge.Features.GetConfig.GetConfigResponse.Config.init -> void
+Aw.Judge.Features.GetConfig.GetConfigResponse.Deconstruct(out Aw.Judge.Core.Config.JudgeConfig! Config) -> void
+Aw.Judge.Features.GetConfig.GetConfigResponse.Equals(Aw.Judge.Features.GetConfig.GetConfigResponse? other) -> bool
+Aw.Judge.Features.GetConfig.GetConfigResponse.GetConfigResponse(Aw.Judge.Core.Config.JudgeConfig! Config) -> void
+override Aw.Judge.Features.GetConfig.GetConfigRequest.Equals(object? obj) -> bool
+override Aw.Judge.Features.GetConfig.GetConfigRequest.GetHashCode() -> int
+override Aw.Judge.Features.GetConfig.GetConfigRequest.ToString() -> string!
+override Aw.Judge.Features.GetConfig.GetConfigResponse.Equals(object? obj) -> bool
+override Aw.Judge.Features.GetConfig.GetConfigResponse.GetHashCode() -> int
+override Aw.Judge.Features.GetConfig.GetConfigResponse.ToString() -> string!
+static Aw.Judge.Features.GetConfig.GetConfigRequest.operator !=(Aw.Judge.Features.GetConfig.GetConfigRequest? left, Aw.Judge.Features.GetConfig.GetConfigRequest? right) -> bool
+static Aw.Judge.Features.GetConfig.GetConfigRequest.operator ==(Aw.Judge.Features.GetConfig.GetConfigRequest? left, Aw.Judge.Features.GetConfig.GetConfigRequest? right) -> bool
+static Aw.Judge.Features.GetConfig.GetConfigResponse.operator !=(Aw.Judge.Features.GetConfig.GetConfigResponse? left, Aw.Judge.Features.GetConfig.GetConfigResponse? right) -> bool
+static Aw.Judge.Features.GetConfig.GetConfigResponse.operator ==(Aw.Judge.Features.GetConfig.GetConfigResponse? left, Aw.Judge.Features.GetConfig.GetConfigResponse? right) -> bool
