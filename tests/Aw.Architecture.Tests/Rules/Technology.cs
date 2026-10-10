@@ -2,10 +2,11 @@ namespace Aw.Architecture.Tests.Rules;
 
 /// <summary>
 /// External technology types (csharp.md Seams): database, cache, queue or bus, file system, processes, network, the
-/// environment, git, containers. Core, Features and the small shape's App.Commands see only ports; BannedSymbols covers
-/// Core's BCL I/O, and this list adds what it misses (Aw.Kernel.Data, SQLitePCL, Npgsql, cache and queue clients, the
-/// environment-reading members of System.Environment). Pure helpers such as System.Net.WebUtility, System.IO.TextWriter
-/// and Environment.NewLine are not technology.
+/// host environment, git, containers. Core, Features and the small shape's App.Commands see only ports. In Core,
+/// BannedSymbols (RS0030) already bans the BCL I/O namespaces and types, System.Environment whole, the clock and random
+/// ids; this list adds the packages it misses (Aw.Kernel.Data, SQLitePCL, Npgsql, cache and queue clients) and carries
+/// the rule to Features and App.Commands, where System.Environment counts only through members that read the host.
+/// Pure helpers such as System.Net.WebUtility, System.IO.TextWriter and Environment.NewLine are not technology.
 /// </summary>
 public static class Technology
 {
@@ -27,21 +28,28 @@ public static class Technology
         "System.Net.WebRequest", "System.Net.HttpWebRequest", "System.Net.FtpWebRequest", "System.Net.HttpListener", "System.Net.Dns",
     ];
 
-    // System.Environment is technology only where it reads or changes the process environment; NewLine, ProcessorCount
-    // and the like are pure.
-    private static readonly string[] _environmentMembers =
+    // System.Environment's pure members; every other member (variables, folders, the current directory, the user and
+    // machine, the command line, exit) reads or changes the host, so a new BCL member fails closed.
+    private static readonly string[] _pureEnvironmentMembers =
     [
-        "GetEnvironmentVariable", "GetEnvironmentVariables", "SetEnvironmentVariable", "ExpandEnvironmentVariables",
-        "GetFolderPath", "get_CurrentDirectory", "set_CurrentDirectory", "GetCommandLineArgs", "get_CommandLine", "Exit",
-        "FailFast", "get_ExitCode", "set_ExitCode",
+        "get_NewLine", "get_ProcessorCount", "get_TickCount", "get_TickCount64", "get_CurrentManagedThreadId",
+        "get_Is64BitProcess", "get_Is64BitOperatingSystem", "get_Version", "get_HasShutdownStarted", "get_StackTrace",
     ];
 
-    /// <summary>Whether a call to a member of a type reads or changes the environment (System.Environment's I/O members).</summary>
+    /// <summary>Whether a call to a member of a type reads or changes the host environment (any System.Environment member but the pure ones).</summary>
     /// <param name="fullName">The called type's full name.</param>
     /// <param name="member">The member, as ArchUnitNET names it (e.g. GetEnvironmentVariable(System.String)).</param>
     /// <returns>True for an environment read or write.</returns>
     public static bool IsEnvironmentAccess(string fullName, string member) =>
-        fullName == "System.Environment" && _environmentMembers.Contains(member.Split('(')[0], StringComparer.Ordinal);
+        fullName == "System.Environment" && !_pureEnvironmentMembers.Contains(member.Split('(')[0], StringComparer.Ordinal);
+
+    /// <summary>What an edge's technology use is, for messages: the type, or the environment member called.</summary>
+    /// <param name="edge">An edge that <see cref="Reaches"/> technology.</param>
+    /// <returns>e.g. "uses a technology type" or "calls System.Environment.GetEnvironmentVariable".</returns>
+    public static string Describe(Edge edge) =>
+        Is(edge.Target.FullName)
+            ? "uses a technology type"
+            : $"calls {edge.Target.FullName}.{edge.TargetMembers.First(m => IsEnvironmentAccess(edge.Target.FullName, m)).Split('(')[0]}";
 
     /// <summary>Whether an edge reaches technology: a technology type, or an environment-reading member.</summary>
     /// <param name="edge">The edge.</param>

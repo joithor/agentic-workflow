@@ -19,7 +19,7 @@ public sealed class ArchitectureTests
         Verify.None(InfrastructureRules.Check(Production.Architecture.Types, Production.Scope));
 
     [Fact]
-    public void Every_namespace_under_a_package_root_names_a_layer() =>
+    public void Every_type_of_a_package_sits_in_a_layer_namespace() =>
         Verify.None(PlacementRules.Check(Production.Architecture.Types, Production.Scope));
 
     [Fact]

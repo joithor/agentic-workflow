@@ -104,7 +104,7 @@ public sealed class FixtureTests
     [Fact]
     public void A_namespace_outside_the_root_in_a_layer_assembly_is_reported()
     {
-        var scope = new Scope(["Aw.Fx"], new Dictionary<string, string>(StringComparer.Ordinal), new Dictionary<string, string>(StringComparer.Ordinal) { ["Aw.Architecture.Tests"] = "Aw.Fx" });
+        var scope = new Scope(["Aw.Fx"], new Dictionary<string, string>(StringComparer.Ordinal), new Dictionary<string, LayerAssembly>(StringComparer.Ordinal) { ["Aw.Architecture.Tests"] = new("Aw.Fx", Layer.Core) });
 
         Verify.Exactly(PlacementRules.Check([FixtureSet.Named(typeof(Verify).FullName!)], scope), PlacementRules.Id,
             "namespace 'Aw.Architecture.Tests' in Aw.Architecture.Tests names no layer of package Aw.Fx");
@@ -113,7 +113,7 @@ public sealed class FixtureTests
     [Fact]
     public void A_type_outside_every_root_in_a_host_assembly_is_host()
     {
-        var scope = new Scope(["Aw.Fx"], new Dictionary<string, string>(StringComparer.Ordinal) { ["Aw.Architecture.Tests"] = "Aw.Fx" }, new Dictionary<string, string>(StringComparer.Ordinal));
+        var scope = new Scope(["Aw.Fx"], new Dictionary<string, string>(StringComparer.Ordinal) { ["Aw.Architecture.Tests"] = "Aw.Fx" }, new Dictionary<string, LayerAssembly>(StringComparer.Ordinal));
 
         Assert.Equal(new Place("Aw.Fx", Layer.Host, Slice: null, IsComposition: false), Place.Of(FixtureSet.Named(typeof(Verify).FullName!), scope));
     }
@@ -125,9 +125,40 @@ public sealed class FixtureTests
 
         Assert.Equal(["Aw.Judge"], scope.Roots);
         Assert.Equal("Aw.Judge", scope.HostRootOf("judge"));
-        Assert.Equal("Aw.Judge", scope.LayerRootOf("Aw.Judge.Core"));
-        Assert.Null(scope.LayerRootOf("Aw.Redaction.Core"));
+        Assert.Equal(new LayerAssembly("Aw.Judge", Layer.Core), scope.LayerOf("Aw.Judge.Core"));
+        Assert.Null(scope.LayerOf("Aw.Redaction.Core"));
     }
+
+    [Fact]
+    public void A_namespace_naming_another_layer_than_its_assembly_is_reported()
+    {
+        const string root = "Aw.Architecture.Tests.Fixtures.Mismatch";
+        var scope = new Scope([root], new Dictionary<string, string>(StringComparer.Ordinal),
+            new Dictionary<string, LayerAssembly>(StringComparer.Ordinal) { ["Aw.Architecture.Tests"] = new(root, Layer.Core) });
+
+        Verify.Exactly(PlacementRules.Check(FixtureSet.Types("Mismatch"), scope), PlacementRules.Id,
+            "Mismatch.Infrastructure.Http' in Aw.Architecture.Tests is " + root + " Infrastructure, but Aw.Architecture.Tests holds " + root + " Core");
+    }
+
+    [Theory]
+    [InlineData("<PrivateImplementationDetails>", false, "", true)]
+    [InlineData("Probe", true, "", true)]
+    [InlineData("EmbeddedAttribute", false, "Microsoft.CodeAnalysis.EmbeddedAttribute", true)]
+    [InlineData("NullableAttribute", false, "", false)]
+    [InlineData("Item", false, "System.SerializableAttribute", false)]
+    public void Compiler_output_is_not_placed(string name, bool compilerGenerated, string attribute, bool expected) =>
+        Assert.Equal(expected, PlacementRules.IsCompilerEmitted(name, compilerGenerated, attribute.Length == 0 ? [] : [attribute]));
+
+    [Fact]
+    public void The_global_namespace_joins_no_cycle() =>
+        Verify.None(CycleRules.Check([
+            .. FixtureSet.Types("Good").Where(t => TypeNames.NamespaceOf(t).EndsWith(".Host.Endpoints", StringComparison.Ordinal)),
+            FixtureSet.Named("GlobalNamespaceProbe"),
+        ]));
+
+    [Fact]
+    public void Verify_pairs_a_text_that_is_a_substring_of_another_with_a_distinct_violation() =>
+        Verify.Exactly([new Violation("X", "Svc -> Infra", "fix"), new Violation("X", "Svc -> Core", "fix")], "X", "Svc -> ", "Svc -> Infra");
 
     [Theory]
     [InlineData("Aw.Judge.Host", "Aw.Judge")]
@@ -177,6 +208,8 @@ public sealed class FixtureTests
     [InlineData("System.Environment", "GetEnvironmentVariable(System.String)", true)]
     [InlineData("System.Environment", "GetFolderPath(System.Environment+SpecialFolder)", true)]
     [InlineData("System.Environment", "set_CurrentDirectory(System.String)", true)]
+    [InlineData("System.Environment", "get_UserName()", true)]
+    [InlineData("System.Environment", "get_MachineName()", true)]
     [InlineData("System.Environment", "get_NewLine()", false)]
     [InlineData("System.Environment", "get_ProcessorCount()", false)]
     [InlineData("System.Console", "GetEnvironmentVariable(System.String)", false)]
