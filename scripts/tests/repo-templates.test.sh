@@ -31,9 +31,19 @@ check "every FROM and COPY --from image is pinned by digest" \
 nvm="$(tr -d '[:space:]v' < .nvmrc)"
 check "Node major matches .nvmrc ($nvm)" "grep -qE '^ARG NODE_VERSION=${nvm%%.*}\\.[0-9]+\\.[0-9]+\$' $DF"
 check "Node tarball is checksum-verified" "grep -q 'sha256sum -c' $DF && grep -qE '^ARG NODE_SHA256_X64=[0-9a-f]{64}\$' $DF && grep -qE '^ARG NODE_SHA256_ARM64=[0-9a-f]{64}\$' $DF"
-# Comment lines may name what's excluded; only the configuration itself counts.
-check "no Docker-in-Docker, host socket, privileged mode or extra run args" \
-  "! grep -hvE '^[[:space:]]*(#|//)' .devcontainer/* | grep -iE 'docker-in-docker|docker-outside-of-docker|docker\.sock|privileged|\"runArgs\"|\"mounts\"|\"features\"|--cap-add'"
+# Comment lines may name what's excluded; only the configuration itself counts. The pattern is kept in this
+# variable so the probes below can prove it catches each way a devcontainer can gain privileges.
+PRIV_RE='docker-in-docker|docker-outside-of-docker|docker\.sock|privileged|"runArgs"|"mounts"|"features"|--cap-add'
+privilege_hits() { grep -hvE '^[[:space:]]*(#|//)' "$1"/* | grep -iE "$PRIV_RE"; }
+check "no Docker-in-Docker, host socket, privileged mode, capabilities or extra run args" "! privilege_hits .devcontainer"
+PROBE_DIR="$(mktemp -d "${TMPDIR:-/tmp}/repo-templates-probe.XXXXXX")"
+trap 'rm -rf "$PROBE_DIR"' EXIT
+for snippet in '"runArgs": ["--privileged"]' '"capAdd": ["SYS_ADMIN"]' '"securityOpt": ["seccomp=unconfined"]' \
+               '"dockerComposeFile": "compose.yml"' '"mounts": ["source=/var/run/docker.sock,target=/var/run/docker.sock,type=bind"]' \
+               '"features": {"ghcr.io/devcontainers/features/docker-in-docker:2": {}}' 'cap_add: [SYS_ADMIN]'; do
+  printf '{\n  %s\n}\n' "$snippet" > "$PROBE_DIR/devcontainer.json"
+  check "the privilege check catches: $snippet" "privilege_hits '$PROBE_DIR' > /dev/null"
+done
 check "the container runs as a non-root user" "grep -qE '^USER [a-z]+' $DF && grep -q '\"remoteUser\": \"ubuntu\"' $DC"
 check "post-create script is executable and restores locked" \
   "[ -x .devcontainer/post-create.sh ] && grep -q 'dotnet restore AgenticWorkflow.slnx --locked-mode' .devcontainer/post-create.sh"
