@@ -11,9 +11,10 @@ rules compare against. They change only through a re-plan with the human, never 
 > - **R2 as a whole** overrunning 1.5× its summed estimate triggers a re-plan with the human: reorder, cut scope, or
 >   run more packets in parallel. The port itself is decided and isn't reopened.
 
-The fixed thresholds below come from the "Expected" column:
+The fixed thresholds below come from the "Expected" column. They're computed from the unrounded estimates, so a
+threshold can differ by 0.1 h from twice the rounded figure:
 
-| Rule | Estimate (expected) | Stop or re-plan at |
+| Packet | Estimate (expected) | Stop or re-plan at |
 |---|---|---|
 | Judge | 8.9 h | 17.7 h |
 | Bridge | 2.5 h | 5.1 h |
@@ -32,8 +33,9 @@ because the baseline counted that time too. Time spent waiting for the human to 
 ## The baseline: what R1b measured
 
 Three packages were built from the template in R1b. Readiness (T7) and Packets (T8) are the two §10 names, and
-Redaction (T1) is the one package the brief allowed R1b to port. Each is measured against its PR base. Raw output
-is in the T12 proof (`evidence.md`).
+Redaction (T1) is the one package ported during R1b. Each is measured against its PR base. The raw output is in
+the T12 proof, which lives in the owner's local state directory (`proof/readiness-t12-r2-estimate/`), not in the
+repo. PR #144's Evidence section carries the cross-checks.
 
 | | T1 Redaction (#130) | T7 Readiness (#141) | T8 Packets (#142) |
 |---|---|---|---|
@@ -55,9 +57,9 @@ is in the T12 proof (`evidence.md`).
 | Lines added after review run 1 | 455 (29%) | 1,149 (18%) | 1,926 (28%) |
 
 The rework rows measure the review loop. They show how much of each package changed after the first review, and
-none of the three reached zero findings within five runs. T8's long gap covers the template fix it took from T7
-(`743d120` in #142, which applies #141's machine-independent AOT build) and time spent waiting on the heavy-job lock. The
-gap stays in the elapsed time, because a port packet will hit the same waits.
+none of the three reached zero findings within five runs. T8's long gap ends at the template fix it took from T7
+(`743d120` in #142, which applies #141's machine-independent AOT build). The record doesn't say what filled the gap.
+It stays in the elapsed time, because a port packet can hit the same kind of wait.
 
 These figures differ slightly from the stage reports: T7's tests are 1,883 lines, not 1,881. T8's tests are 2,325,
 not 2,375. T7's hand-written lines are 4,368, not 4,517, because golden files and the AOT `expected.txt` are counted
@@ -117,8 +119,8 @@ module ported, which also builds Sindri's host.
 | Sindri: scope | `sindri/src/scope` | 1,889 | 2,449 |
 | Sindri: evolve | `sindri/src/evolve` | 4,112 | 7,596 |
 
-Cross-check: the six sindri modules sum to the whole of `sindri/src` and `sindri/tests` (115 source files and 13,428
-lines, and 99 test files and 20,001 lines, counting blank lines in both).
+Cross-check: the six sindri modules sum to the whole of `sindri/src` and `sindri/tests`: 115 source files with
+12,341 non-blank lines, and 99 test files with 18,320 (13,428 and 20,001 counting blank lines).
 
 ## The estimate per packet
 
@@ -157,8 +159,8 @@ A packet with one of these costs may land between expected and high. Its estimat
 
 ## How a packet is measured
 
-Use the same commands that produced the baseline. The full scripts and their raw output are in the T12 proof
-directory, and the core of each is below.
+Use the same commands that produced the baseline. The full scripts are in the T12 proof directory (see above),
+and the core of each is below.
 
 ```bash
 # Size and commits of a packet's PR against its base.
