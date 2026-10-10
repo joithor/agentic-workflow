@@ -79,14 +79,14 @@ packages:
     projectPrefix: Aw.Kernel
     ts: null
     src: src/Aw.Kernel
-    note: "Result<T>, Error, IService<,> and decorators, clock and id ports, envelope and outbox contracts, byte-compat JSON (§4b.1, §4c)"
+    note: "Result<T>, Error, IService<,> and decorators, clock and id ports, envelope and outbox contracts, source-generated JSON settings (§4b.1)"
   - id: Redaction
     kind: package
     tier: 0
     projectPrefix: Aw.Redaction
     ts: null
     src: src/Redaction
-    note: "the scrubbing patterns copied between judge and sindri today, one shared pattern file (§4c A2); tier 0 per §4e B10"
+    note: "the scrubbing patterns copied between judge and sindri today, merged into one package; tier 0 per §4e B10"
   - id: Analyzers
     kind: package
     tier: 0
@@ -119,7 +119,7 @@ packages:
     projectPrefix: Aw.Kernel.Testing
     ts: null
     src: tests/Aw.Kernel.Testing
-    note: "fakes base, builders, contract-test bases, golden harness; lives under tests/ next to every package's Aw.<Pkg>.Testing, and only test code references it"
+    note: "fakes base, builders, contract-test bases; lives under tests/ next to every package's Aw.<Pkg>.Testing, and only test code references it"
 
   # ---- tier 1 ----
   - id: Judge
