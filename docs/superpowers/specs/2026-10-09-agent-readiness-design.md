@@ -361,12 +361,12 @@ group.MapPost("/items/{id}/start", async (ItemId id, StartItemBody body, IServic
   `Program.cs` resolves `TelemetryRuntime` once the container is built (one runtime per process; R1b, #136).
   `Compose` may also register the package's JSON options (`AwJson.CreateOptions` over the package's
   source-generated context) as a singleton, for an `Infrastructure` adapter that persists JSON; `Aw.Readiness.App`'s
-  run history (`JsonRunHistory`) takes them this way (R1b, #141), so `Infrastructure` never reaches for the host's
-  JSON context.
+  run history (`JsonRunHistory`) takes them this way (R1b, #141, on main), so `Infrastructure` never reaches for the
+  host's JSON context.
 - Nothing binds settings from `IConfiguration`: settings come from the environment `Compose` passes. The one allowed
   touch is the http host clearing its configuration sources (`builder.Configuration.Sources.Clear()`, as
-  `/new-package` generates, #139) so §4d's environment rules hold, and the host-assembly rule (R13) must allow it.
-  OpenTelemetry brings the configuration assemblies into every host, and `BannedSymbols.txt` doesn't apply to hosts,
+  `/new-package` generates, #139 on main) so §4d's environment rules hold, and the host-assembly rule (R13) must allow
+  it. OpenTelemetry brings the configuration assemblies into every host, and `BannedSymbols.txt` doesn't apply to hosts,
   so this needs an architecture rule over the host assemblies (a gap until it lands).
 - Lifetimes: services and repositories are scoped per request or command, pure domain services are singletons, and
   `TimeProvider` is a singleton (a `FakeTimeProvider` in tests).
@@ -396,8 +396,8 @@ group.MapPost("/items/{id}/start", async (ItemId id, StartItemBody body, IServic
   CTRF report is checked against the same budget as an extra per-test cap (`Aw.Kernel.Testing` ships the check). The
   per-test cap reads one CTRF report per test project, so a lane run writes them with `--report-xunit-ctrf
   --results-directory <dir>` (never a fixed `--report-xunit-ctrf-filename` with `--solution`, which keeps only the
-  last project's report), then `dotnet run --project tests/Aw.LaneCap.Testing -- <dir>` checks them (R1b, #133).
-  CTRF reports carry the OS user name, so they are never committed.
+  last project's report), then `dotnet run --project tests/Aw.LaneCap.Testing -- <dir>` checks them (R1b, #133, on
+  main). CTRF reports carry the OS user name, so they are never committed.
 - **Every test carries exactly one `Lane` trait.** The per-test cap reports a test without exactly one known lane
   (LANE-TEST-002); a scan of every built test assembly is the planned complete check.
 - **Fakes, not mocks.** Each port has one in-memory fake in a shared `Aw.<Pkg>.Testing` project. A generic contract-test
@@ -441,8 +441,8 @@ group.MapPost("/items/{id}/start", async (ItemId id, StartItemBody body, IServic
     support it (net8.0 and later), so a netstandard2.0 source generator doesn't fail with NETSDK1210;
   - NativeAOT only on the entry points in the table below, and only under a runtime identifier: an entry point's
     project sets `AwAotEntryPoint=true` and `PublishAot` conditioned on `$(RuntimeIdentifier)` (what `/new-package`
-    generates; R1b, #141). An unconditional `PublishAot=true` makes a plain restore add the host's ILCompiler pack
-    under a host-RID section of `packages.lock.json`, so the committed lock file would differ between macOS and
+    generates; R1b, #141 on main). An unconditional `PublishAot=true` makes a plain restore add the host's ILCompiler
+    pack under a host-RID section of `packages.lock.json`, so the committed lock file would differ between macOS and
     Linux and CI's locked restore would refuse it. AOT publishing (`dotnet publish -r <rid>`) sets the committed lock
     files aside;
   - `InvariantGlobalization=true` on every project with `PublishAot=true` or `AwAotEntryPoint=true`: no ICU
@@ -450,7 +450,8 @@ group.MapPost("/items/{id}/start", async (ItemId id, StartItemBody body, IServic
     globalization as its binary;
   - the trim, AOT and single-file analyzers on for every `AwAotEntryPoint=true` project in every build, JIT
     included: a `Host` isn't a library, so `IsAotCompatible` doesn't turn them on, and a plain build has no
-    `PublishAot`; a small package's `App` is a library and its entry point at once, so both settings apply (R1b, #141);
+    `PublishAot`; a small package's `App` is a library and its entry point at once, so both settings apply (R1b, #141,
+    on main);
   - `EnableRequestDelegateGenerator=true` on every `*.Host` project, so JIT endpoint tests run the same generated
     binding as the AOT binary;
   - the missing-lock-file check (AW0001): under CI, a project without a committed `packages.lock.json` fails;
@@ -499,7 +500,7 @@ group.MapPost("/items/{id}/start", async (ItemId id, StartItemBody body, IServic
 | Hook binaries, `judge`, `sindri`, `scorer`, `bugfix-state` CLIs | NativeAOT | Run per hook call or per command; startup matters |
 | `Bridge` hosts: REST (minimal API) and stdio MCP, two entry points as today | NativeAOT (decided: the MCP C# SDK passed the R1a spike with 0 warnings) | MCP tools use the SDK's low-level list/call handlers, so tool schemas and error shapes are explicit in code |
 | `Evidence` (ui-evidence) | Framework-dependent | Playwright for .NET doesn't support NativeAOT |
-| `aw-readiness` (`Aw.Readiness.App`, #141) and `aw-packets` (`Aw.Packets.App`, #142): small-shape packages, so the entry point is `App` | NativeAOT | Standalone CLIs before the switch (§4c); sindri runs them per check after it |
+| `aw-readiness` (`Aw.Readiness.App`, #141 on main) and `aw-packets` (`Aw.Packets.App`, #142): small-shape packages, so the entry point is `App` | NativeAOT | Standalone CLIs before the switch (§4c); sindri runs them per check after it |
 
 AOT publishing runs only in a separate CI job and in releases. Local builds and tests are JIT, so the inner loop
 stays fast.
@@ -516,8 +517,8 @@ containers, model CLIs, secrets, clock and ids). `Core` declares the port, named
 picks the adapter. Every port has a contract-test suite that its in-memory fake and every real adapter pass (BCL
 ports such as `TimeProvider`, faked by `FakeTimeProvider`, are exempt). In
 R1b the Kernel ports have theirs in `Aw.Kernel.Testing`: `ReadRepositoryContract`, and `UnitOfWorkContract` and
-`OutboxContract` (R1b, #133), run against the fakes and against `Aw.Kernel.Data`'s SQLite adapters, which include
-the transactional outbox `SqliteOutbox` with its table from `SqliteOutboxSchema.CreateMigration`. Logging's port
+`OutboxContract` (R1b, #133, on main), run against the fakes and against `Aw.Kernel.Data`'s SQLite adapters, which
+include the transactional outbox `SqliteOutbox` with its table from `SqliteOutboxSchema.CreateMigration`. Logging's port
 is `ILogSink` in `Aw.Kernel.Telemetry`, with its contract in `tests/Aw.Kernel.Telemetry.Testing` (R1b, #136).
 
 ### 4b.7 Repository tree
@@ -578,7 +579,7 @@ The skill packages that hold code today (`skills/ui-evidence`, `skills/bugFixOrc
   It also has the slice recipe ("to add a use case: test, request and response, service, endpoint, registration")
   and points to the `/new-package` and `/new-slice` scaffolds.
 - The scaffolds produce compliant code with a red test, so an agent's first move is always the TDD step.
-- The scaffolds exist (R1b, #139): `/new-package` and `/new-slice` are skills that drive
+- The scaffolds exist (R1b, #139, on main): `/new-package` and `/new-slice` are skills that drive
   `scripts/scaffold/new-package.mjs` and `scripts/scaffold/new-slice.mjs`, and the CI job "C# scaffold generators"
   scaffolds a small CLI package and a full http package into a temporary tree and builds and tests them.
 - Rule records carry the analyzer ID that enforces each rule, and `node scripts/check-rules.mjs` enforces that every
@@ -588,28 +589,28 @@ The skill packages that hold code today (`skills/ui-evidence`, `skills/bugFixOrc
 ### 4b.10 Checks of record (R1b)
 
 The rule ids the R1b template PRs added. Each failure message names the rule id, what was found (the measured value and
-the limit, where the rule has one) and the fix (§8). Where a check is still in an open PR, the PR is named; the rule record (§4b intro) says `pending` until it
-merges.
+the limit, where the rule has one) and the fix (§8). The PR column names the PR that added each check: `(main)` marks
+one that is merged; any other is still open, and its rule record (§4b intro) says `pending` until it merges.
 
 | Area | Ids | Check | PR |
 |---|---|---|---|
-| Dependency direction; another package only through its `Core`; `Core` and `Features` use no tier-0 package but `Aw.Kernel` | ARCH-DIR-001…005 | `tests/Aw.Architecture.Tests` | #131 |
-| Every type in its project's layer namespace | ARCH-PLACE-001 | same | #131 |
-| No slice-to-slice references | ARCH-SLICE-001 (authoritative); AW1003 (fast analyzer check) | same; `Aw.Analyzers` | #131, #132 |
-| `Infrastructure` types internal | ARCH-INFRA-001 | `tests/Aw.Architecture.Tests` | #131 |
-| No namespace cycles | ARCH-CYCLE-001 | same | #131 |
-| No `Common`, `Shared`, `Utils`, `Helpers` | ARCH-NAME-001 | same | #131 |
-| Service-locator types only in `Host` and registration classes | ARCH-DI-001 | same | #131 |
-| No technology types in `Core`, `Features` or the small shape's `App.Commands` (`Host` may use them); only `Composition` uses `Infrastructure` | ARCH-PORT-001, ARCH-PORT-002 | same | #131 |
-| Typed ids (R9: defaults, user-code converter) | ARCH-ID-001, ARCH-ID-002 (`TypedIdGuard`, moved from `Aw.Kernel.Tests`) | same | #131 |
-| The `Packages.Production` registry matches the solution | ARCH-REG-001, ARCH-REG-002 | same | #131 |
+| Dependency direction; another package only through its `Core`; `Core` and `Features` use no tier-0 package but `Aw.Kernel` | ARCH-DIR-001…005 | `tests/Aw.Architecture.Tests` | #131 (main) |
+| Every type in its project's layer namespace | ARCH-PLACE-001 | same | #131 (main) |
+| No slice-to-slice references | ARCH-SLICE-001 (authoritative); AW1003 (fast analyzer check) | same; `Aw.Analyzers` | #131 (main), #132 |
+| `Infrastructure` types internal | ARCH-INFRA-001 | `tests/Aw.Architecture.Tests` | #131 (main) |
+| No namespace cycles | ARCH-CYCLE-001 | same | #131 (main) |
+| No `Common`, `Shared`, `Utils`, `Helpers` | ARCH-NAME-001 | same | #131 (main) |
+| Service-locator types only in `Host` and registration classes | ARCH-DI-001 | same | #131 (main) |
+| No technology types in `Core`, `Features` or the small shape's `App.Commands` (`Host` may use them); only `Composition` uses `Infrastructure` | ARCH-PORT-001, ARCH-PORT-002 | same | #131 (main) |
+| Typed ids (R9: defaults, user-code converter) | ARCH-ID-001, ARCH-ID-002 (`TypedIdGuard`, moved from `Aw.Kernel.Tests`) | same | #131 (main) |
+| The `Packages.Production` registry matches the solution | ARCH-REG-001, ARCH-REG-002 | same | #131 (main) |
 | Raw ids in public `Core`/`Features` signatures; `!` without `// why:`; endpoint lambda calls exactly one service; file ≤ 300 lines; parameters ≤ 5; constructor dependencies > 7 (error) and 6–7 (`suggestion`); generic arity ≤ 3 | AW1001, AW1002, AW1004, AW1005, AW1006, AW1007, AW1008, AW1009 | `Aw.Analyzers` (`CA1005` off, owned by AW1009) | #132 |
-| Per-test lane cap; exactly one known lane | LANE-TEST-001, LANE-TEST-002 | `tests/Aw.LaneCap.Testing` over CTRF reports | #133 |
+| Per-test lane cap; exactly one known lane | LANE-TEST-001, LANE-TEST-002 | `tests/Aw.LaneCap.Testing` over CTRF reports | #133 (main) |
 | Per-package lane budget; a timed lane run failed | LANE-PKG-001, LANE-PKG-002 | `node scripts/ci/lane-budgets.mjs` (CI .NET job) | #138 |
-| Kernel port contracts | `UnitOfWorkContract`, `OutboxContract` (with `ReadRepositoryContract`) | `Aw.Kernel.Testing` | #133 |
+| Kernel port contracts | `UnitOfWorkContract`, `OutboxContract` (with `ReadRepositoryContract`) | `Aw.Kernel.Testing` | #133 (main) |
 | Redaction timeout blocks | AW-REDACT-001 | `Aw.Redaction` | #130 |
 | Rule records cover every named check and each check exists | RULE-COVER-*, RULE-CHECK-* | `node scripts/check-rules.mjs` | #137 |
-| Scaffold inputs and refusals; generator steps | NP-* (`/new-package`), NS-* (`/new-slice`), SCAFFOLD-* | `scripts/scaffold/*.mjs`, CI job "C# scaffold generators" | #139 |
+| Scaffold inputs and refusals; generator steps | NP-* (`/new-package`), NS-* (`/new-slice`), SCAFFOLD-* | `scripts/scaffold/*.mjs`, CI job "C# scaffold generators" | #139 (main) |
 | Every environment variable read is documented | ENV-EXAMPLE-001…004 | `scripts/check-env-example.sh` | #140 |
 
 Still gaps after R1b. The rule records (#137) are the list of record, and `node scripts/check-rules.mjs` counts them
@@ -627,8 +628,8 @@ lands:
 Also still gaps:
 - the `IConfiguration` ban for hosts (§4b.4, R13);
 - the complete one-`Lane`-trait scan (§4b.5);
-- telemetry in generated code: the `/new-package` templates (#139), `Aw.Readiness` (#141) and `Aw.Packets` (#142)
-  don't call `AddKernelTelemetry` in `Compose` yet (§4b.4), because they're stacked on #139, which predates #136.
+- telemetry in generated code: the `/new-package` templates (#139, on main), `Aw.Readiness` (#141, on main) and
+  `Aw.Packets` (#142) don't call `AddKernelTelemetry` in `Compose` yet (§4b.4), because #139 predates #136.
   They adopt it once #136 merges.
 
 **Sources:**
@@ -810,8 +811,10 @@ are `aw-packets validate` and `aw-packets freeze`, with the rule ids, output, ex
 
 - **Tiers (B10):** `Redaction` is domain-free and moves to tier 0 next to `Aw.Kernel`, so judge and sindri both depend
   on it downward. Scorer reading Evidence's run files is declared as a `file` edge. The new outbox table is named
-  `outbox_commands` to avoid `judge/outbox`. Sindri's fan-out exceeds the limit and carries a recorded exception
-  until its modules split.
+  `outbox_commands` to avoid `judge/outbox`. On main, Sindri reaches Readiness through its CLI (§8) and has 5
+  project edges, over the limit of 4, under a recorded DEPS-FANOUT-001 exception. #142 makes the Packets edge `cli`
+  too (§4c), which leaves Kernel, KernelData, KernelTelemetry and Redaction (4, at the limit), and deletes the
+  exception.
 - **Readiness target (B11):** the target level is per ring in `readiness.yaml` (ring 0: Level 4 before F0, Level 5
   with F3). Exit code 0 means every repo in scope meets its ring's target.
 - **Overrides (B11):** requested by PR only. `overrides.yaml` is CODEOWNERS-protected and an approval-tier file, so an
@@ -837,7 +840,7 @@ Each row is a criterion family, the change that satisfies it, and its owner work
 | 3 | Integration tests, tests runnable locally | Lanes, one root `test` command | W3 |
 | 3 | Secret scanning, CODEOWNERS | GitHub secret scanning + push protection, a scrub job in CI, CODEOWNERS backed by a check (§4d) | W4 |
 | 3 | Structured logging, tracing, metrics | One logger module (JSON lines, levels, ids; `Aw.Kernel.Telemetry`); OTel spans and metrics in bridge and sindri (exporter off by default; the OTLP adapter and a local collector, run on the host, arrive with the first exporting host) | W7 |
-| 3 | Issue and PR templates, labels | Templates; label scheme (`type:`, `area:`, `size:`, `ring:`) in `.github/labels.yml`, synced to the repo by the owner. The criterion (TD-2) passes only when labels of each family are on the repo, not only in the file (R1b, #141), so it waits on that owner step | W6 |
+| 3 | Issue and PR templates, labels | Templates; label scheme (`type:`, `area:`, `size:`, `ring:`) in `.github/labels.yml`, synced to the repo by the owner. The criterion (TD-2) passes only when labels of each family are on the repo, not only in the file (R1b, #141, on main), so it waits on that owner step | W6 |
 | 4 | Fast CI feedback | Required CI under 5 minutes for lint, types and unit tests; affected-package detection; heavy lanes nightly | W3 |
 | 4 | Flaky-test detection | The quarantine job (§4e B11, §8) | W3 |
 | 4 | Deployment frequency | "Release" here means promoting a stable channel (§7.7 of the main spec). Track promotion frequency and lead time | W8 |
@@ -874,7 +877,7 @@ next PR shows it passing.
   runs our reproducible criteria, per repo and per app. It is built in **R1b as
   one of the first two packages scaffolded from the template** (§10), so the template proves itself and the Level-4
   gate is measurable from the start.
-- **The R1b CLI** (R1b, #141; `docs/readiness/README.md` there): `aw-readiness check [--json] [--root DIR]
+- **The R1b CLI** (R1b, #141 on main; `docs/readiness/README.md` there): `aw-readiness check [--json] [--root DIR]
   [--no-remote]`. `--root` checks another checkout (default the current directory); `--no-remote` skips the
   read-only `gh` calls behind the host criteria. Nothing installs or schedules it.
   - **Scope:** `csharp-template`, the C# build surface (`src/`, `tests/`, the root build files, the CI workflows,
@@ -900,7 +903,7 @@ next PR shows it passing.
   different scope. When sindri's C# ledger first runs, it imports that history and keeps the files; results are
   recorded in the ledger from then on.
 - **sindri runs the CLI:** `sindri readiness check` calls `aw-readiness check --json` (a planned `cli` edge in
-  `deps.yaml`, R1b, #141) rather than referencing the package, because a project edge could reach only
+  `deps.yaml`, R1b, #141 on main) rather than referencing the package, because a project edge could reach only
   `Aw.Readiness.Core` and would re-implement its adapters.
 - **Usage metrics for R3** (promotion frequency, flake rates, doc freshness over time) come from external sources
   where possible (git tags, the GitHub Actions API). Anything else is measured from the switch.
@@ -910,7 +913,7 @@ next PR shows it passing.
   - the summary shows the level per pillar and overall, and the delta since the last run;
   - exit codes: 0 when the target level holds, 1 when it doesn't, 2 on a usage or tool error;
   - a first run with no baseline records one and says so;
-  - `--json` follows a versioned schema. Version 1 (R1b, #141; golden file
+  - `--json` follows a versioned schema. Version 1 (R1b, #141 on main; golden file
     `tests/Aw.Readiness.Tests/Golden/report.json`): `schemaVersion`, `repo`, `scope`, `recordedAt`, `target {ring,
     level}`, `level`, `holds`, `unconfirmed[]`, `recordedTo`, `delta {since, levelBefore, levelAfter, changes[],
     isFirstRun}`, `pillars[]`, `tallies[]`, `findings[] {criterion {id, pillar, level, title, fix}, state, evidence,
@@ -976,8 +979,8 @@ the R1b stage PRs merged **and** the owner's label sync (§5 Level 3, TD-2):
 - the same tree with `.github/labels.yml` applied to the repo (simulated): Level 4 holds. A CODEOWNERS file backed by
   a required check (SEC-3) would also reach it.
 
-`Aw.Packets`, the second standalone package, is #142 (stacked on #139, like #141). It wasn't in the measured tree; its
-`aw-packets validate` and `aw-packets freeze` are the R1b packet commands (addendum §17.4).
+`Aw.Packets`, the second standalone package, is #142 (built on #139, like #141; both are on main). It wasn't in the
+measured tree; its `aw-packets validate` and `aw-packets freeze` are the R1b packet commands (addendum §17.4).
 
 **Stop rules:**
 - **The unit is agent elapsed hours.** A packet's clock starts at the `created` line of its verification plan and

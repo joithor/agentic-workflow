@@ -251,7 +251,7 @@ the affected tasks are re-planned and re-frozen.
 CLI `aw-packets validate|freeze <packet-dir> [--repo <dir>] [--json]` (readiness design §4c). After it,
 `sindri packet validate|freeze` runs this CLI through a planned `cli` edge, as `sindri readiness check` does
 (readiness design §8): the use cases and adapters live in `Aw.Packets.App`, and a `project` edge could reach only
-`Aw.Packets.Core`. (#142's `deps.yaml` still declares Sindri → Packets as `kind: project`; it changes to `cli`.)
+`Aw.Packets.Core`; #142's `deps.yaml` declares that `cli` edge.
 `--repo` is a directory inside the repository the packet builds (default: the packet directory); the base commit's
 file list comes from git.
 - **The manifest is `packet.json` today, not `packet.yaml`:** the build reads typed, source-generated JSON under
@@ -274,6 +274,12 @@ file list comes from git.
   | `PKT-HOLD-002` | No held-out example keeps its text in the packet; the packet keeps its id and evidence kinds (§17.19) |
   | `PKT-SIZE-001` | **Unchecked:** the size-class budgets aren't defined (readiness design §9 R15) |
   | `PKT-FLOW-001` | **Unchecked** until workflow generation (§17.7) exists |
+
+  This is the R1b set, not the whole `packet validate` set. Three checks the later sections add get `PKT-*` ids at
+  F0: measurable acceptance examples (§17.23.14), a named oracle before a migration (§17.24.2), and `freeze`
+  refusing a packet with `proposed` items not yet confirmed or rejected (§17.26.4). The §17.26.4 editing (`packet
+  edit`, `packet undo`, `source:` provenance on every item, change sets and draft revisions) is F0 too, not R1b.
+  Because #142 refuses an unknown member, F0 extends the packet schema with the provenance and status fields.
 - **Malformed packets** are refused before any rule runs (`AW-PACKETS-003`, or `-004` for an unknown
   `schemaVersion`): a byte order mark, a duplicate key, an unknown member (an optional top-level `$schema` editor hint
   is allowed), a null in a list, more than 2,000 tasks, or a link that leaves the packet directory (`..`, a root, a
