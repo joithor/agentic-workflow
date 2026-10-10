@@ -20,9 +20,10 @@ export const SEARCH = {
   "lane-cap": ["tests"],
   "check-rules": ["scripts/check-rules.mjs", "scripts/rules"],
 };
-const BUILD_FILES = ["Directory.Build.props", "Directory.Build.targets", "Directory.Packages.props", "global.json", ".editorconfig", "nuget.config"];
+const BUILD_FILES = ["Directory.Build.props", "Directory.Build.targets", "Directory.Packages.props", "global.json", ".editorconfig", "nuget.config", "CodeMetricsConfig.txt"];
 
-// stripCs(text) — C# without // and /* */ comments. Strings are copied as they are: "…" (with \ escapes), verbatim
+// stripCs(text) — C# without // and /* */ comments. Known limit: interpolation holes in $"…" aren't lexed, so a char
+// literal '"' inside a hole ends the string early (the damage stays on that line). Strings are copied as they are: "…" (with \ escapes), verbatim
 // @"…", $@"…" and @$"…" ("" escapes), raw """…""" (closed by the same run of quotes) and char literals.
 function stripCs(text) {
   let out = "";
@@ -37,9 +38,13 @@ function stripCs(text) {
     if (prefix) {
       const q = text.slice(i + prefix[1].length).match(/^"+/)[0].length;
       let j = i + prefix[1].length + q;
-      if (q >= 3) { const e = text.indexOf('"'.repeat(q), j); copyTo(e < 0 ? text.length : e + q); continue; }
-      if (q === 2) { copyTo(j); continue; } // "" is an empty string
-      if (prefix[1].includes("@")) { while (j < text.length && !(text[j] === '"' && text[j + 1] !== '"')) j += text[j] === '"' ? 2 : 1; }
+      const verbatim = prefix[1].includes("@");
+      if (q >= 3 && !verbatim) { const e = text.indexOf('"'.repeat(q), j); copyTo(e < 0 ? text.length : e + q); continue; }
+      if (q === 2 && !verbatim) { copyTo(j); continue; } // "" is an empty string
+      if (verbatim) {
+        j = i + prefix[1].length + 1; // the opening quote; "" pairs after it are escaped quotes
+        while (j < text.length && !(text[j] === '"' && text[j + 1] !== '"')) j += text[j] === '"' ? 2 : 1;
+      }
       else { while (j < text.length && text[j] !== '"' && text[j] !== "\n") j += text[j] === "\\" ? 2 : 1; }
       copyTo(j + 1); continue;
     }
@@ -50,9 +55,9 @@ function stripCs(text) {
 }
 
 // stripJs(text) — JavaScript without comments, through check-deps' lexer (regex literals, template nesting). A file
-// the lexer can't read (an unterminated literal) is used as it is.
+// the lexer can't read (an unterminated literal) counts as empty.
 function stripJs(text) {
-  try { return lexTs(text).code; } catch { return text; }
+  try { return lexTs(text).code; } catch { return ""; } // proves nothing, as check-deps fails closed on it
 }
 
 // stripHashComments(text) — .editorconfig, YAML and text files: a line starting with # or ; is a comment, and so is
@@ -117,13 +122,29 @@ export class Tree {
 
 // A section that applies to C# files in general ([*], [*.cs], [**.cs], [**/*.cs], [*.{…,cs,…}]); a narrower section
 // (a path glob) neither enables nor disables a rule for the whole repo.
+// topLevel(list) — a brace list's elements, split on commas outside nested braces
+function topLevel(list) {
+  const out = [];
+  let depth = 0;
+  let cur = "";
+  for (const ch of list) {
+    if (ch === "," && depth === 0) { out.push(cur.trim()); cur = ""; continue; }
+    if (ch === "{") depth++;
+    if (ch === "}") depth--;
+    cur += ch;
+  }
+  out.push(cur.trim());
+  return out;
+}
+
 function isGeneralCs(glob) {
   if (/^(\*|\*\*|\*\*\/\*)$/.test(glob)) return true;
   const list = glob.match(/^\{(.*)\}$/);
-  if (list) return list[1].split(",").some((g) => isGeneralCs(g.trim()));
-  if (/^\*\*?(\/\*)?\.cs$/.test(glob)) return true;
-  const exts = glob.match(/^\*\*?(\/\*)?\.\{([^}]*)\}$/);
-  return Boolean(exts && exts[2].split(",").map((e) => e.trim()).includes("cs"));
+  if (list) return topLevel(list[1]).some((g) => isGeneralCs(g));
+  const ext = glob.match(/^(?:\*|\*\*|\*\*\/\*)\.(.+)$/);
+  if (!ext) return false;
+  const exts = ext[1].match(/^\{(.*)\}$/);
+  return exts ? topLevel(exts[1]).some((e) => e === "cs" || (/^\{.*\}$/.test(e) && topLevel(e.slice(1, -1)).includes("cs"))) : ext[1] === "cs";
 }
 
 // editorconfigKeys(tree) — the properties the root .editorconfig's general C# sections set, keys lower-cased
@@ -134,7 +155,8 @@ function editorconfigKeys(tree) {
   for (const line of (tree.text(".editorconfig") ?? "").split("\n")) {
     const section = line.match(/^\s*\[(.*)\]\s*$/);
     if (section) { applies = isGeneralCs(section[1].trim()); continue; }
-    const kv = applies && line.match(/^\s*([^=]+?)\s*=\s*(.*?)\s*$/);
+    // Roslyn's property syntax: key = value or key: value, a # or ; ending the value.
+    const kv = applies && line.match(/^\s*([\w.\-]+)\s*[=:]\s*(.*?)\s*(?:[#;].*)?$/);
     if (kv) keys.set(kv[1].toLowerCase(), kv[2]);
   }
   return keys;
@@ -156,10 +178,10 @@ function rootSeverities(tree) {
   return { ids, categories, bulk };
 }
 
-// buildSetting(tree, c) — a literal in the root build files; an editorconfig property (`dotnet_… = value`) must be
+// buildSetting(tree, c) — a literal in the root build files; an editorconfig property (`key = value`) must be
 // the value a general C# section of the root .editorconfig ends up with.
 function buildSetting(tree, c) {
-  const prop = c.id.match(/^\s*(dotnet_[A-Za-z0-9_.-]+)\s*=\s*(.+?)\s*$/);
+  const prop = c.id.match(/^\s*([A-Za-z_][\w.\-]*)\s+=\s+(.+?)\s*$/);
   if (prop) {
     const got = editorconfigKeys(tree).get(prop[1].toLowerCase());
     const found = got !== undefined && got.toLowerCase() === prop[2].toLowerCase();
