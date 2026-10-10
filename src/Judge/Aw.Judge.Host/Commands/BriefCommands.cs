@@ -12,6 +12,7 @@ internal static class BriefCommands
         {
             SaveBriefCommand.Name => await SaveBriefCommand.Run(services).ConfigureAwait(false),
             GetBriefCommand.Name => await GetBriefCommand.Run(Argument(args, 1), services, json).ConfigureAwait(false),
+            MapBriefByNameCommand.Name => await MapBriefByNameCommand.Run(Argument(args, 1), services).ConfigureAwait(false),
             _ => CommandOutput.Emit(1, "", "usage: judge brief save|get|map-by-name|map-by-dispatch|set-agent-id ..."),
         };
 
