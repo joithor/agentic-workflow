@@ -1,4 +1,5 @@
 using System.Globalization;
+using System.Reflection;
 
 namespace Aw.Kernel.Testing;
 
@@ -10,6 +11,27 @@ public static class Golden
 {
     /// <summary>The environment variable that switches to update mode when it is '1'.</summary>
     public const string UpdateVariable = "AW_GOLDEN_UPDATE";
+
+    /// <summary>
+    /// The assembly-metadata key that holds a test project's source directory. Declare it in the test project:
+    /// '&lt;AssemblyMetadata Include="AwGoldenSourceRoot" Value="$(MSBuildProjectDirectory)" /&gt;'.
+    /// </summary>
+    public const string SourceRootKey = "AwGoldenSourceRoot";
+
+    /// <summary>
+    /// The path of a golden file in the test project's source tree, so update mode rewrites the committed file
+    /// rather than a copy in the build output.
+    /// </summary>
+    /// <param name="testAssembly">The test assembly; it declares <see cref="SourceRootKey"/>.</param>
+    /// <param name="relativePath">The golden file, relative to the test project directory.</param>
+    /// <returns>The absolute path.</returns>
+    /// <exception cref="InvalidOperationException">The assembly doesn't declare its source root.</exception>
+    public static string SourcePath(Assembly testAssembly, string relativePath)
+    {
+        ArgumentNullException.ThrowIfNull(testAssembly);
+        ArgumentException.ThrowIfNullOrEmpty(relativePath);
+        throw new NotSupportedException("red: Aw.Kernel.Testing C2 SourcePath");
+    }
 
     /// <summary>Checks <paramref name="actual"/> against the golden file after normalization.</summary>
     /// <param name="actual">The output.</param>

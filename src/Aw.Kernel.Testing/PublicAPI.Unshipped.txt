@@ -67,3 +67,5 @@ static Aw.Kernel.Testing.Normalization.Ulids.get -> Aw.Kernel.Testing.Normalizat
 static Aw.Kernel.Testing.SequentialIdGenerator.IdAt(long n, uint scope = 0) -> System.Guid
 static readonly Aw.Kernel.Testing.KnownInstants.Epoch -> System.DateTimeOffset
 const Aw.Kernel.Testing.SequentialIdGenerator.MaxCall = 281474976710655 -> long
+const Aw.Kernel.Testing.Golden.SourceRootKey = "AwGoldenSourceRoot" -> string!
+static Aw.Kernel.Testing.Golden.SourcePath(System.Reflection.Assembly! testAssembly, string! relativePath) -> string!

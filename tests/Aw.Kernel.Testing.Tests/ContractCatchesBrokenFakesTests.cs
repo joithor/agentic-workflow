@@ -38,6 +38,18 @@ public sealed class ContractCatchesBrokenFakesTests
     public async Task A_fake_that_loses_what_was_stored_breaks_the_contract() =>
         await Assert.ThrowsAsync<ContractViolationException>(new Forgetful().Get_returns_the_seeded_entity);
 
+    [Fact]
+    public async Task A_fake_that_throws_for_a_stored_id_breaks_the_contract()
+    {
+        var e = await Assert.ThrowsAsync<ContractViolationException>(new ThrowsAlways().Get_returns_the_seeded_entity);
+
+        _ = Assert.IsType<InvalidOperationException>(e.InnerException);
+    }
+
+    [Fact]
+    public async Task A_fake_whose_exists_throws_breaks_the_contract() =>
+        await Assert.ThrowsAsync<ContractViolationException>(new ExistsThrows().Exists_is_true_only_for_seeded_ids);
+
     private class Broken : ReadRepositoryContract<Item, ItemId>
     {
         protected InMemoryItemRepository Repository { get; } = new();
@@ -86,6 +98,18 @@ public sealed class ContractCatchesBrokenFakesTests
     private sealed class ExistsAlwaysTrue : Broken
     {
         protected override ValueTask<bool> Exists(ItemId id, CancellationToken cancellationToken) => ValueTask.FromResult(true);
+    }
+
+    private sealed class ThrowsAlways : Broken
+    {
+        protected override ValueTask<Result<Item>> Get(ItemId id, CancellationToken cancellationToken) =>
+            throw new InvalidOperationException("database is gone");
+    }
+
+    private sealed class ExistsThrows : Broken
+    {
+        protected override ValueTask<bool> Exists(ItemId id, CancellationToken cancellationToken) =>
+            throw new InvalidOperationException("database is gone");
     }
 
     private sealed class Forgetful : Broken

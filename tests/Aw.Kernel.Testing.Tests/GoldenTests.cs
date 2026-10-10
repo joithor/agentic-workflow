@@ -14,7 +14,7 @@ public sealed class GoldenTests : IDisposable
     public void Output_matching_after_normalization_passes() =>
         Golden.Match(
             "run 0e5f38f5-1c2d-4e3f-8a9b-0123456789ab at 2026-10-10T06:00:00.123Z\nok\n",
-            Path.Combine(AppContext.BaseDirectory, "Golden", "run.txt"),
+            Golden.SourcePath(typeof(GoldenTests).Assembly, "Golden/run.txt"),
             Declared);
 
     [Fact]
@@ -55,6 +55,23 @@ public sealed class GoldenTests : IDisposable
 
         Assert.Equal("at <timestamp>\n", File.ReadAllText(path));
         Golden.Match("at 2026-12-31T23:59:59Z\n", path, Declared, update: false);
+    }
+
+    [Fact]
+    public void SourcePath_points_into_the_test_project_not_the_build_output()
+    {
+        var path = Golden.SourcePath(typeof(GoldenTests).Assembly, "Golden/run.txt");
+
+        Assert.True(File.Exists(path), path);
+        Assert.DoesNotContain(Path.DirectorySeparatorChar + "artifacts" + Path.DirectorySeparatorChar, path, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void SourcePath_says_how_to_declare_the_source_root()
+    {
+        var e = Assert.Throws<InvalidOperationException>(() => Golden.SourcePath(typeof(Golden).Assembly, "x.txt"));
+
+        Assert.Contains(Golden.SourceRootKey, e.Message, StringComparison.Ordinal);
     }
 
     private string Write(string name, string content)

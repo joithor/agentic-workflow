@@ -19,6 +19,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Content Include="Golden/*.txt" CopyToOutputDirectory="PreserveNewest" />
+    <!-- Golden files are read and rewritten in the source tree (Golden.SourcePath), never copied to the output. -->
+    <AssemblyMetadata Include="AwGoldenSourceRoot" Value="$(MSBuildProjectDirectory)" />
   </ItemGroup>
 </Project>
