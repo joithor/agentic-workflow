@@ -80,7 +80,15 @@ private context (for example, session-start memory output).
   `generalize: rewrite failed` / `generalize: judge failed`. The next `stage` retries every held
   proposal that has no `proposal_public` row (publish-gate holds always have one). Nothing is staged from the original text.
 - **Budget.** Two calls per staged proposal, at most `evolve.maxOpenProposals` per run, under the
-  existing evolve budget. Calls use the evolve model config (`role: "draft"`).
+  existing evolve budget. *(Amended during implementation; this replaces "Calls use the evolve model
+  config (`role: "draft"`)".)* The two calls use separate roles and models: the rewrite runs as role
+  `generalize.rewrite` on `models.challenger`, and the judge as role `generalize.judge` on
+  `models.adjudicator`, so the judge can run on a different model from the rewrite. Slots go to `proposed` proposals
+  first (most evidence first), then to held retries with whatever slots remain, so a proposal the
+  judge keeps flagging can't starve new ones. *(Also amended during implementation.)* When the
+  budget is gone before a proposal's rewrite or judge call, nothing is decided: the proposal keeps
+  its status (`proposed` stays proposed, a held retry stays held) and counts as waiting; only a
+  failed or invalid call holds it.
 - **Storage.** Ledger migration v4 → v5 (backup `ledger.db.bak-v4`, the existing `migrateWith`
   pattern) adds `proposal_public (proposal_id TEXT PRIMARY KEY REFERENCES proposals(id), body TEXT NOT
   NULL, judge_category TEXT NOT NULL, model TEXT NOT NULL, created_at TEXT NOT NULL, epoch INTEGER NOT NULL)`. The original
