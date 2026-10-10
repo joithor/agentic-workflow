@@ -231,7 +231,7 @@ async function indexChecks(deps: Deps, loaded: LoadedProfile, probes: IndexProbe
   else if (heavy.ageMs !== null && heavy.ageMs > 6 * 3_600_000) {
     // Remove the holder record too: left beside a lock dir, it would name a later locks.sh lock's holder.
     const dir = heavyLockDir(awStateDir(deps), deps.env);
-    out.push({ name: "heavy-lock", status: "warn", detail: `held for over 6 h${who}`, fix: `if that process is gone: rmdir ${dir} && rm -f ${dir}.holder.json` });
+    out.push({ name: "heavy-lock", status: "warn", detail: `held for over 6 h${who}`, fix: `if that process is gone: rm -r ${dir} && rm -f ${dir}.holder.json (a crashed takeover can leave a .reclaim-* mark inside)` });
   } else out.push({ name: "heavy-lock", status: "ok", detail: `held${heavy.holder === null ? " by an unknown job" : ` by ${heavy.holder.kind}`}` });
   return out;
 }

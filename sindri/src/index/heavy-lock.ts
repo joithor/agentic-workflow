@@ -79,11 +79,14 @@ function dead(h: HeavyHolder, sys: SystemProbe): boolean {
   return !sys.pidAlive(h.pid);
 }
 
+// Whether the filesystem keeps real birth times, judged from the lock's parent dir: no birth time
+// reads as 0, and Node without statx (old kernels, some sandboxes) reports ctime instead. Not judged
+// from the lock dir itself: a dir made within one timestamp tick of a change has birth = ctime too.
+const keepsBirth = (st: fs.Stats): boolean => st.birthtimeMs !== 0 && st.birthtimeMs !== st.ctimeMs;
 // `marked` (stat'ed after the mark) is the dir `checked` was: same inode, and the same birth time
-// when the platform reports a real one. No birth time reads as 0; Node without statx (old kernels,
-// some sandboxes) reports ctime instead, which the mark itself just changed: neither can count.
-const sameDir = (marked: fs.Stats, checked: fs.Stats): boolean =>
-  marked.ino === checked.ino && (marked.birthtimeMs === 0 || marked.birthtimeMs === marked.ctimeMs || marked.birthtimeMs === checked.birthtimeMs);
+// where the filesystem keeps one.
+const sameDir = (marked: fs.Stats, checked: fs.Stats, births: boolean): boolean =>
+  marked.ino === checked.ino && (!births || marked.birthtimeMs === checked.birthtimeMs);
 const sameFile = (a: fs.Stats, b: fs.Stats | undefined): boolean => b !== undefined && a.ino === b.ino && a.mtimeMs === b.mtimeMs;
 
 // Put a dir that changed hands back. rename() replaces an empty dir already at `dir` (another
@@ -145,6 +148,7 @@ function reclaim(deps: Deps, dir: string, gone: HeavyHolder | null, me: HeavyHol
     // A dir holding a file can't be rmdir'ed, so once marked it can't change hands. The mark's
     // name is one only this takeover knows; the inode number alone can't tell a replacement
     // apart, because Linux hands a freed inode to the next mkdir at once.
+    const births = keepsBirth(fs.statSync(path.dirname(dir))); // the reclaim mutex lives there too
     const id = ulid(deps.now());
     const mark = `.reclaim-${id}`;
     if (!tryMark(path.join(dir, mark))) return false; // released in between
@@ -155,7 +159,7 @@ function reclaim(deps: Deps, dir: string, gone: HeavyHolder | null, me: HeavyHol
       // holder record is the one checked (or its holder released it meanwhile).
       const marked = fs.statSync(dir, { throwIfNoEntry: false });
       const after = fs.statSync(holderFile(dir), { throwIfNoEntry: false });
-      if (marked === undefined || !sameDir(marked, st) || (after !== undefined && !sameFile(after, record))) return false;
+      if (marked === undefined || !sameDir(marked, st, births) || (after !== undefined && !sameFile(after, record))) return false;
       // The dir exists, so nobody else can enter while its dead holder's record goes.
       fs.rmSync(holderFile(dir), { force: true });
       if (!tryRename(dir, stale)) return false;
