@@ -200,7 +200,8 @@ for now; the second HTTP package moves it into a tier-0 Kernel part (second use 
 |---|---|
 | `AgenticWorkflow.slnx` | Adds every new project under `/src/<Name>/` and `/tests/` folders |
 | `deps.yaml` | **The node:** if the package is declared already (as `Readiness` and `Packets` are), check that `tier`, `src` (`src/<Name>`) and `projectPrefix` (`Aw.<Name>`) match the inputs, else refuse `NP-DEPS-MISMATCH`. If it isn't declared, add it (`id: <Name>`, `kind: package`, `tier`, `projectPrefix: Aw.<Name>`, `ts: null`, `src: src/<Name>`, `note`). **The edges, one rule for both cases:** for every cross-package project edge the scaffold creates (always `<Name> → Kernel`, since `Core`, `Features` and `Infrastructure` reference `Aw.Kernel`, plus one per `depends` entry), a `planned` edge in `deps.yaml` becomes `current`, and a missing edge is added as `current` with a note. Planned edges the scaffold doesn't create stay `planned` (otherwise `DEPS-STALE-001`) |
-| `tests/Aw.Architecture.Tests/Packages.cs` | Only once that project exists (R1b): registers the package's assemblies so every §4b.1 rule covers them. Until then the generator skips this edit and prints `skipped: tests/Aw.Architecture.Tests doesn't exist yet (R1b)` |
+| `tests/Aw.Architecture.Tests/Packages.cs` | One line per new production project (`"Aw.<Name>.Core",` …, or `Core` and `App` in the small shape), appended to `Packages.Production`, so every §4b.1 rule covers them (`ARCH-REG-001` fails otherwise) |
+| `tests/Aw.Architecture.Tests/Aw.Architecture.Tests.csproj` | One `ProjectReference` per new production project in the `Registered packages` item group, so each registered name loads (`ARCH-REG-002`) |
 
 No other file changes. In particular the scaffold never touches `Directory.Packages.props` (see "Before the scaffold"),
 `setup.sh`, `providers/`, `config/` or MCP registration: nothing is installed before the cutover.
@@ -279,7 +280,7 @@ adds it here.
 ### Template: `VogenDefaults.cs` (Core, R9)
 
 Verbatim from `docs/csharp/typed-ids.md` step 2. `TypedIdGuard.CheckDefaults` checks all six arguments
-(for a package's assembly that check is a gap — R1b (TypedIdGuard moves to Aw.Architecture.Tests)), and `TryFromGeneration.GenerateBoolMethod` is what `ITypedId`'s `static abstract bool TryFrom` binds to:
+(for every registered assembly, `ARCH-ID-001` in `tests/Aw.Architecture.Tests`), and `TryFromGeneration.GenerateBoolMethod` is what `ITypedId`'s `static abstract bool TryFrom` binds to:
 
 ```csharp
 using Vogen;
@@ -381,8 +382,7 @@ All of them run under the heavy-job lock.
 
 1. The commands above produce exactly: both restores succeed; build 0 warnings; one failing test (the slice's), every
    other test green; format clean; deps check green.
-2. Once `tests/Aw.Architecture.Tests` exists (R1b): it passes with the new assemblies registered. Until then this
-   criterion doesn't apply, and the generator's output says it was skipped.
+2. `tests/Aw.Architecture.Tests` passes with the new assemblies registered (the unit-lane run above includes it).
 3. `git status` shows only the files listed above (including each new project's `packages.lock.json`).
 4. The generator prints the next step: "Make `<FirstSlice>Tests` pass: replace the `Assert.Fail` with the real
    assertion, add the ports the service needs, then implement it in `Features/<FirstSlice>/` (see `/new-slice`)."
