@@ -305,7 +305,7 @@ describe("heavy-job lock", () => {
     await expect(withHeavyLock(d, "x", 0, async () => 1)).rejects.toThrow("EACCES");
     vi.restoreAllMocks();
     expect(fs.readdirSync(dir)).toEqual([]);
-    fs.rmSync(`${dir}.reclaim`, { recursive: true, force: true });
+    expect(fs.existsSync(`${dir}.reclaim`)).toBe(false);
     fs.rmdirSync(dir);
     // A waiter that wasn't reclaiming took the freed dir first.
     plant();
@@ -344,6 +344,134 @@ describe("heavy-job lock", () => {
     expect(fs.existsSync(dir)).toBe(true);
     expect(fs.readdirSync(dir)).toEqual([]);
     expect(fs.readdirSync(path.dirname(dir)).filter((n) => n.includes(".stale-"))).toEqual([]);
+  });
+
+  describe("once the dead holder's dir is marked", () => {
+    const record = (pid: number): string => JSON.stringify({ kind: "index-build", pid, host: "test-host", startedAt: `t${pid}` });
+    const setup = (logs: string[] = []) => {
+      const d = makeDeps({ system: fakeSystem({ pidAlive: (p) => p !== 999 }), log: (l) => logs.push(l) });
+      const root = awStateDir(d);
+      const dir = heavyLockDir(root, d.env);
+      fs.mkdirSync(dir, { recursive: true });
+      fs.writeFileSync(holderPath(root), record(999));
+      return { d, root, dir };
+    };
+    // Runs `act` just before the mark is written, or just after it with `after`.
+    const aroundMark = (act: () => void, after = false): void => {
+      const realWrite = fs.writeFileSync;
+      vi.spyOn(fs, "writeFileSync").mockImplementation(((f: fs.PathOrFileDescriptor, data: string, o?: fs.WriteFileOptions) => {
+        const marking = String(f).includes(".reclaim-");
+        if (marking && !after) act();
+        realWrite(f, data, o);
+        if (marking && after) act();
+      }) as typeof fs.writeFileSync);
+    };
+    const leftovers = (dir: string): string[] => fs.readdirSync(path.dirname(dir)).filter((n) => n.includes(".stale-") || n.endsWith(".reclaim"));
+
+    it("backs off when the dir was replaced, with the freed inode number, between the recheck and the mark", async () => {
+      const { d, root, dir } = setup();
+      const ino = fs.statSync(dir).ino;
+      // The dead holder's dir goes and a live sindri holder takes the name (Linux reuses the inode).
+      aroundMark(() => {
+        fs.rmSync(holderPath(root));
+        fs.rmdirSync(dir);
+        fs.mkdirSync(dir);
+        fs.writeFileSync(holderPath(root), record(4243));
+        const later = new Date(Date.now() + 5000);
+        fs.utimesSync(holderPath(root), later, later);
+      });
+      const realStat = fs.statSync;
+      vi.spyOn(fs, "statSync").mockImplementation(((p: fs.PathLike, o?: fs.StatSyncOptions) => {
+        const st = realStat(p, o);
+        return st !== undefined && String(p) === dir ? Object.assign(st, { ino }) : st;
+      }) as typeof fs.statSync);
+      await expect(withHeavyLock(d, "x", 0, async () => 1)).rejects.toThrow("the heavy-job lock is busy");
+      vi.restoreAllMocks();
+      expect(fs.readdirSync(dir)).toEqual([]);
+      expect(JSON.parse(fs.readFileSync(holderPath(root), "utf8")).pid).toBe(4243);
+      expect(leftovers(dir)).toEqual([]);
+    });
+
+    it("backs off when the marked dir is not the one checked, or is gone", async () => {
+      const { d, dir } = setup();
+      // Same inode, another birth time: a replacement on a filesystem that keeps birth times.
+      const realStat = fs.statSync;
+      let marked = false;
+      aroundMark(() => { marked = true; }, true);
+      vi.spyOn(fs, "statSync").mockImplementation(((p: fs.PathLike, o?: fs.StatSyncOptions) => {
+        const st = realStat(p, o);
+        return st !== undefined && marked && String(p) === dir ? Object.assign(st, { birthtimeMs: st.birthtimeMs + 1 }) : st;
+      }) as typeof fs.statSync);
+      await expect(withHeavyLock(d, "x", 0, async () => 1)).rejects.toThrow("the heavy-job lock is busy");
+      vi.restoreAllMocks();
+      expect(fs.readdirSync(dir)).toEqual([]);
+      // Removed outright (rm -r) right after the mark.
+      aroundMark(() => fs.rmSync(dir, { recursive: true }), true);
+      await expect(withHeavyLock(d, "x", 0, async () => 1)).rejects.toThrow("the heavy-job lock is busy");
+      vi.restoreAllMocks();
+      expect(fs.existsSync(dir)).toBe(false);
+      expect(leftovers(dir)).toEqual([]);
+    });
+
+    it("backs off when a holder record appears on a lock that had none", async () => {
+      const { d, root, dir } = setup();
+      fs.rmSync(holderPath(root));
+      const t = new Date(d.now().getTime() - 7 * 3_600_000);
+      fs.utimesSync(dir, t, t);
+      aroundMark(() => fs.writeFileSync(holderPath(root), record(4243)));
+      await expect(withHeavyLock(d, "x", 0, async () => 1)).rejects.toThrow("the heavy-job lock is busy");
+      vi.restoreAllMocks();
+      expect(fs.readdirSync(dir)).toEqual([]);
+      expect(leftovers(dir)).toEqual([]);
+    });
+
+    it("takes the lock when its holder released it meanwhile: the marked dir can't have changed hands", async () => {
+      const { d, root, dir } = setup();
+      // The holder's own release removes its record; its rmdir fails on the mark.
+      aroundMark(() => fs.rmSync(holderPath(root)), true);
+      expect(await withHeavyLock(d, "x", 0, async () => fs.readdirSync(dir))).toEqual([]);
+      vi.restoreAllMocks();
+      expect(fs.existsSync(dir)).toBe(false);
+      expect(leftovers(dir)).toEqual([]);
+    });
+
+    it("clears a mark a crashed takeover left in the dir, and removes its own when the rename throws", async () => {
+      const { d, root, dir } = setup();
+      fs.writeFileSync(path.join(dir, ".reclaim-01OLD"), "");
+      const t = new Date(d.now().getTime() - 7 * 3_600_000);
+      fs.utimesSync(dir, t, t);
+      fs.rmSync(holderPath(root));
+      expect(await withHeavyLock(d, "x", 0, async () => fs.readdirSync(dir))).toEqual([]);
+      expect(fs.existsSync(dir)).toBe(false);
+      expect(leftovers(dir)).toEqual([]);
+      fs.mkdirSync(dir);
+      fs.writeFileSync(holderPath(root), record(999));
+      vi.spyOn(fs, "renameSync").mockImplementationOnce(() => { throw Object.assign(new Error("EACCES"), { code: "EACCES" }); });
+      await expect(withHeavyLock(d, "x", 0, async () => 1)).rejects.toThrow("EACCES");
+      vi.restoreAllMocks();
+      expect(fs.readdirSync(dir)).toEqual([]);
+      expect(leftovers(dir)).toEqual([]);
+    });
+
+    it("puts a moved dir back without replacing a newer lock, and says so when the name is taken", async () => {
+      const logs: string[] = [];
+      const { d, dir } = setup(logs);
+      const realMkdir = fs.mkdirSync;
+      const realRename = fs.renameSync;
+      // The marked dir goes (rm -r), a new holder's dir is moved instead, and a third takes the name.
+      vi.spyOn(fs, "renameSync").mockImplementationOnce(((from: fs.PathLike, to: fs.PathLike) => {
+        fs.rmSync(from, { recursive: true, force: true });
+        realMkdir(from);
+        realRename(from, to);
+        realMkdir(from);
+      }) as typeof fs.renameSync);
+      await expect(withHeavyLock(d, "x", 0, async () => 1)).rejects.toThrow("the heavy-job lock is busy");
+      vi.restoreAllMocks();
+      const stale = fs.readdirSync(path.dirname(dir)).filter((n) => n.includes(".stale-"));
+      expect(stale).toHaveLength(1);
+      expect(fs.existsSync(dir)).toBe(true);
+      expect(logs).toContainEqual(`the heavy-job lock changed hands during a takeover; left ${path.join(path.dirname(dir), stale[0] ?? "")} aside`);
+    });
   });
 
   it("keeps the mutex until the holder is written, frees the dir when that write fails, and never removes another taker's mutex", async () => {
