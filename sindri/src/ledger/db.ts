@@ -146,7 +146,9 @@ const MIGRATIONS: readonly string[] = [
     seq INTEGER PRIMARY KEY AUTOINCREMENT, ts TEXT NOT NULL, verb TEXT NOT NULL, actor TEXT NOT NULL, detail TEXT NOT NULL, epoch INTEGER NOT NULL
   );
   `,
-  // v5: the generalized proposal publish renders (evolve privacy B1).
+  // v5: the generalized proposal publish renders (evolve privacy B1). judge_category is always 'none' today: only a
+  // clean verdict (leaks false, category none) is ever stored, every other one holds. It stays as an audit column so a
+  // future judge with graded clean categories needs no migration.
   `
   CREATE TABLE proposal_public (
     proposal_id TEXT PRIMARY KEY REFERENCES proposals(id), body TEXT NOT NULL, judge_category TEXT NOT NULL, model TEXT NOT NULL,

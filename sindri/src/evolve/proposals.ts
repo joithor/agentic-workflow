@@ -141,6 +141,7 @@ export function getProposal(db: Ledger, id: string): StoredProposal | null {
 }
 
 // The generalized version publish renders (privacy spec 5.1). The original stays in `proposals`, local only.
+// INSERT OR REPLACE on purpose: re-generalizing a proposal (a held retry, a v4-era staged row) replaces its row.
 export function savePublic(db: Ledger, id: string, p: Proposal, o: { category: string; model: string }, epoch: number, now: Date): void {
   db.prepare("INSERT OR REPLACE INTO proposal_public (proposal_id, body, judge_category, model, created_at, epoch) VALUES (?, ?, ?, ?, ?, ?)")
     .run(id, JSON.stringify(scrubber.scrubDeep(p)), o.category, o.model, now.toISOString(), epoch);
