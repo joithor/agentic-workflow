@@ -33,6 +33,10 @@ expect() { # expect <name> <code> <substring>...
   if [ "$good" = 1 ]; then ok "$name"; else fail "$name (exit $CODE, want $code)"; printf '%s\n' "$OUT" | sed 's/^/       | /'; fi
 }
 
+refuse() { # refuse <name> <substring> — OUT must not contain it
+  case "$OUT" in *"$2"*) fail "$1"; printf '%s\n' "$OUT" | sed 's/^/       | /' ;; *) ok "$1" ;; esac
+}
+
 rec() { echo "$1/rules/engineering/csharp/$2.yaml"; }
 # sub <file> <from> <to> — replace one literal fragment on every line that has it (portable; no sed -i)
 sub() { local tmp="$1.new"; awk -v f="$2" -v t="$3" '{ i = index($0, f); if (i) $0 = substr($0, 1, i - 1) t substr($0, i + length(f)); print }' "$1" > "$tmp" && mv "$tmp" "$1"; }
@@ -61,6 +65,13 @@ expect "a pending check without its PR fails the schema" 1 "RULE-SCHEMA-001" "pe
 
 d="$(fixture yaml)"; printf 'id: [unclosed\n' > "$(rec "$d" no-catch-exception)"; run "$d"
 expect "a record outside the YAML subset fails" 1 "RULE-YAML-001" "no-catch-exception.yaml"
+
+d="$(fixture yaml-line)"; printf 'schemaVersion: 1\nselect: {languages: [csharp]}\n' > "$(rec "$d" no-catch-exception)"; run "$d"
+expect "a YAML error names the record's line, not deps.yaml" 1 "no-catch-exception.yaml: line 2:"
+refuse "a YAML error names the record's line, not deps.yaml (no deps.yaml)" "deps.yaml:2"
+
+d="$(fixture no-cascade)"; drop "$(rec "$d" no-catch-exception)" '^why:'; run "$d"
+refuse "a record failing its schema doesn't cascade into RULE-COVER-002" "RULE-COVER-002"
 
 d="$(fixture id)"; sub "$(rec "$d" no-catch-exception)" "id: engineering.csharp.no-catch-exception" "id: engineering.csharp.other"; run "$d"
 expect "a record id must match its file name" 1 "RULE-ID-001" "engineering.csharp.other"
