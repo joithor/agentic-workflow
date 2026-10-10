@@ -1,0 +1,6 @@
+root = false
+
+# The boundary folders of a small package's App: catching every exception is allowed only here (CA1031,
+# .agents/rules/csharp.md "Types and errors").
+[{Infrastructure/**.cs,Commands/**.cs,Program.cs,Composition.cs}]
+dotnet_diagnostic.CA1031.severity = none

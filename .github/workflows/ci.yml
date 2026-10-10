@@ -309,14 +309,14 @@ jobs:
       - name: NativeAOT smoke tests
         if: steps.sln.outputs.run == 'true'
         # Each publishes for the runner's own RID (linux-x64), runs the native binary and
-        # compares its output; clang and zlib1g-dev are on ubuntu runners.
+        # compares its output; clang and zlib1g-dev are on ubuntu runners. The smokes are found by
+        # location (a Kernel project's src/<Project>.AotSmoke/, a package's src/<Pkg>/aot-smoke/), so
+        # a new package's smoke needs no edit here.
         run: |
-          for smoke in src/Aw.Kernel.AotSmoke/run.sh src/Aw.Kernel.Data.AotSmoke/run.sh src/Readiness/aot-smoke/run.sh; do
-            if [ -f "$smoke" ]; then
-              bash "$smoke"
-            else
-              echo "no-op: $smoke not present yet"
-            fi
+          shopt -s nullglob
+          for smoke in src/*.AotSmoke/run.sh src/*/aot-smoke/run.sh; do
+            echo "== $smoke"
+            bash "$smoke"
           done
       - name: Upload test and AOT smoke output on failure
         if: failure() && steps.sln.outputs.run == 'true'
@@ -326,9 +326,9 @@ jobs:
           path: |
             TestResults
             artifacts/aot-smoke
+            artifacts/aot-*/*.txt
+            artifacts/aot-*/publish.log
             artifacts/aot-data-smoke
-            artifacts/aot-readiness/publish.log
-            artifacts/aot-readiness/actual.txt
           if-no-files-found: ignore
           retention-days: 7
 

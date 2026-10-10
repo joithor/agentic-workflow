@@ -151,7 +151,9 @@ packages:
     projectPrefix: Aw.Packets
     ts: null
     src: src/Packets
-    note: "packet schema, validate, freeze (§4c); built at the end of R1b, before any port"
+    bins: [aw-packets]
+    namespace: packets
+    note: "packet schema, validate, freeze (§4c); a standalone NativeAOT CLI before the switch, writing only under packets/"
   - id: Readiness
     kind: package
     tier: 1
@@ -370,7 +372,7 @@ edges:
   - from: Packets
     to: Kernel
     kind: project
-    status: planned
+    status: current
     note: "Result, JSON"
   - from: Readiness
     to: Kernel
@@ -429,9 +431,9 @@ edges:
     note: "replaces sindri's copy of the scrubbing patterns"
   - from: Sindri
     to: Packets
-    kind: project
+    kind: cli
     status: planned
-    note: "every port and factory run is a packet"
+    note: "every port and factory run is a packet; sindri runs aw-packets, since the use cases live in App and a project edge reaches only Core (spec §4c)"
   - from: Sindri
     to: Readiness
     kind: cli
@@ -443,9 +445,6 @@ edges:
     status: planned
     note: "scorer's labeler moves into scorer's Core; sindri calls it through scorer's CLI instead of copying it (§4b.1a)"
 
-exceptions:
-  - rule: DEPS-FANOUT-001
-    subject: Sindri
-    reason: "§4e B10: sindri declares project edges to 6 packages (limits.packageFanOut is 4) until its modules split; revisit when the Sindri port splits by module. Per-project fan-out (DEPS-FANOUT-002/003) is measured separately once its projects exist"
-    recorded: 2026-10-10
-    expires: 2027-04-01
+# No exceptions: Sindri's project fan-out is 4 (Kernel, KernelData, KernelTelemetry, Redaction) now that it reaches
+# Packets and Readiness through their CLIs (spec §4c, §8).
+exceptions: []
