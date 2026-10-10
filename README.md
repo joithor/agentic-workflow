@@ -133,7 +133,7 @@ After setup, a couple of provider-specific steps remain:
 ## Prerequisites
 
 - At least one agent CLI: [Claude Code](https://claude.com/claude-code) (`claude`), [Codex](https://github.com/openai/codex) (`codex`), or [Cursor CLI](https://cursor.com/cli) (`cursor-agent`)
-- Node.js >= 20
+- Node.js >= 22
 - [Docker Desktop](https://www.docker.com/products/docker-desktop/) installed and running (required for Serena LSP)
 - [GitHub CLI (`gh`)](https://cli.github.com/) installed and authenticated (required by review skills)
 - [`jq`](https://jqlang.github.io/jq/) installed (required by hooks and the statusline; `brew install jq` on macOS)

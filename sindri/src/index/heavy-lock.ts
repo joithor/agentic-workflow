@@ -79,6 +79,38 @@ function dead(h: HeavyHolder, sys: SystemProbe): boolean {
   return !sys.pidAlive(h.pid);
 }
 
+// Whether the filesystem keeps real birth times, judged from the lock's parent dir: no birth time
+// reads as 0, and Node without statx (old kernels, some sandboxes) reports ctime instead. Not judged
+// from the lock dir itself: a dir made within one timestamp tick of a change has birth = ctime too.
+const keepsBirth = (st: fs.Stats): boolean => st.birthtimeMs !== 0 && st.birthtimeMs !== st.ctimeMs;
+// `marked` (stat'ed after the mark) is the dir `checked` was: same inode, and the same birth time
+// where the filesystem keeps one.
+const sameDir = (marked: fs.Stats, checked: fs.Stats, births: boolean): boolean =>
+  marked.ino === checked.ino && (!births || marked.birthtimeMs === checked.birthtimeMs);
+const sameFile = (a: fs.Stats, b: fs.Stats | undefined): boolean => b !== undefined && a.ino === b.ino && a.mtimeMs === b.mtimeMs;
+
+// Put a dir that changed hands back. rename() replaces an empty dir already at `dir` (another
+// holder's lock), so claim the name with mkdir first and rename onto that claim; when someone
+// else has the name, leave the moved dir aside and say so.
+function putBack(deps: Deps, stale: string, dir: string): void {
+  if (tryMkdir(dir)) {
+    fs.renameSync(stale, dir);
+    return;
+  }
+  deps.log(`the heavy-job lock changed hands during a takeover; left ${stale} aside`);
+}
+
+// false: the dir is gone (released between the recheck and the mark).
+function tryMark(file: string): boolean {
+  try {
+    fs.writeFileSync(file, "", { flag: "wx" });
+    return true;
+  } catch (e) {
+    if ((e as NodeJS.ErrnoException).code !== "ENOENT") throw e;
+    return false;
+  }
+}
+
 function tryMkdir(dir: string): boolean {
   try {
     fs.mkdirSync(dir);
@@ -107,19 +139,41 @@ function reclaim(deps: Deps, dir: string, gone: HeavyHolder | null, me: HeavyHol
   }
   try {
     writeHolder(mutexRecord(dir), me);
+    // The age and the holder come from before the mark: writing it changes the dir's mtime.
+    // The record's identity is taken before it is read, so one written in between never passes as checked.
+    const record = fs.statSync(holderFile(dir), { throwIfNoEntry: false });
     const st = fs.statSync(dir, { throwIfNoEntry: false });
     const now = st === undefined ? null : readHolder(dir);
     if (st === undefined || !due(st) || (gone === null ? now !== null : !sameHolder(now, gone))) return false; // released, or it changed hands
-    // The dir exists, so nobody else can enter while its dead holder's record goes.
-    fs.rmSync(holderFile(dir), { force: true });
-    const stale = `${dir}.stale-${ulid(deps.now())}`;
-    if (!tryRename(dir, stale)) return false;
-    // Moved a dir other than the one checked (it changed hands in between): put it back.
-    if (fs.statSync(stale).ino !== st.ino) {
-      tryRename(stale, dir);
+    // A dir holding a file can't be rmdir'ed, so once marked it can't change hands. The mark's
+    // name is one only this takeover knows; the inode number alone can't tell a replacement
+    // apart, because Linux hands a freed inode to the next mkdir at once.
+    const births = keepsBirth(fs.statSync(path.dirname(dir))); // the reclaim mutex lives there too
+    const id = ulid(deps.now());
+    const mark = `.reclaim-${id}`;
+    if (!tryMark(path.join(dir, mark))) return false; // released in between
+    const stale = `${dir}.stale-${id}`;
+    let moved = false;
+    try {
+      // The decisive check, now the dir is pinned: the marked dir is the one checked, and its
+      // holder record is the one checked (or its holder released it meanwhile).
+      const marked = fs.statSync(dir, { throwIfNoEntry: false });
+      const after = fs.statSync(holderFile(dir), { throwIfNoEntry: false });
+      if (marked === undefined || !sameDir(marked, st, births) || (after !== undefined && !sameFile(after, record))) return false;
+      // The dir exists, so nobody else can enter while its dead holder's record goes.
+      fs.rmSync(holderFile(dir), { force: true });
+      if (!tryRename(dir, stale)) return false;
+      moved = true;
+    } finally {
+      if (!moved) fs.rmSync(path.join(dir, mark), { force: true });
+    }
+    // Moved a dir other than the one marked (it changed hands in between): put it back.
+    if (!fs.existsSync(path.join(stale, mark))) {
+      putBack(deps, stale, dir);
       return false;
     }
-    fs.rmdirSync(stale);
+    // Ours, with anything a crashed takeover left in it.
+    fs.rmSync(stale, { recursive: true, force: true });
     if (!tryMkdir(dir)) return false; // a waiter that wasn't reclaiming got in first
     try {
       writeHolder(holderFile(dir), me);

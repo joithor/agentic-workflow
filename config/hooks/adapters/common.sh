@@ -19,6 +19,20 @@
 AW_ADAPTER_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 AW_ADAPTER_HOOKS_ROOT="$(cd "$AW_ADAPTER_DIR/.." && pwd)"
 
+# aw_adapter_failopen <provider> <cause> [raw-input] — HOOK-FAILOPEN logging
+# for the adapter's own fail-open paths (config/lib/failopen.sh: <hooks>/lib
+# when installed, config/lib in a checkout). Cause "input" classifies the host
+# payload (empty-input, input-unparsable, …). Runs in a subshell with its output
+# discarded, so it can never change what the adapter prints or exits with.
+aw_adapter_failopen() {
+  (
+    set +eu
+    for f in "$AW_ADAPTER_DIR/../lib/failopen.sh" "$AW_ADAPTER_DIR/../../lib/failopen.sh"; do
+      if [ -f "$f" ]; then . "$f" && aw_failopen "$1-adapter" "$2" "${3-}"; exit 0; fi
+    done
+  ) > /dev/null 2>&1 || true
+}
+
 AW_ADAPTER_RAW=0
 AW_ADAPTER_EVENT=""
 AW_ADAPTER_SCRIPT=""
@@ -57,7 +71,11 @@ aw_adapter_parse_args() {
 aw_adapter_run() {
   local payload="$1" provider="$2" cwd out_f err_f
   AW_RC=0; AW_OUT=""; AW_ERR=""
-  [ -f "$AW_ADAPTER_SCRIPT" ] || { AW_ERR="adapter: hook script not found: $AW_ADAPTER_SCRIPT"; return 0; }
+  if [ ! -f "$AW_ADAPTER_SCRIPT" ]; then
+    aw_adapter_failopen "$provider" hook-script-missing
+    AW_ERR="adapter: hook script not found: $AW_ADAPTER_SCRIPT"
+    return 0
+  fi
   cwd="$(printf '%s' "$payload" | jq -r '.cwd // empty' 2>/dev/null)"
   out_f="$(mktemp)"; err_f="$(mktemp)"
   (

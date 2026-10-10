@@ -222,10 +222,14 @@ describe("sindri doctor coverage paths", () => {
     expect(r.stderr + r.stdout).toContain("SND-CLI-002");
   });
 
-  it("flags node 20.10 as too old and 20.11 as fine", async () => {
+  it("holds node to the engines floor: 21.x fails with the fix, 22.0 is fine", async () => {
     const d = makeDeps();
-    expect((await byName(d, "20.10.0")).node.status).toBe("fail");
-    expect((await byName(d, "20.11.0")).node.status).toBe("ok");
+    const old = (await byName(d, "21.7.3")).node;
+    expect(old.status).toBe("fail");
+    expect(old.detail).toBe("21.7.3 (need >= 22, which better-sqlite3 13 requires)");
+    expect(old.fix).toBe("install Node 22 or newer (see .nvmrc)");
+    expect((await byName(d, "20.11.0")).node.status).toBe("fail");
+    expect((await byName(d, "22.0.0")).node.status).toBe("ok");
   });
 });
 
@@ -439,7 +443,7 @@ describe("doctor index checks", () => {
       hold(1, { kind: "index-build", pid: 7, host: "other", startedAt: "t" });
       expect(await lock()).toMatchObject({ status: "ok", detail: "held by index-build" });
       hold(7, null);
-      expect(await lock()).toMatchObject({ status: "warn", detail: "held for over 6 h", fix: `if that process is gone: rmdir ${dir} && rm -f ${holderFile}` });
+      expect(await lock()).toMatchObject({ status: "warn", detail: "held for over 6 h", fix: `if that process is gone: rm -r ${dir} && rm -f ${holderFile} (a crashed takeover can leave a .reclaim-* mark inside)` });
       hold(7, { kind: "index-build", pid: 7, host: "other", startedAt: "t" });
       expect((await lock()).detail).toBe("held for over 6 h by index-build (pid 7)");
       fs.rmSync(holderFile, { force: true });

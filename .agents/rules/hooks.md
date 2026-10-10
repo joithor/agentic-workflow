@@ -84,7 +84,35 @@ Each provider's `install-hooks.sh` installs them by copying, not symlinking, so 
 
 **Lever hooks** (context-guard, done-gate, scope-gate, external-write-guard, wake gating, judge-health, prompt-sort, sindri-nudge) are installed by `scripts/install-*.sh --provider claude|codex|cursor`, with `claude` as the default. `setup.sh` runs them for each selected provider. A lever with no equivalent event on a provider prints `skipped for <provider>` and writes nothing. For example, context-guard is skipped on Cursor.
 
-Tests (all run under a temp `HOME`): `config/hooks/tests/{codex-adapter,cursor-adapter,provider-install-hooks,probe-log,judge-health,sindri-nudge}.test.sh`, plus `config/lib/tests/{prompt-sort,install-prompt-sort}.test.sh` (run through the `config/lib/tests/*.test.sh` glob).
+Tests (all run under a temp `HOME`): `config/hooks/tests/{codex-adapter,cursor-adapter,failopen,provider-install-hooks,probe-log,judge-health,sindri-nudge}.test.sh`, plus `config/lib/tests/{prompt-sort,install-prompt-sort}.test.sh` (run through the `config/lib/tests/*.test.sh` glob).
+
+## Fail-open logging (HOOK-FAILOPEN)
+
+A hook **fails open** when its own error turns into an allow or a let-through: judge missing or erroring, a payload it can't read, unreadable state. Each such path calls `failopen <cause>` right before it allows, which appends one line to `${AW_STATE_DIR:-~/.agentic-workflow}/logs/failopen.log`:
+
+```json
+{"ts":"2026-10-10T06:30:00Z","event":"HOOK-FAILOPEN","hook":"send-gate","cause":"judge-exit-127","provider":"claude"}
+```
+
+- The logger is `config/lib/failopen.sh` (`aw_failopen <hook> <cause>`). `aw_failopen <hook> input "$INPUT" '<jq predicate>'` classifies a payload the hook couldn't use: `empty-input`, `jq-missing`, `input-unparsable`, or `field-missing` when the predicate holds (the payload names the hook's own tool but lacks the field it checks). It logs nothing for any other readable payload. Installers copy it to `<hooks-dir>/lib/failopen.sh`; a hook looks there first, then at `../lib/` (a repo checkout).
+- **Logging only.** Each hook's `failopen()` wrapper (and the adapters' `aw_adapter_failopen`) runs the logger in a subshell with `set +eu`, its output discarded and `|| true`. Nothing the logger hits (HOME unset, `date` missing, an unwritable dir) can change the hook's exit code, stdout or stderr. With neither `AW_STATE_DIR` nor `HOME` set, it logs nothing. Payload content never reaches the log. The logger writes only to a regular file, or creates one, with mode `0600`. A symlink, FIFO or device at the log path is never opened, because opening a FIFO would block the hook into its host timeout. The log rotates to `failopen.log.1` past `AW_FAILOPEN_MAX_BYTES` (default 1 MiB). Only one writer rotates at a time (an mkdir lock, re-checking the size under it), and a non-regular `.1` is never replaced. An adapter that already logged the host payload exports `AW_FAILOPEN_INPUT_LOGGED=1`, so the hook behind it doesn't count the same payload again as `field-missing`.
+- `config/hooks/tests/failopen.test.sh` runs every documented cause against the current hook and against the baseline copy in `config/hooks/tests/fixtures/failopen-baseline/` (the hooks before logging was added). It requires identical stdout, stderr and exit code under a 10 s watchdog. It also runs every fail-open hook and both adapters with HOME unset, with `date` missing and with a FIFO log. If you change a hook's decision on purpose, refresh its baseline copy in the same PR.
+- Fail-open hooks and their causes:
+  - `send-gate`: `locks-lib-missing`, `judge-exit-<N>`, `judge-output-unparsable`, `judge-decision-missing`
+  - `scope-gate`: the judge causes plus `judge-decision-unknown`
+  - `external-write-guard`: `session-id-missing`, `session-state-unreadable`
+  - `done-gate`: `transcript-unreadable`, `no-assistant-line`, `transcript-line-unparsable`, `judge-ask-check-exit-<N>`, `judge-brief-exit-<N>` (but not "no brief for …")
+  - `outbox-flush`: `outbox-unreadable`
+  - the three Bash safety hooks: the input causes only
+  - the Codex/Cursor adapters (`<provider>-adapter`): the input causes, `args-invalid`, `payload-unparsable`, `hook-script-missing`, `hook-exit-<N>`, and `result-unparsable` (Cursor only)
+
+  Every hook in that list also logs the input causes.
+- **Crashes are not counted under Claude Code (known gap).** No fail-open hook has an `EXIT` trap. On bash 3.2 a trap turns a `set -u` or `${x:?}` abort under `set -e` into exit 0, and it defers `SIGTERM` until a running `$(judge …)` returns, so a hook killed by the host's timeout would live seconds longer. Both are decision or behavior changes. A hook that crashes (exit other than 0 or 2) keeps its exit code, and Claude Code treats it as a non-blocking error. Under Codex/Cursor the adapter logs `hook-exit-<N>`. The test pins the crash exit codes and checks that `SIGTERM` during a slow judge exits as fast as the baseline.
+- **Not counted (known gap):** a hook killed by the host's own timeout. On `SIGKILL` no trap runs. On `SIGTERM` the hook dies at once, as it did before the logging. A `TERM` trap that logs and re-raises would count it, but it isn't decision-neutral: with a `TERM` trap set, bash waits for the running foreground command (a slow `judge`) to finish before handling the signal, instead of dying at once. Wrapping `judge` in a shorter timeout would change when a slow judge's decision is used. Both are decision changes, so they are out of scope for logging-only work.
+- **Not counted (known limit):** an event written while `date` is missing from PATH has an empty `ts`. The line is still written, but the scorer can't place it in a window and skips it. `date` is a POSIX base utility in `/bin`, and bash 3.2 (macOS) has no builtin clock to fall back on.
+- Advisory hooks with no allow/deny (context-guard, prompt-sort, done-gate-annotate, rtk-rewrite, the SessionStart hooks) don't log. Neither do hooks that fail closed (turn-origin; send-gate's unknown decision, which queues and denies).
+- `scorer`'s daily report lists the events per hook and cause (`## Hook fail-open`). It reads `failopen.log.1` and `failopen.log` as untrusted input. The log is general observability: it shows when and why a hook let something through on its own error. It is not a release or cutover gate.
+- A new hook with a fail-open path must call `failopen` with a fixed cause word on it.
 
 ## Adding a New Hook
 

@@ -1,12 +1,33 @@
 #!/usr/bin/env bash
 set -euo pipefail
+# HOOK-FAILOPEN: record why this hook is failing open (config/lib/failopen.sh,
+# installed at <hooks>/lib/failopen.sh). Logging only: it runs in a subshell
+# with its output discarded, so it can never change this hook's exit code,
+# stdout or stderr, whatever set -e/-u or the environment do to it.
+failopen() {
+  (
+    set +eu
+    d="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)" || exit 0
+    for f in "$d/lib/failopen.sh" "$d/../lib/failopen.sh"; do
+      if [ -f "$f" ]; then . "$f" && aw_failopen block-push-main "$@"; exit 0; fi
+    done
+  ) > /dev/null 2>&1 || true
+}
+# No EXIT trap: on bash 3.2 a trap turns a set -u abort under set -e into exit 0
+# and defers SIGTERM. A crash keeps its exit code and is not counted under
+# Claude Code (see "Fail-open logging" in .agents/rules/hooks.md); under
+# Codex/Cursor the adapter counts it.
 
 # PreToolUse hook: Block git push to main/master
 # Exit 2 = deny, Exit 0 = allow.
 
 INPUT=$(cat)
 COMMAND=$(printf '%s\n' "$INPUT" | jq -r '.tool_input.command // empty' 2>/dev/null) || true
-[ -z "$COMMAND" ] && exit 0
+# No command to check: log why when the payload itself was unreadable.
+if [ -z "$COMMAND" ]; then
+  failopen input "$INPUT" '.tool_name == "Bash"'
+  exit 0
+fi
 
 # Only check git push commands
 printf '%s\n' "$COMMAND" | grep -qE '\bgit\s+push\b' || exit 0

@@ -1236,7 +1236,9 @@ behaviour didn't change.
 
   Only then come the migration tasks, checked against those tests.
 - The pinning tests are frozen with the packet. Under invariant 17, the migration tasks can't edit them.
-- Sindri's own C# port (readiness §4c) is the first instance of this rule.
+- Sindri's own C# port (readiness §4c) applies the rule narrowly. It is a clean cutover with no TS behaviour parity,
+  so its oracle covers only the frozen hook-facing CLI and file surface, checked by running the real hook scripts
+  against the C# binaries.
 
 ### 17.24.3 Critic lens (addyosmani)
 

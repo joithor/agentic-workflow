@@ -4,7 +4,7 @@
 
 | Requirement | Minimum Version | Purpose |
 |-------------|----------------|---------|
-| Node.js | >= 20 | Runtime for MCP bridge and build tooling |
+| Node.js | >= 22 (`.nvmrc`) | Runtime for MCP bridge and build tooling; better-sqlite3 13 requires 22 |
 | GitHub CLI (`gh`) | Latest | Required by review skills for PR interaction |
 | Claude Code, Codex, or Cursor CLI | Latest | At least one agent host for skills and MCP server registration |
 | npm | Bundled with Node | Dependency management |

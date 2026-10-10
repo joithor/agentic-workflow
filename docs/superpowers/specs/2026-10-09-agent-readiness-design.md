@@ -1,6 +1,7 @@
 # Agent readiness for agentic-workflow — design
 
-Status: draft for review, revision 4 · 2026-10-10 (rounds 1–2 applied; **one cutover at parity** decided by the owner, replacing per-package shims)
+Status: draft for review, revision 5 · 2026-10-10 (rounds 1–2 applied; owner decision: **one clean cutover, no backward
+compatibility** — no TS parity, no data migration, no replay; decisions from the R1a/R1b PRs folded in)
 Target: **Level 5 (Autonomous)** on Factory's agent-readiness framework. Level 4 is a prerequisite for the
 factory work in `2026-10-09-sindri-factory-addendum.md` (§17.16). Level 5 is reached together with that work.
 
@@ -66,7 +67,7 @@ The human decided to rewrite the toolkit's TypeScript packages in **C# on .NET 1
 Linux and macOS. **The readiness foundation comes first** (rollout R1): the standards, rules, template, shared
 building blocks and CI checks are set up for C# before any package is ported, so each ported package is
 compliant from its first commit. The TypeScript is not linted or refactored, since it is being replaced. It only
-gets CI and golden contract tests as a safety net. The standards in §4 still apply, expressed in .NET tooling.
+gets CI as a safety net until the switch. The standards in §4 still apply, expressed in .NET tooling.
 
 **What moves, and to what:**
 
@@ -76,11 +77,11 @@ gets CI and golden contract tests as a safety net. The standards in §4 still ap
 | Biome / typescript-eslint (planned) | Roslyn analyzers (built-in + `Microsoft.CodeAnalysis.NetAnalyzers`), `.editorconfig` severities, `dotnet format` in pre-commit and CI |
 | dependency-cruiser (planned) | One project per layer (§4b.1) with project references as the boundary, plus ArchUnitNET architecture tests and `deps.yaml` (§4b.1a) |
 | Zod schemas, JSON Schema export | Records with `System.Text.Json` source generation; validators per schema; JSON Schema generated from the types for editor autocomplete |
-| Vitest | xUnit (or TUnit), with the lanes and time budgets in §4 |
-| better-sqlite3 | `Microsoft.Data.Sqlite`, same files and schemas, WAL mode |
+| Vitest | xUnit v3 on Microsoft.Testing.Platform (R7), with the lanes and time budgets in §4b.5 |
+| better-sqlite3 | `Microsoft.Data.Sqlite` with its bundled SQLite (§4b.2), new C# schemas, WAL mode |
 | Fastify (bridge) | ASP.NET Core minimal APIs |
 | `@modelcontextprotocol/sdk` | The official MCP C# SDK |
-| Node CLIs started per hook call | **NativeAOT** single-file binaries for hook and CLI entry points only (§4b.6 AOT table), so startup stays fast. Reflection-free JSON (source generators) is required for them |
+| Node CLIs started per hook call | **NativeAOT** binaries for hook and CLI entry points only (§4b.6 AOT table), so startup stays fast; a tool that opens a database ships the bundled SQLite library beside it. Reflection-free JSON (source generators) is required for them |
 | Playwright (ui-evidence) | Playwright for .NET |
 
 **What stays outside C#, on purpose:**
@@ -93,27 +94,29 @@ gets CI and golden contract tests as a safety net. The standards in §4 still ap
 - **Agent sessions** are started through the `claude` CLI (as today), so there's no dependency on an Agent SDK.
 
 **How the rewrite runs (strangler, never big-bang):**
-1. **Freeze the contracts first.** Each package's external surface is captured as golden tests: CLI arguments,
-   output and exit codes, JSON files, the ledger and SQLite schemas, MCP tool schemas and HTTP routes. They run
-   against the TS and the C# builds alike.
-2. **One package at a time,** smallest and least shared first: `judge` → `scorer` → `skills/bugFixOrchestrator`
-   state CLI → `mcp-bridge` → `skills/ui-evidence` → `sindri` (by module: profile and ledger, scrub, observe,
-   index, scope, evolve).
-3. **One cutover at parity (decided 2026-10-10).** The installed TS toolkit stays untouched while the C# build is
-   ported and proven beside it. Each package is "done" when its golden tests pass against the C# build, its unit
-   tests meet the lanes, and it builds on macOS and Linux. When **every** package is done, one reversible switch
-   moves the install to C#.
-4. **Data compatibility.** The C# build reads every existing ledger, index and state file. On its first run it backs
-   them up and migrates them to the C# schemas (which include the multiplayer seams, §4b). The TS build never reads
-   C# data, so the two builds never share files at the same time.
+1. **Contracts are designed, not recorded.** Each package's external surface (CLI arguments, output and exit
+   codes, JSON files, SQLite schemas, MCP tool schemas and HTTP routes) is defined by the C# package's own tests.
+   The TS behavior is the reference for what the contract should do, not a byte-for-byte target, and the C# build
+   is free to fix what the TS got wrong, except on the hook-facing CLI and file surface, which is frozen until the
+   switch (§4c).
+2. **One package at a time,** lowest tier first, in the §10 R2 order: `Redaction` → `judge` and `mcp-bridge` →
+   `scorer`, `skills/ui-evidence` and the `skills/bugFixOrchestrator` state CLI → `sindri` (by module: profile and
+   ledger, scrub, observe, index, scope, evolve).
+3. **One clean cutover (decided 2026-10-10).** The installed TS toolkit stays untouched while the C# build is
+   ported and proven beside it. Each package is "done" when its tests pass in every lane within budget, its AOT
+   entry points build and pass the AOT CI job, the real hook scripts pass against its binaries in CI, and it
+   builds on macOS and Linux. When **every** package is done, one reversible switch moves the install to C#.
+4. **No data compatibility.** The C# build never reads TS-written ledgers, indexes or state files, and the TS build
+   never reads C# data. At the switch the TS packages' state is moved aside and the C# build starts with fresh state in its
+   own schemas (which include the multiplayer seams, §4b.6).
 5. **Each package rewrite is a packet** (addendum §17.4), built with today's skills on the host. That makes the
    rewrite the first real test of the packet format and the thin end-to-end slice (F0.5), before the factory
    exists.
 
 **Risks to watch:**
 - NativeAOT limits (reflection, some libraries). Every CLI builds AOT in CI from day one.
-- The Plan 5 evolve suites and judge calibration data have TS-specific fixtures. They're ported as golden data,
-  and their pass rates must not drop at cutover.
+- The Plan 5 evolve suites and judge calibration data have TS-specific fixtures. They're ported as test data where
+  they still apply, and their pass rates are re-baselined on the C# build before the switch.
 - Rewrite fatigue: the rewrite is time-boxed per package, and a package that overruns 2× its estimate is reviewed
   before more work goes into it.
 
@@ -145,12 +148,12 @@ Host ──► Features ──► Core ◄── Infrastructure
 
 | Project (per package) | Holds | May reference |
 |---|---|---|
-| `Aw.<Pkg>.Core` | Domain types, strongly typed ids and value objects, pure logic, **port interfaces** (repositories, clock, process runner), errors | `Aw.Kernel` only |
-| `Aw.<Pkg>.Features` | One folder per use case (a slice): request and response records, the service (handler), the validator, and the endpoint or CLI mapping | `Core`, `Aw.Kernel` |
-| `Aw.<Pkg>.Infrastructure` | Repository implementations over SQL, external adapters (git, containers, model CLIs, HTTP), migrations | `Core`, `Aw.Kernel` |
-| `Aw.<Pkg>.Host` | The composition root: the minimal API app or the CLI `Main`, DI registration, configuration, the JSON context | everything in the package |
-| `Aw.Kernel` (shared) | `Result<T>`, `Error`, clock and id ports, value-object conventions, the generic `IService<TReq, TRes>` pipeline and decorators, the byte-compat JSON settings (§4c) | the BCL only |
-| `Aw.Kernel.Data` · `Aw.Kernel.Telemetry` · `Aw.Kernel.Testing` | SQLite access and migrations runner · logging and OpenTelemetry setup with the scrubbing processor · fakes base, builders, contract-test bases, golden harness | `Aw.Kernel` plus their one external dependency each |
+| `Aw.<Pkg>.Core` | Domain types, strongly typed ids and value objects, pure logic, **port interfaces** (repositories, clock, process runner), errors, its own `Add…()` registration method | `Aw.Kernel`, plus `Microsoft.Extensions.DependencyInjection.Abstractions` for that method and Vogen for its typed ids (R9) |
+| `Aw.<Pkg>.Features` | One folder per use case (a slice): request and response records, the service (handler), the validator | `Core`, `Aw.Kernel`, other packages' `Core` |
+| `Aw.<Pkg>.Infrastructure` | Repository implementations over SQL, external adapters (git, containers, model CLIs, HTTP), migrations | `Core`, `Aw.Kernel`, `Aw.Kernel.Data`, and other tier-0 packages through a declared `deps.yaml` edge |
+| `Aw.<Pkg>.Host` | The composition root: the minimal API app or the CLI `Main`, the endpoints and CLI commands (one per slice, so the request-delegate generator covers them), `Compose` (calls each project's `Add…()`), settings, the JSON context | everything in the package, plus `Aw.Kernel.Telemetry` and the tier-0 and lower-tier `Core`s it composes |
+| `Aw.Kernel` (shared) | `Result<T>`, `Error`, clock and id ports, value-object conventions, the generic `IService<TReq, TRes>` pipeline and decorators, the shared JSON profile (§4b.3) | the BCL only |
+| `Aw.Kernel.Data` · `Aw.Kernel.Telemetry` · `Aw.Kernel.Testing` | SQLite access and migrations runner · logging and OpenTelemetry setup with the scrubbing processor · fakes base, builders, contract-test bases, golden-file assertions | `Aw.Kernel` plus their one external dependency each; Telemetry also references `Redaction` (its scrubbing processor) and Testing also references `Aw.Kernel.Data` (contract tests run on SQLite) |
 
 **Small packages:** a package under about 1,500 lines may use two projects, `Core` and `App` (features,
 infrastructure and host together), with the same dependency direction. It splits into four when it crosses the
@@ -171,32 +174,42 @@ threshold.
 The dependency graph is a **declared, layered, acyclic tree** at every level, and CI fails on any drift from the
 declaration.
 
-**Package tiers** (a package may depend only on packages in a lower tier, never on its own tier):
+**Package tiers** (a package takes `project` dependencies only on lower tiers; read-only `db` and `file` edges may also point across a tier, see the direction rule below):
 
 | Tier | Packages | May depend on |
 |---|---|---|
-| 0 | `Aw.Kernel` and its `Data`, `Telemetry`, `Testing` parts | the BCL plus one external package each |
-| 1 | `Judge`, `Bridge`, `Redaction` (the scrubbing patterns now copied between judge and sindri) | Tier 0 |
+| 0 | `Aw.Kernel` and its `Data`, `Telemetry`, `Testing` parts, `Analyzers` (build-time only and edge-less: referenced only as an analyzer), and `Redaction` (the scrubbing patterns now copied between judge and sindri; moved here by §4e B10) | the BCL plus one external package each, and lower tier-0 sublevels (below) |
+| 1 | `Judge`, `Bridge`, `Packets`, `Readiness` | Tier 0 |
 | 2 | `Scorer`, `Evidence` (ui-evidence), `BugFix` | Tiers 0–1 (today they call judge, and scorer reads `judge.db`) |
-| 3 | `Sindri` | Tiers 0–2, **only through their `Core` contracts or their CLIs** |
+| 3 | `Sindri` | Tiers 0–2, **only through their `Core` contracts or their CLIs** (every package reaches a non-tier-0 package only through its `Core`; `deps.yaml` check DEPS-PROJ-007) |
 | — | Every `Host` | Its own package's projects, plus the tier-0 and lower-tier `Core`s it composes |
 
+- **Tier 0 is ordered inside:** it is the one tier with internal project references. `deps.yaml` gives each tier-0
+  package a sublevel (0: `Aw.Kernel`, `Redaction`; 1: `Data`, `Telemetry`; 2: `Testing`), and a tier-0 project
+  references only a lower sublevel. Every other tier keeps the rule above: never a project reference within the tier.
+- **Who holds a cross-package reference:** only `Features` (`App` in the small shape) and `Host` reference another
+  package's `Core`; `Core` and `Infrastructure` never reference a package above tier 0 (DEPS-PROJ-008). Test
+  projects follow their owning package's edges.
 - **Declared graph, every edge kind:** `deps.yaml` (with a JSON Schema) lists each package's tier and every allowed
   edge, with its kind: `project` (a reference), `cli` (one package runs another's binary), `db` (one package opens
   another's SQLite file) or `file` (shared state files). Project edges are checked against the real references. CLI,
   database and file edges are checked by a scan of process launches, connection strings and known state paths. Any
-  undeclared edge fails CI. A `db` edge is read-only and should become a CLI or a published view over time (today:
-  scorer reads `judge.db`). Adding an edge is
+  undeclared edge fails CI. **Direction:** `project` edges point strictly down the tiers; `db` and `file` edges
+  point down or across, are read-only, and are slated to become CLIs or published views over time (today: scorer
+  reads `judge.db`, and reads Evidence's run files across tier 2, §4e B10). Adding an edge is
   a reviewed change to `deps.yaml` (and an approval-tier change once it is a rule record).
 - **Prefer contracts over references:** a package calls a same-tier or higher-tier package only through its CLI or
-  HTTP contract, never through a project reference. Copied logic is a smell: the redaction patterns copied between
-  judge and sindri move into the tier-1 `Redaction` package, and scorer's labeler, which sindri copies, moves into
+  HTTP contract, never through a project reference (read-only `db` and `file` edges across a tier are the declared,
+  temporary exception above). Copied logic is a smell: the redaction patterns copied between
+  judge and sindri move into the tier-0 `Redaction` package, and scorer's labeler, which sindri copies, moves into
   scorer's `Core` for sindri to call through scorer's CLI.
 - **Inside a package**, the four-project shape (§4b.1) is itself a fixed DAG. **Inside a project,** feature
   folders and namespaces must not form cycles. ArchUnitNET's slice-cycle rule checks every namespace in every
   project (MSBuild already refuses circular *project* references; this covers the namespaces inside one).
-- **Fan-out limits** (every `Host` is exempt, because composing is its job): a project references at most 4 other in-repo projects and at most 6 third-party packages
-  (analyzers and test packages excluded). Going over is a ratchet violation that needs a recorded reason.
+- **Fan-out limits** (every `Host` and all test code are exempt: composing is the Host's job): a project references at most 4 other in-repo projects and at most 6 third-party packages
+  (analyzers and test packages excluded; DEPS-FANOUT-002/003). Per package, at most 4 other packages through
+  declared project edges (`limits.packageFanOut` in `deps.yaml`, DEPS-FANOUT-001). Going over either is a ratchet
+  violation that needs a recorded exception with a reason and an expiry.
 - **No dumping grounds:** there is no `Common`, `Shared`, `Utils` or `Helpers` project or namespace. Code shared by
   two packages goes into `Aw.Kernel` only if it is domain-free and stable; otherwise it is duplicated until a
   second case proves the abstraction (§6.2), then extracted into the owning package's `Core`.
@@ -252,17 +265,44 @@ group.MapPost("/items/{id}/start", async (ItemId id, StartItemBody body, IServic
     `IRowMapper<T>` per row type.
   - SQL lives in `const string` fields next to the repository, or in embedded `.sql` files. Schema changes are numbered
     SQL migration files, and a migration test runs each one on a copy of the previous schema.
-  - Why not EF Core: its NativeAOT support is officially experimental in EF Core 10.
-  - Why not Dapper.AOT: reports on .NET 10 conflict.
-  - R1 includes a one-day spike that re-checks both. If either passes the AOT golden tests, it may replace the
-    hand-written mappers (decision R8).
+  - **Decided (R8, R1a spike, `docs/readiness/aot-spike.md`):** EF Core 10 and Dapper.AOT both run under NativeAOT,
+    but neither builds with `TreatWarningsAsErrors`. EF Core fails on IL2026/IL3050 in the `DbContext` constructor
+    and calls NativeAOT and query precompilation experimental. Dapper.AOT fails only on `Dapper.dll`'s
+    assembly-level IL2104/IL3053, and suppressing those hides any call its generator can't intercept: the spike's
+    generic `Query<T>` built clean and then threw `PlatformNotSupportedException` at runtime.
+  - **Native SQLite (decided):** the bundled `e_sqlite3` that `Microsoft.Data.Sqlite` ships, as a second file next
+    to each AOT tool that opens a database, listed in `binaries.lock`. The same SQLite runs on every machine, and it
+    avoids depending on the host library (on Debian and Ubuntu the unversioned `libsqlite3.so` the OS provider loads
+    ships only in the `-dev` package). Every connection sets `journal_mode=wal`, `busy_timeout` and
+    `foreign_keys=on`.
 
 ### 4b.3 Types, generics and errors
 
 - **Strongly typed ids and value objects** for every id and every constrained primitive (`ItemId`, `RepoSlug`,
-  `SizeClass`, `TokenBudget`). They're generated with Vogen (System.Text.Json and ADO.NET conversions, with
-  analyzers that ban `default` instances), or written by hand as `readonly record struct` if the R1 spike finds an
-  AOT problem. A raw `string` or `Guid` in a public signature of `Core` or `Features` is an analyzer error.
+  `SizeClass`, `TokenBudget`). **Decided (R9):** Vogen generates validation, equality and the analyzer that bans
+  `default` literals (VOG009), with its System.Text.Json generation **off**. Source generators can't see each
+  other's output: a Vogen-generated STJ converter is invisible to the STJ source generator (the id serializes as
+  `{}`, with no warning for string ids), and a parse method that exists only in Vogen's output is invisible to the
+  request-delegate generator (a route id stops binding).
+  - every package that declares ids sets `[assembly: VogenDefaults(conversions: Conversions.None,
+    systemTextJsonConverterFactoryGeneration: SystemTextJsonConverterFactoryGeneration.Omit)]`;
+  - each id has a user-code `[JsonConverter]` that reads with `TryFrom` and throws `JsonException` (a 400, never
+    Vogen's exception). A generic Kernel converter (`[JsonConverter(typeof(StringIdJsonConverter<ItemId>))]`)
+    satisfies this;
+  - `IParsable<T>` must be declared in user code so the request-delegate generator sees it: either the id declares
+    the Kernel's `ITypedId<TSelf, TValue>` (which extends `IParsable<TSelf>`), or the id writes `TryParse` by hand
+    with Vogen's parse generation off. Only the hand-written `TryParse` was verified through the request-delegate
+    generator in the R1a spike, so an id that uses the `ITypedId` form is used behind an endpoint only once an RDG
+    route-binding test passes for that form;
+  - the scaffolds (`/new-slice`, `/new-package`) generate the converter and `IParsable<T>` with each id;
+  - the Kernel JSON profile sets `RespectRequiredConstructorParameters` and `RespectNullableAnnotations`, because a
+    missing property otherwise deserializes to an uninitialized id without calling the converter;
+  - an uninitialized id can still reach a handler (the RDG passes one for an empty query value, `?id=`), so the
+    Host maps Vogen's validation exception to a 400 at the boundary;
+  - an architecture test fails if any value object lacks a user-code `[JsonConverter]` or has Vogen STJ
+    conversions on, and each id has a JSON round-trip test (including missing and null values).
+
+  A raw `string` or `Guid` in a public signature of `Core` or `Features` is an analyzer error.
 - **`Result<T>` and `Error`** live in `Aw.Kernel`:
   - expected failures (not found, invalid, conflict, rate-limited, budget exceeded) are `Error` records with a stable
     code from the error catalogue (`SND-…`, `AW-…`);
@@ -275,15 +315,21 @@ group.MapPost("/items/{id}/start", async (ItemId id, StartItemBody body, IServic
   primary constructors are preferred, and records are immutable by default.
 - **Visibility:** classes are `internal sealed` by default. Public API is tracked with `PublicApiAnalyzers`
   (`PublicAPI.Shipped.txt`), so a change to a package's public surface shows in the diff.
-- **JSON:** System.Text.Json with one source-generated `JsonSerializerContext` per package. No reflection-based
+- **JSON:** System.Text.Json with one source-generated `JsonSerializerContext` per package and one shared Kernel
+  profile (`AwJson`): camelCase names in declaration order; relaxed escaping (only what JSON requires); null
+  properties written; timestamps in the `O` round-trip form (UTC, seven fractional digits and `Z`), and reading
+  requires `Z` or an offset; two-space indentation with `\n`; the strict required and nullable settings above.
+  There is no requirement to match the bytes the TS build writes. No reflection-based
   serialization (it's AOT- and trim-analyzer enforced).
 
 ### 4b.4 Dependency injection
 
-- `Microsoft.Extensions.DependencyInjection`. Registration lives **only** in `Host`. Each project exposes one explicit
-  extension method (`services.AddSindriCore()`, `AddSindriInfrastructure(config)`). There's no assembly scanning,
-  because it's reflection and not AOT-safe.
-- Constructor injection only: no service locator, and no `IServiceProvider` outside `Host`.
+- `Microsoft.Extensions.DependencyInjection`. Each project owns one explicit extension method that registers its own
+  types and decorators (`services.AddSindriCore()`, `AddSindriInfrastructure(settings)`). Only `Host` calls them and
+  builds the container (its `Compose`). There's no assembly scanning, because it's reflection and not AOT-safe.
+- Constructor injection only: no service locator. `IServiceProvider` appears outside `Host` only as the parameter of a
+  registration factory lambda inside a project's own `Add…()` method (the planned ArchUnitNET rule allows exactly
+  that).
 - Lifetimes: services and repositories are scoped per request or command, pure domain services are singletons, and
   `TimeProvider` is a singleton (a `FakeTimeProvider` in tests).
 - A DI validation test builds the container with `ValidateOnBuild` and `ValidateScopes` for every host.
@@ -298,7 +344,13 @@ group.MapPost("/items/{id}/start", async (ItemId id, StartItemBody body, IServic
   - `integration`: repositories on a real temp SQLite file; endpoints through `WebApplicationFactory`. Under 60 s.
   - `heavy`: real containers, browsers and index builds. Nightly or alone.
 
-  Lanes are test traits. CI fails a test that runs over its lane's time.
+  Lanes are test traits, run from the repo root with `dotnet test --solution AgenticWorkflow.slnx --filter-trait
+  "Lane=<lane>" --ignore-exit-code 8` (Microsoft.Testing.Platform options only, no `--logger`). Exit code 8 means a
+  test project has no tests in that lane (an integration-only project in the unit lane), so every lane-filtered run
+  ignores it; the unfiltered `dotnet test --solution AgenticWorkflow.slnx` keeps exit 8 as a failure. A lane's budget
+  is the wall clock of `dotnet test --project <test project> --filter-trait "Lane=<lane>" --ignore-exit-code 8` per
+  test project, summed per package; CI fails a package over its budget. Each test's own time from xUnit's CTRF report
+  is checked against the same budget as an extra per-test cap (`Aw.Kernel.Testing` ships the check).
 - **Fakes, not mocks.** Each port has one in-memory fake in a shared `Aw.<Pkg>.Testing` project. A generic contract-test
   base class (`ReadRepositoryContract<TEntity, TId>`, `ItemRepositoryContract`) runs the **same tests against the fake
   and the SQL implementation**, so the fake can't drift. Mocking libraries are not used.
@@ -307,27 +359,57 @@ group.MapPost("/items/{id}/start", async (ItemId id, StartItemBody body, IServic
 - **Architecture tests** (ArchUnitNET, which is maintained; NetArchTest's last release was in 2023) run in the unit
   lane. They cover the dependency directions, no slice-to-slice references, the `internal` row types and the naming
   rules.
-- **Framework:** xUnit v3 by default, or TUnit if it holds the lane budgets better under AOT (decision R7, settled
-  in the R1 spike).
+- **Framework (decided, R7):** xUnit v3 on Microsoft.Testing.Platform. Tests run JIT; the AOT binaries are checked
+  by the AOT CI job, which runs the CLI smoke tests and the real hook scripts against them. Both frameworks were well
+  inside the lane budgets in the R1a spike.
 
 ### 4b.6 Build settings and analyzers (repo root)
 
-- `global.json` pins the .NET SDK.
+- `global.json` pins the .NET SDK exactly (`rollForward: disable`, no prereleases) and sets the test runner to
+  Microsoft.Testing.Platform.
 - `Directory.Build.props`:
   - language and nullable: `Nullable=enable`, `LangVersion=latest`, `ImplicitUsings=enable`;
-  - warnings: `TreatWarningsAsErrors=true`, `EnforceCodeStyleInBuild=true`, `AnalysisLevel=latest-recommended`
-    (raised to `latest-all` per category where the noise is acceptable, decided during R1);
-  - `IsAotCompatible=true` on `Core`, `Features`, `Infrastructure` and Kernel projects (it turns on the trim and AOT
-    analyzers). `PublishAot=true` only on the entry points in the table below;
-  - `GenerateDocumentationFile=true` for public API;
-  - `RestorePackagesWithLockFile=true`, plus `RestoreLockedMode` in CI.
-- `Directory.Packages.props`: Central Package Management with exact versions. Analyzers are added as
+  - warnings: `TreatWarningsAsErrors=true`, `EnforceCodeStyleInBuild=true`, and `EnableNETAnalyzers=false`
+    because the pinned NetAnalyzers package owns the CA rules (with the SDK copy also on, every CA diagnostic is
+    reported twice). There is no `AnalysisLevel`: the SDK applies it only when `EnableNETAnalyzers` is true and the
+    package ships no replacement, so severity comes from `.editorconfig` (a bulk `error` baseline, explicit
+    per-rule lines, and `dotnet_analyzer_diagnostic.category-<X>.severity` lines where a whole category is raised);
+  - `GenerateDocumentationFile=true` everywhere (IDE0005 needs it); test projects turn off CS1591 instead;
+  - NuGet audit: NU1903 and NU1904 (high, critical) fail the build, NU1901 and NU1902 stay warnings, because the
+    advisory data is live and would otherwise turn every branch red without a repo change. NU1900 (the advisory feed
+    couldn't be read) stays an error so the high and critical gate is never silently skipped; CI retries the restore
+    once;
+  - `RestorePackagesWithLockFile=true`, plus `RestoreLockedMode` in CI. Locked mode only catches reference drift, so
+    CI also fails on a missing lock file (`Directory.Build.targets`) and on a lock file that restore changed
+    (`scripts/dotnet-verify-packages.sh`).
+- `Directory.Build.targets` (evaluated after the project body, so a project's own settings are seen):
+  - `IsAotCompatible=true` on every library project: everything except `*.Tests`, `*.Testing`, `*.Host` and
+    `*.Analyzers` (so `Core`, `Features`, `Infrastructure`, a small package's `App`, Kernel and Redaction). A library
+    that can't be AOT-compatible opts out with `AwAotCompatible=false` and a reason in its `.csproj`. Only TFMs that
+    support it (net8.0 and later), so a netstandard2.0 source generator doesn't fail with NETSDK1210. `PublishAot=true`
+    only on the entry points in the table below;
+  - `InvariantGlobalization=true` on every project with `PublishAot=true`: no ICU dependency (a Linux binary without
+    it needs `libicu` at runtime);
+  - `EnableRequestDelegateGenerator=true` on every `*.Host` project, so JIT endpoint tests run the same generated
+    binding as the AOT binary;
+  - the missing-lock-file check (AW0001): under CI, a project without a committed `packages.lock.json` fails;
+  - the placement check (AW0002): every `*.Tests` and `*.Testing` project, including `Aw.Kernel.Testing`, lives
+    under `tests/`, and nothing else does.
+- Test projects (under `tests/`) get their analyzer policy from `tests/.editorconfig`: CA1707, CA2007, CA1515,
+  RS0016, RS0017, RS0036, RS0037 and CS1591 off, each with its reason, plus xUnit1051 off (MA0040 owns the
+  pass-a-`CancellationToken` rule). `GenerateDocumentationFile` stays on there too. CA2007 elsewhere applies to libraries only
+  (`output_kind = DynamicallyLinkedLibrary`): hosts have no SynchronizationContext.
+- `Directory.Packages.props`: Central Package Management with exact versions (`[x.y.z]`; a bare version is a
+  minimum). Analyzers are added as
   `GlobalPackageReference`: `Microsoft.CodeAnalysis.NetAnalyzers`, `Meziantou.Analyzer`, `Roslynator.Analyzers`,
   `Microsoft.CodeAnalysis.BannedApiAnalyzers`, `Microsoft.CodeAnalysis.PublicApiAnalyzers`. New packages follow
   the same 14-day minimum age as the existing pins.
 - **One owner per rule (A14):** where analyzer packs overlap (for example CA2007 and MA0004 on `ConfigureAwait`),
-  `.editorconfig` names one owning rule and disables the others. Existing violations are captured in a generated
-  `baseline.globalconfig` that lowers only those rule-and-file pairs; the ratchet fails CI if the baseline grows.
+  `.editorconfig` names one owning rule and disables the others. Roslynator, which overlaps the IDE rules most, is
+  off except for rules opted in by name. Existing violations are captured in a generated block at the end of the
+  root `.editorconfig`, after a fixed sentinel line, that lowers only those rule-and-file pairs; the ratchet check
+  (W2) will fail CI if that block grows. (Not a `baseline.globalconfig`: a global config can't lower a rule `.editorconfig` sets,
+  and its sections need absolute paths.)
 - `.editorconfig` sets every rule's severity explicitly (no "suggestion" level for anything agents should obey).
   The size limits: file ≤ 300 lines, method ≤ 40 lines, cyclomatic complexity ≤ 10, parameters ≤ 5. Existing
   violations go into a ratchet baseline that only shrinks.
@@ -335,14 +417,16 @@ group.MapPost("/items/{id}/start", async (ItemId id, StartItemBody body, IServic
   - no raw ids in public signatures;
   - `!` needs a reason;
   - no cross-slice references (fast feedback; the architecture test is authoritative);
-  - endpoint lambdas call exactly one service.
+  - endpoint lambdas call exactly one service;
+  - the size limits no off-the-shelf analyzer covers: file ≤ 300 lines, parameters ≤ 5, constructor dependencies
+    (≤ 5, an error over 7) and generic arity ≤ 3.
 
 **AOT scope** (verified in the R1a spike; anything that fails ships framework-dependent with a startup budget):
 
 | Entry point | Build | Why |
 |---|---|---|
 | Hook binaries, `judge`, `sindri`, `scorer`, `bugfix-state` CLIs | NativeAOT | Run per hook call or per command; startup matters |
-| `Bridge` host (MCP + HTTP) | NativeAOT if the MCP C# SDK passes the spike, else framework-dependent | Long-running; startup matters less |
+| `Bridge` hosts: REST (minimal API) and stdio MCP, two entry points as today | NativeAOT (decided: the MCP C# SDK passed the R1a spike with 0 warnings) | MCP tools use the SDK's low-level list/call handlers, so tool schemas and error shapes are explicit in code |
 | `Evidence` (ui-evidence) | Framework-dependent | Playwright for .NET doesn't support NativeAOT |
 
 AOT publishing runs only in a separate CI job and in releases. Local builds and tests are JIT, so the inner loop
@@ -351,27 +435,32 @@ stays fast.
 **Seams for distribution and multiplayer** (factory addendum §17.20, §17.21): a `LedgerStore` port with a shared
 contract-test suite, idempotent events, an event envelope (`actor`, `tenant`, `ring`, `causation`, `correlation`,
 `trace`), a transactional outbox, and `Lease`, `Launcher`, `Scheduler`, `Bus` and `Secrets` ports, in `Aw.Kernel`
-and `Aw.Kernel.Telemetry`. Because the C# build doesn't share files with the TS build during the port (one cutover,
-§4a), the seams go into the C# schemas **from the first commit**. The first-run migration (§4a) moves existing data
-into them.
+and `Aw.Kernel.Telemetry`. The C# build never shares files with the TS build (one clean cutover, §4a), so the
+seams go into the C# schemas **from the first commit**, and the C# build starts with fresh state at the switch.
 
 ### 4b.7 Repository tree
 
 ```
 agentic-workflow/
-├── global.json · Directory.Build.props · Directory.Packages.props · .editorconfig · BannedSymbols.txt
+├── global.json · Directory.Build.props · Directory.Build.targets · Directory.Packages.props · nuget.config
+├── .editorconfig · BannedSymbols.txt · CodeMetricsConfig.txt
 ├── AgenticWorkflow.slnx
 ├── src/
 │   ├── Aw.Kernel/                     # Result, Error, IService<,>, decorators, contracts
+│   ├── Aw.Kernel.Data/ · Aw.Kernel.Telemetry/
 │   ├── Aw.Analyzers/                  # repo-specific Roslyn rules
-│   ├── Sindri/   (Sindri.Core · Sindri.Features · Sindri.Infrastructure · Sindri.Host)
-│   ├── Judge/    (same four projects)
+│   ├── Redaction/ · Readiness/ · Packets/
+│   ├── Sindri/   (Aw.Sindri.Core · Aw.Sindri.Features · Aw.Sindri.Infrastructure · Aw.Sindri.Host)
+│   ├── Judge/    (Aw.Judge.Core · … · Aw.Judge.Host)
 │   ├── Scorer/   (…)
-│   └── Bridge/   (…)                  # minimal API host
+│   ├── Bridge/   (…)                  # minimal API host
+│   └── …
 ├── tests/
+│   ├── .editorconfig                  # the test-project analyzer policy (§4b.6)
 │   ├── Aw.Architecture.Tests/         # one assembly for every rule in §4b.1
-│   ├── Sindri.Tests/                  # by feature; lanes as traits
-│   ├── Sindri.Testing/                # fakes + builders + contract bases
+│   ├── Aw.Kernel.Testing/             # tier 0 with Aw.Kernel, but lives here like every *.Testing (AW0002)
+│   ├── Aw.Sindri.Tests/               # by feature; lanes as traits
+│   ├── Aw.Sindri.Testing/             # fakes + builders + contract bases
 │   └── …
 ├── tools/ts-indexer/                  # the pinned Node sidecar (§4a)
 ├── mods/                              # Claude Code mods (TypeScript, thin)
@@ -388,7 +477,7 @@ The skill packages that hold code today (`skills/ui-evidence`, `skills/bugFixOrc
 | Four layers, allowed dependency directions, enforced by dependency-cruiser | Four projects per package, project references and ArchUnitNET (§4b.1) |
 | Public API surface per package | `internal` by default and PublicApiAnalyzers |
 | Internal folder template per package | Feature-slice folders (§4b.2) |
-| DI only at composition roots; ports passed in | DI only in `Host`; explicit `Add…()` methods (§4b.4) |
+| DI only at composition roots; ports passed in | Each project's explicit `Add…()` registers its own types; only `Host` calls them and builds the container (§4b.4) |
 | Error taxonomy and `AppResult` | `Result<T>` and `Error` with catalogue codes (§4b.3) |
 | zod at boundaries only | Source-generated JSON and `IValidator<T>` at endpoints and CLI inputs |
 | Branded ids | Vogen strongly typed ids (§4b.3) |
@@ -401,7 +490,9 @@ The skill packages that hold code today (`skills/ui-evidence`, `skills/bugFixOrc
 
 ### 4b.9 Agent readiness of the code itself
 
-- `AGENTS.md` lists the one-line commands: `dotnet build`, `dotnet test --filter Lane=unit`, `dotnet format --verify-no-changes`.
+- `AGENTS.md` lists the one-line commands, run from the repo root: `dotnet build`, `dotnet test --solution
+  AgenticWorkflow.slnx` (all tests), `dotnet test --solution AgenticWorkflow.slnx --filter-trait "Lane=unit"
+  --ignore-exit-code 8` (the unit lane), `dotnet format --verify-no-changes`. Test options are Microsoft.Testing.Platform options only (no `--logger`).
   It also has the slice recipe ("to add a use case: test, request and response, service, endpoint, registration")
   and points to the `/new-package` and `/new-slice` scaffolds.
 - The scaffolds produce compliant code with a red test, so an agent's first move is always the TDD step.
@@ -421,60 +512,71 @@ The skill packages that hold code today (`skills/ui-evidence`, `skills/bugFixOrc
 [Vogen value objects](https://docsearch.algolia.com/mcp/docs/repo/stevedunn/vogen) ·
 [Directory.Build organization and Central Package Management](https://tessl.io/registry/skills/github/dotnet/skills/directory-build-organization)
 
-## 4c. Cutover contract (written before any port)
+## 4c. Cutover contract (clean cutover; written before any port)
 
-No package is ported until this contract and its harness exist. Every rule here is a CI check.
+No package is ported until this contract exists. Every rule here is a CI check. **Owner decision (2026-10-10): the
+cutover is clean.** The C# build doesn't reproduce the TS build's bytes, doesn't read its data and isn't replayed
+against it. It is proven by its own tests.
 
-**Byte compatibility (A1).** `Aw.Kernel` defines one `JsonSerializerOptions` profile that matches what the TS
-packages write today:
-- camelCase names, JS-compatible escaping (no `\u0027` where Node writes `'`), the same null and
-  number handling, and `toISOString()`-identical timestamps (UTC, millisecond precision, `Z`);
-- digests reproduce the TS bytes exactly, including **key insertion order** where today's digests depend on it
-  (judge's `input_digest`, `evaluate.ts:84`). A canonical sorted-key form is used only for new digests, which carry
-  a `digestVersion` field (B4);
-- a compat test suite that feeds recorded TS outputs through the C# reader and writer and requires identical bytes.
-
-**Golden harness (A1, A15).** Each package's contract is recorded from the TS build and replayed against the C# build:
-- CLI arguments, environment variables, stdin, stdout, stderr and exit codes;
-- JSON and state files, ledger and SQLite schemas and rows, MCP tool schemas and HTTP routes;
-- a fake model provider, so calls to model CLIs are recorded and replayed;
+**Proof without parity (A1, A15).** Each package proves itself before the switch:
+- unit and integration lanes within budget (§4b.5) and the architecture tests (§4b.1);
+- CLI output and JSON contracts as golden files recorded from the **C# build** (`Aw.Kernel.Testing`), compared after a
+  declared normalization (ids, times), never by loose matching;
+- a fake model provider, so calls to model CLIs are deterministic in tests;
 - a startup-time budget per CLI;
-- **the real hook scripts** in `config/hooks/` run against the C# binary, because their behavior is what users
-  depend on.
+- the AOT CI job: every NativeAOT entry point is published and smoke-tested;
+- **the real hook scripts** in `config/hooks/` run against the C# binaries in CI, because their behavior is what
+  users depend on.
 
-Outputs are compared after a declared normalization (ids, times), never by loose matching.
+**Digests.** New C# digests over JSON use one canonical form (sorted keys, the Kernel profile) and carry a
+`digestVersion` field. Nothing reproduces TS digest bytes (B4).
 
-**Fail-closed during cutover (A1).** Some hooks treat a judge error as "allow". A cutover run counts every
-fail-open event. A package cuts over only with **zero** fail-open events across the golden and replay corpus, and
-hooks that call a ported binary log a `HOOK-FAILOPEN` event that the daily digest lists.
+**Fail-open is visible (A1, B5).** Some hooks treat a judge error as "allow". Every hook that can fail open logs a
+`HOOK-FAILOPEN` event with its cause (payload content never), the daily digest lists them, and the hook CI tests
+assert that no tested path fails open against the C# binaries.
 
-**Regex parity for the scrubber and gates (A2).**
-- One shared pattern file is the source for both builds until the TS build is deleted.
+**One pattern source for the scrubber and gates (A2).**
+- The tier-0 `Redaction` package owns the patterns; the TS scrubbers keep theirs until the TS build is deleted.
 - Patterns use explicit ASCII classes (`[0-9]`, `[A-Za-z0-9_]`), `RegexOptions.CultureInvariant`, and never
   `NonBacktracking` where lookarounds exist.
 - Every match has a timeout. A timeout **blocks** (the commit, the write or the egress) and is logged. It never passes.
-- A differential corpus (real secrets shapes, Unicode look-alikes, long inputs) runs both builds in CI and fails on
-  any difference, until the TS scrubber is deleted.
+- Redaction's tests carry a corpus of synthetic secret shapes, Unicode look-alikes, zero-width joiners, escaped
+  newlines and long inputs.
 
 **One cutover, reversible (A5, A18, decided 2026-10-10).**
 - **During the port** the installed toolkit stays TS. The C# build lives in the same repo under `src/` and builds to
   its own output directory. Nothing in `setup.sh`, the providers, MCP registration or launchd points at it.
 - **Trying C# early:** `./setup.sh --runtime cs --prefix <dev dir>` installs the C# build into a separate directory for
   a hand test or a dev session, without touching the real install.
-- **The switch:** `./setup.sh --runtime cs` backs up the state dir (`$AW_STATE_DIR` → a timestamped copy), installs the
-  C# binaries, rewrites hooks, MCP registration and launchd jobs to call them, and runs the first-run data migration.
-- **Rollback:** `./setup.sh --runtime ts --restore <backup>` reinstalls the TS build and restores the backed-up state.
+- **The switch:** `./setup.sh --runtime cs` **moves** only the TS packages' state aside to one timestamped archive:
+  the namespaces and files `deps.yaml` lists for them (`judge/`, `scorer/`, `sindri/`, `ui-evidence/`,
+  `context-guard/`, `locks/` and the hook-owned files under `judge/`), plus two fixed extras the switch names itself
+  because `deps.yaml` can't express them: the per-repo bug-fix run state `<repo-slug>/bugfix/` and the bridge's
+  `bridge.db` (outside the state root). The C# BugFix writes to its own namespace, `bugfix/<repo-slug>/<ticket-slug>`
+  (so tickets don't collide across repos), and the bugFixOrchestrator skill text changes at the switch to pass that
+  path; open bug-fix runs restart at the switch. Skill and workflow state is runtime-neutral and
+  stays where it is through the switch and a rollback: `<repo-slug>/` (plans, reviews, proof, verification,
+  design), `digests/`, `external-skills/`, `providers/`, `toolkit/` and `logs/`. The switch then installs the C#
+  binaries and rewrites hooks, MCP registration and launchd jobs to call them. The ported packages start with empty
+  namespaces (Readiness and Packets keep theirs, below), so they can never see TS files; nothing is migrated. The C#
+  build refuses to start if TS-schema files remain in its packages' namespaces. The check excludes `judge/sessions`,
+  `judge/outbox` and `judge/teammate-names.jsonl`, which the hooks write in the frozen shape on both runtimes.
+- **State written before the switch:** `Aw.Readiness` and `Aw.Packets` run before the switch as their own
+  NativeAOT CLIs (`aw-readiness check`, `aw-packets validate|freeze`) and write only under their own namespaces
+  (`readiness/`, `packets/`), which the TS build never touches and the switch keeps. After the switch, sindri's C#
+  host exposes them as `sindri readiness …` and `sindri packets …`. When
+  sindri's C# ledger first runs, it imports Readiness's history into the ledger and keeps the file.
+- **Hooks during the port:** the hook-facing CLI and file surface (the `deps.yaml` Hooks, Statusline and AwLive edges)
+  is frozen until the switch.
+- **Rollback:** `./setup.sh --runtime ts --restore <archive>` reinstalls the TS build, moves the archived TS
+  namespaces and files (including `bridge.db` and `<repo-slug>/bugfix/`) back, and discards the C# packages'
+  post-switch state, including the C# bridge database (never skill and workflow state).
   The TS build stays in the repo, tagged, for 14 days after the switch, then it's deleted.
 - **The switch happens on the always-on box first**, then the laptop after a day with no rollback.
-- **Fail-open is measurable (B5).** Before the switch, every hook that can fail open logs `HOOK-FAILOPEN` with its
-  cause (today `send-gate.sh` allows silently). The switch needs zero fail-open events across the golden corpus and
-  the replay below.
-- **Replay instead of a live shadow (B9).** Real hook and CLI calls are recorded from the TS install for a week (inputs
-  only, scrubbed) and replayed against the C# build. Any difference in decision or output that the golden
-  normalization doesn't explain blocks the switch.
-- **TS stays frozen to bug fixes** once porting starts. A bug fix to TS re-records the affected goldens in the same PR.
+- **TS stays frozen to bug fixes** once porting starts.
 - **Prebuilt binaries (B6).** Release builds per OS and architecture carry build-provenance attestations. A committed
-  `binaries.lock` maps each tool and platform to its expected SHA-256, so the check doesn't trust a checksum
+  `binaries.lock` maps each tool and platform to its expected SHA-256 (and the bundled SQLite library shipped next to
+  a tool), so the check doesn't trust a checksum
   published in the same release. `setup.sh` installs the binaries the checkout's `binaries.lock` names and verifies
   them, and contributors build from source by default (`--prebuilt` opts in). Release tags are protected by a tag
   ruleset (only the owner creates `v*` tags), releases are immutable, and sindri's `stable` and `next` channels map to
@@ -503,7 +605,8 @@ still TS.
   owner can't approve their own PR, so a review requirement would block every merge).
 
 **Workflows (A10).**
-- `permissions: read-all` at the workflow level, with write scopes granted per job only where needed.
+- `permissions: contents: read` at the workflow level (not `read-all`, which also grants read on issues, checks,
+  security events and more), with write scopes granted per job only where needed.
 - `pull_request_target` and `workflow_run` with untrusted checkouts are banned. Forks get no secrets.
 - Every action is pinned to a full commit SHA. `zizmor` lints the workflows.
 - Model or API keys live in a **`main`-only environment** with the owner as required reviewer (B8), used only by
@@ -515,13 +618,28 @@ still TS.
 
 **NuGet and Node (A16).**
 - `nuget.config` with package source mapping (nuget.org only), signed-package validation, and lockfiles in locked
-  mode in CI. Analyzer packages run code in every build, so they get the same review as runtime dependencies.
+  mode in CI. Restore applies the trusted-signer policy only when signature verification is on (off by default on
+  macOS; `DOTNET_NUGET_SIGNATURE_VERIFICATION=true` turns it on) and only to packages it extracts, so a warm cache
+  is never re-checked. The enforcement step is `scripts/dotnet-verify-packages.sh` in CI: lock files present and
+  unchanged, a signature-verified locked restore, and `dotnet nuget verify --all` over every locked package. One
+  carve-out: a package whose only failures are an expired signature (NU3037) or a timestamp from a since-distrusted
+  authority (NU3028), which restore accepts, passes with a warning; any other failure fails. Analyzer packages run
+  code in every build, so they get the same review as runtime dependencies.
 - The TS-indexer sidecar installs with `--ignore-scripts`, runs with no network and no secrets, and talks over
-  stdin and stdout only (a versioned JSON protocol with its own golden tests).
+  stdin and stdout only (a versioned JSON protocol with its own contract tests).
 
 **Runtime hardening (A16).**
-- The bridge binds to loopback **in code**, ignoring `ASPNETCORE_URLS` and Kestrel URL settings, with a test that
-  tries to override it.
+- The bridge binds to loopback **in code**, and nothing outside the code can change it:
+  - no command-line args or environment variables reach the web host's configuration, `PreferHostingUrls` is pinned
+    off, and Kestrel listens with `Listen(IPAddress.Loopback, port)` only;
+  - a test starts the bridge with each override vector (`ASPNETCORE_URLS`, `DOTNET_URLS`, `ASPNETCORE_HTTP_PORTS`,
+    `ASPNETCORE_PREFERHOSTINGURLS`, `Kestrel__Endpoints__*` in the environment and on the command line, `--urls`) and
+    checks the only listener is `127.0.0.1:<port>` (the R1a spike found two of them binding all interfaces in a
+    default `CreateSlimBuilder(args)` host);
+  - requests with a non-loopback `Host` get 400 (B12, DNS rebinding) and a browser `Origin` that isn't loopback gets
+    403 (the MCP Streamable HTTP rule);
+  - not carried over from the TS bridge: the `HOST` variable, the `ALLOW_REMOTE` escape hatch and wildcard CORS
+    (`@fastify/cors` with `origin: true` today).
 - The scrubber runs as a processor on logs and OpenTelemetry exports, so new logging can't carry secrets out.
 - The devcontainer is for humans, and it is never the agent sandbox. Docker-in-Docker means root on the host, so
   agent sessions keep using the Sindri containers of the main spec §8.2.
@@ -539,8 +657,8 @@ still TS.
 - **Weekly items (B11):** deduplicated by criterion id and closed automatically when the criterion passes.
 - **Quarantine (B11):** a test enters on 2 flaky failures in 7 days and leaves after 20 green runs in a row.
 - **Hook and dispatcher safety (B12):** the outbox dispatcher re-runs the gate checks on each command at dispatch
-  time. `actor` is set by the host process, never by the caller. `detect-secrets.sh` is retired into the shared
-  pattern file. The bridge checks the `Host` header (DNS rebinding).
+  time. `actor` is set by the host process, never by the caller. `detect-secrets.sh` is retired into the
+  `Redaction` package's patterns. The bridge checks the `Host` header (DNS rebinding).
 - **Text fixes (B13):** stale `§4` references point to §4b; the colour rule reads "colour is never the only carrier of
   meaning"; test-lane filters use xUnit v3 trait syntax; a doc-migration checklist (README, ARCHITECTURE, TESTING,
   CODE_STYLE, ERD, AGENTS.md, rules) and a CI job graph are R1b deliverables.
@@ -559,7 +677,7 @@ Each row is a criterion family, the change that satisfies it, and its owner work
 | 3 | Structured logging, tracing, metrics | One logger module (JSON lines, levels, ids); OTel spans and metrics in bridge and sindri (exporter off by default, local collector in the devcontainer) | W7 |
 | 3 | Issue and PR templates, labels | Templates; label scheme (`type:`, `area:`, `size:`, `ring:`) synced from a file | W6 |
 | 4 | Fast CI feedback | Required CI under 5 minutes for lint, types and unit tests; affected-package detection; heavy lanes nightly | W3 |
-| 4 | Flaky-test detection | The quarantine job (§4) | W3 |
+| 4 | Flaky-test detection | The quarantine job (§4e B11, §8) | W3 |
 | 4 | Deployment frequency | "Release" here means promoting a stable channel (§7.7 of the main spec). Track promotion frequency and lead time | W8 |
 | 4 | Documentation freshness | A check that executes every command in `AGENTS.md` and fails on drift; link checks; doc age against code changes | W8 |
 | 4 | Product analytics and experiments | Report scorer and ledger telemetry as product analytics; evolve's A/B and the judge's shadow modes as experiment infrastructure, with a page that lists them | W9 |
@@ -590,9 +708,15 @@ next PR shows it passing.
 
 ## 8. Readiness as a Sindri module
 
-- `sindri readiness check [--json]` runs our reproducible criteria, per repo and per app, and records each result
-  in the ledger. It is built in **R1a as the first package scaffolded from the template**, so the template proves
-  itself and the Level-4 gate is measurable from the start.
+- `sindri readiness check [--json]` (before the switch, the standalone NativeAOT `aw-readiness check [--json]`, §4c)
+  runs our reproducible criteria, per repo and per app. It is built in **R1b as
+  one of the first two packages scaffolded from the template** (§10), so the template proves itself and the Level-4
+  gate is measurable from the start.
+- **Where results live:** until sindri is ported, `Aw.Readiness` keeps its own history under its own `deps.yaml`
+  namespace (`readiness/`), for the delta and the first-run baseline; the switch keeps it (§4c). When sindri's C#
+  ledger first runs, it imports that history and keeps the file; results are recorded in the ledger from then on.
+- **Usage metrics for R3** (promotion frequency, flake rates, doc freshness over time) come from external sources
+  where possible (git tags, the GitHub Actions API). Anything else is measured from the switch.
 - **Output contract:**
   - each criterion has a state: `pass`, `fail`, `n/a` (with a reason) or `unknown` (we can't reproduce Factory's
     check);
@@ -623,9 +747,9 @@ next PR shows it passing.
 | R4 | Score of record | **Decided:** our own check (`Aw.Readiness`). No paid Factory account or Droid |
 | R5 | Tighter TS flags | Superseded by R6 for the rewritten packages; applies only to the TS that stays (mods, the TS-indexer sidecar) |
 | R6 | Language and runtime | **Decided:** C# on .NET 10 LTS, NativeAOT CLIs, strangler rewrite per package (§4a) |
-| R7 | Test framework | xUnit v3 (most common, best tooling) or TUnit (faster, source-generated); recommend xUnit v3 unless lane budgets fail in the R1 spike |
-| R8 | Data access under NativeAOT | Hand-written ADO.NET with `IRowMapper<T>` (§4b.2) unless the R1 spike shows EF Core 10 or Dapper.AOT passing the AOT golden tests |
-| R9 | Strongly typed ids | Vogen, or hand-written `readonly record struct` if the spike finds an AOT problem |
+| R7 | Test framework | **Decided (R1a spike):** xUnit v3 on Microsoft.Testing.Platform, lanes as traits, budgets per §4b.5 |
+| R8 | Data access under NativeAOT | **Decided (R1a spike):** hand-written ADO.NET with `IRowMapper<T>` over the bundled SQLite shipped beside each tool (§4b.2); EF Core 10 and Dapper.AOT fail warnings-as-errors |
+| R9 | Strongly typed ids | **Decided (R1a spike):** Vogen with its STJ generation off, a user-code converter per id and `IParsable<T>` declared in user code (§4b.3) |
 | R10 | Agent identity | A GitHub App installed on the repo (preferred) or a fine-grained token, with contents and pull-request write only |
 
 ## 10. Rollout and sizing (rough, one builder with agents)
@@ -636,9 +760,9 @@ Recent pace: about 49 commits in 60 days. The sizes below are estimates to be re
 | Step | Contents | Size | Exit |
 |---|---|---|---|
 | R0 | Baseline: a quick manual pass over the nine pillars, recorded per criterion | XS | Baseline recorded |
-| R1a | **Safety and measurement:**<br>• CI hardened for a public repo, the agent App, the `main` and tag rulesets, the `main`-only key environment (§4d);<br>• fail-open logging in every hook (§4c, B5);<br>• the golden harness (running the real hooks too) and the scrubber differential corpus;<br>• the AOT spike (R7, R8, R9, the MCP C# SDK);<br>• the readiness baseline by a throwaway script (B2);<br>• usage recording for R3 and for the replay (B9).<br>Golden recordings are made per package when its port starts | M (1–2 weeks) | Fail-open logging live; baseline recorded; agents can't bypass `main` |
+| R1a | **Safety and measurement:**<br>• CI hardened for a public repo, the agent App, the `main` and tag rulesets, the `main`-only key environment (§4d);<br>• fail-open logging in every hook (§4c, B5);<br>• the AOT spike (R7, R8, R9, the MCP C# SDK);<br>• the readiness baseline by a throwaway script (B2) | M (1–2 weeks) | Fail-open logging live; baseline recorded; agents can't bypass `main` |
 | R1b | **The template:**<br>• `Directory.Build.props`, Central Package Management, analyzers with one owner per rule, the ratchet baseline, `.editorconfig`;<br>• `Aw.Kernel` and its `Data`, `Telemetry` and `Testing` parts;<br>• `deps.yaml` with every edge kind and its checks (§4b.1a);<br>• the `/new-package` and `/new-slice` scaffolds (inputs, generated files, a red test) and `AGENTS.md` for C#;<br>• rule records for the §4b rules;<br>• W5 devcontainer and W6 templates;<br>• **`Aw.Readiness` and `Aw.Packets` as the first two standalone packages built from the template** (B2) | M (1–2 weeks) | A scaffolded package passes every check; `Aw.Readiness` reports Level 4 for the template; the R2 estimate is fixed here as the stop-rule baseline (B9) |
-| R2 | **The ports, one packet per package:** `Redaction` → `Judge` and `Bridge` → `Scorer`, `Evidence` and `BugFix` → `Sindri` (by module inside its packet). Then **the switch**: replay week, `./setup.sh --runtime cs` on the always-on box, then the laptop. **In parallel,** new factory code (addendum F0 schemas, rule records) is written in C# from the start | L–XL (estimate 6–10 weeks; each packet carries its own) | All packages at golden parity; the switch done on both hosts; TS deleted 14 days later |
+| R2 | **The ports, one packet per package:** `Redaction` → `Judge` and `Bridge` → `Scorer`, `Evidence` and `BugFix` → `Sindri` (by module inside its packet). Then **the switch**: `./setup.sh --runtime cs` on the always-on box, then the laptop. **In parallel,** new factory code (addendum F0 schemas, rule records) is written in C# from the start | L–XL (estimate 6–10 weeks; each packet carries its own) | All packages done (§4a step 3); the switch done on both hosts; TS deleted 14 days later |
 | R3 | Remaining Level 4 criteria that need usage data (promotion frequency, flake rates, doc freshness over time), and W9 | S–M | Level 4 passed. **Factory work (F0) starts here** |
 | R4 | Addendum F0–F3 plus the readiness module's weekly workflow | With the addendum | Level 5 passed |
 
@@ -652,7 +776,7 @@ Recent pace: about 49 commits in 60 days. The sizes below are estimates to be re
 **Dependencies, not a strict sequence.** R1a, R1b and R2 overlap:
 - R1b's build settings, analyzers, `deps.yaml`, the `Aw.Kernel` core, scaffold skeletons and C# `AGENTS.md` need
   nothing from R1a and can start at once.
-- `Aw.Kernel.Data`, `Aw.Kernel.Testing` and typed ids wait for the AOT spike's answers (R7–R9).
-- A package's port starts when its golden recordings exist and enough of the template does to scaffold it. CI (R1a)
-  runs its goldens.
+- `Aw.Kernel.Data`, `Aw.Kernel.Testing` and typed ids waited for the AOT spike's answers (R7–R9); those are now
+  decided (`docs/readiness/aot-spike.md`).
+- A package's port starts when enough of the template exists to scaffold it. CI (R1a) runs its tests.
 - The readiness baseline and the agent token helper block nothing.

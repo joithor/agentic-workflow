@@ -4,6 +4,23 @@
 # denies-as-pure-ack. Fails open to allow on any judge failure (RF-1).
 set -uo pipefail
 HOOK_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# HOOK-FAILOPEN: record why this hook is failing open (config/lib/failopen.sh,
+# installed at <hooks>/lib/failopen.sh). Logging only: it runs in a subshell
+# with its output discarded, so it can never change this hook's exit code,
+# stdout or stderr, whatever set -e/-u or the environment do to it.
+failopen() {
+  (
+    set +eu
+    d="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)" || exit 0
+    for f in "$d/lib/failopen.sh" "$d/../lib/failopen.sh"; do
+      if [ -f "$f" ]; then . "$f" && aw_failopen send-gate "$@"; exit 0; fi
+    done
+  ) > /dev/null 2>&1 || true
+}
+# No EXIT trap: on bash 3.2 a trap defers SIGTERM until a running $(judge …)
+# returns, so the host's timeout kill would take longer. A crash keeps its exit
+# code and is not counted under Claude Code (see "Fail-open logging" in
+# .agents/rules/hooks.md); under Codex/Cursor the adapter counts it.
 # Installed layout first (scripts/install-wake-gating.sh copies locks.sh to
 # $HOOKS_DIR/lib/locks.sh alongside this script), then a raw repo-checkout
 # layout (config/hooks/send-gate.sh next to config/lib/locks.sh) — a bare
@@ -29,6 +46,7 @@ if [ -z "$LOCKS_LIB" ] || ! command -v acquire_lock > /dev/null 2>&1; then
   # for it — judge/src/db.ts's `failures` table is only ever written from
   # inside evaluate()'s own provider-failure path, not from a plain shell
   # hook — so it's skipped rather than faked.
+  failopen locks-lib-missing
   jq -nc '{"hookSpecificOutput":{"hookEventName":"PreToolUse","permissionDecision":"allow"},"systemMessage":"send-gate: locks.sh missing, wake gating disabled"}'
   exit 0
 fi
@@ -53,12 +71,14 @@ deny() {
 }
 
 INPUT="$(cat 2>/dev/null || true)"
-[ -n "$INPUT" ] || allow
+[ -n "$INPUT" ] || { failopen empty-input; allow; }
 
 SESSION_ID="$(printf '%s' "$INPUT" | jq -r '.session_id // "unknown"')"
 AGENT_TYPE="$(printf '%s' "$INPUT" | jq -r '.agent_type // empty')"
 MESSAGE="$(printf '%s' "$INPUT" | jq -r '.tool_input.message // empty')"
-[ -n "$MESSAGE" ] || allow
+# A control message carries no message and is not a failure; a plain
+# SendMessage without one means the payload shape changed.
+[ -n "$MESSAGE" ] || { failopen input "$INPUT" '.tool_name == "SendMessage" and ((.tool_input.type // "message") == "message")'; allow; }
 
 # BLOCKER fix (Step 2, F6): a control message (shutdown_request,
 # shutdown_response, ...) is never routed through the classifier —
@@ -83,9 +103,9 @@ OUTBOX_FILE="$OUTBOX_DIR/$SESSION_ID.jsonl"
 LOCK_DIR="$OUTBOX_FILE.lock"
 
 JUDGE_INPUT="$(jq -nc --arg text "$MESSAGE" --arg sk "$SENDER_KIND" '{text: $text, senderKind: $sk}')"
-JUDGE_OUT="$(printf '%s' "$JUDGE_INPUT" | AW_SESSION_ID="$SESSION_ID" judge wake-gate 2>/dev/null)" || allow
-DECISION="$(printf '%s' "$JUDGE_OUT" | jq -r '.decision // empty' 2>/dev/null)" || allow
-[ -n "$DECISION" ] || allow
+JUDGE_OUT="$(printf '%s' "$JUDGE_INPUT" | AW_SESSION_ID="$SESSION_ID" judge wake-gate 2>/dev/null)" || { failopen "judge-exit-$?"; allow; }
+DECISION="$(printf '%s' "$JUDGE_OUT" | jq -r '.decision // empty' 2>/dev/null)" || { failopen judge-output-unparsable; allow; }
+[ -n "$DECISION" ] || { failopen judge-decision-missing; allow; }
 
 case "$DECISION" in
   send)
