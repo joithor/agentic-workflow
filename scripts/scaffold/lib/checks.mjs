@@ -5,14 +5,14 @@ import { ScaffoldError, run } from "./common.mjs";
 
 const tail = (out, n = 40) => out.trimEnd().split("\n").slice(-n).join("\n");
 
-export function mustPass(root, rule, cmd, args, fix, log) {
-  const r = run(root, cmd, args, { log });
+export async function mustPass(root, rule, cmd, args, fix, log) {
+  const r = await run(root, cmd, args, { log });
   if (r.code !== 0) throw new ScaffoldError(rule, `\`${[cmd, ...args].join(" ")}\` exited ${r.code}\n${tail(r.out)}`, fix);
   return r.out;
 }
 
 /** dotnet format's RS0016 code fix: writes PublicAPI.Unshipped.txt lines for a library project's public symbols. */
-export function publicApiFix(root, project, log) {
+export async function publicApiFix(root, project, log) {
   return mustPass(root, "SCAFFOLD-PUBLICAPI", "dotnet", ["format", "analyzers", project, "--diagnostics", "RS0016", "--severity", "error"], "run the same command by hand and read its output", log);
 }
 
@@ -20,14 +20,14 @@ export function publicApiFix(root, project, log) {
  * The public API lines the RS0016 code fix skips (source-generated members, e.g. Vogen's): read from a build of
  * the project (docs/csharp/typed-ids.md "Public ids and PublicAPI files"). Returns the sorted, unique symbols.
  */
-export function generatedPublicApi(root, project, log) {
-  const r = run(root, "dotnet", ["build", project, "-p:TreatWarningsAsErrors=false"], { log });
+export async function generatedPublicApi(root, project, log) {
+  const r = await run(root, "dotnet", ["build", project, "-p:TreatWarningsAsErrors=false"], { log });
   const symbols = new Set();
   for (const m of r.out.matchAll(/RS0016: Symbol '(.*?)' is not part of the declared public API/g)) symbols.add(m[1]);
   return [...symbols].sort();
 }
 
-export function build(root, log) {
+export async function build(root, log) {
   return mustPass(root, "SCAFFOLD-BUILD", "dotnet", ["build", "AgenticWorkflow.slnx", "-warnaserror"], "fix the template or the root settings it disagrees with; the generator reverted its files", log);
 }
 
@@ -35,8 +35,8 @@ export function build(root, log) {
  * Runs the unit lane and returns the names of the failing tests. dotnet test (Microsoft.Testing.Platform) prints
  * one "failed <name> (<time>)" line per failing test.
  */
-export function unitLaneFailures(root, log) {
-  const r = run(root, "dotnet", ["test", "--solution", "AgenticWorkflow.slnx", "--filter-trait", "Lane=unit", "--ignore-exit-code", "8"], { log });
+export async function unitLaneFailures(root, log) {
+  const r = await run(root, "dotnet", ["test", "--solution", "AgenticWorkflow.slnx", "--filter-trait", "Lane=unit", "--ignore-exit-code", "8"], { log });
   const failed = [...r.out.matchAll(/^\s*failed (\S+)/gm)].map((m) => m[1]);
   // The run summary's "failed: N" line (one per run; per-project summaries print "failed with N error(s)").
   const failedCount = [...r.out.matchAll(/^\s*failed: (\d+)$/gm)].reduce((sum, m) => sum + Number(m[1]), 0);
@@ -44,8 +44,8 @@ export function unitLaneFailures(root, log) {
 }
 
 /** The lane run must fail on exactly the one red test the scaffold wrote, and nothing else. */
-export function expectOnlyRed(root, redTest, log) {
-  const lane = unitLaneFailures(root, log);
+export async function expectOnlyRed(root, redTest, log) {
+  const lane = await unitLaneFailures(root, log);
   const others = lane.failed.filter((name) => !name.endsWith(redTest));
   // The red test fails for the right reason: the parameterless stub's NotSupportedException, not a build or DI problem.
   const slice = redTest.split(".")[0].replace(/Tests$/, "");
@@ -61,17 +61,17 @@ export function expectOnlyRed(root, redTest, log) {
   return lane;
 }
 
-export function formatClean(root, log) {
+export async function formatClean(root, log) {
   return mustPass(root, "SCAFFOLD-FORMAT", "dotnet", ["format", "AgenticWorkflow.slnx", "--verify-no-changes"], "the templates must already be formatted; run `dotnet format` and copy the result into the template", log);
 }
 
-export function depsClean(root, log) {
+export async function depsClean(root, log) {
   return mustPass(root, "SCAFFOLD-DEPS", "node", ["scripts/check-deps.mjs"], "declare the package and its edges in deps.yaml", log);
 }
 
 /** Done criterion: git status shows only the files the scaffold wrote. Returns the changed paths it didn't write. */
-export function strayChanges(journal) {
-  const r = run(journal.root, "git", ["status", "--porcelain", "--untracked-files=all"], { log: () => {} });
+export async function strayChanges(journal) {
+  const r = await run(journal.root, "git", ["status", "--porcelain", "--untracked-files=all"], { log: () => {} });
   if (r.code !== 0) return [];
   const touched = new Set(journal.touched());
   return r.out
@@ -82,7 +82,7 @@ export function strayChanges(journal) {
 }
 
 /** Fails SCAFFOLD-STRAY when a path changed during the run that the scaffold didn't write and wasn't changed before. */
-export function noStrayChanges(journal, before) {
-  const stray = strayChanges(journal).filter((f) => !before.includes(f));
+export async function noStrayChanges(journal, before) {
+  const stray = (await strayChanges(journal)).filter((f) => !before.includes(f));
   if (stray.length) throw new ScaffoldError("SCAFFOLD-STRAY", `files changed that the scaffold didn't write: ${stray.join(", ")}`, "a command rewrote an existing file (usually a lock file or a PublicAPI file): find out why before committing");
 }

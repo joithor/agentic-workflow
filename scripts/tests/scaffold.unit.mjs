@@ -256,13 +256,35 @@ t("new-slice: a new port gets its interface, fake and contract base", () => {
   assert.ok(exists(d, "tests/Aw.Readiness.Testing/RepoReaderContract.cs"));
 });
 
-for (const dir of trees) fs.rmSync(dir, { recursive: true, force: true });
-const common = await import(path.join(REPO, "scripts/scaffold/lib/common.mjs"));
-t("run() strips ANSI colors (CI colors MTP's 'failed' lines, which the red-test check parses)", () => {
-  const r = common.run(REPO, "printf", ["\u001b[31mfailed Aw.X.Tests.T.T_does (1ms)\u001b[m\n  failed: 1\n"], { log: () => {} });
-  assert.equal(r.out, "failed Aw.X.Tests.T.T_does (1ms)\n  failed: 1\n");
+t("NP-DEPENDS: a package listed twice", () => untouched((d) => refused(pkg(d, { depends: "Kernel,Kernel" }), "NP-DEPENDS")));
+t("SIGINT while waiting on the heavy lock reverts everything and exits 1 (SCAFFOLD-INTERRUPTED)", () => {
+  const d = tree();
+  assert.equal(pkg(d).code, 0);
+  const state = fs.mkdtempSync(path.join(os.tmpdir(), "aw-scaffold-unit-state-"));
+  trees.push(state);
+  fs.mkdirSync(path.join(state, "locks", "heavy-job.lock"), { recursive: true });   // someone else's build
+  const before = hashTree(d);
+  const env = { ...process.env, AW_STATE_DIR: state };
+  delete env.AW_HEAVY_LOCK_HELD;
+  // spawnSync stops collecting a pipe once its timeout fires, so the child writes to a file instead.
+  const log = path.join(state, "out.txt");
+  const fd = fs.openSync(log, "w");
+  const r = spawnSync("node", [NEW_SLICE, "--root", d, "--package", "Readiness", "--slice", "ListRepos", "--behavior", "lists_nothing", "--surface", "cli", "--command", "list"], { env, stdio: ["ignore", fd, fd], timeout: 1500, killSignal: "SIGINT" });
+  fs.closeSync(fd);
+  const out = fs.readFileSync(log, "utf8");
+  assert.equal(r.status, 1, out);
+  assert.match(out, /^SCAFFOLD-INTERRUPTED: /m);
+  assert.match(out, /reverted \d+ files/);
+  assert.equal(hashTree(d), before, "the tree changed");
 });
 
+const common = await import(path.join(REPO, "scripts/scaffold/lib/common.mjs"));
+const colored = await common.run(REPO, "printf", ["\u001b[31mfailed Aw.X.Tests.T.T_does (1ms)\u001b[m\n  failed: 1\n"], { log: () => {} });
+t("run() strips ANSI colors (CI colors MTP's 'failed' lines, which the red-test check parses)", () => {
+  assert.equal(colored.out, "failed Aw.X.Tests.T.T_does (1ms)\n  failed: 1\n");
+});
+
+for (const dir of trees) fs.rmSync(dir, { recursive: true, force: true });
 if (failures.length) {
   for (const f of failures) console.error(`FAIL ${f}`);
   console.error(`${passed} passed, ${failures.length} failed`);

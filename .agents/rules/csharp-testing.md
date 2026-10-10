@@ -51,7 +51,7 @@ Lanes are xUnit traits named `Lane`. Every test carries exactly one. A budget co
 | Lane | What | Budget (whole lane, per package) |
 |---|---|---|
 | `unit` | `Core` logic and services with in-memory fakes; architecture tests. No I/O | < 10 s |
-| `integration` | Repositories on a real temp SQLite file; endpoints through `WebApplicationFactory` | < 60 s |
+| `integration` | Repositories on a real temp SQLite file; endpoints on the real host on loopback (`LoopbackBinding` + `Pipeline.Configure`, as the scaffolded tests do) or through `WebApplicationFactory` | < 60 s |
 | `heavy` | Real containers, browsers, index builds | none; nightly or run alone (heavy-job lock) |
 
 ```csharp

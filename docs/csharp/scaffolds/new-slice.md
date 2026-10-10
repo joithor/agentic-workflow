@@ -147,9 +147,10 @@ public readonly partial struct <Id> : ITypedId<<Id>, string>
 http slice whose `route` has `{id}`), the generator adds an RDG route-binding test for it in
 `tests/Aw.<Pkg>.Tests/Ids/<Id>RouteBindingTests.cs` (Lane=integration): an id in the `ITypedId` form is used behind an
 endpoint only once that test passes; otherwise the id gets a hand-written `TryParse` instead. The test maps its own
-`/items/{id}` and `/items?id=` endpoints with the id on a slim app over `TestServer` (from
-`Microsoft.AspNetCore.Mvc.Testing`; the test project runs the request-delegate generator), runs the Host's
-`ValueObjectValidation` middleware (from `/new-package`, `docs/csharp/typed-ids.md` step 4), and asserts: valid text →
+`/items/{id}` and `/items?id=` endpoints with the id on the real host (`LoopbackBinding.Build` + `Pipeline.Configure`,
+as `Program.cs` runs it, listening on loopback; the test project runs the request-delegate generator), so the Host's
+`ValueObjectValidation` middleware (from `/new-package`, `docs/csharp/typed-ids.md` step 4) is the one in the real
+pipeline, and asserts: valid text →
 200 with the id's value; text the type refuses → 400; an empty `?id=` → 400; and both endpoints' `IParameterBindingMetadata`
 reports `HasTryParse`, so losing `IParsable` is a red test, not a production 500. The architecture check
 for the package's ids is `TypedIdGuard` in `tests/Aw.Architecture.Tests` (`ARCH-ID-001`, `ARCH-ID-002`), which covers

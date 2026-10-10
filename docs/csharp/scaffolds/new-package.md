@@ -22,7 +22,7 @@ first move is the TDD step.
 | `errorPrefix` | e.g. `READINESS` | `^[A-Z0-9]{2,16}$`; codes are `AW-<errorPrefix>-NNN` (the form `ErrorCatalogue.Validate` accepts: `^(AW\|SND)-[A-Z0-9]+-[0-9]{3}$`; `SND-` is reserved for Sindri). Unique: no `"AW-<errorPrefix>-` in `src/**/*Errors.cs`; never derived or guessed |
 | `note` | one line: what the package is for | Used for the `deps.yaml` node when the package isn't declared yet |
 | `shape` | `small` (Core + App) or `full` (Core, Features, Infrastructure, Host) | `small` unless the package is expected over ~1,500 lines |
-| `host` | `cli`, `http` or `none` | `cli` → NativeAOT console app; `http` → minimal API with `CreateSlimBuilder`; `none` → library. `http` needs `shape: full`: `shape: small` with `host: http` is refused with `NP-SMALL-HTTP` (the Web SDK's generated public `Program` would land in `App`, a library with `RS0016` on) |
+| `host` | `cli`, `http` or `none` | `cli` → NativeAOT console app; `http` → minimal API with `CreateSlimBuilder`; `none` → library. `http` and `none` need `shape: full`: `shape: small` with `host: http` is refused with `NP-SMALL-HTTP` (the Web SDK's generated public `Program` would land in `App`, a library with `RS0016` on), and with `host: none` with `NP-SMALL-NONE` (nothing could call `App`'s internal `Add…()` methods) |
 | `depends` | list of package names | Each must be in a lower tier (checked against `deps.yaml`). Project edges from this package's `Features` (`App` in the small shape) to their `Core`. Refused with `NP-FANOUT` if that project would hold more than 4 in-repo references |
 | `binary` | the executable name, e.g. `aw-readiness` | `^[a-z][a-z0-9-]{1,40}$`; default `<name lowercase>`. The `AssemblyName` of the Host (or the small shape's `App`) |
 | `firstSlice` | PascalCase use-case name, e.g. `CheckRepo`, plus its `behavior` | Passed to `/new-slice` to generate the first red test, with the slice's `command` or `route`, `ids` and `ports` (`new-slice.md`) |
@@ -186,7 +186,10 @@ them. It also sends a request with `Host: example.com` (expects 400) and one wit
 (expects 403), through `Pipeline.Configure`, the same pipeline `Program.cs` runs (guard, Vogen 400, endpoint table),
 so dropping or reordering a middleware fails a test. The tests set process environment variables, so they share an
 xUnit collection with parallelization off (`ProcessEnvironment.cs`). `HttpJsonProfileTests` (Lane=unit) checks the
-http JSON options equal the AwJson profile setting by setting: `LoopbackBinding` replaces the resolver chain and copies
+http JSON options equal the AwJson profile setting by setting, and that `ProblemDetails` still resolves:
+`LoopbackBinding` calls `AddProblemDetails()` (its post-configure step adds ASP.NET's ProblemDetails context to the
+chain, so an error `Result` is a `ProblemDetails` response, not a 500; `LoopbackBindingTests` sends one through the
+real pipeline and checks the status, `application/problem+json` and the code), replaces the resolver chain and copies
 the naming policy, case sensitivity, number handling, ignore and unmapped-member handling, encoder, the two `Respect…`
 settings and the converters, because ASP.NET starts from the looser Web defaults (case-insensitive names, numbers
 read from strings).
@@ -194,16 +197,18 @@ No `HOST` variable, no `ALLOW_REMOTE` switch, no wildcard CORS. An http package'
 `EnableRequestDelegateGenerator=true`, so its id route-binding tests (`new-slice.md`) compile through the
 request-delegate generator, like the Host.
 
-The http Host applies the same JSON profile in `ConfigureHttpJsonOptions` by copying the settings, converters and
-resolver of `AwJson.CreateOptions(<Name>JsonContext.Default)` into `o.SerializerOptions`. It copies because
+The http Host applies the same JSON profile in `ConfigureHttpJsonOptions` by copying the settings and converters of
+`AwJson.CreateOptions(<Name>JsonContext.Default)` into `o.SerializerOptions` and replacing its resolver chain with
+`<Name>JsonContext.Default` (`AddProblemDetails()`'s post-configure step then adds ASP.NET's ProblemDetails context
+to the chain). It copies because
 `AwJson.CreateOptions` returns read-only options (it calls `MakeReadOnly()`) and `SerializerOptions` has no setter to
 assign them to; the instance it returns is still mutable during configuration.
 
 `HttpResults` maps only a returned `Result`: values to `TypedResults`, errors to `ProblemDetails`. It never sees Vogen's
 `ValueObjectValidationException`, which is thrown during binding or at an uninitialized id's first `.Value` (ASP.NET
 passes `default(T)` for an empty `?id=` without calling `TryParse`), before any `Result` exists. That exception is
-mapped to 400 by pipeline middleware, `ValueObjectValidation.cs`, registered in `Program.cs` with
-`app.UseValueObjectValidation()` before the endpoint table is mapped:
+mapped to 400 by pipeline middleware, `ValueObjectValidation.cs`, registered in `Pipeline.Configure` (which `Program.cs`
+calls) with `app.UseValueObjectValidation()` before the endpoint table is mapped:
 
 ```csharp
 using Vogen;
@@ -233,7 +238,7 @@ internal static class ValueObjectValidation
 
 The body is `docs/csharp/typed-ids.md` step 4, proven under NativeAOT (500 without it, 400 with it). It is covered by
 the route-binding test `/new-slice` adds before the first id binds a route (`tests/Aw.<Name>.Tests/Ids/<Id>RouteBindingTests.cs`,
-Lane=integration): on a slim app over `TestServer` with this middleware in the pipeline, valid route or query text →
+Lane=integration): on the real host and pipeline (`LoopbackBinding.Build` + `Pipeline.Configure`), valid route or query text →
 200 with the id's value; text the type refuses → 400; an empty `?id=` → 400; and both endpoints'
 `IParameterBindingMetadata` report `HasTryParse`, so the id never binds as a body.
 
@@ -452,4 +457,6 @@ not the first user.
   (`SCAFFOLD-RESTORE`, `-PUBLICAPI`, `-BUILD`, `-RED`, `-FORMAT`, `-DEPS`, `-STRAY`), the measured value and the fix.
 - Re-running with the same `name` refuses: `NP-EXISTS: src/<Name> already exists`. A taken `errorPrefix` refuses with
   `NP-PREFIX`; a missing package pin stops with `NP-PINS` and the pin commit to make; `shape: small` with `host: http`
-  refuses with `NP-SMALL-HTTP`.
+  refuses with `NP-SMALL-HTTP`, and with `host: none` with `NP-SMALL-NONE`.
+- SIGINT or SIGTERM during a run is remembered, not fatal: the next command boundary (or the heavy-lock wait) fails
+  with `SCAFFOLD-INTERRUPTED`, then the files are reverted and the lock released.

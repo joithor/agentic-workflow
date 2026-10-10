@@ -40,6 +40,34 @@ export function parseArgs(argv, known, flags = []) {
 
 export class UsageError extends Error {}
 
+/**
+ * SIGINT and SIGTERM during a run: remembered, never fatal on their own, so the generator can revert what it wrote
+ * and release the heavy-job lock. run() refuses to start another command once one arrived and fails the one it was
+ * waiting on (SCAFFOLD-INTERRUPTED); the caller's catch reverts. Installed by each generator's main() around the whole
+ * run, from the first write to the revert.
+ */
+export const signals = { interrupted: false };
+export function trapSignals(log = console.error) {
+  const on = (sig) => {
+    if (!signals.interrupted) log(`${sig}: stopping after the current step; the scaffold will be reverted`);
+    signals.interrupted = true;
+  };
+  const onInt = () => on("SIGINT");
+  const onTerm = () => on("SIGTERM");
+  process.on("SIGINT", onInt);
+  process.on("SIGTERM", onTerm);
+  return () => {
+    process.off("SIGINT", onInt);
+    process.off("SIGTERM", onTerm);
+  };
+}
+const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+const nextTurn = () => new Promise((resolve) => setImmediate(resolve));
+
+function checkInterrupted() {
+  if (signals.interrupted) throw new ScaffoldError("SCAFFOLD-INTERRUPTED", "interrupted (SIGINT or SIGTERM)", "nothing to fix: the files were reverted; run it again");
+}
+
 /** Splits a comma-separated list; empty or missing gives []. */
 export const list = (value) =>
   (value ?? "")
@@ -138,8 +166,8 @@ export class Journal {
  * runs at a time. AW_HEAVY_LOCK_HELD=1 means a caller (the `heavy` wrapper, or new-package calling new-slice)
  * already holds it.
  */
-export function withHeavyLock(fn, { timeoutS = 5400, log = console.error } = {}) {
-  if (process.env.AW_HEAVY_LOCK_HELD === "1") return fn();
+export async function withHeavyLock(fn, { timeoutS = 5400, log = console.error } = {}) {
+  if (process.env.AW_HEAVY_LOCK_HELD === "1") return await fn();
   const state = process.env.AW_STATE_DIR || path.join(os.homedir(), ".agentic-workflow");
   const lock = path.join(state, "locks", "heavy-job.lock");
   fs.mkdirSync(path.dirname(lock), { recursive: true });
@@ -156,35 +184,31 @@ export function withHeavyLock(fn, { timeoutS = 5400, log = console.error } = {})
         log(`waiting on lock: ${lock}`);
         told = true;
       }
+      checkInterrupted();
       if (Date.now() - start > timeoutS * 1000) throw new ScaffoldError("SCAFFOLD-LOCK", `the heavy-job lock ${lock} was held for ${timeoutS} s`, "wait for the other build, or remove a stale lock directory");
-      spawnSync("sleep", ["1"]);
+      await sleep(1000);   // async, so a SIGINT or SIGTERM handler gets to run
     }
   }
   fs.writeFileSync(owner, `${process.pid} ${new Date().toISOString()} ${process.argv.slice(1).join(" ")}\n`);
   process.env.AW_HEAVY_LOCK_HELD = "1";
-  // Ctrl-C or SIGTERM must still release the lock and revert: everything here is synchronous spawnSync, so ignoring
-  // the signal in this process lets the signalled dotnet child die, its non-zero exit fails the check, and the
-  // caller's revert and this finally run.
-  const ignore = () => {};
-  process.on("SIGINT", ignore);
-  process.on("SIGTERM", ignore);
   try {
-    return fn();
+    return await fn();
   } finally {
-    process.off("SIGINT", ignore);
-    process.off("SIGTERM", ignore);
     delete process.env.AW_HEAVY_LOCK_HELD;
     fs.rmSync(lock, { recursive: true, force: true });
   }
 }
 
 /** Runs a command in root; returns { code, out } with stdout and stderr together. Never throws on a non-zero exit. */
-export function run(root, cmd, args, { log = console.error } = {}) {
+export async function run(root, cmd, args, { log = console.error } = {}) {
+  checkInterrupted();
   log(`$ ${[cmd, ...args].join(" ")}`);
   const r = spawnSync(cmd, args, { cwd: root, encoding: "utf8", maxBuffer: 256 * 1024 * 1024, env: process.env });
   if (r.error) return { code: 127, out: String(r.error.message) };
   // CI terminals get ANSI colors (\u001b[31mfailed …); the checks parse plain text.
+  await nextTurn();   // signal handlers run only between event-loop turns, never during spawnSync
   const out = `${r.stdout ?? ""}${r.stderr ?? ""}`.replace(/\u001b\[[0-9;]*m/g, "");
+  checkInterrupted();   // a signal that arrived while the command ran fails it, whatever it exited with
   return { code: r.status ?? 1, out };
 }
 
