@@ -79,8 +79,11 @@ function dead(h: HeavyHolder, sys: SystemProbe): boolean {
   return !sys.pidAlive(h.pid);
 }
 
-// Same dir: inode and birth time (a filesystem that keeps no birth time reports 0 for both).
-const sameDir = (a: fs.Stats, b: fs.Stats): boolean => a.ino === b.ino && a.birthtimeMs === b.birthtimeMs;
+// `marked` (stat'ed after the mark) is the dir `checked` was: same inode, and the same birth time
+// when the platform reports a real one. No birth time reads as 0; Node without statx (old kernels,
+// some sandboxes) reports ctime instead, which the mark itself just changed: neither can count.
+const sameDir = (marked: fs.Stats, checked: fs.Stats): boolean =>
+  marked.ino === checked.ino && (marked.birthtimeMs === 0 || marked.birthtimeMs === marked.ctimeMs || marked.birthtimeMs === checked.birthtimeMs);
 const sameFile = (a: fs.Stats, b: fs.Stats | undefined): boolean => b !== undefined && a.ino === b.ino && a.mtimeMs === b.mtimeMs;
 
 // Put a dir that changed hands back. rename() replaces an empty dir already at `dir` (another
@@ -134,10 +137,11 @@ function reclaim(deps: Deps, dir: string, gone: HeavyHolder | null, me: HeavyHol
   try {
     writeHolder(mutexRecord(dir), me);
     // The age and the holder come from before the mark: writing it changes the dir's mtime.
+    // The record's identity is taken before it is read, so one written in between never passes as checked.
+    const record = fs.statSync(holderFile(dir), { throwIfNoEntry: false });
     const st = fs.statSync(dir, { throwIfNoEntry: false });
     const now = st === undefined ? null : readHolder(dir);
     if (st === undefined || !due(st) || (gone === null ? now !== null : !sameHolder(now, gone))) return false; // released, or it changed hands
-    const record = fs.statSync(holderFile(dir), { throwIfNoEntry: false });
     // A dir holding a file can't be rmdir'ed, so once marked it can't change hands. The mark's
     // name is one only this takeover knows; the inode number alone can't tell a replacement
     // apart, because Linux hands a freed inode to the next mkdir at once.

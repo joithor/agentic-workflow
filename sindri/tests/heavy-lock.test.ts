@@ -409,16 +409,18 @@ describe("heavy-job lock", () => {
       expect(leftovers(dir)).toEqual([]);
     });
 
-    it("takes a dead holder's lock where birth time is only ctime (Node without statx)", async () => {
-      const { d, dir } = setup();
-      const realStat = fs.statSync;
-      vi.spyOn(fs, "statSync").mockImplementation(((p: fs.PathLike, o?: fs.StatSyncOptions) => {
-        const st = realStat(p, o);
-        return st !== undefined && String(p) === dir ? Object.assign(st, { birthtimeMs: st.ctimeMs }) : st;
-      }) as typeof fs.statSync);
-      expect(await withHeavyLock(d, "x", 0, async () => 2)).toBe(2);
-      vi.restoreAllMocks();
-      expect(leftovers(dir)).toEqual([]);
+    it("takes a dead holder's lock where there is no real birth time: 0, or ctime (Node without statx)", async () => {
+      for (const birth of [(st: fs.Stats | fs.BigIntStats) => Number(st.ctimeMs), () => 0]) {
+        const { d, dir } = setup();
+        const realStat = fs.statSync;
+        vi.spyOn(fs, "statSync").mockImplementation(((p: fs.PathLike, o?: fs.StatSyncOptions) => {
+          const st = realStat(p, o);
+          return st !== undefined && String(p) === dir ? Object.assign(st, { birthtimeMs: birth(st) }) : st;
+        }) as typeof fs.statSync);
+        expect(await withHeavyLock(d, "x", 0, async () => 2)).toBe(2);
+        vi.restoreAllMocks();
+        expect(leftovers(dir)).toEqual([]);
+      }
     });
 
     it("backs off when a holder record appears on a lock that had none", async () => {
