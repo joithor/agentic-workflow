@@ -22,6 +22,5 @@ public sealed record ReadinessConfig(RepoName Repo, int Ring, string Scope, IRea
     /// '- ring: N' / 'level: N' items; # comments).</summary>
     /// <param name="text">The file's text.</param>
     /// <returns>The config, or AW-READINESS-003 naming the line and the fix.</returns>
-    public static Result<ReadinessConfig> Parse(string text)
-        => throw new NotSupportedException("red: ReadinessConfig.Parse");
+    public static Result<ReadinessConfig> Parse(string text) => ReadinessConfigParser.Parse(text);
 }

@@ -12,5 +12,42 @@ public static class ReadinessScoring
     /// <param name="findings">The findings.</param>
     /// <returns>The scorecard.</returns>
     public static Scorecard Score(IReadOnlyList<Finding> findings)
-        => throw new NotSupportedException("red: ReadinessScoring.Score");
+    {
+        var pillars = Enum.GetValues<Pillar>()
+            .Select(pillar => PillarOf(pillar, [.. findings.Where(f => f.Criterion.Pillar == pillar)]))
+            .ToList();
+        var tallies = Tally(findings);
+        return new Scorecard(pillars, LevelOf(tallies), tallies);
+    }
+
+    private static PillarScore PillarOf(Pillar pillar, IReadOnlyList<Finding> findings)
+    {
+        var tallies = Tally(findings);
+        return new PillarScore(pillar, tallies.TrueForAll(t => t.IsEmpty) ? null : LevelOf(tallies), tallies);
+    }
+
+    private static List<LevelTally> Tally(IReadOnlyList<Finding> findings) =>
+        [.. Enumerable.Range(1, MaxLevel).Select(level =>
+        {
+            var scored = findings.Where(f => f.Criterion.Level == level && IsScored(f.State)).ToList();
+            return new LevelTally(level, scored.Count(f => f.State == CriterionState.Pass), scored.Count);
+        })];
+
+    private static int LevelOf(IReadOnlyList<LevelTally> tallies)
+    {
+        var level = 1;
+        foreach (var tally in tallies.Where(t => t.Level < MaxLevel && !t.IsEmpty))
+        {
+            if (!tally.Unlocks)
+            {
+                break;
+            }
+
+            level = tally.Level + 1;
+        }
+
+        return level;
+    }
+
+    private static bool IsScored(CriterionState state) => state is CriterionState.Pass or CriterionState.Fail;
 }

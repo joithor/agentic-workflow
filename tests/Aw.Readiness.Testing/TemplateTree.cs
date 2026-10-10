@@ -30,6 +30,7 @@ internal static class TemplateTree
         .With(".devcontainer/devcontainer.json", "{}")
         .With(".env.example", "AW_STATE_DIR=\n")
         .With("src/Aw.Kernel.Telemetry/Aw.Kernel.Telemetry.csproj", "<Project />")
+        .With("src/Aw.Kernel.Telemetry/packages.lock.json", "{}")
         .With("src/Aw.Kernel.Telemetry/JsonLinesLoggerProvider.cs", "sealed class JsonLinesLoggerProvider : ILoggerProvider")
         .With("src/Aw.Kernel.Telemetry/TelemetryRuntime.cs", ".AddSource(pattern) .AddMeter(pattern)")
         .With(".github/CODEOWNERS", "* @owner\n")

@@ -15,5 +15,22 @@ public sealed record RunDelta(DateTimeOffset? Since, int? LevelBefore, int Level
     /// <param name="current">This run.</param>
     /// <returns>The delta.</returns>
     public static RunDelta Between(RunRecord? previous, RunRecord current)
-        => throw new NotSupportedException("red: RunDelta.Between");
+    {
+        if (previous is null)
+        {
+            return new RunDelta(Since: null, LevelBefore: null, current.Level, []);
+        }
+
+        var before = previous.States.ToDictionary(s => s.Id.Value, s => s.State, StringComparer.Ordinal);
+        var after = current.States.ToDictionary(s => s.Id.Value, s => s.State, StringComparer.Ordinal);
+        var changes = before.Keys.Union(after.Keys, StringComparer.Ordinal)
+            .Order(StringComparer.Ordinal)
+            .Select(id => new StateChange(CriterionId.From(id), StateOf(before, id), StateOf(after, id)))
+            .Where(c => c.Before != c.After)
+            .ToList();
+        return new RunDelta(previous.RecordedAt, previous.Level, current.Level, changes);
+    }
+
+    private static CriterionState? StateOf(Dictionary<string, CriterionState> states, string id) =>
+        states.TryGetValue(id, out var state) ? state : null;
 }
