@@ -1,0 +1,77 @@
+# Fixture graph for scripts/tests/check-deps.test.sh
+version: 1
+limits:
+  packageFanOut: 4
+  projectFanOut: 4
+  thirdPartyFanOut: 6
+  exceptionMaxDays: 183
+packages:
+  - id: Kernel
+    kind: package
+    tier: 0
+    projectPrefix: Aw.Kernel
+    ts: null
+    src: src/Aw.Kernel
+    note: "kernel"
+  - id: Alpha
+    kind: package
+    tier: 1
+    projectPrefix: Aw.Alpha
+    ts: alpha
+    src: src/Alpha
+    scan: [alpha/src]
+    bins: [alpha]
+    db: [alpha/a.sqlite]
+    files: [alpha/outbox]
+    namespace: alpha
+    note: alpha
+  - id: Beta
+    kind: package
+    tier: 2
+    projectPrefix: Aw.Beta
+    ts: beta
+    src: src/Beta
+    scan: [beta/src]
+    bins: [beta]
+    note: 'beta # not a comment'
+  - id: Delta
+    kind: package
+    tier: 2
+    projectPrefix: Aw.Delta
+    ts: delta
+    src: src/Delta
+    scan: [delta/src]
+    note: delta
+  - id: Hooks
+    kind: shell
+    ts: hooks
+    src: null
+    scan: [hooks]
+    note: shell hooks
+edges:
+  - from: Beta
+    to: Alpha
+    kind: cli
+    status: current
+    note: beta runs alpha
+  - from: Beta
+    to: Alpha
+    kind: db
+    status: current
+    note: read-only; should become an alpha CLI
+  - from: Hooks
+    to: Alpha
+    kind: cli
+    status: current
+    note: hooks ask alpha
+  - from: Hooks
+    to: Alpha
+    kind: file
+    status: current
+    note: hooks read the outbox
+  - from: Beta
+    to: Kernel
+    kind: project
+    status: planned
+    note: everything uses the kernel
+exceptions: []

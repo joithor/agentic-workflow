@@ -1,0 +1,91 @@
+#!/usr/bin/env bash
+# scripts/ci/changed-areas.sh — the CI path filter.
+#
+# Usage: changed-areas.sh <event-name> <base-sha> <base-ref> <default-branch>
+#
+# Prints GitHub step outputs (key=value lines) naming which areas a change
+# touches, so each CI job can decide between real work and a no-op success:
+#   bash=true|false      the bash tests need to run
+#   dotnet=true|false    the .NET solution needs to build (spikes/ never counts)
+#   packages=[...]       JSON array of the TS packages that changed
+#
+# Anything other than a pull_request into the default branch with a known base
+# runs everything: a filter that can't tell must not skip a check. A stacked PR
+# (based on another branch) runs everything too, because when its parent merges
+# GitHub retargets it without a new run, and a narrowed result would carry over.
+
+TS_PACKAGES=(mcp-bridge scorer judge sindri skills/ui-evidence skills/bugFixOrchestrator)
+
+# Packages whose tests import another package's source: a change to the key also
+# runs the listed dependents (scorer's tests import judge/src/db.ts).
+dependents_of() {
+  case "$1" in
+    judge) echo scorer ;;
+  esac
+}
+
+json_array() {
+  local out="" item
+  for item in "$@"; do out+="${out:+,}\"$item\""; done
+  printf '[%s]' "$out"
+}
+
+print_all() {
+  printf 'bash=true\ndotnet=true\npackages=%s' "$(json_array "${TS_PACKAGES[@]}")"
+}
+
+# Reads changed paths, NUL-separated (git diff -z), on stdin and prints the outputs.
+# NUL separation means no quoting: a non-ASCII or oddly named path arrives verbatim.
+classify_changes() {
+  local bash=false dotnet=false file pkg
+  local -a changed_packages=()
+  while IFS= read -r -d '' file || [ -n "$file" ]; do
+    [ -n "$file" ] || continue
+    case "$file" in
+      .github/*|scripts/ci/*|.nvmrc) print_all; return 0 ;;
+    esac
+    case "$file" in
+      spikes/*) continue ;;  # throwaway spike projects: no area, never the dotnet job
+    esac
+    case "$file" in
+      config/*|scripts/*|providers/*|setup.sh|mods/*|skills/*|.agents/*|AGENTS.md|CLAUDE.md|.claude/*|.cursor/*)
+        bash=true ;;
+      src/*|tests/*|*.cs|*.csproj|*.props|*.targets|*.slnx|global.json|nuget.config|.editorconfig|BannedSymbols.txt|packages.lock.json|.config/dotnet-tools.json)
+        dotnet=true ;;
+    esac
+    for pkg in "${TS_PACKAGES[@]}"; do
+      case "$file" in
+        "$pkg"/*)
+          bash=true
+          local p
+          for p in "$pkg" $(dependents_of "$pkg"); do
+            case " ${changed_packages[*]-} " in
+              *" $p "*) ;;
+              *) changed_packages+=("$p") ;;
+            esac
+          done
+          ;;
+      esac
+    done
+  done
+  printf 'bash=%s\ndotnet=%s\npackages=%s' "$bash" "$dotnet" \
+    "$(json_array ${changed_packages[@]+"${changed_packages[@]}"})"
+}
+
+main() {
+  local event="$1" base="$2" base_ref="${3:-}" default_branch="${4:-}"
+  if [ "$event" != "pull_request" ] || [ -z "$base" ] || [ -z "$default_branch" ] \
+     || [ "$base_ref" != "$default_branch" ]; then
+    print_all
+    return 0
+  fi
+  # --no-renames lists both sides of a move, so a file moved out of a package still
+  # selects it; -z turns off path quoting (core.quotePath) for non-ASCII names.
+  git diff --no-renames --name-only -z "$base" HEAD | classify_changes
+}
+
+if [ "${BASH_SOURCE[0]}" = "$0" ]; then
+  set -euo pipefail
+  main "${1:-}" "${2:-}" "${3:-}" "${4:-}"
+  echo
+fi

@@ -1,0 +1,51 @@
+<Project>
+  <!-- Evaluated after the project body, so properties a .csproj sets (AwAotCompatible, TargetFramework) are seen. -->
+
+  <!-- AOT (spec §4b.6): every library project turns on the trim and AOT analyzers. Opt-out: AwAotCompatible=false
+       in the .csproj with a comment saying why (for example Evidence: Playwright for .NET doesn't support NativeAOT).
+       Only for TFMs that support it: a netstandard2.0 project (a source generator, analyzer code fixes) would fail
+       with NETSDK1210. PublishAot is set only on entry points, in their own project files. -->
+  <PropertyGroup Condition="'$(AwIsLibraryProject)' == 'true' and '$(AwAotCompatible)' != 'false' and '$(TargetFramework)' != '' and $([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net8.0'))">
+    <IsAotCompatible>true</IsAotCompatible>
+  </PropertyGroup>
+
+  <!-- Hosts (spec §4b.6): minimal-API endpoints bind through the request-delegate source generator in every build, so
+       JIT endpoint tests run the same generated binding as the AOT binary. -->
+  <!-- Hosts have no tracked public API: CA1515 (Exe output) keeps their types internal. The web SDK also generates
+       a public `partial class Program` for WebApplicationFactory, which RS0016 would otherwise reject. -->
+  <PropertyGroup Condition="'$(AwIsHostProject)' == 'true'">
+    <EnableRequestDelegateGenerator>true</EnableRequestDelegateGenerator>
+    <NoWarn>$(NoWarn);RS0016;RS0017;RS0036;RS0037</NoWarn>
+  </PropertyGroup>
+
+  <!-- NativeAOT entry points (spec §4b.6): no ICU dependency in the single-file binary. -->
+  <PropertyGroup Condition="'$(PublishAot)' == 'true'">
+    <InvariantGlobalization>true</InvariantGlobalization>
+  </PropertyGroup>
+
+  <!-- Placement (AW0002): the test-project policy is tests/.editorconfig, so *.Tests and *.Testing projects
+       (including Aw.Kernel.Testing) must live under tests/, and nothing else may: a library under tests/ would
+       silently lose RS0016, CS1591 and CA2007. -->
+  <PropertyGroup>
+    <_AwRelDir>$([MSBuild]::MakeRelative('$(MSBuildThisFileDirectory)', '$(MSBuildProjectDirectory)').Replace('\','/'))</_AwRelDir>
+    <_AwUnderTests Condition="$(_AwRelDir.StartsWith('tests/'))">true</_AwUnderTests>
+  </PropertyGroup>
+  <Target Name="AwCheckPlacement"
+          BeforeTargets="_GenerateRestoreGraphProjectEntry;Restore;BeforeBuild"
+          Condition="('$(AwIsTestProject)' == 'true' and '$(_AwUnderTests)' != 'true') or ('$(AwIsTestProject)' != 'true' and '$(_AwUnderTests)' == 'true')">
+    <Error Condition="'$(AwIsTestProject)' == 'true'" Code="AW0002"
+           Text="$(MSBuildProjectName) is a test project (*.Tests or *.Testing) but sits at $(_AwRelDir). Move it under tests/, where tests/.editorconfig applies the test-project policy." />
+    <Error Condition="'$(AwIsTestProject)' != 'true'" Code="AW0002"
+           Text="$(MSBuildProjectName) sits at $(_AwRelDir) but is not a *.Tests or *.Testing project. Move it out of tests/, or rename it if it is test code: tests/.editorconfig would drop library rules (RS0016, CS1591, CA2007) for it." />
+  </Target>
+
+  <!-- CI lock-file guard (spec §4b.6, §4d). Locked restore (RestoreLockedMode, set when CI=true) only fails when
+       package references drift from the lock file; with no lock file at all it quietly writes a new one.
+       This target makes a missing packages.lock.json an error in CI. -->
+  <Target Name="AwRequireLockFile"
+          BeforeTargets="_GenerateRestoreGraphProjectEntry;Restore"
+          Condition="'$(CI)' == 'true' and '$(RestorePackagesWithLockFile)' == 'true' and !Exists('$(MSBuildProjectDirectory)/packages.lock.json')">
+    <Error Code="AW0001"
+           Text="$(MSBuildProjectName) has no packages.lock.json. Run `dotnet restore` locally (CI unset) and commit the packages.lock.json next to $(MSBuildProjectFile)." />
+  </Target>
+</Project>

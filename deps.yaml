@@ -1,0 +1,449 @@
+# deps.yaml — the declared package graph (spec §4b.1a, §4e B10). The merge gate (and CI once the CI
+# workflow lands) fails on any drift from it.
+#
+# Check:   node scripts/check-deps.mjs            (add --mermaid [--base-file F] for the PR graph)
+# Schema:  schemas/deps.schema.json
+#
+# packages  Each node: a C# package (kind: package, with a tier), the bash hooks and statusline (kind: shell)
+#           or the Claude Code mod (kind: mod). `ts` is where the code lives today, `src` where the C#
+#           package lands after its port. `scan` lists the source the checker reads for cli/db/file edges.
+#           `bins`, `binPaths`, `db`, `files` and `namespace` are what other nodes need an edge to use:
+#           db, files and namespace are relative to the state root (${AW_STATE_DIR:-~/.agentic-workflow}),
+#           and `namespace` owns every path under that directory, listed or not. Shell and mod nodes own
+#           nothing: they only consume.
+# edges     kind: project (a C# ProjectReference), cli (runs the other's binary), db (opens the other's
+#           SQLite file, read-only) or file (shared state files). status: current edges exist in the source
+#           today; planned edges are allowed but not built yet. Both directions are checked: a current edge
+#           the scan can't find, and a planned edge it does find, both fail. Adding an edge is a reviewed
+#           change to this file.
+# rules     Nothing depends on a shell or mod node. Project edges point strictly down the tiers; `sublevel`
+#           orders the kernel family inside tier 0 and is allowed on tier 0 only. db and file edges point
+#           down or across, never up; cli edges may point anywhere (a contract, §4b.1a). No cycles across
+#           any kind. Fan-out (§4b.1a): limits.packageFanOut caps the packages one package declares project
+#           edges to; once C# projects exist, each project may reference at most limits.projectFanOut in-repo
+#           projects and limits.thirdPartyFanOut third-party packages (analyzers excluded; *.Host and *.Tests
+#           exempt). Only the fan-out rules take exceptions, each with a reason, at most
+#           limits.exceptionMaxDays long, and an exception that suppresses nothing fails.
+# C# names  A project belongs to the package whose projectPrefix starts its name (longest wins), e.g.
+#           src/Judge/Aw.Judge.Core and tests/Aw.Judge.Tests both belong to Judge. Another package is
+#           reached only through its Core project (Aw.<Pkg>.Core) or a tier-0 package's library projects
+#           (never a Host, Infrastructure, Features or App); anything else fails DEPS-PROJ-007 (§4b.1a
+#           "only through their Core contracts"). The reference sits in Features (App in the small shape)
+#           or Host: Core and Infrastructure use tier-0 packages only (DEPS-PROJ-008, §4b.1). Which tier-0
+#           package a Core may use (Aw.Kernel, not Aw.Kernel.Data) is left to BannedSymbols and the
+#           ArchUnitNET tests.
+#           Test code is every project under tests/, plus any project named *.Tests or *.Testing (also
+#           with a further suffix, such as *.Tests.Integration). Names with a .Testing segment are
+#           test-support (a package's fakes, builders, contract bases; KernelTesting is the shared one,
+#           tests/Aw.Kernel.Testing); the rest are leaves. Test code
+#           follows its owner: it may reference its own package, test-support packages (test: true, such
+#           as Aw.Kernel.Testing), analyzers (normally, to test them) and what its owner has a project edge
+#           to, needs no edge of its own, and is exempt from fan-out. Nothing references a leaf; only test
+#           code references test-support. Test assemblies no package owns (Aw.Architecture.Tests) may
+#           reference every package. Analyzer packages (analyzer: true, Aw.Analyzers) are referenced from
+#           production code only with OutputItemType="Analyzer" (in a .csproj or a Directory.Build file);
+#           they need no edge and don't count as fan-out. Any other ProjectReference in a Directory.Build
+#           file fails.
+# scan      A heuristic, not a proof. It reads *.ts/*.js and *.sh under `scan` (not tests, node_modules or
+#           dist) and finds: spawn/exec*(…"bin…" calls, also wrapped over lines; `?? "bin"` and `|| "bin"`
+#           fallbacks; *Bin = "bin" and *Bin("bin"); BIN_BIN env names; shell commands after VAR=, env,
+#           sudo, xargs, nohup, exec, !, $( and backquotes, by name, path suffix, "$BIN_BIN" or
+#           ${VAR:-bin}. TS comments are blanked and string, template and regex interiors are skipped for
+#           calls; a template literal or block comment left open at the end of a file is a tool error
+#           (exit 2), so a lexing mistake can't hide the rest of the file. It can't see a binary named only
+#           through a variable it doesn't recognise, indirection such as `npx <bin>`, or calls in JSON and
+#           plist config (config/settings.json hook commands, launchd jobs). Shell commands starting with
+#           echo, printf or log (separators inside quotes don't start a new command) and heredoc bodies
+#           are skipped.
+#
+# YAML subset (parsed without a library, so the check needs no install step): block mappings and
+# sequences, plain, 'single' or "double" quoted scalars, [flow, lists] of scalars, and # comments.
+# Anchors, aliases, tags, block scalars (| >), flow mappings ({}), multiple documents, tab indentation,
+# duplicate keys and non-JSON escapes are rejected (DEPS-YAML-001). Quote a scalar that contains ": " or " #".
+
+version: 1
+
+limits:
+  packageFanOut: 4
+  projectFanOut: 4
+  thirdPartyFanOut: 6
+  exceptionMaxDays: 183
+
+packages:
+  # ---- tier 0: domain-free building blocks (the BCL plus one external package each) ----
+  # sublevel orders the kernel family inside tier 0: §4b.1 has Data, Telemetry and Testing reference
+  # Aw.Kernel, and Telemetry carries the scrubbing processor from Redaction, so tier 0 stays acyclic.
+  - id: Kernel
+    kind: package
+    tier: 0
+    projectPrefix: Aw.Kernel
+    ts: null
+    src: src/Aw.Kernel
+    note: "Result<T>, Error, IService<,> and decorators, clock and id ports, envelope and outbox contracts, source-generated JSON settings (§4b.1)"
+  - id: Redaction
+    kind: package
+    tier: 0
+    projectPrefix: Aw.Redaction
+    ts: null
+    src: src/Redaction
+    note: "the scrubbing patterns copied between judge and sindri today, merged into one package; tier 0 per §4e B10"
+  - id: Analyzers
+    kind: package
+    tier: 0
+    analyzer: true
+    projectPrefix: Aw.Analyzers
+    ts: null
+    src: src/Aw.Analyzers
+    note: "repo-specific Roslyn rules (§4b.6); build-time only, wired with OutputItemType=Analyzer, never a runtime reference"
+  - id: KernelData
+    kind: package
+    tier: 0
+    sublevel: 1
+    projectPrefix: Aw.Kernel.Data
+    ts: null
+    src: src/Aw.Kernel.Data
+    note: "SQLite access and the migrations runner (Microsoft.Data.Sqlite)"
+  - id: KernelTelemetry
+    kind: package
+    tier: 0
+    sublevel: 1
+    projectPrefix: Aw.Kernel.Telemetry
+    ts: null
+    src: src/Aw.Kernel.Telemetry
+    note: "logging and OpenTelemetry setup with the scrubbing processor (§4d runtime hardening)"
+  - id: KernelTesting
+    kind: package
+    tier: 0
+    sublevel: 2
+    test: true
+    projectPrefix: Aw.Kernel.Testing
+    ts: null
+    src: tests/Aw.Kernel.Testing
+    note: "fakes base, builders, contract-test bases; lives under tests/ next to every package's Aw.<Pkg>.Testing, and only test code references it"
+
+  # ---- tier 1 ----
+  - id: Judge
+    kind: package
+    tier: 1
+    projectPrefix: Aw.Judge
+    ts: judge
+    src: src/Judge
+    scan: [judge/src]
+    bins: [judge]
+    db: [judge/decisions.sqlite]
+    files: [judge/outbox, judge/sessions]
+    namespace: judge
+    note: "decisions, health, briefs and the prompt sorter; called by hooks and tier-2 packages through its CLI"
+  - id: Bridge
+    kind: package
+    tier: 1
+    projectPrefix: Aw.Bridge
+    ts: mcp-bridge
+    src: src/Bridge
+    scan: [mcp-bridge/src]
+    note: "MCP + REST bridge; its SQLite file lives in the package dir, and no other package reads it"
+  # Packets and Readiness are standalone (§10 R1b, §4c): they depend on tier 0 only and Sindri (tier 3)
+  # consumes both. Tier 1 rather than tier 0, because they carry domain (packet schema, readiness criteria)
+  # and tier 0 stays domain-free.
+  - id: Packets
+    kind: package
+    tier: 1
+    projectPrefix: Aw.Packets
+    ts: null
+    src: src/Packets
+    note: "packet schema, validate, freeze (§4c); built at the end of R1b, before any port"
+  - id: Readiness
+    kind: package
+    tier: 1
+    projectPrefix: Aw.Readiness
+    ts: null
+    src: src/Readiness
+    note: "the readiness check of record (decision R4, §8)"
+
+  # ---- tier 2 ----
+  - id: Scorer
+    kind: package
+    tier: 2
+    projectPrefix: Aw.Scorer
+    ts: scorer
+    src: src/Scorer
+    scan: [scorer/src]
+    bins: [scorer]
+    files: [scorer/live, context-guard]
+    namespace: scorer
+    note: "daily cost and involvement report, live session numbers; owns the context-guard fires-log contract it reports on"
+  - id: Evidence
+    kind: package
+    tier: 2
+    projectPrefix: Aw.Evidence
+    ts: skills/ui-evidence
+    src: src/Evidence
+    scan: [skills/ui-evidence/src, skills/ui-evidence/scripts]
+    binPaths: [ui-evidence/dist/bin.js]
+    files: [ui-evidence/runs, locks/heavy-job.lock, locks/qa-stack.lock]
+    namespace: ui-evidence
+    note: "Playwright UI evidence; owns the box-wide heavy-job and QA-stack locks today (config/lib/locks.sh primitive). A tier-0 or tier-1 package can't take those locks (that would be an upward file edge, DEPS-TIER-002), so the locks move to the Kernel Lease port before one needs them"
+  - id: BugFix
+    kind: package
+    tier: 2
+    projectPrefix: Aw.BugFix
+    ts: skills/bugFixOrchestrator
+    src: src/BugFix
+    scan: [skills/bugFixOrchestrator/src]
+    bins: [bugfix-state]
+    note: "bugfix-state CLI for /bugFixOrchestrator"
+
+  # ---- tier 3 ----
+  - id: Sindri
+    kind: package
+    tier: 3
+    projectPrefix: Aw.Sindri
+    ts: sindri
+    src: src/Sindri
+    scan: [sindri/src]
+    bins: [sindri]
+    db: [sindri/ledger.db]
+    namespace: sindri
+    note: "profile, ledger, scrub, observe, index, scope, evolve; reaches lower tiers only through Core contracts or CLIs"
+
+  # ---- outside the tiers: code that stays bash or TypeScript and calls the CLIs (§4a) ----
+  - id: Hooks
+    kind: shell
+    ts: config/hooks
+    src: null
+    scan: [config/hooks]
+    note: "safety and context hooks, per-provider adapters"
+  - id: Statusline
+    kind: shell
+    ts: config/statusline.sh
+    src: null
+    scan: [config/statusline.sh]
+    note: "the statusline reads a cache and refreshes it from the judge and scorer CLIs in the background"
+  - id: AwLive
+    kind: mod
+    ts: mods/aw-live
+    src: null
+    scan: [mods/aw-live/hooks]
+    note: "Claude Code mod (stays TypeScript, §4a); calls `scorer live --json`"
+
+edges:
+  # ---- current: found in the source today ----
+  - from: Scorer
+    to: Judge
+    kind: db
+    status: current
+    note: "scorer reads judge's decisions.sqlite (run.ts, live.ts). Read-only; should become a judge CLI or a published view"
+  - from: Scorer
+    to: Judge
+    kind: file
+    status: current
+    note: "scorer counts queued wakes in judge/outbox"
+  - from: Scorer
+    to: Evidence
+    kind: file
+    status: current
+    note: "scorer reads ui-evidence run files (§4e B10)"
+  - from: Evidence
+    to: Judge
+    kind: cli
+    status: current
+    note: "ui-evidence asks judge for selector repair and visual critique"
+  - from: BugFix
+    to: Judge
+    kind: cli
+    status: current
+    note: "bugfix-state runs judge resolution-check and judge why"
+  - from: BugFix
+    to: Evidence
+    kind: cli
+    status: current
+    note: "bugfix-state runs the sibling ui-evidence entry point (same tier, through its CLI contract)"
+  - from: Sindri
+    to: Evidence
+    kind: file
+    status: current
+    note: "sindri index builds take the box-wide heavy-job lock; moves to the Kernel Lease port at the port"
+  - from: Hooks
+    to: Judge
+    kind: cli
+    status: current
+    note: "done-gate, subagent-start-map, judge-health, prompt-sort, send-gate and scope-gate call judge"
+  - from: Hooks
+    to: Judge
+    kind: file
+    status: current
+    note: "external-write-guard, done-gate and turn-origin read judge/sessions; outbox-flush and send-gate use judge/outbox; send-gate, record-teammate-name and subagent-start-map keep judge/teammate-names.jsonl, hook-only state inside judge's namespace that moves with judge's port"
+  - from: Hooks
+    to: Scorer
+    kind: file
+    status: current
+    note: "the context-guard hook writes the fires log scorer reports on (context-guard/); nothing depends on a shell node, so the contract sits with scorer"
+  - from: Hooks
+    to: Sindri
+    kind: cli
+    status: current
+    note: "sindri-nudge runs sindri at SessionStart"
+  - from: Statusline
+    to: Judge
+    kind: cli
+    status: current
+    note: "judge health for the statusline segment"
+  - from: Statusline
+    to: Scorer
+    kind: cli
+    status: current
+    note: "scorer live refreshes the statusline cache"
+  - from: Statusline
+    to: Scorer
+    kind: file
+    status: current
+    note: "the statusline reads scorer/live snapshots and writes its own cache there (scorer/live/<sid>.statusline.json)"
+  - from: AwLive
+    to: Scorer
+    kind: cli
+    status: current
+    note: "the /live pane runs scorer live --json"
+
+  - from: KernelData
+    to: Kernel
+    kind: project
+    status: current
+    note: "kernel family"
+  - from: KernelTesting
+    to: Kernel
+    kind: project
+    status: current
+    note: "fakes and builders"
+  # ---- planned: the C# project references the ports create (§4b.1, §4b.1a) ----
+  - from: KernelTelemetry
+    to: Kernel
+    kind: project
+    status: planned
+    note: "kernel family"
+  - from: KernelTelemetry
+    to: Redaction
+    kind: project
+    status: planned
+    note: "the scrubbing processor on logs and OTel exports"
+  - from: KernelTesting
+    to: KernelData
+    kind: project
+    status: planned
+    note: "contract-test bases run against SQLite"
+  - from: Judge
+    to: Kernel
+    kind: project
+    status: planned
+    note: "Result, IService, ports"
+  - from: Judge
+    to: KernelData
+    kind: project
+    status: planned
+    note: "decisions.sqlite"
+  - from: Judge
+    to: KernelTelemetry
+    kind: project
+    status: planned
+    note: "logging"
+  - from: Judge
+    to: Redaction
+    kind: project
+    status: planned
+    note: "replaces judge's copy of the scrubbing patterns"
+  - from: Bridge
+    to: Kernel
+    kind: project
+    status: planned
+    note: "Result, IService, ports"
+  - from: Bridge
+    to: KernelData
+    kind: project
+    status: planned
+    note: "bridge.db"
+  - from: Bridge
+    to: KernelTelemetry
+    kind: project
+    status: planned
+    note: "logging and OTel"
+  - from: Packets
+    to: Kernel
+    kind: project
+    status: planned
+    note: "Result, JSON"
+  - from: Readiness
+    to: Kernel
+    kind: project
+    status: planned
+    note: "Result, JSON"
+  - from: Scorer
+    to: Kernel
+    kind: project
+    status: planned
+    note: "Result, IService, ports"
+  - from: Scorer
+    to: KernelData
+    kind: project
+    status: planned
+    note: "scorer's own SQLite file"
+  - from: Scorer
+    to: KernelTelemetry
+    kind: project
+    status: planned
+    note: "logging"
+  - from: Evidence
+    to: Kernel
+    kind: project
+    status: planned
+    note: "Result, IService, ports"
+  - from: Evidence
+    to: KernelTelemetry
+    kind: project
+    status: planned
+    note: "logging"
+  - from: BugFix
+    to: Kernel
+    kind: project
+    status: planned
+    note: "Result, IService, ports"
+  - from: Sindri
+    to: Kernel
+    kind: project
+    status: planned
+    note: "Result, IService, ports"
+  - from: Sindri
+    to: KernelData
+    kind: project
+    status: planned
+    note: "ledger and index"
+  - from: Sindri
+    to: KernelTelemetry
+    kind: project
+    status: planned
+    note: "logging and OTel"
+  - from: Sindri
+    to: Redaction
+    kind: project
+    status: planned
+    note: "replaces sindri's copy of the scrubbing patterns"
+  - from: Sindri
+    to: Packets
+    kind: project
+    status: planned
+    note: "every port and factory run is a packet"
+  - from: Sindri
+    to: Readiness
+    kind: project
+    status: planned
+    note: "sindri readiness check (§8)"
+  - from: Sindri
+    to: Scorer
+    kind: cli
+    status: planned
+    note: "scorer's labeler moves into scorer's Core; sindri calls it through scorer's CLI instead of copying it (§4b.1a)"
+
+exceptions:
+  - rule: DEPS-FANOUT-001
+    subject: Sindri
+    reason: "§4e B10: sindri declares project edges to 6 packages (limits.packageFanOut is 4) until its modules split; revisit when the Sindri port splits by module. Per-project fan-out (DEPS-FANOUT-002/003) is measured separately once its projects exist"
+    recorded: 2026-10-10
+    expires: 2027-04-01

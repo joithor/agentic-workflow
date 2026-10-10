@@ -20,7 +20,7 @@ Domain-specific rules live in `.agents/rules/` — one file per rule, the only c
 
 | Layer | Technology |
 |-------|------------|
-| Runtime | Node.js >= 20, ES2022 target |
+| Runtime | Node.js >= 22 (`.nvmrc`; better-sqlite3 13 requires it), ES2022 target |
 | Language | TypeScript 5.7, strict mode |
 | HTTP (bridge) | Fastify 5 |
 | Database | SQLite via better-sqlite3, WAL mode |
@@ -64,7 +64,9 @@ agentic-workflow/
 ├── global.json · AgenticWorkflow.slnx · Directory.Build.props · Directory.Build.targets · Directory.Packages.props · nuget.config · .editorconfig · CodeMetricsConfig.txt · BannedSymbols.txt
 ├── .agents/rules/ # Glob-scoped domain rules (.claude/rules and .cursor/rules link here)
 ├── .serena/       # Serena LSP project configuration
-├── scripts/       # Utility scripts (sync-rules.sh, serena-docker, probe.sh, install-scorer.sh)
+├── scripts/       # Utility scripts (sync-rules.sh, check-deps.mjs, serena-docker, probe.sh, install-scorer.sh)
+├── schemas/       # JSON Schemas for repo config (deps.schema.json)
+├── deps.yaml      # Declared package graph: tiers and every project/cli/db/file edge (spec §4b.1a)
 └── setup.sh       # One-command setup for every installed provider
 ```
 
@@ -102,13 +104,24 @@ scripts/dotnet-verify-packages.sh       # Lock files present and unchanged, sign
 scripts/sync-rules.sh                   # Link .claude/rules, .cursor/rules, CLAUDE.md; refresh Rules Index
 scripts/sync-rules.sh --check           # Exit 1 if links or the Rules Index are out of date
 
+# Dependency graph (deps.yaml + schemas/deps.schema.json)
+node scripts/check-deps.mjs             # Schema, tiers, cycles, fan-out, undeclared cli/db/file edges; exit 1 on drift
+node scripts/check-deps.mjs --mermaid [--base-file F]   # Also print the Mermaid graph and the edge list (added/removed vs F)
+
 # Bash tests
 bash providers/tests/install.test.sh
 bash scripts/tests/sync-rules.test.sh
+bash scripts/tests/check-deps.test.sh
 bash scripts/tests/probe.test.sh
 bash scripts/tests/find-duplicate-skills.test.sh
+bash scripts/tests/dotnet-verify-packages.test.sh
 bash scripts/tests/install-scorer-audit.test.sh
 bash scripts/tests/install-sindri.test.sh
+bash scripts/tests/readiness-baseline.test.sh
+bash scripts/tests/agent-token.test.sh
+bash scripts/tests/ci-changed-areas.test.sh
+bash scripts/tests/ci-bash-tests.test.sh
+bash scripts/tests/ci-no-any.test.sh
 bash config/hooks/tests/codex-adapter.test.sh
 bash config/hooks/tests/cursor-adapter.test.sh
 bash config/hooks/tests/provider-install-hooks.test.sh
@@ -134,6 +147,7 @@ sindri shape report                      # record-only shape signals and their o
 sindri shape reconcile                   # move the spool into the ledger and label outcomes now (observe does it hourly)
 sindri observe                          # Backlog with sizes; records to the ledger when the profile is approved
 scripts/install-sindri.sh               # Build sindri, install the CLI wrapper (or ./setup.sh --with-sindri)
+GH_TOKEN="$(scripts/agent-token.sh [--repo NAME])"  # Owner/session launcher only, never inside an agent session: 1h agent App token
 
 # Setup (from repo root)
 ./setup.sh --providers claude,codex,cursor --dry-run   # Print every change, write nothing
@@ -150,10 +164,11 @@ Before merging any PR:
 1. `npm run typecheck` passes with zero errors in `mcp-bridge`, `scorer`, `judge`, `sindri`, `skills/ui-evidence`, and `skills/bugFixOrchestrator`
 2. `npm test` passes in `mcp-bridge`, `scorer`, `judge`, `sindri`, `skills/ui-evidence`, and `skills/bugFixOrchestrator`, every bash test listed above passes, and `claude plugin validate mods/aw-live` and `claude plugin test mods/aw-live` pass
 3. `scripts/sync-rules.sh --check` passes (rule links and Rules Index match `.agents/rules/`)
-4. `./setup.sh --providers claude,codex,cursor --dry-run` runs cleanly
-5. No `/* v8 ignore */` annotations in source files (prohibited — write the test instead)
-6. No `any` types outside of Fastify integration boundaries
-7. C# build (active once `src/` has projects): `dotnet build -warnaserror` reports zero warnings; `dotnet test --solution AgenticWorkflow.slnx --filter-trait "Lane=unit" --ignore-exit-code 8` and `dotnet test --solution AgenticWorkflow.slnx --filter-trait "Lane=integration" --ignore-exit-code 8` pass within their budgets (the heavy lane runs nightly); `dotnet format --verify-no-changes` is clean, `scripts/dotnet-verify-packages.sh` passes, and the ratchet baseline block at the end of `.editorconfig` didn't grow
+4. `node scripts/check-deps.mjs` passes (`deps.yaml` declares every edge the code has; a new edge is a reviewed change to it)
+5. `./setup.sh --providers claude,codex,cursor --dry-run` runs cleanly
+6. No `/* v8 ignore */` annotations in source files (prohibited — write the test instead)
+7. No `any` types outside of Fastify integration boundaries (`node scripts/ci/no-any.mjs`; existing ones are held in `scripts/ci/no-any-baseline.json`, which only shrinks)
+8. C# build (active once `src/` has projects): `dotnet build -warnaserror` reports zero warnings; `dotnet test --solution AgenticWorkflow.slnx --filter-trait "Lane=unit" --ignore-exit-code 8` and `dotnet test --solution AgenticWorkflow.slnx --filter-trait "Lane=integration" --ignore-exit-code 8` pass within their budgets (the heavy lane runs nightly); `dotnet format --verify-no-changes` is clean, `scripts/dotnet-verify-packages.sh` passes, and the ratchet baseline block at the end of `.editorconfig` didn't grow
 
 ## C# slice recipe
 

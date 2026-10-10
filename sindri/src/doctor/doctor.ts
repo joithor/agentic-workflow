@@ -231,7 +231,7 @@ async function indexChecks(deps: Deps, loaded: LoadedProfile, probes: IndexProbe
   else if (heavy.ageMs !== null && heavy.ageMs > 6 * 3_600_000) {
     // Remove the holder record too: left beside a lock dir, it would name a later locks.sh lock's holder.
     const dir = heavyLockDir(awStateDir(deps), deps.env);
-    out.push({ name: "heavy-lock", status: "warn", detail: `held for over 6 h${who}`, fix: `if that process is gone: rmdir ${dir} && rm -f ${dir}.holder.json` });
+    out.push({ name: "heavy-lock", status: "warn", detail: `held for over 6 h${who}`, fix: `if that process is gone: rm -r ${dir} && rm -f ${dir}.holder.json (a crashed takeover can leave a .reclaim-* mark inside)` });
   } else out.push({ name: "heavy-lock", status: "ok", detail: `held${heavy.holder === null ? " by an unknown job" : ` by ${heavy.holder.kind}`}` });
   return out;
 }
@@ -265,9 +265,10 @@ function privacyChecks(deps: Deps, loaded: LoadedProfile): Check[] {
 }
 
 export async function runChecks(deps: Deps, nodeVersion: string = process.versions.node, probes: IndexProbes = deps.io.probes): Promise<Check[]> {
-  const [major, minor] = nodeVersion.split(".").map(Number);
+  const major = Number(nodeVersion.split(".")[0]);
   const checks: Check[] = [
-    major > 20 || (major === 20 && minor >= 11) ? { name: "node", status: "ok", detail: nodeVersion } : { name: "node", status: "fail", detail: `${nodeVersion} (need >= 20.11)`, fix: "install Node 20.11 or newer" },
+    // One floor with package.json engines and .nvmrc: better-sqlite3 13 (the ledger) needs 22.
+    major >= 22 ? { name: "node", status: "ok", detail: nodeVersion } : { name: "node", status: "fail", detail: `${nodeVersion} (need >= 22, which better-sqlite3 13 requires)`, fix: "install Node 22 or newer (see .nvmrc)" },
     stateDirCheck(deps),
     { name: "boot-id", status: "ok", detail: deps.system.bootId() === null ? "unreadable; stale-lock checks use pids only" : "readable" },
     ledgerCheck(deps),

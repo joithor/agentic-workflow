@@ -28,3 +28,6 @@ mods/*/tsconfig.json
 
 # sindri sandbox smoke test probe dirs (removed by the test; left only by a killed run)
 sindri/.sandbox-probe-*/
+
+# .NET build output (Directory.Build.props UseArtifactsOutput)
+artifacts/

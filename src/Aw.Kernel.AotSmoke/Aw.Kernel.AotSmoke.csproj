@@ -1,0 +1,23 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- NativeAOT publish check for Aw.Kernel: run.sh publishes this console with PublishAot for the host RID, fails on
+       any trim/AOT (IL2xxx/IL3xxx) warning, runs the native binary and compares its output with expected.txt.
+       CI: the .NET job of the CI workflow (#93) runs run.sh.
+       - Not in AgenticWorkflow.slnx: PublishAot makes restore resolve the host RID's ILCompiler packs, so a lock file
+         would be per-OS. It is built only by run.sh, with no lock file. The RID is a project property (the SDK's host
+         RID), not a global -r, so Aw.Kernel is restored without one and its lock file is never rewritten.
+       - Under src/, not tests/: it is not a *.Tests project (AW0002), and the full library rule set applies.
+       - InvariantGlobalization: Kernel formats and parses with InvariantCulture only, and a Linux AOT binary would
+         otherwise need libicu at run time. -->
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+    <PublishAot>true</PublishAot>
+    <InvariantGlobalization>true</InvariantGlobalization>
+    <RestorePackagesWithLockFile>false</RestorePackagesWithLockFile>
+    <RuntimeIdentifier>$(NETCoreSdkRuntimeIdentifier)</RuntimeIdentifier>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../Aw.Kernel/Aw.Kernel.csproj" />
+  </ItemGroup>
+</Project>

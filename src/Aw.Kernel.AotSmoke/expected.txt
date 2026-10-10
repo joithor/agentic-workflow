@@ -1,0 +1,25 @@
+{"name":"café <b>","at":"2026-10-10T06:00:00.0070000Z","money":1.10,"note":null,"tags":["a","b"],"counts":{"Key":1},"error":{"code":"AW-KERNEL-002","kind":"notFound","message":"gone"}}
+{
+  "name": "café <b>",
+  "at": "2026-10-10T06:00:00.0070000Z",
+  "money": 1.10,
+  "note": null,
+  "tags": [
+    "a",
+    "b"
+  ],
+  "counts": {
+    "Key": 1
+  },
+  "error": {
+    "code": "AW-KERNEL-002",
+    "kind": "notFound",
+    "message": "gone"
+  }
+}
+roundtrip:True
+bad:AW-KERNEL-001
+offsetless:AW-KERNEL-001
+chain:AW-KERNEL-001
+{"id":"00000000-0000-0000-0000-000000000003","kind":"smoke.notify","payloadJson":"{}","schemaVersion":1,"enqueuedAt":"2026-10-10T06:00:00.0070000Z","actor":"host:smoke","tenant":"personal","ring":0,"correlationId":"00000000-0000-0000-0000-000000000001","causationId":"00000000-0000-0000-0000-000000000002","traceId":null}
+retry:2026-10-10T08:02:00.0070000+02:00
