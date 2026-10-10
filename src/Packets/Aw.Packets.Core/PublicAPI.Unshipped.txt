@@ -106,7 +106,7 @@ Aw.Packets.Core.Model.Deferral.Deferral(string! Owner, string! BuildMayAssume) -
 Aw.Packets.Core.Model.Deferral.Equals(Aw.Packets.Core.Model.Deferral? other) -> bool
 Aw.Packets.Core.Model.Deferral.Owner.get -> string!
 Aw.Packets.Core.Model.Deferral.Owner.init -> void
-Aw.Packets.Core.Model.FreezeLocation
+Aw.Packets.Core.FreezeLocation
 Aw.Packets.Core.Model.FreezeReceipt
 Aw.Packets.Core.Model.FreezeReceipt.<Clone>$() -> Aw.Packets.Core.Model.FreezeReceipt!
 Aw.Packets.Core.Model.FreezeReceipt.AlreadyFrozen.get -> bool
@@ -406,7 +406,7 @@ static Aw.Packets.Core.Model.DecisionLog.operator !=(Aw.Packets.Core.Model.Decis
 static Aw.Packets.Core.Model.DecisionLog.operator ==(Aw.Packets.Core.Model.DecisionLog? left, Aw.Packets.Core.Model.DecisionLog? right) -> bool
 static Aw.Packets.Core.Model.Deferral.operator !=(Aw.Packets.Core.Model.Deferral? left, Aw.Packets.Core.Model.Deferral? right) -> bool
 static Aw.Packets.Core.Model.Deferral.operator ==(Aw.Packets.Core.Model.Deferral? left, Aw.Packets.Core.Model.Deferral? right) -> bool
-static Aw.Packets.Core.Model.FreezeLocation.Of(Aw.Packets.Core.Model.FreezeRecord! record) -> Aw.Kernel.Result<string!>!
+static Aw.Packets.Core.FreezeLocation.Of(Aw.Packets.Core.Model.FreezeRecord! record) -> Aw.Kernel.Result<string!>!
 static Aw.Packets.Core.Model.FreezeReceipt.operator !=(Aw.Packets.Core.Model.FreezeReceipt? left, Aw.Packets.Core.Model.FreezeReceipt? right) -> bool
 static Aw.Packets.Core.Model.FreezeReceipt.operator ==(Aw.Packets.Core.Model.FreezeReceipt? left, Aw.Packets.Core.Model.FreezeReceipt? right) -> bool
 static Aw.Packets.Core.Model.FreezeRecord.operator !=(Aw.Packets.Core.Model.FreezeRecord? left, Aw.Packets.Core.Model.FreezeRecord? right) -> bool

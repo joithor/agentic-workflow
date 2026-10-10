@@ -1,7 +1,8 @@
 using System.Text.RegularExpressions;
 using Aw.Kernel;
+using Aw.Packets.Core.Model;
 
-namespace Aw.Packets.Core.Model;
+namespace Aw.Packets.Core;
 
 /// <summary>Where a freeze record lives, relative to the packets/ namespace: '&lt;packet&gt;/frozen/&lt;hex&gt;.json'.</summary>
 public static partial class FreezeLocation
