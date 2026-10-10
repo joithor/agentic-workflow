@@ -264,7 +264,7 @@ test_malformed_package_json_fails() {
   echo '{bad' > "$t/judge/package.json"
   node "$SCRIPT" --root "$t" --no-remote --date 2026-10-10 --out "$t/o.md"
   for id in BS-1 BS-2; do
-    row "$t/o.md" "$id" | grep -F 'fail: judge (package.json is not valid JSON)' >/dev/null || fail "$id should fail judge on bad JSON: $(row "$t/o.md" "$id")"
+    row "$t/o.md" "$id" | grep -E 'fail: .*judge \(package.json is not valid JSON\)' >/dev/null || fail "$id should fail judge on bad JSON: $(row "$t/o.md" "$id")"
   done
   echo "PASS: test_malformed_package_json_fails"
 }

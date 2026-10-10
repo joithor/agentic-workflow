@@ -5,7 +5,7 @@
 //
 // Usage: node scripts/readiness-baseline.mjs [--root DIR] [--repo OWNER/NAME] [--no-remote] [--date YYYY-MM-DD] [--out FILE]
 // Exit codes: 0 report written, 2 tool error (bad flag, value, root or output path). Remote reads are `gh api`
-// GETs only (READINESS_GH_TIMEOUT_MS bounds each call, default 30000).
+// GETs only (READINESS_GH_TIMEOUT_MS, a positive integer, bounds each call; default 30000).
 // Not the §8 contract: no --json, no delta since the last run, and exit 0/1 does not mean "target level holds".
 
 import { execFileSync } from 'node:child_process';
@@ -66,9 +66,11 @@ const SKIP_DIRS = new Set(['node_modules', '.git', 'dist', 'coverage', '.claude'
 
 // Sorted, so evidence that names the first match is the same on every filesystem. Symlinks are skipped: a broken
 // link would throw and a link back up the tree would recurse forever.
+// An unreadable path (a file where a directory was expected, EACCES) contributes nothing instead of aborting.
 function walk(dir, out = []) {
-  if (!existsSync(dir)) return out;
-  const entries = readdirSync(dir, { withFileTypes: true }).sort((a, b) => (a.name < b.name ? -1 : a.name > b.name ? 1 : 0));
+  let entries;
+  try { entries = readdirSync(dir, { withFileTypes: true }); } catch { return out; }
+  entries.sort((a, b) => (a.name < b.name ? -1 : a.name > b.name ? 1 : 0));
   for (const e of entries) {
     if (SKIP_DIRS.has(e.name) || e.isSymbolicLink()) continue;
     const p = join(dir, e.name);
@@ -81,18 +83,24 @@ const isFile = (p) => { try { return statSync(p).isFile(); } catch { return fals
 const read = (p) => (isFile(p) ? readFileSync(p, 'utf8') : '');
 const firstExisting = (root, paths) => paths.find((p) => existsSync(join(root, p))) ?? null;
 
+// null when there is no package.json; { invalid: true } when it exists but isn't JSON (a defect, scored as fail).
 function pkg(appDir) {
-  try { return JSON.parse(readFileSync(join(appDir, 'package.json'), 'utf8')); } catch { return null; }
+  const f = join(appDir, 'package.json');
+  if (!isFile(f)) return null;
+  try { return JSON.parse(readFileSync(f, 'utf8')); } catch { return { invalid: true }; }
 }
+const BAD_PKG = { pass: false, why: 'package.json is not valid JSON' };
 const allDeps = (p) => Object.keys({ ...(p?.dependencies ?? {}), ...(p?.devDependencies ?? {}) });
 
 // ---------- remote (gh api GET only) ----------
 
-const GH_TIMEOUT_MS = Number(process.env.READINESS_GH_TIMEOUT_MS) || 30000;
+let GH_TIMEOUT_MS = 30000; // set from READINESS_GH_TIMEOUT_MS in main(), after validation
 const ghCache = new Map();
 
-// `gh api <path>`, optionally with a `--jq` projection; never a method override or a field flag.
-function ghGet(path, jq) {
+// `gh api <path>`, optionally with a `--jq` projection; never a method override or a field flag. `array` says which
+// JSON shape the endpoint returns; anything else (an API change, a proxy answering 200) is an error, so the row is
+// unknown instead of the run crashing.
+function ghGet(path, { jq, array = false } = {}) {
   const key = `${path}\0${jq ?? ''}`;
   if (ghCache.has(key)) return ghCache.get(key);
   let r;
@@ -101,9 +109,12 @@ function ghGet(path, jq) {
     const out = execFileSync('gh', args, {
       encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'], maxBuffer: 16 * 1024 * 1024, timeout: GH_TIMEOUT_MS,
     });
-    r = { ok: true, json: JSON.parse(out) };
+    const json = JSON.parse(out);
+    const shapeOk = array ? Array.isArray(json) : json !== null && typeof json === 'object' && !Array.isArray(json);
+    r = shapeOk ? { ok: true, json } : { ok: false, error: 'unexpected response shape' };
   } catch (e) {
-    const timedOut = e.code === 'ETIMEDOUT' || e.signal === 'SIGTERM';
+    // Only ETIMEDOUT is a timeout; an output overflow (ENOBUFS) also ends in SIGTERM but must say so.
+    const timedOut = e.code === 'ETIMEDOUT';
     const msg = timedOut ? `gh timed out after ${GH_TIMEOUT_MS} ms` : String(e.stderr || e.message || e).trim().split('\n').pop();
     r = { ok: false, error: msg };
   }
@@ -119,8 +130,9 @@ const repoInfo = (ctx) => ghGet(`repos/${ctx.repo}`);
 
 function workflows(root) {
   const dir = join(root, '.github', 'workflows');
-  if (!existsSync(dir)) return [];
-  return readdirSync(dir).filter((f) => /\.ya?ml$/.test(f)).sort().map((f) => join(dir, f)).filter(isFile);
+  let names;
+  try { names = readdirSync(dir); } catch { return []; }
+  return names.filter((f) => /\.ya?ml$/.test(f)).sort().map((f) => join(dir, f)).filter(isFile);
 }
 
 const remoteUnknown = (ctx) => ({ state: 'unknown', evidence: ctx.remoteWhy });
@@ -157,6 +169,7 @@ const CRITERIA = [
   { id: 'BS-1', pillar: 1, level: 2, src: 'S5', name: 'Build command documented', app: (ctx, d, rel) => {
     const p = pkg(d);
     if (!p) return { state: 'n/a', why: 'no package.json; nothing to build (loaded as source)' };
+    if (p.invalid) return BAD_PKG;
     if (!p.scripts?.build) return { pass: false, why: 'no build script' };
     const agents = read(join(ctx.root, 'AGENTS.md'));
     const documented = agents.split('\n').some((l) => l.includes(rel))
@@ -165,7 +178,9 @@ const CRITERIA = [
       : { pass: false, why: 'scripts.build not documented in AGENTS.md' };
   } },
   { id: 'BS-2', pillar: 1, level: 2, src: 'S5', name: 'Dependencies pinned (lockfile)', app: (ctx, d) => {
-    if (!pkg(d)) return { state: 'n/a', why: 'no package.json, no dependencies to pin' };
+    const p = pkg(d);
+    if (!p) return { state: 'n/a', why: 'no package.json, no dependencies to pin' };
+    if (p.invalid) return BAD_PKG;
     const f = firstExisting(d, ['package-lock.json', 'pnpm-lock.yaml', 'yarn.lock', 'packages.lock.json']);
     return f ? { pass: true, why: f } : { pass: false, why: 'no lockfile' };
   } },
@@ -175,7 +190,7 @@ const CRITERIA = [
   } },
   { id: 'BS-4', pillar: 1, level: 4, src: 'F-level', name: 'Regular deployment frequency (≥3 releases in 90 days)', check: (ctx) => {
     if (!ctx.remote) return remoteUnknown(ctx);
-    const r = ghGet(`repos/${ctx.repo}/releases?per_page=100`, '[.[] | {published_at, draft}]');
+    const r = ghGet(`repos/${ctx.repo}/releases?per_page=100`, { jq: '[.[] | {published_at, draft}]', array: true });
     if (!r.ok) return { state: 'unknown', evidence: `gh api releases: ${r.error}` };
     const cutoff = ctx.now - 90 * 864e5;
     const n = r.json.filter((x) => {
@@ -183,6 +198,14 @@ const CRITERIA = [
       return !x.draft && t >= cutoff && t <= ctx.now;
     }).length;
     return { state: n >= 3 ? 'pass' : 'fail', evidence: `${n} releases published in the 90 days before ${ctx.date}` };
+  } },
+  // Spec §3 lists the missing runtime pin; §5's "pinned dependencies" is satisfied by global.json for .NET.
+  { id: 'BS-5', pillar: 1, level: 2, src: 'S5', name: 'Runtime version pinned', check: (ctx) => {
+    const f = firstExisting(ctx.root, ['.nvmrc', '.node-version', '.tool-versions', 'global.json']);
+    if (f) return { state: 'pass', evidence: f };
+    const ranges = [...new Set(APPS.map((a) => pkg(join(ctx.root, a))?.engines?.node).filter(Boolean))];
+    const eng = ranges.length ? `engines.node is a range (${ranges.join(', ')}); ` : '';
+    return { state: 'fail', evidence: `${eng}no .nvmrc, .node-version, .tool-versions or global.json (spec §3)` };
   } },
 
   // Testing
@@ -265,10 +288,10 @@ const CRITERIA = [
     const info = repoInfo(ctx);
     if (!info.ok) return { state: 'unknown', evidence: `gh api: ${info.error}` };
     const b = info.json.default_branch;
-    if (typeof b !== 'string' || !/^[\w./-]+$/.test(b)) return { state: 'unknown', evidence: 'default_branch not readable' };
+    if (typeof b !== 'string' || !/^[\w./-]+$/.test(b)) return { state: 'unknown', evidence: 'unexpected response shape (no default_branch)' };
     const prot = ghGet(`repos/${ctx.repo}/branches/${b}/protection`);
     if (prot.ok) return { state: 'pass', evidence: `classic branch protection on ${b}` };
-    const rules = ghGet(`repos/${ctx.repo}/rules/branches/${b}`);
+    const rules = ghGet(`repos/${ctx.repo}/rules/branches/${b}`, { array: true });
     if (rules.ok && rules.json.length) return { state: 'pass', evidence: `${rules.json.length} ruleset rules apply to ${b}` };
     if (rules.ok && /not protected/i.test(prot.error)) return { state: 'fail', evidence: `${b}: protection "${prot.error}"; rulesets: none` };
     return { state: 'unknown', evidence: `protection: ${prot.error}; rules: ${rules.ok ? 'none' : rules.error}` };
@@ -285,6 +308,10 @@ const CRITERIA = [
     const f = firstExisting(ctx.root, ['CODEOWNERS', '.github/CODEOWNERS', 'docs/CODEOWNERS']);
     return f ? { state: 'pass', evidence: f } : { state: 'fail', evidence: 'no CODEOWNERS' };
   } },
+  { id: 'SEC-4', pillar: 6, level: 3, src: 'inferred', name: 'Dependency update bot', check: (ctx) => {
+    const f = firstExisting(ctx.root, ['.github/dependabot.yml', '.github/dependabot.yaml', 'renovate.json', '.renovaterc', '.github/renovate.json']);
+    return f ? { state: 'pass', evidence: f } : { state: 'fail', evidence: 'no Dependabot or Renovate config (spec §3: no dependency update bot)' };
+  } },
 
   // Task Discovery
   { id: 'TD-1', pillar: 7, level: 3, src: 'S5', name: 'Issue templates', check: (ctx) => {
@@ -293,7 +320,7 @@ const CRITERIA = [
   } },
   { id: 'TD-2', pillar: 7, level: 3, src: 'S5', name: 'Issue labeling system', check: (ctx) => {
     if (!ctx.remote) return remoteUnknown(ctx);
-    const r = ghGet(`repos/${ctx.repo}/labels?per_page=100`);
+    const r = ghGet(`repos/${ctx.repo}/labels?per_page=100`, { array: true });
     if (!r.ok) return { state: 'unknown', evidence: `gh api labels: ${r.error}` };
     const own = r.json.map((l) => l.name).filter((n) => !DEFAULT_LABELS.has(n));
     return own.length ? { state: 'pass', evidence: `${own.length} labels beyond GitHub defaults` }
@@ -347,9 +374,9 @@ function evaluate(ctx) {
 
 // Levels: every repo starts at L1. Walking the levels that have scored criteria in order, each one that reaches
 // 80% (fractional credit for app criteria; n/a and unknown are not scored) unlocks the level above it; the first
-// one below 80% stops the walk. Levels with nothing scored neither unlock nor block; those the walk passed on its
-// way to a scored level are marked `skipped`, so a level reached without evidence of its own reads as inferred.
-// With nothing scored at all there is no level (null, rendered —).
+// one below 80% stops the walk. Levels with nothing scored neither unlock nor block. Empty levels below the reached
+// level (and an empty Level 1, where every repo starts) are marked `skipped`, so a level reached without evidence
+// of its own reads as inferred; empty levels at or above it are not. Nothing scored at all gives level null (—).
 export function levelOf(rows) {
   const byLevel = [1, 2, 3, 4, 5].map((L) => {
     const scored = rows.filter((r) => r.level === L && (r.state === 'pass' || r.state === 'fail'));
@@ -358,13 +385,12 @@ export function levelOf(rows) {
   });
   if (byLevel.every((b) => b.ratio === null)) return { level: null, byLevel };
   let level = 1;
-  const empty = [];
   for (const b of byLevel) {
-    if (b.ratio === null) { empty.push(b); continue; }
-    for (const e of empty.splice(0)) e.skipped = true;
+    if (b.ratio === null) continue;
     if (b.ratio < 0.8) break;
     level = Math.min(5, b.L + 1);
   }
+  for (const b of byLevel) b.skipped = b.ratio === null && (b.L < level || b.L === 1);
   return { level, byLevel };
 }
 
@@ -387,7 +413,7 @@ function render(ctx, rows) {
   const overall = levelOf(rows);
   out.push('## Summary', '');
   out.push(`**Overall level: ${lvl(overall)}** (of 5). Cells show passed credit / scored criteria at that level; \`skip\``,
-    'is a level with nothing scored that the walk passed; `—` is nothing scored and not reached.', '');
+    'is a level with nothing scored below the reached one (or an empty Level 1); `—` is nothing scored.', '');
   out.push('| Pillar | L1 | L2 | L3 | L4 | L5 | Level |', '|---|---|---|---|---|---|---|');
   PILLARS.forEach((name, i) => {
     const l = levelOf(rows.filter((r) => r.pillar === i));
@@ -408,11 +434,12 @@ function render(ctx, rows) {
     '  denominator). They count as fractional credit and show `pass` only when every applicable app passes.',
     '- **Levels:** every repo starts at Level 1. Level N+1 unlocks when at least 80% of the scored Level N criteria',
     '  pass and every lower level with scored criteria also reached 80%. Levels with nothing scored (in a pillar, or',
-    '  overall) neither unlock nor block; the summary shows the ones the walk passed as `skip`. A pillar with nothing',
-    '  scored has no level (`—`).',
+    '  overall) neither unlock nor block; the summary shows the ones below the reached level (and an empty Level 1)',
+    '  as `skip`. A pillar with nothing scored has no level (`—`).',
     '- **Remote data** comes from read-only `gh api` GETs (default branch, branch protection, rulesets, secret',
     '  scanning, labels, releases).',
-    '- **Not the §8 contract:** this R0 script has no `--json`, no delta since the last run, and its exit codes mean',
+    '- **Not the §8 contract:** this R0 script has no `--json`, no delta since the last run, writes nothing to the',
+    '  ledger, and its rows name the measured value and evidence but no limit or fix command. Its exit codes mean',
     '  "report written" (0) or "tool error" (2), not "target level holds". `Aw.Readiness` (R1b) implements §8 and',
     '  treats this file as its first previous run.', '');
 
@@ -442,14 +469,19 @@ function main() {
   }
   if (!existsSync(root) || !statSync(root).isDirectory()) die(`root is not a directory: ${root}`);
 
-  if (opts.repo && !REPO_RE.test(opts.repo)) die(`--repo must be OWNER/NAME, got ${opts.repo}`);
+  const envMs = process.env.READINESS_GH_TIMEOUT_MS;
+  if (envMs !== undefined && envMs !== '') {
+    if (!/^[1-9][0-9]*$/.test(envMs)) die(`READINESS_GH_TIMEOUT_MS must be a positive integer (ms), got ${envMs}`);
+    GH_TIMEOUT_MS = Number(envMs);
+  }
+  if (opts.repo && !validRepo(opts.repo)) die(`--repo must be OWNER/NAME, got ${opts.repo}`);
   let repo = opts.repo;
   if (!repo) {
     try {
       const url = execFileSync('git', ['-C', root, 'remote', 'get-url', 'origin'], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }).trim();
       repo = url.replace(/\.git$/, '').match(/[:/]([^/:]+\/[^/]+)$/)?.[1] ?? null;
     } catch { repo = null; }
-    if (repo && !REPO_RE.test(repo)) repo = null;
+    if (repo && !validRepo(repo)) repo = null;
   }
   const remote = opts.remote && Boolean(repo);
   const remoteWhy = !opts.remote ? 'not read (--no-remote)' : 'no usable origin remote; pass --repo';
@@ -469,7 +501,10 @@ function main() {
   try { writeFileSync(opts.out, md); } catch (e) { die(`cannot write ${opts.out}: ${e.message}`); }
 }
 
-const REPO_RE = /^[\w.-]+\/[\w.-]+$/;
+// OWNER/NAME, and neither part may be `.` or `..` (the value is spliced into a gh api path).
+const validRepo = (r) => /^[\w.-]+\/[\w.-]+$/.test(r) && !r.split('/').some((x) => x === '.' || x === '..');
 
-// Run only as a CLI; the tests import levelOf.
-if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) main();
+// Run only as a CLI; the tests import levelOf. Anything left uncaught is a tool error (exit 2), not a stack trace.
+if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
+  try { main(); } catch (e) { die(`unexpected error: ${e?.message ?? e}`); }
+}
