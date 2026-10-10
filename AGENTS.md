@@ -107,10 +107,17 @@ scripts/sync-rules.sh --check           # Exit 1 if links or the Rules Index are
 node scripts/check-deps.mjs             # Schema, tiers, cycles, fan-out, undeclared cli/db/file edges; exit 1 on drift
 node scripts/check-deps.mjs --mermaid [--base-file F]   # Also print the Mermaid graph and the edge list (added/removed vs F)
 
+# Environment and dev container
+scripts/check-env-example.sh            # Every env var the code reads is in .env.example (ENV-EXAMPLE-001..004); exit 1 on drift
+# .devcontainer/ is for humans only, never the agent sandbox (no Docker-in-Docker); see docs/devcontainer.md
+# Label scheme: .github/labels.yml (type:, area:, size:, ring:); applying it to the repo is an owner settings change
+
 # Bash tests
 bash providers/tests/install.test.sh
 bash scripts/tests/sync-rules.test.sh
 bash scripts/tests/check-deps.test.sh
+bash scripts/tests/check-env-example.test.sh
+bash scripts/tests/repo-templates.test.sh
 bash scripts/tests/probe.test.sh
 bash scripts/tests/find-duplicate-skills.test.sh
 bash scripts/tests/dotnet-verify-packages.test.sh
