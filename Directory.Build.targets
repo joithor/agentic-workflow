@@ -23,6 +23,15 @@
     <InvariantGlobalization>true</InvariantGlobalization>
   </PropertyGroup>
 
+  <!-- Aw.Analyzers (spec §4b.6, AW1001–AW1009): every production project (not test code, not the analyzer itself)
+       loads the repo rules as an analyzer only. ReferenceOutputAssembly=false keeps it out of the build output and
+       the runtime; the analyzer's own compiler dependency is PrivateAssets=all, so nothing flows into the project.
+       deps.yaml declares Analyzers edge-less (analyzer: true); check-deps allows this reference here (DEPS-PROJ-005/006). -->
+  <ItemGroup Condition="'$(AwIsTestProject)' != 'true' and '$(AwIsAnalyzerProject)' != 'true'">
+    <ProjectReference Include="$(MSBuildThisFileDirectory)src/Aw.Analyzers/Aw.Analyzers.csproj"
+                      OutputItemType="Analyzer" ReferenceOutputAssembly="false" PrivateAssets="all" />
+  </ItemGroup>
+
   <!-- Placement (AW0002): the test-project policy is tests/.editorconfig, so *.Tests and *.Testing projects
        (including Aw.Kernel.Testing) must live under tests/, and nothing else may: a library under tests/ would
        silently lose RS0016, CS1591 and CA2007. -->

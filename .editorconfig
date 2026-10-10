@@ -45,18 +45,28 @@ dotnet_diagnostic.RCS1215.severity = error   # expression is always true or fals
 dotnet_diagnostic.RCS1130.severity = error   # bitwise operation on an enum without [Flags]
 dotnet_diagnostic.RCS1242.severity = error   # non-read-only struct passed as `in` (MA0168 is off by default)
 
-#### Size limits (spec §4b.6) ####
+#### Size limits and repo rules (spec §4b.6) ####
 # Method length: Meziantou MA0051, 40 lines.
 dotnet_diagnostic.MA0051.severity = error
 MA0051.maximum_lines_per_method = 40
 MA0051.maximum_statements_per_method = 40
 # Cyclomatic complexity <= 10: CA1502, limit in CodeMetricsConfig.txt.
 dotnet_diagnostic.CA1502.severity = error
-# No analyzer in these packs covers: file <= 300 lines, parameters <= 5, constructor dependencies
-# (split signal over 5, error over 7), generic type parameters <= 3, raw ids in public signatures,
-# `!` needs a `// why:` comment. None of them is enforced by this build yet; the in-repo Aw.Analyzers
-# project is where custom rules go (raw ids and the `!` reason are on its list in spec §4b.6; the others
-# need a spec entry before anyone can rely on them).
+# Aw.Analyzers (src/Aw.Analyzers, wired for every production project in Directory.Build.targets) owns the rules no
+# pinned pack covers. Checked first: none of CA, IDE, MA or the opted-in RCS rules counts parameters, file lines or
+# constructor dependencies; CA1005 (generic arity) is off by default and caps at 2, not 3. Method length (MA0051) and
+# complexity (CA1502) stay with their packs, above.
+dotnet_diagnostic.AW1001.severity = error    # raw string/Guid id in a public Core/Features signature (§4b.3)
+dotnet_diagnostic.AW1002.severity = error    # '!' without a '// why:' reason (§4b.3)
+dotnet_diagnostic.AW1003.severity = error    # cross-slice type reference (§4b.1; ArchUnitNET is authoritative)
+dotnet_diagnostic.AW1004.severity = error    # endpoint lambda calls IService<,>.Handle other than once (§4b.2)
+dotnet_diagnostic.AW1005.severity = error    # file over 300 lines
+dotnet_diagnostic.AW1006.severity = error    # over 5 parameters
+dotnet_diagnostic.AW1007.severity = error    # over 7 constructor dependencies (§4b.2)
+# AW1008 is the §4b.2 split signal (6 or 7 constructor dependencies): advice for the IDE and review, not a gate.
+# The gate is AW1007. It is the one repo rule below error, on purpose.
+dotnet_diagnostic.AW1008.severity = suggestion
+dotnet_diagnostic.AW1009.severity = error    # over 3 type parameters (§4b.3)
 
 #### One owner per rule (spec §4b.6, A14) ####
 # ConfigureAwait in library code — owner: CA2007, scoped to libraries. Hosts (CLI Main, minimal-API
