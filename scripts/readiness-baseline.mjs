@@ -10,7 +10,7 @@
 
 import { execFileSync } from 'node:child_process';
 import { existsSync, readFileSync, readdirSync, statSync, writeFileSync } from 'node:fs';
-import { join, relative } from 'node:path';
+import { dirname, join, relative } from 'node:path';
 import { pathToFileURL } from 'node:url';
 
 const APPS = [
@@ -80,16 +80,76 @@ function walk(dir, out = []) {
 }
 
 const isFile = (p) => { try { return statSync(p).isFile(); } catch { return false; } };
-const read = (p) => (isFile(p) ? readFileSync(p, 'utf8') : '');
+// { text } when readable, { missing } when absent, { error: code } when it exists but can't be read (EACCES, …).
+// Heuristics use read(), which treats an unreadable file as empty; rows that are about the file itself say why.
+function readState(p) {
+  if (!isFile(p)) return { missing: true };
+  try { return { text: readFileSync(p, 'utf8') }; } catch (e) { return { error: e.code ?? String(e) }; }
+}
+const read = (p) => readState(p).text ?? '';
 const firstExisting = (root, paths) => paths.find((p) => existsSync(join(root, p))) ?? null;
 
-// null when there is no package.json; { invalid: true } when it exists but isn't JSON (a defect, scored as fail).
+// null when there is no package.json; { unreadable: code } or { invalid: true } for a file that exists but can't be
+// read or parsed. Both are defects, scored as fail with their own reason.
 function pkg(appDir) {
-  const f = join(appDir, 'package.json');
-  if (!isFile(f)) return null;
-  try { return JSON.parse(readFileSync(f, 'utf8')); } catch { return { invalid: true }; }
+  const r = readState(join(appDir, 'package.json'));
+  if (r.missing) return null;
+  if (r.error) return { unreadable: r.error };
+  try { return JSON.parse(r.text); } catch { return { invalid: true }; }
 }
-const BAD_PKG = { pass: false, why: 'package.json is not valid JSON' };
+const badPkg = (p) => (p.unreadable ? { pass: false, why: `package.json is not readable (${p.unreadable})` }
+  : p.invalid ? { pass: false, why: 'package.json is not valid JSON' } : null);
+
+// JSONC (tsconfig): drops // and /* */ comments outside strings, then trailing commas. undefined if unparsable.
+function parseJsonc(text) {
+  let out = '';
+  let inStr = false;
+  for (let i = 0; i < text.length; i++) {
+    const c = text[i];
+    const n = text[i + 1];
+    if (inStr) {
+      out += c;
+      if (c === '\\') { out += n ?? ''; i++; } else if (c === '"') inStr = false;
+    } else if (c === '"') { inStr = true; out += c; }
+    else if (c === '/' && n === '/') { while (i < text.length && text[i] !== '\n') i++; out += '\n'; }
+    else if (c === '/' && n === '*') { const e = text.indexOf('*/', i + 2); i = e < 0 ? text.length : e + 1; }
+    else out += c;
+  }
+  try { return JSON.parse(out.replace(/,(\s*[}\]])/g, '$1')); } catch { return undefined; }
+}
+
+// compilerOptions.strict from a tsconfig, following relative `extends` up to 3 levels.
+function tsStrict(file, chain = []) {
+  const r = readState(file);
+  const name = chain.length ? chain[chain.length - 1] : 'tsconfig.json';
+  if (r.missing) return { why: `no ${name}` };
+  if (r.error) return { why: `${name} is not readable (${r.error})` };
+  const cfg = parseJsonc(r.text);
+  if (!cfg || typeof cfg !== 'object') return { why: `${name} is not valid JSONC` };
+  const strict = cfg.compilerOptions?.strict;
+  if (typeof strict === 'boolean') return { strict, chain };
+  if (typeof cfg.extends === 'string' && cfg.extends.startsWith('.') && chain.length < 3) {
+    return tsStrict(join(dirname(file), cfg.extends), [...chain, cfg.extends]);
+  }
+  return { strict: false, chain };
+}
+
+// Fenced code blocks under a "Commands" heading of a markdown file.
+function commandBlocks(md) {
+  const blocks = [];
+  let inCommands = false;
+  let fence = null;
+  for (const line of md.split('\n')) {
+    if (fence) {
+      if (line.startsWith('```')) { blocks.push(fence); fence = null; } else fence.push(line);
+      continue;
+    }
+    const h = /^#{1,6}\s+(.*)$/.exec(line);
+    if (h) inCommands = /^commands\b/i.test(h[1]);
+    else if (inCommands && line.startsWith('```')) fence = [];
+  }
+  return blocks;
+}
 const allDeps = (p) => Object.keys({ ...(p?.dependencies ?? {}), ...(p?.devDependencies ?? {}) });
 
 // ---------- remote (gh api GET only) ----------
@@ -136,6 +196,12 @@ function workflows(root) {
 }
 
 const remoteUnknown = (ctx) => ({ state: 'unknown', evidence: ctx.remoteWhy });
+
+function docPresent(ctx, f) {
+  const r = readState(join(ctx.root, f));
+  if (r.error) return { state: 'unknown', evidence: `${f} is not readable (${r.error})` };
+  return (r.text ?? '').trim() ? { state: 'pass', evidence: `${f} present` } : { state: 'fail', evidence: `no ${f}` };
+}
 const PRODUCT_SIGNALS = 'docs/readiness/product-signals.md';
 
 const CRITERIA = [
@@ -147,9 +213,10 @@ const CRITERIA = [
     return f || dep ? { pass: true, why: f ?? dep } : { pass: false, why: 'no lint config or linter dependency' };
   } },
   { id: 'SV-2', pillar: 0, level: 1, src: 'F-level', name: 'Type checker (strict)', app: (ctx, d) => {
-    const ts = read(join(d, 'tsconfig.json'));
-    if (!ts) return { pass: false, why: 'no tsconfig.json' };
-    return /"strict"\s*:\s*true/.test(ts) ? { pass: true, why: 'tsconfig strict: true' } : { pass: false, why: 'tsconfig without strict: true' };
+    const r = tsStrict(join(d, 'tsconfig.json'));
+    if (r.why) return { pass: false, why: r.why };
+    if (!r.strict) return { pass: false, why: 'compilerOptions.strict is not true' };
+    return { pass: true, why: r.chain.length ? `compilerOptions.strict via ${r.chain.join(' → ')}` : 'compilerOptions.strict' };
   } },
   { id: 'SV-3', pillar: 0, level: 1, src: 'F-pillar', name: 'Code formatter', app: (ctx, d) => {
     const names = ['biome.json', 'biome.jsonc', '.prettierrc', '.prettierrc.json', 'prettier.config.js', 'dprint.json'];
@@ -169,18 +236,19 @@ const CRITERIA = [
   { id: 'BS-1', pillar: 1, level: 2, src: 'S5', name: 'Build command documented', app: (ctx, d, rel) => {
     const p = pkg(d);
     if (!p) return { state: 'n/a', why: 'no package.json; nothing to build (loaded as source)' };
-    if (p.invalid) return BAD_PKG;
+    if (badPkg(p)) return badPkg(p);
     if (!p.scripts?.build) return { pass: false, why: 'no build script' };
-    const agents = read(join(ctx.root, 'AGENTS.md'));
-    const documented = agents.split('\n').some((l) => l.includes(rel))
-      && /\bnpm run build\b|each has [^\n]*\bbuild\b/.test(agents);
-    return documented ? { pass: true, why: 'scripts.build documented in AGENTS.md; no single root build command' }
+    // Documented: a Commands code block lists the package, and either that line names build or the block says
+    // each package has a build script.
+    const documented = commandBlocks(read(join(ctx.root, 'AGENTS.md'))).some((b) => b.some((l) => l.includes(rel))
+      && (b.some((l) => l.includes(rel) && /\bbuild\b/.test(l)) || b.some((l) => /each has [^\n]*\bbuild\b/.test(l))));
+    return documented ? { pass: true, why: `heuristic: AGENTS.md Commands block lists ${rel} and build; no single root build command` }
       : { pass: false, why: 'scripts.build not documented in AGENTS.md' };
   } },
   { id: 'BS-2', pillar: 1, level: 2, src: 'S5', name: 'Dependencies pinned (lockfile)', app: (ctx, d) => {
     const p = pkg(d);
     if (!p) return { state: 'n/a', why: 'no package.json, no dependencies to pin' };
-    if (p.invalid) return BAD_PKG;
+    if (badPkg(p)) return badPkg(p);
     const f = firstExisting(d, ['package-lock.json', 'pnpm-lock.yaml', 'yarn.lock', 'packages.lock.json']);
     return f ? { pass: true, why: f } : { pass: false, why: 'no lockfile' };
   } },
@@ -217,7 +285,8 @@ const CRITERIA = [
     const re = /(^|\/)(integration|e2e|contract|browser|routes)(\/|[.-])/;
     const t = walk(d).filter((p) => /\.(test|spec)\.[cm]?[jt]sx?$/.test(p) && re.test(relative(d, p)));
     const script = Object.keys(pkg(d)?.scripts ?? {}).find((s) => /^test:(integration|e2e|heavy)$/.test(s));
-    if (t.length || script) return { pass: true, why: script ? `script ${script}` : `${t.length} files under integration/e2e/contract/browser/routes` };
+    if (script) return { pass: true, why: `heuristic: matched script ${script}` };
+    if (t.length) return { pass: true, why: `heuristic: matched ${t.length} test files under integration/e2e/contract/browser/routes paths` };
     return { pass: false, why: 'no integration/e2e/contract/browser/routes tests or test:integration|e2e|heavy script' };
   } },
   { id: 'TS-3', pillar: 2, level: 3, src: 'S5', name: 'Tests runnable locally (one command)', app: (ctx, d, rel) => {
@@ -239,10 +308,8 @@ const CRITERIA = [
   } },
 
   // Documentation
-  { id: 'DOC-1', pillar: 3, level: 2, src: 'F-level', name: 'AGENTS.md', check: (ctx) =>
-    read(join(ctx.root, 'AGENTS.md')).trim() ? { state: 'pass', evidence: 'AGENTS.md present' } : { state: 'fail', evidence: 'no AGENTS.md' } },
-  { id: 'DOC-2', pillar: 3, level: 1, src: 'F-level', name: 'README', check: (ctx) =>
-    read(join(ctx.root, 'README.md')).trim() ? { state: 'pass', evidence: 'README.md present' } : { state: 'fail', evidence: 'no README.md' } },
+  { id: 'DOC-1', pillar: 3, level: 2, src: 'F-level', name: 'AGENTS.md', check: (ctx) => docPresent(ctx, 'AGENTS.md') },
+  { id: 'DOC-2', pillar: 3, level: 1, src: 'F-level', name: 'README', check: (ctx) => docPresent(ctx, 'README.md') },
   { id: 'DOC-3', pillar: 3, level: 4, src: 'S5', name: 'Documentation freshness checked automatically', check: (ctx) => {
     const wf = workflows(ctx.root);
     const hit = wf.find((f) => /sync-rules\.sh --check|docs?-fresh|lychee|markdown-link-check/.test(read(f)));
@@ -465,7 +532,9 @@ function main() {
   const opts = parseArgs(process.argv.slice(2));
   let root = opts.root;
   if (!root) {
-    try { root = execFileSync('git', ['rev-parse', '--show-toplevel'], { encoding: 'utf8' }).trim(); } catch { die('not in a git repo; pass --root'); }
+    try {
+      root = execFileSync('git', ['rev-parse', '--show-toplevel'], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }).trim();
+    } catch { die('not in a git repo; pass --root'); }
   }
   if (!existsSync(root) || !statSync(root).isDirectory()) die(`root is not a directory: ${root}`);
 
@@ -476,15 +545,10 @@ function main() {
   }
   if (opts.repo && !validRepo(opts.repo)) die(`--repo must be OWNER/NAME, got ${opts.repo}`);
   let repo = opts.repo;
-  if (!repo) {
-    try {
-      const url = execFileSync('git', ['-C', root, 'remote', 'get-url', 'origin'], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }).trim();
-      repo = url.replace(/\.git$/, '').match(/[:/]([^/:]+\/[^/]+)$/)?.[1] ?? null;
-    } catch { repo = null; }
-    if (repo && !validRepo(repo)) repo = null;
-  }
+  let originWhy = null;
+  if (!repo) ({ repo, why: originWhy } = repoFromOrigin(root));
   const remote = opts.remote && Boolean(repo);
-  const remoteWhy = !opts.remote ? 'not read (--no-remote)' : 'no usable origin remote; pass --repo';
+  const remoteWhy = !opts.remote ? 'not read (--no-remote)' : `${originWhy}; pass --repo`;
   const date = opts.date ?? new Date().toISOString().slice(0, 10);
   // The regex alone accepts 2026-13-45; round-trip through Date so an impossible date is a tool error, not NaN.
   const real = /^\d{4}-\d{2}-\d{2}$/.test(date) && !Number.isNaN(Date.parse(`${date}T00:00:00Z`))
@@ -499,6 +563,21 @@ function main() {
   const md = render(ctx, evaluate(ctx));
   if (!opts.out) { process.stdout.write(md); return; }
   try { writeFileSync(opts.out, md); } catch (e) { die(`cannot write ${opts.out}: ${e.message}`); }
+}
+
+// The origin's OWNER/NAME when it is a github.com URL. Anything else is never sent to gh; the reason names only the
+// host (a URL can carry credentials).
+function repoFromOrigin(root) {
+  let url;
+  try {
+    url = execFileSync('git', ['-C', root, 'remote', 'get-url', 'origin'], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }).trim();
+  } catch { return { repo: null, why: 'no origin remote' }; }
+  const m = /^(?:https:\/\/(?:[^@/]+@)?github\.com\/|git@github\.com:|ssh:\/\/git@github\.com\/)([^/]+\/[^/]+?)(?:\.git)?\/?$/.exec(url);
+  if (!m) {
+    const host = (/^[a-z][a-z0-9+.-]*:\/\/(?:[^@/]+@)?([^/:]+)/i.exec(url) ?? /^[^@\s/]+@([^:/]+):/.exec(url))?.[1] ?? 'unrecognised URL';
+    return { repo: null, why: `origin is not a GitHub URL (${host})` };
+  }
+  return validRepo(m[1]) ? { repo: m[1], why: null } : { repo: null, why: 'origin URL has no OWNER/NAME' };
 }
 
 // OWNER/NAME, and neither part may be `.` or `..` (the value is spliced into a gh api path).
