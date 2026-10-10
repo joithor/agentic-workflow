@@ -14,8 +14,8 @@ external dependency is `OpenTelemetry`. Its closure (see `src/Aw.Kernel.Telemetr
 services.AddKernelTelemetry(TelemetryOptions.FromEnvironment("aw-readiness", environment, clock));
 // A host that exports picks the adapter here too: … with { TraceExporter = <adapter from Infrastructure> }.
 
-// Program.cs, right after building the container: resolving the runtime hands it to the container, which then
-// disposes (and flushes) it on exit.
+// Program.cs, right after building the container (an http host: in LoopbackBinding.Build, right after builder.Build()):
+// resolving the runtime hands it to the container, which then disposes (and flushes) it on exit.
 using var provider = services.BuildServiceProvider();
 _ = provider.GetRequiredService<TelemetryRuntime>();
 ```
@@ -27,7 +27,8 @@ as its first line, a warning whose `eventName` is the code. Without DI, `using v
 TelemetryRuntime.Start(options)` and `telemetry.LoggerFactory`. `AddKernelTelemetry` starts the runtime right away (so
 spans are recorded and the problem line is written while Compose runs, before anything resolves a logger) and
 registers it as a singleton. The container disposes a singleton only once something has resolved it, hence the
-resolve in Program.cs; disposing the runtime flushes it. A second `AddKernelTelemetry` call throws. Run **one runtime per process**: the withheld counter is process-wide.
+resolve in Program.cs (an http host: in `LoopbackBinding.Build`, which Program.cs and its tests share); disposing the
+runtime flushes it. A second `AddKernelTelemetry` call throws. Run **one runtime per process**: the withheld counter is process-wide.
 
 OpenTelemetry's SDK reads some standard `OTEL_*` variables. The resource is exactly `service.name` from `ServiceName`
 (`ResourceBuilder.CreateEmpty()`, so `OTEL_SERVICE_NAME` and `OTEL_RESOURCE_ATTRIBUTES` are ignored), and the sampler

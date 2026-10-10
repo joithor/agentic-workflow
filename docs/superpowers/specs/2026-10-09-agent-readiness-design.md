@@ -631,8 +631,10 @@ Also still gaps:
 - the complete one-`Lane`-trait scan (§4b.5).
 
 Closed in R2 stage 0, before the first port: telemetry in generated code. The `/new-package` hosts (cli and http),
-`aw-readiness` and `aw-packets` call `AddKernelTelemetry` in `Compose` and resolve `TelemetryRuntime` in `Program.cs`
-(§4b.4), and each host's `HostTests` checks it (`Telemetry_is_composed_and_exports_nothing`).
+`aw-readiness` and `aw-packets` call `AddKernelTelemetry` in `Compose` and resolve `TelemetryRuntime` once the container
+is built (`Program.cs`; an http host in `LoopbackBinding.Build`) (§4b.4). Each host's `HostTests` checks the composition
+(`Telemetry_is_composed_and_exports_nothing`), and an http host's `LoopbackBindingTests.Kernel_telemetry_is_the_only_logger`
+checks the real web host.
 
 **Sources:**
 [Vertical slice vs Clean Architecture](https://milanjovanovic.tech/blog/vertical-slice-vs-clean-architecture) ·
