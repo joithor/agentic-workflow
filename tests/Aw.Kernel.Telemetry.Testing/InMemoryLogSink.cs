@@ -36,7 +36,7 @@ public sealed class InMemoryLogSink : ILogSink
     /// <inheritdoc />
     public void WriteLine(string line)
     {
-        LogLines.EnsureSingleLine(line);
+        LogLine.EnsureSingleLine(line);
         lock (_gate)
         {
             _lines.Add(line);

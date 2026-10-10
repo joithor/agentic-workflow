@@ -81,4 +81,16 @@ public sealed class LogScrubbingTests
         Assert.DoesNotContain(BlockingRedactor.Marker, h.Sink.Text, StringComparison.Ordinal);
         Assert.Equal(1, h.Runtime.Withheld.Logs);
     }
+
+    [Fact]
+    public void A_secret_named_hole_is_withheld_while_other_holes_keep_their_format()
+    {
+        using var h = new Harness();
+        var logger = h.Logger();
+
+        Log.LoginWithFormat(logger, 1234.5, "hunter2-not-a-shape");
+
+        var line = Assert.Single(h.Lines());
+        Assert.Equal("{took 1,234.50} as [REDACTED:secret-field]", line.GetProperty("message").GetString());
+    }
 }

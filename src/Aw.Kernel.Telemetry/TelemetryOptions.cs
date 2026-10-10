@@ -43,6 +43,29 @@ public sealed record TelemetryOptions
     /// <param name="serviceName">The service name.</param>
     /// <param name="environment">Reads an environment variable (Environment.GetEnvironmentVariable in Program.cs).</param>
     /// <returns>The options, or AW-TELEMETRY-001 when the level isn't one of the names above.</returns>
-    public static Result<TelemetryOptions> FromEnvironment(string serviceName, Func<string, string?> environment) =>
-        throw new NotSupportedException("red: parse the level");
+    public static Result<TelemetryOptions> FromEnvironment(string serviceName, Func<string, string?> environment)
+    {
+        ArgumentNullException.ThrowIfNull(environment);
+        var value = environment(LevelVariable);
+        if (string.IsNullOrEmpty(value))
+        {
+            return new TelemetryOptions { ServiceName = serviceName };
+        }
+
+        return _levels.TryGetValue(value, out var level)
+            ? new TelemetryOptions { ServiceName = serviceName, MinimumLevel = level }
+            : TelemetryErrors.InvalidSetting.With(
+                $"{LevelVariable}='{value}' is not a level: use trace, debug, information, warning, error, critical or none.");
+    }
+
+    private static readonly Dictionary<string, LogLevel> _levels = new(StringComparer.OrdinalIgnoreCase)
+    {
+        ["trace"] = LogLevel.Trace,
+        ["debug"] = LogLevel.Debug,
+        ["information"] = LogLevel.Information,
+        ["warning"] = LogLevel.Warning,
+        ["error"] = LogLevel.Error,
+        ["critical"] = LogLevel.Critical,
+        ["none"] = LogLevel.None,
+    };
 }

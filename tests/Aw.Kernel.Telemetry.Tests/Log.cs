@@ -18,6 +18,9 @@ internal static partial class Log
     [LoggerMessage(Level = LogLevel.Information, Message = "login {Password}")]
     public static partial void Login(ILogger logger, string password);
 
+    [LoggerMessage(Level = LogLevel.Information, Message = "{{took {Ms:N2}}} as {Token}")]
+    public static partial void LoginWithFormat(ILogger logger, double ms, string token);
+
     [LoggerMessage(Level = LogLevel.Error, Message = "failed")]
     public static partial void Failed(ILogger logger, Exception exception);
 

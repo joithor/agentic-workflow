@@ -1,7 +1,7 @@
-namespace Aw.Kernel.Telemetry.Testing;
+namespace Aw.Kernel.Telemetry;
 
-/// <summary>The one-line rule every fake sink applies, the same check the real sinks make.</summary>
-internal static class LogLines
+/// <summary>The one-line rule every sink applies, so one record can never become two lines.</summary>
+internal static class LogLine
 {
     public static void EnsureSingleLine(string line)
     {

@@ -7,9 +7,25 @@ namespace Aw.Kernel.Telemetry;
 /// <param name="writer">The writer. The sink doesn't own it: the host disposes it.</param>
 public sealed class TextWriterLogSink(TextWriter writer) : ILogSink
 {
-    /// <inheritdoc />
-    public void WriteLine(string line) => throw new NotSupportedException($"red: write the line to {writer.GetType().Name}");
+    private readonly Lock _gate = new();
 
     /// <inheritdoc />
-    public void Flush() => throw new NotSupportedException("red: flush");
+    public void WriteLine(string line)
+    {
+        LogLine.EnsureSingleLine(line);
+        lock (_gate)
+        {
+            writer.Write(line);
+            writer.Write('\n');
+        }
+    }
+
+    /// <inheritdoc />
+    public void Flush()
+    {
+        lock (_gate)
+        {
+            writer.Flush();
+        }
+    }
 }

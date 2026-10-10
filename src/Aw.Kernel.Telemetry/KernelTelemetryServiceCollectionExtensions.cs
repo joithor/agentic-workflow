@@ -1,3 +1,4 @@
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Aw.Kernel.Telemetry;
@@ -12,6 +13,12 @@ public static class KernelTelemetryServiceCollectionExtensions
     /// <param name="services">The services.</param>
     /// <param name="options">The telemetry options.</param>
     /// <returns>The services.</returns>
-    public static IServiceCollection AddKernelTelemetry(this IServiceCollection services, TelemetryOptions options) =>
-        throw new NotSupportedException("red: register");
+    public static IServiceCollection AddKernelTelemetry(this IServiceCollection services, TelemetryOptions options)
+    {
+        ArgumentNullException.ThrowIfNull(options);
+        _ = services.AddSingleton(_ => TelemetryRuntime.Start(options));
+        _ = services.AddSingleton(static sp => sp.GetRequiredService<TelemetryRuntime>().LoggerFactory);
+        _ = services.AddSingleton(typeof(ILogger<>), typeof(Logger<>));
+        return services;
+    }
 }

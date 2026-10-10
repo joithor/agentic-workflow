@@ -110,4 +110,36 @@ public sealed class SpanTests
         Assert.Empty(h.Spans!.Exported);
         Assert.Equal(1, h.Runtime.Withheld.Spans);
     }
+
+    [Fact]
+    public void A_span_whose_link_carries_a_secret_is_dropped()
+    {
+        using var h = new Harness(export: true);
+        var link = new ActivityLink(new ActivityContext(ActivityTraceId.CreateRandom(), ActivitySpanId.CreateRandom(), ActivityTraceFlags.Recorded),
+            new ActivityTagsCollection { ["from"] = Secrets.GithubToken });
+        using (h.Source.StartActivity("work", ActivityKind.Internal, parentContext: default, links: [link]))
+        {
+        }
+
+        h.Runtime.Flush();
+
+        Assert.Empty(h.Spans!.Exported);
+        Assert.Equal(1, h.Runtime.Withheld.Spans);
+    }
+
+    [Fact]
+    public void Numbers_and_flags_in_tags_are_exported_unchanged()
+    {
+        using var h = new Harness(export: true);
+        using (var span = h.Source.StartActivity("work"))
+        {
+            _ = span!.SetTag("count", 3).SetTag("ok", value: true);
+        }
+
+        h.Runtime.Flush();
+
+        var exported = Assert.Single(h.Spans!.Exported);
+        Assert.Equal(3, exported.GetTagItem("count"));
+        Assert.Equal(true, exported.GetTagItem("ok"));
+    }
 }
