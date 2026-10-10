@@ -1,0 +1,10 @@
+# name<TAB>command — startup + full scenario per run, fresh DB ({tmp}). Measured by scripts/timeit.py.
+AdoNet (AOT)	r8-data/AdoNet/bin/Release/net10.0/osx-arm64/publish/AdoNet {tmp}.db
+AdoNet (AOT, ICU on)	out-icu/AdoNet {tmp}.db
+AdoNet (AOT, OS libsqlite3)	r8-data/AdoNetSystemSqlite/bin/Release/net10.0/osx-arm64/publish/AdoNetSystemSqlite {tmp}.db
+AdoNet (JIT, dotnet AdoNet.dll)	dotnet r8-data/AdoNet/bin/Release/net10.0/osx-arm64/AdoNet.dll {tmp}.db
+EfCore (AOT)	r8-data/EfCore/bin/Release/net10.0/osx-arm64/publish/EfCore {tmp}.db
+DapperAot (AOT)	r8-data/DapperAot/bin/Release/net10.0/osx-arm64/publish/DapperAot {tmp}.db
+HandIds (AOT)	r9-ids/HandIds/bin/Release/net10.0/osx-arm64/publish/HandIds {tmp}.db
+VogenIds (AOT, runtime converters)	r9-ids/VogenIds/bin/Release/net10.0/osx-arm64/publish/VogenIds {tmp}.db
+VogenHybrid (AOT)	r9-ids/VogenHybrid/bin/Release/net10.0/osx-arm64/publish/VogenHybrid {tmp}.db

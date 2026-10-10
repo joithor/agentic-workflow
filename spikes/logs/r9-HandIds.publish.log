@@ -1,0 +1,5 @@
+  Determining projects to restore...
+  Restored <repo>/spikes/r9-ids/HandIds/HandIds.csproj (in 104 ms).
+  HandIds -> <repo>/spikes/r9-ids/HandIds/bin/Release/net10.0/osx-arm64/HandIds.dll
+  Generating native code
+  HandIds -> <repo>/spikes/r9-ids/HandIds/bin/Release/net10.0/osx-arm64/publish/

@@ -1,0 +1,7 @@
+  Determining projects to restore...
+  Restored <repo>/spikes/r8-data/DapperAot/DapperAot.csproj (in 109 ms).
+  DapperAot -> <repo>/spikes/r8-data/DapperAot/bin/Release/net10.0/osx-arm64/DapperAot.dll
+  Generating native code
+~/.nuget/packages/dapper/2.1.89/lib/net10.0/Dapper.dll : warning IL3053: Assembly 'Dapper' produced AOT analysis warnings. [<repo>/spikes/r8-data/DapperAot/DapperAot.csproj]
+~/.nuget/packages/dapper/2.1.89/lib/net10.0/Dapper.dll : warning IL2104: Assembly 'Dapper' produced trim warnings. For more information see https://aka.ms/il2104 [<repo>/spikes/r8-data/DapperAot/DapperAot.csproj]
+  DapperAot -> <repo>/spikes/r8-data/DapperAot/bin/Release/net10.0/osx-arm64/publish/

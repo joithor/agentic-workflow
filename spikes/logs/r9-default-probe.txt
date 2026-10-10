@@ -1,0 +1,2 @@
+error VOG009: Type 'ItemId' cannot be constructed with default as it is prohibited 
+OK (build exit 1, VOG009)

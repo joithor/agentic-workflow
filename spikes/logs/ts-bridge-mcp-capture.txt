@@ -1,0 +1,42 @@
+initialize.serverInfo: {"name": "agentic-workflow-bridge", "version": "1.0.0"}
+tools: send_context, get_messages, get_unread, assign_task, report_status
+tools[0] = send_context inputSchema:
+{
+ "type": "object",
+ "properties": {
+  "conversation": {
+   "type": "string",
+   "format": "uuid",
+   "description": "Conversation UUID \u2014 use crypto.randomUUID() to start a new one"
+  },
+  "sender": {
+   "type": "string",
+   "minLength": 1,
+   "description": "Sender agent identifier (e.g. 'claude-code', 'codex', 'cursor')"
+  },
+  "recipient": {
+   "type": "string",
+   "minLength": 1,
+   "description": "Recipient agent identifier"
+  },
+  "payload": {
+   "type": "string",
+   "minLength": 1,
+   "description": "The context or message content to send"
+  },
+  "meta_prompt": {
+   "type": "string",
+   "description": "Optional meta-prompt guiding how the recipient should process this"
+  }
+ },
+ "required": [
+  "conversation",
+  "sender",
+  "recipient",
+  "payload"
+ ],
+ "additionalProperties": false,
+ "$schema": "http://json-schema.org/draft-07/schema#"
+}
+bad args reply: {"result": {"content": [{"type": "text", "text": "MCP error -32602: Input validation error: Invalid arguments for tool send_context: [\n  {\n    \"code\": \"invalid_type\",\n    \"expected\": \"string\",\n    \"received\": \"undefined\",\n    \"path\": [\n      \"conversation\"\n    ],\n    \"message\": \"Required\"\n  },\n  {\n    \"code\": \"invalid_type\",\n    \"expected\": \"string\",\n    \"received\": \"undefined\",\n    \"path\": [\n      \"sender\"\n    ],\n    \"message\": \"Required\"\n  },\n  {\n    \"code\": \"invalid_type\",\n    \"expected\": \"string\",\n    \"received\": \"und
+unknown tool reply: {"result": {"content": [{"type": "text", "text": "MCP error -32602: Tool nope not found"}], "isError": true}, "jsonrpc": "2.0", "id": 4}

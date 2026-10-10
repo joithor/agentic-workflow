@@ -1,0 +1,15 @@
+binary                  binary_MB     dylib_MB   on_disk_MB
+AdoNet                       2.60         1.62         4.22
+AdoNet (ICU on)              2.79         1.62         4.41
+AdoNetSystemSqlite           2.60         0.00         2.60
+EfCore                      16.08         1.62        17.70
+DapperAot                    4.15         1.62         5.77
+HandIds                      3.03         1.62         4.65
+VogenIds                     3.11         1.62         4.73
+VogenHybrid                  3.06         1.62         4.68
+RouteBind                    8.59         0.00         8.59
+StdioLow                     8.14         0.00         8.14
+StdioAttr                    9.38         0.00         9.38
+HttpSlim                    15.88         0.00        15.88
+TUnit.Tests                 18.31         1.62        19.93
+TUnit.Bulk                  24.91         1.62        26.53

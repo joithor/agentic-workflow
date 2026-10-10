@@ -1,0 +1,11 @@
+AdoNet: Mach-O 64-bit executable arm64 | coreclr/hostfxr/clrjit links: 0
+AdoNetSystemSqlite: Mach-O 64-bit executable arm64 | coreclr/hostfxr/clrjit links: 0
+EfCore: Mach-O 64-bit executable arm64 | coreclr/hostfxr/clrjit links: 0
+DapperAot: Mach-O 64-bit executable arm64 | coreclr/hostfxr/clrjit links: 0
+VogenHybrid: Mach-O 64-bit executable arm64 | coreclr/hostfxr/clrjit links: 0
+RouteBind: Mach-O 64-bit executable arm64 | coreclr/hostfxr/clrjit links: 0
+StdioLow: Mach-O 64-bit executable arm64 | coreclr/hostfxr/clrjit links: 0
+HttpSlim: Mach-O 64-bit executable arm64 | coreclr/hostfxr/clrjit links: 0
+TUnit.Tests: Mach-O 64-bit executable arm64 | coreclr/hostfxr/clrjit links: 0
+ICU: both invariant and ICU-on builds link /usr/lib/libicucore.A.dylib on macOS (system library):
+  invariant: 1  icu-on: 1

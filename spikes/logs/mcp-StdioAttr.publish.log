@@ -1,0 +1,5 @@
+  Determining projects to restore...
+  Restored <repo>/spikes/mcp/StdioAttr/StdioAttr.csproj (in 142 ms).
+  StdioAttr -> <repo>/spikes/mcp/StdioAttr/bin/Release/net10.0/osx-arm64/StdioAttr.dll
+  Generating native code
+  StdioAttr -> <repo>/spikes/mcp/StdioAttr/bin/Release/net10.0/osx-arm64/publish/

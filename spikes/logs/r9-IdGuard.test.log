@@ -1,0 +1,23 @@
+waiting on ~/.agentic-workflow/locks/heavy-job.lock
+<repo>/spikes/r9-ids/VogenIds/obj/Debug/net10.0/osx-arm64/Vogen/Vogen.ValueObjectGenerator/global__Spike.R9_TokenBudget.g.cs(736,17): warning IL2026: Using member 'System.Text.Json.JsonSerializer.Serialize<TValue>(Utf8JsonWriter, TValue, JsonSerializerOptions)' which has 'RequiresUnreferencedCodeAttribute' can break functionality when trimming application code. JSON serialization and deserialization might require types that cannot be statically analyzed. Use the overload that takes a JsonTypeInfo or JsonSerializerContext, or make sure all of the required types are preserved. [<repo>/spikes/r9-ids/VogenIds/VogenIds.csproj]
+<repo>/spikes/r9-ids/VogenIds/obj/Debug/net10.0/osx-arm64/Vogen/Vogen.ValueObjectGenerator/global__Spike.R9_TokenBudget.g.cs(736,17): warning IL3050: Using member 'System.Text.Json.JsonSerializer.Serialize<TValue>(Utf8JsonWriter, TValue, JsonSerializerOptions)' which has 'RequiresDynamicCodeAttribute' can break functionality when AOT compiling. JSON serialization and deserialization might require types that cannot be statically analyzed and might need runtime code generation. Use System.Text.Json source generation for native AOT applications. [<repo>/spikes/r9-ids/VogenIds/VogenIds.csproj]
+Running tests from <repo>/spikes/r9-ids/IdGuard.Tests/bin/Debug/net10.0/osx-arm64/IdGuard.Tests.dll (net10.0|arm64)
+passed Spike.R9.Guard.IdGuardTests.Guard_catches_ids_with_Vogen_STJ_conversions (9ms)
+  from <repo>/spikes/r9-ids/IdGuard.Tests/bin/Debug/net10.0/osx-arm64/IdGuard.Tests.dll (net10.0|arm64)
+  Standard output
+    ItemId: converter ItemIdSystemTextJsonConverter is generated (nested), not user code
+    ItemId: Vogen STJ conversions are on (ItemIdSystemTextJsonConverter)
+    TokenBudget: converter TokenBudgetSystemTextJsonConverter is generated (nested), not user code
+    TokenBudget: Vogen STJ conversions are on (TokenBudgetSystemTextJsonConverter)
+    
+  Error output
+passed Spike.R9.Guard.IdGuardTests.Hybrid_ids_pass_the_guard (1ms)
+  from <repo>/spikes/r9-ids/IdGuard.Tests/bin/Debug/net10.0/osx-arm64/IdGuard.Tests.dll (net10.0|arm64)
+<repo>/spikes/r9-ids/IdGuard.Tests/bin/Debug/net10.0/osx-arm64/IdGuard.Tests.dll (net10.0|arm64) passed (142ms)
+
+Test run summary: Passed!
+  total: 2
+  failed: 0
+  succeeded: 2
+  skipped: 0
+  duration: 489ms

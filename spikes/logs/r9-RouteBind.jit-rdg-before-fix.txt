@@ -1,0 +1,5 @@
+## JIT, EnableRequestDelegateGenerator=true (build exit 0)
+/items/item-1 -> 500
+/items/%20 -> 500
+/budget/1200 -> 500
+/budget/abc -> 500

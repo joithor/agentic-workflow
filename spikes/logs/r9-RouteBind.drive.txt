@@ -1,0 +1,11 @@
+/items/item-1          -> 200 item item-1 initialized=True
+/items/%20             -> 400 
+/budget/1200           -> 200 budget 1200
+/budget/-1             -> 400 
+/budget/abc            -> 400 
+/query?id=q-1          -> 200 query q-1
+/query?id=             -> 400 
+/query                 -> 400 
+/qbudget?b=            -> 400 
+/qbudget?b=5           -> 200 qbudget 5
+OK

@@ -1,7 +1,8 @@
 bin/
 obj/
-logs/
 *.db
 *.db-shm
 *.db-wal
 TestResults/
+out-*/
+json-escaping/bin/

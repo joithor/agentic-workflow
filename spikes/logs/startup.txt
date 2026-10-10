@@ -1,0 +1,13 @@
+waiting on ~/.agentic-workflow/locks/heavy-job.lock
+1-min load average at end: 8.59; rounds 15, warmup 1, round-robin shuffled
+command                                 min   median      max  med-floor  exit
+/usr/bin/true                           1.7      2.0      2.1        0.0  [0]
+AdoNet (AOT)                            5.9      6.3      7.4        4.4  [0]
+AdoNet (AOT, ICU on)                    6.1      6.4      7.4        4.4  [0]
+AdoNet (AOT, OS libsqlite3)             8.3     10.0     17.3        8.1  [0]
+AdoNet (JIT, dotnet AdoNet.dll)        41.5     42.4     45.9       40.5  [0]
+EfCore (AOT)                           13.0     13.5     14.8       11.6  [0]
+DapperAot (AOT)                         6.2      6.8      8.4        4.9  [0]
+HandIds (AOT)                           5.4      5.8      7.9        3.9  [0]
+VogenIds (AOT, runtime converters)      5.6      5.9      6.7        3.9  [0]
+VogenHybrid (AOT)                       5.6      6.0      7.1        4.0  [0]

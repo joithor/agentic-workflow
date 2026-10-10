@@ -6,7 +6,7 @@ set -u
 tmp=$(mktemp -d)
 fails=0
 pub() { echo "$1/bin/Release/net10.0/osx-arm64/publish/$(basename "$1")"; }
-for p in r8-data/AdoNet r8-data/EfCore r8-data/DapperAot r9-ids/HandIds r9-ids/VogenIds r9-ids/VogenHybrid; do
+for p in r8-data/AdoNet r8-data/AdoNetSystemSqlite r8-data/EfCore r8-data/DapperAot r9-ids/HandIds r9-ids/VogenIds r9-ids/VogenHybrid; do
   b=$(pub "$p"); n=$(basename "$p"); db="$tmp/$n.db"
   echo "## $n"
   "$b" "$db" </dev/null 2>&1 | head -20
