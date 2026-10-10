@@ -17,11 +17,21 @@ const IDENT = /[\p{L}_$][\p{L}\p{N}_$]*/gu;
 
 export const wordsFile = (deps: Deps): string => deps.env.SINDRI_WORDS ?? "/usr/share/dict/words";
 
+// A name spelled with separators: identifier characters joined by `-` or `.` (`nova-ledger`, `order_sync_worker`,
+// `pkg.name`). Its joined form drops every character that isn't a letter or a digit.
+const SPELLED = /[\p{L}\p{N}_$]+(?:[-.][\p{L}\p{N}_$]+)*/gu;
+const joinedForm = (run: string): string => run.replace(/[^\p{L}\p{N}]/gu, "");
+
 // NFKD, invisibles and combining marks (\p{M}) removed, lowercased: a decomposed or precomposed accent, fullwidth
-// letters and zero-width characters neither split an identifier nor change it.
+// letters and zero-width characters neither split an identifier nor change it. Besides each identifier, the joined
+// form of every name spelled with separators (security-sentinel-1): `nova-ledger`, `nova_ledger`, `novaLedger` and
+// `NovaLedger` all give `novaledger`, on the derived set's side and the candidate's alike, so no spelling of a private
+// name slips past another. Both kinds need at least 5 characters, and a joined form needs a letter.
 export function identifierTokens(text: string): string[] {
   const visible = stripInvisible(text.normalize("NFKD"), WHITESPACE).replace(/\p{M}/gu, "").toLowerCase();
-  return (visible.match(IDENT) ?? []).filter((t) => t.length >= MIN_IDENTIFIER);
+  const plain = (visible.match(IDENT) ?? []).filter((t) => t.length >= MIN_IDENTIFIER);
+  const joined = (visible.match(SPELLED) ?? []).map(joinedForm).filter((t) => t.length >= MIN_IDENTIFIER && /\p{L}/u.test(t));
+  return [...new Set([...plain, ...joined])];
 }
 
 export function vocabularyOf(db: IndexDb): Set<string> {

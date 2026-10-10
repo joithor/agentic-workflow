@@ -23,7 +23,7 @@ describe("identifierTokens", () => {
   });
 
   it("splits on non-identifier characters, lowercases and drops tokens under 5 characters", () => {
-    expect(identifierTokens("call quarbleScheduler() in src/glx-rota/utils.ts, ok")).toEqual(["quarblescheduler", "utils"]);
+    expect(identifierTokens("call quarbleScheduler() in src/glx-rota/utils.ts, ok")).toEqual(["quarblescheduler", "utils", "glxrota", "utilsts"]); // plus joined forms (security-sentinel-1)
     expect(identifierTokens("ｑuarbleScheduler")).toEqual(["quarblescheduler"]);
   });
 
@@ -31,7 +31,7 @@ describe("identifierTokens", () => {
     expect(identifierTokens("BillingEngine\u0301Service")).toEqual(["billingengineservice"]); // decomposed accent stripped
     expect(identifierTokens("BillingEngin\u00e9Service")).toEqual(["billingengineservice"]); // precomposed accent folded
     expect(identifierTokens("Bill\u0456ngEngine")).toEqual(["bill\u0456ngengine"]); // a Cyrillic letter stays inside the token
-    expect(identifierTokens("\u00c9tatMachine $scope_ref")).toEqual(["etatmachine", "$scope_ref"]);
+    expect(identifierTokens("\u00c9tatMachine $scope_ref")).toEqual(["etatmachine", "$scope_ref", "scoperef"]);
     expect(identifierTokens("Quarble\u200bScheduler")).toEqual(["quarblescheduler"]); // invisibles still go
   });
 
@@ -54,6 +54,37 @@ describe("buildDerivedSet", () => {
     expect(set.has("rendertask")).toBe(false); // toolkit vocabulary
     expect(set.has("schedule")).toBe(false); // English
     expect(vocabularyOf(toolkit).has("render")).toBe(true);
+  });
+});
+
+describe("identifier folding across separators (security-sentinel-1)", () => {
+  const words = new Set(["nova", "ledger", "order", "sync", "worker", "packages", "main", "note", "book", "notebook"]);
+  const derivedFrom = (o: { files?: string[]; symbols?: string[] }) =>
+    buildDerivedSet({ privateVocab: [vocabularyOf(seedIndex(openIndex(path.join(tempDir("ix-"), "p.db")), { files: o.files ?? ["src/a.ts"], symbols: o.symbols ?? [] }))], toolkit: new Set(), words });
+
+  it("adds each symbol's and path segment's joined form, so every spelling of a kebab-case private dir holds", () => {
+    const d = derivedFrom({ files: ["packages/nova-ledger/src/main.ts"] });
+    for (const spelling of ["nova-ledger", "nova_ledger", "novaLedger", "NovaLedger", "nova.ledger", "touches packages/nova-ledger/src"]) {
+      expect(identifierProblem(`the change ${spelling} here`, d)).toBe("contains a private-repo identifier");
+    }
+    expect(identifierProblem("a nova ledger, two words", d)).toBeNull(); // two separate words stay out of scope
+  });
+
+  it("matches snake_case against camelCase both ways", () => {
+    expect(identifierProblem("rename order_sync_worker", derivedFrom({ symbols: ["OrderSyncWorker"] }))).toBe("contains a private-repo identifier");
+    expect(identifierProblem("rename OrderSyncWorker", derivedFrom({ files: ["src/order_sync_worker.py"] }))).toBe("contains a private-repo identifier");
+  });
+
+  it("applies the English and toolkit filters to the joined form: a near miss that joins to a word doesn't hold", () => {
+    const d = derivedFrom({ files: ["src/note-book/x.ts"] });
+    expect(d.has("notebook")).toBe(false);
+    expect(identifierProblem("open the notebook and note-book", d)).toBeNull();
+    const tk = buildDerivedSet({ privateVocab: [new Set(identifierTokens("nova-ledger"))], toolkit: new Set(identifierTokens("NovaLedger")), words });
+    expect(tk.size).toBe(0); // the toolkit's own joined vocabulary is subtracted
+  });
+
+  it("never makes a joined form from digits alone or from fewer than 5 characters", () => {
+    expect(identifierTokens("1.2.3-4 and ab-cd 12-345")).toEqual([]);
   });
 });
 
@@ -177,7 +208,7 @@ describe("loadDerivedSet", () => {
     const repo = gitRepo({ "customer-exports/zorbBillingMigration.sql": "x\n", "config/secrets/vexillaKeys.yaml": "x\n", "nurse.md": "x\n" });
     fs.writeFileSync(path.join(repo, "untrackedPlumbus.txt"), "x\n");
     const set = await loadDerivedSet(deps, loaded(deps, { toolkit: {}, globex: { private: true, path: repo } }));
-    expect([...set].sort()).toEqual(["config", "customer", "quarblescheduler", "vexillakeys", "zorbbillingmigration"]);
+    expect([...set].sort()).toEqual(["config", "customer", "customerexports", "quarblescheduler", "vexillakeys", "zorbbillingmigration"]);
   });
 
   it("adds the tracked file names inside a private repo's submodules (git ls-files --recurse-submodules)", async () => {

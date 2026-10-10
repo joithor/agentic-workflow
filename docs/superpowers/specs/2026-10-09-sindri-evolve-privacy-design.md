@@ -130,6 +130,10 @@ At publish, for each repo with `private: true`:
 The candidate text (raw proposal fields plus the rendered task) is tokenized into identifiers
 (`[A-Za-z_$][A-Za-z0-9_$]*`) and path segments, lowercased and checked against the set. A hit holds
 the proposal with `contains a private-repo identifier`. The set is never written, logged or printed.
+*(Amended in review run 3, security-sentinel-1: both sides also add the joined form of every name spelled with
+separators (identifier characters joined by `-`, `_`, `.` or a case change, lowercased, every non-letter/non-digit
+removed), filtered like the plain tokens (5+ characters, not English, not in the toolkit's joined vocabulary), so
+`nova-ledger`, `nova_ledger`, `novaLedger` and `NovaLedger` are one name.)*
 False positives (public library names used in a private repo) hold a proposal; they never leak one.
 `publish --dry-run` reports held counts per layer so the noise is visible before a real run.
 
