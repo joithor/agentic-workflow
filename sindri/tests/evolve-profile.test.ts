@@ -3,7 +3,8 @@ import path from "node:path";
 import { describe, expect, it } from "vitest";
 
 import { LEDGER_SCHEMA_VERSION, openLedger, openMemoryLedger } from "../src/ledger/db.js";
-import { ProfileSchema } from "../src/profile/schema.js";
+import { ERRORS } from "../src/errors.js";
+import { ProfileSchema, RepoSchema } from "../src/profile/schema.js";
 import { tempDir } from "./helpers.js";
 
 const base = { schemaVersion: 1, user: "me", hosts: { active: "h" }, tracker: { type: "plan-file", repo: "r" }, repos: ["r"] };
@@ -41,7 +42,7 @@ describe("evolve and privacy profile keys", () => {
   it("defaults the budgets, the cap and the deny list", () => {
     const p = ProfileSchema.parse(base);
     expect(p.evolve).toEqual({ maxOpenProposals: 10, maxTokensPerJob: 600000, maxTokensPerCompare: 3000000, maxCorrectTurns: 400, prAuthors: [] });
-    expect(p.privacy).toEqual({ denyTerms: [] });
+    expect(p.privacy).toEqual({ denyTerms: [], denyPatterns: [] });
   });
 
   it("accepts deny terms and PR authors, and refuses unknown or malformed keys", () => {
@@ -54,5 +55,34 @@ describe("evolve and privacy profile keys", () => {
     expect(ProfileSchema.safeParse({ ...base, evolve: { prAuthors: ["not a login!"] } }).success).toBe(false);
     expect(ProfileSchema.parse({ ...base, evolve: { maxCorrectTurns: 2000 } }).evolve.maxCorrectTurns).toBe(2000);
     for (const bad of [0, 2001, 1.5]) expect(ProfileSchema.safeParse({ ...base, evolve: { maxCorrectTurns: bad } }).success, String(bad)).toBe(false);
+  });
+});
+
+describe("privacy.denyPatterns and repo private (privacy B1)", () => {
+  const privacy = ProfileSchema.shape.privacy;
+
+  it("defaults denyPatterns to an empty list and keeps valid patterns, with no cap on count or length", () => {
+    expect(privacy.parse({}).denyPatterns).toEqual([]);
+    const many = Array.from({ length: 600 }, (_, i) => `GLX${i}-\\d+`);
+    const long = `(?:${"a".repeat(5000)})`;
+    expect(privacy.parse({ denyPatterns: [...many, long] }).denyPatterns).toHaveLength(601);
+  });
+
+  it("rejects a pattern that doesn't compile as a case-insensitive Unicode regex", () => {
+    const r = privacy.safeParse({ denyPatterns: ["GLX-\\d+", "("] });
+    expect(r.success).toBe(false);
+    if (!r.success) expect(r.error.issues[0].message).toBe("must be a valid regular expression");
+    expect(privacy.safeParse({ denyPatterns: [""] }).success).toBe(false);
+  });
+
+  it("leaves repo private unset unless the repo file sets it", () => {
+    expect(RepoSchema.shape.private.parse(undefined)).toBeUndefined();
+    expect(RepoSchema.shape.private.parse(true)).toBe(true);
+    expect(RepoSchema.shape.private.safeParse("yes").success).toBe(false);
+  });
+
+  it("registers the two new publish refusals", () => {
+    expect(ERRORS["SND-EVOLVE-017"].fix).toContain("sindri index build --repo");
+    expect(ERRORS["SND-EVOLVE-018"].fix).toContain("/usr/share/dict/words");
   });
 });

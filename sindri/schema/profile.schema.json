@@ -565,6 +565,15 @@
           "maxItems": 500,
           "default": [],
           "description": "Workplace words that must never appear in a published proposal task (whole words, case-insensitive). Changing this list needs profile approval"
+        },
+        "denyPatterns": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "default": [],
+          "description": "Regular expressions (case-insensitive, Unicode) a published proposal task must never match, such as ticket keys (ABC-\\d+). Publish only: the scrubber never uses them. Changing this list needs profile approval"
         }
       },
       "additionalProperties": false,

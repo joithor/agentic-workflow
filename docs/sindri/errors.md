@@ -23,6 +23,8 @@ Generated from `sindri/src/errors.ts` by `cd sindri && npm run gen`. Do not edit
 | `SND-EVOLVE-014` | Publishing writes into the working tree, which is on the default branch. | git switch -c docs/sindri-proposals-&lt;week&gt;, then rerun sindri evolve publish |
 | `SND-EVOLVE-015` | The privacy gate has no private terms to check against. | add your workplace's names to privacy.denyTerms in the private profile, then sindri profile approve; or pass --no-privacy-terms to publish with only the email and home-path checks |
 | `SND-EVOLVE-016` | That proposal's status doesn't allow a comparison. | sindri evolve show &lt;id&gt; prints its status; a rejected, adopted, merged or staged proposal is never compared again |
+| `SND-EVOLVE-017` | A private repo has no built code index, so publish can't check proposals for its identifiers. | sindri index build --repo &lt;name&gt;, then rerun sindri evolve publish |
+| `SND-EVOLVE-018` | The English word list publish uses to tell private identifiers from ordinary words is missing. | install a word list at /usr/share/dict/words (or point SINDRI_WORDS at one), then rerun sindri evolve publish |
 | `SND-INDEX-001` | The heavy-job lock is busy. | wait for the holder to finish; `sindri doctor` shows it |
 | `SND-INDEX-002` | The repo path is not a git repo. | check repos/&lt;name&gt;.yaml path, then sindri profile approve |
 | `SND-INDEX-003` | The index input is larger than index.maxTotalMB. | add generated or vendored paths to index.denyPaths, or raise index.maxTotalMB |

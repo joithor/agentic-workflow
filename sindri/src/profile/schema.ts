@@ -162,6 +162,15 @@ const EvolveSchema = z
   .describe("Self-evolution budgets and limits (sindri evolve)")
   .default({});
 
+const validRegex = (p: string): boolean => {
+  try {
+    new RegExp(p, "iu");
+    return true;
+  } catch {
+    return false;
+  }
+};
+
 const PrivacySchema = z
   .object({
     denyTerms: z
@@ -169,6 +178,10 @@ const PrivacySchema = z
       .max(500)
       .default([])
       .describe("Workplace words that must never appear in a published proposal task (whole words, case-insensitive). Changing this list needs profile approval"),
+    denyPatterns: z
+      .array(z.string().min(1).refine(validRegex, "must be a valid regular expression"))
+      .default([])
+      .describe("Regular expressions (case-insensitive, Unicode) a published proposal task must never match, such as ticket keys (ABC-\\d+). Publish only: the scrubber never uses them. Changing this list needs profile approval"),
   })
   .strict()
   .describe("Privacy gate for published proposal tasks")
@@ -229,6 +242,10 @@ export const RepoSchema = z
     protectedPaths: z.array(z.string().min(1)).default([]).describe("Globs; a diff touching one parks for approval (spec §8.5)"),
     overrides: z.object({ autoStartMaxSize: SizeSchema.optional() }).strict().default({}).describe("Per-repo values that win over profile.yaml"),
     index: z.object({ denyPaths: z.array(z.string().min(1)).default([]) }).strict().default({}).describe("index.denyPaths for this repo, added to the profile's"),
+    private: z
+      .boolean()
+      .optional()
+      .describe("true: sindri evolve publish holds any proposal that names this repo's code identifiers (read from its index). Unset counts as false, and sindri doctor warns until it is set"),
   })
   .strict();
 

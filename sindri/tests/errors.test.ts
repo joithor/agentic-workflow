@@ -33,7 +33,9 @@ describe("error registry", () => {
     }
     const registered = new Set(Object.keys(ERRORS));
     expect([...used].filter((c) => !registered.has(c))).toEqual([]);
-    expect([...registered].filter((c) => !used.has(c))).toEqual([]);
+    // Registered ahead of the publish gate that raises them (privacy B1); delete this set when src/ uses them.
+    const notYetRaised = new Set(["SND-EVOLVE-017", "SND-EVOLVE-018"]);
+    expect([...registered].filter((c) => !used.has(c) && !notYetRaised.has(c))).toEqual([]);
   });
 
   it("docs/sindri/errors.md is up to date (run: cd sindri && npm run gen)", () => {
