@@ -345,8 +345,11 @@ group.MapPost("/items/{id}/start", async (ItemId id, StartItemBody body, IServic
   - `heavy`: real containers, browsers and index builds. Nightly or alone.
 
   Lanes are test traits, run from the repo root with `dotnet test --solution AgenticWorkflow.slnx --filter-trait
-  "Lane=<lane>"` (Microsoft.Testing.Platform options only, no `--logger`). A lane's budget is the wall clock of
-  `dotnet test --project <test project> --filter-trait "Lane=<lane>"` per test project, summed per package; CI fails a package over its budget. Each test's own time from xUnit's CTRF report
+  "Lane=<lane>" --ignore-exit-code 8` (Microsoft.Testing.Platform options only, no `--logger`). Exit code 8 means a
+  test project has no tests in that lane (an integration-only project in the unit lane), so every lane-filtered run
+  ignores it; the unfiltered `dotnet test --solution AgenticWorkflow.slnx` keeps exit 8 as a failure. A lane's budget
+  is the wall clock of `dotnet test --project <test project> --filter-trait "Lane=<lane>" --ignore-exit-code 8` per
+  test project, summed per package; CI fails a package over its budget. Each test's own time from xUnit's CTRF report
   is checked against the same budget as an extra per-test cap (`Aw.Kernel.Testing` ships the check).
 - **Fakes, not mocks.** Each port has one in-memory fake in a shared `Aw.<Pkg>.Testing` project. A generic contract-test
   base class (`ReadRepositoryContract<TEntity, TId>`, `ItemRepositoryContract`) runs the **same tests against the fake
@@ -488,8 +491,8 @@ The skill packages that hold code today (`skills/ui-evidence`, `skills/bugFixOrc
 ### 4b.9 Agent readiness of the code itself
 
 - `AGENTS.md` lists the one-line commands, run from the repo root: `dotnet build`, `dotnet test --solution
-  AgenticWorkflow.slnx` (all tests), `dotnet test --solution AgenticWorkflow.slnx --filter-trait "Lane=unit"` (the unit
-  lane), `dotnet format --verify-no-changes`. Test options are Microsoft.Testing.Platform options only (no `--logger`).
+  AgenticWorkflow.slnx` (all tests), `dotnet test --solution AgenticWorkflow.slnx --filter-trait "Lane=unit"
+  --ignore-exit-code 8` (the unit lane), `dotnet format --verify-no-changes`. Test options are Microsoft.Testing.Platform options only (no `--logger`).
   It also has the slice recipe ("to add a use case: test, request and response, service, endpoint, registration")
   and points to the `/new-package` and `/new-slice` scaffolds.
 - The scaffolds produce compliant code with a red test, so an agent's first move is always the TDD step.
@@ -545,17 +548,19 @@ assert that no tested path fails open against the C# binaries.
   its own output directory. Nothing in `setup.sh`, the providers, MCP registration or launchd points at it.
 - **Trying C# early:** `./setup.sh --runtime cs --prefix <dev dir>` installs the C# build into a separate directory for
   a hand test or a dev session, without touching the real install.
-- **The switch:** `./setup.sh --runtime cs` **moves** only the TS packages' state aside: the namespaces and files
-  `deps.yaml` lists for them (`judge/`, `scorer/`, `sindri/`, `ui-evidence/`, `context-guard/`, `locks/`, the
-  hook-owned files under `judge/`, the bug-fix run state `<repo-slug>/bugfix/` and the bridge's `bridge.db`) go to
-  one timestamped archive. The C# BugFix writes to its own namespace (`bugfix/`), so open bug-fix runs restart at the
-  switch. Skill and workflow state is runtime-neutral and
+- **The switch:** `./setup.sh --runtime cs` **moves** only the TS packages' state aside to one timestamped archive:
+  the namespaces and files `deps.yaml` lists for them (`judge/`, `scorer/`, `sindri/`, `ui-evidence/`,
+  `context-guard/`, `locks/` and the hook-owned files under `judge/`), plus two fixed extras the switch names itself
+  because `deps.yaml` can't express them: the per-repo bug-fix run state `<repo-slug>/bugfix/` and the bridge's
+  `bridge.db` (outside the state root). The C# BugFix writes to its own namespace, `bugfix/<repo-slug>/<ticket-slug>`
+  (so tickets don't collide across repos), and the bugFixOrchestrator skill text changes at the switch to pass that
+  path; open bug-fix runs restart at the switch. Skill and workflow state is runtime-neutral and
   stays where it is through the switch and a rollback: `<repo-slug>/` (plans, reviews, proof, verification,
   design), `digests/`, `external-skills/`, `providers/`, `toolkit/` and `logs/`. The switch then installs the C#
   binaries and rewrites hooks, MCP registration and launchd jobs to call them. The ported packages start with empty
   namespaces (Readiness and Packets keep theirs, below), so they can never see TS files; nothing is migrated. The C#
-  build refuses to start if TS-schema files remain in its packages' namespaces. The check excludes `judge/sessions`
-  and `judge/outbox`, which the hooks write in the frozen shape on both runtimes.
+  build refuses to start if TS-schema files remain in its packages' namespaces. The check excludes `judge/sessions`,
+  `judge/outbox` and `judge/teammate-names.jsonl`, which the hooks write in the frozen shape on both runtimes.
 - **State written before the switch:** `Aw.Readiness` and `Aw.Packets` run before the switch as their own
   NativeAOT CLIs (`aw-readiness check`, `aw-packets validate|freeze`) and write only under their own namespaces
   (`readiness/`, `packets/`), which the TS build never touches and the switch keeps. After the switch, sindri's C#
