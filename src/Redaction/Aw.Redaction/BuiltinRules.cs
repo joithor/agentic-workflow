@@ -59,9 +59,15 @@ internal static class BuiltinRules
         new("google-api-key", Start + "AIza[0-9A-Za-z_-]{35}" + End),
         new("linear-key", Start + "lin_(?:api|oauth)_[A-Za-z0-9]{32,}"),
         // Atomic segments: each scan ends at the next dot, so an unbounded segment (an 8 KB identity token) stays linear; a
-        // match starts only where a run of segment characters starts, so a chain of "-eyJ" can't make it quadratic.
-        new("jwt", "(?<![A-Za-z0-9_-])eyJ(?>[A-Za-z0-9_-]{8,})\\.(?>[A-Za-z0-9_-]{8,})\\.[A-Za-z0-9_-]{8,}"),
+        // match starts only where a run of segment characters starts (so a chain of "-eyJ" can't make it quadratic), and the
+        // whole run is the first segment when an eyJ starts a word inside it (${AUTH:-eyJ...}, session-eyJ...).
+        new("jwt", "(?<![A-Za-z0-9_-])(?=[A-Za-z0-9_-]*?(?<![A-Za-z0-9_])eyJ)(?>[A-Za-z0-9_-]{8,})\\.(?>[A-Za-z0-9_-]{8,})\\.[A-Za-z0-9_-]{8,}"),
+        new("google-oauth-token", Start + "ya29\\.[A-Za-z0-9_-]{20,}"),
         new("bearer", Start + "Bearer" + Ws + "+(?<v>[A-Za-z0-9._~+/=-]{20,})", RegexOptions.IgnoreCase),
+        // HTTP Basic credentials (a reversible user:password) after the header name, so the word "Basic" in prose never
+        // matches.
+        new("basic-auth",
+            "(?<![A-Za-z0-9_-])(?:proxy-)?authorization:[ \t]*Basic[ \t]+(?<v>[A-Za-z0-9+/]{8,}={0,2})", RegexOptions.IgnoreCase),
         new("credentialed-url",
             Start + "[a-z][a-z0-9+.-]{0,30}://[^ \t\r\n/:@]{0,256}:(?<v>[^ \t\r\n/]{1,256})@(?=[^ \t\r\n/@]*(?:[/?# \t\r\n]|$))",
             RegexOptions.IgnoreCase),
@@ -73,17 +79,17 @@ internal static class BuiltinRules
 
         // Env style: an UPPER_SNAKE name may take an unquoted value, dots included (API_KEY=..., CLIENT_SECRET=...).
         new("secret-assignment",
-            "(?<![A-Za-z0-9_-])(?:[A-Z0-9]+_)*(?:API_?KEY|SECRET(?:_KEY)?|TOKEN|PASSWORD|PRIVATE_KEY|ACCESS_KEY)" + Ws + "*[=:]" + Ws + "*"
+            "(?<![A-Za-z0-9_-])(?:[A-Z0-9]+_)*(?:API_?KEY|SECRET(?:_KEY)?|TOKEN|PASSWORD|PRIVATE_KEY|ACCESS_KEY)" + Ws + "*[=:]" + Ws + "*['\"]?"
             + DottedValue),
 
-        // Shell style: name=value at a line start or after a space, ;, |, ( or comma, in any case (cd repo; export
+        // Shell style: name=value at a line start or after a space, ;, |, (, comma, quote, { or [, in any case (cd repo; export
         // api_key=..., opts=a,token=...). Keyword arguments holding attribute access (token=settings.value) don't count:
         // the value stops at a dot.
         new("secret-assignment",
-            "(?<![^ \t\r\n;|(,])[A-Za-z0-9_.-]*?" + SecretWord + "=['\"]?" + Value, RegexOptions.IgnoreCase),
+            "(?<![^ \t\r\n;|(,\"'{\\[])[A-Za-z0-9_.-]*?" + SecretWord + "=['\"]?" + Value, RegexOptions.IgnoreCase),
 
-        // Query style: name=value after ?, & or # (?access_token=..., a #access_token= redirect fragment,
-        // cd repo && api_key=...); the value may hold dots (Google's ya29. tokens).
+        // Query style: name=value right after ?, & or # (?access_token=..., a #access_token= redirect fragment); the value
+        // may hold dots.
         new("secret-assignment", "(?<=[?&#])[A-Za-z0-9_.-]*?" + SecretWord + "=" + DottedValue, RegexOptions.IgnoreCase),
 
         // Header style: a hyphenated header name may take an unquoted value (X-Api-Key: ...).

@@ -37,9 +37,11 @@ bool whole = redactor.IsSecretName("client_secret");   // true: write ScrubResul
 | `aws-access-key` | `AKIA…` and `ASIA…` (STS) access key ids |
 | `github-token` | `ghp_`, `gho_`, `ghu_`, `ghs_`, `ghr_`, `github_pat_` |
 | `slack-token`, `stripe-key`, `google-api-key`, `linear-key`, `jwt` | `xox[abprs]-`, `sk_live_`/`rk_test_`…, `AIza…`, `lin_api_`/`lin_oauth_`, three-part `eyJ…` tokens of any length |
+| `google-oauth-token` | `ya29.…` access tokens, anywhere (so a dotted one in a lowercase pair is still caught) |
+| `basic-auth` | the credentials after `Authorization: Basic` (also `Proxy-Authorization`) |
 | `bearer` | the token after `Bearer` (the word stays; the token may follow on the next line) |
 | `credentialed-url` | the password in `scheme://user:password@host` (the user may be empty: `redis://:password@host`), up to the last `@` before the host (an unencoded `@` in the password stays inside the redaction) |
-| `secret-assignment` | the value of `NAME = "value"` (NAME ends in API_KEY, SECRET, TOKEN, PASSWORD, PRIVATE_KEY, ACCESS_KEY; any case, quoted value), `UPPER_SNAKE=value` (dots allowed in the value), a shell pair `name=value` at a line start or after a space, `;`, `|`, `(` or comma in any case (`export api_key=…`, `curl -d client_secret=…`, `opts=a,token=…`; the value stops at a dot, so `token=settings.value` keyword arguments stay), a query pair after `?`, `&` or `#` (`?access_token=…`, a `#access_token=` redirect fragment, `cd repo && api_key=…`; the value may hold dots), a config line in any case that starts with the name and ends with an unquoted value (INI, YAML, `.properties`, `.env`; `api_key=…`, `client_secret: …`, `db.password = …`), `X-Api-Key: value` headers, and `aws_secret_access_key` / `aws_session_token` lines. A value needs 20+ characters with a digit in its first 256 (the `aws_*` lines: 16+ base64 characters, no digit needed); in the code, env and header forms it may follow the separator on the next line |
+| `secret-assignment` | the value of `NAME = "value"` (NAME ends in API_KEY, SECRET, TOKEN, PASSWORD, PRIVATE_KEY, ACCESS_KEY; any case, quoted value), `UPPER_SNAKE=value` (quoted or not, dots allowed in the value), a shell pair `name=value` at a line start or after a space, `;`, `|`, `(`, comma, quote, `{` or `[` in any case (`export api_key=…`, `curl -d "client_secret=…"`, `{access_token=…, expires_in=…}`, `Creds[token=…]`; the value stops at a dot, so `token=settings.value` keyword arguments stay), a query pair right after `?`, `&` or `#` (`?access_token=…`, a `#access_token=` redirect fragment; the value may hold dots), a config line in any case that starts with the name and ends with an unquoted value (INI, YAML, `.properties`, `.env`; `api_key=…`, `client_secret: …`, `db.password = …`), `X-Api-Key: value` headers, and `aws_secret_access_key` / `aws_session_token` lines. A value needs 20+ characters with a digit in its first 256 (the `aws_*` lines: 16+ base64 characters, no digit needed); in the code, env and header forms it may follow the separator on the next line |
 | `ssn`, `mrn` | `123-45-6789`, `MRN: 12345678` |
 
 Overlapping hits merge into one placeholder named by the earlier rule (`Redactor.RuleIds` is the priority order). A
@@ -70,8 +72,10 @@ no boundary before the name. Here a value needs a digit (logs and code are full 
 `export TOKEN=<30 letters>` stays, and a pair needs a line start, a space, `;`, `|`, `(`, a comma, `?`, `&` or `#`
 before its name;
 `PassThroughTests` pins the first choice. The hook's other shapes (AWS keys, GitHub tokens, bearer tokens, and pairs
-with a digit: `cd repo && api_key=…`, `curl -d client_secret=…`, `FOO=1 mytoken=…`, `x=1; Password=…`, dotted values)
-are covered by corpus cases.
+with a digit: `cd repo && api_key=…`, `curl -d "client_secret=…"`, `FOO=1 mytoken=…`, `x=1; Password=…`, dotted
+values in UPPER_SNAKE and query pairs) are covered by corpus cases. Also narrower: a dotted value in a lowercase shell or
+config pair (`access_token=ab12.cd34…`) is left alone, so keyword arguments that hold attribute access stay; the dotted
+token shapes that matter (JWTs, `ya29.`) have their own rules.
 
 ## Timeouts block
 

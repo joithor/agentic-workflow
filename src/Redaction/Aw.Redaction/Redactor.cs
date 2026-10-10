@@ -21,12 +21,12 @@ public sealed class Redactor : IRedactor
     {
         ArgumentOutOfRangeException.ThrowIfLessThanOrEqual(matchTimeout, TimeSpan.Zero);
         _rules = rules;
-        _matchTimeout = matchTimeout;
+        _matchTimeout = Cap(matchTimeout.TotalMilliseconds);
         RuleIds = [.. rules.Select(r => r.Id).Distinct(StringComparer.Ordinal)];
         _secretName = new Regex(
             BuiltinRules.SecretName,
             RegexOptions.CultureInvariant | RegexOptions.ExplicitCapture | RegexOptions.IgnoreCase,
-            matchTimeout);
+            _matchTimeout);
     }
 
     /// <summary>The per-pattern match timeout <see cref="Default"/> uses.</summary>
@@ -99,10 +99,11 @@ public sealed class Redactor : IRedactor
             tier++;
         }
 
-        // Regex refuses a timeout past int.MaxValue - 1 ms (about 24.8 days); a longer budget is capped there.
-        var timeout = TimeSpan.FromMilliseconds(Math.Min(_matchTimeout.TotalMilliseconds * (1L << tier), int.MaxValue - 1));
-        return _tiers[tier] ??= new CompiledRules(_rules, RuleIds, timeout);
+        return _tiers[tier] ??= new CompiledRules(_rules, RuleIds, Cap(_matchTimeout.TotalMilliseconds * (1L << tier)));
     }
+
+    // Regex refuses a timeout past int.MaxValue - 1 ms (about 24.8 days); a longer budget is capped there.
+    private static TimeSpan Cap(double milliseconds) => TimeSpan.FromMilliseconds(Math.Min(milliseconds, int.MaxValue - 1));
 
     private static string Replace(string text, List<RedactionHit> hits)
     {
