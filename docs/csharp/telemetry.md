@@ -13,6 +13,9 @@ if (options.IsError) { Console.Error.WriteLine(options.Error.Message); return 2;
 services.AddKernelTelemetry(options.Value);          // in Compose: TelemetryRuntime, ILoggerFactory, ILogger<T>
 ```
 
+OpenTelemetry's SDK also reads its standard `OTEL_*` environment variables (sampler, resource attributes, limits).
+None of them can turn exporting on: no exporter package is referenced, so only an exporter the host passes exports.
+
 Without DI, `using var telemetry = TelemetryRuntime.Start(options)` and `telemetry.LoggerFactory`. Disposing the
 runtime flushes it; the DI container disposes the singleton for you.
 
