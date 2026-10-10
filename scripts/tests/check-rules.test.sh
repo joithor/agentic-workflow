@@ -37,6 +37,13 @@ refuse() { # refuse <name> <substring> — OUT must not contain it
   case "$OUT" in *"$2"*) fail "$1"; printf '%s\n' "$OUT" | sed 's/^/       | /' ;; *) ok "$1" ;; esac
 }
 
+# addcheck <record> <line>... — insert check lines right after "checks:"
+addcheck() {
+  local f="$1"; shift
+  printf '%s\n' "$@" > "$f.add"
+  awk -v addf="$f.add" '{ print } /^checks:$/ { while ((getline l < addf) > 0) print l }' "$f" > "$f.new" && mv "$f.new" "$f"
+}
+
 rec() { echo "$1/rules/engineering/csharp/$2.yaml"; }
 # sub <file> <from> <to> — replace one literal fragment on every line that has it (portable; no sed -i)
 sub() { local tmp="$1.new"; awk -v f="$2" -v t="$3" '{ i = index($0, f); if (i) $0 = substr($0, 1, i - 1) t substr($0, i + length(f)); print }' "$1" > "$tmp" && mv "$tmp" "$1"; }
@@ -79,7 +86,7 @@ d="$(fixture id)"; sub "$(rec "$d" no-catch-exception)" "id: engineering.csharp.
 expect "a record id must match its file name" 1 "RULE-ID-001" "engineering.csharp.other"
 
 d="$(fixture phantom)"; sub "$(rec "$d" no-catch-exception)" "id: CA1031" "id: AW9999"; run "$d"
-expect "an active check id that exists nowhere fails" 1 "RULE-CHECK-001" "AW9999" ".editorconfig"
+expect "an active check id that exists nowhere fails" 1 "RULE-CHECK-001" "AW9999" "src/Aw.Analyzers"
 
 d="$(fixture phantom-arch)"; f="$(rec "$d" slice-isolation)"
 sub "$f" "status: pending" "status: active"; sub "$f" "gap: pending" "gap: closed"; drop "$f" 'pendingPr:'; run "$d"
@@ -118,11 +125,11 @@ d="$(fixture section-mismatch)"; sub "$(rec "$d" sdk-pinned)" 'section: "4b.6"' 
 expect "a record's section must match the inventory" 1 "RULE-SPEC-001" "sdk-pinned" "4b.6" "4b.3"
 
 # ---- existence is a token in live config, not a substring or a comment ----
-d="$(fixture substring)"; sub "$(rec "$d" no-catch-exception)" 'id: "CA1031"' 'id: "CA103"'; run "$d"
+d="$(fixture substring)"; sub "$(rec "$d" no-catch-exception)" 'id: CA1031' 'id: "CA103"'; run "$d"
 expect "an id found only inside a longer id fails" 1 "RULE-CHECK-001" "CA103 "
 
 d="$(fixture comment-only)"; printf '# CA2000 is not configured yet\n' >> "$d/.editorconfig"
-sub "$(rec "$d" no-catch-exception)" 'id: "CA1031"' 'id: "CA2000"'; printf '| x | `CA2000` |\n' >> "$d/.agents/rules/csharp.md"; run "$d"
+sub "$(rec "$d" no-catch-exception)" 'id: CA1031' 'id: "CA2000"'; printf '| x | `CA2000` |\n' >> "$d/.agents/rules/csharp.md"; run "$d"
 expect "an id found only in a comment fails" 1 "RULE-CHECK-001" "CA2000"
 
 d="$(fixture off)"; sub "$d/.editorconfig" "dotnet_diagnostic.CA1031.severity = error" "dotnet_diagnostic.CA1031.severity = none"; run "$d"
@@ -138,7 +145,7 @@ d="$(fixture baseline-nobulk)"; drop "$d/.editorconfig" '^dotnet_analyzer_diagno
 expect "a baseline analyzer without the bulk error line fails" 1 "RULE-CHECK-001" "RS0016" "bulk"
 
 d="$(fixture aw-nosource)"; printf 'dotnet_diagnostic.AW1005.severity = error\n' >> "$d/.editorconfig"
-sub "$(rec "$d" no-catch-exception)" 'id: "CA1031"' 'id: "AW1005"'; printf '| x | `CA1031` `AW1005` |\n' >> "$d/.agents/rules/csharp.md"; run "$d"
+sub "$(rec "$d" no-catch-exception)" 'id: CA1031' 'id: "AW1005"'; printf '| x | `CA1031` `AW1005` |\n' >> "$d/.agents/rules/csharp.md"; run "$d"
 expect "an AW id with a severity but no descriptor in src/Aw.Analyzers fails" 1 "RULE-CHECK-001" "AW1005" "src/Aw.Analyzers"
 
 d="$(fixture ci-substring)"; sub "$(rec "$d" sdk-pinned)" '"The SDK is exactly the global.json pin"' '"The SDK is exactly"'; run "$d"
@@ -146,8 +153,7 @@ expect "a CI step name must match a step exactly" 1 "RULE-CHECK-001" "The SDK is
 
 # ---- other check types ----
 d="$(fixture test-ok)"; mkdir -p "$d/tests/Aw.X.Tests"; printf 'public sealed class SampleTests { }\n' > "$d/tests/Aw.X.Tests/SampleTests.cs"
-f="$(rec "$d" no-catch-exception)"; printf '%s\n' "  - type: test" '    id: "SampleTests"' "    ref: tests/Aw.X.Tests/SampleTests.cs" "    status: active" > "$d/check.txt"
-awk -v add="$(cat "$d/check.txt")" '{print} /^checks:$/ {print add}' "$f" > "$f.new" && mv "$f.new" "$f"; run "$d"
+f="$(rec "$d" no-catch-exception)"; addcheck "$f" "  - type: test" '    id: "SampleTests"' "    ref: tests/Aw.X.Tests/SampleTests.cs" "    status: active"; run "$d"
 expect "a test check with its file and class passes" 0 "rules: ok"
 sub "$f" 'id: "SampleTests"' 'id: "OtherTests"'; run "$d"
 expect "a test check whose file lacks the name fails" 1 "RULE-CHECK-001" "OtherTests"
@@ -207,7 +213,7 @@ d="$(fixture inv-dup)"; printf '  - id: engineering.csharp.sdk-pinned\n    secti
 expect "a duplicate inventory id fails" 1 "RULE-COVER-005" "engineering.csharp.sdk-pinned"
 
 # ---- modes and arguments ----
-d="$(fixture json-fail)"; sub "$(rec "$d" no-catch-exception)" 'id: "CA1031"' 'id: "AW9999"'; run "$d" --json
+d="$(fixture json-fail)"; sub "$(rec "$d" no-catch-exception)" 'id: CA1031' 'id: "AW9999"'; run "$d" --json
 if [ "$CODE" = 1 ] && printf '%s' "$OUT" | node -e 'const j=JSON.parse(require("fs").readFileSync(0,"utf8")); if (!j.failures.some(f=>f.rule==="RULE-CHECK-001")) process.exit(1)'; then ok "--json reports failures with exit 1"; else fail "--json reports failures with exit 1"; printf '%s\n' "$OUT" | sed 's/^/       | /'; fi
 
 d="$(fixture strict)"; printf 'public const string Id = "ARCH-SLICE-001";\n' > "$d/tests/Aw.Architecture.Tests/SliceRules.cs"; run "$d" --strict

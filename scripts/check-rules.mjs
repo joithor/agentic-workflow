@@ -17,6 +17,7 @@ import path from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { YamlError, parseYaml } from "./deps/yaml.mjs";
 import { SchemaError, validate } from "./deps/schema.mjs";
+import { Tree, existsCheck } from "./rules/exists.mjs";
 
 class ToolError extends Error {}
 
@@ -26,66 +27,31 @@ const INVENTORY = "rules/engineering/csharp.inventory.yaml";
 const RECORDS = "rules/engineering/csharp";
 const SCHEMA = "schemas/rule-record.schema.json";
 const RULES_DOCS = [".agents/rules/csharp.md", ".agents/rules/csharp-testing.md"];
-// The check-id families the rules docs name (analyzer, build-target, check-deps, ArchUnitNET, lane, rule ids).
-const DOC_ID = /\b(?:CA|MA|RS|IDE|AW)[0-9]{4}\b|\b(?:DEPS|ARCH|LANE|RULE)-[A-Z]+-[0-9]{3}\b/g;
+// The check-id families the rules docs name: analyzer, compiler, trim, NuGet and xUnit diagnostics, build-target
+// ids, and the check-deps, ArchUnitNET, lane and rule-record ids.
+const DOC_ID = /\b(?:CA|MA|RS|IDE|AW|CS|IL|NU)[0-9]{4}\b|\bxUnit[0-9]{4}\b|\b(?:DEPS|ARCH|LANE|RULE)-[A-Z]+-[0-9]{3}\b/g;
 
-// Where each check type's id has to appear (relative paths; a directory is searched recursively).
-const SEARCH = {
-  analyzer: [".editorconfig", "tests/.editorconfig", "Directory.Build.props", "Directory.Build.targets", "CodeMetricsConfig.txt", "src/Aw.Analyzers"],
-  archunit: ["tests/Aw.Architecture.Tests"],
-  "check-deps": ["scripts/check-deps.mjs", "scripts/deps"],
-  "lane-cap": ["tests"],
-  "check-rules": ["scripts/check-rules.mjs"],
-  "build-setting": ["Directory.Build.props", "Directory.Build.targets", "Directory.Packages.props", "global.json", ".editorconfig", "nuget.config"],
-};
-const TEXT_EXT = /\.(cs|mjs|js|md|props|targets|txt|json|yaml|yml|editorconfig)$|(^|\/)\.editorconfig$/;
 const deterministic = (c) => c.type !== "review";
 
 function readText(file) {
   try { return fs.readFileSync(file, "utf8"); } catch { return null; }
 }
 
-function filesUnder(root, rel) {
-  const abs = path.join(root, rel);
-  let st;
-  try { st = fs.statSync(abs); } catch { return []; }
-  if (st.isFile()) return [abs];
-  const out = [];
-  for (const e of fs.readdirSync(abs, { withFileTypes: true })) {
-    if (e.name === "bin" || e.name === "obj" || e.name === "node_modules") continue;
-    const child = path.join(rel, e.name);
-    if (e.isDirectory()) out.push(...filesUnder(root, child));
-    else if (TEXT_EXT.test(e.name)) out.push(path.join(root, child));
-  }
-  return out;
-}
-
-// existsCheck(root, check) -> { found, where } — whether the check is present in the tree, and what was searched
-function existsCheck(root, c, cache) {
-  const textOf = (f) => (cache.has(f) ? cache.get(f) : (cache.set(f, readText(f)), cache.get(f)));
-  const inFiles = (rels, needle) => rels.flatMap((r) => filesUnder(root, r)).some((f) => (textOf(f) ?? "").includes(needle));
-  switch (c.type) {
-    case "compiler": return { found: /^(CS|IL)[0-9]{4}$/.test(c.id), where: "the C# compiler and trim analyzers (CS/IL ids)" };
-    case "banned-symbols": {
-      const banned = readText(path.join(root, "BannedSymbols.txt"));
-      const wired = (readText(path.join(root, "Directory.Build.props")) ?? "").includes("BannedSymbols.txt");
-      const listed = new Set((banned ?? "").split("\n").map((l) => l.split(";")[0].trim()).filter(Boolean));
-      const missing = (c.entries ?? []).filter((e) => !listed.has(e));
-      const found = c.id === "RS0030" && banned !== null && wired && missing.length === 0;
-      return { found, where: missing.length ? `BannedSymbols.txt (missing: ${missing.join(", ")})` : "BannedSymbols.txt wired in Directory.Build.props" };
-    }
-    case "test": case "script": return { found: fs.existsSync(path.join(root, c.ref)) && (c.type === "script" || inFiles([c.ref], c.id)), where: c.ref };
-    case "ci": return { found: inFiles([c.ref], c.id), where: c.ref };
-    case "review": return { found: true, where: "review" };
-    default: {
-      const rels = SEARCH[c.type];
-      return { found: inFiles(rels, c.id), where: rels.join(", ") };
-    }
-  }
-}
-
 // The YAML parser is shared with check-deps and prefixes its messages with "deps.yaml:<line>:".
 const yamlMessage = (e) => e.message.replace(/^deps\.yaml:/, `line `);
+
+function inventoryErrors(inv) {
+  const errs = [];
+  const isObj = (v) => v !== null && typeof v === "object" && !Array.isArray(v);
+  if (!isObj(inv)) return ["not a mapping"];
+  if (inv.version !== 1) errs.push("version must be 1");
+  if (typeof inv.spec !== "string" || !inv.spec) errs.push("missing spec (the spec file path)");
+  if (!Array.isArray(inv.records)) errs.push("missing records (a list)");
+  else inv.records.forEach((r, i) => {
+    if (!isObj(r) || typeof r.id !== "string" || typeof r.section !== "string") errs.push(`records[${i}] needs id and section strings`);
+  });
+  return errs;
+}
 
 function load(root, rel) {
   const text = readText(path.join(root, rel));
@@ -93,7 +59,7 @@ function load(root, rel) {
   return text;
 }
 
-export function check(root) {
+export function check(root, { strict = false } = {}) {
   const fails = [];
   const warns = [];
   const fail = (rule, title, measured, limit, fix) => fails.push({ rule, title, measured, limit, fix });
@@ -105,12 +71,19 @@ export function check(root) {
     fail("RULE-YAML-001", "inventory is outside the YAML subset", `${INVENTORY}: ${yamlMessage(e)}`, "the YAML subset deps.yaml uses", "rewrite the line in plain block YAML");
     return { fails, warns, records: [] };
   }
+  const invErrs = inventoryErrors(inventory);
+  for (const e of invErrs) fail("RULE-INV-001", "inventory is malformed", `${INVENTORY}: ${e}`, "version 1, spec: <path>, records: a list of { id, section } strings", `fix ${INVENTORY}`);
+  if (invErrs.length) return { fails, warns, records: [] };
   const specText = load(root, inventory.spec);
   const sections = new Set([...specText.matchAll(/^#{2,4} (\d+[a-z]?(?:\.\d+[a-z]?)*)[ .]/gm)].map((m) => m[1]));
-  const wanted = new Map(inventory.records.map((r) => [r.id, r.section]));
+  const wanted = new Map();
+  for (const r of inventory.records) {
+    if (wanted.has(r.id)) fail("RULE-COVER-005", "duplicate inventory id", `${r.id} (sections ${wanted.get(r.id)} and ${r.section})`, "each rule once in the inventory", `delete one of the ${r.id} lines in ${INVENTORY}`);
+    else wanted.set(r.id, r.section);
+  }
 
   const records = [];
-  const cache = new Map();
+  const tree = new Tree(root);
   // Ids named by records that failed to parse or validate: still counted for RULE-COVER-002, so one broken
   // record reports its own failure instead of a cascade of "no record names <id>".
   const brokenNamed = new Set();
@@ -132,19 +105,25 @@ export function check(root) {
     }
     records.push({ rel, rec });
     const slug = name.replace(/\.yaml$/, "");
-    if (!rec.id.endsWith(`.${slug}`)) fail("RULE-ID-001", "record id doesn't match its file name", `${rel}: id ${rec.id}`, `<kind>.<language>.${slug}`, `rename the file or set id: ...${slug}`);
+    const wantId = `${rec.kind}.csharp.${slug}`;
+    if (rec.id !== wantId) fail("RULE-ID-001", "record id doesn't match its kind and file name", `${rel}: id ${rec.id}, kind ${rec.kind}`, wantId, `set id: ${wantId} (or rename the file)`);
     if (wanted.has(rec.id) && wanted.get(rec.id) !== rec.section) {
       fail("RULE-SPEC-001", "record section differs from the inventory", `${rec.id}: record says ${rec.section}, inventory says ${wanted.get(rec.id)}`, "the same section in both", `set section: "${wanted.get(rec.id)}" in ${rel} (or fix the inventory)`);
     }
     for (const c of rec.checks) {
-      const { found, where } = existsCheck(root, c, cache);
+      const { found, where } = existsCheck(tree, c);
       if (c.status === "active" && !found) fail("RULE-CHECK-001", "active check not found", `${rec.id}: ${c.type} ${c.id} (searched ${where})`, "every active check exists in the tree", `add the check, fix its id, or mark it status: pending with pendingPr`);
-      if (c.status === "pending" && found && c.type !== "review") warns.push(`WARN RULE-CHECK-002 pending check now exists: ${rec.id}: ${c.type} ${c.id} (PR #${c.pendingPr}) — fix: set status: active, drop pendingPr, and update gap in ${rel}`);
+      if (c.status === "pending" && found && deterministic(c)) {
+        const msg = `pending check now exists: ${rec.id}: ${c.type} ${c.id} (PR #${c.pendingPr})`;
+        const fix = `set status: active, drop pendingPr, and update gap in ${rel}${c.note ? ` (the check's note says what it doesn't cover)` : ""}`;
+        if (strict) fail("RULE-CHECK-002", "pending check now exists", msg, "--strict: no pending check that already exists", fix);
+        else warns.push(`WARN RULE-CHECK-002 ${msg} — fix: ${fix}`);
+      }
     }
     const active = rec.checks.filter((c) => c.status === "active" && deterministic(c));
-    const pending = rec.checks.filter((c) => c.status === "pending");
+    const pending = rec.checks.filter((c) => c.status === "pending" && deterministic(c));
     const gapErr = {
-      closed: active.length === 0 && "closed needs at least one active deterministic check",
+      closed: (active.length === 0 || pending.length > 0) && "closed needs an active deterministic check and no pending one (it's partial or pending until that lands)",
       partial: (active.length === 0 || !rec.gapNote) && "partial needs an active deterministic check and a gapNote saying what isn't covered",
       pending: pending.length === 0 && "pending needs a pending check with its pendingPr",
       open: (active.length > 0 || pending.length > 0 || !rec.gapNote) && "open means no active or pending deterministic check, and needs a gapNote",
@@ -181,14 +160,20 @@ function summary(records) {
 function main(argv) {
   let root = path.resolve(HERE, "..");
   let json = false;
+  let strict = false;
   for (let i = 0; i < argv.length; i++) {
     const a = argv[i];
-    if (a === "--root") root = path.resolve(argv[++i] ?? "");
+    if (a === "--root") {
+      const v = argv[++i];
+      if (!v || v.startsWith("--")) throw new ToolError("--root needs a directory");
+      root = path.resolve(v);
+    }
+    else if (a === "--strict") strict = true;
     else if (a === "--json") json = true;
-    else if (a === "-h" || a === "--help") { console.log("usage: node scripts/check-rules.mjs [--root DIR] [--json]"); return 0; }
+    else if (a === "-h" || a === "--help") { console.log("usage: node scripts/check-rules.mjs [--root DIR] [--json] [--strict]"); return 0; }
     else throw new ToolError(`unknown argument ${a}`);
   }
-  const { fails, warns, records } = check(root);
+  const { fails, warns, records } = check(root, { strict });
   const { gaps, pending } = summary(records);
   if (json) {
     console.log(JSON.stringify({ schemaVersion: 1, records: records.length, gaps, pending, warnings: warns, failures: fails }, null, 2));
