@@ -112,17 +112,49 @@ public sealed class LaneCapTests
         Assert.Contains("none.json", error.ToString(), StringComparison.Ordinal);
     }
 
+    [Fact]
+    public void Run_on_a_directory_checks_every_ctrf_report_in_it()
+    {
+        // dotnet test --solution with --report-xunit-ctrf and no file name writes one '<user>_<host>_<time>.ctrf' per test
+        // project; a fixed --report-xunit-ctrf-filename would make the projects overwrite each other's report.
+        using var dir = new TempDir();
+        _ = dir.Write("a.ctrf", Report(Test("Demo.Fast", 400)));
+        _ = dir.Write("b.json", Report(Test("Demo.Slow", 10_500)));
+        _ = dir.Write("notes.txt", "not a report");
+        using var output = new StringWriter();
+        using var error = new StringWriter();
+
+        var exit = LaneCap.Run([dir.Path], output, error);
+
+        Assert.Equal(1, exit);
+        var text = output.ToString();
+        Assert.Contains("a.ctrf: 1 tests", text, StringComparison.Ordinal);
+        Assert.Contains("LANE-TEST-001 Aw.Demo.Tests Demo.Slow", text, StringComparison.Ordinal);
+        Assert.DoesNotContain("notes.txt", text, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void Run_on_a_directory_without_reports_is_exit_2()
+    {
+        using var dir = new TempDir();
+        using var output = new StringWriter();
+        using var error = new StringWriter();
+
+        Assert.Equal(2, LaneCap.Run([dir.Path], output, error));
+        Assert.Contains("no CTRF reports", error.ToString(), StringComparison.Ordinal);
+    }
+
     private sealed class TempDir : IDisposable
     {
-        private readonly string _path = Directory.CreateTempSubdirectory("aw-lane-cap-").FullName;
+        public string Path { get; } = Directory.CreateTempSubdirectory("aw-lane-cap-").FullName;
 
         public string Write(string name, string text)
         {
-            var file = Path.Combine(_path, name);
+            var file = System.IO.Path.Combine(Path, name);
             File.WriteAllText(file, text);
             return file;
         }
 
-        public void Dispose() => Directory.Delete(_path, recursive: true);
+        public void Dispose() => Directory.Delete(Path, recursive: true);
     }
 }
