@@ -65,7 +65,7 @@ Collect all unaddressed items:
 
 **Filter by severity** (for structured issues):
 - Default: `blocking` and `issue` only
-- Pass `--all` to include `suggestion` and `nit` — `/specToProvenPR`'s review loop **always** invokes `/addressReview --all`; its loop-to-zero gate cannot terminate if suggestions/nits are dropped
+- Pass `--all` to include `suggestion` and `nit`. `/specToProvenPR` fixes only blocking findings (every `issue`, plus anything that loses data, breaks a real path or makes a relied-on doc false, whatever its label) and resolves the rest in writing; see its "Blocking or not" section
 
 Report to the user:
 ```
