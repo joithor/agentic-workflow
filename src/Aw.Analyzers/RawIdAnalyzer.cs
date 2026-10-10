@@ -15,7 +15,8 @@ namespace Aw.Analyzers;
 /// '[ValueObject]') wrap the primitive and are allowed. A slot of an override or interface implementation (its
 /// return or a parameter) is reported at the base when the base reports the same slot (public, in this assembly, raw
 /// in its own declaration, with no Guid added by its type arguments); otherwise at the implementation. A partial
-/// member is reported at its defining part.
+/// member is reported once (at its defining part; a partial constructor at its implementing part, the only one Roslyn
+/// analyzes). An extension block's receiver counts when the block has a public member.
 /// </summary>
 [DiagnosticAnalyzer(LanguageNames.CSharp)]
 internal sealed class RawIdAnalyzer : DiagnosticAnalyzer
@@ -107,7 +108,9 @@ internal sealed class RawIdAnalyzer : DiagnosticAnalyzer
         IMethodSymbol method when method.MethodKind is MethodKind.Ordinary or MethodKind.Constructor or MethodKind.UserDefinedOperator =>
             MethodSlots(method, method.Name, method.Locations),
         IMethodSymbol { MethodKind: MethodKind.Conversion } conversion => MethodSlots(conversion, conversion.ContainingType.Name, conversion.Locations),
-        INamedTypeSymbol { IsExtension: true, ExtensionParameter: { } receiver } => [(0, receiver.Type, receiver.Name, receiver.Locations)],
+        INamedTypeSymbol { IsExtension: true, ExtensionParameter: { } receiver } extension
+            when extension.GetMembers().Any(m => !m.IsImplicitlyDeclared && IsPublicSurface(m)) =>
+            [(0, receiver.Type, receiver.Name, receiver.Locations)],
         IPropertySymbol property when !IsRecordPositional(property) =>
             Parameters(property.Parameters).Prepend((-1, property.Type, property.Name, property.Locations)),
         IFieldSymbol field => [(-1, field.Type, field.Name, field.Locations)],
