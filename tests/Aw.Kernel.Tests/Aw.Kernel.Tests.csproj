@@ -16,7 +16,4 @@
     <ProjectReference Include="../../src/Aw.Kernel/Aw.Kernel.csproj" />
   </ItemGroup>
 
-  <ItemGroup>
-    <Content Include="Golden/*.json" CopyToOutputDirectory="PreserveNewest" />
-  </ItemGroup>
 </Project>

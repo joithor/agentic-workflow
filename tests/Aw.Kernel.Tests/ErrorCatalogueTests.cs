@@ -39,7 +39,7 @@ public sealed class ErrorCatalogueTests
         Assert.Equal(
             "{\"code\":\"AW-X-001\",\"kind\":\"" + name + "\",\"message\":\"m\"}",
             System.Text.Encoding.UTF8.GetString(
-                Json.NodeJson.Serialize(new Error("AW-X-001", kind, "m"), Json.NodeJson.CreateOptions(TestJsonContext.Default))));
+                Json.AwJson.Serialize(new Error("AW-X-001", kind, "m"), Json.AwJson.CreateOptions(TestJsonContext.Default))));
 
     [Fact]
     public void A_definition_makes_an_error_with_its_code_and_kind()

@@ -43,14 +43,17 @@ public sealed class EventEnvelopeTests
     }
 
     [Fact]
-    public void An_envelope_serializes_like_the_TS_event_with_causation_and_trace_left_out()
+    public void An_envelope_serializes_with_camel_case_names_in_declaration_order_and_explicit_nulls()
     {
         var context = EventContext.Create("host:sindri", "personal", 0, _correlation).Value;
         var envelope = context.Envelope("item.started", new Shapes.ItemStarted("item-7"), new FixedClock(_now), new SequentialIds());
 
         Assert.Equal(
-            File.ReadAllText(Path.Combine(AppContext.BaseDirectory, "Golden", "envelope.compact.json")),
-            System.Text.Encoding.UTF8.GetString(Json.NodeJson.Serialize(envelope, Json.NodeJson.CreateOptions(TestJsonContext.Default))));
+            "{\"id\":\"00000000-0000-0000-0000-000000000001\",\"type\":\"item.started\",\"schemaVersion\":1,"
+            + "\"occurredAt\":\"2026-10-10T06:00:00.0000000Z\",\"actor\":\"host:sindri\",\"tenant\":\"personal\",\"ring\":0,"
+            + "\"correlationId\":\"00000000-0000-0000-0000-0000000000c1\",\"causationId\":null,\"traceId\":null,"
+            + "\"payload\":{\"item\":\"item-7\"}}",
+            System.Text.Encoding.UTF8.GetString(Json.AwJson.Serialize(envelope, Json.AwJson.CreateOptions(TestJsonContext.Default))));
     }
 
     [Theory]

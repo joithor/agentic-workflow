@@ -34,18 +34,18 @@ public sealed class OutboxTests
     [Fact]
     public void A_command_and_an_error_serialize_with_camel_case_keys_in_declaration_order()
     {
-        var options = NodeJson.CreateOptions(TestJsonContext.Default);
+        var options = AwJson.CreateOptions(TestJsonContext.Default);
         var command = new OutboxCommand(CountingIds.Id(0xaa), "github.comment", "{\"pr\":1}", 1, _now, "host:sindri",
             "personal", 0, _correlation, CausationId: null, TraceId: null);
 
         Assert.Equal(
             "{\"id\":\"00000000-0000-0000-0000-0000000000aa\",\"kind\":\"github.comment\",\"payloadJson\":\"{\\\"pr\\\":1}\","
-            + "\"schemaVersion\":1,\"enqueuedAt\":\"2026-10-10T06:00:00.000Z\",\"actor\":\"host:sindri\",\"tenant\":\"personal\","
-            + "\"ring\":0,\"correlationId\":\"00000000-0000-0000-0000-0000000000c1\"}",
-            Encoding.UTF8.GetString(NodeJson.Serialize(command, options)));
+            + "\"schemaVersion\":1,\"enqueuedAt\":\"2026-10-10T06:00:00.0000000Z\",\"actor\":\"host:sindri\",\"tenant\":\"personal\","
+            + "\"ring\":0,\"correlationId\":\"00000000-0000-0000-0000-0000000000c1\",\"causationId\":null,\"traceId\":null}",
+            Encoding.UTF8.GetString(AwJson.Serialize(command, options)));
         Assert.Equal(
             "{\"code\":\"AW-KERNEL-002\",\"kind\":\"notFound\",\"message\":\"gone\"}",
-            Encoding.UTF8.GetString(NodeJson.Serialize(KernelErrors.NotFound.With("gone"), options)));
+            Encoding.UTF8.GetString(AwJson.Serialize(KernelErrors.NotFound.With("gone"), options)));
     }
 
     [Theory]
