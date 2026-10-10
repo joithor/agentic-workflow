@@ -343,7 +343,8 @@ jobs:
     steps:
       - name: No-op when unchanged
         if: env.CHANGED != 'true'
-        run: echo "no-op: no script or .NET change — the scaffold end-to-end test is not needed"
+        run: |
+          echo "no-op: no script or .NET change — the scaffold end-to-end test is not needed"
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         if: env.CHANGED == 'true'
         with:
