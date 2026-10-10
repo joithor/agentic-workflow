@@ -9,6 +9,8 @@
 
   <ItemGroup>
     <PackageReference Include="xunit.v3" />
+    <!-- Example ids for the typed-id converters and guard (decision R9). -->
+    <PackageReference Include="Vogen" />
     <Using Include="Xunit" />
   </ItemGroup>
 
