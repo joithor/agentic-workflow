@@ -1,4 +1,5 @@
 using System.Text.Json.Serialization;
+using Aw.Judge.Features.ExplainDecision;
 using Aw.Judge.Features.GetBrief;
 using Aw.Judge.Features.GetHealth;
 using Aw.Judge.Features.MapBriefByDispatch;
@@ -14,6 +15,7 @@ namespace Aw.Judge.Host;
 [JsonSerializable(typeof(Error))]
 [JsonSerializable(typeof(HealthOutput))]
 [JsonSerializable(typeof(BriefOutput))]
+[JsonSerializable(typeof(DecisionOutput))]
 [JsonSerializable(typeof(GetHealthRequest))]
 [JsonSerializable(typeof(GetHealthResponse))]
 [JsonSerializable(typeof(SaveBriefRequest))]
@@ -26,4 +28,6 @@ namespace Aw.Judge.Host;
 [JsonSerializable(typeof(MapBriefByDispatchResponse))]
 [JsonSerializable(typeof(SetBriefAgentIdRequest))]
 [JsonSerializable(typeof(SetBriefAgentIdResponse))]
+[JsonSerializable(typeof(ExplainDecisionRequest))]
+[JsonSerializable(typeof(ExplainDecisionResponse))]
 internal sealed partial class JudgeJsonContext : JsonSerializerContext;

@@ -1,0 +1,32 @@
+using Aw.Judge.Infrastructure.Sqlite;
+using Aw.Judge.Testing;
+
+namespace Aw.Judge.Tests.ExplainDecision;
+
+// The contract of 'judge why' (TS runWhy: the decision row with snake_case fields; unknown → exit 1).
+public sealed class ExplainDecisionCliTests : IDisposable
+{
+    private readonly TempStateDirectory _state = new();
+
+    [Fact, Trait("Lane", "integration")]
+    public async Task Why_prints_the_decision_row_with_snake_case_fields()
+    {
+        _ = await new SqliteDecisionLog(_state.Database()).Record(A.Decision().WithId("d-1").Build(), CancellationToken.None);
+
+        var run = await new JudgeCli(_state).Run("why", "d-1");
+
+        Assert.Equal((0, ""), (run.ExitCode, run.Stderr));
+        DecisionJson.AssertRow(run.Json(), "d-1", "model", undone: false);
+    }
+
+    [Fact, Trait("Lane", "integration")]
+    public async Task Why_exits_1_for_an_unknown_or_blank_id()
+    {
+        var cli = new JudgeCli(_state);
+
+        Assert.Equal(new CliRun(1, "", "unknown decision: nope\n"), await cli.Run("why", "nope"));
+        Assert.Equal(new CliRun(1, "", "unknown decision: \n"), await cli.Run("why"));
+    }
+
+    public void Dispose() => _state.Dispose();
+}

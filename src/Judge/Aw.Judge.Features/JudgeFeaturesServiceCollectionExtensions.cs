@@ -1,3 +1,4 @@
+using Aw.Judge.Features.ExplainDecision;
 using Aw.Judge.Features.GetBrief;
 using Aw.Judge.Features.GetHealth;
 using Aw.Judge.Features.MapBriefByDispatch;
@@ -19,6 +20,13 @@ public static class JudgeFeaturesServiceCollectionExtensions
     {
         AddHealth(services);
         AddBriefs(services);
+        _ = services
+            .AddScoped<ExplainDecisionService>()
+            .AddScoped<IValidator<ExplainDecisionRequest>, ExplainDecisionValidator>()
+            .AddScoped<IService<ExplainDecisionRequest, ExplainDecisionResponse>>(static sp =>
+                new ValidatingService<ExplainDecisionRequest, ExplainDecisionResponse>(
+                    sp.GetRequiredService<ExplainDecisionService>(),
+                    sp.GetRequiredService<IValidator<ExplainDecisionRequest>>()));
         return services;
     }
 

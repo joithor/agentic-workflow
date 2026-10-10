@@ -161,3 +161,27 @@ static Aw.Judge.Features.SetBriefAgentId.SetBriefAgentIdRequest.operator !=(Aw.J
 static Aw.Judge.Features.SetBriefAgentId.SetBriefAgentIdRequest.operator ==(Aw.Judge.Features.SetBriefAgentId.SetBriefAgentIdRequest? left, Aw.Judge.Features.SetBriefAgentId.SetBriefAgentIdRequest? right) -> bool
 static Aw.Judge.Features.SetBriefAgentId.SetBriefAgentIdResponse.operator !=(Aw.Judge.Features.SetBriefAgentId.SetBriefAgentIdResponse? left, Aw.Judge.Features.SetBriefAgentId.SetBriefAgentIdResponse? right) -> bool
 static Aw.Judge.Features.SetBriefAgentId.SetBriefAgentIdResponse.operator ==(Aw.Judge.Features.SetBriefAgentId.SetBriefAgentIdResponse? left, Aw.Judge.Features.SetBriefAgentId.SetBriefAgentIdResponse? right) -> bool
+Aw.Judge.Features.ExplainDecision.ExplainDecisionRequest
+Aw.Judge.Features.ExplainDecision.ExplainDecisionRequest.<Clone>$() -> Aw.Judge.Features.ExplainDecision.ExplainDecisionRequest!
+Aw.Judge.Features.ExplainDecision.ExplainDecisionRequest.DecisionId.get -> Aw.Judge.Core.Ids.DecisionId
+Aw.Judge.Features.ExplainDecision.ExplainDecisionRequest.DecisionId.init -> void
+Aw.Judge.Features.ExplainDecision.ExplainDecisionRequest.Deconstruct(out Aw.Judge.Core.Ids.DecisionId DecisionId) -> void
+Aw.Judge.Features.ExplainDecision.ExplainDecisionRequest.Equals(Aw.Judge.Features.ExplainDecision.ExplainDecisionRequest? other) -> bool
+Aw.Judge.Features.ExplainDecision.ExplainDecisionRequest.ExplainDecisionRequest(Aw.Judge.Core.Ids.DecisionId DecisionId) -> void
+Aw.Judge.Features.ExplainDecision.ExplainDecisionResponse
+Aw.Judge.Features.ExplainDecision.ExplainDecisionResponse.<Clone>$() -> Aw.Judge.Features.ExplainDecision.ExplainDecisionResponse!
+Aw.Judge.Features.ExplainDecision.ExplainDecisionResponse.Decision.get -> Aw.Judge.Core.Decisions.DecisionRecord!
+Aw.Judge.Features.ExplainDecision.ExplainDecisionResponse.Decision.init -> void
+Aw.Judge.Features.ExplainDecision.ExplainDecisionResponse.Deconstruct(out Aw.Judge.Core.Decisions.DecisionRecord! Decision) -> void
+Aw.Judge.Features.ExplainDecision.ExplainDecisionResponse.Equals(Aw.Judge.Features.ExplainDecision.ExplainDecisionResponse? other) -> bool
+Aw.Judge.Features.ExplainDecision.ExplainDecisionResponse.ExplainDecisionResponse(Aw.Judge.Core.Decisions.DecisionRecord! Decision) -> void
+override Aw.Judge.Features.ExplainDecision.ExplainDecisionRequest.Equals(object? obj) -> bool
+override Aw.Judge.Features.ExplainDecision.ExplainDecisionRequest.GetHashCode() -> int
+override Aw.Judge.Features.ExplainDecision.ExplainDecisionRequest.ToString() -> string!
+override Aw.Judge.Features.ExplainDecision.ExplainDecisionResponse.Equals(object? obj) -> bool
+override Aw.Judge.Features.ExplainDecision.ExplainDecisionResponse.GetHashCode() -> int
+override Aw.Judge.Features.ExplainDecision.ExplainDecisionResponse.ToString() -> string!
+static Aw.Judge.Features.ExplainDecision.ExplainDecisionRequest.operator !=(Aw.Judge.Features.ExplainDecision.ExplainDecisionRequest? left, Aw.Judge.Features.ExplainDecision.ExplainDecisionRequest? right) -> bool
+static Aw.Judge.Features.ExplainDecision.ExplainDecisionRequest.operator ==(Aw.Judge.Features.ExplainDecision.ExplainDecisionRequest? left, Aw.Judge.Features.ExplainDecision.ExplainDecisionRequest? right) -> bool
+static Aw.Judge.Features.ExplainDecision.ExplainDecisionResponse.operator !=(Aw.Judge.Features.ExplainDecision.ExplainDecisionResponse? left, Aw.Judge.Features.ExplainDecision.ExplainDecisionResponse? right) -> bool
+static Aw.Judge.Features.ExplainDecision.ExplainDecisionResponse.operator ==(Aw.Judge.Features.ExplainDecision.ExplainDecisionResponse? left, Aw.Judge.Features.ExplainDecision.ExplainDecisionResponse? right) -> bool

@@ -34,4 +34,8 @@ public static class A
     /// <summary>A SetBriefAgentIdRequest builder with deterministic defaults.</summary>
     /// <returns>A new builder.</returns>
     public static SetBriefAgentIdRequestBuilder SetBriefAgentIdRequest() => new();
+
+    /// <summary>A ExplainDecisionRequest builder with deterministic defaults.</summary>
+    /// <returns>A new builder.</returns>
+    public static ExplainDecisionRequestBuilder ExplainDecisionRequest() => new();
 }
