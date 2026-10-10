@@ -73,6 +73,9 @@ export async function generalize(o: {
     input: `<untrusted id="candidate">${esc(JSON.stringify(p))}</untrusted>\n\n${evidence}`,
   });
   if (!judged.ok) return { ok: false, why: "generalize: the judge failed" };
-  if (judged.value.leaks || judged.value.category !== "none") return { ok: false, why: `generalize: the judge found ${judged.value.category}` };
+  // Either half of a verdict that isn't clean holds. A leak without a category says so, never "found none".
+  if (judged.value.leaks || judged.value.category !== "none") {
+    return { ok: false, why: judged.value.category === "none" ? "generalize: the judge found a leak (no category)" : `generalize: the judge found ${judged.value.category}` };
+  }
   return { ok: true, proposal: p, category: judged.value.category, model: o.models.rewriter };
 }

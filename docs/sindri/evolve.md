@@ -64,7 +64,8 @@ When the generalization pass refuses a proposal, `stage` moves it to `held` with
 | `generalize: the rewrite changed the artifact, kind or evidence` | The rewrite must keep those exactly as given |
 | `generalize: the rewrite changed the change type` | The rewrite may reword the change, not swap its type |
 | `generalize: the judge failed` | The judge call failed or answered out of schema |
-| `generalize: the judge found <category>` | The judge says the rewrite still leaks; `<category>` is one of `company-or-product`, `people`, `customers`, `codebase`, `tickets`, `domain` or `other`, never the text |
+| `generalize: the judge found <category>` | The judge says the rewrite still leaks; `<category>` is one of `company-or-product`, `people`, `customers`, `codebase`, `tickets`, `domain` or `other`, never the text. The judge's remaining category, `none`, means clean, and only `leaks: false` with `none` passes |
+| `generalize: the judge found a leak (no category)` | The judge answered `leaks: true` but category `none`, a contradiction that holds like any other leak |
 
 Every `stage` retries the proposals it held, after it has filled its slots from new `proposed` ones, so a held retry never keeps a new proposal waiting. A proposal the judge keeps flagging is retried, and costs two model calls, on every run until you `sindri evolve reject <id> --reason "..."` it; rerunning `stage` won't clear it. When the token budget (`evolve.maxTokensPerJob`) runs out before a proposal's rewrite or judge call, nothing is decided: the proposal keeps its status (`proposed` or `held`) and counts as waiting for the next run.
 

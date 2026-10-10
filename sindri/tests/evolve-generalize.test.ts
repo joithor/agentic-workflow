@@ -94,6 +94,11 @@ describe("generalize (privacy B1)", () => {
     expect(await result).toEqual({ ok: false, why: "generalize: the judge found tickets" });
   });
 
+  it("holds a contradictory judge answer the other way round: leaks true with category none, saying so (not 'found none')", async () => {
+    const { result } = run((role) => (role === GENERALIZE_ROLES.rewrite ? GENERIC : { leaks: true, category: "none" }));
+    expect(await result).toEqual({ ok: false, why: "generalize: the judge found a leak (no category)" });
+  });
+
   it("fails when the rewrite changes the change type", async () => {
     const { result } = run((role) => (role === GENERALIZE_ROLES.rewrite ? { ...GENERIC, change: { type: "replace-prompt", text: "Retry once." } } : { leaks: false, category: "none" }));
     expect(await result).toEqual({ ok: false, why: "generalize: the rewrite changed the change type" });
