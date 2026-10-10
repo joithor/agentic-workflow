@@ -414,6 +414,41 @@ expect "a runtime reference to the analyzer project fails" 1 "DEPS-PROJ-006" "Aw
 printf '<Project><ItemGroup><ProjectReference Include="../../Aw.Kernel/Aw.Kernel.csproj" OutputItemType="Analyzer" /></ItemGroup></Project>\n' > "$d/src/Beta/Aw.Beta.Core/Aw.Beta.Core.csproj"; run "$d"
 expect "an analyzer-style reference to a non-analyzer package fails" 1 "DEPS-PROJ-006" "Aw.Beta.Core -> Aw.Kernel"
 
+# ---- review run 3 (PR #92) ----
+d="$(fixture analyzer-tests)"; perl -0pi -e 's/(  - id: Alpha\n)/  - id: Analyzers\n    kind: package\n    tier: 0\n    analyzer: true\n    projectPrefix: Aw.Analyzers\n    ts: null\n    src: src\/Aw.Analyzers\n    note: build-time Roslyn rules\n$1/' "$d/deps.yaml"
+csproj "$d" src/Aw.Analyzers/Aw.Analyzers.csproj; csproj "$d" tests/Aw.Analyzers.Tests/Aw.Analyzers.Tests.csproj ../../src/Aw.Analyzers/Aw.Analyzers.csproj
+csproj "$d" tests/Aw.Architecture.Tests/Aw.Architecture.Tests.csproj ../../src/Aw.Analyzers/Aw.Analyzers.csproj; run "$d"
+expect "test code may reference an analyzer normally" 0 "deps: ok"
+
+d="$(fixture tests-dir)"; perl -0pi -e 's/(  - id: Alpha\n)/  - id: KTest\n    kind: package\n    tier: 0\n    test: true\n    projectPrefix: Aw.KTest\n    ts: null\n    src: src\/KTest\n    note: test support\n$1/' "$d/deps.yaml"
+perl -pi -e 's/^  projectFanOut: 4\n/  projectFanOut: 1\n/' "$d/deps.yaml"
+csproj "$d" src/KTest/Aw.KTest/Aw.KTest.csproj; csproj "$d" src/Aw.Kernel/Aw.Kernel.csproj
+csproj "$d" tests/Aw.Beta.Tests.Integration/Aw.Beta.Tests.Integration.csproj ../../src/KTest/Aw.KTest/Aw.KTest.csproj ../../src/Aw.Kernel/Aw.Kernel.csproj
+csproj "$d" tests/Aw.Beta.Benchmarks/Aw.Beta.Benchmarks.csproj ../../src/KTest/Aw.KTest/Aw.KTest.csproj ../../src/Aw.Kernel/Aw.Kernel.csproj; run "$d"
+expect "every project under tests/ is test code, whatever its name" 0 "deps: ok"
+csproj "$d" src/Beta/Aw.Beta.Core/Aw.Beta.Core.csproj ../../../tests/Aw.Beta.Benchmarks/Aw.Beta.Benchmarks.csproj; run "$d"
+expect "nothing outside tests/ references a project under tests/" 1 "DEPS-PROJ-003" "Aw.Beta.Core -> Aw.Beta.Benchmarks"
+
+d="$(fixture core-only)"; perl -0pi -e 's/kind: project\n    status: planned/kind: project\n    status: current/' "$d/deps.yaml"; edge "$d" Beta Alpha project current
+csproj "$d" src/Aw.Kernel/Aw.Kernel.csproj; csproj "$d" src/Alpha/Aw.Alpha.Core/Aw.Alpha.Core.csproj; csproj "$d" src/Alpha/Aw.Alpha.Infrastructure/Aw.Alpha.Infrastructure.csproj
+csproj "$d" src/Beta/Aw.Beta.Features/Aw.Beta.Features.csproj ../../Aw.Kernel/Aw.Kernel.csproj ../../Alpha/Aw.Alpha.Core/Aw.Alpha.Core.csproj; run "$d"
+expect "a cross-package reference to another package's Core (or a tier-0 package) passes" 0 "deps: ok"
+csproj "$d" src/Beta/Aw.Beta.Features/Aw.Beta.Features.csproj ../../Aw.Kernel/Aw.Kernel.csproj ../../Alpha/Aw.Alpha.Infrastructure/Aw.Alpha.Infrastructure.csproj; run "$d"
+expect "a cross-package reference to another package's non-Core project fails" 1 "DEPS-PROJ-007" "Aw.Beta.Features -> Aw.Alpha.Infrastructure"
+csproj "$d" tests/Aw.Beta.Tests/Aw.Beta.Tests.csproj ../../src/Alpha/Aw.Alpha.Infrastructure/Aw.Alpha.Infrastructure.csproj
+csproj "$d" src/Beta/Aw.Beta.Features/Aw.Beta.Features.csproj ../../Aw.Kernel/Aw.Kernel.csproj ../../Alpha/Aw.Alpha.Core/Aw.Alpha.Core.csproj; run "$d"
+expect "test code also reaches other packages only through Core" 1 "DEPS-PROJ-007" "Aw.Beta.Tests -> Aw.Alpha.Infrastructure"
+
+d="$(fixture regex-postfix)"
+printf 'let n = 4, m = 2;\nconst a = n-- / 2; execFile("beta", []); const b = m++ / 3;\n' > "$d/alpha/src/p.ts"; run "$d"
+expect "a / after postfix ++ or -- divides" 1 "Alpha -> Beta (cli): alpha/src/p.ts:2"
+printf 'const r = a + /beta/.source;\nexecFile("beta", []);\n' > "$d/alpha/src/p.ts"; run "$d"
+expect "a / after a binary + still starts a regex" 1 "Alpha -> Beta (cli): alpha/src/p.ts:2"
+
+d="$(fixture fanout3-text)"; perl -pi -e 's/thirdPartyFanOut: 6/thirdPartyFanOut: 1/' "$d/deps.yaml"; mkdir -p "$d/src/Alpha/Aw.Alpha.Core"
+printf '<Project><ItemGroup><PackageReference Include="A" /><PackageReference Include="B" /></ItemGroup></Project>\n' > "$d/src/Alpha/Aw.Alpha.Core/Aw.Alpha.Core.csproj"; run "$d"
+expect "the third-party fan-out limit names the Host and test exemptions" 1 "DEPS-FANOUT-003" "*.Host and test code exempt"
+
 # ---- parser, validator and schema drift (node unit table) ----
 set +e; UNIT="$(node "$HERE/check-deps.unit.mjs" 2>&1)"; UCODE=$?; set -e
 if [ "$UCODE" = 0 ]; then ok "parser/validator unit table ($(printf '%s' "$UNIT" | tail -1))"; else fail "parser/validator unit table"; printf '%s\n' "$UNIT" | sed 's/^/       | /'; fi
