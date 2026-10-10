@@ -212,6 +212,9 @@ describe("proposal storage, dedupe and merge tracking", () => {
     expect(getProposal(db, tel.id)?.proposal.evidence).toEqual(["transcript:aaaa#1", copied]);
     saveProposal(db, prop({ evidence: ["pr:9"] }), "reflect:pr-9", "code", epoch, now, [NO_TRANSCRIPT]);
     expect(proposalSources(db, tel.id)).toEqual([NO_TRANSCRIPT, "bbbb1111", "cccc3333"]);
+    const other = saveProposal(db, prop({ title: "Reduce false positives in the done hook" }), "telemetry:done", "code", epoch, now);
+    expect(saveProposal(db, prop({ title: "Reduce false positives in the done hook" }), "reflect:pr-11", "code", epoch, now, ["eeee5555"]).id).toBe(other.id);
+    expect(proposalSources(db, other.id)).toEqual(["eeee5555"]); // a reflect re-proposal records its sessions the same way
     saveProposal(db, prop({ evidence: ["pr:10"] }), "telemetry:safety", "code", epoch, now); // another telemetry run adds evidence, no sources
     expect(getProposal(db, tel.id)?.proposal.evidence).toEqual(["transcript:aaaa#1", copied, "pr:9", "pr:10"]);
   });
