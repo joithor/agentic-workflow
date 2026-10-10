@@ -108,6 +108,9 @@ test_level_walk() {
   [ "$(levels "[$frac,$p]")" = '{"level":2,"skipped":[]}' ] || fail "fractional credit should pool"
   # a skipped level in the middle is walked past and reported as skipped
   [ "$(levels "[$p,$p3]")" = '{"level":4,"skipped":[2]}' ] || fail "empty L2 should be skipped and marked"
+  # only empty levels below the reached level are skip (plus an empty L1, where every repo starts); L2-L3 stay unmarked
+  local f4='{"level":4,"state":"fail","credit":0}'
+  [ "$(levels "[$f4]")" = '{"level":1,"skipped":[1]}' ] || fail "empty L2-L3 above level 1 must not be skip: $(levels "[$f4]")"
   # n/a and unknown are not scored; nothing scored -> no level
   [ "$(levels '[{"level":1,"state":"unknown","credit":0},{"level":2,"state":"n/a","credit":0}]')" = '{"level":null,"skipped":[]}' ] \
     || fail "nothing scored should give level null"
@@ -117,11 +120,11 @@ test_level_walk() {
 test_unscored_pillar_and_skipped_cells_render() {
   local t="$TMP/render"; make_tree "$t"
   node "$SCRIPT" --root "$t" --no-remote --date 2026-10-10 --out "$t/o.md"
-  # Product & Experimentation is scored now (PE-1/PE-2 fail at L4); the walk passes empty L1–L3 to reach L4 -> 'skip'
-  grep -E '^\| Product & Experimentation \| skip \| skip \| skip \| 0 / 2 \(0%\) \| — \| 1 \|$' "$t/o.md" >/dev/null \
+  # Product & Experimentation is scored at L4 only and stays level 1: empty L1 is skip, empty L2–L3 above it are '—'
+  grep -E '^\| Product & Experimentation \| skip \| — \| — \| 0 / 2 \(0%\) \| — \| 1 \|$' "$t/o.md" >/dev/null \
     || fail "PE pillar row wrong: $(grep -E '^\| Product' "$t/o.md")"
-  # Documentation: L1, L2 pass; L3 empty and walked past (L4 is scored) -> 'skip'; L5 empty, never reached -> '—'
-  grep -E '^\| Documentation \| 1 / 1 \(100%\) \| 1 / 1 \(100%\) \| skip \| 0 / 1 \(0%\) \| — \| 3 \|$' "$t/o.md" >/dev/null \
+  # Documentation: L1, L2 pass -> level 3; empty L3 is the reached level, not below it -> '—'
+  grep -E '^\| Documentation \| 1 / 1 \(100%\) \| 1 / 1 \(100%\) \| — \| 0 / 1 \(0%\) \| — \| 3 \|$' "$t/o.md" >/dev/null \
     || fail "Documentation row wrong: $(grep -E '^\| Documentation' "$t/o.md")"
   echo "PASS: test_unscored_pillar_and_skipped_cells_render"
 }
@@ -153,14 +156,22 @@ test_app_na_leaves_denominator() {
 test_arg_errors_exit_2() {
   local t="$TMP/args"; make_tree "$t"
   local args
-  for args in "--bogus" "--out" "--out --no-remote" "--date 2026-13-45" "--date yesterday" "--out $TMP/no-such-dir/x.md" "--repo a/b/../../x"; do
+  for args in "--bogus" "--out" "--out --no-remote" "--date 2026-13-45" "--date yesterday" "--out $TMP/no-such-dir/x.md" \
+      "--repo a/b/../../x" "--repo ../.." "--repo ./x" "--repo o/.."; do
     local rc=0
     # shellcheck disable=SC2086
     node "$SCRIPT" --root "$t" --no-remote --date 2026-10-10 $args >/dev/null 2>"$TMP/err" || rc=$?
     [ "$rc" -eq 2 ] || fail "'$args' should exit 2, got $rc ($(head -c 300 "$TMP/err"))"
-    grep -q "Error:\|at " "$TMP/err" && fail "'$args' printed a stack trace"
+    grep -qE '^[[:space:]]+at |Error:' "$TMP/err" && fail "'$args' printed a stack trace"
   done
   [ ! -e "$t/--no-remote" ] || fail "--out took a flag as its value"
+  local ms
+  for ms in -1 1.5 abc 0; do
+    local rc=0
+    READINESS_GH_TIMEOUT_MS="$ms" node "$SCRIPT" --root "$t" --no-remote --date 2026-10-10 >/dev/null 2>"$TMP/err" || rc=$?
+    [ "$rc" -eq 2 ] || fail "READINESS_GH_TIMEOUT_MS=$ms should exit 2, got $rc"
+    grep -q 'READINESS_GH_TIMEOUT_MS' "$TMP/err" || fail "timeout error should name the variable"
+  done
   echo "PASS: test_arg_errors_exit_2"
 }
 
@@ -171,6 +182,12 @@ make_gh_stub() {
 #!/usr/bin/env bash
 echo "$*" >> "$GH_LOG"
 [ -n "${GH_STUB_SLEEP:-}" ] && exec sleep "$GH_STUB_SLEEP"
+# GH_STUB_SHAPE=object: every call answers 200 with {} (an API change or a proxy)
+[ -n "${GH_STUB_SHAPE:-}" ] && { echo '{}'; exit 0; }
+# GH_STUB_BIG=1: releases padded past 1 MiB with JSON whitespace (in memory only; the stub ignores --jq)
+if [ -n "${GH_STUB_BIG:-}" ] && [[ "$2" == repos/o/r/releases* ]]; then
+  printf '['; head -c 1200000 /dev/zero | tr '\0' ' '; echo '{"published_at":"2026-10-01T00:00:00Z","draft":false}]'; exit 0
+fi
 case "$2" in
   repos/o/r) echo '{"default_branch":"trunk","security_and_analysis":{"secret_scanning":{"status":"enabled"},"secret_scanning_push_protection":{"status":"disabled"}}}' ;;
   repos/o/r/branches/trunk/protection) echo 'gh: Branch not protected (HTTP 404)' >&2; exit 1 ;;
@@ -213,7 +230,63 @@ test_gh_timeout_is_unknown() {
   for id in SEC-1 SEC-2 TD-2 BS-4; do
     [ "$(row_state "$t/o.md" "$id")" = "unknown" ] || fail "$id should be unknown when gh times out"
   done
+  # discriminating: the reason must be the timeout, not an empty-output parse error after the sleep
+  row "$t/o.md" BS-4 | grep -F 'timed out after 200 ms' >/dev/null || fail "BS-4 should say it timed out: $(row "$t/o.md" BS-4)"
   echo "PASS: test_gh_timeout_is_unknown"
+}
+
+test_gh_large_payload_is_scored() {
+  local t="$TMP/big"; make_tree "$t"; make_gh_stub "$TMP/stub"
+  export GH_LOG="$TMP/big.log"; : > "$GH_LOG"
+  GH_STUB_BIG=1 PATH="$TMP/stub:$PATH" node "$SCRIPT" --root "$t" --repo o/r --date 2026-10-10 --out "$t/o.md" 2>/dev/null \
+    || fail "large payload run should exit 0"
+  # over Node's 1 MiB default maxBuffer: scored (1 release in the window -> fail), not unknown/ENOBUFS
+  row "$t/o.md" BS-4 | grep -E '\| fail \|.*1 releases' >/dev/null || fail "BS-4 should be scored from a >1 MiB reply: $(row "$t/o.md" BS-4)"
+  echo "PASS: test_gh_large_payload_is_scored"
+}
+
+test_unexpected_shapes_and_fs_errors_are_unknown() {
+  local t="$TMP/shape"; make_tree "$t"; make_gh_stub "$TMP/stub"
+  export GH_LOG="$TMP/shape.log"; : > "$GH_LOG"
+  mkdir -p "$t/scorer"; echo '{"name":"scorer"}' > "$t/scorer/package.json"; echo 'not a dir' > "$t/scorer/src"
+  mkdir -p "$t/.github"; echo 'not a dir' > "$t/.github/workflows"
+  local rc=0
+  GH_STUB_SHAPE=object PATH="$TMP/stub:$PATH" node "$SCRIPT" --root "$t" --repo o/r --date 2026-10-10 --out "$t/o.md" 2>"$TMP/err" || rc=$?
+  [ "$rc" -eq 0 ] || fail "unexpected shapes / fs errors should not crash, got $rc ($(head -c 300 "$TMP/err"))"
+  for id in BS-4 TD-2 SEC-1; do
+    row "$t/o.md" "$id" | grep -E '\| unknown \|.*unexpected response shape' >/dev/null || fail "$id should be unknown on a {} reply: $(row "$t/o.md" "$id")"
+  done
+  echo "PASS: test_unexpected_shapes_and_fs_errors_are_unknown"
+}
+
+test_malformed_package_json_fails() {
+  local t="$TMP/badpkg"; make_tree "$t"
+  echo '{bad' > "$t/judge/package.json"
+  node "$SCRIPT" --root "$t" --no-remote --date 2026-10-10 --out "$t/o.md"
+  for id in BS-1 BS-2; do
+    row "$t/o.md" "$id" | grep -F 'fail: judge (package.json is not valid JSON)' >/dev/null || fail "$id should fail judge on bad JSON: $(row "$t/o.md" "$id")"
+  done
+  echo "PASS: test_malformed_package_json_fails"
+}
+
+test_runtime_pin_flips_bs5() {
+  local t="$TMP/pin"; make_tree "$t"
+  node "$SCRIPT" --root "$t" --no-remote --date 2026-10-10 --out "$t/a.md"
+  row "$t/a.md" BS-5 | grep -E '\| fail \|.*no \.nvmrc' >/dev/null || fail "BS-5 should fail without a runtime pin: $(row "$t/a.md" BS-5)"
+  echo "20.18.0" > "$t/.nvmrc"
+  node "$SCRIPT" --root "$t" --no-remote --date 2026-10-10 --out "$t/b.md"
+  [ "$(row_state "$t/b.md" BS-5)" = "pass" ] || fail "BS-5 should pass with .nvmrc"
+  echo "PASS: test_runtime_pin_flips_bs5"
+}
+
+test_dependency_bot_flips_sec4() {
+  local t="$TMP/bot"; make_tree "$t"
+  node "$SCRIPT" --root "$t" --no-remote --date 2026-10-10 --out "$t/a.md"
+  [ "$(row_state "$t/a.md" SEC-4)" = "fail" ] || fail "SEC-4 should fail without a dependency bot config"
+  mkdir -p "$t/.github"; echo 'version: 2' > "$t/.github/dependabot.yml"
+  node "$SCRIPT" --root "$t" --no-remote --date 2026-10-10 --out "$t/b.md"
+  [ "$(row_state "$t/b.md" SEC-4)" = "pass" ] || fail "SEC-4 should pass with .github/dependabot.yml"
+  echo "PASS: test_dependency_bot_flips_sec4"
 }
 
 test_walk_sorted_and_skips_symlinks() {
@@ -246,3 +319,8 @@ test_arg_errors_exit_2
 test_gh_stub_states_and_get_only
 test_gh_timeout_is_unknown
 test_walk_sorted_and_skips_symlinks
+test_gh_large_payload_is_scored
+test_unexpected_shapes_and_fs_errors_are_unknown
+test_malformed_package_json_fails
+test_runtime_pin_flips_bs5
+test_dependency_bot_flips_sec4
