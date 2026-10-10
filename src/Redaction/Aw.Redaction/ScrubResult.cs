@@ -10,6 +10,10 @@ public sealed record ScrubResult(string Text, IReadOnlyList<RedactionHit> Hits, 
     /// <summary>The text a blocked scrub returns in place of the input.</summary>
     public const string BlockedText = "[REDACTED:blocked]";
 
+    /// <summary>The text a caller writes in place of a value whose name holds a secret (<see cref="IRedactor.IsSecretName"/>).
+    /// A later scrub recognizes it as a placeholder.</summary>
+    public const string SecretFieldText = "[REDACTED:secret-field]";
+
     /// <summary>True when the text was withheld.</summary>
     public bool IsBlocked => Outcome == ScrubOutcome.Blocked;
 }

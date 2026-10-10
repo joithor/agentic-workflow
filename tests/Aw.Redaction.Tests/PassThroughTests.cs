@@ -21,6 +21,12 @@ public sealed class PassThroughTests
         // Narrower than the frozen detect-secrets.sh hook on purpose: a value needs a digit (logs are full of long
         // identifiers), so an all-letter value is not a secret here (docs/csharp/redaction.md).
         "export TOKEN=abcdefghijklmnopqrstuvwxyzabcd",
+
+        // Keyword arguments holding attribute access, and dotted versions, are code, not secrets.
+        "Client(x, token=settings.github_token_v2_value)",
+        "run(x, token=self.tokenizer.encode_batch2)",
+        "pin token=1.2.3-beta.4567890123456789",
+        ScrubResult.SecretFieldText,
         "C:\\new\\temp\\file.txt",
         "Bearer token expired",
         "\u043F\u0440\u0438\u0432\u0435\u0442 \u043C\u0438\u0440",

@@ -39,6 +39,26 @@ public sealed class AdversarialInputTests
     }
 
     [Fact]
+    public void A_long_chain_of_token_prefixes_is_scrubbed_not_blocked()
+    {
+        var input = string.Concat(Enumerable.Repeat("-ey" + "J", 32_000));
+
+        var result = Redactor.Default.Scrub(input);
+
+        Assert.Equal(ScrubOutcome.Clean, result.Outcome);
+    }
+
+    [Fact]
+    public void A_very_long_timeout_is_capped_instead_of_throwing()
+    {
+        var redactor = Redactor.Create(TimeSpan.FromDays(20));
+
+        var result = redactor.Scrub(new string('x', 300_000));
+
+        Assert.Equal(ScrubOutcome.Clean, result.Outcome);
+    }
+
+    [Fact]
     public void A_key_block_larger_than_the_end_search_window_is_redacted_whole()
     {
         var line = string.Concat(Enumerable.Repeat(Shapes.Body, 3))[..64];

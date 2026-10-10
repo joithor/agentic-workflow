@@ -38,6 +38,7 @@ Aw.Redaction.ScrubResult.Text.get -> string!
 Aw.Redaction.ScrubResult.Text.init -> void
 const Aw.Redaction.RedactionCodes.MatchTimeout = "AW-REDACT-001" -> string!
 const Aw.Redaction.ScrubResult.BlockedText = "[REDACTED:blocked]" -> string!
+const Aw.Redaction.ScrubResult.SecretFieldText = "[REDACTED:secret-field]" -> string!
 override Aw.Redaction.RedactionHit.GetHashCode() -> int
 override Aw.Redaction.ScrubResult.Equals(object? obj) -> bool
 override Aw.Redaction.ScrubResult.GetHashCode() -> int

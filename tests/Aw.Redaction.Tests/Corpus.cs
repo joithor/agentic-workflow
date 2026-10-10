@@ -51,6 +51,10 @@ public static class Corpus
         new SecretCase("shell-pair-curl-data", Join("curl -d client", "_secret=", Body, " https://x"), "secret-assignment", Tail),
         new SecretCase("shell-pair-no-separator", Join("FOO=1 mytok", "en=", Body, " ./run"), "secret-assignment", Tail),
         new SecretCase("shell-pair-after-semicolon", Join("x=1; Pass", "word=", Body), "secret-assignment", Tail),
+        new SecretCase("fragment-access-token", Join("{\"u\":\"https://x/cb#access", "_token=", Body, "&x=1\"}"), "secret-assignment", Tail),
+        new SecretCase("pair-at-a-later-line-start", Join("x\napi", "_key=", Body, " && make"), "secret-assignment", Tail),
+        new SecretCase("pair-after-comma", Join("opts=a,tok", "en=", Body), "secret-assignment", Tail),
+        new SecretCase("url-empty-username", Join("redis://:", Body, "@cache:6379"), "credentialed-url", Tail),
         new SecretCase("env-dotted-value", Join("API", "_KEY=Ab3dE6gH9jK2mN5p.", Body), "secret-assignment", Tail),
     ];
 
