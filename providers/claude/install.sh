@@ -221,14 +221,15 @@ claude_mcp_local_projects() {
   jq -r --arg n "$1" '(.projects // {}) | to_entries[] | select(.value.mcpServers[$n] != null) | .key' "$HOME/.claude.json"
 }
 
-# The local entries the CLI can remove: under a directory that still exists and, inside a git repo, keyed at its root
-# (the CLI keys local scope by git root). Any other entry can't be removed with the CLI and is never loaded, so it is
-# left alone.
+# The local entries the CLI can remove: under a directory that still exists and, inside a git repo, keyed at the main
+# repository's root (the CLI keys local scope by it, also from a subdirectory or a linked worktree). Any other entry
+# can't be removed with the CLI and is never loaded, so it is left alone.
 claude_mcp_removable_projects() {
-  local proj top
+  local proj common top
   while IFS= read -r proj; do
     [ -d "$proj" ] || continue
-    top="$(git -C "$proj" rev-parse --show-toplevel 2>/dev/null)" || top=""
+    common="$(git -C "$proj" rev-parse --path-format=absolute --git-common-dir 2>/dev/null)" || common=""
+    top=""; [ -z "$common" ] || top="$(cd "$common/.." && pwd -P)"
     [ -z "$top" ] || [ "$top" = "$(cd "$proj" && pwd -P)" ] || continue
     printf '%s\n' "$proj"
   done < <(claude_mcp_local_projects "$1")

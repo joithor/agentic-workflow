@@ -17,9 +17,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
-- `./setup.sh` removes an existing `agentic-bridge` registration from Claude Code (user scope, and local scope in every
-  project), Codex and Cursor (`AW_MCP_RETIRED`), and deletes the old `mcp-bridge/` directory once only ignored output
-  (`dist/`, `node_modules/`, `bridge.db`) is left in it; re-run it once on every machine.
+- `./setup.sh` removes an existing `agentic-bridge` registration from Claude Code (user scope, and local scope in each
+  project the CLI can remove it from: see the `MCP retire` row in `planning/PROVIDERS.md`), Codex and Cursor
+  (`AW_MCP_RETIRED`), and deletes the old `mcp-bridge/` directory once only ignored output (`dist/`, `node_modules/`,
+  `bridge.db`) is left in it; re-run it once on every machine.
 - The skill preamble no longer checks port 3100, so skills stop offering to re-run `setup.sh` because the bridge is down.
 - `/enhancePrompt` still suggests a peer-agent dialogue, as a prompt you carry to the other session.
 - Merge gate 7 bans `any` in all TypeScript (the bridge's Fastify boundary was its only exemption).

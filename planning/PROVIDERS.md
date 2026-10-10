@@ -17,7 +17,7 @@ provider. Skill text names capabilities, not tools — see `skills/_shared/capab
 | Subagents | `Agent` | `spawn_agent` / `wait_agent` / `send_message` (feature `multi_agent` stable) | `Task` |
 | Hooks | `settings.json` `hooks` (PreToolUse, SessionStart, Stop, …); canonical scripts run directly | `~/.codex/hooks.json` via `adapters/codex.sh`; **trust required**: run `/hooks` in `codex` and trust the `aw:*` entries | `~/.cursor/hooks.json` (`beforeShellExecution`, `sessionStart`, `stop`, …) via `adapters/cursor.sh`; user hooks run from `~/.cursor/` (adapter cds to the workspace root); invalid hook JSON blocks (adapter always prints valid JSON) |
 | MCP register | `claude mcp add --scope user` | `codex mcp add` | jq merge into `~/.cursor/mcp.json` `mcpServers`; new servers may need `cursor-agent mcp enable <name>` |
-| MCP retire | `claude mcp remove --scope user`, and `--scope local` from each project directory in `~/.claude.json` that still exists and is its git root | `codex mcp remove` | jq delete from `~/.cursor/mcp.json` `mcpServers` |
+| MCP retire | `claude mcp remove --scope user`, and `--scope local` from each project directory in `~/.claude.json` that still exists and, inside a git repo, is the main repository's root (not a subdirectory or linked worktree) | `codex mcp remove` | jq delete from `~/.cursor/mcp.json` `mcpServers` |
 | Transcripts | `~/.claude/projects/<proj>/<session>.jsonl` | `~/.codex/sessions/YYYY/MM/DD/rollout-*.jsonl` | `~/.cursor/projects/<proj>/agent-transcripts/<id>/<id>.jsonl` |
 | Repo instructions | `CLAUDE.md`, `.claude/rules/*.md` (`paths:` frontmatter) | `AGENTS.md` (nested) | `AGENTS.md`, `.cursor/rules/*.mdc` (`globs:`, `alwaysApply:`) |
 
