@@ -202,17 +202,16 @@ describe("stage generalizes first (privacy B1)", () => {
     fx.close();
   });
 
-  it("doesn't parse stored public bodies to learn whether one exists: a malformed row can't stop stage (kieran-typescript-reviewer-3)", async () => {
+  it("treats a public row that no longer parses like a missing one: a malformed row can't stop stage, and stage regenerates it (kieran-typescript-reviewer-1)", async () => {
     const { fx, save } = await ready(2, scriptedEvolveIo(generalizingScript()));
     const held = save("Held with a drifted row", {}, "code", "held");
     fx.ctx.db.prepare("INSERT INTO proposal_public (proposal_id, body, judge_category, model, created_at, epoch) VALUES (?, '{\"drifted\":true}', 'none', 'm', '2026-10-08T00:00:00Z', 1)").run(held);
-    fs.mkdirSync(path.dirname(stagedFile(fx.deps, held)), { recursive: true });
-    fs.writeFileSync(stagedFile(fx.deps, held), "### Task 1: kept\n");
+    fx.ctx.db.prepare("INSERT INTO proposal_public (proposal_id, body, judge_category, model, created_at, epoch) VALUES (?, 'not json', 'none', 'm', '2026-10-08T00:00:00Z', 1)").run(save("Held with a broken row", {}, "code", "held"));
     const fresh = save("Fresh change here", {}, "code");
     const o = await stageProposals(fx.ctx);
-    expect(o.staged.map((s) => s.id)).toEqual([fresh]);
-    expect(getProposal(fx.ctx.db, held)?.status).toBe("held"); // it has a public row, so it isn't a generalize retry
-    expect(fs.existsSync(stagedFile(fx.deps, held))).toBe(true);
+    expect(o.staged.map((s) => s.id)).toEqual([fresh, held]); // new proposals first, then the retries the slots allow
+    expect(getProposal(fx.ctx.db, held)?.status).toBe("staged");
+    expect(getPublic(fx.ctx.db, held)?.title).toBe("Held with a drifted row"); // regenerated: readable again
     fx.close();
   });
 

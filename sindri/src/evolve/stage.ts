@@ -15,7 +15,7 @@ import { loadDerivedSet, unsetPrivateRepos } from "./privacy-derived.js";
 import { Budget } from "../scope/model.js";
 import { generalize, type Generalized } from "./generalize.js";
 import {
-  classifyTier, findMerged, getPublic, hasPublic, inFlightCount, listStored, NO_TRANSCRIPT, normTitle, proposalSources, publicTier, readsTranscripts, reduceEvidence, savePublic, setTier, stagedFile, transition, type Proposal, type StoredProposal, type Tier,
+  classifyTier, findMerged, hasPublic, inFlightCount, listStored, NO_TRANSCRIPT, normTitle, proposalSources, publicTier, readPublic, readsTranscripts, reduceEvidence, savePublic, setTier, stagedFile, transition, type Proposal, type StoredProposal, type Tier,
 } from "./proposals.js";
 import { loadRegistry } from "./registry.js";
 import { renderTask } from "./render.js";
@@ -42,9 +42,10 @@ export async function markMerged(ctx: EvolveCtx): Promise<void> {
   if (ids.length > 0) await ctx.writeRetry((epoch) => ids.forEach((id) => transition(ctx.db, id, ["published"], "merged", epoch, ctx.deps.now())));
 }
 
-// Retried by stage: an open proposal past `proposed` with no public row. Held at stage (the generalization pass refused
-// it), or staged by a v4 build before public rows existed; such a staged row doesn't hold a cap slot while it waits.
-const retries = (ctx: EvolveCtx): StoredProposal[] => listStored(ctx.db, ["held", "staged"]).filter((s) => !hasPublic(ctx.db, s.id));
+// Retried by stage: an open proposal past `proposed` with no readable public row. Held at stage (the generalization pass
+// refused it), staged by a v4 build before public rows existed (such a staged row doesn't hold a cap slot while it
+// waits), or one whose public row no longer parses, which is regenerated like a missing one (kieran-typescript-reviewer-1).
+const retries = (ctx: EvolveCtx): StoredProposal[] => listStored(ctx.db, ["held", "staged"]).filter((s) => readPublic(ctx.db, s.id).state !== "ok");
 // How many times stage's generalization pass held this proposal on its content (its `generalize-hold` audit rows)
 // since the latest `sindri evolve retry` of it (its latest `generalize-retry` row). Filtered by verb in SQL; failed
 // model calls write no `generalize-hold` row, so they never count.
@@ -243,10 +244,11 @@ export async function publishProposals(ctx: EvolveCtx, o: { dryRun: boolean; noP
   // The verbatim layer also checks the source sessions recorded when the proposal was saved (security-sentinel-0); a
   // transcript-reading proposal with none recorded (saved before provenance existed) holds.
   const open = listStored(ctx.db, ["staged", "held"]).map((s) => {
-    const pub = getPublic(ctx.db, s.id);
+    const row = readPublic(ctx.db, s.id);
+    const pub = row.state === "ok" ? row.value : null;
     const recorded = proposalSources(ctx.db, s.id);
     return {
-      s, pub, refs: [...new Set([...reduceEvidence(s.proposal.evidence).refs, ...reduceEvidence(pub?.evidence ?? []).refs])],
+      s, pub, unreadable: row.state === "unreadable", refs: [...new Set([...reduceEvidence(s.proposal.evidence).refs, ...reduceEvidence(pub?.evidence ?? []).refs])],
       sources: recorded.filter((x) => x !== NO_TRANSCRIPT), unrecorded: readsTranscripts(s.source) && recorded.length === 0,
     };
   });
@@ -294,7 +296,7 @@ export async function publishProposals(ctx: EvolveCtx, o: { dryRun: boolean; noP
   for (const l of open) {
     const { s, pub } = l;
     if (pub === null) {
-      held.push({ id: s.id, layer: "generalize", why: "not generalized yet; run sindri evolve stage" });
+      held.push({ id: s.id, layer: "generalize", why: l.unreadable ? "its public version is unreadable; run sindri evolve stage" : "not generalized yet; run sindri evolve stage" });
       continue;
     }
     const t = publicTier(s.proposal, pub, registry, cfg.protectedPaths); // re-tiered from the public version, never below the original (Review Focus 2)

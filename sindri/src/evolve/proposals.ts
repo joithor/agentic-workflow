@@ -176,9 +176,28 @@ export function savePublic(db: Ledger, id: string, p: Proposal, o: { category: s
   return ProposalSchema.parse(JSON.parse(body));
 }
 
-export function getPublic(db: Ledger, id: string): Proposal | null {
+// A proposal's public row: none, one that parses, or one that no longer does (a body written by another build, or edited
+// by hand). Never throws: publish holds an unreadable one and stage regenerates it like a missing one
+// (kieran-typescript-reviewer-1).
+export type PublicRow = { state: "none" } | { state: "ok"; value: Proposal } | { state: "unreadable" };
+
+export function readPublic(db: Ledger, id: string): PublicRow {
   const r = db.prepare("SELECT body FROM proposal_public WHERE proposal_id = ?").get(id) as { body: string } | undefined;
-  return r === undefined ? null : ProposalSchema.parse(JSON.parse(r.body));
+  if (r === undefined) return { state: "none" };
+  let raw: unknown;
+  try {
+    raw = JSON.parse(r.body);
+  } catch {
+    return { state: "unreadable" };
+  }
+  const parsed = ProposalSchema.safeParse(raw);
+  return parsed.success ? { state: "ok", value: parsed.data } : { state: "unreadable" };
+}
+
+// The public version when its row parses; null when there is none or it is unreadable.
+export function getPublic(db: Ledger, id: string): Proposal | null {
+  const r = readPublic(db, id);
+  return r.state === "ok" ? r.value : null;
 }
 
 // Whether a public row exists, without reading its body: a body that no longer parses can't make the check throw.

@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import { discover, isAddedTestAllowed, isEvalMachinery } from "../src/evolve/registry.js";
-import { classifyTier, findMerged, getProposal, inFlightCount, listProposals, parseEach, proposalSources, ProposalSchema, readsTranscripts, reduceEvidence, renderSaved, saveProposal, savePublic, getPublic, setTier, type Proposal } from "../src/evolve/proposals.js";
+import { classifyTier, findMerged, getProposal, inFlightCount, listProposals, parseEach, proposalSources, ProposalSchema, readPublic, readsTranscripts, reduceEvidence, renderSaved, saveProposal, savePublic, getPublic, setTier, type Proposal } from "../src/evolve/proposals.js";
 import { realGitRunner } from "../src/git-real.js";
 import { bumpEpoch, openMemoryLedger } from "../src/ledger/db.js";
 import { git, setStatus } from "./evolve-fixtures.js";
@@ -251,6 +251,19 @@ describe("proposal_public (privacy B1)", () => {
     savePublic(db, id, { ...p, title: "Second generic title" }, { category: "none", model: "opus" }, epoch, new Date(1));
     expect(getPublic(db, id)?.title).toBe("Second generic title");
     expect(getProposal(db, id)?.proposal.title).toBe("Original title here");
+  });
+
+  it("reads a public row as none, ok or unreadable, never throwing on a row that no longer parses (kieran-typescript-reviewer-1)", () => {
+    const { db, epoch } = setup();
+    const p = prop();
+    const { id } = saveProposal(db, p, "reflect:pr-1", "code", epoch, now);
+    expect(readPublic(db, id)).toEqual({ state: "none" });
+    savePublic(db, id, p, { category: "none", model: "opus" }, epoch, now);
+    expect(readPublic(db, id)).toEqual({ state: "ok", value: p });
+    for (const body of ['{"drifted":true}', "not json"]) {
+      db.prepare("UPDATE proposal_public SET body = ? WHERE proposal_id = ?").run(body, id);
+      expect(readPublic(db, id)).toEqual({ state: "unreadable" });
+    }
   });
 
   it("scrubs the generalized body", () => {

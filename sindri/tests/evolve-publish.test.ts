@@ -372,6 +372,22 @@ describe("publish renders only the generalized version (privacy B1)", () => {
     fx.close();
   });
 
+  it("holds a proposal whose public row no longer parses and publishes the rest; the next stage regenerates it (kieran-typescript-reviewer-1)", async () => {
+    const { fx, save } = await ready();
+    const bad = save("Alpha change here");
+    const good = save("Beta change here");
+    await stage([], fx.ctx);
+    fx.ctx.db.prepare("UPDATE proposal_public SET body = '{\"drifted\":true}' WHERE proposal_id = ?").run(bad);
+    const r = JSON.parse((await publish(["--json"], fx.ctx)).stdout) as { published: { id: string }[]; held: { id: string; layer: string; why: string }[] };
+    expect(r.published.map((p) => p.id)).toEqual([good]);
+    expect(r.held).toEqual([{ id: bad, layer: "generalize", why: "its public version is unreadable; run sindri evolve stage" }]);
+    expect(getProposal(fx.ctx.db, bad)?.status).toBe("held");
+    await stage([], fx.ctx);
+    expect(getProposal(fx.ctx.db, bad)?.status).toBe("staged");
+    expect((JSON.parse((await publish(["--json"], fx.ctx)).stdout) as { published: { id: string }[] }).published.map((p) => p.id)).toEqual([bad]);
+    fx.close();
+  });
+
   it("re-tiers from the public version: a rewrite that moves files to a protected path lands as approval (Review Focus 2)", async () => {
     const { fx, save } = await ready();
     const id = save("Alpha change here");
