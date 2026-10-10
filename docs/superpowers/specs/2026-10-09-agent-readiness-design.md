@@ -32,7 +32,8 @@ Sources: [Factory agent readiness](https://factory.com/product/agent-readiness),
 - **Gap:** Factory doesn't publish the full criteria list, and its own report needs a paid Factory account, which
   this project won't use (decision R4). **Our check is the score of record.** It covers every criterion we can
   reproduce from Factory's public pillars, levels and published examples, and marks any criterion it can't
-  reproduce as `unknown`. Scouting (§17.18) watches Factory's public docs for criteria changes.
+  reproduce as `unknown`. `unknown` also covers a criterion whose data wasn't read on this run (`unread`, §8); an
+  unread criterion counts as not passing, so the reported level is a lower bound. Scouting (§17.18) watches Factory's public docs for criteria changes.
 
 ## 3. Where the repo stands (quick check, 2026-10-09)
 
@@ -168,8 +169,10 @@ threshold.
   `Console`, `DateTime.Now`/`UtcNow` or `Guid.NewGuid`. They're banned through `BannedSymbols.txt` (the
   BannedApiAnalyzers package), and time and ids come from injected ports (`TimeProvider`, `IIdGenerator`).
   Technology packages the banned list can't name (`Aw.Kernel.Data`, `SQLitePCL`, `Npgsql`, cache and queue clients)
-  are kept out of `Core`, `Features` and a small package's `Commands` by an architecture test, and `Core` and
-  `Features` use no tier-0 package other than `Aw.Kernel` (§4b.10).
+  are kept out of `Core`, `Features` and a small package's `Commands` by an architecture test (ARCH-PORT-001). The
+  same test keeps `System.Environment`'s host-reading members (environment variables, special folders, the current
+  directory, user and machine name) out of `Features` and `Commands`; `Core` bans the whole type through
+  `BannedSymbols.txt`. `Core` and `Features` use no tier-0 package other than `Aw.Kernel` (§4b.10).
 - One slice never references another slice's types. Shared behavior moves into `Core` as a domain service or a port.
   A second use of the same logic is the trigger to move it (the "generalize at the second case" signal, §6.2).
 - `Infrastructure` row and DTO types are `internal`. They never leave the project, and repositories return `Core` types.
@@ -348,6 +351,10 @@ group.MapPost("/items/{id}/start", async (ItemId id, StartItemBody body, IServic
   `Host`; each host has one `Compose` method that `Program.cs` and the DI validation test both call. Hosts start
   telemetry there with `AddKernelTelemetry(TelemetryOptions.FromEnvironment(service, environment, clock))`, and
   `Program.cs` resolves `TelemetryRuntime` once the container is built (one runtime per process; R1b, #136).
+  `Compose` may also register the package's JSON options (`AwJson.CreateOptions` over the package's
+  source-generated context) as a singleton, for an `Infrastructure` adapter that persists JSON; `Aw.Readiness.App`'s
+  run history (`JsonRunHistory`) takes them this way (R1b, #141), so `Infrastructure` never reaches for the host's
+  JSON context.
 - Nothing reads `IConfiguration`: settings come from the environment `Compose` passes. OpenTelemetry brings the
   configuration assemblies into every host, and `BannedSymbols.txt` doesn't apply to hosts, so this needs an
   architecture rule over the host assemblies (a gap until it lands).
@@ -371,7 +378,11 @@ group.MapPost("/items/{id}/start", async (ItemId id, StartItemBody body, IServic
   test project has no tests in that lane (an integration-only project in the unit lane), so every lane-filtered run
   ignores it; the unfiltered `dotnet test --solution AgenticWorkflow.slnx` keeps exit 8 as a failure. A lane's budget
   is the wall clock of `dotnet test --project <test project> --filter-trait "Lane=<lane>" --ignore-exit-code 8` per
-  test project, summed per package; CI fails a package over its budget. Each test's own time from xUnit's CTRF report
+  test project, summed per package; CI fails a package at or over its budget. The check is
+  `node scripts/ci/lane-budgets.mjs` (R1b, #138): it runs after CI's build and times each run with `--no-build`, so
+  compile time stays out and each test host's start-up stays in; it sums per `deps.yaml` package by `projectPrefix`
+  (a test assembly no package owns, such as `Aw.Architecture.Tests`, is its own row) and reports LANE-PKG-001 (a
+  package's lane at or over its budget) or LANE-PKG-002 (a timed run failed). Each test's own time from xUnit's CTRF report
   is checked against the same budget as an extra per-test cap (`Aw.Kernel.Testing` ships the check). The
   per-test cap reads one CTRF report per test project, so a lane run writes them with `--report-xunit-ctrf
   --results-directory <dir>` (never a fixed `--report-xunit-ctrf-filename` with `--solution`, which keeps only the
@@ -417,10 +428,19 @@ group.MapPost("/items/{id}/start", async (ItemId id, StartItemBody body, IServic
   - `IsAotCompatible=true` on every library project: everything except `*.Tests`, `*.Testing`, `*.Host` and
     `*.Analyzers` (so `Core`, `Features`, `Infrastructure`, a small package's `App`, Kernel and Redaction). A library
     that can't be AOT-compatible opts out with `AwAotCompatible=false` and a reason in its `.csproj`. Only TFMs that
-    support it (net8.0 and later), so a netstandard2.0 source generator doesn't fail with NETSDK1210. `PublishAot=true`
-    only on the entry points in the table below;
-  - `InvariantGlobalization=true` on every project with `PublishAot=true`: no ICU dependency (a Linux binary without
-    it needs `libicu` at runtime);
+    support it (net8.0 and later), so a netstandard2.0 source generator doesn't fail with NETSDK1210;
+  - NativeAOT only on the entry points in the table below, and only under a runtime identifier: an entry point's
+    project sets `AwAotEntryPoint=true` and `PublishAot` conditioned on `$(RuntimeIdentifier)` (what `/new-package`
+    generates; R1b, #141). An unconditional `PublishAot=true` makes a plain restore add the host's ILCompiler pack
+    under a host-RID section of `packages.lock.json`, so the committed lock file would differ between macOS and
+    Linux and CI's locked restore would refuse it. AOT publishing (`dotnet publish -r <rid>`) sets the committed lock
+    files aside;
+  - `InvariantGlobalization=true` on every project with `PublishAot=true` or `AwAotEntryPoint=true`: no ICU
+    dependency (a Linux binary without it needs `libicu` at runtime), and the entry point's JIT runs use the same
+    globalization as its binary;
+  - the trim, AOT and single-file analyzers on for every `AwAotEntryPoint=true` project in every build, JIT
+    included: a `Host` isn't a library, so `IsAotCompatible` doesn't turn them on, and a plain build has no
+    `PublishAot` (R1b, #141);
   - `EnableRequestDelegateGenerator=true` on every `*.Host` project, so JIT endpoint tests run the same generated
     binding as the AOT binary;
   - the missing-lock-file check (AW0001): under CI, a project without a committed `packages.lock.json` fails;
@@ -573,6 +593,7 @@ merges.
 | The `Packages.Production` registry matches the solution | ARCH-REG-001, ARCH-REG-002 | same | #131 |
 | Raw ids in public `Core`/`Features` signatures; `!` without `// why:`; endpoint lambda calls exactly one service; file ≤ 300 lines; parameters ≤ 5; constructor dependencies > 7 (error) and 6–7 (`suggestion`); generic arity ≤ 3 | AW1001, AW1002, AW1004, AW1005, AW1006, AW1007, AW1008, AW1009 | `Aw.Analyzers` (`CA1005` off, owned by AW1009) | #132 |
 | Per-test lane cap; exactly one known lane | LANE-TEST-001, LANE-TEST-002 | `tests/Aw.LaneCap.Testing` over CTRF reports | #133 |
+| Per-package lane budget; a timed lane run failed | LANE-PKG-001, LANE-PKG-002 | `node scripts/ci/lane-budgets.mjs` (CI .NET job) | #138 |
 | Kernel port contracts | `UnitOfWorkContract`, `OutboxContract` (with `ReadRepositoryContract`) | `Aw.Kernel.Testing` | #133 |
 | Redaction timeout blocks | AW-REDACT-001 | `Aw.Redaction` | #130 |
 | Rule records cover every named check and each check exists | RULE-COVER-*, RULE-CHECK-* | `node scripts/check-rules.mjs` | #137 |
@@ -777,7 +798,7 @@ Each row is a criterion family, the change that satisfies it, and its owner work
 | 3 | Integration tests, tests runnable locally | Lanes, one root `test` command | W3 |
 | 3 | Secret scanning, CODEOWNERS | GitHub secret scanning + push protection, a scrub job in CI, CODEOWNERS backed by a check (§4d) | W4 |
 | 3 | Structured logging, tracing, metrics | One logger module (JSON lines, levels, ids; `Aw.Kernel.Telemetry`); OTel spans and metrics in bridge and sindri (exporter off by default; the OTLP adapter and a local collector, run on the host, arrive with the first exporting host) | W7 |
-| 3 | Issue and PR templates, labels | Templates; label scheme (`type:`, `area:`, `size:`, `ring:`) in `.github/labels.yml`, synced to the repo by the owner | W6 |
+| 3 | Issue and PR templates, labels | Templates; label scheme (`type:`, `area:`, `size:`, `ring:`) in `.github/labels.yml`, synced to the repo by the owner. The criterion (TD-2) passes only when labels of each family are on the repo, not only in the file (R1b, #141), so it waits on that owner step | W6 |
 | 4 | Fast CI feedback | Required CI under 5 minutes for lint, types and unit tests; affected-package detection; heavy lanes nightly | W3 |
 | 4 | Flaky-test detection | The quarantine job (§4e B11, §8) | W3 |
 | 4 | Deployment frequency | "Release" here means promoting a stable channel (§7.7 of the main spec). Track promotion frequency and lead time | W8 |
@@ -792,7 +813,7 @@ Each row is a criterion family, the change that satisfies it, and its owner work
 |---|---|---|
 | W1 Workspace | The .NET solution, `global.json`, `Directory.Build.props`, `Directory.Packages.props`, `nuget.config`; root commands | §4b.6, §4d |
 | W2 Style | Analyzers with one owner per rule, `.editorconfig`, the ratchet baseline, shellcheck and shfmt (§4b.6) | Applies to each package as it's ported |
-| W3 Tests and CI | GitHub Actions: lint, types, unit and integration per affected package, bash tests, `sync-rules --check`, `setup.sh --dry-run`, `claude plugin validate`; nightly heavy lane; quarantine job; time budgets | The `AGENTS.md` merge gate becomes required checks |
+| W3 Tests and CI | GitHub Actions: lint, types, unit and integration per affected package, bash tests, `sync-rules --check`, `setup.sh --dry-run`, `claude plugin validate`; nightly heavy lane; quarantine job; time budgets | The `AGENTS.md` merge gate becomes required checks. The bash suites run as a parallel pool, then the timing-sensitive and shared-state suites one at a time after the pool drains (`scripts/ci/bash-tests.sh`; `--serial` prints that list with each suite's reason; R1b, #138). Lane budgets per package: §4b.5 |
 | W4 Security | Branch protection with required checks and linear history; CODEOWNERS; secret scanning and push protection; Dependabot (or Renovate) with grouped updates; scrub job in CI | Single maintainer: CODEOWNERS is for the protected modules (§7.7) |
 | W5 Dev environment | Devcontainer for humans (.NET SDK, Node, uv; no Docker-in-Docker, §4d: Serena, the sindri containers and the optional collector run on the host; Ollama optional); `.env.example` covering every env var the packages read, enforced by `scripts/check-env-example.sh` (ENV-EXAMPLE-001…004) with `scripts/env-scan-ignore.txt` for OS and host variables | |
 | W6 Task discovery | Issue templates (bug, feature, skill change, idea card), PR template with the evidence section, label sync | Matches the addendum's work-item kinds |
@@ -814,9 +835,33 @@ next PR shows it passing.
   runs our reproducible criteria, per repo and per app. It is built in **R1b as
   one of the first two packages scaffolded from the template** (§10), so the template proves itself and the Level-4
   gate is measurable from the start.
+- **The R1b CLI** (R1b, #141; `docs/readiness/README.md` there): `aw-readiness check [--json] [--root DIR]
+  [--no-remote]`. `--root` checks another checkout (default the current directory); `--no-remote` skips the
+  read-only `gh` calls behind the host criteria. Nothing installs or schedules it.
+  - **Scope:** `csharp-template`, the C# build surface (`src/`, `tests/`, the root build files, the CI workflows,
+    `AGENTS.md`, the rules and the repo-level files), scored against the R0 baseline's 34 criteria with the same ids
+    and levels. The TS apps aren't scored; they are frozen until the cutover.
+  - **`readiness.yaml`** at the repo root: `version` (1), `repo` (the history's directory name), `ring`, `scope`
+    (`csharp-template`, the only one) and `targets` (one `ring`/`level` item per ring; ring 0 targets Level 4). A
+    flat YAML subset read without a library; anything else is refused naming the line and the fix.
+  - **Errors** (exit 2, on stderr): `AW-READINESS-001` bad arguments, `AW-READINESS-002` repo root not found,
+    `AW-READINESS-003` `readiness.yaml` missing or malformed, `AW-READINESS-004` run history unreadable or
+    unwritable (including a recorded run in a `schemaVersion` this build doesn't read).
+  - **Unread:** a host criterion whose data couldn't be read on this run (`--no-remote`, or `gh` missing, failing or
+    without admin rights) is `unknown` with `unread: true`. It counts as not passing, so the level is a lower bound
+    and a run that couldn't read the host never scores higher than one that could. A target the level reaches holds
+    whatever the unread criteria turn out to be; below the target, the unread criteria at or above the level reached
+    are listed under `unconfirmed`. The delta doesn't compare a criterion that was unread on either run.
 - **Where results live:** until sindri is ported, `Aw.Readiness` keeps its own history under its own `deps.yaml`
-  namespace (`readiness/`), for the delta and the first-run baseline; the switch keeps it (§4c). When sindri's C#
-  ledger first runs, it imports that history and keeps the file; results are recorded in the ledger from then on.
+  namespace (`readiness/`), for the delta and the first-run baseline; the switch keeps it (§4c). In R1b that is one
+  JSON file per run, `${AW_STATE_DIR:-~/.agentic-workflow}/readiness/runs/<repo>/<scope>/<UTC time>-NNN.json`
+  (`schemaVersion: 1`: `repo`, `scope`, `recordedAt`, `level`, `states[]` with `id`, `state`, `unread`). The first
+  run records its own baseline; it isn't diffed against the TS R0 baseline (`docs/readiness/baseline-2026-10.md`), a
+  different scope. When sindri's C# ledger first runs, it imports that history and keeps the files; results are
+  recorded in the ledger from then on.
+- **sindri runs the CLI:** `sindri readiness check` calls `aw-readiness check --json` (a planned `cli` edge in
+  `deps.yaml`, R1b, #141) rather than referencing the package, because a project edge could reach only
+  `Aw.Readiness.Core` and would re-implement its adapters.
 - **Usage metrics for R3** (promotion frequency, flake rates, doc freshness over time) come from external sources
   where possible (git tags, the GitHub Actions API). Anything else is measured from the switch.
 - **Output contract:**
@@ -825,7 +870,11 @@ next PR shows it passing.
   - the summary shows the level per pillar and overall, and the delta since the last run;
   - exit codes: 0 when the target level holds, 1 when it doesn't, 2 on a tool error;
   - a first run with no baseline records one and says so;
-  - `--json` follows a versioned schema.
+  - `--json` follows a versioned schema. Version 1 (R1b, #141; golden file
+    `tests/Aw.Readiness.Tests/Golden/report.json`): `schemaVersion`, `repo`, `scope`, `recordedAt`, `target {ring,
+    level}`, `level`, `holds`, `unconfirmed[]`, `recordedTo`, `delta {since, levelBefore, levelAfter, changes[],
+    isFirstRun}`, `pillars[]`, `tallies[]`, `findings[] {criterion {id, pillar, level, title, fix}, state, evidence,
+    unread}`. A field change bumps `schemaVersion`.
 - **Every CI failure message** names the rule id, the measured value, the limit and the fix command. That covers lane
   budgets, ratchets, `deps.yaml` drift, fan-out and analyzer rules. Text is never the only carrier of meaning:
   colour is never the only carrier of meaning, and `NO_COLOR` is respected (A19).
@@ -870,6 +919,15 @@ Recent pace: about 49 commits in 60 days. The sizes below are estimates to be re
 | R2 | **The ports, one packet per package:** `Redaction` → `Judge` and `Bridge` → `Scorer`, `Evidence` and `BugFix` → `Sindri` (by module inside its packet). Then **the switch**: `./setup.sh --runtime cs` on the always-on box, then the laptop. **In parallel,** new factory code (addendum F0 schemas, rule records) is written in C# from the start | L–XL (estimate 6–10 weeks; each packet carries its own) | All packages done (§4a step 3); the switch done on both hosts; TS deleted 14 days later |
 | R3 | Remaining Level 4 criteria that need usage data (promotion frequency, flake rates, doc freshness over time), and W9 | S–M | Level 4 passed. **Factory work (F0) starts here** |
 | R4 | Addendum F0–F3 plus the readiness module's weekly workflow | With the addendum | Level 5 passed |
+
+**R1b exit, as measured (2026-10-10, `aw-readiness check`, R1b, #141).** The "Level 4 for the template" exit needs
+the R1b stage PRs merged **and** the owner's label sync (§5 Level 3, TD-2):
+- the readiness PR's branch alone: Level 2 (no devcontainer, env template, telemetry or templates yet);
+- all R1b stage branches merged in a scratch tree: Level 3. Level 2 passes at exactly 80% (8 of 10; SV-4, no tracked
+  pre-commit config, and SEC-1, branch protection unavailable on the repo's current plan, fail). Level 3 stops at 8
+  of 11 (SEC-2 secret scanning unavailable, SEC-3 no CODEOWNERS, TD-2 labels not on the repo);
+- the same tree with `.github/labels.yml` applied to the repo (simulated): Level 4 holds. A CODEOWNERS file backed by
+  a required check (SEC-3) would also reach it.
 
 **Stop rules:**
 - A package that overruns its packet's estimate by 2× is reviewed with the human before more work goes in.
