@@ -320,4 +320,83 @@ public sealed class ValidatePacketTests
     [InlineData("docs/*", "docs", false)]
     public void Glob_semantics(string glob, string path, bool matches) =>
         Assert.Equal(matches, ScopeGlob.Parse(glob)?.Matches(path));
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task A_task_with_no_acceptance_examples_fails()
+    {
+        var report = await Validate(A.Packet()
+            .With(A.Task("t1").Writing("src/a.cs"))
+            .With(A.Task("t2").After("t1").Writing("src/b.cs").NoExamples()));
+
+        Assert.Equal("task t2", Assert.Single(Failures(report, "PKT-HOLD-001")).Subject);
+        Assert.Equal("task t2", Assert.Single(Failures(report, "PKT-ACC-001")).Subject);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task A_task_whose_only_example_is_held_out_fails_PKT_ACC_001()
+    {
+        var report = await Validate(A.Packet().With(A.Task("t1").ExampleWithText("h1", holdout: true, text: null)));
+
+        Assert.Equal("task t1", Assert.Single(Failures(report, "PKT-ACC-001")).Subject);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task An_evidence_kind_with_a_trailing_newline_fails() =>
+        Assert.Single(Failures(await Validate(A.Packet().With(A.Task("t1").Example("e1", holdout: false, "test\n").Example("h", holdout: true, "test"))), "PKT-EVID-001"));
+
+    [Theory, Trait("Lane", "unit")]
+    [InlineData("new: src", "is an existing directory")]
+    [InlineData("new: README.md/x", "is a file")]
+    [InlineData("/src/a.cs", "relative")]
+    public async Task A_new_path_can_be_created_and_a_glob_is_relative(string scope, string message)
+    {
+        var report = await Validate(A.Packet().With(A.Task("t1").Writing("src/**", scope)));
+
+        Assert.Contains(message, Assert.Single(Failures(report, "PKT-SCOPE-001")).Message, StringComparison.Ordinal);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task A_rule_reports_at_most_50_failures_and_counts_the_rest()
+    {
+        var packet = A.Packet();
+        for (var i = 0; i < 20; i++)
+        {
+            _ = packet.With(A.Task("t" + i.ToString(System.Globalization.CultureInfo.InvariantCulture)).Writing("src/a.cs"));
+        }
+
+        var failures = Failures(await Validate(packet), "PKT-SCOPE-002");
+
+        Assert.Equal(51, failures.Count);
+        Assert.Contains("140 more", failures[^1].Message, StringComparison.Ordinal);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task Overlap_stays_cheap_on_a_large_repo_at_the_task_limit()
+    {
+        var files = new HashSet<string>(PacketBuilder.BaseFiles, StringComparer.Ordinal);
+        for (var i = 0; i < 20_000; i++)
+        {
+            _ = files.Add("src/f" + i.ToString(System.Globalization.CultureInfo.InvariantCulture) + ".cs");
+        }
+
+        var packet = A.Packet();
+        for (var i = 0; i < Aw.Packets.Core.PacketReader.MaxTasks; i++)
+        {
+            var task = A.Task("t" + i.ToString(System.Globalization.CultureInfo.InvariantCulture)).Writing("src/**");
+            _ = packet.With(i == 0 ? task : task.After("t" + (i - 1).ToString(System.Globalization.CultureInfo.InvariantCulture)));
+        }
+
+        var started = System.Diagnostics.Stopwatch.StartNew();
+        var report = await Validate(packet, new InMemoryRepoSnapshot().With(PacketBuilder.BaseSha, files));
+
+        Assert.True(report.Passed);
+        Assert.True(started.Elapsed < TimeSpan.FromSeconds(5), started.Elapsed.ToString());
+    }
+
+    [Theory, Trait("Lane", "unit")]
+    [InlineData("docs/**", "docs", true)]
+    [InlineData("a**b", "axyb", true)]
+    [InlineData("a**b", "ax/yb", false)]
+    public void Glob_edge_cases(string glob, string path, bool matches) =>
+        Assert.Equal(matches, Aw.Packets.Core.Checks.ScopeGlob.Parse(glob)?.Matches(path));
 }

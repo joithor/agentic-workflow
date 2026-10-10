@@ -129,4 +129,25 @@ public sealed class TypedIdTests
     [InlineData("./x")]
     public void A_repo_slug_never_has_a_dot_segment(string value) =>
         Assert.False(RepoSlug.TryParse(value, provider: null, out _));
+
+    [Theory, Trait("Lane", "unit")]
+    [InlineData("example/repo\n")]
+    [InlineData("example/repo\r\n")]
+    [InlineData("example/repo.")]
+    [InlineData("owner/con")]
+    [InlineData("owner/NUL.txt")]
+    [InlineData("lpt1/name")]
+    public void A_repo_slug_is_safe_as_directory_names_on_every_os(string value) =>
+        Assert.False(RepoSlug.TryParse(value, provider: null, out _));
+
+    [Fact, Trait("Lane", "unit")]
+    public void A_repo_slug_may_start_with_a_dot() =>
+        Assert.True(RepoSlug.TryParse("owner/.github", provider: null, out _));
+
+    [Fact, Trait("Lane", "unit")]
+    public void A_trailing_newline_is_never_a_valid_sha_or_hash()
+    {
+        Assert.False(CommitSha.TryParse(new string('a', 40) + "\n", provider: null, out _));
+        Assert.False(PacketHash.TryParse("sha256:" + new string('b', 64) + "\n", provider: null, out _));
+    }
 }

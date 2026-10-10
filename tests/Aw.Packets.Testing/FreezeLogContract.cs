@@ -73,6 +73,19 @@ public abstract class FreezeLogContract
         Expect.That(second.IsSuccess && !second.Value.AlreadyFrozen && ReadBack(log).Count == 2, "a second hash is a second record");
     }
 
+    /// <summary>The same packet id and hash in two repositories are two records.</summary>
+    /// <returns>A task.</returns>
+    [Fact]
+    public async Task The_same_packet_in_two_repos_is_two_records()
+    {
+        var log = Create();
+        _ = await log.Record(ARecord(), CancellationToken.None);
+
+        var other = await log.Record(ARecord() with { Repo = RepoSlug.From("other/repo") }, CancellationToken.None);
+
+        Expect.That(other.IsSuccess && !other.Value.AlreadyFrozen && ReadBack(log).Count == 2, "another repo's packet with the same id and hash is its own record");
+    }
+
     /// <summary>A log that can't write fails with AW-PACKETS-007.</summary>
     /// <returns>A task.</returns>
     [Fact]

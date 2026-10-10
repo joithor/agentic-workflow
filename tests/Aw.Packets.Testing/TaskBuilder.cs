@@ -11,6 +11,7 @@ internal sealed class TaskBuilder(string id)
     private readonly List<AcceptanceExample> _examples = [];
     private string[] _scope = ["src/**"];
     private string _workstream = PacketBuilder.Workstream;
+    private bool _none;
 
     /// <summary>Adds dependencies.</summary>
     /// <param name="deps">Task ids it waits for.</param>
@@ -61,6 +62,14 @@ internal sealed class TaskBuilder(string id)
         return this;
     }
 
+    /// <summary>Leaves the task with no acceptance examples at all.</summary>
+    /// <returns>This builder.</returns>
+    public TaskBuilder NoExamples()
+    {
+        _none = true;
+        return this;
+    }
+
     /// <summary>Builds the task (a visible '&lt;id&gt;-e1' and a held-out '&lt;id&gt;-h1' 'test' example when none was added).</summary>
     /// <returns>The task.</returns>
     public PacketTask Build() => new()
@@ -72,7 +81,7 @@ internal sealed class TaskBuilder(string id)
         Size = SizeClass.Small,
         WriteScope = _scope,
         ReadSeeds = ["README.md"],
-        Acceptance = _examples.Count > 0
+        Acceptance = _none ? [] : _examples.Count > 0
             ? _examples
             :
             [
