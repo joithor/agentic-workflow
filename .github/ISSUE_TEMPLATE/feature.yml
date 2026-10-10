@@ -1,0 +1,37 @@
+name: Feature
+description: New behavior a user or an agent can see.
+labels: ["type:feature"]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem
+      description: Who needs this and why; what they do today instead.
+    validations:
+      required: true
+  - type: textarea
+    id: behavior
+    attributes:
+      label: Behavior
+      description: What the feature does, as observable signals (commands, outputs, files, exit codes).
+    validations:
+      required: true
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Acceptance examples
+      description: Concrete examples that must pass, each with the evidence that proves it (test, cli-transcript, screenshot).
+    validations:
+      required: true
+  - type: textarea
+    id: out-of-scope
+    attributes:
+      label: Out of scope
+      description: What this deliberately doesn't do.
+  - type: dropdown
+    id: size
+    attributes:
+      label: Size guess
+      options: [XS, S, M, L, XL]
+    validations:
+      required: true

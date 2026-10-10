@@ -1,0 +1,41 @@
+name: Skill change
+description: A skill, lens or workflow template should change (sindri addendum §17.14).
+labels: ["type:skill-change", "area:skills"]
+body:
+  - type: input
+    id: skill
+    attributes:
+      label: Skill
+      description: The skill's name, e.g. `/specToProvenPR`.
+    validations:
+      required: true
+  - type: dropdown
+    id: source
+    attributes:
+      label: Source
+      options:
+        - human request
+        - evolve proposal
+        - hook false-positive telemetry
+        - a Step parked on this skill twice
+    validations:
+      required: true
+  - type: textarea
+    id: failure
+    attributes:
+      label: What the skill does wrong today
+      description: The session or transcript excerpt (scrubbed) where it went wrong.
+    validations:
+      required: true
+  - type: textarea
+    id: scenarios
+    attributes:
+      label: Pressure scenarios
+      description: Scenarios that fail on the current text and must pass after the edit (skill TDD).
+    validations:
+      required: true
+  - type: textarea
+    id: checks
+    attributes:
+      label: Checks to run
+      description: The skill's eval suite and the skill lint (preamble, frontmatter, size budget, no interactive asks on sindri-mode paths).

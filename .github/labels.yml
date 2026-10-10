@@ -1,0 +1,114 @@
+# .github/labels.yml — the label scheme (readiness spec §5 Level 3, §6 W6): four families, type:, area:,
+# size: and ring:. This file is the source of truth; applying it to the repo (`gh label create … --force`
+# per entry, or a sync job) is a repo-settings change the owner makes. No workflow here applies it.
+# Checked by scripts/tests/repo-templates.test.sh: "family:value" names, 6-hex colors, a description each.
+
+# ---- type: what kind of work item (the addendum's work-item kinds) ----
+- name: "type:bug"
+  color: d73a4a
+  description: Something works differently from its spec or docs
+- name: "type:feature"
+  color: 0e8a16
+  description: New behavior a user or agent can see
+- name: "type:skill-change"
+  color: 5319e7
+  description: A skill, lens or workflow template changes (addendum §17.14)
+- name: "type:idea"
+  color: c5def5
+  description: An idea card waiting for build, later or no (addendum §17.18)
+- name: "type:refactor"
+  color: fbca04
+  description: Structure changes, behavior doesn't
+- name: "type:docs"
+  color: 0075ca
+  description: Documentation only
+- name: "type:chore"
+  color: ededed
+  description: Dependencies, CI, tooling upkeep
+- name: "type:security"
+  color: b60205
+  description: A security fix or hardening
+
+# ---- area: where the change lands (deps.yaml packages and the repo's top-level areas) ----
+- name: "area:judge"
+  color: 1d76db
+  description: judge (decisions, health, prompt sorter)
+- name: "area:bridge"
+  color: 1d76db
+  description: mcp-bridge (MCP + REST)
+- name: "area:scorer"
+  color: 1d76db
+  description: scorer (cost and involvement reports)
+- name: "area:sindri"
+  color: 1d76db
+  description: sindri (profile, ledger, scrub, observe, index, scope, evolve)
+- name: "area:evidence"
+  color: 1d76db
+  description: ui-evidence
+- name: "area:bugfix"
+  color: 1d76db
+  description: bugFixOrchestrator and its state CLI
+- name: "area:kernel"
+  color: 1d76db
+  description: Aw.Kernel and its Data, Telemetry and Testing parts
+- name: "area:redaction"
+  color: 1d76db
+  description: The Redaction pattern set
+- name: "area:readiness"
+  color: 1d76db
+  description: Aw.Readiness and the readiness criteria
+- name: "area:packets"
+  color: 1d76db
+  description: Aw.Packets (handoff packet schema, validate, freeze)
+- name: "area:hooks"
+  color: 006b75
+  description: Safety and context hooks under config/hooks
+- name: "area:statusline"
+  color: 006b75
+  description: The statusline
+- name: "area:mods"
+  color: 006b75
+  description: Claude Code mods (aw-live)
+- name: "area:skills"
+  color: 006b75
+  description: Skills under skills/ and bootstrap/
+- name: "area:setup"
+  color: 006b75
+  description: setup.sh, providers and installers
+- name: "area:ci"
+  color: 006b75
+  description: GitHub Actions, merge gate, scripts/ci
+- name: "area:build"
+  color: 006b75
+  description: The C# solution root (props, targets, analyzers, deps.yaml)
+- name: "area:docs"
+  color: 006b75
+  description: planning/, docs/, AGENTS.md and rules
+
+# ---- size: the size classes the scoring and packet budgets use ----
+- name: "size:xs"
+  color: c2e0c6
+  description: Under an hour
+- name: "size:s"
+  color: c2e0c6
+  description: A few hours
+- name: "size:m"
+  color: fef2c0
+  description: A day or two
+- name: "size:l"
+  color: f9d0c4
+  description: About a week; split it if it can be split
+- name: "size:xl"
+  color: e99695
+  description: More than a week; needs a packet and a split
+
+# ---- ring: which ring the work belongs to (readiness §4e B11) ----
+- name: "ring:0"
+  color: bfd4f2
+  description: This toolkit
+- name: "ring:1"
+  color: bfd4f2
+  description: Onboarded personal repos
+- name: "ring:2"
+  color: bfd4f2
+  description: Work repos (profile overlay, private)
