@@ -20,7 +20,7 @@ export const SEARCH = {
   "lane-cap": ["tests"],
   "check-rules": ["scripts/check-rules.mjs", "scripts/rules"],
 };
-const BUILD_FILES = ["Directory.Build.props", "Directory.Build.targets", "Directory.Packages.props", "global.json", ".editorconfig", "nuget.config", "CodeMetricsConfig.txt"];
+const BUILD_FILES = ["Directory.Build.props", "Directory.Build.targets", "Directory.Packages.props", "global.json", ".editorconfig", "nuget.config", "CodeMetricsConfig.txt", "deps.yaml"];
 
 // stripCs(text) — C# without // and /* */ comments. Known limit: interpolation holes in $"…" aren't lexed, so a char
 // literal '"' inside a hole ends the string early (the damage stays on that line). Strings are copied as they are: "…" (with \ escapes), verbatim
@@ -117,11 +117,10 @@ export class Tree {
   }
 
   hasToken(rels, id) { const re = token(id); return rels.flatMap((r) => this.files(r)).some((f) => re.test(this.text(f) ?? "")); }
-  hasLiteral(rels, s) { return rels.some((r) => (this.text(r) ?? "").includes(s)); }
+  // hasLiteral — a literal bounded like a token, so "CA1502: 10" never matches "CA1502: 100"
+  hasLiteral(rels, s) { const re = token(s); return rels.some((r) => re.test(this.text(r) ?? "")); }
 }
 
-// A section that applies to C# files in general ([*], [*.cs], [**.cs], [**/*.cs], [*.{…,cs,…}]); a narrower section
-// (a path glob) neither enables nor disables a rule for the whole repo.
 // topLevel(list) — a brace list's elements, split on commas outside nested braces
 function topLevel(list) {
   const out = [];
@@ -137,6 +136,8 @@ function topLevel(list) {
   return out;
 }
 
+// A section that applies to C# files in general ([*], [*.cs], [**.cs], [**/*.cs], [*.{…,cs,…}], [{*.cs,…}], [{*.{cs,…}}]); a narrower section
+// (a path glob) neither enables nor disables a rule for the whole repo.
 function isGeneralCs(glob) {
   if (/^(\*|\*\*|\*\*\/\*)$/.test(glob)) return true;
   const list = glob.match(/^\{(.*)\}$/);
