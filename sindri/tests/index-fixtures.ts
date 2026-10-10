@@ -21,7 +21,7 @@ export const ring0Repo = (files: Record<string, string>): string => gitRepo({ ..
 
 // Deps with this repo as ring 0 and an approved profile. `index` is appended to profile.yaml
 // before approval; `extraRepos` adds repos whose path is a plain (non-git) temp dir, or the given path.
-export async function approvedIndexDeps(root: string, o: { index?: string; extraRepos?: (string | { name: string; path: string })[] } = {}): Promise<Deps> {
+export async function approvedIndexDeps(root: string, o: { index?: string; extraRepos?: (string | { name: string; path: string; private?: boolean })[] } = {}): Promise<Deps> {
   const d = makeDeps({ cwd: root });
   await runCli(["profile", "init", "--ring0"], d);
   const dir = path.join(d.env.AW_STATE_DIR as string, "profile");
@@ -29,8 +29,8 @@ export async function approvedIndexDeps(root: string, o: { index?: string; extra
   if (o.extraRepos !== undefined) {
     const doc = YAML.parseDocument(fs.readFileSync(path.join(dir, "profile.yaml"), "utf8"));
     for (const extra of o.extraRepos) {
-      const { name, path: repoPath } = typeof extra === "string" ? { name: extra, path: tempDir("sindri-ghost-") } : extra;
-      fs.writeFileSync(path.join(dir, "repos", `${name}.yaml`), YAML.stringify({ schemaVersion: 1, name, path: repoPath, defaultBranch: "main", protectedPaths: [] }));
+      const { name, path: repoPath, private: isPrivate } = typeof extra === "string" ? { name: extra, path: tempDir("sindri-ghost-"), private: undefined } : { private: undefined, ...extra };
+      fs.writeFileSync(path.join(dir, "repos", `${name}.yaml`), YAML.stringify({ schemaVersion: 1, name, path: repoPath, defaultBranch: "main", protectedPaths: [], ...(isPrivate === undefined ? {} : { private: isPrivate }) }));
       doc.addIn(["repos"], name);
     }
     fs.writeFileSync(path.join(dir, "profile.yaml"), doc.toString());

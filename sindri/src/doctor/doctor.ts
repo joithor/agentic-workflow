@@ -11,6 +11,7 @@ import type { IndexProbes } from "../index/io.js";
 import { GRAPHIFY_PIN } from "../index/pins.js";
 import { hasModel, installedGraphify, sandboxedVersionArgv, tagsUrl } from "../index/setup.js";
 import { evolveOverlayCheck } from "../evolve/overlay.js";
+import { structureOk, wordsFile } from "../evolve/privacy-derived.js";
 import { LEDGER_SCHEMA_VERSION, ledgerPath, readLedger, schemaVersion } from "../ledger/db.js";
 import { inspectLock } from "../lock/lock.js";
 import type { Command } from "../main.js";
@@ -230,6 +231,31 @@ async function indexChecks(deps: Deps, loaded: LoadedProfile, probes: IndexProbe
   return out;
 }
 
+// Publish treats a repo as public unless it says otherwise; a private repo needs a built index and a word list or publish refuses.
+// The tracker repo is the publish target, so it is skipped even if it sets the flag. Nothing here names a derived identifier.
+function privacyChecks(deps: Deps, loaded: LoadedProfile): Check[] {
+  const out: Check[] = [];
+  const names = Object.keys(loaded.repos).sort().filter((n) => n !== loaded.profile.tracker.repo);
+  for (const repo of names) {
+    const p = loaded.repos[repo].private;
+    if (p === undefined) {
+      out.push({ name: `privacy:${repo}`, status: "warn", detail: "private: is not set, so sindri evolve publish treats this repo as public", fix: `set private: true (or false) in repos/${repo}.yaml, then sindri profile approve` });
+    } else if (p) {
+      const db = openIndexReadOnly(indexPath(deps, repo));
+      const built = db !== null && structureOk(db);
+      db?.close();
+      out.push(built
+        ? { name: `privacy:${repo}`, status: "ok", detail: "private; its identifiers are held at publish" }
+        : { name: `privacy:${repo}`, status: "warn", detail: "private, but no code index: sindri evolve publish will refuse (SND-EVOLVE-017)", fix: `sindri index build --repo ${repo}` });
+    }
+  }
+  const wf = wordsFile(deps);
+  if (names.some((n) => loaded.repos[n].private === true) && !fs.existsSync(wf)) {
+    out.push({ name: "privacy:words", status: "warn", detail: `${wf} is missing: sindri evolve publish will refuse (SND-EVOLVE-018)`, fix: "install a word list at /usr/share/dict/words, or set SINDRI_WORDS" });
+  }
+  return out;
+}
+
 export async function runChecks(deps: Deps, nodeVersion: string = process.versions.node, probes: IndexProbes = deps.io.probes): Promise<Check[]> {
   const [major, minor] = nodeVersion.split(".").map(Number);
   const checks: Check[] = [
@@ -246,7 +272,7 @@ export async function runChecks(deps: Deps, nodeVersion: string = process.versio
   if (!r.ok) return [...checks, { name: "profile", status: "fail", detail: `${r.issues.length} issue(s) in ${root}`, fix: "sindri profile validate" }];
   const profile = await profileChecks(deps, r.value);
   // Like the profile checks, the index checks read the approved profile when there is one.
-  return [...checks, { name: "profile", status: "ok", detail: root }, ...profile.checks, ...(await indexChecks(deps, profile.used, probes))];
+  return [...checks, { name: "profile", status: "ok", detail: root }, ...profile.checks, ...(await indexChecks(deps, profile.used, probes)), ...privacyChecks(deps, profile.used)];
 }
 
 export const doctorCommand: Command = async (args, deps) => {

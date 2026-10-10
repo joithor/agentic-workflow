@@ -36,7 +36,7 @@ export function buildDerivedSet(o: { privateDbs: readonly IndexDb[]; toolkit: In
 }
 
 // An index without a usable layers table counts as unbuilt: fail closed with the same code.
-function structureOk(db: IndexDb): boolean {
+export function structureOk(db: IndexDb): boolean {
   try {
     return layers(db).some((l) => l.layer === "structure" && l.status === "ok");
   } catch {

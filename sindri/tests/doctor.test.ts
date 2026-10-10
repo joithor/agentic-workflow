@@ -16,7 +16,7 @@ import { GRAPHIFY_PIN } from "../src/index/pins.js";
 import { runCli } from "../src/main.js";
 import { preCommitHook } from "../src/scrub/commands.js";
 import { fakeSystem, makeDeps, tempDir } from "./helpers.js";
-import { approvedIndexDeps, BODY, fakeIndexIo, ring0Name, ring0Repo } from "./index-fixtures.js";
+import { approvedIndexDeps, BODY, fakeIndexIo, ring0Name, ring0Repo, seedIndex } from "./index-fixtures.js";
 
 // Plan 2's tests never touch the machine's Ollama or graphify: nothing is installed, nothing answers.
 const offline: IndexProbes = { has: () => false, run: async () => ({ code: 127, stdout: "", stderr: "" }), getJson: async () => null };
@@ -422,5 +422,47 @@ describe("doctor and the prompt overlay", () => {
     const r = await runCli(["doctor", "--json"], d);
     expect((JSON.parse(r.stdout) as { name: string; status: string }[]).find((x) => x.name === "evolve-overlay")?.status).toBe("warn");
     expect(r.exitCode).toBe(1);
+  });
+});
+
+describe("doctor privacy checks (privacy B1)", () => {
+  async function depsWithRepos(repos: Record<string, { private?: boolean }>, env: Record<string, string> = {}): Promise<Deps> {
+    const d = await approvedIndexDeps(ring0Repo({ "src/a.ts": "export const a = 1;\n" }), {
+      extraRepos: Object.entries(repos).map(([name, o]) => ({ name, path: tempDir("sindri-priv-"), ...o })),
+    });
+    return { ...d, env: { ...d.env, ...env } };
+  }
+
+  it("warns on a non-toolkit repo with private unset, and says nothing about the toolkit repo", async () => {
+    const d = await depsWithRepos({ other: {} });
+    const c = await byName(d);
+    expect(c["privacy:other"]).toMatchObject({ status: "warn", detail: "private: is not set, so sindri evolve publish treats this repo as public", fix: "set private: true (or false) in repos/other.yaml, then sindri profile approve" });
+    expect(c[`privacy:${ring0Name(d)}`]).toBeUndefined();
+  });
+
+  it("warns on a private repo with no index and on a missing word list; ok once both exist", async () => {
+    const deps = await depsWithRepos({ globex: { private: true } }, { SINDRI_WORDS: "/nonexistent" });
+    let c = await byName(deps);
+    expect(c["privacy:globex"]).toMatchObject({ status: "warn", fix: "sindri index build --repo globex" });
+    expect(c["privacy:globex"].detail).toContain("SND-EVOLVE-017");
+    expect(c["privacy:words"].detail).toBe("/nonexistent is missing: sindri evolve publish will refuse (SND-EVOLVE-018)");
+    seedIndex(openIndex(indexPath(deps, "globex")), { files: ["a.ts"], symbols: ["x"] }).close();
+    const words = path.join(tempDir("w-"), "words");
+    fs.writeFileSync(words, "word\n");
+    c = await byName({ ...deps, env: { ...deps.env, SINDRI_WORDS: words } });
+    expect(c["privacy:globex"]).toMatchObject({ status: "ok", detail: "private; its identifiers are held at publish" });
+    expect(c["privacy:words"]).toBeUndefined();
+  });
+
+  it("warns on a private repo whose structure layer is not ok", async () => {
+    const deps = await depsWithRepos({ globex: { private: true } });
+    seedIndex(openIndex(indexPath(deps, "globex")), { files: ["a.ts"], symbols: ["x"], structure: "pending" }).close();
+    expect((await byName(deps))["privacy:globex"].detail).toContain("SND-EVOLVE-017");
+  });
+
+  it("is silent for a repo marked private: false", async () => {
+    const c = await byName(await depsWithRepos({ other: { private: false } }));
+    expect(c["privacy:other"]).toBeUndefined();
+    expect(c["privacy:words"]).toBeUndefined();
   });
 });
