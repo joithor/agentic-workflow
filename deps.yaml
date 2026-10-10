@@ -30,8 +30,8 @@
 #           (never a Host, Infrastructure, Features or App); anything else fails DEPS-PROJ-007 (§4b.1a
 #           "only through their Core contracts"). The reference sits in Features (App in the small shape)
 #           or Host: Core and Infrastructure use tier-0 packages only (DEPS-PROJ-008, §4b.1). Which tier-0
-#           package a Core may use (Aw.Kernel, not Aw.Kernel.Data) is left to BannedSymbols and the
-#           ArchUnitNET tests.
+#           package Core and Features may use (Aw.Kernel only, not Aw.Kernel.Data, Telemetry or Redaction)
+#           is ARCH-DIR-005 in tests/Aw.Architecture.Tests.
 #           Test code is every project under tests/, plus any project named *.Tests or *.Testing (also
 #           with a further suffix, such as *.Tests.Integration). Names with a .Testing segment are
 #           test-support (a package's fakes, builders, contract bases; KernelTesting is the shared one,
@@ -39,8 +39,8 @@
 #           follows its owner: it may reference its own package, test-support packages (test: true, such
 #           as Aw.Kernel.Testing), analyzers (normally, to test them) and what its owner has a project edge
 #           to, needs no edge of its own, and is exempt from fan-out. Nothing references a leaf; only test
-#           code references test-support. Test assemblies no package owns (Aw.Architecture.Tests) may
-#           reference every package. Analyzer packages (analyzer: true, Aw.Analyzers) are referenced from
+#           code references test-support. Test assemblies no package owns (Aw.Architecture.Tests; the
+#           Aw.LaneCap.Testing CI tool) may reference every package. Analyzer packages (analyzer: true, Aw.Analyzers) are referenced from
 #           production code only with OutputItemType="Analyzer" (in a .csproj or a Directory.Build file);
 #           they need no edge and don't count as fan-out. Any other ProjectReference in a Directory.Build
 #           file fails.
@@ -119,7 +119,7 @@ packages:
     projectPrefix: Aw.Kernel.Testing
     ts: null
     src: tests/Aw.Kernel.Testing
-    note: "fakes base, builders, contract-test bases; lives under tests/ next to every package's Aw.<Pkg>.Testing, and only test code references it"
+    note: "fakes base, builders, contract-test bases and the Kernel ports' in-memory fakes, golden files, the CTRF lane cap (LaneCap); lives under tests/ next to every package's Aw.<Pkg>.Testing, and only test code references it"
 
   # ---- tier 1 ----
   - id: Judge
@@ -158,7 +158,9 @@ packages:
     projectPrefix: Aw.Readiness
     ts: null
     src: src/Readiness
-    note: "the readiness check of record (decision R4, §8)"
+    bins: [aw-readiness]
+    namespace: readiness
+    note: "the readiness check of record (decision R4, §8); a standalone NativeAOT CLI before the switch, writing only under readiness/ (§4c)"
 
   # ---- tier 2 ----
   - id: Scorer
@@ -373,7 +375,7 @@ edges:
   - from: Readiness
     to: Kernel
     kind: project
-    status: planned
+    status: current
     note: "Result, JSON"
   - from: Scorer
     to: Kernel
@@ -432,9 +434,9 @@ edges:
     note: "every port and factory run is a packet"
   - from: Sindri
     to: Readiness
-    kind: project
+    kind: cli
     status: planned
-    note: "sindri readiness check (§8)"
+    note: "sindri readiness check (§8): runs aw-readiness check --json (schema v1, tests/Aw.Readiness.Tests/Golden/report.json); a project edge could reach only Aw.Readiness.Core and would re-implement the adapters"
   - from: Sindri
     to: Scorer
     kind: cli

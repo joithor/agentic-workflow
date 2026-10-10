@@ -1,0 +1,6 @@
+root = false
+
+# A small package's builders and builder root are internal, because App's records are; Aw.<Pkg>.Tests uses them
+# through InternalsVisibleTo, which MA0182 ("internal type is apparently never used") can't see.
+[*.cs]
+dotnet_diagnostic.MA0182.severity = none

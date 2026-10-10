@@ -1,6 +1,17 @@
 # Sindri — factory addendum (§17)
 
-Status: draft for review, revision 4 · 2026-10-09 (applies /autoplan round 1 C1–C17 in §17.19 and round 2 D1–D12 in §17.22)
+Status: draft for review, revision 5 · 2026-10-10 (applies /autoplan round 1 C1–C17 in §17.19 and round 2 D1–D12 in §17.22)
+Revision 5 adds the factory field review (§17.23): review back-pressure, self-proving tests, read-only existing tests,
+consequence tiers, diff guardrails, closed outcomes with a Not proven section, the merge-confidence card, gate
+removal criteria, escaped-defect tracing, comprehension drift, a PR lease, signed run receipts, no-progress
+detection, the implementer's plan review, feedback-loop classes and factory/human cohorts; invariants 17–19.
+It also adds a second field pass (§17.24: failure ownership, migration oracles, the critic lens, context assertions,
+executor escalation, `spec-conflict`, DORA keys and postmortems, sealed artifacts, one live variant per artifact) and
+field harvest (§17.25), which makes finding and building other factories' practices part of Sindri grows Sindri,
+and scoping v2 (§17.26): tracker intake by assignee, a challenger that retrieves every round, candidate files per
+surface, and a packet the studio edits with the same pipeline (add, remove, prune, ask), with edits as labels.
+§17.27 makes every action manageable from the UI: one command layer with the CLI and UI as clients, authority by
+action class and surface, a scope button, and a parity test so UI actions marked pending can't slip.
 Revision 2 adds:
 - development lenses and workflow generation (§17.7)
 - lean session bootstrap (§17.8)
@@ -17,7 +28,8 @@ addendum wins for the sections it names. Everything else in the main spec stands
 Everything this addendum defines is a **starting point**, not a finished design. That covers the lenses,
 evidence kinds, standing workflows, context-graph components, rules, budgets and surfaces. Sindri improves,
 grows, enhances and evolves Sindri: it measures its own parts (§7.4, §7.7), proposes changes to them, **finds new
-capabilities worth adding** (§17.18), and builds the approved ones through its own factory (§7.6). The human
+capabilities worth adding** (§17.18), **harvests what other software factories already do and builds the practices
+it lacks** (§17.25), and builds the approved ones through its own factory (§7.6). The human
 approves direction. Sindri does the finding, the building and the proving.
 
 ### Architectural principles that follow from the tenet
@@ -101,6 +113,9 @@ profiles and repos. This document is generic.
 16. **Nothing here is final.** Every catalog, schema, threshold and surface in §17 is a registered artifact
     that Sindri may propose to change, extend or replace through §7.4, §17.14 and §17.18. A part with no eval
     suite or telemetry is itself a gap that Sindri proposes to fill.
+17. **Sessions don't edit the tests that judge them** (§17.23.3).
+18. **Production stops when review is full** (§17.23.1).
+19. **Every verdict says what it didn't prove** (§17.23.6).
 
 ## 17.2 Metrics, revised
 
@@ -117,7 +132,8 @@ These replace the "human turns per merged PR" row of §2 and its use in the auto
 | Phone decisions per merged PR, and median decision latency | Tracked | Measures the review surface |
 | Decisions by ladder rung, cost per decision, and agent turns a lower rung could have made (judged after the fact) | The share made at rungs 1–2 rises month over month | The decision ladder |
 
-Auto-start's kill criterion keeps the rework comparison and drops the −20% total-turns condition.
+Auto-start's kill criterion keeps the rework comparison and drops the −20% total-turns condition. §17.23.17 adds
+rows for back-pressure, test proof, triage accuracy, escaped defects, no-progress parks, the merge card and cohorts.
 
 ## 17.3 Knowledge layer: the context graph
 
@@ -224,6 +240,9 @@ records, with a generated JSON Schema for editors; see the readiness design §4b
 - the holdout share exists and is stored where the implementer can't read it;
 - the workflow passes its coverage checks (§17.7).
 
+**Editing before freeze** uses the scoping pipeline itself (§17.26.4): adds, removals and "too much" re-run
+retrieval or pruning scoped to the edit.
+
 **Freeze and amend:** `sindri packet freeze` records the hash in the ledger, and builds run against that hash.
 Any later change is an **amendment**: a scope-expansion or packet-miss item goes back to the desk queue, and only
 the affected tasks are re-planned and re-frozen.
@@ -287,7 +306,7 @@ file list comes from git.
 
 | Field | Computed from |
 |---|---|
-| `write` | The task's write scope, plus its tests by the repo's test-path convention |
+| `write` | The task's write scope, plus **new** test files by the repo's test-path convention. Existing tests only when the packet names them (§17.23.3) |
 | `read` | The context-graph query for the task's seeds (§17.3), within the injection plan's budget |
 | `rules` | Rule selection (§17.6) for the repo, paths, task kind, lens and stage |
 | `skills`, `agents`, `mcp` | The lens definition's allowlist (§17.7) |
@@ -561,7 +580,8 @@ with `tailscale serve` (tailnet only), never `funnel`.
 - Typing into a session through Warp remote control is in-pane input: a **takeover** (§8.2 W6), never an
   authenticated decision.
 
-This replaces Plan 6's "no actions from the browser" for the listed kinds only. Plan 6's rule that the browser
+This replaces Plan 6's "no actions from the browser" for the listed kinds only. §17.27 later extends UI actions to
+every command, by action class. Plan 6's rule that the browser
 can't bypass a CLI gate still holds: the phone path is the same gate with a second authenticator.
 
 ## 17.13 Swappable factory host
@@ -635,7 +655,7 @@ clone, a new evidence kind, a better memory store, a new lens, a standing workfl
 |---|---|
 | **Internal gaps** | Packet misses, parks by reason, repeated scope-expansion requests, lenses with no evidence kind, evidence kinds with low precision, slow decisions, standing-workflow misses, steering turns the audit still sees |
 | **Upstream changes** | New releases of pinned dependencies and vendored packs (§16), provider CLI changelogs (new hooks, flags or SDK features), new MCP servers |
-| **The software-factory field** | What other agent factories and agentic dev platforms ship and publish: their tenets and frameworks (for example agent-readiness levels and criteria), orchestration and handoff models, review surfaces, evals, case studies and benchmarks. For example Factory (Droids, agent readiness), Warp (agents and remote control), coding-agent vendors' changelogs and engineering blogs. Each card says which of Sindri's principles or metrics the advance bears on, and whether Sindri already does it, does it worse, or lacks it |
+| **The software-factory field** | What other agent factories and agentic dev platforms ship and publish: their tenets and frameworks (for example agent-readiness levels and criteria), orchestration and handoff models, review surfaces, evals, case studies and benchmarks. For example Factory (Droids, agent readiness), Warp (agents and remote control), coding-agent vendors' changelogs and engineering blogs. Each card says which of Sindri's principles or metrics the advance bears on, and whether Sindri already does it, does it worse, or lacks it. Factory repos and topics run through the dedicated field-harvest loop (§17.25) |
 | **Ecosystem** | Skill and subagent catalogs, agent-tooling repos, papers and posts on agent harnesses, memory, retrieval and evals |
 | **The human's notes** | The notes dir and the desk decision log ("would be nice if…", links saved for later) |
 
@@ -928,6 +948,814 @@ minutes are compared with the step-0 baseline in the weekly digest.
 Ring-1 rows added to §17.19's table: containers on the work host (on, if the work host can run them), auto-start
 (off until ring-1 policy allows), P3 federation (on, home → work only), workplace connectors (only those the
 workplace approves).
+
+## 17.23 Factory field review (revision 5)
+
+A read of other software factories (2026-10-10) found sixteen practices this design didn't have or only had in
+part. This section adds them. Where it conflicts with earlier text, this section wins. §17.5, §17.10, §17.11 and
+§17.12 are read through it.
+
+**Sources.** Only ideas are taken; no code is copied, so licences don't constrain this section. Each source is
+also a seed for the scout's software-factory field (§17.18).
+
+| Source | Licence | Ideas taken |
+|---|---|---|
+| addyosmani/factory | MIT | Review back-pressure, a test that proves itself, read-only existing tests, consequence tiers, the tune loop, comprehension drift, "never loosen" |
+| superplanehq/superplane (factory PRD and design) | Apache-2.0 | The merge-confidence card, one PR writer per head SHA, factory and human cohorts |
+| asklokesh/loki-mode, chainloop-dev/chainloop | not stated; Apache-2.0 | Closed outcomes with a NOT PROVEN list, signed run receipts |
+| robi42/factory | MIT | Diff guardrails, the implementer reviewing the plan it will execute |
+| inkatze/planwright | MIT | No-progress detection |
+| actual-software/software-factory-intensive | none stated | Removal criteria on human gates, the feedback-loop taxonomy, measurable acceptance criteria |
+| mmaripanguec/dev-sdd-kit | MIT | Untouchable tests, derived artifacts that say "no data" before they guess |
+
+**New invariants** (added to §17.1):
+
+17. **Sessions don't edit the tests that judge them.** Existing tests are read-only to a session unless the frozen
+    packet names the change. A test change always gets a human read (§17.23.3).
+18. **Production stops when review is full.** No new Step whose result needs a human decision starts while the
+    pending-decision queue is at its limit (§17.23.1).
+19. **Every verdict says what it didn't prove.** An item's outcome lists every planned check that didn't run or
+    couldn't decide. Silence is never read as a pass (§17.23.6).
+
+### 17.23.1 Review back-pressure
+
+The human-minutes ceiling (§17.19 C15) is a lagging, weekly brake. This adds an instant one, read on every tick.
+
+- **Pending decisions** are counted per ring: PRs waiting for a human read or merge, desk-queue questions and
+  amendments, needs-approval items, and open swipe cards other than `fyi`.
+- `review.maxPending` (profile, approval tier) defaults to 3 per ring.
+- At or above the limit, the router starts no new Step whose result needs a human decision. That covers auto-start,
+  a packet's next task, and standing workflows at the `propose` tier. Each such item waits with the reason
+  `held: review-backpressure`, which `status` and the dashboard show.
+- Running Steps finish. Fix rounds on PRs already in the queue still run, because they shrink it. `report`-tier
+  standing workflows still run.
+- A queue that stays full for 24 hours raises one `blocks-factory` digest entry, not a notification per item.
+- Metrics (§17.2): queue depth over time, and hours items were held.
+
+### 17.23.2 Every new test proves itself
+
+The fail-on-base, pass-on-head check (§6) covers bug reproduce checks only. This extends it to every task whose
+evidence plan includes `test`.
+
+- In the verifier container (§8.5), a script splits the bundle's diff into test paths (by the repo's test-path
+  convention) and non-test paths. It reverse-applies the non-test hunks and runs the task's new tests. Each test
+  that backs an acceptance example must fail. Then it restores the tree. No model is involved.
+- When test and implementation share a file (inline tests, for example) and can't be split, the verdict is
+  `could-not-determine`. It goes into the Not proven section (§17.23.6) and is never counted as a pass.
+- **New evidence kind `mutation`:** mutation testing scoped to the changed lines, through the repo's command alias
+  (for example Stryker or mutmut). The share of surviving mutants on changed lines must be at or below the
+  profile's bar. It's required at the `production` consequence tier (§17.23.4) and on protected paths. Elsewhere it
+  runs on the inspector's nightly cadence (§17.9), not per task, to keep verification inside budget.
+
+### 17.23.3 Existing tests are read-only to sessions
+
+This amends §17.5's `write` field ("plus its tests by the repo's test-path convention").
+
+- The compiled write scope includes **new** test files by convention. It includes an **existing** test file only
+  when the packet task names it with the reason `test-change`, decided at the desk.
+- Snapshot and golden files count as tests. Deleting a test, skipping it, or loosening an assertion counts as
+  changing it.
+- The `PreToolUse` gate denies the edit (`SND-SANDBOX-110`), and the sindri-side verifier refuses a bundle that
+  changes an existing test outside scope.
+- A PR with any existing-test change carries the `test-change` label and waits for a human read. `epicMerge: auto`
+  doesn't apply to it (§17.10).
+- Metric: existing-test changes per merged PR, and the share of them that a desk decision approved.
+
+### 17.23.4 Consequence tiers
+
+Auto-start was gated on size and ambiguity only (§7.1). Autonomy should follow who gets hurt when the work is
+wrong, not how hard it is.
+
+- The profile gives every repo a `consequence` tier. `consequence.paths` (for example auth, payments, migrations, CI
+  and agent config) raise the tier for any task that touches them.
+- A task's tier is the highest tier among its repo and the paths in its write scope. Ring-1 repos default to
+  `production`. Changing a tier is approval tier.
+
+| Tier | Meaning | Auto-start | `epicMerge: auto` | Evidence depth | Human read |
+|---|---|---|---|---|---|
+| `sandbox` | Unlaunched; nobody depends on it | ≤ S | allowed | fast | samples |
+| `personal` | The human's own tools; nobody else depends on them yet | ≤ XS | allowed | full | samples, plus every protected path |
+| `shared` | Other people depend on it | off by default | off | full | every PR |
+| `production` | Someone's business depends on it | off | off | deep (including `mutation`) | every diff |
+
+Evidence depth sets which evidence kinds are required: `fast` is types and lint, `full` adds `test`, and `deep` adds
+`security`, `mutation` and the architecture checks. Protected modules (§7.7) wait for the human at every tier.
+
+### 17.23.5 Diff guardrails
+
+These deterministic checks are added to the shape checks (§6.2). They run at commit and in the verifier, on added
+lines only, and a hit is refused like any other shape check.
+
+- **New suppressions:** `eslint-disable`, `@ts-ignore`, `@ts-expect-error` with no reason, `# type: ignore`,
+  `#[allow(…)]`, `//nolint`, `#pragma warning disable`, `[SuppressMessage]`.
+- **New skipped or focused tests:** `.skip`, `.only`, `xit`, `@Ignore`, `[Fact(Skip=…)]`, `pytest.mark.skip`.
+- **Swallowed errors:** an empty `catch`, or `except: pass`.
+- **Build output and generated files** outside the repo's allowed paths, and lockfile changes in a task that may
+  not change dependencies.
+- **A source change with no test change,** unless the task kind is `docs` or `config`, or the packet says
+  `test: none` with a reason.
+
+An exception needs an inline `sindri-allow: <check-id> <reason>` marker. The verifier records each one and lists it
+under Not proven (§17.23.6). The pattern list is a rule pack (§17.6), so evolve can grow it per language.
+
+### 17.23.6 Closed outcomes and the Not proven section
+
+Every item ends with exactly one outcome:
+
+| Outcome | Means | What happens |
+|---|---|---|
+| `verified` | Every required evidence item passed | The PR proceeds under the ship contract |
+| `already-satisfied` | The reproduce or acceptance check passes on the base | The item closes with that evidence; no PR |
+| `blocked` | It needs an answer | It parks as needs-answer (§10.2) |
+| `unverified` | It was built, but a required evidence item couldn't run or couldn't decide | The PR stays draft and the gap is named |
+| `failed` | Gates are red after the round cap, or no progress (§17.23.13) | It parks with the findings |
+
+**Not proven** is a PR-body section that a script generates from the evidence plan (ship contract, §17.11). It lists:
+- every planned item without a passing artifact;
+- every `could-not-determine` (§17.23.2);
+- every `sindri-allow` exception (§17.23.5);
+- every merge-card dimension marked "not assessed" (§17.23.7).
+
+When nothing was skipped, the section says so in one line instead of being left out. Swipe cards show its count.
+
+### 17.23.7 Merge-confidence card
+
+Every task PR and epic PR gets a card with five dimensions, each scored 1 to 5:
+
+| Dimension | Better | Source |
+|---|---|---|
+| Blast radius | lower | Deterministic: fan-in of changed symbols (code index), product nodes touched, the consequence tier of the paths |
+| Reversibility | higher | Deterministic first: a migration with no down step, data deletion, a published API or package contract, or an external side effect lowers it. A judge explains |
+| Drift from the packet | lower | Judge: the diff against the task's acceptance examples and the packet's out-of-scope list |
+| Security | higher | The security lens's verdict when it ran; otherwise "not assessed" |
+| Performance | higher | The performance lens and `perf` evidence when they ran; otherwise "not assessed" |
+
+- Dimension names, directions and the caution and critical thresholds live in Sindri code as a registered artifact.
+  Changing them is approval tier. For judged dimensions, a model supplies only a score and a one-line summary
+  (invariant 13).
+- A critical dimension turns the card red and moves the decision from the phone to the desk queue.
+- Each card is stored with the PR's later outcome (merged clean, reworked, reverted, escaped defect), so evolve
+  calibrates the thresholds the same way as direction checks.
+
+### 17.23.8 Every human gate has removal criteria
+
+Every human gate and approval-tier rule gets a **gate record** (a registered artifact):
+
+| Field | Contents |
+|---|---|
+| Why | The incident or risk it exists for |
+| Worst case if skipped | What would ship, and what recovery would cost |
+| Removal criteria | Measurable, for example "20 consecutive items of class X with no escaped defect and no human fix" |
+| Evidence so far | Kept up to date from the ledger |
+
+- Evolve may propose loosening a gate only once its removal criteria hold, and the proposal cites the run of
+  evidence. Loosening is always approval tier, never self-adopt.
+- Tightening is immediate when an escaped defect traces to that gate (§17.23.9).
+- **Never loosened** (structural; no removal criteria):
+  - the human merges to the default branch;
+  - existing tests are read-only to sessions (invariant 17);
+  - the producer never verifies its own work (invariant 3, §17.22 D4);
+  - protected modules need approval;
+  - models never grant capabilities (invariant 13).
+
+### 17.23.9 Escaped defects, triage accuracy and the tune report
+
+- **Escaped defect:** within 30 days of merge, a fix, revert or incident on lines a Sindri item merged, linked by
+  blame and PR refs. Each one starts a bounded trace job that lists the gates, evidence kinds, lenses and checks that
+  ran on the original item, and names the one that should have caught it. The output is either a tighten proposal
+  for that gate or, when no gate covered the case, a new deterministic check proposal.
+- **Repeated catches become checks:** when a verifier or judge rejects the same class of problem 5 times in 30 days,
+  Sindri proposes a deterministic check. This extends the enforcement ladder in §17.6 from rules to verifier
+  rejections.
+- **Triage accuracy** has two parts, both judged after the fact:
+  - the share of items routed to auto-start or a micro-packet that later needed the desk (an amendment, a scope
+    expansion, or a product question after freeze);
+  - the share of items sent to the desk that a micro-packet could have handled.
+- **Monthly tune report** (in the digest):
+  - merged items;
+  - human-minutes;
+  - rework;
+  - escaped defects and which gates they traced to;
+  - triage accuracy;
+  - queue depth;
+  - proposed tightenings and loosenings.
+
+  It ends with one question, answered with those numbers: *is the factory producing work worth the review attention
+  it consumes?*
+
+### 17.23.10 Comprehension drift
+
+The inspector (§17.9) gains one signal: files that Sindri items changed 5 or more times in 30 days with no update to
+any doc, ADR, rule or decision-log entry linked to them in the context graph (§17.3). These are the places where the
+code has moved and the written understanding hasn't. Each finding becomes a `propose` item for the documentation
+maintainer. Like every standing workflow, the inspector reports what it checked and found clean (§10.4).
+
+### 17.23.11 One writer per PR, bound to a head SHA
+
+Claims (§9.4) are per item. A PR also needs a writer lock, because the PR babysitter, a fix-round Step, a rebase and
+the human can all push to it.
+
+- Every actor that changes a PR takes an exclusive **PR lease** in the ledger, keyed by the PR and bound to the
+  head SHA it started from. It is fenced by the host lease's token (§17.22 D2).
+- Waiting for CI or review bots holds no lease.
+- A push is made with `--force-with-lease=<bound sha>`. If the head moved, the push is refused, the activity's
+  output is discarded, and the work is re-planned on the new head.
+- A human push to a Sindri PR is a takeover of that PR (§9.3) until `handback`.
+- A check handler starts at most one fix Step per failed head SHA.
+
+### 17.23.12 Signed run receipts
+
+When an item ends, Sindri writes a **receipt** containing:
+- the item id, packet hash and workflow hash;
+- the base and head SHAs and the bundle hash;
+- each evidence artifact's hash and verdict;
+- each judge decision id and score;
+- the outcome and the Not proven list;
+- token and compute totals;
+- the hash chain of the item's ledger events.
+
+The receipt holds hashes and ids only, never code or ring-1 text, so it is safe to share.
+
+- It's signed with the host's Ed25519 key, which lives in the host's secret store. The public key is in the profile.
+- `sindri verify <item | receipt>` re-hashes the receipt and checks the signature and the event chain. It prints one
+  of `verified`, `tampered`, `unsigned` or `unchecked`.
+- The receipt hash goes in the PR body. `epicMerge: auto` requires a verified receipt for the exact head SHA. The
+  epic → default-branch PR carries the roll-up of its tasks' receipts.
+- The daily audit-chain anchor (§17.22 D10) includes the day's receipt hashes.
+
+### 17.23.13 No-progress detection
+
+A fix loop (review rounds, CI fix rounds, verifier rejections) parks early, with the reason `no-progress` and the
+repeated findings, when round *n* makes no progress over round *n−1*. That means any of:
+- its open findings equal round *n−1*'s or are a superset of them, keyed by file, check and normalized message;
+- the round produced an empty diff;
+- the same check failed twice with the same failure signature.
+
+It doesn't spend its remaining rounds. Metric: `no-progress` parks per lens.
+
+### 17.23.14 The implementer reviews the plan; acceptance examples are measurable
+
+- **Executability review.** In workflow generation (§17.7), between the model pass and the direction check, a
+  review-only implementer-lens Step reads each task: its write scope, read seeds, acceptance examples and evidence
+  plan. For each task it answers four questions:
+  - Is it executable as written?
+  - Is any context missing?
+  - Is the write scope enough?
+  - Can every acceptance example be checked by a command or an artifact?
+
+  Objections revise the workflow within a round cap, or go to the desk. The evaluator Step later receives the
+  packet's design rationale, so the build is reviewed against intent as well as the diff.
+- **Measurable acceptance.** `sindri packet validate` (§17.4) rejects an acceptance example that uses an
+  unmeasurable term ("fast", "clean", "nice", "intuitive", "simple", "good", "obvious") without a number or a
+  reference artifact. Example: "returns in under 200 ms on the 10k fixture" passes; "fast" fails. The term list is
+  a rule pack.
+
+### 17.23.15 Feedback loops, including external ones
+
+Every feedback loop is a record (a registered artifact) with: signal, trigger, target, action, verification and
+history. There are three classes:
+
+| Class | Fires on | Produces |
+|---|---|---|
+| Aggregate | A repeated pattern: the §7.4 steering sources, repeated verifier catches (§17.23.9) | A rule, prompt or check proposal |
+| Reactive | One incident: an escaped defect, a revert, an incident | An immediate tighten proposal (§17.23.8) |
+| External | A signal from outside the factory: a support ticket, a customer report, an app-store review, an error-tracker spike, through a `Connector` (§17.3) | A tracker item labelled `external`, with a triage SLA from the profile. Never a direct prompt edit |
+
+- When the root cause of an external item turns out to be an agent artifact, a reactive loop is opened and linked
+  to it.
+- The digest lists external items past their SLA.
+- External text is untrusted data (invariant 7). It is scrubbed, and values typed by users aren't kept beyond the
+  item (§17.3).
+
+### 17.23.16 Factory and human cohorts
+
+The dashboard (Plan 6) gains a **Velocity** view: the last 14 days by default, filtered by repo.
+
+- It shows the same indicators for three cohorts: all work, human-authored PRs, and factory-authored PRs (PRs
+  opened for a Sindri item).
+- Indicators:
+  - merged PRs;
+  - cycle time (item start to merge);
+  - rework and revert rate within 30 days;
+  - escaped defects;
+  - tracked cost (model tokens and compute).
+- Human time is shown as human-minutes, never as a dollar figure. The view has no per-person breakdown, and it
+  presents the cohorts side by side, not as a contest.
+- Per workflow and per standing workflow, it also shows the success rate (items closed `verified` and merged ÷ items
+  closed) and the cost per merged item.
+
+### 17.23.17 Metrics added to §17.2
+
+| Measure | Target | Why |
+|---|---|---|
+| Pending-decision queue depth, and hours held by back-pressure | Depth ≤ `review.maxPending`; hours held tracked | Invariant 18 |
+| Share of acceptance-example tests proven to fail without the change | ≥ 0.9 of tasks with `test` evidence | §17.23.2 |
+| Existing-test changes per merged PR | Tracked; each one desk-approved | Invariant 17 |
+| Triage accuracy (both directions) | Rises month over month | §17.23.9 |
+| Escaped defects per merged PR, and the share traced to a gate | Falling; traced share ≥ 0.8 | §17.23.9 |
+| `no-progress` parks per lens | Tracked | §17.23.13 |
+| Merge-card calibration (red cards later reworked vs green cards later reworked) | Red rework rate clearly above green | §17.23.7 |
+| Factory vs human cycle time and rework, same size class | Factory rework ≤ human rework | §17.23.16; matches the auto-start kill criterion |
+
+### 17.23.18 Rollout
+
+| Step | Adds |
+|---|---|
+| F0 | Consequence tiers in the profile schema; gate records; the outcome enum and the Not proven section in the ship contract schema; the measurable-acceptance check in `packet validate` |
+| F0.5 | The thin slice runs with read-only existing tests, the prove-the-test script and the diff guardrails from its first PR |
+| F1 | Not proven in PR bodies; no-progress detection; the `mutation` evidence kind |
+| F2 | Review back-pressure; the PR lease; signed receipts, before `epicMerge: auto` is allowed anywhere |
+| F3 | The implementer executability review; the merge-confidence card |
+| F4 | The card on the swipe inbox; comprehension drift in the inspector; the Velocity view |
+| F6 | Escaped-defect tracing, triage accuracy and the tune report; evolve proposals against gate records; feedback-loop records, with external loops once F5's connectors exist |
+
+## 17.24 Factory field review, second pass
+
+A second, deeper read of the same sources (2026-10-10) found nine more practices. Where this section conflicts
+with earlier text, it wins. §17.23.6 and §17.23.9 are read through it.
+
+### 17.24.1 Failure ownership (loki-mode)
+
+Every failed check, Step and item records an **owner**:
+
+| Owner | Examples |
+|---|---|
+| `code` | A test fails on the head, or a lint, type or shape check fails on code the session wrote |
+| `harness` | A Sindri bug, a hook crash (`SND-HOOK-9xx`), a bad handoff |
+| `environment` | A CI runner or preview environment fails, a dependency registry is down, a known flake |
+| `provider` | A model error, a rate limit, a quota limit, a timeout |
+
+- Ownership comes from code, not a model. Exit sources, error codes, the flake register and a rerun on a clean
+  runner decide it. Ownership that can't be decided is recorded as `unknown`, and it never counts as `code`.
+- **Only `code`-owned failures count** toward:
+  - rework and revert rates;
+  - escalation (§17.24.5);
+  - the kill criteria (§2);
+  - consequence-tier and gate-record evidence (§17.23.4, §17.23.8);
+  - evolve's outcome labels (invariant 9).
+- Every other failure goes into Not proven (§17.23.6) and into `doctor`'s health report. Repeats of the same
+  non-code cause become a harness or environment work item, not a prompt proposal.
+- Metric: failures by owner per week. A rising `harness` share is a Sindri defect.
+
+### 17.24.2 Name the oracle before a migration (addyosmani)
+
+A task with change class `migration`, `port`, `upgrade` or `large-refactor` must name its **oracle**: what proves
+behaviour didn't change.
+
+- `sindri packet validate` refuses such a task when it has no oracle.
+- When existing coverage is thin, workflow generation (§17.7) puts the oracle-building tasks first:
+  1. build on the current stack;
+  2. typecheck;
+  3. pin current behaviour with characterization or golden tests.
+
+  Only then come the migration tasks, checked against those tests.
+- The pinning tests are frozen with the packet. Under invariant 17, the migration tasks can't edit them.
+- Sindri's own C# port (readiness §4c) applies the rule narrowly. It is a clean cutover with no TS behaviour parity,
+  so its oracle covers only the frozen hook-facing CLI and file surface, checked by running the real hook scripts
+  against the C# binaries.
+
+### 17.24.3 Critic lens (addyosmani)
+
+A review-only lens that argues **against** the change. Every other Step leans toward shipping, so this one doesn't.
+
+| Looks for | Example |
+|---|---|
+| Assumptions that spread unstated | A default chosen silently that three callers now depend on |
+| Abstraction with one caller | An interface, factory or config option used once |
+| Behaviour change behind a green suite | A case the tests never covered now behaves differently |
+| Dead code and orphans | Exports, branches or config keys left behind by an earlier approach |
+| Six-month comprehensibility | Would someone who wasn't in the session understand why it's shaped this way? |
+| Unconsidered blast radius | Other readers of this data, callers of this function |
+
+- It's required at the `production` consequence tier and on protected paths. Elsewhere it's optional.
+- It runs on a different model from the implementer. Its findings go into the review round like any reviewer's.
+- A critic finding that repeats becomes a shape-check or rule proposal (§17.23.9).
+
+### 17.24.4 Executable assertions on context (dev-sdd-kit)
+
+Context-graph facts and pack sections may carry a cheap **assertion** that is checked before injection. Examples:
+- a symbol exists;
+- a path or route exists;
+- a grep matches;
+- a read-only query returns rows;
+- a config key has a value.
+
+Rules:
+- Assertions run in the task compiler (§17.5) with read-only tools and a time budget.
+- A failing assertion drops the section, or marks it `stale` when the injection plan requires it, and records a
+  freshness miss against the component that produced it (§17.3).
+- A section or fact without an assertion falls back to commit-SHA freshness.
+- Metric: freshness misses per component. It feeds that component's backtest arm.
+
+### 17.24.5 Executor escalation on evidence (loki-mode)
+
+The decision ladder governs decisions. This extends it to the model that runs a build Step.
+
+- Each lens names a starting executor tier (§17.7 `model.tier`). A Step moves up a tier only after a
+  **`code`-owned** failure (§17.24.1): first a retry at the same tier, then the next tier up. Escalation never
+  moves down within an item.
+- Sindri remembers outcomes per **repo shape** (workspace kind plus test runners, for example
+  `multi-root:dotnet+vitest`). A shape with 2 `code`-owned losses in its last 3 runs at a tier starts at the next tier.
+- Non-code failures cause no transition. Each escalation is recorded on the receipt (§17.23.12).
+- Evolve may propose changing a lens's starting tier from the shape history. That's a budget field, so it's
+  approval tier.
+
+### 17.24.6 `spec-conflict` outcome (loki-mode)
+
+This adds a sixth outcome to §17.23.6:
+
+| Outcome | Means | What happens |
+|---|---|---|
+| `spec-conflict` | The task contradicts the packet, the code at the base SHA, or another frozen task | Parks to the desk as a packet miss (§17.2), citing both sides. Not counted as a failure |
+
+### 17.24.7 Delivery metrics and blameless postmortems (dev-sdd-kit)
+
+- The Velocity view (§17.23.16) adds DORA's four keys per repo and cohort: deployment frequency, lead time for
+  changes, change failure rate and time to restore. They're computed from deploys, merges and incidents through
+  `TelemetrySource` (§17.3). A repo with no deploy signal shows "no data" rather than a guess.
+- The incident resolver's standing workflow (§17.9) ends with a **blameless postmortem** draft from a template:
+  timeline, contributing factors, what detected it, what would have caught it earlier, and actions. The human
+  edits and publishes it. Its "what would have caught it" line opens a reactive feedback loop (§17.23.15).
+
+### 17.24.8 Sealed derived artifacts (dev-sdd-kit)
+
+Anything Sindri generates for people to read carries a **seal**: the generator id and version plus hashes of its
+sources. That covers walkthroughs, metric reports, the digest, generated docs, the Velocity numbers and scope maps.
+
+- `sindri seal check` (and `doctor`) fails when a sealed artifact's sources changed or it was hand-edited. The fix
+  is to regenerate it, the same pattern as `sync-rules.sh --check`.
+- A generator writes "no data" for any value it can't derive. It never interpolates or estimates silently.
+- Hand-written docs aren't sealed. Comprehension drift (§17.23.10) covers them.
+
+### 17.24.9 One live variant per artifact (Actual AI workshop)
+
+Evolve runs at most **one** variant per artifact at a time: in offline comparison, shadow, or canary. A second
+proposal for the same artifact waits until the first is adopted, reverted or rejected. Changes to different
+artifacts that share an eval suite are also serialized. This keeps a change in outcome attributable to one cause.
+
+### 17.24.10 Rollout
+
+| Step | Adds |
+|---|---|
+| F0 | Failure ownership in the ledger schema; the oracle field and its check in `packet validate`; the `spec-conflict` outcome |
+| F1 | Ownership on every check and park; sealed digests and reports |
+| F3 | The critic lens; executor escalation and the repo-shape history |
+| F4 | DORA keys in the Velocity view; postmortem drafts in the incident resolver |
+| F5 | Context assertions in the task compiler and the context graph |
+| F6 | One live variant per artifact in evolve's scheduler |
+
+## 17.25 Field harvest: Sindri finds what other factories do and builds it in
+
+Sections 17.23 and 17.24 came from a person and an agent reading other software factories by hand. Under the core
+tenet, this becomes **Sindri's own job**: it watches the field, finds practices it lacks, proves which ones are
+worth having, and builds them through its own factory. §17.18's scout finds ideas. Field harvest is the
+specialised, continuous loop for one source class: other software factories, agent harnesses and coding-agent
+platforms.
+
+```
+ field registry ──► harvest job ──► practice cards ──► gap check vs Sindri ──► rank ──► human: build/later/no
+ (repos, topics,    (read-only,      (mechanism, cited    (have / partial /                     │
+  blogs, changelogs) sandboxed)       file + line, licence) missing, cited §)                   ▼
+                                                                    spec section + guide + work items
+                                                                    built and proven by the factory
+```
+
+**Field registry** (a registered artifact; the human adds or removes entries from the desk or phone):
+- named repos, starting with every source in §17.23 and §17.24;
+- GitHub topic queries (for example `topic:software-factory`, `topic:agent-harness`, `topic:coding-agent`), sorted
+  by stars and recent activity, with a minimum-signal filter;
+- coding-agent vendor changelogs and engineering blogs (§17.18's field row);
+- for each entry, the paths that usually hold the design: README, `docs/`, specs, PRDs, design docs, agent
+  definitions, skills, hooks, gate scripts and the CI workflows.
+
+**Harvest job** (weekly, plus `sindri harvest [--repo <url>] [--topic <q>]`):
+- A bounded, heavy job under the scout's guardrails (§17.18): network limited to the registry's hosts.
+- It shallow-clones each source into a scratch directory **outside any worktree**. It never runs, builds or
+  installs anything it fetched, and all fetched text is untrusted data (invariant 7).
+- It reads only what changed since the last harvest (a commit-SHA cursor per source), so the weekly cost tracks the
+  field's activity, not its size.
+- It stores no code from a source. It keeps summaries with citations: repo, commit SHA, path and line range.
+
+**Practice card** (extends the idea card, §17.18):
+
+| Field | Contents |
+|---|---|
+| Practice | One sentence, plus the mechanism: what runs, when, and what it decides |
+| Citation | Source repo, commit SHA, file and line range for every claim |
+| Licence | The source's licence. MIT, Apache-2.0 or BSD allow porting code with attribution after an ownership check. Anything else, or none, allows ideas only |
+| Gap verdict | `have`, `partial` or `missing`. Each verdict cites the Sindri spec sections and code it was checked against, and quotes the line that covers it or says what is absent |
+| Bears on | The §17.2 metrics and invariants it affects |
+| Fit | Where it plugs in: lens, evidence kind, check, outcome, metric, surface, rule pack, standing workflow, context-graph component |
+| Cost and risk | Size, recurring cost, new egress, protected surfaces touched |
+| Eval plan | How Sindri would prove it helps (§17.18) |
+
+**Gap check, not trust.** The gap verdict is made by a model **with read access only to Sindri's spec, guide and
+code index**. A second model, which doesn't see the first one's verdict, must agree before a `missing` or `partial`
+card is shown to the human (invariant 3). A `have` verdict that a later item contradicts is an eval miss for the
+gap checker. This is how the "already covered" list in §17.23 was made, now done by Sindri.
+
+**Human decision.** Cards appear in the swipe inbox under `scout.maxCardsPerWeek`, ranked by their effect on cited
+gaps ÷ cost. Cards that only add novelty rank below cards tied to a measured gap. Decisions are `build`, `later` or
+`no`, as in §17.18.
+
+**What `build` does.** It opens one work item that the factory runs like any other:
+1. drafts the spec section (an addendum entry in this document's format, with sources, mechanism, rollout row and
+   metric) for the human to approve at the desk;
+2. updates the HTML guide (`docs/sindri.html`) and its catalog rows;
+3. scopes, builds and proves the mechanism through the normal Steps, evals and merge rules (§17.10). Protected
+   surfaces stay approval tier.
+
+The spec edit and the build are separate PRs, so the design can land before the code.
+
+**Guardrails:**
+- Harvest proposes and never adopts (§17.18). It can't edit the registry, its own gap-check prompts or eval suite
+  (invariant 11).
+- A card citing code it can't port (licence) describes the mechanism in Sindri's own words. The build never copies
+  that source.
+- Sources from a workplace (ring 1) are never added to the public registry. A ring-1 profile may have its own
+  private registry.
+- If fewer than one harvested card in five reaches `build` over two months, harvest drops from weekly to monthly.
+
+**Metrics** (added to §17.2):
+- practices harvested;
+- the share judged `missing` that the human agreed with;
+- cards built;
+- the share of built practices still holding their eval gain after 20 items;
+- median time from a practice appearing upstream to it being live in Sindri.
+
+**Seed run.** §17.23 and §17.24 are the first harvest, done by hand on 2026-10-10. Their source list is the
+registry's starting content, and their "already covered" findings are the gap checker's first labelled examples.
+F6 adds the harvest job; until then, `sindri scout --topic software-factory` (§17.18) runs it on demand.
+
+## 17.26 Scoping v2: tracker intake, a retrieving loop, and a packet you edit with the same machinery
+
+This amends §7.1 (intake), §7.5 (the scoping harness) and §17.4 (design studio, packet, amend). Where it conflicts
+with them, this section wins.
+
+The v1 harness (Plan 4) has three limits:
+- it starts only by hand;
+- its challenger re-reads the drafter's evidence pack, so it can find only what was already gathered (§7.5
+  amendment 14);
+- the map leaves preprocessing as a one-shot result: the studio can edit it, but nothing re-runs the search
+  around an edit.
+
+Scoping v2 fixes all three. The principle: **the same pipeline runs at intake, in the loop, and at the desk.** A
+human edit is just another seed for it.
+
+### 17.26.1 Two triggers
+
+| Trigger | How |
+|---|---|
+| Human | `sindri scope <brief | spec section | tracker project | tracker item>`, as today |
+| Tracker intake | The tick (§7.1) scans the tracker with the profile's `intake` filter. Items that triage routes to the scoping queue get a scoping job without a human starting it |
+
+```yaml
+intake:
+  tracker: linear
+  filter:
+    assignee: me            # me | unassigned | any
+    kinds: [project, issue] # projects always scope; issues scope only when triage sizes them above autoStartMaxSize or marks them ambiguous
+    states: [backlog, todo]
+    teams: [<team key>]
+  scopeOnArrival: true      # false: list in `status` as scopable; the human runs `sindri scope`
+```
+
+- `assignee: me` is matched against the tracker identity in the profile. Assigning an item to yourself in the
+  tracker is the way to say "Sindri, scope this".
+- Intake scoping runs host-side and read-only, exactly as the manual command does. It writes the map to the notes
+  dir and adds a **desk-queue entry**: "scope map ready". It never creates tracker issues, writes to the tracker or
+  starts a build.
+- A finished map is a pending decision, so it counts toward `review.maxPending` (§17.23.1). When the queue is full,
+  intake keeps the item `held: review-backpressure` and doesn't scope it yet. That keeps the desk from filling up
+  with maps nobody reads.
+- An item whose text changes after its map was written gets a `map stale` marker. It's re-scoped only on request
+  or when the item changes state.
+- Ring-1 profiles default to `scopeOnArrival: false`, and intake follows the workplace's agent policy (§17.17 Q5).
+
+### 17.26.2 The loop retrieves every round
+
+```
+ brief + intake record
+        │
+        ▼
+ seed queries ──► retrieve (all sources) ──► draft / revise map ──► deterministic checks
+        ▲                                                                   │
+        │                                                                   ▼
+ expansion queries ◄── challenger: gaps as queries ◄── prune pass ◄── challenger: what's missing?
+ (recorded in the map)                                 (what's not supported?)
+```
+
+**Each round:**
+1. **Challenge for recall.** The challenger (a different model from the drafter) doesn't just name missing
+   surfaces. It writes **expansion queries** that would find evidence for them, each typed:
+   - `symbol` (a name or pattern);
+   - `neighbours` (callers, callees or module neighbours of a symbol already in the map);
+   - `similar` (embedding search from a surface's text or a cited symbol);
+   - `tracker` (a search over issues, comments and linked docs);
+   - `notes`;
+   - `route` or `flag` (a pattern over routes, feature-flag keys and config).
+2. **Retrieve.** Sindri code, not the model, runs each query against the sources. Today those are the Plan 3 index
+   (symbols, the call and module graph, per-symbol embeddings, the deps layer), the tracker, notes and transcripts
+   (opt-in). After F5 the context graph's components are added (§17.3). Results are scrubbed, fenced as untrusted,
+   deduplicated against what the run already holds, and cut to the round's budget by rank.
+3. **Revise.** The drafter revises the map with only the new evidence plus the current map. It doesn't re-read
+   the whole pack. A surface it adds must cite one of the retrieved records.
+4. **Prune for precision.** A pruning pass on the challenger model marks surfaces as `weak` when:
+   - their only evidence is a keyword match;
+   - their citations don't support the claim;
+   - they come only from `provenance: model` links (§17.3).
+
+   Code checks the citations first. The model only reads the ones code can't decide. A weak surface is moved to a
+   **Considered and dropped** list with its reason, not deleted, so the human can see it and bring it back.
+5. **Deterministic checks**, as in §7.5.
+
+**Stopping:**
+- The loop stops when a round adds no new surface and drops none, or at `scope.maxRounds` (default 5 for v2), or
+  at the token budget.
+- **Retrieval convergence** also stops it: the expansion queries return no record the run hasn't already seen.
+  That is the honest signal of "exhaustive given these sources". The map states it as `converged` or
+  `capped (rounds | budget)`.
+- A capped map lists its open expansion queries, so the studio can run them later.
+
+**Recorded in the map:**
+- every query, its round, its type and how many records it returned;
+- which surfaces it led to.
+
+The backtest (§7.5) reads this to show which query types earned their recall. Evolve tunes the challenger's query
+prompt against recall and precision, never one without the other (the pass bar is unchanged).
+
+**Code tools.** The loop still gives models **no tools**. "Agent turns that explore the code" are replaced by typed
+queries that Sindri runs. That keeps scoping read-only, budgeted and replayable, and keeps exploration out of the
+model's hands (invariant 13).
+
+### 17.26.3 The map carries the file level, as candidates
+
+Each surface in a v2 map also lists **candidate files and symbols**: the code its citations and retrievals point
+to, ranked, with the query that found each one. These are candidates, not write scopes. They seed the design
+studio, so the packet's write scopes and read seeds start from evidence instead of a blank page. `packet init
+--from-scope` (§17.4) copies them into each task as **proposed** write scope and read seeds, marked `proposed`
+until the human or the studio confirms them.
+
+### 17.26.4 The packet is edited with the same machinery
+
+Preprocessing can miss things or find too much. In the design studio, the human and the agent edit the map and the
+packet, and **every edit re-runs the relevant part of the same pipeline, scoped to the edit**:
+
+| Edit | What re-runs | What you get back |
+|---|---|---|
+| **Add** a surface, file, symbol, route, ticket or product node | A retrieval round seeded by the addition: its neighbours, similar symbols, tests by convention, tickets that mention it, and the challenger's recall pass on just that area | Proposed related surfaces, files and read seeds, each cited. Accept them one by one, or all |
+| **Remove** a surface, file or task | A dependency check: what cites it, which workstreams, tasks, acceptance examples or evidence items lose coverage, and which remaining items only existed because of it | A list of knock-on removals and coverage gaps to accept or reject |
+| **"Too much"** on a surface, workstream or the whole map | The prune pass at a stricter bar | A shorter list with each dropped item's reason |
+| **"Something's missing around X"** (free text) | The challenger turns the text into expansion queries, and one retrieval round runs | New candidates, cited |
+| **Narrow or widen** a write scope | `packet validate`'s write-scope rules (exists or declared new, no overlap with concurrent tasks) plus a neighbours query on the new paths | Validation result and any newly reachable tests or callers |
+| **Run the open queries** of a capped map | One round per query | As for Add |
+| **Several at once** ("add X but remove Y") | All the edits are planned as **one change set** and re-run together: retrieval seeded by X skips Y and anything removed with it, and the dependency check for Y counts X as present | One combined preview of everything the change set adds, removes and leaves uncovered |
+| **Restore** ("remove A — actually A was right") | Brings A back from its tombstone with its citations and provenance. If A's removal took knock-on items with it, they are offered back too, one by one | A, plus the knock-on items to accept or leave out, and any coverage A's return closes |
+| **Undo** a change set, or go back to a revision | Reverts every edit in that change set (or every change set after the revision), then re-runs the checks | The packet as it was, with the reverted change sets kept in history |
+
+Commands: `sindri packet edit <id> add|remove|prune|ask|narrow|widen|restore …` and `sindri packet undo <id>
+<change-set | --to <revision>>` from a terminal, and the same verbs in the studio view (§17.27). They all go through
+one code path. The studio agent turns what you say ("add the export job but drop the admin screen") into one change
+set using the same verbs. Nothing changes until you accept it, and you can accept part of a change set.
+
+**Change sets and revisions.** Every accepted change set makes a new **draft revision** of the map and packet. The
+revisions form an append-only history, so nothing you remove is lost and any earlier state can be restored. Each
+change set records:
+- what you said or typed;
+- the edits it made;
+- what it re-ran;
+- the knock-on items it took or added.
+
+**Rules for edits:**
+- **Provenance on everything.** Every item in the map and packet carries `source: retrieval | model | human` and,
+  for retrieval, the query that found it.
+- **Tombstones.** An item the human removes is kept with its reason, and the loop never re-proposes it unless new
+  evidence appears (a record the run hadn't seen when it was removed). Without this, every re-run would argue with
+  the human. A tombstone is never final. `restore` clears it, and the item comes back as human-pinned.
+- **Changing your mind is normal.** Restore, undo and re-remove are ordinary edits. Each one goes in the decision log
+  with your reason ("A was right once we chose the export design"), so the packet records why the design moved.
+- **Human adds are pinned.** The prune pass never drops a human-added item. It may flag one as weak, with the
+  reason.
+- **Decision log.** Each accepted or rejected proposal is a decision-log record (§17.4), with the asker
+  (`retrieval`, `challenger`, `studio agent` or `human`).
+- **Same checks before freeze.** After any edit, the deterministic scoping checks and `packet validate` run again.
+  `freeze` refuses a packet with `proposed` items not yet confirmed or rejected.
+- **After freeze**, an amendment (§17.4) uses the same verbs on a new draft revision. Only the tasks the edit
+  touches are re-planned.
+
+### 17.26.5 Edits are labels
+
+The human's edits are the best signal of what preprocessing got wrong. They are outcome labels, so invariant 9
+holds.
+
+Labels are computed **at freeze, from the net difference** between the preprocessed map and the frozen packet, not
+from each edit. An item removed and then restored produces no label, and neither does a change set that was undone,
+so changing your mind while designing never teaches the loop the wrong lesson. Each freeze or amendment labels only
+its own net difference. The net difference gives:
+- an **add** that wasn't in the map is a **recall miss**, tagged with the query types that could have found it;
+- a **remove** of a retrieved or model item is a **precision miss**, with its reason;
+- a proposal **accepted** after an Add or Ask counts as a recall hit for that query type;
+- mid-build packet misses (§17.2) are recall misses found late, and they weigh more.
+
+These labels join the backtest corpus. Evolve proposes changes to the challenger's query prompt, the prune bar and
+per-query-type budgets, judged on recall and precision together (§7.4). Metrics, added to §17.2:
+- recall and precision misses per packet, at the desk and after freeze;
+- the share of maps that converged rather than capped;
+- the share of `proposed` candidates the human confirmed.
+
+### 17.26.6 Rollout
+
+| Step | Adds |
+|---|---|
+| Scoping v2a (any time after Plan 3; it needs only the code index and the tracker) | The retrieving loop with typed queries over the index, tracker and notes; the prune pass; convergence; the queries recorded in the map; candidate files per surface |
+| F0 | `packet init --from-scope` carries the candidates as `proposed`; `packet edit` verbs (including restore) with provenance, tombstones and pinned human adds; change sets, draft revisions and `packet undo`; `freeze` refuses unconfirmed `proposed` items; labels from the net difference at freeze |
+| F2 | Tracker intake with the `intake` filter and `scopeOnArrival`, behind review back-pressure |
+| F4 | The same edit verbs on the studio's walkthrough page and the phone (keep or drop a surface is already a phone decision, §17.12) |
+| F5 | Context-graph components join the retrieval round as query targets, each kept only if its backtest arm helps |
+| F6 | Edit labels feed evolve's scoping proposals |
+
+## 17.27 Every step is manageable from the UI
+
+Every Sindri action is manageable from the UI, not only from a terminal. That covers starting a scope, editing a
+packet, approving, adopting and promoting. The UI can lag the CLI while it is built, but no action is terminal-only
+by design.
+
+This amends:
+- the Plan 6 dashboard spec, which is "read-mostly" with actions limited to attach;
+- §17.12, where "host CLI verbs stay the authority".
+
+Safety doesn't change, because UI actions go through the same gates as CLI verbs (below).
+
+### 17.27.1 One command layer, two clients
+
+- Every action is a **command**: a typed request handled by one handler. The handler does the validation, writes
+  the ledger record and the audit entry, and returns `SND-*` errors. Readiness §4b.1 already shapes each use case
+  as a slice with "an endpoint or CLI mapping". This makes both mappings required.
+- The CLI and the UI are two clients of the same handlers. The UI holds **no logic of its own**: no extra checks,
+  shortcuts or UI-only state changes. A rule that is true in the terminal is true in the browser.
+- Long-running commands (scope, backtest, harvest, index build, evolve check) run as ledger jobs. Both clients
+  follow the same progress events, for example `gathering…`, `round 2: 14 queries, 9 new records`,
+  `pruned 3`. Both can cancel the job.
+- **The authority is the command layer.** "CLI verbs are the authority" now means the handlers they call, which
+  the UI calls too.
+
+### 17.27.2 Which surface may run which action
+
+Every UI action carries the same identity and gate as its CLI verb, plus the authenticator its class requires:
+
+| Action class | Examples | Terminal | Dashboard on the host (loopback) | Dashboard over the tailnet (desk view) | Phone (swipe inbox) |
+|---|---|---|---|---|---|
+| Read and watch | Status, timelines, maps, receipts, metrics | yes | yes | yes | yes |
+| Read-only jobs | Scope, backtest, harvest, index build, `doctor`, `verify` | yes | yes | yes, passkey | From a card only (for example "run the open queries") |
+| Non-protected decisions | The §17.12 list: undraft, accept evidence, keep or drop a surface, prompt-text rules, idea and practice cards | yes | yes | yes, passkey | yes, passkey |
+| Desk actions | Answer questions; edit, freeze and amend packets; start an item; hand back a takeover | yes | yes, passkey | yes, passkey | no |
+| Protected (approval tier) | Allowlists, egress, trust lists, tier raises, consequence tiers, `review.maxPending`, gate loosening, evolve adoption, `channel promote`, `profile approve` | yes | yes: passkey plus a **typed confirmation bound to the hash of the full diff**, which is shown in full on the page | no | no |
+
+- Every UI action writes a **signed decision record** (kind, item, choice, device, time), as phone decisions
+  already do (§17.12).
+- Protected actions keep the rule that the confirmation is typed against the exact content. For example, evolve
+  adoption types the variant's sha256 (§7.4). A button alone never adopts, promotes or widens anything.
+- The phone stays limited to binary, non-protected decisions (§17.12, §17.19 C8).
+- Live session input is still a takeover, never a decision (§8.2).
+
+### 17.27.3 The scope button (and its neighbours)
+
+| Where | Button | What it does |
+|---|---|---|
+| A tracker item or project in the backlog view, a spec section, or an uploaded brief | **Scope** | Shows a dry-run first (which sources would be read, with counts, and the token budget; no model is called). On confirm it starts the scoping job, shows progress per round with its queries, and opens the map when done |
+| A scope map | **Edit** verbs from §17.26.4: add, remove, too much, missing around X, run open queries | The same commands as `sindri packet edit` |
+| A scope map | **Create packet** | `packet init --from-scope`, then opens the studio view |
+| A packet | **Validate**, **Freeze** (desk), **Amend** | The same commands; freeze shows `validate`'s result and the unconfirmed proposals first |
+| A past tracker project | **Backtest** | `sindri scope --backtest`, then the recall and precision report |
+| An item in `status` | **Start** (desk), **Hold**, **Re-scope** | The same router commands, behind review back-pressure |
+
+The same pattern applies everywhere else: every view that shows a thing Sindri can act on offers that action.
+Examples:
+- an evolve proposal offers compare, adopt (protected) and revert;
+- a channel build offers promote (protected) and rollback;
+- a gate record offers propose loosening (approval tier);
+- a receipt offers verify;
+- the field registry offers add and remove a source;
+- a repo offers onboard and index build.
+
+### 17.27.4 Parity is tracked, so "later" doesn't become "never"
+
+- Each command declares its CLI form and its UI action in a **command registry** (a registered artifact). Until
+  the UI action exists, the declaration is `ui: pending` with the rollout step it is due in.
+- A test fails when a command has no CLI form, or when a `pending` UI action is past its due step.
+- `doctor` lists the pending UI actions. The guide's catalog shows each command's UI status.
+- Adding a command without a UI declaration fails the same test. A new verb must at least say when its button
+  arrives.
+
+### 17.27.5 Rollout
+
+| Step | Adds |
+|---|---|
+| Plan 6 | The dashboard reads the command registry and shows each action's status. Its server is built on the command layer, so actions can be added without a second implementation |
+| F0 | The command registry and the parity test. Every existing verb is declared, mostly as `ui: pending` |
+| F2 | Passkey enrolment on the host dashboard. Desk actions (start, hand back, answer) and read-only jobs |
+| F4 | The scope button, map editing and packet validate, freeze and amend in the studio view; the tailnet desk view; protected actions with typed hash confirmation |
+| Every F-step | Its "Turn it on" task (§13.3) ships its commands' UI actions, or records `ui: pending` with a due step the parity test enforces |
 
 ## 17.17 Decisions
 
