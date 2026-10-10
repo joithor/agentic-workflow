@@ -29,6 +29,10 @@ expect "nested skill package is matched by its full path" \
   "$(printf 'skills/ui-evidence/src/run.ts\nskills/review/SKILL.md\n')" \
   "$(printf 'ts=true\nbash=true\ndotnet=false\npackages=["skills/ui-evidence"]')"
 
+expect "a judge change also runs scorer, whose tests import judge's source" \
+  "$(printf 'judge/src/db.ts\n')" \
+  "$(printf 'ts=true\nbash=true\ndotnet=false\npackages=["judge","scorer"]')"
+
 expect "a hook change runs bash tests only" \
   "$(printf 'config/hooks/send-gate.sh\n')" \
   "$(printf 'ts=false\nbash=true\ndotnet=false\npackages=[]')"
