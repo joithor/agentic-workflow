@@ -24,12 +24,19 @@
 # http://localhost:<port>. Whatever host it names receives the App JWT, which
 # for its 10-minute life can mint tokens for every installation of the App.
 #
-# Secrets: only the token is ever printed, and only to stdout. The key lives in
-# a mode-600 file inside a private temp dir that is removed on exit; the JWT and
-# the Authorization header reach curl on its stdin (--config -), so they are
-# never in argv or on disk. curl runs with -q, so ~/.curlrc can't add
-# directives. On an API error only the HTTP status and GitHub's message are
-# shown, with token shapes and control characters removed.
+# Secrets: only the token is ever printed, and only to stdout. The key is the
+# one secret that touches disk: a mode-600 file inside a private temp dir,
+# deleted as soon as the JWT is signed (before any network call) and again on
+# exit. The JWT and the Authorization header reach curl on its stdin
+# (--config -), and the response (with the token) comes back on curl's stdout
+# and stays in memory, so neither is ever in argv or on disk. curl runs with
+# -q (no ~/.curlrc) and noproxy "*". On an API error only the HTTP status and
+# GitHub's message are shown, with token shapes and control characters removed.
+#
+# Trust boundary: the URL allowlist and these checks stop mistakes, not a
+# hostile caller. The caller's environment (PATH, exported functions, BASH_ENV,
+# proxies, CA bundle) is trusted, which is why only the owner or the launcher
+# runs this.
 set -euo pipefail
 set +x # an inherited xtrace (bash -x, SHELLOPTS) would trace the JWT and the token
 unset BASH_XTRACEFD
@@ -79,8 +86,19 @@ fi
 umask 077
 WORK="$(mktemp -d "${TMPDIR:-/tmp}/agent-token.XXXXXX")"
 trap 'rm -rf "$WORK"' EXIT
-trap 'exit 130' INT
-trap 'exit 143' TERM
+REQ_PID=""
+# kill_tree PID: signal PID's descendants (the command substitution, curl), then PID.
+kill_tree() {
+  local child
+  for child in $(pgrep -P "$1" 2>/dev/null); do kill_tree "$child"; done
+  kill -TERM "$1" 2>/dev/null || true
+}
+on_signal() {
+  [ -z "$REQ_PID" ] || kill_tree "$REQ_PID"
+  exit "$1"
+}
+trap 'on_signal 130' INT
+trap 'on_signal 143' TERM
 KEY="$WORK/key.pem"
 
 if [ -n "${AGENT_APP_KEY_FILE:-}" ]; then
@@ -114,6 +132,7 @@ jwt="$header.$claims.$sig"
 # config string; the body's own quotes are escaped for curl's config syntax.
 cfg="url = \"$API_URL/app/installations/$INSTALLATION_ID/access_tokens\"
 request = \"POST\"
+noproxy = \"*\"
 header = \"Accept: application/vnd.github+json\"
 header = \"X-GitHub-Api-Version: 2022-11-28\"
 header = \"Authorization: Bearer $jwt\""
@@ -125,22 +144,36 @@ data-raw = \"${body//\"/\\\"}\""
 fi
 unset jwt sig
 
-status="$(printf '%s\n' "$cfg" | curl -q -sS --max-time 30 -o "$WORK/resp.json" -w '%{http_code}' --config -)" \
-  || die "request to $API_URL failed"
+# The request runs as a background job and the main shell `wait`s on it: bash
+# defers a trap until a foreground child exits, but `wait` returns as soon as a
+# trapped signal arrives, so TERM/INT stop the script (and curl) at once. The
+# response stays in the job's memory and reaches jq through pipes (a bash 3.2
+# here-string would be a temp file).
+(
+  resp="$(printf '%s\n' "$cfg" | curl -q -sS --max-time 30 -w '\n%{http_code}' --config -)" \
+    || die "request to $API_URL failed"
+  status="${resp##*$'\n'}"
+  resp="${resp%$'\n'*}"
+
+  if [ "$status" != "201" ]; then
+    msg="$(printf '%s' "$resp" | jq -r '.message // "no message"' 2>/dev/null || echo "unreadable response")"
+    # GitHub's message is plain text; strip control characters and anything
+    # token-shaped all the same, and cap the length.
+    msg="$(printf '%s' "$msg" | LC_ALL=C tr -d '\000-\037\177' \
+      | sed -E 's/(gh[a-z]_|github_pat_)[A-Za-z0-9_.-]+/[redacted]/g' | cut -c1-300)"
+    die "GitHub returned HTTP $status: $msg"
+  fi
+
+  token="$(printf '%s' "$resp" | jq -r '.token // empty')"
+  [ -n "$token" ] || die "GitHub returned no token"
+  if [ "$VERBOSE" -eq 1 ]; then
+    echo "agent-token: expires_at $(printf '%s' "$resp" | jq -r '.expires_at // "unknown"')" >&2
+  fi
+  printf '%s\n' "$token"
+) &
+REQ_PID=$!
 unset cfg
-
-if [ "$status" != "201" ]; then
-  msg="$(jq -r '.message // "no message"' "$WORK/resp.json" 2>/dev/null || echo "unreadable response")"
-  # GitHub's message is plain text; strip control characters and anything
-  # token-shaped all the same, and cap the length.
-  msg="$(printf '%s' "$msg" | LC_ALL=C tr -d '\000-\037\177' \
-    | sed -E 's/(gh[a-z]_|github_pat_)[A-Za-z0-9_.-]+/[redacted]/g' | cut -c1-300)"
-  die "GitHub returned HTTP $status: $msg"
-fi
-
-token="$(jq -r '.token // empty' "$WORK/resp.json")"
-[ -n "$token" ] || die "GitHub returned no token"
-if [ "$VERBOSE" -eq 1 ]; then
-  echo "agent-token: expires_at $(jq -r '.expires_at // "unknown"' "$WORK/resp.json")" >&2
-fi
-printf '%s\n' "$token"
+rc=0
+wait "$REQ_PID" || rc=$?
+REQ_PID=""
+exit "$rc"
