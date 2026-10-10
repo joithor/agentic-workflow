@@ -48,7 +48,11 @@ jobs:
         env:
           EVENT_NAME: ${{ github.event_name }}
           BASE_SHA: ${{ github.event.pull_request.base.sha }}
-        run: bash scripts/ci/changed-areas.sh "$EVENT_NAME" "${BASE_SHA:-}" >> "$GITHUB_OUTPUT"
+          BASE_REF: ${{ github.base_ref }}
+          DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
+        run: >-
+          bash scripts/ci/changed-areas.sh "$EVENT_NAME" "${BASE_SHA:-}" "${BASE_REF:-}" "${DEFAULT_BRANCH:-}"
+          >> "$GITHUB_OUTPUT"
 
   ts:
     name: TS ${{ matrix.package }}

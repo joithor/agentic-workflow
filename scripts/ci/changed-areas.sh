@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # scripts/ci/changed-areas.sh — the CI path filter.
 #
-# Usage: changed-areas.sh <event-name> <base-sha>
+# Usage: changed-areas.sh <event-name> <base-sha> <base-ref> <default-branch>
 #
 # Prints GitHub step outputs (key=value lines) naming which areas a change
 # touches, so each CI job can decide between real work and a no-op success:
@@ -11,8 +11,10 @@
 #                        judge, scrubber and hooks the recordings cover)
 #   packages=[...]       JSON array of the TS packages that changed
 #
-# Anything other than a pull_request with a known base runs everything: a
-# filter that can't tell must not skip a check.
+# Anything other than a pull_request into the default branch with a known base
+# runs everything: a filter that can't tell must not skip a check. A stacked PR
+# (based on another branch) runs everything too, because when its parent merges
+# GitHub retargets it without a new run, and a narrowed result would carry over.
 
 TS_PACKAGES=(mcp-bridge scorer judge sindri skills/ui-evidence skills/bugFixOrchestrator)
 
@@ -77,8 +79,9 @@ classify_changes() {
 }
 
 main() {
-  local event="$1" base="$2"
-  if [ "$event" != "pull_request" ] || [ -z "$base" ]; then
+  local event="$1" base="$2" base_ref="${3:-}" default_branch="${4:-}"
+  if [ "$event" != "pull_request" ] || [ -z "$base" ] || [ -z "$default_branch" ] \
+     || [ "$base_ref" != "$default_branch" ]; then
     print_all
     return 0
   fi
@@ -89,6 +92,6 @@ main() {
 
 if [ "${BASH_SOURCE[0]}" = "$0" ]; then
   set -euo pipefail
-  main "${1:-}" "${2:-}"
+  main "${1:-}" "${2:-}" "${3:-}" "${4:-}"
   echo
 fi
