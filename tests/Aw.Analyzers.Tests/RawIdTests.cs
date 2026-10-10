@@ -54,10 +54,12 @@ public sealed class RawIdTests
                 public override (Guid Run, int N) Pair() => default;
             }
             public delegate void Handler(Guid run);
+            public delegate Guid NextRun();
             """);
 
-        // Lines 11-12: overrides repeat the base's shape and are reported there (lines 6-7).
-        Assert.Equal(["AW1001@14", "AW1001@6", "AW1001@7"], found);
+        // Lines 11-12: overrides repeat the base's shape and are reported there (lines 6-7). Line 15: a delegate's
+        // return type counts too.
+        Assert.Equal(["AW1001@14", "AW1001@15", "AW1001@6", "AW1001@7"], found);
     }
 
     [Fact]
@@ -73,11 +75,14 @@ public sealed class RawIdTests
             public sealed class Key : IEquatable<Guid> { public bool Equals(Guid other) => false; }
             public interface IRuns { void Stop(Guid run); }
             public sealed class Runs : IRuns { public void Stop(Guid run) { } }
+            public interface IFind { void Find(Guid run, string name); }
+            public sealed class Finder : IFind { public void Find(Guid run, string ownerId) { } }
             """);
 
         // Line 4: the generic base declares TId, not Guid. Line 6: the internal interface isn't public surface.
         // Line 7: the base is the BCL's. Line 8 is reported at the base, so its implementation (line 9) isn't.
-        Assert.Equal(["AW1001@4", "AW1001@6", "AW1001@7", "AW1001@8"], found);
+        // Line 11: the base reports 'run' (line 10), but 'ownerId' is raw only in the implementation.
+        Assert.Equal(["AW1001@10", "AW1001@11", "AW1001@4", "AW1001@6", "AW1001@7", "AW1001@8"], found);
     }
 
     [Fact]
