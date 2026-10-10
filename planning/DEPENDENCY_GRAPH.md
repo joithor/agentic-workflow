@@ -4,7 +4,7 @@
 
 | Requirement | Value |
 |-------------|-------|
-| Node.js | >= 20 |
+| Node.js | >= 22 |
 | TypeScript target | ES2022 |
 | Module system | Node16 (ESM — `"type": "module"` in package.json) |
 | Module resolution | Node16 |

@@ -89,8 +89,8 @@ jobs:
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         if: env.CHANGED == 'true'
         with:
-          # .nvmrc is the engines floor (>= 22, set by better-sqlite3 13), so the
-          # version CI tests is the lowest one the packages declare.
+          # .nvmrc holds the engines major (22, set by better-sqlite3 13). setup-node
+          # resolves it to the newest 22.x, so CI tests the major, not 22.0.0 exactly.
           node-version-file: .nvmrc
           cache: npm
           cache-dependency-path: |
