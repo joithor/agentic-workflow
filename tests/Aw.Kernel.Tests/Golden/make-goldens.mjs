@@ -28,6 +28,7 @@ const fixture = {
     "lone \udc00 low",
     "ctrl \u0000\u0001\b\t\n\u000b\f\r\u001f\u007f",
     "caf\u00e9 \u00f1 \u4e2d\u6587",
+    "plus + backtick ` tilde ~ at @ hash #",
     "",
   ],
   numbers: [
@@ -35,7 +36,7 @@ const fixture = {
     1.7976931348623157e308, 2 ** 53, 100, 1.5, -2.5e-10, 0.000001234, 1e300, 4.35, 0.5e-6,
   ],
   nested: { zeta: 1, alpha: 2 },
-  labels: { "caf\u00e9 </x>": "v", plain: "w" },
+  labels: { "caf\u00e9 </x>": "v", "\u4e2d + ` \u{1F600}": "k", plain: "w" },
   emptyList: [],
   emptyObject: {},
 };

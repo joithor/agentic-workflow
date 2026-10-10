@@ -19,6 +19,7 @@
     "lone \udc00 low",
     "ctrl \u0000\u0001\b\t\n\u000b\f\r\u001f",
     "café ñ 中文",
+    "plus + backtick ` tilde ~ at @ hash #",
     ""
   ],
   "numbers": [
@@ -49,6 +50,7 @@
   },
   "labels": {
     "café </x>": "v",
+    "中 + ` 😀": "k",
     "plain": "w"
   },
   "emptyList": [],

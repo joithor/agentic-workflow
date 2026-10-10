@@ -5,6 +5,7 @@ namespace Aw.Kernel.Tests;
 
 [JsonSerializable(typeof(NodeJsonFixture))]
 [JsonSerializable(typeof(Stamp))]
+[JsonSerializable(typeof(Named))]
 [JsonSerializable(typeof(double[]))]
 [JsonSerializable(typeof(Error))]
 [JsonSerializable(typeof(OutboxCommand))]

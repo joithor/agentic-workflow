@@ -45,6 +45,20 @@ public sealed class NodeJsonTests
         Assert.Equal("AW-KERNEL-001", result.Error.Code);
     }
 
+    [Theory]
+    [InlineData("{}")]
+    [InlineData("{\"note\":\"n\"}")]
+    [InlineData("{\"name\":null}")]
+    public void A_missing_required_property_or_a_null_for_a_non_nullable_one_is_an_invalid_error(string json) =>
+        Assert.Equal("AW-KERNEL-001", NodeJson.Deserialize<Named>(Encoding.UTF8.GetBytes(json), _compact).Error.Code);
+
+    [Fact]
+    public void An_optional_parameter_may_be_missing_and_a_nullable_one_may_be_null()
+    {
+        Assert.Equal(new Named("a"), NodeJson.Deserialize<Named>("{\"name\":\"a\"}"u8, _compact).Value);
+        Assert.Equal(new Named("a"), NodeJson.Deserialize<Named>("{\"name\":\"a\",\"note\":null}"u8, _compact).Value);
+    }
+
     [Fact]
     public void A_JSON_null_document_is_an_invalid_error() =>
         Assert.Equal("AW-KERNEL-001", NodeJson.Deserialize<Stamp>("null"u8, _compact).Error.Code);

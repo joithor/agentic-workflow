@@ -35,6 +35,7 @@ public static class NodeJson
             Encoder = NodeJsonEncoder.Instance,
             DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
             RespectNullableAnnotations = true,
+            RespectRequiredConstructorParameters = true,
         };
         options.Converters.Add(new NodeStringConverter());
         options.Converters.Add(new NodeNumberConverter());

@@ -10,7 +10,6 @@ internal sealed record NodeJsonFixture(
     int Count,
     double Ratio,
     IReadOnlyList<bool> Flags,
-    string? Omitted,
     [property: JsonIgnore(Condition = JsonIgnoreCondition.Never)] string? ExplicitNull,
     IReadOnlyList<string> Strings,
     IReadOnlyList<double> Numbers,
@@ -27,7 +26,6 @@ internal sealed record NodeJsonFixture(
         Count: 3,
         Ratio: 0.1 + 0.2,
         Flags: [true, false],
-        Omitted: null,
         ExplicitNull: null,
         Strings:
         [
@@ -40,6 +38,7 @@ internal sealed record NodeJsonFixture(
             "lone \udc00 low",
             "ctrl \u0000\u0001\b\t\n\u000b\f\r\u001f\u007f",
             "caf\u00e9 \u00f1 \u4e2d\u6587",
+            "plus + backtick ` tilde ~ at @ hash #",
             "",
         ],
         Numbers:
@@ -48,9 +47,12 @@ internal sealed record NodeJsonFixture(
             1.7976931348623157e308, 9007199254740992, 100, 1.5, -2.5e-10, 0.000001234, 1e300, 4.35, 0.5e-6,
         ],
         Nested: new Pair(Zeta: 1, Alpha: 2),
-        Labels: new Dictionary<string, string>(StringComparer.Ordinal) { ["caf\u00e9 </x>"] = "v", ["plain"] = "w" },
+        Labels: new Dictionary<string, string>(StringComparer.Ordinal) { ["caf\u00e9 </x>"] = "v", ["\u4e2d + ` \U0001F600"] = "k", ["plain"] = "w" },
         EmptyList: [],
         EmptyObject: new Empty());
+
+    /// <summary>Undefined in TS, so JSON.stringify leaves the key out; null here, so it is left out too.</summary>
+    public string? Omitted { get; init; }
 
     internal sealed record Pair(int Zeta, int Alpha);
 
