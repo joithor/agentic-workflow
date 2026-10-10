@@ -751,6 +751,42 @@ ladder, and each level reuses the one below:
 the shared lease). P3 starts when ring 1 begins, as the safe way to share improvements between home and work. P4
 starts only when a team adopts it, and needs the workplace's approval.
 
+## 17.21 Multiplayer foundations
+
+§17.20 scales Sindri across machines. Serving several **people** (team mode, P4) needs more. Most of it is
+missing today, because the design so far assumes one human, one SQLite writer, file logs and polling. The table
+lists what exists and what is needed, in the order it's built.
+
+| Piece | Today | Needed for multiplayer |
+|---|---|---|
+| **Event log and bus** | The ledger is the record. Hooks append to spool files. The dashboard and the bridge poll | Every state change is an **event** with one envelope: `id`, `type`, `version`, `tenant`, `ring`, `actor`, `item`, `causation`, `correlation`, `trace`, `time`. Events go into an append-only log in the ledger's transaction (**transactional outbox**). Consumers (dashboard, phone, notifier, workers, digests, other instances) read with durable cursors. Transport is a `Bus` port: in-process → database polling or `LISTEN/NOTIFY` → a broker (for example NATS) at P2+. The bridge becomes one consumer, not a parallel channel |
+| **Exactly-once outward actions** | Writes run directly from the ship Step, with idempotency keys on some adapters | Every push, merge, comment, label and notification is an outbox **command** with an idempotency key, run by one dispatcher under the lease. Retries and a second worker can't repeat it |
+| **Identity** | One OS user; host CLI verbs are the authority | People, devices and **service identities** (coordinator, each worker, each agent session, each standing workflow). Every record and event carries an `actor`. Agents never act as a person |
+| **Authorization** | Implicit: the host user can do everything | Roles per tenant: *owner* (protected surfaces, capability approvals), *approver* (decisions in a ring), *contributor* (desk sessions, packets), *viewer*. Every decision kind declares the role it needs. Two-person approval is available per kind (for example capability changes at work) |
+| **Tenancy** | A tenant and ring key on rows (§17.20 seam), single-valued | Isolation per tenant: data, secrets, budgets and quota, rule and lens overlays, notification routing and retention. A query without a tenant fails. No cross-tenant reads, except published packs (P3). Per-tenant fair scheduling, so one team can't starve another |
+| **Concurrency between humans** | One human, so no conflicts | Optimistic concurrency on every item (the item version from §17.19). Claims and assignment ("who owns this decision"), visible presence, and a defined rule for two people deciding at once: the first signed decision wins and the other sees `decided elsewhere` |
+| **Collaboration surfaces** | Decisions only | Comments on items, packets and walkthroughs; @-mentions; handing an item to another person; a shared desk queue with filters per person; notification preferences per user |
+| **Observability** | JSONL tick and hook logs; scorer reports; OTel planned for bridge and sindri (readiness §5) | **One trace per work item:** tick → job → session → tool calls → outward command, with W3C trace context passed into containers and model-proxy calls. Metrics: queue depth, lease age, Step latency by lens, decision latency by person, quota by account, cost by item, person and team, fail-open counts. Logs are structured and correlated by trace id, scrubbed by the logging processor. Every metric and log carries the tenant |
+| **SLOs and alerting** | `doctor` and the silent-failure floor (§10.4) | SLOs for the factory: time from freeze to first PR, decision latency, stall rate, and the coordinator's availability. Alerts route to the on-call person of the tenant, with the main spec's notification budget per person |
+| **Audit** | Ledger rows and the profile's audit log (§8.7) | An append-only audit stream per tenant with a **hash chain** (each entry covers the previous one), exportable. It records every decision, approval, capability change, override and outward action, with actor and device |
+| **Secrets** | Keychain or 0600 files, per host | A secrets port with per-tenant vault backends. Short-lived credentials are issued to workers per Step, and rotation doesn't need a restart |
+| **Config and policy as code** | Profile files with `profile approve` | Versioned profiles per tenant, changed by pull request with the required approvers, and a history of who changed which policy and when |
+| **Data lifecycle** | Retention in §8.4 | Retention, export and deletion per tenant. Backups and restore drills for the coordinator store |
+| **Operations** | One process on one host | Rolling upgrades with version skew rules: workers are at most one minor version behind the coordinator, and events are versioned and upcast. Zero-downtime migrations for the shared store. A health endpoint per component |
+| **API** | CLI verbs; the dashboard's local HTTP | One versioned API (HTTP + event stream) that the CLI, dashboard, phone and other instances all use, plus outbound webhooks. No client gets a private back door |
+
+**Order of work:**
+- **During the C# port (cheap seams):** the event envelope and transactional outbox, outward actions as outbox
+  commands, `actor`/`tenant`/`ring`/trace fields on every record, the `Bus` and secrets ports, and OpenTelemetry with
+  trace propagation. They make P1 simpler as well.
+- **With P2:** the bus transport between hosts, service identities for workers, and trace propagation across
+  machines.
+- **With P4:** people and roles, tenant isolation, collaboration surfaces, hash-chained audit, the shared store,
+  SLOs, and per-tenant secrets and policy.
+
+**Not a goal:** Sindri doesn't become a hosted SaaS. Team mode runs on infrastructure the team controls, under
+its own policy.
+
 ## 17.17 Decisions
 
 **Decided by the human (2026-10-09):**

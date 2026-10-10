@@ -349,6 +349,11 @@ stays fast.
 shared contract-test suite, every event is idempotent, `Lease`, `Launcher` and `Scheduler` are ports, and every row
 carries a tenant and ring key. These cost little now and avoid a second rewrite later.
 
+**Seams for multiplayer** (factory addendum §17.21): one event envelope (`actor`, `tenant`, `ring`, `causation`,
+`correlation`, `trace`), a transactional outbox for every state change and every outward action, `Bus` and
+`Secrets` ports, and OpenTelemetry with trace context passed into child processes and containers. They live in
+`Aw.Kernel` and `Aw.Kernel.Telemetry`, so every ported package gets them from its first commit.
+
 ### 4b.7 Repository tree
 
 ```
