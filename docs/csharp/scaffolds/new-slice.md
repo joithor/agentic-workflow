@@ -33,7 +33,7 @@ src/<Pkg>/Aw.<Pkg>.Features/<Slice>/
 ├── <Slice>Request.cs        # public sealed record <Slice>Request(<typed ids / value objects>), /// summary
 ├── <Slice>Response.cs       # public sealed record <Slice>Response(...), /// summary
 ├── <Slice>Service.cs        # internal sealed class, no constructor parameters, Handle throws NotSupportedException
-└── <Slice>Validator.cs      # internal sealed class, IValidator<<Slice>Request>; empty rule set
+└── <Slice>Validator.cs      # internal sealed class, IValidator<<Slice>Request>; accepts everything until a rule is added
 src/<Pkg>/Aw.<Pkg>.Host/
 ├── Endpoints/<Slice>Endpoint.cs   # http: internal static, Map<Slice>(RouteGroupBuilder) — bind, one service call, ToHttpResult()
 ├── Endpoints/<Slice>Body.cs       # http: internal sealed record <Slice>Body(...) with ToRequest()
@@ -53,7 +53,7 @@ IL2026/IL3050 (errors under warnings-as-errors). The test reaches the `internal`
 
 | File | Change |
 |---|---|
-| `src/<Pkg>/Aw.<Pkg>.Features/<Pkg>FeaturesServiceCollectionExtensions.cs` | Registers the service (scoped), its validator, and the validation decorator, explicitly |
+| `src/<Pkg>/Aw.<Pkg>.Features/<Pkg>FeaturesServiceCollectionExtensions.cs` | Registers the service, its validator, and the validation decorator as the `IService<,>` (template below) |
 | `src/<Pkg>/Aw.<Pkg>.Features/PublicAPI.Unshipped.txt` | The request and response records and all their members, compiler-generated ones included, annotated — written by the `RS0016` code fix (`dotnet format analyzers <project> --diagnostics RS0016`) |
 | `src/<Pkg>/Aw.<Pkg>.Host/Endpoints/EndpointTable.cs` or `Commands/CommandTable.cs` | One line mapping the route or command |
 | `src/<Pkg>/Aw.<Pkg>.Host/<Pkg>JsonContext.cs` | `[JsonSerializable]` for `<Slice>Request`, `<Slice>Response`, and `<Slice>Body` (http) |
@@ -82,6 +82,37 @@ internal sealed class <Slice>Service : IService<<Slice>Request, <Slice>Response>
 The stub has **no constructor parameters**: an unread parameter is `CS9113` and `NotImplementedException` is `MA0025`,
 both errors under the root settings. The `ports` (and `TimeProvider`) arrive in the implement step; the generator has
 already created any new port interface and its fake, and prints the constructor to write.
+
+### Template: `<Slice>Validator.cs`
+
+```csharp
+using Aw.Kernel;
+using Aw.Kernel.Services;
+
+namespace Aw.<Pkg>.Features.<Slice>;
+
+internal sealed class <Slice>Validator : IValidator<<Slice>Request>
+{
+    public Result<Unit> Validate(<Slice>Request value) => Unit.Value;
+}
+```
+
+### Template: the registration (added to `Add<Pkg>Features()`)
+
+```csharp
+services
+    .AddScoped<<Slice>Service>()
+    .AddScoped<IValidator<<Slice>Request>, <Slice>Validator>()
+    .AddScoped<IService<<Slice>Request, <Slice>Response>>(static sp =>
+        new ValidatingService<<Slice>Request, <Slice>Response>(
+            sp.GetRequiredService<<Slice>Service>(),
+            sp.GetRequiredService<IValidator<<Slice>Request>>()));
+```
+
+M.E.DI has no decorators, so the decorator is a factory registration. Its `IServiceProvider` parameter is the one
+exception to "no `IServiceProvider` outside `Host`" (`.agents/rules/csharp.md`, DI): it lives only inside the project's
+own `Add…()` method and only resolves and constructs. `HostTests` resolves every `IService<,>` in a scope, which covers
+what `ValidateOnBuild` can't see inside the factory.
 
 ### Template: `Endpoints/<Slice>Endpoint.cs` (http)
 

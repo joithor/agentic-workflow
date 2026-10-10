@@ -137,7 +137,7 @@ for now; the second HTTP package moves it into a tier-0 Kernel part (second use 
 | File | Change |
 |---|---|
 | `AgenticWorkflow.slnx` | Adds every new project under `/src/<Name>/` and `/tests/` folders |
-| `deps.yaml` | **Declared already** (as `Readiness` and `Packets` are): check that `tier`, `src` (`src/<Name>`) and `projectPrefix` (`Aw.<Name>`) match the inputs (else refuse `NP-DEPS-MISMATCH`), then switch the matching `planned` project edges to `current`. **Not declared:** add the node (`id: <Name>`, `kind: package`, `tier`, `projectPrefix: Aw.<Name>`, `ts: null`, `src: src/<Name>`, `note`) and one edge per `depends` entry (`kind: project`, `status: current`, `note`) |
+| `deps.yaml` | **The node:** if the package is declared already (as `Readiness` and `Packets` are), check that `tier`, `src` (`src/<Name>`) and `projectPrefix` (`Aw.<Name>`) match the inputs, else refuse `NP-DEPS-MISMATCH`. If it isn't declared, add it (`id: <Name>`, `kind: package`, `tier`, `projectPrefix: Aw.<Name>`, `ts: null`, `src: src/<Name>`, `note`). **The edges, one rule for both cases:** for every cross-package project edge the scaffold creates (always `<Name> → Kernel`, since `Core`, `Features` and `Infrastructure` reference `Aw.Kernel`, plus one per `depends` entry), a `planned` edge in `deps.yaml` becomes `current`, and a missing edge is added as `current` with a note. Planned edges the scaffold doesn't create stay `planned` (otherwise `DEPS-STALE-001`) |
 | `tests/Aw.Architecture.Tests/Packages.cs` | Registers the package's assemblies so every §4b.1 rule covers them |
 
 No other file changes. In particular the scaffold never touches `Directory.Packages.props` (see "Before the scaffold"),
@@ -180,15 +180,16 @@ await using (provider.ConfigureAwait(false))
 }
 ```
 
-`CommandTable.Run` binds the arguments, opens a scope (`var scope = provider.CreateAsyncScope(); await using
+`CommandTable.Run(string[] args, IServiceProvider provider, <Name>JsonContext json)` binds the arguments, opens a scope (`var scope = provider.CreateAsyncScope(); await using
 (scope.ConfigureAwait(false)) { … }`), resolves one `IService<TReq, TRes>`, calls it, and maps the `Result` to an exit
-code and output. It is generated in the Host; it moves into a Kernel part only when a second CLI package proves the shape.
+code and output (serialized with `json.<Slice>Response`). It is generated in the Host; it moves into a Kernel part only when a second CLI package proves the shape.
 
 ### Template: `HostTests.cs`
 
 ```csharp
 using Aw.<Name>.Host;
 using Aw.<Name>.Infrastructure;
+using Aw.Kernel.Services;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Time.Testing;
 
@@ -197,18 +198,27 @@ namespace Aw.<Name>.Tests;
 public sealed class HostTests
 {
     [Fact, Trait("Lane", "unit")]
-    public void Container_builds_with_every_registration_valid()
+    public void Every_registered_service_resolves_in_a_scope()
     {
         var settings = new <Name>Settings(StateDirectory: Path.Combine(Path.GetTempPath(), "aw-<name>-di-test"));
         var services = Composition.Compose(new ServiceCollection(), settings, new FakeTimeProvider());
+        var serviceTypes = services
+            .Select(d => d.ServiceType)
+            .Where(t => t.IsGenericType && t.GetGenericTypeDefinition() == typeof(IService<,>))
+            .ToList();
 
         using var provider = services.BuildServiceProvider(
             new ServiceProviderOptions { ValidateOnBuild = true, ValidateScopes = true });
+        using var scope = provider.CreateScope();
 
-        Assert.NotNull(provider);
+        Assert.NotEmpty(serviceTypes);
+        Assert.All(serviceTypes, t => Assert.NotNull(scope.ServiceProvider.GetRequiredService(t)));
     }
 }
 ```
+
+`ValidateOnBuild` can't see inside the decorator factories `/new-slice` registers, so the test resolves every
+`IService<,>` in a scope: a missing inner service or validator registration fails here, not at the first command.
 
 ## The red test
 
@@ -241,7 +251,8 @@ All of them run under the heavy-job lock.
 4. The generator prints the next step: "Make `<FirstSlice>Tests` pass: replace the `Assert.Fail` with the real
    assertion, add the ports the service needs, then implement it in `Features/<FirstSlice>/` (see `/new-slice`)."
 
-The generator's own test suite builds a scaffolded package against the real root files (`Directory.Build.props`,
+The generator's own test suite scaffolds two packages — one declared in `deps.yaml` already and one that isn't — and
+builds each against the real root files (`Directory.Build.props`,
 `.editorconfig`, `tests/.editorconfig`, `Directory.Packages.props`) and asserts criterion 1, so template drift from the
 root settings fails the generator's CI, not the first user.
 
