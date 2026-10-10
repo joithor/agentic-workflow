@@ -17,6 +17,9 @@ public static class JudgeErrors
     /// <summary>AW-JUDGE-004: a brief for this tool use id is already saved.</summary>
     public static readonly ErrorDefinition BriefExists = new("AW-JUDGE-004", ErrorKind.Conflict, "brief already saved");
 
+    /// <summary>AW-JUDGE-010: the --providers flag or AW_JUDGE_PROVIDERS is malformed; the message is the TS error text.</summary>
+    public static readonly ErrorDefinition ProvidersFlag = new("AW-JUDGE-010", ErrorKind.Invalid, "bad providers allowlist");
+
     /// <summary>Every Judge error, for ErrorCatalogue.Validate.</summary>
-    public static IReadOnlyList<ErrorDefinition> All { get; } = [Invalid, UnknownDecision, DecisionExists, BriefExists];
+    public static IReadOnlyList<ErrorDefinition> All { get; } = [Invalid, UnknownDecision, DecisionExists, BriefExists, ProvidersFlag];
 }

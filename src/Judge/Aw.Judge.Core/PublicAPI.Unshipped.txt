@@ -1,9 +1,28 @@
 #nullable enable
-Aw.Judge.Core.JudgeCoreServiceCollectionExtensions
-Aw.Judge.Core.JudgeErrors
-static Aw.Judge.Core.JudgeCoreServiceCollectionExtensions.AddJudgeCore(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
-static Aw.Judge.Core.JudgeErrors.All.get -> System.Collections.Generic.IReadOnlyList<Aw.Kernel.ErrorDefinition!>!
-static readonly Aw.Judge.Core.JudgeErrors.Invalid -> Aw.Kernel.ErrorDefinition!
+Aw.Judge.Core.Briefs.Brief
+Aw.Judge.Core.Briefs.Brief.<Clone>$() -> Aw.Judge.Core.Briefs.Brief!
+Aw.Judge.Core.Briefs.Brief.AcceptanceCriteria.get -> string!
+Aw.Judge.Core.Briefs.Brief.AcceptanceCriteria.init -> void
+Aw.Judge.Core.Briefs.Brief.AgentId.get -> Aw.Judge.Core.Ids.AgentId?
+Aw.Judge.Core.Briefs.Brief.AgentId.init -> void
+Aw.Judge.Core.Briefs.Brief.Brief() -> void
+Aw.Judge.Core.Briefs.Brief.DispatchName.get -> string?
+Aw.Judge.Core.Briefs.Brief.DispatchName.init -> void
+Aw.Judge.Core.Briefs.Brief.Equals(Aw.Judge.Core.Briefs.Brief? other) -> bool
+Aw.Judge.Core.Briefs.Brief.Goal.get -> string!
+Aw.Judge.Core.Briefs.Brief.Goal.init -> void
+Aw.Judge.Core.Briefs.Brief.PromptId.get -> Aw.Judge.Core.Ids.PromptId
+Aw.Judge.Core.Briefs.Brief.PromptId.init -> void
+Aw.Judge.Core.Briefs.Brief.ProofCommand.get -> string!
+Aw.Judge.Core.Briefs.Brief.ProofCommand.init -> void
+Aw.Judge.Core.Briefs.Brief.SavedAt.get -> System.DateTimeOffset
+Aw.Judge.Core.Briefs.Brief.SavedAt.init -> void
+Aw.Judge.Core.Briefs.Brief.SessionId.get -> Aw.Judge.Core.Ids.SessionId
+Aw.Judge.Core.Briefs.Brief.SessionId.init -> void
+Aw.Judge.Core.Briefs.Brief.SubagentType.get -> string!
+Aw.Judge.Core.Briefs.Brief.SubagentType.init -> void
+Aw.Judge.Core.Briefs.Brief.ToolUseId.get -> Aw.Judge.Core.Ids.ToolUseId
+Aw.Judge.Core.Briefs.Brief.ToolUseId.init -> void
 Aw.Judge.Core.Decisions.Agreement
 Aw.Judge.Core.Decisions.Agreement.Agreed = 1 -> Aw.Judge.Core.Decisions.Agreement
 Aw.Judge.Core.Decisions.Agreement.Overrode = 2 -> Aw.Judge.Core.Decisions.Agreement
@@ -73,6 +92,11 @@ Aw.Judge.Core.Decisions.FailureRecord.ReasonCode.get -> string!
 Aw.Judge.Core.Decisions.FailureRecord.ReasonCode.init -> void
 Aw.Judge.Core.Decisions.FailureRecord.Ts.get -> System.DateTimeOffset
 Aw.Judge.Core.Decisions.FailureRecord.Ts.init -> void
+Aw.Judge.Core.Decisions.SkipReason
+Aw.Judge.Core.Decisions.SkipReason.BelowThreshold = 4 -> Aw.Judge.Core.Decisions.SkipReason
+Aw.Judge.Core.Decisions.SkipReason.Failed = 2 -> Aw.Judge.Core.Decisions.SkipReason
+Aw.Judge.Core.Decisions.SkipReason.Timeout = 3 -> Aw.Judge.Core.Decisions.SkipReason
+Aw.Judge.Core.Decisions.SkipReason.Unavailable = 1 -> Aw.Judge.Core.Decisions.SkipReason
 Aw.Judge.Core.Decisions.SkippedProvider
 Aw.Judge.Core.Decisions.SkippedProvider.<Clone>$() -> Aw.Judge.Core.Decisions.SkippedProvider!
 Aw.Judge.Core.Decisions.SkippedProvider.Deconstruct(out string! Provider, out Aw.Judge.Core.Decisions.SkipReason Reason) -> void
@@ -82,51 +106,79 @@ Aw.Judge.Core.Decisions.SkippedProvider.Provider.init -> void
 Aw.Judge.Core.Decisions.SkippedProvider.Reason.get -> Aw.Judge.Core.Decisions.SkipReason
 Aw.Judge.Core.Decisions.SkippedProvider.Reason.init -> void
 Aw.Judge.Core.Decisions.SkippedProvider.SkippedProvider(string! Provider, Aw.Judge.Core.Decisions.SkipReason Reason) -> void
-Aw.Judge.Core.Decisions.SkipReason
-Aw.Judge.Core.Decisions.SkipReason.BelowThreshold = 4 -> Aw.Judge.Core.Decisions.SkipReason
-Aw.Judge.Core.Decisions.SkipReason.Failed = 2 -> Aw.Judge.Core.Decisions.SkipReason
-Aw.Judge.Core.Decisions.SkipReason.Timeout = 3 -> Aw.Judge.Core.Decisions.SkipReason
-Aw.Judge.Core.Decisions.SkipReason.Unavailable = 1 -> Aw.Judge.Core.Decisions.SkipReason
+Aw.Judge.Core.Evaluation.AgentCliResolution
+Aw.Judge.Core.Evaluation.ChainRouting
 Aw.Judge.Core.Ids.AgentId
 Aw.Judge.Core.Ids.AgentId.AgentId() -> void
-Aw.Judge.Core.Ids.AgentId.Equals(Aw.Judge.Core.Ids.AgentId other, System.Collections.Generic.IEqualityComparer<Aw.Judge.Core.Ids.AgentId>! comparer) -> bool
 Aw.Judge.Core.Ids.AgentId.Equals(Aw.Judge.Core.Ids.AgentId other) -> bool
+Aw.Judge.Core.Ids.AgentId.Equals(Aw.Judge.Core.Ids.AgentId other, System.Collections.Generic.IEqualityComparer<Aw.Judge.Core.Ids.AgentId>! comparer) -> bool
 Aw.Judge.Core.Ids.AgentId.GetTypeCode() -> System.TypeCode
 Aw.Judge.Core.Ids.AgentId.IsInitialized() -> bool
 Aw.Judge.Core.Ids.AgentId.ToString(System.IFormatProvider? provider) -> string!
 Aw.Judge.Core.Ids.AgentId.Value.get -> string!
 Aw.Judge.Core.Ids.DecisionId
 Aw.Judge.Core.Ids.DecisionId.DecisionId() -> void
-Aw.Judge.Core.Ids.DecisionId.Equals(Aw.Judge.Core.Ids.DecisionId other, System.Collections.Generic.IEqualityComparer<Aw.Judge.Core.Ids.DecisionId>! comparer) -> bool
 Aw.Judge.Core.Ids.DecisionId.Equals(Aw.Judge.Core.Ids.DecisionId other) -> bool
+Aw.Judge.Core.Ids.DecisionId.Equals(Aw.Judge.Core.Ids.DecisionId other, System.Collections.Generic.IEqualityComparer<Aw.Judge.Core.Ids.DecisionId>! comparer) -> bool
 Aw.Judge.Core.Ids.DecisionId.GetTypeCode() -> System.TypeCode
 Aw.Judge.Core.Ids.DecisionId.IsInitialized() -> bool
 Aw.Judge.Core.Ids.DecisionId.ToString(System.IFormatProvider? provider) -> string!
 Aw.Judge.Core.Ids.DecisionId.Value.get -> string!
 Aw.Judge.Core.Ids.PromptId
-Aw.Judge.Core.Ids.PromptId.Equals(Aw.Judge.Core.Ids.PromptId other, System.Collections.Generic.IEqualityComparer<Aw.Judge.Core.Ids.PromptId>! comparer) -> bool
 Aw.Judge.Core.Ids.PromptId.Equals(Aw.Judge.Core.Ids.PromptId other) -> bool
+Aw.Judge.Core.Ids.PromptId.Equals(Aw.Judge.Core.Ids.PromptId other, System.Collections.Generic.IEqualityComparer<Aw.Judge.Core.Ids.PromptId>! comparer) -> bool
 Aw.Judge.Core.Ids.PromptId.GetTypeCode() -> System.TypeCode
 Aw.Judge.Core.Ids.PromptId.IsInitialized() -> bool
 Aw.Judge.Core.Ids.PromptId.PromptId() -> void
 Aw.Judge.Core.Ids.PromptId.ToString(System.IFormatProvider? provider) -> string!
 Aw.Judge.Core.Ids.PromptId.Value.get -> string!
 Aw.Judge.Core.Ids.SessionId
-Aw.Judge.Core.Ids.SessionId.Equals(Aw.Judge.Core.Ids.SessionId other, System.Collections.Generic.IEqualityComparer<Aw.Judge.Core.Ids.SessionId>! comparer) -> bool
 Aw.Judge.Core.Ids.SessionId.Equals(Aw.Judge.Core.Ids.SessionId other) -> bool
+Aw.Judge.Core.Ids.SessionId.Equals(Aw.Judge.Core.Ids.SessionId other, System.Collections.Generic.IEqualityComparer<Aw.Judge.Core.Ids.SessionId>! comparer) -> bool
 Aw.Judge.Core.Ids.SessionId.GetTypeCode() -> System.TypeCode
 Aw.Judge.Core.Ids.SessionId.IsInitialized() -> bool
 Aw.Judge.Core.Ids.SessionId.SessionId() -> void
 Aw.Judge.Core.Ids.SessionId.ToString(System.IFormatProvider? provider) -> string!
 Aw.Judge.Core.Ids.SessionId.Value.get -> string!
 Aw.Judge.Core.Ids.ToolUseId
-Aw.Judge.Core.Ids.ToolUseId.Equals(Aw.Judge.Core.Ids.ToolUseId other, System.Collections.Generic.IEqualityComparer<Aw.Judge.Core.Ids.ToolUseId>! comparer) -> bool
 Aw.Judge.Core.Ids.ToolUseId.Equals(Aw.Judge.Core.Ids.ToolUseId other) -> bool
+Aw.Judge.Core.Ids.ToolUseId.Equals(Aw.Judge.Core.Ids.ToolUseId other, System.Collections.Generic.IEqualityComparer<Aw.Judge.Core.Ids.ToolUseId>! comparer) -> bool
 Aw.Judge.Core.Ids.ToolUseId.GetTypeCode() -> System.TypeCode
 Aw.Judge.Core.Ids.ToolUseId.IsInitialized() -> bool
-Aw.Judge.Core.Ids.ToolUseId.ToolUseId() -> void
 Aw.Judge.Core.Ids.ToolUseId.ToString(System.IFormatProvider? provider) -> string!
+Aw.Judge.Core.Ids.ToolUseId.ToolUseId() -> void
 Aw.Judge.Core.Ids.ToolUseId.Value.get -> string!
+Aw.Judge.Core.Json.JsArray
+Aw.Judge.Core.Json.JsArray.Items.get -> System.Collections.Generic.IReadOnlyList<Aw.Judge.Core.Json.JsValue!>!
+Aw.Judge.Core.Json.JsArray.JsArray(System.Collections.Generic.IEnumerable<Aw.Judge.Core.Json.JsValue!>! items) -> void
+Aw.Judge.Core.Json.JsBoolean
+Aw.Judge.Core.Json.JsBoolean.JsBoolean(bool value) -> void
+Aw.Judge.Core.Json.JsBoolean.Value.get -> bool
+Aw.Judge.Core.Json.JsJson
+Aw.Judge.Core.Json.JsNull
+Aw.Judge.Core.Json.JsNumber
+Aw.Judge.Core.Json.JsNumber.JsNumber(double value) -> void
+Aw.Judge.Core.Json.JsNumber.Value.get -> double
+Aw.Judge.Core.Json.JsNumbers
+Aw.Judge.Core.Json.JsObject
+Aw.Judge.Core.Json.JsObject.Count.get -> int
+Aw.Judge.Core.Json.JsObject.JsObject() -> void
+Aw.Judge.Core.Json.JsObject.Properties.get -> System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string!, Aw.Judge.Core.Json.JsValue!>>!
+Aw.Judge.Core.Json.JsObject.Remove(string! key) -> bool
+Aw.Judge.Core.Json.JsObject.Set(string! key, Aw.Judge.Core.Json.JsValue! value) -> Aw.Judge.Core.Json.JsObject!
+Aw.Judge.Core.Json.JsObject.TryGet(string! key, out Aw.Judge.Core.Json.JsValue? value) -> bool
+Aw.Judge.Core.Json.JsString
+Aw.Judge.Core.Json.JsString.JsString(string! value) -> void
+Aw.Judge.Core.Json.JsString.Value.get -> string!
+Aw.Judge.Core.Json.JsValue
+Aw.Judge.Core.JudgeCoreServiceCollectionExtensions
+Aw.Judge.Core.JudgeErrors
+Aw.Judge.Core.Ports.IBriefStore
+Aw.Judge.Core.Ports.IBriefStore.ByToolUseId(Aw.Judge.Core.Ids.ToolUseId toolUseId, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Judge.Core.Briefs.Brief?>!>
+Aw.Judge.Core.Ports.IBriefStore.FirstUnmappedByDispatch(Aw.Judge.Core.Ids.SessionId sessionId, Aw.Judge.Core.Ids.PromptId promptId, string! subagentType, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Judge.Core.Briefs.Brief?>!>
+Aw.Judge.Core.Ports.IBriefStore.FirstUnmappedByDispatchName(string! dispatchName, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Judge.Core.Briefs.Brief?>!>
+Aw.Judge.Core.Ports.IBriefStore.Save(Aw.Judge.Core.Briefs.Brief! brief, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Kernel.Unit>!>
+Aw.Judge.Core.Ports.IBriefStore.SetAgentId(Aw.Judge.Core.Ids.ToolUseId toolUseId, Aw.Judge.Core.Ids.AgentId agentId, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Kernel.Unit>!>
 Aw.Judge.Core.Ports.IDecisionLog
 Aw.Judge.Core.Ports.IDecisionLog.CountFailuresSince(System.DateTimeOffset since, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<int>!>
 Aw.Judge.Core.Ports.IDecisionLog.Find(Aw.Judge.Core.Ids.DecisionId id, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Judge.Core.Decisions.DecisionRecord!>!>
@@ -136,6 +188,98 @@ Aw.Judge.Core.Ports.IDecisionLog.PrefixReasonCode(Aw.Judge.Core.Ids.DecisionId i
 Aw.Judge.Core.Ports.IDecisionLog.PruneDetailsBefore(System.DateTimeOffset before, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<int>!>
 Aw.Judge.Core.Ports.IDecisionLog.Record(Aw.Judge.Core.Decisions.DecisionRecord! decision, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Kernel.Unit>!>
 Aw.Judge.Core.Ports.IDecisionLog.RecordFailure(Aw.Judge.Core.Decisions.FailureRecord! failure, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Kernel.Unit>!>
+Aw.Judge.Core.Ports.IExecutableLocator
+Aw.Judge.Core.Ports.IExecutableLocator.IsOnPath(string! name) -> bool
+Aw.Judge.Core.Ports.IModelProvider
+Aw.Judge.Core.Ports.IModelProvider.Classes.get -> System.Collections.Generic.IReadOnlySet<Aw.Judge.Core.Providers.ContentClass>!
+Aw.Judge.Core.Ports.IModelProvider.Decide(Aw.Judge.Core.Providers.QuestionRef! question, System.Text.Json.Nodes.JsonNode? input, System.TimeSpan budget, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Judge.Core.Providers.ProviderResult!>
+Aw.Judge.Core.Ports.IModelProvider.Name.get -> Aw.Judge.Core.Providers.ProviderName
+Aw.Judge.Core.Providers.AgentCliName
+Aw.Judge.Core.Providers.AgentCliName.ClaudeCli = 1 -> Aw.Judge.Core.Providers.AgentCliName
+Aw.Judge.Core.Providers.AgentCliName.CodexCli = 2 -> Aw.Judge.Core.Providers.AgentCliName
+Aw.Judge.Core.Providers.AgentCliName.CursorCli = 3 -> Aw.Judge.Core.Providers.AgentCliName
+Aw.Judge.Core.Providers.AgentCliNames
+Aw.Judge.Core.Providers.ChainSpec
+Aw.Judge.Core.Providers.ChainSpec.<Clone>$() -> Aw.Judge.Core.Providers.ChainSpec!
+Aw.Judge.Core.Providers.ChainSpec.ChainSpec(System.Collections.Generic.IReadOnlyDictionary<Aw.Judge.Core.Providers.ContentClass, System.Collections.Generic.IReadOnlyList<Aw.Judge.Core.Providers.ProviderName>!>! Classes) -> void
+Aw.Judge.Core.Providers.ChainSpec.Classes.get -> System.Collections.Generic.IReadOnlyDictionary<Aw.Judge.Core.Providers.ContentClass, System.Collections.Generic.IReadOnlyList<Aw.Judge.Core.Providers.ProviderName>!>!
+Aw.Judge.Core.Providers.ChainSpec.Classes.init -> void
+Aw.Judge.Core.Providers.ChainSpec.Deconstruct(out System.Collections.Generic.IReadOnlyDictionary<Aw.Judge.Core.Providers.ContentClass, System.Collections.Generic.IReadOnlyList<Aw.Judge.Core.Providers.ProviderName>!>! Classes) -> void
+Aw.Judge.Core.Providers.ChainSpec.Equals(Aw.Judge.Core.Providers.ChainSpec? other) -> bool
+Aw.Judge.Core.Providers.ChainSpec.For(Aw.Judge.Core.Providers.ContentClass contentClass) -> System.Collections.Generic.IReadOnlyList<Aw.Judge.Core.Providers.ProviderName>!
+Aw.Judge.Core.Providers.ChainSpec.Restrict(System.Collections.Generic.IReadOnlyCollection<Aw.Judge.Core.Providers.ProviderName>! allowed) -> Aw.Judge.Core.Providers.ChainSpec!
+Aw.Judge.Core.Providers.ContentClass
+Aw.Judge.Core.Providers.ContentClass.Brief = 3 -> Aw.Judge.Core.Providers.ContentClass
+Aw.Judge.Core.Providers.ContentClass.Code = 1 -> Aw.Judge.Core.Providers.ContentClass
+Aw.Judge.Core.Providers.ContentClass.Diff = 2 -> Aw.Judge.Core.Providers.ContentClass
+Aw.Judge.Core.Providers.ContentClass.Image = 6 -> Aw.Judge.Core.Providers.ContentClass
+Aw.Judge.Core.Providers.ContentClass.MessageMeta = 5 -> Aw.Judge.Core.Providers.ContentClass
+Aw.Judge.Core.Providers.ContentClass.Transcript = 4 -> Aw.Judge.Core.Providers.ContentClass
+Aw.Judge.Core.Providers.ContentClasses
+Aw.Judge.Core.Providers.ProviderDecided
+Aw.Judge.Core.Providers.ProviderDecided.Confidence.get -> double
+Aw.Judge.Core.Providers.ProviderDecided.Confidence.init -> void
+Aw.Judge.Core.Providers.ProviderDecided.Decision.get -> string!
+Aw.Judge.Core.Providers.ProviderDecided.Decision.init -> void
+Aw.Judge.Core.Providers.ProviderDecided.Deconstruct(out string! Decision, out double Confidence, out string! ReasonCode) -> void
+Aw.Judge.Core.Providers.ProviderDecided.Equals(Aw.Judge.Core.Providers.ProviderDecided? other) -> bool
+Aw.Judge.Core.Providers.ProviderDecided.Extra.get -> System.Text.Json.Nodes.JsonObject?
+Aw.Judge.Core.Providers.ProviderDecided.Extra.init -> void
+Aw.Judge.Core.Providers.ProviderDecided.Probabilities.get -> System.Collections.Generic.IReadOnlyDictionary<string!, double>?
+Aw.Judge.Core.Providers.ProviderDecided.Probabilities.init -> void
+Aw.Judge.Core.Providers.ProviderDecided.ProviderDecided(string! Decision, double Confidence, string! ReasonCode) -> void
+Aw.Judge.Core.Providers.ProviderErrored
+Aw.Judge.Core.Providers.ProviderErrored.Deconstruct(out string! ReasonCode) -> void
+Aw.Judge.Core.Providers.ProviderErrored.Equals(Aw.Judge.Core.Providers.ProviderErrored? other) -> bool
+Aw.Judge.Core.Providers.ProviderErrored.ProviderErrored(string! ReasonCode) -> void
+Aw.Judge.Core.Providers.ProviderName
+Aw.Judge.Core.Providers.ProviderName.ClaudeCli = 2 -> Aw.Judge.Core.Providers.ProviderName
+Aw.Judge.Core.Providers.ProviderName.CodexCli = 3 -> Aw.Judge.Core.Providers.ProviderName
+Aw.Judge.Core.Providers.ProviderName.CursorCli = 4 -> Aw.Judge.Core.Providers.ProviderName
+Aw.Judge.Core.Providers.ProviderName.Jev = 5 -> Aw.Judge.Core.Providers.ProviderName
+Aw.Judge.Core.Providers.ProviderName.Rules = 1 -> Aw.Judge.Core.Providers.ProviderName
+Aw.Judge.Core.Providers.ProviderNames
+Aw.Judge.Core.Providers.ProviderResult
+Aw.Judge.Core.Providers.ProviderResult.Deconstruct(out string! ReasonCode) -> void
+Aw.Judge.Core.Providers.ProviderResult.ProviderResult(Aw.Judge.Core.Providers.ProviderResult! original) -> void
+Aw.Judge.Core.Providers.ProviderResult.ProviderResult(string! ReasonCode) -> void
+Aw.Judge.Core.Providers.ProviderResult.ReasonCode.get -> string!
+Aw.Judge.Core.Providers.ProviderResult.ReasonCode.init -> void
+Aw.Judge.Core.Providers.ProviderUnavailable
+Aw.Judge.Core.Providers.ProviderUnavailable.Deconstruct(out string! ReasonCode) -> void
+Aw.Judge.Core.Providers.ProviderUnavailable.Equals(Aw.Judge.Core.Providers.ProviderUnavailable? other) -> bool
+Aw.Judge.Core.Providers.ProviderUnavailable.ProviderUnavailable(string! ReasonCode) -> void
+Aw.Judge.Core.Providers.ProvidersAllowlist
+Aw.Judge.Core.Providers.ProvidersAllowlist.<Clone>$() -> Aw.Judge.Core.Providers.ProvidersAllowlist!
+Aw.Judge.Core.Providers.ProvidersAllowlist.Allowed.get -> System.Collections.Generic.IReadOnlyList<Aw.Judge.Core.Providers.ProviderName>?
+Aw.Judge.Core.Providers.ProvidersAllowlist.Allowed.init -> void
+Aw.Judge.Core.Providers.ProvidersAllowlist.Arguments.get -> System.Collections.Generic.IReadOnlyList<string!>!
+Aw.Judge.Core.Providers.ProvidersAllowlist.Arguments.init -> void
+Aw.Judge.Core.Providers.ProvidersAllowlist.Deconstruct(out System.Collections.Generic.IReadOnlyList<Aw.Judge.Core.Providers.ProviderName>? Allowed, out System.Collections.Generic.IReadOnlyList<string!>! Arguments) -> void
+Aw.Judge.Core.Providers.ProvidersAllowlist.Equals(Aw.Judge.Core.Providers.ProvidersAllowlist? other) -> bool
+Aw.Judge.Core.Providers.ProvidersAllowlist.IsAllowed(Aw.Judge.Core.Providers.ProviderName provider) -> bool
+Aw.Judge.Core.Providers.ProvidersAllowlist.ProvidersAllowlist(System.Collections.Generic.IReadOnlyList<Aw.Judge.Core.Providers.ProviderName>? Allowed, System.Collections.Generic.IReadOnlyList<string!>! Arguments) -> void
+Aw.Judge.Core.Providers.QuestionRef
+Aw.Judge.Core.Providers.QuestionRef.<Clone>$() -> Aw.Judge.Core.Providers.QuestionRef!
+Aw.Judge.Core.Providers.QuestionRef.ContentClass.get -> Aw.Judge.Core.Providers.ContentClass
+Aw.Judge.Core.Providers.QuestionRef.ContentClass.init -> void
+Aw.Judge.Core.Providers.QuestionRef.Criteria.get -> System.Collections.Generic.IReadOnlyDictionary<string!, string!>?
+Aw.Judge.Core.Providers.QuestionRef.Criteria.init -> void
+Aw.Judge.Core.Providers.QuestionRef.Equals(Aw.Judge.Core.Providers.QuestionRef? other) -> bool
+Aw.Judge.Core.Providers.QuestionRef.ExtraProperties.get -> System.Collections.Generic.IReadOnlyDictionary<string!, System.Text.Json.Nodes.JsonObject!>?
+Aw.Judge.Core.Providers.QuestionRef.ExtraProperties.init -> void
+Aw.Judge.Core.Providers.QuestionRef.Name.get -> string!
+Aw.Judge.Core.Providers.QuestionRef.Name.init -> void
+Aw.Judge.Core.Providers.QuestionRef.Outputs.get -> System.Collections.Generic.IReadOnlyList<string!>!
+Aw.Judge.Core.Providers.QuestionRef.Outputs.init -> void
+Aw.Judge.Core.Providers.QuestionRef.Prompt.get -> string!
+Aw.Judge.Core.Providers.QuestionRef.Prompt.init -> void
+Aw.Judge.Core.Providers.QuestionRef.QuestionRef() -> void
+abstract Aw.Judge.Core.Providers.ProviderResult.<Clone>$() -> Aw.Judge.Core.Providers.ProviderResult!
+const Aw.Judge.Core.Providers.ProviderUnavailable.Timeout = "timeout" -> string!
+override Aw.Judge.Core.Briefs.Brief.Equals(object? obj) -> bool
+override Aw.Judge.Core.Briefs.Brief.GetHashCode() -> int
+override Aw.Judge.Core.Briefs.Brief.ToString() -> string!
 override Aw.Judge.Core.Decisions.DecisionDetails.Equals(object? obj) -> bool
 override Aw.Judge.Core.Decisions.DecisionDetails.GetHashCode() -> int
 override Aw.Judge.Core.Decisions.DecisionDetails.ToString() -> string!
@@ -163,6 +307,35 @@ override Aw.Judge.Core.Ids.SessionId.ToString() -> string!
 override Aw.Judge.Core.Ids.ToolUseId.Equals(object? obj) -> bool
 override Aw.Judge.Core.Ids.ToolUseId.GetHashCode() -> int
 override Aw.Judge.Core.Ids.ToolUseId.ToString() -> string!
+override Aw.Judge.Core.Providers.ChainSpec.Equals(object? obj) -> bool
+override Aw.Judge.Core.Providers.ChainSpec.GetHashCode() -> int
+override Aw.Judge.Core.Providers.ChainSpec.ToString() -> string!
+override Aw.Judge.Core.Providers.ProviderDecided.<Clone>$() -> Aw.Judge.Core.Providers.ProviderDecided!
+override Aw.Judge.Core.Providers.ProviderDecided.Equals(object? obj) -> bool
+override Aw.Judge.Core.Providers.ProviderDecided.GetHashCode() -> int
+override Aw.Judge.Core.Providers.ProviderDecided.ToString() -> string!
+override Aw.Judge.Core.Providers.ProviderErrored.<Clone>$() -> Aw.Judge.Core.Providers.ProviderErrored!
+override Aw.Judge.Core.Providers.ProviderErrored.Equals(object? obj) -> bool
+override Aw.Judge.Core.Providers.ProviderErrored.GetHashCode() -> int
+override Aw.Judge.Core.Providers.ProviderErrored.ToString() -> string!
+override Aw.Judge.Core.Providers.ProviderResult.Equals(object? obj) -> bool
+override Aw.Judge.Core.Providers.ProviderResult.GetHashCode() -> int
+override Aw.Judge.Core.Providers.ProviderResult.ToString() -> string!
+override Aw.Judge.Core.Providers.ProviderUnavailable.<Clone>$() -> Aw.Judge.Core.Providers.ProviderUnavailable!
+override Aw.Judge.Core.Providers.ProviderUnavailable.Equals(object? obj) -> bool
+override Aw.Judge.Core.Providers.ProviderUnavailable.GetHashCode() -> int
+override Aw.Judge.Core.Providers.ProviderUnavailable.ToString() -> string!
+override Aw.Judge.Core.Providers.ProvidersAllowlist.Equals(object? obj) -> bool
+override Aw.Judge.Core.Providers.ProvidersAllowlist.GetHashCode() -> int
+override Aw.Judge.Core.Providers.ProvidersAllowlist.ToString() -> string!
+override Aw.Judge.Core.Providers.QuestionRef.Equals(object? obj) -> bool
+override Aw.Judge.Core.Providers.QuestionRef.GetHashCode() -> int
+override Aw.Judge.Core.Providers.QuestionRef.ToString() -> string!
+override sealed Aw.Judge.Core.Providers.ProviderDecided.Equals(Aw.Judge.Core.Providers.ProviderResult? other) -> bool
+override sealed Aw.Judge.Core.Providers.ProviderErrored.Equals(Aw.Judge.Core.Providers.ProviderResult? other) -> bool
+override sealed Aw.Judge.Core.Providers.ProviderUnavailable.Equals(Aw.Judge.Core.Providers.ProviderResult? other) -> bool
+static Aw.Judge.Core.Briefs.Brief.operator !=(Aw.Judge.Core.Briefs.Brief? left, Aw.Judge.Core.Briefs.Brief? right) -> bool
+static Aw.Judge.Core.Briefs.Brief.operator ==(Aw.Judge.Core.Briefs.Brief? left, Aw.Judge.Core.Briefs.Brief? right) -> bool
 static Aw.Judge.Core.Decisions.DecisionDetails.operator !=(Aw.Judge.Core.Decisions.DecisionDetails? left, Aw.Judge.Core.Decisions.DecisionDetails? right) -> bool
 static Aw.Judge.Core.Decisions.DecisionDetails.operator ==(Aw.Judge.Core.Decisions.DecisionDetails? left, Aw.Judge.Core.Decisions.DecisionDetails? right) -> bool
 static Aw.Judge.Core.Decisions.DecisionRecord.operator !=(Aw.Judge.Core.Decisions.DecisionRecord? left, Aw.Judge.Core.Decisions.DecisionRecord? right) -> bool
@@ -171,97 +344,39 @@ static Aw.Judge.Core.Decisions.FailureRecord.operator !=(Aw.Judge.Core.Decisions
 static Aw.Judge.Core.Decisions.FailureRecord.operator ==(Aw.Judge.Core.Decisions.FailureRecord? left, Aw.Judge.Core.Decisions.FailureRecord? right) -> bool
 static Aw.Judge.Core.Decisions.SkippedProvider.operator !=(Aw.Judge.Core.Decisions.SkippedProvider? left, Aw.Judge.Core.Decisions.SkippedProvider? right) -> bool
 static Aw.Judge.Core.Decisions.SkippedProvider.operator ==(Aw.Judge.Core.Decisions.SkippedProvider? left, Aw.Judge.Core.Decisions.SkippedProvider? right) -> bool
+static Aw.Judge.Core.Evaluation.AgentCliResolution.Resolve(Aw.Judge.Core.Ports.IExecutableLocator! locator, string? hostProvider, System.Collections.Generic.IReadOnlyList<Aw.Judge.Core.Providers.AgentCliName>? configured) -> System.Collections.Generic.IReadOnlyList<Aw.Judge.Core.Providers.AgentCliName>!
+static Aw.Judge.Core.Evaluation.ChainRouting.Candidates(Aw.Judge.Core.Providers.ChainSpec! chain, Aw.Judge.Core.Providers.ContentClass contentClass, System.Collections.Generic.IReadOnlyList<Aw.Judge.Core.Ports.IModelProvider!>! providers, System.Collections.Generic.IReadOnlyList<Aw.Judge.Core.Providers.ProviderName>? questionProviders) -> System.Collections.Generic.IReadOnlyList<Aw.Judge.Core.Ports.IModelProvider!>!
+static Aw.Judge.Core.Evaluation.ChainRouting.ProvidersFor(Aw.Judge.Core.Providers.ChainSpec! chain, Aw.Judge.Core.Providers.ContentClass contentClass, System.Collections.Generic.IReadOnlyList<Aw.Judge.Core.Ports.IModelProvider!>! providers) -> System.Collections.Generic.IReadOnlyList<Aw.Judge.Core.Ports.IModelProvider!>!
 static Aw.Judge.Core.Ids.AgentId.From(string! value) -> Aw.Judge.Core.Ids.AgentId
-static Aw.Judge.Core.Ids.AgentId.operator !=(Aw.Judge.Core.Ids.AgentId left, Aw.Judge.Core.Ids.AgentId right) -> bool
-static Aw.Judge.Core.Ids.AgentId.operator ==(Aw.Judge.Core.Ids.AgentId left, Aw.Judge.Core.Ids.AgentId right) -> bool
 static Aw.Judge.Core.Ids.AgentId.Parse(string! s, System.IFormatProvider? provider) -> Aw.Judge.Core.Ids.AgentId
 static Aw.Judge.Core.Ids.AgentId.TryFrom(string? value, out Aw.Judge.Core.Ids.AgentId vo) -> bool
 static Aw.Judge.Core.Ids.AgentId.TryParse(string? s, System.IFormatProvider? provider, out Aw.Judge.Core.Ids.AgentId result) -> bool
+static Aw.Judge.Core.Ids.AgentId.operator !=(Aw.Judge.Core.Ids.AgentId left, Aw.Judge.Core.Ids.AgentId right) -> bool
+static Aw.Judge.Core.Ids.AgentId.operator ==(Aw.Judge.Core.Ids.AgentId left, Aw.Judge.Core.Ids.AgentId right) -> bool
 static Aw.Judge.Core.Ids.DecisionId.From(string! value) -> Aw.Judge.Core.Ids.DecisionId
-static Aw.Judge.Core.Ids.DecisionId.operator !=(Aw.Judge.Core.Ids.DecisionId left, Aw.Judge.Core.Ids.DecisionId right) -> bool
-static Aw.Judge.Core.Ids.DecisionId.operator ==(Aw.Judge.Core.Ids.DecisionId left, Aw.Judge.Core.Ids.DecisionId right) -> bool
 static Aw.Judge.Core.Ids.DecisionId.Parse(string! s, System.IFormatProvider? provider) -> Aw.Judge.Core.Ids.DecisionId
 static Aw.Judge.Core.Ids.DecisionId.TryFrom(string? value, out Aw.Judge.Core.Ids.DecisionId vo) -> bool
 static Aw.Judge.Core.Ids.DecisionId.TryParse(string? s, System.IFormatProvider? provider, out Aw.Judge.Core.Ids.DecisionId result) -> bool
+static Aw.Judge.Core.Ids.DecisionId.operator !=(Aw.Judge.Core.Ids.DecisionId left, Aw.Judge.Core.Ids.DecisionId right) -> bool
+static Aw.Judge.Core.Ids.DecisionId.operator ==(Aw.Judge.Core.Ids.DecisionId left, Aw.Judge.Core.Ids.DecisionId right) -> bool
 static Aw.Judge.Core.Ids.PromptId.From(string! value) -> Aw.Judge.Core.Ids.PromptId
-static Aw.Judge.Core.Ids.PromptId.operator !=(Aw.Judge.Core.Ids.PromptId left, Aw.Judge.Core.Ids.PromptId right) -> bool
-static Aw.Judge.Core.Ids.PromptId.operator ==(Aw.Judge.Core.Ids.PromptId left, Aw.Judge.Core.Ids.PromptId right) -> bool
 static Aw.Judge.Core.Ids.PromptId.Parse(string! s, System.IFormatProvider? provider) -> Aw.Judge.Core.Ids.PromptId
 static Aw.Judge.Core.Ids.PromptId.TryFrom(string? value, out Aw.Judge.Core.Ids.PromptId vo) -> bool
 static Aw.Judge.Core.Ids.PromptId.TryParse(string? s, System.IFormatProvider? provider, out Aw.Judge.Core.Ids.PromptId result) -> bool
+static Aw.Judge.Core.Ids.PromptId.operator !=(Aw.Judge.Core.Ids.PromptId left, Aw.Judge.Core.Ids.PromptId right) -> bool
+static Aw.Judge.Core.Ids.PromptId.operator ==(Aw.Judge.Core.Ids.PromptId left, Aw.Judge.Core.Ids.PromptId right) -> bool
 static Aw.Judge.Core.Ids.SessionId.From(string! value) -> Aw.Judge.Core.Ids.SessionId
-static Aw.Judge.Core.Ids.SessionId.operator !=(Aw.Judge.Core.Ids.SessionId left, Aw.Judge.Core.Ids.SessionId right) -> bool
-static Aw.Judge.Core.Ids.SessionId.operator ==(Aw.Judge.Core.Ids.SessionId left, Aw.Judge.Core.Ids.SessionId right) -> bool
 static Aw.Judge.Core.Ids.SessionId.Parse(string! s, System.IFormatProvider? provider) -> Aw.Judge.Core.Ids.SessionId
 static Aw.Judge.Core.Ids.SessionId.TryFrom(string? value, out Aw.Judge.Core.Ids.SessionId vo) -> bool
 static Aw.Judge.Core.Ids.SessionId.TryParse(string? s, System.IFormatProvider? provider, out Aw.Judge.Core.Ids.SessionId result) -> bool
+static Aw.Judge.Core.Ids.SessionId.operator !=(Aw.Judge.Core.Ids.SessionId left, Aw.Judge.Core.Ids.SessionId right) -> bool
+static Aw.Judge.Core.Ids.SessionId.operator ==(Aw.Judge.Core.Ids.SessionId left, Aw.Judge.Core.Ids.SessionId right) -> bool
 static Aw.Judge.Core.Ids.ToolUseId.From(string! value) -> Aw.Judge.Core.Ids.ToolUseId
-static Aw.Judge.Core.Ids.ToolUseId.operator !=(Aw.Judge.Core.Ids.ToolUseId left, Aw.Judge.Core.Ids.ToolUseId right) -> bool
-static Aw.Judge.Core.Ids.ToolUseId.operator ==(Aw.Judge.Core.Ids.ToolUseId left, Aw.Judge.Core.Ids.ToolUseId right) -> bool
 static Aw.Judge.Core.Ids.ToolUseId.Parse(string! s, System.IFormatProvider? provider) -> Aw.Judge.Core.Ids.ToolUseId
 static Aw.Judge.Core.Ids.ToolUseId.TryFrom(string? value, out Aw.Judge.Core.Ids.ToolUseId vo) -> bool
 static Aw.Judge.Core.Ids.ToolUseId.TryParse(string? s, System.IFormatProvider? provider, out Aw.Judge.Core.Ids.ToolUseId result) -> bool
-static readonly Aw.Judge.Core.JudgeErrors.BriefExists -> Aw.Kernel.ErrorDefinition!
-static readonly Aw.Judge.Core.JudgeErrors.DecisionExists -> Aw.Kernel.ErrorDefinition!
-static readonly Aw.Judge.Core.JudgeErrors.UnknownDecision -> Aw.Kernel.ErrorDefinition!
-Aw.Judge.Core.Briefs.Brief
-Aw.Judge.Core.Briefs.Brief.<Clone>$() -> Aw.Judge.Core.Briefs.Brief!
-Aw.Judge.Core.Briefs.Brief.AcceptanceCriteria.get -> string!
-Aw.Judge.Core.Briefs.Brief.AcceptanceCriteria.init -> void
-Aw.Judge.Core.Briefs.Brief.AgentId.get -> Aw.Judge.Core.Ids.AgentId?
-Aw.Judge.Core.Briefs.Brief.AgentId.init -> void
-Aw.Judge.Core.Briefs.Brief.Brief() -> void
-Aw.Judge.Core.Briefs.Brief.DispatchName.get -> string?
-Aw.Judge.Core.Briefs.Brief.DispatchName.init -> void
-Aw.Judge.Core.Briefs.Brief.Equals(Aw.Judge.Core.Briefs.Brief? other) -> bool
-Aw.Judge.Core.Briefs.Brief.Goal.get -> string!
-Aw.Judge.Core.Briefs.Brief.Goal.init -> void
-Aw.Judge.Core.Briefs.Brief.PromptId.get -> Aw.Judge.Core.Ids.PromptId
-Aw.Judge.Core.Briefs.Brief.PromptId.init -> void
-Aw.Judge.Core.Briefs.Brief.ProofCommand.get -> string!
-Aw.Judge.Core.Briefs.Brief.ProofCommand.init -> void
-Aw.Judge.Core.Briefs.Brief.SavedAt.get -> System.DateTimeOffset
-Aw.Judge.Core.Briefs.Brief.SavedAt.init -> void
-Aw.Judge.Core.Briefs.Brief.SessionId.get -> Aw.Judge.Core.Ids.SessionId
-Aw.Judge.Core.Briefs.Brief.SessionId.init -> void
-Aw.Judge.Core.Briefs.Brief.SubagentType.get -> string!
-Aw.Judge.Core.Briefs.Brief.SubagentType.init -> void
-Aw.Judge.Core.Briefs.Brief.ToolUseId.get -> Aw.Judge.Core.Ids.ToolUseId
-Aw.Judge.Core.Briefs.Brief.ToolUseId.init -> void
-Aw.Judge.Core.Ports.IBriefStore
-Aw.Judge.Core.Ports.IBriefStore.ByToolUseId(Aw.Judge.Core.Ids.ToolUseId toolUseId, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Judge.Core.Briefs.Brief?>!>
-Aw.Judge.Core.Ports.IBriefStore.FirstUnmappedByDispatch(Aw.Judge.Core.Ids.SessionId sessionId, Aw.Judge.Core.Ids.PromptId promptId, string! subagentType, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Judge.Core.Briefs.Brief?>!>
-Aw.Judge.Core.Ports.IBriefStore.FirstUnmappedByDispatchName(string! dispatchName, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Judge.Core.Briefs.Brief?>!>
-Aw.Judge.Core.Ports.IBriefStore.Save(Aw.Judge.Core.Briefs.Brief! brief, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Kernel.Unit>!>
-Aw.Judge.Core.Ports.IBriefStore.SetAgentId(Aw.Judge.Core.Ids.ToolUseId toolUseId, Aw.Judge.Core.Ids.AgentId agentId, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Kernel.Unit>!>
-override Aw.Judge.Core.Briefs.Brief.Equals(object? obj) -> bool
-override Aw.Judge.Core.Briefs.Brief.GetHashCode() -> int
-override Aw.Judge.Core.Briefs.Brief.ToString() -> string!
-static Aw.Judge.Core.Briefs.Brief.operator !=(Aw.Judge.Core.Briefs.Brief? left, Aw.Judge.Core.Briefs.Brief? right) -> bool
-static Aw.Judge.Core.Briefs.Brief.operator ==(Aw.Judge.Core.Briefs.Brief? left, Aw.Judge.Core.Briefs.Brief? right) -> bool
-Aw.Judge.Core.Json.JsArray
-Aw.Judge.Core.Json.JsArray.Items.get -> System.Collections.Generic.IReadOnlyList<Aw.Judge.Core.Json.JsValue!>!
-Aw.Judge.Core.Json.JsArray.JsArray(System.Collections.Generic.IEnumerable<Aw.Judge.Core.Json.JsValue!>! items) -> void
-Aw.Judge.Core.Json.JsBoolean
-Aw.Judge.Core.Json.JsBoolean.JsBoolean(bool value) -> void
-Aw.Judge.Core.Json.JsBoolean.Value.get -> bool
-Aw.Judge.Core.Json.JsJson
-Aw.Judge.Core.Json.JsNull
-Aw.Judge.Core.Json.JsNumber
-Aw.Judge.Core.Json.JsNumber.JsNumber(double value) -> void
-Aw.Judge.Core.Json.JsNumber.Value.get -> double
-Aw.Judge.Core.Json.JsNumbers
-Aw.Judge.Core.Json.JsObject
-Aw.Judge.Core.Json.JsObject.Count.get -> int
-Aw.Judge.Core.Json.JsObject.JsObject() -> void
-Aw.Judge.Core.Json.JsObject.Properties.get -> System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string!, Aw.Judge.Core.Json.JsValue!>>!
-Aw.Judge.Core.Json.JsObject.Remove(string! key) -> bool
-Aw.Judge.Core.Json.JsObject.Set(string! key, Aw.Judge.Core.Json.JsValue! value) -> Aw.Judge.Core.Json.JsObject!
-Aw.Judge.Core.Json.JsObject.TryGet(string! key, out Aw.Judge.Core.Json.JsValue? value) -> bool
-Aw.Judge.Core.Json.JsString
-Aw.Judge.Core.Json.JsString.JsString(string! value) -> void
-Aw.Judge.Core.Json.JsString.Value.get -> string!
-Aw.Judge.Core.Json.JsValue
+static Aw.Judge.Core.Ids.ToolUseId.operator !=(Aw.Judge.Core.Ids.ToolUseId left, Aw.Judge.Core.Ids.ToolUseId right) -> bool
+static Aw.Judge.Core.Ids.ToolUseId.operator ==(Aw.Judge.Core.Ids.ToolUseId left, Aw.Judge.Core.Ids.ToolUseId right) -> bool
 static Aw.Judge.Core.Json.JsJson.Parse(string! text) -> Aw.Judge.Core.Json.JsValue?
 static Aw.Judge.Core.Json.JsJson.Stringify(Aw.Judge.Core.Json.JsValue! value) -> string!
 static Aw.Judge.Core.Json.JsJson.StringifyIndented(Aw.Judge.Core.Json.JsValue! value) -> string!
@@ -273,3 +388,40 @@ static Aw.Judge.Core.Json.JsValue.From(double value) -> Aw.Judge.Core.Json.JsVal
 static Aw.Judge.Core.Json.JsValue.From(string! value) -> Aw.Judge.Core.Json.JsValue!
 static Aw.Judge.Core.Json.JsValue.FromNullable(string? value) -> Aw.Judge.Core.Json.JsValue!
 static Aw.Judge.Core.Json.JsValue.Null.get -> Aw.Judge.Core.Json.JsValue!
+static Aw.Judge.Core.JudgeCoreServiceCollectionExtensions.AddJudgeCore(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
+static Aw.Judge.Core.JudgeErrors.All.get -> System.Collections.Generic.IReadOnlyList<Aw.Kernel.ErrorDefinition!>!
+static Aw.Judge.Core.Providers.AgentCliNames.Binary(Aw.Judge.Core.Providers.AgentCliName value) -> string!
+static Aw.Judge.Core.Providers.AgentCliNames.DefaultOrder.get -> System.Collections.Generic.IReadOnlyList<Aw.Judge.Core.Providers.AgentCliName>!
+static Aw.Judge.Core.Providers.AgentCliNames.FromHost(string? value) -> Aw.Judge.Core.Providers.AgentCliName?
+static Aw.Judge.Core.Providers.AgentCliNames.FromProvider(Aw.Judge.Core.Providers.ProviderName value) -> Aw.Judge.Core.Providers.AgentCliName?
+static Aw.Judge.Core.Providers.AgentCliNames.Provider(Aw.Judge.Core.Providers.AgentCliName value) -> Aw.Judge.Core.Providers.ProviderName
+static Aw.Judge.Core.Providers.ChainSpec.Build(System.Collections.Generic.IReadOnlyList<Aw.Judge.Core.Providers.AgentCliName>! agentClis, bool jev) -> Aw.Judge.Core.Providers.ChainSpec!
+static Aw.Judge.Core.Providers.ChainSpec.Default.get -> Aw.Judge.Core.Providers.ChainSpec!
+static Aw.Judge.Core.Providers.ChainSpec.operator !=(Aw.Judge.Core.Providers.ChainSpec? left, Aw.Judge.Core.Providers.ChainSpec? right) -> bool
+static Aw.Judge.Core.Providers.ChainSpec.operator ==(Aw.Judge.Core.Providers.ChainSpec? left, Aw.Judge.Core.Providers.ChainSpec? right) -> bool
+static Aw.Judge.Core.Providers.ContentClasses.All.get -> System.Collections.Generic.IReadOnlyList<Aw.Judge.Core.Providers.ContentClass>!
+static Aw.Judge.Core.Providers.ContentClasses.Name(Aw.Judge.Core.Providers.ContentClass value) -> string!
+static Aw.Judge.Core.Providers.ContentClasses.Text.get -> System.Collections.Generic.IReadOnlyList<Aw.Judge.Core.Providers.ContentClass>!
+static Aw.Judge.Core.Providers.ProviderDecided.operator !=(Aw.Judge.Core.Providers.ProviderDecided? left, Aw.Judge.Core.Providers.ProviderDecided? right) -> bool
+static Aw.Judge.Core.Providers.ProviderDecided.operator ==(Aw.Judge.Core.Providers.ProviderDecided? left, Aw.Judge.Core.Providers.ProviderDecided? right) -> bool
+static Aw.Judge.Core.Providers.ProviderErrored.operator !=(Aw.Judge.Core.Providers.ProviderErrored? left, Aw.Judge.Core.Providers.ProviderErrored? right) -> bool
+static Aw.Judge.Core.Providers.ProviderErrored.operator ==(Aw.Judge.Core.Providers.ProviderErrored? left, Aw.Judge.Core.Providers.ProviderErrored? right) -> bool
+static Aw.Judge.Core.Providers.ProviderNames.Name(Aw.Judge.Core.Providers.ProviderName value) -> string!
+static Aw.Judge.Core.Providers.ProviderNames.TryParse(string? text, out Aw.Judge.Core.Providers.ProviderName value) -> bool
+static Aw.Judge.Core.Providers.ProviderResult.operator !=(Aw.Judge.Core.Providers.ProviderResult? left, Aw.Judge.Core.Providers.ProviderResult? right) -> bool
+static Aw.Judge.Core.Providers.ProviderResult.operator ==(Aw.Judge.Core.Providers.ProviderResult? left, Aw.Judge.Core.Providers.ProviderResult? right) -> bool
+static Aw.Judge.Core.Providers.ProviderUnavailable.operator !=(Aw.Judge.Core.Providers.ProviderUnavailable? left, Aw.Judge.Core.Providers.ProviderUnavailable? right) -> bool
+static Aw.Judge.Core.Providers.ProviderUnavailable.operator ==(Aw.Judge.Core.Providers.ProviderUnavailable? left, Aw.Judge.Core.Providers.ProviderUnavailable? right) -> bool
+static Aw.Judge.Core.Providers.ProvidersAllowlist.Parse(System.Collections.Generic.IReadOnlyList<string!>! arguments, string? environmentValue) -> Aw.Kernel.Result<Aw.Judge.Core.Providers.ProvidersAllowlist!>!
+static Aw.Judge.Core.Providers.ProvidersAllowlist.operator !=(Aw.Judge.Core.Providers.ProvidersAllowlist? left, Aw.Judge.Core.Providers.ProvidersAllowlist? right) -> bool
+static Aw.Judge.Core.Providers.ProvidersAllowlist.operator ==(Aw.Judge.Core.Providers.ProvidersAllowlist? left, Aw.Judge.Core.Providers.ProvidersAllowlist? right) -> bool
+static Aw.Judge.Core.Providers.QuestionRef.operator !=(Aw.Judge.Core.Providers.QuestionRef? left, Aw.Judge.Core.Providers.QuestionRef? right) -> bool
+static Aw.Judge.Core.Providers.QuestionRef.operator ==(Aw.Judge.Core.Providers.QuestionRef? left, Aw.Judge.Core.Providers.QuestionRef? right) -> bool
+static readonly Aw.Judge.Core.JudgeErrors.BriefExists -> Aw.Kernel.ErrorDefinition!
+static readonly Aw.Judge.Core.JudgeErrors.DecisionExists -> Aw.Kernel.ErrorDefinition!
+static readonly Aw.Judge.Core.JudgeErrors.Invalid -> Aw.Kernel.ErrorDefinition!
+static readonly Aw.Judge.Core.JudgeErrors.ProvidersFlag -> Aw.Kernel.ErrorDefinition!
+static readonly Aw.Judge.Core.JudgeErrors.UnknownDecision -> Aw.Kernel.ErrorDefinition!
+virtual Aw.Judge.Core.Providers.ProviderResult.EqualityContract.get -> System.Type!
+virtual Aw.Judge.Core.Providers.ProviderResult.Equals(Aw.Judge.Core.Providers.ProviderResult? other) -> bool
+virtual Aw.Judge.Core.Providers.ProviderResult.PrintMembers(System.Text.StringBuilder! builder) -> bool
