@@ -1,0 +1,11 @@
+<Project>
+  <!-- CI lock-file guard (spec §4b.6, §4d). Locked restore (RestoreLockedMode, set when CI=true) only fails when
+       package references drift from the lock file; with no lock file at all it quietly writes a new one.
+       This target makes a missing packages.lock.json an error in CI. -->
+  <Target Name="AwRequireLockFile"
+          BeforeTargets="_GenerateRestoreGraphProjectEntry;Restore"
+          Condition="'$(CI)' == 'true' and '$(RestorePackagesWithLockFile)' == 'true' and !Exists('$(MSBuildProjectDirectory)/packages.lock.json')">
+    <Error Code="AW0001"
+           Text="$(MSBuildProjectName) has no packages.lock.json. Run `dotnet restore` locally (CI unset) and commit the packages.lock.json next to $(MSBuildProjectFile)." />
+  </Target>
+</Project>

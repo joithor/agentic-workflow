@@ -1,6 +1,7 @@
 <Project>
   <!-- Build settings for every C# project under this repo (agent-readiness spec §4b.6).
-       Analyzer severities live in .editorconfig; package versions in Directory.Packages.props. -->
+       Analyzer severities live in .editorconfig; package versions in Directory.Packages.props;
+       the CI lock-file guard in Directory.Build.targets. -->
 
   <PropertyGroup Label="Language">
     <Nullable>enable</Nullable>
@@ -14,11 +15,24 @@
     <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
     <!-- The pinned Microsoft.CodeAnalysis.NetAnalyzers package (Directory.Packages.props) owns the CA rules.
          With the SDK's built-in copy also on, every CA diagnostic is reported twice. Code-style (IDE) rules
-         still run from the SDK through EnforceCodeStyleInBuild. -->
+         still run from the SDK through EnforceCodeStyleInBuild.
+         There is deliberately no AnalysisLevel/AnalysisMode here: the SDK wires those through a targets file it
+         imports only when EnableNETAnalyzers is true, and the package ships no build/ folder, so they would be
+         silently ignored. Severity comes from .editorconfig instead: the bulk `error` baseline plus explicit
+         per-rule and per-category lines. -->
     <EnableNETAnalyzers>false</EnableNETAnalyzers>
-    <AnalysisLevel>latest-recommended</AnalysisLevel>
     <!-- Public API carries XML docs; IDE0005 (unused usings) also needs the documentation file to run in build. -->
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
+  </PropertyGroup>
+
+  <!-- NuGet audit (spec §4d): advisory data is fetched live, so with warnings as errors any new advisory would turn
+       every branch red with no change in the repo. High and critical advisories (NU1903, NU1904) fail the build;
+       low and moderate (NU1901, NU1902) stay visible warnings and are left to Dependabot. -->
+  <PropertyGroup Label="NuGet audit">
+    <NuGetAudit>true</NuGetAudit>
+    <NuGetAuditMode>all</NuGetAuditMode>
+    <NuGetAuditLevel>low</NuGetAuditLevel>
+    <WarningsNotAsErrors>$(WarningsNotAsErrors);NU1901;NU1902</WarningsNotAsErrors>
   </PropertyGroup>
 
   <PropertyGroup Label="Reproducible output">
@@ -32,30 +46,41 @@
     <RestorePackagesWithLockFile>true</RestorePackagesWithLockFile>
   </PropertyGroup>
 
-  <!-- CI (GitHub Actions sets CI=true): restore must match the committed packages.lock.json exactly. -->
+  <!-- CI (GitHub Actions sets CI=true). Locked mode fails restore when a project's package references no longer
+       match its packages.lock.json (NU1004). It does not fail on a missing or hand-edited lock file: the
+       AwRequireLockFile target (Directory.Build.targets) fails on a missing one, and
+       scripts/dotnet-verify-packages.sh fails when restore changed a committed one. -->
   <PropertyGroup Label="CI" Condition="'$(CI)' == 'true'">
     <RestoreLockedMode>true</RestoreLockedMode>
     <ContinuousIntegrationBuild>true</ContinuousIntegrationBuild>
   </PropertyGroup>
 
-  <!-- Project roles, from the project name (spec §4b.1). Test projects (*.Tests, *.Testing) are never AOT-compatible. -->
+  <!-- Project roles, from the project name (spec §4b.1). -->
   <PropertyGroup Label="Project roles">
     <_AwName>$(MSBuildProjectName)</_AwName>
     <AwIsTestProject Condition="$(_AwName.EndsWith('.Tests')) or $(_AwName.EndsWith('.Testing'))">true</AwIsTestProject>
+    <AwIsHostProject Condition="$(_AwName.EndsWith('.Host'))">true</AwIsHostProject>
+    <AwIsAnalyzerProject Condition="$(_AwName.EndsWith('.Analyzers'))">true</AwIsAnalyzerProject>
     <AwIsCoreProject Condition="$(_AwName.EndsWith('.Core'))">true</AwIsCoreProject>
-    <AwIsAotLibrary Condition="'$(AwIsTestProject)' != 'true' and ($(_AwName.EndsWith('.Core')) or $(_AwName.EndsWith('.Features')) or $(_AwName.EndsWith('.Infrastructure')) or $(_AwName.StartsWith('Aw.Kernel')))">true</AwIsAotLibrary>
+    <!-- Every other project is a library (Core, Features, Infrastructure, App, Kernel, Redaction, ...). A new
+         project shape is covered by default; opting out needs AwAotCompatible=false in its .csproj with a
+         comment saying why (for example Evidence: Playwright for .NET doesn't support NativeAOT). -->
+    <AwIsLibraryProject Condition="'$(AwIsTestProject)' != 'true' and '$(AwIsHostProject)' != 'true' and '$(AwIsAnalyzerProject)' != 'true'">true</AwIsLibraryProject>
     <!-- Core projects have no I/O, clock or random ids (spec §4b.1). Other projects may opt in with AwBannedSymbols=true. -->
     <AwBannedSymbols Condition="'$(AwBannedSymbols)' == '' and '$(AwIsCoreProject)' == 'true'">true</AwBannedSymbols>
   </PropertyGroup>
 
-  <!-- Turns on the trim and AOT analyzers. PublishAot is set only on entry points, in their own project files. -->
-  <PropertyGroup Condition="'$(AwIsAotLibrary)' == 'true'">
-    <IsAotCompatible>true</IsAotCompatible>
+  <!-- Test projects (*.Tests, and the *.Testing fakes, builders and contract bases) live under tests/. Their
+       analyzer policy is tests/.editorconfig (it wins over the root file there). GenerateDocumentationFile stays
+       on, so IDE0005 (unused usings) still runs; tests/.editorconfig turns off CS1591 instead. -->
+  <PropertyGroup Condition="'$(AwIsTestProject)' == 'true'">
+    <IsPackable>false</IsPackable>
   </PropertyGroup>
 
-  <PropertyGroup Condition="'$(AwIsTestProject)' == 'true'">
-    <GenerateDocumentationFile>false</GenerateDocumentationFile>
-    <IsPackable>false</IsPackable>
+  <!-- AOT: library projects turn on the trim and AOT analyzers. PublishAot is set only on entry points
+       (a Host, or a small package's App project), in their own project files. -->
+  <PropertyGroup Condition="'$(AwIsLibraryProject)' == 'true' and '$(AwAotCompatible)' != 'false'">
+    <IsAotCompatible>true</IsAotCompatible>
   </PropertyGroup>
 
   <ItemGroup Condition="'$(AwBannedSymbols)' == 'true'">
@@ -67,8 +92,10 @@
     <AdditionalFiles Include="$(MSBuildThisFileDirectory)CodeMetricsConfig.txt" Link="CodeMetricsConfig.txt" />
   </ItemGroup>
 
-  <!-- Public API tracking (spec §4b.3): a project that ships public API keeps PublicAPI.Shipped.txt and
-       PublicAPI.Unshipped.txt next to its .csproj; the analyzer then reports any surface change. -->
+  <!-- Public API tracking (spec §4b.3): PublicAPI.Shipped.txt and PublicAPI.Unshipped.txt next to the .csproj.
+       The analyzer reports RS0016 for every public symbol of a project that has no such files, so a library
+       can't opt out by forgetting them (do not set dotnet_public_api_analyzer.require_api_files = true: that
+       silences the analyzer when the files are missing). Test projects turn it off in tests/.editorconfig. -->
   <ItemGroup>
     <AdditionalFiles Include="PublicAPI.Shipped.txt" Condition="Exists('PublicAPI.Shipped.txt')" />
     <AdditionalFiles Include="PublicAPI.Unshipped.txt" Condition="Exists('PublicAPI.Unshipped.txt')" />
