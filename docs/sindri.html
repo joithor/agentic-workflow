@@ -848,7 +848,7 @@ status: active  # proposed | active | retired</code></pre>
     "fencing epoch": ["Fencing epoch", "A counter bumped when the lock is acquired. Every write carries it, and stale epochs are rejected, so a zombie tick can't act.", "§9.1"],
     "swipe inbox": ["Swipe inbox", "The mobile view for binary, non-protected decisions, signed with a passkey on an enrolled device, each with visible buttons and a 10-second undo.", "§17.12, §17.19"],
     "tailnet": ["Tailnet", "A private Tailscale network. The dashboard is served only there (tailscale serve, never funnel).", "§17.12"],
-    "strangler": ["Strangler rewrite", "Porting one package at a time behind an entry-point shim, cutting over only when golden tests pass, with rollback as one profile change.", "readiness §4a, §4c"],
+    "strangler": ["Strangler rewrite", "Porting each package beside the untouched TS install, proving it with golden tests, then one reversible cutover (setup.sh --runtime cs) once every package is at parity.", "readiness §4a, §4c"],
     "slice": ["Feature slice", "One folder per use case holding its request and response records, service, validator and endpoint or CLI mapping. Slices never reference each other.", "readiness §4b.1"],
     "typed id": ["Strongly typed id", "A value type such as ItemId or SizeClass in place of a raw string or Guid; raw ids in public signatures are an analyzer error.", "readiness §4b.3"],
     "golden harness": ["Golden harness", "Recorded TS behaviour (CLI I/O, files, schemas, real hook scripts) replayed against the C# build with declared normalization; byte-identical where it matters.", "readiness §4c"],
@@ -1014,7 +1014,7 @@ status: active  # proposed | active | retired</code></pre>
     ["hosts","designed","Linux built-ins as prerequisites","systemd scheduler, Docker sandbox and a phone-reachable notifier.","§17.13"],
 
     ["readiness","designed","Readiness check module","<code>sindri readiness check</code> per repo and app, recorded in the ledger; Factory's report as score of record when available.","readiness §8"],
-    ["readiness","designed","Cutover contract","Byte-compatible JSON, a golden harness that runs the real hooks, zero fail-open events, regex parity, shims and one-change rollback.","readiness §4c"],
+    ["readiness","designed","Cutover contract","A golden harness that runs the real hooks, a replay week, zero fail-open events, regex parity, and one reversible cutover with a state backup.","readiness §4c"],
     ["readiness","designed","CI, identity and supply chain","read-all permissions, banned untrusted triggers, SHA-pinned actions, NuGet source mapping, loopback bind in code.","readiness §4d"],
     ["readiness","designed","Feature slices on a clean direction","Host → Features → Core ← Infrastructure; Core has no I/O and bans clocks and random ids.","readiness §4b.1"],
     ["readiness","designed","Minimal endpoint → service → repository → SQL","Endpoints call exactly one service; repositories return Core types over hand-written ADO.NET by default.","readiness §4b.2"],

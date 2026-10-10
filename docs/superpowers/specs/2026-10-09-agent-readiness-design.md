@@ -1,6 +1,6 @@
 # Agent readiness for agentic-workflow — design
 
-Status: draft for review, revision 3 · 2026-10-09 (applies /autoplan round 1 A1–A19 and round 2 B1–B13; the C# port itself is decided and was not under review)
+Status: draft for review, revision 4 · 2026-10-10 (rounds 1–2 applied; **one cutover at parity** decided by the owner, replacing per-package shims)
 Target: **Level 5 (Autonomous)** on Factory's agent-readiness framework. Level 4 is a prerequisite for the
 factory work in `2026-10-09-sindri-factory-addendum.md` (§17.16). Level 5 is reached together with that work.
 
@@ -99,11 +99,13 @@ gets CI and golden contract tests as a safety net. The standards in §4 still ap
 2. **One package at a time,** smallest and least shared first: `judge` → `scorer` → `skills/bugFixOrchestrator`
    state CLI → `mcp-bridge` → `skills/ui-evidence` → `sindri` (by module: profile and ledger, scrub, observe,
    index, scope, evolve).
-3. **Cut over per package** when its golden tests pass on C#, its own new unit tests meet the lanes, and an
-   install on both macOS and Linux works. The TS package is deleted in the same PR series, never kept alongside
-   it for long.
-4. **Shared data stays compatible.** The ledger, index and state files keep their schemas and versions, so a C#
-   `sindri` reads what the TS one wrote, and the reverse during cutover.
+3. **One cutover at parity (decided 2026-10-10).** The installed TS toolkit stays untouched while the C# build is
+   ported and proven beside it. Each package is "done" when its golden tests pass against the C# build, its unit
+   tests meet the lanes, and it builds on macOS and Linux. When **every** package is done, one reversible switch
+   moves the install to C#.
+4. **Data compatibility.** The C# build reads every existing ledger, index and state file. On its first run it backs
+   them up and migrates them to the C# schemas (which include the multiplayer seams, §4b). The TS build never reads
+   C# data, so the two builds never share files at the same time.
 5. **Each package rewrite is a packet** (addendum §17.4), built with today's skills on the host. That makes the
    rewrite the first real test of the packet format and the thin end-to-end slice (F0.5), before the factory
    exists.
@@ -349,11 +351,9 @@ stays fast.
 **Seams for distribution and multiplayer** (factory addendum §17.20, §17.21): a `LedgerStore` port with a shared
 contract-test suite, idempotent events, an event envelope (`actor`, `tenant`, `ring`, `causation`, `correlation`,
 `trace`), a transactional outbox, and `Lease`, `Launcher`, `Scheduler`, `Bus` and `Secrets` ports, in `Aw.Kernel`
-and `Aw.Kernel.Telemetry`. **Timing (B1):** every package is ported **at parity first**, with the schemas and bytes
-§4c freezes. The seams that change stored schemas (tenant and ring keys, envelope columns, the outbox table) are
-added in a **post-cutover migration**, only after that package's TS build has been deleted (the 14-day rollback
-window has passed). Golden tests are re-recorded at that migration. Ports and interfaces that don't change stored
-data (`Bus`, `Secrets`, `Lease`, OTel) go in from the first commit.
+and `Aw.Kernel.Telemetry`. Because the C# build doesn't share files with the TS build during the port (one cutover,
+§4a), the seams go into the C# schemas **from the first commit**. The first-run migration (§4a) moves existing data
+into them.
 
 ### 4b.7 Repository tree
 
@@ -449,31 +449,30 @@ fail-open event. A package cuts over only with **zero** fail-open events across 
 hooks that call a ported binary log a `HOOK-FAILOPEN` event that the daily digest lists.
 
 **Regex parity for the scrubber and gates (A2).**
-- One shared pattern file is the source for both builds while both exist.
+- One shared pattern file is the source for both builds until the TS build is deleted.
 - Patterns use explicit ASCII classes (`[0-9]`, `[A-Za-z0-9_]`), `RegexOptions.CultureInvariant`, and never
   `NonBacktracking` where lookarounds exist.
 - Every match has a timeout. A timeout **blocks** (the commit, the write or the egress) and is logged. It never passes.
 - A differential corpus (real secrets shapes, Unicode look-alikes, long inputs) runs both builds in CI and fails on
   any difference, until the TS scrubber is deleted.
 
-**Coexistence and rollback (A5, A18).**
-- Each package is ported **whole**, not module by module, behind one entry-point shim: `bin/<tool>` runs the C# or
-  TS build according to **`runtime.json`** (B3). It lives at `$AW_STATE_DIR/runtime.json` on installs and at
-  `config/runtime.json` in the repo for CI, is owned by the shim, and is read by every package. It is not part of
-  sindri's approved profile. Rollback is one line in that file, and CI runs TS jobs only for packages still on `ts`.
-- **Shim failures deny (B5).** A missing binary, a checksum mismatch or a crash exits with a dedicated code. Gate and
-  scrub hooks treat that code as **deny**, never as a pass, and log `SHIM-FAIL`. The shim adds at most 10 ms per call,
-  measured in CI.
-- **Fail-open is measurable (B5).** Before any port, R1a changes every hook that can fail open to log
-  `HOOK-FAILOPEN` with its cause (today `send-gate.sh` allows silently). The "zero fail-open" cutover rule counts
-  those events.
-- **Judge runs in shadow first (B9).** For one week before judge's switch, both builds answer every call, the TS
-  answer is used, and any disagreement is recorded. Cutover needs zero unexplained disagreements.
-- During a package's cutover its ledger and state schemas are frozen. Neither build migrates them.
-- The TS package is frozen (bug fixes only) once its port starts, and deleted when the C# build has run as default
-  for 14 days with no rollback.
-- `setup.sh`, the provider installers, MCP registration (`node dist/mcp.js` today) and the launchd jobs call the
-  shim, never a runtime directly.
+**One cutover, reversible (A5, A18, decided 2026-10-10).**
+- **During the port** the installed toolkit stays TS. The C# build lives in the same repo under `src/` and builds to
+  its own output directory. Nothing in `setup.sh`, the providers, MCP registration or launchd points at it.
+- **Trying C# early:** `./setup.sh --runtime cs --prefix <dev dir>` installs the C# build into a separate directory for
+  a hand test or a dev session, without touching the real install.
+- **The switch:** `./setup.sh --runtime cs` backs up the state dir (`$AW_STATE_DIR` → a timestamped copy), installs the
+  C# binaries, rewrites hooks, MCP registration and launchd jobs to call them, and runs the first-run data migration.
+- **Rollback:** `./setup.sh --runtime ts --restore <backup>` reinstalls the TS build and restores the backed-up state.
+  The TS build stays in the repo, tagged, for 14 days after the switch, then it's deleted.
+- **The switch happens on the always-on box first**, then the laptop after a day with no rollback.
+- **Fail-open is measurable (B5).** Before the switch, every hook that can fail open logs `HOOK-FAILOPEN` with its
+  cause (today `send-gate.sh` allows silently). The switch needs zero fail-open events across the golden corpus and
+  the replay below.
+- **Replay instead of a live shadow (B9).** Real hook and CLI calls are recorded from the TS install for a week (inputs
+  only, scrubbed) and replayed against the C# build. Any difference in decision or output that the golden
+  normalization doesn't explain blocks the switch.
+- **TS stays frozen to bug fixes** once porting starts. A bug fix to TS re-records the affected goldens in the same PR.
 - **Prebuilt binaries (B6).** Release builds per OS and architecture carry build-provenance attestations. A committed
   `binaries.lock` maps each tool and platform to its expected SHA-256, so the check doesn't trust a checksum
   published in the same release. `setup.sh` installs the binaries the checkout's `binaries.lock` names and verifies
@@ -637,9 +636,9 @@ Recent pace: about 49 commits in 60 days. The sizes below are estimates to be re
 | Step | Contents | Size | Exit |
 |---|---|---|---|
 | R0 | Baseline: a quick manual pass over the nine pillars, recorded per criterion | XS | Baseline recorded |
-| R1a | **Safety and measurement first:**<br>• CI hardened for a public repo, the agent App, the `main` and tag rulesets, the `main`-only key environment (§4d);<br>• fail-open logging in every hook (§4c, B5);<br>• the cutover harness: byte-compat profile, golden harness running the real hooks, scrubber differential corpus, entry-point shims and `runtime.json`, install and MCP-registration migration, `binaries.lock` and release provenance;<br>• the AOT spike (R7, R8, R9, the MCP C# SDK);<br>• the readiness **baseline by a throwaway script** (B2);<br>• usage metrics collection starts here, for R3 (B9).<br>Golden recordings are made **per package when its port starts**, not all up front (B9) | M (1–2 weeks) | Shims and fail-open logging live; baseline recorded; agents can't bypass `main` |
+| R1a | **Safety and measurement:**<br>• CI hardened for a public repo, the agent App, the `main` and tag rulesets, the `main`-only key environment (§4d);<br>• fail-open logging in every hook (§4c, B5);<br>• the golden harness (running the real hooks too) and the scrubber differential corpus;<br>• the AOT spike (R7, R8, R9, the MCP C# SDK);<br>• the readiness baseline by a throwaway script (B2);<br>• usage recording for R3 and for the replay (B9).<br>Golden recordings are made per package when its port starts | M (1–2 weeks) | Fail-open logging live; baseline recorded; agents can't bypass `main` |
 | R1b | **The template:**<br>• `Directory.Build.props`, Central Package Management, analyzers with one owner per rule, the ratchet baseline, `.editorconfig`;<br>• `Aw.Kernel` and its `Data`, `Telemetry` and `Testing` parts;<br>• `deps.yaml` with every edge kind and its checks (§4b.1a);<br>• the `/new-package` and `/new-slice` scaffolds (inputs, generated files, a red test) and `AGENTS.md` for C#;<br>• rule records for the §4b rules;<br>• W5 devcontainer and W6 templates;<br>• **`Aw.Readiness` and `Aw.Packets` as the first two standalone packages built from the template** (B2) | M (1–2 weeks) | A scaffolded package passes every check; `Aw.Readiness` reports Level 4 for the template; the R2 estimate is fixed here as the stop-rule baseline (B9) |
-| R2 | **The ports, one packet per package, whole:** `Judge` and `Redaction` → `Scorer` → `BugFix` → `Bridge` → `Evidence` → `Sindri`. Sindri is sized per module inside its packet. **In parallel,** new factory code (addendum F0 schemas, rule records) is written in C# from the start | L–XL (estimate 6–10 weeks; each packet carries its own) | Every package on C# by default through the shim; TS deleted 14 days after each cutover |
+| R2 | **The ports, one packet per package:** `Redaction` → `Judge` and `Bridge` → `Scorer`, `Evidence` and `BugFix` → `Sindri` (by module inside its packet). Then **the switch**: replay week, `./setup.sh --runtime cs` on the always-on box, then the laptop. **In parallel,** new factory code (addendum F0 schemas, rule records) is written in C# from the start | L–XL (estimate 6–10 weeks; each packet carries its own) | All packages at golden parity; the switch done on both hosts; TS deleted 14 days later |
 | R3 | Remaining Level 4 criteria that need usage data (promotion frequency, flake rates, doc freshness over time), and W9 | S–M | Level 4 passed. **Factory work (F0) starts here** |
 | R4 | Addendum F0–F3 plus the readiness module's weekly workflow | With the addendum | Level 5 passed |
 
@@ -647,5 +646,13 @@ Recent pace: about 49 commits in 60 days. The sizes below are estimates to be re
 - A package that overruns its packet's estimate by 2× is reviewed with the human before more work goes in.
 - **R2 as a whole** overrunning 1.5× its summed estimate triggers a re-plan with the human: reorder, cut scope, or
   run more packets in parallel. The port itself is decided and isn't reopened.
-- CI cost while both builds exist: TS jobs run only for packages whose `runtime` is still `ts`, so cost falls with
-  each cutover.
+- CI cost while both builds exist: TS jobs run only on PRs that touch TS (bug fixes), and the C# jobs run on everything
+  else.
+
+**Dependencies, not a strict sequence.** R1a, R1b and R2 overlap:
+- R1b's build settings, analyzers, `deps.yaml`, the `Aw.Kernel` core, scaffold skeletons and C# `AGENTS.md` need
+  nothing from R1a and can start at once.
+- `Aw.Kernel.Data`, `Aw.Kernel.Testing` and typed ids wait for the AOT spike's answers (R7–R9).
+- A package's port starts when its golden recordings exist and enough of the template does to scaffold it. CI (R1a)
+  runs its goldens.
+- The readiness baseline and the agent token helper block nothing.
