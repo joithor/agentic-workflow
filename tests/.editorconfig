@@ -22,3 +22,9 @@ dotnet_diagnostic.CS1591.severity = none
 # Forward the CancellationToken — owner: MA0040 (root .editorconfig). xUnit1051 reports the same call with
 # TestContext.Current.CancellationToken as the fix (measured: both fired on one `await Task.Delay(1)`).
 dotnet_diagnostic.xUnit1051.severity = none
+
+# *.Testing projects are used by their *.Tests project through InternalsVisibleTo: a small package's builders and
+# builder root are internal because App's records are, so MA0182 ("internal type is never used") can't see their
+# callers from inside the assembly.
+[*.Testing/**.cs]
+dotnet_diagnostic.MA0182.severity = none
