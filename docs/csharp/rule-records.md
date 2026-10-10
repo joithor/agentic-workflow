@@ -12,7 +12,7 @@ mappings (`select: { … }`), which the YAML subset below doesn't allow; write `
 | Path | What |
 |---|---|
 | `rules/engineering/csharp/<slug>.yaml` | One record per rule; the file name is the id's last part |
-| `rules/engineering/csharp.inventory.yaml` | The §4b rule list, every record id with its spec section. It also holds the rules `.agents/rules/csharp.md` states under a §4b heading beyond the spec (no TODO comments, file name matches the type, suppressions need a reason, and every technology behind a port); those records cite `.agents/rules/csharp.md` as their `source`. Rules from other spec sections (§4c, §4d, such as `nuget.config` source mapping) are out of scope |
+| `rules/engineering/csharp.inventory.yaml` | The §4b rule list, every record id with its spec section. It also holds the rules the C# rules docs state under a §4b heading beyond the spec, each citing that doc as its `source`: from `.agents/rules/csharp.md`, `no-todo-comments`, `file-name-matches-type`, `suppressions-need-justification`, `technology-behind-ports`, `test-support-only-in-tests`, `nuget-source-mapping`, `ports-named-for-need` and `di-composition-shape`; from `csharp-testing.md`, `one-lane-trait-per-test`. Rules of other spec sections (§4c, §4d) are out of scope unless the rules docs file them under a §4b heading |
 | `schemas/rule-record.schema.json` | The record schema (JSON Schema, for editors and the check) |
 | `scripts/check-rules.mjs` | The check (`node scripts/check-rules.mjs [--json]`; merge gate item 9, CI "Rule records name real checks") |
 | `scripts/tests/check-rules.test.sh` | Its tests, on the fixture repo in `scripts/tests/fixtures/check-rules/base` |
@@ -48,10 +48,14 @@ source:
 status: active                                 # proposed | active | retired
 ```
 
-Optional fields: `gapNote` (what isn't covered, and how the rule is followed until it is), `relatedIds` (ids the C#
-rules docs mention for this rule that aren't its checks, such as `MA0004`, switched off because `CA2007` owns
-`ConfigureAwait`), and per check `ref`, `entries`, `via`, `package`, `severity`, `pendingPr` and `note` (what the
-check doesn't cover, so the record stays `partial` when a pending check lands).
+Optional fields: `gapNote` (what isn't covered, and how the rule is followed until it is), `relatedIds` (ids related to
+the rule that aren't its checks: every id the C# rules docs mention for it, such as `MA0004`, switched off because
+`CA2007` owns `ConfigureAwait`, plus related ids the docs don't name, such as `CA1005`, which `AW1009` owns), and per
+check `ref`, `entries`, `via`, `package`, `category`, `severity`, `pendingPr` and `note` (what the check doesn't cover,
+so the record stays `partial` when a pending check lands).
+
+A spec-sourced record's text may carry the details the C# rules docs add to that spec rule (for example the six
+`VogenDefaults` arguments, or `synchronous=NORMAL`): those docs implement the spec, and the record names the rule once.
 
 The id is `<kind>.csharp.<slug>`, and the file is `rules/engineering/csharp/<slug>.yaml`.
 
