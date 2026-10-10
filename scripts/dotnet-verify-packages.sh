@@ -10,12 +10,12 @@
 #     when the client verifies signatures. That is off by default on macOS and switched on by
 #     DOTNET_NUGET_SIGNATURE_VERIFICATION=true.
 # So this script:
-#   1. fails if any committed .csproj has no packages.lock.json next to it;
+#   1. fails if any project in AgenticWorkflow.slnx has no committed packages.lock.json next to it;
 #   2. restores the solution with CI=true, --locked-mode and DOTNET_NUGET_SIGNATURE_VERIFICATION=true;
 #   3. fails if restore changed any lock file;
 #   4. runs `dotnet nuget verify --all` with the repo nuget.config over every package the lock files name,
 #      so an untrusted or unsigned package fails even where restore didn't verify.
-# With no C# projects it reports a no-op success.
+# With no projects in the solution it reports a no-op success.
 set -euo pipefail
 
 ROOT="${1:-$(git rev-parse --show-toplevel)}"
@@ -23,9 +23,19 @@ ROOT="$(cd "$ROOT" && pwd)"
 DOTNET="${DOTNET:-dotnet}"
 cd "$ROOT"
 
-projects="$(git ls-files '*.csproj')"
+# The solution defines the build: only projects listed in AgenticWorkflow.slnx are checked. Projects outside it
+# (for example spikes/, throwaway experiments) are never restored by CI and need no lock file.
+# The .slnx is parsed directly (a <Project Path="..."/> per project, possibly inside <Folder>).
+projects=""
+if [ -f AgenticWorkflow.slnx ]; then
+  projects="$(python3 -c '
+import sys, xml.etree.ElementTree as ET
+for el in ET.parse(sys.argv[1]).getroot().iter("Project"):
+    print(el.get("Path", "").replace("\\", "/"))
+' AgenticWorkflow.slnx | grep . || true)"
+fi
 if [ -z "$projects" ]; then
-  echo "dotnet-verify-packages: no C# projects; nothing to verify"
+  echo "dotnet-verify-packages: no C# projects in AgenticWorkflow.slnx; nothing to verify"
   exit 0
 fi
 
@@ -68,7 +78,7 @@ while IFS=' ' read -r id version; do
     echo "dotnet-verify-packages: $lid $lver is locked but not in $pkgs_dir" >&2
     absent=1
   fi
-done < <(git ls-files '*packages.lock.json' | python3 -c '
+done < <(while IFS= read -r proj; do echo "$(dirname "$proj")/packages.lock.json"; done <<< "$projects" | python3 -c '
 import json, sys
 seen = set()
 for path in sys.stdin.read().split():
