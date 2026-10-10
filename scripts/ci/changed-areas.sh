@@ -56,6 +56,10 @@ classify_changes() {
       src/*|tests/*|schemas/packets/*|*.cs|*.csproj|*.props|*.targets|*.slnx|global.json|nuget.config|.editorconfig|BannedSymbols.txt|packages.lock.json|.config/dotnet-tools.json)
         dotnet=true ;;
     esac
+    case "$file" in
+      schemas/packets/*) ;;  # the packet schemas belong to Aw.Packets (its golden test, the dotnet area above)
+      schemas/*|rules/*|deps.yaml) bash=true ;;  # check-deps and check-rules (and their suites) read these
+    esac
     for pkg in "${TS_PACKAGES[@]}"; do
       case "$file" in
         "$pkg"/*)

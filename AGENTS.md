@@ -65,7 +65,8 @@ agentic-workflow/
 ├── .agents/rules/ # Glob-scoped domain rules (.claude/rules and .cursor/rules link here)
 ├── .serena/       # Serena LSP project configuration
 ├── scripts/       # Utility scripts (sync-rules.sh, check-deps.mjs, serena-docker, probe.sh, install-scorer.sh)
-├── schemas/       # JSON Schemas for repo config (deps.schema.json)
+├── schemas/       # JSON Schemas for repo config (deps.schema.json, rule-record.schema.json)
+├── rules/         # Rule records (factory addendum §17.6): rules/engineering/csharp/*.yaml, one per §4b rule
 ├── deps.yaml      # Declared package graph: tiers and every project/cli/db/file edge (spec §4b.1a)
 └── setup.sh       # One-command setup for every installed provider
 ```
@@ -114,10 +115,14 @@ scripts/sync-rules.sh --check           # Exit 1 if links or the Rules Index are
 node scripts/check-deps.mjs             # Schema, tiers, cycles, fan-out, undeclared cli/db/file edges; exit 1 on drift
 node scripts/check-deps.mjs --mermaid [--base-file F]   # Also print the Mermaid graph and the edge list (added/removed vs F)
 
+# Rule records (rules/engineering/csharp/*.yaml + schemas/rule-record.schema.json; docs/csharp/rule-records.md)
+node scripts/check-rules.mjs [--json]   # Every §4b rule has a record; every active check exists; pending ones wait on their PR
+
 # Bash tests
 bash providers/tests/install.test.sh
 bash scripts/tests/sync-rules.test.sh
 bash scripts/tests/check-deps.test.sh
+bash scripts/tests/check-rules.test.sh
 bash scripts/tests/scaffold.test.sh
 bash scripts/tests/probe.test.sh
 bash scripts/tests/find-duplicate-skills.test.sh
@@ -177,6 +182,7 @@ Before merging any PR:
 6. No `/* v8 ignore */` annotations in source files (prohibited — write the test instead)
 7. No `any` types outside of Fastify integration boundaries (`node scripts/ci/no-any.mjs`; existing ones are held in `scripts/ci/no-any-baseline.json`, which only shrinks)
 8. C# build (active once `src/` has projects): `dotnet build -warnaserror` reports zero warnings; `dotnet test --solution AgenticWorkflow.slnx --filter-trait "Lane=unit" --ignore-exit-code 8` and `dotnet test --solution AgenticWorkflow.slnx --filter-trait "Lane=integration" --ignore-exit-code 8` pass within their budgets (the heavy lane runs nightly); `dotnet format --verify-no-changes` is clean, `scripts/dotnet-verify-packages.sh` passes, and the ratchet baseline block at the end of `.editorconfig` didn't grow
+9. `node scripts/check-rules.mjs` passes (every §4b rule has a rule record, and every check a record calls active exists in the tree)
 
 ## C# slice recipe
 

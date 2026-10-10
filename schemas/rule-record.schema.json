@@ -1,0 +1,309 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/jthorare/agentic-workflow/schemas/rule-record.schema.json",
+  "title": "Rule record",
+  "description": "One rule (factory addendum \u00a717.6) with the check that enforces it and its gap status. Checked by scripts/check-rules.mjs; docs/csharp/rule-records.md explains every field.",
+  "type": "object",
+  "required": [
+    "schemaVersion",
+    "id",
+    "kind",
+    "section",
+    "text",
+    "why",
+    "select",
+    "checks",
+    "gap",
+    "source",
+    "status"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "schemaVersion": {
+      "const": 1
+    },
+    "id": {
+      "description": "<kind>.<language>.<slug>; the file is named <slug>.yaml",
+      "type": "string",
+      "pattern": "^[a-z]+\\.[a-z]+\\.[a-z0-9]+(-[a-z0-9]+)*$"
+    },
+    "kind": {
+      "enum": [
+        "taste",
+        "engineering",
+        "process",
+        "product-precedent",
+        "security",
+        "lens"
+      ]
+    },
+    "section": {
+      "description": "The spec section the rule comes from, as its heading number (4b.1, 4b.1a, \u2026)",
+      "type": "string",
+      "pattern": "^[0-9]+[a-z]?(\\.[0-9]+[a-z]?)*$"
+    },
+    "text": {
+      "description": "One or two imperative sentences",
+      "type": "string",
+      "minLength": 10
+    },
+    "why": {
+      "type": "string",
+      "minLength": 10
+    },
+    "select": {
+      "type": "object",
+      "required": [
+        "languages",
+        "paths"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "repos": {
+          "$ref": "#/$defs/strings"
+        },
+        "languages": {
+          "$ref": "#/$defs/strings"
+        },
+        "paths": {
+          "$ref": "#/$defs/strings"
+        },
+        "taskKinds": {
+          "$ref": "#/$defs/strings"
+        },
+        "lenses": {
+          "$ref": "#/$defs/strings"
+        },
+        "stages": {
+          "$ref": "#/$defs/strings"
+        }
+      }
+    },
+    "checks": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/check"
+      }
+    },
+    "gap": {
+      "description": "closed: an active deterministic check enforces the rule. partial: an active check covers part of it (gapNote says what isn't). pending: a check in an open PR (pendingPr) will cover it. open: no deterministic check (gapNote says how it's followed today)",
+      "enum": [
+        "closed",
+        "partial",
+        "pending",
+        "open"
+      ]
+    },
+    "gapNote": {
+      "type": "string",
+      "minLength": 10
+    },
+    "relatedIds": {
+      "description": "Check ids the rules docs mention for this rule that aren't its checks (e.g. a rule another analyzer owns, switched off)",
+      "$ref": "#/$defs/strings"
+    },
+    "source": {
+      "type": "object",
+      "required": [
+        "type",
+        "ref"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "enum": [
+            "desk",
+            "correction",
+            "adr",
+            "review",
+            "import"
+          ]
+        },
+        "ref": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "status": {
+      "enum": [
+        "proposed",
+        "active",
+        "retired"
+      ]
+    }
+  },
+  "$defs": {
+    "strings": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "check": {
+      "type": "object",
+      "required": [
+        "type",
+        "id",
+        "status"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "description": "analyzer (a Roslyn diagnostic id), compiler (CS/IL ids), banned-symbols (RS0030 + BannedSymbols.txt entries), archunit (ARCH-\u2026 in tests/Aw.Architecture.Tests), check-deps (DEPS-\u2026), lane-cap (LANE-\u2026), check-rules (RULE-\u2026), build-setting (a literal in the root build files), test (a test file, ref), script (a script, ref), ci (a workflow step name, ref), review (not deterministic)",
+          "enum": [
+            "analyzer",
+            "compiler",
+            "banned-symbols",
+            "archunit",
+            "check-deps",
+            "lane-cap",
+            "check-rules",
+            "build-setting",
+            "test",
+            "script",
+            "ci",
+            "review"
+          ]
+        },
+        "id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "ref": {
+          "description": "A repo-relative path: test (a file, or a directory when the test moves between PRs; say so in note), script, ci (the workflow file)",
+          "type": "string",
+          "minLength": 1
+        },
+        "entries": {
+          "description": "banned-symbols: the BannedSymbols.txt entries (the part before ';')",
+          "$ref": "#/$defs/strings"
+        },
+        "status": {
+          "enum": [
+            "active",
+            "pending"
+          ]
+        },
+        "pendingPr": {
+          "description": "The open PR that adds the check",
+          "type": "integer",
+          "minimum": 1
+        },
+        "note": {
+          "type": "string",
+          "minLength": 1
+        },
+        "via": {
+          "description": "analyzer: 'baseline' when the id has no severity line and is enforced by the bulk dotnet_analyzer_diagnostic.severity = error line; only for rules enabled by default (needs package and category)",
+          "enum": [
+            "baseline"
+          ]
+        },
+        "package": {
+          "description": "analyzer via baseline: the GlobalPackageReference that ships the diagnostic",
+          "type": "string",
+          "minLength": 1
+        },
+        "severity": {
+          "description": "analyzer: the severity the root .editorconfig must set (default: error or warning)",
+          "enum": [
+            "error",
+            "warning",
+            "suggestion"
+          ]
+        },
+        "category": {
+          "description": "analyzer via baseline: the diagnostic's category (e.g. ApiDesign), so a category-level severity below error fails the check",
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "status": {
+                "const": "pending"
+              }
+            }
+          },
+          "then": {
+            "required": [
+              "pendingPr"
+            ]
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "status": {
+                "const": "active"
+              }
+            }
+          },
+          "then": {
+            "not": {
+              "required": [
+                "pendingPr"
+              ]
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "type": {
+                "enum": [
+                  "test",
+                  "script",
+                  "ci"
+                ]
+              }
+            }
+          },
+          "then": {
+            "required": [
+              "ref"
+            ]
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "type": {
+                "const": "banned-symbols"
+              }
+            }
+          },
+          "then": {
+            "required": [
+              "entries"
+            ]
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "via": {
+                "const": "baseline"
+              }
+            },
+            "required": [
+              "via"
+            ]
+          },
+          "then": {
+            "required": [
+              "package",
+              "category"
+            ]
+          }
+        }
+      ]
+    }
+  }
+}

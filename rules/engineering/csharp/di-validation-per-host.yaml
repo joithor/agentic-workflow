@@ -1,0 +1,20 @@
+schemaVersion: 1
+id: engineering.csharp.di-validation-per-host
+kind: engineering
+section: "4b.4"
+text: "Every host has a DI validation test over its Compose: ValidateOnBuild and ValidateScopes, then every registered IService<,> resolved in a scope."
+why: "ValidateOnBuild can't see into decorator factories; resolving each service catches a missing registration before the first command."
+select:
+  languages: [csharp]
+  paths: ["src/**/*.Host/**", "tests/**"]
+checks:
+  - type: review
+    id: "HostTests per host"
+    status: active
+    note: "/new-package generates HostTests; no hosts exist on main yet"
+gap: open
+gapNote: "No host exists yet; the /new-package generator (stage T6) writes HostTests for each new host."
+source:
+  type: adr
+  ref: "docs/superpowers/specs/2026-10-09-agent-readiness-design.md#4b4"
+status: active

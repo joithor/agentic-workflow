@@ -1,0 +1,20 @@
+schemaVersion: 1
+id: engineering.csharp.graph-visible-in-prs
+kind: engineering
+section: "4b.1a"
+text: "CI renders the package graph (Mermaid) and a plain list of added and removed edges into the PR summary whenever it changes, with fan-in and fan-out per project."
+why: "A new edge is reviewed as a picture, not found later."
+select:
+  languages: [csharp]
+  paths: ["deps.yaml"]
+checks:
+  - type: review
+    id: "check-deps --mermaid"
+    status: active
+    note: "the renderer exists (node scripts/check-deps.mjs --mermaid --base-file F); CI doesn't post it yet"
+gap: open
+gapNote: "check-deps --mermaid renders the graph locally; no CI step writes it to the PR summary or reports fan-in yet."
+source:
+  type: adr
+  ref: "docs/superpowers/specs/2026-10-09-agent-readiness-design.md#4b1a"
+status: active

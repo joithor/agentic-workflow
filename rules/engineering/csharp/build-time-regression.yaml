@@ -1,0 +1,20 @@
+schemaVersion: 1
+id: engineering.csharp.build-time-regression
+kind: engineering
+section: "4b.8"
+text: "CI records build time per project, and a regression over 20% fails."
+why: "Fast builds keep the agent inner loop fast."
+select:
+  languages: [csharp]
+  paths: ["src/**", ".github/workflows/**"]
+checks:
+  - type: review
+    id: "build time"
+    status: active
+    note: "no CI step records build time yet"
+gap: open
+gapNote: "No CI step records per-project build time or compares it with the base branch."
+source:
+  type: adr
+  ref: "docs/superpowers/specs/2026-10-09-agent-readiness-design.md#4b8"
+status: active

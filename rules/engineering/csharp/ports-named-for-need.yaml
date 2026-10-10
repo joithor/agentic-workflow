@@ -1,0 +1,20 @@
+schemaVersion: 1
+id: engineering.csharp.ports-named-for-need
+kind: engineering
+section: "4b.6"
+text: "Name ports for what the code needs (IItemStore, IJobQueue), not for the technology; no port for something with one obvious BCL implementation and no I/O."
+why: "A port named after its technology leaks the technology into every caller."
+select:
+  languages: [csharp]
+  paths: ["src/**/*.Core/**"]
+checks:
+  - type: review
+    id: "port names"
+    status: active
+    note: "checked in review"
+gap: open
+gapNote: "No check reads port names."
+source:
+  type: import
+  ref: ".agents/rules/csharp.md"
+status: active

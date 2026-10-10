@@ -1,0 +1,20 @@
+schemaVersion: 1
+id: engineering.csharp.suppressions-need-justification
+kind: engineering
+section: "4b.6"
+text: "Fix a warning rather than suppress it; a #pragma warning disable, [SuppressMessage], <NoWarn> in a project file, #nullable disable or a nested .editorconfig that lowers a rule carries a reason and is reviewed like an override."
+why: "Unexplained suppressions erase the rules they suppress."
+select:
+  languages: [csharp]
+  paths: ["src/**", "tests/**"]
+checks:
+  - type: review
+    id: "suppressions"
+    status: active
+    note: "checked in review"
+gap: open
+gapNote: "No analyzer requires the Justification yet."
+source:
+  type: import
+  ref: ".agents/rules/csharp.md"
+status: active

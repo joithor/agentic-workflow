@@ -1,0 +1,23 @@
+schemaVersion: 1
+id: engineering.csharp.architecture-tests
+kind: engineering
+section: "4b.5"
+text: "Architecture tests (ArchUnitNET) run in the unit lane over every registered Aw.* assembly, and the registry matches the solution."
+why: "The §4b.1 rules are executable, not prose."
+select:
+  languages: [csharp]
+  paths: ["tests/**"]
+checks:
+  - type: archunit
+    id: "ARCH-REG-001"
+    status: pending
+    pendingPr: 131
+  - type: archunit
+    id: "ARCH-REG-002"
+    status: pending
+    pendingPr: 131
+gap: pending
+source:
+  type: adr
+  ref: "docs/superpowers/specs/2026-10-09-agent-readiness-design.md#4b5"
+status: active

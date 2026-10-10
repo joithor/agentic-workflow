@@ -1,0 +1,30 @@
+schemaVersion: 1
+id: engineering.csharp.cross-package-through-core
+kind: engineering
+section: "4b.1"
+text: "Reference another package only through its Core public surface (from Features, App or Host) or through its CLI or HTTP contract."
+why: "Packages stay replaceable behind their contracts; Infrastructure and Features of another package are never reachable."
+select:
+  languages: [csharp]
+  paths: ["src/**", "tests/**"]
+checks:
+  - type: check-deps
+    id: "DEPS-PROJ-007"
+    status: active
+  - type: check-deps
+    id: "DEPS-PROJ-008"
+    status: active
+  - type: check-deps
+    id: "DEPS-PROJ-001"
+    status: active
+  - type: archunit
+    id: "ARCH-DIR-004"
+    status: pending
+    pendingPr: 131
+    note: "the same rule over the compiled assemblies, including the small shape"
+gap: partial
+gapNote: "check-deps checks project references; the CLI and HTTP contract half is declared as cli edges in deps.yaml but not proven to be the only route; ARCH-DIR-004 adds the assembly-level check."
+source:
+  type: adr
+  ref: "docs/superpowers/specs/2026-10-09-agent-readiness-design.md#4b1"
+status: active

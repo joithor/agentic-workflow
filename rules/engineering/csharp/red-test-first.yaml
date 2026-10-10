@@ -1,0 +1,21 @@
+schemaVersion: 1
+id: engineering.csharp.red-test-first
+kind: engineering
+section: "4b.5"
+text: "Every slice starts with a failing test that names the behavior, committed red but compiling (a parameterless stub that throws NotSupportedException)."
+why: "The red commit proves the test can fail and pins the behavior before the code."
+select:
+  languages: [csharp]
+  paths: ["src/**", "tests/**"]
+checks:
+  - type: review
+    id: "commit history"
+    status: active
+    note: "the /specToProvenPR red-commit rule"
+gap: open
+gapNote: "Commit order is checked in review."
+relatedIds: ["MA0025", "CS9113"]
+source:
+  type: adr
+  ref: "docs/superpowers/specs/2026-10-09-agent-readiness-design.md#4b5"
+status: active
