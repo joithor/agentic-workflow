@@ -202,7 +202,7 @@ skills (`/officeHours`, brainstorming, `/autoplan`, `/archReview`). The studio a
 
 **Handoff packet:** a directory with a manifest, validated by a typed C# schema (System.Text.Json source-generated
 records, with a generated JSON Schema for editors; see the readiness design §4b and §4c). Each schema file carries
-`schemaVersion`. A minimal version ships in readiness step R1a so the C# ports themselves run as packets.
+`schemaVersion`. A minimal version ships in readiness step R1b (#142) so the C# ports themselves run as packets.
 
 | Part | Contents |
 |---|---|
@@ -270,7 +270,7 @@ packet builds (default: the packet directory); the base commit's file list comes
   `packets/<owner>/<name>/<id>/frozen/<hex>.json` under the state directory, per repository because a packet id is
   unique only within one. Freezing the same hash again writes nothing. The packet directory is never changed. Until
   sindri's C# ledger exists this record stands in for "records the hash in the ledger"; the ledger takes over
-  when sindri is ported (readiness design §4c).
+  when sindri is ported.
 - **The hash** is digest v1 (readiness design §4c, Digests) over the packet's files.
 
 ## 17.5 Narrow scope and sandbox per session
