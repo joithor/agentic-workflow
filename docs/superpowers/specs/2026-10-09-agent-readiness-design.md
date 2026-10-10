@@ -841,7 +841,7 @@ next PR shows it passing.
   read-only `gh` calls behind the host criteria. Nothing installs or schedules it.
   - **Scope:** `csharp-template`, the C# build surface (`src/`, `tests/`, the root build files, the CI workflows,
     `AGENTS.md`, the rules and the repo-level files), scored against the R0 baseline's 34 criteria with the same ids
-    and levels. The TS apps aren't scored; they are frozen until the cutover.
+    and levels. The TS apps aren't scored (they are frozen until the cutover), so R1b reports per repo only.
   - **`readiness.yaml`** at the repo root: `version` (1), `repo` (the history's directory name), `ring`, `scope`
     (`csharp-template`, the only one) and `targets` (one `ring`/`level` item per ring; ring 0 targets Level 4). A
     flat YAML subset read without a library; anything else is refused naming the line and the fix.
@@ -852,7 +852,8 @@ next PR shows it passing.
     without admin rights) is `unknown` with `unread: true`. It counts as not passing, so the level is a lower bound
     and a run that couldn't read the host never scores higher than one that could. A target the level reaches holds
     whatever the unread criteria turn out to be; below the target, the unread criteria at or above the level reached
-    and below the target (the only ones that could still raise it) are listed under `unconfirmed`. The delta doesn't compare a criterion that was unread on either run.
+    and below the target (the only ones that could still raise it) are listed under `unconfirmed`. The delta
+    doesn't compare a criterion that was unread on either run.
 - **Where results live:** until sindri is ported, `Aw.Readiness` keeps its own history under its own `deps.yaml`
   namespace (`readiness/`), for the delta and the first-run baseline; the switch keeps it (§4c). In R1b that is one
   JSON file per run, `${AW_STATE_DIR:-~/.agentic-workflow}/readiness/runs/<repo>/<scope>/<UTC time>-NNN.json`
@@ -867,9 +868,9 @@ next PR shows it passing.
   where possible (git tags, the GitHub Actions API). Anything else is measured from the switch.
 - **Output contract:**
   - each criterion has a state: `pass`, `fail`, `n/a` (with a reason) or `unknown` (we can't reproduce Factory's
-    check);
+    check, or its data wasn't read on this run: `unread`, scored as not passing);
   - the summary shows the level per pillar and overall, and the delta since the last run;
-  - exit codes: 0 when the target level holds, 1 when it doesn't, 2 on a tool error;
+  - exit codes: 0 when the target level holds, 1 when it doesn't, 2 on a usage or tool error;
   - a first run with no baseline records one and says so;
   - `--json` follows a versioned schema. Version 1 (R1b, #141; golden file
     `tests/Aw.Readiness.Tests/Golden/report.json`): `schemaVersion`, `repo`, `scope`, `recordedAt`, `target {ring,
