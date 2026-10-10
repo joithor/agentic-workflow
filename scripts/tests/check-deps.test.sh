@@ -283,8 +283,8 @@ printf "<Project><ItemGroup><ProjectReference Include='../../Delta/Aw.Delta.Core
 expect "single-quoted Include is read" 1 "DEPS-PROJ-001" "Aw.Beta.Core -> Aw.Delta.Core"
 printf '<Project><!-- <ProjectReference Include="../../Delta/Aw.Delta.Core/Aw.Delta.Core.csproj" /> --></Project>\n' > "$d/src/Beta/Aw.Beta.Core/Aw.Beta.Core.csproj"; run "$d"
 expect "a commented-out ProjectReference is ignored" 0 "deps: ok"
-printf '<Project><ItemGroup><ProjectReference Include="../../../Delta/Aw.Delta.Core/Aw.Delta.Core.csproj" /></ItemGroup></Project>\n' > "$d/src/Beta/tests/Aw.Beta.Tests/Aw.Beta.Tests.CSPROJ"; run "$d"
-expect "projects under tests/ dirs and .CSPROJ are read; test projects may reference any package" 0 "checked 3 C# projects"
+printf '<Project><ItemGroup><ProjectReference Include="../../../Aw.Kernel/Aw.Kernel.csproj" /></ItemGroup></Project>\n' > "$d/src/Beta/tests/Aw.Beta.Tests/Aw.Beta.Tests.CSPROJ"; run "$d"
+expect "projects under tests/ dirs and .CSPROJ are read; test projects may reference their owner's edges" 0 "checked 3 C# projects"
 printf '<Project><ItemGroup><ProjectReference Include="../../src/Beta/tests/Aw.Beta.Tests/Aw.Beta.Tests.CSPROJ" /></ItemGroup></Project>\n' > "$d/tests/Aw.Delta.Tests/Aw.Delta.Tests.csproj"
 printf '<Project><ItemGroup><ProjectReference Include="../../Beta/tests/Aw.Beta.Tests/Aw.Beta.Tests.CSPROJ" /></ItemGroup></Project>\n' > "$d/src/Delta/Aw.Delta.Core/Aw.Delta.Core.csproj"; run "$d"
 expect "top-level tests/ is walked; nothing may reference a test project" 1 "DEPS-PROJ-003" "Aw.Delta.Core -> Aw.Beta.Tests" "checked 4 C# projects"
@@ -387,12 +387,24 @@ csproj "$d" src/Aw.Kernel/Aw.Kernel.csproj; csproj "$d" src/Beta/Aw.Beta.Core/Aw
 csproj "$d" tests/Aw.Beta.Testing/Aw.Beta.Testing.csproj ../../src/Beta/Aw.Beta.Core/Aw.Beta.Core.csproj ../../src/Aw.Kernel/Aw.Kernel.csproj; run "$d"
 expect "*.Testing projects are exempt from fan-out and don't make edges current" 0 "deps: ok"
 
+d="$(fixture scaffold-shape)"; perl -pi -e 's/thirdPartyFanOut: 6/thirdPartyFanOut: 1/' "$d/deps.yaml"
+perl -0pi -e 's/kind: project\n    status: planned/kind: project\n    status: current/' "$d/deps.yaml"
+perl -0pi -e 's/(  - id: Alpha\n)/  - id: KTest\n    kind: package\n    tier: 0\n    test: true\n    projectPrefix: Aw.KTest\n    ts: null\n    src: src\/KTest\n    note: test support\n$1/' "$d/deps.yaml"
+csproj "$d" src/Aw.Kernel/Aw.Kernel.csproj; csproj "$d" src/KTest/Aw.KTest/Aw.KTest.csproj
+csproj "$d" src/Beta/Aw.Beta.Core/Aw.Beta.Core.csproj ../../Aw.Kernel/Aw.Kernel.csproj
+mkdir -p "$d/tests/Aw.Beta.Testing" "$d/tests/Aw.Beta.Tests"
+printf '<Project><ItemGroup><ProjectReference Include="../../src/KTest/Aw.KTest/Aw.KTest.csproj" /><ProjectReference Include="../../src/Beta/Aw.Beta.Core/Aw.Beta.Core.csproj" /><PackageReference Include="xunit.v3" /><PackageReference Include="Microsoft.Extensions.TimeProvider.Testing" /></ItemGroup></Project>\n' > "$d/tests/Aw.Beta.Testing/Aw.Beta.Testing.csproj"
+printf '<Project><ItemGroup><ProjectReference Include="../Aw.Beta.Testing/Aw.Beta.Testing.csproj" /><PackageReference Include="xunit.v3" /><PackageReference Include="Microsoft.NET.Test.Sdk" /><PackageReference Include="xunit.runner.visualstudio" /></ItemGroup></Project>\n' > "$d/tests/Aw.Beta.Tests/Aw.Beta.Tests.csproj"
+run "$d"
+expect "a scaffold-shaped package (Core -> Kernel current, Tests and Testing with xunit) passes" 0 "deps: ok" "checked 5 C# projects"
+
 # ---- analyzers ----
 d="$(fixture analyzers)"; perl -0pi -e 's/(  - id: Alpha\n)/  - id: Analyzers\n    kind: package\n    tier: 0\n    analyzer: true\n    projectPrefix: Aw.Analyzers\n    ts: null\n    src: src\/Aw.Analyzers\n    note: build-time Roslyn rules\n$1/' "$d/deps.yaml"
 perl -pi -e 's/^  projectFanOut: 4\n/  projectFanOut: 1\n/' "$d/deps.yaml"
 perl -0pi -e 's/kind: project\n    status: planned/kind: project\n    status: current/' "$d/deps.yaml"
 csproj "$d" src/Aw.Analyzers/Aw.Analyzers.csproj; csproj "$d" src/Aw.Kernel/Aw.Kernel.csproj
-printf '<Project><ItemGroup><ProjectReference Include="../../Aw.Kernel/Aw.Kernel.csproj" /><ProjectReference Include="../../Aw.Analyzers/Aw.Analyzers.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" /></ItemGroup></Project>\n' > "$d/src/Beta/Aw.Beta.Core/Aw.Beta.Core.csproj" 2>/dev/null || { mkdir -p "$d/src/Beta/Aw.Beta.Core"; printf '<Project><ItemGroup><ProjectReference Include="../../Aw.Kernel/Aw.Kernel.csproj" /><ProjectReference Include="../../Aw.Analyzers/Aw.Analyzers.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" /></ItemGroup></Project>\n' > "$d/src/Beta/Aw.Beta.Core/Aw.Beta.Core.csproj"; }
+mkdir -p "$d/src/Beta/Aw.Beta.Core"
+printf '<Project><ItemGroup><ProjectReference Include="../../Aw.Kernel/Aw.Kernel.csproj" /><ProjectReference Include="../../Aw.Analyzers/Aw.Analyzers.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" /></ItemGroup></Project>\n' > "$d/src/Beta/Aw.Beta.Core/Aw.Beta.Core.csproj"
 run "$d"
 expect "an analyzer ProjectReference needs no edge and is not fan-out" 0 "deps: ok"
 printf '<Project><ItemGroup><ProjectReference Include="$(MSBuildThisFileDirectory)Aw.Analyzers/Aw.Analyzers.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" /></ItemGroup></Project>\n' > "$d/src/Directory.Build.props"; run "$d"

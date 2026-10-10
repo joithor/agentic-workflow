@@ -125,6 +125,10 @@
           "type": "boolean",
           "description": "A test-support package: exempt from the fan-out limit, and only test projects may reference it without a declared edge."
         },
+        "analyzer": {
+          "type": "boolean",
+          "description": "A Roslyn analyzer package: referenced only with OutputItemType=\"Analyzer\" (build-time), never at runtime, and needs no declared edge."
+        },
         "ts": {
           "type": [
             "string",
@@ -235,6 +239,11 @@
                 {
                   "required": [
                     "test"
+                  ]
+                },
+                {
+                  "required": [
+                    "analyzer"
                   ]
                 },
                 {

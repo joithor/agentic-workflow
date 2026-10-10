@@ -23,15 +23,23 @@ function walk(dir, skip, keep, out = []) {
   return out;
 }
 
-// ---------- TypeScript: comments blanked, string interiors masked ----------
+// ---------- TypeScript: comments blanked, string, template and regex interiors masked ----------
+
+export class ScanError extends Error {}
+
+// A `/` starts a regex literal after one of these, or after one of the keywords; otherwise it divides.
+const BEFORE_REGEX = new Set([..."(,=:[!&|?{};+-*%<>~^"]);
+const REGEX_KEYWORDS = new Set(["return", "typeof", "case", "in", "of", "delete", "void", "throw", "new", "else", "do", "yield", "await", "instanceof"]);
 
 // Returns the text with comments replaced by spaces (newlines kept, so offsets and lines still line up)
-// and a mask that is true inside string and template literals. Regex literals are not recognised.
+// and a mask that is true inside string, template and regex literals. Throws ScanError on a template
+// literal or block comment still open at the end of the file, so a lexing error can't hide calls.
 export function lexTs(src) {
   const out = src.split("");
   const inStr = new Uint8Array(src.length);
   const stack = []; // template nesting: a number is the brace depth inside ${ }
   let i = 0;
+  const lineOf = (k) => src.slice(0, k).split("\n").length;
   const blank = (a, b) => { for (let k = a; k < b; k++) if (out[k] !== "\n") out[k] = " "; };
   const quoted = (q) => {
     const start = i++;
@@ -39,38 +47,98 @@ export function lexTs(src) {
     inStr.fill(1, start + 1, Math.min(i, src.length));
     i++;
   };
-  const template = () => {
+  const template = (opened) => {
     const start = i;
     while (i < src.length && src[i] !== "`") {
       if (src[i] === "\\") { i += 2; continue; }
       if (src[i] === "$" && src[i + 1] === "{") { inStr.fill(1, start, i); stack.push(0); i += 2; return; }
       i++;
     }
-    inStr.fill(1, start, Math.min(i, src.length));
+    if (i >= src.length) throw new ScanError(`unterminated template literal opened on line ${lineOf(opened)}`);
+    inStr.fill(1, start, i);
     i++;
   };
+  const regexAhead = () => {
+    let k = i - 1;
+    while (k >= 0 && /\s/.test(out[k])) k--;
+    if (k < 0) return true;
+    if (BEFORE_REGEX.has(out[k])) return true;
+    if (!/[A-Za-z0-9_$]/.test(out[k])) return false;
+    let w = k;
+    while (w > 0 && /[A-Za-z0-9_$]/.test(out[w - 1])) w--;
+    return REGEX_KEYWORDS.has(out.slice(w, k + 1).join(""));
+  };
+  const regex = () => { // i at the opening slash; returns false if no closing slash on this line
+    let j = i + 1;
+    let cls = false;
+    while (j < src.length && src[j] !== "\n") {
+      if (src[j] === "\\") { j += 2; continue; }
+      if (src[j] === "[") cls = true;
+      else if (src[j] === "]") cls = false;
+      else if (src[j] === "/" && !cls) break;
+      j++;
+    }
+    if (j >= src.length || src[j] !== "/") return false;
+    inStr.fill(1, i + 1, j);
+    i = j + 1;
+    while (i < src.length && /[a-z]/.test(src[i])) i++;
+    return true;
+  };
+  const templates = [];
   while (i < src.length) {
     const c = src[i];
-    if (stack.length && c === "}" && stack[stack.length - 1] === 0) { stack.pop(); i++; template(); continue; }
+    if (stack.length && c === "}" && stack[stack.length - 1] === 0) {
+      stack.pop(); i++;
+      const opened = templates.pop();
+      template(opened);
+      if (stack.length > templates.length) templates.push(opened);
+      continue;
+    }
     if (c === "/" && src[i + 1] === "/") { const e = src.indexOf("\n", i); const end = e === -1 ? src.length : e; blank(i, end); i = end; continue; }
-    if (c === "/" && src[i + 1] === "*") { const e = src.indexOf("*/", i + 2); const end = e === -1 ? src.length : e + 2; blank(i, end); i = end; continue; }
+    if (c === "/" && src[i + 1] === "*") {
+      const e = src.indexOf("*/", i + 2);
+      if (e === -1) throw new ScanError(`unterminated block comment opened on line ${lineOf(i)}`);
+      blank(i, e + 2); i = e + 2; continue;
+    }
+    if (c === "/" && regexAhead() && regex()) continue;
     if (c === '"' || c === "'") { quoted(c); continue; }
-    if (c === "`") { i++; template(); continue; }
+    if (c === "`") { const opened = i; i++; template(opened); if (stack.length > templates.length) templates.push(opened); continue; }
     if (stack.length && c === "{") stack[stack.length - 1]++;
     if (stack.length && c === "}") stack[stack.length - 1]--;
     i++;
   }
+  if (stack.length) throw new ScanError(`unterminated template literal opened on line ${lineOf(templates[templates.length - 1] ?? 0)}`);
   return { code: out.join(""), inStr };
 }
 
-// ---------- shell: heredoc bodies and prose lines skipped, each command segment checked ----------
+// ---------- shell: heredoc bodies and prose skipped, each command segment checked ----------
 
 const PROSE = /^(?:echo|printf|log|die|warn|info|err|error|note|say|usage)\b/;
 const PREFIX = /^(?:!\s*|(?:if|then|do|else|elif|while|until|time|nice|nohup|sudo|exec|command|builtin|xargs|env)\s+|timeout\s+\S+\s+|\w+_bin\s+|[A-Za-z_][A-Za-z0-9_]*=(?:"[^"]*"|'[^']*'|\S*)\s+|-\S+\s+|[({]\s*)/;
 
-// The command segments of one shell line: split on ; | & and opened by $( or a backquote.
+// Splits one shell line into commands: on ; | & outside quotes, and at $( and backquotes outside single
+// quotes (a command substitution inside double quotes is still a command).
+function splitShell(line) {
+  const segs = [];
+  let cur = "";
+  let q = null;
+  for (let k = 0; k < line.length; k++) {
+    const c = line[k];
+    if (q === "'") { cur += c; if (c === "'") q = null; continue; }
+    if (c === "\\") { cur += c + (line[k + 1] ?? ""); k++; continue; }
+    if (c === "$" && line[k + 1] === "(" && line[k + 2] !== "(") { segs.push(cur); cur = ""; k++; continue; }
+    if (c === "`") { segs.push(cur); cur = ""; continue; }
+    if (q === '"') { cur += c; if (c === '"') q = null; continue; }
+    if (c === '"' || c === "'") { q = c; cur += c; continue; }
+    if (c === ";" || c === "|" || c === "&") { segs.push(cur); cur = ""; continue; }
+    cur += c;
+  }
+  segs.push(cur);
+  return segs;
+}
+
 export function shellSegments(line) {
-  return line.split(/\$\(|`|;|\|\|?|&&?/).map((s) => s.trim()).filter((s) => s && !PROSE.test(s)).map((s) => {
+  return splitShell(line).map((s) => s.trim()).filter((s) => s && !PROSE.test(s)).map((s) => {
     let prev;
     do { prev = s; s = s.replace(PREFIX, ""); } while (s !== prev);
     return s;
@@ -112,11 +180,13 @@ export function matchersFor(node) {
         `(?:\\?\\?|\\|\\|)\\s*${Q}${e}${Q}`, // env fallback: process.env.X ?? "bin"
         `\\b\\w*[Bb]in\\w*\\s*[:=]\\s*${Q}${e}${Q}`, // fooBin = "bin", { judgeBin: "bin" }
         `\\b\\w*[Bb]in\\w*\\([^\\n]*${Q}${e}${Q}`, // findBin("bin")
-        `\\b${env}\\b`, // process.env.BIN_BIN
       ].join("|"), "g"),
-      sh: (seg) => new RegExp(`^(?:(?:which|type|command\\s+-v)\\s+)?(?:["']?[^\\s"']*/)?${e}(?=["'\\s)]|$)|^["']?\\$\\{?${env}\\}?(?=["'\\s]|$)`).test(seg)
-        || new RegExp(`\\b(?:which|type|command\\s+-v)\\s+${e}(?=[\\s)]|$)`).test(seg),
+      sh: (seg) => new RegExp(`^(?:(?:which|type|command\\s+-v)\\s+)?(?:["']?[^\\s"']*/)?${e}(?=["'\\s)]|$)`).test(seg)
+        || new RegExp(`\\b(?:which|type|command\\s+-v)\\s+${e}(?=[\\s)]|$)`).test(seg)
+        || new RegExp(`\\$\\{?${env}\\b|\\$\\{\\w+:-["']?(?:[^}"']*/)?${e}["']?\\}`).test(seg),
     });
+    // The env name that overrides the binary (process.env.X_BIN, process.env["X_BIN"]) is a use in code or in a string.
+    m.push({ kind: "cli", what: `launches \`${b}\` (${envName(b)})`, ts: new RegExp(`\\b${env}\\b`, "g"), sh: () => false });
   }
   for (const p of node.binPaths ?? []) m.push({ kind: "cli", what: `launches ${p}`, ...pathPatterns(p) });
   for (const p of node.db ?? []) m.push({ kind: "db", what: `opens ${p}`, ...pathPatterns(p) });
@@ -176,7 +246,11 @@ export function scan(root, nodes) {
       for (const file of files) {
         const rel = path.relative(root, file).split(path.sep).join("/");
         const text = fs.readFileSync(file, "utf8");
-        const hits = (file.endsWith(".sh") ? shHits : tsHits)(text, others);
+        let hits;
+        try { hits = (file.endsWith(".sh") ? shHits : tsHits)(text, others); } catch (e) {
+          if (e instanceof ScanError) throw new ScanError(`${rel}: ${e.message}; the scan can't read this file, so it fails closed`);
+          throw e;
+        }
         const explained = new Set(hits.filter((h) => !h.m.namespace).map((h) => `${h.to}|${h.line}`));
         for (const h of hits.sort((a, b) => a.line - b.line)) {
           if (h.m.namespace && explained.has(`${h.to}|${h.line}`)) continue;
@@ -194,12 +268,25 @@ export function scan(root, nodes) {
 const stripXmlComments = (s) => s.replace(/<!--[\s\S]*?-->/g, "");
 const projName = (p) => path.basename(p.replace(/\\/g, "/")).replace(/\.csproj$/i, "");
 
-// Every *.csproj under src/ and tests/ (any case), with its project and package references.
+// ProjectReferences in one file: { name, analyzer } where analyzer means OutputItemType="Analyzer"
+// (a build-time Roslyn reference, attribute or child element).
+function projectRefs(xml) {
+  const refs = [];
+  for (const m of xml.matchAll(/<ProjectReference\b([^>]*?)(?:\/>|>([\s\S]*?)<\/ProjectReference>)/g)) {
+    const inc = /\bInclude\s*=\s*(["'])(.*?)\1/.exec(m[1]);
+    if (!inc) continue;
+    const analyzer = /\bOutputItemType\s*=\s*(["'])Analyzer\1/i.test(m[1]) || /<OutputItemType>\s*Analyzer\s*<\/OutputItemType>/i.test(m[2] ?? "");
+    refs.push({ name: projName(inc[2]), analyzer });
+  }
+  return refs;
+}
+
+// Every *.csproj under src/ and tests/ (any case): runtime refs, analyzer refs, third-party packages.
 export function readProjects(root) {
   const files = ["src", "tests"].flatMap((d) => walk(path.join(root, d), SKIP_PROJECT_DIRS, (p) => /\.csproj$/i.test(p)));
   return files.map((file) => {
     const xml = stripXmlComments(fs.readFileSync(file, "utf8"));
-    const refs = [...xml.matchAll(/<ProjectReference\b[^>]*?\bInclude\s*=\s*(["'])(.*?)\1/g)].map((m) => projName(m[2]));
+    const all = projectRefs(xml);
     const packages = [];
     for (const m of xml.matchAll(/<PackageReference\b([^>]*?)(?:\/>|>([\s\S]*?)<\/PackageReference>)/g)) {
       const inc = /\bInclude\s*=\s*(["'])(.*?)\1/.exec(m[1]);
@@ -207,15 +294,20 @@ export function readProjects(root) {
       const priv = /\bPrivateAssets\s*=\s*(["'])all\1/i.test(m[1]) || /<PrivateAssets>\s*all\s*<\/PrivateAssets>/i.test(m[2] ?? "");
       if (!priv) packages.push(inc[2]);
     }
-    return { file: path.relative(root, file).split(path.sep).join("/"), name: projName(file), refs: [...new Set(refs)], packages: [...new Set(packages)].sort() };
+    return {
+      file: path.relative(root, file).split(path.sep).join("/"), name: projName(file),
+      refs: [...new Set(all.filter((r) => !r.analyzer).map((r) => r.name))],
+      analyzers: [...new Set(all.filter((r) => r.analyzer).map((r) => r.name))],
+      packages: [...new Set(packages)].sort(),
+    };
   });
 }
 
-// Directory.Build.props/.targets files that add ProjectReferences (hidden edges on every project below them).
-export function buildFilesWithRefs(root) {
+// Directory.Build.props/.targets files with their ProjectReferences (they apply to every project below).
+export function buildFiles(root) {
   const files = [
     ...["Directory.Build.props", "Directory.Build.targets"].map((f) => path.join(root, f)).filter((f) => fs.existsSync(f)),
     ...["src", "tests"].flatMap((d) => walk(path.join(root, d), SKIP_PROJECT_DIRS, (p) => /^Directory\.Build\.(props|targets)$/.test(path.basename(p)))),
   ];
-  return files.filter((f) => /<ProjectReference\b/.test(stripXmlComments(fs.readFileSync(f, "utf8")))).map((f) => path.relative(root, f).split(path.sep).join("/"));
+  return files.map((f) => ({ file: path.relative(root, f).split(path.sep).join("/"), refs: projectRefs(stripXmlComments(fs.readFileSync(f, "utf8"))) })).filter((f) => f.refs.length > 0);
 }

@@ -15,7 +15,7 @@ import path from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { YamlError, parseYaml } from "./deps/yaml.mjs";
 import { SchemaError, SUPPORTED_KEYWORDS, validate } from "./deps/schema.mjs";
-import { buildFilesWithRefs, readProjects, scan } from "./deps/scan.mjs";
+import { ScanError, buildFiles, readProjects, scan } from "./deps/scan.mjs";
 
 export { parseYaml, validate, SUPPORTED_KEYWORDS };
 
@@ -30,8 +30,16 @@ const tierLabel = (n) => `tier ${n.tier}${n.sublevel ? `.${n.sublevel}` : ""}`;
 const rank = (n) => n.tier * 10 + (n.sublevel ?? 0);
 const edgeKey = (e) => `${e.from}|${e.to}|${e.kind}`;
 const edgeText = (e) => `${e.from} -> ${e.to} (${e.kind})`;
-const isTestProject = (name) => /\.Tests$/.test(name);
 const isHostProject = (name) => /\.Host$/.test(name);
+
+// What a C# project is, by name and owner: "tests" (*.Tests), "testing" (a package's own *.Testing
+// test-support project), "analyzer" (a project of an analyzer: true package) or "prod".
+function roleOf(name, owner) {
+  if (/\.Tests$/.test(name)) return "tests";
+  if (/\.Testing$/.test(name) && !owner?.test) return "testing";
+  if (owner?.analyzer) return "analyzer";
+  return "prod";
+}
 const yamlEdge = (from, to, kind, status) => [`      - from: ${from}`, `        to: ${to}`, `        kind: ${kind}`, `        status: ${status}`, "        note: <why this edge exists>"].join("\n");
 
 function findCycles(edges) {
@@ -83,6 +91,19 @@ export function check(root, today = new Date().toISOString().slice(0, 10)) {
   for (const p of doc.packages.filter((x) => x.projectPrefix)) {
     if (prefixes.has(p.projectPrefix)) fail("DEPS-REF-004", "two packages share a projectPrefix", `${p.projectPrefix} (${prefixes.get(p.projectPrefix)}, ${p.id})`, "each package has its own projectPrefix", `give ${p.id} a prefix of its own in deps.yaml`);
     else prefixes.set(p.projectPrefix, p.id);
+  }
+  const nsOwner = new Map();
+  for (const p of doc.packages.filter((x) => x.namespace)) {
+    if (nsOwner.has(p.namespace)) fail("DEPS-REF-005", "two packages own one state path", `${p.namespace} (${nsOwner.get(p.namespace)}, ${p.id})`, "each namespace, db and files path has one owner", `give ${p.id} a namespace of its own in deps.yaml`);
+    else nsOwner.set(p.namespace, p.id);
+  }
+  for (const p of doc.packages) {
+    for (const entry of [...(p.db ?? []), ...(p.files ?? []), ...(p.namespace ? [p.namespace] : [])]) {
+      for (const [ns, owner] of nsOwner) {
+        if (owner === p.id || entry === p.namespace) continue;
+        if (entry === ns || entry.startsWith(`${ns}/`) || ns.startsWith(`${entry}/`)) fail("DEPS-REF-005", "two packages own one state path", `${entry} (${p.id}) overlaps namespace ${ns} (${owner})`, "each namespace, db and files path has one owner", `move ${entry} out of ${ns}/, or let ${owner} own it`);
+      }
+    }
   }
   const seenEdges = new Set();
   const edges = doc.edges.filter((e) => {
@@ -179,28 +200,43 @@ function ownerOf(name, nodes) {
 }
 
 function checkProjects(root, doc, byId, declared, edges, { fail, info, excepted, measure }) {
-  for (const f of buildFilesWithRefs(root)) fail("DEPS-PROJ-005", "ProjectReference in a Directory.Build file", f, "references live in each .csproj, where the check can see who owns them", `move the ProjectReference out of ${f} into the projects that need it`);
+  const analyzerOk = (name) => ownerOf(name, doc.packages)?.analyzer === true;
+  for (const f of buildFiles(root)) {
+    for (const r of f.refs) {
+      if (!r.analyzer) fail("DEPS-PROJ-005", "ProjectReference in a Directory.Build file", `${f.file} -> ${r.name}`, "runtime references live in each .csproj, where the check can see who owns them (analyzer references may live here)", `move the ProjectReference out of ${f.file} into the projects that need it`);
+      else if (!analyzerOk(r.name)) fail("DEPS-PROJ-006", "analyzer reference to a project that is not an analyzer", `${f.file} -> ${r.name}`, "OutputItemType=\"Analyzer\" references point at an analyzer: true package", `point the reference at an analyzer project, or drop OutputItemType="Analyzer"`);
+    }
+  }
   const projects = readProjects(root);
   const real = new Set(); // "Owner|RefOwner" for production cross-package references
   const owners = new Set(); // packages with at least one production project
   for (const pj of projects) {
-    const test = isTestProject(pj.name);
     const owner = ownerOf(pj.name, doc.packages);
-    if (!owner && !test) { fail("DEPS-PROJ-002", "C# project no package owns", `${pj.file} (${pj.name})`, "every project name starts with a package's projectPrefix", "rename the project, or declare its package in deps.yaml"); continue; }
-    if (owner && !test) owners.add(owner.id);
+    const role = roleOf(pj.name, owner);
+    const testCode = role === "tests" || role === "testing";
+    if (!owner && !testCode) { fail("DEPS-PROJ-002", "C# project no package owns", `${pj.file} (${pj.name})`, "every project name starts with a package's projectPrefix (test assemblies such as Aw.Architecture.Tests excepted)", "rename the project, or declare its package in deps.yaml"); continue; }
+    if (role === "prod" || role === "analyzer") owners.add(owner.id);
+    for (const a of pj.analyzers) if (!analyzerOk(a)) fail("DEPS-PROJ-006", "analyzer reference to a project that is not an analyzer", `${pj.name} -> ${a}`, "OutputItemType=\"Analyzer\" references point at an analyzer: true package", `point the reference at an analyzer project, or drop OutputItemType="Analyzer"`);
     for (const ref of pj.refs) {
-      if (isTestProject(ref)) { fail("DEPS-PROJ-003", "reference to a test project", `${pj.name} -> ${ref} (${pj.file})`, "test projects are leaves: nothing references them", `remove the reference; move shared test code into a test-support package (test: true)`); continue; }
-      if (test) continue; // test projects may reference any package, including test-support ones
       const refOwner = ownerOf(ref, doc.packages);
+      const refRole = roleOf(ref, refOwner);
+      if (refRole === "tests" || (refRole === "testing" && !testCode)) { fail("DEPS-PROJ-003", "reference to test code", `${pj.name} -> ${ref} (${pj.file})`, "nothing references a *.Tests project, and only test code references a *.Testing project", "remove the reference; production code gets fakes through its ports, not from test projects"); continue; }
+      if (refRole === "analyzer") { fail("DEPS-PROJ-006", "runtime reference to an analyzer", `${pj.name} -> ${ref}`, "analyzers are referenced with OutputItemType=\"Analyzer\" ReferenceOutputAssembly=\"false\" only", `add OutputItemType="Analyzer" ReferenceOutputAssembly="false" to the reference in ${pj.file}`); continue; }
       if (!refOwner) { fail("DEPS-PROJ-002", "C# project no package owns", `${pj.name} -> ${ref}`, "every project name starts with a package's projectPrefix", "rename the project, or declare its package in deps.yaml"); continue; }
+      if (testCode) {
+        // Test code follows its owner: its own package, test-support packages, and its owner's project edges.
+        if (!owner || refOwner.id === owner.id || refOwner.test || declared.has(`${owner.id}|${refOwner.id}|project`)) continue;
+        fail("DEPS-PROJ-004", "test code references a package its owner may not", `${pj.name} -> ${ref} (${owner.id} -> ${refOwner.id})`, "test code may reference its own package, test-support packages (test: true) and what its owner has a project edge to", `reference ${refOwner.id} from its own tests, or declare (from: ${owner.id}, to: ${refOwner.id}, kind: project) if ${owner.id} itself needs it`);
+        continue;
+      }
       if (refOwner.id === owner.id) continue;
       real.add(`${owner.id}|${refOwner.id}`);
       if (!declared.has(`${owner.id}|${refOwner.id}|project`)) fail("DEPS-PROJ-001", "undeclared ProjectReference", `${pj.name} -> ${ref} (${owner.id} -> ${refOwner.id})`, "every cross-package ProjectReference is a declared project edge", `call ${refOwner.id} through its CLI, or add this under edges in deps.yaml (a reviewed change):\n${yamlEdge(owner.id, refOwner.id, "project", "current")}`);
     }
-    if (test || isHostProject(pj.name) || owner.test) continue;
-    const inRepo = pj.refs.filter((r) => !isTestProject(r)).sort();
+    if (testCode || isHostProject(pj.name) || owner.test) continue;
+    const inRepo = [...pj.refs].sort();
     const m2 = `${pj.name} references ${inRepo.length} in-repo projects (${inRepo.join(", ")})`;
-    if (inRepo.length > doc.limits.projectFanOut) { if (!excepted("DEPS-FANOUT-002", owner.id, m2)) fail("DEPS-FANOUT-002", "project fan-out over the limit", m2, `${doc.limits.projectFanOut} in-repo projects per project (limits.projectFanOut; *.Host and *.Tests exempt)`, `split ${pj.name}, or record a DEPS-FANOUT-002 exception for ${owner.id} with a reason and an expiry`); } else measure("DEPS-FANOUT-002", owner.id, m2);
+    if (inRepo.length > doc.limits.projectFanOut) { if (!excepted("DEPS-FANOUT-002", owner.id, m2)) fail("DEPS-FANOUT-002", "project fan-out over the limit", m2, `${doc.limits.projectFanOut} in-repo projects per project (limits.projectFanOut; *.Host, *.Tests, *.Testing and analyzer references exempt)`, `split ${pj.name}, or record a DEPS-FANOUT-002 exception for ${owner.id} with a reason and an expiry`); } else measure("DEPS-FANOUT-002", owner.id, m2);
     const m3 = `${pj.name} references ${pj.packages.length} third-party packages (${pj.packages.join(", ")})`;
     if (pj.packages.length > doc.limits.thirdPartyFanOut) { if (!excepted("DEPS-FANOUT-003", owner.id, m3)) fail("DEPS-FANOUT-003", "third-party fan-out over the limit", m3, `${doc.limits.thirdPartyFanOut} third-party packages per project, analyzers (PrivateAssets=all) excluded (limits.thirdPartyFanOut)`, `drop a package from ${pj.name} or split it, or record a DEPS-FANOUT-003 exception for ${owner.id}`); } else measure("DEPS-FANOUT-003", owner.id, m3);
   }
@@ -251,18 +287,20 @@ function main(argv) {
   let root = path.join(HERE, "..");
   let wantMermaid = false;
   let baseFile = null;
+  let today = new Date().toISOString().slice(0, 10);
   const value = (i) => { const v = argv[i + 1]; if (v === undefined || v === "" || v.startsWith("--")) throw new ToolError(`${argv[i]} needs a value`); return v; };
   for (let i = 0; i < argv.length; i++) {
     const a = argv[i];
     if (a === "--root") root = value(i++);
     else if (a === "--mermaid") wantMermaid = true;
     else if (a === "--base-file") baseFile = value(i++);
-    else if (a === "-h" || a === "--help") { console.log("usage: node scripts/check-deps.mjs [--root DIR] [--mermaid [--base-file FILE]]"); return 0; }
+    else if (a === "--today") { today = value(i++); if (!parseDate(today)) throw new ToolError("--today needs a YYYY-MM-DD date"); } // for tests: pins the date exceptions expire against
+    else if (a === "-h" || a === "--help") { console.log("usage: node scripts/check-deps.mjs [--root DIR] [--mermaid [--base-file FILE]] [--today YYYY-MM-DD]"); return 0; }
     else throw new ToolError(`unknown argument ${a}`);
   }
   if (baseFile && !wantMermaid) throw new ToolError("--base-file needs --mermaid");
   const base = baseFile ? readBase(baseFile) : null;
-  const { fails, info, doc, valid } = check(path.resolve(root));
+  const { fails, info, doc, valid } = check(path.resolve(root), today);
   for (const f of fails) console.log(`FAIL ${f.rule} ${f.title}\n  measured: ${f.measured}\n  limit: ${f.limit}\n  fix: ${f.fix}\n  rerun: ${RERUN}`);
   for (const l of info) console.log(l);
   if (wantMermaid) console.log(valid ? `\n${mermaid(doc, base)}` : "mermaid: skipped (deps.yaml is invalid; fix the failures above first)");
@@ -273,7 +311,7 @@ function main(argv) {
 
 if (process.argv[1] && import.meta.url === pathToFileURL(path.resolve(process.argv[1])).href) {
   try { process.exitCode = main(process.argv.slice(2)); } catch (e) {
-    const known = e instanceof ToolError || e instanceof YamlError || e instanceof SchemaError;
+    const known = e instanceof ToolError || e instanceof YamlError || e instanceof SchemaError || e instanceof ScanError;
     console.error(`check-deps: error: ${known ? e.message : e.stack}`);
     process.exitCode = 2;
   }
