@@ -7,13 +7,15 @@ namespace Aw.Analyzers;
 
 /// <summary>
 /// AW1001: no raw ids in the public signatures of a 'Core' or 'Features' assembly (spec §4b.3): methods,
-/// constructors, properties and indexers, fields, events and delegates. A raw id is a <see cref="Guid"/> anywhere in
+/// constructors, operators and conversions, properties and indexers, fields, events, delegates and extension-block
+/// receivers. A raw id is a <see cref="Guid"/> anywhere in
 /// the type (an array element or any type argument, so tuples and dictionaries too), or a <see cref="string"/> whose
 /// member is named as an id ('id', '…Id', '…Ids'), also inside an array, a nullable or a one-argument generic such as
 /// 'IReadOnlyList&lt;T&gt;'. A typed id's own members (it implements 'ITypedId&lt;,&gt;' or carries Vogen's
 /// '[ValueObject]') wrap the primitive and are allowed. A slot of an override or interface implementation (its
 /// return or a parameter) is reported at the base when the base reports the same slot (public, in this assembly, raw
-/// in its own declaration); otherwise at the implementation.
+/// in its own declaration, with no Guid added by its type arguments); otherwise at the implementation. A partial
+/// member is reported at its defining part.
 /// </summary>
 [DiagnosticAnalyzer(LanguageNames.CSharp)]
 internal sealed class RawIdAnalyzer : DiagnosticAnalyzer
@@ -41,7 +43,8 @@ internal sealed class RawIdAnalyzer : DiagnosticAnalyzer
     private static void Analyze(SymbolAnalysisContext context, string assembly)
     {
         var member = context.Symbol;
-        if (member.IsImplicitlyDeclared || !IsPublicSurface(member) || IsTypedId(member as INamedTypeSymbol ?? member.ContainingType))
+        if (member.IsImplicitlyDeclared || InheritedShape.IsPartialImplementation(member) || !IsPublicSurface(member)
+            || IsTypedId(member as INamedTypeSymbol ?? member.ContainingType))
         {
             return;
         }
@@ -52,15 +55,35 @@ internal sealed class RawIdAnalyzer : DiagnosticAnalyzer
             return;
         }
 
-        // A slot its base reports too (the same position, raw in the base's own declaration) is reported there only.
+        // A slot its base reports too (the same position, raw in the base's own declaration, and no Guid added by the
+        // base's type arguments) is reported there only.
         var reportedAtBase = new HashSet<int>(InheritedShape.Bases(member)
             .Where(b => SymbolEqualityComparer.Default.Equals(b.ContainingAssembly, context.Compilation.Assembly) && IsPublicSurface(b))
-            .SelectMany(b => RawSlots(b.OriginalDefinition).Select(slot => slot.Position)));
+            .SelectMany(ReportedPositions));
         foreach (var slot in raw.Where(slot => !reportedAtBase.Contains(slot.Position)))
         {
             context.ReportDiagnostic(Diagnostic.Create(AwDiagnostics.RawId, slot.Location, slot.Name, slot.Kind, assembly));
         }
     }
+
+    // The positions a base reports in its own declaration whose constructed type (through the implementer's type
+    // arguments) holds no more Guids than the declaration does.
+    private static IEnumerable<int> ReportedPositions(ISymbol baseMember)
+    {
+        var constructed = Slots(baseMember).ToDictionary(s => s.Position, s => s.Type);
+        var declared = Slots(baseMember.OriginalDefinition).ToDictionary(s => s.Position, s => s.Type);
+        return RawSlots(baseMember.OriginalDefinition)
+            .Select(slot => slot.Position)
+            .Where(p => constructed.TryGetValue(p, out var c) && declared.TryGetValue(p, out var d) && GuidCount(c) == GuidCount(d));
+    }
+
+    private static int GuidCount(ITypeSymbol type) => type switch
+    {
+        IArrayTypeSymbol array => GuidCount(array.ElementType),
+        INamedTypeSymbol named when IsNamed(named, "Guid", "System") => 1,
+        INamedTypeSymbol named => named.TypeArguments.Sum(GuidCount),
+        _ => 0,
+    };
 
     // Every raw id in the member's signature. Position: -1 for the member's own type (return, property, field,
     // event), i for parameter i, so an implementation's slots line up with its base's.
@@ -81,7 +104,10 @@ internal sealed class RawIdAnalyzer : DiagnosticAnalyzer
 
     private static IEnumerable<(int Position, ITypeSymbol Type, string Name, ImmutableArray<Location> Locations)> Slots(ISymbol member) => member switch
     {
-        IMethodSymbol method when method.MethodKind is MethodKind.Ordinary or MethodKind.Constructor => MethodSlots(method, method.Name, method.Locations),
+        IMethodSymbol method when method.MethodKind is MethodKind.Ordinary or MethodKind.Constructor or MethodKind.UserDefinedOperator =>
+            MethodSlots(method, method.Name, method.Locations),
+        IMethodSymbol { MethodKind: MethodKind.Conversion } conversion => MethodSlots(conversion, conversion.ContainingType.Name, conversion.Locations),
+        INamedTypeSymbol { IsExtension: true, ExtensionParameter: { } receiver } => [(0, receiver.Type, receiver.Name, receiver.Locations)],
         IPropertySymbol property when !IsRecordPositional(property) =>
             Parameters(property.Parameters).Prepend((-1, property.Type, property.Name, property.Locations)),
         IFieldSymbol field => [(-1, field.Type, field.Name, field.Locations)],

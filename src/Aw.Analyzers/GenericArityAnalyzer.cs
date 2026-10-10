@@ -31,7 +31,8 @@ internal sealed class GenericArityAnalyzer : DiagnosticAnalyzer
             IMethodSymbol { IsImplicitlyDeclared: false } method => method.TypeParameters.Length,
             _ => 0,
         };
-        if (count > AwDiagnostics.MaxTypeParameters && !symbol.Locations.IsEmpty && !InheritedShape.IsInherited(symbol))
+        if (count > AwDiagnostics.MaxTypeParameters && !symbol.Locations.IsEmpty
+            && !InheritedShape.IsPartialImplementation(symbol) && !InheritedShape.IsInherited(symbol))
         {
             report(Diagnostic.Create(AwDiagnostics.GenericArity, symbol.Locations[0], symbol.Name, count, AwDiagnostics.MaxTypeParameters));
         }

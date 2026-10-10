@@ -28,7 +28,7 @@ internal sealed class ParameterCountAnalyzer : DiagnosticAnalyzer
     private static void AnalyzeMethod(SymbolAnalysisContext context)
     {
         var method = (IMethodSymbol)context.Symbol;
-        if (method.Parameters.Length <= AwDiagnostics.MaxParameters || method.IsImplicitlyDeclared)
+        if (method.Parameters.Length <= AwDiagnostics.MaxParameters || method.IsImplicitlyDeclared || InheritedShape.IsPartialImplementation(method))
         {
             return;
         }
@@ -60,7 +60,8 @@ internal sealed class ParameterCountAnalyzer : DiagnosticAnalyzer
     private static void AnalyzeIndexer(SymbolAnalysisContext context)
     {
         var property = (IPropertySymbol)context.Symbol;
-        if (property.IsIndexer && property.Parameters.Length > AwDiagnostics.MaxParameters && !InheritedShape.IsInherited(property))
+        if (property.IsIndexer && property.Parameters.Length > AwDiagnostics.MaxParameters
+            && !InheritedShape.IsPartialImplementation(property) && !InheritedShape.IsInherited(property))
         {
             Report(context.ReportDiagnostic, "this[]", property.Parameters.Length, property.Locations);
         }
