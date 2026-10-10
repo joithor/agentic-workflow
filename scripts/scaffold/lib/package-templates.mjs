@@ -253,7 +253,7 @@ using Aw.Kernel;
 
 namespace ${ns};
 
-/// <summary>The package's one source-generated JSON context; used only through AwJson.CreateOptions (spec §4b.3).</summary>
+/// <summary>The package's one source-generated JSON context (spec §4b.3): through AwJson.CreateOptions, and first in an http host's resolver chain.</summary>
 [JsonSerializable(typeof(Error))]
 internal sealed partial class ${p.name}JsonContext : JsonSerializerContext;
 `;
@@ -384,6 +384,7 @@ internal static class LoopbackBinding
         _ = builder.WebHost.UseKestrel(kestrel => kestrel.Listen(IPAddress.Loopback, PortFrom(environment)));
         _ = Composition.Compose(builder.Services, environment, clock);
         _ = builder.Services.ConfigureHttpJsonOptions(o => CopyProfile(o.SerializerOptions));
+        _ = builder.Services.AddProblemDetails();   // its post-configure step adds ProblemDetails' JSON context to the chain
         return builder.Build();
     }
 
@@ -394,7 +395,7 @@ internal static class LoopbackBinding
     private static void CopyProfile(JsonSerializerOptions target)
     {
         var profile = AwJson.CreateOptions(${p.name}JsonContext.Default);
-        target.TypeInfoResolverChain.Clear();   // ASP.NET's own post-configure steps add their contexts (ProblemDetails) after this
+        target.TypeInfoResolverChain.Clear();   // AddProblemDetails' post-configure step adds ProblemDetails' context after this runs
         target.TypeInfoResolverChain.Add(${p.name}JsonContext.Default);
         target.PropertyNamingPolicy = profile.PropertyNamingPolicy;
         target.PropertyNameCaseInsensitive = profile.PropertyNameCaseInsensitive;   // the Web defaults are case-insensitive
@@ -592,7 +593,7 @@ public sealed class ProcessEnvironment
 }
 `;
 
-export const loopbackTests = (p) => `${usingsBlock(["System.Net", `Aw.${p.name}.Host`, "Microsoft.AspNetCore.Builder", "Microsoft.AspNetCore.Hosting.Server", "Microsoft.AspNetCore.Hosting.Server.Features", "Microsoft.Extensions.DependencyInjection", "Microsoft.Extensions.Time.Testing"])}
+export const loopbackTests = (p) => `${usingsBlock(["System.Net", `Aw.${p.name}.Host`, "Aw.Kernel", "Microsoft.AspNetCore.Builder", "Microsoft.AspNetCore.Hosting.Server", "Microsoft.AspNetCore.Hosting.Server.Features", "Microsoft.Extensions.DependencyInjection", "Microsoft.Extensions.Time.Testing"])}
 
 namespace Aw.${p.name}.Tests;
 
@@ -658,6 +659,25 @@ public sealed class LoopbackBindingTests
     }
 
     [Fact, Trait("Lane", "integration")]
+    public async Task An_error_result_is_problem_details_with_its_code()
+    {
+        var app = LoopbackBinding.Build([], _ => null, new FakeTimeProvider());
+        await using (app)
+        {
+            _ = Pipeline.Configure(app);
+            _ = app.MapGet("/probe-error", static () => ((Result<Unit>)KernelErrors.Invalid.With("probe")).ToHttpResult());
+            await app.StartAsync(TestContext.Current.CancellationToken);
+            using var client = new HttpClient { BaseAddress = new Uri(Address(app)) };
+
+            using var response = await client.GetAsync(new Uri("/probe-error", UriKind.Relative), TestContext.Current.CancellationToken);
+
+            Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+            Assert.Equal("application/problem+json", response.Content.Headers.ContentType?.MediaType);
+            Assert.Contains(KernelErrors.Invalid.Code, await response.Content.ReadAsStringAsync(TestContext.Current.CancellationToken), StringComparison.Ordinal);
+        }
+    }
+
+    [Fact, Trait("Lane", "integration")]
     public async Task A_non_loopback_browser_origin_is_refused_with_403()
     {
         await using var app = await Started();
@@ -692,7 +712,9 @@ public sealed class LoopbackBindingTests
 `;
 
 /** The http Host's JSON options are the AwJson profile, setting by setting (ASP.NET starts from the looser Web defaults). */
-export const httpJsonProfileTests = (p) => `${usingsBlock([`Aw.${p.name}.Host`, "Aw.Kernel.Json", "Microsoft.AspNetCore.Http.Json", "Microsoft.Extensions.DependencyInjection", "Microsoft.Extensions.Options", "Microsoft.Extensions.Time.Testing"])}
+export const httpJsonProfileTests = (p) => `${usingsBlock([`Aw.${p.name}.Host`, "Aw.Kernel.Json", "Microsoft.Extensions.DependencyInjection", "Microsoft.Extensions.Options", "Microsoft.Extensions.Time.Testing"])}
+using HttpJsonOptions = Microsoft.AspNetCore.Http.Json.JsonOptions;
+using ProblemDetails = Microsoft.AspNetCore.Mvc.ProblemDetails;
 
 namespace Aw.${p.name}.Tests;
 
@@ -702,10 +724,11 @@ public sealed class HttpJsonProfileTests
     public async Task The_http_json_options_are_the_Kernel_profile()
     {
         await using var app = LoopbackBinding.Build([], _ => null, new FakeTimeProvider());
-        var http = app.Services.GetRequiredService<IOptions<JsonOptions>>().Value.SerializerOptions;
+        var http = app.Services.GetRequiredService<IOptions<HttpJsonOptions>>().Value.SerializerOptions;
         var profile = AwJson.CreateOptions(${p.name}JsonContext.Default);
 
-        Assert.Same(${p.name}JsonContext.Default, http.TypeInfoResolverChain[0]);
+        Assert.Contains(${p.name}JsonContext.Default, http.TypeInfoResolverChain);   // with ASP.NET's ProblemDetails context
+        Assert.NotNull(http.TypeInfoResolver?.GetTypeInfo(typeof(ProblemDetails), http));   // error results serialize
         Assert.Equal(profile.PropertyNamingPolicy, http.PropertyNamingPolicy);
         Assert.Equal(profile.PropertyNameCaseInsensitive, http.PropertyNameCaseInsensitive);
         Assert.Equal(profile.NumberHandling, http.NumberHandling);

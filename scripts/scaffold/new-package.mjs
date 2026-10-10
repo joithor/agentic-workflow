@@ -15,7 +15,7 @@
 
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { Journal, ScaffoldError, UsageError, list, lower, parseArgs, withHeavyLock } from "./lib/common.mjs";
+import { Journal, ScaffoldError, UsageError, trapSignals, list, lower, parseArgs, withHeavyLock } from "./lib/common.mjs";
 import * as P from "./lib/package-templates.mjs";
 import * as R from "./lib/repo.mjs";
 import { build, depsClean, expectOnlyRed, formatClean, mustPass, noStrayChanges, publicApiFix, strayChanges } from "./lib/checks.mjs";
@@ -60,6 +60,8 @@ export function resolvePackage(journal, input) {
   if (inUse.has(errorPrefix) || errorPrefix === "KERNEL") throw new ScaffoldError("NP-PREFIX", `AW-${errorPrefix}- is taken (${inUse.get(errorPrefix) ?? "Aw.Kernel"})`, "ask the user for another prefix; never derive one");
 
   const depends = list(input.depends);
+  const repeated = depends.find((d, i) => depends.indexOf(d) !== i);
+  if (repeated) throw new ScaffoldError("NP-DEPENDS", `${repeated} is listed twice`, "list each package once");
   const refs = 2 + depends.length;
   if (refs > 4) throw new ScaffoldError("NP-FANOUT", `${shape === "small" ? "App" : "Features"} would hold ${refs} in-repo references (Core, Aw.Kernel and ${depends.length} depends); the limit is 4`, "depend on fewer packages, or reach one through its CLI");
   for (const d of depends) {
@@ -187,7 +189,7 @@ export function writePackage(journal, p) {
 }
 
 /** The spec's command list, in order. Each lock file a restore writes is journalled first, so revert restores it. */
-export function checkPackage(journal, p, s, log) {
+export async function checkPackage(journal, p, s, log) {
   const root = journal.root;
   const { prod, tests } = projectsOf(p);
   const restored = [...prod, ...tests, { path: R.ARCH_CSPROJ }];
@@ -195,19 +197,19 @@ export function checkPackage(journal, p, s, log) {
   for (const proj of restored) journal.watch(path.join(path.dirname(proj.path), "packages.lock.json"));
   for (const proj of restored) {
     // --force: a restore no-op cache left by an earlier, reverted run would otherwise skip rewriting the lock file.
-    mustPass(root, "SCAFFOLD-RESTORE", "dotnet", ["restore", proj.path, "--force"], "a package the templates reference must be pinned in Directory.Packages.props", log);
+    await mustPass(root, "SCAFFOLD-RESTORE", "dotnet", ["restore", proj.path, "--force"], "a package the templates reference must be pinned in Directory.Packages.props", log);
   }
-  mustPass(root, "SCAFFOLD-RESTORE", "dotnet", ["restore", R.SLNX, "--locked-mode"], "no existing lock file may change here: a new pin belongs in its own commit (NP-PINS)", log);
-  for (const proj of prod.filter((x) => ["Core", "Features", "Infrastructure"].includes(x.layer))) publicApiFix(root, proj.path, log);
-  sliceApi(journal, s, log);
-  build(root, log);
-  const lane = expectOnlyRed(root, `${s.slice}Tests.${s.slice}_${s.behavior}`, log);
-  formatClean(root, log);
-  depsClean(root, log);
+  await mustPass(root, "SCAFFOLD-RESTORE", "dotnet", ["restore", R.SLNX, "--locked-mode"], "no existing lock file may change here: a new pin belongs in its own commit (NP-PINS)", log);
+  for (const proj of prod.filter((x) => ["Core", "Features", "Infrastructure"].includes(x.layer))) await publicApiFix(root, proj.path, log);
+  await sliceApi(journal, s, log);
+  await build(root, log);
+  const lane = await expectOnlyRed(root, `${s.slice}Tests.${s.slice}_${s.behavior}`, log);
+  await formatClean(root, log);
+  await depsClean(root, log);
   return lane;
 }
 
-export function main(argv, { log = (line) => console.error(line), out = (line) => console.log(line) } = {}) {
+export async function main(argv, { log = (line) => console.error(line), out = (line) => console.log(line) } = {}) {
   let input;
   try {
     input = parseArgs(argv, KNOWN, ["filesOnly"]);
@@ -220,7 +222,8 @@ export function main(argv, { log = (line) => console.error(line), out = (line) =
   }
   const root = path.resolve(input.root ?? process.cwd());
   const journal = new Journal(root);
-  const before = input.filesOnly ? [] : strayChanges(journal);
+  const before = input.filesOnly ? [] : await strayChanges(journal);
+  const untrap = trapSignals(log);
   try {
     const p = resolvePackage(journal, input);
     if (!/^[A-Z][A-Za-z0-9]{2,40}$/.test(input.firstSlice)) throw new ScaffoldError("NS-NAME", `'${input.firstSlice}' is not a PascalCase use case name`, "pass e.g. --first-slice CheckRepo");
@@ -229,8 +232,8 @@ export function main(argv, { log = (line) => console.error(line), out = (line) =
     const s = resolveSlice(journal, { package: p.name, slice: input.firstSlice, behavior: input.behavior, surface: p.host, command: input.command, route: input.route, ids: input.ids, ports: input.ports });
     writeSlice(journal, s);
     if (!input.filesOnly) {
-      withHeavyLock(() => checkPackage(journal, p, s, log));
-      noStrayChanges(journal, before);
+      await withHeavyLock(async () => checkPackage(journal, p, s, log));
+      await noStrayChanges(journal, before);
     }
     out(`new-package: ${p.name} (${p.shape}, host ${p.host}, tier ${p.tier}) — ${journal.touched().length} files`);
     for (const f of journal.touched()) out(`  ${f}`);
@@ -241,13 +244,18 @@ export function main(argv, { log = (line) => console.error(line), out = (line) =
     out(nextSteps(s));
     return 0;
   } catch (e) {
+    const count = journal.touched().length;
     journal.revert();
     const err = e instanceof ScaffoldError ? e : new ScaffoldError("SCAFFOLD-INTERNAL", e.message, "a generator bug: the files were reverted; report the message");
     log(err.message);
     if (err.fix) log(`fix: ${err.fix}`);
-    if (journal.touched().length) log(`reverted ${journal.touched().length} files`);
+    if (count) log(`reverted ${count} files`);
     return 1;
+  } finally {
+    untrap();
   }
 }
 
-if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) process.exitCode = main(process.argv.slice(2));
+if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
+  process.exitCode = await main(process.argv.slice(2));
+}

@@ -30,7 +30,7 @@ prefix: read the tier from `deps.yaml` when the package is declared there, and a
 | error prefix | `--error-prefix` | `^[A-Z0-9]{2,16}$`, not used by any `src/**/*Errors.cs`; codes are `AW-<prefix>-NNN` |
 | note | `--note` | one line; required only when the package isn't in `deps.yaml` yet |
 | shape | `--shape` | `small` (Core + App) unless the package is expected over ~1,500 lines, then `full` |
-| host | `--host` | `cli` (NativeAOT console app), `http` (minimal API; needs `full`) or `none` (library) |
+| host | `--host` | `cli` (NativeAOT console app), `http` (minimal API; needs `full`) or `none` (library; needs `full`) |
 | binary | `--binary` | the executable name, default `<name lowercase>` (e.g. `aw-readiness`) |
 | depends | `--depends` | comma list of lower-tier, non-tier-0 packages whose `Core` the features reference |
 | first slice | `--first-slice`, `--behavior` | the first use case (PascalCase, verb first) and its behavior (snake_case) |
@@ -51,7 +51,7 @@ slice's red test), `dotnet format --verify-no-changes` and `node scripts/check-d
 every file it wrote and prints the rule id, the measured value and the fix.
 
 Refusals (exit 1, nothing written): `NP-INPUT` (a missing or malformed input), `NP-NAME`, `NP-EXISTS`, `NP-TIER`,
-`NP-DEPS-MISMATCH`, `NP-PREFIX`, `NP-DEPENDS`, `NP-FANOUT`, `NP-SMALL-HTTP`, `NP-PINS`, and the first slice's
+`NP-DEPS-MISMATCH`, `NP-PREFIX`, `NP-DEPENDS`, `NP-FANOUT`, `NP-SMALL-HTTP`, `NP-SMALL-NONE`, `NP-PINS`, and the first slice's
 `NS-*` ids. On `NP-PINS`, make the pin commit it prints first (pins in `Directory.Packages.props` plus the lock
 files an unlocked restore changes), then run the generator again. On any other refusal, fix the input (ask the user
 when it's theirs to decide) and re-run.

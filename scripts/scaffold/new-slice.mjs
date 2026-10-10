@@ -15,7 +15,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { Journal, ScaffoldError, UsageError, camel, kebab, list, parseArgs, withHeavyLock } from "./lib/common.mjs";
+import { Journal, ScaffoldError, UsageError, trapSignals, camel, kebab, list, parseArgs, withHeavyLock } from "./lib/common.mjs";
 import { byNamespace, usingsBlock } from "./lib/package-templates.mjs";
 import { nodeOf, packageShape, readDeps } from "./lib/repo.mjs";
 import * as T from "./lib/slice-templates.mjs";
@@ -206,18 +206,18 @@ export function writeSlice(journal, s) {
 }
 
 /** The public API steps (before the build): the RS0016 code fix, then Vogen's generated members from the build. */
-export function sliceApi(journal, s, log) {
+export async function sliceApi(journal, s, log) {
   const root = journal.root;
   // dotnet format rewrites the PublicAPI files outside the journal: record them first, so a revert restores them.
   journal.watch(`${s.dirs.core}/PublicAPI.Unshipped.txt`);
   if (s.dirs.featuresProject) journal.watch(`src/${s.pkg}/Aw.${s.pkg}.Features/PublicAPI.Unshipped.txt`);
   if (s.ids.some((i) => i.isNew) || s.newPorts.length > 0) {
     const api = `${s.dirs.core}/PublicAPI.Unshipped.txt`;
-    publicApiFix(root, s.dirs.coreProject, log);
-    const generated = generatedPublicApi(root, s.dirs.coreProject, log);
+    await publicApiFix(root, s.dirs.coreProject, log);
+    const generated = await generatedPublicApi(root, s.dirs.coreProject, log);
     if (generated.length) journal.edit(api, (text) => `${text.replace(/\n*$/, "\n")}${generated.join("\n")}\n`);
   }
-  if (s.dirs.featuresProject) publicApiFix(root, s.dirs.featuresProject, log);
+  if (s.dirs.featuresProject) await publicApiFix(root, s.dirs.featuresProject, log);
 }
 
 export const nextSteps = (s) =>
@@ -230,7 +230,7 @@ export const nextSteps = (s) =>
     '  5. run the lane: dotnet test --solution AgenticWorkflow.slnx --filter-trait "Lane=unit" --ignore-exit-code 8',
   ].join("\n");
 
-function main(argv) {
+async function main(argv) {
   let input;
   try {
     input = parseArgs(argv, KNOWN, ["filesOnly"]);
@@ -244,18 +244,19 @@ function main(argv) {
   const root = path.resolve(input.root ?? process.cwd());
   const journal = new Journal(root);
   const log = (line) => console.error(line);
-  const before = input.filesOnly ? [] : strayChanges(journal);
+  const before = input.filesOnly ? [] : await strayChanges(journal);
+  const untrap = trapSignals(log);
   try {
     const s = resolveSlice(journal, input);
     writeSlice(journal, s);
     if (!input.filesOnly) {
-      withHeavyLock(() => {
-        sliceApi(journal, s, log);
-        build(root, log);
-        expectOnlyRed(root, `${s.slice}Tests.${s.slice}_${s.behavior}`, log);
-        formatClean(root, log);
+      await withHeavyLock(async () => {
+        await sliceApi(journal, s, log);
+        await build(root, log);
+        await expectOnlyRed(root, `${s.slice}Tests.${s.slice}_${s.behavior}`, log);
+        await formatClean(root, log);
       });
-      noStrayChanges(journal, before);
+      await noStrayChanges(journal, before);
     }
     console.log(`new-slice: wrote ${journal.touched().length} files for ${s.pkg}.${s.slice}`);
     for (const f of journal.touched()) console.log(`  ${f}`);
@@ -263,13 +264,18 @@ function main(argv) {
     console.log(nextSteps(s));
     return 0;
   } catch (e) {
+    const count = journal.touched().length;
     journal.revert();
     const err = e instanceof ScaffoldError ? e : new ScaffoldError("SCAFFOLD-INTERNAL", e.message, "a generator bug: the files were reverted; report the message");
     console.error(err.message);
     if (err.fix) console.error(`fix: ${err.fix}`);
-    if (journal.touched().length) console.error(`reverted ${journal.touched().length} files`);
+    if (count) console.error(`reverted ${count} files`);
     return 1;
+  } finally {
+    untrap();
   }
 }
 
-if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) process.exitCode = main(process.argv.slice(2));
+if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
+  process.exitCode = await main(process.argv.slice(2));
+}

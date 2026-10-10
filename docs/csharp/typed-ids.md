@@ -77,7 +77,7 @@ With it, binding goes through Vogen's generated, validating `TryParse`; nothing 
 **Committed route-binding test (required before an id is used behind an endpoint).** The proof above is a throwaway
 probe. The first package with `host: http` (or an `Aw.Host.Tests` project, if one exists first) commits a test that
 compiles a minimal API through the request-delegate generator, with `ITypedId` ids as a route parameter
-(`/items/{id}`) and a query parameter (`/items?id=`), and the host's 400 middleware. Through a test server
+(`/items/{id}`) and a query parameter (`/items?id=`), and the host's 400 middleware. Through the host listening on loopback
 it asserts: valid text → 200 with the id's value; text the type refuses → 400; an empty `?id=` → 400; and it fails if
 the id binds as a body (the endpoint's `ParameterBindingMetadata` reports the parameter as route/query with
 `hasTryParse: true`), so losing `IParsable` turns into a red test, not a production 500.
