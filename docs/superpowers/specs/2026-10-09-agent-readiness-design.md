@@ -315,19 +315,35 @@ group.MapPost("/items/{id}/start", async (ItemId id, StartItemBody body, IServic
 - `global.json` pins the .NET SDK.
 - `Directory.Build.props`:
   - language and nullable: `Nullable=enable`, `LangVersion=latest`, `ImplicitUsings=enable`;
-  - warnings: `TreatWarningsAsErrors=true`, `EnforceCodeStyleInBuild=true`, `AnalysisLevel=latest-recommended`
-    (raised to `latest-all` per category where the noise is acceptable, decided during R1);
-  - `IsAotCompatible=true` on `Core`, `Features`, `Infrastructure` and Kernel projects (it turns on the trim and AOT
-    analyzers). `PublishAot=true` only on the entry points in the table below;
-  - `GenerateDocumentationFile=true` for public API;
-  - `RestorePackagesWithLockFile=true`, plus `RestoreLockedMode` in CI.
-- `Directory.Packages.props`: Central Package Management with exact versions. Analyzers are added as
+  - warnings: `TreatWarningsAsErrors=true`, `EnforceCodeStyleInBuild=true`, and `EnableNETAnalyzers=false`
+    because the pinned NetAnalyzers package owns the CA rules (with the SDK copy also on, every CA diagnostic is
+    reported twice). There is no `AnalysisLevel`: the SDK applies it only when `EnableNETAnalyzers` is true and the
+    package ships no replacement, so severity comes from `.editorconfig` (a bulk `error` baseline, explicit
+    per-rule lines, and `dotnet_analyzer_diagnostic.category-<X>.severity` lines where a whole category is raised);
+  - `IsAotCompatible=true` on every library project: everything except `*.Tests`, `*.Testing`, `*.Host` and
+    `*.Analyzers` (so `Core`, `Features`, `Infrastructure`, a small package's `App`, Kernel and Redaction). A library
+    that can't be AOT-compatible opts out with `AwAotCompatible=false` and a reason. `PublishAot=true` only on the
+    entry points in the table below;
+  - `GenerateDocumentationFile=true` everywhere (IDE0005 needs it); test projects turn off CS1591 instead;
+  - NuGet audit: NU1903 and NU1904 (high, critical) fail the build, NU1901 and NU1902 stay warnings, because the
+    advisory data is live and would otherwise turn every branch red without a repo change;
+  - `RestorePackagesWithLockFile=true`, plus `RestoreLockedMode` in CI. Locked mode only catches reference drift, so
+    CI also fails on a missing lock file (`Directory.Build.targets`) and on a lock file that restore changed
+    (`scripts/dotnet-verify-packages.sh`).
+- Test projects (under `tests/`) get their analyzer policy from `tests/.editorconfig`: CA1707, CA2007, CA1515,
+  RS0016, RS0017, RS0036, RS0037 and CS1591 off, each with its reason. CA2007 elsewhere applies to libraries only
+  (`output_kind = DynamicallyLinkedLibrary`): hosts have no SynchronizationContext.
+- `Directory.Packages.props`: Central Package Management with exact versions (`[x.y.z]`; a bare version is a
+  minimum). Analyzers are added as
   `GlobalPackageReference`: `Microsoft.CodeAnalysis.NetAnalyzers`, `Meziantou.Analyzer`, `Roslynator.Analyzers`,
   `Microsoft.CodeAnalysis.BannedApiAnalyzers`, `Microsoft.CodeAnalysis.PublicApiAnalyzers`. New packages follow
   the same 14-day minimum age as the existing pins.
 - **One owner per rule (A14):** where analyzer packs overlap (for example CA2007 and MA0004 on `ConfigureAwait`),
-  `.editorconfig` names one owning rule and disables the others. Existing violations are captured in a generated
-  `baseline.globalconfig` that lowers only those rule-and-file pairs; the ratchet fails CI if the baseline grows.
+  `.editorconfig` names one owning rule and disables the others. Roslynator, which overlaps the IDE rules most, is
+  off except for rules opted in by name. Existing violations are captured in a generated block at the end of the
+  root `.editorconfig`, after a fixed sentinel line, that lowers only those rule-and-file pairs; the ratchet fails
+  CI if that block grows. (Not a `baseline.globalconfig`: a global config can't lower a rule `.editorconfig` sets,
+  and its sections need absolute paths.)
 - `.editorconfig` sets every rule's severity explicitly (no "suggestion" level for anything agents should obey).
   The size limits: file ≤ 300 lines, method ≤ 40 lines, cyclomatic complexity ≤ 10, parameters ≤ 5. Existing
   violations go into a ratchet baseline that only shrinks.
@@ -515,7 +531,10 @@ still TS.
 
 **NuGet and Node (A16).**
 - `nuget.config` with package source mapping (nuget.org only), signed-package validation, and lockfiles in locked
-  mode in CI. Analyzer packages run code in every build, so they get the same review as runtime dependencies.
+  mode in CI. Restore applies the trusted-signer policy only when signature verification is on (off by default on
+  macOS; `DOTNET_NUGET_SIGNATURE_VERIFICATION=true` turns it on) and only to packages it extracts, so a warm cache
+  is never re-checked. The enforcement step is `scripts/dotnet-verify-packages.sh` in CI: lock files present and
+  unchanged, a signature-verified locked restore, and `dotnet nuget verify --all` over every locked package. Analyzer packages run code in every build, so they get the same review as runtime dependencies.
 - The TS-indexer sidecar installs with `--ignore-scripts`, runs with no network and no secrets, and talks over
   stdin and stdout only (a versioned JSON protocol with its own golden tests).
 
