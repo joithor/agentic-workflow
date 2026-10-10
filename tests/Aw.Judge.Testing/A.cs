@@ -6,4 +6,8 @@ public static class A
     /// <summary>A GetHealthRequest builder with deterministic defaults.</summary>
     /// <returns>A new builder.</returns>
     public static GetHealthRequestBuilder GetHealthRequest() => new();
+
+    /// <summary>A decision builder with deterministic defaults.</summary>
+    /// <returns>A new builder.</returns>
+    public static DecisionBuilder Decision() => new();
 }

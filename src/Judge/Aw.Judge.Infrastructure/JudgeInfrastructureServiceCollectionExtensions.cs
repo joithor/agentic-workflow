@@ -1,3 +1,5 @@
+using Aw.Judge.Core.Ports;
+using Aw.Judge.Infrastructure.Sqlite;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Aw.Judge.Infrastructure;
@@ -10,5 +12,7 @@ public static class JudgeInfrastructureServiceCollectionExtensions
     /// <param name="environment">Reads an environment variable (Environment.GetEnvironmentVariable in Program.cs, a lambda in tests).</param>
     /// <returns>The same collection.</returns>
     public static IServiceCollection AddJudgeInfrastructure(this IServiceCollection services, Func<string, string?> environment)
-        => services.AddSingleton(SettingsFromEnvironment.Read(environment));
+        => services
+            .AddSingleton(SettingsFromEnvironment.Read(environment))
+            .AddScoped<IDecisionLog, SqliteDecisionLog>();
 }

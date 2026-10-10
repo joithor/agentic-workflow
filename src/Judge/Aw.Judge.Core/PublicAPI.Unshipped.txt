@@ -4,3 +4,203 @@ Aw.Judge.Core.JudgeErrors
 static Aw.Judge.Core.JudgeCoreServiceCollectionExtensions.AddJudgeCore(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
 static Aw.Judge.Core.JudgeErrors.All.get -> System.Collections.Generic.IReadOnlyList<Aw.Kernel.ErrorDefinition!>!
 static readonly Aw.Judge.Core.JudgeErrors.Invalid -> Aw.Kernel.ErrorDefinition!
+Aw.Judge.Core.Decisions.Agreement
+Aw.Judge.Core.Decisions.Agreement.Agreed = 1 -> Aw.Judge.Core.Decisions.Agreement
+Aw.Judge.Core.Decisions.Agreement.Overrode = 2 -> Aw.Judge.Core.Decisions.Agreement
+Aw.Judge.Core.Decisions.Agreement.Undecided = 3 -> Aw.Judge.Core.Decisions.Agreement
+Aw.Judge.Core.Decisions.DecisionDetails
+Aw.Judge.Core.Decisions.DecisionDetails.<Clone>$() -> Aw.Judge.Core.Decisions.DecisionDetails!
+Aw.Judge.Core.Decisions.DecisionDetails.Agreement.get -> Aw.Judge.Core.Decisions.Agreement?
+Aw.Judge.Core.Decisions.DecisionDetails.Agreement.init -> void
+Aw.Judge.Core.Decisions.DecisionDetails.DecisionDetails() -> void
+Aw.Judge.Core.Decisions.DecisionDetails.Equals(Aw.Judge.Core.Decisions.DecisionDetails? other) -> bool
+Aw.Judge.Core.Decisions.DecisionDetails.InputJson.get -> string!
+Aw.Judge.Core.Decisions.DecisionDetails.InputJson.init -> void
+Aw.Judge.Core.Decisions.DecisionDetails.Probabilities.get -> System.Collections.Generic.IReadOnlyDictionary<string!, double>?
+Aw.Judge.Core.Decisions.DecisionDetails.Probabilities.init -> void
+Aw.Judge.Core.Decisions.DecisionDetails.RulesOpinion.get -> string?
+Aw.Judge.Core.Decisions.DecisionDetails.RulesOpinion.init -> void
+Aw.Judge.Core.Decisions.DecisionDetails.SessionId.get -> Aw.Judge.Core.Ids.SessionId?
+Aw.Judge.Core.Decisions.DecisionDetails.SessionId.init -> void
+Aw.Judge.Core.Decisions.DecisionOutcome
+Aw.Judge.Core.Decisions.DecisionOutcome.Decided = 1 -> Aw.Judge.Core.Decisions.DecisionOutcome
+Aw.Judge.Core.Decisions.DecisionOutcome.Escalated = 2 -> Aw.Judge.Core.Decisions.DecisionOutcome
+Aw.Judge.Core.Decisions.DecisionOutcome.Failed = 3 -> Aw.Judge.Core.Decisions.DecisionOutcome
+Aw.Judge.Core.Decisions.DecisionRecord
+Aw.Judge.Core.Decisions.DecisionRecord.<Clone>$() -> Aw.Judge.Core.Decisions.DecisionRecord!
+Aw.Judge.Core.Decisions.DecisionRecord.ChainPosition.get -> int
+Aw.Judge.Core.Decisions.DecisionRecord.ChainPosition.init -> void
+Aw.Judge.Core.Decisions.DecisionRecord.Confidence.get -> double
+Aw.Judge.Core.Decisions.DecisionRecord.Confidence.init -> void
+Aw.Judge.Core.Decisions.DecisionRecord.ContentClass.get -> string!
+Aw.Judge.Core.Decisions.DecisionRecord.ContentClass.init -> void
+Aw.Judge.Core.Decisions.DecisionRecord.Decision.get -> string?
+Aw.Judge.Core.Decisions.DecisionRecord.Decision.init -> void
+Aw.Judge.Core.Decisions.DecisionRecord.DecisionRecord() -> void
+Aw.Judge.Core.Decisions.DecisionRecord.Details.get -> Aw.Judge.Core.Decisions.DecisionDetails?
+Aw.Judge.Core.Decisions.DecisionRecord.Details.init -> void
+Aw.Judge.Core.Decisions.DecisionRecord.Equals(Aw.Judge.Core.Decisions.DecisionRecord? other) -> bool
+Aw.Judge.Core.Decisions.DecisionRecord.Id.get -> Aw.Judge.Core.Ids.DecisionId
+Aw.Judge.Core.Decisions.DecisionRecord.Id.init -> void
+Aw.Judge.Core.Decisions.DecisionRecord.InputDigest.get -> string!
+Aw.Judge.Core.Decisions.DecisionRecord.InputDigest.init -> void
+Aw.Judge.Core.Decisions.DecisionRecord.LatencyMs.get -> long
+Aw.Judge.Core.Decisions.DecisionRecord.LatencyMs.init -> void
+Aw.Judge.Core.Decisions.DecisionRecord.Outcome.get -> Aw.Judge.Core.Decisions.DecisionOutcome
+Aw.Judge.Core.Decisions.DecisionRecord.Outcome.init -> void
+Aw.Judge.Core.Decisions.DecisionRecord.Provider.get -> string!
+Aw.Judge.Core.Decisions.DecisionRecord.Provider.init -> void
+Aw.Judge.Core.Decisions.DecisionRecord.Question.get -> string!
+Aw.Judge.Core.Decisions.DecisionRecord.Question.init -> void
+Aw.Judge.Core.Decisions.DecisionRecord.ReasonCode.get -> string!
+Aw.Judge.Core.Decisions.DecisionRecord.ReasonCode.init -> void
+Aw.Judge.Core.Decisions.DecisionRecord.Skipped.get -> System.Collections.Generic.IReadOnlyList<Aw.Judge.Core.Decisions.SkippedProvider!>!
+Aw.Judge.Core.Decisions.DecisionRecord.Skipped.init -> void
+Aw.Judge.Core.Decisions.DecisionRecord.Ts.get -> System.DateTimeOffset
+Aw.Judge.Core.Decisions.DecisionRecord.Ts.init -> void
+Aw.Judge.Core.Decisions.DecisionRecord.UndoneAt.get -> System.DateTimeOffset?
+Aw.Judge.Core.Decisions.DecisionRecord.UndoneAt.init -> void
+Aw.Judge.Core.Decisions.FailureRecord
+Aw.Judge.Core.Decisions.FailureRecord.<Clone>$() -> Aw.Judge.Core.Decisions.FailureRecord!
+Aw.Judge.Core.Decisions.FailureRecord.Deconstruct(out System.DateTimeOffset Ts, out string! Question, out string! Provider, out string! ReasonCode) -> void
+Aw.Judge.Core.Decisions.FailureRecord.Equals(Aw.Judge.Core.Decisions.FailureRecord? other) -> bool
+Aw.Judge.Core.Decisions.FailureRecord.FailureRecord(System.DateTimeOffset Ts, string! Question, string! Provider, string! ReasonCode) -> void
+Aw.Judge.Core.Decisions.FailureRecord.Provider.get -> string!
+Aw.Judge.Core.Decisions.FailureRecord.Provider.init -> void
+Aw.Judge.Core.Decisions.FailureRecord.Question.get -> string!
+Aw.Judge.Core.Decisions.FailureRecord.Question.init -> void
+Aw.Judge.Core.Decisions.FailureRecord.ReasonCode.get -> string!
+Aw.Judge.Core.Decisions.FailureRecord.ReasonCode.init -> void
+Aw.Judge.Core.Decisions.FailureRecord.Ts.get -> System.DateTimeOffset
+Aw.Judge.Core.Decisions.FailureRecord.Ts.init -> void
+Aw.Judge.Core.Decisions.SkippedProvider
+Aw.Judge.Core.Decisions.SkippedProvider.<Clone>$() -> Aw.Judge.Core.Decisions.SkippedProvider!
+Aw.Judge.Core.Decisions.SkippedProvider.Deconstruct(out string! Provider, out Aw.Judge.Core.Decisions.SkipReason Reason) -> void
+Aw.Judge.Core.Decisions.SkippedProvider.Equals(Aw.Judge.Core.Decisions.SkippedProvider? other) -> bool
+Aw.Judge.Core.Decisions.SkippedProvider.Provider.get -> string!
+Aw.Judge.Core.Decisions.SkippedProvider.Provider.init -> void
+Aw.Judge.Core.Decisions.SkippedProvider.Reason.get -> Aw.Judge.Core.Decisions.SkipReason
+Aw.Judge.Core.Decisions.SkippedProvider.Reason.init -> void
+Aw.Judge.Core.Decisions.SkippedProvider.SkippedProvider(string! Provider, Aw.Judge.Core.Decisions.SkipReason Reason) -> void
+Aw.Judge.Core.Decisions.SkipReason
+Aw.Judge.Core.Decisions.SkipReason.BelowThreshold = 4 -> Aw.Judge.Core.Decisions.SkipReason
+Aw.Judge.Core.Decisions.SkipReason.Failed = 2 -> Aw.Judge.Core.Decisions.SkipReason
+Aw.Judge.Core.Decisions.SkipReason.Timeout = 3 -> Aw.Judge.Core.Decisions.SkipReason
+Aw.Judge.Core.Decisions.SkipReason.Unavailable = 1 -> Aw.Judge.Core.Decisions.SkipReason
+Aw.Judge.Core.Ids.AgentId
+Aw.Judge.Core.Ids.AgentId.AgentId() -> void
+Aw.Judge.Core.Ids.AgentId.Equals(Aw.Judge.Core.Ids.AgentId other, System.Collections.Generic.IEqualityComparer<Aw.Judge.Core.Ids.AgentId>! comparer) -> bool
+Aw.Judge.Core.Ids.AgentId.Equals(Aw.Judge.Core.Ids.AgentId other) -> bool
+Aw.Judge.Core.Ids.AgentId.GetTypeCode() -> System.TypeCode
+Aw.Judge.Core.Ids.AgentId.IsInitialized() -> bool
+Aw.Judge.Core.Ids.AgentId.ToString(System.IFormatProvider? provider) -> string!
+Aw.Judge.Core.Ids.AgentId.Value.get -> string!
+Aw.Judge.Core.Ids.DecisionId
+Aw.Judge.Core.Ids.DecisionId.DecisionId() -> void
+Aw.Judge.Core.Ids.DecisionId.Equals(Aw.Judge.Core.Ids.DecisionId other, System.Collections.Generic.IEqualityComparer<Aw.Judge.Core.Ids.DecisionId>! comparer) -> bool
+Aw.Judge.Core.Ids.DecisionId.Equals(Aw.Judge.Core.Ids.DecisionId other) -> bool
+Aw.Judge.Core.Ids.DecisionId.GetTypeCode() -> System.TypeCode
+Aw.Judge.Core.Ids.DecisionId.IsInitialized() -> bool
+Aw.Judge.Core.Ids.DecisionId.ToString(System.IFormatProvider? provider) -> string!
+Aw.Judge.Core.Ids.DecisionId.Value.get -> string!
+Aw.Judge.Core.Ids.PromptId
+Aw.Judge.Core.Ids.PromptId.Equals(Aw.Judge.Core.Ids.PromptId other, System.Collections.Generic.IEqualityComparer<Aw.Judge.Core.Ids.PromptId>! comparer) -> bool
+Aw.Judge.Core.Ids.PromptId.Equals(Aw.Judge.Core.Ids.PromptId other) -> bool
+Aw.Judge.Core.Ids.PromptId.GetTypeCode() -> System.TypeCode
+Aw.Judge.Core.Ids.PromptId.IsInitialized() -> bool
+Aw.Judge.Core.Ids.PromptId.PromptId() -> void
+Aw.Judge.Core.Ids.PromptId.ToString(System.IFormatProvider? provider) -> string!
+Aw.Judge.Core.Ids.PromptId.Value.get -> string!
+Aw.Judge.Core.Ids.SessionId
+Aw.Judge.Core.Ids.SessionId.Equals(Aw.Judge.Core.Ids.SessionId other, System.Collections.Generic.IEqualityComparer<Aw.Judge.Core.Ids.SessionId>! comparer) -> bool
+Aw.Judge.Core.Ids.SessionId.Equals(Aw.Judge.Core.Ids.SessionId other) -> bool
+Aw.Judge.Core.Ids.SessionId.GetTypeCode() -> System.TypeCode
+Aw.Judge.Core.Ids.SessionId.IsInitialized() -> bool
+Aw.Judge.Core.Ids.SessionId.SessionId() -> void
+Aw.Judge.Core.Ids.SessionId.ToString(System.IFormatProvider? provider) -> string!
+Aw.Judge.Core.Ids.SessionId.Value.get -> string!
+Aw.Judge.Core.Ids.ToolUseId
+Aw.Judge.Core.Ids.ToolUseId.Equals(Aw.Judge.Core.Ids.ToolUseId other, System.Collections.Generic.IEqualityComparer<Aw.Judge.Core.Ids.ToolUseId>! comparer) -> bool
+Aw.Judge.Core.Ids.ToolUseId.Equals(Aw.Judge.Core.Ids.ToolUseId other) -> bool
+Aw.Judge.Core.Ids.ToolUseId.GetTypeCode() -> System.TypeCode
+Aw.Judge.Core.Ids.ToolUseId.IsInitialized() -> bool
+Aw.Judge.Core.Ids.ToolUseId.ToolUseId() -> void
+Aw.Judge.Core.Ids.ToolUseId.ToString(System.IFormatProvider? provider) -> string!
+Aw.Judge.Core.Ids.ToolUseId.Value.get -> string!
+Aw.Judge.Core.Ports.IDecisionLog
+Aw.Judge.Core.Ports.IDecisionLog.CountFailuresSince(System.DateTimeOffset since, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<int>!>
+Aw.Judge.Core.Ports.IDecisionLog.Find(Aw.Judge.Core.Ids.DecisionId id, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Judge.Core.Decisions.DecisionRecord!>!>
+Aw.Judge.Core.Ports.IDecisionLog.LastAttemptOutcomes(int count, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<System.Collections.Generic.IReadOnlyList<Aw.Judge.Core.Decisions.DecisionOutcome>!>!>
+Aw.Judge.Core.Ports.IDecisionLog.MarkUndone(Aw.Judge.Core.Ids.DecisionId id, System.DateTimeOffset at, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Kernel.Unit>!>
+Aw.Judge.Core.Ports.IDecisionLog.PrefixReasonCode(Aw.Judge.Core.Ids.DecisionId id, string! prefix, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Kernel.Unit>!>
+Aw.Judge.Core.Ports.IDecisionLog.PruneDetailsBefore(System.DateTimeOffset before, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<int>!>
+Aw.Judge.Core.Ports.IDecisionLog.Record(Aw.Judge.Core.Decisions.DecisionRecord! decision, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Kernel.Unit>!>
+Aw.Judge.Core.Ports.IDecisionLog.RecordFailure(Aw.Judge.Core.Decisions.FailureRecord! failure, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Kernel.Unit>!>
+override Aw.Judge.Core.Decisions.DecisionDetails.Equals(object? obj) -> bool
+override Aw.Judge.Core.Decisions.DecisionDetails.GetHashCode() -> int
+override Aw.Judge.Core.Decisions.DecisionDetails.ToString() -> string!
+override Aw.Judge.Core.Decisions.DecisionRecord.Equals(object? obj) -> bool
+override Aw.Judge.Core.Decisions.DecisionRecord.GetHashCode() -> int
+override Aw.Judge.Core.Decisions.DecisionRecord.ToString() -> string!
+override Aw.Judge.Core.Decisions.FailureRecord.Equals(object? obj) -> bool
+override Aw.Judge.Core.Decisions.FailureRecord.GetHashCode() -> int
+override Aw.Judge.Core.Decisions.FailureRecord.ToString() -> string!
+override Aw.Judge.Core.Decisions.SkippedProvider.Equals(object? obj) -> bool
+override Aw.Judge.Core.Decisions.SkippedProvider.GetHashCode() -> int
+override Aw.Judge.Core.Decisions.SkippedProvider.ToString() -> string!
+override Aw.Judge.Core.Ids.AgentId.Equals(object? obj) -> bool
+override Aw.Judge.Core.Ids.AgentId.GetHashCode() -> int
+override Aw.Judge.Core.Ids.AgentId.ToString() -> string!
+override Aw.Judge.Core.Ids.DecisionId.Equals(object? obj) -> bool
+override Aw.Judge.Core.Ids.DecisionId.GetHashCode() -> int
+override Aw.Judge.Core.Ids.DecisionId.ToString() -> string!
+override Aw.Judge.Core.Ids.PromptId.Equals(object? obj) -> bool
+override Aw.Judge.Core.Ids.PromptId.GetHashCode() -> int
+override Aw.Judge.Core.Ids.PromptId.ToString() -> string!
+override Aw.Judge.Core.Ids.SessionId.Equals(object? obj) -> bool
+override Aw.Judge.Core.Ids.SessionId.GetHashCode() -> int
+override Aw.Judge.Core.Ids.SessionId.ToString() -> string!
+override Aw.Judge.Core.Ids.ToolUseId.Equals(object? obj) -> bool
+override Aw.Judge.Core.Ids.ToolUseId.GetHashCode() -> int
+override Aw.Judge.Core.Ids.ToolUseId.ToString() -> string!
+static Aw.Judge.Core.Decisions.DecisionDetails.operator !=(Aw.Judge.Core.Decisions.DecisionDetails? left, Aw.Judge.Core.Decisions.DecisionDetails? right) -> bool
+static Aw.Judge.Core.Decisions.DecisionDetails.operator ==(Aw.Judge.Core.Decisions.DecisionDetails? left, Aw.Judge.Core.Decisions.DecisionDetails? right) -> bool
+static Aw.Judge.Core.Decisions.DecisionRecord.operator !=(Aw.Judge.Core.Decisions.DecisionRecord? left, Aw.Judge.Core.Decisions.DecisionRecord? right) -> bool
+static Aw.Judge.Core.Decisions.DecisionRecord.operator ==(Aw.Judge.Core.Decisions.DecisionRecord? left, Aw.Judge.Core.Decisions.DecisionRecord? right) -> bool
+static Aw.Judge.Core.Decisions.FailureRecord.operator !=(Aw.Judge.Core.Decisions.FailureRecord? left, Aw.Judge.Core.Decisions.FailureRecord? right) -> bool
+static Aw.Judge.Core.Decisions.FailureRecord.operator ==(Aw.Judge.Core.Decisions.FailureRecord? left, Aw.Judge.Core.Decisions.FailureRecord? right) -> bool
+static Aw.Judge.Core.Decisions.SkippedProvider.operator !=(Aw.Judge.Core.Decisions.SkippedProvider? left, Aw.Judge.Core.Decisions.SkippedProvider? right) -> bool
+static Aw.Judge.Core.Decisions.SkippedProvider.operator ==(Aw.Judge.Core.Decisions.SkippedProvider? left, Aw.Judge.Core.Decisions.SkippedProvider? right) -> bool
+static Aw.Judge.Core.Ids.AgentId.From(string! value) -> Aw.Judge.Core.Ids.AgentId
+static Aw.Judge.Core.Ids.AgentId.operator !=(Aw.Judge.Core.Ids.AgentId left, Aw.Judge.Core.Ids.AgentId right) -> bool
+static Aw.Judge.Core.Ids.AgentId.operator ==(Aw.Judge.Core.Ids.AgentId left, Aw.Judge.Core.Ids.AgentId right) -> bool
+static Aw.Judge.Core.Ids.AgentId.Parse(string! s, System.IFormatProvider? provider) -> Aw.Judge.Core.Ids.AgentId
+static Aw.Judge.Core.Ids.AgentId.TryFrom(string? value, out Aw.Judge.Core.Ids.AgentId vo) -> bool
+static Aw.Judge.Core.Ids.AgentId.TryParse(string? s, System.IFormatProvider? provider, out Aw.Judge.Core.Ids.AgentId result) -> bool
+static Aw.Judge.Core.Ids.DecisionId.From(string! value) -> Aw.Judge.Core.Ids.DecisionId
+static Aw.Judge.Core.Ids.DecisionId.operator !=(Aw.Judge.Core.Ids.DecisionId left, Aw.Judge.Core.Ids.DecisionId right) -> bool
+static Aw.Judge.Core.Ids.DecisionId.operator ==(Aw.Judge.Core.Ids.DecisionId left, Aw.Judge.Core.Ids.DecisionId right) -> bool
+static Aw.Judge.Core.Ids.DecisionId.Parse(string! s, System.IFormatProvider? provider) -> Aw.Judge.Core.Ids.DecisionId
+static Aw.Judge.Core.Ids.DecisionId.TryFrom(string? value, out Aw.Judge.Core.Ids.DecisionId vo) -> bool
+static Aw.Judge.Core.Ids.DecisionId.TryParse(string? s, System.IFormatProvider? provider, out Aw.Judge.Core.Ids.DecisionId result) -> bool
+static Aw.Judge.Core.Ids.PromptId.From(string! value) -> Aw.Judge.Core.Ids.PromptId
+static Aw.Judge.Core.Ids.PromptId.operator !=(Aw.Judge.Core.Ids.PromptId left, Aw.Judge.Core.Ids.PromptId right) -> bool
+static Aw.Judge.Core.Ids.PromptId.operator ==(Aw.Judge.Core.Ids.PromptId left, Aw.Judge.Core.Ids.PromptId right) -> bool
+static Aw.Judge.Core.Ids.PromptId.Parse(string! s, System.IFormatProvider? provider) -> Aw.Judge.Core.Ids.PromptId
+static Aw.Judge.Core.Ids.PromptId.TryFrom(string? value, out Aw.Judge.Core.Ids.PromptId vo) -> bool
+static Aw.Judge.Core.Ids.PromptId.TryParse(string? s, System.IFormatProvider? provider, out Aw.Judge.Core.Ids.PromptId result) -> bool
+static Aw.Judge.Core.Ids.SessionId.From(string! value) -> Aw.Judge.Core.Ids.SessionId
+static Aw.Judge.Core.Ids.SessionId.operator !=(Aw.Judge.Core.Ids.SessionId left, Aw.Judge.Core.Ids.SessionId right) -> bool
+static Aw.Judge.Core.Ids.SessionId.operator ==(Aw.Judge.Core.Ids.SessionId left, Aw.Judge.Core.Ids.SessionId right) -> bool
+static Aw.Judge.Core.Ids.SessionId.Parse(string! s, System.IFormatProvider? provider) -> Aw.Judge.Core.Ids.SessionId
+static Aw.Judge.Core.Ids.SessionId.TryFrom(string? value, out Aw.Judge.Core.Ids.SessionId vo) -> bool
+static Aw.Judge.Core.Ids.SessionId.TryParse(string? s, System.IFormatProvider? provider, out Aw.Judge.Core.Ids.SessionId result) -> bool
+static Aw.Judge.Core.Ids.ToolUseId.From(string! value) -> Aw.Judge.Core.Ids.ToolUseId
+static Aw.Judge.Core.Ids.ToolUseId.operator !=(Aw.Judge.Core.Ids.ToolUseId left, Aw.Judge.Core.Ids.ToolUseId right) -> bool
+static Aw.Judge.Core.Ids.ToolUseId.operator ==(Aw.Judge.Core.Ids.ToolUseId left, Aw.Judge.Core.Ids.ToolUseId right) -> bool
+static Aw.Judge.Core.Ids.ToolUseId.Parse(string! s, System.IFormatProvider? provider) -> Aw.Judge.Core.Ids.ToolUseId
+static Aw.Judge.Core.Ids.ToolUseId.TryFrom(string? value, out Aw.Judge.Core.Ids.ToolUseId vo) -> bool
+static Aw.Judge.Core.Ids.ToolUseId.TryParse(string? s, System.IFormatProvider? provider, out Aw.Judge.Core.Ids.ToolUseId result) -> bool
+static readonly Aw.Judge.Core.JudgeErrors.BriefExists -> Aw.Kernel.ErrorDefinition!
+static readonly Aw.Judge.Core.JudgeErrors.DecisionExists -> Aw.Kernel.ErrorDefinition!
+static readonly Aw.Judge.Core.JudgeErrors.UnknownDecision -> Aw.Kernel.ErrorDefinition!

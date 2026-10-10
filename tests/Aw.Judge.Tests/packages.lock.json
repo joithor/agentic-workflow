@@ -349,7 +349,8 @@
         "dependencies": {
           "Aw.Judge.Core": "[1.0.0, )",
           "Aw.Judge.Features": "[1.0.0, )",
-          "Aw.Kernel.Testing": "[1.0.0, )"
+          "Aw.Kernel.Testing": "[1.0.0, )",
+          "xunit.v3.extensibility.core": "[4.0.1, 4.0.1]"
         }
       },
       "aw.kernel": {
