@@ -80,4 +80,43 @@ public sealed class LoadingTests
         Assert.Equal("AW-PACKETS-003", result.Error.Code);
         Assert.Contains("byte order mark", result.Error.Message, StringComparison.Ordinal);
     }
+
+    [Theory, Trait("Lane", "unit")]
+    [InlineData("tasks.json", "\"writeScope\": [", "\"writeScope\": [null, ")]
+    [InlineData("tasks.json", "\"evidence\": [", "\"evidence\": [null, ")]
+    [InlineData("tasks.json", "\"tasks\": [", "\"tasks\": [null, ")]
+    [InlineData("tasks.json", "\"readSeeds\": [", "\"readSeeds\": [null, ")]
+    [InlineData("decisions.json", "\"questions\": [", "\"questions\": [null, ")]
+    [InlineData("out-of-scope.json", "\"items\": [", "\"items\": [null, ")]
+    [InlineData("packet.json", "\"design\": [", "\"design\": [null, ")]
+    public async Task A_null_in_any_list_is_AW_PACKETS_003_naming_where(string file, string from, string to)
+    {
+        var files = PacketFiles.Of(A.Packet().Build());
+        Replace(files, file, from, to);
+        var service = new ValidatePacketService(new PacketInspector(
+            new InMemoryPacketSource().With("pkt", files),
+            new InMemoryRepoSnapshot().With(PacketBuilder.BaseSha, PacketBuilder.BaseFiles)));
+
+        var result = await service.Handle(new ValidatePacketRequest("pkt"), CancellationToken.None);
+
+        Assert.Equal("AW-PACKETS-003", result.Error.Code);
+        Assert.Contains("null", result.Error.Message, StringComparison.Ordinal);
+    }
+
+    [Theory, Trait("Lane", "unit")]
+    [InlineData("tasks.json", "\"holdout\": true", "\"heldOut\": true")]
+    [InlineData("packet.json", "\"repo\":", "\"repository\": \"x/y\", \"repo\":")]
+    [InlineData("decisions.json", "\"answer\":", "\"answr\": \"x\", \"answer\":")]
+    public async Task An_unknown_member_is_AW_PACKETS_003(string file, string from, string to) =>
+        Assert.Equal("AW-PACKETS-003", await ErrorCode(f => Replace(f, file, from, to)));
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task A_schema_hint_is_allowed_in_every_file() =>
+        Assert.Equal("none", await ErrorCode(static f =>
+        {
+            foreach (var file in (string[])["packet.json", "decisions.json", "out-of-scope.json", "tasks.json"])
+            {
+                Replace(f, file, "{\n  \"schemaVersion\"", "{\n  \"$schema\": \"x.json\",\n  \"schemaVersion\"");
+            }
+        }));
 }

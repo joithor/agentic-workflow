@@ -256,4 +256,12 @@ public sealed class ValidatePacketTests
 
         Assert.Equal(passes, Failures(report, "PKT-HOLD-002").Count == 0);
     }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task A_very_long_glob_is_a_scope_failure_not_a_crash()
+    {
+        var report = await Validate(A.Packet().With(A.Task("t1").Writing("src/**", "src/" + new string('b', 3000)).Example("h", holdout: true, "test")));
+
+        _ = Assert.Single(Failures(report, "PKT-SCOPE-001"));
+    }
 }
