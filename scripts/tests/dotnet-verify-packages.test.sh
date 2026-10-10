@@ -25,7 +25,7 @@ echo "$* | CI=${CI:-} SIGVERIFY=${DOTNET_NUGET_SIGNATURE_VERIFICATION:-}" >> "$F
 case "$1 ${2:-}" in
   "restore "*) if [ -n "${FAKE_RESTORE_EDIT:-}" ]; then echo '{"changed":true}' > "$FAKE_RESTORE_EDIT"; fi; exit 0 ;;
   "nuget locals") echo "global-packages: $FAKE_PKGS/"; exit 0 ;;
-  "nuget verify") exit "${FAKE_VERIFY_EXIT:-0}" ;;
+  "nuget verify") printf '%b' "${FAKE_VERIFY_OUT:-}"; exit "${FAKE_VERIFY_EXIT:-0}" ;;
 esac
 exit 0
 FAKE_EOF
@@ -43,7 +43,7 @@ new_repo() {
   echo '<Solution />' > "$REPO/AgenticWorkflow.slnx"
   echo '<configuration />' > "$REPO/nuget.config"
   export FAKE_LOG="$WORK/fake-$RANDOM.log"; : > "$FAKE_LOG"
-  unset FAKE_RESTORE_EDIT FAKE_VERIFY_EXIT
+  unset FAKE_RESTORE_EDIT FAKE_VERIFY_EXIT FAKE_VERIFY_OUT
 }
 add_project() { # name, with-lock(yes|no)
   mkdir -p "$REPO/src/$1"; echo '<Project Sdk="Microsoft.NET.Sdk" />' > "$REPO/src/$1/$1.csproj"
@@ -81,12 +81,31 @@ run
 check "lock drift: exit 1" "$CODE" "1"
 check "lock drift: names the file" "$(echo "$OUT" | grep -c 'src/Demo.Core/packages.lock.json')" "1"
 
-# --- a package that fails signature verification fails ---
+# --- a package not signed by a trusted signer fails ---
 new_repo; add_project Demo.Core yes
-export FAKE_VERIFY_EXIT=1
+export FAKE_VERIFY_EXIT=1 FAKE_VERIFY_OUT='Verifying Demo.Pkg.1.2.3\nerror: NU3034: This package is signed but not by a trusted signer.\n'
 run
 check "untrusted package: exit 1" "$CODE" "1"
 check "untrusted package: says verification failed" "$(echo "$OUT" | grep -c 'signature verification failed')" "1"
+
+# --- an unsigned package fails ---
+new_repo; add_project Demo.Core yes
+export FAKE_VERIFY_EXIT=1 FAKE_VERIFY_OUT='Verifying Demo.Pkg.1.2.3\nerror: NU3004: The package is not signed.\n'
+run
+check "unsigned package: exit 1" "$CODE" "1"
+
+# --- only expired legacy signature timestamps (NU3037, NU3028): restore accepts them, so a warning, not a failure ---
+new_repo; add_project Demo.Core yes
+export FAKE_VERIFY_EXIT=1 FAKE_VERIFY_OUT='Verifying Demo.Pkg.1.2.3\nerror: NU3037: The author primary signature validity period has expired.\nerror: NU3028: The author primary signature timestamp found a chain building issue: ExplicitDistrust\n'
+run
+check "expired legacy timestamps only: exit 0" "$CODE" "0"
+check "expired legacy timestamps only: warns" "$(echo "$OUT" | grep -c 'warning: .*NU3037')" "1"
+
+# --- verify failing with no NU3 code at all fails closed ---
+new_repo; add_project Demo.Core yes
+export FAKE_VERIFY_EXIT=1 FAKE_VERIFY_OUT='something unexpected\n'
+run
+check "verify failure without a code: exit 1" "$CODE" "1"
 
 # --- a locked package missing from the packages folder fails ---
 new_repo
