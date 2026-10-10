@@ -70,9 +70,9 @@ export async function stageProposals(ctx: EvolveCtx, budget: Budget = new Budget
   const scrub = profileScrubber(ctx.loaded);
   // Shipped duplicates are left out here so they cost no model calls; the write below rejects them.
   const eligible = notSelfAdopt(registry, extra);
-  const snapshot = slotOrder(
-    listStored(ctx.db, ["proposed"]).filter((s) => shippedDuplicate(ctx, s) === undefined && eligible(s)), heldAtStage(ctx).filter(eligible), (s) => s,
-  ).slice(0, Math.max(0, cap - inFlightCount(ctx.db)));
+  const unshipped = (s: StoredProposal): boolean => shippedDuplicate(ctx, s) === undefined && eligible(s);
+  const snapshot = slotOrder(listStored(ctx.db, ["proposed"]).filter(unshipped), heldAtStage(ctx).filter(unshipped), (s) => s)
+    .slice(0, Math.max(0, cap - inFlightCount(ctx.db)));
   const refsOf = (s: StoredProposal): string[] => reduceEvidence(s.proposal.evidence).refs;
   const evidence = resolveRefs(transcriptsDir(ctx), ctx.repo, snapshot.flatMap(refsOf), scrub);
   const runner = ctx.io.runner(ctx.loaded, scrub);
@@ -88,22 +88,23 @@ export async function stageProposals(ctx: EvolveCtx, budget: Budget = new Budget
   }
   return ctx.writeRetry((epoch) => {
     const inFlight = inFlightCount(ctx.db);
-    // Re-checked under the lock: reject shipped duplicates rather than stage them again.
+    // Re-checked under the lock: reject shipped duplicates rather than stage them again. A held-at-stage retry can be
+    // the open row a re-proposal of shipped work merged into, so the retries are checked too.
     const duplicates: { id: string; of: string }[] = [];
-    const fresh = listStored(ctx.db, ["proposed"]).filter((s) => {
+    const notShipped = (list: StoredProposal[]): StoredProposal[] => list.filter((s) => {
       const dup = shippedDuplicate(ctx, s);
       if (dup !== undefined) duplicates.push({ id: s.id, of: dup });
       return dup === undefined;
     });
     const classify = (s: StoredProposal) => ({ s, t: classifyTier(s.proposal, registry, extra) });
-    const freshC = fresh.map(classify);
-    const heldC = heldAtStage(ctx).map(classify);
+    const freshC = notShipped(listStored(ctx.db, ["proposed"])).map(classify);
+    const heldC = notShipped(heldAtStage(ctx)).map(classify);
     const keep = (c: ReturnType<typeof classify>): boolean => c.t.tier !== "self-adopt";
     const candidates = slotOrder(freshC.filter(keep), heldC.filter(keep), (c) => c.s);
     const take = candidates.slice(0, Math.max(0, cap - inFlight));
     let reclassified = 0;
     for (const d of duplicates) {
-      transition(ctx.db, d.id, ["proposed"], "rejected", epoch, ctx.deps.now());
+      transition(ctx.db, d.id, ["proposed", "held"], "rejected", epoch, ctx.deps.now());
       audit(ctx.db, ctx.deps, "reject", `${d.id}: duplicate of ${d.of}`, epoch, scrub);
     }
     fs.mkdirSync(dir, { recursive: true, mode: 0o700 });

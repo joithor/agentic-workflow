@@ -237,6 +237,19 @@ describe("stage generalizes first (privacy B1)", () => {
     fx.close();
   });
 
+  it("rejects a held-at-stage retry that duplicates shipped work, with no model call, instead of retrying it", async () => {
+    const io = scriptedEvolveIo(generalizingScript());
+    const { fx, save } = await ready(4, io);
+    const merged = save("Alpha change here", {}, "code", "merged");
+    const held = save("alpha CHANGE here!", {}, "code", "held"); // no public row: a held-at-stage retry
+    const o = await stageProposals(fx.ctx);
+    expect(io.calls).toEqual([]);
+    expect(o).toMatchObject({ staged: [], held: [], duplicates: 1 });
+    expect(getProposal(fx.ctx.db, held)?.status).toBe("rejected");
+    expect(fx.ctx.db.prepare("SELECT verb, detail FROM evolve_audit").all()).toEqual([{ verb: "reject", detail: `${held}: duplicate of ${merged}` }]);
+    fx.close();
+  });
+
   it("sends each proposal's own resolved transcript lines to both generalize calls, never another proposal's", async () => {
     const io = scriptedEvolveIo(generalizingScript());
     const { fx, save } = await ready(2, io);
