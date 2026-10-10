@@ -19,7 +19,8 @@ versions and runs a locked `dotnet restore` (`.devcontainer/post-create.sh`); th
 `npm ci` per package, on demand.
 
 `scripts/tests/repo-templates.test.sh` checks that the image tag matches `global.json`, the Node major matches
-`.nvmrc`, every image is pinned by digest, and nothing adds Docker-in-Docker, a socket mount or privileges.
+`.nvmrc`, every image is pinned by digest, and nothing adds Docker-in-Docker, a socket or host mount, a host-side
+command (`initializeCommand`), capabilities or privileges.
 
 ## What it deliberately doesn't do
 
