@@ -436,3 +436,4 @@ static readonly Aw.Packets.Core.PacketsErrors.NotFound -> Aw.Kernel.ErrorDefinit
 static readonly Aw.Packets.Core.PacketsErrors.RepoUnavailable -> Aw.Kernel.ErrorDefinition!
 static readonly Aw.Packets.Core.PacketsErrors.Unreadable -> Aw.Kernel.ErrorDefinition!
 static readonly Aw.Packets.Core.PacketsErrors.UnsupportedSchema -> Aw.Kernel.ErrorDefinition!
+Aw.Packets.Core.IFreezeLog

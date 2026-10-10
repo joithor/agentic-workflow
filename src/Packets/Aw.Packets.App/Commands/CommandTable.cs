@@ -20,6 +20,7 @@ internal static class CommandTable
             return args[0] switch
             {
                 ValidatePacketCommand.Name => await ValidatePacketCommand.Run(rest, scope.ServiceProvider, json).ConfigureAwait(false),
+                FreezePacketCommand.Name => await FreezePacketCommand.Run(rest, scope.ServiceProvider, json).ConfigureAwait(false),
                 _ => CommandOutput.Usage($"unknown command '{args[0]}'"),
             };
         }

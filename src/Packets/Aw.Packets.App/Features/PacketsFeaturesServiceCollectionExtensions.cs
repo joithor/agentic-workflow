@@ -1,4 +1,5 @@
 using Aw.Kernel.Services;
+using Aw.Packets.App.Features.FreezePacket;
 using Aw.Packets.App.Features.ValidatePacket;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -19,6 +20,13 @@ internal static class PacketsFeaturesServiceCollectionExtensions
                 new ValidatingService<ValidatePacketRequest, ValidatePacketResponse>(
                     sp.GetRequiredService<ValidatePacketService>(),
                     sp.GetRequiredService<IValidator<ValidatePacketRequest>>()));
+        _ = services
+            .AddScoped<FreezePacketService>()
+            .AddScoped<IValidator<FreezePacketRequest>, FreezePacketValidator>()
+            .AddScoped<IService<FreezePacketRequest, FreezePacketResponse>>(static sp =>
+                new ValidatingService<FreezePacketRequest, FreezePacketResponse>(
+                    sp.GetRequiredService<FreezePacketService>(),
+                    sp.GetRequiredService<IValidator<FreezePacketRequest>>()));
         return services;
     }
 }

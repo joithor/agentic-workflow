@@ -1,5 +1,6 @@
 using System.Text.Json.Serialization;
 using Aw.Kernel;
+using Aw.Packets.App.Features.FreezePacket;
 using Aw.Packets.App.Features.ValidatePacket;
 using Aw.Packets.Core.Model;
 
@@ -14,4 +15,6 @@ namespace Aw.Packets.App;
 [JsonSerializable(typeof(FreezeRecord))]
 [JsonSerializable(typeof(ValidatePacketRequest))]
 [JsonSerializable(typeof(ValidatePacketResponse))]
+[JsonSerializable(typeof(FreezePacketRequest))]
+[JsonSerializable(typeof(FreezePacketResponse))]
 internal sealed partial class PacketsJsonContext : JsonSerializerContext;
