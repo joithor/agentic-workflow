@@ -318,27 +318,20 @@ describe("heavy-job lock", () => {
     expect(fs.existsSync(`${dir}.reclaim`)).toBe(false);
   });
 
-  it("backs off when the replacement dir reuses the checked dir's inode number (Linux does at once)", async () => {
+  it("puts back a dir that was swapped in at the rename (it holds no mark of ours)", async () => {
     const d = makeDeps({ system: fakeSystem({ pidAlive: (p) => p !== 999 }) });
     const root = awStateDir(d);
     const dir = heavyLockDir(root, d.env);
     fs.mkdirSync(dir, { recursive: true });
     fs.writeFileSync(holderPath(root), JSON.stringify({ kind: "index-build", pid: 999, host: "test-host", startedAt: "t" }));
-    const ino = fs.statSync(dir).ino;
     const realMkdir = fs.mkdirSync;
     const realRename = fs.renameSync;
-    const realStat = fs.statSync;
-    // Another process removes the dead holder's dir and takes the lock between the recheck and the rename.
+    // The marked dir goes (rm -r) and another holder's dir is what the rename moves.
     vi.spyOn(fs, "renameSync").mockImplementationOnce(((from: fs.PathLike, to: fs.PathLike) => {
       fs.rmSync(from, { recursive: true, force: true });
       realMkdir(from);
       realRename(from, to);
     }) as typeof fs.renameSync);
-    // The new dir gets the freed inode number, as it would on Linux.
-    vi.spyOn(fs, "statSync").mockImplementation(((p: fs.PathLike, o?: fs.StatSyncOptions) => {
-      const st = realStat(p, o);
-      return st !== undefined && String(p).includes(".stale-") ? Object.assign(st, { ino }) : st;
-    }) as typeof fs.statSync);
     await expect(withHeavyLock(d, "x", 0, async () => 1)).rejects.toThrow("the heavy-job lock is busy");
     vi.restoreAllMocks();
     expect(fs.existsSync(dir)).toBe(true);
@@ -383,7 +376,8 @@ describe("heavy-job lock", () => {
       const realStat = fs.statSync;
       vi.spyOn(fs, "statSync").mockImplementation(((p: fs.PathLike, o?: fs.StatSyncOptions) => {
         const st = realStat(p, o);
-        return st !== undefined && String(p) === dir ? Object.assign(st, { ino }) : st;
+        // Same inode and no usable birth time (birth = ctime, as without statx): only the record tells.
+        return st !== undefined && String(p) === dir ? Object.assign(st, { ino, birthtimeMs: st.ctimeMs }) : st;
       }) as typeof fs.statSync);
       await expect(withHeavyLock(d, "x", 0, async () => 1)).rejects.toThrow("the heavy-job lock is busy");
       vi.restoreAllMocks();
@@ -412,6 +406,18 @@ describe("heavy-job lock", () => {
       await expect(withHeavyLock(d, "x", 0, async () => 1)).rejects.toThrow("the heavy-job lock is busy");
       vi.restoreAllMocks();
       expect(fs.existsSync(dir)).toBe(false);
+      expect(leftovers(dir)).toEqual([]);
+    });
+
+    it("takes a dead holder's lock where birth time is only ctime (Node without statx)", async () => {
+      const { d, dir } = setup();
+      const realStat = fs.statSync;
+      vi.spyOn(fs, "statSync").mockImplementation(((p: fs.PathLike, o?: fs.StatSyncOptions) => {
+        const st = realStat(p, o);
+        return st !== undefined && String(p) === dir ? Object.assign(st, { birthtimeMs: st.ctimeMs }) : st;
+      }) as typeof fs.statSync);
+      expect(await withHeavyLock(d, "x", 0, async () => 2)).toBe(2);
+      vi.restoreAllMocks();
       expect(leftovers(dir)).toEqual([]);
     });
 
