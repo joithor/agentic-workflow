@@ -6,6 +6,8 @@ import { makeScrubber } from "../src/scrub/scrub.js";
 
 const COPIED = "the overnight rota swap left two shifts without a charge nurse";
 const line = (t: string) => ({ text: t, turn: t });
+// Session files keyed by their full identity (kieran-typescript-reviewer-3); several can share one prefix.
+const files = (...fs: [session: string, lines: Map<number, ReturnType<typeof line>>][]) => new Map(fs.map(([session, lines], i) => [`/t/f${i}.jsonl`, { session, lines }]));
 
 const ctx = (over: Partial<GateCtx> = {}): GateCtx => ({
   deny: ["Acme Care"], patterns: ["GLX-\\d+"], derived: new Set(["quarblescheduler"]), user: "", scrubber: makeScrubber(),
@@ -35,7 +37,7 @@ describe("the publish gate as an ordered list (architecture-strategist-7)", () =
 describe("verbatimChecker", () => {
   it("compares only the cited sessions that exist, and reads the corpus once, only after a candidate shares a run", async () => {
     let reads = 0;
-    const sessions = new Map([["s1", new Map([[2, line("")], [1, line(COPIED)]])]]);
+    const sessions = files(["s1", new Map([[2, line("")], [1, line(COPIED)]])]);
     const copies = verbatimChecker(sessions, async () => { reads++; return " | "; });
     expect(await copies("a plain idea with nothing copied from anywhere at all", ["s1", "s1", "gone"])).toBeNull();
     expect(reads).toBe(0);
@@ -45,14 +47,23 @@ describe("verbatimChecker", () => {
   });
 
   it("says missing when the candidate cites sessions and none resolves; nothing cited is not missing (security-sentinel-1)", async () => {
-    const copies = verbatimChecker(new Map([["s1", new Map([[1, line(COPIED)]])]]), async () => " | ");
+    const copies = verbatimChecker(files(["s1", new Map([[1, line(COPIED)]])]), async () => " | ");
     expect(await copies(`Fix: ${COPIED}`, ["gone"])).toBe("missing");
     expect(await copies("a plain idea", ["gone", "also-gone"])).toBe("missing");
     expect(await copies(`Fix: ${COPIED}`, [])).toBeNull();
   });
 
   it("passes a run the corpus already holds", async () => {
-    const copies = verbatimChecker(new Map([["s1", new Map([[1, line(COPIED)]])]]), async () => ` ${COPIED} `);
+    const copies = verbatimChecker(files(["s1", new Map([[1, line(COPIED)]])]), async () => ` ${COPIED} `);
     expect(await copies(`Fix: ${COPIED}`, ["s1"])).toBeNull();
+  });
+
+  it("checks every file that shares a cited prefix, each on its own: same line numbers never overwrite each other (kieran-typescript-reviewer-3)", async () => {
+    const other = "an unrelated first line about something else entirely here today";
+    const copies = verbatimChecker(files(["s1", new Map([[1, line(COPIED)]])], ["s1", new Map([[1, line(other)]])]), async () => " | ");
+    expect(await copies(`Fix: ${COPIED}`, ["s1"])).toBe("copies");
+    expect(await copies(`Also: ${other}`, ["s1"])).toBe("copies");
+    // runs never cross from one file into the other
+    expect(await copies(`${COPIED.split(" ").slice(-4).join(" ")} ${other.split(" ").slice(0, 4).join(" ")}`, ["s1"])).toBeNull();
   });
 });

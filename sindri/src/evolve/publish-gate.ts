@@ -1,7 +1,7 @@
 import type { Scrubber } from "../scrub/scrub.js";
 import { identifierProblem } from "./privacy-derived.js";
 import { copiedFrom, patternProblem, personalProblem, shingleSession, termProblem, type HoldLayer, type SessionShingles } from "./privacy.js";
-import type { SessionText } from "./transcripts.js";
+import type { SessionFile } from "./transcripts.js";
 
 // The publish gate (privacy spec §5.4 to §5.6) as one ordered list of layer checks. `generalize` (a proposal with no
 // public version) is decided before the gate runs, so the list starts at `terms`.
@@ -51,27 +51,27 @@ export async function runGate(c: Candidate, g: GateCtx): Promise<{ layer: HoldLa
   return null;
 }
 
-// The verbatim layer's evidence for one publish run: each cited session is shingled once, on first use, and the toolkit
-// corpus is read at most once, only when some candidate shares a run with its evidence. Some cited sessions missing is
-// fine (the ones that resolve are checked); all of them missing is "missing".
+// The verbatim layer's evidence for one publish run: each session file is shingled once, on first use, and the toolkit
+// corpus is read at most once, only when some candidate shares a run with its evidence. A session prefix resolves to
+// every file that has it (an ambiguous prefix brings in all of them, fail closed), each shingled on its own so runs
+// never cross files. Some sessions missing is fine (the ones that resolve are checked); all of them missing is "missing".
 export function verbatimChecker(
-  sessions: ReadonlyMap<string, ReadonlyMap<number, SessionText>>, corpus: () => Promise<string>,
-): (text: string, cited: readonly string[]) => Promise<VerbatimResult> {
+  files: ReadonlyMap<string, SessionFile>, corpus: () => Promise<string>,
+): (text: string, sessions: readonly string[]) => Promise<VerbatimResult> {
   const shingled = new Map<string, SessionShingles>();
+  const byPrefix = new Map<string, string[]>();
+  for (const [file, f] of files) byPrefix.set(f.session, [...(byPrefix.get(f.session) ?? []), file]);
   let pub: Promise<string> | null = null;
-  const of = (session: string, lines: ReadonlyMap<number, SessionText>): SessionShingles => {
-    const known = shingled.get(session);
+  const of = (file: string): SessionShingles => {
+    const known = shingled.get(file);
     if (known !== undefined) return known;
-    const made = shingleSession([...lines].sort(([a], [b]) => a - b).map(([, t]) => t));
-    shingled.set(session, made);
+    const made = shingleSession([...files.get(file)!.lines].sort(([a], [b]) => a - b).map(([, t]) => t));
+    shingled.set(file, made);
     return made;
   };
-  return async (text, cited) => {
-    const asked = [...new Set(cited)];
-    const mine = asked.flatMap((s) => {
-      const lines = sessions.get(s);
-      return lines === undefined ? [] : [of(s, lines)];
-    });
+  return async (text, sessions) => {
+    const asked = [...new Set(sessions)];
+    const mine = asked.flatMap((s) => (byPrefix.get(s) ?? []).map(of));
     if (asked.length > 0 && mine.length === 0) return "missing";
     if (!copiedFrom(text, mine, () => false)) return null;
     pub ??= corpus();

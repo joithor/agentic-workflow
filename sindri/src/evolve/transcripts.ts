@@ -209,18 +209,27 @@ export interface SessionText {
   turn: string;
 }
 
-// Every line of the given sessions (prefixes as sessionOf gives them), scrubbed and keyed by line number, in one
-// scan of this repo's sessions. The verbatim gate reads it: a rewrite can copy any turn of a session its evidence
-// cites, not only the cited line. Nothing is deduped: a resumed session keeps the lines it copied from the original.
-// A prefix with no line in this repo is absent; a line with no text maps to empty strings.
-export function sessionTexts(dir: string, repo: string, sessions: readonly string[], scrub: Scrubber = scrubber): Map<string, Map<number, SessionText>> {
+// One session file's lines, keyed by line number; `session` is its prefix as sessionOf gives it.
+export interface SessionFile {
+  session: string;
+  lines: ReadonlyMap<number, SessionText>;
+}
+
+// Every line of the given sessions (prefixes as sessionOf gives them), scrubbed, in one scan of this repo's sessions,
+// keyed by the session file (its full identity) and then by line number: two files that share an 8-character prefix
+// keep their own lines (kieran-typescript-reviewer-3), and a prefix brings in every file that has it (fail closed).
+// The verbatim gate reads it: a rewrite can copy any turn of a session its evidence cites, not only the cited line.
+// Nothing is deduped: a resumed session keeps the lines it copied from the original. A prefix with no line in this
+// repo is absent; a line with no text maps to empty strings.
+export function sessionTexts(dir: string, repo: string, sessions: readonly string[], scrub: Scrubber = scrubber): Map<string, SessionFile> {
   const want = new Set(sessions);
-  const out = new Map<string, Map<number, SessionText>>();
+  const out = new Map<string, { session: string; lines: Map<number, SessionText> }>();
   if (want.size === 0) return out;
   for (const line of readRepoSessions(dir, repo, new Date(0), Infinity, { dedupe: false }).lines) {
     if (!want.has(line.session)) continue;
-    const lines = out.get(line.session) ?? new Map<number, SessionText>();
-    out.set(line.session, lines.set(line.n, { text: lineText(line, scrub), turn: turnText(line, scrub) }));
+    const f = out.get(line.file) ?? { session: line.session, lines: new Map<number, SessionText>() };
+    f.lines.set(line.n, { text: lineText(line, scrub), turn: turnText(line, scrub) });
+    out.set(line.file, f);
   }
   return out;
 }
