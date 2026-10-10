@@ -58,24 +58,24 @@ test_is_idempotent() {
 }
 
 test_keeps_user_hand_edited_value_and_warns() {
-  local tmp manifest
-  tmp="$(mktemp)"; manifest="$(mktemp)"
+  local tmp manifest warn
+  tmp="$(mktemp)"; manifest="$(mktemp)"; warn="$(mktemp)"
   # Simulate: we previously wrote "addressReview": "off" and recorded it in
   # the manifest, but the user has since hand-set it back to "on" in the real file.
   echo '{"skillOverrides": {"addressReview": "off"}}' > "$manifest"
   echo '{"skillOverrides": {"addressReview": "on"}}' > "$tmp"
-  apply_profile "$tmp" "$DIR/../../profiles/web-app.json" "$manifest" 2>/tmp/apply-profile-warn.txt
+  apply_profile "$tmp" "$DIR/../../profiles/web-app.json" "$manifest" 2>"$warn"
   local value
   value="$(jq -r '.skillOverrides.addressReview' "$tmp")"
   if [ "$value" != "on" ]; then
     echo "FAIL: expected the user's hand-set 'on' to survive, got '$value'"
-    rm "$tmp" "$manifest"; exit 1
+    rm "$tmp" "$manifest" "$warn"; exit 1
   fi
-  if ! grep -q "addressReview" /tmp/apply-profile-warn.txt; then
+  if ! grep -q "addressReview" "$warn"; then
     echo "FAIL: expected a warning naming the hand-edited key"
-    rm "$tmp" "$manifest"; exit 1
+    rm "$tmp" "$manifest" "$warn"; exit 1
   fi
-  rm "$tmp" "$manifest"
+  rm "$tmp" "$manifest" "$warn"
   echo "PASS: test_keeps_user_hand_edited_value_and_warns"
 }
 
