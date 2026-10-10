@@ -1,0 +1,51 @@
+#nullable enable
+Aw.Redaction.IRedactor
+Aw.Redaction.IRedactor.Scrub(string! text) -> Aw.Redaction.ScrubResult!
+Aw.Redaction.RedactionCodes
+Aw.Redaction.RedactionHit
+Aw.Redaction.RedactionHit.Deconstruct(out string! Rule, out int Start, out int End) -> void
+Aw.Redaction.RedactionHit.End.get -> int
+Aw.Redaction.RedactionHit.End.init -> void
+Aw.Redaction.RedactionHit.Equals(Aw.Redaction.RedactionHit other) -> bool
+Aw.Redaction.RedactionHit.RedactionHit() -> void
+Aw.Redaction.RedactionHit.RedactionHit(string! Rule, int Start, int End) -> void
+Aw.Redaction.RedactionHit.Rule.get -> string!
+Aw.Redaction.RedactionHit.Rule.init -> void
+Aw.Redaction.RedactionHit.Start.get -> int
+Aw.Redaction.RedactionHit.Start.init -> void
+Aw.Redaction.Redactor
+Aw.Redaction.Redactor.RuleIds.get -> System.Collections.Generic.IReadOnlyList<string!>!
+Aw.Redaction.Redactor.Scrub(string! text) -> Aw.Redaction.ScrubResult!
+Aw.Redaction.ScrubOutcome
+Aw.Redaction.ScrubOutcome.Blocked = 2 -> Aw.Redaction.ScrubOutcome
+Aw.Redaction.ScrubOutcome.Clean = 0 -> Aw.Redaction.ScrubOutcome
+Aw.Redaction.ScrubOutcome.Redacted = 1 -> Aw.Redaction.ScrubOutcome
+Aw.Redaction.ScrubResult
+Aw.Redaction.ScrubResult.<Clone>$() -> Aw.Redaction.ScrubResult!
+Aw.Redaction.ScrubResult.BlockCode.get -> string?
+Aw.Redaction.ScrubResult.BlockCode.init -> void
+Aw.Redaction.ScrubResult.Deconstruct(out string! Text, out System.Collections.Generic.IReadOnlyList<Aw.Redaction.RedactionHit>! Hits, out Aw.Redaction.ScrubOutcome Outcome, out string? BlockCode) -> void
+Aw.Redaction.ScrubResult.Equals(Aw.Redaction.ScrubResult? other) -> bool
+Aw.Redaction.ScrubResult.Hits.get -> System.Collections.Generic.IReadOnlyList<Aw.Redaction.RedactionHit>!
+Aw.Redaction.ScrubResult.Hits.init -> void
+Aw.Redaction.ScrubResult.IsBlocked.get -> bool
+Aw.Redaction.ScrubResult.Outcome.get -> Aw.Redaction.ScrubOutcome
+Aw.Redaction.ScrubResult.Outcome.init -> void
+Aw.Redaction.ScrubResult.ScrubResult(string! Text, System.Collections.Generic.IReadOnlyList<Aw.Redaction.RedactionHit>! Hits, Aw.Redaction.ScrubOutcome Outcome, string? BlockCode) -> void
+Aw.Redaction.ScrubResult.Text.get -> string!
+Aw.Redaction.ScrubResult.Text.init -> void
+const Aw.Redaction.RedactionCodes.MatchTimeout = "AW-REDACT-001" -> string!
+const Aw.Redaction.ScrubResult.BlockedText = "[REDACTED:blocked]" -> string!
+override Aw.Redaction.RedactionHit.GetHashCode() -> int
+override Aw.Redaction.ScrubResult.Equals(object? obj) -> bool
+override Aw.Redaction.ScrubResult.GetHashCode() -> int
+override Aw.Redaction.ScrubResult.ToString() -> string!
+static Aw.Redaction.RedactionHit.operator !=(Aw.Redaction.RedactionHit left, Aw.Redaction.RedactionHit right) -> bool
+static Aw.Redaction.RedactionHit.operator ==(Aw.Redaction.RedactionHit left, Aw.Redaction.RedactionHit right) -> bool
+static Aw.Redaction.Redactor.Create(System.TimeSpan matchTimeout) -> Aw.Redaction.Redactor!
+static Aw.Redaction.Redactor.Default.get -> Aw.Redaction.Redactor!
+static Aw.Redaction.Redactor.DefaultMatchTimeout.get -> System.TimeSpan
+static Aw.Redaction.ScrubResult.operator !=(Aw.Redaction.ScrubResult? left, Aw.Redaction.ScrubResult? right) -> bool
+static Aw.Redaction.ScrubResult.operator ==(Aw.Redaction.ScrubResult? left, Aw.Redaction.ScrubResult? right) -> bool
+~override Aw.Redaction.RedactionHit.Equals(object obj) -> bool
+~override Aw.Redaction.RedactionHit.ToString() -> string

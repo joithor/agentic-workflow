@@ -1,0 +1,19 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- Aw.Redaction's tests: the synthetic secret corpus (no real secret; every shape is built by concatenation, so
+       no scanner sees a whole token in this source), evasion forms, non-secrets that must pass untouched, and the
+       timeout-blocks rule (spec §4c). Lanes are traits (spec §4b.5). -->
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <OutputType>Exe</OutputType>
+    <RootNamespace>Aw.Redaction.Tests</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="xunit.v3" />
+    <Using Include="Xunit" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../../src/Redaction/Aw.Redaction/Aw.Redaction.csproj" />
+  </ItemGroup>
+</Project>
