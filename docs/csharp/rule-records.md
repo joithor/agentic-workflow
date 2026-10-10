@@ -12,14 +12,15 @@ mappings (`select: { … }`), which the YAML subset below doesn't allow; write `
 | Path | What |
 |---|---|
 | `rules/engineering/csharp/<slug>.yaml` | One record per rule; the file name is the id's last part |
-| `rules/engineering/csharp.inventory.yaml` | The §4b rule list, every record id with its spec section. It also holds the few rules `.agents/rules/csharp.md` adds under a §4b heading (no TODO comments, file name matches the type, suppressions need a justification); those records cite `.agents/rules/csharp.md` as their `source` |
+| `rules/engineering/csharp.inventory.yaml` | The §4b rule list, every record id with its spec section. It also holds the rules `.agents/rules/csharp.md` states under a §4b heading beyond the spec (no TODO comments, file name matches the type, suppressions need a reason, and every technology behind a port); those records cite `.agents/rules/csharp.md` as their `source`. Rules from other spec sections (§4c, §4d, such as `nuget.config` source mapping) are out of scope |
 | `schemas/rule-record.schema.json` | The record schema (JSON Schema, for editors and the check) |
 | `scripts/check-rules.mjs` | The check (`node scripts/check-rules.mjs [--json]`; merge gate item 9, CI "Rule records name real checks") |
 | `scripts/tests/check-rules.test.sh` | Its tests, on the fixture repo in `scripts/tests/fixtures/check-rules/base` |
 
 Ids are matched as whole tokens (`CA103` never matches `CA1031`) in the files' live text: comments are stripped
 first (`#` and `;` lines and ` #…` outside quotes in `.editorconfig` and YAML, `<!-- -->` outside CDATA in MSBuild
-files, `//` and `/* */` outside string literals in code).
+files and `nuget.config`, `//` and `/* */` outside string and regex literals in code: JavaScript through check-deps'
+lexer, C# with its verbatim, interpolated and raw strings).
 
 Records use the same YAML subset as `deps.yaml` (block mappings and sequences, quoted scalars, flow lists of scalars,
 comments; no flow mappings, anchors or block scalars), so the check needs no install step.
@@ -58,14 +59,14 @@ The id is `<kind>.csharp.<slug>`, and the file is `rules/engineering/csharp/<slu
 
 | `type` | `id` | Exists when |
 |---|---|---|
-| `analyzer` | a Roslyn diagnostic id (`CA1031`, `MA0051`, `AW1005`) | a general C# section of the root `.editorconfig` (`[*]`, `[*.cs]`, `[**.cs]`, `[*.{…,cs,…}]`; keys are case-insensitive, the last line wins) sets `dotnet_diagnostic.<id>.severity` to `error` or `warning`, or to the check's `severity`. Or, with `via: baseline`, `package` and `category`: that section has the bulk `dotnet_analyzer_diagnostic.severity = error` line, sets no severity for the id and nothing below `error` for its category, and `Directory.Packages.props` has a `GlobalPackageReference` to the package. `via: baseline` is only for rules the package enables by default (the bulk line doesn't switch on a disabled rule); check the package's documentation `.md`. An `AW` id also needs its descriptor in `src/Aw.Analyzers`. A rule set below the check's severity isn't a check, and a check at `severity: suggestion` exists but never counts as enforcing (it can't make a rule `closed` or `partial`). A narrower section (a path glob) neither enables nor disables a rule |
+| `analyzer` | a Roslyn diagnostic id (`CA1031`, `MA0051`, `AW1005`) | a general C# section of the root `.editorconfig` (`[*]`, `[**]`, `[*.cs]`, `[**.cs]`, `[*.{…,cs,…}]`, `[{*.cs,…}]`; keys are case-insensitive, the last line wins) sets `dotnet_diagnostic.<id>.severity` to `error` or `warning`, or, when the check names a `severity`, to exactly that. Or, with `via: baseline`, `package` and `category`: that section has the bulk `dotnet_analyzer_diagnostic.severity = error` line, sets no severity for the id and nothing below `error` for its category, and `Directory.Packages.props` has a `GlobalPackageReference` to the package. `via: baseline` is only for rules the package enables by default (the bulk line doesn't switch on a disabled rule); check the package's documentation `.md`. An `AW` id also needs its descriptor in `src/Aw.Analyzers`. A rule set to anything else isn't the check (raise a check's `severity` when its analyzer is raised), and a check at `severity: suggestion` exists but never counts as enforcing (it can't make a rule `closed` or `partial`). A narrower section (a path glob) neither enables nor disables a rule |
 | `compiler` | a `CS…` or `IL…` id | always (the compiler and trim analyzers); only the form is checked |
 | `banned-symbols` | `RS0030`, with `entries` (required) | `BannedSymbols.txt` lists every entry and an `AdditionalFiles` item in `Directory.Build.props` wires the file |
 | `archunit` | `ARCH-…` | it appears under `tests/Aw.Architecture.Tests` |
 | `check-deps` | `DEPS-…` | it appears in `scripts/check-deps.mjs` or `scripts/deps/` |
 | `lane-cap` | `LANE-…` | it appears under `tests/` |
 | `check-rules` | `RULE-…` | it appears in `scripts/check-rules.mjs` or `scripts/rules/` |
-| `build-setting` | a literal (`<IsAotCompatible>true</IsAotCompatible>`, `AW0001`) | it appears in `Directory.Build.*`, `Directory.Packages.props`, `global.json`, `.editorconfig` or `nuget.config` |
+| `build-setting` | a literal (`<IsAotCompatible>true</IsAotCompatible>`, `AW0001`), or an editorconfig property `dotnet_… = value` | the literal appears in `Directory.Build.*`, `Directory.Packages.props`, `global.json`, `.editorconfig` or `nuget.config`; an editorconfig property must be the value a general C# section of the root `.editorconfig` ends up with |
 | `test` | a class or member name, with `ref` | `ref` (a file or directory) exists and contains the name |
 | `script` | a name, with `ref` | `ref` exists (only that: it doesn't prove CI runs it, so pair it with a `ci` check or call the rule `partial`) |
 | `ci` | a workflow step name, with `ref` | the workflow file has a step (a `name:` of an item in a `steps:` list, not a job) named exactly that |
@@ -99,7 +100,7 @@ the tree doesn't have fails (`RULE-CHECK-001`).
 | `RULE-CHECK-002` | (warning; a failure with `--strict`) a `pending` check is now in the tree: flip it to `active` |
 | `RULE-GAP-001` | `gap` disagrees with the checks (table above) |
 | `RULE-COVER-001` | an inventory rule has no record |
-| `RULE-COVER-002` | a check id that `.agents/rules/csharp.md` or `csharp-testing.md` names (`CA…`, `MA…`, `RS…`, `IDE…`, `AW…`, `CS…`, `IL…`, `NU…`, `xUnit…`, `DEPS-…`, `ARCH-…`, `LANE-…`, `RULE-…`) belongs to no record's `checks` or `relatedIds` |
+| `RULE-COVER-002` | a check id that `.agents/rules/csharp.md` or `csharp-testing.md` names (`CA…`, `MA…`, `RS…`, `RCS…`, `IDE…`, `AW…`, `CS…`, `IL…`, `NU…`, `SYSLIB…`, `xUnit…`, `DEPS-…`, `ARCH-…`, `LANE-…`, `RULE-…`) belongs to no record's `checks` or `relatedIds` |
 | `RULE-COVER-003` | a record isn't in the inventory |
 | `RULE-COVER-004` | an inventory section isn't a heading in the spec |
 | `RULE-COVER-005` | the inventory lists an id twice |
