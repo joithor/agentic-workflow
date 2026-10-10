@@ -71,12 +71,29 @@ describe("generalize (privacy B1)", () => {
     expect(r.ok).toBe(true);
     expect(runner.calls[0].input).toContain("(no transcript text could be resolved for this proposal's evidence)");
   });
+
   it("caps each evidence line and the total fenced text", async () => {
     const runner = answeringRunner((c) => (c.role === GENERALIZE_ROLES.rewrite ? GENERIC : { leaks: false, category: "none" }));
     const big = new Map(Array.from({ length: 30 }, (_, i) => [`transcript:5e55a1d0#${i}`, "x".repeat(5_000)] as const));
     await generalize({ runner, budget: new Budget(1_000), models, proposal: P, evidence: big });
     const input = runner.calls[0].input;
     expect(input).not.toContain("x".repeat(2_001));
-    expect(input.match(/<untrusted id="transcript:/g)?.length).toBeLessThan(30);
+    expect(input.match(/<untrusted id="transcript:/g)).toHaveLength(19);
+  });
+  it("holds a contradictory judge answer: leaks false with a category other than none", async () => {
+    const { result } = run((role) => (role === GENERALIZE_ROLES.rewrite ? GENERIC : { leaks: false, category: "tickets" }));
+    expect(await result).toEqual({ ok: false, why: "generalize: the judge found tickets" });
+  });
+
+  it("fails when the rewrite changes the change type", async () => {
+    const { result } = run((role) => (role === GENERALIZE_ROLES.rewrite ? { ...GENERIC, change: { type: "replace-prompt", text: "Retry once." } } : { leaks: false, category: "none" }));
+    expect(await result).toEqual({ ok: false, why: "generalize: the rewrite changed the change type" });
+  });
+
+  it("escapes quotes in evidence ids so an id can't inject attributes into the fence", async () => {
+    const runner = answeringRunner((c) => (c.role === GENERALIZE_ROLES.rewrite ? GENERIC : { leaks: false, category: "none" }));
+    await generalize({ runner, budget: new Budget(1_000), models, proposal: P, evidence: new Map([['x" injected="1', "text"]]) });
+    expect(runner.calls[0].input).toContain('<untrusted id="x&quot; injected=&quot;1">');
+    expect(runner.calls[0].input).not.toContain('injected="1"');
   });
 });

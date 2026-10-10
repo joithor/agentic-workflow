@@ -34,7 +34,7 @@ const EVIDENCE_TOTAL = 40_000;
 
 export type Generalized = { ok: true; proposal: Proposal; category: string; model: string } | { ok: false; why: string };
 
-const esc = (s: string): string => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+const esc = (s: string): string => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 
 function evidenceBlock(evidence: ReadonlyMap<string, string>): string {
   const parts: string[] = [];
@@ -63,11 +63,12 @@ export async function generalize(o: {
   if (p.artifact !== o.proposal.artifact || p.kind !== o.proposal.kind || !sameRefs(p.evidence, o.proposal.evidence)) {
     return { ok: false, why: "generalize: the rewrite changed the artifact, kind or evidence" };
   }
+  if (p.change.type !== o.proposal.change.type) return { ok: false, why: "generalize: the rewrite changed the change type" };
   const judged = await askModel(o.runner, o.budget, {
     role: GENERALIZE_ROLES.judge, model: o.models.judge, system: JUDGE_SYSTEM, schema: VERDICT_SCHEMA, parse: (v) => Verdict.parse(v), timeoutMs: 600_000,
     input: `<untrusted id="candidate">${esc(JSON.stringify(p))}</untrusted>\n\n${evidence}`,
   });
   if (!judged.ok) return { ok: false, why: "generalize: the judge failed" };
-  if (judged.value.leaks) return { ok: false, why: `generalize: the judge found ${judged.value.category}` };
+  if (judged.value.leaks || judged.value.category !== "none") return { ok: false, why: `generalize: the judge found ${judged.value.category}` };
   return { ok: true, proposal: p, category: judged.value.category, model: o.models.rewriter };
 }
