@@ -309,7 +309,8 @@ export async function publishProposals(ctx: EvolveCtx, o: { dryRun: boolean; noP
     // Fail closed: a cited session among this repo's sessions brings in every line, even when the cited line number
     // doesn't resolve (the transcript was compacted). A cited session that isn't there is skipped while another one
     // resolves; when none of them does (deleted, moved, another transcripts dir), the verbatim layer holds (security-sentinel-1).
-    const hit = await runGate({ text: `${raw}\n${md}`, sessions: checked(l), unrecorded: l.unrecorded }, gate);
+    // A recorded source session must resolve, or it holds too (run 4 security-sentinel-1).
+    const hit = await runGate({ text: `${raw}\n${md}`, sessions: checked(l), recorded: l.sources, unrecorded: l.unrecorded }, gate);
     if (hit !== null) held.push({ id: s.id, ...hit });
     else ready.push({ s, pub, t });
   }

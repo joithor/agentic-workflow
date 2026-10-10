@@ -436,7 +436,7 @@ describe("publish gate layers (privacy B1)", () => {
     over: Record<string, unknown>,
     o: {
       extraYaml?: string; files?: (fx: EvolveFixture) => Record<string, string>; repoFiles?: Record<string, string>; stagedFiles?: Record<string, string>; noTranscripts?: boolean;
-      src?: { source?: string; sessions?: string[] };
+      removeAfterStage?: string[]; src?: { source?: string; sessions?: string[] };
     } = {},
   ): Promise<{ layer: string; why: string }[]> {
     const { fx, save } = await ready({ extraYaml: o.extraYaml ?? PATTERNS });
@@ -455,6 +455,7 @@ describe("publish gate layers (privacy B1)", () => {
     save("Alpha change here", over, "code", o.src);
     await stage([], fx.ctx);
     if (o.noTranscripts === true) fs.rmSync(fx.transcripts, { recursive: true }); // deleted (cleanupPeriodDays) after stage
+    for (const f of o.removeAfterStage ?? []) fs.rmSync(path.join(fx.transcripts, f));
     const r = JSON.parse((await publish(["--json", "--dry-run"], fx.ctx)).stdout) as { held: { layer: string; why: string }[] };
     fx.close();
     return r.held.map((h) => ({ layer: h.layer, why: h.why }));
@@ -512,10 +513,24 @@ describe("publish gate layers (privacy B1)", () => {
   });
 
   it("verbatim: holds the same way when the transcripts dir doesn't exist, also for a proposal citing no transcript whose sources are recorded; telemetry passes", async () => {
-    const missing = [{ layer: "verbatim", why: "evidence transcripts are missing, so copied text can't be checked" }];
-    expect(await heldLayer({ evidence: ["transcript:5e55a1d0#1"] }, { noTranscripts: true })).toEqual(missing);
-    expect(await heldLayer({ evidence: ["pr:12"] }, { noTranscripts: true })).toEqual(missing); // its recorded source is gone
+    const sourceMissing = [{ layer: "verbatim", why: "a source transcript it was built from is missing, so copied text can't be checked" }];
+    expect(await heldLayer({ evidence: ["transcript:5e55a1d0#1"] }, { noTranscripts: true })).toEqual(sourceMissing);
+    expect(await heldLayer({ evidence: ["pr:12"] }, { noTranscripts: true })).toEqual(sourceMissing); // its recorded source is gone
+    expect(await heldLayer({ evidence: ["transcript:5e55a1d0#1"] }, { noTranscripts: true, src: { sessions: [NO_TRANSCRIPT] } }))
+      .toEqual([{ layer: "verbatim", why: "evidence transcripts are missing, so copied text can't be checked" }]); // only cited ones
     expect(await heldLayer({ evidence: ["pr:12"] }, { noTranscripts: true, src: { source: "telemetry:done-gate", sessions: [] } })).toEqual([]);
+  });
+
+  it("verbatim: a two-source proposal whose one recorded source was cleaned up holds, though the other still resolves (run 4 security-sentinel-1)", async () => {
+    const other = "0ddba11e-0000-4000-8000-000000000002.jsonl";
+    const held = await heldLayer(
+      { rationale: "The overnight rota swap left two shifts without cover.", evidence: ["pr:12"] },
+      { files: (fx) => ({ [other]: transcriptLine(fx, COPIED) }), src: { sessions: ["5e55a1d0", "0ddba11e"] }, removeAfterStage: [other] },
+    );
+    expect(held).toEqual([{ layer: "verbatim", why: "a source transcript it was built from is missing, so copied text can't be checked" }]);
+    expect(JSON.stringify(held)).not.toMatch(/0ddba11e|overnight/);
+    // a cited session that isn't there while the recorded ones resolve is still tolerated (Review Focus 1)
+    expect(await heldLayer({ evidence: ["pr:12", "transcript:feedf00d#1"] })).toEqual([]);
   });
 
   it("verbatim: a reflect proposal citing only pr:N that copies 8 words of a branch session it was built from holds (security-sentinel-0)", async () => {
