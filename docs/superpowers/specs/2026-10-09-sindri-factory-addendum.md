@@ -229,9 +229,12 @@ Any later change is an **amendment**: a scope-expansion or packet-miss item goes
 the affected tasks are re-planned and re-frozen.
 
 **What R1b builds (`Aw.Packets`, #142).** Before the switch the checks and the freeze run as the standalone NativeAOT
-CLI `aw-packets validate|freeze <packet-dir> [--repo <dir>] [--json]` (readiness design §4c); after it, sindri's C#
-host exposes the same use cases as `sindri packet validate|freeze`. `--repo` is a directory inside the repository the
-packet builds (default: the packet directory); the base commit's file list comes from git.
+CLI `aw-packets validate|freeze <packet-dir> [--repo <dir>] [--json]` (readiness design §4c). After it,
+`sindri packet validate|freeze` runs this CLI through a planned `cli` edge, as `sindri readiness check` does
+(readiness design §8): the use cases and adapters live in `Aw.Packets.App`, and a `project` edge could reach only
+`Aw.Packets.Core`. (#142's `deps.yaml` still declares Sindri → Packets as `kind: project`; it changes to `cli`.)
+`--repo` is a directory inside the repository the packet builds (default: the packet directory); the base commit's
+file list comes from git.
 - **The manifest is `packet.json` today, not `packet.yaml`:** the build reads typed, source-generated JSON under
   NativeAOT and carries no YAML library. Keeping JSON or adding a YAML reader is open (readiness design §9 R14).
 - **Rule ids,** in the order the checks report them:
@@ -260,17 +263,22 @@ packet builds (default: the packet directory); the base commit's file list comes
   crosses segments. An entry is at most 1,024 characters, and matching is a two-pointer walk with no regex.
 - **Output:** the text form lists every rule as `pass`, `FAIL` (subject, what was found, the fix) or `unchecked` (the
   reason). A rule reports at most 50 failures, then one `omitted` record whose `omitted` field counts the rest.
-  `--json` writes one document, `schemaVersion` 1, with `packet`, `passed` and `checks[]`: one record per failure and
-  one per passing or unchecked rule, each with `rule`, `state`, `subject`, `message` and `fix`.
+  `--json` writes one document, `schemaVersion` 1. For `validate` it holds `packet`, `passed` and `checks[]`: one
+  record per failure and one per passing or unchecked rule, each with `rule`, `state`, `subject`, `message` and `fix`.
+  For `freeze` it holds `packet`, `frozen`, `hash` (null when a check failed), `digestVersion`, `location` (the
+  record's path under `packets/`, null when nothing was frozen), `alreadyFrozen` and the same `checks[]`; it has no
+  `passed`.
 - **Exit codes:** 0 when every implemented check passes (for `freeze`, the hash is recorded); 1 when a check fails or
   the packet is malformed; 2 for a usage error or when the tool can't do its job (no packet, an unreadable repository
   or packet file, an unwritable freeze log).
 - **Freeze:** a packet with a failed check isn't frozen and nothing is written. Otherwise the record (`FreezeRecord`:
-  repo, packet, hash, `digestVersion`, `baseSha`, `frozenAt`, the files the hash covers) goes to
+  `schemaVersion` 1, repo, packet, hash, `digestVersion`, `baseSha`, `frozenAt`, the files the hash covers) goes to
   `packets/<owner>/<name>/<id>/frozen/<hex>.json` under the state directory, per repository because a packet id is
-  unique only within one. Freezing the same hash again writes nothing. The packet directory is never changed. Until
-  sindri's C# ledger exists this record stands in for "records the hash in the ledger"; the ledger takes over
-  when sindri is ported.
+  unique only within one. The repository is a `RepoSlug` (`owner/name`): each side is letters, digits, `.`, `_` and
+  `-`, never ends in `.`, and isn't a Windows device name (`con`, `prn`, `aux`, `nul`, `com1`–`com9`, `lpt1`–`lpt9`,
+  with or without an extension), because the two sides are also directory names under `packets/` on every OS. Freezing
+  the same hash again writes nothing. The packet directory is never changed. Until sindri's C# ledger exists this
+  record stands in for "records the hash in the ledger"; the ledger takes over when sindri is ported.
 - **The hash** is digest v1 (readiness design §4c, Digests) over the packet's files.
 
 ## 17.5 Narrow scope and sandbox per session

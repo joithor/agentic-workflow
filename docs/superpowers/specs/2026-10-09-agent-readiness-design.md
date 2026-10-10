@@ -102,13 +102,13 @@ gets CI as a safety net until the switch. The standards in §4 still apply, expr
    The TS behavior is the reference for what the contract should do, not a byte-for-byte target, and the C# build
    is free to fix what the TS got wrong, except on the hook-facing CLI and file surface, which is frozen until the
    switch (§4c).
-2. **One package at a time,** lowest tier first, in the §10 R2 order: `Redaction` (done in R1b, #130) → `judge` and
-   `mcp-bridge` → `scorer`, `skills/ui-evidence` and the `skills/bugFixOrchestrator` state CLI → `sindri` (by module:
-   profile and ledger, scrub, observe, index, scope, evolve). Sindri's code outside those directories goes with a
-   module: the CLI, errors, ids, output, lock, doctor and docs code goes with profile and ledger, the first module
-   ported, which also builds Sindri's host; `secrets.ts` goes with scrub; `adapters` goes with observe. Shape, signals
-   and spool live under `sindri/src/index` and stay with index. `docs/readiness/r2-estimate.md` (#144) sizes each
-   module this way.
+2. **One package at a time,** lowest tier first, in the §10 R2 order: `Redaction` (ported in R1b, #130, not yet
+   merged) → `judge` and `mcp-bridge` → `scorer`, `skills/ui-evidence` and the `skills/bugFixOrchestrator` state CLI →
+   `sindri` (by module: profile and ledger, scrub, observe, index, scope, evolve). Sindri's code outside those
+   directories goes with a module: the CLI, errors, ids, output, lock, doctor and docs code goes with profile and
+   ledger, the first module ported, which also builds Sindri's host; `secrets.ts` goes with scrub; `adapters` goes
+   with observe. Shape, signals and spool live under `sindri/src/index` and stay with index.
+   `docs/readiness/r2-estimate.md` (#144) sizes each module this way.
 3. **One clean cutover (decided 2026-10-10).** The installed TS toolkit stays untouched while the C# build is
    ported and proven beside it. Each package is "done" when its tests pass in every lane within budget, its AOT
    entry points build and pass the AOT CI job, the real hook scripts pass against its binaries in CI, and it
@@ -354,7 +354,7 @@ group.MapPost("/items/{id}/start", async (ItemId id, StartItemBody body, IServic
 - Constructor injection only: no service locator. `IServiceProvider` appears outside `Host` only as the parameter of a
   registration factory lambda inside a project's own `Add…()` method. The architecture test can't isolate the
   lambda, so it allows any member of a `*ServiceCollectionExtensions` class (and, in the small shape, the `App` root
-  namespace).
+  namespace and `App.Commands`).
 - Composition shape: decorators are registered in the owning project's `Add…()` method, outermost first, never in
   `Host`; each host has one `Compose` method that `Program.cs` and the DI validation test both call. Hosts start
   telemetry there with `AddKernelTelemetry(TelemetryOptions.FromEnvironment(service, environment, clock))`, and
@@ -363,9 +363,11 @@ group.MapPost("/items/{id}/start", async (ItemId id, StartItemBody body, IServic
   source-generated context) as a singleton, for an `Infrastructure` adapter that persists JSON; `Aw.Readiness.App`'s
   run history (`JsonRunHistory`) takes them this way (R1b, #141), so `Infrastructure` never reaches for the host's
   JSON context.
-- Nothing reads `IConfiguration`: settings come from the environment `Compose` passes. OpenTelemetry brings the
-  configuration assemblies into every host, and `BannedSymbols.txt` doesn't apply to hosts, so this needs an
-  architecture rule over the host assemblies (a gap until it lands).
+- Nothing binds settings from `IConfiguration`: settings come from the environment `Compose` passes. The one allowed
+  touch is the http host clearing its configuration sources (`builder.Configuration.Sources.Clear()`, as
+  `/new-package` generates, #139) so §4d's environment rules hold, and the host-assembly rule (R13) must allow it.
+  OpenTelemetry brings the configuration assemblies into every host, and `BannedSymbols.txt` doesn't apply to hosts,
+  so this needs an architecture rule over the host assemblies (a gap until it lands).
 - Lifetimes: services and repositories are scoped per request or command, pure domain services are singletons, and
   `TimeProvider` is a singleton (a `FakeTimeProvider` in tests).
 - A DI validation test builds the container with `ValidateOnBuild` and `ValidateScopes` for every host.
@@ -448,7 +450,7 @@ group.MapPost("/items/{id}/start", async (ItemId id, StartItemBody body, IServic
     globalization as its binary;
   - the trim, AOT and single-file analyzers on for every `AwAotEntryPoint=true` project in every build, JIT
     included: a `Host` isn't a library, so `IsAotCompatible` doesn't turn them on, and a plain build has no
-    `PublishAot` (R1b, #141);
+    `PublishAot`; a small package's `App` is a library and its entry point at once, so both settings apply (R1b, #141);
   - `EnableRequestDelegateGenerator=true` on every `*.Host` project, so JIT endpoint tests run the same generated
     binding as the AOT binary;
   - the missing-lock-file check (AW0001): under CI, a project without a committed `packages.lock.json` fails;
@@ -485,9 +487,10 @@ group.MapPost("/items/{id}/start", async (ItemId id, StartItemBody body, IServic
     (≤ 5, an error over 7) and generic arity ≤ 3.
 
   It runs on production projects only, not on test code under `tests/`. Class constructors fall under the
-  constructor-dependency rule rather than the parameter rule; record constructors (data shapes) and lambdas aren't
+  constructor-dependency rule rather than the parameter rule, and struct constructors under the parameter rule
+  (AW1006, #132); record constructors (data shapes) and lambdas aren't
   counted. The 6–7 constructor-dependency split signal is reported at `suggestion`, the one deliberate exception to
-  "never suggestion" below (an owner question, §9 R11). Ids in §4b.10.
+  "never suggestion" above (an owner question, §9 R11). Ids in §4b.10.
 
 **AOT scope** (verified in the R1a spike; anything that fails ships framework-dependent with a startup budget):
 
@@ -496,6 +499,7 @@ group.MapPost("/items/{id}/start", async (ItemId id, StartItemBody body, IServic
 | Hook binaries, `judge`, `sindri`, `scorer`, `bugfix-state` CLIs | NativeAOT | Run per hook call or per command; startup matters |
 | `Bridge` hosts: REST (minimal API) and stdio MCP, two entry points as today | NativeAOT (decided: the MCP C# SDK passed the R1a spike with 0 warnings) | MCP tools use the SDK's low-level list/call handlers, so tool schemas and error shapes are explicit in code |
 | `Evidence` (ui-evidence) | Framework-dependent | Playwright for .NET doesn't support NativeAOT |
+| `aw-readiness` (`Aw.Readiness.App`, #141) and `aw-packets` (`Aw.Packets.App`, #142): small-shape packages, so the entry point is `App` | NativeAOT | Standalone CLIs before the switch (§4c); sindri runs them per check after it |
 
 AOT publishing runs only in a separate CI job and in releases. Local builds and tests are JIT, so the inner loop
 stays fast.
@@ -596,7 +600,7 @@ merges.
 | No namespace cycles | ARCH-CYCLE-001 | same | #131 |
 | No `Common`, `Shared`, `Utils`, `Helpers` | ARCH-NAME-001 | same | #131 |
 | Service-locator types only in `Host` and registration classes | ARCH-DI-001 | same | #131 |
-| No technology types outside `Infrastructure`; only `Composition` uses it | ARCH-PORT-001, ARCH-PORT-002 | same | #131 |
+| No technology types in `Core`, `Features` or the small shape's `App.Commands` (`Host` may use them); only `Composition` uses `Infrastructure` | ARCH-PORT-001, ARCH-PORT-002 | same | #131 |
 | Typed ids (R9: defaults, user-code converter) | ARCH-ID-001, ARCH-ID-002 (`TypedIdGuard`, moved from `Aw.Kernel.Tests`) | same | #131 |
 | The `Packages.Production` registry matches the solution | ARCH-REG-001, ARCH-REG-002 | same | #131 |
 | Raw ids in public `Core`/`Features` signatures; `!` without `// why:`; endpoint lambda calls exactly one service; file ≤ 300 lines; parameters ≤ 5; constructor dependencies > 7 (error) and 6–7 (`suggestion`); generic arity ≤ 3 | AW1001, AW1002, AW1004, AW1005, AW1006, AW1007, AW1008, AW1009 | `Aw.Analyzers` (`CA1005` off, owned by AW1009) | #132 |
@@ -608,8 +612,24 @@ merges.
 | Scaffold inputs and refusals; generator steps | NP-* (`/new-package`), NS-* (`/new-slice`), SCAFFOLD-* | `scripts/scaffold/*.mjs`, CI job "C# scaffold generators" | #139 |
 | Every environment variable read is documented | ENV-EXAMPLE-001…004 | `scripts/check-env-example.sh` | #140 |
 
-Still gaps after R1b: the `IConfiguration` ban for hosts (§4b.4), the tier-0 one-external-package cap (§4b.1a), the
-20% build-time regression gate (§4b.8) and the complete one-`Lane`-trait scan (§4b.5).
+Still gaps after R1b. The rule records (#137) are the list of record, and `node scripts/check-rules.mjs` counts them
+by gap state. 18 are `gap: open`, meaning no active or pending deterministic check, so they're review-only until one
+lands:
+- package shape and graph (§4b.1, §4b.1a): `small-package-shape`, `tier-zero-minimal-deps` (the one-external-package
+  cap), `graph-visible-in-prs`;
+- design (§4b.2): `explicit-decorators-no-mediatr`, `named-repositories`;
+- DI (§4b.4): `explicit-di-registration`, `di-composition-shape`, `di-lifetimes`, `di-validation-per-host`;
+- tests (§4b.5): `red-test-first`, `deterministic-test-data`, `tests-by-feature`;
+- ports and suppressions (§4b.6): `ports-named-for-need`, `suppressions-need-justification`, `ratchet-baseline-shrinks`;
+- build and agent docs (§4b.8, §4b.9): `build-time-regression` (the 20% gate), `agents-md-commands`,
+  `scaffolds-produce-compliant-code`.
+
+Also still gaps:
+- the `IConfiguration` ban for hosts (§4b.4, R13);
+- the complete one-`Lane`-trait scan (§4b.5);
+- telemetry in generated code: the `/new-package` templates (#139), `Aw.Readiness` (#141) and `Aw.Packets` (#142)
+  don't call `AddKernelTelemetry` in `Compose` yet (§4b.4), because they're stacked on #139, which predates #136.
+  They adopt it once #136 merges.
 
 **Sources:**
 [Vertical slice vs Clean Architecture](https://milanjovanovic.tech/blog/vertical-slice-vs-clean-architecture) ·
@@ -693,8 +713,9 @@ assert that no tested path fails open against the C# binaries.
 - **State written before the switch:** `Aw.Readiness` and `Aw.Packets` run before the switch as their own
   NativeAOT CLIs (`aw-readiness check`, `aw-packets validate|freeze`) and write only under their own namespaces
   (`readiness/`, `packets/`), which the TS build never touches and the switch keeps. After the switch, sindri's C#
-  host exposes them as `sindri readiness …` and `sindri packet …` (addendum §17.4). When
-  sindri's C# ledger first runs, it imports Readiness's history into the ledger and keeps the file.
+  host runs them as `sindri readiness …` and `sindri packet …` through planned `cli` edges to the two binaries
+  (§8, addendum §17.4): each package's use cases and adapters live in its `App`, and a `project` edge reaches only
+  `Core`. When sindri's C# ledger first runs, it imports Readiness's history into the ledger and keeps the files.
 - **Hooks during the port:** the hook-facing CLI and file surface (the `deps.yaml` Hooks, Statusline and AwLive edges)
   is frozen until the switch.
 - **Rollback:** `./setup.sh --runtime ts --restore <archive>` reinstalls the TS build, moves the archived TS
@@ -776,11 +797,11 @@ are `aw-packets validate` and `aw-packets freeze`, with the rule ids, output, ex
   - not carried over from the TS bridge: the `HOST` variable, the `ALLOW_REMOTE` escape hatch and wildcard CORS
     (`@fastify/cors` with `origin: true` today).
 - The scrubber runs as a processor on logs and OpenTelemetry exports, so new logging can't carry secrets out
-  (`Aw.Kernel.Telemetry`, R1b, #136). Per path: log text and fields are scrubbed and secret-named fields withheld
-  whole; with a trace exporter, span display names, tag values and status descriptions are rewritten in place, and a
-  span with a secret in what can't be rewritten (operation name, trace state, tag keys, events, links) is dropped; a
-  metric instrument whose tags carry a secret is withheld from every export. A blocked scrub never passes raw text,
-  a scrub failure is never thrown into the caller, and what was withheld is counted on
+  (`Aw.Kernel.Telemetry`, R1b, #136). Per path: log text and fields are scrubbed and secret-named fields, entries and
+  holes withheld whole; with a trace exporter, span display names, tag values and status descriptions are rewritten in
+  place, and a span with a secret in what can't be rewritten (operation name, trace state, tag keys, events, links) is
+  dropped; a metric instrument whose tags carry a secret is withheld from every export. A blocked scrub never passes
+  raw text, a scrub failure is never thrown into the caller, and what was withheld is counted on
   `aw.telemetry.scrub.withheld`. Exporters are host-supplied adapters and off by default.
 - The devcontainer is for humans, and it is never the agent sandbox. Docker-in-Docker means root on the host, so
   agent sessions keep using the Sindri containers of the main spec §8.2.
@@ -923,7 +944,7 @@ next PR shows it passing.
 | R10 | Agent identity | A GitHub App installed on the repo (preferred) or a fine-grained token, with contents and pull-request write only |
 | R11 | AW1008 at `suggestion` | **Open (owner).** The 6–7 constructor-dependency split signal is reported at `suggestion`. Keep it as a recorded exception to "never suggestion", or raise it to `warning` |
 | R12 | Rule record shape | **Open (owner).** R1b records carry a `checks` list (one record per rule, several checks each) plus `section`, `gap`, `gapNote`, `relatedIds` (addendum §17.6). Keep the list form, or one record per check |
-| R13 | How hosts are kept off `IConfiguration` | **Open (owner).** An architecture rule over host assemblies is proposed; `BannedSymbols.txt` doesn't apply to hosts |
+| R13 | How hosts are kept off `IConfiguration` | **Open (owner).** An architecture rule over host assemblies is proposed; `BannedSymbols.txt` doesn't apply to hosts. The rule must allow the http host's `builder.Configuration.Sources.Clear()` (§4b.4) |
 | R14 | Packet manifest format | **Open (owner).** Addendum §17.4 names `packet.yaml`; the R1b build (#142) reads `packet.json` (typed, source-generated JSON under NativeAOT, no YAML library). Keep JSON, or add a YAML reader |
 | R15 | Size-class budgets (`PKT-SIZE-001`) | **Open (owner).** Addendum §17.5 sets budgets "by size class and lens", and sindri's profile already has a per-size changed-line budget, `shape.sizeBudget`. Do packet-time budgets live in the profile next to it, which lens does a packet-time check use, and is a task over budget a failure or a split signal? The rule reports `unchecked` until then |
 | R16 | Holdout store | **Open (owner).** Path and format of the sindri-private store (addendum §17.19), and how a packet names a set. #142 names each held-out example by id and checks only the packet side (`PKT-HOLD-002`) |
@@ -941,7 +962,7 @@ about 49 commits in 60 days. The step sizes below are rough; each R2 packet's ow
 | R0 | Baseline: a quick manual pass over the nine pillars, recorded per criterion | XS | Baseline recorded |
 | R1a | **Safety and measurement:**<br>• CI hardened for a public repo, the agent App, the `main` and tag rulesets, the `main`-only key environment (§4d);<br>• fail-open logging in every hook (§4c, B5);<br>• the AOT spike (R7, R8, R9, the MCP C# SDK);<br>• the readiness baseline by a throwaway script (B2) | M (1–2 weeks) | Fail-open logging live; baseline recorded; agents can't bypass `main` |
 | R1b | **The template:**<br>• `Directory.Build.props`, Central Package Management, analyzers with one owner per rule, the ratchet baseline, `.editorconfig`;<br>• `Aw.Kernel` and its `Data`, `Telemetry` and `Testing` parts;<br>• `deps.yaml` with every edge kind and its checks (§4b.1a);<br>• the `/new-package` and `/new-slice` scaffolds (inputs, generated files, a red test) and `AGENTS.md` for C#;<br>• rule records for the §4b rules;<br>• W5 devcontainer and W6 templates;<br>• **`Aw.Readiness` and `Aw.Packets` as the first two standalone packages built from the template** (B2) | M (1–2 weeks) | A scaffolded package passes every check; `Aw.Readiness` reports Level 4 for the template; the R2 estimate is fixed here as the stop-rule baseline (round-2 review item B9: the 1.5× stop rule had no fixed baseline), in `docs/readiness/r2-estimate.md` (#144) |
-| R2 | **The ports, one packet per package:** `Redaction` is done in R1b (#130), so R2 starts at `Judge` and `Bridge` → `Scorer`, `Evidence` and `BugFix` → `Sindri` (by module inside its packet). Then **the switch**: `./setup.sh --runtime cs` on the always-on box, then the laptop. **In parallel,** new factory code (addendum F0 schemas, rule records) is written in C# from the start | L–XL (6–10 calendar weeks, including merge waits and the switch; the stop rules compare against the fixed baseline instead: 53.8 agent-hours expected, band 19.2–117.2 h, #144) | All packages done (§4a step 3); the switch done on both hosts; TS deleted 14 days later |
+| R2 | **The ports, one packet per package:** `Redaction` is ported in R1b (#130, not yet merged; any rework it needs before merging counts toward R1b), so R2 starts at `Judge` and `Bridge` → `Scorer`, `Evidence` and `BugFix` → `Sindri` (by module inside its packet). Then **the switch**: `./setup.sh --runtime cs` on the always-on box, then the laptop. **In parallel,** new factory code (addendum F0 schemas, rule records) is written in C# from the start | L–XL (6–10 calendar weeks, including merge waits and the switch; the stop rules compare against the fixed baseline instead: 54.0 agent-hours expected, band 19.3–118.4 h, #144) | All packages done (§4a step 3); the switch done on both hosts; TS deleted 14 days later |
 | R3 | Remaining Level 4 criteria that need usage data (promotion frequency, flake rates, doc freshness over time), and W9 | S–M | Level 4 passed. **Factory work (F0) starts here** |
 | R4 | Addendum F0–F3 plus the readiness module's weekly workflow | With the addendum | Level 5 passed |
 
@@ -967,7 +988,7 @@ the R1b stage PRs merged **and** the owner's label sync (§5 Level 3, TD-2):
   one packet, so the rule applies to its total, not per module.
 - **R2 as a whole** overrunning 1.5× its summed estimate triggers a re-plan with the human: reorder, cut scope, or
   run more packets in parallel. The port itself is decided and isn't reopened. The summed estimate excludes
-  Redaction (done): 53.8 h expected, so the re-plan point is 80.7 h.
+  Redaction (ported in R1b, #130): 54.0 h expected, so the re-plan point is 81.1 h.
 - CI cost while both builds exist: TS jobs run only on PRs that touch TS (bug fixes), and the C# jobs run on everything
   else.
 
