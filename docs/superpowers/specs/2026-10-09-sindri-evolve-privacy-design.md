@@ -143,9 +143,12 @@ fails closed (amended in review: a session kept out because one line was deduped
 copy pass)). *(Amended during implementation; this replaces "every transcript
 line behind the proposal's evidence refs". The hand test found a public title that copied an uncited
 turn of a cited session verbatim and passed, because only the cited lines were compared.)* *(Amended in review: each cited session is shingled as its lines joined in order, so a quote that crosses from one turn into the next is a shingle too (sessions are never joined to each other); and a whole turn of 4 to 7 normalized words that appears as a contiguous run in the candidate holds as well, since a turn under 8 words has no shingle and short prompts copied into titles are the likeliest leak.)* A shared shingle, or such a short turn, holds the proposal with `copies transcript text`, unless the
-shingle also appears in a file `git ls-files` lists in the toolkit repo (working-tree text) (so quoting the toolkit's own
-public skill text passes). Toolkit shingles are computed once per publish run from `git ls-files` text
-files.
+shingle also appears in the toolkit repo's text at the remote default branch, `origin/<defaultBranch>` (so quoting
+the toolkit's own public skill text passes). Toolkit shingles are computed once per publish run from the text
+files (non-binary, at most 1 MB, no symlinks) in that ref's tree, read with `git ls-tree` and `git grep`; if the
+ref doesn't exist nothing is exempt. *(Amendment, from review: this replaces "a file `git ls-files` lists in the
+toolkit repo (working-tree text)". Working-tree text counted uncommitted, staged-only and unpushed edits as public,
+so a note an agent wrote on a branch could exempt the transcript runs it quoted.)*
 
 ### 5.6 Gate order and reasons
 

@@ -251,7 +251,7 @@ export async function publishProposals(ctx: EvolveCtx, o: { dryRun: boolean; noP
   const sessions = sessionTexts(transcriptsDir(ctx), ctx.repo, open.flatMap((l) => cited(l.refs).map((c) => c.session)), scrubber);
   const gate: GateCtx = {
     deny, patterns, derived, user, scrubber,
-    copies: verbatimChecker(sessions, () => toolkitCorpus(ctx.deps.git, ctx.repo)),
+    copies: verbatimChecker(sessions, () => toolkitCorpus(ctx.deps.git, ctx.repo, cfg.defaultBranch)),
   };
   const ready: { s: StoredProposal; pub: Proposal; t: { tier: Tier; why: string } }[] = [];
   const held: PublishOutcome["held"] = [];

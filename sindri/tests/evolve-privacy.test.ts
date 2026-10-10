@@ -1,3 +1,4 @@
+import { execFileSync } from "node:child_process";
 import fs from "node:fs";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
@@ -6,34 +7,61 @@ import { copiedFrom, patternProblem, personalProblem, privacyProblem, runWords, 
 import { realGitRunner } from "../src/git-real.js";
 import { gitRepo } from "./helpers.js";
 
-describe("toolkitCorpus (spec §5.5)", () => {
-  it("joins the normalized words of tracked text files, skipping binaries, files over 1 MB, symlinks and deleted files", async () => {
+describe("toolkitCorpus (spec §5.5, read from origin/<default branch>)", () => {
+  const g = realGitRunner();
+  const run = (repo: string, ...args: string[]): void => {
+    execFileSync("git", ["-c", "user.name=T", "-c", "user.email=t@example.com", ...args], { cwd: repo });
+  };
+  const pushed = (repo: string): void => run(repo, "update-ref", "refs/remotes/origin/main", "HEAD");
+
+  it("joins the normalized words of text files at origin/main, skipping binaries, files over 1 MB and symlinks", async () => {
     const repo = gitRepo({
       "a.md": "Hello,  World\nSecond LINE",
       "bin.dat": "abc\u0000secretbinaryword",
       "big.txt": `bigfileword ${"x".repeat(1_000_001)}`,
-      "gone.md": "deletedfileword",
+      "sub dir/c.txt": "spaced path words",
     });
-    fs.symlinkSync(path.join(repo, "a.md"), path.join(repo, "link.md"));
-    const g = realGitRunner();
-    await g.run(["add", "link.md"], repo);
-    fs.rmSync(path.join(repo, "gone.md"));
-    const c = await toolkitCorpus(g, repo);
+    fs.symlinkSync("a.md", path.join(repo, "link.md"));
+    run(repo, "add", "link.md");
+    run(repo, "commit", "-qm", "link");
+    pushed(repo);
+    const c = await toolkitCorpus(g, repo, "main");
     expect(c.startsWith(" ") && c.endsWith(" ")).toBe(true);
     expect(c).toContain(" hello world second line ");
-    expect(c).not.toMatch(/secretbinaryword|bigfileword|deletedfileword/);
+    expect(c).toContain(" spaced path words ");
+    expect(c).not.toMatch(/secretbinaryword|bigfileword/);
     expect(c.match(/hello world/g)).toHaveLength(1); // the symlink isn't read a second time
+  });
+
+  it("never counts text that hasn't reached origin/main: uncommitted, staged-only or unpushed (security-sentinel-0)", async () => {
+    const repo = gitRepo({ "a.md": "published words only" });
+    pushed(repo);
+    fs.writeFileSync(path.join(repo, "a.md"), "published words only\nuncommitted edit words");
+    fs.writeFileSync(path.join(repo, "staged.md"), "staged only words");
+    run(repo, "add", "staged.md");
+    run(repo, "checkout", "-q", "-b", "work");
+    fs.writeFileSync(path.join(repo, "branch.md"), "unpushed branch words");
+    run(repo, "add", "branch.md");
+    run(repo, "commit", "-qm", "work");
+    const c = await toolkitCorpus(g, repo, "main");
+    expect(c).toContain(" published words only ");
+    expect(c).not.toMatch(/uncommitted|staged only|unpushed/);
   });
 
   it("keeps files apart, so a run never spans the end of one file and the start of the next", async () => {
     const repo = gitRepo({ "a.md": "one two three four", "b.md": "five six seven eight" });
-    const c = await toolkitCorpus(realGitRunner(), repo);
+    pushed(repo);
+    const c = await toolkitCorpus(g, repo, "main");
     expect(c).toContain(" one two three four ");
     expect(c).not.toContain(" four five ");
   });
 
-  it("is empty when git can't list the files", async () => {
-    expect(await toolkitCorpus({ run: async () => ({ ok: false, stderr: "boom", code: 128 }) }, "/nowhere")).toBe("");
+  it("is empty without the origin ref (fail closed), with no text file at it, and when git fails", async () => {
+    expect(await toolkitCorpus(g, gitRepo({ "a.md": "local words" }), "main")).toBe("");
+    const binOnly = gitRepo({ "bin.dat": "a\u0000b" });
+    pushed(binOnly);
+    expect(await toolkitCorpus(g, binOnly, "main")).toBe("");
+    expect(await toolkitCorpus({ run: async () => ({ ok: false, stderr: "boom", code: 128 }) }, "/nowhere", "main")).toBe("");
   });
 });
 

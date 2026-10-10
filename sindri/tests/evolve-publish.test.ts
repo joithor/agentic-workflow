@@ -413,11 +413,18 @@ describe("publish gate layers (privacy B1)", () => {
 
   async function heldLayer(
     over: Record<string, unknown>,
-    o: { extraYaml?: string; files?: (fx: EvolveFixture) => Record<string, string>; repoFiles?: Record<string, string> } = {},
+    o: { extraYaml?: string; files?: (fx: EvolveFixture) => Record<string, string>; repoFiles?: Record<string, string>; stagedFiles?: Record<string, string> } = {},
   ): Promise<{ layer: string; why: string }[]> {
     const { fx, save } = await ready({ extraYaml: o.extraYaml ?? PATTERNS });
     for (const [f, t] of Object.entries(o.files?.(fx) ?? {})) fs.writeFileSync(path.join(fx.transcripts, f), t);
+    // Toolkit text counts as public once it is on the remote default branch: commit it and point origin/main there.
     for (const [f, t] of Object.entries(o.repoFiles ?? {})) {
+      fs.writeFileSync(path.join(fx.repo, f), t);
+      git(fx.repo, "add", f);
+      git(fx.repo, "commit", "-qm", `add ${f}`);
+    }
+    git(fx.repo, "update-ref", "refs/remotes/origin/main", "HEAD");
+    for (const [f, t] of Object.entries(o.stagedFiles ?? {})) {
       fs.writeFileSync(path.join(fx.repo, f), t);
       git(fx.repo, "add", f);
     }
@@ -469,6 +476,14 @@ describe("publish gate layers (privacy B1)", () => {
       { files: (fx) => ({ [SESSION]: transcriptLine(fx, COPIED) }) },
     );
     expect(held).toEqual([]);
+  });
+
+  it("verbatim: a run in a staged but uncommitted toolkit file isn't public, so the copy still holds (security-sentinel-0)", async () => {
+    const held = await heldLayer(
+      { rationale: "The overnight rota swap left two shifts without cover.", evidence: ["transcript:5e55a1d0#1"] },
+      { files: (fx) => ({ [SESSION]: transcriptLine(fx, COPIED) }), stagedFiles: { "NOTES.md": "# Notes\n\nThe overnight rota swap left two shifts without anyone.\n" } },
+    );
+    expect(held).toEqual([{ layer: "verbatim", why: "copies transcript text" }]);
   });
 
   it("verbatim: a run copied from an uncited line of a cited session holds too (hand-test leak)", async () => {
@@ -551,7 +566,7 @@ describe("publish gate layers (privacy B1)", () => {
     const { fx, save } = await ready({ extraYaml: `${DENY}evolve:\n  maxOpenProposals: 4\n` });
     fs.writeFileSync(path.join(fx.transcripts, SESSION), transcriptLine(fx, COPIED));
     let lsFiles = 0;
-    const counting: GitRunner = { run: async (args, cwd) => { if (args[0] === "ls-files") lsFiles++; return fx.deps.git.run(args, cwd); } };
+    const counting: GitRunner = { run: async (args, cwd) => { if (args[0] === "ls-tree") lsFiles++; return fx.deps.git.run(args, cwd); } };
     const ctx = withDeps(fx.ctx, { git: counting });
     const clean = save("A clean proposal");
     await stage([], fx.ctx);

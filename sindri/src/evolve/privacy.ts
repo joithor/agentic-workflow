@@ -1,6 +1,3 @@
-import fs from "node:fs";
-import path from "node:path";
-
 import type { GitRunner } from "../git.js";
 import { stripInvisible, WHITESPACE } from "./invisible.js";
 
@@ -102,19 +99,31 @@ export function copiedFrom(text: string, sessions: readonly SessionShingles[], i
 
 const CORPUS_FILE_MAX = 1_000_000;
 
-// The toolkit's own tracked text, as normalized words: a run found here is public already (spec §5.5). Symlinks,
-// binaries, files over 1 MB and tracked files missing from the work tree are skipped.
-export async function toolkitCorpus(git: GitRunner, repo: string): Promise<string> {
-  const r = await git.run(["ls-files", "-z"], repo);
-  if (!r.ok) return "";
-  const parts: string[] = [];
-  for (const rel of r.stdout.split("\0").filter((f) => f !== "")) {
-    const st = fs.lstatSync(path.join(repo, rel), { throwIfNoEntry: false });
-    if (st === undefined || !st.isFile() || st.size > CORPUS_FILE_MAX) continue;
-    const buf = fs.readFileSync(path.join(repo, rel));
-    if (buf.includes(0)) continue; // binary
-    parts.push(runWords(buf.toString("utf8")));
+// The toolkit's public text, as normalized words: a run (or short turn) found here is public already (spec §5.5).
+// "Public" is what the remote default branch holds (origin/<defaultBranch>), read from git objects, never the working
+// tree: uncommitted, staged-only and unpushed text isn't public yet. Without that ref the corpus is empty (fail
+// closed). Symlinks, binaries and files over 1 MB are skipped.
+export async function toolkitCorpus(git: GitRunner, repo: string, defaultBranch: string): Promise<string> {
+  const ref = `origin/${defaultBranch}`;
+  const tree = await git.run(["ls-tree", "-r", "-l", "-z", ref], repo);
+  if (!tree.ok) return "";
+  const skip: string[] = [];
+  for (const entry of tree.stdout.split("\0").filter((e) => e !== "")) {
+    const tab = entry.indexOf("\t"); // <mode> <type> <object> <size>\t<path>
+    const [mode, , , size] = entry.slice(0, tab).split(/ +/);
+    if (mode === "120000" || Number(size) > CORPUS_FILE_MAX) skip.push(entry.slice(tab + 1));
+  }
+  // Every line of every text file at the ref, in one process; -I leaves binaries out. Exit 1 means no line at all.
+  const grep = await git.run(["grep", "-I", "-z", "--full-name", "-e", "", ref, "--", ".", ...skip.map((f) => `:(exclude,literal)${f}`)], repo);
+  if (!grep.ok) return "";
+  const files = new Map<string, string[]>();
+  for (const line of grep.stdout.split("\n")) {
+    const cut = line.indexOf("\0"); // <ref>:<path>\0<line>
+    if (cut < 0) continue;
+    const lines = files.get(line.slice(0, cut));
+    if (lines === undefined) files.set(line.slice(0, cut), [line.slice(cut + 1)]);
+    else lines.push(line.slice(cut + 1));
   }
   // "|" is never a word, so a run can't span the end of one file and the start of the next.
-  return ` ${parts.join(" | ")} `;
+  return ` ${[...files.values()].map((lines) => runWords(lines.join("\n"))).join(" | ")} `;
 }
