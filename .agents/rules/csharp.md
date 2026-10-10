@@ -51,15 +51,15 @@ Host ──► Features ──► Core ◄── Infrastructure
 |---|---|---|
 | `Aw.<Pkg>.Core` | Domain types, typed ids, value objects, pure logic, **port interfaces**, errors | `Aw.Kernel` (+ `Microsoft.Extensions.DependencyInjection.Abstractions` for its `Add…()` method) |
 | `Aw.<Pkg>.Features` | One folder per use case (slice): request/response records, service, validator | `Core`, `Aw.Kernel`, other packages' `Core` |
-| `Aw.<Pkg>.Infrastructure` | Repositories over SQL, adapters (git, containers, model CLIs, HTTP), migrations | `Core`, `Aw.Kernel` |
-| `Aw.<Pkg>.Host` | Composition root: minimal API app or CLI `Main`, the endpoints and CLI commands (one per slice), `Compose`, settings, the JSON context | everything in the package |
+| `Aw.<Pkg>.Infrastructure` | Repositories over SQL, adapters (git, containers, model CLIs, HTTP), migrations | `Core`, `Aw.Kernel`, `Aw.Kernel.Data`, and other tier-0 packages (e.g. `Redaction`) through a declared `deps.yaml` edge |
+| `Aw.<Pkg>.Host` | Composition root: minimal API app or CLI `Main`, the endpoints and CLI commands (one per slice), `Compose`, settings, the JSON context | everything in the package, plus `Aw.Kernel.Telemetry` and the tier-0 and lower-tier `Core`s it composes |
 
 A package under ~1,500 lines may use two projects, `Core` and `App`, with the same direction; split into four past the threshold.
 
 | Rule | Check |
 |---|---|
 | Dependency direction above | Project references (the build fails) + ArchUnitNET in `tests/Aw.Architecture.Tests` (gap — R1b) |
-| `Core` has no I/O: no `System.IO`, `System.Net`, `Microsoft.Data.*`, `System.Diagnostics.Process`, `Console`, `DateTime.Now/UtcNow`, `DateTimeOffset.Now/UtcNow`, `Guid.NewGuid` — use `TimeProvider` and `IIdGenerator` ports | `BannedSymbols.txt` → `RS0030` (BannedApiAnalyzers, wired for `*.Core` in `Directory.Build.props`) |
+| `Core` has no I/O: no `System.IO`, `System.Net`, `Microsoft.Data.*`, `System.Diagnostics.Process`, `Console`, `DateTime.Now/UtcNow`, `DateTimeOffset.Now/UtcNow`, `Guid.NewGuid` — use `TimeProvider` and `IIdGenerator` ports | `BannedSymbols.txt` → `RS0030` (BannedApiAnalyzers, wired for `*.Core` in `Directory.Build.props`; another project opts in with `AwBannedSymbols=true`, as `Aw.Kernel` does) |
 | A slice never references another slice's types; the second use moves the logic into `Core` | ArchUnitNET (gap — R1b); `Aw.Analyzers` fast check (gap — R1b) |
 | `Infrastructure` row/DTO types are `internal`; repositories return `Core` types | ArchUnitNET (gap — R1b) |
 | Packages reference other packages only through their `Core` public surface (the reference sits in `Features`, or `App` in the small shape) or a CLI/HTTP contract | `node scripts/check-deps.mjs` against `deps.yaml` (gap — active once the deps-graph PR #92 merges) |
@@ -68,11 +68,11 @@ A package under ~1,500 lines may use two projects, `Core` and `App`, with the sa
 
 ## Dependency graph (§4b.1a, §4e)
 
-- Tiers (`deps.yaml` is the tier table of record): 0 `Aw.Kernel` (+ `Data`, `Telemetry`, `Testing`) and `Redaction` · 1 `Judge`, `Bridge`, `Packets`, `Readiness` · 2 `Scorer`, `Evidence`, `BugFix` · 3 `Sindri`. A package depends only on lower tiers; same-tier or upward calls go through a CLI or HTTP contract.
+- Tiers (`deps.yaml` is the tier table of record): 0 `Aw.Kernel` (+ `Data`, `Telemetry`, `Testing`), `Redaction` and `Analyzers` · 1 `Judge`, `Bridge`, `Packets`, `Readiness` · 2 `Scorer`, `Evidence`, `BugFix` · 3 `Sindri`. A package depends only on lower tiers; same-tier or upward calls go through a CLI or HTTP contract.
 - Every edge is declared in `deps.yaml` (schema `schemas/deps.schema.json`) with its kind (`project`, `cli`, `db`, `file`). Adding an edge is a reviewed change to `deps.yaml`. Check: `node scripts/check-deps.mjs`, which compares the declared edges with the project references and with the cli, db and file edges it scans in the source (gap — active once the deps-graph PR #92 merges).
 - Fan-out: ≤ 4 in-repo project references (`limits.projectFanOut`) and ≤ 6 third-party packages (`limits.thirdPartyFanOut`) per project. `*.Host`, `*.Tests` and `*.Testing` projects are exempt; analyzers are excluded (packages with `PrivateAssets=all`, and project references with `OutputItemType=Analyzer`). Over the limit needs a recorded exception with a reason in `deps.yaml`. Check: `scripts/check-deps.mjs` (`DEPS-FANOUT-002`/`003`, once #92 merges).
 - **Test support:** `*.Testing` projects are test-support, like packages marked `test: true` in `deps.yaml` (e.g. `KernelTesting`). They may reference test-support packages without a declared edge, and only `*.Tests` and `*.Testing` projects may reference them. Production code never references test support. Check: `scripts/check-deps.mjs` (once #92 merges).
-- **Analyzers:** `Aw.Analyzers` is declared as the `Analyzers` node in `deps.yaml`. It's wired in through `Directory.Build.props`/`Directory.Build.targets` as a project reference with `OutputItemType=Analyzer` (`ReferenceOutputAssembly=false`). Such analyzer references are allowed only in the `Directory.Build` files, and are excluded from fan-out and from `DEPS-PROJ-001`. Check: `scripts/check-deps.mjs` (once #92 merges).
+- **Analyzers:** `Aw.Analyzers` is declared as the `Analyzers` node in `deps.yaml`. It's referenced only with `OutputItemType="Analyzer"` (and `ReferenceOutputAssembly=false`), in a `.csproj` or a `Directory.Build` file, normally `Directory.Build.targets`. Such analyzer references are excluded from fan-out and from `DEPS-PROJ-001`; a runtime reference in a `Directory.Build` file fails `DEPS-PROJ-005`, and an analyzer reference without `OutputItemType="Analyzer"` fails `DEPS-PROJ-006`. Check: `scripts/check-deps.mjs` (once #92 merges).
 
 ## Request flow (§4b.2)
 
@@ -100,6 +100,7 @@ A package under ~1,500 lines may use two projects, `Core` and `App`, with the sa
 
 - `Microsoft.Extensions.DependencyInjection`. **Each project owns one explicit, public extension method** that registers its own types (`services.AddSindriCore()`, `AddSindriFeatures()`, `AddSindriInfrastructure(settings)`); **only `Host` calls them and builds the container.** No assembly scanning (reflection, not AOT-safe).
 - So `Core`, `Features` and `Infrastructure` may reference `Microsoft.Extensions.DependencyInjection.Abstractions` (for `Core`, its only package besides `Aw.Kernel`). `Aw.Kernel` stays BCL-only: no `IConfiguration` in Kernel signatures. Each package's settings are a typed record (`<Name>Settings`) that `Host` builds from the environment and passes to `Add<Name>Infrastructure(settings)`.
+- Decorators are registered in the **owning project's `Add…()` method** (outermost first), never in `Host`: `Compose` only calls the projects' `Add…()` methods and adds the clock and settings.
 - Each `Host` exposes one `internal static IServiceCollection Compose(IServiceCollection, <Name>Settings, TimeProvider)` that `Program.cs` and the DI validation test both call, so the test covers the real composition.
 - Constructor injection only; no service locator; no `IServiceProvider` outside `Host`, with **one exception**: the `IServiceProvider` parameter of a registration factory lambda inside a project's own `Add…()` method. M.E.DI has no decorator support, so that's how a decorator wraps its service:
 
@@ -118,13 +119,15 @@ A package under ~1,500 lines may use two projects, `Core` and `App`, with the sa
 
 ## Build settings and analyzers (§4b.6)
 
-- `global.json` pins the SDK; `Directory.Build.props` sets `Nullable`, `LangVersion=latest`, `ImplicitUsings`, `TreatWarningsAsErrors`, `EnforceCodeStyleInBuild`, `AnalysisLevel=latest-recommended`, `GenerateDocumentationFile`, `RestorePackagesWithLockFile` (locked mode in CI). Don't override these per project.
-- `Directory.Packages.props`: Central Package Management with exact versions. **New packages are at least 14 days old** on nuget.org. Analyzers come in as `GlobalPackageReference` and get the same review as runtime dependencies (they run code in every build).
+- `global.json` pins the SDK. `Directory.Build.props` sets `Nullable`, `LangVersion=latest`, `ImplicitUsings`, `TreatWarningsAsErrors`, `EnforceCodeStyleInBuild`, `EnableNETAnalyzers=false` (the pinned NetAnalyzers package owns the CA rules), `GenerateDocumentationFile`, NuGet audit (high and critical advisories, `NU1903`/`NU1904`, fail the build), and `RestorePackagesWithLockFile` (locked mode in CI). Severity lives in `.editorconfig` (the bulk `error` baseline plus explicit lines); **never add `AnalysisLevel`**: with the SDK analyzers off it is silently ignored. Don't override these per project, except through the two role switches below.
+- **Project roles** (from the name, in `Directory.Build.props`): `*.Tests` and `*.Testing` are test projects, `*.Host` hosts, `*.Analyzers` analyzers; **every other project is a library** (`Core`, `Features`, `Infrastructure`, a small package's `App`, Kernel, `Redaction`) and gets `IsAotCompatible=true`. A library opts out only with `AwAotCompatible=false` and a comment saying why (e.g. `Evidence`: Playwright for .NET has no NativeAOT). A non-`Core` project opts into the banned-symbol list with `AwBannedSymbols=true`.
+- **Lock files:** CI fails on a missing `packages.lock.json` (`AW0001`, `Directory.Build.targets`) and on a lock file restore changed or a package that isn't signed (`scripts/dotnet-verify-packages.sh`: lock files present and unchanged, signature-verified locked restore, `dotnet nuget verify --all`).
+- `Directory.Packages.props`: Central Package Management with versions pinned as **`[x.y.z]`** (a bare `x.y.z` is only a minimum). **New packages are at least 14 days old** on nuget.org. Analyzers come in as `GlobalPackageReference` and get the same review as runtime dependencies (they run code in every build).
 - `nuget.config` maps every package to nuget.org only. Don't add sources.
 - **One owner per rule:** where analyzer packs overlap (for example `CA2007` vs `MA0004`), `.editorconfig` names the owner and disables the other. Every rule agents must obey has an explicit severity — never `suggestion`.
 - **Ratchet:** existing violations live in the `#### Ratchet baseline ####` block at the end of the root `.editorconfig` (one section per file, lowering only the named rule), which may only shrink. It replaces the spec's `baseline.globalconfig`: a global config can't lower a rule that `.editorconfig` sets (editorconfig wins), and global-config sections need absolute paths. The growth check is a gap — R1b.
 - **Size limits:** file ≤ 300 lines (gap — `Aw.Analyzers`); method ≤ 40 lines (`MA0051`, `MA0051.maximum_lines_per_method = 40` in `.editorconfig`); cyclomatic complexity ≤ 10 (`CA1502`, error in `.editorconfig`, limit `CA1502: 10` in `CodeMetricsConfig.txt`); parameters ≤ 5 (gap — `Aw.Analyzers`).
-- **Test projects:** Test projects (`*.Tests`, `*.Testing`) get their own policy, set by #89 in `tests/.editorconfig` (`root = false`): `CA1707` (underscore test names), `RS0016`, `RS0017`, `RS0036`, `RS0037` (no public-API tracking), `CA2007` and `CA1515` (xUnit needs public test classes; xUnit1030 forbids `ConfigureAwait(false)` in tests) are off; `GenerateDocumentationFile` stays `true` (IDE0005 needs it) with `CS1591` off.
+- **Test projects:** The test policy applies **by location**: every `*.Tests` and `*.Testing` project lives under `tests/` (including `tests/Aw.Kernel.Testing/`), and #89's `tests/.editorconfig` (`root = false`) covers everything there; outside `tests/` it doesn't apply. It sets: `CA1707` (underscore test names), `RS0016`, `RS0017`, `RS0036`, `RS0037` (no public-API tracking), `CA2007` and `CA1515` (xUnit needs public test classes; xUnit1030 forbids `ConfigureAwait(false)` in tests) are off; `GenerateDocumentationFile` stays `true` (IDE0005 needs it) with `CS1591` off.
 - **`ConfigureAwait`:** `CA2007` owns it (`MA0004` is off) and, per #89, applies to libraries (`dotnet_code_quality.CA2007.output_kind = DynamicallyLinkedLibrary`). Library code writes `.ConfigureAwait(false)` on every `await`, every `await using` (`await using (x.ConfigureAwait(false)) { … }`, including `CreateAsyncScope()`) and every `await foreach`. Host templates use the same forms so code moved into a library stays compliant.
 - **No TODO comments** (`MA0026`): finish the work or open a work item.
 - **File name matches the type** (`MA0048`): one top-level type per file.
@@ -138,7 +141,7 @@ A package under ~1,500 lines may use two projects, `Core` and `App`, with the sa
 | `Bridge` host (MCP + HTTP) | NativeAOT if the MCP C# SDK passes the AOT spike, else framework-dependent |
 | `Evidence` (ui-evidence) | Framework-dependent (Playwright for .NET has no NativeAOT) |
 
-`IsAotCompatible=true` on `Core`, `Features`, `Infrastructure` and Kernel projects; `PublishAot=true` only on the entry points above. AOT publishing runs in its own CI job and in releases; local builds and tests are JIT.
+Every library project (see Project roles above: everything except `*.Tests`, `*.Testing`, `*.Host`, `*.Analyzers`) gets `IsAotCompatible=true` from `Directory.Build.props`; `Evidence`'s libraries opt out with `AwAotCompatible=false` and the reason. `PublishAot=true` only on the entry points above (a Host, or a small package's `App`), in their own project files. AOT publishing runs in its own CI job and in releases; local builds and tests are JIT.
 
 ## Seams (§4b.6, factory addendum §17.20–17.21)
 

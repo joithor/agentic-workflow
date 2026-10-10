@@ -147,8 +147,8 @@ Host ──► Features ──► Core ◄── Infrastructure
 |---|---|---|
 | `Aw.<Pkg>.Core` | Domain types, strongly typed ids and value objects, pure logic, **port interfaces** (repositories, clock, process runner), errors, its own `Add…()` registration method | `Aw.Kernel`, plus `Microsoft.Extensions.DependencyInjection.Abstractions` for that method |
 | `Aw.<Pkg>.Features` | One folder per use case (a slice): request and response records, the service (handler), the validator | `Core`, `Aw.Kernel`, other packages' `Core` |
-| `Aw.<Pkg>.Infrastructure` | Repository implementations over SQL, external adapters (git, containers, model CLIs, HTTP), migrations | `Core`, `Aw.Kernel` |
-| `Aw.<Pkg>.Host` | The composition root: the minimal API app or the CLI `Main`, the endpoints and CLI commands (one per slice, so the request-delegate generator covers them), `Compose` (calls each project's `Add…()`), settings, the JSON context | everything in the package |
+| `Aw.<Pkg>.Infrastructure` | Repository implementations over SQL, external adapters (git, containers, model CLIs, HTTP), migrations | `Core`, `Aw.Kernel`, `Aw.Kernel.Data`, and other tier-0 packages through a declared `deps.yaml` edge |
+| `Aw.<Pkg>.Host` | The composition root: the minimal API app or the CLI `Main`, the endpoints and CLI commands (one per slice, so the request-delegate generator covers them), `Compose` (calls each project's `Add…()`), settings, the JSON context | everything in the package, plus `Aw.Kernel.Telemetry` and the tier-0 and lower-tier `Core`s it composes |
 | `Aw.Kernel` (shared) | `Result<T>`, `Error`, clock and id ports, value-object conventions, the generic `IService<TReq, TRes>` pipeline and decorators, the byte-compat JSON settings (§4c) | the BCL only |
 | `Aw.Kernel.Data` · `Aw.Kernel.Telemetry` · `Aw.Kernel.Testing` | SQLite access and migrations runner · logging and OpenTelemetry setup with the scrubbing processor · fakes base, builders, contract-test bases, golden harness | `Aw.Kernel` plus their one external dependency each |
 
@@ -327,9 +327,7 @@ group.MapPost("/items/{id}/start", async (ItemId id, StartItemBody body, IServic
   the same 14-day minimum age as the existing pins.
 - **One owner per rule (A14):** where analyzer packs overlap (for example CA2007 and MA0004 on `ConfigureAwait`),
   `.editorconfig` names one owning rule and disables the others. Existing violations are captured in a generated
-  ratchet baseline block at the end of `.editorconfig` that lowers only those rule-and-file pairs; the ratchet fails
-  CI if the baseline grows. (Not a `baseline.globalconfig`: a global config can't lower a rule that `.editorconfig`
-  sets, and global-config sections need absolute paths.)
+  `baseline.globalconfig` that lowers only those rule-and-file pairs; the ratchet fails CI if the baseline grows.
 - `.editorconfig` sets every rule's severity explicitly (no "suggestion" level for anything agents should obey).
   The size limits: file ≤ 300 lines, method ≤ 40 lines, cyclomatic complexity ≤ 10, parameters ≤ 5. Existing
   violations go into a ratchet baseline that only shrinks.

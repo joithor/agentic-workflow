@@ -17,7 +17,7 @@ first move is the TDD step.
 | Input | Form | Rule |
 |---|---|---|
 | `name` | PascalCase, e.g. `Readiness` | `^[A-Z][A-Za-z0-9]{2,30}$`; not `Common`, `Shared`, `Utils`, `Helpers`; no existing `src/<Name>/` |
-| `tier` | `0`–`3` | Must match `deps.yaml` (the tier table of record). Tier 0 is reserved for `Aw.Kernel*` and `Redaction` |
+| `tier` | `0`–`3` | Must match `deps.yaml` (the tier table of record). Tier 0 is reserved for `Aw.Kernel*`, `Redaction` and `Analyzers` |
 | `errorPrefix` | e.g. `RDY` | `^[A-Z]{2,4}$`; unique across the error catalogues (`src/**/*Errors.cs`); never derived or guessed |
 | `note` | one line: what the package is for | Used for the `deps.yaml` node when the package isn't declared yet |
 | `shape` | `small` (Core + App) or `full` (Core, Features, Infrastructure, Host) | `small` unless the package is expected over ~1,500 lines |
@@ -34,7 +34,7 @@ The templates need `Microsoft.Extensions.DependencyInjection.Abstractions` (Core
 `Microsoft.Extensions.DependencyInjection` (Host, tests), `Microsoft.Extensions.TimeProvider.Testing` (tests) and, for
 `host: http`, `Microsoft.AspNetCore.Mvc.Testing` (integration tests); `xunit.v3` is already pinned. If any isn't in
 `Directory.Packages.props`, the generator **stops** and prints the pin commit to make first: add each `PackageVersion`
-(exact version, at least 14 days old), refresh the lock files it changes (with `CentralPackageTransitivePinningEnabled`
+(pinned as `[x.y.z]`, at least 14 days old), refresh the lock files it changes (with `CentralPackageTransitivePinningEnabled`
 a new pin can turn an existing project's `Transitive` entry into `CentralTransitive`), and commit that on its own.
 The scaffold itself never edits `Directory.Packages.props`, so its whole-solution locked restore can't fail on NU1004.
 
@@ -104,9 +104,8 @@ tests/
 
 **`shape: small`** replaces `Features`, `Infrastructure` and `Host` with one `Aw.<Name>.App` project: same files under
 `Features/`, `Infrastructure/`, `Commands/` (or `Endpoints/`), same `Add…()` methods, `OutputType=Exe` when `host`
-isn't `none`. Because `App` matches none of the role suffixes in `Directory.Build.props`, its csproj sets
-`IsAotCompatible=true` itself (so a `host: none` library still gets the trim and AOT analyzers). Its `.editorconfig`
-lowers `CA1031` only for the boundary folders:
+isn't `none` (then `PublishAot=true` too). `App` is a library under `Directory.Build.props`' project roles, so it gets
+`IsAotCompatible=true` from the root. Its `.editorconfig` lowers `CA1031` only for the boundary folders:
 
 ```ini
 root = false

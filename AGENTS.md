@@ -62,7 +62,6 @@ agentic-workflow/
 ├── tests/         # C# tests: Aw.<Pkg>.Tests (by feature), Aw.<Pkg>.Testing (fakes, builders, contract bases), Aw.Architecture.Tests
 ├── spikes/        # Throwaway C# spikes (AOT spike); never part of the solution
 ├── global.json · AgenticWorkflow.slnx · Directory.Build.props · Directory.Packages.props · nuget.config · BannedSymbols.txt
-├── deps.yaml      # Declared package tiers and every dependency edge (project, cli, db, file); checked by scripts/check-deps.mjs (deps-graph PR #92)
 ├── .agents/rules/ # Glob-scoped domain rules (.claude/rules and .cursor/rules link here)
 ├── .serena/       # Serena LSP project configuration
 ├── scripts/       # Utility scripts (sync-rules.sh, serena-docker, probe.sh, install-scorer.sh)
@@ -91,6 +90,7 @@ dotnet test --filter-trait "Lane=unit"  # Unit lane (< 10 s per package); xUnit 
 dotnet test --filter-trait "Lane=integration"   # Temp SQLite files, WebApplicationFactory (< 60 s per package)
 dotnet test --filter-not-trait "Lane=heavy"     # Everything except containers, browsers and index builds
 dotnet format --verify-no-changes       # Style and analyzer fixes are applied (CI and pre-commit)
+scripts/dotnet-verify-packages.sh       # Lock files present and unchanged, signature-verified locked restore, dotnet nuget verify --all
 # Add a package: /new-package (spec docs/csharp/scaffolds/new-package.md)
 # Add a use case: /new-slice (spec docs/csharp/scaffolds/new-slice.md) — test, request and response, service, endpoint, registration
 
@@ -149,7 +149,7 @@ Before merging any PR:
 4. `./setup.sh --providers claude,codex,cursor --dry-run` runs cleanly
 5. No `/* v8 ignore */` annotations in source files (prohibited — write the test instead)
 6. No `any` types outside of Fastify integration boundaries
-7. C# build (active once `src/` has projects): `dotnet build -warnaserror` reports zero warnings, `dotnet test` passes in every lane CI runs, `dotnet format --verify-no-changes` is clean, and the ratchet baseline block at the end of `.editorconfig` didn't grow. Once `scripts/check-deps.mjs` exists (deps-graph PR #92), `node scripts/check-deps.mjs` passes too (`deps.yaml` matches the real edges)
+7. C# build (active once `src/` has projects): `dotnet build -warnaserror` reports zero warnings, `dotnet test` passes in every lane CI runs, `dotnet format --verify-no-changes` is clean, `scripts/dotnet-verify-packages.sh` passes, and the ratchet baseline block at the end of `.editorconfig` didn't grow
 
 ## C# slice recipe
 
