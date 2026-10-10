@@ -1,5 +1,6 @@
 #nullable enable
 Aw.Redaction.IRedactor
+Aw.Redaction.IRedactor.IsSecretName(string! name) -> bool
 Aw.Redaction.IRedactor.Scrub(string! text) -> Aw.Redaction.ScrubResult!
 Aw.Redaction.RedactionCodes
 Aw.Redaction.RedactionHit
@@ -14,6 +15,7 @@ Aw.Redaction.RedactionHit.Rule.init -> void
 Aw.Redaction.RedactionHit.Start.get -> int
 Aw.Redaction.RedactionHit.Start.init -> void
 Aw.Redaction.Redactor
+Aw.Redaction.Redactor.IsSecretName(string! name) -> bool
 Aw.Redaction.Redactor.RuleIds.get -> System.Collections.Generic.IReadOnlyList<string!>!
 Aw.Redaction.Redactor.Scrub(string! text) -> Aw.Redaction.ScrubResult!
 Aw.Redaction.ScrubOutcome

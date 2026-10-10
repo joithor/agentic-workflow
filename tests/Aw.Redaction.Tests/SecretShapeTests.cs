@@ -5,6 +5,7 @@ public sealed class SecretShapeTests
 {
     [Theory]
     [MemberData(nameof(Corpus.Plain), MemberType = typeof(Corpus))]
+    [MemberData(nameof(Corpus.LongAndShellShapes), MemberType = typeof(Corpus))]
     public void Each_secret_shape_is_replaced_by_its_rule_placeholder(SecretCase secret)
     {
         var result = Redactor.Default.Scrub(secret.Input);

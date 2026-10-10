@@ -39,6 +39,9 @@ public sealed class Redactor : IRedactor
     public static Redactor Create(TimeSpan matchTimeout) => new(BuiltinRules.All, matchTimeout);
 
     /// <inheritdoc/>
+    public bool IsSecretName(string name) => throw new NotSupportedException("red: IsSecretName");
+
+    /// <inheritdoc/>
     public ScrubResult Scrub(string text)
     {
         ArgumentNullException.ThrowIfNull(text);

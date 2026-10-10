@@ -41,6 +41,19 @@ public static class Corpus
             "private-key", Tail),
     ];
 
+    public static TheoryData<SecretCase> LongAndShellShapes() =>
+    [
+        new SecretCase("long-jwt", LongJwt(), "jwt", Tail),
+        new SecretCase("long-jwt-in-json", "{\"id_token\":\"" + LongJwt() + "\"}", "jwt", Tail),
+        new SecretCase("long-jwt-cookie", "Cookie: session=" + LongJwt(), "jwt", Tail),
+        new SecretCase("credentialed-url-raw-at", Join("postgres://app:p@ss", Body, "@db.example.com/x"), "credentialed-url", Tail),
+        new SecretCase("shell-pair-after-and", Join("cd repo && api", "_key=", Body), "secret-assignment", Tail),
+        new SecretCase("shell-pair-curl-data", Join("curl -d client", "_secret=", Body, " https://x"), "secret-assignment", Tail),
+        new SecretCase("shell-pair-no-separator", Join("FOO=1 mytok", "en=", Body, " ./run"), "secret-assignment", Tail),
+        new SecretCase("shell-pair-after-semicolon", Join("x=1; Pass", "word=", Body), "secret-assignment", Tail),
+        new SecretCase("env-dotted-value", Join("API", "_KEY=Ab3dE6gH9jK2mN5p.", Body), "secret-assignment", Tail),
+    ];
+
     public static TheoryData<SecretCase> Evasions() =>
     [
         new SecretCase("unterminated-private-key", Pem(string.Empty), "private-key", Tail),
@@ -73,5 +86,12 @@ public static class Corpus
         new SecretCase("fullwidth-letter-glued", Join("\uFF41gh", "p_", Body, "Ab3dE6gH9"), "github-token", Tail),
         new SecretCase("aws-cyrillic-after", Aws("AK" + "IA") + "\u043E", "aws-access-key", "IJKLMNOP"),
         new SecretCase("windows-path-backslash-r", Join("C:\\keys\\", "rk", "_live_", Body), "stripe-key", Tail),
+        new SecretCase("line-separator-bearer", Join("Bear", "er\u2028", Body, Body), "bearer", Tail),
+        new SecretCase("pgp-unterminated-charset", Join(
+            "-----BEGIN PGP PRIV", "ATE KEY BLOCK-----\nCharset: UTF-8\n\n", Body, Body, "\n"), "private-key", Tail),
+        new SecretCase("script-g-lookalike", Join("\u0261h", "p_", Body, "Ab3dE6gH9"), "github-token", Tail),
     ];
+
+    // A JWT whose payload is over 8 KB (identity tokens with many group claims are this long).
+    private static string LongJwt() => Join("ey", "J", Body, ".", string.Concat(Enumerable.Repeat(Body, 300)), ".", Body);
 }
