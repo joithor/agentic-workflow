@@ -1,70 +1,94 @@
 # Aw.Kernel.Data
 
-SQLite access for every C# package: hand-written ADO.NET over `Microsoft.Data.Sqlite` with an `IRowMapper<T>` per row
-type (decision R8, `docs/readiness/aot-spike.md`), the unit of work, and the migrations runner (spec §4b.2). Tier 0
-in `deps.yaml`: `Aw.Kernel` plus one external package.
+SQLite access for every C# package: hand-written ADO.NET over `Microsoft.Data.Sqlite` (decision R8,
+`docs/readiness/aot-spike.md`), the unit of work, read sessions and the migrations runner (spec §4b.2). Tier 0 in
+`deps.yaml`: `Aw.Kernel` plus one external package.
+
+**Who owns what.** Kernel.Data provides connections, sessions, binders, readers and the runner. Each package's
+`Infrastructure` project owns its row mappers (`IRowMapper<T>`), its SQL and its migrations. Strongly typed ids follow
+`docs/csharp/typed-ids.md` (PR #100); bind them with `BindId(name, id, accessor)` for now. Once #100 lands, an
+`ITypedId`-constrained `BindId`/`GetId` can replace the accessor.
 
 ## What's in it
 
 | Type | Job |
 |---|---|
-| `SqliteConnectionFactory` / `SqliteOptions` | Opens a connection with `journal_mode=WAL`, `busy_timeout`, `foreign_keys=ON`, `synchronous=NORMAL`. Pooling is off |
-| `SqliteBind` | Typed parameters (`Bind` for text, integer, real, boolean, blob; null is SQL NULL) and `BindId(name, id, accessor)` for strongly typed ids |
+| `SqliteConnectionFactory` / `SqliteOptions` | `Open`: read-write, creates the file, sets `busy_timeout`, `journal_mode=WAL` (checked: a connection that can't get WAL is refused), `foreign_keys=ON`, `synchronous=NORMAL`. `OpenReadOnly`: `query_only`, never creates the file, doesn't touch the journal mode. Pooling is off |
+| `SqliteBind` | Typed parameters: text, integer (`int`, `long`), real, boolean (0/1), blob, `DateTimeOffset` (UTC text, `2026-10-10T07:05:07.042Z`), `Guid` (lowercase hyphenated text), and `BindId(name, id, accessor)` for typed ids stored as text, integer or Guid. Cast a bare `null` (`(string?)null`) |
+| `SqliteRead` | `GetGuid`: reads lowercase hyphenated text strictly; a BLOB, upper case or braces throw `InvalidDataException` |
 | `IRowMapper<T>` | Maps one row, columns by ordinal |
 | `SqlStatement`, `SqliteQueries` | `One`, `List`, `Exists`, `Execute`, each returning `Result<T>` |
-| `ISqliteSession`, `SqliteUnitOfWork`, `SqliteUnitOfWorkFactory` | One `BEGIN IMMEDIATE` transaction per use case; disposing without `Commit` rolls back |
-| `SqliteReadRepository<TEntity,TId>` | Implements `Aw.Kernel.Persistence.IReadRepository` from a repository's two SQL constants and its id binder |
-| `Migration`, `EmbeddedMigrations`, `MigrationRunner` | Numbered `NNNN_name.sql` resources, `schema_version` with SHA-256 checksums, one transaction per migration |
+| `SqliteUnitOfWork` / `SqliteUnitOfWorkFactory.BeginSession` | One `BEGIN IMMEDIATE` per use case; disposing without `Commit` rolls back. Implements `Aw.Kernel.Persistence.IUnitOfWork` |
+| `SqliteReadSession` / `BeginRead` | A deferred transaction on a read-only connection: one snapshot, no write lock, reads beside a writer, no file created. For status, doctor and report commands |
+| `SqliteReadRepository<TEntity,TId>` | Implements `IReadRepository` from a repository's two SQL constants and its id binder |
+| `Migration`, `EmbeddedMigrations`, `MigrationRunner` | See below |
 
-The ports a `Core` project declares against (`IReadRepository<TEntity,TId>`, `IUnitOfWork`, `IUnitOfWorkFactory`) live
-in `Aw.Kernel.Persistence`, because `Core` references `Aw.Kernel` only (spec §4b.1).
+Every path that fails closes the connection it opened, cancellation included; disposing a session closes the
+connection even if the rollback throws.
 
 ## Errors
 
-Expected store failures are `Result` errors; everything else (broken SQL, a mapper bug) throws.
+Expected store failures are `Result` errors; everything else (broken SQL, a mapper bug, `SQLITE_LOCKED`) throws.
 
 | Code | Kind | When |
 |---|---|---|
 | AW-DATA-001 | notFound | `One` found no row |
-| AW-DATA-002 | unavailable | The file can't be opened, read or written (missing directory, read-only, full, not a database) |
+| AW-DATA-002 | unavailable | The file can't be opened, read or written (missing, read-only, full, permission), or WAL isn't available there |
 | AW-DATA-003 | timeout | Another connection held the lock past the busy timeout |
-| AW-DATA-004 | conflict | A constraint failed (unique, foreign key, not null, check) |
-| AW-DATA-005 | invalid | The migration set has a gap, a duplicate, the wrong order, or a file without a version |
-| AW-DATA-006 | conflict | An applied migration's text changed |
+| AW-DATA-004 | conflict | A constraint failed, or a migration left foreign-key violations |
+| AW-DATA-005 | invalid | The migration set is empty, has a gap, a duplicate, the wrong order, or a file without a version; or no embedded resources matched the prefix |
+| AW-DATA-006 | conflict | The applied history doesn't match the build: an applied migration's text or name changed, or `schema_version` isn't exactly 1..n |
 | AW-DATA-007 | conflict | The database has a migration this build doesn't know |
+| AW-DATA-008 | invalid | The file is damaged or isn't a SQLite database. Not retryable: restore from a backup |
+| AW-DATA-009 | conflict | The database has tables but no `schema_version`: this runner didn't create it (usually the wrong path). Nothing is written |
 
 ## Migrations
 
-- One file per change, `NNNN_name.sql`, embedded as a resource. Versions run 1, 2, 3 with no gaps.
-- The checksum is SHA-256 of the UTF-8 text with CRLF turned into LF, so a checkout's line endings never look like an
-  edit. An applied migration never changes: add a new one.
-- `Migrate(set, ct, targetVersion: n)` stops at `n`, so a package's migration test can apply each step to a copy of the
-  previous schema (spec §4b.2).
-- A migration whose SQL fails is a bug: its transaction rolls back (DDL included) and the exception propagates.
+- One file per change, `NNNN_name.sql`, embedded as a resource. Versions run 1, 2, 3 with no gaps. An applied
+  migration never changes: add a new one.
+- The checksum is SHA-256 of the UTF-8 text without a leading BOM and with CRLF or lone CR turned into LF, so line
+  endings or a different loader never look like an edit.
+- Before anything is written, the runner checks the set, then checks the file on a read-only connection (AW-DATA-009
+  leaves it byte-for-byte unchanged).
+- Before upgrading a database that already has migrations, it writes a consistent copy with `VACUUM INTO` to
+  `<file>.bak-v<N>`. The first backup of a version is kept; the copy is moved into place atomically.
+- Each migration runs in its own transaction with its `schema_version` row. `foreign_keys` is switched off before
+  `BEGIN` (inside a transaction the pragma does nothing), so the SQLite table-rebuild recipe works without cascading
+  deletes; `PRAGMA foreign_key_check` runs before commit, and violations roll back as AW-DATA-004. It is switched back on
+  afterwards.
+- Two runners at once apply each migration once; both report the final version.
+- `Migrate(set, ct, targetVersion: n)` stops at `n`, so a package's migration test can apply each step to a copy of
+  the previous schema.
+- The C# build starts from fresh state: no database the TS build wrote is read or migrated (owner decision,
+  2026-10-10), so the runner keeps its version only in `schema_version`, never in `PRAGMA user_version`.
+
+## Durability: synchronous=NORMAL
+
+In WAL mode, `synchronous=NORMAL` can't corrupt the database, and survives an application crash. On power loss or an
+OS crash it can lose the last few committed transactions. That's the trade for a local toolkit; a package that needs
+every commit on disk sets `synchronous=FULL` on its own connections. It only holds while the file really is in WAL mode,
+which is why `Open` refuses a connection that didn't get WAL.
 
 ## Busy timeout
 
 `busy_timeout` is set in milliseconds, but `Microsoft.Data.Sqlite` also retries `SQLITE_BUSY` itself until the
 command timeout, which it counts in whole seconds. The factory sets that to the busy timeout rounded up to a second,
-so a 300 ms busy timeout waits about 1.3 s before AW-DATA-003 (measured in the C1 smoke run).
+so a 300 ms busy timeout waits about 1.3 s before AW-DATA-003.
 
 ## Native SQLite: how it ships
 
-**Decision: the side-by-side `libe_sqlite3` file**, one per AOT tool and platform, listed in `binaries.lock` next to
-the tool (spec §4c B6).
+**The bundled `e_sqlite3`, as a side-by-side file** (`libe_sqlite3.dylib` / `.so`, 1.7 MB on osx-arm64) next to each
+AOT tool, listed in `binaries.lock` (spec §4c B6; the decision is recorded by the spec PR, S1).
 
-- `Microsoft.Data.Sqlite` 10.0.12 pulls `SQLitePCLRaw.bundle_e_sqlite3` 2.1.12. Its `lib.e_sqlite3` package ships a
-  static archive (`e_sqlite3.a`) only for `browser-wasm`. For `osx-arm64`, `osx-x64` and `linux-x64` it ships
-  `libe_sqlite3.dylib` / `libe_sqlite3.so` only, so a NativeAOT static link (one file per tool) would mean building
-  SQLite ourselves. That isn't worth it for R1.
-- The OS SQLite (`SQLitePCLRaw.bundle_sqlite3`) would also give one file, but the SQLite version would then differ
-  between machines (macOS ships its own; Linux distributions vary). Byte-compatible goldens (spec §4c) want the same
-  SQLite everywhere, so the bundled build wins.
-- A NativeAOT publish puts `libe_sqlite3.dylib` (1.7 MB on osx-arm64) next to the binary. `setup.sh` and
-  `binaries.lock` must install and check both files.
+- `Microsoft.Data.Sqlite` 10.0.12 pulls `SQLitePCLRaw.bundle_e_sqlite3` 2.1.12, which ships a static archive only for
+  browser-wasm; macOS and Linux get the shared library only, so a static link would mean building SQLite ourselves.
+- The bundled build gives every host the same SQLite version and features (JSON, WAL), so behaviour doesn't depend on
+  the OS's SQLite.
+- `setup.sh` installs and checks both files; a hook or provider installer must never copy the binary alone.
+- `src/Aw.Kernel.Data.AotSmoke/run.sh` publishes the canary with NativeAOT, fails on any IL2xxx/IL3xxx warning and
+  checks its output, so the side-by-side layout and the embedded migrations are exercised on every run of the AOT job.
 
-## AOT numbers assume InvariantGlobalization
+## AOT tools set InvariantGlobalization
 
-The C1 smoke (and the A5 spike numbers) were published with `InvariantGlobalization=true`. Every AOT entry point
-should set it: the toolkit formats with `CultureInfo.InvariantCulture` anyway, and it keeps ICU out of the startup
-path. The macOS binary still links `libicucore`, but doesn't load culture data at run time.
+The canary (and the A5 spike numbers) use `InvariantGlobalization=true`. Every AOT entry point sets it: the toolkit
+formats with `CultureInfo.InvariantCulture`, and a Linux AOT binary would otherwise need `libicu` at run time.

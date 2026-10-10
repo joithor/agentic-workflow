@@ -2,6 +2,7 @@
   <Folder Name="/src/">
     <Project Path="src/Aw.Kernel/Aw.Kernel.csproj" />
     <Project Path="src/Aw.Kernel.Data/Aw.Kernel.Data.csproj" />
+    <Project Path="src/Aw.Kernel.Data.AotSmoke/Aw.Kernel.Data.AotSmoke.csproj" />
   </Folder>
   <Folder Name="/tests/">
     <Project Path="tests/Aw.Kernel.Testing/Aw.Kernel.Testing.csproj" />
