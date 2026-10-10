@@ -215,6 +215,8 @@ d="$(fixture ns-hook)"; printf '#!/usr/bin/env bash\nT="$AW_STATE_DIR/alpha/name
 expect "a hook using an unlisted file in alpha's namespace is the declared file edge" 0 "deps: ok"
 d="$(fixture ns-ts)"; printf 'const c = path.join(stateDir, "alpha", "config.json");\n' > "$d/delta/src/cfg.ts"; run "$d"
 expect "any file in another package's namespace is a file edge" 1 "Delta -> Alpha (file): delta/src/cfg.ts:1" "uses alpha/ (namespace)"
+d="$(fixture ns-words)"; printf 'const words = ["alpha", "beta"];\nconst k = z.enum(["alpha", "test"]);\nconst p = path.join(root, "alpha", "outbox2");\n' > "$d/delta/src/words.ts"; run "$d"
+expect "a namespace name in a word list is not a path; in a join it is" 1 "Delta -> Alpha (file): delta/src/words.ts:3"
 d="$(fixture ns-db)"; run "$d"
 refuse "a db path does not also count as a namespace file edge" "Beta -> Alpha (file)"
 

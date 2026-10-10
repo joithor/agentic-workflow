@@ -1,30 +1,51 @@
-# deps.yaml — the declared package graph (spec §4b.1a, §4e B10). CI fails on any drift from it.
+# deps.yaml — the declared package graph (spec §4b.1a, §4e B10). The merge gate (and CI once the CI
+# workflow lands) fails on any drift from it.
 #
 # Check:   node scripts/check-deps.mjs            (add --mermaid [--base-file F] for the PR graph)
 # Schema:  schemas/deps.schema.json
 #
 # packages  Each node: a C# package (kind: package, with a tier), the bash hooks and statusline (kind: shell)
 #           or the Claude Code mod (kind: mod). `ts` is where the code lives today, `src` where the C#
-#           package lands after its port. `scan` lists the source the checker reads for cli/db/file edges;
-#           `bins`, `binPaths`, `db` and `files` are what other nodes must declare an edge to use
-#           (db and files are relative to the state root, ${AW_STATE_DIR:-~/.agentic-workflow}).
+#           package lands after its port. `scan` lists the source the checker reads for cli/db/file edges.
+#           `bins`, `binPaths`, `db`, `files` and `namespace` are what other nodes need an edge to use:
+#           db, files and namespace are relative to the state root (${AW_STATE_DIR:-~/.agentic-workflow}),
+#           and `namespace` owns every path under that directory, listed or not. Shell and mod nodes own
+#           nothing: they only consume.
 # edges     kind: project (a C# ProjectReference), cli (runs the other's binary), db (opens the other's
-#           SQLite file, read-only) or file (shared state files). status: current edges must exist in the
-#           source today; planned edges are allowed but not built yet (most project edges, until the ports).
-#           Adding an edge is a reviewed change to this file.
-# rules     shell and mod nodes only consume: no edge points into them. Project edges point strictly down the tiers (tier, then sublevel); db and file edges point down
-#           or across, never up; cli edges may point anywhere (a contract, §4b.1a); no cycles across any
-#           kind; at most limits.projectFanOut project edges per package unless an unexpired exception says why.
+#           SQLite file, read-only) or file (shared state files). status: current edges exist in the source
+#           today; planned edges are allowed but not built yet. Both directions are checked: a current edge
+#           the scan can't find, and a planned edge it does find, both fail. Adding an edge is a reviewed
+#           change to this file.
+# rules     Nothing depends on a shell or mod node. Project edges point strictly down the tiers; `sublevel`
+#           orders the kernel family inside tier 0 and is allowed on tier 0 only. db and file edges point
+#           down or across, never up; cli edges may point anywhere (a contract, §4b.1a). No cycles across
+#           any kind. Fan-out (§4b.1a): limits.packageFanOut caps the packages one package declares project
+#           edges to; once C# projects exist, each project may reference at most limits.projectFanOut in-repo
+#           projects and limits.thirdPartyFanOut third-party packages (analyzers excluded; *.Host and *.Tests
+#           exempt). *.Tests projects are leaves and may reference any package, including test-support ones
+#           (test: true), without a declared edge. Only the fan-out rules take exceptions, each with a reason,
+#           at most limits.exceptionMaxDays long, and an exception that suppresses nothing fails.
+# scan      A heuristic, not a proof. It reads *.ts/*.js and *.sh under `scan` (not tests, node_modules or
+#           dist) and finds: spawn/exec*(…"bin…" calls, also wrapped over lines; `?? "bin"` and `|| "bin"`
+#           fallbacks; *Bin = "bin" and *Bin("bin"); BIN_BIN env names; shell commands after VAR=, env,
+#           sudo, xargs, nohup, exec, !, $( and backquotes, by name, path suffix or "$BIN_BIN". It can't see
+#           a binary named only through a variable it doesn't recognise, indirection such as
+#           `npx <bin>`, regex literals that look like strings, or calls in JSON and plist config
+#           (config/settings.json hook commands, launchd jobs). Shell lines starting with echo, printf or log
+#           and heredoc bodies are skipped.
 #
 # YAML subset (parsed without a library, so the check needs no install step): block mappings and
 # sequences, plain, 'single' or "double" quoted scalars, [flow, lists] of scalars, and # comments.
-# Anchors, aliases, tags, block scalars (| >), flow mappings ({}), multiple documents, tab indentation
-# and duplicate keys are rejected (DEPS-YAML-001). Quote a scalar that contains ": " or " #".
+# Anchors, aliases, tags, block scalars (| >), flow mappings ({}), multiple documents, tab indentation,
+# duplicate keys and non-JSON escapes are rejected (DEPS-YAML-001). Quote a scalar that contains ": " or " #".
 
 version: 1
 
 limits:
+  packageFanOut: 4
   projectFanOut: 4
+  thirdPartyFanOut: 6
+  exceptionMaxDays: 183
 
 packages:
   # ---- tier 0: domain-free building blocks (the BCL plus one external package each) ----
@@ -81,6 +102,7 @@ packages:
     bins: [judge]
     db: [judge/decisions.sqlite]
     files: [judge/outbox, judge/sessions]
+    namespace: judge
     note: "decisions, health, briefs and the prompt sorter; called by hooks and tier-2 packages through its CLI"
   - id: Bridge
     kind: package
@@ -118,6 +140,7 @@ packages:
     scan: [scorer/src]
     bins: [scorer]
     files: [scorer/live, context-guard]
+    namespace: scorer
     note: "daily cost and involvement report, live session numbers; owns the context-guard fires-log contract it reports on"
   - id: Evidence
     kind: package
@@ -128,7 +151,8 @@ packages:
     scan: [skills/ui-evidence/src, skills/ui-evidence/scripts]
     binPaths: [ui-evidence/dist/bin.js]
     files: [ui-evidence/runs, locks/heavy-job.lock, locks/qa-stack.lock]
-    note: "Playwright UI evidence; owns the box-wide heavy-job and QA-stack locks today (config/lib/locks.sh primitive)"
+    namespace: ui-evidence
+    note: "Playwright UI evidence; owns the box-wide heavy-job and QA-stack locks today (config/lib/locks.sh primitive). A tier-0 or tier-1 package can't take those locks (that would be an upward file edge, DEPS-TIER-002), so the locks move to the Kernel Lease port before one needs them"
   - id: BugFix
     kind: package
     tier: 2
@@ -149,6 +173,7 @@ packages:
     scan: [sindri/src]
     bins: [sindri]
     db: [sindri/ledger.db]
+    namespace: sindri
     note: "profile, ledger, scrub, observe, index, scope, evolve; reaches lower tiers only through Core contracts or CLIs"
 
   # ---- outside the tiers: code that stays bash or TypeScript and calls the CLIs (§4a) ----
@@ -217,7 +242,7 @@ edges:
     to: Judge
     kind: file
     status: current
-    note: "external-write-guard and done-gate read judge/sessions; outbox-flush drains judge/outbox"
+    note: "external-write-guard, done-gate and turn-origin read judge/sessions; outbox-flush and send-gate use judge/outbox; send-gate, record-teammate-name and subagent-start-map keep judge/teammate-names.jsonl, hook-only state inside judge's namespace that moves with judge's port"
   - from: Hooks
     to: Scorer
     kind: file
@@ -242,7 +267,7 @@ edges:
     to: Scorer
     kind: file
     status: current
-    note: "the statusline reads scorer/live snapshots"
+    note: "the statusline reads scorer/live snapshots and writes its own cache there (scorer/live/<sid>.statusline.json)"
   - from: AwLive
     to: Scorer
     kind: cli

@@ -124,7 +124,7 @@ export function matchersFor(node) {
   if (node.namespace) {
     const e = esc(node.namespace);
     m.push({ kind: "file", what: `uses ${node.namespace}/ (namespace)`, namespace: true,
-      ts: new RegExp(`${Q}${e}${Q}\\s*,\\s*${Q}|${Q}[^"'\`\\n]*/${e}/`, "g"), sh: new RegExp(`/${e}/`) });
+      ts: new RegExp(`\\b(?:join|resolve)\\([^)]*?${Q}${e}${Q}\\s*,\\s*${Q}|${Q}[^"'\`\\n]*/${e}/`, "g"), sh: new RegExp(`/${e}/`) });
   }
   return m;
 }
