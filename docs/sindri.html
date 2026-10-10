@@ -250,6 +250,7 @@ svg .dim { opacity: .25; }
   <h1>Sindri grows Sindri.</h1>
   <p class="lede">Sindri is a local, always-on harness that picks up work, sizes it, starts agent sessions with cited context, keeps them on track and ships them through a fixed recipe. It asks the human only when it has to. Named after the dwarf smith who forged Draupnir, the ring that multiplies itself.</p>
   <div class="quote">The human approves direction. Sindri does the finding, the building and the proving. <span class="ref">§17 core tenet</span></div>
+  <p>Part of the finding is looking outward. Sindri {{field harvest|harvests other software factories}}: it reads their designs, checks each practice against its own spec, and builds the ones it lacks through its own factory. <a href="#c-field">See chapter 22</a>. <span class="ref">§17.25</span></p>
   <p>It started from a measurement. A transcript audit of one month of work (406 sessions, 2,911 human turns) found that the human's effort went mostly to the <em>least</em> judgment-heavy parts of agent work. <span class="ref">§1</span></p>
   <figure class="dia">
     <svg viewBox="0 0 600 300" role="img" aria-labelledby="whyT">
@@ -268,8 +269,8 @@ svg .dim { opacity: .25; }
 <!-- 2 -->
 <section class="ch" id="c-tenets" data-title="Tenets, invariants and principles">
   <p class="kicker">Chapter 2 · Rules that never bend</p>
-  <h2>Sixteen invariants, three principles</h2>
-  <p class="lede">The main spec fixes eleven invariants; the factory addendum adds five. Three architectural principles follow from the core tenet: Sindri can only evolve parts it can isolate, measure and swap, and it can only afford to run them if most decisions cost no model turn.</p>
+  <h2>Nineteen invariants, three principles</h2>
+  <p class="lede">The main spec fixes eleven invariants; the factory addendum adds eight. Three architectural principles follow from the core tenet: Sindri can only evolve parts it can isolate, measure and swap, and it can only afford to run them if most decisions cost no model turn.</p>
   <div class="grid g3">
     <div class="panel"><p class="kicker">Principle 1</p><h3 style="margin-top:0">Modularity</h3><p style="font-size:14.5px">Every part is a module with a typed contract, an eval suite, telemetry and a registry entry. A part that can't be swapped alone is a design defect.</p></div>
     <div class="panel"><p class="kicker">Principle 2</p><h3 style="margin-top:0">Context management</h3><p style="font-size:14.5px">No session gathers its own context. Code assembles a budgeted, cited {{injection plan}}. Modules declare what they need; they never load everything that might help.</p></div>
@@ -406,6 +407,28 @@ svg .dim { opacity: .25; }
     </svg>
     <figcaption>Labels come from an adjudicator model, never a person; only answers that agree in both orders count (invariant 9).</figcaption>
   </figure>
+  <h3>Scoping v2: intake, a loop that retrieves, and edits that re-run it <span class="ref">§17.26</span></h3>
+  <p>Today scoping starts by hand, and its challenger re-reads the drafter's evidence, so it can only find what was already gathered. In v2 the same pipeline runs at intake, in every round, and at the desk. A human edit is just another seed.</p>
+  <ul class="clean">
+    <li><b>Two triggers.</b> <code>sindri scope</code> by hand, or tracker intake: assign an item to yourself and, if triage routes it to scoping, a map is waiting in the desk queue. Intake holds while review is full (invariant 18).</li>
+    <li><b>Every round retrieves.</b> The challenger writes typed {{expansion query|expansion queries}} (symbol, neighbours, similar, tracker, notes, route or flag). Sindri runs them against the code index, call graph, embeddings and tracker, and the drafter revises with only the new evidence. Models still get no tools.</li>
+    <li><b>Every round prunes.</b> Surfaces with keyword-only or unsupporting evidence move to a <i>Considered and dropped</i> list with a reason, so you can bring them back.</li>
+    <li><b>Honest stopping.</b> The map says <code>converged</code> (queries found nothing new) or <code>capped</code>, and lists its open queries.</li>
+    <li><b>File-level candidates.</b> Each surface lists ranked candidate files and symbols with the query that found them. They become <i>proposed</i> write scopes and read seeds in the packet.</li>
+  </ul>
+  <div class="tablewrap"><table>
+    <thead><tr><th>Studio edit</th><th>What re-runs</th><th>You get back</th></tr></thead>
+    <tbody>
+      <tr><td>Add a surface, file, symbol or ticket</td><td>A retrieval round seeded by it: neighbours, similar code, tests, tickets that mention it</td><td>Cited related candidates to accept one by one</td></tr>
+      <tr><td>Remove</td><td>A dependency check on what cites it and what loses coverage</td><td>Knock-on removals and coverage gaps</td></tr>
+      <tr><td>"Too much"</td><td>The prune pass at a stricter bar</td><td>A shorter list, each drop with its reason</td></tr>
+      <tr><td>"Something's missing around X"</td><td>Your text becomes expansion queries; one round runs</td><td>New cited candidates</td></tr>
+      <tr><td>Narrow or widen a write scope</td><td><code>packet validate</code> plus a neighbours query on the new paths</td><td>Validation and newly reachable tests or callers</td></tr>
+      <tr><td>"Add X but remove Y"</td><td>One {{change set}}, re-run as a whole: X's retrieval skips Y, and Y's dependency check counts X as present</td><td>One combined preview; accept all or part</td></tr>
+      <tr><td>"Remove A — actually A was right"</td><td>Restore A from its tombstone; knock-on items it took are offered back one by one</td><td>A, pinned as yours, plus the coverage it closes</td></tr>
+      <tr><td>Undo a change set, or go back to a revision</td><td>Reverts those edits and re-runs the checks; history keeps everything</td><td>The packet as it was</td></tr>
+    </tbody></table></div>
+  <p style="font-size:14.5px">Everything carries its provenance (retrieval, model or human). A removed item leaves a {{tombstone}}, so the loop doesn't re-propose it without new evidence. Human adds are never pruned. <code>freeze</code> refuses unconfirmed proposals. Labels come from the <b>net</b> difference at freeze, so removing and then restoring something teaches nothing wrong: what you finally added is a recall miss and what you finally removed a precision miss.</p>
   <h3>Direction checks: "is this the right path at all?" <span class="ref">§6.1</span></h3>
   <div class="tablewrap"><table>
     <thead><tr><th>Checkpoint</th><th>Fired by</th><th>Question</th></tr></thead>
@@ -660,7 +683,7 @@ status: active  # proposed | active | retired</code></pre>
 <section class="ch" id="c-surfaces" data-title="Human surfaces">
   <p class="kicker">Chapter 18 · Where the human decides</p>
   <h2>The right surface for each decision</h2>
-  <p class="lede">The host CLI stays the authority. A loopback dashboard shows every agent on the machine; over a tailnet, a phone handles binary, low-context decisions, signed with a passkey. Open questions, freezes and protected approvals stay at the desk. <span class="ref">§10, Plan 6, §17.12, §17.19</span></p>
+  <p class="lede">One command layer is the authority; the CLI and the dashboard are two clients of it, so every action gets a UI form (§17.27). A loopback dashboard shows every agent on the machine; over a tailnet, a phone handles binary, low-context decisions, signed with a passkey. Open questions, freezes and protected approvals stay at the desk. <span class="ref">§10, Plan 6, §17.12, §17.19</span></p>
   <figure class="dia">
     <svg viewBox="0 0 600 300" role="group" aria-label="Surfaces arranged by context needed and where they are used. Each is a button.">
       <path class="ln" d="M40,270 H580" marker-end="url(#ah)"/><path class="ln" d="M40,270 V20" marker-end="url(#ah)"/>
@@ -670,6 +693,18 @@ status: active  # proposed | active | retired</code></pre>
     </svg>
     <div class="detail" id="surfDetail" aria-live="polite"><p class="hint">Select a surface.</p></div>
   </figure>
+  <h3>Every step from the UI <span class="ref">§17.27</span></h3>
+  <p>Every action, from <b>Scope</b> on a tracker item to editing, freezing and promoting, is a command with one handler. The CLI and the dashboard call the same handler, with the same checks, errors and ledger record; the UI has no logic of its own. Long jobs stream the same progress to both and can be cancelled from either.</p>
+  <div class="tablewrap"><table>
+    <thead><tr><th>Action class</th><th>Host dashboard</th><th>Tailnet desk view</th><th>Phone</th></tr></thead>
+    <tbody>
+      <tr><td>Read and watch</td><td>yes</td><td>yes</td><td>yes</td></tr>
+      <tr><td>Read-only jobs (scope, backtest, harvest, index build)</td><td>yes</td><td>passkey</td><td>from a card only</td></tr>
+      <tr><td>Non-protected decisions</td><td>yes</td><td>passkey</td><td>passkey</td></tr>
+      <tr><td>Desk actions (answer, edit, freeze, amend, start)</td><td>passkey</td><td>passkey</td><td>no</td></tr>
+      <tr><td>Protected (allowlists, tier raises, adoption, promotion)</td><td>passkey + typed confirmation of the full diff's hash</td><td>no</td><td>no</td></tr>
+    </tbody></table></div>
+  <p style="font-size:14.5px">A {{command registry}} declares each command's CLI form and UI action, or <code>ui: pending</code> with the step it is due. A test fails when a pending action passes its step, so "later" can't become "never".</p>
   <h3>Phone decision states <span class="ref">§17.19 C8</span></h3>
   <p>Each decision signs <code>(item id, item version, nonce, choice)</code>. A changed item or a reused nonce is refused. Every swipe also has visible buttons, and every choice can be undone for 10 seconds.</p>
   <div class="ctrls" role="list" aria-label="Decision states">
@@ -775,8 +810,96 @@ status: active  # proposed | active | retired</code></pre>
 </section>
 
 <!-- 21 -->
+<section class="ch" id="c-field" data-title="Lessons from other factories">
+  <p class="kicker">Chapter 22 · What the field already knew</p>
+  <h2>Twenty-five practices from other software factories</h2>
+  <p class="lede">A read of other factories (addyosmani/factory, SuperPlane, loki-mode, chainloop, robi42/factory, planwright, dev-sdd-kit and the Actual AI workshop) found practices Sindri didn't have or had only in part: sixteen on a first pass and nine more on a second. Ideas only; no code is copied. Each source also seeds the scout. <span class="ref">§17.23</span></p>
+  <h3>Three new invariants <span class="ref">§17.1, §17.23</span></h3>
+  <div class="grid g3">
+    <div class="panel"><p class="kicker">Invariant 17</p><h3 style="margin-top:0">Sessions don't edit the tests that judge them</h3><p style="font-size:14.5px">Existing tests are read-only unless the frozen packet names the change, and a test change always gets a human read.</p></div>
+    <div class="panel"><p class="kicker">Invariant 18</p><h3 style="margin-top:0">Production stops when review is full</h3><p style="font-size:14.5px">No new Step whose result needs a human decision starts while the {{back-pressure|pending-decision queue}} is at its limit.</p></div>
+    <div class="panel"><p class="kicker">Invariant 19</p><h3 style="margin-top:0">Every verdict says what it didn't prove</h3><p style="font-size:14.5px">An item's outcome lists every planned check that didn't run or couldn't decide. Silence is never a pass.</p></div>
+  </div>
+  <h3>First pass: sixteen additions <span class="ref">§17.23</span></h3>
+  <div class="tablewrap"><table>
+    <thead><tr><th>Addition</th><th>What it fixes</th><th>Source</th><th>Where</th></tr></thead>
+    <tbody>
+      <tr><td>Review back-pressure</td><td>Human-minutes is a weekly, lagging brake. A per-ring cap on pending decisions (default 3) holds new work at once.</td><td>addyosmani</td><td>§17.23.1</td></tr>
+      <tr><td>Every new test proves itself</td><td>Fail-on-base covered bug reproduce checks only. Now every task's new tests must fail with the non-test hunks reversed; a new <code>mutation</code> evidence kind joins.</td><td>addyosmani</td><td>§17.23.2</td></tr>
+      <tr><td>Read-only existing tests</td><td>§17.5's write scope let a session edit its tests, and so weaken assertions to go green.</td><td>addyosmani, dev-sdd-kit</td><td>§17.23.3</td></tr>
+      <tr><td>{{consequence tier|Consequence tiers}}</td><td>Auto-start looked at size only. Autonomy now follows who gets hurt.</td><td>addyosmani</td><td>§17.23.4</td></tr>
+      <tr><td>Diff guardrails</td><td>No new suppressions, skipped tests, swallowed errors, build output, or code without a test.</td><td>robi42/factory</td><td>§17.23.5</td></tr>
+      <tr><td>Closed outcomes and {{not proven|Not proven}}</td><td>Five outcomes, including <code>already-satisfied</code> and <code>unverified</code>, plus a script-written list of what wasn't checked.</td><td>loki-mode</td><td>§17.23.6</td></tr>
+      <tr><td>{{merge card|Merge-confidence card}}</td><td>Phone decisions had no consistent risk summary, and reversibility wasn't measured anywhere.</td><td>SuperPlane</td><td>§17.23.7</td></tr>
+      <tr><td>{{gate record|Gate removal criteria}}</td><td>Human gates had no measurable exit, so evolve couldn't propose loosening one with evidence.</td><td>Actual AI workshop</td><td>§17.23.8</td></tr>
+      <tr><td>Escaped-defect tracing and triage accuracy</td><td>Evolve learned from steering, not from defects that got through or from misrouted items.</td><td>addyosmani</td><td>§17.23.9</td></tr>
+      <tr><td>Comprehension drift</td><td>Code the factory keeps changing while its docs stand still.</td><td>addyosmani</td><td>§17.23.10</td></tr>
+      <tr><td>{{PR lease}}</td><td>The babysitter, a fix round and the human could all push to one PR.</td><td>SuperPlane</td><td>§17.23.11</td></tr>
+      <tr><td>Signed {{receipt|run receipts}}</td><td><code>epicMerge: auto</code> and audits had nothing checkable to rest on.</td><td>loki-mode, chainloop</td><td>§17.23.12</td></tr>
+      <tr><td>No-progress detection</td><td>Loops spent every round even when they repeated the same findings.</td><td>planwright</td><td>§17.23.13</td></tr>
+      <tr><td>Implementer reviews the plan</td><td>Plans weren't checked by the lens that has to execute them, and vague acceptance examples passed validation.</td><td>robi42/factory, workshop</td><td>§17.23.14</td></tr>
+      <tr><td>Feedback-loop classes</td><td>Aggregate, reactive and external loops, so customer reports become items with an SLA.</td><td>Actual AI workshop</td><td>§17.23.15</td></tr>
+      <tr><td>Factory and human cohorts</td><td>Turn counts don't show delivery. A Velocity view compares cycle time, rework and cost side by side.</td><td>SuperPlane</td><td>§17.23.16</td></tr>
+    </tbody>
+  </table></div>
+  <h3>Consequence tiers <span class="ref">§17.23.4</span></h3>
+  <div class="tablewrap"><table>
+    <thead><tr><th>Tier</th><th>Auto-start</th><th>epicMerge auto</th><th>Evidence depth</th><th>Human read</th></tr></thead>
+    <tbody>
+      <tr><td><code>sandbox</code></td><td>≤ S</td><td>allowed</td><td>fast</td><td>samples</td></tr>
+      <tr><td><code>personal</code></td><td>≤ XS</td><td>allowed</td><td>full</td><td>samples, plus every protected path</td></tr>
+      <tr><td><code>shared</code></td><td>off by default</td><td>off</td><td>full</td><td>every PR</td></tr>
+      <tr><td><code>production</code></td><td>off</td><td>off</td><td>deep, including mutation</td><td>every diff</td></tr>
+    </tbody>
+  </table></div>
+  <h3>Closed outcomes <span class="ref">§17.23.6</span></h3>
+  <div class="tablewrap"><table>
+    <thead><tr><th>Outcome</th><th>Means</th><th>What happens</th></tr></thead>
+    <tbody>
+      <tr><td><code>verified</code></td><td>Every required evidence item passed</td><td>The PR proceeds under the ship contract</td></tr>
+      <tr><td><code>already-satisfied</code></td><td>The check passes on the base</td><td>Closed with evidence; no PR</td></tr>
+      <tr><td><code>blocked</code></td><td>It needs an answer</td><td>Parks as needs-answer</td></tr>
+      <tr><td><code>unverified</code></td><td>Built, but a required check couldn't run or decide</td><td>The PR stays draft; the gap is named</td></tr>
+      <tr><td><code>failed</code></td><td>Red after the round cap, or no progress</td><td>Parks with the findings</td></tr>
+    </tbody>
+  </table></div>
+  <h3>Merge-confidence card <span class="ref">§17.23.7</span></h3>
+  <p>Five dimensions, scored 1 to 5: <b>blast radius</b> and <b>drift from the packet</b> (lower is better), <b>reversibility</b>, <b>security</b> and <b>performance</b> (higher is better). Names and thresholds live in Sindri code; a model supplies only a score and a one-line summary. A critical dimension moves the decision from the phone to the desk.</p>
+  <div class="quote">Never loosened, whatever the evidence: the human merges to the default branch; existing tests are read-only to sessions; the producer never verifies its own work; protected modules need approval; models never grant capabilities. <span class="ref">§17.23.8</span></div>
+  <h3>Second pass: nine more <span class="ref">§17.24</span></h3>
+  <div class="tablewrap"><table>
+    <thead><tr><th>Addition</th><th>What it fixes</th><th>Source</th><th>Where</th></tr></thead>
+    <tbody>
+      <tr><td>{{failure owner|Failure ownership}}</td><td>A flaky runner or provider outage counted as a bad outcome for the code. Now only <code>code</code>-owned failures feed rework, escalation, kill criteria and evolve labels.</td><td>loki-mode</td><td>§17.24.1</td></tr>
+      <tr><td>Name the {{oracle}} first</td><td>Migrations could pass every test and still behave differently. Behaviour is pinned before anything moves.</td><td>addyosmani</td><td>§17.24.2</td></tr>
+      <tr><td>{{critic lens|Critic lens}}</td><td>No reviewer argued against the change: hidden assumptions, one-caller abstractions, behaviour changes behind a green suite.</td><td>addyosmani</td><td>§17.24.3</td></tr>
+      <tr><td>Executable assertions on context</td><td>Facts went stale between index rebuilds. A cheap check now runs before each section is injected.</td><td>dev-sdd-kit</td><td>§17.24.4</td></tr>
+      <tr><td>Executor escalation on evidence</td><td>Build Steps had a fixed model. They now move up a tier only after a code-owned failure, remembered per repo shape.</td><td>loki-mode</td><td>§17.24.5</td></tr>
+      <tr><td><code>spec-conflict</code> outcome</td><td>A task that contradicts its packet now goes to the desk as a packet miss, not a failure.</td><td>loki-mode</td><td>§17.24.6</td></tr>
+      <tr><td>DORA keys and postmortems</td><td>No delivery-stability metrics existed. Velocity now shows the four keys; the incident resolver drafts a blameless postmortem.</td><td>dev-sdd-kit</td><td>§17.24.7</td></tr>
+      <tr><td>{{seal|Sealed derived artifacts}}</td><td>Generated reports could drift or be hand-edited. A seal check fails when sources change, and generators say "no data" instead of guessing.</td><td>dev-sdd-kit</td><td>§17.24.8</td></tr>
+      <tr><td>One live variant per artifact</td><td>Overlapping evolve variants made outcome changes hard to attribute.</td><td>Actual AI workshop</td><td>§17.24.9</td></tr>
+    </tbody>
+  </table></div>
+  <h3>Field harvest: Sindri does this reading itself <span class="ref">§17.25</span></h3>
+  <p>These two passes were done by hand. From F6 they are Sindri's job: a weekly harvest reads the factories in a {{field registry}}, writes practice cards with file-and-line citations and a licence, and checks each against Sindri's own spec. Two models must agree a practice is missing before you see it. <b>build</b> drafts the spec section, updates this guide, and runs the mechanism through the factory like any other work.</p>
+  <div class="tablewrap"><table>
+    <thead><tr><th>Step</th><th>What happens</th><th>Guardrail</th></tr></thead>
+    <tbody>
+      <tr><td>Registry</td><td>Named repos (every source above), topic queries such as <code>topic:software-factory</code>, vendor changelogs</td><td>You add and remove entries; ring-1 sources stay in a private registry</td></tr>
+      <tr><td>Harvest</td><td>Shallow clone into scratch, read only what changed since the last SHA</td><td>Never runs, builds or installs fetched code; text is untrusted data</td></tr>
+      <tr><td>Practice card</td><td>Mechanism, citations, licence, fit, cost, eval plan</td><td>No source code stored; non-permissive licences mean ideas only</td></tr>
+      <tr><td>Gap check</td><td><code>have</code>, <code>partial</code> or <code>missing</code>, each citing the Sindri section it checked</td><td>A second, blind model must agree before a card is shown</td></tr>
+      <tr><td>Your call</td><td><b>build</b>, <b>later</b> or <b>no</b> in the swipe inbox</td><td>Harvest proposes; it never adopts</td></tr>
+      <tr><td>Build</td><td>Spec section, guide update, then the mechanism, as separate PRs</td><td>Normal evals, gates and merge rules; protected surfaces stay approval tier</td></tr>
+    </tbody>
+  </table></div>
+  <div class="feats" data-ch="field"></div>
+</section>
+
+<!-- 22b -->
 <section class="ch" id="c-dreams" data-title="Dreams: the open-ended vision">
-  <p class="kicker">Chapter 22 · Everything being dreamed of</p>
+  <p class="kicker">Chapter 23 · Everything being dreamed of</p>
   <h2>A factory that finds its own next tools</h2>
   <p class="lede">Nothing in §17 is final (invariant 16). The scout reads internal gaps, upstream changes, the software-factory field, the wider ecosystem and the human's notes, and writes idea cards. The human answers <b>build</b>, <b>later</b> or <b>no</b>. Below: the seed backlog, open decisions and deferred items, each with its source. <span class="ref">§17.18, §17.17, §4</span></p>
   <h3>Try the swipe inbox (a local demo)</h3>
@@ -787,7 +910,7 @@ status: active  # proposed | active | retired</code></pre>
 
 <!-- 22 -->
 <section class="ch" id="c-glossary" data-title="Glossary">
-  <p class="kicker">Chapter 23 · Words that mean one thing</p>
+  <p class="kicker">Chapter 24 · Words that mean one thing</p>
   <h2>Glossary</h2>
   <p class="lede">The terms these pages use, as the specs define them. A fixed glossary for "lens", "factory", "profile", "ring" and "packet" is itself part of the design (§17.19 C16).</p>
   <dl class="gloss" id="glossList"></dl>
@@ -852,6 +975,23 @@ status: active  # proposed | active | retired</code></pre>
     "slice": ["Feature slice", "One folder per use case holding its request and response records, service, validator and endpoint or CLI mapping. Slices never reference each other.", "readiness §4b.1"],
     "typed id": ["Strongly typed id", "A value type such as ItemId or SizeClass in place of a raw string or Guid; raw ids in public signatures are an analyzer error.", "readiness §4b.3"],
     "golden harness": ["Golden files", "CLI output and JSON contracts recorded from the C# build and compared after declared normalization (ids, times). No TS parity: the cutover is clean.", "readiness §4c"],
+    "back-pressure": ["Review back-pressure", "A per-ring cap on decisions waiting for the human (default 3). At the limit, no new Step whose result needs a decision starts.", "§17.23.1"],
+    "consequence tier": ["Consequence tier", "sandbox, personal, shared or production, per repo and raised by paths. Sets auto-start, epic merge, evidence depth and how much the human reads.", "§17.23.4"],
+    "not proven": ["Not proven", "A PR-body section written by script: every planned check without a passing artifact, every undecidable test proof, every allowed exception.", "§17.23.6"],
+    "merge card": ["Merge-confidence card", "Five scores (blast radius, reversibility, drift, security, performance) with thresholds in Sindri code; a critical one moves the decision to the desk.", "§17.23.7"],
+    "gate record": ["Gate record", "Why a human gate exists, the worst case if skipped, measurable removal criteria and the evidence so far.", "§17.23.8"],
+    "PR lease": ["PR lease", "An exclusive, head-SHA-bound lock held by whatever is changing a PR; waiting for CI holds none.", "§17.23.11"],
+    "receipt": ["Run receipt", "An Ed25519-signed record of an item's hashes, verdicts, outcome and event chain, checked with sindri verify.", "§17.23.12"],
+    "field harvest": ["Field harvest", "Sindri's weekly read of other software factories: cited practice cards, a two-model gap check against its own spec, and approved practices built through the factory.", "§17.25"],
+    "field registry": ["Field registry", "The list of factory repos, topic queries and changelogs that field harvest reads. A registered artifact the human edits.", "§17.25"],
+    "failure owner": ["Failure owner", "Who a failure belongs to: code, harness, environment, provider or unknown. Only code-owned failures count toward outcomes and labels.", "§17.24.1"],
+    "oracle": ["Oracle", "What proves a migration didn't change behaviour, usually characterization or golden tests pinned before the move.", "§17.24.2"],
+    "critic lens": ["Critic lens", "A review-only lens that argues against a change: hidden assumptions, one-caller abstractions, untested behaviour changes, orphans.", "§17.24.3"],
+    "seal": ["Seal", "Generator id, version and source hashes on a generated artifact; a seal check fails when it is stale or hand-edited.", "§17.24.8"],
+    "expansion query": ["Expansion query", "A typed query (symbol, neighbours, similar, tracker, notes, route or flag) the scoping challenger writes and Sindri runs, so each round gathers new evidence.", "§17.26.2"],
+    "tombstone": ["Tombstone", "A removed map or packet item kept with its reason, so scoping doesn't re-propose it unless new evidence appears.", "§17.26.4"],
+    "change set": ["Change set", "The edits from one instruction (\"add X but remove Y\"), planned and re-run together and accepted in whole or part. Each one is a draft revision you can undo.", "§17.26.4"],
+    "command registry": ["Command registry", "Every Sindri command with its CLI form and UI action, or ui: pending and a due step that a test enforces.", "§17.27.4"],
     "holdout": ["Holdout", "Acceptance examples (or eval corpus) the implementer never sees. Mounted only into evaluator Steps; a canary example detects leaks.", "§17.4, §17.19"]
   };
 
@@ -879,6 +1019,9 @@ status: active  # proposed | active | retired</code></pre>
     ["tenets","designed","14 · No build without a frozen packet","A build Step starts only from a packet that validates and is frozen by hash.","§17.1"],
     ["tenets","designed","15 · Context is budgeted","Every session starts from an injection plan with a token budget per section.","§17.1"],
     ["tenets","designed","16 · Nothing here is final","Every catalog, schema, threshold and surface is a registered artifact Sindri may propose to change.","§17.1"],
+    ["tenets","designed","17 · Sessions don't edit the tests that judge them","Existing tests are read-only unless the frozen packet names the change; a test change always gets a human read.","§17.23.3"],
+    ["tenets","designed","18 · Production stops when review is full","No new Step whose result needs a human decision starts while the pending-decision queue is at its limit.","§17.23.1"],
+    ["tenets","designed","19 · Every verdict says what it didn't prove","Each outcome lists every planned check that didn't run or couldn't decide.","§17.23.6"],
 
     ["pipeline","built","Scope","<code>sindri scope</code> turns a brief or tracker project into a cited scope map.","§7.5, Plan 4"],
     ["pipeline","designed","Design studio","Desk sessions with the existing planning skills plus a decision log, <code>/rule</code> capture and a local visual walkthrough.","§17.4"],
@@ -916,11 +1059,17 @@ status: active  # proposed | active | retired</code></pre>
     ["scoping","built","Backtests with a baseline","Recall, precision and a brief-only baseline against a pass bar, judged twice in reversed order.","§7.5, Plan 4"],
     ["scoping","built","Repo onboarding","<code>sindri repo onboard</code>: add, approve at a terminal, install the hook, build the index.","Plan 4"],
     ["scoping","built","Record-only shape signals","The pre-commit hook records signals; reconcile labels their outcomes. Nothing blocks a commit yet.","§6.2, Plan 3"],
+    ["scoping","designed","Tracker intake","An intake filter (assignee: me) starts scoping for items triage routes there; the map waits in the desk queue, behind review back-pressure.","§17.26.1"],
+    ["scoping","designed","Retrieving challenger","Typed expansion queries run by Sindri every round, a prune pass, convergence, and every query recorded in the map.","§17.26.2"],
+    ["scoping","designed","Candidate files per surface","Ranked files and symbols with the query that found each, carried into the packet as proposed scope.","§17.26.3"],
     ["scoping","designed","Direction checks","Approach, scoping, drift, shape and scope-expansion checkpoints, sindri-relayed, shadow first.","§6.1"],
     ["scoping","designed","Shape enforcement","Each index layer enforces once its precision reaches 0.7 over 30 signals on real commits.","§13 step 3b"],
 
     ["packets","designed","Packet schema and deterministic checks","Acyclic tasks, existing or declared write scopes, no overlapping concurrent scopes, answered or defaulted questions, a hidden holdout.","§17.4"],
     ["packets","designed","Freeze and amend","The hash is recorded; later changes are amendments that re-plan only the affected tasks.","§17.4"],
+    ["packets","designed","Edit with the same machinery","add, remove, prune, ask, narrow and widen re-run retrieval or pruning scoped to the edit; provenance, tombstones and pinned human adds.","§17.26.4"],
+    ["packets","designed","Change sets, restore and undo","Compound edits plan and re-run as one change set; tombstones restore; every change set is a draft revision you can undo.","§17.26.4"],
+    ["packets","designed","Edits are labels","Computed from the net difference at freeze: final adds are recall misses and final removals precision misses; reversed edits produce no label.","§17.26.5"],
     ["packets","designed","Micro-packets","Small tracker items get an auto-generated one-task packet without a desk step.","§17.19 C12"],
     ["packets","designed","Task compiler","Code, not a model, computes each Step's session spec.","§17.5"],
     ["packets","designed","Compiled sandbox policy","Denials return <code>SND-SCOPE-1xx</code> and become scope-expansion requests; three of a kind park the Step.","§17.5"],
@@ -946,6 +1095,9 @@ status: active  # proposed | active | retired</code></pre>
     ["evidence","designed","Ship contract","Three review rounds by default, a satisfied evidence plan, shared publish rules.","§17.11"],
     ["evidence","designed","Two-phase verification","Sindri re-runs the reproduce check in a fresh verifier container: fail on base, pass on head.","§6, §8.5"],
     ["evidence","designed","Narrative kind","Explainer videos from a Scene Plan JSON with a pinned renderer; JSON only, never agent-written renderer code.","§17.11"],
+    ["evidence","designed","Every new test proves itself","The verifier reverses the non-test hunks; each test backing an acceptance example must fail, then the tree is restored.","§17.23.2"],
+    ["evidence","designed","Closed outcomes and Not proven","verified, already-satisfied, blocked, unverified or failed, plus a script-written list of what wasn't checked.","§17.23.6"],
+    ["evidence","designed","Diff guardrails","No new suppressions, skipped tests, swallowed errors, build output, or code without a test.","§17.23.5"],
 
     ["epics","designed","Epic branch per packet","Task PRs open as a stack in dependency order.","§17.10"],
     ["epics","designed","Auto-merge into the epic only","<code>epicMerge: auto</code> once CI is green, threads resolved, evidence satisfied and rounds within the cap.","§17.10, §17.17 Q1"],
@@ -1004,6 +1156,9 @@ status: active  # proposed | active | retired</code></pre>
     ["surfaces","specced","The needs-you signal and badge","One attention colour, motion that respects reduced motion, a tab title count, and a menu-bar badge.","dashboard §5.1–5.2"],
     ["surfaces","designed","Notification taxonomy and budget","needs-answer, decide and needs-approval never overflow; an interrupt ceiling; per-surface budgets.","§10.1, §17.19 C15"],
     ["surfaces","designed","Swipe inbox with signed decisions","Passkey on an enrolled device; signs item, version, nonce and choice.","§17.12, §17.19"],
+    ["surfaces","designed","One command layer","The CLI and the dashboard are clients of the same handlers; every UI action writes a signed decision record.","§17.27.1"],
+    ["surfaces","designed","Scope button and studio actions","Scope with a dry-run first, live round progress, map edits, create, validate, freeze and amend a packet.","§17.27.3"],
+    ["surfaces","designed","UI parity test","A command registry with ui: pending and a due step; the test fails when a button is overdue.","§17.27.4"],
     ["surfaces","designed","Walkthrough pages","Designs, scope maps, PR walkthroughs and incident timelines, from a separate origin with no decision endpoints.","§17.12, §17.19"],
     ["surfaces","designed","Desk queue and live session","Open questions, amendments, freezes and approvals at the desk; watch or take over a running session.","§17.12"],
 
@@ -1028,7 +1183,30 @@ status: active  # proposed | active | retired</code></pre>
     ["roadmap","built","Plans 1–5 merged","Measure and fixes, core, code index, scoping harness, self-evolution.","git log, §13.3"],
     ["roadmap","specced","Plan 6 and evolve privacy","The dashboard plan and the B1/B2 privacy plans are written and approved.","Plan 6, B1/B2"],
     ["roadmap","designed","F0.5 thin slice","One micro-packet → one task → one PR, two lenses, two evidence kinds, end to end once before it grows.","§17.16"],
+    ["roadmap","designed","Field review across F0–F6","Tiers, gate records and outcomes in F0; test protection, test proof and guardrails from F0.5; back-pressure, PR lease and receipts in F2; the merge card in F3; tracing and the tune report in F6.","§17.23.18"],
+    ["roadmap","designed","Second field pass and harvest","Ownership, oracles and spec-conflict in F0; the critic and escalation in F3; DORA in F4; context assertions in F5; one variant per artifact and the harvest job in F6.","§17.24.10, §17.25"],
 
+    ["field","designed","Review back-pressure","review.maxPending per ring (default 3); new work waits as held: review-backpressure while running Steps and fix rounds finish.","§17.23.1"],
+    ["field","designed","Read-only existing tests","New tests by convention; existing ones only when the packet names them. SND-SANDBOX-110 on a denied edit.","§17.23.3"],
+    ["field","designed","Consequence tiers","sandbox, personal, shared, production per repo, raised by paths; ring 1 defaults to production.","§17.23.4"],
+    ["field","designed","Merge-confidence card","Blast radius, reversibility, drift, security, performance; red cards go to the desk.","§17.23.7"],
+    ["field","designed","Gate records","Why, worst case, removal criteria and evidence so far; loosening is approval tier, tightening is immediate.","§17.23.8"],
+    ["field","designed","Escaped defects and the tune report","Each escape is traced to the gate that missed it; a monthly report asks whether the work is worth the review it costs.","§17.23.9"],
+    ["field","designed","Comprehension drift","Files changed 5+ times in 30 days with no linked doc update become docs-maintainer items.","§17.23.10"],
+    ["field","designed","PR lease","One writer per PR, bound to a head SHA; pushes use force-with-lease; a human push is a takeover.","§17.23.11"],
+    ["field","designed","Signed run receipts","Ed25519-signed hashes of evidence, verdicts and the event chain; sindri verify; required for epicMerge auto.","§17.23.12"],
+    ["field","designed","No-progress detection","A loop parks early when a round repeats its findings, makes an empty diff, or fails the same way twice.","§17.23.13"],
+    ["field","designed","Implementer reviews the plan","A review-only implementer Step checks each task is executable; packet validate rejects unmeasurable acceptance examples.","§17.23.14"],
+    ["field","designed","Feedback-loop classes","Aggregate, reactive and external loops; external signals become items with a triage SLA, never prompt edits.","§17.23.15"],
+    ["field","designed","Velocity view","Factory, human and total cohorts: merged PRs, cycle time, rework, escapes and tracked cost, side by side.","§17.23.16"],
+    ["field","designed","Failure ownership","Every failure is code, harness, environment, provider or unknown; only code-owned ones count toward outcomes.","§17.24.1"],
+    ["field","designed","Migration oracles","Migration, port and large-refactor tasks name what proves behaviour didn't change, and pin it first.","§17.24.2"],
+    ["field","designed","Critic lens","A review-only lens that argues against the change; required at the production tier.","§17.24.3"],
+    ["field","designed","Context assertions","A failing assertion drops or marks a section stale before injection.","§17.24.4"],
+    ["field","designed","Executor escalation","Up a model tier only after a code-owned failure; repo-shape history sets the starting tier.","§17.24.5"],
+    ["field","designed","DORA keys and postmortems","Deploy frequency, lead time, change failure rate and time to restore; blameless postmortem drafts.","§17.24.7"],
+    ["field","designed","Sealed artifacts","sindri seal check fails on stale or hand-edited generated reports.","§17.24.8"],
+    ["field","designed","Field harvest","Weekly read of other factories into cited practice cards, a blind two-model gap check, and build through the factory.","§17.25"],
     ["dreams","dream","Explainer videos from code","Generated from the code, the packet and evidence via a Scene Plan JSON and a pinned renderer.","§17.18 seed, §17.11"],
     ["dreams","dream","Narration with a consented voice","Voice-cloned narration of the human's own voice only, with a consent record; approval-tier egress.","§17.18 seed"],
     ["dreams","dream","A native phone app","Built only if the PWA's decision latency or push reliability measurably stalls decisions.","§17.17 Q4, §17.18"],
@@ -1441,7 +1619,8 @@ status: active  # proposed | active | retired</code></pre>
       ["Infrastructure", "CI, containers, IaC, environments", "<code>cli-transcript</code>, deploy dry-run"],
       ["Integrations", "Third-party APIs, webhooks, connectors", "<code>api-transcript</code> against mocks"],
       ["Accessibility", "UI", "<code>a11y</code>"],
-      ["Documentation", "Public APIs, user-facing behavior", "<code>docs</code>"]
+      ["Documentation", "Public APIs, user-facing behavior", "<code>docs</code>"],
+      ["Critic (review-only)", "Production tier, protected paths", "findings in the review round"]
     ];
     buttons("lensBtns", LN.map(function (l) { return { t: l[0], s: "designed", b: "<b>Triggers:</b> " + l[1] + ".<br><b>Evidence:</b> " + l[2] + ".", r: "§17.7" }; }), "lensDetail");
   })();
@@ -1451,7 +1630,7 @@ status: active  # proposed | active | retired</code></pre>
     var K = [
       ["ui-browser", "Web UI flows, via ui-evidence and Playwright."], ["behavior-sim", "Interaction-heavy UI: seeded, human-paced sessions checked against invariants."], ["ios-sim", "iOS, via XcodeBuildMCP."],
       ["test", "Logic and APIs: unit, integration, contract."], ["api-transcript", "Endpoints, webhooks, integrations: recorded request and response against a mock or preview."], ["cli-transcript", "CLIs, scripts, installers, infrastructure."],
-      ["migration", "Database changes: dry-run, rollback, schema diff."], ["perf", "Hot paths and build budgets: benchmarks, bundle size, type-check time."], ["a11y", "UI: an axe scan."],
+      ["migration", "Database changes: dry-run, rollback, schema diff."], ["perf", "Hot paths and build budgets: benchmarks, bundle size, type-check time."], ["a11y", "UI: an axe scan."], ["mutation", "Changed lines: mutation testing; required at the production tier, nightly elsewhere."],
       ["design-parity", "UI with a design source: a pixel diff against a mockup or design file."], ["security", "Auth, input handling, dependencies: <code>/cso</code> diff mode and a dependency audit."], ["trace", "Jobs and async flows: a log or telemetry query on a preview."],
       ["docs", "Docs: render and link check."], ["recording", "Any UI, as proof: a screen or simulator video."], ["narrative", "Optional, non-gating: an explainer video from Scene Plan JSON rendered by a pinned renderer."]
     ];
