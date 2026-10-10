@@ -47,9 +47,15 @@ public sealed class ParameterCountTests
                 internal partial void M(int a, int b, int c, int d, int e, int f);
                 internal partial void M(int a, int b, int c, int d, int e, int f) { }
             }
+            internal partial struct S
+            {
+                internal partial S(int a, int b, int c, int d, int e, int f);
+                internal partial S(int a, int b, int c, int d, int e, int f) { }
+            }
             """);
 
-        Assert.Equal(["AW1006@4"], found);
+        // A partial constructor reaches the analyzer only as its implementing part (line 10).
+        Assert.Equal(["AW1006@10", "AW1006@4"], found);
     }
 
     private const string Constructors = """

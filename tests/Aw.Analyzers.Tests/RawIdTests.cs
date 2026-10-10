@@ -133,10 +133,17 @@ public sealed class RawIdTests
             {
                 public partial void M(string ownerId);
                 public partial void M(string ownerId) { }
+                public partial event System.Action<System.Guid> Changed;
+                public partial event System.Action<System.Guid> Changed { add { } remove { } }
+                public partial P(System.Guid g);
+                public partial P(System.Guid g) { }
             }
+            public static class Ext { extension(System.Guid run) { internal bool IsNew() => false; } }
             """);
 
-        Assert.Equal(["AW1001@4"], found);
+        // A partial constructor reaches the analyzer only as its implementing part (line 9). Line 11: the block
+        // exposes nothing public, so its receiver isn't public surface.
+        Assert.Equal(["AW1001@4", "AW1001@6", "AW1001@9"], found);
     }
 
     [Fact]
