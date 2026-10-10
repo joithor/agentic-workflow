@@ -16,8 +16,10 @@ fail() { FAIL=$((FAIL + 1)); echo "  FAIL $1"; }
 # fixture <name> — a fresh copy of the base fixture repo; prints its path
 fixture() { local d="$TMPROOT/$1"; cp -R "$BASE" "$d"; echo "$d"; }
 
-# run <dir> [args...] — sets OUT (stdout+stderr) and CODE
-run() { local d="$1"; shift; set +e; OUT="$(node "$CHECKER" --root "$d" "$@" 2>&1)"; CODE=$?; set -e; }
+# run <dir> [args...] — sets OUT (stdout+stderr) and CODE. The date is pinned (--today), so the
+# exception fixtures' dates never expire under the suite.
+TODAY="2026-10-10"
+run() { local d="$1"; shift; set +e; OUT="$(node "$CHECKER" --root "$d" --today "$TODAY" "$@" 2>&1)"; CODE=$?; set -e; }
 
 expect() { # expect <name> <code> <substring>...
   local name="$1" code="$2"; shift 2
@@ -323,6 +325,82 @@ expect "--mermaid on an invalid deps.yaml skips the graph" 1 "DEPS-SCHEMA-001" "
 # ---- fix lines ----
 d="$(fixture fixcmd)"; printf 'execFile("beta", []);\n' > "$d/alpha/src/call.ts"; run "$d"
 expect "fix prints the YAML to paste and the rerun command" 1 "      - from: Alpha" "rerun: node scripts/check-deps.mjs"
+
+# ---- review run 2 (PR #92) ----
+d="$(fixture today)"; perl -pi -e 's/^exceptions: \[\]\n/exceptions:\n  - rule: DEPS-FANOUT-001\n    subject: Beta\n    reason: test\n    recorded: 2026-10-10\n    expires: 2026-12-01\n/; s/packageFanOut: 4/packageFanOut: 1/' "$d/deps.yaml"; edge "$d" Beta Alpha project planned
+TODAY=2026-11-30 run "$d"; expect "--today pins the date: the day before expiry passes" 0 "deps: ok"
+TODAY=2026-12-02 run "$d"; expect "--today pins the date: the day after expiry fails" 1 "DEPS-EXC-001" "today 2026-12-02"
+TODAY=2026-13-01 run "$d"; expect "--today must be a calendar date" 2 "--today needs a YYYY-MM-DD date"
+
+d="$(fixture regex-backtick)"
+printf 'export const clean = (s: string) => s.replace(/[`*]/g, "");\nexecFile("beta", ["x"]);\nexport const t = `later ${1}`;\n' > "$d/alpha/src/re.ts"; run "$d"
+expect "a backtick inside a regex literal does not hide a later call" 1 "Alpha -> Beta (cli): alpha/src/re.ts:2"
+d="$(fixture regex-slashes)"
+printf 'const url = /https?:\\/\\//;\nconst x = a / b / c;\nexecFile("beta", ["x"]);\n' > "$d/alpha/src/re.ts"; run "$d"
+expect "a regex with \\/\\/ is not a line comment, and division still works" 1 "Alpha -> Beta (cli): alpha/src/re.ts:3"
+d="$(fixture regex-quote)"
+printf 'const q = /["'"'"']/;\nconst r = (x) => x.split(/,/);\nexecFile("beta", ["x"]);\n' > "$d/alpha/src/re.ts"; run "$d"
+expect "quotes inside a regex do not open strings" 1 "Alpha -> Beta (cli): alpha/src/re.ts:3"
+d="$(fixture lex-open-template)"; printf 'const t = `never closed\nexecFile("beta", []);\n' > "$d/alpha/src/bad.ts"; run "$d"
+expect "an unterminated template literal fails closed" 2 "alpha/src/bad.ts" "unterminated template"
+d="$(fixture lex-open-comment)"; printf '/* never closed\nexecFile("beta", []);\n' > "$d/alpha/src/bad.ts"; run "$d"
+expect "an unterminated block comment fails closed" 2 "alpha/src/bad.ts" "unterminated block comment"
+d="$(fixture lex-jsx)"; printf 'export const V = () => <Box><Text>a/b</Text></Box>;\nexecFile("beta", []);\n' > "$d/alpha/src/v.tsx"; run "$d"
+expect "JSX closing tags do not break the lexer" 1 "Alpha -> Beta (cli): alpha/src/v.tsx:2"
+
+d="$(fixture sh-default)"
+for shape in '"${BETA_BIN:-beta}" run' 'b=${BETA_BIN:-beta}; "$b" x' 'exec "${BETA_BIN:-beta}"' 'x="$(${TOOL:-beta} report)"'; do
+  printf '#!/usr/bin/env bash\n%s\n' "$shape" > "$d/hooks/other.sh"; run "$d"
+  expect "shell \${X:-bin} form is a cli edge: $shape" 1 "Hooks -> Beta (cli)"
+done
+d="$(fixture ts-env-index)"; printf 'const b = process.env["ALPHA_BIN"];\n' > "$d/delta/src/env.ts"; run "$d"
+expect "process.env[\"X_BIN\"] is a cli edge" 1 "Delta -> Alpha (cli): delta/src/env.ts:1"
+d="$(fixture sh-quoted-sep)"; printf '#!/usr/bin/env bash\necho "retry; beta x"\nprintf "a | beta"\nlog "x && beta y"\n' > "$d/hooks/other.sh"; run "$d"
+expect "separators inside quotes do not start a command" 0 "deps: ok"
+d="$(fixture sh-subst-in-quotes)"; printf '#!/usr/bin/env bash\nOUT="ok: $(beta report)"\n' > "$d/hooks/other.sh"; run "$d"
+expect "a \$( ) inside double quotes is still a command" 1 "Hooks -> Beta (cli)"
+
+d="$(fixture ns-dup)"; perl -pi -e 's/^    note: delta\n/    namespace: alpha\n    note: delta\n/' "$d/deps.yaml"; run "$d"
+expect "two packages with one namespace fails" 1 "DEPS-REF-005" "alpha (Alpha, Delta)"
+d="$(fixture ns-nested)"; perl -pi -e 's/^    note: delta\n/    files: [alpha\/extra]\n    note: delta\n/' "$d/deps.yaml"; run "$d"
+expect "a file inside another package's namespace fails" 1 "DEPS-REF-005" "alpha/extra"
+
+# ---- test code (*.Tests, *.Testing) follows its owner's rules ----
+d="$(fixture testing-support)"; perl -0pi -e 's/(  - id: Alpha\n)/  - id: KTest\n    kind: package\n    tier: 0\n    test: true\n    projectPrefix: Aw.KTest\n    ts: null\n    src: src\/KTest\n    note: test support\n$1/' "$d/deps.yaml"
+perl -0pi -e 's/kind: project\n    status: planned/kind: project\n    status: current/' "$d/deps.yaml"
+csproj "$d" src/KTest/Aw.KTest/Aw.KTest.csproj; csproj "$d" src/Aw.Kernel/Aw.Kernel.csproj
+csproj "$d" src/Beta/Aw.Beta.Core/Aw.Beta.Core.csproj ../../Aw.Kernel/Aw.Kernel.csproj
+csproj "$d" tests/Aw.Beta.Testing/Aw.Beta.Testing.csproj ../../src/KTest/Aw.KTest/Aw.KTest.csproj ../../src/Beta/Aw.Beta.Core/Aw.Beta.Core.csproj ../../src/Aw.Kernel/Aw.Kernel.csproj
+csproj "$d" tests/Aw.Beta.Tests/Aw.Beta.Tests.csproj ../Aw.Beta.Testing/Aw.Beta.Testing.csproj ../../src/KTest/Aw.KTest/Aw.KTest.csproj
+run "$d"
+expect "a package's *.Testing may reference test-support, its own package and its owner's edges; *.Tests may reference it" 0 "deps: ok" "checked 5 C# projects"
+csproj "$d" src/Beta/Aw.Beta.Host/Aw.Beta.Host.csproj ../../../tests/Aw.Beta.Testing/Aw.Beta.Testing.csproj; run "$d"
+expect "production code may not reference a *.Testing project" 1 "DEPS-PROJ-003" "Aw.Beta.Host -> Aw.Beta.Testing"
+d="$(fixture tests-tier)"; csproj "$d" src/Alpha/Aw.Alpha.Core/Aw.Alpha.Core.csproj; csproj "$d" src/Beta/Aw.Beta.Core/Aw.Beta.Core.csproj
+csproj "$d" tests/Aw.Alpha.Tests/Aw.Alpha.Tests.csproj ../../src/Beta/Aw.Beta.Core/Aw.Beta.Core.csproj; run "$d"
+expect "a tier-1 package's tests may not reference a tier-2 package" 1 "DEPS-PROJ-004" "Aw.Alpha.Tests -> Aw.Beta.Core (Alpha -> Beta)"
+csproj "$d" tests/Aw.Alpha.Tests/Aw.Alpha.Tests.csproj ../../src/Alpha/Aw.Alpha.Core/Aw.Alpha.Core.csproj
+csproj "$d" tests/Aw.Architecture.Tests/Aw.Architecture.Tests.csproj ../../src/Alpha/Aw.Alpha.Core/Aw.Alpha.Core.csproj ../../src/Beta/Aw.Beta.Core/Aw.Beta.Core.csproj; run "$d"
+expect "an unowned cross-cutting test assembly may reference every package" 0 "deps: ok"
+d="$(fixture tests-fanout)"; perl -pi -e 's/^  projectFanOut: 4\n/  projectFanOut: 1\n/' "$d/deps.yaml"
+csproj "$d" src/Aw.Kernel/Aw.Kernel.csproj; csproj "$d" src/Beta/Aw.Beta.Core/Aw.Beta.Core.csproj
+csproj "$d" tests/Aw.Beta.Testing/Aw.Beta.Testing.csproj ../../src/Beta/Aw.Beta.Core/Aw.Beta.Core.csproj ../../src/Aw.Kernel/Aw.Kernel.csproj; run "$d"
+expect "*.Testing projects are exempt from fan-out and don't make edges current" 0 "deps: ok"
+
+# ---- analyzers ----
+d="$(fixture analyzers)"; perl -0pi -e 's/(  - id: Alpha\n)/  - id: Analyzers\n    kind: package\n    tier: 0\n    analyzer: true\n    projectPrefix: Aw.Analyzers\n    ts: null\n    src: src\/Aw.Analyzers\n    note: build-time Roslyn rules\n$1/' "$d/deps.yaml"
+perl -pi -e 's/^  projectFanOut: 4\n/  projectFanOut: 1\n/' "$d/deps.yaml"
+perl -0pi -e 's/kind: project\n    status: planned/kind: project\n    status: current/' "$d/deps.yaml"
+csproj "$d" src/Aw.Analyzers/Aw.Analyzers.csproj; csproj "$d" src/Aw.Kernel/Aw.Kernel.csproj
+printf '<Project><ItemGroup><ProjectReference Include="../../Aw.Kernel/Aw.Kernel.csproj" /><ProjectReference Include="../../Aw.Analyzers/Aw.Analyzers.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" /></ItemGroup></Project>\n' > "$d/src/Beta/Aw.Beta.Core/Aw.Beta.Core.csproj" 2>/dev/null || { mkdir -p "$d/src/Beta/Aw.Beta.Core"; printf '<Project><ItemGroup><ProjectReference Include="../../Aw.Kernel/Aw.Kernel.csproj" /><ProjectReference Include="../../Aw.Analyzers/Aw.Analyzers.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" /></ItemGroup></Project>\n' > "$d/src/Beta/Aw.Beta.Core/Aw.Beta.Core.csproj"; }
+run "$d"
+expect "an analyzer ProjectReference needs no edge and is not fan-out" 0 "deps: ok"
+printf '<Project><ItemGroup><ProjectReference Include="$(MSBuildThisFileDirectory)Aw.Analyzers/Aw.Analyzers.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" /></ItemGroup></Project>\n' > "$d/src/Directory.Build.props"; run "$d"
+expect "an analyzer ProjectReference in Directory.Build.props is allowed" 0 "deps: ok"
+printf '<Project><ItemGroup><ProjectReference Include="../../Aw.Analyzers/Aw.Analyzers.csproj" /></ItemGroup></Project>\n' > "$d/src/Beta/Aw.Beta.Core/Aw.Beta.Core.csproj"; run "$d"
+expect "a runtime reference to the analyzer project fails" 1 "DEPS-PROJ-006" "Aw.Beta.Core -> Aw.Analyzers"
+printf '<Project><ItemGroup><ProjectReference Include="../../Aw.Kernel/Aw.Kernel.csproj" OutputItemType="Analyzer" /></ItemGroup></Project>\n' > "$d/src/Beta/Aw.Beta.Core/Aw.Beta.Core.csproj"; run "$d"
+expect "an analyzer-style reference to a non-analyzer package fails" 1 "DEPS-PROJ-006" "Aw.Beta.Core -> Aw.Kernel"
 
 # ---- parser, validator and schema drift (node unit table) ----
 set +e; UNIT="$(node "$HERE/check-deps.unit.mjs" 2>&1)"; UCODE=$?; set -e
