@@ -1,0 +1,11 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- Expected to FAIL to build with VOG009: scripts/check-default-probe.sh asserts it. -->
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <RootNamespace>Spike.R9</RootNamespace>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="../VogenHybrid/Ids.cs" />
+    <PackageReference Include="Vogen" />
+  </ItemGroup>
+</Project>

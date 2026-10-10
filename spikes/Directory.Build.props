@@ -1,14 +1,17 @@
 <Project>
   <!-- Spikes are throwaway measurement code for docs/readiness/aot-spike.md.
-       This file deliberately does NOT import any parent Directory.Build.props, so the
-       spikes never inherit (or affect) the repo's product build settings. -->
+       MSBuild uses the nearest Directory.Build.props/.targets/Directory.Packages.props, so the repo root's
+       files (PR #89) are not imported here; no explicit import is needed. nuget.config, however, merges up the
+       tree (the root's signature validation also applies to spike restores). -->
   <PropertyGroup>
     <TargetFramework>net10.0</TargetFramework>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <LangVersion>latest</LangVersion>
+    <!-- Measured with invariant globalization (no ICU); docs/readiness/aot-spike.md records the cost of turning it off. -->
     <InvariantGlobalization>true</InvariantGlobalization>
     <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
+    <RestorePackagesWithLockFile>true</RestorePackagesWithLockFile>
     <RuntimeIdentifier Condition="'$(RuntimeIdentifier)' == ''">osx-arm64</RuntimeIdentifier>
   </PropertyGroup>
 </Project>

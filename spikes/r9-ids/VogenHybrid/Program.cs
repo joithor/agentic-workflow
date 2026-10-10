@@ -13,7 +13,7 @@ var id = ItemId.From("item-1");
 Check(id.Value == "item-1", "From/Value");
 Check(ItemId.From("item-1") == id, "value equality");
 try { ItemId.From(""); failures.Add("empty id rejected"); } catch (ValueObjectValidationException) { }
-// `default(ItemId)` is rejected at compile time by Vogen's analyzer (VOG009).
+// `default(ItemId)` is rejected at compile time (VOG009): scripts/check-default-probe.sh.
 var size = TokenBudget.From(1200);
 try { TokenBudget.From(-1); failures.Add("negative budget rejected"); } catch (ValueObjectValidationException) { }
 
@@ -22,6 +22,33 @@ var json = JsonSerializer.Serialize(payload, SpikeJson.Default.Payload);
 Console.WriteLine($"hybrid: json {json}");
 Check(json == "{\"id\":\"item-1\",\"budget\":1200,\"name\":\"alpha\"}", "json shape");
 Check(JsonSerializer.Deserialize(json, SpikeJson.Default.Payload) == payload, "json round trip");
+
+// Boundary cases: each must be a JsonException (400), never a default id or a Vogen exception (500).
+foreach (var (label, bad) in new[]
+{
+    ("missing id", """{"budget":1,"name":"x"}"""),
+    ("null id", """{"id":null,"budget":1,"name":"x"}"""),
+    ("empty id", """{"id":"","budget":1,"name":"x"}"""),
+    ("numeric id", """{"id":7,"budget":1,"name":"x"}"""),
+    ("negative budget", """{"id":"a","budget":-1,"name":"x"}"""),
+    ("missing name", """{"id":"a","budget":1}"""),
+})
+{
+    string outcome;
+    try { var p = JsonSerializer.Deserialize(bad, SpikeJson.Default.Payload); outcome = $"accepted {p}"; }
+    catch (JsonException) { outcome = "JsonException"; }
+    catch (Exception e) { outcome = e.GetType().Name; }
+    Console.WriteLine($"hybrid: {label}: {outcome}");
+    Check(outcome == "JsonException", $"{label} -> JsonException");
+}
+
+// Without RespectRequiredConstructorParameters a missing id is silently default(ItemId): the converter never runs.
+{
+    var lax = JsonSerializer.Deserialize("""{"budget":1,"name":"x"}""", LaxJson.Default.Payload)!;
+    var initialized = lax.Id.IsInitialized();
+    Console.WriteLine($"hybrid: missing id under STJ defaults: accepted, Id.IsInitialized()={initialized}");
+    Check(!initialized, "STJ defaults let an uninitialized id through (the gap Respect* closes)");
+}
 
 var db = args.Length > 0 ? args[0] : "hybrid.db";
 using (var conn = new SqliteConnection($"Data Source={db}"))
@@ -50,39 +77,3 @@ foreach (var f in failures) Console.Error.WriteLine($"hybrid: FAIL {f}");
 Console.WriteLine(failures.Count == 0 ? "hybrid: OK" : $"hybrid: FAILED {failures.Count}");
 return failures.Count == 0 ? 0 : 1;
 
-namespace Spike.R9
-{
-    [ValueObject<string>(conversions: Conversions.None)]
-    [JsonConverter(typeof(ItemIdJsonConverter))]
-    public readonly partial struct ItemId
-    {
-        private static Validation Validate(string value) =>
-            string.IsNullOrWhiteSpace(value) ? Validation.Invalid("ItemId must not be empty") : Validation.Ok;
-    }
-
-    public sealed class ItemIdJsonConverter : JsonConverter<ItemId>
-    {
-        public override ItemId Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options) => ItemId.From(reader.GetString()!);
-        public override void Write(Utf8JsonWriter writer, ItemId value, JsonSerializerOptions options) => writer.WriteStringValue(value.Value);
-    }
-
-    [ValueObject<int>(conversions: Conversions.None)]
-    [JsonConverter(typeof(TokenBudgetJsonConverter))]
-    public readonly partial struct TokenBudget
-    {
-        private static Validation Validate(int value) =>
-            value < 0 ? Validation.Invalid("TokenBudget must be >= 0") : Validation.Ok;
-    }
-
-    public sealed class TokenBudgetJsonConverter : JsonConverter<TokenBudget>
-    {
-        public override TokenBudget Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options) => TokenBudget.From(reader.GetInt32());
-        public override void Write(Utf8JsonWriter writer, TokenBudget value, JsonSerializerOptions options) => writer.WriteNumberValue(value.Value);
-    }
-
-    public sealed record Payload(ItemId Id, TokenBudget Budget, string Name);
-
-    [JsonSourceGenerationOptions(PropertyNamingPolicy = JsonKnownNamingPolicy.CamelCase)]
-    [JsonSerializable(typeof(Payload))]
-    public sealed partial class SpikeJson : JsonSerializerContext;
-}
