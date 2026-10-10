@@ -206,6 +206,9 @@ test_claude_retire_removes_user_and_local_scopes() {
   AW_DRY_RUN=0
   jq -n '{projects: {"/no/such/dir": {mcpServers: {"agentic-bridge": {command: "node"}}}}}' >"$HOME/.claude.json"
   [ -z "$(PATH="$bin:$PATH" claude_retire_mcp)" ] && [ ! -s "$calls" ] || fail "an entry under a deleted project should be left alone"
+  mkdir -p "$SANDBOX/gitrepo/sub"; git -C "$SANDBOX/gitrepo" init -q
+  jq -n --arg p "$SANDBOX/gitrepo/sub" '{projects: {($p): {mcpServers: {"agentic-bridge": {command: "node"}}}}}' >"$HOME/.claude.json"
+  [ -z "$(PATH="$bin:$PATH" claude_retire_mcp)" ] && [ ! -s "$calls" ] || fail "an entry under a git subdirectory should be left alone"
   AW_MCP_SERVERS=""; AW_MCP_RETIRED=""
   teardown_env
   echo "PASS: test_claude_retire_removes_user_and_local_scopes"
@@ -219,6 +222,7 @@ test_remove_retired_dir_only_when_untracked() {
   mkdir -p "$repo/old-pkg/dist" "$repo/kept"
   git -C "$repo" init -q
   touch "$repo/old-pkg/dist/mcp.js" "$repo/kept/file"
+  printf 'dist/\n' >"$repo/.gitignore"
   git -C "$repo" add kept/file
   AW_DRY_RUN=1
   out="$(aw_remove_retired_dir "$repo" old-pkg)"
@@ -230,6 +234,13 @@ test_remove_retired_dir_only_when_untracked() {
   echo "$out" | grep -q "removed $repo/old-pkg (retired)" || fail "removal not reported: $out"
   out="$(aw_remove_retired_dir "$repo" kept)"
   [ -f "$repo/kept/file" ] || fail "a tracked directory must stay"
+  mkdir -p "$repo/wip/dist"; touch "$repo/wip/dist/x.js" "$repo/wip/new-feature.ts"
+  printf 'dist/\n' >"$repo/.gitignore"
+  aw_remove_retired_dir "$repo" wip >/dev/null
+  [ -f "$repo/wip/new-feature.ts" ] || fail "untracked work that git doesn't ignore must stay"
+  mkdir -p "$SANDBOX/plain/old-pkg"
+  aw_remove_retired_dir "$SANDBOX/plain" old-pkg >/dev/null
+  [ -d "$SANDBOX/plain/old-pkg" ] || fail "outside a git repo nothing may be removed"
   [ -z "$(aw_remove_retired_dir "$repo" old-pkg)" ] || fail "a missing directory should print nothing"
   teardown_env
   echo "PASS: test_remove_retired_dir_only_when_untracked"
