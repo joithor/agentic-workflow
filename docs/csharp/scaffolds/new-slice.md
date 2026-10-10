@@ -304,6 +304,6 @@ green, scaffolds a second slice with a new id, and asserts criterion 1 against t
   measured value and the fix.
 - `NS-EXISTS` when the slice folder exists; `NS-SURFACE` when `surface` doesn't match the package's host; `NS-DEPS` as
   above; `NS-EDIT` when an anchor is missing; `SCAFFOLD-INTERNAL` for a generator bug (also reverted).
-- SIGINT, SIGTERM or SIGHUP at any point of a run (including the heavy-lock wait) is caught: the generator forwards
-  it to the running command, fails that step with `SCAFFOLD-INTERRUPTED` whatever the command exited with, then
+- SIGINT, SIGTERM or SIGHUP at any point of a run (including the heavy-lock wait) is caught: the generator stops the
+  running command's whole process group (SIGINT, dotnet's cancel path, then SIGKILL after 10 s), fails that step with `SCAFFOLD-INTERRUPTED` whatever the command exited with, then
   reverts and releases the lock. The lock directory carries an `owner` file (pid, time, command).

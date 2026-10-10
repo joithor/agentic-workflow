@@ -278,7 +278,7 @@ t("SIGINT while waiting on the heavy lock reverts everything and exits 1 (SCAFFO
   assert.equal(hashTree(d), before, "the tree changed");
 });
 
-t("SIGTERM to the generator alone stops a running command at once and fails it (SCAFFOLD-INTERRUPTED)", () => {
+t("SIGTERM to the generator alone stops a running command and what it started, and fails it (SCAFFOLD-INTERRUPTED)", () => {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), "aw-scaffold-unit-sig-"));
   trees.push(dir);
   const script = path.join(dir, "probe.mjs");
@@ -286,10 +286,11 @@ t("SIGTERM to the generator alone stops a running command at once and fails it (
 trapSignals(() => {});
 const start = Date.now();
 try {
-  await run(".", "sleep", ["30"], { log: () => {} });
+  await run(".", "sh", ["-c", "sleep 31 & wait"], { log: () => {} });   // a grandchild, like dotnet's build nodes
   console.log("not interrupted");
 } catch (e) {
-  console.log(e.message, Date.now() - start < 10000 ? "fast" : "slow");
+  // A shell's background job ignores SIGINT, so this probe waits for the SIGKILL 10 s later; still well under 31 s.
+  console.log(e.message, Date.now() - start < 20000 ? "fast" : "slow");
 }
 `);
   const out = path.join(dir, "out.txt");
@@ -297,7 +298,9 @@ try {
   // timeout + killSignal: SIGTERM goes to node's pid only, not its process group, so the sleep never sees it directly.
   spawnSync("node", [script], { cwd: dir, stdio: ["ignore", fd, fd], timeout: 1000, killSignal: "SIGTERM" });
   fs.closeSync(fd);
-  assert.match(fs.readFileSync(out, "utf8"), /^SCAFFOLD-INTERRUPTED: .* fast$/m);
+  assert.match(fs.readFileSync(out, "utf8"), /^SCAFFOLD-INTERRUPTED: interrupted \(SIGTERM\) fast$/m);
+  const left = spawnSync("pgrep", ["-f", "sleep 31"], { encoding: "utf8" });
+  assert.equal(left.stdout.trim(), "", "the grandchild outlived the interrupt");
 });
 
 const common = await import(path.join(REPO, "scripts/scaffold/lib/common.mjs"));
