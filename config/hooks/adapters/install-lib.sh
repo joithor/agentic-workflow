@@ -64,8 +64,16 @@ aw_hooks_init() {
   esac
 }
 
-# Copy every canonical hook, the adapters, and lib/locks.sh (send-gate.sh
-# resolves it at <hooks-dir>/lib/locks.sh) into the provider-neutral dir.
+# aw_install_failopen_lib <hooks-dir> — copy config/lib/failopen.sh to
+# <hooks-dir>/lib/, where every fail-open hook looks for its HOOK-FAILOPEN logger.
+aw_install_failopen_lib() {
+  mkdir -p "$1/lib"
+  cp "$AW_TOOLKIT_ROOT/config/lib/failopen.sh" "$1/lib/failopen.sh"
+}
+
+# Copy every canonical hook, the adapters, lib/locks.sh (send-gate.sh
+# resolves it at <hooks-dir>/lib/locks.sh) and lib/failopen.sh into the
+# provider-neutral dir.
 aw_hooks_stage() {
   local f
   mkdir -p "$AW_HOOKS_INSTALL_DIR/adapters" "$AW_HOOKS_INSTALL_DIR/lib"
@@ -80,6 +88,7 @@ aw_hooks_stage() {
     chmod +x "$AW_HOOKS_INSTALL_DIR/adapters/$(basename "$f")"
   done
   cp "$AW_TOOLKIT_ROOT/config/lib/locks.sh" "$AW_HOOKS_INSTALL_DIR/lib/locks.sh"
+  aw_install_failopen_lib "$AW_HOOKS_INSTALL_DIR"
 }
 
 aw_hook_set_cmd() {
