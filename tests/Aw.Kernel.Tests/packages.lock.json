@@ -32,6 +32,12 @@
         "resolved": "5.0.0",
         "contentHash": "+J5kR/naCd62IwY2BG9P0QoHnJM8liBUFFAk6jga1t9s61JC3M+ofb3AY3wc73/pdROyKFCURqctQh8WRCIT/w=="
       },
+      "Vogen": {
+        "type": "Direct",
+        "requested": "[8.0.7, 8.0.7]",
+        "resolved": "8.0.7",
+        "contentHash": "0DrJ2ZPEGoJlzwqhum2LaZJ2FzJzgy5HP0km+XYL2MC/hS4Sn5/C35oRyob146Yjlf5xit2tmPx5xhI2BXkhLw=="
+      },
       "xunit.v3": {
         "type": "Direct",
         "requested": "[4.0.1, 4.0.1]",
