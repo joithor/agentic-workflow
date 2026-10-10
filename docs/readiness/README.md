@@ -25,13 +25,16 @@ artifacts/aot-readiness/bin/aw-readiness check [--json] [--root DIR] [--no-remot
   failure prints the criterion's fix. `unknown` has two causes, told apart by the finding's `unread` flag: the check
   can't be reproduced yet (TD-4, PE-3), or its data couldn't be read this run (`--no-remote`, gh missing, failing or
   not an admin). An **unread** criterion below the target's level can't confirm the target: the report says
-  "not confirmed (… weren't read)", lists them under `unconfirmed`, and exits 1, whatever the level.
+  "not confirmed (… weren't read)", lists them under `unconfirmed`, and exits 1, whatever the level. For scoring, an
+  unread criterion counts as not passing, so the level is a lower bound: a run that couldn't read the host never
+  scores higher than one that could.
 - **Levels:** every repo starts at Level 1; Level N+1 unlocks when at least 80% of the scored Level N criteria pass.
   A level with nothing scored neither unlocks nor blocks: the climb skips it, so the level is one above the highest
   scored level that passed with every scored level below it passing (the R0 baseline's rule; with L1 passing, L2
   empty and L3 failing the level is 2). The first scored level under 80% stops the climb. Reported per pillar and overall.
 - **Delta:** each run is diffed against the repo's previous run in the same scope; a criterion unread on either run
-  isn't compared (so an offline run doesn't show host criteria flipping). The first run records a baseline and says so.
+  isn't compared (so an offline run doesn't show host criteria flipping), and a level move with no compared change is
+  reported as such. The first run records a baseline and says so.
 - **History:** one JSON file per run, `{schemaVersion: 1, repo, scope, recordedAt, level, states[] {id, state, unread}}`,
   under `${AW_STATE_DIR:-~/.agentic-workflow}/readiness/runs/<repo>/<scope>/<UTC time>-NNN.json` (NNN keeps runs at
   the same instant apart, in save order). It writes nothing else (spec §4c), and nothing installs or schedules it (no
@@ -42,14 +45,17 @@ artifacts/aot-readiness/bin/aw-readiness check [--json] [--root DIR] [--no-remot
   entries, never in the current directory (a checkout can't plant its own); `AW_READINESS_GH` overrides it with an
   absolute path. A call that outlives its 30 s timeout is killed. Offline (`--no-remote`) or when gh can't answer,
   they are unread `unknown`s, never guessed. A plan that can't protect branches (HTTP 403 "Upgrade to GitHub Pro") is
-  a known fail for SEC-1; a repo admin seeing no `security_and_analysis` is a known fail for SEC-2.
-- **Files** are read only inside the root, never through a symlinked file, and at most 1 MiB each (a bigger or linked
-  file reads as missing).
+  a known fail for SEC-1, and so is a 404 "Branch not protected" with no protective ruleset rule (pull_request,
+required_status_checks, non_fast_forward, required_linear_history, deletion, update); a plain 404 (what a non-admin
+gets) is unread. A repo admin seeing no `security_and_analysis` is a known fail for SEC-2.
+- **Files** are read and listed only inside the root: a path with a symbolic link (file or directory) or `..` in any
+  segment reads as missing, and a file over 1 MiB reads as missing.
 - **Output:** text by default — every state is a word, so colour never carries meaning and `NO_COLOR` has nothing to
   strip. `--json` writes the report object, `schemaVersion: 1` (recorded in
   `tests/Aw.Readiness.Tests/Golden/report.json`): `repo`, `scope`, `recordedAt`, `target {ring, level}`, `level`,
-  `holds`, `recordedTo`, `delta {since, levelBefore, levelAfter, changes[], isFirstRun}`, `pillars[]`, `tallies[]`,
-  `findings[] {criterion {id, pillar, level, title, fix}, state, evidence}`. A field change bumps `schemaVersion`.
+  `holds`, `unconfirmed[]`, `recordedTo`, `delta {since, levelBefore, levelAfter, changes[], isFirstRun}`, `pillars[]`,
+  `tallies[]`, `findings[] {criterion {id, pillar, level, title, fix}, state, evidence, unread}`. A field change bumps
+  `schemaVersion`.
 
 ## Scope: the C# template
 

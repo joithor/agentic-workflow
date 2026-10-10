@@ -4,7 +4,8 @@ namespace Aw.Readiness.Core.Scoring;
 /// of the scored Level N criteria pass. A level with nothing scored neither unlocks nor blocks: the climb skips it, so
 /// the level is one above the highest scored level that passed with every scored level below it passing (the R0
 /// baseline's rule). The first scored level below 80% stops the climb, so with L1 passing, L2 empty and L3 failing the
-/// level is 2: Level 3 is never awarded on an empty Level 2.</summary>
+/// level is 2: Level 3 is never awarded on an empty Level 2. An unread criterion (its data couldn't be read this run)
+/// counts as scored and not passing, so the level is a lower bound and offline never scores higher.</summary>
 public static class ReadinessScoring
 {
     /// <summary>The highest level.</summary>
@@ -31,7 +32,7 @@ public static class ReadinessScoring
     private static List<LevelTally> Tally(IReadOnlyList<Finding> findings) =>
         [.. Enumerable.Range(1, MaxLevel).Select(level =>
         {
-            var scored = findings.Where(f => f.Criterion.Level == level && IsScored(f.State)).ToList();
+            var scored = findings.Where(f => f.Criterion.Level == level && IsScored(f)).ToList();
             return new LevelTally(level, scored.Count(f => f.State == CriterionState.Pass), scored.Count);
         })];
 
@@ -51,5 +52,7 @@ public static class ReadinessScoring
         return level;
     }
 
-    private static bool IsScored(CriterionState state) => state is CriterionState.Pass or CriterionState.Fail;
+    // An unread criterion counts as scored and not passing: the level is a lower bound, so a run that couldn't read
+    // the host never scores higher than one that could.
+    private static bool IsScored(Finding finding) => finding.State is CriterionState.Pass or CriterionState.Fail || finding.Unread;
 }

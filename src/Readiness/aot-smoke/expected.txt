@@ -5,15 +5,15 @@ first run: baseline recorded (<state>/readiness/runs/smoke/csharp-template/<run>
 
 pillar                       L1      L2      L3      L4      L5      level
 Style & Validation           3/3     0/1     -       -       -       2
-Build System                 -       1/4     -       -       -       1
+Build System                 -       1/4     -       0/1     -       1
 Testing                      1/1     -       1/2     0/2     -       2
 Documentation                1/1     1/1     -       0/1     -       3
 Development Environment      -       0/3     -       -       -       1
 Debugging & Observability    -       -       0/3     -       -       1
-Security                     -       -       0/2     -       -       1
+Security                     -       0/1     0/3     -       -       1
 Task Discovery               -       -       0/3     -       -       1
 Product & Experimentation    -       -       -       0/2     -       1
-overall                      5/5     2/9     1/10    0/5     -       2
+overall                      5/5     2/10    1/11    0/6     -       2
 
 pass  SV-1 (L1) Linter configured (Roslyn analyzers): NetAnalyzers is a GlobalPackageReference; .editorconfig sets analyzer severities
 pass  SV-2 (L1) Type checker strict (nullable, warnings as errors): Directory.Build.props: Nullable=enable, TreatWarningsAsErrors=true
@@ -78,15 +78,15 @@ since <time>: no change (level 2)
 
 pillar                       L1      L2      L3      L4      L5      level
 Style & Validation           3/3     0/1     -       -       -       2
-Build System                 -       1/4     -       -       -       1
+Build System                 -       1/4     -       0/1     -       1
 Testing                      1/1     -       1/2     0/2     -       2
 Documentation                1/1     1/1     -       0/1     -       3
 Development Environment      -       0/3     -       -       -       1
 Debugging & Observability    -       -       0/3     -       -       1
-Security                     -       -       0/2     -       -       1
+Security                     -       0/1     0/3     -       -       1
 Task Discovery               -       -       0/3     -       -       1
 Product & Experimentation    -       -       -       0/2     -       1
-overall                      5/5     2/9     1/10    0/5     -       2
+overall                      5/5     2/10    1/11    0/6     -       2
 
 pass  SV-1 (L1) Linter configured (Roslyn analyzers): NetAnalyzers is a GlobalPackageReference; .editorconfig sets analyzer severities
 pass  SV-2 (L1) Type checker strict (nullable, warnings as errors): Directory.Build.props: Nullable=enable, TreatWarningsAsErrors=true

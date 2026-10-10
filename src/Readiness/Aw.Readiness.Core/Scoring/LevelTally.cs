@@ -1,6 +1,7 @@
 namespace Aw.Readiness.Core.Scoring;
 
-/// <summary>How many of one level's scored criteria passed. Only pass and fail are scored.</summary>
+/// <summary>How many of one level's scored criteria passed. Pass and fail are scored, and so is an unread criterion
+/// (as not passing).</summary>
 /// <param name="Level">The level (1-5).</param>
 /// <param name="Passed">Scored criteria that passed.</param>
 /// <param name="Scored">Criteria scored (pass or fail) at this level.</param>

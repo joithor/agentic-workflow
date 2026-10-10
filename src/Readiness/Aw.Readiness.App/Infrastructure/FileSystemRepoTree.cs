@@ -9,7 +9,7 @@ internal sealed class FileSystemRepoTree(string root) : IRepoTree
 {
     private static readonly HashSet<string> _skipped = new(["bin", "obj", "node_modules"], StringComparer.Ordinal);
 
-    public bool Exists(string path) => File.Exists(Full(path)) || Directory.Exists(Full(path));
+    public bool Exists(string path) => Unlinked(path) && (File.Exists(Full(path)) || Directory.Exists(Full(path)));
 
     /// <summary>The largest file a criterion reads; a bigger one reads as missing.</summary>
     internal const long MaxReadBytes = 1024 * 1024;
@@ -19,7 +19,7 @@ internal sealed class FileSystemRepoTree(string root) : IRepoTree
         try
         {
             var file = new FileInfo(Full(path));
-            return file.Exists && file.LinkTarget is null && file.Length <= MaxReadBytes && Inside(file.FullName)
+            return Unlinked(path) && file.Exists && file.Length <= MaxReadBytes && Inside(file.FullName)
                 ? File.ReadAllText(file.FullName)
                 : null;
         }
@@ -33,7 +33,7 @@ internal sealed class FileSystemRepoTree(string root) : IRepoTree
     {
         var start = Full(directory);
         var found = new List<string>();
-        if (Directory.Exists(start))
+        if (Unlinked(directory) && Directory.Exists(start))
         {
             Walk(start, suffix, found);
         }
@@ -67,6 +67,27 @@ internal sealed class FileSystemRepoTree(string root) : IRepoTree
     }
 
     private string Full(string path) => path.Length == 0 ? root : Path.Combine(root, path);
+
+    // True when no segment of the path below the root is a symbolic link (or a '..'), so it can't lead outside.
+    private bool Unlinked(string path)
+    {
+        var current = root;
+        foreach (var segment in path.Split('/', StringSplitOptions.RemoveEmptyEntries))
+        {
+            if (string.Equals(segment, ".", StringComparison.Ordinal) || string.Equals(segment, "..", StringComparison.Ordinal))
+            {
+                return false;
+            }
+
+            current = Path.Combine(current, segment);
+            if (new FileInfo(current).LinkTarget is not null)
+            {
+                return false;
+            }
+        }
+
+        return true;
+    }
 
     private bool Inside(string full) =>
         full.StartsWith(root.TrimEnd(Path.DirectorySeparatorChar) + Path.DirectorySeparatorChar, StringComparison.Ordinal);

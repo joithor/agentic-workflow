@@ -11,6 +11,6 @@ internal static class SettingsFromEnvironment
                 ? Path.Combine(root, "readiness")
                 : Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), ".agentic-workflow", "readiness"),
             GhBinary: environment("AW_READINESS_GH") is { Length: > 0 } gh ? gh : "gh",
-            GhSearchPath: "",
+            GhSearchPath: environment("PATH") ?? "",
             GhTimeout: DefaultGhTimeout);
 }

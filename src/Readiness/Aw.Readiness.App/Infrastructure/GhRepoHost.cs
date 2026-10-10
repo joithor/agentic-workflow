@@ -10,6 +10,11 @@ internal sealed class GhRepoHost(ReadinessSettings settings) : IRepoHost
 {
     private readonly GhCli _gh = new(settings);
 
+    // Ruleset rule types that protect a branch (required reviews or checks, history, no force push or deletion).
+    private static readonly HashSet<string> _protectiveRules = new(
+        ["pull_request", "required_status_checks", "non_fast_forward", "required_linear_history", "deletion", "update"],
+        StringComparer.Ordinal);
+
     public async ValueTask<HostFacts> Read(string root, CancellationToken cancellationToken)
     {
         var view = await _gh.Run(root, ["repo", "view", "--json", "nameWithOwner,defaultBranchRef"], cancellationToken).ConfigureAwait(false);
@@ -44,17 +49,25 @@ internal sealed class GhRepoHost(ReadinessSettings settings) : IRepoHost
             return new HostFact(Holds: false, $"{branch} can't be protected: branch protection and rulesets aren't available for this repo on its plan (HTTP 403)");
         }
 
-        if (!protection.IsHttp(404))
+        // GitHub answers 404 'Branch not protected' to an admin; a plain 404 'Not Found' is what a non-admin gets for a
+        // protected branch too, so it says nothing.
+        if (!protection.IsHttp(404) || !protection.Reason.Contains("Branch not protected", StringComparison.Ordinal))
         {
             return new HostFact(Holds: null, $"gh couldn't read {branch}'s protection: {protection.Reason}");
         }
 
         var rules = await _gh.Run(root, ["api", $"{api}/rules/branches/{branch}"], ct).ConfigureAwait(false);
-        return !rules.Ok || !GhJson.TryRuleTypes(rules.Stdout, out var types)
-            ? new HostFact(Holds: null, $"gh couldn't read the ruleset rules for {branch}: {rules.Reason}")
-            : types.Count > 0
-                ? new HostFact(Holds: true, $"ruleset rules apply to {branch}: {string.Join(", ", types)}")
-                : new HostFact(Holds: false, $"{branch} is not protected: no branch protection (HTTP 404) and no ruleset rules");
+        if (!rules.Ok || !GhJson.TryRuleTypes(rules.Stdout, out var types))
+        {
+            return new HostFact(Holds: null, $"gh couldn't read the ruleset rules for {branch}: {rules.Reason}");
+        }
+
+        var protective = types.Where(_protectiveRules.Contains).ToList();
+        return protective.Count > 0
+            ? new HostFact(Holds: true, $"ruleset rules protect {branch}: {string.Join(", ", protective)}")
+            : new HostFact(Holds: false, types.Count == 0
+                ? $"{branch} is not protected: no branch protection (HTTP 404) and no ruleset rules"
+                : $"{branch} is not protected: no branch protection (HTTP 404); its ruleset rules ({string.Join(", ", types)}) protect nothing");
     }
 
     private async Task<HostFact> Scanning(string root, string api, CancellationToken ct)

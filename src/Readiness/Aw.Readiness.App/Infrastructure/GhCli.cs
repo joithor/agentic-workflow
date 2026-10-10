@@ -12,7 +12,7 @@ internal sealed class GhCli(ReadinessSettings settings)
 {
     internal async Task<GhReply> Run(string root, IReadOnlyList<string> args, CancellationToken cancellationToken)
     {
-        var binary = Resolve(settings.GhBinary, Environment.GetEnvironmentVariable("PATH"));
+        var binary = Resolve(settings.GhBinary, settings.GhSearchPath);
         if (binary is null)
         {
             return GhReply.Failed($"gh could not run ({settings.GhBinary} isn't an absolute path or a gh on an absolute PATH entry)");

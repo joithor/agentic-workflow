@@ -37,7 +37,9 @@ internal static class ReportText
         var since = delta.Since!.Value.UtcDateTime.ToString("yyyy-MM-dd'T'HH:mm:ss'Z'", CultureInfo.InvariantCulture);   // why: not a first run
         if (delta.Changes.Count == 0)
         {
-            return Inv($"since {since}: no change (level {delta.LevelAfter})\n");
+            return delta.LevelBefore == delta.LevelAfter
+                ? Inv($"since {since}: no change (level {delta.LevelAfter})\n")
+                : Inv($"since {since}: level {delta.LevelBefore?.ToString(CultureInfo.InvariantCulture)} -> {delta.LevelAfter}, no compared change (criteria unread on either run aren't compared)\n");
         }
 
         var noun = delta.Changes.Count == 1 ? "change" : "changes";

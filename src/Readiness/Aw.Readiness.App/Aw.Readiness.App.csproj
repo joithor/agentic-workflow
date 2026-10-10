@@ -8,7 +8,7 @@
     <!-- NativeAOT only when publishing for a runtime (dotnet publish -r <rid>, see src/Readiness/aot-smoke/run.sh).
          PublishAot on a plain restore pulls the host's ILCompiler pack into packages.lock.json under a host-RID
          section, so the committed lock file would differ between macOS and Linux and CI's locked restore would fail.
-         The trim and AOT analyzers still run in every build (IsAotCompatible, Directory.Build.targets). -->
+         The trim and AOT analyzers still run in every build (AwAotEntryPoint and IsAotCompatible, Directory.Build.targets). -->
     <AwAotEntryPoint>true</AwAotEntryPoint>
     <PublishAot Condition="'$(RuntimeIdentifier)' != ''">true</PublishAot>
     <AssemblyName>aw-readiness</AssemblyName>

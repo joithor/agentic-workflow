@@ -25,6 +25,15 @@
     <InvariantGlobalization>true</InvariantGlobalization>
   </PropertyGroup>
 
+  <!-- An entry point's PublishAot is off in a plain build (no RID), which would also switch off the trim, AOT and
+       single-file analyzers a Host relies on (a Host isn't a library, so IsAotCompatible doesn't cover it). They
+       add no package, so the lock file stays RID-free. -->
+  <PropertyGroup Condition="'$(AwAotEntryPoint)' == 'true'">
+    <EnableTrimAnalyzer>true</EnableTrimAnalyzer>
+    <EnableAotAnalyzer>true</EnableAotAnalyzer>
+    <EnableSingleFileAnalyzer>true</EnableSingleFileAnalyzer>
+  </PropertyGroup>
+
   <!-- Placement (AW0002): the test-project policy is tests/.editorconfig, so *.Tests and *.Testing projects
        (including Aw.Kernel.Testing) must live under tests/, and nothing else may: a library under tests/ would
        silently lose RS0016, CS1591 and CA2007. -->

@@ -22,7 +22,7 @@ put_back() {
     find "$locks" -delete
   else
     echo "aot-readiness-smoke: restoring lock files failed; the originals are in $locks" >&2
-    return 1
+    exit 1   # an EXIT trap's return status doesn't set the script's exit code; exit does
   fi
 }
 trap put_back EXIT

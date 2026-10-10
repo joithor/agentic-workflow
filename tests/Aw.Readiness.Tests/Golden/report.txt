@@ -1,19 +1,19 @@
 aw-readiness: agentic-workflow (csharp-template)
-Level 5 of 5; target 4 (ring 0): not confirmed (SEC-1, SEC-2, TD-2 weren't read)
-since 2026-10-09T12:00:00Z: level 4 -> 5, 1 change
+Level 3 of 5; target 4 (ring 0): not confirmed (SEC-1, SEC-2, TD-2 weren't read)
+since 2026-10-09T12:00:00Z: level 4 -> 3, 1 change
   SEC-3: pass -> fail
 
 pillar                       L1      L2      L3      L4      L5      level
 Style & Validation           3/3     1/1     -       -       -       3
-Build System                 -       4/4     -       -       -       3
+Build System                 -       4/4     -       0/1     -       3
 Testing                      1/1     -       2/2     2/2     -       5
 Documentation                1/1     1/1     -       1/1     -       5
 Development Environment      -       3/3     -       -       -       3
 Debugging & Observability    -       -       3/3     -       -       4
-Security                     -       -       1/2     -       -       1
-Task Discovery               -       -       2/2     -       -       4
+Security                     -       0/1     1/3     -       -       1
+Task Discovery               -       -       2/3     -       -       1
 Product & Experimentation    -       -       -       2/2     -       5
-overall                      5/5     9/9     8/9     5/5     -       5
+overall                      5/5     9/10    8/11    5/6     -       3
 
 pass  SV-1 (L1) Linter configured (Roslyn analyzers): NetAnalyzers is a GlobalPackageReference; .editorconfig sets analyzer severities
 pass  SV-2 (L1) Type checker strict (nullable, warnings as errors): Directory.Build.props: Nullable=enable, TreatWarningsAsErrors=true
