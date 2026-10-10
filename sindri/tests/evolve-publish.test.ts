@@ -581,6 +581,26 @@ describe("publish gate layers (privacy B1)", () => {
     fx.close();
   });
 
+  it("reports how many non-toolkit repos leave private: unset, by count only, and still publishes", async () => {
+    const fx = await evolveFixture({ files: FILES, extraYaml: DENY, extraRepos: [{ name: "initrode" }, { name: "zylo" }, { name: "vandelay", private: false }] });
+    await init([], fx.ctx);
+    git(fx.repo, "checkout", "-q", "-b", "docs/proposals");
+    fx.ctx.write((epoch) => saveProposal(fx.ctx.db, ProposalSchema.parse({
+      artifact: "skill:review", kind: "skill-edit", title: "A clean proposal", rationale: "r", evidence: ["pr:12"],
+      change: { type: "describe", files: ["skills/review/SKILL.md"], description: "d" },
+    }), "reflect:pr-12", "code", epoch, fx.deps.now()));
+    await stage([], fx.ctx);
+    const note = "Warning: 2 repo(s) other than the toolkit repo don't set private:, so publish treats them as public (sindri doctor lists them).";
+    const dry = await publish(["--dry-run"], fx.ctx);
+    expect(dry.stdout).toContain(note);
+    expect(dry.stdout).not.toMatch(/initrode|zylo/);
+    expect(JSON.parse((await publish(["--dry-run", "--json"], fx.ctx)).stdout)).toMatchObject({ privateUnset: 2 });
+    const r = await publish([], fx.ctx);
+    expect(r.exitCode).toBe(0);
+    expect(r.stdout).toContain(note);
+    fx.close();
+  });
+
   it("releases a held proposal once the profile no longer matches it, without a model call (Review Focus 5)", async () => {
     const { fx, save } = await ready({ extraYaml: PATTERNS });
     const id = save("Alpha change here", { rationale: "Seen on GLX-1234." });

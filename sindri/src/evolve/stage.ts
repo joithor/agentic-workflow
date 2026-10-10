@@ -9,7 +9,7 @@ import { audit, auditMarker } from "./audit.js";
 import { repoConfig, type EvolveCtx } from "./ctx.js";
 import { profileScrubber } from "../scope/commands.js";
 import { copiedRun, patternProblem, personalProblem, termProblem, toolkitCorpus, type HoldLayer } from "./privacy.js";
-import { identifierProblem, loadDerivedSet } from "./privacy-derived.js";
+import { identifierProblem, loadDerivedSet, unsetPrivateRepos } from "./privacy-derived.js";
 import { Budget } from "../scope/model.js";
 import { generalize, type Generalized } from "./generalize.js";
 import {
@@ -171,6 +171,7 @@ export interface PublishOutcome {
   dryRun: boolean;
   warning: string | null;
   termsSkipped: boolean; // true when --no-privacy-terms let an empty denyTerms through
+  privateUnset: number; // repos other than the tracker repo with no explicit private: (treated as public); count only
 }
 
 const HEADER = (monday: string): string =>
@@ -320,5 +321,5 @@ export async function publishProposals(ctx: EvolveCtx, o: { dryRun: boolean; noP
   for (const h of done.held) heldByLayer[h.layer] = (heldByLayer[h.layer] ?? 0) + 1;
   const listed = ctx.loaded.profile.tracker.include.some((pattern) => wildcard(pattern).test(name));
   const warning = listed ? null : `tracker.include in the profile doesn't match ${name}, so sindri observe won't list these tasks.`;
-  return { relFile, monday, first, published, held: done.held, heldByLayer, dryRun: o.dryRun, warning, termsSkipped: deny.length === 0 };
+  return { relFile, monday, first, published, held: done.held, heldByLayer, dryRun: o.dryRun, warning, termsSkipped: deny.length === 0, privateUnset: unsetPrivateRepos(ctx.loaded).length };
 }

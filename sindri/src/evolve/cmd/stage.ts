@@ -54,6 +54,8 @@ export async function publish(args: string[], ctx: EvolveCtx): Promise<CommandRe
   const warning = [
     ...(r.termsSkipped ? ["Warning: no privacy.denyTerms were set, so the private-terms layer was skipped; the patterns, identifiers, verbatim, personal and scrubber layers ran."] : []),
     ...(r.warning === null ? [] : [`Warning: ${r.warning}`]),
+    // The one fail-open default of the gate: an unset private: skips the identifiers layer for that repo. Names stay out.
+    ...(r.privateUnset > 0 ? [`Warning: ${r.privateUnset} repo(s) other than the toolkit repo don't set private:, so publish treats them as public (sindri doctor lists them).`] : []),
   ];
   const heldNote = r.held.length > 0 ? `; ${r.held.length} held back` : "";
   if (r.published.length === 0 && r.held.length === 0) return success("Nothing is staged.\nNext: sindri evolve stage", { ...r }, json);
