@@ -18,6 +18,9 @@ The dashboard is the builder's own "T3 / Warp" view of all agent work on the mac
 The dashboard is read-mostly. The builder works with an agent by **attaching** to it in its own host (T3, Warp,
 Cursor, a terminal). There is no chat inside the dashboard.
 
+*Amended by the factory addendum §17.12 and §17.27: the dashboard becomes a client of Sindri's command layer, and every
+action gets a UI form by action class. This plan's read-mostly scope is the first step, not the end state.*
+
 **Success looks like this:**
 - the builder can tell, without reading text, that a page has something that needs them;
 - every live agent on the machine appears within one poll;

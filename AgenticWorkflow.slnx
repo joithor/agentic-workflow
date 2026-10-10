@@ -13,5 +13,6 @@
     <Project Path="tests/Aw.Redaction.Tests/Aw.Redaction.Tests.csproj" />
     <Project Path="tests/Aw.Kernel.Telemetry.Testing/Aw.Kernel.Telemetry.Testing.csproj" />
     <Project Path="tests/Aw.Kernel.Telemetry.Tests/Aw.Kernel.Telemetry.Tests.csproj" />
+    <Project Path="tests/Aw.LaneCap.Testing/Aw.LaneCap.Testing.csproj" />
   </Folder>
 </Solution>
