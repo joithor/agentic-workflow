@@ -1,3 +1,4 @@
+using System.Globalization;
 using Aw.Packets.Core.Model;
 
 namespace Aw.Packets.Core.Checks;
@@ -41,7 +42,7 @@ internal static class ScopeChecks
                 };
                 if (problem is not null)
                 {
-                    yield return ($"task {task.Id.Value}", $"write scope '{entry}' {problem}",
+                    yield return ($"task {task.Id.Value}", $"write scope '{Shown(entry)}' {problem}",
                         "Point the scope at files that exist at the base commit, or declare a file the task creates as 'new: <path>'.");
                 }
             }
@@ -61,7 +62,8 @@ internal static class ScopeChecks
             for (var j = i + 1; j < tasks.Count; j++)
             {
                 var (a, b) = (tasks[i], tasks[j]);
-                if (a.Id != b.Id && !graph.Ordered(a.Id, b.Id) && writes[a].FirstOrDefault(writes[b].Contains) is { } path)
+                // the shared path first: reachability is only computed for tasks that share one
+                if (a.Id != b.Id && writes[a].FirstOrDefault(writes[b].Contains) is { } path && !graph.Ordered(a.Id, b.Id))
                 {
                     yield return ($"tasks {a.Id.Value}, {b.Id.Value}",
                         $"tasks {a.Id.Value} and {b.Id.Value} can run at the same time and both write '{path}'",
@@ -77,6 +79,10 @@ internal static class ScopeChecks
     // The paths (sorted by ordinal) a task's scope matches: base files and every declared new path.
     private static SortedSet<string> Written(List<ScopeGlob> globs, List<string> paths) =>
         new(paths.Where(p => globs.Exists(g => g.Matches(p))), StringComparer.Ordinal);
+
+    // An entry as a message shows it: a long one is cut, with its length.
+    private static string Shown(string entry) =>
+        entry.Length <= 80 ? entry : string.Create(CultureInfo.InvariantCulture, $"{entry[..80]}… ({entry.Length} characters)");
 
     private static string Short(string sha) => sha.Length > 12 ? sha[..12] : sha;
 }

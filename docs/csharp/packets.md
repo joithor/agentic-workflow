@@ -20,7 +20,7 @@ It was generated with `/new-package` (the invocation is in the PR that added it)
 
 Every JSON file carries `schemaVersion` (1). The JSON Schemas for editors are generated from the records and committed
 in `schemas/packets/` (`PacketSchemaTests` fails when a record changes and the schema isn't regenerated). Links are
-relative paths with `/` inside the packet directory; `..`, a root or a `:` is refused, and so is a symbolic link anywhere between the packet directory and the file (a linked file or a linked sub-directory). Every JSON file is UTF-8 without a byte order mark and has no duplicate keys (AW-PACKETS-003 otherwise).
+relative paths with `/` inside the packet directory; `..`, a root or a `:` is refused, and so is a symbolic link anywhere between the packet directory and the file (a linked file or a linked sub-directory). Every JSON file is UTF-8 without a byte order mark, with no duplicate keys, no unknown members (an optional `$schema` editor hint is allowed at the top of each file) and no null in a list; a packet holds at most 2,000 tasks (`PacketReader.MaxTasks`). Anything else is AW-PACKETS-003.
 
 Write-scope globs are repo-relative: `*` and `?` stay inside one path segment, `**` crosses segments (`src/**`,
 `**/guide.md`); matching is linear in the path's length whatever the glob. `new: src/c.cs` declares a file the task creates.
@@ -42,9 +42,9 @@ file list comes from git.
 | `PKT-ACC-001` | Every acceptance example the implementer sees has text |
 | `PKT-EVID-001` | Every acceptance example names at least one kebab-case evidence kind (addendum §17.11) |
 | `PKT-DEC-001` | Every question is answered, or deferred with an owner and a `buildMayAssume` default |
-| `PKT-HOLD-001` | At least one acceptance example is held out |
-| `PKT-SIZE-001` | **Unchecked**: the size-class budgets aren't defined (open question below) |
+| `PKT-HOLD-001` | Every task with acceptance examples holds at least one out (addendum §17.4: a share held out, per task) |
 | `PKT-HOLD-002` | No held-out example keeps its text in the packet: held-out text lives in sindri-private state, mounted only into evaluator Steps and never committed (addendum §17.19); the packet keeps its id and evidence kinds |
+| `PKT-SIZE-001` | **Unchecked**: the size-class budgets aren't defined (open question below) |
 | `PKT-FLOW-001` | **Unchecked**: workflow coverage (addendum §17.7) needs the lens catalog and workflow generation |
 
 The text output lists every rule (`pass`, `FAIL` with the subject, what was found and the fix, or `unchecked` with the
@@ -54,14 +54,14 @@ failure, one per passing or unchecked rule; each failure has `rule`, `subject`, 
 ## Freeze (`aw-packets freeze <packet-dir> [--repo <dir>] [--json]`)
 
 Runs the same checks. A packet with a failed check isn't frozen and nothing is written. Otherwise its canonical hash
-is recorded at `packets/<id>/frozen/<hex>.json` (`FreezeRecord`: packet, hash, `digestVersion`, `baseSha`,
+is recorded at `packets/<owner>/<name>/<id>/frozen/<hex>.json` (per repository: a packet id is unique only within one) (`FreezeRecord`: packet, hash, `digestVersion`, `baseSha`,
 `frozenAt`, the files the hash covers). Freezing the same hash again writes nothing and says `already frozen`. The
 packet directory itself is never changed; the record under `packets/` is authoritative (the sindri ledger takes over
 when sindri is ported, spec §4c).
 
 **The hash (`digestVersion` 1, spec §4c Digests):** SHA-256 over the canonical JSON of
-`{"digestVersion":1,"files":{<path>:<entry>}}`. A JSON packet file's entry is the file itself, except `packet.json`'s
-`status` and `hash`; any other linked file's entry is `sha256:<hex of its bytes>`. Canonical JSON sorts object keys by
+`{"digestVersion":1,"files":{<path>:<entry>}}`. A JSON packet file's entry is the file itself without its `$schema` editor hint (and `packet.json` without
+`status` and `hash`); any other linked file's entry is `sha256:<hex of its bytes>`. Canonical JSON sorts object keys by
 ordinal, drops whitespace, keeps numbers as written, and writes strings as System.Text.Json's relaxed encoder does (the Kernel profile): `"` and `\` escaped, control characters in their short or `\u00XX` form, U+2028/U+2029 and characters outside the Basic Multilingual Plane as `\u` escapes (surrogate pairs), everything else as UTF-8. `CanonicalJsonTests` pins examples and one packet's hash; changing these bytes needs a new `digestVersion`.
 
 ## Exit codes and errors

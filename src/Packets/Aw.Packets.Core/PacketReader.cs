@@ -73,6 +73,13 @@ public static class PacketReader
             return decisions.IsError ? decisions.Error : outOfScope.IsError ? outOfScope.Error : tasks.Error;
         }
 
+        if (tasks.Value.Tasks.Count > MaxTasks)
+        {
+            return PacketsErrors.Malformed.With(string.Create(
+                CultureInfo.InvariantCulture,
+                $"{links.Tasks} holds {tasks.Value.Tasks.Count} tasks; a packet holds at most {MaxTasks}: split it into several packets."));
+        }
+
         return new LoadedPacket(new Packet(manifest, decisions.Value, outOfScope.Value, tasks.Value), files);
     }
 
@@ -139,7 +146,8 @@ public static class PacketReader
         }
     }
 
-    // The JSON path of the first null inside an array, or null. Iterative, so a deep document can't overflow the stack.
+    // The JSON path of the first null inside an array (in document order), or null. Iterative, so a deep document
+    // can't overflow the stack: children are pushed in reverse so they pop in document order.
     private static string? NullInList(JsonElement root, string rootPath)
     {
         var pending = new Stack<(JsonElement Element, string Path)>();
@@ -148,23 +156,22 @@ public static class PacketReader
         {
             if (next.Element.ValueKind == JsonValueKind.Object)
             {
-                foreach (var property in next.Element.EnumerateObject())
+                foreach (var property in next.Element.EnumerateObject().Reverse())
                 {
                     pending.Push((property.Value, $"{next.Path}.{property.Name}"));
                 }
             }
             else if (next.Element.ValueKind == JsonValueKind.Array)
             {
-                var index = 0;
-                foreach (var item in next.Element.EnumerateArray())
+                var items = next.Element.EnumerateArray().ToList();
+                if (items.FindIndex(static i => i.ValueKind == JsonValueKind.Null) is var at and >= 0)
                 {
-                    var itemPath = string.Create(CultureInfo.InvariantCulture, $"{next.Path}[{index++}]");
-                    if (item.ValueKind == JsonValueKind.Null)
-                    {
-                        return itemPath;
-                    }
+                    return string.Create(CultureInfo.InvariantCulture, $"{next.Path}[{at}]");
+                }
 
-                    pending.Push((item, itemPath));
+                for (var index = items.Count - 1; index >= 0; index--)
+                {
+                    pending.Push((items[index], string.Create(CultureInfo.InvariantCulture, $"{next.Path}[{index}]")));
                 }
             }
         }

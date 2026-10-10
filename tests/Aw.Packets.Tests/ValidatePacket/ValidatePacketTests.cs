@@ -289,7 +289,7 @@ public sealed class ValidatePacketTests
     public async Task A_chain_at_the_task_limit_validates_in_seconds()
     {
         var packet = A.Packet();
-        for (var i = 0; i < Aw.Packets.Core.PacketReader.MaxTasks; i++)
+        for (var i = 0; i < PacketReader.MaxTasks; i++)
         {
             var id = "t" + i.ToString(System.Globalization.CultureInfo.InvariantCulture);
             var task = A.Task(id).Writing("src/a.cs");

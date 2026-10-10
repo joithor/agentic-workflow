@@ -33,10 +33,7 @@ public static class PacketRules
     /// <summary>Every question is answered, or deferred with an owner and a default.</summary>
     public const string Decisions = "PKT-DEC-001";
 
-    /// <summary>Every task fits its size class's budget (unchecked until the budgets are defined).</summary>
-    public const string SizeBudget = "PKT-SIZE-001";
-
-    /// <summary>The held-out share exists.</summary>
+    /// <summary>Every task with acceptance examples holds at least one out (addendum §17.4: a share held out, per task).</summary>
     public const string HoldoutExists = "PKT-HOLD-001";
 
     /// <summary>
@@ -44,6 +41,9 @@ public static class PacketRules
     /// evaluator Steps and never committed (addendum §17.19). The store itself is checked once it exists.
     /// </summary>
     public const string HoldoutStored = "PKT-HOLD-002";
+
+    /// <summary>Every task fits its size class's budget (unchecked until the budgets are defined).</summary>
+    public const string SizeBudget = "PKT-SIZE-001";
 
     /// <summary>The workflow passes its coverage checks (unchecked until workflow generation exists, addendum §17.7).</summary>
     public const string WorkflowCoverage = "PKT-FLOW-001";

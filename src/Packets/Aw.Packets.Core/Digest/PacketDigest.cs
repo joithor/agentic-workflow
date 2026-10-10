@@ -11,8 +11,8 @@ namespace Aw.Packets.Core.Digest;
 
 /// <summary>
 /// The packet's canonical hash (spec §4c Digests, version 1): SHA-256 over the canonical JSON of the object
-/// '{"digestVersion":1,"files":{&lt;path&gt;: &lt;entry&gt;}}'. A JSON packet file's entry is the file itself (packet.json
-/// without its 'status' and 'hash', which change when a packet is frozen); any other linked file's entry is
+/// '{"digestVersion":1,"files":{&lt;path&gt;: &lt;entry&gt;}}'. A JSON packet file's entry is the file itself without its
+/// '$schema' editor hint (and packet.json without its 'status' and 'hash', which change when a packet is frozen); any other linked file's entry is
 /// 'sha256:&lt;hex of its bytes&gt;'. Canonical JSON: object keys sorted by ordinal, no whitespace, numbers as written in
 /// the file, and strings as System.Text.Json writes them with the Kernel profile's encoder (UnsafeRelaxedJsonEscaping):
 /// '"' and '\' escaped, control characters in their short or \u00XX form, U+2028 and U+2029 as \u escapes, and
@@ -72,10 +72,14 @@ public static class PacketDigest
         try
         {
             var node = JsonNode.Parse(bytes.Span, nodeOptions: null, _strict);
-            if (path == ManifestFile && node is JsonObject manifest)
+            if (node is JsonObject file)
             {
-                _ = manifest.Remove("status");
-                _ = manifest.Remove("hash");
+                _ = file.Remove("$schema");   // an editor hint, like formatting: not content
+                if (path == ManifestFile)
+                {
+                    _ = file.Remove("status");
+                    _ = file.Remove("hash");
+                }
             }
 
             return Results.Success(node);

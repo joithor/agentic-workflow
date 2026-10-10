@@ -38,7 +38,7 @@ public sealed class CliTests : IDisposable
         Assert.Equal(1, report.RootElement.GetProperty("schemaVersion").GetInt32());
         Assert.False(report.RootElement.GetProperty("passed").GetBoolean());
         var failures = report.RootElement.GetProperty("checks").EnumerateArray().Where(static c => c.GetProperty("state").GetString() == "fail").ToList();
-        Assert.Equal(["PKT-GRAPH-002", "PKT-HOLD-001"], failures.Select(static c => c.GetProperty("rule").GetString()), StringComparer.Ordinal);
+        Assert.Equal(["PKT-GRAPH-002"], failures.Select(static c => c.GetProperty("rule").GetString()), StringComparer.Ordinal);
         Assert.All(failures, static f => Assert.False(string.IsNullOrEmpty(f.GetProperty("fix").GetString())));
     }
 

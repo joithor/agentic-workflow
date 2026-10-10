@@ -11,12 +11,11 @@ internal static class Composition
 {
     internal static IServiceCollection Compose(IServiceCollection services, Func<string, string?> environment, TimeProvider clock)
     {
-        var json = AwJson.CreateOptions(PacketsJsonContext.Default);   // the one Kernel JSON profile: output and state files
         return services
             .AddSingleton(clock)
-            .AddSingleton(json)
+            .AddSingleton(AwJson.CreateOptions(PacketsJsonContext.Default))   // the one Kernel JSON profile: output and state files
             .AddPacketsCore()
             .AddPacketsFeatures()
-            .AddPacketsInfrastructure(environment, json);
+            .AddPacketsInfrastructure(environment);
     }
 }

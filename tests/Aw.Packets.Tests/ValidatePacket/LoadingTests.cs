@@ -138,7 +138,7 @@ public sealed class LoadingTests
     public async Task A_packet_over_the_task_limit_is_AW_PACKETS_003()
     {
         var packet = A.Packet();
-        for (var i = 0; i <= Aw.Packets.Core.PacketReader.MaxTasks; i++)
+        for (var i = 0; i <= PacketReader.MaxTasks; i++)
         {
             _ = packet.With(A.Task("t" + i.ToString(System.Globalization.CultureInfo.InvariantCulture)).Writing("src/a.cs"));
         }

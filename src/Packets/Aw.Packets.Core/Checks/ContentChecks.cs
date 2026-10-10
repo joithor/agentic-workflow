@@ -46,10 +46,13 @@ internal static partial class ContentChecks
     {
         checks.Rule(
             PacketRules.HoldoutExists,
-            "the packet has a held-out share",
-            examples.Exists(static x => x.Example.Holdout)
-                ? []
-                : [("packet", "no acceptance example is held out", "Mark at least one acceptance example 'holdout: true'.")]);
+            "every task with acceptance examples holds one out",
+            examples.GroupBy(static x => x.Task)
+                .Where(static g => !g.Any(static x => x.Example.Holdout))
+                .Select(static g => (
+                    $"task {g.Key.Id.Value}",
+                    "none of its acceptance examples is held out",
+                    "Add a held-out example to this task ('holdout: true', its text kept in sindri-private state).")));
         checks.Rule(
             PacketRules.HoldoutStored,
             "no held-out example keeps its text in the packet",

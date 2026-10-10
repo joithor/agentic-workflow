@@ -61,7 +61,7 @@ internal sealed class TaskBuilder(string id)
         return this;
     }
 
-    /// <summary>Builds the task (one '&lt;id&gt;-e1' 'test' example when none was added).</summary>
+    /// <summary>Builds the task (a visible '&lt;id&gt;-e1' and a held-out '&lt;id&gt;-h1' 'test' example when none was added).</summary>
     /// <returns>The task.</returns>
     public PacketTask Build() => new()
     {
@@ -74,7 +74,11 @@ internal sealed class TaskBuilder(string id)
         ReadSeeds = ["README.md"],
         Acceptance = _examples.Count > 0
             ? _examples
-            : [new AcceptanceExample { Id = ExampleId.From($"{id}-e1"), Text = $"{id} works", Evidence = ["test"] }],
+            :
+            [
+                new AcceptanceExample { Id = ExampleId.From($"{id}-e1"), Text = $"{id} works", Evidence = ["test"] },
+                new AcceptanceExample { Id = ExampleId.From($"{id}-h1"), Evidence = ["test"], Holdout = true },
+            ],
         Budget = new TaskBudget { Tokens = 100_000, Turns = 40, WallMinutes = 60 },
     };
 }

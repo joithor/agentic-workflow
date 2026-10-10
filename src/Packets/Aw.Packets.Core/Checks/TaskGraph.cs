@@ -1,3 +1,4 @@
+using System.Collections;
 using Aw.Packets.Core.Ids;
 using Aw.Packets.Core.Model;
 
@@ -7,12 +8,17 @@ namespace Aw.Packets.Core.Checks;
 internal sealed class TaskGraph
 {
     private readonly Dictionary<TaskId, IReadOnlyList<TaskId>> _deps;
-    private readonly Dictionary<TaskId, HashSet<TaskId>> _reach = [];
+    private readonly Dictionary<TaskId, int> _position = [];
+    private readonly Dictionary<TaskId, BitArray> _reach = [];
 
     internal TaskGraph(IReadOnlyList<PacketTask> tasks)
     {
         _deps = tasks.GroupBy(static t => t.Id).ToDictionary(static g => g.Key, static g => (IReadOnlyList<TaskId>)[.. g.SelectMany(static t => t.Deps)]);
         Ids = [.. _deps.Keys.OrderBy(static id => id.Value, StringComparer.Ordinal)];
+        for (var i = 0; i < Ids.Count; i++)
+        {
+            _position[Ids[i]] = i;
+        }
     }
 
     internal IReadOnlyList<TaskId> Ids { get; }
@@ -36,7 +42,8 @@ internal sealed class TaskGraph
     }
 
     /// <summary>True when a chain of dependencies orders <paramref name="a"/> and <paramref name="b"/> either way.</summary>
-    internal bool Ordered(TaskId a, TaskId b) => Reach(a).Contains(b) || Reach(b).Contains(a);
+    internal bool Ordered(TaskId a, TaskId b) =>
+        _position.TryGetValue(a, out var pa) && _position.TryGetValue(b, out var pb) && (Reach(a)[pb] || Reach(b)[pa]);
 
     // One cycle through the group, from its smallest id: a depth-first walk inside the group (deps in declared order),
     // iterative so a long chain can't overflow the stack. Every member of a strongly connected group reaches the start.
@@ -75,20 +82,22 @@ internal sealed class TaskGraph
         return [start, start];
     }
 
-    private HashSet<TaskId> Reach(TaskId from)
+    // Every task 'from' waits on, directly or not, as one bit per task (memory n²/8 bytes at most), computed once.
+    private BitArray Reach(TaskId from)
     {
         if (_reach.TryGetValue(from, out var known))
         {
             return known;
         }
 
-        var seen = new HashSet<TaskId>();
-        var stack = new Stack<TaskId>(_deps.GetValueOrDefault(from) ?? []);
+        var seen = new BitArray(Ids.Count);
+        var stack = new Stack<TaskId>(_deps[from]);
         while (stack.TryPop(out var next))
         {
-            if (seen.Add(next))
+            if (_position.TryGetValue(next, out var at) && !seen[at])
             {
-                foreach (var dep in _deps.GetValueOrDefault(next) ?? [])
+                seen[at] = true;
+                foreach (var dep in _deps[next])
                 {
                     stack.Push(dep);
                 }

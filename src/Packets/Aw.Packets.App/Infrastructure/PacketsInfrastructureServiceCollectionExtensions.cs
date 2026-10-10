@@ -13,12 +13,11 @@ internal static class PacketsInfrastructureServiceCollectionExtensions
     /// <summary>Adds the Packets adapters (disk, git, the freeze log under packets/) and their settings.</summary>
     /// <param name="services">The service collection.</param>
     /// <param name="environment">Reads an environment variable (Environment.GetEnvironmentVariable in Program.cs, a lambda in tests).</param>
-    /// <param name="json">The package's one AwJson profile, built and registered by Composition.</param>
     /// <returns>The same collection.</returns>
-    internal static IServiceCollection AddPacketsInfrastructure(this IServiceCollection services, Func<string, string?> environment, JsonSerializerOptions json)
+    internal static IServiceCollection AddPacketsInfrastructure(this IServiceCollection services, Func<string, string?> environment)
         => services
             .AddSingleton(SettingsFromEnvironment.Read(environment))
-            .AddSingleton<IPacketSource>(_ => new FileSystemPacketSource(json))
+            .AddSingleton<IPacketSource>(static sp => new FileSystemPacketSource(sp.GetRequiredService<JsonSerializerOptions>()))
             .AddSingleton<IRepoSnapshot>(static _ => new GitRepoSnapshot(GitTimeout))
-            .AddSingleton<IFreezeLog>(sp => new FileFreezeLog(sp.GetRequiredService<PacketsSettings>(), json));
+            .AddSingleton<IFreezeLog>(static sp => new FileFreezeLog(sp.GetRequiredService<PacketsSettings>(), sp.GetRequiredService<JsonSerializerOptions>()));
 }
