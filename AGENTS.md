@@ -20,7 +20,7 @@ Domain-specific rules live in `.agents/rules/` — one file per rule, the only c
 
 | Layer | Technology |
 |-------|------------|
-| Runtime | Node.js >= 20, ES2022 target |
+| Runtime | Node.js >= 22 (`.nvmrc`; better-sqlite3 13 requires it), ES2022 target |
 | Language | TypeScript 5.7, strict mode |
 | HTTP (bridge) | Fastify 5 |
 | Database | SQLite via better-sqlite3, WAL mode |

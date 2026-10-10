@@ -216,7 +216,7 @@ agentic-workflow/
 │       ├── git-context.sh              #     SessionStart — injects current branch, recent commits, working tree status
 │       └── prism-context.sh            #     SessionStart — one-line warning if the prism-mcp dashboard is unreachable
 ├── mcp-bridge/                          # TypeScript MCP bridge server
-│   ├── package.json                     #   Node >=20, Fastify 5, better-sqlite3, Zod 3
+│   ├── package.json                     #   Node >=22, Fastify 5, better-sqlite3, Zod 3
 │   ├── tsconfig.json                    #   ES2022, Node16 modules, strict mode
 │   ├── vitest.config.ts                 #   Vitest config — v8 coverage, 100% thresholds, excludes index.ts + mcp.ts
 │   ├── tests/                           #   Unit and integration tests (99 tests)
