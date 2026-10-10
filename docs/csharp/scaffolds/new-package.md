@@ -1,8 +1,9 @@
 # `/new-package` — scaffold spec
 
-Status: **spec only** (R1b). The generator isn't built yet; this file is its contract. When it ships it becomes a skill
-under `skills/new-package/` whose `SKILL.md` points here, and the first two packages built with it are `Aw.Readiness`
-and `Aw.Packets` (spec §10 R1b). Rules it must satisfy: `.agents/rules/csharp.md`, `.agents/rules/csharp-testing.md`,
+Status: **built** (R1b). This file is the contract; the generator is `scripts/scaffold/new-package.mjs`, driven by the
+`/new-package` skill (`skills/new-package/SKILL.md`), and the first two packages built with it are `Aw.Readiness` and
+`Aw.Packets` (spec §10 R1b). Its tests: `scripts/tests/scaffold.test.sh` (inputs, refusals, files, revert; no dotnet)
+and `scripts/scaffold/e2e.sh` (scaffold, build and test real packages; CI job "C# scaffold generators"). Rules it must satisfy: `.agents/rules/csharp.md`, `.agents/rules/csharp-testing.md`,
 spec §4b, and the root build settings (`Directory.Build.props`, `.editorconfig`, `tests/.editorconfig`,
 `Directory.Packages.props` from the .NET solution PR #89).
 
@@ -23,17 +24,27 @@ first move is the TDD step.
 | `shape` | `small` (Core + App) or `full` (Core, Features, Infrastructure, Host) | `small` unless the package is expected over ~1,500 lines |
 | `host` | `cli`, `http` or `none` | `cli` → NativeAOT console app; `http` → minimal API with `CreateSlimBuilder`; `none` → library. `http` needs `shape: full`: `shape: small` with `host: http` is refused with `NP-SMALL-HTTP` (the Web SDK's generated public `Program` would land in `App`, a library with `RS0016` on) |
 | `depends` | list of package names | Each must be in a lower tier (checked against `deps.yaml`). Project edges from this package's `Features` (`App` in the small shape) to their `Core`. Refused with `NP-FANOUT` if that project would hold more than 4 in-repo references |
-| `firstSlice` | PascalCase use-case name, e.g. `CheckRepo`, plus its `behavior` | Passed to `/new-slice` to generate the first red test |
+| `binary` | the executable name, e.g. `aw-readiness` | `^[a-z][a-z0-9-]{1,40}$`; default `<name lowercase>`. The `AssemblyName` of the Host (or the small shape's `App`) |
+| `firstSlice` | PascalCase use-case name, e.g. `CheckRepo`, plus its `behavior` | Passed to `/new-slice` to generate the first red test, with the slice's `command` or `route`, `ids` and `ports` (`new-slice.md`) |
 
-Inputs come from the arguments, then **Ask the user** for anything missing. Refuse (exit with the rule id) on any rule
-violation; never guess a tier or a prefix. `Readiness` and `Packets` are `host: cli` packages that ship before the
+Inputs come from the arguments, then **Ask the user** for anything missing (the generator refuses a missing one with
+`NP-INPUT`). Refuse (exit with the rule id) on any rule violation; never guess a tier or a prefix. The ids:
+`NP-INPUT`, `NP-NAME` (format or a reserved name), `NP-EXISTS`, `NP-TIER` (not 1–3), `NP-DEPS-MISMATCH`, `NP-PREFIX`,
+`NP-DEPENDS` (not a declared package, not a lower tier, or tier 0), `NP-FANOUT`, `NP-SMALL-HTTP`, `NP-PINS`, and the
+first slice's `NS-*` ids.
+
+```bash
+node scripts/scaffold/new-package.mjs --name Readiness --tier 1 --error-prefix READINESS --shape small --host cli \
+  --binary aw-readiness --first-slice CheckRepo --behavior reports_level_one_for_an_empty_repo --command check
+``` `Readiness` and `Packets` are `host: cli` packages that ship before the
 switch as the standalone NativeAOT CLIs `aw-readiness` and `aw-packets` (spec §4c).
 
 ## Before the scaffold: package pins
 
 The templates need `Microsoft.Extensions.DependencyInjection.Abstractions` (Core, Features, Infrastructure),
 `Microsoft.Extensions.DependencyInjection` (Host, tests), `Microsoft.Extensions.TimeProvider.Testing` (tests) and, for
-`host: http`, `Microsoft.AspNetCore.Mvc.Testing` (integration tests), and `Vogen` (Core, for typed ids, R9); `xunit.v3` is already pinned. If any isn't in
+`host: http`, `Microsoft.AspNetCore.Mvc.Testing` (integration tests), and `Vogen` (Core, for typed ids, R9); `xunit.v3` is already pinned. All of
+them are pinned since R1b (the DI pair and `Mvc.Testing` at 10.0.12). If any isn't in
 `Directory.Packages.props`, the generator **stops** and prints the pin commit to make first: add each `PackageVersion`
 (pinned as `[x.y.z]`, at least 14 days old), refresh the lock files it changes (with `CentralPackageTransitivePinningEnabled`
 a new pin can turn an existing project's `Transitive` entry into `CentralTransitive`), and commit that on its own.
@@ -44,7 +55,8 @@ The scaffold itself never edits `Directory.Packages.props`, so its whole-solutio
 ```
 src/<Name>/
 ├── Aw.<Name>.Core/
-│   ├── Aw.<Name>.Core.csproj          # refs Aw.Kernel + DI.Abstractions + Vogen (R9); InternalsVisibleTo Aw.<Name>.Tests, Aw.<Name>.Testing
+│   ├── Aw.<Name>.Core.csproj          # refs Aw.Kernel + DI.Abstractions + Vogen (R9); InternalsVisibleTo Aw.<Name>.Tests, Aw.<Name>.Testing;
+│   │                                  # NoWarn RS0041 (Vogen's Guid/int ids, below)
 │   ├── packages.lock.json             # written by the first restore
 │   ├── PublicAPI.Shipped.txt          # "#nullable enable" only
 │   ├── PublicAPI.Unshipped.txt        # "#nullable enable", then every public symbol, annotated (below)
@@ -56,7 +68,8 @@ src/<Name>/
 │   │                                  # InternalsVisibleTo Aw.<Name>.Tests, Aw.<Name>.Testing
 │   ├── packages.lock.json
 │   ├── PublicAPI.Shipped.txt · PublicAPI.Unshipped.txt
-│   └── <Name>FeaturesServiceCollectionExtensions.cs   # public static Add<Name>Features(this IServiceCollection)
+│   └── <Name>FeaturesServiceCollectionExtensions.cs   # public static Add<Name>Features(this IServiceCollection): a block body
+│                                      # ending in `return services;`, which /new-slice inserts its registrations before
 ├── Aw.<Name>.Infrastructure/
 │   ├── Aw.<Name>.Infrastructure.csproj   # InternalsVisibleTo Aw.<Name>.Tests, Aw.<Name>.Testing
 │   ├── .editorconfig                  # root = false; [*.cs] dotnet_diagnostic.CA1031.severity = none  (boundary adapters)
@@ -66,13 +79,14 @@ src/<Name>/
 │   ├── SettingsFromEnvironment.cs     # internal static: reads <Name>Settings from the environment Composition passes (template below)
 │   └── <Name>InfrastructureServiceCollectionExtensions.cs   # public static Add<Name>Infrastructure(this IServiceCollection, Func<string, string?> environment)
 └── Aw.<Name>.Host/
-    ├── Aw.<Name>.Host.csproj          # OutputType=Exe; PublishAot=true (cli); AssemblyName=<name lowercase>;
+    ├── Aw.<Name>.Host.csproj          # OutputType=Exe; PublishAot=true; AssemblyName=<binary>;
     │                                  # refs DI; InternalsVisibleTo Aw.<Name>.Tests
     ├── .editorconfig                  # root = false; [*.cs] dotnet_diagnostic.CA1031.severity = none  (composition root)
     ├── packages.lock.json
     ├── Program.cs                     # calls Composition.Compose, then the command table
     ├── Composition.cs                 # internal static class Composition { Compose(...) }; the only file that uses Infrastructure
-    ├── Commands/CommandTable.cs       # internal static: command name → handler; /new-slice adds one line per slice
+    ├── Commands/CommandTable.cs       # internal static: command name → handler; /new-slice adds one switch arm per slice
+    ├── Commands/CommandOutput.cs      # internal static: Result → one JSON line on stdout (0) or the error on stderr (1); usage (2)
     └── <Name>JsonContext.cs           # internal partial class, [JsonSerializable] source-generated; used only through AwJson.CreateOptions
 tests/
 ├── Aw.<Name>.Tests/
@@ -83,7 +97,8 @@ tests/
 │   ├── <Name>ErrorsTests.cs           # ErrorCatalogue.Validate(<Name>Errors.All) succeeds (Lane=unit) — green
 │   └── <FirstSlice>/<FirstSlice>Tests.cs   # from /new-slice — RED
 └── Aw.<Name>.Testing/
-    ├── Aw.<Name>.Testing.csproj       # refs Core, Features and Aw.Kernel.Testing (builders, fakes, contract bases)
+    ├── Aw.<Name>.Testing.csproj       # refs Core, Features (App in the small shape) and Aw.Kernel.Testing (builders, fakes,
+    │                                  # contract bases); no package of its own (xUnit comes through Aw.Kernel.Testing)
     ├── packages.lock.json
     └── A.cs                           # builder root: public static class A
 ```
@@ -105,7 +120,15 @@ tests/
 - Usings: the generator emits exactly the namespaces each file uses (`IDE0005` and `IDE0161` are errors); the
   templates below show them.
 - Test projects follow the test policy set by #89 in `tests/.editorconfig` (`root = false`): `CA1707`, `RS0016`,
-  `RS0017`, `RS0036`, `RS0037`, `CA2007` and `CA1515` off; `GenerateDocumentationFile=true` with `CS1591` off.
+  `RS0017`, `RS0036`, `RS0037`, `CA2007` and `CA1515` off; `GenerateDocumentationFile=true` with `CS1591` off. `MA0182`
+  ("internal type is never used") is off for `*.Testing` projects only: their builders are used by `*.Tests` through
+  `InternalsVisibleTo`, and in the small shape they are internal.
+- Private fields are `_camelCase` (the root naming rule, `IDE1006`), static ones included; literal `bool` and `null`
+  arguments are named (`MA0003`); string comparisons say their `StringComparison` (`MA0127`, `CA1309`).
+- Vogen 8.0.7 wraps a `Guid` or `int` id's generated `ToString(string, IFormatProvider)` in `#nullable disable`, which
+  `RS0041` (oblivious types in the public API) rejects with nothing to fix in user code, and `.editorconfig` sections
+  don't reach source-generated files. So `Core` sets `<NoWarn>$(NoWarn);RS0041</NoWarn>` with that reason; `RS0016`
+  still tracks the member (declared with the `~` marker the build reports).
 
 **`shape: small`** replaces `Features`, `Infrastructure` and `Host` with one `Aw.<Name>.App` project: same files under
 `Features/`, `Infrastructure/`, `Commands/`, same `Add…()` methods, `OutputType=Exe` when `host`
@@ -138,14 +161,21 @@ Aw.<Name>.Host/
 tests/Aw.<Name>.Tests/LoopbackBindingTests.cs   # every override vector, Host 400, Origin 403 (Lane=integration)
 ```
 
-`LoopbackBinding` builds the host with `WebApplication.CreateSlimBuilder(new WebApplicationOptions { Args = [] })`: no
-command-line args and no environment variables reach the web host's configuration, `PreferHostingUrls` is pinned off,
-and Kestrel listens with `Listen(IPAddress.Loopback, port)` only. `LoopbackBindingTests` starts the host once per
+`LoopbackBinding.Build(args, environment, clock)` refuses any command-line argument (`ArgumentException`), builds the
+host with `WebApplication.CreateSlimBuilder(new WebApplicationOptions { Args = [] })`, clears every configuration source
+(`ASPNETCORE_*`/`DOTNET_*` environment variables reach the host's configuration otherwise, even with `Args = []`) and adds
+an empty in-memory one (the host writes its own settings), pins `PreferHostingUrls` off, and listens with
+`Listen(IPAddress.Loopback, port)` only. The port is `AW_<NAME>_PORT` from the environment `Composition` gets, `0` (a free
+port) by default. `LoopbackBindingTests` starts the host once per
 override vector and checks the only listener is `127.0.0.1:<port>`: `ASPNETCORE_URLS`, `DOTNET_URLS`,
 `ASPNETCORE_HTTP_PORTS`, `ASPNETCORE_PREFERHOSTINGURLS`, `Kestrel__Endpoints__*` (each in the environment and on the
 command line) and `--urls` (the R1a spike found two of these binding all interfaces in a default
 `CreateSlimBuilder(args)` host). It also sends a request with `Host: example.com` (expects 400) and one with
-`Origin: https://example.com` (expects 403). No `HOST` variable, no `ALLOW_REMOTE` switch, no wildcard CORS.
+`Origin: https://example.com` (expects 403); the command-line vector is `Build(["--urls", …])`, refused. The tests set
+process environment variables, so they share an xUnit collection with parallelization off (`ProcessEnvironment.cs`).
+No `HOST` variable, no `ALLOW_REMOTE` switch, no wildcard CORS. An http package's test project sets
+`EnableRequestDelegateGenerator=true`, so its id route-binding tests (`new-slice.md`) compile through the
+request-delegate generator, like the Host.
 
 The http Host applies the same JSON profile in `ConfigureHttpJsonOptions` by copying the settings, converters and
 resolver of `AwJson.CreateOptions(<Name>JsonContext.Default)` into `o.SerializerOptions`. It copies because
@@ -368,35 +398,41 @@ with the `NotSupportedException` thrown by the parameterless service stub. The s
 ## Commands the generator runs (in order)
 
 ```bash
-for p in src/<Name>/*/*.csproj tests/Aw.<Name>.*/*.csproj tests/Aw.Architecture.Tests/Aw.Architecture.Tests.csproj; do dotnet restore "$p"; done   # the new projects, plus the architecture tests that now reference them: writes their packages.lock.json
+for p in src/<Name>/*/*.csproj tests/Aw.<Name>.*/*.csproj tests/Aw.Architecture.Tests/Aw.Architecture.Tests.csproj; do dotnet restore "$p" --force; done   # the new projects, plus the architecture tests that now reference them: writes their packages.lock.json (--force: a no-op cache from an earlier, reverted run would skip the lock file)
 dotnet restore --locked-mode                            # whole solution; must pass — no other lock file changes here
-dotnet format analyzers <each new library project> --diagnostics RS0016   # writes the PublicAPI.Unshipped.txt lines (not hosts)
+dotnet format analyzers <each new library project> --diagnostics RS0016 --severity error   # writes the PublicAPI.Unshipped.txt lines (Core, Features, Infrastructure; not hosts or App)
 dotnet build -warnaserror                               # must report 0 warnings, 0 errors
 dotnet test --solution AgenticWorkflow.slnx --filter-trait "Lane=unit" --ignore-exit-code 8   # HostTests pass; the slice test fails (expected); exit 8 = empty lane in some project
 dotnet format --verify-no-changes
 node scripts/check-deps.mjs                             # the package and edges are declared
 ```
 
-All of them run under the heavy-job lock.
+All of them run under the heavy-job lock (the generator takes it, or runs inside a caller's with `AW_HEAVY_LOCK_HELD=1`).
+They run with the developer's environment: under `CI=true` (locked restore, the `AW0001` lock-file guard) restoring a
+new project is refused by design, so `scripts/scaffold/e2e.sh` runs the generators with `CI` unset.
 
 ## Done criteria
 
-1. The commands above produce exactly: both restores succeed; build 0 warnings; one failing test (the slice's), every
-   other test green; format clean; deps check green.
+1. The commands above produce exactly: both restores succeed; build 0 warnings; one failing test (the slice's, failing
+   with the stub's `NotSupportedException`), every other test green; format clean; deps check green.
 2. `tests/Aw.Architecture.Tests` passes with the new assemblies registered (the unit-lane run above includes it).
-3. `git status` shows only the files listed above (including each new project's `packages.lock.json`).
+3. `git status` shows only the files listed above (including each new project's `packages.lock.json`); the generator
+   fails with `SCAFFOLD-STRAY` otherwise.
 4. The generator prints the next step: "Make `<FirstSlice>Tests` pass: replace the `Assert.Fail` with the real
    assertion, add the ports the service needs, then implement it in `Features/<FirstSlice>/` (see `/new-slice`)."
 
-The generator's own test suite scaffolds two packages — one declared in `deps.yaml` already and one that isn't — and
-builds each against the real root files (`Directory.Build.props`,
-`.editorconfig`, `tests/.editorconfig`, `Directory.Packages.props`) and asserts criterion 1, so template drift from the
-root settings fails the generator's CI, not the first user.
+The generator's own test suite, `scripts/scaffold/e2e.sh`, scaffolds two packages — the first package `deps.yaml`
+declares that has no `src/` yet, as `small`/`cli`, and an undeclared one as `full`/`http` — each in a throwaway worktree,
+builds each against the real root files (`Directory.Build.props`, `.editorconfig`, `tests/.editorconfig`,
+`Directory.Packages.props`) and asserts criterion 1, then adds a second slice to the first (after making its first
+slice green) and runs the second's integration lane, so template drift from the root settings fails the generator's CI,
+not the first user.
 
 ## Failure behavior
 
 - Any check fails other than the expected red test → the generator reverts everything it created or edited (it
-  records the file list before writing) and prints the rule id, the measured value and the fix.
+  records the file list before writing, and each lock file before a restore rewrites it) and prints the rule id
+  (`SCAFFOLD-RESTORE`, `-PUBLICAPI`, `-BUILD`, `-RED`, `-FORMAT`, `-DEPS`, `-STRAY`), the measured value and the fix.
 - Re-running with the same `name` refuses: `NP-EXISTS: src/<Name> already exists`. A taken `errorPrefix` refuses with
   `NP-PREFIX`; a missing package pin stops with `NP-PINS` and the pin commit to make; `shape: small` with `host: http`
   refuses with `NP-SMALL-HTTP`.

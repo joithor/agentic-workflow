@@ -56,13 +56,13 @@ step "(a) /new-package: $SMALL, small, cli, tier $SMALL_TIER (declared in deps.y
   --shape small --host cli --first-slice CheckThing --behavior reports_nothing_for_an_empty_tree) || fail "(a) new-package"
 (cd "$A" && git status --porcelain --untracked-files=all | grep -q "src/$SMALL/") || fail "(a) wrote no src/$SMALL"
 
-step "(a) make CheckThing green by hand, then /new-slice ListThings with a typed id"
+step "(a) make CheckThing green by hand, then /new-slice ListThings with a typed id and a new port"
 SVC="$A/src/$SMALL/Aw.$SMALL.App/Features/CheckThing/CheckThingService.cs"
 RED="$A/tests/Aw.$SMALL.Tests/CheckThing/CheckThingTests.cs"
 perl -0pi -e 's/=> throw new NotSupportedException\("CheckThing: make CheckThingTests pass"\);/=> ValueTask.FromResult<Result<CheckThingResponse>>(new CheckThingResponse());/' "$SVC"
 perl -0pi -e 's/\n        Assert\.Fail\("red: assert reports_nothing_for_an_empty_tree"\);//' "$RED"
 (cd "$A" && gen scripts/scaffold/new-slice.mjs --package "$SMALL" --slice ListThings --behavior lists_nothing_for_an_empty_tree \
-  --surface cli --command list --ids ThingId:string) || fail "(a) new-slice"
+  --surface cli --command list --ids ThingId:string --ports IThingStore) || fail "(a) new-slice"
 
 # ---- (b) full http package, not declared ----
 tree http

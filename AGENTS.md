@@ -96,8 +96,9 @@ dotnet test --solution AgenticWorkflow.slnx --filter-trait "Lane=integration" --
 dotnet test --solution AgenticWorkflow.slnx --filter-not-trait "Lane=heavy" --ignore-exit-code 8     # Everything except containers, browsers and index builds
 dotnet format --verify-no-changes       # Style and analyzer fixes are applied (CI and pre-commit)
 scripts/dotnet-verify-packages.sh       # Lock files present and unchanged, signature-verified locked restore, dotnet nuget verify --all
-# Add a package: /new-package (spec docs/csharp/scaffolds/new-package.md)
-# Add a use case: /new-slice (spec docs/csharp/scaffolds/new-slice.md) — test, request and response, service, endpoint, registration
+# Add a package: /new-package (node scripts/scaffold/new-package.mjs; contract docs/csharp/scaffolds/new-package.md)
+# Add a use case: /new-slice (node scripts/scaffold/new-slice.mjs; contract docs/csharp/scaffolds/new-slice.md) — test, request and response, service, endpoint, registration
+bash scripts/scaffold/e2e.sh            # The generators end to end: scaffold, build and test a small cli and a full http package in throwaway worktrees (~1 min)
 
 # Rules (edit .agents/rules/, then regenerate)
 scripts/sync-rules.sh                   # Link .claude/rules, .cursor/rules, CLAUDE.md; refresh Rules Index
@@ -111,6 +112,7 @@ node scripts/check-deps.mjs --mermaid [--base-file F]   # Also print the Mermaid
 bash providers/tests/install.test.sh
 bash scripts/tests/sync-rules.test.sh
 bash scripts/tests/check-deps.test.sh
+bash scripts/tests/scaffold.test.sh
 bash scripts/tests/probe.test.sh
 bash scripts/tests/find-duplicate-skills.test.sh
 bash scripts/tests/dotnet-verify-packages.test.sh
