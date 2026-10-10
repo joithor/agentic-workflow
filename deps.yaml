@@ -22,17 +22,29 @@
 #           any kind. Fan-out (§4b.1a): limits.packageFanOut caps the packages one package declares project
 #           edges to; once C# projects exist, each project may reference at most limits.projectFanOut in-repo
 #           projects and limits.thirdPartyFanOut third-party packages (analyzers excluded; *.Host and *.Tests
-#           exempt). *.Tests projects are leaves and may reference any package, including test-support ones
-#           (test: true), without a declared edge. Only the fan-out rules take exceptions, each with a reason,
-#           at most limits.exceptionMaxDays long, and an exception that suppresses nothing fails.
+#           exempt). Only the fan-out rules take exceptions, each with a reason, at most
+#           limits.exceptionMaxDays long, and an exception that suppresses nothing fails.
+# C# names  A project belongs to the package whose projectPrefix starts its name (longest wins), e.g.
+#           src/Judge/Aw.Judge.Core and tests/Aw.Judge.Tests both belong to Judge. Test code is
+#           Aw.<Pkg>.Tests (tests) and Aw.<Pkg>.Testing (that package's fakes, builders, contract bases).
+#           Test code follows its owner: it may reference its own package, test-support packages
+#           (test: true, such as Aw.Kernel.Testing) and what its owner has a project edge to, needs no edge
+#           of its own, and is exempt from fan-out. Nothing references *.Tests; only test code references
+#           *.Testing. Test assemblies no package owns (Aw.Architecture.Tests) may reference every package.
+#           Analyzer packages (analyzer: true, Aw.Analyzers) are referenced only with
+#           OutputItemType="Analyzer" (in a .csproj or a Directory.Build file); they need no edge and don't
+#           count as fan-out. Any other ProjectReference in a Directory.Build file fails.
 # scan      A heuristic, not a proof. It reads *.ts/*.js and *.sh under `scan` (not tests, node_modules or
 #           dist) and finds: spawn/exec*(…"bin…" calls, also wrapped over lines; `?? "bin"` and `|| "bin"`
 #           fallbacks; *Bin = "bin" and *Bin("bin"); BIN_BIN env names; shell commands after VAR=, env,
-#           sudo, xargs, nohup, exec, !, $( and backquotes, by name, path suffix or "$BIN_BIN". It can't see
-#           a binary named only through a variable it doesn't recognise, indirection such as
-#           `npx <bin>`, regex literals that look like strings, or calls in JSON and plist config
-#           (config/settings.json hook commands, launchd jobs). Shell lines starting with echo, printf or log
-#           and heredoc bodies are skipped.
+#           sudo, xargs, nohup, exec, !, $( and backquotes, by name, path suffix, "$BIN_BIN" or
+#           ${VAR:-bin}. TS comments are blanked and string, template and regex interiors are skipped for
+#           calls; a template literal or block comment left open at the end of a file is a tool error
+#           (exit 2), so a lexing mistake can't hide the rest of the file. It can't see a binary named only
+#           through a variable it doesn't recognise, indirection such as `npx <bin>`, or calls in JSON and
+#           plist config (config/settings.json hook commands, launchd jobs). Shell commands starting with
+#           echo, printf or log (separators inside quotes don't start a new command) and heredoc bodies
+#           are skipped.
 #
 # YAML subset (parsed without a library, so the check needs no install step): block mappings and
 # sequences, plain, 'single' or "double" quoted scalars, [flow, lists] of scalars, and # comments.
@@ -65,6 +77,14 @@ packages:
     ts: null
     src: src/Redaction
     note: "the scrubbing patterns copied between judge and sindri today, one shared pattern file (§4c A2); tier 0 per §4e B10"
+  - id: Analyzers
+    kind: package
+    tier: 0
+    analyzer: true
+    projectPrefix: Aw.Analyzers
+    ts: null
+    src: src/Aw.Analyzers
+    note: "repo-specific Roslyn rules (§4b.6); build-time only, wired with OutputItemType=Analyzer, never a runtime reference"
   - id: KernelData
     kind: package
     tier: 0

@@ -193,7 +193,7 @@ declaration.
   a reviewed change to `deps.yaml` (and an approval-tier change once it is a rule record).
 - **Prefer contracts over references:** a package calls a same-tier or higher-tier package only through its CLI or
   HTTP contract, never through a project reference. Copied logic is a smell: the redaction patterns copied between
-  judge and sindri move into the tier-1 `Redaction` package, and scorer's labeler, which sindri copies, moves into
+  judge and sindri move into the tier-0 `Redaction` package, and scorer's labeler, which sindri copies, moves into
   scorer's `Core` for sindri to call through scorer's CLI.
 - **Inside a package**, the four-project shape (§4b.1) is itself a fixed DAG. **Inside a project,** feature
   folders and namespaces must not form cycles. ArchUnitNET's slice-cycle rule checks every namespace in every
@@ -366,15 +366,16 @@ agentic-workflow/
 ├── AgenticWorkflow.slnx
 ├── src/
 │   ├── Aw.Kernel/                     # Result, Error, IService<,>, decorators, contracts
+│   ├── Aw.Kernel.Data/ · Aw.Kernel.Telemetry/ · Aw.Kernel.Testing/
 │   ├── Aw.Analyzers/                  # repo-specific Roslyn rules
-│   ├── Sindri/   (Sindri.Core · Sindri.Features · Sindri.Infrastructure · Sindri.Host)
-│   ├── Judge/    (same four projects)
+│   ├── Sindri/   (Aw.Sindri.Core · Aw.Sindri.Features · Aw.Sindri.Infrastructure · Aw.Sindri.Host)
+│   ├── Judge/    (Aw.Judge.Core · … · Aw.Judge.Host)
 │   ├── Scorer/   (…)
 │   └── Bridge/   (…)                  # minimal API host
 ├── tests/
 │   ├── Aw.Architecture.Tests/         # one assembly for every rule in §4b.1
-│   ├── Sindri.Tests/                  # by feature; lanes as traits
-│   ├── Sindri.Testing/                # fakes + builders + contract bases
+│   ├── Aw.Sindri.Tests/               # by feature; lanes as traits
+│   ├── Aw.Sindri.Testing/             # fakes + builders + contract bases
 │   └── …
 ├── tools/ts-indexer/                  # the pinned Node sidecar (§4a)
 ├── mods/                              # Claude Code mods (TypeScript, thin)
