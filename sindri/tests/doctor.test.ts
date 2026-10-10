@@ -16,7 +16,7 @@ import { GRAPHIFY_PIN } from "../src/index/pins.js";
 import { runCli } from "../src/main.js";
 import { preCommitHook } from "../src/scrub/commands.js";
 import { fakeSystem, makeDeps, tempDir } from "./helpers.js";
-import { approvedIndexDeps, BODY, fakeIndexIo, ring0Name, ring0Repo, seedIndex } from "./index-fixtures.js";
+import { approvedIndexDeps, BODY, fakeIndexIo, OFF as OFF_INDEX, ring0Name, ring0Repo, seedIndex } from "./index-fixtures.js";
 
 // Plan 2's tests never touch the machine's Ollama or graphify: nothing is installed, nothing answers.
 const offline: IndexProbes = { has: () => false, run: async () => ({ code: 127, stdout: "", stderr: "" }), getJson: async () => null };
@@ -511,6 +511,21 @@ describe("doctor privacy checks (privacy B1)", () => {
     expect(c.profile).toMatchObject({ status: "ok" });
     expect(c[`privacy:${name}`]).toBeUndefined();
     expect(c["privacy:words"]).toBeUndefined();
+  });
+
+  it("warns privacy:judge, once publishing is set up, when the rewriter and the judge are the same model; ok when they differ", async () => {
+    const repo = (): string => ring0Repo({ "src/a.ts": "export const a = 1;\n" });
+    const TERMS = "privacy:\n  denyTerms:\n    - Initech\n";
+    // No privacy.denyTerms: publish refuses anyway, so a fresh install stays all ok (spec §13.3).
+    expect((await byName(await depsWithRepos({})))["privacy:judge"]).toBeUndefined();
+    const same = await byName(await approvedIndexDeps(repo(), { index: `${OFF_INDEX}${TERMS}` }));
+    expect(same["privacy:judge"]).toMatchObject({
+      status: "warn",
+      detail: "models.challenger and models.adjudicator are both opus, so the generalize judge shares the rewriter's blind spots",
+      fix: "set models.adjudicator (or models.challenger) to a different model in the private profile, then sindri profile approve",
+    });
+    const d = await approvedIndexDeps(repo(), { index: `${OFF_INDEX}${TERMS}models:\n  adjudicator: haiku\n` });
+    expect((await byName(d))["privacy:judge"]).toMatchObject({ status: "ok", detail: "the generalize rewriter (opus) and judge (haiku) are different models" });
   });
 
   it("is silent for a repo marked private: false", async () => {

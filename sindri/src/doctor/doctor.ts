@@ -268,6 +268,14 @@ function privacyChecks(deps: Deps, loaded: LoadedProfile): Check[] {
   if (names.some((n) => loaded.repos[n].private === true) && !fs.existsSync(wf)) {
     out.push({ name: "privacy:words", status: "warn", detail: `${wf} is missing: sindri evolve publish will refuse (SND-EVOLVE-018)`, fix: "install a word list at /usr/share/dict/words, or set SINDRI_WORDS" });
   }
+  // Judge independence: stage's generalize rewrite runs on models.challenger and its judge on models.adjudicator.
+  // Checked once publishing is set up (privacy.denyTerms is set; publish refuses without it), so a fresh install with
+  // the default models stays all ok.
+  const { challenger, adjudicator } = loaded.profile.models;
+  if (loaded.profile.privacy.denyTerms.length === 0) return out;
+  out.push(challenger === adjudicator
+    ? { name: "privacy:judge", status: "warn", detail: `models.challenger and models.adjudicator are both ${challenger}, so the generalize judge shares the rewriter's blind spots`, fix: "set models.adjudicator (or models.challenger) to a different model in the private profile, then sindri profile approve" }
+    : { name: "privacy:judge", status: "ok", detail: `the generalize rewriter (${challenger}) and judge (${adjudicator}) are different models` });
   return out;
 }
 
