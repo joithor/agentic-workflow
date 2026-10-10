@@ -65,4 +65,61 @@ public sealed class BindTests
 
         Assert.True((await SqliteQueries.Exists(work, new SqlStatement("SELECT EXISTS (SELECT 1 FROM ids WHERE t = 'a-1' AND typeof(t) = 'text' AND i = 42 AND typeof(i) = 'integer')"), ct)).Value);
     }
+
+    [Fact]
+    public async Task Int_binds_as_integer_and_timestamps_as_utc_iso_text_with_milliseconds()
+    {
+        using var db = new TempDatabase();
+        var ct = TestContext.Current.CancellationToken;
+        await using var work = (await new SqliteUnitOfWorkFactory(db.Factory()).BeginSession(ct)).Value;
+        _ = await SqliteQueries.Execute(work, new SqlStatement("CREATE TABLE v (i, t)"), ct);
+        var at = new DateTimeOffset(2026, 10, 10, 9, 5, 7, 42, TimeSpan.FromHours(2));
+
+        _ = await SqliteQueries.Execute(work, new SqlStatement("INSERT INTO v VALUES ($i, $t)", c => c.Bind("$i", 7).Bind("$t", at)), ct);
+
+        Assert.True((await SqliteQueries.Exists(work, new SqlStatement("SELECT EXISTS (SELECT 1 FROM v WHERE typeof(i) = 'integer' AND i = 7 AND t = '2026-10-10T07:05:07.042Z')"), ct)).Value);
+    }
+
+    private const string Upper = "0F8FAD5B-D9CB-469F-A165-70867728950E";
+
+    private const string FromTs = "7c9e6679-7425-40de-944b-e07fc1f90ae7";
+
+    private readonly record struct RunId(Guid Value);
+
+    private sealed class GuidMapper : IRowMapper<Guid>
+    {
+        public Guid Map(Microsoft.Data.Sqlite.SqliteDataReader reader) => SqliteRead.GetGuid(reader, 0);
+    }
+
+    [Fact]
+    public async Task Guids_bind_as_lowercase_text_like_node_randomUUID_and_read_back()
+    {
+        using var db = new TempDatabase();
+        var ct = TestContext.Current.CancellationToken;
+        await using var work = (await new SqliteUnitOfWorkFactory(db.Factory()).BeginSession(ct)).Value;
+        _ = await SqliteQueries.Execute(work, new SqlStatement("CREATE TABLE g (id TEXT, run TEXT)"), ct);
+        var id = Guid.Parse(Upper, System.Globalization.CultureInfo.InvariantCulture);
+
+        _ = await SqliteQueries.Execute(work, new SqlStatement("INSERT INTO g VALUES ($id, $run)", c => c.Bind("$id", id).BindId("$run", new RunId(id), r => r.Value)), ct);
+        // A row the TS build wrote: crypto.randomUUID() is lowercase text.
+        _ = await SqliteQueries.Execute(work, new SqlStatement("INSERT INTO g VALUES ('7c9e6679-7425-40de-944b-e07fc1f90ae7', NULL)"), ct);
+
+        Assert.True((await SqliteQueries.Exists(work, new SqlStatement("SELECT EXISTS (SELECT 1 FROM g WHERE id = '0f8fad5b-d9cb-469f-a165-70867728950e' AND run = id AND typeof(id) = 'text')"), ct)).Value);
+        var read = await SqliteQueries.List(work, new SqlStatement("SELECT id FROM g ORDER BY rowid"), new GuidMapper(), ct);
+        Assert.Equal([id, Guid.Parse(FromTs, System.Globalization.CultureInfo.InvariantCulture)], read.Value);
+    }
+
+    [Theory]
+    [InlineData("SELECT X'0F8FAD5BD9CB469FA16570867728950E'")]
+    [InlineData("SELECT '0F8FAD5B-D9CB-469F-A165-70867728950E'")]
+    [InlineData("SELECT '{0f8fad5b-d9cb-469f-a165-70867728950e}'")]
+    [InlineData("SELECT 'not a guid'")]
+    public async Task GetGuid_refuses_anything_but_lowercase_hyphenated_text(string sql)
+    {
+        using var db = new TempDatabase();
+        var ct = TestContext.Current.CancellationToken;
+        await using var work = (await new SqliteUnitOfWorkFactory(db.Factory()).BeginSession(ct)).Value;
+
+        _ = await Assert.ThrowsAsync<InvalidDataException>(async () => await SqliteQueries.One(work, new SqlStatement(sql), new GuidMapper(), ct));
+    }
 }

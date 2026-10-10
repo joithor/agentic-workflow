@@ -127,6 +127,8 @@ public sealed class MigrationRunnerTests
         var crlf = lf with { Sql = lf.Sql.Replace("\n", "\r\n", StringComparison.Ordinal) };
 
         Assert.Equal(lf.Checksum, crlf.Checksum);
+        Assert.Equal(lf.Checksum, (lf with { Sql = lf.Sql.Replace('\n', '\r') }).Checksum);
+        Assert.Equal(lf.Checksum, (lf with { Sql = "\uFEFF" + lf.Sql }).Checksum);
         Assert.Equal(
             Convert.ToHexStringLower(System.Security.Cryptography.SHA256.HashData(System.Text.Encoding.UTF8.GetBytes(lf.Sql))),
             lf.Checksum);

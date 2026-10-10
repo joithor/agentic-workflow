@@ -23,11 +23,12 @@ public sealed class EmbeddedMigrationsTests
     }
 
     [Fact]
-    public void No_matching_resources_is_an_empty_set()
+    public void No_matching_resources_is_refused_naming_the_prefix()
     {
         var loaded = EmbeddedMigrations.Load(typeof(EmbeddedMigrationsTests).Assembly, "Nothing.Here.");
 
-        Assert.Empty(loaded.Value);
+        Assert.Equal(DataErrors.MigrationSequence.Code, loaded.Error.Code);
+        Assert.Contains("Nothing.Here.", loaded.Error.Message, StringComparison.Ordinal);
     }
 
     [Fact]
