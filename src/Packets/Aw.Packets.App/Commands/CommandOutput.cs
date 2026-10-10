@@ -14,6 +14,10 @@ namespace Aw.Packets.App.Commands;
 /// </summary>
 internal static class CommandOutput
 {
+    /// <summary>The scaffold's mapping (/new-slice generates calls to it): the value as JSON, or the error.</summary>
+    internal static int Write<T>(Result<T> result, JsonSerializerOptions json) =>
+        result.IsError ? Error(result.Error, asJson: true, json) : Json(result.Value, passed: true, json);
+
     internal static int Error(Error error, bool asJson, JsonSerializerOptions json)
     {
         Console.Error.WriteLine(asJson
