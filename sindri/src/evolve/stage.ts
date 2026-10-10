@@ -8,11 +8,12 @@ import { ulid } from "../ids.js";
 import { audit } from "./audit.js";
 import { repoConfig, type EvolveCtx } from "./ctx.js";
 import { profileScrubber } from "../scope/commands.js";
-import { privacyProblem } from "./privacy.js";
+import { copiedRun, patternProblem, personalProblem, termProblem, toolkitCorpus, type HoldLayer } from "./privacy.js";
+import { identifierProblem, loadDerivedSet } from "./privacy-derived.js";
 import { Budget } from "../scope/model.js";
 import { generalize, type Generalized } from "./generalize.js";
 import {
-  classifyTier, findMerged, getPublic, inFlightCount, listStored, normTitle, reduceEvidence, savePublic, setTier, stagedFile, transition, type StoredProposal, type Tier,
+  classifyTier, findMerged, getPublic, inFlightCount, listStored, normTitle, reduceEvidence, savePublic, setTier, stagedFile, transition, type Proposal, type StoredProposal, type Tier,
 } from "./proposals.js";
 import { loadRegistry } from "./registry.js";
 import { renderTask } from "./render.js";
@@ -130,7 +131,8 @@ export interface PublishOutcome {
   monday: string;
   first: number;
   published: { id: string; n: number; tier: Tier }[];
-  held: { id: string; why: string }[];
+  held: { id: string; why: string; layer: HoldLayer }[]; // `why` names the layer's check, never the matched text
+  heldByLayer: Partial<Record<HoldLayer, number>>;
   dryRun: boolean;
   warning: string | null;
   termsSkipped: boolean; // true when --no-privacy-terms let an empty denyTerms through
@@ -169,6 +171,8 @@ export async function publishProposals(ctx: EvolveCtx, o: { dryRun: boolean; noP
       fix: "add your workplace's names to privacy.denyTerms in the private profile, then sindri profile approve; or pass --no-privacy-terms to publish with only the email and home-path checks",
     });
   }
+  // May throw SND-EVOLVE-017/018 (a private repo without an index, no word list), also on --dry-run, before any write.
+  const derived = loadDerivedSet(ctx.deps, ctx.loaded);
   const cfg = repoConfig(ctx.loaded);
   const monday = isoWeekMonday(ctx.deps.now());
   if (!o.dryRun) {
@@ -192,16 +196,55 @@ export async function publishProposals(ctx: EvolveCtx, o: { dryRun: boolean; noP
   const first = parsePlan(existing).tasks.reduce((m, t) => Math.max(m, t.number), 0) + 1;
   const registry = loadRegistry(ctx.db);
   const scrubber = profileScrubber(ctx.loaded);
-  const ready: { s: StoredProposal; t: { tier: Tier; why: string } }[] = [];
+  const patterns = ctx.loaded.profile.privacy.denyPatterns;
+  const user = ctx.deps.system.username();
+  // Only the public version is ever rendered or checked (privacy spec §5.1); the original never reaches the repo.
+  // A proposal released by a profile change publishes from the public row it already has: no model call.
+  const open = listStored(ctx.db, ["staged", "held"]).map((s) => ({ s, pub: getPublic(ctx.db, s.id) }));
+  // The evidence of every listed proposal, resolved in one scan; a ref that doesn't resolve isn't checked (Review Focus 1).
+  const sources = resolveRefs(transcriptsDir(ctx), ctx.repo, open.flatMap((l) => reduceEvidence(l.pub?.evidence ?? []).refs), scrubber);
+  // The toolkit corpus is read only when some proposal shares a run with its evidence, and at most once per run.
+  let corpus: Promise<string> | null = null;
+  const copies = async (text: string, evidence: readonly string[]): Promise<boolean> => {
+    if (!copiedRun(text, evidence, () => false)) return false;
+    corpus ??= toolkitCorpus(ctx.deps.git, ctx.repo);
+    const c = await corpus;
+    return copiedRun(text, evidence, (run) => c.includes(` ${run} `));
+  };
+  const ready: { s: StoredProposal; pub: Proposal; t: { tier: Tier; why: string } }[] = [];
   const held: PublishOutcome["held"] = [];
-  for (const s of listStored(ctx.db, ["staged", "held"])) {
-    const t = classifyTier(s.proposal, registry, cfg.protectedPaths);
-    const md = renderTask(first + ready.length, s.id, s.proposal, t.tier, t.why, s.source);
-    const p = s.proposal;
-    const raw = [p.title, p.rationale, ...p.evidence, p.change.type === "describe" ? `${p.change.description}\n${p.change.files.join("\n")}` : p.change.text, s.source].join("\n");
-    const problem = privacyProblem(`${raw}\n${md}`, deny, ctx.deps.system.username()) ?? (scrubber.find(`${raw}\n${md}`).length > 0 ? "contains text the scrubber redacts (a secret or a scrub.extraPatterns match)" : null);
-    if (problem !== null) held.push({ id: s.id, why: problem });
-    else ready.push({ s, t });
+  for (const { s, pub } of open) {
+    if (pub === null) {
+      held.push({ id: s.id, layer: "generalize", why: "not generalized yet; run sindri evolve stage" });
+      continue;
+    }
+    const t = classifyTier(pub, registry, cfg.protectedPaths); // re-tiered from the public version (Review Focus 2)
+    const md = renderTask(first + ready.length, s.id, pub, t.tier, t.why, s.source);
+    const raw = [pub.title, pub.rationale, ...pub.evidence, pub.change.type === "describe" ? `${pub.change.description}\n${pub.change.files.join("\n")}` : pub.change.text, s.source].join("\n");
+    const text = `${raw}\n${md}`;
+    const evidence = reduceEvidence(pub.evidence).refs.flatMap((r) => {
+      const e = sources.get(r);
+      return e === undefined ? [] : [e];
+    });
+    // In order; the first hit holds and the rest don't run (a terms hit never reads the corpus).
+    const checks: [HoldLayer, () => Promise<string | null>][] = [
+      ["terms", async () => termProblem(text, deny)],
+      ["patterns", async () => patternProblem(text, patterns)],
+      ["identifiers", async () => identifierProblem(text, derived)],
+      ["verbatim", async () => ((await copies(text, evidence)) ? "copies transcript text" : null)],
+      ["personal", async () => personalProblem(text, user)],
+      ["scrubber", async () => (scrubber.find(text).length > 0 ? "contains text the scrubber redacts (a secret or a scrub.extraPatterns match)" : null)],
+    ];
+    let hit: { layer: HoldLayer; why: string } | null = null;
+    for (const [layer, check] of checks) {
+      const why = await check();
+      if (why !== null) {
+        hit = { layer, why };
+        break;
+      }
+    }
+    if (hit !== null) held.push({ id: s.id, ...hit });
+    else ready.push({ s, pub, t });
   }
   let done = { ready, held };
   if (!o.dryRun && (ready.length > 0 || held.length > 0)) {
@@ -213,7 +256,7 @@ export async function publishProposals(ctx: EvolveCtx, o: { dryRun: boolean; noP
       const heldNow = held.filter((h) => transition(ctx.db, h.id, FROM, "held", epoch, ctx.deps.now()));
       const readyNow = ready.filter((r) => transition(ctx.db, r.s.id, FROM, "published", epoch, ctx.deps.now()));
       if (readyNow.length > 0) {
-        const chunks = readyNow.map((r, i) => renderTask(first + i, r.s.id, r.s.proposal, r.t.tier, r.t.why, r.s.source));
+        const chunks = readyNow.map((r, i) => renderTask(first + i, r.s.id, r.pub, r.t.tier, r.t.why, r.s.source));
         fs.mkdirSync(path.dirname(file), { recursive: true });
         // A temp file in the same directory, then a rename: never written through whatever is at the path.
         const tmp = `${file}.tmp-${ulid(ctx.deps.now())}`;
@@ -229,7 +272,9 @@ export async function publishProposals(ctx: EvolveCtx, o: { dryRun: boolean; noP
     });
   }
   const published: PublishOutcome["published"] = done.ready.map((r, i) => ({ id: r.s.id, n: first + i, tier: r.t.tier }));
+  const heldByLayer: PublishOutcome["heldByLayer"] = {};
+  for (const h of done.held) heldByLayer[h.layer] = (heldByLayer[h.layer] ?? 0) + 1;
   const listed = ctx.loaded.profile.tracker.include.some((pattern) => wildcard(pattern).test(name));
   const warning = listed ? null : `tracker.include in the profile doesn't match ${name}, so sindri observe won't list these tasks.`;
-  return { relFile, monday, first, published, held: done.held, dryRun: o.dryRun, warning, termsSkipped: deny.length === 0 };
+  return { relFile, monday, first, published, held: done.held, heldByLayer, dryRun: o.dryRun, warning, termsSkipped: deny.length === 0 };
 }

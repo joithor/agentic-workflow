@@ -1,4 +1,12 @@
+import fs from "node:fs";
+import path from "node:path";
+
+import type { GitRunner } from "../git.js";
 import { stripInvisible, WHITESPACE } from "./invisible.js";
+
+// The publish gate's layers, in the order they run (spec §5.4); `generalize` holds a proposal with no public version.
+export type HoldLayer = "generalize" | "terms" | "patterns" | "identifiers" | "verbatim" | "personal" | "scrubber";
+export const HOLD_LAYERS: readonly HoldLayer[] = ["generalize", "terms", "patterns", "identifiers", "verbatim", "personal", "scrubber"];
 
 // The publication gate (spec amendment 2): nothing workplace-specific reaches the public repo.
 // Matching runs on a normalized copy, so a term can't be hidden behind a line break, a double space,
@@ -70,4 +78,23 @@ export function copiedRun(text: string, sources: readonly string[], isPublic: (r
   const mine = runsOf(text);
   if (mine.size === 0) return false;
   return sources.some((s) => [...runsOf(s)].some((run) => mine.has(run) && !isPublic(run)));
+}
+
+const CORPUS_FILE_MAX = 1_000_000;
+
+// The toolkit's own tracked text, as normalized words: a run found here is public already (spec §5.5). Symlinks,
+// binaries, files over 1 MB and tracked files missing from the work tree are skipped.
+export async function toolkitCorpus(git: GitRunner, repo: string): Promise<string> {
+  const r = await git.run(["ls-files", "-z"], repo);
+  if (!r.ok) return "";
+  const parts: string[] = [];
+  for (const rel of r.stdout.split("\0").filter((f) => f !== "")) {
+    const st = fs.lstatSync(path.join(repo, rel), { throwIfNoEntry: false });
+    if (st === undefined || !st.isFile() || st.size > CORPUS_FILE_MAX) continue;
+    const buf = fs.readFileSync(path.join(repo, rel));
+    if (buf.includes(0)) continue; // binary
+    parts.push(runWords(buf.toString("utf8")));
+  }
+  // "|" is never a word, so a run can't span the end of one file and the start of the next.
+  return ` ${parts.join(" | ")} `;
 }

@@ -1,6 +1,41 @@
+import fs from "node:fs";
+import path from "node:path";
 import { describe, expect, it } from "vitest";
 
-import { copiedRun, patternProblem, personalProblem, privacyProblem, runWords, termProblem, RUN_WORDS } from "../src/evolve/privacy.js";
+import { copiedRun, patternProblem, personalProblem, privacyProblem, runWords, termProblem, toolkitCorpus, RUN_WORDS } from "../src/evolve/privacy.js";
+import { realGitRunner } from "../src/git-real.js";
+import { gitRepo } from "./helpers.js";
+
+describe("toolkitCorpus (spec §5.5)", () => {
+  it("joins the normalized words of tracked text files, skipping binaries, files over 1 MB, symlinks and deleted files", async () => {
+    const repo = gitRepo({
+      "a.md": "Hello,  World\nSecond LINE",
+      "bin.dat": "abc\u0000secretbinaryword",
+      "big.txt": `bigfileword ${"x".repeat(1_000_001)}`,
+      "gone.md": "deletedfileword",
+    });
+    fs.symlinkSync(path.join(repo, "a.md"), path.join(repo, "link.md"));
+    const g = realGitRunner();
+    await g.run(["add", "link.md"], repo);
+    fs.rmSync(path.join(repo, "gone.md"));
+    const c = await toolkitCorpus(g, repo);
+    expect(c.startsWith(" ") && c.endsWith(" ")).toBe(true);
+    expect(c).toContain(" hello world second line ");
+    expect(c).not.toMatch(/secretbinaryword|bigfileword|deletedfileword/);
+    expect(c.match(/hello world/g)).toHaveLength(1); // the symlink isn't read a second time
+  });
+
+  it("keeps files apart, so a run never spans the end of one file and the start of the next", async () => {
+    const repo = gitRepo({ "a.md": "one two three four", "b.md": "five six seven eight" });
+    const c = await toolkitCorpus(realGitRunner(), repo);
+    expect(c).toContain(" one two three four ");
+    expect(c).not.toContain(" four five ");
+  });
+
+  it("is empty when git can't list the files", async () => {
+    expect(await toolkitCorpus({ run: async () => ({ ok: false, stderr: "boom", code: 128 }) }, "/nowhere")).toBe("");
+  });
+});
 
 describe("privacyProblem (Review Focus 6)", () => {
   it("finds profile deny terms as whole words, case-insensitively, without echoing them", () => {

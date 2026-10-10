@@ -54,7 +54,46 @@ The tier is recomputed at stage and publish time from the current registry, and 
 
 ## Publication and privacy
 
-`publish` scrubs every text, escapes it so it can't forge a heading or a ticked step, reduces evidence references to `pr:<n>` and `transcript:<session prefix>#<line>`, and withholds any proposal that mentions a word in the profile's `privacy.denyTerms` (terms match whole words after normalization: case, accents, width, invisible characters and line breaks don't hide one, but joined or hyphenated variants such as `AcmeCare` or `acme-care` and look-alike letters do, so list each variant as its own term), an email address or a home directory path. A held proposal moves to status `held`, doesn't count against the cap and is re-checked on the next `publish`; because of that, releasing a held proposal later can push the number of open proposals past `evolve.maxOpenProposals`; `publish` names it and the reason, never the matched text. Put your workplace's words in `privacy.denyTerms` in the private profile (changing it needs `sindri profile approve`). **`publish` refuses to run while `privacy.denyTerms` is empty** (`SND-EVOLVE-015`), because the email and home-path checks can't know your employer's names; pass `--no-privacy-terms` only to publish knowingly without a term list.
+`stage` generalizes every proposal before staging it: one model call rewrites it as a change to agent behavior or to the toolkit, with no product, company, customer, codebase, ticket or people detail, and a separate call judges whether the rewrite still leaks. Only a rewrite the judge passes is stored as the proposal's public version and staged; the original stays in the local ledger. `publish` renders only that public version. It scrubs every text, escapes it so it can't forge a heading or a ticked step, reduces evidence references to `pr:<n>` and `transcript:<session prefix>#<line>`, recomputes the tier from the public version, and then runs it through six gate layers in order: private terms, deny patterns, private-repo identifiers, verbatim overlap with the evidence transcripts, email addresses and home paths, and the scrubber (see [Privacy](#privacy)). The first layer that matches holds the proposal. A staged or held proposal with no public version is held under layer `generalize` until the next `stage` generalizes it. A held proposal moves to status `held`, doesn't count against the cap and is re-checked on the next `publish` from the public version it already has, with no model call; because of that, releasing a held proposal later can push the number of open proposals past `evolve.maxOpenProposals`. `publish` prints `held <id> (<layer>): <reason>` and a `Held by layer:` count, never the matched text; `--dry-run` shows the same, so you can see how noisy each layer is before a real run. **`publish` refuses to run while `privacy.denyTerms` is empty** (`SND-EVOLVE-015`), because the other checks can't know your employer's names; pass `--no-privacy-terms` only to publish knowingly without a term list.
+
+## Privacy
+
+What the gate protects, and where:
+
+- **Asset:** workplace information: names, code identifiers, ticket keys, product and domain detail.
+- **Boundary:** the plan file `sindri evolve publish` writes into the toolkit repo. The toolkit repo is public; anything committed there is published. Everything before it (transcripts, the ledger, index databases, staged previews) stays local in owner-only state.
+- **Not a boundary:** model calls. Evolve sends transcript text to the same model provider every session already uses. Model input is unrestricted; model output headed for the plan file is restricted.
+- **Leak paths:** model-written proposal text (title, rationale, change description, file list, replacement text) that copies or paraphrases workplace content from its inputs.
+
+The gate, in order (the first hit holds; reasons name the layer, never the text):
+
+| Layer | Holds a proposal that | Reason |
+|---|---|---|
+| `generalize` | has no public version yet (the generalization pass refused it or hasn't run) | `not generalized yet; run sindri evolve stage` |
+| `terms` | mentions a word in `privacy.denyTerms` | `contains a private term` |
+| `patterns` | matches a regex in `privacy.denyPatterns` | `matches a privacy.denyPatterns entry` |
+| `identifiers` | names a code identifier or path segment from a `private: true` repo's index (5+ characters, not an English word, not in the toolkit's own index) | `contains a private-repo identifier` |
+| `verbatim` | shares a run of 8 normalized words with a transcript line its evidence points at, unless the toolkit's own tracked files already contain that run. Evidence refs that no longer resolve are skipped | `copies transcript text` |
+| `personal` | contains an email address or a home directory path | `contains an email address or a home directory path` |
+| `scrubber` | contains text the scrubber redacts (a secret or a `scrub.extraPatterns` match) | `contains text the scrubber redacts (a secret or a scrub.extraPatterns match)` |
+
+Configure it in the private profile; every change needs `sindri profile approve`:
+
+```yaml
+# profile.yaml
+privacy:
+  denyTerms:          # whole words; publish refuses while this is empty
+    - Acme
+  denyPatterns:       # JavaScript regexes, matched case-insensitively; publish only
+    - "ABC-\\d+"
+```
+
+```yaml
+# repos/<name>.yaml, for each workplace checkout
+private: true
+```
+
+Terms match whole words after normalization: case, accents, width, invisible characters and line breaks don't hide one, but joined or hyphenated variants such as `AcmeCare` or `acme-care` and look-alike letters do, so list each variant as its own term. Patterns are tried on the visible text and on the normalized copy; unlike `scrub.extraPatterns`, they don't redact anything elsewhere (scope maps keep their ticket keys). For a `private: true` repo, `publish` reads its code index (`sindri index build --repo <name>`) and the English word list at `/usr/share/dict/words` (or `SINDRI_WORDS`); it refuses, also on `--dry-run`, while either is missing (`SND-EVOLVE-017`, `SND-EVOLVE-018`). The identifier set lives in memory only; it is never written, logged or printed. A public library name used in a private repo can hold a proposal; it never lets one through.
 
 ## Comparisons
 
@@ -91,7 +130,10 @@ Suite output tails, audit details and transcript excerpts are scrubbed with the 
 | `SND-EVOLVE-005` | A channel change isn't allowed yet | `sindri channel status` says why and what to run |
 | `SND-EVOLVE-014` | `publish` would write into the default branch | `git switch -c docs/sindri-proposals-<week>` |
 | `SND-EVOLVE-015` | `publish` found `privacy.denyTerms` empty | add your workplace's names to `privacy.denyTerms` in the private profile, then `sindri profile approve`; or pass `--no-privacy-terms` |
-| `held: contains a private term` | A proposal matched `privacy.denyTerms` | `reject` it first: a held proposal is still open, so a re-proposal with the same title merges into it and stays held, and a rejected title can't be saved again, so a reworded one needs a different title. Or fix the cause (edit `privacy.denyTerms` or `scrub.extraPatterns`, then `sindri profile approve`) and rerun `publish`, which re-checks held proposals. Held proposals don't count against the cap |
+| `SND-EVOLVE-017` | `publish` found a `private: true` repo with no built code index | `sindri index build --repo <name>`, then rerun `publish` |
+| `SND-EVOLVE-018` | `publish` found no English word list for a `private: true` repo | install a word list at `/usr/share/dict/words` (or point `SINDRI_WORDS` at one), then rerun `publish` |
+| `held <id> (terms): contains a private term` (or another layer) | A proposal's public version tripped that gate layer ([Privacy](#privacy)) | `reject` it first: a held proposal is still open, so a re-proposal with the same title merges into it and stays held, and a rejected title can't be saved again, so a reworded one needs a different title. Or fix the cause (edit `privacy.denyTerms`, `privacy.denyPatterns`, a repo's `private` or `scrub.extraPatterns`, then `sindri profile approve`) and rerun `publish`, which re-checks held proposals. Held proposals don't count against the cap |
+| `held <id> (generalize): not generalized yet` | The proposal has no public version | `sindri evolve stage` retries the generalization pass |
 | `SND-LOCK-001` from an evolve command | `observe` held the tick lock for more than 6 seconds | rerun; evolve retries a held lock 3 times, 2 seconds apart, before failing |
 | `evolve-overlay` warning in `doctor` | An overlay file is being ignored | `adopt` properly, or delete the file |
 

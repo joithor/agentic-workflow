@@ -2,6 +2,7 @@ import { parseFlags } from "../../args.js";
 import { success, type CommandResult } from "../../output.js";
 import type { EvolveCtx } from "../ctx.js";
 import { terminalSafe } from "../invisible.js";
+import { HOLD_LAYERS } from "../privacy.js";
 import { publishProposals, stageProposals } from "../stage.js";
 
 export async function stage(args: string[], ctx: EvolveCtx): Promise<CommandResult> {
@@ -39,7 +40,9 @@ export async function publish(args: string[], ctx: EvolveCtx): Promise<CommandRe
   const { values } = parseFlags(args, { "dry-run": { type: "boolean" }, "no-privacy-terms": { type: "boolean" }, json: { type: "boolean" } });
   const r = await publishProposals(ctx, { dryRun: values["dry-run"] === true, noPrivacyTerms: values["no-privacy-terms"] === true });
   const json = values.json === true;
-  const heldLines = r.held.map((h) => `held ${h.id}: ${h.why}`);
+  // Each line names the layer and its check, never the matched text; then one count per layer, in gate order.
+  const byLayer = HOLD_LAYERS.flatMap((l) => (r.heldByLayer[l] === undefined ? [] : [`${l} ${r.heldByLayer[l]}`]));
+  const heldLines = [...r.held.map((h) => `held ${h.id} (${h.layer}): ${h.why}`), ...(byLayer.length > 0 ? [`Held by layer: ${byLayer.join(", ")}`] : [])];
   const heldHelp = r.held.length > 0 ? ['Held proposals stay held and don\'t count against the cap. Reject one with: sindri evolve reject <id> --reason "..."'] : [];
   const warning = [
     ...(r.termsSkipped ? ["Warning: no privacy.denyTerms were set; only the email-address and home-path checks ran."] : []),

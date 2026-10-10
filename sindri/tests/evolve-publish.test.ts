@@ -7,8 +7,9 @@ import { makePlanFileTracker } from "../src/adapters/plan-file/tracker.js";
 import { parsePlan } from "../src/adapters/plan-file/parse.js";
 import { init } from "../src/evolve/cmd/registry.js";
 import { publish, stage } from "../src/evolve/cmd/stage.js";
-import { getProposal, inFlightCount, ProposalSchema, saveProposal, stagedFile, type Tier } from "../src/evolve/proposals.js";
-import { evolveFixture, git, withDeps, setStatus } from "./evolve-fixtures.js";
+import { getProposal, inFlightCount, ProposalSchema, savePublic, saveProposal, stagedFile, type Tier } from "../src/evolve/proposals.js";
+import type { GitRunner } from "../src/git.js";
+import { evolveFixture, git, scriptedEvolveIo, withDeps, setStatus, type EvolveFixture } from "./evolve-fixtures.js";
 
 const FILES = { "config/hooks/done-gate.sh": "#!/bin/sh\n", "skills/review/SKILL.md": "x\n" };
 const DENY = "privacy:\n  denyTerms:\n    - Acme Care\n"; // every test but the N1 ones runs with a term list, as a real profile must
@@ -152,9 +153,10 @@ describe("sindri evolve publish (the explicit half; Review Focus 6)", () => {
     expect(r.stdout).toBe(
       [
         `Published 1 proposal(s) as tasks 1-1 in ${REL}; 3 held back.`,
-        `held ${term}: contains a private term`,
-        `held ${mail}: contains an email address or a home directory path`,
-        `held ${home}: contains an email address or a home directory path`,
+        `held ${term} (terms): contains a private term`,
+        `held ${mail} (personal): contains an email address or a home directory path`,
+        `held ${home} (personal): contains an email address or a home directory path`,
+        "Held by layer: terms 1, personal 2",
         "Next: review the diff, then commit it:",
         `  git add ${REL}`,
         '  git commit -m "docs: sindri proposals, week of 2026-10-05"',
@@ -199,7 +201,7 @@ describe("sindri evolve publish (the explicit half; Review Focus 6)", () => {
     await stage([], bare.fx.ctx);
     const held = await publish(["--no-privacy-terms"], bare.fx.ctx);
     expect(held.exitCode).toBe(1);
-    expect(held.stdout).toContain(`held ${mail}: contains an email address or a home directory path`);
+    expect(held.stdout).toContain(`held ${mail} (personal): contains an email address or a home directory path`);
     bare.fx.close();
   });
 
@@ -219,7 +221,7 @@ describe("sindri evolve publish (the explicit half; Review Focus 6)", () => {
     const r = await publish([], held.fx.ctx);
     expect(r.exitCode).toBe(1);
     expect(getProposal(held.fx.ctx.db, id)?.status).toBe("held");
-    expect(r.stdout).toBe(`Nothing to publish: 1 held back.\nheld ${id}: contains a private term\nHeld proposals stay held and don't count against the cap. Reject one with: sindri evolve reject <id> --reason "..."\n`);
+    expect(r.stdout).toBe(`Nothing to publish: 1 held back.\nheld ${id} (terms): contains a private term\nHeld by layer: terms 1\nHeld proposals stay held and don't count against the cap. Reject one with: sindri evolve reject <id> --reason "..."\n`);
     held.fx.close();
   });
 
@@ -268,8 +270,8 @@ describe("publish: re-tiering, replace-prompt text, profile scrub patterns, the 
     await stage([], fx.ctx);
     const r = await publish([], fx.ctx);
     expect(r.exitCode).toBe(1);
-    expect(r.stdout).toContain(`held ${bad}: contains text the scrubber redacts (a secret or a scrub.extraPatterns match)`);
-    expect(r.stdout).toContain(`held ${rat}: contains text the scrubber redacts (a secret or a scrub.extraPatterns match)`);
+    expect(r.stdout).toContain(`held ${bad} (scrubber): contains text the scrubber redacts (a secret or a scrub.extraPatterns match)`);
+    expect(r.stdout).toContain(`held ${rat} (scrubber): contains text the scrubber redacts (a secret or a scrub.extraPatterns match)`);
     expect(r.stdout).not.toContain("WRK-");
     expect(fs.readFileSync(path.join(fx.repo, REL), "utf8")).not.toContain("WRK-");
     expect([ok, bad, rat].map((id) => getProposal(fx.ctx.db, id)?.status)).toEqual(["published", "held", "held"]);
@@ -302,7 +304,7 @@ describe("publish hardening (Task 10 fix round 1)", () => {
     const fine = save("Perfectly clean proposal");
     await stage([], fx.ctx);
     const r = await publish([], fx.ctx);
-    for (const id of ids) expect(r.stdout).toContain(`held ${id}: contains a private term`);
+    for (const id of ids) expect(r.stdout).toContain(`held ${id} (terms): contains a private term`);
     expect(r.stdout).not.toMatch(/Acme/);
     expect(getProposal(fx.ctx.db, fine)?.status).toBe("published");
     expect(fs.readFileSync(path.join(fx.repo, REL), "utf8")).not.toMatch(/Acme/);
@@ -314,7 +316,7 @@ describe("publish hardening (Task 10 fix round 1)", () => {
     const id = save("Prompt replacement on a skill", { change: { type: "replace-prompt", text: "Written for Acme Care teams only." } }, "approval");
     await stage([], fx.ctx);
     const r = await publish([], fx.ctx);
-    expect(r.stdout).toContain(`held ${id}: contains a private term`);
+    expect(r.stdout).toContain(`held ${id} (terms): contains a private term`);
     expect(getProposal(fx.ctx.db, id)?.status).toBe("held");
     fx.close();
   });
@@ -335,6 +337,201 @@ describe("publish hardening (Task 10 fix round 1)", () => {
     await expect(publish([], failing)).rejects.toThrow(/couldn't tell which branch/);
     expect(fs.existsSync(path.join(broken.fx.repo, REL))).toBe(false);
     broken.fx.close();
+  });
+});
+
+describe("publish renders only the generalized version (privacy B1)", () => {
+  it("publishes the public text, never the original", async () => {
+    const { fx, save } = await ready();
+    const id = save("Original private wording");
+    await stage([], fx.ctx);
+    fx.ctx.write((epoch) => savePublic(fx.ctx.db, id, { ...getProposal(fx.ctx.db, id)!.proposal, title: "Generic wording to publish" }, { category: "none", model: "m" }, epoch, fx.deps.now()));
+    await publish([], fx.ctx);
+    const text = fs.readFileSync(path.join(fx.repo, REL), "utf8");
+    expect(text).toContain("Generic wording to publish");
+    expect(text).not.toContain("Original private wording");
+    fx.close();
+  });
+
+  it("holds a staged proposal with no public row under the generalize layer", async () => {
+    const { fx, save } = await ready();
+    const id = save("Alpha change here");
+    await stage([], fx.ctx);
+    fx.ctx.db.prepare("DELETE FROM proposal_public WHERE proposal_id = ?").run(id);
+    const r = JSON.parse((await publish(["--json"], fx.ctx)).stdout) as { held: { id: string; layer: string; why: string }[]; heldByLayer: Record<string, number> };
+    expect(r.held).toEqual([{ id, layer: "generalize", why: "not generalized yet; run sindri evolve stage" }]);
+    expect(r.heldByLayer).toEqual({ generalize: 1 });
+    expect(getProposal(fx.ctx.db, id)?.status).toBe("held");
+    fx.close();
+  });
+
+  it("re-tiers from the public version: a rewrite that moves files to a protected path lands as approval (Review Focus 2)", async () => {
+    const { fx, save } = await ready();
+    const id = save("Alpha change here");
+    await stage([], fx.ctx);
+    const p = getProposal(fx.ctx.db, id)!.proposal;
+    fx.ctx.write((epoch) => savePublic(fx.ctx.db, id, { ...p, change: { type: "describe", files: ["config/hooks/done-gate.sh"], description: "x" } }, { category: "none", model: "m" }, epoch, fx.deps.now()));
+    const r = JSON.parse((await publish(["--json"], fx.ctx)).stdout) as { published: { tier: string }[] };
+    expect(r.published[0].tier).toBe("approval");
+    expect(getProposal(fx.ctx.db, id)?.tier).toBe("approval");
+    fx.close();
+  });
+
+  it("checks the public version only: a private term left in the original doesn't hold a clean rewrite", async () => {
+    const { fx, save } = await ready();
+    const id = save("Acme Care scheduling fix");
+    await stage([], fx.ctx);
+    fx.ctx.write((epoch) => savePublic(fx.ctx.db, id, { ...getProposal(fx.ctx.db, id)!.proposal, title: "Scheduling fix" }, { category: "workplace", model: "m" }, epoch, fx.deps.now()));
+    const r = await publish([], fx.ctx);
+    expect(r.exitCode).toBe(0);
+    expect(fs.readFileSync(path.join(fx.repo, REL), "utf8")).not.toMatch(/Acme/);
+    fx.close();
+  });
+});
+
+describe("publish gate layers (privacy B1)", () => {
+  const PATTERNS = `${DENY}  denyPatterns:\n    - "GLX-\\\\d+"\n`;
+  const transcriptLine = (fx: EvolveFixture, text: string): string =>
+    `${JSON.stringify({ type: "user", timestamp: "2026-10-08T10:00:00Z", cwd: fx.repo, message: { content: text } })}\n`;
+  const COPIED = "the overnight rota swap left two shifts without a charge nurse";
+  const SESSION = "5e55a1d0-0000-4000-8000-000000000001.jsonl";
+
+  async function heldLayer(
+    over: Record<string, unknown>,
+    o: { extraYaml?: string; files?: (fx: EvolveFixture) => Record<string, string>; repoFiles?: Record<string, string> } = {},
+  ): Promise<{ layer: string; why: string }[]> {
+    const { fx, save } = await ready({ extraYaml: o.extraYaml ?? PATTERNS });
+    for (const [f, t] of Object.entries(o.files?.(fx) ?? {})) fs.writeFileSync(path.join(fx.transcripts, f), t);
+    for (const [f, t] of Object.entries(o.repoFiles ?? {})) {
+      fs.writeFileSync(path.join(fx.repo, f), t);
+      git(fx.repo, "add", f);
+    }
+    save("Alpha change here", over);
+    await stage([], fx.ctx);
+    const r = JSON.parse((await publish(["--json", "--dry-run"], fx.ctx)).stdout) as { held: { layer: string; why: string }[] };
+    fx.close();
+    return r.held.map((h) => ({ layer: h.layer, why: h.why }));
+  }
+
+  it("terms", async () => {
+    expect(await heldLayer({ rationale: "Seen at ACME care twice." })).toEqual([{ layer: "terms", why: "contains a private term" }]);
+  });
+
+  it("patterns, without printing the match", async () => {
+    const held = await heldLayer({ rationale: "Seen on glx-1234." });
+    expect(held).toEqual([{ layer: "patterns", why: "matches a privacy.denyPatterns entry" }]);
+    expect(JSON.stringify(held)).not.toMatch(/1234/);
+  });
+
+  it("verbatim: a rationale copying 8 words of its evidence transcript", async () => {
+    const held = await heldLayer(
+      { rationale: "The overnight rota swap left two shifts without cover.", evidence: ["transcript:5e55a1d0#1"] },
+      { files: (fx) => ({ [SESSION]: transcriptLine(fx, COPIED) }) },
+    );
+    expect(held).toEqual([{ layer: "verbatim", why: "copies transcript text" }]);
+    expect(JSON.stringify(held)).not.toMatch(/rota/);
+  });
+
+  it("verbatim: a run the toolkit's own tracked files already contain is public, not a leak", async () => {
+    const held = await heldLayer(
+      { rationale: "The overnight rota swap left two shifts without cover.", evidence: ["transcript:5e55a1d0#1"] },
+      { files: (fx) => ({ [SESSION]: transcriptLine(fx, COPIED) }), repoFiles: { "NOTES.md": "# Notes\n\nThe overnight rota swap left two shifts without anyone.\n" } },
+    );
+    expect(held).toEqual([]);
+  });
+
+  it("verbatim: an evidence ref that doesn't resolve is skipped; only the resolving ones are checked (Review Focus 1)", async () => {
+    const held = await heldLayer(
+      { rationale: "The overnight rota swap left two shifts without cover.", evidence: ["transcript:0badc0de#9", "transcript:5e55a1d0#2"] },
+      { files: (fx) => ({ [SESSION]: transcriptLine(fx, COPIED) }) },
+    );
+    expect(held).toEqual([]);
+  });
+
+  it("personal", async () => {
+    expect(await heldLayer({ rationale: "mail ops@example.org" })).toEqual([{ layer: "personal", why: "contains an email address or a home directory path" }]);
+  });
+
+  it("scrubber, after every other layer", async () => {
+    const yaml = `${PATTERNS}scrub:\n  extraPatterns:\n    - kind: ticket\n      regex: "WRK-[0-9]{3,6}"\n`;
+    expect(await heldLayer({ rationale: "Linked to WRK-99001 upstream." }, { extraYaml: yaml })).toEqual([
+      { layer: "scrubber", why: "contains text the scrubber redacts (a secret or a scrub.extraPatterns match)" },
+    ]);
+  });
+
+  it("the first hit holds: a term, a pattern and an email together report terms", async () => {
+    expect(await heldLayer({ rationale: "Acme Care saw GLX-1234 and mailed ops@example.org." })).toEqual([{ layer: "terms", why: "contains a private term" }]);
+  });
+
+  it("reads the toolkit corpus at most once, and only when some proposal shares a run with its evidence", async () => {
+    const { fx, save } = await ready({ extraYaml: `${DENY}evolve:\n  maxOpenProposals: 4\n` });
+    fs.writeFileSync(path.join(fx.transcripts, SESSION), transcriptLine(fx, COPIED));
+    let lsFiles = 0;
+    const counting: GitRunner = { run: async (args, cwd) => { if (args[0] === "ls-files") lsFiles++; return fx.deps.git.run(args, cwd); } };
+    const ctx = withDeps(fx.ctx, { git: counting });
+    const clean = save("A clean proposal");
+    await stage([], fx.ctx);
+    await publish(["--dry-run"], ctx);
+    expect(lsFiles).toBe(0); // nothing shares a run: no corpus
+    const a = save("Copying proposal one", { rationale: "The overnight rota swap left two shifts without cover.", evidence: ["transcript:5e55a1d0#1"] });
+    const b = save("Copying proposal two", { rationale: "So the overnight rota swap left two shifts without a lead.", evidence: ["transcript:5e55a1d0#1"] });
+    await stage([], fx.ctx);
+    const r = JSON.parse((await publish(["--dry-run", "--json"], ctx)).stdout) as { held: { id: string; layer: string }[]; heldByLayer: Record<string, number> };
+    expect(lsFiles).toBe(1);
+    expect(r.held).toEqual([{ id: a, layer: "verbatim", why: "copies transcript text" }, { id: b, layer: "verbatim", why: "copies transcript text" }]);
+    expect(r.heldByLayer).toEqual({ verbatim: 2 });
+    expect(getProposal(fx.ctx.db, clean)?.status).toBe("staged");
+    fx.close();
+  });
+
+  it("prints the layer on each held line and a per-layer count, never the matched text", async () => {
+    const { fx, save } = await ready({ extraYaml: `${PATTERNS}evolve:\n  maxOpenProposals: 4\n` });
+    const t = save("Acme Care scheduling fix");
+    const p = save("Pattern proposal", { rationale: "Seen on GLX-1234." });
+    const m = save("Mail proposal", { rationale: "Ask joi@example.com about it." });
+    await stage([], fx.ctx);
+    const r = await publish([], fx.ctx);
+    expect(r.exitCode).toBe(1);
+    expect(r.stdout).toBe(
+      [
+        "Nothing to publish: 3 held back.",
+        `held ${t} (terms): contains a private term`,
+        `held ${p} (patterns): matches a privacy.denyPatterns entry`,
+        `held ${m} (personal): contains an email address or a home directory path`,
+        "Held by layer: terms 1, patterns 1, personal 1",
+        `Held proposals stay held and don't count against the cap. Reject one with: sindri evolve reject <id> --reason "..."`,
+        "",
+      ].join("\n"),
+    );
+    expect(r.stdout).not.toMatch(/Acme|GLX|1234|joi@/);
+    fx.close();
+  });
+
+  it("refuses with SND-EVOLVE-018 before writing anything, also on --dry-run, when a repo is private and the word list is missing", async () => {
+    const { fx, save } = await ready();
+    const id = save("A clean proposal");
+    await stage([], fx.ctx);
+    const name = fx.ctx.loaded.profile.tracker.repo;
+    const loaded = { ...fx.ctx.loaded, repos: { ...fx.ctx.loaded.repos, globex: { ...fx.ctx.loaded.repos[name], private: true } } };
+    const ctx = { ...withDeps(fx.ctx, { env: { ...fx.deps.env, SINDRI_WORDS: path.join(fx.transcripts, "no-words") } }), loaded };
+    await expect(publish(["--dry-run"], ctx)).rejects.toThrow(expect.objectContaining({ code: "SND-EVOLVE-018" }));
+    await expect(publish([], ctx)).rejects.toThrow(expect.objectContaining({ code: "SND-EVOLVE-018" }));
+    expect(fs.existsSync(path.join(fx.repo, REL))).toBe(false);
+    expect(getProposal(fx.ctx.db, id)?.status).toBe("staged");
+    fx.close();
+  });
+
+  it("releases a held proposal once the profile no longer matches it, without a model call (Review Focus 5)", async () => {
+    const { fx, save } = await ready({ extraYaml: PATTERNS });
+    const id = save("Alpha change here", { rationale: "Seen on GLX-1234." });
+    await stage([], fx.ctx);
+    expect(JSON.parse((await publish(["--json"], fx.ctx)).stdout).held[0].layer).toBe("patterns");
+    const relaxed = { ...fx.ctx, loaded: { ...fx.ctx.loaded, profile: { ...fx.ctx.loaded.profile, privacy: { ...fx.ctx.loaded.profile.privacy, denyPatterns: [] } } }, io: scriptedEvolveIo(() => { throw new Error("no model call expected"); }) };
+    const r = JSON.parse((await publish(["--json"], relaxed)).stdout) as { published: { id: string }[] };
+    expect(r.published.map((p) => p.id)).toEqual([id]);
+    expect(relaxed.io.calls).toEqual([]);
+    expect(getProposal(fx.ctx.db, id)?.status).toBe("published");
+    fx.close();
   });
 });
 
