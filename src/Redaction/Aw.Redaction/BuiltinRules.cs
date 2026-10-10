@@ -33,7 +33,7 @@ internal static class BuiltinRules
 
     /// <summary>A field, header or attribute name whose value is a secret whatever it looks like.</summary>
     public const string SecretName =
-        "^(?:[A-Za-z0-9_.-]*?" + SecretWord + "|(?:proxy-)?authorization|(?:set-)?cookie)$";
+        "^(?:[A-Za-z0-9_.-]*?" + SecretWord + "|(?:[A-Za-z0-9_-]*\\.)*(?:proxy-)?authorization|(?:[A-Za-z0-9_-]*\\.)*(?:set-)?cookie)$";
 
     private const string SecretWord = "(?:API[_-]?KEY|SECRET(?:[_-]?KEY)?|TOKEN|PASSWORD|PRIVATE[_-]?KEY|ACCESS[_-]?KEY)";
 
@@ -64,10 +64,10 @@ internal static class BuiltinRules
         new("jwt", "(?<![A-Za-z0-9_-])(?=[A-Za-z0-9_-]*?(?<![A-Za-z0-9_])eyJ)(?>[A-Za-z0-9_-]{8,})\\.(?>[A-Za-z0-9_-]{8,})\\.[A-Za-z0-9_-]{8,}"),
         new("google-oauth-token", Start + "ya29\\.[A-Za-z0-9_-]{20,}"),
         new("bearer", Start + "Bearer" + Ws + "+(?<v>[A-Za-z0-9._~+/=-]{20,})", RegexOptions.IgnoreCase),
-        // HTTP Basic credentials (a reversible user:password) after the header name, so the word "Basic" in prose never
-        // matches.
+        // HTTP Basic credentials (a reversible user:password) after the header name, bare or quoted as in a JSON, JS or
+        // Python header object, so the word "Basic" in prose never matches.
         new("basic-auth",
-            "(?<![A-Za-z0-9_-])(?:proxy-)?authorization:[ \t]*Basic[ \t]+(?<v>[A-Za-z0-9+/]{8,}={0,2})", RegexOptions.IgnoreCase),
+            "(?<![A-Za-z0-9_-])(?:proxy-)?authorization['\"]?[ \t]*[:=][ \t]*[\\['\"]{0,2}[ \t]*Basic[ \t]+(?<v>[A-Za-z0-9+/]{8,}={0,2})", RegexOptions.IgnoreCase),
         new("credentialed-url",
             Start + "[a-z][a-z0-9+.-]{0,30}://[^ \t\r\n/:@]{0,256}:(?<v>[^ \t\r\n/]{1,256})@(?=[^ \t\r\n/@]*(?:[/?# \t\r\n]|$))",
             RegexOptions.IgnoreCase),
@@ -82,11 +82,12 @@ internal static class BuiltinRules
             "(?<![A-Za-z0-9_-])(?:[A-Z0-9]+_)*(?:API_?KEY|SECRET(?:_KEY)?|TOKEN|PASSWORD|PRIVATE_KEY|ACCESS_KEY)" + Ws + "*[=:]" + Ws + "*['\"]?"
             + DottedValue),
 
-        // Shell style: name=value at a line start or after a space, ;, |, (, comma, quote, { or [, in any case (cd repo; export
+        // Shell style: name=value at a line start or after a space, ;, |, (, comma, quote, {, [ or : (a scoped .npmrc
+        // //host/:_authToken=...), in any case (cd repo; export
         // api_key=..., opts=a,token=...). Keyword arguments holding attribute access (token=settings.value) don't count:
         // the value stops at a dot.
         new("secret-assignment",
-            "(?<![^ \t\r\n;|(,\"'{\\[])[A-Za-z0-9_.-]*?" + SecretWord + "=['\"]?" + Value, RegexOptions.IgnoreCase),
+            "(?<![^ \t\r\n;|(,\"'{\\[:])[A-Za-z0-9_.-]*?" + SecretWord + "=['\"]?" + Value, RegexOptions.IgnoreCase),
 
         // Query style: name=value right after ?, & or # (?access_token=..., a #access_token= redirect fragment); the value
         // may hold dots.

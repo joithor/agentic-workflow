@@ -22,7 +22,8 @@ bool whole = redactor.IsSecretName("client_secret");   // true: write ScrubResul
 - `IsSecretName(name)` is for callers that see a key and its value apart (a telemetry attribute, a header, a JSON
   field): the assignment rules need the name and the value in one string, so such a caller redacts the whole value of
   a field whose name ends in a secret word (API_KEY, SECRET, TOKEN, PASSWORD, PRIVATE_KEY, ACCESS_KEY, any case and
-  separator) or is `Authorization`, `Proxy-Authorization`, `Cookie` or `Set-Cookie`, writing
+  separator) or is `Authorization`, `Proxy-Authorization`, `Cookie` or `Set-Cookie` (also with a dotted prefix, as in the
+  OpenTelemetry attribute `http.request.header.cookie`), writing
   `ScrubResult.SecretFieldText` (`[REDACTED:secret-field]`, which later scrubs treat as a placeholder) in its place, and
   scrubs every other value.
 - Register `IRedactor` as a singleton (`Redactor.Default`) in the composing `Add…()` method; tests use the real
@@ -38,10 +39,10 @@ bool whole = redactor.IsSecretName("client_secret");   // true: write ScrubResul
 | `github-token` | `ghp_`, `gho_`, `ghu_`, `ghs_`, `ghr_`, `github_pat_` |
 | `slack-token`, `stripe-key`, `google-api-key`, `linear-key`, `jwt` | `xox[abprs]-`, `sk_live_`/`rk_test_`…, `AIza…`, `lin_api_`/`lin_oauth_`, three-part `eyJ…` tokens of any length |
 | `google-oauth-token` | `ya29.…` access tokens, anywhere (so a dotted one in a lowercase pair is still caught) |
-| `basic-auth` | the credentials after `Authorization: Basic` (also `Proxy-Authorization`) |
+| `basic-auth` | the credentials after `Authorization: Basic` (also `Proxy-Authorization`, and a quoted name or value as in a JSON, JS or Python header object) |
 | `bearer` | the token after `Bearer` (the word stays; the token may follow on the next line) |
 | `credentialed-url` | the password in `scheme://user:password@host` (the user may be empty: `redis://:password@host`), up to the last `@` before the host (an unencoded `@` in the password stays inside the redaction) |
-| `secret-assignment` | the value of `NAME = "value"` (NAME ends in API_KEY, SECRET, TOKEN, PASSWORD, PRIVATE_KEY, ACCESS_KEY; any case, quoted value), `UPPER_SNAKE=value` (quoted or not, dots allowed in the value), a shell pair `name=value` at a line start or after a space, `;`, `|`, `(`, comma, quote, `{` or `[` in any case (`export api_key=…`, `curl -d "client_secret=…"`, `{access_token=…, expires_in=…}`, `Creds[token=…]`; the value stops at a dot, so `token=settings.value` keyword arguments stay), a query pair right after `?`, `&` or `#` (`?access_token=…`, a `#access_token=` redirect fragment; the value may hold dots), a config line in any case that starts with the name and ends with an unquoted value (INI, YAML, `.properties`, `.env`; `api_key=…`, `client_secret: …`, `db.password = …`), `X-Api-Key: value` headers, and `aws_secret_access_key` / `aws_session_token` lines. A value needs 20+ characters with a digit in its first 256 (the `aws_*` lines: 16+ base64 characters, no digit needed); in the code, env and header forms it may follow the separator on the next line |
+| `secret-assignment` | the value of `NAME = "value"` (NAME ends in API_KEY, SECRET, TOKEN, PASSWORD, PRIVATE_KEY, ACCESS_KEY; any case, quoted value), `UPPER_SNAKE=value` (quoted or not, dots allowed in the value), a shell pair `name=value` at a line start or after a space, `;`, `|`, `(`, comma, quote, `{`, `[` or `:` (`export api_key=…`, `curl -d "client_secret=…"`, `{access_token=…, expires_in=…}`, `Creds[token=…]`, a scoped `.npmrc` `//host/:_authToken=…`; the value stops at a dot, so `token=settings.value` keyword arguments stay), a query pair right after `?`, `&` or `#` (`?access_token=…`, a `#access_token=` redirect fragment; the value may hold dots), a config line in any case that starts with the name and ends with an unquoted value (INI, YAML, `.properties`, `.env`; `api_key=…`, `client_secret: …`, `db.password = …`), `X-Api-Key: value` headers, and `aws_secret_access_key` / `aws_session_token` lines. A value needs 20+ characters with a digit in its first 256 (the `aws_*` lines: 16+ base64 characters, no digit needed); in the code, env and header forms it may follow the separator on the next line |
 | `ssn`, `mrn` | `123-45-6789`, `MRN: 12345678` |
 
 Overlapping hits merge into one placeholder named by the earlier rule (`Redactor.RuleIds` is the priority order). A
@@ -69,8 +70,8 @@ Not folded: mathematical alphanumeric look-alikes (astral code points) and base6
 
 `detect-secrets.sh` blocks any `NAME=value` with a 20+ character value anywhere in a command, digits or not, and with
 no boundary before the name. Here a value needs a digit (logs and code are full of long all-letter identifiers), so
-`export TOKEN=<30 letters>` stays, and a pair needs a line start, a space, `;`, `|`, `(`, a comma, `?`, `&` or `#`
-before its name;
+`export TOKEN=<30 letters>` stays, and a pair needs one of the boundaries the `secret-assignment` row lists before its
+name;
 `PassThroughTests` pins the first choice. The hook's other shapes (AWS keys, GitHub tokens, bearer tokens, and pairs
 with a digit: `cd repo && api_key=…`, `curl -d "client_secret=…"`, `FOO=1 mytoken=…`, `x=1; Password=…`, dotted
 values in UPPER_SNAKE and query pairs) are covered by corpus cases. Also narrower: a dotted value in a lowercase shell or
