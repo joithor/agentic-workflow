@@ -308,7 +308,7 @@ edges:
   - from: KernelData
     to: Kernel
     kind: project
-    status: planned
+    status: current
     note: "kernel family"
   - from: KernelTelemetry
     to: Kernel
@@ -323,7 +323,7 @@ edges:
   - from: KernelTesting
     to: Kernel
     kind: project
-    status: planned
+    status: current
     note: "fakes and builders"
   - from: KernelTesting
     to: KernelData
