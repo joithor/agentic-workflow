@@ -336,6 +336,22 @@ describe("doctor index checks", () => {
     expect((await checks(on, offline))[`index:${ring0Name(on)}`].detail).toBe("embeddings pending: not built yet (sindri index build); graph pending: not built yet (sindri index build)");
   });
 
+  it("reports an index whose layers table is gone as damaged instead of throwing", async () => {
+    const d = await approvedIndexDeps(ring0Repo({ "src/a.ts": "export const a = 1;\n" }));
+    const name = ring0Name(d);
+    await makeIndexCommand(fakeIndexIo())(["build", "--repo", name], d);
+    const db = openIndex(indexPath(d, name));
+    db.exec("DROP TABLE layers");
+    db.close();
+    expect((await checks(d, offline))[`index:${name}`]).toMatchObject({
+      status: "warn", detail: "damaged (no usable layers table)", fix: `rm ${indexPath(d, name)}, then sindri index build --repo ${name}`,
+    });
+    // The fix clears the warning.
+    fs.rmSync(indexPath(d, name));
+    await makeIndexCommand(fakeIndexIo())(["build", "--repo", name], d);
+    expect((await checks(d, offline))[`index:${name}`]).toMatchObject({ status: "ok" });
+  });
+
   it("gives each down layer the fix that helps: raise the cap, rebuild, or set up", async () => {
     const d = await approvedIndexDeps(ring0Repo({ "src/a.ts": "export const a = 1;\n" }));
     const name = ring0Name(d);
@@ -458,6 +474,18 @@ describe("doctor privacy checks (privacy B1)", () => {
     const deps = await depsWithRepos({ globex: { private: true } });
     seedIndex(openIndex(indexPath(deps, "globex")), { files: ["a.ts"], symbols: ["x"], structure: "pending" }).close();
     expect((await byName(deps))["privacy:globex"].detail).toContain("SND-EVOLVE-017");
+  });
+
+  it("never checks the toolkit repo as private, even when it sets private: true", async () => {
+    const d = await depsWithRepos({}, { SINDRI_WORDS: "/nonexistent" });
+    const name = ring0Name(d);
+    fs.appendFileSync(path.join(d.env.AW_STATE_DIR as string, "profile", "repos", `${name}.yaml`), "private: true\n");
+    const hash = (JSON.parse((await runCli(["profile", "approve", "--json"], d)).stdout) as { hash: string }).hash;
+    expect((await runCli(["profile", "approve", hash], { ...d, isTTY: true, prompt: async () => hash.slice(0, 6) })).exitCode).toBe(0);
+    const c = await byName(d);
+    expect(c.profile).toMatchObject({ status: "ok" });
+    expect(c[`privacy:${name}`]).toBeUndefined();
+    expect(c["privacy:words"]).toBeUndefined();
   });
 
   it("is silent for a repo marked private: false", async () => {

@@ -4,14 +4,14 @@ import path from "node:path";
 import { parseFlags } from "../args.js";
 import { awStateDir, stateDir, type Deps } from "../deps.js";
 import { SindriError } from "../errors.js";
-import { indexPath, layers, meta, openIndexReadOnly } from "../index/db.js";
+import { indexPath, meta, openIndexReadOnly } from "../index/db.js";
 import { GRAPH_OVER_CAP } from "../index/graph.js";
 import { heavyLockDir, heavyLockState } from "../index/heavy-lock.js";
 import type { IndexProbes } from "../index/io.js";
 import { GRAPHIFY_PIN } from "../index/pins.js";
 import { hasModel, installedGraphify, sandboxedVersionArgv, tagsUrl } from "../index/setup.js";
 import { evolveOverlayCheck } from "../evolve/overlay.js";
-import { structureOk, wordsFile } from "../evolve/privacy-derived.js";
+import { layersOrNull, structureOk, wordsFile } from "../evolve/privacy-derived.js";
 import { LEDGER_SCHEMA_VERSION, ledgerPath, readLedger, schemaVersion } from "../ledger/db.js";
 import { inspectLock } from "../lock/lock.js";
 import type { Command } from "../main.js";
@@ -184,11 +184,14 @@ async function indexChecks(deps: Deps, loaded: LoadedProfile, probes: IndexProbe
       continue;
     }
     const m = meta(db);
-    const down = layers(db).filter((l) => l.status === "unavailable" || l.status === "pending");
+    const all = layersOrNull(db);
     db.close();
+    const down = (all ?? []).filter((l) => l.status === "unavailable" || l.status === "pending");
     const ageH = m.builtAt === null ? null : (deps.now().getTime() - Date.parse(m.builtAt)) / 3_600_000;
     const rebuild = `sindri index build --repo ${repo}`;
-    if (ageH === null) out.push({ name: `index:${repo}`, status: "warn", detail: "never built", fix: rebuild });
+    // A rebuild keeps a same-version index file, so a missing table needs the file removed first.
+    if (all === null) out.push({ name: `index:${repo}`, status: "warn", detail: "damaged (no usable layers table)", fix: `rm ${indexPath(deps, repo)}, then ${rebuild}` });
+    else if (ageH === null) out.push({ name: `index:${repo}`, status: "warn", detail: "never built", fix: rebuild });
     else if (ageH > ix.maxAgeHours) out.push({ name: `index:${repo}`, status: "warn", detail: `stale (built ${Math.floor(ageH)} h ago)`, fix: rebuild });
     else if (down.length > 0) out.push({ name: `index:${repo}`, status: "warn", detail: down.map((l) => `${l.layer} ${l.status}: ${l.detail}`).join("; "), fix: [...new Set(down.map((l) => layerFix(l, repo)))].join("; ") });
     else out.push({ name: `index:${repo}`, status: "ok", detail: `built ${Math.floor(ageH)} h ago` });

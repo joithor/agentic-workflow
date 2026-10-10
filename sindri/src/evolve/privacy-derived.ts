@@ -35,13 +35,18 @@ export function buildDerivedSet(o: { privateDbs: readonly IndexDb[]; toolkit: In
   return out;
 }
 
+// The index's layers, or null when its layers table is missing or unreadable.
+export function layersOrNull(db: IndexDb): ReturnType<typeof layers> | null {
+  try {
+    return layers(db);
+  } catch {
+    return null;
+  }
+}
+
 // An index without a usable layers table counts as unbuilt: fail closed with the same code.
 export function structureOk(db: IndexDb): boolean {
-  try {
-    return layers(db).some((l) => l.layer === "structure" && l.status === "ok");
-  } catch {
-    return false;
-  }
+  return (layersOrNull(db) ?? []).some((l) => l.layer === "structure" && l.status === "ok");
 }
 
 export function loadDerivedSet(deps: Deps, loaded: LoadedProfile): Set<string> {
