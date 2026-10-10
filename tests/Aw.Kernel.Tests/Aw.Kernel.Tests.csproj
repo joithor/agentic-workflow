@@ -5,8 +5,6 @@
     <TargetFramework>net10.0</TargetFramework>
     <OutputType>Exe</OutputType>
     <RootNamespace>Aw.Kernel.Tests</RootNamespace>
-    <!-- IDE0005 (unused usings) only runs with a documentation file; tests/.editorconfig turns off CS1591. -->
-    <GenerateDocumentationFile>true</GenerateDocumentationFile>
   </PropertyGroup>
 
   <ItemGroup>

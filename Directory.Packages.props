@@ -20,6 +20,6 @@
 
   <ItemGroup Label="Packages">
     <!-- Tests. xunit.v3 4.0.1 published 2026-09-12. -->
-    <PackageVersion Include="xunit.v3" Version="4.0.1" />
+    <PackageVersion Include="xunit.v3" Version="[4.0.1]" />
   </ItemGroup>
 </Project>
