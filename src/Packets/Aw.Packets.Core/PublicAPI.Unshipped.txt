@@ -31,6 +31,7 @@ Aw.Packets.Core.Checks.Inspection.Passed.get -> bool
 Aw.Packets.Core.Checks.PacketInspector
 Aw.Packets.Core.Checks.PacketInspector.Inspect(string! packetDirectory, string! repoDirectory, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Packets.Core.Checks.Inspection!>!>
 Aw.Packets.Core.Checks.PacketInspector.PacketInspector(Aw.Packets.Core.Ports.IPacketSource! source, Aw.Packets.Core.Ports.IRepoSnapshot! repo) -> void
+Aw.Packets.Core.Checks.PacketRules
 Aw.Packets.Core.Ids.ExampleId
 Aw.Packets.Core.Ids.ExampleId.Equals(Aw.Packets.Core.Ids.ExampleId other, System.Collections.Generic.IEqualityComparer<Aw.Packets.Core.Ids.ExampleId>! comparer) -> bool
 Aw.Packets.Core.Ids.ExampleId.Equals(Aw.Packets.Core.Ids.ExampleId other) -> bool
@@ -236,6 +237,7 @@ Aw.Packets.Core.Model.Question.Id.init -> void
 Aw.Packets.Core.Model.Question.Question() -> void
 Aw.Packets.Core.Model.Question.Text.get -> string!
 Aw.Packets.Core.Model.Question.Text.init -> void
+Aw.Packets.Core.Model.RelativePath
 Aw.Packets.Core.Model.SizeClass
 Aw.Packets.Core.Model.SizeClass.ExtraLarge = 5 -> Aw.Packets.Core.Model.SizeClass
 Aw.Packets.Core.Model.SizeClass.ExtraSmall = 1 -> Aw.Packets.Core.Model.SizeClass
@@ -280,6 +282,19 @@ Aw.Packets.Core.Ports.IPacketSource
 Aw.Packets.Core.Ports.IPacketSource.Load(string! packetDirectory, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Packets.Core.Model.LoadedPacket!>!>
 Aw.Packets.Core.Ports.IRepoSnapshot
 Aw.Packets.Core.Ports.IRepoSnapshot.Files(string! repoDirectory, string! commitSha, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<System.Collections.Generic.IReadOnlySet<string!>!>!>
+const Aw.Packets.Core.Checks.PacketRules.Acyclic = "PKT-GRAPH-002" -> string!
+const Aw.Packets.Core.Checks.PacketRules.BaseCommit = "PKT-BASE-001" -> string!
+const Aw.Packets.Core.Checks.PacketRules.Decisions = "PKT-DEC-001" -> string!
+const Aw.Packets.Core.Checks.PacketRules.Evidence = "PKT-EVID-001" -> string!
+const Aw.Packets.Core.Checks.PacketRules.HoldoutExists = "PKT-HOLD-001" -> string!
+const Aw.Packets.Core.Checks.PacketRules.HoldoutStored = "PKT-HOLD-002" -> string!
+const Aw.Packets.Core.Checks.PacketRules.KnownDependencies = "PKT-GRAPH-001" -> string!
+const Aw.Packets.Core.Checks.PacketRules.ScopeExists = "PKT-SCOPE-001" -> string!
+const Aw.Packets.Core.Checks.PacketRules.ScopeOverlap = "PKT-SCOPE-002" -> string!
+const Aw.Packets.Core.Checks.PacketRules.SizeBudget = "PKT-SIZE-001" -> string!
+const Aw.Packets.Core.Checks.PacketRules.TaskInWorkstream = "PKT-WS-001" -> string!
+const Aw.Packets.Core.Checks.PacketRules.UniqueIds = "PKT-ID-001" -> string!
+const Aw.Packets.Core.Checks.PacketRules.WorkflowCoverage = "PKT-FLOW-001" -> string!
 override Aw.Packets.Core.Checks.CheckResult.Equals(object? obj) -> bool
 override Aw.Packets.Core.Checks.CheckResult.GetHashCode() -> int
 override Aw.Packets.Core.Checks.CheckResult.ToString() -> string!
@@ -404,6 +419,7 @@ static Aw.Packets.Core.Model.PacketTask.operator !=(Aw.Packets.Core.Model.Packet
 static Aw.Packets.Core.Model.PacketTask.operator ==(Aw.Packets.Core.Model.PacketTask? left, Aw.Packets.Core.Model.PacketTask? right) -> bool
 static Aw.Packets.Core.Model.Question.operator !=(Aw.Packets.Core.Model.Question? left, Aw.Packets.Core.Model.Question? right) -> bool
 static Aw.Packets.Core.Model.Question.operator ==(Aw.Packets.Core.Model.Question? left, Aw.Packets.Core.Model.Question? right) -> bool
+static Aw.Packets.Core.Model.RelativePath.IsSafe(string! path) -> bool
 static Aw.Packets.Core.Model.TaskBudget.operator !=(Aw.Packets.Core.Model.TaskBudget? left, Aw.Packets.Core.Model.TaskBudget? right) -> bool
 static Aw.Packets.Core.Model.TaskBudget.operator ==(Aw.Packets.Core.Model.TaskBudget? left, Aw.Packets.Core.Model.TaskBudget? right) -> bool
 static Aw.Packets.Core.Model.TaskPlan.operator !=(Aw.Packets.Core.Model.TaskPlan? left, Aw.Packets.Core.Model.TaskPlan? right) -> bool

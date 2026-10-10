@@ -37,13 +37,6 @@ internal static class PacketLoading
         return manifest.IsError ? manifest.Error : LoadLinked(read, json, manifest.Value, manifestRaw);
     }
 
-    internal static bool IsSafeRelative(string path) =>
-        path.Length > 0
-        && !path.Contains('\\', StringComparison.Ordinal)
-        && !path.StartsWith('/')
-        && !path.Contains(':', StringComparison.Ordinal)
-        && path.Split('/').All(static s => s.Length > 0 && s is not ("." or ".."));
-
     private static Result<LoadedPacket> LoadLinked(FileReader read, JsonSerializerOptions json, PacketManifest manifest, ReadOnlyMemory<byte> manifestRaw)
     {
         var files = new Dictionary<string, ReadOnlyMemory<byte>>(StringComparer.Ordinal) { [ManifestFile] = manifestRaw };
@@ -78,7 +71,7 @@ internal static class PacketLoading
 
     private static Result<ReadOnlyMemory<byte>> ReadLink(FileReader read, string link)
     {
-        if (!IsSafeRelative(link) || string.Equals(link, ManifestFile, StringComparison.Ordinal))
+        if (!RelativePath.IsSafe(link) || string.Equals(link, ManifestFile, StringComparison.Ordinal))
         {
             return PacketsErrors.Malformed.With(
                 $"packet.json links '{link}': links are relative paths with '/' inside the packet directory (no '..', no root), and never packet.json.");
