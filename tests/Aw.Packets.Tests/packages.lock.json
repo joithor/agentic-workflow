@@ -197,7 +197,8 @@
         "dependencies": {
           "Aw.Kernel.Testing": "[1.0.0, )",
           "Aw.Packets.Core": "[1.0.0, )",
-          "aw-packets": "[1.0.0, )"
+          "aw-packets": "[1.0.0, )",
+          "xunit.v3.extensibility.core": "[4.0.1, 4.0.1]"
         }
       },
       "Microsoft.Extensions.DependencyInjection.Abstractions": {

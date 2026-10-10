@@ -1,6 +1,5 @@
 using Aw.Kernel;
 using Aw.Packets.Core;
-using Aw.Packets.Core.Ports;
 
 namespace Aw.Packets.Testing;
 

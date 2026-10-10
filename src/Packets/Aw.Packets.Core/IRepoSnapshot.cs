@@ -1,6 +1,6 @@
 using Aw.Kernel;
 
-namespace Aw.Packets.Core.Ports;
+namespace Aw.Packets.Core;
 
 /// <summary>Lists a repository's files at a commit (git today).</summary>
 public interface IRepoSnapshot

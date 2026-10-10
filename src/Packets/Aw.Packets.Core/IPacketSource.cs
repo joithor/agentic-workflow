@@ -1,7 +1,7 @@
 using Aw.Kernel;
 using Aw.Packets.Core.Model;
 
-namespace Aw.Packets.Core.Ports;
+namespace Aw.Packets.Core;
 
 /// <summary>Reads a packet directory: the manifest, the files it links and their bytes.</summary>
 public interface IPacketSource

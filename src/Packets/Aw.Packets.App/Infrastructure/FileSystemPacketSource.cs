@@ -2,7 +2,6 @@ using System.Text.Json;
 using Aw.Kernel;
 using Aw.Packets.Core;
 using Aw.Packets.Core.Model;
-using Aw.Packets.Core.Ports;
 
 namespace Aw.Packets.App.Infrastructure;
 

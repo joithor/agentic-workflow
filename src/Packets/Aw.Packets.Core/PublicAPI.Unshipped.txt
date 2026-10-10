@@ -18,20 +18,8 @@ Aw.Packets.Core.Checks.CheckState
 Aw.Packets.Core.Checks.CheckState.Fail = 2 -> Aw.Packets.Core.Checks.CheckState
 Aw.Packets.Core.Checks.CheckState.Pass = 1 -> Aw.Packets.Core.Checks.CheckState
 Aw.Packets.Core.Checks.CheckState.Unchecked = 3 -> Aw.Packets.Core.Checks.CheckState
-Aw.Packets.Core.Inspection
-Aw.Packets.Core.Inspection.<Clone>$() -> Aw.Packets.Core.Inspection!
-Aw.Packets.Core.Inspection.Checks.get -> System.Collections.Generic.IReadOnlyList<Aw.Packets.Core.Checks.CheckResult!>!
-Aw.Packets.Core.Inspection.Checks.init -> void
-Aw.Packets.Core.Inspection.Deconstruct(out Aw.Packets.Core.Model.LoadedPacket! Loaded, out System.Collections.Generic.IReadOnlyList<Aw.Packets.Core.Checks.CheckResult!>! Checks) -> void
-Aw.Packets.Core.Inspection.Equals(Aw.Packets.Core.Inspection? other) -> bool
-Aw.Packets.Core.Inspection.Inspection(Aw.Packets.Core.Model.LoadedPacket! Loaded, System.Collections.Generic.IReadOnlyList<Aw.Packets.Core.Checks.CheckResult!>! Checks) -> void
-Aw.Packets.Core.Inspection.Loaded.get -> Aw.Packets.Core.Model.LoadedPacket!
-Aw.Packets.Core.Inspection.Loaded.init -> void
-Aw.Packets.Core.Inspection.Passed.get -> bool
-Aw.Packets.Core.PacketInspector
-Aw.Packets.Core.PacketInspector.Inspect(string! packetDirectory, string! repoDirectory, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Packets.Core.Inspection!>!>
-Aw.Packets.Core.PacketInspector.PacketInspector(Aw.Packets.Core.Ports.IPacketSource! source, Aw.Packets.Core.Ports.IRepoSnapshot! repo) -> void
 Aw.Packets.Core.Checks.PacketRules
+Aw.Packets.Core.Digest.PacketDigest
 Aw.Packets.Core.Ids.ExampleId
 Aw.Packets.Core.Ids.ExampleId.Equals(Aw.Packets.Core.Ids.ExampleId other, System.Collections.Generic.IEqualityComparer<Aw.Packets.Core.Ids.ExampleId>! comparer) -> bool
 Aw.Packets.Core.Ids.ExampleId.Equals(Aw.Packets.Core.Ids.ExampleId other) -> bool
@@ -72,6 +60,22 @@ Aw.Packets.Core.Ids.WorkstreamId.IsInitialized() -> bool
 Aw.Packets.Core.Ids.WorkstreamId.ToString(System.IFormatProvider? provider) -> string!
 Aw.Packets.Core.Ids.WorkstreamId.Value.get -> string!
 Aw.Packets.Core.Ids.WorkstreamId.WorkstreamId() -> void
+Aw.Packets.Core.IFreezeLog
+Aw.Packets.Core.IFreezeLog.Record(Aw.Packets.Core.Model.FreezeRecord! record, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Packets.Core.Model.FreezeReceipt!>!>
+Aw.Packets.Core.Inspection
+Aw.Packets.Core.Inspection.<Clone>$() -> Aw.Packets.Core.Inspection!
+Aw.Packets.Core.Inspection.Checks.get -> System.Collections.Generic.IReadOnlyList<Aw.Packets.Core.Checks.CheckResult!>!
+Aw.Packets.Core.Inspection.Checks.init -> void
+Aw.Packets.Core.Inspection.Deconstruct(out Aw.Packets.Core.Model.LoadedPacket! Loaded, out System.Collections.Generic.IReadOnlyList<Aw.Packets.Core.Checks.CheckResult!>! Checks) -> void
+Aw.Packets.Core.Inspection.Equals(Aw.Packets.Core.Inspection? other) -> bool
+Aw.Packets.Core.Inspection.Inspection(Aw.Packets.Core.Model.LoadedPacket! Loaded, System.Collections.Generic.IReadOnlyList<Aw.Packets.Core.Checks.CheckResult!>! Checks) -> void
+Aw.Packets.Core.Inspection.Loaded.get -> Aw.Packets.Core.Model.LoadedPacket!
+Aw.Packets.Core.Inspection.Loaded.init -> void
+Aw.Packets.Core.Inspection.Passed.get -> bool
+Aw.Packets.Core.IPacketSource
+Aw.Packets.Core.IPacketSource.Load(string! packetDirectory, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Packets.Core.Model.LoadedPacket!>!>
+Aw.Packets.Core.IRepoSnapshot
+Aw.Packets.Core.IRepoSnapshot.Files(string! repoDirectory, string! commitSha, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<System.Collections.Generic.IReadOnlySet<string!>!>!>
 Aw.Packets.Core.Model.AcceptanceExample
 Aw.Packets.Core.Model.AcceptanceExample.<Clone>$() -> Aw.Packets.Core.Model.AcceptanceExample!
 Aw.Packets.Core.Model.AcceptanceExample.AcceptanceExample() -> void
@@ -102,6 +106,7 @@ Aw.Packets.Core.Model.Deferral.Deferral(string! Owner, string! BuildMayAssume) -
 Aw.Packets.Core.Model.Deferral.Equals(Aw.Packets.Core.Model.Deferral? other) -> bool
 Aw.Packets.Core.Model.Deferral.Owner.get -> string!
 Aw.Packets.Core.Model.Deferral.Owner.init -> void
+Aw.Packets.Core.Model.FreezeLocation
 Aw.Packets.Core.Model.FreezeReceipt
 Aw.Packets.Core.Model.FreezeReceipt.<Clone>$() -> Aw.Packets.Core.Model.FreezeReceipt!
 Aw.Packets.Core.Model.FreezeReceipt.AlreadyFrozen.get -> bool
@@ -274,14 +279,11 @@ Aw.Packets.Core.Model.Workstream.Id.init -> void
 Aw.Packets.Core.Model.Workstream.Title.get -> string!
 Aw.Packets.Core.Model.Workstream.Title.init -> void
 Aw.Packets.Core.Model.Workstream.Workstream(Aw.Packets.Core.Ids.WorkstreamId Id, string! Title) -> void
+Aw.Packets.Core.PacketInspector
+Aw.Packets.Core.PacketInspector.Inspect(string! packetDirectory, string! repoDirectory, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Packets.Core.Inspection!>!>
+Aw.Packets.Core.PacketInspector.PacketInspector(Aw.Packets.Core.IPacketSource! source, Aw.Packets.Core.IRepoSnapshot! repo) -> void
 Aw.Packets.Core.PacketsCoreServiceCollectionExtensions
 Aw.Packets.Core.PacketsErrors
-Aw.Packets.Core.Ports.IFreezeLog
-Aw.Packets.Core.Ports.IFreezeLog.Record(Aw.Packets.Core.Model.FreezeRecord! record, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Packets.Core.Model.FreezeReceipt!>!>
-Aw.Packets.Core.Ports.IPacketSource
-Aw.Packets.Core.Ports.IPacketSource.Load(string! packetDirectory, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Packets.Core.Model.LoadedPacket!>!>
-Aw.Packets.Core.Ports.IRepoSnapshot
-Aw.Packets.Core.Ports.IRepoSnapshot.Files(string! repoDirectory, string! commitSha, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<System.Collections.Generic.IReadOnlySet<string!>!>!>
 const Aw.Packets.Core.Checks.PacketRules.Acyclic = "PKT-GRAPH-002" -> string!
 const Aw.Packets.Core.Checks.PacketRules.BaseCommit = "PKT-BASE-001" -> string!
 const Aw.Packets.Core.Checks.PacketRules.Decisions = "PKT-DEC-001" -> string!
@@ -295,12 +297,10 @@ const Aw.Packets.Core.Checks.PacketRules.SizeBudget = "PKT-SIZE-001" -> string!
 const Aw.Packets.Core.Checks.PacketRules.TaskInWorkstream = "PKT-WS-001" -> string!
 const Aw.Packets.Core.Checks.PacketRules.UniqueIds = "PKT-ID-001" -> string!
 const Aw.Packets.Core.Checks.PacketRules.WorkflowCoverage = "PKT-FLOW-001" -> string!
+const Aw.Packets.Core.Digest.PacketDigest.Version = 1 -> int
 override Aw.Packets.Core.Checks.CheckResult.Equals(object? obj) -> bool
 override Aw.Packets.Core.Checks.CheckResult.GetHashCode() -> int
 override Aw.Packets.Core.Checks.CheckResult.ToString() -> string!
-override Aw.Packets.Core.Inspection.Equals(object? obj) -> bool
-override Aw.Packets.Core.Inspection.GetHashCode() -> int
-override Aw.Packets.Core.Inspection.ToString() -> string!
 override Aw.Packets.Core.Ids.ExampleId.Equals(object? obj) -> bool
 override Aw.Packets.Core.Ids.ExampleId.GetHashCode() -> int
 override Aw.Packets.Core.Ids.ExampleId.ToString() -> string!
@@ -316,6 +316,9 @@ override Aw.Packets.Core.Ids.TaskId.ToString() -> string!
 override Aw.Packets.Core.Ids.WorkstreamId.Equals(object? obj) -> bool
 override Aw.Packets.Core.Ids.WorkstreamId.GetHashCode() -> int
 override Aw.Packets.Core.Ids.WorkstreamId.ToString() -> string!
+override Aw.Packets.Core.Inspection.Equals(object? obj) -> bool
+override Aw.Packets.Core.Inspection.GetHashCode() -> int
+override Aw.Packets.Core.Inspection.ToString() -> string!
 override Aw.Packets.Core.Model.AcceptanceExample.Equals(object? obj) -> bool
 override Aw.Packets.Core.Model.AcceptanceExample.GetHashCode() -> int
 override Aw.Packets.Core.Model.AcceptanceExample.ToString() -> string!
@@ -363,8 +366,8 @@ override Aw.Packets.Core.Model.Workstream.GetHashCode() -> int
 override Aw.Packets.Core.Model.Workstream.ToString() -> string!
 static Aw.Packets.Core.Checks.CheckResult.operator !=(Aw.Packets.Core.Checks.CheckResult? left, Aw.Packets.Core.Checks.CheckResult? right) -> bool
 static Aw.Packets.Core.Checks.CheckResult.operator ==(Aw.Packets.Core.Checks.CheckResult? left, Aw.Packets.Core.Checks.CheckResult? right) -> bool
-static Aw.Packets.Core.Inspection.operator !=(Aw.Packets.Core.Inspection? left, Aw.Packets.Core.Inspection? right) -> bool
-static Aw.Packets.Core.Inspection.operator ==(Aw.Packets.Core.Inspection? left, Aw.Packets.Core.Inspection? right) -> bool
+static Aw.Packets.Core.Digest.PacketDigest.Canonical(System.Text.Json.Nodes.JsonNode! node) -> byte[]!
+static Aw.Packets.Core.Digest.PacketDigest.Compute(Aw.Packets.Core.Model.LoadedPacket! loaded) -> Aw.Kernel.Result<string!>!
 static Aw.Packets.Core.Ids.ExampleId.From(string! value) -> Aw.Packets.Core.Ids.ExampleId
 static Aw.Packets.Core.Ids.ExampleId.operator !=(Aw.Packets.Core.Ids.ExampleId left, Aw.Packets.Core.Ids.ExampleId right) -> bool
 static Aw.Packets.Core.Ids.ExampleId.operator ==(Aw.Packets.Core.Ids.ExampleId left, Aw.Packets.Core.Ids.ExampleId right) -> bool
@@ -395,12 +398,15 @@ static Aw.Packets.Core.Ids.WorkstreamId.operator ==(Aw.Packets.Core.Ids.Workstre
 static Aw.Packets.Core.Ids.WorkstreamId.Parse(string! s, System.IFormatProvider? provider) -> Aw.Packets.Core.Ids.WorkstreamId
 static Aw.Packets.Core.Ids.WorkstreamId.TryFrom(string? value, out Aw.Packets.Core.Ids.WorkstreamId vo) -> bool
 static Aw.Packets.Core.Ids.WorkstreamId.TryParse(string? s, System.IFormatProvider? provider, out Aw.Packets.Core.Ids.WorkstreamId result) -> bool
+static Aw.Packets.Core.Inspection.operator !=(Aw.Packets.Core.Inspection? left, Aw.Packets.Core.Inspection? right) -> bool
+static Aw.Packets.Core.Inspection.operator ==(Aw.Packets.Core.Inspection? left, Aw.Packets.Core.Inspection? right) -> bool
 static Aw.Packets.Core.Model.AcceptanceExample.operator !=(Aw.Packets.Core.Model.AcceptanceExample? left, Aw.Packets.Core.Model.AcceptanceExample? right) -> bool
 static Aw.Packets.Core.Model.AcceptanceExample.operator ==(Aw.Packets.Core.Model.AcceptanceExample? left, Aw.Packets.Core.Model.AcceptanceExample? right) -> bool
 static Aw.Packets.Core.Model.DecisionLog.operator !=(Aw.Packets.Core.Model.DecisionLog? left, Aw.Packets.Core.Model.DecisionLog? right) -> bool
 static Aw.Packets.Core.Model.DecisionLog.operator ==(Aw.Packets.Core.Model.DecisionLog? left, Aw.Packets.Core.Model.DecisionLog? right) -> bool
 static Aw.Packets.Core.Model.Deferral.operator !=(Aw.Packets.Core.Model.Deferral? left, Aw.Packets.Core.Model.Deferral? right) -> bool
 static Aw.Packets.Core.Model.Deferral.operator ==(Aw.Packets.Core.Model.Deferral? left, Aw.Packets.Core.Model.Deferral? right) -> bool
+static Aw.Packets.Core.Model.FreezeLocation.Of(Aw.Packets.Core.Model.FreezeRecord! record) -> Aw.Kernel.Result<string!>!
 static Aw.Packets.Core.Model.FreezeReceipt.operator !=(Aw.Packets.Core.Model.FreezeReceipt? left, Aw.Packets.Core.Model.FreezeReceipt? right) -> bool
 static Aw.Packets.Core.Model.FreezeReceipt.operator ==(Aw.Packets.Core.Model.FreezeReceipt? left, Aw.Packets.Core.Model.FreezeReceipt? right) -> bool
 static Aw.Packets.Core.Model.FreezeRecord.operator !=(Aw.Packets.Core.Model.FreezeRecord? left, Aw.Packets.Core.Model.FreezeRecord? right) -> bool
@@ -436,4 +442,3 @@ static readonly Aw.Packets.Core.PacketsErrors.NotFound -> Aw.Kernel.ErrorDefinit
 static readonly Aw.Packets.Core.PacketsErrors.RepoUnavailable -> Aw.Kernel.ErrorDefinition!
 static readonly Aw.Packets.Core.PacketsErrors.Unreadable -> Aw.Kernel.ErrorDefinition!
 static readonly Aw.Packets.Core.PacketsErrors.UnsupportedSchema -> Aw.Kernel.ErrorDefinition!
-Aw.Packets.Core.IFreezeLog

@@ -1,7 +1,6 @@
 using System.Text.RegularExpressions;
 using Aw.Kernel;
 using Aw.Packets.Core.Checks;
-using Aw.Packets.Core.Ports;
 
 namespace Aw.Packets.Core;
 

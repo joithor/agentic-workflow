@@ -11,8 +11,4 @@ internal static class A
     /// <param name="id">The task id.</param>
     /// <returns>A new builder.</returns>
     public static TaskBuilder Task(string id) => new(id);
-
-    /// <summary>A FreezePacketRequest builder with deterministic defaults.</summary>
-    /// <returns>A new builder.</returns>
-    public static FreezePacketRequestBuilder FreezePacketRequest() => new();
 }

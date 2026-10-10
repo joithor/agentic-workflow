@@ -12,13 +12,33 @@ internal static class FreezePacketCommand
 
     internal static async Task<int> Run(IReadOnlyList<string> args, IServiceProvider services, JsonSerializerOptions json)
     {
-        if (args.Count != 0)
+        if (PacketArguments.Parse(args) is not { } arguments)
         {
-            return CommandOutput.Usage("freeze");
+            return CommandOutput.Usage($"{Name} {PacketArguments.Shape}");
         }
 
         var service = services.GetRequiredService<IService<FreezePacketRequest, FreezePacketResponse>>();
-        var result = await service.Handle(new FreezePacketRequest(), CancellationToken.None).ConfigureAwait(false);
-        return CommandOutput.Write(result, json);
+        var result = await service.Handle(new FreezePacketRequest(arguments.PacketDirectory, arguments.RepoDirectory), CancellationToken.None)
+            .ConfigureAwait(false);
+        if (result.IsError)
+        {
+            return CommandOutput.Error(result.Error, arguments.Json, json);
+        }
+
+        var frozen = result.Value;
+        if (arguments.Json)
+        {
+            return CommandOutput.Json(frozen, frozen.Frozen, json);
+        }
+
+        Console.Out.WriteLine(frozen.Frozen
+            ? $"aw-packets freeze: packet {frozen.Packet.Value} — {(frozen.AlreadyFrozen ? "already frozen" : "frozen")} {frozen.Hash} (packets/{frozen.Location})"
+            : $"aw-packets freeze: packet {frozen.Packet.Value} — not frozen: {CommandOutput.Summary(frozen.Checks)}");
+        if (!frozen.Frozen)
+        {
+            CommandOutput.Checks(frozen.Checks);
+        }
+
+        return frozen.Frozen ? 0 : 1;
     }
 }
