@@ -102,7 +102,8 @@ ArchUnitNET (not NetArchTest), in the `unit` lane, in `tests/Aw.Architecture.Tes
 The layer rules apply to shaped packages (assemblies named `Aw.<Pkg>.Core`, `.Features`, `.Infrastructure`, `.Host`
 or `.App`); tier-0 packages (`Aw.Kernel`, `Aw.Kernel.Data`) get the cycle, naming, service-provider and typed-id rules.
 A type outside every package root in a package's `Host` or `App` assembly (the top-level-statement `Program`, generator
-output) counts as Host. A new package registers each production project in `tests/Aw.Architecture.Tests/Packages.cs`
+output) counts as Host. ArchUnitNET records no dependencies from a top-level-statement body (`<Main>$`), so what
+`Program` itself calls is checked by review, not by these rules. A new package registers each production project in `tests/Aw.Architecture.Tests/Packages.cs`
 (one line, the project name) and adds a `ProjectReference` to it in `Aw.Architecture.Tests.csproj`; `/new-package` does
 both. Each rule is proven by a fixture
 package under `tests/Aw.Architecture.Tests/Fixtures/` that breaks it.
