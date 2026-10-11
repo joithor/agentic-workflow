@@ -144,6 +144,23 @@ public sealed class RunScriptTests
     }
 
     [Fact, Trait("Lane", "unit")]
+    public async Task RunScript_never_reuses_an_earlier_runs_verdict_without_an_app_build_even_in_the_same_directory()
+    {
+        var harness = WithMenu();
+        harness.Judge = new FakeJudge().Critiques(
+            new VisualVerdict(VisualDecision.LooksRight, [], Usage: null), new VisualVerdict(VisualDecision.LooksOff, ["new build"], Usage: null));
+        _ = harness.WithScript(OpenMenu());
+        var request = A.RunScriptRequest().Build();   // no --app-build: identical pixels can hide a new build
+
+        _ = await harness.Run(request);
+        var rerun = (await harness.Run(request)).Value.Summary;   // the same run directory, so the same run name and cache file
+
+        Assert.Equal(Verdict.LooksOff, rerun.Visual.Verdict);
+        Assert.Equal(2, harness.Judge.CritiqueRequests.Count);
+        Assert.False(rerun.Invocations.Single().CacheHit);
+    }
+
+    [Fact, Trait("Lane", "unit")]
     public async Task RunScript_lints_the_final_page_of_each_viewport()
     {
         var harness = WithMenu();
