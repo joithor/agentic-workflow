@@ -40,11 +40,12 @@ printf '#!/usr/bin/env bash\nexec node "%s" "$@"\n' "$TS_CLI" > "$WORK/shim-ts/j
 chmod +x "$WORK/shim-cs/judge" "$WORK/shim-ts/judge"
 
 # Stub agent CLIs, each alone in a directory put on PATH (XPATH) for the cases that use it, with
-# AW_JUDGE_PROVIDERS=rules,claude-cli: one answers 'continue' (claude -p's JSON envelope), one fails.
-mkdir -p "$WORK/claude-continue" "$WORK/claude-broken"
+# AW_JUDGE_PROVIDERS=rules,claude-cli: one answers 'continue' and one 'batch' (claude -p's JSON envelope), one fails.
+mkdir -p "$WORK/claude-continue" "$WORK/claude-batch" "$WORK/claude-broken"
 printf '#!/usr/bin/env bash\nprintf %%s %s\n' "'{\"type\":\"result\",\"is_error\":false,\"result\":\"\",\"structured_output\":{\"decision\":\"continue\"}}'" > "$WORK/claude-continue/claude"
+printf '#!/usr/bin/env bash\nprintf %%s %s\n' "'{\"type\":\"result\",\"is_error\":false,\"result\":\"\",\"structured_output\":{\"decision\":\"batch\"}}'" > "$WORK/claude-batch/claude"
 printf '#!/usr/bin/env bash\necho "stub claude: broken" >&2\nexit 1\n' > "$WORK/claude-broken/claude"
-chmod +x "$WORK/claude-continue/claude" "$WORK/claude-broken/claude"
+chmod +x "$WORK/claude-continue/claude" "$WORK/claude-batch/claude" "$WORK/claude-broken/claude"
 XPATH=""
 
 export AW_JUDGE_PROVIDERS=rules AW_LOG_LEVEL=none
@@ -106,6 +107,12 @@ for side in $SIDES; do
   s="$(fresh "$side" send-urgent)"; hook "$side" "$s" send-gate.sh '{"session_id":"s1","agent_type":"builder-a","tool_input":{"to":"main","message":"blocked: need your review"}}' send-urgent
   s="$(fresh "$side" send-ack)"; hook "$side" "$s" send-gate.sh '{"session_id":"s1","agent_type":"builder-a","tool_input":{"to":"main","message":"ok"}}' send-ack
   s="$(fresh "$side" send-undecided)"; hook "$side" "$s" send-gate.sh '{"session_id":"s1","agent_type":"builder-a","tool_input":{"to":"main","message":"still working through the second task now"}}' send-undecided
+  # batch (a stub claude decides it): queued in judge/outbox/s1.jsonl; the next urgent send in the same
+  # state dir flushes the queue and attaches it.
+  s="$(fresh "$side" send-batch)"
+  XPATH="$WORK/claude-batch" AW_JUDGE_PROVIDERS=rules,claude-cli hook "$side" "$s" send-gate.sh '{"session_id":"s1","agent_type":"builder-a","tool_input":{"to":"main","message":"still working through the second task now"}}' send-batch
+  cp "$s/judge/outbox/s1.jsonl" "$WORK/send-batch.$side.outbox" 2> /dev/null || : > "$WORK/send-batch.$side.outbox"
+  hook "$side" "$s" send-gate.sh '{"session_id":"s1","agent_type":"builder-a","tool_input":{"to":"main","message":"blocked: need your review"}}' send-flush
 done
 out_of send-urgent | jq -e '.hookSpecificOutput.permissionDecision == "allow"' > /dev/null || fail "send-urgent: expected allow, got $(out_of send-urgent)"
 out_of send-ack | jq -e '.hookSpecificOutput.permissionDecision == "deny"' > /dev/null || fail "send-ack: expected deny (pure ack dropped), got $(out_of send-ack)"
@@ -113,8 +120,19 @@ out_of send-ack | jq -e '.hookSpecificOutput.permissionDecision == "deny"' > /de
 # send-gate takes its fail-open path: allow, logging judge-exit-2 (not some other exit: the judge ran).
 out_of send-undecided | jq -e '.hookSpecificOutput.permissionDecision == "allow"' > /dev/null || fail "send-undecided: expected allow, got $(out_of send-undecided)"
 failopen_log send-undecided | grep -q 'judge-exit-2' || fail "send-undecided: expected the escalation's judge-exit-2 fail-open, got '$(failopen_log send-undecided)'"
-no_failopen send-urgent send-ack
-for c in send-urgent send-ack send-undecided; do [ "$(rc_of $c)" = 0 ] || fail "$c: exit $(rc_of $c)"; same $c; done
+out_of send-batch | jq -e '.hookSpecificOutput.permissionDecision == "deny"' > /dev/null || fail "send-batch: expected deny (queued), got $(out_of send-batch)"
+[ "$(wc -l < "$WORK/send-batch.cs.outbox" | tr -d ' ')" = 1 ] || fail "send-batch: expected one outbox line, got '$(cat "$WORK/send-batch.cs.outbox")'"
+jq -e '.text == "still working through the second task now" and .agentType == "builder-a"' "$WORK/send-batch.cs.outbox" > /dev/null || fail "send-batch: outbox line $(cat "$WORK/send-batch.cs.outbox")"
+out_of send-flush | jq -e '.hookSpecificOutput.permissionDecision == "allow"' > /dev/null || fail "send-flush: expected allow, got $(out_of send-flush)"
+out_of send-flush | grep -q 'queued progress, now attached' || fail "send-flush: expected the queued message attached, got $(out_of send-flush)"
+[ ! -s "$WORK/state-cs-send-batch/judge/outbox/s1.jsonl" ] || fail "send-flush: the outbox wasn't emptied"
+no_failopen send-urgent send-ack send-batch
+for c in send-urgent send-ack send-undecided send-batch send-flush; do [ "$(rc_of $c)" = 0 ] || fail "$c: exit $(rc_of $c)"; done
+for c in send-urgent send-ack send-undecided send-batch; do same $c; done
+if [ "$SIDES" = "cs ts" ]; then
+  diff <(norm "$WORK/send-batch.cs.outbox") <(norm "$WORK/send-batch.ts.outbox") > /dev/null || fail "send-batch: the queued outbox line differs from the TS judge's run"
+  diff <(norm "$WORK/send-flush.cs.out") <(norm "$WORK/send-flush.ts.out") > /dev/null || fail "send-flush: stdout differs from the TS judge"
+fi
 
 # ---- scope-gate (brief-scope + brief save) ----
 for side in $SIDES; do

@@ -351,7 +351,8 @@ done-gate-annotate, subagent-start-map, judge-health and the statusline's own `j
 `config/statusline.sh`), checking each hook's stdout, exit code and written files. send-gate and scope-gate allow, and
 done-gate falls back to its evidence check, on any judge failure, so every case that expects a pass also expects no
 fail-open log line; the one case that reaches a fail-open on purpose (a wake-gate escalation, exit 2) expects exactly
-`judge-exit-2`. The done-gate cases cover ask (a pre-rule), an escalation (asks), continue (a stub `claude` answering
+`judge-exit-2`. A send-gate case has a stub `claude` answer `batch`, which queues the message in
+`judge/outbox/<sid>.jsonl`, and the next urgent send in the same state flushes and attaches it. The done-gate cases cover ask (a pre-rule), an escalation (asks), continue (a stub `claude` answering
 `continue`, which writes `judge/sessions/<sid>.json`), a claim that meets the saved brief in words the no-brief
 evidence check wouldn't accept, one that misses it (exit 2 naming the criteria), and no brief. The health cases cover
 ok, degraded (a stub `claude` that exits 1 leaves one failure row) and a store that can't be opened. It builds
