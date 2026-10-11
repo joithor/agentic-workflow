@@ -19,14 +19,16 @@ internal static class LinearFilter
         "eq", "neq", "in", "nin", "gt", "gte", "lt", "lte", "null", "eqIgnoreCase", "contains", "containsIgnoreCase", "startsWith",
     };
 
-    public static bool Matches(JsonNode? node, JsonObject filter) => filter.All(entry => Entry(node, entry.Key, entry.Value));
+    // Every clause is evaluated before the results are combined (no short-circuit), so a refusal never depends on
+    // whether an earlier clause already failed: a bad filter is a 400 whatever its order.
+    public static bool Matches(JsonNode? node, JsonObject filter) => Every([.. filter.Select(entry => Entry(node, entry.Key, entry.Value))]);
 
     private static bool Entry(JsonNode? node, string key, JsonNode? condition) => key switch
     {
-        "and" => List(key, condition).All(f => Matches(node, Object(key, f))),
-        "or" => List(key, condition).Any(f => Matches(node, Object(key, f))),
-        "some" => Items(node).Any(item => Matches(item, Object(key, condition))),
-        "every" => Items(node).All(item => Matches(item, Object(key, condition))),
+        "and" => Every([.. List(key, condition).Select(f => Matches(node, Object(key, f)))]),
+        "or" => Some([.. List(key, condition).Select(f => Matches(node, Object(key, f)))]),
+        "some" => Some([.. Items(key, node).Select(item => Matches(item, Object(key, condition)))]),
+        "every" => Every([.. Items(key, node).Select(item => Matches(item, Object(key, condition)))]),
         _ when _comparators.Contains(key) => Compare(node, key, condition),
         _ => Field(node, key, condition),
     };
@@ -61,8 +63,8 @@ internal static class LinearFilter
             : throw FakeRequestException.Invalid("Filter 'null' takes a Boolean."),
         "eq" => Equal(value, operand),
         "neq" => !Equal(value, operand),
-        "in" => List(comparator, operand).Any(o => Equal(value, o)),
-        "nin" => !List(comparator, operand).Any(o => Equal(value, o)),
+        "in" => Some([.. List(comparator, operand).Select(o => Equal(value, o))]),
+        "nin" => !Some([.. List(comparator, operand).Select(o => Equal(value, o))]),
         "gt" or "gte" or "lt" or "lte" => value is not null && Holds(comparator, Order(value, operand)),
         _ => Text(comparator, value, operand),
     };
@@ -77,7 +79,12 @@ internal static class LinearFilter
 
     private static bool Text(string comparator, JsonNode? value, JsonNode? operand)
     {
-        if (value?.GetValueKind() != JsonValueKind.String || operand?.GetValueKind() != JsonValueKind.String)
+        if (operand?.GetValueKind() != JsonValueKind.String || (value is not null && value.GetValueKind() != JsonValueKind.String))
+        {
+            throw FakeRequestException.Invalid($"Filter '{comparator}' compares strings; got '{value?.ToJsonString()}' and '{operand?.ToJsonString() ?? "null"}'.");
+        }
+
+        if (value is null)
         {
             return false;
         }
@@ -113,7 +120,8 @@ internal static class LinearFilter
         {
             (JsonValueKind.Number, JsonValueKind.Number) => value.GetValue<double>().CompareTo(operand.GetValue<double>()),
             (JsonValueKind.String, JsonValueKind.String) => string.CompareOrdinal(value.GetValue<string>(), operand.GetValue<string>()),
-            _ => string.CompareOrdinal(value.ToJsonString(), operand.ToJsonString()),
+            (JsonValueKind.True or JsonValueKind.False, JsonValueKind.True or JsonValueKind.False) => value.GetValue<bool>().CompareTo(operand.GetValue<bool>()),
+            _ => throw FakeRequestException.Invalid($"Filter compares '{value.ToJsonString()}' with '{operand.ToJsonString()}', values of different types."),
         };
     }
 
@@ -123,12 +131,17 @@ internal static class LinearFilter
             ? at
             : null;
 
-    private static JsonArray Items(JsonNode? node) => node switch
+    private static JsonArray Items(string key, JsonNode? node) => node switch
     {
+        null => [],
         JsonArray array => array,
         JsonObject { } connection when connection["nodes"] is JsonArray nodes => nodes,
-        _ => [],
+        _ => throw FakeRequestException.Invalid($"Filter '{key}' takes a connection or a list, not '{node.ToJsonString()}'."),
     };
+
+    private static bool Every(List<bool> results) => results.TrueForAll(r => r);
+
+    private static bool Some(List<bool> results) => results.Exists(r => r);
 
     private static JsonArray List(string key, JsonNode? node) =>
         node as JsonArray ?? throw FakeRequestException.Invalid($"Filter '{key}' takes a list.");

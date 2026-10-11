@@ -19,6 +19,11 @@
   </ItemGroup>
 
   <ItemGroup>
+    <!-- The fakes' shared host (LoopbackServer) is internal; its own tests reach it here. -->
+    <InternalsVisibleTo Include="Aw.Context.Testing.Tests" />
+  </ItemGroup>
+
+  <ItemGroup>
     <!-- The fixture travels inside the assembly, so a test in any project reads it without file paths. -->
     <EmbeddedResource Include="Fixtures/split-panes/**/*" LogicalName="split-panes/%(RecursiveDir)%(Filename)%(Extension)" />
   </ItemGroup>

@@ -28,8 +28,8 @@ internal sealed record OnyxSearchRequest(string Message, IReadOnlyList<string>? 
             message,
             Sources(filters?["source_type"]),
             Cutoff(filters?["time_cutoff"]),
-            Number(options?["limit"], DefaultLimit),
-            Number(options?["offset"], 0));
+            Number(options, "limit", DefaultLimit),
+            Number(options, "offset", 0));
     }
 
     public static FakeRequestException Unprocessable(string[] location, string message, string type) =>
@@ -63,6 +63,7 @@ internal sealed record OnyxSearchRequest(string Message, IReadOnlyList<string>? 
         node switch
         {
             null => null,
+            JsonArray { Count: 0 } => null, // Onyx applies no source filter for an empty list
             JsonArray list when list.All(x => x is JsonValue v && v.GetValueKind() == JsonValueKind.String) => [.. list.Select(x => x!.GetValue<string>())], // why: All checked every element is a string value
             _ => throw Unprocessable(["body", "retrieval_options", "filters", "source_type"], "Must be a list of strings.", "list_type"),
         };
@@ -73,8 +74,11 @@ internal sealed record OnyxSearchRequest(string Message, IReadOnlyList<string>? 
             && DateTimeOffset.TryParse(v.GetValue<string>(), CultureInfo.InvariantCulture, DateTimeStyles.AssumeUniversal, out var at) ? at
         : throw Unprocessable(["body", "retrieval_options", "filters", "time_cutoff"], "Must be an ISO-8601 datetime string.", "datetime_parsing");
 
-    private static int Number(JsonNode? node, int fallback) =>
-        node is null ? fallback
-        : node is JsonValue v && v.TryGetValue<int>(out var n) && n >= 0 ? n
-        : throw Unprocessable(["body", "retrieval_options"], "limit and offset are non-negative integers.", "int_type");
+    private static int Number(JsonObject? options, string name, int fallback) =>
+        options?[name] switch
+        {
+            null => fallback,
+            JsonValue v when v.TryGetValue<int>(out var n) && n >= 0 => n,
+            _ => throw Unprocessable(["body", "retrieval_options", name], "Must be a non-negative integer.", "int_type"),
+        };
 }

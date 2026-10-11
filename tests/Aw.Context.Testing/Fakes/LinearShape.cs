@@ -6,8 +6,8 @@ namespace Aw.Context.Testing.Fakes;
 /// Cuts a recorded value down to what the query selected, as a GraphQL server answers: only the selected fields,
 /// under their aliases, recursing into objects and lists. A field the recordings don't have, an object without a
 /// sub-selection, or a scalar with one is a 400, so a hand-written query that selects the wrong thing fails here and
-/// not against Linear. A nested connection takes 'first' (the recordings hold every child); other nested arguments
-/// are refused.
+/// not against Linear. A nested connection takes 'first' and gets a computed 'pageInfo' (the recordings hold every
+/// child); other nested arguments are refused.
 /// </summary>
 internal static class LinearShape
 {
@@ -49,20 +49,35 @@ internal static class LinearShape
 
     private static JsonNode? Nested(JsonNode? value, GraphQlField child, string path)
     {
+        var connection = value is JsonObject c && c["nodes"] is JsonArray && !c.ContainsKey("pageInfo") ? c : null;
         if (child.Arguments.Count == 0)
         {
-            return value;
+            return connection is null ? value : Page(connection, int.MaxValue);
         }
 
-        if (child.Arguments.Count > 1 || !child.Arguments.TryGetValue("first", out var first)
-            || first is not JsonValue n || !n.TryGetValue<int>(out var count) || count < 1
-            || value is not JsonObject { } connection || connection["nodes"] is not JsonArray nodes)
+        return connection is not null && child.Arguments.Count == 1 && First(child) is { } count
+            ? Page(connection, count)
+            : throw FakeRequestException.Invalid($"At {path} the fake Linear server reads only 'first' (a positive Int) on a nested connection.");
+    }
+
+    private static int? First(GraphQlField child) =>
+        child.Arguments.GetValueOrDefault("first") is JsonValue n && n.TryGetValue<int>(out var count) && count > 0 ? count : null;
+
+    // A nested connection in the recordings holds every child and no pageInfo; this gives it the first 'count' nodes
+    // and the pageInfo a client pages with.
+    private static JsonObject Page(JsonObject connection, int count)
+    {
+        var nodes = connection["nodes"]!.AsArray(); // why: Nested passes only connections whose 'nodes' is an array
+        var kept = nodes.Take(count).Select(x => x?.DeepClone()).ToList();
+        var page = (JsonObject)connection.DeepClone();
+        page["nodes"] = new JsonArray([.. kept]);
+        page["pageInfo"] = new JsonObject
         {
-            throw FakeRequestException.Invalid($"At {path} the fake Linear server reads only 'first' (a positive Int) on a nested connection.");
-        }
-
-        var cut = (JsonObject)connection.DeepClone();
-        cut["nodes"] = new JsonArray([.. nodes.Take(count).Select(x => x?.DeepClone())]);
-        return cut;
+            ["hasNextPage"] = kept.Count < nodes.Count,
+            ["hasPreviousPage"] = false,
+            ["startCursor"] = (string?)kept.FirstOrDefault()?["id"],
+            ["endCursor"] = (string?)kept.LastOrDefault()?["id"],
+        };
+        return page;
     }
 }

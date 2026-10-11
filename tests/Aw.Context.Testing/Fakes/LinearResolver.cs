@@ -100,7 +100,12 @@ internal static class LinearResolver
     }
 
     private static string? Text(GraphQlField field, string name) =>
-        field.Arguments.GetValueOrDefault(name) is { } value && value.GetValueKind() == JsonValueKind.String ? value.GetValue<string>() : null;
+        field.Arguments.GetValueOrDefault(name) switch
+        {
+            null => null,
+            JsonValue value when value.GetValueKind() == JsonValueKind.String => value.GetValue<string>(),
+            var other => throw FakeRequestException.Invalid($"Argument '{name}' on \"{field.Name}\" takes a string or enum value, got {other.ToJsonString()}."),
+        };
 
     private static void Known(GraphQlField field, HashSet<string> allowed)
     {

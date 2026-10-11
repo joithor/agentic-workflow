@@ -184,6 +184,10 @@ public sealed class FakeLinearServerTests
     [InlineData("{ issues { nodes { ...IssueFields } } }", "Fragments")]
     [InlineData("query { issue(id: $id) { id } }", "$id")]
     [InlineData("{ issue(id: \"SPL-1\\q\") { id } }", "escape")]
+    [InlineData("{ issue(id: \"SPL-10\\u 035\") { id } }", "escape")]
+    [InlineData("{ issues(first: 1e999) { nodes { id } } }", "1e999")]
+    [InlineData("{ issues(orderBy: 5) { nodes { id } } }", "orderBy")]
+    [InlineData("{ issues(after: 5) { nodes { id } } }", "after")]
     public async Task A_selection_or_variable_the_fake_cannot_answer_truthfully_is_a_clear_400(string query, string named)
     {
         await using var linear = await FakeLinearServer.Start();
@@ -198,18 +202,27 @@ public sealed class FakeLinearServerTests
     public async Task Variable_defaults_apply_when_the_request_leaves_the_variable_out()
     {
         await using var linear = await FakeLinearServer.Start();
-        const string query = "query($first: Int = 2, $order: PaginationOrderBy = updatedAt) { issues(first: $first, orderBy: $order) { nodes { identifier } } }";
+        const string query = "query($first: Int = 3, $order: PaginationOrderBy = updatedAt) { issues(first: $first, orderBy: $order) { nodes { identifier } } }";
+        const string inline = "{ issues(first: 3, orderBy: updatedAt) { nodes { identifier } } }";
 
         var (status, body) = await Post(linear, query, []);
+        var literal = (await Post(linear, inline, variables: null)).Body!["data"]!["issues"]!;
+        var escaped = (await Post(linear, "{ issue(id: \"SPL-10\\u0035\") { identifier } }", variables: null)).Body!["data"]!["issue"]!;
 
         Assert.Equal(HttpStatusCode.OK, status);
-        Assert.Equal(["SPL-101", "SPL-102"], Identifiers(body!["data"]!["issues"]!));
+        Assert.Equal(["SPL-101", "SPL-102", "SPL-104"], Identifiers(body!["data"]!["issues"]!));
+        Assert.Equal(["SPL-101", "SPL-102", "SPL-104"], Identifiers(literal));
+        Assert.Equal("SPL-105", (string?)escaped["identifier"]);
     }
 
     [Theory]
     [InlineData("{\"completedAt\":{\"null\":\"yes\"}}", "Boolean")]
     [InlineData("{\"stateName\":{\"eq\":\"Done\"}}", "stateName")]
     [InlineData("{\"labels\":{\"name\":{\"eq\":\"layout\"}}}", "some")]
+    [InlineData("{\"team\":{\"key\":{\"eq\":\"OTHER\"}},\"bogus\":{\"eq\":1}}", "bogus")]
+    [InlineData("{\"team\":{\"key\":{\"eq\":\"OTHER\"}},\"updatedAt\":{\"gt\":\"P1W\"}}", "P1W")]
+    [InlineData("{\"or\":[{\"identifier\":{\"eq\":\"SPL-101\"}},{\"priority\":{\"gt\":\"1\"}}]}", "different types")]
+    [InlineData("{\"title\":{\"contains\":5}}", "contains")]
     public async Task A_filter_the_fake_cannot_evaluate_truthfully_is_a_clear_400(string filter, string named)
     {
         await using var linear = await FakeLinearServer.Start();
@@ -218,6 +231,31 @@ public sealed class FakeLinearServerTests
 
         Assert.Equal(HttpStatusCode.BadRequest, status);
         Assert.Contains(named, (string?)body!["errors"]![0]!["message"], StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task A_nested_connection_pages_with_first_and_a_computed_page_info()
+    {
+        await using var linear = await FakeLinearServer.Start();
+        const string query = "{ issue(id: \"SPL-105\") { comments(first: 2) { nodes { id } pageInfo { hasNextPage endCursor } } } }";
+
+        var comments = (await Post(linear, query, variables: null)).Body!["data"]!["issue"]!["comments"]!;
+
+        Assert.Equal(2, comments["nodes"]!.AsArray().Count);
+        Assert.True((bool)comments["pageInfo"]!["hasNextPage"]!);
+        Assert.Equal((string?)comments["nodes"]![1]!["id"], (string?)comments["pageInfo"]!["endCursor"]);
+    }
+
+    [Fact]
+    public async Task Selection_sets_nesting_past_the_limit_are_refused()
+    {
+        await using var linear = await FakeLinearServer.Start();
+        var query = "{ issues " + string.Concat(Enumerable.Repeat("{ nodes ", 40)) + "{ id" + new string('}', 42);
+
+        var (status, body) = await Post(linear, query, variables: null);
+
+        Assert.Equal(HttpStatusCode.BadRequest, status);
+        Assert.Contains("deeper", (string?)body!["errors"]![0]!["message"], StringComparison.Ordinal);
     }
 
     private static async Task<JsonNode> Issues(FakeLinearServer linear, JsonObject variables)

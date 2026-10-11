@@ -13,7 +13,9 @@ namespace Aw.Context.Testing.Fakes;
 internal sealed class GraphQlReader(string text, JsonObject? variables)
 {
     private readonly Dictionary<string, JsonNode?> _declared = new(StringComparer.Ordinal);
+    private const int MaxDepth = 32;
     private int _at;
+    private int _depth;
 
     public static IReadOnlyList<GraphQlField> RootFields(string query, JsonObject? variables) =>
         new GraphQlReader(query, variables).Operation();
@@ -98,6 +100,11 @@ internal sealed class GraphQlReader(string text, JsonObject? variables)
 
     private List<GraphQlField> SelectionSet()
     {
+        if (++_depth > MaxDepth)
+        {
+            throw FakeRequestException.Invalid(string.Create(CultureInfo.InvariantCulture, $"Selection sets nest deeper than {MaxDepth} levels."));
+        }
+
         Expect('{');
         var fields = new List<GraphQlField>();
         for (SkipIgnored(); Peek != '}'; SkipIgnored())
@@ -106,6 +113,7 @@ internal sealed class GraphQlReader(string text, JsonObject? variables)
         }
 
         _at++;
+        _depth--;
         return fields.Count > 0 ? fields : throw FakeRequestException.Invalid("An empty selection set '{ }' isn't valid GraphQL.");
     }
 
@@ -188,7 +196,7 @@ internal sealed class GraphQlReader(string text, JsonObject? variables)
             "false" => JsonValue.Create(value: false),
             "null" => null,
             _ when int.TryParse(token, NumberStyles.Integer, CultureInfo.InvariantCulture, out var number) => JsonValue.Create(number),
-            _ when double.TryParse(token, NumberStyles.Float, CultureInfo.InvariantCulture, out var real) => JsonValue.Create(real),
+            _ when double.TryParse(token, NumberStyles.Float, CultureInfo.InvariantCulture, out var real) && double.IsFinite(real) => JsonValue.Create(real),
             _ when token.Length > 0 && (char.IsLetter(token[0]) || token[0] == '_') => JsonValue.Create(token),
             _ => throw FakeRequestException.Invalid(string.Create(CultureInfo.InvariantCulture, $"Unexpected '{token}{Peek}' at offset {start} of the query.")),
         };
@@ -227,7 +235,7 @@ internal sealed class GraphQlReader(string text, JsonObject? variables)
             'n' => '\n',
             'r' => '\r',
             't' => '\t',
-            'u' when _at + 4 < text.Length && int.TryParse(text.AsSpan(_at + 1, 4), NumberStyles.HexNumber, CultureInfo.InvariantCulture, out var code) => Unicode(code),
+            'u' when _at + 4 < text.Length && int.TryParse(text.AsSpan(_at + 1, 4), NumberStyles.AllowHexSpecifier, CultureInfo.InvariantCulture, out var code) => Unicode(code),
             _ => throw FakeRequestException.Invalid(string.Create(CultureInfo.InvariantCulture, $"Invalid escape in a string at offset {_at} of the query.")),
         };
     }

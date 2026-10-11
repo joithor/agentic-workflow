@@ -82,7 +82,8 @@ public sealed class FakeOnyxServerTests
     [InlineData("{\"message\":\"pane\",\"retrieval_options\":{\"enable_auto_detect_filters\":false}}", "enable_auto_detect_filters")]
     [InlineData("{\"message\":\"pane\",\"retrieval_options\":{\"filters\":{\"source_type\":\"linear\"}}}", "source_type")]
     [InlineData("{\"message\":\"pane\",\"retrieval_options\":{\"filters\":{\"time_cutoff\":5}}}", "time_cutoff")]
-    [InlineData("{\"message\":\"pane\",\"retrieval_options\":{\"limit\":1.5}}", "retrieval_options")]
+    [InlineData("{\"message\":\"pane\",\"retrieval_options\":{\"limit\":1.5}}", "limit")]
+    [InlineData("{\"message\":\"pane\",\"retrieval_options\":{\"offset\":-1}}", "offset")]
     public async Task A_field_the_fake_does_not_read_or_a_badly_typed_value_is_a_422_naming_it(string body, string named)
     {
         await using var onyx = await FakeOnyxServer.Start();
@@ -102,6 +103,17 @@ public sealed class FakeOnyxServerTests
         var second = await Search(onyx, new JsonObject { ["message"] = "pane", ["retrieval_options"] = new JsonObject { ["offset"] = 1, ["limit"] = 1 } });
 
         Assert.Equal((string?)all[1]!["document_id"], (string?)Assert.Single(second)!["document_id"]);
+    }
+
+    [Fact]
+    public async Task An_empty_source_type_list_is_no_filter_as_in_onyx()
+    {
+        await using var onyx = await FakeOnyxServer.Start();
+
+        var unfiltered = await Search(onyx, Request("pane", sources: null, cutoff: null, limit: null));
+        var empty = await Search(onyx, Request("pane", [], cutoff: null, limit: null));
+
+        Assert.Equal(unfiltered.Count, empty.Count);
     }
 
     [Fact]
