@@ -199,7 +199,7 @@ packages:
     src: src/Sindri
     scan: [sindri/src]
     bins: [sindri]
-    db: [sindri/ledger.db]
+    db: [sindri/ledger.db, sindri-app/ledger.db]
     namespace: sindri
     note: "built new in C# as an application (control plane, workflow engine, context retrieval; addendum §17.29, Q7), not ported; ts: sindri (profile, ledger, scrub, observe, index, scope, evolve) is the reference and runs until the switch; S1 (app shell: CLI and control plane, host lease, ledger, profile, API, scheduler, doctor) is in src/Sindri; reaches lower tiers only through Core contracts or CLIs"
 
