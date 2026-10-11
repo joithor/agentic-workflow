@@ -1,6 +1,5 @@
 using System.Globalization;
 using System.Threading.Channels;
-using Aw.Kernel.Json;
 using Aw.Sindri.Ui.Api;
 using Aw.Sindri.Ui.Platform;
 
@@ -23,6 +22,7 @@ internal sealed class MainViewModel(IEndpointRecordSource records, ISindriApi ap
     private long _cursor;
     private byte[] _record = [];
     private long _epoch;
+    private int _pid;
 
     /// <summary>The state in one word: Connecting, Running or Not running.</summary>
     public string Headline { get; private set => Set(ref field, value); } = "Connecting";
@@ -147,36 +147,43 @@ internal sealed class MainViewModel(IEndpointRecordSource records, ISindriApi ap
             return NotRunning($"no endpoint record at {records.Location}: Sindri hasn't started, or it stopped");
         }
 
-        var record = AwJson.Deserialize<ControlRecord>(bytes, SindriApiClient.Json);
-        if (record.IsError || !record.Value.Url.IsAbsoluteUri)
+        var record = ControlRecord.Usable(bytes, SindriApiClient.Json);
+        if (record is null)
         {
             return NotRunning($"the endpoint record at {records.Location} can't be read");
         }
 
-        var ping = await api.Ping(record.Value.Url, cancellationToken).ConfigureAwait(true);
+        var ping = await api.Ping(record.Url, cancellationToken).ConfigureAwait(true);
         if (ping.IsError)
         {
             return NotRunning(ping.Error.Message);
         }
 
-        if (ping.Value.Pid != record.Value.Pid || ping.Value.Epoch != record.Value.Epoch)
+        if (ping.Value.Pid != record.Pid || ping.Value.Epoch != record.Epoch)
         {
             return NotRunning(string.Create(CultureInfo.InvariantCulture,
-                $"the endpoint record is stale: it names pid {record.Value.Pid} at epoch {record.Value.Epoch}, but pid {ping.Value.Pid} at epoch {ping.Value.Epoch} answers"));
+                $"the endpoint record is stale: it names pid {record.Pid} at epoch {record.Epoch}, but pid {ping.Value.Pid} at epoch {ping.Value.Epoch} answers"));
         }
 
         _record = bytes;
-        if (ping.Value.Epoch < _epoch)
-        {
-            _cursor = 0;   // a lower epoch is a new ledger: its sequence starts over
-        }
-
-        _epoch = ping.Value.Epoch;
-        return await Refresh(record.Value.Url, cancellationToken).ConfigureAwait(true) ? record.Value.Url : null;
+        Track(ping.Value);
+        return await Refresh(record.Url, cancellationToken).ConfigureAwait(true) ? record.Url : null;
     }
 
     // Follows the stream until it ends, a status refresh fails, or the endpoint record changes. A stopping control plane
     // can hold its stream open while it shuts down, so the stream ending is not the only sign that it's gone.
+    // A lower epoch, or the same epoch held by another process, is a new ledger (the lease lives in it): its sequence
+    // starts over. The same process at the same epoch is a dropped stream, which resumes from the cursor.
+    private void Track(PingView ping)
+    {
+        if (ping.Epoch < _epoch || (ping.Epoch == _epoch && ping.Pid != _pid))
+        {
+            _cursor = 0;
+        }
+
+        (_epoch, _pid) = (ping.Epoch, ping.Pid);
+    }
+
     private async Task<int> Follow(Uri url, CancellationToken cancellationToken)
     {
         var events = 0;

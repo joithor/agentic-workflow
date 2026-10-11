@@ -14,11 +14,13 @@ internal static class StatusText
 
     internal static string Lease(StatusView s) => string.Create(CultureInfo.InvariantCulture, $"pid {s.Pid} · epoch {s.Epoch}");
 
+    // "approved" only when Sindri says nothing needs approval; otherwise the most specific reason the record gives.
     internal static string ProfileState(ProfileView p) => p switch
     {
         { Approved: null, Problem: not null } => "unreadable",
         { Approved: null } => "not approved",
         { ChangedSinceApproval: true } => "changed since approval",
+        { NeedsApproval: true } => "needs approval",
         _ => "approved",
     };
 
