@@ -46,4 +46,21 @@ public static class LoopRules
     /// <returns>The instance with the allowed rounds raised, or SND-WF-003.</returns>
     public static Result<WorkflowInstance> Grant(WorkflowInstance instance, Recipe recipe, int rounds) =>
         throw new NotSupportedException("P3 unit (c): LoopRules.Grant");
+
+    /// <summary>
+    /// '--text' on a no-progress park (spec §3.8): the same as a grant (the resume performs the withheld transition or
+    /// re-runs the Step) without adding rounds beyond the one it starts, once per loop.
+    /// </summary>
+    /// <param name="instance">The parked instance.</param>
+    /// <param name="recipe">Its recipe.</param>
+    /// <returns>The instance with the loop ready for the round the answer starts, or SND-WF-003.</returns>
+    public static Result<WorkflowInstance> AnswerText(WorkflowInstance instance, Recipe recipe) =>
+        throw new NotSupportedException("P3 unit (c): LoopRules.AnswerText");
+
+    /// <summary>The 'next' variables of every loop the recipe names (spec §3.7): '{loop.&lt;n&gt;}' (the round) and '{loop.&lt;n&gt;.cap}' (the last round allowed).</summary>
+    /// <param name="instance">The instance.</param>
+    /// <param name="recipe">Its recipe.</param>
+    /// <returns>The values, by variable name without braces.</returns>
+    public static IReadOnlyDictionary<string, string> Values(WorkflowInstance instance, Recipe recipe) =>
+        throw new NotSupportedException("P3 unit (c): LoopRules.Values");
 }

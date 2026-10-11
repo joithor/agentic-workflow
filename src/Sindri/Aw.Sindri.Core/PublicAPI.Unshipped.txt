@@ -3297,3 +3297,7 @@ virtual Aw.Sindri.Core.Workflow.Engine.Triggers.Trigger.PrintMembers(System.Text
 virtual Aw.Sindri.Core.Workflow.Engine.Triggers.WaitSource.EqualityContract.get -> System.Type!
 virtual Aw.Sindri.Core.Workflow.Engine.Triggers.WaitSource.Equals(Aw.Sindri.Core.Workflow.Engine.Triggers.WaitSource? other) -> bool
 virtual Aw.Sindri.Core.Workflow.Engine.Triggers.WaitSource.PrintMembers(System.Text.StringBuilder! builder) -> bool
+Aw.Sindri.Core.Workflow.Engine.Instances.LoopState.TextAnswered.get -> bool
+Aw.Sindri.Core.Workflow.Engine.Instances.LoopState.TextAnswered.init -> void
+static Aw.Sindri.Core.Workflow.Engine.Rules.LoopRules.AnswerText(Aw.Sindri.Core.Workflow.Engine.Instances.WorkflowInstance! instance, Aw.Sindri.Core.Workflow.Recipes.Recipe! recipe) -> Aw.Kernel.Result<Aw.Sindri.Core.Workflow.Engine.Instances.WorkflowInstance!>!
+static Aw.Sindri.Core.Workflow.Engine.Rules.LoopRules.Values(Aw.Sindri.Core.Workflow.Engine.Instances.WorkflowInstance! instance, Aw.Sindri.Core.Workflow.Recipes.Recipe! recipe) -> System.Collections.Generic.IReadOnlyDictionary<string!, string!>!
