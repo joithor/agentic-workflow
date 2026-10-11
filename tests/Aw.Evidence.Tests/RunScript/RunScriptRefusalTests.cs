@@ -169,4 +169,17 @@ public sealed class RunScriptRefusalTests
         Assert.False(harness.Locks.IsHeld(LockKind.QaStack));
         Assert.False(harness.Locks.IsHeld(LockKind.HeavyJob));
     }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task RunScript_deletes_an_earlier_summary_so_a_run_that_errors_leaves_none()
+    {
+        var harness = WithSave();
+        _ = harness.Files.With(RunScriptRequestBuilder.RunDirectory + "/summary.json", "{\"schema\":\"ui-evidence.run/1\"}"u8.ToArray());
+        harness.Browser.FailsToStart = true;
+
+        var result = await harness.Run(A.RunScriptRequest().Build());
+
+        Assert.Equal(ErrorKind.Unavailable, result.Error.Kind);
+        Assert.False(harness.Files.Files.ContainsKey(RunScriptRequestBuilder.RunDirectory + "/summary.json"), "exit 4 leaves no earlier evidence behind");
+    }
 }
