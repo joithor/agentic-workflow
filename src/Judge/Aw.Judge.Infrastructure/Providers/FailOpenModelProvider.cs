@@ -1,4 +1,3 @@
-using System.Diagnostics.CodeAnalysis;
 using System.Text.Json.Nodes;
 using Aw.Judge.Core.Ports;
 using Aw.Judge.Core.Providers;
@@ -23,13 +22,14 @@ internal sealed class FailOpenModelProvider(IModelProvider inner) : IModelProvid
     public IReadOnlySet<ContentClass> Classes => Inner.Classes;
 
     /// <inheritdoc />
-    [SuppressMessage("Design", "CA1031:Do not catch general exception types", Justification = "The boundary backstop: any adapter bug becomes a recorded 'provider-threw' failure; the caller's cancellation still propagates.")]
     public async ValueTask<ProviderResult> Decide(QuestionRef question, JsonNode? input, TimeSpan budget, CancellationToken cancellationToken)
     {
         try
         {
             return await Inner.Decide(question, input, budget, cancellationToken).ConfigureAwait(false);
         }
+        // The boundary backstop (CA1031 is off for Infrastructure): any adapter bug becomes a recorded 'provider-threw'
+        // failure; the caller's cancellation still propagates.
         catch (Exception) when (!cancellationToken.IsCancellationRequested)
         {
             return new ProviderErrored(ProviderReasons.ProviderThrew);

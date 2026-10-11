@@ -16,6 +16,9 @@ internal sealed class KeychainSecretSource(Func<string, string?> environment, IP
     // The keychain tool answers in milliseconds; a locked keychain's prompt must not hold the judge.
     private static readonly TimeSpan _keychainTimeout = TimeSpan.FromSeconds(5);
 
+    /// <summary>The environment variable of every secret the judge owns (what an agent CLI child must not inherit).</summary>
+    internal static IReadOnlyList<string> Variables { get; } = [.. Enum.GetValues<SecretName>().Select(static name => Entry(name).Variable)];
+
     /// <inheritdoc />
     public async ValueTask<string?> Read(SecretName name, CancellationToken cancellationToken)
     {
