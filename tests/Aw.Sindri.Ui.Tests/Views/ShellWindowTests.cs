@@ -24,8 +24,10 @@ namespace Aw.Sindri.Ui.Tests.Views;
 /// discovery under the repo's 4.0 (docs/csharp/sindri-ui.md "Tests").
 /// </summary>
 [Lane(TestLane.Integration)]
-public sealed class ShellWindowTests
+public sealed class ShellWindowTests : IDisposable
 {
+    private readonly List<Window> _windows = [];
+    private readonly CancellationTokenSource _stop = CancellationTokenSource.CreateLinkedTokenSource(TestContext.Current.CancellationToken);
     private readonly InMemoryEndpointRecords _records = new();
     private readonly FakeSindriApi _server = new();
     private readonly FakeTimeProvider _clock = new(A.Noon);
@@ -33,11 +35,25 @@ public sealed class ShellWindowTests
 
     private static CancellationToken Token => TestContext.Current.CancellationToken;
 
-    private static async Task OnUi(Func<Task> body) =>
+    public void Dispose() => _stop.Dispose();
+
+    // Each test stops its shell and closes its windows, then settles, before it returns: a layout pass or a ticker left
+    // queued would run after the headless session has moved on (another test's theme, or the session's reset).
+    private async Task OnUi(Func<Task> body) =>
         _ = await HeadlessUnitTestSession.GetOrStartForAssembly(typeof(ShellWindowTests).Assembly)
             .Dispatch(async () =>
             {
-                await body();
+                try
+                {
+                    await body();
+                }
+                finally
+                {
+                    await _stop.CancelAsync();
+                    _windows.ForEach(w => w.Close());
+                    Dispatcher.UIThread.RunJobs();
+                }
+
                 return true;
             }, Token);
 
@@ -46,8 +62,9 @@ public sealed class ShellWindowTests
         var shell = new ShellViewModel(_records, _server, _clock, _preferences);
         await shell.Restore(Token);
         var window = new ShellWindow { DataContext = shell };
+        _windows.Add(window);
         window.Show();
-        var following = run ? shell.Run(Token) : Task.CompletedTask;
+        var following = run ? shell.Run(_stop.Token) : Task.CompletedTask;
         await Until(() => ready(shell) || following.IsFaulted);
         Assert.False(following.IsFaulted, following.Exception?.ToString());
         Assert.True(ready(shell), "the shell never reached the expected state");
