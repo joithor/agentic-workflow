@@ -1,4 +1,4 @@
-using Aw.Evidence.Core;
+using Aw.Evidence.Core.Registration;
 using Aw.Evidence.Features;
 using Aw.Evidence.Infrastructure;
 using Aw.Kernel.Json;

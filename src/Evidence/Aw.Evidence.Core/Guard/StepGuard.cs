@@ -1,5 +1,4 @@
 using System.Globalization;
-using Aw.Evidence.Core.Browser;
 using Aw.Evidence.Core.Scripts;
 using Aw.Kernel;
 
@@ -26,13 +25,10 @@ public static class StepGuard
     /// <returns>Whether write-looking steps (and repair candidates) are refused.</returns>
     public static bool RunRefusesWrites(ResolvedHost host, bool allowWrites) => host.Kind == HostKind.Preview && !allowWrites;
 
-    /// <summary>
-    /// Whether a repair candidate reads like a write control: the same write-word check a scripted click gets, applied to
-    /// its test id, accessible name and text.
-    /// </summary>
-    /// <param name="candidate">The candidate the judge chose.</param>
-    /// <returns>Whether any of its labels reads like a write.</returns>
-    public static bool LooksLikeWrite(Candidate candidate) => WriteWords.LooksLikeWrite(candidate);
+    /// <summary>Whether a control's label (a test id, accessible name or text) reads like a write, as a scripted click target would.</summary>
+    /// <param name="label">The label, or null.</param>
+    /// <returns>Whether it reads like a write.</returns>
+    public static bool LabelLooksLikeWrite(string? label) => WriteWords.LabelLooksLikeWrite(label);
 
     /// <summary>Checks a parity manifest's frame steps (read-only on every host).</summary>
     /// <param name="steps">Every frame's steps, in order.</param>

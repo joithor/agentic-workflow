@@ -2,7 +2,7 @@ using Aw.Evidence.Core.Steps;
 using Aw.Evidence.Core.Visual;
 using Microsoft.Extensions.DependencyInjection;
 
-namespace Aw.Evidence.Core;
+namespace Aw.Evidence.Core.Registration;
 
 /// <summary>Registers Aw.Evidence.Core's types.</summary>
 public static class EvidenceCoreServiceCollectionExtensions

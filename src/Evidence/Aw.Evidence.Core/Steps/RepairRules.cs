@@ -29,7 +29,7 @@ public static class RepairRules
 
     /// <summary>
     /// A click lands anywhere; a fill must land on something fillable. Where writes are refused, a candidate that reads
-    /// like a write control (<see cref="StepGuard.LooksLikeWrite(Candidate)"/>) never fits: the guard vetted the script's
+    /// like a write control (its test id, accessible name or text, by <see cref="StepGuard.LabelLooksLikeWrite"/>) never fits: the guard vetted the script's
     /// targets, and a repair must not reach past it.
     /// </summary>
     /// <param name="action">The step's action.</param>
@@ -37,6 +37,10 @@ public static class RepairRules
     /// <param name="refuseWrites">Whether writes are refused on this host.</param>
     /// <returns>Whether the candidate fits.</returns>
     public static bool Fits(StepAction action, Candidate candidate, bool refuseWrites) =>
-        !(refuseWrites && StepGuard.LooksLikeWrite(candidate))
+        !(refuseWrites && LooksLikeWrite(candidate))
         && (action == StepAction.Click || (action == StepAction.Fill && candidate.Role is { } role && _fillableRoles.Contains(role)));
+
+    // A repair candidate is clicked, so each of its labels is read as a click target would be.
+    private static bool LooksLikeWrite(Candidate candidate) =>
+        StepGuard.LabelLooksLikeWrite(candidate.TestId?.Value) || StepGuard.LabelLooksLikeWrite(candidate.AccessibleName) || StepGuard.LabelLooksLikeWrite(candidate.Text);
 }

@@ -249,7 +249,7 @@ Aw.Evidence.Core.Design.MeasuredGeometry.X.init -> void
 Aw.Evidence.Core.Design.MeasuredGeometry.Y.get -> double
 Aw.Evidence.Core.Design.MeasuredGeometry.Y.init -> void
 Aw.Evidence.Core.Design.ParityRegions
-Aw.Evidence.Core.EvidenceCoreServiceCollectionExtensions
+Aw.Evidence.Core.Registration.EvidenceCoreServiceCollectionExtensions
 Aw.Evidence.Core.EvidenceErrors
 Aw.Evidence.Core.Files.IRunFiles
 Aw.Evidence.Core.Files.IRunFiles.CreateDirectoryAsync(string! path, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Kernel.Unit>!>
@@ -1334,7 +1334,7 @@ static Aw.Evidence.Core.Design.MeasuredGeometry.operator !=(Aw.Evidence.Core.Des
 static Aw.Evidence.Core.Design.MeasuredGeometry.operator ==(Aw.Evidence.Core.Design.MeasuredGeometry? left, Aw.Evidence.Core.Design.MeasuredGeometry? right) -> bool
 static Aw.Evidence.Core.Design.ParityRegions.Implementation(Aw.Evidence.Core.Geometry.Box! anchor, Aw.Evidence.Core.Geometry.Region! design, Aw.Evidence.Core.Geometry.Offset! offset) -> Aw.Evidence.Core.Geometry.Region!
 static Aw.Evidence.Core.Design.ParityRegions.Shortfall(Aw.Evidence.Core.Geometry.Region! region, Aw.Evidence.Core.Geometry.ViewportSize! viewport) -> Aw.Evidence.Core.Geometry.ViewportSize?
-static Aw.Evidence.Core.EvidenceCoreServiceCollectionExtensions.AddEvidenceCore(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
+static Aw.Evidence.Core.Registration.EvidenceCoreServiceCollectionExtensions.AddEvidenceCore(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
 static Aw.Evidence.Core.EvidenceErrors.All.get -> System.Collections.Generic.IReadOnlyList<Aw.Kernel.ErrorDefinition!>!
 static Aw.Evidence.Core.Files.RunPath.Combine(string! directory, string! file) -> string!
 static Aw.Evidence.Core.Files.RunPath.NameOf(string! path) -> string!
@@ -1356,7 +1356,7 @@ static Aw.Evidence.Core.Guard.ProvenanceRules.For(Aw.Evidence.Core.Guard.HostKin
 static Aw.Evidence.Core.Guard.ResolvedHost.operator !=(Aw.Evidence.Core.Guard.ResolvedHost? left, Aw.Evidence.Core.Guard.ResolvedHost? right) -> bool
 static Aw.Evidence.Core.Guard.ResolvedHost.operator ==(Aw.Evidence.Core.Guard.ResolvedHost? left, Aw.Evidence.Core.Guard.ResolvedHost? right) -> bool
 static Aw.Evidence.Core.Guard.StepGuard.ForParity(System.Collections.Generic.IReadOnlyList<Aw.Evidence.Core.Scripts.ScriptStep!>! steps, bool allowWrites) -> Aw.Kernel.Result<Aw.Kernel.Unit>!
-static Aw.Evidence.Core.Guard.StepGuard.LooksLikeWrite(Aw.Evidence.Core.Browser.Candidate! candidate) -> bool
+static Aw.Evidence.Core.Guard.StepGuard.LabelLooksLikeWrite(string? label) -> bool
 static Aw.Evidence.Core.Guard.StepGuard.RunRefusesWrites(Aw.Evidence.Core.Guard.ResolvedHost! host, bool allowWrites) -> bool
 static Aw.Evidence.Core.Guard.StepGuard.ForRun(System.Collections.Generic.IReadOnlyList<Aw.Evidence.Core.Scripts.ScriptStep!>! steps, Aw.Evidence.Core.Guard.ResolvedHost! host, bool allowWrites) -> Aw.Kernel.Result<Aw.Kernel.Unit>!
 static Aw.Evidence.Core.Guard.StepGuard.IsSameOriginPath(string! target) -> bool
