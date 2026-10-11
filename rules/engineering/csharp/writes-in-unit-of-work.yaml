@@ -15,10 +15,10 @@ checks:
   - type: test
     id: "UnitOfWorkContract"
     ref: tests/Aw.Kernel.Testing/UnitOfWorkContract.cs
-    status: pending
-    pendingPr: 133
+    status: active
     note: "proves the port's semantics, not that every write uses it"
-gap: pending
+gap: partial
+gapNote: "UnitOfWorkContract proves the port's semantics on the fake and the SQL adapter; that every write runs inside a unit of work is reviewed."
 source:
   type: adr
   ref: "docs/superpowers/specs/2026-10-09-agent-readiness-design.md#4b2"

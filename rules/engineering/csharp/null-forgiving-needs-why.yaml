@@ -10,9 +10,8 @@ select:
 checks:
   - type: analyzer
     id: "AW1002"
-    status: pending
-    pendingPr: 132
-gap: pending
+    status: active
+gap: closed
 source:
   type: adr
   ref: "docs/superpowers/specs/2026-10-09-agent-readiness-design.md#4b3"

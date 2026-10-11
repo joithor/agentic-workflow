@@ -1,8 +1,9 @@
 # Agent readiness for agentic-workflow — design
 
-Status: draft for review, revision 6 · 2026-10-10 (rounds 1–2 applied; owner decision: **one clean cutover, no backward
+Status: draft for review, revision 7 · 2026-10-10 (rounds 1–2 applied; owner decision: **one clean cutover, no backward
 compatibility** — no TS parity, no data migration, no replay; decisions from the R1a PRs and the R1b template PRs
-folded in; R1b checks of record in §4b.10)
+folded in; R1b checks of record in §4b.10; rev 7: each package is a **reimplementation in idiomatic C#, not a
+translation** of the TS, and the hook contract is only what the hooks read, §4a step 1 and §4c)
 Target: **Level 5 (Autonomous)** on Factory's agent-readiness framework. Level 4 is a prerequisite for the
 factory work in `2026-10-09-sindri-factory-addendum.md` (§17.16). Level 5 is reached together with that work.
 
@@ -86,6 +87,32 @@ gets CI as a safety net until the switch. The standards in §4 still apply, expr
 | Fastify (bridge; retired 2026-10-10, not ported) | — (an http host, if one is ever needed, uses ASP.NET Core minimal APIs) |
 | Node CLIs started per hook call | **NativeAOT** binaries for hook and CLI entry points only (§4b.6 AOT table), so startup stays fast; a tool that opens a database ships the bundled SQLite library beside it. Reflection-free JSON (source generators) is required for them |
 | Playwright (ui-evidence) | Playwright for .NET |
+| The Plan 6 dashboard (planned as static HTML and TypeScript in a browser; not built) | **Avalonia UI** app in C# (below) |
+
+**UI: Avalonia (decided 2026-10-10).** Sindri's UI (the Plan 6 dashboard, the §17.27 action forms and the §17.12
+swipe inbox) is one [Avalonia UI](https://avaloniaui.net/) app in C#, not a browser page. It is cross-platform today
+and ports to native apps without a rewrite:
+- **Platforms:** desktop (macOS, Linux, Windows) first. iOS and Android heads, and a browser (WebAssembly) head if
+  one is ever wanted, are later projects over the same views and view models. Going native is adding a head, not
+  rewriting the UI.
+- **Shape:** `Aw.Sindri.Ui` holds the views, view models and the API client; each platform is a thin head project
+  (`Aw.Sindri.Ui.Desktop` first, then `.iOS`, `.Android`). MVVM with compiled bindings only
+  (`AvaloniaUseCompiledBindingsByDefault`, every view has an `x:DataType`, no `ReflectionBinding`), so the app stays
+  trim- and AOT-safe.
+- **A client, not a second implementation:** the app talks to Sindri's host over its versioned HTTP API (factory
+  addendum §17.27.1) and holds no logic of its own: no extra checks, shortcuts or UI-only state. It is its own
+  package (`SindriUi` in `deps.yaml`, above `Sindri`) and references no Sindri project: Sindri's HTTP contract is
+  its only edge. `deps.yaml` has no `http` edge kind yet (today: `project`, `cli`, `db`, `file`); the first UI PR
+  adds it to the schema and `check-deps.mjs`. Its own platform services (notifications, tray icon, opening
+  apps for attach, passkeys) sit behind ports in `Aw.Sindri.Ui`, one adapter per platform in the heads.
+- **Dependencies:** the MIT-licensed Avalonia packages only (no Avalonia XPF or paid add-ons), under the same
+  Central Package Management, pinning and 14-day rules as every package (§4b.6).
+- **Tests:** view models are plain C# and tested in the `unit` lane; views run under Avalonia's headless platform
+  (`Avalonia.Headless`) in the `integration` lane, with no window or display. Whether `Avalonia.Headless.XUnit`
+  runs on xUnit v3 and Microsoft.Testing.Platform (R7) is checked in the package's first PR; if it doesn't, the
+  headless tests drive `HeadlessUnitTestSession` from plain xUnit v3 tests.
+- **Not in scope:** walkthrough pages (§17.12) stay generated HTML documents, read in any browser. They are
+  documents, not the app.
 
 **What stays outside C#, on purpose:**
 - **Claude Code mods** (`mods/aw-live`) run in-process in Claude Code, so they stay TypeScript. They stay thin and
@@ -97,11 +124,21 @@ gets CI as a safety net until the switch. The standards in §4 still apply, expr
 - **Agent sessions** are started through the `claude` CLI (as today), so there's no dependency on an Agent SDK.
 
 **How the rewrite runs (strangler, never big-bang):**
-1. **Contracts are designed, not recorded.** Each package's external surface (CLI arguments, output and exit
-   codes, JSON files, SQLite schemas, MCP tool schemas and HTTP routes) is defined by the C# package's own tests.
-   The TS behavior is the reference for what the contract should do, not a byte-for-byte target, and the C# build
-   is free to fix what the TS got wrong, except on the hook-facing CLI and file surface, which is frozen until the
-   switch (§4c).
+1. **A reimplementation, not a translation (owner, 2026-10-10).** Each package is rebuilt as idiomatic C# in the
+   §4b shape, with the TS package as a guideline for *what* it does, never for *how*. Its external surface (CLI
+   arguments, output and exit codes, JSON files, SQLite schemas, MCP tool schemas and HTTP routes) is designed fresh
+   and defined by the C# package's own tests and its doc under `docs/csharp/`. Nothing reproduces TS formatting,
+   quirks or workarounds:
+   - no JS-semantics layer (no `JSON.parse`/`JSON.stringify` emulation, no matching of key order, escaping or number
+     text);
+   - JSON is type-driven: records (de)serialized through the Kernel `AwJson` profile, not `JsonDocument` walking or
+     per-field leniency copied from TS;
+   - no marker hacks (a status smuggled into another field), no exit codes, messages or silent failures kept only
+     because TS had them, no TS structure mirrored file by file;
+   - tests compare C# behavior with the C# contract, never with TS output.
+   The tier-2 callers of a package's CLI (ui-evidence, bugfix) are ported too, so they follow the C# contract. The
+   one compatibility target is the **hook contract** (§4c): what the bash hooks and the statusline that keep running
+   actually read, and nothing more. `.agents/rules/csharp.md` "Porting a TS package" is the working checklist.
 2. **One package at a time,** lowest tier first, in the §10 R2 order: `Redaction` (ported in R1b, #130, not yet
    merged) → `judge` (the MCP bridge was retired on 2026-10-10 instead of ported: it was never used) → `scorer`, `skills/ui-evidence` and the `skills/bugFixOrchestrator` state CLI →
    `sindri` (by module: profile and ledger, scrub, observe, index, scope, evolve). Sindri's code outside those
@@ -123,7 +160,8 @@ gets CI as a safety net until the switch. The standards in §4 still apply, expr
 **Risks to watch:**
 - NativeAOT limits (reflection, some libraries). Every CLI builds AOT in CI from day one.
 - The Plan 5 evolve suites and judge calibration data have TS-specific fixtures. They're ported as test data where
-  they still apply, and their pass rates are re-baselined on the C# build before the switch.
+  they still apply (as data for C# tests, not as TS-behavior oracles), and their pass rates are re-baselined on the C#
+  build before the switch.
 - Rewrite fatigue: the rewrite is time-boxed per package, and a package that overruns 2× its estimate is reviewed
   before more work goes into it.
 
@@ -201,6 +239,7 @@ declaration.
 | 1 | `Judge`, `Packets`, `Readiness` | Tier 0 |
 | 2 | `Scorer`, `Evidence` (ui-evidence), `BugFix` | Tiers 0–1 (today they call judge, and scorer reads `judge.db`) |
 | 3 | `Sindri` | Tiers 0–2, **only through their `Core` contracts or their CLIs** (every package reaches a non-tier-0 package only through its `Core`; `deps.yaml` check DEPS-PROJ-007) |
+| 4 | `SindriUi` (the Avalonia app, §4a "UI") | No project edges: Sindri's HTTP contract only |
 | — | Every `Host` | Its own package's projects, plus the tier-0 and lower-tier `Core`s it composes |
 
 - **Tier 0 is ordered inside:** it is the one tier with internal project references. `deps.yaml` gives each tier-0
@@ -500,6 +539,7 @@ group.MapPost("/items/{id}/start", async (ItemId id, StartItemBody body, IServic
 |---|---|---|
 | Hook binaries, `judge`, `sindri`, `scorer`, `bugfix-state` CLIs | NativeAOT | Run per hook call or per command; startup matters |
 | `Evidence` (ui-evidence) | Framework-dependent | Playwright for .NET doesn't support NativeAOT |
+| `Aw.Sindri.Ui.Desktop` (the Avalonia app, §4a "UI") | NativeAOT (compiled bindings only) | Starts fast and ships without a runtime; Avalonia supports NativeAOT on desktop. The mobile heads build with their platform's toolchain |
 | `aw-readiness` (`Aw.Readiness.App`, #141 on main) and `aw-packets` (`Aw.Packets.App`, #142): small-shape packages, so the entry point is `App` | NativeAOT | Standalone CLIs before the switch (§4c); sindri runs them per check after it |
 
 AOT publishing runs only in a separate CI job and in releases. Local builds and tests are JIT, so the inner loop
@@ -534,6 +574,7 @@ agentic-workflow/
 │   ├── Aw.Analyzers/                  # repo-specific Roslyn rules
 │   ├── Redaction/ · Readiness/ · Packets/
 │   ├── Sindri/   (Aw.Sindri.Core · Aw.Sindri.Features · Aw.Sindri.Infrastructure · Aw.Sindri.Host)
+│   │             (Aw.Sindri.Ui · Aw.Sindri.Ui.Desktop; later .iOS · .Android: the Avalonia app, §4a)
 │   ├── Judge/    (Aw.Judge.Core · … · Aw.Judge.Host)
 │   ├── Scorer/   (…)
 │   └── …
@@ -661,7 +702,7 @@ against it. It is proven by its own tests.
 - a startup-time budget per CLI;
 - the AOT CI job: every NativeAOT entry point is published and smoke-tested;
 - **the real hook scripts** in `config/hooks/` run against the C# binaries in CI, because their behavior is what
-  users depend on.
+  users depend on. They check the hook contract (§4c) only: what the hooks read, not the rest of a command's output.
 
 **Digests.** New C# digests over JSON use one canonical form (sorted keys, the Kernel profile) and carry a
 `digestVersion` field. Nothing reproduces TS digest bytes (B4). Digest v1, as `Aw.Packets` builds it for the packet
@@ -719,8 +760,18 @@ assert that no tested path fails open against the C# binaries.
   host runs them as `sindri readiness …` and `sindri packet …` through planned `cli` edges to the two binaries
   (§8, addendum §17.4): each package's use cases and adapters live in its `App`, and a `project` edge reaches only
   `Core`. When sindri's C# ledger first runs, it imports Readiness's history into the ledger and keeps the files.
-- **Hooks during the port:** the hook-facing CLI and file surface (the `deps.yaml` Hooks, Statusline and AwLive edges)
-  is frozen until the switch.
+- **Hooks during the port: the hook contract.** The hooks stay bash and keep running through the switch, so what they
+  depend on is frozen until then (the `deps.yaml` Hooks, Statusline and AwLive edges). That is exactly:
+  - the commands and arguments a hook or the statusline calls (for Judge: `wake-gate`, `brief-scope`, `ask-check`,
+    `prompt-sort`, `brief save|get|map-by-name|map-by-dispatch|set-agent-id`, `health`) and the environment
+    variables they set (`AW_STATE_DIR`, `AW_SESSION_ID`, `AW_PROVIDER`, `AW_JUDGE_PROVIDERS`);
+  - the input JSON fields hooks send, the output fields they read with `jq` (e.g. `.decision`,
+    `.acceptanceCriteria`, `.status`, `.failures24h`), the exit codes they branch on (`ask-check`: 0 ask, 2 continue)
+    and the stderr prefixes they match (`no brief for`);
+  - the files the hooks themselves write and read (`judge/sessions`, `judge/outbox`, `judge/teammate-names.jsonl`).
+  Everything else is the C# package's own design: the rest of each output and its formatting, other commands, error
+  wording, exit codes no hook reads, config and database formats. The check runs the real hook scripts against the C#
+  binary and compares only these points.
 - **Rollback:** `./setup.sh --runtime ts --restore <archive>` reinstalls the TS build, moves the archived TS
   namespaces and files (including `<repo-slug>/bugfix/`) back, and discards the C# packages'
   post-switch state (never skill and workflow state).

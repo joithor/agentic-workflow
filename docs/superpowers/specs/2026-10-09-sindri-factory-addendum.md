@@ -570,7 +570,7 @@ with `tailscale serve` (tailnet only), never `funnel`.
 
 | Surface | Decisions | Where |
 |---|---|---|
-| **Swipe inbox** (mobile view of the Plan 6 dashboard) | Binary, low-context, **non-protected** only: undraft a PR, accept evidence, approve or reject a **prompt-text** rule or idea card, keep or drop a scope surface, resolve `shape-unresolved`. Never tier raises, capability changes, evolve adoptions or publishes, or packet freezes | Phone |
+| **Swipe inbox** (mobile view of the Plan 6 dashboard; the Avalonia app, §17.17 Q4) | Binary, low-context, **non-protected** only: undraft a PR, accept evidence, approve or reject a **prompt-text** rule or idea card, keep or drop a scope surface, resolve `shape-unresolved`. Never tier raises, capability changes, evolve adoptions or publishes, or packet freezes | Phone |
 | **Walkthrough pages** (HTML from the packet, the scope map, or a PR with its evidence) | Read and comment: designs, scope maps, PR walkthroughs, incident timelines | Phone or desk |
 | **Desk queue** | Open questions, design revisions, amendments, packet freezes, protected-surface approvals | Desk |
 | **Live session** (Warp remote control, or `sindri attach` over Tailscale SSH) | Watching or taking over a running session | Either |
@@ -704,7 +704,7 @@ and digests list the rest.
 - explainer videos generated from code, the packet and evidence (Scene Plan JSON rendered by a pinned renderer;
   the `narrative` evidence kind, §17.11);
 - narration for those videos with a consented voice clone of the human;
-- a native phone app, if the PWA's decision latency stalls (§17.17 Q4);
+- the iOS and Android heads of the Avalonia app, if the desktop app plus the desk queue slow decisions (§17.17 Q4);
 - marketplace memory or consolidation stores as context-graph arms (§17.3);
 - importing community lens and subagent definitions as trust-tiered packs (§17.7).
 
@@ -1316,9 +1316,12 @@ behaviour didn't change.
 
   Only then come the migration tasks, checked against those tests.
 - The pinning tests are frozen with the packet. Under invariant 17, the migration tasks can't edit them.
-- Sindri's own C# port (readiness §4c) applies the rule narrowly. It is a clean cutover with no TS behaviour parity,
-  so its oracle covers only the frozen hook-facing CLI and file surface, checked by running the real hook scripts
-  against the C# binaries.
+- This repo's own C# port (readiness §4a step 1, §4c) is the exception: it is a clean cutover and a reimplementation
+  in idiomatic C#, with the TS as a guideline for what each package does, never a behaviour to pin. Workflow
+  generation must not add characterization or golden tasks that record TS output for a port packet. Its oracle is
+  the C# package's own contract tests plus the **hook contract** only (what the bash hooks and statusline read: the
+  commands and arguments they call, the fields they `jq`, the exit codes and stderr prefixes they branch on, the
+  files they write), checked by running the real hook scripts against the C# binaries.
 
 ### 17.24.3 Critic lens (addyosmani)
 
@@ -1800,5 +1803,15 @@ it only when the backtest says it helps.
 | **Chat bot** (a DM channel) | Push and replies come free, and it's familiar | Decisions leave the tailnet through a third party. Weak authentication for signed decisions. Rich walkthroughs don't fit |
 | **GitHub mobile** | Already installed. Good for reading PR diffs and comments | It sees only GitHub objects: no packets, rules, lenses or evidence roll-ups, and no Sindri decisions |
 
-The recommendation is the PWA first, with Warp remote control for live sessions. Build native only if push
-reliability or swipe feel measurably slows decisions (§17.2 decision latency).
+~~The recommendation is the PWA first, with Warp remote control for live sessions. Build native only if push
+reliability or swipe feel measurably slows decisions (§17.2 decision latency).~~
+
+**Decided (owner, 2026-10-10): the Avalonia app** (readiness spec §4a "UI"). The dashboard, the §17.27 action forms
+and the swipe inbox are one [Avalonia UI](https://avaloniaui.net/) app in C#, so the UI is cross-platform from the
+start and moves to native phone apps by adding iOS and Android heads over the same views, not by rewriting a web
+app. This takes the native column's strengths (swipe feel, reliable push, Face ID, an offline decision queue) without
+a second codebase, at the cost of app distribution (TestFlight or sideloading) once the mobile heads exist. Desktop
+comes first; Warp remote control stays the tool for live sessions. Open for the mobile step:
+- passkeys come from each platform's API (ASAuthorization on iOS and macOS, Credential Manager on Android, Windows
+  Hello), behind one `IPasskeys` port with an adapter per head, instead of WebAuthn in a browser;
+- push to the phone over the tailnet (ntfy, or APNs and FCM through a relay) is picked then.

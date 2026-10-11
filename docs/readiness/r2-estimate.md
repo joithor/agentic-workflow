@@ -159,8 +159,9 @@ Sindri total. The module rows are for tracking progress inside it and aren't sep
 
 The baseline packages had no existing behavior to match. Some ports have costs that new code didn't, and they're
 the likeliest reasons for a packet to land near its high end:
-- **Judge:** the hook-facing CLI and file surface is frozen until the switch, and CI runs the real hook scripts
-  against the C# binary (§4a step 3, §4c).
+- **Judge:** the hook contract (only what the hooks read: the commands they call, the fields they `jq`, the exit codes
+  they branch on, the files they write) is frozen until the switch, and CI runs the real hook scripts against the C#
+  binary (§4a step 3, §4c). The rest of the judge is a fresh idiomatic design, not a match of the TS (§4a step 1).
 - **Evidence:** Playwright for .NET and its browser tests.
 - **Sindri: index:** a pinned Node sidecar for indexing TS repos and graphify behind its adapter (§4a).
 

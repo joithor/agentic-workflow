@@ -46,7 +46,7 @@ node scripts/scaffold/new-package.mjs --name <Name> --tier <n> --error-prefix <P
 
 It takes the heavy-job lock itself (or runs inside one, under `AW_HEAVY_LOCK_HELD=1`), writes the files, then runs the
 spec's commands in order: restore of the new projects and the architecture tests, the locked whole-solution restore,
-the `RS0016` code fix on the library projects, `dotnet build -warnaserror`, the unit lane (exactly one failure: the
+the public API lines from each library project's build (`RS0016`), `dotnet build -warnaserror`, the unit lane (exactly one failure: the
 slice's red test), `dotnet format --verify-no-changes` and `node scripts/check-deps.mjs`. Any other failure reverts
 every file it wrote and prints the rule id, the measured value and the fix.
 

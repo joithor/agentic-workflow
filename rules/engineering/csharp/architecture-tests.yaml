@@ -10,13 +10,11 @@ select:
 checks:
   - type: archunit
     id: "ARCH-REG-001"
-    status: pending
-    pendingPr: 131
+    status: active
   - type: archunit
     id: "ARCH-REG-002"
-    status: pending
-    pendingPr: 131
-gap: pending
+    status: active
+gap: closed
 source:
   type: adr
   ref: "docs/superpowers/specs/2026-10-09-agent-readiness-design.md#4b5"

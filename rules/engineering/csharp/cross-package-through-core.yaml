@@ -19,11 +19,10 @@ checks:
     status: active
   - type: archunit
     id: "ARCH-DIR-004"
-    status: pending
-    pendingPr: 131
+    status: active
     note: "the same rule over the compiled assemblies, including the small shape"
 gap: partial
-gapNote: "check-deps checks project references; the CLI and HTTP contract half is declared as cli edges in deps.yaml but not proven to be the only route; ARCH-DIR-004 adds the assembly-level check."
+gapNote: "check-deps (project references) and ARCH-DIR-004 (the compiled assemblies, both shapes) prove the Core-only half; the CLI and HTTP contract half is declared as cli edges in deps.yaml but not proven to be the only route."
 source:
   type: adr
   ref: "docs/superpowers/specs/2026-10-09-agent-readiness-design.md#4b1"

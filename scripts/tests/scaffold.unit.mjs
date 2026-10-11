@@ -304,9 +304,55 @@ t("new-slice: a new port gets its interface, fake and contract base", () => {
   assert.equal(pkg(d).code, 0);
   const r = slice(d, { package: "Readiness", slice: "Score", behavior: "scores_a_repo", surface: "cli", ports: "IRepoReader" });
   assert.equal(r.code, 0, r.out);
-  assert.ok(exists(d, "src/Readiness/Aw.Readiness.Core/IRepoReader.cs"));
-  assert.ok(exists(d, "tests/Aw.Readiness.Testing/InMemoryRepoReader.cs"));
-  assert.ok(exists(d, "tests/Aw.Readiness.Testing/RepoReaderContract.cs"));
+  assert.match(read(d, "src/Readiness/Aw.Readiness.Core/Ports/IRepoReader.cs"), /^namespace Aw\.Readiness\.Core\.Ports;$/m);
+  assert.match(read(d, "tests/Aw.Readiness.Testing/InMemoryRepoReader.cs"), /^using Aw\.Readiness\.Core\.Ports;$/m);
+  assert.match(read(d, "tests/Aw.Readiness.Testing/RepoReaderContract.cs"), /^using Aw\.Readiness\.Core\.Ports;$/m);
+});
+// A port is found anywhere under Core (Core/Ports/ is where the generator and the ported packages put them), and an
+// existing one is reused as it is: its fake and contract base are the package's, not the generator's to rewrite.
+for (const where of ["Ports/IRepoReader.cs", "IRepoReader.cs", "Ports/Repo/IRepoReader.cs"]) {
+  t(`new-slice: an existing port (Core/${where}) is reused, its fake and contract left alone`, () => {
+    const d = tree();
+    assert.equal(pkg(d).code, 0);
+    const port = path.join(d, "src/Readiness/Aw.Readiness.Core", where);
+    fs.mkdirSync(path.dirname(port), { recursive: true });
+    fs.writeFileSync(port, "namespace Aw.Readiness.Core.Ports;\n\npublic interface IRepoReader;\n");
+    fs.writeFileSync(path.join(d, "tests/Aw.Readiness.Testing/InMemoryRepoReader.cs"), "// the package's own fake\n");
+    const r = slice(d, { package: "Readiness", slice: "Score", behavior: "scores_a_repo", surface: "cli", ports: "IRepoReader" });
+    assert.equal(r.code, 0, r.out);
+    assert.equal(read(d, "tests/Aw.Readiness.Testing/InMemoryRepoReader.cs"), "// the package's own fake\n");
+    assert.ok(!exists(d, "tests/Aw.Readiness.Testing/RepoReaderContract.cs"), "wrote a contract base for an existing port");
+    const ports = fs.readdirSync(path.join(d, "src/Readiness/Aw.Readiness.Core"), { recursive: true }).filter((f) => f.endsWith("IRepoReader.cs"));
+    assert.deepEqual(ports, [where], "wrote a second IRepoReader");
+  });
+}
+t("NS-PORTS: a new port whose fake or contract base already exists", () => {
+  for (const file of ["InMemoryRepoReader.cs", "RepoReaderContract.cs"]) {
+    const d = tree();
+    assert.equal(pkg(d).code, 0);
+    fs.writeFileSync(path.join(d, "tests/Aw.Readiness.Testing", file), "// stray\n");
+    const before = hashTree(d);
+    refused(slice(d, { ...base, ports: "IRepoReader" }), "NS-PORTS");
+    assert.equal(hashTree(d), before, "the tree changed");
+  }
+});
+
+const checks = await import(path.join(REPO, "scripts/scaffold/lib/checks.mjs"));
+t("rs0016Symbols: the build's RS0016 symbols for one project, unique and sorted", () => {
+  const proj = "/r/src/P/Aw.P.Features/Aw.P.Features.csproj";
+  const line = (file, sym, p) => `${file}(6,22): error RS0016: Symbol '${sym}' is not part of the declared public API (https://github.com/dotnet/roslyn/blob/main/src/RoslynAnalyzers/PublicApiAnalyzers/PublicApiAnalyzers.Help.md) [${p}]`;
+  const out = [
+    line("/r/src/P/Aw.P.Features/X/XRequest.cs", "Aw.P.Features.X.XRequest", proj),
+    line("/r/src/P/Aw.P.Features/X/XRequest.cs", "override Aw.P.Features.X.XRequest.ToString() -> string!", proj),
+    line("/r/src/P/Aw.P.Features/X/XRequest.cs", "Aw.P.Features.X.XRequest", proj),   // MSBuild repeats errors in its summary
+    line("/r/src/P/Aw.P.Core/Ids/XId.cs", "Aw.P.Core.Ids.XId", "/r/src/P/Aw.P.Core/Aw.P.Core.csproj"),
+    "/r/src/P/Aw.P.Features/X/XRequest.cs(6,22): warning RS0017: Symbol 'Aw.P.Features.Gone' is part of the declared API, but is either not public or could not be found [" + proj + "]",
+  ].join("\n");
+  assert.deepEqual(checks.rs0016Symbols(out, proj), ["Aw.P.Features.X.XRequest", "override Aw.P.Features.X.XRequest.ToString() -> string!"]);
+});
+t("withApiLines: appends after the #nullable header, keeps what's there, adds nothing twice", () => {
+  assert.equal(checks.withApiLines("#nullable enable\n", ["B", "A"]), "#nullable enable\nA\nB\n");
+  assert.equal(checks.withApiLines("#nullable enable\nA\n\n", ["C", "A"]), "#nullable enable\nA\nC\n");
 });
 
 t("NP-DEPENDS: a package listed twice", () => untouched((d) => refused(pkg(d, { depends: "Kernel,Kernel" }), "NP-DEPENDS")));

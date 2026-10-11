@@ -10,9 +10,9 @@ select:
 checks:
   - type: analyzer
     id: "AW1006"
-    status: pending
-    pendingPr: 132
-gap: pending
+    status: active
+gap: partial
+gapNote: "AW1006 skips class constructors (AW1007 caps them at 7, AW1008 flags over 5), record constructors and lambdas."
 source:
   type: adr
   ref: "docs/superpowers/specs/2026-10-09-agent-readiness-design.md#4b6"

@@ -127,7 +127,7 @@ It learns from its own steering so recurring corrections become rules.
 
 | In v1 | Deferred (interface and contract tests exist, no built-in) |
 |---|---|
-| macOS, launchd, session containers (OrbStack or Docker), tmux inside containers, macOS notifier (with fallback chain §10.4), web dashboard plus SwiftBar badge | systemd/cron schedulers, ntfy, chat-DM notifier |
+| macOS, launchd, session containers (OrbStack or Docker), tmux inside containers, macOS notifier (with fallback chain §10.4), dashboard app with tray badge (Avalonia, C#; was a web dashboard plus SwiftBar badge, amended 2026-10-10) | systemd/cron schedulers, ntfy, chat-DM notifier |
 | Single active host | Shared `Lease` adapter, multi-host |
 | Tracker: Linear. Reviewer: GitHub | Other trackers and reviewers |
 | Sources: tracker, notes dir, transcripts, memory (Prism) | Chat (Slack) as a pack source |
