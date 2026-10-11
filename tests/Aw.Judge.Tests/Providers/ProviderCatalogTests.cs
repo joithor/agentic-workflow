@@ -36,7 +36,7 @@ public sealed class ProviderCatalogTests
 
         Assert.Equal(
             [typeof(JevProvider), typeof(ClaudeCliProvider), typeof(CodexCliProvider), typeof(CursorCliProvider)],
-            lineup.Providers.SkipLast(1).Select(p => p.GetType()));
+            lineup.Providers.SkipLast(1).Select(p => Assert.IsType<FailOpenModelProvider>(p).Inner.GetType()));
         Assert.Same(_rules, lineup.Providers[^1]);
     }
 

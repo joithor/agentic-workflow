@@ -29,7 +29,7 @@ internal sealed class ProviderCatalog(Func<string, string?> environment, IExecut
         }
 
         var named = chain.Classes.Values.SelectMany(names => names).ToHashSet();
-        return new ProviderLineup([.. providers.Where(p => named.Contains(p.Name)), rules], chain);
+        return new ProviderLineup([.. providers.Where(p => named.Contains(p.Name)).Select(p => new FailOpenModelProvider(p)), rules], chain);
     }
 
     // config.json's names are checked on read (JudgeConfigParser), so an unknown one can't reach here; skip it if it does.
