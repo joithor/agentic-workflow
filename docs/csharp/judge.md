@@ -93,7 +93,7 @@ stderr; the hooks discard stderr except where the hook contract says. At the def
 | Command | Input | Output (exit 0) | Errors |
 |---|---|---|---|
 | `health` | — | `HealthOutput`: `{"status": "ok"\|"degraded"\|"down", "failures24h": n}`: ok with no failure row in 24 h, down when the last five model attempts all failed (escalations before the chain and pre-rule settlements never reached a model and don't count), degraded otherwise | store error → 1 |
-| `brief save` | stdin `BriefInput`: `toolUseId`, `sessionId`, `promptId`, `dispatchName` (string or null), `subagentType`, `goal`, `acceptanceCriteria`, `proofCommand`, all required, strings may be empty, other keys ignored | nothing | `invalid input: …` → 1; `brief already saved: <toolUseId>` → 1 |
+| `brief save` | stdin `BriefInput`: `toolUseId`, `sessionId`, `promptId`, `dispatchName` (string or null), `subagentType`, `goal`, `acceptanceCriteria`, `proofCommand`, all required, strings may be empty, other keys ignored; the three texts are stored redacted, then capped at 8,000 characters | nothing | `invalid input: …` → 1; `brief already saved: <toolUseId>` → 1 |
 | `brief get <toolUseId>` | — | `BriefOutput`: `toolUseId`, `agentId`, `sessionId`, `promptId`, `dispatchName`, `subagentType`, `goal`, `acceptanceCriteria`, `proofCommand`, `savedAt` | `no brief for tool_use_id: <id>` → 1 |
 | `brief map-by-name <name>` | — | the oldest unmapped brief's tool use id with that dispatch name, or nothing | store error → 1 |
 | `brief map-by-dispatch <sessionId> <promptId> <subagentType>` | — | the oldest unmapped matching brief's tool use id, or nothing | store error → 1 |
@@ -375,7 +375,7 @@ reads a TS-written file.
 
 | File | Holds |
 |---|---|
-| `decisions.sqlite` | WAL SQLite (`Aw.Kernel.Data`), migrations embedded in `Aw.Judge.Infrastructure/Sqlite/Migrations/` (`0001_judge.sql`, `0002_approved_at.sql`; a migration is never edited once merged): `decisions` (one row per decision, `approved_at` from 0002), `decision_details` (the redacted input and the provider's detail, pruned after 30 days), `failures` (provider failures, for `health`), `briefs` (the dispatch briefs), `schema_version` |
+| `decisions.sqlite` | WAL SQLite (`Aw.Kernel.Data`), migrations embedded in `Aw.Judge.Infrastructure/Sqlite/Migrations/` (`0001_judge.sql`, `0002_approved_at.sql`; a migration is never edited once merged): `decisions` (one row per decision, `approved_at` from 0002), `decision_details` (the redacted input and the provider's detail, pruned after 30 days), `failures` (provider failures, for `health`), `briefs` (the dispatch briefs, their texts redacted and capped), `schema_version` |
 | `config.json` | `JudgeConfig`, written by `config set`; absent means the defaults |
 
 ## Environment
