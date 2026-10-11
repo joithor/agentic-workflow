@@ -8,5 +8,19 @@ internal sealed class FileEndpointRecords(string path) : IEndpointRecordSource
 {
     public string Location => path;
 
-    public ValueTask<byte[]?> Read(CancellationToken cancellationToken) => throw new NotSupportedException("red");
+    public async ValueTask<byte[]?> Read(CancellationToken cancellationToken)
+    {
+        try
+        {
+            return await File.ReadAllBytesAsync(path, cancellationToken).ConfigureAwait(false);
+        }
+        catch (FileNotFoundException)
+        {
+            return null;
+        }
+        catch (DirectoryNotFoundException)
+        {
+            return null;
+        }
+    }
 }

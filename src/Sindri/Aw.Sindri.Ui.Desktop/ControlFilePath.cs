@@ -6,5 +6,11 @@ namespace Aw.Sindri.Ui.Desktop;
 /// </summary>
 internal static class ControlFilePath
 {
-    internal static string From(Func<string, string?> environment, string userHome) => throw new NotSupportedException($"red {environment("HOME")}{userHome}");
+    internal static string From(Func<string, string?> environment, string userHome)
+    {
+        var home = environment("AW_SINDRI_HOME") is { Length: > 0 } explicitHome
+            ? explicitHome
+            : Path.Combine(environment("AW_STATE_DIR") is { Length: > 0 } root ? root : Path.Combine(userHome, ".agentic-workflow"), "sindri-app");
+        return Path.Combine(home, "control.json");
+    }
 }

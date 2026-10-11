@@ -17,7 +17,7 @@ public sealed class SindriApiClientTests
     {
         var handler = new FakeSindriHandler(new FakeSindriApi()) { Override = (HttpStatusCode.InternalServerError, """{"title":"SND-LEDGER-002"}""") };
 
-        var status = await new SindriApiClient(handler).Status(_api, Token);
+        var status = await new SindriApiClient(new HttpClient(handler)).Status(_api, Token);
 
         Assert.Equal("SND-UI-003", status.Error.Code);
         Assert.Contains("500", status.Error.Message, StringComparison.Ordinal);
@@ -28,7 +28,7 @@ public sealed class SindriApiClientTests
     {
         var handler = new FakeSindriHandler(new FakeSindriApi()) { Override = (HttpStatusCode.OK, "<html>not sindri</html>") };
 
-        var ping = await new SindriApiClient(handler).Ping(_api, Token);
+        var ping = await new SindriApiClient(new HttpClient(handler)).Ping(_api, Token);
 
         Assert.Equal("SND-UI-003", ping.Error.Code);
     }
@@ -38,7 +38,7 @@ public sealed class SindriApiClientTests
     {
         var handler = new FakeSindriHandler(new FakeSindriApi()) { Override = (HttpStatusCode.NotFound, "{}") };
 
-        var events = await new SindriApiClient(handler).Events(_api, 0, Token).ToListAsync(Token);
+        var events = await new SindriApiClient(new HttpClient(handler)).Events(_api, 0, Token).ToListAsync(Token);
 
         Assert.Empty(events);
     }

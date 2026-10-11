@@ -42,6 +42,8 @@ public sealed class MainWindowTests
         }
 
         Assert.True(ready(window), "the window never reached the expected state");
+        window.UpdateLayout();
+        Dispatcher.UIThread.RunJobs();
         return window;
     }
 

@@ -9,16 +9,18 @@
 #           package lands after its port. `scan` lists the source the checker reads for cli/db/file edges.
 #           `bins`, `binPaths`, `db`, `files` and `namespace` are what other nodes need an edge to use:
 #           db, files and namespace are relative to the state root (${AW_STATE_DIR:-~/.agentic-workflow}),
-#           and `namespace` owns every path under that directory, listed or not. Shell and mod nodes own
-#           nothing: they only consume.
+#           and `namespace` owns every path under that directory, listed or not. `routes` lists the HTTP
+#           route prefixes a package serves (e.g. /sindri/). Shell and mod nodes own nothing: they only
+#           consume.
 # edges     kind: project (a C# ProjectReference), cli (runs the other's binary), db (opens the other's
-#           SQLite file, read-only) or file (shared state files). status: current edges exist in the source
+#           SQLite file, read-only), file (shared state files) or http (calls the other's HTTP API, which
+#           it declares as `routes`). status: current edges exist in the source
 #           today; planned edges are allowed but not built yet. Both directions are checked: a current edge
 #           the scan can't find, and a planned edge it does find, both fail. Adding an edge is a reviewed
 #           change to this file.
 # rules     Nothing depends on a shell or mod node. Project edges point strictly down the tiers; `sublevel`
 #           orders the kernel family inside tier 0 and is allowed on tier 0 only. db and file edges point
-#           down or across, never up; cli edges may point anywhere (a contract, §4b.1a). No cycles across
+#           down or across, never up; cli and http edges may point anywhere (a contract, §4b.1a). No cycles across
 #           any kind. Fan-out (§4b.1a): limits.packageFanOut caps the packages one package declares project
 #           edges to; once C# projects exist, each project may reference at most limits.projectFanOut in-repo
 #           projects and limits.thirdPartyFanOut third-party packages (analyzers excluded; *.Host and *.Tests
@@ -54,7 +56,10 @@
 #           through a variable it doesn't recognise, indirection such as `npx <bin>`, or calls in JSON and
 #           plist config (config/settings.json hook commands, launchd jobs). Shell commands starting with
 #           echo, printf or log (separators inside quotes don't start a new command) and heredoc bodies
-#           are skipped.
+#           are skipped. http edges: a C# string literal (plain, $, @) in a production project's *.cs files
+#           that starts with another package's route prefix; the project belongs to the package whose
+#           projectPrefix starts its name, so a client inside the server's src directory is told apart.
+#           Whole-line // comments and test projects are skipped; a URL built from pieces is not seen.
 #
 # YAML subset (parsed without a library, so the check needs no install step): block mappings and
 # sequences, plain, 'single' or "double" quoted scalars, [flow, lists] of scalars, and # comments.
@@ -201,7 +206,17 @@ packages:
     bins: [sindri]
     db: [sindri/ledger.db]
     namespace: sindri
+    routes: [/sindri/]
     note: "built new in C# as an application (control plane, workflow engine, context retrieval; addendum §17.29, Q7), not ported; ts: sindri (profile, ledger, scrub, observe, index, scope, evolve) is the reference and runs until the switch; S1 (app shell: CLI and control plane, host lease, ledger, profile, API, scheduler, doctor) is in src/Sindri; reaches lower tiers only through Core contracts or CLIs"
+
+  # ---- tier 4 ----
+  - id: SindriUi
+    kind: package
+    tier: 4
+    projectPrefix: Aw.Sindri.Ui
+    ts: null
+    src: src/Sindri/Aw.Sindri.Ui
+    note: "the Avalonia desktop app (readiness spec §4a UI): Aw.Sindri.Ui (views, view models, the typed API client, platform ports) and the thin Aw.Sindri.Ui.Desktop head (NativeAOT, binary sindri-ui). It references no Sindri project and holds no logic: Sindri's HTTP API is its only contract (docs/csharp/sindri-ui.md)"
 
   # ---- outside the tiers: code that stays bash or TypeScript and calls the CLIs (§4a) ----
   - id: Hooks
@@ -437,6 +452,17 @@ edges:
     kind: cli
     status: planned
     note: "scorer's labeler moves into scorer's Core; sindri calls it through scorer's CLI instead of copying it (§4b.1a)"
+
+  - from: SindriUi
+    to: Kernel
+    kind: project
+    status: current
+    note: "Result and AwJson for the API client's source-generated JSON"
+  - from: SindriUi
+    to: Sindri
+    kind: http
+    status: current
+    note: "the app's only edge to Sindri: GET /sindri/ping, /sindri/status and the /sindri/events stream (docs/csharp/sindri.md); it finds the endpoint in control.json under AW_SINDRI_HOME"
 
 # No exceptions: Sindri's project fan-out is 4 (Kernel, KernelData, KernelTelemetry, Redaction) now that it reaches
 # Packets and Readiness through their CLIs (spec §4c, §8).

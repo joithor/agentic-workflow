@@ -31,7 +31,7 @@ public sealed class SindriApp : Application
     /// <param name="clock">The clock for retry waits.</param>
     /// <returns>The app.</returns>
     public static SindriApp Create(IEndpointRecordSource records, TimeProvider clock) =>
-        new(new MainViewModel(records, new SindriApiClient(new SocketsHttpHandler()), clock));
+        new(new MainViewModel(records, new SindriApiClient(new HttpClient { Timeout = Timeout.InfiniteTimeSpan }), clock));
 
     /// <inheritdoc />
     public override void Initialize() => AvaloniaXamlLoader.Load(this);
