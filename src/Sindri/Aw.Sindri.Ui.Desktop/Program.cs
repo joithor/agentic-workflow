@@ -2,11 +2,21 @@ using Avalonia;
 
 namespace Aw.Sindri.Ui.Desktop;
 
-/// <summary>The desktop head's entry point: compose the app, then run it until its window closes.</summary>
+/// <summary>The desktop head's entry point: claim the single instance, then run the app until Quit (or hand over and exit).</summary>
 internal static class Program
 {
     [STAThread]
-    private static int Main(string[] args) =>
-        Composition.Compose(Environment.GetEnvironmentVariable, Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), TimeProvider.System)
-            .StartWithClassicDesktopLifetime(args);
+    private static int Main(string[] args)
+    {
+        var platform = Composition.Platform(Environment.GetEnvironmentVariable, Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), TimeProvider.System);
+        try
+        {
+            return SingleLaunch.Run(platform.Instance, args, () => Composition.Compose(platform, TimeProvider.System).StartWithClassicDesktopLifetime(args));
+        }
+        finally
+        {
+            platform.Instance.DisposeAsync().AsTask().GetAwaiter().GetResult();
+            (platform.Motion as IDisposable)?.Dispose();
+        }
+    }
 }
