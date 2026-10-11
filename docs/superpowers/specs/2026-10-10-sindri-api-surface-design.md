@@ -14,6 +14,10 @@ Status:
   epic's second /autoplan) adds the launch contract (§8.1: `session wrap`, the launch secret, two target kinds,
   liveness), builds the `human` token in P1, fixes the queue groups and adds `answerKind` (§3.6), and adds the
   `issue` kind to §4.
+- **The UI app design spec (`2026-10-11-sindri-ui-design.md`, approved) amends this spec** through its §6.7 edits
+  E-1…E-19 and §18.1, which say where each lands. Where they differ from the text here (the launch surface,
+  `ItemView.launch`, `NeedsYouRow.actions` and `label`, catalog fields, `health`, `GET /events/catalog`, golden JSON),
+  the UI spec wins (README X52).
 - This document is the written spec for review.
 
 The spec designs the surface every Sindri client uses: the `sindri` CLI, the Avalonia app (`SindriUi`), the Sindri MCP
@@ -333,7 +337,7 @@ They're in the catalog with class `local` and are never routes. `doctor` gains a
 | `POST /services/{name}/pause` | `PauseService` | — | `CommandAccepted` | desk | `sindri services pause <name>` | P6 |
 | `POST /services/{name}/resume` | `ResumeService` | — | `CommandAccepted` | desk | `sindri services resume <name>` | P6 |
 | `POST /jobs/{jobId}/cancel` | `CancelJob` | — | `CommandAccepted` | job | Ctrl-C while following; `sindri jobs cancel <id>` | P6 |
-| `POST /items/{itemId}/open` | `OpenItem` | `target?` (`claude`, `codex` or `cursor`; default from the profile), `mode?` (`open` or `attach`) | `ItemOpened(accepted, launchedIn)` | desk | `sindri open <item> [--with claude\|codex\|cursor] [--attach]` | P10 |
+| `POST /items/{itemId}/open` | `OpenItem` | `mode` (`open`, `attach` or `resume`), `target?` (`claude-code`, `codex` or `cursor`), `itemVersion` (UI E-1) | `LaunchRequested(accepted, LaunchId)` | desk | `sindri open <item> [--agent claude-code\|codex\|cursor] [--attach \| --resume]` | P10a |
 
 Notes:
 - **`ApproveProfile` keeps S1's body.** The `protected` class means only a `human` caller **with a terminal** reaches
@@ -411,7 +415,7 @@ catalog itself lands in P1. Every domain payload carries `commandId` (or the `se
 | `service.paused`, `service.resumed` | service | `service.paused:<name>:<commandId>` | yes | P6 |
 | `item.linked` | item, record key, alias | `item.linked:<itemId>:<record>` | yes | P3 (`CreateItem` with `link`); context Phase 6 (`service:context-sync`) |
 | `item.open-requested` | item, target, mode, launch | `item.open-requested:<itemId>:<launch>` | yes | P10 |
-| `session.launched`, `session.ended` | launch, item, run?, target, kind; ended: reason (`exit`, `lost`), exit code, token usage | `session.launched:<launch>`, `session.ended:<launch>` | yes | P10 (written by `service:launcher`; the engine's agent runtime uses the same events) |
+| `launch.started`, `launch.failed`, `launch.probed`, `session.ended` | as UI E-1 and E-3; `session.ended`: launch, reason (`exit`, `lost`), exit code, token usage | `launch.started:<launch>`, `launch.failed:<launch>`, `session.ended:<launch>` | yes | P10a (written by `service:launcher`; the engine's agent runtime uses the same events) |
 
 **How a request becomes a decision** (one domain event per command):
 1. `FileRequest` appends `request.filed`, with both ids chosen by the handler.
@@ -605,8 +609,8 @@ that path.
 
 It tells live clients "something changed, re-read":
 - **The Avalonia app:** refreshes the affected view, and drives the needs-you pulse and the tray badge. OS
-  notifications come only from the engine's `notify.desk` (engine §6.3), so nothing fires twice. Until engine P6
-  ships `notify.desk`, the app raises an OS notification for each new `pulse` row itself; P6 turns that off.
+  notifications come only from the engine's `notify.desk` (engine §6.3); the app never raises one itself, before or
+  after engine P6 (UI spec X5), so nothing fires twice.
 - **The CLI's long-running verbs:** job progress and cancel.
 - **`sindri status --follow`**.
 - **Later:** the notifier, the phone head, and other instances.
@@ -807,9 +811,11 @@ One port launches every agent session: the human handoff (`OpenItem`) and the en
   quoted.
 - **Usage.** Token usage is read by the target's usage reader (Claude Code's session log, and the Codex and Cursor
   equivalents recorded in P10) when the session ends, and recorded on `session.ended`. It is never self-reported.
-- **`OpenItem` is one event.** The command decides and appends `item.open-requested`; it does no launching. After the
-  commit `service:launcher` takes the item's live instance over (`pause`, a service caller may) on the human's behalf,
-  writes the launch, and appends `session.launched`. A second open while a session is live is `SND-LAUNCH-002`.
+- **`OpenItem` is one event.** The command decides and appends `item.open-requested`; it does no launching (UI E-1).
+  A live instance is taken over by the engine's `open-request` trigger (engine §5.4, UI E-6) before the launcher opens
+  anything; the launcher then performs the launch once within 30 s and appends `launch.started` or `launch.failed`.
+  A second open while a session is live offers `attach` instead (UI E-2); a launch already in progress is
+  `SND-LAUNCH-008`.
 - **Attach** means one thing: focus the live interactive session's tab. The takeover happened when it opened; typing
   into the tab changes nothing in Sindri.
 
@@ -843,7 +849,7 @@ of **`docs/csharp/sindri.md`**. Not `docs/sindri/errors.md`, which is generated 
 | `SND-JOB-404` | NotFound (404) | No such job | P6 |
 | `SND-SVC-404` | NotFound (404) | No such service in the approved profile | P6 |
 | `SND-LAUNCH-001` | Unavailable (503) | The launcher couldn't open the terminal | P10 |
-| `SND-LAUNCH-002` | Conflict (409) | The item already has a live session; attach to it | P10 |
+| `SND-LAUNCH-002…009` | — | As the UI spec's E-5 numbers them (no terminal, agent CLI missing, repo missing, nothing to resume or attach, interrupted, already in progress, timed out) | P10a |
 | `SND-AUTH-001` | Forbidden (403) | `human` without a valid per-start token | P1 |
 | `SND-AUTH-003` | Forbidden (403) | The launch secret doesn't match an open launch, or the run is taken over | P10 |
 
@@ -957,6 +963,9 @@ Spans and metrics use the `Aw.Sindri` source and meter, as `docs/csharp/telemetr
 
 **Proving a phase.** Every phase signal below assumes this recipe. The recipe lives in the plan and in this spec. It is
 not in `docs/csharp/sindri.md`, because it isn't a user feature.
+- **Golden JSON (UI E-17).** Every phase's integration tests write each route's response bodies per scenario to
+  `tests/Aw.Sindri.Tests/Golden/Api/<route-slug>/<scenario>.json`, with a fixed `FakeTimeProvider` and seeded ids; the
+  UI's fake API serves them.
 - **Wrapper.** Every spec's proofs use `scripts/sindri-prove.sh`, added in P1 (the engine and context specs adopt it).
   `sindri-prove.sh <verb>` runs the C# CLI as the calling agent (`session`); `human <verb>` and `curl` act as the owner
   (below). It refuses to run unless `AW_SINDRI_HOME` is
@@ -1169,7 +1178,7 @@ Each phase is one PR and follows the slice recipe, red first.
 | **P5** | **Event stream and ledger read.** <ul><li>Public types from `EventCatalog`, `PublicEvent`.</li><li>The `item` and `types` filters, the session repo filter, `Last-Event-ID`.</li><li>The ping and the stream limits (`SND-API-012`).</li><li>`ILedgerSignal`, wired to the projector and the stream.</li><li>`ReadLedger` and `sindri ledger`.</li><li>`sindri status --follow` (C4).</li></ul> | `Core/Events/*`, `Infrastructure/Ledger/LedgerSignal.cs`, `Features/{StreamEvents,ReadLedger}/`, `Host/Endpoints/EventStream.cs`, `Host/Projector.cs` | S | P1, plus P2 for the projector wiring (its signal uses `service.heartbeat`; the item filter is tested once P3 lands) | <ul><li>`curl -N '…/sindri/events?after=0&types=service.*'` shows each `service.heartbeat` within 100 ms of its append.</li><li>Reconnecting with `Last-Event-ID: n` resumes at n+1.</li><li>`command.handled` never appears.</li><li>`sindri-prove.sh human ledger --json --after 0` lists it.</li></ul> | **UI, engine** (S1-D6) |
 | **P6** | **Jobs and services.** <ul><li>`JobId` and the job events.</li><li>The slices `GetJob`, `CancelJob`, `RunService` (as a job), `PauseService`, `ResumeService`; the scheduler honours pause and resume.</li><li>The CLI follows progress on the stream, and Ctrl-C cancels.</li><li>Codes: `SND-JOB-404`, `SND-SVC-404`.</li></ul> | `Core/Jobs/*`, `Features/{GetJob,CancelJob,RunService,PauseService,ResumeService}/`, a scheduler hook in Host | M | P2 + P5 | <ul><li>`sindri-prove.sh human services run heartbeat` prints progress and the result.</li><li>Ctrl-C during a long fake job prints `cancelled`, and the ledger shows `job.cancelled`.</li><li>After `services pause heartbeat`, there's no heartbeat for 3 cadences.</li><li>A run with no caller header gets 403.</li><li>A manual run that succeeds clears that service's `failure` row and sets `lastRun` to `ok`.</li></ul> | UI, **engine** |
 | **P8** | **The `sindri_*` MCP tools.** <ul><li>On `/sindri/mcp` (created here, or by context S-1M if it landed first).</li><li>`sindri mcp register [--apply]`.</li><li>Every call stamped `session`, scoped by `X-Sindri-Repo`.</li></ul> | `Host/Mcp/*`, the SDK in `Directory.Packages.props` (pinned, at least 14 days old), `deps.yaml` | M | P4 + P6 | A fresh `claude -p "<journey>" --mcp-config … --strict-mcp-config --allowedTools …` subagent: <ul><li>lists the queue and an item;</li><li>files a `rescope` request, which shows up in `GET /needs-you`;</li><li>finds no tool to decide with;</li><li>gets `SND-AUTH-002` from a `curl` with no caller header.</li></ul> Its transcript is the evidence | — |
-| **P10** | **`sindri open` and the launch contract.** <ul><li>`ILauncher` with `interactive` (Warp + Claude Code, Codex or Cursor) and `process` targets (§8.1).</li><li>`sindri session wrap`, the launch secret, heartbeats, `session.launched`/`ended`, per-launch files, usage readers.</li><li>`OpenItem` as one event; `service:launcher` takes over and launches after commit; attach focuses; `SND-LAUNCH-001/002`, `SND-AUTH-003`.</li><li>Codex and Cursor launch-time MCP config, and their usage readers.</li></ul> | `Core/Launch/*`, `Infrastructure/Launch/{Warp,Process}Launcher.cs`, `Host/Commands/SessionWrap*`, `Features/OpenItem/` | L | P3 + P8, and the UI design spec (launch targets) | <ul><li>`sindri-prove.sh human open ITM-…` opens a Warp tab running Claude Code in the item's repo; `session.launched` is recorded; the session's first `sindri_item` call returns the item.</li><li>Closing the tab writes `session.ended` (`exit`); killing wrap writes it (`lost`) within 150 s; the item can be opened again.</li><li>A second open while live exits 2 with `SND-LAUNCH-002`.</li><li>The launch file and argv contain no secret and no item text.</li></ul> | engine P8 (the agent runtime) |
+| **P10a** | **`sindri open` and the launch contract** (UI E-1…E-5, E-11 and §8.1; P10b, opening is a takeover, follows engine P5 with UI E-6 and E-19). <ul><li>`ILauncher` with `interactive` (Warp + Claude Code, Codex or Cursor) and `process` targets (§8.1).</li><li>`sindri session wrap`, the launch secret, heartbeats, `session.launched`/`ended`, per-launch files, usage readers.</li><li>`OpenItem` as one event; `service:launcher` takes over and launches after commit; attach focuses; `SND-LAUNCH-001/002`, `SND-AUTH-003`.</li><li>Codex and Cursor launch-time MCP config, and their usage readers.</li></ul> | `Core/Launch/*`, `Infrastructure/Launch/{Warp,Process}Launcher.cs`, `Host/Commands/SessionWrap*`, `Features/OpenItem/` | L | P3 + P8 | <ul><li>`sindri-prove.sh human open ITM-…` opens a Warp tab running Claude Code in the item's repo; `session.launched` is recorded; the session's first `sindri_item` call returns the item.</li><li>Closing the tab writes `session.ended` (`exit`); killing wrap writes it (`lost`) within 150 s; the item can be opened again.</li><li>A second open while live exits 2 with `SND-LAUNCH-002`.</li><li>The launch file and argv contain no secret and no item text.</li></ul> | engine P8 (the agent runtime) |
 
 | **P11** | **Engine item states.** <ul><li>The item projection folds `workflow.*` events into `needs-answer`, `taken-over`, `parked`, `running` and `queued`.</li><li>Engine parks, escalations, idle takeovers and desk tasks become needs-you rows of kind `park`.</li><li>`CloseItem` refuses while an instance is active.</li></ul> | `Features/Projections/*` | M | P4 + engine P4 | <ul><li>Starting `workflow.step` on an item moves it to `running` in `GET /queue`.</li><li>A desk task and a park appear in `GET /needs-you` with the engine's action id.</li></ul> | UI's live item states |
 
