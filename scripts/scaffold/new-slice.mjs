@@ -188,7 +188,7 @@ export function writeSlice(journal, resolved, { sliceOnly = false } = {}) {
   if (sliceOnly) {
     if (needsRs0041(journal, s)) {
       const id = s.ids.find((i) => i.isNew && i.prim !== "string");
-      throw new ScaffoldError("NS-SLICE-ONLY", `the new ${id.prim} id ${id.name} needs the RS0041 NoWarn in ${d.coreProject}, a shared file --slice-only doesn't edit`, `${CONTRACT_UNIT_FIX} (the NoWarn: docs/csharp/typed-ids.md)`);
+      throw new ScaffoldError("NS-SLICE-ONLY", `the new ${id.prim} id ${id.name} needs the RS0041 NoWarn in ${d.coreProject}, a shared file --slice-only doesn't edit`, `the NoWarn is in docs/csharp/typed-ids.md; ${CONTRACT_UNIT_FIX}`);
     }
     // A.cs and IdsJsonContext.cs take one line per slice; creating a missing one would make every parallel branch add it.
     const shared = [`${d.testing}/A.cs`, ...(s.ids.some((i) => i.isNew) ? [`${d.tests}/Ids/IdsJsonContext.cs`] : [])];

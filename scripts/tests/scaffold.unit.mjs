@@ -486,7 +486,7 @@ t("NS-SLICE-ONLY: a new Guid id when Core lacks the RS0041 NoWarn is refused, no
   const r = sliceOnly(d, { package: "Readiness", slice: "ListRuns", behavior: "lists_runs", surface: "cli", ids: "RunId:Guid" });
   refused(r, "NS-SLICE-ONLY");
   assert.match(r.out, /RS0041/);
-  assert.match(r.out, /without --slice-only/);
+  assert.match(r.out, /^fix: the NoWarn is in docs\/csharp\/typed-ids\.md; add it in the phase's contract unit, or run without --slice-only$/m);
   assert.equal(hashTree(d), before, "the tree changed");
 });
 
