@@ -1882,6 +1882,22 @@ A **block** supplies the code, once, for every recipe that names it:
 
 Each block declares its inputs and outputs, so the validator can check that a recipe wires them correctly.
 
+**Tools versus workflows.** The ported packages are mostly **tools**. In a recipe they are blocks: deterministic
+code that a step calls or a gate relies on, which does one job and returns a result. The **workflow** is the
+sequence around them: the steps, the gates between them, and what happens on failure. A skill today usually holds
+both, and only the second half becomes recipe material:
+
+| Package or skill | Becomes blocks (tools) | Becomes a recipe (workflow) |
+|---|---|---|
+| `ui-evidence` (`src/Evidence`, R2) | `run` (the `ui-browser` evidence provider), `parity` (`design-parity`), `doctor` and `provenance` (checks), `install-browser` (setup) | The skill's sequence: doctor the stack → plan the journey → run headless → lint → check provenance → publish (ask-first). It becomes `workflow.ui-evidence`, a child that a feature workflow starts |
+| `bugfix-state` (`src/BugFix`, #155) | `run-test` (the `test` evidence provider), and the gates: the frozen check, the clean tree with registered leftovers, registered evidence, candidate-on-baseline, protected and shadowing paths, judge once per candidate | The phases intake → investigate → reproduce → fix → evaluate → report, attempt caps, mode B, and the `next` hints. This becomes `workflow.bugfix` |
+| `judge` | Each decision question is a rung-2 gate block | None: judge answers questions, it doesn't sequence work |
+| `scorer` | A reader of events, receipts and transcripts, for the metrics in §17.2 | None |
+| `aw-packets` (`src/Packets`) | `validate` (the `PKT-*` checks) and `freeze` as gate blocks | The packet lifecycle: draft → edit → validate → frozen → amended (§17.4, §17.26.4) |
+
+A tool with no branching that needs an agent or a gate stays a block. Wrapping it in states adds nothing.
+
+
 | Machine | States (abridged) | Gates and evidence it plugs in |
 |---|---|---|
 | Item lifecycle | triaged → startable → claimed → running → done | Router table (§7.1), the claim ref (§9.4), budget |
@@ -1953,6 +1969,36 @@ Each block declares its inputs and outputs, so the validator can check that a re
 5. Standing workflows join as recipes as they are built (§17.9).
 6. Workflow generation (§17.7) switches from emitting a Step graph to emitting a recipe, so each deliverable's
    workflow is generated from blocks and validated before it is frozen.
+
+### 17.28.7 Port order: Sindri first, then the tools as blocks (proposed 2026-10-11, the owner decides)
+
+The readiness design's R2 order (§4a step 2) ports every tool as a standalone CLI before Sindri: `judge` →
+`scorer`, `ui-evidence` and the `bugfix-state` CLI → `sindri`. The table above shows the cost. Each standalone port
+carries a workflow half (its own state file, phases, `next` hints and exit-code scheme) that the engine replaces
+once the tool is plugged into a recipe. `bugfix-state` (#155) is the example: about half of it is phase machinery
+that becomes `workflow.bugfix`.
+
+**Proposal:** port Sindri's core first, then port the remaining tools straight into Sindri as blocks.
+1. Keep the ports already merged: `Redaction`, `Packets`, `Readiness`, `BugFix` (#155). BugFix's rules become the
+   bug-fix gate blocks; its phase machinery is retired when `workflow.bugfix` replaces it.
+2. Finish `judge`. Sindri's decision ladder needs it (rung 2), and it is a tool, not a workflow.
+3. Port Sindri's core next: profile and ledger with the host, then the engine and recipe format (§17.28.6 step 1).
+4. Port each remaining tool as blocks written against the block contracts, inside Sindri or as a package that only
+   provides blocks: the evidence providers (`ui-evidence`'s runner and parity), then `scorer` as the metrics reader.
+   Their orchestration halves are written as recipes, never as standalone CLIs first.
+
+**What doesn't change:**
+- The clean cutover (§4a step 3): the installed TS toolkit stays as it is until the switch. Until a tool's block
+  port lands, the C# Sindri calls the TS tool through a declared `cli` edge, as it already plans for `aw-packets`
+  and `aw-readiness`.
+- The hook contract (§4c).
+
+**Open for the owner:**
+- `ui-evidence`'s in-flight port (#158). Most of it is the browser runner and parity, which are tool code the
+  `ui-browser` and `design-parity` blocks need anyway. Either land it and later swap its CLI shell for block
+  registration, or pause it until step 4.
+- `scorer`: deferred to step 4 under this proposal.
+- The readiness design's §4a step 2 and §10 R2 order change in their own PR once this is decided.
 
 ## 17.17 Decisions
 
