@@ -11,7 +11,7 @@ internal static class Usage
         "       sindri profile validate [--json]",
         "       sindri profile approve [<hash>]   without a hash: show the hash and what changed; with it: approve (needs a terminal)",
         "       sindri doctor [--json]        lease, ledger, profile and api checks; runs without the control plane",
-        "       sindri recipe validate <file> [--json]   validate a recipe in-process (exit 0 pass, 1 fail, 2 error)",
-        "       sindri recipe eval <file> [--json]       run a recipe's eval cases in-process (exit 0 pass, 1 fail, 2 error)",
+        "       sindri recipe validate <file> [--json]   check a recipe in-process: rule lines, then its hash (exit 0 pass, 1 fail, 2 error)",
+        "       sindri recipe eval <file>     run a recipe's eval cases (arrives with P3; exits 2 until then)",
         "exit codes: 0 ok, 1 attention needed, 2 error");
 }

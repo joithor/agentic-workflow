@@ -24,6 +24,8 @@ One NativeAOT binary, `sindri`, is both the control plane and its CLI.
 | `sindri profile approve` | Shows the live hash and the key paths changed since the latest approval; changes nothing | 0 when it already is approved; 1 when not approved yet, or when it isn't running (`SND-API-001`); 2 on any other error (e.g. an invalid profile `SND-PROFILE-001/002`, a ledger it can't read `SND-LEDGER-002`, no answer in time `SND-API-002`, an API error without a code `SND-API-004` or from inside `SND-API-005`) |
 | `sindri profile approve <hash>` | Approves: the hash must be the live one, and you type its first 6 characters at an interactive terminal | 0; 1 when it isn't running (`SND-API-001`); 2 on any other error (e.g. a malformed hash `SND-CLI-003`, a stale hash `SND-PROFILE-003`, no terminal or a wrong confirmation `SND-PROFILE-004`, approvals that can't be written `SND-PROFILE-006`, a ledger it can't read or write `SND-LEDGER-002`, no answer in time `SND-API-002`, an API error without a code `SND-API-004` or from inside `SND-API-005`) |
 | `sindri doctor [--json]` | One line per check, in order: `lease`, `ledger`, `profile`, `api`, each `ok` / `warn` / `fail` with a fix. `profile` is `ok` only when approved by the one rule (see Profile); changed since the saved approval, or saved but not the latest recorded one, is a `warn` | 0 all ok, 1 any warn, 2 any fail |
+| `sindri recipe validate <file> [--json]` | Validates a recipe in this process against the build's block catalog, never contacting the control plane: one line per finding (errors first; information and skipped findings labelled), then the recipe's hash. `--json` adds each finding's fields and the normalized long form. Reference: `docs/csharp/sindri-workflow.md` | 0 no errors; 1 any `RCP-*` error; 2 a usage error (no file, `SND-CLI-003`) or an unreadable file (`SND-RECIPE-010`) |
+| `sindri recipe eval <file>` | Arrives with the engine's evals (P3); until then it refuses | 2 (`SND-CLI-001`) |
 
 Output: state is always a word, never colour; there is no colour at all, so `NO_COLOR` and redirected output need
 nothing special. Errors go to stderr as `SND-<AREA>-NNN message`, with `(fix: …)` where there is one. `--json` prints
@@ -32,6 +34,7 @@ the response record through AwJson.
 **Which verbs are API clients.** `status`, `stop` and `profile approve` call the running process's API (the CLI is a
 client of the same handlers the UI will call, §17.27.1). `doctor` and `profile validate` run the same handlers in the
 calling process, read-only, because they must work while the control plane is down (`doctor` reports exactly that).
+`recipe validate` is local too: it reads only the recipe file and its child recipes beside it.
 `status` and `stop` never start the process: "not running" is an answer. `profile approve` needs it running, because
 the approval is a ledger event fenced by the lease.
 
@@ -212,8 +215,9 @@ together with `SindriErrors`. Retired codes stay reserved in `WorkflowErrors.Ret
 | `SND-WF-013` | conflict | A workflow challenge expired, or its subject changed |
 | `SND-WF-014` | invalid | `--item` and `fact:item`'s `id` differ |
 
-`sindri recipe validate <file> [--json]` and `sindri recipe eval <file> [--json]` are local checker verbs (engine spec
-W27): exit 0 pass, 1 fail, 2 usage or tool error.
+`sindri recipe validate <file> [--json]` and `sindri recipe eval <file>` are local checker verbs (engine spec W27): exit
+0 pass, 1 fail, 2 usage or tool error; `eval` arrives with P3. The recipe reference, the `RCP-*` rule table and how to add
+a block are in `docs/csharp/sindri-workflow.md`.
 
 ## Hook contract
 
