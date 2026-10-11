@@ -1,6 +1,1538 @@
 #nullable enable
+abstract Aw.Evidence.Core.Browser.Locator.<Clone>$() -> Aw.Evidence.Core.Browser.Locator!
+abstract Aw.Evidence.Core.Scripts.ExpectedState.<Clone>$() -> Aw.Evidence.Core.Scripts.ExpectedState!
+abstract Aw.Evidence.Core.Scripts.ExpectedState.Describe() -> string!
+abstract Aw.Evidence.Core.Scripts.ExpectedState.Problem() -> string?
+Aw.Evidence.Core.Browser.BrowserSessionOptions
+Aw.Evidence.Core.Browser.BrowserSessionOptions.<Clone>$() -> Aw.Evidence.Core.Browser.BrowserSessionOptions!
+Aw.Evidence.Core.Browser.BrowserSessionOptions.BrowserSessionOptions(Aw.Evidence.Core.Guard.ResolvedHost! Host, Aw.Evidence.Core.Geometry.ViewportSize! Viewport, string? RecordDirectory, string? UserAgentOverride) -> void
+Aw.Evidence.Core.Browser.BrowserSessionOptions.Deconstruct(out Aw.Evidence.Core.Guard.ResolvedHost! Host, out Aw.Evidence.Core.Geometry.ViewportSize! Viewport, out string? RecordDirectory, out string? UserAgentOverride) -> void
+Aw.Evidence.Core.Browser.BrowserSessionOptions.Equals(Aw.Evidence.Core.Browser.BrowserSessionOptions? other) -> bool
+Aw.Evidence.Core.Browser.BrowserSessionOptions.Host.get -> Aw.Evidence.Core.Guard.ResolvedHost!
+Aw.Evidence.Core.Browser.BrowserSessionOptions.Host.init -> void
+Aw.Evidence.Core.Browser.BrowserSessionOptions.RecordDirectory.get -> string?
+Aw.Evidence.Core.Browser.BrowserSessionOptions.RecordDirectory.init -> void
+Aw.Evidence.Core.Browser.BrowserSessionOptions.UserAgentOverride.get -> string?
+Aw.Evidence.Core.Browser.BrowserSessionOptions.UserAgentOverride.init -> void
+Aw.Evidence.Core.Browser.BrowserSessionOptions.Viewport.get -> Aw.Evidence.Core.Geometry.ViewportSize!
+Aw.Evidence.Core.Browser.BrowserSessionOptions.Viewport.init -> void
+Aw.Evidence.Core.Browser.Candidate
+Aw.Evidence.Core.Browser.Candidate.<Clone>$() -> Aw.Evidence.Core.Browser.Candidate!
+Aw.Evidence.Core.Browser.Candidate.AccessibleName.get -> string?
+Aw.Evidence.Core.Browser.Candidate.AccessibleName.init -> void
+Aw.Evidence.Core.Browser.Candidate.Candidate(int Index, string? Role, string? AccessibleName, Aw.Evidence.Core.Ids.TestId? TestId, string? Text) -> void
+Aw.Evidence.Core.Browser.Candidate.Deconstruct(out int Index, out string? Role, out string? AccessibleName, out Aw.Evidence.Core.Ids.TestId? TestId, out string? Text) -> void
+Aw.Evidence.Core.Browser.Candidate.Equals(Aw.Evidence.Core.Browser.Candidate? other) -> bool
+Aw.Evidence.Core.Browser.Candidate.Index.get -> int
+Aw.Evidence.Core.Browser.Candidate.Index.init -> void
+Aw.Evidence.Core.Browser.Candidate.Role.get -> string?
+Aw.Evidence.Core.Browser.Candidate.Role.init -> void
+Aw.Evidence.Core.Browser.Candidate.TestId.get -> Aw.Evidence.Core.Ids.TestId?
+Aw.Evidence.Core.Browser.Candidate.TestId.init -> void
+Aw.Evidence.Core.Browser.Candidate.Text.get -> string?
+Aw.Evidence.Core.Browser.Candidate.Text.init -> void
+Aw.Evidence.Core.Browser.CandidateLocator
+Aw.Evidence.Core.Browser.CandidateLocator.CandidateLocator(int Index, Aw.Evidence.Core.Ids.TestId? ExpectedTestId) -> void
+Aw.Evidence.Core.Browser.CandidateLocator.Deconstruct(out int Index, out Aw.Evidence.Core.Ids.TestId? ExpectedTestId) -> void
+Aw.Evidence.Core.Browser.CandidateLocator.Equals(Aw.Evidence.Core.Browser.CandidateLocator? other) -> bool
+Aw.Evidence.Core.Browser.CandidateLocator.ExpectedTestId.get -> Aw.Evidence.Core.Ids.TestId?
+Aw.Evidence.Core.Browser.CandidateLocator.ExpectedTestId.init -> void
+Aw.Evidence.Core.Browser.CandidateLocator.Index.get -> int
+Aw.Evidence.Core.Browser.CandidateLocator.Index.init -> void
+Aw.Evidence.Core.Browser.CssLocator
+Aw.Evidence.Core.Browser.CssLocator.Css.get -> string!
+Aw.Evidence.Core.Browser.CssLocator.Css.init -> void
+Aw.Evidence.Core.Browser.CssLocator.CssLocator(string! Css) -> void
+Aw.Evidence.Core.Browser.CssLocator.Deconstruct(out string! Css) -> void
+Aw.Evidence.Core.Browser.CssLocator.Equals(Aw.Evidence.Core.Browser.CssLocator? other) -> bool
+Aw.Evidence.Core.Browser.IBrowser
+Aw.Evidence.Core.Browser.IBrowser.OpenAsync(Aw.Evidence.Core.Browser.BrowserSessionOptions! options, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Evidence.Core.Browser.IBrowserSession!>!>
+Aw.Evidence.Core.Browser.IBrowserSession
+Aw.Evidence.Core.Browser.IBrowserSession.BoundingBoxAsync(Aw.Evidence.Core.Browser.Locator! target, System.TimeSpan timeout, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Evidence.Core.Geometry.Box!>!>
+Aw.Evidence.Core.Browser.IBrowserSession.BrowserVersion.get -> string!
+Aw.Evidence.Core.Browser.IBrowserSession.ClickAsync(Aw.Evidence.Core.Browser.Locator! target, System.TimeSpan timeout, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Kernel.Unit>!>
+Aw.Evidence.Core.Browser.IBrowserSession.DropFocusAsync(Aw.Evidence.Core.Geometry.Offset? neutralClick, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Kernel.Unit>!>
+Aw.Evidence.Core.Browser.IBrowserSession.FillAsync(Aw.Evidence.Core.Browser.Locator! target, string! value, System.TimeSpan timeout, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Kernel.Unit>!>
+Aw.Evidence.Core.Browser.IBrowserSession.GotoAsync(string! path, System.TimeSpan timeout, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Kernel.Unit>!>
+Aw.Evidence.Core.Browser.IBrowserSession.InputValueAsync(Aw.Evidence.Core.Browser.Locator! target, System.TimeSpan timeout, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<string!>!>
+Aw.Evidence.Core.Browser.IBrowserSession.LintSnapshotAsync(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Evidence.Core.Lint.PageSnapshot!>!>
+Aw.Evidence.Core.Browser.IBrowserSession.ResetScrollAsync(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Kernel.Unit>!>
+Aw.Evidence.Core.Browser.IBrowserSession.ScreenshotAsync(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<byte[]!>!>
+Aw.Evidence.Core.Browser.IBrowserSession.SettleAsync(System.TimeSpan settle, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Kernel.Unit>!>
+Aw.Evidence.Core.Browser.IBrowserSession.SignInAsync(Aw.Evidence.Core.Design.LoginSpec! login, Aw.Evidence.Core.Guard.Credentials! credentials, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Kernel.Unit>!>
+Aw.Evidence.Core.Browser.IBrowserSession.StopRecordingAsync(string! tracePath, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Evidence.Core.Browser.SessionRecording!>!>
+Aw.Evidence.Core.Browser.IBrowserSession.VisibleCandidatesAsync(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<System.Collections.Generic.IReadOnlyList<Aw.Evidence.Core.Browser.Candidate!>!>!>
+Aw.Evidence.Core.Browser.IBrowserSession.WaitForPathAsync(string! path, System.TimeSpan timeout, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Kernel.Unit>!>
+Aw.Evidence.Core.Browser.IBrowserSession.WaitHiddenAsync(Aw.Evidence.Core.Browser.Locator! target, System.TimeSpan timeout, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Kernel.Unit>!>
+Aw.Evidence.Core.Browser.IBrowserSession.WaitVisibleAsync(Aw.Evidence.Core.Browser.Locator! target, System.TimeSpan timeout, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Kernel.Unit>!>
+Aw.Evidence.Core.Browser.Locator
+Aw.Evidence.Core.Browser.Locator.Locator() -> void
+Aw.Evidence.Core.Browser.Locator.Locator(Aw.Evidence.Core.Browser.Locator! original) -> void
+Aw.Evidence.Core.Browser.SessionRecording
+Aw.Evidence.Core.Browser.SessionRecording.<Clone>$() -> Aw.Evidence.Core.Browser.SessionRecording!
+Aw.Evidence.Core.Browser.SessionRecording.Deconstruct(out string? Trace, out System.Collections.Generic.IReadOnlyList<string!>! Videos) -> void
+Aw.Evidence.Core.Browser.SessionRecording.Equals(Aw.Evidence.Core.Browser.SessionRecording? other) -> bool
+Aw.Evidence.Core.Browser.SessionRecording.SessionRecording(string? Trace, System.Collections.Generic.IReadOnlyList<string!>! Videos) -> void
+Aw.Evidence.Core.Browser.SessionRecording.Trace.get -> string?
+Aw.Evidence.Core.Browser.SessionRecording.Trace.init -> void
+Aw.Evidence.Core.Browser.SessionRecording.Videos.get -> System.Collections.Generic.IReadOnlyList<string!>!
+Aw.Evidence.Core.Browser.SessionRecording.Videos.init -> void
+Aw.Evidence.Core.Browser.TestIdLocator
+Aw.Evidence.Core.Browser.TestIdLocator.Deconstruct(out Aw.Evidence.Core.Ids.TestId TestId) -> void
+Aw.Evidence.Core.Browser.TestIdLocator.Equals(Aw.Evidence.Core.Browser.TestIdLocator? other) -> bool
+Aw.Evidence.Core.Browser.TestIdLocator.TestId.get -> Aw.Evidence.Core.Ids.TestId
+Aw.Evidence.Core.Browser.TestIdLocator.TestId.init -> void
+Aw.Evidence.Core.Browser.TestIdLocator.TestIdLocator(Aw.Evidence.Core.Ids.TestId TestId) -> void
+Aw.Evidence.Core.Browser.TextLocator
+Aw.Evidence.Core.Browser.TextLocator.Deconstruct(out string! Text) -> void
+Aw.Evidence.Core.Browser.TextLocator.Equals(Aw.Evidence.Core.Browser.TextLocator? other) -> bool
+Aw.Evidence.Core.Browser.TextLocator.Text.get -> string!
+Aw.Evidence.Core.Browser.TextLocator.Text.init -> void
+Aw.Evidence.Core.Browser.TextLocator.TextLocator(string! Text) -> void
+Aw.Evidence.Core.Browser.UserAgent
+Aw.Evidence.Core.ContentHash
+Aw.Evidence.Core.Design.BoxCheck
+Aw.Evidence.Core.Design.BoxCheck.<Clone>$() -> Aw.Evidence.Core.Design.BoxCheck!
+Aw.Evidence.Core.Design.BoxCheck.Actual.get -> Aw.Evidence.Core.Design.MeasuredGeometry?
+Aw.Evidence.Core.Design.BoxCheck.Actual.init -> void
+Aw.Evidence.Core.Design.BoxCheck.BoxCheck(string! Target, string? RelativeTo, Aw.Evidence.Core.Design.ExpectedGeometry! Expected, Aw.Evidence.Core.Design.MeasuredGeometry? Actual, double Tolerance, bool Pass, string? Failure) -> void
+Aw.Evidence.Core.Design.BoxCheck.Deconstruct(out string! Target, out string? RelativeTo, out Aw.Evidence.Core.Design.ExpectedGeometry! Expected, out Aw.Evidence.Core.Design.MeasuredGeometry? Actual, out double Tolerance, out bool Pass, out string? Failure) -> void
+Aw.Evidence.Core.Design.BoxCheck.Equals(Aw.Evidence.Core.Design.BoxCheck? other) -> bool
+Aw.Evidence.Core.Design.BoxCheck.Expected.get -> Aw.Evidence.Core.Design.ExpectedGeometry!
+Aw.Evidence.Core.Design.BoxCheck.Expected.init -> void
+Aw.Evidence.Core.Design.BoxCheck.Failure.get -> string?
+Aw.Evidence.Core.Design.BoxCheck.Failure.init -> void
+Aw.Evidence.Core.Design.BoxCheck.Pass.get -> bool
+Aw.Evidence.Core.Design.BoxCheck.Pass.init -> void
+Aw.Evidence.Core.Design.BoxCheck.RelativeTo.get -> string?
+Aw.Evidence.Core.Design.BoxCheck.RelativeTo.init -> void
+Aw.Evidence.Core.Design.BoxCheck.Target.get -> string!
+Aw.Evidence.Core.Design.BoxCheck.Target.init -> void
+Aw.Evidence.Core.Design.BoxCheck.Tolerance.get -> double
+Aw.Evidence.Core.Design.BoxCheck.Tolerance.init -> void
+Aw.Evidence.Core.Design.BoxExpectation
+Aw.Evidence.Core.Design.BoxExpectation.<Clone>$() -> Aw.Evidence.Core.Design.BoxExpectation!
+Aw.Evidence.Core.Design.BoxExpectation.BoxExpectation(Aw.Evidence.Core.Design.ElementSelector! Target, Aw.Evidence.Core.Design.ExpectedGeometry! Expected, Aw.Evidence.Core.Design.ElementSelector? RelativeTo = null, double? Tolerance = null) -> void
+Aw.Evidence.Core.Design.BoxExpectation.Deconstruct(out Aw.Evidence.Core.Design.ElementSelector! Target, out Aw.Evidence.Core.Design.ExpectedGeometry! Expected, out Aw.Evidence.Core.Design.ElementSelector? RelativeTo, out double? Tolerance) -> void
+Aw.Evidence.Core.Design.BoxExpectation.Equals(Aw.Evidence.Core.Design.BoxExpectation? other) -> bool
+Aw.Evidence.Core.Design.BoxExpectation.Expected.get -> Aw.Evidence.Core.Design.ExpectedGeometry!
+Aw.Evidence.Core.Design.BoxExpectation.Expected.init -> void
+Aw.Evidence.Core.Design.BoxExpectation.RelativeTo.get -> Aw.Evidence.Core.Design.ElementSelector?
+Aw.Evidence.Core.Design.BoxExpectation.RelativeTo.init -> void
+Aw.Evidence.Core.Design.BoxExpectation.Target.get -> Aw.Evidence.Core.Design.ElementSelector!
+Aw.Evidence.Core.Design.BoxExpectation.Target.init -> void
+Aw.Evidence.Core.Design.BoxExpectation.Tolerance.get -> double?
+Aw.Evidence.Core.Design.BoxExpectation.Tolerance.init -> void
+Aw.Evidence.Core.Design.DesignFrame
+Aw.Evidence.Core.Design.DesignFrame.<Clone>$() -> Aw.Evidence.Core.Design.DesignFrame!
+Aw.Evidence.Core.Design.DesignFrame.Anchor.get -> Aw.Evidence.Core.Design.ElementSelector!
+Aw.Evidence.Core.Design.DesignFrame.Anchor.init -> void
+Aw.Evidence.Core.Design.DesignFrame.AnchorOffset.get -> Aw.Evidence.Core.Geometry.Offset?
+Aw.Evidence.Core.Design.DesignFrame.AnchorOffset.init -> void
+Aw.Evidence.Core.Design.DesignFrame.DesignFrame(string! name, string! designPng, Aw.Evidence.Core.Geometry.Region! designRegion, Aw.Evidence.Core.Design.ElementSelector! anchor, Aw.Evidence.Core.Geometry.Offset? anchorOffset = null, Aw.Evidence.Core.Design.ElementSelector? waitFor = null, System.Collections.Generic.IReadOnlyList<Aw.Evidence.Core.Scripts.ScriptStep!>? steps = null, System.Collections.Generic.IReadOnlyList<Aw.Evidence.Core.Design.FormValue!>? formValues = null, System.Collections.Generic.IReadOnlyList<Aw.Evidence.Core.Design.BoxExpectation!>? expectBoxes = null, System.Collections.Generic.IReadOnlyList<string!>? knownDifferences = null, string? designNode = null) -> void
+Aw.Evidence.Core.Design.DesignFrame.DesignNode.get -> string?
+Aw.Evidence.Core.Design.DesignFrame.DesignNode.init -> void
+Aw.Evidence.Core.Design.DesignFrame.DesignPng.get -> string!
+Aw.Evidence.Core.Design.DesignFrame.DesignPng.init -> void
+Aw.Evidence.Core.Design.DesignFrame.DesignRegion.get -> Aw.Evidence.Core.Geometry.Region!
+Aw.Evidence.Core.Design.DesignFrame.DesignRegion.init -> void
+Aw.Evidence.Core.Design.DesignFrame.Equals(Aw.Evidence.Core.Design.DesignFrame? other) -> bool
+Aw.Evidence.Core.Design.DesignFrame.ExpectBoxes.get -> System.Collections.Generic.IReadOnlyList<Aw.Evidence.Core.Design.BoxExpectation!>!
+Aw.Evidence.Core.Design.DesignFrame.ExpectBoxes.init -> void
+Aw.Evidence.Core.Design.DesignFrame.FormValues.get -> System.Collections.Generic.IReadOnlyList<Aw.Evidence.Core.Design.FormValue!>!
+Aw.Evidence.Core.Design.DesignFrame.FormValues.init -> void
+Aw.Evidence.Core.Design.DesignFrame.KnownDifferences.get -> System.Collections.Generic.IReadOnlyList<string!>!
+Aw.Evidence.Core.Design.DesignFrame.KnownDifferences.init -> void
+Aw.Evidence.Core.Design.DesignFrame.Name.get -> string!
+Aw.Evidence.Core.Design.DesignFrame.Name.init -> void
+Aw.Evidence.Core.Design.DesignFrame.Steps.get -> System.Collections.Generic.IReadOnlyList<Aw.Evidence.Core.Scripts.ScriptStep!>!
+Aw.Evidence.Core.Design.DesignFrame.Steps.init -> void
+Aw.Evidence.Core.Design.DesignFrame.WaitFor.get -> Aw.Evidence.Core.Design.ElementSelector?
+Aw.Evidence.Core.Design.DesignFrame.WaitFor.init -> void
+Aw.Evidence.Core.Design.DesignManifest
+Aw.Evidence.Core.Design.DesignManifest.<Clone>$() -> Aw.Evidence.Core.Design.DesignManifest!
+Aw.Evidence.Core.Design.DesignManifest.DesignManifest(string! route, Aw.Evidence.Core.Design.ElementSelector! ready, System.Collections.Generic.IReadOnlyList<Aw.Evidence.Core.Design.DesignFrame!>! frames, Aw.Evidence.Core.Geometry.ViewportSize? viewport = null, int timeoutMs = 60000, int settleMs = 600, double threshold = 0.1, bool includeAA = false, Aw.Evidence.Core.Geometry.Offset? neutralClick = null, bool skipNeutralClick = false, string? designNode = null, Aw.Evidence.Core.Design.LoginSpec? login = null) -> void
+Aw.Evidence.Core.Design.DesignManifest.DesignNode.get -> string?
+Aw.Evidence.Core.Design.DesignManifest.DesignNode.init -> void
+Aw.Evidence.Core.Design.DesignManifest.Equals(Aw.Evidence.Core.Design.DesignManifest? other) -> bool
+Aw.Evidence.Core.Design.DesignManifest.Frames.get -> System.Collections.Generic.IReadOnlyList<Aw.Evidence.Core.Design.DesignFrame!>!
+Aw.Evidence.Core.Design.DesignManifest.Frames.init -> void
+Aw.Evidence.Core.Design.DesignManifest.IncludeAA.get -> bool
+Aw.Evidence.Core.Design.DesignManifest.IncludeAA.init -> void
+Aw.Evidence.Core.Design.DesignManifest.Login.get -> Aw.Evidence.Core.Design.LoginSpec?
+Aw.Evidence.Core.Design.DesignManifest.Login.init -> void
+Aw.Evidence.Core.Design.DesignManifest.NeutralClick.get -> Aw.Evidence.Core.Geometry.Offset?
+Aw.Evidence.Core.Design.DesignManifest.NeutralClick.init -> void
+Aw.Evidence.Core.Design.DesignManifest.NeutralClickPoint() -> Aw.Evidence.Core.Geometry.Offset?
+Aw.Evidence.Core.Design.DesignManifest.Ready.get -> Aw.Evidence.Core.Design.ElementSelector!
+Aw.Evidence.Core.Design.DesignManifest.Ready.init -> void
+Aw.Evidence.Core.Design.DesignManifest.Route.get -> string!
+Aw.Evidence.Core.Design.DesignManifest.Route.init -> void
+Aw.Evidence.Core.Design.DesignManifest.SettleMs.get -> int
+Aw.Evidence.Core.Design.DesignManifest.SettleMs.init -> void
+Aw.Evidence.Core.Design.DesignManifest.SkipNeutralClick.get -> bool
+Aw.Evidence.Core.Design.DesignManifest.SkipNeutralClick.init -> void
+Aw.Evidence.Core.Design.DesignManifest.Threshold.get -> double
+Aw.Evidence.Core.Design.DesignManifest.Threshold.init -> void
+Aw.Evidence.Core.Design.DesignManifest.TimeoutMs.get -> int
+Aw.Evidence.Core.Design.DesignManifest.TimeoutMs.init -> void
+Aw.Evidence.Core.Design.DesignManifest.Viewport.get -> Aw.Evidence.Core.Geometry.ViewportSize!
+Aw.Evidence.Core.Design.DesignManifest.Viewport.init -> void
+Aw.Evidence.Core.Design.ElementSelector
+Aw.Evidence.Core.Design.ElementSelector.<Clone>$() -> Aw.Evidence.Core.Design.ElementSelector!
+Aw.Evidence.Core.Design.ElementSelector.Deconstruct(out Aw.Evidence.Core.Ids.TestId? TestId, out string? Text) -> void
+Aw.Evidence.Core.Design.ElementSelector.ElementSelector(Aw.Evidence.Core.Ids.TestId? TestId = null, string? Text = null) -> void
+Aw.Evidence.Core.Design.ElementSelector.Equals(Aw.Evidence.Core.Design.ElementSelector? other) -> bool
+Aw.Evidence.Core.Design.ElementSelector.IsWellFormed.get -> bool
+Aw.Evidence.Core.Design.ElementSelector.Key.get -> string!
+Aw.Evidence.Core.Design.ElementSelector.TestId.get -> Aw.Evidence.Core.Ids.TestId?
+Aw.Evidence.Core.Design.ElementSelector.TestId.init -> void
+Aw.Evidence.Core.Design.ElementSelector.Text.get -> string?
+Aw.Evidence.Core.Design.ElementSelector.Text.init -> void
+Aw.Evidence.Core.Design.ExpectedGeometry
+Aw.Evidence.Core.Design.ExpectedGeometry.<Clone>$() -> Aw.Evidence.Core.Design.ExpectedGeometry!
+Aw.Evidence.Core.Design.ExpectedGeometry.Deconstruct(out double? W, out double? H, out double? X, out double? Y) -> void
+Aw.Evidence.Core.Design.ExpectedGeometry.Equals(Aw.Evidence.Core.Design.ExpectedGeometry? other) -> bool
+Aw.Evidence.Core.Design.ExpectedGeometry.ExpectedGeometry(double? W = null, double? H = null, double? X = null, double? Y = null) -> void
+Aw.Evidence.Core.Design.ExpectedGeometry.H.get -> double?
+Aw.Evidence.Core.Design.ExpectedGeometry.H.init -> void
+Aw.Evidence.Core.Design.ExpectedGeometry.IsEmpty.get -> bool
+Aw.Evidence.Core.Design.ExpectedGeometry.W.get -> double?
+Aw.Evidence.Core.Design.ExpectedGeometry.W.init -> void
+Aw.Evidence.Core.Design.ExpectedGeometry.X.get -> double?
+Aw.Evidence.Core.Design.ExpectedGeometry.X.init -> void
+Aw.Evidence.Core.Design.ExpectedGeometry.Y.get -> double?
+Aw.Evidence.Core.Design.ExpectedGeometry.Y.init -> void
+Aw.Evidence.Core.Design.FormValue
+Aw.Evidence.Core.Design.FormValue.<Clone>$() -> Aw.Evidence.Core.Design.FormValue!
+Aw.Evidence.Core.Design.FormValue.Css.get -> string?
+Aw.Evidence.Core.Design.FormValue.Css.init -> void
+Aw.Evidence.Core.Design.FormValue.Deconstruct(out string! Value, out Aw.Evidence.Core.Ids.TestId? TestId, out string? Css) -> void
+Aw.Evidence.Core.Design.FormValue.Equals(Aw.Evidence.Core.Design.FormValue? other) -> bool
+Aw.Evidence.Core.Design.FormValue.FormValue(string! Value, Aw.Evidence.Core.Ids.TestId? TestId = null, string? Css = null) -> void
+Aw.Evidence.Core.Design.FormValue.IsWellFormed.get -> bool
+Aw.Evidence.Core.Design.FormValue.TestId.get -> Aw.Evidence.Core.Ids.TestId?
+Aw.Evidence.Core.Design.FormValue.TestId.init -> void
+Aw.Evidence.Core.Design.FormValue.Value.get -> string!
+Aw.Evidence.Core.Design.FormValue.Value.init -> void
+Aw.Evidence.Core.Design.GeometryChecks
+Aw.Evidence.Core.Design.LoginSpec
+Aw.Evidence.Core.Design.LoginSpec.<Clone>$() -> Aw.Evidence.Core.Design.LoginSpec!
+Aw.Evidence.Core.Design.LoginSpec.EmailEnv.get -> string!
+Aw.Evidence.Core.Design.LoginSpec.EmailEnv.init -> void
+Aw.Evidence.Core.Design.LoginSpec.EmailSelector.get -> string!
+Aw.Evidence.Core.Design.LoginSpec.EmailSelector.init -> void
+Aw.Evidence.Core.Design.LoginSpec.Equals(Aw.Evidence.Core.Design.LoginSpec? other) -> bool
+Aw.Evidence.Core.Design.LoginSpec.LoginPath.get -> string!
+Aw.Evidence.Core.Design.LoginSpec.LoginPath.init -> void
+Aw.Evidence.Core.Design.LoginSpec.LoginSpec(string! emailEnv, string! passwordEnv, string! emailSelector, string! passwordSelector, string! submitSelector, string? nextSelector = null, string? loginPath = null) -> void
+Aw.Evidence.Core.Design.LoginSpec.NextSelector.get -> string?
+Aw.Evidence.Core.Design.LoginSpec.NextSelector.init -> void
+Aw.Evidence.Core.Design.LoginSpec.PasswordEnv.get -> string!
+Aw.Evidence.Core.Design.LoginSpec.PasswordEnv.init -> void
+Aw.Evidence.Core.Design.LoginSpec.PasswordSelector.get -> string!
+Aw.Evidence.Core.Design.LoginSpec.PasswordSelector.init -> void
+Aw.Evidence.Core.Design.LoginSpec.SubmitSelector.get -> string!
+Aw.Evidence.Core.Design.LoginSpec.SubmitSelector.init -> void
+Aw.Evidence.Core.Design.ManifestReader
+Aw.Evidence.Core.Design.MeasuredGeometry
+Aw.Evidence.Core.Design.MeasuredGeometry.<Clone>$() -> Aw.Evidence.Core.Design.MeasuredGeometry!
+Aw.Evidence.Core.Design.MeasuredGeometry.Deconstruct(out double W, out double H, out double X, out double Y) -> void
+Aw.Evidence.Core.Design.MeasuredGeometry.Equals(Aw.Evidence.Core.Design.MeasuredGeometry? other) -> bool
+Aw.Evidence.Core.Design.MeasuredGeometry.H.get -> double
+Aw.Evidence.Core.Design.MeasuredGeometry.H.init -> void
+Aw.Evidence.Core.Design.MeasuredGeometry.MeasuredGeometry(double W, double H, double X, double Y) -> void
+Aw.Evidence.Core.Design.MeasuredGeometry.W.get -> double
+Aw.Evidence.Core.Design.MeasuredGeometry.W.init -> void
+Aw.Evidence.Core.Design.MeasuredGeometry.X.get -> double
+Aw.Evidence.Core.Design.MeasuredGeometry.X.init -> void
+Aw.Evidence.Core.Design.MeasuredGeometry.Y.get -> double
+Aw.Evidence.Core.Design.MeasuredGeometry.Y.init -> void
+Aw.Evidence.Core.Design.ParityRegions
 Aw.Evidence.Core.EvidenceCoreServiceCollectionExtensions
 Aw.Evidence.Core.EvidenceErrors
+Aw.Evidence.Core.Files.IRunFiles
+Aw.Evidence.Core.Files.IRunFiles.CreateDirectoryAsync(string! path, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Kernel.Unit>!>
+Aw.Evidence.Core.Files.IRunFiles.DeleteAsync(string! path, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Kernel.Unit>!>
+Aw.Evidence.Core.Files.IRunFiles.ReadAsync(string! path, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<byte[]!>!>
+Aw.Evidence.Core.Files.IRunFiles.SizeAsync(string! path, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<long>!>
+Aw.Evidence.Core.Files.IRunFiles.WriteAsync(string! path, System.ReadOnlyMemory<byte> content, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Kernel.Unit>!>
+Aw.Evidence.Core.Files.RunPath
+Aw.Evidence.Core.Geometry.Box
+Aw.Evidence.Core.Geometry.Box.<Clone>$() -> Aw.Evidence.Core.Geometry.Box!
+Aw.Evidence.Core.Geometry.Box.Box(double X, double Y, double W, double H) -> void
+Aw.Evidence.Core.Geometry.Box.Deconstruct(out double X, out double Y, out double W, out double H) -> void
+Aw.Evidence.Core.Geometry.Box.Equals(Aw.Evidence.Core.Geometry.Box? other) -> bool
+Aw.Evidence.Core.Geometry.Box.H.get -> double
+Aw.Evidence.Core.Geometry.Box.H.init -> void
+Aw.Evidence.Core.Geometry.Box.Overlaps(Aw.Evidence.Core.Geometry.Box! other) -> bool
+Aw.Evidence.Core.Geometry.Box.Right.get -> double
+Aw.Evidence.Core.Geometry.Box.W.get -> double
+Aw.Evidence.Core.Geometry.Box.W.init -> void
+Aw.Evidence.Core.Geometry.Box.X.get -> double
+Aw.Evidence.Core.Geometry.Box.X.init -> void
+Aw.Evidence.Core.Geometry.Box.Y.get -> double
+Aw.Evidence.Core.Geometry.Box.Y.init -> void
+Aw.Evidence.Core.Geometry.Offset
+Aw.Evidence.Core.Geometry.Offset.<Clone>$() -> Aw.Evidence.Core.Geometry.Offset!
+Aw.Evidence.Core.Geometry.Offset.Deconstruct(out double X, out double Y) -> void
+Aw.Evidence.Core.Geometry.Offset.Equals(Aw.Evidence.Core.Geometry.Offset? other) -> bool
+Aw.Evidence.Core.Geometry.Offset.Offset(double X, double Y) -> void
+Aw.Evidence.Core.Geometry.Offset.X.get -> double
+Aw.Evidence.Core.Geometry.Offset.X.init -> void
+Aw.Evidence.Core.Geometry.Offset.Y.get -> double
+Aw.Evidence.Core.Geometry.Offset.Y.init -> void
+Aw.Evidence.Core.Geometry.Region
+Aw.Evidence.Core.Geometry.Region.<Clone>$() -> Aw.Evidence.Core.Geometry.Region!
+Aw.Evidence.Core.Geometry.Region.Bottom.get -> int
+Aw.Evidence.Core.Geometry.Region.Deconstruct(out int X, out int Y, out int W, out int H) -> void
+Aw.Evidence.Core.Geometry.Region.Describe() -> string!
+Aw.Evidence.Core.Geometry.Region.Equals(Aw.Evidence.Core.Geometry.Region? other) -> bool
+Aw.Evidence.Core.Geometry.Region.FitsIn(int width, int height) -> bool
+Aw.Evidence.Core.Geometry.Region.H.get -> int
+Aw.Evidence.Core.Geometry.Region.H.init -> void
+Aw.Evidence.Core.Geometry.Region.Region(int X, int Y, int W, int H) -> void
+Aw.Evidence.Core.Geometry.Region.Right.get -> int
+Aw.Evidence.Core.Geometry.Region.W.get -> int
+Aw.Evidence.Core.Geometry.Region.W.init -> void
+Aw.Evidence.Core.Geometry.Region.X.get -> int
+Aw.Evidence.Core.Geometry.Region.X.init -> void
+Aw.Evidence.Core.Geometry.Region.Y.get -> int
+Aw.Evidence.Core.Geometry.Region.Y.init -> void
+Aw.Evidence.Core.Geometry.ViewportSize
+Aw.Evidence.Core.Geometry.ViewportSize.<Clone>$() -> Aw.Evidence.Core.Geometry.ViewportSize!
+Aw.Evidence.Core.Geometry.ViewportSize.Deconstruct(out int W, out int H) -> void
+Aw.Evidence.Core.Geometry.ViewportSize.Describe() -> string!
+Aw.Evidence.Core.Geometry.ViewportSize.Equals(Aw.Evidence.Core.Geometry.ViewportSize? other) -> bool
+Aw.Evidence.Core.Geometry.ViewportSize.H.get -> int
+Aw.Evidence.Core.Geometry.ViewportSize.H.init -> void
+Aw.Evidence.Core.Geometry.ViewportSize.ViewportSize(int W, int H) -> void
+Aw.Evidence.Core.Geometry.ViewportSize.W.get -> int
+Aw.Evidence.Core.Geometry.ViewportSize.W.init -> void
+Aw.Evidence.Core.Guard.Credentials
+Aw.Evidence.Core.Guard.Credentials.Email.get -> string!
+Aw.Evidence.Core.Guard.Credentials.Password.get -> string!
+Aw.Evidence.Core.Guard.Credentials.Redact(string! text) -> string!
+Aw.Evidence.Core.Guard.DbProvenance
+Aw.Evidence.Core.Guard.DbProvenance.Seeded = 0 -> Aw.Evidence.Core.Guard.DbProvenance
+Aw.Evidence.Core.Guard.DbProvenance.Unknown = 1 -> Aw.Evidence.Core.Guard.DbProvenance
+Aw.Evidence.Core.Guard.HostGuard
+Aw.Evidence.Core.Guard.HostKind
+Aw.Evidence.Core.Guard.HostKind.Local = 0 -> Aw.Evidence.Core.Guard.HostKind
+Aw.Evidence.Core.Guard.HostKind.Preview = 1 -> Aw.Evidence.Core.Guard.HostKind
+Aw.Evidence.Core.Guard.ISecretsSource
+Aw.Evidence.Core.Guard.ISecretsSource.Get(string! name) -> string?
+Aw.Evidence.Core.Guard.Provenance
+Aw.Evidence.Core.Guard.Provenance.Scrubbed = 1 -> Aw.Evidence.Core.Guard.Provenance
+Aw.Evidence.Core.Guard.Provenance.Seeded = 0 -> Aw.Evidence.Core.Guard.Provenance
+Aw.Evidence.Core.Guard.Provenance.Unknown = 2 -> Aw.Evidence.Core.Guard.Provenance
+Aw.Evidence.Core.Guard.ProvenanceRules
+Aw.Evidence.Core.Guard.ResolvedHost
+Aw.Evidence.Core.Guard.ResolvedHost.<Clone>$() -> Aw.Evidence.Core.Guard.ResolvedHost!
+Aw.Evidence.Core.Guard.ResolvedHost.Deconstruct(out string! Origin, out Aw.Evidence.Core.Guard.HostKind Kind) -> void
+Aw.Evidence.Core.Guard.ResolvedHost.Equals(Aw.Evidence.Core.Guard.ResolvedHost? other) -> bool
+Aw.Evidence.Core.Guard.ResolvedHost.Kind.get -> Aw.Evidence.Core.Guard.HostKind
+Aw.Evidence.Core.Guard.ResolvedHost.Kind.init -> void
+Aw.Evidence.Core.Guard.ResolvedHost.Origin.get -> string!
+Aw.Evidence.Core.Guard.ResolvedHost.Origin.init -> void
+Aw.Evidence.Core.Guard.ResolvedHost.ResolvedHost(string! Origin, Aw.Evidence.Core.Guard.HostKind Kind) -> void
+Aw.Evidence.Core.Guard.ResolvedHost.UrlFor(string! path) -> string!
+Aw.Evidence.Core.Guard.StepGuard
+Aw.Evidence.Core.Ids.AttachmentId
+Aw.Evidence.Core.Ids.AttachmentId.AttachmentId() -> void
+Aw.Evidence.Core.Ids.AttachmentId.Equals(Aw.Evidence.Core.Ids.AttachmentId other, System.Collections.Generic.IEqualityComparer<Aw.Evidence.Core.Ids.AttachmentId>! comparer) -> bool
+Aw.Evidence.Core.Ids.AttachmentId.Equals(Aw.Evidence.Core.Ids.AttachmentId other) -> bool
+Aw.Evidence.Core.Ids.AttachmentId.GetTypeCode() -> System.TypeCode
+Aw.Evidence.Core.Ids.AttachmentId.IsInitialized() -> bool
+Aw.Evidence.Core.Ids.AttachmentId.ToString(System.IFormatProvider? provider) -> string!
+Aw.Evidence.Core.Ids.AttachmentId.Value.get -> string!
+Aw.Evidence.Core.Ids.RunId
+Aw.Evidence.Core.Ids.RunId.Equals(Aw.Evidence.Core.Ids.RunId other, System.Collections.Generic.IEqualityComparer<Aw.Evidence.Core.Ids.RunId>! comparer) -> bool
+Aw.Evidence.Core.Ids.RunId.Equals(Aw.Evidence.Core.Ids.RunId other) -> bool
+Aw.Evidence.Core.Ids.RunId.GetTypeCode() -> System.TypeCode
+Aw.Evidence.Core.Ids.RunId.IsInitialized() -> bool
+Aw.Evidence.Core.Ids.RunId.RunId() -> void
+Aw.Evidence.Core.Ids.RunId.ToString(System.IFormatProvider? provider) -> string!
+Aw.Evidence.Core.Ids.RunId.Value.get -> string!
+Aw.Evidence.Core.Ids.TestId
+Aw.Evidence.Core.Ids.TestId.Equals(Aw.Evidence.Core.Ids.TestId other, System.Collections.Generic.IEqualityComparer<Aw.Evidence.Core.Ids.TestId>! comparer) -> bool
+Aw.Evidence.Core.Ids.TestId.Equals(Aw.Evidence.Core.Ids.TestId other) -> bool
+Aw.Evidence.Core.Ids.TestId.GetTypeCode() -> System.TypeCode
+Aw.Evidence.Core.Ids.TestId.IsInitialized() -> bool
+Aw.Evidence.Core.Ids.TestId.TestId() -> void
+Aw.Evidence.Core.Ids.TestId.ToString(System.IFormatProvider? provider) -> string!
+Aw.Evidence.Core.Ids.TestId.Value.get -> string!
+Aw.Evidence.Core.Images.IImageCodec
+Aw.Evidence.Core.Images.IImageCodec.Decode(System.ReadOnlySpan<byte> encoded) -> Aw.Kernel.Result<Aw.Evidence.Core.Images.RgbaImage!>!
+Aw.Evidence.Core.Images.IImageCodec.Encode(Aw.Evidence.Core.Images.RgbaImage! image) -> byte[]!
+Aw.Evidence.Core.Images.ImageOps
+Aw.Evidence.Core.Images.PixelComparison
+Aw.Evidence.Core.Images.PixelComparison.<Clone>$() -> Aw.Evidence.Core.Images.PixelComparison!
+Aw.Evidence.Core.Images.PixelComparison.Changed.get -> Aw.Evidence.Core.Geometry.Region?
+Aw.Evidence.Core.Images.PixelComparison.Changed.init -> void
+Aw.Evidence.Core.Images.PixelComparison.Deconstruct(out long DiffPixels, out long Total, out Aw.Evidence.Core.Images.RgbaImage! Diff, out Aw.Evidence.Core.Geometry.Region? Changed) -> void
+Aw.Evidence.Core.Images.PixelComparison.Diff.get -> Aw.Evidence.Core.Images.RgbaImage!
+Aw.Evidence.Core.Images.PixelComparison.Diff.init -> void
+Aw.Evidence.Core.Images.PixelComparison.DiffPercent.get -> double
+Aw.Evidence.Core.Images.PixelComparison.DiffPixels.get -> long
+Aw.Evidence.Core.Images.PixelComparison.DiffPixels.init -> void
+Aw.Evidence.Core.Images.PixelComparison.DiffScore.get -> double
+Aw.Evidence.Core.Images.PixelComparison.Equals(Aw.Evidence.Core.Images.PixelComparison? other) -> bool
+Aw.Evidence.Core.Images.PixelComparison.PixelComparison(long DiffPixels, long Total, Aw.Evidence.Core.Images.RgbaImage! Diff, Aw.Evidence.Core.Geometry.Region? Changed) -> void
+Aw.Evidence.Core.Images.PixelComparison.Total.get -> long
+Aw.Evidence.Core.Images.PixelComparison.Total.init -> void
+Aw.Evidence.Core.Images.PixelMatch
+Aw.Evidence.Core.Images.PixelMatchOptions
+Aw.Evidence.Core.Images.PixelMatchOptions.<Clone>$() -> Aw.Evidence.Core.Images.PixelMatchOptions!
+Aw.Evidence.Core.Images.PixelMatchOptions.Deconstruct(out double Threshold, out bool IncludeAA) -> void
+Aw.Evidence.Core.Images.PixelMatchOptions.Equals(Aw.Evidence.Core.Images.PixelMatchOptions? other) -> bool
+Aw.Evidence.Core.Images.PixelMatchOptions.IncludeAA.get -> bool
+Aw.Evidence.Core.Images.PixelMatchOptions.IncludeAA.init -> void
+Aw.Evidence.Core.Images.PixelMatchOptions.PixelMatchOptions(double Threshold, bool IncludeAA) -> void
+Aw.Evidence.Core.Images.PixelMatchOptions.Threshold.get -> double
+Aw.Evidence.Core.Images.PixelMatchOptions.Threshold.init -> void
+Aw.Evidence.Core.Images.RgbaImage
+Aw.Evidence.Core.Images.RgbaImage.Bounds() -> Aw.Evidence.Core.Geometry.Region!
+Aw.Evidence.Core.Images.RgbaImage.Height.get -> int
+Aw.Evidence.Core.Images.RgbaImage.PixelAt(int x, int y) -> uint
+Aw.Evidence.Core.Images.RgbaImage.Pixels.get -> System.ReadOnlySpan<byte>
+Aw.Evidence.Core.Images.RgbaImage.Width.get -> int
+Aw.Evidence.Core.Judging.IJudge
+Aw.Evidence.Core.Judging.IJudge.CritiqueAsync(Aw.Evidence.Core.Judging.VisualCritiqueRequest! request, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Evidence.Core.Judging.VisualVerdict?>
+Aw.Evidence.Core.Judging.IJudge.RepairSelectorAsync(Aw.Evidence.Core.Judging.SelectorRepairRequest! request, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Evidence.Core.Judging.SelectorRepair?>
+Aw.Evidence.Core.Judging.RepairDecision
+Aw.Evidence.Core.Judging.RepairDecision.NoGoodCandidate = 1 -> Aw.Evidence.Core.Judging.RepairDecision
+Aw.Evidence.Core.Judging.RepairDecision.Repaired = 0 -> Aw.Evidence.Core.Judging.RepairDecision
+Aw.Evidence.Core.Judging.SelectorRepair
+Aw.Evidence.Core.Judging.SelectorRepair.<Clone>$() -> Aw.Evidence.Core.Judging.SelectorRepair!
+Aw.Evidence.Core.Judging.SelectorRepair.ChosenIndex.get -> int?
+Aw.Evidence.Core.Judging.SelectorRepair.ChosenIndex.init -> void
+Aw.Evidence.Core.Judging.SelectorRepair.Decision.get -> Aw.Evidence.Core.Judging.RepairDecision
+Aw.Evidence.Core.Judging.SelectorRepair.Decision.init -> void
+Aw.Evidence.Core.Judging.SelectorRepair.Deconstruct(out Aw.Evidence.Core.Judging.RepairDecision Decision, out int? ChosenIndex, out Aw.Evidence.Core.Usage.InvocationUsage? Usage) -> void
+Aw.Evidence.Core.Judging.SelectorRepair.Equals(Aw.Evidence.Core.Judging.SelectorRepair? other) -> bool
+Aw.Evidence.Core.Judging.SelectorRepair.SelectorRepair(Aw.Evidence.Core.Judging.RepairDecision Decision, int? ChosenIndex, Aw.Evidence.Core.Usage.InvocationUsage? Usage) -> void
+Aw.Evidence.Core.Judging.SelectorRepair.Usage.get -> Aw.Evidence.Core.Usage.InvocationUsage?
+Aw.Evidence.Core.Judging.SelectorRepair.Usage.init -> void
+Aw.Evidence.Core.Judging.SelectorRepairRequest
+Aw.Evidence.Core.Judging.SelectorRepairRequest.<Clone>$() -> Aw.Evidence.Core.Judging.SelectorRepairRequest!
+Aw.Evidence.Core.Judging.SelectorRepairRequest.BrokenSelector.get -> string!
+Aw.Evidence.Core.Judging.SelectorRepairRequest.BrokenSelector.init -> void
+Aw.Evidence.Core.Judging.SelectorRepairRequest.Candidates.get -> System.Collections.Generic.IReadOnlyList<Aw.Evidence.Core.Browser.Candidate!>!
+Aw.Evidence.Core.Judging.SelectorRepairRequest.Candidates.init -> void
+Aw.Evidence.Core.Judging.SelectorRepairRequest.Deconstruct(out string! BrokenSelector, out string! Step, out System.Collections.Generic.IReadOnlyList<Aw.Evidence.Core.Browser.Candidate!>! Candidates) -> void
+Aw.Evidence.Core.Judging.SelectorRepairRequest.Equals(Aw.Evidence.Core.Judging.SelectorRepairRequest? other) -> bool
+Aw.Evidence.Core.Judging.SelectorRepairRequest.SelectorRepairRequest(string! BrokenSelector, string! Step, System.Collections.Generic.IReadOnlyList<Aw.Evidence.Core.Browser.Candidate!>! Candidates) -> void
+Aw.Evidence.Core.Judging.SelectorRepairRequest.Step.get -> string!
+Aw.Evidence.Core.Judging.SelectorRepairRequest.Step.init -> void
+Aw.Evidence.Core.Judging.VisualCritiqueRequest
+Aw.Evidence.Core.Judging.VisualCritiqueRequest.<Clone>$() -> Aw.Evidence.Core.Judging.VisualCritiqueRequest!
+Aw.Evidence.Core.Judging.VisualCritiqueRequest.AfterScreenshot.get -> string!
+Aw.Evidence.Core.Judging.VisualCritiqueRequest.AfterScreenshot.init -> void
+Aw.Evidence.Core.Judging.VisualCritiqueRequest.BaselineScreenshot.get -> string?
+Aw.Evidence.Core.Judging.VisualCritiqueRequest.BaselineScreenshot.init -> void
+Aw.Evidence.Core.Judging.VisualCritiqueRequest.Deconstruct(out string! AfterScreenshot, out string? BaselineScreenshot, out string! EvidenceDirectory) -> void
+Aw.Evidence.Core.Judging.VisualCritiqueRequest.Equals(Aw.Evidence.Core.Judging.VisualCritiqueRequest? other) -> bool
+Aw.Evidence.Core.Judging.VisualCritiqueRequest.EvidenceDirectory.get -> string!
+Aw.Evidence.Core.Judging.VisualCritiqueRequest.EvidenceDirectory.init -> void
+Aw.Evidence.Core.Judging.VisualCritiqueRequest.VisualCritiqueRequest(string! AfterScreenshot, string? BaselineScreenshot, string! EvidenceDirectory) -> void
+Aw.Evidence.Core.Judging.VisualDecision
+Aw.Evidence.Core.Judging.VisualDecision.LooksOff = 1 -> Aw.Evidence.Core.Judging.VisualDecision
+Aw.Evidence.Core.Judging.VisualDecision.LooksRight = 0 -> Aw.Evidence.Core.Judging.VisualDecision
+Aw.Evidence.Core.Judging.VisualDecision.Sloppy = 2 -> Aw.Evidence.Core.Judging.VisualDecision
+Aw.Evidence.Core.Judging.VisualVerdict
+Aw.Evidence.Core.Judging.VisualVerdict.<Clone>$() -> Aw.Evidence.Core.Judging.VisualVerdict!
+Aw.Evidence.Core.Judging.VisualVerdict.Decision.get -> Aw.Evidence.Core.Judging.VisualDecision
+Aw.Evidence.Core.Judging.VisualVerdict.Decision.init -> void
+Aw.Evidence.Core.Judging.VisualVerdict.Deconstruct(out Aw.Evidence.Core.Judging.VisualDecision Decision, out System.Collections.Generic.IReadOnlyList<string!>! Reasons, out Aw.Evidence.Core.Usage.InvocationUsage? Usage) -> void
+Aw.Evidence.Core.Judging.VisualVerdict.Equals(Aw.Evidence.Core.Judging.VisualVerdict? other) -> bool
+Aw.Evidence.Core.Judging.VisualVerdict.Reasons.get -> System.Collections.Generic.IReadOnlyList<string!>!
+Aw.Evidence.Core.Judging.VisualVerdict.Reasons.init -> void
+Aw.Evidence.Core.Judging.VisualVerdict.Usage.get -> Aw.Evidence.Core.Usage.InvocationUsage?
+Aw.Evidence.Core.Judging.VisualVerdict.Usage.init -> void
+Aw.Evidence.Core.Judging.VisualVerdict.VisualVerdict(Aw.Evidence.Core.Judging.VisualDecision Decision, System.Collections.Generic.IReadOnlyList<string!>! Reasons, Aw.Evidence.Core.Usage.InvocationUsage? Usage) -> void
+Aw.Evidence.Core.Lint.ElementStyle
+Aw.Evidence.Core.Lint.ElementStyle.<Clone>$() -> Aw.Evidence.Core.Lint.ElementStyle!
+Aw.Evidence.Core.Lint.ElementStyle.Color.get -> string?
+Aw.Evidence.Core.Lint.ElementStyle.Color.init -> void
+Aw.Evidence.Core.Lint.ElementStyle.Deconstruct(out string? TextOverflow, out string? Overflow, out string? Color) -> void
+Aw.Evidence.Core.Lint.ElementStyle.ElementStyle(string? TextOverflow, string? Overflow, string? Color) -> void
+Aw.Evidence.Core.Lint.ElementStyle.Equals(Aw.Evidence.Core.Lint.ElementStyle? other) -> bool
+Aw.Evidence.Core.Lint.ElementStyle.Overflow.get -> string?
+Aw.Evidence.Core.Lint.ElementStyle.Overflow.init -> void
+Aw.Evidence.Core.Lint.ElementStyle.TextOverflow.get -> string?
+Aw.Evidence.Core.Lint.ElementStyle.TextOverflow.init -> void
+Aw.Evidence.Core.Lint.LintFinding
+Aw.Evidence.Core.Lint.LintFinding.<Clone>$() -> Aw.Evidence.Core.Lint.LintFinding!
+Aw.Evidence.Core.Lint.LintFinding.Deconstruct(out Aw.Evidence.Core.Lint.LintRule Rule, out string! Selector, out string! Detail) -> void
+Aw.Evidence.Core.Lint.LintFinding.Detail.get -> string!
+Aw.Evidence.Core.Lint.LintFinding.Detail.init -> void
+Aw.Evidence.Core.Lint.LintFinding.Equals(Aw.Evidence.Core.Lint.LintFinding? other) -> bool
+Aw.Evidence.Core.Lint.LintFinding.LintFinding(Aw.Evidence.Core.Lint.LintRule Rule, string! Selector, string! Detail) -> void
+Aw.Evidence.Core.Lint.LintFinding.Rule.get -> Aw.Evidence.Core.Lint.LintRule
+Aw.Evidence.Core.Lint.LintFinding.Rule.init -> void
+Aw.Evidence.Core.Lint.LintFinding.Selector.get -> string!
+Aw.Evidence.Core.Lint.LintFinding.Selector.init -> void
+Aw.Evidence.Core.Lint.LintRule
+Aw.Evidence.Core.Lint.LintRule.Clipped = 4 -> Aw.Evidence.Core.Lint.LintRule
+Aw.Evidence.Core.Lint.LintRule.MisalignedEdge = 1 -> Aw.Evidence.Core.Lint.LintRule
+Aw.Evidence.Core.Lint.LintRule.MissingHoverFocus = 5 -> Aw.Evidence.Core.Lint.LintRule
+Aw.Evidence.Core.Lint.LintRule.NonTokenColor = 7 -> Aw.Evidence.Core.Lint.LintRule
+Aw.Evidence.Core.Lint.LintRule.Overlap = 0 -> Aw.Evidence.Core.Lint.LintRule
+Aw.Evidence.Core.Lint.LintRule.PhoneOverflow = 2 -> Aw.Evidence.Core.Lint.LintRule
+Aw.Evidence.Core.Lint.LintRule.TruncatedLabel = 3 -> Aw.Evidence.Core.Lint.LintRule
+Aw.Evidence.Core.Lint.LintRule.UnresolvedPlaceholder = 6 -> Aw.Evidence.Core.Lint.LintRule
+Aw.Evidence.Core.Lint.PageElement
+Aw.Evidence.Core.Lint.PageElement.<Clone>$() -> Aw.Evidence.Core.Lint.PageElement!
+Aw.Evidence.Core.Lint.PageElement.Deconstruct(out string! Selector, out Aw.Evidence.Core.Geometry.Box! Rect, out string! Text, out Aw.Evidence.Core.Lint.ElementStyle! Style, out bool HasHoverState, out bool HasFocusState) -> void
+Aw.Evidence.Core.Lint.PageElement.Equals(Aw.Evidence.Core.Lint.PageElement? other) -> bool
+Aw.Evidence.Core.Lint.PageElement.HasFocusState.get -> bool
+Aw.Evidence.Core.Lint.PageElement.HasFocusState.init -> void
+Aw.Evidence.Core.Lint.PageElement.HasHoverState.get -> bool
+Aw.Evidence.Core.Lint.PageElement.HasHoverState.init -> void
+Aw.Evidence.Core.Lint.PageElement.PageElement(string! Selector, Aw.Evidence.Core.Geometry.Box! Rect, string! Text, Aw.Evidence.Core.Lint.ElementStyle! Style, bool HasHoverState, bool HasFocusState) -> void
+Aw.Evidence.Core.Lint.PageElement.Rect.get -> Aw.Evidence.Core.Geometry.Box!
+Aw.Evidence.Core.Lint.PageElement.Rect.init -> void
+Aw.Evidence.Core.Lint.PageElement.Selector.get -> string!
+Aw.Evidence.Core.Lint.PageElement.Selector.init -> void
+Aw.Evidence.Core.Lint.PageElement.Style.get -> Aw.Evidence.Core.Lint.ElementStyle!
+Aw.Evidence.Core.Lint.PageElement.Style.init -> void
+Aw.Evidence.Core.Lint.PageElement.Text.get -> string!
+Aw.Evidence.Core.Lint.PageElement.Text.init -> void
+Aw.Evidence.Core.Lint.PageLint
+Aw.Evidence.Core.Lint.PageSnapshot
+Aw.Evidence.Core.Lint.PageSnapshot.<Clone>$() -> Aw.Evidence.Core.Lint.PageSnapshot!
+Aw.Evidence.Core.Lint.PageSnapshot.Deconstruct(out System.Collections.Generic.IReadOnlyList<Aw.Evidence.Core.Lint.PageElement!>! Elements, out Aw.Evidence.Core.Geometry.ViewportSize! Viewport) -> void
+Aw.Evidence.Core.Lint.PageSnapshot.Elements.get -> System.Collections.Generic.IReadOnlyList<Aw.Evidence.Core.Lint.PageElement!>!
+Aw.Evidence.Core.Lint.PageSnapshot.Elements.init -> void
+Aw.Evidence.Core.Lint.PageSnapshot.Equals(Aw.Evidence.Core.Lint.PageSnapshot? other) -> bool
+Aw.Evidence.Core.Lint.PageSnapshot.PageSnapshot(System.Collections.Generic.IReadOnlyList<Aw.Evidence.Core.Lint.PageElement!>! Elements, Aw.Evidence.Core.Geometry.ViewportSize! Viewport) -> void
+Aw.Evidence.Core.Lint.PageSnapshot.Viewport.get -> Aw.Evidence.Core.Geometry.ViewportSize!
+Aw.Evidence.Core.Lint.PageSnapshot.Viewport.init -> void
+Aw.Evidence.Core.Locks.ILockLease
+Aw.Evidence.Core.Locks.ILockLease.Held.get -> System.Collections.Generic.IReadOnlyList<Aw.Evidence.Core.Locks.LockKind>!
+Aw.Evidence.Core.Locks.IMachineLocks
+Aw.Evidence.Core.Locks.IMachineLocks.AcquireAsync(Aw.Evidence.Core.Locks.LockKind kind, System.TimeSpan timeout, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Evidence.Core.Locks.ILockLease!>!>
+Aw.Evidence.Core.Locks.LockKind
+Aw.Evidence.Core.Locks.LockKind.HeavyJob = 1 -> Aw.Evidence.Core.Locks.LockKind
+Aw.Evidence.Core.Locks.LockKind.QaStack = 0 -> Aw.Evidence.Core.Locks.LockKind
+Aw.Evidence.Core.Locks.StackLocks
+Aw.Evidence.Core.Publishing.EvidenceComment
+Aw.Evidence.Core.Publishing.ExistingAttachment
+Aw.Evidence.Core.Publishing.ExistingAttachment.<Clone>$() -> Aw.Evidence.Core.Publishing.ExistingAttachment!
+Aw.Evidence.Core.Publishing.ExistingAttachment.Deconstruct(out Aw.Evidence.Core.Ids.AttachmentId Id, out string! Title) -> void
+Aw.Evidence.Core.Publishing.ExistingAttachment.Equals(Aw.Evidence.Core.Publishing.ExistingAttachment? other) -> bool
+Aw.Evidence.Core.Publishing.ExistingAttachment.ExistingAttachment(Aw.Evidence.Core.Ids.AttachmentId Id, string! Title) -> void
+Aw.Evidence.Core.Publishing.ExistingAttachment.Id.get -> Aw.Evidence.Core.Ids.AttachmentId
+Aw.Evidence.Core.Publishing.ExistingAttachment.Id.init -> void
+Aw.Evidence.Core.Publishing.ExistingAttachment.Title.get -> string!
+Aw.Evidence.Core.Publishing.ExistingAttachment.Title.init -> void
+Aw.Evidence.Core.Publishing.ParityAttachments
+Aw.Evidence.Core.Publishing.ParityComments
+Aw.Evidence.Core.Publishing.PlannedAttachment
+Aw.Evidence.Core.Publishing.PlannedAttachment.<Clone>$() -> Aw.Evidence.Core.Publishing.PlannedAttachment!
+Aw.Evidence.Core.Publishing.PlannedAttachment.ContentType.get -> string!
+Aw.Evidence.Core.Publishing.PlannedAttachment.ContentType.init -> void
+Aw.Evidence.Core.Publishing.PlannedAttachment.Deconstruct(out string! Frame, out string! File, out string! Filename, out string! ContentType, out long Size, out string! Title, out string! Subtitle, out string! Expectation) -> void
+Aw.Evidence.Core.Publishing.PlannedAttachment.Equals(Aw.Evidence.Core.Publishing.PlannedAttachment? other) -> bool
+Aw.Evidence.Core.Publishing.PlannedAttachment.Expectation.get -> string!
+Aw.Evidence.Core.Publishing.PlannedAttachment.Expectation.init -> void
+Aw.Evidence.Core.Publishing.PlannedAttachment.File.get -> string!
+Aw.Evidence.Core.Publishing.PlannedAttachment.File.init -> void
+Aw.Evidence.Core.Publishing.PlannedAttachment.Filename.get -> string!
+Aw.Evidence.Core.Publishing.PlannedAttachment.Filename.init -> void
+Aw.Evidence.Core.Publishing.PlannedAttachment.Frame.get -> string!
+Aw.Evidence.Core.Publishing.PlannedAttachment.Frame.init -> void
+Aw.Evidence.Core.Publishing.PlannedAttachment.PlannedAttachment(string! Frame, string! File, string! Filename, string! ContentType, long Size, string! Title, string! Subtitle, string! Expectation) -> void
+Aw.Evidence.Core.Publishing.PlannedAttachment.Size.get -> long
+Aw.Evidence.Core.Publishing.PlannedAttachment.Size.init -> void
+Aw.Evidence.Core.Publishing.PlannedAttachment.Subtitle.get -> string!
+Aw.Evidence.Core.Publishing.PlannedAttachment.Subtitle.init -> void
+Aw.Evidence.Core.Publishing.PlannedAttachment.Title.get -> string!
+Aw.Evidence.Core.Publishing.PlannedAttachment.Title.init -> void
+Aw.Evidence.Core.Publishing.PublishPolicy
+Aw.Evidence.Core.Publishing.PutCommand
+Aw.Evidence.Core.Publishing.RunPublishing
+Aw.Evidence.Core.Publishing.RunPublishPlan
+Aw.Evidence.Core.Publishing.RunPublishPlan.<Clone>$() -> Aw.Evidence.Core.Publishing.RunPublishPlan!
+Aw.Evidence.Core.Publishing.RunPublishPlan.Deconstruct(out Aw.Evidence.Core.Guard.DbProvenance Provenance, out string! Question, out bool LinearUploadAllowed, out System.Collections.Generic.IReadOnlyList<string!>! Files, out string? Note, out string! PrComment) -> void
+Aw.Evidence.Core.Publishing.RunPublishPlan.Equals(Aw.Evidence.Core.Publishing.RunPublishPlan? other) -> bool
+Aw.Evidence.Core.Publishing.RunPublishPlan.Files.get -> System.Collections.Generic.IReadOnlyList<string!>!
+Aw.Evidence.Core.Publishing.RunPublishPlan.Files.init -> void
+Aw.Evidence.Core.Publishing.RunPublishPlan.LinearUploadAllowed.get -> bool
+Aw.Evidence.Core.Publishing.RunPublishPlan.LinearUploadAllowed.init -> void
+Aw.Evidence.Core.Publishing.RunPublishPlan.Note.get -> string?
+Aw.Evidence.Core.Publishing.RunPublishPlan.Note.init -> void
+Aw.Evidence.Core.Publishing.RunPublishPlan.PrComment.get -> string!
+Aw.Evidence.Core.Publishing.RunPublishPlan.PrComment.init -> void
+Aw.Evidence.Core.Publishing.RunPublishPlan.Provenance.get -> Aw.Evidence.Core.Guard.DbProvenance
+Aw.Evidence.Core.Publishing.RunPublishPlan.Provenance.init -> void
+Aw.Evidence.Core.Publishing.RunPublishPlan.Question.get -> string!
+Aw.Evidence.Core.Publishing.RunPublishPlan.Question.init -> void
+Aw.Evidence.Core.Publishing.RunPublishPlan.RunPublishPlan(Aw.Evidence.Core.Guard.DbProvenance Provenance, string! Question, bool LinearUploadAllowed, System.Collections.Generic.IReadOnlyList<string!>! Files, string? Note, string! PrComment) -> void
+Aw.Evidence.Core.Publishing.SignedUpload
+Aw.Evidence.Core.Publishing.SignedUpload.<Clone>$() -> Aw.Evidence.Core.Publishing.SignedUpload!
+Aw.Evidence.Core.Publishing.SignedUpload.Deconstruct(out string! Url, out System.Collections.Generic.IReadOnlyDictionary<string!, string!>! Headers) -> void
+Aw.Evidence.Core.Publishing.SignedUpload.Equals(Aw.Evidence.Core.Publishing.SignedUpload? other) -> bool
+Aw.Evidence.Core.Publishing.SignedUpload.Headers.get -> System.Collections.Generic.IReadOnlyDictionary<string!, string!>!
+Aw.Evidence.Core.Publishing.SignedUpload.Headers.init -> void
+Aw.Evidence.Core.Publishing.SignedUpload.SignedUpload(string! Url, System.Collections.Generic.IReadOnlyDictionary<string!, string!>! Headers) -> void
+Aw.Evidence.Core.Publishing.SignedUpload.Url.get -> string!
+Aw.Evidence.Core.Publishing.SignedUpload.Url.init -> void
+Aw.Evidence.Core.Publishing.StaleAttachments
+Aw.Evidence.Core.Runs.ParityFiles
+Aw.Evidence.Core.Runs.ParityFiles.<Clone>$() -> Aw.Evidence.Core.Runs.ParityFiles!
+Aw.Evidence.Core.Runs.ParityFiles.Deconstruct(out string! Design, out string! Implementation, out string! Diff, out string! SideBySide) -> void
+Aw.Evidence.Core.Runs.ParityFiles.Design.get -> string!
+Aw.Evidence.Core.Runs.ParityFiles.Design.init -> void
+Aw.Evidence.Core.Runs.ParityFiles.Diff.get -> string!
+Aw.Evidence.Core.Runs.ParityFiles.Diff.init -> void
+Aw.Evidence.Core.Runs.ParityFiles.Equals(Aw.Evidence.Core.Runs.ParityFiles? other) -> bool
+Aw.Evidence.Core.Runs.ParityFiles.Implementation.get -> string!
+Aw.Evidence.Core.Runs.ParityFiles.Implementation.init -> void
+Aw.Evidence.Core.Runs.ParityFiles.ParityFiles(string! Design, string! Implementation, string! Diff, string! SideBySide) -> void
+Aw.Evidence.Core.Runs.ParityFiles.SideBySide.get -> string!
+Aw.Evidence.Core.Runs.ParityFiles.SideBySide.init -> void
+Aw.Evidence.Core.Runs.ParityFrame
+Aw.Evidence.Core.Runs.ParityFrame.<Clone>$() -> Aw.Evidence.Core.Runs.ParityFrame!
+Aw.Evidence.Core.Runs.ParityFrame.AnchorBox.get -> Aw.Evidence.Core.Geometry.Box!
+Aw.Evidence.Core.Runs.ParityFrame.AnchorBox.init -> void
+Aw.Evidence.Core.Runs.ParityFrame.AnchorOffset.get -> Aw.Evidence.Core.Geometry.Offset!
+Aw.Evidence.Core.Runs.ParityFrame.AnchorOffset.init -> void
+Aw.Evidence.Core.Runs.ParityFrame.BoxChecks.get -> System.Collections.Generic.IReadOnlyList<Aw.Evidence.Core.Design.BoxCheck!>!
+Aw.Evidence.Core.Runs.ParityFrame.BoxChecks.init -> void
+Aw.Evidence.Core.Runs.ParityFrame.Deconstruct(out string! Name, out Aw.Evidence.Core.Geometry.Region! DesignRegion, out Aw.Evidence.Core.Geometry.Offset! ImplementationOrigin, out Aw.Evidence.Core.Geometry.Box! AnchorBox, out Aw.Evidence.Core.Geometry.Offset! AnchorOffset, out Aw.Evidence.Core.Runs.SizeDelta! SizeDelta, out long DiffPixels, out long Total, out double DiffPercent, out double Threshold, out bool IncludeAA, out System.Collections.Generic.IReadOnlyList<Aw.Evidence.Core.Design.BoxCheck!>! BoxChecks, out System.Collections.Generic.IReadOnlyList<string!>! KnownDifferences, out Aw.Evidence.Core.Runs.ParityFiles! Files, out string? DesignNode) -> void
+Aw.Evidence.Core.Runs.ParityFrame.DesignNode.get -> string?
+Aw.Evidence.Core.Runs.ParityFrame.DesignNode.init -> void
+Aw.Evidence.Core.Runs.ParityFrame.DesignRegion.get -> Aw.Evidence.Core.Geometry.Region!
+Aw.Evidence.Core.Runs.ParityFrame.DesignRegion.init -> void
+Aw.Evidence.Core.Runs.ParityFrame.DiffPercent.get -> double
+Aw.Evidence.Core.Runs.ParityFrame.DiffPercent.init -> void
+Aw.Evidence.Core.Runs.ParityFrame.DiffPixels.get -> long
+Aw.Evidence.Core.Runs.ParityFrame.DiffPixels.init -> void
+Aw.Evidence.Core.Runs.ParityFrame.Equals(Aw.Evidence.Core.Runs.ParityFrame? other) -> bool
+Aw.Evidence.Core.Runs.ParityFrame.Files.get -> Aw.Evidence.Core.Runs.ParityFiles!
+Aw.Evidence.Core.Runs.ParityFrame.Files.init -> void
+Aw.Evidence.Core.Runs.ParityFrame.ImplementationOrigin.get -> Aw.Evidence.Core.Geometry.Offset!
+Aw.Evidence.Core.Runs.ParityFrame.ImplementationOrigin.init -> void
+Aw.Evidence.Core.Runs.ParityFrame.IncludeAA.get -> bool
+Aw.Evidence.Core.Runs.ParityFrame.IncludeAA.init -> void
+Aw.Evidence.Core.Runs.ParityFrame.KnownDifferences.get -> System.Collections.Generic.IReadOnlyList<string!>!
+Aw.Evidence.Core.Runs.ParityFrame.KnownDifferences.init -> void
+Aw.Evidence.Core.Runs.ParityFrame.Name.get -> string!
+Aw.Evidence.Core.Runs.ParityFrame.Name.init -> void
+Aw.Evidence.Core.Runs.ParityFrame.ParityFrame(string! Name, Aw.Evidence.Core.Geometry.Region! DesignRegion, Aw.Evidence.Core.Geometry.Offset! ImplementationOrigin, Aw.Evidence.Core.Geometry.Box! AnchorBox, Aw.Evidence.Core.Geometry.Offset! AnchorOffset, Aw.Evidence.Core.Runs.SizeDelta! SizeDelta, long DiffPixels, long Total, double DiffPercent, double Threshold, bool IncludeAA, System.Collections.Generic.IReadOnlyList<Aw.Evidence.Core.Design.BoxCheck!>! BoxChecks, System.Collections.Generic.IReadOnlyList<string!>! KnownDifferences, Aw.Evidence.Core.Runs.ParityFiles! Files, string? DesignNode) -> void
+Aw.Evidence.Core.Runs.ParityFrame.SizeDelta.get -> Aw.Evidence.Core.Runs.SizeDelta!
+Aw.Evidence.Core.Runs.ParityFrame.SizeDelta.init -> void
+Aw.Evidence.Core.Runs.ParityFrame.Threshold.get -> double
+Aw.Evidence.Core.Runs.ParityFrame.Threshold.init -> void
+Aw.Evidence.Core.Runs.ParityFrame.Total.get -> long
+Aw.Evidence.Core.Runs.ParityFrame.Total.init -> void
+Aw.Evidence.Core.Runs.ParityMeasurement
+Aw.Evidence.Core.Runs.ParityMeasurement.<Clone>$() -> Aw.Evidence.Core.Runs.ParityMeasurement!
+Aw.Evidence.Core.Runs.ParityMeasurement.AnchorBox.get -> Aw.Evidence.Core.Geometry.Box!
+Aw.Evidence.Core.Runs.ParityMeasurement.AnchorBox.init -> void
+Aw.Evidence.Core.Runs.ParityMeasurement.BoxChecks.get -> System.Collections.Generic.IReadOnlyList<Aw.Evidence.Core.Design.BoxCheck!>!
+Aw.Evidence.Core.Runs.ParityMeasurement.BoxChecks.init -> void
+Aw.Evidence.Core.Runs.ParityMeasurement.Comparison.get -> Aw.Evidence.Core.Images.PixelComparison!
+Aw.Evidence.Core.Runs.ParityMeasurement.Comparison.init -> void
+Aw.Evidence.Core.Runs.ParityMeasurement.Deconstruct(out Aw.Evidence.Core.Design.DesignFrame! Frame, out Aw.Evidence.Core.Geometry.Box! AnchorBox, out Aw.Evidence.Core.Images.PixelComparison! Comparison, out System.Collections.Generic.IReadOnlyList<Aw.Evidence.Core.Design.BoxCheck!>! BoxChecks, out Aw.Evidence.Core.Runs.ParityFiles! Files) -> void
+Aw.Evidence.Core.Runs.ParityMeasurement.Equals(Aw.Evidence.Core.Runs.ParityMeasurement? other) -> bool
+Aw.Evidence.Core.Runs.ParityMeasurement.Files.get -> Aw.Evidence.Core.Runs.ParityFiles!
+Aw.Evidence.Core.Runs.ParityMeasurement.Files.init -> void
+Aw.Evidence.Core.Runs.ParityMeasurement.Frame.get -> Aw.Evidence.Core.Design.DesignFrame!
+Aw.Evidence.Core.Runs.ParityMeasurement.Frame.init -> void
+Aw.Evidence.Core.Runs.ParityMeasurement.ParityMeasurement(Aw.Evidence.Core.Design.DesignFrame! Frame, Aw.Evidence.Core.Geometry.Box! AnchorBox, Aw.Evidence.Core.Images.PixelComparison! Comparison, System.Collections.Generic.IReadOnlyList<Aw.Evidence.Core.Design.BoxCheck!>! BoxChecks, Aw.Evidence.Core.Runs.ParityFiles! Files) -> void
+Aw.Evidence.Core.Runs.ParityMeasurement.ToFrame(Aw.Evidence.Core.Design.DesignManifest! manifest) -> Aw.Evidence.Core.Runs.ParityFrame!
+Aw.Evidence.Core.Runs.ParitySummary
+Aw.Evidence.Core.Runs.ParitySummary.<Clone>$() -> Aw.Evidence.Core.Runs.ParitySummary!
+Aw.Evidence.Core.Runs.ParitySummary.AppBuild.get -> string?
+Aw.Evidence.Core.Runs.ParitySummary.AppBuild.init -> void
+Aw.Evidence.Core.Runs.ParitySummary.Deconstruct(out string! Schema, out Aw.Evidence.Core.Ids.RunId RunId, out string! Host, out Aw.Evidence.Core.Guard.Provenance Provenance, out string? AppBuild, out string? DesignNode, out Aw.Evidence.Core.Geometry.ViewportSize! Viewport, out System.Collections.Generic.IReadOnlyList<Aw.Evidence.Core.Runs.ParityFrame!>! Frames) -> void
+Aw.Evidence.Core.Runs.ParitySummary.DesignNode.get -> string?
+Aw.Evidence.Core.Runs.ParitySummary.DesignNode.init -> void
+Aw.Evidence.Core.Runs.ParitySummary.Equals(Aw.Evidence.Core.Runs.ParitySummary? other) -> bool
+Aw.Evidence.Core.Runs.ParitySummary.FailedBoxChecks() -> System.Collections.Generic.IReadOnlyList<(string! Frame, Aw.Evidence.Core.Design.BoxCheck! Check)>!
+Aw.Evidence.Core.Runs.ParitySummary.Frames.get -> System.Collections.Generic.IReadOnlyList<Aw.Evidence.Core.Runs.ParityFrame!>!
+Aw.Evidence.Core.Runs.ParitySummary.Frames.init -> void
+Aw.Evidence.Core.Runs.ParitySummary.Host.get -> string!
+Aw.Evidence.Core.Runs.ParitySummary.Host.init -> void
+Aw.Evidence.Core.Runs.ParitySummary.ParitySummary(string! Schema, Aw.Evidence.Core.Ids.RunId RunId, string! Host, Aw.Evidence.Core.Guard.Provenance Provenance, string? AppBuild, string? DesignNode, Aw.Evidence.Core.Geometry.ViewportSize! Viewport, System.Collections.Generic.IReadOnlyList<Aw.Evidence.Core.Runs.ParityFrame!>! Frames) -> void
+Aw.Evidence.Core.Runs.ParitySummary.Provenance.get -> Aw.Evidence.Core.Guard.Provenance
+Aw.Evidence.Core.Runs.ParitySummary.Provenance.init -> void
+Aw.Evidence.Core.Runs.ParitySummary.RunId.get -> Aw.Evidence.Core.Ids.RunId
+Aw.Evidence.Core.Runs.ParitySummary.RunId.init -> void
+Aw.Evidence.Core.Runs.ParitySummary.Schema.get -> string!
+Aw.Evidence.Core.Runs.ParitySummary.Schema.init -> void
+Aw.Evidence.Core.Runs.ParitySummary.Viewport.get -> Aw.Evidence.Core.Geometry.ViewportSize!
+Aw.Evidence.Core.Runs.ParitySummary.Viewport.init -> void
+Aw.Evidence.Core.Runs.RunEvidence
+Aw.Evidence.Core.Runs.RunEvidence.<Clone>$() -> Aw.Evidence.Core.Runs.RunEvidence!
+Aw.Evidence.Core.Runs.RunEvidence.Deconstruct(out System.Collections.Generic.IReadOnlyList<string!>! Traces, out System.Collections.Generic.IReadOnlyList<string!>! Videos) -> void
+Aw.Evidence.Core.Runs.RunEvidence.Equals(Aw.Evidence.Core.Runs.RunEvidence? other) -> bool
+Aw.Evidence.Core.Runs.RunEvidence.RunEvidence(System.Collections.Generic.IReadOnlyList<string!>! Traces, System.Collections.Generic.IReadOnlyList<string!>! Videos) -> void
+Aw.Evidence.Core.Runs.RunEvidence.Traces.get -> System.Collections.Generic.IReadOnlyList<string!>!
+Aw.Evidence.Core.Runs.RunEvidence.Traces.init -> void
+Aw.Evidence.Core.Runs.RunEvidence.Videos.get -> System.Collections.Generic.IReadOnlyList<string!>!
+Aw.Evidence.Core.Runs.RunEvidence.Videos.init -> void
+Aw.Evidence.Core.Runs.RunFileReader
+Aw.Evidence.Core.Runs.RunLintFinding
+Aw.Evidence.Core.Runs.RunLintFinding.<Clone>$() -> Aw.Evidence.Core.Runs.RunLintFinding!
+Aw.Evidence.Core.Runs.RunLintFinding.Deconstruct(out Aw.Evidence.Core.Scripts.ViewportKind Viewport, out Aw.Evidence.Core.Lint.LintRule Rule, out string! Selector, out string! Detail) -> void
+Aw.Evidence.Core.Runs.RunLintFinding.Detail.get -> string!
+Aw.Evidence.Core.Runs.RunLintFinding.Detail.init -> void
+Aw.Evidence.Core.Runs.RunLintFinding.Equals(Aw.Evidence.Core.Runs.RunLintFinding? other) -> bool
+Aw.Evidence.Core.Runs.RunLintFinding.Rule.get -> Aw.Evidence.Core.Lint.LintRule
+Aw.Evidence.Core.Runs.RunLintFinding.Rule.init -> void
+Aw.Evidence.Core.Runs.RunLintFinding.RunLintFinding(Aw.Evidence.Core.Scripts.ViewportKind Viewport, Aw.Evidence.Core.Lint.LintRule Rule, string! Selector, string! Detail) -> void
+Aw.Evidence.Core.Runs.RunLintFinding.Selector.get -> string!
+Aw.Evidence.Core.Runs.RunLintFinding.Selector.init -> void
+Aw.Evidence.Core.Runs.RunLintFinding.Viewport.get -> Aw.Evidence.Core.Scripts.ViewportKind
+Aw.Evidence.Core.Runs.RunLintFinding.Viewport.init -> void
+Aw.Evidence.Core.Runs.RunStep
+Aw.Evidence.Core.Runs.RunStep.<Clone>$() -> Aw.Evidence.Core.Runs.RunStep!
+Aw.Evidence.Core.Runs.RunStep.Action.get -> Aw.Evidence.Core.Scripts.StepAction
+Aw.Evidence.Core.Runs.RunStep.Action.init -> void
+Aw.Evidence.Core.Runs.RunStep.Deconstruct(out Aw.Evidence.Core.Scripts.ViewportKind Viewport, out int Index, out Aw.Evidence.Core.Scripts.StepAction Action, out string! Target, out Aw.Evidence.Core.Steps.StepStatus Status, out string! Screenshot) -> void
+Aw.Evidence.Core.Runs.RunStep.Equals(Aw.Evidence.Core.Runs.RunStep? other) -> bool
+Aw.Evidence.Core.Runs.RunStep.Index.get -> int
+Aw.Evidence.Core.Runs.RunStep.Index.init -> void
+Aw.Evidence.Core.Runs.RunStep.RunStep(Aw.Evidence.Core.Scripts.ViewportKind Viewport, int Index, Aw.Evidence.Core.Scripts.StepAction Action, string! Target, Aw.Evidence.Core.Steps.StepStatus Status, string! Screenshot) -> void
+Aw.Evidence.Core.Runs.RunStep.Screenshot.get -> string!
+Aw.Evidence.Core.Runs.RunStep.Screenshot.init -> void
+Aw.Evidence.Core.Runs.RunStep.Status.get -> Aw.Evidence.Core.Steps.StepStatus
+Aw.Evidence.Core.Runs.RunStep.Status.init -> void
+Aw.Evidence.Core.Runs.RunStep.Target.get -> string!
+Aw.Evidence.Core.Runs.RunStep.Target.init -> void
+Aw.Evidence.Core.Runs.RunStep.Viewport.get -> Aw.Evidence.Core.Scripts.ViewportKind
+Aw.Evidence.Core.Runs.RunStep.Viewport.init -> void
+Aw.Evidence.Core.Runs.RunSummary
+Aw.Evidence.Core.Runs.RunSummary.<Clone>$() -> Aw.Evidence.Core.Runs.RunSummary!
+Aw.Evidence.Core.Runs.RunSummary.AllStepsPassed() -> bool
+Aw.Evidence.Core.Runs.RunSummary.AppBuild.get -> string?
+Aw.Evidence.Core.Runs.RunSummary.AppBuild.init -> void
+Aw.Evidence.Core.Runs.RunSummary.Deconstruct(out string! Schema, out Aw.Evidence.Core.Ids.RunId RunId, out System.DateTimeOffset StartedAt, out System.DateTimeOffset FinishedAt, out string! Route, out Aw.Evidence.Core.Scripts.UserRole Role, out string! Host, out string? AppBuild, out string? Fixtures, out string! ScriptSha256, out string? Pr, out System.Collections.Generic.IReadOnlyList<Aw.Evidence.Core.Scripts.ViewportKind>! Viewports, out System.Collections.Generic.IReadOnlyList<Aw.Evidence.Core.Runs.RunStep!>! Steps, out Aw.Evidence.Core.Runs.RunVisual! Visual, out System.Collections.Generic.IReadOnlyList<Aw.Evidence.Core.Runs.RunLintFinding!>! LintFindings, out System.Collections.Generic.IReadOnlyList<Aw.Evidence.Core.Usage.ModelInvocation!>! Invocations, out Aw.Evidence.Core.Scripts.PlanningMeta? Planning, out Aw.Evidence.Core.Runs.RunEvidence! Evidence) -> void
+Aw.Evidence.Core.Runs.RunSummary.Equals(Aw.Evidence.Core.Runs.RunSummary? other) -> bool
+Aw.Evidence.Core.Runs.RunSummary.Evidence.get -> Aw.Evidence.Core.Runs.RunEvidence!
+Aw.Evidence.Core.Runs.RunSummary.Evidence.init -> void
+Aw.Evidence.Core.Runs.RunSummary.FinishedAt.get -> System.DateTimeOffset
+Aw.Evidence.Core.Runs.RunSummary.FinishedAt.init -> void
+Aw.Evidence.Core.Runs.RunSummary.Fixtures.get -> string?
+Aw.Evidence.Core.Runs.RunSummary.Fixtures.init -> void
+Aw.Evidence.Core.Runs.RunSummary.Host.get -> string!
+Aw.Evidence.Core.Runs.RunSummary.Host.init -> void
+Aw.Evidence.Core.Runs.RunSummary.Invocations.get -> System.Collections.Generic.IReadOnlyList<Aw.Evidence.Core.Usage.ModelInvocation!>!
+Aw.Evidence.Core.Runs.RunSummary.Invocations.init -> void
+Aw.Evidence.Core.Runs.RunSummary.LintFindings.get -> System.Collections.Generic.IReadOnlyList<Aw.Evidence.Core.Runs.RunLintFinding!>!
+Aw.Evidence.Core.Runs.RunSummary.LintFindings.init -> void
+Aw.Evidence.Core.Runs.RunSummary.Planning.get -> Aw.Evidence.Core.Scripts.PlanningMeta?
+Aw.Evidence.Core.Runs.RunSummary.Planning.init -> void
+Aw.Evidence.Core.Runs.RunSummary.Pr.get -> string?
+Aw.Evidence.Core.Runs.RunSummary.Pr.init -> void
+Aw.Evidence.Core.Runs.RunSummary.Role.get -> Aw.Evidence.Core.Scripts.UserRole
+Aw.Evidence.Core.Runs.RunSummary.Role.init -> void
+Aw.Evidence.Core.Runs.RunSummary.Route.get -> string!
+Aw.Evidence.Core.Runs.RunSummary.Route.init -> void
+Aw.Evidence.Core.Runs.RunSummary.RunId.get -> Aw.Evidence.Core.Ids.RunId
+Aw.Evidence.Core.Runs.RunSummary.RunId.init -> void
+Aw.Evidence.Core.Runs.RunSummary.RunSummary(string! Schema, Aw.Evidence.Core.Ids.RunId RunId, System.DateTimeOffset StartedAt, System.DateTimeOffset FinishedAt, string! Route, Aw.Evidence.Core.Scripts.UserRole Role, string! Host, string? AppBuild, string? Fixtures, string! ScriptSha256, string? Pr, System.Collections.Generic.IReadOnlyList<Aw.Evidence.Core.Scripts.ViewportKind>! Viewports, System.Collections.Generic.IReadOnlyList<Aw.Evidence.Core.Runs.RunStep!>! Steps, Aw.Evidence.Core.Runs.RunVisual! Visual, System.Collections.Generic.IReadOnlyList<Aw.Evidence.Core.Runs.RunLintFinding!>! LintFindings, System.Collections.Generic.IReadOnlyList<Aw.Evidence.Core.Usage.ModelInvocation!>! Invocations, Aw.Evidence.Core.Scripts.PlanningMeta? Planning, Aw.Evidence.Core.Runs.RunEvidence! Evidence) -> void
+Aw.Evidence.Core.Runs.RunSummary.Schema.get -> string!
+Aw.Evidence.Core.Runs.RunSummary.Schema.init -> void
+Aw.Evidence.Core.Runs.RunSummary.ScriptSha256.get -> string!
+Aw.Evidence.Core.Runs.RunSummary.ScriptSha256.init -> void
+Aw.Evidence.Core.Runs.RunSummary.StartedAt.get -> System.DateTimeOffset
+Aw.Evidence.Core.Runs.RunSummary.StartedAt.init -> void
+Aw.Evidence.Core.Runs.RunSummary.Steps.get -> System.Collections.Generic.IReadOnlyList<Aw.Evidence.Core.Runs.RunStep!>!
+Aw.Evidence.Core.Runs.RunSummary.Steps.init -> void
+Aw.Evidence.Core.Runs.RunSummary.Viewports.get -> System.Collections.Generic.IReadOnlyList<Aw.Evidence.Core.Scripts.ViewportKind>!
+Aw.Evidence.Core.Runs.RunSummary.Viewports.init -> void
+Aw.Evidence.Core.Runs.RunSummary.Visual.get -> Aw.Evidence.Core.Runs.RunVisual!
+Aw.Evidence.Core.Runs.RunSummary.Visual.init -> void
+Aw.Evidence.Core.Runs.RunVisual
+Aw.Evidence.Core.Runs.RunVisual.<Clone>$() -> Aw.Evidence.Core.Runs.RunVisual!
+Aw.Evidence.Core.Runs.RunVisual.Deconstruct(out Aw.Evidence.Core.Visual.Verdict Verdict, out System.Collections.Generic.IReadOnlyList<string!>! Reasons, out double? DiffScore, out string? DiffImage) -> void
+Aw.Evidence.Core.Runs.RunVisual.DiffImage.get -> string?
+Aw.Evidence.Core.Runs.RunVisual.DiffImage.init -> void
+Aw.Evidence.Core.Runs.RunVisual.DiffScore.get -> double?
+Aw.Evidence.Core.Runs.RunVisual.DiffScore.init -> void
+Aw.Evidence.Core.Runs.RunVisual.Equals(Aw.Evidence.Core.Runs.RunVisual? other) -> bool
+Aw.Evidence.Core.Runs.RunVisual.Reasons.get -> System.Collections.Generic.IReadOnlyList<string!>!
+Aw.Evidence.Core.Runs.RunVisual.Reasons.init -> void
+Aw.Evidence.Core.Runs.RunVisual.RunVisual(Aw.Evidence.Core.Visual.Verdict Verdict, System.Collections.Generic.IReadOnlyList<string!>! Reasons, double? DiffScore, string? DiffImage) -> void
+Aw.Evidence.Core.Runs.RunVisual.Verdict.get -> Aw.Evidence.Core.Visual.Verdict
+Aw.Evidence.Core.Runs.RunVisual.Verdict.init -> void
+Aw.Evidence.Core.Runs.SizeDelta
+Aw.Evidence.Core.Runs.SizeDelta.<Clone>$() -> Aw.Evidence.Core.Runs.SizeDelta!
+Aw.Evidence.Core.Runs.SizeDelta.Deconstruct(out double W, out double H) -> void
+Aw.Evidence.Core.Runs.SizeDelta.Equals(Aw.Evidence.Core.Runs.SizeDelta? other) -> bool
+Aw.Evidence.Core.Runs.SizeDelta.H.get -> double
+Aw.Evidence.Core.Runs.SizeDelta.H.init -> void
+Aw.Evidence.Core.Runs.SizeDelta.SizeDelta(double W, double H) -> void
+Aw.Evidence.Core.Runs.SizeDelta.W.get -> double
+Aw.Evidence.Core.Runs.SizeDelta.W.init -> void
+Aw.Evidence.Core.Scripts.ExpectedState
+Aw.Evidence.Core.Scripts.ExpectedState.ExpectedState() -> void
+Aw.Evidence.Core.Scripts.ExpectedState.ExpectedState(Aw.Evidence.Core.Scripts.ExpectedState! original) -> void
+Aw.Evidence.Core.Scripts.InputValue
+Aw.Evidence.Core.Scripts.InputValue.Deconstruct(out Aw.Evidence.Core.Ids.TestId TestId, out string! Value) -> void
+Aw.Evidence.Core.Scripts.InputValue.Equals(Aw.Evidence.Core.Scripts.InputValue? other) -> bool
+Aw.Evidence.Core.Scripts.InputValue.InputValue(Aw.Evidence.Core.Ids.TestId TestId, string! Value) -> void
+Aw.Evidence.Core.Scripts.InputValue.TestId.get -> Aw.Evidence.Core.Ids.TestId
+Aw.Evidence.Core.Scripts.InputValue.TestId.init -> void
+Aw.Evidence.Core.Scripts.InputValue.Value.get -> string!
+Aw.Evidence.Core.Scripts.InputValue.Value.init -> void
+Aw.Evidence.Core.Scripts.PlanningMeta
+Aw.Evidence.Core.Scripts.PlanningMeta.<Clone>$() -> Aw.Evidence.Core.Scripts.PlanningMeta!
+Aw.Evidence.Core.Scripts.PlanningMeta.Deconstruct(out string? Pr, out string? Model, out long? ElapsedMs, out long? InputTokens, out long? OutputTokens) -> void
+Aw.Evidence.Core.Scripts.PlanningMeta.ElapsedMs.get -> long?
+Aw.Evidence.Core.Scripts.PlanningMeta.ElapsedMs.init -> void
+Aw.Evidence.Core.Scripts.PlanningMeta.Equals(Aw.Evidence.Core.Scripts.PlanningMeta? other) -> bool
+Aw.Evidence.Core.Scripts.PlanningMeta.InputTokens.get -> long?
+Aw.Evidence.Core.Scripts.PlanningMeta.InputTokens.init -> void
+Aw.Evidence.Core.Scripts.PlanningMeta.Model.get -> string?
+Aw.Evidence.Core.Scripts.PlanningMeta.Model.init -> void
+Aw.Evidence.Core.Scripts.PlanningMeta.OutputTokens.get -> long?
+Aw.Evidence.Core.Scripts.PlanningMeta.OutputTokens.init -> void
+Aw.Evidence.Core.Scripts.PlanningMeta.PlanningMeta(string? Pr = null, string? Model = null, long? ElapsedMs = null, long? InputTokens = null, long? OutputTokens = null) -> void
+Aw.Evidence.Core.Scripts.PlanningMeta.Pr.get -> string?
+Aw.Evidence.Core.Scripts.PlanningMeta.Pr.init -> void
+Aw.Evidence.Core.Scripts.ScriptReader
+Aw.Evidence.Core.Scripts.ScriptStep
+Aw.Evidence.Core.Scripts.ScriptStep.<Clone>$() -> Aw.Evidence.Core.Scripts.ScriptStep!
+Aw.Evidence.Core.Scripts.ScriptStep.Action.get -> Aw.Evidence.Core.Scripts.StepAction
+Aw.Evidence.Core.Scripts.ScriptStep.Action.init -> void
+Aw.Evidence.Core.Scripts.ScriptStep.ActionName.get -> string!
+Aw.Evidence.Core.Scripts.ScriptStep.Deconstruct(out Aw.Evidence.Core.Scripts.StepAction Action, out string! Target, out Aw.Evidence.Core.Scripts.ExpectedState! ExpectedState, out string? Value) -> void
+Aw.Evidence.Core.Scripts.ScriptStep.Describe() -> string!
+Aw.Evidence.Core.Scripts.ScriptStep.Equals(Aw.Evidence.Core.Scripts.ScriptStep? other) -> bool
+Aw.Evidence.Core.Scripts.ScriptStep.ExpectedState.get -> Aw.Evidence.Core.Scripts.ExpectedState!
+Aw.Evidence.Core.Scripts.ScriptStep.ExpectedState.init -> void
+Aw.Evidence.Core.Scripts.ScriptStep.ScriptStep(Aw.Evidence.Core.Scripts.StepAction Action, string! Target, Aw.Evidence.Core.Scripts.ExpectedState! ExpectedState, string? Value = null) -> void
+Aw.Evidence.Core.Scripts.ScriptStep.Target.get -> string!
+Aw.Evidence.Core.Scripts.ScriptStep.Target.init -> void
+Aw.Evidence.Core.Scripts.ScriptStep.Value.get -> string?
+Aw.Evidence.Core.Scripts.ScriptStep.Value.init -> void
+Aw.Evidence.Core.Scripts.ScriptViewports
+Aw.Evidence.Core.Scripts.StepAction
+Aw.Evidence.Core.Scripts.StepAction.Click = 1 -> Aw.Evidence.Core.Scripts.StepAction
+Aw.Evidence.Core.Scripts.StepAction.ExpectVisible = 3 -> Aw.Evidence.Core.Scripts.StepAction
+Aw.Evidence.Core.Scripts.StepAction.Fill = 2 -> Aw.Evidence.Core.Scripts.StepAction
+Aw.Evidence.Core.Scripts.StepAction.Goto = 0 -> Aw.Evidence.Core.Scripts.StepAction
+Aw.Evidence.Core.Scripts.TestIdVisible
+Aw.Evidence.Core.Scripts.TestIdVisible.Deconstruct(out Aw.Evidence.Core.Ids.TestId TestId) -> void
+Aw.Evidence.Core.Scripts.TestIdVisible.Equals(Aw.Evidence.Core.Scripts.TestIdVisible? other) -> bool
+Aw.Evidence.Core.Scripts.TestIdVisible.TestId.get -> Aw.Evidence.Core.Ids.TestId
+Aw.Evidence.Core.Scripts.TestIdVisible.TestId.init -> void
+Aw.Evidence.Core.Scripts.TestIdVisible.TestIdVisible(Aw.Evidence.Core.Ids.TestId TestId) -> void
+Aw.Evidence.Core.Scripts.TextAbsent
+Aw.Evidence.Core.Scripts.TextAbsent.Deconstruct(out string! Text) -> void
+Aw.Evidence.Core.Scripts.TextAbsent.Equals(Aw.Evidence.Core.Scripts.TextAbsent? other) -> bool
+Aw.Evidence.Core.Scripts.TextAbsent.Text.get -> string!
+Aw.Evidence.Core.Scripts.TextAbsent.Text.init -> void
+Aw.Evidence.Core.Scripts.TextAbsent.TextAbsent(string! Text) -> void
+Aw.Evidence.Core.Scripts.TextVisible
+Aw.Evidence.Core.Scripts.TextVisible.Deconstruct(out string! Text) -> void
+Aw.Evidence.Core.Scripts.TextVisible.Equals(Aw.Evidence.Core.Scripts.TextVisible? other) -> bool
+Aw.Evidence.Core.Scripts.TextVisible.Text.get -> string!
+Aw.Evidence.Core.Scripts.TextVisible.Text.init -> void
+Aw.Evidence.Core.Scripts.TextVisible.TextVisible(string! Text) -> void
+Aw.Evidence.Core.Scripts.UiScript
+Aw.Evidence.Core.Scripts.UiScript.<Clone>$() -> Aw.Evidence.Core.Scripts.UiScript!
+Aw.Evidence.Core.Scripts.UiScript.Deconstruct(out string! Route, out Aw.Evidence.Core.Scripts.UserRole Role, out System.Collections.Generic.IReadOnlyList<Aw.Evidence.Core.Scripts.ScriptStep!>! Steps, out System.Collections.Generic.IReadOnlyList<Aw.Evidence.Core.Scripts.ViewportKind>! Viewports, out Aw.Evidence.Core.Scripts.PlanningMeta? Planning) -> void
+Aw.Evidence.Core.Scripts.UiScript.Equals(Aw.Evidence.Core.Scripts.UiScript? other) -> bool
+Aw.Evidence.Core.Scripts.UiScript.Planning.get -> Aw.Evidence.Core.Scripts.PlanningMeta?
+Aw.Evidence.Core.Scripts.UiScript.Planning.init -> void
+Aw.Evidence.Core.Scripts.UiScript.Role.get -> Aw.Evidence.Core.Scripts.UserRole
+Aw.Evidence.Core.Scripts.UiScript.Role.init -> void
+Aw.Evidence.Core.Scripts.UiScript.Route.get -> string!
+Aw.Evidence.Core.Scripts.UiScript.Route.init -> void
+Aw.Evidence.Core.Scripts.UiScript.Steps.get -> System.Collections.Generic.IReadOnlyList<Aw.Evidence.Core.Scripts.ScriptStep!>!
+Aw.Evidence.Core.Scripts.UiScript.Steps.init -> void
+Aw.Evidence.Core.Scripts.UiScript.UiScript(string! Route, Aw.Evidence.Core.Scripts.UserRole Role, System.Collections.Generic.IReadOnlyList<Aw.Evidence.Core.Scripts.ScriptStep!>! Steps, System.Collections.Generic.IReadOnlyList<Aw.Evidence.Core.Scripts.ViewportKind>! Viewports, Aw.Evidence.Core.Scripts.PlanningMeta? Planning = null) -> void
+Aw.Evidence.Core.Scripts.UiScript.Viewports.get -> System.Collections.Generic.IReadOnlyList<Aw.Evidence.Core.Scripts.ViewportKind>!
+Aw.Evidence.Core.Scripts.UiScript.Viewports.init -> void
+Aw.Evidence.Core.Scripts.UrlPath
+Aw.Evidence.Core.Scripts.UrlPath.Deconstruct(out string! Path) -> void
+Aw.Evidence.Core.Scripts.UrlPath.Equals(Aw.Evidence.Core.Scripts.UrlPath? other) -> bool
+Aw.Evidence.Core.Scripts.UrlPath.Path.get -> string!
+Aw.Evidence.Core.Scripts.UrlPath.Path.init -> void
+Aw.Evidence.Core.Scripts.UrlPath.UrlPath(string! Path) -> void
+Aw.Evidence.Core.Scripts.UserRole
+Aw.Evidence.Core.Scripts.UserRole.CentralStaffer = 2 -> Aw.Evidence.Core.Scripts.UserRole
+Aw.Evidence.Core.Scripts.UserRole.Manager = 0 -> Aw.Evidence.Core.Scripts.UserRole
+Aw.Evidence.Core.Scripts.UserRole.Staff = 1 -> Aw.Evidence.Core.Scripts.UserRole
+Aw.Evidence.Core.Scripts.UserRole.SuperAdmin = 3 -> Aw.Evidence.Core.Scripts.UserRole
+Aw.Evidence.Core.Scripts.ViewportKind
+Aw.Evidence.Core.Scripts.ViewportKind.Desktop = 0 -> Aw.Evidence.Core.Scripts.ViewportKind
+Aw.Evidence.Core.Scripts.ViewportKind.Phone = 1 -> Aw.Evidence.Core.Scripts.ViewportKind
+Aw.Evidence.Core.Stack.IProvenanceQuery
+Aw.Evidence.Core.Stack.IProvenanceQuery.AllEmailsAsync(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<System.Collections.Generic.IReadOnlyList<string!>!>!>
+Aw.Evidence.Core.Stack.IProvenanceQuery.EmailsLikeAsync(string! likePattern, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<System.Collections.Generic.IReadOnlyList<string!>!>!>
+Aw.Evidence.Core.Stack.IStackProbe
+Aw.Evidence.Core.Stack.IStackProbe.DatabaseReadyAsync(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Kernel.Unit>!>
+Aw.Evidence.Core.Stack.IStackProbe.PageTitleAsync(System.Uri! url, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<string!>!>
+Aw.Evidence.Core.Stack.IStackProbe.PortOpenAsync(string! host, int port, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Kernel.Unit>!>
+Aw.Evidence.Core.Stack.ProvenanceCheck
+Aw.Evidence.Core.Stack.ProvenanceFinding
+Aw.Evidence.Core.Stack.ProvenanceFinding.<Clone>$() -> Aw.Evidence.Core.Stack.ProvenanceFinding!
+Aw.Evidence.Core.Stack.ProvenanceFinding.Deconstruct(out Aw.Evidence.Core.Guard.DbProvenance Provenance, out string! Reason) -> void
+Aw.Evidence.Core.Stack.ProvenanceFinding.Equals(Aw.Evidence.Core.Stack.ProvenanceFinding? other) -> bool
+Aw.Evidence.Core.Stack.ProvenanceFinding.Provenance.get -> Aw.Evidence.Core.Guard.DbProvenance
+Aw.Evidence.Core.Stack.ProvenanceFinding.Provenance.init -> void
+Aw.Evidence.Core.Stack.ProvenanceFinding.ProvenanceFinding(Aw.Evidence.Core.Guard.DbProvenance Provenance, string! Reason) -> void
+Aw.Evidence.Core.Stack.ProvenanceFinding.Reason.get -> string!
+Aw.Evidence.Core.Stack.ProvenanceFinding.Reason.init -> void
+Aw.Evidence.Core.Stack.SeedPolicy
+Aw.Evidence.Core.Stack.SeedPolicy.<Clone>$() -> Aw.Evidence.Core.Stack.SeedPolicy!
+Aw.Evidence.Core.Stack.SeedPolicy.Deconstruct(out System.Collections.Generic.IReadOnlyList<string!>! Domains, out string! EmailPattern) -> void
+Aw.Evidence.Core.Stack.SeedPolicy.Domains.get -> System.Collections.Generic.IReadOnlyList<string!>!
+Aw.Evidence.Core.Stack.SeedPolicy.Domains.init -> void
+Aw.Evidence.Core.Stack.SeedPolicy.EmailPattern.get -> string!
+Aw.Evidence.Core.Stack.SeedPolicy.EmailPattern.init -> void
+Aw.Evidence.Core.Stack.SeedPolicy.Equals(Aw.Evidence.Core.Stack.SeedPolicy? other) -> bool
+Aw.Evidence.Core.Stack.SeedPolicy.SeedPolicy(System.Collections.Generic.IReadOnlyList<string!>! Domains, string! EmailPattern) -> void
+Aw.Evidence.Core.Steps.RepairRules
+Aw.Evidence.Core.Steps.StepRunner
+Aw.Evidence.Core.Steps.StepRunner.RunAsync(Aw.Evidence.Core.Browser.IBrowserSession! session, Aw.Evidence.Core.Scripts.ScriptStep! step, Aw.Evidence.Core.Steps.StepRunOptions! options, Aw.Evidence.Core.Usage.InvocationLog! log, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Evidence.Core.Steps.StepStatus>
+Aw.Evidence.Core.Steps.StepRunner.StepRunner(Aw.Evidence.Core.Judging.IJudge! judge, System.TimeProvider! clock) -> void
+Aw.Evidence.Core.Steps.StepRunOptions
+Aw.Evidence.Core.Steps.StepRunOptions.<Clone>$() -> Aw.Evidence.Core.Steps.StepRunOptions!
+Aw.Evidence.Core.Steps.StepRunOptions.ActionTimeout.get -> System.TimeSpan
+Aw.Evidence.Core.Steps.StepRunOptions.ActionTimeout.init -> void
+Aw.Evidence.Core.Steps.StepRunOptions.AllowRepair.get -> bool
+Aw.Evidence.Core.Steps.StepRunOptions.AllowRepair.init -> void
+Aw.Evidence.Core.Steps.StepRunOptions.Deconstruct(out System.TimeSpan ActionTimeout, out System.TimeSpan ExpectationTimeout, out bool AllowRepair) -> void
+Aw.Evidence.Core.Steps.StepRunOptions.Equals(Aw.Evidence.Core.Steps.StepRunOptions? other) -> bool
+Aw.Evidence.Core.Steps.StepRunOptions.ExpectationTimeout.get -> System.TimeSpan
+Aw.Evidence.Core.Steps.StepRunOptions.ExpectationTimeout.init -> void
+Aw.Evidence.Core.Steps.StepRunOptions.StepRunOptions(System.TimeSpan ActionTimeout, System.TimeSpan ExpectationTimeout, bool AllowRepair) -> void
+Aw.Evidence.Core.Steps.StepStatus
+Aw.Evidence.Core.Steps.StepStatus.Broken = 2 -> Aw.Evidence.Core.Steps.StepStatus
+Aw.Evidence.Core.Steps.StepStatus.Failed = 1 -> Aw.Evidence.Core.Steps.StepStatus
+Aw.Evidence.Core.Steps.StepStatus.Passed = 0 -> Aw.Evidence.Core.Steps.StepStatus
+Aw.Evidence.Core.StrictEnumConverter<TEnum>
+Aw.Evidence.Core.StrictEnumConverter<TEnum>.StrictEnumConverter() -> void
+Aw.Evidence.Core.Usage.InvocationLog
+Aw.Evidence.Core.Usage.InvocationLog.All.get -> System.Collections.Generic.IReadOnlyList<Aw.Evidence.Core.Usage.ModelInvocation!>!
+Aw.Evidence.Core.Usage.InvocationLog.InvocationLog() -> void
+Aw.Evidence.Core.Usage.InvocationLog.Record(Aw.Evidence.Core.Usage.ModelInvocation! invocation) -> void
+Aw.Evidence.Core.Usage.InvocationLog.RecordPlanning(Aw.Evidence.Core.Scripts.PlanningMeta! planning) -> void
+Aw.Evidence.Core.Usage.InvocationLog.TimeAsync<T>(Aw.Evidence.Core.Usage.InvocationPhase phase, System.TimeProvider! clock, System.Func<System.Threading.Tasks.ValueTask<T?>>! call, System.Func<T!, Aw.Evidence.Core.Usage.InvocationUsage?>! usage) -> System.Threading.Tasks.ValueTask<T?>
+Aw.Evidence.Core.Usage.InvocationPhase
+Aw.Evidence.Core.Usage.InvocationPhase.Planning = 0 -> Aw.Evidence.Core.Usage.InvocationPhase
+Aw.Evidence.Core.Usage.InvocationPhase.SelectorRepair = 1 -> Aw.Evidence.Core.Usage.InvocationPhase
+Aw.Evidence.Core.Usage.InvocationPhase.VisualCritique = 2 -> Aw.Evidence.Core.Usage.InvocationPhase
+Aw.Evidence.Core.Usage.InvocationUsage
+Aw.Evidence.Core.Usage.InvocationUsage.<Clone>$() -> Aw.Evidence.Core.Usage.InvocationUsage!
+Aw.Evidence.Core.Usage.InvocationUsage.Deconstruct(out string? Model, out long? InputTokens, out long? OutputTokens) -> void
+Aw.Evidence.Core.Usage.InvocationUsage.Equals(Aw.Evidence.Core.Usage.InvocationUsage? other) -> bool
+Aw.Evidence.Core.Usage.InvocationUsage.InputTokens.get -> long?
+Aw.Evidence.Core.Usage.InvocationUsage.InputTokens.init -> void
+Aw.Evidence.Core.Usage.InvocationUsage.InvocationUsage(string? Model, long? InputTokens, long? OutputTokens) -> void
+Aw.Evidence.Core.Usage.InvocationUsage.Model.get -> string?
+Aw.Evidence.Core.Usage.InvocationUsage.Model.init -> void
+Aw.Evidence.Core.Usage.InvocationUsage.OutputTokens.get -> long?
+Aw.Evidence.Core.Usage.InvocationUsage.OutputTokens.init -> void
+Aw.Evidence.Core.Usage.ModelInvocation
+Aw.Evidence.Core.Usage.ModelInvocation.<Clone>$() -> Aw.Evidence.Core.Usage.ModelInvocation!
+Aw.Evidence.Core.Usage.ModelInvocation.CacheHit.get -> bool
+Aw.Evidence.Core.Usage.ModelInvocation.CacheHit.init -> void
+Aw.Evidence.Core.Usage.ModelInvocation.Deconstruct(out Aw.Evidence.Core.Usage.InvocationPhase Phase, out string? Model, out long? ElapsedMs, out bool Ok, out long? InputTokens, out long? OutputTokens, out bool CacheHit) -> void
+Aw.Evidence.Core.Usage.ModelInvocation.ElapsedMs.get -> long?
+Aw.Evidence.Core.Usage.ModelInvocation.ElapsedMs.init -> void
+Aw.Evidence.Core.Usage.ModelInvocation.Equals(Aw.Evidence.Core.Usage.ModelInvocation? other) -> bool
+Aw.Evidence.Core.Usage.ModelInvocation.InputTokens.get -> long?
+Aw.Evidence.Core.Usage.ModelInvocation.InputTokens.init -> void
+Aw.Evidence.Core.Usage.ModelInvocation.Model.get -> string?
+Aw.Evidence.Core.Usage.ModelInvocation.Model.init -> void
+Aw.Evidence.Core.Usage.ModelInvocation.ModelInvocation(Aw.Evidence.Core.Usage.InvocationPhase Phase, string? Model, long? ElapsedMs, bool Ok, long? InputTokens, long? OutputTokens, bool CacheHit) -> void
+Aw.Evidence.Core.Usage.ModelInvocation.Ok.get -> bool
+Aw.Evidence.Core.Usage.ModelInvocation.Ok.init -> void
+Aw.Evidence.Core.Usage.ModelInvocation.OutputTokens.get -> long?
+Aw.Evidence.Core.Usage.ModelInvocation.OutputTokens.init -> void
+Aw.Evidence.Core.Usage.ModelInvocation.Phase.get -> Aw.Evidence.Core.Usage.InvocationPhase
+Aw.Evidence.Core.Usage.ModelInvocation.Phase.init -> void
+Aw.Evidence.Core.Visual.CachedVerdict
+Aw.Evidence.Core.Visual.CachedVerdict.<Clone>$() -> Aw.Evidence.Core.Visual.CachedVerdict!
+Aw.Evidence.Core.Visual.CachedVerdict.CachedVerdict(Aw.Evidence.Core.Judging.VisualDecision Decision, System.Collections.Generic.IReadOnlyList<string!>! Reasons, Aw.Evidence.Core.Ids.RunId RunId) -> void
+Aw.Evidence.Core.Visual.CachedVerdict.Decision.get -> Aw.Evidence.Core.Judging.VisualDecision
+Aw.Evidence.Core.Visual.CachedVerdict.Decision.init -> void
+Aw.Evidence.Core.Visual.CachedVerdict.Deconstruct(out Aw.Evidence.Core.Judging.VisualDecision Decision, out System.Collections.Generic.IReadOnlyList<string!>! Reasons, out Aw.Evidence.Core.Ids.RunId RunId) -> void
+Aw.Evidence.Core.Visual.CachedVerdict.Equals(Aw.Evidence.Core.Visual.CachedVerdict? other) -> bool
+Aw.Evidence.Core.Visual.CachedVerdict.Reasons.get -> System.Collections.Generic.IReadOnlyList<string!>!
+Aw.Evidence.Core.Visual.CachedVerdict.Reasons.init -> void
+Aw.Evidence.Core.Visual.CachedVerdict.RunId.get -> Aw.Evidence.Core.Ids.RunId
+Aw.Evidence.Core.Visual.CachedVerdict.RunId.init -> void
+Aw.Evidence.Core.Visual.IVerdictCacheStore
+Aw.Evidence.Core.Visual.IVerdictCacheStore.LoadAsync(string! manifestPath, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Evidence.Core.Visual.VerdictCache!>
+Aw.Evidence.Core.Visual.IVerdictCacheStore.SaveAsync(string! manifestPath, Aw.Evidence.Core.Visual.VerdictCache! cache, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Kernel.Unit>!>
+Aw.Evidence.Core.Visual.Verdict
+Aw.Evidence.Core.Visual.Verdict.LooksOff = 3 -> Aw.Evidence.Core.Visual.Verdict
+Aw.Evidence.Core.Visual.Verdict.LooksRight = 2 -> Aw.Evidence.Core.Visual.Verdict
+Aw.Evidence.Core.Visual.Verdict.Sloppy = 4 -> Aw.Evidence.Core.Visual.Verdict
+Aw.Evidence.Core.Visual.Verdict.Unchanged = 1 -> Aw.Evidence.Core.Visual.Verdict
+Aw.Evidence.Core.Visual.Verdict.Unchecked = 0 -> Aw.Evidence.Core.Visual.Verdict
+Aw.Evidence.Core.Visual.VerdictCache
+Aw.Evidence.Core.Visual.VerdictCache.<Clone>$() -> Aw.Evidence.Core.Visual.VerdictCache!
+Aw.Evidence.Core.Visual.VerdictCache.Deconstruct(out System.Collections.Generic.IReadOnlyDictionary<string!, Aw.Evidence.Core.Visual.CachedVerdict!>! Entries) -> void
+Aw.Evidence.Core.Visual.VerdictCache.Entries.get -> System.Collections.Generic.IReadOnlyDictionary<string!, Aw.Evidence.Core.Visual.CachedVerdict!>!
+Aw.Evidence.Core.Visual.VerdictCache.Entries.init -> void
+Aw.Evidence.Core.Visual.VerdictCache.Equals(Aw.Evidence.Core.Visual.VerdictCache? other) -> bool
+Aw.Evidence.Core.Visual.VerdictCache.Lookup(string! key, bool appBuildKnown, Aw.Evidence.Core.Ids.RunId runId) -> Aw.Evidence.Core.Visual.CachedVerdict?
+Aw.Evidence.Core.Visual.VerdictCache.VerdictCache(System.Collections.Generic.IReadOnlyDictionary<string!, Aw.Evidence.Core.Visual.CachedVerdict!>! Entries) -> void
+Aw.Evidence.Core.Visual.VerdictCache.With(string! key, Aw.Evidence.Core.Judging.VisualVerdict! verdict, Aw.Evidence.Core.Ids.RunId runId) -> Aw.Evidence.Core.Visual.VerdictCache!
+Aw.Evidence.Core.Visual.VerdictCacheContext
+Aw.Evidence.Core.Visual.VerdictCacheContext.<Clone>$() -> Aw.Evidence.Core.Visual.VerdictCacheContext!
+Aw.Evidence.Core.Visual.VerdictCacheContext.AppBuild.get -> string?
+Aw.Evidence.Core.Visual.VerdictCacheContext.AppBuild.init -> void
+Aw.Evidence.Core.Visual.VerdictCacheContext.BrowserVersion.get -> string!
+Aw.Evidence.Core.Visual.VerdictCacheContext.BrowserVersion.init -> void
+Aw.Evidence.Core.Visual.VerdictCacheContext.Deconstruct(out string! PromptVersion, out string! Model, out string? AppBuild, out string! Scenario, out string? Fixtures, out string! Viewports, out string! BrowserVersion) -> void
+Aw.Evidence.Core.Visual.VerdictCacheContext.Equals(Aw.Evidence.Core.Visual.VerdictCacheContext? other) -> bool
+Aw.Evidence.Core.Visual.VerdictCacheContext.Fixtures.get -> string?
+Aw.Evidence.Core.Visual.VerdictCacheContext.Fixtures.init -> void
+Aw.Evidence.Core.Visual.VerdictCacheContext.Model.get -> string!
+Aw.Evidence.Core.Visual.VerdictCacheContext.Model.init -> void
+Aw.Evidence.Core.Visual.VerdictCacheContext.PromptVersion.get -> string!
+Aw.Evidence.Core.Visual.VerdictCacheContext.PromptVersion.init -> void
+Aw.Evidence.Core.Visual.VerdictCacheContext.Scenario.get -> string!
+Aw.Evidence.Core.Visual.VerdictCacheContext.Scenario.init -> void
+Aw.Evidence.Core.Visual.VerdictCacheContext.VerdictCacheContext(string! PromptVersion, string! Model, string? AppBuild, string! Scenario, string? Fixtures, string! Viewports, string! BrowserVersion) -> void
+Aw.Evidence.Core.Visual.VerdictCacheContext.Viewports.get -> string!
+Aw.Evidence.Core.Visual.VerdictCacheContext.Viewports.init -> void
+Aw.Evidence.Core.Visual.VerdictCacheKey
+Aw.Evidence.Core.Visual.VerdictCacheKey.<Clone>$() -> Aw.Evidence.Core.Visual.VerdictCacheKey!
+Aw.Evidence.Core.Visual.VerdictCacheKey.AfterHash.get -> string!
+Aw.Evidence.Core.Visual.VerdictCacheKey.AfterHash.init -> void
+Aw.Evidence.Core.Visual.VerdictCacheKey.BaselineHash.get -> string?
+Aw.Evidence.Core.Visual.VerdictCacheKey.BaselineHash.init -> void
+Aw.Evidence.Core.Visual.VerdictCacheKey.Compute(System.Text.Json.JsonSerializerOptions! options) -> string!
+Aw.Evidence.Core.Visual.VerdictCacheKey.Context.get -> Aw.Evidence.Core.Visual.VerdictCacheContext!
+Aw.Evidence.Core.Visual.VerdictCacheKey.Context.init -> void
+Aw.Evidence.Core.Visual.VerdictCacheKey.Deconstruct(out string! AfterHash, out string? BaselineHash, out Aw.Evidence.Core.Visual.VerdictCacheContext! Context) -> void
+Aw.Evidence.Core.Visual.VerdictCacheKey.Equals(Aw.Evidence.Core.Visual.VerdictCacheKey? other) -> bool
+Aw.Evidence.Core.Visual.VerdictCacheKey.VerdictCacheKey(string! AfterHash, string? BaselineHash, Aw.Evidence.Core.Visual.VerdictCacheContext! Context) -> void
+Aw.Evidence.Core.Visual.VisualGate
+Aw.Evidence.Core.Visual.VisualGate.DecideAsync(Aw.Evidence.Core.Visual.VisualGateInput! input, Aw.Evidence.Core.Usage.InvocationLog! log, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Evidence.Core.Visual.VisualOutcome!>
+Aw.Evidence.Core.Visual.VisualGate.VisualGate(Aw.Evidence.Core.Files.IRunFiles! files, Aw.Evidence.Core.Images.IImageCodec! codec, Aw.Evidence.Core.Judging.IJudge! judge, System.TimeProvider! clock, System.Text.Json.JsonSerializerOptions! json) -> void
+Aw.Evidence.Core.Visual.VisualGateInput
+Aw.Evidence.Core.Visual.VisualGateInput.<Clone>$() -> Aw.Evidence.Core.Visual.VisualGateInput!
+Aw.Evidence.Core.Visual.VisualGateInput.AfterScreenshot.get -> string!
+Aw.Evidence.Core.Visual.VisualGateInput.AfterScreenshot.init -> void
+Aw.Evidence.Core.Visual.VisualGateInput.Baseline.get -> string?
+Aw.Evidence.Core.Visual.VisualGateInput.Baseline.init -> void
+Aw.Evidence.Core.Visual.VisualGateInput.Cache.get -> Aw.Evidence.Core.Visual.VerdictCache!
+Aw.Evidence.Core.Visual.VisualGateInput.Cache.init -> void
+Aw.Evidence.Core.Visual.VisualGateInput.Context.get -> Aw.Evidence.Core.Visual.VerdictCacheContext!
+Aw.Evidence.Core.Visual.VisualGateInput.Context.init -> void
+Aw.Evidence.Core.Visual.VisualGateInput.Deconstruct(out string! AfterScreenshot, out string? Baseline, out bool HasFailedSteps, out Aw.Evidence.Core.Ids.RunId RunId, out string! RunDirectory, out Aw.Evidence.Core.Visual.VerdictCacheContext! Context, out Aw.Evidence.Core.Visual.VerdictCache! Cache) -> void
+Aw.Evidence.Core.Visual.VisualGateInput.Equals(Aw.Evidence.Core.Visual.VisualGateInput? other) -> bool
+Aw.Evidence.Core.Visual.VisualGateInput.HasFailedSteps.get -> bool
+Aw.Evidence.Core.Visual.VisualGateInput.HasFailedSteps.init -> void
+Aw.Evidence.Core.Visual.VisualGateInput.RunDirectory.get -> string!
+Aw.Evidence.Core.Visual.VisualGateInput.RunDirectory.init -> void
+Aw.Evidence.Core.Visual.VisualGateInput.RunId.get -> Aw.Evidence.Core.Ids.RunId
+Aw.Evidence.Core.Visual.VisualGateInput.RunId.init -> void
+Aw.Evidence.Core.Visual.VisualGateInput.VisualGateInput(string! AfterScreenshot, string? Baseline, bool HasFailedSteps, Aw.Evidence.Core.Ids.RunId RunId, string! RunDirectory, Aw.Evidence.Core.Visual.VerdictCacheContext! Context, Aw.Evidence.Core.Visual.VerdictCache! Cache) -> void
+Aw.Evidence.Core.Visual.VisualOutcome
+Aw.Evidence.Core.Visual.VisualOutcome.<Clone>$() -> Aw.Evidence.Core.Visual.VisualOutcome!
+Aw.Evidence.Core.Visual.VisualOutcome.Cache.get -> Aw.Evidence.Core.Visual.VerdictCache!
+Aw.Evidence.Core.Visual.VisualOutcome.Cache.init -> void
+Aw.Evidence.Core.Visual.VisualOutcome.Deconstruct(out Aw.Evidence.Core.Visual.Verdict Verdict, out System.Collections.Generic.IReadOnlyList<string!>! Reasons, out double? DiffScore, out string? DiffImage, out Aw.Evidence.Core.Visual.VerdictCache! Cache) -> void
+Aw.Evidence.Core.Visual.VisualOutcome.DiffImage.get -> string?
+Aw.Evidence.Core.Visual.VisualOutcome.DiffImage.init -> void
+Aw.Evidence.Core.Visual.VisualOutcome.DiffScore.get -> double?
+Aw.Evidence.Core.Visual.VisualOutcome.DiffScore.init -> void
+Aw.Evidence.Core.Visual.VisualOutcome.Equals(Aw.Evidence.Core.Visual.VisualOutcome? other) -> bool
+Aw.Evidence.Core.Visual.VisualOutcome.Reasons.get -> System.Collections.Generic.IReadOnlyList<string!>!
+Aw.Evidence.Core.Visual.VisualOutcome.Reasons.init -> void
+Aw.Evidence.Core.Visual.VisualOutcome.Verdict.get -> Aw.Evidence.Core.Visual.Verdict
+Aw.Evidence.Core.Visual.VisualOutcome.Verdict.init -> void
+Aw.Evidence.Core.Visual.VisualOutcome.VisualOutcome(Aw.Evidence.Core.Visual.Verdict Verdict, System.Collections.Generic.IReadOnlyList<string!>! Reasons, double? DiffScore, string? DiffImage, Aw.Evidence.Core.Visual.VerdictCache! Cache) -> void
+const Aw.Evidence.Core.Guard.HostGuard.DefaultOrigin = "http://localhost:3000" -> string!
+const Aw.Evidence.Core.Images.ImageOps.SideBySideGap = 12 -> int
+const Aw.Evidence.Core.Publishing.ParityAttachments.SubtitleMax = 500 -> int
+const Aw.Evidence.Core.Publishing.ParityAttachments.TitlePrefix = "Pixel diff: " -> string!
+const Aw.Evidence.Core.Runs.ParitySummary.SchemaName = "ui-evidence.parity/1" -> string!
+const Aw.Evidence.Core.Runs.RunSummary.SchemaName = "ui-evidence.run/1" -> string!
+const Aw.Evidence.Core.Steps.RepairRules.MaxAttempts = 2 -> int
+const Aw.Evidence.Core.Visual.VerdictCacheContext.CurrentPromptVersion = "visual-critique/v1" -> string!
+override Aw.Evidence.Core.Browser.BrowserSessionOptions.Equals(object? obj) -> bool
+override Aw.Evidence.Core.Browser.BrowserSessionOptions.GetHashCode() -> int
+override Aw.Evidence.Core.Browser.BrowserSessionOptions.ToString() -> string!
+override Aw.Evidence.Core.Browser.Candidate.Equals(object? obj) -> bool
+override Aw.Evidence.Core.Browser.Candidate.GetHashCode() -> int
+override Aw.Evidence.Core.Browser.Candidate.ToString() -> string!
+override Aw.Evidence.Core.Browser.CandidateLocator.<Clone>$() -> Aw.Evidence.Core.Browser.CandidateLocator!
+override Aw.Evidence.Core.Browser.CandidateLocator.Equals(object? obj) -> bool
+override Aw.Evidence.Core.Browser.CandidateLocator.GetHashCode() -> int
+override Aw.Evidence.Core.Browser.CandidateLocator.ToString() -> string!
+override Aw.Evidence.Core.Browser.CssLocator.<Clone>$() -> Aw.Evidence.Core.Browser.CssLocator!
+override Aw.Evidence.Core.Browser.CssLocator.Equals(object? obj) -> bool
+override Aw.Evidence.Core.Browser.CssLocator.GetHashCode() -> int
+override Aw.Evidence.Core.Browser.CssLocator.ToString() -> string!
+override Aw.Evidence.Core.Browser.Locator.Equals(object? obj) -> bool
+override Aw.Evidence.Core.Browser.Locator.GetHashCode() -> int
+override Aw.Evidence.Core.Browser.Locator.ToString() -> string!
+override Aw.Evidence.Core.Browser.SessionRecording.Equals(object? obj) -> bool
+override Aw.Evidence.Core.Browser.SessionRecording.GetHashCode() -> int
+override Aw.Evidence.Core.Browser.SessionRecording.ToString() -> string!
+override Aw.Evidence.Core.Browser.TestIdLocator.<Clone>$() -> Aw.Evidence.Core.Browser.TestIdLocator!
+override Aw.Evidence.Core.Browser.TestIdLocator.Equals(object? obj) -> bool
+override Aw.Evidence.Core.Browser.TestIdLocator.GetHashCode() -> int
+override Aw.Evidence.Core.Browser.TestIdLocator.ToString() -> string!
+override Aw.Evidence.Core.Browser.TextLocator.<Clone>$() -> Aw.Evidence.Core.Browser.TextLocator!
+override Aw.Evidence.Core.Browser.TextLocator.Equals(object? obj) -> bool
+override Aw.Evidence.Core.Browser.TextLocator.GetHashCode() -> int
+override Aw.Evidence.Core.Browser.TextLocator.ToString() -> string!
+override Aw.Evidence.Core.Design.BoxCheck.Equals(object? obj) -> bool
+override Aw.Evidence.Core.Design.BoxCheck.GetHashCode() -> int
+override Aw.Evidence.Core.Design.BoxCheck.ToString() -> string!
+override Aw.Evidence.Core.Design.BoxExpectation.Equals(object? obj) -> bool
+override Aw.Evidence.Core.Design.BoxExpectation.GetHashCode() -> int
+override Aw.Evidence.Core.Design.BoxExpectation.ToString() -> string!
+override Aw.Evidence.Core.Design.DesignFrame.Equals(object? obj) -> bool
+override Aw.Evidence.Core.Design.DesignFrame.GetHashCode() -> int
+override Aw.Evidence.Core.Design.DesignFrame.ToString() -> string!
+override Aw.Evidence.Core.Design.DesignManifest.Equals(object? obj) -> bool
+override Aw.Evidence.Core.Design.DesignManifest.GetHashCode() -> int
+override Aw.Evidence.Core.Design.DesignManifest.ToString() -> string!
+override Aw.Evidence.Core.Design.ElementSelector.Equals(object? obj) -> bool
+override Aw.Evidence.Core.Design.ElementSelector.GetHashCode() -> int
+override Aw.Evidence.Core.Design.ElementSelector.ToString() -> string!
+override Aw.Evidence.Core.Design.ExpectedGeometry.Equals(object? obj) -> bool
+override Aw.Evidence.Core.Design.ExpectedGeometry.GetHashCode() -> int
+override Aw.Evidence.Core.Design.ExpectedGeometry.ToString() -> string!
+override Aw.Evidence.Core.Design.FormValue.Equals(object? obj) -> bool
+override Aw.Evidence.Core.Design.FormValue.GetHashCode() -> int
+override Aw.Evidence.Core.Design.FormValue.ToString() -> string!
+override Aw.Evidence.Core.Design.LoginSpec.Equals(object? obj) -> bool
+override Aw.Evidence.Core.Design.LoginSpec.GetHashCode() -> int
+override Aw.Evidence.Core.Design.LoginSpec.ToString() -> string!
+override Aw.Evidence.Core.Design.MeasuredGeometry.Equals(object? obj) -> bool
+override Aw.Evidence.Core.Design.MeasuredGeometry.GetHashCode() -> int
+override Aw.Evidence.Core.Design.MeasuredGeometry.ToString() -> string!
+override Aw.Evidence.Core.Geometry.Box.Equals(object? obj) -> bool
+override Aw.Evidence.Core.Geometry.Box.GetHashCode() -> int
+override Aw.Evidence.Core.Geometry.Box.ToString() -> string!
+override Aw.Evidence.Core.Geometry.Offset.Equals(object? obj) -> bool
+override Aw.Evidence.Core.Geometry.Offset.GetHashCode() -> int
+override Aw.Evidence.Core.Geometry.Offset.ToString() -> string!
+override Aw.Evidence.Core.Geometry.Region.Equals(object? obj) -> bool
+override Aw.Evidence.Core.Geometry.Region.GetHashCode() -> int
+override Aw.Evidence.Core.Geometry.Region.ToString() -> string!
+override Aw.Evidence.Core.Geometry.ViewportSize.Equals(object? obj) -> bool
+override Aw.Evidence.Core.Geometry.ViewportSize.GetHashCode() -> int
+override Aw.Evidence.Core.Geometry.ViewportSize.ToString() -> string!
+override Aw.Evidence.Core.Guard.Credentials.ToString() -> string!
+override Aw.Evidence.Core.Guard.ResolvedHost.Equals(object? obj) -> bool
+override Aw.Evidence.Core.Guard.ResolvedHost.GetHashCode() -> int
+override Aw.Evidence.Core.Guard.ResolvedHost.ToString() -> string!
+override Aw.Evidence.Core.Ids.AttachmentId.Equals(object? obj) -> bool
+override Aw.Evidence.Core.Ids.AttachmentId.GetHashCode() -> int
+override Aw.Evidence.Core.Ids.AttachmentId.ToString() -> string!
+override Aw.Evidence.Core.Ids.RunId.Equals(object? obj) -> bool
+override Aw.Evidence.Core.Ids.RunId.GetHashCode() -> int
+override Aw.Evidence.Core.Ids.RunId.ToString() -> string!
+override Aw.Evidence.Core.Ids.TestId.Equals(object? obj) -> bool
+override Aw.Evidence.Core.Ids.TestId.GetHashCode() -> int
+override Aw.Evidence.Core.Ids.TestId.ToString() -> string!
+override Aw.Evidence.Core.Images.PixelComparison.Equals(object? obj) -> bool
+override Aw.Evidence.Core.Images.PixelComparison.GetHashCode() -> int
+override Aw.Evidence.Core.Images.PixelComparison.ToString() -> string!
+override Aw.Evidence.Core.Images.PixelMatchOptions.Equals(object? obj) -> bool
+override Aw.Evidence.Core.Images.PixelMatchOptions.GetHashCode() -> int
+override Aw.Evidence.Core.Images.PixelMatchOptions.ToString() -> string!
+override Aw.Evidence.Core.Judging.SelectorRepair.Equals(object? obj) -> bool
+override Aw.Evidence.Core.Judging.SelectorRepair.GetHashCode() -> int
+override Aw.Evidence.Core.Judging.SelectorRepair.ToString() -> string!
+override Aw.Evidence.Core.Judging.SelectorRepairRequest.Equals(object? obj) -> bool
+override Aw.Evidence.Core.Judging.SelectorRepairRequest.GetHashCode() -> int
+override Aw.Evidence.Core.Judging.SelectorRepairRequest.ToString() -> string!
+override Aw.Evidence.Core.Judging.VisualCritiqueRequest.Equals(object? obj) -> bool
+override Aw.Evidence.Core.Judging.VisualCritiqueRequest.GetHashCode() -> int
+override Aw.Evidence.Core.Judging.VisualCritiqueRequest.ToString() -> string!
+override Aw.Evidence.Core.Judging.VisualVerdict.Equals(object? obj) -> bool
+override Aw.Evidence.Core.Judging.VisualVerdict.GetHashCode() -> int
+override Aw.Evidence.Core.Judging.VisualVerdict.ToString() -> string!
+override Aw.Evidence.Core.Lint.ElementStyle.Equals(object? obj) -> bool
+override Aw.Evidence.Core.Lint.ElementStyle.GetHashCode() -> int
+override Aw.Evidence.Core.Lint.ElementStyle.ToString() -> string!
+override Aw.Evidence.Core.Lint.LintFinding.Equals(object? obj) -> bool
+override Aw.Evidence.Core.Lint.LintFinding.GetHashCode() -> int
+override Aw.Evidence.Core.Lint.LintFinding.ToString() -> string!
+override Aw.Evidence.Core.Lint.PageElement.Equals(object? obj) -> bool
+override Aw.Evidence.Core.Lint.PageElement.GetHashCode() -> int
+override Aw.Evidence.Core.Lint.PageElement.ToString() -> string!
+override Aw.Evidence.Core.Lint.PageSnapshot.Equals(object? obj) -> bool
+override Aw.Evidence.Core.Lint.PageSnapshot.GetHashCode() -> int
+override Aw.Evidence.Core.Lint.PageSnapshot.ToString() -> string!
+override Aw.Evidence.Core.Publishing.ExistingAttachment.Equals(object? obj) -> bool
+override Aw.Evidence.Core.Publishing.ExistingAttachment.GetHashCode() -> int
+override Aw.Evidence.Core.Publishing.ExistingAttachment.ToString() -> string!
+override Aw.Evidence.Core.Publishing.PlannedAttachment.Equals(object? obj) -> bool
+override Aw.Evidence.Core.Publishing.PlannedAttachment.GetHashCode() -> int
+override Aw.Evidence.Core.Publishing.PlannedAttachment.ToString() -> string!
+override Aw.Evidence.Core.Publishing.RunPublishPlan.Equals(object? obj) -> bool
+override Aw.Evidence.Core.Publishing.RunPublishPlan.GetHashCode() -> int
+override Aw.Evidence.Core.Publishing.RunPublishPlan.ToString() -> string!
+override Aw.Evidence.Core.Publishing.SignedUpload.Equals(object? obj) -> bool
+override Aw.Evidence.Core.Publishing.SignedUpload.GetHashCode() -> int
+override Aw.Evidence.Core.Publishing.SignedUpload.ToString() -> string!
+override Aw.Evidence.Core.Runs.ParityFiles.Equals(object? obj) -> bool
+override Aw.Evidence.Core.Runs.ParityFiles.GetHashCode() -> int
+override Aw.Evidence.Core.Runs.ParityFiles.ToString() -> string!
+override Aw.Evidence.Core.Runs.ParityFrame.Equals(object? obj) -> bool
+override Aw.Evidence.Core.Runs.ParityFrame.GetHashCode() -> int
+override Aw.Evidence.Core.Runs.ParityFrame.ToString() -> string!
+override Aw.Evidence.Core.Runs.ParityMeasurement.Equals(object? obj) -> bool
+override Aw.Evidence.Core.Runs.ParityMeasurement.GetHashCode() -> int
+override Aw.Evidence.Core.Runs.ParityMeasurement.ToString() -> string!
+override Aw.Evidence.Core.Runs.ParitySummary.Equals(object? obj) -> bool
+override Aw.Evidence.Core.Runs.ParitySummary.GetHashCode() -> int
+override Aw.Evidence.Core.Runs.ParitySummary.ToString() -> string!
+override Aw.Evidence.Core.Runs.RunEvidence.Equals(object? obj) -> bool
+override Aw.Evidence.Core.Runs.RunEvidence.GetHashCode() -> int
+override Aw.Evidence.Core.Runs.RunEvidence.ToString() -> string!
+override Aw.Evidence.Core.Runs.RunLintFinding.Equals(object? obj) -> bool
+override Aw.Evidence.Core.Runs.RunLintFinding.GetHashCode() -> int
+override Aw.Evidence.Core.Runs.RunLintFinding.ToString() -> string!
+override Aw.Evidence.Core.Runs.RunStep.Equals(object? obj) -> bool
+override Aw.Evidence.Core.Runs.RunStep.GetHashCode() -> int
+override Aw.Evidence.Core.Runs.RunStep.ToString() -> string!
+override Aw.Evidence.Core.Runs.RunSummary.Equals(object? obj) -> bool
+override Aw.Evidence.Core.Runs.RunSummary.GetHashCode() -> int
+override Aw.Evidence.Core.Runs.RunSummary.ToString() -> string!
+override Aw.Evidence.Core.Runs.RunVisual.Equals(object? obj) -> bool
+override Aw.Evidence.Core.Runs.RunVisual.GetHashCode() -> int
+override Aw.Evidence.Core.Runs.RunVisual.ToString() -> string!
+override Aw.Evidence.Core.Runs.SizeDelta.Equals(object? obj) -> bool
+override Aw.Evidence.Core.Runs.SizeDelta.GetHashCode() -> int
+override Aw.Evidence.Core.Runs.SizeDelta.ToString() -> string!
+override Aw.Evidence.Core.Scripts.ExpectedState.Equals(object? obj) -> bool
+override Aw.Evidence.Core.Scripts.ExpectedState.GetHashCode() -> int
+override Aw.Evidence.Core.Scripts.ExpectedState.ToString() -> string!
+override Aw.Evidence.Core.Scripts.InputValue.<Clone>$() -> Aw.Evidence.Core.Scripts.InputValue!
+override Aw.Evidence.Core.Scripts.InputValue.Describe() -> string!
+override Aw.Evidence.Core.Scripts.InputValue.Equals(object? obj) -> bool
+override Aw.Evidence.Core.Scripts.InputValue.GetHashCode() -> int
+override Aw.Evidence.Core.Scripts.InputValue.Problem() -> string?
+override Aw.Evidence.Core.Scripts.InputValue.ToString() -> string!
+override Aw.Evidence.Core.Scripts.PlanningMeta.Equals(object? obj) -> bool
+override Aw.Evidence.Core.Scripts.PlanningMeta.GetHashCode() -> int
+override Aw.Evidence.Core.Scripts.PlanningMeta.ToString() -> string!
+override Aw.Evidence.Core.Scripts.ScriptStep.Equals(object? obj) -> bool
+override Aw.Evidence.Core.Scripts.ScriptStep.GetHashCode() -> int
+override Aw.Evidence.Core.Scripts.ScriptStep.ToString() -> string!
+override Aw.Evidence.Core.Scripts.TestIdVisible.<Clone>$() -> Aw.Evidence.Core.Scripts.TestIdVisible!
+override Aw.Evidence.Core.Scripts.TestIdVisible.Describe() -> string!
+override Aw.Evidence.Core.Scripts.TestIdVisible.Equals(object? obj) -> bool
+override Aw.Evidence.Core.Scripts.TestIdVisible.GetHashCode() -> int
+override Aw.Evidence.Core.Scripts.TestIdVisible.Problem() -> string?
+override Aw.Evidence.Core.Scripts.TestIdVisible.ToString() -> string!
+override Aw.Evidence.Core.Scripts.TextAbsent.<Clone>$() -> Aw.Evidence.Core.Scripts.TextAbsent!
+override Aw.Evidence.Core.Scripts.TextAbsent.Describe() -> string!
+override Aw.Evidence.Core.Scripts.TextAbsent.Equals(object? obj) -> bool
+override Aw.Evidence.Core.Scripts.TextAbsent.GetHashCode() -> int
+override Aw.Evidence.Core.Scripts.TextAbsent.Problem() -> string?
+override Aw.Evidence.Core.Scripts.TextAbsent.ToString() -> string!
+override Aw.Evidence.Core.Scripts.TextVisible.<Clone>$() -> Aw.Evidence.Core.Scripts.TextVisible!
+override Aw.Evidence.Core.Scripts.TextVisible.Describe() -> string!
+override Aw.Evidence.Core.Scripts.TextVisible.Equals(object? obj) -> bool
+override Aw.Evidence.Core.Scripts.TextVisible.GetHashCode() -> int
+override Aw.Evidence.Core.Scripts.TextVisible.Problem() -> string?
+override Aw.Evidence.Core.Scripts.TextVisible.ToString() -> string!
+override Aw.Evidence.Core.Scripts.UiScript.Equals(object? obj) -> bool
+override Aw.Evidence.Core.Scripts.UiScript.GetHashCode() -> int
+override Aw.Evidence.Core.Scripts.UiScript.ToString() -> string!
+override Aw.Evidence.Core.Scripts.UrlPath.<Clone>$() -> Aw.Evidence.Core.Scripts.UrlPath!
+override Aw.Evidence.Core.Scripts.UrlPath.Describe() -> string!
+override Aw.Evidence.Core.Scripts.UrlPath.Equals(object? obj) -> bool
+override Aw.Evidence.Core.Scripts.UrlPath.GetHashCode() -> int
+override Aw.Evidence.Core.Scripts.UrlPath.Problem() -> string?
+override Aw.Evidence.Core.Scripts.UrlPath.ToString() -> string!
+override Aw.Evidence.Core.Stack.ProvenanceFinding.Equals(object? obj) -> bool
+override Aw.Evidence.Core.Stack.ProvenanceFinding.GetHashCode() -> int
+override Aw.Evidence.Core.Stack.ProvenanceFinding.ToString() -> string!
+override Aw.Evidence.Core.Stack.SeedPolicy.Equals(object? obj) -> bool
+override Aw.Evidence.Core.Stack.SeedPolicy.GetHashCode() -> int
+override Aw.Evidence.Core.Stack.SeedPolicy.ToString() -> string!
+override Aw.Evidence.Core.Steps.StepRunOptions.Equals(object? obj) -> bool
+override Aw.Evidence.Core.Steps.StepRunOptions.GetHashCode() -> int
+override Aw.Evidence.Core.Steps.StepRunOptions.ToString() -> string!
+override Aw.Evidence.Core.Usage.InvocationUsage.Equals(object? obj) -> bool
+override Aw.Evidence.Core.Usage.InvocationUsage.GetHashCode() -> int
+override Aw.Evidence.Core.Usage.InvocationUsage.ToString() -> string!
+override Aw.Evidence.Core.Usage.ModelInvocation.Equals(object? obj) -> bool
+override Aw.Evidence.Core.Usage.ModelInvocation.GetHashCode() -> int
+override Aw.Evidence.Core.Usage.ModelInvocation.ToString() -> string!
+override Aw.Evidence.Core.Visual.CachedVerdict.Equals(object? obj) -> bool
+override Aw.Evidence.Core.Visual.CachedVerdict.GetHashCode() -> int
+override Aw.Evidence.Core.Visual.CachedVerdict.ToString() -> string!
+override Aw.Evidence.Core.Visual.VerdictCache.Equals(object? obj) -> bool
+override Aw.Evidence.Core.Visual.VerdictCache.GetHashCode() -> int
+override Aw.Evidence.Core.Visual.VerdictCache.ToString() -> string!
+override Aw.Evidence.Core.Visual.VerdictCacheContext.Equals(object? obj) -> bool
+override Aw.Evidence.Core.Visual.VerdictCacheContext.GetHashCode() -> int
+override Aw.Evidence.Core.Visual.VerdictCacheContext.ToString() -> string!
+override Aw.Evidence.Core.Visual.VerdictCacheKey.Equals(object? obj) -> bool
+override Aw.Evidence.Core.Visual.VerdictCacheKey.GetHashCode() -> int
+override Aw.Evidence.Core.Visual.VerdictCacheKey.ToString() -> string!
+override Aw.Evidence.Core.Visual.VisualGateInput.Equals(object? obj) -> bool
+override Aw.Evidence.Core.Visual.VisualGateInput.GetHashCode() -> int
+override Aw.Evidence.Core.Visual.VisualGateInput.ToString() -> string!
+override Aw.Evidence.Core.Visual.VisualOutcome.Equals(object? obj) -> bool
+override Aw.Evidence.Core.Visual.VisualOutcome.GetHashCode() -> int
+override Aw.Evidence.Core.Visual.VisualOutcome.ToString() -> string!
+override sealed Aw.Evidence.Core.Browser.CandidateLocator.Equals(Aw.Evidence.Core.Browser.Locator? other) -> bool
+override sealed Aw.Evidence.Core.Browser.CssLocator.Equals(Aw.Evidence.Core.Browser.Locator? other) -> bool
+override sealed Aw.Evidence.Core.Browser.TestIdLocator.Equals(Aw.Evidence.Core.Browser.Locator? other) -> bool
+override sealed Aw.Evidence.Core.Browser.TextLocator.Equals(Aw.Evidence.Core.Browser.Locator? other) -> bool
+override sealed Aw.Evidence.Core.Scripts.InputValue.Equals(Aw.Evidence.Core.Scripts.ExpectedState? other) -> bool
+override sealed Aw.Evidence.Core.Scripts.TestIdVisible.Equals(Aw.Evidence.Core.Scripts.ExpectedState? other) -> bool
+override sealed Aw.Evidence.Core.Scripts.TextAbsent.Equals(Aw.Evidence.Core.Scripts.ExpectedState? other) -> bool
+override sealed Aw.Evidence.Core.Scripts.TextVisible.Equals(Aw.Evidence.Core.Scripts.ExpectedState? other) -> bool
+override sealed Aw.Evidence.Core.Scripts.UrlPath.Equals(Aw.Evidence.Core.Scripts.ExpectedState? other) -> bool
+static Aw.Evidence.Core.Browser.BrowserSessionOptions.operator !=(Aw.Evidence.Core.Browser.BrowserSessionOptions? left, Aw.Evidence.Core.Browser.BrowserSessionOptions? right) -> bool
+static Aw.Evidence.Core.Browser.BrowserSessionOptions.operator ==(Aw.Evidence.Core.Browser.BrowserSessionOptions? left, Aw.Evidence.Core.Browser.BrowserSessionOptions? right) -> bool
+static Aw.Evidence.Core.Browser.Candidate.operator !=(Aw.Evidence.Core.Browser.Candidate? left, Aw.Evidence.Core.Browser.Candidate? right) -> bool
+static Aw.Evidence.Core.Browser.Candidate.operator ==(Aw.Evidence.Core.Browser.Candidate? left, Aw.Evidence.Core.Browser.Candidate? right) -> bool
+static Aw.Evidence.Core.Browser.CandidateLocator.operator !=(Aw.Evidence.Core.Browser.CandidateLocator? left, Aw.Evidence.Core.Browser.CandidateLocator? right) -> bool
+static Aw.Evidence.Core.Browser.CandidateLocator.operator ==(Aw.Evidence.Core.Browser.CandidateLocator? left, Aw.Evidence.Core.Browser.CandidateLocator? right) -> bool
+static Aw.Evidence.Core.Browser.CssLocator.operator !=(Aw.Evidence.Core.Browser.CssLocator? left, Aw.Evidence.Core.Browser.CssLocator? right) -> bool
+static Aw.Evidence.Core.Browser.CssLocator.operator ==(Aw.Evidence.Core.Browser.CssLocator? left, Aw.Evidence.Core.Browser.CssLocator? right) -> bool
+static Aw.Evidence.Core.Browser.Locator.ByCss(string! css) -> Aw.Evidence.Core.Browser.Locator!
+static Aw.Evidence.Core.Browser.Locator.ByTestId(Aw.Evidence.Core.Ids.TestId testId) -> Aw.Evidence.Core.Browser.Locator!
+static Aw.Evidence.Core.Browser.Locator.ByText(string! text) -> Aw.Evidence.Core.Browser.Locator!
+static Aw.Evidence.Core.Browser.Locator.For(Aw.Evidence.Core.Design.ElementSelector! selector) -> Aw.Evidence.Core.Browser.Locator!
+static Aw.Evidence.Core.Browser.Locator.For(Aw.Evidence.Core.Design.FormValue! value) -> Aw.Evidence.Core.Browser.Locator!
+static Aw.Evidence.Core.Browser.Locator.operator !=(Aw.Evidence.Core.Browser.Locator? left, Aw.Evidence.Core.Browser.Locator? right) -> bool
+static Aw.Evidence.Core.Browser.Locator.operator ==(Aw.Evidence.Core.Browser.Locator? left, Aw.Evidence.Core.Browser.Locator? right) -> bool
+static Aw.Evidence.Core.Browser.SessionRecording.operator !=(Aw.Evidence.Core.Browser.SessionRecording? left, Aw.Evidence.Core.Browser.SessionRecording? right) -> bool
+static Aw.Evidence.Core.Browser.SessionRecording.operator ==(Aw.Evidence.Core.Browser.SessionRecording? left, Aw.Evidence.Core.Browser.SessionRecording? right) -> bool
+static Aw.Evidence.Core.Browser.TestIdLocator.operator !=(Aw.Evidence.Core.Browser.TestIdLocator? left, Aw.Evidence.Core.Browser.TestIdLocator? right) -> bool
+static Aw.Evidence.Core.Browser.TestIdLocator.operator ==(Aw.Evidence.Core.Browser.TestIdLocator? left, Aw.Evidence.Core.Browser.TestIdLocator? right) -> bool
+static Aw.Evidence.Core.Browser.TextLocator.operator !=(Aw.Evidence.Core.Browser.TextLocator? left, Aw.Evidence.Core.Browser.TextLocator? right) -> bool
+static Aw.Evidence.Core.Browser.TextLocator.operator ==(Aw.Evidence.Core.Browser.TextLocator? left, Aw.Evidence.Core.Browser.TextLocator? right) -> bool
+static Aw.Evidence.Core.Browser.UserAgent.For(string! browserVersion, string? overrideValue) -> string!
+static Aw.Evidence.Core.ContentHash.Sha256Hex(System.ReadOnlySpan<byte> content) -> string!
+static Aw.Evidence.Core.ContentHash.Sha256Hex<T>(T value, System.Text.Json.JsonSerializerOptions! options) -> string!
+static Aw.Evidence.Core.Design.BoxCheck.operator !=(Aw.Evidence.Core.Design.BoxCheck? left, Aw.Evidence.Core.Design.BoxCheck? right) -> bool
+static Aw.Evidence.Core.Design.BoxCheck.operator ==(Aw.Evidence.Core.Design.BoxCheck? left, Aw.Evidence.Core.Design.BoxCheck? right) -> bool
+static Aw.Evidence.Core.Design.BoxExpectation.operator !=(Aw.Evidence.Core.Design.BoxExpectation? left, Aw.Evidence.Core.Design.BoxExpectation? right) -> bool
+static Aw.Evidence.Core.Design.BoxExpectation.operator ==(Aw.Evidence.Core.Design.BoxExpectation? left, Aw.Evidence.Core.Design.BoxExpectation? right) -> bool
+static Aw.Evidence.Core.Design.DesignFrame.operator !=(Aw.Evidence.Core.Design.DesignFrame? left, Aw.Evidence.Core.Design.DesignFrame? right) -> bool
+static Aw.Evidence.Core.Design.DesignFrame.operator ==(Aw.Evidence.Core.Design.DesignFrame? left, Aw.Evidence.Core.Design.DesignFrame? right) -> bool
+static Aw.Evidence.Core.Design.DesignManifest.operator !=(Aw.Evidence.Core.Design.DesignManifest? left, Aw.Evidence.Core.Design.DesignManifest? right) -> bool
+static Aw.Evidence.Core.Design.DesignManifest.operator ==(Aw.Evidence.Core.Design.DesignManifest? left, Aw.Evidence.Core.Design.DesignManifest? right) -> bool
+static Aw.Evidence.Core.Design.ElementSelector.ByTestId(Aw.Evidence.Core.Ids.TestId testId) -> Aw.Evidence.Core.Design.ElementSelector!
+static Aw.Evidence.Core.Design.ElementSelector.ByText(string! text) -> Aw.Evidence.Core.Design.ElementSelector!
+static Aw.Evidence.Core.Design.ElementSelector.operator !=(Aw.Evidence.Core.Design.ElementSelector? left, Aw.Evidence.Core.Design.ElementSelector? right) -> bool
+static Aw.Evidence.Core.Design.ElementSelector.operator ==(Aw.Evidence.Core.Design.ElementSelector? left, Aw.Evidence.Core.Design.ElementSelector? right) -> bool
+static Aw.Evidence.Core.Design.ExpectedGeometry.operator !=(Aw.Evidence.Core.Design.ExpectedGeometry? left, Aw.Evidence.Core.Design.ExpectedGeometry? right) -> bool
+static Aw.Evidence.Core.Design.ExpectedGeometry.operator ==(Aw.Evidence.Core.Design.ExpectedGeometry? left, Aw.Evidence.Core.Design.ExpectedGeometry? right) -> bool
+static Aw.Evidence.Core.Design.FormValue.operator !=(Aw.Evidence.Core.Design.FormValue? left, Aw.Evidence.Core.Design.FormValue? right) -> bool
+static Aw.Evidence.Core.Design.FormValue.operator ==(Aw.Evidence.Core.Design.FormValue? left, Aw.Evidence.Core.Design.FormValue? right) -> bool
+static Aw.Evidence.Core.Design.GeometryChecks.Check(System.Collections.Generic.IReadOnlyList<Aw.Evidence.Core.Design.BoxExpectation!>! expectations, System.Func<Aw.Evidence.Core.Design.ElementSelector!, Aw.Evidence.Core.Geometry.Box?>! measure) -> System.Collections.Generic.IReadOnlyList<Aw.Evidence.Core.Design.BoxCheck!>!
+static Aw.Evidence.Core.Design.GeometryChecks.SelectorsOf(System.Collections.Generic.IReadOnlyList<Aw.Evidence.Core.Design.BoxExpectation!>! expectations) -> System.Collections.Generic.IEnumerable<Aw.Evidence.Core.Design.ElementSelector!>!
+static Aw.Evidence.Core.Design.LoginSpec.operator !=(Aw.Evidence.Core.Design.LoginSpec? left, Aw.Evidence.Core.Design.LoginSpec? right) -> bool
+static Aw.Evidence.Core.Design.LoginSpec.operator ==(Aw.Evidence.Core.Design.LoginSpec? left, Aw.Evidence.Core.Design.LoginSpec? right) -> bool
+static Aw.Evidence.Core.Design.ManifestReader.Read(System.ReadOnlySpan<byte> utf8Json, System.Text.Json.JsonSerializerOptions! options) -> Aw.Kernel.Result<Aw.Evidence.Core.Design.DesignManifest!>!
+static Aw.Evidence.Core.Design.ManifestReader.Validate(Aw.Evidence.Core.Design.DesignManifest! manifest) -> Aw.Kernel.Result<Aw.Evidence.Core.Design.DesignManifest!>!
+static Aw.Evidence.Core.Design.MeasuredGeometry.operator !=(Aw.Evidence.Core.Design.MeasuredGeometry? left, Aw.Evidence.Core.Design.MeasuredGeometry? right) -> bool
+static Aw.Evidence.Core.Design.MeasuredGeometry.operator ==(Aw.Evidence.Core.Design.MeasuredGeometry? left, Aw.Evidence.Core.Design.MeasuredGeometry? right) -> bool
+static Aw.Evidence.Core.Design.ParityRegions.Implementation(Aw.Evidence.Core.Geometry.Box! anchor, Aw.Evidence.Core.Geometry.Region! design, Aw.Evidence.Core.Geometry.Offset! offset) -> Aw.Evidence.Core.Geometry.Region!
+static Aw.Evidence.Core.Design.ParityRegions.Shortfall(Aw.Evidence.Core.Geometry.Region! region, Aw.Evidence.Core.Geometry.ViewportSize! viewport) -> Aw.Evidence.Core.Geometry.ViewportSize?
 static Aw.Evidence.Core.EvidenceCoreServiceCollectionExtensions.AddEvidenceCore(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
 static Aw.Evidence.Core.EvidenceErrors.All.get -> System.Collections.Generic.IReadOnlyList<Aw.Kernel.ErrorDefinition!>!
+static Aw.Evidence.Core.Files.RunPath.Combine(string! directory, string! file) -> string!
+static Aw.Evidence.Core.Files.RunPath.NameOf(string! path) -> string!
+static Aw.Evidence.Core.Geometry.Box.operator !=(Aw.Evidence.Core.Geometry.Box? left, Aw.Evidence.Core.Geometry.Box? right) -> bool
+static Aw.Evidence.Core.Geometry.Box.operator ==(Aw.Evidence.Core.Geometry.Box? left, Aw.Evidence.Core.Geometry.Box? right) -> bool
+static Aw.Evidence.Core.Geometry.Offset.operator !=(Aw.Evidence.Core.Geometry.Offset? left, Aw.Evidence.Core.Geometry.Offset? right) -> bool
+static Aw.Evidence.Core.Geometry.Offset.operator ==(Aw.Evidence.Core.Geometry.Offset? left, Aw.Evidence.Core.Geometry.Offset? right) -> bool
+static Aw.Evidence.Core.Geometry.Offset.Zero.get -> Aw.Evidence.Core.Geometry.Offset!
+static Aw.Evidence.Core.Geometry.Region.operator !=(Aw.Evidence.Core.Geometry.Region? left, Aw.Evidence.Core.Geometry.Region? right) -> bool
+static Aw.Evidence.Core.Geometry.Region.operator ==(Aw.Evidence.Core.Geometry.Region? left, Aw.Evidence.Core.Geometry.Region? right) -> bool
+static Aw.Evidence.Core.Geometry.ViewportSize.operator !=(Aw.Evidence.Core.Geometry.ViewportSize? left, Aw.Evidence.Core.Geometry.ViewportSize? right) -> bool
+static Aw.Evidence.Core.Geometry.ViewportSize.operator ==(Aw.Evidence.Core.Geometry.ViewportSize? left, Aw.Evidence.Core.Geometry.ViewportSize? right) -> bool
+static Aw.Evidence.Core.Guard.Credentials.Read(Aw.Evidence.Core.Guard.ISecretsSource! secrets, string! emailName, string! passwordName) -> Aw.Kernel.Result<Aw.Evidence.Core.Guard.Credentials!>!
+static Aw.Evidence.Core.Guard.HostGuard.IsLocal(string! origin) -> bool
+static Aw.Evidence.Core.Guard.HostGuard.IsOffOriginNavigation(string! origin, string! url, bool isNavigation) -> bool
+static Aw.Evidence.Core.Guard.HostGuard.Resolve(string? host, bool allowPreviewHost) -> Aw.Kernel.Result<Aw.Evidence.Core.Guard.ResolvedHost!>!
+static Aw.Evidence.Core.Guard.ProvenanceRules.Effective(string! host, Aw.Evidence.Core.Guard.DbProvenance claimed) -> Aw.Evidence.Core.Guard.DbProvenance
+static Aw.Evidence.Core.Guard.ProvenanceRules.For(Aw.Evidence.Core.Guard.HostKind kind, Aw.Evidence.Core.Guard.DbProvenance? database) -> Aw.Evidence.Core.Guard.Provenance
+static Aw.Evidence.Core.Guard.ResolvedHost.operator !=(Aw.Evidence.Core.Guard.ResolvedHost? left, Aw.Evidence.Core.Guard.ResolvedHost? right) -> bool
+static Aw.Evidence.Core.Guard.ResolvedHost.operator ==(Aw.Evidence.Core.Guard.ResolvedHost? left, Aw.Evidence.Core.Guard.ResolvedHost? right) -> bool
+static Aw.Evidence.Core.Guard.StepGuard.ForParity(System.Collections.Generic.IReadOnlyList<Aw.Evidence.Core.Scripts.ScriptStep!>! steps, bool allowWrites) -> Aw.Kernel.Result<Aw.Kernel.Unit>!
+static Aw.Evidence.Core.Guard.StepGuard.ForRun(System.Collections.Generic.IReadOnlyList<Aw.Evidence.Core.Scripts.ScriptStep!>! steps, Aw.Evidence.Core.Guard.ResolvedHost! host, bool allowWrites) -> Aw.Kernel.Result<Aw.Kernel.Unit>!
+static Aw.Evidence.Core.Guard.StepGuard.IsSameOriginPath(string! target) -> bool
+static Aw.Evidence.Core.Ids.AttachmentId.From(string! value) -> Aw.Evidence.Core.Ids.AttachmentId
+static Aw.Evidence.Core.Ids.AttachmentId.operator !=(Aw.Evidence.Core.Ids.AttachmentId left, Aw.Evidence.Core.Ids.AttachmentId right) -> bool
+static Aw.Evidence.Core.Ids.AttachmentId.operator ==(Aw.Evidence.Core.Ids.AttachmentId left, Aw.Evidence.Core.Ids.AttachmentId right) -> bool
+static Aw.Evidence.Core.Ids.AttachmentId.Parse(string! s, System.IFormatProvider? provider) -> Aw.Evidence.Core.Ids.AttachmentId
+static Aw.Evidence.Core.Ids.AttachmentId.TryFrom(string? value, out Aw.Evidence.Core.Ids.AttachmentId vo) -> bool
+static Aw.Evidence.Core.Ids.AttachmentId.TryParse(string? s, System.IFormatProvider? provider, out Aw.Evidence.Core.Ids.AttachmentId result) -> bool
+static Aw.Evidence.Core.Ids.RunId.From(string! value) -> Aw.Evidence.Core.Ids.RunId
+static Aw.Evidence.Core.Ids.RunId.operator !=(Aw.Evidence.Core.Ids.RunId left, Aw.Evidence.Core.Ids.RunId right) -> bool
+static Aw.Evidence.Core.Ids.RunId.operator ==(Aw.Evidence.Core.Ids.RunId left, Aw.Evidence.Core.Ids.RunId right) -> bool
+static Aw.Evidence.Core.Ids.RunId.Parse(string! s, System.IFormatProvider? provider) -> Aw.Evidence.Core.Ids.RunId
+static Aw.Evidence.Core.Ids.RunId.TryFrom(string? value, out Aw.Evidence.Core.Ids.RunId vo) -> bool
+static Aw.Evidence.Core.Ids.RunId.TryParse(string? s, System.IFormatProvider? provider, out Aw.Evidence.Core.Ids.RunId result) -> bool
+static Aw.Evidence.Core.Ids.TestId.From(string! value) -> Aw.Evidence.Core.Ids.TestId
+static Aw.Evidence.Core.Ids.TestId.operator !=(Aw.Evidence.Core.Ids.TestId left, Aw.Evidence.Core.Ids.TestId right) -> bool
+static Aw.Evidence.Core.Ids.TestId.operator ==(Aw.Evidence.Core.Ids.TestId left, Aw.Evidence.Core.Ids.TestId right) -> bool
+static Aw.Evidence.Core.Ids.TestId.Parse(string! s, System.IFormatProvider? provider) -> Aw.Evidence.Core.Ids.TestId
+static Aw.Evidence.Core.Ids.TestId.TryFrom(string? value, out Aw.Evidence.Core.Ids.TestId vo) -> bool
+static Aw.Evidence.Core.Ids.TestId.TryParse(string? s, System.IFormatProvider? provider, out Aw.Evidence.Core.Ids.TestId result) -> bool
+static Aw.Evidence.Core.Images.ImageOps.Crop(Aw.Evidence.Core.Images.RgbaImage! image, Aw.Evidence.Core.Geometry.Region! region) -> Aw.Kernel.Result<Aw.Evidence.Core.Images.RgbaImage!>!
+static Aw.Evidence.Core.Images.ImageOps.CropPadded(Aw.Evidence.Core.Images.RgbaImage! image, Aw.Evidence.Core.Geometry.Region! box, int pad = 24) -> Aw.Kernel.Result<Aw.Evidence.Core.Images.RgbaImage!>!
+static Aw.Evidence.Core.Images.ImageOps.SideBySide(Aw.Evidence.Core.Images.RgbaImage! design, Aw.Evidence.Core.Images.RgbaImage! implementation, Aw.Evidence.Core.Images.RgbaImage! diff) -> Aw.Evidence.Core.Images.RgbaImage!
+static Aw.Evidence.Core.Images.PixelComparison.operator !=(Aw.Evidence.Core.Images.PixelComparison? left, Aw.Evidence.Core.Images.PixelComparison? right) -> bool
+static Aw.Evidence.Core.Images.PixelComparison.operator ==(Aw.Evidence.Core.Images.PixelComparison? left, Aw.Evidence.Core.Images.PixelComparison? right) -> bool
+static Aw.Evidence.Core.Images.PixelMatch.Compare(Aw.Evidence.Core.Images.RgbaImage! expected, Aw.Evidence.Core.Images.RgbaImage! actual, Aw.Evidence.Core.Images.PixelMatchOptions! options) -> Aw.Kernel.Result<Aw.Evidence.Core.Images.PixelComparison!>!
+static Aw.Evidence.Core.Images.PixelMatchOptions.Default.get -> Aw.Evidence.Core.Images.PixelMatchOptions!
+static Aw.Evidence.Core.Images.PixelMatchOptions.operator !=(Aw.Evidence.Core.Images.PixelMatchOptions? left, Aw.Evidence.Core.Images.PixelMatchOptions? right) -> bool
+static Aw.Evidence.Core.Images.PixelMatchOptions.operator ==(Aw.Evidence.Core.Images.PixelMatchOptions? left, Aw.Evidence.Core.Images.PixelMatchOptions? right) -> bool
+static Aw.Evidence.Core.Images.RgbaImage.Create(int width, int height, System.ReadOnlySpan<byte> pixels) -> Aw.Kernel.Result<Aw.Evidence.Core.Images.RgbaImage!>!
+static Aw.Evidence.Core.Images.RgbaImage.Filled(int width, int height, uint rgba) -> Aw.Evidence.Core.Images.RgbaImage!
+static Aw.Evidence.Core.Judging.SelectorRepair.operator !=(Aw.Evidence.Core.Judging.SelectorRepair? left, Aw.Evidence.Core.Judging.SelectorRepair? right) -> bool
+static Aw.Evidence.Core.Judging.SelectorRepair.operator ==(Aw.Evidence.Core.Judging.SelectorRepair? left, Aw.Evidence.Core.Judging.SelectorRepair? right) -> bool
+static Aw.Evidence.Core.Judging.SelectorRepairRequest.operator !=(Aw.Evidence.Core.Judging.SelectorRepairRequest? left, Aw.Evidence.Core.Judging.SelectorRepairRequest? right) -> bool
+static Aw.Evidence.Core.Judging.SelectorRepairRequest.operator ==(Aw.Evidence.Core.Judging.SelectorRepairRequest? left, Aw.Evidence.Core.Judging.SelectorRepairRequest? right) -> bool
+static Aw.Evidence.Core.Judging.VisualCritiqueRequest.operator !=(Aw.Evidence.Core.Judging.VisualCritiqueRequest? left, Aw.Evidence.Core.Judging.VisualCritiqueRequest? right) -> bool
+static Aw.Evidence.Core.Judging.VisualCritiqueRequest.operator ==(Aw.Evidence.Core.Judging.VisualCritiqueRequest? left, Aw.Evidence.Core.Judging.VisualCritiqueRequest? right) -> bool
+static Aw.Evidence.Core.Judging.VisualVerdict.operator !=(Aw.Evidence.Core.Judging.VisualVerdict? left, Aw.Evidence.Core.Judging.VisualVerdict? right) -> bool
+static Aw.Evidence.Core.Judging.VisualVerdict.operator ==(Aw.Evidence.Core.Judging.VisualVerdict? left, Aw.Evidence.Core.Judging.VisualVerdict? right) -> bool
+static Aw.Evidence.Core.Lint.ElementStyle.operator !=(Aw.Evidence.Core.Lint.ElementStyle? left, Aw.Evidence.Core.Lint.ElementStyle? right) -> bool
+static Aw.Evidence.Core.Lint.ElementStyle.operator ==(Aw.Evidence.Core.Lint.ElementStyle? left, Aw.Evidence.Core.Lint.ElementStyle? right) -> bool
+static Aw.Evidence.Core.Lint.LintFinding.operator !=(Aw.Evidence.Core.Lint.LintFinding? left, Aw.Evidence.Core.Lint.LintFinding? right) -> bool
+static Aw.Evidence.Core.Lint.LintFinding.operator ==(Aw.Evidence.Core.Lint.LintFinding? left, Aw.Evidence.Core.Lint.LintFinding? right) -> bool
+static Aw.Evidence.Core.Lint.PageElement.operator !=(Aw.Evidence.Core.Lint.PageElement? left, Aw.Evidence.Core.Lint.PageElement? right) -> bool
+static Aw.Evidence.Core.Lint.PageElement.operator ==(Aw.Evidence.Core.Lint.PageElement? left, Aw.Evidence.Core.Lint.PageElement? right) -> bool
+static Aw.Evidence.Core.Lint.PageLint.Check(Aw.Evidence.Core.Lint.PageSnapshot! snapshot, System.Collections.Generic.IReadOnlyCollection<string!>? allowedColors = null) -> System.Collections.Generic.IReadOnlyList<Aw.Evidence.Core.Lint.LintFinding!>!
+static Aw.Evidence.Core.Lint.PageSnapshot.operator !=(Aw.Evidence.Core.Lint.PageSnapshot? left, Aw.Evidence.Core.Lint.PageSnapshot? right) -> bool
+static Aw.Evidence.Core.Lint.PageSnapshot.operator ==(Aw.Evidence.Core.Lint.PageSnapshot? left, Aw.Evidence.Core.Lint.PageSnapshot? right) -> bool
+static Aw.Evidence.Core.Locks.StackLocks.AcquireAsync(Aw.Evidence.Core.Locks.IMachineLocks! locks, System.TimeSpan timeout, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Evidence.Core.Locks.ILockLease!>!>
+static Aw.Evidence.Core.Publishing.EvidenceComment.NeedsLook(Aw.Evidence.Core.Runs.RunSummary! summary) -> bool
+static Aw.Evidence.Core.Publishing.EvidenceComment.Render(Aw.Evidence.Core.Runs.RunSummary! summary, string? note, System.Collections.Generic.IReadOnlyDictionary<string!, string!>! urls) -> string!
+static Aw.Evidence.Core.Publishing.ExistingAttachment.operator !=(Aw.Evidence.Core.Publishing.ExistingAttachment? left, Aw.Evidence.Core.Publishing.ExistingAttachment? right) -> bool
+static Aw.Evidence.Core.Publishing.ExistingAttachment.operator ==(Aw.Evidence.Core.Publishing.ExistingAttachment? left, Aw.Evidence.Core.Publishing.ExistingAttachment? right) -> bool
+static Aw.Evidence.Core.Publishing.ParityAttachments.Plan(Aw.Evidence.Core.Runs.ParitySummary! summary, System.Func<string!, long>! sizeOf) -> System.Collections.Generic.IReadOnlyList<Aw.Evidence.Core.Publishing.PlannedAttachment!>!
+static Aw.Evidence.Core.Publishing.ParityAttachments.Subtitle(Aw.Evidence.Core.Runs.ParitySummary! summary, Aw.Evidence.Core.Runs.ParityFrame! frame) -> string!
+static Aw.Evidence.Core.Publishing.ParityAttachments.Title(string! frame) -> string!
+static Aw.Evidence.Core.Publishing.ParityAttachments.Unreviewed(System.Collections.Generic.IReadOnlyList<Aw.Evidence.Core.Publishing.PlannedAttachment!>! plan, System.Collections.Generic.IReadOnlyCollection<string!>! reviewed) -> System.Collections.Generic.IReadOnlyList<string!>!
+static Aw.Evidence.Core.Publishing.ParityComments.GitHub(Aw.Evidence.Core.Runs.ParitySummary! summary) -> string!
+static Aw.Evidence.Core.Publishing.ParityComments.Linear(Aw.Evidence.Core.Runs.ParitySummary! summary) -> string!
+static Aw.Evidence.Core.Publishing.PlannedAttachment.operator !=(Aw.Evidence.Core.Publishing.PlannedAttachment? left, Aw.Evidence.Core.Publishing.PlannedAttachment? right) -> bool
+static Aw.Evidence.Core.Publishing.PlannedAttachment.operator ==(Aw.Evidence.Core.Publishing.PlannedAttachment? left, Aw.Evidence.Core.Publishing.PlannedAttachment? right) -> bool
+static Aw.Evidence.Core.Publishing.PublishPolicy.CanEmbedImagesInPr(Aw.Evidence.Core.Guard.Provenance provenance, bool hasApprovedUploader) -> bool
+static Aw.Evidence.Core.Publishing.PublishPolicy.CanUploadToLinear(Aw.Evidence.Core.Guard.Provenance provenance) -> bool
+static Aw.Evidence.Core.Publishing.PutCommand.Build(Aw.Evidence.Core.Publishing.SignedUpload! upload, string! file) -> System.Collections.Generic.IReadOnlyList<string!>!
+static Aw.Evidence.Core.Publishing.RunPublishing.Plan(Aw.Evidence.Core.Runs.RunSummary! summary, Aw.Evidence.Core.Guard.DbProvenance claimed, bool hasLinearIssue) -> Aw.Evidence.Core.Publishing.RunPublishPlan!
+static Aw.Evidence.Core.Publishing.RunPublishPlan.operator !=(Aw.Evidence.Core.Publishing.RunPublishPlan? left, Aw.Evidence.Core.Publishing.RunPublishPlan? right) -> bool
+static Aw.Evidence.Core.Publishing.RunPublishPlan.operator ==(Aw.Evidence.Core.Publishing.RunPublishPlan? left, Aw.Evidence.Core.Publishing.RunPublishPlan? right) -> bool
+static Aw.Evidence.Core.Publishing.SignedUpload.operator !=(Aw.Evidence.Core.Publishing.SignedUpload? left, Aw.Evidence.Core.Publishing.SignedUpload? right) -> bool
+static Aw.Evidence.Core.Publishing.SignedUpload.operator ==(Aw.Evidence.Core.Publishing.SignedUpload? left, Aw.Evidence.Core.Publishing.SignedUpload? right) -> bool
+static Aw.Evidence.Core.Publishing.StaleAttachments.Select(System.Collections.Generic.IReadOnlyList<Aw.Evidence.Core.Publishing.ExistingAttachment!>! existing, System.Collections.Generic.IReadOnlyCollection<Aw.Evidence.Core.Ids.AttachmentId>! keep) -> System.Collections.Generic.IReadOnlyList<Aw.Evidence.Core.Publishing.ExistingAttachment!>!
+static Aw.Evidence.Core.Runs.ParityFiles.For(string! runDirectory, string! frame) -> Aw.Evidence.Core.Runs.ParityFiles!
+static Aw.Evidence.Core.Runs.ParityFiles.operator !=(Aw.Evidence.Core.Runs.ParityFiles? left, Aw.Evidence.Core.Runs.ParityFiles? right) -> bool
+static Aw.Evidence.Core.Runs.ParityFiles.operator ==(Aw.Evidence.Core.Runs.ParityFiles? left, Aw.Evidence.Core.Runs.ParityFiles? right) -> bool
+static Aw.Evidence.Core.Runs.ParityFrame.operator !=(Aw.Evidence.Core.Runs.ParityFrame? left, Aw.Evidence.Core.Runs.ParityFrame? right) -> bool
+static Aw.Evidence.Core.Runs.ParityFrame.operator ==(Aw.Evidence.Core.Runs.ParityFrame? left, Aw.Evidence.Core.Runs.ParityFrame? right) -> bool
+static Aw.Evidence.Core.Runs.ParityMeasurement.operator !=(Aw.Evidence.Core.Runs.ParityMeasurement? left, Aw.Evidence.Core.Runs.ParityMeasurement? right) -> bool
+static Aw.Evidence.Core.Runs.ParityMeasurement.operator ==(Aw.Evidence.Core.Runs.ParityMeasurement? left, Aw.Evidence.Core.Runs.ParityMeasurement? right) -> bool
+static Aw.Evidence.Core.Runs.ParitySummary.operator !=(Aw.Evidence.Core.Runs.ParitySummary? left, Aw.Evidence.Core.Runs.ParitySummary? right) -> bool
+static Aw.Evidence.Core.Runs.ParitySummary.operator ==(Aw.Evidence.Core.Runs.ParitySummary? left, Aw.Evidence.Core.Runs.ParitySummary? right) -> bool
+static Aw.Evidence.Core.Runs.RunEvidence.operator !=(Aw.Evidence.Core.Runs.RunEvidence? left, Aw.Evidence.Core.Runs.RunEvidence? right) -> bool
+static Aw.Evidence.Core.Runs.RunEvidence.operator ==(Aw.Evidence.Core.Runs.RunEvidence? left, Aw.Evidence.Core.Runs.RunEvidence? right) -> bool
+static Aw.Evidence.Core.Runs.RunFileReader.Parity(System.ReadOnlySpan<byte> utf8Json, System.Text.Json.JsonSerializerOptions! options) -> Aw.Kernel.Result<Aw.Evidence.Core.Runs.ParitySummary!>!
+static Aw.Evidence.Core.Runs.RunFileReader.Summary(System.ReadOnlySpan<byte> utf8Json, System.Text.Json.JsonSerializerOptions! options) -> Aw.Kernel.Result<Aw.Evidence.Core.Runs.RunSummary!>!
+static Aw.Evidence.Core.Runs.RunLintFinding.operator !=(Aw.Evidence.Core.Runs.RunLintFinding? left, Aw.Evidence.Core.Runs.RunLintFinding? right) -> bool
+static Aw.Evidence.Core.Runs.RunLintFinding.operator ==(Aw.Evidence.Core.Runs.RunLintFinding? left, Aw.Evidence.Core.Runs.RunLintFinding? right) -> bool
+static Aw.Evidence.Core.Runs.RunStep.operator !=(Aw.Evidence.Core.Runs.RunStep? left, Aw.Evidence.Core.Runs.RunStep? right) -> bool
+static Aw.Evidence.Core.Runs.RunStep.operator ==(Aw.Evidence.Core.Runs.RunStep? left, Aw.Evidence.Core.Runs.RunStep? right) -> bool
+static Aw.Evidence.Core.Runs.RunSummary.operator !=(Aw.Evidence.Core.Runs.RunSummary? left, Aw.Evidence.Core.Runs.RunSummary? right) -> bool
+static Aw.Evidence.Core.Runs.RunSummary.operator ==(Aw.Evidence.Core.Runs.RunSummary? left, Aw.Evidence.Core.Runs.RunSummary? right) -> bool
+static Aw.Evidence.Core.Runs.RunVisual.operator !=(Aw.Evidence.Core.Runs.RunVisual? left, Aw.Evidence.Core.Runs.RunVisual? right) -> bool
+static Aw.Evidence.Core.Runs.RunVisual.operator ==(Aw.Evidence.Core.Runs.RunVisual? left, Aw.Evidence.Core.Runs.RunVisual? right) -> bool
+static Aw.Evidence.Core.Runs.SizeDelta.operator !=(Aw.Evidence.Core.Runs.SizeDelta? left, Aw.Evidence.Core.Runs.SizeDelta? right) -> bool
+static Aw.Evidence.Core.Runs.SizeDelta.operator ==(Aw.Evidence.Core.Runs.SizeDelta? left, Aw.Evidence.Core.Runs.SizeDelta? right) -> bool
+static Aw.Evidence.Core.Scripts.ExpectedState.operator !=(Aw.Evidence.Core.Scripts.ExpectedState? left, Aw.Evidence.Core.Scripts.ExpectedState? right) -> bool
+static Aw.Evidence.Core.Scripts.ExpectedState.operator ==(Aw.Evidence.Core.Scripts.ExpectedState? left, Aw.Evidence.Core.Scripts.ExpectedState? right) -> bool
+static Aw.Evidence.Core.Scripts.InputValue.operator !=(Aw.Evidence.Core.Scripts.InputValue? left, Aw.Evidence.Core.Scripts.InputValue? right) -> bool
+static Aw.Evidence.Core.Scripts.InputValue.operator ==(Aw.Evidence.Core.Scripts.InputValue? left, Aw.Evidence.Core.Scripts.InputValue? right) -> bool
+static Aw.Evidence.Core.Scripts.PlanningMeta.operator !=(Aw.Evidence.Core.Scripts.PlanningMeta? left, Aw.Evidence.Core.Scripts.PlanningMeta? right) -> bool
+static Aw.Evidence.Core.Scripts.PlanningMeta.operator ==(Aw.Evidence.Core.Scripts.PlanningMeta? left, Aw.Evidence.Core.Scripts.PlanningMeta? right) -> bool
+static Aw.Evidence.Core.Scripts.ScriptReader.Read(System.ReadOnlySpan<byte> utf8Json, System.Text.Json.JsonSerializerOptions! options) -> Aw.Kernel.Result<Aw.Evidence.Core.Scripts.UiScript!>!
+static Aw.Evidence.Core.Scripts.ScriptReader.Validate(Aw.Evidence.Core.Scripts.UiScript! script) -> Aw.Kernel.Result<Aw.Evidence.Core.Scripts.UiScript!>!
+static Aw.Evidence.Core.Scripts.ScriptStep.NameOf(Aw.Evidence.Core.Scripts.StepAction action) -> string!
+static Aw.Evidence.Core.Scripts.ScriptStep.operator !=(Aw.Evidence.Core.Scripts.ScriptStep? left, Aw.Evidence.Core.Scripts.ScriptStep? right) -> bool
+static Aw.Evidence.Core.Scripts.ScriptStep.operator ==(Aw.Evidence.Core.Scripts.ScriptStep? left, Aw.Evidence.Core.Scripts.ScriptStep? right) -> bool
+static Aw.Evidence.Core.Scripts.ScriptViewports.NameOf(Aw.Evidence.Core.Scripts.ViewportKind kind) -> string!
+static Aw.Evidence.Core.Scripts.ScriptViewports.SizeOf(Aw.Evidence.Core.Scripts.ViewportKind kind) -> Aw.Evidence.Core.Geometry.ViewportSize!
+static Aw.Evidence.Core.Scripts.TestIdVisible.operator !=(Aw.Evidence.Core.Scripts.TestIdVisible? left, Aw.Evidence.Core.Scripts.TestIdVisible? right) -> bool
+static Aw.Evidence.Core.Scripts.TestIdVisible.operator ==(Aw.Evidence.Core.Scripts.TestIdVisible? left, Aw.Evidence.Core.Scripts.TestIdVisible? right) -> bool
+static Aw.Evidence.Core.Scripts.TextAbsent.operator !=(Aw.Evidence.Core.Scripts.TextAbsent? left, Aw.Evidence.Core.Scripts.TextAbsent? right) -> bool
+static Aw.Evidence.Core.Scripts.TextAbsent.operator ==(Aw.Evidence.Core.Scripts.TextAbsent? left, Aw.Evidence.Core.Scripts.TextAbsent? right) -> bool
+static Aw.Evidence.Core.Scripts.TextVisible.operator !=(Aw.Evidence.Core.Scripts.TextVisible? left, Aw.Evidence.Core.Scripts.TextVisible? right) -> bool
+static Aw.Evidence.Core.Scripts.TextVisible.operator ==(Aw.Evidence.Core.Scripts.TextVisible? left, Aw.Evidence.Core.Scripts.TextVisible? right) -> bool
+static Aw.Evidence.Core.Scripts.UiScript.operator !=(Aw.Evidence.Core.Scripts.UiScript? left, Aw.Evidence.Core.Scripts.UiScript? right) -> bool
+static Aw.Evidence.Core.Scripts.UiScript.operator ==(Aw.Evidence.Core.Scripts.UiScript? left, Aw.Evidence.Core.Scripts.UiScript? right) -> bool
+static Aw.Evidence.Core.Scripts.UrlPath.operator !=(Aw.Evidence.Core.Scripts.UrlPath? left, Aw.Evidence.Core.Scripts.UrlPath? right) -> bool
+static Aw.Evidence.Core.Scripts.UrlPath.operator ==(Aw.Evidence.Core.Scripts.UrlPath? left, Aw.Evidence.Core.Scripts.UrlPath? right) -> bool
+static Aw.Evidence.Core.Stack.ProvenanceCheck.RunAsync(Aw.Evidence.Core.Stack.IProvenanceQuery! query, Aw.Evidence.Core.Stack.SeedPolicy! policy, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Evidence.Core.Stack.ProvenanceFinding!>
+static Aw.Evidence.Core.Stack.ProvenanceFinding.operator !=(Aw.Evidence.Core.Stack.ProvenanceFinding? left, Aw.Evidence.Core.Stack.ProvenanceFinding? right) -> bool
+static Aw.Evidence.Core.Stack.ProvenanceFinding.operator ==(Aw.Evidence.Core.Stack.ProvenanceFinding? left, Aw.Evidence.Core.Stack.ProvenanceFinding? right) -> bool
+static Aw.Evidence.Core.Stack.SeedPolicy.Default.get -> Aw.Evidence.Core.Stack.SeedPolicy!
+static Aw.Evidence.Core.Stack.SeedPolicy.From(string? domains, string? emailPattern) -> Aw.Evidence.Core.Stack.SeedPolicy!
+static Aw.Evidence.Core.Stack.SeedPolicy.operator !=(Aw.Evidence.Core.Stack.SeedPolicy? left, Aw.Evidence.Core.Stack.SeedPolicy? right) -> bool
+static Aw.Evidence.Core.Stack.SeedPolicy.operator ==(Aw.Evidence.Core.Stack.SeedPolicy? left, Aw.Evidence.Core.Stack.SeedPolicy? right) -> bool
+static Aw.Evidence.Core.Steps.RepairRules.Fits(Aw.Evidence.Core.Scripts.StepAction action, Aw.Evidence.Core.Browser.Candidate! candidate) -> bool
+static Aw.Evidence.Core.Steps.RepairRules.IsRepairable(Aw.Evidence.Core.Scripts.StepAction action) -> bool
+static Aw.Evidence.Core.Steps.RepairRules.Resolve(Aw.Evidence.Core.Judging.SelectorRepair? proposal, System.Collections.Generic.IReadOnlyList<Aw.Evidence.Core.Browser.Candidate!>! visible) -> Aw.Evidence.Core.Browser.Candidate?
+static Aw.Evidence.Core.Steps.StepRunner.ExpectationHolds(Aw.Evidence.Core.Browser.IBrowserSession! session, Aw.Evidence.Core.Scripts.ExpectedState! expected, System.TimeSpan timeout, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<bool>
+static Aw.Evidence.Core.Steps.StepRunOptions.operator !=(Aw.Evidence.Core.Steps.StepRunOptions? left, Aw.Evidence.Core.Steps.StepRunOptions? right) -> bool
+static Aw.Evidence.Core.Steps.StepRunOptions.operator ==(Aw.Evidence.Core.Steps.StepRunOptions? left, Aw.Evidence.Core.Steps.StepRunOptions? right) -> bool
+static Aw.Evidence.Core.Steps.StepRunOptions.Parity(System.TimeSpan actionTimeout) -> Aw.Evidence.Core.Steps.StepRunOptions!
+static Aw.Evidence.Core.Steps.StepRunOptions.Run.get -> Aw.Evidence.Core.Steps.StepRunOptions!
+static Aw.Evidence.Core.Usage.InvocationUsage.operator !=(Aw.Evidence.Core.Usage.InvocationUsage? left, Aw.Evidence.Core.Usage.InvocationUsage? right) -> bool
+static Aw.Evidence.Core.Usage.InvocationUsage.operator ==(Aw.Evidence.Core.Usage.InvocationUsage? left, Aw.Evidence.Core.Usage.InvocationUsage? right) -> bool
+static Aw.Evidence.Core.Usage.ModelInvocation.operator !=(Aw.Evidence.Core.Usage.ModelInvocation? left, Aw.Evidence.Core.Usage.ModelInvocation? right) -> bool
+static Aw.Evidence.Core.Usage.ModelInvocation.operator ==(Aw.Evidence.Core.Usage.ModelInvocation? left, Aw.Evidence.Core.Usage.ModelInvocation? right) -> bool
+static Aw.Evidence.Core.Visual.CachedVerdict.operator !=(Aw.Evidence.Core.Visual.CachedVerdict? left, Aw.Evidence.Core.Visual.CachedVerdict? right) -> bool
+static Aw.Evidence.Core.Visual.CachedVerdict.operator ==(Aw.Evidence.Core.Visual.CachedVerdict? left, Aw.Evidence.Core.Visual.CachedVerdict? right) -> bool
+static Aw.Evidence.Core.Visual.VerdictCache.Empty.get -> Aw.Evidence.Core.Visual.VerdictCache!
+static Aw.Evidence.Core.Visual.VerdictCache.operator !=(Aw.Evidence.Core.Visual.VerdictCache? left, Aw.Evidence.Core.Visual.VerdictCache? right) -> bool
+static Aw.Evidence.Core.Visual.VerdictCache.operator ==(Aw.Evidence.Core.Visual.VerdictCache? left, Aw.Evidence.Core.Visual.VerdictCache? right) -> bool
+static Aw.Evidence.Core.Visual.VerdictCacheContext.operator !=(Aw.Evidence.Core.Visual.VerdictCacheContext? left, Aw.Evidence.Core.Visual.VerdictCacheContext? right) -> bool
+static Aw.Evidence.Core.Visual.VerdictCacheContext.operator ==(Aw.Evidence.Core.Visual.VerdictCacheContext? left, Aw.Evidence.Core.Visual.VerdictCacheContext? right) -> bool
+static Aw.Evidence.Core.Visual.VerdictCacheContext.ScenarioOf(Aw.Evidence.Core.Scripts.UiScript! script, System.Text.Json.JsonSerializerOptions! options) -> string!
+static Aw.Evidence.Core.Visual.VerdictCacheKey.operator !=(Aw.Evidence.Core.Visual.VerdictCacheKey? left, Aw.Evidence.Core.Visual.VerdictCacheKey? right) -> bool
+static Aw.Evidence.Core.Visual.VerdictCacheKey.operator ==(Aw.Evidence.Core.Visual.VerdictCacheKey? left, Aw.Evidence.Core.Visual.VerdictCacheKey? right) -> bool
+static Aw.Evidence.Core.Visual.VisualGate.ToVerdict(Aw.Evidence.Core.Judging.VisualDecision decision) -> Aw.Evidence.Core.Visual.Verdict
+static Aw.Evidence.Core.Visual.VisualGateInput.operator !=(Aw.Evidence.Core.Visual.VisualGateInput? left, Aw.Evidence.Core.Visual.VisualGateInput? right) -> bool
+static Aw.Evidence.Core.Visual.VisualGateInput.operator ==(Aw.Evidence.Core.Visual.VisualGateInput? left, Aw.Evidence.Core.Visual.VisualGateInput? right) -> bool
+static Aw.Evidence.Core.Visual.VisualOutcome.operator !=(Aw.Evidence.Core.Visual.VisualOutcome? left, Aw.Evidence.Core.Visual.VisualOutcome? right) -> bool
+static Aw.Evidence.Core.Visual.VisualOutcome.operator ==(Aw.Evidence.Core.Visual.VisualOutcome? left, Aw.Evidence.Core.Visual.VisualOutcome? right) -> bool
+static readonly Aw.Evidence.Core.Design.DesignManifest.DefaultViewport -> Aw.Evidence.Core.Geometry.ViewportSize!
+static readonly Aw.Evidence.Core.EvidenceErrors.BrowserFailed -> Aw.Kernel.ErrorDefinition!
+static readonly Aw.Evidence.Core.EvidenceErrors.CredentialsMissing -> Aw.Kernel.ErrorDefinition!
+static readonly Aw.Evidence.Core.EvidenceErrors.FileNotFound -> Aw.Kernel.ErrorDefinition!
+static readonly Aw.Evidence.Core.EvidenceErrors.FileUnavailable -> Aw.Kernel.ErrorDefinition!
+static readonly Aw.Evidence.Core.EvidenceErrors.HostRefused -> Aw.Kernel.ErrorDefinition!
+static readonly Aw.Evidence.Core.EvidenceErrors.ImageInvalid -> Aw.Kernel.ErrorDefinition!
 static readonly Aw.Evidence.Core.EvidenceErrors.Invalid -> Aw.Kernel.ErrorDefinition!
+static readonly Aw.Evidence.Core.EvidenceErrors.LockBusy -> Aw.Kernel.ErrorDefinition!
+static readonly Aw.Evidence.Core.EvidenceErrors.ManifestInvalid -> Aw.Kernel.ErrorDefinition!
+static readonly Aw.Evidence.Core.EvidenceErrors.ProbeFailed -> Aw.Kernel.ErrorDefinition!
+static readonly Aw.Evidence.Core.EvidenceErrors.RegionOutside -> Aw.Kernel.ErrorDefinition!
+static readonly Aw.Evidence.Core.EvidenceErrors.ScriptInvalid -> Aw.Kernel.ErrorDefinition!
+static readonly Aw.Evidence.Core.EvidenceErrors.SizeMismatch -> Aw.Kernel.ErrorDefinition!
+static readonly Aw.Evidence.Core.EvidenceErrors.StepsRefused -> Aw.Kernel.ErrorDefinition!
+virtual Aw.Evidence.Core.Browser.Locator.EqualityContract.get -> System.Type!
+virtual Aw.Evidence.Core.Browser.Locator.Equals(Aw.Evidence.Core.Browser.Locator? other) -> bool
+virtual Aw.Evidence.Core.Browser.Locator.PrintMembers(System.Text.StringBuilder! builder) -> bool
+virtual Aw.Evidence.Core.Scripts.ExpectedState.EqualityContract.get -> System.Type!
+virtual Aw.Evidence.Core.Scripts.ExpectedState.Equals(Aw.Evidence.Core.Scripts.ExpectedState? other) -> bool
+virtual Aw.Evidence.Core.Scripts.ExpectedState.PrintMembers(System.Text.StringBuilder! builder) -> bool
