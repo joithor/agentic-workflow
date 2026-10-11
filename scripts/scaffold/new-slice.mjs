@@ -169,6 +169,17 @@ const needsRs0041 = (journal, s) => s.ids.some((i) => i.isNew && i.prim !== "str
 const sliceOwned = (s, rel) =>
   rel === `${s.dirs.testing}/A.cs` || rel === `${s.dirs.tests}/Ids/IdsJsonContext.cs` || (rel.startsWith(`src/${s.pkg}/`) && path.basename(rel) === "PublicAPI.Unshipped.txt");
 
+/** --slice-only: the new files that belong to the slice alone; any other new file is a shared one it doesn't create. */
+const sliceCreatable = (s, rel) => {
+  const d = s.dirs;
+  const own = [`${d.testing}/${s.slice}RequestBuilder.cs`];
+  for (const id of s.ids.filter((i) => i.isNew)) own.push(`${d.core}/Ids/${id.name}.cs`, `${d.tests}/Ids/${id.name}Tests.cs`, `${d.tests}/Ids/${id.name}Holder.cs`);
+  for (const id of s.routeIds) own.push(`${d.tests}/Ids/${id}RouteBindingTests.cs`);
+  for (const port of s.newPorts) own.push(`${d.core}/Ports/${port}.cs`, `${d.testing}/InMemory${port.slice(1)}.cs`, `${d.testing}/${port.slice(1)}Contract.cs`);
+  return rel.startsWith(`${d.features}/`) || rel.startsWith(`${d.tests}/${s.slice}/`) || own.includes(rel);
+};
+const CONTRACT_UNIT_FIX = "add it in the phase's contract unit, or run without --slice-only";
+
 /** Writes the slice's files and edits (no checks). --slice-only skips the shared edits and refuses any other. */
 export function writeSlice(journal, resolved, { sliceOnly = false } = {}) {
   const s = { ...resolved, sliceOnly };
@@ -178,8 +189,15 @@ export function writeSlice(journal, resolved, { sliceOnly = false } = {}) {
       const id = s.ids.find((i) => i.isNew && i.prim !== "string");
       throw new ScaffoldError("NS-SLICE-ONLY", `the new ${id.prim} id ${id.name} needs the RS0041 NoWarn in ${d.coreProject}, a shared file --slice-only doesn't edit`, "add the NoWarn in the phase's contract unit (docs/csharp/typed-ids.md), or run without --slice-only");
     }
+    // A.cs and IdsJsonContext.cs take one line per slice; creating a missing one would make every parallel branch add it.
+    const shared = [`${d.testing}/A.cs`, ...(s.ids.some((i) => i.isNew) ? [`${d.tests}/Ids/IdsJsonContext.cs`] : [])];
+    const missing = shared.find((rel) => !journal.exists(rel));
+    if (missing) throw new ScaffoldError("NS-SLICE-ONLY", `${missing} is missing, and --slice-only only adds the slice's line to it; it creates no shared file`, CONTRACT_UNIT_FIX);
     journal.editGuard = (rel) => {
       if (!sliceOwned(s, rel)) throw new ScaffoldError("NS-SLICE-ONLY", `${rel} is a shared file --slice-only doesn't edit`, "add that line by hand in your branch, or run without --slice-only");
+    };
+    journal.createGuard = (rel) => {
+      if (!sliceCreatable(s, rel)) throw new ScaffoldError("NS-SLICE-ONLY", `${rel} is not one of the slice's own files, and --slice-only creates no shared file`, CONTRACT_UNIT_FIX);
     };
   }
   journal.create(`${d.features}/${s.slice}Request.cs`, T.request(s));
@@ -235,7 +253,8 @@ export function writeSlice(journal, resolved, { sliceOnly = false } = {}) {
 
   journal.create(`${d.tests}/${s.slice}/${s.slice}Tests.cs`, T.redTest(s));
   journal.create(`${d.testing}/${s.slice}RequestBuilder.cs`, T.requestBuilder(s));
-  // A package may have dropped an empty builder root (Sindri's S1 did): write it again rather than fail on it.
+  // A package may have dropped an empty builder root (Sindri's S1 did): write it again rather than fail on it
+  // (--slice-only has refused that case above).
   if (!journal.exists(`${d.testing}/A.cs`)) journal.create(`${d.testing}/A.cs`, builderRoot({ name: s.pkg, shape: s.shape }));
   journal.insert(`${d.testing}/A.cs`, /\{\n\}\n?$|\n\}\n?$/, (end) => (end.startsWith("{") ? `{\n${T.builderFactory(s)}}\n` : `\n\n${T.builderFactory(s)}}\n`), "NS-EDIT", "the builder factory (before A's closing brace)");
 }
@@ -260,7 +279,7 @@ export function sharedLines(s) {
   const hand = s.surface === "cli" ? [`${d.commands}/${s.slice}Command.cs`] : s.surface === "http" ? [`${d.endpoints}/${s.slice}Endpoint.cs`, ...(T.hasBody(s) ? [`${d.endpoints}/${s.slice}Body.cs`] : [])] : [];
   if (hand.length) out.push(`  Write by hand: ${hand.join(", ")} (the normal mode's templates are in scripts/scaffold/lib/slice-templates.mjs).`);
   out.push(`  With the registration, remove the [SuppressMessage] for MA0182 from ${s.slice}Service and ${s.slice}Validator.`);
-  out.push(`  For Sindri: mark ${s.slice}Request ICommand<${s.slice}Response> or IQuery<${s.slice}Response>, and register it with AddCommand or AddQuery in place of the block above (spec §12).`);
+  if (s.pkg === "Sindri") out.push(`  For Sindri: mark ${s.slice}Request ICommand<${s.slice}Response> or IQuery<${s.slice}Response>, and register it with AddCommand or AddQuery in place of the block above (spec §12).`);
   return out.join("\n");
 }
 

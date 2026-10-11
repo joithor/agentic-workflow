@@ -106,6 +106,8 @@ export class Journal {
     this.edited = new Map();
     /** Called with each existing file before an edit (files this run created are exempt); throws to refuse it. */
     this.editGuard = null;
+    /** Called with each new file before it is written; throws to refuse it. */
+    this.createGuard = null;
   }
 
   abs(rel) {
@@ -124,6 +126,7 @@ export class Journal {
   create(rel, text) {
     const file = this.abs(rel);
     if (fs.existsSync(file)) throw new Error(`refusing to overwrite ${rel}`);
+    if (this.createGuard) this.createGuard(rel);
     this.mkdirs(path.dirname(rel));
     fs.writeFileSync(file, text);
     this.created.push(rel);
@@ -144,6 +147,7 @@ export class Journal {
    * hand-edited file can't make the scaffold skip a registration silently.
    */
   insert(rel, anchor, replacement, rule, what) {
+    if (this.editGuard && !this.created.includes(rel)) this.editGuard(rel);
     const text = this.read(rel);
     if (!anchor.test(text)) {
       throw new ScaffoldError(rule, `${rel}: no anchor for ${what} (${anchor})`, "restore the anchor the scaffold writes (see the scaffold spec's templates) or make this edit by hand");

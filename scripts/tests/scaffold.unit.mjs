@@ -407,7 +407,7 @@ t("--slice-only cli: only the slice's files, its id files and its A.cs factory; 
   assert.match(r.out, /new ValidatingService<ListReposRequest, ListReposResponse>\(/);
   assert.match(r.out, /\[JsonSerializable\(typeof\(ListReposRequest\)\)\]\n\s*\[JsonSerializable\(typeof\(ListReposResponse\)\)\]/);
   assert.match(r.out, /Commands\/ListReposCommand\.cs/);
-  assert.match(r.out, /ICommand<ListReposResponse>.*IQuery<ListReposResponse>/);
+  assert.doesNotMatch(r.out, /For Sindri/, "the Sindri-only note prints only for Sindri");
   // the file list comes before the block, and the block before the next steps
   assert.ok(r.out.indexOf("ListReposTests.cs") < r.out.indexOf("Shared lines") && r.out.indexOf("Shared lines") < r.out.indexOf("Next (make"), r.out);
 });
@@ -565,6 +565,13 @@ t("Journal insert: the edit guard runs before the anchor test, so a guarded file
     throw new commonLib.ScaffoldError("NS-SLICE-ONLY", `${rel} is shared`, "x");
   };
   assert.throws(() => j.insert("deps.yaml", /no such anchor/, "x", "NS-EDIT", "a line"), /NS-SLICE-ONLY: deps\.yaml is shared/);
+});
+
+const newSliceLib = await import(NEW_SLICE);
+t("sharedLines: the ICommand/IQuery note prints for Sindri only", () => {
+  const s = (pkg) => ({ pkg, slice: "GetJob", surface: "none", featuresNs: `Aw.${pkg}.Features.GetJob`, ports: [], visibility: "public", dirs: { registration: `src/${pkg}/R.cs` } });
+  assert.match(newSliceLib.sharedLines(s("Sindri")), /For Sindri: mark GetJobRequest ICommand<GetJobResponse> or IQuery<GetJobResponse>/);
+  assert.doesNotMatch(newSliceLib.sharedLines(s("Readiness")), /For Sindri/);
 });
 
 const checks = await import(path.join(REPO, "scripts/scaffold/lib/checks.mjs"));
