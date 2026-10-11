@@ -17,7 +17,7 @@ internal sealed class StopProcessService(HeldLease held, ILease lease, ILedgerSt
         if (grant is null)
         {
             shutdown.Request();
-            return new StopProcessResponse(0, 0);
+            return new StopProcessResponse(0, 0, Sequence: null);
         }
 
         var entry = events.Entry(EventTypes.ProcessStopped, new ProcessStopped(grant.Holder.Pid, grant.Epoch, request.Reason),
@@ -28,6 +28,6 @@ internal sealed class StopProcessService(HeldLease held, ILease lease, ILedgerSt
         var released = await lease.Release(grant, cancellationToken).ConfigureAwait(false);
         return recorded.IsError ? recorded.Error
             : released.IsError ? released.Error
-            : new StopProcessResponse(grant.Holder.Pid, grant.Epoch);
+            : new StopProcessResponse(grant.Holder.Pid, grant.Epoch, recorded.Value.Sequence);
     }
 }

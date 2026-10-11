@@ -29,12 +29,10 @@ Aw.Sindri.Features.ApproveProfile.ApproveProfileRequest.Hash.get -> Aw.Sindri.Co
 Aw.Sindri.Features.ApproveProfile.ApproveProfileRequest.Hash.init -> void
 Aw.Sindri.Features.ApproveProfile.ApproveProfileResponse
 Aw.Sindri.Features.ApproveProfile.ApproveProfileResponse.<Clone>$() -> Aw.Sindri.Features.ApproveProfile.ApproveProfileResponse!
-Aw.Sindri.Features.ApproveProfile.ApproveProfileResponse.ApproveProfileResponse(Aw.Sindri.Core.Ids.ProfileHash Hash, System.Collections.Generic.IReadOnlyList<string!>! Changes, bool Approved) -> void
 Aw.Sindri.Features.ApproveProfile.ApproveProfileResponse.Approved.get -> bool
 Aw.Sindri.Features.ApproveProfile.ApproveProfileResponse.Approved.init -> void
 Aw.Sindri.Features.ApproveProfile.ApproveProfileResponse.Changes.get -> System.Collections.Generic.IReadOnlyList<string!>!
 Aw.Sindri.Features.ApproveProfile.ApproveProfileResponse.Changes.init -> void
-Aw.Sindri.Features.ApproveProfile.ApproveProfileResponse.Deconstruct(out Aw.Sindri.Core.Ids.ProfileHash Hash, out System.Collections.Generic.IReadOnlyList<string!>! Changes, out bool Approved) -> void
 Aw.Sindri.Features.ApproveProfile.ApproveProfileResponse.Equals(Aw.Sindri.Features.ApproveProfile.ApproveProfileResponse? other) -> bool
 Aw.Sindri.Features.ApproveProfile.ApproveProfileResponse.Hash.get -> Aw.Sindri.Core.Ids.ProfileHash
 Aw.Sindri.Features.ApproveProfile.ApproveProfileResponse.Hash.init -> void
@@ -128,13 +126,11 @@ Aw.Sindri.Features.StopProcess.StopProcessRequest.Equals(Aw.Sindri.Features.Stop
 Aw.Sindri.Features.StopProcess.StopProcessRequest.Reason.init -> void
 Aw.Sindri.Features.StopProcess.StopProcessResponse
 Aw.Sindri.Features.StopProcess.StopProcessResponse.<Clone>$() -> Aw.Sindri.Features.StopProcess.StopProcessResponse!
-Aw.Sindri.Features.StopProcess.StopProcessResponse.Deconstruct(out int Pid, out long Epoch) -> void
 Aw.Sindri.Features.StopProcess.StopProcessResponse.Epoch.get -> long
 Aw.Sindri.Features.StopProcess.StopProcessResponse.Epoch.init -> void
 Aw.Sindri.Features.StopProcess.StopProcessResponse.Equals(Aw.Sindri.Features.StopProcess.StopProcessResponse? other) -> bool
 Aw.Sindri.Features.StopProcess.StopProcessResponse.Pid.get -> int
 Aw.Sindri.Features.StopProcess.StopProcessResponse.Pid.init -> void
-Aw.Sindri.Features.StopProcess.StopProcessResponse.StopProcessResponse(int Pid, long Epoch) -> void
 Aw.Sindri.Features.StreamEvents.EventView
 Aw.Sindri.Features.StreamEvents.EventView.<Clone>$() -> Aw.Sindri.Features.StreamEvents.EventView!
 Aw.Sindri.Features.StreamEvents.EventView.Actor.get -> string!
@@ -288,3 +284,11 @@ Aw.Sindri.Features.Commands.SindriCommandServiceCollectionExtensions
 static Aw.Sindri.Features.Commands.SindriCommandServiceCollectionExtensions.AddCommand<TCommand, TResult, TService>(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
 static Aw.Sindri.Features.Commands.SindriCommandServiceCollectionExtensions.AddIssue<TIssue, TResult, TService>(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
 static Aw.Sindri.Features.Commands.SindriCommandServiceCollectionExtensions.AddQuery<TQuery, TView, TService>(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
+Aw.Sindri.Features.ApproveProfile.ApproveProfileResponse.ApproveProfileResponse(Aw.Sindri.Core.Ids.ProfileHash Hash, System.Collections.Generic.IReadOnlyList<string!>! Changes, bool Approved, long? Sequence) -> void
+Aw.Sindri.Features.ApproveProfile.ApproveProfileResponse.Deconstruct(out Aw.Sindri.Core.Ids.ProfileHash Hash, out System.Collections.Generic.IReadOnlyList<string!>! Changes, out bool Approved, out long? Sequence) -> void
+Aw.Sindri.Features.ApproveProfile.ApproveProfileResponse.Sequence.get -> long?
+Aw.Sindri.Features.ApproveProfile.ApproveProfileResponse.Sequence.init -> void
+Aw.Sindri.Features.StopProcess.StopProcessResponse.Deconstruct(out int Pid, out long Epoch, out long? Sequence) -> void
+Aw.Sindri.Features.StopProcess.StopProcessResponse.Sequence.get -> long?
+Aw.Sindri.Features.StopProcess.StopProcessResponse.Sequence.init -> void
+Aw.Sindri.Features.StopProcess.StopProcessResponse.StopProcessResponse(int Pid, long Epoch, long? Sequence) -> void
