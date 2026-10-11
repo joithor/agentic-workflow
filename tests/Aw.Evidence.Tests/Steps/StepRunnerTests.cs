@@ -146,7 +146,7 @@ public sealed class StepRunnerTests
 
         var (status, _) = await Run(session, ScriptBuilder.Fill("search", "St"), judge);
 
-        Assert.Equal(StepStatus.Broken, status);
+        Assert.Equal(StepStatus.Failed, status);   // the fill ran on the fillable candidate; its expectation decides
         Assert.Equal(["fill testId:search", "fill candidate:1"], session.Calls);
     }
 

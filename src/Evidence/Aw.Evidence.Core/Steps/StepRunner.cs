@@ -11,7 +11,8 @@ namespace Aw.Evidence.Core.Steps;
 /// <summary>
 /// Runs one step and checks its expected state. The action failing means the selector is broken: a click or fill may
 /// ask the judge for a visible replacement (at most <see cref="RepairRules.MaxAttempts"/> times), run the same action
-/// on it and re-check the expectation; where writes are refused, a candidate that reads like a write is never acted on
+/// on it and re-check the expectation (only a repaired action that fails gets another attempt; one that runs settles the
+/// step: passed, or failed when the expectation misses); where writes are refused, a candidate that reads like a write is never acted on
 /// (it counts as no candidate). The action passing but the expectation failing is a behaviour failure:
 /// <see cref="StepStatus.Failed"/>, never repaired or masked by a model.
 /// </summary>
@@ -115,9 +116,12 @@ public sealed class StepRunner(IJudge judge, TimeProvider clock)
 
             var target = new CandidateLocator(chosen.Index, chosen.TestId);
             var acted = await PerformAsync(session, step, target, options.ActionTimeout, cancellationToken).ConfigureAwait(false);
-            if (acted.IsSuccess && await ExpectationHolds(session, step.ExpectedState, options.ExpectationTimeout, cancellationToken).ConfigureAwait(false))
+            if (acted.IsSuccess)
             {
-                return StepStatus.Passed;
+                // The repaired action ran, so the page changed: the expectation decides, and nothing acts again.
+                return await ExpectationHolds(session, step.ExpectedState, options.ExpectationTimeout, cancellationToken).ConfigureAwait(false)
+                    ? StepStatus.Passed
+                    : StepStatus.Failed;
             }
         }
 

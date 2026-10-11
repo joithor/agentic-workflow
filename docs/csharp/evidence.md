@@ -185,7 +185,8 @@ Scorer and bugfix-state read these files after their own ports; the fields they 
 | `evidence` | object | `traces` (string[]: `<run-dir>/<viewport>-trace.zip`), `videos` (string[]) |
 
 A step's `status`: `passed` (the action ran and the expected state held), `failed` (the action ran, the expected state
-didn't hold: a behaviour failure, never repaired), `broken` (the action itself failed and no repair made it pass). Every
+didn't hold: a behaviour failure, never repaired; also a repaired action that ran but missed the expectation, which is
+never repaired again), `broken` (the action itself failed and no repair made it run). Every
 step runs whatever an earlier one did. The visual verdict comes from the last passed step's screenshot: pixel-identical
 to `--baseline` is `unchanged` with no model (never for a run with a failed step); otherwise the verdict cache
 (`--cache`, default `<run-dir>/verdict-cache.json`; keyed on the pixels' and baseline's hashes, the prompt version,
