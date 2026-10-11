@@ -49,7 +49,7 @@ public sealed class FixtureRepo : IDisposable
         {
             if (!built)
             {
-                Directory.Delete(root, recursive: true);
+                TryDelete(root);
             }
         }
     }
@@ -60,6 +60,19 @@ public sealed class FixtureRepo : IDisposable
         if (Directory.Exists(_root))
         {
             Directory.Delete(_root, recursive: true);
+        }
+    }
+
+    // Cleanup after a failed build must not replace the build's own error (git's stderr) with a delete failure.
+    private static void TryDelete(string root)
+    {
+        try
+        {
+            Directory.Delete(root, recursive: true);
+        }
+        catch (Exception e) when (e is IOException or UnauthorizedAccessException)
+        {
+            // left behind; the build error that brought us here is the one to report
         }
     }
 

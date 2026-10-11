@@ -96,7 +96,9 @@ doesn't read Linear Documents (D4).
 Eight questions (§9.2 item 3), each with the anchors a correct answer holds: `nodes` (graph keys, §6.1 scheme),
 `absentNodes` (what it must not name, e.g. the sibling), `records` (canonical keys), `files` (repo paths) and
 `decisions` (verbatim quote, `current` or `superseded`, and the file it conflicts with). The node keys are the intended
-map, not one a stage has built yet; the stage that builds the map (S-3, S-4) checks its keys against them.
+map, not one a stage has built yet; the stage that builds the map (S-3, S-4) checks its keys against them. Where the
+spec's §8.4 result example names this cascade differently (`feature:tabs.layout-restore`,
+`action:tabs.restore-layout`), that example is illustrative and these keys are the fixture's map.
 
 ## The fakes
 
@@ -113,18 +115,24 @@ to change; an exception it didn't anticipate becomes a recorded JSON 500 naming 
 - Root fields `projects`, `documents`, `projectUpdates`, `issues`: Linear filter objects (nested fields such as
   `team: { key: { eq: "SPL" } }`, `and`/`or`, `some`/`every` over a connection, `eq neq in nin gt gte lt lte null
   eqIgnoreCase contains containsIgnoreCase startsWith`; dates compare as instants), `first` (1–250, default 50),
-  `after` (a node id from `endCursor`), `orderBy` (`createdAt` default, or `updatedAt`; ascending), `pageInfo`.
+  `after` (a node id from `endCursor`), `orderBy` (`createdAt` default, or `updatedAt`; ascending), `pageInfo`;
+  `includeArchived` is accepted and changes nothing (no recorded node is archived). A non-string `orderBy` or `after`
+  is a 400.
 - `project(id)`, `document(id)`, `issue(id)` (an issue also by identifier); a missing one is a GraphQL error with
   `data.<field> = null`, status 200.
 - **Replies follow the selection set**: only the selected fields come back, under their aliases. A field the
   recordings don't have, an object field without subfields, or a scalar with subfields is a 400, so a hand-written
-  query (D18) that selects the wrong thing fails here. A nested connection takes `first`; other nested arguments are
-  refused.
+  query (D18) that selects the wrong thing fails here. A nested connection (`comments`, `attachments`, `labels`,
+  `teams`) takes `first` and answers `pageInfo` (computed: the recordings hold every child); other nested arguments
+  are refused. Selection sets nest at most 32 deep.
 - One `query` operation with variable definitions; defaults (`$first: Int = 2`) apply when the request leaves a
   variable out, and an undeclared `$variable` is a 400. Object and list arguments must be variables (inline scalars and
-  enums are fine). Mutations, fragments, directives, block strings and invalid string escapes are 400s.
-- Filters: an unknown filter field, a field filter straight on a connection (without `some`/`every`), `null` with a
-  non-Boolean, or a date compared with a non-date (`P1W`) is a 400. A null field or relation fails every comparator
+  enums are fine; a non-finite number is a 400). Mutations, fragments, directives, block strings and invalid string
+  escapes are 400s.
+- Filters: an unknown filter field, a field filter straight on a connection (without `some`/`every`), `some`/`every`
+  on a scalar, `null` with a non-Boolean, a string comparator with a non-string, values of different types, or a date
+  compared with a non-date (`P1W`) is a 400, wherever the clause sits: every clause is evaluated before the results
+  are combined, so an earlier failing clause never hides a bad one. A null field or relation fails every comparator
   except `neq`, `nin` and `null: true`; the fake doesn't model Linear's joins beyond that.
 - No or a wrong token is a 401.
 
@@ -132,7 +140,7 @@ to change; an exception it didn't anticipate becomes a recorded JSON 500 naming 
 
 - `POST /api/query/document-search` reads exactly `message` and
   `retrieval_options.{filters.{source_type,time_cutoff},limit,offset}`; `time_cutoff` keeps documents updated at or
-  after it. **Any other field** (`search_type`, `run_search`, `real_time`, `enable_auto_detect_filters`, `tags`,
+  after it, and an empty `source_type` list is no filter (as in Onyx). **Any other field** (`search_type`, `run_search`, `real_time`, `enable_auto_detect_filters`, `tags`,
   `document_set`, …), a missing `message`, or a badly typed value (a `source_type` that isn't a list of strings, a
   non-string `time_cutoff`, a non-integer `limit`) is a 422 in Onyx's validation shape (`detail: [{loc, msg, type}]`),
   so a client never relies on a knob the fake would ignore. The reply is
