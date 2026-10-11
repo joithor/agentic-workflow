@@ -1,6 +1,7 @@
 using System.Text.Json;
 using Aw.Kernel;
 using Aw.Kernel.Json;
+using Aw.Sindri.Core;
 using Aw.Sindri.Core.Control;
 
 namespace Aw.Sindri.Infrastructure.Control;
@@ -23,6 +24,10 @@ internal sealed class FileEndpoint(SindriSettings settings, JsonSerializerOption
         {
             return Results.Success<ControlEndpoint?>(value: null);
         }
+        catch (Exception e) when (e is IOException or UnauthorizedAccessException)
+        {
+            return Unreadable(e);
+        }
 
         var endpoint = AwJson.Deserialize<ControlEndpoint>(bytes, options);
         return endpoint.IsError ? Results.Success<ControlEndpoint?>(value: null) : endpoint.Value;   // a damaged record reads as none
@@ -30,19 +35,37 @@ internal sealed class FileEndpoint(SindriSettings settings, JsonSerializerOption
 
     public ValueTask<Result<Unit>> Write(ControlEndpoint endpoint, CancellationToken cancellationToken)
     {
-        OwnerOnly.EnsureDirectory(settings.Home);
-        OwnerOnly.WriteAtomically(settings.EndpointPath, AwJson.Serialize(endpoint, options));
-        return ValueTask.FromResult<Result<Unit>>(Unit.Value);
+        try
+        {
+            OwnerOnly.EnsureDirectory(settings.Home);
+            OwnerOnly.WriteAtomically(settings.EndpointPath, AwJson.Serialize(endpoint, options));
+            return ValueTask.FromResult<Result<Unit>>(Unit.Value);
+        }
+        catch (Exception e) when (e is IOException or UnauthorizedAccessException)
+        {
+            return ValueTask.FromResult<Result<Unit>>(Unreadable(e));
+        }
     }
 
     public async ValueTask<Result<Unit>> Remove(int pid, CancellationToken cancellationToken)
     {
         var current = await Read(cancellationToken).ConfigureAwait(false);
-        if (current.IsSuccess && current.Value?.Pid == pid)
+        if (current.IsError || current.Value?.Pid != pid)
         {
-            File.Delete(settings.EndpointPath);
+            return current.IsError ? current.Error : Unit.Value;
         }
 
-        return Unit.Value;
+        try
+        {
+            File.Delete(settings.EndpointPath);
+            return Unit.Value;
+        }
+        catch (Exception e) when (e is IOException or UnauthorizedAccessException)
+        {
+            return Unreadable(e);
+        }
     }
+
+    private Error Unreadable(Exception e) => SindriErrors.LedgerUnavailable.With(
+        $"{settings.EndpointPath} can't be read or written: {e.Message} (fix: check the permissions of {settings.Home})");
 }

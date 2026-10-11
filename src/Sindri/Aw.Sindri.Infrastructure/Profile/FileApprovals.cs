@@ -17,6 +17,32 @@ internal sealed class FileApprovals(SindriSettings settings, JsonSerializerOptio
 
     public async ValueTask<Result<LoadedProfile?>> Latest(CancellationToken cancellationToken)
     {
+        try
+        {
+            return await Read(cancellationToken).ConfigureAwait(false);
+        }
+        catch (Exception e) when (e is IOException or UnauthorizedAccessException)
+        {
+            return SindriErrors.ProfileNotApproved.With($"the approval under {settings.ApprovalsDirectory} can't be read: {e.Message} (fix: check its permissions, or sindri profile approve)");
+        }
+    }
+
+    public ValueTask<Result<Unit>> Save(LoadedProfile profile, CancellationToken cancellationToken)
+    {
+        try
+        {
+            Write(profile);
+            return ValueTask.FromResult<Result<Unit>>(Unit.Value);
+        }
+        catch (Exception e) when (e is IOException or UnauthorizedAccessException)
+        {
+            return ValueTask.FromResult<Result<Unit>>(SindriErrors.ProfileNotApproved.With(
+                $"the approval can't be saved under {settings.ApprovalsDirectory}: {e.Message} (fix: check its permissions and free space)"));
+        }
+    }
+
+    private async ValueTask<Result<LoadedProfile?>> Read(CancellationToken cancellationToken)
+    {
         if (!File.Exists(_latestPath))
         {
             return Results.Success<LoadedProfile?>(value: null);
@@ -43,14 +69,13 @@ internal sealed class FileApprovals(SindriSettings settings, JsonSerializerOptio
         return loaded.Value;
     }
 
-    public ValueTask<Result<Unit>> Save(LoadedProfile profile, CancellationToken cancellationToken)
+    private void Write(LoadedProfile profile)
     {
         OwnerOnly.EnsureDirectory(settings.Home);
         OwnerOnly.EnsureDirectory(settings.ApprovalsDirectory);
         OwnerOnly.EnsureDirectory(Path.GetDirectoryName(SnapshotPath(profile.Hash))!);   // why: a snapshot path always has a parent
         OwnerOnly.WriteAtomically(SnapshotPath(profile.Hash), ProfileReading.Canonical(profile.Profile, options));
         OwnerOnly.WriteAtomically(_latestPath, Encoding.UTF8.GetBytes(profile.Hash.Value + "\n"));
-        return ValueTask.FromResult<Result<Unit>>(Unit.Value);
     }
 
     private string SnapshotPath(ProfileHash hash) => Path.Combine(settings.ApprovalsDirectory, hash.Value, "profile.json");
