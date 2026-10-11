@@ -456,6 +456,29 @@ t("--slice-only http POST with a body id: the printed JSON lines include the bod
   assert.ok(!exists(d, "src/Demohttp/Aw.Demohttp.Host/Endpoints/MoveItemBody.cs"), "--slice-only wrote the body record");
 });
 
+const demohttp = (d) => assert.equal(pkg(d, { name: "Demohttp", note: "x", "error-prefix": "DEMOHTTP", shape: "full", host: "http", binary: undefined, "first-slice": "StartItem", behavior: "starts_an_item", route: "POST /items/{itemId}/start", ids: "ItemId:string" }).code, 0);
+t("--slice-only: a new port gets its interface, fake and contract base past the create guard", () => {
+  const d = tree();
+  demohttp(d);
+  const before = fileHashes(d);
+  const r = sliceOnly(d, { package: "Demohttp", slice: "ListShelves", behavior: "lists_shelves", surface: "http", route: "GET /shelves", ports: "IShelfStore" });
+  assert.equal(r.code, 0, r.out);
+  const f = "src/Demohttp/Aw.Demohttp.Features/ListShelves";
+  assert.deepEqual(changedFiles(before, fileHashes(d)), [
+    "src/Demohttp/Aw.Demohttp.Core/Ports/IShelfStore.cs",
+    `${f}/ListShelvesRequest.cs`,
+    `${f}/ListShelvesResponse.cs`,
+    `${f}/ListShelvesService.cs`,
+    `${f}/ListShelvesValidator.cs`,
+    "tests/Aw.Demohttp.Testing/A.cs",
+    "tests/Aw.Demohttp.Testing/InMemoryShelfStore.cs",
+    "tests/Aw.Demohttp.Testing/ListShelvesRequestBuilder.cs",
+    "tests/Aw.Demohttp.Testing/ShelfStoreContract.cs",
+    "tests/Aw.Demohttp.Tests/ListShelves/ListShelvesTests.cs",
+  ]);
+  assert.ok(!exists(d, "src/Demohttp/Aw.Demohttp.Host/Endpoints/ListShelvesEndpoint.cs"), "--slice-only wrote the endpoint");
+});
+
 t("NS-SLICE-ONLY: a new Guid id when Core lacks the RS0041 NoWarn is refused, nothing written", () => {
   const d = tree();
   assert.equal(pkg(d).code, 0);
@@ -490,7 +513,6 @@ t("--slice-only: a slice-only refusal leaves a normal second run possible (the g
 
 // Sindri's S1 removed its empty A.cs. The normal mode writes the builder root again; --slice-only creates no shared
 // file, so it refuses and leaves the tree as it was (the phase's contract unit restores A.cs).
-const demohttp = (d) => assert.equal(pkg(d, { name: "Demohttp", note: "x", "error-prefix": "DEMOHTTP", shape: "full", host: "http", binary: undefined, "first-slice": "StartItem", behavior: "starts_an_item", route: "POST /items/{itemId}/start", ids: "ItemId:string" }).code, 0);
 t("new-slice (normal): a package without tests/Aw.<Pkg>.Testing/A.cs gets the builder root with the factory", () => {
   const d = tree();
   demohttp(d);
