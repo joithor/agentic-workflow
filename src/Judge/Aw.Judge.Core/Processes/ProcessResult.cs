@@ -28,4 +28,9 @@ public sealed record ProcessResult(ProcessEnd End, int? ExitCode, string Standar
     /// <summary>A program that couldn't be started.</summary>
     /// <returns>The result.</returns>
     public static ProcessResult NotStarted() => new(ProcessEnd.NotStarted, ExitCode: null, "", "");
+
+    /// <summary>A program the system refused to start.</summary>
+    /// <param name="reason">Why, as the system said it (standard error).</param>
+    /// <returns>The result.</returns>
+    public static ProcessResult FailedToStart(string reason) => new(ProcessEnd.FailedToStart, ExitCode: null, "", reason);
 }

@@ -944,3 +944,5 @@ static Aw.Judge.Core.Ports.ProviderLineup.operator !=(Aw.Judge.Core.Ports.Provid
 static Aw.Judge.Core.Ports.ProviderLineup.operator ==(Aw.Judge.Core.Ports.ProviderLineup? left, Aw.Judge.Core.Ports.ProviderLineup? right) -> bool
 Aw.Judge.Core.Ports.IProviderCatalog.Lineup(Aw.Judge.Core.Config.ProvidersConfig? config, System.Collections.Generic.IReadOnlyCollection<Aw.Judge.Core.Providers.ProviderName>? allowed, Aw.Judge.Core.Ports.IModelProvider! rules) -> Aw.Judge.Core.Ports.ProviderLineup!
 static Aw.Judge.Core.Decisions.DecisionDetails.Retention.get -> System.TimeSpan
+Aw.Judge.Core.Processes.ProcessEnd.FailedToStart = 4 -> Aw.Judge.Core.Processes.ProcessEnd
+static Aw.Judge.Core.Processes.ProcessResult.FailedToStart(string! reason) -> Aw.Judge.Core.Processes.ProcessResult!

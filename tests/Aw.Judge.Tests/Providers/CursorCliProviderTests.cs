@@ -1,3 +1,4 @@
+using System.Text;
 using Aw.Judge.Core.Providers;
 using Aw.Judge.Infrastructure.Providers;
 using Aw.Judge.Testing;
@@ -36,6 +37,20 @@ public sealed class CursorCliProviderTests
         Assert.Contains("JSON Schema", arguments[^1], StringComparison.Ordinal);
         Assert.Contains("\"enum\":[\"send\",\"batch\",\"drop\"]", arguments[^1], StringComparison.Ordinal);
         Assert.False(Directory.Exists(call.Request.WorkingDirectory));
+    }
+
+    [Fact]
+    public async Task The_prompt_argument_carries_the_built_prompt_only_and_is_capped_under_the_argument_limit()
+    {
+        Install(Questions.ResultText("""{"decision":"send"}"""));
+        var huge = Questions.Text with { Prompt = new string('p', 300_000) };
+
+        _ = await Decide(huge);
+
+        var prompt = Assert.Single(_runner.Calls).Request.Arguments[^1];
+        Assert.DoesNotContain("hello", prompt, StringComparison.Ordinal);
+        Assert.Contains("[truncated", prompt, StringComparison.Ordinal);
+        Assert.True(Encoding.UTF8.GetByteCount(prompt) < 128 * 1024, $"one argument stays under Linux's 128 KiB, got {prompt.Length} chars");
     }
 
     [Theory]

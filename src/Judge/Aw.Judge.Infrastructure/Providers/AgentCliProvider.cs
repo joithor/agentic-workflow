@@ -43,7 +43,7 @@ internal abstract class AgentCliProvider(IProcessRunner runner, AgentCliName cli
         var result = await runner.Run(Request(call, budget), cancellationToken).ConfigureAwait(false);
         return result.End switch
         {
-            ProcessEnd.NotStarted => new ProviderUnavailable(ProviderReasons.NotInstalled),
+            ProcessEnd.NotStarted or ProcessEnd.FailedToStart => new ProviderUnavailable(ProviderReasons.NotInstalled),
             ProcessEnd.TimedOut => new ProviderUnavailable(ProviderUnavailable.Timeout),
             ProcessEnd.Exited when result.ExitCode != 0 => new ProviderErrored(ProviderReasons.Exit(result.ExitCode)),
             ProcessEnd.Exited => Read(result.StandardOutput, question),

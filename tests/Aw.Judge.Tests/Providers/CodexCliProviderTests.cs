@@ -41,8 +41,8 @@ public sealed class CodexCliProviderTests
         Assert.Equal(call.Request.WorkingDirectory, ClaudeCliProviderTests.After(arguments, "-C"));
         Assert.Equal(["schema.json"], call.WorkingDirectoryFiles ?? [], StringComparer.Ordinal);
         Assert.Contains("hooks", arguments, StringComparer.Ordinal);
-        Assert.Equal("--", arguments[^2]);
-        Assert.StartsWith(Questions.WithIndex.Prompt + "\n\nInput:\n", arguments[^1], StringComparison.Ordinal);
+        Assert.Equal(["--", "-"], arguments.TakeLast(2), StringComparer.Ordinal);
+        Assert.Equal(Questions.WithIndex.Prompt, call.Request.StandardInput);
         var schema = JsonNode.Parse(schemaText!)!;   // why: the program read the file during the run
         Assert.Equal("""["decision","chosenIndex"]""", schema["required"]!.ToJsonString());   // why: strict mode lists every property
         Assert.False(schema["additionalProperties"]!.GetValue<bool>());   // why: strict mode sets it
@@ -81,6 +81,7 @@ public sealed class CodexCliProviderTests
         var arguments = Assert.Single(_runner.Calls).Request.Arguments.ToList();
         var separator = arguments.IndexOf("--");
         Assert.Equal(["--image", Path.Combine(evidence, "after.png"), "--image", Path.Combine(evidence, "before.png")], arguments[(separator - 4)..separator]);
+        Assert.StartsWith(Questions.Image.Prompt, Assert.Single(_runner.Calls).Request.StandardInput, StringComparison.Ordinal);
     }
 
     private static string Message(string text) =>

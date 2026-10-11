@@ -32,12 +32,12 @@ public sealed class ClaudeCliProviderTests
         var request = call.Request;
         Assert.Equal("claude", request.FileName);
         Assert.Equal(Questions.Budget, request.Timeout);
-        Assert.Null(request.StandardInput);
+        Assert.Equal(Questions.Text.Prompt, request.StandardInput);
         Assert.Equal(["-p", "--model", "haiku", "--effort", "low"], request.Arguments.Take(5), StringComparer.Ordinal);
         Assert.Equal("", After(request.Arguments, "--tools"));
         Assert.Equal("", After(request.Arguments, "--setting-sources"));
-        Assert.Equal(Questions.Text.Prompt, After(request.Arguments, "--system-prompt"));
-        Assert.Equal(Questions.Input.ToJsonString(), request.Arguments[^1]);
+        Assert.Equal("json", request.Arguments[^1]);
+        Assert.DoesNotContain(request.Arguments, argument => argument.Contains("hello", StringComparison.Ordinal) || argument.Contains(Questions.Text.Prompt, StringComparison.Ordinal));
         var schema = JsonNode.Parse(After(request.Arguments, "--json-schema"))!;   // why: the flag's value is the schema JSON
         Assert.Equal("""["send","batch","drop"]""", schema["properties"]!["decision"]!["enum"]!.ToJsonString());   // why: the lax schema always has the decision enum
         Assert.Equal("1", request.Environment["AW_JUDGE_CHILD"]);
@@ -85,6 +85,14 @@ public sealed class ClaudeCliProviderTests
     }
 
     [Fact]
+    public async Task A_cli_the_system_refuses_to_start_is_errored_so_health_counts_it()
+    {
+        _ = _runner.With("claude", new FakeProgram { FailsToStart = true });
+
+        Assert.Equal(new ProviderErrored("spawn-failed"), await Decide(Questions.Text));
+    }
+
+    [Fact]
     public async Task Not_installed_is_unavailable() =>
         Assert.Equal(new ProviderUnavailable("not-installed"), await Decide(Questions.Text));
 
@@ -123,7 +131,8 @@ public sealed class ClaudeCliProviderTests
         Assert.Equal(evidence, request.WorkingDirectory);
         Assert.Equal("Read", After(request.Arguments, "--tools"));
         Assert.Equal("Read(./**)", After(request.Arguments, "--allowedTools"));
-        Assert.Equal(Questions.Image.Prompt, request.Arguments[^1]);
+        Assert.Equal(Questions.Image.Prompt, request.StandardInput);
+        Assert.Equal("json", request.Arguments[^1]);
     }
 
     [Fact]

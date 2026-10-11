@@ -28,6 +28,9 @@ public sealed record FakeProgram
     /// <summary>How many 'a's it writes to each of standard output and standard error first.</summary>
     public int OutputSize { get; init; }
 
+    /// <summary>It is installed but the system refuses to start it (a file that isn't a program).</summary>
+    public bool FailsToStart { get; init; }
+
     /// <summary>How long it runs before it writes anything else; past the request's timeout it is stopped.</summary>
     public TimeSpan Runs { get; init; }
 }

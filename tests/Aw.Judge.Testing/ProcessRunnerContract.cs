@@ -96,6 +96,16 @@ public abstract class ProcessRunnerContract : IDisposable
         Expect.That(result == ProcessResult.NotStarted(), $"a missing program is not started, got {result}");
     }
 
+    /// <summary>A program that is installed but can't be run is a start failure, not a missing program, and nothing throws.</summary>
+    /// <returns>A task.</returns>
+    [Fact]
+    public async Task A_program_the_system_refuses_to_start_failed_to_start()
+    {
+        var result = await Run(new FakeProgram { FailsToStart = true });
+
+        Expect.That(result.End == ProcessEnd.FailedToStart && result.ExitCode is null, $"the start failed, got {result}");
+    }
+
     /// <summary>A megabyte on each stream at once doesn't deadlock on full pipes.</summary>
     /// <returns>A task.</returns>
     [Fact]

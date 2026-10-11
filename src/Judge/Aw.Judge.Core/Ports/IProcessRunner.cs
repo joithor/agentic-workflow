@@ -7,8 +7,9 @@ public interface IProcessRunner
 {
     /// <summary>
     /// Runs the program and collects both output streams. Past <see cref="ProcessRequest.Timeout"/> the program and
-    /// every process it started are stopped and the result is <see cref="ProcessEnd.TimedOut"/>; a program that can't
-    /// be started is <see cref="ProcessEnd.NotStarted"/>. Neither throws.
+    /// every process it started are stopped and the result is <see cref="ProcessEnd.TimedOut"/>; a program that isn't
+    /// installed is <see cref="ProcessEnd.NotStarted"/>, and one the system refuses to start is
+    /// <see cref="ProcessEnd.FailedToStart"/>. None of them throws.
     /// </summary>
     /// <param name="request">What to run.</param>
     /// <param name="cancellationToken">Stops the program (and its children) and throws OperationCanceledException.</param>

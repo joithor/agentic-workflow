@@ -95,6 +95,19 @@ public sealed class FakeClaudeOnPathTests : IDisposable
     }
 
     [Fact]
+    public async Task A_prompt_far_past_the_argument_limit_still_reaches_the_cli()
+    {
+        Assert.SkipWhen(OperatingSystem.IsWindows(), "the fake CLIs are sh scripts");
+        _ = _bin.InstallScript("claude", "cat > /dev/null\n" + """printf '{"type":"result","structured_output":{"decision":"send"}}'""" + "\n");
+        var provider = new ClaudeCliProvider(new SystemProcessRunner(_bin.Environment));
+        var huge = Questions.Text with { Prompt = new string('d', 2 << 20) };
+
+        var result = await provider.Decide(huge, new JsonObject { ["diff"] = new string('d', 2 << 20) }, TimeSpan.FromSeconds(10), TestContext.Current.CancellationToken);
+
+        Assert.Equal(new ProviderDecided("send", 1, "model"), result);
+    }
+
+    [Fact]
     public async Task A_cli_missing_from_the_path_is_not_installed()
     {
         var result = await Decide(TimeSpan.FromSeconds(10));

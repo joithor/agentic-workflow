@@ -17,12 +17,16 @@ internal sealed class ShellPrograms : IDisposable
 
     public static string Quote(string text) => "'" + text.Replace("'", "'\\''", StringComparison.Ordinal) + "'";
 
-    public string Install(string name, FakeProgram program) => InstallScript(name, Script(program));
+    public string Install(string name, FakeProgram program) =>
+        program.FailsToStart ? InstallFile(name, "not a program\n") : InstallScript(name, Script(program));
 
-    public string InstallScript(string name, string body)
+    public string InstallScript(string name, string body) => InstallFile(name, "#!/bin/sh\n" + body);
+
+    // An executable file; without a '#!' line the system refuses to run it (ENOEXEC).
+    private string InstallFile(string name, string content)
     {
         var file = System.IO.Path.Combine(Directory, name);
-        File.WriteAllText(file, "#!/bin/sh\n" + body);
+        File.WriteAllText(file, content);
         if (!OperatingSystem.IsWindows())
         {
             File.SetUnixFileMode(file, UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute);

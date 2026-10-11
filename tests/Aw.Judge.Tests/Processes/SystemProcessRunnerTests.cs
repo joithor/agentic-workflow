@@ -43,6 +43,20 @@ public sealed class SystemProcessRunnerTests : IDisposable
     }
 
     [Fact]
+    public async Task An_argument_list_past_the_system_limit_failed_to_start_rather_than_not_installed()
+    {
+        Assert.SkipWhen(OperatingSystem.IsWindows(), "the program is an sh script");
+        _ = _bin.InstallScript("echoer", "printf ok\n");
+
+        var result = await new SystemProcessRunner(_bin.Environment).Run(
+            new ProcessRequest { FileName = "echoer", Arguments = [new string('x', 4 << 20)], Timeout = TimeSpan.FromSeconds(10) },
+            TestContext.Current.CancellationToken);
+
+        Assert.Equal(ProcessEnd.FailedToStart, result.End);
+        Assert.False(string.IsNullOrEmpty(result.StandardError), "the system's reason is kept");
+    }
+
+    [Fact]
     public async Task Cancelling_stops_the_program_and_throws()
     {
         Assert.SkipWhen(OperatingSystem.IsWindows(), "the program is an sh script");
