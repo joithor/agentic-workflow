@@ -3,6 +3,8 @@ using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Markup.Xaml;
 using Aw.Sindri.Ui.Api;
 using Aw.Sindri.Ui.Platform;
+using Aw.Sindri.Ui.ViewModels;
+using Aw.Sindri.Ui.ViewModels.Settings;
 using Aw.Sindri.Ui.ViewModels.Shell;
 using Aw.Sindri.Ui.Views.Shell;
 
@@ -50,24 +52,45 @@ public sealed partial class SindriApp : Application
     /// <inheritdoc />
     public override void OnFrameworkInitializationCompleted()
     {
-        if (_shell is not null && ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
+        if (_shell is not null && Platform is { } platform && ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
         {
-            // Started on the UI thread, so the view model's awaits come back to it.
-            _ = Open(desktop, _shell);
+            // Started on the UI thread, so the view models' awaits come back to it.
+            _ = Open(desktop, _shell, platform);
         }
 
         base.OnFrameworkInitializationCompleted();
     }
 
-    // The window opens once the preferences are read (its bounds, the sheet width and the last page), then follows.
-    private async Task Open(IClassicDesktopStyleApplicationLifetime desktop, ShellViewModel shell)
+    // The window opens once the preferences are read (the text scale and reduced motion, applied before the first frame;
+    // its bounds, the sheet width and the last page), then follows.
+    private async Task Open(IClassicDesktopStyleApplicationLifetime desktop, ShellViewModel shell, SindriPlatform platform)
     {
+        var settings = await Settings(platform).ConfigureAwait(true);
+        desktop.Exit += (_, _) => settings.Dispose();
         await shell.Restore(CancellationToken.None).ConfigureAwait(true);
         var window = new ShellWindow { DataContext = shell };
+        window.SettingsSlot.Content = new SettingsView { DataContext = settings };
         desktop.MainWindow = window;
         window.Show();
         ShellOpened(desktop, window, shell);
         await shell.Run(CancellationToken.None).ConfigureAwait(true);
+    }
+
+    // Settings (⌘,) over the preferences and the OS setting, applying to this app's resources. A preferences file that
+    // can't be read leaves the theme's own values (the defaults) in place.
+    private async Task<SettingsViewModel> Settings(SindriPlatform platform)
+    {
+        var settings = new SettingsViewModel(new Preferences(platform.Preferences), platform.Motion, SettingsTheme.For(Resources));
+        try
+        {
+            await settings.Load(CancellationToken.None).ConfigureAwait(true);
+        }
+        catch (Exception e) when (e is IOException or UnauthorizedAccessException)
+        {
+            // The defaults stay; a later change in Settings tries the file again.
+        }
+
+        return settings;
     }
 
     /// <summary>The platform wiring's hook: the shell window is shown and its view model about to follow.</summary>
