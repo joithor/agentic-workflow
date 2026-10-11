@@ -18,7 +18,8 @@ ScrubResult result = redactor.Scrub(text);
 bool whole = redactor.IsSecretName("client_secret");   // true: write ScrubResult.SecretFieldText instead of the value
 ```
 
-- `Redactor.Create(TimeSpan)` gives the same rules with another per-pattern timeout.
+- `Redactor.Create(TimeSpan)` gives the same rules with another per-pattern timeout; `Redactor.Create(extraPatterns,
+  TimeSpan)` adds patterns from configuration ("Extra patterns from configuration" below).
 - `IsSecretName(name)` is for callers that see a key and its value apart (a telemetry attribute, a header, a JSON
   field): the assignment rules need the name and the value in one string, so such a caller redacts the whole value of
   a field whose name ends in a secret word (API_KEY, SECRET, TOKEN, PASSWORD, PRIVATE_KEY, ACCESS_KEY, any case and
@@ -28,6 +29,45 @@ bool whole = redactor.IsSecretName("client_secret");   // true: write ScrubResul
   scrubs every other value.
 - Register `IRedactor` as a singleton (`Redactor.Default`) in the composing `Add…()` method; tests use the real
   redactor (it has no I/O, so it needs no fake).
+
+## Extra patterns from configuration
+
+A profile can add identifier shapes the built-in rules don't know (context spec D14: Sindri's
+`context.scrub.extraPatterns`, such as `{ id: acme-customer-id, pattern: "ACME-[0-9]{6}" }`). Redaction owns the
+validation and the compiling, so there is still one scrubber; the caller only maps the errors to its own key path.
+
+```csharp
+RedactorResult created = Redactor.Create(
+    [new ExtraPattern("acme-customer-id", "ACME-[0-9]{6}")], Redactor.DefaultMatchTimeout);
+if (created.IsValid)
+{
+    created.Redactor.Scrub("order ACME-123456");   // "order [REDACTED:acme-customer-id]"
+}
+else
+{
+    foreach (var e in created.Errors) { /* e.Index, e.Field (Id | Pattern), e.Code, e.Message */ }
+}
+```
+
+- **Scrubbing.** The accepted patterns run after the built-in rules, in the order given, compiled into the same size
+  tiers with the redactor's match timeout and the options every rule gets (`CultureInvariant`, `ExplicitCapture`;
+  write `(?i)` for case-insensitive). So they behave like built-in rules: a hit becomes `[REDACTED:<id>]`, a group
+  named `v` limits the redaction to that group, the folded pass sees through the evasions below, their ids join
+  `RuleIds` (so their placeholders are skipped and scrubbing stays idempotent), a built-in rule names a hit that
+  overlaps one of theirs, and a match that runs past the timeout blocks the whole text (`AW-REDACT-001`). Nothing
+  checks a pattern for catastrophic backtracking up front; the timeout is that guard.
+- **Refusals.** `Create` checks every entry and returns every refused field, in entry order, as an
+  `ExtraPatternError(Index, Field, Code, Message)`; no redactor is built while one is refused. The message says how to
+  fix the entry and never quotes the pattern. A caller reports the key path itself (Sindri: `SND-CONTEXT-001` at
+  `context.scrub.extraPatterns[<Index>].id` or `.pattern`).
+
+| Code | Field | Refused when |
+|---|---|---|
+| `AW-REDACT-002` | `Id` | not lowercase ASCII letters, digits and single hyphens starting with a letter, or over 64 characters (no `/`, `_`, spaces or `]`: the id sits in the placeholder); a built-in rule id, `blocked` or `secret-field`; the same id as an earlier entry |
+| `AW-REDACT-003` | `Pattern` | empty or over 1024 characters; not a valid .NET regex (the message gives the parse error and offset); uses `\d`, `\w`, `\s`, `\b` or their negations, which are Unicode-aware in .NET (the message names the ASCII class to write instead). An escaped backslash (`\\d`) is a backslash and a `d`, and is accepted |
+
+A null list, or a timeout that isn't positive, is a bug and throws (`ArgumentNullException`,
+`ArgumentOutOfRangeException`).
 
 ## Rules
 
@@ -104,4 +144,6 @@ when it is a new kind, a row above.
 
 `src/Redaction/Aw.Redaction.AotSmoke/run.sh` publishes a NativeAOT canary, fails on any IL2xxx/IL3xxx warning and
 compares its output with `expected.txt`; CI's .NET job runs it. `Aw.Redaction.AotSmoke --stdin` scrubs standard input
-(text to stdout, outcome and hits to stderr; exit 3 when blocked).
+(text to stdout, outcome and hits to stderr; exit 3 when blocked); `--extra <id>=<pattern>` (repeatable) and
+`--timeout-ms <n>` add extra patterns, and a refused one exits 2 with each refusal on stderr. The canary's samples
+include an accepted, a refused and a timing-out extra pattern.
