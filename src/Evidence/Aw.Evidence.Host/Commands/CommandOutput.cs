@@ -34,7 +34,8 @@ internal static class CommandOutput
         return Ok;
     }
 
-    internal static void Message(string message) => Console.Error.WriteLine(Prefix + message);
+    // One line whatever the text carries (a step target, a path, a JSON value): callers parse stderr line by line.
+    internal static void Message(string message) => Console.Error.WriteLine(Prefix + message.ReplaceLineEndings(" "));
 
     /// <summary>Writes the error to stderr; a lock timeout exits 75, an unavailable browser, file or lock directory 4, anything else 1.</summary>
     internal static int Error(Error error)

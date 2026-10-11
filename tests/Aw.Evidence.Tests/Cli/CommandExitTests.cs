@@ -74,6 +74,16 @@ public sealed class CommandExitTests : IDisposable
     }
 
     [Fact]
+    public async Task Every_stderr_message_stays_one_line_whatever_text_it_carries()
+    {
+        var (exit, _, error) = await Run("frob\nnicate");
+
+        Assert.Equal(CommandOutput.Refused, exit);
+        _ = Assert.Single(error.Split('\n', StringSplitOptions.RemoveEmptyEntries));
+        Assert.Contains("unknown command 'frob nicate'", error, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public async Task A_busy_lock_exits_75()
     {
         _ = _locks.AlwaysBusy.Add(LockKind.HeavyJob);
@@ -105,7 +115,7 @@ public sealed class CommandExitTests : IDisposable
 
         Assert.Equal(CommandOutput.CheckFailed, exit);
         Assert.Contains("\"healthy\":false", output, StringComparison.Ordinal);
-        Assert.Contains("ui-evidence: doctor: postgres_container is not ready", error, StringComparison.Ordinal);
+        Assert.Contains("ui-evidence: doctor: the database is not ready", error, StringComparison.Ordinal);
     }
 
     [Fact]
