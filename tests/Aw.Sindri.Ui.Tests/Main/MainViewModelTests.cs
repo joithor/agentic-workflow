@@ -19,13 +19,16 @@ public sealed class MainViewModelTests : IDisposable
         _vm = new MainViewModel(_records, _server, _clock);
     }
 
+    private Task _run = Task.CompletedTask;
+
     public void Dispose()
     {
         _stop.Cancel();
+        Assert.True(_run.Wait(TimeSpan.FromSeconds(2), CancellationToken.None), "Run ended when cancelled");
         _stop.Dispose();
     }
 
-    private void Start() => _ = _vm.Run(_stop.Token);
+    private void Start() => _run = _vm.Run(_stop.Token);
 
     private static async Task Eventually(Func<bool> condition, string what)
     {
@@ -198,5 +201,84 @@ public sealed class MainViewModelTests : IDisposable
             _clock.Advance(MainViewModel.RetryEvery);
             return _server.StreamCursors.Count > streams && _vm.Headline == "Running";
         }, "reopened the stream");
+    }
+
+    [Fact]
+    public async Task An_unreadable_endpoint_record_reads_as_not_running_with_the_reason()
+    {
+        _records.WriteText("{not json");
+        Start();
+
+        await Eventually(() => _vm.Headline == "Not running", "headline");
+        Assert.Contains("can't be read", _vm.Reason, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task A_record_with_a_relative_url_reads_as_not_running()
+    {
+        _records.WriteText("""{"url":"sindri/","pid":4242,"epoch":7}""");
+        Start();
+
+        await Eventually(() => _vm.Headline == "Not running", "headline");
+        Assert.Contains("can't be read", _vm.Reason, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task A_status_without_the_lease_reads_as_not_running()
+    {
+        _records.Write(A.Record());
+        _server.Current = A.Status() with { Running = false };
+        Start();
+
+        await Eventually(() => _vm.Headline == "Not running", "headline");
+        Assert.Contains("holds no lease", _vm.Reason, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task A_record_the_platform_cant_read_reads_as_not_running_and_the_app_keeps_trying()
+    {
+        _records.Write(A.Record());
+        _records.FailNextRead(new UnauthorizedAccessException("Access to the path is denied."));
+        Start();
+
+        await Eventually(() => _vm.Headline == "Not running", "not running");
+        Assert.Contains("Access to the path is denied.", _vm.Reason, StringComparison.Ordinal);
+        await Eventually(() =>
+        {
+            _clock.Advance(MainViewModel.RetryEvery);
+            return _vm.Headline == "Running";
+        }, "recovered on the next try");
+    }
+
+    [Fact]
+    public async Task A_new_ledger_after_a_reconnect_restarts_the_stream_from_the_start()
+    {
+        _records.Write(A.Record(epoch: 7));
+        _server.Push(A.Event(30));
+        Start();
+        await Eventually(() => _vm.LastEvent.EndsWith("#30", StringComparison.Ordinal), "event 30");
+
+        _records.Write(A.Record(epoch: 1));
+        _server.Pong = new(4242, 1);
+        _server.Current = A.Status(epoch: 1);
+        await Eventually(() =>
+        {
+            _clock.Advance(MainViewModel.RetryEvery);
+            return _vm.Lease == "pid 4242 · epoch 1";
+        }, "reconnected to the new ledger");
+        Assert.Equal(0, _server.StreamCursors[^1]);
+    }
+
+    [Fact]
+    public async Task An_event_stream_that_ends_at_once_waits_before_reconnecting()
+    {
+        _records.Write(A.Record());
+        _server.StreamsEndAtOnce = true;
+        Start();
+        await Eventually(() => _vm.Headline == "Running", "running");
+
+        await Task.Delay(200, TestContext.Current.CancellationToken);
+
+        _ = Assert.Single(_server.StreamCursors);
     }
 }

@@ -35,6 +35,8 @@ internal sealed class StartCommand(IControlPlaneProbe probe, IControlPlaneLaunch
             .ConfigureAwait(false);
     }
 
+    internal Task<int> Report(GetStatusResponse status, ControlEndpoint endpoint) => throw new NotSupportedException($"red {status}{endpoint}");
+
     /// <summary>
     /// The running control plane, or the one this call starts. It launches only when nothing runs (SND-API-001); one that
     /// answers late (SND-API-002) is reported as it is. A child that exits with SND-LEASE-001 lost the lease to a

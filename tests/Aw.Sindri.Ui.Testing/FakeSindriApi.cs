@@ -24,6 +24,9 @@ internal sealed class FakeSindriApi : ISindriApi
     /// <summary>True when nothing answers.</summary>
     public bool Down { get; private set; }
 
+    /// <summary>When true, every event stream ends as soon as it opens (an events route that answers and closes).</summary>
+    public bool StreamsEndAtOnce { get; set; }
+
     /// <summary>When true, status calls fail as unreachable while pings and open streams carry on (a stopping process).</summary>
     public bool FailStatus { get; set; }
 
@@ -87,8 +90,13 @@ internal sealed class FakeSindriApi : ISindriApi
 
     public async IAsyncEnumerable<EventView> Events(Uri api, long after, [EnumeratorCancellation] CancellationToken cancellationToken)
     {
-        if (Down)
+        if (Down || StreamsEndAtOnce)
         {
+            lock (_gate)
+            {
+                _cursors.Add(after);
+            }
+
             yield break;
         }
 

@@ -514,6 +514,25 @@ expect "http edges count in the cycle check" 1 "DEPS-CYCLE-001" "Beta -> Gamma -
 d="$(http_fixture http-shell-routes)"; perl -0pi -e 's/(    scan: \[hooks\]\n)/$1    routes: [\/hooks\/]\n/' "$d/deps.yaml"; run "$d"
 expect "a shell node can't serve routes (schema)" 1 "DEPS-SCHEMA-001"
 
+d="$(http_fixture http-nested-and-verbatim)"
+mkdir -p "$d/src/Beta/Aw.Beta.Host/Ui"; csproj "$d" src/Beta/Aw.Beta.Host/Ui/Aw.Beta.Ui.Nested.csproj
+perl -0pi -e 's/projectPrefix: Aw.Beta.Ui\n/projectPrefix: Aw.Beta.Ui\n/' "$d/deps.yaml"
+printf 'var a = @"/beta/status";\n' > "$d/src/Beta/Aw.Beta.Host/Ui/Client.cs"; run "$d"
+expect "a client project nested in the server's directory is its own (verbatim literal found)" 1 "DEPS-EDGE-001" "Gamma -> Beta (http)" "src/Beta/Aw.Beta.Host/Ui/Client.cs:1"
+
+# ---- C# file and db edges: every segment of another package's state path as a string literal in one file ----
+d="$(http_fixture cs-file-undeclared)"
+printf 'var p = Path.Combine(home, "alpha", "outbox");\n' > "$d/src/Beta/Aw.Beta.Ui/Paths.cs"; run "$d"
+expect "a C# project naming another package's state file is an undeclared file edge" 1 "DEPS-EDGE-001" "Gamma -> Alpha (file)" "src/Beta/Aw.Beta.Ui/Paths.cs"
+
+d="$(http_fixture cs-file-declared)"; edge "$d" Gamma Alpha file current
+printf 'var p = Path.Combine(home, "alpha");\nvar f = Path.Combine(p, "outbox");\n' > "$d/src/Beta/Aw.Beta.Ui/Paths.cs"; run "$d"
+expect "a declared C# file edge passes when the segments sit on separate lines of one file" 0 "deps: ok"
+
+d="$(http_fixture cs-file-partial)"
+printf 'var p = "outbox";\n' > "$d/src/Beta/Aw.Beta.Ui/Paths.cs"; run "$d"
+expect "one segment alone is not a file edge" 0 "deps: ok"
+
 # ---- parser, validator and schema drift (node unit table) ----
 set +e; UNIT="$(node "$HERE/check-deps.unit.mjs" 2>&1)"; UCODE=$?; set -e
 if [ "$UCODE" = 0 ]; then ok "parser/validator unit table ($(printf '%s' "$UNIT" | tail -1))"; else fail "parser/validator unit table"; printf '%s\n' "$UNIT" | sed 's/^/       | /'; fi

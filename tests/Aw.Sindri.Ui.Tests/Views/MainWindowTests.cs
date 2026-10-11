@@ -18,6 +18,8 @@ namespace Aw.Sindri.Ui.Tests.Views;
 [Lane(TestLane.Integration)]
 public sealed class MainWindowTests
 {
+    private static readonly string[] _runningTexts = ["HeadlineText", "LeaseText", "ProfileStateText", "LastEventText"];
+    private static readonly string[] _notRunningTexts = ["HeadlineText", "ReasonText", "FixText"];
     private readonly InMemoryEndpointRecords _records = new();
     private readonly FakeSindriApi _server = new();
 
@@ -67,7 +69,10 @@ public sealed class MainWindowTests
         Assert.Equal("sindri", Text(window, "FixText"));
         Assert.True(Visible(window, "NotRunningPanel"));
         Assert.False(Visible(window, "RunningPanel"));
-        Assert.Equal("Not running", Avalonia.Automation.AutomationProperties.GetName(window.FindControl<TextBlock>("HeadlineText")!));
+        foreach (var name in _notRunningTexts)
+        {
+            Assert.Equal(Text(window, name), Avalonia.Automation.AutomationProperties.GetName(window.FindControl<TextBlock>(name)!));
+        }
         Capture(window, "not-running");
     });
 
@@ -83,6 +88,11 @@ public sealed class MainWindowTests
         Assert.False(Visible(window, "ProfileFixText"));
         Assert.Contains(window.GetVisualDescendants().OfType<TextBlock>(), t => t.Text == "last run 12:00:00Z");
         Assert.False(Visible(window, "NotRunningPanel"));
+        foreach (var name in _runningTexts)
+        {
+            Assert.Equal(Text(window, name), Avalonia.Automation.AutomationProperties.GetName(window.FindControl<TextBlock>(name)!));
+        }
+
         Capture(window, "running");
     });
 

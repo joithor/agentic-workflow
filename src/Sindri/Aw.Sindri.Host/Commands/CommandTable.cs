@@ -57,6 +57,8 @@ internal static class CommandTable
         new StartCommand(services.GetRequiredService<IControlPlaneProbe>(), services.GetRequiredService<IControlPlaneLauncher>(), client, output, openUi)
             .Run(CancellationToken.None);
 
+    internal static Func<string>? UiOpener(bool headless, Func<string, string?> environment) => throw new NotSupportedException($"red {headless}{environment("HOME")}");
+
     private static bool? Json(string[] rest) => rest switch
     {
         [] => false,

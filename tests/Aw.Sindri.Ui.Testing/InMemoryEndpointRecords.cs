@@ -9,6 +9,7 @@ namespace Aw.Sindri.Ui.Testing;
 internal sealed class InMemoryEndpointRecords : IEndpointRecordSource
 {
     private byte[]? _bytes;
+    private Exception? _fail;
 
     public string Location => "memory:control.json";
 
@@ -21,8 +22,20 @@ internal sealed class InMemoryEndpointRecords : IEndpointRecordSource
     /// <param name="text">The text.</param>
     public void WriteText(string text) => _bytes = Encoding.UTF8.GetBytes(text);
 
+    /// <summary>Makes the next read throw, as a record the platform can't read does (a directory, no permission).</summary>
+    /// <param name="error">The exception.</param>
+    public void FailNextRead(Exception error) => _fail = error;
+
     /// <summary>Removes the record, as a clean stop does.</summary>
     public void Remove() => _bytes = null;
 
-    public ValueTask<byte[]?> Read(CancellationToken cancellationToken) => ValueTask.FromResult<byte[]?>(_bytes is null ? null : [.. _bytes]);
+    public ValueTask<byte[]?> Read(CancellationToken cancellationToken)
+    {
+        if (Interlocked.Exchange(ref _fail, value: null) is { } error)
+        {
+            throw error;
+        }
+
+        return ValueTask.FromResult<byte[]?>(_bytes is null ? null : [.. _bytes]);
+    }
 }

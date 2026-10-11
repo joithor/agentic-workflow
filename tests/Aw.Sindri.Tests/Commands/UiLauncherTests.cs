@@ -27,4 +27,36 @@ public sealed class UiLauncherTests
 
         Assert.Matches(@"^opened \(true, pid \d+\)$", line);
     }
+
+    [Fact, Trait("Lane", "unit")]
+    public void A_relative_path_is_resolved_against_the_working_directory_before_anything_runs()
+    {
+        var line = UiLauncher.Open("no-such-dir/sindri-ui");
+
+        Assert.StartsWith($"not found at {Path.GetFullPath("no-such-dir/sindri-ui")} ", line, StringComparison.Ordinal);
+    }
+
+    [Fact, Trait("Lane", "integration")]
+    [System.Runtime.Versioning.UnsupportedOSPlatform("windows")]
+    public void A_file_that_isnt_executable_is_named_with_the_fix()
+    {
+        var file = Path.Combine(Directory.CreateTempSubdirectory("sindri-ui-").FullName, "sindri-ui");
+        File.WriteAllText(file, "not a program");
+        File.SetUnixFileMode(file, UnixFileMode.UserRead | UnixFileMode.UserWrite);
+
+        var line = UiLauncher.Open(file);
+
+        Assert.StartsWith($"not executable at {file} (fix: ", line, StringComparison.Ordinal);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public void Headless_has_no_opener_and_bare_sindri_opens_the_located_app()
+    {
+        Assert.Null(CommandTable.UiOpener(headless: true, _ => "/nonexistent/sindri-ui"));
+
+        var open = CommandTable.UiOpener(headless: false, n => n == UiLauncher.Variable ? "/nonexistent/sindri-ui" : null);
+
+        Assert.NotNull(open);
+        Assert.StartsWith("not found at /nonexistent/sindri-ui ", open(), StringComparison.Ordinal);
+    }
 }

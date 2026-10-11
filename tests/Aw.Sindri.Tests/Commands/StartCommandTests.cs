@@ -74,6 +74,37 @@ public sealed class StartCommandTests : IDisposable
         Assert.Contains("SND-API-003 address already in use", found.Error.Message, StringComparison.Ordinal);
     }
 
+    [Theory, Trait("Lane", "unit")]
+    [InlineData(false, 0)]
+    [InlineData(true, 1)]
+    public async Task The_summary_carries_the_opener_line_and_the_exit_code_follows_only_the_profile(bool needsApproval, int code)
+    {
+        var stdout = new StringWriter();
+        var calls = 0;
+        var command = new StartCommand(_probe, new FakeControlPlaneLauncher(), _client, new Output(stdout, TextWriter.Null, SliceHarness.Json),
+            () => { calls++; return "not found at /x (fix: …)"; });
+
+        var exit = await command.Report(Status(needsApproval), _found.Item1);
+
+        Assert.Equal((1, code), (calls, exit));
+        Assert.Contains("  ui        not found at /x (fix: …)", stdout.ToString(), StringComparison.Ordinal);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task Without_an_opener_there_is_no_ui_line()
+    {
+        var stdout = new StringWriter();
+        var command = new StartCommand(_probe, new FakeControlPlaneLauncher(), _client, new Output(stdout, TextWriter.Null, SliceHarness.Json), openUi: null);
+
+        _ = await command.Report(Status(needsApproval: false), _found.Item1);
+
+        Assert.DoesNotContain("  ui ", stdout.ToString(), StringComparison.Ordinal);
+    }
+
+    private static Features.GetStatus.GetStatusResponse Status(bool needsApproval) =>
+        new(Running: true, 42, 3, LeaseExpiresAt: null,
+            new Features.GetStatus.ProfileStatus(Approved: null, Live: null, ChangedSinceApproval: false, Problem: "p", Source: null, NeedsApproval: needsApproval), []);
+
     private StartCommand Command(FakeControlPlaneLauncher launcher, TimeSpan? budget = null) =>
         new(_probe, launcher, _client, new Output(TextWriter.Null, TextWriter.Null, SliceHarness.Json), openUi: null, budget);
 
