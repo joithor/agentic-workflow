@@ -36,6 +36,11 @@ public sealed class FakeBrowserSession(FakePage page, BrowserSessionOptions opti
     {
         cancellationToken.ThrowIfCancellationRequested();
         _calls.Add($"goto {path}");
+        if (!StepGuard.IsSameOriginPath(path))
+        {
+            return Fail($"a goto target must be a path on the host: {path}");   // as the adapter refuses it
+        }
+
         Page.Path = path.Split('?')[0];
         return Ok();
     }
