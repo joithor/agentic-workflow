@@ -16,9 +16,9 @@ Aw.Judge.Host ──► Aw.Judge.Features ──► Aw.Judge.Core ◄── Aw.J
 | Project | Holds |
 |---|---|
 | `Aw.Judge.Core` | Typed ids (`Ids`: `DecisionId`, `ToolUseId`, `SessionId`, `PromptId`, `AgentId`), the domain records (`Briefs`, `Decisions`, `Health`, `Config`, `Providers`), the eight questions with their input records (`Questions`), the evaluation engine with the question catalog, and the rules provider (`Evaluation`), the error catalogue (`Errors.JudgeErrors`, AW-JUDGE-NNN) and the ports (`Ports`) |
-| `Aw.Judge.Features` | One slice per command: `AskQuestion` (every `judge <question>`), `SaveBrief`, `GetBrief`, `MapBriefByName`, `MapBriefByDispatch`, `SetBriefAgentId`, `ExplainDecision` (`why`), `UndoDecision`, `ApproveDecision`, `GetHealth`, `GetConfig`, `SetConfig` |
+| `Aw.Judge.Features` | One slice per command: `AskQuestion` (every `judge <question>`), `SaveBrief`, `GetBrief`, `MapBriefByName`, `MapBriefByDispatch`, `SetBriefAgentId`, `ExplainDecision` (`why`), `UndoDecision`, `ApproveDecision`, `GetHealth`, `GetConfig`, `SetConfig`, and `PruneDecisionDetails` (the housekeeping after a question) |
 | `Aw.Judge.Infrastructure` | The SQLite stores over `decisions.sqlite`, the config file, the redactor adapter over `Aw.Redaction`, the `PATH` executable locator, the process runner, the secret source (environment, then keychain), the model providers and their catalog (`Providers/`), random decision ids, and the settings read from the environment |
-| `Aw.Judge.Host` | `Program.cs`, `Composition.Compose`, one command per slice in `Commands/`, the command table, `JudgeJsonContext` (the package's one source-generated JSON context) |
+| `Aw.Judge.Host` | `Program.cs`, `Composition.Compose`, one command per slice in `Commands/`, the command table (which takes the providers allowlist out of argv first), `Housekeeping` (the prune after a question), `JudgeJsonContext` (the package's one source-generated JSON context) |
 
 Core's namespaces form a graph with no cycle (`ARCH-CYCLE-001`): `Errors` and `Ids` are leaves, `Providers`,
 `Config`, `Briefs`, `Decisions`, `Health`, `Questions`, `Processes` and `Secrets` sit on them, `Ports` on those, `Evaluation` on `Ports`, and
@@ -62,6 +62,13 @@ fields (the decision plus the question's extra properties) are read as a `JsonOb
 
 `judge <command> [args]`, or `judge <question> < input.json` for any first word that isn't a command.
 
+**The providers allowlist** is a global flag, `--providers a,b`, accepted anywhere in argv (`judge --providers rules
+wake-gate` and `judge wake-gate --providers rules` are the same), else `AW_JUDGE_PROVIDERS` (hooks can't always add
+flags); the flag wins over the variable. The table takes it out of argv before anything else, so every command accepts
+it; only the questions use it. Names are `rules`, `jev`, `claude-cli`, `codex-cli`, `cursor-cli`; `rules` is always
+kept. A flag with no value, an empty list or an unknown name is a usage error (64, AW-JUDGE-010), for any command
+(`ProvidersAllowlistCliTests`).
+
 ### Exit codes and streams
 
 | Exit | Meaning | Streams |
@@ -69,7 +76,7 @@ fields (the decision plus the question's extra properties) are read as a `JsonOb
 | 0 | Ok | The result on stdout (JSON or a bare id), nothing on stderr |
 | 1 | Error: not found, invalid input, an invalid stored config, a store that can't be used | Nothing on stdout; one stderr line, the error's message |
 | 2 | Escalated: a question that couldn't decide; for `ask-check`, "continue" (Questions below) | The question's envelope on stdout |
-| 64 | Usage: no command, an unknown subcommand or question, a missing or extra argument, an argument that doesn't parse | One stderr line starting `usage: judge ` (the synopsis, then the problem in parentheses) |
+| 64 | Usage: no command, an unknown subcommand or question, a missing or extra argument, an argument that doesn't parse, a providers allowlist the judge can't read | One stderr line starting `usage: judge ` (the synopsis, then the problem in parentheses) |
 
 Usage lines name the command's synopsis, e.g. `usage: judge why <decision-id>`, `usage: judge brief map-by-dispatch
 <session-id> <prompt-id> <subagent-type>`, `usage: judge config set <question> enabled true|false | threshold <0-1>
@@ -77,7 +84,9 @@ Usage lines name the command's synopsis, e.g. `usage: judge why <decision-id>`, 
 (`CliUsageTests`).
 
 Every stream that has text ends with one `\n`. Log lines (Aw.Kernel.Telemetry JSON lines, `AW_LOG_LEVEL`) also go to
-stderr; the hooks discard stderr except where the hook contract says.
+stderr; the hooks discard stderr except where the hook contract says. At the default level a normal run logs nothing
+(the AOT smoke runs every command with `AW_LOG_LEVEL` unset and compares stderr); the one warning is an invalid
+`config.json` (read on the defaults).
 
 ### Commands
 
@@ -127,13 +136,13 @@ no arguments, and prints one envelope on stdout:
 `done-gate.sh` branches on those codes; its envelope is the same as every other question's. The hooks fail open on any
 other non-zero exit.
 
-How a call runs: the question's `config.json` entry (`enabled`, `threshold`, `providers`; no entry means the
-question's own threshold) becomes the evaluator's override, and a disabled question escalates `question-disabled`; an
-unreadable or invalid `config.json` runs on the defaults and logs one warning. The chain is the one `Composition` builds
-(`ProviderLineup`), restricted by the allowlist when one is given. **Providers today:** `Composition.ModelProviders()` is
-the one place the list is built, and it is `rules` alone, so the commands run offline and any input no pre-rule settles
-escalates `no-provider-decided` (exit 2; `ask-check` asks). The agent-CLI and Jev providers, the chain built from
-`config.json` and `AW_PROVIDER`, and the `--providers` allowlist (`AskQuestionRequest.AllowedProviders`) plug in there.
+How a call runs (`AskQuestionService`): the catalog builds the lineup (Providers below) from `config.json`'s
+`providers` block and the allowlist (`AskQuestionRequest.AllowedProviders`); the question's `config.json` entry
+(`enabled`, `threshold`, `providers`; no entry means the question's own threshold) becomes the evaluator's override,
+which narrows that chain, and a disabled question escalates `question-disabled`. An unreadable or invalid `config.json`
+runs on the defaults and logs one warning. With `--providers rules` (or `AW_JUDGE_PROVIDERS=rules`) a question runs
+offline: any input no pre-rule settles escalates `no-provider-decided` (exit 2; `ask-check` asks). After the output the
+judge prunes old decision details (Housekeeping below).
 
 | Question | Input record (stdin) | Outputs | Class | Threshold | Budget | Pre-rules (decided by `rules` without a model) | Fallback after an unsure model |
 |---|---|---|---|---|---|---|---|
@@ -150,7 +159,8 @@ The input names of `wake-gate`, `brief-scope` and `ask-check` are hook contract;
 design (their tier-2 callers are ported to this contract). Prompts carry untrusted text (a ticket, a diff, a problem
 statement) inside tagged blocks with the tags inside it defused, capped (`UntrustedText`). Pinned by the
 `Questions/*Tests` (each question's rules, offline with `ScriptedProvider`), `AskQuestionTests` (config, allowlist,
-session) and `AskQuestionCliTests` (envelopes, exit codes, the ask-check exception, invalid input, unknown question).
+session, the config's providers block) and `AskQuestionCliTests` (envelopes, exit codes, the ask-check exception,
+invalid input, unknown question).
 
 ### Errors (AW-JUDGE-NNN)
 
@@ -180,10 +190,12 @@ The providers live in `Aw.Judge.Infrastructure/Providers/`; Composition reaches 
 3. the chain: text classes get Jev, the agent CLIs, then rules; image gets the agent CLIs, then rules
    (`ChainSpec.Build`); then the `--providers` / `AW_JUDGE_PROVIDERS` allowlist, which always keeps rules;
 4. the providers: one instance of each model provider the chain names, then the `rules` provider the caller passes
-   (the engine's own; the catalog doesn't make one).
+   (the engine's own, which `AddJudgeCore` registers; the catalog doesn't make one).
 
 `AddJudgeInfrastructure` registers it (its `AddModelProviders` part) over one instance of each model provider: Jev
-(with its own `HttpClient`) and the three agent CLIs (over `IProcessRunner`).
+(with its own `HttpClient`) and the three agent CLIs (over `IProcessRunner`). `AskQuestionService` calls it once per
+question; it looks the agent CLIs up on `PATH`, but starts nothing and reads no key (no keychain call) until a provider
+in the chain is asked.
 
 ### The agent CLIs
 
@@ -250,10 +262,39 @@ inherited the pipes can't hold the run open. A program that can't be started is 
 -s agentic-workflow-typesafe -a TYPESAFE_API_KEY -w` (5 s timeout). A missing entry, a missing `security` (not macOS)
 or a hung keychain all read as unset.
 
+## Fail-open
+
+The hooks fail open on any judge failure, and the judge does its part: storage never stops a question.
+
+- **A question** prints its decision with its normal exit code whatever state `decisions.sqlite` is in. The decision
+  write fails open (`IDecisionLog` returns an error, never throws): the evaluator then tries to record a
+  `decision-write-failed` failure row, which counts in `health` when only the decision write failed; with the whole
+  store unusable nothing can be counted, and the outcome stands. The envelope's `id` then names a decision `why` won't
+  find.
+- **`health`** on a store it can't open exits 1 with one stderr line, so `judge-health.sh` prints `judge: health check
+  failed` and the statusline shows the judge as down.
+- **The brief commands** on a store they can't open exit 1 with one stderr line that isn't `no brief for …`, so
+  `done-gate.sh` fails open (`judge-brief-exit-1`) to its evidence check; `scope-gate.sh` and `subagent-start-map.sh`
+  ignore the exit.
+- A database that opens **read-only** (the file and its directory not writable) still answers reads: `health` and
+  `brief get` report what it holds, and only the writes fail with one line.
+- `config get`/`set` never open the database; a usage error never touches it.
+
+Pinned by `UnusableStorageTests` (a read-only state directory, a read-only database, a corrupt file) and the decision
+log's own store-error tests.
+
+## Housekeeping
+
+After each question, the only command that writes `decision_details`, `Housekeeping` runs `PruneDecisionDetails`: it
+deletes the detail rows of decisions older than 30 days (`DecisionDetails.Retention`); the decision rows stay. It is
+best effort, after the output is written, and its result is ignored. The cost is one DELETE over the `decisions.ts`
+index in its own write transaction, which removes only what aged past 30 days since the last question (usually
+nothing): a NativeAOT question takes about 10 ms end to end with it (`health` about 9 ms), so no cheaper trigger (once a
+day, a marker file) is needed. Pinned by `PruneDecisionDetailsTests` and `PruneDecisionDetailsCliTests`.
+
 ## Hook contract
 
-What the hooks that keep running read, and nothing else. It stays frozen until the switch; Task 9's real-hook check
-runs the hook scripts against the C# binary.
+What the hooks that keep running read, and nothing else. It stays frozen until the switch.
 
 | Hook | Calls | Reads | Pinned by |
 |---|---|---|---|
@@ -272,6 +313,31 @@ The hooks also export `AW_STATE_DIR`, `AW_SESSION_ID`, `AW_PROVIDER` and `AW_JUD
 and write their own files under `$AW_STATE_DIR/judge/` (`sessions/`, `outbox`, `teammate-names.jsonl`), which the
 judge doesn't own.
 
+**The real-hook check**, `config/lib/tests/judge-cs-hook-surface.test.sh`, runs the hook scripts themselves against
+the C# judge, offline (`AW_JUDGE_PROVIDERS=rules`, a scratch `AW_STATE_DIR`): send-gate, scope-gate, done-gate,
+done-gate-annotate, subagent-start-map, judge-health and the statusline's `judge_health`, comparing each hook's
+stdout, exit code and written files. It builds `src/Judge/Aw.Judge.Host` in Release itself (or takes
+`AW_JUDGE_CS_BIN`); when `judge/dist` is built it runs the same cases against the TS judge too and compares.
+
+```bash
+bash config/lib/tests/judge-cs-hook-surface.test.sh   # needs dotnet 10; "All … passed (sides: cs ts)" with judge/dist
+```
+
+## Build and NativeAOT
+
+`judge` is a NativeAOT entry point (`AwAotEntryPoint`, `PublishAot` under a runtime identifier); local builds and
+tests run JIT. `src/Judge/aot-smoke/run.sh` publishes it for the host RID on a copy of the sources it needs (the lock
+files stay RID-free), fails on any IL2xxx/IL3xxx warning or a missing bundled `libe_sqlite3` beside the binary, then
+runs the native binary offline (bare `PATH`, `AW_JUDGE_PROVIDERS=rules`, `AW_LOG_LEVEL` unset) on a temp state
+directory: `health`, `brief save`/`get`/`map-by-name`, a missing brief, the wake-gate and ask-check pre-rules, a
+question nothing decides, `config get`, a usage error and a bad allowlist. The output, with ids and times normalized,
+must equal `expected.txt`. CI's .NET job runs it with the other `src/*/aot-smoke/run.sh` scripts. The binary is about
+11 MB.
+
+```bash
+bash src/Judge/aot-smoke/run.sh   # "aot-judge-smoke: native binary passed (… judge)"
+```
+
 ## State files
 
 All under `${AW_STATE_DIR:-~/.agentic-workflow}/judge/`. The C# build starts with fresh state (spec §4c); it never
@@ -289,6 +355,10 @@ reads a TS-written file.
 | `AW_STATE_DIR` | Infrastructure settings | The state root; the judge's files are under `<root>/judge/`. Default `~/.agentic-workflow` |
 | `AW_SESSION_ID` | the question commands (`Composition`, once) | The calling session, stored with the decision's detail row; a value past the session id's cap is ignored |
 | `AW_PROVIDER` | `ProviderCatalog` | The host the calling session runs in (`claude`, `codex`, `cursor`), which leads the agent CLI order unless `config.json` sets `providers.agentClis` |
-| `AW_JUDGE_PROVIDERS` | the providers allowlist | A comma-separated allowlist of providers when the `--providers` flag is absent |
+| `AW_JUDGE_PROVIDERS` | the command table (`Composition` reads it once) | A comma-separated allowlist of providers when the `--providers` flag is absent; unreadable → usage error (64) |
+| `PATH` | `PathExecutableLocator`, `SystemProcessRunner` | Where the agent CLIs (and `security`) are found |
 | `TYPESAFE_API_KEY` | `KeychainSecretSource` | Jev's API key; when unset or empty, the keychain entry `agentic-workflow-typesafe` / `TYPESAFE_API_KEY`; without either Jev is unavailable |
-| `AW_LOG_LEVEL` | Aw.Kernel.Telemetry | The stderr log level (default information; the hooks discard stderr) |
+| `AW_LOG_LEVEL` | Aw.Kernel.Telemetry | The stderr log level (default information, at which a normal run logs nothing; the hooks discard stderr) |
+
+The judge sets `AW_JUDGE_CHILD=1` (and `MAX_THINKING_TOKENS=0` for claude) for the agent CLIs it starts; it doesn't
+read them.

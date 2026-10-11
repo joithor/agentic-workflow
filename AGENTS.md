@@ -104,6 +104,7 @@ bash scripts/scaffold/e2e.sh            # The generators end to end: scaffold, b
 dotnet run --project src/Packets/Aw.Packets.App -- validate <packet-dir> [--repo <dir>] [--json]   # aw-packets: the packet checks (docs/csharp/packets.md); exit 0 pass, 1 fail, 2 tool error; writes nothing
 dotnet run --project src/Packets/Aw.Packets.App -- freeze <packet-dir> [--repo <dir>] [--json]     # Record the packet's canonical hash under $AW_STATE_DIR/packets/<owner>/<name>/<id>/frozen/
 bash src/Packets/aot-smoke/run.sh        # aw-packets under NativeAOT: publish (on a copy), run against a temp repo, compare with expected.txt
+bash src/Judge/aot-smoke/run.sh          # judge under NativeAOT: publish (on a copy), run offline on a temp AW_STATE_DIR, compare with expected.txt
 
 # Rules (edit .agents/rules/, then regenerate)
 scripts/sync-rules.sh                   # Link .claude/rules, .cursor/rules, CLAUDE.md; refresh Rules Index
