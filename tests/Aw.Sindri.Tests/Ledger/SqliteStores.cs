@@ -10,7 +10,7 @@ internal static class SqliteStores
 {
     internal static SindriStores Create(string home, TimeProvider clock, IProcessProbe probe)
     {
-        var database = new LedgerDatabase(new SindriSettings(home, System.IO.Path.Combine(home, "profile.yaml")), clock);
+        var database = new LedgerDatabase(new SindriSettings(home, Path.Combine(home, "profile.yaml")), clock);
         return new SindriStores(new SqliteLease(database, probe, clock), new SqliteLedger(database));
     }
 }

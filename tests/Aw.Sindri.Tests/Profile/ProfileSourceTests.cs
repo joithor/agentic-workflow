@@ -39,12 +39,13 @@ public sealed class ProfileSourceTests : IDisposable
     }
 
     [Theory, Trait("Lane", "integration")]
-    [InlineData("schemaVersion: 1\nuser: thor\ncolour: blue\n", "colour")]
-    [InlineData("schemaVersion: one\nuser: thor\n", "schemaVersion")]
+    [InlineData("schemaVersion: 1\nuser: thor\ncolour: blue\n", "'colour' is not a profile key here (allowed: schemaVersion, user, tenant, repos, services, api)")]
+    [InlineData("schemaVersion: one\nuser: thor\n", "schemaVersion: expected a whole number")]
+    [InlineData("schemaVersion: 1\nuser: thor\nrepos: { a: 1 }\n", "repos: expected a list")]
     [InlineData("schemaVersion: 1\n", "user")]
     [InlineData("schemaVersion: 1\nuser: thor\nservices:\n  heartbeat: { every: 0s }\n", "services.heartbeat.every")]
     [InlineData("schemaVersion: 2\nuser: thor\n", "schemaVersion: is 2")]
-    [InlineData("schemaVersion: 1\nuser: thor\nservices:\n  heartbeat: { every: 30s, jitter: 1 }\n", "jitter")]
+    [InlineData("schemaVersion: 1\nuser: thor\nservices:\n  heartbeat: { every: 30s, jitter: 1 }\n", "'jitter' is not a profile key here (allowed: every)")]
     public async Task An_invalid_profile_names_the_file_the_key_and_the_fix(string yaml, string key)
     {
         _files.Write(yaml);
@@ -55,6 +56,7 @@ public sealed class ProfileSourceTests : IDisposable
         Assert.Contains(_files.Settings.ProfilePath, error.Message, StringComparison.Ordinal);
         Assert.Contains(key, error.Message, StringComparison.Ordinal);
         Assert.Contains("fix:", error.Message, StringComparison.Ordinal);
+        Assert.DoesNotContain("BytePositionInLine", error.Message, StringComparison.Ordinal);
     }
 
     [Fact, Trait("Lane", "integration")]

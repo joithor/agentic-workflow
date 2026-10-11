@@ -21,7 +21,7 @@ internal static class ProfileReading
         var typed = AwJson.Deserialize<SindriProfile>(json, options);
         if (typed.IsError)
         {
-            return SindriErrors.ProfileInvalid.With($"{source}: {typed.Error.Message} ({Fix})");
+            return SindriErrors.ProfileInvalid.With($"{source}: {ProfileErrors.Explain(typed.Error.Message, options)} ({Fix})");
         }
 
         var checkedProfile = ProfileRules.Check(typed.Value);

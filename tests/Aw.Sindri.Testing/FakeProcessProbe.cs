@@ -1,3 +1,4 @@
+using Aw.Kernel.Testing;
 using Aw.Sindri.Core.Ids;
 using Aw.Sindri.Core.Lease;
 
@@ -22,7 +23,7 @@ public sealed class FakeProcessProbe : IProcessProbe
     /// <param name="startedAt">Its start time (default: the known epoch).</param>
     /// <returns>The holder.</returns>
     public static LeaseHolder Holder(int pid, DateTimeOffset? startedAt = null) =>
-        new(HostId.From("box"), pid, startedAt ?? Aw.Kernel.Testing.KnownInstants.Epoch, BootId.From("boot-1"));
+        new(HostId.From("box"), pid, startedAt ?? KnownInstants.Epoch, BootId.From("boot-1"));
 
     /// <summary>Marks <paramref name="holder"/>'s pid as running with its start time.</summary>
     /// <param name="holder">The holder.</param>
