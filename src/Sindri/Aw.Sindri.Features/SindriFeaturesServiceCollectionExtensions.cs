@@ -31,6 +31,7 @@ public static class SindriFeaturesServiceCollectionExtensions
             .AddScoped<IService<PingProcessRequest, Ping>, PingProcessService>()
             .AddScoped<IService<ValidateProfileRequest, ValidateProfileResponse>, ValidateProfileService>()
             .AddScoped<IService<ApproveProfileRequest, ApproveProfileResponse>, ApproveProfileService>()
+            .AddScoped<ProfileFacts>()
             .AddScoped<IService<RunDoctorRequest, RunDoctorResponse>, RunDoctorService>()
             .AddScoped<IScheduledService, HeartbeatService>();
         return services;

@@ -47,7 +47,8 @@ public static class ProfileRules
     /// <summary>
     /// Whether the profile with hash <paramref name="live"/> is approved: it is the saved approval and the latest recorded
     /// 'profile.approved' event names it. A saved approval whose event is missing or isn't the latest (its save failed after
-    /// a later approval was recorded) doesn't count, so approving again records it. Every surface uses this one rule.
+    /// a later approval was recorded) doesn't count, so approving again records it. Every surface judges by this one rule:
+    /// profile validate, approve's preview, the status ('needsApproval') and the startup summary, and doctor's profile check.
     /// </summary>
     /// <param name="saved">The latest saved approval's hash, or null.</param>
     /// <param name="recorded">The hash the latest recorded approval names, or null.</param>

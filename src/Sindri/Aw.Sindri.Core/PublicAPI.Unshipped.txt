@@ -536,7 +536,7 @@ static Aw.Sindri.Core.Doctor.DoctorRules.Api(Aw.Kernel.Result<(Aw.Sindri.Core.Co
 static Aw.Sindri.Core.Doctor.DoctorRules.ExitCode(System.Collections.Generic.IEnumerable<Aw.Sindri.Core.Doctor.DoctorCheck!>! checks) -> int
 static Aw.Sindri.Core.Doctor.DoctorRules.Lease(Aw.Sindri.Core.Lease.LeaseRow? row, System.DateTimeOffset now, Aw.Sindri.Core.Lease.HolderLiveness liveness) -> Aw.Sindri.Core.Doctor.DoctorCheck!
 static Aw.Sindri.Core.Doctor.DoctorRules.Ledger(Aw.Kernel.Result<Aw.Sindri.Core.Ledger.SchemaStatus!>! schema) -> Aw.Sindri.Core.Doctor.DoctorCheck!
-static Aw.Sindri.Core.Doctor.DoctorRules.Profile(Aw.Kernel.Result<Aw.Sindri.Core.Profile.LoadedProfile!>! live, Aw.Kernel.Result<Aw.Sindri.Core.Profile.LoadedProfile?>! approved) -> Aw.Sindri.Core.Doctor.DoctorCheck!
+static Aw.Sindri.Core.Doctor.DoctorRules.Profile(Aw.Kernel.Result<Aw.Sindri.Core.Profile.LoadedProfile!>! live, Aw.Kernel.Result<Aw.Sindri.Core.Profile.LoadedProfile?>! approved, Aw.Kernel.Result<Aw.Sindri.Core.Events.RecordedApproval?>! recorded) -> Aw.Sindri.Core.Doctor.DoctorCheck!
 static Aw.Sindri.Core.Events.EventScope.ControlPlane.get -> Aw.Sindri.Core.Events.EventScope!
 static Aw.Sindri.Core.Events.EventScope.operator !=(Aw.Sindri.Core.Events.EventScope? left, Aw.Sindri.Core.Events.EventScope? right) -> bool
 static Aw.Sindri.Core.Events.EventScope.operator ==(Aw.Sindri.Core.Events.EventScope? left, Aw.Sindri.Core.Events.EventScope? right) -> bool

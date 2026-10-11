@@ -23,7 +23,7 @@ One NativeAOT binary, `sindri`, is both the control plane and its CLI.
 | `sindri profile validate [--json]` | Checks the live profile file and prints its hash | 0 valid and approved (it is the saved approval and the latest recorded `profile.approved` event names it, the rule every surface uses); 1 valid, not approved; 2 invalid (`SND-PROFILE-001/002`), or the ledger can't be read (`SND-LEDGER-002`): a ledger read error is never "not approved" |
 | `sindri profile approve` | Shows the live hash and the key paths changed since the latest approval; changes nothing | 1 when not approved yet, 0 when it already is |
 | `sindri profile approve <hash>` | Approves: the hash must be the live one, and you type its first 6 characters at an interactive terminal | 0; 2 on a malformed hash (`SND-CLI-003`), a stale hash (`SND-PROFILE-003`), no terminal or a wrong confirmation (`SND-PROFILE-004`), approvals that can't be written (`SND-PROFILE-006`), or an API error without a code (`SND-API-004`) or from inside (`SND-API-005`) |
-| `sindri doctor [--json]` | One line per check, in order: `lease`, `ledger`, `profile`, `api`, each `ok` / `warn` / `fail` with a fix | 0 all ok, 1 any warn, 2 any fail |
+| `sindri doctor [--json]` | One line per check, in order: `lease`, `ledger`, `profile`, `api`, each `ok` / `warn` / `fail` with a fix. `profile` is `ok` only when approved by the one rule (see Profile); changed since the saved approval, or saved but not the latest recorded one, is a `warn` | 0 all ok, 1 any warn, 2 any fail |
 
 Output: state is always a word, never colour; there is no colour at all, so `NO_COLOR` and redirected output need
 nothing special. Errors go to stderr as `SND-<AREA>-NNN message`, with `(fix: …)` where there is one. `--json` prints
@@ -72,8 +72,12 @@ The approval hash is SHA-256 over the canonical JSON (the checked record, repos 
 key order don't change it. An approval snapshot whose content no longer matches its hash isn't trusted.
 
 Approving appends the `profile.approved` event first and saves the snapshot second. A failed append changes nothing;
-a retry after a failed save finds the latest recorded approval already naming that hash, appends nothing and only saves. "Already approved" means saved
-and recorded, so a saved approval whose event is missing is shown as not approved and approving again records it.
+a retry after a failed save finds the latest recorded approval already naming that hash, appends nothing and only saves. "Approved" means saved
+and named by the latest recorded `profile.approved` event, so a saved approval whose event is missing (or was followed by a later one)
+is not approved, and approving again records it. Every surface judges by this one rule (`ProfileRules.IsApproved`): `profile
+validate`, the `profile approve` preview, `status` (`profile.needsApproval`) and the startup summary ("approval not recorded in
+the ledger as the latest one"), and `doctor`'s profile check (a `warn` with the fix `sindri profile approve`). A ledger that
+can't be read is an error on each of them, never "not approved".
 
 ## Host lease
 

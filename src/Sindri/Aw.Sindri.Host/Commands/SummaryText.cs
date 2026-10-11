@@ -33,9 +33,16 @@ internal static class SummaryText
         { Problem: { } problem, Approved: null } => $"{problem}",
         { Approved: null } => $"{p.Source} (not approved; fix: sindri profile approve)",
         { ChangedSinceApproval: true } => $"{p.Source} (changed since approval {p.Approved.Value.Abbreviated}; running with the approved one; fix: sindri profile approve)",
-        { Problem: { } problem } => $"approved {p.Approved.Value.Abbreviated}; the live file has a problem: {problem}",
+        { Problem: { } problem, Live: null } => $"{(p.NeedsApproval ? "saved" : "approved")} {p.Approved.Value.Abbreviated}{Unrecorded(p)}; the live file has a problem: {problem}",
+        { Problem: { } problem } => $"{p.Source} (the approval can't be checked: {problem})",
+        { NeedsApproval: true } => $"{p.Source} ({NotLatest}; fix: sindri profile approve)",
         _ => $"{p.Source} (approved, hash {p.Approved.Value.Abbreviated})",
     };
+
+    /// <summary>What a saved approval that the ledger doesn't name as its latest 'profile.approved' event says.</summary>
+    private const string NotLatest = "approval not recorded in the ledger as the latest one";
+
+    private static string Unrecorded(ProfileStatus p) => p.NeedsApproval ? $" ({NotLatest}; fix: sindri profile approve)" : string.Empty;
 
     private static string LastRun(DateTimeOffset? at) =>
         at is { } t ? string.Create(CultureInfo.InvariantCulture, $" (last {t:HH:mm:ss}Z)") : string.Empty;
