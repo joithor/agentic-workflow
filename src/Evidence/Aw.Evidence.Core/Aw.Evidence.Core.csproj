@@ -1,6 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <!-- Aw.Evidence.Core (scaffolded by /new-package): domain types, typed ids, value objects, pure logic, port
-       interfaces and errors. No I/O, clock or random ids (BannedSymbols.txt, spec §4b.1). Playwright UI evidence; owns the box-wide heavy-job and QA-stack locks today (config/lib/locks.sh primitive). A tier-0 or tier-1 package can't take those locks (that would be an upward file edge, DEPS-TIER-002), so the locks move to the Kernel Lease port before one needs them -->
+       interfaces and errors. No I/O, clock or random ids (BannedSymbols.txt, spec §4b.1). Playwright UI evidence; owns the box-wide heavy-job and QA-stack locks behind its own Core port IMachineLocks (deps.yaml note). -->
   <PropertyGroup>
     <TargetFramework>net10.0</TargetFramework>
     <RootNamespace>Aw.Evidence.Core</RootNamespace>

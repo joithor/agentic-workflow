@@ -9,7 +9,7 @@ namespace Aw.Evidence.Tests;
 
 public sealed class HostTests
 {
-    private static readonly string _stateRoot = Path.Combine(Path.GetTempPath(), "aw-evidence-di-test");
+    private static readonly string _stateRoot = "/nonexistent/aw-evidence-di-test";   // Compose writes nothing; a unique-looking path that never exists
 
     [Fact, Trait("Lane", "unit")]
     public async Task Every_registered_service_resolves_in_a_scope()

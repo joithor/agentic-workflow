@@ -19,7 +19,7 @@ every path it writes into a run file is absolute.
 
 | Command | Does | Exit |
 |---|---|---|
-| `run <script.json> <run-dir> [--baseline png] [--app-build sha] [--fixtures id] [--cache manifest.json] [--host url] [--allow-preview-host] [--allow-writes] [--lock-timeout s]` | Deletes `<run-dir>/summary.json`, runs every step of a UI script in each of its viewports, writes `summary.json` and prints it | 0 every step passed · 2 a step failed or broke · 1 · 4 · 75 |
+| `run <script.json> <run-dir> [--baseline png] [--app-build sha] [--fixtures id] [--cache verdict-cache.json] [--host url] [--allow-preview-host] [--allow-writes] [--lock-timeout s]` | Deletes `<run-dir>/summary.json`, runs every step of a UI script in each of its viewports, writes `summary.json` and prints it | 0 every step passed · 2 a step failed or broke · 1 · 4 · 75 |
 | `parity <manifest.json> <run-dir> [--host url] [--allow-preview-host] [--allow-writes] [--app-build sha] [--db-provenance seeded\|unknown] [--lock-timeout s]` | Deletes `<run-dir>/parity.json`, measures each design frame, writes `parity.json` and prints it; each failed box check is also a stderr line `ui-evidence: geometry: <frame> <target>: <failure>` | 0 every geometry check passed · 2 one failed · 1 · 4 · 75 |
 | `parity-plan <run-dir> [--reviewed file,file]` | Prints the Linear attachment plan (one side-by-side image per frame) | 0 every image reviewed · 3 an image is unreviewed · 1 provenance unknown (AW-EVIDENCE-016: the evidence stays local) |
 | `parity-comment <run-dir> --for linear\|github` | Prints the comment as markdown (Linear: a table with geometry; GitHub: a table, images stay on Linear) | 0 · 1 |
@@ -30,7 +30,7 @@ every path it writes into a run file is absolute.
 | `provenance` | Prints `{provenance: seeded\|unknown, reason}` for the local database | 0 |
 | `install-browser` | Installs the browser the run and parity commands drive; the installer's download progress goes to stderr, so stdout is only `{installed}`. Ctrl-C returns at once (a download already running finishes in Playwright's driver) | 0 · 4 |
 
-`--lock-timeout` is whole seconds (default 120; 0 tries once). `--host` takes a bare origin: `http://localhost:<port>`
+`--lock-timeout` is whole seconds, 0 to 86400 (default 120; 0 tries once); anything else is a usage error. `--host` takes a bare origin: `http://localhost:<port>`
 or `http://127.0.0.1:<port>` (local: no extra flag), or `https://pr-<n>.vitalize.build` with `--allow-preview-host`
 (the host guard below). Without `--host` the binary drives `http://localhost:3000`.
 
@@ -248,7 +248,9 @@ The adapter (`DirectoryLocks`) is the same lock the shell tools take, so the two
 | `AW_HEAVY_LOCK_HELD=1` | set by the `heavy` wrapper: the parent already holds a heavy-job slot, so that lease is a no-op (it takes no second slot) |
 | Stale locks | never taken over (the shell primitive doesn't either); remove a dead holder's directory by hand |
 
-`config/lib/locks.sh` (`acquire_lock` / `release_lock`) is the shell side of the same format; the integration tests
+The `heavy` wrapper is the owner's machine script (`~/.agentic-workflow/bin-r1b/heavy`, outside this repo); its slot
+layout and owner line are the ones above. `config/lib/locks.sh` (`acquire_lock` / `release_lock`) is the in-repo shell
+side of the same format; the integration tests
 source it to prove the exclusion in both directions, and that a C# holder takes `<lock>.2` while bash holds `<lock>`.
 
 ## Judge

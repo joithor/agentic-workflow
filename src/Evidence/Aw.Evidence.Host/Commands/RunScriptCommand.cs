@@ -10,7 +10,7 @@ internal static class RunScriptCommand
 {
     internal const string Name = "run";
     internal const string Shape =
-        "run <script.json> <run-dir> [--baseline png] [--app-build sha] [--fixtures id] [--cache manifest.json] " +
+        "run <script.json> <run-dir> [--baseline png] [--app-build sha] [--fixtures id] [--cache verdict-cache.json] " +
         "[--host url] [--allow-preview-host] [--allow-writes] [--lock-timeout s]";
 
     private static readonly CliSpec _spec = new(
