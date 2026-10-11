@@ -4,6 +4,7 @@ using Aw.Judge.Infrastructure.Config;
 using Aw.Judge.Infrastructure.Ids;
 using Aw.Judge.Infrastructure.Processes;
 using Aw.Judge.Infrastructure.Redaction;
+using Aw.Judge.Infrastructure.Secrets;
 using Aw.Judge.Infrastructure.Sqlite;
 using Aw.Kernel.Ids;
 using Aw.Redaction;
@@ -34,6 +35,7 @@ public static class JudgeInfrastructureServiceCollectionExtensions
             .AddSingleton<IInputRedactor>(new AwInputRedactor(Redactor.Default))
             .AddSingleton<IExecutableLocator>(new PathExecutableLocator(environment))
             .AddSingleton<IProcessRunner>(new SystemProcessRunner(environment))
+            .AddSingleton<ISecretSource>(sp => new KeychainSecretSource(environment, sp.GetRequiredService<IProcessRunner>()))
             .AddSingleton<IIdGenerator, RandomIdGenerator>();
     }
 }
