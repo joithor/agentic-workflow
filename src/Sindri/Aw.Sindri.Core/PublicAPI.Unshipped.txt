@@ -554,3 +554,4 @@ static Aw.Sindri.Core.Events.ProfileApproved.operator !=(Aw.Sindri.Core.Events.P
 static Aw.Sindri.Core.Events.ProfileApproved.operator ==(Aw.Sindri.Core.Events.ProfileApproved? left, Aw.Sindri.Core.Events.ProfileApproved? right) -> bool
 static readonly Aw.Sindri.Core.SindriErrors.PortInUse -> Aw.Kernel.ErrorDefinition!
 Aw.Sindri.Core.Events.EventFactory.Payload<TPayload>(Aw.Sindri.Core.Ledger.LedgerEvent! recorded) -> Aw.Kernel.Result<TPayload>!
+static readonly Aw.Sindri.Core.Lease.LeaseDecision.StartTolerance -> System.TimeSpan

@@ -24,7 +24,7 @@ public sealed class InMemorySindriStore(TimeProvider clock, IProcessProbe probe)
         lock (_gate)
         {
             var now = clock.GetUtcNow();
-            var liveness = _row is { } row && row.IsLive(now)
+            var liveness = _row is { Released: false } row
                 ? LeaseDecision.Liveness(row.Holder, probe.Self(), probe.Facts(row.Holder.Pid))
                 : HolderLiveness.Unknown;
             var decision = LeaseDecision.Acquire(_row, candidate, now, liveness);

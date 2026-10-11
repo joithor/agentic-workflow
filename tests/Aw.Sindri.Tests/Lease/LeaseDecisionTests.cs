@@ -24,8 +24,9 @@ public sealed class LeaseDecisionTests
     }
 
     [Theory, Trait("Lane", "unit")]
-    [InlineData(false, HolderLiveness.Unknown)]    // expired: free whatever the holder is
-    [InlineData(true, HolderLiveness.ProvenDead)]  // unexpired but provably dead
+    [InlineData(false, HolderLiveness.Unknown)]     // expired, on another machine
+    [InlineData(false, HolderLiveness.ProvenDead)]  // expired and provably dead
+    [InlineData(true, HolderLiveness.ProvenDead)]   // unexpired but provably dead
     public void A_lapsed_or_dead_holder_gives_the_next_epoch(bool live, HolderLiveness liveness)
     {
         var row = new LeaseRow(_other, 4, _now.AddSeconds(-70), live ? _now.AddSeconds(50) : _now.AddSeconds(-10), Released: false);
@@ -42,8 +43,27 @@ public sealed class LeaseDecisionTests
         Assert.False(LeaseDecision.Acquire(row, _me, _now, HolderLiveness.Unknown).IsSuccess);
     }
 
+    [Fact, Trait("Lane", "unit")]
+    public void An_expired_lease_of_a_holder_alive_on_this_machine_is_refused()
+    {
+        var row = new LeaseRow(_other, 4, _now.AddSeconds(-70), _now.AddSeconds(-10), Released: false);
+
+        Assert.Equal(SindriErrors.LeaseHeld.Code, LeaseDecision.Acquire(row, _me, _now, HolderLiveness.Alive).Error.Code);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public void A_released_lease_is_free_whatever_its_holder_is()
+    {
+        var row = new LeaseRow(_other, 4, _now.AddSeconds(-10), _now, Released: true);
+
+        Assert.Equal(5, LeaseDecision.Acquire(row, _me, _now, HolderLiveness.Alive).Value.Epoch);
+    }
+
     [Theory, Trait("Lane", "unit")]
     [InlineData("box", "boot-1", true, 0, HolderLiveness.Alive)]
+    [InlineData("box", "boot-1", true, 2, HolderLiveness.Alive)]           // start-time jitter within 2 s: the same process
+    [InlineData("box", "boot-1", true, -2, HolderLiveness.Alive)]
+    [InlineData("box", "boot-1", true, 3, HolderLiveness.ProvenDead)]      // beyond it: a later process
     [InlineData("box", "boot-1", false, 0, HolderLiveness.ProvenDead)]     // pid gone
     [InlineData("box", "boot-1", true, 30, HolderLiveness.ProvenDead)]     // pid reused by a later process
     [InlineData("box", "boot-2", true, 0, HolderLiveness.ProvenDead)]      // another boot

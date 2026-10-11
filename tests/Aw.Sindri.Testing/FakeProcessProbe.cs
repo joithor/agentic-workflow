@@ -25,6 +25,11 @@ public sealed class FakeProcessProbe : IProcessProbe
     public static LeaseHolder Holder(int pid, DateTimeOffset? startedAt = null) =>
         new(HostId.From("box"), pid, startedAt ?? KnownInstants.Epoch, BootId.From("boot-1"));
 
+    /// <summary>A holder on another machine, whose liveness this probe can't know.</summary>
+    /// <param name="pid">The pid.</param>
+    /// <returns>The holder.</returns>
+    public static LeaseHolder Remote(int pid) => new(HostId.From("other-box"), pid, KnownInstants.Epoch, BootId.From("boot-9"));
+
     /// <summary>Marks <paramref name="holder"/>'s pid as running with its start time.</summary>
     /// <param name="holder">The holder.</param>
     public void Start(LeaseHolder holder) => _running[holder.Pid] = holder.PidStart;

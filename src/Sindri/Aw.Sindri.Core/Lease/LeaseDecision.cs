@@ -9,12 +9,19 @@ namespace Aw.Sindri.Core.Lease;
 /// </summary>
 public static class LeaseDecision
 {
-    /// <summary>Whether <paramref name="candidate"/> may take the lease, and with which epoch.</summary>
+    /// <summary>How far two readings of one process's start time may differ (Linux derives it from boot time and clock ticks).</summary>
+    public static readonly TimeSpan StartTolerance = TimeSpan.FromSeconds(2);
+
+    /// <summary>
+    /// Whether <paramref name="candidate"/> may take the lease, and with which epoch. A released lease is free. A holder
+    /// proven dead loses it at once; one proven alive on this machine keeps it even past expiry (its renewals may only be
+    /// late); one whose liveness is unknown (another machine) keeps it until it expires.
+    /// </summary>
     /// <param name="row">The stored lease, or null when it was never held.</param>
     /// <param name="candidate">Who asks.</param>
     /// <param name="now">The current time.</param>
-    /// <param name="liveness">What is known about the stored holder (only read when the lease is still live).</param>
-    /// <returns>The grant, or SND-LEASE-001 naming the live holder.</returns>
+    /// <param name="liveness">What is known about the stored holder (the adapter asks <see cref="Liveness"/> for any unreleased row).</param>
+    /// <returns>The grant, or SND-LEASE-001 naming the holder.</returns>
     public static Result<LeaseGrant> Acquire(LeaseRow? row, LeaseHolder candidate, DateTimeOffset now, HolderLiveness liveness)
     {
         if (row is null)
@@ -22,7 +29,14 @@ public static class LeaseDecision
             return new LeaseGrant(candidate, 1, now + LeaseTiming.Ttl);
         }
 
-        return row.IsLive(now) && liveness != HolderLiveness.ProvenDead
+        var kept = !row.Released && liveness switch
+        {
+            HolderLiveness.Alive => true,
+            HolderLiveness.Unknown => row.IsLive(now),
+            HolderLiveness.ProvenDead => false,
+            _ => false,
+        };
+        return kept
             ? SindriErrors.LeaseHeld.With(string.Create(CultureInfo.InvariantCulture,
                 $"held by {row.Holder} since {row.AcquiredAt:yyyy-MM-ddTHH:mm:ssZ} (epoch {row.Epoch})"))
             : new LeaseGrant(candidate, row.Epoch + 1, now + LeaseTiming.Ttl);
@@ -53,7 +67,7 @@ public static class LeaseDecision
     /// <param name="holder">The stored holder.</param>
     /// <param name="self">This process.</param>
     /// <param name="facts">The system's facts about the holder's pid (only meaningful on the same machine and boot).</param>
-    /// <returns>Alive, ProvenDead or Unknown.</returns>
+    /// <returns>Alive, ProvenDead or Unknown. Start times within <see cref="StartTolerance"/> count as the same process.</returns>
     public static HolderLiveness Liveness(LeaseHolder holder, LeaseHolder self, ProcessFacts facts)
     {
         if (holder.Host != self.Host)
@@ -66,6 +80,6 @@ public static class LeaseDecision
             return HolderLiveness.ProvenDead;
         }
 
-        return facts.StartedAt is { } started && started != holder.PidStart ? HolderLiveness.ProvenDead : HolderLiveness.Alive;
+        return facts.StartedAt is { } started && (started - holder.PidStart).Duration() > StartTolerance ? HolderLiveness.ProvenDead : HolderLiveness.Alive;
     }
 }

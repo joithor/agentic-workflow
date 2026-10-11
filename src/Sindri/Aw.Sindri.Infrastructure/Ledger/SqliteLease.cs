@@ -31,7 +31,7 @@ internal sealed class SqliteLease(LedgerDatabase database, IProcessProbe probe, 
             }
 
             var now = clock.GetUtcNow();
-            var liveness = row.Value is { } held && held.IsLive(now)
+            var liveness = row.Value is { Released: false } held
                 ? LeaseDecision.Liveness(held.Holder, probe.Self(), probe.Facts(held.Holder.Pid))
                 : HolderLiveness.Unknown;
             var decision = LeaseDecision.Acquire(row.Value, candidate, now, liveness);

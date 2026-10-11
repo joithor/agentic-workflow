@@ -98,14 +98,13 @@ public abstract class LeaseContract
         Expect.True((await lease.Read(Token)).Value is { Epoch: 2, Released: false });
     }
 
-    /// <summary>An expired lease goes to the next asker even if its holder may live; the old holder's renew then fails.</summary>
+    /// <summary>An expired lease of a holder on another machine goes to the next asker; the old holder's renew then fails.</summary>
     /// <returns>The test.</returns>
     [Fact]
     public async Task A_paused_holder_loses_on_renew_after_another_took_over()
     {
         var lease = (await Create(Clock, Probe)).Lease;
-        var paused = FakeProcessProbe.Holder(400);
-        Probe.Start(paused);
+        var paused = FakeProcessProbe.Remote(400);
         var old = (await lease.Acquire(paused, Token)).Value;
         Clock.Advance(LeaseTiming.Ttl + TimeSpan.FromSeconds(1));
         _ = (await lease.Acquire(Probe.Self(), Token)).Value;
@@ -113,6 +112,22 @@ public abstract class LeaseContract
         var renew = await lease.Renew(old, Token);
 
         Expect.Equal(SindriErrors.LeaseLost.Code, renew.Error.Code);
+    }
+
+    /// <summary>An expired lease whose holder is alive on this machine is refused: its renewals are only late.</summary>
+    /// <returns>The test.</returns>
+    [Fact]
+    public async Task An_expired_lease_of_a_holder_alive_on_this_machine_is_refused()
+    {
+        var lease = (await Create(Clock, Probe)).Lease;
+        var late = FakeProcessProbe.Holder(500);
+        Probe.Start(late);
+        _ = (await lease.Acquire(late, Token)).Value;
+        Clock.Advance(LeaseTiming.Ttl + TimeSpan.FromSeconds(1));
+
+        var refused = await lease.Acquire(Probe.Self(), Token);
+
+        Expect.Equal(SindriErrors.LeaseHeld.Code, refused.Error.Code);
     }
 
     /// <summary>A holder that slept past expiry, when nobody took over, renews and keeps its epoch.</summary>
