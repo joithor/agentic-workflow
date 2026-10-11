@@ -32,6 +32,10 @@
     <ProjectReference Include="../../src/Judge/Aw.Judge.Features/Aw.Judge.Features.csproj" />
     <ProjectReference Include="../../src/Judge/Aw.Judge.Infrastructure/Aw.Judge.Infrastructure.csproj" />
     <ProjectReference Include="../../src/Judge/Aw.Judge.Host/Aw.Judge.Host.csproj" />
+    <ProjectReference Include="../../src/Evidence/Aw.Evidence.Core/Aw.Evidence.Core.csproj" />
+    <ProjectReference Include="../../src/Evidence/Aw.Evidence.Features/Aw.Evidence.Features.csproj" />
+    <ProjectReference Include="../../src/Evidence/Aw.Evidence.Infrastructure/Aw.Evidence.Infrastructure.csproj" />
+    <ProjectReference Include="../../src/Evidence/Aw.Evidence.Host/Aw.Evidence.Host.csproj" />
     <ProjectReference Include="../../src/BugFix/Aw.BugFix.Core/Aw.BugFix.Core.csproj" />
     <ProjectReference Include="../../src/BugFix/Aw.BugFix.Features/Aw.BugFix.Features.csproj" />
     <ProjectReference Include="../../src/BugFix/Aw.BugFix.Infrastructure/Aw.BugFix.Infrastructure.csproj" />

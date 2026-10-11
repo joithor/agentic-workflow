@@ -70,6 +70,8 @@ classify_changes() {
       # lane-budgets.mjs reads deps.yaml through this parser (scripts/* already runs the bash tests)
       scripts/deps/*) dotnet=true ;;
       schemas/packets/*) ;;  # the packet schemas belong to Aw.Packets (its golden test, the dotnet area above)
+      # Aw.Evidence's lock interop tests source it: the C# lock adapter and the shell tools share one lock format
+      config/lib/locks.sh) dotnet=true ;;
       schemas/*|rules/*) bash=true ;;  # check-deps and check-rules (and their suites) read these
       # scripts/tests/ci-lane-budgets.test.sh checks lane-budgets.mjs against these numbers
       tests/Aw.Kernel.Testing/Lanes.cs) bash=true ;;
