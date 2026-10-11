@@ -29,6 +29,10 @@ public sealed class FileRunLedgerContractTests : RunLedgerContract, IDisposable
         File.WriteAllText(Path.Combine(_temp.Path, "digest.key"), content);
 
         Assert.Equal(Core.Errors.BugFixErrors.DigestKeyMissing.Code, Ledger.Reserve(_temp.Path, DateTimeOffset.UnixEpoch, CheckKind.Test).Error.Code);
+
+        Ledger.CreateDigestKey(_temp.Path);   // init replaces it
+
+        Assert.Matches("^[0-9a-f]{64}$", Ledger.Reserve(_temp.Path, DateTimeOffset.UnixEpoch, CheckKind.Test).Value.DigestKey);
     }
 
     public void Dispose() => _temp.Dispose();

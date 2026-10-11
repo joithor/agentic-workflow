@@ -43,8 +43,8 @@ internal sealed class InitService(IStateStore store, IRunLedger ledger, IFiles f
                 $"an unfinished bug fix already exists at {store.StateFile(request.StateDirectory)} (status {status}); resume it instead");
         }
 
+        ledger.CreateDigestKey(request.StateDirectory);   // first: a bug fix never exists without its key
         store.Save(request.StateDirectory, BugFixState.Start(ticket, clock.GetUtcNow(), request.TicketFile));
-        ledger.CreateDigestKey(request.StateDirectory);
         return new InitResponse(store.StateFile(request.StateDirectory));
     }
 }

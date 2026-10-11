@@ -43,6 +43,17 @@ design.
 `--state`, `--ticket`, `--evidence` and `--cwd` resolve against the process's working directory; `--check` resolves
 against `--cwd` (the checkout the check lives in). The argv after `--` is kept as given.
 
+## Threat model
+
+The gates guard against an agent's **honest mistakes and shortcuts**: editing or weakening the check, running a
+different command or program, recording a run against the wrong commit, a dirty or stale work tree, re-rolling a judge
+verdict, skipping a phase. bugfix-state runs in a private software factory, under the skill's guidance, so a
+**deliberately adversarial agent** that crafts commands or files to slip past a rule (inline code glued to its flag,
+interpreter modes that don't run the script, a planted file a loader picks up) is out of scope. The rules below refuse
+the common forms of those tricks where that was cheap, but they aren't a sandbox; the judge's resolution check and code
+review of the fix are the backstop. A review finding that needs a crafted exploit is answered against this section,
+not with another rule.
+
 ## The rules
 
 - **Evidence is ours.** `advance reproduce` and `record-run` accept only run records that `run-test` or `run-ui` wrote for
@@ -124,8 +135,9 @@ against `--cwd` (the checkout the check lives in). The argv after `--` is kept a
   config extension) or a script or config file in an option, that doesn't exist as a file or directory, is refused
   (AW-BUGFIX-008): a fix could add it. `advance reproduce` freezes the check only from a
   clean checkout of the baseline commit (no index or working change, no stray untracked file), and a file the command
-  names that the baseline run itself created (its own report, `--junitxml=out/r.xml`) is its output, not a command
-  file; any other named file is protected, including one an earlier run left untracked. Option values that aren't files (URLs, `/regexes/`, output files such as
+  names that a run of the same command created in that work tree (its report, `--junitxml=out/r.xml`, also when a re-run
+  wrote the same bytes again) is its output, not a command file; any other named file is protected, including one an
+  earlier run of another command left untracked. Option values that aren't files (URLs, `/regexes/`, output files such as
   `--junitxml=out/r.xml`, names such as `--cov=app`) are neither required nor protected, and globs and package patterns
   (`./...`) aren't paths.
 - **Attempts.** Mode A one candidate, C one candidate (split by area, in sequence), B two candidates on different open
@@ -183,7 +195,7 @@ Everything else is one line on stderr ending with the catalogue code, and nothin
 | AW-BUGFIX-017 | unavailable | ui-evidence produced no usable run; nothing registered |
 | AW-BUGFIX-018 | invalid | A git command failed (not a repository, unknown revision) |
 | AW-BUGFIX-019 | conflict | The report step isn't allowed (already reported, candidate not eligible) |
-| AW-BUGFIX-020 | conflict | A working tree has uncommitted changes, or an untracked file no registered run left behind |
+| AW-BUGFIX-020 | conflict | A working tree has uncommitted changes, an untracked file no run of the frozen check left behind, or an untracked file that could change what runs |
 | AW-BUGFIX-021 | conflict | Another bugfix-state call holds the state directory; retry when it finishes |
 | AW-BUGFIX-022 | unavailable | A state, run or log file can't be written or read |
 | AW-BUGFIX-023 | unavailable | The bug fix's `digest.key` is missing or malformed, so environment digests can't be made or compared |
@@ -192,8 +204,9 @@ Everything else is one line on stderr ending with the catalogue code, and nothin
 
 Everything lives under the `--state` directory; the C# build never reads TS-written state (spec §4c).
 
-- `digest.key`: the bug fix's random HMAC key for the environment digests (64 hex characters, owner-only), made once by
-  `init` (written to a temporary file and moved into place, never overwritten). `run-test` and `run-ui` refuse with
+- `digest.key`: the bug fix's random HMAC key for the environment digests (64 hex characters, owner-only), made by `init`
+  before the state (written to a temporary file and moved into place; `init` keeps a valid key and replaces a missing or
+  malformed one, since no digest uses it yet). `run-test` and `run-ui` refuse with
   AW-BUGFIX-023 when it is missing or malformed instead of making a new one: the digests in `state.json` and the run
   records are only comparable under the key they were made with.
 - `state.json`: the state (`schemaVersion` 1), written to a temporary file and renamed, under `state.lock`. Fields: `ticket`, `phase`,

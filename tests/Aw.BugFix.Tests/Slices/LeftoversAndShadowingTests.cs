@@ -92,6 +92,21 @@ public sealed class LeftoversAndShadowingTests : IDisposable
     }
 
     [Fact, Trait("Lane", "unit")]
+    public async Task A_re_run_baseline_that_writes_the_same_report_does_not_freeze_it()
+    {
+        string[] command = ["bash", World.Check, "--junitxml=out/r.xml"];
+        await _w.Investigated();
+        _w.Runner.WhileRunning = dir => _w.Repos.Write($"{dir}/out/r.xml", "<r/>\n");   // the same bytes every run
+        _ = World.Ok(await _w.Run<RunTestRequest, RunTestResponse>(new RunTestRequest(World.State, World.Check, World.Repo, command)));
+        var again = World.Ok(await _w.Run<RunTestRequest, RunTestResponse>(new RunTestRequest(World.State, World.Check, World.Repo, command)));
+
+        _ = World.Ok(await _w.Run<AdvanceReproduceRequest, AdvanceReproduceResponse>(new AdvanceReproduceRequest(World.State, again.Evidence, World.Check, World.Repo)));
+
+        Assert.DoesNotContain("out/r.xml", _w.Now.Check?.CommandFiles ?? [], StringComparer.Ordinal);
+        _ = World.Ok(await _w.Run<RunTestRequest, RunTestResponse>(new RunTestRequest(World.State, World.Check, World.Repo, command)));
+    }
+
+    [Fact, Trait("Lane", "unit")]
     public async Task What_a_run_of_another_check_left_behind_is_not_allowed()
     {
         _w.Repos.Write($"{World.Repo}/tools/mk.sh", "planter\n");

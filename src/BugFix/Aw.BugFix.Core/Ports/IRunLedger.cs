@@ -14,7 +14,7 @@ public interface IRunLedger
     /// <returns>The run's files, or AW-BUGFIX-023 when the bug fix's digest key is missing or malformed.</returns>
     public Result<RunSlot> Reserve(string directory, DateTimeOffset at, CheckKind kind);
 
-    /// <summary>Creates the bug fix's secret digest key beside its state, once: an existing valid key is kept.</summary>
+    /// <summary>Creates the bug fix's secret digest key beside its state: an existing valid key is kept, a missing or malformed one is replaced (init calls it before any run exists).</summary>
     /// <param name="directory">The state directory.</param>
     public void CreateDigestKey(string directory);
 

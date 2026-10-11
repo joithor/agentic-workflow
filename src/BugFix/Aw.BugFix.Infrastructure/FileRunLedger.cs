@@ -20,7 +20,7 @@ internal sealed class FileRunLedger(JsonSerializerOptions json) : IRunLedger
     {
         if (ReadKey(directory) is not { } key)
         {
-            return BugFixErrors.DigestKeyMissing.With($"{Path.Combine(directory, KeyFile)} is missing or malformed; it is made by init and holds the key the environment digests in state.json were made with, so restore it or start the bug fix over");
+            return BugFixErrors.DigestKeyMissing.With($"{Path.Combine(directory, KeyFile)} is missing or malformed; it is made by init and holds the key the environment digests in state.json were made with, so restore it, or start over in a new state directory");
         }
 
         var runs = Directory.CreateDirectory(Path.Combine(directory, "runs")).FullName;
@@ -45,8 +45,8 @@ internal sealed class FileRunLedger(JsonSerializerOptions json) : IRunLedger
         }
     }
 
-    // Written to a temporary file and moved into place without overwriting, so a reader never sees a half-written key
-    // and an existing valid key is never replaced.
+    // Written to a temporary file and moved into place, so a reader never sees a half-written key; a valid key is never
+    // replaced, a malformed one is (init runs only when no unfinished bug fix uses it).
     public void CreateDigestKey(string directory)
     {
         if (ReadKey(directory) is not null)
@@ -67,14 +67,7 @@ internal sealed class FileRunLedger(JsonSerializerOptions json) : IRunLedger
             stream.Write(Encoding.ASCII.GetBytes(Convert.ToHexStringLower(RandomNumberGenerator.GetBytes(32))));
         }
 
-        try
-        {
-            File.Move(temporary, path, overwrite: false);
-        }
-        catch (IOException) when (File.Exists(path))
-        {
-            File.Delete(temporary);   // another call made it first
-        }
+        File.Move(temporary, path, overwrite: true);   // only a missing or malformed key gets here
     }
 
     // The key, or null when the file is missing or isn't 32 bytes of hex.

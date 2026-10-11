@@ -21,7 +21,7 @@ internal sealed class AdvanceReproduceService(IStateStore store, IRunLedger ledg
             .Bind(static record => record.AsBaseline())
             .Bind(record => AtHead(record, state, request.WorkingDirectory));
         var frozen = run.Bind(record => locator.Locate(request.WorkingDirectory, request.Check)
-            .Bind(file => files.Sha256(file.FullPath).Bind(sha => Freeze(record, file, sha))));
+            .Bind(file => files.Sha256(file.FullPath).Bind(sha => Freeze(record, file, sha, Outputs(state, record)))));
         if (frozen.IsError)
         {
             return frozen.Error;
@@ -40,7 +40,7 @@ internal sealed class AdvanceReproduceService(IStateStore store, IRunLedger ledg
             ? record
             : BugFixErrors.NotReproduced.With($"the evidence ran against {record.Commit}, but {directory} is at {checkout.Head}"));
 
-    private Result<FrozenCheck> Freeze(RunRecord record, CheckFile file, string sha)
+    private Result<FrozenCheck> Freeze(RunRecord record, CheckFile file, string sha, IReadOnlySet<string> outputs)
     {
         if (record.CheckSha256 != sha)
         {
@@ -48,20 +48,29 @@ internal sealed class AdvanceReproduceService(IStateStore store, IRunLedger ledg
         }
 
         var root = file.FullPath[..^file.RepoPath.Length].TrimEnd('/');
-        return CommandFiles(record, root, file).Map(commandFiles =>
+        return CommandFiles(record, root, file, outputs).Map(commandFiles =>
             new FrozenCheck(record.Kind, file.RepoPath, sha, record.Command, record.Directory, record.ProgramSha256, record.Environment, commandFiles));
     }
+
+    // What the baseline command's runs created in the baseline's work tree: the baseline run's own leftovers, and those
+    // of earlier runs of the same command there (a re-run that writes the same report again leaves nothing new).
+    private HashSet<string> Outputs(BugFixState state, RunRecord baseline) =>
+        state.Runs.Select(run => ledger.Read(run.Evidence)).Where(static r => r.IsSuccess).Select(static r => r.Value.Record)
+            .Where(r => r.Checkout == baseline.Checkout && r.Directory == baseline.Directory && (r.Command ?? []).SequenceEqual(baseline.Command ?? [], StringComparer.Ordinal))
+            .Append(baseline)
+            .SelectMany(static r => r.Leftovers.Keys)
+            .ToHashSet(StringComparer.Ordinal);
 
     // The repository files the baseline command names besides the check (its runner, wrapper scripts, --require=,
     // --config=, -m modules): a fix that changes them changes what the check executes, so they are protected like it.
     // A script-like path that doesn't exist is refused: what isn't there now could be added by a fix.
-    private Result<IReadOnlyList<string>> CommandFiles(RunRecord record, string root, CheckFile check)
+    private Result<IReadOnlyList<string>> CommandFiles(RunRecord record, string root, CheckFile check, IReadOnlySet<string> outputs)
     {
         var directory = record.Directory.Length == 0 ? root : $"{root}/{record.Directory}";
         var found = new List<string>();
         foreach (var named in CommandFilesRule.Paths(record.Command ?? []))
         {
-            // A file the baseline run itself created is its output (--junitxml=out/r.xml), not code a fix could change.
+            // A file a run of this command created is its output (--junitxml=out/r.xml), not code a fix could change.
             var protect = Protected(named, directory);
             if (protect.IsError)
             {
@@ -71,7 +80,7 @@ internal sealed class AdvanceReproduceService(IStateStore store, IRunLedger ledg
             found.AddRange(protect.Value
                 .Where(f => f.StartsWith(root + "/", StringComparison.Ordinal) && f != check.FullPath)
                 .Select(f => f[(root.Length + 1)..])
-                .Where(f => named.Specifier || !record.Leftovers.ContainsKey(f)));
+                .Where(f => named.Specifier || !outputs.Contains(f)));
         }
 
         return Results.Success<IReadOnlyList<string>>([.. found.Distinct(StringComparer.Ordinal)]);
