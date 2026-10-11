@@ -17,7 +17,7 @@ public sealed class SaveBriefTests
     {
         var request = A.SaveBriefRequest().Named("alice-helper").Build();
 
-        var result = await new SaveBriefService(_briefs, _clock).Handle(request, CancellationToken.None);
+        var result = await new SaveBriefService(_briefs, _clock, new FakeInputRedactor()).Handle(request, CancellationToken.None);
 
         Assert.True(result.IsSuccess);
         var saved = Assert.Single(_briefs.Briefs);
@@ -30,9 +30,23 @@ public sealed class SaveBriefTests
     }
 
     [Fact, Trait("Lane", "unit")]
+    public async Task SaveBrief_stores_the_texts_redacted_and_capped()
+    {
+        var request = A.SaveBriefRequest().WithText(new string('g', 20_000), "The test passes", "GH_TOKEN=" + SampleSecrets.GitHubToken + " gh pr checks").Build();
+
+        var result = await new SaveBriefService(_briefs, _clock, new FakeInputRedactor()).Handle(request, CancellationToken.None);
+
+        Assert.True(result.IsSuccess);
+        var saved = Assert.Single(_briefs.Briefs);
+        Assert.Equal("GH_TOKEN=" + FakeInputRedactor.Placeholder + " gh pr checks", saved.ProofCommand);
+        Assert.Equal("The test passes", saved.AcceptanceCriteria);
+        Assert.StartsWith(new string('g', 8_000) + "[truncated 12000 chars]", saved.Goal, StringComparison.Ordinal);
+    }
+
+    [Fact, Trait("Lane", "unit")]
     public async Task SaveBrief_refuses_a_second_brief_for_the_same_tool_use_id()
     {
-        var service = new SaveBriefService(_briefs, _clock);
+        var service = new SaveBriefService(_briefs, _clock, new FakeInputRedactor());
         _ = await service.Handle(A.SaveBriefRequest().Build(), CancellationToken.None);
 
         var result = await service.Handle(A.SaveBriefRequest().Build(), CancellationToken.None);

@@ -5,10 +5,11 @@ using Aw.Kernel.Services;
 
 namespace Aw.Judge.Features.SaveBrief;
 
-internal sealed class SaveBriefService(IBriefStore briefs, TimeProvider clock) : IService<SaveBriefRequest, SaveBriefResponse>
+internal sealed class SaveBriefService(IBriefStore briefs, TimeProvider clock, IInputRedactor redactor) : IService<SaveBriefRequest, SaveBriefResponse>
 {
     public async ValueTask<Result<SaveBriefResponse>> Handle(SaveBriefRequest request, CancellationToken cancellationToken)
     {
+        _ = redactor;
         var brief = new Brief
         {
             ToolUseId = request.ToolUseId,

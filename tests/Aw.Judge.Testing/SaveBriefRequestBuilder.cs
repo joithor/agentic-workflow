@@ -20,6 +20,17 @@ public sealed class SaveBriefRequestBuilder
         return this;
     }
 
+    /// <summary>Sets the goal, the acceptance criteria and the proof command.</summary>
+    /// <param name="goal">The goal.</param>
+    /// <param name="acceptanceCriteria">The acceptance criteria.</param>
+    /// <param name="proofCommand">The proof command.</param>
+    /// <returns>This builder.</returns>
+    public SaveBriefRequestBuilder WithText(string goal, string acceptanceCriteria, string proofCommand)
+    {
+        _request = _request with { Goal = goal, AcceptanceCriteria = acceptanceCriteria, ProofCommand = proofCommand };
+        return this;
+    }
+
     /// <summary>Sets the teammate name.</summary>
     /// <param name="value">The name.</param>
     /// <returns>This builder.</returns>
