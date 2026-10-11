@@ -13,6 +13,19 @@ public sealed class RegistryTests
     /// <summary>A Packages.cs line with no production project in the solution, or no ProjectReference here.</summary>
     public const string StaleId = "ARCH-REG-002";
 
+    /// <summary>A registered project that is neither tier 0, a layer project nor declared unshaped.</summary>
+    public const string UnshapedId = "ARCH-REG-003";
+
+    [Fact]
+    public void Every_registered_project_is_tier_zero_a_layer_or_declared_unshaped() =>
+        Verify.None(Production.UndeclaredUnshaped(Packages.Production, Packages.Unshaped)
+            .Select(n => new Violation(UnshapedId, $"{n} is neither tier 0, a Core/Features/Infrastructure/Host/App project, nor in Packages.Unshaped",
+                "rename it to its layer (Aw.<Pkg>.Core, …), or, for a deliberately unshaped package such as a UI head, add it to Packages.Unshaped")));
+
+    [Fact]
+    public void A_misnamed_project_in_a_shaped_root_is_not_taken_as_unshaped() =>
+        Assert.Equal(["Aw.Sindri.Engine"], Production.UndeclaredUnshaped(["Aw.Kernel", "Aw.Sindri.Core", "Aw.Sindri.Engine", "Aw.Sindri.Ui"], ["Aw.Sindri.Ui"]));
+
     [Fact]
     public void Every_production_project_in_the_solution_is_registered() =>
         Verify.None(Missing(Solution.ProductionProjects, Packages.Production));

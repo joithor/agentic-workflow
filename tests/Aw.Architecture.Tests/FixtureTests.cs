@@ -222,15 +222,24 @@ public sealed class FixtureTests
     [InlineData("Aw.Sindri.Ui.Views", null)]
     [InlineData("Aw.Sindri.Ui.Desktop", null)]
     [InlineData("Aw.Sindri.Uix.Core", "Aw.Sindri")]
+    [InlineData("Aw.Sindri.Engine.Runs", "Aw.Sindri")]
     public void An_unshaped_package_inside_a_shaped_root_belongs_to_no_package(string ns, string? root) =>
         Assert.Equal(root, (Scope.Of(["Aw.Sindri"]) with { Unshaped = ["Aw.Sindri.Ui", "Aw.Sindri.Ui.Desktop"] }).RootOf(ns));
 
     [Fact]
-    public void Unshaped_packages_are_the_registered_projects_with_no_layer_that_are_not_tier_zero() =>
-        Assert.Equal(["Aw.Sindri.Ui", "Aw.Sindri.Ui.Desktop"],
-            Production.UnshapedOf(["Aw.Kernel", "Aw.Kernel.Data", "Aw.Sindri.Core", "Aw.Sindri.Host", "Aw.Sindri.Ui", "Aw.Sindri.Ui.Desktop", "Aw.Packets.App"]));
-
-    [Fact]
     public void The_real_ui_assemblies_are_unshaped_and_keep_the_global_rules() =>
         Assert.Equal(["Aw.Sindri.Ui", "Aw.Sindri.Ui.Desktop"], Production.Scope.Unshaped);
+
+    [Fact]
+    public void Ui_rule_reports_avalonia_in_view_models_and_views_in_heads() =>
+        Verify.Exactly(UiRules.Check(FixtureSet.Edges("Ui"), "Aw.Architecture.Tests.Fixtures.Ui"), UiRules.Id,
+            "Ui.ViewModels.LeakyViewModel uses Avalonia.Controls.TextBlock",
+            "Ui.Desktop.HeadView uses Avalonia.Controls.ContentControl",
+            "Ui.Desktop.HeadView uses System.ComponentModel.INotifyPropertyChanged",
+            "Ui.Desktop.HeadViewModel uses System.ComponentModel.INotifyPropertyChanged");
+
+    [Fact]
+    public void Xaml_generated_closures_are_exempt_from_the_locator_rule_and_hand_written_code_is_not() =>
+        Verify.Exactly(ServiceProviderRules.Check(Edge.All(FixtureSet.Types("Xaml"), Scope.Of([]))), ServiceProviderRules.Id,
+            "Xaml.HandWritten uses IServiceProvider");
 }

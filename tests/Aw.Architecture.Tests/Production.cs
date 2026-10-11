@@ -55,18 +55,20 @@ internal static class Production
             .Where(p => p.Project.EndsWith(".Host", StringComparison.Ordinal) || p.Project.EndsWith(".App", StringComparison.Ordinal))
             .Select(p => KeyValuePair.Create(p.Assembly, p.Project[..p.Project.LastIndexOf('.')]))
             .Where(p => roots.Contains(p.Value, StringComparer.Ordinal)));
-        return scope with { Unshaped = UnshapedOf(list.Select(p => p.Project)) };
+        return scope with { Unshaped = [.. Packages.Unshaped.Where(u => list.Exists(p => p.Project == u))] };
     }
 
     /// <summary>
-    /// The registered projects that are neither tier 0 nor a layer of a shaped package (Core, Features, Infrastructure,
-    /// Host, App): the Sindri UI (Aw.Sindri.Ui) and its platform heads (Aw.Sindri.Ui.Desktop).
+    /// The projects that are neither tier 0, a layer project of a shaped package (Core, Features, Infrastructure, Host,
+    /// App), nor declared unshaped: each is a misnamed project the layer rules would miss (ARCH-REG-003).
     /// </summary>
     /// <param name="projectNames">Project names.</param>
-    /// <returns>Their names, sorted.</returns>
-    public static IReadOnlyList<string> UnshapedOf(IEnumerable<string> projectNames) =>
+    /// <param name="declaredUnshaped">The declared unshaped projects (Packages.Unshaped).</param>
+    /// <returns>The undeclared ones, sorted.</returns>
+    public static IReadOnlyList<string> UndeclaredUnshaped(IEnumerable<string> projectNames, IEnumerable<string> declaredUnshaped) =>
         [.. projectNames
             .Where(n => !TierZero.Contains(n) && !_layerProjects.Contains(n.Split('.')[^1], StringComparer.Ordinal))
+            .Except(declaredUnshaped, StringComparer.Ordinal)
             .Distinct(StringComparer.Ordinal)
             .Order(StringComparer.Ordinal)];
 
