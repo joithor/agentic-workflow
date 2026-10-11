@@ -16,9 +16,6 @@ internal static partial class ExtraPatternRules
     /// <summary>The longest pattern accepted.</summary>
     public const int MaxPatternLength = 1024;
 
-    /// <summary>The options every rule is compiled with (<see cref="CompiledRules"/>).</summary>
-    public const RegexOptions Options = RegexOptions.CultureInvariant | RegexOptions.ExplicitCapture;
-
     // Placeholder names that are not rules: a later scrub skips them, so an extra pattern may not take them.
     private static readonly string[] _reserved = ["blocked", "secret-field"];
 
@@ -33,7 +30,13 @@ internal static partial class ExtraPatternRules
         var seen = new HashSet<string>(StringComparer.Ordinal);
         for (var index = 0; index < extras.Count; index++)
         {
-            var (id, pattern) = extras[index];
+            if (extras[index] is not var (id, pattern))
+            {
+                // A null entry comes from configuration (an empty list item), so it is refused, not a bug.
+                errors.Add(new ExtraPatternError(index, ExtraPatternField.Id, RedactionCodes.InvalidPatternId, "The entry is empty; give it an id and a pattern."));
+                continue;
+            }
+
             if (IdProblem(id, taken, seen) is { } idProblem)
             {
                 errors.Add(new ExtraPatternError(index, ExtraPatternField.Id, RedactionCodes.InvalidPatternId, idProblem));
@@ -77,7 +80,7 @@ internal static partial class ExtraPatternRules
         try
         {
             // Parsing only: the pattern is compiled per size tier, with the redactor's timeout, when a scrub needs it.
-            _ = new Regex(pattern, Options, Redactor.DefaultMatchTimeout);
+            _ = new Regex(pattern, CompiledRules.Always, Redactor.DefaultMatchTimeout);
         }
         catch (RegexParseException parse)
         {
@@ -89,8 +92,10 @@ internal static partial class ExtraPatternRules
         return ShorthandProblem(pattern);
     }
 
-    // \d, \w, \s and \b (and their negations) are Unicode-aware in .NET, so they match far more than the ASCII shapes a
-    // pattern means (Arabic-Indic digits, letters of every script); the built-in rules spell the ASCII classes out.
+    // \d, \w, \s and \b (and their negations) are Unicode-aware in .NET, and \p{...} names a Unicode category, so they
+    // match far more than the ASCII shapes a pattern means (Arabic-Indic digits, letters of every script); the built-in
+    // rules spell the ASCII classes out. The scan is lexical: such an escape inside a class ([\b] is a backspace there) or
+    // an (?x) comment is refused too, the safe direction.
     private static string? ShorthandProblem(string pattern)
     {
         for (var at = 0; at < pattern.Length - 1; at++)
@@ -106,6 +111,7 @@ internal static partial class ExtraPatternRules
                 'w' => "[A-Za-z0-9_]",
                 's' => "[ \\t\\r\\n]",
                 'b' => "a lookaround such as (?<![A-Za-z0-9_])",
+                'p' => "the ASCII range you mean, such as [0-9] or [A-Za-z]",
                 _ => null,
             };
             if (replacement is not null)
@@ -122,6 +128,6 @@ internal static partial class ExtraPatternRules
     }
 
     // \z, not $: in .NET, $ also matches before a final newline.
-    [GeneratedRegex("^[a-z][a-z0-9]*(?:-[a-z0-9]+)*\\z", Options, matchTimeoutMilliseconds: 100)]
+    [GeneratedRegex("^[a-z][a-z0-9]*(?:-[a-z0-9]+)*\\z", CompiledRules.Always, matchTimeoutMilliseconds: 1000)]
     private static partial Regex IdShape { get; }
 }
