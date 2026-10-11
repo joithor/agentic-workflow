@@ -52,11 +52,19 @@ public static class CheckCommandRule
         "--locked", "--no-sync", "--isolated", "--all-extras", "--no-dev",
     };
 
-    // Runner options whose value is the next argument (unless written --name=value): a package, an interpreter, a
-    // workspace package (its directory is still under the frozen run's), or uv run's module.
-    private static readonly HashSet<string> _runnerValueOptions = new(StringComparer.Ordinal)
+    // Each runner's own options: those whose value is the next argument (unless written --name=value: a package, an
+    // interpreter, a workspace package, uv run's module), and those that take none. The same letter differs between
+    // runners: npm -w names a workspace, pnpm -w is --workspace-root.
+    private static readonly Dictionary<string, (string[] Valued, string[] Flags)> _runnerOptions = new(StringComparer.Ordinal)
     {
-        "-p", "--package", "--with", "--python", "--extra", "--group", "--filter", "-F", "--workspace", "-w", "-m", "--module",
+        ["npx"] = (["-p", "--package", "-w", "--workspace"], []),
+        ["npm"] = (["-p", "--package", "-w", "--workspace"], []),
+        ["pnpx"] = (["--filter", "-F"], ["-w", "--workspace-root"]),
+        ["pnpm"] = (["--filter", "-F"], ["-w", "--workspace-root"]),
+        ["bunx"] = (["-p", "--package"], []),
+        ["bun"] = (["-p", "--package"], []),
+        ["uvx"] = (["--with", "--python", "-p", "--extra", "--group", "--package", "-m", "--module"], []),
+        ["uv"] = (["--with", "--python", "-p", "--extra", "--group", "--package", "-m", "--module"], []),
     };
 
     private static readonly HashSet<string> _callFlags = new(StringComparer.Ordinal) { "-c", "--call", "--shell-mode" };
@@ -157,7 +165,7 @@ public static class CheckCommandRule
                 return (i, refusal);
             }
 
-            i += _runnerValueOptions.Contains(name) && !arg.Contains('=', StringComparison.Ordinal) ? 1 : 0;
+            i += Valued(program, name) && !arg.Contains('=', StringComparison.Ordinal) ? 1 : 0;
         }
 
         return (args.Count, null);
@@ -171,10 +179,13 @@ public static class CheckCommandRule
             return $"the command must execute the check, not inline code (`{program} {name}`)";
         }
 
-        return _runnerValueOptions.Contains(name) || _runnerFlags.Contains(name)
+        return Valued(program, name) || _runnerFlags.Contains(name) || (_runnerOptions.TryGetValue(program, out var own) && own.Flags.Contains(name, StringComparer.Ordinal))
             ? null
             : $"`{program}` option `{name}` hides which program runs; put it after the program or in the runner's config, or run from the package's directory with --cwd";
     }
+
+    private static bool Valued(string program, string name) =>
+        _runnerOptions.TryGetValue(program, out var own) && own.Valued.Contains(name, StringComparer.Ordinal);
 
     private static string? Target(List<string> rest, int depth)
     {

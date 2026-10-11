@@ -23,7 +23,13 @@ internal sealed class RunUiService(IStateStore store, IRunLedger ledger, WorkTre
 
         var (commit, directory) = (checkout.Value.Head, checkout.Value.Directory);
         // The served app must be rebuilt from this checkout; the helper can label the run, not check what the server runs.
-        var slot = ledger.Reserve(request.StateDirectory, clock.GetUtcNow(), CheckKind.Ui);
+        var reserved = ledger.Reserve(request.StateDirectory, clock.GetUtcNow(), CheckKind.Ui);
+        if (reserved.IsError)
+        {
+            return reserved.Error;
+        }
+
+        var slot = reserved.Value;
         var run = ui.Run(new UiRunRequest(script.Value.FullPath, slot.Output, commit, request.WorkingDirectory, slot.Log));
         if (run.IsError)
         {

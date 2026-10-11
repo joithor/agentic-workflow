@@ -28,10 +28,20 @@ public sealed class WorkTree(IGit git, IFiles files, IRunLedger ledger)
         }
 
         var checkout = Snapshot(directory);
-        var stray = checkout.Map(c => LeftoverRule.Stray(c, Registered(state), state.Check));
-        return stray.Bind(paths => paths.Count == 0
-            ? checkout
-            : BugFixErrors.DirtyTree.With($"{directory} has untracked files no run of the frozen check left behind here ({string.Join(", ", paths.Take(5))}); remove or commit them; {what}"));
+        return checkout.Bind(c => Stray(c, state, what) is { } error ? Results.Failure<Checkout>(error) : c);
+    }
+
+    private Error? Stray(Checkout checkout, BugFixState state, string what)
+    {
+        if (LeftoverRule.Loading(checkout, state.Check) is { Count: > 0 } loading)
+        {
+            return BugFixErrors.DirtyTree.With(
+                $"{checkout.Root} has untracked files that could change what runs ({string.Join(", ", loading.Take(5))}), so they count as no run's output; delete them, gitignore them (__pycache__/), or have the check write reports outside its directory; {what}");
+        }
+
+        return LeftoverRule.Unaccounted(checkout, Registered(state), state.Check) is { Count: > 0 } stray
+            ? BugFixErrors.DirtyTree.With($"{checkout.Root} has untracked files no run of the frozen check left behind here ({string.Join(", ", stray.Take(5))}); remove or commit them; {what}")
+            : null;
     }
 
     /// <summary>The work tree <paramref name="directory"/> is in, with its untracked files hashed, as it is now.</summary>

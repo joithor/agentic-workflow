@@ -74,11 +74,15 @@ public static class BugFixErrors
     /// <summary>AW-BUGFIX-022: a file under the state directory or a log can't be written or read.</summary>
     public static readonly ErrorDefinition StorageFailed = new("AW-BUGFIX-022", ErrorKind.Unavailable, "Storage failed");
 
+    /// <summary>AW-BUGFIX-023: the bug fix's digest.key is missing or malformed, so environment digests can't be compared.</summary>
+    public static readonly ErrorDefinition DigestKeyMissing = new("AW-BUGFIX-023", ErrorKind.Unavailable, "Digest key missing");
+
     /// <summary>Every BugFix error, for ErrorCatalogue.Validate.</summary>
     public static IReadOnlyList<ErrorDefinition> All { get; } =
     [
         Invalid, StateMissing, StateCorrupt, FileUnreadable, WrongPhase, HandoffRefused, NotReproduced, CheckNotFrozen,
         EvidenceRefused, AttemptRefused, CandidateRefused, CommandRefused, UnknownCandidate, RunRefused, JudgeRefused,
         JudgeUnavailable, UiEvidenceUnavailable, GitFailed, ReportRefused, DirtyTree, StateBusy, StorageFailed,
+        DigestKeyMissing,
     ];
 }

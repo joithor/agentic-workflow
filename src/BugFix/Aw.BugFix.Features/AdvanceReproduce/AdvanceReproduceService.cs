@@ -7,7 +7,7 @@ using Aw.Kernel.Services;
 
 namespace Aw.BugFix.Features.AdvanceReproduce;
 
-internal sealed class AdvanceReproduceService(IStateStore store, IRunLedger ledger, IGit git, IFiles files, CheckLocator locator, TimeProvider clock)
+internal sealed class AdvanceReproduceService(IStateStore store, IRunLedger ledger, IFiles files, CheckLocator locator, WorkTree tree, TimeProvider clock)
     : IService<AdvanceReproduceRequest, AdvanceReproduceResponse>
 {
     public ValueTask<Result<AdvanceReproduceResponse>> Handle(AdvanceReproduceRequest request, CancellationToken cancellationToken) =>
@@ -19,7 +19,7 @@ internal sealed class AdvanceReproduceService(IStateStore store, IRunLedger ledg
             .Bind(_ => ledger.Read(request.Evidence))
             .Bind(stored => EvidenceRule.Accept(state, stored))
             .Bind(static record => record.AsBaseline())
-            .Bind(record => AtHead(record, request.WorkingDirectory));
+            .Bind(record => AtHead(record, state, request.WorkingDirectory));
         var frozen = run.Bind(record => locator.Locate(request.WorkingDirectory, request.Check)
             .Bind(file => files.Sha256(file.FullPath).Bind(sha => Freeze(record, file, sha))));
         if (frozen.IsError)
@@ -34,10 +34,11 @@ internal sealed class AdvanceReproduceService(IStateStore store, IRunLedger ledg
         return new AdvanceReproduceResponse(Phase.Reproduce, frozen.Value.Path, run.Value.Commit);
     }
 
-    private Result<RunRecord> AtHead(RunRecord record, string directory) =>
-        git.Head(directory).Bind<RunRecord>(head => head == record.Commit
+    // Frozen from a clean checkout at the baseline commit: what the check names is decided by the commit, not the index.
+    private Result<RunRecord> AtHead(RunRecord record, BugFixState state, string directory) =>
+        tree.Clean(state, directory, "freeze the check from the clean baseline checkout").Bind<RunRecord>(checkout => checkout.Head == record.Commit
             ? record
-            : BugFixErrors.NotReproduced.With($"the evidence ran against {record.Commit}, but {directory} is at {head}"));
+            : BugFixErrors.NotReproduced.With($"the evidence ran against {record.Commit}, but {directory} is at {checkout.Head}"));
 
     private Result<FrozenCheck> Freeze(RunRecord record, CheckFile file, string sha)
     {
@@ -57,11 +58,10 @@ internal sealed class AdvanceReproduceService(IStateStore store, IRunLedger ledg
     private Result<IReadOnlyList<string>> CommandFiles(RunRecord record, string root, CheckFile check)
     {
         var directory = record.Directory.Length == 0 ? root : $"{root}/{record.Directory}";
-        var untracked = git.Untracked(root);
         var found = new List<string>();
-        foreach (var named in untracked.IsError ? [] : CommandFilesRule.Paths(record.Command ?? []))
+        foreach (var named in CommandFilesRule.Paths(record.Command ?? []))
         {
-            // An untracked file the command names is the run's output (--junitxml=out/r.xml), not code a fix could change.
+            // A file the baseline run itself created is its output (--junitxml=out/r.xml), not code a fix could change.
             var protect = Protected(named, directory);
             if (protect.IsError)
             {
@@ -71,10 +71,10 @@ internal sealed class AdvanceReproduceService(IStateStore store, IRunLedger ledg
             found.AddRange(protect.Value
                 .Where(f => f.StartsWith(root + "/", StringComparison.Ordinal) && f != check.FullPath)
                 .Select(f => f[(root.Length + 1)..])
-                .Where(f => named.Specifier || !untracked.Value.Contains(f, StringComparer.Ordinal)));
+                .Where(f => named.Specifier || !record.Leftovers.ContainsKey(f)));
         }
 
-        return untracked.Map(_ => (IReadOnlyList<string>)[.. found.Distinct(StringComparer.Ordinal)]);
+        return Results.Success<IReadOnlyList<string>>([.. found.Distinct(StringComparer.Ordinal)]);
     }
 
     // A specifier is protected through every file the loader could open for it, whether or not it exists yet: a fix

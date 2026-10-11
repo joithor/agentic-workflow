@@ -67,6 +67,31 @@ public sealed class LeftoversAndShadowingTests : IDisposable
     }
 
     [Fact, Trait("Lane", "unit")]
+    public async Task The_check_is_frozen_only_from_a_clean_baseline_checkout()
+    {
+        await _w.Investigated();
+        var run = World.Ok(await _w.TestRun());
+        _w.Repos.Delete($"{World.Repo}/src/app.ts");   // like git rm --cached: the commit is the same, the tree isn't
+
+        _ = World.Refused(await _w.Run<AdvanceReproduceRequest, AdvanceReproduceResponse>(new AdvanceReproduceRequest(World.State, run.Evidence, World.Check, World.Repo)), BugFixErrors.DirtyTree);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task A_file_the_command_names_stays_protected_unless_the_baseline_run_made_it()
+    {
+        string[] command = ["bash", "scripts/run-check.sh", World.Check];
+        await _w.Investigated();
+        _w.Runner.WhileRunning = dir => _w.Repos.Write($"{dir}/scripts/run-check.sh", "bash \"$1\"\n");   // left by an earlier run, before the baseline
+        _ = World.Ok(await _w.Run<RunTestRequest, RunTestResponse>(new RunTestRequest(World.State, World.Check, World.Repo, ["bash", World.Check])));
+        _w.Runner.WhileRunning = null;
+        var baseline = World.Ok(await _w.Run<RunTestRequest, RunTestResponse>(new RunTestRequest(World.State, World.Check, World.Repo, command)));
+
+        _ = World.Ok(await _w.Run<AdvanceReproduceRequest, AdvanceReproduceResponse>(new AdvanceReproduceRequest(World.State, baseline.Evidence, World.Check, World.Repo)));
+
+        Assert.Contains("scripts/run-check.sh", _w.Now.Check?.CommandFiles ?? [], StringComparer.Ordinal);
+    }
+
+    [Fact, Trait("Lane", "unit")]
     public async Task What_a_run_of_another_check_left_behind_is_not_allowed()
     {
         _w.Repos.Write($"{World.Repo}/tools/mk.sh", "planter\n");
@@ -93,7 +118,9 @@ public sealed class LeftoversAndShadowingTests : IDisposable
         var run = World.Ok(await _w.TestRun(World.Worktree));
         _w.Runner.WhileRunning = null;
 
-        Assert.Contains(written, World.Refused(await RecordRun(c1, run.Evidence), BugFixErrors.DirtyTree).Message, StringComparison.Ordinal);
+        var refused = World.Refused(await RecordRun(c1, run.Evidence), BugFixErrors.DirtyTree).Message;
+        Assert.Contains(written, refused, StringComparison.Ordinal);
+        Assert.Contains("could change what runs", refused, StringComparison.Ordinal);
     }
 
     [Theory, Trait("Lane", "unit")]

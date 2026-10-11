@@ -7,10 +7,13 @@ namespace Aw.BugFix.Testing;
 /// <summary>The <see cref="ICheckRunner"/> contract, run against the scripted fake and the process runner.</summary>
 public abstract class CheckRunnerContract
 {
-    /// <summary>Gets the runner under test.</summary>
     /// <summary>A digest key (hex) for the runs.</summary>
     protected const string Key = "000102030405060708090a0b0c0d0e0f000102030405060708090a0b0c0d0e0f";
 
+    /// <summary>Another digest key (hex).</summary>
+    protected const string OtherKey = "f0e0d0c0b0a090807060504030201000f0e0d0c0b0a090807060504030201000";
+
+    /// <summary>Gets the runner under test.</summary>
     protected abstract ICheckRunner Runner { get; }
 
     /// <summary>Gets a working directory.</summary>
@@ -22,6 +25,18 @@ public abstract class CheckRunnerContract
     {
         Expect.That(Runner.Run(["true"], Directory, $"{Directory}/true.log", Key) is { Code: 0, Ran: true }, "Equal(0, Runner.Run(['true'], Directory, $'{Directory}/true.log', Key))");
         Expect.That(Runner.Run(["false"], Directory, $"{Directory}/false.log", Key) is { Ran: true, Code: not 0 }, "NotEqual(0, Runner.Run(['false'], Directory, $'{Directory}/false.log', Key))");
+    }
+
+    /// <summary>The environment digests depend on the key: the same key gives the same digests, another key other ones.</summary>
+    [Fact]
+    public void The_environment_digests_are_keyed()
+    {
+        var first = Runner.Run(["true"], Directory, $"{Directory}/k1.log", Key).Environment;
+        var again = Runner.Run(["true"], Directory, $"{Directory}/k2.log", Key).Environment;
+        var other = Runner.Run(["true"], Directory, $"{Directory}/k3.log", OtherKey).Environment;
+
+        Expect.That(first.Count > 0 && first.OrderBy(static kv => kv.Key, StringComparer.Ordinal).SequenceEqual(again.OrderBy(static kv => kv.Key, StringComparer.Ordinal)), "the same key gives the same digests");
+        Expect.That(first.All(kv => other.GetValueOrDefault(kv.Key) != kv.Value), "another key gives other digests");
     }
 
     /// <summary>A command that can't start fails; it never passes.</summary>

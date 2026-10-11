@@ -10,6 +10,7 @@ namespace Aw.BugFix.Testing;
 /// <summary>The in-memory fake for <see cref="IRunLedger"/>: records by full path, with a version number standing in for the hash.</summary>
 public sealed class InMemoryRunLedger : IRunLedger
 {
+    private readonly Dictionary<string, string> _keys = new(StringComparer.Ordinal);
     private readonly Dictionary<string, (RunRecord Record, int Version)> _records = new(StringComparer.Ordinal);
     private int _slots;
 
@@ -27,10 +28,24 @@ public sealed class InMemoryRunLedger : IRunLedger
     public void Forge(string path, RunRecord record) => _records[path] = (record, 0);
 
     /// <inheritdoc/>
-    public RunSlot Reserve(string directory, DateTimeOffset at, CheckKind kind)
+    public Result<RunSlot> Reserve(string directory, DateTimeOffset at, CheckKind kind)
     {
+        if (!_keys.TryGetValue(directory, out var key))
+        {
+            return BugFixErrors.DigestKeyMissing.With($"no digest key for {directory}");
+        }
+
         var stem = string.Create(CultureInfo.InvariantCulture, $"{directory.TrimEnd('/')}/runs/{++_slots:D3}-{(kind == CheckKind.Test ? "test" : "ui")}");
-        return new RunSlot(kind == CheckKind.Test ? $"{stem}.log" : stem, $"{stem}.log", $"{stem}.json", DigestKey: new string('7', 64));
+        return new RunSlot(kind == CheckKind.Test ? $"{stem}.log" : stem, $"{stem}.log", $"{stem}.json", DigestKey: key);
+    }
+
+    /// <inheritdoc/>
+    public void CreateDigestKey(string directory)
+    {
+        if (!_keys.ContainsKey(directory))
+        {
+            _keys[directory] = (_keys.Count + 1).ToString("x64", CultureInfo.InvariantCulture);
+        }
     }
 
     /// <inheritdoc/>

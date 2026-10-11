@@ -115,6 +115,15 @@ public sealed class RulesTests
     [InlineData("npm -w web test t.js", null)]
     [InlineData("uv run -m pytest t.py", null)]
     [InlineData("bun x -p vitest vitest t.ts", null)]
+    [InlineData("python3 --check-hash-based-pycs always -c 1 t.py", "inline code (`python3 -c`)")]
+    [InlineData("node --redirect-warnings w.txt -e 1 t.js", "inline code (`node -e`)")]
+    [InlineData("node --test-reporter spec -e 1 t.js", "inline code (`node -e`)")]
+    [InlineData("npx -y node --redirect-warnings w.txt -e 1 t.js", "inline code (`node -e`)")]
+    [InlineData("php -d k=v -r 1 t.php", "inline code (`php -r`)")]
+    [InlineData("bash --rcfile f -c true t.sh", "inline code (`bash -c`)")]
+    [InlineData("pnpm -w grep -q x t.js", "not `grep`")]
+    [InlineData("npm -w web exec vitest t.js", null)]
+    [InlineData("python -B -m pytest -c pytest.ini t.py", null)]
     public void The_check_command_rule_refuses_non_runners_and_inline_code(string command, string? reason)
     {
         var refusal = CheckCommandRule.Refusal(command.Split(' '));

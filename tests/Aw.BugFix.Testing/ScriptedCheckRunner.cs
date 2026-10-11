@@ -64,9 +64,13 @@ public sealed class ScriptedCheckRunner : ICheckRunner
         var program = _resolves.GetValueOrDefault(command[0], $"sha-of-{command[0]}");
         if (_hanging.Contains(command[0]))
         {
-            return new CheckExit(124, Ran: false, program, _environment);
+            return new CheckExit(124, Ran: false, program, Digests(digestKey));
         }
 
-        return _programs.TryGetValue(command[0], out var code) ? new CheckExit(code, Ran: true, program, _environment) : new CheckExit(127, Ran: false, string.Empty, _environment);
+        return _programs.TryGetValue(command[0], out var code) ? new CheckExit(code, Ran: true, program, Digests(digestKey)) : new CheckExit(127, Ran: false, string.Empty, Digests(digestKey));
     }
+
+    // A stand-in for the keyed digest: it changes with the key and the value, as the real one does.
+    private Dictionary<string, string> Digests(string key) =>
+        _environment.ToDictionary(static kv => kv.Key, kv => $"keyed:{key[..8]}:{kv.Value}", StringComparer.Ordinal);
 }

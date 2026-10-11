@@ -11,8 +11,12 @@ public interface IRunLedger
     /// <param name="directory">The state directory.</param>
     /// <param name="at">When the run starts.</param>
     /// <param name="kind">The check kind.</param>
-    /// <returns>The run's files.</returns>
-    public RunSlot Reserve(string directory, DateTimeOffset at, CheckKind kind);
+    /// <returns>The run's files, or AW-BUGFIX-023 when the bug fix's digest key is missing or malformed.</returns>
+    public Result<RunSlot> Reserve(string directory, DateTimeOffset at, CheckKind kind);
+
+    /// <summary>Creates the bug fix's secret digest key beside its state, once: an existing valid key is kept.</summary>
+    /// <param name="directory">The state directory.</param>
+    public void CreateDigestKey(string directory);
 
     /// <summary>Writes a run record.</summary>
     /// <param name="slot">The run's files.</param>

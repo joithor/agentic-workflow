@@ -14,5 +14,7 @@ public sealed class InMemoryRunLedgerContractTests : RunLedgerContract
 
     protected override string Directory => "/state/x";
 
+    protected override string OtherDirectory => "/state/y";
+
     protected override void Edit(string path, RunRecord record) => _ledger.Tamper(path, record);
 }

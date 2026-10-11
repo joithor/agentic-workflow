@@ -60,15 +60,20 @@ against `--cwd` (the checkout the check lives in). The argv after `--` is kept a
   `xargs`, `timeout`, `nice`, `nohup`, `sudo`, …), and inline code, by interpreter: shells and python `-c`, node/deno/bun
   `-e`/`-p`/`--eval`/`--print`, perl and ruby `-e`/`-E`, php `-r`, `deno eval` (anywhere in a short-flag cluster, so
   `bash -xec` counts and `bash -e` doesn't; ruby and perl value flags such as `-Itest` don't). Only the interpreter's
-  own options count: they end at the script, at python's `-m` module, or at `--`, skipping option values (`-X dev`,
-  `-r ./x.js`, `-o pipefail`), so `python -m pytest -c pytest.ini` and `node t.js -e` are fine. A package runner (`npx`,
+  own options count: they end at the script, at python's `-m` module, or at `--`, skipping the values of known options
+  (`-X dev`, `-r ./x.js`, `-o pipefail`), so `python -m pytest -c pytest.ini` and `node t.js -e` are fine. The scan fails
+  closed: after an option not known to take no value (`--check-hash-based-pycs`, `--redirect-warnings`), the next
+  argument is taken for that option's value, not for the script, and the scan goes on, so such an option can't hide a
+  later `-c`/`-e` (a rare false refusal: write the option as `--name=value`). A package runner (`npx`,
   `pnpx`, `bunx`, `uvx`, `npm exec|x`, `pnpm exec|dlx`, `yarn exec|dlx|node`, `bun x`, `uv run`, `uv tool run`,
   `poetry run`, `bundle exec`) is looked through: the first program past its verb and options is classified the same
   way, and every later argument is checked for an interpreter given inline code. Before the program (and before the
-  verb) only these runner options may appear: `-y`, `--yes`, `--no`, `-q`, `--quiet`, `-s`, `--silent`, `--offline`,
-  `--prefer-offline`, `--no-install`, `--bun`, `--frozen`, `--locked`, `--no-sync`, `--isolated`, `--all-extras`,
-  `--no-dev`, and with a value `-p`, `--package`, `--with`, `--python`, `--extra`, `--group`, the workspace options
-  `--filter`, `-F`, `--workspace`, `-w`, and `uv run`'s `-m`/`--module`. A runner that is itself an interpreter (`bun`)
+  verb) only these runner options may appear: for every runner `-y`, `--yes`, `--no`, `-q`, `--quiet`, `-s`,
+  `--silent`, `--offline`, `--prefer-offline`, `--no-install`, `--bun`, `--frozen`, `--locked`, `--no-sync`,
+  `--isolated`, `--all-extras`, `--no-dev`; and each runner's own: npm/npx `-p`/`--package`, `-w`/`--workspace` (with a
+  value); pnpm/pnpx `--filter`/`-F` (with a value) and `-w`/`--workspace-root` (without); bun/bunx `-p`/`--package`;
+  uv/uvx `--with`, `--python`, `-p`, `--extra`, `--group`, `--package`, `-m`/`--module` (with a value). The same letter
+  differs between runners (npm `-w web` names a workspace; pnpm `-w` is the workspace root and takes none). A runner that is itself an interpreter (`bun`)
   has its inline flags refused before its verb (`bun -p` is print) but not after it (`bun x -p` is a package). Any other is refused: an
   unknown option could take the next argument as its value and hide the real program behind it, and some change what
   runs (`-c`/`--call`/`--shell-mode`, `--node-options`, `--env-file`, a different directory). A runner subcommand that
@@ -92,10 +97,13 @@ against `--cwd` (the checkout the check lives in). The argv after `--` is kept a
   shadows another could change what the check does while the commit stays the same. Each test run record keeps the
   work tree it ran in (`checkout`) and the untracked files that appeared or changed during the run (`leftovers`:
   `.coverage`, a junit report, with their SHA-256). A later step accepts such a file only if a run **of the frozen check**
-  (same check file, command, directory and program) left it **in that same work tree**, it is unchanged since, and it is
-  no file that could change what runs (a protected file, a test or fixture path, or one a loader picks first; see
-  below). Before the check is frozen, leftovers of any test run in the same work tree count, with the same filter.
-  Anything else is listed in the refusal (AW-BUGFIX-020). Residual risk: a file the check would load that no rule
+  (one `record-run` would take for the same command: same check file, command, directory, program and environment)
+  left it **in that same work tree**, and it is unchanged since. Before the check is frozen, leftovers of any test run
+  in the same work tree count. Either way an untracked file that could change what runs (a protected file, a test or
+  fixture path, or one a loader picks first; see below) is never output, whoever wrote it, and is refused with its
+  own message: delete it, gitignore it (`__pycache__/`; or run python with `-B`, or name `PYTHONDONTWRITEBYTECODE` in
+  `AW_BUGFIX_CHECK_ENV`), or have the check write its reports outside its own directory. Any other untracked file is
+  refused as left by no run of the frozen check (AW-BUGFIX-020 for both). Residual risk: a file the check would load that no rule
   names (a conditionally sourced helper outside the test paths), written by the agent while a run of the frozen check
   is going, is accepted as that run's output.
 - **Candidates are real changes on the baseline:** a clean worktree on the named branch, with commits on top of the
@@ -114,8 +122,10 @@ against `--cwd` (the checkout the check lives in). The argv after `--` is kept a
   shadows the standard library), compiled or native code anywhere (`.pyc`, `.pyo`, `.pyd`, `.so`, `.dylib`, `.node`,
   `.pth`), `sitecustomize.py`/`usercustomize.py`, and anything under `node_modules/`. A baseline command that names a positional path (written with `/` or a leading `.`, or with a script or
   config extension) or a script or config file in an option, that doesn't exist as a file or directory, is refused
-  (AW-BUGFIX-008): a fix could add it. A file the command names that is untracked when the check is frozen (the baseline run's own report,
-  `--junitxml=out/r.xml`) is its output, not a command file. Option values that aren't files (URLs, `/regexes/`, output files such as
+  (AW-BUGFIX-008): a fix could add it. `advance reproduce` freezes the check only from a
+  clean checkout of the baseline commit (no index or working change, no stray untracked file), and a file the command
+  names that the baseline run itself created (its own report, `--junitxml=out/r.xml`) is its output, not a command
+  file; any other named file is protected, including one an earlier run left untracked. Option values that aren't files (URLs, `/regexes/`, output files such as
   `--junitxml=out/r.xml`, names such as `--cov=app`) are neither required nor protected, and globs and package patterns
   (`./...`) aren't paths.
 - **Attempts.** Mode A one candidate, C one candidate (split by area, in sequence), B two candidates on different open
@@ -176,11 +186,16 @@ Everything else is one line on stderr ending with the catalogue code, and nothin
 | AW-BUGFIX-020 | conflict | A working tree has uncommitted changes, or an untracked file no registered run left behind |
 | AW-BUGFIX-021 | conflict | Another bugfix-state call holds the state directory; retry when it finishes |
 | AW-BUGFIX-022 | unavailable | A state, run or log file can't be written or read |
+| AW-BUGFIX-023 | unavailable | The bug fix's `digest.key` is missing or malformed, so environment digests can't be made or compared |
 
 ## Files
 
 Everything lives under the `--state` directory; the C# build never reads TS-written state (spec §4c).
 
+- `digest.key`: the bug fix's random HMAC key for the environment digests (64 hex characters, owner-only), made once by
+  `init` (written to a temporary file and moved into place, never overwritten). `run-test` and `run-ui` refuse with
+  AW-BUGFIX-023 when it is missing or malformed instead of making a new one: the digests in `state.json` and the run
+  records are only comparable under the key they were made with.
 - `state.json`: the state (`schemaVersion` 1), written to a temporary file and renamed, under `state.lock`. Fields: `ticket`, `phase`,
   `status`, `attempt`, `mode`, `investigation` (`handoff`, `rootCause`, `hypotheses`), `check` (`kind` test or ui,
   `path`, `sha256`, `command`, `directory`, `programSha256`, `environment` (digests), `commandFiles`), `baseline` (`evidence`, `commit`), `candidates` (`id`, `attempt`, `mode`, `branch`,

@@ -14,8 +14,15 @@ namespace Aw.BugFix.Infrastructure;
 /// <summary>Run records under &lt;state&gt;/runs/ and judge inputs beside state.json, as JSON files.</summary>
 internal sealed class FileRunLedger(JsonSerializerOptions json) : IRunLedger
 {
-    public RunSlot Reserve(string directory, DateTimeOffset at, CheckKind kind)
+    private const string KeyFile = "digest.key";
+
+    public Result<RunSlot> Reserve(string directory, DateTimeOffset at, CheckKind kind)
     {
+        if (ReadKey(directory) is not { } key)
+        {
+            return BugFixErrors.DigestKeyMissing.With($"{Path.Combine(directory, KeyFile)} is missing or malformed; it is made by init and holds the key the environment digests in state.json were made with, so restore it or start the bug fix over");
+        }
+
         var runs = Directory.CreateDirectory(Path.Combine(directory, "runs")).FullName;
         var stamp = at.UtcDateTime.ToString("yyyyMMdd'T'HHmmssfff'Z'", CultureInfo.InvariantCulture);
         var name = kind == CheckKind.Test ? "test" : "ui";
@@ -34,34 +41,48 @@ internal sealed class FileRunLedger(JsonSerializerOptions json) : IRunLedger
                 continue;
             }
 
-            return new RunSlot(kind == CheckKind.Test ? $"{stem}.log" : stem, $"{stem}.log", $"{stem}.json", DigestKey(directory));
+            return new RunSlot(kind == CheckKind.Test ? $"{stem}.log" : stem, $"{stem}.log", $"{stem}.json", key);
         }
     }
 
-    // A random key per bug fix in digest.key (owner-only), made on first use; two runs racing to make it read the winner's.
-    private static string DigestKey(string directory)
+    // Written to a temporary file and moved into place without overwriting, so a reader never sees a half-written key
+    // and an existing valid key is never replaced.
+    public void CreateDigestKey(string directory)
     {
-        var path = Path.Combine(directory, "digest.key");
-        if (!File.Exists(path))
+        if (ReadKey(directory) is not null)
         {
-            try
-            {
-                var options = new FileStreamOptions { Mode = FileMode.CreateNew, Access = FileAccess.Write };
-                if (!OperatingSystem.IsWindows())
-                {
-                    options.UnixCreateMode = UnixFileMode.UserRead | UnixFileMode.UserWrite;
-                }
-
-                using var stream = new FileStream(path, options);
-                stream.Write(Encoding.ASCII.GetBytes(Convert.ToHexStringLower(RandomNumberGenerator.GetBytes(32))));
-            }
-            catch (IOException) when (File.Exists(path))
-            {
-                // another run made it first
-            }
+            return;
         }
 
-        return File.ReadAllText(path).Trim();
+        var path = Path.Combine(directory, KeyFile);
+        var temporary = string.Create(CultureInfo.InvariantCulture, $"{path}.{Environment.ProcessId}.tmp");
+        var options = new FileStreamOptions { Mode = FileMode.Create, Access = FileAccess.Write };
+        if (!OperatingSystem.IsWindows())
+        {
+            options.UnixCreateMode = UnixFileMode.UserRead | UnixFileMode.UserWrite;
+        }
+
+        using (var stream = new FileStream(temporary, options))
+        {
+            stream.Write(Encoding.ASCII.GetBytes(Convert.ToHexStringLower(RandomNumberGenerator.GetBytes(32))));
+        }
+
+        try
+        {
+            File.Move(temporary, path, overwrite: false);
+        }
+        catch (IOException) when (File.Exists(path))
+        {
+            File.Delete(temporary);   // another call made it first
+        }
+    }
+
+    // The key, or null when the file is missing or isn't 32 bytes of hex.
+    private static string? ReadKey(string directory)
+    {
+        var path = Path.Combine(directory, KeyFile);
+        var key = File.Exists(path) ? File.ReadAllText(path).Trim() : string.Empty;
+        return key.Length == 64 && key.All(char.IsAsciiHexDigitLower) ? key : null;
     }
 
     public string Write(RunSlot slot, RunRecord record) => WriteFile(slot.Record, AwJson.Serialize(record, json));

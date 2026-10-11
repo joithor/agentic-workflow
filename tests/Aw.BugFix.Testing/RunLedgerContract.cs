@@ -20,12 +20,15 @@ public abstract class RunLedgerContract
     /// <summary>Gets a state directory.</summary>
     protected abstract string Directory { get; }
 
+    /// <summary>Gets another state directory, of another bug fix.</summary>
+    protected abstract string OtherDirectory { get; }
+
     /// <summary>Two runs reserved at the same instant get different files.</summary>
     [Fact]
     public void Runs_reserved_at_the_same_instant_get_different_files()
     {
-        var first = Ledger.Reserve(Directory, _at, CheckKind.Test);
-        var second = Ledger.Reserve(Directory, _at, CheckKind.Test);
+        var first = Slot(CheckKind.Test);
+        var second = Slot(CheckKind.Test);
 
         Expect.That(!Equals(first.Record, second.Record), "NotEqual(first.Record, second.Record)");
         Expect.That(!Equals(first.Log, second.Log), "NotEqual(first.Log, second.Log)");
@@ -35,7 +38,7 @@ public abstract class RunLedgerContract
     [Fact]
     public void A_written_record_reads_back_with_its_hash()
     {
-        var slot = Ledger.Reserve(Directory, _at, CheckKind.Test);
+        var slot = Slot(CheckKind.Test);
 
         var sha = Ledger.Write(slot, _record);
         var stored = Ledger.Read(slot.Record).Value;
@@ -50,21 +53,30 @@ public abstract class RunLedgerContract
         Expect.That(stored.Record.Leftovers.OrderBy(static kv => kv.Key, StringComparer.Ordinal).SequenceEqual(_record.Leftovers), "the leftovers round-trip");
     }
 
+    /// <summary>Without a digest key a run can't be reserved: AW-BUGFIX-023.</summary>
+    [Fact]
+    public void A_bug_fix_without_a_digest_key_reserves_no_run() =>
+        Expect.Equal(BugFixErrors.DigestKeyMissing.Code, Ledger.Reserve(OtherDirectory, _at, CheckKind.Test).Error.Code, "AW-BUGFIX-023 without a key");
+
     /// <summary>Every run of a bug fix gets the same digest key, and another bug fix gets another one.</summary>
     [Fact]
     public void Runs_of_a_bug_fix_share_one_digest_key()
     {
-        var first = Ledger.Reserve(Directory, _at, CheckKind.Test).DigestKey;
+        var first = Slot(CheckKind.Test).DigestKey;
 
-        Expect.Equal(first, Ledger.Reserve(Directory, _at, CheckKind.Ui).DigestKey, "the same key for every run of the bug fix");
+        Expect.Equal(first, Slot(CheckKind.Ui).DigestKey, "the same key for every run of the bug fix");
         Expect.That(first.Length >= 32 && Convert.FromHexString(first).Length >= 16, "a hex key of at least 128 bits");
+        Ledger.CreateDigestKey(Directory);
+        Expect.Equal(first, Slot(CheckKind.Test).DigestKey, "creating the key again keeps it");
+        Ledger.CreateDigestKey(OtherDirectory);
+        Expect.That(!Equals(first, Ledger.Reserve(OtherDirectory, _at, CheckKind.Test).Value.DigestKey), "another bug fix gets another key");
     }
 
     /// <summary>An edited record reads back with a different hash.</summary>
     [Fact]
     public void An_edited_record_has_a_new_hash()
     {
-        var slot = Ledger.Reserve(Directory, _at, CheckKind.Test);
+        var slot = Slot(CheckKind.Test);
         var sha = Ledger.Write(slot, _record);
 
         Edit(slot.Record, _record with { Outcome = RunOutcome.Passed, ExitCode = 0 });
@@ -81,7 +93,7 @@ public abstract class RunLedgerContract
     [Fact]
     public void A_released_slot_leaves_no_record()
     {
-        var slot = Ledger.Reserve(Directory, _at, CheckKind.Ui);
+        var slot = Slot(CheckKind.Ui);
 
         Ledger.Release(slot);
 
@@ -103,4 +115,11 @@ public abstract class RunLedgerContract
     /// <param name="path">The record's path.</param>
     /// <param name="record">The edited record.</param>
     protected abstract void Edit(string path, RunRecord record);
+
+    // A slot in Directory, whose bug fix has its key (init made it).
+    private RunSlot Slot(CheckKind kind)
+    {
+        Ledger.CreateDigestKey(Directory);
+        return Ledger.Reserve(Directory, _at, kind).Value;
+    }
 }

@@ -9,7 +9,7 @@ using Aw.Kernel.Services;
 
 namespace Aw.BugFix.Features.Init;
 
-internal sealed class InitService(IStateStore store, IFiles files, TimeProvider clock, JsonSerializerOptions json)
+internal sealed class InitService(IStateStore store, IRunLedger ledger, IFiles files, TimeProvider clock, JsonSerializerOptions json)
     : IService<InitRequest, InitResponse>
 {
     public ValueTask<Result<InitResponse>> Handle(InitRequest request, CancellationToken cancellationToken) =>
@@ -44,6 +44,7 @@ internal sealed class InitService(IStateStore store, IFiles files, TimeProvider 
         }
 
         store.Save(request.StateDirectory, BugFixState.Start(ticket, clock.GetUtcNow(), request.TicketFile));
+        ledger.CreateDigestKey(request.StateDirectory);
         return new InitResponse(store.StateFile(request.StateDirectory));
     }
 }

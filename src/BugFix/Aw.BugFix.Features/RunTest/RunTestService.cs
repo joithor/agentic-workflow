@@ -24,19 +24,25 @@ internal sealed class RunTestService(IStateStore store, IRunLedger ledger, IFile
             return sha.Error;
         }
 
-        var (before, slot) = (checkout.Value, ledger.Reserve(request.StateDirectory, clock.GetUtcNow(), CheckKind.Test));
-        var exit = runner.Run(request.Command, request.WorkingDirectory, slot.Log, slot.DigestKey);
+        var slot = ledger.Reserve(request.StateDirectory, clock.GetUtcNow(), CheckKind.Test);
+        if (slot.IsError)
+        {
+            return slot.Error;
+        }
+
+        var before = checkout.Value;
+        var exit = runner.Run(request.Command, request.WorkingDirectory, slot.Value.Log, slot.Value.DigestKey);
         var after = tree.Snapshot(request.WorkingDirectory).Match(static c => c.Untracked, static _ => new Dictionary<string, string>(StringComparer.Ordinal));
         var record = new RunRecord(
-            CheckKind.Test, exit.Outcome, before.Head, before.Directory, sha.Value, request.Command, exit.ProgramSha256, exit.Environment, exit.Code, slot.Log,
+            CheckKind.Test, exit.Outcome, before.Head, before.Directory, sha.Value, request.Command, exit.ProgramSha256, exit.Environment, exit.Code, slot.Value.Log,
             LeftoverRule.Left(before.Untracked, after), before.Root);
-        var recordSha = ledger.Write(slot, record);
+        var recordSha = ledger.Write(slot.Value, record);
 
         // Registered under the lock, onto the current state: the run may have taken minutes.
         return store.Locked(request.StateDirectory, () => store.Load(request.StateDirectory).Map(fresh =>
         {
-            store.Save(request.StateDirectory, fresh.Register(new RegisteredRun(slot.Record, recordSha)));
-            return new RunTestResponse(slot.Record, record.Outcome, exit.Code, before.Head);
+            store.Save(request.StateDirectory, fresh.Register(new RegisteredRun(slot.Value.Record, recordSha)));
+            return new RunTestResponse(slot.Value.Record, record.Outcome, exit.Code, before.Head);
         }));
     }
 

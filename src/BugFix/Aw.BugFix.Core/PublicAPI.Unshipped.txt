@@ -458,9 +458,10 @@ Aw.BugFix.Core.Ports.IGit.Untracked(string! directory) -> Aw.Kernel.Result<Syste
 Aw.BugFix.Core.Ports.IJudge
 Aw.BugFix.Core.Ports.IJudge.ResolutionCheck(Aw.BugFix.Core.Model.JudgeQuestion! question) -> Aw.Kernel.Result<Aw.BugFix.Core.Model.JudgeAnswer!>!
 Aw.BugFix.Core.Ports.IRunLedger
+Aw.BugFix.Core.Ports.IRunLedger.CreateDigestKey(string! directory) -> void
 Aw.BugFix.Core.Ports.IRunLedger.Read(string! path) -> Aw.Kernel.Result<Aw.BugFix.Core.Model.StoredRun!>!
 Aw.BugFix.Core.Ports.IRunLedger.Release(Aw.BugFix.Core.Model.RunSlot! slot) -> void
-Aw.BugFix.Core.Ports.IRunLedger.Reserve(string! directory, System.DateTimeOffset at, Aw.BugFix.Core.Model.CheckKind kind) -> Aw.BugFix.Core.Model.RunSlot!
+Aw.BugFix.Core.Ports.IRunLedger.Reserve(string! directory, System.DateTimeOffset at, Aw.BugFix.Core.Model.CheckKind kind) -> Aw.Kernel.Result<Aw.BugFix.Core.Model.RunSlot!>!
 Aw.BugFix.Core.Ports.IRunLedger.Write(Aw.BugFix.Core.Model.RunSlot! slot, Aw.BugFix.Core.Model.RunRecord! record) -> string!
 Aw.BugFix.Core.Ports.IRunLedger.WriteJudgeInput(string! directory, Aw.BugFix.Core.Ids.CandidateId candidate, Aw.BugFix.Core.Model.ResolutionCheckInput! input) -> Aw.BugFix.Core.Model.JudgeQuestion!
 Aw.BugFix.Core.Ports.IStateStore
@@ -646,7 +647,8 @@ static Aw.BugFix.Core.Rules.CommandFilesRule.Paths(System.Collections.Generic.IR
 static Aw.BugFix.Core.Rules.EvidenceRule.Accept(Aw.BugFix.Core.Model.BugFixState! state, Aw.BugFix.Core.Model.StoredRun! run) -> Aw.Kernel.Result<Aw.BugFix.Core.Model.RunRecord!>!
 static Aw.BugFix.Core.Rules.HandoffParser.Parse(string! markdown) -> Aw.Kernel.Result<Aw.BugFix.Core.Model.Handoff!>!
 static Aw.BugFix.Core.Rules.LeftoverRule.Left(System.Collections.Generic.IReadOnlyDictionary<string!, string!>! before, System.Collections.Generic.IReadOnlyDictionary<string!, string!>! after) -> System.Collections.Generic.IReadOnlyDictionary<string!, string!>!
-static Aw.BugFix.Core.Rules.LeftoverRule.Stray(Aw.BugFix.Core.Model.Checkout! checkout, System.Collections.Generic.IEnumerable<Aw.BugFix.Core.Model.RunRecord!>! runs, Aw.BugFix.Core.Model.FrozenCheck? check) -> System.Collections.Generic.IReadOnlyList<string!>!
+static Aw.BugFix.Core.Rules.LeftoverRule.Loading(Aw.BugFix.Core.Model.Checkout! checkout, Aw.BugFix.Core.Model.FrozenCheck? check) -> System.Collections.Generic.IReadOnlyList<string!>!
+static Aw.BugFix.Core.Rules.LeftoverRule.Unaccounted(Aw.BugFix.Core.Model.Checkout! checkout, System.Collections.Generic.IEnumerable<Aw.BugFix.Core.Model.RunRecord!>! runs, Aw.BugFix.Core.Model.FrozenCheck? check) -> System.Collections.Generic.IReadOnlyList<string!>!
 static Aw.BugFix.Core.Rules.NextStep.For(Aw.BugFix.Core.Model.BugFixState! state) -> string!
 static Aw.BugFix.Core.Rules.ProtectedPaths.Shadowing(System.Collections.Generic.IEnumerable<string!>! addedFiles, string! runDirectory, string! checkPath) -> System.Collections.Generic.IReadOnlyList<string!>!
 static Aw.BugFix.Core.Rules.ProtectedPaths.Touched(System.Collections.Generic.IEnumerable<string!>! changedFiles, string! checkPath, System.Collections.Generic.IReadOnlyCollection<string!>! commandFiles) -> System.Collections.Generic.IReadOnlyList<string!>!
@@ -654,6 +656,7 @@ static readonly Aw.BugFix.Core.Errors.BugFixErrors.AttemptRefused -> Aw.Kernel.E
 static readonly Aw.BugFix.Core.Errors.BugFixErrors.CandidateRefused -> Aw.Kernel.ErrorDefinition!
 static readonly Aw.BugFix.Core.Errors.BugFixErrors.CheckNotFrozen -> Aw.Kernel.ErrorDefinition!
 static readonly Aw.BugFix.Core.Errors.BugFixErrors.CommandRefused -> Aw.Kernel.ErrorDefinition!
+static readonly Aw.BugFix.Core.Errors.BugFixErrors.DigestKeyMissing -> Aw.Kernel.ErrorDefinition!
 static readonly Aw.BugFix.Core.Errors.BugFixErrors.DirtyTree -> Aw.Kernel.ErrorDefinition!
 static readonly Aw.BugFix.Core.Errors.BugFixErrors.EvidenceRefused -> Aw.Kernel.ErrorDefinition!
 static readonly Aw.BugFix.Core.Errors.BugFixErrors.FileUnreadable -> Aw.Kernel.ErrorDefinition!

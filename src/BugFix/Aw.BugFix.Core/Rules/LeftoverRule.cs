@@ -9,22 +9,26 @@ namespace Aw.BugFix.Core.Rules;
 /// </summary>
 public static class LeftoverRule
 {
-    /// <summary>The untracked files no accepted run left behind.</summary>
+    /// <summary>The untracked files no run of the frozen check left behind in this work tree (or changed since).</summary>
     /// <param name="checkout">The work tree, with its untracked files.</param>
     /// <param name="runs">The bug fix's registered run records.</param>
     /// <param name="check">The frozen check, once there is one.</param>
-    /// <returns>The stray paths, sorted.</returns>
-    public static IReadOnlyList<string> Stray(Checkout checkout, IEnumerable<RunRecord> runs, FrozenCheck? check)
+    /// <returns>The paths, sorted.</returns>
+    public static IReadOnlyList<string> Unaccounted(Checkout checkout, IEnumerable<RunRecord> runs, FrozenCheck? check)
     {
         var allowed = runs
             .Where(run => run.Checkout == checkout.Root && (check?.Ran(run) ?? (run.Kind == CheckKind.Test)))
             .SelectMany(static run => run.Leftovers.Select(l => (l.Key, l.Value)))
             .ToHashSet();
-        return [.. checkout.Untracked
-            .Where(f => !allowed.Contains((f.Key, f.Value)) || Loads(f.Key, check))
-            .Select(static f => f.Key)
-            .Order(StringComparer.Ordinal)];
+        return [.. checkout.Untracked.Where(f => !allowed.Contains((f.Key, f.Value))).Select(static f => f.Key).Order(StringComparer.Ordinal)];
     }
+
+    /// <summary>The untracked files that could change what a run executes (protected, test or fixture paths, or a file a loader picks first): never output, whoever wrote them.</summary>
+    /// <param name="checkout">The work tree, with its untracked files.</param>
+    /// <param name="check">The frozen check, once there is one.</param>
+    /// <returns>The paths, sorted.</returns>
+    public static IReadOnlyList<string> Loading(Checkout checkout, FrozenCheck? check) =>
+        [.. checkout.Untracked.Keys.Where(path => Loads(path, check)).Order(StringComparer.Ordinal)];
 
     /// <summary>What a run left behind: the untracked files after it that weren't there, or were different, before it.</summary>
     /// <param name="before">The untracked files before the run.</param>
