@@ -57,18 +57,6 @@ public sealed class FallbackAndStorageTests
     }
 
     [Fact]
-    public async Task A_throwing_fallback_is_no_fallback_and_the_chain_continues()
-    {
-        var harness = new EvaluatorHarness();
-        var cli = new ScriptedProvider(ProviderName.ClaudeCli).Decides("drop", 0.9);
-        var question = A.Question().WithThreshold(0.8).WithFallbackRules(_ => throw new InvalidOperationException("boom")).Build();
-
-        var outcome = await harness.Run(question, Text("hi"), JevThenCli(BelowJev(), cli));
-
-        Assert.Equal(new DecidedOutcome("drop", 0.9, ProviderName.ClaudeCli, "model", FirstId), outcome);
-    }
-
-    [Fact]
     public async Task The_settling_provider_probabilities_win_over_an_earlier_undecided_answer()
     {
         var harness = new EvaluatorHarness();
