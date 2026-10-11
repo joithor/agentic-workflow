@@ -255,6 +255,7 @@ t("new-slice: a second cli slice adds one command arm, one registration and one 
   assert.match(table, /CheckRepoCommand\.Name[\s\S]*ListReposCommand\.Name[\s\S]*_ => CommandOutput\.Usage/);
   const reg = read(d, "src/Readiness/Aw.Readiness.App/Features/ReadinessFeaturesServiceCollectionExtensions.cs");
   assert.equal((reg.match(/new ValidatingService</g) ?? []).length, 2);
+  assert.doesNotMatch(read(d, "src/Readiness/Aw.Readiness.App/Features/ListRepos/ListReposService.cs"), /SuppressMessage/, "registered: nothing to suppress");
   assert.match(read(d, "src/Readiness/Aw.Readiness.App/Commands/ListReposCommand.cs"), /RepoId\.TryParse\(args\[0\], CultureInfo\.InvariantCulture, out var repoId\)/);
   assert.match(r.out, /^Commit: test: red ListRepos test \(lists_nothing_for_an_empty_profile\)$/m);
 });
@@ -389,6 +390,13 @@ t("--slice-only cli: only the slice's files, its id files and its A.cs factory; 
   assert.match(added, /public static ListReposRequestBuilder ListReposRequest\(\) => new\(\);/);
   assert.doesNotMatch(added, /CheckRepo/);
   assert.ok(!exists(d, `${app}/Commands/ListReposCommand.cs`), "--slice-only wrote the command file");
+  // Nothing in the assembly uses the unregistered stub and validator yet: MA0182 (an error) is suppressed until the branch registers them.
+  for (const f of ["ListReposService", "ListReposValidator"]) {
+    const text = read(d, `${app}/Features/ListRepos/${f}.cs`);
+    assert.match(text, /^using System\.Diagnostics\.CodeAnalysis;$/m, f);
+    assert.match(text, new RegExp(`\\[SuppressMessage\\("Design", "MA0182:Avoid unused internal types", Justification = "[^"]+"\\)\\]\\ninternal sealed class ${f}`), f);
+  }
+  assert.match(r.out, /remove the \[SuppressMessage\] for MA0182 from ListReposService and ListReposValidator/);
   assert.match(r.out, /^Shared lines to add in your branch/m);
   assert.match(r.out, /ListReposCommand\.Name => await ListReposCommand\.Run\(rest, scope\.ServiceProvider, json\)/);
   assert.match(r.out, /new ValidatingService<ListReposRequest, ListReposResponse>\(/);
