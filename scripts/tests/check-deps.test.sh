@@ -534,6 +534,16 @@ for p in App Host; do csproj "$d" "src/Alpha/Aw.Alpha.$p/Aw.Alpha.$p.csproj"; do
 csproj "$d" src/Beta/Aw.Beta.Host/Aw.Beta.Host.csproj ../../Alpha/Aw.Alpha.Core/Aw.Alpha.Core.csproj ../../Alpha/Aw.Alpha.Features/Aw.Alpha.Features.csproj ../../Alpha/Aw.Alpha.App/Aw.Alpha.App.csproj ../../Alpha/Aw.Alpha.Host/Aw.Alpha.Host.csproj; run "$d"
 expect "a compose edge opens Features and Infrastructure only, never App or Host" 1 "DEPS-PROJ-007" "Aw.Beta.Host -> Aw.Alpha.App" "Aw.Beta.Host -> Aw.Alpha.Host"
 
+d="$(fixture compose-up-ref)"; perl -0pi -e 's/kind: project\n    status: planned/kind: project\n    status: current/' "$d/deps.yaml"
+csproj "$d" src/Aw.Kernel/Aw.Kernel.csproj; csproj "$d" src/Delta/Aw.Delta.Features/Aw.Delta.Features.csproj
+csproj "$d" src/Alpha/Aw.Alpha.Host/Aw.Alpha.Host.csproj ../../Delta/Aw.Delta.Features/Aw.Delta.Features.csproj; run "$d"
+expect "a Host reference up the tiers into Features is DEPS-PROJ-007, not a compose suggestion" 1 "DEPS-PROJ-007" "Aw.Alpha.Host -> Aw.Delta.Features"
+refuse "  ... with no DEPS-COMPOSE-001" "DEPS-COMPOSE-001"
+
+d="$(fixture compose-tier0-current)"; edge "$d" Beta Kernel compose current; run "$d"
+expect "a current compose edge into tier 0 fails DEPS-COMPOSE-001 only" 1 "compose edge into a tier-0 package"
+refuse "  ... without a staleness fix that can't apply" "DEPS-STALE-001"
+
 d="$(composed compose-features)"
 csproj "$d" src/Beta/Aw.Beta.Features/Aw.Beta.Features.csproj ../../Aw.Kernel/Aw.Kernel.csproj ../../Alpha/Aw.Alpha.Core/Aw.Alpha.Core.csproj ../../Alpha/Aw.Alpha.Features/Aw.Alpha.Features.csproj; run "$d"
 expect "the compose carve-out is for the Host only" 1 "DEPS-PROJ-007" "Aw.Beta.Features -> Aw.Alpha.Features"

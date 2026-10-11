@@ -245,7 +245,7 @@ function checkProjects(root, doc, byId, declared, edges, { fail, info, excepted,
   const sourceOk = (name, refOwner) => refOwner.tier === 0 || !/\.(Core|Infrastructure)$/.test(name);
   const contractFail = (pj, ref, refOwner) => fail("DEPS-PROJ-007", "reference into another package past its Core", `${pj.name} -> ${ref} (${refOwner.id})`, `another package is used only through its Core project (${refOwner.projectPrefix}.Core) or a tier-0 package (§4b.1a)`, `reference ${refOwner.projectPrefix}.Core instead, moving what you need into ${refOwner.id}'s Core contracts`);
   // A Host's reference to a lower package's Features or Infrastructure: the compose carve-out of DEPS-PROJ-007.
-  const composeRef = (pj, ref, refOwner) => isHostProject(pj.name) && refOwner.tier !== 0 && [".Features", ".Infrastructure"].some((s) => ref === `${refOwner.projectPrefix}${s}`);
+  const composeRef = (pj, ref, refOwner, owner) => isHostProject(pj.name) && refOwner.tier !== 0 && rank(owner) > rank(refOwner) && [".Features", ".Infrastructure"].some((s) => ref === `${refOwner.projectPrefix}${s}`);
   const real = new Set(); // "Owner|RefOwner" for production cross-package references
   const composed = new Set(); // "Owner|RefOwner" for Host references under the compose carve-out
   const owners = new Set(); // packages with at least one production project
@@ -274,7 +274,7 @@ function checkProjects(root, doc, byId, declared, edges, { fail, info, excepted,
         continue;
       }
       if (refOwner.id === owner.id) continue;
-      if (composeRef(pj, ref, refOwner)) {
+      if (composeRef(pj, ref, refOwner, owner)) {
         composed.add(`${owner.id}|${refOwner.id}`);
         if (!declared.has(`${owner.id}|${refOwner.id}|compose`)) fail("DEPS-COMPOSE-001", "Host reference into another package's Features or Infrastructure without a compose edge", `${pj.name} -> ${ref} (${owner.id} -> ${refOwner.id})`, "a Host reaches another package's Features and Infrastructure only for their Add…() registration methods, under a declared compose edge (context spec §4)", `reference ${refOwner.projectPrefix}.Core instead, or declare the compose edge beside the project edge (a reviewed change):\n${yamlEdge(owner.id, refOwner.id, "compose", "current")}`);
         continue;
@@ -296,7 +296,7 @@ function checkProjects(root, doc, byId, declared, edges, { fail, info, excepted,
     if (e.status === "current" && !has) fail("DEPS-STALE-001", "declared current edge not found in source", `${edgeText(e)}: ${owners.has(e.from) ? "no ProjectReference" : `${e.from} has no C# projects yet`}`, "a status: current edge exists in the source today", "set status: planned in deps.yaml if it is still intended, or delete the edge");
     if (e.status === "planned" && has) fail("DEPS-STALE-002", "planned edge found in source", `${edgeText(e)}: a ProjectReference exists`, "an edge the source has today is status: current", `set status: current on ${edgeText(e)} in deps.yaml`);
   }
-  for (const e of edges.filter((x) => x.kind === "compose")) {
+  for (const e of edges.filter((x) => x.kind === "compose" && byId.get(x.to).tier !== 0)) { // tier 0: DEPS-COMPOSE-001 already
     const has = composed.has(`${e.from}|${e.to}`);
     if (e.status === "current" && !has) fail("DEPS-STALE-001", "declared current edge not found in source", `${edgeText(e)}: no ${e.from} Host ProjectReference into ${e.to}'s Features or Infrastructure`, "a status: current edge exists in the source today", "set status: planned in deps.yaml if it is still intended, or delete the edge");
     if (e.status === "planned" && has) fail("DEPS-STALE-002", "planned edge found in source", `${edgeText(e)}: a Host ProjectReference into ${e.to}'s Features or Infrastructure exists`, "an edge the source has today is status: current", `set status: current on ${edgeText(e)} in deps.yaml`);
