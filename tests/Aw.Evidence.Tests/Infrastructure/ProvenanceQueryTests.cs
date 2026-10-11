@@ -14,7 +14,7 @@ public sealed class ProvenanceQueryTests : IDisposable
     public async Task The_pattern_travels_as_a_psql_variable_and_never_inside_the_sql()
     {
         var pattern = "x'; DROP TABLE profile; --%";
-        var query = new DockerPsqlProvenance(Recorder("printf 'seed-admin-1@example.com\\n\\nseed-admin-2@example.com\\n'"));
+        var query = new DockerPsqlProvenance(Recorder("printf 'seed-admin-1@example.com\\nseed-admin-2@example.com\\n'"));
 
         var emails = await query.EmailsLikeAsync(pattern, TestContext.Current.CancellationToken);
 
@@ -32,7 +32,7 @@ public sealed class ProvenanceQueryTests : IDisposable
         var query = new DockerPsqlProvenance(Recorder("echo a@example.com"));
 
         Assert.Equal(["a@example.com"], (await query.AllEmailsAsync(TestContext.Current.CancellationToken)).Value);
-        Assert.Equal("SELECT email FROM public.profile;\n", await File.ReadAllTextAsync(_root.Combine("stdin"), TestContext.Current.CancellationToken));
+        Assert.Equal("SELECT coalesce(email, '') FROM public.profile;\n", await File.ReadAllTextAsync(_root.Combine("stdin"), TestContext.Current.CancellationToken));
     }
 
     [Fact]

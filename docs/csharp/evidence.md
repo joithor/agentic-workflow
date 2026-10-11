@@ -293,7 +293,8 @@ These are read by Infrastructure's `EnvironmentEvidenceSettings` and lock settin
 
 `doctor` checks `http://localhost:3000/login`'s title, `docker exec postgres_container pg_isready -U postgres`, and a
 TCP connect to `localhost:5002`. `provenance` runs `docker exec postgres_container psql` with the seed pattern passed as
-a psql variable, never interpolated into the SQL; a failed query is `unknown` with the reason.
+a psql variable, never interpolated into the SQL; a failed query is `unknown` with the reason. A profile row with a
+NULL email reads as an empty email (not on a seed domain), so it makes the data `unknown` rather than being skipped.
 
 ## AOT scope
 

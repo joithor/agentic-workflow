@@ -14,7 +14,9 @@ namespace Aw.Evidence.Infrastructure.Stack;
 internal sealed class DockerPsqlProvenance(string docker) : IProvenanceQuery
 {
     private const string Like = "SELECT email FROM public.profile WHERE email LIKE :'pattern';\n";
-    private const string All = "SELECT email FROM public.profile;\n";
+
+    // A NULL email is read as '' (never dropped): it isn't on a seed domain, so the check fails closed.
+    private const string All = "SELECT coalesce(email, '') FROM public.profile;\n";
 
     private static readonly TimeSpan _limit = TimeSpan.FromSeconds(15);
 
@@ -34,7 +36,15 @@ internal sealed class DockerPsqlProvenance(string docker) : IProvenanceQuery
     {
         var run = await ProcessRunner.RunAsync(Command(variables), sql, _limit, EvidenceErrors.ProbeFailed, cancellationToken).ConfigureAwait(false);
         return run.Bind(outcome => outcome.ExitCode == 0
-            ? Results.Success<IReadOnlyList<string>>([.. outcome.StandardOutput.Split('\n', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries)])
+            ? Results.Success(Rows(outcome.StandardOutput))
             : EvidenceErrors.ProbeFailed.With(string.Create(CultureInfo.InvariantCulture, $"psql failed (exit {outcome.ExitCode}): {outcome.StandardError.Trim()}")));
+    }
+
+    // One row per line (psql -At); an empty line is a row whose value is empty, so only the final newline is dropped.
+    private static IReadOnlyList<string> Rows(string output)
+    {
+        var text = output.Replace("\r\n", "\n", StringComparison.Ordinal);
+        text = text.EndsWith('\n') ? text[..^1] : text;
+        return text.Length == 0 ? [] : [.. text.Split('\n').Select(static row => row.Trim())];
     }
 }
