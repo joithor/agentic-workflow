@@ -2,8 +2,8 @@
 
 Status:
 - Approved in conversation, decision by decision, on 2026-10-10.
-- Revised the same day after `/autoplan`: rev 2 after review pass 1, rev 3 after pass 2, an edit after pass 3, and a
-  final edit after pass 4. The owner allowed up to five passes. §13 lists every finding and its resolution.
+- Revised the same day after `/autoplan`: rev 2 after review pass 1, rev 3 after pass 2, an edit after pass 3, an edit
+  after pass 4, and a final edit after pass 5. The owner allowed five passes, and all five lenses passed pass 5. §13 lists every finding and its resolution.
 - This document is the written spec for review.
 
 The spec designs the surface every Sindri client uses: the `sindri` CLI, the Avalonia app (`SindriUi`), the Sindri MCP
@@ -91,7 +91,7 @@ only, so the gate is never held for long.
 - A command that reads views (catalog flag `ReadsViews`) waits, inside the gate, until the projector's cursor reaches
   the ledger head. It reads the head from `ILedgerStore.Head()` itself, so it never decides on views that miss the
   previous command's event. The limit is 2 s, after which it fails with `SND-API-004`. While the projector is `stalled`,
-  it fails at once with `SND-VIEW-001` instead of holding the gate.
+  it fails at once with `SND-VIEW-001` instead of holding the gate; during a rebuild, with `SND-API-010` (§2.3).
 - `StopProcess` and `RebuildViews` read no views and **don't wait**. So the fix for a stalled projector, and stopping
   the process, both always work.
 
@@ -134,7 +134,9 @@ and a body over 64 KiB. They get 400 or 415, and the host logs them; they aren't
   Only `ServeCommand` sets `service:host`, explicitly.
 - **No context is refused.** `AuthorizingService` refuses a command with no caller context (`SND-AUTH-002`, audited as
   caller `none`). Every other in-process writer sets its own `service:<name>`: the scheduler per service, the projector,
-  and `profile-watch`.
+  `profile-watch` and the job runner (`service:jobs`).
+- **Events written with no context** (for example by S1's internal services below) keep S1's stamp, `host:sindri`.
+  `EventFactory` never makes up a `service:` or `human:` actor.
 - **S1's internal services stay outside the chain.** `StartProcess` and `RecordHeartbeat` are called by the host itself
   (`ServeCommand`, the scheduler). They aren't commands, have no route, and keep writing through `EventFactory` with
   `service:host` and `service:heartbeat`.
@@ -185,8 +187,8 @@ clients compute ages themselves.
 3. stores the new cursor.
 
 Each page is one `views.db` transaction. After a full page it continues at once; it sleeps on the ledger signal (§5.5),
-or for 1 s, only once it has caught up. While a rebuild runs, commands that read views fail at once with `SND-API-004`
-("views rebuilding") instead of waiting.
+or for 1 s, only once it has caught up. While a rebuild runs, commands that read views fail at once with `SND-API-010`
+("views rebuilding, retry") instead of waiting. The command wasn't run, so clients show "retry", not "done".
 
 **Where the ledger head comes from.**
 - S1's `ILedgerStore` gains an additive `Head()` member (conflict C9) with a contract test. The projector calls it each
@@ -290,9 +292,14 @@ Every list view also returns `empty`, the `EmptyText` sentence (§3.6) for its c
 - The same scope applies to session **commands**. `FileRequest` and `pause` (takeover) reach only items in the session's
   repo. A filed request records that repo, so the request caps and the request and decision rows are scoped too.
 - The CLI sets `X-Sindri-Repo` from its working directory in every mode, as `sindri mcp` does.
-- **The repo name** is the profile's repo entry whose path contains the main checkout, found through
-  `git rev-parse --git-common-dir`. That way a worktree such as `.claude/worktrees/x` resolves to its repository, not to
-  the worktree's folder. Outside any profile repo, the header is omitted.
+- **The repo name** is found from the main checkout, so a worktree such as `.claude/worktrees/x` resolves to its
+  repository, not to the worktree's folder:
+  1. Take the main checkout's directory: the parent of `git rev-parse --path-format=absolute --git-common-dir`.
+  2. Resolve it to its real path.
+  3. Pick the **approved** profile's repo entry whose real path (with `~` expanded) contains it. When several match, take
+     the longest.
+
+  A submodule resolves to its superproject. Outside any profile repo, the header is omitted.
 - **`CreateItem` without `--repo`** uses `X-Sindri-Repo`, so items created from inside a repo belong to it.
 - `human` callers see everything.
 
@@ -379,13 +386,13 @@ catalog itself lands in P1. Every domain payload carries `commandId` (or the `se
 | `command.handled` | command, class, caller, outcome (`accepted`, `refused`, `invalid` or `failed`), code? | `command.handled:<commandId>` | no | P1 |
 | `views.rebuilt` | cursor before, events replayed | `views.rebuilt:<commandId>` | no | P2 |
 | `service.ran` | service, slot, outcome (`ok` or `failed`), code? | `service.ran:<name>:<epoch>:<slot>` | yes | P2 (C8) |
-| `profile.checked` | approved hash, live hash, drifted, changed paths | `profile.checked:<previousCheckSequence>` | yes | P2 (C8) |
+| `profile.checked` | approved hash, live hash, drifted, changed paths, the approved profile's service names | `profile.checked:<previousCheckSequence>` | yes | P2 (C8) |
 | `item.created` | item, title, repo | `item.created:<itemId>` | yes | P3 |
 | `item.state-changed` | item, from, to, version (the new one), reason? | `item.state-changed:<itemId>:v<version>` | yes | P3 |
 | `request.filed` | request, decision, kind, item?, repo? (the item's repo, else the session's `X-Sindri-Repo`), text (scrubbed, at most 2,000 characters) | `request.filed:<requestId>` | yes (text left out) | P4 |
 | `decision.recorded` | decision, choice, note?, by | `decision.recorded:<decisionId>` | yes | P4 |
 | `job.started` | job, kind, item? | `job.started:<jobId>` | yes | P6 |
-| `service.ran` (manual) | as above, with slot `manual:<jobId>` | `service.ran:<name>:manual:<jobId>` | yes | P6: a `RunService` job appends it when it ends, so a manual run updates `lastRun` and clears a failure row |
+| `service.ran` (manual) | as above; `slot` is the run's start time, and the key carries the job instead | `service.ran:<name>:manual:<jobId>` | yes | P6: a `RunService` job appends it when it ends, so a manual run updates `lastRun` and clears a failure row |
 | `job.progress` | job, round, line | `job.progress:<jobId>:<n>` | yes | P6 |
 | `job.finished` | job, outcome, summary, code? | `job.finished:<jobId>` | yes | P6 |
 | `job.cancelled` | job | `job.cancelled:<jobId>` | yes | P6 |
@@ -465,8 +472,8 @@ How items move through the states:
 | Kind | Source | Urgency | Cleared when |
 |---|---|---|---|
 | `decision` | Pending decisions, including filed requests (P4) | `pulse` | `decision.recorded` |
-| `park` | Engine parks and gates (S2) | `pulse` | The engine resumes the instance |
-| `failure` | `service.ran` with `failed` (C8, P2) | `colour` | The service's next `service.ran` with `ok` (scheduled or manual), or a `profile.approved` whose profile no longer names the service |
+| `park` | Engine parks and gates, idle takeovers, and desk tasks (S2) | `pulse` | The engine resumes the instance, a `handback`, or `CompleteStep` |
+| `failure` | `service.ran` with `failed` (C8, P2) | `colour` | The service's next `service.ran` with `ok` (scheduled or manual), or a `profile.checked` whose approved service names no longer include the service (it was removed and approved) |
 | `profile` | `profile.checked` with `drifted: true` (C8, P2) | `calm` | The next `profile.checked` with `drifted: false`, after an approval or a revert |
 
 - The collector adds more sources later (§11): sessions waiting on approval or input, stale indexes, judge health and
@@ -505,7 +512,7 @@ N of M)…") and `stalled` ("Views are stalled at N: run `sindri views rebuild`"
 |---|---|---|
 | `request` | A fact filed for a human or the engine to act on; changes no item state | `FileRequest` |
 | `pause` | Only stops automation. It is safe in one direction: resuming is `desk` | The engine's `ApplyCommand:takeover` |
-| `job` | Read-only work, possibly long-running; writes only its own job events | `RunService`, `CancelJob` |
+| `job` | Read-only work, possibly long-running; writes only its own job events and, for `RunService`, the run's `service.ran` | `RunService`, `CancelJob` |
 | `decision` | A non-protected human decision (the §17.12 list) | `Decide` |
 | `desk` | A human action that changes item or process state (§17.27.2) | `StopProcess`, `RebuildViews`, `CreateItem`, `CloseItem`, `PauseService`, `ResumeService`, `OpenItem`; the engine's start, answer, handback, cancel and complete |
 | `protected` | The approval tier: a typed confirmation, bound to the content, at a terminal | `ApproveProfile`, and the engine's `ApplyCommand:answer-grant`, `answer-accept` and `recipe approve`. Later: evolve adopt, channel promote and tier raises |
@@ -559,7 +566,8 @@ The endpoint is `GET /events?after=<sequence>&item=<itemId>&types=<glob,glob>`, 
 (`TypedResults.ServerSentEvents`, as in S1).
 - On a reconnect, `Last-Event-ID` wins over `after` (conflict C4).
 - A read error ends the stream with `event: error` and the SND code, instead of being swallowed.
-- A `session` caller's stream is filtered to its repo (§3.1).
+- A `session` caller's stream is filtered to its repo (§3.1). That filter, and the one on `ReadLedger`, also drop any
+  event whose payload `repo` names another repo, such as a request filed elsewhere without an item.
 - Not WebSocket: the stream is one-way, SSE resumes natively, it works with `curl -N`, and the Avalonia client reads it
   with a streaming `HttpClient`.
 
@@ -713,6 +721,7 @@ of **`docs/csharp/sindri.md`**. Not `docs/sindri/errors.md`, which is generated 
 | `SND-API-008` | Forbidden (403) | A command carried an `Origin` header | P1 |
 | `SND-API-009` | Unavailable (503) | The command gate wasn't acquired within 5 s | P1 |
 | `SND-API-004` | Unavailable (503) | The views didn't reach `X-Sindri-After`, or the head, within 2 s | P2 |
+| `SND-API-010` | Unavailable (503) | A command that reads views arrived during a rebuild; it wasn't run, so retry | P2 |
 | `SND-VIEW-001` | Unavailable (503) | The projector stalled on an event (status, doctor, logs) | P2 |
 | `SND-ITEM-404` | NotFound (404) | No such item, or it's outside a session's repo | P3 |
 | `SND-ITEM-409` | Conflict (409) | The item changed since you looked, or the decision was decided elsewhere | P3, P4 |
@@ -757,12 +766,12 @@ Spans and metrics use the `Aw.Sindri` source and meter, as `docs/csharp/telemetr
 | # | S1 today | What this design needs | Resolution |
 |---|---|---|---|
 | C1 | ~~`/sindri/sindri/status`~~ | — | Already fixed in S1 |
-| C2 | No caller class: `ApproveProfile` trusts `confirmed` from any loopback caller | Only a `human` caller with a terminal reaches protected handlers | P1 adds the caller middleware and wraps S1's commands in the chain. Their handler bodies don't change; their registrations move to `AddCommand` |
+| C2 | No caller class: `ApproveProfile` trusts `confirmed` from any loopback caller | Only a `human` caller with a terminal reaches protected handlers | P1 adds the caller middleware and wraps S1's commands in the chain. Their handler bodies don't change. Their registrations move to `AddCommand`, and `StopProcessRequest` and `ApproveProfileRequest` gain the `ICommand<…>` marker, with their PublicAPI lines |
 | C3 | `LoopbackGuard` allows a browser `Origin` on loopback | Commands refuse any `Origin` | P1 adds an endpoint filter on commands. S1's guard stays for queries |
 | C4 | `EventStream` lets `after` beat `Last-Event-ID`, swallows read errors, and sends every type | `Last-Event-ID` wins; errors end the stream with their code; public types only; session repo filter | P5 changes S1's `EventStream` and `StreamEvents`. The route stays |
 | C5 | Command responses have no `sequence`, and `ControlPlaneClient` re-serializes `--json` | `sequence` for read-your-writes, and the raw body printed | P1 adds `sequence` to `StopProcessResponse` and `ApproveProfileResponse`, and keeps the raw body. Both are additive |
 | C6 | The singleton `EventFactory` stamps `host:sindri`, uses a new correlation id per event, and leaves `Item = null` | The actor from the caller, one correlation per command, the item set | P1 adds `ICallerContextAccessor` (an `AsyncLocal` singleton) and `EventFactory` reads it. The same change covers the engine's S1-D7 |
-| C7 | `EndpointTable` and `CommandTable`/`Verbs` have no anchors, and `/new-slice` edits shared files at its own anchors even with `--files-only` | Slices can be scaffolded in parallel without touching shared files | P1 adds a `--slice-only` mode to `scripts/scaffold/new-slice.mjs`, with a case in `scripts/tests/scaffold.test.sh`. It writes the slice folder, the test, the builder and new ids, plus the slice's own lines in three generator-owned places: the unit's `PublicAPI.Unshipped.txt` lines, its `A.cs` factory method, and its `IdsJsonContext` entry. It touches no other shared file. P1 also restructures both tables to one line per slice under an anchor comment |
+| C7 | `EndpointTable` and `CommandTable`/`Verbs` have no anchors, and `/new-slice` edits shared files at its own anchors even with `--files-only` | Slices can be scaffolded in parallel without touching shared files | P0 adds a `--slice-only` mode to `scripts/scaffold/new-slice.mjs`, with a case in `scripts/tests/scaffold.test.sh`. It writes the slice folder, the test, the builder and new ids, plus the slice's own lines in three generator-owned places: the unit's `PublicAPI.Unshipped.txt` lines, its `A.cs` factory method, and its `IdsJsonContext` entry. It touches no other shared file. P1 also restructures both tables to one line per slice under an anchor comment |
 | C8 | The scheduler only logs a failed run (`SND-SCHED-001`), and a changed profile is a file on disk with no event | `service.ran` and `profile.checked` events for the views | <ul><li>P2 makes the scheduler append `service.ran` for every run, `ok` or `failed`, keyed by service, epoch and slot.</li><li>P2 adds `profile-watch` as a **hosted service**. It isn't scheduled from the profile, so it always runs.</li><li>Every 30 s it hashes the live profile, and appends `profile.checked` only when the (approved, live) pair has changed since its last check.</li><li>So a revert or a re-approval writes `drifted: false`, and drifting back to an old hash writes again.</li><li>S1's `profile.approved` key already includes the previous hash (S1 `5c9c4a4`), so re-approving an old hash is recorded, and S1 needs no change.</li><li>On restart, `profile-watch` takes its last (approved, live) pair from the latest `profile.checked` event.</li></ul> |
 | C9 | `ILedgerStore` has no way to read the head | The ledger head, for `asOf` and command waits | P2 adds `Head()` to `ILedgerStore` (additive, with a case in its contract suite) and `ILedgerReader` (the read-only port for `ReadLedger` and the projector) |
 
@@ -832,7 +841,6 @@ Spans and metrics use the `Aw.Sindri` source and meter, as `docs/csharp/telemetr
    - the `SindriJsonContext` entries;
    - the catalog rows;
    - the error codes;
-   - the `A.cs` builder method.
 3. The CLI verb is written by hand in `Host/Commands`.
 
 **Proving a phase.** Every phase signal below assumes this recipe. The recipe lives in the plan and in this spec. It is
@@ -966,7 +974,7 @@ Both HIGHs and every MEDIUM are fixed in the text.
 
 | Finding (lens) | Resolution |
 |---|---|
-| Ctrl-C on `serve` goes through the chain with no caller and is refused, so the lease stays held (arch R1, HIGH) | Host-internal stops use the caller `service:host`, which the catalog allows for `StopProcess` only, and `EventFactory` defaults to it. A P1 signal and test cover it (§2.1) |
+| Ctrl-C on `serve` goes through the chain with no caller and is refused, so the lease stays held (arch R1, HIGH) | Host-internal stops use the caller `service:host`, which the catalog allows for `StopProcess` only, set explicitly by `ServeCommand`. A P1 signal and test cover it (§2.1) |
 | No event for a successful run, so failure rows never clear (arch R2, HIGH) | `service.ran` with an outcome for every run, keyed with the epoch (which also fixes design R1). P2 and P4 signals cover "fail, then succeed" |
 | A command reads a head that lags (arch R3) | Commands read `ILedgerStore.Head()`, and fail fast while the projector is stalled (security P3-3) |
 | `profile-watch` is never scheduled; drift rows stick or are dropped (arch R4, design R2, R5) | `profile-watch` is a hosted service in P2, and `profile.checked` is written on every change, keyed by the previous check. Revert and re-approval clear the row, and S1 needs no change |
@@ -1003,6 +1011,31 @@ These LOW findings are fixed too:
 - **S1's `profile.approved` key** (S1 `5c9c4a4`) is noted, along with `profile-watch` restart state.
 - **The projector** doesn't sleep between full pages, and commands fail fast during a rebuild.
 
+### Pass 5 → final text (the last pass the owner allowed)
+
+All five lenses passed, with no HIGH findings. These MEDIUM findings are fixed in the text:
+- **Failure rows can't clear through `profile.approved`** (design N1, architecture N1). S1's payload doesn't carry the
+  service names. `profile.checked`, which P2 owns, now carries the approved service names, and the row clears on that
+  event. S1 still needs no change.
+- **The actor when there's no context** (architecture N2). Events written with no context keep S1's `host:sindri`, and
+  the job runner is `service:jobs`.
+
+These LOW findings are fixed too:
+- **`SND-API-010`:** "views rebuilding" now has its own code, separate from `SND-API-004`.
+- **`park` rows:** their sources and their clearing rule now cover takeovers and desk tasks.
+- **Repo resolution:** it uses an absolute common dir, real paths and the longest match against the approved profile.
+- **Stream and `ReadLedger` filters:** they also drop events whose payload names another repo.
+- **The manual `service.ran` slot:** it's the run's start time.
+- **The `job` class text:** updated to match.
+- **The C2 row:** it now names the marker on S1's request records.
+- **C7:** it now says P0.
+- **§12 step 2:** it no longer has the implementer add `A.cs` lines.
+- **The P0 signal:** it now matches what the generator writes.
+- **The §13 pass-3 row:** the stale "defaults" wording is fixed.
+
+**Left to the engine spec's owner:** the engine spec's own wave table has to show the gate, and its §6.2 and §6.3 edit
+has to land (§3.5). Engine P1 mustn't define actor classes either.
+
 ## Phases
 
 Each phase is one PR and follows the slice recipe, red first.
@@ -1014,11 +1047,11 @@ Each phase is one PR and follows the slice recipe, red first.
 
 | # | Goal | Files (main ones) | Size | Depends on | Observable signal | Unblocks |
 |---|---|---|---|---|---|---|
-| **P0** | **Scaffold mode.** `--slice-only` for `new-slice.mjs` (C7) | `scripts/scaffold/new-slice.mjs`, `scripts/tests/scaffold.test.sh` | S | — (it works on any package) | `bash scripts/tests/scaffold.test.sh` passes its `--slice-only` case: only slice files and its own PublicAPI lines change | All phases |
+| **P0** | **Scaffold mode.** `--slice-only` for `new-slice.mjs` (C7) | `scripts/scaffold/new-slice.mjs`, `scripts/tests/scaffold.test.sh` | S | — (it works on any package) | `bash scripts/tests/scaffold.test.sh` passes its `--slice-only` case: only the slice's files change, plus its own lines in `PublicAPI.Unshipped.txt`, `A.cs` and `IdsJsonContext`; the red test compiles and fails | All phases |
 | **P1** | **CQRS spine.** <ul><li>The anchors (C7).</li><li>`ICommand`, `IQuery`, `IClassifiedCommand`.</li><li>The callers: `CallerContext`, `ICallerContextAccessor`, the four headers (no header means `session`), the `Origin` refusal.</li><li>The chain: `CommandGate`, `AuditingService`, `AuthorizingService`, `ValidatingService`, and the `AddCommand`/`AddQuery` helpers.</li><li>`CommandAccepted`.</li><li>The catalogs: `ICommandCatalog`/`CommandCatalog`, `EventCatalog`, `ListCommands`.</li><li>`apiVersion`.</li><li>S1's commands get their classes; plus `sequence` and the raw `--json` (C5), and `EventFactory` (C6).</li><li>The CLI headers and the no-start rule for agent sessions.</li><li>`scripts/sindri-prove.sh`.</li><li>`ARCH-CQRS-001..003`.</li><li>Codes: `SND-AUTH-002`, `SND-API-007/008/009`.</li></ul> | `scripts/sindri-prove.sh`, `Core/Commands/*`, `Core/Events/EventCatalog.cs`, `Features/Commands/*`, `Features/ListCommands/`, `Host/CallerContextMiddleware.cs`, `Host/CommandCatalog.cs`, `Host/Endpoints/EndpointTable.cs`, `Host/Commands/*`, `tests/Aw.Sindri.Tests/Commands/*`, `tests/Aw.Architecture.Tests/Cqrs*`, rule records, `docs/csharp/sindri.md`, `scripts/env-scan-ignore.txt` | M | S1 + P0 | <ul><li>With `H=$($SINDRI profile validate --json \| jq -r .hash)`, the call `curl -X POST -H 'Content-Type: application/json' …/sindri/profile/approve -d "{\"hash\":\"$H\",\"confirmed\":true}"` with **no caller header** gets 403 `SND-AUTH-002`. `sqlite3 -readonly ledger.db` shows a `command.handled` row with `refused` and no `profile.approved`.</li><li>The same call as `human` but with no `X-Sindri-Terminal` also gets 403.</li><li>Adding `-H 'Origin: http://localhost:3000'` gets `SND-API-008`.</li><li>`curl …/sindri/commands` lists every action id with its class.</li><li>In an agent session, `$SINDRI stop` gets `SND-AUTH-002`.</li><li>Ctrl-C on `sindri serve` records `process.stopped`, and an immediate restart takes the lease.</li></ul> | UI, engine |
 | **P2** | **Projector, read-your-writes and the head.** <ul><li>`views.db`, `IProjection`, the projector, `IProjectorStatus`, `asOf`.</li><li>Rebuild and stall handling.</li><li>`X-Sindri-After`.</li><li>`ILedgerStore.Head()` and `ILedgerReader` (C9).</li><li>`service.ran` and `profile-watch` (C8).</li><li>The slices `RebuildViews`, `ListServices`, `GetProfile`.</li><li>doctor's `views` line.</li><li>Codes: `SND-API-004`, `SND-VIEW-001`.</li></ul> | `Core/Views/*`, `Infrastructure/Views/*` (+ migrations), `Infrastructure/Ledger/*` (Head, reader), `Host/Projector.cs`, `Features/{ListServices,GetProfile,RebuildViews}/` | M | P1 | <ul><li>Delete `views.db` and restart: `GET /services` matches the earlier body, apart from `asOf`.</li><li>During `views rebuild`, a query shows `"rebuilding":true`.</li><li>`X-Sindri-After: <head+1000>` gets 503 `SND-API-004` after 2 s.</li><li>A test service that fails once and then succeeds: after the failure, `lastRun.outcome` is `failed`; after the success, it is `ok`.</li><li>Editing the live profile makes `GET /profile` show `changed` within 30 s, and reverting the edit clears it.</li></ul> | UI, engine |
 | **P3** | **Items and the queue.** <ul><li>`ItemId` and the item events.</li><li>The `item_view` and `queue_view` projections.</li><li>`ItemActions` and `EmptyText`.</li><li>The slices `CreateItem`, `CloseItem`, `GetQueue`, `ListItems`, `GetItem`, `GetItemTimeline`.</li><li>The CLI verbs `queue`, `items`, `item add` and `item close`.</li></ul> | `Core/Items/*`, `Features/{CreateItem,CloseItem,GetQueue,ListItems,GetItem,GetItemTimeline}/`, projections, `Host/Commands/*` | M | P2 | <ul><li>`sindri-prove.sh human item add "Try the queue"`, then `sindri-prove.sh curl GET /sindri/queue \| jq -S 'del(.asOf)'` equals `sindri-prove.sh human queue --json \| jq -S 'del(.asOf)'` (both human, so both see every repo).</li><li>`item close` with a stale version gets `SND-ITEM-409`.</li><li>An empty queue prints its `EmptyText`.</li><li>A `POST /items` with no header gets 403.</li></ul> | **UI** |
-| **P4** | **Requests, decisions and needs-you.** <ul><li>`RequestId` and `DecisionId`.</li><li>The slices `FileRequest`, `ListRequests`, `ListDecisions`, `Decide`, `GetNeedsYou`.</li><li>The needs-you `failure` and `profile` rows over P2's events.</li><li>The CLI verbs `request`, `requests`, `decide` and `needs-you`.</li><li>Codes: `SND-REQ-*`, `SND-DEC-*`.</li></ul> | `Core/{Requests,Decisions,NeedsYou}/*`, `Features/{FileRequest,ListRequests,ListDecisions,Decide,GetNeedsYou}/`, projections, `Host/Commands/*` | M | P3 | <ul><li>`curl -X POST -H 'Content-Type: application/json' -H 'X-Sindri-Repo: demo' …/requests -d '{"kind":"rescope","text":"…"}'` (no caller header, so `session`) shows up as exactly one `decision` row in `GET /needs-you`, with `recordedOnly: true`.</li><li>The same `decide` with no caller header gets 403.</li><li>`sindri-prove.sh human decide DEC-… accept` clears the row.</li><li>Two `decide` calls started together: one succeeds and the other gets `SND-ITEM-409 decided elsewhere`.</li><li>Editing the live profile adds a `profile` row within 30 s, and reverting the edit clears it.</li><li>A service that fails adds a `failure` row, and its next good run clears it.</li></ul> | **UI, engine** |
+| **P4** | **Requests, decisions and needs-you.** <ul><li>`RequestId` and `DecisionId`.</li><li>The slices `FileRequest`, `ListRequests`, `ListDecisions`, `Decide`, `GetNeedsYou`.</li><li>The needs-you `failure` and `profile` rows over P2's events.</li><li>The CLI verbs `request`, `requests`, `decide` and `needs-you`.</li><li>Codes: `SND-REQ-*`, `SND-DEC-*`.</li></ul> | `Core/{Requests,Decisions,NeedsYou}/*`, `Features/{FileRequest,ListRequests,ListDecisions,Decide,GetNeedsYou}/`, projections, `Host/Commands/*` | M | P3 | <ul><li>`curl -X POST -H 'Content-Type: application/json' -H 'X-Sindri-Repo: demo' …/requests -d '{"kind":"rescope","text":"…"}'` (no caller header, so `session`) shows up as exactly one `decision` row in `GET /needs-you`, with `recordedOnly: true`.</li><li>The same `decide` with no caller header gets 403.</li><li>`sindri-prove.sh human decide DEC-… accept` clears the row.</li><li>Two `decide` calls started together: one succeeds and the other gets `SND-ITEM-409 decided elsewhere`.</li><li>Editing the live profile adds a `profile` row within 30 s, and reverting the edit clears it.</li><li>A service that fails adds a `failure` row, and its next good run clears it.</li><li>A service that fails, is removed from the profile, and has the profile approved also clears its row.</li></ul> | **UI, engine** |
 | **P5** | **Event stream and ledger read.** <ul><li>Public types from `EventCatalog`, `PublicEvent`.</li><li>The `item` and `types` filters, the session repo filter, `Last-Event-ID`.</li><li>The ping and the stream limits (`SND-API-005`).</li><li>`ILedgerSignal`, wired to the projector and the stream.</li><li>`ReadLedger` and `sindri ledger`.</li><li>`sindri status --follow` (C4).</li></ul> | `Core/Events/*`, `Infrastructure/Ledger/LedgerSignal.cs`, `Features/{StreamEvents,ReadLedger}/`, `Host/Endpoints/EventStream.cs`, `Host/Projector.cs` | S | P1, plus P2 for the projector wiring (its signal uses `service.heartbeat`; the item filter is tested once P3 lands) | <ul><li>`curl -N '…/sindri/events?after=0&types=service.*'` shows each `service.heartbeat` within 100 ms of its append.</li><li>Reconnecting with `Last-Event-ID: n` resumes at n+1.</li><li>`command.handled` never appears.</li><li>`sindri-prove.sh human ledger --json --after 0` lists it.</li></ul> | **UI, engine** (S1-D6) |
 | **P6** | **Jobs and services.** <ul><li>`JobId` and the job events.</li><li>The slices `GetJob`, `CancelJob`, `RunService` (as a job), `PauseService`, `ResumeService`; the scheduler honours pause and resume.</li><li>The CLI follows progress on the stream, and Ctrl-C cancels.</li><li>Codes: `SND-JOB-404`, `SND-SVC-404`.</li></ul> | `Core/Jobs/*`, `Features/{GetJob,CancelJob,RunService,PauseService,ResumeService}/`, a scheduler hook in Host | M | P2 + P5 | <ul><li>`sindri-prove.sh human services run heartbeat` prints progress and the result.</li><li>Ctrl-C during a long fake job prints `cancelled`, and the ledger shows `job.cancelled`.</li><li>After `services pause heartbeat`, there's no heartbeat for 3 cadences.</li><li>A run with no caller header gets 403.</li><li>A manual run that succeeds clears that service's `failure` row and sets `lastRun` to `ok`.</li></ul> | UI, **engine** |
 | **P8** | **`sindri mcp`.** <ul><li>The MCP server: stdio, the MCP C# SDK, and the §8 tools.</li><li>`X-Sindri-Repo` set from the working directory.</li><li>`SND-API-001` when the process isn't running.</li></ul> | `Host/Mcp/*`, the SDK in `Directory.Packages.props` (pinned, at least 14 days old), `deps.yaml` | M | P4 + P6 | A fresh `claude -p "<journey>" --mcp-config … --strict-mcp-config --allowedTools …` subagent: <ul><li>lists the queue and an item;</li><li>files a `rescope` request, which shows up in `GET /needs-you`;</li><li>finds no tool to decide with;</li><li>gets `SND-AUTH-002` from a `curl` with no caller header.</li></ul> Its transcript is the evidence | — |
