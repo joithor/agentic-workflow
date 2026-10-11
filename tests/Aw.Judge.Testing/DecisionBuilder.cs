@@ -59,6 +59,14 @@ public sealed class DecisionBuilder : Builder<DecisionBuilder, DecisionRecord>
         return this;
     }
 
+    /// <summary>Makes it a pre-rule settlement: decided by 'rules' without reaching a provider.</summary>
+    /// <returns>This builder.</returns>
+    public DecisionBuilder SettledByPreRule()
+    {
+        _record = _record with { Outcome = DecisionOutcome.Decided, Provider = "rules", ReasonCode = "pre-rule", Confidence = 1, ChainPosition = 0, Skipped = [] };
+        return this;
+    }
+
     /// <summary>Drops the detail row.</summary>
     /// <returns>This builder.</returns>
     public DecisionBuilder WithoutDetails()

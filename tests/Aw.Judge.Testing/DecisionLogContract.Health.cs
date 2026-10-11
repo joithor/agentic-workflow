@@ -49,6 +49,24 @@ public abstract partial class DecisionLogContract
         Expect.That(all.IsSuccess && all.Value.SequenceEqual([DecisionOutcome.Failed, DecisionOutcome.Decided, DecisionOutcome.Failed]), "every attempt, newest first");
     }
 
+    /// <summary>A pre-rule settlement never reached a provider, so it isn't a model attempt: failures around it still make a streak.</summary>
+    /// <returns>A task.</returns>
+    [Fact]
+    public async Task Pre_rule_settlements_are_not_model_attempts()
+    {
+        var log = await Create(_none);
+        for (var i = 0; i < 10; i++)
+        {
+            var builder = A.Decision().WithId("d" + i.ToString(CultureInfo.InvariantCulture)).At(KnownInstants.Epoch.AddMinutes(i));
+            var decision = (i % 2 == 0 ? builder.WithOutcome(DecisionOutcome.Failed) : builder.SettledByPreRule()).Build();
+            Expect.That((await log.Record(decision, _none)).IsSuccess, "a decision is recorded");
+        }
+
+        var last = await log.LastAttemptOutcomes(5, _none);
+
+        Expect.That(last.IsSuccess && last.Value.Count == 5 && last.Value.All(static o => o == DecisionOutcome.Failed), "five failed attempts, the pre-rule rows between them skipped");
+    }
+
     /// <summary>An empty log has no failures and no attempts.</summary>
     /// <returns>A task.</returns>
     [Fact]
