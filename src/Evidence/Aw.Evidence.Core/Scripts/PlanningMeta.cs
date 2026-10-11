@@ -1,3 +1,5 @@
+using System.Text.Json.Serialization;
+
 namespace Aw.Evidence.Core.Scripts;
 
 /// <summary>The planner's one model invocation that wrote the script. Null means unknown, never zero.</summary>
@@ -6,4 +8,5 @@ namespace Aw.Evidence.Core.Scripts;
 /// <param name="ElapsedMs">How long planning took.</param>
 /// <param name="InputTokens">Input tokens, when reported.</param>
 /// <param name="OutputTokens">Output tokens, when reported.</param>
+[JsonUnmappedMemberHandling(JsonUnmappedMemberHandling.Disallow)]
 public sealed record PlanningMeta(string? Pr = null, string? Model = null, long? ElapsedMs = null, long? InputTokens = null, long? OutputTokens = null);

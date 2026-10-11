@@ -102,15 +102,17 @@ A step:
 | `input-value` | `testId` (string, not blank), `value` (string, may be empty) | that input holds exactly `value` |
 
 A missing `kind` is `missing required property "kind"`; another value names the five kinds. Enum values are matched by
-name only (a number is refused). Unknown keys in a script are ignored. The script's SHA-256 is `summary.json`'s
-`scriptSha256`.
+name only (a number is refused). Unknown keys are refused in every script object (the script, `planning`, each step
+and each `expectedState`, whatever its kind and wherever `kind` sits): a misspelt key is one error naming the file, the
+JSON location and the key (`script <path>: $.steps[0].vaule: unknown property`), never a silently ignored setting such
+as a fill that types nothing. The script's SHA-256 is `summary.json`'s `scriptSha256`.
 
 ### Design manifest (`parity <manifest.json>`)
 
 Unknown keys are refused in every manifest object (the manifest, `ready`, `viewport`, `neutralClick`, `login`, each
 frame and its `designRegion`, `anchor`, `anchorOffset`, `waitFor`, `formValues[]` and `expectBoxes[]` with their
-`target`, `relativeTo` and `expected`): a misspelt key is an error, not a silently ignored setting. The one exception
-is a frame's `steps[]`, which use the run script's step format above (unknown keys ignored there, as in a script).
+`target`, `relativeTo` and `expected`): a misspelt key is an error, not a silently ignored setting. A frame's `steps[]`
+use the run script's step format above and are just as strict (`$.frames[0].steps[0].vaule: unknown property`).
 
 | Key | Type | Required | Default | Holds and rules |
 |---|---|---|---|---|

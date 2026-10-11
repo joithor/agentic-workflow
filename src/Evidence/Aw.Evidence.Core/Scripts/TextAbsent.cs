@@ -1,7 +1,10 @@
+using System.Text.Json.Serialization;
+
 namespace Aw.Evidence.Core.Scripts;
 
 /// <summary>No visible element shows <paramref name="Text"/>.</summary>
 /// <param name="Text">The text (not empty).</param>
+[JsonUnmappedMemberHandling(JsonUnmappedMemberHandling.Disallow)]
 public sealed record TextAbsent(string Text) : ExpectedState
 {
     /// <inheritdoc/>

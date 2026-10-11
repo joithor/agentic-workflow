@@ -12,6 +12,7 @@ namespace Aw.Evidence.Core.Scripts;
 [JsonDerivedType(typeof(TestIdVisible), "testid-visible")]
 [JsonDerivedType(typeof(UrlPath), "url-path")]
 [JsonDerivedType(typeof(InputValue), "input-value")]
+[JsonUnmappedMemberHandling(JsonUnmappedMemberHandling.Disallow)]
 public abstract record ExpectedState
 {
     /// <summary>A short description for people and the selector-repair prompt.</summary>

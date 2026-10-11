@@ -1,7 +1,10 @@
+using System.Text.Json.Serialization;
+
 namespace Aw.Evidence.Core.Scripts;
 
 /// <summary>Some visible element shows <paramref name="Text"/>.</summary>
 /// <param name="Text">The text (not empty).</param>
+[JsonUnmappedMemberHandling(JsonUnmappedMemberHandling.Disallow)]
 public sealed record TextVisible(string Text) : ExpectedState
 {
     /// <inheritdoc/>

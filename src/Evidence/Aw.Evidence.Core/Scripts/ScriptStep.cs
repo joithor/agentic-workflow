@@ -7,6 +7,7 @@ namespace Aw.Evidence.Core.Scripts;
 /// <param name="Target">A path for goto, a test id for click and fill, visible text for expect-visible.</param>
 /// <param name="ExpectedState">The state checked after the action.</param>
 /// <param name="Value">The text a fill types; null types nothing.</param>
+[JsonUnmappedMemberHandling(JsonUnmappedMemberHandling.Disallow)]
 public sealed record ScriptStep(
     StepAction Action, string Target, [property: JsonConverter(typeof(KindFirstConverter))] ExpectedState ExpectedState, string? Value = null)
 {
