@@ -497,7 +497,8 @@ the profile and checked by doctor); the compose file's published ports bound to 
 server, with no cloud LLM or embedding provider configured; Onyx telemetry off; connectors scoped (Linear from a start
 date covering the backtest projects; Slack federated or the product's channels; docs connectors limited to the
 product's spaces); an Onyx API key with the narrowest role that can search, stored by pointer. Doctor
-`context:onyx` checks the loopback bind, the version and that the key can search. First indexing time is reported by
+`context:onyx` checks the loopback bind, the version and that the key can search. The no-cloud-provider and telemetry-off
+settings can't be read with a search-only key, so the setup doc lists them as a manual check on each Onyx version change. First indexing time is reported by
 `context sources status` from Onyx's own connector status.
 
 ## 9. Evaluation
