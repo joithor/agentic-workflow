@@ -35,13 +35,19 @@ public sealed class ShellViewModelTests
     {
         var shell = await Shell();
         _ = shell.Run(Token);
-        for (var i = 0; i < 100 && shell.State != until; i++)
-        {
-            await Task.Yield();
-        }
+        await Until(() => shell.State == until);
 
         Assert.Equal(until, shell.State);
         return shell;
+    }
+
+    // Stream events reach the shell on the thread pool: wait for them with a bound, not a count of yields.
+    private static async Task Until(Func<bool> condition)
+    {
+        for (var i = 0; i < 400 && !condition(); i++)
+        {
+            await Task.Delay(5, Token);
+        }
     }
 
     [Fact]
@@ -174,19 +180,13 @@ public sealed class ShellViewModelTests
         var shell = await Running(ShellState.Normal);
 
         _clock.Advance(ShellViewModel.StaleAfter);
-        for (var i = 0; i < 100 && shell.State != ShellState.Stale; i++)
-        {
-            await Task.Yield();
-        }
+        await Until(() => shell.State == ShellState.Stale);
 
         Assert.Equal(ShellState.Stale, shell.State);
         Assert.Contains(Labels.Stale, shell.HealthPill, StringComparison.Ordinal);
 
         _server.Push(A.Event(1));
-        for (var i = 0; i < 100 && shell.State != ShellState.Normal; i++)
-        {
-            await Task.Yield();
-        }
+        await Until(() => shell.State == ShellState.Normal);
 
         Assert.Equal(ShellState.Normal, shell.State);
     }
