@@ -7,7 +7,10 @@ namespace Aw.Judge.Infrastructure.Redaction;
 
 /// <summary>
 /// IInputRedactor over Aw.Redaction: every string value and key goes through the shared scrubber, then through the
-/// judge's own patterns (the TS redactSecrets set), which keep the standalone 40+ hex rule Aw.Redaction leaves out.
+/// judge's own patterns (the TS redactSecrets set), which keep the standalone 40+ hex rule Aw.Redaction leaves out. A
+/// field whose name says it holds a secret (<see cref="IRedactor.IsSecretName"/>: client_secret, apiKey, password) has
+/// its whole value replaced, whatever it looks like: the key and the value are scrubbed apart, so the assignment rules
+/// can't see the name.
 /// </summary>
 /// <param name="redactor">The shared scrubber.</param>
 internal sealed partial class AwInputRedactor(IRedactor redactor) : IInputRedactor
@@ -53,7 +56,7 @@ internal sealed partial class AwInputRedactor(IRedactor redactor) : IInputRedact
         var copy = new JsonObject();
         foreach (var (key, value) in obj)
         {
-            copy[Text(key)] = Redact(value);
+            copy[Text(key)] = value is JsonValue && redactor.IsSecretName(key) ? JsonValue.Create(Placeholder) : Redact(value);
         }
 
         return copy;

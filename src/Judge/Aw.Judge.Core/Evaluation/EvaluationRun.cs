@@ -8,7 +8,7 @@ namespace Aw.Judge.Core.Evaluation;
 /// <summary>The state of one evaluation as it walks the chain.</summary>
 /// <param name="id">The decision id.</param>
 /// <param name="ts">When the evaluation started.</param>
-/// <param name="rawInput">The input as read, as JSON (escalation rows digest and store it).</param>
+/// <param name="rawInput">The input as read, as JSON (an escalation before the input validates digests and stores it).</param>
 internal sealed class EvaluationRun(DecisionId id, DateTimeOffset ts, JsonNode? rawInput)
 {
     private readonly List<SkippedProvider> _skipped = [];

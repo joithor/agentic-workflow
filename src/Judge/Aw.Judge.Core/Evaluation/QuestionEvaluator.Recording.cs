@@ -19,7 +19,9 @@ public sealed partial class QuestionEvaluator
             ChainPosition = run.Skipped.Count,
             Probabilities = run.UndecidedProbabilities,
         };
-        await Record(question, run, settlement, run.RawInput, cancellationToken).ConfigureAwait(false);
+        // Once the input validated, the row holds the record (its declared fields), as a decided row does; before that
+        // (disabled, invalid) it holds what the caller sent.
+        await Record(question, run, settlement, run.Input ?? run.RawInput, cancellationToken).ConfigureAwait(false);
         return new EscalatedOutcome(reasonCode);
     }
 

@@ -3,7 +3,11 @@ using Aw.Judge.Core.Ports;
 
 namespace Aw.Judge.Testing;
 
-/// <summary>The IInputRedactor fake: replaces known secrets (by default <see cref="SampleSecrets.Contract"/>) in every string and key; it passes InputRedactorContract.</summary>
+/// <summary>
+/// The IInputRedactor fake: replaces known secrets (by default <see cref="SampleSecrets.Contract"/>) in every string and
+/// key, and the whole value of a field whose name has 'secret', 'password', 'token' or 'key' in it (any case); it passes
+/// InputRedactorContract.
+/// </summary>
 /// <param name="secrets">The secrets it knows; the contract's samples when none are given.</param>
 public sealed class FakeInputRedactor(params string[] secrets) : IInputRedactor
 {
@@ -26,11 +30,16 @@ public sealed class FakeInputRedactor(params string[] secrets) : IInputRedactor
         var copy = new JsonObject();
         foreach (var (key, value) in obj)
         {
-            copy[Text(key)] = Redact(value);
+            copy[Text(key)] = value is JsonValue && IsSecretName(key) ? JsonValue.Create(Placeholder) : Redact(value);
         }
 
         return copy;
     }
+
+    private static bool IsSecretName(string name) =>
+        _secretWords.Any(word => name.Contains(word, StringComparison.OrdinalIgnoreCase));
+
+    private static readonly string[] _secretWords = ["secret", "password", "token", "key"];
 
     private string Text(string text) => _secrets.Aggregate(text, (acc, secret) => acc.Replace(secret, Placeholder, StringComparison.Ordinal));
 }
