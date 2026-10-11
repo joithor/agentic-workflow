@@ -155,6 +155,16 @@ packages:
     bins: [aw-readiness]
     namespace: readiness
     note: "the readiness check of record (decision R4, §8); a standalone NativeAOT CLI before the switch, writing only under readiness/ (§4c)"
+  # Context: the Sindri context retrieval engine (docs/superpowers/specs/2026-10-10-sindri-context-retrieval-design.md
+  # §4). Separable, no Sindri imports; Sindri reaches it through the IContextEngine facade in Aw.Context.Core and
+  # composes it with a compose edge. Its state lives in Sindri's app home ($AW_SINDRI_HOME/context/), passed in by Sindri.
+  - id: Context
+    kind: package
+    tier: 1
+    projectPrefix: Aw.Context
+    ts: null
+    src: src/Context
+    note: "context retrieval engine: product graph, source adapters, query planner (context spec §4); the package lands in stage S-1A"
 
   # ---- tier 2 ----
   - id: Scorer
@@ -367,6 +377,14 @@ edges:
     kind: project
     status: current
     note: "the aw-readiness host starts Kernel telemetry in Compose (§4b.4)"
+  # Context's tier-0 edges (context spec §4: Aw.Kernel, Aw.Kernel.Data, Redaction). Stage S-FX declares the Kernel one,
+  # which its test support (tests/Aw.Context.Testing, AwJson for the fixture files) already needs; S-1A flips it to
+  # current with the package's own projects and adds the other two.
+  - from: Context
+    to: Kernel
+    kind: project
+    status: planned
+    note: "Result, AwJson, IService; Aw.Context.Testing reads the fixture's history and probes through AwJson"
   - from: Scorer
     to: Kernel
     kind: project
