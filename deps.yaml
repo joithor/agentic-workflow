@@ -15,12 +15,13 @@
 #           SQLite file, read-only), file (shared state files) or compose (a Host references a lower-tier
 #           package's Features and Infrastructure projects to call their public Add…() registration methods
 #           and nothing else: DEPS-COMPOSE-001 here, ARCH-COMPOSE-001 in tests/Aw.Architecture.Tests; context
-#           spec §4). A compose edge sits beside a project edge to the same package, so fan-out still counts
-#           it. status: current edges exist in the source
-#           today; planned edges are allowed but not built yet. Both directions are checked: a current edge
+#           spec §4). A compose edge sits beside a project edge to the same package, so fan-out counts
+#           the package through that project edge. status: current edges exist in the source today;
+#           planned edges are allowed but not built yet. Both directions are checked: a current edge
 #           the scan can't find, and a planned edge it does find, both fail. Adding an edge is a reviewed
 #           change to this file.
-# rules     Nothing depends on a shell or mod node. Project and compose edges point strictly down the tiers; `sublevel`
+# rules     Nothing depends on a shell or mod node. Project and compose edges point strictly down the
+#           tiers (a compose edge never into tier 0, which has no Features or Infrastructure); `sublevel`
 #           orders the kernel family inside tier 0 and is allowed on tier 0 only. db and file edges point
 #           down or across, never up; cli edges may point anywhere (a contract, §4b.1a). No cycles across
 #           any kind. Fan-out (§4b.1a): limits.packageFanOut caps the packages one package declares project
@@ -29,15 +30,16 @@
 #           exempt). Only the fan-out rules take exceptions, each with a reason, at most
 #           limits.exceptionMaxDays long, and an exception that suppresses nothing fails. A DEPS-FANOUT-001
 #           exception may name the project edge it is attached to (`edge: <to>`): it then covers that one edge
-#           only, and fails (DEPS-EXC-004) when the edge isn't declared.
+#           only, and fails (DEPS-EXC-004) when the edge isn't declared or points into test support.
 # C# names  A project belongs to the package whose projectPrefix starts its name (longest wins), e.g.
 #           src/Judge/Aw.Judge.Core and tests/Aw.Judge.Tests both belong to Judge. Another package is
 #           reached only through its Core project (Aw.<Pkg>.Core) or a tier-0 package's library projects
 #           (never a Host, Infrastructure, Features or App); anything else fails DEPS-PROJ-007 (§4b.1a
-#           "only through their Core contracts"). The one carve-out: a *.Host project may reference a
-#           compose target's Features and Infrastructure projects (without the compose edge that is
-#           DEPS-COMPOSE-001); those references also make the compose edge current. The reference sits in Features (App in the small shape)
-#           or Host: Core and Infrastructure use tier-0 packages only (DEPS-PROJ-008, §4b.1). Which tier-0
+#           "only through their Core contracts"). A Core reference sits in Features (App in the small shape)
+#           or Host: Core and Infrastructure use tier-0 packages only (DEPS-PROJ-008, §4b.1). The one
+#           carve-out: a *.Host project may reference a compose target's Features and Infrastructure
+#           projects (without the compose edge that is DEPS-COMPOSE-001). Those references make the compose
+#           edge current; the project edge beside it is current only through a Core reference. Which tier-0
 #           package Core and Features may use (Aw.Kernel only, not Aw.Kernel.Data, Telemetry or Redaction)
 #           is ARCH-DIR-005 in tests/Aw.Architecture.Tests.
 #           Test code is every project under tests/, plus any project named *.Tests or *.Testing (also

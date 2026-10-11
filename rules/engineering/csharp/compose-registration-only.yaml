@@ -11,7 +11,7 @@ checks:
   - type: check-deps
     id: "DEPS-COMPOSE-001"
     status: active
-    note: "the declared graph: a compose edge needs a project edge beside it; a Host reference into another package's Features or Infrastructure needs a compose edge (any other project doing it is DEPS-PROJ-007); tier and staleness as for project edges"
+    note: "the declared graph: a compose edge needs a project edge beside it and never points into tier 0; a Host reference into another package's Features or Infrastructure needs a compose edge (any other project doing it is DEPS-PROJ-007); tier and staleness as for project edges, and only a Core reference makes the project edge current"
   - type: archunit
     id: "ARCH-COMPOSE-001"
     status: active

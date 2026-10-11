@@ -307,7 +307,7 @@
             "file",
             "compose"
           ],
-          "description": "project = a C# ProjectReference to the other package's Core; compose = a Host's ProjectReference to a lower-tier package's Features and Infrastructure, for their public Add…() registration methods only (DEPS-COMPOSE-001, ARCH-COMPOSE-001; needs a project edge beside it); cli, db, file as described in deps.yaml."
+          "description": "project = a C# ProjectReference to the other package's Core (or a tier-0 package's library projects); compose = a Host's ProjectReference to a lower-tier, non-tier-0 package's Features and Infrastructure, for their public Add…() registration methods only (DEPS-COMPOSE-001, ARCH-COMPOSE-001; needs a project edge beside it, which only a Core reference makes current); cli, db, file as described in deps.yaml."
         },
         "status": {
           "enum": [
@@ -347,7 +347,7 @@
         },
         "edge": {
           "$ref": "#/$defs/id",
-          "description": "DEPS-FANOUT-001 only: the package of the declared project edge (subject -> edge) this exception is attached to. It then covers that one edge: the fan-out without it must be within the limit (DEPS-EXC-004 when no such edge is declared)."
+          "description": "DEPS-FANOUT-001 only: the package of the declared project edge (subject -> edge) this exception is attached to. It then covers that one edge: the fan-out without it must be within the limit. DEPS-EXC-004 when no such edge is declared or it points into a test-support package (fan-out never counts those)."
         },
         "reason": {
           "type": "string",
