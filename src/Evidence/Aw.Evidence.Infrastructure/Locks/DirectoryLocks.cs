@@ -133,7 +133,7 @@ internal sealed class DirectoryLocks(LockSettings settings, TimeProvider clock, 
         {
             File.WriteAllText(Path.Combine(directory, OwnerFile), owner);
         }
-        catch (IOException)
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
         {
             // The owner line is for people reading a stuck lock; the lock itself is the directory, already held.
         }

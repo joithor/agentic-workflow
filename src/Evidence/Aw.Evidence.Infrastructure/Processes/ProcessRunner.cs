@@ -34,10 +34,27 @@ internal static class ProcessRunner
         {
             return await CollectAsync(process, standardInput, limit.Token).ConfigureAwait(false);
         }
-        catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)
+        catch (OperationCanceledException)
+        {
+            Kill(process);   // on a timeout and on Ctrl-C alike: never leave docker exec / psql behind
+            if (cancellationToken.IsCancellationRequested)
+            {
+                throw;
+            }
+
+            return failure.With(string.Create(CultureInfo.InvariantCulture, $"{command[0]} did not finish within {timeout.TotalSeconds:0} s"));
+        }
+    }
+
+    private static void Kill(Process process)
+    {
+        try
         {
             process.Kill(entireProcessTree: true);
-            return failure.With(string.Create(CultureInfo.InvariantCulture, $"{command[0]} did not finish within {timeout.TotalSeconds:0} s"));
+        }
+        catch (InvalidOperationException)
+        {
+            // It already exited.
         }
     }
 

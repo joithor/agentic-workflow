@@ -29,17 +29,25 @@ internal sealed class FileRunFiles : IRunFiles
     public async ValueTask<Result<Unit>> WriteAsync(string path, ReadOnlyMemory<byte> content, CancellationToken cancellationToken)
     {
         var temporary = string.Create(CultureInfo.InvariantCulture, $"{path}.{Environment.ProcessId}.{Guid.NewGuid():N}.tmp");
+        var moved = false;
         try
         {
             _ = Directory.CreateDirectory(Path.GetDirectoryName(path) ?? ".");
             await File.WriteAllBytesAsync(temporary, content, cancellationToken).ConfigureAwait(false);
             File.Move(temporary, path, overwrite: true);
+            moved = true;
             return Results.Ok();
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
         {
-            File.Delete(temporary);
             return Unavailable("write", path, ex);
+        }
+        finally
+        {
+            if (!moved)
+            {
+                DeleteQuietly(temporary);   // a failed or cancelled write leaves no .tmp behind
+            }
         }
     }
 
@@ -73,4 +81,16 @@ internal sealed class FileRunFiles : IRunFiles
 
     private static Error Unavailable(string verb, string path, Exception ex) =>
         EvidenceErrors.FileUnavailable.With($"can't {verb} {path}: {ex.Message}");
+
+    private static void DeleteQuietly(string path)
+    {
+        try
+        {
+            File.Delete(path);
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            // Nothing to clean up (its directory was never made), or not ours to remove.
+        }
+    }
 }

@@ -25,6 +25,20 @@ public sealed class DirectoryLocksTests : IDisposable
     }
 
     [Fact]
+    public async Task Release_leaves_a_slot_another_holder_took_after_ours_was_removed_by_hand()
+    {
+        var settings = LockTestEnvironment.Settings(_root);
+        var lease = (await LockTestEnvironment.Locks(_root).AcquireAsync(LockKind.QaStack, TimeSpan.Zero, TestContext.Current.CancellationToken)).Value;
+        Directory.Delete(settings.QaStack, recursive: true);   // a person "clears a stuck lock" that wasn't stuck
+        _ = Directory.CreateDirectory(settings.QaStack);
+        await File.WriteAllTextAsync(Path.Combine(settings.QaStack, "owner"), "1 2026-10-10T12:00:00Z heavy\n", TestContext.Current.CancellationToken);
+
+        await lease.DisposeAsync();
+
+        Assert.True(File.Exists(Path.Combine(settings.QaStack, "owner")), "the other holder keeps its lock");
+    }
+
+    [Fact]
     public async Task A_waiter_says_once_which_lock_it_waits_on()
     {
         var notices = new StringWriter();

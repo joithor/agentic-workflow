@@ -35,13 +35,25 @@ internal sealed class PlaywrightBrowser : IBrowser, IAsyncDisposable, IDisposabl
     /// <inheritdoc/>
     public async ValueTask DisposeAsync()
     {
-        foreach (var browser in _browsers.Values)
+        try
         {
-            await browser.CloseAsync().ConfigureAwait(false);
+            foreach (var browser in _browsers.Values)
+            {
+                try
+                {
+                    await browser.CloseAsync().ConfigureAwait(false);
+                }
+                catch (PlaywrightException)
+                {
+                    // Already crashed or disconnected; close the others and stop the driver anyway.
+                }
+            }
         }
-
-        _playwright?.Dispose();
-        _gate.Dispose();
+        finally
+        {
+            _playwright?.Dispose();
+            _gate.Dispose();
+        }
     }
 
     /// <inheritdoc/>

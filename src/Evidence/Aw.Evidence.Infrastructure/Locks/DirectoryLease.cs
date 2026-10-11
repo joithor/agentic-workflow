@@ -2,7 +2,11 @@ using Aw.Evidence.Core.Locks;
 
 namespace Aw.Evidence.Infrastructure.Locks;
 
-/// <summary>A held lock directory. Release deletes the owner file this process wrote, then the directory; twice is harmless.</summary>
+/// <summary>
+/// A held lock directory. Release deletes the owner file this process wrote, then the directory; twice is harmless. A
+/// directory whose owner line names another process is left alone: someone removed ours by hand and another holder
+/// took the slot.
+/// </summary>
 internal sealed class DirectoryLease(LockKind kind, string? directory) : ILockLease
 {
     private int _released;
@@ -16,16 +20,22 @@ internal sealed class DirectoryLease(LockKind kind, string? directory) : ILockLe
     public IReadOnlyList<LockKind> Held { get; } = [kind];
 
     /// <inheritdoc/>
-    public ValueTask DisposeAsync()
+    public async ValueTask DisposeAsync()
     {
         if (directory is null || Interlocked.Exchange(ref _released, 1) == 1)
         {
-            return ValueTask.CompletedTask;
+            return;
         }
 
         try
         {
-            File.Delete(Path.Combine(directory, DirectoryLocks.OwnerFile));
+            var owner = Path.Combine(directory, DirectoryLocks.OwnerFile);
+            if (File.Exists(owner) && !IsOurs(await File.ReadAllTextAsync(owner).ConfigureAwait(false)))
+            {
+                return;
+            }
+
+            File.Delete(owner);
             Directory.Delete(directory, recursive: false);
         }
         catch (IOException)
@@ -36,7 +46,8 @@ internal sealed class DirectoryLease(LockKind kind, string? directory) : ILockLe
         {
             // Not ours to remove; same as above.
         }
-
-        return ValueTask.CompletedTask;
     }
+
+    private static bool IsOurs(string ownerLine) =>
+        ownerLine.Split(' ', 2)[0] == Environment.ProcessId.ToString(System.Globalization.CultureInfo.InvariantCulture);
 }
