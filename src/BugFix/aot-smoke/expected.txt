@@ -1,0 +1,27 @@
+## init --state <tmp>/state --ticket <tmp>/ticket.json
+{"state":"<tmp>/state/state.json"}
+## advance investigate --state <tmp>/state --evidence <tmp>/handoff.md
+{"phase":"investigate","hypotheses":1}
+## run-test --state <tmp>/state --check tests/bug.test.sh -- bash tests/bug.test.sh
+{"evidence":"<tmp>/state/runs/<stamp>-test-1.json","outcome":"failed","exitCode":1,"commit":"<sha>"}
+## advance reproduce --state <tmp>/state --evidence <tmp>/state/runs/<stamp>-test-1.json --check tests/bug.test.sh
+{"phase":"reproduce","check":"tests/bug.test.sh","baselineCommit":"<sha>"}
+## start-attempt --state <tmp>/state --mode A
+{"phase":"fix","attempt":1,"mode":"A"}
+## record-candidate --state <tmp>/state --branch fix-a1 --cwd <tmp>/a1
+{"candidate":"c1","commit":"<sha>","changedFiles":["src/app.txt"]}
+## run-test --state <tmp>/state --check tests/bug.test.sh --cwd <tmp>/a1 -- bash tests/bug.test.sh
+{"evidence":"<tmp>/state/runs/<stamp>-test-1.json","outcome":"passed","exitCode":0,"commit":"<sha>"}
+## record-run c1 --state <tmp>/state --evidence <tmp>/state/runs/<stamp>-test-1.json
+{"candidate":"c1","passed":true,"next":"judge c1"}
+## judge c1 --state <tmp>/state
+refused: judge resolution-check isn't wired into the C# bugfix-state yet (it waits on the C# judge CLI contract, docs/csharp/judge.md); no verdict recorded (AW-BUGFIX-016)
+exit 3
+## advance report --state <tmp>/state --unresolved
+{"phase":"report","status":"unresolved","candidate":null}
+## resume --state <tmp>/state
+{"phase":"report","status":"unresolved","attempt":1,"next":"done (unresolved); write resolution.md if not written"}
+## start-attempt --state <tmp>/state --mode Z
+usage: --mode must be A, B or C (got "Z")
+start-attempt --state <dir> --mode <A|B|C>
+exit 2
