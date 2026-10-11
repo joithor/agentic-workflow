@@ -8,6 +8,4 @@ namespace Aw.Sindri.Ui.Tests.Platform;
 public sealed class InMemoryPreferencesStoreContractTests : PreferencesStoreContract
 {
     protected override IPreferencesStore Create() => new InMemoryPreferencesStore();
-
-    protected override void WriteRaw(IPreferencesStore store, byte[] bytes) => ((InMemoryPreferencesStore)store).WriteRaw(bytes);
 }

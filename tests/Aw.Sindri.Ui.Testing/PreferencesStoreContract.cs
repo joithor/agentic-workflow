@@ -1,9 +1,11 @@
-using System.Text;
 using Aw.Sindri.Ui.Platform;
 
 namespace Aw.Sindri.Ui.Testing;
 
-/// <summary>The contract every <see cref="IPreferencesStore"/> passes: the in-memory one, and the desktop file store over a temp directory.</summary>
+/// <summary>
+/// The contract every <see cref="IPreferencesStore"/> passes: the in-memory one, and the desktop file store over a temp
+/// directory (whose own tests add the 0600 mode and the temp-file-and-rename write).
+/// </summary>
 public abstract class PreferencesStoreContract
 {
     private static CancellationToken Token => TestContext.Current.CancellationToken;
@@ -12,73 +14,42 @@ public abstract class PreferencesStoreContract
     /// <returns>The store.</returns>
     protected abstract IPreferencesStore Create();
 
-    /// <summary>Puts raw bytes where <paramref name="store"/> keeps its preferences (a damaged or foreign file).</summary>
-    /// <param name="store">A store from <see cref="Create"/>.</param>
-    /// <param name="bytes">The bytes.</param>
-    protected abstract void WriteRaw(IPreferencesStore store, byte[] bytes);
-
-    private static UiPreferences Sample => UiPreferences.Defaults with
-    {
-        Window = new WindowBounds(40, 60, 1280, 800),
-        SheetWidth = 600,
-        LastPage = "Queue",
-        SeenIds = ["nyr-1", "nyr-2"],
-        PaletteHistory = ["Rebuild views"],
-        TextScale = 1.2,
-        ReduceMotion = true,
-    };
+    [Fact]
+    public async Task Nothing_stored_reads_as_null() => Expect.True(await Create().Read(Token) is null);
 
     [Fact]
-    public async Task Nothing_stored_reads_as_the_defaults() => Expect.Equal(UiPreferences.Defaults, await Create().Read(Token));
-
-    [Fact]
-    public async Task What_is_written_reads_back()
+    public async Task What_is_written_reads_back_byte_for_byte()
     {
         var store = Create();
+        byte[] contents = [.. """{"version":1,"lastPage":"Queue"}"""u8];
 
-        await store.Write(Sample, Token);
+        await store.Write(contents, Token);
 
-        Expect.Equal(Sample, await store.Read(Token));
+        Expect.Sequence(contents, await store.Read(Token));
     }
 
     [Fact]
-    public async Task A_second_write_replaces_the_first()
+    public async Task A_second_write_replaces_the_first_whole()
     {
         var store = Create();
 
-        await store.Write(Sample, Token);
-        await store.Write(UiPreferences.Defaults with { LastPage = "Health" }, Token);
+        await store.Write([.. """{"version":1,"lastPage":"Queue","seenIds":["a","b","c"]}"""u8], Token);
+        await store.Write([.. "{}"u8], Token);
 
-        Expect.Equal(UiPreferences.Defaults with { LastPage = "Health" }, await store.Read(Token));
+        Expect.Sequence([.. "{}"u8], await store.Read(Token));
     }
 
     [Fact]
-    public async Task Values_out_of_range_read_clamped()
+    public async Task Any_bytes_round_trip_the_app_parses_them_not_the_store()
     {
         var store = Create();
+        byte[] damaged = [.. "{ not json"u8, 0xff, 0x00];
 
-        await store.Write(Sample with { Window = new WindowBounds(0, 0, 300, 200), SheetWidth = 2000, TextScale = 9, LastPage = "Nowhere" }, Token);
+        await store.Write(damaged, Token);
 
-        var read = await store.Read(Token);
-        Expect.Equal(new WindowBounds(0, 0, UiPreferences.MinWidth, UiPreferences.MinHeight), read.Window);
-        Expect.Equal((UiPreferences.MaxSheetWidth, UiPreferences.MaxTextScale, UiPreferences.DefaultPage), (read.SheetWidth, read.TextScale, read.LastPage));
+        Expect.Sequence(damaged, await store.Read(Token));
     }
 
     [Fact]
-    public async Task A_malformed_file_reads_as_the_defaults()
-    {
-        var store = Create();
-        WriteRaw(store, Encoding.UTF8.GetBytes("{ not json"));
-
-        Expect.Equal(UiPreferences.Defaults, await store.Read(Token));
-    }
-
-    [Fact]
-    public async Task A_file_of_another_version_reads_as_the_defaults()
-    {
-        var store = Create();
-        WriteRaw(store, Encoding.UTF8.GetBytes("""{"version":2,"sheetWidth":600,"lastPage":"Queue","seenIds":[],"paletteHistory":[],"textScale":1.1,"reduceMotion":true}"""));
-
-        Expect.Equal(UiPreferences.Defaults, await store.Read(Token));
-    }
+    public void It_names_where_it_keeps_them() => Expect.True(!string.IsNullOrWhiteSpace(Create().Location));
 }

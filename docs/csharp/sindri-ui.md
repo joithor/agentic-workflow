@@ -53,14 +53,15 @@ takes the ring, the darker primary hover and pressed fills, and `semantic-error`
 | `IMotionPreference` (`ReduceMotion`, `Changed`) | macOS `NSWorkspace`, Windows `SPI_GETCLIENTAREAANIMATION`, GNOME `enable-animations`; bound over a drivable OS seam | `MotionPreferenceContract` |
 | `ISingleInstance` (`TryClaim`, `Send`, `Messages`; `InstanceMessages.Focus`, `MaxLength` 512) | A local channel only the user can open, under `$AW_SINDRI_HOME/ui/`. A message only navigates: the app reads it as a `DeepLink` and ignores anything else | `SingleInstanceContract` |
 | `ITray` (`Show(TrayView)`, `Shown`, `OpenRequested`, `QuitRequested`; `TrayState` Neutral, NotRunning, Stale) | Avalonia `TrayIcon`; menu labels escape `_` | `TrayContract` |
-| `IPreferencesStore` (`Read`, `Write` of `UiPreferences`) | `$AW_SINDRI_HOME/ui/preferences.json`, 0600, temp file and rename | `PreferencesStoreContract` |
+| `IPreferencesStore` (`Location`, `Read`/`Write` of the bytes, like the endpoint record) | `$AW_SINDRI_HOME/ui/preferences.json`, 0600, temp file and rename | `PreferencesStoreContract` |
 
 A head hands its adapters to `SindriApp.Create(SindriPlatform, TimeProvider)` (`SindriPlatform` bundles them, so a
 new port doesn't change the signature).
 
 **Preferences** (§12.3) are `UiPreferences`: `version` (1), `window` (x, y, width, height), `sheetWidth`, `lastPage`,
-`seenIds`, `paletteHistory`, `textScale`, `reduceMotion`, camelCase JSON. Every store parses and writes with
-`UiPreferences.FromJson` / `ToJson`, so clamping is the same everywhere: the window grows to 900 × 600 (bounds that
+`seenIds`, `paletteHistory`, `textScale`, `reduceMotion`, camelCase JSON. A head's store only moves bytes; the app's
+`ViewModels/Preferences` (`Load`, `Save`) parses and writes them through `Api/PreferencesJson`, so clamping is the same
+on every head: the window grows to 900 × 600 (bounds that
 aren't finite are dropped), the sheet is 420–760, the scale 0.9–1.3, an unknown page reads as Home, and the id lists
 drop blanks and repeats and keep their newest 500 and 20. A malformed file, or one of another version, reads as the
 defaults.

@@ -5,4 +5,4 @@ namespace Aw.Sindri.Ui.Platform;
 /// <param name="Y">Top edge.</param>
 /// <param name="Width">Width (at least <see cref="UiPreferences.MinWidth"/>).</param>
 /// <param name="Height">Height (at least <see cref="UiPreferences.MinHeight"/>).</param>
-public sealed record WindowBounds(double X, double Y, double Width, double Height);
+internal sealed record WindowBounds(double X, double Y, double Width, double Height);

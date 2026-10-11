@@ -1,20 +1,23 @@
 namespace Aw.Sindri.Ui.Platform;
 
 /// <summary>
-/// Port: the app's local preferences (UI spec §12.3; on a desktop $AW_SINDRI_HOME/ui/preferences.json, 0600, written to a
-/// temp file and renamed). Nothing in them changes what the API decides. A store parses and writes with
-/// <see cref="UiPreferences.FromJson"/> and <see cref="UiPreferences.ToJson"/>, so every head clamps and resets the same way.
+/// Port: where the app keeps its local preferences (UI spec §12.3; on a desktop $AW_SINDRI_HOME/ui/preferences.json,
+/// 0600). Like the endpoint record, a head only moves bytes: the app parses, clamps and resets them (an unreadable file
+/// reads as the defaults), so every head behaves the same. Nothing in them changes what the API decides.
 /// </summary>
 public interface IPreferencesStore
 {
-    /// <summary>Reads the preferences: clamped, and <see cref="UiPreferences.Defaults"/> when there are none or they are malformed.</summary>
-    /// <param name="cancellationToken">Cancels the read.</param>
-    /// <returns>The preferences.</returns>
-    public ValueTask<UiPreferences> Read(CancellationToken cancellationToken);
+    /// <summary>Where the preferences are kept, for messages (a path on a desktop).</summary>
+    public string Location { get; }
 
-    /// <summary>Replaces the preferences atomically (a reader sees the old file or the new one, never part of one).</summary>
-    /// <param name="preferences">The preferences.</param>
+    /// <summary>Reads the stored bytes.</summary>
+    /// <param name="cancellationToken">Cancels the read.</param>
+    /// <returns>The bytes, or null when nothing is stored.</returns>
+    public ValueTask<byte[]?> Read(CancellationToken cancellationToken);
+
+    /// <summary>Replaces the stored bytes atomically (a reader sees the old contents or the new, never part of one), readable by the user only.</summary>
+    /// <param name="contents">The new contents.</param>
     /// <param name="cancellationToken">Cancels the write.</param>
     /// <returns>A task that completes when they are written.</returns>
-    public ValueTask Write(UiPreferences preferences, CancellationToken cancellationToken);
+    public ValueTask Write(byte[] contents, CancellationToken cancellationToken);
 }

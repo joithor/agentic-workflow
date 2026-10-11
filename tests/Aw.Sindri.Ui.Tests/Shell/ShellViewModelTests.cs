@@ -188,7 +188,7 @@ public sealed class ShellViewModelTests
     {
         Shell().GoTo(PageId.Decisions);
 
-        Assert.Equal("Decisions", (await _preferences.Read(Token)).LastPage);
+        Assert.Equal("Decisions", (await new Preferences(_preferences).Load(Token)).LastPage);
         Assert.Equal(PageId.Decisions, Shell().CurrentPage);
     }
 }

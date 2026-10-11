@@ -1,4 +1,6 @@
-namespace Aw.Sindri.Ui.Platform;
+using Aw.Sindri.Ui.Platform;
+
+namespace Aw.Sindri.Ui.Api;
 
 /// <summary>
 /// preferences.json as written (UI spec §12.3): <see cref="UiPreferences"/> with every field but the version optional, so

@@ -1,6 +1,7 @@
 using System.Text;
 using System.Text.Json;
 using Aw.Kernel.Testing;
+using Aw.Sindri.Ui.Api;
 using Aw.Sindri.Ui.Platform;
 
 namespace Aw.Sindri.Ui.Tests.Platform;
@@ -22,7 +23,7 @@ public sealed class UiPreferencesTests
     [Fact]
     public void The_file_is_camel_case_json_with_a_version()
     {
-        var json = Encoding.UTF8.GetString((UiPreferences.Defaults with { Window = new WindowBounds(1, 2, 1000, 700), SeenIds = ["a"] }).ToJson());
+        var json = Encoding.UTF8.GetString(PreferencesJson.Write(UiPreferences.Defaults with { Window = new WindowBounds(1, 2, 1000, 700), SeenIds = ["a"] }));
 
         using var doc = JsonDocument.Parse(json);
         var root = doc.RootElement;
@@ -41,7 +42,7 @@ public sealed class UiPreferencesTests
     {
         var prefs = UiPreferences.Defaults with { Window = new WindowBounds(-10, 20, 1440, 900), SheetWidth = 700, LastPage = "Settings", SeenIds = ["r1", "r2"], PaletteHistory = ["Health"], TextScale = 0.9, ReduceMotion = true };
 
-        Assert.Equal(prefs, UiPreferences.FromJson(prefs.ToJson()));
+        Assert.Equal(prefs, PreferencesJson.Read(PreferencesJson.Write(prefs)));
     }
 
     [Theory]
@@ -53,13 +54,13 @@ public sealed class UiPreferencesTests
     [InlineData("""{"version":0,"sheetWidth":600,"lastPage":"Queue","seenIds":[],"paletteHistory":[],"textScale":1,"reduceMotion":false}""")]
     [InlineData("""{"version":2,"sheetWidth":600,"lastPage":"Queue","seenIds":[],"paletteHistory":[],"textScale":1,"reduceMotion":false}""")]
     public void A_malformed_or_foreign_file_reads_as_the_defaults(string text) =>
-        Assert.Equal(UiPreferences.Defaults, UiPreferences.FromJson(Encoding.UTF8.GetBytes(text)));
+        Assert.Equal(UiPreferences.Defaults, PreferencesJson.Read(Encoding.UTF8.GetBytes(text)));
 
     [Fact]
     public void Missing_lists_read_as_empty() =>
         Assert.Equal(
             UiPreferences.Defaults with { LastPage = "Queue" },
-            UiPreferences.FromJson("""{"version":1,"sheetWidth":520,"lastPage":"Queue","textScale":1,"reduceMotion":false}"""u8));
+            PreferencesJson.Read("""{"version":1,"sheetWidth":520,"lastPage":"Queue","textScale":1,"reduceMotion":false}"""u8));
 
     [Theory]
     [InlineData(300, 200, 900, 600)]
