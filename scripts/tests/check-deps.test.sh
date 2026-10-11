@@ -555,7 +555,8 @@ expect "an attached exception covers its one edge, not a wider fan-out" 1 "DEPS-
 
 d="$(fixture fanout-attached-test)"; perl -0pi -e 's/(  - id: Alpha\n)/  - id: KTest\n    kind: package\n    tier: 0\n    sublevel: 2\n    test: true\n    projectPrefix: Aw.KTest\n    ts: null\n    src: tests\/Aw.KTest.Testing\n    note: test support\n$1/' "$d/deps.yaml"
 edge "$d" Delta KTest project planned; exc "$d" Delta KTest; run "$d"
-expect "an exception attached to an edge into test support (which fan-out never counts) fails" 1 "DEPS-EXC-004" "Delta -> KTest (project)"
+expect "an exception attached to an edge into test support (which fan-out never counts) fails" 1 "DEPS-EXC-004" "exception attached to an edge fan-out doesn't count" "Delta -> KTest goes into test support"
+refuse "  ... without claiming the declared edge is missing" "isn't declared"
 
 d="$(fixture fanout-attached-within)"; edge "$d" Beta Alpha project planned; exc "$d" Beta Alpha; run "$d"
 expect "an attached exception within the limit suppresses nothing, with the plain measurement" 1 "DEPS-EXC-002" "Beta has 2 project edges (Alpha, Kernel)"

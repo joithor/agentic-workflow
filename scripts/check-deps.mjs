@@ -139,7 +139,9 @@ export function check(root, today = new Date().toISOString().slice(0, 10)) {
       continue;
     }
     if (x.expires < today) { fail("DEPS-EXC-001", "expired exception", `${x.rule} for ${x.subject} expired ${x.expires} (today ${today})`, "an exception is valid until its expires date", "fix the violation, or renew the exception in a reviewed PR with a new reason and dates"); continue; }
-    if (x.edge && (!seenEdges.has(`${x.subject}|${x.edge}|project`) || byId.get(x.edge)?.test)) { fail("DEPS-EXC-004", "exception attached to an edge that isn't declared", `${x.rule} for ${x.subject}: no ${x.subject} -> ${x.edge} (project) edge`, "an exception's edge names a declared project edge from its subject to a package fan-out counts (not test support)", `declare (from: ${x.subject}, to: ${x.edge}, kind: project), or fix the exception's edge`); continue; }
+    const attachLimit = "an exception's edge names a declared project edge from its subject to a package fan-out counts (not test support)";
+    if (x.edge && !seenEdges.has(`${x.subject}|${x.edge}|project`)) { fail("DEPS-EXC-004", "exception attached to an edge that isn't declared", `${x.rule} for ${x.subject}: no ${x.subject} -> ${x.edge} (project) edge`, attachLimit, `declare (from: ${x.subject}, to: ${x.edge}, kind: project), or fix the exception's edge`); continue; }
+    if (x.edge && byId.get(x.edge)?.test) { fail("DEPS-EXC-004", "exception attached to an edge fan-out doesn't count", `${x.rule} for ${x.subject}: ${x.subject} -> ${x.edge} goes into test support`, attachLimit, `delete the exception's edge: fan-out never counts ${x.edge}`); continue; }
     active.push({ ...x, used: false, measured: null });
     info.push(`exception ${x.rule} ${x.subject} (expires ${x.expires}): ${x.reason}`);
   }
@@ -153,29 +155,27 @@ export function check(root, today = new Date().toISOString().slice(0, 10)) {
   };
   const measure = (rule, subject, measured) => { for (const x of active) if (x.rule === rule && x.subject === subject && !x.used) x.measured = measured; };
 
-  // ---- kinds and tiers ----
-  const misplaced = new Set(); // compose edges a kind or tier rule already failed: no DEPS-COMPOSE-001 on top
-  for (const e of edges) {
-    const a = byId.get(e.from);
-    const b = byId.get(e.to);
-    const before = fails.length;
-    kindsAndTiers(e, a, b);
-    if (e.kind === "compose" && fails.length > before) misplaced.add(edgeKey(e));
-  }
+  // Every kind and tier rule for one edge; true when one failed it.
   function kindsAndTiers(e, a, b) {
+    let bad = false;
+    const flag = (...args) => { bad = true; fail(...args); };
     if (b.kind !== "package") {
-      fail("DEPS-KIND-002", "edge into a shell or mod node", edgeText(e), `shell and mod nodes only consume packages; nothing depends on them (${e.to} is ${b.kind})`, `move the shared state or contract into a package and point the edge the other way (${e.to} -> <package>)`);
-      return;
+      flag("DEPS-KIND-002", "edge into a shell or mod node", edgeText(e), `shell and mod nodes only consume packages; nothing depends on them (${e.to} is ${b.kind})`, `move the shared state or contract into a package and point the edge the other way (${e.to} -> <package>)`);
+      return bad;
     }
     if (a.kind !== "package") {
-      if (linked(e.kind)) fail("DEPS-KIND-001", `${e.kind} edge outside the C# packages`, edgeText(e), `project and compose edges connect kind: package nodes (${e.from} is ${a.kind})`, `change the edge to kind: cli or file in deps.yaml`);
-      return;
+      if (linked(e.kind)) flag("DEPS-KIND-001", `${e.kind} edge outside the C# packages`, edgeText(e), `project and compose edges connect kind: package nodes (${e.from} is ${a.kind})`, `change the edge to kind: cli or file in deps.yaml`);
+      return bad;
     }
-    if (e.kind === "compose" && b.tier === 0) fail("DEPS-COMPOSE-001", "compose edge into a tier-0 package", edgeText(e), "a tier-0 package has no Features or Infrastructure to compose; its library projects are used whole through a project edge", "delete the compose edge; reference the tier-0 library projects under the project edge");
-    if (linked(e.kind) && b.test && !a.test) fail("DEPS-KIND-003", `${e.kind} edge from production code into a test-support package`, edgeText(e), "only test projects reference test-support packages, and they need no declared edge", `delete the edge from deps.yaml and move the reference into ${e.from}'s *.Tests project`);
-    if (linked(e.kind) && rank(a) <= rank(b)) fail("DEPS-TIER-001", `${e.kind} edge does not point to a lower tier`, `${e.from} (${tierLabel(a)}) -> ${e.to} (${tierLabel(b)})`, `a ${e.kind} edge points strictly down the tiers (§4b.1a)`, `change it to kind: cli and call ${e.to}'s CLI, or move the shared code down a tier`);
-    if ((e.kind === "db" || e.kind === "file") && rank(a) < rank(b)) fail("DEPS-TIER-002", `${e.kind} edge points to a higher tier`, `${e.from} (${tierLabel(a)}) -> ${e.to} (${tierLabel(b)})`, "db and file edges point down or across, never up", `replace it with (from: ${e.from}, to: ${e.to}, kind: cli) and ask ${e.to}'s CLI`);
+    if (e.kind === "compose" && b.tier === 0) flag("DEPS-COMPOSE-001", "compose edge into a tier-0 package", edgeText(e), "a tier-0 package has no Features or Infrastructure to compose; its library projects are used whole through a project edge", "delete the compose edge; reference the tier-0 library projects under the project edge");
+    if (linked(e.kind) && b.test && !a.test) flag("DEPS-KIND-003", `${e.kind} edge from production code into a test-support package`, edgeText(e), "only test projects reference test-support packages, and they need no declared edge", `delete the edge from deps.yaml and move the reference into ${e.from}'s *.Tests project`);
+    if (linked(e.kind) && rank(a) <= rank(b)) flag("DEPS-TIER-001", `${e.kind} edge does not point to a lower tier`, `${e.from} (${tierLabel(a)}) -> ${e.to} (${tierLabel(b)})`, `a ${e.kind} edge points strictly down the tiers (§4b.1a)`, `change it to kind: cli and call ${e.to}'s CLI, or move the shared code down a tier`);
+    if ((e.kind === "db" || e.kind === "file") && rank(a) < rank(b)) flag("DEPS-TIER-002", `${e.kind} edge points to a higher tier`, `${e.from} (${tierLabel(a)}) -> ${e.to} (${tierLabel(b)})`, "db and file edges point down or across, never up", `replace it with (from: ${e.from}, to: ${e.to}, kind: cli) and ask ${e.to}'s CLI`);
+    return bad;
   }
+  // ---- kinds and tiers ----
+  const misplaced = new Set(); // compose edges a kind or tier rule already failed: no DEPS-COMPOSE-001 on top
+  for (const e of edges) if (kindsAndTiers(e, byId.get(e.from), byId.get(e.to)) && e.kind === "compose") misplaced.add(edgeKey(e));
   for (const e of edges.filter((x) => x.kind === "compose" && !misplaced.has(edgeKey(x)) && !seenEdges.has(`${x.from}|${x.to}|project`))) {
     fail("DEPS-COMPOSE-001", "compose edge without a project edge", `${edgeText(e)}: no project edge ${e.from} -> ${e.to}`, "a compose edge sits beside a project edge to the same package, which fan-out counts (DEPS-FANOUT-001 counts project edges only)", `declare the project edge too (the Host and Features reference ${e.to}'s Core):\n${yamlEdge(e.from, e.to, "project", e.status)}`);
   }
