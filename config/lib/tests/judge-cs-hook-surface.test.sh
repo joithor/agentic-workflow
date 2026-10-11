@@ -7,6 +7,11 @@
 # When the TS judge is built (judge/dist/cli.js), every case also runs against it and the two runs
 # must agree on exit codes, stderr and parsed JSON (keys sorted, ids and times masked), so a change on either side that moves the surface fails.
 #
+# A case that expects a pass also expects no fail-open log line: send-gate and scope-gate allow, and done-gate
+# falls back to its evidence check, on any judge failure, so a pass alone can't tell a working judge from a broken one.
+# Two stub `claude` CLIs (one answering 'continue', one exiting 1) reach the branches the offline rules can't: the
+# ask-check continue branch and a degraded health.
+#
 # AW_JUDGE_CS_BIN  a built C# judge (the NativeAOT publish or the JIT apphost). Unset: the test builds
 #                  src/Judge/Aw.Judge.Host in Release into a temp dir first (needs dotnet 10).
 set -euo pipefail
@@ -21,6 +26,8 @@ if [ -z "${AW_JUDGE_CS_BIN:-}" ]; then
   AW_JUDGE_CS_BIN="$WORK/cs-build/judge"
 fi
 [ -x "$AW_JUDGE_CS_BIN" ] || { echo "FAIL: no C# judge at $AW_JUDGE_CS_BIN"; exit 1; }
+# Absolute, so the PATH shim works from whatever directory a hook runs `judge` in.
+AW_JUDGE_CS_BIN="$(cd "$(dirname "$AW_JUDGE_CS_BIN")" && pwd)/$(basename "$AW_JUDGE_CS_BIN")"
 
 SIDES="cs"
 TS_CLI="$ROOT/judge/dist/cli.js"
@@ -32,6 +39,14 @@ printf '#!/usr/bin/env bash\nexec "%s" "$@"\n' "$AW_JUDGE_CS_BIN" > "$WORK/shim-
 printf '#!/usr/bin/env bash\nexec node "%s" "$@"\n' "$TS_CLI" > "$WORK/shim-ts/judge"
 chmod +x "$WORK/shim-cs/judge" "$WORK/shim-ts/judge"
 
+# Stub agent CLIs, each alone in a directory put on PATH (XPATH) for the cases that use it, with
+# AW_JUDGE_PROVIDERS=rules,claude-cli: one answers 'continue' (claude -p's JSON envelope), one fails.
+mkdir -p "$WORK/claude-continue" "$WORK/claude-broken"
+printf '#!/usr/bin/env bash\nprintf %%s %s\n' "'{\"type\":\"result\",\"is_error\":false,\"result\":\"\",\"structured_output\":{\"decision\":\"continue\"}}'" > "$WORK/claude-continue/claude"
+printf '#!/usr/bin/env bash\necho "stub claude: broken" >&2\nexit 1\n' > "$WORK/claude-broken/claude"
+chmod +x "$WORK/claude-continue/claude" "$WORK/claude-broken/claude"
+XPATH=""
+
 export AW_JUDGE_PROVIDERS=rules AW_LOG_LEVEL=none
 unset AW_OUTBOX_DIR AW_TEAMMATE_NAMES_FILE AW_JUDGE_SESSIONS_DIR AW_JUDGE_CHILD 2> /dev/null || true
 
@@ -41,13 +56,13 @@ fresh() { local d="$WORK/state-$1-$2"; rm -rf "$d"; mkdir -p "$d/judge"; echo "$
 # hook <side> <state> <script> <stdin> -> writes $WORK/<case>.<side>.{out,err,rc}
 hook() {
   local side="$1" state="$2" script="$3" input="$4" name="$5" rc=0
-  PATH="$WORK/shim-$side:$PATH" AW_STATE_DIR="$state" bash "$HOOKS/$script" <<< "$input" \
+  PATH="$WORK/shim-$side:${XPATH:+$XPATH:}$PATH" AW_STATE_DIR="$state" bash "$HOOKS/$script" <<< "$input" \
     > "$WORK/$name.$side.out" 2> "$WORK/$name.$side.err" || rc=$?
   echo "$rc" > "$WORK/$name.$side.rc"
 }
 
 # judge <side> <state> args... — the same side's judge, for setup and for reading state back
-judge_on() { local side="$1" state="$2"; shift 2; PATH="$WORK/shim-$side:$PATH" AW_STATE_DIR="$state" judge "$@"; }
+judge_on() { local side="$1" state="$2"; shift 2; PATH="$WORK/shim-$side:${XPATH:+$XPATH:}$PATH" AW_STATE_DIR="$state" judge "$@"; }
 
 # The contract is field names, values and exit codes, not formatting: JSON lines are compared after jq -S
 # (sorted keys, canonical numbers and escapes), with ids and timestamps masked.
@@ -81,6 +96,10 @@ same() {
 
 rc_of() { cat "$WORK/$1.cs.rc"; }
 out_of() { cat "$WORK/$1.cs.out"; }
+err_of() { cat "$WORK/$1.cs.err"; }
+failopen_log() { cat "$WORK/state-cs-$1/logs/failopen.log" 2> /dev/null || true; }
+# no_failopen <case>...: the hook passed because the judge answered, not because it failed open
+no_failopen() { local c; for c in "$@"; do [ -z "$(failopen_log "$c")" ] || fail "$c: the hook failed open: $(failopen_log "$c")"; done; }
 
 # ---- send-gate (wake-gate) ----
 for side in $SIDES; do
@@ -90,8 +109,11 @@ for side in $SIDES; do
 done
 out_of send-urgent | jq -e '.hookSpecificOutput.permissionDecision == "allow"' > /dev/null || fail "send-urgent: expected allow, got $(out_of send-urgent)"
 out_of send-ack | jq -e '.hookSpecificOutput.permissionDecision == "deny"' > /dev/null || fail "send-ack: expected deny (pure ack dropped), got $(out_of send-ack)"
-# rules-only chain: no model decides, the rule fallback says send -> allow
+# rules-only chain: no pre-rule settles it and no model is allowed, so wake-gate escalates (exit 2) and
+# send-gate takes its fail-open path: allow, logging judge-exit-2 (not some other exit: the judge ran).
 out_of send-undecided | jq -e '.hookSpecificOutput.permissionDecision == "allow"' > /dev/null || fail "send-undecided: expected allow, got $(out_of send-undecided)"
+failopen_log send-undecided | grep -q 'judge-exit-2' || fail "send-undecided: expected the escalation's judge-exit-2 fail-open, got '$(failopen_log send-undecided)'"
+no_failopen send-urgent send-ack
 for c in send-urgent send-ack send-undecided; do [ "$(rc_of $c)" = 0 ] || fail "$c: exit $(rc_of $c)"; same $c; done
 
 # ---- scope-gate (brief-scope + brief save) ----
@@ -104,6 +126,10 @@ for side in $SIDES; do
 done
 out_of scope-exempt | jq -e '(.hookSpecificOutput.permissionDecision // "allow") == "allow"' > /dev/null 2>&1 || [ -z "$(out_of scope-exempt)" ] || fail "scope-exempt: expected allow, got $(out_of scope-exempt)"
 out_of scope-empty | jq -e '.hookSpecificOutput.permissionDecision == "deny"' > /dev/null || fail "scope-empty: expected deny, got $(out_of scope-empty)"
+# scope-gate saved the brief through `judge brief save`; read back what the hooks read later.
+jq -e '.toolUseId == "tu-x" and .dispatchName == "scout" and .sessionId == "s1"' "$WORK/scope-exempt.cs.brief" > /dev/null 2>&1 \
+  || fail "scope-exempt: the saved brief isn't tu-x for scout: $(cat "$WORK/scope-exempt.cs.brief")"
+no_failopen scope-exempt scope-empty
 if [ "$SIDES" = "cs ts" ]; then
   # Only what hooks read back from a brief: its id and acceptance criteria (done-gate, done-gate-annotate).
   diff <(jq -S '{toolUseId, acceptanceCriteria}' "$WORK/scope-exempt.cs.brief" 2> /dev/null) <(jq -S '{toolUseId, acceptanceCriteria}' "$WORK/scope-exempt.ts.brief" 2> /dev/null) > /dev/null \
@@ -125,6 +151,7 @@ for side in $SIDES; do
 done
 [ "$(cat "$WORK/map-name.cs.agent")" = agent-1 ] || fail "map-name: agentId $(cat "$WORK/map-name.cs.agent"), expected agent-1"
 [ "$(cat "$WORK/map-dispatch.cs.agent")" = agent-2 ] || fail "map-dispatch: agentId $(cat "$WORK/map-dispatch.cs.agent"), expected agent-2"
+no_failopen map-name map-dispatch
 for c in map-name map-dispatch; do [ "$(rc_of $c)" = 0 ] || fail "$c: exit $(rc_of $c)"; same $c; done
 
 # ---- done-gate-annotate (brief get) ----
@@ -134,31 +161,75 @@ for side in $SIDES; do
   hook "$side" "$s" done-gate-annotate.sh '{"tool_use_id":"tu-c","tool_response":{"result":"Finished: all tests pass (npm test)."}}' annotate
 done
 out_of annotate | jq -e '.hookSpecificOutput.additionalContext | startswith("Brief acceptance criteria plausibly met")' > /dev/null || fail "annotate: got $(out_of annotate)"
+no_failopen annotate
 same annotate
 
 # ---- done-gate (ask-check, brief get task:<sid>) ----
 transcript() { jq -nc --arg t "$2" '{type:"assistant", message:{content:[{type:"text", text:$t}]}}' > "$1"; }
 transcript "$WORK/t-merge.jsonl" "Next I will merge the release branch."
-transcript "$WORK/t-claim.jsonl" "Done — all tests pass, ran npm test."
+transcript "$WORK/t-next.jsonl" "I'll look at the logs next."
+# A claim that meets the brief's criteria in words the no-brief evidence check (RF-2) wouldn't accept, so it
+# passes only if done-gate read the brief; one that misses them; and one with RF-2 evidence for the no-brief case.
+transcript "$WORK/t-meets.jsonl" "Done — all tests pass."
+transcript "$WORK/t-misses.jsonl" "Done — refactored the parser."
+transcript "$WORK/t-evidence.jsonl" "Done — all tests pass, ran npm test."
+stop() { jq -nc --arg t "$1" '{transcript_path:$t, session_id:"s1"}'; }
+task_brief() { printf '%s' '{"toolUseId":"task:s1","sessionId":"s1","promptId":"p1","dispatchName":null,"subagentType":"main","goal":"g","acceptanceCriteria":"all tests pass","proofCommand":"npm test"}' | judge_on "$1" "$2" brief save; }
 for side in $SIDES; do
-  s="$(fresh "$side" done-ask)"; hook "$side" "$s" done-gate.sh "$(jq -nc --arg t "$WORK/t-merge.jsonl" '{transcript_path:$t, session_id:"s1"}')" done-ask
-  s="$(fresh "$side" done-brief)"
-  printf '%s' '{"toolUseId":"task:s1","sessionId":"s1","promptId":"p1","dispatchName":null,"subagentType":"main","goal":"g","acceptanceCriteria":"all tests pass","proofCommand":"npm test"}' | judge_on "$side" "$s" brief save
-  hook "$side" "$s" done-gate.sh "$(jq -nc --arg t "$WORK/t-claim.jsonl" '{transcript_path:$t, session_id:"s1"}')" done-brief
-  s="$(fresh "$side" done-nobrief)"; hook "$side" "$s" done-gate.sh "$(jq -nc --arg t "$WORK/t-claim.jsonl" '{transcript_path:$t, session_id:"s1"}')" done-nobrief
+  s="$(fresh "$side" done-ask)"; hook "$side" "$s" done-gate.sh "$(stop "$WORK/t-merge.jsonl")" done-ask
+  s="$(fresh "$side" done-escalated)"; hook "$side" "$s" done-gate.sh "$(stop "$WORK/t-next.jsonl")" done-escalated
+  s="$(fresh "$side" done-continue)"
+  XPATH="$WORK/claude-continue" AW_JUDGE_PROVIDERS=rules,claude-cli hook "$side" "$s" done-gate.sh "$(stop "$WORK/t-next.jsonl")" done-continue
+  s="$(fresh "$side" done-brief)"; task_brief "$side" "$s"; hook "$side" "$s" done-gate.sh "$(stop "$WORK/t-meets.jsonl")" done-brief
+  s="$(fresh "$side" done-brief-miss)"; task_brief "$side" "$s"; hook "$side" "$s" done-gate.sh "$(stop "$WORK/t-misses.jsonl")" done-brief-miss
+  s="$(fresh "$side" done-nobrief)"; hook "$side" "$s" done-gate.sh "$(stop "$WORK/t-evidence.jsonl")" done-nobrief
 done
 [ "$(rc_of done-ask)" = 0 ] || fail "done-ask: a merge next step must stop to ask (exit 0), got $(rc_of done-ask)"
 [ ! -e "$WORK/state-cs-done-ask/judge/sessions/s1.json" ] || fail "done-ask: must not record auto_continued_at"
+[ "$(rc_of done-escalated)" = 0 ] || fail "done-escalated: an escalated ask-check stops to ask (exit 0), got $(rc_of done-escalated)"
+[ ! -e "$WORK/state-cs-done-escalated/judge/sessions/s1.json" ] || fail "done-escalated: must not record auto_continued_at"
+[ "$(rc_of done-continue)" = 2 ] || fail "done-continue: ask-check 'continue' keeps going (exit 2), got $(rc_of done-continue)"
+jq -e '.auto_continued_at | test("^[0-9]{4}-[0-9]{2}-[0-9]{2}T")' "$WORK/state-cs-done-continue/judge/sessions/s1.json" > /dev/null 2>&1 \
+  || fail "done-continue: expected judge/sessions/s1.json with auto_continued_at"
 [ "$(rc_of done-brief)" = 0 ] || fail "done-brief: a claim meeting the brief must pass, got $(rc_of done-brief)"
+[ "$(rc_of done-brief-miss)" = 2 ] || fail "done-brief-miss: a claim missing the brief's criteria must block (exit 2), got $(rc_of done-brief-miss)"
+err_of done-brief-miss | grep -q 'acceptance criteria ("all tests pass")' || fail "done-brief-miss: stderr must name the criteria, got $(err_of done-brief-miss)"
 [ "$(rc_of done-nobrief)" = 0 ] || fail "done-nobrief: a claim with evidence and no brief must pass, got $(rc_of done-nobrief)"
-grep -q 'judge-brief-exit' "$WORK/state-cs-done-nobrief/logs/failopen.log" 2> /dev/null && fail "done-nobrief: 'no brief' must not log a fail-open"
-for c in done-ask done-brief done-nobrief; do same $c; done
+no_failopen done-ask done-escalated done-continue done-brief done-brief-miss done-nobrief
+for c in done-ask done-escalated done-continue done-brief done-brief-miss done-nobrief; do same $c; done
 
-# ---- judge-health (SessionStart) ----
-for side in $SIDES; do s="$(fresh "$side" health)"; hook "$side" "$s" judge-health.sh '' health; done
+# ---- judge-health (SessionStart) and the statusline's judge_health ----
+# statusline.sh's own functions, run against the shim: `<ok|degraded|down> <failures24h>`.
+sed -n '/^find_bin() {/,/^}/p; /^judge_health() {/,/^}/p' "$ROOT/config/statusline.sh" > "$WORK/statusline-health.sh"
+grep -q '^judge_health() {' "$WORK/statusline-health.sh" || fail "statusline: judge_health() not found in config/statusline.sh"
+statusline_health() { (export PATH="$WORK/shim-$1:$PATH" AW_STATE_DIR="$2"; . "$WORK/statusline-health.sh"; judge_health); }
+for side in $SIDES; do
+  s="$(fresh "$side" health)"; hook "$side" "$s" judge-health.sh '' health
+  statusline_health "$side" "$s" > "$WORK/health.$side.statusline"
+  # One failure in the last 24 h (a provider that exits 1) makes it degraded.
+  s="$(fresh "$side" health-degraded)"
+  printf '%s' '{"text":"still working through the second task now","senderKind":"teammate"}' \
+    | XPATH="$WORK/claude-broken" AW_JUDGE_PROVIDERS=claude-cli,rules judge_on "$side" "$s" wake-gate > /dev/null 2>&1 || true
+  hook "$side" "$s" judge-health.sh '' health-degraded
+  statusline_health "$side" "$s" > "$WORK/health-degraded.$side.statusline"
+  # A store the judge can't open: the health check itself fails.
+  s="$(fresh "$side" health-down)"; mkdir -p "$s/judge/decisions.sqlite"
+  hook "$side" "$s" judge-health.sh '' health-down
+  statusline_health "$side" "$s" > "$WORK/health-down.$side.statusline"
+done
 [ -z "$(out_of health)" ] || fail "health: a fresh judge is ok and the hook prints nothing, got $(out_of health)"
-[ "$(rc_of health)" = 0 ] || fail "health: exit $(rc_of health)"
-same health
+[ "$(cat "$WORK/health.cs.statusline")" = "ok 0" ] || fail "health: the statusline reads 'ok 0', got '$(cat "$WORK/health.cs.statusline")'"
+out_of health-degraded | grep -q '^judge: degraded — 1 failures in the last 24h' || fail "health-degraded: expected the degraded warning, got '$(out_of health-degraded)'"
+[ "$(cat "$WORK/health-degraded.cs.statusline")" = "degraded 1" ] || fail "health-degraded: the statusline reads 'degraded 1', got '$(cat "$WORK/health-degraded.cs.statusline")'"
+[ "$(out_of health-down)" = "judge: health check failed" ] || fail "health-down: expected 'judge: health check failed', got '$(out_of health-down)'"
+[ "$(cat "$WORK/health-down.cs.statusline")" = "down 0" ] || fail "health-down: the statusline reads 'down 0', got '$(cat "$WORK/health-down.cs.statusline")'"
+for c in health health-degraded health-down; do
+  [ "$(rc_of $c)" = 0 ] || fail "$c: exit $(rc_of $c)"
+  same $c
+  if [ "$SIDES" = "cs ts" ]; then
+    diff "$WORK/$c.cs.statusline" "$WORK/$c.ts.statusline" > /dev/null || fail "$c: the statusline differs from the TS judge's: $(cat "$WORK/$c.cs.statusline") vs $(cat "$WORK/$c.ts.statusline")"
+  fi
+done
 
 if [ "$FAILS" -gt 0 ]; then echo "judge-cs-hook-surface: $FAILS failure(s) (sides: $SIDES)"; exit 1; fi
 echo "All judge-cs-hook-surface tests passed (sides: $SIDES)."

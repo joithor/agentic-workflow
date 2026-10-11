@@ -310,23 +310,33 @@ What the hooks that keep running read, and nothing else. It stays frozen until t
 | `scope-gate.sh` | `judge brief save` < `{toolUseId, sessionId, promptId, dispatchName, subagentType, goal, acceptanceCriteria, proofCommand}` (`dispatchName` null when empty) | nothing (`> /dev/null 2>&1 \|\| true`) | `SaveBriefCliTests.Brief_save_stores_the_payload_and_prints_nothing` |
 | `scope-gate.sh` | `judge brief-scope` < `{agentType, goal, acceptanceCriteria, proofCommand, skillInternal?}` (`AW_SESSION_ID` set) | `.decision` of stdout; a non-zero exit fails open | `AskQuestionCliTests.Brief_scope_prints_its_decision`, `BriefScopeTests` |
 | `send-gate.sh` | `judge wake-gate` < `{text, senderKind}` (`AW_SESSION_ID` set) | `.decision` of stdout; a non-zero exit fails open | `AskQuestionCliTests.A_decided_question_prints_the_decided_envelope_and_exits_0`, `WakeGateTests` |
-| `done-gate.sh` | `judge ask-check` < `{transcriptTail}` | the exit code: 0 = ask (an escalation asks too), 2 = continue, anything else fails open | `AskQuestionCliTests.Ask_check_exits_0_for_ask_or_an_escalation_and_2_for_continue`, `AskCheckTests` |
+| `done-gate.sh` | `judge ask-check` < `{transcriptTail}` (`AW_SESSION_ID` set) | the exit code: 0 = ask (an escalation asks too), 2 = continue, anything else fails open | `AskQuestionCliTests.Ask_check_exits_0_for_ask_or_an_escalation_and_2_for_continue`, `AskCheckTests` |
 | `done-gate.sh` | `judge brief get "task:<session>"` | stdout as the brief JSON; on a non-zero exit, stderr starting `no brief for` means "no brief", anything else fails open | `GetBriefCliTests` (the `no brief for` prefix, exit 1) |
 | `done-gate-annotate.sh` | `judge brief get <toolUseId>` | `.acceptanceCriteria` | `GetBriefCliTests` |
 | `subagent-start-map.sh` | `judge brief map-by-name <agentType>`, `judge brief map-by-dispatch <session> <prompt> <agentType>` | stdout: the tool use id or nothing, exit 0 | `MapBriefByNameCliTests`, `MapBriefByDispatchCliTests` |
 | `subagent-start-map.sh` | `judge brief set-agent-id <toolUseId> <agentId>` | nothing (`\|\| true`) | `SetBriefAgentIdCliTests` |
 | `judge-health.sh` | `judge health` | `.status` (`ok`, `degraded`, `down`) and `.failures24h`; a non-zero exit is "health check failed" | `GetHealthCliTests` |
+| `config/statusline.sh` (`judge_health`, the background refresh) | `judge health` (on `PATH`, else `~/.local/bin`) | `.status` (`ok`, `degraded`; anything else, or a non-zero exit, is `down 0`) and `.failures24h` | `GetHealthCliTests` |
 | `prompt-sort.sh` | `judge prompt-sort` < `{prompt, sessionId}` | stdout (J2) | J2 |
 
-The hooks also export `AW_STATE_DIR`, `AW_SESSION_ID`, `AW_PROVIDER` and `AW_JUDGE_PROVIDERS` to the judge (below),
-and write their own files under `$AW_STATE_DIR/judge/` (`sessions/`, `outbox`, `teammate-names.jsonl`), which the
+The hooks set `AW_SESSION_ID` on the question calls; the Codex and Cursor adapters export `AW_PROVIDER` (unset under
+Claude Code); `AW_STATE_DIR` and `AW_JUDGE_PROVIDERS` come from the session's environment (below). The hooks also
+write their own files under `$AW_STATE_DIR/judge/` (`sessions/`, `outbox`, `teammate-names.jsonl`), which the
 judge doesn't own.
 
 **The real-hook check**, `config/lib/tests/judge-cs-hook-surface.test.sh`, runs the hook scripts themselves against
 the C# judge, offline (`AW_JUDGE_PROVIDERS=rules`, a scratch `AW_STATE_DIR`): send-gate, scope-gate, done-gate,
-done-gate-annotate, subagent-start-map, judge-health and the statusline's `judge_health`, comparing each hook's
-stdout, exit code and written files. It builds `src/Judge/Aw.Judge.Host` in Release itself (or takes
-`AW_JUDGE_CS_BIN`); when `judge/dist` is built it runs the same cases against the TS judge too and compares.
+done-gate-annotate, subagent-start-map, judge-health and the statusline's own `judge_health` (taken from
+`config/statusline.sh`), checking each hook's stdout, exit code and written files. send-gate and scope-gate allow, and
+done-gate falls back to its evidence check, on any judge failure, so every case that expects a pass also expects no
+fail-open log line; the one case that reaches a fail-open on purpose (a wake-gate escalation, exit 2) expects exactly
+`judge-exit-2`. The done-gate cases cover ask (a pre-rule), an escalation (asks), continue (a stub `claude` answering
+`continue`, which writes `judge/sessions/<sid>.json`), a claim that meets the saved brief in words the no-brief
+evidence check wouldn't accept, one that misses it (exit 2 naming the criteria), and no brief. The health cases cover
+ok, degraded (a stub `claude` that exits 1 leaves one failure row) and a store that can't be opened. It builds
+`src/Judge/Aw.Judge.Host` in Release itself (or takes `AW_JUDGE_CS_BIN`, made absolute); when `judge/dist` is built it
+runs the same cases against the TS judge too and compares. CI runs it in the .NET job, which a hook, statusline or
+hook-library change selects (`scripts/ci/changed-areas.sh`).
 
 ```bash
 bash config/lib/tests/judge-cs-hook-surface.test.sh   # needs dotnet 10; "All … passed (sides: cs ts)" with judge/dist
