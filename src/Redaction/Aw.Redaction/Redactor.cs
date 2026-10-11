@@ -15,10 +15,13 @@ public sealed class Redactor : IRedactor
     private readonly TimeSpan _matchTimeout;
     private readonly CompiledRules?[] _tiers = new CompiledRules?[24];
     private readonly Regex _secretName;
+    private readonly TimeProvider? _clock;
 
-    /// <summary>A redactor over <paramref name="rules"/> (tests inject a slow rule to prove the timeout blocks).</summary>
-    internal Redactor(IReadOnlyList<RedactionRule> rules, TimeSpan matchTimeout)
+    /// <summary>A redactor over <paramref name="rules"/> (tests inject a slow rule to prove the timeout blocks). With a
+    /// <paramref name="clock"/>, a whole scrub also gets a deadline (<see cref="ScanBudgetFactor"/>).</summary>
+    internal Redactor(IReadOnlyList<RedactionRule> rules, TimeSpan matchTimeout, TimeProvider? clock = null)
     {
+        _clock = clock;
         ArgumentOutOfRangeException.ThrowIfLessThanOrEqual(matchTimeout, TimeSpan.Zero);
         _rules = rules;
         _matchTimeout = Cap(matchTimeout.TotalMilliseconds);
@@ -28,6 +31,9 @@ public sealed class Redactor : IRedactor
             RegexOptions.CultureInvariant | RegexOptions.ExplicitCapture | RegexOptions.IgnoreCase,
             _matchTimeout);
     }
+
+    /// <summary>With extra patterns, a whole scrub may take this many times its per-pattern match timeout.</summary>
+    public const int ScanBudgetFactor = 4;
 
     /// <summary>The per-pattern match timeout <see cref="Default"/> uses.</summary>
     public static TimeSpan DefaultMatchTimeout { get; } = TimeSpan.FromSeconds(1);
@@ -46,19 +52,22 @@ public sealed class Redactor : IRedactor
     /// <summary>
     /// Creates a redactor over the built-in rules and <paramref name="extraPatterns"/> from configuration, each
     /// validated against Redaction's pattern rules and compiled with <paramref name="matchTimeout"/>; a match that
-    /// runs past it blocks, like a built-in rule's.
+    /// runs past it blocks, like a built-in rule's. Configured patterns aren't reviewed to stay linear, so a whole scrub
+    /// also blocks once it runs past <see cref="ScanBudgetFactor"/> times its match timeout on <paramref name="clock"/>.
     /// </summary>
     /// <param name="extraPatterns">The configured patterns, after the built-ins in priority order.</param>
     /// <param name="matchTimeout">The timeout for each pattern; must be positive.</param>
+    /// <param name="clock">The clock for the whole-scrub deadline (the host's TimeProvider).</param>
     /// <returns>The redactor, or every refused field with its entry index.</returns>
-    public static RedactorResult Create(IReadOnlyList<ExtraPattern> extraPatterns, TimeSpan matchTimeout)
+    public static RedactorResult Create(IReadOnlyList<ExtraPattern> extraPatterns, TimeSpan matchTimeout, TimeProvider clock)
     {
         ArgumentNullException.ThrowIfNull(extraPatterns);
+        ArgumentNullException.ThrowIfNull(clock);
         ArgumentOutOfRangeException.ThrowIfLessThanOrEqual(matchTimeout, TimeSpan.Zero);
         var errors = ExtraPatternRules.Check(extraPatterns, Default.RuleIds);
         return errors.Count > 0
             ? RedactorResult.Invalid(errors)
-            : RedactorResult.Valid(new Redactor([.. BuiltinRules.All, .. extraPatterns.Select(e => new RedactionRule(e.Id, e.Pattern))], matchTimeout));
+            : RedactorResult.Valid(new Redactor([.. BuiltinRules.All, .. extraPatterns.Select(e => new RedactionRule(e.Id, e.Pattern))], matchTimeout, clock));
     }
 
     /// <inheritdoc/>
@@ -95,11 +104,14 @@ public sealed class Redactor : IRedactor
     private List<RawHit> FindBoth(string text)
     {
         var rules = RulesFor(text.Length);
-        var raw = rules.Find(text);
+        ScanDeadline? deadline = _clock is null
+            ? null
+            : new ScanDeadline(_clock, _clock.GetTimestamp(), rules.MatchTimeout * ScanBudgetFactor);
+        var raw = rules.Find(text, deadline);
         if (text.AsSpan().ContainsAnyExceptInRange('\u0000', '\u007F') || text.Contains('\\', StringComparison.Ordinal))
         {
             var folded = FoldedText.Fold(text);
-            raw.AddRange(rules.Find(folded.Text).Select(h =>
+            raw.AddRange(rules.Find(folded.Text, deadline).Select(h =>
             {
                 var (start, end) = folded.ToOriginal(h.Start, h.End);
                 return h with { Start = start, End = end };

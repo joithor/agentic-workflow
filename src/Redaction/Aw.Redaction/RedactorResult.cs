@@ -2,8 +2,9 @@ using System.Diagnostics.CodeAnalysis;
 
 namespace Aw.Redaction;
 
-/// <summary>The result of <see cref="Redactor.Create(IReadOnlyList{ExtraPattern}, TimeSpan)"/>: a redactor over the
-/// built-in rules and the extra patterns, or every reason the extra patterns were refused.</summary>
+/// <summary>The result of <see cref="Redactor.Create(IReadOnlyList{ExtraPattern}, TimeSpan, TimeProvider)"/>: a
+/// redactor over the built-in rules and the extra patterns, or every reason the extra patterns were refused. Redaction
+/// sits beside Aw.Kernel at tier 0 and can't use its Result; a caller maps the errors to its own.</summary>
 public sealed class RedactorResult
 {
     private RedactorResult(Redactor? redactor, IReadOnlyList<ExtraPatternError> errors)

@@ -15,7 +15,7 @@ if (args is ["--stdin", ..])
         return 2;
     }
 
-    var created = Redactor.Create(options.Extras, options.Timeout);
+    var created = Redactor.Create(options.Extras, options.Timeout, TimeProvider.System);
     if (!created.IsValid)
     {
         await Console.Error.WriteLineAsync(string.Join('\n', created.Errors.Select(Refusal))).ConfigureAwait(false);
@@ -35,7 +35,7 @@ foreach (var (name, input) in Samples.All)
 
 foreach (var (name, extras, timeout, input) in Samples.Extra)
 {
-    var created = Redactor.Create(extras, timeout);
+    var created = Redactor.Create(extras, timeout, TimeProvider.System);
     if (created.IsValid)
     {
         Print(name, created.Redactor.Scrub(input));

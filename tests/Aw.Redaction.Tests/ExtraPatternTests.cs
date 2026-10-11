@@ -43,8 +43,10 @@ public sealed class ExtraPatternTests
     [Fact]
     public void Scrubbing_twice_with_extra_patterns_changes_nothing_the_second_time()
     {
-        var redactor = Build(new ExtraPattern("ticket-ref", "[A-Z]+-[0-9]+"));
-        var once = redactor.Scrub("see ACME-123456");
+        // The pattern matches its own placeholder's text, so the second scrub is clean only because the placeholder of
+        // an extra id is skipped.
+        var redactor = Build(new ExtraPattern("ticket-ref", "(?i)ticket-[a-z0-9]+"));
+        var once = redactor.Scrub("see TICKET-123456");
 
         var twice = redactor.Scrub(once.Text);
 
@@ -58,7 +60,10 @@ public sealed class ExtraPatternTests
     {
         var redactor = Build(new ExtraPattern("customer-ref", "customer=(?<v>[0-9]{6})"));
 
-        Assert.Equal("customer=[REDACTED:customer-ref]", redactor.Scrub("customer=123456").Text);
+        var result = redactor.Scrub("customer=123456");
+
+        Assert.Equal("customer=[REDACTED:customer-ref]", result.Text);
+        Assert.Equal(new RedactionHit("customer-ref", 9, 15), Assert.Single(result.Hits));
     }
 
     [Fact]
@@ -73,12 +78,42 @@ public sealed class ExtraPatternTests
     }
 
     [Fact]
+    public void Patterns_are_case_sensitive_unless_they_ask_otherwise()
+    {
+        Assert.Equal(ScrubOutcome.Clean, Build(Acme).Scrub("acme-123456").Outcome);
+        Assert.Equal(
+            "[REDACTED:acme-customer-id]",
+            Build(new ExtraPattern("acme-customer-id", "(?i)ACME-[0-9]{6}")).Scrub("acme-123456").Text);
+    }
+
+    [Fact]
+    public void Extra_patterns_keep_their_order_and_the_earlier_one_names_a_shared_start()
+    {
+        var redactor = Build(new ExtraPattern("short-ref", "ACME-[0-9]{3}"), new ExtraPattern("long-ref", "ACME-[0-9]{6}"));
+
+        Assert.Equal(["short-ref", "long-ref"], redactor.RuleIds.TakeLast(2), StringComparer.Ordinal);
+        Assert.Equal("[REDACTED:short-ref]", redactor.Scrub("ACME-123456").Text);
+    }
+
+    [Fact]
+    public void Extra_patterns_scrub_text_past_the_first_size_tier()
+    {
+        var input = new string('x', 140_000) + " ACME-123456";
+
+        var result = Build(Acme).Scrub(input);
+
+        Assert.EndsWith(" [REDACTED:acme-customer-id]", result.Text, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public void A_pattern_that_times_out_blocks_and_withholds_the_whole_text()
     {
+        // 65 characters is the first size tier, so the budget is the 200 ms given; the built-in rules take well under
+        // a millisecond on it, while the extra pattern backtracks for years: only the extra pattern can time out.
         var slow = new ExtraPattern("slow", "^(?:a|aa)+$");
-        var redactor = Build(TimeSpan.FromMilliseconds(1), slow);
+        var redactor = Build(TimeSpan.FromMilliseconds(200), slow);
 
-        var result = redactor.Scrub(new string('a', 40) + "!");
+        var result = redactor.Scrub(new string('a', 64) + "!");
 
         Assert.Equal(ScrubOutcome.Blocked, result.Outcome);
         Assert.Equal(ScrubResult.BlockedText, result.Text);
@@ -87,9 +122,34 @@ public sealed class ExtraPatternTests
     }
 
     [Fact]
+    public void A_scrub_with_many_matches_blocks_once_it_runs_past_its_whole_scan_budget()
+    {
+        // Each match is fast, so no match times out; the clock steps 5 ms per reading and the budget is 4 x 10 ms.
+        var clock = new SteppingClock(TimeSpan.FromMilliseconds(5));
+        var created = Redactor.Create([new ExtraPattern("letter-a", "a")], TimeSpan.FromMilliseconds(10), clock);
+        Assert.True(created.IsValid);
+
+        var result = created.Redactor.Scrub(new string('a', 20));
+
+        Assert.Equal(ScrubOutcome.Blocked, result.Outcome);
+        Assert.Equal(ScrubResult.BlockedText, result.Text);
+        Assert.Equal(RedactionCodes.MatchTimeout, result.BlockCode);
+    }
+
+    [Fact]
+    public void A_scrub_within_its_whole_scan_budget_is_not_blocked()
+    {
+        var clock = new SteppingClock(TimeSpan.FromMilliseconds(5));
+        var created = Redactor.Create([new ExtraPattern("letter-a", "a")], TimeSpan.FromMilliseconds(10), clock);
+        Assert.True(created.IsValid);
+
+        Assert.Equal("x [REDACTED:letter-a] y [REDACTED:letter-a]", created.Redactor.Scrub("x a y a").Text);
+    }
+
+    [Fact]
     public void No_extra_patterns_gives_the_built_in_rules()
     {
-        var result = Redactor.Create([], Redactor.DefaultMatchTimeout);
+        var result = Redactor.Create([], Redactor.DefaultMatchTimeout, TimeProvider.System);
 
         Assert.True(result.IsValid);
         Assert.Empty(result.Errors);
@@ -98,18 +158,23 @@ public sealed class ExtraPatternTests
 
     [Fact]
     public void Create_with_extra_patterns_refuses_a_timeout_that_is_not_positive() =>
-        Assert.Throws<ArgumentOutOfRangeException>(() => Redactor.Create([Acme], TimeSpan.Zero));
+        Assert.Throws<ArgumentOutOfRangeException>(() => Redactor.Create([Acme], TimeSpan.Zero, TimeProvider.System));
 
     // why: the null-forgiving operator passes null on purpose, to prove the guard.
     [Fact]
     public void A_null_pattern_list_is_a_bug() =>
-        Assert.Throws<ArgumentNullException>(() => Redactor.Create(null!, Redactor.DefaultMatchTimeout));
+        Assert.Throws<ArgumentNullException>(() => Redactor.Create(null!, Redactor.DefaultMatchTimeout, TimeProvider.System));
+
+    // why: the null-forgiving operator passes null on purpose, to prove the guard.
+    [Fact]
+    public void A_null_clock_is_a_bug() =>
+        Assert.Throws<ArgumentNullException>(() => Redactor.Create([Acme], Redactor.DefaultMatchTimeout, null!));
 
     private static Redactor Build(params ExtraPattern[] extras) => Build(Redactor.DefaultMatchTimeout, extras);
 
     private static Redactor Build(TimeSpan matchTimeout, params ExtraPattern[] extras)
     {
-        var result = Redactor.Create(extras, matchTimeout);
+        var result = Redactor.Create(extras, matchTimeout, TimeProvider.System);
         Assert.True(result.IsValid, string.Join("; ", result.Errors));
         return result.Redactor;
     }

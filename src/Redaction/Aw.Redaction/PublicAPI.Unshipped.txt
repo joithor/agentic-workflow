@@ -81,6 +81,7 @@ Aw.Redaction.RedactorResult
 Aw.Redaction.RedactorResult.Errors.get -> System.Collections.Generic.IReadOnlyList<Aw.Redaction.ExtraPatternError!>!
 Aw.Redaction.RedactorResult.IsValid.get -> bool
 Aw.Redaction.RedactorResult.Redactor.get -> Aw.Redaction.Redactor?
+const Aw.Redaction.Redactor.ScanBudgetFactor = 4 -> int
 const Aw.Redaction.RedactionCodes.InvalidPattern = "AW-REDACT-003" -> string!
 const Aw.Redaction.RedactionCodes.InvalidPatternId = "AW-REDACT-002" -> string!
 override Aw.Redaction.ExtraPattern.Equals(object? obj) -> bool
@@ -93,4 +94,4 @@ static Aw.Redaction.ExtraPattern.operator !=(Aw.Redaction.ExtraPattern? left, Aw
 static Aw.Redaction.ExtraPattern.operator ==(Aw.Redaction.ExtraPattern? left, Aw.Redaction.ExtraPattern? right) -> bool
 static Aw.Redaction.ExtraPatternError.operator !=(Aw.Redaction.ExtraPatternError? left, Aw.Redaction.ExtraPatternError? right) -> bool
 static Aw.Redaction.ExtraPatternError.operator ==(Aw.Redaction.ExtraPatternError? left, Aw.Redaction.ExtraPatternError? right) -> bool
-static Aw.Redaction.Redactor.Create(System.Collections.Generic.IReadOnlyList<Aw.Redaction.ExtraPattern!>! extraPatterns, System.TimeSpan matchTimeout) -> Aw.Redaction.RedactorResult!
+static Aw.Redaction.Redactor.Create(System.Collections.Generic.IReadOnlyList<Aw.Redaction.ExtraPattern!>! extraPatterns, System.TimeSpan matchTimeout, System.TimeProvider! clock) -> Aw.Redaction.RedactorResult!
