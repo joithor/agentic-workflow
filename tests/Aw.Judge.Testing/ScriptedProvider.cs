@@ -64,7 +64,7 @@ public sealed class ScriptedProvider(ProviderName name, params ContentClass[] cl
         };
         var result = step();
         // Like every adapter (ModelProviderContract), a decision outside the outputs is errored, never decided.
-        return ValueTask.FromResult<ProviderResult>(result is ProviderDecided decided && !question.Outputs.Contains(decided.Decision, StringComparer.Ordinal)
+        return ValueTask.FromResult(result is ProviderDecided decided && !question.Outputs.Contains(decided.Decision, StringComparer.Ordinal)
             ? new ProviderErrored("out-of-enum")
             : result);
     }
