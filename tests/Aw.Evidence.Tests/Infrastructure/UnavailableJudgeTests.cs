@@ -1,21 +1,10 @@
-using Aw.Evidence.Infrastructure.Guard;
 using Aw.Evidence.Infrastructure.Judging;
 using Microsoft.Extensions.Logging;
 
 namespace Aw.Evidence.Tests.Infrastructure;
 
-public sealed class SecretsAndJudgeTests
+public sealed class UnavailableJudgeTests
 {
-    [Fact, Trait("Lane", "unit")]
-    public void A_secret_is_its_environment_value_and_blank_is_unset()
-    {
-        var secrets = new EnvironmentSecrets(name => name switch { "QA_EMAIL" => "qa@example.com", "QA_PASSWORD" => "  ", _ => null });
-
-        Assert.Equal("qa@example.com", secrets.Get("QA_EMAIL"));
-        Assert.Null(secrets.Get("QA_PASSWORD"));
-        Assert.Null(secrets.Get("MISSING"));
-    }
-
     [Fact, Trait("Lane", "unit")]
     public async Task The_unavailable_judge_is_not_available_answers_nothing_and_says_so_once()
     {
