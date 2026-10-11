@@ -32,7 +32,8 @@ public sealed class OffOriginRedirectTests : IAsyncLifetime
 
     public async ValueTask InitializeAsync()
     {
-        var installed = await new PlaywrightInstaller().InstallAsync(CancellationToken.None);
+        using var install = new CancellationTokenSource(TimeSpan.FromMinutes(5));   // a stalled download fails the lane, never hangs it
+        var installed = await new PlaywrightInstaller().InstallAsync(install.Token);
         Assert.True(installed.IsSuccess, installed.IsError ? installed.Error.Message : null);
         _app = new LocalHttpServer(
             new Dictionary<string, string>(StringComparer.Ordinal),
