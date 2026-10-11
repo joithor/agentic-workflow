@@ -1,5 +1,6 @@
 using Aw.Judge.Core;
 using Aw.Judge.Core.Evaluation;
+using Aw.Judge.Core.Ports;
 using Aw.Judge.Core.Providers;
 using Aw.Judge.Features;
 using Aw.Judge.Host.Commands;
@@ -27,5 +28,5 @@ internal static class Composition
     // The one place the questions' providers and chain are built. Offline for now: rules alone, so any input no pre-rule
     // settles escalates 'no-provider-decided'. The agent-CLI and Jev adapters, the chain from config.json and AW_PROVIDER,
     // and the --providers allowlist arrive here (and in AskQuestionRequest.AllowedProviders) with the provider work.
-    private static ProviderSet ModelProviders() => new([new RulesProvider()], ChainSpec.Default);
+    private static ProviderLineup ModelProviders() => new([new RulesProvider()], ChainSpec.Default);
 }

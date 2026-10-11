@@ -1,5 +1,4 @@
 using Aw.Judge.Core;
-using Aw.Judge.Core.Evaluation;
 using Aw.Judge.Core.Ports;
 using Aw.Judge.Core.Providers;
 using Aw.Judge.Features;
@@ -33,7 +32,7 @@ internal sealed class AskQuestionHarness
             .AddSingleton<IBriefStore>(new InMemoryBriefStore())
             .AddSingleton<IInputRedactor>(new FakeInputRedactor())
             .AddSingleton<IIdGenerator>(new SequentialIdGenerator())
-            .AddSingleton(new ProviderSet(providers, ChainSpec.Default))
+            .AddSingleton(new ProviderLineup(providers, ChainSpec.Default))
             .AddJudgeCore()
             .AddJudgeFeatures();
         await using var provider = services.BuildServiceProvider(new ServiceProviderOptions { ValidateOnBuild = true, ValidateScopes = true });

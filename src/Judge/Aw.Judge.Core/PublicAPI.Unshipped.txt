@@ -633,15 +633,6 @@ Aw.Judge.Core.Decisions.DecisionRecord.ApprovedAt.init -> void
 Aw.Judge.Core.Ports.IDecisionLog.MarkApproved(Aw.Judge.Core.Ids.DecisionId id, System.DateTimeOffset at, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Kernel.Unit>!>
 Aw.Judge.Core.Config.JudgeConfig.SetEnabled(string! question, bool enabled) -> Aw.Judge.Core.Config.JudgeConfig!
 Aw.Judge.Core.Config.JudgeConfig.SetThreshold(string! question, double threshold) -> Aw.Kernel.Result<Aw.Judge.Core.Config.JudgeConfig!>!
-Aw.Judge.Core.Evaluation.ProviderSet
-Aw.Judge.Core.Evaluation.ProviderSet.<Clone>$() -> Aw.Judge.Core.Evaluation.ProviderSet!
-Aw.Judge.Core.Evaluation.ProviderSet.Chain.get -> Aw.Judge.Core.Providers.ChainSpec!
-Aw.Judge.Core.Evaluation.ProviderSet.Chain.init -> void
-Aw.Judge.Core.Evaluation.ProviderSet.Deconstruct(out System.Collections.Generic.IReadOnlyList<Aw.Judge.Core.Ports.IModelProvider!>! Providers, out Aw.Judge.Core.Providers.ChainSpec! Chain) -> void
-Aw.Judge.Core.Evaluation.ProviderSet.Equals(Aw.Judge.Core.Evaluation.ProviderSet? other) -> bool
-Aw.Judge.Core.Evaluation.ProviderSet.ProviderSet(System.Collections.Generic.IReadOnlyList<Aw.Judge.Core.Ports.IModelProvider!>! Providers, Aw.Judge.Core.Providers.ChainSpec! Chain) -> void
-Aw.Judge.Core.Evaluation.ProviderSet.Providers.get -> System.Collections.Generic.IReadOnlyList<Aw.Judge.Core.Ports.IModelProvider!>!
-Aw.Judge.Core.Evaluation.ProviderSet.Providers.init -> void
 Aw.Judge.Core.Evaluation.QuestionCatalog
 Aw.Judge.Core.Evaluation.RulesProvider
 Aw.Judge.Core.Evaluation.RulesProvider.Classes.get -> System.Collections.Generic.IReadOnlySet<Aw.Judge.Core.Providers.ContentClass>!
@@ -822,9 +813,6 @@ const Aw.Judge.Core.Questions.WakeGateQuestion.Drop = "drop" -> string!
 const Aw.Judge.Core.Questions.WakeGateQuestion.Name = "wake-gate" -> string!
 const Aw.Judge.Core.Questions.WakeGateQuestion.Send = "send" -> string!
 const Aw.Judge.Core.Questions.WakeGateQuestion.ShortMessageLength = 12 -> int
-override Aw.Judge.Core.Evaluation.ProviderSet.Equals(object? obj) -> bool
-override Aw.Judge.Core.Evaluation.ProviderSet.GetHashCode() -> int
-override Aw.Judge.Core.Evaluation.ProviderSet.ToString() -> string!
 override Aw.Judge.Core.Questions.AskCheckInput.Equals(object? obj) -> bool
 override Aw.Judge.Core.Questions.AskCheckInput.GetHashCode() -> int
 override Aw.Judge.Core.Questions.AskCheckInput.ToString() -> string!
@@ -852,8 +840,6 @@ override Aw.Judge.Core.Questions.VisualCritiqueInput.ToString() -> string!
 override Aw.Judge.Core.Questions.WakeGateInput.Equals(object? obj) -> bool
 override Aw.Judge.Core.Questions.WakeGateInput.GetHashCode() -> int
 override Aw.Judge.Core.Questions.WakeGateInput.ToString() -> string!
-static Aw.Judge.Core.Evaluation.ProviderSet.operator !=(Aw.Judge.Core.Evaluation.ProviderSet? left, Aw.Judge.Core.Evaluation.ProviderSet? right) -> bool
-static Aw.Judge.Core.Evaluation.ProviderSet.operator ==(Aw.Judge.Core.Evaluation.ProviderSet? left, Aw.Judge.Core.Evaluation.ProviderSet? right) -> bool
 static Aw.Judge.Core.Evaluation.QuestionCatalog.Ask(this Aw.Judge.Core.Evaluation.QuestionEvaluator! evaluator, string! question, string! rawInput, Aw.Judge.Core.Evaluation.EvaluationContext! context, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Judge.Core.Evaluation.EvaluationOutcome!>
 static Aw.Judge.Core.Evaluation.QuestionCatalog.Names.get -> System.Collections.Frozen.FrozenSet<string!>!
 static Aw.Judge.Core.Evaluation.QuestionOverride.For(Aw.Judge.Core.Config.JudgeConfig! config, string! question) -> Aw.Judge.Core.Evaluation.QuestionOverride?

@@ -11,7 +11,7 @@ namespace Aw.Judge.Features.AskQuestion;
 /// host built, then the evaluator decides or escalates. A config that can't be read runs on the defaults (a question
 /// fails open), like an invalid one.
 /// </summary>
-internal sealed class AskQuestionService(QuestionEvaluator evaluator, IJudgeConfigStore configs, ProviderSet providers)
+internal sealed class AskQuestionService(QuestionEvaluator evaluator, IJudgeConfigStore configs, ProviderLineup providers)
     : IService<AskQuestionRequest, AskQuestionResponse>
 {
     public async ValueTask<Result<AskQuestionResponse>> Handle(AskQuestionRequest request, CancellationToken cancellationToken)

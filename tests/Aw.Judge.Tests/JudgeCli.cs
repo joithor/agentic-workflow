@@ -1,4 +1,3 @@
-using Aw.Judge.Core.Evaluation;
 using Aw.Judge.Core.Ports;
 using Aw.Judge.Core.Providers;
 using Aw.Judge.Host;
@@ -35,7 +34,7 @@ public sealed class JudgeCli(TempStateDirectory state)
             Clock);
         if (Providers is { } providers)
         {
-            _ = services.AddSingleton(new ProviderSet(providers, ChainSpec.Default));   // the last registration wins
+            _ = services.AddSingleton(new ProviderLineup(providers, ChainSpec.Default));   // the last registration wins
         }
 
         var provider = services.BuildServiceProvider();

@@ -15,7 +15,7 @@ Aw.Judge.Host ──► Aw.Judge.Features ──► Aw.Judge.Core ◄── Aw.J
 
 | Project | Holds |
 |---|---|
-| `Aw.Judge.Core` | Typed ids (`Ids`: `DecisionId`, `ToolUseId`, `SessionId`, `PromptId`, `AgentId`), the domain records (`Briefs`, `Decisions`, `Health`, `Config`, `Providers`), the eight questions with their input records (`Questions`), the evaluation engine with the question catalog, the rules provider and `ProviderSet` (`Evaluation`), the error catalogue (`Errors.JudgeErrors`, AW-JUDGE-NNN) and the ports (`Ports`) |
+| `Aw.Judge.Core` | Typed ids (`Ids`: `DecisionId`, `ToolUseId`, `SessionId`, `PromptId`, `AgentId`), the domain records (`Briefs`, `Decisions`, `Health`, `Config`, `Providers`), the eight questions with their input records (`Questions`), the evaluation engine with the question catalog, and the rules provider (`Evaluation`), the error catalogue (`Errors.JudgeErrors`, AW-JUDGE-NNN) and the ports (`Ports`) |
 | `Aw.Judge.Features` | One slice per command: `AskQuestion` (every `judge <question>`), `SaveBrief`, `GetBrief`, `MapBriefByName`, `MapBriefByDispatch`, `SetBriefAgentId`, `ExplainDecision` (`why`), `UndoDecision`, `ApproveDecision`, `GetHealth`, `GetConfig`, `SetConfig` |
 | `Aw.Judge.Infrastructure` | The SQLite stores over `decisions.sqlite`, the config file, the redactor adapter over `Aw.Redaction`, the `PATH` executable locator, the process runner, the secret source (environment, then keychain), the model providers and their catalog (`Providers/`), random decision ids, and the settings read from the environment |
 | `Aw.Judge.Host` | `Program.cs`, `Composition.Compose`, one command per slice in `Commands/`, the command table, `JudgeJsonContext` (the package's one source-generated JSON context) |
@@ -130,7 +130,7 @@ other non-zero exit.
 How a call runs: the question's `config.json` entry (`enabled`, `threshold`, `providers`; no entry means the
 question's own threshold) becomes the evaluator's override, and a disabled question escalates `question-disabled`; an
 unreadable or invalid `config.json` runs on the defaults and logs one warning. The chain is the one `Composition` builds
-(`ProviderSet`), restricted by the allowlist when one is given. **Providers today:** `Composition.ModelProviders()` is
+(`ProviderLineup`), restricted by the allowlist when one is given. **Providers today:** `Composition.ModelProviders()` is
 the one place the list is built, and it is `rules` alone, so the commands run offline and any input no pre-rule settles
 escalates `no-provider-decided` (exit 2; `ask-check` asks). The agent-CLI and Jev providers, the chain built from
 `config.json` and `AW_PROVIDER`, and the `--providers` allowlist (`AskQuestionRequest.AllowedProviders`) plug in there.
