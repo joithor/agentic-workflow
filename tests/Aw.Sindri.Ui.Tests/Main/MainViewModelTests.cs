@@ -329,4 +329,16 @@ public sealed class MainViewModelTests : IDisposable
         Assert.Equal("needs approval", _vm.ProfileState);
         Assert.Equal("sindri profile approve", _vm.ProfileFix);
     }
+
+    [Fact]
+    public async Task An_unreadable_live_profile_offers_no_approve_fix_because_approving_it_cant_work()
+    {
+        _records.Write(A.Record());
+        _server.Current = A.Status(profile: new(Approved: null, Live: null, ChangedSinceApproval: false, Problem: "SND-PROFILE-002 bad key", Source: null, NeedsApproval: true));
+        Start();
+
+        await Eventually(() => _vm.ProfileState == "unreadable", "profile state");
+        Assert.Equal("", _vm.ProfileFix);
+        Assert.Equal("SND-PROFILE-002 bad key", _vm.ProfileDetail);
+    }
 }
