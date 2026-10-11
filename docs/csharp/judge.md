@@ -111,6 +111,12 @@ stderr; the hooks discard stderr except where the hook contract says. At the def
 | `config set <question> threshold <number>` | — | the saved `JudgeConfig` | not a number → 64; outside 0–1 → 1; an invalid `config.json` → 1 as above |
 | `<question>` | stdin: the question's input record (Questions below) | the decided envelope (exit 0) or the escalated one (exit 2) | an unknown question or any argument → 64 |
 
+Each output's exact JSON is pinned by a golden file (`Aw.Kernel.Testing`'s `Golden`, through `CliGolden`; decision ids
+and timestamps normalized) next to the command's CLI tests: `GetHealth/Golden/` (ok, degraded), `AskQuestion/Golden/`
+(decided, escalated, decided with an extra field), `ExplainDecision/Golden/why.json`, `GetBrief/Golden/brief-get.json`,
+`GetConfig/Golden/` (defaults, a file's blocks) and `SetConfig/Golden/config-set.json`, all under `tests/Aw.Judge.Tests/`.
+A change to an output is a reviewed change to its golden file (`AW_GOLDEN_UPDATE=1` rewrites it locally).
+
 `DecisionOutput` is the decision row with the `decisions` table's column names: `id`, `ts`, `question`,
 `content_class`, `provider`, `decision`, `confidence`, `reason_code`, `latency_ms`, `input_digest`, `undone_at`,
 `chain_position`, `skipped` (`[{provider, reason}]`, reason `unavailable|failed|timeout|below_threshold`), `outcome`

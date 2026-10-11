@@ -17,6 +17,7 @@ public sealed class GetConfigCliTests : IDisposable
         Assert.Equal(0.7, wakeGate.GetProperty("threshold").GetDouble());
         Assert.False(json.TryGetProperty("providers", out _));
         Assert.False(json.TryGetProperty("promptSort", out _));
+        CliGolden.Match(run, "GetConfig/Golden/config-get-defaults.json");
     }
 
     [Fact, Trait("Lane", "integration")]
@@ -28,8 +29,10 @@ public sealed class GetConfigCliTests : IDisposable
             """{"questions":{"ask-check":{"enabled":false,"threshold":0.6,"providers":["jev"]}},"providers":{"agentClis":["codex-cli"],"jev":false},"promptSort":{"budgetMs":800}}""",
             TestContext.Current.CancellationToken);
 
-        var json = (await new JudgeCli(_state).Run("config", "get")).Json();
+        var run = await new JudgeCli(_state).Run("config", "get");
+        var json = run.Json();
 
+        CliGolden.Match(run, "GetConfig/Golden/config-get-file.json");
         var askCheck = json.GetProperty("questions").GetProperty("ask-check");
         Assert.False(askCheck.GetProperty("enabled").GetBoolean());
         Assert.Equal("jev", askCheck.GetProperty("providers")[0].GetString());

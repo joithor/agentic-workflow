@@ -13,6 +13,7 @@ public sealed class GetHealthCliTests : IDisposable
         var run = await new JudgeCli(_state).Run("health");
 
         AssertHealth(run, "ok", 0);
+        CliGolden.Match(run, "GetHealth/Golden/health-ok.json");
     }
 
     [Fact, Trait("Lane", "integration")]
@@ -25,6 +26,7 @@ public sealed class GetHealthCliTests : IDisposable
         var run = await cli.Run("health");
 
         AssertHealth(run, "degraded", 1);
+        CliGolden.Match(run, "GetHealth/Golden/health-degraded.json");
     }
 
     private static void AssertHealth(CliRun run, string status, int failures)

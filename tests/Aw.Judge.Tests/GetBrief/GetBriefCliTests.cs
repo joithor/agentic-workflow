@@ -30,6 +30,7 @@ public sealed class GetBriefCliTests : IDisposable
         Assert.Equal("é\n😀", json.GetProperty("acceptanceCriteria").GetString());
         Assert.Equal("", json.GetProperty("proofCommand").GetString());
         Assert.Equal(cli.Clock.GetUtcNow(), json.GetProperty("savedAt").GetDateTimeOffset());
+        CliGolden.Match(run, "GetBrief/Golden/brief-get.json");
     }
 
     [Fact, Trait("Lane", "integration")]

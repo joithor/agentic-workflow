@@ -37,6 +37,7 @@ public sealed class SetConfigCliTests : IDisposable
 
         Assert.Equal((0, ""), (run.ExitCode, run.Stderr));
         Assert.False(run.Json().GetProperty("questions").GetProperty("wake-gate").GetProperty("enabled").GetBoolean());
+        CliGolden.Match(run, "SetConfig/Golden/config-set.json");
         Assert.True(File.Exists(ConfigFile));
         Assert.False((await cli.Run("config", "get")).Json().GetProperty("questions").GetProperty("wake-gate").GetProperty("enabled").GetBoolean());
     }

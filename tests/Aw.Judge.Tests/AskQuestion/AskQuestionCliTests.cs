@@ -30,6 +30,7 @@ public sealed class AskQuestionCliTests : IDisposable
         var json = run.Json();
         Assert.Equal("confidence,decision,id,model,reasonCode", Names(json));
         Assert.Equal(("drop", 1.0, "rules", "pre-rule"), (json.GetProperty("decision").GetString(), json.GetProperty("confidence").GetDouble(), json.GetProperty("model").GetString(), json.GetProperty("reasonCode").GetString()));
+        CliGolden.Match(run, "AskQuestion/Golden/decided.json");
         Assert.Equal(0, (await cli.Run("why", json.GetProperty("id").GetString()!)).ExitCode);   // why: the envelope's id is a string
     }
 
@@ -42,6 +43,7 @@ public sealed class AskQuestionCliTests : IDisposable
         var json = run.Json();
         Assert.Equal("escalated,reasonCode", Names(json));
         Assert.Equal((true, "no-provider-decided"), (json.GetProperty("escalated").GetBoolean(), json.GetProperty("reasonCode").GetString()));
+        CliGolden.Match(run, "AskQuestion/Golden/escalated.json");
     }
 
     [Theory, Trait("Lane", "integration")]
@@ -141,6 +143,7 @@ public sealed class AskQuestionCliTests : IDisposable
         var json = run.Json();
         Assert.Equal("chosenIndex,confidence,decision,id,model,reasonCode", Names(json));
         Assert.Equal(("repaired", 1, "claude-cli"), (json.GetProperty("decision").GetString(), json.GetProperty("chosenIndex").GetInt32(), json.GetProperty("model").GetString()));
+        CliGolden.Match(run, "AskQuestion/Golden/decided-with-extras.json");
     }
 
     [Fact, Trait("Lane", "integration")]
