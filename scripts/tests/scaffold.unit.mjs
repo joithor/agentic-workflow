@@ -475,6 +475,19 @@ t("--slice-only: a slice-only refusal leaves a normal second run possible (the g
   assert.doesNotMatch(r.out, /Shared lines to add/);
 });
 
+// Sindri's S1 removed its empty A.cs: the generator writes the builder root again rather than failing on it.
+for (const mode of ["--slice-only", "normal"]) {
+  t(`new-slice (${mode}): a package without tests/Aw.<Pkg>.Testing/A.cs gets the builder root with the factory`, () => {
+    const d = tree();
+    assert.equal(pkg(d, { name: "Demohttp", note: "x", "error-prefix": "DEMOHTTP", shape: "full", host: "http", binary: undefined, "first-slice": "StartItem", behavior: "starts_an_item", route: "POST /items/{itemId}/start", ids: "ItemId:string" }).code, 0);
+    fs.rmSync(path.join(d, "tests/Aw.Demohttp.Testing/A.cs"));
+    const args = { package: "Demohttp", slice: "GetItem", behavior: "gets_an_item", surface: "http", route: "GET /items/{itemId}" };
+    const r = mode === "normal" ? slice(d, args) : sliceOnly(d, args);
+    assert.equal(r.code, 0, r.out);
+    assert.match(read(d, "tests/Aw.Demohttp.Testing/A.cs"), /^namespace Aw\.Demohttp\.Testing;\n[\s\S]*public static class A\n\{\n {4}\/\/\/ <summary>A GetItemRequest builder[\s\S]*public static GetItemRequestBuilder GetItemRequest\(\) => new\(\);\n\}\n$/);
+  });
+}
+
 const commonLib = await import(path.join(REPO, "scripts/scaffold/lib/common.mjs"));
 t("Journal edit guard: an edit the guard refuses throws its ScaffoldError and leaves the file alone", () => {
   const d = tree();
