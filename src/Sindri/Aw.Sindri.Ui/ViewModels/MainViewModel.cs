@@ -94,11 +94,7 @@ internal sealed class MainViewModel(IEndpointRecordSource records, ISindriApi ap
             {
                 wait = await Cycle(cancellationToken).ConfigureAwait(true);
             }
-            catch (IOException e)
-            {
-                wait = Unreadable(e);
-            }
-            catch (UnauthorizedAccessException e)
+            catch (Exception e) when (e is IOException or UnauthorizedAccessException)
             {
                 wait = Unreadable(e);
             }
@@ -249,6 +245,10 @@ internal sealed class MainViewModel(IEndpointRecordSource records, ISindriApi ap
                     return;
                 }
             }
+        }
+        catch (Exception e) when (e is IOException or UnauthorizedAccessException)
+        {
+            await stop.CancelAsync().ConfigureAwait(true);   // the next Connect reads it again and says why
         }
         catch (OperationCanceledException)
         {
