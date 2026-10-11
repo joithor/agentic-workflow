@@ -102,7 +102,7 @@ stderr; the hooks discard stderr except where the hook contract says. At the def
 | `undo <decisionId>` | — | `DecisionOutput` with `undone_at` set | `unknown decision: <id>` → 1 |
 | `approve <decisionId>` | — | `DecisionOutput` with `approved_at` set; approving again keeps the first time | `unknown decision: <id>` → 1 |
 | `config get` | — | the effective `JudgeConfig` (an invalid `config.json` prints the defaults and logs one warning) | store error → 1 |
-| `config set <question> enabled true\|false` | — | the saved `JudgeConfig` | usage → 64; an invalid `config.json`: `invalid config <file>: <reason>; fix or delete it, then set again` → 1 |
+| `config set <question> enabled true\|false` | — | the saved `JudgeConfig` | usage → 64; a question the judge doesn't have: `unknown question: <name> (known: …)` → 1; an invalid `config.json`: `invalid config <file>: <reason>; fix or delete it, then set again` → 1 |
 | `config set <question> threshold <number>` | — | the saved `JudgeConfig` | not a number → 64; outside 0–1 → 1; an invalid `config.json` → 1 as above |
 | `<question>` | stdin: the question's input record (Questions below) | the decided envelope (exit 0) or the escalated one (exit 2) | an unknown question or any argument → 64 |
 
