@@ -16,7 +16,6 @@ internal static class SettingsFromEnvironment
             ?? Path.Combine(Set(environment("HOME")) ?? Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), ".agentic-workflow");
         var locks = Path.Combine(root, "locks");
         return new(
-            StateDirectory: Path.Combine(root, "evidence"),
             Locks: new(
                 QaStack: Set(environment("AW_QA_STACK_LOCK")) ?? Path.Combine(locks, "qa-stack.lock"),
                 HeavyJob: Set(environment("AW_HEAVY_JOB_LOCK")) ?? Path.Combine(locks, "heavy-job.lock"),

@@ -180,7 +180,7 @@ Scorer and bugfix-state read these files after their own ports; the fields they 
 | `steps[]` † | object[] | viewport by viewport, in order: `viewport`, `index` (1-based), `action` (`goto` \| `click` \| `fill` \| `expect-visible`), `target`, `status` † (`passed` \| `failed` \| `broken`), `screenshot` (`<run-dir>/<viewport>-<index>-<action>.png`) |
 | `visual` | object | `verdict` † (`unchecked` \| `unchanged` \| `looks-right` \| `looks-off` \| `sloppy`), `reasons` (string[]), `diffScore` (number \| null: the fraction of pixels differing from the baseline, 1 for a size change), `diffImage` (string \| null: `<run-dir>/visual-diff.png`) |
 | `lintFindings[]` | object[] | `viewport`, `rule` (`overlap` \| `misaligned-edge` \| `phone-overflow` \| `truncated-label` \| `clipped` \| `missing-hover-focus` \| `unresolved-placeholder` \| `non-token-color`), `selector`, `detail` |
-| `invocations[]` † | object[] | every model call actually made, in order (none when no judge is wired: "Judge" below): `phase` (`planning` \| `selector-repair` \| `visual-critique`), `model`, `elapsedMs`, `ok` (false: the judge was called and failed or answered nothing), `inputTokens`, `outputTokens` (number \| null: null is unknown, never zero), `cacheHit` (a verdict-cache hit stands in for a critique) |
+| `invocations[]` † | object[] | every model call actually made, in order (none when no judge is wired: "Judge" below): `phase` (`planning` \| `selector-repair` \| `visual-critique`), `model` (string \| null), `elapsedMs` (number \| null), `ok` (false: the judge was called and failed or answered nothing), `inputTokens`, `outputTokens` (number \| null: null is unknown, never zero), `cacheHit` (a verdict-cache hit stands in for a critique) |
 | `planning` | object \| null | the script's planning block: `pr`, `model`, `elapsedMs`, `inputTokens`, `outputTokens` |
 | `evidence` | object | `traces` (string[]: `<run-dir>/<viewport>-trace.zip`), `videos` (string[]) |
 
@@ -331,14 +331,28 @@ drift; the adapter's names, defaults, blank-as-unset and env-file fallback are p
 
 What changes for the callers when the install moves to the C# build:
 
+- **Run directories.** `run` and `parity` write wherever `<run-dir>` points; Evidence keeps no state directory of its
+  own. Scorer finds runs by enumerating `${AW_STATE_DIR:-~/.agentic-workflow}/ui-evidence/runs/*/summary.json` (the
+  Evidence `files` edge in `deps.yaml`), so a caller that wants a run counted passes
+  `<run-dir>` = `$AW_STATE_DIR/ui-evidence/runs/<id>`, a new `<id>` per run. A caller that wants verdict-cache hits across
+  runs passes a stable `--cache` (the default cache lives in the run directory, so it never hits across runs).
 - **SKILL.md** (`skills/ui-evidence`): `with_stack_lock_and_heavy_job_lock 120 node dist/bin.js <script> <run-dir> …`
   becomes `ui-evidence run <script> <run-dir> … [--lock-timeout 120]`. The binary takes both locks itself, so the bash
   wrapper goes. The parity, plan, comment, stale, put and publish steps call `ui-evidence parity …`,
-  `ui-evidence parity-plan …` and so on; `scripts/doctor.sh` becomes `ui-evidence doctor`; the provenance probe becomes
-  `ui-evidence provenance`; `npx playwright install chromium` becomes `ui-evidence install-browser`.
-- **bugfix-state** (`run-ui`): runs `ui-evidence run <script> <run-dir> --app-build <sha>` instead of
-  `node <sibling>/dist/bin.js`, reads `summary.json` per the table above (`steps[].status`, `appBuild`, `scriptSha256`),
-  and treats exit 75 as "stack busy, try again" rather than a failed check.
-- **Scorer**: reads `invocations[]`, `visual.verdict` and `finishedAt` from `summary.json`.
+  `ui-evidence parity-plan …` and so on; `scripts/doctor.sh` becomes `ui-evidence doctor` (unhealthy is exit 2); the
+  provenance probe becomes `ui-evidence provenance`; `npx playwright install chromium` becomes `ui-evidence
+  install-browser`.
+- **bugfix-state** (`run-ui`): drops the `process.execPath, deps.uiEvidenceBin` argv (`deps.ts` `siblingUiEvidence`)
+  and runs `ui-evidence run <script> <run-dir> --app-build <sha>`; reads `summary.json` per the table above
+  (`steps[].status`, `appBuild`, `scriptSha256`); treats exit 75 as "stack busy, try again" rather than a failed check;
+  and its "wrote no summary" refusal now covers exit 4 and 75 as well as a crash (`run` deletes an earlier
+  `summary.json` first, so a file present after exit 4 can't be stale).
+- **Scorer** (`scorer/src/ui-evidence-runs.ts`, `RunSummarySchema`): the C# summary is a new schema, and every changed
+  field must move with the port, or `safeParse` fails and Scorer silently skips every C# run. `ts` becomes `finishedAt`
+  (UTC `O`: `…+00:00`, not `Z`; parse it, don't compare strings); `visual` becomes an object (`visual.verdict`), and
+  `visualReasons` becomes `visual.reasons`; `steps[].name` is gone (a step is `viewport`, `index`, `action`, `target`);
+  `steps[].status`, `pr`, `route`, `lintFindings[]` and `invocations[]` keep their names. In `invocations[]`, `model`
+  is `string | null` and `elapsedMs`, `inputTokens` and `outputTokens` are `number | null` (null is unknown, never
+  zero; the keys are always written).
 - Exit 4 (the run errored) and 75 (a lock stayed busy) are new; a caller that only knew 0, 1 and 2 must treat both as
   "no evidence", never as a pass.

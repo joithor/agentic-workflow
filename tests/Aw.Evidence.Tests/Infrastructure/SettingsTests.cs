@@ -5,11 +5,10 @@ namespace Aw.Evidence.Tests.Infrastructure;
 public sealed class SettingsTests
 {
     [Fact, Trait("Lane", "unit")]
-    public void Locks_and_state_live_under_the_state_root()
+    public void Locks_live_under_the_state_root()
     {
         var settings = SettingsFromEnvironment.Read(Env(("AW_STATE_DIR", "/state"), ("HOME", "/home/u")));
 
-        Assert.Equal("/state/evidence", settings.StateDirectory);
         Assert.Equal("/state/locks/qa-stack.lock", settings.Locks.QaStack);
         Assert.Equal("/state/locks/heavy-job.lock", settings.Locks.HeavyJob);
         Assert.False(settings.Locks.HeavyJobHeld);
