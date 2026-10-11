@@ -1,7 +1,8 @@
 # Judge — `judge`
 
 `Aw.Judge` (`src/Judge`, tier 1, four projects) is the C# judge: the cheap-agent harness's decision CLI that the bash
-hooks call (send-gate, scope-gate, done-gate, subagent-start-map, judge-health, prompt-sort). It is a reimplementation,
+hooks call (send-gate, scope-gate, done-gate, done-gate-annotate, subagent-start-map, judge-health, prompt-sort)
+and the statusline. It is a reimplementation,
 not a translation of the TS judge (`judge/src/**`): the TS package is a guide to what the judge does, never to how.
 Its contracts are the C# tests in `tests/Aw.Judge.Tests`, except the **hook contract** below, which stays frozen
 until the switch (spec §4a step 1, §4c). Before the switch nothing installs it (spec §4a: the installed toolkit stays
@@ -395,7 +396,7 @@ reads a TS-written file.
 | `AW_STATE_DIR` | Infrastructure settings | The state root; the judge's files are under `<root>/judge/`. Default `~/.agentic-workflow` |
 | `AW_SESSION_ID` | the question commands (`Composition`, once) | The calling session, stored with the decision's detail row; a value past the session id's cap is ignored |
 | `AW_PROVIDER` | `ProviderCatalog` | The host the calling session runs in (`claude`, `codex`, `cursor`), which leads the agent CLI order unless `config.json` sets `providers.agentClis` |
-| `AW_JUDGE_PROVIDERS` | the command table (`Composition` reads it once) | A comma-separated allowlist of providers when the `--providers` flag is absent; unreadable → usage error (64) |
+| `AW_JUDGE_PROVIDERS` | the command table (`Composition` reads it once) | A comma-separated allowlist of providers when the `--providers` flag is absent; only a question reads it, and there an unreadable list is a usage error (64) |
 | `PATH` | `PathExecutableLocator`, `SystemProcessRunner` | Where the agent CLIs (and `security`) are found |
 | `TYPESAFE_API_KEY` | `KeychainSecretSource` | Jev's API key; when unset or empty, the keychain entry `agentic-workflow-typesafe` / `TYPESAFE_API_KEY`; without either Jev is unavailable |
 | `AW_LOG_LEVEL` | Aw.Kernel.Telemetry | The stderr log level (default information, at which a normal run logs nothing; the hooks discard stderr) |
