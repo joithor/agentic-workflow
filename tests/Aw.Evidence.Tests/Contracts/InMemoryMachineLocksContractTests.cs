@@ -7,6 +7,8 @@ namespace Aw.Evidence.Tests.Contracts;
 [Lane(TestLane.Unit)]
 public sealed class InMemoryMachineLocksContractTests : MachineLocksContract
 {
+    protected override int HeavyJobSlots => 2;
+
     protected override (IMachineLocks First, IMachineLocks Second) CreatePair()
     {
         var locks = new InMemoryMachineLocks();

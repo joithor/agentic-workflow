@@ -28,9 +28,9 @@ public sealed class DirectoryLocksTests : IDisposable
     public async Task A_waiter_says_once_which_lock_it_waits_on()
     {
         var notices = new StringWriter();
-        await using var held = (await LockTestEnvironment.Locks(_root).AcquireAsync(LockKind.HeavyJob, TimeSpan.Zero, TestContext.Current.CancellationToken)).Value;
+        await using var held = (await LockTestEnvironment.Locks(_root, slots: "1").AcquireAsync(LockKind.HeavyJob, TimeSpan.Zero, TestContext.Current.CancellationToken)).Value;
 
-        var busy = await LockTestEnvironment.Locks(_root, notices: notices).AcquireAsync(LockKind.HeavyJob, TimeSpan.FromSeconds(1.5), TestContext.Current.CancellationToken);
+        var busy = await LockTestEnvironment.Locks(_root, notices: notices, slots: "1").AcquireAsync(LockKind.HeavyJob, TimeSpan.FromSeconds(1.5), TestContext.Current.CancellationToken);
 
         Assert.Equal(EvidenceErrors.LockBusy.Code, busy.Error.Code);
         Assert.Equal($"ui-evidence: waiting on lock: {LockTestEnvironment.Settings(_root).HeavyJob}{Environment.NewLine}", notices.ToString());
@@ -58,6 +58,58 @@ public sealed class DirectoryLocksTests : IDisposable
         var busy = await LockTestEnvironment.Locks(_root, heavyHeld: true).AcquireAsync(LockKind.QaStack, TimeSpan.Zero, TestContext.Current.CancellationToken);
 
         Assert.Equal(EvidenceErrors.LockBusy.Code, busy.Error.Code);
+    }
+
+    [Fact]
+    public async Task Two_holders_take_both_heavy_slots_and_a_third_times_out_busy()
+    {
+        var notices = new StringWriter();
+        var first = (await LockTestEnvironment.Locks(_root).AcquireAsync(LockKind.HeavyJob, TimeSpan.Zero, TestContext.Current.CancellationToken)).Value;
+        var second = (await LockTestEnvironment.Locks(_root).AcquireAsync(LockKind.HeavyJob, TimeSpan.Zero, TestContext.Current.CancellationToken)).Value;
+
+        Assert.True(File.Exists(Path.Combine(LockTestEnvironment.HeavySlot(_root, 1), "owner")), "slot 1 is the lock path");
+        Assert.True(File.Exists(Path.Combine(LockTestEnvironment.HeavySlot(_root, 2), "owner")), "slot 2 is <lock>.2");
+        var third = await LockTestEnvironment.Locks(_root, notices: notices).AcquireAsync(LockKind.HeavyJob, TimeSpan.FromSeconds(1.2), TestContext.Current.CancellationToken);
+        Assert.Equal(EvidenceErrors.LockBusy.Code, third.Error.Code);
+        Assert.Contains("2 slots", third.Error.Message, StringComparison.Ordinal);
+
+        await first.DisposeAsync();
+        await second.DisposeAsync();
+        Assert.Empty(Directory.GetFileSystemEntries(Path.GetDirectoryName(LockTestEnvironment.HeavySlot(_root, 1))!));   // why: the lock path always has a parent
+    }
+
+    [Fact]
+    public async Task With_one_slot_the_heavy_job_lock_is_a_single_mutex()
+    {
+        await using var held = (await LockTestEnvironment.Locks(_root, slots: "1").AcquireAsync(LockKind.HeavyJob, TimeSpan.Zero, TestContext.Current.CancellationToken)).Value;
+
+        var busy = await LockTestEnvironment.Locks(_root, slots: "1").AcquireAsync(LockKind.HeavyJob, TimeSpan.Zero, TestContext.Current.CancellationToken);
+
+        Assert.Equal(EvidenceErrors.LockBusy.Code, busy.Error.Code);
+        Assert.False(Directory.Exists(LockTestEnvironment.HeavySlot(_root, 2)));
+    }
+
+    [Fact]
+    public async Task An_invalid_slot_count_is_reported_once_and_two_slots_are_used()
+    {
+        var notices = new StringWriter();
+        var locks = LockTestEnvironment.Locks(_root, notices: notices, slots: "zero");
+        await using var first = (await locks.AcquireAsync(LockKind.HeavyJob, TimeSpan.Zero, TestContext.Current.CancellationToken)).Value;
+        await using var second = (await locks.AcquireAsync(LockKind.HeavyJob, TimeSpan.Zero, TestContext.Current.CancellationToken)).Value;
+
+        Assert.Equal($"ui-evidence: AW_HEAVY_SLOTS='zero' isn't a whole number of at least 1; using 2 slots{Environment.NewLine}", notices.ToString());
+        Assert.True(Directory.Exists(LockTestEnvironment.HeavySlot(_root, 2)));
+    }
+
+    [Fact]
+    public async Task The_qa_stack_lock_stays_one_slot_whatever_the_heavy_slot_count()
+    {
+        await using var held = (await LockTestEnvironment.Locks(_root, slots: "4").AcquireAsync(LockKind.QaStack, TimeSpan.Zero, TestContext.Current.CancellationToken)).Value;
+
+        var busy = await LockTestEnvironment.Locks(_root, slots: "4").AcquireAsync(LockKind.QaStack, TimeSpan.Zero, TestContext.Current.CancellationToken);
+
+        Assert.Equal(EvidenceErrors.LockBusy.Code, busy.Error.Code);
+        Assert.False(Directory.Exists(LockTestEnvironment.Settings(_root).QaStack + ".2"));
     }
 
     public void Dispose() => _root.Dispose();

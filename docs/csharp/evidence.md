@@ -232,15 +232,16 @@ The adapter (`DirectoryLocks`) is the same lock the shell tools take, so the two
 | | |
 |---|---|
 | QA-stack lock | `$AW_QA_STACK_LOCK`, else `${AW_STATE_DIR:-~/.agentic-workflow}/locks/qa-stack.lock` |
-| Heavy-job lock | `$AW_HEAVY_JOB_LOCK`, else `${AW_STATE_DIR:-~/.agentic-workflow}/locks/heavy-job.lock` |
-| Acquire | an atomic `mkdir` of the lock directory (libc `mkdir`; `EEXIST` means busy), polled every second until the timeout; `ui-evidence: waiting on lock: <dir>` once |
-| Owner | `<dir>/owner`: `<pid> <UTC time> ui-evidence`, the file the `heavy` wrapper writes too |
-| Release | delete our `owner`, then `rmdir`; a directory something else wrote into is left alone |
-| `AW_HEAVY_LOCK_HELD=1` | set by the `heavy` wrapper: the parent already holds the heavy-job lock, so that lease is a no-op |
+| Heavy-job lock | `$AW_HEAVY_JOB_LOCK`, else `${AW_STATE_DIR:-~/.agentic-workflow}/locks/heavy-job.lock`: slot 1. Slot k (2 … `$AW_HEAVY_SLOTS`) is `<lock>.k` |
+| Heavy-job slots | `$AW_HEAVY_SLOTS`, default 2: at most that many heavy jobs at once, the same count the `heavy` wrapper uses. A value that isn't a whole number of at least 1 isn't refused: the lock uses 2 and says once on stderr `ui-evidence: AW_HEAVY_SLOTS='<value>' isn't a whole number of at least 1; using 2 slots` |
+| Acquire | an atomic `mkdir` of a slot directory (libc `mkdir`; `EEXIST` means that slot is busy). Each poll tries slot 1, then 2 … N, the wrapper's order, so a holder that knows only `<lock>` (sindri's lock, a plain `acquire_lock` caller) occupies slot 1 and the total never exceeds the slot count. Polled every second until the timeout; `ui-evidence: waiting on lock: <lock>` once. The QA-stack lock has one slot |
+| Owner | `<slot>/owner`: `<pid> <UTC time> ui-evidence`, the file the `heavy` wrapper writes too |
+| Release | delete our `owner`, then `rmdir` the slot we hold; a directory something else wrote into is left alone |
+| `AW_HEAVY_LOCK_HELD=1` | set by the `heavy` wrapper: the parent already holds a heavy-job slot, so that lease is a no-op (it takes no second slot) |
 | Stale locks | never taken over (the shell primitive doesn't either); remove a dead holder's directory by hand |
 
 `config/lib/locks.sh` (`acquire_lock` / `release_lock`) is the shell side of the same format; the integration tests
-source it to prove the exclusion in both directions.
+source it to prove the exclusion in both directions, and that a C# holder takes `<lock>.2` while bash holds `<lock>`.
 
 ## Judge
 
@@ -277,7 +278,7 @@ the manifest's `login` names (AW-EVIDENCE-006 lists the missing names, never val
 | `AW_VISUAL_MODEL` | `run`: the model label in the verdict-cache key (default `judge-default`) |
 | `UI_EVIDENCE_APP_TITLE`, `UI_EVIDENCE_CONFIG` | `doctor`: the title the app on :3000 must show at `/login`; else the `NAME=value` env file `UI_EVIDENCE_CONFIG` names |
 | `UI_EVIDENCE_SEED_DOMAINS`, `UI_EVIDENCE_SEED_EMAIL_PATTERN` | `provenance`: the seed policy (defaults match only `example.com`, so an unconfigured install stays `unknown`) |
-| `AW_QA_STACK_LOCK`, `AW_HEAVY_JOB_LOCK`, `AW_HEAVY_LOCK_HELD`, `AW_STATE_DIR` | the lock adapter |
+| `AW_QA_STACK_LOCK`, `AW_HEAVY_JOB_LOCK`, `AW_HEAVY_SLOTS`, `AW_HEAVY_LOCK_HELD`, `AW_STATE_DIR` | the lock adapter |
 | the manifest's `login.emailEnv` / `login.passwordEnv` | `parity` sign-in |
 
 `doctor` checks `http://localhost:3000/login`'s title, `docker exec postgres_container pg_isready -U postgres`, and a

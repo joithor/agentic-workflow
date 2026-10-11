@@ -13,6 +13,33 @@ public sealed class SettingsTests
         Assert.Equal("/state/locks/qa-stack.lock", settings.Locks.QaStack);
         Assert.Equal("/state/locks/heavy-job.lock", settings.Locks.HeavyJob);
         Assert.False(settings.Locks.HeavyJobHeld);
+        Assert.Equal(2, settings.Locks.HeavyJobSlots);
+        Assert.Null(settings.Locks.IgnoredHeavyJobSlots);
+    }
+
+    [Theory, Trait("Lane", "unit")]
+    [InlineData("1", 1)]
+    [InlineData("3", 3)]
+    [InlineData(" 4 ", 4)]
+    public void The_heavy_job_slot_count_comes_from_AW_HEAVY_SLOTS(string value, int slots)
+    {
+        var settings = SettingsFromEnvironment.Read(Env(("AW_STATE_DIR", "/state"), ("AW_HEAVY_SLOTS", value)));
+
+        Assert.Equal(slots, settings.Locks.HeavyJobSlots);
+        Assert.Null(settings.Locks.IgnoredHeavyJobSlots);
+    }
+
+    [Theory, Trait("Lane", "unit")]
+    [InlineData("0")]
+    [InlineData("-1")]
+    [InlineData("two")]
+    [InlineData("1.5")]
+    public void An_invalid_slot_count_falls_back_to_two_and_is_kept_for_the_notice(string value)
+    {
+        var settings = SettingsFromEnvironment.Read(Env(("AW_STATE_DIR", "/state"), ("AW_HEAVY_SLOTS", value)));
+
+        Assert.Equal(2, settings.Locks.HeavyJobSlots);
+        Assert.Equal(value, settings.Locks.IgnoredHeavyJobSlots);
     }
 
     [Fact, Trait("Lane", "unit")]

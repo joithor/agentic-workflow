@@ -9,6 +9,8 @@ public sealed class DirectoryLocksContractTests : MachineLocksContract, IDisposa
 {
     private readonly TempDirectory _root = new();
 
+    protected override int HeavyJobSlots => 2;
+
     protected override (IMachineLocks First, IMachineLocks Second) CreatePair() =>
         (LockTestEnvironment.Locks(_root), LockTestEnvironment.Locks(_root));
 
