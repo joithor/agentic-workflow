@@ -20,13 +20,13 @@ public sealed class CliTextTests
             new ProfileStatus(_hash, _hash, ChangedSinceApproval: false, Problem: null, "/home/profile.yaml"),
             [new ServiceStatus(ServiceName.From("heartbeat"), "5s", KnownInstants.Epoch)]);
 
-        var text = SummaryText.Render(status, _endpoint, showUi: true);
+        var text = SummaryText.Render(status, _endpoint, ui: "opened (sindri-ui, pid 77)");
 
         Assert.Equal(string.Join('\n',
             "  profile   /home/profile.yaml (approved, hash 3f1c2a)",
             "  services  heartbeat every 5s (last 00:00:00Z)",
             "  api       127.0.0.1:7410",
-            "  ui        not built yet (S1b); use sindri status",
+            "  ui        opened (sindri-ui, pid 77)",
             "  lease     held by pid 42, epoch 3",
             "  ready     running",
             string.Empty), text.ReplaceLineEndings("\n"));
@@ -39,7 +39,7 @@ public sealed class CliTextTests
     {
         var status = new GetStatusResponse(Running: true, 42, 3, LeaseExpiresAt: null, new ProfileStatus(Approved: null, _hash, ChangedSinceApproval: false, Problem: null, "/p.yaml"), []);
 
-        var text = SummaryText.Render(status, _endpoint, showUi: false);
+        var text = SummaryText.Render(status, _endpoint, ui: null);
 
         Assert.True(SummaryText.NeedsApproval(status));
         Assert.Contains("(not approved; fix: sindri profile approve)", text, StringComparison.Ordinal);

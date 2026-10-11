@@ -25,12 +25,12 @@ internal static class CommandTable
             var scope = provider.CreateAsyncScope();
             await using (scope.ConfigureAwait(false))
             {
-                return await Dispatch(args, scope.ServiceProvider).ConfigureAwait(false);
+                return await Dispatch(args, scope.ServiceProvider, environment).ConfigureAwait(false);
             }
         }
     }
 
-    private static async Task<int> Dispatch(string[] args, IServiceProvider services)
+    private static async Task<int> Dispatch(string[] args, IServiceProvider services, Func<string, string?> environment)
     {
         var options = services.GetRequiredService<JsonSerializerOptions>();
         var probe = services.GetRequiredService<IControlPlaneProbe>();
@@ -40,8 +40,8 @@ internal static class CommandTable
         var ct = CancellationToken.None;
         return args switch
         {
-            [] => await Start(services, client, output, headless: false).ConfigureAwait(false),
-            ["--headless"] => await Start(services, client, output, headless: true).ConfigureAwait(false),
+            [] => await Start(services, client, output, () => UiLauncher.Open(UiLauncher.Locate(environment, AppContext.BaseDirectory))).ConfigureAwait(false),
+            ["--headless"] => await Start(services, client, output, openUi: null).ConfigureAwait(false),
             ["status", .. var rest] when Json(rest) is { } json => await verbs.Status(json, ct).ConfigureAwait(false),
             ["stop"] => await verbs.Stop(ct).ConfigureAwait(false),
             ["profile", "validate", .. var rest] when Json(rest) is { } json => await verbs.Validate(json, ct).ConfigureAwait(false),
@@ -53,9 +53,9 @@ internal static class CommandTable
         };
     }
 
-    private static Task<int> Start(IServiceProvider services, ControlPlaneClient client, Output output, bool headless) =>
-        new StartCommand(services.GetRequiredService<IControlPlaneProbe>(), services.GetRequiredService<IControlPlaneLauncher>(), client, output)
-            .Run(headless, CancellationToken.None);
+    private static Task<int> Start(IServiceProvider services, ControlPlaneClient client, Output output, Func<string>? openUi) =>
+        new StartCommand(services.GetRequiredService<IControlPlaneProbe>(), services.GetRequiredService<IControlPlaneLauncher>(), client, output, openUi)
+            .Run(CancellationToken.None);
 
     private static bool? Json(string[] rest) => rest switch
     {

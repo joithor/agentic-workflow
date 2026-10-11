@@ -29,7 +29,7 @@ internal sealed class Verbs(ControlPlaneClient client, Core.Control.IControlPlan
         var code = SummaryText.NeedsApproval(status.Value) ? 1 : 0;
         return json
             ? await output.Json(status.Value, code).ConfigureAwait(false)
-            : await output.Text(SummaryText.Render(status.Value, found.Value.Endpoint, showUi: false), code).ConfigureAwait(false);
+            : await output.Text(SummaryText.Render(status.Value, found.Value.Endpoint, ui: null), code).ConfigureAwait(false);
     }
 
     internal async Task<int> Stop(CancellationToken ct)

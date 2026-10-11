@@ -8,7 +8,7 @@ namespace Aw.Sindri.Host.Commands;
 /// <summary>The startup summary (factory addendum §17.29.1): one labelled line per part, state always as words.</summary>
 internal static class SummaryText
 {
-    internal static string Render(GetStatusResponse status, ControlEndpoint endpoint, bool showUi)
+    internal static string Render(GetStatusResponse status, ControlEndpoint endpoint, string? ui)
     {
         var lines = new StringBuilder();
         Line(lines, "profile", Profile(status.Profile));
@@ -16,9 +16,9 @@ internal static class SummaryText
             ? "none scheduled (the approved profile names no services)"
             : string.Join(" · ", status.Services.Select(s => $"{s.Name.Value} every {s.Every}{LastRun(s.LastRun)}")));
         Line(lines, "api", endpoint.Url.Authority);
-        if (showUi)
+        if (ui is not null)
         {
-            Line(lines, "ui", "not built yet (S1b); use sindri status");
+            Line(lines, "ui", ui);
         }
 
         Line(lines, "lease", status.Running
