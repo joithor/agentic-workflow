@@ -23,6 +23,35 @@ public sealed class VisualCritiqueTests
         Assert.Contains("Then look at before.png", Assert.Single(cli.Calls).Question.Prompt, StringComparison.Ordinal);
     }
 
+    [Theory]
+    [InlineData("after.png", "ev", null)]
+    [InlineData("after.png", "", null)]
+    [InlineData("../secrets.png", "/tmp/ev", null)]
+    [InlineData("shots/../../x.png", "/tmp/ev", null)]
+    [InlineData("/etc/passwd", "/tmp/ev", null)]
+    [InlineData("after.png", "/tmp/ev", "..")]
+    [InlineData("after.png", "/tmp/ev", "\\server\\x.png")]
+    public async Task Screenshots_must_be_relative_paths_inside_an_absolute_evidence_directory(string after, string evidenceDir, string? baseline)
+    {
+        var cli = Cli(ContentClass.Image).Decides("looks-right", 1);
+        var input = new System.Text.Json.Nodes.JsonObject { ["afterScreenshot"] = after, ["evidenceDir"] = evidenceDir, ["baselineScreenshot"] = baseline };
+
+        var outcome = await new QuestionRun().Ask(VisualCritiqueQuestion.Definition, input.ToJsonString(), cli);
+
+        Assert.Equal(new EscalatedOutcome("invalid-input"), outcome);
+        Assert.Empty(cli.Calls);
+    }
+
+    [Fact]
+    public async Task A_screenshot_in_a_subdirectory_of_the_evidence_directory_is_fine()
+    {
+        var cli = Cli(ContentClass.Image).Decides("looks-right", 1);
+
+        var outcome = await new QuestionRun().Ask(VisualCritiqueQuestion.Definition, """{"afterScreenshot":"shots/after.png","evidenceDir":"/tmp/ev"}""", cli);
+
+        _ = AssertModel("looks-right", outcome);
+    }
+
     [Fact]
     public async Task Without_a_baseline_it_is_judged_on_its_own_and_a_text_only_model_is_never_asked()
     {

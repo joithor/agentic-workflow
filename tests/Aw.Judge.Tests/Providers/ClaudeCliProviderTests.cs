@@ -137,6 +137,15 @@ public sealed class ClaudeCliProviderTests
     }
 
     [Fact]
+    public async Task An_image_question_with_a_relative_evidence_directory_is_errored_without_a_run_or_a_throw()
+    {
+        var result = await new ClaudeCliProvider(_runner).Decide(Questions.Image, Questions.Evidence("relative/dir"), Questions.Budget, TestContext.Current.CancellationToken);
+
+        Assert.Equal(new ProviderErrored("invalid-image-input"), result);
+        Assert.Empty(_runner.Calls);
+    }
+
+    [Fact]
     public async Task An_image_question_without_evidence_paths_is_errored_without_a_run()
     {
         var result = await new ClaudeCliProvider(_runner).Decide(Questions.Image, new JsonObject { ["text"] = "x" }, Questions.Budget, TestContext.Current.CancellationToken);
