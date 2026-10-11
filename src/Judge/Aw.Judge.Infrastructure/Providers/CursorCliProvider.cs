@@ -12,7 +12,8 @@ namespace Aw.Judge.Infrastructure.Providers;
 /// The CLI has no schema mode, so the schema is stated in the prompt and the answer is the last JSON object in the
 /// result text (a prose preamble has been seen). Images are named by absolute path, with "do not search" (given a bare
 /// name the agent globs, finds nothing and reports the file missing). The prompt is an argument, so it is capped at
-/// <see cref="PromptCap"/> characters: four bytes each at most, that keeps it under Linux's 128 KiB per argument.
+/// <see cref="PromptCap"/> characters (for an image question the screenshot paths included): four bytes each at most,
+/// that keeps it under Linux's 128 KiB per argument.
 /// </summary>
 /// <param name="runner">Runs `cursor-agent`.</param>
 internal sealed class CursorCliProvider(IProcessRunner runner) : AgentCliProvider(runner, AgentCliName.CursorCli)
@@ -23,6 +24,9 @@ internal sealed class CursorCliProvider(IProcessRunner runner) : AgentCliProvide
     /// <summary>How many characters of the question's prompt go on the command line.</summary>
     public const int PromptCap = 30_000;
 
+    /// <summary>Of <see cref="PromptCap"/>, how many characters an image question's screenshot paths may take.</summary>
+    public const int PathsCap = 2 * UntrustedText.FieldCap;
+
     /// <inheritdoc />
     protected override AgentCliCall ForText(QuestionRef question, JsonNode? input, string workspace) =>
         Call(workspace, $"{UntrustedText.Capped(question.Prompt, PromptCap)}\n\n{Instruction(question)}");
@@ -31,7 +35,7 @@ internal sealed class CursorCliProvider(IProcessRunner runner) : AgentCliProvide
     protected override AgentCliCall ForImage(QuestionRef question, ImageEvidence evidence, string workspace) =>
         Call(
             evidence.EvidenceDir,
-            $"{question.Prompt}\n\nOpen each screenshot directly with your file-read tool (it reads images), at these paths — do not search for them: {string.Join(", ", evidence.Files)}\n\n{Instruction(question)}");
+            $"{UntrustedText.Capped(question.Prompt, PromptCap - PathsCap)}\n\nOpen each screenshot directly with your file-read tool (it reads images), at these paths — do not search for them: {UntrustedText.Capped(string.Join(", ", evidence.Files), PathsCap)}\n\n{Instruction(question)}");
 
     /// <inheritdoc />
     protected override ProviderResult Read(string output, QuestionRef question)

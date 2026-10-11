@@ -159,7 +159,7 @@ judge prunes old decision details (Retention below).
 | `resolution-check` | `{brief, expected, actual, rootCause, checkKind, checkSummary, beforePassed, afterPassed, diffStat, diff?}`, `checkKind` `ui-evidence` or `test`; a blank `brief` is invalid input | `resolved`, `partial`, `unresolved` (+ `reasons`) | brief | 0.8 | 15 s | the check fails after the fix, or already passed before it → `unresolved` | none |
 | `turn-progress` | `{problem, turnDiff, acceptanceCriteria?, priorDiffStat?, signals?}` (the last three default to empty); a blank `problem` is invalid input | `progressing`, `stalled`, `regressing`, `off-target` | diff | 0.7 | 10 s | a blank `turnDiff` → `stalled` | none |
 | `ui-element-repair` | `{brokenSelector, step, candidates: [{index, role, accessibleName, testId, text}]}` (the four strings may be null) | `repaired` (+ `chosenIndex`), `no-good-candidate` | code | 0.6 | 10 s | no candidates → `no-good-candidate` | none |
-| `visual-critique` | `{afterScreenshot, evidenceDir, baselineScreenshot?}`; `evidenceDir` absolute and each screenshot a relative path that stays inside it (no `..`), else `invalid-input` | `looks-right`, `looks-off`, `sloppy` (+ `reasons`) | image | 0.5 | 20 s | none: judging the screenshot is the question | none |
+| `visual-critique` | `{afterScreenshot, evidenceDir, baselineScreenshot?}`; `evidenceDir` absolute and each screenshot a relative path that stays inside it (no `..`, no control character), else `invalid-input`; the prompt carries each path on one line, capped | `looks-right`, `looks-off`, `sloppy` (+ `reasons`) | image | 0.5 | 20 s | none: judging the screenshot is the question | none |
 
 The input names of `wake-gate`, `brief-scope` and `ask-check` are hook contract; the other five are the C# judge's own
 design (their tier-2 callers are ported to this contract). Prompts carry untrusted text (a ticket, a diff, a problem
@@ -216,7 +216,8 @@ exits at once) and without the judge's own `TYPESAFE_API_KEY` in the environment
 deleted afterwards. The model sees the question's prompt and nothing else: every prompt already carries the input's
 fields (capped and with their delimiter tags defused, `UntrustedText`), so the raw input record is never sent. claude
 and codex read the prompt on standard input, so no input size can hit the system's argument limit; cursor-agent takes
-it as an argument, capped at 30,000 characters (under Linux's 128 KiB per argument). The answer schema is the question's outputs as the decision's enum, plus
+it as an argument, capped at 30,000 characters (under Linux's 128 KiB per argument; for an image question that
+includes the screenshot paths, which get at most 4,000). The answer schema is the question's outputs as the decision's enum, plus
 its extra properties. All three read images, so all three cover every content class.
 
 | Provider | Binary and model | Isolation | Schema and answer |

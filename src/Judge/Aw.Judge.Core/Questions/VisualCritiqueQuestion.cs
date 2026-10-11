@@ -42,7 +42,8 @@ public static class VisualCritiqueQuestion
     };
 
     // The evidence directory is the CLIs' working directory and their Read scope: it must be absolute, and each
-    // screenshot a relative path that stays inside it.
+    // screenshot a relative path that stays inside it, with no control character (a line break would let the path
+    // start a line of its own in the prompt).
     internal static string? InputProblem(VisualCritiqueInput input) =>
         !IsAbsolute(input.EvidenceDir) ? "evidenceDir must be an absolute path"
         : !StaysInside(input.AfterScreenshot) ? "afterScreenshot must be a relative path inside evidenceDir"
@@ -54,15 +55,16 @@ public static class VisualCritiqueQuestion
 
     private static bool StaysInside(string path) =>
         path.Length > 0
+        && !path.Any(char.IsControl)
         && !path.StartsWith('/') && !path.StartsWith('\\') && !(path.Length >= 2 && path[1] == ':')
         && !path.Split('/', '\\').Contains("..", StringComparer.Ordinal);
 
     // Provider-neutral: a CLI provider reads the file from the evidence directory or attaches it as an image.
     private static string Prompt(VisualCritiqueInput input) => string.Join('\n',
     [
-        $"Look at the screenshot {input.AfterScreenshot}.",
+        $"Look at the screenshot {UntrustedText.OneLine(input.AfterScreenshot)}.",
         input.BaselineScreenshot is { } baseline
-            ? $"Then look at {baseline}, a screenshot of the same page on the base branch before this change, and compare them."
+            ? $"Then look at {UntrustedText.OneLine(baseline)}, a screenshot of the same page on the base branch before this change, and compare them."
             : "There is no base-branch screenshot to compare against: judge it on its own.",
         "Rate alignment, spacing, typographic hierarchy, visual weight, and consistency with the reference (when given).",
         "Reply {\"decision\":\"looks-right\",\"reasons\":[]} if it looks right, or {\"decision\":\"looks-off\",\"reasons\":[\"...\"]} or {\"decision\":\"sloppy\",\"reasons\":[\"...\"]} listing the specific problems. Never guess \"looks-right\" if anything looks wrong.",
