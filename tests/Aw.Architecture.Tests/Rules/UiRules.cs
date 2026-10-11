@@ -2,7 +2,8 @@ namespace Aw.Architecture.Tests.Rules;
 
 /// <summary>
 /// The UI package's own rules (.agents/rules/csharp.md "The UI package"), over the unshaped UI assemblies: view models
-/// carry no Avalonia types (so they test in the unit lane), and a platform head holds no views or view models.
+/// carry no Avalonia types (so they test in the unit lane), a platform head holds no views or view models, and nothing in
+/// the UI uses a type of Sindri itself (its HTTP contract is the only edge).
 /// </summary>
 public static class UiRules
 {
@@ -21,7 +22,19 @@ public static class UiRules
     /// <param name="edges">Every dependency edge among the registered assemblies' types.</param>
     /// <returns>One violation per offending type.</returns>
     /// <param name="root">The UI package root (its view models are root.ViewModels, its desktop head root.Desktop).</param>
-    public static IEnumerable<Violation> Check(IEnumerable<Edge> edges, string root = "Aw.Sindri.Ui") =>
+    /// <param name="server">The server package the UI reaches only over HTTP (no type of it may be used).</param>
+    public static IEnumerable<Violation> Check(IEnumerable<Edge> edges, string root = "Aw.Sindri.Ui", string server = "Aw.Sindri") =>
+        ServerTypes(edges, root, server).Concat(Shape(edges, root));
+
+    // The UI reaches its server only over HTTP: no type of the server package (outside the UI's own root).
+    private static IEnumerable<Violation> ServerTypes(IEnumerable<Edge> edges, string root, string server) =>
+        edges
+            .Where(e => In(e, root) && e.Target.FullName.StartsWith(server + ".", StringComparison.Ordinal)
+                && !e.Target.FullName.StartsWith(root + ".", StringComparison.Ordinal))
+            .Select(e => new Violation(Id, $"{TypeNames.Qualified(e.Origin)} uses {e.Target.FullName}",
+                "the UI reaches Sindri only through its HTTP contract and endpoint record; mirror the record in Aw.Sindri.Ui.Api"));
+
+    private static IEnumerable<Violation> Shape(IEnumerable<Edge> edges, string root) =>
         edges
             .Where(e => In(e, root + ".ViewModels") && e.Target.FullName.StartsWith("Avalonia.", StringComparison.Ordinal))
             .Select(e => new Violation(Id, $"{TypeNames.Qualified(e.Origin)} uses {e.Target.FullName}",

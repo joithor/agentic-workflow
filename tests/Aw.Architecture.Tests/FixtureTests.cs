@@ -232,7 +232,8 @@ public sealed class FixtureTests
 
     [Fact]
     public void Ui_rule_reports_avalonia_in_view_models_and_views_in_heads() =>
-        Verify.Exactly(UiRules.Check(FixtureSet.Edges("Ui"), "Aw.Architecture.Tests.Fixtures.Ui"), UiRules.Id,
+        Verify.Exactly(UiRules.Check(FixtureSet.Edges("Ui", "UiServer"), "Aw.Architecture.Tests.Fixtures.Ui", "Aw.Architecture.Tests.Fixtures.UiServer"), UiRules.Id,
+            "Ui.ViewModels.ServerCoupledViewModel uses Aw.Architecture.Tests.Fixtures.UiServer.Core.ServerStatus",
             "Ui.ViewModels.LeakyViewModel uses Avalonia.Controls.TextBlock",
             "Ui.Desktop.HeadView uses Avalonia.Controls.ContentControl",
             "Ui.Desktop.HeadView uses System.ComponentModel.INotifyPropertyChanged",
@@ -242,4 +243,15 @@ public sealed class FixtureTests
     public void Xaml_generated_closures_are_exempt_from_the_locator_rule_and_hand_written_code_is_not() =>
         Verify.Exactly(ServiceProviderRules.Check(Edge.All(FixtureSet.Types("Xaml"), Scope.Of([]))), ServiceProviderRules.Id,
             "Xaml.HandWritten uses IServiceProvider");
+
+    [Fact]
+    public void The_real_views_xaml_locator_use_is_exempt()
+    {
+        var edges = Production.Edges
+            .Where(e => TypeNames.Qualified(e.Origin).StartsWith("Aw.Sindri.Ui.Views.", StringComparison.Ordinal) && ServiceProviderRules.IsLocator(e.Target.FullName))
+            .ToList();
+
+        Assert.NotEmpty(edges);
+        Assert.All(edges, e => Assert.True(ServiceProviderRules.IsXamlGenerated(e), $"{e.Text} is not exempt"));
+    }
 }
