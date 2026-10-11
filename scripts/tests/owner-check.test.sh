@@ -30,9 +30,10 @@ expect() { # expect <name> <code> <substring>...
 free_port() { python3 -c 'import socket; s=socket.socket(); s.bind(("127.0.0.1",0)); print(s.getsockname()[1]); s.close()'; }
 listening() { (exec 3<>"/dev/tcp/127.0.0.1/$1") 2>/dev/null; }
 listen() { # listen <port> — a bare listener in the background, like an aborted check's process
-  python3 -c 'import socket,sys,time
-s=socket.socket(); s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1); s.bind(("127.0.0.1", int(sys.argv[1]))); s.listen(); time.sleep(600)' "$1" &
-  LISTENERS+=("$!")
+  ( python3 -c 'import socket,sys,time
+s=socket.socket(); s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1); s.bind(("127.0.0.1", int(sys.argv[1]))); s.listen(); time.sleep(600)' "$1" >/dev/null 2>&1 &
+    echo "$!" > "$T/listener.pid" )
+  LISTENERS+=("$(cat "$T/listener.pid")")
   local i; for i in $(seq 1 50); do listening "$1" && return 0; sleep 0.1; done; return 1
 }
 
@@ -53,7 +54,7 @@ s=socket.socket(); s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1); s.bi
     echo "profile needs approval"; exit 1 ;;
   "profile validate --json") printf '{"valid":true,"approved":false,"hash":"%s"}\n' "$(printf 'a%.0s' $(seq 1 64))"; exit 1 ;;
   "profile approve "*) exit 0 ;;
-  "context map import "*) [ -f "${*##* }" ] || exit 2; exit 0 ;;
+  "context map import "*) [ -f "${@: -1}" ] || exit 2; exit 0 ;;
   stop) [ ! -f "$OWNER_CHECK_TEST_PID" ] || { kill "$(cat "$OWNER_CHECK_TEST_PID")" 2>/dev/null; rm -f "$OWNER_CHECK_TEST_PID"; }; exit 0 ;;
   *) exit 2 ;;
 esac
