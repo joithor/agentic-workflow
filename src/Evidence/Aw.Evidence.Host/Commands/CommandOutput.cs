@@ -36,7 +36,7 @@ internal static class CommandOutput
 
     internal static void Message(string message) => Console.Error.WriteLine(Prefix + message);
 
-    /// <summary>Writes the error to stderr; a lock timeout exits 75, a failure after the run started 4, anything else 1.</summary>
+    /// <summary>Writes the error to stderr; a lock timeout exits 75, an unavailable browser, file or lock directory 4, anything else 1.</summary>
     internal static int Error(Error error)
     {
         Message($"{error.Code} {error.Message}");

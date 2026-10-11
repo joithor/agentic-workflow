@@ -32,6 +32,6 @@ internal static class DoctorCommand
             CommandOutput.Message($"doctor: {failure}");
         }
 
-        return CommandOutput.Json(result.Value, json, result.Value.Healthy ? CommandOutput.Ok : CommandOutput.Refused);
+        return CommandOutput.Json(result.Value, json, result.Value.Healthy ? CommandOutput.Ok : CommandOutput.CheckFailed);
     }
 }
