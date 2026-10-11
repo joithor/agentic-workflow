@@ -1,0 +1,3 @@
+#nullable enable
+Aw.BugFix.Infrastructure.BugFixInfrastructureServiceCollectionExtensions
+static Aw.BugFix.Infrastructure.BugFixInfrastructureServiceCollectionExtensions.AddBugFixInfrastructure(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services, System.Func<string!, string?>! environment) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!

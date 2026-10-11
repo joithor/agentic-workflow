@@ -24,5 +24,9 @@ internal static class Packages
         "Aw.Evidence.Features",
         "Aw.Evidence.Infrastructure",
         "Aw.Evidence.Host",
+        "Aw.BugFix.Core",
+        "Aw.BugFix.Features",
+        "Aw.BugFix.Infrastructure",
+        "Aw.BugFix.Host",
     ];
 }

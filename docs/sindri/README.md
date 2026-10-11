@@ -1,8 +1,69 @@
 # Sindri
 
-Sindri is a local, always-on harness that picks up work, sizes it, starts agent sessions with cited context, keeps them on track and ships them through a fixed recipe. It asks the human only when it has to. Design: `docs/superpowers/specs/2026-10-07-sindri-design.md`.
+Sindri is a local, always-on harness that picks up work, sizes it, starts agent sessions with cited context, keeps them on track and ships them. It asks the human only when it has to. Two things carry the name today:
 
-This package is being built in plans. What exists today (Plans 2 and 3; the code index is documented in `index.md`):
+- **The Sindri application**, designed below and built new in C# (not ported from TypeScript). None of it is built or installed yet.
+- **The TypeScript `sindri/` package** ([below](#today-the-typescript-reference-sindri)). It runs at the desk now and is the reference for what each part does. It keeps running until the switch (readiness spec §4a step 3).
+
+Specs: the core design `docs/superpowers/specs/2026-10-07-sindri-design.md`, and the factory addendum `docs/superpowers/specs/2026-10-09-sindri-factory-addendum.md` (A below), whose §17.28 (the workflow engine) and §17.29 (Sindri as an application) define the app. Decisions Q6 and Q7 are in A §17.17.
+
+## The application
+
+### What it is
+
+One process per host, started by `sindri`, with a UI app as its client. It provides three engines (A §17.29.2):
+
+| Engine | What it does |
+|---|---|
+| Control plane | The ledger, the command layer, the scheduler and host lease, the outbox, notifications, the API (HTTP plus an event stream) and webhook endpoints. Every surface is a client: the CLI, the UI app, the phone and Claude Code sessions |
+| Workflow engine | Runs every piece of work as a workflow instance from a recipe (A §17.28) |
+| Context retrieval engine | The context graph and its query planner over trackers, PRDs, notes, memory, the code index and the product map, all scrubbed and cited (A §17.3) |
+
+### What it is not
+
+It doesn't replace your terminal or your agent tool. Agent work, yours and the factory's, happens in Claude Code sessions in your terminal (Warp today). Sindri starts those sessions, feeds them context and tracks their work. It has no chat surface. The UI app is a window onto the control plane (the queue, status, decisions, receipts, metrics and "open in Warp"), not a chat (A §17.29.3).
+
+### Starting it
+
+`sindri` starts the control-plane process under the host lease, starts the UI app and prints what's running: the approved profile, the index, intake sources, background services, the API address and what needs you. `sindri --headless` starts it without the UI, for the always-on box. Every other `sindri <verb>` is a client call to the running process, and starts the process first if needed.
+
+Config is the profile (`profile.md`); changes still go through `sindri profile approve`. Background services run inside the process on the profile's cadence: the code index (watch, quick builds on change, nightly full build), intake polling, scorer and metrics, the weekly evolve job, and webhook listeners. These are today's launchd jobs moved into the process; launchd only keeps the process alive (A §17.29.1).
+
+### The factory line
+
+Each workflow is a recipe, and each starts the next (A §17.29.2):
+
+intake → design studio → scoping → design → builder → tester → multi-lens validation → verification → shipper → PR babysitter
+
+Design freezes the **packet** (`packet.json`, A §17.4), the handoff spec the rest of the line works from. Verification is the human's review and decision. Webhooks (alerts, errors, new tickets) start triage, incident response and comms workflows.
+
+### Recipes and blocks
+
+- A **recipe** is declarative YAML, validated by a JSON Schema, that names states, transitions, gates, evidence, effects, loop caps, timeouts and budgets. A new workflow, or a change to one, is a config change. Recipes can be generated per deliverable and evolved like other artifacts.
+- A **block** is a typed C# module with its own contract and tests: a gate, an evidence provider, a Step implementation or an effect kind. New code is needed only for a new block.
+- The **engine** owns everything else: state, fencing, idempotency, timers, park, escalate and takeover, loops, budgets and receipts.
+- **Tools become blocks, sequences become recipes** (A §17.28.2). The finished C# tool ports (`Redaction`, `Packets`, `Readiness`, `BugFix`, and `Judge` and `Evidence` once they land) are blocks; a skill's phase sequence, such as `/bugFixOrchestrator`'s, becomes a recipe.
+- Gates guard against an agent's honest mistakes. Containing a deliberately adversarial agent is the sandbox's job (A §17.28.3, `docs/csharp/bugfix.md` "Threat model").
+
+### How you interject
+
+- **A live session:** attach in Warp and type. That's a takeover: the workflow pauses, timers stopped, until `sindri handback`.
+- **No live session** (between steps, at a gate, parked): `sindri open <item>`, or "open in Warp" in the UI, starts a Claude Code session in your terminal, seeded with the item's state, packet, evidence and context. The item is taken over until handback.
+- **From your own sessions:** the `sindri` CLI and a Sindri MCP server give an item's state and context, run a retrieval query, or file a request ("re-scope this"). Calls from a session are requests, never decisions. Approvals stay human actions, through authenticated verbs and UI forms.
+
+### Build order
+
+Not a module-by-module port of `sindri/` (A §17.29.4):
+1. app shell: the process and CLI, profile, ledger, host lease, command layer and API, scheduler, UI app shell;
+2. the workflow engine and recipe format;
+3. the context retrieval engine, over the sources already reachable;
+4. blocks, each when the first recipe needs it (the code index, scorer, scoping and evolve are rebuilt from their TS reference);
+5. workflows down the factory line, intake first;
+6. the switch, once every desk tool has its C# form.
+
+## Today: the TypeScript reference (`sindri/`)
+
+The TS package was built in plans, and is what runs now. What exists (the code index is documented in `index.md`):
 
 | Command | What it does |
 |---|---|
@@ -71,4 +132,4 @@ The `plan-file` tracker reads each `### Task N: …` heading as one item and its
 | Turn an approved spec into proven PRs, by hand | `/specToProvenPR` |
 | Review a plan before building it | `/autoplan` |
 | See the backlog and what Sindri would start | `sindri observe` |
-| Have work picked up, run and shipped for you | `sindri start` / auto-start (rollout step 3a and later; not built yet) |
+| Have work picked up, run and shipped for you | The factory line in the Sindri application (not built yet; see "The application") |
