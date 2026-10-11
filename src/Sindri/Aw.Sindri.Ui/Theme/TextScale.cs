@@ -1,4 +1,3 @@
-using System.Diagnostics.CodeAnalysis;
 using Avalonia.Controls;
 
 namespace Aw.Sindri.Ui.Theme;
@@ -8,7 +7,6 @@ namespace Aw.Sindri.Ui.Theme;
 /// stay in the token dictionary; the scaled ones are written over them, so the typography styles' DynamicResource
 /// setters follow.
 /// </summary>
-[SuppressMessage("Design", "MA0182:Internal type is apparently never used", Justification = "U0 Unit D's Settings and the shell's start-up apply the stored scale; until they land only the theme tests call it.")]
 internal static class TextScale
 {
     /// <summary>The smallest scale.</summary>

@@ -1,4 +1,3 @@
-using System.Diagnostics.CodeAnalysis;
 using Aw.Sindri.Ui.Platform;
 
 namespace Aw.Sindri.Ui.ViewModels.Settings;
@@ -9,7 +8,6 @@ namespace Aw.Sindri.Ui.ViewModels.Settings;
 /// the theme through the apply callback (no Avalonia types here). Built on the UI thread: an OS change raised elsewhere is
 /// posted back to it.
 /// </summary>
-[SuppressMessage("Design", "MA0182:Internal type is apparently never used", Justification = "U0 Unit D: the integrator builds it in SindriApp.Create(SindriPlatform, TimeProvider) for the shell's Settings page.")]
 internal sealed class SettingsViewModel : ObservableObject, IDisposable
 {
     private readonly Preferences _preferences;

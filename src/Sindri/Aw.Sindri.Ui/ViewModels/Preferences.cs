@@ -1,4 +1,3 @@
-using System.Diagnostics.CodeAnalysis;
 using Aw.Sindri.Ui.Api;
 using Aw.Sindri.Ui.Platform;
 
@@ -10,7 +9,6 @@ namespace Aw.Sindri.Ui.ViewModels;
 /// motion) read and write through it.
 /// </summary>
 /// <param name="store">Where the head keeps them.</param>
-[SuppressMessage("Design", "MA0182:Internal type is apparently never used", Justification = "U0 contract: Unit A's shell and Unit D's Settings read and write through it; until then only its tests use it.")]
 internal sealed class Preferences(IPreferencesStore store)
 {
     /// <summary>Reads the preferences.</summary>
