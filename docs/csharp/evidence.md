@@ -319,7 +319,13 @@ move behind an AOT host if the browser adapter ever allowed it.
 | `IEvidenceSettings` (user agent, visual model, seed policy, app title) | `EnvironmentEvidenceSettings` | `FakeEvidenceSettings` |
 | `IIdGenerator` (Kernel; the run instance) | `RandomIds` | `SequentialIds` |
 
-Each port's contract suite lives in `tests/Aw.Evidence.Testing`; the fake and the adapter both pass it.
+Each port with behaviour to pin has a contract suite in `tests/Aw.Evidence.Testing` that the fake and the adapter both
+run: `BrowserSessionContract` (fake: unit; Playwright on the fixture site: heavy), `BrowserInstallerContract` (fake: unit;
+Playwright: heavy), `RunFilesContract`, `ImageCodecContract`, `VerdictCacheStoreContract`, `MachineLocksContract`,
+`JudgeContract`, `StackProbeContract` (the adapter over a local HTTP server, a stub `docker` and a loopback listener),
+`ProvenanceQueryContract` (the adapter over a stub `docker` playing `psql -At`), `SecretsSourceContract` and
+`IdGeneratorContract`. `IEvidenceSettings` has none: its fake is a set of plain values with no behaviour that could
+drift; the adapter's names, defaults, blank-as-unset and env-file fallback are pinned by `EnvironmentEvidenceSettingsTests`.
 
 ## At the switch
 
