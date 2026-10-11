@@ -106,6 +106,21 @@ public abstract class ProcessRunnerContract : IDisposable
         Expect.That(result.End == ProcessEnd.FailedToStart && result.ExitCode is null, $"the start failed, got {result}");
     }
 
+    /// <summary>
+    /// An installed program asked to run in a working directory that doesn't exist failed to start: the program is there,
+    /// the caller's path is wrong, so it must not read as a missing program.
+    /// </summary>
+    /// <returns>A task.</returns>
+    [Fact]
+    public async Task A_missing_working_directory_failed_to_start()
+    {
+        var missing = Path.Combine(_directory, "no-such-directory");
+
+        var result = await Run(new FakeProgram { StandardOutput = "ran" }, request => request with { WorkingDirectory = missing });
+
+        Expect.That(result.End == ProcessEnd.FailedToStart && result.ExitCode is null, $"the start failed, got {result}");
+    }
+
     /// <summary>Each stream is kept up to the request's output limit; the rest is dropped and the run still ends normally.</summary>
     /// <returns>A task.</returns>
     [Fact]
