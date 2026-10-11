@@ -90,7 +90,8 @@ every 20 s.
   nobody took over, lost nothing to fencing). Once another process took the lease, renew fails with `SND-LEASE-002` and
   the process stops (exit 1): it must not write under a stale epoch. Any other renewal error (a busy or unreadable
   ledger) is logged and retried at the next tick, until the grant expires; past expiry the process stops too. A stop
-  clears the grant before releasing it, and a renewal that finishes afterwards doesn't hold it again.
+  clears the grant and requests the shutdown before releasing the lease; a renewal that finishes afterwards doesn't
+  hold the grant again, and one that lost to the release ends quietly (a stop, not a loss: exit 0).
 - **Fencing:** every ledger append checks, in its own transaction, that the writer's grant is the current epoch;
   otherwise `SND-LEASE-003` and nothing is written.
 
