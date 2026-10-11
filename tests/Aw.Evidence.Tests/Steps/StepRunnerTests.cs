@@ -78,7 +78,22 @@ public sealed class StepRunnerTests
     }
 
     [Fact, Trait("Lane", "unit")]
-    public async Task An_unavailable_judge_leaves_the_step_broken_after_two_attempts()
+    public async Task A_judge_that_answers_nothing_leaves_the_step_broken_after_two_failed_calls()
+    {
+        var judge = new FakeJudge();
+        var session = Session(static p => p.Candidates.Add(new Candidate(0, "button", "Open", TestId: null, "Open")));
+
+        var (status, log) = await Run(session, ScriptBuilder.Click("open"), judge);
+
+        Assert.Equal(StepStatus.Broken, status);
+        Assert.Equal(RepairRules.MaxAttempts, judge.RepairRequests.Count);
+        Assert.Equal(RepairRules.MaxAttempts, log.All.Count);
+        Assert.All(log.All, static i => Assert.False(i.Ok));
+        Assert.All(log.All, static i => Assert.Null(i.InputTokens));
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task No_judge_wired_leaves_the_step_broken_without_calling_or_recording_a_model()
     {
         var judge = FakeJudge.Unavailable;
         var session = Session(static p => p.Candidates.Add(new Candidate(0, "button", "Open", TestId: null, "Open")));
@@ -86,9 +101,8 @@ public sealed class StepRunnerTests
         var (status, log) = await Run(session, ScriptBuilder.Click("open"), judge);
 
         Assert.Equal(StepStatus.Broken, status);
-        Assert.Equal(RepairRules.MaxAttempts, judge.RepairRequests.Count);
-        Assert.All(log.All, static i => Assert.False(i.Ok));
-        Assert.All(log.All, static i => Assert.Null(i.InputTokens));
+        Assert.Empty(judge.RepairRequests);
+        Assert.Empty(log.All);
     }
 
     [Fact, Trait("Lane", "unit")]

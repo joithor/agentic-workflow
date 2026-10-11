@@ -95,12 +95,26 @@ public sealed class VisualGateTests
     {
         var files = new InMemoryRunFiles().With(After, Png(WithDot())).With(Baseline, Png(Plain()));
 
-        var (outcome, log) = await Decide(files, FakeJudge.Unavailable, Input());
+        var (outcome, log) = await Decide(files, new FakeJudge(), Input());
 
         Assert.Equal(Verdict.Unchecked, outcome.Verdict);
         Assert.Empty(outcome.Reasons);
         Assert.Empty(outcome.Cache.Entries);
         Assert.False(Assert.Single(log.All).Ok);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task No_judge_wired_stays_unchecked_without_calling_or_recording_a_model()
+    {
+        var files = new InMemoryRunFiles().With(After, Png(WithDot())).With(Baseline, Png(Plain()));
+        var judge = FakeJudge.Unavailable;
+
+        var (outcome, log) = await Decide(files, judge, Input());
+
+        Assert.Equal(Verdict.Unchecked, outcome.Verdict);
+        Assert.Empty(outcome.Cache.Entries);
+        Assert.Empty(judge.CritiqueRequests);
+        Assert.Empty(log.All);
     }
 
     [Fact, Trait("Lane", "unit")]

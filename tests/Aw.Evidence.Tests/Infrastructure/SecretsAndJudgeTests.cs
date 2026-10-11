@@ -17,11 +17,12 @@ public sealed class SecretsAndJudgeTests
     }
 
     [Fact, Trait("Lane", "unit")]
-    public async Task The_unavailable_judge_answers_nothing_and_says_so_once()
+    public async Task The_unavailable_judge_is_not_available_answers_nothing_and_says_so_once()
     {
         var log = new CountingLogger();
         var judge = new UnavailableJudge(log);
 
+        Assert.False(judge.IsAvailable);
         Assert.Null(await judge.CritiqueAsync(null!, TestContext.Current.CancellationToken));   // why: the judge never reads the request
         Assert.Null(await judge.RepairSelectorAsync(null!, TestContext.Current.CancellationToken));   // why: as above
 

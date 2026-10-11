@@ -4,12 +4,23 @@ using Microsoft.Extensions.Logging;
 namespace Aw.Evidence.Infrastructure.Judging;
 
 /// <summary>
-/// The judge until its CLI adapter lands: every answer is null, so selector repair doesn't happen and the visual
-/// verdict stays unchecked (callers fail closed). Says so once per process, at information.
+/// The judge until its CLI adapter lands: <see cref="IsAvailable"/> is false, so callers neither call it nor record a
+/// model invocation; selector repair doesn't happen and the visual verdict stays unchecked (callers fail closed). Called
+/// anyway, every answer is null. Says once per process, at information, that it isn't wired.
 /// </summary>
 internal sealed partial class UnavailableJudge(ILogger<UnavailableJudge> logger) : IJudge
 {
     private int _announced;
+
+    /// <inheritdoc/>
+    public bool IsAvailable
+    {
+        get
+        {
+            Announce();
+            return false;
+        }
+    }
 
     /// <inheritdoc/>
     public ValueTask<SelectorRepair?> RepairSelectorAsync(SelectorRepairRequest request, CancellationToken cancellationToken)

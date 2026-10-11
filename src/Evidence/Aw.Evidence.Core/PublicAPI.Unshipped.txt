@@ -399,6 +399,7 @@ Aw.Evidence.Core.Images.RgbaImage.Pixels.get -> System.ReadOnlySpan<byte>
 Aw.Evidence.Core.Images.RgbaImage.Width.get -> int
 Aw.Evidence.Core.Judging.IJudge
 Aw.Evidence.Core.Judging.IJudge.CritiqueAsync(Aw.Evidence.Core.Judging.VisualCritiqueRequest! request, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Evidence.Core.Judging.VisualVerdict?>
+Aw.Evidence.Core.Judging.IJudge.IsAvailable.get -> bool
 Aw.Evidence.Core.Judging.IJudge.RepairSelectorAsync(Aw.Evidence.Core.Judging.SelectorRepairRequest! request, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Evidence.Core.Judging.SelectorRepair?>
 Aw.Evidence.Core.Judging.RepairDecision
 Aw.Evidence.Core.Judging.RepairDecision.NoGoodCandidate = 1 -> Aw.Evidence.Core.Judging.RepairDecision

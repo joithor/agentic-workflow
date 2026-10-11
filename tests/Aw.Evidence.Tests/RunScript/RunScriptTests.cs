@@ -23,7 +23,7 @@ public sealed class RunScriptTests
 
     private static RunScriptHarness WithMenu()
     {
-        var harness = new RunScriptHarness();
+        var harness = new RunScriptHarness { Judge = new FakeJudge() };
         _ = harness.Page.TestIds.Add("open-menu");
         harness.Page.OnClick["testId:open-menu"] = static p => p.Texts.Add("Menu");
         return harness;
@@ -81,9 +81,10 @@ public sealed class RunScriptTests
     }
 
     [Fact, Trait("Lane", "unit")]
-    public async Task RunScript_records_the_planning_call_and_an_unavailable_critique_as_unchecked()
+    public async Task RunScript_records_the_planning_call_and_a_failed_critique_as_unchecked()
     {
         var harness = WithMenu();
+        harness.Judge = new FakeJudge();
         _ = harness.WithScript(A.Script().WithStep(ScriptBuilder.Goto("/hospitals"))
             .WithPlanning(new PlanningMeta(Pr: "42", Model: "planner", ElapsedMs: 900, InputTokens: 10, OutputTokens: null)).Build());
 
@@ -94,6 +95,18 @@ public sealed class RunScriptTests
         Assert.Equal([InvocationPhase.Planning, InvocationPhase.VisualCritique], summary.Invocations.Select(static i => i.Phase));
         Assert.Null(summary.Invocations[0].OutputTokens);
         Assert.False(summary.Invocations[1].Ok);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task RunScript_without_a_judge_stays_unchecked_and_records_no_model_call()
+    {
+        var harness = WithMenu();
+        _ = harness.WithScript(A.Script().WithStep(ScriptBuilder.Goto("/hospitals")).Build());
+
+        var summary = (await harness.Run(A.RunScriptRequest().Build())).Value.Summary;
+
+        Assert.Equal(Verdict.Unchecked, summary.Visual.Verdict);
+        Assert.Empty(summary.Invocations);
     }
 
     [Fact, Trait("Lane", "unit")]
