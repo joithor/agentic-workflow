@@ -47,7 +47,7 @@ public static class SindriErrors
     /// <summary>SND-API-003: serve can't listen on the API port: another program has it, it is refused, or the host failed to start listening.</summary>
     public static readonly ErrorDefinition PortInUse = new("SND-API-003", ErrorKind.Unavailable, "The API port is in use");
 
-    /// <summary>SND-API-004: the API answered an error without a catalogue code (a route or method it doesn't serve, a body it couldn't read).</summary>
+    /// <summary>SND-API-004: the API answered an error without a catalogue code (a route, method or Content-Type it doesn't serve).</summary>
     public static readonly ErrorDefinition ApiNoCode = new("SND-API-004", ErrorKind.Unavailable, "The API answered without an error code");
 
     /// <summary>SND-API-005: a handler failed with an unexpected exception (a bug); the control plane logged it.</summary>
@@ -59,7 +59,7 @@ public static class SindriErrors
     /// <summary>SND-CLI-002: the process didn't come up after starting it.</summary>
     public static readonly ErrorDefinition StartFailed = new("SND-CLI-002", ErrorKind.Unavailable, "Sindri didn't start");
 
-    /// <summary>SND-CLI-003: a command's input is malformed (a profile hash, AW_SINDRI_PORT).</summary>
+    /// <summary>SND-CLI-003: bad input: a malformed CLI argument or setting (a profile hash, AW_SINDRI_PORT), or an API request body or value the control plane refused (a 400).</summary>
     public static readonly ErrorDefinition InvalidInput = new("SND-CLI-003", ErrorKind.Invalid, "Invalid command input");
 
     /// <summary>SND-SCHED-001: a background service run failed.</summary>

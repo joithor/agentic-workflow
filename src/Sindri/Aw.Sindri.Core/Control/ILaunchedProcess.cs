@@ -12,7 +12,10 @@ public interface ILaunchedProcess : IDisposable
     /// <summary>Whether it has exited (it refused to start, or crashed).</summary>
     public bool HasExited { get; }
 
-    /// <summary>The last 'SND-' line it wrote to its log (never an earlier run's), or a note that there is none.</summary>
+    /// <summary>
+    /// The last 'SND-' line in its log, or a note that there is none. Only lines written since this start count, not an
+    /// earlier run's (a concurrent start writing to the same log would count too).
+    /// </summary>
     /// <returns>The line.</returns>
     public string LastError();
 }
