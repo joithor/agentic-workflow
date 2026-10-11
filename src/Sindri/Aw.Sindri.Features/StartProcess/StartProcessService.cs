@@ -26,6 +26,13 @@ internal sealed class StartProcessService(ILease lease, IProcessProbe probe, Hel
         var entry = events.Entry(EventTypes.ProcessStarted, new ProcessStarted(self.Host, self.Pid, grant.Value.Epoch, hash),
             string.Create(CultureInfo.InvariantCulture, $"{EventTypes.ProcessStarted}:{grant.Value.Epoch}"));
         var recorded = await ledger.Append(entry, grant.Value, cancellationToken).ConfigureAwait(false);
-        return recorded.IsError ? recorded.Error : new StartProcessResponse(grant.Value, hash);
+        if (recorded.IsError)
+        {
+            held.Clear();   // the start isn't recorded, so don't keep the lease: give it back for the next start
+            _ = await lease.Release(grant.Value, cancellationToken).ConfigureAwait(false);
+            return recorded.Error;
+        }
+
+        return new StartProcessResponse(grant.Value, hash);
     }
 }

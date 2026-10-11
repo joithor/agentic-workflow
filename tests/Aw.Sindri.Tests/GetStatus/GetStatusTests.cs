@@ -59,15 +59,14 @@ public sealed class GetStatusTests
     }
 
     [Fact, Trait("Lane", "unit")]
-    public async Task GetStatus_reports_a_ledger_that_cant_be_read_as_the_profile_problem()
+    public async Task GetStatus_returns_the_ledger_error_when_the_recorded_approval_cant_be_read()
     {
         var live = SliceHarness.Profile("5s");
         _h.Profiles.Live = live;
         _ = await _h.Profiles.Save(live, Token);
 
-        var status = (await new GetStatusService(_h.Held, _h.Profiles, _h.Profiles, new ReadFailingLedger(_h.Store), _h.Events).Handle(new GetStatusRequest(), Token)).Value;
+        var status = await new GetStatusService(_h.Held, _h.Profiles, _h.Profiles, new ReadFailingLedger(_h.Store), _h.Events).Handle(new GetStatusRequest(), Token);
 
-        Assert.Equal(ReadFailingLedger.Failure.Message, status.Profile.Problem);
-        Assert.True(status.Profile.NeedsApproval);
+        Assert.Equal(ReadFailingLedger.Failure.Code, status.Error.Code);   // an error (exit 2), never "needs approval"
     }
 }

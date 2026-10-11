@@ -33,11 +33,13 @@ internal sealed class ApproveProfileService(IProfileSource live, IApprovals appr
             return recorded.Error;   // refuse: without the latest recorded approval, the preview can't judge and the key can't name what it follows
         }
 
-        var shown = await Show(loaded.Value, recorded.Value, cancellationToken).ConfigureAwait(false);
-        if (request.Hash is not { } asked || shown.Approved)
+        var preview = await Show(loaded.Value, recorded.Value, approving: request.Hash is not null, cancellationToken).ConfigureAwait(false);
+        if (preview.IsError || request.Hash is not { } asked || preview.Value.Approved)
         {
-            return shown;
+            return preview;
         }
+
+        var shown = preview.Value;
 
         if (Refusal(asked, loaded.Value, request.Confirmed) is { } refusal)
         {
@@ -76,9 +78,14 @@ internal sealed class ApproveProfileService(IProfileSource live, IApprovals appr
     /// What to show. Approved is <see cref="ProfileRules.IsApproved"/>: saved and the latest recorded approval, so a saved
     /// approval whose event is missing (or isn't the latest) shows as not approved and approving again records it.
     /// </summary>
-    private async ValueTask<ApproveProfileResponse> Show(LoadedProfile loaded, RecordedApproval? recorded, CancellationToken cancellationToken)
+    private async ValueTask<Result<ApproveProfileResponse>> Show(LoadedProfile loaded, RecordedApproval? recorded, bool approving, CancellationToken cancellationToken)
     {
         var latest = await approvals.Latest(cancellationToken).ConfigureAwait(false);
+        if (latest.IsError && !approving)
+        {
+            return latest.Error;   // a preview can't judge an approval it can't read; approving overwrites (and so repairs) it
+        }
+
         var previous = latest.IsSuccess ? latest.Value : null;
         var approved = ProfileRules.IsApproved(previous?.Hash, recorded?.Hash, loaded.Hash);
         return new ApproveProfileResponse(loaded.Hash, ProfileDiff.Between(previous?.Profile, loaded.Profile), approved);
