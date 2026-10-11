@@ -7,4 +7,7 @@ internal static class Composition
 {
     public static ICollection<string> Compose(ICollection<string> services) =>
         services.AddThingFeatures().AddThingInfrastructure();
+
+    public static string Labelled(ICollection<string> services) =>
+        services.AddThingFeatures().First() + ThingFeaturesServiceCollectionExtensions.Label;
 }

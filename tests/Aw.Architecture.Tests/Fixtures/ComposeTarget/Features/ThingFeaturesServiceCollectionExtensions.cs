@@ -10,4 +10,8 @@ public static class ThingFeaturesServiceCollectionExtensions
     }
 
     public static string Describe() => "not a registration method";
+
+#pragma warning disable CA2211, MA0069 // Fixture: a mutable public static field the Host must not touch (ARCH-COMPOSE-001).
+    public static string Label = "a field, not a registration method";
+#pragma warning restore CA2211, MA0069
 }

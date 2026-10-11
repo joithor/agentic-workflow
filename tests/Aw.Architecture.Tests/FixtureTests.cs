@@ -49,6 +49,7 @@ public sealed class FixtureTests
     public void A_host_may_call_a_compose_targets_registration_methods_but_nothing_else_from_its_features_or_infrastructure() =>
         Verify.Exactly(ComposeRules.Check(FixtureSet.Edges(_composing), _compose), ComposeRules.Id,
             "ShowCommand -> Aw.Architecture.Tests.Fixtures.ComposeTarget.Features.ThingFeaturesServiceCollectionExtensions: calls Describe",
+            "Composition -> Aw.Architecture.Tests.Fixtures.ComposeTarget.Features.ThingFeaturesServiceCollectionExtensions: calls Label",
             "ShowCommand -> Aw.Architecture.Tests.Fixtures.ComposeTarget.Features.Make.MakeRequest");
 
     [Fact]

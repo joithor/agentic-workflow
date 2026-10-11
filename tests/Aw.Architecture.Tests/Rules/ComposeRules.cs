@@ -35,7 +35,7 @@ public static class ComposeRules
             return new Violation(Id, $"{e.Text}: the Host uses {e.To.Layer} type {e.Target.Name}, not a public static registration class", fix);
         }
 
-        string[] other = [.. e.TargetMembers.Select(m => m.Split('(')[0]).Where(m => !IsRegistration(m))];
+        string[] other = [.. e.TargetMembers.Select(m => m.Split('(')[0]).Where(m => !IsRegistration(m)), .. e.TargetFields];
         return other.Length > 0 ? new Violation(Id, $"{e.Text}: calls {string.Join(", ", other)}", fix)
             : e.TargetMembers.Count == 0 ? new Violation(Id, $"{e.Text}: uses the class without calling an Add…() method", fix)
             : null;
