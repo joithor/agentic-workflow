@@ -70,6 +70,10 @@ public sealed class RegistryTests
         Assert.All(TierZero.Prefixes, p => Assert.Contains(p, declared, StringComparer.Ordinal));
     }
 
+    [Fact]
+    public void The_compose_edges_come_from_deps_yaml() =>
+        Assert.Contains(new ComposeEdge("Aw.Sindri", "Aw.Context"), Production.Compose);
+
     private static IEnumerable<Violation> Missing(IEnumerable<string> projects, IReadOnlyList<string> registered) =>
         projects.Where(p => !registered.Contains(p, StringComparer.Ordinal))
             .Select(p => new Violation(MissingId, $"{p} is in AgenticWorkflow.slnx but not in Packages.cs",
