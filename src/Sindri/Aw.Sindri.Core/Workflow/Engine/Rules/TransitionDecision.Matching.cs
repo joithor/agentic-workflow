@@ -55,7 +55,7 @@ public static partial class TransitionDecision
 
     /// <summary>
     /// The instance as a child's row sees it (§5.7): a frame that mirrors the child is popped before the row applies,
-    /// so the match reads the frame under it.
+    /// so the match reads the frame under it. A takeover above the mirror stays (the row is held until the handback).
     /// </summary>
     private static WorkflowInstance Unmirrored(WorkflowInstance instance, Trigger trigger)
     {
@@ -68,7 +68,9 @@ public static partial class TransitionDecision
         {
             if (instance.Suspended[i].Suspension.Mirrors == child.Child)
             {
-                return instance with { Frame = instance.Suspended[i].Frame, Suspended = [.. instance.Suspended.Take(i)] };
+                return i == instance.Suspended.Count - 1
+                    ? instance with { Frame = instance.Suspended[i].Frame, Suspended = [.. instance.Suspended.Take(i)] }
+                    : instance;
             }
         }
 

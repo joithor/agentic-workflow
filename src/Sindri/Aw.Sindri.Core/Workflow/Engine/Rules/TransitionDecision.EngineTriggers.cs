@@ -38,7 +38,7 @@ public static partial class TransitionDecision
             return new Rejected(d.Key, NotAllowed(d.Trigger, instance));
         }
 
-        var popping = d.Rules.Pop(instance, d.Recipe, child: null, d.Now);
+        var popping = d.Rules.Pop(instance, d.Recipe, child: null, d.Context);
         if (popping.IsError)
         {
             return new Rejected(d.Key, popping.Error);
@@ -50,18 +50,22 @@ public static partial class TransitionDecision
             : d.Commit(popped.Instance);
     }
 
-    /// <summary>A child's park, resume or escalation (§5.7): mirrored, released, ignored, or held while the parent is busy.</summary>
+    /// <summary>
+    /// A child's park, resume or escalation (§5.7): mirrored, released, ignored, or held while the parent is busy. Any
+    /// row from the child first pops the frame that mirrors it, so a new mirror replaces an old one.
+    /// </summary>
     private static Decision Child(Deciding d, WorkflowInstance instance, ChildChanged change)
     {
         var effect = d.Rules.ToParent(instance, d.Recipe, change);
         return effect.Kind switch
         {
-            ParentEffectKind.MirrorPark or ParentEffectKind.Escalate when effect.Suspend is { } suspend => d.Commit(d.Rules.Suspend(instance, suspend, d.Now)),
+            ParentEffectKind.MirrorPark or ParentEffectKind.Escalate when effect.Suspend is { } suspend =>
+                d.Commit(d.Rules.Suspend(d.Rules.Release(instance, d.Recipe, change.Child, d.Now), suspend, d.Now)),
             ParentEffectKind.Release => d.CommitOrAbsorb(d.Rules.Release(instance, d.Recipe, change.Child, d.Now), instance, "no frame mirrors that child"),
             ParentEffectKind.Hold => new Rejected(d.Key, WorkflowErrors.TriggerNotAllowed.With(
                 $"{instance.Address.Value} is busy, so the child's {change.Name} stays pending (fix: none needed; it applies when the parent can take it)")),
             ParentEffectKind.Ignore or ParentEffectKind.MirrorPark or ParentEffectKind.Escalate or _ =>
-                new Absorbed(d.Key, $"the child's {change.Name} doesn't reach the parent (onParked: ignore)"),
+                new Absorbed(d.Key, $"the child's {change.Name} leaves the parent as it is: nothing waits on or mirrors that child, or its wait says onParked: ignore"),
         };
     }
 }

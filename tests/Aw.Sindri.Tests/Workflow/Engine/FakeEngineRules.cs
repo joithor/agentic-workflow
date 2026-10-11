@@ -8,6 +8,7 @@ using Aw.Sindri.Core.Workflow.Engine.Rules;
 using Aw.Sindri.Core.Workflow.Engine.Triggers;
 using Aw.Sindri.Core.Workflow.Ids;
 using Aw.Sindri.Core.Workflow.Recipes;
+using Aw.Sindri.Core.Workflow.Validation;
 
 namespace Aw.Sindri.Tests.Workflow.Engine;
 
@@ -49,7 +50,7 @@ internal sealed class FakeEngineRules : IEngineRules
         };
     }
 
-    public Result<PopResult> Pop(WorkflowInstance instance, Recipe recipe, WorkflowInstanceId? child, DateTimeOffset now)
+    public Result<PopResult> Pop(WorkflowInstance instance, Recipe recipe, WorkflowInstanceId? child, DecisionContext context)
     {
         if (instance.Suspended.Count == 0)
         {
@@ -103,7 +104,7 @@ internal sealed class FakeEngineRules : IEngineRules
             : null);
     }
 
-    public StartRequest CreateChild(WorkflowInstance parent, ChildWait wait, TriggerKey key, string actor) => new(
+    public StartRequest CreateChild(WorkflowInstance parent, ChildWait wait, ChildRecipe child, TriggerKey key, string actor) => new(
         key,
         EngineFixture.ChildId,
         parent.Address.Child(wait.Recipe, parent.Frame.Entry),

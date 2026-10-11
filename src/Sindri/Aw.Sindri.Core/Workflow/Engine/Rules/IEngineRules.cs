@@ -4,6 +4,7 @@ using Aw.Sindri.Core.Workflow.Engine.Events;
 using Aw.Sindri.Core.Workflow.Engine.Instances;
 using Aw.Sindri.Core.Workflow.Engine.Triggers;
 using Aw.Sindri.Core.Workflow.Recipes;
+using Aw.Sindri.Core.Workflow.Validation;
 
 namespace Aw.Sindri.Core.Workflow.Engine.Rules;
 
@@ -20,8 +21,8 @@ internal interface IEngineRules
     /// <summary><see cref="FrameRules.Suspend"/>.</summary>
     public WorkflowInstance Suspend(WorkflowInstance instance, SuspendOutcome outcome, DateTimeOffset now);
 
-    /// <summary><see cref="FrameRules.Pop"/>.</summary>
-    public Result<PopResult> Pop(WorkflowInstance instance, Recipe recipe, WorkflowInstanceId? child, DateTimeOffset now);
+    /// <summary><see cref="FrameRules.Pop(WorkflowInstance, Recipe, WorkflowInstanceId?, DecisionContext)"/>.</summary>
+    public Result<PopResult> Pop(WorkflowInstance instance, Recipe recipe, WorkflowInstanceId? child, DecisionContext context);
 
     /// <summary><see cref="FrameRules.TakeOver"/>.</summary>
     public Result<WorkflowInstance> TakeOver(WorkflowInstance instance, string actor, DecisionContext context);
@@ -41,8 +42,8 @@ internal interface IEngineRules
     /// <summary><see cref="BudgetRules.Spend"/>.</summary>
     public BudgetVerdict Spend(WorkflowInstance instance, Recipe recipe, int tokens);
 
-    /// <summary><see cref="ChildPropagation.Create"/>.</summary>
-    public StartRequest CreateChild(WorkflowInstance parent, ChildWait wait, TriggerKey key, string actor);
+    /// <summary><see cref="ChildPropagation.Create(WorkflowInstance, ChildWait, ChildRecipe, TriggerKey, string)"/>.</summary>
+    public StartRequest CreateChild(WorkflowInstance parent, ChildWait wait, ChildRecipe child, TriggerKey key, string actor);
 
     /// <summary><see cref="ChildPropagation.ToParent"/>.</summary>
     public ParentEffect ToParent(WorkflowInstance parent, Recipe recipe, ChildChanged change);

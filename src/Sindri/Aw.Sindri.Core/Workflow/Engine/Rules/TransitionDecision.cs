@@ -82,12 +82,22 @@ public static partial class TransitionDecision
         var spend = Spend(d, instance);
         if (spend.Park is { } budget)
         {
-            return d.Commit(d.Rules.Suspend(instance with { Spent = spend.Spent }, budget, d.Now));
+            return d.Commit(d.Rules.Suspend(instance with { Spent = spend.Spent }, Caused(budget, d.Trigger, match.Transition), d.Now));
         }
 
         var spent = instance with { Spent = spend.Spent };
         return match.Transition is { } index ? Transition(d, spent, index) : Unmatched(d, spent);
     }
+
+    /// <summary>
+    /// A park a rule decided carries no actor and no withheld trigger (LoopRules, BudgetRules); the decision that took the
+    /// trigger sets both, so the park shows who caused it and its resume can perform or re-run what it withheld.
+    /// </summary>
+    private static SuspendOutcome Caused(SuspendOutcome park, Trigger trigger, int? transition) => park with
+    {
+        Suspension = park.Suspension with { Actor = park.Suspension.Actor.Length == 0 ? trigger.Actor : park.Suspension.Actor },
+        Resume = park.Resume.Withheld is null ? park.Resume with { Withheld = new WithheldTrigger(transition, trigger) } : park.Resume,
+    };
 
     /// <summary>A child's row first pops the parent's frame that mirrors that child (§5.7), so a child that ends releases its parent.</summary>
     private static WorkflowInstance Release(Deciding d) =>

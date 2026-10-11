@@ -60,9 +60,7 @@ public static partial class TransitionDecision
         var verdict = d.Rules.Reenter(instance, d.Recipe, state, Progress(d.Trigger));
         if (verdict.Park is { } park)
         {
-            return (instance, park.Resume.Withheld is null
-                ? park with { Resume = park.Resume with { Withheld = new WithheldTrigger(index, d.Trigger) } }
-                : park);
+            return (instance, Caused(park, d.Trigger, index));
         }
 
         return verdict.Next is { } next ? (instance with { Loops = With(instance.Loops, name, next) }, null) : (instance, null);
@@ -105,7 +103,7 @@ public static partial class TransitionDecision
                 $"child recipe {wait.Recipe.Value} isn't pinned for {scope.Recipe.Id.Value} (fix: re-approve {scope.Recipe.Id.Value})");
         }
 
-        var request = scope.Rules.CreateChild(entered, wait, scope.Key, scope.Actor);
+        var request = scope.Rules.CreateChild(entered, wait, child, scope.Key, scope.Actor);
         return Start(request, child.Recipe, scope.Context, scope.Rules) switch
         {
             Applied started => new Entered(
