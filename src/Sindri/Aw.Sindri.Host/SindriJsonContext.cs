@@ -9,7 +9,6 @@ using Aw.Sindri.Features.RunDoctor;
 using Aw.Sindri.Features.StopProcess;
 using Aw.Sindri.Features.StreamEvents;
 using Aw.Sindri.Features.ValidateProfile;
-using Aw.Sindri.Host.Commands;
 
 namespace Aw.Sindri.Host;
 

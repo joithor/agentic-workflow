@@ -9,7 +9,7 @@ using Aw.Sindri.Infrastructure.Ledger;
 using Aw.Sindri.Infrastructure.Profile;
 using Microsoft.Extensions.DependencyInjection;
 
-namespace Aw.Sindri.Infrastructure;
+namespace Aw.Sindri.Infrastructure.Registration;
 
 /// <summary>Registers Aw.Sindri.Infrastructure's adapters and settings. A second technology for a port gets its own AddSindri&lt;Tech&gt;Infrastructure method.</summary>
 public static class SindriInfrastructureServiceCollectionExtensions

@@ -1,11 +1,11 @@
 using Aw.Kernel.Json;
 using Aw.Kernel.Telemetry;
-using Aw.Sindri.Core;
+using Aw.Sindri.Core.Registration;
 using Aw.Sindri.Core.Control;
 using Aw.Sindri.Core.Scheduling;
 using Aw.Sindri.Features;
 using Aw.Sindri.Host.Server;
-using Aw.Sindri.Infrastructure;
+using Aw.Sindri.Infrastructure.Registration;
 
 namespace Aw.Sindri.Host;
 

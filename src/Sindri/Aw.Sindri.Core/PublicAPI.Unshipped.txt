@@ -1,7 +1,7 @@
 #nullable enable
-Aw.Sindri.Core.SindriCoreServiceCollectionExtensions
+Aw.Sindri.Core.Registration.SindriCoreServiceCollectionExtensions
 Aw.Sindri.Core.SindriErrors
-static Aw.Sindri.Core.SindriCoreServiceCollectionExtensions.AddSindriCore(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
+static Aw.Sindri.Core.Registration.SindriCoreServiceCollectionExtensions.AddSindriCore(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
 static Aw.Sindri.Core.SindriErrors.All.get -> System.Collections.Generic.IReadOnlyList<Aw.Kernel.ErrorDefinition!>!
 Aw.Sindri.Core.Control.ControlEndpoint
 Aw.Sindri.Core.Control.ControlEndpoint.<Clone>$() -> Aw.Sindri.Core.Control.ControlEndpoint!
@@ -248,7 +248,7 @@ Aw.Sindri.Core.Profile.SindriProfile.Tenant.init -> void
 Aw.Sindri.Core.Profile.SindriProfile.User.get -> string!
 Aw.Sindri.Core.Profile.SindriProfile.User.init -> void
 Aw.Sindri.Core.Scheduling.IScheduledService
-Aw.Sindri.Core.Scheduling.IScheduledService.Name.get -> Aw.Sindri.Core.Ids.ServiceName
+Aw.Sindri.Core.Scheduling.IScheduledService.Identity() -> Aw.Sindri.Core.Ids.ServiceName
 Aw.Sindri.Core.Scheduling.IScheduledService.Run(Aw.Sindri.Core.Scheduling.ScheduledRun! run, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Kernel.Unit>!>
 Aw.Sindri.Core.Scheduling.ScheduledRun
 Aw.Sindri.Core.Scheduling.ScheduledRun.<Clone>$() -> Aw.Sindri.Core.Scheduling.ScheduledRun!

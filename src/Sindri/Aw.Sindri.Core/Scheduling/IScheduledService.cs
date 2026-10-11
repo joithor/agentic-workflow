@@ -10,7 +10,8 @@ namespace Aw.Sindri.Core.Scheduling;
 public interface IScheduledService
 {
     /// <summary>The name the profile's services map uses.</summary>
-    public ServiceName Name { get; }
+    /// <returns>The service name.</returns>
+    public ServiceName Identity();
 
     /// <summary>Runs once.</summary>
     /// <param name="run">The run.</param>

@@ -7,8 +7,9 @@ using Aw.Sindri.Core.Lease;
 using Aw.Sindri.Core.Profile;
 using Aw.Sindri.Features.StartProcess;
 using Aw.Sindri.Features.StopProcess;
+using Aw.Sindri.Host.Server;
 
-namespace Aw.Sindri.Host.Server;
+namespace Aw.Sindri.Host.Commands;
 
 /// <summary>
 /// 'sindri serve': the control plane in the foreground (what bare 'sindri' starts detached, and what launchd will keep

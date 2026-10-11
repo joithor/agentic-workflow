@@ -2,7 +2,6 @@ using System.Text.Json;
 using Aw.Kernel.Telemetry;
 using Aw.Sindri.Core;
 using Aw.Sindri.Core.Control;
-using Aw.Sindri.Host.Server;
 
 namespace Aw.Sindri.Host.Commands;
 

@@ -11,7 +11,7 @@ internal sealed class HeartbeatService(IService<RecordHeartbeatRequest, RecordHe
 {
     public static readonly ServiceName ServiceId = ServiceName.From("heartbeat");
 
-    public ServiceName Name => ServiceId;
+    public ServiceName Identity() => ServiceId;
 
     public async ValueTask<Result<Unit>> Run(ScheduledRun run, CancellationToken cancellationToken) =>
         (await record.Handle(new RecordHeartbeatRequest(run), cancellationToken).ConfigureAwait(false)).Map(_ => Unit.Value);

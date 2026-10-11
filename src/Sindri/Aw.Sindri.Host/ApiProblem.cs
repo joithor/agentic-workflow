@@ -1,4 +1,4 @@
-namespace Aw.Sindri.Host.Commands;
+namespace Aw.Sindri.Host;
 
 /// <summary>The part of an API ProblemDetails answer the CLI reads: the SND code (title) and the message (detail).</summary>
 /// <param name="Title">The error code.</param>

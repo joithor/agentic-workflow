@@ -2,7 +2,7 @@ using Aw.Sindri.Core.Events;
 using Aw.Sindri.Core.Lease;
 using Microsoft.Extensions.DependencyInjection;
 
-namespace Aw.Sindri.Core;
+namespace Aw.Sindri.Core.Registration;
 
 /// <summary>Registers Aw.Sindri.Core's types.</summary>
 public static class SindriCoreServiceCollectionExtensions

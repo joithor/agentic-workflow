@@ -68,7 +68,7 @@ internal sealed partial class SchedulerHost(IServiceScopeFactory scopes, IApprov
         var scope = scopes.CreateAsyncScope();
         await using (scope.ConfigureAwait(false))
         {
-            var service = scope.ServiceProvider.GetServices<IScheduledService>().FirstOrDefault(s => s.Name == schedule.Name);
+            var service = scope.ServiceProvider.GetServices<IScheduledService>().FirstOrDefault(s => s.Identity() == schedule.Name);
             if (service is null)
             {
                 LogUnknownService(log, schedule.Name.Value);
