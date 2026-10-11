@@ -51,8 +51,15 @@ public sealed class Redactor : IRedactor
     /// <param name="extraPatterns">The configured patterns, after the built-ins in priority order.</param>
     /// <param name="matchTimeout">The timeout for each pattern; must be positive.</param>
     /// <returns>The redactor, or every refused field with its entry index.</returns>
-    public static RedactorResult Create(IReadOnlyList<ExtraPattern> extraPatterns, TimeSpan matchTimeout) =>
-        throw new NotSupportedException("red: validate and compile the extra patterns");
+    public static RedactorResult Create(IReadOnlyList<ExtraPattern> extraPatterns, TimeSpan matchTimeout)
+    {
+        ArgumentNullException.ThrowIfNull(extraPatterns);
+        ArgumentOutOfRangeException.ThrowIfLessThanOrEqual(matchTimeout, TimeSpan.Zero);
+        var errors = ExtraPatternRules.Check(extraPatterns, Default.RuleIds);
+        return errors.Count > 0
+            ? RedactorResult.Invalid(errors)
+            : RedactorResult.Valid(new Redactor([.. BuiltinRules.All, .. extraPatterns.Select(e => new RedactionRule(e.Id, e.Pattern))], matchTimeout));
+    }
 
     /// <inheritdoc/>
     public bool IsSecretName(string name)
