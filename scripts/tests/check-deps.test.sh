@@ -503,9 +503,14 @@ expect "a compose edge without a project edge to the same package fails" 1 "DEPS
 
 d="$(fixture compose-up)"; edge "$d" Alpha Beta compose planned; run "$d"
 expect "a compose edge points down the tiers" 1 "DEPS-TIER-001" "compose edge does not point to a lower tier" "Alpha (tier 1) -> Beta (tier 2)"
+refuse "a misplaced compose edge isn't also told to add a project edge" "DEPS-COMPOSE-001"
 
 d="$(fixture compose-shell)"; edge "$d" Hooks Alpha compose planned; run "$d"
 expect "a compose edge from a shell node fails" 1 "DEPS-KIND-001" "Hooks -> Alpha (compose)"
+refuse "a compose edge from a shell node isn't also told to add a project edge" "DEPS-COMPOSE-001"
+
+d="$(fixture compose-tier0)"; edge "$d" Beta Kernel compose planned; run "$d"
+expect "a compose edge into a tier-0 package fails" 1 "DEPS-COMPOSE-001" "compose edge into a tier-0 package" "Beta -> Kernel (compose)"
 
 d="$(composed compose-good)"; run "$d"
 expect "a Host may reference a compose target's Features and Infrastructure" 0 "deps: ok"
@@ -513,6 +518,21 @@ expect "a Host may reference a compose target's Features and Infrastructure" 0 "
 d="$(composed compose-undeclared)"; perl -0pi -e 's/  - from: Beta\n    to: Alpha\n    kind: compose\n    status: current\n    note: added by test\n//' "$d/deps.yaml"; run "$d"
 expect "a Host reference into another package's Features without a compose edge fails" 1 "DEPS-COMPOSE-001" "Aw.Beta.Host -> Aw.Alpha.Features" "Aw.Beta.Host -> Aw.Alpha.Infrastructure" "kind: compose"
 refuse "the Host's undeclared compose reference is not also DEPS-PROJ-007" "DEPS-PROJ-007"
+
+d="$(composed compose-host-only)"; perl -0pi -e 's/  - from: Beta\n    to: Alpha\n    kind: compose\n    status: current\n    note: added by test\n//; s/  - from: Beta\n    to: Alpha\n    kind: project\n    status: current\n    note: added by test\n//' "$d/deps.yaml"; run "$d"
+expect "with neither edge declared, a Host's Features reference is DEPS-COMPOSE-001 only" 1 "DEPS-COMPOSE-001" "Aw.Beta.Host -> Aw.Alpha.Features"
+refuse "  ... and not DEPS-PROJ-007" "DEPS-PROJ-007"
+
+d="$(composed compose-no-core)"
+csproj "$d" src/Beta/Aw.Beta.Features/Aw.Beta.Features.csproj ../../Aw.Kernel/Aw.Kernel.csproj
+csproj "$d" src/Beta/Aw.Beta.Host/Aw.Beta.Host.csproj ../../Alpha/Aw.Alpha.Features/Aw.Alpha.Features.csproj; run "$d"
+expect "a Host's compose reference doesn't make the project edge current: it needs a Core reference" 1 "DEPS-STALE-001" "Beta -> Alpha (project)"
+refuse "  ... while the compose edge itself is found" "Beta -> Alpha (compose)"
+
+d="$(composed compose-app)"
+for p in App Host; do csproj "$d" "src/Alpha/Aw.Alpha.$p/Aw.Alpha.$p.csproj"; done
+csproj "$d" src/Beta/Aw.Beta.Host/Aw.Beta.Host.csproj ../../Alpha/Aw.Alpha.Core/Aw.Alpha.Core.csproj ../../Alpha/Aw.Alpha.Features/Aw.Alpha.Features.csproj ../../Alpha/Aw.Alpha.App/Aw.Alpha.App.csproj ../../Alpha/Aw.Alpha.Host/Aw.Alpha.Host.csproj; run "$d"
+expect "a compose edge opens Features and Infrastructure only, never App or Host" 1 "DEPS-PROJ-007" "Aw.Beta.Host -> Aw.Alpha.App" "Aw.Beta.Host -> Aw.Alpha.Host"
 
 d="$(composed compose-features)"
 csproj "$d" src/Beta/Aw.Beta.Features/Aw.Beta.Features.csproj ../../Aw.Kernel/Aw.Kernel.csproj ../../Alpha/Aw.Alpha.Core/Aw.Alpha.Core.csproj ../../Alpha/Aw.Alpha.Features/Aw.Alpha.Features.csproj; run "$d"
@@ -532,6 +552,14 @@ expect "an exception attached to an edge that isn't declared fails" 1 "DEPS-EXC-
 
 d="$(fixture fanout-attached-wide)"; perl -pi -e 's/packageFanOut: 4/packageFanOut: 1/' "$d/deps.yaml"; edge "$d" Beta Alpha project planned; edge "$d" Beta Delta project planned; exc "$d" Beta Alpha; run "$d"
 expect "an attached exception covers its one edge, not a wider fan-out" 1 "DEPS-FANOUT-001" "Beta has 3 project edges" "DEPS-EXC-002" "Beta has 3 project edges (Alpha, Delta, Kernel), more than an exception attached to one edge covers"
+
+d="$(fixture fanout-attached-test)"; perl -0pi -e 's/(  - id: Alpha\n)/  - id: KTest\n    kind: package\n    tier: 0\n    sublevel: 2\n    test: true\n    projectPrefix: Aw.KTest\n    ts: null\n    src: tests\/Aw.KTest.Testing\n    note: test support\n$1/' "$d/deps.yaml"
+edge "$d" Delta KTest project planned; exc "$d" Delta KTest; run "$d"
+expect "an exception attached to an edge into test support (which fan-out never counts) fails" 1 "DEPS-EXC-004" "Delta -> KTest (project)"
+
+d="$(fixture fanout-attached-within)"; edge "$d" Beta Alpha project planned; exc "$d" Beta Alpha; run "$d"
+expect "an attached exception within the limit suppresses nothing, with the plain measurement" 1 "DEPS-EXC-002" "Beta has 2 project edges (Alpha, Kernel)"
+refuse "  ... without the wider-fan-out wording" "more than an exception"
 
 d="$(fixture fanout-attached-rule)"; perl -pi -e "s/^exceptions: \[\]\n/exceptions:\n  - rule: DEPS-FANOUT-002\n    subject: Beta\n    edge: Alpha\n    reason: test\n    recorded: 2026-10-10\n    expires: 2026-12-01\n/" "$d/deps.yaml"; run "$d"
 expect "only a DEPS-FANOUT-001 exception is attached to an edge" 1 "DEPS-SCHEMA-001" "/exceptions/0/rule: must be \"DEPS-FANOUT-001\""
