@@ -21,6 +21,7 @@ internal sealed class MainViewModel(IEndpointRecordSource records, ISindriApi ap
     internal static readonly TimeSpan RetryEvery = TimeSpan.FromSeconds(2);
 
     private long _cursor;
+    private byte[] _record = [];
 
     /// <summary>The state in one word: Connecting, Running or Not running.</summary>
     public string Headline { get; private set => Set(ref field, value); } = "Connecting";
@@ -131,39 +132,75 @@ internal sealed class MainViewModel(IEndpointRecordSource records, ISindriApi ap
                 $"the endpoint record is stale: it names pid {record.Value.Pid} at epoch {record.Value.Epoch}, but pid {ping.Value.Pid} at epoch {ping.Value.Epoch} answers"));
         }
 
+        _record = bytes;
         return await Refresh(record.Value.Url, cancellationToken).ConfigureAwait(true) ? record.Value.Url : null;
     }
 
+    // Follows the stream until it ends, a status refresh fails, or the endpoint record changes. A stopping control plane
+    // can hold its stream open while it shuts down, so the stream ending is not the only sign that it's gone.
     private async Task Follow(Uri url, CancellationToken cancellationToken)
     {
         var dirty = Channel.CreateBounded<bool>(new BoundedChannelOptions(1) { FullMode = BoundedChannelFullMode.DropWrite });
         using var stop = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
-        var refresher = RefreshOnSignal(url, dirty.Reader, stop.Token);
-        await foreach (var e in api.Events(url, _cursor, cancellationToken).ConfigureAwait(true))
+        var refresher = RefreshOnSignal(url, dirty.Reader, stop);
+        var watcher = WatchRecord(stop);
+        try
         {
-            _cursor = e.Sequence;
-            LastEvent = StatusText.Event(e);
-            _ = dirty.Writer.TryWrite(item: true);
+            await foreach (var e in api.Events(url, _cursor, stop.Token).ConfigureAwait(true))
+            {
+                _cursor = e.Sequence;
+                LastEvent = StatusText.Event(e);
+                _ = dirty.Writer.TryWrite(item: true);
+            }
+        }
+        catch (OperationCanceledException) when (stop.IsCancellationRequested)
+        {
+            // A failed refresh or a changed record ended the stream; Run looks for the control plane again.
         }
 
         await stop.CancelAsync().ConfigureAwait(true);
-        await refresher.ConfigureAwait(true);
+        await Task.WhenAll(refresher, watcher).ConfigureAwait(true);
     }
 
-    // One status refresh per burst of events: the signal holds at most one pending refresh.
-    private async Task RefreshOnSignal(Uri url, ChannelReader<bool> dirty, CancellationToken cancellationToken)
+    // One status refresh per burst of events: the signal holds at most one pending refresh. A failed refresh ends the follow.
+    private async Task RefreshOnSignal(Uri url, ChannelReader<bool> dirty, CancellationTokenSource stop)
     {
         try
         {
-            while (await dirty.WaitToReadAsync(cancellationToken).ConfigureAwait(true))
+            while (await dirty.WaitToReadAsync(stop.Token).ConfigureAwait(true))
             {
                 _ = dirty.TryRead(item: out _);
-                _ = await Refresh(url, cancellationToken).ConfigureAwait(true);
+                if (!await Refresh(url, stop.Token).ConfigureAwait(true))
+                {
+                    await stop.CancelAsync().ConfigureAwait(true);
+                }
             }
         }
         catch (OperationCanceledException)
         {
-            // The stream ended; Run looks for the control plane again.
+            // The follow ended.
+        }
+    }
+
+    // Ends the follow when the endpoint record no longer is the one this follow connected with (stopped, or restarted).
+    private async Task WatchRecord(CancellationTokenSource stop)
+    {
+        try
+        {
+            while (true)
+            {
+                await Task.Delay(RetryEvery, clock, stop.Token).ConfigureAwait(true);
+                var now = await records.Read(stop.Token).ConfigureAwait(true);
+                if (now is null || !now.AsSpan().SequenceEqual(_record))
+                {
+                    await stop.CancelAsync().ConfigureAwait(true);
+                    return;
+                }
+            }
+        }
+        catch (OperationCanceledException)
+        {
+            // The follow ended.
         }
     }
 
