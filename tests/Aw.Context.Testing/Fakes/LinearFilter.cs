@@ -9,8 +9,9 @@ namespace Aw.Context.Testing.Fakes;
 /// ('team: { key: { eq: "SPL" } }'), 'and' / 'or', 'some' / 'every' over a connection, and the comparators
 /// eq, neq, in, nin, gt, gte, lt, lte, null, eqIgnoreCase, contains, containsIgnoreCase, startsWith. Dates compare as
 /// instants; comparing a date field with something that isn't a date, a field the recordings don't have, or a field
-/// filter straight on a connection is refused, never guessed. A null field or relation fails every comparator but
-/// 'neq', 'nin' and 'null: true' (the fake doesn't model Linear's joins).
+/// filter straight on a connection is refused, never guessed; so is a null or non-scalar operand (use 'null' for null).
+/// A null field or relation fails every comparator but 'neq', 'nin' and 'null: true' (the fake doesn't model Linear's
+/// joins).
 /// </summary>
 internal static class LinearFilter
 {
@@ -65,7 +66,7 @@ internal static class LinearFilter
         "neq" => !Equal(value, operand),
         "in" => Some([.. List(comparator, operand).Select(o => Equal(value, o))]),
         "nin" => !Some([.. List(comparator, operand).Select(o => Equal(value, o))]),
-        "gt" or "gte" or "lt" or "lte" => value is not null && Holds(comparator, Order(value, operand)),
+        "gt" or "gte" or "lt" or "lte" => Scalar(comparator, operand) is var checkedOperand && value is not null && Holds(comparator, Order(value, checkedOperand)),
         _ => Text(comparator, value, operand),
     };
 
@@ -99,8 +100,20 @@ internal static class LinearFilter
         };
     }
 
-    private static bool Equal(JsonNode? value, JsonNode? operand) =>
-        value is null || operand is null ? value is null && operand is null : Order(value, operand) == 0;
+    // A null operand is refused (Linear's meaning for it isn't modeled; the 'null' comparator says it), and the operand
+    // is checked before the field value, so a refusal never depends on whether the recorded value is null.
+    private static bool Equal(JsonNode? value, JsonNode? operand)
+    {
+        var checkedOperand = Scalar("eq", operand);
+        return value is not null && Order(value, checkedOperand) == 0;
+    }
+
+    private static JsonValue Scalar(string comparator, JsonNode? operand) =>
+        operand is JsonValue v && v.GetValueKind() is JsonValueKind.String or JsonValueKind.Number or JsonValueKind.True or JsonValueKind.False
+            ? v
+            : throw FakeRequestException.Invalid(operand is null
+                ? $"Filter '{comparator}' compares with null; use the 'null' comparator."
+                : $"Filter '{comparator}' takes a string, number or Boolean, not '{operand.ToJsonString()}'.");
 
     private static int Order(JsonNode value, JsonNode? operand)
     {

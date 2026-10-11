@@ -113,7 +113,7 @@ public sealed class FakeOnyxServerTests
         var unfiltered = await Search(onyx, Request("pane", sources: null, cutoff: null, limit: null));
         var empty = await Search(onyx, Request("pane", [], cutoff: null, limit: null));
 
-        Assert.Equal(unfiltered.Count, empty.Count);
+        Assert.Equal(unfiltered.Select(d => (string?)d!["document_id"]), empty.Select(d => (string?)d!["document_id"]), StringComparer.Ordinal);
     }
 
     [Fact]

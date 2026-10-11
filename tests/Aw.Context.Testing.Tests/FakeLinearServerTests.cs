@@ -221,7 +221,13 @@ public sealed class FakeLinearServerTests
     [InlineData("{\"labels\":{\"name\":{\"eq\":\"layout\"}}}", "some")]
     [InlineData("{\"team\":{\"key\":{\"eq\":\"OTHER\"}},\"bogus\":{\"eq\":1}}", "bogus")]
     [InlineData("{\"team\":{\"key\":{\"eq\":\"OTHER\"}},\"updatedAt\":{\"gt\":\"P1W\"}}", "P1W")]
-    [InlineData("{\"or\":[{\"identifier\":{\"eq\":\"SPL-101\"}},{\"priority\":{\"gt\":\"1\"}}]}", "different types")]
+    [InlineData("{\"or\":[{\"team\":{\"key\":{\"eq\":\"SPL\"}}},{\"priority\":{\"gt\":\"1\"}}]}", "different types")]
+    [InlineData("{\"labels\":{\"some\":{\"or\":[{\"name\":{\"eq\":\"layout\"}},{\"bogus\":{\"eq\":1}}]}}}", "bogus")]
+    [InlineData("{\"identifier\":{\"in\":[\"SPL-101\",\"SPL-102\",\"SPL-103\",\"SPL-104\",\"SPL-105\",\"SPL-106\",5]}}", "different types")]
+    [InlineData("{\"completedAt\":{\"eq\":null}}", "'null' comparator")]
+    [InlineData("{\"completedAt\":{\"neq\":null}}", "'null' comparator")]
+    [InlineData("{\"completedAt\":{\"in\":[null]}}", "'null' comparator")]
+    [InlineData("{\"completedAt\":{\"gt\":{\"x\":1}}}", "string, number or Boolean")]
     [InlineData("{\"title\":{\"contains\":5}}", "contains")]
     public async Task A_filter_the_fake_cannot_evaluate_truthfully_is_a_clear_400(string filter, string named)
     {
@@ -246,16 +252,18 @@ public sealed class FakeLinearServerTests
         Assert.Equal((string?)comments["nodes"]![1]!["id"], (string?)comments["pageInfo"]!["endCursor"]);
     }
 
-    [Fact]
-    public async Task Selection_sets_nesting_past_the_limit_are_refused()
+    [Theory]
+    [InlineData(32, false)]
+    [InlineData(33, true)]
+    public async Task Selection_sets_nest_at_most_32_deep(int depth, bool refused)
     {
         await using var linear = await FakeLinearServer.Start();
-        var query = "{ issues " + string.Concat(Enumerable.Repeat("{ nodes ", 40)) + "{ id" + new string('}', 42);
+        var query = "{ issues " + string.Concat(Enumerable.Repeat("{ nodes ", depth - 2)) + "{ id" + new string('}', depth);
 
         var (status, body) = await Post(linear, query, variables: null);
 
-        Assert.Equal(HttpStatusCode.BadRequest, status);
-        Assert.Contains("deeper", (string?)body!["errors"]![0]!["message"], StringComparison.Ordinal);
+        Assert.Equal(HttpStatusCode.BadRequest, status); // at 32 the reader accepts it and shaping refuses nodes.nodes
+        Assert.Equal(refused, ((string?)body!["errors"]![0]!["message"])!.Contains("deeper", StringComparison.Ordinal));
     }
 
     private static async Task<JsonNode> Issues(FakeLinearServer linear, JsonObject variables)
