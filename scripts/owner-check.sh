@@ -11,8 +11,8 @@
 #         $AW_STATE_DIR/sindri-ownercheck-<stage>/bin.
 #      2. Home: AW_SINDRI_HOME=$AW_STATE_DIR/sindri-app-ownercheck-<stage>, deleted first and created fresh (0700),
 #         with AW_SINDRI_PORT=7480, so it never takes the real instance's home or port.
-#      3. Seed (--seed): the merged build ($SINDRI_MAIN) exports the map from the real home into
-#         <scratch home>/seed.json (env -u AW_SINDRI_HOME -u AW_SINDRI_PORT), so teardown deletes it. Never copies
+#      3. Seed (--seed): the merged build ($SINDRI_MAIN) exports the map from the real home (the one the profile
+#         comes from, AW_SINDRI_PORT unset) into <scratch home>/seed.json, so teardown deletes it. Never copies
 #         context.db.
 #      4. Profile: the real profile (AW_SINDRI_PROFILE, else <real home>/profile/profile.yaml) copied in and edited:
 #         the engine's services (context-docs-refresh, context-sync, context-rebuild, context-purge) kept only when
@@ -67,12 +67,16 @@ port="${OWNER_CHECK_PORT:-7480}"
 home="$state/sindri-app-ownercheck-$stage"
 scratch="$state/sindri-ownercheck-$stage"
 bin="$scratch/bin/sindri"
-[ "$home" != "$real_home" ] || die "AW_SINDRI_HOME points at the owner-check home $home; unset it (the real home is read, never used)"
+# up reads the real home; AW_SINDRI_HOME set to the owner-check home (the export line up prints) would make it read the
+# scratch one. down never reads the real home, so it runs from that shell too.
+[ "$action" = down ] || [ "$home" != "$real_home" ] || die "AW_SINDRI_HOME points at the owner-check home $home; unset it (the real home is read, never used)"
 
 bounded() { perl -e 'alarm shift; exec @ARGV or die "exec $ARGV[0]: $!"' 30 "$@"; }   # SIGALRM after 30 s
 listening() { (exec 3<>"/dev/tcp/127.0.0.1/$port") 2>/dev/null; }
 listeners() { if command -v lsof >/dev/null; then lsof -nP -t -iTCP:"$port" -sTCP:LISTEN 2>/dev/null; else fuser -n tcp "$port" 2>/dev/null; fi; }
-scratch_env() { AW_SINDRI_HOME="$home" AW_SINDRI_PORT="$port" "$@"; }
+# Every call to the PR's build: the scratch home and port, and never AW_SINDRI_PROFILE (it would point the scratch
+# instance at the real profile instead of the edited copy in the scratch home).
+in_scratch=(env -u AW_SINDRI_PROFILE AW_SINDRI_HOME="$home" AW_SINDRI_PORT="$port")
 
 # yaml_set <file> <a> <b> <c> <value> <insert> — sets a.b.c in a block-style YAML file; with insert=0 only where the
 # key exists. Exit 3 when it can't edit in place (a flow mapping or a scalar on the way).
@@ -109,18 +113,18 @@ drop_services() {
     function ind(s) { match(s, /[^ ]/); return RSTART - 1 }
     /^ *(#.*)?$/ { if (!skip) print; next }
     ind($0) == 0 { inside = ($0 ~ /^services:/); skip = 0
-                   if (inside && $0 !~ /^services: *(#.*)?$/) { for (s in eng) if (index($0, s)) exit 3 }
+                   if (inside && $0 !~ /^services: *(#.*)?$/) { for (s in eng) if (index($0, s)) { flow = 1; exit 3 } }
                    print; next }
     inside && !ci { ci = ind($0) }
     inside && ind($0) == ci { name = $0; sub(/^ */, "", name); sub(/:.*/, "", name)
                               seen[name] = 1; skip = (name in eng) && !(name in keep) }
     !skip { print }
-    END { for (s in keep) if (!(s in seen)) { print s > "/dev/stderr"; exit 4 } }' "$f" >"$f.new" || { local rc=$?; rm -f "$f.new"; return "$rc"; }
+    END { if (flow) exit 3; for (s in keep) if (!(s in seen)) { print s > "/dev/stderr"; exit 4 } }' "$f" >"$f.new" || { local rc=$?; rm -f "$f.new"; return "$rc"; }
   mv "$f.new" "$f"
 }
 
 down() {
-  [ ! -x "$bin" ] || bounded env AW_SINDRI_HOME="$home" AW_SINDRI_PORT="$port" "$bin" stop >/dev/null 2>&1 || true
+  [ ! -x "$bin" ] || bounded "${in_scratch[@]}" "$bin" stop >/dev/null 2>&1 || true
   local pids i
   pids="$(listeners)"
   if [ -n "$pids" ]; then
@@ -132,6 +136,7 @@ down() {
   case "$home" in */sindri-app-ownercheck-"$stage") rm -rf "$home" ;; *) die "refusing to delete $home" ;; esac
   case "$scratch" in */sindri-ownercheck-"$stage") rm -rf "$scratch" ;; *) die "refusing to delete $scratch" ;; esac
   echo "owner-check $stage down: stopped port $port; deleted $home and $scratch (build, MCP config)"
+  echo "In a shell that ran up's export line: unset SINDRI AW_SINDRI_HOME AW_SINDRI_PORT"
 }
 
 up() {
@@ -150,7 +155,7 @@ up() {
   [ -x "$smoke" ] || die "step 1 needs $smoke (S1's AOT smoke, #163) on the PR head"
 
   echo "== 1. build (src/Sindri/aot-smoke/run.sh)"
-  "$smoke" || broke "step 1: the AOT build or its smoke failed"
+  env -u AW_SINDRI_PROFILE -u AW_SINDRI_HOME -u AW_SINDRI_PORT "$smoke" || broke "step 1: the AOT build or its smoke failed"
   case "$scratch" in */sindri-ownercheck-"$stage") rm -rf "$scratch" ;; *) die "refusing to delete $scratch" ;; esac
   mkdir -p "$scratch" && chmod 700 "$scratch" && cp -R "$root/artifacts/aot-sindri-smoke/bin" "$scratch/bin" \
     || broke "step 1: can't copy the build into $scratch"
@@ -163,7 +168,7 @@ up() {
 
   if [ "$seed" = 1 ]; then
     echo "== 3. seed export from the real home (merged build)"
-    env -u AW_SINDRI_HOME -u AW_SINDRI_PORT -u AW_SINDRI_PROFILE "${main[@]}" context map export "$home/seed.json" \
+    env -u AW_SINDRI_PORT AW_SINDRI_HOME="$real_home" "${main[@]}" context map export "$home/seed.json" \
       || broke "step 3: the export failed"
   fi
 
@@ -177,16 +182,16 @@ up() {
     || die "step 4: can't set context.sessions.enabled in place (a flow mapping); rewrite context: in block style in the real profile"
   yaml_set "$p" context labeling enabled "$([ "$labeling" = 1 ] && echo true || echo false)" "$labeling" \
     || die "step 4: can't set context.labeling.enabled in place (a flow mapping); rewrite context: in block style in the real profile"
-  rc=0; bounded env AW_SINDRI_HOME="$home" AW_SINDRI_PORT="$port" "$bin" --headless || rc=$?
+  rc=0; bounded "${in_scratch[@]}" "$bin" --headless || rc=$?
   [ "$rc" -le 1 ] || broke "step 4: the scratch instance didn't start (exit $rc); see $home/logs/serve.log"
   local hash
-  hash="$({ bounded env AW_SINDRI_HOME="$home" AW_SINDRI_PORT="$port" "$bin" profile validate --json || true; } | sed -nE 's/.*"hash":"([0-9a-f]{64})".*/\1/p')"
+  hash="$({ bounded "${in_scratch[@]}" "$bin" profile validate --json || true; } | sed -nE 's/.*"hash":"([0-9a-f]{64})".*/\1/p')"
   [ -n "$hash" ] || broke "step 4: profile validate gave no hash; run: AW_SINDRI_HOME=$home AW_SINDRI_PORT=$port $bin profile validate"
   echo "-- approve at this terminal: type the first 6 characters of the hash when asked"
-  scratch_env "$bin" profile approve "$hash" || broke "step 4: approval failed; retry: AW_SINDRI_HOME=$home AW_SINDRI_PORT=$port $bin profile approve $hash"
+  "${in_scratch[@]}" "$bin" profile approve "$hash" || broke "step 4: approval failed; retry: AW_SINDRI_HOME=$home AW_SINDRI_PORT=$port $bin profile approve $hash"
   if [ "$seed" = 1 ]; then
     echo "-- import the seed at this terminal"
-    scratch_env "$bin" context map import "$home/seed.json" \
+    "${in_scratch[@]}" "$bin" context map import "$home/seed.json" \
       || broke "step 4: import failed; retry: AW_SINDRI_HOME=$home AW_SINDRI_PORT=$port $bin context map import $home/seed.json"
   fi
 
@@ -195,7 +200,7 @@ up() {
   fi
   echo
   echo "owner-check $stage up. For the steps in owner-check.md:"
-  echo "  export SINDRI=$bin AW_SINDRI_HOME=$home AW_SINDRI_PORT=$port"
+  echo "  unset AW_SINDRI_PROFILE; export SINDRI=$bin AW_SINDRI_HOME=$home AW_SINDRI_PORT=$port"
   [ "$session" = 0 ] || echo "  claude --strict-mcp-config --mcp-config $scratch/mcp.json   # first call context_sources: build and port must be this instance's"
   echo "When done (pass or fail): scripts/owner-check.sh $stage down"
 }

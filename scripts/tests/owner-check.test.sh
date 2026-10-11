@@ -44,6 +44,7 @@ cp "$HERE/../owner-check.sh" "$REPO/scripts/owner-check.sh"
 cat > "$T/stub-sindri" <<'STUB'
 #!/usr/bin/env bash
 # Stub of the PR's sindri: records each call with the home and port it ran with.
+[ -z "${AW_SINDRI_PROFILE:-}" ] || echo "PROFILE-LEAK $AW_SINDRI_PROFILE" >> "$OWNER_CHECK_TEST_LOG"
 echo "home=${AW_SINDRI_HOME:-unset} port=${AW_SINDRI_PORT:-unset} args=$*" >> "$OWNER_CHECK_TEST_LOG"
 case "$*" in
   --headless)
@@ -63,6 +64,7 @@ cat > "$REPO/src/Sindri/aot-smoke/run.sh" <<STUB
 #!/usr/bin/env bash
 # Stub of S1's AOT smoke: "publishes" the stub binary and its SQLite library.
 set -e
+[ -z "\${AW_SINDRI_PROFILE:-}" ] || echo "PROFILE-LEAK smoke" >> "\$OWNER_CHECK_TEST_LOG"
 root="\$(cd "\$(dirname "\$0")/../../.." && pwd)"
 mkdir -p "\$root/artifacts/aot-sindri-smoke/bin"
 cp "$T/stub-sindri" "\$root/artifacts/aot-sindri-smoke/bin/sindri"
@@ -129,8 +131,8 @@ mkdir -p "$OC_HOME"; echo stale > "$OC_HOME/leftover"
 SINDRI_MAIN="$T/main-sindri" run s-x up --seed --session --services context-sync --repo work-repo
 expect "up builds, makes a fresh home, seeds, edits the profile, starts and approves" 0 "$OC_SCRATCH/bin/sindri" "$OC_HOME" "AW_SINDRI_PORT=$PORT" "--strict-mcp-config" "owner-check.sh s-x down"
 check "the build output is copied whole (binary and SQLite library)" '[ -x "$OC_SCRATCH/bin/sindri" ] && [ -f "$OC_SCRATCH/bin/libe_sqlite3.dylib" ]'
-check "the home is created fresh (a leftover file is gone) and is 0700" '[ ! -e "$OC_HOME/leftover" ] && [ "$(stat -f %Lp "$OC_HOME" 2>/dev/null || stat -c %a "$OC_HOME")" = 700 ]'
-check "the seed is exported by the merged build from the real home (no AW_SINDRI_HOME or port)" 'grep -qx "main home=unset port=unset args=context map export $OC_HOME/seed.json" "$T/calls.log" && [ -f "$OC_HOME/seed.json" ]'
+check "the home is created fresh (a leftover file is gone) and is 0700" '[ ! -e "$OC_HOME/leftover" ] && [ "$(stat -c %a "$OC_HOME" 2>/dev/null || stat -f %Lp "$OC_HOME")" = 700 ]'
+check "the seed is exported by the merged build from the real home (the profile's), with no port" 'grep -qx "main home=$REAL_HOME port=unset args=context map export $OC_HOME/seed.json" "$T/calls.log" && [ -f "$OC_HOME/seed.json" ]'
 P="$OC_HOME/profile/profile.yaml"
 check "the real profile is copied in and left unchanged" '[ -f "$P" ] && cmp -s "$T/profile.orig" "$REAL_HOME/profile/profile.yaml"'
 check "the named engine service is kept, the others removed, other services kept" 'grep -q "^  context-sync:" "$P" && grep -q "^    every: 15m" "$P" && ! grep -q "context-purge\|context-docs-refresh" "$P" && grep -q "^  heartbeat:" "$P"'
@@ -170,6 +172,20 @@ run s-x down
 cp "$T/profile.orig" "$T/flow.yaml"; perl -0pi -e 's/context:\n  labeling:\n    enabled: true\n    maxTokens: 20000\n  sessions:\n    enabled: false\n/context: { sessions: { enabled: false } }\n/' "$T/flow.yaml"
 AW_SINDRI_PROFILE="$T/flow.yaml" run s-x up --session --repo work-repo
 expect "a profile key it can't edit in place stops with the key to set by hand" 2 "context.sessions.enabled"
+run s-x down
+
+cp "$REAL_HOME/profile/profile.yaml" "$T/elsewhere.yaml"
+: > "$T/calls.log"
+AW_SINDRI_PROFILE="$T/elsewhere.yaml" run s-x up --session --repo work-repo
+expect "up with AW_SINDRI_PROFILE pointing at the real profile" 0 "unset AW_SINDRI_PROFILE; export SINDRI="
+check "the PR's build (smoke included) never sees AW_SINDRI_PROFILE, so it loads the edited copy" '! grep -q PROFILE-LEAK "$T/calls.log" && awk "/^  sessions:/{f=1;next} f&&/^    enabled:/{print \$2; exit}" "$P" | grep -qx true'
+AW_SINDRI_HOME="$OC_HOME" run s-x down
+expect "down runs from a shell that exported the owner-check home" 0 "unset SINDRI AW_SINDRI_HOME AW_SINDRI_PORT"
+check "  ... and tears it down" '! listening "$PORT" && [ ! -e "$OC_HOME" ]'
+
+printf 'schemaVersion: 1\nuser: owner\nservices: { context-sync: { every: 1m } }\n' > "$T/flowsvc.yaml"
+AW_SINDRI_PROFILE="$T/flowsvc.yaml" run s-x up --services context-sync
+expect "a flow-style services: is named as the reason, even with --services" 2 "flow mapping"
 run s-x down
 
 printf 'schemaVersion: 1\nuser: owner\n' > "$T/bare.yaml"
