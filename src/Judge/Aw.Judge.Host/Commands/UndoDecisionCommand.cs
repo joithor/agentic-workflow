@@ -12,9 +12,8 @@ internal static class UndoDecisionCommand
 {
     internal const string Name = "undo";
 
-    internal static async Task<int> Run(IReadOnlyList<string> args, IServiceProvider services, JsonSerializerOptions json)
+    internal static async Task<int> Run(string text, IServiceProvider services, JsonSerializerOptions json)
     {
-        var text = args.Count > 0 ? args[0] : "";
         var unknown = $"unknown decision: {text}";
         if (!DecisionId.TryFrom(text, out var id))
         {

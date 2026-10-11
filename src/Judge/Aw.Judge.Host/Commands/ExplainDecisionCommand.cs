@@ -7,18 +7,17 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace Aw.Judge.Host.Commands;
 
-/// <summary>'judge why &lt;id&gt;': the decision row, or exit 1 'unknown decision: &lt;id&gt;' (TS runWhy).</summary>
+/// <summary>'judge why &lt;id&gt;': the decision row, or exit 1 'unknown decision: &lt;id&gt;'.</summary>
 internal static class ExplainDecisionCommand
 {
     internal const string Name = "why";
 
-    internal static async Task<int> Run(IReadOnlyList<string> args, IServiceProvider services, JsonSerializerOptions json)
+    internal static async Task<int> Run(string text, IServiceProvider services, JsonSerializerOptions json)
     {
-        var text = args.Count > 0 ? args[0] : "";
         var unknown = $"unknown decision: {text}";
         if (!DecisionId.TryFrom(text, out var id))
         {
-            return CommandOutput.Emit(1, "", unknown);   // a blank id names no decision
+            return CommandOutput.Emit(1, "", unknown);   // a blank or over-long id names no decision
         }
 
         var service = services.GetRequiredService<IService<ExplainDecisionRequest, ExplainDecisionResponse>>();

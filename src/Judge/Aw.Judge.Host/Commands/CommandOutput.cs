@@ -6,7 +6,7 @@ using Aw.Kernel.Json;
 namespace Aw.Judge.Host.Commands;
 
 /// <summary>
-/// The command line's frozen streams (TS cli.ts): a command produces an exit code, stdout and stderr; each stream gets
+/// The command line's streams: a command produces an exit code, stdout and stderr; each stream gets
 /// its text plus "\n" only when the text isn't empty, as UTF-8. Stdin is read whole and deserialized into the command's
 /// input record. A test captures all three for its own async flow (<see cref="Capture"/>).
 /// </summary>
@@ -49,11 +49,12 @@ internal static class CommandOutput
     /// <summary>Stdin that isn't the command's input record: exit 1, 'invalid input: &lt;reason&gt;' on one line.</summary>
     internal static int InvalidInput(string reason) => Emit(1, "", $"invalid input: {OneLine(reason)}");
 
-    /// <summary>The scaffold's mapping (/new-slice generates calls to it): the value as Kernel JSON, or the error.</summary>
+    /// <summary>The scaffold's mapping (/new-slice generates calls to it): the value as Kernel JSON on stdout, or exit 1
+    /// and the error's message as one stderr line.</summary>
     internal static int Write<T>(Result<T> result, JsonSerializerOptions json) =>
         result.IsError
-            ? Emit(1, "", Encoding.UTF8.GetString(AwJson.Serialize(result.Error, json)))
-            : Emit(0, Encoding.UTF8.GetString(AwJson.Serialize(result.Value, json)));
+            ? Emit(1, "", OneLine(result.Error.Message))
+            : Emit(0, Json(result.Value, json));
 
     /// <summary>A usage error: exit 64 and one stderr line, 'usage: judge &lt;synopsis&gt;' and the problem in parentheses.</summary>
     /// <param name="synopsis">The command's synopsis after 'judge ', e.g. 'why &lt;decision-id&gt;'.</param>

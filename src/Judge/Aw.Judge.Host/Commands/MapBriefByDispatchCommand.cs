@@ -5,7 +5,7 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace Aw.Judge.Host.Commands;
 
-/// <summary>'judge brief map-by-dispatch &lt;sid&gt; &lt;pid&gt; &lt;type&gt;': the oldest unmapped brief's tool use id for that dispatch, or nothing; exit 0 (TS runBriefMapByDispatch).</summary>
+/// <summary>'judge brief map-by-dispatch &lt;sid&gt; &lt;pid&gt; &lt;type&gt;': the oldest unmapped brief's tool use id for that dispatch, or nothing; exit 0 (hook contract).</summary>
 internal static class MapBriefByDispatchCommand
 {
     internal const string Name = "map-by-dispatch";

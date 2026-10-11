@@ -4,17 +4,22 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace Aw.Judge.Host.Commands;
 
-/// <summary>Command name → handler. Each handler binds its arguments, calls one service and maps the result to an exit code.</summary>
+/// <summary>
+/// Command name → handler. The table checks each command's argument count (a wrong count is a usage error, 64); each
+/// handler binds its arguments, calls one service and maps the result to an exit code (docs/csharp/judge.md).
+/// </summary>
 internal static class CommandTable
 {
-    // The first words the switch routes; any other is a question (TS cli.ts's default branch).
+    internal const string Synopsis = "<command> [args] | judge <question> < input.json";
+
+    // The first words the switch routes; any other is a question.
     private static readonly FrozenSet<string> _routed = FrozenSet.Create(StringComparer.Ordinal, GetHealthCommand.Name, BriefCommands.Name, ExplainDecisionCommand.Name, UndoDecisionCommand.Name, ApproveDecisionCommand.Name, ConfigCommands.Name);
 
     internal static async Task<int> Run(string[] args, IServiceProvider provider, JsonSerializerOptions json)
     {
         if (args.Length == 0)
         {
-            return CommandOutput.Emit(1, "", "usage: judge <question> < input.json");
+            return CommandOutput.Usage(Synopsis);
         }
 
         if (!_routed.Contains(args[0]))
@@ -26,15 +31,17 @@ internal static class CommandTable
         await using (scope.ConfigureAwait(false))
         {
             var rest = args[1..];
+            var services = scope.ServiceProvider;
             return args[0] switch
             {
-                GetHealthCommand.Name => await GetHealthCommand.Run(scope.ServiceProvider, json).ConfigureAwait(false),
-                BriefCommands.Name => await BriefCommands.Run(rest, scope.ServiceProvider, json).ConfigureAwait(false),
-                ExplainDecisionCommand.Name => await ExplainDecisionCommand.Run(rest, scope.ServiceProvider, json).ConfigureAwait(false),
-                UndoDecisionCommand.Name => await UndoDecisionCommand.Run(rest, scope.ServiceProvider, json).ConfigureAwait(false),
-                ApproveDecisionCommand.Name => await ApproveDecisionCommand.Run(rest, scope.ServiceProvider, json).ConfigureAwait(false),
-                ConfigCommands.Name => await ConfigCommands.Run(rest, scope.ServiceProvider, json).ConfigureAwait(false),
-                _ => CommandOutput.Usage($"unknown command '{args[0]}'"),
+                GetHealthCommand.Name when rest.Length == 0 => await GetHealthCommand.Run(services, json).ConfigureAwait(false),
+                GetHealthCommand.Name => CommandOutput.Usage("health"),
+                BriefCommands.Name => await BriefCommands.Run(rest, services, json).ConfigureAwait(false),
+                ConfigCommands.Name => await ConfigCommands.Run(rest, services, json).ConfigureAwait(false),
+                _ when rest.Length != 1 => CommandOutput.Usage($"{args[0]} <decision-id>"),
+                ExplainDecisionCommand.Name => await ExplainDecisionCommand.Run(rest[0], services, json).ConfigureAwait(false),
+                UndoDecisionCommand.Name => await UndoDecisionCommand.Run(rest[0], services, json).ConfigureAwait(false),
+                _ => await ApproveDecisionCommand.Run(rest[0], services, json).ConfigureAwait(false),
             };
         }
     }

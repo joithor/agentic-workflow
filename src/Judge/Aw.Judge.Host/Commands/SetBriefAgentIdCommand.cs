@@ -5,7 +5,7 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace Aw.Judge.Host.Commands;
 
-/// <summary>'judge brief set-agent-id &lt;toolUseId&gt; &lt;agentId&gt;': maps the brief to its agent, prints nothing, exit 0 (TS runBriefSetAgentId).</summary>
+/// <summary>'judge brief set-agent-id &lt;toolUseId&gt; &lt;agentId&gt;': maps the brief to its agent, prints nothing, exit 0 (hook contract).</summary>
 internal static class SetBriefAgentIdCommand
 {
     internal const string Name = "set-agent-id";

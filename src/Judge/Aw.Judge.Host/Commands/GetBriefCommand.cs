@@ -7,7 +7,7 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace Aw.Judge.Host.Commands;
 
-/// <summary>'judge brief get &lt;toolUseId&gt;': the brief as JSON, or exit 1 'no brief for tool_use_id: …' (TS runBriefGet).</summary>
+/// <summary>'judge brief get &lt;toolUseId&gt;': the brief as JSON, or exit 1 'no brief for tool_use_id: …' (hook contract).</summary>
 internal static class GetBriefCommand
 {
     internal const string Name = "get";

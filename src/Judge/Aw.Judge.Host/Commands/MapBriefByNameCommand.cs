@@ -4,7 +4,7 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace Aw.Judge.Host.Commands;
 
-/// <summary>'judge brief map-by-name &lt;name&gt;': the oldest unmapped brief's tool use id under that name, or nothing; exit 0 (TS runBriefMapByName).</summary>
+/// <summary>'judge brief map-by-name &lt;name&gt;': the oldest unmapped brief's tool use id under that name, or nothing; exit 0 (hook contract).</summary>
 internal static class MapBriefByNameCommand
 {
     internal const string Name = "map-by-name";
