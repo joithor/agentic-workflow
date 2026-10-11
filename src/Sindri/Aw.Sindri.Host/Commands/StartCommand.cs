@@ -9,11 +9,15 @@ namespace Aw.Sindri.Host.Commands;
 /// Bare 'sindri' and 'sindri --headless' (factory addendum §17.29.1): start the control plane if it isn't running
 /// (detached, through the launcher), open the app unless headless (<paramref name="openUi"/> is null), then print the
 /// banner and the summary. Exit 1 when the profile needs approval, so a script sees the attention; the app never changes
-/// the exit code.
+/// the exit code. The start wait runs on the injected clock: up to <see cref="Budget"/>, probing every <see cref="Poll"/>.
 /// </summary>
-internal sealed class StartCommand(IControlPlaneProbe probe, IControlPlaneLauncher launcher, ControlPlaneClient client, Output output, Func<string>? openUi, TimeSpan? budget = null)
+internal sealed class StartCommand(IControlPlaneProbe probe, IControlPlaneLauncher launcher, ControlPlaneClient client, Output output, TimeProvider clock, Func<string>? openUi = null)
 {
-    private readonly TimeSpan _startBudget = budget ?? TimeSpan.FromSeconds(10);
+    /// <summary>How long a start waits for the control plane to answer.</summary>
+    internal static readonly TimeSpan Budget = TimeSpan.FromSeconds(10);
+
+    /// <summary>How often the start wait probes.</summary>
+    internal static readonly TimeSpan Poll = TimeSpan.FromMilliseconds(200);
 
     internal async Task<int> Run(CancellationToken ct)
     {
@@ -60,10 +64,10 @@ internal sealed class StartCommand(IControlPlaneProbe probe, IControlPlaneLaunch
         }
 
         using var child = launched.Value;
-        var deadline = DateTimeOffset.UtcNow + _startBudget;
-        while (DateTimeOffset.UtcNow < deadline)
+        var deadline = clock.GetUtcNow() + Budget;
+        while (clock.GetUtcNow() < deadline)
         {
-            await Task.Delay(200, ct).ConfigureAwait(false);
+            await Task.Delay(Poll, clock, ct).ConfigureAwait(false);
             var found = await probe.Check(ct).ConfigureAwait(false);
             if (found.IsSuccess)
             {
@@ -76,6 +80,8 @@ internal sealed class StartCommand(IControlPlaneProbe probe, IControlPlaneLaunch
             }
         }
 
-        return SindriErrors.StartFailed.With(string.Create(System.Globalization.CultureInfo.InvariantCulture, $"'sindri serve' didn't answer within {_startBudget.TotalSeconds:0} s (log: {child.LogPath})"));
+        var exited = child.HasExited ? $": the started one exited with {child.LastError()}" : string.Empty;   // a lost race names the holder that never answered
+        return SindriErrors.StartFailed.With(string.Create(System.Globalization.CultureInfo.InvariantCulture,
+            $"'sindri serve' didn't answer within {Budget.TotalSeconds:0} s{exited} (log: {child.LogPath})"));
     }
 }

@@ -54,8 +54,8 @@ internal static class CommandTable
     }
 
     private static Task<int> Start(IServiceProvider services, ControlPlaneClient client, Output output, Func<string>? openUi) =>
-        new StartCommand(services.GetRequiredService<IControlPlaneProbe>(), services.GetRequiredService<IControlPlaneLauncher>(), client, output, openUi)
-            .Run(CancellationToken.None);
+        new StartCommand(services.GetRequiredService<IControlPlaneProbe>(), services.GetRequiredService<IControlPlaneLauncher>(), client, output,
+            services.GetRequiredService<TimeProvider>(), openUi).Run(CancellationToken.None);
 
     /// <summary>What bare 'sindri' does to open the app; 'sindri --headless' opens nothing.</summary>
     internal static Func<string>? UiOpener(bool headless, Func<string, string?> environment) =>
