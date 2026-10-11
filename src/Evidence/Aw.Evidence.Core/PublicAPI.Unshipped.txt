@@ -1568,3 +1568,5 @@ static Aw.Evidence.Core.Ids.RunInstanceId.TryFrom(string? value, out Aw.Evidence
 static Aw.Evidence.Core.Ids.RunInstanceId.TryParse(string? s, System.IFormatProvider? provider, out Aw.Evidence.Core.Ids.RunInstanceId result) -> bool
 static Aw.Evidence.Core.Ids.RunInstanceId.operator !=(Aw.Evidence.Core.Ids.RunInstanceId left, Aw.Evidence.Core.Ids.RunInstanceId right) -> bool
 static Aw.Evidence.Core.Ids.RunInstanceId.operator ==(Aw.Evidence.Core.Ids.RunInstanceId left, Aw.Evidence.Core.Ids.RunInstanceId right) -> bool
+const Aw.Evidence.Core.Runs.ParitySummary.FileName = "parity.json" -> string!
+const Aw.Evidence.Core.Runs.RunSummary.FileName = "summary.json" -> string!

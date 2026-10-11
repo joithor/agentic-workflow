@@ -10,8 +10,6 @@ namespace Aw.Evidence.Features.Parity;
 /// <summary>The parity run's own files: the manifest it reads and the parity.json it replaces.</summary>
 internal sealed class ParityFilesAccess(IRunFiles files, JsonSerializerOptions json)
 {
-    internal const string SummaryFile = "parity.json";
-
     internal async ValueTask<Result<DesignManifest>> ReadManifestAsync(string path, CancellationToken cancellationToken)
     {
         var bytes = await files.ReadAsync(path, cancellationToken).ConfigureAwait(false);
@@ -24,9 +22,9 @@ internal sealed class ParityFilesAccess(IRunFiles files, JsonSerializerOptions j
     internal async ValueTask<Result<Unit>> PrepareAsync(string runDirectory, CancellationToken cancellationToken)
     {
         var created = await files.CreateDirectoryAsync(runDirectory, cancellationToken).ConfigureAwait(false);
-        return created.IsError ? created : await files.DeleteAsync(RunPath.Combine(runDirectory, SummaryFile), cancellationToken).ConfigureAwait(false);
+        return created.IsError ? created : await files.DeleteAsync(RunPath.Combine(runDirectory, ParitySummary.FileName), cancellationToken).ConfigureAwait(false);
     }
 
     internal ValueTask<Result<Unit>> WriteSummaryAsync(string runDirectory, ParitySummary summary, CancellationToken cancellationToken) =>
-        files.WriteAsync(RunPath.Combine(runDirectory, SummaryFile), AwJson.Serialize(summary, json), cancellationToken);
+        files.WriteAsync(RunPath.Combine(runDirectory, ParitySummary.FileName), AwJson.Serialize(summary, json), cancellationToken);
 }

@@ -12,7 +12,7 @@ internal sealed class ParityCommentService(IRunFiles files, JsonSerializerOption
 {
     public async ValueTask<Result<ParityCommentResponse>> Handle(ParityCommentRequest request, CancellationToken cancellationToken)
     {
-        var bytes = await files.ReadAsync(RunPath.Combine(request.RunDirectory, "parity.json"), cancellationToken).ConfigureAwait(false);
+        var bytes = await files.ReadAsync(RunPath.Combine(request.RunDirectory, ParitySummary.FileName), cancellationToken).ConfigureAwait(false);
         return bytes
             .Bind(b => RunFileReader.Parity(b, json))
             .Map(s => new ParityCommentResponse(request.Target == CommentTarget.GitHub ? ParityComments.GitHub(s) : ParityComments.Linear(s)));

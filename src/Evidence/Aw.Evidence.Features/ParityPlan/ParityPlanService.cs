@@ -13,7 +13,7 @@ internal sealed class ParityPlanService(IRunFiles files, JsonSerializerOptions j
 {
     public async ValueTask<Result<ParityPlanResponse>> Handle(ParityPlanRequest request, CancellationToken cancellationToken)
     {
-        var bytes = await files.ReadAsync(RunPath.Combine(request.RunDirectory, "parity.json"), cancellationToken).ConfigureAwait(false);
+        var bytes = await files.ReadAsync(RunPath.Combine(request.RunDirectory, ParitySummary.FileName), cancellationToken).ConfigureAwait(false);
         var summary = bytes.Bind(b => RunFileReader.Parity(b, json));
         if (summary.IsError)
         {

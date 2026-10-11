@@ -26,6 +26,9 @@ public sealed record ParitySummary(
     /// <summary>The schema this build writes and reads.</summary>
     public const string SchemaName = "ui-evidence.parity/1";
 
+    /// <summary>The file a parity run writes in its run directory, and parity-plan and parity-comment read.</summary>
+    public const string FileName = "parity.json";
+
     /// <summary>Every failed geometry check, with its frame.</summary>
     /// <returns>The failures, in frame order.</returns>
     public IReadOnlyList<(string Frame, Design.BoxCheck Check)> FailedBoxChecks() =>

@@ -49,6 +49,9 @@ public sealed record RunSummary(
     /// <summary>The schema this build writes and reads.</summary>
     public const string SchemaName = "ui-evidence.run/1";
 
+    /// <summary>The file a run writes in its run directory, and publish-plan reads.</summary>
+    public const string FileName = "summary.json";
+
     /// <summary>True when every step passed.</summary>
     /// <returns>Whether the run's checks passed.</returns>
     public bool AllStepsPassed() => Steps.All(static s => s.Status == StepStatus.Passed);

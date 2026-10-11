@@ -12,7 +12,7 @@ internal sealed class PublishPlanService(IRunFiles files, JsonSerializerOptions 
 {
     public async ValueTask<Result<PublishPlanResponse>> Handle(PublishPlanRequest request, CancellationToken cancellationToken)
     {
-        var bytes = await files.ReadAsync(RunPath.Combine(request.RunDirectory, "summary.json"), cancellationToken).ConfigureAwait(false);
+        var bytes = await files.ReadAsync(RunPath.Combine(request.RunDirectory, RunSummary.FileName), cancellationToken).ConfigureAwait(false);
         return bytes
             .Bind(b => RunFileReader.Summary(b, json))
             .Map(s => new PublishPlanResponse(RunPublishing.Plan(s, request.Provenance, !string.IsNullOrWhiteSpace(request.LinearIssue))));
