@@ -280,7 +280,9 @@ redirect hop, though, so a server's `3xx` (or a canonical-host or auth redirect)
 session therefore also watches where the page actually is: every main-frame navigation, and the page's URL before and
 after each browser call. Once the page has been off the vetted origin, that call and every later one in the session
 fail with `AW-EVIDENCE-013 <call>: the page left <vetted origin> for <other origin> …`, so `run` and `parity` end with
-exit 4 and write no `summary.json` / `parity.json`. Sign-in checks again after loading the host and right before it
+exit 4 and write no `summary.json` / `parity.json`. In `run` that message is the one reported; `parity` reports every
+run failure as AW-EVIDENCE-015, naming the origin when the page left during sign-in or route opening, and naming the
+frame and its step (`step N … broken`) when it left during a frame step. Sign-in checks again after loading the host and right before it
 types each credential, so a credential is never typed into a page off the vetted origin. A write-looking step is a click (or a `goto`) whose
 target has a write verb (`save`, `submit`, `delete`, …, including fused control names such as `saveBtn`). Selector
 repair is held to the same guard: where writes are refused, a candidate the judge picks whose test id, accessible name
