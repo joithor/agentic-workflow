@@ -543,6 +543,7 @@ static Aw.Judge.Core.Evaluation.EvaluationOutcome.operator ==(Aw.Judge.Core.Eval
 static Aw.Judge.Core.Evaluation.InputCap.Truncate(string! text, int maxChars) -> string!
 static Aw.Judge.Core.Evaluation.InputCap.Write(System.Text.Json.Nodes.JsonNode? value, int maxChars, System.Text.Json.JsonSerializerOptions! options) -> string!
 static Aw.Judge.Core.Evaluation.InputJson.Digest(System.Text.Json.Nodes.JsonNode? node, System.Text.Json.JsonSerializerOptions! options) -> string!
+static Aw.Judge.Core.Evaluation.InputJson.TryParse(string! text, out System.Text.Json.Nodes.JsonNode? node) -> bool
 static Aw.Judge.Core.Evaluation.InputJson.Write(System.Text.Json.Nodes.JsonNode? node, System.Text.Json.JsonSerializerOptions! options) -> string!
 static Aw.Judge.Core.Evaluation.QuestionOverride.operator !=(Aw.Judge.Core.Evaluation.QuestionOverride? left, Aw.Judge.Core.Evaluation.QuestionOverride? right) -> bool
 static Aw.Judge.Core.Evaluation.QuestionOverride.operator ==(Aw.Judge.Core.Evaluation.QuestionOverride? left, Aw.Judge.Core.Evaluation.QuestionOverride? right) -> bool

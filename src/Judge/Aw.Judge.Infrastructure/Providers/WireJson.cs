@@ -1,6 +1,7 @@
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Nodes;
+using Aw.Judge.Core.Evaluation;
 using Aw.Kernel.Json;
 
 namespace Aw.Judge.Infrastructure.Providers;
@@ -22,24 +23,11 @@ internal static class WireJson
         return result.IsError ? null : result.Value;
     }
 
-    /// <summary>Parses text as any JSON value; an object that repeats a key isn't one.</summary>
+    /// <summary>Parses text as any JSON value that can be read back; a repeated key or a lone-surrogate escape isn't one.</summary>
     /// <param name="text">The text.</param>
     /// <param name="node">The value (null for JSON null).</param>
     /// <returns>Whether the text is JSON.</returns>
-    public static bool TryParse(string text, out JsonNode? node)
-    {
-        try
-        {
-            // why: JsonNode.Parse otherwise accepts a repeated key and throws later, when the object is first read.
-            node = JsonNode.Parse(text, documentOptions: new JsonDocumentOptions { AllowDuplicateProperties = false });
-            return true;
-        }
-        catch (JsonException)
-        {
-            node = null;
-            return false;
-        }
-    }
+    public static bool TryParse(string text, out JsonNode? node) => InputJson.TryParse(text, out node);
 
     /// <summary>The input as compact JSON text, as the CLIs are given it.</summary>
     /// <param name="input">The input.</param>
