@@ -1,4 +1,5 @@
 using Aw.Sindri.Core;
+using Aw.Sindri.Core.Ids;
 using Aw.Sindri.Core.Profile;
 
 namespace Aw.Sindri.Tests.Profile;
@@ -72,5 +73,18 @@ public sealed class ProfileRulesTests
         Assert.Equal(["services.heartbeat.every"], ProfileDiff.Between(live, changed));
         Assert.Empty(ProfileDiff.Between(live, live));
         Assert.Equal(["api.port", "schemaVersion", "services.heartbeat.every", "tenant", "user"], ProfileDiff.Between(approved: null, live));
+    }
+
+    [Theory, Trait("Lane", "unit")]
+    [InlineData(null, null, true)]
+    [InlineData(null, "a", true)]
+    [InlineData("a", "a", false)]
+    [InlineData("a", "b", true)]
+    [InlineData("a", null, false)]
+    public void A_profile_needs_approval_without_one_or_once_the_live_hash_differs(string? approved, string? live, bool needs)
+    {
+        static ProfileHash? Hash(string? which) => which is null ? null : ProfileHash.From(new string(which[0], 64));
+
+        Assert.Equal(needs, ProfileRules.NeedsApproval(Hash(approved), Hash(live)));
     }
 }
