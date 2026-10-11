@@ -20,7 +20,8 @@ Local: it runs in the calling process with this build's block catalog, and never
 reads the file and its child recipes, and writes nothing.
 
 - **Plain output:** one line per finding, then `hash sha256:<64 hex>` when the recipe bound (it parsed and its fields
-  have the right types). Errors come first, as `RCP-…: <what> at <file>:<line>:<col> (<path>); <fix>`. Information and
+  have the right types). The hash is printed in full, not as §3.1's 12-character display, because it is the value a
+  `hash:` field takes. Errors come first, as `RCP-…: <what> at <file>:<line>:<col> (<path>); <fix>`. Information and
   skipped findings follow, with `information: ` or `skipped: ` in front of the same line, so a line that starts with
   `RCP-` is always an error. Output is ASCII as long as the recipe's own names are.
 - **`--json`:** one JSON object on one line: `passed`, `hash` (null when the recipe didn't bind), `findings` (in the
@@ -186,18 +187,18 @@ and a test that pins its exact line (the P2 rows have none yet). All are errors 
 | `RCP-SCHEMA-001` | No unknown or missing field, the fields a state's kind needs and no others (a missing `timeout` is `RCP-TIME-001`'s), and one form where a value takes exactly one (`waitFor`, `with:` values, `when`) | Remove the field, or add the missing one |
 | `RCP-SCHEMA-002` | Each value has the right type and form (an enum is exactly one of its names), and a transition's `from` and `to` name states of the recipe | Write the form the message names |
 | `RCP-SCHEMA-003` | No refused YAML (see Reading) | Write the value out in full |
-| `RCP-STATE-001` | No state uses a reserved name | Rename the state |
+| `RCP-STATE-001` | No state uses a reserved name, and the recipe has an active or wait state and a terminal state | Rename the state |
 | `RCP-INIT-001` | `initial` names an active or wait state | Point `initial` at one |
 | `RCP-DUR-001` | Durations are `<n>m/h/d`, at least `1m` | Write a whole number and m, h or d |
 | `RCP-BLOCK-001` | Every block a recipe names is registered | Name a registered block, or fix the id |
 | `RCP-BLOCK-002` | A block is used where its kind fits (gates under `gates`, Steps under `step`, …) | Name a block of the right kind |
 | `RCP-BLOCK-003` | `with` names only the block's parameters, with the right types, and every required one | Remove, retype or add the parameter |
-| `RCP-EVID-001` | An evidence kind has a registered provider | Name a provided kind, or register the provider |
+| `RCP-EVID-001` | An evidence kind has a registered provider, `at` is `base` or `head`, and `expect` is `pass` or `fail` | Name a provided kind, or register the provider |
 | `RCP-EVENT-001` | A waited-for event is registered | Wait for a registered event |
 | `RCP-WIRE-001` | A block's inputs are produced on every path into its state, or are recipe inputs | Produce it on every path, or add it to `inputs` |
 | `RCP-WIRE-002` | `produces` lists only what the trigger's source records | List only its outputs |
 | `RCP-WHEN-001` | `when: { outcome }` names an outcome the source reports | Test one of its outcomes |
-| `RCP-WHEN-002` | `when: { loop }` names a declared loop | Declare the loop |
+| `RCP-WHEN-002` | `when: { loop }` names a declared loop, and `when: { outcome }` isn't used on a trigger that reports no outcome | Declare the loop |
 | `RCP-OUTCOME-001` | Every outcome a Step, event or child reports is handled by a transition, and terminal outcomes are `resolved`, `unresolved`, `alreadySatisfied` or `failed` | Add a transition for it, or use one of those outcomes |
 | `RCP-CHILD-001` | A child recipe resolves (registered, or next to the recipe) and gets its inputs | Register it, or put `<id>.yaml` beside the recipe; pass the inputs it declares |
 | `RCP-CHILD-002` | Child recipes form no cycle | Remove a child wait |
@@ -213,7 +214,7 @@ and a test that pins its exact line (the P2 rows have none yet). All are errors 
 | `RCP-EXIT-001` | Every non-terminal state has a path to a terminal state | Add a transition towards a terminal state |
 | `RCP-TIME-001` | Every active and wait state has a timeout | Add `timeout: { after, then }` |
 | `RCP-TIME-002` | A child wait doesn't `retry` | Use `park` or `escalate` |
-| `RCP-LOOP-001` | A state's `loop` is declared | Declare it under `loops` |
+| `RCP-LOOP-001` | A state's `loop` is declared, and every loop's `cap` is at least 1 | Declare it under `loops` |
 | `RCP-LOOP-002` | A looped state has a transition back into it | Add it, or remove `loop` |
 | `RCP-LOOP-003` | `noProgress` isn't empty | Name a signal, or leave it out |
 | `RCP-TRIG-001` | `on` fits the `from` state's kind | Use the trigger the message lists |
