@@ -7,6 +7,7 @@ using Aw.Sindri.Core.Workflow.Engine.Rules;
 using Aw.Sindri.Core.Workflow.Engine.Triggers;
 using Aw.Sindri.Core.Workflow.Ids;
 using Aw.Sindri.Core.Workflow.Recipes;
+using Aw.Sindri.Testing.Workflow;
 using static Aw.Sindri.Tests.Workflow.Engine.EngineFixture;
 
 namespace Aw.Sindri.Tests.Workflow.Engine;
@@ -163,7 +164,7 @@ public sealed class RefusalRulesTests
     public void Gate_answer_means_what_its_rung_and_threshold_say(Rung rung, GateVerdict verdict, double? score, GateOutcome expected)
     {
         var use = new GateUse(BlockId.From("gate.test.model"), Threshold: 0.8, new Dictionary<string, WithValue>(StringComparer.Ordinal));
-        var descriptor = Aw.Sindri.Testing.Workflow.TestBlocks.Gate("gate.test.model") with { Rung = rung };
+        var descriptor = TestBlocks.Gate("gate.test.model") with { Rung = rung };
 
         var record = RefusalRules.Classify(use, new GateResult(verdict, score, ["reason"]), descriptor);
 

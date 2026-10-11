@@ -7,6 +7,7 @@ using Aw.Sindri.Core.Workflow.Engine.Rules;
 using Aw.Sindri.Core.Workflow.Engine.Triggers;
 using Aw.Sindri.Core.Workflow.Ids;
 using Aw.Sindri.Core.Workflow.Recipes;
+using Aw.Sindri.Testing.Workflow;
 using static Aw.Sindri.Tests.Workflow.Engine.EngineFixture;
 
 namespace Aw.Sindri.Tests.Workflow.Engine;
@@ -184,5 +185,5 @@ public sealed class TransitionDecisionTests
         return recipe with { States = states };
     }
 
-    private static WhenClause ARecipeWhen(string outcome) => Aw.Sindri.Testing.Workflow.ARecipe.When(OutcomeName.From(outcome));
+    private static WhenClause ARecipeWhen(string outcome) => ARecipe.When(OutcomeName.From(outcome));
 }
