@@ -123,14 +123,16 @@ to change; an exception it didn't anticipate becomes a recorded JSON 500 naming 
 - **Replies follow the selection set**: only the selected fields come back, under their aliases. A field the
   recordings don't have, an object field without subfields, or a scalar with subfields is a 400, so a hand-written
   query (D18) that selects the wrong thing fails here. A nested connection (`comments`, `attachments`, `labels`,
-  `teams`) takes `first` and answers `pageInfo` (computed: the recordings hold every child); other nested arguments
-  are refused. Selection sets nest at most 32 deep.
+  `teams`) takes `first` and answers `pageInfo` (computed: the recordings hold every child; the cursors are the
+  children's `id`, null where a recorded child has none, as labels don't). Nested `after` and other nested arguments
+  are refused, so read every child by raising `first`. Selection sets nest at most 32 deep.
 - One `query` operation with variable definitions; defaults (`$first: Int = 2`) apply when the request leaves a
   variable out, and an undeclared `$variable` is a 400. Object and list arguments must be variables (inline scalars and
   enums are fine; a non-finite number is a 400). Mutations, fragments, directives, block strings and invalid string
   escapes are 400s.
 - Filters: an unknown filter field, a field filter straight on a connection (without `some`/`every`), `some`/`every`
-  on a scalar, `null` with a non-Boolean, a string comparator with a non-string, values of different types, or a date
+  on a scalar, `null` with a non-Boolean, a null or non-scalar operand (`eq: null`, `in: [null]`; test for null with
+  `null: true`), a string comparator with a non-string, values of different types, or a date
   compared with a non-date (`P1W`) is a 400, wherever the clause sits: every clause is evaluated before the results
   are combined, so an earlier failing clause never hides a bad one. A null field or relation fails every comparator
   except `neq`, `nin` and `null: true`; the fake doesn't model Linear's joins beyond that.
