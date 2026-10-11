@@ -3,8 +3,9 @@ using static Aw.Judge.Tests.AskQuestion.AskQuestionHarness;
 
 namespace Aw.Judge.Tests.AskQuestion;
 
-// The providers allowlist: '--providers a,b' anywhere in argv, else AW_JUDGE_PROVIDERS; rules is always kept, and a
-// list the judge can't read is a usage error for any command.
+// The providers allowlist: '--providers a,b' anywhere in argv, else AW_JUDGE_PROVIDERS; rules is always kept. It only
+// limits questions, so only a question reads the list: one the judge can't read is a usage error there, and the other
+// commands (health, the brief commands the hooks call) ignore it.
 public sealed class ProvidersAllowlistCliTests : IDisposable
 {
     private const string Progress = """{"text":"progress on the parser, half done","senderKind":"teammate"}""";
@@ -55,8 +56,8 @@ public sealed class ProvidersAllowlistCliTests : IDisposable
     [InlineData(null, "--providers", "bogus", "wake-gate")]
     [InlineData(null, "wake-gate", "--providers")]
     [InlineData("bogus", "wake-gate")]
-    [InlineData(",", "health")]
-    public async Task A_list_the_judge_cant_read_is_a_usage_error(string? variable, params string[] args)
+    [InlineData(",", "wake-gate")]
+    public async Task A_list_the_judge_cant_read_is_a_usage_error_for_a_question(string? variable, params string[] args)
     {
         var claude = Cli().Decides("batch", 0.9);
 
@@ -74,6 +75,28 @@ public sealed class ProvidersAllowlistCliTests : IDisposable
 
         Assert.Equal(0, run.ExitCode);
         Assert.Equal("ok", run.Json().GetProperty("status").GetString());
+    }
+
+    [Fact, Trait("Lane", "integration")]
+    public async Task A_bad_AW_JUDGE_PROVIDERS_never_breaks_health_or_the_brief_commands()
+    {
+        var judge = Judge(Cli(), "bogus");
+
+        var health = await judge.Run("health");
+        var save = await judge.RunWithInput(
+            """{"toolUseId":"tu-1","sessionId":"s1","promptId":"p1","dispatchName":null,"subagentType":"main","goal":"g","acceptanceCriteria":"a","proofCommand":"p"}""", "brief", "save");
+        var map = await judge.Run("brief", "map-by-name", "builder-a");
+
+        Assert.Equal((0, 0, 0), (health.ExitCode, save.ExitCode, map.ExitCode));
+        Assert.Equal("ok", health.Json().GetProperty("status").GetString());
+    }
+
+    [Fact, Trait("Lane", "integration")]
+    public async Task A_bad_flag_value_on_another_command_is_ignored()
+    {
+        var run = await new JudgeCli(_state).Run("health", "--providers", "bogus");
+
+        Assert.Equal(0, run.ExitCode);
     }
 
     public void Dispose() => _state.Dispose();
