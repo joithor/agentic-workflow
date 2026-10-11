@@ -30,6 +30,9 @@ public static class RefusalRules
     /// </summary>
     /// <param name="input">The refused transition and its records.</param>
     /// <returns>What follows.</returns>
-    public static RefusalOutcome Refuse(RefusalInput input) =>
+    public static RefusalOutcome Refuse(RefusalInput input) => Refuse(input, EngineRules.Default);
+
+    /// <summary><see cref="Refuse(RefusalInput)"/> through <paramref name="rules"/>.</summary>
+    internal static RefusalOutcome Refuse(RefusalInput input, IEngineRules rules) =>
         throw new NotSupportedException("P3 unit (a): RefusalRules.Refuse");
 }

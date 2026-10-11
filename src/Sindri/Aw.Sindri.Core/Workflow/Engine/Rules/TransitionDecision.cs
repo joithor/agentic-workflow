@@ -24,7 +24,7 @@ public static class TransitionDecision
     /// <param name="context">The time, epoch, catalog, runtimes, children and timings.</param>
     /// <returns><see cref="Applied"/> with the started row (and a created child's), or <see cref="Rejected"/>.</returns>
     public static Decision Start(StartRequest request, Recipe recipe, DecisionContext context) =>
-        throw new NotSupportedException("P3 unit (a): TransitionDecision.Start");
+        Start(request, recipe, context, EngineRules.Default);
 
     /// <summary>
     /// The transition <paramref name="trigger"/> selects from the current state (spec §3.5): the first in file order
@@ -41,6 +41,13 @@ public static class TransitionDecision
     /// <summary>Decides one trigger (spec §5.3–§5.5).</summary>
     /// <param name="input">The row, recipe, trigger, gate answers and context.</param>
     /// <returns>Applied, refused, absorbed or rejected.</returns>
-    public static Decision Decide(DecisionInput input) =>
+    public static Decision Decide(DecisionInput input) => Decide(input, EngineRules.Default);
+
+    /// <summary><see cref="Start(StartRequest, Recipe, DecisionContext)"/> through <paramref name="rules"/>.</summary>
+    internal static Decision Start(StartRequest request, Recipe recipe, DecisionContext context, IEngineRules rules) =>
+        throw new NotSupportedException("P3 unit (a): TransitionDecision.Start");
+
+    /// <summary><see cref="Decide(DecisionInput)"/> through <paramref name="rules"/>.</summary>
+    internal static Decision Decide(DecisionInput input, IEngineRules rules) =>
         throw new NotSupportedException("P3 unit (a): TransitionDecision.Decide");
 }

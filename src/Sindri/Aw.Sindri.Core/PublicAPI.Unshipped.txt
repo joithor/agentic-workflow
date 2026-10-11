@@ -3297,3 +3297,5 @@ virtual Aw.Sindri.Core.Workflow.Engine.Triggers.Trigger.PrintMembers(System.Text
 virtual Aw.Sindri.Core.Workflow.Engine.Triggers.WaitSource.EqualityContract.get -> System.Type!
 virtual Aw.Sindri.Core.Workflow.Engine.Triggers.WaitSource.Equals(Aw.Sindri.Core.Workflow.Engine.Triggers.WaitSource? other) -> bool
 virtual Aw.Sindri.Core.Workflow.Engine.Triggers.WaitSource.PrintMembers(System.Text.StringBuilder! builder) -> bool
+Aw.Sindri.Core.Workflow.Engine.Decisions.DecisionContext.Recorded.get -> System.Collections.Generic.IReadOnlySet<Aw.Sindri.Core.Workflow.Engine.TriggerKey>!
+Aw.Sindri.Core.Workflow.Engine.Decisions.DecisionContext.Recorded.init -> void

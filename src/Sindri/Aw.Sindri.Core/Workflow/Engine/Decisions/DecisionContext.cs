@@ -23,4 +23,11 @@ public sealed record DecisionContext(
     BlockCatalog Catalog,
     IReadOnlySet<BlockId> Runtimes,
     IChildRecipeResolver Children,
-    EngineTimings Timings);
+    EngineTimings Timings)
+{
+    /// <summary>
+    /// The keys this instance already recorded a decision under (spec §5.3 step 2, W12). The store returns a recorded
+    /// decision before deciding; a trigger whose key is here anyway is absorbed, so a trigger applied twice records one event.
+    /// </summary>
+    public IReadOnlySet<TriggerKey> Recorded { get; init; } = new HashSet<TriggerKey>();
+}
