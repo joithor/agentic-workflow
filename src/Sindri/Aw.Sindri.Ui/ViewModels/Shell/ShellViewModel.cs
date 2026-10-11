@@ -9,7 +9,7 @@ namespace Aw.Sindri.Ui.ViewModels.Shell;
 /// The window (UI spec §3.2, §4.1): the top bar's navigation and health pill, the current page, the pre-API state, and
 /// the detail sheet. It maps what the API and the platform say to words and visibility, and holds no other logic: the
 /// connection and its state live in <see cref="Health"/>, and the window's size, the sheet's width and the last page are
-/// local preferences, read once by <see cref="Restore"/> and written whole when they change.
+/// local preferences, read once by <see cref="Restore"/> and written over the stored file when they change.
 /// </summary>
 internal sealed class ShellViewModel : ObservableObject
 {
@@ -170,7 +170,7 @@ internal sealed class ShellViewModel : ObservableObject
 
         CurrentPage = page;
         Changed(_pageProperties);
-        Remember(_preferences with { LastPage = page.ToString() });
+        Remember(p => p with { LastPage = page.ToString() });
     }
 
     /// <summary>Goes where a deep link points: a page, or the detail sheet with its subject.</summary>
@@ -211,13 +211,13 @@ internal sealed class ShellViewModel : ObservableObject
     /// <param name="width">The width the user dragged it to.</param>
     internal void ResizeSheet(double width)
     {
-        Remember(_preferences with { SheetWidth = width });
+        Remember(p => p with { SheetWidth = width });
         OnChanged(nameof(SheetWidth));
     }
 
     /// <summary>Remembers the window's bounds (grown to 900 × 600 when they're next read).</summary>
     /// <param name="bounds">Where the window is.</param>
-    internal void RememberWindow(WindowBounds bounds) => Remember(_preferences with { Window = bounds });
+    internal void RememberWindow(WindowBounds bounds) => Remember(p => p with { Window = bounds });
 
     /// <summary>Reads the stored preferences: the last page, the window's bounds and the sheet's width (the defaults when they can't be read).</summary>
     /// <param name="cancellationToken">Cancels the read.</param>
@@ -243,20 +243,22 @@ internal sealed class ShellViewModel : ObservableObject
     /// <returns>A task that ends when cancelled.</returns>
     internal Task Run(CancellationToken cancellationToken) => Health.Run(cancellationToken);
 
-    // Preferences are written whole and in order (each write waits for the one before); a failed write keeps the old file,
-    // since they are a convenience and never change what the API decides.
-    private void Remember(UiPreferences preferences)
+    // The shell's fields are written over whatever the file holds now (Settings writes its own), whole and in order (each
+    // write waits for the one before); a failed write keeps the old file, since they are a convenience and never change
+    // what the API decides.
+    private void Remember(Func<UiPreferences, UiPreferences> change)
     {
-        _preferences = preferences.Clamp();
-        _saving = SaveAfter(_saving, _preferences);
+        _preferences = change(_preferences).Clamp();
+        _saving = SaveAfter(_saving, change);
     }
 
-    private async Task SaveAfter(Task previous, UiPreferences preferences)
+    private async Task SaveAfter(Task previous, Func<UiPreferences, UiPreferences> change)
     {
         await previous.ConfigureAwait(true);
         try
         {
-            await _store.Save(preferences, CancellationToken.None).ConfigureAwait(true);
+            var stored = await _store.Load(CancellationToken.None).ConfigureAwait(true);
+            await _store.Save(change(stored), CancellationToken.None).ConfigureAwait(true);
         }
         catch (Exception e) when (e is IOException or UnauthorizedAccessException)
         {
