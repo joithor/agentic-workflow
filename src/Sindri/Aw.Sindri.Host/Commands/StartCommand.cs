@@ -30,12 +30,15 @@ internal sealed class StartCommand(IControlPlaneProbe probe, IControlPlaneLaunch
             return await output.Error(status.Error).ConfigureAwait(false);
         }
 
-        var ui = openUi?.Invoke();
-        return await output.Text(SummaryText.Render(status.Value, found.Value.Endpoint, ui), status.Value.Profile.NeedsApproval ? 1 : 0)
-            .ConfigureAwait(false);
+        return await Report(status.Value, found.Value.Endpoint).ConfigureAwait(false);
     }
 
-    internal Task<int> Report(GetStatusResponse status, ControlEndpoint endpoint) => throw new NotSupportedException($"red {status}{endpoint}");
+    /// <summary>Opens the app (unless headless) and prints the summary; the exit code follows only the profile.</summary>
+    internal Task<int> Report(GetStatusResponse status, ControlEndpoint endpoint)
+    {
+        var ui = openUi?.Invoke();
+        return output.Text(SummaryText.Render(status, endpoint, ui), status.Profile.NeedsApproval ? 1 : 0);
+    }
 
     /// <summary>
     /// The running control plane, or the one this call starts. It launches only when nothing runs (SND-API-001); one that

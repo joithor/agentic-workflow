@@ -16,11 +16,18 @@ internal static class UiLauncher
     internal static string Locate(Func<string, string?> environment, string baseDirectory) =>
         environment(Variable) is { Length: > 0 } path ? path : Path.Combine(baseDirectory, "sindri-ui");
 
-    internal static string Open(string path)
+    internal static string Open(string location)
     {
+        // A relative path is resolved here, where it is checked: exec would otherwise search PATH for it.
+        var path = Path.GetFullPath(location);
         if (!File.Exists(path))
         {
             return $"not found at {path} (fix: publish Aw.Sindri.Ui.Desktop next to sindri, or set {Variable}); use sindri status";
+        }
+
+        if (!OperatingSystem.IsWindows() && (File.GetUnixFileMode(path) & (UnixFileMode.UserExecute | UnixFileMode.GroupExecute | UnixFileMode.OtherExecute)) == UnixFileMode.None)
+        {
+            return $"not executable at {path} (fix: chmod +x it, or publish Aw.Sindri.Ui.Desktop next to sindri); use sindri status";
         }
 
         try

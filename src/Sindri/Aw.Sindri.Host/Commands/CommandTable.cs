@@ -40,8 +40,8 @@ internal static class CommandTable
         var ct = CancellationToken.None;
         return args switch
         {
-            [] => await Start(services, client, output, () => UiLauncher.Open(UiLauncher.Locate(environment, AppContext.BaseDirectory))).ConfigureAwait(false),
-            ["--headless"] => await Start(services, client, output, openUi: null).ConfigureAwait(false),
+            [] => await Start(services, client, output, UiOpener(headless: false, environment)).ConfigureAwait(false),
+            ["--headless"] => await Start(services, client, output, UiOpener(headless: true, environment)).ConfigureAwait(false),
             ["status", .. var rest] when Json(rest) is { } json => await verbs.Status(json, ct).ConfigureAwait(false),
             ["stop"] => await verbs.Stop(ct).ConfigureAwait(false),
             ["profile", "validate", .. var rest] when Json(rest) is { } json => await verbs.Validate(json, ct).ConfigureAwait(false),
@@ -57,7 +57,9 @@ internal static class CommandTable
         new StartCommand(services.GetRequiredService<IControlPlaneProbe>(), services.GetRequiredService<IControlPlaneLauncher>(), client, output, openUi)
             .Run(CancellationToken.None);
 
-    internal static Func<string>? UiOpener(bool headless, Func<string, string?> environment) => throw new NotSupportedException($"red {headless}{environment("HOME")}");
+    /// <summary>What bare 'sindri' does to open the app; 'sindri --headless' opens nothing.</summary>
+    internal static Func<string>? UiOpener(bool headless, Func<string, string?> environment) =>
+        headless ? null : () => UiLauncher.Open(UiLauncher.Locate(environment, AppContext.BaseDirectory));
 
     private static bool? Json(string[] rest) => rest switch
     {
