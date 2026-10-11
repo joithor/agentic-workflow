@@ -35,7 +35,11 @@ internal sealed class SteppedClock(FakeTimeProvider fake) : TimeProvider
         fake.Advance(by);
     }
 
-    /// <summary>Waits until the loop has armed its next wait (it finished the iteration the last step started), or <paramref name="orElse"/> holds.</summary>
+    /// <summary>
+    /// Waits until the loop has armed its next wait (it finished the iteration the last step started), or <paramref name="orElse"/> holds.
+    /// A zero-length wait arms no timer (Task.Delay with TimeSpan.Zero completes at once), so a loop that waits zero
+    /// goes round again and is seen only at its next non-zero wait.
+    /// </summary>
     public async Task Armed(Func<bool>? orElse = null)
     {
         for (var waited = 0; Volatile.Read(ref _timers) <= _seen && orElse?.Invoke() != true; waited += 2)

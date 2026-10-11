@@ -20,6 +20,7 @@ public sealed class FileApprovalsFailureTests : IDisposable
     [Fact, Trait("Lane", "integration")]
     public async Task An_unreadable_approval_is_SND_PROFILE_006()
     {
+        SkipWhenPrivileged();
         _ = await _files.Approvals.Save(SliceHarness.Profile("5s"), Token);
         File.SetUnixFileMode(Path.Combine(_files.Settings.ApprovalsDirectory, "latest"), UnixFileMode.None);
 
@@ -31,6 +32,7 @@ public sealed class FileApprovalsFailureTests : IDisposable
     [Fact, Trait("Lane", "integration")]
     public async Task A_save_into_a_read_only_directory_is_SND_PROFILE_006()
     {
+        SkipWhenPrivileged();
         _ = Directory.CreateDirectory(_files.Settings.ApprovalsDirectory);
         File.SetUnixFileMode(_files.Settings.ApprovalsDirectory, UnixFileMode.UserRead | UnixFileMode.UserExecute);
 
@@ -38,4 +40,8 @@ public sealed class FileApprovalsFailureTests : IDisposable
 
         Assert.Equal(SindriErrors.ApprovalsUnavailable.Code, saved.Error.Code);
     }
+
+    /// <summary>root reads and writes through any mode bits, so a chmod can't make the disk refuse.</summary>
+    private static void SkipWhenPrivileged() =>
+        Assert.SkipWhen(Environment.IsPrivilegedProcess, "a privileged process ignores the permissions these tests take away");
 }
