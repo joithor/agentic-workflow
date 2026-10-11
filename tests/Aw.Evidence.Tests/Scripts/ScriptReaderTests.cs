@@ -72,6 +72,23 @@ public sealed class ScriptReaderTests
         Assert.Equal((EvidenceErrors.ScriptInvalid.Code, message), (error.Code, error.Message));
     }
 
+    [Theory, Trait("Lane", "unit")]
+    [InlineData("""{"route":"/","role":"manager","viewports":["desktop"],"steps":[{"action":"fill","target":"search","vaule":"St","expectedState":{"kind":"input-value","testId":"search","value":"St"}}]}""", "$.steps[0].vaule")]
+    [InlineData("""{"route":"/","role":"manager","viewports":["desktop"],"steps":[{"action":"goto","target":"/","expectedState":{"kind":"url-path","path":"/"}}],"viewport":"desktop"}""", "$.viewport")]
+    [InlineData("""{"route":"/","role":"manager","viewports":["desktop"],"steps":[{"action":"goto","target":"/","expectedState":{"kind":"url-path","path":"/"}}],"planning":{"model":"m","tokens":3}}""", "$.planning.tokens")]
+    [InlineData("""{"route":"/","role":"manager","viewports":["desktop"],"steps":[{"action":"goto","target":"/","expectedState":{"kind":"text-visible","text":"a","exact":true}}]}""", "$.steps[0].expectedState.exact")]
+    [InlineData("""{"route":"/","role":"manager","viewports":["desktop"],"steps":[{"action":"goto","target":"/","expectedState":{"kind":"text-absent","text":"a","exact":true}}]}""", "$.steps[0].expectedState.exact")]
+    [InlineData("""{"route":"/","role":"manager","viewports":["desktop"],"steps":[{"action":"goto","target":"/","expectedState":{"kind":"testid-visible","testId":"a","exact":true}}]}""", "$.steps[0].expectedState.exact")]
+    [InlineData("""{"route":"/","role":"manager","viewports":["desktop"],"steps":[{"action":"goto","target":"/","expectedState":{"kind":"url-path","path":"/","exact":true}}]}""", "$.steps[0].expectedState.exact")]
+    [InlineData("""{"route":"/","role":"manager","viewports":["desktop"],"steps":[{"action":"goto","target":"/","expectedState":{"kind":"input-value","testId":"a","value":"b","exact":true}}]}""", "$.steps[0].expectedState.exact")]
+    [InlineData("""{"route":"/","role":"manager","viewports":["desktop"],"steps":[{"action":"goto","target":"/","expectedState":{"exact":true,"path":"/","kind":"url-path"}}]}""", "$.steps[0].expectedState.exact")]
+    public void An_unknown_key_anywhere_in_a_script_is_refused_and_named(string json, string location)
+    {
+        var error = Read(json).Error;
+
+        Assert.Equal((EvidenceErrors.ScriptInvalid.Code, location + ": unknown property"), (error.Code, error.Message));
+    }
+
     [Fact, Trait("Lane", "unit")]
     public void Missing_planning_usage_stays_unknown_rather_than_zero()
     {

@@ -59,6 +59,16 @@ public sealed class ManifestReaderTests
     }
 
     [Fact, Trait("Lane", "unit")]
+    public void A_frame_step_with_an_unknown_key_is_refused_and_named()
+    {
+        var frame = Frame.Replace("}}", """},"steps":[{"action":"fill","target":"search","vaule":"St","expectedState":{"kind":"input-value","testId":"search","value":"St"}}]}""", StringComparison.Ordinal);
+
+        var error = Read(Manifest(frame: frame)).Error;
+
+        Assert.Equal((EvidenceErrors.ManifestInvalid.Code, "$.frames[0].steps[0].vaule: unknown property"), (error.Code, error.Message));
+    }
+
+    [Fact, Trait("Lane", "unit")]
     public void A_misspelt_key_inside_a_frame_is_refused()
     {
         var frame = Frame.Replace("}}", """},"expectBox":[{"target":{"testId":"a"},"expected":{"w":1}}]}""", StringComparison.Ordinal);
