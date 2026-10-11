@@ -13,7 +13,7 @@ namespace Aw.Evidence.Infrastructure.Browser;
 /// desktop-Chrome user agent, video and tracing into the record directory, and a route that aborts every navigation
 /// off the vetted origin.
 /// </summary>
-internal sealed class PlaywrightBrowser : IBrowser, IAsyncDisposable
+internal sealed class PlaywrightBrowser : IBrowser, IAsyncDisposable, IDisposable
 {
     // A preview host is public, but the app it serves calls back into private address space; Chromium blocks that by default.
     private static readonly string[] _previewArgs =
@@ -40,6 +40,14 @@ internal sealed class PlaywrightBrowser : IBrowser, IAsyncDisposable
             await browser.CloseAsync().ConfigureAwait(false);
         }
 
+        _playwright?.Dispose();
+        _gate.Dispose();
+    }
+
+    /// <inheritdoc/>
+    /// <remarks>Stopping the Playwright driver ends the browsers it started; DisposeAsync closes them first.</remarks>
+    public void Dispose()
+    {
         _playwright?.Dispose();
         _gate.Dispose();
     }

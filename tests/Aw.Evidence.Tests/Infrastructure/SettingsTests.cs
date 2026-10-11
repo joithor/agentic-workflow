@@ -10,9 +10,9 @@ public sealed class SettingsTests
         var settings = SettingsFromEnvironment.Read(Env(("AW_STATE_DIR", "/state"), ("HOME", "/home/u")));
 
         Assert.Equal("/state/evidence", settings.StateDirectory);
-        Assert.Equal("/state/locks/qa-stack.lock", settings.QaStackLock);
-        Assert.Equal("/state/locks/heavy-job.lock", settings.HeavyJobLock);
-        Assert.False(settings.HeavyLockHeld);
+        Assert.Equal("/state/locks/qa-stack.lock", settings.Locks.QaStack);
+        Assert.Equal("/state/locks/heavy-job.lock", settings.Locks.HeavyJob);
+        Assert.False(settings.Locks.HeavyJobHeld);
     }
 
     [Fact, Trait("Lane", "unit")]
@@ -20,7 +20,7 @@ public sealed class SettingsTests
     {
         var settings = SettingsFromEnvironment.Read(Env(("HOME", "/home/u")));
 
-        Assert.Equal("/home/u/.agentic-workflow/locks/heavy-job.lock", settings.HeavyJobLock);
+        Assert.Equal("/home/u/.agentic-workflow/locks/heavy-job.lock", settings.Locks.HeavyJob);
     }
 
     [Fact, Trait("Lane", "unit")]
@@ -29,9 +29,9 @@ public sealed class SettingsTests
         var settings = SettingsFromEnvironment.Read(Env(
             ("AW_STATE_DIR", "/state"), ("AW_QA_STACK_LOCK", "/tmp/q.lock"), ("AW_HEAVY_JOB_LOCK", "/tmp/h.lock"), ("AW_HEAVY_LOCK_HELD", "1")));
 
-        Assert.Equal("/tmp/q.lock", settings.QaStackLock);
-        Assert.Equal("/tmp/h.lock", settings.HeavyJobLock);
-        Assert.True(settings.HeavyLockHeld);
+        Assert.Equal("/tmp/q.lock", settings.Locks.QaStack);
+        Assert.Equal("/tmp/h.lock", settings.Locks.HeavyJob);
+        Assert.True(settings.Locks.HeavyJobHeld);
     }
 
     private static Func<string, string?> Env(params (string Name, string Value)[] values) =>

@@ -11,7 +11,7 @@ namespace Aw.Evidence.Infrastructure.Locks;
 /// ui-evidence' to &lt;dir&gt;/owner. With AW_HEAVY_LOCK_HELD=1 a parent already holds the heavy-job lock, so taking it
 /// is a no-op. There is no stale-lock takeover: a crashed holder's directory is removed by a person.
 /// </summary>
-internal sealed class DirectoryLocks(EvidenceSettings settings, TimeProvider clock, TextWriter notices) : IMachineLocks
+internal sealed class DirectoryLocks(LockSettings settings, TimeProvider clock, TextWriter notices) : IMachineLocks
 {
     /// <summary>The file a holder writes inside the lock directory.</summary>
     internal const string OwnerFile = "owner";
@@ -20,9 +20,9 @@ internal sealed class DirectoryLocks(EvidenceSettings settings, TimeProvider clo
 
     /// <inheritdoc/>
     public ValueTask<Result<ILockLease>> AcquireAsync(LockKind kind, TimeSpan timeout, CancellationToken cancellationToken) =>
-        kind == LockKind.HeavyJob && settings.HeavyLockHeld
+        kind == LockKind.HeavyJob && settings.HeavyJobHeld
             ? ValueTask.FromResult<Result<ILockLease>>(DirectoryLease.Inherited(kind))
-            : WaitAsync(kind, kind == LockKind.QaStack ? settings.QaStackLock : settings.HeavyJobLock, timeout, cancellationToken);
+            : WaitAsync(kind, kind == LockKind.QaStack ? settings.QaStack : settings.HeavyJob, timeout, cancellationToken);
 
     private async ValueTask<Result<ILockLease>> WaitAsync(LockKind kind, string directory, TimeSpan timeout, CancellationToken cancellationToken)
     {

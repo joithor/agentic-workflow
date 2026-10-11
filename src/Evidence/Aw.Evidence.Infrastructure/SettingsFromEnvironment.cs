@@ -10,9 +10,10 @@ internal static class SettingsFromEnvironment
         var locks = Path.Combine(root, "locks");
         return new(
             StateDirectory: Path.Combine(root, "evidence"),
-            QaStackLock: Set(environment("AW_QA_STACK_LOCK")) ?? Path.Combine(locks, "qa-stack.lock"),
-            HeavyJobLock: Set(environment("AW_HEAVY_JOB_LOCK")) ?? Path.Combine(locks, "heavy-job.lock"),
-            HeavyLockHeld: string.Equals(environment("AW_HEAVY_LOCK_HELD"), "1", StringComparison.Ordinal));
+            Locks: new(
+                QaStack: Set(environment("AW_QA_STACK_LOCK")) ?? Path.Combine(locks, "qa-stack.lock"),
+                HeavyJob: Set(environment("AW_HEAVY_JOB_LOCK")) ?? Path.Combine(locks, "heavy-job.lock"),
+                HeavyJobHeld: string.Equals(environment("AW_HEAVY_LOCK_HELD"), "1", StringComparison.Ordinal)));
     }
 
     private static string? Set(string? value) => string.IsNullOrWhiteSpace(value) ? null : value;

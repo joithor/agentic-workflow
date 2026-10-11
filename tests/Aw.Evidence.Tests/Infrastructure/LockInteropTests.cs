@@ -11,7 +11,7 @@ public sealed class LockInteropTests : IDisposable
 {
     private readonly TempDirectory _root = new();
 
-    private string Lock => LockTestEnvironment.Settings(_root).QaStackLock;
+    private string Lock => LockTestEnvironment.Settings(_root).QaStack;
 
     [Fact]
     public async Task A_lock_bash_holds_is_busy_for_csharp_until_bash_releases_it()

@@ -16,12 +16,12 @@ public sealed class DirectoryLocksTests : IDisposable
         var settings = LockTestEnvironment.Settings(_root);
         var lease = (await LockTestEnvironment.Locks(_root).AcquireAsync(LockKind.QaStack, TimeSpan.Zero, TestContext.Current.CancellationToken)).Value;
 
-        var owner = await File.ReadAllTextAsync(Path.Combine(settings.QaStackLock, "owner"), TestContext.Current.CancellationToken);
+        var owner = await File.ReadAllTextAsync(Path.Combine(settings.QaStack, "owner"), TestContext.Current.CancellationToken);
         Assert.Matches($"^{Environment.ProcessId.ToString(CultureInfo.InvariantCulture)} \\d{{4}}-\\d\\d-\\d\\dT\\d\\d:\\d\\d:\\d\\dZ ui-evidence\n$", owner);
 
         await lease.DisposeAsync();
-        Assert.False(Directory.Exists(settings.QaStackLock));
-        Assert.True(Directory.Exists(Path.GetDirectoryName(settings.QaStackLock)), "the locks directory stays");
+        Assert.False(Directory.Exists(settings.QaStack));
+        Assert.True(Directory.Exists(Path.GetDirectoryName(settings.QaStack)), "the locks directory stays");
     }
 
     [Fact]
@@ -33,7 +33,7 @@ public sealed class DirectoryLocksTests : IDisposable
         var busy = await LockTestEnvironment.Locks(_root, notices: notices).AcquireAsync(LockKind.HeavyJob, TimeSpan.FromSeconds(1.5), TestContext.Current.CancellationToken);
 
         Assert.Equal(EvidenceErrors.LockBusy.Code, busy.Error.Code);
-        Assert.Equal($"ui-evidence: waiting on lock: {LockTestEnvironment.Settings(_root).HeavyJobLock}{Environment.NewLine}", notices.ToString());
+        Assert.Equal($"ui-evidence: waiting on lock: {LockTestEnvironment.Settings(_root).HeavyJob}{Environment.NewLine}", notices.ToString());
     }
 
     [Fact]
@@ -46,7 +46,7 @@ public sealed class DirectoryLocksTests : IDisposable
 
         Assert.True(second.IsSuccess);
         Assert.Equal([LockKind.HeavyJob], second.Value.Held);
-        Assert.False(Directory.Exists(settings.HeavyJobLock), "an inherited lease creates nothing");
+        Assert.False(Directory.Exists(settings.HeavyJob), "an inherited lease creates nothing");
         await second.Value.DisposeAsync();
     }
 

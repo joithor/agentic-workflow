@@ -35,7 +35,7 @@ public static class EvidenceInfrastructureServiceCollectionExtensions
         var settings = SettingsFromEnvironment.Read(environment);
         return services
             .AddSingleton(settings)
-            .AddSingleton<IMachineLocks>(static sp => new DirectoryLocks(sp.GetRequiredService<EvidenceSettings>(), sp.GetRequiredService<TimeProvider>(), Console.Error))
+            .AddSingleton<IMachineLocks>(static sp => new DirectoryLocks(sp.GetRequiredService<EvidenceSettings>().Locks, sp.GetRequiredService<TimeProvider>(), Console.Error))
             .AddSingleton<IRunFiles, FileRunFiles>()
             .AddSingleton<IImageCodec, PngCodec>()
             .AddSingleton<IVerdictCacheStore, FileVerdictCacheStore>()
