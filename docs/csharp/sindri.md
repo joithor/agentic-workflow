@@ -15,10 +15,10 @@ One NativeAOT binary, `sindri`, is both the control plane and its CLI.
 
 | Command | What it does | Exit |
 |---|---|---|
-| `sindri` | Prints the banner, starts the control plane if it isn't running (detached, `sindri serve`, output in `<home>/logs/serve.log`), then prints the startup summary | 0; 1 when the profile needs approval; 2 when it can't start |
+| `sindri` | Prints the banner, starts the control plane if it isn't running (detached in its own session, so a Ctrl-C or a kill of the terminal's process group doesn't reach it; `sindri serve`, output in `<home>/logs/serve.log`), then prints the startup summary | 0; 1 when the profile needs approval; 2 when it can't start |
 | `sindri --headless` | The same without the UI line (the UI is S1b) | as above |
-| `sindri serve` | Runs the control plane in the foreground: what bare `sindri` starts, and what launchd will keep alive later | 0 on a clean stop; 1 when another process holds the lease (`SND-LEASE-001`) or the lease was lost; 2 when the port is taken (`SND-API-003`) or the ledger can't be opened |
-| `sindri status [--json]` | The running control plane's status, through the API | 0; 1 when it isn't running (`SND-API-001`) or the profile needs approval |
+| `sindri serve` | Runs the control plane in the foreground: what bare `sindri` starts, and what launchd will keep alive later | 0 on a clean stop; 1 when another process holds the lease (`SND-LEASE-001`) or the lease was lost; 2 when the port is taken or refused, or `AW_SINDRI_PORT` isn't a port number 0..65535 (`SND-API-003`, checked before the lease is taken), or the ledger can't be opened |
+| `sindri status [--json]` | The running control plane's status, through the API | 0; 1 when it isn't running (`SND-API-001`) or the profile needs approval (`profile.needsApproval` in the response); 2 when it didn't answer in time (`SND-API-002`) |
 | `sindri stop` | Stops it: records the stop, releases the lease, shuts down | 0; 1 when it isn't running |
 | `sindri profile validate [--json]` | Checks the live profile file and prints its hash | 0 valid and approved; 1 valid, not approved; 2 invalid (`SND-PROFILE-001/002`) |
 | `sindri profile approve` | Shows the live hash and the key paths changed since the latest approval; changes nothing | 1 when not approved yet, 0 when it already is |
@@ -38,21 +38,23 @@ the approval is a ledger event fenced by the lease.
 ## Files
 
 `AW_SINDRI_HOME`, default `$AW_STATE_DIR/sindri-app` (`$AW_STATE_DIR` defaults to `~/.agentic-workflow`). It is apart from
-the TS sindri's `$AW_STATE_DIR/sindri` until the switch; no TS state is read. Directories are 0700, files 0600.
+the TS sindri's `$AW_STATE_DIR/sindri` until the switch; no TS state is read. A directory Sindri creates is 0700 (one that already exists keeps the
+mode its owner gave it); files are 0600.
 
 | Path | What |
 |---|---|
 | `ledger.db` | The ledger (SQLite, WAL, through `Aw.Kernel.Data`): `events`, `lease`, `outbox_commands` |
 | `approved/<hash>/profile.json`, `approved/latest` | Approved profile snapshots (canonical JSON) and the latest hash. Runtime reads only these, never the live file |
 | `control.json` | The running control plane's endpoint: `url`, `pid`, `epoch`. Written once it listens, removed on stop. A client checks the pid and epoch against `/sindri/ping`, so a stale record reads as "not running" |
-| `logs/serve.log` | The detached control plane's output |
+| `logs/serve.log` | The detached control plane's output (0600: written under umask 077, and an older log is narrowed after each start) |
 | `profile/profile.yaml` | The live profile (`AW_SINDRI_PROFILE` overrides the path) |
 
 ## Profile
 
 YAML, typed through AwJson (owner decision 2026-10-11): the YamlDotNet parser and representation model (no reflection)
-turn the file into JSON, which AwJson reads into `SindriProfile`. Scalars follow the YAML 1.2 core schema (`yes` and
-`no` stay strings); anchors, aliases, tags and duplicate keys are refused; unknown keys are errors.
+turn the file into JSON, which AwJson reads into `SindriProfile`. Scalars follow a subset of the YAML 1.2 core schema
+(null, booleans, decimal integers and decimals; everything else is a string, so `yes` and `no` stay strings);
+anchors, aliases, tags and duplicate keys are refused; unknown keys are errors.
 
 ```yaml
 schemaVersion: 1          # required; this build reads 1
@@ -62,11 +64,15 @@ repos:                    # optional
   - { name: agentic-workflow, path: /Users/thor/repos/agentic-workflow }
 services:                 # optional: background services by name, each with a cadence
   heartbeat: { every: 30s }   # <n>s|m|h, 5s to 24h
-api: { port: 7410 }       # optional, default 7410; AW_SINDRI_PORT overrides it
+api: { port: 7410 }       # optional, default 7410; 0 (a free port) or 1024..65535; AW_SINDRI_PORT overrides it
 ```
 
 The approval hash is SHA-256 over the canonical JSON (the checked record, repos and services sorted), so comments and
 key order don't change it. An approval snapshot whose content no longer matches its hash isn't trusted.
+
+Approving appends the `profile.approved` event first and saves the snapshot second. A failed append changes nothing;
+a retry after a failed save finds the event already recorded (same key) and saves. "Already approved" means saved
+and recorded, so a saved approval whose event is missing is shown as not approved and approving again records it.
 
 ## Host lease
 
@@ -74,12 +80,17 @@ One control plane per host (design spec §9.1, factory addendum §17.22 D2). The
 (host, pid, pid start time to the second, boot id), epoch, acquired and expiry times, released flag. TTL 60 s, renewed
 every 20 s.
 
-- **Acquire** (in one `BEGIN IMMEDIATE`): free, released or expired → taken with epoch + 1. A live holder → refused with
-  `SND-LEASE-001 held by <host>/<pid> since <time> (epoch N)`. A holder that is provably dead on this machine (another
-  boot, no such pid, or the pid reused by a later process) → taken at once, so `kill -9` doesn't cost a 60 s wait.
+- **Acquire** (in one `BEGIN IMMEDIATE`): free or released → taken with epoch + 1. A holder that is provably dead on
+  this machine (another boot, no such pid, or the pid reused by a later process) → taken at once, so `kill -9` doesn't
+  cost a 60 s wait. A holder proven alive on this machine → refused with `SND-LEASE-001 held by <host>/<pid> since
+  <time> (epoch N)`, even past expiry (its renewals are only late). A holder on another machine, whose liveness can't be
+  proven → refused until the lease expires, then taken. Start times that differ by at most 2 s count as the same
+  process (Linux derives them from boot time and clock ticks, so they jitter).
 - **Renew** succeeds while the row still names this holder at this epoch, even past expiry (a process that slept, when
   nobody took over, lost nothing to fencing). Once another process took the lease, renew fails with `SND-LEASE-002` and
-  the process stops: it must not write under a stale epoch.
+  the process stops (exit 1): it must not write under a stale epoch. Any other renewal error (a busy or unreadable
+  ledger) is logged and retried at the next tick, until the grant expires; past expiry the process stops too. A stop
+  clears the grant before releasing it, and a renewal that finishes afterwards doesn't hold it again.
 - **Fencing:** every ledger append checks, in its own transaction, that the writer's grant is the current epoch;
   otherwise `SND-LEASE-003` and nothing is written.
 
@@ -117,7 +128,9 @@ foreign browser `Origin` a 403):
 | `POST /sindri/profile/approve` | `ApproveProfile` (`{hash, confirmed}`) |
 | `GET /sindri/events?after=N` | `StreamEvents` as server-sent events: one event per ledger row, `id` = `seq`, `event` = type; resumes from `after` or `Last-Event-ID`; polls the ledger once a second |
 
-Errors are ProblemDetails with the `SND-*` code as `title`. There is no API token in S1: the threat model guards honest
+A service's error is ProblemDetails with the `SND-*` code as `title`. The loopback guard's 400 and 403 and an unknown
+route's 404 carry no ProblemDetails body. The approve route's `confirmed` is the CLI's claim that the human typed the
+confirmation; in S1 that terminal check in the CLI is the only gate. There is no API token in S1: the threat model guards honest
 mistakes (`docs/csharp/bugfix.md`), and approval stays terminal-bound in the CLI. Device-bound approvals for the UI
 (passkeys, §17.21 D6) come with the UI's action forms.
 
@@ -125,7 +138,8 @@ mistakes (`docs/csharp/bugfix.md`), and approval stays terminal-bound in the CLI
 
 The control plane runs the services the **approved** profile names, on their cadence. It re-reads the approval once a
 second, so an approval takes effect without a restart. Missed slots after a sleep are skipped, not replayed in a burst. A
-failed run is logged (`SND-SCHED-001`) and the next slot still runs. Nothing runs while the process holds no lease. S1
+failed run (an error or an exception) is logged (`SND-SCHED-001`) and the next slot still runs; an approval it can't read
+is logged once (`SND-SCHED-001`) and the current schedule keeps running. Nothing runs while the process holds no lease. S1
 ships one service, `heartbeat`, which records `service.heartbeat` per slot; the index, intake and scorer join later as
 blocks.
 
