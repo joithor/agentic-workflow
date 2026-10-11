@@ -22,8 +22,9 @@ Sindri's handlers (factory addendum §17.27.1). Nothing installs it before the s
 - **Compiled bindings only.** `AvaloniaUseCompiledBindingsByDefault=true`, `x:DataType` on the window and every
   template, no `ReflectionBinding`, so the head publishes under NativeAOT.
 - **View models carry no Avalonia types** (plain C#, `INotifyPropertyChanged`), so they test in the unit lane.
-- **Hand composition, no container.** The app has one view model and one client; the head builds them by hand
-  (`SindriApp.Create(records, clock)`). A service locator outside a Host would fail `ARCH-DI-001`.
+- **Hand composition, no container.** The app has one view model and one client; the head builds its adapter and hands it to
+  `SindriApp.Create(records, clock)`, which builds the view model and the API client (a loopback `HttpClient` that never
+  uses a proxy). A service locator outside a Host would fail `ARCH-DI-001`.
 - **Packages.** MIT Avalonia packages only, all `[12.1.3]`: `Avalonia`, `Avalonia.Themes.Fluent`, `Avalonia.Fonts.Inter`
   (the library), `Avalonia.Desktop` (the head), `Avalonia.Headless` and `Avalonia.Skia` (tests).
 

@@ -31,7 +31,12 @@ public sealed class SindriApp : Application
     /// <param name="clock">The clock for retry waits.</param>
     /// <returns>The app.</returns>
     public static SindriApp Create(IEndpointRecordSource records, TimeProvider clock) =>
-        new(new MainViewModel(records, new SindriApiClient(new HttpClient { Timeout = Timeout.InfiniteTimeSpan }), clock));
+        new(new MainViewModel(records, new SindriApiClient(Loopback()), clock));
+
+    // The API is on loopback: never through a configured proxy (as the CLI's client), and a connect that hangs fails in 2 s.
+    // The client owns no timeout of its own, so the event stream stays open.
+    private static HttpClient Loopback() =>
+        new(new SocketsHttpHandler { UseProxy = false, ConnectTimeout = TimeSpan.FromSeconds(2) }) { Timeout = Timeout.InfiniteTimeSpan };
 
     /// <inheritdoc />
     public override void Initialize() => AvaloniaXamlLoader.Load(this);

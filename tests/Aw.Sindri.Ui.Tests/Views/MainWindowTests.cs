@@ -36,13 +36,14 @@ public sealed class MainWindowTests
         var vm = new MainViewModel(_records, _server, new FakeTimeProvider(A.Noon));
         var window = new MainWindow { DataContext = vm };
         window.Show();
-        _ = vm.Run(TestContext.Current.CancellationToken);
-        for (var i = 0; i < 200 && !ready(window); i++)
+        var run = vm.Run(TestContext.Current.CancellationToken);
+        for (var i = 0; i < 200 && !ready(window) && !run.IsFaulted; i++)
         {
             await Task.Delay(10, TestContext.Current.CancellationToken);
             Dispatcher.UIThread.RunJobs();
         }
 
+        Assert.False(run.IsFaulted, run.Exception?.ToString());
         Assert.True(ready(window), "the window never reached the expected state");
         window.UpdateLayout();
         Dispatcher.UIThread.RunJobs();

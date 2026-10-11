@@ -33,7 +33,8 @@ internal static class StatusText
         _ => $"hash {Short(p.Approved)} · {p.Source}",
     };
 
-    internal static string ProfileFix(ProfileView p) => p.NeedsApproval ? ApproveFix : string.Empty;
+    // Approving needs a live profile that loads: offer the command only when it can work (as the CLI does).
+    internal static string ProfileFix(ProfileView p) => p.NeedsApproval && p.Live is not null ? ApproveFix : string.Empty;
 
     internal static ServiceRow Service(ServiceView s) => new(s.Name, "every " + s.Every, s.LastRun is { } t ? "last run " + Time(t) : "not run yet");
 
