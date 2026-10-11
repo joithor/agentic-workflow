@@ -367,8 +367,12 @@ const sliceOnly = (d, extra) => run(NEW_SLICE, d, ["--slice-only", ...Object.ent
 t("--slice-only cli: only the slice's files, its id files and its A.cs factory; the shared lines are printed", () => {
   const d = tree();
   assert.equal(pkg(d).code, 0);
+  // the phase's contract unit owns IdsJsonContext.cs; a normal slice with an id stands in for it here
+  assert.equal(slice(d, { package: "Readiness", slice: "ListThings", behavior: "lists_things", surface: "cli", command: "things", ids: "ThingId:string" }).code, 0);
   const a = "tests/Aw.Readiness.Testing/A.cs";
   const aBefore = read(d, a);
+  const ctx = "tests/Aw.Readiness.Tests/Ids/IdsJsonContext.cs";
+  const ctxBefore = read(d, ctx);
   const before = fileHashes(d);
   const r = sliceOnly(d, { package: "Readiness", slice: "ListRepos", behavior: "lists_nothing_for_an_empty_profile", surface: "cli", command: "list", ids: "RepoId:string" });
   assert.equal(r.code, 0, r.out);
@@ -388,6 +392,7 @@ t("--slice-only cli: only the slice's files, its id files and its A.cs factory; 
   ]);
   const added = insertedOnly(aBefore, read(d, a));
   assert.match(added, /public static ListReposRequestBuilder ListReposRequest\(\) => new\(\);/);
+  assert.equal(insertedOnly(ctxBefore, read(d, ctx)).trim(), "[JsonSerializable(typeof(RepoIdHolder))]");
   assert.doesNotMatch(added, /CheckRepo/);
   assert.ok(!exists(d, `${app}/Commands/ListReposCommand.cs`), "--slice-only wrote the command file");
   // Nothing in the assembly uses the unregistered stub and validator yet: MA0182 (an error) is suppressed until the branch registers them.
@@ -483,18 +488,46 @@ t("--slice-only: a slice-only refusal leaves a normal second run possible (the g
   assert.doesNotMatch(r.out, /Shared lines to add/);
 });
 
-// Sindri's S1 removed its empty A.cs: the generator writes the builder root again rather than failing on it.
-for (const mode of ["--slice-only", "normal"]) {
-  t(`new-slice (${mode}): a package without tests/Aw.<Pkg>.Testing/A.cs gets the builder root with the factory`, () => {
-    const d = tree();
-    assert.equal(pkg(d, { name: "Demohttp", note: "x", "error-prefix": "DEMOHTTP", shape: "full", host: "http", binary: undefined, "first-slice": "StartItem", behavior: "starts_an_item", route: "POST /items/{itemId}/start", ids: "ItemId:string" }).code, 0);
-    fs.rmSync(path.join(d, "tests/Aw.Demohttp.Testing/A.cs"));
-    const args = { package: "Demohttp", slice: "GetItem", behavior: "gets_an_item", surface: "http", route: "GET /items/{itemId}" };
-    const r = mode === "normal" ? slice(d, args) : sliceOnly(d, args);
-    assert.equal(r.code, 0, r.out);
-    assert.match(read(d, "tests/Aw.Demohttp.Testing/A.cs"), /^namespace Aw\.Demohttp\.Testing;\n[\s\S]*public static class A\n\{\n {4}\/\/\/ <summary>A GetItemRequest builder[\s\S]*public static GetItemRequestBuilder GetItemRequest\(\) => new\(\);\n\}\n$/);
-  });
-}
+// Sindri's S1 removed its empty A.cs. The normal mode writes the builder root again; --slice-only creates no shared
+// file, so it refuses and leaves the tree as it was (the phase's contract unit restores A.cs).
+const demohttp = (d) => assert.equal(pkg(d, { name: "Demohttp", note: "x", "error-prefix": "DEMOHTTP", shape: "full", host: "http", binary: undefined, "first-slice": "StartItem", behavior: "starts_an_item", route: "POST /items/{itemId}/start", ids: "ItemId:string" }).code, 0);
+t("new-slice (normal): a package without tests/Aw.<Pkg>.Testing/A.cs gets the builder root with the factory", () => {
+  const d = tree();
+  demohttp(d);
+  fs.rmSync(path.join(d, "tests/Aw.Demohttp.Testing/A.cs"));
+  const r = slice(d, { package: "Demohttp", slice: "GetItem", behavior: "gets_an_item", surface: "http", route: "GET /items/{itemId}" });
+  assert.equal(r.code, 0, r.out);
+  assert.match(read(d, "tests/Aw.Demohttp.Testing/A.cs"), /^namespace Aw\.Demohttp\.Testing;\n[\s\S]*public static class A\n\{\n {4}\/\/\/ <summary>A GetItemRequest builder[\s\S]*public static GetItemRequestBuilder GetItemRequest\(\) => new\(\);\n\}\n$/);
+});
+t("NS-SLICE-ONLY: a package without tests/Aw.<Pkg>.Testing/A.cs is refused, nothing written", () => {
+  const d = tree();
+  demohttp(d);
+  fs.rmSync(path.join(d, "tests/Aw.Demohttp.Testing/A.cs"));
+  const before = hashTree(d);
+  const r = sliceOnly(d, { package: "Demohttp", slice: "GetItem", behavior: "gets_an_item", surface: "http", route: "GET /items/{itemId}" });
+  refused(r, "NS-SLICE-ONLY");
+  assert.match(r.out, /tests\/Aw\.Demohttp\.Testing\/A\.cs/);
+  assert.match(r.out, /^fix: add it in the phase's contract unit, or run without --slice-only$/m);
+  assert.equal(hashTree(d), before, "the tree changed");
+});
+t("NS-SLICE-ONLY: a new id when the tests have no IdsJsonContext.cs is refused, nothing written", () => {
+  const d = tree();
+  assert.equal(pkg(d).code, 0);
+  assert.ok(!exists(d, "tests/Aw.Readiness.Tests/Ids/IdsJsonContext.cs"));
+  const before = hashTree(d);
+  const r = sliceOnly(d, { package: "Readiness", slice: "ListRepos", behavior: "lists_repos", surface: "cli", command: "list", ids: "RepoId:string" });
+  refused(r, "NS-SLICE-ONLY");
+  assert.match(r.out, /tests\/Aw\.Readiness\.Tests\/Ids\/IdsJsonContext\.cs/);
+  assert.match(r.out, /^fix: add it in the phase's contract unit, or run without --slice-only$/m);
+  assert.equal(hashTree(d), before, "the tree changed");
+});
+t("--slice-only: no IdsJsonContext.cs is fine when the slice adds no id", () => {
+  const d = tree();
+  assert.equal(pkg(d).code, 0);
+  const r = sliceOnly(d, { package: "Readiness", slice: "ListRepos", behavior: "lists_repos", surface: "cli", command: "list" });
+  assert.equal(r.code, 0, r.out);
+  assert.ok(!exists(d, "tests/Aw.Readiness.Tests/Ids/IdsJsonContext.cs"));
+});
 
 const commonLib = await import(path.join(REPO, "scripts/scaffold/lib/common.mjs"));
 t("Journal edit guard: an edit the guard refuses throws its ScaffoldError and leaves the file alone", () => {
@@ -511,6 +544,27 @@ t("Journal edit guard: an edit the guard refuses throws its ScaffoldError and le
   j.create("new.txt", "a\n");
   j.edit("new.txt", () => "b\n");   // a file this run created is its own, never guarded
   assert.equal(read(d, "new.txt"), "b\n");
+});
+
+t("Journal create guard: a create the guard refuses throws its ScaffoldError and writes nothing", () => {
+  const d = tree();
+  const j = new commonLib.Journal(d);
+  j.createGuard = (rel) => {
+    if (rel !== "mine.txt") throw new commonLib.ScaffoldError("NS-SLICE-ONLY", `${rel} is shared`, "x");
+  };
+  assert.throws(() => j.create("sub/shared.txt", "a\n"), /NS-SLICE-ONLY: sub\/shared\.txt is shared/);
+  assert.ok(!exists(d, "sub/shared.txt"));
+  assert.ok(!exists(d, "sub"), "the guard runs before the directories are made");
+  j.create("mine.txt", "a\n");
+  assert.equal(read(d, "mine.txt"), "a\n");
+});
+t("Journal insert: the edit guard runs before the anchor test, so a guarded file reports the guard's rule", () => {
+  const d = tree();
+  const j = new commonLib.Journal(d);
+  j.editGuard = (rel) => {
+    throw new commonLib.ScaffoldError("NS-SLICE-ONLY", `${rel} is shared`, "x");
+  };
+  assert.throws(() => j.insert("deps.yaml", /no such anchor/, "x", "NS-EDIT", "a line"), /NS-SLICE-ONLY: deps\.yaml is shared/);
 });
 
 const checks = await import(path.join(REPO, "scripts/scaffold/lib/checks.mjs"));
