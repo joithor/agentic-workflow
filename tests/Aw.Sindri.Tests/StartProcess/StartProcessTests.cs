@@ -39,4 +39,15 @@ public sealed class StartProcessTests
         Assert.Null(_h.Held.Current);
         Assert.Empty(_h.Store.Events);
     }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task StartProcess_gives_the_lease_back_when_the_start_cant_be_recorded()
+    {
+        var failed = await new StartProcessService(_h.Store, _h.Probe, _h.Held, _h.Profiles, new AppendFailingLedger(_h.Store), _h.Events)
+            .Handle(new StartProcessRequest(), Token);
+
+        Assert.Equal(AppendFailingLedger.Failure, failed.Error);
+        Assert.Null(_h.Held.Current);
+        Assert.True((await _h.Store.Read(Token)).Value is { Released: true });
+    }
 }
