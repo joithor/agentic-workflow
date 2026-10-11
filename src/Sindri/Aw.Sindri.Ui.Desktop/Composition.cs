@@ -33,9 +33,8 @@ internal static class Composition
     /// <param name="platform">The head's adapters.</param>
     /// <param name="clock">The clock for every timing rule.</param>
     /// <returns>The app's builder.</returns>
-    // U0 integration: the app takes the whole platform once Unit A's shell lands (SindriApp.Create(platform, clock)).
     internal static AppBuilder Compose(SindriPlatform platform, TimeProvider clock) =>
-        AppBuilder.Configure(() => SindriApp.Create(platform.Records, clock))
+        AppBuilder.Configure(() => SindriApp.Create(platform, clock))
             .UsePlatformDetect()
             .WithInterFont()
             .LogToTrace();

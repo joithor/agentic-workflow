@@ -94,8 +94,8 @@ carries `apiVersion` from API P1 (`SindriApiClient.AppApiVersion` is 1; absent m
 window. `SindriApp.Create(SindriPlatform, TimeProvider)` builds the view model over the head's endpoint record and
 preferences store, restores the preferences (window bounds, sheet width, last page), then shows the window and follows
 the control plane; the platform wiring (tray, single instance, close-to-tray) receives the window through the partial
-`ShellOpened` hook. S1b's `Create(records, clock)` stays for the head until it passes its `SindriPlatform`, with
-preferences kept for the run only.
+`ShellOpened` hook. The head's `Composition.Compose` passes its `SindriPlatform`; S1b's `Create(records, clock)` is
+gone.
 
 | Part | What it shows |
 |---|---|

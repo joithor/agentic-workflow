@@ -23,21 +23,11 @@ public sealed partial class SindriApp : Application
     {
     }
 
-    private SindriApp(ShellViewModel shell, SindriPlatform? platform)
+    private SindriApp(ShellViewModel shell, SindriPlatform platform)
     {
         _shell = shell;
         Platform = platform;
     }
-
-    /// <summary>
-    /// S1b's entry, kept until the head passes its <see cref="SindriPlatform"/>: the shell over the endpoint record alone,
-    /// its preferences kept for this run only.
-    /// </summary>
-    /// <param name="records">The platform's endpoint record (control.json on a desktop).</param>
-    /// <param name="clock">The clock for every timing rule.</param>
-    /// <returns>The app.</returns>
-    public static SindriApp Create(IEndpointRecordSource records, TimeProvider clock) =>
-        new(new ShellViewModel(records, new SindriApiClient(Loopback()), clock, new RunPreferences()), platform: null);
 
     /// <summary>The app in the shell (UI spec §3.2, §15): the shell window over <paramref name="platform"/>'s adapters.</summary>
     /// <param name="platform">The head's adapters.</param>
@@ -46,7 +36,7 @@ public sealed partial class SindriApp : Application
     public static SindriApp Create(SindriPlatform platform, TimeProvider clock) =>
         new(new ShellViewModel(platform.Records, new SindriApiClient(Loopback()), clock, platform.Preferences), platform);
 
-    /// <summary>The head's adapters, or null for S1b's entry and the theme-only app.</summary>
+    /// <summary>The head's adapters, or null for the theme-only app.</summary>
     internal SindriPlatform? Platform { get; }
 
     // The API is on loopback: never through a configured proxy (as the CLI's client), and a connect that hangs fails in 2 s.
@@ -85,20 +75,4 @@ public sealed partial class SindriApp : Application
     /// <param name="window">The shell window.</param>
     /// <param name="shell">Its view model (a deep link from the single instance navigates it).</param>
     partial void ShellOpened(IClassicDesktopStyleApplicationLifetime desktop, ShellWindow window, ShellViewModel shell);
-
-    // S1b's entry has no preferences file: what the shell remembers lasts for this run.
-    private sealed class RunPreferences : IPreferencesStore
-    {
-        private byte[]? _bytes;
-
-        public string Location => "memory:preferences.json";
-
-        public ValueTask<byte[]?> Read(CancellationToken cancellationToken) => ValueTask.FromResult(_bytes);
-
-        public ValueTask Write(byte[] contents, CancellationToken cancellationToken)
-        {
-            _bytes = contents;
-            return ValueTask.CompletedTask;
-        }
-    }
 }

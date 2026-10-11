@@ -67,5 +67,4 @@ static Aw.Sindri.Ui.Platform.SindriPlatform.operator !=(Aw.Sindri.Ui.Platform.Si
 static Aw.Sindri.Ui.Platform.SindriPlatform.operator ==(Aw.Sindri.Ui.Platform.SindriPlatform? left, Aw.Sindri.Ui.Platform.SindriPlatform? right) -> bool
 static Aw.Sindri.Ui.Platform.TrayView.operator !=(Aw.Sindri.Ui.Platform.TrayView? left, Aw.Sindri.Ui.Platform.TrayView? right) -> bool
 static Aw.Sindri.Ui.Platform.TrayView.operator ==(Aw.Sindri.Ui.Platform.TrayView? left, Aw.Sindri.Ui.Platform.TrayView? right) -> bool
-static Aw.Sindri.Ui.Views.SindriApp.Create(Aw.Sindri.Ui.Platform.IEndpointRecordSource! records, System.TimeProvider! clock) -> Aw.Sindri.Ui.Views.SindriApp!
 static Aw.Sindri.Ui.Views.SindriApp.Create(Aw.Sindri.Ui.Platform.SindriPlatform! platform, System.TimeProvider! clock) -> Aw.Sindri.Ui.Views.SindriApp!
