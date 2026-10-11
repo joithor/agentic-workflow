@@ -61,11 +61,16 @@ internal static partial class YamlScalars
         return double.IsFinite(value) ? JsonValue.Create(value) : Unrepresentable(text, path, findings);
     }
 
+    /// <summary>
+    /// A 0o or 0x integer. Up to 64 bits it is read unsigned (Convert.ToInt64 would wrap 2^63 and above to a negative
+    /// number); above long's range it becomes a double, as a decimal integer that large does.
+    /// </summary>
     private static JsonNode? Based(string digits, int radix, string path, ReaderFindings findings)
     {
         try
         {
-            return JsonValue.Create(Convert.ToInt64(digits, radix));
+            var value = Convert.ToUInt64(digits, radix);
+            return value <= long.MaxValue ? JsonValue.Create((long)value) : JsonValue.Create((double)value);
         }
         catch (OverflowException)
         {
