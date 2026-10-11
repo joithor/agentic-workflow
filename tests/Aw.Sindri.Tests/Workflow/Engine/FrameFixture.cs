@@ -32,6 +32,9 @@ internal static class FrameFixture
     /// <summary>The index of 'checks -> produce' (the loop transition) in <see cref="Recipe"/>.</summary>
     public const int LoopBack = 1;
 
+    // why one instance: a withheld trigger compares its outputs by reference, so the fixtures share them
+    private static IReadOnlyDictionary<FactKey, FactValue> NoOutputs { get; } = new Dictionary<FactKey, FactValue>();
+
     public static Recipe Recipe { get; } = BuildRecipe();
 
     public static DecisionContext Context(DateTimeOffset now) => new(
@@ -63,11 +66,11 @@ internal static class FrameFixture
         new ResumeAction(ResumeKind.Forward, Withheld: null, Gate: null, Effect: null));
 
     public static WithheldTrigger CheckFailed() => new(LoopBack, new StepCompleted(
-        "service:desk", RunToken.For(4, 1), OutcomeName.From("failed"), new Dictionary<FactKey, FactValue>(), Tokens: 10, StepRuntime.Desk,
+        "service:desk", RunToken.For(4, 1), OutcomeName.From("failed"), NoOutputs, Tokens: 10, StepRuntime.Desk,
         new string('b', 64)));
 
     public static WithheldTrigger CiFinished() => new(Transition: 3, new WaitSatisfied(
-        "service:router", new EventWaitSource(EventKind.From("ci.finished"), 42), OutcomeName.From("failed"), new Dictionary<FactKey, FactValue>()));
+        "service:router", new EventWaitSource(EventKind.From("ci.finished"), 42), OutcomeName.From("failed"), NoOutputs));
 
     public static AnswerGiven Answer(AnswerVariant variant, string? text = null, int? amount = null) => new(
         "human:cli", new CommandStamp(CommandNonce.From(new string('c', 32)), new string('d', 64)), variant, text, amount, Forwarded: null);
