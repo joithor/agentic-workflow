@@ -24,11 +24,9 @@ internal static class SummaryText
         Line(lines, "lease", status.Running
             ? string.Create(CultureInfo.InvariantCulture, $"held by pid {status.Pid}, epoch {status.Epoch}")
             : "not held");
-        Line(lines, "ready", NeedsApproval(status) ? "running; the profile needs your approval" : "running");
+        Line(lines, "ready", status.Profile.NeedsApproval ? "running; the profile needs your approval" : "running");
         return lines.ToString();
     }
-
-    internal static bool NeedsApproval(GetStatusResponse status) => status.Profile.Approved is null || status.Profile.ChangedSinceApproval;
 
     private static string Profile(ProfileStatus p) => p switch
     {

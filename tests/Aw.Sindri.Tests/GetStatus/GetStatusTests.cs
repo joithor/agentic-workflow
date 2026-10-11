@@ -20,6 +20,7 @@ public sealed class GetStatusTests
         Assert.False(status.Running);
         Assert.Equal(0, status.Epoch);
         Assert.Null(status.Profile.Approved);
+        Assert.True(status.Profile.NeedsApproval);
         Assert.Empty(status.Services);
     }
 
@@ -37,6 +38,7 @@ public sealed class GetStatusTests
         Assert.True(status.Running);
         Assert.Equal(grant.Epoch, status.Epoch);
         Assert.Equal(approved.Hash, status.Profile.Approved);
+        Assert.False(status.Profile.NeedsApproval);
         var heartbeat = Assert.Single(status.Services);
         Assert.Equal(("heartbeat", "5s", _h.Clock.GetUtcNow()), (heartbeat.Name.Value, heartbeat.Every, heartbeat.LastRun!.Value));
     }
@@ -50,6 +52,7 @@ public sealed class GetStatusTests
         var status = (await Service().Handle(new GetStatusRequest(), Token)).Value;
 
         Assert.True(status.Profile.ChangedSinceApproval);
+        Assert.True(status.Profile.NeedsApproval);
         Assert.Equal("5s", Assert.Single(status.Services).Every);
         Assert.Equal(HeartbeatService.ServiceId, Assert.Single(status.Services).Name);
     }

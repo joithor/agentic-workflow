@@ -30,7 +30,7 @@ internal sealed class StartCommand(IControlPlaneProbe probe, IControlPlaneLaunch
         var status = await client.Get<GetStatusResponse>("/sindri/status", ct).ConfigureAwait(false);
         return status.IsError
             ? await output.Error(status.Error).ConfigureAwait(false)
-            : await output.Text(SummaryText.Render(status.Value, found.Value.Endpoint, showUi: !headless), SummaryText.NeedsApproval(status.Value) ? 1 : 0)
+            : await output.Text(SummaryText.Render(status.Value, found.Value.Endpoint, showUi: !headless), status.Value.Profile.NeedsApproval ? 1 : 0)
                 .ConfigureAwait(false);
     }
 

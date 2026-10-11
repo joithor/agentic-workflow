@@ -17,7 +17,7 @@ public sealed class CliTextTests
     public void The_summary_names_each_part_in_words()
     {
         var status = new GetStatusResponse(Running: true, 42, 3, KnownInstants.Epoch,
-            new ProfileStatus(_hash, _hash, ChangedSinceApproval: false, Problem: null, "/home/profile.yaml"),
+            new ProfileStatus(_hash, _hash, ChangedSinceApproval: false, Problem: null, "/home/profile.yaml", NeedsApproval: false),
             [new ServiceStatus(ServiceName.From("heartbeat"), "5s", KnownInstants.Epoch)]);
 
         var text = SummaryText.Render(status, _endpoint, showUi: true);
@@ -31,17 +31,16 @@ public sealed class CliTextTests
             "  ready     running",
             string.Empty), text.ReplaceLineEndings("\n"));
         Assert.DoesNotContain('\u001b', text);
-        Assert.False(SummaryText.NeedsApproval(status));
     }
 
     [Fact, Trait("Lane", "unit")]
     public void An_unapproved_profile_needs_attention_and_says_the_fix()
     {
-        var status = new GetStatusResponse(Running: true, 42, 3, LeaseExpiresAt: null, new ProfileStatus(Approved: null, _hash, ChangedSinceApproval: false, Problem: null, "/p.yaml"), []);
+        var status = new GetStatusResponse(Running: true, 42, 3, LeaseExpiresAt: null, new ProfileStatus(Approved: null, _hash, ChangedSinceApproval: false, Problem: null, "/p.yaml", NeedsApproval: true), []);
 
         var text = SummaryText.Render(status, _endpoint, showUi: false);
 
-        Assert.True(SummaryText.NeedsApproval(status));
+        Assert.Contains("running; the profile needs your approval", text, StringComparison.Ordinal);
         Assert.Contains("(not approved; fix: sindri profile approve)", text, StringComparison.Ordinal);
         Assert.DoesNotContain("ui ", text, StringComparison.Ordinal);
     }

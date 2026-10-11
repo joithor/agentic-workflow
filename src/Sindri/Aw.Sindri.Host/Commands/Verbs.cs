@@ -26,7 +26,7 @@ internal sealed class Verbs(ControlPlaneClient client, Core.Control.IControlPlan
             return await output.Error(status.Error with { Message = "not running: " + status.Error.Message }).ConfigureAwait(false);
         }
 
-        var code = SummaryText.NeedsApproval(status.Value) ? 1 : 0;
+        var code = status.Value.Profile.NeedsApproval ? 1 : 0;
         return json
             ? await output.Json(status.Value, code).ConfigureAwait(false)
             : await output.Text(SummaryText.Render(status.Value, found.Value.Endpoint, showUi: false), code).ConfigureAwait(false);
