@@ -90,6 +90,36 @@ public sealed class HealthViewModelTests : IDisposable
     }
 
     [Fact]
+    public async Task The_health_line_words_the_status_in_4_8s_order()
+    {
+        _records.Write(A.Record());
+        _server.Current = A.Status(profile: A.ChangedProfile(), services: [A.Heartbeat(), A.Heartbeat()]) with { ApiVersion = 1 };
+        Start();
+
+        await Eventually(() => _vm.Headline == "Running", "headline");
+        Assert.Equal("Running · pid 4242 · epoch 7 · API v1 · 2 services · profile changed since approval", _vm.HealthLine);
+    }
+
+    [Fact]
+    public async Task The_health_line_leaves_out_what_the_status_does_not_carry()
+    {
+        _records.Write(A.Record());
+        Start();
+
+        await Eventually(() => _vm.Headline == "Running", "headline");
+        Assert.Equal("Running · pid 4242 · epoch 7 · 1 service · profile approved", _vm.HealthLine);
+    }
+
+    [Fact]
+    public async Task Not_running_is_the_whole_health_line()
+    {
+        Start();
+
+        await Eventually(() => _vm.Headline == "Not running", "headline");
+        Assert.Equal("Not running", _vm.HealthLine);
+    }
+
+    [Fact]
     public async Task A_profile_changed_since_approval_names_the_approve_fix()
     {
         _records.Write(A.Record());

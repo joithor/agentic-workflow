@@ -207,6 +207,30 @@ public sealed class ShellWindowTests
     });
 
     [Fact]
+    public Task Homes_health_strip_shows_the_health_line_and_opens_Health() => OnUi(async () =>
+    {
+        _records.Write(A.Record());
+        var (window, shell) = await Show(s => s.State == ShellState.Normal);
+
+        Assert.Equal("Running · pid 4242 · epoch 7 · 1 service · profile approved", Text(window, "HealthLineText"));
+        var strip = window.GetVisualDescendants().OfType<Button>().Single(b => b.Name == "HealthStrip");
+        Assert.Equal(shell.Health.HealthLine, AutomationProperties.GetName(strip));
+        EveryControlIsNamed(window);
+        Frame(window, "home-health-strip");
+
+        strip.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+        Settle(window);
+        Assert.Equal(PageId.Health, shell.CurrentPage);
+
+        shell.GoTo(PageId.Home);
+        Settle(window);
+        Assert.True(strip.Focus(NavigationMethod.Tab));
+        window.KeyPress(Key.Enter, RawInputModifiers.None, PhysicalKey.Enter, keySymbol: null);
+        Settle(window);
+        Assert.Equal(PageId.Health, shell.CurrentPage);
+    });
+
+    [Fact]
     public Task A_deep_link_opens_the_sheet_and_Esc_leaves_the_edge_tab() => OnUi(async () =>
     {
         _records.Write(A.Record());

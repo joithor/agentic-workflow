@@ -39,6 +39,9 @@ internal sealed class HealthViewModel(IEndpointRecordSource records, ISindriApi 
     /// <summary>The health pill's words: the state, and once connected how fresh the status is.</summary>
     public string HealthPill { get; private set => Set(ref field, value); } = Labels.Connecting;
 
+    /// <summary>Home's health strip (§4.2, §4.8): the status's fields in the health line's order, or the state in words.</summary>
+    public string HealthLine { get; } = string.Empty;
+
     /// <summary>The state in one word: Connecting…, Running or Not running.</summary>
     public string Headline { get; private set => Set(ref field, value); } = Labels.Connecting;
 
