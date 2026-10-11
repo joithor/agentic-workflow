@@ -99,12 +99,13 @@ public abstract class LedgerStoreContract
         Expect.True((await ledger.Latest("never", Token)).Value is null);
     }
 
-    /// <summary>A fresh store reports its schema as current.</summary>
+    /// <summary>Once anything is written, the store reports its schema as current.</summary>
     /// <returns>The test.</returns>
     [Fact]
-    public async Task A_fresh_store_has_a_current_schema()
+    public async Task A_written_store_has_a_current_schema()
     {
-        var (_, ledger) = await Create(Clock, Probe);
+        var (lease, ledger) = await Create(Clock, Probe);
+        _ = (await lease.Acquire(Probe.Self(), Token)).Value;
         Expect.True((await ledger.Schema(Token)).Value.IsCurrent);
     }
 
