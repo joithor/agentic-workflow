@@ -29,6 +29,9 @@ reads the file and its child recipes, and writes nothing.
   canonical JSON is `hash`.
 - **Child recipes** resolve from the recipe file's directory (`<child id>.yaml`), so `recipes/sindri/workflow.item.yaml`
   finds `workflow.step.yaml`. Once the registry exists (P2), a served validation resolves them from the registered recipes.
+- **Hand-written only:** `recipe validate` passes no base recipe, so it checks every recipe as hand-written: a `base`
+  field is `RCP-CAP-004`, and the generated-recipe rules (`RCP-CAP-001`, `-002`, `-005`, `-006`) don't run. Those run
+  when Sindri's generator checks a generated recipe against its base (the packet freeze, W9).
 - **The profile:** there is no effect allowlist in the profile yet (`workflow.effects`, P6), so `RCP-EFFECT-001` is
   reported as `skipped`.
 
@@ -36,7 +39,7 @@ reads the file and its child recipes, and writes nothing.
 |---|---|
 | 0 | No finding is an error (information and skipped findings don't count) |
 | 1 | One or more errors |
-| 2 | A usage error (no file: `SND-CLI-003`; an unknown `recipe` verb: `SND-CLI-001`), or a tool error: the file doesn't exist, is a directory or can't be read (`SND-RECIPE-010 <path> doesn't exist (fix: check the path)`) |
+| 2 | A usage error (no file: `SND-CLI-003`; an unknown `recipe` verb: `SND-CLI-001`), or a tool error: the file doesn't exist, is a directory or can't be read (`SND-RECIPE-010 <path> doesn't exist`, `… is a directory, not a recipe file` or `… can't be read: <reason>`, each with its fix), or a bug inside `sindri` (`SND-API-005 recipe validate failed inside sindri: …`) |
 
 Errors go to stderr as `CODE message (fix: …)`, like every `sindri` verb.
 
@@ -93,7 +96,7 @@ the file is checked (`RCP-HASH-001`). Listings show the first 12 hex digits.
 | `id` | yes | `workflow.<name>` |
 | `version` | yes | An integer. Same id and version with another hash, or a version not above the highest registered, is refused once the registry exists (`RCP-VERSION-001`/`-002`, P2) |
 | `description` | no | |
-| `base` | generated recipes only | Written by Sindri's generator; on a hand-written recipe it is `RCP-CAP-004` |
+| `base` | generated recipes only | Written by Sindri's generator; on a hand-written recipe it is `RCP-CAP-004`, and `recipe validate` treats every recipe as hand-written |
 | `inputs` | no | The facts a start supplies: `{ key, label?, type?: text \| file \| item }` |
 | `initial` | yes | An `active` or `wait` state (`RCP-INIT-001`) |
 | `states` | yes | At least one non-terminal and one terminal state. `cancelled`, `escalated`, `parked` and `taken-over` are reserved (`RCP-STATE-001`) |
@@ -137,8 +140,8 @@ re-arms the deadline in the same frame and re-sends the entering transition's ef
 
 | Field | Required | Notes |
 |---|---|---|
-| `from` | yes | A non-terminal state, or a list of them |
-| `to` | yes | A state of the recipe |
+| `from` | yes | A non-terminal state, or a list of them. A name that isn't a state of the recipe is `RCP-SCHEMA-002` |
+| `to` | yes | A state of the recipe; any other name is `RCP-SCHEMA-002` |
 | `on` | yes | `step.completed` or `step.failed` from an active state; `wait.satisfied` from a wait state; `command.<verb>` from any non-terminal state (`RCP-TRIG-001`). Verbs match `[a-z][a-z-]{1,31}` and may not be one of `sindri workflow`'s own (`RCP-TRIG-002`) |
 | `when` | no | Below |
 | `gates` | no | `{ use, threshold?, with? }`, run in order. A judge or model gate needs a threshold above 0 and at most 1; a deterministic gate takes none (`RCP-THRESH-001`/`-002`) |
@@ -175,13 +178,13 @@ escalates; `takeover` hands the instance to a human until `handback`; `cancel` e
 
 ## Rules
 
-Every rule has an invalid fixture, `tests/Aw.Sindri.Testing/Workflow/Recipes/invalid/<RULE-ID>.yaml`, and a test that
-pins its exact line. All are errors except where the severity says otherwise.
+Every rule `recipe validate` runs has an invalid fixture, `tests/Aw.Sindri.Testing/Workflow/Recipes/invalid/<RULE-ID>.yaml`,
+and a test that pins its exact line (the P2 rows have none yet). All are errors except where the severity says otherwise.
 
 | Rule | Checks | Fix |
 |---|---|---|
 | `RCP-SCHEMA-001` | No unknown or missing field, the fields a state's kind needs and no others (a missing `timeout` is `RCP-TIME-001`'s), and one form where a value takes exactly one (`waitFor`, `with:` values, `when`) | Remove the field, or add the missing one |
-| `RCP-SCHEMA-002` | Each value has the right type and form | Write the form the message names |
+| `RCP-SCHEMA-002` | Each value has the right type and form (an enum is exactly one of its names), and a transition's `from` and `to` name states of the recipe | Write the form the message names |
 | `RCP-SCHEMA-003` | No refused YAML (see Reading) | Write the value out in full |
 | `RCP-STATE-001` | No state uses a reserved name | Rename the state |
 | `RCP-INIT-001` | `initial` names an active or wait state | Point `initial` at one |
@@ -199,12 +202,12 @@ pins its exact line. All are errors except where the severity says otherwise.
 | `RCP-CHILD-001` | A child recipe resolves (registered, or next to the recipe) and gets its inputs | Register it, or put `<id>.yaml` beside the recipe; pass the inputs it declares |
 | `RCP-CHILD-002` | Child recipes form no cycle | Remove a child wait |
 | `RCP-CHILD-003` | Children nest at most 4 deep | Flatten the chain |
-| `RCP-CAP-001` | A generated recipe adds no capability use its base doesn't have | Remove it, or generate from a base that has it |
-| `RCP-CAP-002` | A generated recipe keeps its base's capability parameters | Set them to the base's values |
+| `RCP-CAP-001` | **Generated recipes only** (run against the base; `recipe validate` doesn't): a generated recipe adds no capability use its base doesn't have | Remove it, or generate from a base that has it |
+| `RCP-CAP-002` | **Generated recipes only:** a generated recipe keeps its base's capability parameters | Set them to the base's values |
 | `RCP-CAP-003` | The recipe's hash is approved and its pinned blocks match the build (registry, P2) | Approve it |
 | `RCP-CAP-004` | A hand-written recipe has no `base` | Remove `base` |
-| `RCP-CAP-005` | A generated recipe keeps every guard its base puts on a capability use | Restore the guard |
-| `RCP-CAP-006` | A generated recipe raises no loop cap or budget above its base | Lower it to the base's |
+| `RCP-CAP-005` | **Generated recipes only:** a generated recipe keeps every guard its base puts on a capability use | Restore the guard |
+| `RCP-CAP-006` | **Generated recipes only:** a generated recipe raises no loop cap or budget above its base | Lower it to the base's |
 | `RCP-CAP-007` | A capability parameter is a literal or `{ profile }`, never a fact | Give a literal or `{ profile: <key> }` |
 | `RCP-REACH-001` | Every state is reachable from `initial` | Add a transition into it, or remove it |
 | `RCP-EXIT-001` | Every non-terminal state has a path to a terminal state | Add a transition towards a terminal state |
@@ -225,7 +228,8 @@ pins its exact line. All are errors except where the severity says otherwise.
 | `RCP-VERSION-001` | Same id and version, same hash (registry, P2) | Raise `version` |
 | `RCP-VERSION-002` | `version` is above the highest registered (registry, P2) | Raise `version` |
 
-Rows marked P2 need the registry and aren't checked by `recipe validate` yet. Each message names the node and the
+Rows marked P2 need the registry and aren't checked by `recipe validate` yet; neither are the generated-recipes-only rows,
+which need the base recipe. Each message names the node and the
 concrete fix, so the table's Fix column is a summary.
 
 ## How to add a block
