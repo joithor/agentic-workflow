@@ -4,7 +4,7 @@ using Avalonia.Threading;
 using Avalonia.VisualTree;
 using Aw.Kernel.Testing;
 using Aw.Sindri.Ui.Testing;
-using Aw.Sindri.Ui.ViewModels;
+using Aw.Sindri.Ui.ViewModels.Shell;
 using Aw.Sindri.Ui.Views;
 using Microsoft.Extensions.Time.Testing;
 
@@ -33,7 +33,7 @@ public sealed class MainWindowTests
 
     private async Task<MainWindow> Show(Func<MainWindow, bool> ready)
     {
-        var vm = new MainViewModel(_records, _server, new FakeTimeProvider(A.Noon));
+        var vm = new HealthViewModel(_records, _server, new FakeTimeProvider(A.Noon));
         var window = new MainWindow { DataContext = vm };
         window.Show();
         var run = vm.Run(TestContext.Current.CancellationToken);

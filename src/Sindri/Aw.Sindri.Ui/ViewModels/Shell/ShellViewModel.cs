@@ -1,3 +1,4 @@
+using System.ComponentModel;
 using System.Diagnostics.CodeAnalysis;
 using Aw.Sindri.Ui.Api;
 using Aw.Sindri.Ui.Navigation;
@@ -7,69 +8,271 @@ namespace Aw.Sindri.Ui.ViewModels.Shell;
 
 /// <summary>
 /// The window (UI spec §3.2, §4.1): the top bar's navigation and health pill, the current page, the pre-API state, and
-/// the detail sheet. It maps what the API and the platform say to words and visibility, and holds no other logic.
+/// the detail sheet. It maps what the API and the platform say to words and visibility, and holds no other logic: the
+/// connection and its state live in <see cref="Health"/>, and the window's size, the sheet's width and the last page are
+/// local preferences, read once by <see cref="Restore"/> and written whole when they change.
 /// </summary>
-/// <param name="records">Where the control plane recorded its endpoint.</param>
-/// <param name="api">Its API.</param>
-/// <param name="clock">The clock for every timing rule.</param>
-/// <param name="preferences">The local preferences (window, sheet width, last page).</param>
-[SuppressMessage("Design", "MA0182:Internal type is apparently never used", Justification = "Red: SindriApp.Create(SindriPlatform, TimeProvider) builds it in the next commit.")]
-internal sealed class ShellViewModel(IEndpointRecordSource records, ISindriApi api, TimeProvider clock, IPreferencesStore preferences) : ObservableObject
+[SuppressMessage("Design", "MA0182:Internal type is apparently never used", Justification = "SindriApp.Create(SindriPlatform, TimeProvider) builds it with the shell window, in the next commit.")]
+internal sealed class ShellViewModel : ObservableObject
 {
     /// <summary>How long without an event or a ping before the views are stale (§4.1, API §2.4).</summary>
-    internal static readonly TimeSpan StaleAfter = TimeSpan.FromSeconds(30);
+    internal static readonly TimeSpan StaleAfter = HealthViewModel.StaleAfter;
+
+    private static readonly string[] _stateProperties =
+    [
+        nameof(State), nameof(IsVersionMismatch), nameof(IsChromeVisible), nameof(IsNotRunning), nameof(IsConnecting),
+        nameof(IsUnreadable), nameof(IsPageVisible), nameof(IsSheetShown), nameof(IsEdgeTabShown),
+    ];
+
+    private static readonly string[] _pageProperties =
+    [
+        nameof(CurrentPage), nameof(SelectedNav), nameof(IsHome), nameof(IsQueue), nameof(IsDecisions), nameof(IsServices),
+        nameof(IsHealth), nameof(IsSettings),
+    ];
+
+    private readonly Preferences _store;
+    private UiPreferences _preferences = UiPreferences.Defaults;
+    private Task _saving = Task.CompletedTask;
+
+    /// <summary>The shell over its ports.</summary>
+    /// <param name="records">Where the control plane recorded its endpoint.</param>
+    /// <param name="api">Its API.</param>
+    /// <param name="clock">The clock for every timing rule.</param>
+    /// <param name="preferences">The local preferences (window, sheet width, last page).</param>
+    internal ShellViewModel(IEndpointRecordSource records, ISindriApi api, TimeProvider clock, IPreferencesStore preferences)
+    {
+        _store = new Preferences(preferences);
+        Health = new HealthViewModel(records, api, clock);
+        Health.PropertyChanged += OnHealthChanged;
+    }
+
+    /// <summary>The connection and the Health page's status card.</summary>
+    public HealthViewModel Health { get; }
 
     /// <summary>The top bar's segments, in order: Home, Queue, Decisions, Services.</summary>
-    public IReadOnlyList<NavEntry> Navigation { get; } = [];
+    public IReadOnlyList<NavEntry> Navigation { get; } =
+    [
+        new(PageId.Home, Labels.Home, "H", string.Empty),
+        new(PageId.Queue, Labels.Queue, "Q", string.Empty),
+        new(PageId.Decisions, Labels.Decisions, "D", string.Empty),
+        new(PageId.Services, Labels.Services, "S", string.Empty),
+    ];
 
     /// <summary>"Later ▾": Agents, Repos, Today, Automatic work, each "not served yet".</summary>
-    public IReadOnlyList<LaterEntry> Later { get; } = [];
+    public IReadOnlyList<LaterEntry> Later { get; } =
+    [
+        new(Labels.Agents, Labels.NotServedYet),
+        new(Labels.Repos, Labels.NotServedYet),
+        new(Labels.Today, Labels.NotServedYet),
+        new(Labels.AutomaticWork, Labels.NotServedYet),
+    ];
 
     /// <summary>Every page the window can show, in order: Home, Queue, Decisions, Services, Health, Settings.</summary>
-    public IReadOnlyList<PageId> Pages { get; } = [];
+    public IReadOnlyList<PageId> Pages { get; } = Enum.GetValues<PageId>();
 
     /// <summary>The page shown.</summary>
-    public PageId CurrentPage { get; }
+    public PageId CurrentPage { get; private set; } = PageId.Home;
+
+    /// <summary>The top bar's segment for the page shown; null on Health and Settings. Setting it goes to its page.</summary>
+    public NavEntry? SelectedNav
+    {
+        get => Navigation.FirstOrDefault(n => n.Page == CurrentPage);
+        set
+        {
+            if (value is not null)
+            {
+                GoTo(value.Page);
+            }
+        }
+    }
+
+    /// <summary>True on Home.</summary>
+    public bool IsHome => CurrentPage == PageId.Home;
+
+    /// <summary>True on Queue.</summary>
+    public bool IsQueue => CurrentPage == PageId.Queue;
+
+    /// <summary>True on Decisions.</summary>
+    public bool IsDecisions => CurrentPage == PageId.Decisions;
+
+    /// <summary>True on Services.</summary>
+    public bool IsServices => CurrentPage == PageId.Services;
+
+    /// <summary>True on Health.</summary>
+    public bool IsHealth => CurrentPage == PageId.Health;
+
+    /// <summary>True on Settings.</summary>
+    public bool IsSettings => CurrentPage == PageId.Settings;
 
     /// <summary>The window's pre-API state.</summary>
-    public ShellState State { get; }
+    public ShellState State => Health.State;
 
     /// <summary>The state's reason in words: why it isn't running, the two versions, the unreadable answer's code and message; empty when Normal.</summary>
-    public string Reason { get; } = string.Empty;
+    public string Reason => Health.Reason;
 
     /// <summary>The health pill: the state word, and "updated Ns ago" (or "stale") once connected. It opens Health.</summary>
-    public string HealthPill { get; } = string.Empty;
+    public string HealthPill => Health.HealthPill;
+
+    /// <summary>Version mismatch: the full-window panel, and nothing else.</summary>
+    public bool IsVersionMismatch => State == ShellState.VersionMismatch;
+
+    /// <summary>The top bar shows in every state but a version mismatch.</summary>
+    public bool IsChromeVisible => !IsVersionMismatch;
+
+    /// <summary>Not running: S1b's panel in place of the page.</summary>
+    public bool IsNotRunning => State == ShellState.NotRunning;
+
+    /// <summary>Connecting: skeleton rows in place of the page (first load only).</summary>
+    public bool IsConnecting => State == ShellState.Connecting;
+
+    /// <summary>Unreadable: the banner above the page, which keeps its last data.</summary>
+    public bool IsUnreadable => State == ShellState.Unreadable;
+
+    /// <summary>The page shows when connected: Normal, Stale, or Unreadable with the last data.</summary>
+    public bool IsPageVisible => State is ShellState.Normal or ShellState.Stale or ShellState.Unreadable;
 
     /// <summary>True while the detail sheet is open.</summary>
-    public bool IsSheetOpen { get; }
+    public bool IsSheetOpen { get; private set; }
 
     /// <summary>The sheet's subject (the deep link's subject); kept after the sheet closes for the edge tab; empty before the first.</summary>
-    public string SheetSubject { get; } = string.Empty;
+    public string SheetSubject { get; private set; } = string.Empty;
 
     /// <summary>True when the closed sheet shows its edge tab (a subject was opened before).</summary>
-    public bool HasEdgeTab { get; }
+    public bool HasEdgeTab => SheetSubject.Length > 0;
+
+    /// <summary>The sheet shows when it's open over a visible page.</summary>
+    public bool IsSheetShown => IsSheetOpen && IsPageVisible;
+
+    /// <summary>The edge tab shows when the sheet is closed and has a subject, over a visible page.</summary>
+    public bool IsEdgeTabShown => !IsSheetOpen && HasEdgeTab && IsPageVisible;
 
     /// <summary>The attention band under the top bar (§3.2): always false in U0, since needs-you arrives in U3.</summary>
     public bool IsAttentionBandVisible { get; }
 
-    /// <summary>Shows a page (the G-chords, the top bar, the pill).</summary>
+    /// <summary>The window's remembered bounds, or null to let the platform place it.</summary>
+    public WindowBounds? Window => _preferences.Window;
+
+    /// <summary>The detail sheet's width (420–760).</summary>
+    public double SheetWidth => _preferences.SheetWidth;
+
+    /// <summary>Shows a page (the G-chords, the top bar, the pill) and remembers it.</summary>
     /// <param name="page">The page.</param>
-    internal void GoTo(PageId page) => throw new NotSupportedException();
+    internal void GoTo(PageId page)
+    {
+        if (page == CurrentPage)
+        {
+            return;
+        }
+
+        CurrentPage = page;
+        Changed(_pageProperties);
+        Remember(_preferences with { LastPage = page.ToString() });
+    }
 
     /// <summary>Goes where a deep link points: a page, or the detail sheet with its subject.</summary>
     /// <param name="link">The link.</param>
-    internal void Navigate(DeepLink link) => throw new NotSupportedException();
+    internal void Navigate(DeepLink link)
+    {
+        if (link.Kind == DeepLinkKind.HomeNeedsYou || link.Subject is null)
+        {
+            GoTo(PageId.Home);
+            return;
+        }
+
+        SheetSubject = link.Subject;
+        IsSheetOpen = true;
+        Changed(nameof(SheetSubject), nameof(IsSheetOpen), nameof(HasEdgeTab), nameof(IsSheetShown), nameof(IsEdgeTabShown));
+    }
 
     /// <summary>Closes the sheet (Esc); its subject stays on the edge tab.</summary>
-    internal void CloseSheet() => throw new NotSupportedException();
+    internal void CloseSheet()
+    {
+        IsSheetOpen = false;
+        Changed(nameof(IsSheetOpen), nameof(IsSheetShown), nameof(IsEdgeTabShown));
+    }
+
+    /// <summary>Opens the sheet again on its last subject (the edge tab).</summary>
+    internal void ReopenSheet()
+    {
+        if (!HasEdgeTab)
+        {
+            return;
+        }
+
+        IsSheetOpen = true;
+        Changed(nameof(IsSheetOpen), nameof(IsSheetShown), nameof(IsEdgeTabShown));
+    }
+
+    /// <summary>Remembers the sheet's width (clamped to 420–760 when it's next read).</summary>
+    /// <param name="width">The width the user dragged it to.</param>
+    internal void ResizeSheet(double width)
+    {
+        Remember(_preferences with { SheetWidth = width });
+        OnChanged(nameof(SheetWidth));
+    }
+
+    /// <summary>Remembers the window's bounds (grown to 900 × 600 when they're next read).</summary>
+    /// <param name="bounds">Where the window is.</param>
+    internal void RememberWindow(WindowBounds bounds) => Remember(_preferences with { Window = bounds });
 
     /// <summary>Reads the stored preferences: the last page, the window's bounds and the sheet's width.</summary>
     /// <param name="cancellationToken">Cancels the read.</param>
     /// <returns>A task that completes when they are applied.</returns>
-    internal Task Restore(CancellationToken cancellationToken) => throw new NotSupportedException($"{records.Location} {api} {clock} {preferences.Location}");
+    internal async Task Restore(CancellationToken cancellationToken)
+    {
+        _preferences = await _store.Load(cancellationToken).ConfigureAwait(true);
+        CurrentPage = Enum.TryParse<PageId>(_preferences.LastPage, out var page) ? page : PageId.Home;
+        Changed(_pageProperties);
+        Changed(nameof(Window), nameof(SheetWidth));
+    }
 
     /// <summary>Follows the control plane until cancelled (S1b's loop: control.json, ping, status, events).</summary>
     /// <param name="cancellationToken">Stops following.</param>
     /// <returns>A task that ends when cancelled.</returns>
-    internal Task Run(CancellationToken cancellationToken) => throw new NotSupportedException();
+    internal Task Run(CancellationToken cancellationToken) => Health.Run(cancellationToken);
+
+    // Preferences are written whole and in order (each write waits for the one before); a failed write keeps the old file,
+    // since they are a convenience and never change what the API decides.
+    private void Remember(UiPreferences preferences)
+    {
+        _preferences = preferences.Clamp();
+        _saving = SaveAfter(_saving, _preferences);
+    }
+
+    private async Task SaveAfter(Task previous, UiPreferences preferences)
+    {
+        await previous.ConfigureAwait(true);
+        try
+        {
+            await _store.Save(preferences, CancellationToken.None).ConfigureAwait(true);
+        }
+        catch (Exception e) when (e is IOException or UnauthorizedAccessException)
+        {
+            // Kept in memory for this run; the next change tries again.
+        }
+    }
+
+    private void OnHealthChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        switch (e.PropertyName)
+        {
+            case nameof(HealthViewModel.State):
+                Changed(_stateProperties);
+                break;
+            case nameof(HealthViewModel.Reason):
+            case nameof(HealthViewModel.HealthPill):
+                OnChanged(e.PropertyName);
+                break;
+            default:
+                break;
+        }
+    }
+
+    private void Changed(params string[] names)
+    {
+        foreach (var name in names)
+        {
+            OnChanged(name);
+        }
+    }
 }

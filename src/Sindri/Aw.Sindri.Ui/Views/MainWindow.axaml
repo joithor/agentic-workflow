@@ -1,8 +1,9 @@
 <Window xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:vm="using:Aw.Sindri.Ui.ViewModels"
+        xmlns:shell="using:Aw.Sindri.Ui.ViewModels.Shell"
         x:Class="Aw.Sindri.Ui.Views.MainWindow"
-        x:DataType="vm:MainViewModel"
+        x:DataType="shell:HealthViewModel"
         Title="Sindri"
         Width="760" Height="560" MinWidth="560" MinHeight="420">
   <DockPanel Margin="32,28">

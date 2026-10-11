@@ -2,84 +2,25 @@ using System.Threading.Channels;
 using Aw.Sindri.Ui.Api;
 using Aw.Sindri.Ui.Platform;
 
-namespace Aw.Sindri.Ui.ViewModels;
+namespace Aw.Sindri.Ui.ViewModels.Shell;
 
 /// <summary>
-/// The main window: the control plane's status, kept live from its event stream. It finds the control plane through
-/// its endpoint record, checks the record against /sindri/ping (a stale record reads as not running), shows
-/// /sindri/status, and refreshes the status after each event on /sindri/events. When the stream ends it looks again.
-/// Every await resumes on the caller's context (the UI thread in the app), so property changes reach the bindings there.
+/// S1b's loop behind <see cref="HealthViewModel"/>: it finds the control plane through its endpoint record, checks the
+/// record against /sindri/ping (a stale record reads as not running), reads /sindri/status, and refreshes the status after
+/// each event on /sindri/events. When the stream ends, a refresh fails or the record changes, it looks again every 2 s.
+/// Every await resumes on the caller's context (the UI thread in the app), so what it tells the view model reaches the
+/// bindings there.
 /// </summary>
 /// <param name="records">Where the control plane recorded its endpoint.</param>
 /// <param name="api">Its API.</param>
 /// <param name="clock">The clock for retry waits.</param>
-internal sealed class MainViewModel(IEndpointRecordSource records, ISindriApi api, TimeProvider clock) : ObservableObject
+/// <param name="health">The view model it tells.</param>
+internal sealed class ControlPlaneFollower(IEndpointRecordSource records, ISindriApi api, TimeProvider clock, HealthViewModel health)
 {
-    /// <summary>How long to wait before looking for the control plane again.</summary>
-    internal static readonly TimeSpan RetryEvery = TimeSpan.FromSeconds(2);
-
     private long _cursor;
     private byte[] _record = [];
     private long _epoch;
     private int _pid;
-
-    /// <summary>The state in one word: Connecting, Running or Not running.</summary>
-    public string Headline { get; private set => Set(ref field, value); } = "Connecting";
-
-    /// <summary>Why it isn't running (when it isn't).</summary>
-    public string Reason { get; private set => Set(ref field, value); } = "looking for Sindri's control plane";
-
-    /// <summary>The command that fixes "not running".</summary>
-    public string Fix { get; } = Labels.StartFix;
-
-    /// <summary>True while a control plane answers.</summary>
-    public bool IsRunning { get; private set => Set(ref field, value); }
-
-    /// <summary>True once it's known that none does.</summary>
-    public bool IsNotRunning { get; private set => Set(ref field, value); }
-
-    /// <summary>Running: the lease line.</summary>
-    public string Lease { get; private set => Set(ref field, value); } = string.Empty;
-
-    /// <summary>Where the API listens.</summary>
-    public string Api { get; private set => Set(ref field, value); } = string.Empty;
-
-    /// <summary>The profile's state in words.</summary>
-    public string ProfileState { get; private set => Set(ref field, value); } = string.Empty;
-
-    /// <summary>The profile's hash and file.</summary>
-    public string ProfileDetail { get; private set => Set(ref field, value); } = string.Empty;
-
-    /// <summary>The command that fixes the profile's state, or empty.</summary>
-    public string ProfileFix
-    {
-        get;
-        private set
-        {
-            Set(ref field, value);
-            OnChanged(nameof(HasProfileFix));
-        }
-    } = string.Empty;
-
-    /// <summary>True when the profile needs a command.</summary>
-    public bool HasProfileFix => ProfileFix.Length > 0;
-
-    /// <summary>The scheduled services.</summary>
-    public IReadOnlyList<ServiceRow> Services
-    {
-        get;
-        private set
-        {
-            Set(ref field, value);
-            OnChanged(nameof(HasServices));
-        }
-    } = [];
-
-    /// <summary>True when any service is scheduled.</summary>
-    public bool HasServices => Services.Count > 0;
-
-    /// <summary>The newest event seen on the stream.</summary>
-    public string LastEvent { get; private set => Set(ref field, value); } = "none yet";
 
     /// <summary>Follows the control plane until cancelled.</summary>
     /// <param name="cancellationToken">Stops following.</param>
@@ -95,14 +36,14 @@ internal sealed class MainViewModel(IEndpointRecordSource records, ISindriApi ap
             }
             catch (Exception e) when (e is IOException or UnauthorizedAccessException)
             {
-                wait = Unreadable(e);
+                wait = RecordUnreadable(e);
             }
 
             if (wait)
             {
                 try
                 {
-                    await Task.Delay(RetryEvery, clock, cancellationToken).ConfigureAwait(true);
+                    await Task.Delay(HealthViewModel.RetryEvery, clock, cancellationToken).ConfigureAwait(true);
                 }
                 catch (OperationCanceledException)
                 {
@@ -113,9 +54,9 @@ internal sealed class MainViewModel(IEndpointRecordSource records, ISindriApi ap
     }
 
     // The platform couldn't read the record (a directory, no permission): say so, and keep trying.
-    private bool Unreadable(Exception e)
+    private bool RecordUnreadable(Exception e)
     {
-        _ = NotRunning(Labels.RecordUnreadable(records.Location, e.Message));
+        _ = health.NotRunning(Labels.RecordUnreadable(records.Location, e.Message));
         return true;
     }
 
@@ -131,7 +72,7 @@ internal sealed class MainViewModel(IEndpointRecordSource records, ISindriApi ap
 
         var started = clock.GetUtcNow();
         var events = await Follow(url, cancellationToken).ConfigureAwait(true);
-        return events == 0 && clock.GetUtcNow() - started < RetryEvery;
+        return events == 0 && clock.GetUtcNow() - started < HealthViewModel.RetryEvery;
     }
 
     private async Task<Uri?> Connect(CancellationToken cancellationToken)
@@ -139,24 +80,24 @@ internal sealed class MainViewModel(IEndpointRecordSource records, ISindriApi ap
         var bytes = await records.Read(cancellationToken).ConfigureAwait(true);
         if (bytes is null)
         {
-            return NotRunning(Labels.NoRecord(records.Location));
+            return health.NotRunning(Labels.NoRecord(records.Location));
         }
 
         var record = ControlRecord.Usable(bytes, SindriApiClient.Json);
         if (record is null)
         {
-            return NotRunning(Labels.RecordUnreadable(records.Location));
+            return health.NotRunning(Labels.RecordUnreadable(records.Location));
         }
 
         var ping = await api.Ping(record.Url, cancellationToken).ConfigureAwait(true);
         if (ping.IsError)
         {
-            return NotRunning(ping.Error.Message);
+            return health.Failed(ping.Error);
         }
 
         if (ping.Value.Pid != record.Pid || ping.Value.Epoch != record.Epoch)
         {
-            return NotRunning(Labels.StaleRecord(record.Pid, record.Epoch, ping.Value.Pid, ping.Value.Epoch));
+            return health.NotRunning(Labels.StaleRecord(record.Pid, record.Epoch, ping.Value.Pid, ping.Value.Epoch));
         }
 
         _record = bytes;
@@ -191,7 +132,7 @@ internal sealed class MainViewModel(IEndpointRecordSource records, ISindriApi ap
             {
                 events++;
                 _cursor = e.Sequence;
-                LastEvent = StatusText.Event(e);
+                health.Event(e);
                 _ = dirty.Writer.TryWrite(item: true);
             }
         }
@@ -235,7 +176,7 @@ internal sealed class MainViewModel(IEndpointRecordSource records, ISindriApi ap
         {
             while (true)
             {
-                await Task.Delay(RetryEvery, clock, stop.Token).ConfigureAwait(true);
+                await Task.Delay(HealthViewModel.RetryEvery, clock, stop.Token).ConfigureAwait(true);
                 var now = await records.Read(stop.Token).ConfigureAwait(true);
                 if (now is null || !now.AsSpan().SequenceEqual(_record))
                 {
@@ -259,34 +200,11 @@ internal sealed class MainViewModel(IEndpointRecordSource records, ISindriApi ap
         var status = await api.Status(url, cancellationToken).ConfigureAwait(true);
         if (status.IsError)
         {
-            _ = NotRunning(status.Error.Message);
+            _ = health.Failed(status.Error);
             return false;
         }
 
-        Show(url, status.Value);
+        health.Show(url, status.Value);
         return true;
-    }
-
-    private void Show(Uri url, StatusView status)
-    {
-        Api = url.Authority;
-        Lease = StatusText.Lease(status);
-        ProfileState = StatusText.ProfileState(status.Profile);
-        ProfileDetail = StatusText.ProfileDetail(status.Profile);
-        ProfileFix = StatusText.ProfileFix(status.Profile);
-        Services = [.. status.Services.Select(StatusText.Service)];
-        Headline = status.Running ? Labels.Running : Labels.NotRunning;
-        Reason = status.Running ? string.Empty : Labels.NoLease;
-        IsRunning = status.Running;
-        IsNotRunning = !status.Running;
-    }
-
-    private Uri? NotRunning(string reason)
-    {
-        Headline = Labels.NotRunning;
-        Reason = reason;
-        IsRunning = false;
-        IsNotRunning = true;
-        return null;
     }
 }

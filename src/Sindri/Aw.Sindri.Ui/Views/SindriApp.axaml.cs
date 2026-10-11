@@ -3,7 +3,7 @@ using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Markup.Xaml;
 using Aw.Sindri.Ui.Api;
 using Aw.Sindri.Ui.Platform;
-using Aw.Sindri.Ui.ViewModels;
+using Aw.Sindri.Ui.ViewModels.Shell;
 
 namespace Aw.Sindri.Ui.Views;
 
@@ -14,14 +14,14 @@ namespace Aw.Sindri.Ui.Views;
 /// </summary>
 public sealed class SindriApp : Application
 {
-    private readonly MainViewModel? _main;
+    private readonly HealthViewModel? _main;
 
     /// <summary>The app with its theme only: no window, nothing followed.</summary>
     public SindriApp()
     {
     }
 
-    private SindriApp(MainViewModel main)
+    private SindriApp(HealthViewModel main)
     {
         _main = main;
     }
@@ -31,7 +31,7 @@ public sealed class SindriApp : Application
     /// <param name="clock">The clock for retry waits.</param>
     /// <returns>The app.</returns>
     public static SindriApp Create(IEndpointRecordSource records, TimeProvider clock) =>
-        new(new MainViewModel(records, new SindriApiClient(Loopback()), clock));
+        new(new HealthViewModel(records, new SindriApiClient(Loopback()), clock));
 
     /// <summary>
     /// The app in the U0 shell (UI spec §3.2, §15): the shell window over <paramref name="platform"/>'s adapters, closing
