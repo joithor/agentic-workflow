@@ -9,8 +9,8 @@
 #
 # A case that expects a pass also expects no fail-open log line: send-gate and scope-gate allow, and done-gate
 # falls back to its evidence check, on any judge failure, so a pass alone can't tell a working judge from a broken one.
-# Two stub `claude` CLIs (one answering 'continue', one exiting 1) reach the branches the offline rules can't: the
-# ask-check continue branch and a degraded health.
+# Three stub `claude` CLIs (answering 'continue', answering 'batch', and one that exits 1) reach the branches the
+# offline rules can't: ask-check continue, send-gate's batch queue and flush, and a degraded health.
 #
 # AW_JUDGE_CS_BIN  a built C# judge (the NativeAOT publish or the JIT apphost). Unset: the test builds
 #                  src/Judge/Aw.Judge.Host in Release into a temp dir first (needs dotnet 10).

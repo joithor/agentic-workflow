@@ -147,8 +147,8 @@ How a call runs (`AskQuestionService`): the catalog builds the lineup (Providers
 `config set <question> enabled …` on a question the file doesn't name writes an entry without one) becomes the evaluator's override,
 which narrows that chain, and a disabled question escalates `question-disabled`. An unreadable or invalid `config.json`
 runs on the defaults and logs one warning. With `--providers rules` (or `AW_JUDGE_PROVIDERS=rules`) a question runs
-offline: any input no pre-rule settles escalates `no-provider-decided` (exit 2; `ask-check` asks). After the output the
-judge prunes old decision details (Retention below).
+offline: any input no pre-rule settles escalates `no-provider-decided` (exit 2; `ask-check` asks). After the question
+decides or escalates, and before its envelope is written, the judge prunes old decision details (Retention below).
 
 | Question | Input record (stdin) | Outputs | Class | Threshold | Budget | Pre-rules (decided by `rules` without a model) | Fallback after an unsure model |
 |---|---|---|---|---|---|---|---|
