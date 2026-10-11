@@ -62,6 +62,7 @@ public sealed class CodexCliProviderTests
     [InlineData("garbage\nmore garbage", "unparseable-output")]
     [InlineData("""{"type":"item.completed","item":{"type":"agent_message","text":"send it"}}""", "unparseable-answer")]
     [InlineData("""{"type":"item.completed","item":{"type":"agent_message","text":"{\"decision\":\"wake\"}"}}""", "out-of-enum")]
+    [InlineData("""{"type":"item.completed","item":{"type":"agent_message","text":"{\"decision\":\"send\",\"decision\":\"drop\"}"}}""", "unparseable-answer")]
     public async Task A_malformed_or_out_of_schema_answer_is_errored(string output, string reason)
     {
         Install(output);
