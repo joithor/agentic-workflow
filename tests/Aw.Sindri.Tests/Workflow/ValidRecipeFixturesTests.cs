@@ -28,8 +28,13 @@ public sealed partial class ValidRecipeFixturesTests
         Assert.False(ApprovalData.In(RecipeFixtures.Read(fixture)), fixture);
 
     [Fact, Trait("Lane", "unit")]
-    public void Bugfix_fixture_names_only_bugfix_steps() =>
-        Assert.All(StepUse.Matches(RecipeFixtures.Read("valid/workflow.bugfix.yaml")), m => Assert.StartsWith("step.bugfix.", m.Groups["id"].Value, StringComparison.Ordinal));
+    public void Bugfix_fixture_names_only_bugfix_steps()
+    {
+        var uses = StepUse.Matches(RecipeFixtures.Read("valid/workflow.bugfix.yaml"));
+
+        Assert.NotEmpty(uses);
+        Assert.All(uses, m => Assert.StartsWith("step.bugfix.", m.Groups["id"].Value, StringComparison.Ordinal));
+    }
 
     [GeneratedRegex(@"step:\s*(?<id>step\.[a-z.-]+)", RegexOptions.CultureInvariant | RegexOptions.ExplicitCapture, matchTimeoutMilliseconds: 1000)]
     private static partial Regex StepUse { get; }
