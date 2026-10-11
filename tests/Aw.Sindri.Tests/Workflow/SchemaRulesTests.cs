@@ -105,8 +105,8 @@ public sealed class SchemaRulesTests
 
         Assert.Equal(
             [
-                "RCP-SCHEMA-002: transition from 'ghost' names a state the recipe doesn't declare at test.yaml:16:22 (transitions[1].from[1]); name one of the recipe's states: produce, done",
-                "RCP-SCHEMA-002: transition to 'nowhere' names a state the recipe doesn't declare at test.yaml:16:34 (transitions[1].to); name one of the recipe's states: produce, done",
+                "RCP-SCHEMA-002: transition from 'ghost' names a state the recipe doesn't declare at test.yaml:16:23 (transitions[1].from[1]); name one of the recipe's states: produce, done",
+                "RCP-SCHEMA-002: transition to 'nowhere' names a state the recipe doesn't declare at test.yaml:16:31 (transitions[1].to); name one of the recipe's states: produce, done",
             ],
             lines);
     }
