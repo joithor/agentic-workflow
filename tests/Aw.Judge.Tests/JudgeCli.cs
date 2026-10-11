@@ -2,6 +2,7 @@ using Aw.Judge.Core.Ports;
 using Aw.Judge.Core.Providers;
 using Aw.Judge.Host;
 using Aw.Judge.Host.Commands;
+using Aw.Judge.Testing;
 using Aw.Kernel.Json;
 using Aw.Kernel.Testing;
 using Microsoft.Extensions.DependencyInjection;
@@ -19,7 +20,7 @@ public sealed class JudgeCli(TempStateDirectory state)
     /// <summary>Environment variables beyond AW_STATE_DIR and AW_LOG_LEVEL (e.g. AW_SESSION_ID).</summary>
     public IReadOnlyDictionary<string, string> Environment { get; init; } = new Dictionary<string, string>(StringComparer.Ordinal);
 
-    /// <summary>When set, the providers the questions use instead of the ones Compose builds (the default chain routes them).</summary>
+    /// <summary>The providers the questions can use, through a FakeProviderCatalog (the agent CLIs among them count as installed); none when null.</summary>
     public IReadOnlyList<IModelProvider>? Providers { get; init; }
 
     /// <summary>Runs one command line with empty stdin.</summary>
@@ -36,6 +37,9 @@ public sealed class JudgeCli(TempStateDirectory state)
         {
             _ = services.AddSingleton(new ProviderLineup(providers, ChainSpec.Default));   // the last registration wins
         }
+
+        // Never the real catalog: no agent CLI or Jev call (nor a keychain read) from a test.
+        _ = services.AddSingleton<IProviderCatalog>(new FakeProviderCatalog([.. Providers ?? []]));   // the last registration wins
 
         var provider = services.BuildServiceProvider();
         await using (provider)

@@ -4,6 +4,7 @@ using Aw.Judge.Core.Evaluation;
 using Aw.Judge.Core.Ids;
 using Aw.Judge.Core.Providers;
 using Aw.Judge.Features.AskQuestion;
+using Aw.Judge.Testing;
 using Aw.Kernel.Testing;
 using static Aw.Judge.Tests.AskQuestion.AskQuestionHarness;
 
@@ -67,6 +68,37 @@ public sealed class AskQuestionTests
 
         Assert.Equal(new EscalatedOutcome("no-provider-decided"), result.Value.Outcome);
         Assert.Empty(cli.Calls);
+    }
+
+    [Fact]
+    public async Task AskQuestion_takes_the_agent_clis_from_the_config_s_providers_block()
+    {
+        _harness.Config.Stored = JudgeConfig.Default with { Providers = new ProvidersConfig(AgentClis: ["cursor-cli"]) };
+        var claude = Cli().Decides("batch", 0.9);
+        var cursor = new ScriptedProvider(ProviderName.CursorCli).Decides("send", 0.9);
+
+        var result = await _harness.Ask(new AskQuestionRequest("wake-gate", Progress), claude, cursor);
+
+        Assert.Equal(("send", ProviderName.CursorCli), Decided(result.Value.Outcome));
+        Assert.Empty(claude.Calls);
+    }
+
+    [Fact]
+    public async Task AskQuestion_leaves_jev_out_when_the_config_turns_it_off()
+    {
+        _harness.Config.Stored = JudgeConfig.Default with { Providers = new ProvidersConfig(Jev: false) };
+        var jev = new ScriptedProvider(ProviderName.Jev).Decides("drop", 0.9);
+
+        var result = await _harness.Ask(new AskQuestionRequest("wake-gate", Progress), jev, Cli().Decides("batch", 0.9));
+
+        Assert.Equal(("batch", ProviderName.ClaudeCli), Decided(result.Value.Outcome));
+        Assert.Empty(jev.Calls);
+    }
+
+    private static (string, ProviderName) Decided(EvaluationOutcome outcome)
+    {
+        var decided = Assert.IsType<DecidedOutcome>(outcome);
+        return (decided.Decision, decided.Model);
     }
 
     [Fact]

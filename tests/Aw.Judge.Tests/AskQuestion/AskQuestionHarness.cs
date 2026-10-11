@@ -33,6 +33,7 @@ internal sealed class AskQuestionHarness
             .AddSingleton<IInputRedactor>(new FakeInputRedactor())
             .AddSingleton<IIdGenerator>(new SequentialIdGenerator())
             .AddSingleton(new ProviderLineup(providers, ChainSpec.Default))
+            .AddSingleton<IProviderCatalog>(new FakeProviderCatalog(providers))
             .AddJudgeCore()
             .AddJudgeFeatures();
         await using var provider = services.BuildServiceProvider(new ServiceProviderOptions { ValidateOnBuild = true, ValidateScopes = true });
