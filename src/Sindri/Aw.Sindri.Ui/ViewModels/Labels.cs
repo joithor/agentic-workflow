@@ -103,6 +103,12 @@ internal static class Labels
     /// <summary>The closed sheet's edge tab, before its subject.</summary>
     internal const string Reopen = "Reopen";
 
+    /// <summary>The detail sheet's resize grip.</summary>
+    internal const string Sheet = "Detail sheet width";
+
+    /// <summary>The top bar's navigation.</summary>
+    internal const string Pages = "Pages";
+
     // The states before the API answers (§4.1).
 
     /// <summary>First load, before /status answers.</summary>

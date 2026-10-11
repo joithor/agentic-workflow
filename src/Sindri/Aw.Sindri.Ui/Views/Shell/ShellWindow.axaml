@@ -1,0 +1,144 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:shell="using:Aw.Sindri.Ui.ViewModels.Shell"
+        xmlns:views="using:Aw.Sindri.Ui.Views.Shell"
+        x:Class="Aw.Sindri.Ui.Views.Shell.ShellWindow"
+        x:DataType="shell:ShellViewModel"
+        Title="{Binding Text.Sindri}"
+        Width="1280" Height="800"
+        MinWidth="{StaticResource Size.WindowMinWidth}" MinHeight="{StaticResource Size.WindowMinHeight}">
+  <!-- The shell (UI spec §3.2, §4.1): a top bar, the page, and the detail sheet over it; a version mismatch takes the whole
+       window. Each pre-API state is a panel the view model makes visible; the view decides nothing. -->
+  <Window.Styles>
+    <StyleInclude Source="avares://Aw.Sindri.Ui/Views/Shell/ShellStyles.axaml" />
+  </Window.Styles>
+
+  <Panel>
+    <!-- Version mismatch: a full-window panel, no data, no actions (§4.1). -->
+    <Border x:Name="VersionMismatchPanel" IsVisible="{Binding IsVersionMismatch}" Classes="card"
+            HorizontalAlignment="Center" VerticalAlignment="Center" MaxWidth="560">
+      <StackPanel Spacing="12">
+        <TextBlock Classes="eyebrow" Text="{Binding Text.ControlPlaneCard}" AutomationProperties.Name="{Binding Text.ControlPlaneCard}" />
+        <TextBlock x:Name="VersionMismatchText" Classes="page-title" TextWrapping="Wrap"
+                   Text="{Binding Text.VersionMismatch}" AutomationProperties.Name="{Binding Text.VersionMismatch}" />
+        <TextBlock x:Name="VersionsText" Classes="body muted" TextWrapping="Wrap" Text="{Binding Reason}"
+                   AutomationProperties.Name="{Binding Reason}" />
+        <Border Classes="command">
+          <TextBlock x:Name="VersionFixText" Classes="mono" Text="{Binding Text.VersionMismatchFix}"
+                     AutomationProperties.Name="{Binding Text.VersionMismatchFix}" />
+        </Border>
+      </StackPanel>
+    </Border>
+
+    <DockPanel IsVisible="{Binding IsChromeVisible}">
+      <views:TopBar x:Name="TopBar" DockPanel.Dock="Top" />
+
+      <!-- The attention band (§3.2): hidden until needs-you is served (U3). -->
+      <Border x:Name="AttentionBand" DockPanel.Dock="Top" Height="{StaticResource Size.AttentionBand}"
+              Background="{DynamicResource Brush.Attention}" IsVisible="{Binding IsAttentionBandVisible}"
+              AutomationProperties.Name="{Binding Text.NeedsYouPanel}" />
+
+      <!-- Unreadable (§4.1): a banner with the code and sindri doctor; the page below keeps its last data. -->
+      <Border x:Name="UnreadableBanner" DockPanel.Dock="Top" Classes="banner" IsVisible="{Binding IsUnreadable}">
+        <StackPanel Orientation="Horizontal" Spacing="12">
+          <TextBlock Classes="body error-glyph" Text="✕" AutomationProperties.Name="{Binding Text.Unreadable}" />
+          <TextBlock x:Name="UnreadableText" Classes="body" Text="{Binding Reason}" TextWrapping="Wrap"
+                     AutomationProperties.Name="{Binding Reason}" />
+          <TextBlock Classes="body subtle" Text="{Binding Text.CheckIt}" AutomationProperties.Name="{Binding Text.CheckIt}" />
+          <Border Classes="command">
+            <TextBlock x:Name="DoctorFixText" Classes="mono" Text="{Binding Text.DoctorFix}"
+                       AutomationProperties.Name="{Binding Text.DoctorFix}" />
+          </Border>
+        </StackPanel>
+      </Border>
+
+      <Panel>
+        <Border x:Name="Page" Focusable="True" AutomationProperties.Name="{Binding Text.Home}">
+          <Panel>
+            <!-- Connecting (§4.1): the chrome and skeleton rows, first load only. -->
+            <StackPanel x:Name="ConnectingSkeleton" IsVisible="{Binding IsConnecting}" Margin="32,24" Spacing="8">
+              <TextBlock x:Name="ConnectingText" Classes="caption subtle" Text="{Binding Text.Connecting}"
+                         AutomationProperties.Name="{Binding Text.Connecting}" />
+              <Border Classes="skeleton" Width="280" />
+              <Border Classes="skeleton" />
+              <Border Classes="skeleton" />
+              <Border Classes="skeleton" />
+              <Border Classes="skeleton" Width="420" />
+            </StackPanel>
+
+            <!-- Not running (§4.1): S1b's panel: the word, the reason, and sindri to copy. -->
+            <Border x:Name="NotRunningPanel" Classes="card" IsVisible="{Binding IsNotRunning}" Margin="32,24"
+                    VerticalAlignment="Top">
+              <StackPanel Spacing="12">
+                <TextBlock Classes="eyebrow" Text="{Binding Text.ControlPlaneCard}" AutomationProperties.Name="{Binding Text.ControlPlaneCard}" />
+                <TextBlock x:Name="NotRunningText" Classes="title" Text="{Binding Text.NotRunning}"
+                           AutomationProperties.Name="{Binding Text.NotRunning}" />
+                <TextBlock x:Name="ReasonText" Classes="muted" Text="{Binding Reason}" TextWrapping="Wrap"
+                           AutomationProperties.Name="{Binding Reason}" />
+                <StackPanel Orientation="Horizontal" Spacing="10">
+                  <TextBlock Classes="subtle" Text="{Binding Text.StartIt}" AutomationProperties.Name="{Binding Text.StartIt}" VerticalAlignment="Center" />
+                  <Border Classes="command">
+                    <TextBlock x:Name="FixText" Classes="mono" Text="{Binding Text.StartFix}"
+                               AutomationProperties.Name="{Binding Text.StartFix}" />
+                  </Border>
+                </StackPanel>
+              </StackPanel>
+            </Border>
+
+            <!-- The pages (§3.3), each shown by the view model's page flag. -->
+            <ScrollViewer x:Name="Pages" IsVisible="{Binding IsPageVisible}">
+              <Panel Margin="32,24">
+                <views:HomePage x:Name="HomePage" IsVisible="{Binding IsHome}" />
+                <views:PlaceholderPage x:Name="QueuePage" Title="{Binding Text.Queue}" IsVisible="{Binding IsQueue}" />
+                <views:PlaceholderPage x:Name="DecisionsPage" Title="{Binding Text.Decisions}" IsVisible="{Binding IsDecisions}" />
+                <views:PlaceholderPage x:Name="ServicesPage" Title="{Binding Text.Services}" IsVisible="{Binding IsServices}" />
+                <Panel IsVisible="{Binding IsHealth}">
+                  <views:HealthPage x:Name="HealthPage" DataContext="{Binding Health}" />
+                </Panel>
+                <!-- Settings (⌘,): the slot Unit D's view fills; a placeholder until it does. -->
+                <ContentControl x:Name="SettingsSlot" IsVisible="{Binding IsSettings}">
+                  <views:PlaceholderPage Title="{Binding Text.Settings}" />
+                </ContentControl>
+              </Panel>
+            </ScrollViewer>
+          </Panel>
+        </Border>
+
+        <!-- The closed sheet's edge tab: the last subject, which reopens it. -->
+        <Button x:Name="EdgeTab" Classes="edge-tab" IsVisible="{Binding IsEdgeTabShown}" Click="OnEdgeTab"
+                HorizontalAlignment="Right" VerticalAlignment="Center"
+                AutomationProperties.Name="{Binding EdgeTabName}">
+          <LayoutTransformControl>
+            <LayoutTransformControl.LayoutTransform>
+              <RotateTransform Angle="-90" />
+            </LayoutTransformControl.LayoutTransform>
+            <TextBlock Classes="mono" Text="{Binding SheetSubject}" />
+          </LayoutTransformControl>
+        </Button>
+
+        <!-- The detail sheet (§3.2): over the page at the right, 420–760 px wide; below 1100 px it covers the page. -->
+        <Border x:Name="Sheet" Classes="sheet" IsVisible="{Binding IsSheetShown}" Focusable="True"
+                AutomationProperties.Name="{Binding SheetSubject}">
+          <DockPanel>
+            <Thumb x:Name="SheetGrip" Classes="sheet-grip" DockPanel.Dock="Left" Cursor="SizeWestEast"
+                   DragDelta="OnSheetDrag" DragCompleted="OnSheetDragged"
+                   AutomationProperties.Name="{Binding Text.Sheet}" />
+            <StackPanel Margin="24,16" Spacing="12">
+              <Grid ColumnDefinitions="Auto,*,Auto">
+                <Button x:Name="SheetBack" Classes="back" Content="{Binding Text.Back}" Click="OnCloseSheet"
+                        AutomationProperties.Name="{Binding Text.Back}" Margin="0,0,12,0" />
+                <TextBlock x:Name="SheetTitle" Grid.Column="1" Classes="detail-title mono" Focusable="True"
+                           Text="{Binding SheetSubject}" AutomationProperties.Name="{Binding SheetSubject}"
+                           VerticalAlignment="Center" />
+                <Button x:Name="SheetClose" Grid.Column="2" Content="{Binding Text.CloseSheet}" Click="OnCloseSheet"
+                        AutomationProperties.Name="{Binding Text.CloseSheet}" />
+              </Grid>
+              <TextBlock x:Name="SheetBody" Classes="body muted" Text="{Binding Text.NotServedYet}"
+                         AutomationProperties.Name="{Binding Text.NotServedYet}" />
+            </StackPanel>
+          </DockPanel>
+        </Border>
+      </Panel>
+    </DockPanel>
+  </Panel>
+</Window>

@@ -1,5 +1,4 @@
 using System.ComponentModel;
-using System.Diagnostics.CodeAnalysis;
 using Aw.Sindri.Ui.Api;
 using Aw.Sindri.Ui.Navigation;
 using Aw.Sindri.Ui.Platform;
@@ -12,7 +11,6 @@ namespace Aw.Sindri.Ui.ViewModels.Shell;
 /// connection and its state live in <see cref="Health"/>, and the window's size, the sheet's width and the last page are
 /// local preferences, read once by <see cref="Restore"/> and written whole when they change.
 /// </summary>
-[SuppressMessage("Design", "MA0182:Internal type is apparently never used", Justification = "SindriApp.Create(SindriPlatform, TimeProvider) builds it with the shell window, in the next commit.")]
 internal sealed class ShellViewModel : ObservableObject
 {
     /// <summary>How long without an event or a ping before the views are stale (§4.1, API §2.4).</summary>
@@ -45,6 +43,9 @@ internal sealed class ShellViewModel : ObservableObject
         Health = new HealthViewModel(records, api, clock);
         Health.PropertyChanged += OnHealthChanged;
     }
+
+    /// <summary>The app's copy, for the view.</summary>
+    public ShellText Text { get; } = ShellText.Instance;
 
     /// <summary>The connection and the Health page's status card.</summary>
     public HealthViewModel Health { get; }
@@ -143,6 +144,9 @@ internal sealed class ShellViewModel : ObservableObject
     /// <summary>The sheet shows when it's open over a visible page.</summary>
     public bool IsSheetShown => IsSheetOpen && IsPageVisible;
 
+    /// <summary>The edge tab's accessible name: "Reopen" and its subject.</summary>
+    public string EdgeTabName => Labels.Reopen + " " + SheetSubject;
+
     /// <summary>The edge tab shows when the sheet is closed and has a subject, over a visible page.</summary>
     public bool IsEdgeTabShown => !IsSheetOpen && HasEdgeTab && IsPageVisible;
 
@@ -181,7 +185,7 @@ internal sealed class ShellViewModel : ObservableObject
 
         SheetSubject = link.Subject;
         IsSheetOpen = true;
-        Changed(nameof(SheetSubject), nameof(IsSheetOpen), nameof(HasEdgeTab), nameof(IsSheetShown), nameof(IsEdgeTabShown));
+        Changed(nameof(SheetSubject), nameof(EdgeTabName), nameof(IsSheetOpen), nameof(HasEdgeTab), nameof(IsSheetShown), nameof(IsEdgeTabShown));
     }
 
     /// <summary>Closes the sheet (Esc); its subject stays on the edge tab.</summary>
@@ -215,12 +219,20 @@ internal sealed class ShellViewModel : ObservableObject
     /// <param name="bounds">Where the window is.</param>
     internal void RememberWindow(WindowBounds bounds) => Remember(_preferences with { Window = bounds });
 
-    /// <summary>Reads the stored preferences: the last page, the window's bounds and the sheet's width.</summary>
+    /// <summary>Reads the stored preferences: the last page, the window's bounds and the sheet's width (the defaults when they can't be read).</summary>
     /// <param name="cancellationToken">Cancels the read.</param>
     /// <returns>A task that completes when they are applied.</returns>
     internal async Task Restore(CancellationToken cancellationToken)
     {
-        _preferences = await _store.Load(cancellationToken).ConfigureAwait(true);
+        try
+        {
+            _preferences = await _store.Load(cancellationToken).ConfigureAwait(true);
+        }
+        catch (Exception e) when (e is IOException or UnauthorizedAccessException)
+        {
+            _preferences = UiPreferences.Defaults;
+        }
+
         CurrentPage = Enum.TryParse<PageId>(_preferences.LastPage, out var page) ? page : PageId.Home;
         Changed(_pageProperties);
         Changed(nameof(Window), nameof(SheetWidth));

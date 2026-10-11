@@ -30,6 +30,9 @@ internal sealed class HealthViewModel(IEndpointRecordSource records, ISindriApi 
     private DateTimeOffset _heard;
     private SynchronizationContext? _ui;
 
+    /// <summary>The app's copy, for the view.</summary>
+    public ShellText Text { get; } = ShellText.Instance;
+
     /// <summary>The pre-API state (§4.1).</summary>
     public ShellState State { get; private set => Set(ref field, value); } = ShellState.Connecting;
 
