@@ -65,7 +65,7 @@ agentic-workflow/
 ├── scripts/       # Utility scripts (sync-rules.sh, check-deps.mjs, serena-docker, probe.sh, install-scorer.sh)
 ├── schemas/       # JSON Schemas for repo config (deps.schema.json, rule-record.schema.json)
 ├── rules/         # Rule records (factory addendum §17.6): rules/engineering/csharp/*.yaml, one per §4b rule
-├── deps.yaml      # Declared package graph: tiers and every project/cli/db/file edge (spec §4b.1a)
+├── deps.yaml      # Declared package graph: tiers and every project/compose/cli/db/file edge (spec §4b.1a)
 └── setup.sh       # One-command setup for every installed provider
 ```
 
@@ -116,7 +116,7 @@ scripts/sync-rules.sh                   # Link .claude/rules, .cursor/rules, CLA
 scripts/sync-rules.sh --check           # Exit 1 if links or the Rules Index are out of date
 
 # Dependency graph (deps.yaml + schemas/deps.schema.json)
-node scripts/check-deps.mjs             # Schema, tiers, cycles, fan-out, undeclared cli/db/file edges; exit 1 on drift
+node scripts/check-deps.mjs             # Schema, tiers, cycles, fan-out, compose (DEPS-COMPOSE-001), undeclared cli/db/file edges; exit 1 on drift
 node scripts/check-deps.mjs --mermaid [--base-file F]   # Also print the Mermaid graph and the edge list (added/removed vs F)
 
 # Rule records (rules/engineering/csharp/*.yaml + schemas/rule-record.schema.json; docs/csharp/rule-records.md)
@@ -137,6 +137,8 @@ bash scripts/tests/check-deps.test.sh
 bash scripts/tests/check-rules.test.sh
 bash scripts/tests/scaffold.test.sh
 bash scripts/tests/check-env-example.test.sh
+bash scripts/tests/denylist-check.test.sh
+bash scripts/tests/owner-check.test.sh
 bash scripts/tests/repo-templates.test.sh
 bash scripts/tests/probe.test.sh
 bash scripts/tests/find-duplicate-skills.test.sh
@@ -176,6 +178,8 @@ sindri shape reconcile                   # move the spool into the ledger and la
 sindri observe                          # Backlog with sizes; records to the ledger when the profile is approved
 scripts/install-sindri.sh               # Build sindri, install the CLI wrapper (or ./setup.sh --with-sindri)
 GH_TOKEN="$(scripts/agent-token.sh [--repo NAME])"  # Owner/session launcher only, never inside an agent session: 1h agent App token
+scripts/denylist-check.sh <denylist> <file>...   # Work identifiers in PR text: prints only file:line and a hit count; exit 0 none, 1 hits, 2 missing/empty denylist (fails closed)
+scripts/owner-check.sh <stage> up [--seed] [--services a,b] [--labeling] [--session] [--repo NAME] | down   # Owner only: the scratch Sindri instance (port 7480) for a stage's owner check (context spec, owner-check outline steps 1-4 and 7)
 
 # Setup (from repo root)
 ./setup.sh --providers claude,codex,cursor --dry-run   # Print every change, write nothing
