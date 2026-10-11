@@ -1,0 +1,130 @@
+using System.Net;
+using System.Text.Json.Nodes;
+using Aw.Judge.Core.Providers;
+using Aw.Judge.Core.Secrets;
+using Aw.Judge.Infrastructure.Providers;
+using Aw.Judge.Testing;
+using Aw.Kernel.Testing;
+
+namespace Aw.Judge.Tests.Providers;
+
+[Lane(TestLane.Unit)]
+public sealed class JevProviderTests
+{
+    private const string Key = "jev-test-key";
+
+    private const string Answer = """
+        {"answers":{"decision":{"type":"choice","choice":"batch","confidence":0.82,"probabilities":{"send":0.1,"batch":0.82,"drop":0.08}}},"usage":{"input_tokens":12,"output_tokens":1}}
+        """;
+
+    [Fact]
+    public async Task A_choice_is_decided_with_its_confidence_and_probabilities()
+    {
+        var result = Assert.IsType<ProviderDecided>(await Decide(FakeHttpHandler.Answering(HttpStatusCode.OK, Answer)));
+
+        Assert.Equal(("batch", 0.82, "model"), (result.Decision, result.Confidence, result.ReasonCode));
+        Assert.Equal(0.1, result.Probabilities?["send"]);
+    }
+
+    [Fact]
+    public async Task It_posts_to_the_api_with_the_bearer_key()
+    {
+        var handler = FakeHttpHandler.Answering(HttpStatusCode.OK, Answer);
+
+        _ = await Decide(handler);
+
+        var (request, _) = Assert.Single(handler.Requests);
+        Assert.Equal(HttpMethod.Post, request.Method);
+        Assert.Equal("https://api.typesafe.ai/v1/systemone", request.RequestUri?.ToString());
+        Assert.Equal(("Bearer", Key), (request.Headers.Authorization?.Scheme, request.Headers.Authorization?.Parameter));
+    }
+
+    [Fact]
+    public async Task The_body_is_the_state_the_model_and_the_choice_question()
+    {
+        var handler = FakeHttpHandler.Answering(HttpStatusCode.OK, Answer);
+
+        _ = await Decide(handler);
+
+        var json = JsonNode.Parse(Assert.Single(handler.Requests).Body)!;   // why: the provider always sends a JSON body
+        Assert.Equal(Questions.Input.ToJsonString(), json["state"]?.ToJsonString());
+        Assert.Equal(JevProvider.Model, json["model"]?.GetValue<string>());
+        var question = json["questions"]?["decision"];
+        Assert.Equal("choice", question?["type"]?.GetValue<string>());
+        Assert.Equal(Questions.Text.Prompt, question?["instructions"]?.GetValue<string>());
+        Assert.Equal("""{"send":"worth waking for","batch":"batch","drop":"drop"}""", question?["criteria"]?.ToJsonString());
+    }
+
+    [Fact]
+    public async Task Without_a_key_it_is_unavailable_and_sends_nothing()
+    {
+        var handler = FakeHttpHandler.Answering(HttpStatusCode.OK, Answer);
+
+        var result = await Decide(handler, new FakeSecretSource());
+
+        Assert.Equal(new ProviderUnavailable("no-api-key"), result);
+        Assert.Empty(handler.Requests);
+    }
+
+    [Theory]
+    [InlineData(HttpStatusCode.InternalServerError, "http-500")]
+    [InlineData(HttpStatusCode.Unauthorized, "http-401")]
+    public async Task An_http_error_status_is_errored(HttpStatusCode status, string reason) =>
+        Assert.Equal(new ProviderErrored(reason), await Decide(FakeHttpHandler.Answering(status, "{}")));
+
+    [Theory]
+    [InlineData("""{"answers":{"decision":{"type":"choice","choice":"wake","confidence":0.9}}}""", "out-of-enum")]
+    [InlineData("""{"answers":{"decision":{"type":"score","score":3}}}""", "unparseable-answer")]
+    [InlineData("""{"answers":{}}""", "unparseable-answer")]
+    [InlineData("<html>bad gateway</html>", "unparseable-answer")]
+    public async Task A_malformed_or_out_of_enum_answer_is_errored(string body, string reason) =>
+        Assert.Equal(new ProviderErrored(reason), await Decide(FakeHttpHandler.Answering(HttpStatusCode.OK, body)));
+
+    [Fact]
+    public async Task Past_the_budget_it_is_unavailable_with_timeout()
+    {
+        var handler = new FakeHttpHandler(async (_, token) =>
+        {
+            await Task.Delay(TimeSpan.FromSeconds(30), token);
+            return new HttpResponseMessage(HttpStatusCode.OK);
+        });
+        using var provider = new JevProvider(new HttpClient(handler), Secrets());
+
+        var result = await provider.Decide(Questions.Text, Questions.Input, TimeSpan.FromMilliseconds(100), TestContext.Current.CancellationToken);
+
+        Assert.Equal(new ProviderUnavailable(ProviderUnavailable.Timeout), result);
+    }
+
+    [Fact]
+    public async Task An_unreachable_api_is_unavailable() =>
+        Assert.Equal(
+            new ProviderUnavailable("network-error"),
+            await Decide(new FakeHttpHandler((_, _) => throw new HttpRequestException("connection refused"))));
+
+    [Fact]
+    public async Task More_outputs_than_the_api_allows_is_errored_without_a_call()
+    {
+        var handler = FakeHttpHandler.Answering(HttpStatusCode.OK, Answer);
+        using var provider = new JevProvider(new HttpClient(handler), Secrets());
+        var question = Questions.Text with { Outputs = [.. Enumerable.Range(0, 256).Select(i => $"o{i.ToString(System.Globalization.CultureInfo.InvariantCulture)}")] };
+
+        Assert.Equal(new ProviderErrored("too-many-options"), await provider.Decide(question, Questions.Input, Questions.Budget, TestContext.Current.CancellationToken));
+        Assert.Empty(handler.Requests);
+    }
+
+    [Fact]
+    public void It_covers_the_text_classes_only()
+    {
+        using var provider = new JevProvider(new HttpClient(), Secrets());
+
+        Assert.Equal(ContentClasses.Text.Order(), provider.Classes.Order());
+    }
+
+    private static FakeSecretSource Secrets() => new(new Dictionary<SecretName, string> { [SecretName.TypeSafeApiKey] = Key });
+
+    private static async Task<ProviderResult> Decide(FakeHttpHandler handler, FakeSecretSource? secrets = null)
+    {
+        using var provider = new JevProvider(new HttpClient(handler), secrets ?? Secrets());
+        return await provider.Decide(Questions.Text, Questions.Input, Questions.Budget, TestContext.Current.CancellationToken);
+    }
+}

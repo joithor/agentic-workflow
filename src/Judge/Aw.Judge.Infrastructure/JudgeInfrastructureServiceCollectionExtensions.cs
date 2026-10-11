@@ -3,7 +3,9 @@ using Aw.Judge.Core.Ports;
 using Aw.Judge.Infrastructure.Config;
 using Aw.Judge.Infrastructure.Ids;
 using Aw.Judge.Infrastructure.Processes;
+using Aw.Judge.Infrastructure.Providers;
 using Aw.Judge.Infrastructure.Redaction;
+using Aw.Judge.Infrastructure.Secrets;
 using Aw.Judge.Infrastructure.Sqlite;
 using Aw.Kernel.Ids;
 using Aw.Redaction;
@@ -17,7 +19,8 @@ public static class JudgeInfrastructureServiceCollectionExtensions
     /// <summary>
     /// Adds the Judge adapters and their settings: the SQLite stores over $AW_STATE_DIR/judge/decisions.sqlite, the config
     /// file $AW_STATE_DIR/judge/config.json (which needs the host's JsonSerializerOptions registered), the input redactor
-    /// over Aw.Redaction, the PATH executable locator and random decision ids.
+    /// over Aw.Redaction, the PATH executable locator, the process runner, the secret source (environment, then keychain),
+    /// random decision ids and the model providers (AddModelProviders).
     /// </summary>
     /// <param name="services">The service collection.</param>
     /// <param name="environment">Reads an environment variable (Environment.GetEnvironmentVariable in Program.cs, a lambda in tests).</param>
@@ -33,6 +36,26 @@ public static class JudgeInfrastructureServiceCollectionExtensions
             .AddScoped<IJudgeConfigStore>(sp => new FileJudgeConfigStore(settings.StateDirectory, sp.GetRequiredService<JsonSerializerOptions>()))
             .AddSingleton<IInputRedactor>(new AwInputRedactor(Redactor.Default))
             .AddSingleton<IExecutableLocator>(new PathExecutableLocator(environment))
-            .AddSingleton<IIdGenerator, RandomIdGenerator>();
+            .AddSingleton<IProcessRunner>(new SystemProcessRunner(environment))
+            .AddSingleton<ISecretSource>(sp => new KeychainSecretSource(environment, sp.GetRequiredService<IProcessRunner>()))
+            .AddSingleton<IIdGenerator, RandomIdGenerator>()
+            .AddModelProviders(environment);
     }
+
+    /// <summary>
+    /// The model providers behind one port, IProviderCatalog: Jev (over its own HttpClient and the secret source) and
+    /// the claude, codex and cursor-agent CLIs (over the process runner); the catalog picks and orders them per
+    /// config.json, AW_PROVIDER and PATH, and closes every chain with the rules provider its caller passes.
+    /// </summary>
+    private static IServiceCollection AddModelProviders(this IServiceCollection services, Func<string, string?> environment) => services
+        .AddSingleton(sp => new JevProvider(new HttpClient(), sp.GetRequiredService<ISecretSource>()))
+        .AddSingleton<IProviderCatalog>(sp => new ProviderCatalog(
+            environment,
+            sp.GetRequiredService<IExecutableLocator>(),
+            [
+                sp.GetRequiredService<JevProvider>(),
+                new ClaudeCliProvider(sp.GetRequiredService<IProcessRunner>()),
+                new CodexCliProvider(sp.GetRequiredService<IProcessRunner>()),
+                new CursorCliProvider(sp.GetRequiredService<IProcessRunner>()),
+            ]));
 }
