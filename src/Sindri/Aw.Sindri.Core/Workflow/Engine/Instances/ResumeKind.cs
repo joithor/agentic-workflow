@@ -49,4 +49,8 @@ public enum ResumeKind
     /// <summary>Nothing resumes it (spec-conflict, revoked): only cancel ends it.</summary>
     [JsonStringEnumMemberName("none")]
     None = 11,
+
+    /// <summary>'--reject' on a gate escalation: the escalated gate's refusal stands, and the withheld trigger takes the §5.5 refusal path.</summary>
+    [JsonStringEnumMemberName("refuse")]
+    Refuse = 12,
 }

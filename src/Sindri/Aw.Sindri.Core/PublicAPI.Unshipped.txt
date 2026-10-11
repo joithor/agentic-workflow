@@ -3299,3 +3299,7 @@ virtual Aw.Sindri.Core.Workflow.Engine.Triggers.WaitSource.Equals(Aw.Sindri.Core
 virtual Aw.Sindri.Core.Workflow.Engine.Triggers.WaitSource.PrintMembers(System.Text.StringBuilder! builder) -> bool
 Aw.Sindri.Core.Workflow.Engine.Decisions.DecisionContext.Recorded.get -> System.Collections.Generic.IReadOnlySet<Aw.Sindri.Core.Workflow.Engine.TriggerKey>!
 Aw.Sindri.Core.Workflow.Engine.Decisions.DecisionContext.Recorded.init -> void
+Aw.Sindri.Core.Workflow.Engine.Instances.ResumeKind.Refuse = 12 -> Aw.Sindri.Core.Workflow.Engine.Instances.ResumeKind
+static Aw.Sindri.Core.Workflow.Engine.Rules.FrameRules.Fits(Aw.Sindri.Core.Workflow.Engine.Instances.WorkflowInstance! instance, Aw.Sindri.Core.Workflow.Recipes.Recipe! recipe, Aw.Sindri.Core.Workflow.Engine.Triggers.AnswerGiven! answer) -> Aw.Kernel.Result<Aw.Sindri.Core.Workflow.Engine.Instances.ResumeAction!>!
+static Aw.Sindri.Core.Workflow.Engine.Rules.FrameRules.HandBack(Aw.Sindri.Core.Workflow.Engine.Instances.WorkflowInstance! instance, System.DateTimeOffset now) -> Aw.Kernel.Result<Aw.Sindri.Core.Workflow.Engine.Decisions.PopResult!>!
+static Aw.Sindri.Core.Workflow.Engine.Rules.FrameRules.Pop(Aw.Sindri.Core.Workflow.Engine.Instances.WorkflowInstance! instance, Aw.Sindri.Core.Workflow.Recipes.Recipe! recipe, Aw.Sindri.Core.Workflow.Engine.WorkflowInstanceId? child, Aw.Sindri.Core.Workflow.Engine.Decisions.DecisionContext! context) -> Aw.Kernel.Result<Aw.Sindri.Core.Workflow.Engine.Decisions.PopResult!>!
