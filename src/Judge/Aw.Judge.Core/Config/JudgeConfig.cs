@@ -23,8 +23,8 @@ public sealed record JudgeConfig(
     public static JudgeConfig Default { get; } = new(
         new Dictionary<string, QuestionConfig>(StringComparer.Ordinal) { [WakeGate] = DefaultQuestion });
 
-    /// <summary>Sets one question's enabled flag; a question the config doesn't name starts from the defaults. The
-    /// providers and promptSort blocks are kept.</summary>
+    /// <summary>Sets one question's enabled flag; a question the config doesn't name gets an entry with no threshold, so
+    /// it keeps its own. The providers and promptSort blocks are kept.</summary>
     /// <param name="question">The question name.</param>
     /// <param name="enabled">The flag.</param>
     /// <returns>The new config.</returns>
@@ -42,7 +42,7 @@ public sealed record JudgeConfig(
     private JudgeConfig With(string question, Func<QuestionConfig, QuestionConfig> change)
     {
         ArgumentNullException.ThrowIfNull(question);
-        var existing = Questions.TryGetValue(question, out var current) ? current : DefaultQuestion;
+        var existing = Questions.TryGetValue(question, out var current) ? current : new QuestionConfig(Enabled: true);
         return this with { Questions = new Dictionary<string, QuestionConfig>(Questions, StringComparer.Ordinal) { [question] = change(existing) } };
     }
 }

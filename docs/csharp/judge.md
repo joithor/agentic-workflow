@@ -112,8 +112,8 @@ stderr; the hooks discard stderr except where the hook contract says. At the def
 (`decided|escalated|failed`), `approved_at`. Timestamps are UTC ISO-8601 (`AwJson`); `undone_at` and `approved_at`
 are null until set.
 
-`JudgeConfig` (`config.json`, written indented): `questions` (required: name → `{enabled, threshold, providers?}`,
-`threshold` 0–1, `providers` from `rules`, `jev`, `claude-cli`, `codex-cli`, `cursor-cli`), `providers?`
+`JudgeConfig` (`config.json`, written indented): `questions` (required: name → `{enabled, threshold?, providers?}`,
+`threshold` 0–1, absent for the question's own, `providers` from `rules`, `jev`, `claude-cli`, `codex-cli`, `cursor-cli`), `providers?`
 (`agentClis?`: agent CLI names in priority order, `jev?`: false drops Jev), `promptSort?` (`enabled?`, `budgetMs?`
 200–1050, `cooldownPrompts?` a whole number ≥ 0, `scaffolds?`: `brief`, `bugfix`, `ui-evidence`, `plan-first` → on).
 Unknown keys are ignored; a wrong type, a missing required field, an unknown name or a value out of range makes the
@@ -138,7 +138,8 @@ other non-zero exit.
 
 How a call runs (`AskQuestionService`): the catalog builds the lineup (Providers below) from `config.json`'s
 `providers` block and the allowlist (`AskQuestionRequest.AllowedProviders`); the question's `config.json` entry
-(`enabled`, `threshold`, `providers`; no entry means the question's own threshold) becomes the evaluator's override,
+(`enabled`, `threshold`, `providers`; no entry, or an entry without a threshold, means the question's own threshold;
+`config set <question> enabled …` on a question the file doesn't name writes an entry without one) becomes the evaluator's override,
 which narrows that chain, and a disabled question escalates `question-disabled`. An unreadable or invalid `config.json`
 runs on the defaults and logs one warning. With `--providers rules` (or `AW_JUDGE_PROVIDERS=rules`) a question runs
 offline: any input no pre-rule settles escalates `no-provider-decided` (exit 2; `ask-check` asks). After the output the
