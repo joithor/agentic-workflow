@@ -1,5 +1,4 @@
 using Aw.Judge.Core.Ports;
-using Aw.Judge.Core.Providers;
 using Aw.Judge.Host;
 using Aw.Judge.Host.Commands;
 using Aw.Judge.Testing;
@@ -33,11 +32,6 @@ public sealed class JudgeCli(TempStateDirectory state)
             new ServiceCollection(),
             name => name switch { "AW_STATE_DIR" => state.Path, "AW_LOG_LEVEL" => "none", _ => Environment.GetValueOrDefault(name) },
             Clock);
-        if (Providers is { } providers)
-        {
-            _ = services.AddSingleton(new ProviderLineup(providers, ChainSpec.Default));   // the last registration wins
-        }
-
         // Never the real catalog: no agent CLI or Jev call (nor a keychain read) from a test.
         _ = services.AddSingleton<IProviderCatalog>(new FakeProviderCatalog([.. Providers ?? []]));   // the last registration wins
 

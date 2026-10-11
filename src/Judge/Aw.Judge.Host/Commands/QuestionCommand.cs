@@ -18,7 +18,8 @@ namespace Aw.Judge.Host.Commands;
 /// </summary>
 internal static class QuestionCommand
 {
-    internal static async Task<int> Run(string name, IReadOnlyList<string> args, IServiceProvider services, JsonSerializerOptions json)
+    internal static async Task<int> Run(
+        string name, IReadOnlyList<string> args, IReadOnlyList<ProviderName>? allowed, IServiceProvider services, JsonSerializerOptions json)
     {
         if (!QuestionCatalog.Names.Contains(name))
         {
@@ -31,7 +32,11 @@ internal static class QuestionCommand
         }
 
         var input = await CommandOutput.ReadText(CancellationToken.None).ConfigureAwait(false);
-        var request = new AskQuestionRequest(name, input) { SessionId = services.GetRequiredService<CallingSession>().Id };
+        var request = new AskQuestionRequest(name, input)
+        {
+            SessionId = services.GetRequiredService<CallingSession>().Id,
+            AllowedProviders = allowed,
+        };
         var service = services.GetRequiredService<IService<AskQuestionRequest, AskQuestionResponse>>();
         var result = await service.Handle(request, CancellationToken.None).ConfigureAwait(false);
         if (result.IsError)

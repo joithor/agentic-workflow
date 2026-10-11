@@ -32,7 +32,6 @@ internal sealed class AskQuestionHarness
             .AddSingleton<IBriefStore>(new InMemoryBriefStore())
             .AddSingleton<IInputRedactor>(new FakeInputRedactor())
             .AddSingleton<IIdGenerator>(new SequentialIdGenerator())
-            .AddSingleton(new ProviderLineup(providers, ChainSpec.Default))
             .AddSingleton<IProviderCatalog>(new FakeProviderCatalog(providers))
             .AddJudgeCore()
             .AddJudgeFeatures();

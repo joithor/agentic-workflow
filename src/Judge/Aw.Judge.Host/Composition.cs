@@ -1,7 +1,4 @@
 using Aw.Judge.Core;
-using Aw.Judge.Core.Evaluation;
-using Aw.Judge.Core.Ports;
-using Aw.Judge.Core.Providers;
 using Aw.Judge.Features;
 using Aw.Judge.Host.Commands;
 using Aw.Judge.Infrastructure;
@@ -20,13 +17,8 @@ internal static class Composition
             .AddSingleton(AwJson.CreateOptions(JudgeJsonContext.Default))   // the Kernel JSON profile: the config file and Core's stored-input JSON
             .AddKernelTelemetry(TelemetryOptions.FromEnvironment("judge", environment, clock))   // JSON lines on stderr (AW_LOG_LEVEL); exports off
             .AddSingleton(CallingSession.From(environment("AW_SESSION_ID")))
-            .AddSingleton(ModelProviders())
+            .AddSingleton(new ProvidersVariable(environment("AW_JUDGE_PROVIDERS")))
             .AddJudgeCore()
             .AddJudgeFeatures()
             .AddJudgeInfrastructure(environment);
-
-    // The one place the questions' providers and chain are built. Offline for now: rules alone, so any input no pre-rule
-    // settles escalates 'no-provider-decided'. The agent-CLI and Jev adapters, the chain from config.json and AW_PROVIDER,
-    // and the --providers allowlist arrive here (and in AskQuestionRequest.AllowedProviders) with the provider work.
-    private static ProviderLineup ModelProviders() => new([new RulesProvider()], ChainSpec.Default);
 }

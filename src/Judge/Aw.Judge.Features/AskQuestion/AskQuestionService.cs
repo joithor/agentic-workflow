@@ -7,11 +7,11 @@ using Aw.Kernel.Services;
 namespace Aw.Judge.Features.AskQuestion;
 
 /// <summary>
-/// Asks one question: the question's config entry (enabled, threshold, providers) and the allowlist shape the chain the
-/// host built, then the evaluator decides or escalates. A config that can't be read runs on the defaults (a question
-/// fails open), like an invalid one.
+/// Asks one question: the catalog builds the provider lineup from the config's providers block and the allowlist, the
+/// question's config entry (enabled, threshold, providers) narrows it, then the evaluator decides or escalates. A config
+/// that can't be read runs on the defaults (a question fails open), like an invalid one.
 /// </summary>
-internal sealed class AskQuestionService(QuestionEvaluator evaluator, IJudgeConfigStore configs, ProviderLineup providers)
+internal sealed class AskQuestionService(QuestionEvaluator evaluator, IJudgeConfigStore configs, IProviderCatalog catalog, RulesProvider rules)
     : IService<AskQuestionRequest, AskQuestionResponse>
 {
     public async ValueTask<Result<AskQuestionResponse>> Handle(AskQuestionRequest request, CancellationToken cancellationToken)
@@ -19,10 +19,11 @@ internal sealed class AskQuestionService(QuestionEvaluator evaluator, IJudgeConf
         ArgumentNullException.ThrowIfNull(request);
         var reading = ConfigReading.From(await configs.Load(cancellationToken).ConfigureAwait(false));
         var (config, warning) = reading.IsSuccess ? (reading.Value.Config, reading.Value.Warning) : (JudgeConfig.Default, reading.Error.Message);
+        var lineup = catalog.Lineup(config.Providers, request.AllowedProviders, rules);
         var context = new EvaluationContext
         {
-            Providers = providers.Providers,
-            Chain = request.AllowedProviders is { } allowed ? providers.Chain.Restrict(allowed) : providers.Chain,
+            Providers = lineup.Providers,
+            Chain = lineup.Chain,
             Override = QuestionOverride.For(config, request.Question),
             SessionId = request.SessionId,
         };

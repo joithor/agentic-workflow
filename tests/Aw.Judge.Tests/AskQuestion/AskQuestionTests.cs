@@ -64,7 +64,7 @@ public sealed class AskQuestionTests
         Configure("ask-check", new QuestionConfig(Enabled: true, Threshold: 0.6) { Providers = ["rules"] });
         var cli = Cli(ContentClass.Transcript).Decides("continue", 1);
 
-        var result = await _harness.Ask(new AskQuestionRequest("ask-check", """{"transcriptTail":"run the tests"}"""), cli, new RulesProvider());
+        var result = await _harness.Ask(new AskQuestionRequest("ask-check", """{"transcriptTail":"run the tests"}"""), cli);
 
         Assert.Equal(new EscalatedOutcome("no-provider-decided"), result.Value.Outcome);
         Assert.Empty(cli.Calls);
@@ -106,7 +106,7 @@ public sealed class AskQuestionTests
     {
         var cli = Cli().Decides("batch", 1);
 
-        var result = await _harness.Ask(new AskQuestionRequest("wake-gate", Progress) { AllowedProviders = [ProviderName.Jev] }, cli, new RulesProvider());
+        var result = await _harness.Ask(new AskQuestionRequest("wake-gate", Progress) { AllowedProviders = [ProviderName.Jev] }, cli);
 
         Assert.Equal(new EscalatedOutcome("no-provider-decided"), result.Value.Outcome);
         Assert.Empty(cli.Calls);
