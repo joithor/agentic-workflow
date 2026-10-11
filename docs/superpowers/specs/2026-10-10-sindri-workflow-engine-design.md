@@ -10,7 +10,9 @@ API surface, the boundary with S1's app shell, and the first recipes. §13 maps 
 C1–C32 from pass 1, E1–E24 from pass 2 and G1–G18 from pass 3. Revision 5 applies the epic reconciliation
 (`docs/sindri/README.md`, X1–X17): callers and action classes from the API spec (§6.2), commands behind its chain
 (§5.3), one needs-you list and one notifier (§6.3), `$AW_SINDRI_HOME` (§6.1), the `heavy` allocator (§3.4), the
-`StepInput` block kind (§2), and `ILauncher` in API P10 (§7.2).
+`StepInput` block kind (§2), and `ILauncher` in API P10 (§7.2). The second epic batch (X19–X33) adds the agent
+runtime (§6.5, P8), drops `workflow.request`, makes P4 depend on API P3 for items, and moves every proof to
+`sindri-prove.sh`.
 
 References:
 - the factory addendum `2026-10-09-sindri-factory-addendum.md` (A) and the core design `2026-10-07-sindri-design.md` (D);
@@ -44,7 +46,7 @@ References:
 | W17 | **Children are created in the parent's `Commit`** and propagate both ways through the inbox (§5.7), keeping the actor of a forwarded command | C6, E14 |
 | W18 | **Timers are deadlines applied by built-in services.** Sleep and downtime count as time when nothing ran. They're detected through an `IMonotonicClock` port alongside `TimeProvider`, and applied per instance as keyed `shift` triggers | Replayable and versioned (C19) |
 | W19 | **A takeover pauses deadlines; a park stops them** (its answer re-arms them fresh). Each takeover arms a `takeoverIdle` deadline that notifies the human once and clears | D §9.3 |
-| W20 | **The desk runtime runs `deskCapable` Steps until `ILauncher` exists.** The state stays `active` with an open task. Its timeout is at least the profile's `workflow.deskTimeout` (default 2d) and always ends in `park`. The human reports with `sindri workflow complete --run <token>`. Reports are validated synchronously. Outcomes are labeled `via: desk` | Every phase reaches a real outcome without letting the agent-sized timeouts park the human's own work (C7, E11) |
+| W20 | **The desk runtime runs `deskCapable` Steps until the agent runtime (§6.5, P8) runs them.** The state stays `active` with an open task. Its timeout is at least the profile's `workflow.deskTimeout` (default 2d) and always ends in `park`. The human reports with `sindri workflow complete --run <token>`. Reports are validated synchronously. Outcomes are labeled `via: desk` | Every phase reaches a real outcome without letting the agent-sized timeouts park the human's own work (C7, E11) |
 | W21 | **Every event carries the full post-state delta** | Folding the log rebuilds the row (C20) |
 | W22 | **Callers and permissions follow the API surface spec** (API §4, §6): a caller class (`human`, `session`, `service`) with a terminal flag, and an action class per command or variant. Every engine command runs through API's command chain (gate, audit, authorization). A `protected` action also needs the server challenge (§4.2) typed at a TTY (§6.2) | One permission model for every surface; text typed into a session is never a decision (E2) |
 | W23 | **The engine lives in `Aw.Sindri.Core/Workflow` and in Sindri's Features, Infrastructure and Host. Phase 1 is stacked on `feat/sindri-s1-app-shell`.** Stacked phases add files and append registrations; changes to S1's behaviour wait until S1 merges | A 17.28.3; the S1 session's work isn't disturbed |
@@ -131,7 +133,7 @@ public interface IDescribedBlock { public static abstract BlockDescriptor Descri
 | `version` | yes | `RCP-VERSION-001` (same id and version, different hash); `-002` (not above the highest registered) |
 | `description` | no | |
 | `base` | generated only | Written by Sindri's generator. A hand-written recipe with `base` is `RCP-CAP-004` |
-| `inputs` | no | Fact keys |
+| `inputs` | no | Fact keys. The long form is `{ key, label?, type?: text \| file \| item }`; `recipe show` and `GET /workflow/recipes` return them so the app can render a start form |
 | `initial` | yes | An `active` or `wait` state |
 | `states` | yes | At least one non-terminal and one terminal state; reserved names refused |
 | `transitions` | yes | |
@@ -339,7 +341,6 @@ Each `Commit` writes one event per instance it changes, which is one event excep
 | `workflow.shifted` | A sleep or downtime shift |
 | `workflow.notified` | `takeoverIdle` fired |
 | `workflow.expired` | An inbox row expired |
-| `workflow.request` | A session's request (MCP), which changes no state |
 | `recipe.*` | Registry actions |
 
 Every event carries:
@@ -639,6 +640,23 @@ The answer line depends on the park reason:
 
 Durations are shown as `1d 22h 48m`. Plain output is ASCII. Golden files pin every layout.
 
+### 6.5 The agent runtime (owner decision, 2026-10-11)
+
+The runtime that runs a Step in an agent session and takes its result back, so the factory line can run unattended.
+- **Launch.** For a Step whose descriptor names an agent runtime, the post-commit loop calls `ILauncher` (API P10's
+  port; the human handoff uses the same one) with the run token, the target from the profile (`workflow.agent.target`:
+  Claude Code, Codex or Cursor), the repo and the Step's injection plan. The MCP endpoint is passed at launch (API §8).
+  `session.launched` records it; the instance's `run.runtime` is `agent`.
+- **Report.** The launched session, and only it, reports with `sindri workflow complete --run <token>`. Its caller class is
+  `step-report` (API §4.1), proven by a run-scoped token `ILauncher` hands the session and the server checks against
+  the open run. The report goes through the same validation as a desk report (§5.5). The session reports; the engine
+  decides through the recipe's gates. A session can't report another run, grant, accept, or hand back.
+- **Tokens.** The report carries token usage, read by the target's provider adapter (Judge's `IModelProvider`
+  catalog, X18) from the session's own usage output. Budgets (§3.7) count it; an over-budget report parks with
+  `budget`.
+- **Ends.** A session that exits without reporting ends the run as `step.failed` (`session.ended`, reason `no report`).
+  The Step's `timeout` still applies. A human may take the instance over at any time (`OpenItem` with `attach`).
+
 ## 7. Placement and S1 changes
 
 ### 7.1 Placement
@@ -648,7 +666,7 @@ Durations are shown as `1d 22h 48m`. Plain output is ASCII. Golden files pin eve
 | `Aw.Sindri.Core/Workflow` | Recipe records and typed ids; descriptors, `BlockCatalog`, `IDescribedBlock`, the kind interfaces; `RecipeHash`; `RecipeValidator` with `ValidationContext` (as data); `TransitionDecision`, `RefusalRules`, `FrameRules`, `LoopRules`, `BudgetRules`, `TimerDecision`, `ChildPropagation`, `EventFold`; the ports `IWorkflowStore`, `IRecipeStore`, `IRecipeApprovals`, `IMonotonicClock`; `WorkflowErrors` (a second catalogue class beside S1's `SindriErrors`, validated together) |
 | `Aw.Sindri.Features` | Slices: `ValidateRecipe`, `EvalRecipe`, `RegisterRecipe`, `ShowRecipe`, `ApproveRecipe`, `RevokeRecipe`, `ListRecipes`, `IssueChallenge`, `StartInstance`, `ApplyCommand`, `CompleteStep`, `IssueNonce`, `GetInstance`, `ListInstances`, `TickTimers`, `RouteEvents`, `DrainInbox`, `RunPostCommit`. Also `BlockRuntime`, the desk runtime and the pure blocks. Each service takes at most 5 dependencies; validation and telemetry are decorators |
 | `Aw.Sindri.Infrastructure` | `YamlRecipeReader`; the SQLite stores and migrations (`workflow_instances`, `workflow_deadlines`, `workflow_inbox`, `workflow_cursor`, `workflow_gate_results`, `workflow_nonces`, `workflow_commands`, `recipes`, `recipe_approvals`); the I/O blocks; the dispatcher |
-| `Aw.Sindri.Host` | The `recipe`, `workflow` and `outbox` verb groups, each with its own group command table; endpoints; the agent-variable probe; JSON context entries. The command classes, the endpoints and the group tables are written by hand, following the slice recipe. `/new-slice` doesn't fit Sindri's host yet: it needs `--surface http` and an anchor that S1's `MapGroup("/sindri")` doesn't match |
+| `Aw.Sindri.Host` | The `recipe`, `workflow` and `outbox` verb groups, each with its own group command table; endpoints; the agent-variable probe; JSON context entries. The command classes, the endpoints and the group tables are written by hand, following the slice recipe. Slices are scaffolded with `/new-slice --slice-only` (API P0), then wired at the anchors API P1 adds |
 
 ### 7.2 S1 changes and their owners (W26)
 
@@ -659,7 +677,7 @@ Durations are shown as `1d 22h 48m`. Plain output is ASCII. Golden files pin eve
 | S1-D3 | The outbox dispatcher (with `notBefore`, the recheck and `outbox.refused`) | `outbox_commands` exists; no dispatcher | P6 |
 | S1-D5 | The server challenge. P2 builds it for the `recipe` and `workflow` verbs, and it replaces `profile approve`'s `confirmed` body flag too, so every `protected` action confirms the same way (API §3.2) | `profile approve` trusts a `Confirmed` flag | P2 |
 | S1-D6 | An item or instance filter on `/sindri/events` | no filter | P4 |
-| S1-D7 | `EventFactory` takes item, causation and the request's actor (not the process-wide `EventScope` actor) | `Item: null`, one process-wide actor | P4 |
+| S1-D7 | `EventFactory` takes item, causation and the request's actor (not the process-wide `EventScope` actor) | `Item: null`, one process-wide actor | API P1 (its C6); P4 uses it |
 | S1-D8 | Built-in services without a profile entry | only profile-named services run | P4 |
 | S1-D9 | Pin the outbox migration at version 3: list it explicitly after S1's two files, so Sindri's later files are 4 and up | appended as `own.Count + 1`, so the next migration would renumber it | P2 (the first phase with a migration) |
 | S1-D10 | One loop per service | services run one after another | P4 |
@@ -1052,7 +1070,11 @@ reviewed again. Its fixes are listed below for the owner's review.
 
 ## Phases
 
-Each phase is one PR. P1 and P3 are stacked on `feat/sindri-s1-app-shell` and add files only. P2 and every later
+Each phase is one PR. The order across all three specs is the one table in `docs/sindri/README.md` ("Build order");
+the dependencies below follow it. Signals write `T-n` for the `ITM-…` id that `sindri item add "<title>"` printed:
+every signal creates its item first (API P3). Every **(owner)** step runs through `scripts/sindri-prove.sh human` (API
+§12), so the Prover runs both halves and the ledger records `human:prover`.
+P1 and P3 are stacked on `feat/sindri-s1-app-shell` and add files only. P2 and every later
 phase start once S1 has merged, target `main`, and stack on the phases they need. Every phase updates `docs/csharp/sindri-workflow.md` and
 `docs/csharp/sindri.md`. Sizes: S is a few files, M one subsystem slice, L a store or several slices with
 migrations.
@@ -1099,10 +1121,9 @@ parallel phases the one that merges second renumbers at rebase.
 - **Implementer:** one per unit, in its own worktree, red first.
 - **Integrator:** one per phase. It merges the units, runs the full gate (zero warnings, unit and integration lanes
   in budget, `format`, `check-deps`, `check-rules`), and opens the draft PR.
-- **Prover:** runs the **(agent)** steps of the phase Signal and records the evidence. An agent is a `session` by
-  design (W22), so it can't run the **(owner)** steps. Those are written as a numbered runbook in the PR. The owner
-  runs it in a plain terminal under `script -q <transcript>`, and the Prover checks the transcript against the
-  expected lines and the ledger (`workflow events`). A phase isn't proven until both halves match.
+- **Prover:** runs the **(agent)** steps with `sindri-prove.sh <verb>` (a `session`) and the **(owner)** steps with
+  `sindri-prove.sh human <verb>` (API §12), and records the evidence. It checks both against the expected lines and
+  the ledger (`workflow events`). A phase isn't proven until both halves match.
 - **Reviewers:** run `/review` until no blocking or issue findings remain. Fixes go back to implementers as units.
 
 **Limits:**
@@ -1182,7 +1203,7 @@ parallel phases the one that merges second renumbers at rebase.
   - approve running the evals;
   - docs.
 - **Size:** L.
-- **S1 dependency:** S1 merged; this phase makes its S1 changes.
+- **S1 dependency:** S1 merged, API P3 (items) merged; this phase makes its S1 changes.
 - **Signal:**
   1. **(owner)** With `workflow.step` approved (P2), `sindri workflow start workflow.step --item T-1 --fact fact:spec=spec.md`,
      then `sindri workflow status T-1/step/1`, shows the desk-task layout with `--run 1.1`.
@@ -1257,3 +1278,15 @@ parallel phases the one that merges second renumbers at rebase.
   - On `T-7`, completing `checks` as `failed` twice with the same findings parks the child (`no-progress`), and the
     parent shows `parked: no-progress (child)`. `sindri workflow answer T-7 --grant 1`, with its challenge typed, is
     forwarded with `onBehalfOf`, re-runs the child's `produce` (§5.8), and resumes both.
+
+### Phase 8: the agent runtime
+
+- **Goal:** a Step runs in a launched agent session that reports its own result; the factory line runs unattended.
+- **Files:** the agent runtime and its post-commit launch; the `step-report` token check; `session.launched` and
+  `session.ended`; token usage from the provider adapter; the `workflow.agent.target` profile key; docs.
+- **Size:** M.
+- **Depends on:** P7, API P10 (`ILauncher`), Judge's provider port (#156).
+- **Signal:** with `workflow.agent.target: claude`, starting `workflow.step` on a new item launches a Warp tab running
+  Claude Code. The session's `complete --run` moves it to `checks`, and the event records `via: agent` and the token
+  usage. The same `complete` from another session exits 2 with `SND-AUTH-002`. Killing the session parks the Step
+  through `step.failed`.

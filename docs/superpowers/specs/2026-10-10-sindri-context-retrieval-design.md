@@ -3,7 +3,10 @@
 Status: decisions settled in conversation with the owner, question by question, 2026-10-10; revised the same day
 after the `/autoplan` review (§14); revised 2026-10-11 in the Sindri app epic (`docs/sindri/README.md`, X1–X18): the
 shared MCP endpoint, `GET` queries and route classes, the error-doc location, the shared heavy-job lock, the `StepInput`
-block, and a provider-neutral model port. This is the written spec for review; it goes to `/specToProvenPR` once approved.
+block and a provider-neutral model port. A second batch (X19–X33) gates every session read on any transport and
+defines repo scope (§3), puts the model port in this package's Core (§4), retires `SND-CONTEXT-041`, aligns exit
+codes with S1 (§8.6), adds ledger events, waits for API P1 and P6 (stage table), and links items to Linear (Phase 6).
+This is the written spec for review; it goes to `/specToProvenPR` once approved.
 It refines the factory addendum §17.3 (the context graph), §17.29.2 and §17.29.3 (the engine, and access from
 sessions) and §17.17 Q2 (component options), for build step 3 of §17.29.4 (stage S3 in `docs/csharp/sindri.md`).
 Where they disagree, this document wins for the context retrieval engine.
@@ -77,7 +80,7 @@ that graph plus rank fusion across adapters.
 - **Company OAuth:** connecting Onyx to company Linear and Slack is done by the owner, with sign-off. Sindri never
   connects a business source itself.
 - **Model egress** sits behind profile switches, all off until approved: `context.labeling.enabled` (map labeling and
-  decision extraction), `context.eval.adjudicator`, and `context.mcp.enabled` (whether sessions may read intent text
+  decision extraction), `context.eval.adjudicator`, and `context.sessions.enabled` (whether sessions may read intent text
   through MCP at all; a session reading it sends it to the model provider).
 - **State** lives under `$AW_SINDRI_HOME/context/` (S1's app home, default `$AW_STATE_DIR/sindri-app`; never the TS
   `$AW_STATE_DIR/sindri/`): `context.db` and its `-wal`/`-shm` files, `eval/`, exports. Directories 0700, files 0600,
@@ -100,6 +103,14 @@ that graph plus rank fusion across adapters.
   `~/.claude.json`.
 - **Decisions stay human:** applying a map review is a `protected` command (API §3.7), so it records `human`
   provenance only from a human at an interactive terminal (the same rule as `profile approve`); there is no review tool over MCP.
+- **Session reads, any transport.** `context.sessions.enabled` gates every `session`-class context read: MCP, the CLI
+  run inside an agent session, and plain HTTP. Off, they answer `SND-CONTEXT-020`; `human` reads are unaffected.
+- **Repo scope.** A `session` caller sees only records reachable from its `X-Sindri-Repo`: that repo's files and code,
+  graph nodes the repo implements and their cascade, and intent records linked to those nodes or from the Linear teams
+  the profile maps to that repo (`context.repoTeams`). Anything else answers as an unknown anchor (`SND-CONTEXT-003`),
+  never as a hint that it exists.
+- **Every command writes an event.** `context.map.built`, `context.map.promoted`, `context.map.reviewed`,
+  `context.map.imported` and `context.sources.synced` go to the ledger through the API chain, so the app refreshes.
 
 ## 4. Package shape and composition
 
@@ -138,8 +149,9 @@ tests/
   `Composition` and passes the values to `AddContextInfrastructure(environment)` through the environment function;
   `Aw.Context` never resolves pointers or reads the keychain.
 - **The labeler lives in `Aw.Context.Infrastructure`, behind `ILabeler`, and is provider-neutral.** Every model call
-  (labeling, decision extraction, the rerank arm, the eval adjudicator) goes through Judge's provider port
-  (`IModelProvider` and `IProviderCatalog`, #156), so the provider (the Claude Code, Codex or Cursor CLI, or an API
+  (labeling, decision extraction, the rerank arm, the eval adjudicator) goes through `IModelPort`, a port in `Aw.Context.Core`.
+  Sindri's Host adapts it over Judge's provider port (`IModelProvider` and `IProviderCatalog`, #156), the same pattern
+  as the heavy-job lock (tiers forbid a direct Context → Judge edge), so the provider (the Claude Code, Codex or Cursor CLI, or an API
   key) is a profile choice and an adapter, never an interface change. Until #156 merges, a `claude` CLI adapter (a
   declared `cli` edge) stands in behind the same port.
 - **The heavy-job lock is a port, supplied by Sindri:** `IHeavyJobLock` is declared in `Aw.Context.Core`. Sindri
@@ -421,7 +433,7 @@ All of them call `IContextEngine`; they differ only in transport.
 |---|---|---|
 | **HTTP** | `GET /sindri/context/query?q=&node=&item=&symbol=&depth=&budget=&draft=`; `GET /sindri/context/node?key=`; `GET /sindri/context/neighbors?key=&depth=`; `GET /sindri/context/path?from=&to=`; `POST /sindri/context/map/import`; `GET /sindri/context/map/export`; `POST /sindri/context/map/build`; `GET /sindri/context/map`; `GET /sindri/context/map/review`; `POST /sindri/context/map/review` (`protected`, §3); `POST /sindri/context/map/promote`; `GET /sindri/context/sources`; `POST /sindri/context/sources/sync`. Each `POST` is a command with a catalog row and the class API §3.7 gives it. Keys travel in query strings or bodies, never in the path (they hold `/` and `#`). Errors are ProblemDetails with the `SND-CONTEXT-*` code as `title` | 1 (query, sources), 3–4 (the rest) |
 | **CLI** | `$SINDRI context query "<q>" [--draft] [--node K \| --item ENG-1 \| --symbol S] [--depth N] [--budget N] [--json]`; `context show <key>`, `neighbors <key> [--depth N]`, `path <a> <b>`, `map import <file> \| export <file> \| build \| status \| promote \| review [--export F \| --apply F \| --history \| --undo ID]`, `sources status \| sync`, `eval backtest \| probes \| map` | as HTTP |
-| **MCP** | The shared Sindri endpoint `/sindri/mcp` (API §8): Streamable HTTP on the API port, **stateless mode** (so a Sindri restart doesn't break a session), behind the API guard. Read-only tools: `context_query {q, node?, item?, symbol?, depth?, budget?}`, `context_node {key}`, `context_neighbors {key, depth?}`, `context_sources {}`. Results: `structuredContent` with the result JSON, and a short text summary (anchors, counts, conflicts, degraded; not the full text a second time). Errors map to tool errors carrying the `SND-CONTEXT-*` code and fix. The `context_*` tools are off when `context.mcp.enabled` is false; the endpoint itself stays up for the `sindri_*` tools | 1 (`context_query`, `context_sources`), 3 (the rest) |
+| **MCP** | The shared Sindri endpoint `/sindri/mcp` (API §8): Streamable HTTP on the API port, **stateless mode** (so a Sindri restart doesn't break a session), behind the API guard. Read-only tools: `context_query {q, node?, item?, symbol?, depth?, budget?}`, `context_node {key}`, `context_neighbors {key, depth?}`, `context_sources {}`. Results: `structuredContent` with the result JSON, and a short text summary (anchors, counts, conflicts, degraded; not the full text a second time). Errors map to tool errors carrying the `SND-CONTEXT-*` code and fix. The `context_*` tools are off when `context.sessions.enabled` is false; the endpoint itself stays up for the `sindri_*` tools | 1 (`context_query`, `context_sources`), 3 (the rest) |
 | **Workflow block** | `input.context.retrieve`, a `StepInput` block (engine §2): fills injection-plan sections before a recipe Step starts | 10 |
 
 **Telling sessions to use it:** Phase 1 ships an agent-rules snippet in `docs/sindri/context.md` for the work repo's
@@ -432,9 +444,9 @@ last 7 days (counts from `query_log`, client `mcp`), so it's visible whether ses
 
 ### 8.6 Exit codes and errors
 
-CLI exit codes: **0** results returned (possibly degraded); **1** no results, an unknown anchor, or a refused input
-(e.g. a worktree path), with the fix; **2** tool error (the process isn't running, the profile is invalid, the store
-can't open); **75** the heavy-job lock stayed busy (`map build`, `eval`). Long jobs print progress lines to stderr
+CLI exit codes (S1's and the API's): **0** results returned, possibly degraded or empty; **1** attention: the process
+isn't running (`SND-API-001`), an unknown anchor, or a refused input (e.g. a worktree path), with the fix; **2** tool
+error (the profile is invalid, the store can't open, every source is down); **75** the heavy-job lock stayed busy (`map build`, `eval`). Long jobs print progress lines to stderr
 (`waiting for heavy-job lock (slot 1/2 held by …)`, `extracting 412/1830 files`, `labeling 40/120`).
 
 | Code | Meaning | Fix |
@@ -446,10 +458,10 @@ can't open); **75** the heavy-job lock stayed busy (`map build`, `eval`). Long j
 | `SND-CONTEXT-005` | Output path inside a git worktree | Write outside repos |
 | `SND-CONTEXT-010` | A source is unavailable (degraded, not fatal) | `context sources status` |
 | `SND-CONTEXT-011` | **Every** source is unavailable (exit 2, not "no results") | `context sources status`; start Onyx or check the repos |
-| `SND-CONTEXT-020` | MCP is disabled (`context.mcp.enabled: false`); the `context_*` tools answer this code and `context sources status` says so | Enable it in the profile and approve |
+| `SND-CONTEXT-020` | MCP is disabled (`context.sessions.enabled: false`); the `context_*` tools answer this code and `context sources status` says so | Enable it in the profile and approve |
 | `SND-CONTEXT-030` | No map yet | `context map import` or `context map build` |
 | `SND-CONTEXT-040` | The heavy-job lock stayed busy | Retry; the message names the holder |
-| `SND-CONTEXT-041` | Map review needs an interactive terminal | Run it at a terminal, or `--apply` a reviewed file there |
+| `SND-CONTEXT-041` | Retired: applying a review, `import` and `promote` are `protected` commands and use the engine's challenge, refused with `SND-AUTH-002` | — |
 | `SND-CONTEXT-042` | Labeling disabled or over its token cap | Enable `context.labeling` or raise `maxTokens` |
 | `SND-CONTEXT-043` | No entry in the review file matches the latest draft | `map review --export` again |
 | `SND-CONTEXT-050` | A source's token lacks a needed read scope | Recreate the key read-only with the listed scope |
@@ -475,7 +487,7 @@ map v13 (draft, a41b07d) · 46 proposals · 3 orphaned links
 
 - **Map version lifecycle:** `map build` writes a `draft`; queries read the `current` version (`--draft` reads the draft);
   `map review` works on the latest draft; `map promote` (or emptying the review queue, or a build whose queue is empty from the start) makes it `current`;
-  `map import` writes `current` directly; doctor `context:map` warns with the draft's age and how many commits `current`
+  `map import` writes `current` directly and, like `promote`, is a `protected` command (API §3.7); doctor `context:map` warns with the draft's age and how many commits `current`
   is behind HEAD; and the old
   one `retained`. `--apply` works on the latest draft only; entries whose targets still match are applied and the rest
   listed as skipped (`SND-CONTEXT-043` only when nothing matches). `map review --history` lists overrides with their ids
@@ -501,7 +513,7 @@ context:
   minHits: 3
   scrub: { extraPatterns: [{ id: acme-customer-id, pattern: "ACME-[0-9]{6}" }] }
   labeling: { enabled: false, maxTokens: 400000, maxTokensPerSync: 50000 }
-  mcp: { enabled: false }                # off until approved (§3)
+  sessions: { enabled: false }           # every session-class read, any transport; off until approved (§3)
   sources:
     linear: { token: "keychain:linear/work-read", teams: [ENG, APP] }   # url: Linear's API host (or loopback, tests)
     onyx: { url: "http://127.0.0.1:3000", token: "keychain:onyx/sindri-read", version: "<pinned tag>" }
@@ -673,7 +685,7 @@ single source of truth (A-F10); fusion inputs defined (A-F11); batched stale che
 mode and error mapping (A-F17); FTS5 test (A-F18); one fence format (A-F19); snippet purge (A-F20); batched builds
 (A-F21); identifiers in scrub patterns (S-M1, via D14 and Phase 2); attribute and permalink handling (S-M3); argument
 validation (S-M4); human-only review (S-M5); least-privilege keys (S-M6); no text in logs, client in the query log
-(S-M7); SQLite file modes and corpus retention (S-M8); `context.mcp.enabled` (S-M9); server-side caps (S-M10); pinned
+(S-M7); SQLite file modes and corpus retention (S-M8); `context.sessions.enabled` (S-M9); server-side caps (S-M10); pinned
 Onyx and a reviewed MCP package (S-M11); HMAC query hashes (S-L1); MCP tool arguments and non-duplicated results
 (D-M); `schemaVersion` and `queryId` (D-M); docs per phase (D-M); fixture app defined (D-M); exit codes, empty
 states, the `affects` section, `confirmed` and `provenance` per item, conflicts outside the budget, degraded detail,
@@ -718,7 +730,7 @@ HIGHs, fixed:
 
 Also fixed: a stage-owner brief overriding `/specToProvenPR`'s epic defaults (devex); owners stay assigned until merge
 and do their own rebases; the lead is the only `stages.md` writer; caps on ready-unmerged PRs and stack depth; a token
-budget per stage; S-2W as its own stage, merging before S-5A; `context.mcp.enabled` defaults to false; MCP usage
+budget per stage; S-2W as its own stage, merging before S-5A; `context.sessions.enabled` defaults to false; MCP usage
 counts in `sources status` (P-4); every-source-down is exit 2 (`SND-CONTEXT-011`); `scrub-blocked` as a citation state;
 stale review files refused (`SND-CONTEXT-043`), resume after quit, `--undo`; cascade behaviour after ascend; truth
 mapped through the sample's as-of map; as-of maps deterministic-only and cached; Linear canonical keys on the UUID; the
@@ -800,14 +812,14 @@ stacks on that branch).
 | **S-1C** | The `compose` edge kind: `deps.yaml` schema, `check-deps.mjs` (`DEPS-COMPOSE-001`), the ArchUnitNET rule (`ARCH-COMPOSE-001`), the `DEPS-PROJ-007` and ARCH-DIR-004 carve-outs for `compose` targets' `Add…()` calls, rule records, a Sindri → Context `project` edge declared `planned` (Sindri's Host and Features reference `Aw.Context.Core`; S-1A flips it to `current`), the fan-out exception attached to that `project` edge (`DEPS-FANOUT-001` counts project edges only), and the `compose` edge with its own tier and staleness checks, `scripts/denylist-check.sh` | — (no S1 needed) | 0 |
 | **S-2R** | `Aw.Redaction` extra patterns from configuration, validated and compiled with the match timeout | — | 0 |
 | **S-FX** | The fixture app and its recorded sources (§10), all **synthetic**, never captured from a real workspace: repo, Linear and Onyx recordings, merged-PR history, probe file, fake Linear and Onyx servers that replay them | — | 0 |
-| **S-1A** | Phase 1a: `Aw.Context` package, facade, contract, sanitizer, egress scrubber, repo-docs, planner skeleton, HTTP and CLI | S1 merged · S-1C · S-FX | 1 |
+| **S-1A** | Phase 1a: `Aw.Context` package, facade, contract, sanitizer, egress scrubber, repo-docs, planner skeleton, HTTP and CLI | S1 merged · API P1 merged (the chain) · S-1C · S-FX | 1 |
 | **S-1M** | Phase 1b: the `/sindri/mcp` host (shared with API P8), `context_query` and `context_sources`, doctor checks, per-repo registration docs | S-1A | 2 |
 | **S-2W** | Wiring `context.scrub.extraPatterns` into `Aw.Context` (XS) | S-1A · S-2R | 2 |
 | **S-3** | Phase 3 without its MCP tools: graph store, overrides, cascade, `node`/`neighbors`/`path`, probe runner | S-1A | 2 |
 | **S-5A** | Phase 5, first half: `onyx` adapter (search, fetch, UUID canonical keys and identifier aliases, contract tests against `FakeOnyxServer`), secret-pointer resolution, Onyx setup doc and doctor `context:onyx` | S-1A · S-2R · S-FX; **merges after S-2W** | 2 |
 | **S-3M** | Phase 3's MCP tools `context_node`, `context_neighbors` (XS) | S-1M · S-3 | 3 |
-| **S-4** | Phase 4: extractor, file-level `implements`, map review | S-3 | 3 |
-| **S-5B** | Phase 5, second half: sync, rules-first linking, decisions from issue and comment records, intent-vs-intent conflicts, the `item` shape | S-3 · S-5A | 3 |
+| **S-4** | Phase 4: extractor, file-level `implements`, map review | S-3 · API P6 merged (jobs: `map build` runs as a job, never inside the command gate) | 3 |
+| **S-5B** | Phase 5, second half: sync, rules-first linking, decisions from issue and comment records, intent-vs-intent conflicts, the `item` shape | S-3 · S-5A · API P6 merged (jobs: `sources sync`) | 3 |
 | **S-6** | Phase 6: native `linear` adapter (hand-written GraphQL, D18): projects, Linear Documents, project updates, issue↔PR attachments; dedup with Onyx's records; links and decisions from documents through S-5B's linker | S-5B | 4 |
 | **S-7A** | Phase 7, harness: corpus builder, per-sample as-of maps (from the extractor), arms runner, reports, on the fixture corpus | S-3 · S-4 · S-FX | 4 |
 | **S-CF** | Intent-vs-file conflicts: a decision citing a file the map says implements something else (S) | S-4 · S-5B | 4 |
@@ -868,8 +880,8 @@ defaults:
    earlier C# stages did. Skip `/ui-evidence` with that reason.
 3. Hand tests run in **your isolated environment only**: `AW_SINDRI_HOME=<scratch>/home-<id>`,
    `AW_SINDRI_PORT=<port>` (assigned by the lead from 7491 up), a profile built from the fixture app with
-   repo-docs on the fixture repo and the fake Linear and Onyx servers, approved at a pseudo-terminal with `expect` in
-   that throwaway home (the S1 hand-test pattern). Source tokens in that profile are `env:` or `file:` pointers to
+   repo-docs on the fixture repo and the fake Linear and Onyx servers, approved with `sindri-prove.sh human profile approve` in
+   that throwaway home (API §12, the one prover recipe). Source tokens in that profile are `env:` or `file:` pointers to
    fixture values, never the owner's keychain, and the profile names only the sources its base branch supports.
    `$SINDRI` is the stage's binary published with `src/Sindri/aot-smoke/run.sh` (it publishes from a copy, so the
    worktree's lock files don't change), rebuilt after each rebase; a rebase that renumbers a migration also deletes the
@@ -902,7 +914,7 @@ team ever reads work data:
      export lands in the scratch home and teardown deletes it. Never copy `context.db`.
   4. **Profile:** the real profile copied in, then edited per the template: the engine's services under `services:`
      (`context-docs-refresh`, `context-sync`, `context-rebuild`, `context-purge`) kept only when the check names them;
-     labeling on only when the check names it (S-5B and S-CF need decisions); `context.mcp.enabled: true` when the check
+     labeling on only when the check names it (S-5B and S-CF need decisions); `context.sessions.enabled: true` when the check
      uses a session. Start `$SINDRI serve --headless`, approve at a terminal, then `$SINDRI context map import
      <scratch home>/seed.json` at the terminal.
   5. **MCP**, when the check uses a session: start it with `claude --strict-mcp-config --mcp-config <file>` naming only
@@ -1061,7 +1073,8 @@ on the fixture app.
 ### Phase 6: native Linear adapter
 
 - **Goal:** what Onyx doesn't index enters the graph: projects, Linear Documents (the PRDs and TDDs), project updates
-  and the issue↔PR links.
+  and the issue↔PR links. This phase also owns linking a Sindri item to its Linear record: `item.linked` (service
+  `context-sync`) gives an `ITM-…` item its `linear:issue/<uuid>` record and its key alias, which API routes resolve.
 - **Files:** `linear` adapter (D18: hand-written GraphQL operations as embedded `.graphql` files, response records in
   the JSON context, team filter, `linear.url`), dedup with Onyx's records by UUID key, document version handling, the
   as-of check of document history (§12), links and decisions from documents through S-5B's linker, the recorded

@@ -7,7 +7,10 @@ Status:
 - Revised 2026-10-11 in the Sindri app epic (`docs/sindri/README.md`, X1–X17): one MCP endpoint shared with the
   context engine (§8), `ItemId` is always `ITM-…` (§3), the engine adopts this spec's callers and classes (§3.5),
   one OS notifier (§5.1), the context routes' classes (§3.7), launch targets for `sindri open` (P10), engine item
-  states (P11), and exit code 75 (§9).
+  states (P11), and exit code 75 (§9). A second batch (X19–X33, after the epic's /autoplan) renumbers the new
+  codes past S1's (`SND-API-011`, `-012`), adds the `step-report` class and the agent runtime's launch port (§4, §8,
+  P10), the nonce and challenge carve-outs (§2.5), the engine-to-item state map (§3.6), launch-time MCP config for
+  Codex and Cursor (§8), and the `human` token before the app's first write (§6).
 - This document is the written spec for review.
 
 The spec designs the surface every Sindri client uses: the `sindri` CLI, the Avalonia app (`SindriUi`), the Sindri MCP
@@ -36,7 +39,7 @@ server (`/sindri/mcp`), and the workflow engine's calls into the command layer.
 | Routes | `GET /sindri/status`, `GET /sindri/ping`, `POST /sindri/stop`, `POST /sindri/profile/approve` and `GET /sindri/events` |
 | Host | `LoopbackBinding`, `LoopbackGuard` and `HttpResults` |
 | `Core` types | Those under `Control`, `Ledger`, `Lease`, `Profile`, `Scheduling` and `Doctor`, including `EventFactory` |
-| `SindriErrors` | `SND-LEASE-001…003`, `SND-PROFILE-001…005`, `SND-LEDGER-001/002`, `SND-API-001…003`, `SND-CLI-001/002` and `SND-SCHED-001` |
+| `SindriErrors` | `SND-LEASE-001…003`, `SND-PROFILE-001…005`, `SND-LEDGER-001/002`, `SND-API-001…005`, `SND-CLI-001/003` and `SND-SCHED-001` |
 | Process model | `sindri serve`, `control.json`, the spawn, and the pid and epoch check against `/ping` |
 | CLI-local verbs | `doctor` and `profile validate` |
 
@@ -66,7 +69,9 @@ This design adds to these. Where it has to change one of them, §10 lists the co
 - A command whose class depends on its arguments implements `IClassifiedCommand.ActionClass`, with one fail-closed
   rule: **protected fields override the variant, and an unknown variant is `protected`**. For the engine's
   `ApplyCommand`:
-  - any request carrying `grant` or `accept` is `protected`, and those fields are invalid on any variant but `answer`;
+  - any request carrying `grant`, `grantTokens` or `accept` is `protected` (`answer-grant`, `answer-grant-tokens`,
+    `answer-accept`), and those fields are invalid on any variant but `answer`;
+  - `CompleteStep` is `desk` from a human, and `step-report` when the launched agent session for that run reports it (§4.1);
   - `takeover` is `pause`;
   - `answer`, `handback`, `cancel` and `complete` are `desk`.
 
@@ -94,7 +99,7 @@ only, so the gate is never held for long.
 **Waiting for the views.**
 - A command that reads views (catalog flag `ReadsViews`) waits, inside the gate, until the projector's cursor reaches
   the ledger head. It reads the head from `ILedgerStore.Head()` itself, so it never decides on views that miss the
-  previous command's event. The limit is 2 s, after which it fails with `SND-API-004`. While the projector is `stalled`,
+  previous command's event. The limit is 2 s, after which it fails with `SND-API-011`. While the projector is `stalled`,
   it fails at once with `SND-VIEW-001` instead of holding the gate; during a rebuild, with `SND-API-010` (§2.3).
 - `StopProcess` and `RebuildViews` read no views and **don't wait**. So the fix for a stalled projector, and stopping
   the process, both always work.
@@ -225,14 +230,14 @@ inline one would. Inline projection stays a later option (§11).
 ### 2.4 Read-your-writes
 
 **Queries.** Every query accepts `X-Sindri-After: <sequence>`. The handler waits on the projector's progress signal
-until the cursor is at or past that sequence. After 2 s it returns `SND-API-004` (503), naming the cursor and the
+until the cursor is at or past that sequence. After 2 s it returns `SND-API-011` (503), naming the cursor and the
 target.
 
 **Commands** that read views wait for the head before deciding (§2.1).
 
 **Clients.**
 - The CLI sends the `Sequence` of its own previous command when one verb chains a command and a query.
-- The UI sends the last `Sequence` it received. If it gets `SND-API-004` after an accepted command, it keeps its "done"
+- The UI sends the last `Sequence` it received. If it gets `SND-API-011` after an accepted command, it keeps its "done"
   confirmation, shows the view as stale, and re-queries on the next event.
 - When the UI is on the event stream, it marks views stale if no event or ping has arrived for 30 s.
 
@@ -240,7 +245,7 @@ target.
 
 | Id | Rule |
 |---|---|
-| `ARCH-CQRS-001` | <ul><li>Every `MapGet` endpoint resolves an `IService<TQuery, TView>` where `TQuery : IQuery<TView>`.</li><li>Every `MapPost` resolves an `IService<TCommand, _>` where `TCommand : ICommand<_>`.</li><li>S1's `GET /ping` and `GET /status` are queries, and `GET /events` is the stream query.</li><li>It is checked over the endpoint data source in an integration test, because minimal-API lambdas aren't visible to ArchUnitNET.</li></ul> |
+| `ARCH-CQRS-001` | <ul><li>Every `MapGet` endpoint resolves an `IService<TQuery, TView>` where `TQuery : IQuery<TView>`.</li><li>Every `MapPost` resolves an `IService<TCommand, _>` where `TCommand : ICommand<_>`.</li><li>S1's `GET /ping` and `GET /status` are queries, and `GET /events` is the stream query.</li><li>Its only carve-outs are the engine's two issuing routes, which append no domain event: `POST /workflow/instances/{a}/nonce` (allowed to any caller whose class may run a command on that instance, so a session can get one for `takeover`) and `POST /workflow/challenges` (`human` + terminal only). Both have catalog rows of kind `issue` and are audited by `command.handled`.</li><li>It is checked over the endpoint data source in an integration test, because minimal-API lambdas aren't visible to ArchUnitNET.</li></ul> |
 | `ARCH-CQRS-002` | No query handler's constructor takes `ILedgerStore`, `ILease`, `IApprovals` or a projection writer |
 | `ARCH-CQRS-003` | Every `ICommand` (and every action variant) has a row in the command catalog (§3.3) |
 
@@ -411,6 +416,8 @@ catalog itself lands in P1. Every domain payload carries `commandId` (or the `se
 3. `Decide` appends `decision.recorded`.
 4. The projections mark the decision as decided, and the request as `accepted` or `declined`.
 
+**Once the engine runs,** an accepted request reaches the item's instance as `decision.recorded` (kind
+`accept-request`), a registered event a recipe may wait on; the engine's `workflow.request` event is dropped.
 **Before the engine (S2) exists,** an accepted request is **recorded only**. Its decision row and needs-you row carry
 `recordedOnly: true`, shown as "recorded; acted on once the workflow engine runs".
 
@@ -443,7 +450,7 @@ is a command with a catalog row and an action class, and every route goes throug
 |---|---|
 | `GET /context/query`, `/context/node`, `/context/neighbors`, `/context/path`, `/context/map`, `/context/map/export`, `/context/map/review`, `/context/sources` | query (session callers repo-scoped, §3.1) |
 | `POST /context/map/build`, `POST /context/sources/sync` | `job` |
-| `POST /context/map/import`, `POST /context/map/promote` | `desk` |
+| `POST /context/map/import`, `POST /context/map/promote` (both make content `current`) | `protected` |
 | `POST /context/map/review` (apply a review) | `protected` |
 
 ### 3.6 Views the UI renders: states, groups and needs-you
@@ -468,6 +475,22 @@ How items move through the states:
   - `needs-answer`, `taken-over`, `parked`, `running` and `queued` come from the item projection folding the engine's
     `workflow.*` events, which P11 adds;
   - `needs-answer` is produced only by the engine.
+
+**Engine state → item state** (P11 folds these; the needs-you row kind is `park` for every row below that has one):
+
+| Engine (instance frame, engine §3.8) | `ItemState` | Queue group | Needs-you row and primary action |
+|---|---|---|---|
+| `active` with an agent run | `running` | `running` | — |
+| `active` with an open desk task | `needs-answer` | `waitingOnYou` | "Desk task" → `CompleteStep` (UI form), or `OpenItem` |
+| `wait` (event, child, resource) | `running` | `running` | — |
+| `parked` (any reason) | `parked` | `waitingOnYou` | Reason and question → the §3.8 answer's action id (`cli-only` when `protected`) |
+| `escalated` | `parked` | `waitingOnYou` | → `ApplyCommand:answer-accept` (`cli-only`) / `answer` reject |
+| `taken-over` | `taken-over` | `withYou` | After `takeoverIdle`: "hand back?" → `ApplyCommand:handback` |
+| terminal | `done` or `cancelled` | — | — |
+| no instance yet, started by a router | `queued` | `queued` | — |
+
+`parked` therefore sits in `waitingOnYou`; the `parked` group only holds items parked by a human's own choice (none in
+v0). `needs-answer` is an item state; park reasons are shown as the row's `reason`, never as an item state.
 
 **`GET /needs-you`** is one list across every source, built by the needs-you projection. Each `NeedsYouRow` has:
 
@@ -528,6 +551,7 @@ N of M)…") and `stalled` ("Views are stalled at N: run `sindri views rebuild`"
 | Class | Meaning | Commands |
 |---|---|---|
 | `request` | A fact filed for a human or the engine to act on; changes no item state | `FileRequest` |
+| `step-report` | A launched agent session reports the result of the Step run it was launched for. Bound to that run token; the engine still decides through the recipe's gates | `CompleteStep` from the agent runtime's session (§8, engine §6.5) |
 | `pause` | Only stops automation. It is safe in one direction: resuming is `desk` | The engine's `ApplyCommand:takeover` |
 | `job` | Read-only work, possibly long-running; writes only its own job events and, for `RunService`, the run's `service.ran` | `RunService`, `CancelJob` |
 | `decision` | A non-protected human decision (the §17.12 list) | `Decide` |
@@ -541,6 +565,7 @@ N of M)…") and `stalled` ("Views are stalled at N: run `sindri views rebuild`"
 |---|---|---|---|---|
 | any query | yes | yes | yes, scoped to its repo (§3.1) | yes |
 | `request` | yes | yes | **yes**: at most 20 open requests per repo, 50 in total (`SND-REQ-002`) | yes |
+| `step-report` | no | no | **only** the session the agent runtime launched for that run, proven by its run-scoped token (§6) | no |
 | `pause` | yes | yes | **yes** | yes |
 | `job` | yes | yes | no: file a `request` | yes |
 | `decision` | yes | yes | **no** | no: it may only *raise* a decision |
@@ -571,7 +596,8 @@ that path.
 
 It tells live clients "something changed, re-read":
 - **The Avalonia app:** refreshes the affected view, and drives the needs-you pulse and the tray badge. OS
-  notifications come only from the engine's `notify.desk` (engine §6.3), so nothing fires twice.
+  notifications come only from the engine's `notify.desk` (engine §6.3), so nothing fires twice. Until engine P6
+  ships `notify.desk`, the app raises an OS notification for each new `pulse` row itself; P6 turns that off.
 - **The CLI's long-running verbs:** job progress and cancel.
 - **`sindri status --follow`**.
 - **Later:** the notifier, the phone head, and other instances.
@@ -616,7 +642,7 @@ data: {"sequence":4211,"id":"0192…","type":"item.state-changed","schemaVersion
   than the head is a 400. A `reset` event is reserved for when retention lands.
 - **Keep-alive:** a `: ping` comment every 15 s.
 - **Stream limits:** at most 16 concurrent streams, with 4 reserved for `human` callers, so `session` streams are
-  capped at 12. Past a limit the stream gets `SND-API-005` (429), and the client falls back to re-querying every 5 s.
+  capped at 12. Past a limit the stream gets `SND-API-012` (429), and the client falls back to re-querying every 5 s.
 
 ### 5.5 Latency
 
@@ -667,7 +693,13 @@ mistakes. That's the repo's threat model: gates guard against honest mistakes, n
 **Protected actions in the UI** show the CLI command to copy (`cli-only:typed-confirmation`), because the app has no
 terminal until passkeys exist.
 
-**Out of scope for v0:** a session that deliberately forges `human` (§11, tokens).
+**The `human` token before the app writes.** The app is a full desk client, so the header alone is too thin. Before
+the app's first command (its first write phase in the UI design spec), `serve` mints `auth/human.token` (0600) on each
+start; the CLI and the app send it as `X-Sindri-Token`, and a `human` header without it counts as `session`. The
+agent runtime gets a separate run-scoped token per launched session for `step-report` (§4.1). Session-class tokens and
+passkeys stay later (§11).
+
+**Out of scope for v0:** a session that deliberately reads the owner's token file (§11).
 
 **When tokens arrive,** only the source of the caller class and the terminal flag changes. The authorization table, the
 decorators and every test stay.
@@ -705,8 +737,15 @@ One MCP endpoint serves every Sindri tool, this spec's and the context engine's:
 
 **Registration is per repo, by the owner, never user-wide.** `sindri mcp register` prints, and with `--apply` runs,
 `claude mcp add --transport http --scope local --header "X-Sindri-Repo: <name>" sindri http://127.0.0.1:<port>/sindri/mcp`
-inside the current repo (the name resolved as §3.1 says). Codex and Cursor get the equivalent entry. Personal repos
-never see work context. Nothing in `setup.sh` or the providers registers it before the switch.
+inside the current repo (the name resolved as §3.1 says). P8 checks whether that local scope reaches sessions in the
+repo's worktrees and records the answer.
+
+**Codex and Cursor are never registered.** Codex keeps MCP servers only in user config, and Cursor's project file sits
+inside the repo, so either would leak work context or get committed. Instead `ILauncher` passes the endpoint at
+launch time, in the command line it builds (Codex: `-c` config overrides for one `mcp_servers.sindri` entry with the
+repo header; Cursor: the launch-time equivalent its CLI offers, recorded in P10). Until P10 proves a target's form,
+that target launches without Sindri MCP. `sindri doctor` warns on any user-wide `sindri` entry in `~/.claude.json`,
+`~/.codex/config.toml` or `~/.cursor/mcp.json`. Personal repos never see work context. Nothing in `setup.sh` or the providers registers it before the switch.
 
 | Tool | Arguments | API call | Kind |
 |---|---|---|---|
@@ -719,9 +758,10 @@ never see work context. Nothing in `setup.sh` or the providers registers it befo
 | `sindri_request` | `kind`, `itemId?`, `text` | `POST /requests` (`FileRequest`) | request |
 | `context_query`, `context_node`, `context_neighbors`, `context_sources` | context spec §8.5 | `IContextEngine` | query, **with S3**; off while `context.mcp.enabled` is false |
 
-There is no decision, desk, protected or job tool, so the MCP surface can't even attempt one. Query tools carry the MCP
+Text from agents or trackers in `sindri_*` results carries the same `trust` field and fencing as `context_*` results
+(context spec §7). There is no decision, desk, protected or job tool, so the MCP surface can't even attempt one. Query tools carry the MCP
 `readOnlyHint` annotation. Whichever lands first, context Phase 1 (S-1M) or this spec's P8, creates the endpoint; the
-other adds its tools to it.
+other adds its tools to it. `sindri mcp register` ships with whichever creates the endpoint.
 
 **Proof.** The proof run starts a fresh Claude Code process as the subagent:
 ```
@@ -750,7 +790,7 @@ of **`docs/csharp/sindri.md`**. Not `docs/sindri/errors.md`, which is generated 
 | `SND-API-007` | Invalid (400) | An unknown `X-Sindri-Caller` value | P1 |
 | `SND-API-008` | Forbidden (403) | A command carried an `Origin` header | P1 |
 | `SND-API-009` | Unavailable (503) | The command gate wasn't acquired within 5 s | P1 |
-| `SND-API-004` | Unavailable (503) | The views didn't reach `X-Sindri-After`, or the head, within 2 s | P2 |
+| `SND-API-011` | Unavailable (503) | The views didn't reach `X-Sindri-After`, or the head, within 2 s | P2 |
 | `SND-API-010` | Unavailable (503) | A command that reads views arrived during a rebuild; it wasn't run, so retry | P2 |
 | `SND-VIEW-001` | Unavailable (503) | The projector stalled on an event (status, doctor, logs) | P2 |
 | `SND-ITEM-404` | NotFound (404) | No such item, or it's outside a session's repo | P3 |
@@ -759,7 +799,7 @@ of **`docs/csharp/sindri.md`**. Not `docs/sindri/errors.md`, which is generated 
 | `SND-REQ-002` | RateLimited (429) | Too many open requests (§4.2) | P4 |
 | `SND-DEC-404` | NotFound (404) | No such decision | P4 |
 | `SND-DEC-001` | Invalid (400) | A choice that isn't one of the decision's options | P4 |
-| `SND-API-005` | RateLimited (429) | The stream limits (§5.4) | P5 |
+| `SND-API-012` | RateLimited (429) | The stream limits (§5.4) | P5 |
 | `SND-JOB-404` | NotFound (404) | No such job | P6 |
 | `SND-SVC-404` | NotFound (404) | No such service in the approved profile | P6 |
 | `SND-LAUNCH-001` | Unavailable (503) | The launcher couldn't open the terminal | P10 |
@@ -850,7 +890,7 @@ Spans and metrics use the `Aw.Sindri` source and meter, as `docs/csharp/telemetr
 | Catalogs | unit | <ul><li>`ARCH-CQRS-003`.</li><li>Every route exists.</li><li>No stale `pending`.</li><li>`cli-only` only on terminal-bound rows.</li><li>Every event type is in `EventCatalog`.</li></ul> |
 | Endpoints | integration | `WebApplicationFactory` over the real `Compose`, with S1's contract-tested in-memory fakes and `FakeTimeProvider`. For each endpoint: <ul><li>the happy path;</li><li>its error codes;</li><li>no header, or `session`, on every decision, desk and protected route → 403, and nothing written but the audit row;</li><li>`human` without a terminal on protected → 403;</li><li>an `Origin` on a command → 403;</li><li>a session repo scope test.</li></ul> `ARCH-CQRS-001` runs over the endpoint data source |
 | Concurrency | integration | Two `Decide` calls on one decision, started together: exactly one `decision.recorded`, and the other gets `SND-ITEM-409` |
-| Read-your-writes and freshness | integration | <ul><li>A command, then a query with `X-Sindri-After`, sees the write.</li><li>A stalled projector gives `SND-API-004` and `asOf.stalled`.</li><li>`views rebuild` still runs while the projector is stalled.</li></ul> |
+| Read-your-writes and freshness | integration | <ul><li>A command, then a query with `X-Sindri-After`, sees the write.</li><li>A stalled projector gives `SND-API-011` and `asOf.stalled`.</li><li>`views rebuild` still runs while the projector is stalled.</li></ul> |
 | Projector rebuild | integration | Real SQLite in a temp dir: delete `views.db` and restart, and the same views come back (bodies equal, apart from `asOf`). During the rebuild, queries answer with `asOf.rebuilding` |
 | Event stream | integration | <ul><li>Resume with `Last-Event-ID`.</li><li>The filters, including the session repo filter.</li><li>The stream limits.</li><li>Non-public types never appear.</li><li>An OSC or ANSI payload arrives escaped.</li></ul> |
 | CLI | unit + integration | <ul><li>Verb routing.</li><li>The headers taken from the terminal and the environment.</li><li>The auto-start rules (§7).</li><li>`--json` equal to the API body.</li></ul> |
@@ -875,7 +915,9 @@ Spans and metrics use the `Aw.Sindri` source and meter, as `docs/csharp/telemetr
 
 **Proving a phase.** Every phase signal below assumes this recipe. The recipe lives in the plan and in this spec. It is
 not in `docs/csharp/sindri.md`, because it isn't a user feature.
-- **Wrapper.** The prover uses `scripts/sindri-prove.sh`, added in P1. It refuses to run unless `AW_SINDRI_HOME` is
+- **Wrapper.** Every spec's proofs use `scripts/sindri-prove.sh`, added in P1 (the engine and context specs adopt it).
+  `sindri-prove.sh <verb>` runs the C# CLI as the calling agent (`session`); `human <verb>` and `curl` act as the owner
+  (below). It refuses to run unless `AW_SINDRI_HOME` is
   under `$TMPDIR` or the phase's proof folder, so it can never touch the owner's real ledger. It sets:
   - `AW_SINDRI_PORT=0`;
   - `SINDRI="dotnet run --project src/Sindri/Aw.Sindri.Host --"`, or the binary published to the phase's temp dir.
@@ -1051,7 +1093,7 @@ All five lenses passed, with no HIGH findings. These MEDIUM findings are fixed i
   the job runner is `service:jobs`.
 
 These LOW findings are fixed too:
-- **`SND-API-010`:** "views rebuilding" now has its own code, separate from `SND-API-004`.
+- **`SND-API-010`:** "views rebuilding" now has its own code, separate from `SND-API-011` (renumbered from 004 in the epic: S1 already uses 004 and 005).
 - **`park` rows:** their sources and their clearing rule now cover takeovers and desk tasks.
 - **Repo resolution:** it uses an absolute common dir, real paths and the longest match against the approved profile.
 - **Stream and `ReadLedger` filters:** they also drop events whose payload names another repo.
@@ -1079,13 +1121,13 @@ Each phase is one PR and follows the slice recipe, red first.
 |---|---|---|---|---|---|---|
 | **P0** | **Scaffold mode.** `--slice-only` for `new-slice.mjs` (C7) | `scripts/scaffold/new-slice.mjs`, `scripts/tests/scaffold.test.sh` | S | — (it works on any package) | `bash scripts/tests/scaffold.test.sh` passes its `--slice-only` case: only the slice's files change, plus its own lines in `PublicAPI.Unshipped.txt`, `A.cs` and `IdsJsonContext`; the red test compiles and fails | All phases |
 | **P1** | **CQRS spine.** <ul><li>The anchors (C7).</li><li>`ICommand`, `IQuery`, `IClassifiedCommand`.</li><li>The callers: `CallerContext`, `ICallerContextAccessor`, the four headers (no header means `session`), the `Origin` refusal.</li><li>The chain: `CommandGate`, `AuditingService`, `AuthorizingService`, `ValidatingService`, and the `AddCommand`/`AddQuery` helpers.</li><li>`CommandAccepted`.</li><li>The catalogs: `ICommandCatalog`/`CommandCatalog`, `EventCatalog`, `ListCommands`.</li><li>`apiVersion`.</li><li>S1's commands get their classes; plus `sequence` and the raw `--json` (C5), and `EventFactory` (C6).</li><li>The CLI headers and the no-start rule for agent sessions.</li><li>`scripts/sindri-prove.sh`.</li><li>`ARCH-CQRS-001..003`.</li><li>Codes: `SND-AUTH-002`, `SND-API-007/008/009`.</li></ul> | `scripts/sindri-prove.sh`, `Core/Commands/*`, `Core/Events/EventCatalog.cs`, `Features/Commands/*`, `Features/ListCommands/`, `Host/CallerContextMiddleware.cs`, `Host/CommandCatalog.cs`, `Host/Endpoints/EndpointTable.cs`, `Host/Commands/*`, `tests/Aw.Sindri.Tests/Commands/*`, `tests/Aw.Architecture.Tests/Cqrs*`, rule records, `docs/csharp/sindri.md`, `scripts/env-scan-ignore.txt` | M | S1 + P0 | <ul><li>With `H=$($SINDRI profile validate --json \| jq -r .hash)`, the call `curl -X POST -H 'Content-Type: application/json' …/sindri/profile/approve -d "{\"hash\":\"$H\",\"confirmed\":true}"` with **no caller header** gets 403 `SND-AUTH-002`. `sqlite3 -readonly ledger.db` shows a `command.handled` row with `refused` and no `profile.approved`.</li><li>The same call as `human` but with no `X-Sindri-Terminal` also gets 403.</li><li>Adding `-H 'Origin: http://localhost:3000'` gets `SND-API-008`.</li><li>`curl …/sindri/commands` lists every action id with its class.</li><li>In an agent session, `$SINDRI stop` gets `SND-AUTH-002`.</li><li>Ctrl-C on `sindri serve` records `process.stopped`, and an immediate restart takes the lease.</li></ul> | UI, engine |
-| **P2** | **Projector, read-your-writes and the head.** <ul><li>`views.db`, `IProjection`, the projector, `IProjectorStatus`, `asOf`.</li><li>Rebuild and stall handling.</li><li>`X-Sindri-After`.</li><li>`ILedgerStore.Head()` and `ILedgerReader` (C9).</li><li>`service.ran` and `profile-watch` (C8).</li><li>The slices `RebuildViews`, `ListServices`, `GetProfile`.</li><li>doctor's `views` line.</li><li>Codes: `SND-API-004`, `SND-VIEW-001`.</li></ul> | `Core/Views/*`, `Infrastructure/Views/*` (+ migrations), `Infrastructure/Ledger/*` (Head, reader), `Host/Projector.cs`, `Features/{ListServices,GetProfile,RebuildViews}/` | M | P1 | <ul><li>Delete `views.db` and restart: `GET /services` matches the earlier body, apart from `asOf`.</li><li>During `views rebuild`, a query shows `"rebuilding":true`.</li><li>`X-Sindri-After: <head+1000>` gets 503 `SND-API-004` after 2 s.</li><li>A test service that fails once and then succeeds: after the failure, `lastRun.outcome` is `failed`; after the success, it is `ok`.</li><li>Editing the live profile makes `GET /profile` show `changed` within 30 s, and reverting the edit clears it.</li></ul> | UI, engine |
+| **P2** | **Projector, read-your-writes and the head.** <ul><li>`views.db`, `IProjection`, the projector, `IProjectorStatus`, `asOf`.</li><li>Rebuild and stall handling.</li><li>`X-Sindri-After`.</li><li>`ILedgerStore.Head()` and `ILedgerReader` (C9).</li><li>`service.ran` and `profile-watch` (C8).</li><li>The slices `RebuildViews`, `ListServices`, `GetProfile`.</li><li>doctor's `views` line.</li><li>Codes: `SND-API-011`, `SND-VIEW-001`.</li></ul> | `Core/Views/*`, `Infrastructure/Views/*` (+ migrations), `Infrastructure/Ledger/*` (Head, reader), `Host/Projector.cs`, `Features/{ListServices,GetProfile,RebuildViews}/` | M | P1 | <ul><li>Delete `views.db` and restart: `GET /services` matches the earlier body, apart from `asOf`.</li><li>During `views rebuild`, a query shows `"rebuilding":true`.</li><li>`X-Sindri-After: <head+1000>` gets 503 `SND-API-011` after 2 s.</li><li>A test service that fails once and then succeeds: after the failure, `lastRun.outcome` is `failed`; after the success, it is `ok`.</li><li>Editing the live profile makes `GET /profile` show `changed` within 30 s, and reverting the edit clears it.</li></ul> | UI, engine |
 | **P3** | **Items and the queue.** <ul><li>`ItemId` and the item events.</li><li>The `item_view` and `queue_view` projections.</li><li>`ItemActions` and `EmptyText`.</li><li>The slices `CreateItem`, `CloseItem`, `GetQueue`, `ListItems`, `GetItem`, `GetItemTimeline`.</li><li>The CLI verbs `queue`, `items`, `item add` and `item close`.</li></ul> | `Core/Items/*`, `Features/{CreateItem,CloseItem,GetQueue,ListItems,GetItem,GetItemTimeline}/`, projections, `Host/Commands/*` | M | P2 | <ul><li>`sindri-prove.sh human item add "Try the queue"`, then `sindri-prove.sh curl GET /sindri/queue \| jq -S 'del(.asOf)'` equals `sindri-prove.sh human queue --json \| jq -S 'del(.asOf)'` (both human, so both see every repo).</li><li>`item close` with a stale version gets `SND-ITEM-409`.</li><li>An empty queue prints its `EmptyText`.</li><li>A `POST /items` with no header gets 403.</li></ul> | **UI** |
 | **P4** | **Requests, decisions and needs-you.** <ul><li>`RequestId` and `DecisionId`.</li><li>The slices `FileRequest`, `ListRequests`, `ListDecisions`, `Decide`, `GetNeedsYou`.</li><li>The needs-you `failure` and `profile` rows over P2's events.</li><li>The CLI verbs `request`, `requests`, `decide` and `needs-you`.</li><li>Codes: `SND-REQ-*`, `SND-DEC-*`.</li></ul> | `Core/{Requests,Decisions,NeedsYou}/*`, `Features/{FileRequest,ListRequests,ListDecisions,Decide,GetNeedsYou}/`, projections, `Host/Commands/*` | M | P3 | <ul><li>`curl -X POST -H 'Content-Type: application/json' -H 'X-Sindri-Repo: demo' …/requests -d '{"kind":"rescope","text":"…"}'` (no caller header, so `session`) shows up as exactly one `decision` row in `GET /needs-you`, with `recordedOnly: true`.</li><li>The same `decide` with no caller header gets 403.</li><li>`sindri-prove.sh human decide DEC-… accept` clears the row.</li><li>Two `decide` calls started together: one succeeds and the other gets `SND-ITEM-409 decided elsewhere`.</li><li>Editing the live profile adds a `profile` row within 30 s, and reverting the edit clears it.</li><li>A service that fails adds a `failure` row, and its next good run clears it.</li><li>A service that fails, is removed from the profile, and has the profile approved also clears its row.</li></ul> | **UI, engine** |
-| **P5** | **Event stream and ledger read.** <ul><li>Public types from `EventCatalog`, `PublicEvent`.</li><li>The `item` and `types` filters, the session repo filter, `Last-Event-ID`.</li><li>The ping and the stream limits (`SND-API-005`).</li><li>`ILedgerSignal`, wired to the projector and the stream.</li><li>`ReadLedger` and `sindri ledger`.</li><li>`sindri status --follow` (C4).</li></ul> | `Core/Events/*`, `Infrastructure/Ledger/LedgerSignal.cs`, `Features/{StreamEvents,ReadLedger}/`, `Host/Endpoints/EventStream.cs`, `Host/Projector.cs` | S | P1, plus P2 for the projector wiring (its signal uses `service.heartbeat`; the item filter is tested once P3 lands) | <ul><li>`curl -N '…/sindri/events?after=0&types=service.*'` shows each `service.heartbeat` within 100 ms of its append.</li><li>Reconnecting with `Last-Event-ID: n` resumes at n+1.</li><li>`command.handled` never appears.</li><li>`sindri-prove.sh human ledger --json --after 0` lists it.</li></ul> | **UI, engine** (S1-D6) |
+| **P5** | **Event stream and ledger read.** <ul><li>Public types from `EventCatalog`, `PublicEvent`.</li><li>The `item` and `types` filters, the session repo filter, `Last-Event-ID`.</li><li>The ping and the stream limits (`SND-API-012`).</li><li>`ILedgerSignal`, wired to the projector and the stream.</li><li>`ReadLedger` and `sindri ledger`.</li><li>`sindri status --follow` (C4).</li></ul> | `Core/Events/*`, `Infrastructure/Ledger/LedgerSignal.cs`, `Features/{StreamEvents,ReadLedger}/`, `Host/Endpoints/EventStream.cs`, `Host/Projector.cs` | S | P1, plus P2 for the projector wiring (its signal uses `service.heartbeat`; the item filter is tested once P3 lands) | <ul><li>`curl -N '…/sindri/events?after=0&types=service.*'` shows each `service.heartbeat` within 100 ms of its append.</li><li>Reconnecting with `Last-Event-ID: n` resumes at n+1.</li><li>`command.handled` never appears.</li><li>`sindri-prove.sh human ledger --json --after 0` lists it.</li></ul> | **UI, engine** (S1-D6) |
 | **P6** | **Jobs and services.** <ul><li>`JobId` and the job events.</li><li>The slices `GetJob`, `CancelJob`, `RunService` (as a job), `PauseService`, `ResumeService`; the scheduler honours pause and resume.</li><li>The CLI follows progress on the stream, and Ctrl-C cancels.</li><li>Codes: `SND-JOB-404`, `SND-SVC-404`.</li></ul> | `Core/Jobs/*`, `Features/{GetJob,CancelJob,RunService,PauseService,ResumeService}/`, a scheduler hook in Host | M | P2 + P5 | <ul><li>`sindri-prove.sh human services run heartbeat` prints progress and the result.</li><li>Ctrl-C during a long fake job prints `cancelled`, and the ledger shows `job.cancelled`.</li><li>After `services pause heartbeat`, there's no heartbeat for 3 cadences.</li><li>A run with no caller header gets 403.</li><li>A manual run that succeeds clears that service's `failure` row and sets `lastRun` to `ok`.</li></ul> | UI, **engine** |
 | **P8** | **The `sindri_*` MCP tools.** <ul><li>On `/sindri/mcp` (created here, or by context S-1M if it landed first).</li><li>`sindri mcp register [--apply]`.</li><li>Every call stamped `session`, scoped by `X-Sindri-Repo`.</li></ul> | `Host/Mcp/*`, the SDK in `Directory.Packages.props` (pinned, at least 14 days old), `deps.yaml` | M | P4 + P6 | A fresh `claude -p "<journey>" --mcp-config … --strict-mcp-config --allowedTools …` subagent: <ul><li>lists the queue and an item;</li><li>files a `rescope` request, which shows up in `GET /needs-you`;</li><li>finds no tool to decide with;</li><li>gets `SND-AUTH-002` from a `curl` with no caller header.</li></ul> Its transcript is the evidence | — |
-| **P10** | **`sindri open`.** <ul><li>`ILauncher`, a Warp launch configuration as in the dashboard plan's decision 15, running the chosen agent: Claude Code, Codex or Cursor (targets and their failure states from the UI design spec).</li><li>`mode: attach` focuses a live session and marks the takeover.</li><li>`OpenItem` passes only the item id and the repo path from the profile, and the session pulls its context through the MCP endpoint.</li><li>`SND-LAUNCH-001`.</li></ul> | `Core/Launch/ILauncher.cs`, `Infrastructure/Launch/WarpLauncher.cs`, `Features/OpenItem/` | M | P3 + P8 (the engine marks the takeover once S2 runs) | <ul><li>`sindri-prove.sh human open ITM-…` opens a Warp tab running Claude Code in the item's repo.</li><li>The session's first `sindri_item` call returns the item.</li><li>The launch config contains no item text.</li></ul> | **engine** (`ILauncher`) |
+| **P10** | **`sindri open`.** <ul><li>`ILauncher`, a Warp launch configuration as in the dashboard plan's decision 15, running the chosen agent: Claude Code, Codex or Cursor (targets and their failure states from the UI design spec).</li><li>Opening an item that has a live instance takes it over (`pause`) in the same command; the app then offers handback. `mode: attach` focuses the recorded live session instead of opening a new one.</li><li>Launches are recorded: `session.launched` and `session.ended` events, `ItemView.session?`; attach is offered only when a session is live; a second open of the same item while one is live is refused (fact key per item and session).</li><li>`OpenItem` passes only the item id and the repo path from the profile; the session pulls its context through the MCP endpoint, passed at launch for Codex and Cursor (§8).</li><li>The same `ILauncher` serves the engine's agent runtime (engine §6.5).</li><li>`SND-LAUNCH-001`.</li></ul> | `Core/Launch/ILauncher.cs`, `Infrastructure/Launch/WarpLauncher.cs`, `Features/OpenItem/` | M | P3 + P8 (the engine marks the takeover once S2 runs) | <ul><li>`sindri-prove.sh human open ITM-…` opens a Warp tab running Claude Code in the item's repo.</li><li>The session's first `sindri_item` call returns the item.</li><li>The launch config contains no item text.</li></ul> | **engine** (`ILauncher`) |
 
 | **P11** | **Engine item states.** <ul><li>The item projection folds `workflow.*` events into `needs-answer`, `taken-over`, `parked`, `running` and `queued`.</li><li>Engine parks, escalations, idle takeovers and desk tasks become needs-you rows of kind `park`.</li><li>`CloseItem` refuses while an instance is active.</li></ul> | `Features/Projections/*` | M | P4 + engine P4 | <ul><li>Starting `workflow.step` on an item moves it to `running` in `GET /queue`.</li><li>A desk task and a park appear in `GET /needs-you` with the engine's action id.</li></ul> | UI's live item states |
 
