@@ -1,0 +1,72 @@
+<Styles xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+  <!-- The type ramp (UI spec §14.2) as TextBlock style classes: Classes="body" and so on. Sizes and line heights come from
+       Tokens.axaml as DynamicResource, so the text scale (TextScale.Apply, Settings) restyles every text at once. Avalonia
+       has no text-transform: eyebrow text is written in capitals by the app's labels. A Styles file, because a
+       ResourceDictionary can't hold styles. -->
+  <Style Selector="TextBlock.page-title">
+    <Setter Property="FontFamily" Value="{DynamicResource Font.Text}" />
+    <Setter Property="FontSize" Value="{DynamicResource Type.PageTitle.Size}" />
+    <Setter Property="LineHeight" Value="{DynamicResource Type.PageTitle.LineHeight}" />
+    <Setter Property="FontWeight" Value="SemiBold" />
+    <Setter Property="LetterSpacing" Value="-0.4" />
+  </Style>
+  <Style Selector="TextBlock.detail-title">
+    <Setter Property="FontFamily" Value="{DynamicResource Font.Text}" />
+    <Setter Property="FontSize" Value="{DynamicResource Type.DetailTitle.Size}" />
+    <Setter Property="LineHeight" Value="{DynamicResource Type.DetailTitle.LineHeight}" />
+    <Setter Property="FontWeight" Value="Medium" />
+    <Setter Property="LetterSpacing" Value="-0.3" />
+  </Style>
+  <Style Selector="TextBlock.body">
+    <Setter Property="FontFamily" Value="{DynamicResource Font.Text}" />
+    <Setter Property="FontSize" Value="{DynamicResource Type.Body.Size}" />
+    <Setter Property="LineHeight" Value="{DynamicResource Type.Body.LineHeight}" />
+    <Setter Property="FontWeight" Value="Normal" />
+    <Setter Property="LetterSpacing" Value="0" />
+  </Style>
+  <Style Selector="TextBlock.body-strong">
+    <Setter Property="FontFamily" Value="{DynamicResource Font.Text}" />
+    <Setter Property="FontSize" Value="{DynamicResource Type.BodyStrong.Size}" />
+    <Setter Property="LineHeight" Value="{DynamicResource Type.BodyStrong.LineHeight}" />
+    <Setter Property="FontWeight" Value="Medium" />
+    <Setter Property="LetterSpacing" Value="0" />
+  </Style>
+  <Style Selector="TextBlock.caption">
+    <Setter Property="FontFamily" Value="{DynamicResource Font.Text}" />
+    <Setter Property="FontSize" Value="{DynamicResource Type.Caption.Size}" />
+    <Setter Property="LineHeight" Value="{DynamicResource Type.Caption.LineHeight}" />
+    <Setter Property="FontWeight" Value="Normal" />
+    <Setter Property="LetterSpacing" Value="0" />
+  </Style>
+  <Style Selector="TextBlock.eyebrow">
+    <Setter Property="FontFamily" Value="{DynamicResource Font.Text}" />
+    <Setter Property="FontSize" Value="{DynamicResource Type.Eyebrow.Size}" />
+    <Setter Property="LineHeight" Value="{DynamicResource Type.Eyebrow.LineHeight}" />
+    <Setter Property="FontWeight" Value="Medium" />
+    <Setter Property="LetterSpacing" Value="0.4" />
+    <Setter Property="Foreground" Value="{DynamicResource Brush.InkSubtle}" />
+  </Style>
+  <Style Selector="TextBlock.button">
+    <Setter Property="FontFamily" Value="{DynamicResource Font.Text}" />
+    <Setter Property="FontSize" Value="{DynamicResource Type.Button.Size}" />
+    <Setter Property="LineHeight" Value="{DynamicResource Type.Button.LineHeight}" />
+    <Setter Property="FontWeight" Value="Medium" />
+    <Setter Property="LetterSpacing" Value="0" />
+  </Style>
+  <Style Selector="TextBlock.mono">
+    <Setter Property="FontFamily" Value="{DynamicResource Font.Mono}" />
+    <Setter Property="FontSize" Value="{DynamicResource Type.Mono.Size}" />
+    <Setter Property="LineHeight" Value="{DynamicResource Type.Mono.LineHeight}" />
+    <Setter Property="FontWeight" Value="Normal" />
+    <Setter Property="LetterSpacing" Value="0" />
+  </Style>
+  <Style Selector="TextBlock.kbd">
+    <Setter Property="FontFamily" Value="{DynamicResource Font.Mono}" />
+    <Setter Property="FontSize" Value="{DynamicResource Type.Kbd.Size}" />
+    <Setter Property="LineHeight" Value="{DynamicResource Type.Kbd.LineHeight}" />
+    <Setter Property="FontWeight" Value="Medium" />
+    <Setter Property="LetterSpacing" Value="0" />
+    <Setter Property="Foreground" Value="{DynamicResource Brush.InkSubtle}" />
+  </Style>
+</Styles>

@@ -18,6 +18,11 @@
   </ItemGroup>
 
   <ItemGroup>
+    <!-- JetBrains Mono (OFL 1.1, Theme/Fonts/OFL.txt), embedded for Theme/Tokens.axaml's Font.Mono. -->
+    <AvaloniaResource Include="Theme/Fonts/*.ttf" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="../../Aw.Kernel/Aw.Kernel.csproj" />
   </ItemGroup>
 

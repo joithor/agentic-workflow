@@ -9,7 +9,7 @@
     <!-- Header: the brand mark and the state as a word in a pill. -->
     <Grid DockPanel.Dock="Top" ColumnDefinitions="Auto,*,Auto" Margin="0,0,0,24">
       <StackPanel Orientation="Horizontal" Spacing="10" VerticalAlignment="Center">
-        <Border Width="22" Height="22" CornerRadius="6" Background="{StaticResource Primary}">
+        <Border Width="22" Height="22" CornerRadius="6" Background="{DynamicResource Brush.Primary}">
           <TextBlock Text="S" FontWeight="SemiBold" FontSize="13" HorizontalAlignment="Center" VerticalAlignment="Center" />
         </Border>
         <TextBlock Text="Sindri" FontSize="28" FontWeight="SemiBold" LetterSpacing="-0.6" VerticalAlignment="Center" />
