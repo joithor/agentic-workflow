@@ -43,6 +43,17 @@ public sealed class Redactor : IRedactor
     /// <returns>The redactor.</returns>
     public static Redactor Create(TimeSpan matchTimeout) => new(BuiltinRules.All, matchTimeout);
 
+    /// <summary>
+    /// Creates a redactor over the built-in rules and <paramref name="extraPatterns"/> from configuration, each
+    /// validated against Redaction's pattern rules and compiled with <paramref name="matchTimeout"/>; a match that
+    /// runs past it blocks, like a built-in rule's.
+    /// </summary>
+    /// <param name="extraPatterns">The configured patterns, after the built-ins in priority order.</param>
+    /// <param name="matchTimeout">The timeout for each pattern; must be positive.</param>
+    /// <returns>The redactor, or every refused field with its entry index.</returns>
+    public static RedactorResult Create(IReadOnlyList<ExtraPattern> extraPatterns, TimeSpan matchTimeout) =>
+        throw new NotSupportedException("red: validate and compile the extra patterns");
+
     /// <inheritdoc/>
     public bool IsSecretName(string name)
     {
