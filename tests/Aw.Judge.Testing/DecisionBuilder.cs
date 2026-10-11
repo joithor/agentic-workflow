@@ -67,6 +67,14 @@ public sealed class DecisionBuilder : Builder<DecisionBuilder, DecisionRecord>
         return this;
     }
 
+    /// <summary>Makes it a rule-timeout escalation: a question rule timed out before the chain, so no provider was asked.</summary>
+    /// <returns>This builder.</returns>
+    public DecisionBuilder RuleTimedOut()
+    {
+        _record = _record with { Outcome = DecisionOutcome.Failed, Decision = null, Provider = "none", ReasonCode = "rule-timeout", Confidence = 0, ChainPosition = 0, Skipped = [] };
+        return this;
+    }
+
     /// <summary>Drops the detail row.</summary>
     /// <returns>This builder.</returns>
     public DecisionBuilder WithoutDetails()

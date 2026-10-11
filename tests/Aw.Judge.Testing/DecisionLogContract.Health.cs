@@ -67,6 +67,24 @@ public abstract partial class DecisionLogContract
         Expect.That(last.IsSuccess && last.Value.Count == 5 && last.Value.All(static o => o == DecisionOutcome.Failed), "five failed attempts, the pre-rule rows between them skipped");
     }
 
+    /// <summary>A rule-timeout escalation never reached a provider either: a run of them doesn't make a 'down' streak.</summary>
+    /// <returns>A task.</returns>
+    [Fact]
+    public async Task Rule_timeout_escalations_are_not_model_attempts()
+    {
+        var log = await Create(_none);
+        for (var i = 0; i < 10; i++)
+        {
+            var builder = A.Decision().WithId("d" + i.ToString(CultureInfo.InvariantCulture)).At(KnownInstants.Epoch.AddMinutes(i));
+            var decision = (i % 2 == 0 ? builder.WithOutcome(DecisionOutcome.Decided) : builder.RuleTimedOut()).Build();
+            Expect.That((await log.Record(decision, _none)).IsSuccess, "a decision is recorded");
+        }
+
+        var last = await log.LastAttemptOutcomes(5, _none);
+
+        Expect.That(last.IsSuccess && last.Value.Count == 5 && last.Value.All(static o => o == DecisionOutcome.Decided), "five decided attempts, the rule-timeout rows between them skipped");
+    }
+
     /// <summary>An empty log has no failures and no attempts.</summary>
     /// <returns>A task.</returns>
     [Fact]
