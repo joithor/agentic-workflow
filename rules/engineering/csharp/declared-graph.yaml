@@ -55,7 +55,7 @@ checks:
     ref: .github/workflows/ci.yml
     status: active
 gap: partial
-gapNote: "The cli/db/file scan is a heuristic (deps.yaml lists what it can't see: npx indirection, JSON and plist config); the http scan sees route literals in C# projects, not URLs built from pieces, and cli edges in C# aren't scanned."
+gapNote: "The cli/db/file scan is a heuristic (deps.yaml lists what it can't see: npx indirection, JSON and plist config); the C# scan sees route literals (http) and state-path segment literals (file, db) in C# projects, not a route after a base URL or computed paths, and cli edges in C# aren't scanned."
 source:
   type: adr
   ref: "docs/superpowers/specs/2026-10-09-agent-readiness-design.md#4b1a"

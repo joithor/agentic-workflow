@@ -5,7 +5,8 @@
 //
 // Validates deps.yaml against schemas/deps.schema.json; checks the reference, kind, tier, cycle and
 // fan-out rules; scans the TypeScript packages, hooks and statusline for cli/db/file edges, and the C#
-// projects for http edges (string literals naming another package's routes), and fails on any undeclared
+// projects for http, file and db edges (string literals naming another package's routes or state paths), and
+// fails on any undeclared
 // one or any whose status is wrong; and, once src/ or tests/ have C# projects, checks
 // their ProjectReferences, per-project fan-out and project-edge status. --mermaid also prints the graph
 // and the edge list (added/removed against --base-file) for a PR summary.
@@ -16,7 +17,7 @@ import path from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { YamlError, parseYaml } from "./deps/yaml.mjs";
 import { SchemaError, SUPPORTED_KEYWORDS, validate } from "./deps/schema.mjs";
-import { ScanError, buildFiles, readProjects, scan, scanHttp } from "./deps/scan.mjs";
+import { ScanError, buildFiles, readProjects, scan, scanCSharp } from "./deps/scan.mjs";
 
 export { parseYaml, validate, SUPPORTED_KEYWORDS };
 
@@ -180,7 +181,7 @@ export function check(root, today = new Date().toISOString().slice(0, 10)) {
   // ---- cli/db/file edges in the source ----
   const declared = new Map(edges.map((e) => [edgeKey(e), e]));
   const found = scan(root, doc.packages);
-  for (const [k, h] of scanHttp(root, doc.packages)) found.set(k, h);
+  for (const [k, h] of scanCSharp(root, doc.packages)) if (!found.has(k)) found.set(k, h);
   let undeclared = 0;
   for (const [k, h] of found) {
     const d = declared.get(k);
@@ -192,7 +193,7 @@ export function check(root, today = new Date().toISOString().slice(0, 10)) {
   for (const e of edges.filter((x) => x.status === "current" && x.kind !== "project" && !found.has(edgeKey(x)))) {
     const where = e.kind === "http"
       ? `no string literal naming ${e.to}'s routes (${byId.get(e.to).routes?.join(", ") ?? "none"}) in ${e.from}'s C# projects`
-      : `no match under ${byId.get(e.from).scan?.join(", ") ?? "(no scan dirs)"}`;
+      : `no match under ${byId.get(e.from).scan?.join(", ") ?? "(no scan dirs)"} or in ${e.from}'s C# projects`;
     fail("DEPS-STALE-001", "declared current edge not found in source", `${edgeText(e)}: ${where}`, "a status: current edge exists in the source today", "set status: planned in deps.yaml if it is still intended, or delete the edge");
   }
   info.push(`scan: ${found.size} cli/db/file/http edges found in source, ${undeclared === 0 ? "all declared" : `${undeclared} undeclared (DEPS-EDGE-001 above)`}`);
