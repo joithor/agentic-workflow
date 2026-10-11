@@ -62,10 +62,10 @@ internal static class LinearFilter
         "null" => operand is JsonValue flag && flag.TryGetValue<bool>(out var want)
             ? (value is null) == want
             : throw FakeRequestException.Invalid("Filter 'null' takes a Boolean."),
-        "eq" => Equal(value, operand),
-        "neq" => !Equal(value, operand),
-        "in" => Some([.. List(comparator, operand).Select(o => Equal(value, o))]),
-        "nin" => !Some([.. List(comparator, operand).Select(o => Equal(value, o))]),
+        "eq" => Equal(value, operand, comparator),
+        "neq" => !Equal(value, operand, comparator),
+        "in" => Some([.. List(comparator, operand).Select(o => Equal(value, o, comparator))]),
+        "nin" => !Some([.. List(comparator, operand).Select(o => Equal(value, o, comparator))]),
         "gt" or "gte" or "lt" or "lte" => Scalar(comparator, operand) is var checkedOperand && value is not null && Holds(comparator, Order(value, checkedOperand)),
         _ => Text(comparator, value, operand),
     };
@@ -102,9 +102,9 @@ internal static class LinearFilter
 
     // A null operand is refused (Linear's meaning for it isn't modeled; the 'null' comparator says it), and the operand
     // is checked before the field value, so a refusal never depends on whether the recorded value is null.
-    private static bool Equal(JsonNode? value, JsonNode? operand)
+    private static bool Equal(JsonNode? value, JsonNode? operand, string comparator)
     {
-        var checkedOperand = Scalar("eq", operand);
+        var checkedOperand = Scalar(comparator, operand);
         return value is not null && Order(value, checkedOperand) == 0;
     }
 
@@ -115,13 +115,8 @@ internal static class LinearFilter
                 ? $"Filter '{comparator}' compares with null; use the 'null' comparator."
                 : $"Filter '{comparator}' takes a string, number or Boolean, not '{operand.ToJsonString()}'.");
 
-    private static int Order(JsonNode value, JsonNode? operand)
+    private static int Order(JsonNode value, JsonValue operand)
     {
-        if (operand is null)
-        {
-            throw FakeRequestException.Invalid($"Filter compares '{value.ToJsonString()}' with null; use the 'null' comparator.");
-        }
-
         if (Instant(value) is { } left)
         {
             return Instant(operand) is { } right

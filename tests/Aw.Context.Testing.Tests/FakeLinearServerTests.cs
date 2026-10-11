@@ -225,8 +225,8 @@ public sealed class FakeLinearServerTests
     [InlineData("{\"labels\":{\"some\":{\"or\":[{\"name\":{\"eq\":\"layout\"}},{\"bogus\":{\"eq\":1}}]}}}", "bogus")]
     [InlineData("{\"identifier\":{\"in\":[\"SPL-101\",\"SPL-102\",\"SPL-103\",\"SPL-104\",\"SPL-105\",\"SPL-106\",5]}}", "different types")]
     [InlineData("{\"completedAt\":{\"eq\":null}}", "'null' comparator")]
-    [InlineData("{\"completedAt\":{\"neq\":null}}", "'null' comparator")]
-    [InlineData("{\"completedAt\":{\"in\":[null]}}", "'null' comparator")]
+    [InlineData("{\"completedAt\":{\"neq\":null}}", "Filter 'neq' compares with null; use the 'null' comparator")]
+    [InlineData("{\"completedAt\":{\"in\":[null]}}", "Filter 'in' compares with null")]
     [InlineData("{\"completedAt\":{\"gt\":{\"x\":1}}}", "string, number or Boolean")]
     [InlineData("{\"title\":{\"contains\":5}}", "contains")]
     public async Task A_filter_the_fake_cannot_evaluate_truthfully_is_a_clear_400(string filter, string named)
