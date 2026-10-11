@@ -198,8 +198,14 @@ internal sealed class PlaywrightSession : IBrowserSession
     {
         var field = _page.Locator(css);
         await field.WaitForAsync(new() { State = WaitForSelectorState.Visible, Timeout = PlaywrightLocators.Ms(timeout) }).ConfigureAwait(false);
-        ThrowIfOffOrigin();   // never type a credential into a _page off the vetted origin
-        await field.FillAsync(value).ConfigureAwait(false);
+        // why: a handle is bound to the document it was checked in; a redirect that commits mid-fill detaches it and the
+        // fill fails, where a Locator would retry into the new (possibly off-origin) document.
+        var handle = await field.ElementHandleAsync(new() { Timeout = PlaywrightLocators.Ms(timeout) }).ConfigureAwait(false);
+        await using (handle.ConfigureAwait(false))
+        {
+            ThrowIfOffOrigin();   // never type a credential into a _page off the vetted origin
+            await handle.FillAsync(value).ConfigureAwait(false);
+        }
     }
 
     private ValueTask<Result<T>> Guarded<T>(string what, Func<Task<T>> call, CancellationToken cancellationToken, Func<string, string>? redact = null) =>
