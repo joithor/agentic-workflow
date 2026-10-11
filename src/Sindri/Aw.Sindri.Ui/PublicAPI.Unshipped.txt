@@ -1,0 +1,9 @@
+#nullable enable
+Aw.Sindri.Ui.Platform.IEndpointRecordSource
+Aw.Sindri.Ui.Platform.IEndpointRecordSource.Location.get -> string!
+Aw.Sindri.Ui.Platform.IEndpointRecordSource.Read(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<byte[]?>
+Aw.Sindri.Ui.Views.SindriApp
+Aw.Sindri.Ui.Views.SindriApp.SindriApp() -> void
+override Aw.Sindri.Ui.Views.SindriApp.Initialize() -> void
+override Aw.Sindri.Ui.Views.SindriApp.OnFrameworkInitializationCompleted() -> void
+static Aw.Sindri.Ui.Views.SindriApp.Create(Aw.Sindri.Ui.Platform.IEndpointRecordSource! records, System.TimeProvider! clock) -> Aw.Sindri.Ui.Views.SindriApp!

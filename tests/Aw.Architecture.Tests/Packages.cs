@@ -32,5 +32,7 @@ internal static class Packages
         "Aw.Sindri.Features",
         "Aw.Sindri.Infrastructure",
         "Aw.Sindri.Host",
+        "Aw.Sindri.Ui",
+        "Aw.Sindri.Ui.Desktop",
     ];
 }

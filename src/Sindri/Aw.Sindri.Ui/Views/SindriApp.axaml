@@ -1,0 +1,82 @@
+<Application xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             x:Class="Aw.Sindri.Ui.Views.SindriApp"
+             RequestedThemeVariant="Dark">
+  <!-- docs/sindri/DESIGN.md (Linear's look): a near-black canvas, charcoal cards with hairline borders, light gray ink,
+       and the lavender accent only on the brand mark and the state pill. State is always a word, never colour alone. -->
+  <Application.Resources>
+    <SolidColorBrush x:Key="Canvas" Color="#010102" />
+    <SolidColorBrush x:Key="Surface1" Color="#0f1011" />
+    <SolidColorBrush x:Key="Surface2" Color="#141516" />
+    <SolidColorBrush x:Key="Hairline" Color="#23252a" />
+    <SolidColorBrush x:Key="HairlineStrong" Color="#34343a" />
+    <SolidColorBrush x:Key="Ink" Color="#f7f8f8" />
+    <SolidColorBrush x:Key="InkMuted" Color="#d0d6e0" />
+    <SolidColorBrush x:Key="InkSubtle" Color="#8a8f98" />
+    <SolidColorBrush x:Key="Primary" Color="#5e6ad2" />
+    <SolidColorBrush x:Key="PrimarySoft" Color="#1d2036" />
+    <FontFamily x:Key="Mono">Menlo, Consolas, monospace</FontFamily>
+  </Application.Resources>
+
+  <Application.Styles>
+    <FluentTheme />
+    <Style Selector="Window">
+      <Setter Property="Background" Value="{StaticResource Canvas}" />
+      <Setter Property="FontFamily" Value="fonts:Inter#Inter" />
+    </Style>
+    <Style Selector="TextBlock">
+      <Setter Property="Foreground" Value="{StaticResource Ink}" />
+      <Setter Property="FontSize" Value="14" />
+    </Style>
+    <Style Selector="Border.card">
+      <Setter Property="Background" Value="{StaticResource Surface1}" />
+      <Setter Property="BorderBrush" Value="{StaticResource Hairline}" />
+      <Setter Property="BorderThickness" Value="1" />
+      <Setter Property="CornerRadius" Value="12" />
+      <Setter Property="Padding" Value="20,16" />
+    </Style>
+    <Style Selector="TextBlock.eyebrow">
+      <Setter Property="Foreground" Value="{StaticResource InkSubtle}" />
+      <Setter Property="FontSize" Value="12" />
+      <Setter Property="FontWeight" Value="Medium" />
+      <Setter Property="LetterSpacing" Value="0.4" />
+      <Setter Property="Margin" Value="0,0,0,8" />
+    </Style>
+    <Style Selector="TextBlock.title">
+      <Setter Property="FontSize" Value="22" />
+      <Setter Property="FontWeight" Value="Medium" />
+      <Setter Property="LetterSpacing" Value="-0.4" />
+    </Style>
+    <Style Selector="TextBlock.muted">
+      <Setter Property="Foreground" Value="{StaticResource InkMuted}" />
+    </Style>
+    <Style Selector="TextBlock.subtle">
+      <Setter Property="Foreground" Value="{StaticResource InkSubtle}" />
+      <Setter Property="FontSize" Value="13" />
+    </Style>
+    <Style Selector="TextBlock.mono">
+      <Setter Property="FontFamily" Value="{StaticResource Mono}" />
+      <Setter Property="FontSize" Value="13" />
+    </Style>
+    <Style Selector="Border.command">
+      <Setter Property="Background" Value="{StaticResource Surface2}" />
+      <Setter Property="BorderBrush" Value="{StaticResource HairlineStrong}" />
+      <Setter Property="BorderThickness" Value="1" />
+      <Setter Property="CornerRadius" Value="6" />
+      <Setter Property="Padding" Value="10,6" />
+      <Setter Property="HorizontalAlignment" Value="Left" />
+    </Style>
+    <Style Selector="Border.pill">
+      <Setter Property="Background" Value="{StaticResource PrimarySoft}" />
+      <Setter Property="BorderBrush" Value="{StaticResource Primary}" />
+      <Setter Property="BorderThickness" Value="1" />
+      <Setter Property="CornerRadius" Value="9999" />
+      <Setter Property="Padding" Value="12,4" />
+      <Setter Property="VerticalAlignment" Value="Center" />
+    </Style>
+    <Style Selector="Border.pill.down">
+      <Setter Property="Background" Value="{StaticResource Surface2}" />
+      <Setter Property="BorderBrush" Value="{StaticResource HairlineStrong}" />
+    </Style>
+  </Application.Styles>
+</Application>

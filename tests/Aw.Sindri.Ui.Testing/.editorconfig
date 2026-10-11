@@ -1,0 +1,6 @@
+root = false
+
+# The fakes and contract bases are internal, because the app's ports are; Aw.Sindri.Ui.Tests uses them through
+# InternalsVisibleTo, which MA0182 ("internal type is apparently never used") can't see.
+[*.cs]
+dotnet_diagnostic.MA0182.severity = none

@@ -1,0 +1,28 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- Aw.Sindri.Ui (readiness spec §4a "UI", .agents/rules/csharp.md "The UI package"): the Avalonia views, their view
+       models, the typed client of Sindri's HTTP API and the ports for platform services. It references no Sindri
+       project: GET /sindri/ping, /sindri/status and /sindri/events (docs/csharp/sindri.md) are its only edge to
+       Sindri. Each platform head (Aw.Sindri.Ui.Desktop) adds Main, composition and one adapter per port. -->
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <RootNamespace>Aw.Sindri.Ui</RootNamespace>
+    <!-- Compiled bindings only: every view and template has an x:DataType, and nothing uses ReflectionBinding, so the
+         app stays trim- and AOT-safe. -->
+    <AvaloniaUseCompiledBindingsByDefault>true</AvaloniaUseCompiledBindingsByDefault>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Avalonia" />
+    <PackageReference Include="Avalonia.Themes.Fluent" />
+    <PackageReference Include="Avalonia.Fonts.Inter" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../../Aw.Kernel/Aw.Kernel.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="Aw.Sindri.Ui.Tests" />
+    <InternalsVisibleTo Include="Aw.Sindri.Ui.Testing" />
+  </ItemGroup>
+</Project>

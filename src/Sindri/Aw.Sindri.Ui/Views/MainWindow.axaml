@@ -1,0 +1,92 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:Aw.Sindri.Ui.ViewModels"
+        x:Class="Aw.Sindri.Ui.Views.MainWindow"
+        x:DataType="vm:MainViewModel"
+        Title="Sindri"
+        Width="760" Height="560" MinWidth="560" MinHeight="420">
+  <DockPanel Margin="32,28">
+    <!-- Header: the brand mark and the state as a word in a pill. -->
+    <Grid DockPanel.Dock="Top" ColumnDefinitions="Auto,*,Auto" Margin="0,0,0,24">
+      <StackPanel Orientation="Horizontal" Spacing="10" VerticalAlignment="Center">
+        <Border Width="22" Height="22" CornerRadius="6" Background="{StaticResource Primary}">
+          <TextBlock Text="S" FontWeight="SemiBold" FontSize="13" HorizontalAlignment="Center" VerticalAlignment="Center" />
+        </Border>
+        <TextBlock Text="Sindri" FontSize="28" FontWeight="SemiBold" LetterSpacing="-0.6" VerticalAlignment="Center" />
+      </StackPanel>
+      <Border Grid.Column="2" Classes="pill" Classes.down="{Binding !IsRunning}">
+        <TextBlock x:Name="HeadlineText" Text="{Binding Headline}" FontWeight="Medium" FontSize="13"
+                   AutomationProperties.Name="{Binding Headline}" />
+      </Border>
+    </Grid>
+
+    <!-- Not running: why, and the command that fixes it. -->
+    <Border x:Name="NotRunningPanel" Classes="card" IsVisible="{Binding !IsRunning}" VerticalAlignment="Top">
+      <StackPanel Spacing="12">
+        <TextBlock Classes="eyebrow" Text="CONTROL PLANE" />
+        <TextBlock Classes="title" Text="{Binding Headline}" />
+        <TextBlock x:Name="ReasonText" Classes="muted" Text="{Binding Reason}" TextWrapping="Wrap"
+                   AutomationProperties.Name="{Binding Reason}" />
+        <StackPanel Orientation="Horizontal" Spacing="10" IsVisible="{Binding IsNotRunning}">
+          <TextBlock Classes="subtle" Text="Start it:" VerticalAlignment="Center" />
+          <Border Classes="command">
+            <TextBlock x:Name="FixText" Classes="mono" Text="{Binding Fix}" AutomationProperties.Name="{Binding Fix}" />
+          </Border>
+        </StackPanel>
+      </StackPanel>
+    </Border>
+
+    <!-- Running: the same status the CLI prints. -->
+    <ScrollViewer x:Name="RunningPanel" IsVisible="{Binding IsRunning}">
+      <StackPanel Spacing="16">
+        <Grid ColumnDefinitions="*,16,*">
+          <Border Classes="card">
+            <StackPanel>
+              <TextBlock Classes="eyebrow" Text="LEASE" />
+              <TextBlock x:Name="LeaseText" Classes="title" Text="{Binding Lease}" AutomationProperties.Name="{Binding Lease}" />
+              <TextBlock Classes="subtle" Text="{Binding Api}" Margin="0,6,0,0" />
+            </StackPanel>
+          </Border>
+          <Border Grid.Column="2" Classes="card">
+            <StackPanel>
+              <TextBlock Classes="eyebrow" Text="PROFILE" />
+              <TextBlock x:Name="ProfileStateText" Classes="title" Text="{Binding ProfileState}"
+                         AutomationProperties.Name="{Binding ProfileState}" />
+              <TextBlock x:Name="ProfileDetailText" Classes="subtle" Text="{Binding ProfileDetail}" TextWrapping="Wrap" Margin="0,6,0,0" />
+              <Border Classes="command" Margin="0,10,0,0" IsVisible="{Binding HasProfileFix}">
+                <TextBlock x:Name="ProfileFixText" Classes="mono" Text="{Binding ProfileFix}"
+                           AutomationProperties.Name="{Binding ProfileFix}" />
+              </Border>
+            </StackPanel>
+          </Border>
+        </Grid>
+
+        <Border Classes="card">
+          <StackPanel>
+            <TextBlock Classes="eyebrow" Text="SERVICES" />
+            <ItemsControl x:Name="ServicesList" ItemsSource="{Binding Services}">
+              <ItemsControl.ItemTemplate>
+                <DataTemplate x:DataType="vm:ServiceRow">
+                  <Grid ColumnDefinitions="140,*,Auto" Margin="0,6">
+                    <TextBlock Text="{Binding Name}" FontWeight="Medium" />
+                    <TextBlock Grid.Column="1" Classes="muted" Text="{Binding Cadence}" />
+                    <TextBlock Grid.Column="2" Classes="mono" Text="{Binding LastRun}" AutomationProperties.Name="{Binding LastRun}" />
+                  </Grid>
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
+            <TextBlock Classes="subtle" Text="none scheduled (the approved profile names no services)"
+                       IsVisible="{Binding !HasServices}" />
+          </StackPanel>
+        </Border>
+
+        <Border Classes="card">
+          <StackPanel>
+            <TextBlock Classes="eyebrow" Text="LAST EVENT" />
+            <TextBlock x:Name="LastEventText" Classes="mono" Text="{Binding LastEvent}" AutomationProperties.Name="{Binding LastEvent}" />
+          </StackPanel>
+        </Border>
+      </StackPanel>
+    </ScrollViewer>
+  </DockPanel>
+</Window>

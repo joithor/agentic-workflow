@@ -11,6 +11,8 @@
     <Project Path="src/Sindri/Aw.Sindri.Features/Aw.Sindri.Features.csproj" />
     <Project Path="src/Sindri/Aw.Sindri.Infrastructure/Aw.Sindri.Infrastructure.csproj" />
     <Project Path="src/Sindri/Aw.Sindri.Host/Aw.Sindri.Host.csproj" />
+    <Project Path="src/Sindri/Aw.Sindri.Ui/Aw.Sindri.Ui.csproj" />
+    <Project Path="src/Sindri/Aw.Sindri.Ui.Desktop/Aw.Sindri.Ui.Desktop.csproj" />
   </Folder>
   <Folder Name="/src/Evidence/">
     <Project Path="src/Evidence/Aw.Evidence.Core/Aw.Evidence.Core.csproj" />
@@ -53,5 +55,7 @@
     <Project Path="tests/Aw.BugFix.Testing/Aw.BugFix.Testing.csproj" />
     <Project Path="tests/Aw.Sindri.Tests/Aw.Sindri.Tests.csproj" />
     <Project Path="tests/Aw.Sindri.Testing/Aw.Sindri.Testing.csproj" />
+    <Project Path="tests/Aw.Sindri.Ui.Tests/Aw.Sindri.Ui.Tests.csproj" />
+    <Project Path="tests/Aw.Sindri.Ui.Testing/Aw.Sindri.Ui.Testing.csproj" />
   </Folder>
 </Solution>

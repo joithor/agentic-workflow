@@ -1,0 +1,26 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- Aw.Sindri.Ui.Desktop: the thin desktop head of the Sindri app (readiness spec §4a "UI"): Main, composition and one
+       adapter per Aw.Sindri.Ui port. It holds no views or view models. NativeAOT entry point 'sindri-ui' (spec §4b.6
+       AOT scope); bare 'sindri' starts it when it sits next to the sindri binary. -->
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <OutputType>WinExe</OutputType>
+    <AwAotEntryPoint>true</AwAotEntryPoint>
+    <PublishAot Condition="'$(RuntimeIdentifier)' != ''">true</PublishAot>
+    <AssemblyName>sindri-ui</AssemblyName>
+    <RootNamespace>Aw.Sindri.Ui.Desktop</RootNamespace>
+    <AvaloniaUseCompiledBindingsByDefault>true</AvaloniaUseCompiledBindingsByDefault>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Avalonia.Desktop" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../Aw.Sindri.Ui/Aw.Sindri.Ui.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="Aw.Sindri.Ui.Tests" />
+  </ItemGroup>
+</Project>
