@@ -23,7 +23,7 @@ public sealed class RunScriptTests
 
     private static RunScriptHarness WithMenu()
     {
-        var harness = new RunScriptHarness { Judge = new FakeJudge() };
+        var harness = new RunScriptHarness();
         _ = harness.Page.TestIds.Add("open-menu");
         harness.Page.OnClick["testId:open-menu"] = static p => p.Texts.Add("Menu");
         return harness;
@@ -66,7 +66,7 @@ public sealed class RunScriptTests
     [Fact, Trait("Lane", "unit")]
     public async Task RunScript_records_a_failed_expectation_and_still_runs_every_step()
     {
-        var harness = new RunScriptHarness();
+        var harness = new RunScriptHarness { Judge = new FakeJudge() };
         _ = harness.Page.TestIds.Add("open-menu");
         _ = harness.WithScript(A.Script()
             .WithStep(ScriptBuilder.Click("open-menu", new TextVisible("Menu")))

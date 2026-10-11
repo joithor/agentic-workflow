@@ -62,6 +62,11 @@ public sealed class VisualGate(IRunFiles files, IImageCodec codec, IJudge judge,
     private async ValueTask<VisualOutcome> CritiqueAsync(
         VisualGateInput input, BaselineDiff? diff, string? key, InvocationLog log, CancellationToken cancellationToken)
     {
+        if (!judge.IsAvailable)
+        {
+            return new(Verdict.Unchecked, [], diff?.Score, diff?.DiffImage, input.Cache);   // no judge wired: no call to record
+        }
+
         var request = await CritiqueRequestAsync(input, diff, cancellationToken).ConfigureAwait(false);
         var verdict = await log.TimeAsync(InvocationPhase.VisualCritique, clock, () => judge.CritiqueAsync(request, cancellationToken), static v => v.Usage).ConfigureAwait(false);
         if (verdict is null)

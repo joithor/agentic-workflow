@@ -82,7 +82,7 @@ Scorer and bugfix-state read these files after their own ports; the fields they 
 | `steps[]` † | object[] | viewport by viewport, in order: `viewport`, `index` (1-based), `action` (`goto` \| `click` \| `fill` \| `expect-visible`), `target`, `status` † (`passed` \| `failed` \| `broken`), `screenshot` (`<run-dir>/<viewport>-<index>-<action>.png`) |
 | `visual` | object | `verdict` † (`unchecked` \| `unchanged` \| `looks-right` \| `looks-off` \| `sloppy`), `reasons` (string[]), `diffScore` (number \| null: the fraction of pixels differing from the baseline, 1 for a size change), `diffImage` (string \| null: `<run-dir>/visual-diff.png`) |
 | `lintFindings[]` | object[] | `viewport`, `rule` (`overlap` \| `misaligned-edge` \| `phone-overflow` \| `truncated-label` \| `clipped` \| `missing-hover-focus` \| `unresolved-placeholder` \| `non-token-color`), `selector`, `detail` |
-| `invocations[]` † | object[] | every model call in order: `phase` (`planning` \| `selector-repair` \| `visual-critique`), `model`, `elapsedMs`, `ok`, `inputTokens`, `outputTokens` (number \| null: null is unknown, never zero), `cacheHit` (a verdict-cache hit stands in for a critique) |
+| `invocations[]` † | object[] | every model call actually made, in order (none when no judge is wired: "Judge" below): `phase` (`planning` \| `selector-repair` \| `visual-critique`), `model`, `elapsedMs`, `ok` (false: the judge was called and failed or answered nothing), `inputTokens`, `outputTokens` (number \| null: null is unknown, never zero), `cacheHit` (a verdict-cache hit stands in for a critique) |
 | `planning` | object \| null | the script's planning block: `pr`, `model`, `elapsedMs`, `inputTokens`, `outputTokens` |
 | `evidence` | object | `traces` (string[]: `<run-dir>/<viewport>-trace.zip`), `videos` (string[]) |
 
@@ -92,8 +92,8 @@ step runs whatever an earlier one did. The visual verdict comes from the last pa
 to `--baseline` is `unchanged` with no model (never for a run with a failed step); otherwise the verdict cache
 (`--cache`, default `<run-dir>/verdict-cache.json`; keyed on the pixels' and baseline's hashes, the prompt version,
 `AW_VISUAL_MODEL`, the app build, the script's scenario hash, fixtures, viewports and the browser build; an entry without
-an app build is trusted only inside the run that wrote it), then one critique of the changed region. No passed step, or
-no answer from the judge, is `unchecked`.
+an app build is trusted only inside the run that wrote it), then one critique of the changed region. No passed step, no
+judge wired, or no answer from the judge, is `unchecked`.
 
 ### `parity.json` (`schema: "ui-evidence.parity/1"`)
 
@@ -149,11 +149,15 @@ source it to prove the exclusion in both directions.
 
 ## Judge
 
-Selector repair and visual critique go through the Core port `IJudge` (`RepairSelectorAsync`, `CritiqueAsync`); a null
-answer means unavailable, and every caller fails closed: no repair (the step stays `broken`), and the verdict stays
-`unchecked`. Each call is recorded in `invocations[]`, with null token counts when the answer reports none. Until
-`docs/csharp/judge.md` lands, the composition registers `UnavailableJudge` (always null; it logs once that it isn't
-wired); the CLI adapter over the C# `judge` binary is BLOCKED on that contract.
+Selector repair and visual critique go through the Core port `IJudge` (`IsAvailable`, `RepairSelectorAsync`,
+`CritiqueAsync`). `IsAvailable` says whether a judge is wired at all; callers check it first, and with no judge they
+don't call it and record nothing in `invocations[]`, because no model ran. A wired judge's null answer means the call
+failed (timed out, errored or answered out of contract); that call is recorded with `ok: false`. Either way every caller
+fails closed: no repair (the step stays `broken`), and the verdict stays `unchecked`. A recorded call carries null
+token counts when the answer reports none. Until `docs/csharp/judge.md` lands, the composition registers
+`UnavailableJudge` (`IsAvailable` false, every answer null; it logs once that it isn't wired), so a run records no
+`selector-repair` or `visual-critique` invocation; the CLI adapter over the C# `judge` binary is BLOCKED on that
+contract.
 
 ## Host guard
 

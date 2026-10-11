@@ -31,7 +31,8 @@ public sealed class StepRunner(IJudge judge, TimeProvider clock)
         var acted = await PerformAsync(session, step, TargetOf(step), options.ActionTimeout, cancellationToken).ConfigureAwait(false);
         if (acted.IsError)
         {
-            return options.AllowRepair && RepairRules.IsRepairable(step.Action)
+            // No judge wired: no repair is tried, and no model call is recorded.
+            return options.AllowRepair && RepairRules.IsRepairable(step.Action) && judge.IsAvailable
                 ? await RepairAsync(session, step, options, log, cancellationToken).ConfigureAwait(false)
                 : StepStatus.Broken;
         }
