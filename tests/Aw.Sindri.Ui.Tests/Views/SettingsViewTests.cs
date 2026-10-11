@@ -56,6 +56,7 @@ public sealed class SettingsViewTests
         await settings.Load(TestContext.Current.CancellationToken);
         var window = new Window { Width = 900, Height = 600, Content = new SettingsView { DataContext = settings } };
         _windows.Add(window);
+        SettingsTheme.Follow(window, settings);
         window.Show();
         Settle(window);
         return (window, settings);

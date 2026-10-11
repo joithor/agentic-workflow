@@ -129,8 +129,9 @@ model's apply callback over both. **Shell hook:** the shell builds
 `new SettingsViewModel(new Preferences(platform.Preferences), platform.Motion, SettingsTheme.For(Application.Current.Resources))`
 on the UI thread, awaits `Load` once at start-up (it applies the stored scale and motion before the first frame), shows
 `new SettingsView { DataContext = settings }` as its Settings page, and disposes it on exit. Stock Fluent controls'
-own transitions don't read the `Motion.*` tokens: Settings' switch drops its knob transition while motion is reduced
-(a view style on `IsMotionReduced`); other stock controls with transitions need the same when a page uses them.
+own transitions don't read the `Motion.*` tokens: `SettingsTheme.Follow(window, settings)` keeps the window's
+`reduce-motion` class in step with `IsMotionReduced`, and `Theme/FluentOverrides.axaml` turns those transitions off
+under it (today the ToggleSwitch knob); another stock control with its own transitions gets its line there.
 
 ### LiveSetting on macOS (§11.4, §18.2; U0 spike)
 

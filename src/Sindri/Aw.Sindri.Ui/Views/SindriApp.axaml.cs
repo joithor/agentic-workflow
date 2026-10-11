@@ -70,6 +70,7 @@ public sealed partial class SindriApp : Application
         await shell.Restore(CancellationToken.None).ConfigureAwait(true);
         var window = new ShellWindow { DataContext = shell };
         window.SettingsSlot.Content = new SettingsView { DataContext = settings };
+        SettingsTheme.Follow(window, settings);
         desktop.MainWindow = window;
         window.Show();
         ShellOpened(desktop, window, shell);

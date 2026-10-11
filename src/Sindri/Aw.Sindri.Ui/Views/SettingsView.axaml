@@ -4,16 +4,6 @@
              x:Class="Aw.Sindri.Ui.Views.SettingsView"
              x:DataType="vm:SettingsViewModel">
   <!-- Settings (UI spec §3.3 ⌘,, §11.4, §14.2): local preferences only. The shell hosts it as its Settings page. -->
-  <UserControl.Styles>
-    <!-- Fluent's ToggleSwitch slides its knob on a fixed 200 ms transition that the Motion.* tokens don't reach; under
-         reduced motion the knob jumps (§11.4). -->
-    <Style Selector="ToggleSwitch.reduced">
-      <Setter Property="KnobTransitions">
-        <Transitions />
-      </Setter>
-    </Style>
-  </UserControl.Styles>
-
   <ScrollViewer>
     <StackPanel Margin="{StaticResource Space.LG.Thickness}" Spacing="{StaticResource Space.MD}" MinWidth="480"
                 MaxWidth="640" HorizontalAlignment="Left">
@@ -33,7 +23,6 @@
                          AutomationProperties.Name="{Binding SystemReducesMotionNote}" />
             </StackPanel>
             <ToggleSwitch x:Name="ReduceMotionSwitch" Grid.Column="1" VerticalAlignment="Center"
-                          Classes.reduced="{Binding IsMotionReduced}"
                           IsChecked="{Binding ReduceMotion, Mode=TwoWay}"
                           AutomationProperties.Name="{Binding ReduceMotionLabel}" />
           </Grid>

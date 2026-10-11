@@ -56,6 +56,15 @@
     </Setter>
   </Style>
 
+  <!-- Reduced motion (§11.4) for stock controls: their own transitions run on fixed durations the Motion.* tokens don't
+       reach (Fluent's ToggleSwitch knob slides for 200 ms), so under the window's reduce-motion class (SettingsTheme.Follow)
+       they're off. A stock control with its own transitions gets its line here. -->
+  <Style Selector=":is(TopLevel).reduce-motion ToggleSwitch">
+    <Setter Property="KnobTransitions">
+      <Transitions />
+    </Setter>
+  </Style>
+
   <!-- Thin scroll bars that overlay the content and expand on hover (Fluent's own behaviour, kept on). -->
   <Style Selector="ScrollViewer">
     <Setter Property="AllowAutoHide" Value="True" />
