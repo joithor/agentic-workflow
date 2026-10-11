@@ -82,19 +82,31 @@ public sealed class SchemaRulesTests
     }
 
     [Fact, Trait("Lane", "unit")]
-    public void Schema_version_terminal_outcome_and_a_state_kind_census_are_checked()
+    public void Schema_version_and_a_state_kind_census_are_checked()
     {
         var yaml = RecipeReaderTests.Minimal
             .Replace("schema: 1", "schema: 2", StringComparison.Ordinal)
-            .Replace("outcome: resolved", "outcome: cancelled", StringComparison.Ordinal)
             .Replace("    kind: active", "    kind: terminal", StringComparison.Ordinal);
 
         var lines = Validate(yaml, "test.yaml");
 
         Assert.Contains("RCP-SCHEMA-002: schema is 2, but this build reads schema 1 at test.yaml:1:1 (schema); set schema: 1", lines, StringComparer.Ordinal);
-        Assert.Contains("RCP-SCHEMA-002: outcome 'cancelled' of state 'done' isn't a recipe outcome at test.yaml:13:5 (states.done.outcome); use resolved, unresolved, alreadySatisfied or failed", lines, StringComparer.Ordinal);
         Assert.Contains("RCP-STATE-001: the recipe has no active or wait state at test.yaml:5:1 (states); add a state with kind: active or kind: wait", lines, StringComparer.Ordinal);
         Assert.Contains("RCP-INIT-001: initial state 'produce' is a terminal state at test.yaml:4:1 (initial); set initial to an active or wait state", lines, StringComparer.Ordinal);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public void A_terminal_outcome_outside_the_closed_set_is_RCP_OUTCOME_001_alone()
+    {
+        var yaml = RecipeReaderTests.Minimal.Replace("outcome: resolved", "outcome: cancelled", StringComparison.Ordinal);
+        var document = RecipeReaderTests.Reader.Read(yaml, "test.yaml").Document!;
+        var context = new ValidationContext(
+            new BlockCatalog([TestBlocks.Step("step.produce")], []), RecipeProfileFacts.None, InMemoryChildRecipes.None, BaseRecipe: null);
+
+        Assert.Equal(
+            ["RCP-OUTCOME-001: terminal state 'done' ends with outcome 'cancelled', which isn't a recipe outcome at test.yaml:13:5 (states.done.outcome); use resolved, unresolved, alreadySatisfied or failed"],
+            RecipeValidator.Validate(document, context).Select(f => f.ToLine()),
+            StringComparer.Ordinal);
     }
 
     [Fact, Trait("Lane", "unit")]

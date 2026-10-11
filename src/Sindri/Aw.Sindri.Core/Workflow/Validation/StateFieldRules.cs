@@ -5,15 +5,12 @@ namespace Aw.Sindri.Core.Workflow.Validation;
 
 /// <summary>
 /// The per-kind state fields (spec §3.4): which fields an active, wait or terminal state needs and which it can't have
-/// (RCP-SCHEMA-001), exactly one form of a waitFor (RCP-SCHEMA-001), a terminal outcome from the closed set (W6,
-/// RCP-SCHEMA-002), a token count of at least 1 (RCP-SCHEMA-002) and a set duration (RCP-DUR-001).
+/// (RCP-SCHEMA-001), exactly one form of a waitFor (RCP-SCHEMA-001), a token count of at least 1 (RCP-SCHEMA-002) and a
+/// set duration (RCP-DUR-001). One fault gives one finding, and the specific rule wins: a missing timeout is
+/// RCP-TIME-001's (the graph rules) and a terminal outcome outside W6's set is RCP-OUTCOME-001's (the wiring rules).
 /// </summary>
 internal static class StateFieldRules
 {
-    /// <summary>The outcomes a recipe terminal can have (W6); 'cancelled' belongs to the engine.</summary>
-    internal static IReadOnlySet<string> RecipeOutcomes { get; } =
-        new HashSet<string>(["resolved", "unresolved", "alreadySatisfied", "failed"], StringComparer.Ordinal);
-
     internal static IEnumerable<RecipeFinding> Check(Recipe recipe, RecipeSource source) =>
         recipe.States.SelectMany(s => CheckState("states." + s.Key, s.Key, s.Value, source));
 
@@ -26,7 +23,8 @@ internal static class StateFieldRules
         foreach (var (field, present) in Fields(state))
         {
             var need = Need(state.Kind, field);
-            if (need == Presence.Required && !present)
+            // why: a missing timeout is RCP-TIME-001's, so it isn't reported twice
+            if (need == Presence.Required && !present && field != "timeout")
             {
                 yield return source.Finding("RCP-SCHEMA-001", $"{path}.{field}", $"{Kind(state.Kind)} state '{name}' has no '{field}'", Needs(state.Kind));
             }
@@ -50,12 +48,6 @@ internal static class StateFieldRules
             yield return source.Finding("RCP-SCHEMA-001", path + ".waitFor",
                 string.Create(CultureInfo.InvariantCulture, $"waitFor of state '{name}' names {Forms(wait)} of event, answer, resource and child"),
                 "name exactly one: { event }, { answer }, { resource } or { child }");
-        }
-
-        if (state is { Kind: StateKind.Terminal, Outcome: { } outcome } && !RecipeOutcomes.Contains(outcome.Value))
-        {
-            yield return source.Finding("RCP-SCHEMA-002", path + ".outcome", $"outcome '{outcome.Value}' of state '{name}' isn't a recipe outcome",
-                "use resolved, unresolved, alreadySatisfied or failed");
         }
 
         if (state.Budget is { Tokens: < 1 } budget)

@@ -141,17 +141,28 @@ internal sealed partial class WiringRules
         }
     }
 
-    /// <summary>A block's declared inputs, at its 'use', and the facts its 'with:' values read. The state is filled in by the caller.</summary>
+    /// <summary>
+    /// A block's declared inputs, at its 'use', and the facts its 'with:' values read. The state is filled in by the
+    /// caller. A block of the wrong kind for its place (a Step named as a gate) is RCP-BLOCK-002's, so its inputs aren't read.
+    /// </summary>
     private static IEnumerable<Need> BlockNeeds(string path, string word, BlockUse use, BlockCatalog catalog, string where)
     {
         var what = $"{word} '{use.Use.Value}' {where}";
-        var inputs = catalog.Find(use.Use)?.Inputs ?? [];
+        var inputs = catalog.Find(use.Use) is { } descriptor && descriptor.Kind == KindOf(word) ? descriptor.Inputs : [];
         var declared = inputs.Select(fact => new Need($"{path}.use", what, fact, State: string.Empty, Transition: null));
         var read = use.With
             .Where(w => w.Value.Fact is not null)
             .Select(w => new Need($"{path}.with.{w.Key}", $"parameter '{w.Key}' of {what}", w.Value.Fact.GetValueOrDefault(), State: string.Empty, Transition: null));
         return declared.Concat(read);
     }
+
+    private static BlockKind KindOf(string word) => word switch
+    {
+        "step" => BlockKind.Step,
+        "input" => BlockKind.StepInput,
+        "gate" => BlockKind.Gate,
+        _ => BlockKind.Effect,
+    };
 
     private static IEnumerable<Need> EvidenceNeeds(string path, string kind, BlockCatalog catalog, string where) =>
         BlockId.TryFrom($"evidence.{kind}", out var id) && catalog.Find(id) is { Kind: BlockKind.EvidenceProvider } provider
