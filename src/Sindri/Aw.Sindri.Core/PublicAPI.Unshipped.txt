@@ -564,3 +564,5 @@ static Aw.Sindri.Core.Events.EventTypes.ServiceRun(Aw.Sindri.Core.Ids.ServiceNam
 static Aw.Sindri.Core.Profile.ProfileRules.NeedsApproval(Aw.Sindri.Core.Ids.ProfileHash? approved, Aw.Sindri.Core.Ids.ProfileHash? live) -> bool
 static readonly Aw.Sindri.Core.SindriErrors.ApprovalsUnavailable -> Aw.Kernel.ErrorDefinition!
 static readonly Aw.Sindri.Core.SindriErrors.InvalidInput -> Aw.Kernel.ErrorDefinition!
+static readonly Aw.Sindri.Core.SindriErrors.ApiInternal -> Aw.Kernel.ErrorDefinition!
+static readonly Aw.Sindri.Core.SindriErrors.ApiNoCode -> Aw.Kernel.ErrorDefinition!
