@@ -38,6 +38,16 @@ every measurement is pinned to it, not to the branch. The clock runs while the a
 because the baseline counted that time too. Time spent waiting for the human to merge, and the switch itself
 (§10 R2), are not part of a packet and are not in these numbers.
 
+## Re-plan 2026-10-11: build the Sindri app, stop porting
+
+The owner re-planned R2 (readiness design §4a step 2 and §10, factory addendum §17.29, decision Q7):
+- `BugFix` is done (#155: 3.9 h against 2.0 h expected, under its 4.1 h review point). `Judge` (#156) and `Evidence`
+  (#158) finish against their estimates above.
+- `Scorer` and `Sindri` are no longer ported, so their rows here stop applying. Sindri is built as a new C#
+  application (app shell → workflow engine → context retrieval → blocks → workflows); scorer comes back as a block.
+- New Sindri work is new code, not a port, so this baseline doesn't size it. Each build plan gets its own estimate,
+  measured the same way (agent hours from the verification plan's `created` line), using the throughput below.
+
 ## The baseline: what R1b measured
 
 Three packages were built from the template in R1b. Readiness (T7) and Packets (T8) are the two §10 names, and
@@ -151,8 +161,9 @@ Cross-check: the six sindri modules sum to the whole of `sindri/src` and `sindri
 | **Sindri packet** | 30,661 | 30,977 / 40,175 / 55,506 | 10.5 / 29.5 / 64.9 | 59.0 h |
 | **R2 (excluding Redaction; Bridge retired)** | 52,730 | 54,310 / 70,129 / 96,494 | 18.4 / 51.5 / 112.9 | 77.2 h (1.5×) |
 
-Sindri is one packet with six modules (§10 R2: "by module inside its packet"), so the 2× rule applies to the
-Sindri total. The module rows are for tracking progress inside it and aren't separate stop points. The template's
+Superseded by the re-plan of 2026-10-11 above: Sindri isn't ported, so the Sindri rows no longer apply. As planned
+before it, Sindri was one packet with six modules (§10 R2: "by module inside its packet"), so the 2× rule applied to the
+Sindri total. The module rows were for tracking progress inside it, not separate stop points. The template's
 316 lines count once, on its first module. Every total is summed from unrounded values, and then rounded.
 
 ## Port costs the baseline didn't have

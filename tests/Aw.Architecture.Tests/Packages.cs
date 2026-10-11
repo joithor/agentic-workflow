@@ -24,5 +24,9 @@ internal static class Packages
         "Aw.Judge.Features",
         "Aw.Judge.Infrastructure",
         "Aw.Judge.Host",
+        "Aw.BugFix.Core",
+        "Aw.BugFix.Features",
+        "Aw.BugFix.Infrastructure",
+        "Aw.BugFix.Host",
     ];
 }

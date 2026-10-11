@@ -1,6 +1,7 @@
 # Sindri — factory addendum (§17)
 
-Status: draft for review, revision 5 · 2026-10-10 (applies /autoplan round 1 C1–C17 in §17.19 and round 2 D1–D12 in §17.22)
+Status: draft for review, revision 6 · 2026-10-11 (applies /autoplan round 1 C1–C17 in §17.19 and round 2 D1–D12 in §17.22)
+Revision 6 adds one workflow state machine (§17.28): one engine and a declarative recipe format for every Sindri machine and, later, the worker skills; and Sindri as an application (§17.29): a control plane, the workflow engine and a context retrieval engine, built new in C#, with agents staying in Claude Code.
 Revision 5 adds the factory field review (§17.23): review back-pressure, self-proving tests, read-only existing tests,
 consequence tiers, diff guardrails, closed outcomes with a Not proven section, the merge-confidence card, gate
 removal criteria, escaped-defect tracing, comprehension drift, a PR lease, signed run receipts, no-progress
@@ -303,7 +304,7 @@ file list comes from git.
   `-`, never ends in `.`, and isn't a Windows device name (`con`, `prn`, `aux`, `nul`, `com1`–`com9`, `lpt1`–`lpt9`,
   with or without an extension), because the two sides are also directory names under `packets/` on every OS. Freezing
   the same hash again writes nothing. The packet directory is never changed. Until sindri's C# ledger exists this
-  record stands in for "records the hash in the ledger"; the ledger takes over when sindri is ported.
+  record stands in for "records the hash in the ledger"; the ledger takes over once the C# Sindri application has one (built new, §17.29).
 - **The hash** is digest v1 (readiness design §4c, Digests) over the packet's files.
 
 ## 17.5 Narrow scope and sandbox per session
@@ -1766,7 +1767,328 @@ Examples:
 | F4 | The scope button, map editing and packet validate, freeze and amend in the studio view; the tailnet desk view; protected actions with typed hash confirmation |
 | Every F-step | Its "Turn it on" task (§13.3) ships its commands' UI actions, or records `ui: pending` with a due step the parity test enforces |
 
+## 17.28 One workflow state machine
+
+Sindri runs many state machines, and so far each section describes its own:
+- the item lifecycle (§7.1, §9.2–9.4): triaged, startable, claimed, running, parked, taken over, done;
+- the Step contract (§6): produce, deterministic checks, verifier, revise, with round and budget caps that park;
+- the direction check (§6.1), with leg timeouts, a bounded exchange count and a known-wait state;
+- the ship and stack machine (§7.3, §17.10), the PR lease (§17.23.11) and the review back-pressure loop
+  (§17.23.1);
+- standing workflows (§17.9) and the Step graph that workflow generation freezes per deliverable (§17.7);
+- the workers' own phases, which today live inside the skills: `/bugFixOrchestrator`'s
+  intake → investigate → reproduce → fix → evaluate → report (the C# `bugfix-state`, `docs/csharp/bugfix.md`),
+  and `/specToProvenPR`'s plan → verification plan → implement → hand test → prove → draft PR → review loop → ready.
+
+Written separately, each of these would repeat the same machinery: durable state, fencing, idempotent transitions,
+timers, parks and escalation, round counters with no-progress detection, evidence that counts only when it is
+registered, and the receipt trail. This section defines **one engine and one recipe format**, and every
+machine above becomes a recipe the engine runs. The engine is built in Sindri. The skills plug into it later (§17.28.4).
+
+### 17.28.1 The model
+
+A **workflow definition is a recipe**: declarative config (YAML, validated by a JSON Schema in `schemas/`), not
+code. It names **building blocks** from the registry: gates, evidence kinds, Step implementations, effects and
+`next` templates. Each block is a typed C# module with its own contract, eval suite and telemetry (principle 1).
+The engine interprets recipes. So:
+- a new workflow, or a change to one, is a config change;
+- new code is only needed for a new block, and a block is reused by every recipe that names it;
+- recipes can be **generated**: workflow generation (§17.7) emits the recipe for a deliverable, so each
+  deliverable's workflow is built at packet time from the blocks its lenses need;
+- recipes can be **evolved**: they are registered artifacts, so the evolve loop (§7.4) proposes, A/B tests and adopts
+  them like a prompt or a lens.
+
+This is the recipe-and-canvas shape other factory implementations use (for example Superplane's configurable
+workflows, §16), applied to Sindri's gates and evidence. A recipe is versioned and hashed. A recipe used by a
+deliverable is frozen with the packet (§17.7 step 6) and named in the receipt (§17.23.12). Model-written recipes
+can't set capability fields (invariant 13): blocks that grant tools, outward effects or autonomy tiers are named
+only by approved recipes, and the validator refuses the rest.
+
+```yaml
+id: workflow.bugfix
+version: 1
+states:
+  investigate: { kind: active, step: skill.bugFixOrchestrator.investigate, timeout: 4h, onTimeout: park }
+  reproduce:   { kind: active, step: skill.bugFixOrchestrator.reproduce,   timeout: 2h, onTimeout: park }
+  fix:         { kind: active, step: skill.bugFixOrchestrator.fix,         loop: attempts, timeout: 6h }
+  evaluate:    { kind: active, step: skill.bugFixOrchestrator.evaluate }
+  report:      { kind: terminal }
+transitions:
+  - { from: investigate, to: reproduce, gates: [gate.handoff.diagnosed] }
+  - { from: reproduce,   to: fix,       gates: [gate.baseline.fails, gate.check.committed], evidence: [test@base] }
+  - { from: fix,         to: evaluate,  gates: [gate.candidate.onBaseline, gate.paths.unprotected], evidence: [test@head] }
+  - { from: evaluate,    to: report,    gates: [gate.judge.resolved], effects: [effect.pr.draft] }
+  - { from: evaluate,    to: fix,       when: notResolved }
+loops: { attempts: { cap: 3 } }
+budget: { tokens: 400k }
+```
+
+A recipe declares:
+
+| Part | What it says |
+|---|---|
+| States | Each state's kind: `active` (a Step or session is working), `wait` (a known wait: a human answer, a reviewer, CI, a child workflow, the heavy-job lock; never a stall, §9.2) or `terminal`. Each `wait` and `active` state has a timeout and what the timeout does (escalate, park, retry once) |
+| Transitions | `from → to`, the command or event that asks for it, its **gates**, the **evidence** it needs, and its **effects** |
+| Gates | Checks that must pass before the transition is applied, each placed on the decision ladder: deterministic code first, then a judge question, then a bounded model call. The rung, score and threshold are recorded with the transition |
+| Evidence | The artifact kinds a transition needs (§17.11). Only artifacts registered for this instance, bound to its head SHA and unchanged since, count. Verdicts are computed by script (invariant 3) |
+| Effects | Outward actions, emitted as outbox commands in the same transaction as the transition (§17.21). The engine never pushes, comments or merges directly |
+| Loops | A named counter per loop (review rounds, fix rounds, revise rounds, direction exchanges) with its cap, and §17.23.13's no-progress rule built in |
+| Budget | Tokens and turns per state and per instance (§6). Exhaustion is a transition to `parked`, not an error |
+| Next | The text `status`, `resume` and the session inbox show for each state: the one allowed next step, which skills read |
+
+**Every recipe gets the universal states and transitions for free:**
+- `any → cancelled` (the human, or the item closed in the tracker) and `any → escalated` (a gate below threshold
+  on the top rung, invariant 4);
+- `active|wait → parked(reason)`, where the reason is one of `rounds`, `budget`, `no-progress`, `timeout`,
+  `needs-answer` or `spec-conflict` (§17.24.6), and `parked → previous state` on the human's answer;
+- `any non-terminal → taken-over → previous state` on a human takeover and `handback` (§9.3), with timers paused.
+
+**An instance** is a row: the recipe id and hash, the item, the attempt, the current state, the loop counters,
+the budget spent, the registered evidence, and a **version** for optimistic concurrency (§17.19). It also carries
+the §17.20 seams: tenant and ring keys.
+
+**A transition is one ledger event** with the §17.21 envelope (`actor`, `causation`, `correlation`, trace). It is
+applied only if all of these hold:
+- the caller holds the host lease and its epoch is current (fencing, §9.1);
+- the instance version matches;
+- the gates pass.
+
+Its idempotency key is `(recipe, item, attempt, transition, sha)` (§17.20), so a retried or replayed event is a
+no-op. The event, the new instance version and the outbox commands commit in one transaction.
+
+**Timers** are deadlines on the instance row. The tick evaluates due deadlines and applies their transitions like
+any other event, so a timeout is replayable and never a hidden side effect. Sleep and clock jumps follow §9.2.
+
+**Composition:** a Step graph (§17.7) or a stack (§17.10) is a parent workflow whose states start child
+instances and `wait` on their terminal events. A child's `parked` or `escalated` propagates to the parent as an
+event, never as shared state.
+
+### 17.28.2 Recipes and blocks
+
+The engine owns persistence, fencing, idempotency, timers, parks, takeover, loops, budgets, receipts and the
+event trail. A **recipe** supplies:
+1. its states and transitions;
+2. which gates, evidence kinds, Steps and effects each one uses, by block id;
+3. its loop caps, timeouts and budget;
+4. its `next` texts;
+5. its eval suite: replayed event logs with expected states, plus the failure cases (gate refusal, timeout,
+   no-progress, takeover) it must handle.
+
+A **block** supplies the code, once, for every recipe that names it:
+- gates, as deterministic checks or judge questions;
+- evidence providers (§17.11);
+- Step implementations: the jobs, sessions and skills that do the work in `active` states;
+- effect command kinds.
+
+Each block declares its inputs and outputs, so the validator can check that a recipe wires them correctly.
+
+**Tools versus workflows.** The ported packages are mostly **tools**. In a recipe they are blocks: deterministic
+code that a step calls or a gate relies on, which does one job and returns a result. The **workflow** is the
+sequence around them: the steps, the gates between them, and what happens on failure. A skill today usually holds
+both, and only the second half becomes recipe material:
+
+| Package or skill | Becomes blocks (tools) | Becomes a recipe (workflow) |
+|---|---|---|
+| `ui-evidence` (`src/Evidence`, R2) | `run` (the `ui-browser` evidence provider), `parity` (`design-parity`), `doctor` and `provenance` (checks), `install-browser` (setup) | The skill's sequence: doctor the stack → plan the journey → run headless → lint → check provenance → publish (ask-first). It becomes `workflow.ui-evidence`, a child that a feature workflow starts |
+| `bugfix-state` (`src/BugFix`, #155) | `run-test` (the `test` evidence provider), and the gates: the frozen check, the clean tree with registered leftovers, registered evidence, candidate-on-baseline, protected and shadowing paths, judge once per candidate | The phases intake → investigate → reproduce → fix → evaluate → report, attempt caps, mode B, and the `next` hints. This becomes `workflow.bugfix` |
+| `judge` | Each decision question is a rung-2 gate block | None: judge answers questions, it doesn't sequence work |
+| `scorer` | A reader of events, receipts and transcripts, for the metrics in §17.2 | None |
+| `aw-packets` (`src/Packets`) | `validate` (the `PKT-*` checks) and `freeze` as gate blocks | The packet lifecycle: draft → edit → validate → frozen → amended (§17.4, §17.26.4) |
+
+A tool with no branching that needs an agent or a gate stays a block. Wrapping it in states adds nothing.
+
+
+| Machine | States (abridged) | Gates and evidence it plugs in |
+|---|---|---|
+| Item lifecycle | triaged → startable → claimed → running → done | Router table (§7.1), the claim ref (§9.4), budget |
+| Step contract | produce → checks → verify → (revise)* → done | Per-Step deterministic checks and verifier (§6 table) |
+| Direction check | requested → position → challenge(n) → reply(n) → verdict → delivered | Leg timeouts, `maxExchanges`, the verdict judge question |
+| Ship and stack | draft → undrafted → fix rounds → green → re-draft → next level | Reviewer and CI state from adapters, PR lease, receipt for `epicMerge` |
+| Standing workflow | fired → working → reported / proposed / acted | Autonomy tier (§17.9) as a gate on effects |
+| Bug-fix worker | intake → investigate → reproduce → fix → evaluate → report | Frozen check, clean tree, registered runs, judge resolution-check once per candidate (the rules in `docs/csharp/bugfix.md`) |
+| Feature worker | plan → evidence plan → implement → prove → review loop → ready | Plan before code, evidence plan satisfied, review rounds (§17.11), ship contract |
+
+### 17.28.3 Placement and ports
+
+- The engine lives in Sindri's C# package. The recipe model, the validator and every pure decision (is this transition allowed,
+  which gates apply, what a timeout does) are Core types. Persistence is the `LedgerStore` port (§17.20), and the
+  outbox and events are the §17.21 seams. Leases, the launcher and the scheduler stay the existing ports.
+- It is not a separate tier-1 package yet. Per the C# rules, a port moves to Kernel or its own package when a
+  second package needs it. If a package outside Sindri needs to run recipes, the engine is extracted then,
+  with its contract tests.
+- **Threat model:** gates guard against an agent's honest mistakes and shortcuts. Containing a deliberately
+  adversarial agent is the job of the sandbox and the safety boundary (§8), not of workflow gates. This is the
+  same line `docs/csharp/bugfix.md` draws for `bugfix-state`.
+
+### 17.28.4 The existing skills stay as they are until it can host them
+
+- `/specToProvenPR` is **not** ported to any shared machine now. It keeps its own stages and files.
+- `/bugFixOrchestrator` keeps the C# `bugfix-state` (merged in #155) as its standalone helper.
+- In Sindri mode both run as Step implementations through the write shim (§11.4), and Sindri reconciles their own
+  state read-only, as today.
+- **Once the engine runs Sindri's own machines** (item lifecycle, Step contract, direction check, ship), the
+  bug-fix and feature workflows are written as recipes. The skills then become Step implementations the engine drives:
+  they stop owning phase state, and their gates become blocks the recipe names.
+- `bugfix-state` is the reference for that port. Its generic parts map one to one onto the engine: the locked
+  state file maps to the instance row, registered run records to registered evidence, the frozen check and clean
+  tree to gates, and judge-once to a gate whose question is never re-asked.
+- Desk (non-Sindri) use of both skills keeps working throughout. The interactive mode is not removed by the port.
+
+### 17.28.5 Testing
+
+- **Recipe validation (deterministic, at registration and before a generated recipe is frozen):**
+  - the recipe matches the JSON Schema, and every block id it names is registered;
+  - every block's inputs are produced upstream;
+  - capability-bearing blocks appear only in approved recipes;
+  - every state is reachable;
+  - every non-terminal state has a way out;
+  - every `wait` and `active` state has a timeout;
+  - every loop has a cap;
+  - effects only use allowlisted command kinds;
+  - the recipe hash matches its content.
+- **Engine properties:**
+  - replaying an event log reproduces the same instance;
+  - applying any event twice is a no-op;
+  - a stale lease epoch or instance version is refused;
+  - a timer firing during a takeover does nothing;
+  - parks and escalations propagate from child to parent.
+- **Store contract:** one suite for SQLite and the later server store (§17.20).
+- **Per recipe:** its eval suite (§17.28.2, item 5) runs in the evolve loop like any artifact (§7.4), so a
+  changed recipe is A/B tested and adopted like a prompt or a lens.
+- **Per block:** its own contract tests, run once for every recipe that uses it.
+
+### 17.28.6 Rollout
+
+1. Right after the Sindri app shell (§17.29.4 step 1): build the engine, the recipe schema and validator, and the block
+   registry. Move the item
+   lifecycle and the Step contract onto it first, as recipes. They are the machines every later one runs inside.
+2. Then the direction check, which exercises timers, bounded loops and the known-wait state.
+3. Then ship and stack, which exercise child workflows, the PR lease and receipts.
+4. Then the worker workflows as recipes, bug fix first (its gates become blocks lifted from `bugfix-state`'s rules)
+   and feature second. This is where
+   `/bugFixOrchestrator` and `/specToProvenPR` become Step implementations. Until then they are unchanged.
+5. Standing workflows join as recipes as they are built (§17.9).
+6. Workflow generation (§17.7) switches from emitting a Step graph to emitting a recipe, so each deliverable's
+   workflow is generated from blocks and validated before it is frozen.
+
+### 17.28.7 Port order
+
+Superseded by §17.29.4 (owner, 2026-10-11): Sindri isn't ported from TS module by module; it is built as a new C#
+application, engine first. The tools stay tools: they become blocks when a recipe needs them (§17.28.2).
+
+## 17.29 Sindri as an application
+
+Sindri is one application the human starts on a machine, not a set of launchd-ticked commands. It provides three
+engines: a **control plane**, a **workflow engine** (§17.28) and a **context retrieval engine**. It does **not**
+replace the agent tool. Agent work, the human's and the factory's, happens in Claude Code sessions in the human's
+terminal (Warp today). Sindri starts those sessions, feeds them context and tracks their work, and the human
+interacts with them where they already work.
+
+### 17.29.1 Starting it
+
+```
+$ sindri
+  <banner>
+  profile   ~/…/sindri/profile.yaml (approved, hash 3f1c…)
+  index     4 repos in path · watching · nightly full build 02:00
+  intake    linear: team ENG (assigned to me) · notes: ~/notes · every 5 min
+  services  scorer daily 06:00 · evolve weekly Mon · pr-babysitter on webhook
+  api       127.0.0.1:7410 (tailnet: off)
+  ui        Sindri.app started
+  ready     3 items need you · 2 running · 1 parked
+```
+
+- `sindri` starts the control-plane process (one per host, under the host lease, §9.1 and §17.22 D2) and the UI app
+  as a client. `sindri --headless` starts it without the UI, for the always-on box. Every other `sindri <verb>`
+  is a client call to the running process, and starts it first if it isn't running.
+- **Config is the profile** (§11.1): which repos are in the path, which intake sources, cadences, budgets, modes
+  and lenses. Changing it goes through `profile approve`, as today.
+- **Background services** run on the profile's cadence inside the process:
+  - code index: watch the repos in the path, quick builds on change, a nightly full build (§6.2);
+  - intake: poll the configured sources (Linear by assignee, PRDs, the notes dir) and create items (§17.26.1);
+  - scorer and metrics on their cadence (§17.2);
+  - the evolve loop's weekly job (§7.4);
+  - webhook listeners that start standing workflows (§17.9).
+
+  These are the old launchd jobs, now scheduled by the process; launchd only keeps the process alive.
+
+### 17.29.2 The three engines
+
+**Control plane.** The ledger, the command layer (§17.27.1), the scheduler and lease, the outbox, notifications,
+the API (HTTP plus an event stream, §17.21) and the webhook endpoints. Every surface is a client: the CLI, the UI
+app (§17.17 Q4), the phone, and Claude Code sessions (below).
+
+**Workflow engine** (§17.28). Every piece of work is a workflow instance run from a recipe. The factory line is a
+chain of recipes, each starting the next:
+
+| Workflow | What it does | Builds on |
+|---|---|---|
+| Intake | A Linear ticket or project, a PRD or a notes entry becomes an item | §7.1, §17.26.1 |
+| Design studio | A desk session with the human, fed by retrieved context, that settles the open questions | §17.4 |
+| Scoping | The retrieval engine and blocks map the work: surfaces, workstreams, candidate files | §7.5, §17.26 |
+| Design | An exhaustive engineering design: TDD/PRD, product map and codebase scoping, implementation guide, task breakdown; frozen as the packet | §17.4, §17.7 |
+| Builder | Implements each task | §6 worker, §17.7 |
+| Tester | Proves each task: acceptance examples, evidence providers | §17.11, §17.23.2 |
+| Multi-lens validation | The packet's lenses review the change (security, data, UX, …) | §17.7 |
+| Verification | The human reviews and decides, from any Sindri surface | §17.12, §17.23.7, §17.27 |
+| Shipper | Stacked PRs, receipts, the ship contract | §7.3, §17.10, §17.23.12 |
+| PR babysitter | CI and review fix rounds until green | §17.9, §17.23.11 |
+| Triage, incident response and comms | Started by webhooks (alerts, errors, new tickets) | §17.9 |
+
+**Context retrieval engine.** The context graph and its query planner (§17.3): business tools and trackers, PRDs and
+notes, memory, the code index and the product map, all behind source adapters, scrubbed and cited. Workflows query it
+through blocks, and the human's own sessions query it through the CLI and MCP (below).
+
+### 17.29.3 Agents stay in the human's tool
+
+- A workflow state that needs an agent launches a **Claude Code session** (in its container for factory work, §8.2)
+  and records it. The human sees it like any other session and attaches through the existing attach resolver
+  (Warp, a terminal, tmux; Plan 6 dashboard spec). Sindri has no chat surface of its own.
+- **Interject at any point:**
+  - On an item with a live session: attach in Warp and type. That is a takeover (§9.3): the instance pauses,
+    with its timers stopped, until `sindri handback`.
+  - On an item with no live session (between steps, at a gate, parked): `sindri open <item>`, or "open in Warp" in
+    the UI, starts a Claude Code session in the human's terminal, seeded with the item's context: its state, packet,
+    evidence, history and retrieved context. The instance is taken over until handback.
+  - What the human changes there flows back through the normal paths: packet edits as amendments (§17.4,
+    §17.26.4), instructions as recorded inputs the next Step receives, and decisions only through authenticated
+    verbs and UI forms. Text typed into a session is never a decision (§8.2 W6).
+- **The human's own Claude Code sessions reach Sindri** through the `sindri` CLI and a **Sindri MCP server** (the
+  MCP C# SDK, approved in the readiness AOT spike). From any session: an item's state and context, a context
+  retrieval query, or a request ("re-scope this", "add a task"). Calls from a session are requests, never
+  decisions; approvals stay human actions.
+- **The UI app is a window onto the control plane:** the queue, status, decisions, receipts, metrics and "open in
+  Warp". It is not a chat surface.
+
+### 17.29.4 Build order
+
+Sindri is built as a new C# application, not ported module by module from the TS `sindri/`. The TS code is a
+reference for what each part does, and it keeps running at the desk until the switch.
+1. **App shell:** the `sindri` process and CLI, profile loading, the ledger (`LedgerStore`), the host lease, the
+   command layer and API, the scheduler for background services, and the UI app shell.
+2. **Workflow engine and recipe format** (§17.28.6 step 1).
+3. **Context retrieval engine:** source adapters and the query planner over the sources already reachable (§17.17
+   Q2's recommendation).
+4. **Blocks, each when the first recipe needs it:** judge (#156) and evidence (#158) are wrapped as blocks; the code
+   index, scorer, scoping and evolve are rebuilt as blocks or workflows from their TS reference.
+5. **Workflows down the factory line,** intake first, then design studio and scoping, then design, builder, tester,
+   validation, verification, shipper and PR babysitter; webhook-started workflows as their sources are wired.
+6. **The switch** (readiness §4a step 3) once every desk tool has its C# form.
+
 ## 17.17 Decisions
+
+**Decided by the human (2026-10-11):**
+- **Q7:** Sindri is built as a new C# application, not ported (§17.29). It provides a control plane, the workflow
+  engine and a context retrieval engine, and it doesn't replace the agent tool: agent work stays in Claude Code in the
+  human's terminal (Warp), with interjection at any point by attach or `sindri open` (§17.29.3). Build order:
+  app shell → engine → context retrieval → blocks as recipes need them → workflows (§17.29.4). The finished tool ports
+  (`Redaction`, `Packets`, `Readiness`, `BugFix`, and `Judge` #156 and `Evidence` #158 once they land) become blocks;
+  no further standalone ports are started.
+- **Q6:** one workflow state machine, built in Sindri (§17.28). Every Sindri machine is a declarative recipe (config,
+  not code) interpreted by one engine and built from registered blocks. Recipes can be generated per deliverable
+  and evolved like other artifacts.
+  `/specToProvenPR` is not ported to a shared machine now, and `bugfix-state` stays standalone. The worker skills move
+  onto the engine once Sindri runs its own machines on it (§17.28.4, §17.28.6).
 
 **Decided by the human (2026-10-09):**
 - **Q1:** stacked PRs into epic branches, with `epicMerge: auto` into the epic only (§17.10).

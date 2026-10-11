@@ -352,7 +352,7 @@ Archived configuration for replication across machines. `settings.json`, the sta
 
 ## Scorer
 
-`scorer/` reads agent transcripts through pluggable per-provider transcript sources, selected with `--provider`. The sources cover Claude Code (`~/.claude/projects/<project>/<session>.jsonl`, plus `<session>/subagents/agent-<id>.jsonl` with its `.meta.json`), Codex (`~/.codex/sessions/YYYY/MM/DD/rollout-*.jsonl`), and Cursor (`~/.cursor/projects/<proj>/agent-transcripts/`). Transcripts are read incrementally, tracking a byte offset per file in `~/.agentic-workflow/scorer/scorer.sqlite`. API calls are deduplicated by `message.id`. User lines are classified into the user's prompts, continues, corrections, interrupts and teammate wakes. PR links are checked against `gh` for merge state. A daily launchd job writes `reports/<date>.md` and `.json`. When the transcript format changes, the report shows only an "unknown format" warning and the CLI exits 3. `scorer probe` summarizes the hook-input probe logs in `~/.agentic-workflow/probe/`.
+`scorer/` reads agent transcripts through pluggable per-provider transcript sources, selected with `--provider`. The sources cover Claude Code (`~/.claude/projects/<project>/<session>.jsonl`, plus `<session>/subagents/agent-<id>.jsonl` with its `.meta.json`), Codex (`~/.codex/sessions/YYYY/MM/DD/rollout-*.jsonl`), and Cursor (`~/.cursor/projects/<proj>/agent-transcripts/`). Transcripts are read incrementally, tracking a byte offset per file in `~/.agentic-workflow/scorer/scorer.sqlite`. API calls are deduplicated by `message.id`. User lines are classified into the user's prompts, continues, corrections, interrupts and teammate wakes. PR links are checked against `gh` for merge state. A daily launchd job writes `reports/<date>.md` and `.json`. When the transcript format changes, the report shows only an "unknown format" warning and the CLI exits 3. `scorer probe` summarizes the hook-input probe logs in `~/.agentic-workflow/probe/`. Scorer isn't ported to C# as a standalone CLI: in the C# build it comes back as a block of the Sindri application (factory addendum §17.29.4).
 
 `scorer live --session <id> [--cwd DIR] [--json]` is the per-session, incremental view of the same
 figures: it ingests only that session's transcripts into `~/.agentic-workflow/scorer/live/<session>.sqlite`
@@ -361,6 +361,19 @@ daily report (`CTX`, `OVER_200K`, `percentile`, `summarizeDecisions`). The `aw-l
 renders it in a `/live` pane (and `/live status`) inside Claude Code. `config/statusline.sh` shows the headline in its `Live` column (`calls · >200k · judge`, at 141 columns and up), reading a per-session cache `~/.agentic-workflow/scorer/live/<session>.statusline.json` (15 s TTL) that a detached background `scorer live --json` refreshes, so the statusline never waits on scorer or judge. Judge health (`judge health`) is cached the same way.
 
 ## Sindri
+
+**Direction (2026-10-11).** Sindri is being built new in C# as one application (factory addendum
+`docs/superpowers/specs/2026-10-09-sindri-factory-addendum.md` §17.29, decision Q7), not ported module by module. `sindri`
+starts a control-plane process per host, with a UI app as its client, and three engines: the control plane (ledger,
+command layer, scheduler and lease, outbox, API, webhooks), a workflow engine that runs every piece of work from a
+declarative recipe built from registered C# blocks (§17.28), and a context retrieval engine (§17.3). The launchd jobs
+below become background services scheduled inside that process. Agent work stays in Claude Code sessions in the
+human's terminal; the human interjects by attaching or with `sindri open <item>`, and sessions reach Sindri through
+the CLI and a Sindri MCP server, as requests, never decisions. Build order: app shell → workflow engine → context
+retrieval → blocks as recipes need them → workflows. Overview: `docs/sindri/README.md`.
+
+The rest of this section describes the TypeScript `sindri/` that runs today. It is the reference for what each part
+does, and it keeps running until the switch.
 
 `sindri/` is the core of the always-on harness in `docs/superpowers/specs/2026-10-07-sindri-design.md`, built in plans. Plan 2 ships the profile (`profile.yaml` + `repos/<repo>.yaml`, Zod-validated, approved by hash), the ledger (`$AW_STATE_DIR/sindri/ledger.db`, SQLite WAL, sindri the only writer), the singleton lock with a fencing epoch, the scrubber, the `plan-file` tracker that reads plan task checkboxes as work items, and the `observe`, `ledger`, `scrub` and `doctor` commands. Every command is a function of `(args, deps)`. `deps` carries the environment, clock, `SystemProbe` and `GitRunner`, so the package is tested without spawning itself.
 

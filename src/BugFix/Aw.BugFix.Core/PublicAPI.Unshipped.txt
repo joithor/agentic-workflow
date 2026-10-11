@@ -1,0 +1,677 @@
+#nullable enable
+Aw.BugFix.Core.BugFixCoreServiceCollectionExtensions
+Aw.BugFix.Core.Errors.BugFixErrors
+Aw.BugFix.Core.Ids.CandidateId
+Aw.BugFix.Core.Ids.CandidateId.CandidateId() -> void
+Aw.BugFix.Core.Ids.CandidateId.Equals(Aw.BugFix.Core.Ids.CandidateId other, System.Collections.Generic.IEqualityComparer<Aw.BugFix.Core.Ids.CandidateId>! comparer) -> bool
+Aw.BugFix.Core.Ids.CandidateId.Equals(Aw.BugFix.Core.Ids.CandidateId other) -> bool
+Aw.BugFix.Core.Ids.CandidateId.GetTypeCode() -> System.TypeCode
+Aw.BugFix.Core.Ids.CandidateId.IsInitialized() -> bool
+Aw.BugFix.Core.Ids.CandidateId.ToString(System.IFormatProvider? provider) -> string!
+Aw.BugFix.Core.Ids.CandidateId.Value.get -> string!
+Aw.BugFix.Core.Ids.JudgeDecisionId
+Aw.BugFix.Core.Ids.JudgeDecisionId.Equals(Aw.BugFix.Core.Ids.JudgeDecisionId other, System.Collections.Generic.IEqualityComparer<Aw.BugFix.Core.Ids.JudgeDecisionId>! comparer) -> bool
+Aw.BugFix.Core.Ids.JudgeDecisionId.Equals(Aw.BugFix.Core.Ids.JudgeDecisionId other) -> bool
+Aw.BugFix.Core.Ids.JudgeDecisionId.GetTypeCode() -> System.TypeCode
+Aw.BugFix.Core.Ids.JudgeDecisionId.IsInitialized() -> bool
+Aw.BugFix.Core.Ids.JudgeDecisionId.JudgeDecisionId() -> void
+Aw.BugFix.Core.Ids.JudgeDecisionId.ToString(System.IFormatProvider? provider) -> string!
+Aw.BugFix.Core.Ids.JudgeDecisionId.Value.get -> string!
+Aw.BugFix.Core.Model.Baseline
+Aw.BugFix.Core.Model.Baseline.<Clone>$() -> Aw.BugFix.Core.Model.Baseline!
+Aw.BugFix.Core.Model.Baseline.Baseline(string! Evidence, string! Commit) -> void
+Aw.BugFix.Core.Model.Baseline.Commit.get -> string!
+Aw.BugFix.Core.Model.Baseline.Commit.init -> void
+Aw.BugFix.Core.Model.Baseline.Deconstruct(out string! Evidence, out string! Commit) -> void
+Aw.BugFix.Core.Model.Baseline.Equals(Aw.BugFix.Core.Model.Baseline? other) -> bool
+Aw.BugFix.Core.Model.Baseline.Evidence.get -> string!
+Aw.BugFix.Core.Model.Baseline.Evidence.init -> void
+Aw.BugFix.Core.Model.BugFixState
+Aw.BugFix.Core.Model.BugFixState.<Clone>$() -> Aw.BugFix.Core.Model.BugFixState!
+Aw.BugFix.Core.Model.BugFixState.Attempt.get -> int
+Aw.BugFix.Core.Model.BugFixState.Attempt.init -> void
+Aw.BugFix.Core.Model.BugFixState.Baseline.get -> Aw.BugFix.Core.Model.Baseline?
+Aw.BugFix.Core.Model.BugFixState.Baseline.init -> void
+Aw.BugFix.Core.Model.BugFixState.BugFixState(int SchemaVersion, Aw.BugFix.Core.Model.Ticket! Ticket, Aw.BugFix.Core.Model.Phase Phase, Aw.BugFix.Core.Model.BugFixStatus Status, int Attempt, Aw.BugFix.Core.Model.FixMode? Mode, Aw.BugFix.Core.Model.Investigation? Investigation, Aw.BugFix.Core.Model.FrozenCheck? Check, Aw.BugFix.Core.Model.Baseline? Baseline, System.Collections.Generic.IReadOnlyList<Aw.BugFix.Core.Model.Candidate!>! Candidates, System.Collections.Generic.IReadOnlyList<Aw.BugFix.Core.Model.RegisteredRun!>! Runs, Aw.BugFix.Core.Ids.CandidateId? ResolvedBy, System.Collections.Generic.IReadOnlyList<Aw.BugFix.Core.Model.HistoryEntry!>! History) -> void
+Aw.BugFix.Core.Model.BugFixState.Candidates.get -> System.Collections.Generic.IReadOnlyList<Aw.BugFix.Core.Model.Candidate!>!
+Aw.BugFix.Core.Model.BugFixState.Candidates.init -> void
+Aw.BugFix.Core.Model.BugFixState.Check.get -> Aw.BugFix.Core.Model.FrozenCheck?
+Aw.BugFix.Core.Model.BugFixState.Check.init -> void
+Aw.BugFix.Core.Model.BugFixState.CurrentCandidates.get -> System.Collections.Generic.IEnumerable<Aw.BugFix.Core.Model.Candidate!>!
+Aw.BugFix.Core.Model.BugFixState.Deconstruct(out int SchemaVersion, out Aw.BugFix.Core.Model.Ticket! Ticket, out Aw.BugFix.Core.Model.Phase Phase, out Aw.BugFix.Core.Model.BugFixStatus Status, out int Attempt, out Aw.BugFix.Core.Model.FixMode? Mode, out Aw.BugFix.Core.Model.Investigation? Investigation, out Aw.BugFix.Core.Model.FrozenCheck? Check, out Aw.BugFix.Core.Model.Baseline? Baseline, out System.Collections.Generic.IReadOnlyList<Aw.BugFix.Core.Model.Candidate!>! Candidates, out System.Collections.Generic.IReadOnlyList<Aw.BugFix.Core.Model.RegisteredRun!>! Runs, out Aw.BugFix.Core.Ids.CandidateId? ResolvedBy, out System.Collections.Generic.IReadOnlyList<Aw.BugFix.Core.Model.HistoryEntry!>! History) -> void
+Aw.BugFix.Core.Model.BugFixState.Equals(Aw.BugFix.Core.Model.BugFixState? other) -> bool
+Aw.BugFix.Core.Model.BugFixState.Find(Aw.BugFix.Core.Ids.CandidateId id) -> Aw.Kernel.Result<Aw.BugFix.Core.Model.Candidate!>!
+Aw.BugFix.Core.Model.BugFixState.Finished.get -> bool
+Aw.BugFix.Core.Model.BugFixState.Frozen.get -> (Aw.BugFix.Core.Model.FrozenCheck! Check, Aw.BugFix.Core.Model.Baseline! Baseline)
+Aw.BugFix.Core.Model.BugFixState.History.get -> System.Collections.Generic.IReadOnlyList<Aw.BugFix.Core.Model.HistoryEntry!>!
+Aw.BugFix.Core.Model.BugFixState.History.init -> void
+Aw.BugFix.Core.Model.BugFixState.Investigation.get -> Aw.BugFix.Core.Model.Investigation?
+Aw.BugFix.Core.Model.BugFixState.Investigation.init -> void
+Aw.BugFix.Core.Model.BugFixState.Mode.get -> Aw.BugFix.Core.Model.FixMode?
+Aw.BugFix.Core.Model.BugFixState.Mode.init -> void
+Aw.BugFix.Core.Model.BugFixState.Phase.get -> Aw.BugFix.Core.Model.Phase
+Aw.BugFix.Core.Model.BugFixState.Phase.init -> void
+Aw.BugFix.Core.Model.BugFixState.Register(Aw.BugFix.Core.Model.RegisteredRun! run) -> Aw.BugFix.Core.Model.BugFixState!
+Aw.BugFix.Core.Model.BugFixState.Require(params Aw.BugFix.Core.Model.Phase[]! allowed) -> Aw.Kernel.Result<Aw.Kernel.Unit>!
+Aw.BugFix.Core.Model.BugFixState.ResolvedBy.get -> Aw.BugFix.Core.Ids.CandidateId?
+Aw.BugFix.Core.Model.BugFixState.ResolvedBy.init -> void
+Aw.BugFix.Core.Model.BugFixState.Runs.get -> System.Collections.Generic.IReadOnlyList<Aw.BugFix.Core.Model.RegisteredRun!>!
+Aw.BugFix.Core.Model.BugFixState.Runs.init -> void
+Aw.BugFix.Core.Model.BugFixState.SchemaVersion.get -> int
+Aw.BugFix.Core.Model.BugFixState.SchemaVersion.init -> void
+Aw.BugFix.Core.Model.BugFixState.Status.get -> Aw.BugFix.Core.Model.BugFixStatus
+Aw.BugFix.Core.Model.BugFixState.Status.init -> void
+Aw.BugFix.Core.Model.BugFixState.Step(Aw.BugFix.Core.Model.Phase to, string! command, System.DateTimeOffset at, string? evidence = null) -> Aw.BugFix.Core.Model.BugFixState!
+Aw.BugFix.Core.Model.BugFixState.Ticket.get -> Aw.BugFix.Core.Model.Ticket!
+Aw.BugFix.Core.Model.BugFixState.Ticket.init -> void
+Aw.BugFix.Core.Model.BugFixState.With(Aw.BugFix.Core.Model.Candidate! candidate) -> Aw.BugFix.Core.Model.BugFixState!
+Aw.BugFix.Core.Model.BugFixStatus
+Aw.BugFix.Core.Model.BugFixStatus.Active = 1 -> Aw.BugFix.Core.Model.BugFixStatus
+Aw.BugFix.Core.Model.BugFixStatus.NeedsHuman = 4 -> Aw.BugFix.Core.Model.BugFixStatus
+Aw.BugFix.Core.Model.BugFixStatus.Resolved = 2 -> Aw.BugFix.Core.Model.BugFixStatus
+Aw.BugFix.Core.Model.BugFixStatus.Unresolved = 3 -> Aw.BugFix.Core.Model.BugFixStatus
+Aw.BugFix.Core.Model.Candidate
+Aw.BugFix.Core.Model.Candidate.<Clone>$() -> Aw.BugFix.Core.Model.Candidate!
+Aw.BugFix.Core.Model.Candidate.Attempt.get -> int
+Aw.BugFix.Core.Model.Candidate.Attempt.init -> void
+Aw.BugFix.Core.Model.Candidate.Branch.get -> string!
+Aw.BugFix.Core.Model.Candidate.Branch.init -> void
+Aw.BugFix.Core.Model.Candidate.Candidate(Aw.BugFix.Core.Ids.CandidateId Id, int Attempt, Aw.BugFix.Core.Model.FixMode Mode, string! Branch, string! Worktree, string! Commit, int? Hypothesis, System.Collections.Generic.IReadOnlyList<string!>! ChangedFiles, Aw.BugFix.Core.Model.CandidateRun? Run, Aw.BugFix.Core.Model.JudgeVerdict? Verdict, string? JudgeAsked = null) -> void
+Aw.BugFix.Core.Model.Candidate.ChangedFiles.get -> System.Collections.Generic.IReadOnlyList<string!>!
+Aw.BugFix.Core.Model.Candidate.ChangedFiles.init -> void
+Aw.BugFix.Core.Model.Candidate.Commit.get -> string!
+Aw.BugFix.Core.Model.Candidate.Commit.init -> void
+Aw.BugFix.Core.Model.Candidate.Deconstruct(out Aw.BugFix.Core.Ids.CandidateId Id, out int Attempt, out Aw.BugFix.Core.Model.FixMode Mode, out string! Branch, out string! Worktree, out string! Commit, out int? Hypothesis, out System.Collections.Generic.IReadOnlyList<string!>! ChangedFiles, out Aw.BugFix.Core.Model.CandidateRun? Run, out Aw.BugFix.Core.Model.JudgeVerdict? Verdict, out string? JudgeAsked) -> void
+Aw.BugFix.Core.Model.Candidate.Equals(Aw.BugFix.Core.Model.Candidate? other) -> bool
+Aw.BugFix.Core.Model.Candidate.Evaluated.get -> bool
+Aw.BugFix.Core.Model.Candidate.Hypothesis.get -> int?
+Aw.BugFix.Core.Model.Candidate.Hypothesis.init -> void
+Aw.BugFix.Core.Model.Candidate.Id.get -> Aw.BugFix.Core.Ids.CandidateId
+Aw.BugFix.Core.Model.Candidate.Id.init -> void
+Aw.BugFix.Core.Model.Candidate.Judgeable() -> Aw.Kernel.Result<Aw.BugFix.Core.Model.Candidate!>!
+Aw.BugFix.Core.Model.Candidate.JudgeAsked.get -> string?
+Aw.BugFix.Core.Model.Candidate.JudgeAsked.init -> void
+Aw.BugFix.Core.Model.Candidate.JudgeInterrupted.get -> bool
+Aw.BugFix.Core.Model.Candidate.Mode.get -> Aw.BugFix.Core.Model.FixMode
+Aw.BugFix.Core.Model.Candidate.Mode.init -> void
+Aw.BugFix.Core.Model.Candidate.Resolves.get -> bool
+Aw.BugFix.Core.Model.Candidate.ResolvesTicket() -> Aw.Kernel.Result<Aw.BugFix.Core.Model.Candidate!>!
+Aw.BugFix.Core.Model.Candidate.Run.get -> Aw.BugFix.Core.Model.CandidateRun?
+Aw.BugFix.Core.Model.Candidate.Run.init -> void
+Aw.BugFix.Core.Model.Candidate.Verdict.get -> Aw.BugFix.Core.Model.JudgeVerdict?
+Aw.BugFix.Core.Model.Candidate.Verdict.init -> void
+Aw.BugFix.Core.Model.Candidate.Worktree.get -> string!
+Aw.BugFix.Core.Model.Candidate.Worktree.init -> void
+Aw.BugFix.Core.Model.CandidateRun
+Aw.BugFix.Core.Model.CandidateRun.<Clone>$() -> Aw.BugFix.Core.Model.CandidateRun!
+Aw.BugFix.Core.Model.CandidateRun.CandidateRun(string! Evidence, bool Passed, System.DateTimeOffset RecordedAt) -> void
+Aw.BugFix.Core.Model.CandidateRun.Deconstruct(out string! Evidence, out bool Passed, out System.DateTimeOffset RecordedAt) -> void
+Aw.BugFix.Core.Model.CandidateRun.Equals(Aw.BugFix.Core.Model.CandidateRun? other) -> bool
+Aw.BugFix.Core.Model.CandidateRun.Evidence.get -> string!
+Aw.BugFix.Core.Model.CandidateRun.Evidence.init -> void
+Aw.BugFix.Core.Model.CandidateRun.Passed.get -> bool
+Aw.BugFix.Core.Model.CandidateRun.Passed.init -> void
+Aw.BugFix.Core.Model.CandidateRun.RecordedAt.get -> System.DateTimeOffset
+Aw.BugFix.Core.Model.CandidateRun.RecordedAt.init -> void
+Aw.BugFix.Core.Model.CheckExit
+Aw.BugFix.Core.Model.CheckExit.<Clone>$() -> Aw.BugFix.Core.Model.CheckExit!
+Aw.BugFix.Core.Model.CheckExit.CheckExit(int Code, bool Ran, string! ProgramSha256, System.Collections.Generic.IReadOnlyDictionary<string!, string!>! Environment) -> void
+Aw.BugFix.Core.Model.CheckExit.Code.get -> int
+Aw.BugFix.Core.Model.CheckExit.Code.init -> void
+Aw.BugFix.Core.Model.CheckExit.Deconstruct(out int Code, out bool Ran, out string! ProgramSha256, out System.Collections.Generic.IReadOnlyDictionary<string!, string!>! Environment) -> void
+Aw.BugFix.Core.Model.CheckExit.Environment.get -> System.Collections.Generic.IReadOnlyDictionary<string!, string!>!
+Aw.BugFix.Core.Model.CheckExit.Environment.init -> void
+Aw.BugFix.Core.Model.CheckExit.Equals(Aw.BugFix.Core.Model.CheckExit? other) -> bool
+Aw.BugFix.Core.Model.CheckExit.Outcome.get -> Aw.BugFix.Core.Model.RunOutcome
+Aw.BugFix.Core.Model.CheckExit.ProgramSha256.get -> string!
+Aw.BugFix.Core.Model.CheckExit.ProgramSha256.init -> void
+Aw.BugFix.Core.Model.CheckExit.Ran.get -> bool
+Aw.BugFix.Core.Model.CheckExit.Ran.init -> void
+Aw.BugFix.Core.Model.CheckFile
+Aw.BugFix.Core.Model.CheckFile.<Clone>$() -> Aw.BugFix.Core.Model.CheckFile!
+Aw.BugFix.Core.Model.CheckFile.CheckFile(string! RepoPath, string! FullPath) -> void
+Aw.BugFix.Core.Model.CheckFile.Deconstruct(out string! RepoPath, out string! FullPath) -> void
+Aw.BugFix.Core.Model.CheckFile.Equals(Aw.BugFix.Core.Model.CheckFile? other) -> bool
+Aw.BugFix.Core.Model.CheckFile.FullPath.get -> string!
+Aw.BugFix.Core.Model.CheckFile.FullPath.init -> void
+Aw.BugFix.Core.Model.CheckFile.RepoPath.get -> string!
+Aw.BugFix.Core.Model.CheckFile.RepoPath.init -> void
+Aw.BugFix.Core.Model.CheckKind
+Aw.BugFix.Core.Model.CheckKind.Test = 1 -> Aw.BugFix.Core.Model.CheckKind
+Aw.BugFix.Core.Model.CheckKind.Ui = 2 -> Aw.BugFix.Core.Model.CheckKind
+Aw.BugFix.Core.Model.Checkout
+Aw.BugFix.Core.Model.Checkout.<Clone>$() -> Aw.BugFix.Core.Model.Checkout!
+Aw.BugFix.Core.Model.Checkout.Checkout(string! Root, string! Directory, string! Head, System.Collections.Generic.IReadOnlyDictionary<string!, string!>! Untracked) -> void
+Aw.BugFix.Core.Model.Checkout.Deconstruct(out string! Root, out string! Directory, out string! Head, out System.Collections.Generic.IReadOnlyDictionary<string!, string!>! Untracked) -> void
+Aw.BugFix.Core.Model.Checkout.Directory.get -> string!
+Aw.BugFix.Core.Model.Checkout.Directory.init -> void
+Aw.BugFix.Core.Model.Checkout.Equals(Aw.BugFix.Core.Model.Checkout? other) -> bool
+Aw.BugFix.Core.Model.Checkout.Head.get -> string!
+Aw.BugFix.Core.Model.Checkout.Head.init -> void
+Aw.BugFix.Core.Model.Checkout.Root.get -> string!
+Aw.BugFix.Core.Model.Checkout.Root.init -> void
+Aw.BugFix.Core.Model.Checkout.Untracked.get -> System.Collections.Generic.IReadOnlyDictionary<string!, string!>!
+Aw.BugFix.Core.Model.Checkout.Untracked.init -> void
+Aw.BugFix.Core.Model.CommitDiff
+Aw.BugFix.Core.Model.CommitDiff.<Clone>$() -> Aw.BugFix.Core.Model.CommitDiff!
+Aw.BugFix.Core.Model.CommitDiff.CommitDiff(string! Stat, string? Full) -> void
+Aw.BugFix.Core.Model.CommitDiff.Deconstruct(out string! Stat, out string? Full) -> void
+Aw.BugFix.Core.Model.CommitDiff.Equals(Aw.BugFix.Core.Model.CommitDiff? other) -> bool
+Aw.BugFix.Core.Model.CommitDiff.Full.get -> string?
+Aw.BugFix.Core.Model.CommitDiff.Full.init -> void
+Aw.BugFix.Core.Model.CommitDiff.Stat.get -> string!
+Aw.BugFix.Core.Model.CommitDiff.Stat.init -> void
+Aw.BugFix.Core.Model.FixMode
+Aw.BugFix.Core.Model.FixMode.A = 1 -> Aw.BugFix.Core.Model.FixMode
+Aw.BugFix.Core.Model.FixMode.B = 2 -> Aw.BugFix.Core.Model.FixMode
+Aw.BugFix.Core.Model.FixMode.C = 3 -> Aw.BugFix.Core.Model.FixMode
+Aw.BugFix.Core.Model.FrozenCheck
+Aw.BugFix.Core.Model.FrozenCheck.<Clone>$() -> Aw.BugFix.Core.Model.FrozenCheck!
+Aw.BugFix.Core.Model.FrozenCheck.Accepts(Aw.BugFix.Core.Model.RunRecord! record) -> Aw.Kernel.Result<Aw.BugFix.Core.Model.RunRecord!>!
+Aw.BugFix.Core.Model.FrozenCheck.Command.get -> System.Collections.Generic.IReadOnlyList<string!>?
+Aw.BugFix.Core.Model.FrozenCheck.Command.init -> void
+Aw.BugFix.Core.Model.FrozenCheck.CommandFiles.get -> System.Collections.Generic.IReadOnlyList<string!>!
+Aw.BugFix.Core.Model.FrozenCheck.CommandFiles.init -> void
+Aw.BugFix.Core.Model.FrozenCheck.Deconstruct(out Aw.BugFix.Core.Model.CheckKind Kind, out string! Path, out string! Sha256, out System.Collections.Generic.IReadOnlyList<string!>? Command, out string! Directory, out string! ProgramSha256, out System.Collections.Generic.IReadOnlyDictionary<string!, string!>! Environment, out System.Collections.Generic.IReadOnlyList<string!>! CommandFiles) -> void
+Aw.BugFix.Core.Model.FrozenCheck.Directory.get -> string!
+Aw.BugFix.Core.Model.FrozenCheck.Directory.init -> void
+Aw.BugFix.Core.Model.FrozenCheck.Environment.get -> System.Collections.Generic.IReadOnlyDictionary<string!, string!>!
+Aw.BugFix.Core.Model.FrozenCheck.Environment.init -> void
+Aw.BugFix.Core.Model.FrozenCheck.Equals(Aw.BugFix.Core.Model.FrozenCheck? other) -> bool
+Aw.BugFix.Core.Model.FrozenCheck.FrozenCheck(Aw.BugFix.Core.Model.CheckKind Kind, string! Path, string! Sha256, System.Collections.Generic.IReadOnlyList<string!>? Command, string! Directory, string! ProgramSha256, System.Collections.Generic.IReadOnlyDictionary<string!, string!>! Environment, System.Collections.Generic.IReadOnlyList<string!>! CommandFiles) -> void
+Aw.BugFix.Core.Model.FrozenCheck.Kind.get -> Aw.BugFix.Core.Model.CheckKind
+Aw.BugFix.Core.Model.FrozenCheck.Kind.init -> void
+Aw.BugFix.Core.Model.FrozenCheck.Path.get -> string!
+Aw.BugFix.Core.Model.FrozenCheck.Path.init -> void
+Aw.BugFix.Core.Model.FrozenCheck.ProgramSha256.get -> string!
+Aw.BugFix.Core.Model.FrozenCheck.ProgramSha256.init -> void
+Aw.BugFix.Core.Model.FrozenCheck.Ran(Aw.BugFix.Core.Model.RunRecord! record) -> bool
+Aw.BugFix.Core.Model.FrozenCheck.Sha256.get -> string!
+Aw.BugFix.Core.Model.FrozenCheck.Sha256.init -> void
+Aw.BugFix.Core.Model.Handoff
+Aw.BugFix.Core.Model.Handoff.<Clone>$() -> Aw.BugFix.Core.Model.Handoff!
+Aw.BugFix.Core.Model.Handoff.Deconstruct(out string! Status, out System.Collections.Generic.IReadOnlyList<Aw.BugFix.Core.Model.Hypothesis!>! Hypotheses, out string! RootCause) -> void
+Aw.BugFix.Core.Model.Handoff.Equals(Aw.BugFix.Core.Model.Handoff? other) -> bool
+Aw.BugFix.Core.Model.Handoff.Handoff(string! Status, System.Collections.Generic.IReadOnlyList<Aw.BugFix.Core.Model.Hypothesis!>! Hypotheses, string! RootCause) -> void
+Aw.BugFix.Core.Model.Handoff.Hypotheses.get -> System.Collections.Generic.IReadOnlyList<Aw.BugFix.Core.Model.Hypothesis!>!
+Aw.BugFix.Core.Model.Handoff.Hypotheses.init -> void
+Aw.BugFix.Core.Model.Handoff.RootCause.get -> string!
+Aw.BugFix.Core.Model.Handoff.RootCause.init -> void
+Aw.BugFix.Core.Model.Handoff.Status.get -> string!
+Aw.BugFix.Core.Model.Handoff.Status.init -> void
+Aw.BugFix.Core.Model.Handoff.SupportsFix() -> Aw.Kernel.Result<Aw.BugFix.Core.Model.Handoff!>!
+Aw.BugFix.Core.Model.HistoryEntry
+Aw.BugFix.Core.Model.HistoryEntry.<Clone>$() -> Aw.BugFix.Core.Model.HistoryEntry!
+Aw.BugFix.Core.Model.HistoryEntry.At.get -> System.DateTimeOffset
+Aw.BugFix.Core.Model.HistoryEntry.At.init -> void
+Aw.BugFix.Core.Model.HistoryEntry.Command.get -> string!
+Aw.BugFix.Core.Model.HistoryEntry.Command.init -> void
+Aw.BugFix.Core.Model.HistoryEntry.Deconstruct(out System.DateTimeOffset At, out string! Command, out Aw.BugFix.Core.Model.Phase? From, out Aw.BugFix.Core.Model.Phase To, out string? Evidence) -> void
+Aw.BugFix.Core.Model.HistoryEntry.Equals(Aw.BugFix.Core.Model.HistoryEntry? other) -> bool
+Aw.BugFix.Core.Model.HistoryEntry.Evidence.get -> string?
+Aw.BugFix.Core.Model.HistoryEntry.Evidence.init -> void
+Aw.BugFix.Core.Model.HistoryEntry.From.get -> Aw.BugFix.Core.Model.Phase?
+Aw.BugFix.Core.Model.HistoryEntry.From.init -> void
+Aw.BugFix.Core.Model.HistoryEntry.HistoryEntry(System.DateTimeOffset At, string! Command, Aw.BugFix.Core.Model.Phase? From, Aw.BugFix.Core.Model.Phase To, string? Evidence) -> void
+Aw.BugFix.Core.Model.HistoryEntry.To.get -> Aw.BugFix.Core.Model.Phase
+Aw.BugFix.Core.Model.HistoryEntry.To.init -> void
+Aw.BugFix.Core.Model.Hypothesis
+Aw.BugFix.Core.Model.Hypothesis.<Clone>$() -> Aw.BugFix.Core.Model.Hypothesis!
+Aw.BugFix.Core.Model.Hypothesis.Deconstruct(out int Number, out string! Text, out System.Collections.Generic.IReadOnlyList<string!>! Files, out Aw.BugFix.Core.Model.HypothesisResult Result) -> void
+Aw.BugFix.Core.Model.Hypothesis.Equals(Aw.BugFix.Core.Model.Hypothesis? other) -> bool
+Aw.BugFix.Core.Model.Hypothesis.Files.get -> System.Collections.Generic.IReadOnlyList<string!>!
+Aw.BugFix.Core.Model.Hypothesis.Files.init -> void
+Aw.BugFix.Core.Model.Hypothesis.Hypothesis(int Number, string! Text, System.Collections.Generic.IReadOnlyList<string!>! Files, Aw.BugFix.Core.Model.HypothesisResult Result) -> void
+Aw.BugFix.Core.Model.Hypothesis.Number.get -> int
+Aw.BugFix.Core.Model.Hypothesis.Number.init -> void
+Aw.BugFix.Core.Model.Hypothesis.Result.get -> Aw.BugFix.Core.Model.HypothesisResult
+Aw.BugFix.Core.Model.Hypothesis.Result.init -> void
+Aw.BugFix.Core.Model.Hypothesis.Text.get -> string!
+Aw.BugFix.Core.Model.Hypothesis.Text.init -> void
+Aw.BugFix.Core.Model.HypothesisResult
+Aw.BugFix.Core.Model.HypothesisResult.Confirmed = 1 -> Aw.BugFix.Core.Model.HypothesisResult
+Aw.BugFix.Core.Model.HypothesisResult.RuledOut = 2 -> Aw.BugFix.Core.Model.HypothesisResult
+Aw.BugFix.Core.Model.HypothesisResult.Untested = 3 -> Aw.BugFix.Core.Model.HypothesisResult
+Aw.BugFix.Core.Model.Investigation
+Aw.BugFix.Core.Model.Investigation.<Clone>$() -> Aw.BugFix.Core.Model.Investigation!
+Aw.BugFix.Core.Model.Investigation.Deconstruct(out string! Handoff, out string! RootCause, out System.Collections.Generic.IReadOnlyList<Aw.BugFix.Core.Model.Hypothesis!>! Hypotheses) -> void
+Aw.BugFix.Core.Model.Investigation.Equals(Aw.BugFix.Core.Model.Investigation? other) -> bool
+Aw.BugFix.Core.Model.Investigation.Handoff.get -> string!
+Aw.BugFix.Core.Model.Investigation.Handoff.init -> void
+Aw.BugFix.Core.Model.Investigation.Hypotheses.get -> System.Collections.Generic.IReadOnlyList<Aw.BugFix.Core.Model.Hypothesis!>!
+Aw.BugFix.Core.Model.Investigation.Hypotheses.init -> void
+Aw.BugFix.Core.Model.Investigation.Investigation(string! Handoff, string! RootCause, System.Collections.Generic.IReadOnlyList<Aw.BugFix.Core.Model.Hypothesis!>! Hypotheses) -> void
+Aw.BugFix.Core.Model.Investigation.RootCause.get -> string!
+Aw.BugFix.Core.Model.Investigation.RootCause.init -> void
+Aw.BugFix.Core.Model.JudgeAnswer
+Aw.BugFix.Core.Model.JudgeAnswer.<Clone>$() -> Aw.BugFix.Core.Model.JudgeAnswer!
+Aw.BugFix.Core.Model.JudgeAnswer.Decision.get -> Aw.BugFix.Core.Model.JudgeDecision
+Aw.BugFix.Core.Model.JudgeAnswer.Decision.init -> void
+Aw.BugFix.Core.Model.JudgeAnswer.DecisionId.get -> Aw.BugFix.Core.Ids.JudgeDecisionId?
+Aw.BugFix.Core.Model.JudgeAnswer.DecisionId.init -> void
+Aw.BugFix.Core.Model.JudgeAnswer.Deconstruct(out Aw.BugFix.Core.Model.JudgeDecision Decision, out Aw.BugFix.Core.Ids.JudgeDecisionId? DecisionId, out string! ReasonCode, out System.Collections.Generic.IReadOnlyList<string!>! Reasons, out string! InputSha256) -> void
+Aw.BugFix.Core.Model.JudgeAnswer.Equals(Aw.BugFix.Core.Model.JudgeAnswer? other) -> bool
+Aw.BugFix.Core.Model.JudgeAnswer.InputSha256.get -> string!
+Aw.BugFix.Core.Model.JudgeAnswer.InputSha256.init -> void
+Aw.BugFix.Core.Model.JudgeAnswer.JudgeAnswer(Aw.BugFix.Core.Model.JudgeDecision Decision, Aw.BugFix.Core.Ids.JudgeDecisionId? DecisionId, string! ReasonCode, System.Collections.Generic.IReadOnlyList<string!>! Reasons, string! InputSha256) -> void
+Aw.BugFix.Core.Model.JudgeAnswer.ReasonCode.get -> string!
+Aw.BugFix.Core.Model.JudgeAnswer.ReasonCode.init -> void
+Aw.BugFix.Core.Model.JudgeAnswer.Reasons.get -> System.Collections.Generic.IReadOnlyList<string!>!
+Aw.BugFix.Core.Model.JudgeAnswer.Reasons.init -> void
+Aw.BugFix.Core.Model.JudgeDecision
+Aw.BugFix.Core.Model.JudgeDecision.Escalated = 4 -> Aw.BugFix.Core.Model.JudgeDecision
+Aw.BugFix.Core.Model.JudgeDecision.Partial = 2 -> Aw.BugFix.Core.Model.JudgeDecision
+Aw.BugFix.Core.Model.JudgeDecision.Resolved = 1 -> Aw.BugFix.Core.Model.JudgeDecision
+Aw.BugFix.Core.Model.JudgeDecision.Unresolved = 3 -> Aw.BugFix.Core.Model.JudgeDecision
+Aw.BugFix.Core.Model.JudgeQuestion
+Aw.BugFix.Core.Model.JudgeQuestion.<Clone>$() -> Aw.BugFix.Core.Model.JudgeQuestion!
+Aw.BugFix.Core.Model.JudgeQuestion.Deconstruct(out Aw.BugFix.Core.Model.ResolutionCheckInput! Input, out string! InputFile, out string! InputSha256) -> void
+Aw.BugFix.Core.Model.JudgeQuestion.Equals(Aw.BugFix.Core.Model.JudgeQuestion? other) -> bool
+Aw.BugFix.Core.Model.JudgeQuestion.Input.get -> Aw.BugFix.Core.Model.ResolutionCheckInput!
+Aw.BugFix.Core.Model.JudgeQuestion.Input.init -> void
+Aw.BugFix.Core.Model.JudgeQuestion.InputFile.get -> string!
+Aw.BugFix.Core.Model.JudgeQuestion.InputFile.init -> void
+Aw.BugFix.Core.Model.JudgeQuestion.InputSha256.get -> string!
+Aw.BugFix.Core.Model.JudgeQuestion.InputSha256.init -> void
+Aw.BugFix.Core.Model.JudgeQuestion.JudgeQuestion(Aw.BugFix.Core.Model.ResolutionCheckInput! Input, string! InputFile, string! InputSha256) -> void
+Aw.BugFix.Core.Model.JudgeVerdict
+Aw.BugFix.Core.Model.JudgeVerdict.<Clone>$() -> Aw.BugFix.Core.Model.JudgeVerdict!
+Aw.BugFix.Core.Model.JudgeVerdict.Decision.get -> Aw.BugFix.Core.Model.JudgeDecision
+Aw.BugFix.Core.Model.JudgeVerdict.Decision.init -> void
+Aw.BugFix.Core.Model.JudgeVerdict.DecisionId.get -> Aw.BugFix.Core.Ids.JudgeDecisionId?
+Aw.BugFix.Core.Model.JudgeVerdict.DecisionId.init -> void
+Aw.BugFix.Core.Model.JudgeVerdict.Deconstruct(out Aw.BugFix.Core.Model.JudgeDecision Decision, out Aw.BugFix.Core.Ids.JudgeDecisionId? DecisionId, out string! ReasonCode, out string! InputSha256) -> void
+Aw.BugFix.Core.Model.JudgeVerdict.Equals(Aw.BugFix.Core.Model.JudgeVerdict? other) -> bool
+Aw.BugFix.Core.Model.JudgeVerdict.InputSha256.get -> string!
+Aw.BugFix.Core.Model.JudgeVerdict.InputSha256.init -> void
+Aw.BugFix.Core.Model.JudgeVerdict.JudgeVerdict(Aw.BugFix.Core.Model.JudgeDecision Decision, Aw.BugFix.Core.Ids.JudgeDecisionId? DecisionId, string! ReasonCode, string! InputSha256) -> void
+Aw.BugFix.Core.Model.JudgeVerdict.ReasonCode.get -> string!
+Aw.BugFix.Core.Model.JudgeVerdict.ReasonCode.init -> void
+Aw.BugFix.Core.Model.Names
+Aw.BugFix.Core.Model.Phase
+Aw.BugFix.Core.Model.Phase.Evaluate = 5 -> Aw.BugFix.Core.Model.Phase
+Aw.BugFix.Core.Model.Phase.Fix = 4 -> Aw.BugFix.Core.Model.Phase
+Aw.BugFix.Core.Model.Phase.Intake = 1 -> Aw.BugFix.Core.Model.Phase
+Aw.BugFix.Core.Model.Phase.Investigate = 2 -> Aw.BugFix.Core.Model.Phase
+Aw.BugFix.Core.Model.Phase.Report = 6 -> Aw.BugFix.Core.Model.Phase
+Aw.BugFix.Core.Model.Phase.Reproduce = 3 -> Aw.BugFix.Core.Model.Phase
+Aw.BugFix.Core.Model.RegisteredRun
+Aw.BugFix.Core.Model.RegisteredRun.<Clone>$() -> Aw.BugFix.Core.Model.RegisteredRun!
+Aw.BugFix.Core.Model.RegisteredRun.Deconstruct(out string! Evidence, out string! Sha256) -> void
+Aw.BugFix.Core.Model.RegisteredRun.Equals(Aw.BugFix.Core.Model.RegisteredRun? other) -> bool
+Aw.BugFix.Core.Model.RegisteredRun.Evidence.get -> string!
+Aw.BugFix.Core.Model.RegisteredRun.Evidence.init -> void
+Aw.BugFix.Core.Model.RegisteredRun.RegisteredRun(string! Evidence, string! Sha256) -> void
+Aw.BugFix.Core.Model.RegisteredRun.Sha256.get -> string!
+Aw.BugFix.Core.Model.RegisteredRun.Sha256.init -> void
+Aw.BugFix.Core.Model.ResolutionCheckInput
+Aw.BugFix.Core.Model.ResolutionCheckInput.<Clone>$() -> Aw.BugFix.Core.Model.ResolutionCheckInput!
+Aw.BugFix.Core.Model.ResolutionCheckInput.Actual.get -> string!
+Aw.BugFix.Core.Model.ResolutionCheckInput.Actual.init -> void
+Aw.BugFix.Core.Model.ResolutionCheckInput.AfterPassed.get -> bool
+Aw.BugFix.Core.Model.ResolutionCheckInput.AfterPassed.init -> void
+Aw.BugFix.Core.Model.ResolutionCheckInput.BeforePassed.get -> bool
+Aw.BugFix.Core.Model.ResolutionCheckInput.BeforePassed.init -> void
+Aw.BugFix.Core.Model.ResolutionCheckInput.Brief.get -> string!
+Aw.BugFix.Core.Model.ResolutionCheckInput.Brief.init -> void
+Aw.BugFix.Core.Model.ResolutionCheckInput.CheckKind.get -> Aw.BugFix.Core.Model.CheckKind
+Aw.BugFix.Core.Model.ResolutionCheckInput.CheckKind.init -> void
+Aw.BugFix.Core.Model.ResolutionCheckInput.CheckSummary.get -> string!
+Aw.BugFix.Core.Model.ResolutionCheckInput.CheckSummary.init -> void
+Aw.BugFix.Core.Model.ResolutionCheckInput.Deconstruct(out string! Brief, out string! Expected, out string! Actual, out string! RootCause, out Aw.BugFix.Core.Model.CheckKind CheckKind, out string! CheckSummary, out bool BeforePassed, out bool AfterPassed, out string! DiffStat, out string? Diff) -> void
+Aw.BugFix.Core.Model.ResolutionCheckInput.Diff.get -> string?
+Aw.BugFix.Core.Model.ResolutionCheckInput.Diff.init -> void
+Aw.BugFix.Core.Model.ResolutionCheckInput.DiffStat.get -> string!
+Aw.BugFix.Core.Model.ResolutionCheckInput.DiffStat.init -> void
+Aw.BugFix.Core.Model.ResolutionCheckInput.Equals(Aw.BugFix.Core.Model.ResolutionCheckInput? other) -> bool
+Aw.BugFix.Core.Model.ResolutionCheckInput.Expected.get -> string!
+Aw.BugFix.Core.Model.ResolutionCheckInput.Expected.init -> void
+Aw.BugFix.Core.Model.ResolutionCheckInput.ResolutionCheckInput(string! Brief, string! Expected, string! Actual, string! RootCause, Aw.BugFix.Core.Model.CheckKind CheckKind, string! CheckSummary, bool BeforePassed, bool AfterPassed, string! DiffStat, string? Diff) -> void
+Aw.BugFix.Core.Model.ResolutionCheckInput.RootCause.get -> string!
+Aw.BugFix.Core.Model.ResolutionCheckInput.RootCause.init -> void
+Aw.BugFix.Core.Model.RunOutcome
+Aw.BugFix.Core.Model.RunOutcome.Broken = 3 -> Aw.BugFix.Core.Model.RunOutcome
+Aw.BugFix.Core.Model.RunOutcome.Failed = 2 -> Aw.BugFix.Core.Model.RunOutcome
+Aw.BugFix.Core.Model.RunOutcome.Passed = 1 -> Aw.BugFix.Core.Model.RunOutcome
+Aw.BugFix.Core.Model.RunRecord
+Aw.BugFix.Core.Model.RunRecord.<Clone>$() -> Aw.BugFix.Core.Model.RunRecord!
+Aw.BugFix.Core.Model.RunRecord.AsBaseline() -> Aw.Kernel.Result<Aw.BugFix.Core.Model.RunRecord!>!
+Aw.BugFix.Core.Model.RunRecord.Checkout.get -> string!
+Aw.BugFix.Core.Model.RunRecord.Checkout.init -> void
+Aw.BugFix.Core.Model.RunRecord.CheckSha256.get -> string!
+Aw.BugFix.Core.Model.RunRecord.CheckSha256.init -> void
+Aw.BugFix.Core.Model.RunRecord.Command.get -> System.Collections.Generic.IReadOnlyList<string!>?
+Aw.BugFix.Core.Model.RunRecord.Command.init -> void
+Aw.BugFix.Core.Model.RunRecord.Commit.get -> string!
+Aw.BugFix.Core.Model.RunRecord.Commit.init -> void
+Aw.BugFix.Core.Model.RunRecord.Deconstruct(out Aw.BugFix.Core.Model.CheckKind Kind, out Aw.BugFix.Core.Model.RunOutcome Outcome, out string! Commit, out string! Directory, out string! CheckSha256, out System.Collections.Generic.IReadOnlyList<string!>? Command, out string! ProgramSha256, out System.Collections.Generic.IReadOnlyDictionary<string!, string!>! Environment, out int ExitCode, out string! Output, out System.Collections.Generic.IReadOnlyDictionary<string!, string!>! Leftovers, out string! Checkout) -> void
+Aw.BugFix.Core.Model.RunRecord.Directory.get -> string!
+Aw.BugFix.Core.Model.RunRecord.Directory.init -> void
+Aw.BugFix.Core.Model.RunRecord.Environment.get -> System.Collections.Generic.IReadOnlyDictionary<string!, string!>!
+Aw.BugFix.Core.Model.RunRecord.Environment.init -> void
+Aw.BugFix.Core.Model.RunRecord.Equals(Aw.BugFix.Core.Model.RunRecord? other) -> bool
+Aw.BugFix.Core.Model.RunRecord.ExitCode.get -> int
+Aw.BugFix.Core.Model.RunRecord.ExitCode.init -> void
+Aw.BugFix.Core.Model.RunRecord.Kind.get -> Aw.BugFix.Core.Model.CheckKind
+Aw.BugFix.Core.Model.RunRecord.Kind.init -> void
+Aw.BugFix.Core.Model.RunRecord.Leftovers.get -> System.Collections.Generic.IReadOnlyDictionary<string!, string!>!
+Aw.BugFix.Core.Model.RunRecord.Leftovers.init -> void
+Aw.BugFix.Core.Model.RunRecord.Outcome.get -> Aw.BugFix.Core.Model.RunOutcome
+Aw.BugFix.Core.Model.RunRecord.Outcome.init -> void
+Aw.BugFix.Core.Model.RunRecord.Output.get -> string!
+Aw.BugFix.Core.Model.RunRecord.Output.init -> void
+Aw.BugFix.Core.Model.RunRecord.ProgramSha256.get -> string!
+Aw.BugFix.Core.Model.RunRecord.ProgramSha256.init -> void
+Aw.BugFix.Core.Model.RunRecord.RunRecord(Aw.BugFix.Core.Model.CheckKind Kind, Aw.BugFix.Core.Model.RunOutcome Outcome, string! Commit, string! Directory, string! CheckSha256, System.Collections.Generic.IReadOnlyList<string!>? Command, string! ProgramSha256, System.Collections.Generic.IReadOnlyDictionary<string!, string!>! Environment, int ExitCode, string! Output, System.Collections.Generic.IReadOnlyDictionary<string!, string!>! Leftovers, string! Checkout) -> void
+Aw.BugFix.Core.Model.RunSlot
+Aw.BugFix.Core.Model.RunSlot.<Clone>$() -> Aw.BugFix.Core.Model.RunSlot!
+Aw.BugFix.Core.Model.RunSlot.Deconstruct(out string! Output, out string! Log, out string! Record, out string! DigestKey) -> void
+Aw.BugFix.Core.Model.RunSlot.DigestKey.get -> string!
+Aw.BugFix.Core.Model.RunSlot.DigestKey.init -> void
+Aw.BugFix.Core.Model.RunSlot.Equals(Aw.BugFix.Core.Model.RunSlot? other) -> bool
+Aw.BugFix.Core.Model.RunSlot.Log.get -> string!
+Aw.BugFix.Core.Model.RunSlot.Log.init -> void
+Aw.BugFix.Core.Model.RunSlot.Output.get -> string!
+Aw.BugFix.Core.Model.RunSlot.Output.init -> void
+Aw.BugFix.Core.Model.RunSlot.Record.get -> string!
+Aw.BugFix.Core.Model.RunSlot.Record.init -> void
+Aw.BugFix.Core.Model.RunSlot.RunSlot(string! Output, string! Log, string! Record, string! DigestKey) -> void
+Aw.BugFix.Core.Model.StoredRun
+Aw.BugFix.Core.Model.StoredRun.<Clone>$() -> Aw.BugFix.Core.Model.StoredRun!
+Aw.BugFix.Core.Model.StoredRun.Deconstruct(out string! Path, out string! Sha256, out Aw.BugFix.Core.Model.RunRecord! Record) -> void
+Aw.BugFix.Core.Model.StoredRun.Equals(Aw.BugFix.Core.Model.StoredRun? other) -> bool
+Aw.BugFix.Core.Model.StoredRun.Path.get -> string!
+Aw.BugFix.Core.Model.StoredRun.Path.init -> void
+Aw.BugFix.Core.Model.StoredRun.Record.get -> Aw.BugFix.Core.Model.RunRecord!
+Aw.BugFix.Core.Model.StoredRun.Record.init -> void
+Aw.BugFix.Core.Model.StoredRun.Sha256.get -> string!
+Aw.BugFix.Core.Model.StoredRun.Sha256.init -> void
+Aw.BugFix.Core.Model.StoredRun.StoredRun(string! Path, string! Sha256, Aw.BugFix.Core.Model.RunRecord! Record) -> void
+Aw.BugFix.Core.Model.Ticket
+Aw.BugFix.Core.Model.Ticket.<Clone>$() -> Aw.BugFix.Core.Model.Ticket!
+Aw.BugFix.Core.Model.Ticket.Actual.get -> string!
+Aw.BugFix.Core.Model.Ticket.Actual.init -> void
+Aw.BugFix.Core.Model.Ticket.Brief.get -> string!
+Aw.BugFix.Core.Model.Ticket.Brief.init -> void
+Aw.BugFix.Core.Model.Ticket.Deconstruct(out Aw.BugFix.Core.Model.TicketSource Source, out string? Reference, out string! Title, out string! Brief, out string! Expected, out string! Actual) -> void
+Aw.BugFix.Core.Model.Ticket.Equals(Aw.BugFix.Core.Model.Ticket? other) -> bool
+Aw.BugFix.Core.Model.Ticket.Expected.get -> string!
+Aw.BugFix.Core.Model.Ticket.Expected.init -> void
+Aw.BugFix.Core.Model.Ticket.Reference.get -> string?
+Aw.BugFix.Core.Model.Ticket.Reference.init -> void
+Aw.BugFix.Core.Model.Ticket.Source.get -> Aw.BugFix.Core.Model.TicketSource
+Aw.BugFix.Core.Model.Ticket.Source.init -> void
+Aw.BugFix.Core.Model.Ticket.Ticket(Aw.BugFix.Core.Model.TicketSource Source, string? Reference, string! Title, string! Brief, string! Expected, string! Actual) -> void
+Aw.BugFix.Core.Model.Ticket.Title.get -> string!
+Aw.BugFix.Core.Model.Ticket.Title.init -> void
+Aw.BugFix.Core.Model.TicketSource
+Aw.BugFix.Core.Model.TicketSource.Linear = 1 -> Aw.BugFix.Core.Model.TicketSource
+Aw.BugFix.Core.Model.TicketSource.Text = 2 -> Aw.BugFix.Core.Model.TicketSource
+Aw.BugFix.Core.Model.UiRun
+Aw.BugFix.Core.Model.UiRun.<Clone>$() -> Aw.BugFix.Core.Model.UiRun!
+Aw.BugFix.Core.Model.UiRun.Deconstruct(out System.Collections.Generic.IReadOnlyList<Aw.BugFix.Core.Model.RunOutcome>! Steps, out string! ScriptSha256, out int ExitCode) -> void
+Aw.BugFix.Core.Model.UiRun.Equals(Aw.BugFix.Core.Model.UiRun? other) -> bool
+Aw.BugFix.Core.Model.UiRun.ExitCode.get -> int
+Aw.BugFix.Core.Model.UiRun.ExitCode.init -> void
+Aw.BugFix.Core.Model.UiRun.Outcome.get -> Aw.BugFix.Core.Model.RunOutcome
+Aw.BugFix.Core.Model.UiRun.ScriptSha256.get -> string!
+Aw.BugFix.Core.Model.UiRun.ScriptSha256.init -> void
+Aw.BugFix.Core.Model.UiRun.Steps.get -> System.Collections.Generic.IReadOnlyList<Aw.BugFix.Core.Model.RunOutcome>!
+Aw.BugFix.Core.Model.UiRun.Steps.init -> void
+Aw.BugFix.Core.Model.UiRun.UiRun(System.Collections.Generic.IReadOnlyList<Aw.BugFix.Core.Model.RunOutcome>! Steps, string! ScriptSha256, int ExitCode) -> void
+Aw.BugFix.Core.Model.UiRunRequest
+Aw.BugFix.Core.Model.UiRunRequest.<Clone>$() -> Aw.BugFix.Core.Model.UiRunRequest!
+Aw.BugFix.Core.Model.UiRunRequest.Commit.get -> string!
+Aw.BugFix.Core.Model.UiRunRequest.Commit.init -> void
+Aw.BugFix.Core.Model.UiRunRequest.Deconstruct(out string! Script, out string! RunDirectory, out string! Commit, out string! WorkingDirectory, out string! Log) -> void
+Aw.BugFix.Core.Model.UiRunRequest.Equals(Aw.BugFix.Core.Model.UiRunRequest? other) -> bool
+Aw.BugFix.Core.Model.UiRunRequest.Log.get -> string!
+Aw.BugFix.Core.Model.UiRunRequest.Log.init -> void
+Aw.BugFix.Core.Model.UiRunRequest.RunDirectory.get -> string!
+Aw.BugFix.Core.Model.UiRunRequest.RunDirectory.init -> void
+Aw.BugFix.Core.Model.UiRunRequest.Script.get -> string!
+Aw.BugFix.Core.Model.UiRunRequest.Script.init -> void
+Aw.BugFix.Core.Model.UiRunRequest.UiRunRequest(string! Script, string! RunDirectory, string! Commit, string! WorkingDirectory, string! Log) -> void
+Aw.BugFix.Core.Model.UiRunRequest.WorkingDirectory.get -> string!
+Aw.BugFix.Core.Model.UiRunRequest.WorkingDirectory.init -> void
+Aw.BugFix.Core.Ports.ICheckRunner
+Aw.BugFix.Core.Ports.ICheckRunner.Run(System.Collections.Generic.IReadOnlyList<string!>! command, string! directory, string! log, string! digestKey) -> Aw.BugFix.Core.Model.CheckExit!
+Aw.BugFix.Core.Ports.IFiles
+Aw.BugFix.Core.Ports.IFiles.Exists(string! path) -> bool
+Aw.BugFix.Core.Ports.IFiles.FullPath(string! directory, string! path) -> string!
+Aw.BugFix.Core.Ports.IFiles.ReadText(string! path) -> Aw.Kernel.Result<string!>!
+Aw.BugFix.Core.Ports.IFiles.RealPath(string! path) -> string?
+Aw.BugFix.Core.Ports.IFiles.Sha256(string! path) -> Aw.Kernel.Result<string!>!
+Aw.BugFix.Core.Ports.IGit
+Aw.BugFix.Core.Ports.IGit.AddedFiles(string! directory, string! from, string! to) -> Aw.Kernel.Result<System.Collections.Generic.IReadOnlyList<string!>!>!
+Aw.BugFix.Core.Ports.IGit.Branch(string! directory) -> Aw.Kernel.Result<string!>!
+Aw.BugFix.Core.Ports.IGit.ChangedFiles(string! directory, string! from, string! to) -> Aw.Kernel.Result<System.Collections.Generic.IReadOnlyList<string!>!>!
+Aw.BugFix.Core.Ports.IGit.Diff(string! directory, string! from, string! to) -> Aw.Kernel.Result<Aw.BugFix.Core.Model.CommitDiff!>!
+Aw.BugFix.Core.Ports.IGit.Head(string! directory) -> Aw.Kernel.Result<string!>!
+Aw.BugFix.Core.Ports.IGit.IsAncestor(string! directory, string! ancestor, string! commit) -> Aw.Kernel.Result<bool>!
+Aw.BugFix.Core.Ports.IGit.IsClean(string! directory) -> Aw.Kernel.Result<bool>!
+Aw.BugFix.Core.Ports.IGit.IsCommittedUnchanged(string! root, string! file) -> Aw.Kernel.Result<bool>!
+Aw.BugFix.Core.Ports.IGit.RelativeDirectory(string! directory) -> Aw.Kernel.Result<string!>!
+Aw.BugFix.Core.Ports.IGit.Root(string! directory) -> Aw.Kernel.Result<string!>!
+Aw.BugFix.Core.Ports.IGit.SameTree(string! directory, string! first, string! second) -> Aw.Kernel.Result<bool>!
+Aw.BugFix.Core.Ports.IGit.Untracked(string! directory) -> Aw.Kernel.Result<System.Collections.Generic.IReadOnlyList<string!>!>!
+Aw.BugFix.Core.Ports.IJudge
+Aw.BugFix.Core.Ports.IJudge.ResolutionCheck(Aw.BugFix.Core.Model.JudgeQuestion! question) -> Aw.Kernel.Result<Aw.BugFix.Core.Model.JudgeAnswer!>!
+Aw.BugFix.Core.Ports.IRunLedger
+Aw.BugFix.Core.Ports.IRunLedger.CreateDigestKey(string! directory) -> void
+Aw.BugFix.Core.Ports.IRunLedger.Read(string! path) -> Aw.Kernel.Result<Aw.BugFix.Core.Model.StoredRun!>!
+Aw.BugFix.Core.Ports.IRunLedger.Release(Aw.BugFix.Core.Model.RunSlot! slot) -> void
+Aw.BugFix.Core.Ports.IRunLedger.Reserve(string! directory, System.DateTimeOffset at, Aw.BugFix.Core.Model.CheckKind kind) -> Aw.Kernel.Result<Aw.BugFix.Core.Model.RunSlot!>!
+Aw.BugFix.Core.Ports.IRunLedger.Write(Aw.BugFix.Core.Model.RunSlot! slot, Aw.BugFix.Core.Model.RunRecord! record) -> string!
+Aw.BugFix.Core.Ports.IRunLedger.WriteJudgeInput(string! directory, Aw.BugFix.Core.Ids.CandidateId candidate, Aw.BugFix.Core.Model.ResolutionCheckInput! input) -> Aw.BugFix.Core.Model.JudgeQuestion!
+Aw.BugFix.Core.Ports.IStateStore
+Aw.BugFix.Core.Ports.IStateStore.Load(string! directory) -> Aw.Kernel.Result<Aw.BugFix.Core.Model.BugFixState!>!
+Aw.BugFix.Core.Ports.IStateStore.Lock(string! directory, bool create) -> Aw.Kernel.Result<System.IDisposable!>!
+Aw.BugFix.Core.Ports.IStateStore.Save(string! directory, Aw.BugFix.Core.Model.BugFixState! state) -> void
+Aw.BugFix.Core.Ports.IStateStore.StateFile(string! directory) -> string!
+Aw.BugFix.Core.Ports.IUiEvidence
+Aw.BugFix.Core.Ports.IUiEvidence.Run(Aw.BugFix.Core.Model.UiRunRequest! request) -> Aw.Kernel.Result<Aw.BugFix.Core.Model.UiRun!>!
+Aw.BugFix.Core.Ports.StateStoreExtensions
+Aw.BugFix.Core.Rules.AttemptRule
+Aw.BugFix.Core.Rules.CandidateRule
+Aw.BugFix.Core.Rules.CheckCommandRule
+Aw.BugFix.Core.Rules.CheckLocator
+Aw.BugFix.Core.Rules.CheckLocator.CheckLocator(Aw.BugFix.Core.Ports.IGit! git, Aw.BugFix.Core.Ports.IFiles! files) -> void
+Aw.BugFix.Core.Rules.CheckLocator.Locate(string! directory, string! path) -> Aw.Kernel.Result<Aw.BugFix.Core.Model.CheckFile!>!
+Aw.BugFix.Core.Rules.CommandFilesRule
+Aw.BugFix.Core.Rules.EvidenceRule
+Aw.BugFix.Core.Rules.HandoffParser
+Aw.BugFix.Core.Rules.LeftoverRule
+Aw.BugFix.Core.Rules.NextStep
+Aw.BugFix.Core.Rules.ProtectedPaths
+Aw.BugFix.Core.Rules.WorkTree
+Aw.BugFix.Core.Rules.WorkTree.Clean(Aw.BugFix.Core.Model.BugFixState! state, string! directory, string! what) -> Aw.Kernel.Result<Aw.BugFix.Core.Model.Checkout!>!
+Aw.BugFix.Core.Rules.WorkTree.Snapshot(string! directory) -> Aw.Kernel.Result<Aw.BugFix.Core.Model.Checkout!>!
+Aw.BugFix.Core.Rules.WorkTree.WorkTree(Aw.BugFix.Core.Ports.IGit! git, Aw.BugFix.Core.Ports.IFiles! files, Aw.BugFix.Core.Ports.IRunLedger! ledger) -> void
+const Aw.BugFix.Core.Model.BugFixState.CurrentSchema = 1 -> int
+const Aw.BugFix.Core.Model.BugFixState.MaxAttempts = 3 -> int
+const Aw.BugFix.Core.Model.ResolutionCheckInput.DiffCap = 200000 -> int
+override Aw.BugFix.Core.Ids.CandidateId.Equals(object? obj) -> bool
+override Aw.BugFix.Core.Ids.CandidateId.GetHashCode() -> int
+override Aw.BugFix.Core.Ids.CandidateId.ToString() -> string!
+override Aw.BugFix.Core.Ids.JudgeDecisionId.Equals(object? obj) -> bool
+override Aw.BugFix.Core.Ids.JudgeDecisionId.GetHashCode() -> int
+override Aw.BugFix.Core.Ids.JudgeDecisionId.ToString() -> string!
+override Aw.BugFix.Core.Model.Baseline.Equals(object? obj) -> bool
+override Aw.BugFix.Core.Model.Baseline.GetHashCode() -> int
+override Aw.BugFix.Core.Model.Baseline.ToString() -> string!
+override Aw.BugFix.Core.Model.BugFixState.Equals(object? obj) -> bool
+override Aw.BugFix.Core.Model.BugFixState.GetHashCode() -> int
+override Aw.BugFix.Core.Model.BugFixState.ToString() -> string!
+override Aw.BugFix.Core.Model.Candidate.Equals(object? obj) -> bool
+override Aw.BugFix.Core.Model.Candidate.GetHashCode() -> int
+override Aw.BugFix.Core.Model.Candidate.ToString() -> string!
+override Aw.BugFix.Core.Model.CandidateRun.Equals(object? obj) -> bool
+override Aw.BugFix.Core.Model.CandidateRun.GetHashCode() -> int
+override Aw.BugFix.Core.Model.CandidateRun.ToString() -> string!
+override Aw.BugFix.Core.Model.CheckExit.Equals(object? obj) -> bool
+override Aw.BugFix.Core.Model.CheckExit.GetHashCode() -> int
+override Aw.BugFix.Core.Model.CheckExit.ToString() -> string!
+override Aw.BugFix.Core.Model.CheckFile.Equals(object? obj) -> bool
+override Aw.BugFix.Core.Model.CheckFile.GetHashCode() -> int
+override Aw.BugFix.Core.Model.CheckFile.ToString() -> string!
+override Aw.BugFix.Core.Model.Checkout.Equals(object? obj) -> bool
+override Aw.BugFix.Core.Model.Checkout.GetHashCode() -> int
+override Aw.BugFix.Core.Model.Checkout.ToString() -> string!
+override Aw.BugFix.Core.Model.CommitDiff.Equals(object? obj) -> bool
+override Aw.BugFix.Core.Model.CommitDiff.GetHashCode() -> int
+override Aw.BugFix.Core.Model.CommitDiff.ToString() -> string!
+override Aw.BugFix.Core.Model.FrozenCheck.Equals(object? obj) -> bool
+override Aw.BugFix.Core.Model.FrozenCheck.GetHashCode() -> int
+override Aw.BugFix.Core.Model.FrozenCheck.ToString() -> string!
+override Aw.BugFix.Core.Model.Handoff.Equals(object? obj) -> bool
+override Aw.BugFix.Core.Model.Handoff.GetHashCode() -> int
+override Aw.BugFix.Core.Model.Handoff.ToString() -> string!
+override Aw.BugFix.Core.Model.HistoryEntry.Equals(object? obj) -> bool
+override Aw.BugFix.Core.Model.HistoryEntry.GetHashCode() -> int
+override Aw.BugFix.Core.Model.HistoryEntry.ToString() -> string!
+override Aw.BugFix.Core.Model.Hypothesis.Equals(object? obj) -> bool
+override Aw.BugFix.Core.Model.Hypothesis.GetHashCode() -> int
+override Aw.BugFix.Core.Model.Hypothesis.ToString() -> string!
+override Aw.BugFix.Core.Model.Investigation.Equals(object? obj) -> bool
+override Aw.BugFix.Core.Model.Investigation.GetHashCode() -> int
+override Aw.BugFix.Core.Model.Investigation.ToString() -> string!
+override Aw.BugFix.Core.Model.JudgeAnswer.Equals(object? obj) -> bool
+override Aw.BugFix.Core.Model.JudgeAnswer.GetHashCode() -> int
+override Aw.BugFix.Core.Model.JudgeAnswer.ToString() -> string!
+override Aw.BugFix.Core.Model.JudgeQuestion.Equals(object? obj) -> bool
+override Aw.BugFix.Core.Model.JudgeQuestion.GetHashCode() -> int
+override Aw.BugFix.Core.Model.JudgeQuestion.ToString() -> string!
+override Aw.BugFix.Core.Model.JudgeVerdict.Equals(object? obj) -> bool
+override Aw.BugFix.Core.Model.JudgeVerdict.GetHashCode() -> int
+override Aw.BugFix.Core.Model.JudgeVerdict.ToString() -> string!
+override Aw.BugFix.Core.Model.RegisteredRun.Equals(object? obj) -> bool
+override Aw.BugFix.Core.Model.RegisteredRun.GetHashCode() -> int
+override Aw.BugFix.Core.Model.RegisteredRun.ToString() -> string!
+override Aw.BugFix.Core.Model.ResolutionCheckInput.Equals(object? obj) -> bool
+override Aw.BugFix.Core.Model.ResolutionCheckInput.GetHashCode() -> int
+override Aw.BugFix.Core.Model.ResolutionCheckInput.ToString() -> string!
+override Aw.BugFix.Core.Model.RunRecord.Equals(object? obj) -> bool
+override Aw.BugFix.Core.Model.RunRecord.GetHashCode() -> int
+override Aw.BugFix.Core.Model.RunRecord.ToString() -> string!
+override Aw.BugFix.Core.Model.RunSlot.Equals(object? obj) -> bool
+override Aw.BugFix.Core.Model.RunSlot.GetHashCode() -> int
+override Aw.BugFix.Core.Model.RunSlot.ToString() -> string!
+override Aw.BugFix.Core.Model.StoredRun.Equals(object? obj) -> bool
+override Aw.BugFix.Core.Model.StoredRun.GetHashCode() -> int
+override Aw.BugFix.Core.Model.StoredRun.ToString() -> string!
+override Aw.BugFix.Core.Model.Ticket.Equals(object? obj) -> bool
+override Aw.BugFix.Core.Model.Ticket.GetHashCode() -> int
+override Aw.BugFix.Core.Model.Ticket.ToString() -> string!
+override Aw.BugFix.Core.Model.UiRun.Equals(object? obj) -> bool
+override Aw.BugFix.Core.Model.UiRun.GetHashCode() -> int
+override Aw.BugFix.Core.Model.UiRun.ToString() -> string!
+override Aw.BugFix.Core.Model.UiRunRequest.Equals(object? obj) -> bool
+override Aw.BugFix.Core.Model.UiRunRequest.GetHashCode() -> int
+override Aw.BugFix.Core.Model.UiRunRequest.ToString() -> string!
+static Aw.BugFix.Core.BugFixCoreServiceCollectionExtensions.AddBugFixCore(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
+static Aw.BugFix.Core.Errors.BugFixErrors.All.get -> System.Collections.Generic.IReadOnlyList<Aw.Kernel.ErrorDefinition!>!
+static Aw.BugFix.Core.Ids.CandidateId.From(string! value) -> Aw.BugFix.Core.Ids.CandidateId
+static Aw.BugFix.Core.Ids.CandidateId.Numbered(int number) -> Aw.BugFix.Core.Ids.CandidateId
+static Aw.BugFix.Core.Ids.CandidateId.operator !=(Aw.BugFix.Core.Ids.CandidateId left, Aw.BugFix.Core.Ids.CandidateId right) -> bool
+static Aw.BugFix.Core.Ids.CandidateId.operator ==(Aw.BugFix.Core.Ids.CandidateId left, Aw.BugFix.Core.Ids.CandidateId right) -> bool
+static Aw.BugFix.Core.Ids.CandidateId.Parse(string! s, System.IFormatProvider? provider) -> Aw.BugFix.Core.Ids.CandidateId
+static Aw.BugFix.Core.Ids.CandidateId.TryFrom(string? value, out Aw.BugFix.Core.Ids.CandidateId vo) -> bool
+static Aw.BugFix.Core.Ids.CandidateId.TryParse(string? s, System.IFormatProvider? provider, out Aw.BugFix.Core.Ids.CandidateId result) -> bool
+static Aw.BugFix.Core.Ids.JudgeDecisionId.From(string! value) -> Aw.BugFix.Core.Ids.JudgeDecisionId
+static Aw.BugFix.Core.Ids.JudgeDecisionId.operator !=(Aw.BugFix.Core.Ids.JudgeDecisionId left, Aw.BugFix.Core.Ids.JudgeDecisionId right) -> bool
+static Aw.BugFix.Core.Ids.JudgeDecisionId.operator ==(Aw.BugFix.Core.Ids.JudgeDecisionId left, Aw.BugFix.Core.Ids.JudgeDecisionId right) -> bool
+static Aw.BugFix.Core.Ids.JudgeDecisionId.Parse(string! s, System.IFormatProvider? provider) -> Aw.BugFix.Core.Ids.JudgeDecisionId
+static Aw.BugFix.Core.Ids.JudgeDecisionId.TryFrom(string? value, out Aw.BugFix.Core.Ids.JudgeDecisionId vo) -> bool
+static Aw.BugFix.Core.Ids.JudgeDecisionId.TryParse(string? s, System.IFormatProvider? provider, out Aw.BugFix.Core.Ids.JudgeDecisionId result) -> bool
+static Aw.BugFix.Core.Model.Baseline.operator !=(Aw.BugFix.Core.Model.Baseline? left, Aw.BugFix.Core.Model.Baseline? right) -> bool
+static Aw.BugFix.Core.Model.Baseline.operator ==(Aw.BugFix.Core.Model.Baseline? left, Aw.BugFix.Core.Model.Baseline? right) -> bool
+static Aw.BugFix.Core.Model.BugFixState.operator !=(Aw.BugFix.Core.Model.BugFixState? left, Aw.BugFix.Core.Model.BugFixState? right) -> bool
+static Aw.BugFix.Core.Model.BugFixState.operator ==(Aw.BugFix.Core.Model.BugFixState? left, Aw.BugFix.Core.Model.BugFixState? right) -> bool
+static Aw.BugFix.Core.Model.BugFixState.Start(Aw.BugFix.Core.Model.Ticket! ticket, System.DateTimeOffset at, string! ticketFile) -> Aw.BugFix.Core.Model.BugFixState!
+static Aw.BugFix.Core.Model.Candidate.operator !=(Aw.BugFix.Core.Model.Candidate? left, Aw.BugFix.Core.Model.Candidate? right) -> bool
+static Aw.BugFix.Core.Model.Candidate.operator ==(Aw.BugFix.Core.Model.Candidate? left, Aw.BugFix.Core.Model.Candidate? right) -> bool
+static Aw.BugFix.Core.Model.CandidateRun.operator !=(Aw.BugFix.Core.Model.CandidateRun? left, Aw.BugFix.Core.Model.CandidateRun? right) -> bool
+static Aw.BugFix.Core.Model.CandidateRun.operator ==(Aw.BugFix.Core.Model.CandidateRun? left, Aw.BugFix.Core.Model.CandidateRun? right) -> bool
+static Aw.BugFix.Core.Model.CheckExit.operator !=(Aw.BugFix.Core.Model.CheckExit? left, Aw.BugFix.Core.Model.CheckExit? right) -> bool
+static Aw.BugFix.Core.Model.CheckExit.operator ==(Aw.BugFix.Core.Model.CheckExit? left, Aw.BugFix.Core.Model.CheckExit? right) -> bool
+static Aw.BugFix.Core.Model.CheckFile.operator !=(Aw.BugFix.Core.Model.CheckFile? left, Aw.BugFix.Core.Model.CheckFile? right) -> bool
+static Aw.BugFix.Core.Model.CheckFile.operator ==(Aw.BugFix.Core.Model.CheckFile? left, Aw.BugFix.Core.Model.CheckFile? right) -> bool
+static Aw.BugFix.Core.Model.Checkout.operator !=(Aw.BugFix.Core.Model.Checkout? left, Aw.BugFix.Core.Model.Checkout? right) -> bool
+static Aw.BugFix.Core.Model.Checkout.operator ==(Aw.BugFix.Core.Model.Checkout? left, Aw.BugFix.Core.Model.Checkout? right) -> bool
+static Aw.BugFix.Core.Model.CommitDiff.operator !=(Aw.BugFix.Core.Model.CommitDiff? left, Aw.BugFix.Core.Model.CommitDiff? right) -> bool
+static Aw.BugFix.Core.Model.CommitDiff.operator ==(Aw.BugFix.Core.Model.CommitDiff? left, Aw.BugFix.Core.Model.CommitDiff? right) -> bool
+static Aw.BugFix.Core.Model.FrozenCheck.operator !=(Aw.BugFix.Core.Model.FrozenCheck? left, Aw.BugFix.Core.Model.FrozenCheck? right) -> bool
+static Aw.BugFix.Core.Model.FrozenCheck.operator ==(Aw.BugFix.Core.Model.FrozenCheck? left, Aw.BugFix.Core.Model.FrozenCheck? right) -> bool
+static Aw.BugFix.Core.Model.Handoff.operator !=(Aw.BugFix.Core.Model.Handoff? left, Aw.BugFix.Core.Model.Handoff? right) -> bool
+static Aw.BugFix.Core.Model.Handoff.operator ==(Aw.BugFix.Core.Model.Handoff? left, Aw.BugFix.Core.Model.Handoff? right) -> bool
+static Aw.BugFix.Core.Model.HistoryEntry.operator !=(Aw.BugFix.Core.Model.HistoryEntry? left, Aw.BugFix.Core.Model.HistoryEntry? right) -> bool
+static Aw.BugFix.Core.Model.HistoryEntry.operator ==(Aw.BugFix.Core.Model.HistoryEntry? left, Aw.BugFix.Core.Model.HistoryEntry? right) -> bool
+static Aw.BugFix.Core.Model.Hypothesis.operator !=(Aw.BugFix.Core.Model.Hypothesis? left, Aw.BugFix.Core.Model.Hypothesis? right) -> bool
+static Aw.BugFix.Core.Model.Hypothesis.operator ==(Aw.BugFix.Core.Model.Hypothesis? left, Aw.BugFix.Core.Model.Hypothesis? right) -> bool
+static Aw.BugFix.Core.Model.Investigation.operator !=(Aw.BugFix.Core.Model.Investigation? left, Aw.BugFix.Core.Model.Investigation? right) -> bool
+static Aw.BugFix.Core.Model.Investigation.operator ==(Aw.BugFix.Core.Model.Investigation? left, Aw.BugFix.Core.Model.Investigation? right) -> bool
+static Aw.BugFix.Core.Model.JudgeAnswer.operator !=(Aw.BugFix.Core.Model.JudgeAnswer? left, Aw.BugFix.Core.Model.JudgeAnswer? right) -> bool
+static Aw.BugFix.Core.Model.JudgeAnswer.operator ==(Aw.BugFix.Core.Model.JudgeAnswer? left, Aw.BugFix.Core.Model.JudgeAnswer? right) -> bool
+static Aw.BugFix.Core.Model.JudgeQuestion.operator !=(Aw.BugFix.Core.Model.JudgeQuestion? left, Aw.BugFix.Core.Model.JudgeQuestion? right) -> bool
+static Aw.BugFix.Core.Model.JudgeQuestion.operator ==(Aw.BugFix.Core.Model.JudgeQuestion? left, Aw.BugFix.Core.Model.JudgeQuestion? right) -> bool
+static Aw.BugFix.Core.Model.JudgeVerdict.operator !=(Aw.BugFix.Core.Model.JudgeVerdict? left, Aw.BugFix.Core.Model.JudgeVerdict? right) -> bool
+static Aw.BugFix.Core.Model.JudgeVerdict.operator ==(Aw.BugFix.Core.Model.JudgeVerdict? left, Aw.BugFix.Core.Model.JudgeVerdict? right) -> bool
+static Aw.BugFix.Core.Model.Names.Of(Aw.BugFix.Core.Model.CheckKind kind) -> string!
+static Aw.BugFix.Core.Model.Names.Of(Aw.BugFix.Core.Model.FixMode mode) -> string!
+static Aw.BugFix.Core.Model.Names.Of(Aw.BugFix.Core.Model.JudgeDecision decision) -> string!
+static Aw.BugFix.Core.Model.Names.Of(Aw.BugFix.Core.Model.Phase phase) -> string!
+static Aw.BugFix.Core.Model.RegisteredRun.operator !=(Aw.BugFix.Core.Model.RegisteredRun? left, Aw.BugFix.Core.Model.RegisteredRun? right) -> bool
+static Aw.BugFix.Core.Model.RegisteredRun.operator ==(Aw.BugFix.Core.Model.RegisteredRun? left, Aw.BugFix.Core.Model.RegisteredRun? right) -> bool
+static Aw.BugFix.Core.Model.ResolutionCheckInput.operator !=(Aw.BugFix.Core.Model.ResolutionCheckInput? left, Aw.BugFix.Core.Model.ResolutionCheckInput? right) -> bool
+static Aw.BugFix.Core.Model.ResolutionCheckInput.operator ==(Aw.BugFix.Core.Model.ResolutionCheckInput? left, Aw.BugFix.Core.Model.ResolutionCheckInput? right) -> bool
+static Aw.BugFix.Core.Model.RunRecord.operator !=(Aw.BugFix.Core.Model.RunRecord? left, Aw.BugFix.Core.Model.RunRecord? right) -> bool
+static Aw.BugFix.Core.Model.RunRecord.operator ==(Aw.BugFix.Core.Model.RunRecord? left, Aw.BugFix.Core.Model.RunRecord? right) -> bool
+static Aw.BugFix.Core.Model.RunSlot.operator !=(Aw.BugFix.Core.Model.RunSlot? left, Aw.BugFix.Core.Model.RunSlot? right) -> bool
+static Aw.BugFix.Core.Model.RunSlot.operator ==(Aw.BugFix.Core.Model.RunSlot? left, Aw.BugFix.Core.Model.RunSlot? right) -> bool
+static Aw.BugFix.Core.Model.StoredRun.operator !=(Aw.BugFix.Core.Model.StoredRun? left, Aw.BugFix.Core.Model.StoredRun? right) -> bool
+static Aw.BugFix.Core.Model.StoredRun.operator ==(Aw.BugFix.Core.Model.StoredRun? left, Aw.BugFix.Core.Model.StoredRun? right) -> bool
+static Aw.BugFix.Core.Model.Ticket.operator !=(Aw.BugFix.Core.Model.Ticket? left, Aw.BugFix.Core.Model.Ticket? right) -> bool
+static Aw.BugFix.Core.Model.Ticket.operator ==(Aw.BugFix.Core.Model.Ticket? left, Aw.BugFix.Core.Model.Ticket? right) -> bool
+static Aw.BugFix.Core.Model.UiRun.operator !=(Aw.BugFix.Core.Model.UiRun? left, Aw.BugFix.Core.Model.UiRun? right) -> bool
+static Aw.BugFix.Core.Model.UiRun.operator ==(Aw.BugFix.Core.Model.UiRun? left, Aw.BugFix.Core.Model.UiRun? right) -> bool
+static Aw.BugFix.Core.Model.UiRunRequest.operator !=(Aw.BugFix.Core.Model.UiRunRequest? left, Aw.BugFix.Core.Model.UiRunRequest? right) -> bool
+static Aw.BugFix.Core.Model.UiRunRequest.operator ==(Aw.BugFix.Core.Model.UiRunRequest? left, Aw.BugFix.Core.Model.UiRunRequest? right) -> bool
+static Aw.BugFix.Core.Ports.StateStoreExtensions.Locked<T>(this Aw.BugFix.Core.Ports.IStateStore! store, string! directory, System.Func<Aw.Kernel.Result<T>!>! work, bool create = false) -> Aw.Kernel.Result<T>!
+static Aw.BugFix.Core.Rules.AttemptRule.Candidates(Aw.BugFix.Core.Model.FixMode? mode) -> int
+static Aw.BugFix.Core.Rules.AttemptRule.CanStart(Aw.BugFix.Core.Model.BugFixState! state, Aw.BugFix.Core.Model.FixMode mode, bool abandonJudge = false) -> Aw.Kernel.Result<Aw.Kernel.Unit>!
+static Aw.BugFix.Core.Rules.CandidateRule.CanRecord(Aw.BugFix.Core.Model.BugFixState! state, string! commit, int? hypothesis) -> Aw.Kernel.Result<Aw.Kernel.Unit>!
+static Aw.BugFix.Core.Rules.CheckCommandRule.Refusal(System.Collections.Generic.IReadOnlyList<string!>! command) -> string?
+static Aw.BugFix.Core.Rules.CommandFilesRule.LoaderCandidates(string! path) -> System.Collections.Generic.IEnumerable<string!>!
+static Aw.BugFix.Core.Rules.CommandFilesRule.Paths(System.Collections.Generic.IReadOnlyList<string!>! command) -> System.Collections.Generic.IReadOnlyList<(string! Path, bool Required, bool Specifier)>!
+static Aw.BugFix.Core.Rules.EvidenceRule.Accept(Aw.BugFix.Core.Model.BugFixState! state, Aw.BugFix.Core.Model.StoredRun! run) -> Aw.Kernel.Result<Aw.BugFix.Core.Model.RunRecord!>!
+static Aw.BugFix.Core.Rules.HandoffParser.Parse(string! markdown) -> Aw.Kernel.Result<Aw.BugFix.Core.Model.Handoff!>!
+static Aw.BugFix.Core.Rules.LeftoverRule.Left(System.Collections.Generic.IReadOnlyDictionary<string!, string!>! before, System.Collections.Generic.IReadOnlyDictionary<string!, string!>! after) -> System.Collections.Generic.IReadOnlyDictionary<string!, string!>!
+static Aw.BugFix.Core.Rules.LeftoverRule.Loading(Aw.BugFix.Core.Model.Checkout! checkout, Aw.BugFix.Core.Model.FrozenCheck? check) -> System.Collections.Generic.IReadOnlyList<string!>!
+static Aw.BugFix.Core.Rules.LeftoverRule.Unaccounted(Aw.BugFix.Core.Model.Checkout! checkout, System.Collections.Generic.IEnumerable<Aw.BugFix.Core.Model.RunRecord!>! runs, Aw.BugFix.Core.Model.FrozenCheck? check) -> System.Collections.Generic.IReadOnlyList<string!>!
+static Aw.BugFix.Core.Rules.NextStep.For(Aw.BugFix.Core.Model.BugFixState! state) -> string!
+static Aw.BugFix.Core.Rules.ProtectedPaths.Shadowing(System.Collections.Generic.IEnumerable<string!>! addedFiles, string! runDirectory, string! checkPath) -> System.Collections.Generic.IReadOnlyList<string!>!
+static Aw.BugFix.Core.Rules.ProtectedPaths.Touched(System.Collections.Generic.IEnumerable<string!>! changedFiles, string! checkPath, System.Collections.Generic.IReadOnlyCollection<string!>! commandFiles) -> System.Collections.Generic.IReadOnlyList<string!>!
+static readonly Aw.BugFix.Core.Errors.BugFixErrors.AttemptRefused -> Aw.Kernel.ErrorDefinition!
+static readonly Aw.BugFix.Core.Errors.BugFixErrors.CandidateRefused -> Aw.Kernel.ErrorDefinition!
+static readonly Aw.BugFix.Core.Errors.BugFixErrors.CheckNotFrozen -> Aw.Kernel.ErrorDefinition!
+static readonly Aw.BugFix.Core.Errors.BugFixErrors.CommandRefused -> Aw.Kernel.ErrorDefinition!
+static readonly Aw.BugFix.Core.Errors.BugFixErrors.DigestKeyMissing -> Aw.Kernel.ErrorDefinition!
+static readonly Aw.BugFix.Core.Errors.BugFixErrors.DirtyTree -> Aw.Kernel.ErrorDefinition!
+static readonly Aw.BugFix.Core.Errors.BugFixErrors.EvidenceRefused -> Aw.Kernel.ErrorDefinition!
+static readonly Aw.BugFix.Core.Errors.BugFixErrors.FileUnreadable -> Aw.Kernel.ErrorDefinition!
+static readonly Aw.BugFix.Core.Errors.BugFixErrors.GitFailed -> Aw.Kernel.ErrorDefinition!
+static readonly Aw.BugFix.Core.Errors.BugFixErrors.HandoffRefused -> Aw.Kernel.ErrorDefinition!
+static readonly Aw.BugFix.Core.Errors.BugFixErrors.Invalid -> Aw.Kernel.ErrorDefinition!
+static readonly Aw.BugFix.Core.Errors.BugFixErrors.JudgeRefused -> Aw.Kernel.ErrorDefinition!
+static readonly Aw.BugFix.Core.Errors.BugFixErrors.JudgeUnavailable -> Aw.Kernel.ErrorDefinition!
+static readonly Aw.BugFix.Core.Errors.BugFixErrors.NotReproduced -> Aw.Kernel.ErrorDefinition!
+static readonly Aw.BugFix.Core.Errors.BugFixErrors.ReportRefused -> Aw.Kernel.ErrorDefinition!
+static readonly Aw.BugFix.Core.Errors.BugFixErrors.RunRefused -> Aw.Kernel.ErrorDefinition!
+static readonly Aw.BugFix.Core.Errors.BugFixErrors.StateBusy -> Aw.Kernel.ErrorDefinition!
+static readonly Aw.BugFix.Core.Errors.BugFixErrors.StateCorrupt -> Aw.Kernel.ErrorDefinition!
+static readonly Aw.BugFix.Core.Errors.BugFixErrors.StateMissing -> Aw.Kernel.ErrorDefinition!
+static readonly Aw.BugFix.Core.Errors.BugFixErrors.StorageFailed -> Aw.Kernel.ErrorDefinition!
+static readonly Aw.BugFix.Core.Errors.BugFixErrors.UiEvidenceUnavailable -> Aw.Kernel.ErrorDefinition!
+static readonly Aw.BugFix.Core.Errors.BugFixErrors.UnknownCandidate -> Aw.Kernel.ErrorDefinition!
+static readonly Aw.BugFix.Core.Errors.BugFixErrors.WrongPhase -> Aw.Kernel.ErrorDefinition!
