@@ -2,8 +2,10 @@ using Aw.Judge.Core.Decisions;
 using Aw.Judge.Core.Evaluation;
 using Aw.Judge.Core.Providers;
 using Aw.Judge.Infrastructure.Providers;
+using Aw.Judge.Infrastructure.Redaction;
 using Aw.Judge.Testing;
 using Aw.Kernel.Testing;
+using Aw.Redaction;
 using static Aw.Judge.Tests.Evaluation.EvaluatorHarness;
 
 namespace Aw.Judge.Tests.Evaluation;
@@ -209,6 +211,23 @@ public sealed class QuestionEvaluatorTests
 
         Assert.Empty(cli.Calls);
         Assert.Equal("\"not json\"", harness.Log.Decisions[0].Details?.InputJson);
+    }
+
+    [Theory]
+    [InlineData("""{"text":"a","text":"I will now refactor the module"}""")]
+    [InlineData("""{"text":"a","meta":{"k":1,"k":2}}""")]
+    public async Task An_input_with_a_repeated_key_escalates_as_invalid_input_and_is_recorded(string raw)
+    {
+        // The real redactor walks the stored node, so a node that hides a repeated key would throw here.
+        var harness = new EvaluatorHarness(redactor: new AwInputRedactor(Redactor.Default));
+        var cli = Cli().Decides("send", 1);
+
+        var outcome = await harness.RunText(A.Question().Build(), raw, cli);
+
+        Assert.Equal(new EscalatedOutcome("invalid-input"), outcome);
+        Assert.Empty(cli.Calls);
+        Assert.Equal(DecisionOutcome.Escalated, harness.Row.Outcome);
+        Assert.Equal(raw, System.Text.Json.Nodes.JsonNode.Parse(harness.Row.Details?.InputJson ?? "")?.GetValue<string>());
     }
 
     [Fact]
