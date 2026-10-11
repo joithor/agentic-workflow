@@ -74,6 +74,18 @@ public sealed class AskQuestionCliTests : IDisposable
         Assert.Equal(["wake-gate|none|invalid-input|escalated"], await DecisionRows());
     }
 
+    [Theory, Trait("Lane", "integration")]
+    [InlineData("""{"text":"\ud800","senderKind":"teammate"}""")]
+    [InlineData("""{"text":"ok","senderKind":"teammate","x":"\ud83d"}""")]
+    [InlineData("""{"\ud800":1,"text":"ok","senderKind":"teammate"}""")]
+    public async Task Stdin_with_a_lone_surrogate_escape_is_the_invalid_input_escalation_and_is_recorded(string input)
+    {
+        var run = await new JudgeCli(_state).RunWithInput(input, "wake-gate");
+
+        Assert.Equal((2, "invalid-input", ""), (run.ExitCode, run.Json().GetProperty("reasonCode").GetString(), run.Stderr));
+        Assert.Equal(["wake-gate|none|invalid-input|escalated"], await DecisionRows());
+    }
+
     private async Task<List<string>> DecisionRows()
     {
         var ct = TestContext.Current.CancellationToken;
@@ -120,6 +132,8 @@ public sealed class AskQuestionCliTests : IDisposable
     [InlineData("""{"transcriptTail":"Next I'll run the tests"}""", null, 0)]
     [InlineData("not json", null, 0)]
     [InlineData("""{"transcriptTail":"x","transcriptTail":"Next I'll run the tests"}""", null, 0)]
+    [InlineData("""{"transcriptTail":"x \ud83d"}""", null, 0)]
+    [InlineData("""{"transcriptTail":"Next I'll run the tests","\udc00":"x"}""", null, 0)]
     public async Task Ask_check_exits_0_for_ask_or_an_escalation_and_2_for_continue(string input, string? model, int exitCode)
     {
         var cli = new JudgeCli(_state) { Providers = model is null ? null : [Cli(ContentClass.Transcript).Decides(model, 0.9)] };

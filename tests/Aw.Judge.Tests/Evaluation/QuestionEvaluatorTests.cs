@@ -230,6 +230,26 @@ public sealed class QuestionEvaluatorTests
         Assert.Equal(raw, System.Text.Json.Nodes.JsonNode.Parse(harness.Row.Details?.InputJson ?? "")?.GetValue<string>());
     }
 
+    [Theory]
+    [InlineData("""{"text":"\ud800","senderKind":"main"}""")]
+    [InlineData("""{"text":"a","x":"\ud83d"}""")]
+    [InlineData("""{"text":5,"x":["\udc00"]}""")]
+    [InlineData("""{"\ud800":1,"text":"a"}""")]
+    public async Task An_input_with_a_lone_surrogate_escape_escalates_as_invalid_input_and_is_stored_as_text(string raw)
+    {
+        // A lone surrogate escape parses, but throws when the node is written or read as a string: the digest, the
+        // real redactor and the cap all do one of those, so the text must be stored as one JSON string instead.
+        var harness = new EvaluatorHarness(redactor: new AwInputRedactor(Redactor.Default));
+        var cli = Cli().Decides("send", 1);
+
+        var outcome = await harness.RunText(A.Question().Build(), raw, cli);
+
+        Assert.Equal(new EscalatedOutcome("invalid-input"), outcome);
+        Assert.Empty(cli.Calls);
+        Assert.Equal(DecisionOutcome.Escalated, harness.Row.Outcome);
+        Assert.Equal(raw, System.Text.Json.Nodes.JsonNode.Parse(harness.Row.Details?.InputJson ?? "")?.GetValue<string>());
+    }
+
     [Fact]
     public async Task A_configured_threshold_overrides_the_question_threshold()
     {
