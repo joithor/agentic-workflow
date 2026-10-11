@@ -11,9 +11,9 @@ using Aw.Kernel.Services;
 namespace Aw.Evidence.Features.RunScript;
 
 /// <summary>
-/// Runs a UI script: reads and checks it, vets the host and the steps (refusals take no lock), then holds the QA-stack
-/// and heavy-job locks for the whole browser run, deletes an earlier summary.json, writes the new one and releases the
-/// locks on every path.
+/// Runs a UI script: reads and checks it, vets the host, the steps and that a given baseline exists (refusals take no
+/// lock), then holds the QA-stack and heavy-job locks for the whole browser run, deletes an earlier summary.json, writes
+/// the new one and releases the locks on every path.
 /// </summary>
 internal sealed class RunScriptService(ScriptFiles files, IMachineLocks locks, ScriptRun run, RunVerdict verdict, TimeProvider clock, IIdGenerator ids)
     : IService<RunScriptRequest, RunScriptResponse>
@@ -26,6 +26,12 @@ internal sealed class RunScriptService(ScriptFiles files, IMachineLocks locks, S
         if (vetted.IsError)
         {
             return vetted.Error;
+        }
+
+        var baseline = await files.CheckBaselineAsync(request.Baseline, cancellationToken).ConfigureAwait(false);
+        if (baseline.IsError)
+        {
+            return baseline.Error;
         }
 
         var lease = await StackLocks.AcquireAsync(locks, request.LockTimeout, cancellationToken).ConfigureAwait(false);

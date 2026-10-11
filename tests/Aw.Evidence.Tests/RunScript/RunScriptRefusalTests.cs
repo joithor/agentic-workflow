@@ -56,6 +56,19 @@ public sealed class RunScriptRefusalTests
     }
 
     [Fact, Trait("Lane", "unit")]
+    public async Task RunScript_refuses_a_missing_baseline_before_taking_a_lock()
+    {
+        var harness = WithSave();
+
+        var result = await harness.Run(A.RunScriptRequest().WithBaseline("/baselines/typo.png").Build());
+
+        Assert.Equal(EvidenceErrors.FileNotFound.Code, result.Error.Code);
+        Assert.Contains("--baseline /baselines/typo.png", result.Error.Message, StringComparison.Ordinal);
+        Assert.Empty(harness.Locks.Events);
+        Assert.Empty(harness.Browser.Sessions);
+    }
+
+    [Fact, Trait("Lane", "unit")]
     public async Task RunScript_refuses_a_host_that_is_not_local_or_a_preview()
     {
         var harness = WithSave();

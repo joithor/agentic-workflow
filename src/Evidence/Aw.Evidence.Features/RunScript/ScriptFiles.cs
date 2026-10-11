@@ -19,6 +19,18 @@ internal sealed class ScriptFiles(IRunFiles files, JsonSerializerOptions json)
             error => error with { Message = $"script {path}: {error.Message}" }));
     }
 
+    // A typo'd --baseline is a bad input: say so before any lock, rather than skipping the compare after the whole run.
+    internal async ValueTask<Result<Unit>> CheckBaselineAsync(string? baseline, CancellationToken cancellationToken)
+    {
+        if (baseline is null)
+        {
+            return Unit.Value;
+        }
+
+        var size = await files.SizeAsync(baseline, cancellationToken).ConfigureAwait(false);
+        return size.IsError ? size.Error with { Message = $"--baseline {baseline}: {size.Error.Message}" } : Unit.Value;
+    }
+
     // A run that errors must not leave an earlier run's summary behind as if it were this run's evidence.
     internal async ValueTask<Result<Unit>> PrepareRunDirectoryAsync(string runDirectory, CancellationToken cancellationToken)
     {

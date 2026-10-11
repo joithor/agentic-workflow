@@ -30,7 +30,7 @@ every path it writes into a run file is absolute.
 | `provenance` | Prints `{provenance: seeded\|unknown, reason}` for the local database | 0 |
 | `install-browser` | Installs the browser the run and parity commands drive; the installer's download progress goes to stderr, so stdout is only `{installed}`. Ctrl-C returns at once (a download already running finishes in Playwright's driver) | 0 · 4 |
 
-`--lock-timeout` is whole seconds, 0 to 86400 (default 120; 0 tries once); anything else is a usage error. `--host` takes a bare origin: `http://localhost:<port>`
+`--lock-timeout` is whole seconds, 0 to 86400 (default 120; 0 tries once), and applies to each lock in turn, so exit 75 can come after up to twice the value; anything else is a usage error. A `--baseline` that doesn't exist is AW-EVIDENCE-010 (exit 1) before any lock is taken; one that exists but doesn't decode as a PNG leaves the verdict `unchecked` (never `unchanged`). `--host` takes a bare origin: `http://localhost:<port>`
 or `http://127.0.0.1:<port>` (local: no extra flag), or `https://pr-<n>.vitalize.build` with `--allow-preview-host`
 (the host guard below). Without `--host` the binary drives `http://localhost:3000`.
 
