@@ -19,9 +19,11 @@ internal sealed class ScriptRun(IBrowser browser, StepRunner runner, IRunFiles f
 {
     internal const string UserAgentVariable = "UI_EVIDENCE_USER_AGENT";
 
-    internal async ValueTask<Result<DrivenRun>> DriveAsync(UiScript script, ResolvedHost host, string runDirectory, InvocationLog log, CancellationToken cancellationToken)
+    internal async ValueTask<Result<DrivenRun>> DriveAsync(UiScript script, RunTarget target, InvocationLog log, CancellationToken cancellationToken)
     {
+        var (host, runDirectory) = (target.Host, target.RunDirectory);
         var run = new Collected();
+        var stepOptions = StepRunOptions.Run with { RefuseWrites = StepGuard.RunRefusesWrites(host, target.AllowWrites) };
         foreach (var viewport in script.Viewports)
         {
             var options = new BrowserSessionOptions(host, ScriptViewports.SizeOf(viewport), runDirectory, settings.Get(UserAgentVariable));
@@ -33,7 +35,7 @@ internal sealed class ScriptRun(IBrowser browser, StepRunner runner, IRunFiles f
 
             await using (opened.Value.ConfigureAwait(false))
             {
-                var driven = await ViewportAsync(opened.Value, new(script, viewport, runDirectory, log), run, cancellationToken).ConfigureAwait(false);
+                var driven = await ViewportAsync(opened.Value, new(script, viewport, runDirectory, log, stepOptions), run, cancellationToken).ConfigureAwait(false);
                 if (driven.IsError)
                 {
                     return driven.Error;
@@ -84,7 +86,7 @@ internal sealed class ScriptRun(IBrowser browser, StepRunner runner, IRunFiles f
     private async ValueTask<Result<RunStep>> StepAsync(IBrowserSession session, Pass pass, int index, CancellationToken cancellationToken)
     {
         var step = pass.Script.Steps[index - 1];
-        var status = await runner.RunAsync(session, step, StepRunOptions.Run, pass.Log, cancellationToken).ConfigureAwait(false);
+        var status = await runner.RunAsync(session, step, pass.Options, pass.Log, cancellationToken).ConfigureAwait(false);
         var shot = await session.ScreenshotAsync(cancellationToken).ConfigureAwait(false);
         if (shot.IsError)
         {
@@ -97,7 +99,7 @@ internal sealed class ScriptRun(IBrowser browser, StepRunner runner, IRunFiles f
         return written.Map(_ => new RunStep(pass.Viewport, index, step.Action, step.Target, status, path));
     }
 
-    private sealed record Pass(UiScript Script, ViewportKind Viewport, string RunDirectory, InvocationLog Log);
+    private sealed record Pass(UiScript Script, ViewportKind Viewport, string RunDirectory, InvocationLog Log, StepRunOptions Options);
 
     private sealed class Collected
     {

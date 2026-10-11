@@ -1,4 +1,5 @@
 using System.Text.RegularExpressions;
+using Aw.Evidence.Core.Browser;
 using Aw.Evidence.Core.Scripts;
 
 namespace Aw.Evidence.Core.Guard;
@@ -27,8 +28,14 @@ internal static partial class WriteWords
             StepAction.Fill or StepAction.ExpectVisible => null,
             _ => null,
         };
-        return label is not null && Words(label).Any(IsWriteWord);
+        return LabelLooksLikeWrite(label);
     }
+
+    // A repair candidate is clicked, so it is read as a click step on each of its labels.
+    internal static bool LooksLikeWrite(Candidate candidate) =>
+        LabelLooksLikeWrite(candidate.TestId?.Value) || LabelLooksLikeWrite(candidate.AccessibleName) || LabelLooksLikeWrite(candidate.Text);
+
+    private static bool LabelLooksLikeWrite(string? label) => label is not null && Words(label).Any(IsWriteWord);
 
     internal static IEnumerable<string> Words(string target) =>
         NonWord.Split(CamelBoundary.Replace(target, "${lower} ${upper}").ToLowerInvariant()).Where(static w => w.Length > 0);

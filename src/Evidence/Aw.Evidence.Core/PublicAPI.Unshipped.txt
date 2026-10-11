@@ -1368,6 +1368,8 @@ static Aw.Evidence.Core.Guard.ProvenanceRules.For(Aw.Evidence.Core.Guard.HostKin
 static Aw.Evidence.Core.Guard.ResolvedHost.operator !=(Aw.Evidence.Core.Guard.ResolvedHost? left, Aw.Evidence.Core.Guard.ResolvedHost? right) -> bool
 static Aw.Evidence.Core.Guard.ResolvedHost.operator ==(Aw.Evidence.Core.Guard.ResolvedHost? left, Aw.Evidence.Core.Guard.ResolvedHost? right) -> bool
 static Aw.Evidence.Core.Guard.StepGuard.ForParity(System.Collections.Generic.IReadOnlyList<Aw.Evidence.Core.Scripts.ScriptStep!>! steps, bool allowWrites) -> Aw.Kernel.Result<Aw.Kernel.Unit>!
+static Aw.Evidence.Core.Guard.StepGuard.LooksLikeWrite(Aw.Evidence.Core.Browser.Candidate! candidate) -> bool
+static Aw.Evidence.Core.Guard.StepGuard.RunRefusesWrites(Aw.Evidence.Core.Guard.ResolvedHost! host, bool allowWrites) -> bool
 static Aw.Evidence.Core.Guard.StepGuard.ForRun(System.Collections.Generic.IReadOnlyList<Aw.Evidence.Core.Scripts.ScriptStep!>! steps, Aw.Evidence.Core.Guard.ResolvedHost! host, bool allowWrites) -> Aw.Kernel.Result<Aw.Kernel.Unit>!
 static Aw.Evidence.Core.Guard.StepGuard.IsSameOriginPath(string! target) -> bool
 static Aw.Evidence.Core.Ids.AttachmentId.From(string! value) -> Aw.Evidence.Core.Ids.AttachmentId
@@ -1491,7 +1493,7 @@ static Aw.Evidence.Core.Stack.SeedPolicy.Default.get -> Aw.Evidence.Core.Stack.S
 static Aw.Evidence.Core.Stack.SeedPolicy.From(string? domains, string? emailPattern) -> Aw.Evidence.Core.Stack.SeedPolicy!
 static Aw.Evidence.Core.Stack.SeedPolicy.operator !=(Aw.Evidence.Core.Stack.SeedPolicy? left, Aw.Evidence.Core.Stack.SeedPolicy? right) -> bool
 static Aw.Evidence.Core.Stack.SeedPolicy.operator ==(Aw.Evidence.Core.Stack.SeedPolicy? left, Aw.Evidence.Core.Stack.SeedPolicy? right) -> bool
-static Aw.Evidence.Core.Steps.RepairRules.Fits(Aw.Evidence.Core.Scripts.StepAction action, Aw.Evidence.Core.Browser.Candidate! candidate) -> bool
+static Aw.Evidence.Core.Steps.RepairRules.Fits(Aw.Evidence.Core.Scripts.StepAction action, Aw.Evidence.Core.Browser.Candidate! candidate, bool refuseWrites) -> bool
 static Aw.Evidence.Core.Steps.RepairRules.IsRepairable(Aw.Evidence.Core.Scripts.StepAction action) -> bool
 static Aw.Evidence.Core.Steps.RepairRules.Resolve(Aw.Evidence.Core.Judging.SelectorRepair? proposal, System.Collections.Generic.IReadOnlyList<Aw.Evidence.Core.Browser.Candidate!>! visible) -> Aw.Evidence.Core.Browser.Candidate?
 static Aw.Evidence.Core.Steps.StepRunner.ExpectationHolds(Aw.Evidence.Core.Browser.IBrowserSession! session, Aw.Evidence.Core.Scripts.ExpectedState! expected, System.TimeSpan timeout, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<bool>

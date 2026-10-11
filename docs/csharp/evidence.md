@@ -268,7 +268,9 @@ contract.
 
 Every `goto` target must be a path on the host (one leading `/`); a step that leaves the host is refused
 (AW-EVIDENCE-005), and the browser aborts any off-origin navigation. A write-looking step is a click (or a `goto`) whose
-target has a write verb (`save`, `submit`, `delete`, …, including fused control names such as `saveBtn`). `parity`
+target has a write verb (`save`, `submit`, `delete`, …, including fused control names such as `saveBtn`). Selector
+repair is held to the same guard: where writes are refused, a candidate the judge picks whose test id, accessible name
+or text reads like a write is never clicked or filled (it counts as no candidate, so the step stays `broken`). `parity`
 applies the write guard on every host, local included. Sign-in credentials come only from the environment variables
 the manifest's `login` names (AW-EVIDENCE-006 lists the missing names, never values).
 

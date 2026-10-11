@@ -11,7 +11,8 @@ namespace Aw.Evidence.Core.Steps;
 /// <summary>
 /// Runs one step and checks its expected state. The action failing means the selector is broken: a click or fill may
 /// ask the judge for a visible replacement (at most <see cref="RepairRules.MaxAttempts"/> times), run the same action
-/// on it and re-check the expectation. The action passing but the expectation failing is a behaviour failure:
+/// on it and re-check the expectation; where writes are refused, a candidate that reads like a write is never acted on
+/// (it counts as no candidate). The action passing but the expectation failing is a behaviour failure:
 /// <see cref="StepStatus.Failed"/>, never repaired or masked by a model.
 /// </summary>
 /// <param name="judge">The judge that proposes repairs.</param>
@@ -107,7 +108,7 @@ public sealed class StepRunner(IJudge judge, TimeProvider clock)
         for (var attempt = 0; attempt < RepairRules.MaxAttempts; attempt++)
         {
             var chosen = await ProposeAsync(session, step, log, cancellationToken).ConfigureAwait(false);
-            if (chosen is null || !RepairRules.Fits(step.Action, chosen))
+            if (chosen is null || !RepairRules.Fits(step.Action, chosen, options.RefuseWrites))
             {
                 continue;
             }

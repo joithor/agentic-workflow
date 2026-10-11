@@ -1,4 +1,5 @@
 using Aw.Evidence.Core.Browser;
+using Aw.Evidence.Core.Guard;
 using Aw.Evidence.Core.Judging;
 using Aw.Evidence.Core.Scripts;
 
@@ -26,10 +27,16 @@ public static class RepairRules
             ? visible.FirstOrDefault(c => c.Index == index)
             : null;
 
-    /// <summary>A click lands anywhere; a fill must land on something fillable.</summary>
+    /// <summary>
+    /// A click lands anywhere; a fill must land on something fillable. Where writes are refused, a candidate that reads
+    /// like a write control (<see cref="StepGuard.LooksLikeWrite(Candidate)"/>) never fits: the guard vetted the script's
+    /// targets, and a repair must not reach past it.
+    /// </summary>
     /// <param name="action">The step's action.</param>
     /// <param name="candidate">The candidate.</param>
+    /// <param name="refuseWrites">Whether writes are refused on this host.</param>
     /// <returns>Whether the candidate fits.</returns>
-    public static bool Fits(StepAction action, Candidate candidate) =>
-        action == StepAction.Click || (action == StepAction.Fill && candidate.Role is { } role && _fillableRoles.Contains(role));
+    public static bool Fits(StepAction action, Candidate candidate, bool refuseWrites) =>
+        !(refuseWrites && StepGuard.LooksLikeWrite(candidate))
+        && (action == StepAction.Click || (action == StepAction.Fill && candidate.Role is { } role && _fillableRoles.Contains(role)));
 }

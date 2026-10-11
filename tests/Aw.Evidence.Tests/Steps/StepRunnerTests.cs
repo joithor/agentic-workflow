@@ -260,8 +260,8 @@ public sealed class StepRunnerTests
     {
         var candidate = new Candidate(0, role, AccessibleName: null, TestId: null, Text: null);
 
-        Assert.Equal(fits, RepairRules.Fits(StepAction.Fill, candidate));
-        Assert.True(RepairRules.Fits(StepAction.Click, candidate));
+        Assert.Equal(fits, RepairRules.Fits(StepAction.Fill, candidate, refuseWrites: false));
+        Assert.True(RepairRules.Fits(StepAction.Click, candidate, refuseWrites: false));
     }
 
     [Fact, Trait("Lane", "unit")]

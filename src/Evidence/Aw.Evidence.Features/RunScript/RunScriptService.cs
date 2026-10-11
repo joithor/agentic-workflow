@@ -54,7 +54,7 @@ internal sealed class RunScriptService(ScriptFiles files, IMachineLocks locks, S
             log.RecordPlanning(planning);
         }
 
-        var driven = await run.DriveAsync(script, host, request.RunDirectory, log, cancellationToken).ConfigureAwait(false);
+        var driven = await run.DriveAsync(script, new RunTarget(host, request.RunDirectory, request.AllowWrites), log, cancellationToken).ConfigureAwait(false);
         if (driven.IsError)
         {
             return driven.Error;

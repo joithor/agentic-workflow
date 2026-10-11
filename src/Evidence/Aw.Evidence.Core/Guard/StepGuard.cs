@@ -1,4 +1,5 @@
 using System.Globalization;
+using Aw.Evidence.Core.Browser;
 using Aw.Evidence.Core.Scripts;
 using Aw.Kernel;
 
@@ -17,7 +18,21 @@ public static class StepGuard
     /// <param name="allowWrites">Whether --allow-writes was given.</param>
     /// <returns>Success, or AW-EVIDENCE-005 naming each refused step.</returns>
     public static Result<Unit> ForRun(IReadOnlyList<ScriptStep> steps, ResolvedHost host, bool allowWrites) =>
-        Check(steps, refuseWrites: host.Kind == HostKind.Preview && !allowWrites);
+        Check(steps, refuseWrites: RunRefusesWrites(host, allowWrites));
+
+    /// <summary>Whether a run refuses writes: on a preview host, unless --allow-writes was given.</summary>
+    /// <param name="host">The resolved host.</param>
+    /// <param name="allowWrites">Whether --allow-writes was given.</param>
+    /// <returns>Whether write-looking steps (and repair candidates) are refused.</returns>
+    public static bool RunRefusesWrites(ResolvedHost host, bool allowWrites) => host.Kind == HostKind.Preview && !allowWrites;
+
+    /// <summary>
+    /// Whether a repair candidate reads like a write control: the same write-word check a scripted click gets, applied to
+    /// its test id, accessible name and text.
+    /// </summary>
+    /// <param name="candidate">The candidate the judge chose.</param>
+    /// <returns>Whether any of its labels reads like a write.</returns>
+    public static bool LooksLikeWrite(Candidate candidate) => WriteWords.LooksLikeWrite(candidate);
 
     /// <summary>Checks a parity manifest's frame steps (read-only on every host).</summary>
     /// <param name="steps">Every frame's steps, in order.</param>
