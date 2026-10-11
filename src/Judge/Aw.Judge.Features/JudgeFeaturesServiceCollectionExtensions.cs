@@ -1,4 +1,5 @@
 using Aw.Judge.Features.ApproveDecision;
+using Aw.Judge.Features.AskQuestion;
 using Aw.Judge.Features.ExplainDecision;
 using Aw.Judge.Features.GetBrief;
 using Aw.Judge.Features.GetConfig;
@@ -24,6 +25,7 @@ public static class JudgeFeaturesServiceCollectionExtensions
     {
         AddHealth(services);
         AddBriefs(services);
+        AddQuestions(services);
         _ = services
             .AddScoped<ExplainDecisionService>()
             .AddScoped<IValidator<ExplainDecisionRequest>, ExplainDecisionValidator>()
@@ -60,6 +62,18 @@ public static class JudgeFeaturesServiceCollectionExtensions
                     sp.GetRequiredService<SetConfigService>(),
                     sp.GetRequiredService<IValidator<SetConfigRequest>>()));
         return services;
+    }
+
+    // AskQuestion: every 'judge <question>'.
+    private static void AddQuestions(IServiceCollection services)
+    {
+        _ = services
+            .AddScoped<AskQuestionService>()
+            .AddScoped<IValidator<AskQuestionRequest>, AskQuestionValidator>()
+            .AddScoped<IService<AskQuestionRequest, AskQuestionResponse>>(static sp =>
+                new ValidatingService<AskQuestionRequest, AskQuestionResponse>(
+                    sp.GetRequiredService<AskQuestionService>(),
+                    sp.GetRequiredService<IValidator<AskQuestionRequest>>()));
     }
 
     // GetHealth.

@@ -284,3 +284,35 @@ Aw.Judge.Features.SetConfig.SetConfigRequest.Enabled.init -> void
 Aw.Judge.Features.SetConfig.SetConfigRequest.SetConfigRequest(string! Question, bool? Enabled = null, double? Threshold = null) -> void
 Aw.Judge.Features.SetConfig.SetConfigRequest.Threshold.get -> double?
 Aw.Judge.Features.SetConfig.SetConfigRequest.Threshold.init -> void
+Aw.Judge.Features.AskQuestion.AskQuestionRequest
+Aw.Judge.Features.AskQuestion.AskQuestionRequest.<Clone>$() -> Aw.Judge.Features.AskQuestion.AskQuestionRequest!
+Aw.Judge.Features.AskQuestion.AskQuestionRequest.AllowedProviders.get -> System.Collections.Generic.IReadOnlyList<Aw.Judge.Core.Providers.ProviderName>?
+Aw.Judge.Features.AskQuestion.AskQuestionRequest.AllowedProviders.init -> void
+Aw.Judge.Features.AskQuestion.AskQuestionRequest.AskQuestionRequest(string! Question, string! Input) -> void
+Aw.Judge.Features.AskQuestion.AskQuestionRequest.Deconstruct(out string! Question, out string! Input) -> void
+Aw.Judge.Features.AskQuestion.AskQuestionRequest.Equals(Aw.Judge.Features.AskQuestion.AskQuestionRequest? other) -> bool
+Aw.Judge.Features.AskQuestion.AskQuestionRequest.Input.get -> string!
+Aw.Judge.Features.AskQuestion.AskQuestionRequest.Input.init -> void
+Aw.Judge.Features.AskQuestion.AskQuestionRequest.Question.get -> string!
+Aw.Judge.Features.AskQuestion.AskQuestionRequest.Question.init -> void
+Aw.Judge.Features.AskQuestion.AskQuestionRequest.SessionId.get -> Aw.Judge.Core.Ids.SessionId?
+Aw.Judge.Features.AskQuestion.AskQuestionRequest.SessionId.init -> void
+Aw.Judge.Features.AskQuestion.AskQuestionResponse
+Aw.Judge.Features.AskQuestion.AskQuestionResponse.<Clone>$() -> Aw.Judge.Features.AskQuestion.AskQuestionResponse!
+Aw.Judge.Features.AskQuestion.AskQuestionResponse.AskQuestionResponse(Aw.Judge.Core.Evaluation.EvaluationOutcome! Outcome, string? ConfigWarning) -> void
+Aw.Judge.Features.AskQuestion.AskQuestionResponse.ConfigWarning.get -> string?
+Aw.Judge.Features.AskQuestion.AskQuestionResponse.ConfigWarning.init -> void
+Aw.Judge.Features.AskQuestion.AskQuestionResponse.Deconstruct(out Aw.Judge.Core.Evaluation.EvaluationOutcome! Outcome, out string? ConfigWarning) -> void
+Aw.Judge.Features.AskQuestion.AskQuestionResponse.Equals(Aw.Judge.Features.AskQuestion.AskQuestionResponse? other) -> bool
+Aw.Judge.Features.AskQuestion.AskQuestionResponse.Outcome.get -> Aw.Judge.Core.Evaluation.EvaluationOutcome!
+Aw.Judge.Features.AskQuestion.AskQuestionResponse.Outcome.init -> void
+override Aw.Judge.Features.AskQuestion.AskQuestionRequest.Equals(object? obj) -> bool
+override Aw.Judge.Features.AskQuestion.AskQuestionRequest.GetHashCode() -> int
+override Aw.Judge.Features.AskQuestion.AskQuestionRequest.ToString() -> string!
+override Aw.Judge.Features.AskQuestion.AskQuestionResponse.Equals(object? obj) -> bool
+override Aw.Judge.Features.AskQuestion.AskQuestionResponse.GetHashCode() -> int
+override Aw.Judge.Features.AskQuestion.AskQuestionResponse.ToString() -> string!
+static Aw.Judge.Features.AskQuestion.AskQuestionRequest.operator !=(Aw.Judge.Features.AskQuestion.AskQuestionRequest? left, Aw.Judge.Features.AskQuestion.AskQuestionRequest? right) -> bool
+static Aw.Judge.Features.AskQuestion.AskQuestionRequest.operator ==(Aw.Judge.Features.AskQuestion.AskQuestionRequest? left, Aw.Judge.Features.AskQuestion.AskQuestionRequest? right) -> bool
+static Aw.Judge.Features.AskQuestion.AskQuestionResponse.operator !=(Aw.Judge.Features.AskQuestion.AskQuestionResponse? left, Aw.Judge.Features.AskQuestion.AskQuestionResponse? right) -> bool
+static Aw.Judge.Features.AskQuestion.AskQuestionResponse.operator ==(Aw.Judge.Features.AskQuestion.AskQuestionResponse? left, Aw.Judge.Features.AskQuestion.AskQuestionResponse? right) -> bool
