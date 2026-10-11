@@ -1,4 +1,5 @@
 using Aw.Evidence.Core;
+using Aw.Evidence.Core.Geometry;
 using Aw.Evidence.Core.Images;
 using Aw.Evidence.Core.Judging;
 using Aw.Evidence.Core.Lint;
@@ -7,7 +8,6 @@ using Aw.Evidence.Core.Scripts;
 using Aw.Evidence.Core.Steps;
 using Aw.Evidence.Core.Usage;
 using Aw.Evidence.Core.Visual;
-using Aw.Evidence.Core.Geometry;
 using Aw.Evidence.Testing;
 using Aw.Kernel.Json;
 

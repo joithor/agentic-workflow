@@ -1,3 +1,5 @@
+using Aw.Evidence.Core.Steps;
+using Aw.Evidence.Core.Visual;
 using Aw.Evidence.Features.CheckProvenance;
 using Aw.Evidence.Features.Doctor;
 using Aw.Evidence.Features.InstallBrowser;
@@ -16,7 +18,7 @@ namespace Aw.Evidence.Features;
 /// <summary>Registers Aw.Evidence.Features's slices: each service, its validator and its decorators (outermost first).</summary>
 public static class EvidenceFeaturesServiceCollectionExtensions
 {
-    /// <summary>Adds every Evidence use case as an IService, with the helpers the browser slices use.</summary>
+    /// <summary>Adds every Evidence use case as an IService, with the Core step runner and visual gate and the helpers the browser slices use.</summary>
     /// <param name="services">The service collection.</param>
     /// <returns>The same collection.</returns>
     public static IServiceCollection AddEvidenceFeatures(this IServiceCollection services) =>
@@ -24,6 +26,8 @@ public static class EvidenceFeaturesServiceCollectionExtensions
 
     private static IServiceCollection AddBrowserSlices(this IServiceCollection services) =>
         services
+            .AddScoped<StepRunner>()
+            .AddScoped<VisualGate>()
             .AddScoped<ScriptFiles>()
             .AddScoped<ScriptRun>()
             .AddScoped<RunVerdict>()

@@ -12,7 +12,7 @@ public sealed class HostTests
     private static readonly string _stateRoot = Path.Combine(Path.GetTempPath(), "aw-evidence-di-test");
 
     [Fact, Trait("Lane", "unit")]
-    public void Every_registered_service_resolves_in_a_scope()
+    public async Task Every_registered_service_resolves_in_a_scope()
     {
         var services = Compose();
         var serviceTypes = services
@@ -20,10 +20,11 @@ public sealed class HostTests
             .Where(t => t.IsGenericType && t.GetGenericTypeDefinition() == typeof(IService<,>))
             .ToList();
 
-        using var provider = services.BuildServiceProvider(
+        // The browser adapter is only IAsyncDisposable, so the container and the scope are disposed asynchronously, as Program.cs does.
+        await using var provider = services.BuildServiceProvider(
             new ServiceProviderOptions { ValidateOnBuild = true, ValidateScopes = true });
         _ = provider.GetRequiredService<TelemetryRuntime>();   // so the container disposes it, as Program.cs does
-        using var scope = provider.CreateScope();
+        await using var scope = provider.CreateAsyncScope();
 
         Assert.NotEmpty(serviceTypes);
         Assert.All(serviceTypes, t => Assert.NotNull(scope.ServiceProvider.GetRequiredService(t)));
