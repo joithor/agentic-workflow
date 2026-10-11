@@ -54,7 +54,7 @@ public sealed class ProviderCatalogTests
                 new JevProvider(new HttpClient(), new FakeSecretSource(), new FakeInputRedactor()),
                 new ClaudeCliProvider(runner),
                 new CodexCliProvider(runner),
-                new CursorCliProvider(runner),
+                new CursorCliProvider(runner, new FakeInputRedactor()),
             ]);
     }
 }

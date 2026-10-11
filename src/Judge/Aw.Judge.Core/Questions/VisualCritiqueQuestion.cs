@@ -42,10 +42,10 @@ public static class VisualCritiqueQuestion
     };
 
     // The evidence directory is the CLIs' working directory and their Read scope: it must be absolute, and each
-    // screenshot a relative path that stays inside it, with no control character (a line break would let the path
-    // start a line of its own in the prompt).
+    // screenshot a relative path that stays inside it. None may hold a control character or U+2028/U+2029 (a line
+    // break would let a path start a line of its own in the prompt, and cursor names the full paths in it).
     internal static string? InputProblem(VisualCritiqueInput input) =>
-        !IsAbsolute(input.EvidenceDir) ? "evidenceDir must be an absolute path"
+        !IsAbsolute(input.EvidenceDir) || HasLineBreakOrControl(input.EvidenceDir) ? "evidenceDir must be an absolute path with no control character"
         : !StaysInside(input.AfterScreenshot) ? "afterScreenshot must be a relative path inside evidenceDir"
         : input.BaselineScreenshot is { } baseline && !StaysInside(baseline) ? "baselineScreenshot must be a relative path inside evidenceDir"
         : null;
@@ -53,9 +53,11 @@ public static class VisualCritiqueQuestion
     private static bool IsAbsolute(string path) =>
         path.StartsWith('/') || (path.Length >= 3 && char.IsAsciiLetter(path[0]) && path[1] == ':' && path[2] is '/' or '\\');
 
+    private static bool HasLineBreakOrControl(string path) => path.Any(c => char.IsControl(c) || c is '\u2028' or '\u2029');
+
     private static bool StaysInside(string path) =>
         path.Length > 0
-        && !path.Any(char.IsControl)
+        && !HasLineBreakOrControl(path)
         && !path.StartsWith('/') && !path.StartsWith('\\') && !(path.Length >= 2 && path[1] == ':')
         && !path.Split('/', '\\').Contains("..", StringComparer.Ordinal);
 

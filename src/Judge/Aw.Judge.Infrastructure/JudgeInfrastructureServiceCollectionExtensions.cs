@@ -56,6 +56,6 @@ public static class JudgeInfrastructureServiceCollectionExtensions
                 sp.GetRequiredService<JevProvider>(),
                 new ClaudeCliProvider(sp.GetRequiredService<IProcessRunner>()),
                 new CodexCliProvider(sp.GetRequiredService<IProcessRunner>()),
-                new CursorCliProvider(sp.GetRequiredService<IProcessRunner>()),
+                new CursorCliProvider(sp.GetRequiredService<IProcessRunner>(), sp.GetRequiredService<IInputRedactor>()),
             ]));
 }

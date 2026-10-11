@@ -17,5 +17,5 @@ public sealed class CursorCliProviderContractTests : ModelProviderContract
 
     protected override IModelProvider? Hanging() => With(new FakeProgram { Runs = TimeSpan.FromMinutes(1) });
 
-    private static CursorCliProvider With(FakeProgram program) => new(new FakeProcessRunner().With("cursor-agent", program));
+    private static CursorCliProvider With(FakeProgram program) => new(new FakeProcessRunner().With("cursor-agent", program), new FakeInputRedactor());
 }
