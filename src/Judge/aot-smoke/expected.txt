@@ -23,6 +23,8 @@ exit 64
 ## bad allowlist
 usage: judge <command> [args] | judge <question> < input.json (unknown provider(s): bogus)
 exit 64
+## bad AW_JUDGE_PROVIDERS under health
+{"status":"ok","failures24h":0}
 ## health after
 {"status":"ok","failures24h":0}
 ## state files

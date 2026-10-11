@@ -1,5 +1,6 @@
 using Aw.Judge.Core.Errors;
 using Aw.Judge.Core.Providers;
+using Aw.Judge.Host.Commands;
 using Aw.Kernel.Testing;
 
 namespace Aw.Judge.Tests.Providers;
@@ -8,44 +9,33 @@ namespace Aw.Judge.Tests.Providers;
 public sealed class ProvidersAllowlistTests
 {
     [Fact]
-    public void Neither_flag_nor_environment_allows_everything_and_keeps_argv()
-    {
-        var parsed = ProvidersAllowlist.Parse(["why", "d1"], environmentValue: null);
-
-        Assert.Null(parsed.Value.Allowed);
-        Assert.Equal(["why", "d1"], parsed.Value.Arguments);
-        Assert.True(parsed.Value.IsAllowed(ProviderName.Jev));
-    }
+    public void Without_the_flag_argv_is_kept_whole() =>
+        Assert.Equal(("why d1", null), Joined(ProvidersFlag.Take(["why", "d1"])));
 
     [Fact]
-    public void The_flag_is_read_and_removed_wherever_it_appears_and_wins_over_the_environment()
-    {
-        var parsed = ProvidersAllowlist.Parse(["--providers", "jev, claude-cli,jev", "ask-check"], "rules");
-
-        Assert.Equal([ProviderName.Jev, ProviderName.ClaudeCli], parsed.Value.Allowed);
-        Assert.Equal(["ask-check"], parsed.Value.Arguments);
-        Assert.False(parsed.Value.IsAllowed(ProviderName.CodexCli));
-    }
+    public void The_flag_is_taken_out_wherever_it_appears() =>
+        Assert.Equal(("ask-check", "jev, claude-cli,jev"), Joined(ProvidersFlag.Take(["ask-check", "--providers", "jev, claude-cli,jev"])));
 
     [Fact]
-    public void The_environment_is_used_when_the_flag_is_absent()
-    {
-        var parsed = ProvidersAllowlist.Parse(["health"], "jev");
+    public void A_flag_without_a_value_leaves_no_command_line() =>
+        Assert.Null(ProvidersFlag.Take(["wake-gate", "--providers"]).Arguments);
 
-        Assert.Equal([ProviderName.Jev], parsed.Value.Allowed);
-        Assert.Equal(["health"], parsed.Value.Arguments);
-    }
+    [Fact]
+    public void A_list_is_trimmed_and_deduplicated_in_first_seen_order() =>
+        Assert.Equal([ProviderName.Jev, ProviderName.ClaudeCli], ProviderNames.ParseList("jev, claude-cli,jev").Value);
 
     [Theory]
-    [InlineData(new[] { "--providers" }, null, "--providers needs a comma-separated list")]
-    [InlineData(new[] { "--providers", "" }, null, "--providers list is empty")]
-    [InlineData(new[] { "health" }, " , ", "--providers list is empty")]
-    [InlineData(new[] { "--providers", "jev,gpt,Rules" }, null, "unknown provider(s): gpt, Rules")]
-    public void A_malformed_list_is_an_error_with_the_ts_message(string[] arguments, string? environment, string message)
+    [InlineData("", "--providers list is empty")]
+    [InlineData(" , ", "--providers list is empty")]
+    [InlineData("jev,gpt,Rules", "unknown provider(s): gpt, Rules")]
+    public void A_malformed_list_is_an_error_naming_the_problem(string list, string message)
     {
-        var parsed = ProvidersAllowlist.Parse(arguments, environment);
+        var parsed = ProviderNames.ParseList(list);
 
         Assert.True(parsed.IsError);
         Assert.Equal((JudgeErrors.ProvidersFlag.Code, message), (parsed.Error.Code, parsed.Error.Message));
     }
+
+    private static (string? Arguments, string? Value) Joined((string[]? Arguments, string? Value) taken) =>
+        (taken.Arguments is null ? null : string.Join(' ', taken.Arguments), taken.Value);
 }

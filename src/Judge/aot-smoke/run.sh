@@ -41,7 +41,7 @@ state="$work/state"
 mkdir -p "$state"
 
 # Each call gets only these variables: offline, deterministic, the default log level.
-judge() { env -i HOME="$work" PATH=/usr/bin:/bin AW_STATE_DIR="$state" AW_JUDGE_PROVIDERS=rules AW_SESSION_ID=smoke "$bin" "$@"; }
+judge() { env -i HOME="$work" PATH=/usr/bin:/bin AW_STATE_DIR="$state" AW_JUDGE_PROVIDERS="${SMOKE_PROVIDERS:-rules}" AW_SESSION_ID=smoke "$bin" "$@"; }
 brief='{"toolUseId":"toolu_1","sessionId":"s1","promptId":"p1","dispatchName":"builder-a","subagentType":"general-purpose","goal":"g","acceptanceCriteria":"the tests pass","proofCommand":"make test"}'
 {
   echo "## health"
@@ -65,7 +65,9 @@ brief='{"toolUseId":"toolu_1","sessionId":"s1","promptId":"p1","dispatchName":"b
   echo "## usage error"
   judge why || echo "exit $?"
   echo "## bad allowlist"
-  judge --providers bogus health || echo "exit $?"
+  printf '%s' '{"text":"ok","senderKind":"teammate"}' | judge --providers bogus wake-gate || echo "exit $?"
+  echo "## bad AW_JUDGE_PROVIDERS under health"
+  SMOKE_PROVIDERS=bogus judge health || echo "exit $?"
   echo "## health after"
   judge health || echo "exit $?"
   echo "## state files"

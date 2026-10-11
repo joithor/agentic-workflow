@@ -296,16 +296,6 @@ Aw.Judge.Core.Providers.QuestionRef.Outputs.init -> void
 Aw.Judge.Core.Providers.QuestionRef.Prompt.get -> string!
 Aw.Judge.Core.Providers.QuestionRef.Prompt.init -> void
 Aw.Judge.Core.Providers.QuestionRef.QuestionRef() -> void
-Aw.Judge.Core.Providers.ProvidersAllowlist
-Aw.Judge.Core.Providers.ProvidersAllowlist.<Clone>$() -> Aw.Judge.Core.Providers.ProvidersAllowlist!
-Aw.Judge.Core.Providers.ProvidersAllowlist.Allowed.get -> System.Collections.Generic.IReadOnlyList<Aw.Judge.Core.Providers.ProviderName>?
-Aw.Judge.Core.Providers.ProvidersAllowlist.Allowed.init -> void
-Aw.Judge.Core.Providers.ProvidersAllowlist.Arguments.get -> System.Collections.Generic.IReadOnlyList<string!>!
-Aw.Judge.Core.Providers.ProvidersAllowlist.Arguments.init -> void
-Aw.Judge.Core.Providers.ProvidersAllowlist.Deconstruct(out System.Collections.Generic.IReadOnlyList<Aw.Judge.Core.Providers.ProviderName>? Allowed, out System.Collections.Generic.IReadOnlyList<string!>! Arguments) -> void
-Aw.Judge.Core.Providers.ProvidersAllowlist.Equals(Aw.Judge.Core.Providers.ProvidersAllowlist? other) -> bool
-Aw.Judge.Core.Providers.ProvidersAllowlist.IsAllowed(Aw.Judge.Core.Providers.ProviderName provider) -> bool
-Aw.Judge.Core.Providers.ProvidersAllowlist.ProvidersAllowlist(System.Collections.Generic.IReadOnlyList<Aw.Judge.Core.Providers.ProviderName>? Allowed, System.Collections.Generic.IReadOnlyList<string!>! Arguments) -> void
 Aw.Judge.Core.Questions.QuestionDefinition<TInput>
 Aw.Judge.Core.Questions.QuestionDefinition<TInput>.ContentClass.get -> Aw.Judge.Core.Providers.ContentClass
 Aw.Judge.Core.Questions.QuestionDefinition<TInput>.ContentClass.init -> void
@@ -411,9 +401,6 @@ override Aw.Judge.Core.Providers.ProviderUnavailable.ToString() -> string!
 override Aw.Judge.Core.Providers.QuestionRef.Equals(object? obj) -> bool
 override Aw.Judge.Core.Providers.QuestionRef.GetHashCode() -> int
 override Aw.Judge.Core.Providers.QuestionRef.ToString() -> string!
-override Aw.Judge.Core.Providers.ProvidersAllowlist.Equals(object? obj) -> bool
-override Aw.Judge.Core.Providers.ProvidersAllowlist.GetHashCode() -> int
-override Aw.Judge.Core.Providers.ProvidersAllowlist.ToString() -> string!
 override Aw.Judge.Core.Questions.QuestionDefinition<TInput>.Equals(object? obj) -> bool
 override Aw.Judge.Core.Questions.QuestionDefinition<TInput>.GetHashCode() -> int
 override Aw.Judge.Core.Questions.QuestionDefinition<TInput>.ToString() -> string!
@@ -585,9 +572,6 @@ static Aw.Judge.Core.Providers.ProviderUnavailable.operator !=(Aw.Judge.Core.Pro
 static Aw.Judge.Core.Providers.ProviderUnavailable.operator ==(Aw.Judge.Core.Providers.ProviderUnavailable? left, Aw.Judge.Core.Providers.ProviderUnavailable? right) -> bool
 static Aw.Judge.Core.Providers.QuestionRef.operator !=(Aw.Judge.Core.Providers.QuestionRef? left, Aw.Judge.Core.Providers.QuestionRef? right) -> bool
 static Aw.Judge.Core.Providers.QuestionRef.operator ==(Aw.Judge.Core.Providers.QuestionRef? left, Aw.Judge.Core.Providers.QuestionRef? right) -> bool
-static Aw.Judge.Core.Providers.ProvidersAllowlist.Parse(System.Collections.Generic.IReadOnlyList<string!>! arguments, string? environmentValue) -> Aw.Kernel.Result<Aw.Judge.Core.Providers.ProvidersAllowlist!>!
-static Aw.Judge.Core.Providers.ProvidersAllowlist.operator !=(Aw.Judge.Core.Providers.ProvidersAllowlist? left, Aw.Judge.Core.Providers.ProvidersAllowlist? right) -> bool
-static Aw.Judge.Core.Providers.ProvidersAllowlist.operator ==(Aw.Judge.Core.Providers.ProvidersAllowlist? left, Aw.Judge.Core.Providers.ProvidersAllowlist? right) -> bool
 static readonly Aw.Judge.Core.Errors.JudgeErrors.Invalid -> Aw.Kernel.ErrorDefinition!
 static readonly Aw.Judge.Core.Errors.JudgeErrors.ProvidersFlag -> Aw.Kernel.ErrorDefinition!
 virtual Aw.Judge.Core.Evaluation.EvaluationOutcome.EqualityContract.get -> System.Type!
@@ -951,3 +935,4 @@ Aw.Judge.Core.Config.QuestionConfig.Deconstruct(out bool Enabled, out double? Th
 Aw.Judge.Core.Config.QuestionConfig.QuestionConfig(bool Enabled, double? Threshold = null) -> void
 Aw.Judge.Core.Config.QuestionConfig.Threshold.get -> double?
 const Aw.Judge.Core.Evaluation.EvaluationReasons.RuleTimeout = "rule-timeout" -> string!
+static Aw.Judge.Core.Providers.ProviderNames.ParseList(string! raw) -> Aw.Kernel.Result<System.Collections.Generic.IReadOnlyList<Aw.Judge.Core.Providers.ProviderName>!>!

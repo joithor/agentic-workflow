@@ -6,8 +6,9 @@ using Microsoft.Extensions.DependencyInjection;
 namespace Aw.Judge.Host.Commands;
 
 /// <summary>
-/// Command name → handler. The table first takes the providers allowlist out of argv ('--providers a,b' anywhere, else
-/// AW_JUDGE_PROVIDERS), then checks each command's argument count (a bad list or a wrong count is a usage error, 64);
+/// Command name → handler. The table first takes the '--providers a,b' flag out of argv (ProvidersFlag), then checks each
+/// command's argument count (a wrong count is a usage error, 64); a question also reads the allowlist (the flag, else
+/// AW_JUDGE_PROVIDERS), and a list it can't read is a usage error there;
 /// each handler binds its arguments, calls one service and maps the result to an exit code (docs/csharp/judge.md).
 /// </summary>
 internal static class CommandTable
@@ -19,13 +20,12 @@ internal static class CommandTable
 
     internal static async Task<int> Run(string[] argv, IServiceProvider provider, JsonSerializerOptions json)
     {
-        var allowlist = ProvidersAllowlist.Parse(argv, provider.GetRequiredService<ProvidersVariable>().Value);
-        if (allowlist.IsError)
+        var (args, flag) = ProvidersFlag.Take(argv);
+        if (args is null)
         {
-            return CommandOutput.Usage(Synopsis, allowlist.Error.Message);
+            return CommandOutput.Usage(Synopsis, "--providers needs a comma-separated list");
         }
 
-        string[] args = [.. allowlist.Value.Arguments];
         if (args.Length == 0)
         {
             return CommandOutput.Usage(Synopsis);
@@ -38,7 +38,7 @@ internal static class CommandTable
             var services = scope.ServiceProvider;
             return args[0] switch
             {
-                _ when !_routed.Contains(args[0]) => await QuestionCommand.Run(args[0], rest, allowlist.Value.Allowed, services, json).ConfigureAwait(false),
+                _ when !_routed.Contains(args[0]) => await Question(args[0], rest, flag ?? services.GetRequiredService<ProvidersVariable>().Value, services, json).ConfigureAwait(false),
                 GetHealthCommand.Name when rest.Length == 0 => await GetHealthCommand.Run(services, json).ConfigureAwait(false),
                 GetHealthCommand.Name => CommandOutput.Usage("health"),
                 BriefCommands.Name => await BriefCommands.Run(rest, services, json).ConfigureAwait(false),
@@ -49,5 +49,23 @@ internal static class CommandTable
                 _ => await ApproveDecisionCommand.Run(rest[0], services, json).ConfigureAwait(false),
             };
         }
+    }
+
+    // A question reads the allowlist (the flag, else AW_JUDGE_PROVIDERS); a list it can't read is a usage error.
+    private static async Task<int> Question(string question, string[] rest, string? list, IServiceProvider services, JsonSerializerOptions json)
+    {
+        IReadOnlyList<ProviderName>? allowed = null;
+        if (list is not null)
+        {
+            var parsed = ProviderNames.ParseList(list);
+            if (parsed.IsError)
+            {
+                return CommandOutput.Usage(Synopsis, parsed.Error.Message);
+            }
+
+            allowed = parsed.Value;
+        }
+
+        return await QuestionCommand.Run(question, rest, allowed, services, json).ConfigureAwait(false);
     }
 }

@@ -64,9 +64,11 @@ fields (the decision plus the question's extra properties) are read as a `JsonOb
 
 **The providers allowlist** is a global flag, `--providers a,b`, accepted anywhere in argv (`judge --providers rules
 wake-gate` and `judge wake-gate --providers rules` are the same), else `AW_JUDGE_PROVIDERS` (hooks can't always add
-flags); the flag wins over the variable. The table takes it out of argv before anything else, so every command accepts
-it; only the questions use it. Names are `rules`, `jev`, `claude-cli`, `codex-cli`, `cursor-cli`; `rules` is always
-kept. A flag with no value, an empty list or an unknown name is a usage error (64, AW-JUDGE-010), for any command
+flags); the flag wins over the variable. The table takes the flag out of argv before anything else (`ProvidersFlag`,
+Host), so every command line accepts it, and a flag with no value is a usage error for any command. Only a question
+reads the list (`ProviderNames.ParseList`, Core): names are `rules`, `jev`, `claude-cli`, `codex-cli`, `cursor-cli`,
+`rules` is always kept, and an empty list or an unknown name is a usage error there (64, AW-JUDGE-010). The other
+commands ignore the list, so a bad `AW_JUDGE_PROVIDERS` never stops `health` or the brief commands the hooks call
 (`ProvidersAllowlistCliTests`).
 
 ### Exit codes and streams
@@ -362,7 +364,8 @@ tests run JIT. `src/Judge/aot-smoke/run.sh` publishes it for the host RID on a c
 files stay RID-free), fails on any IL2xxx/IL3xxx warning or a missing bundled `libe_sqlite3` beside the binary, then
 runs the native binary offline (bare `PATH`, `AW_JUDGE_PROVIDERS=rules`, `AW_LOG_LEVEL` unset) on a temp state
 directory: `health`, `brief save`/`get`/`map-by-name`, a missing brief, the wake-gate and ask-check pre-rules, a
-question nothing decides, `config get`, a usage error and a bad allowlist. The output, with ids and times normalized,
+question nothing decides, `config get`, a usage error, a bad allowlist on a question and a bad `AW_JUDGE_PROVIDERS`
+under `health`. The output, with ids and times normalized,
 must equal `expected.txt`. CI's .NET job runs it with the other `src/*/aot-smoke/run.sh` scripts. The binary is about
 11 MB.
 
