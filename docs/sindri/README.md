@@ -14,7 +14,7 @@ Each part of the app has its own design spec under `docs/superpowers/specs/`. Th
 | Part | Spec | Build step (A §17.29.4) | Stage |
 |---|---|---|---|
 | App shell: process, CLI, lease, ledger, profile, scheduler, doctor | `docs/csharp/sindri.md` (on `feat/sindri-s1-app-shell` until it merges) | 1 | S1 |
-| API surface: commands, queries, projections, the event stream, auth v0, the MCP server, `sindri open` | `2026-10-10-sindri-api-surface-design.md` | 1 (the command layer and API) | API P0–P10 |
+| API surface: commands, queries, projections, the event stream, auth v0, the MCP server, `sindri open` | `2026-10-10-sindri-api-surface-design.md` | 1 (the command layer and API) | API P0–P11 |
 | **UI app design** (Avalonia, Linear design language): the control plane's views, actions and launching sessions | *Slot: `<date>-sindri-ui-design.md`, not written yet. It comes next, before any more building* | 1 (the UI app) | S1b |
 | Workflow engine: recipes, blocks, validator, instances, timers, approval | `2026-10-10-sindri-workflow-engine-design.md` | 2 | S2 (P1–P7) |
 | Context retrieval engine: the product graph, adapters, planner, evals | `2026-10-10-sindri-context-retrieval-design.md` | 3 | S3 (Phases 1–10) |
@@ -62,7 +62,7 @@ Design freezes the **packet** (`packet.json`, A §17.4), the handoff spec the re
 
 ### How you interject
 
-- **A live session:** attach in Warp and type. That's a takeover: the workflow pauses, timers stopped, until `sindri handback`.
+- **A live session:** opening an item that has a running instance takes it over (the workflow pauses, timers stopped) until you hand back (`sindri handback`, or the app's button). "Attach" only focuses a session that's already live; typing into it changes nothing in Sindri.
 - **No live session** (between steps, at a gate, parked): `sindri open <item> [--with claude|codex|cursor]`, or "open" in the app, starts a session in Warp with Claude Code, Codex or Cursor, seeded with the item id and repo; the session pulls the item's state, packet, evidence and context through Sindri's MCP endpoint. If the item has a live instance, opening it takes it over (`pause`) until you hand back, which the app offers. `--attach` focuses a session that's already live.
 - **From your own sessions:** the `sindri` CLI and a Sindri MCP server give an item's state and context, run a retrieval query, or file a request ("re-scope this"). Calls from a session are requests, never decisions. Approvals stay human actions, through authenticated verbs and UI forms.
 
@@ -76,25 +76,25 @@ Not a module-by-module port of `sindri/` (A §17.29.4):
 5. workflows down the factory line, intake first;
 6. the switch, once every desk tool has its C# form.
 
-Within steps 1–3 the specs' phases land in this order. It is the one order every spec's dependency column cites (X19):
+Within steps 1–3 the specs' phases land in this order. It is the only cross-spec order: each wave is one more than the latest wave a phase needs, from each spec's own dependency column. Each spec's internal wave table only orders its own phases inside it (X19, X39).
 
 | Wave | Lands | Needs |
 |---|---|---|
-| 0 | S1 (#163); API P0 (`--slice-only`); context S-1C (`compose` edge); engine P1 and P3 (stacked on S1, add files only) | — |
-| 1 | API P1 (the command chain, callers, `sindri-prove.sh`) | S1 |
-| 2 | API P2 (projector), P3 (items); engine P2 (registry, challenge) | API P1 |
-| 3 | Context S-1A, then S-1M (`/sindri/mcp`); API P4, P5 | API P1 (context), API P2 (P4, P5) |
-| 4 | Engine P4 (store, start, desk Steps) | engine P2 + P3, API P3 (items) |
-| 5 | API P6 (jobs), P11 (engine item states); engine P5, P6 | engine P4 |
-| 6 | Context jobs stages (S-4 map build, S-5B sync) and the rest of its stages | API P6 |
-| 7 | API P8 (`sindri_*` tools), P10 (`ILauncher`, `sindri open`); engine P7 | API P4 + P6 (P8), engine P5 + P6 (P7) |
-| 8 | Engine P8 (the agent runtime) | engine P7, API P10, Judge (#156) |
+| 0 | S1 (#163); API P0; context S-1C, S-2R, S-FX; engine P1 and P3 (stacked on S1, add files only) | — |
+| 1 | API P1 (command chain, callers, the `human` token, `sindri-prove.sh`) | S1, API P0 |
+| 2 | API P2 (projector); engine P2 (registry, challenge); context S-1A | API P1 (+ engine P1; S-1C, S-FX) |
+| 3 | API P3 (items), P5 (stream); context S-1M (`/sindri/mcp`), S-2W, S-3, S-5A | API P2; S-1A |
+| 4 | API P4 (decisions, needs-you), P6 (jobs); engine P4; context S-3M | API P3; API P2 + P5; engine P2 + P3 + API P3; S-1M + S-3 |
+| 5 | API P8 (`sindri_*` tools), P11 (engine item states); engine P5, P6; context S-4, S-5B, S-10 | API P4 + P6; API P4 + engine P4; engine P4; S-3 (+ S-5A) + API P6; engine P4 |
+| 6 | API P10 (launch contract, `sindri open`); engine P7; context S-6, S-7A, S-CF | API P3 + P8 + the UI design spec; engine P5 + P6; S-5B; S-3 + S-4; S-4 + S-5B |
+| 7 | Engine P8 (agent runtime); context S-7B | engine P7 + API P10 + Judge (#156); S-4 + S-6 + S-7A |
+| 8 | Context S-8 | S-7B |
 
-The UI design spec comes before any app phase beyond the S1b shell, and before API P10 (it sets the launch targets).
+The UI design spec comes before any app phase beyond the S1b shell, and before API P10 (it sets the launch targets). The scoping recipe's spec comes after it. Context S-9 waits for the code index block.
 
 ### Cross-spec reconciliation
 
-Where the API (API), workflow engine (WF) and context retrieval (CTX) specs disagreed. The owner settled X2 (the app is a full desk client, not read-only), X21 and X22, and asked for the recommended answer on the rest; X19–X33 come from the epic's `/autoplan` review (2026-10-11); each answer is now written into the spec named in "Changes" (2026-10-11). X17 is a build-order plan, not a spec change.
+Where the API (API), workflow engine (WF) and context retrieval (CTX) specs disagreed. The owner settled X2 (the app is a full desk client, not read-only), X21, X22 and X17's PR decision, and asked for the recommended answer on the rest; X19–X42 come from the epic's two `/autoplan` passes (2026-10-11); each answer is now written into the spec named in "Changes" (2026-10-11). X17 is a build-order plan, not a spec change.
 
 | # | Where they differed | Answer | Changes |
 |---|---|---|---|
@@ -114,7 +114,7 @@ Where the API (API), workflow engine (WF) and context retrieval (CTX) specs disa
 | X14 | **The `context.retrieve` block** (CTX Phase 10) fills a Step's injection plan. WF's block kinds are gate, evidence provider, Step and effect, and none of them is "input to a Step" | WF adds a Step-input kind (or a documented use of `IEvidenceProvider`) before CTX Phase 10 | WF §2; CTX Phase 10 |
 | X15 | **Launching sessions.** API P10: `OpenItem` and `ILauncher`, Warp only. WF §7.2: `ILauncher` is "the next engine design". README: Claude Code only | API P10 owns `ILauncher`. The UI design defines the launch targets: Warp plus Claude Code, Codex or Cursor, chosen per item or by profile default, and "attach" for a live session | API P10, §3.5; WF §7.2; UI design |
 | X16 | **Two timelines.** API `GET /items/{id}/timeline`; WF `workflow events <address>` | The item timeline includes its instances' events; `workflow events` is the instance-level filter of the same read | API §3.1; WF §6.3 |
-| X17 | **Build order versus what's built.** S2 (#167), S3 (#166), S4a (#169) and the UI shell S1b (#168) were built on S1 ahead of API P1, and differ from the specs | **The specs win.** Merge in the build-order table's waves. Before review, each PR changes to its spec: #167 to the engine spec's blocks, routes, verbs and `docs/csharp/sindri-workflow.md`; #166 moves to `src/Context/`, serves `GET /sindri/context/query`, and drops the ConnectAI source (the owner declined ConnectAI); #169 drops routes no spec owns; #168 stays draft until the UI design spec is approved | Plan; the four PRs |
+| X17 | **Build order versus what's built.** S2 (#167), S3 (#166), S4a (#169) and the UI shell S1b (#168) were built on S1 ahead of API P1, and differ from the specs | **The specs win, and the built PRs are references (owner, 2026-10-11).** #166, #167 and #169 stay open as draft reference branches and are never merged; each phase is rebuilt from its spec in the build-order waves, reusing their code where it fits. Divergences to drop on rebuild: #167's built-in recipes that ship approved, its block types, routes and verbs; #166's placement in `src/Sindri`, `POST /context/query`, the `LINEAR_API_KEY` variable (secrets are pointers) and the ConnectAI source (declined); #169's routes, its doc and `collect` verb. #169's Judge and Evidence blocks are rebuilt in engine P8 and the first recipe that needs evidence. #168 stays draft until the UI design spec is approved | Plan; the four PRs |
 | X18 | **The model provider.** Judge (#156) has `IModelProvider` and `IProviderCatalog`. CTX's labeler called the `claude` CLI, and no spec said every model call goes through one port | Every model call in Sindri (rung-2 and rung-3 gates, labeling, rerank, adjudication) goes through Judge's provider port, and agent sessions go through `ILauncher` with a target (Claude Code, Codex or Cursor). Switching provider, an API key included, is a profile choice and an adapter, never an interface change. Context reaches it through its own `IModelPort`, adapted in Sindri's Host (tiers forbid Context → Judge). Provider keys are secret pointers only, never values in the profile | CTX §4, §11; API P10 |
 | X19 | One build order, stated four ways (E3) | The build-order table above; every spec cites it | README; all three |
 | X20 | `SND-API-004` and `-005` were reserved anew but S1 already uses them (E1) | The API's new codes are `SND-API-011` (views not reached) and `-012` (stream limits) | API §1, §9 |
@@ -132,6 +132,14 @@ Where the API (API), workflow engine (WF) and context retrieval (CTX) specs disa
 | X32 | Exit codes, ledger events, fencing, notifications (E18, E23, E24, E26) | Context uses S1's exit codes (1 when not running, 0 when empty); context commands write ledger events; `sindri_*` text is fenced like `context_*`; the app notifies only until engine P6 | CTX §3, §8.6; API §5.1, §8 |
 | X33 | Leftovers (E25, E27, E28) | `workflow.request` dropped (accepted requests reach instances as `decision.recorded`); `EventFactory` owned by API P1; the engine scaffolds with `--slice-only`; `sindri mcp register` ships with whoever creates `/sindri/mcp` | WF §5.2, §7; API §3.4, §8 |
 | X34 | The app should start scoping, but no spec owned a scoping workflow, and recipes had no input metadata for a start form (E11) | Recipe `inputs` carry a label and type, returned by `recipe show` and `GET /workflow/recipes`, so the app's start form lists approved recipes and their inputs. The scoping recipe is factory step 5's first workflow, built on the context engine; its spec is the next one after the UI design. Until it exists, "start" offers whatever recipes are approved | WF §3.2; README build order |
+| X35 | Nothing wrote `session.ended`, so attach and the double-launch guard never cleared and dead agent Steps waited out their timeout (P2-1) | Every launched command runs under `sindri session wrap`, which heartbeats and reports exit; `service:launcher` writes `session.ended` (`exit` or `lost` after 120 s) | API §8.1, P10 |
+| X36 | `step-report` had no credential; the run token is public; one fixed launch file let launches cross (P2-2) | A per-launch secret, read once from a 0600 file by wrap and passed only by environment, sent as `X-Sindri-Launch-Secret`; per-launch Warp files; `SND-AUTH-003` | API §6, §8.1; WF §6.5 |
+| X37 | The engine had no route table; addresses contain `/`; forms had no fields (P2-3) | An engine route table with typed instance ids, request bodies, base64 files, and `GetInstance` returning the open Step's outcomes and outputs | WF §6.3 |
+| X38 | The state map contradicted the group table, and park rows didn't say which answer they need (P2-4) | One group table (`parked` is in `waitingOnYou`); escalation by gate, timeout and child; `answerKind` on park rows | API §3.6 |
+| X39 | Several build orders (P2-5) | The derived wave table above; each spec's graph gained its cross-spec edges and points here | README; all three |
+| X40 | The `human` token had no phase, code or header; the prover couldn't act as human (P2-6) | API P1 builds it (`X-Sindri-Token`, `SND-AUTH-001`); `sindri-prove.sh human` reads it from the guarded home and sets a marker the server honours only for a temp home | API §1 D4, §6 |
+| X41 | `OpenItem` broke the chain's rules; attach meant three things; unattended runs needed Warp (P2-7, P2-16) | `OpenItem` appends one event; `service:launcher` takes over and launches after commit; attach only focuses; two target kinds (`interactive` Warp, `process` for the agent runtime and `--headless`); ids only at launch, context pulled through MCP; usage read, never self-reported | API §8.1; WF §6.5 |
+| X42 | Leftovers (P2-9 to P2-15) | CTX §3 follows X22 and S-1M owns the three-provider doctor check and the worktree probe; only `protected` promote makes a map current; `issue` kind in API §4; `item.linked` and `CreateItem` `link?`; `EventFactory` owned by API P1; engine P8 owns the Sindri → Judge edge with a recorded fan-out exception; `context.repoTeams` in the profile example | CTX §3, §8.7, §8.8; API §3, §4; WF P8 |
 
 ## Today: the TypeScript reference (`sindri/`)
 

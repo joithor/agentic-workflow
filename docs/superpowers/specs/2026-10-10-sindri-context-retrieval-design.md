@@ -98,9 +98,11 @@ that graph plus rank fusion across adapters.
 - **MCP registration is per work repo, never user-wide:** one Sindri MCP endpoint serves these tools and the API
   spec's `sindri_*` tools (API §8). `sindri mcp register` prints, or with `--apply` runs, `claude mcp add --transport
   http --scope local --header "X-Sindri-Repo: <name>" sindri http://127.0.0.1:<port>/sindri/mcp` inside the work repo
-  (Codex and Cursor get the equivalent entry), so personal-repo sessions (where Prism is registered) never
-  see work context. Doctor check `context:mcp-scope` warns when a user-scope `sindri` server exists in
-  `~/.claude.json`.
+  so personal-repo sessions (where Prism is registered) never see work context. Codex and Cursor are never
+  registered: `ILauncher` passes the endpoint at launch time (API §8, §8.1). Doctor check `context:mcp-scope` warns on
+  any user-wide `sindri` entry in `~/.claude.json`, `~/.codex/config.toml` or `~/.cursor/mcp.json`. S-1M, which
+  creates `/sindri/mcp`, ships this check, `sindri mcp register`, and the probe of whether Claude Code's local scope
+  reaches the repo's worktree sessions.
 - **Decisions stay human:** applying a map review is a `protected` command (API §3.7), so it records `human`
   provenance only from a human at an interactive terminal (the same rule as `profile approve`); there is no review tool over MCP.
 - **Session reads, any transport.** `context.sessions.enabled` gates every `session`-class context read: MCP, the CLI
@@ -486,7 +488,8 @@ map v13 (draft, a41b07d) · 46 proposals · 3 orphaned links
 ```
 
 - **Map version lifecycle:** `map build` writes a `draft`; queries read the `current` version (`--draft` reads the draft);
-  `map review` works on the latest draft; `map promote` (or emptying the review queue, or a build whose queue is empty from the start) makes it `current`;
+  `map review` works on the latest draft; only `map promote`, a `protected` command (API §3.7), makes it `current`. An empty review queue, from review or from
+  a build, only marks the draft ready to promote;
   `map import` writes `current` directly and, like `promote`, is a `protected` command (API §3.7); doctor `context:map` warns with the draft's age and how many commits `current`
   is behind HEAD; and the old
   one `retained`. `--apply` works on the latest draft only; entries whose targets still match are applied and the rest
@@ -507,6 +510,7 @@ map v13 (draft, a41b07d) · 46 proposals · 3 orphaned links
 context:
   repos: [work-app]                       # profile repos the engine maps; default: all
   docs: { globs: ["docs/**/*.md", "**/PRD*.md", "**/TDD*.md"] }
+  repoTeams: { work-app: [ENG, APP] }    # Linear teams in each repo's session scope (§3)
   cascadeDepth: 2
   deadline: 4s
   maxBudget: 32000
@@ -826,13 +830,17 @@ stacks on that branch).
 | **S-7B** | Phase 7 on the owner's corpus: eligible-sample count, the real backtest and probes. **Owner-run** (below) | S-4 · S-6 · S-7A | 5 |
 | **S-8** | Phase 8: ranker features and the rerank arm (code on fixtures; the arm decision from an owner-run backtest) | S-7B | 6 |
 | **S-9** | Phase 9: code adapter and symbol-level links | the code index block | blocked |
-| **S-10** | Phase 10: the `input.context.retrieve` block | the workflow engine | blocked |
+| **S-10** | Phase 10: the `input.context.retrieve` block | engine P4 (the `StepInput` runtime) | after engine P4 |
 
 Critical path: S-1A → S-3 → S-5B → S-6 → S-7B → S-8 (S-4 → S-7A runs beside it).
 
 ```mermaid
 flowchart LR
-  S1[S1 merged] --> S1A
+  S1[S1 merged] --> P1[API P1 chain]
+  P1 --> S1A
+  P6[API P6 jobs] --> S4
+  P6 --> S5B
+  WF4[engine P4] --> S10[S-10 context.retrieve]
   S1C[S-1C compose edge] --> S1A
   SFX[S-FX fixture app] --> S1A
   SFX --> S5A
@@ -915,7 +923,7 @@ team ever reads work data:
   4. **Profile:** the real profile copied in, then edited per the template: the engine's services under `services:`
      (`context-docs-refresh`, `context-sync`, `context-rebuild`, `context-purge`) kept only when the check names them;
      labeling on only when the check names it (S-5B and S-CF need decisions); `context.sessions.enabled: true` when the check
-     uses a session. Start `$SINDRI serve --headless`, approve at a terminal, then `$SINDRI context map import
+     uses a session. Start `$SINDRI serve`, approve at a terminal, then `$SINDRI context map import
      <scratch home>/seed.json` at the terminal.
   5. **MCP**, when the check uses a session: start it with `claude --strict-mcp-config --mcp-config <file>` naming only
      `sindri-ownercheck` (port 7480), so the real `sindri` server can't answer; the first step calls `context_sources`
@@ -1028,7 +1036,7 @@ on the fixture app.
 - **Goal:** the product graph exists and answers cascade questions, from a hand-authored map first; probes guard
   every later phase.
 - **Files:** its `context.db` migration (graph, overrides, decisions, retention); `EntryKey`, aliases, key migration
-  scaffolding; `ImportMap` and `ExportMap` (versioned schema with `schemaVersion` and `kind: export | authored`; an export holds nodes, edges with their evidence, aliases, decisions, overrides and rejections **with their original timestamps and provenance**; import accepts the current and the previous schema version and runs the key migration on older keys, and the imported map becomes `current`. Trust is always recomputed from provenance, never read from the file. Rows with `human` provenance, overrides and rejections are restored only by a `protected` import with the shared challenge (`SND-AUTH-002` otherwise); the HTTP route imports them as `model` provenance (untrusted, unconfirmed). Exports are written only under `$AW_SINDRI_HOME/context/exports/` or an owner-check home, by temp file and rename at 0600, and purged after 14 days. Tests: round trip, a golden export from the previous build, and the terminal gate); `ShowNode`, `Neighbors`, `Path`;
+  scaffolding; `ImportMap` and `ExportMap` (versioned schema with `schemaVersion` and `kind: export | authored`; an export holds nodes, edges with their evidence, aliases, decisions, overrides and rejections **with their original timestamps and provenance**; import accepts the current and the previous schema version and runs the key migration on older keys, and the imported map becomes `current`. Trust is always recomputed from provenance, never read from the file. Rows with `human` provenance, overrides and rejections are restored only by a `protected` import with the shared challenge (`SND-AUTH-002` otherwise); an import from the app is the same `protected` command, shown there as the CLI to copy (API §4.2). Exports are written only under `$AW_SINDRI_HOME/context/exports/` or an owner-check home, by temp file and rename at 0600, and purged after 14 days. Tests: round trip, a golden export from the previous build, and the terminal gate); `ShowNode`, `Neighbors`, `Path`;
   the cascade (§6.1) with fixtures; `node` shape, `graph` and `affects` sections; anchor resolution for `text`;
   routes, verbs, MCP `context_node` and `context_neighbors` (these two tools are stage S-3M, after S-1M); doctor `context:map` and `context:retention`; the probe
   runner (`eval probes`) and probe file format.

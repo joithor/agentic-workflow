@@ -2077,7 +2077,7 @@ reference for what each part does, and it keeps running at the desk until the sw
 
 Each step has its own design spec, listed with its stage in `docs/sindri/README.md` ("Design specs for the
 application"): the API surface and the UI app design for step 1, the workflow engine for step 2, and the context
-retrieval engine for step 3. That README also keeps the cross-spec reconciliation list (X1–X33) and the one build order.
+retrieval engine for step 3. That README also keeps the cross-spec reconciliation list (X1–X42) and the one build order.
 
 ## 17.17 Decisions
 

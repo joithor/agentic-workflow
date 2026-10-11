@@ -10,7 +10,10 @@ Status:
   states (P11), and exit code 75 (§9). A second batch (X19–X33, after the epic's /autoplan) renumbers the new
   codes past S1's (`SND-API-011`, `-012`), adds the `step-report` class and the agent runtime's launch port (§4, §8,
   P10), the nonce and challenge carve-outs (§2.5), the engine-to-item state map (§3.6), launch-time MCP config for
-  Codex and Cursor (§8), and the `human` token before the app's first write (§6).
+  Codex and Cursor (§8), and the `human` token before the app's first write (§6). A third batch (X35–X42, after the
+  epic's second /autoplan) adds the launch contract (§8.1: `session wrap`, the launch secret, two target kinds,
+  liveness), builds the `human` token in P1, fixes the queue groups and adds `answerKind` (§3.6), and adds the
+  `issue` kind to §4.
 - This document is the written spec for review.
 
 The spec designs the surface every Sindri client uses: the `sindri` CLI, the Avalonia app (`SindriUi`), the Sindri MCP
@@ -52,7 +55,7 @@ This design adds to these. Where it has to change one of them, §10 lists the co
 | D1 | Resource model | **CQRS** over resource paths:<ul><li>commands are `POST`s that append one domain event, plus the audit row, and return `CommandAccepted`;</li><li>queries are `GET`s that read projections;</li><li>one route = one slice = one `IService` (§2, §3).</li></ul> |
 | D2 | Commands vs queries, decisions vs requests | <ul><li>Every command declares an **action class**.</li><li>Every caller has a **caller class**, and humans also have a **terminal** flag.</li><li>One table authorizes the combination.</li><li>Sessions may run queries, file **requests** and **pause** automation, but never make decisions (§4).</li></ul> |
 | D3 | Event stream | **Server-Sent Events**, `GET /events?after=`. The cursor is the ledger sequence, and events go out in a public envelope. It's a "go re-read" signal for live clients, never the source of truth (§5) |
-| D4 | Local auth | **v0 is local-only, with no tokens:**<ul><li>the caller class comes from `X-Sindri-Caller`, and a missing header counts as `session`;</li><li>only the CLI at a terminal and the app send `human`;</li><li>the CLI also sends `X-Sindri-Terminal: 1`;</li><li>commands refuse any `Origin` header.</li></ul>Tokens, passkeys and the tailnet come later (§6) |
+| D4 | Local auth | **v0 is local-only, with one token:**<ul><li>the caller class comes from `X-Sindri-Caller`, and a missing header counts as `session`;</li><li>only the CLI at a terminal and the app send `human`, and `human` also needs the per-start `X-Sindri-Token` (P1, §6);</li><li>the CLI also sends `X-Sindri-Terminal: 1`;</li><li>commands refuse any `Origin` header.</li></ul>Session-class tokens, passkeys and the tailnet come later (§11) |
 | D5 | Finding or starting the process | S1's `control.json`, spawn and ping check, plus one rule for which verbs may start the process. Nothing run inside an agent session starts it (§7) |
 | D6 | MCP server | **One MCP endpoint, `/sindri/mcp`**: Streamable HTTP in stateless mode on the API port (the MCP C# SDK), shared with the context engine's `context_*` tools. Every call is stamped `session`. It offers queries and `sindri_request` only. **It is proven by a real Claude Code subagent**, run as a fresh `claude -p` process (§8) |
 | D7 | Webhooks | **Cut for now** (§11) |
@@ -245,7 +248,7 @@ target.
 
 | Id | Rule |
 |---|---|
-| `ARCH-CQRS-001` | <ul><li>Every `MapGet` endpoint resolves an `IService<TQuery, TView>` where `TQuery : IQuery<TView>`.</li><li>Every `MapPost` resolves an `IService<TCommand, _>` where `TCommand : ICommand<_>`.</li><li>S1's `GET /ping` and `GET /status` are queries, and `GET /events` is the stream query.</li><li>Its only carve-outs are the engine's two issuing routes, which append no domain event: `POST /workflow/instances/{a}/nonce` (allowed to any caller whose class may run a command on that instance, so a session can get one for `takeover`) and `POST /workflow/challenges` (`human` + terminal only). Both have catalog rows of kind `issue` and are audited by `command.handled`.</li><li>It is checked over the endpoint data source in an integration test, because minimal-API lambdas aren't visible to ArchUnitNET.</li></ul> |
+| `ARCH-CQRS-001` | <ul><li>Every `MapGet` endpoint resolves an `IService<TQuery, TView>` where `TQuery : IQuery<TView>`.</li><li>Every `MapPost` resolves an `IService<TCommand, _>` where `TCommand : ICommand<_>`.</li><li>S1's `GET /ping` and `GET /status` are queries, and `GET /events` is the stream query.</li><li>Its only carve-outs are the engine's two issuing routes, which append no domain event: `POST /workflow/instances/{a}/nonce` (allowed to any caller whose class may run a command on that instance, so a session can get one for `takeover`) and `POST /workflow/challenges` (`human` + terminal only). `session wrap`'s heartbeat and exit calls (`POST /sessions/{launch}/heartbeat`, `/exit`, proven by the launch secret) are the third and fourth. All have catalog rows of kind `issue` (§4.1) and are audited by `command.handled`.</li><li>It is checked over the endpoint data source in an integration test, because minimal-API lambdas aren't visible to ArchUnitNET.</li></ul> |
 | `ARCH-CQRS-002` | No query handler's constructor takes `ILedgerStore`, `ILease`, `IApprovals` or a projection writer |
 | `ARCH-CQRS-003` | Every `ICommand` (and every action variant) has a row in the command catalog (§3.3) |
 
@@ -322,7 +325,7 @@ They're in the catalog with class `local` and are never routes. `doctor` gains a
 | `POST /stop` | `StopProcess` (S1) | — | S1's response, plus `sequence` | desk (self-audited) | `sindri stop` | S1; class in P1 |
 | `POST /profile/approve` | `ApproveProfile` (S1) | S1's body | S1's response, plus `sequence` | **protected** | `sindri profile approve [<hash>]` | S1; class in P1 |
 | `POST /views/rebuild` | `RebuildViews` | — | `CommandAccepted` | desk | `sindri views rebuild` | P2 |
-| `POST /items` | `CreateItem` | `title`, `repo?`, `body?` | `ItemCreated(accepted, ItemId)` | desk | `sindri item add "<title>" [--repo R]` | P3 |
+| `POST /items` | `CreateItem` | `title`, `repo?`, `body?`, `link?` (a tracker record key, e.g. `linear:issue/<uuid>`) | `ItemCreated(accepted, ItemId)` | desk | `sindri item add "<title>" [--repo R]` | P3 |
 | `POST /items/{itemId}/close` | `CloseItem` | `reason` (`done` or `cancelled`), `itemVersion` | `CommandAccepted` | desk | `sindri item close <item> [--cancelled]` | P3 |
 | `POST /requests` | `FileRequest` | `kind` (`rescope`, `add-task`, `note` or `handback`), `itemId?`, `text` | `RequestFiled(accepted, RequestId, DecisionId)` | **request** | `sindri request <kind> [--item X] "<text>"` | P4 |
 | `POST /decisions/{decisionId}` | `Decide` | `choice`, `note?` | `CommandAccepted` | decision | `sindri decide <decisionId> <choice> [--note]` | P4 |
@@ -406,6 +409,9 @@ catalog itself lands in P1. Every domain payload carries `commandId` (or the `se
 | `job.finished` | job, outcome, summary, code? | `job.finished:<jobId>` | yes | P6 |
 | `job.cancelled` | job | `job.cancelled:<jobId>` | yes | P6 |
 | `service.paused`, `service.resumed` | service | `service.paused:<name>:<commandId>` | yes | P6 |
+| `item.linked` | item, record key, alias | `item.linked:<itemId>:<record>` | yes | P3 (`CreateItem` with `link`); context Phase 6 (`service:context-sync`) |
+| `item.open-requested` | item, target, mode, launch | `item.open-requested:<itemId>:<launch>` | yes | P10 |
+| `session.launched`, `session.ended` | launch, item, run?, target, kind; ended: reason (`exit`, `lost`), exit code, token usage | `session.launched:<launch>`, `session.ended:<launch>` | yes | P10 (written by `service:launcher`; the engine's agent runtime uses the same events) |
 
 **How a request becomes a decision** (one domain event per command):
 1. `FileRequest` appends `request.filed`, with both ids chosen by the handler.
@@ -436,7 +442,7 @@ action id, for example `ApplyCommand:answer`.
 | The item filter on `/sindri/events` (engine S1-D6) | **This spec**, in P5 | The engine's `workflow events` uses it. If engine P4 merges first, it adds the filter and P5 keeps it |
 | `ILauncher` | **This spec**, in P10 (`OpenItem`), with launch targets from the UI design spec | The engine replaces its desk runtime with it (engine W20) |
 | The authorization model: caller, terminal flag, action classes, the chain, and `SND-AUTH-002` | **This spec**, in P1 | Every engine command goes through the same chain. The engine spec adopted it in its rev 5 (§6.2): its own caller classes and `SND-WF-007` are retired, takeover is `pause`, the `IClassifiedCommand` rule applies, its harness probe supplies the agent variables (§6), and idle takeovers and desk tasks are needs-you rows of kind `park`. Engine commands never evaluate gates in the handler (engine §5.3) and may append one event per instance they change (a parent and the child it creates) |
-| `EventFactory` reading the caller (C6) and the engine's S1-D7 | One change, made by whichever phase lands first | — |
+| `EventFactory` reading the caller (C6) and the engine's S1-D7 | **This spec**, P1 | The engine uses it from P4 |
 | Starting the process from a verb | **This spec**, §7: never from inside an agent session | The engine spec's "starts if needed" follows §7 |
 
 This spec has no item `hold`, and no item-level park, unpark or handback: those are engine instance commands.
@@ -459,9 +465,8 @@ is a command with a catalog row and an action class, and every route goes throug
 
 | Group | `ItemState` values |
 |---|---|
-| `waitingOnYou` | `needs-decision`, `needs-answer` |
+| `waitingOnYou` | `needs-decision`, `needs-answer`, `parked` |
 | `withYou` | `taken-over` |
-| `parked` | `parked` |
 | `running` | `running` |
 | `queued` | `new`, `queued` |
 | (not in the queue) | `done`, `cancelled` |
@@ -484,13 +489,14 @@ How items move through the states:
 | `active` with an open desk task | `needs-answer` | `waitingOnYou` | "Desk task" → `CompleteStep` (UI form), or `OpenItem` |
 | `wait` (event, child, resource) | `running` | `running` | — |
 | `parked` (any reason) | `parked` | `waitingOnYou` | Reason and question → the §3.8 answer's action id (`cli-only` when `protected`) |
-| `escalated` | `parked` | `waitingOnYou` | → `ApplyCommand:answer-accept` (`cli-only`) / `answer` reject |
+| `escalated` (gate) | `parked` | `waitingOnYou` | `answerKind: accept` → `ApplyCommand:answer-accept` (`cli-only`); reject is `answer` |
+| `escalated` (timeout) | `parked` | `waitingOnYou` | `answerKind: resume` → `ApplyCommand:answer` |
+| `escalated` (child) | `parked` | `waitingOnYou` | The child's `answerKind`, forwarded |
 | `taken-over` | `taken-over` | `withYou` | After `takeoverIdle`: "hand back?" → `ApplyCommand:handback` |
 | terminal | `done` or `cancelled` | — | — |
 | no instance yet, started by a router | `queued` | `queued` | — |
 
-`parked` therefore sits in `waitingOnYou`; the `parked` group only holds items parked by a human's own choice (none in
-v0). `needs-answer` is an item state; park reasons are shown as the row's `reason`, never as an item state.
+`parked` therefore sits in `waitingOnYou`; there is no separate `parked` group. `needs-answer` is an item state; park reasons are shown as the row's `reason`, never as an item state.
 
 **`GET /needs-you`** is one list across every source, built by the needs-you projection. Each `NeedsYouRow` has:
 
@@ -504,6 +510,7 @@ v0). `needs-answer` is an item state; park reasons are shown as the row's `reaso
 | `urgency` | `pulse`, `colour` or `calm` (dashboard spec §5.1) |
 | `since` | When the row appeared |
 | `recordedOnly` | Whether the decision is recorded only (before S2) |
+| `answerKind` | For `park` rows: `text`, `resume`, `grant`, `grantTokens`, `accept` (with reject), or `cancel-only`, taken from the engine's resume action (engine §5.8), so the app shows the right control |
 | `primaryAction` | A catalog action id, or `copy:<cli>` for a `cli-only` row. Per kind: <ul><li>`decision` → `Decide`;</li><li>`park` → the engine's action id;</li><li>`failure` → `copy:sindri status` until P6, then `RunService`;</li><li>`profile` → `copy:sindri profile approve <hash>` (protected).</li></ul> |
 | `cli` | The CLI form |
 
@@ -551,13 +558,14 @@ N of M)…") and `stalled` ("Views are stalled at N: run `sindri views rebuild`"
 | Class | Meaning | Commands |
 |---|---|---|
 | `request` | A fact filed for a human or the engine to act on; changes no item state | `FileRequest` |
-| `step-report` | A launched agent session reports the result of the Step run it was launched for. Bound to that run token; the engine still decides through the recipe's gates | `CompleteStep` from the agent runtime's session (§8, engine §6.5) |
+| `step-report` | A launched agent session reports the result of the Step run it was launched for. Proven by the launch secret (§8.1), never by the public run token; the engine still decides through the recipe's gates | `CompleteStep` from the agent runtime's session (§8, engine §6.5) |
 | `pause` | Only stops automation. It is safe in one direction: resuming is `desk` | The engine's `ApplyCommand:takeover` |
 | `job` | Read-only work, possibly long-running; writes only its own job events and, for `RunService`, the run's `service.ran` | `RunService`, `CancelJob` |
 | `decision` | A non-protected human decision (the §17.12 list) | `Decide` |
 | `desk` | A human action that changes item or process state (§17.27.2) | `StopProcess`, `RebuildViews`, `CreateItem`, `CloseItem`, `PauseService`, `ResumeService`, `OpenItem`; the engine's start, answer, handback, cancel and complete |
 | `protected` | The approval tier: a typed confirmation, bound to the content, at a terminal | `ApproveProfile`, and the engine's `ApplyCommand:answer-grant`, `answer-accept` and `recipe approve`. Later: evolve adopt, channel promote and tier raises |
 | `local` | Runs in the CLI, never through the API | `doctor`, `profile validate` |
+| `issue` | Issues a one-time value and appends no domain event (audited by `command.handled`). The only `POST`s that aren't commands (§2.5) | `IssueNonce` (any caller whose class may run a command on that instance, repo-scoped for sessions), `IssueChallenge` (`human` + terminal), and `session wrap`'s heartbeat and exit (the launch secret, §8.1) |
 
 ### 4.2 Callers and the authorization table
 
@@ -571,6 +579,7 @@ N of M)…") and `stalled` ("Views are stalled at N: run `sindri views rebuild`"
 | `decision` | yes | yes | **no** | no: it may only *raise* a decision |
 | `desk` | yes | yes | **no** | only the engine commands its recipe step owns (the engine spec lists them), and `service:host` → `StopProcess` (§2.1) |
 | `protected` | yes | **no**: shown as `cli-only` | **no** | no |
+| `issue` | per row in §4.1 | per row | per row | no |
 
 **The app is a full desk client.** It starts workflows (scoping included), answers parks, takes over and hands back,
 closes items, runs services and hands work off to a session in Warp with Claude Code, Codex or Cursor (`OpenItem`).
@@ -668,6 +677,8 @@ mistakes. That's the repo's threat model: gates guard against honest mistakes, n
 | `X-Sindri-Terminal` | `1` | Sent only by the CLI when stdin and stdout are a terminal. It's honoured only alongside `human` |
 | `X-Sindri-Client` | `cli`, `ui`, `prover` | Labels the actor (`human:cli`, `human:ui`, `human:prover`). With no label, a human caller is `human:http` |
 | `X-Sindri-Repo` | a repo name | Scopes a `session` caller (§3.1) |
+| `X-Sindri-Token` | the per-start token | Required with `human` (P1); `SND-AUTH-001` when missing or stale |
+| `X-Sindri-Launch-Secret` | a launch's secret | Proves `step-report` and `session wrap`'s calls for that launch (§8.1); `SND-AUTH-003` when it doesn't match an open launch |
 
 **Who sends what.**
 - **The CLI** sends `human` with `X-Sindri-Terminal: 1` only when stdin and stdout are a terminal **and** none of these
@@ -693,11 +704,15 @@ mistakes. That's the repo's threat model: gates guard against honest mistakes, n
 **Protected actions in the UI** show the CLI command to copy (`cli-only:typed-confirmation`), because the app has no
 terminal until passkeys exist.
 
-**The `human` token before the app writes.** The app is a full desk client, so the header alone is too thin. Before
-the app's first command (its first write phase in the UI design spec), `serve` mints `auth/human.token` (0600) on each
-start; the CLI and the app send it as `X-Sindri-Token`, and a `human` header without it counts as `session`. The
-agent runtime gets a separate run-scoped token per launched session for `step-report` (§4.1). Session-class tokens and
-passkeys stay later (§11).
+**The `human` token (P1).** The app is a full desk client, so the header alone is too thin. On each start `serve`
+mints `auth/human.token` (0600) under `$AW_SINDRI_HOME`; the CLI and the app read it and send it as `X-Sindri-Token`.
+A `human` header with a missing or stale token is refused with `SND-AUTH-001` ("restart the app or rerun the
+command"), never silently downgraded. The CLI doesn't read the token when an agent variable is set. Launched sessions
+prove `step-report` with their launch secret instead (§8.1). Session-class tokens and passkeys stay later (§11).
+
+**The prover.** `sindri-prove.sh human` reads the token from the guarded temp home, and runs the CLI with
+`AW_SINDRI_PROVER=1`, which exempts it from the parent-process check. The server honours that marker only when its
+own home is under `$TMPDIR` or a proof folder, so the owner's real process never does.
 
 **Out of scope for v0:** a session that deliberately reads the owner's token file (§11).
 
@@ -756,7 +771,7 @@ that target launches without Sindri MCP. `sindri doctor` warns on any user-wide 
 | `sindri_pending_decisions` | `itemId?` | `GET /decisions?pending=true` | query |
 | `sindri_job` | `jobId` | `GET /jobs/{jobId}` | query, **from P6** |
 | `sindri_request` | `kind`, `itemId?`, `text` | `POST /requests` (`FileRequest`) | request |
-| `context_query`, `context_node`, `context_neighbors`, `context_sources` | context spec §8.5 | `IContextEngine` | query, **with S3**; off while `context.mcp.enabled` is false |
+| `context_query`, `context_node`, `context_neighbors`, `context_sources` | context spec §8.5 | `IContextEngine` | query, **with S3**; off while `context.sessions.enabled` is false |
 
 Text from agents or trackers in `sindri_*` results carries the same `trust` field and fencing as `context_*` results
 (context spec §7). There is no decision, desk, protected or job tool, so the MCP surface can't even attempt one. Query tools carry the MCP
@@ -772,6 +787,31 @@ claude -p "<journey>" --mcp-config <tmp>/sindri-mcp.json --strict-mcp-config \
   test repo's `X-Sindri-Repo`.
 - Nothing is registered with the provider, so the cutover rule holds and there is nothing to clean up.
 - The user's own hooks may load; the journey doesn't depend on them.
+
+### 8.1 The launch contract (`ILauncher`, P10)
+
+One port launches every agent session: the human handoff (`OpenItem`) and the engine's agent runtime (engine §6.5).
+- **Two target kinds.** `interactive`: a Warp tab running the agent CLI (`claude`, `codex` or `cursor-agent`), for the
+  human. `process`: the agent CLI as a plain child process, for the agent runtime and the `--headless` box.
+- **Ids only at launch.** The command line carries the item id, the repo path and, for a Step, the run token. Context,
+  packets and evidence are pulled through the MCP endpoint (Codex and Cursor get it as launch-time config, §8).
+- **`sindri session wrap`.** Every launched command runs as `sindri session wrap --launch <id> -- <agent cli …>`. Wrap
+  reads the launch secret from a one-time file (`$AW_SINDRI_HOME/launches/<id>.secret`, 0600), deletes it, and passes
+  the secret to the agent only through its environment (`AW_SINDRI_LAUNCH_SECRET`), never argv or a shared file. It
+  also sets `AW_SINDRI_CHILD`, so the CLI inside is a session.
+- **Liveness.** Wrap sends a heartbeat every 30 s and an exit call when the agent exits (both `issue` kind, proven by
+  the secret). `service:launcher` appends `session.ended` with reason `exit` and the exit code, or `lost` after 120 s
+  without a heartbeat. So a closed tab or a crash always ends the session; the double-launch guard clears.
+- **Per-launch files.** An interactive launch writes its own Warp launch configuration
+  (`launch_configurations/sindri-<launch>.yaml`, 0600, no secret in it) and deletes it once Warp has read it. Paths are
+  quoted.
+- **Usage.** Token usage is read by the target's usage reader (Claude Code's session log, and the Codex and Cursor
+  equivalents recorded in P10) when the session ends, and recorded on `session.ended`. It is never self-reported.
+- **`OpenItem` is one event.** The command decides and appends `item.open-requested`; it does no launching. After the
+  commit `service:launcher` takes the item's live instance over (`pause`, a service caller may) on the human's behalf,
+  writes the launch, and appends `session.launched`. A second open while a session is live is `SND-LAUNCH-002`.
+- **Attach** means one thing: focus the live interactive session's tab. The takeover happened when it opened; typing
+  into the tab changes nothing in Sindri.
 
 ## 9. Errors, versioning and JSON
 
@@ -803,8 +843,11 @@ of **`docs/csharp/sindri.md`**. Not `docs/sindri/errors.md`, which is generated 
 | `SND-JOB-404` | NotFound (404) | No such job | P6 |
 | `SND-SVC-404` | NotFound (404) | No such service in the approved profile | P6 |
 | `SND-LAUNCH-001` | Unavailable (503) | The launcher couldn't open the terminal | P10 |
+| `SND-LAUNCH-002` | Conflict (409) | The item already has a live session; attach to it | P10 |
+| `SND-AUTH-001` | Forbidden (403) | `human` without a valid per-start token | P1 |
+| `SND-AUTH-003` | Forbidden (403) | The launch secret doesn't match an open launch, or the run is taken over | P10 |
 
-- `SND-AUTH-001` and `SND-API-006` are reserved for the token phase (§11).
+- `SND-API-006` is reserved for the idempotency key (§11).
 - The engine spec reserves `SND-RECIPE-*` and `SND-WF-*`, and should not add its own authorization code (§3.5).
 
 ### Versioning
@@ -848,8 +891,7 @@ Spans and metrics use the `Aw.Sindri` source and meter, as `docs/csharp/telemetr
 ## 11. Later (designed in outline, not phased)
 
 - **Auth:**
-  - per-class bearer tokens minted on each `serve` start (`auth/human.token` and `auth/session.token`, 0600);
-  - `SND-AUTH-001` for a missing or stale token;
+  - a session-class token (`auth/session.token`, 0600), beside P1's human token;
   - an `aw:sindri-auth` guard hook;
   - containerized factory sessions get only the session token;
   - passkeys through `IPasskeys` for the UI's desk and protected actions (§17.27.2);
@@ -1127,7 +1169,7 @@ Each phase is one PR and follows the slice recipe, red first.
 | **P5** | **Event stream and ledger read.** <ul><li>Public types from `EventCatalog`, `PublicEvent`.</li><li>The `item` and `types` filters, the session repo filter, `Last-Event-ID`.</li><li>The ping and the stream limits (`SND-API-012`).</li><li>`ILedgerSignal`, wired to the projector and the stream.</li><li>`ReadLedger` and `sindri ledger`.</li><li>`sindri status --follow` (C4).</li></ul> | `Core/Events/*`, `Infrastructure/Ledger/LedgerSignal.cs`, `Features/{StreamEvents,ReadLedger}/`, `Host/Endpoints/EventStream.cs`, `Host/Projector.cs` | S | P1, plus P2 for the projector wiring (its signal uses `service.heartbeat`; the item filter is tested once P3 lands) | <ul><li>`curl -N '…/sindri/events?after=0&types=service.*'` shows each `service.heartbeat` within 100 ms of its append.</li><li>Reconnecting with `Last-Event-ID: n` resumes at n+1.</li><li>`command.handled` never appears.</li><li>`sindri-prove.sh human ledger --json --after 0` lists it.</li></ul> | **UI, engine** (S1-D6) |
 | **P6** | **Jobs and services.** <ul><li>`JobId` and the job events.</li><li>The slices `GetJob`, `CancelJob`, `RunService` (as a job), `PauseService`, `ResumeService`; the scheduler honours pause and resume.</li><li>The CLI follows progress on the stream, and Ctrl-C cancels.</li><li>Codes: `SND-JOB-404`, `SND-SVC-404`.</li></ul> | `Core/Jobs/*`, `Features/{GetJob,CancelJob,RunService,PauseService,ResumeService}/`, a scheduler hook in Host | M | P2 + P5 | <ul><li>`sindri-prove.sh human services run heartbeat` prints progress and the result.</li><li>Ctrl-C during a long fake job prints `cancelled`, and the ledger shows `job.cancelled`.</li><li>After `services pause heartbeat`, there's no heartbeat for 3 cadences.</li><li>A run with no caller header gets 403.</li><li>A manual run that succeeds clears that service's `failure` row and sets `lastRun` to `ok`.</li></ul> | UI, **engine** |
 | **P8** | **The `sindri_*` MCP tools.** <ul><li>On `/sindri/mcp` (created here, or by context S-1M if it landed first).</li><li>`sindri mcp register [--apply]`.</li><li>Every call stamped `session`, scoped by `X-Sindri-Repo`.</li></ul> | `Host/Mcp/*`, the SDK in `Directory.Packages.props` (pinned, at least 14 days old), `deps.yaml` | M | P4 + P6 | A fresh `claude -p "<journey>" --mcp-config … --strict-mcp-config --allowedTools …` subagent: <ul><li>lists the queue and an item;</li><li>files a `rescope` request, which shows up in `GET /needs-you`;</li><li>finds no tool to decide with;</li><li>gets `SND-AUTH-002` from a `curl` with no caller header.</li></ul> Its transcript is the evidence | — |
-| **P10** | **`sindri open`.** <ul><li>`ILauncher`, a Warp launch configuration as in the dashboard plan's decision 15, running the chosen agent: Claude Code, Codex or Cursor (targets and their failure states from the UI design spec).</li><li>Opening an item that has a live instance takes it over (`pause`) in the same command; the app then offers handback. `mode: attach` focuses the recorded live session instead of opening a new one.</li><li>Launches are recorded: `session.launched` and `session.ended` events, `ItemView.session?`; attach is offered only when a session is live; a second open of the same item while one is live is refused (fact key per item and session).</li><li>`OpenItem` passes only the item id and the repo path from the profile; the session pulls its context through the MCP endpoint, passed at launch for Codex and Cursor (§8).</li><li>The same `ILauncher` serves the engine's agent runtime (engine §6.5).</li><li>`SND-LAUNCH-001`.</li></ul> | `Core/Launch/ILauncher.cs`, `Infrastructure/Launch/WarpLauncher.cs`, `Features/OpenItem/` | M | P3 + P8 (the engine marks the takeover once S2 runs) | <ul><li>`sindri-prove.sh human open ITM-…` opens a Warp tab running Claude Code in the item's repo.</li><li>The session's first `sindri_item` call returns the item.</li><li>The launch config contains no item text.</li></ul> | **engine** (`ILauncher`) |
+| **P10** | **`sindri open` and the launch contract.** <ul><li>`ILauncher` with `interactive` (Warp + Claude Code, Codex or Cursor) and `process` targets (§8.1).</li><li>`sindri session wrap`, the launch secret, heartbeats, `session.launched`/`ended`, per-launch files, usage readers.</li><li>`OpenItem` as one event; `service:launcher` takes over and launches after commit; attach focuses; `SND-LAUNCH-001/002`, `SND-AUTH-003`.</li><li>Codex and Cursor launch-time MCP config, and their usage readers.</li></ul> | `Core/Launch/*`, `Infrastructure/Launch/{Warp,Process}Launcher.cs`, `Host/Commands/SessionWrap*`, `Features/OpenItem/` | L | P3 + P8, and the UI design spec (launch targets) | <ul><li>`sindri-prove.sh human open ITM-…` opens a Warp tab running Claude Code in the item's repo; `session.launched` is recorded; the session's first `sindri_item` call returns the item.</li><li>Closing the tab writes `session.ended` (`exit`); killing wrap writes it (`lost`) within 150 s; the item can be opened again.</li><li>A second open while live exits 2 with `SND-LAUNCH-002`.</li><li>The launch file and argv contain no secret and no item text.</li></ul> | engine P8 (the agent runtime) |
 
 | **P11** | **Engine item states.** <ul><li>The item projection folds `workflow.*` events into `needs-answer`, `taken-over`, `parked`, `running` and `queued`.</li><li>Engine parks, escalations, idle takeovers and desk tasks become needs-you rows of kind `park`.</li><li>`CloseItem` refuses while an instance is active.</li></ul> | `Features/Projections/*` | M | P4 + engine P4 | <ul><li>Starting `workflow.step` on an item moves it to `running` in `GET /queue`.</li><li>A desk task and a park appear in `GET /needs-you` with the engine's action id.</li></ul> | UI's live item states |
 
@@ -1149,6 +1191,9 @@ An **agent team orchestrated with `/specToProvenPR`** builds the phases. The lea
 every agent working. `/specToProvenPR`'s plan for this spec follows these rules.
 
 ### Dependency graph and waves
+
+The cross-spec order is the derived wave table in `docs/sindri/README.md` ("Build order"); the graph below orders
+only this spec's phases inside it. P11 follows P4 and engine P4; P10 also needs the UI design spec.
 
 ```
 S1 ──► P1 ──┬──► P2 ──► P3 ──► P4 ──┬──► P8 ──► P10

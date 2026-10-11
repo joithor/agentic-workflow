@@ -12,7 +12,8 @@ C1–C32 from pass 1, E1–E24 from pass 2 and G1–G18 from pass 3. Revision 5 
 (§5.3), one needs-you list and one notifier (§6.3), `$AW_SINDRI_HOME` (§6.1), the `heavy` allocator (§3.4), the
 `StepInput` block kind (§2), and `ILauncher` in API P10 (§7.2). The second epic batch (X19–X33) adds the agent
 runtime (§6.5, P8), drops `workflow.request`, makes P4 depend on API P3 for items, and moves every proof to
-`sindri-prove.sh`.
+`sindri-prove.sh`. The third batch (X35–X42) adds the route table (§6.3), puts the agent runtime on API §8.1's
+launch contract (§6.5), and adds P8 and the API edges to the phase graph.
 
 References:
 - the factory addendum `2026-10-09-sindri-factory-addendum.md` (A) and the core design `2026-10-07-sindri-design.md` (D);
@@ -310,7 +311,7 @@ capability fields (§13).
 | `frame` | `{ state, entry, run?, child?, deadlines[], since }`. `entry` rises on each real state entry |
 | `suspended` | A stack of at most 2 suspended frames, each with what suspended it (park, escalation or takeover, with its reason and question) |
 | `loops`, `spent`, `facts` | `facts` hold `{ ref, sha256, headSha }` |
-| `run?` | `{ token: {entry}.{n}, runtime: desk\|launcher, task }` |
+| `run?` | `{ token: {entry}.{n}, runtime: desk\|agent, launch?, task }`. The token is a public counter, never a credential |
 | `deadlines` | `{ id: {entry}:{kind}:{arm}, kind: state\|retry\|takeoverIdle, due?, remaining? }` |
 | `version` | Rises on every `Commit` |
 
@@ -505,7 +506,8 @@ doesn't fit the reason, such as `--text` on a `rounds` park, is `SND-WF-003`, an
 
   ```
   export AW_SINDRI_HOME=$(mktemp -d)      # never the TS sindri's $AW_STATE_DIR/sindri
-  alias sindri='scripts/sindri-prove.sh'  # API §12: guards the home, runs the C# host, `human <verb>` acts as the owner
+  alias sindri='scripts/sindri-prove.sh'  # API §12: guards the home, runs the C# host as the agent (a session)
+  # owner verbs (profile approve, recipe approve, grants): sindri human <verb>
   ```
 
   Then copy `recipes/dev/profile.yaml` to S1's profile location (`docs/csharp/sindri.md`), run
@@ -575,11 +577,31 @@ terminal knows why. The table is honest-mistake grade (A 17.28.3).
   - parks, escalations and `takeoverIdle` interrupt, within D §10.1's budget;
   - an instance's **first** desk task interrupts once, so starting `workflow.item` gives a cue;
   - later desk tasks are non-interrupting `info`, collected into a daily digest.
-- `notify.desk` is the **only** source of OS notifications. The app shows the needs-you badge and pulse from the
-  event stream but never raises an OS notification itself, so nothing fires twice (API §5.1).
+- From P6, `notify.desk` is the **only** source of OS notifications. The app shows the needs-you badge and pulse from
+  the event stream; until P6 ships it also raises an OS notification for each new `pulse` row, and P6 turns that off,
+  so nothing fires twice (API §5.1).
 - **`--needs-me`** lists a parent and its mirrored child once, under the child.
 - **Empty states:** `nothing needs you` (`--needs-me`), `no instances match` (other filters), `no events`, `no
   commands`, and `no evals declared` (eval).
+
+**Routes** (under S1's `/sindri` group; each is one slice through API's chain, with a catalog row):
+
+| Route | Slice | Class |
+|---|---|---|
+| `GET /workflow/recipes` · `GET /workflow/recipes/{id}@{hash}` | `ListRecipes` (with each recipe's `inputs`, for the app's start form) · `ShowRecipe` (the preview) | query |
+| `POST /workflow/recipes` | `RegisterRecipe` (body: the recipe text) | desk |
+| `POST /workflow/recipes/{id}@{hash}/approve` · `/revoke` | `ApproveRecipe` · `RevokeRecipe` (body: the challenge and its typed text) | protected |
+| `POST /workflow/challenges` | `IssueChallenge` (body: the action and its subject) | issue |
+| `GET /workflow/instances?address=&item=&state=&needsMe=` | `ListInstances`; `address` resolves a CLI address (`T-3/item/1`) to an instance id | query |
+| `POST /workflow/instances` | `StartInstance` (body: `recipe`, `item`, `attempt?`, `facts { key: { name, contentBase64 } }`, each ≤ 1 MiB) | desk |
+| `GET /workflow/instances/{instanceId}` | `GetInstance`: the instance, rendered `next`, `allowedCommands`, the open question or desk task **with the Step's declared outcomes and outputs**, children | query |
+| `GET /workflow/instances/{instanceId}/events?after=` | `GetInstanceEvents` (the item timeline filtered to the instance) | query |
+| `POST /workflow/instances/{instanceId}/nonce` | `IssueNonce` | issue |
+| `POST /workflow/instances/{instanceId}/commands` | `ApplyCommand` (body: `verb`, `nonce`, `text?`, `fileBase64?`, `grant?`, `grantTokens?`, `accept?`, `reject?`, `resume?`, `challenge?`) | by variant (§6.2) |
+| `POST /workflow/instances/{instanceId}/runs/{run}/complete` | `CompleteStep` (body: `outcome`, `outputs { fact: contentBase64 }`, `nonce`) | desk; `step-report` with `X-Sindri-Launch-Secret` |
+| `GET /outbox?state=` | `ListOutbox` | query |
+
+Instance ids are opaque (`WFI-…`, a typed id); the CLI's `/`-separated addresses travel only as the `address` query.
 
 ### 6.4 `status` layouts
 
@@ -643,19 +665,26 @@ Durations are shown as `1d 22h 48m`. Plain output is ASCII. Golden files pin eve
 ### 6.5 The agent runtime (owner decision, 2026-10-11)
 
 The runtime that runs a Step in an agent session and takes its result back, so the factory line can run unattended.
-- **Launch.** For a Step whose descriptor names an agent runtime, the post-commit loop calls `ILauncher` (API P10's
-  port; the human handoff uses the same one) with the run token, the target from the profile (`workflow.agent.target`:
-  Claude Code, Codex or Cursor), the repo and the Step's injection plan. The MCP endpoint is passed at launch (API §8).
-  `session.launched` records it; the instance's `run.runtime` is `agent`.
-- **Report.** The launched session, and only it, reports with `sindri workflow complete --run <token>`. Its caller class is
-  `step-report` (API §4.1), proven by a run-scoped token `ILauncher` hands the session and the server checks against
-  the open run. The report goes through the same validation as a desk report (§5.5). The session reports; the engine
-  decides through the recipe's gates. A session can't report another run, grant, accept, or hand back.
-- **Tokens.** The report carries token usage, read by the target's provider adapter (Judge's `IModelProvider`
-  catalog, X18) from the session's own usage output. Budgets (§3.7) count it; an over-budget report parks with
-  `budget`.
-- **Ends.** A session that exits without reporting ends the run as `step.failed` (`session.ended`, reason `no report`).
-  The Step's `timeout` still applies. A human may take the instance over at any time (`OpenItem` with `attach`).
+It uses API §8.1's launch contract; nothing here launches anything itself.
+- **Launch.** For a Step whose descriptor names an agent runtime, the post-commit loop asks `ILauncher` for a
+  `process` launch (the always-on `--headless` box has no Warp), with only ids: the instance, the run token, the repo,
+  and a fresh per-run worktree (`<repo>/.claude/worktrees/sindri-<instance>-<run>`). The target and its permission
+  mode come from the profile (`workflow.agent.target`: Claude Code, Codex or Cursor; `workflow.agent.permissionMode`).
+  The session pulls its injection plan, context and packet through the MCP endpoint. `run.runtime` is `agent` and
+  `run.launch` names the launch.
+- **Report.** The launched session, and only it, reports with `sindri workflow complete --run <token>`. The CLI reads
+  `AW_SINDRI_LAUNCH_SECRET` from its environment (set by `session wrap`) and sends it as `X-Sindri-Launch-Secret`;
+  the server accepts `step-report` only when the secret matches the open run's launch and the instance isn't taken
+  over (`SND-AUTH-003` otherwise). The run token stays a public counter. The report goes through the same validation
+  as a desk report (§5.5). The session reports; the engine decides through the recipe's gates.
+- **Tokens.** Usage is read by the target's usage reader when the session ends (API §8.1) and recorded on
+  `session.ended`; budgets (§3.7) count it, and an over-budget run parks with `budget`. Sessions never report their
+  own usage.
+- **Ends.** `session.ended` without a report ends the run as `step.failed` (reason `exit` or `lost`), at most 150 s
+  after a crash. The Step's `timeout` still applies. A human may take the instance over at any time (`OpenItem`), which
+  invalidates the launch secret for `step-report`.
+- **Desk Steps stay.** A `deskCapable` Step whose descriptor names no agent runtime keeps running on the desk runtime
+  (W20).
 
 ## 7. Placement and S1 changes
 
@@ -687,7 +716,7 @@ The runtime that runs a Step in an agent session and takes its result back, so t
 
 Outside S1:
 - `ILauncher` belongs to the API surface spec (P10, `OpenItem`), with its launch targets (Warp plus Claude Code, Codex
-  or Cursor) set by the UI design spec. The desk runtime (W20) gives way to it.
+  or Cursor) set by the UI design spec. The agent runtime (§6.5) runs Steps that name one; the desk runtime (W20) keeps the rest.
 - The API chain (API P1) and the challenge are prerequisites of P2: P2 starts once API P1 has merged.
 - The router and slot stubs come in P7.
 - Judge (#156) and Evidence (#158) become blocks with the worker recipes.
@@ -1084,9 +1113,9 @@ migrations.
 `/specToProvenPR` runs the phases with an agent team, working from this graph and keeping every agent busy:
 
 ```
-P1 model + validator ──┬──► P2 registry + approval (S1 merged) ──┐
-                       └──► P3 pure engine + evals ──────────────┴──► P4 store, start, desk, events ──┬──► P5 timers, takeover ─┐
-                                                                                                    └──► P6 effects ─────────┴──► P7 children + item
+P1 model + validator ──┬──► P2 registry + approval (S1, API P1) ──┐
+                       └──► P3 pure engine + evals ──────────────────┴──► P4 store, start, desk, events (API P3) ──┬──► P5 timers, takeover ─┐
+                                                                                                                  └──► P6 effects ─────────┴──► P7 children + item ──► P8 agent runtime (API P10, Judge #156)
 ```
 
 | Wave | Parallel | Starts when |
@@ -1096,6 +1125,10 @@ P1 model + validator ──┬──► P2 registry + approval (S1 merged) ─�
 | 3 | P4 | P2 and P3 merged |
 | 4 | P5 ∥ P6 | P4 merged |
 | 5 | P7 | P5 and P6 merged |
+| 6 | P8 | P7, API P10 and Judge (#156) merged |
+
+These engine-local waves sit inside the cross-spec order in `docs/sindri/README.md` ("Build order"), which is the one
+that decides what starts when.
 
 **Units:** each phase starts with one contract unit (records, ports, stubs, committed red). The other units then
 fan out, one implementer each:
@@ -1285,7 +1318,8 @@ parallel phases the one that merges second renumbers at rebase.
 - **Files:** the agent runtime and its post-commit launch; the `step-report` token check; `session.launched` and
   `session.ended`; token usage from the provider adapter; the `workflow.agent.target` profile key; docs.
 - **Size:** M.
-- **Depends on:** P7, API P10 (`ILauncher`), Judge's provider port (#156).
+- **Depends on:** P7, API P10 (`ILauncher` and §8.1), Judge's provider port (#156). This phase adds Sindri's
+  `deps.yaml` edge to Judge with a recorded fan-out exception (Sindri is at 4), reviewed like Context's.
 - **Signal:** with `workflow.agent.target: claude`, starting `workflow.step` on a new item launches a Warp tab running
   Claude Code. The session's `complete --run` moves it to `checks`, and the event records `via: agent` and the token
   usage. The same `complete` from another session exits 2 with `SND-AUTH-002`. Killing the session parks the Step
