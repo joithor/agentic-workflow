@@ -1,13 +1,13 @@
 # Sindri workflow engine: recipes, blocks, validator and engine
 
-**Status:** design, revision 4 (after the three /autoplan passes), awaiting approval · **Date:** 2026-10-10 · **Builds:**
+**Status:** design, revision 5 (after four /autoplan passes; pass 5 is the last), awaiting approval · **Date:** 2026-10-10 · **Builds:**
 factory addendum §17.28 (one workflow state machine) and §17.29.4 step 2 · **Next:** `/specToProvenPR` takes the
 Phases at the end to PRs.
 
 This doc makes §17.28 concrete. It doesn't reopen §17.28 or §17.29, which are settled (decisions Q6 and Q7). It
 settles the block contract, the recipe schema, approval and invariant 13, the instance and its events, the CLI and
 API surface, the boundary with S1's app shell, and the first recipes. §13 maps every review finding to its fix:
-C1–C32 from pass 1, E1–E24 from pass 2 and G1–G18 from pass 3.
+C1–C32 from pass 1, E1–E24 from pass 2, G1–G18 from pass 3 and H1–H20 from pass 4.
 
 References:
 - the factory addendum `2026-10-09-sindri-factory-addendum.md` (A) and the core design `2026-10-07-sindri-design.md` (D);
@@ -33,7 +33,7 @@ References:
 | W9 | **Hand-written recipes are approved with `sindri recipe approve`**, through a server-issued challenge. **Generated recipes are approved by the packet freeze**, from a `base` that Sindri code picks | Invariant 13 |
 | W10 | **`RCP-CAP-001`–`007` keep a generated recipe at or below its base** (§4.3), comparing guards by path and loops by state | C16, C17, E19 |
 | W11 | **Approval and pins are checked on every `Commit` and at dispatch.** Approval pins the descriptor hashes of the blocks the recipe names and the hashes of its children. A revoke cascades to the generated recipes approved from it, and wakes running instances so they park at once. `cancel`, `takeover`, `handback`, `takeoverIdle` and engine-owned notifications are exempt from the check. Drift is fixed by re-approving the same hash with the new pins | Drift and revokes take effect immediately, and every instance can still be cancelled or resumed (C13, E15, G2, G7) |
-| W12 | **A transition is keyed by its trigger:** `wf:{instance}:{trigger}`. `Commit` checks, in order: the actor, the key (a replay returns the recorded result), the nonce, the fence, the approval, the version | Replays and redeliveries are no-ops, and a replayed refusal reports the refusal (C1, G6) |
+| W12 | **A transition is keyed by its trigger:** `wf:{instance}:{trigger}`. `Commit` checks, in order: the actor, the key, the nonce, the run token and state, the fence, the approval, the version. Only **decisions** (applied, or refused by a gate or evidence) are recorded under the key and replayed; a validation refusal (actor, nonce, token, fence, version, malformed report) records nothing and consumes nothing | Replays are no-ops, and a bad request never burns a task's key (C1, G6, H3) |
 | W13 | **One `Commit` per trigger**, in one SQLite transaction, with one event per row it changes: the event(s), the version bump, the instance row (and a new child row), deadlines, outbox commands with their id map, inbox rows and consumed nonces. Every change to an instance row goes through it | A 17.28.1; E13 |
 | W14 | **Each refusal consumes its trigger, and what follows is defined** (§5.5) | C2 |
 | W15 | **External events reach instances through the engine inbox** (§5.7) | C3 |
@@ -203,7 +203,8 @@ names come from the trigger's source: a Step, an event, or a child's terminal ou
 - **Recipe `next` variables:** `{item}`, `{instance}`, `{state}`, `{user}`, `{child}`, `{loop.<n>}`,
   `{loop.<n>.cap}`, `{budget.tokens.left}`.
 - **Engine-only variables** (in §3.8 texts): `{reason}`, `{question}`, `{gate}`, `{score}`, `{threshold}`,
-  `{since}`, `{run}`, `{after}`, `{to}`, `{effects}`, `{block}`, `{marker}`.
+  `{since}`, `{run}`, `{after}`, `{from}`, `{to}`, `{effects}`, `{block}`, `{marker}`, `{effect}`, `{code}`, `{recipe}`,
+  `{reasons}`, `{childNext}`.
 - **Voice:** waits are descriptions ("Waiting for …"); human-action states are instructions.
 - **No approval-tier verbs** may appear in `next` (`RCP-NEXT-002`).
 
@@ -211,17 +212,18 @@ names come from the trigger's source: a Step, an event, or a child's terminal ou
 
 | State | Entered by | `next` | Ways out (resume action, §5.8) |
 |---|---|---|---|
-| `parked` (`rounds`, `no-progress`) | A loop cap, or no progress | "Parked ({reason}): {question}. Grant more rounds at a terminal, or cancel." | `answer --grant n` (human-terminal): re-runs the Step. `answer --text` on `no-progress`: re-runs it once. `takeover`, `cancel` |
+| `parked` (`rounds`, `no-progress`) | A loop cap, or no progress, on the transition back into a looped state | "Parked ({reason}): {question}. Grant more rounds at a terminal, or cancel." | `answer --grant n` (human-terminal): performs the withheld loop transition, and the round it starts is the first granted one. `answer --text` on `no-progress`: performs it once, counting a round. `takeover`, `cancel` |
 | `parked` (`budget`) | A budget, or a `gate.budget.*` refusal | "Parked (budget): {question}. Grant tokens at a terminal, or cancel." | `answer --grant-tokens n` (human-terminal): re-runs the Step, or re-evaluates the withheld transition. `takeover`, `cancel` |
-| `parked` (`needs-answer`) | A refusal without a loop, `step.failed`, a wait refusal | "Parked (needs-answer): {question}. Answer with --text." | `answer --text`: re-runs the Step with `fact:answer`, or re-evaluates the withheld transition with the stored trigger. `takeover`, `cancel` |
+| `parked` (`needs-answer`, Step) | A refusal without a loop, `step.failed` | "Parked (needs-answer): {question}. Answer with --text; the Step runs again with your answer." | `answer --text`: re-runs the Step with `fact:answer`. `takeover`, `cancel` |
+| `parked` (`needs-answer`, wait) | A gate refused the transition out of a wait | "Parked: {gate} refused {from} -> {to} ({reasons}). Fix the cause, then resume to check again, or cancel." | `answer --resume [--text]`: re-checks every gate and evidence at the current head under the answer's key (§5.8). `takeover`, `cancel` |
 | `parked` (`timeout`) | `then: park` | "Parked (timeout): {state} ran past {after}. Resume to give it the full time again, or cancel." | `answer --resume`: back to the frame (the same run token) with a fresh deadline. `takeover`, `cancel` |
 | `parked` (`spec-conflict`: revoked) | `recipe revoke` | "This recipe was revoked. Cancel, then start a new attempt from an approved version." | `cancel` |
-| `parked` (`spec-conflict`: drift) | A pinned block or child changed in this build | "{block} changed since this recipe was approved. Re-approve it (`sindri recipe approve {recipe}`), then resume." | After the re-approval, `answer --resume` re-evaluates the trigger. `cancel` |
-| `parked` (`spec-conflict`: dispatch) | `outbox.refused` | "{effect} was refused at dispatch ({code}). Fix the approval or the allowlist, then resume to send it again." | `answer --resume`: re-emits the effect. `cancel` |
-| `parked` (`SND-WF-010`) | A Step or resource with no runtime | "No runtime for {block} in this build. Cancel, or resume in a build that has it." | `answer --resume`, `cancel` |
-| `escalated` (gate) | A top-rung gate below threshold or uncertain | "Escalated: {gate} scored {score}, below {threshold}. Accept to fire {to} with {effects}, or reject." | `--accept` (human-terminal) overrides only that gate, then evaluates the remaining gates and evidence at the current head. `--reject` is a refusal. `cancel` |
+| `parked` (`spec-conflict`: drift) | A pinned block or child changed in this build | "{block} changed since {recipe} was approved. Re-approve it (`sindri recipe approve {recipe}`); the approval resumes this instance." | The drift approval resumes every instance it lists (§4.1). `cancel` |
+| `parked` (`spec-conflict`: dispatch) | `outbox.refused` with `SND-WF-011` (not allowlisted) | "{effect} isn't on the profile's effect allowlist. Add it and approve the profile, then resume to send it again." | `answer --resume`: re-emits the effect. `cancel` |
+| `parked` (`SND-WF-010`) | A Step or resource with no runtime | "No runtime for {block} in this build. Cancel, or resume in a build that has it." | `answer --resume`: starts the Step again (a new run), or waits for the resource again. `cancel` |
+| `escalated` (gate) | A top-rung gate below threshold or uncertain | "Escalated: {gate} scored {score}, below {threshold}. Accept to override it (the other checks still run before {to}), or reject to treat it as a refusal." | `--accept` (human-terminal) overrides only that gate, then evaluates the remaining gates and evidence at the current head. `--reject` is a refusal. `cancel` |
 | `escalated` (timeout) | `then: escalate` | "Escalated: {state} ran past {after}. Resume to give it the full time again, or cancel." | `--resume`, `cancel` |
-| `escalated` (child) | The child escalated | "Escalated in {child}: {question}. Answer here; it goes to {child}." | The child's own answers, forwarded. `cancel` |
+| `escalated` (child) | The child escalated | "Escalated in {child}: {childNext}" | The child's `answer` variants, forwarded (§5.7), and shown as the child's `allowedCommands`. `cancel` and `takeover` act on the parent |
 | `taken-over` | `takeover` (allowed on a parked or escalated instance as well) | "With you since {since}. Run `sindri workflow handback {instance}` when you're done." | `handback` (pops back to whatever it covered), `cancel` |
 | `cancelled` | `cancel` from any state, the tracker, a cancelled parent | (terminal) | outcome `cancelled` |
 
@@ -244,18 +246,27 @@ names come from the trigger's source: a Step, an event, or a child's terminal ou
 `IRecipeStore` keeps the normalized text by hash. Register, approve and revoke write `recipe.registered`,
 `recipe.approved` and `recipe.revoked` events. Approvals live in `ledger.db` and travel with a host handover.
 `recipe list --stale` lists approved recipes whose pins no longer match the build. Re-approving the **same hash**
-records the new pins (a drift approval), and the preview shows which blocks changed.
+appends a new approval row and event with the new pins (a **drift approval**; a revoked hash can't be re-approved
+this way, `SND-RECIPE-005`). It re-runs the validator and evals, and its preview shows:
+- which blocks changed, with a capability diff;
+- the instances parked on that drift, which the same approval resumes, with one notice per recipe.
+
+**Child pins:** a child is created from the hash its parent pinned. Approving a newer child version, or revoking
+the pinned one, marks every parent that pins it as `child-stale` in `recipe list --stale`; re-approving the parent
+pins the latest approved child. Creating a child whose pinned hash is revoked is refused, and the parent parks with
+`spec-conflict` (revoked). The revoke wake reaches those parents too.
 
 ### 4.2 The challenge (shared by every `human-terminal` command)
 
 1. The CLI asks the server for a challenge for one action, such as `approve workflow.step 1`,
    `revoke workflow.step@…`, `grant 1 T-1/step/1` or `accept T-1/step/1`. The server returns a one-time **challenge**, valid for 5 minutes and bound to the subject (the recipe hash and
-   version, or the instance version), together with the preview. If the subject changes before the answer, the
+   version plus a digest of the pins for a drift approval; or the instance address and version, including the
+   child's address and version for a forwarded answer), together with the preview. If the subject changes before the answer, the
    challenge is refused.
 2. The human types the action text at a TTY, for example `grant-tokens 100k T-1/step/1`. The CLI returns it with
    the challenge.
 3. The server refuses a request without a valid challenge:
-   - `SND-RECIPE-004` when the request came from a human without a TTY;
+   - `SND-RECIPE-004` when the request came from a human without a TTY (the `script` class);
    - `SND-WF-007` when it came from a session. The message names the harness marker it saw;
    - `SND-RECIPE-009` when the challenge has expired. The fix text says "run it again".
 
@@ -349,20 +360,27 @@ The ledger writer runs the whole payload through `Aw.Redaction` (E20). `causatio
 
 One transaction:
 1. **Actor:** refuse a trigger its actor class may not fire (`SND-WF-007`, §6.2).
-2. **Key:** if the key exists, return the **recorded result**. An applied trigger prints `already applied` and exits 0.
-   A refused one prints the recorded refusal and exits 2.
-3. **Nonce:** a command's nonce must be unused, unexpired and for the current version (`SND-WF-009`). It is
-   consumed in this transaction.
-4. **Fence:** `LeaseDecision.Holds`, otherwise `SND-LEASE-003`.
-5. **Approval:** check the recipe's approval and pins (`RCP-CAP-003`) against a snapshot invalidated by `recipe.*`
-   events. `cancel`, `takeover`, `handback`, `takeoverIdle` and engine-owned commands are exempt. A mismatch on any
-   other system trigger turns the commit into a `spec-conflict` park.
-6. **Version:** `UPDATE … WHERE version = @fromVersion`, otherwise `VersionConflict`.
-7. **Write:** the event(s), the row(s), the deadlines, the outbox commands and their `workflow_commands` map rows,
-   and the inbox rows.
+2. **Key:** if the key exists, return the **recorded decision**. An applied trigger prints `already applied` and
+   exits 0; a gate refusal prints the recorded refusal and exits 2. A command's key is
+   `cmd:{nonce}:{verb}:{sha256 of its arguments}`, so a different command with a used nonce doesn't collide with it;
+   it fails at step 3 instead.
+3. **Nonce:** a command's nonce must be unused, unexpired and for the current version (`SND-WF-009`).
+4. **Run token and state:** a desk report's token must be the open run's (`SND-WF-005`), and the trigger must be
+   allowed in the current state (`SND-WF-003`). A malformed report is `SND-WF-008`.
+5. **Fence:** `LeaseDecision.Holds`, otherwise `SND-LEASE-003`.
+6. **Approval:** check the recipe's approval and pins (`RCP-CAP-003`) against a snapshot invalidated by `recipe.*`
+   events. Exempt: the triggers `cancel`, `takeover`, `handback` and `takeoverIdle`, and outbox commands with
+   `origin: engine`. A mismatch on a human trigger returns `SND-RECIPE-006` and records nothing. On a system
+   trigger it turns the commit into a `spec-conflict` park.
+7. **Version:** `UPDATE … WHERE version = @fromVersion`, otherwise `VersionConflict`.
+8. **Write:** the event(s), the row(s), the deadlines, the outbox commands and their `workflow_commands` map rows,
+   the inbox rows, and the consumed nonce.
 
-Gate answers are saved in their own transaction before the `Commit` (`workflow_gate_results`, keyed by trigger and
-block). A system trigger that hits a version conflict re-decides, reusing those answers, up to 3 times. A command
+Steps 1, 3, 4, 5 and 7 are validation: a failure there returns its error, writes nothing and consumes nothing.
+
+Gate answers are saved in their own transaction before the `Commit` (`workflow_gate_results`, keyed by trigger key and
+block). A resume runs under the answer's own key, so its gates are evaluated afresh and never reuse the answers
+that caused the park. A system trigger that hits a version conflict re-decides, reusing those answers, up to 3 times. A command
 gets `SND-WF-002`.
 
 ### 5.4 Triggers, nonces, outbox ids
@@ -382,17 +400,25 @@ gets `SND-WF-002`.
   deletes expired ones. Reads never mint a nonce.
 - **Outbox command ids** are UUIDv8 (RFC 9562) built from SHA-256 over `{trigger key}:{effect index}`, so each
   `Commit` gets ids of its own. SHA-1-based UUIDv5 would trip CA5350. `workflow_commands` maps each command id back
-  to its instance and entry.
+  to its instance, the entry of the frame the transition **enters**, and its `origin` (`engine` or `recipe`).
 - **Effect identity:** separately from the command id, each effect carries a stable identity in its payload,
-  `{instance}:{entry}:{effect index}`. `effect.claim.ref` uses the **item** as its identity, so a later attempt of
-  the same item finds its own claim and gets `created`. The effect's existence check uses this identity, so a
+  `{instance}:{entry}:{effect index}`, using the entered frame's entry. `effect.claim.ref` keys its identity by
+  **item** and records the owning instance in the ref. A later attempt gets `created` only when it owns the ref or
+  the owner's attempt has ended; otherwise it gets `claimExists`. `workflow start --attempt next` is refused while an
+  earlier attempt of the item is live (`SND-WF-012`). The effect's existence check uses this identity, so a
   `retry` or a re-emission is harmless.
-- **Engine-owned commands** (`notify.desk` for parks, escalations, desk tasks and `takeoverIdle`) are exempt from
-  the recipe approval check at dispatch.
+- **Origin decides the exemption, not the kind.** The engine's own notifications (parks, escalations, desk tasks,
+  `takeoverIdle`) are written with `origin: engine` and skip the recipe approval check at dispatch. A recipe's
+  `effect.notify.desk` is `origin: recipe` and is checked like any effect.
 - **Dispatcher:** it honours `notBefore = enqueuedAt + workflow.dispatchDelay` (default 10 s, A 17.22 D3's undo
   window). A refusal at dispatch marks the command dead with Kernel's new `IOutbox.MarkRefused` (K-D1, owned by
-  P6), so it isn't retried, and writes `outbox.refused` (producer `system:dispatcher`). The router delivers it, and
-  the instance parks with `spec-conflict: dispatch`.
+  P6), so it isn't retried. In the same `ledger.db` transaction it writes `outbox.refused` (producer
+  `system:dispatcher`, with the code: `SND-RECIPE-005` revoked, `SND-RECIPE-006` drift, `SND-WF-011` not
+  allowlisted). The router delivers it by causation:
+  - When the instance is already parked by the same revoke, the revoke park absorbs it.
+  - Otherwise the instance parks with `spec-conflict` of that kind, whatever frame it is in now, because this row is
+    never expired.
+  - On a terminal instance it writes `workflow.effect-refused` and a needs-me notice.
 
 ### 5.5 Refusals (W14)
 
@@ -405,7 +431,8 @@ Precedence runs top to bottom:
    - at the cap, the instance parks with `rounds`;
    - with no loop, it parks with `needs-answer`.
 4. From a wait: the event is stored on the suspended frame as the withheld trigger, held resources (such as a
-   session slot) are released, and the instance parks with `needs-answer`.
+   session slot) are released, and the instance parks with `needs-answer` (wait). A resource grant isn't a stored
+   trigger; its resume waits for the resource again.
 5. A command gets `SND-WF-004`, recorded once under its nonce.
 
 A **desk report** that is malformed (an undeclared outcome, a missing required output, an undeclared fact) is
@@ -427,8 +454,10 @@ rejected before any decision with `SND-WF-008`. No round is used.
 - **Router** (`workflow.events`):
   - It reads the ledger from its cursor in `workflow_cursor`.
   - It accepts an event of a registered kind only when the envelope's actor is the descriptor's `producer`.
-  - It resolves the target through `causation`, via `workflow_commands`, or else through `item` and attempt. Parked
-    and taken-over instances are valid targets.
+  - It resolves the target through `causation`, via `workflow_commands`, or else through `item` and attempt. An
+    event whose descriptor says `route: causation` (`claim.created`, `notify.delivered`, `outbox.refused`) is routed
+    **only** by causation, so the engine's own notification can't satisfy a recipe's wait. Parked and taken-over
+    instances are valid targets.
   - It writes inbox rows.
 - **Inbox** (`workflow.inbox`):
   - A row applies when its instance is in the matching wait, in the frame that row names, or, for a row written
@@ -447,8 +476,9 @@ rejected before any decision with `SND-WF-008`. No round is used.
 | Cancelled | `wait.satisfied` with outcome `cancelled` |
 | Parked (`propagate`) | Pushes a park mirroring the child's reason and question |
 | Resumed | Pops back to its wait (the same frame and child) |
+| **Any** row from the child | Pops the frame mirroring that child first (by child id), then applies, so a child cancelled at its own address, or accepted straight to `done`, still releases its parent |
 | Escalated | Pushes an `escalated (child)` frame |
-| A command to the parent while the frame mirrors a child | Forwarded to the child as a system trigger carrying `onBehalfOf` (the original actor and the consumed challenge's id). The child accepts that as proof; the parent follows the child |
+| An `answer` to the parent while the frame mirrors a child | Forwarded **synchronously**: the CLI's command commits on the child, as the child's own trigger, carrying `onBehalfOf` (the actor, plus a challenge bound to the child's address and version for terminal-class answers). The CLI prints the child's result. The parent follows through the inbox. Forwarded grants aren't stored, so a later `--resume` needs a fresh challenge. `cancel` and `takeover` act on the parent (cancel cascades) |
 | Parent cancelled | Every child is cancelled, whatever its state |
 | Parent busy | The row stays pending until the parent can take it |
 
@@ -458,16 +488,22 @@ Each suspended frame stores a **resume action**. Its answer, once accepted, pops
 
 | Park or escalation | Resume action |
 |---|---|
-| `rounds`, `no-progress` | `rerun`: a new run `n+1` of the frame's Step, with the findings and any `fact:answer` |
+| `rounds`, `no-progress` | `transition`: performs the withheld loop transition (for example `checks -> produce`) into a new entry and a new run, with the findings and any `fact:answer`. With `--grant n`, this is the first of the n granted rounds |
 | `budget` from a Step | `rerun`, under the raised allowance |
-| `budget` from a `gate.budget.*` refusal | `reevaluate`: the withheld transition with its stored trigger, under the raised allowance |
+| `budget` from a `gate.budget.*` refusal | `reevaluate`: from a Step, the withheld transition with the stored Step result; from a resource wait, `rewait` |
 | `needs-answer` from a Step (refusal without a loop, `step.failed`) | `rerun`, with `fact:answer` |
-| `needs-answer` from a wait refusal | `reevaluate` the withheld transition with its stored trigger, and `fact:answer` |
+| `needs-answer` from a wait refusal | `reevaluate` the withheld transition with its stored event (a resource wait does `rewait`), and `fact:answer` |
 | `timeout`, `escalated (timeout)` | `rearm`: back to the frame (the same run, the same desk task) with a fresh deadline |
-| `spec-conflict: drift`, `SND-WF-010` | `reevaluate` the trigger that parked it |
+| `spec-conflict: drift` | `rearm`: restores the frame. A frame parked by a Step trigger also re-evaluates that trigger. A startup wake has no trigger, so it only restores |
+| `SND-WF-010` | `restart`: a new run of the Step, or `rewait` for a resource |
 | `spec-conflict: dispatch` | `reemit`: the refused effect, as a new command with the same effect identity |
 | `escalated (gate)` | `--accept`: the withheld transition, with that gate overridden. `--reject`: the §5.5 refusal path |
 | A mirrored child frame | Forwarded (§5.7) |
+
+Every resume commits under the **answer's own key** (`cmd:{nonce}:…`), so the stored trigger's key is never
+replayed. `reevaluate` runs every gate and evidence check again at the current head; earlier gate answers aren't
+reused (§5.3). A drift wake on an instance that is already parked is recorded on its suspended frame. The answer
+that pops that frame is refused with `SND-RECIPE-006` until the drift is re-approved.
 
 `fact:answer` holds the latest answer text, scrubbed, at most 1 MiB, and visible to the next Step. An answer that
 doesn't fit the reason, such as `--text` on a `rounds` park, is `SND-WF-003`, and its fix names the right answer.
@@ -491,13 +527,16 @@ doesn't fit the reason, such as `--text` on a `rounds` park, is `SND-WF-003`, an
 - **Dev loop:**
 
   ```
-  export AW_STATE_DIR=$(mktemp -d)
-  alias sindri='dotnet run --project src/Sindri/Aw.Sindri.Host --'
+  export AW_SINDRI_HOME=/tmp/sindri-dev-p<N>          # one fixed path per phase, shared by the owner and the Prover
+  dotnet build src/Sindri/Aw.Sindri.Host -c Debug      # once; then call the built binary, never `dotnet run`
+  sindri() { src/Sindri/Aw.Sindri.Host/bin/Debug/net10.0/Aw.Sindri.Host "$@"; }   # a function, so `script` runbooks work
   ```
 
   Then copy `recipes/dev/profile.yaml` to S1's profile location (`docs/csharp/sindri.md`), run
   `sindri profile approve <hash>` (the hash `sindri profile validate` prints), and run `sindri serve` in one
-  terminal and the verbs in another. Each phase that adds a `workflow:` profile key (S1-D11) adds it to the dev
+  terminal (the owner starts it and leaves it running for the whole phase), and the verbs in another. The Prover
+  exports the same `AW_SINDRI_HOME` and reaches that server over loopback. If its sandbox blocks loopback, the
+  owner approves running the Prover's read verbs outside the sandbox. Each phase that adds a `workflow:` profile key (S1-D11) adds it to the dev
   profile in the same PR, so the dev profile always matches the schema of its phase.
 
 ### 6.2 Actor classes (W22)
@@ -506,18 +545,20 @@ doesn't fit the reason, such as `--text` on a `rounds` park, is `SND-WF-003`, an
 |---|---|
 | The CLI with any harness marker set, or a parent process that is an agent harness (`HarnessMarkers`: the environment list and the process names; see below) | `session` |
 | The CLI on a TTY (stdin and stdout), no marker | `human` |
-| The CLI without a TTY, no marker | `script`: read verbs, `recipe validate`, `recipe eval`, `recipe register` |
+| The CLI without a TTY, no marker | `script`: read verbs, `recipe validate`, `recipe eval`, `recipe register`. Terminal-class commands from `script` are `SND-RECIPE-004` |
 | MCP (stamped by the server) | `session`: read verbs and `workflow.request` only |
-| The Avalonia UI client (stamped by the server) | `ui`: read verbs only, until the UI's own design adds its forms |
+| The Avalonia UI client (stamped by the server from its connection, not from what the client says) | `ui`: read verbs only, until the UI's own design adds its forms. Class order: `system` > `human-terminal` > `human` > `ui` = `script` > `session` |
 | A `human` command carrying a valid challenge (§4.2) | `human-terminal` |
 | Engine services and adapters | `system` |
 
 The CLI reports its channel and the server stamps the actor. The table is honest-mistake grade (A 17.28.3).
 
 **`HarnessMarkers` is probed, not guessed.** P2 records what each harness actually sets (Claude Code, Codex in
-each sandbox mode, Cursor's agent and its integrated terminal) and pins the result in a golden test. A marker that
-humans also see, such as one set in an IDE's own terminal, is excluded, and the parent-process check covers it
-instead. A refusal names the marker or process it found, so a human in an IDE terminal knows why.
+each sandbox mode, Cursor's agent and its integrated terminal) and pins the result in a golden test. The probe records the whole process ancestry,
+not just names. Claude Code can run as `node`, and Cursor's app hosts both the human's terminal and its agent, so
+matching is by the ancestry pattern the probe pinned. A marker that humans also see is excluded. `sindri doctor`
+re-probes when a provider's version changes. The Codex and Cursor probes are **(owner)** steps in P2's runbook,
+because a Claude Code implementer can't run those harnesses. A refusal names the marker or process it found, so a human in an IDE terminal knows why.
 
 ### 6.3 Verbs
 
@@ -534,7 +575,7 @@ instead. A refusal names the marker or process it found, so a human in an IDE te
 | `workflow status <address> [--json]` | any | §6.4 |
 | `workflow list [--needs-me \| --item \| --state] [--json]` | any | One status header per line. `--needs-me` shows two sections, **Decisions** (parked, escalated, idle takeovers) and then **Tasks** (open desk tasks). Empty: `nothing needs you` |
 | `workflow answer <address> [--text …\|--file …] [--grant n \| --grant-tokens n \| --accept \| --reject \| --resume]` | human (grants, accept: human-terminal) | The new status header and the resume action it ran |
-| `workflow command <address> <verb>` | human | Fires a recipe `command.<verb>` trigger |
+| `workflow command <address> <verb>` | human | Fires a recipe `command.<verb>` trigger. Verbs match `[a-z][a-z-]{1,31}`; the engine verbs plus `approve`, `revoke`, `grant-tokens` and `override` are reserved (`RCP-TRIG-002`) |
 | `workflow complete <address> --run <token> --outcome <o> [--output <fact>=<file>]…` | human | The new status header and what happened (`-> checks`, `refused: re-running produce (round 2/3)`, `parked: rounds`) |
 | `workflow cancel <address>` · `takeover` · `handback` | human | The new status header. `sindri handback <item>` stays as D §9.3's short form |
 | `workflow events <address> [--follow] [--json]` | any | One line per event |
@@ -545,7 +586,7 @@ instead. A refusal names the marker or process it found, so a human in an IDE te
 - `GET /workflow/instances/{address}` returns the instance, the rendered `next`, `allowedCommands` (each with its
   actor class), the open question or task (with its input facts), the run token, the children, and what `--accept`
   would fire.
-- **Notifications** go out as `notify.desk` outbox commands, each written to `$AW_STATE_DIR/sindri/notifications.jsonl` and shown
+- **Notifications** go out as `notify.desk` outbox commands, each written to `$AW_SINDRI_HOME/notifications.jsonl` and shown
   as a macOS notification when one is available:
   - parks, escalations and `takeoverIdle` interrupt, within D §10.1's budget;
   - an instance's **first** desk task interrupts once, so starting `workflow.item` gives a cue;
@@ -595,7 +636,7 @@ T-6/step/1  workflow.step@9ab2d40c1e77  v5  escalated: gate  since 09:10 (2h)
 ```
 T-2/dev-timeout/1  workflow.dev-timeout@77aa01c3d9e2  v3  taken-over  since 12:01 (5m)
   next      With you since 12:01. Run `sindri workflow handback T-2/dev-timeout/1` when you're done.
-  paused    timeout 0m 40s left
+  paused    timeout 40s left
   commands  handback, cancel
 ```
 
@@ -611,7 +652,10 @@ The answer line depends on the park reason:
 - `needs-answer` suggests `--text`;
 - a park mirroring a child names the child.
 
-Durations are shown as `1d 22h 48m`. Plain output is ASCII. Golden files pin every layout.
+Durations are shown as `1d 22h 48m`, or `40s` under a minute. `since` adds the date (`since 10-09 11:54`) once the
+age is a day or more. Plain output is ASCII, and `commands` always lists the instance's own verbs first, in the
+order `answer`, `complete`, `handback`, `takeover`, `cancel`. Golden files pin every layout in §6.4, plus one per
+§3.8 row.
 
 ## 7. Placement and S1 changes
 
@@ -639,7 +683,7 @@ Durations are shown as `1d 22h 48m`. Plain output is ASCII. Golden files pin eve
 | S1-D10 | One loop per service | services run one after another | P4 |
 | S1-D4 | Cadence below a minute | Met: `Cadence` accepts `5s`–`24h` | — |
 | K-D1 | Kernel `IOutbox.MarkRefused`: mark a command dead without retrying it | Missing in `Aw.Kernel` | P6 |
-| S1-D11 | Profile keys under `workflow:`: `deskTimeout` and `eventHold` (P4), `effects` and `dispatchDelay` (P6), `route` (P7, §12). Until `workflow.effects` exists, `RCP-EFFECT-001` reports `skipped`, and effects are refused at run time | S1's profile schema is closed | P4, P6, P7 |
+| S1-D11 | Profile keys under `workflow:`: `deskTimeout` and `eventHold` (P4), `effects` and `dispatchDelay` (P6), `route` and `budget.tokens` (P7, §12). Until `workflow.effects` exists, `RCP-EFFECT-001` reports `skipped`, and effects are refused at run time | S1's profile schema is closed | P4, P6, P7 |
 
 Outside S1:
 - `ILauncher` is the subject of the next engine design (session launch, §17.29.3), not of these phases.
@@ -658,7 +702,7 @@ Outside S1:
 | SND-RECIPE-006 | conflict | A pinned block or child changed since approval | Re-approve (`recipe list --stale`) |
 | SND-RECIPE-007 | conflict | Same id and version, other content | Raise `version` |
 | SND-RECIPE-008 | conflict | Evals missing or failing | `sindri recipe eval <file>` |
-| SND-RECIPE-009 | conflict | The challenge expired, or its subject changed since the preview | Run it again and re-read the preview |
+| SND-RECIPE-009 | conflict | A recipe challenge expired, or its subject changed since the preview | Run it again and re-read the preview |
 | SND-RECIPE-010 | notFound | The recipe file can't be read | Check the path |
 | SND-WF-001 | notFound | No such instance | `sindri workflow list` |
 | SND-WF-002 | conflict | The instance changed | Re-read and retry |
@@ -670,6 +714,9 @@ Outside S1:
 | SND-WF-008 | invalid | A malformed desk report | Use a declared outcome and the required outputs |
 | SND-WF-009 | conflict | The command's nonce was used, expired or is for another version | Run the command again (the CLI fetches a new nonce) |
 | SND-WF-010 | unavailable | No runtime for a named block or resource | Cancel, or a build with it |
+| SND-WF-011 | forbidden | The effect kind isn't on the profile's effect allowlist | Add it under `workflow.effects` and approve the profile |
+| SND-WF-012 | conflict | An earlier attempt of this item is still live | Finish or cancel it first |
+| SND-WF-013 | conflict | A workflow challenge expired, or its subject changed | Run it again and re-read the preview |
 
 ## 9. Validator and eval format
 
@@ -701,7 +748,8 @@ directory when not (so `workflow.item.yaml` finds `workflow.step.yaml`).
   "expect": { "state", "park"?, "outcome"? } }`.
 
 `recipe eval` folds the decisions over the triggers and reports the first line that diverges. `--scaffold`
-generates a happy-path case for a new recipe, so the first eval isn't hand-written. `--record` writes a live
+generates a happy-path case for a new recipe, so the first eval isn't hand-written. It marks line 1 with
+`"scaffold": true`, and the approve preview says `scaffold only` when every eval is a scaffold. `--record` writes a live
 instance's history in this format.
 
 ## 10. Engine properties mapped to tests
@@ -728,6 +776,11 @@ instance's history in this format.
 | Exits work under a revoke | `Cancel_is_exempt_from_the_approval_check`, `Parent_cancel_cancels_a_drifted_child` | unit, integration | 3, 4 |
 | Outbox ids are unique per commit | `Two_parks_in_one_entry_get_distinct_command_ids` | unit | 6 |
 | Live frames keep their rows | `Child_result_survives_a_long_parent_park` | integration | 7 |
+| Resumes do what they say | `Grant_performs_the_withheld_loop_transition`, `Resume_reevaluates_gates_under_the_answer_key`, `Resource_wait_resume_rewaits` | unit | 3 |
+| A child that ends releases its parent | `Child_cancelled_at_its_own_address_releases_the_parent`, `Child_accepted_to_done_releases_the_parent` | unit | 3, 7 |
+| A bad request never burns a key | `Stale_token_report_records_nothing`, `Malformed_report_records_nothing` | unit | 4 |
+| Claims across attempts | `Next_attempt_refused_while_earlier_is_live`, `Claim_owned_by_ended_attempt_reads_created` | integration | 6, 7 |
+| Notifications can't satisfy waits | `Engine_notification_delivery_routes_by_causation_only` | unit | 6 |
 
 ## 11. Test strategy by lane, and telemetry
 
@@ -759,6 +812,7 @@ These feed A §17.2, and all of it is scrubbed.
 - **Real recipes:** `recipes/sindri/workflow.item.yaml` and `workflow.step.yaml`, with evals in
   `recipes/sindri/evals/`.
 - **Dev recipes:** `recipes/dev/`, with `profile.yaml`:
+  - each dev recipe has one eval in `recipes/dev/evals/<id>/happy.jsonl`, so its approval passes;
   - `workflow.dev-timeout`: a desk Step and a `1m` timeout (desk floor off in the dev profile:
     `workflow.deskTimeout: 1m`);
   - `workflow.dev-notify`: `ask` (a desk Step), then `ask -> sent` with `effect.notify.desk`, then `sent` waits on
@@ -782,11 +836,12 @@ These feed A §17.2, and all of it is scrubbed.
 | Event | Producer | Outcomes | Facts |
 |---|---|---|---|
 | `item.routed` | `router.stub` | `startable`, `notStartable` | `fact:stepSpec` |
-| `claim.created` | `system:dispatcher` | `created`, `claimExists` | — |
-| `notify.delivered` | `system:dispatcher` | `delivered` | — |
+| `claim.created` | `system:dispatcher` (route: causation) | `created`, `claimExists` | — |
+| `notify.delivered` | `system:dispatcher` (route: causation) | `delivered` | — |
 
-- **`fact:item`** is `{ id, repo }`, where `repo` is a key of the profile's `repos`. `effect.claim.ref` creates
-  `sindri/{user}/{item}` in that repo.
+- **`fact:item`** is `{ id, repo, spec }`, where `repo` is a key of the profile's `repos` and `spec` is the Step
+  spec text. `effect.claim.ref` creates
+  `sindri/{user}/{item}` in that repo, pointing at its default branch's head, so the repo needs one commit.
 - **`workflow.route`** (P7) is `{ startable: all | none }`. The `router.stub` service fires on each
   `workflow.started` of `workflow.item` and emits `item.routed` with `outcome` taken from that key, and with
   `fact:stepSpec` copied from `fact:item`'s spec.
@@ -805,7 +860,7 @@ states:
   claimed:   { kind: wait, waitFor: { event: claim.created }, timeout: { after: 10m, then: retry },
                next: "Waiting for the claim ref sindri/{user}/{item}." }
   running:   { kind: wait, timeout: { after: 14d, then: park },
-               waitFor: { child: { recipe: workflow.step, inputs: { spec: { fact: fact:stepSpec } }, onParked: propagate } },
+               waitFor: { child: { recipe: workflow.step, inputs: { "fact:spec": { fact: fact:stepSpec } }, onParked: propagate } },
                next: "Waiting for {child}." }
   done:      { kind: terminal, outcome: resolved }
   dropped:   { kind: terminal, outcome: unresolved }
@@ -857,10 +912,11 @@ The child's outcomes are `resolved` and `cancelled`, and `workflow.item` covers 
 
 ## 13. Review resolutions
 
-/autoplan ran three passes (2026-10-10), each over five lenses. No pass found a CRITICAL. Passes 1 and 2 came back
-NEEDS_WORK. In pass 3, security passed and the other four lenses still had HIGHs, which revision 4 fixes. The consolidated reviews are in `~/.agentic-workflow/jthorare-agentic-workflow/plans/sindri-workflow-engine/`
-(`consolidated-review.md`, `-r2.md`, `-r3.md`). The owner capped the loop at three passes, so revision 4 isn't
-reviewed again. Its fixes are listed below for the owner's review.
+/autoplan ran four passes (2026-10-10 and 2026-10-11), each over five lenses. No pass found a CRITICAL. Passes 1
+and 2 came back NEEDS_WORK. In pass 3, security passed and the other four lenses still had HIGHs. In pass 4,
+product and security passed, and design, devex and arch had HIGHs, which revision 5 fixes. The consolidated reviews are in `~/.agentic-workflow/jthorare-agentic-workflow/plans/sindri-workflow-engine/`
+(`consolidated-review.md` and `-r2.md` to `-r4.md`). The owner raised the cap to five passes, and pass 5 reviews
+revision 5.
 
 ### Pass 1 (C1–C32)
 
@@ -951,6 +1007,31 @@ reviewed again. Its fixes are listed below for the owner's review.
 | G17 | §6.4 layout 1, §3.8 texts, §4.2 and §8 naming, `step.checks` (below) |
 | G18 | Below |
 
+### Pass 4 (H1–H20)
+
+| Id | Finding | Fixed in |
+|---|---|---|
+| H1 | (arch H1) The grant re-ran the wrong state | §5.8 `transition`; §3.8 rounds row |
+| H2 | (arch H2) A parent stuck on a child that already ended | §5.7 "any row pops the mirror first" |
+| H3 | (arch H3) A refused report burns its key | W12, §5.3 (only decisions are recorded) |
+| H4 | (design J1, arch M1) Resume reuses the consumed key and gate answers | §5.8 answer key, §5.3 gate cache |
+| H5 | (devex HIGH) The owner and the Prover don't share a server | §6.1 fixed `AW_SINDRI_HOME`, a built binary, the owner starts `serve` |
+| H6 | (devex HIGH) An engine notification completes `dev-notify` | §5.7 `route: causation` |
+| H7 | (sec M4-1, arch M2) The exemption was by kind | §5.3 step 6 and §5.4 `origin` |
+| H8 | (sec M4-2, product) Two live attempts both own the claim | §5.4 owner in the ref, `SND-WF-012` |
+| H9 | (sec M4-3) A drift approval didn't bind the pins | §4.2 pins digest; §4.1 re-validates, appends, batch-resumes |
+| H10 | (sec M4-4, arch M9, design J3) Forwarding scope and proof | §5.7 synchronous forwarding of `answer` only, bound challenge |
+| H11 | (product) Child pin lifecycle | §4.1 child pins |
+| H12 | (product) Drift recovery for each instance | §4.1 batch resume |
+| H13 | (arch M3) Drift on startup and on parked instances | §5.8 `rearm`, recorded on the suspended frame |
+| H14 | (arch M4) A grant gave one round too many | §3.8, §5.8 |
+| H15 | (arch M5) The entry recorded for commands | §5.4 entered frame |
+| H16 | (arch M6, sec L4-5) Creating a revoked child | §4.1 |
+| H17 | (arch M7) Replaying a slot grant | §5.5, §5.8 `rewait` |
+| H18 | (arch M8, design J4) Dispatch refusals: code, text, ended frames | §5.4, §3.8, `SND-WF-011` |
+| H19 | (design J2, J5, J6) Texts, variables, layouts | §3.7, §3.8, §6.4, `SND-WF-013` |
+| H20 | Remaining devex, arch and security LOWs | Below |
+
 ### Written answers
 
 - **P7 (host move):** approvals live in `ledger.db` and move with the A 17.19 handover snapshot.
@@ -1014,6 +1095,22 @@ reviewed again. Its fixes are listed below for the owner's review.
     - the MCP architecture test applies once an MCP project exists;
     - `RCP-EFFECT-001` reads the approved profile.
   - **Security L-1 and L-2:** the 1 MiB caps and `0600` (§6.1); the `ui` class (§6.2).
+- **Pass 4 answers:**
+  - **Branches and `/specToProvenPR`:** this doc stacks P1 and P3 on S1's branch and overlaps the waves. The plan's
+    `stages.md` records each stage's base branch. When a parent stage's code changes under a stacked stage, that
+    stage's proof is run again after the rebase.
+  - **Units and red tests:** each implementer runs only its own unit's test classes (`--filter-class`), because
+    other units' red tests are expected to fail. The integrator runs the whole lane.
+  - **Hotspots:** add `docs/csharp/sindri.md`'s error table, and append switch arms before the default arm.
+  - **The session cap** is 3 implementers at once, with at most 2 building.
+  - **Runbooks** start with their setup: the profile approval, approving each recipe used, and creating the input
+    files.
+  - **`recipe register` stays `script+`:** registering grants nothing, and approval is terminal-class.
+  - **A nonce is fetched after the challenge is typed**, just before sending (arch L1).
+  - **`workflow.request`** writes an event but changes no row, so it doesn't bump the version (arch L10).
+  - **`MarkRefused` and `outbox.refused`** run in one transaction (arch L11).
+  - **A drifted generated recipe** is re-frozen at the desk once a generator exists. None is built in these
+    phases.
 - **Crafted bypasses** are outside the threat model (A 17.28.3; `docs/csharp/bugfix.md` "Threat model"):
   - direct SQLite writes;
   - unauthenticated loopback callers and port squatting;
@@ -1053,7 +1150,7 @@ fan out, one implementer each:
 | Phase | Contract unit | Parallel units |
 |---|---|---|
 | P1 | Records, ids, descriptors, catalog, `ValidationContext`, the validator shell, `WorkflowErrors`, the `recipe` group table | (a) reader, normalization, hash, schema and overlay, `RCP-SCHEMA/STATE/INIT/DUR/HASH` · (b) graph rules · (c) wiring, block and event rules · (d) `RCP-CAP-001/002/004–007` · (e) descriptors, `recipes/**` including the evals and dev profile, the fixtures · (f) CLI verb, golden files, the guide |
-| P2 | Ports, fakes, contract bases, the challenge shell, the actor table and `HarnessMarkers` | (a) SQLite adapters, S1-D9 · (b) register, show, list, `--stale` · (c) approve (including drift re-approval), revoke with previews, cascade, wake · (d) pins, `RCP-VERSION-*`, registry events, the architecture test · (e) the harness probe and its golden test |
+| P2 | Ports, fakes, contract bases, the challenge shell, the actor table and `HarnessMarkers` (the Codex and Cursor probes are owner steps) | (a) SQLite adapters, S1-D9 · (b) register, show, list, `--stale` · (c) approve (including drift re-approval), revoke with previews, cascade, wake · (d) pins, `RCP-VERSION-*`, registry events, the architecture test · (e) the harness probe and its golden test |
 | P3 | Instance, frames, triggers, decision signatures | (a) `TransitionDecision`, `RefusalRules` · (b) `FrameRules` and the engine-owned states · (c) `LoopRules`, `BudgetRules`, grants · (d) `ChildPropagation` · (e) `EventFold`, the in-memory store, `WorkflowStoreContract` · (f) `recipe eval`, `--scaffold`, `--record` format |
 | P4 | `SqliteWorkflowStore` skeleton, S1-D2/D7, the `workflow` group table | (a) store, migrations, contract binding · (b) start, commands, nonces, the §5.8 resume actions · (c) desk runtime, `complete`, `RunPostCommit` · (d) router, inbox, S1-D8/D10 · (e) status, list, events (S1-D6), golden layouts, approve running evals, S1-D11 (`deskTimeout`, `eventHold`) |
 | P5 | The deadline model, `IMonotonicClock` | (a) `TickTimers`, shift · (b) takeover, handback, `takeoverIdle` |
@@ -1158,12 +1255,13 @@ parallel phases the one that merges second renumbers at rebase.
 - **Signal:**
   1. **(owner)** With `workflow.step` approved (P2), `sindri workflow start workflow.step --item T-1 --fact fact:spec=spec.md`,
      then `sindri workflow status T-1/step/1`, shows the desk-task layout with `--run 1.1`.
-  2. `sindri workflow complete T-1/step/1 --run 1.1 --outcome done --output fact:output=out.md` prints `-> checks`.
+  2. **(owner)** `sindri workflow complete T-1/step/1 --run 1.1 --outcome done --output fact:output=out.md --json`
+     prints `-> checks` and the nonce it used.
      Two more completes (`passed`, `accepted`) print `done: resolved`. `sindri workflow events T-1/step/1` lists
      every event.
   3. **(owner)** Re-running the first `complete` exactly (the same `--run 1.1`) exits 0 with `already applied`, and
-     no new event appears. Re-running it with `--nonce <the nonce from --json>` and a new `--run` exits 2 with
-     `SND-WF-009`.
+     no new event appears. Running `complete T-1/step/1 --run 2.1 --outcome passed --nonce <the nonce from step 2>`
+     exits 2 with `SND-WF-009`, and records nothing.
   4. **(agent)** The same `complete`, from the agent session, exits 2 with `SND-WF-007` (the actor is checked before
      the key). `sindri workflow events T-1/step/1 --json` matches the owner transcript.
 
@@ -1181,9 +1279,9 @@ parallel phases the one that merges second renumbers at rebase.
 - **Signal** (dev profile, `workflow.deskTimeout: 1m`; **(owner)**, then the Prover checks `workflow events`):
   - `sindri workflow start workflow.dev-timeout --item T-2`, then wait at least 75 s (the timeout plus a 15 s tick),
     and `status` shows `parked: timeout`.
-  - A second instance, taken over within 20 s of starting, shows `taken-over` and `paused timeout 0m 40s left` (±15 s).
+  - A second instance on item `T-8`, taken over within 20 s of starting, shows `taken-over` and `paused timeout 0m 40s left` (±15 s).
     Nothing fires until `sindri workflow handback`, and it parks after roughly the remaining time plus one tick.
-  - `sindri workflow answer T-2 --resume` puts the first instance back in its desk task, with the same run token.
+  - `sindri workflow answer T-2/dev-timeout/1 --resume` puts the first instance back in its desk task, with the same run token.
 
 ### Phase 6: effects through the outbox
 
@@ -1200,14 +1298,15 @@ parallel phases the one that merges second renumbers at rebase.
   - docs.
 - **Size:** M.
 - **S1 dependency:** S1-D3 (made here).
-- **Signal** (dev profile with `notify.desk` allowlisted and `dispatchDelay: 60s`; **(owner)**, then the Prover
+- **Signal** (dev profile with `effect.notify.desk` allowlisted and `dispatchDelay: 60s`; **(owner)**, then the Prover
   checks `outbox list --json` and the events):
   1. `sindri workflow start workflow.dev-notify --item T-4`, then `complete` its desk Step. The transition event
      lists an outbox id. After the delay, `sindri outbox list --dispatched` shows it, the notifications file has the
      line, and the instance reaches `done` through `notify.delivered`.
   2. On `T-5`: `complete`, then within the 60 s window run `sindri recipe revoke workflow.dev-notify@<hash>` and type
-     its challenge. `outbox list` shows the command `refused (SND-RECIPE-005)`, and `sindri workflow status T-5`
-     shows `parked: spec-conflict` (revoked; only `cancel` is offered), and `cancel` works.
+     its challenge. `outbox list` shows the recipe command `refused (SND-RECIPE-005)` and the engine's own
+     first-task notice `dispatched` (origin `engine`). `sindri workflow status T-5` shows `parked: spec-conflict`
+     (revoked; only `cancel` is offered), and `cancel` works.
 
 ### Phase 7: children and the item lifecycle end to end
 
@@ -1221,11 +1320,12 @@ parallel phases the one that merges second renumbers at rebase.
   - docs.
 - **Size:** L.
 - **S1 dependency:** none beyond P4–P6.
-- **Signal** (dev profile naming a temp repo, with `workflow.route: { startable: all }`; **(owner)**, then the Prover
+- **Signal** (dev profile naming a temp repo with one commit, with `workflow.route: { startable: all }`,
+  `effect.claim.ref` allowlisted and `workflow.budget.tokens: 1M`; **(owner)**, then the Prover
   checks the events):
   - `sindri workflow start workflow.item --item T-3 --fact fact:item=item.json` shows `triaged -> startable -> claimed -> running` in
     `sindri workflow events T-3`, and `git -C <repo> show-ref sindri/<user>/T-3` finds the claim ref.
   - Completing the child's three desk Steps moves the parent to `done: resolved`.
   - On `T-7`, completing `checks` as `failed` twice with the same findings parks the child (`no-progress`), and the
     parent shows `parked: no-progress (child)`. `sindri workflow answer T-7 --grant 1`, with its challenge typed, is
-    forwarded with `onBehalfOf`, re-runs the child's `produce` (§5.8), and resumes both.
+    forwarded with `onBehalfOf`, performs the withheld `checks -> produce` transition (§5.8), and resumes both.
