@@ -4,7 +4,7 @@ Sindri is built new in C# as one application (factory addendum §17.29, decision
 `sindri/`, which stays the reference for *what* a part does and keeps running until the switch. This page is the C#
 contract for stage S1, the app shell: the `sindri` binary, the control-plane process, the host lease, the ledger, the
 profile, the command layer and its API, the scheduler and `doctor`. The workflow engine (S2), context retrieval (S3),
-blocks and workflows come later and plug into it. The Avalonia UI is its own stage (S1b).
+blocks and workflows come later and plug into it. The Avalonia UI is its own package, `SindriUi` (stage S1b, `docs/csharp/sindri-ui.md`).
 
 Tier 3 in `deps.yaml` (`src/Sindri`, full shape: Core · Features · Infrastructure · Host). Nothing installs it before
 the switch: `setup.sh`, the providers and launchd don't point at it.
@@ -15,8 +15,8 @@ One NativeAOT binary, `sindri`, is both the control plane and its CLI.
 
 | Command | What it does | Exit |
 |---|---|---|
-| `sindri` | Prints the banner, starts the control plane if it isn't running (detached, `sindri serve`, output in `<home>/logs/serve.log`), then prints the startup summary | 0; 1 when the profile needs approval; 2 when it can't start |
-| `sindri --headless` | The same without the UI line (the UI is S1b) | as above |
+| `sindri` | Prints the banner, starts the control plane if it isn't running (detached, `sindri serve`, output in `<home>/logs/serve.log`), opens the Sindri app (`sindri-ui` next to the binary, or `AW_SINDRI_UI`; detached), then prints the startup summary, whose `ui` line says what opening the app did (`opened (sindri-ui, pid N)`, or `not found at <path>` with the fix) | 0; 1 when the profile needs approval; 2 when it can't start. The app never changes the exit code |
+| `sindri --headless` | The same without opening the app and without the `ui` line | as above |
 | `sindri serve` | Runs the control plane in the foreground: what bare `sindri` starts, and what launchd will keep alive later | 0 on a clean stop; 1 when another process holds the lease (`SND-LEASE-001`) or the lease was lost; 2 when the port is taken (`SND-API-003`) or the ledger can't be opened |
 | `sindri status [--json]` | The running control plane's status, through the API | 0; 1 when it isn't running (`SND-API-001`) or the profile needs approval |
 | `sindri stop` | Stops it: records the stop, releases the lease, shuts down | 0; 1 when it isn't running |

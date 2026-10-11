@@ -108,6 +108,7 @@ dotnet run --project src/Evidence/Aw.Evidence.Host -- <run|parity|parity-plan|pa
 dotnet run --project src/BugFix/Aw.BugFix.Host -- <command> --state <dir> [options]   # bugfix-state, the C# /bugFixOrchestrator helper (docs/csharp/bugfix.md); exit 0 ok, 1 bad input, 2 usage, 3 refused
 bash src/BugFix/aot-smoke/run.sh         # bugfix-state under NativeAOT: publish (on a copy), run a bug fix in a temp repo, compare with expected.txt
 dotnet run --project src/Sindri/Aw.Sindri.Host -- [--headless | serve | status | stop | profile validate|approve | doctor]   # the C# Sindri app (S1 app shell, docs/csharp/sindri.md); state in AW_SINDRI_HOME (default $AW_STATE_DIR/sindri-app); exit 0 ok, 1 attention, 2 error
+dotnet run --project src/Sindri/Aw.Sindri.Ui.Desktop       # the Sindri app (S1b, docs/csharp/sindri-ui.md): a window with the control plane's status, live from its event stream; bare `sindri` opens it (sindri-ui next to sindri, or AW_SINDRI_UI)
 bash src/Sindri/aot-smoke/run.sh         # sindri under NativeAOT: publish (on a copy), drive start, a refused second serve, approve, status, stop and doctor in a temp home, compare with expected.txt
 
 # Rules (edit .agents/rules/, then regenerate)
