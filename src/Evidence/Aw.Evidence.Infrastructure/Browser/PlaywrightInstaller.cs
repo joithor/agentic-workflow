@@ -1,6 +1,7 @@
 using System.Globalization;
 using Aw.Evidence.Core;
 using Aw.Evidence.Core.Browser;
+using Aw.Evidence.Infrastructure.Native;
 using Aw.Kernel;
 
 namespace Aw.Evidence.Infrastructure.Browser;
@@ -11,7 +12,13 @@ internal sealed class PlaywrightInstaller : IBrowserInstaller
     /// <inheritdoc/>
     public async ValueTask<Result<Unit>> InstallAsync(CancellationToken cancellationToken)
     {
-        var exit = await Task.Run(static () => Microsoft.Playwright.Program.Main(["install", "chromium"]), cancellationToken).ConfigureAwait(false);
+        var exit = await Task.Run(static () =>
+        {
+            using (DescriptorDetour.Redirect(DescriptorDetour.StandardOutput, DescriptorDetour.StandardError))
+            {
+                return Microsoft.Playwright.Program.Main(["install", "chromium"]);
+            }
+        }, cancellationToken).ConfigureAwait(false);
         return exit == 0
             ? Results.Ok()
             : EvidenceErrors.BrowserFailed.With(string.Create(CultureInfo.InvariantCulture, $"installing chromium failed (playwright install exit {exit})"));
