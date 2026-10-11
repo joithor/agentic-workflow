@@ -13,7 +13,7 @@ internal sealed class StartAttemptService(IStateStore store, TimeProvider clock)
 
     private Result<StartAttemptResponse> Start(StartAttemptRequest request, BugFixState state)
     {
-        var allowed = state.Require(Phase.Reproduce, Phase.Evaluate).Bind(_ => AttemptRule.CanStart(state, request.Mode));
+        var allowed = state.Require(Phase.Reproduce, Phase.Evaluate).Bind(_ => AttemptRule.CanStart(state, request.Mode, request.AbandonJudge));
         if (allowed.IsError)
         {
             return allowed.Error;
@@ -23,7 +23,7 @@ internal sealed class StartAttemptService(IStateStore store, TimeProvider clock)
         store.Save(
             request.StateDirectory,
             (state with { Attempt = attempt, Mode = request.Mode, Status = BugFixStatus.Active })
-                .Step(Phase.Fix, $"start-attempt {Names.Of(request.Mode)}", clock.GetUtcNow()));
+                .Step(Phase.Fix, $"start-attempt {Names.Of(request.Mode)}{(request.AbandonJudge ? " --abandon-judge" : string.Empty)}", clock.GetUtcNow()));
         return new StartAttemptResponse(Phase.Fix, attempt, request.Mode);
     }
 }

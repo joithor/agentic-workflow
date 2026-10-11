@@ -86,8 +86,11 @@ public sealed class InMemoryRepos : IGit, IFiles
         Tree(directory).Map(t => directory.Length > t.Root.Length ? directory[(t.Root.Length + 1)..].TrimEnd('/') : string.Empty);
 
     /// <inheritdoc/>
-    public bool Exists(string path) =>
-        RealPath(path) is not null || _files.Keys.Any(f => f.StartsWith(path.TrimEnd('/') + "/", StringComparison.Ordinal));
+    public bool Exists(string path)
+    {
+        var resolved = path.StartsWith('/') ? Resolve(path, 40) : null;
+        return resolved is not null && (_files.ContainsKey(resolved) || _files.Keys.Any(f => f.StartsWith(resolved.TrimEnd('/') + "/", StringComparison.Ordinal)));
+    }
 
     /// <inheritdoc/>
     public Result<string> ReadText(string path) =>

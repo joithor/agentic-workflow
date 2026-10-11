@@ -11,7 +11,7 @@ namespace Aw.BugFix.Core.Model;
 /// <param name="CheckSha256">SHA-256 of the check file the run executed.</param>
 /// <param name="Command">The test command (argv); null for ui-evidence.</param>
 /// <param name="ProgramSha256">The SHA-256 of the program the test command ran (after the PATH lookup); empty for ui-evidence.</param>
-/// <param name="EnvironmentSha256">The SHA-256 of the environment the test command ran with; empty for ui-evidence.</param>
+/// <param name="Environment">The variables that decide which code the test command ran (PATH, HOME, …); empty for ui-evidence.</param>
 /// <param name="ExitCode">The test command's or ui-evidence's exit code.</param>
 /// <param name="Output">The run's log (test) or ui-evidence run directory.</param>
 public sealed record RunRecord(
@@ -22,7 +22,7 @@ public sealed record RunRecord(
     string CheckSha256,
     IReadOnlyList<string>? Command,
     string ProgramSha256,
-    string EnvironmentSha256,
+    IReadOnlyDictionary<string, string> Environment,
     int ExitCode,
     string Output)
 {

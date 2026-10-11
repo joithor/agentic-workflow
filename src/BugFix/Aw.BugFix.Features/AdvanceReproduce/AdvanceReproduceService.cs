@@ -48,7 +48,7 @@ internal sealed class AdvanceReproduceService(IStateStore store, IRunLedger ledg
 
         var root = file.FullPath[..^file.RepoPath.Length].TrimEnd('/');
         return CommandFiles(record, root, file).Map(commandFiles =>
-            new FrozenCheck(record.Kind, file.RepoPath, sha, record.Command, record.Directory, record.ProgramSha256, record.EnvironmentSha256, commandFiles));
+            new FrozenCheck(record.Kind, file.RepoPath, sha, record.Command, record.Directory, record.ProgramSha256, record.Environment, commandFiles));
     }
 
     // The repository files the baseline command names besides the check (its runner, wrapper scripts, --require=,
@@ -58,19 +58,21 @@ internal sealed class AdvanceReproduceService(IStateStore store, IRunLedger ledg
     {
         var directory = record.Directory.Length == 0 ? root : $"{root}/{record.Directory}";
         var found = new List<string>();
-        foreach (var (path, required) in CommandFilesRule.Paths(record.Command ?? []))
+        foreach (var (path, required, specifier) in CommandFilesRule.Paths(record.Command ?? []))
         {
-            // What a loader would open for it: the path itself, or a specifier's .js, .py, /index.js, … file.
-            var real = CommandFilesRule.LoaderCandidates(path)
-                .Select(candidate => files.RealPath(files.FullPath(directory, candidate)))
-                .OfType<string>()
-                .ToList();
-            if (real.Count == 0 && required && !files.Exists(files.FullPath(directory, path)))
+            // A specifier is protected through every file the loader could open for it, whether or not it exists yet: a
+            // fix that adds one the loader tries first (lib/setup before lib/setup.js) changes what runs.
+            var candidates = (specifier ? CommandFilesRule.LoaderCandidates(path) : [path]).Select(c => files.FullPath(directory, c)).ToList();
+            var existing = candidates.Select(files.RealPath).OfType<string>().ToList();
+            if (existing.Count == 0 && required && !files.Exists(files.FullPath(directory, path)))
             {
                 return BugFixErrors.CheckNotFrozen.With($"the baseline command names {path}, which doesn't exist; a fix could add it, so name only files that exist");
             }
 
-            found.AddRange(real.Where(r => r.StartsWith(root + "/", StringComparison.Ordinal) && r != check.FullPath).Select(r => r[(root.Length + 1)..]));
+            var protect = specifier ? existing.Concat(candidates.Select(Path.GetFullPath)) : existing;
+            found.AddRange(protect
+                .Where(f => f.StartsWith(root + "/", StringComparison.Ordinal) && f != check.FullPath)
+                .Select(f => f[(root.Length + 1)..]));
         }
 
         return Results.Success<IReadOnlyList<string>>([.. found.Distinct(StringComparer.Ordinal)]);

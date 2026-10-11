@@ -80,6 +80,8 @@ public abstract class ReposContract
         Expect.That(Files.RealPath($"{root}/missing.txt") is null, "Null(Files.RealPath($'{root}/missing.txt'))");
         Expect.Equal("a\n", Ok(Files.ReadText($"{root}/src/a.txt")), "Equal('a\n', Ok(Files.ReadText($'{root}/src/a.txt')))");
         Expect.Equal("87428fc522803d31065e7bce3cf03fe475096631e5e07bbd7a0fde60c4cf25c7", Ok(Files.Sha256($"{root}/src/a.txt")), "Equal('87428fc522803d31065e7bce3cf03fe475096631e5e07bbd7a0fde60c4cf25c7', Ok(Files.Sha256($'{root}/src/a.txt')");
+        Expect.That(Files.Exists($"{root}/src/a.txt") && Files.Exists(Files.FullPath(root, "./src")) && Files.Exists($"{root}/tests"), "files and directories exist, written with ./ too");
+        Expect.That(!Files.Exists($"{root}/nothing"), "a missing path doesn't exist");
         Expect.Equal(BugFixErrors.FileUnreadable.Code, Files.ReadText($"{root}/missing.txt").Error.Code, "Equal(BugFixErrors.FileUnreadable.Code, Files.ReadText($'{root}/missing.txt').Error.Code)");
     }
 

@@ -83,7 +83,7 @@ public static class NextStep
 
     // A question judge was asked whose answer was never recorded: only a human can settle it.
     private static string? Interrupted(List<Candidate> current) =>
-        current.Find(static c => c.JudgeInterrupted) is { } asked && current.TrueForAll(static c => c.Evaluated)
-            ? $"ask the user: judge was asked about {asked.Id.Value} and its answer was never recorded (the call was interrupted; see judge why); start-attempt with what is known, or advance report --unresolved"
+        current.Find(static c => c.JudgeInterrupted) is { } asked && current.TrueForAll(static c => c.Evaluated || c.JudgeInterrupted)
+            ? $"ask the user: judge was asked about {asked.Id.Value} and its answer was never recorded (an interrupted call, unless one is still running; see judge why); start-attempt --mode <A|B|C> --abandon-judge, or advance report --unresolved"
             : null;
 }

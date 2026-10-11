@@ -32,7 +32,7 @@ internal sealed class RunUiService(IStateStore store, IRunLedger ledger, IGit gi
             return run.Error;
         }
 
-        var record = new RunRecord(CheckKind.Ui, run.Value.Outcome, commit.Value, directory.Value, run.Value.ScriptSha256, Command: null, ProgramSha256: string.Empty, EnvironmentSha256: string.Empty, run.Value.ExitCode, slot.Output);
+        var record = new RunRecord(CheckKind.Ui, run.Value.Outcome, commit.Value, directory.Value, run.Value.ScriptSha256, Command: null, ProgramSha256: string.Empty, Environment: new Dictionary<string, string>(StringComparer.Ordinal), run.Value.ExitCode, slot.Output);
         var recordSha = ledger.Write(slot, record);
         return store.Locked(request.StateDirectory, () => store.Load(request.StateDirectory).Map(fresh =>
         {

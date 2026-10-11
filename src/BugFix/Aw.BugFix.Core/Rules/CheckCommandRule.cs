@@ -41,13 +41,6 @@ public static partial class CheckCommandRule
 
     private static readonly HashSet<string> _callFlags = new(StringComparer.Ordinal) { "-c", "--call" };
 
-    // Runner options whose value is the next argument: skipped with it, so the value isn't taken for the program.
-    private static readonly HashSet<string> _runnerValueOptions = new(StringComparer.Ordinal)
-    {
-        "-p", "--package", "-w", "--workspace", "--with", "--with-requirements", "--python", "--project", "--directory", "-C",
-        "-P", "--env-file", "--group", "--extra", "--gemfile", "--filter", "--prefix",
-    };
-
     private static readonly HashSet<string> _inlineLongFlags = new(StringComparer.Ordinal) { "--eval", "--print", "--command" };
 
     // The inline-code flags of each interpreter: shells -c, node -e/-p, perl -e/-E, ruby -e, php -r, python -c.
@@ -63,7 +56,7 @@ public static partial class CheckCommandRule
         ["deno"] = NodeFlag,
         ["bun"] = NodeFlag,
         ["perl"] = PerlFlag,
-        ["ruby"] = PerlFlag,
+        ["ruby"] = RubyFlag,
         ["php"] = PhpFlag,
     };
 
@@ -100,43 +93,43 @@ public static partial class CheckCommandRule
         return inline is null ? null : $"the command must execute the check, not inline code (`{program} {inline}`)";
     }
 
-    // Look through the runner to the program it runs: npx node -e … is node -e ….
+    // Look through the runner to the program it runs: npx node -e … is node -e …. The first argument past the runner's
+    // verb and options is classified fully; every later one is checked for inline code too, so an option value taken
+    // for the program (npx --registry r node -e …) can't hide the real one.
     private static string? Runner(string program, string[] verbs, List<string> args, int depth)
     {
-        if (verbs.Length > 0 && (args.Count == 0 || !verbs.Contains(args[0], StringComparer.Ordinal)))
+        var verbAt = verbs.Length == 0 ? -1 : args.FindIndex(a => verbs.Contains(a, StringComparer.Ordinal));
+        if (verbs.Length > 0 && verbAt < 0)
         {
             // Not the runner form: npm test runs the package's own script, but bun -e is still inline code.
             var inline = InlineArgument(program, args);
             return inline is null ? null : $"the command must execute the check, not inline code (`{program} {inline}`)";
         }
 
-        var rest = args.Skip(verbs.Length > 0 && !_programVerbs.Contains(args[0]) ? 1 : 0).ToList();
-        var target = Target(rest, out var call);
-        if (call is not null)
-        {
-            return $"the command must execute the check, not inline code (`{program} {call}`)";
-        }
-
-        return target.Count == 0 || depth > 3 ? null : Classify(target, depth + 1);
+        var rest = args.Skip(verbAt >= 0 && _programVerbs.Contains(args[verbAt]) ? verbAt : verbAt + 1).ToList();
+        return rest.TakeWhile(static a => a.StartsWith('-')).FirstOrDefault(static a => _callFlags.Contains(a)) is { } call
+            ? $"the command must execute the check, not inline code (`{program} {call}`)"
+            : Target(rest, depth);
     }
 
-    // The program a runner runs and its arguments: past the runner's options and the values they take.
-    private static List<string> Target(List<string> rest, out string? call)
+    private static string? Target(List<string> rest, int depth)
     {
-        call = null;
-        var i = 0;
-        while (i < rest.Count && rest[i].StartsWith('-'))
-        {
-            if (_callFlags.Contains(rest[i]))
-            {
-                call = rest[i];
-                return [];
-            }
+        var first = rest.FindIndex(static a => !a.StartsWith('-'));
+        return first < 0 || depth > 3 ? null : Classify(rest[first..], depth + 1) ?? LaterInline(rest, first);
+    }
 
-            i += _runnerValueOptions.Contains(rest[i]) ? 2 : 1;
+    private static string? LaterInline(List<string> rest, int first)
+    {
+        for (var j = first + 1; j < rest.Count; j++)
+        {
+            var program = rest[j][(rest[j].LastIndexOf('/') + 1)..];
+            if (!rest[j].StartsWith('-') && InlineArgument(program, rest[(j + 1)..]) is { } inline)
+            {
+                return $"the command must execute the check, not inline code (`{program} {inline}`)";
+            }
         }
 
-        return [.. rest.Skip(i)];
+        return null;
     }
 
     // The argument that makes an interpreter run inline code instead of a file (deno eval, or the interpreter's flags).
@@ -160,8 +153,13 @@ public static partial class CheckCommandRule
     [GeneratedRegex("^-[a-zA-Z]*[ep][a-zA-Z]*\\z", RegexOptions.CultureInvariant, matchTimeoutMilliseconds: 1000)]
     private static partial Regex NodeFlag { get; }
 
-    [GeneratedRegex("^-(?![IrMmCxWdT])[a-zA-Z]*[eE][a-zA-Z]*\\z", RegexOptions.CultureInvariant, matchTimeoutMilliseconds: 1000)]
+    // perl: -e/-E anywhere in a cluster, except clusters that start with a switch whose value is the rest (-Ilib, -Mstrict).
+    [GeneratedRegex("^-(?![IMmixF])[a-zA-Z]*[eE][a-zA-Z]*\\z", RegexOptions.CultureInvariant, matchTimeoutMilliseconds: 1000)]
     private static partial Regex PerlFlag { get; }
+
+    // ruby: -e anywhere in a cluster (-E is an encoding), except clusters that start with a switch whose value is the rest (-Itest, -rjson).
+    [GeneratedRegex("^-(?![IrCxEF])[a-zA-Z]*e[a-zA-Z]*\\z", RegexOptions.CultureInvariant, matchTimeoutMilliseconds: 1000)]
+    private static partial Regex RubyFlag { get; }
 
     [GeneratedRegex("^-[a-zA-Z]*r[a-zA-Z]*\\z", RegexOptions.CultureInvariant, matchTimeoutMilliseconds: 1000)]
     private static partial Regex PhpFlag { get; }

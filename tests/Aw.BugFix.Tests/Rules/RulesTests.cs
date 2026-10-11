@@ -81,6 +81,15 @@ public sealed class RulesTests
     [InlineData("ruby -Itest t_test.rb", null)]
     [InlineData("perl -Ilib t.t", null)]
     [InlineData("ruby -e 1 t.rb", "inline code (`ruby -e`)")]
+    [InlineData("ruby -We 1 t.rb", "inline code (`ruby -We`)")]
+    [InlineData("perl -We 1 t.t", "inline code (`perl -We`)")]
+    [InlineData("perl -le 1 t.t", "inline code (`perl -le`)")]
+    [InlineData("perl -Mstrict t.t", null)]
+    [InlineData("npx --registry https://r node -e 1 t.js", "inline code (`node -e`)")]
+    [InlineData("pnpm --filter x exec node -e 1 t.js", "inline code (`node -e`)")]
+    [InlineData("uv run --index-url https://x python -c 1 t.py", "inline code (`python -c`)")]
+    [InlineData("npx playwright test tests/x.spec.ts", null)]
+    [InlineData("pnpm exec vitest run t.test.ts", null)]
     [InlineData("npx -p vitest node -e 1 t.js", "inline code (`node -e`)")]
     [InlineData("uv run --with pytest python -c 1 t.py", "inline code (`python -c`)")]
     [InlineData("yarn node -e 1 t.js", "inline code (`node -e`)")]
@@ -109,30 +118,38 @@ public sealed class RulesTests
     [Fact, Trait("Lane", "unit")]
     public void A_frozen_test_check_accepts_only_the_same_command_in_the_same_directory()
     {
-        var check = new FrozenCheck(CheckKind.Test, "tests/bug.sh", "sha", ["bash", "tests/bug.sh"], Directory: string.Empty, ProgramSha256: "bash", EnvironmentSha256: "env", CommandFiles: []);
-        var run = new RunRecord(CheckKind.Test, RunOutcome.Passed, "c", Directory: string.Empty, "sha", ["bash", "tests/bug.sh"], ProgramSha256: "bash", EnvironmentSha256: "env", 0, "/log");
+        var env = new Dictionary<string, string>(StringComparer.Ordinal) { ["PATH"] = "/usr/bin", ["HOME"] = "/home/u" };
+        var check = new FrozenCheck(CheckKind.Test, "tests/bug.sh", "sha", ["bash", "tests/bug.sh"], Directory: string.Empty, ProgramSha256: "bash", Environment: env, CommandFiles: []);
+        var run = new RunRecord(CheckKind.Test, RunOutcome.Passed, "c", Directory: string.Empty, "sha", ["bash", "tests/bug.sh"], ProgramSha256: "bash", Environment: env, 0, "/log");
 
         _ = World.Ok(check.Accepts(run));
         _ = World.Refused(check.Accepts(run with { Directory = "lib" }), BugFixErrors.RunRefused);
         _ = World.Refused(check.Accepts(run with { Command = ["bash", "./tests/bug.sh"] }), BugFixErrors.RunRefused);
         _ = World.Refused(check.Accepts(run with { Outcome = RunOutcome.Broken }), BugFixErrors.RunRefused);
         _ = World.Refused(check.Accepts(run with { ProgramSha256 = "another bash" }), BugFixErrors.RunRefused);
-        _ = World.Refused(check.Accepts(run with { EnvironmentSha256 = "another PATH" }), BugFixErrors.RunRefused);
+        var otherPath = World.Refused(check.Accepts(run with { Environment = new Dictionary<string, string>(env, StringComparer.Ordinal) { ["PATH"] = "/evil:/usr/bin" } }), BugFixErrors.RunRefused);
+        Assert.Contains("different PATH", otherPath.Message, StringComparison.Ordinal);
     }
 
     [Fact, Trait("Lane", "unit")]
-    public void Command_files_include_flag_values_and_module_files()
+    public void Command_files_are_positional_paths_config_files_and_module_specifiers()
     {
-        var paths = CommandFilesRule.Paths(["node", "--require=./lib/setup.cjs", "-r./lib/r.js", "-xvf", "-m", "tools.runner", "--reporter=dot", "./pkg/...", "t.js"]);
+        var paths = CommandFilesRule.Paths([
+            "node", "--require=./lib/setup", "-r./lib/r", "--config=vt.ts", "--outputFile=reports/junit.xml", "--test-name-pattern=/x/",
+            "--base-url=http://localhost:3000", "--cov=app", "-m", "tools.runner", "./pkg/...", "tests/t.js",
+        ]).ToDictionary(static p => p.Path, static p => (p.Required, p.Specifier), StringComparer.Ordinal);
 
-        Assert.Contains(("./lib/setup.cjs", true), paths);
-        Assert.Contains(("./lib/r.js", true), paths);
-        Assert.Contains(("vf", false), paths);
-        Assert.Contains(("tools/runner.py", false), paths);
-        Assert.Contains(("tools/runner/__init__.py", false), paths);
-        Assert.Contains(("dot", false), paths);
-        Assert.Contains(("./pkg/...", false), paths);
-        Assert.Contains(("t.js", true), paths);
+        Assert.Equal((true, true), paths["./lib/setup"]);
+        Assert.Equal((true, true), paths["./lib/r"]);
+        Assert.Equal((true, false), paths["vt.ts"]);
+        Assert.Equal((false, false), paths["reports/junit.xml"]);
+        Assert.Equal((false, false), paths["/x/"]);
+        Assert.Equal((false, false), paths["http://localhost:3000"]);
+        Assert.Equal((false, false), paths["app"]);
+        Assert.Equal((false, true), paths["tools/runner.py"]);
+        Assert.Equal((false, true), paths["tools/__main__.py"]);
+        Assert.Equal((false, false), paths["./pkg/..."]);
+        Assert.Equal((true, false), paths["tests/t.js"]);
         Assert.Equal(["./lib/setup", "./lib/setup.js", "./lib/setup.cjs"], CommandFilesRule.LoaderCandidates("./lib/setup").Take(3), StringComparer.Ordinal);
     }
 }

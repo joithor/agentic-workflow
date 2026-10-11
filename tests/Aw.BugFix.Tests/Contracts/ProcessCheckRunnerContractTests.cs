@@ -47,13 +47,13 @@ public sealed class ProcessCheckRunnerContractTests : CheckRunnerContract, IDisp
     [Fact]
     public void Only_the_allowed_variables_reach_the_check()
     {
-        Environment.SetEnvironmentVariable("AW_BUGFIX_TEST_LEAK", "leaked");
         var log = Path.Combine(_temp.Path, "env.log");
 
-        var exit = Runner.Run(["sh", "-c", "echo \"${AW_BUGFIX_TEST_LEAK:-unset} ${HOME:+home}\""], Directory, log);
+        // SHLVL and PWD are in every shell's environment, so this process has them too; neither is on the allowlist.
+        var exit = Runner.Run(["sh", "-c", "echo \"${OLDPWD:-unset} ${SHLVL_PARENT:-unset} ${HOME:+home}\""], Directory, log);
 
         Assert.True(exit.Ran);
-        Assert.Equal("unset home", File.ReadAllText(log).Trim());
+        Assert.Equal("unset unset home", File.ReadAllText(log).Trim());
     }
 
     [Fact]
@@ -72,5 +72,24 @@ public sealed class ProcessCheckRunnerContractTests : CheckRunnerContract, IDisp
 
         Assert.Equal((4, true), (exit.Code, exit.Ran));
         Assert.Equal(new LocalFiles().Sha256(script).Value, exit.ProgramSha256);
+    }
+
+    [Fact]
+    public void A_symlinked_program_runs_under_the_name_it_was_found_by()
+    {
+        if (OperatingSystem.IsWindows())
+        {
+            return;
+        }
+
+        var target = Path.Combine(_temp.Path, "dispatch.sh");
+        File.WriteAllText(target, "#!/bin/sh\n[ \"$(basename \"$0\")\" = alias ] && exit 0 || exit 5\n");
+        File.SetUnixFileMode(target, UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute);
+        _ = File.CreateSymbolicLink(Path.Combine(_temp.Path, "alias"), target);
+
+        var exit = Runner.Run(["./alias"], Directory, Path.Combine(_temp.Path, "alias.log"));
+
+        Assert.Equal((0, true), (exit.Code, exit.Ran));   // a venv's python or bunx keeps its name
+        Assert.Equal(new LocalFiles().Sha256(target).Value, exit.ProgramSha256);
     }
 }

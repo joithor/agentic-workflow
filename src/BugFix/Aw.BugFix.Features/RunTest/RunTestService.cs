@@ -28,7 +28,7 @@ internal sealed class RunTestService(IStateStore store, IRunLedger ledger, IGit 
 
         var slot = ledger.Reserve(request.StateDirectory, clock.GetUtcNow(), CheckKind.Test);
         var exit = runner.Run(request.Command, request.WorkingDirectory, slot.Log);
-        var record = new RunRecord(CheckKind.Test, exit.Outcome, commit.Value, directory.Value, sha.Value, request.Command, exit.ProgramSha256, exit.EnvironmentSha256, exit.Code, slot.Log);
+        var record = new RunRecord(CheckKind.Test, exit.Outcome, commit.Value, directory.Value, sha.Value, request.Command, exit.ProgramSha256, exit.Environment, exit.Code, slot.Log);
         var recordSha = ledger.Write(slot, record);
 
         // Registered under the lock, onto the current state: the run may have taken minutes.

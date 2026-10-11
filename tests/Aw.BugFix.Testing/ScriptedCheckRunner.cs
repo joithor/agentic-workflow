@@ -9,7 +9,7 @@ public sealed class ScriptedCheckRunner : ICheckRunner
     private readonly Dictionary<string, int> _programs = new(StringComparer.Ordinal) { ["true"] = 0, ["false"] = 1 };
     private readonly HashSet<string> _hanging = new(StringComparer.Ordinal);
     private readonly Dictionary<string, string> _resolves = new(StringComparer.Ordinal);
-    private string _environment = "the usual environment";
+    private Dictionary<string, string> _environment = new(StringComparer.Ordinal) { ["PATH"] = "/usr/bin:/bin" };
 
     /// <summary>Gets every command run, with its directory.</summary>
     public IList<(IReadOnlyList<string> Command, string Directory)> Runs { get; } = [];
@@ -44,12 +44,12 @@ public sealed class ScriptedCheckRunner : ICheckRunner
         return this;
     }
 
-    /// <summary>Makes later runs report a different environment (PATH, HOME, …), as a caller's changed shell would.</summary>
-    /// <param name="environment">A name for the environment; its hash differs from the usual one.</param>
+    /// <summary>Makes later runs report another PATH, as a caller's changed shell would.</summary>
+    /// <param name="path">The PATH value.</param>
     /// <returns>This runner.</returns>
-    public ScriptedCheckRunner RunsIn(string environment)
+    public ScriptedCheckRunner RunsWithPath(string path)
     {
-        _environment = environment;
+        _environment = new(StringComparer.Ordinal) { ["PATH"] = path };
         return this;
     }
 

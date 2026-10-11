@@ -32,7 +32,7 @@ design.
 | `run-test --check <file> [--cwd <dir>] -- <command…>` | any | Runs the test command on a clean tree and registers a run record (with the commit and the working directory) |
 | `run-ui --check <script.json> [--cwd <dir>]` | any | Runs the ui-evidence script on a clean tree and registers a run record (blocked: see Ports) |
 | `advance reproduce --evidence <run> --check <file> [--cwd <dir>]` | investigate → reproduce | Freezes the check and the failing baseline |
-| `start-attempt --mode <A\|B\|C>` | reproduce, evaluate → fix | Opens the next attempt (at most 3) |
+| `start-attempt --mode <A\|B\|C> [--abandon-judge]` | reproduce, evaluate → fix | Opens the next attempt (at most 3); `--abandon-judge` leaves behind a candidate whose judge question was never answered |
 | `record-candidate --branch <b> [--cwd <dir>] [--hypothesis <n>] [--allow-test-changes]` | fix, evaluate | Records the worktree's commit as the next candidate (`c1`, `c2`, …) |
 | `record-run <candidate> --evidence <run>` | fix, evaluate → evaluate | Records the frozen check's run against the candidate |
 | `judge <candidate>` | evaluate | Asks judge resolution-check once and records the verdict (blocked: see Ports) |
@@ -52,33 +52,43 @@ against `--cwd` (the checkout the check lives in). The argv after `--` is kept a
   was killed at the time limit, or a ui run with broken steps and no failed one (a bad selector).
 - **The check is frozen.** Every later run must execute the same check file (same SHA-256); a test run must use the
   same argv **in the same working directory** (relative to the repository root) as the baseline; its program (argv[0],
-  resolved once against the run's directory or PATH and started as exactly that file) must be the same file (same
-  SHA-256), and it must run in the same environment (the hash of the allowed variables below). `run-test` refuses a command that doesn't name the check by a
+  looked up once against the run's directory or PATH, started by the path found so a venv's python or an argv[0]
+  shim keeps its name, and hashed by that path's real file) must be the same file (same SHA-256); and the variables
+  that decide which code runs must have the same values (a refusal names the ones that differ). `run-test` refuses a command that doesn't name the check by a
   path that resolves to it from the working directory (a same-named file elsewhere doesn't count; paths resolve like
   realpath(3), links before `..`), a non-runner (`grep`, `cat`, `true`, …), a program that runs another one (`env`,
   `xargs`, `timeout`, `nice`, `nohup`, `sudo`, …), and inline code, by interpreter: shells and python `-c`, node/deno/bun
   `-e`/`-p`/`--eval`/`--print`, perl and ruby `-e`/`-E`, php `-r`, `deno eval` (anywhere in a short-flag cluster, so
   `bash -xec` counts and `bash -e` doesn't; ruby and perl value flags such as `-Itest` don't). A package runner (`npx`,
-  `npm exec`, `pnpm exec|dlx`, `yarn exec|dlx|node`, `bun x`, `uv run`, `poetry run`, `bundle exec`) is looked through,
-  past its options and their values: the program it runs is classified the same way.
+  `npm exec`, `pnpm exec|dlx`, `yarn exec|dlx|node`, `bun x`, `uv run`, `poetry run`, `bundle exec`) is looked through:
+  the first program past its verb and options is classified the same way, and every later argument is checked for an
+  interpreter given inline code, so an option value can't hide it.
 - **The caller's environment can't steer it.** The check runs with only an allowlist of variables from bugfix-state's
-  own environment (`PATH`, `HOME`, `USER`, `LOGNAME`, `SHELL`, `TMPDIR`, `TERM`, `CI`, `LANG`, `LANGUAGE`, `LC_*`,
-  `TZ`); everything else (`BASH_ENV`, `NODE_OPTIONS`, exported shell functions, `npm_config_*`, `PYTEST_ADDOPTS`, …)
-  is dropped, and the allowed values are frozen by hash at the baseline, so a later run with another PATH or HOME is
-  refused. Git runs without `GIT_*` variables, and bugfix-state refuses to change state while
-  `DOTNET_SYSTEM_IO_DISABLEFILELOCKING` is set. Residual risk: what lives outside the repository isn't frozen beyond
-  that: installed tools other than the check's own program, files under `HOME` (`~/.npmrc`, shell startup files), and
-  dependencies in gitignored directories (`node_modules`, `.venv`).
+  own environment. `PATH`, `HOME` and the names listed in `AW_BUGFIX_CHECK_ENV` (for a test that needs `DATABASE_URL`,
+  `JAVA_HOME`, …) decide which code runs, so their values are frozen at the baseline and a later run with other values
+  is refused; `USER`, `LOGNAME`, `SHELL`, `TMPDIR`, `TERM`, `CI`, `LANG`, `LANGUAGE`, `TZ` and `LC_ALL`, `LC_CTYPE`,
+  `LC_MESSAGES`, `LC_COLLATE`, `LC_NUMERIC`, `LC_TIME`, `LC_MONETARY` pass through as they are. Everything else
+  (`BASH_ENV`, `NODE_OPTIONS`, exported shell functions, `npm_config_*`, `PYTEST_ADDOPTS`, …) is dropped, and
+  `AW_BUGFIX_CHECK_ENV` can't add those. Git runs without `GIT_*` variables, and bugfix-state refuses to change state
+  while `DOTNET_SYSTEM_IO_DISABLEFILELOCKING` is set. Residual risk: what lives outside the repository isn't frozen
+  beyond that: installed tools other than the check's own program, files under `HOME` (`~/.npmrc`, shell startup
+  files), and dependencies in gitignored directories (`node_modules`, `.venv`).
 - **Candidates are real changes on the baseline:** a clean worktree on the named branch, with commits on top of the
   baseline commit and a tree different from it, not already recorded. A fix that touches the check, its directory,
   tests, fixtures, snapshots, runner config, `package.json`, or a repository file the frozen command names (its runner
-  or wrapper script, a `--require=`/`--config=` value, a `-r./x` value, a `-m`/`-p` module's file, and the file a
-  loader would open for a specifier without an extension, e.g. `./lib/setup` → `lib/setup.js`), or a runner file the
-  command reads without naming it (`Makefile`, `*.mk`, `justfile`, `Rakefile`, `Taskfile.yml`, `noxfile.py`, `.npmrc`,
-  `.yarnrc*`, `bunfig.toml`, `deno.json`, `pom.xml`, `build.gradle`, `Cargo.toml`, `Gemfile`, `go.mod`,
-  `Directory.Build.*`, …) needs `--allow-test-changes` (the user's approval). A baseline command that names a path
-  (a script or config by extension, or anything written with `/` or a leading `.`) that doesn't exist as a file or
-  directory is refused (AW-BUGFIX-008): a fix could add it. Globs and package patterns (`./...`) aren't paths.
+  or wrapper script; a script or config file named in an option, `--config=vt.ts`), every file a loader would try for a
+  module specifier (`--require=`, `-r`, `--import=`, `--loader=`, `--setupFiles=` values and positional `./x`: the path
+  itself, then `.js`, `.py`, `/index.js`, `/__init__.py`, …, whether or not it exists yet, so `lib/setup` added ahead of
+  `lib/setup.js` counts), every file Python could import for a `-m`/`-p` module from the run's directory (each dotted
+  prefix's `.py`, `/__init__.py`, `/__main__.py`), or a runner file the command reads without naming it (`Makefile`,
+  `*.mk`, `justfile`, `Rakefile`, `Taskfile.yml`, `noxfile.py`, `pytest.ini`, `.pytest.ini`, `pytest.toml`, `.rspec`,
+  `.npmrc`, `.yarnrc*`, `bunfig.toml`, `deno.json`, `pom.xml`, `build.gradle`, `Cargo.toml`, `.cargo/config.toml`,
+  `Gemfile`, `go.mod`, `go.work`, `global.json`, `Directory.Build.*`, …) needs `--allow-test-changes` (the user's
+  approval). A baseline command that names a positional path (written with `/` or a leading `.`, or with a script or
+  config extension) or a script or config file in an option, that doesn't exist as a file or directory, is refused
+  (AW-BUGFIX-008): a fix could add it. Option values that aren't files (URLs, `/regexes/`, output files such as
+  `--junitxml=out/r.xml`, names such as `--cov=app`) are neither required nor protected, and globs and package patterns
+  (`./...`) aren't paths.
 - **Attempts.** Mode A one candidate, C one candidate (split by area, in sequence), B two candidates on different open
   hypotheses, only after a failed attempt and with at least two hypotheses not ruled out. A new attempt waits until
   every recorded candidate of the current one is evaluated and none resolves the ticket. While a mode-B attempt has
@@ -89,8 +99,9 @@ against `--cwd` (the checkout the check lives in). The argv after `--` is kept a
   `pnpm-lock.yaml`, `packages.lock.json`) and `dist/` output, capped at 200,000 characters), writes it to
   `judge-<candidate>.json`, marks the candidate as asked, asks judge about that file without holding the lock, and
   records the answer only when it names that file's SHA-256 and the bug fix is still in `evaluate`. It never asks
-  again: a call interrupted after asking leaves the mark, the next `judge` is refused, and `resume` says to ask the
-  user, who may start the next attempt (the candidate counts as evaluated, not resolving) or report unresolved. If judge gives
+  again: a call interrupted after asking leaves the mark and the next `judge` is refused. `resume` then says to ask
+  the user, who may leave it behind with `start-attempt --mode <A|B|C> --abandon-judge` (recorded in the history) or
+  report unresolved; without that flag the candidate isn't evaluated, so a call still running isn't overtaken. If judge gives
   no usable verdict (or one about another input) the mark is cleared and nothing is recorded, so a retry is not a
   re-roll; the input file stays as a record of what was asked. An escalation sets the status to `needs-human`; a
   later `resolved` verdict in the same attempt sets it back to `active`, and `resume` points at the resolving candidate.
@@ -142,11 +153,11 @@ Everything lives under the `--state` directory; the C# build never reads TS-writ
 
 - `state.json`: the state (`schemaVersion` 1), written to a temporary file and renamed, under `state.lock`. Fields: `ticket`, `phase`,
   `status`, `attempt`, `mode`, `investigation` (`handoff`, `rootCause`, `hypotheses`), `check` (`kind` test or ui,
-  `path`, `sha256`, `command`, `directory`, `programSha256`, `commandFiles`), `baseline` (`evidence`, `commit`), `candidates` (`id`, `attempt`, `mode`, `branch`,
+  `path`, `sha256`, `command`, `directory`, `programSha256`, `environment`, `commandFiles`), `baseline` (`evidence`, `commit`), `candidates` (`id`, `attempt`, `mode`, `branch`,
   `worktree`, `commit`, `hypothesis`, `changedFiles`, `run`, `verdict`, `judgeAsked`), `runs` (`evidence`, `sha256`), `resolvedBy`,
   `history`.
 - `runs/<stamp>-<test|ui>-<n>.json`: a run record (`kind`, `outcome` passed, failed or broken, `commit`, `directory`,
-  `checkSha256`, `command`, `programSha256`, `exitCode`, `output`); a ui run that produced nothing gives its slot back, with its `.log` (and, for ui, the ui-evidence run directory `<stem>/`).
+  `checkSha256`, `command`, `programSha256`, `environment`, `exitCode`, `output`); a ui run that produced nothing gives its slot back, with its `.log` (and, for ui, the ui-evidence run directory `<stem>/`).
 - `judge-<candidate>.json`: the resolution-check input asked about the candidate.
 
 ## Ports and adapters

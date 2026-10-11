@@ -115,12 +115,12 @@ Aw.BugFix.Core.Model.CandidateRun.RecordedAt.get -> System.DateTimeOffset
 Aw.BugFix.Core.Model.CandidateRun.RecordedAt.init -> void
 Aw.BugFix.Core.Model.CheckExit
 Aw.BugFix.Core.Model.CheckExit.<Clone>$() -> Aw.BugFix.Core.Model.CheckExit!
-Aw.BugFix.Core.Model.CheckExit.CheckExit(int Code, bool Ran, string! ProgramSha256, string! EnvironmentSha256) -> void
+Aw.BugFix.Core.Model.CheckExit.CheckExit(int Code, bool Ran, string! ProgramSha256, System.Collections.Generic.IReadOnlyDictionary<string!, string!>! Environment) -> void
 Aw.BugFix.Core.Model.CheckExit.Code.get -> int
 Aw.BugFix.Core.Model.CheckExit.Code.init -> void
-Aw.BugFix.Core.Model.CheckExit.Deconstruct(out int Code, out bool Ran, out string! ProgramSha256, out string! EnvironmentSha256) -> void
-Aw.BugFix.Core.Model.CheckExit.EnvironmentSha256.get -> string!
-Aw.BugFix.Core.Model.CheckExit.EnvironmentSha256.init -> void
+Aw.BugFix.Core.Model.CheckExit.Deconstruct(out int Code, out bool Ran, out string! ProgramSha256, out System.Collections.Generic.IReadOnlyDictionary<string!, string!>! Environment) -> void
+Aw.BugFix.Core.Model.CheckExit.Environment.get -> System.Collections.Generic.IReadOnlyDictionary<string!, string!>!
+Aw.BugFix.Core.Model.CheckExit.Environment.init -> void
 Aw.BugFix.Core.Model.CheckExit.Equals(Aw.BugFix.Core.Model.CheckExit? other) -> bool
 Aw.BugFix.Core.Model.CheckExit.Outcome.get -> Aw.BugFix.Core.Model.RunOutcome
 Aw.BugFix.Core.Model.CheckExit.ProgramSha256.get -> string!
@@ -159,13 +159,13 @@ Aw.BugFix.Core.Model.FrozenCheck.Command.get -> System.Collections.Generic.IRead
 Aw.BugFix.Core.Model.FrozenCheck.Command.init -> void
 Aw.BugFix.Core.Model.FrozenCheck.CommandFiles.get -> System.Collections.Generic.IReadOnlyList<string!>!
 Aw.BugFix.Core.Model.FrozenCheck.CommandFiles.init -> void
-Aw.BugFix.Core.Model.FrozenCheck.Deconstruct(out Aw.BugFix.Core.Model.CheckKind Kind, out string! Path, out string! Sha256, out System.Collections.Generic.IReadOnlyList<string!>? Command, out string! Directory, out string! ProgramSha256, out string! EnvironmentSha256, out System.Collections.Generic.IReadOnlyList<string!>! CommandFiles) -> void
+Aw.BugFix.Core.Model.FrozenCheck.Deconstruct(out Aw.BugFix.Core.Model.CheckKind Kind, out string! Path, out string! Sha256, out System.Collections.Generic.IReadOnlyList<string!>? Command, out string! Directory, out string! ProgramSha256, out System.Collections.Generic.IReadOnlyDictionary<string!, string!>! Environment, out System.Collections.Generic.IReadOnlyList<string!>! CommandFiles) -> void
 Aw.BugFix.Core.Model.FrozenCheck.Directory.get -> string!
 Aw.BugFix.Core.Model.FrozenCheck.Directory.init -> void
-Aw.BugFix.Core.Model.FrozenCheck.EnvironmentSha256.get -> string!
-Aw.BugFix.Core.Model.FrozenCheck.EnvironmentSha256.init -> void
+Aw.BugFix.Core.Model.FrozenCheck.Environment.get -> System.Collections.Generic.IReadOnlyDictionary<string!, string!>!
+Aw.BugFix.Core.Model.FrozenCheck.Environment.init -> void
 Aw.BugFix.Core.Model.FrozenCheck.Equals(Aw.BugFix.Core.Model.FrozenCheck? other) -> bool
-Aw.BugFix.Core.Model.FrozenCheck.FrozenCheck(Aw.BugFix.Core.Model.CheckKind Kind, string! Path, string! Sha256, System.Collections.Generic.IReadOnlyList<string!>? Command, string! Directory, string! ProgramSha256, string! EnvironmentSha256, System.Collections.Generic.IReadOnlyList<string!>! CommandFiles) -> void
+Aw.BugFix.Core.Model.FrozenCheck.FrozenCheck(Aw.BugFix.Core.Model.CheckKind Kind, string! Path, string! Sha256, System.Collections.Generic.IReadOnlyList<string!>? Command, string! Directory, string! ProgramSha256, System.Collections.Generic.IReadOnlyDictionary<string!, string!>! Environment, System.Collections.Generic.IReadOnlyList<string!>! CommandFiles) -> void
 Aw.BugFix.Core.Model.FrozenCheck.Kind.get -> Aw.BugFix.Core.Model.CheckKind
 Aw.BugFix.Core.Model.FrozenCheck.Kind.init -> void
 Aw.BugFix.Core.Model.FrozenCheck.Path.get -> string!
@@ -328,11 +328,11 @@ Aw.BugFix.Core.Model.RunRecord.Command.get -> System.Collections.Generic.IReadOn
 Aw.BugFix.Core.Model.RunRecord.Command.init -> void
 Aw.BugFix.Core.Model.RunRecord.Commit.get -> string!
 Aw.BugFix.Core.Model.RunRecord.Commit.init -> void
-Aw.BugFix.Core.Model.RunRecord.Deconstruct(out Aw.BugFix.Core.Model.CheckKind Kind, out Aw.BugFix.Core.Model.RunOutcome Outcome, out string! Commit, out string! Directory, out string! CheckSha256, out System.Collections.Generic.IReadOnlyList<string!>? Command, out string! ProgramSha256, out string! EnvironmentSha256, out int ExitCode, out string! Output) -> void
+Aw.BugFix.Core.Model.RunRecord.Deconstruct(out Aw.BugFix.Core.Model.CheckKind Kind, out Aw.BugFix.Core.Model.RunOutcome Outcome, out string! Commit, out string! Directory, out string! CheckSha256, out System.Collections.Generic.IReadOnlyList<string!>? Command, out string! ProgramSha256, out System.Collections.Generic.IReadOnlyDictionary<string!, string!>! Environment, out int ExitCode, out string! Output) -> void
 Aw.BugFix.Core.Model.RunRecord.Directory.get -> string!
 Aw.BugFix.Core.Model.RunRecord.Directory.init -> void
-Aw.BugFix.Core.Model.RunRecord.EnvironmentSha256.get -> string!
-Aw.BugFix.Core.Model.RunRecord.EnvironmentSha256.init -> void
+Aw.BugFix.Core.Model.RunRecord.Environment.get -> System.Collections.Generic.IReadOnlyDictionary<string!, string!>!
+Aw.BugFix.Core.Model.RunRecord.Environment.init -> void
 Aw.BugFix.Core.Model.RunRecord.Equals(Aw.BugFix.Core.Model.RunRecord? other) -> bool
 Aw.BugFix.Core.Model.RunRecord.ExitCode.get -> int
 Aw.BugFix.Core.Model.RunRecord.ExitCode.init -> void
@@ -344,7 +344,7 @@ Aw.BugFix.Core.Model.RunRecord.Output.get -> string!
 Aw.BugFix.Core.Model.RunRecord.Output.init -> void
 Aw.BugFix.Core.Model.RunRecord.ProgramSha256.get -> string!
 Aw.BugFix.Core.Model.RunRecord.ProgramSha256.init -> void
-Aw.BugFix.Core.Model.RunRecord.RunRecord(Aw.BugFix.Core.Model.CheckKind Kind, Aw.BugFix.Core.Model.RunOutcome Outcome, string! Commit, string! Directory, string! CheckSha256, System.Collections.Generic.IReadOnlyList<string!>? Command, string! ProgramSha256, string! EnvironmentSha256, int ExitCode, string! Output) -> void
+Aw.BugFix.Core.Model.RunRecord.RunRecord(Aw.BugFix.Core.Model.CheckKind Kind, Aw.BugFix.Core.Model.RunOutcome Outcome, string! Commit, string! Directory, string! CheckSha256, System.Collections.Generic.IReadOnlyList<string!>? Command, string! ProgramSha256, System.Collections.Generic.IReadOnlyDictionary<string!, string!>! Environment, int ExitCode, string! Output) -> void
 Aw.BugFix.Core.Model.RunSlot
 Aw.BugFix.Core.Model.RunSlot.<Clone>$() -> Aw.BugFix.Core.Model.RunSlot!
 Aw.BugFix.Core.Model.RunSlot.Deconstruct(out string! Output, out string! Log, out string! Record) -> void
@@ -607,11 +607,11 @@ static Aw.BugFix.Core.Model.UiRunRequest.operator !=(Aw.BugFix.Core.Model.UiRunR
 static Aw.BugFix.Core.Model.UiRunRequest.operator ==(Aw.BugFix.Core.Model.UiRunRequest? left, Aw.BugFix.Core.Model.UiRunRequest? right) -> bool
 static Aw.BugFix.Core.Ports.StateStoreExtensions.Locked<T>(this Aw.BugFix.Core.Ports.IStateStore! store, string! directory, System.Func<Aw.Kernel.Result<T>!>! work, bool create = false) -> Aw.Kernel.Result<T>!
 static Aw.BugFix.Core.Rules.AttemptRule.Candidates(Aw.BugFix.Core.Model.FixMode? mode) -> int
-static Aw.BugFix.Core.Rules.AttemptRule.CanStart(Aw.BugFix.Core.Model.BugFixState! state, Aw.BugFix.Core.Model.FixMode mode) -> Aw.Kernel.Result<Aw.Kernel.Unit>!
+static Aw.BugFix.Core.Rules.AttemptRule.CanStart(Aw.BugFix.Core.Model.BugFixState! state, Aw.BugFix.Core.Model.FixMode mode, bool abandonJudge = false) -> Aw.Kernel.Result<Aw.Kernel.Unit>!
 static Aw.BugFix.Core.Rules.CandidateRule.CanRecord(Aw.BugFix.Core.Model.BugFixState! state, string! commit, int? hypothesis) -> Aw.Kernel.Result<Aw.Kernel.Unit>!
 static Aw.BugFix.Core.Rules.CheckCommandRule.Refusal(System.Collections.Generic.IReadOnlyList<string!>! command) -> string?
 static Aw.BugFix.Core.Rules.CommandFilesRule.LoaderCandidates(string! path) -> System.Collections.Generic.IEnumerable<string!>!
-static Aw.BugFix.Core.Rules.CommandFilesRule.Paths(System.Collections.Generic.IReadOnlyList<string!>! command) -> System.Collections.Generic.IReadOnlyList<(string! Path, bool Required)>!
+static Aw.BugFix.Core.Rules.CommandFilesRule.Paths(System.Collections.Generic.IReadOnlyList<string!>! command) -> System.Collections.Generic.IReadOnlyList<(string! Path, bool Required, bool Specifier)>!
 static Aw.BugFix.Core.Rules.EvidenceRule.Accept(Aw.BugFix.Core.Model.BugFixState! state, Aw.BugFix.Core.Model.StoredRun! run) -> Aw.Kernel.Result<Aw.BugFix.Core.Model.RunRecord!>!
 static Aw.BugFix.Core.Rules.HandoffParser.Parse(string! markdown) -> Aw.Kernel.Result<Aw.BugFix.Core.Model.Handoff!>!
 static Aw.BugFix.Core.Rules.NextStep.For(Aw.BugFix.Core.Model.BugFixState! state) -> string!

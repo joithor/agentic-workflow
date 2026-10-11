@@ -50,7 +50,8 @@ public static partial class ProtectedPaths
         + "|(^|/)setupTests\\.[^/]+$|(^|/)conftest\\.py$|(^|/)\\.mocharc[^/]*$|(^|/)(pytest\\.ini|tox\\.ini|pyproject\\.toml|setup\\.cfg)$"
         + "|(^|/)\\.babelrc[^/]*$|(^|/)\\.env\\.test[^/]*$|(^|/)tsconfig[^/]*\\.json$|(^|/)package\\.json$"
         + "|(^|/)(GNUmakefile|[Mm]akefile|[Jj]ustfile|Rakefile|Taskfile\\.ya?ml|noxfile\\.py|bunfig\\.toml|deno\\.jsonc?|pom\\.xml|build\\.gradle(\\.kts)?|settings\\.gradle(\\.kts)?|Cargo\\.toml|Gemfile|go\\.mod)$"
-        + "|\\.mk$|(^|/)\\.(npmrc|yarnrc[^/]*|pnpmfile\\.c?js|nvmrc|tool-versions)$|\\.runsettings$|(^|/)Directory\\.Build\\.(props|targets)$",
+        + "|\\.mk$|(^|/)\\.(npmrc|yarnrc[^/]*|pnpmfile\\.c?js|nvmrc|tool-versions)$|\\.runsettings$|(^|/)Directory\\.Build\\.(props|targets|rsp)$"
+        + "|(^|/)\\.?pytest\\.(ini|toml)$|(^|/)\\.rspec(-local)?$|(^|/)\\.cargo/config(\\.toml)?$|(^|/)go\\.work(\\.sum)?$|(^|/)global\\.json$",
         RegexOptions.IgnoreCase | RegexOptions.CultureInvariant | RegexOptions.ExplicitCapture,
         matchTimeoutMilliseconds: 1000)]
     private static partial Regex RunnerConfig { get; }

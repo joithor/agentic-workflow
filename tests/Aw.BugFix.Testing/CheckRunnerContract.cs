@@ -35,7 +35,7 @@ public abstract class CheckRunnerContract
         var missing = Runner.Run(["no-such-program-aw-bugfix"], Directory, $"{Directory}/c.log");
 
         Expect.That(first.ProgramSha256.Length > 0 && first.ProgramSha256 == second.ProgramSha256, "the program's hash is recorded and stable");
-        Expect.That(first.EnvironmentSha256.Length > 0 && first.EnvironmentSha256 == second.EnvironmentSha256, "the environment's hash is recorded and stable");
+        Expect.That(first.Environment.ContainsKey("PATH") && first.Environment.SequenceEqual(second.Environment), "the environment (PATH, …) is recorded and stable");
         Expect.That(missing is { Ran: false, ProgramSha256: "" }, "a program that doesn't resolve didn't run and has no hash");
     }
 

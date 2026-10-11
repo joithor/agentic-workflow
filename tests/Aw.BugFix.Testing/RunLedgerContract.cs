@@ -11,7 +11,7 @@ public abstract class RunLedgerContract
 {
     private static readonly DateTimeOffset _at = new(2026, 10, 10, 12, 0, 0, TimeSpan.Zero);
 
-    private static readonly RunRecord _record = new(CheckKind.Test, RunOutcome.Failed, new string('a', 40), "tests", new string('b', 64), ["bash", "t.sh"], new string('c', 64), new string('d', 64), 1, "/log");
+    private static readonly RunRecord _record = new(CheckKind.Test, RunOutcome.Failed, new string('a', 40), "tests", new string('b', 64), ["bash", "t.sh"], new string('c', 64), new Dictionary<string, string>(StringComparer.Ordinal) { ["PATH"] = "/bin" }, 1, "/log");
 
     /// <summary>Gets the ledger under test.</summary>
     protected abstract IRunLedger Ledger { get; }
@@ -40,7 +40,7 @@ public abstract class RunLedgerContract
         var stored = Ledger.Read(slot.Record).Value;
 
         Expect.Equal((slot.Record, sha), (stored.Path, stored.Sha256), "Equal((slot.Record, sha), (stored.Path, stored.Sha256))");
-        Expect.Equal(_record with { Command = null }, stored.Record with { Command = null }, "Equal(_record with { Command = null }, stored.Record with { Command = null })");
+        Expect.Equal(_record with { Command = null, Environment = stored.Record.Environment }, stored.Record with { Command = null }, "Equal(_record with { Command = null }, stored.Record with { Command = null })");
         Expect.That((stored.Record.Command ?? []).SequenceEqual(_record.Command ?? [], StringComparer.Ordinal), "the command round-trips");
     }
 

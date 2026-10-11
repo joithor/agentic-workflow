@@ -6,6 +6,7 @@ using Aw.BugFix.Features.Init;
 using Aw.BugFix.Features.JudgeCandidate;
 using Aw.BugFix.Features.Resume;
 using Aw.BugFix.Features.RunTest;
+using Aw.BugFix.Features.StartAttempt;
 using Aw.BugFix.Testing;
 using Aw.Kernel;
 
@@ -141,7 +142,9 @@ public sealed class GateHardeningTests : IDisposable
         Assert.Contains("no answer was recorded", World.Refused(await Judge(c1), BugFixErrors.JudgeRefused).Message, StringComparison.Ordinal);
         _ = Assert.Single(_w.Judge.Asked);
         Assert.StartsWith("ask the user: judge was asked about c1", World.Ok(await Resume()).Next, StringComparison.Ordinal);
-        Assert.Equal(2, World.Ok(await _w.Start()).Attempt);   // a human may move on to a new attempt
+        Assert.Contains("--abandon-judge", World.Refused(await _w.Start(), BugFixErrors.AttemptRefused).Message, StringComparison.Ordinal);
+        var moved = World.Ok(await _w.Run<StartAttemptRequest, StartAttemptResponse>(new StartAttemptRequest(World.State, FixMode.A, AbandonJudge: true)));
+        Assert.Equal(2, moved.Attempt);   // only the user's explicit choice leaves the question behind
     }
 
     [Fact, Trait("Lane", "unit")]
@@ -186,9 +189,9 @@ public sealed class GateHardeningTests : IDisposable
     public async Task A_run_in_another_environment_is_not_the_frozen_check()
     {
         var c1 = await _w.Candidate();
-        _ = _w.Runner.RunsIn("PATH with a planted grep");
+        _ = _w.Runner.RunsWithPath("/tmp/planted:/usr/bin:/bin");
 
-        Assert.Contains("different environment", World.Refused(await _w.RunAgainst(c1), BugFixErrors.RunRefused).Message, StringComparison.Ordinal);
+        Assert.Contains("different PATH", World.Refused(await _w.RunAgainst(c1), BugFixErrors.RunRefused).Message, StringComparison.Ordinal);
     }
 
     [Fact, Trait("Lane", "unit")]
@@ -202,7 +205,35 @@ public sealed class GateHardeningTests : IDisposable
         var run = World.Ok(await TestRun(World.Repo, World.Check, ["node", "--require=./lib/setup", World.Check]));
         _ = World.Ok(await Reproduce(run.Evidence));
 
-        Assert.Equal(["lib/setup.js"], _w.Now.Check?.CommandFiles);
+        Assert.Contains("lib/setup.js", _w.Now.Check?.CommandFiles ?? [], StringComparer.Ordinal);
+        Assert.Contains("lib/setup", _w.Now.Check?.CommandFiles ?? [], StringComparer.Ordinal);   // a file the loader would try first, though it doesn't exist
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task A_new_file_that_shadows_a_python_module_is_protected()
+    {
+        await _w.Investigated();
+        _ = _w.Runner.Exits("python3", 1);
+        var run = World.Ok(await TestRun(World.Repo, World.Check, ["python3", "-m", "unittest", World.Check]));
+        _ = World.Ok(await Reproduce(run.Evidence));
+        _ = World.Ok(await _w.Start());
+        _ = _w.Fix(changes: new(StringComparer.Ordinal) { ["src/app.ts"] = "fixed\n", ["unittest.py"] = "raise SystemExit(0)\n" });
+
+        Assert.Contains("unittest.py", World.Refused(await _w.Record(), BugFixErrors.CandidateRefused).Message, StringComparison.Ordinal);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task Option_values_that_are_not_files_are_neither_required_nor_protected()
+    {
+        _w.Repos.Write("/repo/app/__init__.py", "x\n");
+        _ = _w.Repos.Commit(World.Repo);
+        await _w.Investigated();
+        _ = _w.Runner.Exits("pytest", 1);
+        var run = World.Ok(await TestRun(World.Repo, World.Check, ["pytest", "--cov=app", "--junitxml=out/report.xml", "-k", "/login/", World.Check]));
+
+        _ = World.Ok(await Reproduce(run.Evidence));
+
+        Assert.Empty(_w.Now.Check?.CommandFiles ?? ["?"]);   // the fix may change app/__init__.py, the code under test
     }
 
     private async Task PassAndJudge(CandidateId candidate, string worktree, JudgeDecision decision)

@@ -10,9 +10,9 @@ namespace Aw.BugFix.Core.Model;
 /// <param name="Command">The test command (argv) of the baseline run; null for a ui-evidence check.</param>
 /// <param name="Directory">The working directory of the baseline run, relative to the repository root ("" for the root).</param>
 /// <param name="ProgramSha256">The SHA-256 of the program the baseline command ran: a later run must run the same program.</param>
-/// <param name="EnvironmentSha256">The SHA-256 of the baseline run's environment (PATH, HOME, …): a later run must run in the same one.</param>
+/// <param name="Environment">The variables that decided which code the baseline ran (PATH, HOME, …): a later run must run with the same values.</param>
 /// <param name="CommandFiles">Repository files the baseline command names besides the check (its runner, wrapper scripts): a fix may not change them without approval.</param>
-public sealed record FrozenCheck(CheckKind Kind, string Path, string Sha256, IReadOnlyList<string>? Command, string Directory, string ProgramSha256, string EnvironmentSha256, IReadOnlyList<string> CommandFiles)
+public sealed record FrozenCheck(CheckKind Kind, string Path, string Sha256, IReadOnlyList<string>? Command, string Directory, string ProgramSha256, IReadOnlyDictionary<string, string> Environment, IReadOnlyList<string> CommandFiles)
 {
     /// <summary>Accepts a later run only if it executed this check: same kind, a verdict (not broken), and for a test the same command in the same directory.</summary>
     /// <param name="record">The run.</param>
@@ -45,8 +45,12 @@ public sealed record FrozenCheck(CheckKind Kind, string Path, string Sha256, IRe
             return BugFixErrors.RunRefused.With($"the test command's program `{(Command ?? ["?"])[0]}` resolved to a different file than at the baseline (check PATH)");
         }
 
-        return record.EnvironmentSha256 == EnvironmentSha256
+        var differ = Environment.Keys.Union(record.Environment.Keys, StringComparer.Ordinal)
+            .Where(name => Environment.GetValueOrDefault(name) != record.Environment.GetValueOrDefault(name))
+            .Order(StringComparer.Ordinal)
+            .ToList();
+        return differ.Count == 0
             ? record
-            : BugFixErrors.RunRefused.With("the test command ran in a different environment than the baseline (PATH, HOME, LANG, …); run it from the same shell setup");
+            : BugFixErrors.RunRefused.With($"the test command ran with a different {string.Join(", ", differ)} than the baseline; run it with the baseline's values (state.json check.environment)");
     }
 }
