@@ -478,6 +478,42 @@ csproj "$d" src/Aw.Kernel/Aw.Kernel.csproj; csproj "$d" tests/Aw.KTest.Testing/A
 csproj "$d" tests/Aw.Beta.Tests/Aw.Beta.Tests.csproj ../Aw.KTest.Testing/Aw.KTest.Testing.csproj; run "$d"
 expect "a test-support package under tests/ makes its own edges current and is usable by any test code" 0 "deps: ok"
 
+# ---- http edges: a C# client naming another package's routes (spec §4a "UI") ----
+http_fixture() { # http_fixture <name> — Beta serves /beta/; a tier-4 Gamma client package lives inside Beta's src dir
+  local d; d="$(fixture "$1")"
+  perl -0pi -e 's/(    bins: \[beta\]\n)/$1    routes: [\/beta\/]\n/' "$d/deps.yaml"
+  perl -0pi -e 's/(  - id: Hooks\n)/  - id: Gamma\n    kind: package\n    tier: 4\n    projectPrefix: Aw.Beta.Ui\n    ts: null\n    src: src\/Beta\/Aw.Beta.Ui\n    note: the client app\n$1/' "$d/deps.yaml"
+  csproj "$d" src/Beta/Aw.Beta.Host/Aw.Beta.Host.csproj
+  printf 'app.MapGet("/beta/status", () => 1);\n' > "$d/src/Beta/Aw.Beta.Host/Endpoints.cs"
+  csproj "$d" src/Beta/Aw.Beta.Ui/Aw.Beta.Ui.csproj
+  echo "$d"
+}
+
+d="$(http_fixture http-declared)"; edge "$d" Gamma Beta http current
+printf 'var s = await http.GetAsync($"/beta/status?x={x}", ct);\n' > "$d/src/Beta/Aw.Beta.Ui/Client.cs"; run "$d"
+expect "a declared http edge the C# source has passes; tier 4 is allowed; the server's own routes are no edge" 0 "deps: ok" "cli/db/file/http edges"
+
+d="$(http_fixture http-undeclared)"
+printf '// GET /beta/status is fine in a comment\nconst string Path = "/beta/status";\n' > "$d/src/Beta/Aw.Beta.Ui/Client.cs"; run "$d"
+expect "an undeclared http edge fails with where it was found" 1 "DEPS-EDGE-001" "Gamma -> Beta (http)" "src/Beta/Aw.Beta.Ui/Client.cs:2"
+
+d="$(http_fixture http-stale)"; edge "$d" Gamma Beta http current; run "$d"
+expect "a current http edge with no route literal in the client is stale" 1 "DEPS-STALE-001" "Gamma -> Beta (http)" "no string literal naming Beta's routes (/beta/)"
+
+d="$(http_fixture http-tests-only)"; edge "$d" Gamma Beta http planned
+mkdir -p "$d/tests/Aw.Beta.Ui.Tests"; csproj "$d" tests/Aw.Beta.Ui.Tests/Aw.Beta.Ui.Tests.csproj
+printf 'var url = "/beta/status";\n' > "$d/tests/Aw.Beta.Ui.Tests/T.cs"; run "$d"
+expect "route literals in test projects are not edges" 0 "deps: ok"
+
+d="$(http_fixture http-no-routes)"; edge "$d" Gamma Delta http planned; run "$d"
+expect "an http edge to a package with no routes fails" 1 "DEPS-KIND-004" "Gamma -> Delta (http)"
+
+d="$(http_fixture http-cycle)"; edge "$d" Gamma Beta http planned; edge "$d" Beta Gamma cli planned; run "$d"
+expect "http edges count in the cycle check" 1 "DEPS-CYCLE-001" "Beta -> Gamma -> Beta"
+
+d="$(http_fixture http-shell-routes)"; perl -0pi -e 's/(    scan: \[hooks\]\n)/$1    routes: [\/hooks\/]\n/' "$d/deps.yaml"; run "$d"
+expect "a shell node can't serve routes (schema)" 1 "DEPS-SCHEMA-001"
+
 # ---- parser, validator and schema drift (node unit table) ----
 set +e; UNIT="$(node "$HERE/check-deps.unit.mjs" 2>&1)"; UCODE=$?; set -e
 if [ "$UCODE" = 0 ]; then ok "parser/validator unit table ($(printf '%s' "$UNIT" | tail -1))"; else fail "parser/validator unit table"; printf '%s\n' "$UNIT" | sed 's/^/       | /'; fi

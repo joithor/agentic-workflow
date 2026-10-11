@@ -265,6 +265,61 @@ export function scan(root, nodes) {
   return found;
 }
 
+// ---------- http: C# source naming another package's routes ----------
+
+// A package that serves an HTTP API lists its route prefixes in `routes` (e.g. /sindri/). An http edge is a
+// C# string literal (plain, verbatim or interpolated) starting with another package's route prefix, in a
+// production project's *.cs files; the project belongs to the package whose projectPrefix starts its name
+// (longest wins), so a client package that lives inside the server's src directory is still told apart.
+// Test projects (under tests/, *.Tests, *.Testing) are not scanned.
+const CS_FILE = /\.cs$/;
+
+function ownerByPrefix(name, nodes) {
+  let best = null;
+  for (const n of nodes) {
+    const pre = n.projectPrefix;
+    if (pre && (name === pre || name.startsWith(`${pre}.`)) && (!best || pre.length > best.projectPrefix.length)) best = n;
+  }
+  return best;
+}
+
+function sourceFiles(dir) {
+  // A project's own *.cs files: nested directories that hold another project are that project's.
+  const out = [];
+  for (const e of fs.readdirSync(dir, { withFileTypes: true }).sort((a, b) => a.name.localeCompare(b.name))) {
+    const p = path.join(dir, e.name);
+    if (e.isDirectory()) {
+      if (SKIP_SOURCE_DIRS.has(e.name) || fs.readdirSync(p).some((f) => /\.csproj$/i.test(f))) continue;
+      out.push(...sourceFiles(p));
+    } else if (CS_FILE.test(e.name)) out.push(p);
+  }
+  return out;
+}
+
+export function scanHttp(root, nodes) {
+  const found = new Map();
+  const servers = nodes.filter((n) => (n.routes ?? []).length > 0)
+    .map((n) => ({ id: n.id, routes: n.routes, re: new RegExp(`(?:\\$@|@\\$|\\$|@)?"(?:${n.routes.map(esc).join("|")})`) }));
+  if (servers.length === 0) return found;
+  const files = walk(path.join(root, "src"), SKIP_PROJECT_DIRS, (p) => /\.csproj$/i.test(p));
+  for (const proj of files) {
+    const name = projName(proj);
+    if (/\.(Tests|Testing)(\.|$)/.test(name)) continue;
+    const from = ownerByPrefix(name, nodes);
+    if (!from) continue;
+    for (const file of sourceFiles(path.dirname(proj))) {
+      const rel = path.relative(root, file).split(path.sep).join("/");
+      const lines = fs.readFileSync(file, "utf8").split("\n");
+      for (const to of servers.filter((s) => s.id !== from.id)) {
+        const at = lines.findIndex((l) => !/^\s*\/\//.test(l) && to.re.test(l));
+        const key = `${from.id}|${to.id}|http`;
+        if (at >= 0 && !found.has(key)) found.set(key, { from: from.id, to: to.id, kind: "http", where: `${rel}:${at + 1}`, what: `calls ${to.routes.join(", ")}` });
+      }
+    }
+  }
+  return found;
+}
+
 // ---------- C# projects ----------
 
 const stripXmlComments = (s) => s.replace(/<!--[\s\S]*?-->/g, "");

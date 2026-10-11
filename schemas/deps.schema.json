@@ -113,7 +113,7 @@
         "tier": {
           "type": "integer",
           "minimum": 0,
-          "maximum": 3
+          "maximum": 4
         },
         "sublevel": {
           "type": "integer",
@@ -176,6 +176,16 @@
           "type": "string",
           "pattern": "^[a-z][a-z0-9-]*$",
           "description": "State-root directory this package owns; any other node using a path under it needs a file (or db) edge."
+        },
+        "routes": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^/[a-z0-9][a-z0-9/-]*/$"
+          },
+          "uniqueItems": true,
+          "minItems": 1,
+          "description": "HTTP route prefixes this package serves (e.g. /sindri/); another package's C# string literal starting with one is an http edge."
         },
         "note": {
           "type": "string",
@@ -275,6 +285,11 @@
                   "required": [
                     "namespace"
                   ]
+                },
+                {
+                  "required": [
+                    "routes"
+                  ]
                 }
               ]
             }
@@ -304,7 +319,8 @@
             "project",
             "cli",
             "db",
-            "file"
+            "file",
+            "http"
           ]
         },
         "status": {

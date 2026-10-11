@@ -4,8 +4,9 @@
 //   node scripts/check-deps.mjs [--root DIR] [--mermaid [--base-file FILE]]
 //
 // Validates deps.yaml against schemas/deps.schema.json; checks the reference, kind, tier, cycle and
-// fan-out rules; scans the TypeScript packages, hooks and statusline for cli/db/file edges and fails on
-// any undeclared one or any whose status is wrong; and, once src/ or tests/ have C# projects, checks
+// fan-out rules; scans the TypeScript packages, hooks and statusline for cli/db/file edges, and the C#
+// projects for http edges (string literals naming another package's routes), and fails on any undeclared
+// one or any whose status is wrong; and, once src/ or tests/ have C# projects, checks
 // their ProjectReferences, per-project fan-out and project-edge status. --mermaid also prints the graph
 // and the edge list (added/removed against --base-file) for a PR summary.
 // Exit codes: 0 ok, 1 a rule failed, 2 a tool error. Node builtins only: no install step, no network.
@@ -15,7 +16,7 @@ import path from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { YamlError, parseYaml } from "./deps/yaml.mjs";
 import { SchemaError, SUPPORTED_KEYWORDS, validate } from "./deps/schema.mjs";
-import { ScanError, buildFiles, readProjects, scan } from "./deps/scan.mjs";
+import { ScanError, buildFiles, readProjects, scan, scanHttp } from "./deps/scan.mjs";
 
 export { parseYaml, validate, SUPPORTED_KEYWORDS };
 
@@ -162,6 +163,7 @@ export function check(root, today = new Date().toISOString().slice(0, 10)) {
     }
     if (e.kind === "project" && b.test && !a.test) fail("DEPS-KIND-003", "project edge from production code into a test-support package", edgeText(e), "only test projects reference test-support packages, and they need no declared edge", `delete the edge from deps.yaml and move the reference into ${e.from}'s *.Tests project`);
     if (e.kind === "project" && rank(a) <= rank(b)) fail("DEPS-TIER-001", "project edge does not point to a lower tier", `${e.from} (${tierLabel(a)}) -> ${e.to} (${tierLabel(b)})`, "a project edge points strictly down the tiers (§4b.1a)", `change it to kind: cli and call ${e.to}'s CLI, or move the shared code down a tier`);
+    if (e.kind === "http" && !(b.routes ?? []).length) fail("DEPS-KIND-004", "http edge to a package that serves no routes", edgeText(e), `an http edge calls a package's HTTP API, declared as its routes (${e.to} lists none)`, `add routes: [/<prefix>/] to ${e.to} in deps.yaml, or change the edge's kind`);
     if ((e.kind === "db" || e.kind === "file") && rank(a) < rank(b)) fail("DEPS-TIER-002", `${e.kind} edge points to a higher tier`, `${e.from} (${tierLabel(a)}) -> ${e.to} (${tierLabel(b)})`, "db and file edges point down or across, never up", `replace it with (from: ${e.from}, to: ${e.to}, kind: cli) and ask ${e.to}'s CLI`);
   }
   for (const c of findCycles(edges)) fail("DEPS-CYCLE-001", "the declared graph has a cycle", c.join(" -> "), "the graph is acyclic across every edge kind (§4b.1a)", "delete one edge of the cycle in deps.yaml, or move the shared part into a lower tier");
@@ -178,18 +180,22 @@ export function check(root, today = new Date().toISOString().slice(0, 10)) {
   // ---- cli/db/file edges in the source ----
   const declared = new Map(edges.map((e) => [edgeKey(e), e]));
   const found = scan(root, doc.packages);
+  for (const [k, h] of scanHttp(root, doc.packages)) found.set(k, h);
   let undeclared = 0;
   for (const [k, h] of found) {
     const d = declared.get(k);
     if (!d) {
       undeclared++;
-      fail("DEPS-EDGE-001", "undeclared edge in source", `${h.from} -> ${h.to} (${h.kind}): ${h.where} ${h.what}`, "every cli, db and file edge is declared in deps.yaml", `remove the call, or add this under edges in deps.yaml (a reviewed change):\n${yamlEdge(h.from, h.to, h.kind, "current")}`);
+      fail("DEPS-EDGE-001", "undeclared edge in source", `${h.from} -> ${h.to} (${h.kind}): ${h.where} ${h.what}`, "every cli, db, file and http edge is declared in deps.yaml", `remove the call, or add this under edges in deps.yaml (a reviewed change):\n${yamlEdge(h.from, h.to, h.kind, "current")}`);
     } else if (d.status === "planned") fail("DEPS-STALE-002", "planned edge found in source", `${edgeText(d)}: ${h.where} ${h.what}`, "an edge the source has today is status: current", `set status: current on ${edgeText(d)} in deps.yaml`);
   }
   for (const e of edges.filter((x) => x.status === "current" && x.kind !== "project" && !found.has(edgeKey(x)))) {
-    fail("DEPS-STALE-001", "declared current edge not found in source", `${edgeText(e)}: no match under ${byId.get(e.from).scan?.join(", ") ?? "(no scan dirs)"}`, "a status: current edge exists in the source today", "set status: planned in deps.yaml if it is still intended, or delete the edge");
+    const where = e.kind === "http"
+      ? `no string literal naming ${e.to}'s routes (${byId.get(e.to).routes?.join(", ") ?? "none"}) in ${e.from}'s C# projects`
+      : `no match under ${byId.get(e.from).scan?.join(", ") ?? "(no scan dirs)"}`;
+    fail("DEPS-STALE-001", "declared current edge not found in source", `${edgeText(e)}: ${where}`, "a status: current edge exists in the source today", "set status: planned in deps.yaml if it is still intended, or delete the edge");
   }
-  info.push(`scan: ${found.size} cli/db/file edges found in source, ${undeclared === 0 ? "all declared" : `${undeclared} undeclared (DEPS-EDGE-001 above)`}`);
+  info.push(`scan: ${found.size} cli/db/file/http edges found in source, ${undeclared === 0 ? "all declared" : `${undeclared} undeclared (DEPS-EDGE-001 above)`}`);
 
   checkProjects(root, doc, byId, declared, edges, { fail, info, excepted, measure });
 
@@ -275,7 +281,7 @@ function checkProjects(root, doc, byId, declared, edges, { fail, info, excepted,
 
 // ---------- output ----------
 
-const ARROW = { project: "-->", cli: "-.->", db: "==>", file: "--o" };
+const ARROW = { project: "-->", cli: "-.->", db: "==>", file: "--o", http: "-.->" };
 
 export function mermaid(doc, baseDoc) {
   const out = ["```mermaid", "flowchart TB"];
