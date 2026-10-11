@@ -127,7 +127,7 @@ public sealed class ExtraPatternTests
     public void A_scrub_with_many_matches_blocks_once_it_runs_past_its_whole_scan_budget()
     {
         // Each match is fast, so no match times out; the clock steps 5 ms per reading, the budget is 4 x 100 ms, and
-        // the deadline is read before every rule and after every match: 100 matches pass it.
+        // the deadline is read around the placeholder scan, before every rule and after every match: 100 matches pass it.
         Assert.Equal(4, Redactor.ScanBudgetFactor);
         var redactor = Build(TimeSpan.FromMilliseconds(100), Stepping(), new ExtraPattern("letter-a", "a"));
 
@@ -141,7 +141,7 @@ public sealed class ExtraPatternTests
     [Fact]
     public void A_scrub_within_its_whole_scan_budget_is_not_blocked()
     {
-        // About 30 readings (one per rule, one per match) x 5 ms stay under 4 x 100 ms.
+        // Readings (around the placeholder scan, one per rule, one per match) x 5 ms stay well under the 80 the budget allows.
         var redactor = Build(TimeSpan.FromMilliseconds(100), Stepping(), new ExtraPattern("letter-a", "a"));
 
         Assert.Equal("x [REDACTED:letter-a] y [REDACTED:letter-a]", redactor.Scrub("x a y a").Text);

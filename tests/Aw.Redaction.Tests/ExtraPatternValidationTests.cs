@@ -177,6 +177,7 @@ public sealed class ExtraPatternValidationTests
 
         Assert.True(result.IsValid);
         Assert.Equal("order [REDACTED:acme-customer-id] shipped", result.Redactor.Scrub("order ACME-123456 shipped").Text);
+        _ = AssertRefused(Redactor.Create([new("acme-id", "ACME-\\d")], TimeSpan.FromDays(30), new FakeTimeProvider()), 0, ExtraPatternField.Pattern, RedactionCodes.InvalidPattern);
     }
 
     private static ExtraPatternError AssertRefused(RedactorResult result, int index, ExtraPatternField field, string code)
