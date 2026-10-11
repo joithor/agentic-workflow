@@ -134,6 +134,8 @@ bash scripts/tests/check-deps.test.sh
 bash scripts/tests/check-rules.test.sh
 bash scripts/tests/scaffold.test.sh
 bash scripts/tests/check-env-example.test.sh
+bash scripts/tests/denylist-check.test.sh
+bash scripts/tests/owner-check.test.sh
 bash scripts/tests/repo-templates.test.sh
 bash scripts/tests/probe.test.sh
 bash scripts/tests/find-duplicate-skills.test.sh
@@ -173,6 +175,8 @@ sindri shape reconcile                   # move the spool into the ledger and la
 sindri observe                          # Backlog with sizes; records to the ledger when the profile is approved
 scripts/install-sindri.sh               # Build sindri, install the CLI wrapper (or ./setup.sh --with-sindri)
 GH_TOKEN="$(scripts/agent-token.sh [--repo NAME])"  # Owner/session launcher only, never inside an agent session: 1h agent App token
+scripts/denylist-check.sh <denylist> <file>...   # Work identifiers in PR text: prints only file:line and a hit count; exit 0 none, 1 hits, 2 missing/empty denylist (fails closed)
+scripts/owner-check.sh <stage> up [--seed] [--services a,b] [--labeling] [--session] [--repo NAME] | down   # Owner only: the scratch Sindri instance (port 7480) for a stage's owner check (context spec, owner-check outline steps 1-4 and 7)
 
 # Setup (from repo root)
 ./setup.sh --providers claude,codex,cursor --dry-run   # Print every change, write nothing
