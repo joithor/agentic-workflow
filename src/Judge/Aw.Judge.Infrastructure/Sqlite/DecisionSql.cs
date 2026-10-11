@@ -10,8 +10,9 @@ internal static class DecisionSql
 {
     internal const string InsertDecision =
         "INSERT INTO decisions (id, ts, question, content_class, provider, decision, confidence, reason_code, latency_ms, " +
-        "input_digest, undone_at, chain_position, skipped, outcome) VALUES ($id, $ts, $question, $content_class, $provider, " +
-        "$decision, $confidence, $reason_code, $latency_ms, $input_digest, $undone_at, $chain_position, $skipped, $outcome)";
+        "input_digest, undone_at, chain_position, skipped, outcome, approved_at) VALUES ($id, $ts, $question, $content_class, " +
+        "$provider, $decision, $confidence, $reason_code, $latency_ms, $input_digest, $undone_at, $chain_position, $skipped, " +
+        "$outcome, $approved_at)";
 
     internal const string InsertDetails =
         "INSERT INTO decision_details (id, input_json, probabilities, rules_opinion, agreement, session_id) " +
@@ -22,11 +23,14 @@ internal static class DecisionSql
 
     internal const string Find =
         "SELECT d.id, d.ts, d.question, d.content_class, d.provider, d.decision, d.confidence, d.reason_code, d.latency_ms, " +
-        "d.input_digest, d.undone_at, d.chain_position, d.skipped, d.outcome, " +
+        "d.input_digest, d.undone_at, d.chain_position, d.skipped, d.outcome, d.approved_at, " +
         "x.id, x.input_json, x.probabilities, x.rules_opinion, x.agreement, x.session_id " +
         "FROM decisions d LEFT JOIN decision_details x ON x.id = d.id WHERE d.id = $id";
 
     internal const string MarkUndone = "UPDATE decisions SET undone_at = $at WHERE id = $id";
+
+    // Approving twice keeps the first time; the row still counts as changed, so a known id is never 'unknown'.
+    internal const string MarkApproved = "UPDATE decisions SET approved_at = COALESCE(approved_at, $at) WHERE id = $id";
 
     internal const string CountFailuresSince = "SELECT COUNT(*) FROM failures WHERE ts >= $since";
 
@@ -42,7 +46,8 @@ internal static class DecisionSql
         .Bind("$provider", d.Provider).Bind("$decision", d.Decision).Bind("$confidence", d.Confidence)
         .Bind("$reason_code", d.ReasonCode).Bind("$latency_ms", d.LatencyMs).Bind("$input_digest", d.InputDigest)
         .BindNullable("$undone_at", d.UndoneAt).Bind("$chain_position", d.ChainPosition)
-        .Bind("$skipped", json.Skipped(d.Skipped)).Bind("$outcome", DecisionText.Of(d.Outcome)), "decision " + d.Id.Value);
+        .Bind("$skipped", json.Skipped(d.Skipped)).Bind("$outcome", DecisionText.Of(d.Outcome))
+        .BindNullable("$approved_at", d.ApprovedAt), "decision " + d.Id.Value);
 
     internal static SqlStatement Insert(DecisionId id, DecisionDetails x, DecisionJson json) => new(InsertDetails, c => c
         .Bind("$id", id.Value).Bind("$input_json", x.InputJson).Bind("$probabilities", json.Probabilities(x.Probabilities))
@@ -56,6 +61,9 @@ internal static class DecisionSql
 
     internal static SqlStatement Undo(DecisionId id, DateTimeOffset at) =>
         new(MarkUndone, c => c.Bind("$id", id.Value).Bind("$at", at), "decision " + id.Value);
+
+    internal static SqlStatement Approve(DecisionId id, DateTimeOffset at) =>
+        new(MarkApproved, c => c.Bind("$id", id.Value).Bind("$at", at), "decision " + id.Value);
 
     internal static SqlStatement At(string sql, string name, DateTimeOffset at) => new(sql, c => c.Bind(name, at));
 

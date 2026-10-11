@@ -5,7 +5,7 @@ using Microsoft.Data.Sqlite;
 
 namespace Aw.Judge.Infrastructure.Sqlite;
 
-/// <summary>Maps DecisionSql.Find's columns: the decision (0-13), then its detail row (14-19, null when absent).</summary>
+/// <summary>Maps DecisionSql.Find's columns: the decision (0-14), then its detail row (15-20, null when absent).</summary>
 /// <param name="json">Reads the JSON text columns.</param>
 internal sealed class DecisionMapper(DecisionJson json) : IRowMapper<DecisionRecord>
 {
@@ -25,15 +25,16 @@ internal sealed class DecisionMapper(DecisionJson json) : IRowMapper<DecisionRec
         ChainPosition = reader.GetInt32(11),
         Skipped = json.Skipped(reader.GetString(12)),
         Outcome = DecisionText.Outcome(reader.GetString(13)),
-        Details = reader.IsDBNull(14) ? null : Details(reader),
+        ApprovedAt = reader.IsDBNull(14) ? null : SqliteRead.GetTimestamp(reader, 14),
+        Details = reader.IsDBNull(15) ? null : Details(reader),
     };
 
     private DecisionDetails Details(SqliteDataReader reader) => new()
     {
-        InputJson = reader.GetString(15),
-        Probabilities = json.Probabilities(reader.IsDBNull(16) ? null : reader.GetString(16)),
-        RulesOpinion = reader.IsDBNull(17) ? null : reader.GetString(17),
-        Agreement = reader.IsDBNull(18) ? null : DecisionText.AgreementOf(reader.GetString(18)),
-        SessionId = reader.IsDBNull(19) ? null : SessionId.From(reader.GetString(19)),
+        InputJson = reader.GetString(16),
+        Probabilities = json.Probabilities(reader.IsDBNull(17) ? null : reader.GetString(17)),
+        RulesOpinion = reader.IsDBNull(18) ? null : reader.GetString(18),
+        Agreement = reader.IsDBNull(19) ? null : DecisionText.AgreementOf(reader.GetString(19)),
+        SessionId = reader.IsDBNull(20) ? null : SessionId.From(reader.GetString(20)),
     };
 }
