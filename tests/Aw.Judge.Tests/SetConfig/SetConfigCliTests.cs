@@ -41,12 +41,35 @@ public sealed class SetConfigCliTests : IDisposable
         Assert.False((await cli.Run("config", "get")).Json().GetProperty("questions").GetProperty("wake-gate").GetProperty("enabled").GetBoolean());
     }
 
-    [Fact, Trait("Lane", "integration")]
-    public async Task Config_set_refuses_a_threshold_that_isnt_a_number()
+    // Arguments that don't parse are usage errors: exit 64, one 'usage: judge config set …' line, nothing written.
+    [Theory, Trait("Lane", "integration")]
+    [InlineData("wake-gate", "thresh", "0.5", "unknown field 'thresh'")]
+    [InlineData("wake-gate", "enabled", "yes", "enabled takes true or false, not 'yes'")]
+    [InlineData("wake-gate", "threshold", "high", "threshold takes a number, not 'high'")]
+    [InlineData("wake-gate", "threshold", "NaN", "threshold takes a number, not 'NaN'")]
+    public async Task Config_set_with_an_argument_it_cant_read_is_a_usage_error(string question, string field, string value, string problem)
     {
-        var cli = new JudgeCli(_state);
+        var run = await new JudgeCli(_state).Run("config", "set", question, field, value);
 
-        Assert.Equal(new CliRun(1, "", "not a number: high\n"), await cli.Run("config", "set", "wake-gate", "threshold", "high"));
+        Assert.Equal(new CliRun(64, "", $"usage: judge config set <question> enabled true|false | threshold <0-1> ({problem})\n"), run);
+        Assert.False(File.Exists(ConfigFile));
+    }
+
+    [Fact, Trait("Lane", "integration")]
+    public async Task Config_set_with_a_missing_argument_is_a_usage_error()
+    {
+        var run = await new JudgeCli(_state).Run("config", "set", "wake-gate", "enabled");
+
+        Assert.Equal(64, run.ExitCode);
+        Assert.StartsWith("usage: judge config set ", run.Stderr, StringComparison.Ordinal);
+    }
+
+    [Fact, Trait("Lane", "integration")]
+    public async Task Config_set_refuses_a_threshold_outside_0_to_1()
+    {
+        var run = await new JudgeCli(_state).Run("config", "set", "wake-gate", "threshold", "1.5");
+
+        Assert.Equal(new CliRun(1, "", "threshold must be between 0 and 1, not 1.5\n"), run);
         Assert.False(File.Exists(ConfigFile));
     }
 
