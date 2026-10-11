@@ -13,7 +13,8 @@
 // --slice-only is for slices scaffolded into one package in parallel branches: it writes the slice's own files, ids
 // and ports, and edits only its own lines in A.cs, IdsJsonContext and PublicAPI.Unshipped.txt. It leaves out the
 // registration, the command-table arm or endpoint-table call, the JSON context lines and the command or endpoint file,
-// and prints them for the implementer to add by hand. Any other shared edit is refused (NS-SLICE-ONLY).
+// and prints them for the implementer to add by hand. Any other shared edit, any new shared file, and a missing A.cs
+// or IdsJsonContext (when it adds an id) are refused (NS-SLICE-ONLY).
 // Exit codes: 0 done (the new test is red, everything else green), 1 refused or a check failed, 2 usage error.
 
 import fs from "node:fs";

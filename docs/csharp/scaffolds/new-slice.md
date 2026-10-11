@@ -106,27 +106,33 @@ empty one) gets the builder root written again, holding the new factory.
 ## `--slice-only`
 
 For slices scaffolded into one package in parallel branches (the Sindri API spec, C7 and §12). The generator writes
-only what belongs to the slice, so two branches never edit the same shared line:
+only what belongs to the slice, plus the slice's own lines in three shared files:
 
 - the slice folder, the red test, the request builder;
 - new ids (`Core/Ids/<Id>.cs`, `<Id>Tests.cs`, `<Id>Holder.cs`) and a `<Id>RouteBindingTests.cs` for each route id that
   lacks one;
 - new ports with their fake and contract base;
-- the slice's own lines in three shared files: `A.cs` (its factory method), `IdsJsonContext.cs` (one line per new id,
-  or the new file) and each project's `PublicAPI.Unshipped.txt` (from the build's `RS0016` output, as above).
+- the slice's own lines in three shared files: `A.cs` (its factory method), `IdsJsonContext.cs` (one line per new id)
+  and each project's `PublicAPI.Unshipped.txt` (from the build's `RS0016` output, as above).
+
+Parallel branches append at the same anchors in those three files, so merging them gives adjacent-line conflicts. The
+integrator resolves them by keeping both sides (the spec's "Parallel delivery").
 
 It leaves out the registration, the `CommandTable` arm or `EndpointTable` call, the `<Pkg>JsonContext` lines, and
 the surface files (`Endpoints/<Slice>Endpoint.cs`, `Endpoints/<Slice>Body.cs`, `Commands/<Slice>Command.cs`). After
-the file list it prints a "Shared lines to add in your branch" block: the exact text the normal mode would have
-inserted at each anchor, the surface files to write by hand, and a reminder to mark the request `ICommand<…>` or
-`IQuery<…>` for Sindri. The red test still compiles and fails on its own: it creates the stub directly, so it needs no
+the file list it prints a "Shared lines to add in your branch" block. It lists the lines the normal mode would have
+inserted at each anchor, with the usings each needs, rather than a byte-exact splice (the `EndpointTable` call goes on
+the `MapGroup` chain, before its `;`). It also lists the surface files to write by hand and, for Sindri only, a
+reminder to mark the request `ICommand<…>` or `IQuery<…>`. The red test still compiles and fails on its own: it creates the stub directly, so it needs no
 registration. Until the registration exists nothing in the assembly uses the stub or the validator, and `MA0182` (an
 unused internal type) is an error, so both carry a `[SuppressMessage]` for it with a justification; the block says to
 remove it with the registration.
 
-Any other edit to an existing file is refused with `NS-SLICE-ONLY` (a journal guard, so a new code path can't slip one
-in), and so is a new `Guid` or `int` id when `Core`'s csproj lacks the `RS0041` NoWarn. Fix: add the NoWarn in the
-phase's contract unit, or run without `--slice-only`. Everything written is reverted.
+`--slice-only` creates no shared file. A missing `A.cs`, or a missing `IdsJsonContext.cs` when the slice adds an id,
+is refused with `NS-SLICE-ONLY` (the normal mode writes them; with `--slice-only` the phase's contract unit owns
+them). Journal guards refuse any other edit to an existing file and any new file that isn't the slice's own, so a new
+code path can't slip one in. A new `Guid` or `int` id when `Core`'s csproj lacks the `RS0041` NoWarn is refused too.
+Fix: add it in the phase's contract unit, or run without `--slice-only`. Everything written is reverted.
 
 Without `--files-only` it runs the same checks as the normal mode, under the heavy-job lock. With it, it writes the
 files only (the unit tests).
@@ -346,7 +352,7 @@ leave exactly its test red. `scripts/tests/scaffold.test.sh` covers the port loo
 - A check fails other than the expected red test → revert every created or edited file and print the rule id, the
   measured value and the fix.
 - `NS-EXISTS` when the slice folder exists; `NS-SURFACE` when `surface` doesn't match the package's host; `NS-DEPS` as
-  above; `NS-EDIT` when an anchor is missing; `NS-SLICE-ONLY` when `--slice-only` would edit a shared file; `SCAFFOLD-INTERNAL` for a generator bug (also reverted).
+  above; `NS-EDIT` when an anchor is missing; `NS-SLICE-ONLY` when `--slice-only` would edit or create a shared file, or a shared file it adds a line to is missing; `SCAFFOLD-INTERNAL` for a generator bug (also reverted).
 - SIGINT, SIGTERM or SIGHUP at any point of a run (including the heavy-lock wait) is caught: the generator stops the
   running command's whole process group (SIGINT, dotnet's cancel path, then SIGKILL after 10 s), fails that step with `SCAFFOLD-INTERRUPTED` whatever the command exited with, then
   reverts and releases the lock. The lock directory carries an `owner` file (pid, time, command).

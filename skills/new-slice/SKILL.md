@@ -1,7 +1,7 @@
 ---
 name: new-slice
 description: Add one use case (a slice) to an existing C# package, red first — the failing test that names the behavior, request and response records, a stub service, validator, registration, CLI command or endpoint, typed ids and ports with their fakes.
-argument-hint: "<Package> <Slice> <behavior> [surface] [command|route] [ids] [ports]"
+argument-hint: "<Package> <Slice> <behavior> [surface] [command|route] [ids] [ports] [--slice-only]"
 allowed-tools: Bash(node *), Bash(git *), Bash(dotnet *), Read, Grep, Glob, AskUserQuestion
 ---
 
@@ -29,6 +29,7 @@ Take what the arguments give, then **Ask the user** for every input still missin
 | route | `--route` | http: `"<METHOD> /path"`; each `{name}` names a typed id (`{itemId}` for `ItemId`; `{id}` when there is one id) |
 | ids | `--ids` | new typed ids the request uses, `Name:string\|Guid\|int`, names ending in `Id`; existing ids are reused |
 | ports | `--ports` | `Core` port interfaces the service needs; a missing one is created with its fake and contract base. `ports` + `TimeProvider` ≤ 5 |
+| slice-only | `--slice-only` | set when other branches scaffold slices into the same package in parallel (Sindri API spec C7, §12) |
 
 ## 2. Run the generator
 
@@ -39,7 +40,9 @@ node scripts/scaffold/new-slice.mjs --package <Pkg> --slice <Slice> --behavior <
 
 Pass `--slice-only` when other branches scaffold slices into the same package in parallel. It writes the slice's
 own files and only its lines in `A.cs`, `IdsJsonContext` and `PublicAPI.Unshipped.txt`, then prints the registration,
-table and JSON context lines to add by hand in the branch. A shared edit it would need is refused (`NS-SLICE-ONLY`).
+table and JSON context lines to add by hand in the branch, and the endpoint or command file to write by hand. A shared
+edit or new shared file it would need is refused (`NS-SLICE-ONLY`), including a missing `A.cs` or `IdsJsonContext`:
+the phase's contract unit adds those.
 
 It takes a slot of the heavy-job lock itself, writes the files, records the public API lines (every `RS0016` symbol the
 build reports for `Core` and `Features`, Vogen's generated id members included), then runs `dotnet build -warnaserror`, the unit lane (exactly one
