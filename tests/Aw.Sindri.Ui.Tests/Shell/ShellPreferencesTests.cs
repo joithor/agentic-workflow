@@ -71,6 +71,18 @@ public sealed class ShellPreferencesTests
     }
 
     [Fact]
+    public async Task A_shell_write_keeps_what_Settings_wrote_since_start_up()
+    {
+        var shell = await Shell();
+        await new Preferences(_store).Save(UiPreferences.Defaults with { TextScale = 1.2, ReduceMotion = true }, Token);
+
+        shell.ResizeSheet(600);
+
+        var stored = await Stored();
+        Assert.Equal((1.2, true, 600d), (stored.TextScale, stored.ReduceMotion, stored.SheetWidth));
+    }
+
+    [Fact]
     public async Task A_page_already_shown_is_not_written_again()
     {
         var shell = await Shell();
