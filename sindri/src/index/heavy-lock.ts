@@ -13,6 +13,7 @@ import type { SystemProbe } from "../system.js";
 // a mkdir mutex (mkdir to acquire, rmdir to release). A holder that knows only <lock> holds slot 1,
 // so the holders never outnumber the slots. Each slot has its own holder record beside it
 // (<slot>.holder.json, so the dir stays empty for rmdir) and its own takeover mutex (<slot>.reclaim).
+// Two jobs of the same kind (index-build:<repo>, suite:<id>) never hold slots at once.
 export interface HeavyHolder {
   kind: string;
   pid: number;
@@ -241,36 +242,59 @@ function busyText(deps: Deps, dir: string): { who: string; held: string } {
   };
 }
 
+// A live holder of another slot running the same kind of job (two index builds of one repo, one
+// suite twice): they would share files, so the later one gives its slot back and waits.
+function twinOf(deps: Deps, dirs: string[], mine: string, me: HeavyHolder): HeavyHolder | null {
+  for (const d of dirs) {
+    if (d === mine) continue;
+    const h = readHolder(d);
+    if (h !== null && h.kind === me.kind && !sameHolder(h, me) && !dead(h, deps.system)) return h;
+  }
+  return null;
+}
+
 export async function withHeavyLock<T>(deps: Deps, kind: string, timeoutMs: number, fn: () => Promise<T>): Promise<T> {
   const dirs = heavyLockDirs(awStateDir(deps), deps.env);
   fs.mkdirSync(path.dirname(dirs[0]), { recursive: true });
   const sys = deps.system;
   const fresh: HeavyHolder = { kind, pid: sys.pid, host: sys.hostname(), bootId: sys.bootId(), startedAt: deps.now().toISOString(), reclaimed: null };
-  let got: { dir: string; me: HeavyHolder; written: boolean } | null = null;
+  let got: { dir: string; me: HeavyHolder } | null = null;
   // Bounded by attempts, not wall time, so a fake clock can't loop forever.
   const attempts = Math.ceil(timeoutMs / 1000) + 1;
   for (let i = 1; got === null; i++) {
+    let twin: HeavyHolder | null = null;
     for (const [k, dir] of dirs.entries()) {
       const r = trySlot(deps, dir, k + 1, fresh);
-      if (r !== null) {
-        got = { dir, ...r };
-        break;
+      if (r === null) continue;
+      try {
+        if (!r.written) writeHolder(holderFile(dir), r.me);
+      } catch (e) {
+        release(deps, dir, r.me);
+        throw e;
       }
+      // Our record is written before we look, so of two same-kind jobs starting together at least one sees the other.
+      twin = dirs.length === 1 ? null : twinOf(deps, dirs, dir, r.me);
+      if (twin === null) got = { dir, me: r.me };
+      else release(deps, dir, r.me);
+      break;
     }
     if (got !== null) break;
     // One slot reads exactly as the single lock did; several name each slot's holder.
     const texts = dirs.map((d) => busyText(deps, d));
-    const busy = dirs.length === 1 ? `${texts[0].who}${texts[0].held}` : ` (all ${dirs.length} slots: ${texts.map((t, k) => `slot ${k + 1}${t.who}${t.held}`).join(" | ")})`;
+    const busy =
+      twin !== null
+        ? ` (${kind} already runs in another slot, pid ${twin.pid}, since ${twin.startedAt})`
+        : dirs.length === 1
+          ? `${texts[0].who}${texts[0].held}`
+          : ` (all ${dirs.length} slots: ${texts.map((t, k) => `slot ${k + 1}${t.who}${t.held}`).join(" | ")})`;
     if (i >= attempts) throw new SindriError("SND-INDEX-001", `the heavy-job lock is busy${busy}`);
-    if (i === 1) deps.log(dirs.length === 1 ? `waiting for the heavy-job lock${texts[0].who}` : `waiting for a heavy-job lock slot (all ${dirs.length} busy)`);
+    if (i === 1) deps.log(twin !== null ? `waiting for the other ${kind} to finish` : dirs.length === 1 ? `waiting for the heavy-job lock${texts[0].who}` : `waiting for a heavy-job lock slot (all ${dirs.length} busy)`);
     await deps.sleep(1000);
   }
-  const { dir, me } = got;
   try {
-    if (!got.written) writeHolder(holderFile(dir), me);
     return await fn();
   } finally {
-    release(deps, dir, me);
+    release(deps, got.dir, got.me);
   }
 }
 

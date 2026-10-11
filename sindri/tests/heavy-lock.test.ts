@@ -642,4 +642,26 @@ describe("heavy-job lock slots", () => {
     expect(heavyLockState(root, d.now, d.env).map((s) => s.held)).toEqual([true, false]);
     expect(fs.readFileSync(`${one}.holder.json`, "utf8")).toContain('"live"');
   });
+
+  it("never runs two jobs of the same kind at once: the second waits for the first, not for a slot", async () => {
+    const logs: string[] = [];
+    const d = anySlotDeps({ system: fakeSystem({ pidAlive: (p) => p !== 999 }), log: (l) => logs.push(l) });
+    const root = awStateDir(d);
+    const [one, two] = heavyLockDirs(root, d.env);
+    const other = anySlotDeps({ ...d, system: fakeSystem({ pid: 5151, pidAlive: (p) => p !== 999 }) });
+    await withHeavyLock(other, "index-build:web", 0, async () => {
+      const err = await withHeavyLock(d, "index-build:web", 1000, async () => 0).catch((e: unknown) => e);
+      expect((err as SindriError).code).toBe("SND-INDEX-001");
+      expect((err as SindriError).message).toMatch(/^the heavy-job lock is busy \(index-build:web already runs in another slot, pid 5151, since /);
+      // Its slot went back: nothing of it is left, and another kind still gets in.
+      expect(fs.existsSync(two)).toBe(false);
+      expect(await withHeavyLock(d, "index-build:api", 0, async () => fs.existsSync(two))).toBe(true);
+    });
+    expect(logs).toEqual(["waiting for the other index-build:web to finish"]);
+    // A dead twin doesn't count (its slot is taken over as usual).
+    fs.mkdirSync(one, { recursive: true });
+    fs.writeFileSync(`${one}.holder.json`, JSON.stringify({ kind: "index-build:web", pid: 999, host: "test-host", startedAt: "t" }));
+    expect(await withHeavyLock(d, "index-build:web", 0, async () => heavyLockState(root, d.now, d.env)[0].holder?.reclaimed)).toBe("dead pid 999 (index-build:web)");
+    expect(fs.readdirSync(path.dirname(one))).toEqual([]);
+  });
 });
