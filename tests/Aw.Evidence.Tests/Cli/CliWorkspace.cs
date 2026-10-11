@@ -36,8 +36,17 @@ internal sealed class CliWorkspace : IDisposable
         return running.WaitForExit();
     }
 
+    /// <summary>Runs ui-evidence to completion (at most <see cref="Limit"/>) with extra environment variables.</summary>
+    public (int Exit, string Out, string Err) RunWith(IReadOnlyDictionary<string, string> environment, params string[] args)
+    {
+        using var running = Start(environment, args);
+        return running.WaitForExit();
+    }
+
     /// <summary>Starts ui-evidence and returns while it runs, so a test can wait on its stderr and signal it.</summary>
-    public RunningCli Start(params string[] args)
+    public RunningCli Start(params string[] args) => Start(new Dictionary<string, string>(StringComparer.Ordinal), args);
+
+    private RunningCli Start(IReadOnlyDictionary<string, string> environment, string[] args)
     {
         var start = new ProcessStartInfo(DotnetHost())
         {
@@ -63,6 +72,11 @@ internal sealed class CliWorkspace : IDisposable
         start.Environment["AW_HEAVY_JOB_LOCK"] = HeavyJobLock;
         start.Environment["AW_HEAVY_SLOTS"] = "1";   // one slot, so a test can make the heavy-job lock busy with one directory
         start.Environment["AW_LOG_LEVEL"] = "none";   // the tests compare stderr
+        foreach (var (name, value) in environment)
+        {
+            start.Environment[name] = value;
+        }
+
         return new RunningCli(Process.Start(start)!);   // why: Process.Start returns null only for a shell-executed document
     }
 
