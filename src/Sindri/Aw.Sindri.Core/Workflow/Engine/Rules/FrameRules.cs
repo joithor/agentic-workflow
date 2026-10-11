@@ -53,6 +53,19 @@ public static class FrameRules
         throw new NotSupportedException("P3 unit (b): FrameRules.Pop");
 
     /// <summary>
+    /// <see cref="Pop(WorkflowInstance, Recipe, WorkflowInstanceId?, DateTimeOffset)"/> under the profile's timings: a
+    /// desk run's re-armed timeout is at least <see cref="EngineTimings.DeskTimeout"/> (W20). The overload with a time
+    /// uses <see cref="EngineTimings.Default"/>.
+    /// </summary>
+    /// <param name="instance">The instance.</param>
+    /// <param name="recipe">Its recipe (the state's timeout).</param>
+    /// <param name="child">The child whose mirroring frame to pop; null pops the top.</param>
+    /// <param name="context">The time and the timings.</param>
+    /// <returns>The popped instance and what to run, or SND-WF-003 when nothing fits.</returns>
+    public static Result<PopResult> Pop(WorkflowInstance instance, Recipe recipe, WorkflowInstanceId? child, DecisionContext context) =>
+        throw new NotSupportedException("P3 unit (b): FrameRules.Pop");
+
+    /// <summary>
     /// Whether <paramref name="answer"/> fits the current suspension (spec §3.8, §5.8): '--grant' on rounds or
     /// no-progress, '--grant-tokens' on budget, '--text' on needs-answer or no-progress, '--accept'/'--reject' on a
     /// gate escalation, '--resume' where §3.8 lists it. Otherwise SND-WF-003, whose fix names the answer that fits.
@@ -62,6 +75,24 @@ public static class FrameRules
     /// <returns>The resume action the answer runs, or SND-WF-003.</returns>
     public static Result<ResumeAction> Fits(WorkflowInstance instance, AnswerGiven answer) =>
         throw new NotSupportedException("P3 unit (b): FrameRules.Fits");
+
+    /// <summary>
+    /// <see cref="Fits(WorkflowInstance, AnswerGiven)"/> with the bounds that need the recipe (spec W7): '--grant n'
+    /// within 1..the loop's cap, and '--grant-tokens n' at most the original budget.
+    /// </summary>
+    /// <param name="instance">The instance.</param>
+    /// <param name="recipe">Its recipe (the loop's cap and the budget).</param>
+    /// <param name="answer">The answer.</param>
+    /// <returns>The resume action the answer runs, or SND-WF-003.</returns>
+    public static Result<ResumeAction> Fits(WorkflowInstance instance, Recipe recipe, AnswerGiven answer) =>
+        throw new NotSupportedException("P3 unit (b): FrameRules.Fits");
+
+    /// <summary>A handback (spec §3.8, W19): pops the taken-over frame back to whatever it covered, the paused deadlines re-armed from what remained.</summary>
+    /// <param name="instance">The taken-over instance.</param>
+    /// <param name="now">The time.</param>
+    /// <returns>The popped instance and its resume action ('return', or the pending park), or SND-WF-003 when it isn't taken over.</returns>
+    public static Result<PopResult> HandBack(WorkflowInstance instance, DateTimeOffset now) =>
+        throw new NotSupportedException("P3 unit (b): FrameRules.HandBack");
 
     /// <summary>A takeover (spec §3.8, W19): pushes a taken-over frame, pauses the deadlines, and arms a takeoverIdle deadline.</summary>
     /// <param name="instance">The instance (it may be parked or escalated).</param>
