@@ -180,6 +180,41 @@ blocks.
 | `SND-CLI-003` | Bad input: a CLI argument or setting that is malformed (a profile hash that isn't 64 hex digits, an `AW_SINDRI_PORT` that isn't 0..65535), or an API request body or value the control plane refused (a 400) |
 | `SND-SCHED-001` | A background service run failed |
 
+### Workflow errors (`WorkflowErrors`)
+
+The workflow engine's catalogue (engine spec §8) is a second class, `Aw.Sindri.Core.Workflow.WorkflowErrors`, validated
+together with `SindriErrors`. Retired codes stay reserved in `WorkflowErrors.Retired` and are never reused.
+
+| Code | Kind | When |
+|---|---|---|
+| `SND-RECIPE-001` | invalid | Validation failed; fix each `RCP-*` line |
+| `SND-RECIPE-002` | notFound | No recipe with that id or hash (`sindri recipe list`) |
+| `SND-RECIPE-003` | conflict | Not approved (`sindri recipe approve`) |
+| `SND-RECIPE-004` | — | Retired: a caller without a terminal gets the API's `SND-AUTH-002` |
+| `SND-RECIPE-005` | conflict | Revoked; approve a new version |
+| `SND-RECIPE-006` | conflict | A pinned block changed since approval; re-approve (`recipe list --stale`) |
+| `SND-RECIPE-007` | conflict | Same id and version, other content; raise `version` |
+| `SND-RECIPE-008` | conflict | Evals missing or failing (`sindri recipe eval <file>`) |
+| `SND-RECIPE-009` | conflict | A recipe challenge expired, or its subject changed since the preview |
+| `SND-RECIPE-010` | notFound | The recipe file can't be read |
+| `SND-WF-001` | notFound | No such instance (`sindri workflow list`) |
+| `SND-WF-002` | conflict | The instance changed; re-read and retry |
+| `SND-WF-003` | conflict | The trigger isn't allowed here (`allowedCommands` in `status`) |
+| `SND-WF-004` | conflict | A gate refused; act on the reasons |
+| `SND-WF-005` | conflict | A stale run token; use the token in `status` |
+| `SND-WF-006` | invalid | An ambiguous address; use a listed address |
+| `SND-WF-007` | — | Retired: authorization is the API's `SND-AUTH-002` |
+| `SND-WF-008` | invalid | A malformed desk report |
+| `SND-WF-009` | conflict | The command's nonce was used, expired or is for another version |
+| `SND-WF-010` | unavailable | No runtime for a named block or resource in this build |
+| `SND-WF-011` | forbidden | The effect kind isn't on the profile's effect allowlist (`workflow.effects`) |
+| `SND-WF-012` | conflict | An earlier attempt of this item is still live |
+| `SND-WF-013` | conflict | A workflow challenge expired, or its subject changed |
+| `SND-WF-014` | invalid | `--item` and `fact:item`'s `id` differ |
+
+`sindri recipe validate <file> [--json]` and `sindri recipe eval <file> [--json]` are local checker verbs (engine spec
+W27): exit 0 pass, 1 fail, 2 usage or tool error.
+
 ## Hook contract
 
 None in S1. The `Hooks → Sindri` cli edge in `deps.yaml` (sindri-nudge) is the TS sindri's until the switch; the C#
