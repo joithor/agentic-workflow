@@ -79,6 +79,11 @@ public sealed class RunPublishingTests
     }
 
     [Fact, Trait("Lane", "unit")]
-    public void Without_a_linear_issue_nothing_is_uploaded() =>
-        Assert.False(RunPublishing.Plan(A.RunSummary().Build(), DbProvenance.Seeded, hasLinearIssue: false).LinearUploadAllowed);
+    public void Without_a_linear_issue_nothing_is_uploaded_and_the_question_says_so()
+    {
+        var plan = RunPublishing.Plan(A.RunSummary().Build(), DbProvenance.Seeded, hasLinearIssue: false);
+
+        Assert.False(plan.LinearUploadAllowed);
+        Assert.Equal("Publish UI evidence for run run-1? DB provenance: seeded, but no Linear issue was given (no Linear upload).", plan.Question);
+    }
 }
