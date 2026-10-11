@@ -45,8 +45,10 @@ internal static class DecisionSql
         "ORDER BY ts DESC, rowid DESC LIMIT $count";
 
     // Read first: with nothing to drop (every question but the day's first) the prune never takes the write lock.
+    // CROSS JOIN keeps the order as written: scan decision_details (only the retention window) and look each decision
+    // up by id, so the cost doesn't grow with the decision history, which is never deleted.
     internal const string HasDetailsBefore =
-        "SELECT COUNT(*) FROM (SELECT 1 FROM decisions d JOIN decision_details x ON x.id = d.id WHERE d.ts < $before LIMIT 1)";
+        "SELECT COUNT(*) FROM (SELECT 1 FROM decision_details x CROSS JOIN decisions d ON d.id = x.id WHERE d.ts < $before LIMIT 1)";
 
     internal const string PruneDetailsBefore =
         "DELETE FROM decision_details WHERE id IN (SELECT id FROM decisions WHERE ts < $before)";

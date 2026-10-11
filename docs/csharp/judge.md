@@ -320,7 +320,8 @@ service: `PruneAfterQuestion`, registered in `AddJudgeFeatures` around `AskQuest
 asks `IDecisionLog.PruneDetailsBefore` for the details of decisions older than 30 days (`DecisionDetails.Retention`)
 before the start of today (UTC); the decision rows stay. A question that fails prunes nothing, and the prune's own
 result is ignored (best effort). The cutoff moves once a day, so only the day's first question finds anything to drop;
-the SQLite log reads first (`SELECT … LIMIT 1` over the `decisions.ts` index, no write lock) and opens a write
+the SQLite log reads first (`SELECT … LIMIT 1` that scans `decision_details`, which holds only the retention window,
+and looks each decision up by id, so its cost doesn't grow with the decision history; no write lock) and opens a write
 transaction only when there is something to delete, so a question never waits on another writer for retention. Pinned
 by `PruneAfterQuestionTests`, `PruneAfterQuestionCliTests` and `SqlitePruneTests`.
 
