@@ -2,9 +2,12 @@ using Aw.Judge.Core.Ids;
 
 namespace Aw.Judge.Core.Decisions;
 
-/// <summary>The detail row kept beside a decision (the 'decision_details' table); pruned after 30 days.</summary>
+/// <summary>The detail row kept beside a decision (the 'decision_details' table); pruned after <see cref="Retention"/>.</summary>
 public sealed record DecisionDetails
 {
+    /// <summary>How long a detail row is kept: a decision older than this keeps its row in 'decisions' but loses its details.</summary>
+    public static TimeSpan Retention { get; } = TimeSpan.FromDays(30);
+
     /// <summary>The redacted, capped input as JSON.</summary>
     public required string InputJson { get; init; }
 

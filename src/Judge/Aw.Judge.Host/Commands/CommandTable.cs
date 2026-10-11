@@ -38,7 +38,8 @@ internal static class CommandTable
             var services = scope.ServiceProvider;
             return args[0] switch
             {
-                _ when !_routed.Contains(args[0]) => await QuestionCommand.Run(args[0], rest, allowlist.Value.Allowed, services, json).ConfigureAwait(false),
+                _ when !_routed.Contains(args[0]) => await Housekeeping.AfterQuestion(
+                    await QuestionCommand.Run(args[0], rest, allowlist.Value.Allowed, services, json).ConfigureAwait(false), services).ConfigureAwait(false),
                 GetHealthCommand.Name when rest.Length == 0 => await GetHealthCommand.Run(services, json).ConfigureAwait(false),
                 GetHealthCommand.Name => CommandOutput.Usage("health"),
                 BriefCommands.Name => await BriefCommands.Run(rest, services, json).ConfigureAwait(false),

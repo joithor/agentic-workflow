@@ -17,7 +17,7 @@ public sealed class PruneDecisionDetailsTests
         await Decision("edge", TimeSpan.FromDays(30));
         await Decision("new", TimeSpan.FromDays(1));
 
-        var result = await new PruneDecisionDetailsService().Handle(new PruneDecisionDetailsRequest(), CancellationToken.None);
+        var result = await new PruneDecisionDetailsService(_decisions, _clock).Handle(new PruneDecisionDetailsRequest(), CancellationToken.None);
 
         Assert.Equal(1, result.Value.Pruned);
         Assert.Equal(["old:pruned", "edge:kept", "new:kept"], _decisions.Decisions.Select(d => $"{d.Id.Value}:{(d.Details is null ? "pruned" : "kept")}").ToList());
@@ -26,7 +26,9 @@ public sealed class PruneDecisionDetailsTests
     [Fact, Trait("Lane", "unit")]
     public async Task PruneDecisionDetails_returns_the_store_error_when_the_store_cant_be_used()
     {
-        var result = await new PruneDecisionDetailsService().Handle(new PruneDecisionDetailsRequest(), CancellationToken.None);
+        var service = new PruneDecisionDetailsService(new InMemoryDecisionLog { Unavailable = true }, _clock);
+
+        var result = await service.Handle(new PruneDecisionDetailsRequest(), CancellationToken.None);
 
         Assert.True(result.IsError);
     }

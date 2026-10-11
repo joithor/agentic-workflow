@@ -943,3 +943,4 @@ override Aw.Judge.Core.Ports.ProviderLineup.ToString() -> string!
 static Aw.Judge.Core.Ports.ProviderLineup.operator !=(Aw.Judge.Core.Ports.ProviderLineup? left, Aw.Judge.Core.Ports.ProviderLineup? right) -> bool
 static Aw.Judge.Core.Ports.ProviderLineup.operator ==(Aw.Judge.Core.Ports.ProviderLineup? left, Aw.Judge.Core.Ports.ProviderLineup? right) -> bool
 Aw.Judge.Core.Ports.IProviderCatalog.Lineup(Aw.Judge.Core.Config.ProvidersConfig? config, System.Collections.Generic.IReadOnlyCollection<Aw.Judge.Core.Providers.ProviderName>? allowed, Aw.Judge.Core.Ports.IModelProvider! rules) -> Aw.Judge.Core.Ports.ProviderLineup!
+static Aw.Judge.Core.Decisions.DecisionDetails.Retention.get -> System.TimeSpan
