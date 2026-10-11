@@ -14,14 +14,12 @@ checks:
     status: active
   - type: archunit
     id: "ARCH-PORT-001"
-    status: pending
-    pendingPr: 131
+    status: active
   - type: archunit
     id: "ARCH-PORT-002"
-    status: pending
-    pendingPr: 131
-gap: pending
-gapNote: "BannedSymbols covers Core's BCL I/O only; Aw.Kernel.Data, SQLitePCL, Npgsql, cache and queue clients, and Features/Commands/Host need the ArchUnitNET rules."
+    status: active
+gap: partial
+gapNote: "BannedSymbols and ARCH-PORT-001/002 keep the listed technology types out of Core, Features and App.Commands; a technology missing from that list and a top-level Program's body are reviewed, and each port's contract suite is fakes-with-contract-tests."
 source:
   type: import
   ref: ".agents/rules/csharp.md"

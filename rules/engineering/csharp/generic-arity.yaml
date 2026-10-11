@@ -10,10 +10,10 @@ select:
 checks:
   - type: analyzer
     id: "AW1009"
-    status: pending
-    pendingPr: 132
+    status: active
     note: "arity only: constraints stay a review item"
-gap: pending
+gap: partial
+gapNote: "AW1009 checks the arity; that the type parameters are constrained is reviewed."
 relatedIds: ["CA1005"]
 source:
   type: adr

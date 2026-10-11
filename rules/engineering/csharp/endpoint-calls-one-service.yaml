@@ -10,10 +10,10 @@ select:
 checks:
   - type: analyzer
     id: "AW1004"
-    status: pending
-    pendingPr: 132
+    status: active
     note: "endpoint lambdas only: CLI commands, branching on domain state, MapGroup and CreateSlimBuilder stay review items"
-gap: pending
+gap: partial
+gapNote: "AW1004 checks endpoint lambdas only: CLI commands, branching on domain state, MapGroup per feature and the CreateSlimBuilder host are reviewed (the scaffolds generate them that way)."
 source:
   type: adr
   ref: "docs/superpowers/specs/2026-10-09-agent-readiness-design.md#4b2"

@@ -10,9 +10,8 @@ select:
 checks:
   - type: archunit
     id: "ARCH-CYCLE-001"
-    status: pending
-    pendingPr: 131
-gap: pending
+    status: active
+gap: closed
 source:
   type: adr
   ref: "docs/superpowers/specs/2026-10-09-agent-readiness-design.md#4b1a"
