@@ -28,21 +28,29 @@ public sealed class FixtureRepo : IDisposable
     public IReadOnlyList<MergedPullRequest> PullRequests { get; }
 
     /// <summary>Builds the repo.</summary>
-    /// <param name="parentDirectory">Where to create it; a new temp directory when null.</param>
+    /// <param name="parentDirectory">
+    /// Where to create it: its new subfolder 'aw-split-panes', which must not exist yet (Dispose deletes it). A new temp
+    /// directory when null.
+    /// </param>
     /// <returns>The built repo.</returns>
     public static FixtureRepo Build(string? parentDirectory = null)
     {
         var root = parentDirectory is null
             ? Directory.CreateTempSubdirectory("aw-split-panes-").FullName
-            : Directory.CreateDirectory(System.IO.Path.Combine(parentDirectory, "aw-split-panes")).FullName;
+            : NewFolder(System.IO.Path.Combine(parentDirectory, "aw-split-panes"));
+        var built = false;
         try
         {
-            return Create(root);
+            var repo = Create(root);
+            built = true;
+            return repo;
         }
-        catch (InvalidOperationException)
+        finally
         {
-            Directory.Delete(root, recursive: true);
-            throw;
+            if (!built)
+            {
+                Directory.Delete(root, recursive: true);
+            }
         }
     }
 
@@ -54,6 +62,11 @@ public sealed class FixtureRepo : IDisposable
             Directory.Delete(_root, recursive: true);
         }
     }
+
+    private static string NewFolder(string path) =>
+        Directory.Exists(path) || File.Exists(path)
+            ? throw new InvalidOperationException($"'{path}' already exists; build the fixture repo into a parent without one.")
+            : Directory.CreateDirectory(path).FullName;
 
     private static FixtureRepo Create(string root)
     {

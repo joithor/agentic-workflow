@@ -92,7 +92,7 @@
       "expect": {
         "nodes": ["surface:setting/paneResizeStep", "feature:layout.pane-resize"],
         "absentNodes": [],
-        "records": ["linear:issue/0e5a1b00-0000-4000-8000-000000000105", "slack:C0FIXTURE01/1721900000.000100"],
+        "records": ["linear:issue/0e5a1b00-0000-4000-8000-000000000105", "slack:C0FIXTURE01/1784972400.000100"],
         "files": ["settings/default-settings.json", "src/settings/schema.ts", "src/layout/PaneResize.ts"],
         "decisions": []
       }

@@ -71,7 +71,7 @@
           "state": "Done",
           "project": "Split panes"
         },
-        "updated_at": "2026-07-15T09:35:00+00:00",
+        "updated_at": "2026-07-23T09:00:00+00:00",
         "primary_owners": [
           "Avery Fixture"
         ],
@@ -82,7 +82,8 @@
       "chunks": [
         "A toggle-orientation command (ctrl+shift+o) flips the split between vertical and horizontal.",
         "Decision: toggling orientation keeps the focused pane first, so the cursor never jumps. We considered swapping the pane order and rejected it.",
-        "Implemented as setOrientation in SplitPane.ts; it writes the orientation into PaneLayout."
+        "Implemented as setOrientation in SplitPane.ts; it writes the orientation into PaneLayout.",
+        "Checked after SPL-104 merged: a toggled tab comes back toggled when you switch back to it."
       ]
     },
     {
@@ -174,9 +175,9 @@
     },
     {
       "search_doc": {
-        "document_id": "C0FIXTURE01__1721900000.000100",
+        "document_id": "C0FIXTURE01__1784972400.000100",
         "semantic_identifier": "#split-panes: resize step",
-        "link": "https://fixture-labs.slack.com/archives/C0FIXTURE01/p1721900000000100",
+        "link": "https://fixture-labs.slack.com/archives/C0FIXTURE01/p1784972400000100",
         "blurb": "Should the resize step be configurable?",
         "source_type": "slack",
         "boost": 0,

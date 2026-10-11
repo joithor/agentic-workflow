@@ -60,11 +60,15 @@ public sealed partial class FixtureDataTests
         {
             var doc = Assert.Single(linearDocs, d => (string?)d["search_doc"]!["document_id"] == (string?)issue["id"])["search_doc"]!;
             Assert.Equal((string?)issue["identifier"], (string?)doc["metadata"]!["identifier"]);
+            var chunks = linearDocs.Single(d => (string?)d["search_doc"]!["document_id"] == (string?)issue["id"])["chunks"]!.AsArray().Select(c => (string?)c);
+            Assert.Equal(issue["comments"]!["nodes"]!.AsArray().Select(c => (string?)c!["body"]).Prepend((string?)issue["description"]), chunks, StringComparer.Ordinal);
             Assert.Equal(DateTimeOffset.Parse((string)issue["updatedAt"]!, CultureInfo.InvariantCulture),
                 DateTimeOffset.Parse((string)doc["updated_at"]!, CultureInfo.InvariantCulture));
         }
 
-        _ = Assert.Single(OnyxDocs(), d => (string?)d["search_doc"]!["source_type"] == "slack");
+        var slack = Assert.Single(OnyxDocs(), d => (string?)d["search_doc"]!["source_type"] == "slack")["search_doc"]!;
+        var ts = long.Parse(((string)slack["document_id"]!).Split("__")[1].Split('.')[0], CultureInfo.InvariantCulture);
+        Assert.Equal(DateTimeOffset.FromUnixTimeSeconds(ts), At(slack["updated_at"]));
     }
 
     [Fact]
@@ -72,12 +76,12 @@ public sealed partial class FixtureDataTests
     {
         var records = Nodes("linear/issues.json", "issues").Select(i => $"linear:issue/{i["id"]}")
             .Concat(Nodes("linear/documents.json", "documents").Select(d => $"linear:doc/{d["id"]}"))
-            .Append("slack:C0FIXTURE01/1721900000.000100")
+            .Append("slack:C0FIXTURE01/1784972400.000100")
             .ToHashSet(StringComparer.Ordinal);
         var files = SplitPanesFixture.ResourcePaths.Where(p => p.StartsWith("app/", StringComparison.Ordinal))
             .Select(p => p[(p.IndexOf('/', 4) + 1)..]).ToHashSet(StringComparer.Ordinal);
 
-        Assert.True(SplitPanesFixture.Probes.Count >= 8);
+        Assert.Equal(8, SplitPanesFixture.Probes.Count);
         foreach (var probe in SplitPanesFixture.Probes)
         {
             Assert.All(probe.Expect.Records, r => Assert.Contains(r, records));
@@ -96,6 +100,13 @@ public sealed partial class FixtureDataTests
         Assert.Equal("src/layout/PaneResize.ts", current.ConflictsWith);
         Assert.Contains("20 columns", current.Quote, StringComparison.Ordinal);
         Assert.Contains("MIN_PANE_COLUMNS = 10;", resize, StringComparison.Ordinal);
+        var superseded = Assert.Single(probe.Expect.Decisions, d => d.Status == "superseded");
+        Assert.Contains("10 columns", superseded.Quote, StringComparison.Ordinal);
+        Assert.Null(superseded.ConflictsWith);
+        var merged = SplitPanesFixture.History.PullRequests.Single(p => p.IssueKey == "SPL-105").MergedAt;
+        var comments = Nodes("linear/issues.json", "issues").Single(i => (string?)i["identifier"] == "SPL-105")["comments"]!["nodes"]!.AsArray();
+        Assert.True(At(comments.Single(c => ((string)c!["body"]!).Contains(superseded.Quote, StringComparison.Ordinal))!["createdAt"]) < merged);
+        Assert.True(At(comments.Single(c => ((string)c!["body"]!).Contains(current.Quote, StringComparison.Ordinal))!["createdAt"]) > merged);
     }
 
     [Fact]
@@ -120,6 +131,8 @@ public sealed partial class FixtureDataTests
 
     private static List<JsonNode> Nodes(string path, string field) =>
         [.. JsonNode.Parse(SplitPanesFixture.ReadText(path))!["data"]![field]!["nodes"]!.AsArray().Select(n => n!)];
+
+    private static DateTimeOffset At(JsonNode? value) => DateTimeOffset.Parse((string)value!, CultureInfo.InvariantCulture); // why: callers pass recorded date fields
 
     private static List<JsonNode> OnyxDocs() =>
         [.. JsonNode.Parse(SplitPanesFixture.ReadText("onyx/documents.json"))!["documents"]!.AsArray().Select(n => n!)];

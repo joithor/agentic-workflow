@@ -9,6 +9,10 @@ namespace Aw.Context.Testing.Tests;
 [Lane(TestLane.Integration)]
 public sealed class FixtureRepoTests
 {
+    // The head every machine must build (README "History"). It changes only with a reviewed change to the app files,
+    // history.json or the builder; .gitattributes keeps the fixture's bytes free of line-ending conversion.
+    private const string GoldenHead = "ad683496d8de39923e97e02c5936e599ff934050";
+
     [Fact]
     public void Build_merges_one_pull_request_per_history_entry_with_the_issue_key_in_branch_and_messages()
     {
@@ -45,6 +49,7 @@ public sealed class FixtureRepoTests
         using var second = FixtureRepo.Build();
 
         Assert.Equal(first.Head, second.Head);
+        Assert.Equal(GoldenHead, first.Head);
         Assert.Equal(first.Head, GitOut(first.Path, "rev-parse", "main"));
         var last = first.PullRequests[^1];
         Assert.Equal(last.MergedAt, DateTimeOffset.Parse(GitOut(first.Path, "log", "-1", "--format=%cI", last.MergeCommit), CultureInfo.InvariantCulture));
@@ -65,6 +70,25 @@ public sealed class FixtureRepoTests
         Assert.DoesNotContain(repo.PullRequests, p => p.IssueKey == "SPL-106");
         Assert.Empty(GitOut(repo.Path, "status", "--porcelain"));
         Assert.Empty(GitOut(repo.Path, "remote"));
+    }
+
+    [Fact]
+    public void A_second_build_into_the_same_parent_is_refused_and_leaves_the_first_intact()
+    {
+        var parent = Directory.CreateTempSubdirectory("aw-split-panes-parent-").FullName;
+        try
+        {
+            using var first = FixtureRepo.Build(parent);
+
+            var error = Assert.Throws<InvalidOperationException>(() => FixtureRepo.Build(parent));
+
+            Assert.Contains("already exists", error.Message, StringComparison.Ordinal);
+            Assert.Equal(first.Head, GitOut(first.Path, "rev-parse", "main"));
+        }
+        finally
+        {
+            Directory.Delete(parent, recursive: true);
+        }
     }
 
     [Fact]

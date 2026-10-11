@@ -141,7 +141,7 @@
           "url": "https://linear.app/fixture-labs/issue/SPL-103",
           "priority": 2,
           "createdAt": "2026-07-02T11:00:00.000Z",
-          "updatedAt": "2026-07-15T09:35:00.000Z",
+          "updatedAt": "2026-07-23T09:00:00.000Z",
           "completedAt": "2026-07-15T09:35:00.000Z",
           "state": {
             "name": "Done",
@@ -191,6 +191,16 @@
                 "user": {
                   "id": "0e5a1b00-0000-4000-8000-000000000901",
                   "name": "Avery Fixture"
+                }
+              },
+              {
+                "id": "0e5a1b00-0000-4000-8000-000000001033",
+                "body": "Checked after SPL-104 merged: a toggled tab comes back toggled when you switch back to it.",
+                "createdAt": "2026-07-23T09:00:00.000Z",
+                "updatedAt": "2026-07-23T09:00:00.000Z",
+                "user": {
+                  "id": "0e5a1b00-0000-4000-8000-000000000902",
+                  "name": "Rowan Sample"
                 }
               }
             ]
