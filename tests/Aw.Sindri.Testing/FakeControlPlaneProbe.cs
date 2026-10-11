@@ -8,7 +8,7 @@ namespace Aw.Sindri.Testing;
 public sealed class FakeControlPlaneProbe : IControlPlaneProbe
 {
     /// <summary>The answer the probe gives.</summary>
-    public Result<(ControlEndpoint Endpoint, Ping Ping)> Answer { get; set; } = SindriErrors.NotRunning.With("no control plane is recorded (fix: sindri)");
+    public Result<(ControlEndpoint Endpoint, Ping Ping)> Answer { get; set; } = SindriErrors.NotRunning.With("no control plane is recorded");
 
     /// <inheritdoc/>
     public ValueTask<Result<(ControlEndpoint Endpoint, Ping Ping)>> Check(CancellationToken cancellationToken) => ValueTask.FromResult(Answer);

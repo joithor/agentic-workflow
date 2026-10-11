@@ -21,7 +21,7 @@ internal sealed class HttpControlPlaneProbe(IEndpointFile endpoints, JsonSeriali
         var read = await endpoints.Read(cancellationToken).ConfigureAwait(false);
         if (read.IsError || read.Value is not { } endpoint)
         {
-            return SindriErrors.NotRunning.With("no control plane is recorded (fix: sindri)");
+            return SindriErrors.NotRunning.With("no control plane is recorded");
         }
 
         try
@@ -31,11 +31,11 @@ internal sealed class HttpControlPlaneProbe(IEndpointFile endpoints, JsonSeriali
             var ping = response.IsSuccessStatusCode ? AwJson.Deserialize<Ping>(body, options) : null;
             return ping is { IsSuccess: true } && ping.Value.Pid == endpoint.Pid
                 ? (endpoint, ping.Value)
-                : SindriErrors.NotRunning.With($"{endpoint.Url.Authority} answered, but not as the recorded control plane (fix: sindri)");
+                : SindriErrors.NotRunning.With($"{endpoint.Url.Authority} answered, but not as the recorded control plane");
         }
         catch (HttpRequestException)
         {
-            return SindriErrors.NotRunning.With($"nothing answers at {endpoint.Url.Authority}; the record is stale (fix: sindri)");
+            return SindriErrors.NotRunning.With($"nothing answers at {endpoint.Url.Authority}; the record is stale");
         }
         catch (TaskCanceledException) when (!cancellationToken.IsCancellationRequested)
         {

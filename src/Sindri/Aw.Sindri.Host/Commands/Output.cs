@@ -26,7 +26,9 @@ internal sealed class Output(TextWriter stdout, TextWriter stderr, JsonSerialize
     /// <summary>Prints the error; exit 1 for 'not running' (attention), 2 for everything else.</summary>
     public async Task<int> Error(Error error)
     {
-        await stderr.WriteLineAsync($"{error.Code} {error.Message}").ConfigureAwait(false);
-        return error.Code == SindriErrors.NotRunning.Code ? 1 : 2;
+        var notRunning = error.Code == SindriErrors.NotRunning.Code;
+        var fix = notRunning && !error.Message.Contains("fix:", StringComparison.Ordinal) ? " (fix: sindri)" : string.Empty;
+        await stderr.WriteLineAsync($"{error.Code} {error.Message}{fix}").ConfigureAwait(false);
+        return notRunning ? 1 : 2;
     }
 }

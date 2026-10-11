@@ -56,7 +56,7 @@ internal sealed class ControlPlaneClient(IControlPlaneProbe probe, JsonSerialize
         }
         catch (HttpRequestException e)
         {
-            return SindriErrors.NotRunning.With($"the control plane went away: {e.Message} (fix: sindri)");
+            return SindriErrors.NotRunning.With($"the control plane went away: {e.Message}");
         }
     }
 

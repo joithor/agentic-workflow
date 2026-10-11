@@ -68,39 +68,39 @@ internal sealed class Verbs(ControlPlaneClient client, Core.Control.IControlPlan
 
     internal async Task<int> Approve(string? hashText, bool interactive, TextReader input, CancellationToken ct)
     {
-        ProfileHash? hash = null;
-        if (hashText is not null)
+        ProfileHash? hash = hashText is not null && ProfileHash.TryFrom(hashText, out var parsed) ? parsed : null;
+        if (hashText is not null && hash is null)
         {
-            if (!ProfileHash.TryFrom(hashText, out var parsed))
-            {
-                return await output.Error(SindriErrors.ProfileHashMismatch.With($"'{hashText}' is not a profile hash (64 hex digits)")).ConfigureAwait(false);
-            }
-
-            hash = parsed;
+            return await output.Error(SindriErrors.ProfileHashMismatch.With($"'{hashText}' is not a profile hash (64 hex digits)")).ConfigureAwait(false);
         }
 
-        var confirmed = hash is { } h && await Confirm(h, interactive, input).ConfigureAwait(false);
-        if (hash is not null && !confirmed)
+        var refusal = hash is { } h ? await Confirmation(h, interactive, input).ConfigureAwait(false) : null;
+        if (refusal is not null)
         {
-            return await output.Error(SindriErrors.ProfileNeedsTerminal.With(interactive
-                ? "the confirmation didn't match; nothing was approved"
-                : "approving needs an interactive terminal: run it yourself and type the first 6 characters of the hash")).ConfigureAwait(false);
+            return await output.Error(refusal).ConfigureAwait(false);
         }
 
-        var answer = await client.Post<ApproveProfileRequest, ApproveProfileResponse>("/sindri/profile/approve", new ApproveProfileRequest(hash, confirmed), ct).ConfigureAwait(false);
+        var answer = await client.Post<ApproveProfileRequest, ApproveProfileResponse>("/sindri/profile/approve", new ApproveProfileRequest(hash, hash is not null), ct).ConfigureAwait(false);
         return answer.IsError ? await output.Error(answer.Error).ConfigureAwait(false) : await output.Text(ApprovalText(answer.Value, hash is null), answer.Value.Approved ? 0 : 1).ConfigureAwait(false);
     }
 
-    private async Task<bool> Confirm(ProfileHash hash, bool interactive, TextReader input)
+    private async Task<Kernel.Error?> Confirmation(ProfileHash hash, bool interactive, TextReader input)
     {
         if (!interactive)
         {
-            return false;
+            return SindriErrors.ProfileNeedsTerminal.With("approving needs an interactive terminal: run it yourself and type the first 6 characters of the hash");
         }
 
+        var typed = await Prompt(hash, input).ConfigureAwait(false);
+        return string.Equals(typed, hash.Abbreviated, StringComparison.Ordinal)
+            ? null
+            : SindriErrors.ProfileNeedsTerminal.With($"you typed '{typed}', not the hash's first 6 characters; nothing was approved");
+    }
+
+    private async Task<string?> Prompt(ProfileHash hash, TextReader input)
+    {
         await output.Out.WriteAsync($"Type the first 6 characters of {hash.Value} to approve it: ").ConfigureAwait(false);
-        var typed = (await input.ReadLineAsync().ConfigureAwait(false))?.Trim();
-        return string.Equals(typed, hash.Abbreviated, StringComparison.Ordinal);
+        return (await input.ReadLineAsync().ConfigureAwait(false))?.Trim();
     }
 
     private static string ApprovalText(ApproveProfileResponse a, bool preview) => (preview, a.Approved) switch
