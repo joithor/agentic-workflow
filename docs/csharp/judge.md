@@ -128,7 +128,7 @@ no arguments, and prints one envelope on stdout:
 | Outcome | Exit | Stdout |
 |---|---|---|
 | Decided | 0 | `{"decision", "confidence", "model", "reasonCode", "id"}` plus the question's declared extra fields (`chosenIndex`, `reasons`) when the deciding provider sent them; a provider's undeclared fields are dropped |
-| Escalated | 2 | `{"escalated": true, "reasonCode"}`, reason `question-disabled`, `invalid-input`, `below-threshold` or `no-provider-decided` |
+| Escalated | 2 | `{"escalated": true, "reasonCode"}`, reason `question-disabled`, `invalid-input`, `rule-timeout`, `below-threshold` or `no-provider-decided` |
 
 `model` is the provider that decided (`rules` for a pre-rule or a fallback rule), `id` the decision's id for `why`,
 `undo` and `approve`. Every call writes one decision row, escalations included. **Hook-contract exception:**
@@ -230,7 +230,10 @@ The answer's `choice`, `confidence` (1.0 when absent) and `probabilities` become
 
 `rules` closes every chain but decides nothing itself: pre-rules and fallback rules run in the engine, and the rules
 provider is the engine's (`Aw.Judge.Core.Evaluation`), always unavailable, never a failure. The catalog takes it as an
-argument.
+argument. The question rules (input checks, pre-rules, prompts, fallbacks) are regexes with a one-second match
+timeout, which a huge input can reach: a timeout writes a `rules`/`rule-timeout` failure row and escalates the call
+(outcome `failed`; for `ask-check` that means ask), except in a fallback, which then simply has no opinion. Any other
+exception from a rule is a bug in the question and is not caught.
 
 ### Reason codes
 

@@ -21,6 +21,9 @@ public static class EvaluationReasons
     /// <summary>No provider decided.</summary>
     public const string NoProviderDecided = "no-provider-decided";
 
+    /// <summary>A question rule (input check, pre-rule, prompt or fallback) hit its regex match timeout; failure row and escalation.</summary>
+    public const string RuleTimeout = "rule-timeout";
+
     /// <summary>Failure row: the provider threw.</summary>
     public const string ProviderThrew = "provider-threw";
 

@@ -951,3 +951,4 @@ Aw.Judge.Core.Processes.ProcessRequest.Unset.init -> void
 Aw.Judge.Core.Config.QuestionConfig.Deconstruct(out bool Enabled, out double? Threshold) -> void
 Aw.Judge.Core.Config.QuestionConfig.QuestionConfig(bool Enabled, double? Threshold = null) -> void
 Aw.Judge.Core.Config.QuestionConfig.Threshold.get -> double?
+const Aw.Judge.Core.Evaluation.EvaluationReasons.RuleTimeout = "rule-timeout" -> string!

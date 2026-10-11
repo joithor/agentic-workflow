@@ -98,9 +98,9 @@ public sealed class FallbackAndStorageTests
     }
 
     [Fact]
-    public async Task No_fallback_or_a_null_or_throwing_one_records_no_opinion()
+    public async Task No_fallback_a_null_one_or_one_that_times_out_records_no_opinion()
     {
-        foreach (var fallback in new Func<TextInput, string?>?[] { null, _ => null, _ => throw new InvalidOperationException("boom") })
+        foreach (var fallback in new Func<TextInput, string?>?[] { null, _ => null, _ => throw new System.Text.RegularExpressions.RegexMatchTimeoutException() })
         {
             var details = await Agreement(fallback, "send");
 
