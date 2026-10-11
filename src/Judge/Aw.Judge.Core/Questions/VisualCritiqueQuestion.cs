@@ -5,7 +5,8 @@ namespace Aw.Judge.Core.Questions;
 
 /// <summary>
 /// visual-critique: does a screenshot look right ('looks-right'), have specific problems ('looks-off') or look careless
-/// ('sloppy'), with 'reasons'? No rule: whether it looks right is exactly the judgment this question exists for.
+/// ('sloppy'), with 'reasons'? No rule: whether it looks right is exactly the judgment this question exists for. The
+/// input check wants an absolute evidence directory and screenshot paths relative to it that stay inside it.
 /// </summary>
 public static class VisualCritiqueQuestion
 {
@@ -37,7 +38,24 @@ public static class VisualCritiqueQuestion
         TimeBudget = TimeSpan.FromSeconds(20),
         ExtraProperties = new Dictionary<string, JsonObject>(StringComparer.Ordinal) { [ResolutionCheckQuestion.Reasons] = ResolutionCheckQuestion.StringList() },
         Prompt = Prompt,
+        InputProblem = InputProblem,
     };
+
+    // The evidence directory is the CLIs' working directory and their Read scope: it must be absolute, and each
+    // screenshot a relative path that stays inside it.
+    internal static string? InputProblem(VisualCritiqueInput input) =>
+        !IsAbsolute(input.EvidenceDir) ? "evidenceDir must be an absolute path"
+        : !StaysInside(input.AfterScreenshot) ? "afterScreenshot must be a relative path inside evidenceDir"
+        : input.BaselineScreenshot is { } baseline && !StaysInside(baseline) ? "baselineScreenshot must be a relative path inside evidenceDir"
+        : null;
+
+    private static bool IsAbsolute(string path) =>
+        path.StartsWith('/') || (path.Length >= 3 && char.IsAsciiLetter(path[0]) && path[1] == ':' && path[2] is '/' or '\\');
+
+    private static bool StaysInside(string path) =>
+        path.Length > 0
+        && !path.StartsWith('/') && !path.StartsWith('\\') && !(path.Length >= 2 && path[1] == ':')
+        && !path.Split('/', '\\').Contains("..", StringComparer.Ordinal);
 
     // Provider-neutral: a CLI provider reads the file from the evidence directory or attaches it as an image.
     private static string Prompt(VisualCritiqueInput input) => string.Join('\n',

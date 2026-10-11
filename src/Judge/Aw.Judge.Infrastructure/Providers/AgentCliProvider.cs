@@ -79,8 +79,12 @@ internal abstract class AgentCliProvider(IProcessRunner runner, AgentCliName cli
     /// <returns>Decided, or errored with why.</returns>
     protected abstract ProviderResult Read(string output, QuestionRef question);
 
+    // Null (invalid-image-input) when the paths are missing or the directory isn't absolute, which the question's own
+    // check already refuses; resolving a relative directory would throw.
     private static ImageEvidence? Evidence(JsonNode? input) =>
-        input is JsonObject ? WireJson.Read<ImageEvidence>(WireJson.Text(input)) : null;
+        input is JsonObject && WireJson.Read<ImageEvidence>(WireJson.Text(input)) is { } evidence && Path.IsPathFullyQualified(evidence.EvidenceDir)
+            ? evidence
+            : null;
 
     private ProcessRequest Request(AgentCliCall call, TimeSpan budget) => new()
     {
