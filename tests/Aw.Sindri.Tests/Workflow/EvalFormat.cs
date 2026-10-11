@@ -2,7 +2,7 @@ using System.Text.Json;
 
 namespace Aw.Sindri.Tests.Workflow;
 
-/// <summary>The §9.2 eval line shapes: line 1 '{ start: { inputs } }', then '{ trigger, gates?, expect }' lines.</summary>
+/// <summary>The §9.2 eval line shapes: line 1 '{ start: { inputs } }', then '{ trigger, gates?, expect }' lines; a 'child.parked' trigger carries the child's reason in 'park'.</summary>
 internal static class EvalFormat
 {
     private static readonly string[] _verdicts = ["pass", "fail", "uncertain"];
@@ -28,8 +28,12 @@ internal static class EvalFormat
         Assert.Subset(Set("trigger", "gates", "expect"), Names(root));
 
         var trigger = root.GetProperty("trigger");
-        Assert.Subset(Set("kind", "outcome", "outputs"), Names(trigger));
+        Assert.Subset(Set("kind", "outcome", "outputs", "park"), Names(trigger));
         Assert.Equal(JsonValueKind.String, trigger.GetProperty("kind").ValueKind);
+        if (trigger.TryGetProperty("park", out _))
+        {
+            Assert.Equal("child.parked", trigger.GetProperty("kind").GetString());
+        }
         if (root.TryGetProperty("gates", out var gates))
         {
             Assert.All(gates.EnumerateObject(), g => Assert.Contains(g.Value.GetString(), _verdicts, StringComparer.Ordinal));
