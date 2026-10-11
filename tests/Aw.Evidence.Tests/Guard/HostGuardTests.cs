@@ -59,6 +59,14 @@ public sealed class HostGuardTests
         Assert.Equal(aborted, HostGuard.IsOffOriginNavigation("http://localhost:3000", url, isNavigation));
 
     [Theory, Trait("Lane", "unit")]
+    [InlineData("https://app.example:8443/dashboard?token=x", "https://app.example:8443")]
+    [InlineData("http://127.0.0.1:5000/login", "http://127.0.0.1:5000")]
+    [InlineData("data:text/html,<form>", "data:")]
+    [InlineData("::not a url::", "an unparseable URL")]
+    public void A_page_is_named_by_its_origin_never_its_path_or_query(string url, string named) =>
+        Assert.Equal(named, HostGuard.OriginOf(url));
+
+    [Theory, Trait("Lane", "unit")]
     [InlineData("http://localhost:3000", true)]
     [InlineData("http://127.0.0.1:4000", true)]
     [InlineData("https://pr-1.vitalize.build", false)]

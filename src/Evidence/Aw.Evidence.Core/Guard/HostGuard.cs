@@ -58,6 +58,19 @@ public static partial class HostGuard
             || Uri.Compare(target, vetted, UriComponents.SchemeAndServer, UriFormat.Unescaped, StringComparison.OrdinalIgnoreCase) != 0;
     }
 
+    /// <summary>Names where <paramref name="url"/> is, for a message: its origin, its scheme when it has no host (data:), never its path or query.</summary>
+    /// <param name="url">A page's URL.</param>
+    /// <returns>The origin, '&lt;scheme&gt;:', or 'an unparseable URL'.</returns>
+    public static string OriginOf(string url)
+    {
+        if (!Uri.TryCreate(url, UriKind.Absolute, out var parsed))
+        {
+            return "an unparseable URL";
+        }
+
+        return parsed.Authority.Length > 0 ? parsed.GetLeftPart(UriPartial.Authority) : parsed.Scheme + ":";
+    }
+
     private static string? BareOriginProblem(Uri url, string text)
     {
         if (url.UserInfo.Length > 0)

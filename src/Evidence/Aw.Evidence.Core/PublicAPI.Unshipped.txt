@@ -1350,6 +1350,7 @@ static Aw.Evidence.Core.Geometry.ViewportSize.operator ==(Aw.Evidence.Core.Geome
 static Aw.Evidence.Core.Guard.Credentials.Read(Aw.Evidence.Core.Guard.ISecretsSource! secrets, string! emailName, string! passwordName) -> Aw.Kernel.Result<Aw.Evidence.Core.Guard.Credentials!>!
 static Aw.Evidence.Core.Guard.HostGuard.IsLocal(string! origin) -> bool
 static Aw.Evidence.Core.Guard.HostGuard.IsOffOriginNavigation(string! origin, string! url, bool isNavigation) -> bool
+static Aw.Evidence.Core.Guard.HostGuard.OriginOf(string! url) -> string!
 static Aw.Evidence.Core.Guard.HostGuard.Resolve(string? host, bool allowPreviewHost) -> Aw.Kernel.Result<Aw.Evidence.Core.Guard.ResolvedHost!>!
 static Aw.Evidence.Core.Guard.ProvenanceRules.Effective(string! host, Aw.Evidence.Core.Guard.DbProvenance claimed) -> Aw.Evidence.Core.Guard.DbProvenance
 static Aw.Evidence.Core.Guard.ProvenanceRules.For(Aw.Evidence.Core.Guard.HostKind kind, Aw.Evidence.Core.Guard.DbProvenance? database) -> Aw.Evidence.Core.Guard.Provenance
