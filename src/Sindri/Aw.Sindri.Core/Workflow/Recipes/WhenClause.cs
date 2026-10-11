@@ -1,3 +1,4 @@
+using System.Text.Json.Serialization;
 using Aw.Sindri.Core.Workflow.Ids;
 
 namespace Aw.Sindri.Core.Workflow.Recipes;
@@ -14,6 +15,7 @@ namespace Aw.Sindri.Core.Workflow.Recipes;
 /// <param name="All">Holds when every clause holds.</param>
 /// <param name="Any">Holds when at least one clause holds.</param>
 /// <param name="Not">Holds when the clause doesn't.</param>
+[JsonUnmappedMemberHandling(JsonUnmappedMemberHandling.Disallow)]
 public sealed record WhenClause(
     OutcomeName? Outcome,
     FactKey? Fact,

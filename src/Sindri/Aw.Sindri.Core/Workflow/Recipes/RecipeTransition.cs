@@ -1,3 +1,4 @@
+using System.Text.Json.Serialization;
 using Aw.Sindri.Core.Workflow.Ids;
 
 namespace Aw.Sindri.Core.Workflow.Recipes;
@@ -11,6 +12,7 @@ namespace Aw.Sindri.Core.Workflow.Recipes;
 /// <param name="Evidence">The evidence it requires.</param>
 /// <param name="Effects">The effects it emits.</param>
 /// <param name="Produces">The facts it records, each an output or fact of the trigger's source (RCP-WIRE-002).</param>
+[JsonUnmappedMemberHandling(JsonUnmappedMemberHandling.Disallow)]
 public sealed record RecipeTransition(
     IReadOnlyList<string> From,
     string To,

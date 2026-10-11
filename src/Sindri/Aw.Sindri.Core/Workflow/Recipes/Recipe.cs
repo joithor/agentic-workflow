@@ -1,3 +1,4 @@
+using System.Text.Json.Serialization;
 using Aw.Sindri.Core.Workflow.Ids;
 
 namespace Aw.Sindri.Core.Workflow.Recipes;
@@ -20,6 +21,7 @@ namespace Aw.Sindri.Core.Workflow.Recipes;
 /// <param name="Budget">The recipe-wide budget.</param>
 /// <param name="Evals">The eval files, relative to the recipe's directory (spec §9.2).</param>
 /// <param name="Hash">The hash the file states, checked when present (RCP-HASH-001).</param>
+[JsonUnmappedMemberHandling(JsonUnmappedMemberHandling.Disallow)]
 public sealed record Recipe(
     int Schema,
     RecipeId Id,

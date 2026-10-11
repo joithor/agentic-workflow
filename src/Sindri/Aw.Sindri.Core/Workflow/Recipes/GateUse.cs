@@ -1,3 +1,4 @@
+using System.Text.Json.Serialization;
 using Aw.Sindri.Core.Workflow.Ids;
 
 namespace Aw.Sindri.Core.Workflow.Recipes;
@@ -6,4 +7,5 @@ namespace Aw.Sindri.Core.Workflow.Recipes;
 /// <param name="Use">The gate block.</param>
 /// <param name="Threshold">The score a rung-2 or rung-3 gate must reach (W4; RCP-THRESH-001/002).</param>
 /// <param name="With">Its arguments by parameter name.</param>
+[JsonUnmappedMemberHandling(JsonUnmappedMemberHandling.Disallow)]
 public sealed record GateUse(BlockId Use, double? Threshold, IReadOnlyDictionary<string, WithValue> With);

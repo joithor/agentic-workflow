@@ -1,3 +1,4 @@
+using System.Text.Json.Serialization;
 using Aw.Sindri.Core.Workflow.Ids;
 
 namespace Aw.Sindri.Core.Workflow.Recipes;
@@ -17,6 +18,7 @@ namespace Aw.Sindri.Core.Workflow.Recipes;
 /// <param name="Budget">The state's token budget.</param>
 /// <param name="Next">What the human reads next, with recipe variables (spec §3.7).</param>
 /// <param name="Outcome">A terminal state's outcome: resolved, unresolved, alreadySatisfied or failed.</param>
+[JsonUnmappedMemberHandling(JsonUnmappedMemberHandling.Disallow)]
 public sealed record RecipeState(
     StateKind Kind,
     StepUse? Step,
