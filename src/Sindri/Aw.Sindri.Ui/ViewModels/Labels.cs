@@ -116,7 +116,12 @@ internal static class Labels
     /// <summary>"updated Ns ago" (seconds under a minute, then minutes, then hours).</summary>
     /// <param name="age">How long ago the view was last read.</param>
     /// <returns>The words.</returns>
-    internal static string UpdatedAgo(TimeSpan age) => throw new NotSupportedException();
+    internal static string UpdatedAgo(TimeSpan age) => age.TotalSeconds switch
+    {
+        < 60 => string.Create(CultureInfo.InvariantCulture, $"updated {Math.Max(0, (int)age.TotalSeconds)}s ago"),
+        < 3600 => string.Create(CultureInfo.InvariantCulture, $"updated {(int)age.TotalMinutes}m ago"),
+        _ => string.Create(CultureInfo.InvariantCulture, $"updated {(int)age.TotalHours}h ago"),
+    };
 
     // The tray (§5). U0 knows no counts; U2/U3 add "Sindri · N running · nothing needs you" and the needs-you tooltips.
 

@@ -67,7 +67,8 @@ internal sealed class SindriApiClient(HttpClient http) : ISindriApi
         deadline.CancelAfter(_callTimeout);
         try
         {
-            using var response = await http.GetAsync(new Uri(api, path), deadline.Token).ConfigureAwait(false);
+            using var request = Request(new Uri(api, path));
+            using var response = await http.SendAsync(request, deadline.Token).ConfigureAwait(false);
             var body = await response.Content.ReadAsByteArrayAsync(deadline.Token).ConfigureAwait(false);
             if (!response.IsSuccessStatusCode)
             {
@@ -87,10 +88,20 @@ internal sealed class SindriApiClient(HttpClient http) : ISindriApi
         }
     }
 
+    // Every request says who the app is to the API (UI spec §9.1, API §6): a human, from the UI. Never X-Sindri-Terminal
+    // (the app is no terminal, so protected actions stay at the CLI) and never Origin (commands refuse it).
+    private static HttpRequestMessage Request(Uri url)
+    {
+        var request = new HttpRequestMessage(HttpMethod.Get, url);
+        request.Headers.Add("X-Sindri-Caller", "human");
+        request.Headers.Add("X-Sindri-Client", "ui");
+        return request;
+    }
+
     // The open event-stream response (owned by the caller), or null when it didn't answer 2xx or nothing answered.
     private async Task<HttpResponseMessage?> Open(Uri url, CancellationToken cancellationToken)
     {
-        using var request = new HttpRequestMessage(HttpMethod.Get, url);
+        using var request = Request(url);
         request.Headers.Accept.ParseAdd("text/event-stream");
         try
         {

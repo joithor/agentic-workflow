@@ -1,3 +1,6 @@
+using Aw.Kernel.Json;
+using Aw.Sindri.Ui.Api;
+
 namespace Aw.Sindri.Ui.Platform;
 
 /// <summary>
@@ -64,11 +67,33 @@ public sealed record UiPreferences(
     /// <summary>Parses a preferences file.</summary>
     /// <param name="json">The file's bytes.</param>
     /// <returns>The clamped preferences, or <see cref="Defaults"/> when the file is malformed or of another version.</returns>
-    public static UiPreferences FromJson(ReadOnlySpan<byte> json) => throw new NotSupportedException();
+    public static UiPreferences FromJson(ReadOnlySpan<byte> json)
+    {
+        var file = AwJson.Deserialize<PreferencesFile>(json, SindriApiClient.Json);
+        if (file.IsError || file.Value.Version != CurrentVersion)
+        {
+            return Defaults;
+        }
 
-    /// <summary>The preferences as the file's bytes (UTF-8 JSON, camelCase).</summary>
+        var f = file.Value;
+        return new UiPreferences(
+            f.Version,
+            f.Window,
+            f.SheetWidth ?? DefaultSheetWidth,
+            f.LastPage ?? DefaultPage,
+            f.SeenIds ?? [],
+            f.PaletteHistory ?? [],
+            f.TextScale ?? Defaults.TextScale,
+            f.ReduceMotion ?? Defaults.ReduceMotion).Clamp();
+    }
+
+    /// <summary>The preferences as the file's bytes (UTF-8 JSON, camelCase), clamped first, so a file never holds a value out of range.</summary>
     /// <returns>The bytes.</returns>
-    public byte[] ToJson() => throw new NotSupportedException();
+    public byte[] ToJson()
+    {
+        var p = Clamp();
+        return AwJson.Serialize(new PreferencesFile(p.Version, p.Window, p.SheetWidth, p.LastPage, p.SeenIds, p.PaletteHistory, p.TextScale, p.ReduceMotion), SindriApiClient.Json);
+    }
 
     /// <summary>
     /// These preferences within their limits: bounds below the window minimum grow to it (bounds that aren't finite are
@@ -76,7 +101,35 @@ public sealed record UiPreferences(
     /// <see cref="DefaultPage"/>, blank and repeated ids are dropped and the lists keep their newest entries.
     /// </summary>
     /// <returns>The clamped preferences.</returns>
-    public UiPreferences Clamp() => throw new NotSupportedException();
+    public UiPreferences Clamp() => new(
+        CurrentVersion,
+        Window is { } w && double.IsFinite(w.X) && double.IsFinite(w.Y) && double.IsFinite(w.Width) && double.IsFinite(w.Height)
+            ? w with { Width = Math.Max(w.Width, MinWidth), Height = Math.Max(w.Height, MinHeight) }
+            : null,
+        double.IsFinite(SheetWidth) ? Math.Clamp(SheetWidth, MinSheetWidth, MaxSheetWidth) : DefaultSheetWidth,
+        Pages.Contains(LastPage, StringComparer.Ordinal) ? LastPage : DefaultPage,
+        Newest(SeenIds, MaxSeenIds),
+        Newest(PaletteHistory, MaxPaletteHistory),
+        double.IsFinite(TextScale) ? Math.Clamp(TextScale, MinTextScale, MaxTextScale) : Defaults.TextScale,
+        ReduceMotion);
+
+    // The non-blank entries, each once (at its newest place), keeping the newest 'max'.
+    private static string[] Newest(IReadOnlyList<string>? entries, int max)
+    {
+        var kept = new List<string>();
+        var seen = new HashSet<string>(StringComparer.Ordinal);
+        for (var i = (entries?.Count ?? 0) - 1; i >= 0 && kept.Count < max; i--)
+        {
+            var entry = entries![i]; // why: Count is 0 when null, so the loop doesn't run
+            if (!string.IsNullOrWhiteSpace(entry) && seen.Add(entry))
+            {
+                kept.Add(entry);
+            }
+        }
+
+        kept.Reverse();
+        return [.. kept];
+    }
 
     /// <inheritdoc />
     public bool Equals(UiPreferences? other) =>
