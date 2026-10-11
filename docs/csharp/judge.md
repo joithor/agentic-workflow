@@ -391,7 +391,7 @@ reads a TS-written file.
 | File | Holds |
 |---|---|
 | `decisions.sqlite` | WAL SQLite (`Aw.Kernel.Data`), migrations embedded in `Aw.Judge.Infrastructure/Sqlite/Migrations/` (`0001_judge.sql`, `0002_approved_at.sql`; a migration is never edited once merged): `decisions` (one row per decision, `approved_at` from 0002), `decision_details` (the redacted input and the provider's detail, pruned after 30 days), `failures` (provider failures, for `health`), `briefs` (the dispatch briefs, their texts redacted and capped), `schema_version` |
-| `config.json` | `JudgeConfig`, written by `config set`; absent means the defaults |
+| `config.json` | `JudgeConfig`, written by `config set` (a temporary file in the same directory renamed over it, so a question never reads a half-written file); absent means the defaults |
 
 ## Environment
 
