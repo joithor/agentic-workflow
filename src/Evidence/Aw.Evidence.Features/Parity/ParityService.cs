@@ -5,6 +5,7 @@ using Aw.Evidence.Core.Guard;
 using Aw.Evidence.Core.Ids;
 using Aw.Evidence.Core.Locks;
 using Aw.Evidence.Core.Runs;
+using Aw.Evidence.Core.Scripts;
 using Aw.Kernel;
 using Aw.Kernel.Services;
 
@@ -23,7 +24,7 @@ internal sealed class ParityService(ParityFilesAccess files, IMachineLocks locks
     {
         var manifest = await files.ReadManifestAsync(request.ManifestPath, cancellationToken).ConfigureAwait(false);
         var host = manifest.Bind(_ => HostGuard.Resolve(request.Host, request.AllowPreviewHost));
-        var vetted = host.Bind(_ => StepGuard.ForParity([.. manifest.Value.Frames.SelectMany(static f => f.Steps)], request.AllowWrites));
+        var vetted = host.Bind(_ => StepGuard.ForParity(StepsOf(manifest.Value), request.AllowWrites));
         var credentials = vetted.Bind(_ => ReadCredentials(manifest.Value));
         if (credentials.IsError)
         {
@@ -71,6 +72,10 @@ internal sealed class ParityService(ParityFilesAccess files, IMachineLocks locks
         manifest.Login is { } login
             ? Credentials.Read(secrets, login.EmailEnv, login.PasswordEnv).Map(static c => new SignIn(c))
             : new SignIn(Credentials: null);
+
+    // The route is opened first, so it is vetted as the goto it is, ahead of every frame's steps.
+    private static List<ScriptStep> StepsOf(DesignManifest manifest) =>
+        [new ScriptStep(StepAction.Goto, manifest.Route, new UrlPath(manifest.Route)), .. manifest.Frames.SelectMany(static f => f.Steps)];
 
     private static string DirectoryOf(string path) => path[..Math.Max(1, path.LastIndexOf('/'))];
 
