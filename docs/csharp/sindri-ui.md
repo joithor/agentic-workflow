@@ -95,5 +95,5 @@ AvaloniaTestApplication]`. Revisit when an `Avalonia.Headless.XUnit` built again
 ```bash
 dotnet test --project tests/Aw.Sindri.Ui.Tests --filter-trait "Lane=unit"
 dotnet test --project tests/Aw.Sindri.Ui.Tests --filter-trait "Lane=integration"
-dotnet publish src/Sindri/Aw.Sindri.Ui.Desktop -r osx-arm64 -o <dir>   # NativeAOT sindri-ui (lock files set aside, as the aot-smoke scripts do)
+bash src/Sindri/Aw.Sindri.Ui.AotSmoke/run.sh [<dir>]   # NativeAOT sindri-ui on a copy (CI's AOT step); copies it to <dir> when given
 ```

@@ -2,7 +2,8 @@
 # NativeAOT publish check for the Sindri app's desktop head (src/Sindri/Aw.Sindri.Ui.Desktop, docs/csharp/sindri-ui.md):
 # publish sindri-ui with PublishAot for the host RID and fail on any trim/AOT (IL2xxx/IL3xxx) warning or a missing
 # binary. It doesn't open a window (CI has no display); the hand test and the headless view tests cover what it shows.
-# Output goes to artifacts/aot-sindri-ui/ (gitignored); the publish runs on a copy, like run.sh, so the RID's ILCompiler
+# CI's AOT step runs it (the src/*/*.AotSmoke/run.sh glob). Output goes to artifacts/aot-sindri-ui/ (gitignored); the
+# publish runs on a copy, like src/Sindri/aot-smoke/run.sh, so the RID's ILCompiler
 # packs never reach the checkout's lock files. Pass a directory to also copy sindri-ui there (next to a published sindri).
 set -euo pipefail
 

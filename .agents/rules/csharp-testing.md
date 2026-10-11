@@ -99,7 +99,8 @@ ArchUnitNET (not NetArchTest), in the `unit` lane, in `tests/Aw.Architecture.Tes
 | `ARCH-DI-001` | Service-locator types only in Host (with `Program`; small shape: the `App` root namespace and `App.Commands`) and `*ServiceCollectionExtensions` classes |
 | `ARCH-PORT-001`, `002` | No technology type in Core, Features or the small shape's `App.Commands`; only `Composition` uses Infrastructure |
 | `ARCH-ID-001`, `002` | `TypedIdGuard`: the VogenDefaults block, and every id and id property (`docs/csharp/typed-ids.md`) |
-| `ARCH-REG-001`, `002` | `Packages.cs` lists every production project in the solution (by project name; analyzers excluded), and each one's assembly (its `<AssemblyName>` if set) loads |
+| `ARCH-REG-001`, `002`, `003` | `Packages.cs` lists every production project in the solution (by project name; analyzers excluded), each one's assembly (its `<AssemblyName>` if set) loads, and a project that is neither tier 0 nor a layer project is declared in `Packages.Unshaped` (the UI and its heads) |
+| `ARCH-UI-001` | The UI package: a view model uses no `Avalonia.*` type; a platform head holds no view or view model |
 
 The layer rules apply to shaped packages (assemblies named `Aw.<Pkg>.Core`, `.Features`, `.Infrastructure`, `.Host`
 or `.App`, and not tier 0 in `deps.yaml`, which `RegistryTests` checks against `Rules/TierZero.cs`); tier-0 packages (`Aw.Kernel`, `Aw.Kernel.Data`) get the cycle, naming, service-provider and typed-id rules.
