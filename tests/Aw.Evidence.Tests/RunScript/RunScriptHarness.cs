@@ -33,6 +33,8 @@ internal sealed class RunScriptHarness
 
     public Dictionary<string, string> Settings { get; } = new(StringComparer.Ordinal);
 
+    public SequentialIds Ids { get; } = new();
+
     public FakeTimeProvider Clock { get; } = new(new DateTimeOffset(2026, 10, 10, 12, 0, 0, TimeSpan.Zero));
 
     public byte[] WithScript(UiScript script)
@@ -52,7 +54,7 @@ internal sealed class RunScriptHarness
         var run = new ScriptRun(Browser, new StepRunner(Judge, Clock), Files, settings);
         var verdict = new RunVerdict(new VisualGate(Files, Codec, Judge, Clock, json), Cache, settings, json);
         var service = new ValidatingService<RunScriptRequest, RunScriptResponse>(
-            new RunScriptService(new ScriptFiles(Files, json), Locks, run, verdict, Clock), new RunScriptValidator());
+            new RunScriptService(new ScriptFiles(Files, json), Locks, run, verdict, Clock, Ids), new RunScriptValidator());
         return service.Handle(request, interrupt);
     }
 }

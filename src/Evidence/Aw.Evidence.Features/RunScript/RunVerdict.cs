@@ -1,7 +1,6 @@
 using System.Text.Json;
 using Aw.Evidence.Core.Files;
 using Aw.Evidence.Core.Guard;
-using Aw.Evidence.Core.Ids;
 using Aw.Evidence.Core.Runs;
 using Aw.Evidence.Core.Scripts;
 using Aw.Evidence.Core.Steps;
@@ -20,8 +19,9 @@ internal sealed class RunVerdict(VisualGate gate, IVerdictCacheStore store, ISec
     internal const string DefaultModel = "judge-default";
     internal const string CacheFile = "verdict-cache.json";
 
-    internal async ValueTask<RunVisual> DecideAsync(RunScriptRequest request, UiScript script, DrivenRun driven, InvocationLog log, CancellationToken cancellationToken)
+    internal async ValueTask<RunVisual> DecideAsync(VerdictRun run, InvocationLog log, CancellationToken cancellationToken)
     {
+        var (request, script, driven) = (run.Request, run.Script, run.Driven);
         var lastPassed = driven.Steps.LastOrDefault(static s => s.Status == StepStatus.Passed);
         if (lastPassed is null)
         {
@@ -42,7 +42,7 @@ internal sealed class RunVerdict(VisualGate gate, IVerdictCacheStore store, ISec
             lastPassed.Screenshot,
             request.Baseline,
             driven.Steps.Any(static s => s.Status != StepStatus.Passed),
-            RunId.From(RunPath.NameOf(request.RunDirectory)),
+            run.Instance,
             request.RunDirectory,
             context,
             cache);

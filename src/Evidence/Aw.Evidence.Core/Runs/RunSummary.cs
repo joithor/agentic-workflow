@@ -8,6 +8,7 @@ namespace Aw.Evidence.Core.Runs;
 /// <summary>A run's record, written to &lt;run-dir&gt;/summary.json (schema 'ui-evidence.run/1'). Paths are absolute.</summary>
 /// <param name="Schema">Always <see cref="SchemaName"/>.</param>
 /// <param name="RunId">The run (the run directory's name).</param>
+/// <param name="RunInstance">This invocation, new every time (a rerun in the same directory gets another).</param>
 /// <param name="StartedAt">When the run started (UTC).</param>
 /// <param name="FinishedAt">When it finished (UTC).</param>
 /// <param name="Route">The script's route.</param>
@@ -27,6 +28,7 @@ namespace Aw.Evidence.Core.Runs;
 public sealed record RunSummary(
     string Schema,
     RunId RunId,
+    RunInstanceId RunInstance,
     DateTimeOffset StartedAt,
     DateTimeOffset FinishedAt,
     string Route,

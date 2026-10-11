@@ -24,8 +24,8 @@ public abstract class VerdictCacheStoreContract
         var store = Create();
         var path = RunPath.Combine(Root, "verdict-cache.json");
         var cache = VerdictCache.Empty
-            .With("k1", new VisualVerdict(VisualDecision.LooksOff, ["button overlaps"], Usage: null), RunId.From("run-1"))
-            .With("k2", new VisualVerdict(VisualDecision.LooksRight, [], Usage: null), RunId.From("run-2"));
+            .With("k1", new VisualVerdict(VisualDecision.LooksOff, ["button overlaps"], Usage: null), Instance(1))
+            .With("k2", new VisualVerdict(VisualDecision.LooksRight, [], Usage: null), Instance(2));
 
         Expect.That((await store.SaveAsync(path, cache, CancellationToken.None)).IsSuccess, "a save succeeds");
         var loaded = await store.LoadAsync(path, CancellationToken.None);
@@ -33,8 +33,10 @@ public abstract class VerdictCacheStoreContract
         Expect.That(loaded.Entries.Count == 2, "every entry loads back");
         Expect.That(loaded.Entries["k1"].Decision == VisualDecision.LooksOff, "the decision loads back");
         Expect.That(loaded.Entries["k1"].Reasons.SequenceEqual(["button overlaps"], StringComparer.Ordinal), "the reasons load back");
-        Expect.That(loaded.Entries["k2"].RunId.Value == "run-2", "the run loads back");
+        Expect.That(loaded.Entries["k2"].RunInstance.Value == Instance(2).Value, "the run invocation loads back");
     }
+
+    private static RunInstanceId Instance(int n) => RunInstanceId.From(string.Create(System.Globalization.CultureInfo.InvariantCulture, $"instance-{n}"));
 
     /// <summary>Loading a manifest that was never saved is an empty cache.</summary>
     /// <returns>A task.</returns>
@@ -49,9 +51,9 @@ public abstract class VerdictCacheStoreContract
     {
         var store = Create();
         var path = RunPath.Combine(Root, "verdict-cache.json");
-        _ = await store.SaveAsync(path, VerdictCache.Empty.With("old", new(VisualDecision.Sloppy, [], Usage: null), RunId.From("r")), CancellationToken.None);
+        _ = await store.SaveAsync(path, VerdictCache.Empty.With("old", new(VisualDecision.Sloppy, [], Usage: null), Instance(3)), CancellationToken.None);
 
-        _ = await store.SaveAsync(path, VerdictCache.Empty.With("new", new(VisualDecision.LooksRight, [], Usage: null), RunId.From("r")), CancellationToken.None);
+        _ = await store.SaveAsync(path, VerdictCache.Empty.With("new", new(VisualDecision.LooksRight, [], Usage: null), Instance(3)), CancellationToken.None);
 
         Expect.That((await store.LoadAsync(path, CancellationToken.None)).Entries.Keys.SequenceEqual(["new"], StringComparer.Ordinal), "a second save replaces the cache");
     }

@@ -39,7 +39,7 @@ public sealed class VisualGate(IRunFiles files, IImageCodec codec, IJudge judge,
         }
 
         var key = KeyFor(after, baseline, input.Context);
-        if (key is not null && input.Cache.Lookup(key, input.Context.AppBuild is not null, input.RunId) is { } cached)
+        if (key is not null && input.Cache.Lookup(key, input.Context.AppBuild is not null, input.RunInstance) is { } cached)
         {
             log.Record(new(InvocationPhase.VisualCritique, Model: null, ElapsedMs: 0, Ok: true, InputTokens: null, OutputTokens: null, CacheHit: true));
             return new(ToVerdict(cached.Decision), cached.Reasons, diff?.Score, diff?.DiffImage, input.Cache);
@@ -74,7 +74,7 @@ public sealed class VisualGate(IRunFiles files, IImageCodec codec, IJudge judge,
             return new(Verdict.Unchecked, [], diff?.Score, diff?.DiffImage, input.Cache);
         }
 
-        var cache = key is null ? input.Cache : input.Cache.With(key, verdict, input.RunId);
+        var cache = key is null ? input.Cache : input.Cache.With(key, verdict, input.RunInstance);
         return new(ToVerdict(verdict.Decision), verdict.Reasons, diff?.Score, diff?.DiffImage, cache);
     }
 

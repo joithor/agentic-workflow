@@ -5,6 +5,7 @@ using Aw.Evidence.Core.Locks;
 using Aw.Evidence.Core.Runs;
 using Aw.Evidence.Core.Usage;
 using Aw.Kernel;
+using Aw.Kernel.Ids;
 using Aw.Kernel.Services;
 
 namespace Aw.Evidence.Features.RunScript;
@@ -14,7 +15,7 @@ namespace Aw.Evidence.Features.RunScript;
 /// and heavy-job locks for the whole browser run, deletes an earlier summary.json, writes the new one and releases the
 /// locks on every path.
 /// </summary>
-internal sealed class RunScriptService(ScriptFiles files, IMachineLocks locks, ScriptRun run, RunVerdict verdict, TimeProvider clock)
+internal sealed class RunScriptService(ScriptFiles files, IMachineLocks locks, ScriptRun run, RunVerdict verdict, TimeProvider clock, IIdGenerator ids)
     : IService<RunScriptRequest, RunScriptResponse>
 {
     public async ValueTask<Result<RunScriptResponse>> Handle(RunScriptRequest request, CancellationToken cancellationToken)
@@ -42,6 +43,7 @@ internal sealed class RunScriptService(ScriptFiles files, IMachineLocks locks, S
     private async ValueTask<Result<RunScriptResponse>> RunAsync(RunScriptRequest request, LoadedScript loaded, ResolvedHost host, CancellationToken cancellationToken)
     {
         var started = clock.GetUtcNow();
+        var instance = RunInstanceId.From(ids.NewId().ToString("D"));
         var created = await files.PrepareRunDirectoryAsync(request.RunDirectory, cancellationToken).ConfigureAwait(false);
         if (created.IsError)
         {
@@ -61,9 +63,9 @@ internal sealed class RunScriptService(ScriptFiles files, IMachineLocks locks, S
             return driven.Error;
         }
 
-        var visual = await verdict.DecideAsync(request, script, driven.Value, log, cancellationToken).ConfigureAwait(false);
+        var visual = await verdict.DecideAsync(new VerdictRun(request, instance, script, driven.Value), log, cancellationToken).ConfigureAwait(false);
         var summary = new RunSummary(
-            RunSummary.SchemaName, RunId.From(RunPath.NameOf(request.RunDirectory)), started, clock.GetUtcNow(), script.Route, script.Role, host.Origin,
+            RunSummary.SchemaName, RunId.From(RunPath.NameOf(request.RunDirectory)), instance, started, clock.GetUtcNow(), script.Route, script.Role, host.Origin,
             request.AppBuild, request.Fixtures, loaded.Sha256, script.Planning?.Pr, script.Viewports, driven.Value.Steps, visual,
             driven.Value.LintFindings, log.All, script.Planning, driven.Value.Evidence);
         var written = await files.WriteSummaryAsync(request.RunDirectory, summary, cancellationToken).ConfigureAwait(false);

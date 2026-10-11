@@ -9,8 +9,8 @@ namespace Aw.Evidence.Tests.Visual;
 public sealed class VerdictCacheTests
 {
     private static readonly VerdictCacheContext _context = new("visual-critique/v1", "judge-default", "abc123", "scenario", Fixtures: null, "desktop", "140.0");
-    private static readonly RunId _run1 = RunId.From("run-1");
-    private static readonly RunId _run2 = RunId.From("run-2");
+    private static readonly RunInstanceId _run1 = RunInstanceId.From("instance-1");
+    private static readonly RunInstanceId _run2 = RunInstanceId.From("instance-2");
 
     private static string Key(VerdictCacheContext context, string after = "a", string? baseline = "b") =>
         new VerdictCacheKey(after, baseline, context).Compute(TestJson.Options);
@@ -36,7 +36,7 @@ public sealed class VerdictCacheTests
     }
 
     [Fact, Trait("Lane", "unit")]
-    public void With_an_unknown_app_build_a_verdict_is_trusted_only_within_its_own_run()
+    public void With_an_unknown_app_build_a_verdict_is_trusted_only_within_the_run_invocation_that_formed_it()
     {
         var cache = VerdictCache.Empty.With("k", new VisualVerdict(VisualDecision.LooksRight, [], Usage: null), _run1);
 

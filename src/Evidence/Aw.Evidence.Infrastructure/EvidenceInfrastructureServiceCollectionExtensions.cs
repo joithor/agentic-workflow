@@ -9,11 +9,13 @@ using Aw.Evidence.Core.Visual;
 using Aw.Evidence.Infrastructure.Browser;
 using Aw.Evidence.Infrastructure.Files;
 using Aw.Evidence.Infrastructure.Guard;
+using Aw.Evidence.Infrastructure.Ids;
 using Aw.Evidence.Infrastructure.Images;
 using Aw.Evidence.Infrastructure.Judging;
 using Aw.Evidence.Infrastructure.Locks;
 using Aw.Evidence.Infrastructure.Stack;
 using Aw.Evidence.Infrastructure.Visual;
+using Aw.Kernel.Ids;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Aw.Evidence.Infrastructure;
@@ -24,7 +26,7 @@ public static class EvidenceInfrastructureServiceCollectionExtensions
     /// <summary>
     /// Adds the Evidence adapters and their settings: directory locks, run files on disk, the PNG codec, the verdict-cache
     /// manifest, the stack probes (HTTP, docker, TCP), the psql provenance query, environment secrets, the Playwright
-    /// browser and its installer, and the unavailable judge. The verdict-cache store reads the package's AwJson options,
+    /// browser and its installer, the unavailable judge, and random ids. The verdict-cache store reads the package's AwJson options,
     /// which Composition registers.
     /// </summary>
     /// <param name="services">The service collection.</param>
@@ -44,6 +46,7 @@ public static class EvidenceInfrastructureServiceCollectionExtensions
             .AddSingleton<ISecretsSource>(new EnvironmentSecrets(environment))
             .AddSingleton<IBrowser, PlaywrightBrowser>()
             .AddSingleton<IBrowserInstaller, PlaywrightInstaller>()
-            .AddSingleton<IJudge, UnavailableJudge>();
+            .AddSingleton<IJudge, UnavailableJudge>()
+            .AddSingleton<IIdGenerator, RandomIds>();
     }
 }

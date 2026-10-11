@@ -17,6 +17,7 @@ public sealed class TypedIdTests
         return kind switch
         {
             "run" => AwJson.Deserialize<RunIdHolder>(bytes, _json).Map(static h => h.Id.Value),
+            "instance" => AwJson.Deserialize<RunInstanceIdHolder>(bytes, _json).Map(static h => h.Id.Value),
             "test" => AwJson.Deserialize<TestIdHolder>(bytes, _json).Map(static h => h.Id.Value),
             _ => AwJson.Deserialize<AttachmentIdHolder>(bytes, _json).Map(static h => h.Id.Value),
         };
@@ -25,12 +26,14 @@ public sealed class TypedIdTests
     private static string Write(string kind, string value) => Encoding.UTF8.GetString(kind switch
     {
         "run" => AwJson.Serialize(new RunIdHolder(RunId.From(value)), _json),
+        "instance" => AwJson.Serialize(new RunInstanceIdHolder(RunInstanceId.From(value)), _json),
         "test" => AwJson.Serialize(new TestIdHolder(TestId.From(value)), _json),
         _ => AwJson.Serialize(new AttachmentIdHolder(AttachmentId.From(value)), _json),
     });
 
     [Theory, Trait("Lane", "unit")]
     [InlineData("run")]
+    [InlineData("instance")]
     [InlineData("test")]
     [InlineData("attachment")]
     public void An_id_round_trips_as_a_plain_string(string kind)
@@ -46,6 +49,7 @@ public sealed class TypedIdTests
     [InlineData("test", """{"id":"  "}""")]
     [InlineData("attachment", """{"id":null}""")]
     [InlineData("run", """{}""")]
+    [InlineData("instance", """{"id":null}""")]
     [InlineData("test", """{"id":4}""")]
     public void A_blank_missing_null_or_wrong_typed_id_is_refused(string kind, string json) =>
         Assert.Equal("AW-KERNEL-001", Read(kind, json).Error.Code);

@@ -167,6 +167,7 @@ Scorer and bugfix-state read these files after their own ports; the fields they 
 |---|---|---|
 | `schema` | string | `ui-evidence.run/1` |
 | `runId` | string | the run directory's name |
+| `runInstance` | string | this invocation: a new UUID every time, so a rerun in the same directory has another |
 | `startedAt`, `finishedAt` † | string (UTC `O`) | when the run started and ended |
 | `route` | string | the script's route |
 | `role` | `manager` \| `staff` \| `central-staffer` \| `super-admin` | the script's role |
@@ -189,7 +190,8 @@ step runs whatever an earlier one did. The visual verdict comes from the last pa
 to `--baseline` is `unchanged` with no model (never for a run with a failed step); otherwise the verdict cache
 (`--cache`, default `<run-dir>/verdict-cache.json`; keyed on the pixels' and baseline's hashes, the prompt version,
 `AW_VISUAL_MODEL`, the app build, the script's scenario hash, fixtures, viewports and the browser build; an entry without
-an app build is trusted only inside the run that wrote it), then one critique of the changed region. No passed step, no
+an app build is trusted only inside the run invocation that wrote it, its `runInstance`, so a rerun in the same directory
+never reuses it), then one critique of the changed region. No passed step, no
 judge wired, or no answer from the judge, is `unchecked`.
 
 ### `parity.json` (`schema: "ui-evidence.parity/1"`)

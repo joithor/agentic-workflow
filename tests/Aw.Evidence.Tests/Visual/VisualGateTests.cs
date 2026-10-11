@@ -22,7 +22,7 @@ public sealed class VisualGateTests
     private static RgbaImage WithDot() => TestImages.Draw(60, 60, static (x, y) => (x, y) == (30, 30) ? 0x000000FFu : 0xFFFFFFFFu);
 
     private static VisualGateInput Input(bool failedSteps = false, string? baseline = Baseline, VerdictCache? cache = null, VerdictCacheContext? context = null) =>
-        new(After, baseline, failedSteps, RunId.From("run-1"), "/runs/run-1", context ?? _context, cache ?? VerdictCache.Empty);
+        new(After, baseline, failedSteps, RunInstanceId.From("instance-1"), "/runs/run-1", context ?? _context, cache ?? VerdictCache.Empty);
 
     private static async Task<(VisualOutcome Outcome, InvocationLog Log)> Decide(InMemoryRunFiles files, FakeJudge judge, VisualGateInput input)
     {
