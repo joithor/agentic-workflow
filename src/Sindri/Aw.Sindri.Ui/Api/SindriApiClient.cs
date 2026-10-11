@@ -26,7 +26,13 @@ internal sealed class SindriApiClient(HttpClient http) : ISindriApi
     public async IAsyncEnumerable<EventView> Events(Uri api, long after, [EnumeratorCancellation] CancellationToken cancellationToken)
     {
         var path = string.Create(CultureInfo.InvariantCulture, $"/sindri/events?after={after}");
-        var stream = await Open(new Uri(api, path), cancellationToken).ConfigureAwait(false);
+        using var response = await Open(new Uri(api, path), cancellationToken).ConfigureAwait(false);
+        if (response is null)
+        {
+            yield break;
+        }
+
+        var stream = await Body(response, cancellationToken).ConfigureAwait(false);
         if (stream is null)
         {
             yield break;
@@ -75,7 +81,8 @@ internal sealed class SindriApiClient(HttpClient http) : ISindriApi
         }
     }
 
-    private async Task<Stream?> Open(Uri url, CancellationToken cancellationToken)
+    // The open event-stream response (owned by the caller), or null when it didn't answer 2xx or nothing answered.
+    private async Task<HttpResponseMessage?> Open(Uri url, CancellationToken cancellationToken)
     {
         using var request = new HttpRequestMessage(HttpMethod.Get, url);
         request.Headers.Accept.ParseAdd("text/event-stream");
@@ -84,7 +91,7 @@ internal sealed class SindriApiClient(HttpClient http) : ISindriApi
             var response = await http.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, cancellationToken).ConfigureAwait(false);
             if (response.IsSuccessStatusCode)
             {
-                return await response.Content.ReadAsStreamAsync(cancellationToken).ConfigureAwait(false);
+                return response;
             }
 
             response.Dispose();
@@ -95,6 +102,22 @@ internal sealed class SindriApiClient(HttpClient http) : ISindriApi
             return null;
         }
         catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)
+        {
+            return null;
+        }
+    }
+
+    private static async Task<Stream?> Body(HttpResponseMessage response, CancellationToken cancellationToken)
+    {
+        try
+        {
+            return await response.Content.ReadAsStreamAsync(cancellationToken).ConfigureAwait(false);
+        }
+        catch (HttpRequestException)
+        {
+            return null;
+        }
+        catch (IOException)
         {
             return null;
         }

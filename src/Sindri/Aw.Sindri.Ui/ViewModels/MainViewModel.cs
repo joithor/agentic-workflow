@@ -22,6 +22,7 @@ internal sealed class MainViewModel(IEndpointRecordSource records, ISindriApi ap
 
     private long _cursor;
     private byte[] _record = [];
+    private long _epoch;
 
     /// <summary>The state in one word: Connecting, Running or Not running.</summary>
     public string Headline { get; private set => Set(ref field, value); } = "Connecting";
@@ -88,22 +89,54 @@ internal sealed class MainViewModel(IEndpointRecordSource records, ISindriApi ap
     {
         while (!cancellationToken.IsCancellationRequested)
         {
-            var url = await Connect(cancellationToken).ConfigureAwait(true);
-            if (url is not null)
-            {
-                await Follow(url, cancellationToken).ConfigureAwait(true);
-                continue;
-            }
-
+            bool wait;
             try
             {
-                await Task.Delay(RetryEvery, clock, cancellationToken).ConfigureAwait(true);
+                wait = await Cycle(cancellationToken).ConfigureAwait(true);
             }
-            catch (OperationCanceledException)
+            catch (IOException e)
             {
-                return;
+                wait = Unreadable(e);
+            }
+            catch (UnauthorizedAccessException e)
+            {
+                wait = Unreadable(e);
+            }
+
+            if (wait)
+            {
+                try
+                {
+                    await Task.Delay(RetryEvery, clock, cancellationToken).ConfigureAwait(true);
+                }
+                catch (OperationCanceledException)
+                {
+                    return;
+                }
             }
         }
+    }
+
+    // The platform couldn't read the record (a directory, no permission): say so, and keep trying.
+    private bool Unreadable(Exception e)
+    {
+        _ = NotRunning($"the endpoint record at {records.Location} can't be read: {e.Message}");
+        return true;
+    }
+
+    // One connect-and-follow; true when Run should wait before the next one: nothing answers, or the event stream
+    // ended at once without an event (an events route that closes), which would otherwise reconnect in a tight loop.
+    private async Task<bool> Cycle(CancellationToken cancellationToken)
+    {
+        var url = await Connect(cancellationToken).ConfigureAwait(true);
+        if (url is null)
+        {
+            return true;
+        }
+
+        var started = clock.GetUtcNow();
+        var events = await Follow(url, cancellationToken).ConfigureAwait(true);
+        return events == 0 && clock.GetUtcNow() - started < RetryEvery;
     }
 
     private async Task<Uri?> Connect(CancellationToken cancellationToken)
@@ -115,7 +148,7 @@ internal sealed class MainViewModel(IEndpointRecordSource records, ISindriApi ap
         }
 
         var record = AwJson.Deserialize<ControlRecord>(bytes, SindriApiClient.Json);
-        if (record.IsError)
+        if (record.IsError || !record.Value.Url.IsAbsoluteUri)
         {
             return NotRunning($"the endpoint record at {records.Location} can't be read");
         }
@@ -133,13 +166,20 @@ internal sealed class MainViewModel(IEndpointRecordSource records, ISindriApi ap
         }
 
         _record = bytes;
+        if (ping.Value.Epoch < _epoch)
+        {
+            _cursor = 0;   // a lower epoch is a new ledger: its sequence starts over
+        }
+
+        _epoch = ping.Value.Epoch;
         return await Refresh(record.Value.Url, cancellationToken).ConfigureAwait(true) ? record.Value.Url : null;
     }
 
     // Follows the stream until it ends, a status refresh fails, or the endpoint record changes. A stopping control plane
     // can hold its stream open while it shuts down, so the stream ending is not the only sign that it's gone.
-    private async Task Follow(Uri url, CancellationToken cancellationToken)
+    private async Task<int> Follow(Uri url, CancellationToken cancellationToken)
     {
+        var events = 0;
         var dirty = Channel.CreateBounded<bool>(new BoundedChannelOptions(1) { FullMode = BoundedChannelFullMode.DropWrite });
         using var stop = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
         var refresher = RefreshOnSignal(url, dirty.Reader, stop);
@@ -148,6 +188,7 @@ internal sealed class MainViewModel(IEndpointRecordSource records, ISindriApi ap
         {
             await foreach (var e in api.Events(url, _cursor, stop.Token).ConfigureAwait(true))
             {
+                events++;
                 _cursor = e.Sequence;
                 LastEvent = StatusText.Event(e);
                 _ = dirty.Writer.TryWrite(item: true);
@@ -157,9 +198,13 @@ internal sealed class MainViewModel(IEndpointRecordSource records, ISindriApi ap
         {
             // A failed refresh or a changed record ended the stream; Run looks for the control plane again.
         }
+        finally
+        {
+            await stop.CancelAsync().ConfigureAwait(true);
+            await Task.WhenAll(refresher, watcher).ConfigureAwait(true);
+        }
 
-        await stop.CancelAsync().ConfigureAwait(true);
-        await Task.WhenAll(refresher, watcher).ConfigureAwait(true);
+        return events;
     }
 
     // One status refresh per burst of events: the signal holds at most one pending refresh. A failed refresh ends the follow.
