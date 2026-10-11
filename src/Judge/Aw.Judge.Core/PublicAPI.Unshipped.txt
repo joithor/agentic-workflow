@@ -508,14 +508,11 @@ Aw.Judge.Core.Config.ProvidersConfig.Jev.get -> bool?
 Aw.Judge.Core.Config.ProvidersConfig.Jev.init -> void
 Aw.Judge.Core.Config.QuestionConfig
 Aw.Judge.Core.Config.QuestionConfig.<Clone>$() -> Aw.Judge.Core.Config.QuestionConfig!
-Aw.Judge.Core.Config.QuestionConfig.Deconstruct(out bool Enabled, out double Threshold) -> void
 Aw.Judge.Core.Config.QuestionConfig.Enabled.get -> bool
 Aw.Judge.Core.Config.QuestionConfig.Enabled.init -> void
 Aw.Judge.Core.Config.QuestionConfig.Equals(Aw.Judge.Core.Config.QuestionConfig? other) -> bool
 Aw.Judge.Core.Config.QuestionConfig.Providers.get -> System.Collections.Generic.IReadOnlyList<string!>?
 Aw.Judge.Core.Config.QuestionConfig.Providers.init -> void
-Aw.Judge.Core.Config.QuestionConfig.QuestionConfig(bool Enabled, double Threshold) -> void
-Aw.Judge.Core.Config.QuestionConfig.Threshold.get -> double
 Aw.Judge.Core.Config.QuestionConfig.Threshold.init -> void
 Aw.Judge.Core.Ports.IJudgeConfigStore
 Aw.Judge.Core.Ports.IJudgeConfigStore.Load(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Judge.Core.Config.JudgeConfig!>!>
@@ -951,3 +948,6 @@ Aw.Judge.Core.Processes.ProcessRequest.OutputLimit.init -> void
 const Aw.Judge.Core.Processes.ProcessRequest.DefaultOutputLimit = 4194304 -> int
 Aw.Judge.Core.Processes.ProcessRequest.Unset.get -> System.Collections.Generic.IReadOnlyCollection<string!>!
 Aw.Judge.Core.Processes.ProcessRequest.Unset.init -> void
+Aw.Judge.Core.Config.QuestionConfig.Deconstruct(out bool Enabled, out double? Threshold) -> void
+Aw.Judge.Core.Config.QuestionConfig.QuestionConfig(bool Enabled, double? Threshold = null) -> void
+Aw.Judge.Core.Config.QuestionConfig.Threshold.get -> double?

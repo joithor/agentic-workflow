@@ -1,5 +1,6 @@
 using Aw.Judge.Core.Config;
 using Aw.Judge.Core.Errors;
+using Aw.Judge.Core.Evaluation;
 using Aw.Judge.Features.SetConfig;
 using Aw.Judge.Testing;
 
@@ -29,11 +30,22 @@ public sealed class SetConfigTests
     [Theory, Trait("Lane", "unit")]
     [InlineData(true)]
     [InlineData(false)]
-    public async Task SetConfig_sets_enabled_on_a_new_question_from_the_defaults(bool enabled)
+    public async Task SetConfig_sets_enabled_on_a_new_question_and_leaves_its_own_threshold(bool enabled)
     {
         _ = await Set(A.SetConfigRequest().Enabled("ask-check", enabled));
 
-        Assert.Equal(new QuestionConfig(enabled, 0.7), Saved().Questions["ask-check"]);
+        Assert.Equal(new QuestionConfig(enabled, Threshold: null), Saved().Questions["ask-check"]);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task Toggling_a_question_off_and_on_keeps_its_own_threshold_in_the_evaluation()
+    {
+        _ = await Set(A.SetConfigRequest().Enabled("resolution-check", enabled: false));
+        _ = await Set(A.SetConfigRequest().Enabled("resolution-check", enabled: true));
+
+        var settings = QuestionOverride.For(Saved(), "resolution-check");
+
+        Assert.Equal(new QuestionOverride(Enabled: true, Threshold: null), settings);
     }
 
     [Theory, Trait("Lane", "unit")]

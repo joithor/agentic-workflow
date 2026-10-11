@@ -33,6 +33,14 @@ public sealed class JudgeConfigParserTests
         Assert.Equal("ask-check=True/0.5/-; wake-gate=True/0.7/-; ", ConfigText.Of(config.Value));
     }
 
+    [Fact, Trait("Lane", "unit")]
+    public void A_question_without_a_threshold_keeps_its_own()
+    {
+        var config = Parse("""{"questions":{"wake-gate":{"enabled":true},"ask-check":{"enabled":false}}}""");
+
+        Assert.Equal("wake-gate=True//-; ask-check=False//-; ", ConfigText.Of(config.Value));
+    }
+
     [Theory, Trait("Lane", "unit")]
     [InlineData("")]
     [InlineData("not json")]
@@ -41,8 +49,8 @@ public sealed class JudgeConfigParserTests
     [InlineData("{}")]
     [InlineData("""{"questions":[]}""")]
     [InlineData("""{"questions":{"x":null}}""")]
-    [InlineData("""{"questions":{"x":{"enabled":true}}}""")]
     [InlineData("""{"questions":{"x":{"enabled":"yes","threshold":0.5}}}""")]
+    [InlineData("""{"questions":{"x":{"threshold":0.5}}}""")]
     [InlineData("""{"questions":{"x":{"enabled":true,"threshold":1.5}}}""")]
     [InlineData("""{"questions":{"x":{"enabled":true,"threshold":0.5,"providers":["gpt"]}}}""")]
     [InlineData("""{"questions":{},"providers":{"agentClis":["jev"]}}""")]

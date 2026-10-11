@@ -58,7 +58,7 @@ public static class JudgeConfigParser
             return $"question '{name}' is null";
         }
 
-        return (ThresholdProblem(question.Threshold) is { } threshold ? $"question '{name}': {threshold}" : null)
+        return (question.Threshold is { } value && ThresholdProblem(value) is { } threshold ? $"question '{name}': {threshold}" : null)
             ?? Unknown($"question '{name}' providers", question.Providers, ProviderNames.All);
     }
 
