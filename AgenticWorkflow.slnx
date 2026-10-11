@@ -45,5 +45,7 @@
     <Project Path="tests/Aw.Evidence.Testing/Aw.Evidence.Testing.csproj" />
     <Project Path="tests/Aw.BugFix.Tests/Aw.BugFix.Tests.csproj" />
     <Project Path="tests/Aw.BugFix.Testing/Aw.BugFix.Testing.csproj" />
+    <Project Path="tests/Aw.Context.Testing/Aw.Context.Testing.csproj" />
+    <Project Path="tests/Aw.Context.Testing.Tests/Aw.Context.Testing.Tests.csproj" />
   </Folder>
 </Solution>
