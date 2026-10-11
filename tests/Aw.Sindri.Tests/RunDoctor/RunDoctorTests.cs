@@ -1,6 +1,7 @@
 using Aw.Sindri.Core.Control;
 using Aw.Sindri.Core.Doctor;
 using Aw.Sindri.Core.Ledger;
+using Aw.Sindri.Features.ApproveProfile;
 using Aw.Sindri.Features.RunDoctor;
 using Aw.Sindri.Testing;
 
@@ -13,15 +14,16 @@ public sealed class RunDoctorTests
 
     private static CancellationToken Token => TestContext.Current.CancellationToken;
 
-    private RunDoctorService Service() => new(_h.Store, _h.Probe, _h.Store, _h.Profiles, _h.Profiles, _api, _h.Clock);
+    private RunDoctorService Service(ILedgerStore? ledger = null) =>
+        new(_h.Store, _h.Probe, _h.Store, new ProfileFacts(_h.Profiles, _h.Profiles, ledger ?? _h.Store, _h.Events), _api, _h.Clock);
 
     [Fact, Trait("Lane", "unit")]
     public async Task RunDoctor_is_green_when_running_approved_and_answering()
     {
         var approved = SliceHarness.Profile();
         _h.Profiles.Live = approved;
-        _ = await _h.Profiles.Save(approved, Token);
         var grant = await _h.HoldLease();
+        _ = await new ApproveProfileService(_h.Profiles, _h.Profiles, _h.Held, _h.Store, _h.Events).Handle(new ApproveProfileRequest(approved.Hash, Confirmed: true), Token);
         _api.Answer = (new ControlEndpoint(new Uri("http://127.0.0.1:7410"), grant.Holder.Pid, grant.Epoch), new Ping(grant.Holder.Pid, grant.Epoch));
 
         var report = (await Service().Handle(new RunDoctorRequest(), Token)).Value;
@@ -58,6 +60,31 @@ public sealed class RunDoctorTests
         var profile = report.Checks.Single(c => c.Name == "profile");
         Assert.Equal(CheckState.Warn, profile.State);
         Assert.Equal("sindri profile approve", profile.Fix);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task RunDoctor_warns_when_the_saved_approval_isnt_recorded_in_the_ledger()
+    {
+        var live = SliceHarness.Profile("5s");
+        _h.Profiles.Live = live;
+        _ = await _h.Profiles.Save(live, Token);   // saved, but its event never reached the ledger
+
+        var profile = (await Service().Handle(new RunDoctorRequest(), Token)).Value.Checks.Single(c => c.Name == "profile");
+
+        Assert.Equal((CheckState.Warn, "sindri profile approve"), (profile.State, profile.Fix));
+        Assert.Equal($"approval {live.Hash.Abbreviated} is saved but not recorded in the ledger", profile.Detail);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task RunDoctor_fails_the_profile_check_when_the_ledger_cant_be_read()
+    {
+        var live = SliceHarness.Profile("5s");
+        _h.Profiles.Live = live;
+        _ = await _h.Profiles.Save(live, Token);
+
+        var profile = (await Service(new ReadFailingLedger(_h.Store)).Handle(new RunDoctorRequest(), Token)).Value.Checks.Single(c => c.Name == "profile");
+
+        Assert.Equal((CheckState.Fail, ReadFailingLedger.Failure.Message), (profile.State, profile.Detail));
     }
 
     [Fact, Trait("Lane", "unit")]

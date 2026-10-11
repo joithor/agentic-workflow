@@ -61,7 +61,7 @@ public sealed class ServeLauncherContractTests : ControlPlaneLauncherContract, I
         using var child = ExitingWith("hello").Launch().Value;
         await Exited(child);
 
-        Assert.False(child.LastError().StartsWith("SND-", StringComparison.Ordinal), child.LastError());
+        Assert.Equal("no error line in the log", child.LastError());
     }
 
     [Fact]

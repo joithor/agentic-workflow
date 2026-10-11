@@ -9,7 +9,8 @@ namespace Aw.Sindri.Host;
 
 /// <summary>
 /// Builds the web host so that the only listener is 127.0.0.1 (spec §4d runtime hardening): no command-line
-/// arguments and no environment variables reach the web host's configuration, PreferHostingUrls is off, and Kestrel
+/// arguments and no environment variables reach the web host's configuration, the host environment is always
+/// Production (whatever ASPNETCORE_ENVIRONMENT or DOTNET_ENVIRONMENT say), PreferHostingUrls is off, and Kestrel
 /// listens with Listen(IPAddress.Loopback, port) only. The port is AW_SINDRI_PORT (0 picks a free one); serve's host
 /// instead adds its one loopback listener through <see cref="ServePort"/> (the variable, else the approved api.port, else
 /// 7410) before it starts, and refuses to start when that didn't run (<see cref="ServeListenerCheck"/>).
@@ -25,7 +26,9 @@ internal static class LoopbackBinding
             throw new ArgumentException("This host takes no command-line arguments: its address is fixed to loopback.", nameof(args));
         }
 
-        var builder = WebApplication.CreateSlimBuilder(new WebApplicationOptions { Args = [] });
+        // The environment is pinned too: an inherited ASPNETCORE_ENVIRONMENT/DOTNET_ENVIRONMENT=Development would make
+        // the request binding throw instead of answering 400, turning bad input into a 500.
+        var builder = WebApplication.CreateSlimBuilder(new WebApplicationOptions { Args = [], EnvironmentName = Environments.Production });
         builder.Configuration.Sources.Clear();   // drops the ASPNETCORE_/DOTNET_ environment and command-line sources
         _ = builder.Configuration.AddInMemoryCollection();   // the host still writes its own settings somewhere
         _ = builder.WebHost.PreferHostingUrls(preferHostingUrls: false);

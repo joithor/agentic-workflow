@@ -5,9 +5,13 @@ using Aw.Sindri.Core;
 using Aw.Sindri.Core.Events;
 using Aw.Sindri.Core.Lease;
 using Aw.Sindri.Core.Profile;
+using Aw.Sindri.Core.Control;
+using Aw.Sindri.Core.Doctor;
 using Aw.Sindri.Features.ApproveProfile;
 using Aw.Sindri.Features.GetStatus;
+using Aw.Sindri.Features.RunDoctor;
 using Aw.Sindri.Features.ValidateProfile;
+using Aw.Sindri.Host.Commands;
 using Aw.Sindri.Testing;
 
 namespace Aw.Sindri.Tests.ApproveProfile;
@@ -90,6 +94,23 @@ public sealed class ApproveProfileTests
         Assert.Empty(_h.Store.Events);
     }
 
+    [Theory, Trait("Lane", "unit")]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task ApproveProfile_refuses_when_the_recorded_approval_cant_be_read_and_records_nothing(bool approving)
+    {
+        var live = SliceHarness.Profile("5s");
+        _h.Profiles.Live = live;
+        _ = await _h.HoldLease();
+        var service = new ApproveProfileService(_h.Profiles, _h.Profiles, _h.Held, new ReadFailingLedger(_h.Store), _h.Events);
+
+        var refused = await service.Handle(new ApproveProfileRequest(approving ? live.Hash : null, Confirmed: approving), Token);
+
+        Assert.Equal(ReadFailingLedger.Failure, refused.Error);
+        Assert.Null((await _h.Profiles.Latest(Token)).Value);
+        Assert.Empty(_h.Store.Events);
+    }
+
     [Fact, Trait("Lane", "unit")]
     public async Task ApproveProfile_records_each_approval_of_a_back_and_forth_and_every_surface_agrees()
     {
@@ -101,8 +122,7 @@ public sealed class ApproveProfileTests
             _h.Profiles.Live = profile;
             Assert.True((await Service().Handle(new ApproveProfileRequest(profile.Hash, Confirmed: true), Token)).Value.Approved);
 
-            var preview = (await Service().Handle(new ApproveProfileRequest(Hash: null, Confirmed: false), Token)).Value;
-            Assert.Equal((true, false, true), await Surfaces());
+            Assert.Equal((true, false, true, CheckState.Ok, $"/home/profile.yaml (approved, hash {profile.Hash.Abbreviated})"), await Surfaces());
         }
 
         var events = _h.Store.Events;
@@ -140,10 +160,10 @@ public sealed class ApproveProfileTests
         _ = await _h.Profiles.Save(live, Token);   // saved, but its event never reached the ledger
         _ = await _h.HoldLease();
 
-        var shown = (await Service().Handle(new ApproveProfileRequest(Hash: null, Confirmed: false), Token)).Value;
+        Assert.Equal((false, true, false, CheckState.Warn, NotLatest), await Surfaces());   // saved == live, no recorded event: every surface agrees
+
         var approved = (await Service().Handle(new ApproveProfileRequest(live.Hash, Confirmed: true), Token)).Value;
 
-        Assert.False(shown.Approved);
         Assert.True(approved.Approved);
         Assert.Equal($"profile.approved:{live.Hash.Value}:after:0", Assert.Single(_h.Store.Events).IdempotencyKey);
     }
@@ -161,16 +181,26 @@ public sealed class ApproveProfileTests
 
         _h.Profiles.Live = a;   // edited back: A is still the saved approval, but B's event is the latest recorded one
 
-        Assert.Equal((false, true, false), await Surfaces());
+        Assert.Equal((false, true, false, CheckState.Warn, NotLatest), await Surfaces());
     }
 
-    /// <summary>What the approve preview, the status and validate each say: (approved, needs approval, approved).</summary>
-    private async Task<(bool Preview, bool StatusNeedsApproval, bool Validated)> Surfaces()
+    /// <summary>The summary's profile line for a saved approval the ledger doesn't name as its latest.</summary>
+    private const string NotLatest = "/home/profile.yaml (approval not recorded in the ledger as the latest one; fix: sindri profile approve)";
+
+    /// <summary>
+    /// What each surface says: the approve preview (approved), the status (needs approval), validate (approved), the
+    /// doctor's profile check and the startup summary's profile line.
+    /// </summary>
+    private async Task<(bool Preview, bool StatusNeedsApproval, bool Validated, CheckState Doctor, string Summary)> Surfaces()
     {
         var preview = (await Service().Handle(new ApproveProfileRequest(Hash: null, Confirmed: false), Token)).Value;
         var status = (await new GetStatusService(_h.Held, _h.Profiles, _h.Profiles, _h.Store, _h.Events).Handle(new GetStatusRequest(), Token)).Value;
         var validated = (await new ValidateProfileService(_h.Profiles, _h.Profiles, _h.Store, _h.Events).Handle(new ValidateProfileRequest(), Token)).Value;
-        return (preview.Approved, status.Profile.NeedsApproval, validated.Approved);
+        var doctor = (await new RunDoctorService(_h.Store, _h.Probe, _h.Store, new ProfileFacts(_h.Profiles, _h.Profiles, _h.Store, _h.Events), new FakeControlPlaneProbe(), _h.Clock)
+            .Handle(new RunDoctorRequest(), Token)).Value.Checks.Single(c => c.Name == "profile");
+        var summary = SummaryText.Render(status, new ControlEndpoint(new Uri("http://127.0.0.1:7410"), 1, 1), showUi: false)
+            .Split('\n').Single(l => l.TrimStart().StartsWith("profile ", StringComparison.Ordinal))["  profile   ".Length..].TrimEnd('\r');
+        return (preview.Approved, status.Profile.NeedsApproval, validated.Approved, doctor.State, summary);
     }
 
     /// <summary>Approvals whose first save fails, as a full disk would.</summary>

@@ -13,7 +13,10 @@ namespace Aw.Sindri.Host.Server;
 /// </summary>
 internal sealed class ServePort(IApprovals approvals, IOptions<KestrelServerOptions> kestrel)
 {
-    /// <summary>The chosen port, or null until <see cref="Listen"/> ran (then the host refuses to start: <see cref="LoopbackBinding"/>).</summary>
+    /// <summary>
+    /// The chosen port, or null until <see cref="Listen"/> has run. While it is null serve's host refuses to start
+    /// (<see cref="ServeListenerCheck"/>), and ServeCommand refuses before it takes the lease.
+    /// </summary>
     public int? Chosen { get; private set; }
 
     /// <summary>Chooses the port and adds the loopback listener on it.</summary>

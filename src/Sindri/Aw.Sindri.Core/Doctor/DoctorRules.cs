@@ -1,6 +1,7 @@
 using System.Globalization;
 using Aw.Kernel;
 using Aw.Sindri.Core.Control;
+using Aw.Sindri.Core.Events;
 using Aw.Sindri.Core.Lease;
 using Aw.Sindri.Core.Ledger;
 using Aw.Sindri.Core.Profile;
@@ -39,25 +40,39 @@ public static class DoctorRules
         _ => new("ledger", CheckState.Fail, Text($"schema {schema.Value.Applied}/{schema.Value.Expected}: written by another build"), "use the build that wrote it, or move the ledger aside"),
     };
 
-    /// <summary>The profile: valid, approved, and unchanged since its approval.</summary>
+    /// <summary>
+    /// The profile: valid, and approved by <see cref="ProfileRules.IsApproved"/> (it is the saved approval and the latest
+    /// recorded 'profile.approved' event names it). Changed since the saved approval, or saved but not the latest recorded
+    /// approval, is a warn whose fix is approving again.
+    /// </summary>
     /// <param name="live">The live profile, or why it doesn't load.</param>
-    /// <param name="approved">The latest approval, or why it can't be read.</param>
+    /// <param name="approved">The latest saved approval, or why it can't be read.</param>
+    /// <param name="recorded">The latest recorded approval, or why the ledger can't be read.</param>
     /// <returns>The check.</returns>
-    public static DoctorCheck Profile(Result<LoadedProfile> live, Result<LoadedProfile?> approved)
+    public static DoctorCheck Profile(Result<LoadedProfile> live, Result<LoadedProfile?> approved, Result<RecordedApproval?> recorded)
     {
         if (live.IsError)
         {
             return new("profile", CheckState.Fail, live.Error.Message, "edit the profile; keys are in docs/csharp/sindri.md");
         }
 
-        if (approved.IsError || approved.Value is null)
+        if (approved.IsError || recorded.IsError)
         {
-            return new("profile", CheckState.Fail, approved.IsError ? approved.Error.Message : "not approved", "sindri profile approve");
+            return new("profile", CheckState.Fail, approved.IsError ? approved.Error.Message : recorded.Error.Message,
+                "check the file's permissions and disk, then run sindri doctor again");
         }
 
-        return live.Value.Hash == approved.Value.Hash
-            ? new("profile", CheckState.Ok, $"approved, hash {approved.Value.Hash.Abbreviated}", Fix: null)
-            : new("profile", CheckState.Warn, $"changed since approval ({approved.Value.Hash.Abbreviated} → {live.Value.Hash.Abbreviated}); running with the approved one", "sindri profile approve");
+        return (approved.Value, recorded.Value?.Hash) switch
+        {
+            (null, _) => new("profile", CheckState.Fail, "not approved", "sindri profile approve"),
+            ({ } saved, _) when saved.Hash != live.Value.Hash => new("profile", CheckState.Warn,
+                $"changed since approval ({saved.Hash.Abbreviated} → {live.Value.Hash.Abbreviated}); running with the approved one", "sindri profile approve"),
+            ({ } saved, var latest) when !ProfileRules.IsApproved(saved.Hash, latest, live.Value.Hash) => new("profile", CheckState.Warn,
+                latest is { } other
+                    ? $"approval {saved.Hash.Abbreviated} is saved but isn't the latest recorded one ({other.Abbreviated})"
+                    : $"approval {saved.Hash.Abbreviated} is saved but not recorded in the ledger", "sindri profile approve"),
+            ({ } saved, _) => new("profile", CheckState.Ok, $"approved, hash {saved.Hash.Abbreviated}", Fix: null),
+        };
     }
 
     /// <summary>The API: it answers, at the epoch the lease holds.</summary>

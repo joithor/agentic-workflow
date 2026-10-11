@@ -23,7 +23,7 @@ internal static partial class ApiProblems
                 LogUnhandled(context.RequestServices.GetRequiredService<ILoggerFactory>().CreateLogger(typeof(ApiProblems)), e,
                     context.Request.Method, context.Request.Path.Value ?? string.Empty);
                 await Write(context, SindriErrors.ApiInternal.Code, StatusCodes.Status500InternalServerError,
-                    $"{context.Request.Method} {context.Request.Path} failed with {e.GetType().Name}; the control plane logged it (see <home>/logs/serve.log)").ConfigureAwait(false);
+                    $"{context.Request.Method} {context.Request.Path} failed with {e.GetType().Name}; the control plane logged it").ConfigureAwait(false);
                 return;
             }
 

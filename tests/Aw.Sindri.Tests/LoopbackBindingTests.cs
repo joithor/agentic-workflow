@@ -2,10 +2,12 @@ using System.Net;
 using Aw.Kernel;
 using Aw.Kernel.Telemetry;
 using Aw.Sindri.Host;
+using Aw.Sindri.Tests.Ledger;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting.Server;
 using Microsoft.AspNetCore.Hosting.Server.Features;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Time.Testing;
 
@@ -117,6 +119,38 @@ public sealed class LoopbackBindingTests
         using var response = await client.SendAsync(request, TestContext.Current.CancellationToken);
 
         Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
+    }
+
+    [Theory, Trait("Lane", "integration")]
+    [InlineData("ASPNETCORE_ENVIRONMENT")]
+    [InlineData("DOTNET_ENVIRONMENT")]
+    public async Task An_inherited_development_environment_still_answers_a_bad_body_with_400_SND_CLI_003(string variable)
+    {
+        var before = Environment.GetEnvironmentVariable(variable);
+        Environment.SetEnvironmentVariable(variable, "Development");
+        try
+        {
+            using var home = new TempHome();
+            var app = LoopbackBinding.Build([], n => n == "AW_SINDRI_HOME" ? home.Path : null, new FakeTimeProvider());
+            await using (app)
+            {
+                _ = Pipeline.Configure(app);
+                await app.StartAsync(TestContext.Current.CancellationToken);
+                using var client = new HttpClient { BaseAddress = new Uri(Address(app)) };
+                using var body = new StringContent("""{"hash":""", System.Text.Encoding.UTF8, "application/json");
+
+                using var response = await client.PostAsync(new Uri("/sindri/profile/approve", UriKind.Relative), body, TestContext.Current.CancellationToken);
+                var text = await response.Content.ReadAsStringAsync(TestContext.Current.CancellationToken);
+
+                Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+                Assert.Equal("SND-CLI-003", System.Text.Json.JsonDocument.Parse(text).RootElement.GetProperty("title").GetString());
+                Assert.Equal(Environments.Production, app.Environment.EnvironmentName);
+            }
+        }
+        finally
+        {
+            Environment.SetEnvironmentVariable(variable, before);
+        }
     }
 
     private static async Task<WebApplication> Started()
