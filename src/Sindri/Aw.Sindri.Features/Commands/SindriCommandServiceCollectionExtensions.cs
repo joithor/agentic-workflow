@@ -20,7 +20,7 @@ public static class SindriCommandServiceCollectionExtensions
     public static IServiceCollection AddCommand<TCommand, TResult, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] TService>(this IServiceCollection services)
         where TCommand : ICommand<TResult>
         where TService : class, IService<TCommand, TResult>
-        => services.AddValidated<TCommand, TResult, TService>();
+        => services.AddChained<TCommand, TResult, TService>();
 
     /// <summary>Adds <typeparamref name="TService"/> as the query <typeparamref name="TQuery"/>'s service, behind validation.</summary>
     /// <param name="services">The service collection.</param>
@@ -31,7 +31,10 @@ public static class SindriCommandServiceCollectionExtensions
     public static IServiceCollection AddQuery<TQuery, TView, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] TService>(this IServiceCollection services)
         where TQuery : IQuery<TView>
         where TService : class, IService<TQuery, TView>
-        => services.AddValidated<TQuery, TView, TService>();
+        => services
+            .AddScoped<TService>()
+            .AddScoped<IService<TQuery, TView>>(static sp =>
+                new QuerySpan<TQuery, TView>(new ValidatingService<TQuery, TView>(sp.GetRequiredService<TService>(), sp.GetRequiredService<IValidator<TQuery>>())));
 
     /// <summary>Adds <typeparamref name="TService"/> as the issue <typeparamref name="TIssue"/>'s service, behind the command chain.</summary>
     /// <param name="services">The service collection.</param>
@@ -42,13 +45,18 @@ public static class SindriCommandServiceCollectionExtensions
     public static IServiceCollection AddIssue<TIssue, TResult, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] TService>(this IServiceCollection services)
         where TIssue : IIssue<TResult>
         where TService : class, IService<TIssue, TResult>
-        => services.AddValidated<TIssue, TResult, TService>();
+        => services.AddChained<TIssue, TResult, TService>();
 
-    private static IServiceCollection AddValidated<TRequest, TResponse, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] TService>(this IServiceCollection services)
+    /// <summary>The command chain, outermost first: gate, audit, authorization, validation, then the handler.</summary>
+    private static IServiceCollection AddChained<TRequest, TResponse, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] TService>(this IServiceCollection services)
         where TRequest : notnull
         where TService : class, IService<TRequest, TResponse>
         => services
+            .AddSingleton<AuditTrail>()
             .AddScoped<TService>()
             .AddScoped<IService<TRequest, TResponse>>(static sp =>
-                new ValidatingService<TRequest, TResponse>(sp.GetRequiredService<TService>(), sp.GetRequiredService<IValidator<TRequest>>()));
+                new CommandGate<TRequest, TResponse>(
+                    new AuditingService<TRequest, TResponse>(
+                        new AuthorizingService<TRequest, TResponse>(
+                            new ValidatingService<TRequest, TResponse>(sp.GetRequiredService<TService>(), sp.GetRequiredService<IValidator<TRequest>>())))));
 }
