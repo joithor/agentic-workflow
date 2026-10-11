@@ -147,6 +147,9 @@ adds both; a slice without a new id adds only `A.cs`.
 Without `--files-only` it runs the same checks as the normal mode, under the heavy-job lock. With it, it writes the
 files only (the unit tests).
 
+For example, once the phase's contract unit has added Sindri's `A.cs` and `IdsJsonContext.cs` (until then this is
+refused with `NS-SLICE-ONLY`):
+
 ```bash
 node scripts/scaffold/new-slice.mjs --slice-only --package Sindri --slice GetJob --behavior returns_the_job \
   --surface http --route "GET /jobs/{jobId}" --ids JobId:string
