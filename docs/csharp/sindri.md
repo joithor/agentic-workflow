@@ -38,8 +38,8 @@ the approval is a ledger event fenced by the lease.
 ## Files
 
 `AW_SINDRI_HOME`, default `$AW_STATE_DIR/sindri-app` (`$AW_STATE_DIR` defaults to `~/.agentic-workflow`). It is apart from
-the TS sindri's `$AW_STATE_DIR/sindri` until the switch; no TS state is read. A directory Sindri creates is 0700 (one that already exists keeps the
-mode its owner gave it); files are 0600.
+the TS sindri's `$AW_STATE_DIR/sindri` until the switch; no TS state is read. A directory Sindri creates is 0700: the directory itself is made 0700, and parents it creates keep the umask (one
+that already exists keeps the mode its owner gave it); files are 0600.
 
 | Path | What |
 |---|---|
@@ -129,8 +129,8 @@ foreign browser `Origin` a 403):
 | `POST /sindri/profile/approve` | `ApproveProfile` (`{hash, confirmed}`) |
 | `GET /sindri/events?after=N` | `StreamEvents` as server-sent events: one event per ledger row, `id` = `seq`, `event` = type; resumes from `after` or `Last-Event-ID`; polls the ledger once a second; ends when the client goes away or a stop is requested, so a stop doesn't wait out Kestrel's 30 s graceful shutdown |
 
-A service's error is ProblemDetails with the `SND-*` code as `title`. The loopback guard's 400 and 403 and an unknown
-route's 404 carry no ProblemDetails body. The approve route's `confirmed` is the CLI's claim that the human typed the
+A service's error is ProblemDetails with the `SND-*` code as `title`. The loopback guard's 400 and 403, an unknown
+route's 404 and a wrong method's 405 carry no ProblemDetails body. The approve route's `confirmed` is the CLI's claim that the human typed the
 confirmation; in S1 that terminal check in the CLI is the only gate. There is no API token in S1: the threat model guards honest
 mistakes (`docs/csharp/bugfix.md`), and approval stays terminal-bound in the CLI. Device-bound approvals for the UI
 (passkeys, §17.21 D6) come with the UI's action forms.
@@ -160,7 +160,7 @@ blocks.
 | `SND-LEDGER-001` | The ledger's schema doesn't match this build |
 | `SND-LEDGER-002` | The ledger can't be opened or written |
 | `SND-API-001` | The control plane isn't running (no endpoint record, or nothing answers at it) |
-| `SND-API-002` | It didn't answer within 2 s |
+| `SND-API-002` | It didn't answer the ping within 2 s, or the call itself within 10 s |
 | `SND-API-003` | The API port is taken by another program |
 | `SND-CLI-001` | Unknown command |
 | `SND-CLI-002` | `sindri serve` didn't come up after starting it |

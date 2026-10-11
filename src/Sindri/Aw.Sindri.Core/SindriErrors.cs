@@ -41,7 +41,7 @@ public static class SindriErrors
     /// <summary>SND-API-001: the control-plane process isn't running.</summary>
     public static readonly ErrorDefinition NotRunning = new("SND-API-001", ErrorKind.Unavailable, "Sindri is not running");
 
-    /// <summary>SND-API-002: the control-plane process didn't answer in time.</summary>
+    /// <summary>SND-API-002: the control-plane process didn't answer in time (the ping within 2 s, or the call itself within 10 s).</summary>
     public static readonly ErrorDefinition ApiTimeout = new("SND-API-002", ErrorKind.Timeout, "Sindri didn't answer in time");
 
     /// <summary>SND-API-003: the API's port is taken by another program.</summary>

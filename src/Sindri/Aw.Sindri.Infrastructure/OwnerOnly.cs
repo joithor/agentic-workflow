@@ -6,7 +6,10 @@ internal static class OwnerOnly
     private const UnixFileMode Directory = UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute;
     private const UnixFileMode File = UnixFileMode.UserRead | UnixFileMode.UserWrite;
 
-    /// <summary>Creates <paramref name="path"/> (and parents) if needed; a directory this call creates is made 0700, an existing one is left as its owner set it.</summary>
+    /// <summary>
+    /// Creates <paramref name="path"/> (and parents) if needed. The directory itself is made 0700; parents it creates keep
+    /// the umask, and an existing directory is left as its owner set it.
+    /// </summary>
     /// <param name="path">The directory.</param>
     internal static void EnsureDirectory(string path)
     {
