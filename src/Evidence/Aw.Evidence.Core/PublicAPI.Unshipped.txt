@@ -1536,3 +1536,7 @@ virtual Aw.Evidence.Core.Browser.Locator.PrintMembers(System.Text.StringBuilder!
 virtual Aw.Evidence.Core.Scripts.ExpectedState.EqualityContract.get -> System.Type!
 virtual Aw.Evidence.Core.Scripts.ExpectedState.Equals(Aw.Evidence.Core.Scripts.ExpectedState? other) -> bool
 virtual Aw.Evidence.Core.Scripts.ExpectedState.PrintMembers(System.Text.StringBuilder! builder) -> bool
+Aw.Evidence.Core.Scripts.KindFirstConverter
+Aw.Evidence.Core.Scripts.KindFirstConverter.KindFirstConverter() -> void
+override Aw.Evidence.Core.Scripts.KindFirstConverter.Read(ref System.Text.Json.Utf8JsonReader reader, System.Type! typeToConvert, System.Text.Json.JsonSerializerOptions! options) -> Aw.Evidence.Core.Scripts.ExpectedState?
+override Aw.Evidence.Core.Scripts.KindFirstConverter.Write(System.Text.Json.Utf8JsonWriter! writer, Aw.Evidence.Core.Scripts.ExpectedState! value, System.Text.Json.JsonSerializerOptions! options) -> void
