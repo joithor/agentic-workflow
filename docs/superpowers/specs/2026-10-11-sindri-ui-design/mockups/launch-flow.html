@@ -13,6 +13,7 @@
   --line1:#23252a; --line2:#34343a; --line3:#3e3e44;
   --ink:#f7f8f8; --ink-muted:#d0d6e0; --ink-subtle:#8a8f98; --ink-tertiary:#62666d;
   --brand:#5e6ad2; --brand-hover:#828fff; --link:#828fff;
+  --brand-hover-fill:#535fc6; --brand-pressed:#4c57be; --error:#eb5757;
   --success:#27a644;
   --attn:#f2994a; --attn-soft:rgba(242,153,74,.14);
   --sans:"Inter",system-ui,-apple-system,"Segoe UI",sans-serif;
@@ -109,6 +110,8 @@ a{color:var(--link);text-decoration:none}
   border:1px solid var(--line2);background:var(--s3);color:var(--ink-muted);white-space:nowrap}
 .btn.lg{height:32px;padding:0 12px;font-size:14px}
 .btn.primary{background:var(--brand);border-color:var(--brand);color:#fff}
+.btn.primary:hover{background:var(--brand-hover-fill);border-color:var(--brand-hover-fill)}
+.btn.primary:active{background:var(--brand-pressed);border-color:var(--brand-pressed)}
 .btn.ghost{background:transparent;border-color:transparent;color:var(--ink-subtle)}
 .btn[disabled],.btn.busy{cursor:not-allowed}
 .btn[disabled]:not(.busy){opacity:.55}
@@ -156,7 +159,9 @@ a{color:var(--link);text-decoration:none}
 .notice .t b{color:var(--ink);font-weight:500}
 .notice .t p{color:var(--ink-subtle);font-size:12px;margin-top:2px}
 .notice .t p code{color:var(--ink-muted);font-size:11.5px}
-.fail{border-color:var(--line2)}
+.fail{border-color:var(--line2);box-shadow:inset 2px 0 0 var(--error)}
+.fail .ic{color:var(--error)}
+.phase{font-size:11px;color:var(--ink-subtle);border:1px dashed var(--line2);border-radius:4px;padding:0 6px;height:20px;display:inline-flex;align-items:center;margin-left:8px;white-space:nowrap}
 .fail .code{font-family:var(--mono);font-size:11px;color:var(--ink-muted);border:1px solid var(--line2);border-radius:4px;padding:0 5px;margin-left:6px;font-weight:400}
 .fail .detail{font-family:var(--mono);font-size:11.5px;color:var(--ink-subtle);margin-top:3px}
 .fail .fixrow{display:flex;gap:8px;align-items:center;margin-top:8px;flex-wrap:wrap}
@@ -175,7 +180,7 @@ a{color:var(--link);text-decoration:none}
 
 .ny{position:relative;display:flex;align-items:center;gap:16px;padding:12px 16px 12px 20px;width:796px}
 .ny .bar{position:absolute;left:0;top:8px;bottom:8px;width:3px;border-radius:0 3px 3px 0}
-.ny.pulse .bar{background:var(--attn);animation:pulse 1.8s ease-in-out infinite}
+.ny.pulse .bar{background:var(--attn);animation:pulse 1.6s ease-in-out infinite}
 @keyframes pulse{0%,100%{opacity:1}50%{opacity:.35}}
 .ny .kind{width:96px;display:flex;flex-direction:column;gap:4px;flex:none}
 .ny .kind .chip{align-self:flex-start}
@@ -195,8 +200,8 @@ a{color:var(--link);text-decoration:none}
 /* never box */
 .never{border:1px solid var(--line1);border-radius:12px;background:var(--s1);padding:14px 16px;max-width:620px}
 .never ul{list-style:none;margin-top:8px;display:flex;flex-direction:column;gap:5px}
-.never li{display:flex;gap:8px;color:var(--ink-subtle);font-size:12px}
-.never li::before{content:"×";color:var(--ink-muted);font-weight:600;width:10px;flex:none}
+.never li{display:block;position:relative;padding-left:18px;color:var(--ink-subtle);font-size:12px}
+.never li::before{content:"×";position:absolute;left:0;color:var(--ink-muted);font-weight:600}
 .never li code{color:var(--ink-muted);font-size:11.5px}
 
 /* ───────── sequence ───────── */
@@ -239,6 +244,7 @@ a{color:var(--link);text-decoration:none}
   <symbol id="copy" viewBox="0 0 12 12"><rect x="3.5" y="3.5" width="7" height="7" rx="1.5" stroke="currentColor" fill="none" stroke-width="1.1"/><path d="M8.5 3.5V2.6c0-.6-.5-1.1-1.1-1.1H2.6c-.6 0-1.1.5-1.1 1.1v4.8c0 .6.5 1.1 1.1 1.1h.9" stroke="currentColor" fill="none" stroke-width="1.1"/></symbol>
   <symbol id="check" viewBox="0 0 12 12"><path d="m2.5 6.2 2.3 2.3 4.7-5" stroke="currentColor" fill="none" stroke-width="1.4"/></symbol>
   <symbol id="okc" viewBox="0 0 14 14"><circle cx="7" cy="7" r="6" stroke="currentColor" fill="none" stroke-width="1.2"/><path d="m4.3 7.2 1.9 1.9 3.6-3.8" stroke="currentColor" fill="none" stroke-width="1.3"/></symbol>
+  <symbol id="xc" viewBox="0 0 14 14"><circle cx="7" cy="7" r="5.8" stroke="currentColor" fill="none" stroke-width="1.2"/><path d="m4.9 4.9 4.2 4.2M9.1 4.9 4.9 9.1" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></symbol>
   <symbol id="warn" viewBox="0 0 14 14"><path d="M7 1.6 13 12.4H1L7 1.6Z" stroke="currentColor" fill="none" stroke-width="1.2" stroke-linejoin="round"/><path d="M7 5.6v3.2M7 10.3v.1" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></symbol>
   <symbol id="pause" viewBox="0 0 12 12"><path d="M4 2.5v7M8 2.5v7" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></symbol>
   <symbol id="back" viewBox="0 0 12 12"><path d="M5 3 2 6l3 3M2.5 6H8a2 2 0 0 1 2 2v1" stroke="currentColor" fill="none" stroke-width="1.2"/></symbol>
@@ -357,7 +363,7 @@ cursor { present, limited }</code></div>
                 <div class="l3"><span class="word"><i></i>With you</span><span style="color:var(--ink-subtle)">automation paused</span></div>
                 <div class="withyou">
                   <span class="t">With you since <b>12:31</b> (0m)</span>
-                  <button class="btn"><svg width="12" height="12"><use href="#back"/></svg>Hand back <kbd>H</kbd></button>
+                  <button class="btn"><svg width="12" height="12"><use href="#back"/></svg>Hand back <kbd>B</kbd></button>
                 </div>
               </div>
               <div class="lb">
@@ -385,7 +391,7 @@ cursor { present, limited }</code></div>
 
       <!-- 4 ATTACH -->
       <section class="frame">
-        <div class="fhead"><span class="num">4</span><h2>Attach: a live session Sindri launched</h2><span class="chip">OpenItem:attach</span></div>
+        <div class="fhead"><span class="num">4</span><h2>Attach: a live session Sindri launched<span class="phase">with the engine (U6b)</span></h2><span class="chip">OpenItem:attach</span></div>
         <div class="fbody">
           <div class="cropwrap">
             <div class="croplabel"><span>Detail sheet · ITM-01JA1 · launch block, before and after the click</span><span>520 px</span></div>
@@ -422,63 +428,50 @@ liveSession { target:claude-code,
 
       <!-- 5 TAKE OVER -->
       <section class="frame">
-        <div class="fhead"><span class="num">5</span><h2>Take over a running factory step</h2><span class="chip">ApplyCommand:takeover → OpenItem:resume</span></div>
+        <div class="fhead"><span class="num">5</span><h2>Take over a running step</h2><span class="chip">ApplyCommand:takeover</span></div>
         <div class="fbody">
           <div class="cropwrap">
-            <div class="croplabel"><span>Detail sheet · ITM-01JE7 · launch block, three moments</span><span>520 px</span></div>
+            <div class="croplabel"><span>Detail sheet · ITM-01JE7 · launch block, before and after the click</span><span>520 px</span></div>
             <div class="crop">
               <div class="lb">
-                <div class="live"><span class="state"><i></i>Running</span><span class="dim">· step <code>produce</code> round 2/3 · Claude Code worker · since 12:20</span></div>
+                <div class="live"><span class="state"><i></i>Running</span><span class="dim">· step <code>produce</code> round 2/3 · desk runtime · since 12:20</span></div>
                 <div class="lb-row">
-                  <button class="btn lg"><svg width="12" height="12"><use href="#pause"/></svg>Attach — pauses automation <kbd>O</kbd></button>
+                  <button class="btn lg"><svg width="12" height="12"><use href="#pause"/></svg>Take over <kbd>T</kbd></button>
+                  <span class="hint">pauses automation</span>
                 </div>
-                <p class="lb-foot">A running session is never resumed. Sindri stops the worker first, then offers its session.</p>
               </div>
               <div class="lb">
-                <div class="live" style="margin-bottom:0"><span class="state"><span class="spin" style="border-color:var(--line3);border-top-color:var(--ink-muted)" aria-hidden="true"></span>Pausing</span><span class="dim">· waiting for the worker to stop</span></div>
-              </div>
-              <div class="lb">
-                <div class="live"><span class="state"><i class="pause"></i>Worker stopped</span><span class="dim">· 12:33 · automation paused</span></div>
-                <div class="lb-row">
-                  <div class="split">
-                    <button class="btn primary lg main"><svg width="12" height="12"><use href="#warp"/></svg>Resume in Claude Code <kbd>O</kbd></button>
-                    <button class="btn primary lg chev" aria-label="Choose agent"><svg width="10" height="10"><use href="#chev"/></svg></button>
-                  </div>
-                  <span class="hint">session <code>4f1c…</code></span>
-                </div>
+                <div class="live"><span class="state"><i class="pause"></i>Taken over</span><span class="dim">· 12:33 · automation paused · with you</span></div>
+                <p class="lb-foot">Stopping a running worker and resuming its session arrive with a later engine phase (X20).</p>
               </div>
             </div>
           </div>
           <div class="anno">
             <span class="k">Order</span>
             <div class="ev"><code>1 ApplyCommand:takeover (pause)
-2 engine records worker stop
-3 launch.resumable { claude-code,
-    sessionId:<span class="hl">4f1c…</span> }
-4 OpenItem:resume</code></div>
-            <p>Step 3 appears only after the engine records the stop (E-6).</p>
+2 engine records the takeover
+3 item moves to <span class="hl">With you</span></code></div>
+            <p>Steps run on the desk runtime in WF P1 to P7, so there is no worker process to stop.</p>
           </div>
         </div>
-        <p class="cap"><b>Take over.</b> "Attach — pauses automation" pauses first; Resume appears only once the worker has stopped.</p>
+        <p class="cap"><b>Take over — pauses automation.</b> Pauses the instance. Stopping a running worker and resuming its session arrive with a later engine phase.</p>
       </section>
 
       <!-- 6 RESUME -->
       <section class="frame">
-        <div class="fhead"><span class="num">6</span><h2>Resume a known ended session</h2><span class="chip">OpenItem:resume</span></div>
+        <div class="fhead"><span class="num">6</span><h2>Resume a session after handback<span class="phase">with the engine (U6b)</span></h2><span class="chip">OpenItem:resume</span></div>
         <div class="fbody">
           <div class="cropwrap">
             <div class="croplabel"><span>Detail sheet · ITM-01JD2 · launch block</span><span>520 px</span></div>
             <div class="crop">
               <div class="lb">
                 <div class="lb-head"><span class="eyebrow">Work on it</span><span class="meta"><svg width="12" height="12"><use href="#warp"/></svg>Warp</span></div>
-                <div class="live"><span class="state"><i class="ended"></i>Session ended</span><span class="dim">· Claude Code · 11:12 · session <code>9b27…</code></span></div>
+                <div class="live"><span class="state"><i class="ended"></i>Handed back 12:40</span><span class="dim">· Claude Code · session <code>9b27…</code></span></div>
                 <div class="lb-row">
-                  <div class="split">
-                    <button class="btn primary lg main"><svg width="12" height="12"><use href="#warp"/></svg>Resume in Claude Code <kbd>O</kbd></button>
-                    <button class="btn primary lg chev" aria-label="Choose agent or open new"><svg width="10" height="10"><use href="#chev"/></svg></button>
-                  </div>
+                  <button class="btn primary lg"><svg width="12" height="12"><use href="#warp"/></svg>Resume Claude Code session <kbd>O</kbd></button>
+                  <button class="btn lg">Open new</button>
                 </div>
-                <p class="lb-foot">Opens a new Warp tab in <code>~/repos/sindri-app</code> running <code>claude --resume 9b27…</code>. The chevron also offers a fresh session.</p>
+                <p class="lb-foot">Opens a new Warp tab in <code>~/repos/sindri-app</code> running <code>claude --resume 9b27…</code>. Open new starts a fresh session instead.</p>
               </div>
             </div>
           </div>
@@ -487,10 +480,10 @@ liveSession { target:claude-code,
             <div class="ev"><code>modes:[resume, open]
 resumable { target:claude-code,
   sessionId:9b27… }</code></div>
-            <p>If the session can't be found, the block falls back to Open (SND-LAUNCH-006).</p>
+            <p>Offered only after a handback: the handback is the human's signal that the session is finished. If the session can't be found, the block falls back to Open (SND-LAUNCH-006).</p>
           </div>
         </div>
-        <p class="cap"><b>Resume.</b> A session that ended or crashed comes back in a new tab with the target's resume command.</p>
+        <p class="cap"><b>Resume.</b> After a handback, the known session comes back in a new tab with the target's resume command.</p>
       </section>
 
       <!-- 7 HANDBACK -->
@@ -506,7 +499,7 @@ resumable { target:claude-code,
                 <div class="l3"><span class="word"><i></i>With you</span><span style="color:var(--ink-subtle)">Attached in Warp</span></div>
                 <div class="withyou">
                   <span class="t">With you since <b>12:01</b> (25m)</span>
-                  <button class="btn primary"><svg width="12" height="12"><use href="#back"/></svg>Hand back <kbd>H</kbd></button>
+                  <button class="btn primary"><svg width="12" height="12"><use href="#back"/></svg>Hand back <kbd>B</kbd></button>
                 </div>
               </div>
             </div>
@@ -522,7 +515,7 @@ resumable { target:claude-code,
                   <div class="l2"><span class="tag">sindri-app</span>with you since 12:01 (25m) · Attached in Warp</div>
                 </div>
                 <div class="acts">
-                  <button class="btn primary"><svg width="12" height="12"><use href="#back"/></svg>Hand back <kbd>A</kbd></button>
+                  <button class="btn primary"><svg width="12" height="12"><use href="#back"/></svg>Hand back <kbd>B</kbd></button>
                   <button class="btn"><svg width="12" height="12"><use href="#warp"/></svg>Attach</button>
                 </div>
               </div>
@@ -534,7 +527,7 @@ resumable { target:claude-code,
             <div class="crop row">
               <div class="ny pulse">
                 <span class="bar" aria-hidden="true"></span>
-                <div class="kind"><span class="chip">park</span><span class="motion">Pulsing · idle</span></div>
+                <div class="kind"><span class="chip">park</span><span class="motion">needs you now</span></div>
                 <div class="what">
                   <div class="l1"><span class="title">Hand back ITM-01JA1?</span><span class="reason" style="color:var(--ink-muted)">With you for 2h</span></div>
                   <div class="l2"><span class="tag">sindri-app</span><span style="overflow:hidden;text-overflow:ellipsis">parked: takeoverIdle · Onyx adapter secret pointers</span></div>
@@ -542,7 +535,7 @@ resumable { target:claude-code,
                 <div class="since"><b>0m</b>since 14:01</div>
                 <span class="cut" aria-hidden="true"></span>
                 <div class="acts">
-                  <button class="btn primary"><svg width="12" height="12"><use href="#back"/></svg>Hand back <kbd>A</kbd></button>
+                  <button class="btn primary"><svg width="12" height="12"><use href="#back"/></svg>Hand back <kbd>B</kbd></button>
                   <button class="btn"><svg width="12" height="12"><use href="#warp"/></svg>Attach</button>
                 </div>
               </div>
@@ -554,7 +547,7 @@ resumable { target:claude-code,
             <div class="crop row">
               <div class="ny pulse">
                 <span class="bar" aria-hidden="true"></span>
-                <div class="kind"><span class="chip">decision</span><span class="motion">Pulsing · urgent</span></div>
+                <div class="kind"><span class="chip">decision</span><span class="motion">needs you now</span></div>
                 <div class="what">
                   <div class="l1"><span class="id mono">REQ</span><span class="title">Hand ITM-01JC8 back to Sindri: fix is pushed</span></div>
                   <div class="l2"><span class="tag">agentic-workflow</span>Filed by session <code>7a3e…</code></div>
@@ -562,8 +555,8 @@ resumable { target:claude-code,
                 <div class="since"><b>2m</b>since 12:58</div>
                 <span class="cut" aria-hidden="true"></span>
                 <div class="acts">
-                  <button class="btn primary">Accept <kbd>A</kbd></button>
-                  <button class="btn">Decline <kbd>D</kbd></button>
+                  <button class="btn primary">Accept</button>
+                  <button class="btn">Decline <kbd>X</kbd></button>
                 </div>
               </div>
             </div>
@@ -581,7 +574,7 @@ resumable { target:claude-code,
             <div class="croplabel"><span>8a · ITM-01JC8 · before the click</span><span>520 px</span></div>
             <div class="crop"><div class="lb">
               <div class="notice fail">
-                <span class="ic"><svg width="14" height="14"><use href="#warn"/></svg></span>
+                <span class="ic" aria-hidden="true"><svg width="14" height="14"><use href="#xc"/></svg></span>
                 <div class="t"><b>Warp isn't installed</b><span class="code">SND-LAUNCH-002</span>
                   <div class="detail">no app with bundle id dev.warp.Warp-Stable</div>
                   <div class="fixrow"><a href="#">Install Warp</a><span class="lbl">or copy the CLI instead:</span></div>
@@ -622,7 +615,7 @@ resumable { target:claude-code,
             <div class="croplabel"><span>8c · ITM-01JD2 · before the click</span><span>520 px</span></div>
             <div class="crop"><div class="lb">
               <div class="notice fail">
-                <span class="ic"><svg width="14" height="14"><use href="#warn"/></svg></span>
+                <span class="ic" aria-hidden="true"><svg width="14" height="14"><use href="#xc"/></svg></span>
                 <div class="t"><b>Repo not on disk</b><span class="code">SND-LAUNCH-004</span>
                   <div class="detail">~/repos/sindri-app: not a git repository</div>
                   <div class="fixrow"><span class="cmd"><span class="prompt">$</span><code>git clone … ~/repos/sindri-app</code><button><svg width="12" height="12"><use href="#copy"/></svg>Copy</button></span></div>
@@ -639,7 +632,7 @@ resumable { target:claude-code,
             <div class="croplabel"><span>8d · ITM-01JC8 · after the click</span><span>520 px</span></div>
             <div class="crop"><div class="lb">
               <div class="notice fail">
-                <span class="ic"><svg width="14" height="14"><use href="#warn"/></svg></span>
+                <span class="ic" aria-hidden="true"><svg width="14" height="14"><use href="#xc"/></svg></span>
                 <div class="t"><b>Warp didn't accept the launch</b><span class="code">SND-LAUNCH-001</span>
                   <div class="detail">open warp://launch/sindri-LCH-01JG2Q.yaml exited 1</div>
                   <div class="fixrow">

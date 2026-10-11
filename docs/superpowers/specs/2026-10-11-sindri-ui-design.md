@@ -120,9 +120,11 @@ Three layouts were mocked with the same fixture data (`shotgun/contact-sheet.htm
 - **Home** (the default page, §4.2): a page title with a one-line summary in words, then four panels in a fixed order:
   **Needs you** (full width), **Running and With you** (left) beside **Queued** (right), and a **Sindri health** strip.
 - **Caps:** Running and With you shows at most 5 rows (With you first, then running in the API's order), then "Show
-  all N in Queue (`G R`)"; Queued shows 5. The fold rule holds at 1280 × 800 and text scale 1.0; at scale 1.3 the
-  needs-you cap drops to 4. At the 900 × 600 minimum the page scrolls.
-- **Needs-you cap:** Home shows at most 6 needs-you rows (all `pulse` rows first, as the API orders them), then
+  all N in Queue (`G R`)"; Queued shows 5. **The fold rule:** at 1280 × 800 and text scale 1.0, the summary line, Needs you
+  (up to 5 rows) and the tops of Running and Queued are above the fold; health is always above it in the top bar's
+  pill, so Home's health strip may sit just below (the mockup at 5 rows ends near 840 px). At scale 1.3 the needs-you
+  cap drops to 4. At the 900 × 600 minimum the page scrolls.
+- **Needs-you cap:** Home shows at most 5 needs-you rows (all `pulse` rows first, as the API orders them), then
   "Show all N" which expands the panel in place. So Running, Queued and Health stay above the fold at 1280 × 800 with
   up to 6 rows, and the summary line always states the totals.
 - **Detail sheet:** a right-side sheet (default 520 px, resizable 420–760 px, `surface-1`, a `hairline` left rule)
@@ -198,7 +200,7 @@ confirmation and mark the view stale until the next event (API §2.4).
 ### 4.2 Home
 
 The default page (§3.2): four panels in a fixed order:
-1. **Needs you:** up to six rows with their actions inline (§4.3), and "Show all N" expanding the panel in place.
+1. **Needs you:** up to five rows with their actions inline (§4.3), and "Show all N" expanding the panel in place.
 2. **Running and With you:** one line each: id, title, step, agent, where it runs, since, budget, and its action
    (**Attach**, **Hand back**).
 3. **Queued:** the count and the next five, each with **Open**.
@@ -909,6 +911,10 @@ All in `2026-10-11-sindri-ui-design/`, self-contained HTML with the fixture data
 across every screen), each with a 1280-wide PNG beside it. They are design references, not the implementation. The
 `mockups/` files are the visual reference; `shotgun/variant-2.html` is a layout reference only (it predates the
 attention colour, the focus ring and the reduced-motion word). Where a mockup and this text differ, the text wins.
+Known differences: the mockups' kind chips show the short kind (`park`), where the app renders the API's `label`
+(`parked · no-progress`, E-7); the sheet mockups use a slightly different page shell from `home` and `queue`; and the
+Decisions count varies between files. The `/impeccable` critique (32/40) is in the review folder
+(`impeccable-critique.md`); its 16 fixes are in the files.
 
 | File | Shows |
 |---|---|
@@ -989,7 +995,7 @@ review is in `pass2/consolidated-review.md` beside the pass-1 files.
 | P2-2 Attach and Resume need engine states but sat in U6a | Moved to U6b with their own signal; U6a is Open only (§6.2, §18) |
 | P2-3 `StartInstance` has no address for a nonce | It takes none; WF §6.1 makes it idempotent (§9.1) |
 | P2-4 X18 and X20 carried the old design | Rewritten (§13, README) |
-| P2-5 Mockups predate revision 2 | Updated: Mark all seen, the Running cap, the Error token, the hover colour, and the launch flow's take-over frame |
+| P2-5 Mockups predate revision 2 | Updated with the `/impeccable` pass: Mark all seen, the Running cap, the Error token, the hover colour, the urgency words, and the launch flow's take-over frame. The critique showed the 800 px fold claim was wrong; §3.2's fold rule now says what fits (health stays in the pill) |
 | P2-6…P2-10 (LOW) | E-6 wording and actor row; the pill's words split by source; E-17 pointer in §6.7; fixed keys reserved against catalog shortcuts; §7 sentence and the `primary-focus` row |
 
 ## 18. Phases

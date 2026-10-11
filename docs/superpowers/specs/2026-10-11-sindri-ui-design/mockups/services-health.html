@@ -14,6 +14,7 @@
   --line1:#23252a; --line2:#34343a; --line3:#3e3e44;
   --ink:#f7f8f8; --ink-muted:#d0d6e0; --ink-subtle:#8a8f98; --ink-tertiary:#62666d;
   --brand:#5e6ad2; --brand-hover:#828fff; --focus:#828fff;
+  --brand-hover-fill:#535fc6; --brand-pressed:#4c57be; --error:#eb5757;
   --success:#27a644;
   --attn:#f2994a; --attn-soft:rgba(242,153,74,.14);
   --sans:"Inter",system-ui,-apple-system,"Segoe UI",sans-serif;
@@ -60,6 +61,7 @@ svg{flex:none}
 .dot.hollow{background:transparent;border:1.5px solid var(--ink-subtle)}
 .health .sep{width:1px;height:14px;background:var(--line2)}
 .health .fail{display:flex;align-items:center;gap:5px;color:var(--ink-muted)}
+.health .fail svg{color:var(--error)}
 .health .age{color:var(--ink-subtle)}
 .attn-band{height:2px;background:var(--attn);animation:breathe 1.6s ease-in-out infinite}
 @keyframes breathe{0%,100%{opacity:1}50%{opacity:.35}}
@@ -83,6 +85,8 @@ svg{flex:none}
 .btn{height:28px;padding:0 10px;border-radius:8px;font-size:13px;font-weight:500;display:inline-flex;align-items:center;gap:6px;
   border:1px solid var(--line2);background:var(--s3);color:var(--ink-muted);white-space:nowrap}
 .btn.primary{background:var(--brand);border-color:var(--brand);color:#fff}
+.btn.primary:hover{background:var(--brand-hover-fill);border-color:var(--brand-hover-fill)}
+.btn.primary:active{background:var(--brand-pressed);border-color:var(--brand-pressed)}
 .btn.ghost{background:transparent;border-color:transparent;color:var(--ink-subtle)}
 .btn.danger{background:transparent;border-color:var(--line3);color:var(--ink)}
 .btn[disabled]{color:var(--ink-tertiary);background:var(--s2);border-color:var(--line1);cursor:not-allowed}
@@ -126,7 +130,8 @@ svg{flex:none}
 .banner{display:flex;align-items:center;gap:12px;padding:10px 14px;border:1px solid var(--line2);border-radius:8px;background:var(--s2)}
 .banner .w{font-weight:600;color:var(--ink);display:inline-flex;align-items:center;gap:6px;white-space:nowrap}
 .banner .t{color:var(--ink-muted);flex:1}
-.banner.err{border-color:var(--line3);background:var(--s3);box-shadow:inset 3px 0 0 var(--ink-muted)}
+.banner.err{border-color:var(--line3);background:var(--s3);box-shadow:inset 2px 0 0 var(--error)}
+.banner.err .w .x{color:var(--error)}
 
 /* side sheet (open) */
 .sheet{position:absolute;top:48px;right:0;bottom:0;width:520px;background:var(--s1);border-left:1px solid var(--line2);
@@ -176,7 +181,8 @@ svg{flex:none}
 .sv .ac{display:flex;gap:6px;justify-content:flex-end}
 .sv .ac .btn{height:26px;padding:0 8px;font-size:12px}
 .sv.failed{position:relative;background:var(--s2)}
-.sv.failed .bar{position:absolute;left:0;top:8px;bottom:8px;width:3px;border-radius:0 3px 3px 0;background:var(--attn)}
+.sv.failed .bar{position:absolute;left:0;top:8px;bottom:8px;width:2px;background:var(--error)}
+.sv .bad i{font-style:normal;color:var(--error)}
 .p6{grid-column:4 / -1;display:flex;gap:10px;align-items:center;justify-content:flex-end;margin-top:2px}
 .svfoot{padding:9px 16px;border-top:1px solid var(--line1);color:var(--ink-subtle);font-size:12px;display:flex;justify-content:space-between}
 
@@ -230,7 +236,7 @@ svg{flex:none}
 
 <main class="page">
   <div class="banner err stall" role="alert">
-    <span class="w">⌛ Stalled</span>
+    <span class="w"><span class="x" aria-hidden="true">✕</span>Stalled</span>
     <span class="t">Views are stalled at 4211: run <code>sindri views rebuild</code></span>
     <span class="aside">Rows below are marked stale</span>
     <button class="btn primary focused">Rebuild views</button>
@@ -253,7 +259,7 @@ svg{flex:none}
         <div class="sv"><span class="nm">heartbeat</span><span class="cad">every 5s</span><span class="ok"><i>✓</i>ok</span><span class="last"><span class="mono">12:21:40</span> · ok</span><span class="nx">12:21:45</span>
           <span class="ac"><button class="btn" disabled title="Available with API P6 · sindri services run heartbeat">Run now</button><button class="btn" disabled title="Available with API P6">Pause</button></span></div>
 
-        <div class="sv failed"><span class="bar" aria-hidden="true"></span><span class="nm">index</span><span class="cad">nightly 03:00</span><span class="bad">✕ failed</span><span class="last"><span class="mono">03:00</span> · failed · <span class="mono">SND-INDEX-012</span> graphify timed out</span><span class="nx">03:00 tomorrow</span>
+        <div class="sv failed"><span class="bar" aria-hidden="true"></span><span class="nm">index</span><span class="cad">nightly 03:00</span><span class="bad"><i aria-hidden="true">✕</i>failed</span><span class="last"><span class="mono">03:00</span> · failed · <span class="mono">SND-INDEX-012</span> graphify timed out</span><span class="nx">03:00 tomorrow</span>
           <span class="ac"><button class="btn" disabled title="Available with API P6 · sindri services run index">Run now</button><button class="btn" disabled title="Available with API P6">Pause</button></span>
           <div class="p6"><span class="pending">Available with API P6</span><span class="cmd"><span class="prompt">$</span><code>sindri services run index</code><button aria-label="Copy command"><svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><rect x="3.5" y="3.5" width="6.5" height="6.5" rx="1.2" stroke="currentColor" fill="none" stroke-width="1.2"/><path d="M2 8V2.8C2 2.4 2.4 2 2.8 2H8" stroke="currentColor" fill="none" stroke-width="1.2"/></svg>Copy</button></span></div>
         </div>

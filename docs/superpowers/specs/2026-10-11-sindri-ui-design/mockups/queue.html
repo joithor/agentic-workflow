@@ -14,6 +14,7 @@
   --line1:#23252a; --line2:#34343a; --line3:#3e3e44;
   --ink:#f7f8f8; --ink-muted:#d0d6e0; --ink-subtle:#8a8f98; --ink-tertiary:#62666d;
   --brand:#5e6ad2; --brand-hover:#828fff; --focus:#828fff;
+  --brand-hover-fill:#535fc6; --brand-pressed:#4c57be; --error:#eb5757;
   --success:#27a644;
   --attn:#f2994a; --attn-soft:rgba(242,153,74,.14);
   --sans:"Inter",system-ui,-apple-system,"Segoe UI",sans-serif;
@@ -57,6 +58,7 @@ svg{flex:none}
 .dot{width:7px;height:7px;border-radius:50%;background:var(--success)}
 .health .sep{width:1px;height:14px;background:var(--line2)}
 .health .fail{display:flex;align-items:center;gap:5px;color:var(--ink-muted)}
+.health .fail svg{color:var(--error)}
 .health .age{color:var(--ink-subtle)}
 .attn-band{height:2px;background:var(--attn);animation:breathe 1.6s ease-in-out infinite}
 @keyframes breathe{0%,100%{opacity:1}50%{opacity:.35}}
@@ -116,7 +118,8 @@ svg{flex:none}
   border:1px solid var(--line2);background:var(--s3);color:var(--ink-muted);white-space:nowrap}
 .btn:hover{background:var(--s4);border-color:var(--line3);color:var(--ink)}
 .btn.primary{background:var(--brand);border-color:var(--brand);color:#fff}
-.btn.primary:hover{background:var(--brand-hover);border-color:var(--brand-hover)}
+.btn.primary:hover{background:var(--brand-hover-fill);border-color:var(--brand-hover-fill)}
+.btn.primary:active{background:var(--brand-pressed);border-color:var(--brand-pressed)}
 .btn.ghost{background:transparent;border-color:transparent;color:var(--ink-subtle)}
 .btn.ghost:hover{color:var(--ink-muted);background:var(--s2)}
 .btn[disabled]{color:var(--ink-tertiary);background:var(--s2);border-color:var(--line1);cursor:not-allowed}
@@ -294,7 +297,7 @@ svg{flex:none}
         <span class="cell2">—</span>
         <span class="cell2">—</span>
         <span class="cell2">11:40 · 26m</span>
-        <span class="act"><button class="btn sm">Accept <kbd>A</kbd></button><button class="btn sm">Decline <kbd>X</kbd></button></span>
+        <span class="act"><button class="btn sm">Accept</button><button class="btn sm">Decline <kbd>X</kbd></button></span>
       </div>
     </details>
 

@@ -14,6 +14,7 @@
   --line1:#23252a; --line2:#34343a; --line3:#3e3e44;
   --ink:#f7f8f8; --ink-muted:#d0d6e0; --ink-subtle:#8a8f98; --ink-tertiary:#62666d;
   --brand:#5e6ad2; --brand-hover:#828fff; --focus:#828fff;
+  --brand-hover-fill:#535fc6; --brand-pressed:#4c57be; --error:#eb5757;
   --success:#27a644;
   --attn:#f2994a; --attn-soft:rgba(242,153,74,.14);
   --sans:"Inter",system-ui,-apple-system,"Segoe UI",sans-serif;
@@ -57,6 +58,7 @@ svg{flex:none}
 .dot{width:7px;height:7px;border-radius:50%;background:var(--success)}
 .health .sep{width:1px;height:14px;background:var(--line2)}
 .health .fail{display:flex;align-items:center;gap:5px;color:var(--ink-muted)}
+.health .fail svg{color:var(--error)}
 .health .age{color:var(--ink-subtle)}
 .attn-band{height:2px;background:var(--attn);animation:breathe 1.6s ease-in-out infinite}
 @keyframes breathe{0%,100%{opacity:1}50%{opacity:.35}}
@@ -116,7 +118,8 @@ svg{flex:none}
   border:1px solid var(--line2);background:var(--s3);color:var(--ink-muted);white-space:nowrap}
 .btn:hover{background:var(--s4);border-color:var(--line3);color:var(--ink)}
 .btn.primary{background:var(--brand);border-color:var(--brand);color:#fff}
-.btn.primary:hover{background:var(--brand-hover);border-color:var(--brand-hover)}
+.btn.primary:hover{background:var(--brand-hover-fill);border-color:var(--brand-hover-fill)}
+.btn.primary:active{background:var(--brand-pressed);border-color:var(--brand-pressed)}
 .btn.ghost{background:transparent;border-color:transparent;color:var(--ink-subtle)}
 .btn.ghost:hover{color:var(--ink-muted);background:var(--s2)}
 .btn[disabled]{color:var(--ink-tertiary);background:var(--s2);border-color:var(--line1);cursor:not-allowed}
@@ -298,7 +301,7 @@ svg{flex:none}
 
     <div class="ny pulse sel" aria-selected="true" aria-label="Needs you now: park, ITM-01JC8 (detail open)">
       <span class="bar" aria-hidden="true"></span>
-      <div class="kind"><span class="chip"><span class="g">⏸</span>park</span><span class="motion">pulsing · urgent <span class="newword">new</span></span></div>
+      <div class="kind"><span class="chip"><span class="g">⏸</span>park</span><span class="motion">needs you now <span class="newword">new</span></span></div>
       <div class="what">
         <div class="line1"><span class="id mono">ITM-01JC8</span><span class="title">Retry storm in outbox dispatcher</span><span class="tag">agentic-workflow</span></div>
         <div class="line2">Parked: no-progress —<span class="reason">checks failed twice with the same findings</span></div>
@@ -314,14 +317,14 @@ svg{flex:none}
 
     <div class="ny pulse" aria-label="Needs you now: decision on ITM-01JD2">
       <span class="bar" aria-hidden="true"></span>
-      <div class="kind"><span class="chip"><span class="g">?</span>decision</span><span class="motion">pulsing · urgent <span class="newword">new</span></span></div>
+      <div class="kind"><span class="chip"><span class="g">?</span>decision</span><span class="motion">needs you now <span class="newword">new</span></span></div>
       <div class="what">
         <div class="line1"><span class="id mono">REQ</span><span class="title">Re-scope ITM-01JD2: drop the iOS head from this item</span><span class="tag">sindri-app</span></div>
         <div class="line2">Filed by a session ·<span class="reason">recorded; acted on once the workflow engine runs</span></div>
       </div>
       <div class="since"><b>26m</b>since 11:40</div>
       <div class="acts">
-        <button class="btn primary">Accept <kbd>A</kbd></button>
+        <button class="btn primary">Accept</button>
         <button class="btn">Decline <kbd>X</kbd></button>
         <div class="split"><button class="btn main " aria-label="Open in Claude Code ITM-01JD2"><span class="warp" aria-hidden="true"><svg width="8" height="8" viewBox="0 0 8 8"><path d="m1.5 2 2 2-2 2M4.5 6H7" stroke="#d0d6e0" fill="none" stroke-width="1"/></svg></span>Open in Claude Code</button><button class="btn chev " aria-label="Choose agent for ITM-01JD2" aria-haspopup="menu" aria-expanded="false"><svg width="10" height="10" viewBox="0 0 10 10" aria-hidden="true"><path d="M2.5 4 5 6.5 7.5 4" stroke="currentColor" fill="none" stroke-width="1.3"/></svg></button></div>
       </div>
@@ -329,7 +332,7 @@ svg{flex:none}
 
     <div class="ny pulse" aria-label="Needs you now: escalated gate, ITM-01JB4">
       <span class="bar" aria-hidden="true"></span>
-      <div class="kind"><span class="chip"><span class="g">▲</span>escalated</span><span class="motion">pulsing · urgent <span class="newword">new</span></span></div>
+      <div class="kind"><span class="chip"><span class="g">▲</span>escalated</span><span class="motion">needs you now <span class="newword">new</span></span></div>
       <div class="what">
         <div class="line1"><span class="id mono">ITM-01JB4</span><span class="title">Context map review for tabs.layout</span><span class="tag">agentic-workflow</span></div>
         <div class="line2">Gate: <span class="mono">gate.verify.judge</span> scored<span class="reason">0.62, below 0.80</span></div>
@@ -345,7 +348,7 @@ svg{flex:none}
 
     <div class="ny colour" aria-label="Failed: service index">
       <span class="bar" aria-hidden="true"></span>
-      <div class="kind"><span class="chip"><span class="g">✕</span>failure</span><span class="motion">steady · no motion</span></div>
+      <div class="kind"><span class="chip"><span class="g">✕</span>failure</span><span class="motion">failed</span></div>
       <div class="what">
         <div class="line1"><span class="id mono">service index</span><span class="title">Nightly index build failed</span><span class="mono" style="color:var(--ink-muted)">SND-INDEX-012</span><span class="rest">graphify timed out</span></div>
         <span class="cmd"><span class="prompt">$</span><code>sindri services run index</code><button aria-label="Copy: sindri services run index"><svg width="11" height="11" viewBox="0 0 12 12" aria-hidden="true"><rect x="3.5" y="3.5" width="6.5" height="6.5" rx="1.2" stroke="currentColor" fill="none" stroke-width="1.2"/><path d="M2 8V2.8C2 2.4 2.4 2 2.8 2H8" stroke="currentColor" fill="none" stroke-width="1.2"/></svg>Copy</button></span>
@@ -359,7 +362,7 @@ svg{flex:none}
 
     <div class="ny calm" aria-label="To look at: profile changed">
       <span class="bar" aria-hidden="true"></span>
-      <div class="kind"><span class="chip"><span class="g">◇</span>profile</span><span class="motion">calm</span></div>
+      <div class="kind"><span class="chip"><span class="g">◇</span>profile</span><span class="motion">to look at</span></div>
       <div class="what">
         <div class="line1"><span class="title">Profile changed since approval — 2 keys</span></div>
         <div class="line2"><span class="mono reason">services.index.every</span>·<span class="mono reason">context.maxBudget</span></div>
@@ -436,7 +439,7 @@ svg{flex:none}
   <div class="sh-head">
     <div class="sh-top">
       <span class="chip"><span class="g">⏸</span>park</span>
-      <span>Needs you · pulsing · urgent</span>
+      <span>Needs you · needs you now</span>
       <div class="r"><kbd>Esc</kbd><button class="x" aria-label="Close detail">✕</button></div>
     </div>
     <h2 class="t" id="sh-t"><span class="mono">ITM-01JC8</span>Retry storm in outbox dispatcher</h2>
