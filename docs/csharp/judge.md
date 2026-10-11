@@ -17,11 +17,11 @@ Aw.Judge.Host ──► Aw.Judge.Features ──► Aw.Judge.Core ◄── Aw.J
 |---|---|
 | `Aw.Judge.Core` | Typed ids (`Ids`: `DecisionId`, `ToolUseId`, `SessionId`, `PromptId`, `AgentId`), the domain records (`Briefs`, `Decisions`, `Health`, `Config`, `Questions`, `Providers`), the evaluation engine (`Evaluation`), the error catalogue (`Errors.JudgeErrors`, AW-JUDGE-NNN) and the ports (`Ports`) |
 | `Aw.Judge.Features` | One slice per command: `SaveBrief`, `GetBrief`, `MapBriefByName`, `MapBriefByDispatch`, `SetBriefAgentId`, `ExplainDecision` (`why`), `UndoDecision`, `ApproveDecision`, `GetHealth`, `GetConfig`, `SetConfig` |
-| `Aw.Judge.Infrastructure` | The SQLite stores over `decisions.sqlite`, the config file, the redactor adapter over `Aw.Redaction`, the `PATH` executable locator, random decision ids, and the settings read from the environment |
+| `Aw.Judge.Infrastructure` | The SQLite stores over `decisions.sqlite`, the config file, the redactor adapter over `Aw.Redaction`, the `PATH` executable locator, the process runner, the secret source (environment, then keychain), the model providers and their catalog (`Providers/`), random decision ids, and the settings read from the environment |
 | `Aw.Judge.Host` | `Program.cs`, `Composition.Compose`, one command per slice in `Commands/`, the command table, `JudgeJsonContext` (the package's one source-generated JSON context) |
 
 Core's namespaces form a graph with no cycle (`ARCH-CYCLE-001`): `Errors` and `Ids` are leaves, `Providers`,
-`Config`, `Briefs`, `Decisions`, `Health` and `Questions` sit on them, `Ports` on those, `Evaluation` on `Ports`, and
+`Config`, `Briefs`, `Decisions`, `Health`, `Questions`, `Processes` and `Secrets` sit on them, `Ports` on those, `Evaluation` on `Ports`, and
 the root holds only `AddJudgeCore()`.
 
 ### Ports
@@ -33,7 +33,10 @@ the root holds only `AddJudgeCore()`.
 | `IJudgeConfigStore` | `FileJudgeConfigStore` (`config.json`) | `InMemoryJudgeConfigStore`, `JudgeConfigStoreContract` |
 | `IInputRedactor` | `AwInputRedactor` (over `Aw.Redaction`) | `FakeInputRedactor`, `InputRedactorContract` |
 | `IExecutableLocator` | `PathExecutableLocator` (`PATH` lookup for the agent CLIs) | `FakeExecutableLocator`, `ExecutableLocatorContract` |
-| `IModelProvider` | (Task 7: the agent CLIs and Jev) | `ScriptedProvider` |
+| `IModelProvider` | `ClaudeCliProvider`, `CodexCliProvider`, `CursorCliProvider`, `JevProvider`, `RulesProvider` (Providers below) | `ScriptedProvider` |
+| `IProviderCatalog` | `ProviderCatalog` (the lineup from `config.json`, `AW_PROVIDER` and `PATH`) | `FakeProviderCatalog`, `ProviderCatalogContract` |
+| `IProcessRunner` | `SystemProcessRunner` (`System.Diagnostics.Process`) | `FakeProcessRunner` (runs `FakeProgram`s), `ProcessRunnerContract` |
+| `ISecretSource` | `KeychainSecretSource` (the variable, then the macOS keychain) | `FakeSecretSource`, `SecretSourceContract` |
 
 Plus the Kernel's `IIdGenerator` (`RandomIdGenerator`) and the BCL's `TimeProvider`.
 
@@ -47,6 +50,11 @@ Everything the judge reads or writes as JSON goes through the Kernel `AwJson` pr
 - `config.json` is deserialized into `JudgeConfig` and then checked (`JudgeConfigParser`);
 - the JSON columns `decisions.skipped` (a list of `{provider, reason}`) and `decision_details.probabilities` (option
   → probability) are the typed values, serialized through the same options.
+
+The one exception is the providers' wire formats (the agent CLIs' output envelopes, an image input's paths, Jev's request
+and response): those records are internal to Infrastructure, which the Host's context can't name, so they have their own
+internal `ProviderWireJsonContext`, used only through `AwJson.CreateOptions` (`WireJson.Options`). An answer's free
+fields (the decision plus the question's extra properties) are read as a `JsonObject` and checked against the question.
 
 ## CLI contract
 
@@ -113,6 +121,91 @@ whole file invalid (AW-JUDGE-007): readers use the defaults (wake-gate enabled a
 | AW-JUDGE-007 | Invalid | `config.json` can't be read as a judge config |
 | AW-JUDGE-010 | Invalid | The `--providers` flag or `AW_JUDGE_PROVIDERS` is malformed (a usage error, 64) |
 
+## Providers
+
+A question is answered by the first provider in its chain that decides (the evaluation engine, `QuestionEvaluator`).
+The providers live in `Aw.Judge.Infrastructure/Providers/`; Composition reaches them through one port.
+
+### The catalog
+
+`IProviderCatalog.Lineup(ProvidersConfig? config, IReadOnlyCollection<ProviderName>? allowed)` returns a
+`ProviderLineup(Providers, Chain)`, which is what an `EvaluationContext` takes. It is the one place the inputs meet:
+
+1. the agent CLIs: `config.json`'s `providers.agentClis` when set, else the default order (claude, codex, cursor)
+   with the `AW_PROVIDER` host moved first (`AgentCliResolution`); either way only those whose binary is on `PATH`;
+2. Jev, unless `providers.jev` is false;
+3. the chain: text classes get Jev, the agent CLIs, then rules; image gets the agent CLIs, then rules
+   (`ChainSpec.Build`); then the `--providers` / `AW_JUDGE_PROVIDERS` allowlist, which always keeps rules;
+4. the providers: one instance of each provider the chain names.
+
+`AddJudgeInfrastructure` registers it (its `AddModelProviders` part) over one instance of each provider: rules, Jev
+(with its own `HttpClient`) and the three agent CLIs (over `IProcessRunner`).
+
+### The agent CLIs
+
+Each runs headless on a small fast model, with the recursion guard `AW_JUDGE_CHILD=1` (every `aw:*` hook in the child
+exits at once), standard input closed, the question's time budget as its timeout, and a fresh empty temp directory as
+its working directory, deleted afterwards. The answer schema is the question's outputs as the decision's enum, plus
+its extra properties. All three read images, so all three cover every content class.
+
+| Provider | Binary and model | Isolation | Schema and answer |
+|---|---|---|---|
+| `claude-cli` | `claude -p --model haiku --effort low` | `--no-session-persistence`, no MCP servers, `--setting-sources ""` (no settings files or CLAUDE.md), hooks and slash commands off, thinking off (`MAX_THINKING_TOKENS=0`); text: no tools, the prompt as `--system-prompt`, the input as the message; image: only `Read`, scoped to the evidence directory, which is the working directory | `--json-schema`; the envelope's `structured_output`, else its `result` text parsed as JSON |
+| `codex-cli` | `codex exec --model gpt-6-luna -c model_reasoning_effort="low"` | `-C` the workspace, `--ephemeral`, `--ignore-user-config`, `--ignore-rules`, read-only sandbox, the `hooks` feature (and tool-list features) disabled; images as `--image` absolute paths; the prompt after `--` | `--output-schema schema.json` (in the workspace) in OpenAI strict mode: every property required, extras nullable, no others; the last `agent_message` of the `--json` event lines |
+| `cursor-cli` | `cursor-agent -p --model gpt-5.6-luna-none-fast` | `--mode ask`, `--sandbox enabled`, `--trust` (a fresh workspace needs it), `--workspace` the temp directory (the evidence directory for images, named by absolute path) | no schema flag: the schema is stated in the prompt; the last JSON object in the envelope's `result` text |
+
+The answer object is read the same way for all three: a string `decision` among the outputs; a `confidence` 0–1 when
+present, else **1.0** (the CLIs answer under a schema with no confidence field, so a well-formed answer is taken as
+certain); each declared extra checked against its fragment's JSON `type` (and array `items`), a null one absent;
+undeclared fields dropped.
+
+### Jev
+
+`POST https://api.typesafe.ai/v1/systemone` with `{state: <input>, model: "jev-1.13.0", questions: {decision:
+{type: "choice", instructions: <prompt>, criteria: {<output>: <criterion or the output>}}}}` and `Authorization:
+Bearer <key>`; text classes only. The key comes from `ISecretSource` (`TYPESAFE_API_KEY`, else the keychain).
+The answer's `choice`, `confidence` (1.0 when absent) and `probabilities` become the decision.
+
+### Rules
+
+`rules` closes every chain but decides nothing itself: pre-rules and fallback rules run in the engine, so it is always
+unavailable (`no-rule`, not a failure).
+
+### Reason codes
+
+What the engine does with each result is the engine's rule: decided → a decision (below threshold: skipped, then the
+fallback rule); unavailable → skipped with no failure row, except `timeout`, which is a failure row; errored → a
+failure row with the code.
+
+| Result | Code | Providers | When |
+|---|---|---|---|
+| decided | `model` | all but rules | an answer within the outputs |
+| unavailable | `timeout` | agent CLIs, Jev | past the question's budget; a CLI is killed with its whole process tree |
+| unavailable | `not-installed` | agent CLIs | the binary isn't on `PATH` (or can't be started) |
+| unavailable | `no-api-key` | Jev | no key in the environment or the keychain |
+| unavailable | `network-error` | Jev | the API can't be reached (offline, DNS, refused) |
+| unavailable | `no-rule` | rules | always |
+| errored | `exit-N` | agent CLIs | the CLI exited non-zero |
+| errored | `unparseable-output` | agent CLIs | stdout isn't the CLI's envelope (or event lines) |
+| errored | `unparseable-answer` | all but rules | no JSON answer object with a string decision |
+| errored | `out-of-enum` | all but rules | the decision isn't one of the outputs |
+| errored | `extra-out-of-schema` | agent CLIs | a declared extra has the wrong JSON type |
+| errored | `cli-reported-error` | agent CLIs | `is_error` (claude, cursor) or codex's `turn.failed`/`error` with no answer |
+| errored | `invalid-image-input` | agent CLIs | an image question's input has no `afterScreenshot` and `evidenceDir` |
+| errored | `http-NNN` | Jev | a non-success status |
+| errored | `too-many-options` | Jev | more than 255 outputs |
+
+### Processes and secrets
+
+`SystemProcessRunner` finds a bare program name on the `PATH` the environment gives (a path is run as is), reads both
+output streams concurrently from the start and writes the input on its own task (so a full pipe never blocks it), and
+on a timeout or a cancellation kills the whole process tree (`Process.Kill(entireProcessTree: true)`), so a child that
+inherited the pipes can't hold the run open. A program that can't be started is `NotStarted`, never an exception.
+
+`KeychainSecretSource` reads a secret's variable; when it is unset or empty it runs `security find-generic-password
+-s agentic-workflow-typesafe -a TYPESAFE_API_KEY -w` (5 s timeout). A missing entry, a missing `security` (not macOS)
+or a hung keychain all read as unset.
+
 ## Hook contract
 
 What the hooks that keep running read, and nothing else. It stays frozen until the switch; Task 9's real-hook check
@@ -151,7 +244,7 @@ reads a TS-written file.
 |---|---|---|
 | `AW_STATE_DIR` | Infrastructure settings | The state root; the judge's files are under `<root>/judge/`. Default `~/.agentic-workflow` |
 | `AW_SESSION_ID` | the question commands (Task 6) | The calling session, stored with the decision's detail row |
-| `AW_PROVIDER` | the provider chain (Task 7) | The host the calling session runs in (`claude`, `codex`, `cursor`), which leads the agent CLI order unless `config.json` sets `providers.agentClis` |
+| `AW_PROVIDER` | `ProviderCatalog` | The host the calling session runs in (`claude`, `codex`, `cursor`), which leads the agent CLI order unless `config.json` sets `providers.agentClis` |
 | `AW_JUDGE_PROVIDERS` | the providers allowlist | A comma-separated allowlist of providers when the `--providers` flag is absent |
-| `TYPESAFE_API_KEY` | the Jev provider (Task 7) | Jev's API key; without it Jev is unavailable |
+| `TYPESAFE_API_KEY` | `KeychainSecretSource` | Jev's API key; when unset or empty, the keychain entry `agentic-workflow-typesafe` / `TYPESAFE_API_KEY`; without either Jev is unavailable |
 | `AW_LOG_LEVEL` | Aw.Kernel.Telemetry | The stderr log level (default information; the hooks discard stderr) |
