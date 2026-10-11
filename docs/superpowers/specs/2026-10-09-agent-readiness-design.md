@@ -245,7 +245,7 @@ declaration.
 | 1 | `Judge`, `Packets`, `Readiness` | Tier 0 |
 | 2 | `Scorer`, `Evidence` (ui-evidence), `BugFix` | Tiers 0–1 (today they call judge, and scorer reads `judge.db`) |
 | 3 | `Sindri` | Tiers 0–2, **only through their `Core` contracts or their CLIs** (every package reaches a non-tier-0 package only through its `Core`; `deps.yaml` check DEPS-PROJ-007) |
-| 4 | `SindriUi` (the Avalonia app, §4a "UI") | No project edges: Sindri's HTTP contract only |
+| 4 | `SindriUi` (the Avalonia app, §4a "UI") | Tier-0 project edges only (no Sindri project); Sindri's HTTP API (http edge) and its endpoint record `control.json` (file edge) |
 | — | Every `Host` | Its own package's projects, plus the tier-0 and lower-tier `Core`s it composes |
 
 - **Tier 0 is ordered inside:** it is the one tier with internal project references. `deps.yaml` gives each tier-0

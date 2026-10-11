@@ -46,7 +46,7 @@ directory keeps its mode; files are 0600.
 |---|---|
 | `ledger.db` | The ledger (SQLite, WAL, through `Aw.Kernel.Data`): `events`, `lease`, `outbox_commands` |
 | `approved/<hash>/profile.json`, `approved/latest` | Approved profile snapshots (canonical JSON) and the latest hash. Runtime reads only these, never the live file |
-| `control.json` | The running control plane's endpoint: `url`, `pid`, `epoch`. Written once it listens, removed on stop. A client checks the pid and epoch against `/sindri/ping`, so a stale record reads as "not running" |
+| `control.json` | The running control plane's endpoint: `url`, `pid`, `epoch`. Written once it listens, removed on stop. A client checks the pid and epoch against `/sindri/ping`, so a stale record reads as "not running". Also read by the Sindri app (`SindriUi`, a declared file edge; `docs/csharp/sindri-ui.md`): a change to its fields is a contract change |
 | `logs/serve.log` | The detached control plane's output (0600: written under umask 077, and an older log is narrowed after each start) |
 | `profile/profile.yaml` | The live profile (`AW_SINDRI_PROFILE` overrides the path) |
 
