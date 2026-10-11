@@ -27,6 +27,11 @@ internal sealed class PlaywrightBrowser : IBrowser, IAsyncDisposable, IDisposabl
     public async ValueTask<Result<IBrowserSession>> OpenAsync(BrowserSessionOptions options, CancellationToken cancellationToken)
     {
         var browser = await BrowserCall.Run("start chromium", () => LaunchedAsync(options.Host.Kind, cancellationToken), cancellationToken).ConfigureAwait(false);
+        if (browser.IsError && browser.Error.Message.Contains("Executable doesn't exist", StringComparison.Ordinal))
+        {
+            return browser.Error with { Message = browser.Error.Message + "; run 'ui-evidence install-browser'" };
+        }
+
         return browser.IsError
             ? browser.Error
             : await BrowserCall.Run("open a browser context", () => OpenSessionAsync(browser.Value, options), cancellationToken).ConfigureAwait(false);
@@ -74,18 +79,26 @@ internal sealed class PlaywrightBrowser : IBrowser, IAsyncDisposable, IDisposabl
             RecordVideoDir = options.RecordDirectory,
             RecordVideoSize = options.RecordDirectory is null ? null : new() { Width = options.Viewport.W, Height = options.Viewport.H },
         }).ConfigureAwait(false);
-        var origin = options.Host.Origin;
-        _ = await context.RouteAsync("**/*", route =>
-            HostGuard.IsOffOriginNavigation(origin, route.Request.Url, route.Request.IsNavigationRequest)
-                ? route.AbortAsync("blockedbyclient")
-                : route.ContinueAsync()).ConfigureAwait(false);
-        if (options.RecordDirectory is not null)
+        try
         {
-            await context.Tracing.StartAsync(new() { Screenshots = true, Snapshots = true }).ConfigureAwait(false);
-        }
+            var origin = options.Host.Origin;
+            _ = await context.RouteAsync("**/*", route =>
+                HostGuard.IsOffOriginNavigation(origin, route.Request.Url, route.Request.IsNavigationRequest)
+                    ? route.AbortAsync("blockedbyclient")
+                    : route.ContinueAsync()).ConfigureAwait(false);
+            if (options.RecordDirectory is not null)
+            {
+                await context.Tracing.StartAsync(new() { Screenshots = true, Snapshots = true }).ConfigureAwait(false);
+            }
 
-        var page = await context.NewPageAsync().ConfigureAwait(false);
-        return new PlaywrightSession(context, page, options.Host, options.RecordDirectory is not null, browser.Version);
+            var page = await context.NewPageAsync().ConfigureAwait(false);
+            return new PlaywrightSession(context, page, options.Host, options.RecordDirectory is not null, browser.Version);
+        }
+        catch
+        {
+            await context.CloseAsync().ConfigureAwait(false);   // a half-opened context would otherwise live until the process exits
+            throw;
+        }
     }
 
     private async Task<IChromium> LaunchedAsync(HostKind kind, CancellationToken cancellationToken)

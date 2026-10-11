@@ -19,6 +19,7 @@ internal sealed class PlaywrightSession : IBrowserSession
 {
     private static readonly TimeSpan _signInPage = TimeSpan.FromSeconds(120);
     private static readonly TimeSpan _signInStep = TimeSpan.FromSeconds(60);
+    private static readonly TimeSpan _closeLimit = TimeSpan.FromSeconds(10);
     private const float PathPollMs = 50;
     private readonly IBrowserContext _context;
     private readonly IPage _page;
@@ -168,11 +169,13 @@ internal sealed class PlaywrightSession : IBrowserSession
     {
         try
         {
-            await _context.CloseAsync().ConfigureAwait(false);
+            // Bounded: CloseAsync finalizes the video and may never return from a wedged browser, and the locks are
+            // released only after this; the browser itself is stopped at process exit.
+            await _context.CloseAsync().WaitAsync(_closeLimit).ConfigureAwait(false);
         }
-        catch (PlaywrightException)
+        catch (Exception ex) when (ex is PlaywrightException or TimeoutException)
         {
-            // Already closed (StopRecordingAsync) or the browser is gone; nothing left to release.
+            // Already closed (StopRecordingAsync), the browser is gone, or it didn't close in time; nothing more to do here.
         }
     }
 
