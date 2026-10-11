@@ -9,6 +9,12 @@ internal static class PageScripts
     /// <summary>Waits for web fonts.</summary>
     internal const string FontsReady = "() => document.fonts.ready.then(() => true)";
 
+    /// <summary>True once the page is on the given path and has finished loading (the load event has fired).</summary>
+    internal const string OnPathLoaded = "path => location.pathname === path && document.readyState === 'complete'";
+
+    /// <summary>True once the page's path no longer contains the given text and the page has finished loading.</summary>
+    internal const string OffPathLoaded = "text => !location.pathname.includes(text) && document.readyState === 'complete'";
+
     /// <summary>Blurs the focused element.</summary>
     internal const string Blur = "() => { document.activeElement?.blur?.(); return true; }";
 

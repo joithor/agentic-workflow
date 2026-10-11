@@ -14,6 +14,7 @@ internal sealed class PlaywrightSession(IBrowserContext context, IPage page, Res
 {
     private static readonly TimeSpan _signInPage = TimeSpan.FromSeconds(120);
     private static readonly TimeSpan _signInStep = TimeSpan.FromSeconds(60);
+    private const float PathPollMs = 50;
 
     /// <inheritdoc/>
     public string BrowserVersion => browserVersion;
@@ -43,9 +44,19 @@ internal sealed class PlaywrightSession(IBrowserContext context, IPage page, Res
         WaitAsync(target, WaitForSelectorState.Hidden, timeout, cancellationToken);
 
     /// <inheritdoc/>
+    /// <remarks>
+    /// Polled in the page (as the sign-in's wait to leave the login page is), not through page.WaitForURLAsync: that reads the client's last-known URL and only then subscribes
+    /// to the navigated event, both on the .NET side, while events arrive on the connection's reader thread; a navigation
+    /// that lands between the two is missed and the wait runs to its timeout. A page-side poll is re-run in each new
+    /// document by Playwright itself, so it can't miss a navigation that already happened.
+    /// </remarks>
     public ValueTask<Result<Unit>> WaitForPathAsync(string path, TimeSpan timeout, CancellationToken cancellationToken) =>
-        BrowserCall.Run($"wait for url path {path}", () => page.WaitForURLAsync(
-            url => string.Equals(new Uri(url).AbsolutePath, path, StringComparison.Ordinal), new() { Timeout = PlaywrightLocators.Ms(timeout) }), cancellationToken);
+        BrowserCall.Run($"wait for url path {path}", async () =>
+        {
+            var reached = await page.WaitForFunctionAsync(
+                PageScripts.OnPathLoaded, path, new() { PollingInterval = PathPollMs, Timeout = PlaywrightLocators.Ms(timeout) }).ConfigureAwait(false);
+            await reached.DisposeAsync().ConfigureAwait(false);
+        }, cancellationToken);
 
     /// <inheritdoc/>
     public ValueTask<Result<string>> InputValueAsync(Locator target, TimeSpan timeout, CancellationToken cancellationToken) =>
@@ -107,8 +118,9 @@ internal sealed class PlaywrightSession(IBrowserContext context, IPage page, Res
 
             await FillWhenVisibleAsync(login.PasswordSelector, credentials.Password, _signInStep).ConfigureAwait(false);
             await page.Locator(login.SubmitSelector).ClickAsync(new() { Force = true }).ConfigureAwait(false);
-            await page.WaitForURLAsync(
-                url => !new Uri(url).AbsolutePath.Contains(login.LoginPath, StringComparison.Ordinal), new() { Timeout = PlaywrightLocators.Ms(_signInStep) }).ConfigureAwait(false);
+            var left = await page.WaitForFunctionAsync(
+                PageScripts.OffPathLoaded, login.LoginPath, new() { PollingInterval = PathPollMs, Timeout = PlaywrightLocators.Ms(_signInStep) }).ConfigureAwait(false);
+            await left.DisposeAsync().ConfigureAwait(false);
             return Unit.Value;
         }, cancellationToken, credentials.Redact);
 
