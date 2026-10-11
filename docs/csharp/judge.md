@@ -200,15 +200,18 @@ in the chain is asked.
 ### The agent CLIs
 
 Each runs headless on a small fast model, with the recursion guard `AW_JUDGE_CHILD=1` (every `aw:*` hook in the child
-exits at once), standard input closed, the question's time budget as its timeout, and a fresh empty temp directory as
-its working directory, deleted afterwards. The answer schema is the question's outputs as the decision's enum, plus
+exits at once), the question's time budget as its timeout, and a fresh empty temp directory as its working directory,
+deleted afterwards. The model sees the question's prompt and nothing else: every prompt already carries the input's
+fields (capped and with their delimiter tags defused, `UntrustedText`), so the raw input record is never sent. claude
+and codex read the prompt on standard input, so no input size can hit the system's argument limit; cursor-agent takes
+it as an argument, capped at 30,000 characters (under Linux's 128 KiB per argument). The answer schema is the question's outputs as the decision's enum, plus
 its extra properties. All three read images, so all three cover every content class.
 
 | Provider | Binary and model | Isolation | Schema and answer |
 |---|---|---|---|
-| `claude-cli` | `claude -p --model haiku --effort low` | `--no-session-persistence`, no MCP servers, `--setting-sources ""` (no settings files or CLAUDE.md), hooks and slash commands off, thinking off (`MAX_THINKING_TOKENS=0`); text: no tools, the prompt as `--system-prompt`, the input as the message; image: only `Read`, scoped to the evidence directory, which is the working directory | `--json-schema`; the envelope's `structured_output`, else its `result` text parsed as JSON |
-| `codex-cli` | `codex exec --model gpt-6-luna -c model_reasoning_effort="low"` | `-C` the workspace, `--ephemeral`, `--ignore-user-config`, `--ignore-rules`, read-only sandbox, the `hooks` feature (and tool-list features) disabled; images as `--image` absolute paths; the prompt after `--` | `--output-schema schema.json` (in the workspace) in OpenAI strict mode: every property required, extras nullable, no others; the last `agent_message` of the `--json` event lines |
-| `cursor-cli` | `cursor-agent -p --model gpt-5.6-luna-none-fast` | `--mode ask`, `--sandbox enabled`, `--trust` (a fresh workspace needs it), `--workspace` the temp directory (the evidence directory for images, named by absolute path) | no schema flag: the schema is stated in the prompt; the last JSON object in the envelope's `result` text |
+| `claude-cli` | `claude -p --model haiku --effort low` | `--no-session-persistence`, no MCP servers, `--setting-sources ""` (no settings files or CLAUDE.md), hooks and slash commands off, thinking off (`MAX_THINKING_TOKENS=0`); text: no tools, a fixed one-line `--system-prompt`, the prompt as the message on stdin; image: the prompt on stdin, only `Read`, scoped to the evidence directory, which is the working directory | `--json-schema`; the envelope's `structured_output`, else its `result` text parsed as JSON |
+| `codex-cli` | `codex exec --model gpt-6-luna -c model_reasoning_effort="low"` | `-C` the workspace, `--ephemeral`, `--ignore-user-config`, `--ignore-rules`, read-only sandbox, the `hooks` feature (and tool-list features) disabled; images as `--image` absolute paths; `-- -`, the prompt on stdin | `--output-schema schema.json` (in the workspace) in OpenAI strict mode: every property required, extras nullable, no others; the last `agent_message` of the `--json` event lines |
+| `cursor-cli` | `cursor-agent -p --model gpt-5.6-luna-none-fast` | `--mode ask`, `--sandbox enabled`, `--trust` (a fresh workspace needs it), `--workspace` the temp directory (the evidence directory for images, named by absolute path); the prompt as the last argument, capped | no schema flag: the schema is stated in the prompt; the last JSON object in the envelope's `result` text |
 
 The answer object is read the same way for all three: a string `decision` among the outputs; a `confidence` 0–1 when
 present, else **1.0** (the CLIs answer under a schema with no confidence field, so a well-formed answer is taken as
@@ -238,9 +241,10 @@ failure row with the code.
 |---|---|---|---|
 | decided | `model` | all | an answer within the outputs |
 | unavailable | `timeout` | agent CLIs, Jev | past the question's budget; a CLI is killed with its whole process tree |
-| unavailable | `not-installed` | agent CLIs | the binary isn't on `PATH` (or can't be started) |
+| unavailable | `not-installed` | agent CLIs | the binary isn't on `PATH` |
 | unavailable | `no-api-key` | Jev | no key in the environment or the keychain |
 | unavailable | `network-error` | Jev | the API can't be reached (offline, DNS, refused) |
+| errored | `spawn-failed` | agent CLIs | the binary is there but the system refused to start it (argument list too long, not a program, no permission) |
 | errored | `exit-N` | agent CLIs | the CLI exited non-zero |
 | errored | `unparseable-output` | agent CLIs | stdout isn't the CLI's envelope (or event lines) |
 | errored | `unparseable-answer` | all | no JSON answer object with a string decision |
@@ -256,7 +260,9 @@ failure row with the code.
 `SystemProcessRunner` finds a bare program name on the `PATH` the environment gives (a path is run as is), reads both
 output streams concurrently from the start and writes the input on its own task (so a full pipe never blocks it), and
 on a timeout or a cancellation kills the whole process tree (`Process.Kill(entireProcessTree: true)`), so a child that
-inherited the pipes can't hold the run open. A program that can't be started is `NotStarted`, never an exception.
+inherited the pipes can't hold the run open. A program that isn't installed (not found, or the system says the file is
+gone, `ENOENT`) is `NotStarted`; any other refusal to start (`E2BIG`, `ENOEXEC`, `EACCES`) is `FailedToStart`, with
+the system's message as standard error. Neither is an exception.
 
 `KeychainSecretSource` reads a secret's variable; when it is unset or empty it runs `security find-generic-password
 -s agentic-workflow-typesafe -a TYPESAFE_API_KEY -w` (5 s timeout). A missing entry, a missing `security` (not macOS)

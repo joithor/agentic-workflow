@@ -9,7 +9,7 @@ namespace Aw.Judge.Infrastructure.Providers;
 /// --ignore-user-config, --ignore-rules, --ephemeral, a read-only sandbox, and the hooks feature (with the tool-list
 /// features) disabled; every --disable name must exist in the installed CLI or it exits "Unknown feature flag". The
 /// answer schema is written to schema.json in the workspace in OpenAI strict mode (--output-schema rejects any other).
-/// Images go as --image files; the prompt always follows '--' because --image is variadic. The answer is the last
+/// Images go as --image files; the prompt goes on standard input ('-' after '--', because --image is variadic). The answer is the last
 /// agent_message of the --json event lines.
 /// </summary>
 /// <param name="runner">Runs `codex`.</param>
@@ -22,7 +22,7 @@ internal sealed class CodexCliProvider(IProcessRunner runner) : AgentCliProvider
 
     /// <inheritdoc />
     protected override AgentCliCall ForText(QuestionRef question, JsonNode? input, string workspace) =>
-        Call(question, workspace, [], $"{question.Prompt}\n\nInput:\n{WireJson.Text(input)}");
+        Call(question, workspace, [], question.Prompt);
 
     /// <inheritdoc />
     protected override AgentCliCall ForImage(QuestionRef question, ImageEvidence evidence, string workspace) =>
@@ -65,8 +65,11 @@ internal sealed class CodexCliProvider(IProcessRunner runner) : AgentCliProvider
             [
                 "exec", "--model", Model, "-c", "model_reasoning_effort=\"low\"", "--ephemeral", "--skip-git-repo-check",
                 "--ignore-user-config", "--ignore-rules", .. _disabledFeatures.SelectMany(feature => new[] { "--disable", feature }),
-                "--sandbox", "read-only", "-C", workspace, "--output-schema", schema, "--json", .. images, "--", prompt,
+                "--sandbox", "read-only", "-C", workspace, "--output-schema", schema, "--json", .. images, "--", "-",
             ],
-            workspace);
+            workspace)
+        {
+            StandardInput = prompt,
+        };
     }
 }

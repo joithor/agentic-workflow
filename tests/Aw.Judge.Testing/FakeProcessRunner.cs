@@ -6,7 +6,7 @@ namespace Aw.Judge.Testing;
 
 /// <summary>
 /// The IProcessRunner fake: runs <see cref="FakeProgram"/>s by file name, instantly (a program that runs past the
-/// request's timeout is reported timed out without waiting); an unknown name isn't started. Passes ProcessRunnerContract.
+/// request's timeout is reported timed out without waiting); an unknown name isn't started, and one marked FailsToStart fails to start. Passes ProcessRunnerContract.
 /// </summary>
 public sealed class FakeProcessRunner : IProcessRunner
 {
@@ -46,6 +46,11 @@ public sealed class FakeProcessRunner : IProcessRunner
         }
 
         var program = install(request);
+        if (program.FailsToStart)
+        {
+            return ValueTask.FromResult(ProcessResult.FailedToStart("Exec format error"));
+        }
+
         if (program.Runs >= request.Timeout)
         {
             return ValueTask.FromResult(ProcessResult.TimedOutAfter("", ""));

@@ -7,4 +7,7 @@ internal sealed record AgentCliCall(IReadOnlyList<string> Arguments, string Work
 {
     /// <summary>Variables beyond the recursion guard every child gets.</summary>
     public IReadOnlyDictionary<string, string> Environment { get; init; } = new Dictionary<string, string>(StringComparer.Ordinal);
+
+    /// <summary>What the CLI reads on standard input (the prompt), or null for none.</summary>
+    public string? StandardInput { get; init; }
 }

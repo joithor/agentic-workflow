@@ -14,6 +14,9 @@ namespace Aw.Judge.Infrastructure.Processes;
 /// <param name="environment">Reads PATH, to find a program given by bare name.</param>
 internal sealed class SystemProcessRunner(Func<string, string?> environment) : IProcessRunner
 {
+    // ENOENT on Unix and ERROR_FILE_NOT_FOUND on Windows: the program vanished between the lookup and the start.
+    private const int NoSuchFile = 2;
+
     // After a kill, how long to wait for the pipes to drain before giving up on the rest of the output.
     private static readonly TimeSpan _drainGrace = TimeSpan.FromSeconds(2);
 
@@ -28,16 +31,9 @@ internal sealed class SystemProcessRunner(Func<string, string?> environment) : I
         }
 
         using var process = new Process { StartInfo = StartInfo(file, request) };
-        try
+        if (Start(process) is { } refused)
         {
-            if (!process.Start())
-            {
-                return ProcessResult.NotStarted();
-            }
-        }
-        catch (Win32Exception)
-        {
-            return ProcessResult.NotStarted();
+            return refused;
         }
 
         var stdout = process.StandardOutput.ReadToEndAsync(CancellationToken.None);
@@ -56,6 +52,24 @@ internal sealed class SystemProcessRunner(Func<string, string?> environment) : I
             KillTree(process);
             cancellationToken.ThrowIfCancellationRequested();
             return ProcessResult.TimedOutAfter(await Drained(stdout).ConfigureAwait(false), await Drained(stderr).ConfigureAwait(false));
+        }
+    }
+
+    // Null once it runs; otherwise why it didn't.
+    private static ProcessResult? Start(Process process)
+    {
+        try
+        {
+            return process.Start() ? null : ProcessResult.NotStarted();
+        }
+        catch (Win32Exception exception) when (exception.NativeErrorCode == NoSuchFile)
+        {
+            return ProcessResult.NotStarted();
+        }
+        catch (Win32Exception exception)
+        {
+            // It is installed, so this is a real failure (E2BIG, ENOEXEC, EACCES...), not a missing program.
+            return ProcessResult.FailedToStart(exception.Message);
         }
     }
 

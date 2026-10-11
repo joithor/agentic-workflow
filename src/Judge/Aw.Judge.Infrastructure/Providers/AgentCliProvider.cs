@@ -8,7 +8,10 @@ namespace Aw.Judge.Infrastructure.Providers;
 /// <summary>
 /// An agent CLI run headless on a small fast model: each question gets a fresh empty temp directory (deleted
 /// afterwards) and the recursion guard AW_JUDGE_CHILD=1, which makes every aw:* hook in the child exit at once. The
-/// subclass says how to call its CLI and how to read its output; the run's end maps the same way for all of them.
+/// model sees the question's prompt only, which carries the input's fields already capped; the raw input is never sent,
+/// and the prompt goes on standard input where the CLI reads it, so no input size can hit the system's argument limit.
+/// The subclass says how to call its CLI and how to read its output; the run's end maps the same way for all of them:
+/// a missing binary is unavailable ('not-installed'), one the system refuses to start is errored ('spawn-failed').
 /// </summary>
 /// <param name="runner">Runs the CLI.</param>
 /// <param name="cli">Which agent CLI this is.</param>
@@ -43,7 +46,8 @@ internal abstract class AgentCliProvider(IProcessRunner runner, AgentCliName cli
         var result = await runner.Run(Request(call, budget), cancellationToken).ConfigureAwait(false);
         return result.End switch
         {
-            ProcessEnd.NotStarted or ProcessEnd.FailedToStart => new ProviderUnavailable(ProviderReasons.NotInstalled),
+            ProcessEnd.NotStarted => new ProviderUnavailable(ProviderReasons.NotInstalled),
+            ProcessEnd.FailedToStart => new ProviderErrored(ProviderReasons.SpawnFailed),
             ProcessEnd.TimedOut => new ProviderUnavailable(ProviderUnavailable.Timeout),
             ProcessEnd.Exited when result.ExitCode != 0 => new ProviderErrored(ProviderReasons.Exit(result.ExitCode)),
             ProcessEnd.Exited => Read(result.StandardOutput, question),
@@ -78,6 +82,7 @@ internal abstract class AgentCliProvider(IProcessRunner runner, AgentCliName cli
     {
         FileName = AgentCliNames.Binary(cli),
         Arguments = call.Arguments,
+        StandardInput = call.StandardInput,
         WorkingDirectory = call.WorkingDirectory,
         Environment = new Dictionary<string, string>(call.Environment, StringComparer.Ordinal) { ["AW_JUDGE_CHILD"] = "1" },
         Timeout = budget,

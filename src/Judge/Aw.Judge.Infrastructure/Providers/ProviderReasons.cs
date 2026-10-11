@@ -8,8 +8,11 @@ internal static class ProviderReasons
     /// <summary>Decided: the model answered within the question's outputs.</summary>
     public const string Model = "model";
 
-    /// <summary>Unavailable: the agent CLI's binary isn't installed (or can't be started).</summary>
+    /// <summary>Unavailable: the agent CLI's binary isn't installed.</summary>
     public const string NotInstalled = "not-installed";
+
+    /// <summary>Errored: the agent CLI is installed but the system refused to start it (argument limit, not a program, permissions).</summary>
+    public const string SpawnFailed = "spawn-failed";
 
     /// <summary>Unavailable: no TypeSafe API key in the environment or the keychain (not a failure).</summary>
     public const string NoApiKey = "no-api-key";

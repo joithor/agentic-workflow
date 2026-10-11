@@ -1,6 +1,7 @@
 using System.Text.Json.Nodes;
 using Aw.Judge.Core.Ports;
 using Aw.Judge.Core.Providers;
+using Aw.Judge.Core.Questions;
 
 namespace Aw.Judge.Infrastructure.Providers;
 
@@ -10,7 +11,8 @@ namespace Aw.Judge.Infrastructure.Providers;
 /// enabled, MCP servers never auto-approved; --trust is required or a fresh workspace exits "Workspace Trust Required".
 /// The CLI has no schema mode, so the schema is stated in the prompt and the answer is the last JSON object in the
 /// result text (a prose preamble has been seen). Images are named by absolute path, with "do not search" (given a bare
-/// name the agent globs, finds nothing and reports the file missing).
+/// name the agent globs, finds nothing and reports the file missing). The prompt is an argument, so it is capped at
+/// <see cref="PromptCap"/> characters: four bytes each at most, that keeps it under Linux's 128 KiB per argument.
 /// </summary>
 /// <param name="runner">Runs `cursor-agent`.</param>
 internal sealed class CursorCliProvider(IProcessRunner runner) : AgentCliProvider(runner, AgentCliName.CursorCli)
@@ -18,9 +20,12 @@ internal sealed class CursorCliProvider(IProcessRunner runner) : AgentCliProvide
     /// <summary>The model.</summary>
     public const string Model = "gpt-5.6-luna-none-fast";
 
+    /// <summary>How many characters of the question's prompt go on the command line.</summary>
+    public const int PromptCap = 30_000;
+
     /// <inheritdoc />
     protected override AgentCliCall ForText(QuestionRef question, JsonNode? input, string workspace) =>
-        Call(workspace, $"{question.Prompt}\n\nInput:\n{WireJson.Text(input)}\n\n{Instruction(question)}");
+        Call(workspace, $"{UntrustedText.Capped(question.Prompt, PromptCap)}\n\n{Instruction(question)}");
 
     /// <inheritdoc />
     protected override AgentCliCall ForImage(QuestionRef question, ImageEvidence evidence, string workspace) =>
