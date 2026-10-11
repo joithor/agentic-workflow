@@ -6,7 +6,7 @@ namespace Aw.Sindri.Core.Workflow.Engine.Rules;
 
 /// <summary>
 /// The engine triggers this unit routes to the frame and child rules (spec §3.8, §5.7): cancel, takeover, handback
-/// and a child's park, resume or escalation. Answers and their §5.8 resumes, deadlines, shifts, recipe wakes, outbox
+/// and a child's park, resume or escalation. Deadlines, shifts, recipe wakes, outbox
 /// refusals and open-requests come with the phases that own them (P4–P6).
 /// </summary>
 public static partial class TransitionDecision
@@ -25,8 +25,9 @@ public static partial class TransitionDecision
             TakeoverRequested => d.Rules.TakeOver(instance, d.Trigger.Actor, d.Context).Match<Decision>(d.Commit, e => new Rejected(d.Key, e)),
             HandbackRequested => Handback(d, instance),
             ChildChanged change => Child(d, instance, change),
+            AnswerGiven answer => Answer(d, instance, answer),
             CancelRequested => new Rejected(d.Key, NotAllowed(d.Trigger, instance)),
-            _ => throw new NotSupportedException($"{d.Trigger.Name} is decided by the engine-owned rules its phase adds (P4: answers and the §5.8 resumes; P5: deadlines and shifts; P2, P6: recipe wakes and outbox refusals; UI E-6: open-requests)."),
+            _ => throw new NotSupportedException($"{d.Trigger.Name} is decided by the engine-owned rules its phase adds (P5: deadlines and shifts; P2, P6: recipe wakes and outbox refusals; UI E-6: open-requests)."),
         };
     }
 

@@ -47,7 +47,9 @@ public static partial class TransitionDecision
         {
             var before = Input.Instance;
             var row = after with { Version = before.Version + 1 };
-            var trigger = new TriggerRecord(Trigger.Name, Key, Trigger.Actor, Outcome(Trigger));
+            var trigger = Answered is { } answer
+                ? new TriggerRecord(answer.Name, Key, answer.Actor, Outcome: null)
+                : new TriggerRecord(Trigger.Name, Key, Trigger.Actor, Outcome(Trigger));
             return new InstanceChange(row, new WorkflowEvent(
                 type, row.Id, trigger, before.Version, row.Version, Context.Epoch, Started: null, Rules.Delta(before, row),
                 records.Gates, records.Evidence, Grant: null, Override: null, Refusal: null, Outbox: []));
