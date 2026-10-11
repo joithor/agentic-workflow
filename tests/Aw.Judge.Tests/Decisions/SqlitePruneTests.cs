@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using Aw.Judge.Infrastructure.Sqlite;
 using Aw.Judge.Testing;
 using Aw.Kernel.Testing;
 using Microsoft.Data.Sqlite;
@@ -30,6 +31,34 @@ public sealed class SqlitePruneTests : IDisposable
 
         Assert.Equal(0, pruned.Value);
         Assert.True(clock.Elapsed < TimeSpan.FromSeconds(1), $"no wait for the busy timeout, took {clock.Elapsed}");
+    }
+
+    [Fact]
+    public async Task The_prune_check_starts_from_the_details_table_so_its_cost_is_bounded_by_retention()
+    {
+        // Decision rows are never deleted, so a plan that starts from decisions walks every old row once the details
+        // are gone; decision_details holds only the retention window.
+        var ct = TestContext.Current.CancellationToken;
+        var log = _state.DecisionLog();
+        Assert.True((await log.Record(A.Decision().At(KnownInstants.Epoch).Build(), ct)).IsSuccess);
+        await using var connection = new SqliteConnection($"Data Source={Path.Combine(_state.Path, "judge", "decisions.sqlite")};Mode=ReadOnly");
+        await connection.OpenAsync(ct);
+        await using var explain = connection.CreateCommand();
+        explain.CommandText = "EXPLAIN QUERY PLAN " + DecisionSql.HasDetailsBefore;
+        _ = explain.Parameters.AddWithValue("$before", "2000-01-01T00:00:00.0000000Z");
+
+        List<string> plan = [];
+        await using (var reader = await explain.ExecuteReaderAsync(ct))
+        {
+            while (await reader.ReadAsync(ct))
+            {
+                plan.Add(reader.GetString(3));
+            }
+        }
+
+        // The two table steps, in join order: d is decisions, x is decision_details.
+        var steps = plan.Select(step => step.Split(' ')).Where(words => words is ["SCAN" or "SEARCH", "d" or "x", ..]).Select(words => words[1]).ToList();
+        Assert.True(steps is ["x", "d"], string.Join(" | ", plan));
     }
 
     public void Dispose()
