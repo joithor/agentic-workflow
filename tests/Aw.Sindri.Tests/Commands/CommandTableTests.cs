@@ -1,6 +1,6 @@
 using Aw.Sindri.Host.Commands;
-using Aw.Sindri.Tests.Profile;
 using Aw.Sindri.Tests.Ledger;
+using Aw.Sindri.Tests.Profile;
 
 namespace Aw.Sindri.Tests.Commands;
 
