@@ -1,3 +1,4 @@
+using System.Collections.Concurrent;
 using System.Globalization;
 using System.Net;
 using System.Net.Sockets;
@@ -21,6 +22,9 @@ internal sealed class LocalHttpServer : IDisposable
     }
 
     internal int Port { get; }
+
+    /// <summary>Every request path served, in arrival order.</summary>
+    internal ConcurrentQueue<string> Requests { get; } = new();
 
     internal string Origin => "http://127.0.0.1:" + Port.ToString(CultureInfo.InvariantCulture);
 
@@ -53,7 +57,9 @@ internal sealed class LocalHttpServer : IDisposable
 
     private void Respond(HttpListenerContext context)
     {
-        var found = _pages.TryGetValue(context.Request.Url?.AbsolutePath ?? "/", out var html);
+        var path = context.Request.Url?.AbsolutePath ?? "/";
+        Requests.Enqueue(path);
+        var found = _pages.TryGetValue(path, out var html);
         var body = Encoding.UTF8.GetBytes(found ? html! : "not found");   // why: TryGetValue set it when found
         context.Response.StatusCode = found ? 200 : 404;
         context.Response.ContentType = "text/html; charset=utf-8";

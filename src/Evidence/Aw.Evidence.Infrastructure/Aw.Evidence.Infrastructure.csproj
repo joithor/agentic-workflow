@@ -7,16 +7,25 @@
     <RootNamespace>Aw.Evidence.Infrastructure</RootNamespace>
     <!-- DirectoryLocks calls the C library's mkdir through [LibraryImport], whose generated marshalling is unsafe code. -->
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <!-- Not AOT-compatible: Microsoft.Playwright (PlaywrightBrowser) has no NativeAOT or trimming support, so Evidence
+         ships framework-dependent (spec §4b.6 AOT scope). -->
+    <AwAotCompatible>false</AwAotCompatible>
   </PropertyGroup>
 
   <ItemGroup>
     <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" />
     <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" />
+    <PackageReference Include="Microsoft.Playwright" />
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="../Aw.Evidence.Core/Aw.Evidence.Core.csproj" />
     <ProjectReference Include="../../Aw.Kernel/Aw.Kernel.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- The page scripts PlaywrightBrowser evaluates (PageScripts reads them by manifest name). -->
+    <EmbeddedResource Include="Browser/Scripts/*.js" LogicalName="Aw.Evidence.Infrastructure.Browser.Scripts.%(Filename)%(Extension)" />
   </ItemGroup>
 
   <ItemGroup>

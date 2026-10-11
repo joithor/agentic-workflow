@@ -1,3 +1,4 @@
+using Aw.Evidence.Core.Browser;
 using Aw.Evidence.Core.Files;
 using Aw.Evidence.Core.Guard;
 using Aw.Evidence.Core.Images;
@@ -5,6 +6,7 @@ using Aw.Evidence.Core.Judging;
 using Aw.Evidence.Core.Locks;
 using Aw.Evidence.Core.Stack;
 using Aw.Evidence.Core.Visual;
+using Aw.Evidence.Infrastructure.Browser;
 using Aw.Evidence.Infrastructure.Files;
 using Aw.Evidence.Infrastructure.Guard;
 using Aw.Evidence.Infrastructure.Images;
@@ -40,6 +42,8 @@ public static class EvidenceInfrastructureServiceCollectionExtensions
             .AddSingleton<IStackProbe>(static _ => new ProcessStackProbe("docker"))
             .AddSingleton<IProvenanceQuery>(new DockerPsqlProvenance("docker"))
             .AddSingleton<ISecretsSource>(new EnvironmentSecrets(environment))
+            .AddSingleton<IBrowser, PlaywrightBrowser>()
+            .AddSingleton<IBrowserInstaller, PlaywrightInstaller>()
             .AddSingleton<IJudge, UnavailableJudge>();
     }
 }
