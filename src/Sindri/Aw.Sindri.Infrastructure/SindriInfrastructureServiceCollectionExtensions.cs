@@ -1,6 +1,9 @@
+using Aw.Kernel.Ids;
+using Aw.Sindri.Core.Control;
 using Aw.Sindri.Core.Lease;
 using Aw.Sindri.Core.Ledger;
 using Aw.Sindri.Core.Profile;
+using Aw.Sindri.Infrastructure.Control;
 using Aw.Sindri.Infrastructure.Lease;
 using Aw.Sindri.Infrastructure.Ledger;
 using Aw.Sindri.Infrastructure.Profile;
@@ -19,10 +22,14 @@ public static class SindriInfrastructureServiceCollectionExtensions
     public static IServiceCollection AddSindriInfrastructure(this IServiceCollection services, Func<string, string?> environment)
         => services
             .AddSingleton(SettingsFromEnvironment.Read(environment))
+            .AddSingleton<IIdGenerator, GuidV7Ids>()
             .AddSingleton<IProcessProbe, PosixProcessProbe>()
             .AddSingleton<LedgerDatabase>()
             .AddSingleton<ILedgerStore, SqliteLedger>()
             .AddSingleton<ILease, SqliteLease>()
             .AddSingleton<IProfileSource, YamlProfileSource>()
-            .AddSingleton<IApprovals, FileApprovals>();
+            .AddSingleton<IApprovals, FileApprovals>()
+            .AddSingleton<IEndpointFile, FileEndpoint>()
+            .AddSingleton<IControlPlaneProbe, HttpControlPlaneProbe>()
+            .AddSingleton<IControlPlaneLauncher, ServeLauncher>();
 }

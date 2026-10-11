@@ -1,8 +1,3 @@
-using Aw.Sindri.Host;
+using Aw.Sindri.Host.Commands;
 
-var app = LoopbackBinding.Build(args, Environment.GetEnvironmentVariable, TimeProvider.System);   // also resolves the telemetry runtime
-await using (app.ConfigureAwait(false))
-{
-    _ = Pipeline.Configure(app);
-    await app.RunAsync().ConfigureAwait(false);
-}
+return await CommandTable.Run(args, Environment.GetEnvironmentVariable, TimeProvider.System).ConfigureAwait(false);

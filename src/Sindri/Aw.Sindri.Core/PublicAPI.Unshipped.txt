@@ -430,3 +430,127 @@ static readonly Aw.Sindri.Core.SindriErrors.ProfileNotApproved -> Aw.Kernel.Erro
 static readonly Aw.Sindri.Core.SindriErrors.ServiceFailed -> Aw.Kernel.ErrorDefinition!
 static readonly Aw.Sindri.Core.SindriErrors.StartFailed -> Aw.Kernel.ErrorDefinition!
 static readonly Aw.Sindri.Core.SindriErrors.UnknownVerb -> Aw.Kernel.ErrorDefinition!
+Aw.Sindri.Core.Control.IControlPlaneLauncher
+Aw.Sindri.Core.Control.IControlPlaneLauncher.Launch() -> Aw.Kernel.Result<Aw.Sindri.Core.Control.ILaunchedProcess!>!
+Aw.Sindri.Core.Control.IControlPlaneProbe
+Aw.Sindri.Core.Control.IControlPlaneProbe.Check(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<(Aw.Sindri.Core.Control.ControlEndpoint! Endpoint, Aw.Sindri.Core.Control.Ping! Ping)>!>
+Aw.Sindri.Core.Control.ILaunchedProcess
+Aw.Sindri.Core.Control.ILaunchedProcess.HasExited.get -> bool
+Aw.Sindri.Core.Control.ILaunchedProcess.LastError() -> string!
+Aw.Sindri.Core.Control.ILaunchedProcess.LogPath.get -> string!
+Aw.Sindri.Core.Control.ILaunchedProcess.Pid.get -> int
+Aw.Sindri.Core.Control.IShutdown
+Aw.Sindri.Core.Control.IShutdown.Request() -> void
+Aw.Sindri.Core.Control.Ping
+Aw.Sindri.Core.Control.Ping.<Clone>$() -> Aw.Sindri.Core.Control.Ping!
+Aw.Sindri.Core.Control.Ping.Deconstruct(out int Pid, out long Epoch) -> void
+Aw.Sindri.Core.Control.Ping.Epoch.get -> long
+Aw.Sindri.Core.Control.Ping.Epoch.init -> void
+Aw.Sindri.Core.Control.Ping.Equals(Aw.Sindri.Core.Control.Ping? other) -> bool
+Aw.Sindri.Core.Control.Ping.Pid.get -> int
+Aw.Sindri.Core.Control.Ping.Pid.init -> void
+Aw.Sindri.Core.Control.Ping.Ping(int Pid, long Epoch) -> void
+Aw.Sindri.Core.Doctor.DoctorRules
+Aw.Sindri.Core.Events.EventFactory
+Aw.Sindri.Core.Events.EventFactory.Entry<TPayload>(string! type, TPayload payload, string! key) -> Aw.Sindri.Core.Ledger.LedgerEntry!
+Aw.Sindri.Core.Events.EventFactory.EventFactory(Aw.Sindri.Core.Events.EventScope! scope, System.TimeProvider! clock, Aw.Kernel.Ids.IIdGenerator! ids, System.Text.Json.JsonSerializerOptions! json) -> void
+Aw.Sindri.Core.Events.EventScope
+Aw.Sindri.Core.Events.EventScope.<Clone>$() -> Aw.Sindri.Core.Events.EventScope!
+Aw.Sindri.Core.Events.EventScope.Actor.get -> string!
+Aw.Sindri.Core.Events.EventScope.Actor.init -> void
+Aw.Sindri.Core.Events.EventScope.Deconstruct(out string! Actor, out string! Tenant, out int Ring) -> void
+Aw.Sindri.Core.Events.EventScope.Equals(Aw.Sindri.Core.Events.EventScope? other) -> bool
+Aw.Sindri.Core.Events.EventScope.EventScope(string! Actor, string! Tenant, int Ring) -> void
+Aw.Sindri.Core.Events.EventScope.Ring.get -> int
+Aw.Sindri.Core.Events.EventScope.Ring.init -> void
+Aw.Sindri.Core.Events.EventScope.Tenant.get -> string!
+Aw.Sindri.Core.Events.EventScope.Tenant.init -> void
+Aw.Sindri.Core.Events.EventTypes
+Aw.Sindri.Core.Events.Heartbeat
+Aw.Sindri.Core.Events.Heartbeat.<Clone>$() -> Aw.Sindri.Core.Events.Heartbeat!
+Aw.Sindri.Core.Events.Heartbeat.Deconstruct(out System.DateTimeOffset Slot, out System.DateTimeOffset RanAt) -> void
+Aw.Sindri.Core.Events.Heartbeat.Equals(Aw.Sindri.Core.Events.Heartbeat? other) -> bool
+Aw.Sindri.Core.Events.Heartbeat.Heartbeat(System.DateTimeOffset Slot, System.DateTimeOffset RanAt) -> void
+Aw.Sindri.Core.Events.Heartbeat.RanAt.get -> System.DateTimeOffset
+Aw.Sindri.Core.Events.Heartbeat.RanAt.init -> void
+Aw.Sindri.Core.Events.Heartbeat.Slot.get -> System.DateTimeOffset
+Aw.Sindri.Core.Events.Heartbeat.Slot.init -> void
+Aw.Sindri.Core.Events.ProcessStarted
+Aw.Sindri.Core.Events.ProcessStarted.<Clone>$() -> Aw.Sindri.Core.Events.ProcessStarted!
+Aw.Sindri.Core.Events.ProcessStarted.Deconstruct(out Aw.Sindri.Core.Ids.HostId Host, out int Pid, out long Epoch, out Aw.Sindri.Core.Ids.ProfileHash? Profile) -> void
+Aw.Sindri.Core.Events.ProcessStarted.Epoch.get -> long
+Aw.Sindri.Core.Events.ProcessStarted.Epoch.init -> void
+Aw.Sindri.Core.Events.ProcessStarted.Equals(Aw.Sindri.Core.Events.ProcessStarted? other) -> bool
+Aw.Sindri.Core.Events.ProcessStarted.Host.get -> Aw.Sindri.Core.Ids.HostId
+Aw.Sindri.Core.Events.ProcessStarted.Host.init -> void
+Aw.Sindri.Core.Events.ProcessStarted.Pid.get -> int
+Aw.Sindri.Core.Events.ProcessStarted.Pid.init -> void
+Aw.Sindri.Core.Events.ProcessStarted.ProcessStarted(Aw.Sindri.Core.Ids.HostId Host, int Pid, long Epoch, Aw.Sindri.Core.Ids.ProfileHash? Profile) -> void
+Aw.Sindri.Core.Events.ProcessStarted.Profile.get -> Aw.Sindri.Core.Ids.ProfileHash?
+Aw.Sindri.Core.Events.ProcessStarted.Profile.init -> void
+Aw.Sindri.Core.Events.ProcessStopped
+Aw.Sindri.Core.Events.ProcessStopped.<Clone>$() -> Aw.Sindri.Core.Events.ProcessStopped!
+Aw.Sindri.Core.Events.ProcessStopped.Deconstruct(out int Pid, out long Epoch, out string! Reason) -> void
+Aw.Sindri.Core.Events.ProcessStopped.Epoch.get -> long
+Aw.Sindri.Core.Events.ProcessStopped.Epoch.init -> void
+Aw.Sindri.Core.Events.ProcessStopped.Equals(Aw.Sindri.Core.Events.ProcessStopped? other) -> bool
+Aw.Sindri.Core.Events.ProcessStopped.Pid.get -> int
+Aw.Sindri.Core.Events.ProcessStopped.Pid.init -> void
+Aw.Sindri.Core.Events.ProcessStopped.ProcessStopped(int Pid, long Epoch, string! Reason) -> void
+Aw.Sindri.Core.Events.ProcessStopped.Reason.get -> string!
+Aw.Sindri.Core.Events.ProcessStopped.Reason.init -> void
+Aw.Sindri.Core.Events.ProfileApproved
+Aw.Sindri.Core.Events.ProfileApproved.<Clone>$() -> Aw.Sindri.Core.Events.ProfileApproved!
+Aw.Sindri.Core.Events.ProfileApproved.Changes.get -> System.Collections.Generic.IReadOnlyList<string!>!
+Aw.Sindri.Core.Events.ProfileApproved.Changes.init -> void
+Aw.Sindri.Core.Events.ProfileApproved.Deconstruct(out Aw.Sindri.Core.Ids.ProfileHash Hash, out System.Collections.Generic.IReadOnlyList<string!>! Changes) -> void
+Aw.Sindri.Core.Events.ProfileApproved.Equals(Aw.Sindri.Core.Events.ProfileApproved? other) -> bool
+Aw.Sindri.Core.Events.ProfileApproved.Hash.get -> Aw.Sindri.Core.Ids.ProfileHash
+Aw.Sindri.Core.Events.ProfileApproved.Hash.init -> void
+Aw.Sindri.Core.Events.ProfileApproved.ProfileApproved(Aw.Sindri.Core.Ids.ProfileHash Hash, System.Collections.Generic.IReadOnlyList<string!>! Changes) -> void
+Aw.Sindri.Core.Lease.HeldLease
+Aw.Sindri.Core.Lease.HeldLease.Clear() -> void
+Aw.Sindri.Core.Lease.HeldLease.Current.get -> Aw.Sindri.Core.Lease.LeaseGrant?
+Aw.Sindri.Core.Lease.HeldLease.HeldLease() -> void
+Aw.Sindri.Core.Lease.HeldLease.Hold(Aw.Sindri.Core.Lease.LeaseGrant! grant) -> void
+const Aw.Sindri.Core.Events.EventTypes.Heartbeat = "service.heartbeat" -> string!
+const Aw.Sindri.Core.Events.EventTypes.ProcessStarted = "process.started" -> string!
+const Aw.Sindri.Core.Events.EventTypes.ProcessStopped = "process.stopped" -> string!
+const Aw.Sindri.Core.Events.EventTypes.ProfileApproved = "profile.approved" -> string!
+override Aw.Sindri.Core.Control.Ping.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Control.Ping.GetHashCode() -> int
+override Aw.Sindri.Core.Control.Ping.ToString() -> string!
+override Aw.Sindri.Core.Events.EventScope.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Events.EventScope.GetHashCode() -> int
+override Aw.Sindri.Core.Events.EventScope.ToString() -> string!
+override Aw.Sindri.Core.Events.Heartbeat.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Events.Heartbeat.GetHashCode() -> int
+override Aw.Sindri.Core.Events.Heartbeat.ToString() -> string!
+override Aw.Sindri.Core.Events.ProcessStarted.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Events.ProcessStarted.GetHashCode() -> int
+override Aw.Sindri.Core.Events.ProcessStarted.ToString() -> string!
+override Aw.Sindri.Core.Events.ProcessStopped.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Events.ProcessStopped.GetHashCode() -> int
+override Aw.Sindri.Core.Events.ProcessStopped.ToString() -> string!
+override Aw.Sindri.Core.Events.ProfileApproved.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Events.ProfileApproved.GetHashCode() -> int
+override Aw.Sindri.Core.Events.ProfileApproved.ToString() -> string!
+static Aw.Sindri.Core.Control.Ping.operator !=(Aw.Sindri.Core.Control.Ping? left, Aw.Sindri.Core.Control.Ping? right) -> bool
+static Aw.Sindri.Core.Control.Ping.operator ==(Aw.Sindri.Core.Control.Ping? left, Aw.Sindri.Core.Control.Ping? right) -> bool
+static Aw.Sindri.Core.Doctor.DoctorRules.Api(Aw.Kernel.Result<(Aw.Sindri.Core.Control.ControlEndpoint! Endpoint, Aw.Sindri.Core.Control.Ping! Ping)>! answer, Aw.Sindri.Core.Lease.LeaseRow? row, System.DateTimeOffset now) -> Aw.Sindri.Core.Doctor.DoctorCheck!
+static Aw.Sindri.Core.Doctor.DoctorRules.ExitCode(System.Collections.Generic.IEnumerable<Aw.Sindri.Core.Doctor.DoctorCheck!>! checks) -> int
+static Aw.Sindri.Core.Doctor.DoctorRules.Lease(Aw.Sindri.Core.Lease.LeaseRow? row, System.DateTimeOffset now, Aw.Sindri.Core.Lease.HolderLiveness liveness) -> Aw.Sindri.Core.Doctor.DoctorCheck!
+static Aw.Sindri.Core.Doctor.DoctorRules.Ledger(Aw.Kernel.Result<Aw.Sindri.Core.Ledger.SchemaStatus!>! schema) -> Aw.Sindri.Core.Doctor.DoctorCheck!
+static Aw.Sindri.Core.Doctor.DoctorRules.Profile(Aw.Kernel.Result<Aw.Sindri.Core.Profile.LoadedProfile!>! live, Aw.Kernel.Result<Aw.Sindri.Core.Profile.LoadedProfile?>! approved) -> Aw.Sindri.Core.Doctor.DoctorCheck!
+static Aw.Sindri.Core.Events.EventScope.ControlPlane.get -> Aw.Sindri.Core.Events.EventScope!
+static Aw.Sindri.Core.Events.EventScope.operator !=(Aw.Sindri.Core.Events.EventScope? left, Aw.Sindri.Core.Events.EventScope? right) -> bool
+static Aw.Sindri.Core.Events.EventScope.operator ==(Aw.Sindri.Core.Events.EventScope? left, Aw.Sindri.Core.Events.EventScope? right) -> bool
+static Aw.Sindri.Core.Events.Heartbeat.operator !=(Aw.Sindri.Core.Events.Heartbeat? left, Aw.Sindri.Core.Events.Heartbeat? right) -> bool
+static Aw.Sindri.Core.Events.Heartbeat.operator ==(Aw.Sindri.Core.Events.Heartbeat? left, Aw.Sindri.Core.Events.Heartbeat? right) -> bool
+static Aw.Sindri.Core.Events.ProcessStarted.operator !=(Aw.Sindri.Core.Events.ProcessStarted? left, Aw.Sindri.Core.Events.ProcessStarted? right) -> bool
+static Aw.Sindri.Core.Events.ProcessStarted.operator ==(Aw.Sindri.Core.Events.ProcessStarted? left, Aw.Sindri.Core.Events.ProcessStarted? right) -> bool
+static Aw.Sindri.Core.Events.ProcessStopped.operator !=(Aw.Sindri.Core.Events.ProcessStopped? left, Aw.Sindri.Core.Events.ProcessStopped? right) -> bool
+static Aw.Sindri.Core.Events.ProcessStopped.operator ==(Aw.Sindri.Core.Events.ProcessStopped? left, Aw.Sindri.Core.Events.ProcessStopped? right) -> bool
+static Aw.Sindri.Core.Events.ProfileApproved.operator !=(Aw.Sindri.Core.Events.ProfileApproved? left, Aw.Sindri.Core.Events.ProfileApproved? right) -> bool
+static Aw.Sindri.Core.Events.ProfileApproved.operator ==(Aw.Sindri.Core.Events.ProfileApproved? left, Aw.Sindri.Core.Events.ProfileApproved? right) -> bool
+static readonly Aw.Sindri.Core.SindriErrors.PortInUse -> Aw.Kernel.ErrorDefinition!

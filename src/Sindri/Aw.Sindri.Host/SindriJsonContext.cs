@@ -1,13 +1,33 @@
 using System.Text.Json.Serialization;
 using Aw.Kernel;
+using Aw.Sindri.Core.Control;
+using Aw.Sindri.Core.Events;
 using Aw.Sindri.Core.Profile;
+using Aw.Sindri.Features.ApproveProfile;
 using Aw.Sindri.Features.GetStatus;
+using Aw.Sindri.Features.RunDoctor;
+using Aw.Sindri.Features.StopProcess;
+using Aw.Sindri.Features.StreamEvents;
+using Aw.Sindri.Features.ValidateProfile;
+using Aw.Sindri.Host.Commands;
 
 namespace Aw.Sindri.Host;
 
 /// <summary>The package's one source-generated JSON context (spec §4b.3): through AwJson.CreateOptions, and an http host's resolver after ASP.NET's ProblemDetails context.</summary>
 [JsonSerializable(typeof(Error))]
 [JsonSerializable(typeof(SindriProfile))]
-[JsonSerializable(typeof(GetStatusRequest))]
+[JsonSerializable(typeof(ControlEndpoint))]
+[JsonSerializable(typeof(Ping))]
+[JsonSerializable(typeof(ApiProblem))]
+[JsonSerializable(typeof(ProcessStarted))]
+[JsonSerializable(typeof(ProcessStopped))]
+[JsonSerializable(typeof(ProfileApproved))]
+[JsonSerializable(typeof(Heartbeat))]
 [JsonSerializable(typeof(GetStatusResponse))]
+[JsonSerializable(typeof(StopProcessResponse))]
+[JsonSerializable(typeof(ApproveProfileRequest))]
+[JsonSerializable(typeof(ApproveProfileResponse))]
+[JsonSerializable(typeof(ValidateProfileResponse))]
+[JsonSerializable(typeof(RunDoctorResponse))]
+[JsonSerializable(typeof(EventView))]
 internal sealed partial class SindriJsonContext : JsonSerializerContext;

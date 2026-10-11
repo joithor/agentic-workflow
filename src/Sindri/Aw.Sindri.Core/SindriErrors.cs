@@ -41,6 +41,9 @@ public static class SindriErrors
     /// <summary>SND-API-002: the control-plane process didn't answer in time.</summary>
     public static readonly ErrorDefinition ApiTimeout = new("SND-API-002", ErrorKind.Timeout, "Sindri didn't answer in time");
 
+    /// <summary>SND-API-003: the API's port is taken by another program.</summary>
+    public static readonly ErrorDefinition PortInUse = new("SND-API-003", ErrorKind.Unavailable, "The API port is in use");
+
     /// <summary>SND-CLI-001: an unknown verb or option.</summary>
     public static readonly ErrorDefinition UnknownVerb = new("SND-CLI-001", ErrorKind.Invalid, "Unknown command");
 
@@ -54,6 +57,6 @@ public static class SindriErrors
     public static IReadOnlyList<ErrorDefinition> All { get; } =
     [
         LeaseHeld, LeaseLost, LeaseStale, ProfileMissing, ProfileInvalid, ProfileHashMismatch, ProfileNeedsTerminal,
-        ProfileNotApproved, LedgerSchema, LedgerUnavailable, NotRunning, ApiTimeout, UnknownVerb, StartFailed, ServiceFailed,
+        ProfileNotApproved, LedgerSchema, LedgerUnavailable, NotRunning, ApiTimeout, PortInUse, UnknownVerb, StartFailed, ServiceFailed,
     ];
 }

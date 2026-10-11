@@ -1,0 +1,37 @@
+using Aw.Sindri.Core.Events;
+using Aw.Sindri.Features.StopProcess;
+
+namespace Aw.Sindri.Tests.StopProcess;
+
+public sealed class StopProcessTests
+{
+    private readonly SliceHarness _h = new();
+
+    private static CancellationToken Token => TestContext.Current.CancellationToken;
+
+    private StopProcessService Service() => new(_h.Held, _h.Store, _h.Store, _h.Events, _h.Shutdown);
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task StopProcess_records_the_stop_releases_the_lease_and_shuts_down()
+    {
+        var grant = await _h.HoldLease();
+
+        var stopped = (await Service().Handle(new StopProcessRequest("stop"), Token)).Value;
+
+        Assert.Equal(new StopProcessResponse(grant.Holder.Pid, grant.Epoch), stopped);
+        Assert.Equal(EventTypes.ProcessStopped, Assert.Single(_h.Store.Events).Envelope.Type);
+        Assert.True((await _h.Store.Read(Token)).Value!.Released);
+        Assert.Null(_h.Held.Current);
+        Assert.True(_h.Shutdown.Requested);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task StopProcess_without_a_lease_still_shuts_down_and_writes_nothing()
+    {
+        var stopped = (await Service().Handle(new StopProcessRequest("signal"), Token)).Value;
+
+        Assert.Equal(new StopProcessResponse(0, 0), stopped);
+        Assert.Empty(_h.Store.Events);
+        Assert.True(_h.Shutdown.Requested);
+    }
+}

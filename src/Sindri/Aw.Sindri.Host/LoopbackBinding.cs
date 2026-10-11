@@ -9,13 +9,14 @@ namespace Aw.Sindri.Host;
 /// <summary>
 /// Builds the web host so that the only listener is 127.0.0.1 (spec §4d runtime hardening): no command-line
 /// arguments and no environment variables reach the web host's configuration, PreferHostingUrls is off, and Kestrel
-/// listens with Listen(IPAddress.Loopback, port) only. The port comes from AW_SINDRI_PORT (0, the default, picks a free one).
+/// listens with Listen(IPAddress.Loopback, port) only. The port comes from AW_SINDRI_PORT (0 picks a free one); the
+/// serve command passes the approved profile's api.port (default 7410) through it when the variable isn't set.
 /// </summary>
 internal static class LoopbackBinding
 {
     internal const string PortVariable = "AW_SINDRI_PORT";
 
-    internal static WebApplication Build(string[] args, Func<string, string?> environment, TimeProvider clock)
+    internal static WebApplication Build(string[] args, Func<string, string?> environment, TimeProvider clock, Action<IServiceCollection>? configure = null)
     {
         if (args.Length > 0)
         {
@@ -29,6 +30,7 @@ internal static class LoopbackBinding
         _ = builder.WebHost.UseKestrel(kestrel => kestrel.Listen(IPAddress.Loopback, PortFrom(environment)));
         _ = builder.Logging.ClearProviders();   // Kernel telemetry (AddKernelTelemetry in Compose) is the only logger: scrubbed JSON lines
         _ = Composition.Compose(builder.Services, environment, clock);
+        configure?.Invoke(builder.Services);
         _ = builder.Services.ConfigureHttpJsonOptions(o => CopyProfile(o.SerializerOptions));
         _ = builder.Services.AddProblemDetails();   // its post-configure step adds ProblemDetails' JSON context to the chain
         var app = builder.Build();
