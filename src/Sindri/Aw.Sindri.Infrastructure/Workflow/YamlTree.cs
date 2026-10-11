@@ -46,6 +46,12 @@ internal static class YamlTree
             findings.At(Rule, string.Empty, Position(e.Start), $"the file isn't valid YAML: {Innermost(e).Message}", "fix the YAML at that position");
             return null;
         }
+        catch (InvalidOperationException)   // why: YamlDotNet's scanner throws this, not a YamlException, on some unclosed flow collections
+        {
+            var at = parser.Current is { } current ? Position(current.Start) : SourcePosition.Start;
+            findings.At(Rule, string.Empty, at, "the file isn't valid YAML: the parser stopped here, often at a '[' or '{' that isn't closed", "fix the YAML at that position");
+            return null;
+        }
     }
 
     internal static SourcePosition Position(Mark mark) => new((int)mark.Line, (int)mark.Column);
