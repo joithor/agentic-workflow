@@ -75,6 +75,65 @@ the health pill, the sheet and its edge tab, the attention band) is a stub with 
 `tests/Aw.Sindri.Ui.Tests/Shell/ShellViewModelTests.cs`. They are `Explicit` (xUnit1004 forbids `Skip`) until Unit A
 implements the shell; `dotnet test --project tests/Aw.Sindri.Ui.Tests --explicit only` runs them.
 
+### Settings and reduced motion (§3.3 ⌘,, §11.4, §14.2)
+
+`Views/SettingsView` over `ViewModels/Settings/SettingsViewModel`: the in-app **Reduce motion** switch and **Text size**
+(a slider, 90–130 % in 10 % steps, clamped by `UiPreferences.Clamp`). Both are kept in the preferences: a change is
+written over whatever else the file holds (read, replace the two fields, write; one write after another), and a write
+the platform refuses leaves the change applied for the session. Motion is reduced when the OS asks
+(`IMotionPreference`, re-read on `Changed`, posted back to the UI thread) **or** the switch is on; while the OS asks, the
+page says "On in your system settings" and the switch can't turn it off.
+
+The theme is changed in one place each: `Theme/Motion.Apply(resources, reduce)` sets every `Motion.*` duration to 0, or
+back to its token value, and `Theme/TextScale.Apply` scales the ramp. `Views/SettingsTheme.For(resources)` is the view
+model's apply callback over both. **Shell hook:** the shell builds
+`new SettingsViewModel(new Preferences(platform.Preferences), platform.Motion, SettingsTheme.For(Application.Current.Resources))`
+on the UI thread, awaits `Load` once at start-up (it applies the stored scale and motion before the first frame), shows
+`new SettingsView { DataContext = settings }` as its Settings page, and disposes it on exit. Stock Fluent controls'
+own transitions don't read the `Motion.*` tokens: Settings' switch drops its knob transition while motion is reduced
+(a view style on `IsMotionReduced`); other stock controls with transitions need the same when a page uses them.
+
+### LiveSetting on macOS (§11.4, §18.2; U0 spike)
+
+**Finding: supported in Avalonia 12.1.3, for a `TextBlock` whose `Text` changes; unconfirmed by ear.** The owner's
+VoiceOver pass below confirms or refutes it.
+
+**Method:** read the source at tag `12.1.3` (commit `8eeda4f6`) and checked the shipped binary
+(`~/.nuget/packages/avalonia.native/12.1.3/runtimes/osx/native/libAvaloniaNative.dylib`).
+
+- `AutomationProperties.LiveSetting` (`src/Avalonia.Controls/Automation/AutomationProperties.cs`) is read by
+  `ControlAutomationPeer.GetLiveSettingCore`. `TextBlockAutomationPeer` raises a Name change when `Text` changes;
+  `ControlAutomationPeer` raises none when `AutomationProperties.Name` itself changes, so a bound name on a `Border` or
+  panel is **not** announced.
+- macOS (`native/Avalonia.Native/src/OSX/automation.mm`): the element reports `AXARIALive` (polite or assertive); on a
+  Name change it posts `NSAccessibilityTitleChangedNotification` and, when the live setting isn't Off,
+  `raiseLiveRegionChanged`: `AXLiveRegionChanged`, then `NSAccessibilityAnnouncementRequestedNotification` on the
+  `AvnWindow` with the new name (Polite = `NSAccessibilityPriorityMedium`, Assertive = `High`). The same shape as
+  Windows' UIA `LiveRegionChanged`.
+- The dylib imports `_NSAccessibilityAnnouncementRequestedNotification`, `_NSAccessibilityAnnouncementKey` and
+  `_NSAccessibilityPostNotificationWithUserInfo`, and holds `AXARIALive`, `AXLiveRegionChanged` and
+  `raiseLiveRegionChanged`.
+- History: PR #20473 (2026-01) added the attribute ("problems getting VoiceOver to actually handle the events");
+  PR #21045 (2026-04) added the announcement. Open issue #22312 (2026-09): setting a live element's name to `""`
+  crashes the app (`NSInvalidArgumentException`) once VoiceOver or Accessibility Inspector has read the window.
+
+**Rules for later phases' announcements** ("N now need you", "<id> cleared", §12.4): a dedicated `TextBlock` with
+`LiveSetting="Polite"` whose `Text` changes; never set it to `""` (hide it instead); give it no separate
+`AutomationProperties.Name` (the peer announces the name, and a second binding may lag the text); only in a top-level
+window (popups aren't `AvnWindow`s). If the pass finds it silent, the fallback is a head adapter posting
+`NSAccessibilityAnnouncementRequestedNotification` through ObjC interop; no production seam is added before that.
+
+**The owner's VoiceOver pass** (a throwaway probe window: a polite `TextBlock` changing every 3 s, an assertive one, a
+`Border` with a bound name and `LiveSetting="Polite"`, and a focused `TextBox`):
+1. With focus in the TextBox, VoiceOver speaks each polite change after the current speech, and the assertive one
+   interrupts it.
+2. With the VoiceOver cursor on the live TextBlock, it still speaks, and nothing is said twice.
+3. The Border's name change stays silent (as the source predicts).
+4. A change right after launch, before VoiceOver has walked the window, is or isn't spoken (the native element exists
+   only once something has read the tree).
+5. Accessibility Inspector shows `AXARIALive` on the element and the `AXLiveRegionChanged` and announcement events.
+6. The app in the background: is the announcement still spoken?
+
 ## How it finds the control plane
 
 1. The endpoint-record port (`IEndpointRecordSource`) reads `control.json`. The desktop adapter reads it from
@@ -132,8 +191,8 @@ The app shows each as words in the window, never a dialog or a crash.
 
 | Lane | What |
 |---|---|
-| unit | The view model against the in-memory API and endpoint record; the `ISindriApi` contract for the fake and for the real client over a canned handler that writes Sindri's wire format by hand; the control.json path; the theme (tokens, contrast, Fluent values, no hex outside `Theme/`); the port contracts over their fakes; preferences, deep links, labels |
-| integration | The window under Avalonia's headless platform (Skia rendering; frames saved under the test output's `frames/`); the theme as the app resolves it (palette, overrides, the embedded mono font, the text scale); the control.json adapter against a temp directory (the endpoint-record contract) |
+| unit | The view models (Settings against the in-memory preferences and a fake OS setting) and the main view model against the in-memory API and endpoint record; the `ISindriApi` contract for the fake and for the real client over a canned handler that writes Sindri's wire format by hand; the control.json path; the theme (tokens, contrast, Fluent values, no hex outside `Theme/`); the port contracts over their fakes; preferences, deep links, labels |
+| integration | Settings under the headless platform (frames `settings-motion-off`, `-on`, `settings-system-reduces-motion`, `settings-text-120`); `Motion.Apply` over a token dictionary; the window under Avalonia's headless platform (Skia rendering; frames saved under the test output's `frames/`); the theme as the app resolves it (palette, overrides, the embedded mono font, the text scale); the control.json adapter against a temp directory (the endpoint-record contract) |
 
 `Avalonia.Headless.XUnit` 12.1.3 is compiled against xUnit v3 3.2.2 and fails discovery under the repo's xUnit v3 4.0.1
 (`MissingMethodException` in `TestIntrospectionHelper.GetTestCaseDetails`). The view tests are plain xUnit v3 facts that
