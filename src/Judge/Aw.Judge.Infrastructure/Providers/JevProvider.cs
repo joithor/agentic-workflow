@@ -36,8 +36,39 @@ internal sealed class JevProvider(HttpClient http, ISecretSource secrets) : IMod
     /// <inheritdoc />
     public async ValueTask<ProviderResult> Decide(QuestionRef question, JsonNode? input, TimeSpan budget, CancellationToken cancellationToken)
     {
-        await Task.Yield();
-        throw new NotSupportedException($"red: {http}{secrets}{nameof(Request)}{nameof(Read)}{nameof(SecretName.TypeSafeApiKey)}");
+        ArgumentNullException.ThrowIfNull(question);
+        if (question.Outputs.Count > MaxOptions)
+        {
+            return new ProviderErrored(ProviderReasons.TooManyOptions);
+        }
+
+        if (await secrets.Read(SecretName.TypeSafeApiKey, cancellationToken).ConfigureAwait(false) is not { } key)
+        {
+            return new ProviderUnavailable(ProviderReasons.NoApiKey);
+        }
+
+        using var deadline = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+        deadline.CancelAfter(budget);
+        try
+        {
+            using var request = Request(question, input, key);
+            using var response = await http.SendAsync(request, deadline.Token).ConfigureAwait(false);
+            if (!response.IsSuccessStatusCode)
+            {
+                return new ProviderErrored(ProviderReasons.Http((int)response.StatusCode));
+            }
+
+            var body = await response.Content.ReadAsByteArrayAsync(deadline.Token).ConfigureAwait(false);
+            return Read(body, question);
+        }
+        catch (OperationCanceledException) when (deadline.IsCancellationRequested && !cancellationToken.IsCancellationRequested)
+        {
+            return new ProviderUnavailable(ProviderUnavailable.Timeout);
+        }
+        catch (HttpRequestException)
+        {
+            return new ProviderUnavailable(ProviderReasons.NetworkError);
+        }
     }
 
     /// <inheritdoc />

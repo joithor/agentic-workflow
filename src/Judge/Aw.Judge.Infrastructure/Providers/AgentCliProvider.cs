@@ -23,9 +23,32 @@ internal abstract class AgentCliProvider(IProcessRunner runner, AgentCliName cli
     /// <inheritdoc />
     public async ValueTask<ProviderResult> Decide(QuestionRef question, JsonNode? input, TimeSpan budget, CancellationToken cancellationToken)
     {
+        ArgumentNullException.ThrowIfNull(question);
         using var workspace = TempWorkspace.Create();
-        await Task.Yield();
-        throw new NotSupportedException($"red: {runner} {nameof(Evidence)} {nameof(Request)}");
+        AgentCliCall call;
+        if (question.ContentClass == ContentClass.Image)
+        {
+            if (Evidence(input) is not { } evidence)
+            {
+                return new ProviderErrored(ProviderReasons.InvalidImageInput);
+            }
+
+            call = ForImage(question, evidence, workspace.Path);
+        }
+        else
+        {
+            call = ForText(question, input, workspace.Path);
+        }
+
+        var result = await runner.Run(Request(call, budget), cancellationToken).ConfigureAwait(false);
+        return result.End switch
+        {
+            ProcessEnd.NotStarted => new ProviderUnavailable(ProviderReasons.NotInstalled),
+            ProcessEnd.TimedOut => new ProviderUnavailable(ProviderUnavailable.Timeout),
+            ProcessEnd.Exited when result.ExitCode != 0 => new ProviderErrored(ProviderReasons.Exit(result.ExitCode)),
+            ProcessEnd.Exited => Read(result.StandardOutput, question),
+            _ => throw new InvalidOperationException($"unknown process end {result.End}"),
+        };
     }
 
     /// <summary>The call for a text question, run in the fresh workspace.</summary>

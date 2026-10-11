@@ -14,7 +14,17 @@ internal sealed class ProviderCatalog(Func<string, string?> environment, IExecut
 {
     /// <inheritdoc />
     public ProviderLineup Lineup(ProvidersConfig? config, IReadOnlyCollection<ProviderName>? allowed)
-        => throw new NotSupportedException($"red: {environment("AW_PROVIDER")}{locator}{providers.Count}{nameof(Configured)}{nameof(AgentCliResolution)}");
+    {
+        var clis = AgentCliResolution.Resolve(locator, environment("AW_PROVIDER"), Configured(config?.AgentClis));
+        var chain = ChainSpec.Build(clis, jev: config?.Jev != false);
+        if (allowed is not null)
+        {
+            chain = chain.Restrict(allowed);
+        }
+
+        var named = chain.Classes.Values.SelectMany(names => names).ToHashSet();
+        return new ProviderLineup([.. providers.Where(p => named.Contains(p.Name))], chain);
+    }
 
     // config.json's names are checked on read (JudgeConfigParser), so an unknown one can't reach here; skip it if it does.
     private static List<AgentCliName>? Configured(IReadOnlyList<string>? names) =>

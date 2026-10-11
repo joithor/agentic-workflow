@@ -19,5 +19,5 @@ internal sealed class RulesProvider : IModelProvider
 
     /// <inheritdoc />
     public ValueTask<ProviderResult> Decide(QuestionRef question, JsonNode? input, TimeSpan budget, CancellationToken cancellationToken) =>
-        throw new NotSupportedException("red");
+        ValueTask.FromResult<ProviderResult>(new ProviderUnavailable(ProviderReasons.NoRule));
 }
