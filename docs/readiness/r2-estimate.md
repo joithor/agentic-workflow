@@ -161,8 +161,9 @@ Cross-check: the six sindri modules sum to the whole of `sindri/src` and `sindri
 | **Sindri packet** | 30,661 | 30,977 / 40,175 / 55,506 | 10.5 / 29.5 / 64.9 | 59.0 h |
 | **R2 (excluding Redaction; Bridge retired)** | 52,730 | 54,310 / 70,129 / 96,494 | 18.4 / 51.5 / 112.9 | 77.2 h (1.5×) |
 
-Sindri is one packet with six modules (§10 R2: "by module inside its packet"), so the 2× rule applies to the
-Sindri total. The module rows are for tracking progress inside it and aren't separate stop points. The template's
+Superseded by the re-plan of 2026-10-11 above: Sindri isn't ported, so the Sindri rows no longer apply. As planned
+before it, Sindri was one packet with six modules (§10 R2: "by module inside its packet"), so the 2× rule applied to the
+Sindri total. The module rows were for tracking progress inside it, not separate stop points. The template's
 316 lines count once, on its first module. Every total is summed from unrounded values, and then rounded.
 
 ## Port costs the baseline didn't have
