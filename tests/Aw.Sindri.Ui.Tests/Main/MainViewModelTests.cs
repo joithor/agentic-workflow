@@ -275,10 +275,58 @@ public sealed class MainViewModelTests : IDisposable
         _records.Write(A.Record());
         _server.StreamsEndAtOnce = true;
         Start();
-        await Eventually(() => _vm.Headline == "Running", "running");
+        await Eventually(() => _server.StreamCursors.Count == 1, "first stream opened");
 
         await Task.Delay(200, TestContext.Current.CancellationToken);
-
         _ = Assert.Single(_server.StreamCursors);
+
+        await Eventually(() =>
+        {
+            _clock.Advance(MainViewModel.RetryEvery);
+            return _server.StreamCursors.Count >= 2;
+        }, "reconnected once the wait ended");
+    }
+
+    [Fact]
+    public async Task A_record_with_a_non_http_url_reads_as_not_running()
+    {
+        _records.WriteText("""{"url":"file:///tmp/sindri/","pid":4242,"epoch":7}""");
+        Start();
+
+        await Eventually(() => _vm.Headline == "Not running", "headline");
+        Assert.Contains("can't be read", _vm.Reason, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task A_new_ledger_at_the_same_epoch_restarts_the_stream_from_the_start()
+    {
+        _records.Write(A.Record(pid: 4242, epoch: 1));
+        _server.Pong = new(4242, 1);
+        _server.Current = A.Status(epoch: 1);
+        _server.Push(A.Event(30));
+        Start();
+        await Eventually(() => _vm.LastEvent.EndsWith("#30", StringComparison.Ordinal), "event 30");
+
+        _server.Pong = new(5151, 1);
+        _server.Current = A.Status(pid: 5151, epoch: 1);
+        _records.Write(A.Record(pid: 5151, epoch: 1));
+        await Eventually(() =>
+        {
+            _clock.Advance(MainViewModel.RetryEvery);
+            return _vm.Lease == "pid 5151 · epoch 1";
+        }, "followed the new process");
+        Assert.Equal(0, _server.StreamCursors[^1]);
+    }
+
+    [Fact]
+    public async Task A_profile_sindri_says_needs_approval_never_reads_as_approved()
+    {
+        _records.Write(A.Record());
+        _server.Current = A.Status(profile: A.Approved() with { NeedsApproval = true });
+        Start();
+
+        await Eventually(() => _vm.Headline == "Running", "running");
+        Assert.Equal("needs approval", _vm.ProfileState);
+        Assert.Equal("sindri profile approve", _vm.ProfileFix);
     }
 }

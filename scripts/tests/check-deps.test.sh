@@ -516,7 +516,6 @@ expect "a shell node can't serve routes (schema)" 1 "DEPS-SCHEMA-001"
 
 d="$(http_fixture http-nested-and-verbatim)"
 mkdir -p "$d/src/Beta/Aw.Beta.Host/Ui"; csproj "$d" src/Beta/Aw.Beta.Host/Ui/Aw.Beta.Ui.Nested.csproj
-perl -0pi -e 's/projectPrefix: Aw.Beta.Ui\n/projectPrefix: Aw.Beta.Ui\n/' "$d/deps.yaml"
 printf 'var a = @"/beta/status";\n' > "$d/src/Beta/Aw.Beta.Host/Ui/Client.cs"; run "$d"
 expect "a client project nested in the server's directory is its own (verbatim literal found)" 1 "DEPS-EDGE-001" "Gamma -> Beta (http)" "src/Beta/Aw.Beta.Host/Ui/Client.cs:1"
 
@@ -528,6 +527,10 @@ expect "a C# project naming another package's state file is an undeclared file e
 d="$(http_fixture cs-file-declared)"; edge "$d" Gamma Alpha file current
 printf 'var p = Path.Combine(home, "alpha");\nvar f = Path.Combine(p, "outbox");\n' > "$d/src/Beta/Aw.Beta.Ui/Paths.cs"; run "$d"
 expect "a declared C# file edge passes when the segments sit on separate lines of one file" 0 "deps: ok"
+
+d="$(http_fixture cs-file-whole-path)"
+printf 'var p = Path.Combine(home, "alpha/outbox");\n' > "$d/src/Beta/Aw.Beta.Ui/Paths.cs"; run "$d"
+expect "a single literal holding the whole state path is a file edge" 1 "DEPS-EDGE-001" "Gamma -> Alpha (file)"
 
 d="$(http_fixture cs-file-partial)"
 printf 'var p = "outbox";\n' > "$d/src/Beta/Aw.Beta.Ui/Paths.cs"; run "$d"
