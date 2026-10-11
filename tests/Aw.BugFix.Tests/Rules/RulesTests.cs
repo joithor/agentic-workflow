@@ -43,6 +43,11 @@ public sealed class RulesTests
     [InlineData("SRC/JEST.CONFIG.JS", "t/bug.sh", true)]
     [InlineData("web/tsconfig.app.json", "t/bug.sh", true)]
     [InlineData("scripts/run.sh", "t/bug.sh", true)]
+    [InlineData("Makefile", "t/bug.sh", true)]
+    [InlineData("build/rules.mk", "t/bug.sh", true)]
+    [InlineData(".npmrc", "t/bug.sh", true)]
+    [InlineData("justfile", "t/bug.sh", true)]
+    [InlineData("src/makefile_parser.ts", "t/bug.sh", false)]
     public void Protected_paths_cover_the_check_its_directory_tests_and_their_config(string file, string check, bool touched) =>
         Assert.Equal(touched, ProtectedPaths.Touched([file], check, ["scripts/run.sh"]).Count == 1);
 
@@ -71,6 +76,14 @@ public sealed class RulesTests
     [InlineData("bash -e t.sh", null)]
     [InlineData("python -E t.py", null)]
     [InlineData("bash -xec true t.sh", "inline code (`bash -xec`)")]
+    [InlineData("bun -e 1 t.ts", "inline code (`bun -e`)")]
+    [InlineData("bun test t.test.ts", null)]
+    [InlineData("ruby -Itest t_test.rb", null)]
+    [InlineData("perl -Ilib t.t", null)]
+    [InlineData("ruby -e 1 t.rb", "inline code (`ruby -e`)")]
+    [InlineData("npx -p vitest node -e 1 t.js", "inline code (`node -e`)")]
+    [InlineData("uv run --with pytest python -c 1 t.py", "inline code (`python -c`)")]
+    [InlineData("yarn node -e 1 t.js", "inline code (`node -e`)")]
     public void The_check_command_rule_refuses_non_runners_and_inline_code(string command, string? reason)
     {
         var refusal = CheckCommandRule.Refusal(command.Split(' '));
@@ -96,25 +109,30 @@ public sealed class RulesTests
     [Fact, Trait("Lane", "unit")]
     public void A_frozen_test_check_accepts_only_the_same_command_in_the_same_directory()
     {
-        var check = new FrozenCheck(CheckKind.Test, "tests/bug.sh", "sha", ["bash", "tests/bug.sh"], Directory: string.Empty, ProgramSha256: "bash", CommandFiles: []);
-        var run = new RunRecord(CheckKind.Test, RunOutcome.Passed, "c", Directory: string.Empty, "sha", ["bash", "tests/bug.sh"], ProgramSha256: "bash", 0, "/log");
+        var check = new FrozenCheck(CheckKind.Test, "tests/bug.sh", "sha", ["bash", "tests/bug.sh"], Directory: string.Empty, ProgramSha256: "bash", EnvironmentSha256: "env", CommandFiles: []);
+        var run = new RunRecord(CheckKind.Test, RunOutcome.Passed, "c", Directory: string.Empty, "sha", ["bash", "tests/bug.sh"], ProgramSha256: "bash", EnvironmentSha256: "env", 0, "/log");
 
         _ = World.Ok(check.Accepts(run));
         _ = World.Refused(check.Accepts(run with { Directory = "lib" }), BugFixErrors.RunRefused);
         _ = World.Refused(check.Accepts(run with { Command = ["bash", "./tests/bug.sh"] }), BugFixErrors.RunRefused);
         _ = World.Refused(check.Accepts(run with { Outcome = RunOutcome.Broken }), BugFixErrors.RunRefused);
         _ = World.Refused(check.Accepts(run with { ProgramSha256 = "another bash" }), BugFixErrors.RunRefused);
+        _ = World.Refused(check.Accepts(run with { EnvironmentSha256 = "another PATH" }), BugFixErrors.RunRefused);
     }
 
     [Fact, Trait("Lane", "unit")]
     public void Command_files_include_flag_values_and_module_files()
     {
-        var paths = CommandFilesRule.Paths(["node", "--require=./lib/setup.cjs", "-r./lib/r.js", "-m", "tools.runner", "t.js"]);
+        var paths = CommandFilesRule.Paths(["node", "--require=./lib/setup.cjs", "-r./lib/r.js", "-xvf", "-m", "tools.runner", "--reporter=dot", "./pkg/...", "t.js"]);
 
-        Assert.Contains(("./lib/setup.cjs", false), paths);
+        Assert.Contains(("./lib/setup.cjs", true), paths);
         Assert.Contains(("./lib/r.js", true), paths);
-        Assert.Contains(("tools/runner.py", true), paths);
-        Assert.Contains(("tools/runner/__init__.py", true), paths);
-        Assert.Contains(("t.js", false), paths);
+        Assert.Contains(("vf", false), paths);
+        Assert.Contains(("tools/runner.py", false), paths);
+        Assert.Contains(("tools/runner/__init__.py", false), paths);
+        Assert.Contains(("dot", false), paths);
+        Assert.Contains(("./pkg/...", false), paths);
+        Assert.Contains(("t.js", true), paths);
+        Assert.Equal(["./lib/setup", "./lib/setup.js", "./lib/setup.cjs"], CommandFilesRule.LoaderCandidates("./lib/setup").Take(3), StringComparer.Ordinal);
     }
 }

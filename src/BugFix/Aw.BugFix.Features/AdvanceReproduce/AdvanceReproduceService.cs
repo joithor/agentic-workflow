@@ -48,7 +48,7 @@ internal sealed class AdvanceReproduceService(IStateStore store, IRunLedger ledg
 
         var root = file.FullPath[..^file.RepoPath.Length].TrimEnd('/');
         return CommandFiles(record, root, file).Map(commandFiles =>
-            new FrozenCheck(record.Kind, file.RepoPath, sha, record.Command, record.Directory, record.ProgramSha256, commandFiles));
+            new FrozenCheck(record.Kind, file.RepoPath, sha, record.Command, record.Directory, record.ProgramSha256, record.EnvironmentSha256, commandFiles));
     }
 
     // The repository files the baseline command names besides the check (its runner, wrapper scripts, --require=,
@@ -58,22 +58,21 @@ internal sealed class AdvanceReproduceService(IStateStore store, IRunLedger ledg
     {
         var directory = record.Directory.Length == 0 ? root : $"{root}/{record.Directory}";
         var found = new List<string>();
-        foreach (var (path, optional) in CommandFilesRule.Paths(record.Command ?? []))
+        foreach (var (path, required) in CommandFilesRule.Paths(record.Command ?? []))
         {
-            var real = files.RealPath(files.FullPath(directory, path));
-            if (real is null && MustExist(path, optional))
+            // What a loader would open for it: the path itself, or a specifier's .js, .py, /index.js, … file.
+            var real = CommandFilesRule.LoaderCandidates(path)
+                .Select(candidate => files.RealPath(files.FullPath(directory, candidate)))
+                .OfType<string>()
+                .ToList();
+            if (real.Count == 0 && required && !files.Exists(files.FullPath(directory, path)))
             {
                 return BugFixErrors.CheckNotFrozen.With($"the baseline command names {path}, which doesn't exist; a fix could add it, so name only files that exist");
             }
 
-            if (real is not null && real.StartsWith(root + "/", StringComparison.Ordinal) && real != check.FullPath)
-            {
-                found.Add(real[(root.Length + 1)..]);
-            }
+            found.AddRange(real.Where(r => r.StartsWith(root + "/", StringComparison.Ordinal) && r != check.FullPath).Select(r => r[(root.Length + 1)..]));
         }
 
         return Results.Success<IReadOnlyList<string>>([.. found.Distinct(StringComparer.Ordinal)]);
     }
-
-    private static bool MustExist(string path, bool optional) => !optional && !path.StartsWith('-') && CommandFilesRule.LooksLikeFile(path);
 }

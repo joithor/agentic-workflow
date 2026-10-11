@@ -1,6 +1,6 @@
+using System.Text.Json;
 using Aw.BugFix.Host;
 using Aw.BugFix.Host.Commands;
-using System.Text.Json;
 using Aw.Kernel.Telemetry;
 using Microsoft.Extensions.DependencyInjection;
 

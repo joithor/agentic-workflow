@@ -86,6 +86,10 @@ public sealed class InMemoryRepos : IGit, IFiles
         Tree(directory).Map(t => directory.Length > t.Root.Length ? directory[(t.Root.Length + 1)..].TrimEnd('/') : string.Empty);
 
     /// <inheritdoc/>
+    public bool Exists(string path) =>
+        RealPath(path) is not null || _files.Keys.Any(f => f.StartsWith(path.TrimEnd('/') + "/", StringComparison.Ordinal));
+
+    /// <inheritdoc/>
     public Result<string> ReadText(string path) =>
         _files.TryGetValue(path, out var text) ? text : BugFixErrors.FileUnreadable.With($"cannot read {path}");
 

@@ -20,6 +20,8 @@ internal sealed class LocalFiles : IFiles
         return real is not null && File.Exists(real) ? real : null;
     }
 
+    public bool Exists(string path) => File.Exists(path) || Directory.Exists(path);
+
     public Result<string> ReadText(string path)
     {
         try

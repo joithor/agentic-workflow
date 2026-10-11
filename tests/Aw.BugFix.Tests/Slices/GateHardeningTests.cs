@@ -140,6 +140,8 @@ public sealed class GateHardeningTests : IDisposable
 
         Assert.Contains("no answer was recorded", World.Refused(await Judge(c1), BugFixErrors.JudgeRefused).Message, StringComparison.Ordinal);
         _ = Assert.Single(_w.Judge.Asked);
+        Assert.StartsWith("ask the user: judge was asked about c1", World.Ok(await Resume()).Next, StringComparison.Ordinal);
+        Assert.Equal(2, World.Ok(await _w.Start()).Attempt);   // a human may move on to a new attempt
     }
 
     [Fact, Trait("Lane", "unit")]
@@ -178,6 +180,29 @@ public sealed class GateHardeningTests : IDisposable
         _ = World.Ok(await Reproduce(run.Evidence));
 
         Assert.Equal(["lib/setup.cjs"], _w.Now.Check?.CommandFiles);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task A_run_in_another_environment_is_not_the_frozen_check()
+    {
+        var c1 = await _w.Candidate();
+        _ = _w.Runner.RunsIn("PATH with a planted grep");
+
+        Assert.Contains("different environment", World.Refused(await _w.RunAgainst(c1), BugFixErrors.RunRefused).Message, StringComparison.Ordinal);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task A_module_named_without_its_extension_is_protected()
+    {
+        _w.Repos.Write("/repo/lib/setup.js", "hook\n");
+        _ = _w.Repos.Commit(World.Repo);
+        await _w.Investigated();
+        _ = _w.Runner.Exits("node", 1);
+
+        var run = World.Ok(await TestRun(World.Repo, World.Check, ["node", "--require=./lib/setup", World.Check]));
+        _ = World.Ok(await Reproduce(run.Evidence));
+
+        Assert.Equal(["lib/setup.js"], _w.Now.Check?.CommandFiles);
     }
 
     private async Task PassAndJudge(CandidateId candidate, string worktree, JudgeDecision decision)

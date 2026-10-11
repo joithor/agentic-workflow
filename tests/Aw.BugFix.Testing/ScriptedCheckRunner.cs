@@ -9,6 +9,7 @@ public sealed class ScriptedCheckRunner : ICheckRunner
     private readonly Dictionary<string, int> _programs = new(StringComparer.Ordinal) { ["true"] = 0, ["false"] = 1 };
     private readonly HashSet<string> _hanging = new(StringComparer.Ordinal);
     private readonly Dictionary<string, string> _resolves = new(StringComparer.Ordinal);
+    private string _environment = "the usual environment";
 
     /// <summary>Gets every command run, with its directory.</summary>
     public IList<(IReadOnlyList<string> Command, string Directory)> Runs { get; } = [];
@@ -43,6 +44,15 @@ public sealed class ScriptedCheckRunner : ICheckRunner
         return this;
     }
 
+    /// <summary>Makes later runs report a different environment (PATH, HOME, …), as a caller's changed shell would.</summary>
+    /// <param name="environment">A name for the environment; its hash differs from the usual one.</param>
+    /// <returns>This runner.</returns>
+    public ScriptedCheckRunner RunsIn(string environment)
+    {
+        _environment = environment;
+        return this;
+    }
+
     /// <inheritdoc/>
     public CheckExit Run(IReadOnlyList<string> command, string directory, string log)
     {
@@ -50,9 +60,9 @@ public sealed class ScriptedCheckRunner : ICheckRunner
         var program = _resolves.GetValueOrDefault(command[0], $"sha-of-{command[0]}");
         if (_hanging.Contains(command[0]))
         {
-            return new CheckExit(124, Ran: false, program);
+            return new CheckExit(124, Ran: false, program, _environment);
         }
 
-        return _programs.TryGetValue(command[0], out var code) ? new CheckExit(code, Ran: true, program) : new CheckExit(127, Ran: false, string.Empty);
+        return _programs.TryGetValue(command[0], out var code) ? new CheckExit(code, Ran: true, program, _environment) : new CheckExit(127, Ran: false, string.Empty, _environment);
     }
 }

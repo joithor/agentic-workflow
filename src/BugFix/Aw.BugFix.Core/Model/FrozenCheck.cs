@@ -10,8 +10,9 @@ namespace Aw.BugFix.Core.Model;
 /// <param name="Command">The test command (argv) of the baseline run; null for a ui-evidence check.</param>
 /// <param name="Directory">The working directory of the baseline run, relative to the repository root ("" for the root).</param>
 /// <param name="ProgramSha256">The SHA-256 of the program the baseline command ran: a later run must run the same program.</param>
+/// <param name="EnvironmentSha256">The SHA-256 of the baseline run's environment (PATH, HOME, …): a later run must run in the same one.</param>
 /// <param name="CommandFiles">Repository files the baseline command names besides the check (its runner, wrapper scripts): a fix may not change them without approval.</param>
-public sealed record FrozenCheck(CheckKind Kind, string Path, string Sha256, IReadOnlyList<string>? Command, string Directory, string ProgramSha256, IReadOnlyList<string> CommandFiles)
+public sealed record FrozenCheck(CheckKind Kind, string Path, string Sha256, IReadOnlyList<string>? Command, string Directory, string ProgramSha256, string EnvironmentSha256, IReadOnlyList<string> CommandFiles)
 {
     /// <summary>Accepts a later run only if it executed this check: same kind, a verdict (not broken), and for a test the same command in the same directory.</summary>
     /// <param name="record">The run.</param>
@@ -37,8 +38,15 @@ public sealed record FrozenCheck(CheckKind Kind, string Path, string Sha256, IRe
             : BugFixErrors.RunRefused.With(
                 $"the test command `{string.Join(' ', record.Command ?? [])}` in '{record.Directory}' differs from the baseline's `{string.Join(' ', Command ?? [])}` in '{Directory}'");
 
-    private Result<RunRecord> SameProgram(RunRecord record) =>
-        record.ProgramSha256 == ProgramSha256
+    private Result<RunRecord> SameProgram(RunRecord record)
+    {
+        if (record.ProgramSha256 != ProgramSha256)
+        {
+            return BugFixErrors.RunRefused.With($"the test command's program `{(Command ?? ["?"])[0]}` resolved to a different file than at the baseline (check PATH)");
+        }
+
+        return record.EnvironmentSha256 == EnvironmentSha256
             ? record
-            : BugFixErrors.RunRefused.With($"the test command's program `{(Command ?? ["?"])[0]}` resolved to a different file than at the baseline (check PATH)");
+            : BugFixErrors.RunRefused.With("the test command ran in a different environment than the baseline (PATH, HOME, LANG, …); run it from the same shell setup");
+    }
 }

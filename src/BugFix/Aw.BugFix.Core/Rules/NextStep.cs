@@ -54,6 +54,11 @@ public static class NextStep
             return $"detach the main checkout at {unrun.Commit} ({unrun.Id.Value}), run the same check, then record-run {unrun.Id.Value}";
         }
 
+        if (Interrupted(current) is { } interrupted)
+        {
+            return interrupted;
+        }
+
         if (current.Find(static c => !c.Evaluated) is { } unjudged)
         {
             return $"judge {unjudged.Id.Value}";
@@ -66,9 +71,19 @@ public static class NextStep
 
         if (current.Count < AttemptRule.Candidates(state.Mode))
         {
-            return "record-candidate for the second open hypothesis (mode B runs two competing candidates); if its implementer produced no usable commit, start-attempt with the failure reasons";
+            return "record-candidate for the second open hypothesis (mode B runs two competing candidates); if its implementer produced no usable commit, "
+                + Onward(state);
         }
 
-        return AttemptRule.CanStart(state, FixMode.A).IsSuccess ? "start-attempt with the failure reasons" : "advance report --unresolved";
+        return Onward(state);
     }
+
+    private static string Onward(BugFixState state) =>
+        AttemptRule.CanStart(state, FixMode.A).IsSuccess ? "start-attempt with the failure reasons" : "advance report --unresolved";
+
+    // A question judge was asked whose answer was never recorded: only a human can settle it.
+    private static string? Interrupted(List<Candidate> current) =>
+        current.Find(static c => c.JudgeInterrupted) is { } asked && current.TrueForAll(static c => c.Evaluated)
+            ? $"ask the user: judge was asked about {asked.Id.Value} and its answer was never recorded (the call was interrupted; see judge why); start-attempt with what is known, or advance report --unresolved"
+            : null;
 }

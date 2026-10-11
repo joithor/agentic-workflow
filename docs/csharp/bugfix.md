@@ -51,25 +51,34 @@ against `--cwd` (the checkout the check lives in). The argv after `--` is kept a
   passing check can never prove a fix, and a **broken** run is not a reproduction: a test command that couldn't start or
   was killed at the time limit, or a ui run with broken steps and no failed one (a bad selector).
 - **The check is frozen.** Every later run must execute the same check file (same SHA-256); a test run must use the
-  same argv **in the same working directory** (relative to the repository root) as the baseline, and its program must
-  resolve (through PATH) to the same file (same SHA-256). `run-test` refuses a command that doesn't name the check by a
+  same argv **in the same working directory** (relative to the repository root) as the baseline; its program (argv[0],
+  resolved once against the run's directory or PATH and started as exactly that file) must be the same file (same
+  SHA-256), and it must run in the same environment (the hash of the allowed variables below). `run-test` refuses a command that doesn't name the check by a
   path that resolves to it from the working directory (a same-named file elsewhere doesn't count; paths resolve like
   realpath(3), links before `..`), a non-runner (`grep`, `cat`, `true`, …), a program that runs another one (`env`,
   `xargs`, `timeout`, `nice`, `nohup`, `sudo`, …), and inline code, by interpreter: shells and python `-c`, node/deno/bun
   `-e`/`-p`/`--eval`/`--print`, perl and ruby `-e`/`-E`, php `-r`, `deno eval` (anywhere in a short-flag cluster, so
-  `bash -xec` counts and `bash -e` doesn't). A package runner (`npx`, `npm exec`, `pnpm exec|dlx`, `yarn exec|dlx`,
-  `bun x`, `uv run`, `poetry run`, `bundle exec`) is looked through: the program it runs is classified the same way.
-- **The caller's environment can't steer it.** The check runs without the loader variables that would change what it
-  executes (`BASH_ENV`, `ENV`, `NODE_OPTIONS`, `PYTHON*`, `RUBYOPT`, `PERL5OPT`, `LD_*`, `DYLD_*`, `DOTNET_STARTUP_HOOKS`,
-  …), git runs without `GIT_*` variables (`GIT_DIR`, `GIT_INDEX_FILE`, …), and bugfix-state refuses to change state while
-  `DOTNET_SYSTEM_IO_DISABLEFILELOCKING` is set. Residual risk: dependencies the runner loads from gitignored directories
-  (`node_modules`, `.venv`) aren't frozen; the check's program and the files the command names are.
+  `bash -xec` counts and `bash -e` doesn't; ruby and perl value flags such as `-Itest` don't). A package runner (`npx`,
+  `npm exec`, `pnpm exec|dlx`, `yarn exec|dlx|node`, `bun x`, `uv run`, `poetry run`, `bundle exec`) is looked through,
+  past its options and their values: the program it runs is classified the same way.
+- **The caller's environment can't steer it.** The check runs with only an allowlist of variables from bugfix-state's
+  own environment (`PATH`, `HOME`, `USER`, `LOGNAME`, `SHELL`, `TMPDIR`, `TERM`, `CI`, `LANG`, `LANGUAGE`, `LC_*`,
+  `TZ`); everything else (`BASH_ENV`, `NODE_OPTIONS`, exported shell functions, `npm_config_*`, `PYTEST_ADDOPTS`, …)
+  is dropped, and the allowed values are frozen by hash at the baseline, so a later run with another PATH or HOME is
+  refused. Git runs without `GIT_*` variables, and bugfix-state refuses to change state while
+  `DOTNET_SYSTEM_IO_DISABLEFILELOCKING` is set. Residual risk: what lives outside the repository isn't frozen beyond
+  that: installed tools other than the check's own program, files under `HOME` (`~/.npmrc`, shell startup files), and
+  dependencies in gitignored directories (`node_modules`, `.venv`).
 - **Candidates are real changes on the baseline:** a clean worktree on the named branch, with commits on top of the
   baseline commit and a tree different from it, not already recorded. A fix that touches the check, its directory,
   tests, fixtures, snapshots, runner config, `package.json`, or a repository file the frozen command names (its runner
-  or wrapper script, a `--require=`/`--config=` value, a `-r./x` value, a `-m`/`-p` module's file) needs
-  `--allow-test-changes` (the user's approval). A baseline command that names a script or config file that doesn't
-  exist is refused (AW-BUGFIX-008): a fix could add it.
+  or wrapper script, a `--require=`/`--config=` value, a `-r./x` value, a `-m`/`-p` module's file, and the file a
+  loader would open for a specifier without an extension, e.g. `./lib/setup` → `lib/setup.js`), or a runner file the
+  command reads without naming it (`Makefile`, `*.mk`, `justfile`, `Rakefile`, `Taskfile.yml`, `noxfile.py`, `.npmrc`,
+  `.yarnrc*`, `bunfig.toml`, `deno.json`, `pom.xml`, `build.gradle`, `Cargo.toml`, `Gemfile`, `go.mod`,
+  `Directory.Build.*`, …) needs `--allow-test-changes` (the user's approval). A baseline command that names a path
+  (a script or config by extension, or anything written with `/` or a leading `.`) that doesn't exist as a file or
+  directory is refused (AW-BUGFIX-008): a fix could add it. Globs and package patterns (`./...`) aren't paths.
 - **Attempts.** Mode A one candidate, C one candidate (split by area, in sequence), B two candidates on different open
   hypotheses, only after a failed attempt and with at least two hypotheses not ruled out. A new attempt waits until
   every recorded candidate of the current one is evaluated and none resolves the ticket. While a mode-B attempt has
@@ -80,7 +89,8 @@ against `--cwd` (the checkout the check lives in). The argv after `--` is kept a
   `pnpm-lock.yaml`, `packages.lock.json`) and `dist/` output, capped at 200,000 characters), writes it to
   `judge-<candidate>.json`, marks the candidate as asked, asks judge about that file without holding the lock, and
   records the answer only when it names that file's SHA-256 and the bug fix is still in `evaluate`. It never asks
-  again: a call interrupted after asking leaves the mark, and the next `judge` is refused (ask the user). If judge gives
+  again: a call interrupted after asking leaves the mark, the next `judge` is refused, and `resume` says to ask the
+  user, who may start the next attempt (the candidate counts as evaluated, not resolving) or report unresolved. If judge gives
   no usable verdict (or one about another input) the mark is cleared and nothing is recorded, so a retry is not a
   re-roll; the input file stays as a record of what was asked. An escalation sets the status to `needs-human`; a
   later `resolved` verdict in the same attempt sets it back to `active`, and `resume` points at the resolving candidate.

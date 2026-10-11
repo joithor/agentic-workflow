@@ -37,6 +37,8 @@ internal sealed class FileStateStore(JsonSerializerOptions json, BugFixSettings 
                 _ = Directory.CreateDirectory(directory);
                 return new FileStream(lockFile, FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.None);
             }
+            // A held lock is an IOException on an existing lock file; once state.lock exists (it stays after the first init) any
+            // other open failure looks the same and is reported as busy after the wait.
             catch (IOException) when (File.Exists(lockFile) && waited.Elapsed < settings.LockWait)
             {
                 Thread.Sleep(_lockPause);   // another call holds it: wait

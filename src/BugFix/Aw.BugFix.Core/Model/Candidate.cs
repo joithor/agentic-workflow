@@ -65,6 +65,9 @@ public sealed record Candidate(
         return BugFixErrors.ReportRefused.With($"{Id.Value} needs a passing run and a \"resolved\" judge decision (run: {run}, judge: {verdict})");
     }
 
-    /// <summary>Gets a value indicating whether the candidate needs nothing more: a failing run, or a passing run with a verdict.</summary>
-    public bool Evaluated => Run is not null && (!Run.Passed || Verdict is not null);
+    /// <summary>Gets a value indicating whether the candidate needs nothing more: a failing run, or a passing run with a verdict or an interrupted judge question (which only a human can settle).</summary>
+    public bool Evaluated => Run is not null && (!Run.Passed || Verdict is not null || JudgeAsked is not null);
+
+    /// <summary>Gets a value indicating whether judge was asked about this candidate and the answer was never recorded (an interrupted call).</summary>
+    public bool JudgeInterrupted => Run is { Passed: true } && Verdict is null && JudgeAsked is not null;
 }

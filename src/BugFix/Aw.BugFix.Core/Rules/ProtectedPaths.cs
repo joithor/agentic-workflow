@@ -48,7 +48,9 @@ public static partial class ProtectedPaths
     [GeneratedRegex(
         "(^|/)(vitest|vite|jest|playwright|karma|cypress|babel)\\.(config|setup|workspace)\\.[^/]+$|(^|/)(jest|vitest)[.-]setup[^/]*$"
         + "|(^|/)setupTests\\.[^/]+$|(^|/)conftest\\.py$|(^|/)\\.mocharc[^/]*$|(^|/)(pytest\\.ini|tox\\.ini|pyproject\\.toml|setup\\.cfg)$"
-        + "|(^|/)\\.babelrc[^/]*$|(^|/)\\.env\\.test[^/]*$|(^|/)tsconfig[^/]*\\.json$|(^|/)package\\.json$",
+        + "|(^|/)\\.babelrc[^/]*$|(^|/)\\.env\\.test[^/]*$|(^|/)tsconfig[^/]*\\.json$|(^|/)package\\.json$"
+        + "|(^|/)(GNUmakefile|[Mm]akefile|[Jj]ustfile|Rakefile|Taskfile\\.ya?ml|noxfile\\.py|bunfig\\.toml|deno\\.jsonc?|pom\\.xml|build\\.gradle(\\.kts)?|settings\\.gradle(\\.kts)?|Cargo\\.toml|Gemfile|go\\.mod)$"
+        + "|\\.mk$|(^|/)\\.(npmrc|yarnrc[^/]*|pnpmfile\\.c?js|nvmrc|tool-versions)$|\\.runsettings$|(^|/)Directory\\.Build\\.(props|targets)$",
         RegexOptions.IgnoreCase | RegexOptions.CultureInvariant | RegexOptions.ExplicitCapture,
         matchTimeoutMilliseconds: 1000)]
     private static partial Regex RunnerConfig { get; }

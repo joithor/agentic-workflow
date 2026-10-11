@@ -26,6 +26,19 @@ public abstract class CheckRunnerContract
     public void A_command_that_cannot_start_fails() =>
         Expect.That(Runner.Run(["no-such-program-aw-bugfix"], Directory, $"{Directory}/missing.log") is { Ran: false, Outcome: RunOutcome.Broken }, "NotEqual(0, Runner.Run(['no-such-program-aw-bugfix'], Directory, $'{Directory}/missing.log'))");
 
+    /// <summary>The same program resolves to the same file each run, with a recorded hash; a program that doesn't exist has none.</summary>
+    [Fact]
+    public void A_run_names_the_program_file_it_ran_and_its_environment()
+    {
+        var first = Runner.Run(["true"], Directory, $"{Directory}/a.log");
+        var second = Runner.Run(["true"], Directory, $"{Directory}/b.log");
+        var missing = Runner.Run(["no-such-program-aw-bugfix"], Directory, $"{Directory}/c.log");
+
+        Expect.That(first.ProgramSha256.Length > 0 && first.ProgramSha256 == second.ProgramSha256, "the program's hash is recorded and stable");
+        Expect.That(first.EnvironmentSha256.Length > 0 && first.EnvironmentSha256 == second.EnvironmentSha256, "the environment's hash is recorded and stable");
+        Expect.That(missing is { Ran: false, ProgramSha256: "" }, "a program that doesn't resolve didn't run and has no hash");
+    }
+
     /// <summary>A command that runs past the time limit is cut off and didn't run to a verdict.</summary>
     [Fact]
     public void A_command_past_the_time_limit_did_not_run() =>

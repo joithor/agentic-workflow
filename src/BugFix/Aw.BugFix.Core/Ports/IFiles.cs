@@ -16,6 +16,11 @@ public interface IFiles
     /// <returns>The real path, or null.</returns>
     public string? RealPath(string path);
 
+    /// <summary>Whether a file or a directory exists at <paramref name="path"/>.</summary>
+    /// <param name="path">A full path.</param>
+    /// <returns>True when something is there.</returns>
+    public bool Exists(string path);
+
     /// <summary>Reads a text file.</summary>
     /// <param name="path">A full path.</param>
     /// <returns>The text, or AW-BUGFIX-004.</returns>
