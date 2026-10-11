@@ -128,7 +128,7 @@ public sealed class ApproveProfileTests
         var first = await service.Handle(request, Token);
         var retry = await service.Handle(request, Token);
 
-        Assert.Equal(SindriErrors.ProfileNotApproved.Code, first.Error.Code);
+        Assert.Equal(SindriErrors.ApprovalsUnavailable.Code, first.Error.Code);
         Assert.True(retry.Value.Approved);
         Assert.Equal(live.Hash, (await _h.Profiles.Latest(Token)).Value!.Hash);
         _ = Assert.Single(_h.Store.Events);
@@ -165,7 +165,7 @@ public sealed class ApproveProfileTests
             }
 
             _failed = true;
-            return ValueTask.FromResult<Result<Unit>>(SindriErrors.ProfileNotApproved.With("disk full"));
+            return ValueTask.FromResult<Result<Unit>>(SindriErrors.ApprovalsUnavailable.With("disk full"));
         }
     }
 }

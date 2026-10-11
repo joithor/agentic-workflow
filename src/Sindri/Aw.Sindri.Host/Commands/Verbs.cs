@@ -72,7 +72,7 @@ internal sealed class Verbs(ControlPlaneClient client, Core.Control.IControlPlan
         ProfileHash? hash = hashText is not null && ProfileHash.TryFrom(hashText, out var parsed) ? parsed : null;
         if (hashText is not null && hash is null)
         {
-            return await output.Error(SindriErrors.ProfileHashMismatch.With($"'{hashText}' is not a profile hash (64 hex digits)")).ConfigureAwait(false);
+            return await output.Error(SindriErrors.InvalidInput.With($"'{hashText}' is not a profile hash (64 hex digits)")).ConfigureAwait(false);
         }
 
         var refusal = hash is { } h ? await Confirmation(h, interactive, input).ConfigureAwait(false) : null;

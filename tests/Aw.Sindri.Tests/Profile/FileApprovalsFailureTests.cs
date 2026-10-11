@@ -18,24 +18,24 @@ public sealed class FileApprovalsFailureTests : IDisposable
     private static CancellationToken Token => TestContext.Current.CancellationToken;
 
     [Fact, Trait("Lane", "integration")]
-    public async Task An_unreadable_approval_is_SND_PROFILE_005()
+    public async Task An_unreadable_approval_is_SND_PROFILE_006()
     {
         _ = await _files.Approvals.Save(SliceHarness.Profile("5s"), Token);
         File.SetUnixFileMode(Path.Combine(_files.Settings.ApprovalsDirectory, "latest"), UnixFileMode.None);
 
         var latest = await _files.Approvals.Latest(Token);
 
-        Assert.Equal(SindriErrors.ProfileNotApproved.Code, latest.Error.Code);
+        Assert.Equal(SindriErrors.ApprovalsUnavailable.Code, latest.Error.Code);
     }
 
     [Fact, Trait("Lane", "integration")]
-    public async Task A_save_into_a_read_only_directory_is_SND_PROFILE_005()
+    public async Task A_save_into_a_read_only_directory_is_SND_PROFILE_006()
     {
         _ = Directory.CreateDirectory(_files.Settings.ApprovalsDirectory);
         File.SetUnixFileMode(_files.Settings.ApprovalsDirectory, UnixFileMode.UserRead | UnixFileMode.UserExecute);
 
         var saved = await _files.Approvals.Save(SliceHarness.Profile("5s"), Token);
 
-        Assert.Equal(SindriErrors.ProfileNotApproved.Code, saved.Error.Code);
+        Assert.Equal(SindriErrors.ApprovalsUnavailable.Code, saved.Error.Code);
     }
 }

@@ -17,12 +17,12 @@ One NativeAOT binary, `sindri`, is both the control plane and its CLI.
 |---|---|---|
 | `sindri` | Prints the banner, starts the control plane if it isn't running (detached in its own session, so a Ctrl-C or a kill of the terminal's process group doesn't reach it; `sindri serve`, output in `<home>/logs/serve.log`), then prints the startup summary. It starts one only when nothing runs (`SND-API-001`); one that answers late (`SND-API-002`) is reported as it is. A started child that exits with `SND-LEASE-001` lost the lease to a concurrent start, so it waits up to 10 s for the winner to answer | 0; 1 when the profile needs approval; 2 when it can't start (`SND-CLI-002`) or the running one answers late |
 | `sindri --headless` | The same without the UI line (the UI is S1b) | as above |
-| `sindri serve` | Runs the control plane in the foreground: what bare `sindri` starts, and what launchd will keep alive later | 0 on a clean stop; 1 when another process holds the lease (`SND-LEASE-001`) or the lease was lost; 2 when the port is taken or refused, or `AW_SINDRI_PORT` isn't a port number 0..65535 (`SND-API-003`, checked before the lease is taken), or the ledger can't be opened |
+| `sindri serve` | Runs the control plane in the foreground: what bare `sindri` starts, and what launchd will keep alive later | 0 on a clean stop; 1 when another process holds the lease (`SND-LEASE-001`) or the lease was lost; 2 when the port is taken or refused, (`SND-API-003`), or `AW_SINDRI_PORT` isn't a port number 0..65535 (`SND-CLI-003`, checked before the lease is taken), or the ledger can't be opened |
 | `sindri status [--json]` | The running control plane's status, through the API | 0; 1 when it isn't running (`SND-API-001`) or the profile needs approval (`profile.needsApproval` in the response); 2 when it didn't answer in time (`SND-API-002`) |
 | `sindri stop` | Stops it: records the stop, releases the lease, shuts down | 0; 1 when it isn't running |
 | `sindri profile validate [--json]` | Checks the live profile file and prints its hash | 0 valid and approved; 1 valid, not approved; 2 invalid (`SND-PROFILE-001/002`) |
 | `sindri profile approve` | Shows the live hash and the key paths changed since the latest approval; changes nothing | 1 when not approved yet, 0 when it already is |
-| `sindri profile approve <hash>` | Approves: the hash must be the live one, and you type its first 6 characters at an interactive terminal | 0; 2 on a stale hash (`SND-PROFILE-003`), no terminal or a wrong confirmation (`SND-PROFILE-004`) |
+| `sindri profile approve <hash>` | Approves: the hash must be the live one, and you type its first 6 characters at an interactive terminal | 0; 2 on a malformed hash (`SND-CLI-003`), a stale hash (`SND-PROFILE-003`), no terminal or a wrong confirmation (`SND-PROFILE-004`), or approvals that can't be written (`SND-PROFILE-006`) |
 | `sindri doctor [--json]` | One line per check, in order: `lease`, `ledger`, `profile`, `api`, each `ok` / `warn` / `fail` with a fix | 0 all ok, 1 any warn, 2 any fail |
 
 Output: state is always a word, never colour; there is no colour at all, so `NO_COLOR` and redirected output need
@@ -156,6 +156,7 @@ blocks.
 | `SND-PROFILE-003` | The hash to approve isn't the live profile's |
 | `SND-PROFILE-004` | Approving needs an interactive terminal and the typed confirmation |
 | `SND-PROFILE-005` | No profile is approved, or the latest approval's snapshot is missing or changed |
+| `SND-PROFILE-006` | The approved snapshots can't be read or written (permissions, a full disk) |
 | `SND-LEDGER-001` | The ledger's schema doesn't match this build |
 | `SND-LEDGER-002` | The ledger can't be opened or written |
 | `SND-API-001` | The control plane isn't running (no endpoint record, or nothing answers at it) |
@@ -163,6 +164,7 @@ blocks.
 | `SND-API-003` | The API port is taken by another program |
 | `SND-CLI-001` | Unknown command |
 | `SND-CLI-002` | `sindri serve` didn't come up after starting it |
+| `SND-CLI-003` | A command's input is malformed: a profile hash that isn't 64 hex digits, or an `AW_SINDRI_PORT` that isn't 0..65535 |
 | `SND-SCHED-001` | A background service run failed |
 
 ## Hook contract

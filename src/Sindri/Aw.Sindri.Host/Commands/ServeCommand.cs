@@ -25,7 +25,7 @@ internal static class ServeCommand
         using var hangup = PosixSignalRegistration.Create(PosixSignal.SIGHUP, static c => c.Cancel = true);
         if (environment(LoopbackBinding.PortVariable) is { Length: > 0 } asked && !IsPort(asked))
         {
-            await error.WriteLineAsync($"{SindriErrors.PortInUse.Code} {LoopbackBinding.PortVariable}='{asked}' isn't a port number "
+            await error.WriteLineAsync($"{SindriErrors.InvalidInput.Code} {LoopbackBinding.PortVariable}='{asked}' isn't a port number "
                 + "(fix: set it to 0..65535, or unset it to use the profile's api.port)").ConfigureAwait(false);
             return 2;
         }

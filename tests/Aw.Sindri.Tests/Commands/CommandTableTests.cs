@@ -41,6 +41,15 @@ public sealed class CommandTableTests : IDisposable
         Assert.Contains("SND-CLI-001 'frobnicate' is not a sindri command", _error.ToString(), StringComparison.Ordinal);
     }
 
+    [Fact, Trait("Lane", "integration")]
+    public async Task Approving_a_malformed_hash_exits_2_with_SND_CLI_003()
+    {
+        var code = await Run("profile", "approve", "abc123");
+
+        Assert.Equal(2, code);
+        Assert.Contains("SND-CLI-003 'abc123' is not a profile hash (64 hex digits)", _error.ToString(), StringComparison.Ordinal);
+    }
+
     [Theory, Trait("Lane", "integration")]
     [InlineData("none", 2)]
     [InlineData("invalid", 2)]

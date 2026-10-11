@@ -23,7 +23,7 @@ internal sealed class FileApprovals(SindriSettings settings, JsonSerializerOptio
         }
         catch (Exception e) when (e is IOException or UnauthorizedAccessException)
         {
-            return SindriErrors.ProfileNotApproved.With($"the approval under {settings.ApprovalsDirectory} can't be read: {e.Message} (fix: check its permissions, or sindri profile approve)");
+            return SindriErrors.ApprovalsUnavailable.With($"the approval under {settings.ApprovalsDirectory} can't be read: {e.Message} (fix: check its permissions, or sindri profile approve)");
         }
     }
 
@@ -36,7 +36,7 @@ internal sealed class FileApprovals(SindriSettings settings, JsonSerializerOptio
         }
         catch (Exception e) when (e is IOException or UnauthorizedAccessException)
         {
-            return ValueTask.FromResult<Result<Unit>>(SindriErrors.ProfileNotApproved.With(
+            return ValueTask.FromResult<Result<Unit>>(SindriErrors.ApprovalsUnavailable.With(
                 $"the approval can't be saved under {settings.ApprovalsDirectory}: {e.Message} (fix: check its permissions and free space)"));
         }
     }
