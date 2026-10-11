@@ -954,7 +954,8 @@ next PR shows it passing.
     whatever the unread criteria turn out to be; below the target, the unread criteria at or above the level reached
     and below the target (the only ones that could still raise it) are listed under `unconfirmed`. The delta
     doesn't compare a criterion that was unread on either run.
-- **Where results live:** until sindri is ported, `Aw.Readiness` keeps its own history under its own `deps.yaml`
+- **Where results live:** until the C# Sindri application's ledger exists (Sindri is built new, not ported; factory
+  addendum §17.29), `Aw.Readiness` keeps its own history under its own `deps.yaml`
   namespace (`readiness/`), for the delta and the first-run baseline; the switch keeps it (§4c). In R1b that is one
   JSON file per run, `${AW_STATE_DIR:-~/.agentic-workflow}/readiness/runs/<repo>/<scope>/<UTC time>-NNN.json`
   (`schemaVersion: 1`: `repo`, `scope`, `recordedAt`, `level`, `states[]` with `id`, `state`, `unread`). The first

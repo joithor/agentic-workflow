@@ -9,6 +9,12 @@ Revision 7:
 - turns W1, W2 and W8 into spike criteria (§13.1)
 - amendment (audit feedback): labels come from outcomes or a model adjudicator (invariant 9); regex patterns are floor counts until calibrated (§2, §13 step 0); resumed and forked transcript copies are deduped; "wrong path" splits into design and process, with a step-0 decision rule for direction checks
 
+*Amended 2026-10-11 by the factory addendum §17.29 (decision Q7): Sindri is one application the human starts
+(`sindri`), not a set of launchd-ticked commands. It is built new in C# with three engines (a control plane, the
+§17.28 workflow engine and a context retrieval engine), and agent work stays in Claude Code sessions in the human's
+terminal. This document is kept as design history; where it describes the tick, launchd jobs or the TS package
+layout, §17.29 wins. Overview: `docs/sindri/README.md`.*
+
 Renamed from the working name "conductor" (it collides with Conductor.build) to **Sindri**, the dwarf smith who forged Draupnir, the ring that multiplies itself.
 
 Revision 6 history:
@@ -142,6 +148,12 @@ Linux is a design constraint in v1 (no OS assumptions in core, per-OS boot-id, h
 Linux container test script) but its built-in adapters ship later (§12).
 
 ## 5. Architecture
+
+*Amended 2026-10-11 by addendum §17.29: the tick below becomes work inside one long-running control-plane process
+(§17.29.1–§17.29.2). launchd (or systemd) only keeps that process alive, and the old launchd jobs (index builds,
+observe, scorer, the weekly evolve job) are background services it schedules. Deadlines are evaluated by the
+workflow engine (§17.28.1, Timers), and every machine below becomes a recipe it runs. §5.1's paths describe the TS
+`sindri/` reference; the C# app is built new (§17.29.4).*
 
 ```
 launchd ─► sindri tick  (short, deterministic; singleton lock + fencing epoch §9.1)

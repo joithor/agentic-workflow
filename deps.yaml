@@ -167,7 +167,7 @@ packages:
     bins: [scorer]
     files: [scorer/live, context-guard]
     namespace: scorer
-    note: "daily cost and involvement report, live session numbers; owns the context-guard fires-log contract it reports on"
+    note: "daily cost and involvement report, live session numbers; owns the context-guard fires-log contract it reports on. Not ported as a standalone CLI (addendum §17.29, Q7): it comes back as a block of the Sindri app; the TS package runs until the switch"
   - id: Evidence
     kind: package
     tier: 2
@@ -201,7 +201,7 @@ packages:
     bins: [sindri]
     db: [sindri/ledger.db]
     namespace: sindri
-    note: "profile, ledger, scrub, observe, index, scope, evolve; reaches lower tiers only through Core contracts or CLIs"
+    note: "built new in C# as an application (control plane, workflow engine, context retrieval; addendum §17.29, Q7), not ported; ts: sindri (profile, ledger, scrub, observe, index, scope, evolve) is the reference and runs until the switch; reaches lower tiers only through Core contracts or CLIs"
 
   # ---- outside the tiers: code that stays bash or TypeScript and calls the CLIs (§4a) ----
   - id: Hooks
