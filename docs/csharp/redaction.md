@@ -19,7 +19,7 @@ bool whole = redactor.IsSecretName("client_secret");   // true: write ScrubResul
 ```
 
 - `Redactor.Create(TimeSpan)` gives the same rules with another per-pattern timeout; `Redactor.Create(extraPatterns,
-  TimeSpan)` adds patterns from configuration ("Extra patterns from configuration" below).
+  TimeSpan, TimeProvider)` adds patterns from configuration ("Extra patterns from configuration" below).
 - `IsSecretName(name)` is for callers that see a key and its value apart (a telemetry attribute, a header, a JSON
   field): the assignment rules need the name and the value in one string, so such a caller redacts the whole value of
   a field whose name ends in a secret word (API_KEY, SECRET, TOKEN, PASSWORD, PRIVATE_KEY, ACCESS_KEY, any case and
@@ -38,7 +38,7 @@ validation and the compiling, so there is still one scrubber; the caller only ma
 
 ```csharp
 RedactorResult created = Redactor.Create(
-    [new ExtraPattern("acme-customer-id", "ACME-[0-9]{6}")], Redactor.DefaultMatchTimeout);
+    [new ExtraPattern("acme-customer-id", "ACME-[0-9]{6}")], Redactor.DefaultMatchTimeout, clock);   // the host's TimeProvider
 if (created.IsValid)
 {
     created.Redactor.Scrub("order ACME-123456");   // "order [REDACTED:acme-customer-id]"
@@ -53,9 +53,25 @@ else
   tiers with the redactor's match timeout and the options every rule gets (`CultureInvariant`, `ExplicitCapture`;
   write `(?i)` for case-insensitive). So they behave like built-in rules: a hit becomes `[REDACTED:<id>]`, a group
   named `v` limits the redaction to that group, the folded pass sees through the evasions below, their ids join
-  `RuleIds` (so their placeholders are skipped and scrubbing stays idempotent), a built-in rule names a hit that
-  overlaps one of theirs, and a match that runs past the timeout blocks the whole text (`AW-REDACT-001`). Nothing
-  checks a pattern for catastrophic backtracking up front; the timeout is that guard.
+  `RuleIds` (so their placeholders are skipped and scrubbing stays idempotent), overlapping hits merge (a built-in
+  rule names the merged span when its hit starts at the same character; otherwise the earlier-starting hit does, and
+  the whole span is redacted either way), and a match that runs past the timeout blocks the whole text
+  (`AW-REDACT-001`). Nothing checks a pattern for catastrophic backtracking up front; the timeouts are that guard.
+- **Whole-scan deadline.** The match timeout restarts on every match, and configured patterns, unlike the built-in
+  ones, aren't reviewed to stay linear: a pattern that is slow on every match would never time out and only stall.
+  So a redactor with extra patterns also gives each scrub a budget of `Redactor.ScanBudgetFactor` (4) times its
+  size tier's match timeout, read from the `TimeProvider` passed to `Create` (Redaction reads no clock of its own) and
+  checked after every match; past it, the scrub blocks with `AW-REDACT-001` like a match timeout.
+  `Redactor.Default` and `Create(TimeSpan)` have no clock and keep the per-match timeout only.
+- **Writing a pattern.** Give it boundaries the way the built-in rules do, for example
+  `(?<![A-Za-z0-9_])ACME-[0-9]{6}(?![0-9])`: without them `ACME-[0-9]{6}` also matches inside `XACME-1234567` and
+  leaves the 7. Avoid unbounded runs that can restart at every position of a long run (`[A-Z]+-[0-9]+`): a slow
+  pattern blocks the text (it never leaks it), so an ordinary large input could be withheld.
+- **Where to call it.** `ARCH-DIR-005` keeps `Aw.Redaction` out of a package's `Core` and `Features`, so the caller
+  builds the redactor and maps the refusals in `Infrastructure` (or `Host`): the same list builds the `IRedactor`
+  and is checked at profile validation, and `Core` and `Features` see only the mapped Kernel `Error`. The result is
+  `RedactorResult`, not Kernel's `Result<T>`, because Redaction sits beside `Aw.Kernel` at tier 0 and can't
+  reference it.
 - **Refusals.** `Create` checks every entry and returns every refused field, in entry order, as an
   `ExtraPatternError(Index, Field, Code, Message)`; no redactor is built while one is refused. The message says how to
   fix the entry and never quotes the pattern. A caller reports the key path itself (Sindri: `SND-CONTEXT-001` at
@@ -63,11 +79,13 @@ else
 
 | Code | Field | Refused when |
 |---|---|---|
-| `AW-REDACT-002` | `Id` | not lowercase ASCII letters, digits and single hyphens starting with a letter, or over 64 characters (no `/`, `_`, spaces or `]`: the id sits in the placeholder); a built-in rule id, `blocked` or `secret-field`; the same id as an earlier entry |
-| `AW-REDACT-003` | `Pattern` | empty or over 1024 characters; not a valid .NET regex (the message gives the parse error and offset); uses `\d`, `\w`, `\s`, `\b` or their negations, which are Unicode-aware in .NET (the message names the ASCII class to write instead). An escaped backslash (`\\d`) is a backslash and a `d`, and is accepted |
+| `AW-REDACT-002` | `Id` | an empty (null) entry, or an id that is null, not lowercase ASCII letters, digits and single hyphens starting with a letter, or over 64 characters (no `/`, `_`, spaces or `]`: the id sits in the placeholder); a built-in rule id, `blocked` or `secret-field`; the same id as an earlier entry |
+| `AW-REDACT-003` | `Pattern` | null, empty or over 1024 characters; not a valid .NET regex (the message gives the parse error and offset); uses `\d`, `\w`, `\s`, `\b` or their negations, which are Unicode-aware in .NET, or a Unicode category `\p{…}`/`\P{…}` (the message gives the offset and the ASCII class to write instead). The check is lexical: an escaped backslash (`\\d`) is a backslash and a `d` and is accepted, while such an escape inside a class (`[\b]`, a backspace there) or an `(?x)` comment is refused too |
 
-A null list, or a timeout that isn't positive, is a bug and throws (`ArgumentNullException`,
-`ArgumentOutOfRangeException`).
+A null list or clock, or a timeout that isn't positive, is a bug and throws (`ArgumentNullException`,
+`ArgumentOutOfRangeException`). The list's length isn't capped: every entry runs on every scrub, so keep it to the
+identifier shapes that matter. `(?i)` folds case with the invariant culture, so it also matches a few non-ASCII
+letters (the Kelvin sign for `k`); that only redacts more.
 
 ## Rules
 
