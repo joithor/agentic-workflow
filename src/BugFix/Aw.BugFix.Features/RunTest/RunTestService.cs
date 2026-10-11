@@ -15,44 +15,38 @@ internal sealed class RunTestService(IStateStore store, IRunLedger ledger, IGit 
 
     private Result<RunTestResponse> Run(RunTestRequest request)
     {
-        var check = Clean(git, request.WorkingDirectory)
+        var check = TreeRule.Clean(git, request.WorkingDirectory, "commit before running the check so the result maps to a commit")
             .Bind(_ => locator.Locate(request.WorkingDirectory, request.Check))
             .Bind(file => Executes(request, file));
         var sha = check.Bind(file => files.Sha256(file.FullPath));
         var commit = sha.Bind(_ => git.Head(request.WorkingDirectory));
-        if (commit.IsError)
+        var directory = commit.Bind(_ => git.RelativeDirectory(request.WorkingDirectory));
+        if (directory.IsError)
         {
-            return commit.Error;
+            return directory.Error;
         }
 
         var slot = ledger.Reserve(request.StateDirectory, clock.GetUtcNow(), CheckKind.Test);
-        var exitCode = runner.Run(request.Command, request.WorkingDirectory, slot.Log);
-        var outcome = exitCode == 0 ? RunOutcome.Passed : RunOutcome.Failed;
-        var record = new RunRecord(CheckKind.Test, outcome, commit.Value, sha.Value, request.Command, exitCode, slot.Log);
+        var exit = runner.Run(request.Command, request.WorkingDirectory, slot.Log);
+        var record = new RunRecord(CheckKind.Test, exit.Outcome, commit.Value, directory.Value, sha.Value, request.Command, exit.Code, slot.Log);
         var recordSha = ledger.Write(slot, record);
 
-        // Re-read: the run may have taken minutes.
-        return store.Load(request.StateDirectory).Map(fresh =>
+        // Registered under the lock, onto the current state: the run may have taken minutes.
+        return store.Locked(request.StateDirectory, () => store.Load(request.StateDirectory).Map(fresh =>
         {
-            store.Save(request.StateDirectory, fresh with { Runs = [.. fresh.Runs, new RegisteredRun(slot.Record, recordSha)] });
-            return new RunTestResponse(slot.Record, outcome, exitCode, commit.Value);
-        });
+            store.Save(request.StateDirectory, fresh.Register(new RegisteredRun(slot.Record, recordSha)));
+            return new RunTestResponse(slot.Record, record.Outcome, exit.Code, commit.Value);
+        }));
     }
 
-    private static Result<Unit> Clean(IGit git, string directory) =>
-        git.IsClean(directory).Bind<Unit>(clean => clean
-            ? Unit.Value
-            : BugFixErrors.DirtyTree.With($"{directory} has uncommitted or untracked changes; commit before running the check so the result maps to a commit"));
-
-    // The command must name the check file itself as an argument (not inside a shell string), and must execute it,
-    // so a baseline of `false` and a run of `true` can't stand in for the check.
+    // The command must name the check file itself, by a path that resolves to it from the working directory (not inside
+    // a shell string, not a same-named file elsewhere), and must execute it.
     private Result<CheckFile> Executes(RunTestRequest request, CheckFile check)
     {
-        var named = request.Command.Any(arg =>
-            arg == check.RepoPath || files.RealPath(files.FullPath(request.WorkingDirectory, arg)) == check.FullPath);
+        var named = request.Command.Any(arg => files.RealPath(files.FullPath(request.WorkingDirectory, arg)) == check.FullPath);
         if (!named)
         {
-            return BugFixErrors.CommandRefused.With($"the command must pass the check file ({check.RepoPath}) as an argument");
+            return BugFixErrors.CommandRefused.With($"the command must pass the check file ({check.RepoPath}) as an argument that resolves to it from {request.WorkingDirectory}");
         }
 
         return CheckCommandRule.Refusal(request.Command) is { } reason ? BugFixErrors.CommandRefused.With(reason) : check;

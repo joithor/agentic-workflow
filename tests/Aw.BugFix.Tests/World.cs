@@ -107,7 +107,7 @@ internal sealed class World : IDisposable
     /// <summary>A worktree on <paramref name="branch"/> from the baseline with <paramref name="changes"/> committed (the fix by default).</summary>
     public string Fix(string branch = "bugfix/eng-1-a1", string worktree = Worktree, Dictionary<string, string>? changes = null)
     {
-        Repos.AddWorktree(worktree, branch, Base);
+        Repos.AddWorktree(worktree, branch, Store.Load(State).Match(static s => s.Baseline?.Commit, static _ => null) ?? Base);
         foreach (var (path, text) in changes ?? new Dictionary<string, string>(StringComparer.Ordinal) { ["src/app.ts"] = "keep cookie\n" })
         {
             Repos.Write($"{worktree}/{path}", text);

@@ -34,22 +34,32 @@ internal sealed record CommandLine(IReadOnlyList<string> Positionals, IReadOnlyD
                 continue;
             }
 
-            var name = args[i][2..];
-            if (spec.Flags.Contains(name, StringComparer.Ordinal))
+            if (Option(args, ref i, spec, values, flags) is { } bad)
             {
-                _ = flags.Add(name);
-            }
-            else if (!spec.Required.Concat(spec.Optional).Contains(name, StringComparer.Ordinal))
-            {
-                return Fail($"unknown option --{name}", out problem);
-            }
-            else if (i + 1 >= args.Count || args[i + 1].StartsWith("--", StringComparison.Ordinal) || !values.TryAdd(name, args[++i]))
-            {
-                return Fail($"--{name} needs one value", out problem);
+                return Fail(bad, out problem);
             }
         }
 
         return Finish(spec, new CommandLine(positionals, values, flags, []), out problem);
+    }
+
+    // One option at args[i] (and its value): a flag, or an option with one non-empty value. Returns the problem, if any.
+    private static string? Option(IReadOnlyList<string> args, ref int i, CommandSpec spec, Dictionary<string, string> values, HashSet<string> flags)
+    {
+        var name = args[i][2..];
+        if (spec.Flags.Contains(name, StringComparer.Ordinal))
+        {
+            _ = flags.Add(name);
+            return null;
+        }
+
+        if (!spec.Required.Concat(spec.Optional).Contains(name, StringComparer.Ordinal))
+        {
+            return $"unknown option --{name}";
+        }
+
+        var hasValue = i + 1 < args.Count && args[i + 1].Length > 0 && !args[i + 1].StartsWith("--", StringComparison.Ordinal);
+        return hasValue && values.TryAdd(name, args[++i]) ? null : $"--{name} needs one non-empty value";
     }
 
     private static CommandLine? Finish(CommandSpec spec, CommandLine line, out string problem)

@@ -58,8 +58,13 @@ internal sealed class FileRunLedger(JsonSerializerOptions json) : IRunLedger
             : new StoredRun(full, Convert.ToHexStringLower(SHA256.HashData(bytes)), record.Value);
     }
 
-    public string WriteJudgeInput(string directory, CandidateId candidate, ResolutionCheckInput input) =>
-        WriteFile(Path.Combine(directory, $"judge-{candidate.Value}.json"), AwJson.Serialize(input, json));
+    public void Release(RunSlot slot) => File.Delete(slot.Record);
+
+    public JudgeQuestion WriteJudgeInput(string directory, CandidateId candidate, ResolutionCheckInput input)
+    {
+        var file = Path.Combine(directory, $"judge-{candidate.Value}.json");
+        return new JudgeQuestion(input, file, WriteFile(file, AwJson.Serialize(input, json)));
+    }
 
     private static string WriteFile(string path, byte[] bytes)
     {

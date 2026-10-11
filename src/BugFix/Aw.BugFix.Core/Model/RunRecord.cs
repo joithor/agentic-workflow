@@ -1,9 +1,13 @@
+using Aw.BugFix.Core.Errors;
+using Aw.Kernel;
+
 namespace Aw.BugFix.Core.Model;
 
 /// <summary>The evidence file run-test and run-ui write: one run of the check, classified.</summary>
 /// <param name="Kind">Test or ui-evidence.</param>
 /// <param name="Outcome">Passed, failed or broken (broken: ui steps broke and none failed).</param>
 /// <param name="Commit">The commit the run executed against.</param>
+/// <param name="Directory">The working directory the run executed in, relative to the repository root ("" for the root).</param>
 /// <param name="CheckSha256">SHA-256 of the check file the run executed.</param>
 /// <param name="Command">The test command (argv); null for ui-evidence.</param>
 /// <param name="ExitCode">The test command's or ui-evidence's exit code.</param>
@@ -12,7 +16,21 @@ public sealed record RunRecord(
     CheckKind Kind,
     RunOutcome Outcome,
     string Commit,
+    string Directory,
     string CheckSha256,
     IReadOnlyList<string>? Command,
     int ExitCode,
-    string Output);
+    string Output)
+{
+    /// <summary>Accepts this run as the baseline: it must fail. A check that passes can never prove a fix, and a broken run (it didn't start, timed out, or only had broken ui steps) is not a reproduction.</summary>
+    /// <returns>The run, or AW-BUGFIX-007.</returns>
+    public Result<RunRecord> AsBaseline() => Outcome switch
+    {
+        RunOutcome.Failed => this,
+        RunOutcome.Passed => BugFixErrors.NotReproduced.With(
+            "the baseline check passed on the unfixed code; the bug is not reproduced, so this check cannot prove a fix"),
+        RunOutcome.Broken => BugFixErrors.NotReproduced.With(
+            "the baseline run is broken (it didn't start, timed out, or only had broken steps, e.g. a bad selector); that is not a reproduction, so repair it and re-run"),
+        _ => throw new ArgumentOutOfRangeException(nameof(Outcome), Outcome, "not an outcome"),
+    };
+}

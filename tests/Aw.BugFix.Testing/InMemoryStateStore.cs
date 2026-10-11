@@ -18,6 +18,15 @@ public sealed class InMemoryStateStore : IStateStore
     /// <param name="directory">The state directory.</param>
     public void Corrupt(string directory) => _corrupt.Add(directory);
 
+    /// <summary>Gets the state directories whose lock is held.</summary>
+    public ISet<string> Held { get; } = new HashSet<string>(StringComparer.Ordinal);
+
+    /// <inheritdoc/>
+    public Result<IDisposable> Lock(string directory) =>
+        Held.Add(directory)
+            ? new Release(() => Held.Remove(directory))
+            : BugFixErrors.StateBusy.With($"another bugfix-state call holds {directory}/state.lock; retry when it finishes");
+
     /// <inheritdoc/>
     public string StateFile(string directory) => $"{directory.TrimEnd('/')}/state.json";
 
@@ -40,5 +49,10 @@ public sealed class InMemoryStateStore : IStateStore
         _states[directory] = state;
         _ = _corrupt.Remove(directory);
         Saves++;
+    }
+
+    private sealed class Release(Func<bool> release) : IDisposable
+    {
+        public void Dispose() => _ = release();
     }
 }

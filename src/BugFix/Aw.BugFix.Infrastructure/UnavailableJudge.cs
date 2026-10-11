@@ -11,7 +11,7 @@ namespace Aw.BugFix.Infrastructure;
 /// </summary>
 internal sealed class UnavailableJudge : IJudge
 {
-    public Result<JudgeAnswer> ResolutionCheck(ResolutionCheckInput input) =>
+    public Result<JudgeAnswer> ResolutionCheck(JudgeQuestion question) =>
         BugFixErrors.JudgeUnavailable.With(
             "judge resolution-check isn't wired into the C# bugfix-state yet (it waits on the C# judge CLI contract, docs/csharp/judge.md); no verdict recorded");
 }

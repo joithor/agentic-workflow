@@ -28,7 +28,8 @@ public static class A
 
     /// <summary>A judge answer.</summary>
     /// <param name="decision">The decision.</param>
+    /// <param name="aboutInput">The input hash judge names; empty means the input it was asked about.</param>
     /// <returns>The answer, with an id unless it is an escalation.</returns>
-    public static JudgeAnswer Verdict(JudgeDecision decision) =>
-        new(decision, decision == JudgeDecision.Escalated ? null : JudgeDecisionId.From("d-42"), "judged", ["the reported page now opens"]);
+    public static JudgeAnswer Verdict(JudgeDecision decision, string aboutInput = "") =>
+        new(decision, decision == JudgeDecision.Escalated ? null : JudgeDecisionId.From("d-42"), "judged", ["the reported page now opens"], aboutInput);
 }

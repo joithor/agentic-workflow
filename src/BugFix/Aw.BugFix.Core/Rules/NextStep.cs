@@ -17,6 +17,12 @@ public static class NextStep
                 : "done (unresolved); write resolution.md if not written";
         }
 
+        // A resolving candidate wins over an escalation of another one in the same attempt.
+        if (state.CurrentCandidates.FirstOrDefault(static c => c.Resolves) is { } resolving && state.Phase == Phase.Evaluate)
+        {
+            return $"advance report --candidate {resolving.Id.Value}";
+        }
+
         if (state.Status == BugFixStatus.NeedsHuman)
         {
             return "ask the user how to proceed: start-attempt, or advance report --unresolved";
@@ -58,6 +64,11 @@ public static class NextStep
             return "dispatch the implementer(s), then record-candidate";
         }
 
-        return state.Attempt < BugFixState.MaxAttempts ? "start-attempt with the failure reasons" : "advance report --unresolved";
+        if (current.Count < AttemptRule.Candidates(state.Mode))
+        {
+            return "record-candidate for the second open hypothesis (mode B runs two competing candidates)";
+        }
+
+        return AttemptRule.CanStart(state, FixMode.A).IsSuccess ? "start-attempt with the failure reasons" : "advance report --unresolved";
     }
 }

@@ -33,7 +33,16 @@ public static partial class HandoffParser
         var hypotheses = new List<Hypothesis>();
         foreach (var row in TableRows(lines.Skip(heading + 1)).Skip(2))
         {
-            var parsed = ParseRow(row);
+            Hypothesis? parsed;
+            try
+            {
+                parsed = ParseRow(row);
+            }
+            catch (RegexMatchTimeoutException)
+            {
+                parsed = null;   // a row that can't be read in time is malformed, never accepted
+            }
+
             if (parsed is null)
             {
                 return BugFixErrors.HandoffRefused.With($"malformed hypotheses row: {row.Trim()}");

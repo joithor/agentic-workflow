@@ -21,6 +21,9 @@ internal sealed class GitProcess : IGit
 
     public Result<string> Root(string directory) => Value(directory, "rev-parse", "--show-toplevel");
 
+    public Result<string> RelativeDirectory(string directory) =>
+        Value(directory, "rev-parse", "--show-prefix").Map(static p => p.TrimEnd('/'));
+
     public Result<bool> IsCommittedUnchanged(string root, string file)
     {
         var committed = Run(root, "rev-parse", "--verify", "--quiet", $"HEAD:{file}");
@@ -59,7 +62,7 @@ internal sealed class GitProcess : IGit
     public Result<CommitDiff> Diff(string directory, string from, string to) =>
         Value(directory, "diff", "--stat", from, to).Map(stat =>
         {
-            var full = Run(directory, "diff", from, to, "--", ".", ":(exclude)package-lock.json", ":(exclude)**/dist/**");
+            var full = Run(directory, "diff", from, to, "--", ".", ":(glob,exclude)**/package-lock.json", ":(glob,exclude)**/*.lock", ":(glob,exclude)**/pnpm-lock.yaml", ":(glob,exclude)**/packages.lock.json", ":(glob,exclude)**/dist/**");
             return new CommitDiff(stat, full.ExitCode == 0 ? full.Output : null);
         });
 

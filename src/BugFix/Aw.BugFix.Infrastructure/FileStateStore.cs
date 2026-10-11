@@ -11,7 +11,36 @@ namespace Aw.BugFix.Infrastructure;
 /// <summary>state.json in the state directory, written to a temporary file and renamed so a crash never leaves half a state.</summary>
 internal sealed class FileStateStore(JsonSerializerOptions json) : IStateStore
 {
+    private const int LockAttempts = 300;
+    private static readonly TimeSpan _lockPause = TimeSpan.FromMilliseconds(100);
+
     public string StateFile(string directory) => Path.Combine(directory, "state.json");
+
+    // An exclusive lock file: the OS releases it if the process dies, so a crash never leaves the directory locked.
+    public Result<IDisposable> Lock(string directory)
+    {
+        var lockFile = Path.Combine(directory, "state.lock");
+        for (var attempt = 0; ; attempt++)
+        {
+            try
+            {
+                _ = Directory.CreateDirectory(directory);
+                return new FileStream(lockFile, FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.None);
+            }
+            catch (IOException) when (attempt < LockAttempts)
+            {
+                Thread.Sleep(_lockPause);
+            }
+            catch (IOException ex)
+            {
+                return BugFixErrors.StateBusy.With($"another bugfix-state call holds {lockFile} ({ex.Message}); retry when it finishes");
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                return BugFixErrors.StorageFailed.With($"cannot lock {lockFile}: {ex.Message}");
+            }
+        }
+    }
 
     public Result<BugFixState> Load(string directory)
     {

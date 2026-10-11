@@ -29,7 +29,7 @@ design.
 |---|---|---|
 | `init --state <dir> --ticket <ticket.json>` | (none, or finished) | Reads the ticket (`source` linear or text, `id`, `title`, `brief`, `expected`, `actual`; brief and expected not blank) and starts at `intake` |
 | `advance investigate --evidence <handoff.md>` | intake → investigate | Snapshots the `/rootCause` handoff: status `diagnosed`, at least one `confirmed` hypothesis, a `## Root Cause` section |
-| `run-test --check <file> [--cwd <dir>] -- <command…>` | any | Runs the test command on a clean tree and registers a run record |
+| `run-test --check <file> [--cwd <dir>] -- <command…>` | any | Runs the test command on a clean tree and registers a run record (with the commit and the working directory) |
 | `run-ui --check <script.json> [--cwd <dir>]` | any | Runs the ui-evidence script on a clean tree and registers a run record (blocked: see Ports) |
 | `advance reproduce --evidence <run> --check <file> [--cwd <dir>]` | investigate → reproduce | Freezes the check and the failing baseline |
 | `start-attempt --mode <A\|B\|C>` | reproduce, evaluate → fix | Opens the next attempt (at most 3) |
@@ -47,23 +47,33 @@ against `--cwd` (the checkout the check lives in). The argv after `--` is kept a
 
 - **Evidence is ours.** `advance reproduce` and `record-run` accept only run records that `run-test` or `run-ui` wrote for
   this bug fix and that are unchanged since (path and SHA-256 registered in the state).
-- **The check reproduces the bug.** The baseline run must fail (a passing check can never prove a fix; a ui run with
-  broken steps and no failed one is a selector problem, not a reproduction), at the checkout's HEAD, on the committed
-  check file.
-- **The check is frozen.** Every later run must execute the same check file (same SHA-256), and a test run the same argv
-  as the baseline. `run-test` refuses a command that doesn't name the check file as an argument, a non-runner (`grep`,
-  `cat`, `true`, …) and an interpreter given inline code (`sh -c`, `node -e`, `python -c`, …).
+- **The check reproduces the bug.** The baseline run must fail at the checkout's HEAD, on the committed check file. A
+  passing check can never prove a fix, and a **broken** run is not a reproduction: a test command that couldn't start or
+  was killed at the time limit, or a ui run with broken steps and no failed one (a bad selector).
+- **The check is frozen.** Every later run must execute the same check file (same SHA-256); a test run must use the
+  same argv **in the same working directory** (relative to the repository root) as the baseline. `run-test` refuses a
+  command that doesn't name the check by a path that resolves to it from the working directory (a same-named file
+  elsewhere doesn't count; paths resolve like realpath(3), links before `..`), a non-runner (`grep`, `cat`, `true`, …),
+  a program that runs another one (`env`, `xargs`, `timeout`, `nice`, `nohup`, `sudo`, …), and inline code: `-c`/`-e`/
+  `-E` style flags, `--eval`/`--command`/`--print`, `node -p`, `php -r`, `deno eval`, `npx -c`.
 - **Candidates are real changes on the baseline:** a clean worktree on the named branch, with commits on top of the
   baseline commit and a tree different from it, not already recorded. A fix that touches the check, its directory,
-  tests, fixtures, snapshots, runner config or `package.json` needs `--allow-test-changes` (the user's approval).
+  tests, fixtures, snapshots, runner config, `package.json`, or a repository file the frozen command names (its runner
+  or wrapper script) needs `--allow-test-changes` (the user's approval).
 - **Attempts.** Mode A one candidate, C one candidate (split by area, in sequence), B two candidates on different open
-  hypotheses, only after a failed attempt and with at least two hypotheses not ruled out. A new attempt waits until
-  every candidate of the current one is evaluated, and none resolves the ticket.
+  hypotheses, only after a failed attempt and with at least two hypotheses not ruled out. A new attempt waits until the
+  current one has all its candidates (two in mode B) evaluated and none resolves the ticket; `resume` gives the same
+  answer (`record-candidate for the second open hypothesis` while a mode-B attempt has one).
 - **One verdict per candidate.** `judge` builds the input from state (the ticket verbatim, the snapshotted root cause, a
-  description of the frozen check, the diff stat and the diff without lock files and build output, capped at 200,000
-  characters), writes it to `judge-<candidate>.json`, and records the answer with that file's SHA-256. It never asks
-  again. If judge gives no usable verdict nothing is recorded, so a retry is not a re-roll. An escalation sets the status
-  to `needs-human`.
+  description of the frozen check, the diff stat and the diff without lock files (`package-lock.json`, `*.lock`,
+  `pnpm-lock.yaml`, `packages.lock.json`) and `dist/` output, capped at 200,000 characters), writes it to
+  `judge-<candidate>.json`, asks judge about that file, and records the answer only when it names that file's SHA-256.
+  It never asks again. If judge gives no usable verdict (or one about another input) nothing is recorded, so a retry is
+  not a re-roll; the input file stays as a record of what was asked. An escalation sets the status to `needs-human`; a
+  later `resolved` verdict in the same attempt sets it back to `active`, and `resume` points at the resolving candidate.
+- **One writer at a time.** Every state change holds the state directory's lock (`state.lock`) from load to save; a
+  long `run-test`, `run-ui` or `judge` takes it only to record its result onto the current state. A call that can't get
+  it within 30 seconds is refused with AW-BUGFIX-021 and changes nothing.
 
 ## Output, exit codes and errors
 
@@ -74,8 +84,8 @@ Everything else is one line on stderr ending with the catalogue code, and nothin
 |---|---|---|
 | 0 | (JSON on stdout) | Success |
 | 1 | `error: <message> (AW-BUGFIX-NNN)` | Invalid input or not found (`ErrorKind.Invalid`, `NotFound`) |
-| 2 | `usage: <problem>` then the usage | Unknown command or option, missing option or value, malformed `--mode`, `--hypothesis` or candidate id |
-| 3 | `refused: <reason> (AW-BUGFIX-NNN)` | A rule refuses the step, or judge or ui-evidence is unavailable |
+| 2 | `usage: <problem>` then the usage | Unknown command or option, a missing or empty option value, malformed `--mode`, `--hypothesis` or candidate id |
+| 3 | `refused: <reason> (AW-BUGFIX-NNN)` | A rule refuses the step; judge or ui-evidence is unavailable; the state is busy; a file can't be written or read |
 
 | Code | Kind | Meaning |
 |---|---|---|
@@ -99,29 +109,31 @@ Everything else is one line on stderr ending with the catalogue code, and nothin
 | AW-BUGFIX-018 | invalid | A git command failed (not a repository, unknown revision) |
 | AW-BUGFIX-019 | conflict | The report step isn't allowed (already reported, candidate not eligible) |
 | AW-BUGFIX-020 | conflict | A working tree has uncommitted or untracked changes |
+| AW-BUGFIX-021 | conflict | Another bugfix-state call holds the state directory; retry when it finishes |
+| AW-BUGFIX-022 | unavailable | A state, run or log file can't be written or read |
 
 ## Files
 
 Everything lives under the `--state` directory; the C# build never reads TS-written state (spec §4c).
 
-- `state.json`: the state (`schemaVersion` 1), written to a temporary file and renamed. Fields: `ticket`, `phase`,
+- `state.json`: the state (`schemaVersion` 1), written to a temporary file and renamed, under `state.lock`. Fields: `ticket`, `phase`,
   `status`, `attempt`, `mode`, `investigation` (`handoff`, `rootCause`, `hypotheses`), `check` (`kind` test or ui,
-  `path`, `sha256`, `command`), `baseline` (`evidence`, `commit`), `candidates` (`id`, `attempt`, `mode`, `branch`,
+  `path`, `sha256`, `command`, `directory`, `commandFiles`), `baseline` (`evidence`, `commit`), `candidates` (`id`, `attempt`, `mode`, `branch`,
   `worktree`, `commit`, `hypothesis`, `changedFiles`, `run`, `verdict`), `runs` (`evidence`, `sha256`), `resolvedBy`,
   `history`.
-- `runs/<stamp>-<test|ui>-<n>.json`: a run record (`kind`, `outcome` passed, failed or broken, `commit`, `checkSha256`,
-  `command`, `exitCode`, `output`), with its `.log` (and, for ui, the ui-evidence run directory `<stem>/`).
+- `runs/<stamp>-<test|ui>-<n>.json`: a run record (`kind`, `outcome` passed, failed or broken, `commit`, `directory`,
+  `checkSha256`, `command`, `exitCode`, `output`); a ui run that produced nothing gives its slot back, with its `.log` (and, for ui, the ui-evidence run directory `<stem>/`).
 - `judge-<candidate>.json`: the resolution-check input asked about the candidate.
 
 ## Ports and adapters
 
 | Port (Core) | Fake (`Aw.BugFix.Testing`) | Adapter (`Infrastructure`) | Contract base |
 |---|---|---|---|
-| `IStateStore` | `InMemoryStateStore` | `FileStateStore` | `StateStoreContract` |
+| `IStateStore` (load, save, exclusive lock) | `InMemoryStateStore` | `FileStateStore` (`state.lock`, `FileShare.None`) | `StateStoreContract` |
 | `IRunLedger` | `InMemoryRunLedger` | `FileRunLedger` | `RunLedgerContract` |
 | `IGit`, `IFiles` | `InMemoryRepos` (one fake: git answers about the files the file port reads) | `GitProcess` (git on PATH), `LocalFiles` | `ReposContract` |
-| `ICheckRunner` | `ScriptedCheckRunner` | `ProcessCheckRunner` (killed after `AW_BUGFIX_CHECK_TIMEOUT_SECONDS`, default 1800; counts as failing) | `CheckRunnerContract` |
-| `IJudge` | `ScriptedJudge` | `UnavailableJudge` (**blocked**) | `JudgeContract` |
+| `ICheckRunner` (returns the exit code and whether it ran to a verdict) | `ScriptedCheckRunner` | `ProcessCheckRunner`: output streamed to the log (16 MB cap); killed after `AW_BUGFIX_CHECK_TIMEOUT_SECONDS` (default 1800), also when a background child holds its output; that run didn't run (broken) | `CheckRunnerContract` |
+| `IJudge` (asks about the written input file; the answer names its SHA-256) | `ScriptedJudge` | `UnavailableJudge` (**blocked**) | `JudgeContract` |
 | `IUiEvidence` | `ScriptedUiEvidence` | `UnavailableUiEvidence` (**blocked**) | `UiEvidenceContract` |
 
 **Blocked adapters.** judge and ui-evidence are reached through their CLIs (`deps.yaml` cli edges), and both are being
@@ -129,5 +141,6 @@ ported to C# too, so `bugfix-state` follows their C# contracts, not the TypeScri
 yet (`docs/csharp/judge.md` comes with the Judge packet; Evidence isn't ported). Until then Composition registers
 adapters that answer AW-BUGFIX-016 and AW-BUGFIX-017: `judge` and `run-ui` refuse with exit 3 and record nothing, and
 everything else works. The adapter that replaces each one is a new `Infrastructure` class bound to its contract base.
-For judge it must also prove that the decision it returns is the stored resolution-check decision on exactly the input
-the helper wrote, so an agent can't forge or re-roll a verdict.
+For judge the port already carries the binding: the adapter gets the written input file and its SHA-256 and must
+return the SHA-256 of the input judge stored the decision for (the helper refuses any other), so an agent can't forge or
+re-roll a verdict.

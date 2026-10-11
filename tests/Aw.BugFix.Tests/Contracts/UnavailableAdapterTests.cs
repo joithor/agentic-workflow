@@ -13,7 +13,7 @@ public sealed class UnavailableAdapterTests
     {
         var input = new ResolutionCheckInput("b", "e", "a", "r", CheckKind.Test, "s", BeforePassed: false, AfterPassed: true, "stat", Diff: null);
 
-        Assert.Equal(BugFixErrors.JudgeUnavailable.Code, new UnavailableJudge().ResolutionCheck(input).Error.Code);
+        Assert.Equal(BugFixErrors.JudgeUnavailable.Code, new UnavailableJudge().ResolutionCheck(new JudgeQuestion(input, "/s/judge-c1.json", "sha")).Error.Code);
         Assert.Equal(BugFixErrors.UiEvidenceUnavailable.Code, new UnavailableUiEvidence().Run(new UiRunRequest("/s", "/r", "c", "/w", "/l")).Error.Code);
     }
 }

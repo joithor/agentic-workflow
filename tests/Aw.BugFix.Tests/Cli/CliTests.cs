@@ -56,6 +56,7 @@ public sealed class CliTests : IDisposable
     [InlineData("record-run candidate-1 --state s --evidence e")]
     [InlineData("run-test --state s --check t")]
     [InlineData("init --state --ticket t")]
+    [InlineData("status --state ")]
     public void A_usage_error_exits_2_with_the_usage_and_no_output(string line)
     {
         var (exit, output, error) = _w.Run(line.Split(' ', StringSplitOptions.RemoveEmptyEntries));
@@ -75,6 +76,26 @@ public sealed class CliTests : IDisposable
         Assert.Matches(@"^error: no state at .*state\.json; run bugfix-state init first \(AW-BUGFIX-002\)$", error.TrimEnd());
         Assert.Equal(1, badExit);
         Assert.EndsWith("(AW-BUGFIX-001)", badError.TrimEnd(), StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void An_empty_option_value_is_a_usage_error_and_an_unwritable_state_directory_one_line()
+    {
+        if (OperatingSystem.IsWindows())
+        {
+            return;
+        }
+
+        var (emptyExit, _, emptyError) = _w.Run("status", "--state", "");
+        var readOnly = Directory.CreateDirectory(Path.Combine(_w.Root, "ro")).FullName;
+        File.SetUnixFileMode(readOnly, UnixFileMode.UserRead | UnixFileMode.UserExecute);
+        var (exit, output, error) = _w.Run("init", "--state", Path.Combine(readOnly, "x"), "--ticket", _w.Ticket);
+        File.SetUnixFileMode(readOnly, UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute);
+
+        Assert.Equal(2, emptyExit);
+        Assert.StartsWith("usage: --state needs one non-empty value", emptyError, StringComparison.Ordinal);
+        Assert.Equal((3, ""), (exit, output));
+        Assert.Matches(@"^refused: .* \(AW-BUGFIX-02[12]\)$", error.TrimEnd());
     }
 
     private JsonElement Ok(params string[] args)

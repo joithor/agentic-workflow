@@ -13,7 +13,7 @@ internal sealed class InitService(IStateStore store, IFiles files, TimeProvider 
     : IService<InitRequest, InitResponse>
 {
     public ValueTask<Result<InitResponse>> Handle(InitRequest request, CancellationToken cancellationToken) =>
-        ValueTask.FromResult(files.ReadText(request.TicketFile).Bind(ReadTicket).Bind(ticket => Start(request, ticket)));
+        ValueTask.FromResult(files.ReadText(request.TicketFile).Bind(ReadTicket).Bind(ticket => store.Locked(request.StateDirectory, () => Start(request, ticket))));
 
     private Result<Ticket> ReadTicket(string text)
     {
@@ -38,13 +38,12 @@ internal sealed class InitService(IStateStore store, IFiles files, TimeProvider 
 
         if (existing.IsSuccess && !existing.Value.Finished)
         {
+            var status = existing.Value.Status == BugFixStatus.NeedsHuman ? "needs-human" : "active";
             return BugFixErrors.WrongPhase.With(
-                $"an unfinished bug fix already exists at {store.StateFile(request.StateDirectory)} (status {Status(existing.Value)}); resume it instead");
+                $"an unfinished bug fix already exists at {store.StateFile(request.StateDirectory)} (status {status}); resume it instead");
         }
 
         store.Save(request.StateDirectory, BugFixState.Start(ticket, clock.GetUtcNow(), request.TicketFile));
         return new InitResponse(store.StateFile(request.StateDirectory));
     }
-
-    private static string Status(BugFixState state) => state.Status == BugFixStatus.NeedsHuman ? "needs-human" : "active";
 }

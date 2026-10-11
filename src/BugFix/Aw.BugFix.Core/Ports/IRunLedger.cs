@@ -25,10 +25,14 @@ public interface IRunLedger
     /// <returns>The record with its full path and current hash, or AW-BUGFIX-009 when it isn't a run record.</returns>
     public Result<StoredRun> Read(string path);
 
+    /// <summary>Gives back a reserved slot whose run produced no record, removing what Reserve created.</summary>
+    /// <param name="slot">The slot.</param>
+    public void Release(RunSlot slot);
+
     /// <summary>Writes the resolution-check input asked about a candidate.</summary>
     /// <param name="directory">The state directory.</param>
     /// <param name="candidate">The candidate.</param>
     /// <param name="input">The input.</param>
-    /// <returns>The written file's SHA-256.</returns>
-    public string WriteJudgeInput(string directory, CandidateId candidate, ResolutionCheckInput input);
+    /// <returns>The question: the input with the written file and its SHA-256.</returns>
+    public JudgeQuestion WriteJudgeInput(string directory, CandidateId candidate, ResolutionCheckInput input);
 }

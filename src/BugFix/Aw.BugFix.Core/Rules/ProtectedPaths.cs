@@ -12,13 +12,15 @@ public static partial class ProtectedPaths
     /// <summary>The changed files a fix may not touch without approval.</summary>
     /// <param name="changedFiles">Repository-relative paths with '/'.</param>
     /// <param name="checkPath">The frozen check's repository-relative path.</param>
+    /// <param name="commandFiles">Repository files the frozen command names (its runner, wrapper scripts).</param>
     /// <returns>The protected ones, in input order.</returns>
-    public static IReadOnlyList<string> Touched(IEnumerable<string> changedFiles, string checkPath)
+    public static IReadOnlyList<string> Touched(IEnumerable<string> changedFiles, string checkPath, IReadOnlyCollection<string> commandFiles)
     {
         var slash = checkPath.LastIndexOf('/');
         var checkDirectory = slash < 0 ? null : checkPath[..(slash + 1)];
         return [.. changedFiles.Where(f =>
             f == checkPath
+            || commandFiles.Contains(f, StringComparer.Ordinal)
             || (checkDirectory is not null && f.StartsWith(checkDirectory, StringComparison.Ordinal))
             || Matches(f))];
     }

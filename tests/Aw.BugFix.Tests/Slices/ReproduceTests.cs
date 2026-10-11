@@ -133,7 +133,7 @@ public sealed class ReproduceTests : IDisposable
         Assert.Equal(RunOutcome.Broken, run.Outcome);
         Assert.Equal(World.Ok(_w.Repos.Head(World.Repo)), Assert.Single(_w.Ui.Requests).Commit);
         var error = World.Refused(await Reproduce(run.Evidence, ".ui-evidence/eng-1.json"), BugFixErrors.NotReproduced);
-        Assert.Contains("broken selector", error.Message, StringComparison.Ordinal);
+        Assert.Contains("bad selector", error.Message, StringComparison.Ordinal);
     }
 
     [Fact, Trait("Lane", "unit")]

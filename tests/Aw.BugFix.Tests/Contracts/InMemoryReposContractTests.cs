@@ -27,5 +27,7 @@ public sealed class InMemoryReposContractTests : ReposContract
 
     protected override string Commit(string root) => _repos.Commit(root);
 
+    protected override void Link(string root, string link, string target) => _repos.Link($"{root}/{link}", target);
+
     internal static Dictionary<string, string> Base => new(StringComparer.Ordinal) { ["src/a.txt"] = "a\n", ["tests/t.sh"] = "exit 0\n" };
 }

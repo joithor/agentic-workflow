@@ -46,11 +46,18 @@ public sealed class InMemoryRunLedger : IRunLedger
             ? new StoredRun(path, Hash(path, entry.Version), entry.Record)
             : BugFixErrors.EvidenceRefused.With($"cannot read evidence: {path}");
 
+    /// <summary>Gets the slots reserved and released, by record path.</summary>
+    public ISet<string> Released { get; } = new HashSet<string>(StringComparer.Ordinal);
+
     /// <inheritdoc/>
-    public string WriteJudgeInput(string directory, CandidateId candidate, ResolutionCheckInput input)
+    public void Release(RunSlot slot) => _ = Released.Add(slot.Record);
+
+    /// <inheritdoc/>
+    public JudgeQuestion WriteJudgeInput(string directory, CandidateId candidate, ResolutionCheckInput input)
     {
         JudgeInputs[candidate] = input;
-        return Hash($"judge-{candidate.Value}", 1);
+        var file = $"{directory.TrimEnd('/')}/judge-{candidate.Value}.json";
+        return new JudgeQuestion(input, file, Hash(file, input.GetHashCode()));
     }
 
     private static string Hash(string path, int version) =>

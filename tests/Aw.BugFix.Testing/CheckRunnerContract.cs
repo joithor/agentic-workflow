@@ -1,3 +1,4 @@
+using Aw.BugFix.Core.Model;
 using Aw.BugFix.Core.Ports;
 using Xunit;
 
@@ -16,12 +17,12 @@ public abstract class CheckRunnerContract
     [Fact]
     public void The_exit_code_is_the_commands()
     {
-        Expect.Equal(0, Runner.Run(["true"], Directory, $"{Directory}/true.log"), "Equal(0, Runner.Run(['true'], Directory, $'{Directory}/true.log'))");
-        Expect.That(!Equals(0, Runner.Run(["false"], Directory, $"{Directory}/false.log")), "NotEqual(0, Runner.Run(['false'], Directory, $'{Directory}/false.log'))");
+        Expect.Equal(new CheckExit(0, Ran: true), Runner.Run(["true"], Directory, $"{Directory}/true.log"), "Equal(0, Runner.Run(['true'], Directory, $'{Directory}/true.log'))");
+        Expect.That(Runner.Run(["false"], Directory, $"{Directory}/false.log") is { Ran: true, Code: not 0 }, "NotEqual(0, Runner.Run(['false'], Directory, $'{Directory}/false.log'))");
     }
 
     /// <summary>A command that can't start fails; it never passes.</summary>
     [Fact]
     public void A_command_that_cannot_start_fails() =>
-        Expect.That(!Equals(0, Runner.Run(["no-such-program-aw-bugfix"], Directory, $"{Directory}/missing.log")), "NotEqual(0, Runner.Run(['no-such-program-aw-bugfix'], Directory, $'{Directory}/missing.log'))");
+        Expect.That(Runner.Run(["no-such-program-aw-bugfix"], Directory, $"{Directory}/missing.log") is { Ran: false, Outcome: RunOutcome.Broken }, "NotEqual(0, Runner.Run(['no-such-program-aw-bugfix'], Directory, $'{Directory}/missing.log'))");
 }

@@ -5,7 +5,10 @@ using Aw.Kernel;
 
 namespace Aw.BugFix.Testing;
 
-/// <summary>The fake for <see cref="IJudge"/>: answers from a queue (resolved by default) and keeps every input it was asked.</summary>
+/// <summary>
+/// The fake for <see cref="IJudge"/>: answers from a queue (resolved by default) about the input it was asked, and keeps
+/// every question. An answer queued with an empty input hash names the question's hash, as judge does.
+/// </summary>
 public sealed class ScriptedJudge : IJudge
 {
     private readonly Queue<Result<JudgeAnswer>> _answers = new();
@@ -23,10 +26,11 @@ public sealed class ScriptedJudge : IJudge
     }
 
     /// <inheritdoc/>
-    public Result<JudgeAnswer> ResolutionCheck(ResolutionCheckInput input)
+    public Result<JudgeAnswer> ResolutionCheck(JudgeQuestion question)
     {
-        Asked.Add(input);
-        return _answers.Count > 0 ? _answers.Dequeue() : A.Verdict(JudgeDecision.Resolved);
+        Asked.Add(question.Input);
+        var answer = _answers.Count > 0 ? _answers.Dequeue() : A.Verdict(JudgeDecision.Resolved);
+        return answer.Map(a => a.InputSha256.Length == 0 ? a with { InputSha256 = question.InputSha256 } : a);
     }
 
     /// <summary>The error the port returns when judge gives no usable verdict.</summary>

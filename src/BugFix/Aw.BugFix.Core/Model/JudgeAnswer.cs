@@ -7,4 +7,5 @@ namespace Aw.BugFix.Core.Model;
 /// <param name="DecisionId">The stored decision's id; required for every decision but an escalation.</param>
 /// <param name="ReasonCode">judge's reason code.</param>
 /// <param name="Reasons">judge's reasons, for the implementer brief on a retry.</param>
-public sealed record JudgeAnswer(JudgeDecision Decision, JudgeDecisionId? DecisionId, string ReasonCode, IReadOnlyList<string> Reasons);
+/// <param name="InputSha256">The SHA-256 of the input judge decided on; the helper refuses an answer about any other input.</param>
+public sealed record JudgeAnswer(JudgeDecision Decision, JudgeDecisionId? DecisionId, string ReasonCode, IReadOnlyList<string> Reasons, string InputSha256);

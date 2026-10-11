@@ -36,6 +36,20 @@ public abstract class StateStoreContract
         Expect.That(Store.StateFile(Directory).EndsWith("state.json", StringComparison.Ordinal), "EndsWith('state.json', Store.StateFile(Directory), StringComparison.Ordinal)");
     }
 
+    /// <summary>The lock is exclusive until released: a second taker gets AW-BUGFIX-021, then succeeds after release.</summary>
+    [Fact]
+    public void The_lock_is_exclusive_until_released()
+    {
+        var first = Store.Lock(Directory);
+        Expect.That(first.IsSuccess, "the first taker gets the lock");
+
+        Expect.Equal(BugFixErrors.StateBusy.Code, Store.Lock(Directory).Match(static l => { l.Dispose(); return "taken"; }, static e => e.Code), "a second taker is refused while it is held");
+        first.Value.Dispose();
+        var again = Store.Lock(Directory);
+        Expect.That(again.IsSuccess, "after release it can be taken again");
+        again.Value.Dispose();
+    }
+
     /// <summary>A state file that isn't a BugFix state is AW-BUGFIX-003.</summary>
     [Fact]
     public void An_unreadable_state_is_AW_BUGFIX_003()

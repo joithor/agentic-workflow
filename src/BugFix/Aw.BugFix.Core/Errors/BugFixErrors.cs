@@ -68,11 +68,17 @@ public static class BugFixErrors
     /// <summary>AW-BUGFIX-020: a working tree has uncommitted or untracked changes.</summary>
     public static readonly ErrorDefinition DirtyTree = new("AW-BUGFIX-020", ErrorKind.Conflict, "Working tree not clean");
 
+    /// <summary>AW-BUGFIX-021: another bugfix-state call holds the state directory.</summary>
+    public static readonly ErrorDefinition StateBusy = new("AW-BUGFIX-021", ErrorKind.Conflict, "State busy");
+
+    /// <summary>AW-BUGFIX-022: a file under the state directory or a log can't be written or read.</summary>
+    public static readonly ErrorDefinition StorageFailed = new("AW-BUGFIX-022", ErrorKind.Unavailable, "Storage failed");
+
     /// <summary>Every BugFix error, for ErrorCatalogue.Validate.</summary>
     public static IReadOnlyList<ErrorDefinition> All { get; } =
     [
         Invalid, StateMissing, StateCorrupt, FileUnreadable, WrongPhase, HandoffRefused, NotReproduced, CheckNotFrozen,
         EvidenceRefused, AttemptRefused, CandidateRefused, CommandRefused, UnknownCandidate, RunRefused, JudgeRefused,
-        JudgeUnavailable, UiEvidenceUnavailable, GitFailed, ReportRefused, DirtyTree,
+        JudgeUnavailable, UiEvidenceUnavailable, GitFailed, ReportRefused, DirtyTree, StateBusy, StorageFailed,
     ];
 }

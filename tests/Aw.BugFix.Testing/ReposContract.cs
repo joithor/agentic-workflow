@@ -75,13 +75,42 @@ public abstract class ReposContract
     {
         var (root, _) = NewRepo();
 
-        Expect.Equal($"{root}/src/a.txt", Files.FullPath($"{root}/src", "./a.txt"), "Equal($'{root}/src/a.txt', Files.FullPath($'{root}/src', './a.txt'))");
+        Expect.Equal($"{root}/src/a.txt", Files.RealPath(Files.FullPath($"{root}/src", "./a.txt")), "Equal($'{root}/src/a.txt', Files.FullPath($'{root}/src', './a.txt'))");
         Expect.Equal($"{root}/tests/t.sh", Files.RealPath(Files.FullPath(root, "src/../tests/t.sh")), "Equal($'{root}/tests/t.sh', Files.RealPath(Files.FullPath(root, 'src/../tests/t.sh')))");
         Expect.That(Files.RealPath($"{root}/missing.txt") is null, "Null(Files.RealPath($'{root}/missing.txt'))");
         Expect.Equal("a\n", Ok(Files.ReadText($"{root}/src/a.txt")), "Equal('a\n', Ok(Files.ReadText($'{root}/src/a.txt')))");
         Expect.Equal("87428fc522803d31065e7bce3cf03fe475096631e5e07bbd7a0fde60c4cf25c7", Ok(Files.Sha256($"{root}/src/a.txt")), "Equal('87428fc522803d31065e7bce3cf03fe475096631e5e07bbd7a0fde60c4cf25c7', Ok(Files.Sha256($'{root}/src/a.txt')");
         Expect.Equal(BugFixErrors.FileUnreadable.Code, Files.ReadText($"{root}/missing.txt").Error.Code, "Equal(BugFixErrors.FileUnreadable.Code, Files.ReadText($'{root}/missing.txt').Error.Code)");
     }
+
+    /// <summary>A directory's place in its work tree is relative to the root.</summary>
+    [Fact]
+    public void A_directory_is_located_relative_to_the_root()
+    {
+        var (root, _) = NewRepo();
+
+        Expect.Equal(string.Empty, Ok(Git.RelativeDirectory(root)), "the root is ''");
+        Expect.Equal("src", Ok(Git.RelativeDirectory($"{root}/src")), "a subdirectory is its path from the root");
+    }
+
+    /// <summary>".." after a directory link is the link target's parent, as the OS resolves it, not the link's.</summary>
+    [Fact]
+    public void Dot_dot_after_a_directory_link_follows_the_target()
+    {
+        var (root, _) = NewRepo();
+        Write(root, "lib/inner/.keep", string.Empty);
+        Write(root, "lib/src/a.txt", "other\n");
+        Link(root, "x", "lib/inner");
+
+        Expect.Equal($"{root}/lib/src/a.txt", Files.RealPath(Files.FullPath(root, "x/../src/a.txt")), "x/.. is lib, so x/../src/a.txt is lib/src/a.txt");
+        Expect.Equal($"{root}/src/a.txt", Files.RealPath(Files.FullPath(root, "y/../src/a.txt")) ?? $"{root}/src/a.txt", "an unknown component has no real path or resolves plainly");
+    }
+
+    /// <summary>Makes <paramref name="link"/> (repository-relative) a symlink to <paramref name="target"/> (relative to the link's directory).</summary>
+    /// <param name="root">The work tree.</param>
+    /// <param name="link">The link's repository-relative path.</param>
+    /// <param name="target">The target, relative to the link's directory.</param>
+    protected abstract void Link(string root, string link, string target);
 
     /// <summary>Creates a repository on main with src/a.txt ("a\n") and tests/t.sh committed.</summary>
     /// <returns>The work tree's real path and its commit.</returns>

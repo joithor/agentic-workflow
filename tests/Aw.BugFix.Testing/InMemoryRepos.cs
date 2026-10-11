@@ -66,21 +66,24 @@ public sealed class InMemoryRepos : IGit, IFiles
     /// <param name="text">The content.</param>
     public void Write(string path, string text) => _files[path] = text;
 
-    /// <summary>Makes <paramref name="link"/> resolve to <paramref name="target"/>, like a symlink.</summary>
+    /// <summary>Makes <paramref name="link"/> (a file or a directory) resolve to <paramref name="target"/>, like a symlink.</summary>
     /// <param name="link">The link's full path.</param>
-    /// <param name="target">The target's full path.</param>
+    /// <param name="target">The target: a full path, or one relative to the link's directory.</param>
     public void Link(string link, string target) => _links[link] = target;
 
     /// <inheritdoc/>
-    public string FullPath(string directory, string path) =>
-        path.StartsWith('/') ? Normalize(path) : Normalize($"{directory.TrimEnd('/')}/{path}");
+    public string FullPath(string directory, string path) => path.StartsWith('/') ? path : $"{directory.TrimEnd('/')}/{path}";
 
     /// <inheritdoc/>
     public string? RealPath(string path)
     {
-        var real = _links.GetValueOrDefault(path, path);
-        return _files.ContainsKey(real) ? real : null;
+        var real = path.StartsWith('/') ? Resolve(path, 40) : null;
+        return real is not null && _files.ContainsKey(real) ? real : null;
     }
+
+    /// <inheritdoc/>
+    public Result<string> RelativeDirectory(string directory) =>
+        Tree(directory).Map(t => directory.Length > t.Root.Length ? directory[(t.Root.Length + 1)..].TrimEnd('/') : string.Empty);
 
     /// <inheritdoc/>
     public Result<string> ReadText(string path) =>
@@ -144,22 +147,33 @@ public sealed class InMemoryRepos : IGit, IFiles
             string.Create(CultureInfo.InvariantCulture, $" {files.Count} files changed"),
             string.Concat(files.Select(f => $"diff --git a/{f} b/{f}\n+{_commits[to].Files.GetValueOrDefault(f, string.Empty)}\n"))));
 
-    private static string Normalize(string path)
+    // Like realpath(3): each link resolved before the next component, ".." applied to the resolved directory.
+    private string? Resolve(string path, int budget)
     {
-        var parts = new List<string>();
+        var current = string.Empty;
         foreach (var part in path.Split('/', StringSplitOptions.RemoveEmptyEntries))
         {
             if (part == "..")
             {
-                parts.RemoveAt(parts.Count - 1);
+                current = current.Length == 0 ? current : current[..current.LastIndexOf('/')];
             }
             else if (part != ".")
             {
-                parts.Add(part);
+                current = $"{current}/{part}";
+                if (_links.TryGetValue(current, out var target))
+                {
+                    var resolved = budget == 0 ? null : Resolve(target.StartsWith('/') ? target : $"{current[..current.LastIndexOf('/')]}/{target}", budget - 1);
+                    if (resolved is null)
+                    {
+                        return null;
+                    }
+
+                    current = resolved;
+                }
             }
         }
 
-        return "/" + string.Join('/', parts);
+        return current.Length == 0 ? "/" : current;
     }
 
     private static bool Same(IReadOnlyDictionary<string, string> a, IReadOnlyDictionary<string, string> b) =>

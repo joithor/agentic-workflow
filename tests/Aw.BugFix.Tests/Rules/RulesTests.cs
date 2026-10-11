@@ -42,8 +42,9 @@ public sealed class RulesTests
     [InlineData("src/Contest.cs", "t/bug.sh", false)]
     [InlineData("SRC/JEST.CONFIG.JS", "t/bug.sh", true)]
     [InlineData("web/tsconfig.app.json", "t/bug.sh", true)]
+    [InlineData("scripts/run.sh", "t/bug.sh", true)]
     public void Protected_paths_cover_the_check_its_directory_tests_and_their_config(string file, string check, bool touched) =>
-        Assert.Equal(touched, ProtectedPaths.Touched([file], check).Count == 1);
+        Assert.Equal(touched, ProtectedPaths.Touched([file], check, ["scripts/run.sh"]).Count == 1);
 
     [Theory, Trait("Lane", "unit")]
     [InlineData("bash t.sh", null)]
@@ -53,6 +54,15 @@ public sealed class RulesTests
     [InlineData("python3.12 -c 1 t.py", "inline code")]
     [InlineData("/bin/cat t.sh", "not `cat`")]
     [InlineData("[ -f t.sh ]", "not `[`")]
+    [InlineData("env sh t.sh", "not `env`")]
+    [InlineData("timeout 60 bash t.sh", "not `timeout`")]
+    [InlineData("node -p 1 t.js", "inline code (`node -p`)")]
+    [InlineData("node --print 1 t.js", "inline code")]
+    [InlineData("perl -E 1 t.pl", "inline code (`perl -E`)")]
+    [InlineData("php -r 1 t.php", "inline code (`php -r`)")]
+    [InlineData("deno eval 1 t.ts", "inline code (`deno eval`)")]
+    [InlineData("npx -c true t.test.ts", "inline code (`npx -c`)")]
+    [InlineData("npx jest t.test.ts", null)]
     public void The_check_command_rule_refuses_non_runners_and_inline_code(string command, string? reason)
     {
         var refusal = CheckCommandRule.Refusal(command.Split(' '));
@@ -74,4 +84,16 @@ public sealed class RulesTests
     [InlineData(new RunOutcome[0], RunOutcome.Broken)]
     public void A_ui_run_fails_on_any_failed_step_and_is_broken_on_broken_steps_alone(RunOutcome[] steps, RunOutcome expected) =>
         Assert.Equal(expected, new UiRun(steps, "sha", 0).Outcome);
+
+    [Fact, Trait("Lane", "unit")]
+    public void A_frozen_test_check_accepts_only_the_same_command_in_the_same_directory()
+    {
+        var check = new FrozenCheck(CheckKind.Test, "tests/bug.sh", "sha", ["bash", "tests/bug.sh"], Directory: string.Empty, CommandFiles: []);
+        var run = new RunRecord(CheckKind.Test, RunOutcome.Passed, "c", Directory: string.Empty, "sha", ["bash", "tests/bug.sh"], 0, "/log");
+
+        _ = World.Ok(check.Accepts(run));
+        _ = World.Refused(check.Accepts(run with { Directory = "lib" }), BugFixErrors.RunRefused);
+        _ = World.Refused(check.Accepts(run with { Command = ["bash", "./tests/bug.sh"] }), BugFixErrors.RunRefused);
+        _ = World.Refused(check.Accepts(run with { Outcome = RunOutcome.Broken }), BugFixErrors.RunRefused);
+    }
 }

@@ -26,6 +26,11 @@ public interface IGit
     /// <returns>The root.</returns>
     public Result<string> Root(string directory);
 
+    /// <summary>Where <paramref name="directory"/> is inside its work tree, relative to the root, with '/' ("" for the root).</summary>
+    /// <param name="directory">A directory inside a work tree.</param>
+    /// <returns>The relative directory.</returns>
+    public Result<string> RelativeDirectory(string directory);
+
     /// <summary>Whether <paramref name="file"/> (a real path inside the repository) is committed at HEAD with no working change.</summary>
     /// <param name="root">The repository root.</param>
     /// <param name="file">The repository-relative path, with '/'.</param>

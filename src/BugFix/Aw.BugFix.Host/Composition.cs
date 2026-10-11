@@ -13,7 +13,7 @@ internal static class Composition
     internal static IServiceCollection Compose(IServiceCollection services, Func<string, string?> environment, TimeProvider clock)
         => services
             .AddSingleton(clock)
-            .AddSingleton(AwJson.CreateOptions(BugFixJsonContext.Default))   // for the adapters that persist JSON
+            .AddSingleton(AwJson.CreateOptions(BugFixJsonContext.Default))   // the one AwJson profile: state and run files, the ticket, CLI output
             .AddKernelTelemetry(TelemetryOptions.FromEnvironment("bugfix-state", environment, clock))   // JSON lines on stderr (AW_LOG_LEVEL); exports off
             .AddBugFixCore()
             .AddBugFixFeatures()

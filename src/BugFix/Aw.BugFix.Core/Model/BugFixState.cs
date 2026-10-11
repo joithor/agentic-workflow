@@ -79,6 +79,15 @@ public sealed record BugFixState(
             ? found
             : BugFixErrors.UnknownCandidate.With($"unknown candidate: {id.Value}");
 
+    /// <summary>Gets the frozen check and baseline; only valid from phase reproduce on, which every caller requires first.</summary>
+    public (FrozenCheck Check, Baseline Baseline) Frozen =>
+        (Check!, Baseline!); // why: advance reproduce sets both together, and every phase after it (fix, evaluate) is checked by the caller before this is read.
+
+    /// <summary>The state with one more registered run record.</summary>
+    /// <param name="run">The run record's path and hash.</param>
+    /// <returns>The new state.</returns>
+    public BugFixState Register(RegisteredRun run) => this with { Runs = [.. Runs, run] };
+
     /// <summary>The state with <paramref name="candidate"/> replacing the candidate of the same id.</summary>
     /// <param name="candidate">The updated candidate.</param>
     /// <returns>The new state.</returns>

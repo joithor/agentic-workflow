@@ -11,17 +11,22 @@ internal sealed class RecordRunService(IStateStore store, IRunLedger ledger, IGi
     : IService<RecordRunRequest, RecordRunResponse>
 {
     public ValueTask<Result<RecordRunResponse>> Handle(RecordRunRequest request, CancellationToken cancellationToken) =>
-        ValueTask.FromResult(store.Load(request.StateDirectory).Bind(state => Record(request, state)));
+        ValueTask.FromResult(store.Locked(request.StateDirectory, () => store.Load(request.StateDirectory).Bind(state => Record(request, state))));
 
     private Result<RecordRunResponse> Record(RecordRunRequest request, BugFixState state)
     {
         var candidate = state.Require(Phase.Fix, Phase.Evaluate).Bind(_ => state.Find(request.Candidate)).Bind(Unrun);
-        var run = candidate
-            .Bind(_ => ledger.Read(request.Evidence))
+        if (candidate.IsError)
+        {
+            return candidate.Error;
+        }
+
+        var check = state.Frozen.Check;
+        var run = ledger.Read(request.Evidence)
             .Bind(stored => EvidenceRule.Accept(state, stored))
-            .Bind(record => SameCheck(state.Check!, record)) // why: phase fix or evaluate comes after advance reproduce froze the check.
+            .Bind(check.Accepts)
             .Bind(record => Against(candidate.Value, record))
-            .Bind(record => Frozen(state.Check!, candidate.Value, record)); // why: as above.
+            .Bind(record => Frozen(check, candidate.Value, record));
         if (run.IsError)
         {
             return run.Error;
@@ -30,28 +35,11 @@ internal sealed class RecordRunService(IStateStore store, IRunLedger ledger, IGi
         var passed = run.Value.Outcome == RunOutcome.Passed;
         var recorded = candidate.Value with { Run = new CandidateRun(request.Evidence, passed, clock.GetUtcNow()) };
         store.Save(request.StateDirectory, state.With(recorded).Step(Phase.Evaluate, $"record-run {recorded.Id.Value}", clock.GetUtcNow(), request.Evidence));
-        return new RecordRunResponse(recorded.Id, passed, passed ? $"judge {recorded.Id.Value}" : "start-attempt with the failure reasons");
+        return new RecordRunResponse(recorded.Id, passed, passed ? $"judge {recorded.Id.Value}" : NextStep.For(state.With(recorded) with { Phase = Phase.Evaluate }));
     }
 
     private static Result<Candidate> Unrun(Candidate candidate) =>
         candidate.Run is null ? candidate : BugFixErrors.RunRefused.With($"a run is already recorded for {candidate.Id.Value}");
-
-    private static Result<RunRecord> SameCheck(FrozenCheck check, RunRecord record)
-    {
-        if (record.Kind != check.Kind)
-        {
-            return BugFixErrors.RunRefused.With($"the baseline check was a {Kind(check.Kind)}, this evidence is a {Kind(record.Kind)}");
-        }
-
-        if (record.Outcome == RunOutcome.Broken)
-        {
-            return BugFixErrors.RunRefused.With("the run has broken steps and no failed step; repair the selector and re-run, a broken run is not a verdict on the fix");
-        }
-
-        return record.Kind == CheckKind.Test && !(record.Command ?? []).SequenceEqual(check.Command ?? [], StringComparer.Ordinal)
-            ? BugFixErrors.RunRefused.With($"the test command `{string.Join(' ', record.Command ?? [])}` differs from the baseline's `{string.Join(' ', check.Command ?? [])}`")
-            : record;
-    }
 
     private Result<RunRecord> Against(Candidate candidate, RunRecord record)
     {
@@ -66,21 +54,20 @@ internal sealed class RecordRunService(IStateStore store, IRunLedger ledger, IGi
             return head.IsError ? head.Error : BugFixErrors.RunRefused.With($"{candidate.Id.Value}'s branch moved to {head.Value} after record-candidate; record a new candidate");
         }
 
-        return git.IsClean(candidate.Worktree).Bind<RunRecord>(clean => clean
-            ? record
-            : BugFixErrors.DirtyTree.With($"{candidate.Worktree} has uncommitted or untracked changes"));
+        return TreeRule.Clean(git, candidate.Worktree, "the candidate's worktree must stay as recorded").Map(_ => record);
     }
 
     // The frozen-check rule: a fix must not weaken the check, neither the file nor what the run executed.
     private Result<RunRecord> Frozen(FrozenCheck check, Candidate candidate, RunRecord record)
     {
-        var current = git.Root(candidate.Worktree)
-            .Bind(root => files.Sha256(files.FullPath(root, check.Path)))
-            .Match(sha => sha, _ => string.Empty);
-        return current == check.Sha256 && record.CheckSha256 == check.Sha256
+        var current = git.Root(candidate.Worktree).Bind(root => files.Sha256(files.FullPath(root, check.Path)));
+        if (current.IsError && current.Error.Code != BugFixErrors.FileUnreadable.Code)
+        {
+            return current.Error;
+        }
+
+        return current.IsSuccess && current.Value == check.Sha256 && record.CheckSha256 == check.Sha256
             ? record
             : BugFixErrors.CheckNotFrozen.With($"the check file {check.Path} changed since the baseline");
     }
-
-    private static string Kind(CheckKind kind) => kind == CheckKind.Test ? "test" : "ui-evidence script";
 }

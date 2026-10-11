@@ -1,4 +1,3 @@
-using Aw.BugFix.Core.Errors;
 using Aw.BugFix.Core.Model;
 using Aw.BugFix.Core.Ports;
 using Aw.BugFix.Core.Rules;
@@ -11,14 +10,15 @@ internal sealed class AdvanceInvestigateService(IStateStore store, IFiles files,
     : IService<AdvanceInvestigateRequest, AdvanceInvestigateResponse>
 {
     public ValueTask<Result<AdvanceInvestigateResponse>> Handle(AdvanceInvestigateRequest request, CancellationToken cancellationToken) =>
-        ValueTask.FromResult(store.Load(request.StateDirectory).Bind(state => Advance(request, state)));
+        ValueTask.FromResult(store.Locked(request.StateDirectory, () => store.Load(request.StateDirectory).Bind(state => Advance(request, state))));
 
+    // From here on the helper uses its own snapshot of the handoff; editing the file changes nothing.
     private Result<AdvanceInvestigateResponse> Advance(AdvanceInvestigateRequest request, BugFixState state)
     {
         var handoff = state.Require(Phase.Intake)
             .Bind(_ => files.ReadText(request.Handoff))
             .Bind(HandoffParser.Parse)
-            .Bind(Supports);
+            .Bind(static h => h.SupportsFix());
         if (handoff.IsError)
         {
             return handoff.Error;
@@ -29,21 +29,5 @@ internal sealed class AdvanceInvestigateService(IStateStore store, IFiles files,
             request.StateDirectory,
             (state with { Investigation = investigation }).Step(Phase.Investigate, "advance investigate", clock.GetUtcNow(), request.Handoff));
         return new AdvanceInvestigateResponse(Phase.Investigate, handoff.Value.Hypotheses.Count);
-    }
-
-    // Never fix an unconfirmed cause.
-    private static Result<Handoff> Supports(Handoff handoff)
-    {
-        if (handoff.Status != "diagnosed")
-        {
-            return BugFixErrors.HandoffRefused.With($"handoff status is \"{handoff.Status}\", expected \"diagnosed\" (run /rootCause --investigate-only)");
-        }
-
-        if (!handoff.Hypotheses.Any(static h => h.Result == HypothesisResult.Confirmed))
-        {
-            return BugFixErrors.HandoffRefused.With("no hypothesis is confirmed; ask the user before fixing an unconfirmed cause");
-        }
-
-        return handoff.RootCause.Length == 0 ? BugFixErrors.HandoffRefused.With("the handoff has no ## Root Cause text") : handoff;
     }
 }

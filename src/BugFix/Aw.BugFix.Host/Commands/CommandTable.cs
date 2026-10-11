@@ -1,4 +1,6 @@
 using System.Text.Json;
+using Aw.BugFix.Core.Errors;
+using Aw.Kernel;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Aw.BugFix.Host.Commands;
@@ -43,7 +45,15 @@ internal static class CommandTable
         var scope = provider.CreateAsyncScope();
         await using (scope.ConfigureAwait(false))
         {
-            return await command.Run(line, scope.ServiceProvider, json).ConfigureAwait(false);
+            try
+            {
+                return await command.Run(line, scope.ServiceProvider, json).ConfigureAwait(false);
+            }
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+            {
+                // A state directory, log or run file that can't be written or read: one line with its code, never a stack trace.
+                return CommandOutput.Write(Results.Failure<int>(BugFixErrors.StorageFailed.With(ex.Message)), json);
+            }
         }
     }
 }
