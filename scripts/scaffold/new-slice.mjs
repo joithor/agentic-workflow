@@ -20,7 +20,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { Journal, ScaffoldError, UsageError, trapSignals, camel, kebab, list, parseArgs, withHeavyLock } from "./lib/common.mjs";
-import { byNamespace, usingsBlock } from "./lib/package-templates.mjs";
+import { builderRoot, byNamespace, usingsBlock } from "./lib/package-templates.mjs";
 import { nodeOf, packageShape, readDeps } from "./lib/repo.mjs";
 import * as T from "./lib/slice-templates.mjs";
 import { build, declarePublicApi, expectOnlyRed, formatClean, noStrayChanges, strayChanges } from "./lib/checks.mjs";
@@ -234,6 +234,8 @@ export function writeSlice(journal, s, { sliceOnly = false } = {}) {
 
   journal.create(`${d.tests}/${s.slice}/${s.slice}Tests.cs`, T.redTest(s));
   journal.create(`${d.testing}/${s.slice}RequestBuilder.cs`, T.requestBuilder(s));
+  // A package may have dropped an empty builder root (Sindri's S1 did): write it again rather than fail on it.
+  if (!journal.exists(`${d.testing}/A.cs`)) journal.create(`${d.testing}/A.cs`, builderRoot({ name: s.pkg, shape: s.shape }));
   journal.insert(`${d.testing}/A.cs`, /\{\n\}\n?$|\n\}\n?$/, (end) => (end.startsWith("{") ? `{\n${T.builderFactory(s)}}\n` : `\n\n${T.builderFactory(s)}}\n`), "NS-EDIT", "the builder factory (before A's closing brace)");
 }
 
