@@ -65,7 +65,7 @@ agentic-workflow/
 ├── scripts/       # Utility scripts (sync-rules.sh, check-deps.mjs, serena-docker, probe.sh, install-scorer.sh)
 ├── schemas/       # JSON Schemas for repo config (deps.schema.json, rule-record.schema.json)
 ├── rules/         # Rule records (factory addendum §17.6): rules/engineering/csharp/*.yaml, one per §4b rule
-├── deps.yaml      # Declared package graph: tiers and every project/cli/db/file edge (spec §4b.1a)
+├── deps.yaml      # Declared package graph: tiers and every project/compose/cli/db/file edge (spec §4b.1a)
 └── setup.sh       # One-command setup for every installed provider
 ```
 
@@ -113,7 +113,7 @@ scripts/sync-rules.sh                   # Link .claude/rules, .cursor/rules, CLA
 scripts/sync-rules.sh --check           # Exit 1 if links or the Rules Index are out of date
 
 # Dependency graph (deps.yaml + schemas/deps.schema.json)
-node scripts/check-deps.mjs             # Schema, tiers, cycles, fan-out, undeclared cli/db/file edges; exit 1 on drift
+node scripts/check-deps.mjs             # Schema, tiers, cycles, fan-out, compose (DEPS-COMPOSE-001), undeclared cli/db/file edges; exit 1 on drift
 node scripts/check-deps.mjs --mermaid [--base-file F]   # Also print the Mermaid graph and the edge list (added/removed vs F)
 
 # Rule records (rules/engineering/csharp/*.yaml + schemas/rule-record.schema.json; docs/csharp/rule-records.md)
