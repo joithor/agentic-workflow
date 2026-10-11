@@ -48,7 +48,9 @@ One scheme for every command:
 | 75 | A machine lock stayed busy past `--lock-timeout` | AW-EVIDENCE-009 |
 | 130 | Interrupted (SIGINT, SIGTERM, SIGHUP, SIGQUIT): a browser call in flight is abandoned at once and the locks are released on the way out. A second signal terminates the process without waiting (a lock it held is then left for a person to remove) | `ui-evidence: interrupted` |
 
-The mapping is by error kind: `timeout` → 75, `unavailable` → 4, anything else → 1.
+The mapping is by error kind: `timeout` → 75, `unavailable` → 4, anything else → 1. An unexpected exception (a bug,
+or a failure outside a result) is `ui-evidence: AW-EVIDENCE-015 the run failed unexpectedly: <first line>` and exit 4,
+never the runtime's crash exit.
 
 ### stdout and stderr
 

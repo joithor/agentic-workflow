@@ -1,5 +1,6 @@
 using System.Runtime.InteropServices;
 using System.Text.Json;
+using Aw.Evidence.Core;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Aw.Evidence.Host.Commands;
@@ -41,6 +42,11 @@ internal static class CommandTable
                 CommandOutput.Message("interrupted");
                 return CommandOutput.Interrupted;
             }
+            catch (Exception ex) when (ex is not OperationCanceledException)
+            {
+                // A bug or a failure outside a Result: still one line and a documented exit (the locks are already released).
+                return CommandOutput.Error(EvidenceErrors.RunFailed.With($"the run failed unexpectedly: {FirstLine(ex.Message)}"));
+            }
         }
     }
 
@@ -69,5 +75,11 @@ internal static class CommandTable
 
         context.Cancel = true;   // the first: let the command unwind and release its locks
         cancel.Cancel();
+    }
+
+    private static string FirstLine(string message)
+    {
+        var end = message.IndexOf('\n', StringComparison.Ordinal);
+        return (end < 0 ? message : message[..end]).Trim();
     }
 }
