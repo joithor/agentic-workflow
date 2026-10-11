@@ -135,8 +135,8 @@ property). A compile-time version (converter presence) is a candidate `Aw.Analyz
 ## Public ids and PublicAPI files
 
 With the defaults above, a public string id adds 17 lines to the project's public API (`raw/publicapi-probe-trimmed.txt`;
-25 before the trim). `dotnet format analyzers --diagnostics RS0016` adds only the type itself: its code fix skips
-generated code. Record the rest from the build:
+25 before the trim). Record them from the build: the `RS0016` code fix (`dotnet format analyzers --diagnostics RS0016`)
+skips generated code, and on .NET 10 it adds nothing at all. `/new-package` and `/new-slice` do this step themselves:
 
 ```bash
 dotnet build src/<Pkg>/Aw.<Pkg>.Core 2>&1 \

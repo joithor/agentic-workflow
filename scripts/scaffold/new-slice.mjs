@@ -19,7 +19,7 @@ import { Journal, ScaffoldError, UsageError, trapSignals, camel, kebab, list, pa
 import { byNamespace, usingsBlock } from "./lib/package-templates.mjs";
 import { nodeOf, packageShape, readDeps } from "./lib/repo.mjs";
 import * as T from "./lib/slice-templates.mjs";
-import { build, expectOnlyRed, formatClean, generatedPublicApi, noStrayChanges, publicApiFix, strayChanges } from "./lib/checks.mjs";
+import { build, declarePublicApi, expectOnlyRed, formatClean, noStrayChanges, strayChanges } from "./lib/checks.mjs";
 
 const PRIMS = ["string", "Guid", "int"];
 const METHODS = ["GET", "POST", "PUT", "PATCH", "DELETE"];
@@ -97,7 +97,14 @@ export function resolveSlice(journal, input) {
   for (const port of ports) if (!/^I[A-Z][A-Za-z0-9]{2,40}$/.test(port)) throw new ScaffoldError("NS-PORTS", `'${port}' is not an interface name`, "pass e.g. --ports IItemStore");
   if (dupe(ports)) throw new ScaffoldError("NS-PORTS", `${dupe(ports)} is listed twice`, "list each port once");
   if (ports.length + 1 > 5) throw new ScaffoldError("NS-DEPS", `${ports.length + 1} constructor dependencies (ports + TimeProvider); the limit is 5`, "split the use case");
-  const newPorts = ports.filter((port) => !journal.exists(`${coreDir}/${port}.cs`));
+  // An existing port may sit anywhere in Core (new ones go in Core/Ports/); it is reused with its fake as they are.
+  const coreFiles = journal.exists(coreDir) ? fs.readdirSync(journal.abs(coreDir), { recursive: true }).filter((f) => !/^(bin|obj)[\\/]/.test(f)) : [];
+  const newPorts = ports.filter((port) => !coreFiles.some((f) => path.basename(f) === `${port}.cs`));
+  for (const port of newPorts) {
+    for (const rel of [`tests/Aw.${pkg}.Testing/InMemory${port.slice(1)}.cs`, `tests/Aw.${pkg}.Testing/${port.slice(1)}Contract.cs`]) {
+      if (journal.exists(rel)) throw new ScaffoldError("NS-PORTS", `${port} is not in ${coreDir}, but ${rel} exists`, `add ${port} to ${coreDir}/Ports/ by hand (the generator then reuses it), or rename the stray file`);
+    }
+  }
 
   return {
     pkg,
@@ -171,7 +178,7 @@ export function writeSlice(journal, s) {
     else journal.create(ctx, T.idsJsonContext(s, [`${id.name}Holder`]));
   }
   for (const port of s.newPorts) {
-    journal.create(`${d.core}/${port}.cs`, T.port(s, port));
+    journal.create(`${d.core}/Ports/${port}.cs`, T.port(s, port));
     journal.create(`${d.testing}/InMemory${port.slice(1)}.cs`, T.fake(s, port));
     journal.create(`${d.testing}/${port.slice(1)}Contract.cs`, T.contract(s, port));
   }
@@ -205,19 +212,10 @@ export function writeSlice(journal, s) {
   journal.insert(`${d.testing}/A.cs`, /\{\n\}\n?$|\n\}\n?$/, (end) => (end.startsWith("{") ? `{\n${T.builderFactory(s)}}\n` : `\n\n${T.builderFactory(s)}}\n`), "NS-EDIT", "the builder factory (before A's closing brace)");
 }
 
-/** The public API steps (before the build): the RS0016 code fix, then Vogen's generated members from the build. */
-export async function sliceApi(journal, s, log) {
-  const root = journal.root;
-  // dotnet format rewrites the PublicAPI files outside the journal: record them first, so a revert restores them.
-  journal.watch(`${s.dirs.core}/PublicAPI.Unshipped.txt`);
-  if (s.dirs.featuresProject) journal.watch(`src/${s.pkg}/Aw.${s.pkg}.Features/PublicAPI.Unshipped.txt`);
-  if (s.ids.some((i) => i.isNew) || s.newPorts.length > 0) {
-    const api = `${s.dirs.core}/PublicAPI.Unshipped.txt`;
-    await publicApiFix(root, s.dirs.coreProject, log);
-    const generated = await generatedPublicApi(root, s.dirs.coreProject, log);
-    if (generated.length) journal.edit(api, (text) => `${text.replace(/\n*$/, "\n")}${generated.join("\n")}\n`);
-  }
-  if (s.dirs.featuresProject) await publicApiFix(root, s.dirs.featuresProject, log);
+/** The public API step (before the build): Core first when it gained an id or a port, then Features' records. */
+async function sliceApi(journal, s, log) {
+  if (s.ids.some((i) => i.isNew) || s.newPorts.length > 0) await declarePublicApi(journal, s.dirs.coreProject, log);
+  if (s.dirs.featuresProject) await declarePublicApi(journal, s.dirs.featuresProject, log);
 }
 
 export const nextSteps = (s) =>

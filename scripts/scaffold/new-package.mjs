@@ -18,8 +18,8 @@ import { fileURLToPath } from "node:url";
 import { Journal, ScaffoldError, UsageError, trapSignals, list, lower, parseArgs, withHeavyLock } from "./lib/common.mjs";
 import * as P from "./lib/package-templates.mjs";
 import * as R from "./lib/repo.mjs";
-import { build, depsClean, expectOnlyRed, formatClean, mustPass, noStrayChanges, publicApiFix, strayChanges } from "./lib/checks.mjs";
-import { resolveSlice, sliceApi, writeSlice, nextSteps } from "./new-slice.mjs";
+import { build, declarePublicApi, depsClean, expectOnlyRed, formatClean, mustPass, noStrayChanges, strayChanges } from "./lib/checks.mjs";
+import { resolveSlice, writeSlice, nextSteps } from "./new-slice.mjs";
 
 const KNOWN = ["name", "tier", "errorPrefix", "note", "shape", "host", "depends", "firstSlice", "behavior", "binary", "command", "route", "ids", "ports", "root"];
 const RESERVED = ["Common", "Shared", "Utils", "Helpers"];
@@ -204,8 +204,8 @@ export async function checkPackage(journal, p, s, log) {
     await mustPass(root, "SCAFFOLD-RESTORE", "dotnet", ["restore", proj.path, "--force"], "a package the templates reference must be pinned in Directory.Packages.props", log);
   }
   await mustPass(root, "SCAFFOLD-RESTORE", "dotnet", ["restore", R.SLNX, "--locked-mode"], "no existing lock file may change here: a new pin belongs in its own commit (NP-PINS)", log);
-  for (const proj of prod.filter((x) => ["Core", "Features", "Infrastructure"].includes(x.layer))) await publicApiFix(root, proj.path, log);
-  await sliceApi(journal, s, log);
+  // Every library layer's public API, the first slice's included, in reference order (Core before Features).
+  for (const proj of prod.filter((x) => ["Core", "Features", "Infrastructure"].includes(x.layer))) await declarePublicApi(journal, proj.path, log);
   await build(root, log);
   const lane = await expectOnlyRed(root, `${s.slice}Tests.${s.slice}_${s.behavior}`, log);
   await formatClean(root, log);
