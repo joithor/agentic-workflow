@@ -26,5 +26,7 @@ internal sealed record SindriSettings(string Home, string ProfilePath)
     public string StateDirectory { get; init; } = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), ".agentic-workflow");
 
     /// <summary>Whether this home honours X-Sindri-Client: prover (API spec §6, plan G4): it lies inside the temp directory or a proof folder.</summary>
-    public bool ProverLabelAllowed => ProverHome.Allows(Home, TempDirectory, StateDirectory);
+    public bool ProverLabelAllowed =>
+        RealPath.Of(Home) is { } home && RealPath.Of(TempDirectory) is { } temp && RealPath.Of(StateDirectory) is { } state
+        && ProverHome.Allows(home, temp, state);
 }
