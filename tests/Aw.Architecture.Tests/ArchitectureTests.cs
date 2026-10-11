@@ -12,6 +12,9 @@ public sealed class ArchitectureTests
         Verify.None(DirectionRules.Check(Production.Edges));
 
     [Fact]
+    public void View_models_carry_no_avalonia_types_and_heads_hold_no_views() => Verify.None(UiRules.Check(Production.Edges));
+
+    [Fact]
     public void No_slice_uses_another_slice() => Verify.None(SliceRules.Check(Production.Edges));
 
     [Fact]
