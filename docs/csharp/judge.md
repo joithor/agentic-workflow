@@ -39,7 +39,8 @@ the root holds only `AddJudgeCore()`.
 | `IProcessRunner` | `SystemProcessRunner` (`System.Diagnostics.Process`) | `FakeProcessRunner` (runs `FakeProgram`s), `ProcessRunnerContract` |
 | `ISecretSource` | `KeychainSecretSource` (the variable, then the macOS keychain) | `FakeSecretSource`, `SecretSourceContract` |
 
-Plus the Kernel's `IIdGenerator` (`RandomIdGenerator`) and the BCL's `TimeProvider`.
+Plus the Kernel's `IIdGenerator` (`RandomIdGenerator`, which passes the Kernel's `IdGeneratorContract` in
+`tests/Aw.Judge.Tests/Ids/`; fake `SequentialIdGenerator`) and the BCL's `TimeProvider`.
 
 ## JSON
 
