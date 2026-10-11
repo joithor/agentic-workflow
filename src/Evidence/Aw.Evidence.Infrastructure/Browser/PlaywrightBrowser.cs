@@ -96,7 +96,15 @@ internal sealed class PlaywrightBrowser : IBrowser, IAsyncDisposable, IDisposabl
         }
         catch
         {
-            await context.CloseAsync().ConfigureAwait(false);   // a half-opened context would otherwise live until the process exits
+            try
+            {
+                // A half-opened context would otherwise live until the process exits; bounded, and never hiding the setup error.
+                await context.CloseAsync().WaitAsync(TimeSpan.FromSeconds(10)).ConfigureAwait(false);
+            }
+            catch (Exception ex) when (ex is PlaywrightException or TimeoutException)
+            {
+            }
+
             throw;
         }
     }
