@@ -44,6 +44,18 @@ public abstract class ProvenanceQueryContract
         Expect.That(all.Value.SequenceEqual(["seed-admin-1@example.com", "real.person@gmail.com"], StringComparer.Ordinal), "every row");
     }
 
+    /// <summary>A profile row with no email (NULL) comes back as an empty email, never dropped: it can't pass as a seed.</summary>
+    /// <returns>A task.</returns>
+    [Fact]
+    public async Task A_row_without_an_email_comes_back_empty_and_is_never_dropped()
+    {
+        var query = Create(["seed-admin-1@example.com", string.Empty]);
+
+        var all = await query.AllEmailsAsync(CancellationToken.None);
+
+        Expect.That(all.Value.SequenceEqual(["seed-admin-1@example.com", string.Empty], StringComparer.Ordinal), "the row without an email is kept, as empty");
+    }
+
     /// <summary>A failed query is a probe failure with the database's message.</summary>
     /// <returns>A task.</returns>
     [Fact]

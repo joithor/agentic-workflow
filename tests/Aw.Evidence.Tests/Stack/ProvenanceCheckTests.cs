@@ -50,4 +50,12 @@ public sealed class ProvenanceCheckTests
         Assert.Equal(["seed.test", "demo.test"], custom.Domains);
         Assert.Equal("admin-%@seed.test", custom.EmailPattern);
     }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task A_profile_without_an_email_makes_the_data_unknown()
+    {
+        var finding = await Check(new FakeProvenanceQuery { Emails = { "seed-admin-1@example.com", string.Empty } });
+
+        Assert.Equal(DbProvenance.Unknown, finding.Provenance);
+    }
 }
