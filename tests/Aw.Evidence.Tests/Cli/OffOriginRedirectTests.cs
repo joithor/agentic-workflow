@@ -1,7 +1,7 @@
 using Aw.Evidence.Core.Scripts;
 using Aw.Evidence.Infrastructure.Browser;
-using Aw.Evidence.Tests.Infrastructure;
 using Aw.Evidence.Testing;
+using Aw.Evidence.Tests.Infrastructure;
 using Aw.Kernel.Testing;
 
 namespace Aw.Evidence.Tests.Cli;
