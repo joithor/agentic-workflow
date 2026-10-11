@@ -1,7 +1,9 @@
 # Sindri context retrieval engine: the product graph and its retrieval (design)
 
 Status: decisions settled in conversation with the owner, question by question, 2026-10-10; revised the same day
-after the `/autoplan` review (§14). This is the written spec for review; it goes to `/specToProvenPR` once approved.
+after the `/autoplan` review (§14); revised 2026-10-11 in the Sindri app epic (`docs/sindri/README.md`, X1–X18): the
+shared MCP endpoint, `GET` queries and route classes, the error-doc location, the shared heavy-job lock, the `StepInput`
+block, and a provider-neutral model port. This is the written spec for review; it goes to `/specToProvenPR` once approved.
 It refines the factory addendum §17.3 (the context graph), §17.29.2 and §17.29.3 (the engine, and access from
 sessions) and §17.17 Q2 (component options), for build step 3 of §17.29.4 (stage S3 in `docs/csharp/sindri.md`).
 Where they disagree, this document wins for the context retrieval engine.
@@ -86,15 +88,18 @@ that graph plus rank fusion across adapters.
   `dotnet run --project src/Sindri/Aw.Sindri.Host -- <verb>` or its published AOT binary; `docs/sindri/context.md`
   defines `SINDRI=<that command>` and every phase signal uses `$SINDRI`, never the TS `sindri`. Nothing in `setup.sh`,
   the providers or MCP registration points at the C# build.
-- **API guard:** every `/sindri/context/*` route and `/mcp` sit behind S1's `LoopbackGuard` (loopback bind; a foreign
-  `Host` is 400, any foreign browser `Origin` is 403), which stops DNS rebinding and cross-site posts. Integration
-  tests assert both for `/mcp` and for each POST route.
-- **MCP registration is per work repo, never user-wide:** `claude mcp add --transport http --scope local sindri
-  http://127.0.0.1:<port>/mcp`, run inside the work repo, so personal-repo sessions (where Prism is registered) never
+- **API guard:** every `/sindri/context/*` route and the MCP endpoint `/sindri/mcp` sit behind S1's `LoopbackGuard`
+  (loopback bind; a foreign `Host` is 400, any foreign browser `Origin` is 403), which stops DNS rebinding and
+  cross-site posts. Every route also goes through the API spec's command chain and caller classes (API §2.1, §3.7, §4).
+  Integration tests assert both checks for `/sindri/mcp` and for each POST route.
+- **MCP registration is per work repo, never user-wide:** one Sindri MCP endpoint serves these tools and the API
+  spec's `sindri_*` tools (API §8). `sindri mcp register` prints, or with `--apply` runs, `claude mcp add --transport
+  http --scope local --header "X-Sindri-Repo: <name>" sindri http://127.0.0.1:<port>/sindri/mcp` inside the work repo
+  (Codex and Cursor get the equivalent entry), so personal-repo sessions (where Prism is registered) never
   see work context. Doctor check `context:mcp-scope` warns when a user-scope `sindri` server exists in
   `~/.claude.json`.
-- **Decisions stay human:** the map review route records `human` provenance only from the CLI at an interactive
-  terminal (the same rule as `profile approve`); there is no review tool over MCP.
+- **Decisions stay human:** applying a map review is a `protected` command (API §3.7), so it records `human`
+  provenance only from a human at an interactive terminal (the same rule as `profile approve`); there is no review tool over MCP.
 
 ## 4. Package shape and composition
 
@@ -132,14 +137,18 @@ tests/
 - **Secrets:** Sindri Host resolves the profile's secret pointers (`keychain:`, `env:`, `op:`, `file:` 0600) in
   `Composition` and passes the values to `AddContextInfrastructure(environment)` through the environment function;
   `Aw.Context` never resolves pointers or reads the keychain.
-- **The labeler lives in `Aw.Context.Infrastructure`:** it calls the `claude` CLI (a declared `cli` edge; it moves to
-  Judge's model runner once that lands, behind the same `ILabeler` port).
+- **The labeler lives in `Aw.Context.Infrastructure`, behind `ILabeler`, and is provider-neutral.** Every model call
+  (labeling, decision extraction, the rerank arm, the eval adjudicator) goes through Judge's provider port
+  (`IModelProvider` and `IProviderCatalog`, #156), so the provider (the Claude Code, Codex or Cursor CLI, or an API
+  key) is a profile choice and an adapter, never an interface change. Until #156 merges, a `claude` CLI adapter (a
+  declared `cli` edge) stands in behind the same port.
 - **The heavy-job lock is a port, supplied by Sindri:** `IHeavyJobLock` is declared in `Aw.Context.Core`. Sindri
   Infrastructure implements **Sindri's own** lock port (Sindri Core) over the shared lock directory, for which Sindri
   already declares the file edge (two slots, `AW_HEAVY_SLOTS`). A small adapter in Sindri's **Host** wraps it as
   `IHeavyJobLock` and passes it to `AddContextInfrastructure`, because `DEPS-PROJ-008` allows a reference into another
   package's Core only from Features or Host. A tier-1 package taking the lock directly would be an upward file edge,
-  which `check-deps.mjs` also refuses.
+  which `check-deps.mjs` also refuses. The same Sindri lock port is the workflow engine's `heavy` allocator (engine
+  §3.4), so there is one lock.
 - **Tier 1** in `deps.yaml`. Project edges: `Aw.Kernel`, `Aw.Kernel.Data`, `Redaction` (Infrastructure only).
 - Errors use the `SND-CONTEXT-NNN` catalogue (§8.6), following S1's `SND-<AREA>-NNN` convention.
 
@@ -340,7 +349,7 @@ Every shape resolves to **anchors**, then runs the same pipeline.
 |---|---|---|---|
 | `text` | free text | Phase 1: none (the query terms go straight to the sources). From Phase 3: name and alias match over the graph, source hits vote, `suggestedAnchors` returned | 1, 3 |
 | `node` | a node key, name or alias | direct | 3 |
-| `item` | a Linear key or Sindri item | the record's `decides` and `mentions` links, keys in its text | 5 |
+| `item` | a Sindri `ItemId` or one of its tracker-key aliases (API §3) | the record's `decides` and `mentions` links, keys in its text | 5 |
 | `symbol` | a file path (Phase 4) or a symbol / `path[:line]` (Phase 9) | `implements` from the code unit | 4 (files), 9 (symbols) |
 | `diff` | a ref range | changed files → nodes → cascade | not in this spec's phases |
 
@@ -410,10 +419,10 @@ All of them call `IContextEngine`; they differ only in transport.
 
 | Surface | Shape | Phase |
 |---|---|---|
-| **HTTP** | `POST /sindri/context/query`; `GET /sindri/context/node?key=`; `GET /sindri/context/neighbors?key=&depth=`; `GET /sindri/context/path?from=&to=`; `POST /sindri/context/map/import`; `GET /sindri/context/map/export`; `POST /sindri/context/map/build`; `GET /sindri/context/map`; `GET /sindri/context/map/review`; `POST /sindri/context/map/review` (CLI-confirmed, §3); `GET /sindri/context/sources`; `POST /sindri/context/sources/sync`. Keys travel in query strings or bodies, never in the path (they hold `/` and `#`). Errors are ProblemDetails with the `SND-CONTEXT-*` code as `title` | 1 (query, sources), 3–4 (the rest) |
+| **HTTP** | `GET /sindri/context/query?q=&node=&item=&symbol=&depth=&budget=&draft=`; `GET /sindri/context/node?key=`; `GET /sindri/context/neighbors?key=&depth=`; `GET /sindri/context/path?from=&to=`; `POST /sindri/context/map/import`; `GET /sindri/context/map/export`; `POST /sindri/context/map/build`; `GET /sindri/context/map`; `GET /sindri/context/map/review`; `POST /sindri/context/map/review` (`protected`, §3); `POST /sindri/context/map/promote`; `GET /sindri/context/sources`; `POST /sindri/context/sources/sync`. Each `POST` is a command with a catalog row and the class API §3.7 gives it. Keys travel in query strings or bodies, never in the path (they hold `/` and `#`). Errors are ProblemDetails with the `SND-CONTEXT-*` code as `title` | 1 (query, sources), 3–4 (the rest) |
 | **CLI** | `$SINDRI context query "<q>" [--draft] [--node K \| --item ENG-1 \| --symbol S] [--depth N] [--budget N] [--json]`; `context show <key>`, `neighbors <key> [--depth N]`, `path <a> <b>`, `map import <file> \| export <file> \| build \| status \| promote \| review [--export F \| --apply F \| --history \| --undo ID]`, `sources status \| sync`, `eval backtest \| probes \| map` | as HTTP |
-| **MCP** | Streamable HTTP at `/mcp` on the API port, **stateless mode** (so a Sindri restart doesn't break a session), behind the API guard. Read-only tools: `context_query {q, node?, item?, symbol?, depth?, budget?}`, `context_node {key}`, `context_neighbors {key, depth?}`, `context_sources {}`. Results: `structuredContent` with the result JSON, and a short text summary (anchors, counts, conflicts, degraded; not the full text a second time). Errors map to tool errors carrying the `SND-CONTEXT-*` code and fix. Off when `context.mcp.enabled` is false | 1 (`context_query`, `context_sources`), 3 (the rest) |
-| **Workflow block** | `context.retrieve`: fills injection-plan sections for a recipe Step | 10 |
+| **MCP** | The shared Sindri endpoint `/sindri/mcp` (API §8): Streamable HTTP on the API port, **stateless mode** (so a Sindri restart doesn't break a session), behind the API guard. Read-only tools: `context_query {q, node?, item?, symbol?, depth?, budget?}`, `context_node {key}`, `context_neighbors {key, depth?}`, `context_sources {}`. Results: `structuredContent` with the result JSON, and a short text summary (anchors, counts, conflicts, degraded; not the full text a second time). Errors map to tool errors carrying the `SND-CONTEXT-*` code and fix. The `context_*` tools are off when `context.mcp.enabled` is false; the endpoint itself stays up for the `sindri_*` tools | 1 (`context_query`, `context_sources`), 3 (the rest) |
+| **Workflow block** | `input.context.retrieve`, a `StepInput` block (engine §2): fills injection-plan sections before a recipe Step starts | 10 |
 
 **Telling sessions to use it:** Phase 1 ships an agent-rules snippet in `docs/sindri/context.md` for the work repo's
 own agent file ("before planning a change, call `context_query` for the feature or ticket; cite its `[Cn]`"), added
@@ -437,7 +446,7 @@ can't open); **75** the heavy-job lock stayed busy (`map build`, `eval`). Long j
 | `SND-CONTEXT-005` | Output path inside a git worktree | Write outside repos |
 | `SND-CONTEXT-010` | A source is unavailable (degraded, not fatal) | `context sources status` |
 | `SND-CONTEXT-011` | **Every** source is unavailable (exit 2, not "no results") | `context sources status`; start Onyx or check the repos |
-| `SND-CONTEXT-020` | MCP is disabled (`context.mcp.enabled: false`); `/mcp` answers 403 with this code and `context sources status` says so | Enable it in the profile and approve |
+| `SND-CONTEXT-020` | MCP is disabled (`context.mcp.enabled: false`); the `context_*` tools answer this code and `context sources status` says so | Enable it in the profile and approve |
 | `SND-CONTEXT-030` | No map yet | `context map import` or `context map build` |
 | `SND-CONTEXT-040` | The heavy-job lock stayed busy | Retry; the message names the holder |
 | `SND-CONTEXT-041` | Map review needs an interactive terminal | Run it at a terminal, or `--apply` a reviewed file there |
@@ -446,7 +455,8 @@ can't open); **75** the heavy-job lock stayed busy (`map build`, `eval`). Long j
 | `SND-CONTEXT-050` | A source's token lacks a needed read scope | Recreate the key read-only with the listed scope |
 | `SND-CONTEXT-055` | Onyx not on a loopback address, or its pinned version differs | §8.8 |
 
-The full list, with HTTP status and MCP mapping, is kept in `docs/sindri/errors.md` (C# section) as phases add codes.
+The full list, with HTTP status and MCP mapping, is kept in `docs/csharp/sindri-context.md` as phases add codes
+(`docs/sindri/errors.md` is generated from the TS build).
 
 ### 8.7 Map review
 
@@ -580,7 +590,7 @@ in comments, and the PRs that shipped them.
 | Lane | What |
 |---|---|
 | `unit` | Domain types and keys (`EntryKey` golden snapshot, key migrations writing aliases, alias resolution); cascade fixtures (Orientation → layout restore at depth 1; sibling exclusion; cycles; depth cap); per-source then cross-source RRF; canonical dedup; feature scoring; packing (section order, refs-only overflow, conflicts and degraded outside the budget, never cutting a graph fact); citation states (`stale`, `unstable`, `unchecked`); `IngestSanitizer` cases (the TS fixtures rewritten as behavior examples); fence and attribute escaping (titles, authors, permalinks, aliases); permalink allowlist; trust by provenance; per-field egress scrub with a `Blocked` field; argument validation (leading `-`, ref syntax, FTS phrase quoting); exit-code mapping; result JSON round-trips through `AwJson`; typed ids |
-| `integration` | `context.db` migrations on copies of the previous schema; FTS5 present in the bundled `e_sqlite3`; file modes of db, WAL and SHM; override layer surviving a rebuild and a key-version migration; rejection identity across a doc edit; batched build writing a draft, and promotion; adapter contract base against every adapter and fake (`repo-docs` on a temp git repo; `linear` against a recorded GraphQL fake; `onyx` against `FakeOnyxServer`); HTTP routes through `WebApplicationFactory`, including the foreign-`Host` 400 and foreign-`Origin` 403 on `/mcp` and every POST; the MCP endpoint through the MCP SDK client (tool list, a `context_query` round trip, a planted secret scrubbed, a planted injection fenced); CLI verbs against a running test host; map review `--apply` refused without a terminal; logs carry no planted text; the eval harness on the fixture app with a fake model |
+| `integration` | `context.db` migrations on copies of the previous schema; FTS5 present in the bundled `e_sqlite3`; file modes of db, WAL and SHM; override layer surviving a rebuild and a key-version migration; rejection identity across a doc edit; batched build writing a draft, and promotion; adapter contract base against every adapter and fake (`repo-docs` on a temp git repo; `linear` against a recorded GraphQL fake; `onyx` against `FakeOnyxServer`); HTTP routes through `WebApplicationFactory`, including the foreign-`Host` 400 and foreign-`Origin` 403 on `/sindri/mcp` and every POST; the MCP endpoint through the MCP SDK client (tool list, a `context_query` round trip, a planted secret scrubbed, a planted injection fenced); CLI verbs against a running test host; map review `--apply` refused without a terminal; logs carry no planted text; the eval harness on the fixture app with a fake model |
 | `heavy` | Map extraction on the fixture app with graphify; the full backtest on the fixture corpus; AOT publish of the Sindri host with the MCP endpoint (stateless mode) |
 | manual | Phase signals in the running app; the real backtest and probes over work data, with evidence written outside repos |
 
@@ -601,7 +611,7 @@ fake passes `ContextSourceContract<TSource>`. Tests never touch work data or the
 | MCP host (`ModelContextProtocol.AspNetCore`, a new reviewed package in `Directory.Packages.props`) | 1 | Built by Phase 1 (AOT approved for servers in the readiness spike) |
 | Secret pointer resolution in Sindri Host `Composition` | 5 | Built by Phase 5 |
 | Heavy-job lock: port in `Aw.Context.Core`; Sindri's own lock in Sindri Infrastructure, adapted in Sindri Host (§4) | 4 | Built by Phase 4 |
-| Model runner | 4, 7 | `claude` CLI adapter in Phase 4; Judge's runner once #156 lands |
+| Model provider | 4, 7 | Judge's `IModelProvider` (#156); a `claude` CLI adapter behind the same port until it merges |
 | Code index block (§17.29.4 step 4) | 9 | Its own spec |
 | Workflow engine (§17.29.4 step 2) | 10 | Its own spec |
 | Onyx running, pinned, scoped, loopback-bound, with company OAuth signed off by the owner | 5 | Owner, at setup (§8.8) |
@@ -791,7 +801,7 @@ stacks on that branch).
 | **S-2R** | `Aw.Redaction` extra patterns from configuration, validated and compiled with the match timeout | — | 0 |
 | **S-FX** | The fixture app and its recorded sources (§10), all **synthetic**, never captured from a real workspace: repo, Linear and Onyx recordings, merged-PR history, probe file, fake Linear and Onyx servers that replay them | — | 0 |
 | **S-1A** | Phase 1a: `Aw.Context` package, facade, contract, sanitizer, egress scrubber, repo-docs, planner skeleton, HTTP and CLI | S1 merged · S-1C · S-FX | 1 |
-| **S-1M** | Phase 1b: the `/mcp` host, `context_query` and `context_sources`, doctor checks, per-repo registration docs | S-1A | 2 |
+| **S-1M** | Phase 1b: the `/sindri/mcp` host (shared with API P8), `context_query` and `context_sources`, doctor checks, per-repo registration docs | S-1A | 2 |
 | **S-2W** | Wiring `context.scrub.extraPatterns` into `Aw.Context` (XS) | S-1A · S-2R | 2 |
 | **S-3** | Phase 3 without its MCP tools: graph store, overrides, cascade, `node`/`neighbors`/`path`, probe runner | S-1A | 2 |
 | **S-5A** | Phase 5, first half: `onyx` adapter (search, fetch, UUID canonical keys and identifier aliases, contract tests against `FakeOnyxServer`), secret-pointer resolution, Onyx setup doc and doctor `context:onyx` | S-1A · S-2R · S-FX; **merges after S-2W** | 2 |
@@ -804,7 +814,7 @@ stacks on that branch).
 | **S-7B** | Phase 7 on the owner's corpus: eligible-sample count, the real backtest and probes. **Owner-run** (below) | S-4 · S-6 · S-7A | 5 |
 | **S-8** | Phase 8: ranker features and the rerank arm (code on fixtures; the arm decision from an owner-run backtest) | S-7B | 6 |
 | **S-9** | Phase 9: code adapter and symbol-level links | the code index block | blocked |
-| **S-10** | Phase 10: the `context.retrieve` block | the workflow engine | blocked |
+| **S-10** | Phase 10: the `input.context.retrieve` block | the workflow engine | blocked |
 
 Critical path: S-1A → S-3 → S-5B → S-6 → S-7B → S-8 (S-4 → S-7A runs beside it).
 
@@ -940,7 +950,7 @@ team ever reads work data:
 | `SND-CONTEXT-*` codes | Ranges per stage: S-1A `001–019`, S-1M `020–029`, S-3/S-3M `030–039`, S-4 `040–049`, S-5A/B (Onyx) `050–069`, S-6 (native Linear) `070–079`, S-7A/B `080–089`, S-8 `090–099`, S-CF `100–109`. §8.6 follows these ranges |
 | `deps.yaml`, `Directory.Packages.props`, `AgenticWorkflow.slnx`, `.env.example` | Append-only edits within the stage's own block; the later PR's rebase resolves conflicts |
 | `PublicAPI.Unshipped.txt`, Sindri's `EndpointTable`, `CommandTable`, JSON context, MCP tool list | One line or one block per slice; the later rebase keeps both |
-| `docs/sindri/context.md`, `docs/sindri/errors.md` | One section per stage, headed by the stage id |
+| `docs/sindri/context.md`, `docs/csharp/sindri-context.md` | One section per stage, headed by the stage id |
 | `Aw.Context.Core` domain types | Owned by S-1A. A later stage adds the Core types it needs in its own PR; if two in-flight stages need the same new type, the lead gives it to the earlier one and the other stacks on it |
 
 ### Gates that stay sequential
@@ -973,11 +983,11 @@ on the fixture app.
   `Canonical`, result types, `IngestSanitizer`, egress scrubber, RRF, packing, citations, `QueryContext` and
   `SourcesStatus` slices, `repo-docs` adapter with scrubbed FTS5 and its refresh service, its `context.db` migration);
   `tests/Aw.Context.{Tests,Testing}` (contract base, fakes, fixture app skeleton); Sindri: `Context: JsonElement?`
-  in the profile, routes, `context query` and `context sources status|sync` verbs, the `/mcp` endpoint (stateless,
-  behind the guard) with `context_query` and `context_sources`, doctor `context:sources` and `context:mcp-scope`;
+  in the profile, routes, `context query` and `context sources status|sync` verbs, the `/sindri/mcp` endpoint (stateless,
+  behind the guard; or its tools only, if API P8 created it) with `context_query` and `context_sources`, doctor `context:sources` and `context:mcp-scope`;
   `deps.yaml` (package, edges, `compose` edge kind, fan-out exception), `scripts/check-deps.mjs`, the ArchUnitNET
   rule, rule records; `Directory.Packages.props` (MCP package); `docs/sindri/context.md` (setup, `$SINDRI`, MCP
-  registration per repo, the agent-rules snippet, a text-output example); `docs/sindri/errors.md` (C# codes);
+  registration per repo, the agent-rules snippet, a text-output example); `docs/csharp/sindri-context.md` (C# codes);
   `.env.example` for any new variable.
 - **Size:** L as listed, so three stages: **S-1C** (`compose` edge and checks: S, wave 0), **S-1A** (package,
   contract, sanitizer, scrubber, repo-docs, planner skeleton, HTTP and CLI: M, wave 1) and **S-1M** (MCP host and
@@ -1024,7 +1034,7 @@ on the fixture app.
   names and test ids, each with the files that define it, as deterministic file-level `implements`; graphify clusters
   as candidate features; a labeling pass behind `context.labeling.enabled`); `BuildMap` (batched; writes a `draft`, promoted per §8.7) and
   `ReviewMap` (§8.7, interactive and `--export`/`--apply`); the `symbol` shape in its file-path form (`--symbol
-  <path>`, MCP `symbol`); `IHeavyJobLock`; `ILabeler` with the `claude` CLI
+  <path>`, MCP `symbol`); `IHeavyJobLock`; `ILabeler` over the provider port (the `claude` CLI adapter until #156)
   adapter; a scheduled rebuild. (The intent-vs-file conflict check is stage S-CF, §14 A-F13.)
 - **Size:** M (split extraction and labeling into two PRs if over).
 - **S1:** `IScheduledService`.
@@ -1095,7 +1105,7 @@ on the fixture app.
 - **Signal:** `$SINDRI context query --symbol src/layout/SplitPane.ts:setOrientation --json` returns the features it
   implements, their cascade and their decisions.
 
-### Phase 10: the `context.retrieve` workflow block
+### Phase 10: the `input.context.retrieve` workflow block
 
 - **Goal:** recipes get retrieved context in their injection-plan sections.
 - **Files:** the block, its contract tests, its registration with the engine.

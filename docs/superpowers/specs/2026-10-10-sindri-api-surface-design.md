@@ -4,10 +4,14 @@ Status:
 - Approved in conversation, decision by decision, on 2026-10-10.
 - Revised the same day after `/autoplan`: rev 2 after review pass 1, rev 3 after pass 2, an edit after pass 3, an edit
   after pass 4, and a final edit after pass 5. The owner allowed five passes, and all five lenses passed pass 5. §13 lists every finding and its resolution.
+- Revised 2026-10-11 in the Sindri app epic (`docs/sindri/README.md`, X1–X17): one MCP endpoint shared with the
+  context engine (§8), `ItemId` is always `ITM-…` (§3), the engine adopts this spec's callers and classes (§3.5),
+  one OS notifier (§5.1), the context routes' classes (§3.7), launch targets for `sindri open` (P10), engine item
+  states (P11), and exit code 75 (§9).
 - This document is the written spec for review.
 
 The spec designs the surface every Sindri client uses: the `sindri` CLI, the Avalonia app (`SindriUi`), the Sindri MCP
-server (`sindri mcp`), and the workflow engine's calls into the command layer.
+server (`/sindri/mcp`), and the workflow engine's calls into the command layer.
 - `/specToProvenPR` takes the **Phases** at the end and turns them into PRs, using an agent team.
 - The UI design builds on §3, §5 and §3.6.
 
@@ -47,7 +51,7 @@ This design adds to these. Where it has to change one of them, §10 lists the co
 | D3 | Event stream | **Server-Sent Events**, `GET /events?after=`. The cursor is the ledger sequence, and events go out in a public envelope. It's a "go re-read" signal for live clients, never the source of truth (§5) |
 | D4 | Local auth | **v0 is local-only, with no tokens:**<ul><li>the caller class comes from `X-Sindri-Caller`, and a missing header counts as `session`;</li><li>only the CLI at a terminal and the app send `human`;</li><li>the CLI also sends `X-Sindri-Terminal: 1`;</li><li>commands refuse any `Origin` header.</li></ul>Tokens, passkeys and the tailnet come later (§6) |
 | D5 | Finding or starting the process | S1's `control.json`, spawn and ping check, plus one rule for which verbs may start the process. Nothing run inside an agent session starts it (§7) |
-| D6 | MCP server | `sindri mcp` (stdio, the MCP C# SDK) is a thin client with the session caller class. It offers queries and `sindri_request` only. **It is proven by a real Claude Code subagent**, run as a fresh `claude -p` process (§8) |
+| D6 | MCP server | **One MCP endpoint, `/sindri/mcp`**: Streamable HTTP in stateless mode on the API port (the MCP C# SDK), shared with the context engine's `context_*` tools. Every call is stamped `session`. It offers queries and `sindri_request` only. **It is proven by a real Claude Code subagent**, run as a fresh `claude -p` process (§8) |
 | D7 | Webhooks | **Cut for now** (§11) |
 | D8 | Errors, versioning, JSON | <ul><li>S1's `Result` → `ProblemDetails` mapping stays unchanged.</li><li>New codes are reserved per phase and documented in `docs/csharp/sindri.md`.</li><li>No version in the path in v0.</li><li>One JSON context.</li><li>`--json` prints the API body unchanged (§9).</li></ul> |
 
@@ -256,7 +260,7 @@ and gets its route-binding test.
 
 | Id | Format |
 |---|---|
-| `ItemId` | `ITM-…`, or a tracker key such as `ENG-142` |
+| `ItemId` | Always `ITM-…`. A tracker key such as `ENG-142` is an alias: routes that take an `ItemId` also accept a linked key and resolve it, and responses carry the `ITM-…` id. Linear keys change when an issue moves team, so they are never the id (context spec D16) |
 | `RequestId` | `REQ-…` |
 | `DecisionId` | `DEC-…` |
 | `JobId` | `JOB-…` |
@@ -285,13 +289,13 @@ Every list view also returns `empty`, the `EmptyText` sentence (§3.6) for its c
 | `GET /jobs/{jobId}` | `GetJob` | `GetJobQuery(JobId)` | `JobView`: <ul><li>id, kind, item?;</li><li>state: `running`, `succeeded`, `failed` or `cancelled`;</li><li>when it started and ended;</li><li>the last 200 progress lines;</li><li>result summary and code;</li><li>`asOf`.</li></ul> | P6 |
 
 **Session callers are scoped to one repo.**
-- A `session` caller's list and item queries are filtered to the repo named in `X-Sindri-Repo`, which `sindri mcp` and
-  the CLI set from the working directory.
+- A `session` caller's list and item queries are filtered to the repo named in `X-Sindri-Repo`, which the CLI sets from
+  the working directory and each repo's MCP registration carries (§8).
 - An item in another repo answers `SND-ITEM-404`.
 - A `session` query without `X-Sindri-Repo` answers only items that have no repo.
 - The same scope applies to session **commands**. `FileRequest` and `pause` (takeover) reach only items in the session's
   repo. A filed request records that repo, so the request caps and the request and decision rows are scoped too.
-- The CLI sets `X-Sindri-Repo` from its working directory in every mode, as `sindri mcp` does.
+- The CLI sets `X-Sindri-Repo` from its working directory in every mode.
 - **The repo name** is found from the main checkout, so a worktree such as `.claude/worktrees/x` resolves to its
   repository, not to the worktree's folder:
   1. Take the main checkout's directory: the parent of `git rev-parse --path-format=absolute --git-common-dir`.
@@ -321,14 +325,14 @@ They're in the catalog with class `local` and are never routes. `doctor` gains a
 | `POST /services/{name}/pause` | `PauseService` | — | `CommandAccepted` | desk | `sindri services pause <name>` | P6 |
 | `POST /services/{name}/resume` | `ResumeService` | — | `CommandAccepted` | desk | `sindri services resume <name>` | P6 |
 | `POST /jobs/{jobId}/cancel` | `CancelJob` | — | `CommandAccepted` | job | Ctrl-C while following; `sindri jobs cancel <id>` | P6 |
-| `POST /items/{itemId}/open` | `OpenItem` | — | `ItemOpened(accepted, launchedIn)` | desk | `sindri open <item>` | P10 |
+| `POST /items/{itemId}/open` | `OpenItem` | `target?` (`claude`, `codex` or `cursor`; default from the profile), `mode?` (`open` or `attach`) | `ItemOpened(accepted, launchedIn)` | desk | `sindri open <item> [--with claude\|codex\|cursor] [--attach]` | P10 |
 
 Notes:
 - **`ApproveProfile` keeps S1's body.** The `protected` class means only a `human` caller **with a terminal** reaches
   the handler (§4). How the human confirms is a separate question:
-  - S1 uses a `confirmed` flag set by the CLI after a TTY prompt.
-  - The engine spec's S1-D5 replaces it with a server-issued challenge.
-  - Whichever lands is behind this class check.
+  - The engine spec's server-issued challenge (its §4.2, S1-D5) replaces S1's `confirmed` flag, so every `protected`
+    action confirms the same way.
+  - Until the challenge lands, S1's flag stays behind this class check.
 - **`CloseItem` voids the item's pending decisions.** Their rows clear, and a later `Decide` on one of them gets
   `SND-ITEM-409`. Once S2 runs, `CloseItem` is refused with `SND-ITEM-409` while the item has an active instance; cancel
   that with `sindri workflow cancel`.
@@ -420,15 +424,27 @@ action id, for example `ApplyCommand:answer`.
 |---|---|---|
 | Instances: their states, park reasons, takeover, handback, answering a park (`grant`, `accept`), timers, `CompleteStep` | **Engine**: `StartInstance`, `ApplyCommand`, `CompleteStep`, `GetInstance`, `ListInstances`; engine P4 and P5 | This spec gives their catalog rows a class and allowed callers:<ul><li>start, answer, handback, cancel and complete are `desk`;</li><li>answer with `grant` or `accept` is `protected` (terminal);</li><li>takeover is `pause` (§4.1).</li></ul> |
 | The verbs `sindri workflow start`, `answer`, `takeover`, `handback`, `cancel` and `complete`, plus the `sindri handback` alias | **Engine** | — |
-| One "needs you" list | **This spec**: `GET /needs-you`, with engine parks as kind `park` | The engine's `workflow list --needs-me` should read `GET /needs-you`, so there is one list. This is a note for the engine spec |
+| One "needs you" list | **This spec**: `GET /needs-you`, with engine parks as kind `park` | The engine's `workflow list --needs-me` reads `GET /needs-you` (engine §6.3) |
 | Item rows, the queue, requests and decisions | **This spec** | The engine emits the events these views fold. Once S2 runs, an item's `state` reflects its instance state |
 | The item filter on `/sindri/events` (engine S1-D6) | **This spec**, in P5 | The engine's `workflow events` uses it. If engine P4 merges first, it adds the filter and P5 keeps it |
-| `ILauncher` | **This spec**, in P10 (`OpenItem`) | The engine replaces its desk runtime with it (engine W20) |
-| The authorization model: caller, terminal flag, action classes, the chain, and `SND-AUTH-002` | **This spec**, in P1 | Every engine command goes through the same chain. **The engine spec (rev 4, `f36f2c1`) still differs and needs one edit to its §6.2 and §6.3 before either P1 lands.** It should: <ul><li>drop its `script`, `system` and `human-terminal` caller classes and `SND-WF-007`, using this spec's §4 and §6 instead;</li><li>make takeover `pause`;</li><li>adopt the fail-closed `IClassifiedCommand` rule (§2.1);</li><li>use this spec's agent variables (§6), not `CURSOR_TRACE_ID`;</li><li>show idle takeovers and desk tasks as needs-you rows of kind `park`.</li></ul> Flagged for the engine spec's owner |
+| `ILauncher` | **This spec**, in P10 (`OpenItem`), with launch targets from the UI design spec | The engine replaces its desk runtime with it (engine W20) |
+| The authorization model: caller, terminal flag, action classes, the chain, and `SND-AUTH-002` | **This spec**, in P1 | Every engine command goes through the same chain. The engine spec adopted it in its rev 5 (§6.2): its own caller classes and `SND-WF-007` are retired, takeover is `pause`, the `IClassifiedCommand` rule applies, its harness probe supplies the agent variables (§6), and idle takeovers and desk tasks are needs-you rows of kind `park`. Engine commands never evaluate gates in the handler (engine §5.3) and may append one event per instance they change (a parent and the child it creates) |
 | `EventFactory` reading the caller (C6) and the engine's S1-D7 | One change, made by whichever phase lands first | — |
 | Starting the process from a verb | **This spec**, §7: never from inside an agent session | The engine spec's "starts if needed" follows §7 |
 
 This spec has no item `hold`, and no item-level park, unpark or handback: those are engine instance commands.
+
+### 3.7 Context routes (owned by the context retrieval spec)
+
+The context engine's routes sit under `/sindri/context/` and follow this spec's rules: queries are `GET`s, every `POST`
+is a command with a catalog row and an action class, and every route goes through the chain.
+
+| Route | Class |
+|---|---|
+| `GET /context/query`, `/context/node`, `/context/neighbors`, `/context/path`, `/context/map`, `/context/map/export`, `/context/map/review`, `/context/sources` | query (session callers repo-scoped, §3.1) |
+| `POST /context/map/build`, `POST /context/sources/sync` | `job` |
+| `POST /context/map/import`, `POST /context/map/promote` | `desk` |
+| `POST /context/map/review` (apply a review) | `protected` |
 
 ### 3.6 Views the UI renders: states, groups and needs-you
 
@@ -449,7 +465,8 @@ How items move through the states:
   - it is `needs-decision` while a pending decision points at it, and back to `new` once the decision is recorded;
   - it is `done` or `cancelled` after `CloseItem`.
 - **Once S2 runs:**
-  - `needs-answer`, `taken-over`, `parked`, `running` and `queued` come from the engine's item projection;
+  - `needs-answer`, `taken-over`, `parked`, `running` and `queued` come from the item projection folding the engine's
+    `workflow.*` events, which P11 adds;
   - `needs-answer` is produced only by the engine.
 
 **`GET /needs-you`** is one list across every source, built by the needs-you projection. Each `NeedsYouRow` has:
@@ -530,6 +547,10 @@ N of M)…") and `stalled` ("Views are stalled at N: run `sindri views rebuild`"
 | `desk` | yes | yes | **no** | only the engine commands its recipe step owns (the engine spec lists them), and `service:host` → `StopProcess` (§2.1) |
 | `protected` | yes | **no**: shown as `cli-only` | **no** | no |
 
+**The app is a full desk client.** It starts workflows (scoping included), answers parks, takes over and hands back,
+closes items, runs services and hands work off to a session in Warp with Claude Code, Codex or Cursor (`OpenItem`).
+Only `protected` actions show the CLI to copy.
+
 **Why `pause` is open to sessions.** Takeover is detected by the hook, which runs inside the agent session and is
 therefore a `session` caller. Pausing an instance only stops automation, so it is safe in that direction; handing back
 is `desk`. That's why a session may take over, but never hand back.
@@ -549,8 +570,8 @@ that path.
 ### 5.1 What it's for
 
 It tells live clients "something changed, re-read":
-- **The Avalonia app:** refreshes the affected view, and drives the needs-you pulse, the tray badge and OS
-  notifications.
+- **The Avalonia app:** refreshes the affected view, and drives the needs-you pulse and the tray badge. OS
+  notifications come only from the engine's `notify.desk` (engine §6.3), so nothing fires twice.
 - **The CLI's long-running verbs:** job progress and cancel.
 - **`sindri status --follow`**.
 - **Later:** the notifier, the phone head, and other instances.
@@ -630,10 +651,11 @@ mistakes. That's the repo's threat model: gates guard against honest mistakes, n
   - `CODEX_SANDBOX` (Codex);
   - `CURSOR_AGENT` (Cursor's agent).
 
-  Otherwise it sends `session`. These are variables the tools set, not ones Sindri reads as config. They go in
+  Otherwise it sends `session`. The list comes from the engine's harness probe (engine §6.2, P2), golden-tested, and
+  a parent process that is an agent harness also counts. These are variables the tools set, not ones Sindri reads as config. They go in
   `scripts/env-scan-ignore.txt`, next to the existing `CLAUDECODE` and `AW_SINDRI_CHILD` lines, not in `.env.example`.
 - **The Avalonia app** sends `human` with no terminal.
-- **`sindri mcp`** sends `session`.
+- **The MCP endpoint** stamps `session` whatever the request's headers say, keeping only `X-Sindri-Repo`.
 
 **Commands refuse any `Origin` header** with 403 `SND-API-008`.
 - No first-party client sends one, so this stops a web page in a local browser from driving a command that has no body.
@@ -664,20 +686,27 @@ This design adds which verbs start the process:
 |---|---|
 | `sindri`, `sindri --headless` | Start it (S1) |
 | Commands and queries run by a human (`decide`, `item add`, `queue`, …) | Start it, then run. `--no-start` prints `SND-API-001` instead |
-| **Any verb inside an agent session** (the §6 variables) | Never start it. Print `SND-API-001` ("Sindri isn't running; ask the human to run `sindri`"), as `sindri mcp` does |
+| **Any verb inside an agent session** (the §6 variables) | Never start it. Print `SND-API-001` ("Sindri isn't running; ask the human to run `sindri`") |
 | `status`, `stop` | Never start it. As in S1, `status` prints `not running` and exits 1, and `stop` exits 1 |
 | `doctor`, `profile validate` | Run locally (S1) |
-| `sindri mcp` | Never start it. Its tools return `SND-API-001` |
+| The MCP endpoint | Served by the process. When it isn't running, the session's MCP client reports the server as failed; nothing starts it |
 
 ## 8. The MCP server
 
-`sindri mcp` is a subcommand of the same NativeAOT `sindri` binary:
-- it uses stdio and the official MCP C# SDK, which the readiness AOT spike approved;
-- tools are registered explicitly, and stdout is reserved for the protocol, so logs go to stderr;
-- it is a thin client of the HTTP API: every tool is exactly one API call, with `X-Sindri-Caller: session` and
-  `X-Sindri-Repo` set from the session's working directory, resolved as §3.1 says;
-- the server holds no logic, and errors come back as tool errors carrying the SND code and message;
+One MCP endpoint serves every Sindri tool, this spec's and the context engine's:
+- **`/sindri/mcp`** on the API port: Streamable HTTP in **stateless mode**, so a Sindri restart doesn't break a
+  session, with the official MCP C# SDK (`ModelContextProtocol.AspNetCore`, approved in the readiness AOT spike);
+- behind S1's `LoopbackGuard` and the command-side `Origin` refusal (§6);
+- every call is stamped `session`. The repo comes from the `X-Sindri-Repo` header in the repo's own registration;
+- tools are registered explicitly. Each `sindri_*` tool is exactly one API call through the same handlers; the
+  context engine's `context_*` tools call `IContextEngine` (context spec §8.5);
+- the endpoint holds no logic, and errors come back as tool errors carrying the SND code and message;
 - repo scope is enforced by the server (§3.1), so the tools have no "all repos" argument.
+
+**Registration is per repo, by the owner, never user-wide.** `sindri mcp register` prints, and with `--apply` runs,
+`claude mcp add --transport http --scope local --header "X-Sindri-Repo: <name>" sindri http://127.0.0.1:<port>/sindri/mcp`
+inside the current repo (the name resolved as §3.1 says). Codex and Cursor get the equivalent entry. Personal repos
+never see work context. Nothing in `setup.sh` or the providers registers it before the switch.
 
 | Tool | Arguments | API call | Kind |
 |---|---|---|---|
@@ -688,18 +717,19 @@ This design adds which verbs start the process:
 | `sindri_pending_decisions` | `itemId?` | `GET /decisions?pending=true` | query |
 | `sindri_job` | `jobId` | `GET /jobs/{jobId}` | query, **from P6** |
 | `sindri_request` | `kind`, `itemId?`, `text` | `POST /requests` (`FileRequest`) | request |
-| `sindri_context` | `query`, `itemId?` | `GET /context?q=` | query, **with S3** |
+| `context_query`, `context_node`, `context_neighbors`, `context_sources` | context spec §8.5 | `IContextEngine` | query, **with S3**; off while `context.mcp.enabled` is false |
 
 There is no decision, desk, protected or job tool, so the MCP surface can't even attempt one. Query tools carry the MCP
-`readOnlyHint` annotation.
+`readOnlyHint` annotation. Whichever lands first, context Phase 1 (S-1M) or this spec's P8, creates the endpoint; the
+other adds its tools to it.
 
 **Proof.** The proof run starts a fresh Claude Code process as the subagent:
 ```
 claude -p "<journey>" --mcp-config <tmp>/sindri-mcp.json --strict-mcp-config \
   --allowedTools 'mcp__sindri__*,Bash(curl:*)'
 ```
-- The config points at the phase's built binary and the phase's `AW_SINDRI_HOME`.
-- The tools load when that process starts.
+- The config is an `http` entry pointing at the phase's process (its `control.json` URL plus `/sindri/mcp`) with the
+  test repo's `X-Sindri-Repo`.
 - Nothing is registered with the provider, so the cutover rule holds and there is nothing to clean up.
 - The user's own hooks may load; the journey doesn't depend on them.
 
@@ -708,8 +738,8 @@ claude -p "<journey>" --mcp-config <tmp>/sindri-mcp.json --strict-mcp-config \
 ### Errors
 
 S1's `HttpResults` mapping is unchanged: `ErrorKind` sets the status, and `ProblemDetails` carries `title` = the SND
-code and `detail` = the message with its `(fix: …)`. The CLI prints `SND-… message` and exits 0 for ok, 1 for attention
-and 2 for an error (S1).
+code and `detail` = the message with its `(fix: …)`. The CLI prints `SND-… message` and exits 0 for ok, 1 for attention,
+2 for an error (S1), and 75 when a heavy-job lock stayed busy (as Evidence and the context engine do).
 
 The phase that reserves a code registers it in `SindriErrors` and its `All` list, and documents it in the error table
 of **`docs/csharp/sindri.md`**. Not `docs/sindri/errors.md`, which is generated from the TS build.
@@ -739,7 +769,7 @@ of **`docs/csharp/sindri.md`**. Not `docs/sindri/errors.md`, which is generated 
 
 ### Versioning
 
-- There is no version in the path in v0. The CLI, `sindri mcp` and the UI are built from this repo and ship together.
+- There is no version in the path in v0. The CLI, the MCP endpoint and the UI are built from this repo and ship together.
 - `GET /status` reports `apiVersion: 1`, and every response carries `Sindri-Api-Version: 1`. The UI checks it on
   connect and shows "Sindri and the app are different versions" on a mismatch.
 - A breaking change later adds a `/sindri/v2` group and keeps `v1` for one release.
@@ -804,7 +834,7 @@ Spans and metrics use the `Aw.Sindri` source and meter, as `docs/csharp/telemetr
   These need their own spec once the collector is designed in C#.
 - **Receipts and metrics:** `GET /items/{itemId}/receipt`, `POST …/receipt/verify` (§17.23.12), and
   `GET /metrics/today`.
-- **Context retrieval:** `GET /context?q=&item=` and `sindri_context`, with S3.
+- **Context retrieval:** owned by the context spec; its routes and classes are in §3.7, its tools in §8.
 - **Inline projections:** a unit of work around `Append`, if read-your-writes waits ever matter in practice.
 - **Retention:** if the ledger ever drops events, the stream's `reset` event (§5.4).
 
@@ -1054,8 +1084,10 @@ Each phase is one PR and follows the slice recipe, red first.
 | **P4** | **Requests, decisions and needs-you.** <ul><li>`RequestId` and `DecisionId`.</li><li>The slices `FileRequest`, `ListRequests`, `ListDecisions`, `Decide`, `GetNeedsYou`.</li><li>The needs-you `failure` and `profile` rows over P2's events.</li><li>The CLI verbs `request`, `requests`, `decide` and `needs-you`.</li><li>Codes: `SND-REQ-*`, `SND-DEC-*`.</li></ul> | `Core/{Requests,Decisions,NeedsYou}/*`, `Features/{FileRequest,ListRequests,ListDecisions,Decide,GetNeedsYou}/`, projections, `Host/Commands/*` | M | P3 | <ul><li>`curl -X POST -H 'Content-Type: application/json' -H 'X-Sindri-Repo: demo' …/requests -d '{"kind":"rescope","text":"…"}'` (no caller header, so `session`) shows up as exactly one `decision` row in `GET /needs-you`, with `recordedOnly: true`.</li><li>The same `decide` with no caller header gets 403.</li><li>`sindri-prove.sh human decide DEC-… accept` clears the row.</li><li>Two `decide` calls started together: one succeeds and the other gets `SND-ITEM-409 decided elsewhere`.</li><li>Editing the live profile adds a `profile` row within 30 s, and reverting the edit clears it.</li><li>A service that fails adds a `failure` row, and its next good run clears it.</li><li>A service that fails, is removed from the profile, and has the profile approved also clears its row.</li></ul> | **UI, engine** |
 | **P5** | **Event stream and ledger read.** <ul><li>Public types from `EventCatalog`, `PublicEvent`.</li><li>The `item` and `types` filters, the session repo filter, `Last-Event-ID`.</li><li>The ping and the stream limits (`SND-API-005`).</li><li>`ILedgerSignal`, wired to the projector and the stream.</li><li>`ReadLedger` and `sindri ledger`.</li><li>`sindri status --follow` (C4).</li></ul> | `Core/Events/*`, `Infrastructure/Ledger/LedgerSignal.cs`, `Features/{StreamEvents,ReadLedger}/`, `Host/Endpoints/EventStream.cs`, `Host/Projector.cs` | S | P1, plus P2 for the projector wiring (its signal uses `service.heartbeat`; the item filter is tested once P3 lands) | <ul><li>`curl -N '…/sindri/events?after=0&types=service.*'` shows each `service.heartbeat` within 100 ms of its append.</li><li>Reconnecting with `Last-Event-ID: n` resumes at n+1.</li><li>`command.handled` never appears.</li><li>`sindri-prove.sh human ledger --json --after 0` lists it.</li></ul> | **UI, engine** (S1-D6) |
 | **P6** | **Jobs and services.** <ul><li>`JobId` and the job events.</li><li>The slices `GetJob`, `CancelJob`, `RunService` (as a job), `PauseService`, `ResumeService`; the scheduler honours pause and resume.</li><li>The CLI follows progress on the stream, and Ctrl-C cancels.</li><li>Codes: `SND-JOB-404`, `SND-SVC-404`.</li></ul> | `Core/Jobs/*`, `Features/{GetJob,CancelJob,RunService,PauseService,ResumeService}/`, a scheduler hook in Host | M | P2 + P5 | <ul><li>`sindri-prove.sh human services run heartbeat` prints progress and the result.</li><li>Ctrl-C during a long fake job prints `cancelled`, and the ledger shows `job.cancelled`.</li><li>After `services pause heartbeat`, there's no heartbeat for 3 cadences.</li><li>A run with no caller header gets 403.</li><li>A manual run that succeeds clears that service's `failure` row and sets `lastRun` to `ok`.</li></ul> | UI, **engine** |
-| **P8** | **`sindri mcp`.** <ul><li>The MCP server: stdio, the MCP C# SDK, and the §8 tools.</li><li>`X-Sindri-Repo` set from the working directory.</li><li>`SND-API-001` when the process isn't running.</li></ul> | `Host/Mcp/*`, the SDK in `Directory.Packages.props` (pinned, at least 14 days old), `deps.yaml` | M | P4 + P6 | A fresh `claude -p "<journey>" --mcp-config … --strict-mcp-config --allowedTools …` subagent: <ul><li>lists the queue and an item;</li><li>files a `rescope` request, which shows up in `GET /needs-you`;</li><li>finds no tool to decide with;</li><li>gets `SND-AUTH-002` from a `curl` with no caller header.</li></ul> Its transcript is the evidence | — |
-| **P10** | **`sindri open`.** <ul><li>`ILauncher`, a Warp launch configuration as in the dashboard plan's decision 15.</li><li>`OpenItem` passes only the item id and the repo path from the profile, and the session pulls its context through `sindri mcp`.</li><li>`SND-LAUNCH-001`.</li></ul> | `Core/Launch/ILauncher.cs`, `Infrastructure/Launch/WarpLauncher.cs`, `Features/OpenItem/` | M | P3 + P8 (the engine marks the takeover once S2 runs) | <ul><li>`sindri-prove.sh human open ITM-…` opens a Warp tab running Claude Code in the item's repo.</li><li>The session's first `sindri_item` call returns the item.</li><li>The launch config contains no item text.</li></ul> | **engine** (`ILauncher`) |
+| **P8** | **The `sindri_*` MCP tools.** <ul><li>On `/sindri/mcp` (created here, or by context S-1M if it landed first).</li><li>`sindri mcp register [--apply]`.</li><li>Every call stamped `session`, scoped by `X-Sindri-Repo`.</li></ul> | `Host/Mcp/*`, the SDK in `Directory.Packages.props` (pinned, at least 14 days old), `deps.yaml` | M | P4 + P6 | A fresh `claude -p "<journey>" --mcp-config … --strict-mcp-config --allowedTools …` subagent: <ul><li>lists the queue and an item;</li><li>files a `rescope` request, which shows up in `GET /needs-you`;</li><li>finds no tool to decide with;</li><li>gets `SND-AUTH-002` from a `curl` with no caller header.</li></ul> Its transcript is the evidence | — |
+| **P10** | **`sindri open`.** <ul><li>`ILauncher`, a Warp launch configuration as in the dashboard plan's decision 15, running the chosen agent: Claude Code, Codex or Cursor (targets and their failure states from the UI design spec).</li><li>`mode: attach` focuses a live session and marks the takeover.</li><li>`OpenItem` passes only the item id and the repo path from the profile, and the session pulls its context through the MCP endpoint.</li><li>`SND-LAUNCH-001`.</li></ul> | `Core/Launch/ILauncher.cs`, `Infrastructure/Launch/WarpLauncher.cs`, `Features/OpenItem/` | M | P3 + P8 (the engine marks the takeover once S2 runs) | <ul><li>`sindri-prove.sh human open ITM-…` opens a Warp tab running Claude Code in the item's repo.</li><li>The session's first `sindri_item` call returns the item.</li><li>The launch config contains no item text.</li></ul> | **engine** (`ILauncher`) |
+
+| **P11** | **Engine item states.** <ul><li>The item projection folds `workflow.*` events into `needs-answer`, `taken-over`, `parked`, `running` and `queued`.</li><li>Engine parks, escalations, idle takeovers and desk tasks become needs-you rows of kind `park`.</li><li>`CloseItem` refuses while an instance is active.</li></ul> | `Features/Projections/*` | M | P4 + engine P4 | <ul><li>Starting `workflow.step` on an item moves it to `running` in `GET /queue`.</li><li>A desk task and a park appear in `GET /needs-you` with the engine's action id.</li></ul> | UI's live item states |
 
 Rev 1's P7 and P9 are gone; the engine spec owns them (§3.5).
 

@@ -20,7 +20,7 @@ Each part of the app has its own design spec under `docs/superpowers/specs/`. Th
 | Context retrieval engine: the product graph, adapters, planner, evals | `2026-10-10-sindri-context-retrieval-design.md` | 3 | S3 (Phases 1–10) |
 | What the UI shows (input to the UI design) | `2026-10-09-sindri-dashboard-design.md` | — | — |
 
-The specs were written in parallel and don't fully agree yet. "Cross-spec reconciliation" below lists where they differ, and which spec each fix belongs to. Settle those before the next phase of any of them is built.
+The specs were written in parallel. "Cross-spec reconciliation" below lists where they differed and the answer each spec now carries.
 
 ## The application
 
@@ -76,14 +76,14 @@ Not a module-by-module port of `sindri/` (A §17.29.4):
 5. workflows down the factory line, intake first;
 6. the switch, once every desk tool has its C# form.
 
-### Cross-spec reconciliation (settle before building further)
+### Cross-spec reconciliation
 
-Where the API (API), workflow engine (WF) and context retrieval (CTX) specs disagree. Each row names the recommended answer and the spec that changes. Every row is the owner's call; none is decided by this list.
+Where the API (API), workflow engine (WF) and context retrieval (CTX) specs disagreed. The owner settled X2 (the app is a full desk client, not read-only) and asked for the recommended answer on the rest; each answer is now written into the spec named in "Changes" (2026-10-11). X17 is a build-order plan, not a spec change.
 
-| # | Where they differ | Recommended answer | Changes |
+| # | Where they differed | Answer | Changes |
 |---|---|---|---|
 | X1 | **Who may do what.** API §4/§6: caller class (`human`, `session`, `service`) plus a terminal flag, action classes, `SND-AUTH-002`, the `X-Sindri-*` headers. WF §6.2: actor classes `session`, `human`, `script`, `ui`, `human-terminal`, `system`, `SND-WF-007` | API's model is the one model. WF keeps its server challenge (§4.2) as *how* a `protected` action is confirmed, replacing S1's `confirmed` flag, and its harness probe (P2) becomes the source of API §6's agent-variable list | WF §1 W22, §6.2, §6.3, §8, §10 |
-| X2 | **What the UI may do.** WF §6.2: the UI is read-only "until the UI's own design adds its forms". API §4.2: the app is `human` without a terminal: decisions, desk, job, request and pause; `protected` shows the CLI to copy | API's table. The UI design spec confirms it screen by screen | WF §6.2; UI design |
+| X2 | **What the UI may do.** WF §6.2: the UI is read-only "until the UI's own design adds its forms". API §4.2: the app is `human` without a terminal: decisions, desk, job, request and pause; `protected` shows the CLI to copy | API's table (owner, 2026-10-11): the app starts workflows (scoping included), answers parks, takes over and hands back, and hands work off to Warp with Claude Code, Codex or Cursor. The UI design spec maps it screen by screen | WF §6.2; UI design |
 | X3 | **Takeover.** API: `pause`, open to sessions (the hook detects it inside the session). WF: a `human` verb | API's answer: a session may take over, never hand back | WF §6.3 |
 | X4 | **One write path.** API §2.1: every command runs through `CommandGate` (5 s), audit and authorization, decides without slow work, and appends one domain event. WF §5.3: `Commit` writes its own tables and events, `--accept` re-evaluates gates (which may call a model), and WF says one event per `Commit` (§5.2) but one per row changed (W13) | Engine commands are handlers behind API's chain. Gates that call a model run before the gate is taken (WF already stores gate answers in their own transaction); the handler only decides. WF picks one of "one event per `Commit`" or "one per row" | WF §1 W13, §5.2, §5.3; API §2.1 note |
 | X5 | **One needs-you list, one notifier.** WF: `workflow list --needs-me` and `notify.desk` OS notifications. API: `GET /needs-you`, and the app drives OS notifications and the tray badge from the stream | `GET /needs-you` is the list; `--needs-me` reads it. `notify.desk` is the only source of OS notifications; the app shows its badge and in-app pulse but doesn't notify on its own, so nothing fires twice | WF §6.3; API §5.1 |
@@ -99,6 +99,7 @@ Where the API (API), workflow engine (WF) and context retrieval (CTX) specs disa
 | X15 | **Launching sessions.** API P10: `OpenItem` and `ILauncher`, Warp only. WF §7.2: `ILauncher` is "the next engine design". README: Claude Code only | API P10 owns `ILauncher`. The UI design defines the launch targets: Warp plus Claude Code, Codex or Cursor, chosen per item or by profile default, and "attach" for a live session | API P10, §3.5; WF §7.2; UI design |
 | X16 | **Two timelines.** API `GET /items/{id}/timeline`; WF `workflow events <address>` | The item timeline includes its instances' events; `workflow events` is the instance-level filter of the same read | API §3.1; WF §6.3 |
 | X17 | **Build order versus what's built.** Every spec has its later phases wait for S1 to merge. S2 (#167), S3 (#166), S4a (#169) and the UI shell S1b (#168) are already built on S1, ahead of API P1 (the authorization spine), so they bring their own surfaces outside it | Merge S1, then API P0–P2, then rebase S2 and S3 onto the chain. Keep S1b in draft until the UI design spec is approved | Plan, not a spec |
+| X18 | **The model provider.** Judge (#156) has `IModelProvider` and `IProviderCatalog`. CTX's labeler called the `claude` CLI, and no spec said every model call goes through one port | Every model call in Sindri (rung-2 and rung-3 gates, labeling, rerank, adjudication) goes through Judge's provider port, and agent sessions go through `ILauncher` with a target (Claude Code, Codex or Cursor). Switching provider, an API key included, is a profile choice and an adapter, never an interface change | CTX §4, §11; API P10 |
 
 ## Today: the TypeScript reference (`sindri/`)
 
