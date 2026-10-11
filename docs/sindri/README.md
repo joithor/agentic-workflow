@@ -1,5 +1,10 @@
 # Sindri
 
+> **The C# app.** Sindri is being built new in C# as one application (factory addendum §17.29). Its first stage, the app
+> shell (`src/Sindri`: the `sindri` CLI and control plane, host lease, ledger, YAML profile, API, scheduler, doctor), is
+> documented in `docs/csharp/sindri.md`, with its own `SND-*` catalogue there. This page and `errors.md` describe the
+> TypeScript sindri, which keeps running until the switch.
+
 Sindri is a local, always-on harness that picks up work, sizes it, starts agent sessions with cited context, keeps them on track and ships them through a fixed recipe. It asks the human only when it has to. Design: `docs/superpowers/specs/2026-10-07-sindri-design.md`.
 
 This package is being built in plans. What exists today (Plans 2 and 3; the code index is documented in `index.md`):

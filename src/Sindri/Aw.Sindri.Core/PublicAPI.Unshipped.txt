@@ -3,7 +3,6 @@ Aw.Sindri.Core.SindriCoreServiceCollectionExtensions
 Aw.Sindri.Core.SindriErrors
 static Aw.Sindri.Core.SindriCoreServiceCollectionExtensions.AddSindriCore(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
 static Aw.Sindri.Core.SindriErrors.All.get -> System.Collections.Generic.IReadOnlyList<Aw.Kernel.ErrorDefinition!>!
-static readonly Aw.Sindri.Core.SindriErrors.Invalid -> Aw.Kernel.ErrorDefinition!
 Aw.Sindri.Core.Control.ControlEndpoint
 Aw.Sindri.Core.Control.ControlEndpoint.<Clone>$() -> Aw.Sindri.Core.Control.ControlEndpoint!
 Aw.Sindri.Core.Control.ControlEndpoint.ControlEndpoint(System.Uri! Url, int Pid, long Epoch) -> void

@@ -6,7 +6,6 @@ Aw.Sindri.Features.GetStatus.GetStatusRequest.GetStatusRequest() -> void
 Aw.Sindri.Features.GetStatus.GetStatusResponse
 Aw.Sindri.Features.GetStatus.GetStatusResponse.<Clone>$() -> Aw.Sindri.Features.GetStatus.GetStatusResponse!
 Aw.Sindri.Features.GetStatus.GetStatusResponse.Equals(Aw.Sindri.Features.GetStatus.GetStatusResponse? other) -> bool
-Aw.Sindri.Features.GetStatus.GetStatusResponse.GetStatusResponse() -> void
 Aw.Sindri.Features.SindriFeaturesServiceCollectionExtensions
 override Aw.Sindri.Features.GetStatus.GetStatusRequest.Equals(object? obj) -> bool
 override Aw.Sindri.Features.GetStatus.GetStatusRequest.GetHashCode() -> int

@@ -201,7 +201,7 @@ packages:
     bins: [sindri]
     db: [sindri/ledger.db]
     namespace: sindri
-    note: "profile, ledger, scrub, observe, index, scope, evolve; reaches lower tiers only through Core contracts or CLIs"
+    note: "the Sindri app, built new (factory addendum §17.29): S1 app shell — CLI and control plane, host lease, ledger, profile, API, scheduler, doctor; reaches lower tiers only through Core contracts or CLIs"
 
   # ---- outside the tiers: code that stays bash or TypeScript and calls the CLIs (§4a) ----
   - id: Hooks
@@ -410,8 +410,8 @@ edges:
   - from: Sindri
     to: KernelData
     kind: project
-    status: planned
-    note: "ledger and index"
+    status: current
+    note: "the ledger (events, lease, outbox_commands); later the index"
   - from: Sindri
     to: KernelTelemetry
     kind: project
