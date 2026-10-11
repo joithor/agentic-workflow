@@ -28,7 +28,7 @@ every path it writes into a run file is absolute.
 | `publish-plan <run-dir> --provenance seeded\|unknown [--linear-issue id]` | Prints the publish plan for `summary.json` (below) | 0 · 1 |
 | `doctor` | Prints `{healthy, failures[]}` for the local stack; each failure is also a stderr line `ui-evidence: doctor: <failure>` | 0 healthy · 1 not |
 | `provenance` | Prints `{provenance: seeded\|unknown, reason}` for the local database | 0 |
-| `install-browser` | Installs the browser the run and parity commands drive | 0 · 4 |
+| `install-browser` | Installs the browser the run and parity commands drive; the installer's download progress goes to stderr, so stdout is only `{installed}`. Ctrl-C returns at once (a download already running finishes in Playwright's driver) | 0 · 4 |
 
 `--lock-timeout` is whole seconds (default 120; 0 tries once). `--host` takes a bare origin: `http://localhost:<port>`
 or `http://127.0.0.1:<port>` (local: no extra flag), or `https://pr-<n>.vitalize.build` with `--allow-preview-host`

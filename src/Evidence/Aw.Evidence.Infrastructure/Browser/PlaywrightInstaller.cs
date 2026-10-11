@@ -6,7 +6,11 @@ using Aw.Kernel;
 
 namespace Aw.Evidence.Infrastructure.Browser;
 
-/// <summary>Installs the Chromium build this Playwright version drives (an existing install is kept), through Playwright's own driver.</summary>
+/// <summary>
+/// Installs the Chromium build this Playwright version drives (an existing install is kept), through Playwright's own
+/// driver. The driver's progress goes to stderr (its stdout is detoured there), so the command's stdout stays one JSON
+/// document. A cancellation returns at once; a download already running finishes in the driver on its own.
+/// </summary>
 internal sealed class PlaywrightInstaller : IBrowserInstaller
 {
     /// <inheritdoc/>
@@ -18,7 +22,7 @@ internal sealed class PlaywrightInstaller : IBrowserInstaller
             {
                 return Microsoft.Playwright.Program.Main(["install", "chromium"]);
             }
-        }, cancellationToken).ConfigureAwait(false);
+        }, cancellationToken).WaitAsync(cancellationToken).ConfigureAwait(false);
         return exit == 0
             ? Results.Ok()
             : EvidenceErrors.BrowserFailed.With(string.Create(CultureInfo.InvariantCulture, $"installing chromium failed (playwright install exit {exit})"));
