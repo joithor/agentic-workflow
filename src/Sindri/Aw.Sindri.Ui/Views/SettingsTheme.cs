@@ -1,3 +1,4 @@
+using Avalonia;
 using Avalonia.Controls;
 using Aw.Sindri.Ui.Theme;
 using Aw.Sindri.Ui.ViewModels.Settings;
@@ -19,4 +20,9 @@ internal static class SettingsTheme
         TextScale.Apply(resources, appearance.TextScale);
         Motion.Apply(resources, appearance.ReduceMotion);
     };
+
+    /// <summary>Keeps <paramref name="root"/>'s reduce-motion class in step with <paramref name="settings"/>.</summary>
+    /// <param name="root">The window.</param>
+    /// <param name="settings">Settings, whose reduced motion the class follows.</param>
+    internal static void Follow(StyledElement root, SettingsViewModel settings) => throw new NotSupportedException("red: the window's reduce-motion class follows Settings");
 }

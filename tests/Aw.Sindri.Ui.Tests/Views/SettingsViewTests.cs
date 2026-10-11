@@ -128,6 +128,34 @@ public sealed class SettingsViewTests
     });
 
     [Fact]
+    public Task Reduced_motion_stops_stock_controls_own_transitions_anywhere_in_the_window() => OnUi(async () =>
+    {
+        var settings = new SettingsViewModel(new Preferences(_store), _os, SettingsTheme.For(Resources));
+        using (settings)
+        {
+            await settings.Load(TestContext.Current.CancellationToken);
+            var elsewhere = new ToggleSwitch { Name = "Elsewhere" };
+            var window = new Window { Width = 900, Height = 600, Content = elsewhere };
+            _windows.Add(window);
+            SettingsTheme.Follow(window, settings);
+            window.Show();
+            Settle(window);
+            Assert.NotEmpty(elsewhere.KnobTransitions ?? []);
+
+            settings.ReduceMotion = true;
+            Settle(window);
+            await settings.Saving;
+
+            Assert.Empty(elsewhere.KnobTransitions ?? []);
+
+            settings.ReduceMotion = false;
+            Settle(window);
+
+            Assert.NotEmpty(elsewhere.KnobTransitions ?? []);
+        }
+    });
+
+    [Fact]
     public Task The_slider_scales_the_type_ramp() => OnUi(async () =>
     {
         var (window, settings) = await Show();
