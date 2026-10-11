@@ -1,11 +1,11 @@
 using Aw.Judge.Core.Ids;
 
-namespace Aw.Judge.Tests.PruneDecisionDetails;
+namespace Aw.Judge.Tests.AskQuestion;
 
-// Housekeeping: after each question the judge drops the detail rows older than 30 days (best effort; the question's
+// Retention: after each question the judge drops the detail rows older than 30 days (best effort; the question's
 // output and exit code never depend on it). Only questions write details, so only they prune; no other command, and
 // no command line the judge can't read, opens the database for it.
-public sealed class PruneDecisionDetailsCliTests : IDisposable
+public sealed class PruneAfterQuestionCliTests : IDisposable
 {
     private const string Ack = """{"text":"ok","senderKind":"teammate"}""";
 

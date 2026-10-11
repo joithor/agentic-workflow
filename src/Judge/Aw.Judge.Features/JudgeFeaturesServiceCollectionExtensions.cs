@@ -7,7 +7,6 @@ using Aw.Judge.Features.GetConfig;
 using Aw.Judge.Features.GetHealth;
 using Aw.Judge.Features.MapBriefByDispatch;
 using Aw.Judge.Features.MapBriefByName;
-using Aw.Judge.Features.PruneDecisionDetails;
 using Aw.Judge.Features.SaveBrief;
 using Aw.Judge.Features.SetBriefAgentId;
 using Aw.Judge.Features.SetConfig;
@@ -66,16 +65,9 @@ public static class JudgeFeaturesServiceCollectionExtensions
         return services;
     }
 
-    // AskQuestion: every 'judge <question>'; PruneDecisionDetails: the housekeeping after one.
+    // AskQuestion: every 'judge <question>', validated, then the retention prune after it (outermost first).
     private static void AddQuestions(IServiceCollection services)
     {
-        _ = services
-            .AddScoped<PruneDecisionDetailsService>()
-            .AddScoped<IValidator<PruneDecisionDetailsRequest>, PruneDecisionDetailsValidator>()
-            .AddScoped<IService<PruneDecisionDetailsRequest, PruneDecisionDetailsResponse>>(static sp =>
-                new ValidatingService<PruneDecisionDetailsRequest, PruneDecisionDetailsResponse>(
-                    sp.GetRequiredService<PruneDecisionDetailsService>(),
-                    sp.GetRequiredService<IValidator<PruneDecisionDetailsRequest>>()));
         _ = services
             .AddScoped<AskQuestionService>()
             .AddScoped<IValidator<AskQuestionRequest>, AskQuestionValidator>()

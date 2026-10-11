@@ -100,8 +100,27 @@ internal sealed class SqliteDecisionLog(JudgeDatabase database, JsonSerializerOp
         }
     }
 
-    public ValueTask<Result<int>> PruneDetailsBefore(DateTimeOffset before, CancellationToken cancellationToken) =>
-        Write(DecisionSql.At(DecisionSql.PruneDetailsBefore, "$before", before), cancellationToken);
+    public async ValueTask<Result<int>> PruneDetailsBefore(DateTimeOffset before, CancellationToken cancellationToken)
+    {
+        var begun = await database.BeginRead(cancellationToken).ConfigureAwait(false);
+        if (begun.IsError)
+        {
+            return begun.Error;
+        }
+
+        Result<int> found;
+        await using (begun.Value.ConfigureAwait(false))
+        {
+            found = await SqliteQueries.One(begun.Value, DecisionSql.At(DecisionSql.HasDetailsBefore, "$before", before), ScalarMapper.Count, cancellationToken).ConfigureAwait(false);
+        }
+
+        if (found.IsError || found.Value == 0)
+        {
+            return found;
+        }
+
+        return await Write(DecisionSql.At(DecisionSql.PruneDetailsBefore, "$before", before), cancellationToken).ConfigureAwait(false);
+    }
 
     private static Result<DecisionRecord> Unknown(DecisionId id) => JudgeErrors.UnknownDecision.With($"unknown decision: {id.Value}");
 

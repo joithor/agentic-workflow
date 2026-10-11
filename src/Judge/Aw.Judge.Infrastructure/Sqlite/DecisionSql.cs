@@ -40,6 +40,10 @@ internal static class DecisionSql
         "SELECT outcome FROM decisions WHERE outcome IN ('decided', 'failed') AND reason_code <> 'pre-rule' " +
         "ORDER BY ts DESC, rowid DESC LIMIT $count";
 
+    // Read first: with nothing to drop (every question but the day's first) the prune never takes the write lock.
+    internal const string HasDetailsBefore =
+        "SELECT COUNT(*) FROM (SELECT 1 FROM decisions d JOIN decision_details x ON x.id = d.id WHERE d.ts < $before LIMIT 1)";
+
     internal const string PruneDetailsBefore =
         "DELETE FROM decision_details WHERE id IN (SELECT id FROM decisions WHERE ts < $before)";
 

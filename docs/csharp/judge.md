@@ -16,9 +16,9 @@ Aw.Judge.Host ──► Aw.Judge.Features ──► Aw.Judge.Core ◄── Aw.J
 | Project | Holds |
 |---|---|
 | `Aw.Judge.Core` | Typed ids (`Ids`: `DecisionId`, `ToolUseId`, `SessionId`, `PromptId`, `AgentId`), the domain records (`Briefs`, `Decisions`, `Health`, `Config`, `Providers`), the eight questions with their input records (`Questions`), the evaluation engine with the question catalog, and the rules provider (`Evaluation`), the error catalogue (`Errors.JudgeErrors`, AW-JUDGE-NNN) and the ports (`Ports`) |
-| `Aw.Judge.Features` | One slice per command: `AskQuestion` (every `judge <question>`), `SaveBrief`, `GetBrief`, `MapBriefByName`, `MapBriefByDispatch`, `SetBriefAgentId`, `ExplainDecision` (`why`), `UndoDecision`, `ApproveDecision`, `GetHealth`, `GetConfig`, `SetConfig`, and `PruneDecisionDetails` (the housekeeping after a question) |
+| `Aw.Judge.Features` | One slice per command: `AskQuestion` (every `judge <question>`), `SaveBrief`, `GetBrief`, `MapBriefByName`, `MapBriefByDispatch`, `SetBriefAgentId`, `ExplainDecision` (`why`), `UndoDecision`, `ApproveDecision`, `GetHealth`, `GetConfig`, `SetConfig`; `AskQuestion` is decorated with `PruneAfterQuestion` (retention, below) |
 | `Aw.Judge.Infrastructure` | The SQLite stores over `decisions.sqlite`, the config file, the redactor adapter over `Aw.Redaction`, the `PATH` executable locator, the process runner, the secret source (environment, then keychain), the model providers and their catalog (`Providers/`), random decision ids, and the settings read from the environment |
-| `Aw.Judge.Host` | `Program.cs`, `Composition.Compose`, one command per slice in `Commands/`, the command table (which takes the providers allowlist out of argv first), `Housekeeping` (the prune after a question), `JudgeJsonContext` (the package's one source-generated JSON context) |
+| `Aw.Judge.Host` | `Program.cs`, `Composition.Compose`, one command per slice in `Commands/`, the command table (which takes the providers allowlist out of argv first), `JudgeJsonContext` (the package's one source-generated JSON context) |
 
 Core's namespaces form a graph with no cycle (`ARCH-CYCLE-001`): `Errors` and `Ids` are leaves, `Providers`,
 `Config`, `Briefs`, `Decisions`, `Health`, `Questions`, `Processes` and `Secrets` sit on them, `Ports` on those, `Evaluation` on `Ports`, and
@@ -143,7 +143,7 @@ How a call runs (`AskQuestionService`): the catalog builds the lineup (Providers
 which narrows that chain, and a disabled question escalates `question-disabled`. An unreadable or invalid `config.json`
 runs on the defaults and logs one warning. With `--providers rules` (or `AW_JUDGE_PROVIDERS=rules`) a question runs
 offline: any input no pre-rule settles escalates `no-provider-decided` (exit 2; `ask-check` asks). After the output the
-judge prunes old decision details (Housekeeping below).
+judge prunes old decision details (Retention below).
 
 | Question | Input record (stdin) | Outputs | Class | Threshold | Budget | Pre-rules (decided by `rules` without a model) | Fallback after an unsure model |
 |---|---|---|---|---|---|---|---|
@@ -303,14 +303,16 @@ The hooks fail open on any judge failure, and the judge does its part: storage n
 Pinned by `UnusableStorageTests` (a read-only state directory, a read-only database, a corrupt file) and the decision
 log's own store-error tests.
 
-## Housekeeping
+## Retention
 
-After each question, the only command that writes `decision_details`, `Housekeeping` runs `PruneDecisionDetails`: it
-deletes the detail rows of decisions older than 30 days (`DecisionDetails.Retention`); the decision rows stay. It is
-best effort, after the output is written, and its result is ignored. The cost is one DELETE over the `decisions.ts`
-index in its own write transaction, which removes only what aged past 30 days since the last question (usually
-nothing): a NativeAOT question takes about 10 ms end to end with it (`health` about 9 ms), so no cheaper trigger (once a
-day, a marker file) is needed. Pinned by `PruneDecisionDetailsTests` and `PruneDecisionDetailsCliTests`.
+Questions are the only command that writes `decision_details`, so the retention policy is a decorator on that one
+service: `PruneAfterQuestion`, registered in `AddJudgeFeatures` around `AskQuestion`. After a successful question it
+asks `IDecisionLog.PruneDetailsBefore` for the details of decisions older than 30 days (`DecisionDetails.Retention`)
+before the start of today (UTC); the decision rows stay. A question that fails prunes nothing, and the prune's own
+result is ignored (best effort). The cutoff moves once a day, so only the day's first question finds anything to drop;
+the SQLite log reads first (`SELECT … LIMIT 1` over the `decisions.ts` index, no write lock) and opens a write
+transaction only when there is something to delete, so a question never waits on another writer for retention. Pinned
+by `PruneAfterQuestionTests`, `PruneAfterQuestionCliTests` and `SqlitePruneTests`.
 
 ## Hook contract
 
