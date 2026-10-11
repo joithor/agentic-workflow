@@ -37,7 +37,7 @@ public sealed partial class ShippedRecipesTests
     public void Shipped_recipe_lists_every_eval_of_its_own_and_each_one_is_shipped(string path)
     {
         var document = RecipeComposition.ReadClean(ShippedRecipes.Read(path), Path.GetFileName(path));
-        var directory = Path.GetDirectoryName(path)!;   // why: every shipped recipe sits in a directory under recipes/
+        var directory = Path.GetDirectoryName(path);
         var own = ShippedRecipes.Evals.Where(e => e.StartsWith($"{directory}/evals/{document.Recipe.Id.Value}/", StringComparison.Ordinal));
 
         Assert.Equal(own, document.Recipe.Evals.Select(e => $"{directory}/{e}").Order(StringComparer.Ordinal), StringComparer.Ordinal);

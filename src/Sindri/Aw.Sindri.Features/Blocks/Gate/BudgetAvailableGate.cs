@@ -15,6 +15,14 @@ internal sealed class BudgetAvailableGate : IGate, IDescribedBlock
         Capability.None, Parameters: [], Rung.Deterministic, DeskCapable: false);
 
     /// <inheritdoc/>
-    public ValueTask<GateResult> Evaluate(GateContext context, CancellationToken cancellationToken) =>
-        throw new NotSupportedException("red: gate.budget.available");
+    public ValueTask<GateResult> Evaluate(GateContext context, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(context);
+        return ValueTask.FromResult(context.TokensLeft is null or > 0 ? Pass : Spent);
+    }
+
+    private static GateResult Pass { get; } = new(GateVerdict.Pass, Score: null, Reasons: []);
+
+    private static GateResult Spent { get; } = new(GateVerdict.Fail, Score: null,
+        Reasons: ["the item's token budget is spent; grant tokens with 'sindri workflow answer <instance> --grant-tokens <n>' at a terminal"]);
 }

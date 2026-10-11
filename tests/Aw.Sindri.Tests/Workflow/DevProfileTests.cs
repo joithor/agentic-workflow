@@ -1,6 +1,6 @@
 using Aw.Sindri.Infrastructure.Profile;
-using Aw.Sindri.Tests.Profile;
 using Aw.Sindri.Testing.Workflow;
+using Aw.Sindri.Tests.Profile;
 
 namespace Aw.Sindri.Tests.Workflow;
 
