@@ -1,7 +1,9 @@
 using Aw.Sindri.Core.Lease;
 using Aw.Sindri.Core.Ledger;
+using Aw.Sindri.Core.Profile;
 using Aw.Sindri.Infrastructure.Lease;
 using Aw.Sindri.Infrastructure.Ledger;
+using Aw.Sindri.Infrastructure.Profile;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Aw.Sindri.Infrastructure;
@@ -11,6 +13,7 @@ public static class SindriInfrastructureServiceCollectionExtensions
 {
     /// <summary>Adds the Sindri adapters (SQLite ledger and lease, YAML profile, files, the process probe) and their settings.</summary>
     /// <param name="services">The service collection.</param>
+    /// <remarks>The profile and approval adapters take the package's AwJson options, which Compose registers.</remarks>
     /// <param name="environment">Reads an environment variable (Environment.GetEnvironmentVariable in Program.cs, a lambda in tests).</param>
     /// <returns>The same collection.</returns>
     public static IServiceCollection AddSindriInfrastructure(this IServiceCollection services, Func<string, string?> environment)
@@ -19,5 +22,7 @@ public static class SindriInfrastructureServiceCollectionExtensions
             .AddSingleton<IProcessProbe, PosixProcessProbe>()
             .AddSingleton<LedgerDatabase>()
             .AddSingleton<ILedgerStore, SqliteLedger>()
-            .AddSingleton<ILease, SqliteLease>();
+            .AddSingleton<ILease, SqliteLease>()
+            .AddSingleton<IProfileSource, YamlProfileSource>()
+            .AddSingleton<IApprovals, FileApprovals>();
 }
