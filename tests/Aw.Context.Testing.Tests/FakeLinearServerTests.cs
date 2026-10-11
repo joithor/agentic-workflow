@@ -45,6 +45,21 @@ public sealed class FakeLinearServerTests
     }
 
     [Fact]
+    public async Task Issues_filter_with_or_and_some_over_a_connection()
+    {
+        await using var linear = await FakeLinearServer.Start();
+        var filter = new JsonObject
+        {
+            ["labels"] = new JsonObject { ["some"] = new JsonObject { ["name"] = new JsonObject { ["eq"] = "layout" } } },
+            ["or"] = new JsonArray(
+                new JsonObject { ["identifier"] = new JsonObject { ["eq"] = "SPL-103" } },
+                new JsonObject { ["state"] = new JsonObject { ["type"] = new JsonObject { ["neq"] = "completed" } } }),
+        };
+
+        Assert.Equal(["SPL-103", "SPL-106"], Identifiers(await Issues(linear, new JsonObject { ["filter"] = filter })));
+    }
+
+    [Fact]
     public async Task Issues_page_with_first_and_after_in_updated_at_order()
     {
         await using var linear = await FakeLinearServer.Start();
