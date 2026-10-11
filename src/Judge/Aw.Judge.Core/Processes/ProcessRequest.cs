@@ -18,6 +18,15 @@ public sealed record ProcessRequest
     /// <summary>Variables added to (or replacing in) the inherited environment.</summary>
     public IReadOnlyDictionary<string, string> Environment { get; init; } = new Dictionary<string, string>(StringComparer.Ordinal);
 
+    /// <summary>
+    /// How many characters of each output stream are kept; the rest is read and dropped, so a program that floods its
+    /// output can't grow the caller's memory without bound.
+    /// </summary>
+    public int OutputLimit { get; init; } = DefaultOutputLimit;
+
+    /// <summary>The default <see cref="OutputLimit"/>: 4 Mi characters.</summary>
+    public const int DefaultOutputLimit = 4 << 20;
+
     /// <summary>How long the program may run before it and every process it started are stopped.</summary>
     public required TimeSpan Timeout { get; init; }
 }

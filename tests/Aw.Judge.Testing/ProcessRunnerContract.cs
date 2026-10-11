@@ -106,6 +106,16 @@ public abstract class ProcessRunnerContract : IDisposable
         Expect.That(result.End == ProcessEnd.FailedToStart && result.ExitCode is null, $"the start failed, got {result}");
     }
 
+    /// <summary>Each stream is kept up to the request's output limit; the rest is dropped and the run still ends normally.</summary>
+    /// <returns>A task.</returns>
+    [Fact]
+    public async Task Output_past_the_limit_is_cut_at_it()
+    {
+        var result = await Run(new FakeProgram { OutputSize = 5_000, StandardOutput = "!" }, request => request with { OutputLimit = 1_000 });
+
+        Expect.That(result.ExitCode == 0 && result.StandardOutput == new string('a', 1_000) && result.StandardError == new string('a', 1_000), $"both streams cut at 1,000 chars, got exit {result.ExitCode?.ToString(CultureInfo.InvariantCulture)}, {result.StandardOutput.Length.ToString(CultureInfo.InvariantCulture)} and {result.StandardError.Length.ToString(CultureInfo.InvariantCulture)} chars");
+    }
+
     /// <summary>A megabyte on each stream at once doesn't deadlock on full pipes.</summary>
     /// <returns>A task.</returns>
     [Fact]

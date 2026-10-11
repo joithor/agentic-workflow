@@ -946,3 +946,6 @@ Aw.Judge.Core.Ports.IProviderCatalog.Lineup(Aw.Judge.Core.Config.ProvidersConfig
 static Aw.Judge.Core.Decisions.DecisionDetails.Retention.get -> System.TimeSpan
 Aw.Judge.Core.Processes.ProcessEnd.FailedToStart = 4 -> Aw.Judge.Core.Processes.ProcessEnd
 static Aw.Judge.Core.Processes.ProcessResult.FailedToStart(string! reason) -> Aw.Judge.Core.Processes.ProcessResult!
+Aw.Judge.Core.Processes.ProcessRequest.OutputLimit.get -> int
+Aw.Judge.Core.Processes.ProcessRequest.OutputLimit.init -> void
+const Aw.Judge.Core.Processes.ProcessRequest.DefaultOutputLimit = 4194304 -> int

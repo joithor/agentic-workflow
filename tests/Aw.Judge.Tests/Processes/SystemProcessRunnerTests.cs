@@ -31,6 +31,20 @@ public sealed class SystemProcessRunnerTests : IDisposable
     }
 
     [Fact]
+    public async Task A_program_that_exits_while_a_background_child_holds_its_pipes_is_exited_with_its_output()
+    {
+        Assert.SkipWhen(OperatingSystem.IsWindows(), "the program is an sh script");
+        _ = _bin.InstallScript("daemonizer", "sleep 30 &\nprintf ok\nexit 0\n");
+        var clock = Stopwatch.StartNew();
+
+        var result = await new SystemProcessRunner(_bin.Environment).Run(
+            new ProcessRequest { FileName = "daemonizer", Timeout = TimeSpan.FromSeconds(20) }, TestContext.Current.CancellationToken);
+
+        Assert.Equal(ProcessResult.Exited(0, "ok", ""), result);
+        Assert.True(clock.Elapsed < TimeSpan.FromSeconds(8), $"returned soon after the program exited, not at the 20 s budget, took {clock.Elapsed}");
+    }
+
+    [Fact]
     public async Task A_path_is_run_as_is_without_a_search()
     {
         Assert.SkipWhen(OperatingSystem.IsWindows(), "the program is an sh script");
