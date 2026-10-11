@@ -1,8 +1,8 @@
 # Sindri UI app design: the control plane's views, actions and launching sessions
 
 Status:
-- Draft, 2026-10-11; revision 3 after two `/autoplan` passes (pass 1: five lenses NEEDS_WORK, no CRITICAL; pass 2:
-  product, design and devex PASS, one shared HIGH fixed). §17 lists
+- Draft, 2026-10-11; revision 4 after three `/autoplan` passes (pass 1: five lenses NEEDS_WORK, no CRITICAL; pass 2:
+  product, design and devex PASS, one shared HIGH fixed; pass 3: all five PASS). §17 lists
   every finding and its resolution.
 - The two taste calls DESIGN.md and the specs don't settle were made by the owner on 2026-10-11 from three mocked
   variants (`shotgun/contact-sheet.html`): the **single-glance home** layout (§3.1) and the attention colour
@@ -62,8 +62,9 @@ the fixture ledger (§18.2), a fresh observer answers the four questions from on
 
 **How we know it works** (read from the ledger, so nothing new is collected): the launch success rate
 (`launch.started` over all launch outcomes), the median time from a needs-you row appearing to its clearing, and the
-share of decisions and answers made from the app (`human:ui`) versus the CLI (`human:cli`). The scorer can report them
-once the events exist; this spec adds no metric route.
+share of decisions and answers made from the app (`human:ui`) versus the CLI (`human:cli`). Until a view owns them, the owner reads them
+from the ledger (`sindri ledger --type launch.*`); the **Today** view (§10.2, after the collector spec) is their home.
+This spec adds no metric route.
 
 **Rules every screen follows:**
 - **No logic.** A view model maps API fields to text and visibility. It never computes a state, an urgency, an
@@ -89,7 +90,7 @@ Three layouts were mocked with the same fixture data (`shotgun/contact-sheet.htm
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────────────────────────┐
-│ ◆ Sindri  [Home] Queue 4  Decisions 2  Services 5/6  Later ▾     ⌘K Search or run a command   ● Healthy · updated 2s ago · index failed │
+│ ◆ Sindri  [Home] Queue 4  Decisions 2  Services 5/6  Later ▾     ⌘K Search or run a command   ● Degraded · updated 2s ago · index failed │
 ├══════════════════════════════════ attention band (while a row pulses) ══════════════════════┤
 │ Home                                                                                        │
 │ 5 need you · 3 running · 4 queued                         G N Needs you  J K Move  O Open  ? │
@@ -102,7 +103,7 @@ Three layouts were mocked with the same fixture data (`shotgun/contact-sheet.htm
 │ │ profile   Profile changed since approval — 2 keys        2h  [⌂ Approve at a terminal]    ││
 │ └───────────────────────────────────────────────────────────────────────────────────────────┘│
 │ ┌ RUNNING 3 · WITH YOU 1 ───────────────────────┐ ┌ QUEUED 4 ────────────────────────────────┐│
-│ │ ITM-01JE7 produce 2/3 · Claude Code · Live [Attach ▾]│ ITM-01JF0 Stream limits 429 fallback 1h ││
+│ │ ITM-01JE7 produce 2/3 · Claude Code [Open ▾][Take over]│ ITM-01JF0 Stream limits 429 fallback 1h ││
 │ │ ITM-01JA1 with you since 12:01 [Hand back]    │ │ …                                         ││
 │ └───────────────────────────────────────────────┘ └───────────────────────────────────────────┘│
 │ ┌ SINDRI HEALTH  Running · pid 48211 · epoch 7 · API v1 · views 2s · services 5/6 · profile changed ┐│
@@ -125,8 +126,8 @@ Three layouts were mocked with the same fixture data (`shotgun/contact-sheet.htm
   pill, so Home's health strip may sit just below (the mockup at 5 rows ends near 840 px). At scale 1.3 the needs-you
   cap drops to 4. At the 900 × 600 minimum the page scrolls.
 - **Needs-you cap:** Home shows at most 5 needs-you rows (all `pulse` rows first, as the API orders them), then
-  "Show all N" which expands the panel in place. So Running, Queued and Health stay above the fold at 1280 × 800 with
-  up to 6 rows, and the summary line always states the totals.
+  "Show all N", which expands the panel in place. The summary line always states the totals; the fold rule above says
+  what fits.
 - **Detail sheet:** a right-side sheet (default 520 px, resizable 420–760 px, `surface-1`, a `hairline` left rule)
   over the page, opened from any row with `Enter` or a click on its title. It shows the item, park, decision, service
   or job (§4.3–§4.8). `Esc` closes it and returns focus to the row. While it's closed, a slim edge tab shows the last
@@ -202,7 +203,8 @@ confirmation and mark the view stale until the next event (API §2.4).
 The default page (§3.2): four panels in a fixed order:
 1. **Needs you:** up to five rows with their actions inline (§4.3), and "Show all N" expanding the panel in place.
 2. **Running and With you:** one line each: id, title, step, agent, where it runs, since, budget, and its action
-   (**Attach**, **Hand back**).
+   (running rows: **Open ▾** and **Take over**; With-you rows: **Hand back**, and **Attach** once the engine runs).
+   Running and Queued each show their own group's `empty` sentence when empty (E-18).
 3. **Queued:** the count and the next five, each with **Open**.
 4. **Sindri health:** the health line (§4.8) as a strip; it opens **Health**.
 
@@ -239,7 +241,7 @@ is what that intersection produces, so the mockups and tests can check it:
 |---|---|---|
 | `parked: rounds` / `no-progress` | Grant rounds | **Copy** `sindri workflow answer <a> --grant 1` (`ApplyCommand:answer-grant`, protected, `cli-only:typed-confirmation`). On `no-progress`, also **Answer** with text (desk, a form) |
 | `parked: budget` | Grant tokens | **Copy** `… --grant-tokens <n>` (protected) |
-| `parked: needs-answer` | Answer with text | **Answer** form: a plain-text box (≤ 1 MiB) → `ApplyCommand:answer` (desk, ready) |
+| `parked: needs-answer` | Answer with text | **Answer** form: a plain-text box (≤ 1 MiB) → `ApplyCommand:answer-text` (desk, E-12) |
 | `parked: timeout` | Resume | **Resume** button → `ApplyCommand:answer-resume` (desk) |
 | `parked: spec-conflict` (revoked) | Cancel | **Cancel** (`ApplyCommand:cancel`, desk, confirm) |
 | `parked: spec-conflict` (drift) | Re-approve, then resume | **Copy** `sindri recipe approve <recipe>` (protected), then **Resume** enabled once the instance's `allowedCommands` include it |
@@ -262,7 +264,8 @@ Mockups: `mockups/park-grant.html` (protected answer), `mockups/park-needs-answe
   collapsible section with its count; items within a group in the API's order. Each row: id, title, repo, state as a
   word, step, agent (once launched), since, and the row's primary action from `actions`.
 - **Running** (Home's left panel, and the Queue page filtered by `G R`): the `running` group, with the step (`produce round 2/3`), the agent and where it runs ("Claude Code in
-  Warp", "factory worker"), the budget line as text plus a thin `ink-subtle` bar, and **Attach** (§6).
+  Warp", "factory worker"), the budget line as text plus a thin `ink-subtle` bar, **Open ▾** and **Take over** (§6.2). **Attach** belongs to With-you rows
+  only.
 - **With you** (pinned at the top of Home's left panel, and `G W`): the `withYou` group. Every row carries **Hand back** as its primary action and "with you since
   12:01 (25m)". This is the takeover's home (§6.4).
 - **Create item:** `C` opens a small form (title, repo, body) → `CreateItem` (desk). **Close item** from the detail
@@ -398,7 +401,7 @@ The item's `launch` block (§6.7 E-2) lists the modes the server allows; the app
 |---|---|---|---|---|
 | **Open** | No launch is `requested` for the item, and the item isn't closed | **Open in <agent>** | A new session in a new Warp tab, in the item's repo (the path from the approved profile's repo entry), seeded with the item id only. The session pulls its state and context through the Sindri MCP server (`sindri_item`, `sindri_item_timeline`, `sindri_pending_decisions`, `sindri_context`). Once the engine runs, opening is a takeover (§6.4) | U6a (before S2, no takeover); U6b adds the takeover |
 | **Attach** | The item is **with you** and a `launch.started` for it has no handback since | **Attach** | Brings Warp to the front and names the tab to look for (`sindri ITM-01JA1`). It starts no process: Sindri can't see inside Warp, so it never guesses that a session ended (never two processes on one session, DB §7). `OpenItem:attach` reaches the engine as a no-op takeover | U6b (needs the engine's `taken-over` state) |
-| **Resume** | A `launch.started` for the item carried a session id (Claude Code always; Codex and Cursor once their ids are known), **and the item was handed back since**. The handback is the human's signal that the session is finished | **Resume <agent> session** (next to **Open new**) | A new Warp tab running the target's resume command | U6b (needs the engine's handback) |
+| **Resume** | A `launch.started` for the item carried a session id (Claude Code always; Codex and Cursor once their ids are known), **and the item was handed back since**. The handback is the human's signal that the session is finished | **Resume <agent> session** (next to **Open new**) | A new Warp tab running the target's resume command; like Open, it is a takeover once the engine runs | U6b (needs the engine's handback) |
 | **Take over** (a running step) | The item is `running` | **Take over** (labelled "pauses automation") | `ApplyCommand:takeover` (`pause`). In the engine phases that exist (WF P1–P7) steps run on the desk runtime, so there is no worker process to stop. When a later engine phase adds a headless worker runtime, it owns stopping the worker and recording `run.stopped`; only then does the server offer **Resume** on that worker's session (X20) | U6b |
 
 Session lifecycle facts (a launched session's SessionStart and SessionEnd reported through `sindri mcp`, so Attach and
@@ -434,8 +437,8 @@ Resume could follow the real session) are later; they need the collector or per-
 3. `open "warp://launch/sindri-<launchId>.yaml"` (macOS; `xdg-open` on Linux, `Start-Process` on Windows).
 4. **Cleanup:** delete the file after 60 s, and sweep any `sindri-*.yaml` older than 60 s when the launcher service
    starts, so an old launch can't be re-run from Warp's palette.
-5. **MCP for the session:** Claude Code gets `--mcp-config <AW_SINDRI_HOME>/launch/mcp.json` (0600, written by the
-   launcher; stdio or HTTP per X8). Codex gets the server through `-c mcp_servers.sindri.*` overrides. Cursor reads only
+5. **MCP for the session:** Claude Code gets `--mcp-config <AW_SINDRI_HOME>/launch/mcp-<launchId>.json` (0600,
+   written per launch and swept with the YAML file; stdio or HTTP per X8; no token in v0). Codex gets the server through `-c mcp_servers.sindri.*` overrides. Cursor reads only
    its own `mcp.json`, so until the switch registers the server (the cutover rule), a Cursor session has no Sindri
    tools: the target shows `limited: "Sindri tools aren't registered with Cursor yet"` and still launches.
 6. **No GUI session:** when `sindri serve` can't reach the user's desktop session (started by launchd before login, no
@@ -453,9 +456,13 @@ absolute path (unverified), from a `sindri` started in a terminal and from one s
   applies it as a trigger of a new kind, `open-request` (X18, §6.7 E-6): applied directly in `Commit` in any state where
   a takeover is allowed, keyed by the ledger fact, actor `service:engine`, causation the request. It's a no-op when the
   instance is already taken over (attach, or a second open). **The launcher opens Warp only after the engine has
-  recorded that takeover** (matched by causation), or at once when the item has no active instance; if the engine
-  refuses (the instance became terminal), the launch fails with the engine's code. So automation never runs beside the
+  recorded that takeover** (matched by causation), or at once when the item has no active instance. An instance started while a launch for its item is `requested`
+  or `started` (and not handed back) **starts taken over** (the engine reads the item's open launch in `StartInstance`'s
+  `Commit`), so automation never runs beside a session that's opening. If the engine refuses the takeover (the
+  instance became terminal), the launch fails with the engine's code. So automation never runs beside the
   new session.
+- **A takeover with no session:** when `launch.failed` follows the takeover its request caused, the needs-you `park`
+  row "Hand back ITM-…?" appears at once (the needs-you projection folds the pair), not after `takeoverIdle`'s 2 h.
 - Before S2 (U6a) there is no instance: the item records the launch and nothing pauses.
 - **Handback is offered in four places, always one click:**
   1. the item's header while it's with you ("With you since 12:01 (25m) · **Hand back**");
@@ -507,12 +514,12 @@ the UI's contract tests) is defined in §18.1, which also names the phase each e
 
 | # | Edit | Why |
 |---|---|---|
-| **E-1** | `OpenItem` becomes asynchronous. Body `{ mode: open\|attach\|resume, target?: claude-code\|codex\|cursor, itemVersion }`; response `LaunchRequested(accepted, LaunchId)`, **replacing** P10's `ItemOpened(accepted, launchedIn)`; variants `OpenItem:open`, `:attach`, `:resume`, all `desk`, `ReadsViews`. The handler decides and appends `item.open-requested {launchId, item, mode, target, chosenBy}` (key `item.open-requested:<launchId>`); it refuses with `SND-LAUNCH-008` while the item has a launch in `requested`. An in-process **launcher hosted service** (caller `service:launcher`) reads the ledger from its own persisted `launcher_cursor`, acts on a request **only if it has no outcome and is under 30 s old**, waits for the engine's takeover when the item has an active instance (E-6) **within the same 30 s deadline**, **re-checks freshness immediately before `ILauncher.Launch`**, launches, and appends `launch.started {launchId, item, target, sessionId?, tabTitle}` (key `launch.started:<launchId>`) or `launch.failed {launchId, code}` (key `launch.failed:<launchId>`). A timer (every 5 s) appends `launch.failed SND-LAUNCH-007` for every request with no outcome past its 30 s deadline, and the same sweep runs at start-up; a request is never retried. `SND-LAUNCH-008` counts only requests still inside their deadline. All three events are public and in `EventCatalog`. New typed id `LaunchId` (`LCH-…`). A `launches` projection backs `GET /launches/{launchId}` → `LaunchView(state: requested\|started\|failed, target, chosenBy, code?, detail?, asOf)` | API §2.1: handlers never do slow work; a launch happens at most once and never without a fresh click |
-| **E-2** | `ItemView` gains `launch`: `{ modes: [open\|attach\|resume], defaultTarget, chosenBy: lastUsed\|profile\|builtIn, attach?: {target, tabTitle, since}, resumable?: {target, sessionId}, inFlight?: LaunchId, repoPath, blockers: [{code, detail}] }`, computed in `Core` (`LaunchOptions.For(item, launches, probe, profile)`) from projections only, by §6.2's rules | The app renders modes and the default; it decides neither |
+| **E-1** | `OpenItem` becomes asynchronous. Body `{ mode: open\|attach\|resume, target?: claude-code\|codex\|cursor, itemVersion }`; response `LaunchRequested(accepted, LaunchId)`, **replacing** P10's `ItemOpened(accepted, launchedIn)`; variants `OpenItem:open`, `:attach`, `:resume`, all `desk`, `ReadsViews`. The handler decides and appends `item.open-requested {launchId, item, mode, target, chosenBy}` (key `item.open-requested:<launchId>`); it refuses with `SND-LAUNCH-008` while the item has a launch in `requested`. An in-process **launcher hosted service** (caller `service:launcher`) reads the ledger from its own persisted `launcher_cursor`, acts on a request **only if it has no outcome and is under 30 s old**, waits for the engine's takeover when the item has an active instance (E-6) **within the same 30 s deadline**, **re-checks freshness immediately before `ILauncher.Launch`**, launches, and appends `launch.started {launchId, item, target, sessionId?, tabTitle}` or `launch.failed {launchId, code}`, **both under one fact key, `launch.outcome:<launchId>`**, so the first outcome written wins: the launcher writes `launch.started` only if it wins that key (it records the outcome before reporting success to anyone), and an expiry that loses the race to a started launch is dropped. A `FakeTimeProvider` test fires the expiry while `ILauncher.Launch` is running and asserts exactly one outcome. A timer (every 5 s) tries to append `launch.failed SND-LAUNCH-007` (same `launch.outcome` key) for every request with no outcome past its 30 s deadline; the launcher claims a request before calling `ILauncher.Launch` and doesn't call it after its deadline, and the same sweep runs at start-up; a request is never retried. `SND-LAUNCH-008` counts only requests still inside their deadline. All three events are public and in `EventCatalog`. New typed id `LaunchId` (`LCH-…`). A `launches` projection backs `GET /launches/{launchId}` → `LaunchView(state: requested\|started\|failed, target, chosenBy, code?, detail?, asOf)` | API §2.1: handlers never do slow work; a launch happens at most once and never without a fresh click |
+| **E-2** | `ItemView` gains `launch`: `{ modes: [open\|attach\|resume], defaultTarget, chosenBy: lastUsed\|profile\|builtIn, attach?: {target, tabTitle, since}, resumable?: {target, sessionId}, inFlight?: LaunchId, lastStarted?: {target, at, tabTitle}, repoPath, blockers: [{code, detail}] }`, computed in `Core` (`LaunchOptions.For(item, instance, launches, probe, profile)`, the instance state coming from the engine's item projection, X7) from projections only, by §6.2's rules | The app renders modes and the default; it decides neither |
 | **E-3** | A `launch_targets` projection over `launch.probed {terminal: {id, present, version?, problem?}, targets: [{id, present, version?, limited?, problem?}], repos: [{repo, present}]}`, appended by the launcher service on start, after a failed launch, and every 10 min **only when the result changed**. `GET /launch/targets` → `LaunchTargets(terminal, targets, repos, asOf)`. A **Check again** control: `ProbeLaunchTargets` (`job` class) | Probing is slow I/O, so it's a service that records facts, not a query |
 | **E-4** | Profile keys `launch.default` and `launch.repos.<repo>.default` (each a target id), in S1's closed profile schema | The profile default (§6.1); changing it is a profile approval |
 | **E-5** | Codes `SND-LAUNCH-002` (no terminal: not installed, or no GUI session), `-003` (agent CLI not found), `-004` (repo not on disk), `-006` (no session to resume or attach), `-007` (interrupted; not retried), `-008` (a launch is already in progress), beside P10's `-001` | §6.6 |
-| **E-6** | **WF edit (§5.4, §5.7):** a trigger kind `open-request`, id the source sequence, key `wf:{instance}:open:{launchId}`, applied directly in `Commit` wherever `takeover` is allowed; it is a trigger, not a command, so it takes no nonce, and it is exempt from the approval check like `takeover`; actor `service:engine` (WF §6.2 gains that actor row for this trigger); causation the `item.open-requested` event; a no-op when already taken over. The launcher waits for it (E-1) and fails the launch with the engine's code when it's refused | X18; automation never runs beside the new session; the actor is never a made-up human |
+| **E-6** | **WF edit (§5.4, §5.7):** a trigger kind `open-request` whose id and key are both `wf:{instance}:open:{launchId}`, applied directly in `Commit` wherever `takeover` is allowed; it is a trigger, not a command, so it takes no nonce, and it is exempt from the approval check like `takeover`; actor `service:engine` (WF §6.2 gains that actor row for this trigger); causation the `item.open-requested` event; a no-op when already taken over. The launcher waits for it (E-1) and fails the launch with the engine's code when it's refused | X18; automation never runs beside the new session; the actor is never a made-up human |
 | **E-7** | `NeedsYouRow` gains `actions` (the action ids allowed now, from the same source as E-13), `label` (the display kind and reason, for example `escalated · gate`, `parked · no-progress`, `decision · re-scope`), and `subject` carries the instance address for `park` rows | The app shows the row's kind and its secondary actions without deriving them |
 | **E-8** | Command catalog rows gain `destructive: bool`, `readsViews: bool` and `shortcut?` (a default key, §8). `CloseItem` splits into `CloseItem:done` and `CloseItem:cancelled` (the latter destructive) | Confirmations, rebuild-time disabling and key hints without a client-side list |
 | **E-9** | `CompleteStep` gets a catalog row with UI status `ready` once WF P4 lands; its route accepts output file contents (≤ 1 MiB each), as WF §6.1 says for the CLI. API §2.1's `ApplyCommand:complete` variant is dropped in favour of `CompleteStep` | The desk-task form (§4.4); one name |
@@ -522,6 +529,7 @@ the UI's contract tests) is defined in §18.1, which also names the phase each e
 | **E-13** | **WF edit (§6.3):** each `allowedCommands` entry on `GET /workflow/instances/{address}` is `{ actionId, cli }`, with ids filled and the class taken from the catalog; a parent mirroring a child lists the forwarded actions | The app intersects ids, never maps verbs |
 | **E-14** | `GET /status` gains `health: { word: healthy\|degraded\|stalled\|rebuilding, problems: [{code, text}] }`, computed by `Core`'s `HealthSummary.For(…)` | The health pill renders it verbatim |
 | **E-15** | Each `EventCatalog` entry gains `invalidates: [viewName]`, served by `GET /events/catalog` (a query, P5) | The app's refresh map comes from the server; an unknown type re-queries every visible view |
+| **E-18** | `QueueView.groups[]` each carry their own `empty` sentence from `EmptyText` ("Nothing running.", "Nothing queued."), and the view returns every group, empty ones included | Home's Running and Queued panels never need app-written empty text; the Queue page hides empty groups |
 | **E-16** | Every `cli` string the API serves (catalog rows, `NeedsYouRow.cli`, `allowedCommands`) is built from checked values only: ids matched to their patterns, recipe names and hashes to theirs; no free text | A copied command can't carry a newline or a second command |
 
 ## 7. Controls and the actions they call
@@ -911,7 +919,7 @@ All in `2026-10-11-sindri-ui-design/`, self-contained HTML with the fixture data
 across every screen), each with a 1280-wide PNG beside it. They are design references, not the implementation. The
 `mockups/` files are the visual reference; `shotgun/variant-2.html` is a layout reference only (it predates the
 attention colour, the focus ring and the reduced-motion word). Where a mockup and this text differ, the text wins.
-Known differences: the mockups' kind chips show the short kind (`park`), where the app renders the API's `label`
+Known differences: the `home`, `needs-you` and `queue` mockups put **Attach** on running rows, where the text gives running rows **Open ▾** and **Take over** (Attach is for With-you rows); the health pill in some mockups reads "Healthy" beside a failed service, where `health.word` is `degraded`; the mockups' kind chips show the short kind (`park`), where the app renders the API's `label`
 (`parked · no-progress`, E-7); the sheet mockups use a slightly different page shell from `home` and `queue`; and the
 Decisions count varies between files. The `/impeccable` critique (32/40) is in the review folder
 (`impeccable-critique.md`); its 16 fixes are in the files.
@@ -998,6 +1006,20 @@ review is in `pass2/consolidated-review.md` beside the pass-1 files.
 | P2-5 Mockups predate revision 2 | Updated with the `/impeccable` pass: Mark all seen, the Running cap, the Error token, the hover colour, the urgency words, and the launch flow's take-over frame. The critique showed the 800 px fold claim was wrong; §3.2's fold rule now says what fits (health stays in the pill) |
 | P2-6…P2-10 (LOW) | E-6 wording and actor row; the pill's words split by source; E-17 pointer in §6.7; fixed keys reserved against catalog shortcuts; §7 sentence and the `primary-focus` row |
 
+### Pass 3 → revision 4
+
+Verdicts: all five lenses PASS (no HIGH). The reviews are in `pass3/`.
+
+| Finding | Resolution |
+|---|---|
+| Expiry and launch can both record an outcome (security N1, arch A3-1) | One fact key `launch.outcome:<launchId>`, first write wins; the launcher claims before launching; a race test (E-1) |
+| An instance started during an open launch runs beside it (security N2) | It starts taken over (§6.4) |
+| A second Open before the engine is invisible (product G1) | `launch.lastStarted`; "Open another session" with a confirm (E-2, U6a) |
+| Running rows showed Attach (design N1) | Running rows: Open ▾ and Take over; Attach only on With-you rows (§3.2, §4.2, §4.5); mockup difference listed in §16 |
+| An empty Running panel has no sentence (design N2) | E-18: per-group `empty` in `QueueView` |
+| E-17 isn't in the API spec; one golden per route can't drive states (devex) | E-17 is an edit to API §12, per route and scenario, fixed time and ids; U1 back-fills |
+| LOWs: cap text, success-number owner, a takeover with no session, `answer-text` in §4.4, per-launch `mcp.json`, E-2 inputs, Resume takes over, E-6 key, the pill word | Fixed in §3.2, §2, §6.4, §4.4, §6.3, E-2, §6.2, E-6, §3.2 |
+
 ## 18. Phases
 
 Each phase is one PR. It follows the slice recipe's spirit for the UI (a failing view-model test first, then the view,
@@ -1012,7 +1034,7 @@ approved.
 | **U2** | **Queue, item detail, timeline, Create and Close item** | `Views/Queue*`, `Views/Item*`, view models | M | U1 + API P3 | `sindri-prove.sh human item add` appears without a click within 1 s; Close with a stale version shows `SND-ITEM-409`'s detail; five-second test passes on the fixture |
 | **U3** | **Needs you, decisions, requests, Home, the pulse, Mark all seen, badges and the tray menu** | `Views/NeedsYou*`, `Views/Decisions*`, `Views/Home*`, `Platform/IDockBadge.cs`, tray | M | U2 + API P4 (+ E-7, E-16) | A session's `curl` request appears as one pulsing row; title `(1) Needs you · Sindri`; tray in the attention colour; Accept clears it everywhere; a CLI race shows "decided elsewhere"; reduced motion shows the outline; five-second test passes on `--large` |
 | **U4** | **Services, jobs, Health** | `Views/Services*`, `Views/Health*` | S | U1 + API P6 | Run now streams job lines and Cancel stops them; a failing service raises a `failed` row that Run again clears |
-| **U6a** | **Open in Warp.** The launch block and split button, the target menu with reasons and Check again, Open, "Sent to Warp", every §6.6 failure state. Before the engine, a second Open on the same item starts another session (Attach and Resume need the engine's states and come in U6b) | `Views/Launch*`, view models | M | U2 + API **P10a** (E-1…E-5, E-11) | One click opens a Warp tab titled `sindri ITM-…` running Claude Code in the repo; the session's transcript shows its first `sindri_item` call; a profile repo pointing at a missing folder shows `SND-LAUNCH-004` before the click; the other failures in the integration lane with the recording `ILauncher` |
+| **U6a** | **Open in Warp.** The launch block and split button, the target menu with reasons and Check again, Open, "Sent to Warp", every §6.6 failure state. Before the engine, the item's row and sheet show "Sent to Warp 12m ago · Claude Code · tab `sindri ITM-…`" from `launch.lastStarted`, and the button reads **Open another session**, with an in-app confirm (Attach and Resume need the engine's states and come in U6b) | `Views/Launch*`, view models | M | U2 + API **P10a** (E-1…E-5, E-11) | One click opens a Warp tab titled `sindri ITM-…` running Claude Code in the repo; the row then shows "Sent to Warp … ago" and the button becomes **Open another session** with a confirm; the session's transcript shows its first `sindri_item` call; a profile repo pointing at a missing folder shows `SND-LAUNCH-004` before the click; the other failures in the integration lane with the recording `ILauncher` |
 | **U5** | **Engine surfaces.** §4.4's answers, mirrored child parks, Start, Complete, Take over, Hand back, idle-takeover rows | `Views/Park*`, `Views/Answer*`, view models | M | U3 + WF P4 and P5, the X7 projection (the first API phase after WF P4), E-9, E-12, E-13, and WF's §5.6/§6.3 edit (idle takeovers and desk tasks as `park` rows) | Each §4.4 row reproduced with a dev recipe: protected answers show only the CLI; desk answers resume the instance; Hand back returns the item to `running` |
 | **U6b** | **Opening is a takeover; Attach and Resume** | the launch view models | S | U5 + U6a + API **P10b** and WF's E-6 trigger | Open on a running item pauses it before Warp opens (ledger order: takeover, then `launch.started`); Attach on a with-you item brings Warp forward and starts no process; after Hand back, **Resume Claude Code session** reopens the same session id (transcript continues) |
 | **U7** | **Context tab and map-review viewer** | `Views/Context*` | S | U2 + CTX P3/P4 + X9 (`GET /context`) | A degraded source shows the DEGRADED banner and the citation states; drafts read `(draft)` |
@@ -1025,6 +1047,7 @@ approved.
 | E-8 (`destructive`, `readsViews`, `shortcut`), E-12 (variant rows), E-16 (catalog `cli`) | API P1 (catalog); `CloseItem` variants in P3 | U1 |
 | E-14 (`health`) | API P2 | U1 |
 | E-7 (`actions`, `label`), E-16 (`NeedsYouRow.cli`) | API P4 | U3 |
+| E-18 (per-group `empty`) | API P3 | U2, U3 |
 | E-15 (`invalidates`, `GET /events/catalog`) | API P5 | U1 (optional until then) |
 | E-17 (golden JSON) | every API phase from P1, for its own routes | every U phase |
 | E-1…E-5, E-11 | API P10a | U6a |
@@ -1032,8 +1055,12 @@ approved.
 | E-9, E-13, and E-12's engine rows | WF P4 | U5 |
 | E-10 | the API spec's phase table | — |
 
-**E-17.** Each API phase's integration tests write every route's response body, with `asOf` removed, as golden JSON
-under `tests/Aw.Sindri.Tests/Golden/Api/<route>.json`. The UI's contract test deserializes every golden through
+**E-17.** Each API phase's integration tests write response bodies as golden JSON under
+`tests/Aw.Sindri.Tests/Golden/Api/<route-slug>/<scenario>.json`, one file per route and scenario (for example
+`needs-you/empty.json`, `needs-you/fixture.json`, `needs-you/stalled.json`, `items-id/parked.json`), so the fake can
+drive §4.9's state matrix. The tests run with a fixed `FakeTimeProvider` and seeded ids, so every field is stable, not
+only `asOf`. E-17 is an edit to the API spec's §12 (test strategy); U1's contract unit back-fills goldens for any API
+phase that merged before the edit. The UI's contract test deserializes every golden through
 `SindriUiJsonContext` and the fake `ISindriApi` serves them, so a wire change fails the UI's unit lane, not a prover
 run. `deps.yaml` gains a `SindriUi -> Sindri` file edge for the goldens.
 
