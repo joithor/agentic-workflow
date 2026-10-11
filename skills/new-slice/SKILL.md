@@ -41,7 +41,7 @@ node scripts/scaffold/new-slice.mjs --package <Pkg> --slice <Slice> --behavior <
 Pass `--slice-only` when other branches scaffold slices into the same package in parallel. It writes the slice's
 own files and only its lines in `A.cs`, `IdsJsonContext` and `PublicAPI.Unshipped.txt`, then prints the registration,
 table and JSON context lines to add by hand in the branch, and the endpoint or command file to write by hand. A shared
-edit or new shared file it would need is refused (`NS-SLICE-ONLY`), including a missing `A.cs` or `IdsJsonContext`:
+edit or new shared file it would need is refused (`NS-SLICE-ONLY`), including a missing `A.cs`, or a missing `IdsJsonContext` when the slice adds an id:
 the phase's contract unit adds those.
 
 It takes a slot of the heavy-job lock itself, writes the files, records the public API lines (every `RS0016` symbol the

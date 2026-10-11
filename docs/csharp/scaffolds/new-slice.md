@@ -138,8 +138,11 @@ written is reverted.
 
 The normal mode writes a missing `A.cs` or `IdsJsonContext.cs`. With `--slice-only`, the phase's contract unit adds
 them instead. It writes `A.cs` from the builder-root template (a `public static class A` with an empty body,
-`internal` in the small shape). It writes an `IdsJsonContext.cs` with at least one `[JsonSerializable]` holder,
-because a context with none doesn't compile (`CS0534`). Running one slice in the normal mode also adds both.
+`internal` in the small shape). For `IdsJsonContext.cs`, a context with no `[JsonSerializable]` line doesn't compile
+(`CS0534`), so it needs a holder: the contract unit writes a `<Id>Holder.cs` for one existing id (the holder template,
+`public sealed record <Id>Holder(<Id> Id);`), an `IdsJsonContext.cs` that lists it, and a test that round-trips the
+holder through the context, as the generator's id tests do. Running one slice with a new id in the normal mode also
+adds both; a slice without a new id adds only `A.cs`.
 
 Without `--files-only` it runs the same checks as the normal mode, under the heavy-job lock. With it, it writes the
 files only (the unit tests).
