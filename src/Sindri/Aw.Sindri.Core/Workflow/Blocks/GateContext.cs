@@ -12,4 +12,11 @@ public sealed record GateContext(
     BlockId Gate,
     IReadOnlyDictionary<string, JsonElement> Arguments,
     IReadOnlyDictionary<FactKey, JsonElement> Facts,
-    double? Threshold);
+    double? Threshold)
+{
+    /// <summary>
+    /// The tokens the item may still spend: the profile budget less what the instance spent, raised by
+    /// '--grant-tokens' (spec §5.8, §13 arch N7). Null when no budget applies. 'gate.budget.available' reads it.
+    /// </summary>
+    public int? TokensLeft { get; init; }
+}

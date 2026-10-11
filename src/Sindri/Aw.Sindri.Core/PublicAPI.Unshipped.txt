@@ -1574,3 +1574,5 @@ static readonly Aw.Sindri.Core.Workflow.WorkflowErrors.RecipeVersionTaken -> Aw.
 static readonly Aw.Sindri.Core.Workflow.WorkflowErrors.StaleRunToken -> Aw.Kernel.ErrorDefinition!
 static readonly Aw.Sindri.Core.Workflow.WorkflowErrors.TriggerNotAllowed -> Aw.Kernel.ErrorDefinition!
 static readonly Aw.Sindri.Core.Workflow.WorkflowErrors.WorkflowChallengeStale -> Aw.Kernel.ErrorDefinition!
+Aw.Sindri.Core.Workflow.Blocks.GateContext.TokensLeft.get -> int?
+Aw.Sindri.Core.Workflow.Blocks.GateContext.TokensLeft.init -> void
