@@ -1618,6 +1618,7 @@ port map is in `plans/sindri/reuse-map.md` (reuse spike, 2026-10-08).
 | ref | Cyrus (license inconsistent: the LICENSE file says Apache-2.0 boilerplate, package.json says MIT; ask the maintainers before copying any code) | Reference only: Linear tracker, fake-tracker test pattern, trust gate, egress proxy | `Tracker` adapter, §8.3 |
 | ref | orchestrate (MIT, needs the Cursor SDK) | Schemas as reference | §6 |
 | ref | Conductor (conductor.build) | UX reference | §10.5 |
+| ref | Superplane (license to be confirmed) | Reference only: workflows configured as recipes (stages, events, approvals), not code | §17.28 recipes |
 | skip | ralph-loop | A self-declared completion loop; breaks invariant 3 | — |
 | skip | swarm / arena runners / poteto-mode | Depend on Cursor `Task` subagents and on the agent choosing in-session; breaks invariant 10. Only the blinding rules are kept | — |
 | skip | container-use (Apache-2.0) | Its agent-facing MCP tools break invariant 10 and the interactive-session model | — |
