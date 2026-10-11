@@ -3,6 +3,7 @@ using System.Text;
 using System.Text.Encodings.Web;
 using System.Text.Json;
 using Aw.Kernel.Testing;
+using Aw.Sindri.Core.Workflow;
 using Aw.Sindri.Host;
 using Aw.Sindri.Host.Commands;
 using Aw.Sindri.Testing.Workflow;
@@ -138,6 +139,18 @@ public sealed class RecipeValidateCliTests : IDisposable
     }
 
     [Fact, Trait("Lane", "integration")]
+    public async Task A_bug_inside_validation_is_a_tool_error_with_exit_2_not_a_crash()
+    {
+        var file = PutShipped("workflow.step");
+
+        var run = await RunWith(static services => services.AddSingleton<IRecipeReader, ThrowingReader>(), "validate", file);
+
+        Assert.Equal((2, string.Empty), (run.Exit, run.Stdout));
+        Assert.StartsWith("SND-API-005 recipe validate failed inside sindri: InvalidOperationException: the reader broke", run.Stderr, StringComparison.Ordinal);
+        Assert.Contains("(fix: ", run.Stderr, StringComparison.Ordinal);
+    }
+
+    [Fact, Trait("Lane", "integration")]
     public async Task Eval_says_it_arrives_with_P3_and_exits_2()
     {
         var run = await Run("eval", PutShipped("workflow.step"));
@@ -185,10 +198,13 @@ public sealed class RecipeValidateCliTests : IDisposable
     }
 
     /// <summary>Runs 'sindri recipe &lt;args&gt;' in-process against a throwaway home, and checks it wrote nothing there.</summary>
-    private async Task<CliRun> Run(params string[] args)
+    private Task<CliRun> Run(params string[] args) => RunWith(static _ => { }, args);
+
+    private async Task<CliRun> RunWith(Action<IServiceCollection> replace, params string[] args)
     {
-        var provider = Composition.Compose(new ServiceCollection(), name => name == "AW_SINDRI_HOME" ? _home.Path : null, new FakeTimeProvider())
-            .BuildServiceProvider();
+        var collection = Composition.Compose(new ServiceCollection(), name => name == "AW_SINDRI_HOME" ? _home.Path : null, new FakeTimeProvider());
+        replace(collection);
+        var provider = collection.BuildServiceProvider();
         await using var _ = provider;
         await using var scope = provider.CreateAsyncScope();
         var services = scope.ServiceProvider;
@@ -200,6 +216,11 @@ public sealed class RecipeValidateCliTests : IDisposable
 
         Assert.Empty(Directory.EnumerateFileSystemEntries(_home.Path));
         return new CliRun(string.Join(' ', ["sindri", "recipe", .. args]), exit, stdout.ToString(), stderr.ToString());
+    }
+
+    private sealed class ThrowingReader : IRecipeReader
+    {
+        public RecipeReading Read(string text, string file) => throw new InvalidOperationException("the reader broke");
     }
 
     private sealed record CliRun(string Command, int Exit, string Stdout, string Stderr)

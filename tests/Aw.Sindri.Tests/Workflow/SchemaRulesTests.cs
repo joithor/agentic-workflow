@@ -96,6 +96,22 @@ public sealed class SchemaRulesTests
     }
 
     [Fact, Trait("Lane", "unit")]
+    public void A_transition_from_or_to_an_undeclared_state_is_RCP_SCHEMA_002()
+    {
+        var yaml = RecipeReaderTests.Minimal
+            + "  - { from: [produce, ghost], to: nowhere, on: step.failed }\n";
+
+        var lines = Validate(yaml, "test.yaml");
+
+        Assert.Equal(
+            [
+                "RCP-SCHEMA-002: transition from 'ghost' names a state the recipe doesn't declare at test.yaml:16:22 (transitions[1].from[1]); name one of the recipe's states: produce, done",
+                "RCP-SCHEMA-002: transition to 'nowhere' names a state the recipe doesn't declare at test.yaml:16:34 (transitions[1].to); name one of the recipe's states: produce, done",
+            ],
+            lines);
+    }
+
+    [Fact, Trait("Lane", "unit")]
     public void A_terminal_outcome_outside_the_closed_set_is_RCP_OUTCOME_001_alone()
     {
         var yaml = RecipeReaderTests.Minimal.Replace("outcome: resolved", "outcome: cancelled", StringComparison.Ordinal);

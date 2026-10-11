@@ -68,6 +68,32 @@ public sealed class RecipeReaderTests
     }
 
     [Fact, Trait("Lane", "unit")]
+    public void Hex_and_octal_integers_of_64_bits_read_as_their_value_not_a_negative_number()
+    {
+        var recipe = Bind(Minimal.Replace("step: step.produce", "step: { use: step.produce, with: { a: 0xFFFFFFFFFFFFFFFF, b: 0o1777777777777777777777, c: 0x10, d: 0o17 } }", StringComparison.Ordinal));
+        var with = recipe.States["produce"].Step!.With;
+
+        Assert.Equal(18446744073709551615d, with["a"].Literal!.Value.GetDouble());
+        Assert.Equal(18446744073709551615d, with["b"].Literal!.Value.GetDouble());
+        Assert.Equal(16, with["c"].Literal!.Value.GetInt32());
+        Assert.Equal(15, with["d"].Literal!.Value.GetInt32());
+    }
+
+    [Theory, Trait("Lane", "unit")]
+    [InlineData("    kind: active", "    kind: 7", "RCP-SCHEMA-002: 7 isn't active, wait or terminal at test.yaml:7:5 (states.produce.kind); write active, wait or terminal")]
+    [InlineData("    kind: active", "    kind: -1", "RCP-SCHEMA-002: -1 isn't active, wait or terminal at test.yaml:7:5 (states.produce.kind); write active, wait or terminal")]
+    [InlineData("    kind: active", "    kind: \"3\"", "RCP-SCHEMA-002: '3' isn't active, wait or terminal at test.yaml:7:5 (states.produce.kind); write active, wait or terminal")]
+    [InlineData("    kind: active", "    kind: \"active, wait\"", "RCP-SCHEMA-002: 'active, wait' isn't active, wait or terminal at test.yaml:7:5 (states.produce.kind); write active, wait or terminal")]
+    [InlineData("    kind: active", "    kind: Active", "RCP-SCHEMA-002: 'Active' isn't active, wait or terminal at test.yaml:7:5 (states.produce.kind); write active, wait or terminal")]
+    [InlineData("then: park", "then: 9", "RCP-SCHEMA-002: 9 isn't park, escalate or retry at test.yaml:9:27 (states.produce.timeout.then); write park, escalate or retry")]
+    public void An_enum_takes_exactly_one_of_its_names_never_a_number_or_a_list(string from, string to, string line)
+    {
+        var lines = Lines(Minimal.Replace(from, to, StringComparison.Ordinal));
+
+        Assert.Contains(line, lines, StringComparer.Ordinal);
+    }
+
+    [Fact, Trait("Lane", "unit")]
     public void Every_node_position_is_recorded_as_written()
     {
         var positions = Reader.Read(Minimal, "test.yaml").Document!.Source.Positions;
