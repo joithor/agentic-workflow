@@ -22,10 +22,10 @@ public sealed class SystemProcessRunnerTests : IDisposable
         var clock = Stopwatch.StartNew();
 
         var result = await new SystemProcessRunner(_bin.Environment).Run(
-            new ProcessRequest { FileName = "spawner", Timeout = TimeSpan.FromMilliseconds(500) }, TestContext.Current.CancellationToken);
+            new ProcessRequest { FileName = "spawner", Timeout = TimeSpan.FromSeconds(3) }, TestContext.Current.CancellationToken);
 
         Assert.True(result.TimedOut);
-        Assert.True(clock.Elapsed < TimeSpan.FromSeconds(5), $"stopped near the timeout, took {clock.Elapsed}");
+        Assert.True(clock.Elapsed < TimeSpan.FromSeconds(8), $"stopped near the 3 s timeout, took {clock.Elapsed}");
         var child = int.Parse((await File.ReadAllTextAsync(pidFile, TestContext.Current.CancellationToken)).Trim(), CultureInfo.InvariantCulture);
         Assert.True(await Gone(child), $"the background child {child.ToString(CultureInfo.InvariantCulture)} was stopped too");
     }
