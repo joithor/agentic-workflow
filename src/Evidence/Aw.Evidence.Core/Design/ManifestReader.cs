@@ -4,7 +4,7 @@ using Aw.Kernel;
 
 namespace Aw.Evidence.Core.Design;
 
-/// <summary>Reads a design manifest and checks its rules. Unknown keys, at any depth, are refused.</summary>
+/// <summary>Reads a design manifest and checks its rules. Unknown keys are refused in every manifest object; a frame's steps use the script step format.</summary>
 public static class ManifestReader
 {
     /// <summary>Parses and validates a manifest.</summary>

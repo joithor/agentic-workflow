@@ -60,6 +60,101 @@ required property "expectedState"`; "Inputs" below), the `geometry:` and `doctor
 <dir>` (once, while a lock is busy), and the Kernel telemetry's JSON lines at `AW_LOG_LEVEL`. No message carries a
 sign-in credential: a parity failure's text is scrubbed of the email and password before it leaves the use case.
 
+## Inputs
+
+`run` reads a UI script and `parity` reads a design manifest, both written by the planner (or by hand). Each is one
+JSON object read through the package's `AwJson` options into the Core records (`UiScript`, `DesignManifest`); a key
+marked required must be present and not null, an optional key may be left out (or `null` where the type says so), and
+names are camelCase. A document that doesn't read, or breaks a rule below, is refused before any lock is taken:
+AW-EVIDENCE-002 for a script, AW-EVIDENCE-003 for a manifest, exit 1. The message names the file, the JSON location
+and the problem (`script <path>: $.steps[0]: missing required property "expectedState"`, `manifest <path>:
+$.frames[0].zoom: unknown property`, `$.role: "intern" is not a valid value`, `$: not valid JSON (line 1, column 2)`);
+a rule broken after reading is named by its place instead (`step 2: …`, `frame "empty-state": …`), and every broken
+rule is listed, joined by `; `.
+
+### Run script (`run <script.json>`)
+
+| Key | Type | Required | Holds and rules |
+|---|---|---|---|
+| `route` | string | yes | the route under test; recorded in `summary.json` (the run navigates only through `goto` steps) |
+| `role` | `manager` \| `staff` \| `central-staffer` \| `super-admin` | yes | the app role; recorded in `summary.json` |
+| `viewports` | (`desktop` \| `phone`)[] | yes | at least one; every step runs in each (desktop 1280x800, phone 375x812) |
+| `steps` | step[] | yes | at least one, run in order (below) |
+| `planning` | object \| null | no | the planner's own model call, recorded as the first `invocations[]` entry: `pr` (string \| null, also `summary.json`'s `pr`), `model` (string \| null), `elapsedMs`, `inputTokens`, `outputTokens` (integer \| null each, not negative; null is unknown, never zero) |
+
+A step:
+
+| Key | Type | Required | Holds and rules |
+|---|---|---|---|
+| `action` | `goto` \| `click` \| `fill` \| `expect-visible` | yes | what the step does |
+| `target` | string | yes | `goto`: a path on the host (one leading `/`; the host guard below); `click`, `fill`: a `data-testid`; `expect-visible`: visible text |
+| `expectedState` | object | yes | the state that must hold after the action (below) |
+| `value` | string \| null | no | the text a `fill` types; null or absent types nothing |
+
+`expectedState` is one of five kinds, chosen by its `kind` key (anywhere in the object):
+
+| `kind` | Other keys (all required) | Holds when |
+|---|---|---|
+| `text-visible` | `text` (string, not empty) | some visible element shows the text |
+| `text-absent` | `text` (string, not empty) | no visible element shows the text |
+| `testid-visible` | `testId` (string, not blank) | the element with that `data-testid` is visible |
+| `url-path` | `path` (string, not empty) | the page's URL path is `path` |
+| `input-value` | `testId` (string, not blank), `value` (string, may be empty) | that input holds exactly `value` |
+
+A missing `kind` is `missing required property "kind"`; another value names the five kinds. Enum values are matched by
+name only (a number is refused). Unknown keys in a script are ignored. The script's SHA-256 is `summary.json`'s
+`scriptSha256`.
+
+### Design manifest (`parity <manifest.json>`)
+
+Unknown keys are refused in every manifest object (the manifest, `ready`, `viewport`, `neutralClick`, `login`, each
+frame and its `designRegion`, `anchor`, `anchorOffset`, `waitFor`, `formValues[]` and `expectBoxes[]` with their
+`target`, `relativeTo` and `expected`): a misspelt key is an error, not a silently ignored setting. The one exception
+is a frame's `steps[]`, which use the run script's step format above (unknown keys ignored there, as in a script).
+
+| Key | Type | Required | Default | Holds and rules |
+|---|---|---|---|---|
+| `route` | string | yes | — | the route opened first; starts with `/` |
+| `ready` | selector | yes | — | visible once the route has loaded (past any spinner) |
+| `frames` | frame[] | yes | — | at least one; names unique (`duplicate frame name "<name>"`) |
+| `viewport` | `{w, h}` (integers) | no | 1512x982 | the browser viewport; both positive |
+| `timeoutMs` | integer | no | 60000 | the wait for `ready`, a frame's `waitFor` and its anchor, in ms; positive |
+| `settleMs` | integer | no | 600 | the settle time before and after capture preparation, in ms; not negative |
+| `threshold` | number | no | 0.1 | the per-pixel colour tolerance of the pixel diff; 0 to 1 |
+| `includeAA` | boolean | no | false | count anti-aliased pixels as differences |
+| `neutralClick` | `{x, y}` (numbers) | no | 22 px in from the viewport's bottom-right corner | where to click to drop focus before capture |
+| `skipNeutralClick` | boolean | no | false | skip that click |
+| `designNode` | string \| null | no | null | the design file or node every frame comes from; copied to `parity.json` |
+| `login` | object \| null | no | null (no sign-in) | how to sign in first (below) |
+
+A selector (`ready`, `anchor`, `waitFor`, a box's `target` and `relativeTo`) is `{testId}` or `{text}`, exactly one:
+`testId` a `data-testid` (not blank), `text` visible text (not empty; the first visible match).
+
+`login`:
+
+| Key | Type | Required | Default | Holds and rules |
+|---|---|---|---|---|
+| `emailEnv`, `passwordEnv` | string | yes | — | the environment variables holding the credentials; UPPER_SNAKE (`^[A-Z][A-Z0-9_]*$`). The values come only from the environment, never the manifest |
+| `emailSelector`, `passwordSelector`, `submitSelector` | string (CSS) | yes | — | the form's fields and submit control; not empty |
+| `nextSelector` | string (CSS) \| null | no | null | clicked after the email on a two-step form |
+| `loginPath` | string | no | `/login` | sign-in is done once the URL path no longer contains this |
+
+A frame:
+
+| Key | Type | Required | Default | Holds and rules |
+|---|---|---|---|---|
+| `name` | string | yes | — | letters, digits, `_` and `-`, starting with a letter or digit; names the frame's output files |
+| `designPng` | string | yes | — | the design export (PNG at 1x); not empty. A relative path resolves against the manifest's directory, an absolute one is used as is |
+| `designRegion` | `{x, y, w, h}` (integers) | yes | — | the compared region of the export; `x`, `y` ≥ 0, `w`, `h` > 0 |
+| `anchor` | selector | yes | — | the element whose bounding-box origin locates the implementation crop |
+| `anchorOffset` | `{x, y}` (numbers) \| null | no | no offset | added to the anchor's origin |
+| `waitFor` | selector \| null | no | null | visible before the frame's steps run |
+| `steps` | step[] | no | [] | steps that bring the page into this state (run script steps, same rules; the write guard applies on every host) |
+| `formValues` | object[] | no | [] | values typed into the form (never submitted): `value` (string, required) and exactly one of `testId` (not blank) and `css` (not empty) |
+| `expectBoxes` | object[] | no | [] | geometry checks: `target` (selector, required), `expected` (required: `{w, h, x, y}`, numbers, at least one set), `relativeTo` (selector: measure `x`, `y` from its top-left instead of the page's), `tolerance` (number ≥ 0 px per axis; absent is 0) |
+| `knownDifferences` | string[] | no | [] | intentional differences that explain a non-zero diff; no empty entry |
+| `designNode` | string \| null | no | null | the design node (id or URL) this frame was exported from |
+
 ## Run files
 
 Scorer and bugfix-state read these files after their own ports; the fields they read are marked †.
