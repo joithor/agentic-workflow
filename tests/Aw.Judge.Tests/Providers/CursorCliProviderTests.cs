@@ -78,6 +78,22 @@ public sealed class CursorCliProviderTests
         Assert.Contains(Path.Combine(evidence, "after.png") + "\n", request.Arguments[^1], StringComparison.Ordinal);
     }
 
+    [Fact]
+    public async Task An_image_question_s_prompt_argument_is_capped_under_the_argument_limit_too()
+    {
+        Install(Questions.ResultText("""{"decision":"ok"}"""));
+        var evidence = Path.Combine(Path.GetTempPath(), "judge-evidence");
+        var huge = Questions.Image with { Prompt = new string('p', 300_000) };
+        var input = Questions.Evidence(evidence);
+        input["afterScreenshot"] = new string('a', 300_000) + ".png";
+
+        _ = await new CursorCliProvider(_runner).Decide(huge, input, Questions.Budget, TestContext.Current.CancellationToken);
+
+        var prompt = Assert.Single(_runner.Calls).Request.Arguments[^1];
+        Assert.Contains("[truncated", prompt, StringComparison.Ordinal);
+        Assert.True(Encoding.UTF8.GetByteCount(prompt) < 128 * 1024, $"one argument stays under Linux's 128 KiB, got {prompt.Length} chars");
+    }
+
     private void Install(string stdout) => _ = _runner.With("cursor-agent", new FakeProgram { StandardOutput = stdout });
 
     private async Task<ProviderResult> Decide(QuestionRef question) =>
