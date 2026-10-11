@@ -16,7 +16,7 @@ Each part of the app has its own design spec under `docs/superpowers/specs/`. Th
 | App shell: process, CLI, lease, ledger, profile, scheduler, doctor | `docs/csharp/sindri.md` (on `feat/sindri-s1-app-shell` until it merges) | 1 | S1 |
 | API surface: commands, queries, projections, the event stream, auth v0, the MCP server, `sindri open` | `2026-10-10-sindri-api-surface-design.md` | 1 (the command layer and API) | API P0–P11 |
 | **UI app design** (Avalonia, Linear design language): the control plane's views, actions and launching sessions | *Slot: `<date>-sindri-ui-design.md`, not written yet. It comes next, before any more building* | 1 (the UI app) | S1b |
-| Workflow engine: recipes, blocks, validator, instances, timers, approval | `2026-10-10-sindri-workflow-engine-design.md` | 2 | S2 (P1–P7) |
+| Workflow engine: recipes, blocks, validator, instances, timers, approval, the agent runtime (revision 7) | `2026-10-10-sindri-workflow-engine-design.md` | 2 | S2 (P1–P7) |
 | Context retrieval engine: the product graph, adapters, planner, evals | `2026-10-10-sindri-context-retrieval-design.md` | 3 | S3 (Phases 1–10) |
 | What the UI shows (input to the UI design) | `2026-10-09-sindri-dashboard-design.md` | — | — |
 
