@@ -1,3 +1,4 @@
+using System.Text.Json;
 using Aw.Kernel.Services;
 using Aw.Sindri.Core;
 using Aw.Sindri.Features.EvalRecipe;
@@ -34,7 +35,7 @@ internal static class RecipeCommandTable
         var code = response.Passed ? 0 : 1;
         if (json)
         {
-            return await output.Json(response, code).ConfigureAwait(false);
+            return await output.Json(RecipeValidationView.From(response, services.GetRequiredService<JsonSerializerOptions>()), code).ConfigureAwait(false);
         }
 
         return await output.Text(RecipeText.Validation(response), code).ConfigureAwait(false);
