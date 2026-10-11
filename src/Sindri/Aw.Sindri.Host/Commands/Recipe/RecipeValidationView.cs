@@ -1,5 +1,6 @@
 using System.Text.Json;
 using System.Text.Json.Nodes;
+using Aw.Kernel.Json;
 using Aw.Sindri.Core.Workflow.Ids;
 using Aw.Sindri.Features.ValidateRecipe;
 
@@ -17,8 +18,22 @@ internal sealed record RecipeValidationView(bool Passed, RecipeHash? Hash, IRead
 {
     /// <summary>The view of <paramref name="response"/>.</summary>
     /// <param name="response">The validation.</param>
-    /// <param name="options">The package's AwJson options, the ones the hash was computed with.</param>
+    /// <param name="options">The package's AwJson options, the ones the hash was computed with (RecipeHashing.Of).</param>
     /// <returns>The view.</returns>
-    internal static RecipeValidationView From(ValidateRecipeResponse response, JsonSerializerOptions options) =>
-        throw new NotSupportedException("red: the --json view");
+    internal static RecipeValidationView From(ValidateRecipeResponse response, JsonSerializerOptions options)
+    {
+        var findings = RecipeText.Ordered(response.Findings)
+            .Select(static f => new RecipeFindingView(f.Rule, f.Severity, f.Message, f.File, f.Line, f.Column, f.Path, f.Fix))
+            .ToList();
+        return new RecipeValidationView(response.Passed, response.Hash, findings, response.Normalized is { } recipe ? LongForm(recipe, options) : null);
+    }
+
+    /// <summary>The long form as RecipeHashing.Of hashes it: the record through the package's options, without 'hash'.</summary>
+    private static JsonObject LongForm(Core.Workflow.Recipes.Recipe recipe, JsonSerializerOptions options)
+    {
+        // why: a serialized record is a JSON object, never the null literal
+        var node = JsonNode.Parse(AwJson.Serialize(recipe with { Hash = null }, options))!.AsObject();
+        _ = node.Remove("hash");
+        return node;
+    }
 }

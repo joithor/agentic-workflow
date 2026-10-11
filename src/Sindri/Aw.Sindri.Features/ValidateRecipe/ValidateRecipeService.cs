@@ -34,7 +34,10 @@ internal sealed class ValidateRecipeService(IRecipeReader reader, IRecipeFiles f
             ? await SameDirectoryChildren.Load(path, document.Recipe, reader, files, cancellationToken).ConfigureAwait(false)
             : SameDirectoryChildren.None;
         var context = new ValidationContext(catalog, RecipeProfileFacts.None, children, BaseRecipe: null);
-        return new ValidateRecipeResponse([.. reading.Findings, .. RecipeValidator.Validate(document, context)], document.Hash);
+        return new ValidateRecipeResponse([.. reading.Findings, .. RecipeValidator.Validate(document, context)], document.Hash)
+        {
+            Normalized = document.Recipe,
+        };
     }
 
     private async ValueTask<Result<(string Text, string File)>> Source(ValidateRecipeRequest request, CancellationToken cancellationToken)
