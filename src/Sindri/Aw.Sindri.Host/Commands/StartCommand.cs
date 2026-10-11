@@ -71,6 +71,8 @@ internal sealed class StartCommand(IControlPlaneProbe probe, IControlPlaneLaunch
             }
         }
 
-        return SindriErrors.StartFailed.With(string.Create(System.Globalization.CultureInfo.InvariantCulture, $"'sindri serve' didn't answer within {Budget.TotalSeconds:0} s (log: {child.LogPath})"));
+        var exited = child.HasExited ? $": the started one exited with {child.LastError()}" : string.Empty;   // a lost race names the holder that never answered
+        return SindriErrors.StartFailed.With(string.Create(System.Globalization.CultureInfo.InvariantCulture,
+            $"'sindri serve' didn't answer within {Budget.TotalSeconds:0} s{exited} (log: {child.LogPath})"));
     }
 }
