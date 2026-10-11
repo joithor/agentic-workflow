@@ -1,3 +1,4 @@
+using System.Text.Json;
 using Aw.Kernel.Services;
 using Aw.Sindri.Core.Events;
 using Aw.Sindri.Core.Lease;
@@ -25,15 +26,14 @@ public sealed class SchedulerHostTests
         using var scheduler = new SchedulerHost(provider.GetRequiredService<IServiceScopeFactory>(), _h.Profiles, _h.Held, _h.Clock, NullLogger<SchedulerHost>.Instance);
 
         await scheduler.StartAsync(Token);
-        await Until(() => Heartbeats() == 1);
-        for (var i = 0; i < 3; i++)
-        {
-            _h.Clock.Advance(TimeSpan.FromSeconds(5));
-            await Until(() => Heartbeats() == i + 2);
-        }
-
+        await AdvanceUntil(() => Heartbeats() >= 3);   // 1 s steps: a step can land before the scheduler re-arms its delay
         await scheduler.StopAsync(Token);
-        Assert.Equal(4, Heartbeats());
+
+        var slots = _h.Store.Events.Where(e => e.Envelope.Type == EventTypes.Heartbeat)
+            .Select(e => JsonDocument.Parse(e.Envelope.Payload).RootElement.GetProperty("slot").GetDateTimeOffset())
+            .Take(3).ToList();
+        var start = slots[0];
+        Assert.Equal([start, start.AddSeconds(5), start.AddSeconds(10)], slots);
     }
 
     [Fact, Trait("Lane", "integration")]
@@ -67,6 +67,16 @@ public sealed class SchedulerHostTests
         await renewer.StopAsync(Token);
         Assert.Null(_h.Held.Current);
         Environment.ExitCode = 0;
+    }
+
+    private async Task AdvanceUntil(Func<bool> condition)
+    {
+        for (var step = 0; !condition(); step++)
+        {
+            Assert.True(step < 60, "the condition didn't hold within 60 fake seconds");
+            _h.Clock.Advance(TimeSpan.FromSeconds(1));
+            await Task.Delay(30, Token);
+        }
     }
 
     private int Heartbeats() => _h.Store.Events.Count(e => e.Envelope.Type == EventTypes.Heartbeat);
