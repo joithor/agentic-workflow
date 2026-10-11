@@ -1,6 +1,11 @@
+using Aw.Kernel;
+using Aw.Kernel.Testing;
 using Aw.Sindri.Core;
 using Aw.Sindri.Core.Events;
+using Aw.Sindri.Core.Lease;
+using Aw.Sindri.Core.Profile;
 using Aw.Sindri.Features.ApproveProfile;
+using Aw.Sindri.Testing;
 
 namespace Aw.Sindri.Tests.ApproveProfile;
 
@@ -39,7 +44,7 @@ public sealed class ApproveProfileTests
         Assert.True(approved.Approved);
         Assert.Equal(live.Hash, (await _h.Profiles.Latest(Token)).Value!.Hash);
         var recorded = Assert.Single(_h.Store.Events);
-        Assert.Equal((EventTypes.ProfileApproved, $"profile.approved:{live.Hash.Value}"), (recorded.Envelope.Type, recorded.IdempotencyKey));
+        Assert.Equal((EventTypes.ProfileApproved, $"profile.approved:{live.Hash.Value}:none"), (recorded.Envelope.Type, recorded.IdempotencyKey));
     }
 
     [Theory, Trait("Lane", "unit")]
@@ -65,5 +70,92 @@ public sealed class ApproveProfileTests
         _h.Profiles.Live = SindriErrors.ProfileInvalid.With("/p.yaml: user: must be non-empty text");
 
         Assert.Equal(SindriErrors.ProfileInvalid.Code, (await Service().Handle(new ApproveProfileRequest(Hash: null, Confirmed: false), Token)).Error.Code);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task ApproveProfile_whose_append_fails_leaves_the_approval_unchanged()
+    {
+        var live = SliceHarness.Profile("5s");
+        _h.Profiles.Live = live;
+        _ = await _h.HoldLease();
+        _h.Held.Hold(new LeaseGrant(FakeProcessProbe.Holder(100), 99, KnownInstants.Epoch.AddMinutes(1)));   // an epoch the store doesn't hold
+
+        var refused = await Service().Handle(new ApproveProfileRequest(live.Hash, Confirmed: true), Token);
+
+        Assert.Equal(SindriErrors.LeaseStale.Code, refused.Error.Code);
+        Assert.Null((await _h.Profiles.Latest(Token)).Value);
+        Assert.Empty(_h.Store.Events);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task ApproveProfile_records_each_approval_of_a_back_and_forth()
+    {
+        var (a, b) = (SliceHarness.Profile("5s"), SliceHarness.Profile("9s"));
+        _ = await _h.HoldLease();
+
+        foreach (var profile in new[] { a, b, a })
+        {
+            _h.Profiles.Live = profile;
+            Assert.True((await Service().Handle(new ApproveProfileRequest(profile.Hash, Confirmed: true), Token)).Value.Approved);
+        }
+
+        Assert.Equal(
+            [$"profile.approved:{a.Hash.Value}:none", $"profile.approved:{b.Hash.Value}:{a.Hash.Value}", $"profile.approved:{a.Hash.Value}:{b.Hash.Value}"],
+            _h.Store.Events.Select(e => e.IdempotencyKey), StringComparer.Ordinal);
+        Assert.Equal(a.Hash, (await _h.Profiles.Latest(Token)).Value!.Hash);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task ApproveProfile_retried_after_a_failed_save_records_once_and_saves()
+    {
+        var live = SliceHarness.Profile("5s");
+        _h.Profiles.Live = live;
+        _ = await _h.HoldLease();
+        var flaky = new SaveFailsOnce(_h.Profiles);
+        var service = new ApproveProfileService(_h.Profiles, flaky, _h.Held, _h.Store, _h.Events);
+        var request = new ApproveProfileRequest(live.Hash, Confirmed: true);
+
+        var first = await service.Handle(request, Token);
+        var retry = await service.Handle(request, Token);
+
+        Assert.Equal(SindriErrors.ProfileNotApproved.Code, first.Error.Code);
+        Assert.True(retry.Value.Approved);
+        Assert.Equal(live.Hash, (await _h.Profiles.Latest(Token)).Value!.Hash);
+        _ = Assert.Single(_h.Store.Events);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task ApproveProfile_records_a_missing_event_for_an_approval_already_saved()
+    {
+        var live = SliceHarness.Profile("5s");
+        _h.Profiles.Live = live;
+        _ = await _h.Profiles.Save(live, Token);   // saved, but its event never reached the ledger
+        _ = await _h.HoldLease();
+
+        var shown = (await Service().Handle(new ApproveProfileRequest(Hash: null, Confirmed: false), Token)).Value;
+        var approved = (await Service().Handle(new ApproveProfileRequest(live.Hash, Confirmed: true), Token)).Value;
+
+        Assert.False(shown.Approved);
+        Assert.True(approved.Approved);
+        Assert.Equal($"profile.approved:{live.Hash.Value}:none", Assert.Single(_h.Store.Events).IdempotencyKey);
+    }
+
+    /// <summary>Approvals whose first save fails, as a full disk would.</summary>
+    private sealed class SaveFailsOnce(IApprovals inner) : IApprovals
+    {
+        private bool _failed;
+
+        public ValueTask<Result<LoadedProfile?>> Latest(CancellationToken cancellationToken) => inner.Latest(cancellationToken);
+
+        public ValueTask<Result<Unit>> Save(LoadedProfile profile, CancellationToken cancellationToken)
+        {
+            if (_failed)
+            {
+                return inner.Save(profile, cancellationToken);
+            }
+
+            _failed = true;
+            return ValueTask.FromResult<Result<Unit>>(SindriErrors.ProfileNotApproved.With("disk full"));
+        }
     }
 }

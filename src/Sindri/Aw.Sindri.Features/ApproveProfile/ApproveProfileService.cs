@@ -2,51 +2,84 @@ using Aw.Kernel;
 using Aw.Kernel.Services;
 using Aw.Sindri.Core;
 using Aw.Sindri.Core.Events;
+using Aw.Sindri.Core.Ids;
 using Aw.Sindri.Core.Lease;
 using Aw.Sindri.Core.Ledger;
 using Aw.Sindri.Core.Profile;
 
 namespace Aw.Sindri.Features.ApproveProfile;
 
+/// <summary>
+/// Shows or records an approval. The 'profile.approved' event is appended first and the snapshot saved second, so a
+/// failed append changes nothing and a retry after a failed save finds the event already recorded and saves.
+/// </summary>
 internal sealed class ApproveProfileService(IProfileSource live, IApprovals approvals, HeldLease held, ILedgerStore ledger, EventFactory events)
     : IService<ApproveProfileRequest, ApproveProfileResponse>
 {
     public async ValueTask<Result<ApproveProfileResponse>> Handle(ApproveProfileRequest request, CancellationToken cancellationToken)
     {
         var loaded = await live.Load(cancellationToken).ConfigureAwait(false);
-        var latest = await approvals.Latest(cancellationToken).ConfigureAwait(false);
         if (loaded.IsError)
         {
             return loaded.Error;
         }
 
-        var previous = latest.IsSuccess ? latest.Value : null;
-        var shown = new ApproveProfileResponse(loaded.Value.Hash, ProfileDiff.Between(previous?.Profile, loaded.Value.Profile),
-            Approved: previous?.Hash == loaded.Value.Hash);
+        var (shown, replaced) = await Show(loaded.Value, cancellationToken).ConfigureAwait(false);
         if (request.Hash is not { } asked || shown.Approved)
         {
             return shown;
         }
 
-        var refusal = Refusal(asked, loaded.Value, request.Confirmed, held.Current);
-        if (refusal is not null)
+        if (Refusal(asked, loaded.Value, request.Confirmed) is { } refusal)
         {
             return refusal;
         }
 
-        var saved = await approvals.Save(loaded.Value, cancellationToken).ConfigureAwait(false);
-        var entry = events.Entry(EventTypes.ProfileApproved, new ProfileApproved(asked, shown.Changes), $"{EventTypes.ProfileApproved}:{asked.Value}");
-        var recorded = saved.IsError ? saved.Error : (await ledger.Append(entry, held.Current!, cancellationToken).ConfigureAwait(false)).Map(_ => Unit.Value);   // why: Refusal returned an error when no lease is held
-        return recorded.IsError ? recorded.Error : shown with { Approved = true };
+        if (held.Current is not { } grant)
+        {
+            return SindriErrors.NotRunning.With("the control plane doesn't hold the lease (fix: sindri)");
+        }
+
+        var entry = events.Entry(EventTypes.ProfileApproved, new ProfileApproved(asked, shown.Changes),
+            $"{EventTypes.ProfileApproved}:{asked.Value}:{replaced?.Value ?? "none"}");
+        var appended = await ledger.Append(entry, grant, cancellationToken).ConfigureAwait(false);
+        var saved = appended.IsError ? appended.Error : await approvals.Save(loaded.Value, cancellationToken).ConfigureAwait(false);
+        return saved.IsError ? saved.Error : shown with { Approved = true };
     }
 
-    private static Error? Refusal(Core.Ids.ProfileHash asked, LoadedProfile live, bool confirmed, LeaseGrant? grant) => true switch
+    /// <summary>
+    /// What to show, and the approval a new one follows. Approved means saved and recorded: a saved approval whose
+    /// event is missing from the ledger is shown as not approved, so approving again records it.
+    /// </summary>
+    private async ValueTask<(ApproveProfileResponse Shown, ProfileHash? Replaced)> Show(LoadedProfile loaded, CancellationToken cancellationToken)
+    {
+        var latest = await approvals.Latest(cancellationToken).ConfigureAwait(false);
+        var previous = latest.IsSuccess ? latest.Value : null;
+        var recorded = await LatestRecorded(cancellationToken).ConfigureAwait(false);
+        var saved = previous?.Hash == loaded.Hash;
+        var shown = new ApproveProfileResponse(loaded.Hash, ProfileDiff.Between(previous?.Profile, loaded.Profile), Approved: saved && recorded == loaded.Hash);
+        return (shown, saved ? recorded : previous?.Hash);
+    }
+
+    /// <summary>The hash of the latest 'profile.approved' event in the ledger, or null.</summary>
+    private async ValueTask<ProfileHash?> LatestRecorded(CancellationToken cancellationToken)
+    {
+        var latest = await ledger.Latest(EventTypes.ProfileApproved, cancellationToken).ConfigureAwait(false);
+        if (latest.IsError || latest.Value is not { } recorded)
+        {
+            return null;
+        }
+
+        var payload = events.Payload<ProfileApproved>(recorded);
+        return payload.IsSuccess ? payload.Value.Hash : null;
+    }
+
+    private static Error? Refusal(ProfileHash asked, LoadedProfile live, bool confirmed) => true switch
     {
         _ when asked != live.Hash => SindriErrors.ProfileHashMismatch.With(
             $"{asked.Abbreviated}… isn't the live profile's hash ({live.Hash.Value}); run 'sindri profile approve' to see it and what changed"),
         _ when !confirmed => SindriErrors.ProfileNeedsTerminal.With(
             "approving needs you at an interactive terminal: run 'sindri profile approve <hash>' and type the first 6 characters"),
-        _ when grant is null => SindriErrors.NotRunning.With("the control plane doesn't hold the lease (fix: sindri)"),
         _ => null,
     };
 }

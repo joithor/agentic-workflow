@@ -9,11 +9,29 @@ namespace Aw.Sindri.Tests.Profile;
 /// <summary>A profile file and its approvals in a temp home, over the real adapters.</summary>
 internal sealed class ProfileFiles : IDisposable
 {
-    private readonly Ledger.TempHome _home = new();
+    private readonly Ledger.TempHome? _home;
 
+    /// <summary>Over a fresh temp home, deleted on dispose.</summary>
     public ProfileFiles()
+        : this(new Ledger.TempHome())
     {
-        Settings = new SindriSettings(_home.Path, Path.Combine(_home.Path, "profile", "profile.yaml"));
+    }
+
+    /// <summary>Over <paramref name="home"/>, which the caller owns.</summary>
+    public ProfileFiles(string home)
+        : this(home, owned: null)
+    {
+    }
+
+    private ProfileFiles(Ledger.TempHome home)
+        : this(home.Path, home)
+    {
+    }
+
+    private ProfileFiles(string home, Ledger.TempHome? owned)
+    {
+        _home = owned;
+        Settings = new SindriSettings(home, Path.Combine(home, "profile", "profile.yaml"));
         Source = new YamlProfileSource(Settings, Options);
         Approvals = new FileApprovals(Settings, Options);
     }
@@ -32,5 +50,5 @@ internal sealed class ProfileFiles : IDisposable
         File.WriteAllText(Settings.ProfilePath, yaml);
     }
 
-    public void Dispose() => _home.Dispose();
+    public void Dispose() => _home?.Dispose();
 }

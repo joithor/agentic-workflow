@@ -35,7 +35,7 @@ internal sealed class StartCommand(IControlPlaneProbe probe, IControlPlaneLaunch
         }
 
         var ui = openUi?.Invoke();
-        return await output.Text(SummaryText.Render(status.Value, found.Value.Endpoint, ui), SummaryText.NeedsApproval(status.Value) ? 1 : 0)
+        return await output.Text(SummaryText.Render(status.Value, found.Value.Endpoint, ui), status.Value.Profile.NeedsApproval ? 1 : 0)
             .ConfigureAwait(false);
     }
 

@@ -16,7 +16,7 @@ public sealed class StopProcessTests
     {
         var grant = await _h.HoldLease();
 
-        var stopped = (await Service().Handle(new StopProcessRequest("stop"), Token)).Value;
+        var stopped = (await Service().Handle(new StopProcessRequest(StopReason.Stop), Token)).Value;
 
         Assert.Equal(new StopProcessResponse(grant.Holder.Pid, grant.Epoch), stopped);
         Assert.Equal(EventTypes.ProcessStopped, Assert.Single(_h.Store.Events).Envelope.Type);
@@ -28,7 +28,7 @@ public sealed class StopProcessTests
     [Fact, Trait("Lane", "unit")]
     public async Task StopProcess_without_a_lease_still_shuts_down_and_writes_nothing()
     {
-        var stopped = (await Service().Handle(new StopProcessRequest("signal"), Token)).Value;
+        var stopped = (await Service().Handle(new StopProcessRequest(StopReason.Signal), Token)).Value;
 
         Assert.Equal(new StopProcessResponse(0, 0), stopped);
         Assert.Empty(_h.Store.Events);

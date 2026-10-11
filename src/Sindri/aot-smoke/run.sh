@@ -4,6 +4,7 @@
 # with nothing running, start headless with an unapproved profile, a second serve refused by the lease, the approve
 # preview and its non-terminal refusal, status, stop, and doctor again. The normalized output (pids, ports, hashes, times,
 # the host name and the temp path masked) must equal expected.txt.
+# Every invocation of the binary is bounded (30 s, perl's alarm); one that runs over prints 'exit 124'.
 # Output goes to artifacts/aot-sindri-smoke/ (gitignored). The publish runs on a copy of the files it needs: PublishAot
 # with a RID makes restore add the host RID's ILCompiler packs to the lock files, so it never runs on the checkout.
 set -euo pipefail
@@ -29,18 +30,25 @@ fi
 work="$(mktemp -d "$out/run.XXXXXX")"
 bin="$out/bin/sindri"
 export AW_SINDRI_HOME="$work/home" AW_SINDRI_PORT=0
-cleanup() { "$bin" stop >/dev/null 2>&1 || true; find "$work" -delete; }
+bounded() { perl -e 'alarm shift; exec @ARGV or die "exec $ARGV[0]: $!"' 30 "$@"; }   # SIGALRM after 30 s
+cleanup() { bounded "$bin" stop >/dev/null 2>&1 || true; find "$work" -delete; }
 trap cleanup EXIT
 mkdir -p "$AW_SINDRI_HOME/profile"
 printf 'schemaVersion: 1\nuser: smoke\nservices:\n  heartbeat: { every: 5s }\n' >"$AW_SINDRI_HOME/profile/profile.yaml"
 
-run() { echo "## sindri $*"; "$bin" "$@" </dev/null 2>&1 || echo "exit $?"; }
+run() {
+  echo "## sindri $*"
+  local rc=0
+  bounded "$bin" "$@" </dev/null 2>&1 || rc=$?
+  [ "$rc" -ne 142 ] || rc=124   # killed by the alarm
+  [ "$rc" -eq 0 ] || echo "exit $rc"
+}
 {
   run doctor
   run --headless
   run serve
   run profile approve
-  hash="$({ "$bin" profile validate --json || true; } | sed -E 's/.*"hash":"([0-9a-f]{64})".*/\1/')"
+  hash="$({ bounded "$bin" profile validate --json </dev/null || true; } | sed -E 's/.*"hash":"([0-9a-f]{64})".*/\1/')"
   run profile approve "$hash"
   run status
   run stop
@@ -48,7 +56,7 @@ run() { echo "## sindri $*"; "$bin" "$@" </dev/null 2>&1 || echo "exit $?"; }
   run doctor
 } >"$out/actual.raw"
 
-sed -E -e "s#$work#WORK#g" -e "s#$(hostname -s)[^/ ]*#HOST#g" -e 's/[0-9a-f]{64}/HASH/g' -e 's/hash [0-9a-f]{6}/hash HASH6/g' \
+sed -E -e "s#$work#WORK#g" -e "s#held by $(hostname -s)[^/ ]*#held by HOST#g" -e 's/[0-9a-f]{64}/HASH/g' -e 's/hash [0-9a-f]{6}/hash HASH6/g' \
   -e 's/pid [0-9]+/pid PID/g' -e 's#HOST/[0-9]+#HOST/PID#g' -e 's/127\.0\.0\.1:[0-9]+/127.0.0.1:PORT/g' \
   -e 's/[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9:]{8}Z/TIME/g' -e 's/\(last [0-9:]{8}Z\)/(last TIME)/g' "$out/actual.raw" >"$out/actual.txt"
 diff -u "$here/expected.txt" "$out/actual.txt"

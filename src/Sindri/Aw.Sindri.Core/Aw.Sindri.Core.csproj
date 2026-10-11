@@ -1,6 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <!-- Aw.Sindri.Core (scaffolded by /new-package): domain types, typed ids, value objects, pure logic, port
-       interfaces and errors. No I/O, clock or random ids (BannedSymbols.txt, spec §4b.1). profile, ledger, scrub, observe, index, scope, evolve; reaches lower tiers only through Core contracts or CLIs -->
+       interfaces and errors. No I/O, clock or random ids (BannedSymbols.txt, spec §4b.1). Sindri's domain: the host
+       lease, ledger events, the profile and its approval, the schedule and the doctor's rules. -->
   <PropertyGroup>
     <TargetFramework>net10.0</TargetFramework>
     <RootNamespace>Aw.Sindri.Core</RootNamespace>

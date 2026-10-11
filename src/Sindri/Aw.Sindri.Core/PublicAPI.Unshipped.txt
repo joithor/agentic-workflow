@@ -489,14 +489,11 @@ Aw.Sindri.Core.Events.ProcessStarted.Profile.get -> Aw.Sindri.Core.Ids.ProfileHa
 Aw.Sindri.Core.Events.ProcessStarted.Profile.init -> void
 Aw.Sindri.Core.Events.ProcessStopped
 Aw.Sindri.Core.Events.ProcessStopped.<Clone>$() -> Aw.Sindri.Core.Events.ProcessStopped!
-Aw.Sindri.Core.Events.ProcessStopped.Deconstruct(out int Pid, out long Epoch, out string! Reason) -> void
 Aw.Sindri.Core.Events.ProcessStopped.Epoch.get -> long
 Aw.Sindri.Core.Events.ProcessStopped.Epoch.init -> void
 Aw.Sindri.Core.Events.ProcessStopped.Equals(Aw.Sindri.Core.Events.ProcessStopped? other) -> bool
 Aw.Sindri.Core.Events.ProcessStopped.Pid.get -> int
 Aw.Sindri.Core.Events.ProcessStopped.Pid.init -> void
-Aw.Sindri.Core.Events.ProcessStopped.ProcessStopped(int Pid, long Epoch, string! Reason) -> void
-Aw.Sindri.Core.Events.ProcessStopped.Reason.get -> string!
 Aw.Sindri.Core.Events.ProcessStopped.Reason.init -> void
 Aw.Sindri.Core.Events.ProfileApproved
 Aw.Sindri.Core.Events.ProfileApproved.<Clone>$() -> Aw.Sindri.Core.Events.ProfileApproved!
@@ -512,7 +509,6 @@ Aw.Sindri.Core.Lease.HeldLease.Clear() -> void
 Aw.Sindri.Core.Lease.HeldLease.Current.get -> Aw.Sindri.Core.Lease.LeaseGrant?
 Aw.Sindri.Core.Lease.HeldLease.HeldLease() -> void
 Aw.Sindri.Core.Lease.HeldLease.Hold(Aw.Sindri.Core.Lease.LeaseGrant! grant) -> void
-const Aw.Sindri.Core.Events.EventTypes.Heartbeat = "service.heartbeat" -> string!
 const Aw.Sindri.Core.Events.EventTypes.ProcessStarted = "process.started" -> string!
 const Aw.Sindri.Core.Events.EventTypes.ProcessStopped = "process.stopped" -> string!
 const Aw.Sindri.Core.Events.EventTypes.ProfileApproved = "profile.approved" -> string!
@@ -553,3 +549,15 @@ static Aw.Sindri.Core.Events.ProcessStopped.operator ==(Aw.Sindri.Core.Events.Pr
 static Aw.Sindri.Core.Events.ProfileApproved.operator !=(Aw.Sindri.Core.Events.ProfileApproved? left, Aw.Sindri.Core.Events.ProfileApproved? right) -> bool
 static Aw.Sindri.Core.Events.ProfileApproved.operator ==(Aw.Sindri.Core.Events.ProfileApproved? left, Aw.Sindri.Core.Events.ProfileApproved? right) -> bool
 static readonly Aw.Sindri.Core.SindriErrors.PortInUse -> Aw.Kernel.ErrorDefinition!
+Aw.Sindri.Core.Events.EventFactory.Payload<TPayload>(Aw.Sindri.Core.Ledger.LedgerEvent! recorded) -> Aw.Kernel.Result<TPayload>!
+static readonly Aw.Sindri.Core.Lease.LeaseDecision.StartTolerance -> System.TimeSpan
+Aw.Sindri.Core.Control.IShutdown.Stopping.get -> System.Threading.CancellationToken
+Aw.Sindri.Core.Events.ProcessStopped.Deconstruct(out int Pid, out long Epoch, out Aw.Sindri.Core.Events.StopReason Reason) -> void
+Aw.Sindri.Core.Events.ProcessStopped.ProcessStopped(int Pid, long Epoch, Aw.Sindri.Core.Events.StopReason Reason) -> void
+Aw.Sindri.Core.Events.ProcessStopped.Reason.get -> Aw.Sindri.Core.Events.StopReason
+Aw.Sindri.Core.Events.StopReason
+Aw.Sindri.Core.Events.StopReason.PortInUse = 2 -> Aw.Sindri.Core.Events.StopReason
+Aw.Sindri.Core.Events.StopReason.Signal = 1 -> Aw.Sindri.Core.Events.StopReason
+Aw.Sindri.Core.Events.StopReason.Stop = 0 -> Aw.Sindri.Core.Events.StopReason
+Aw.Sindri.Core.Lease.HeldLease.Replace(Aw.Sindri.Core.Lease.LeaseGrant! expected, Aw.Sindri.Core.Lease.LeaseGrant! next) -> bool
+static Aw.Sindri.Core.Events.EventTypes.ServiceRun(Aw.Sindri.Core.Ids.ServiceName service) -> string!

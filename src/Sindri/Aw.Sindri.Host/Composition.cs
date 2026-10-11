@@ -1,15 +1,13 @@
 using Aw.Kernel.Json;
 using Aw.Kernel.Telemetry;
-using Aw.Sindri.Core.Control;
 using Aw.Sindri.Core.Registration;
-using Aw.Sindri.Core.Scheduling;
 using Aw.Sindri.Features;
-using Aw.Sindri.Host.Server;
+using Aw.Sindri.Host.Registration;
 using Aw.Sindri.Infrastructure.Registration;
 
 namespace Aw.Sindri.Host;
 
-/// <summary>The one composition root, shared by Program.cs and the DI validation test.</summary>
+/// <summary>The one composition root, shared by Program.cs and the DI validation test: only the projects' Add…() calls, the clock and the JSON options.</summary>
 internal static class Composition
 {
     internal static IServiceCollection Compose(IServiceCollection services, Func<string, string?> environment, TimeProvider clock)
@@ -20,7 +18,5 @@ internal static class Composition
             .AddSindriCore()
             .AddSindriFeatures()
             .AddSindriInfrastructure(environment)
-            .AddSingleton<ProcessShutdown>()
-            .AddSingleton<IShutdown>(static sp => sp.GetRequiredService<ProcessShutdown>())
-            .AddScoped<IScheduledService, HeartbeatService>();
+            .AddSindriHost();
 }

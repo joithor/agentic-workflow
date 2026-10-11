@@ -12,9 +12,9 @@ namespace Aw.Sindri.Host.Commands;
 /// handlers the UI calls). It finds the process through the endpoint record and the probe, so a stale record reads as
 /// 'not running', never as a hang.
 /// </summary>
-internal sealed class ControlPlaneClient(IControlPlaneProbe probe, JsonSerializerOptions options) : IDisposable
+internal sealed class ControlPlaneClient(IControlPlaneProbe probe, JsonSerializerOptions options, TimeSpan? timeout = null) : IDisposable
 {
-    private readonly HttpClient _http = new(new SocketsHttpHandler { UseProxy = false }) { Timeout = TimeSpan.FromSeconds(10) };
+    private readonly HttpClient _http = new(new SocketsHttpHandler { UseProxy = false }) { Timeout = timeout ?? TimeSpan.FromSeconds(10) };
 
     public void Dispose() => _http.Dispose();
 
@@ -57,6 +57,11 @@ internal sealed class ControlPlaneClient(IControlPlaneProbe probe, JsonSerialize
         catch (HttpRequestException e)
         {
             return SindriErrors.NotRunning.With($"the control plane went away: {e.Message}");
+        }
+        catch (TaskCanceledException) when (!ct.IsCancellationRequested)
+        {
+            return SindriErrors.ApiTimeout.With(string.Create(System.Globalization.CultureInfo.InvariantCulture,
+                $"{found.Value.Endpoint.Url.Authority} didn't answer {route} within {_http.Timeout.TotalSeconds:0} s"));
         }
     }
 

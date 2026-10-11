@@ -1,8 +1,10 @@
 using System.Globalization;
+using System.Net.Sockets;
 using System.Runtime.InteropServices;
 using Aw.Kernel.Services;
 using Aw.Sindri.Core;
 using Aw.Sindri.Core.Control;
+using Aw.Sindri.Core.Events;
 using Aw.Sindri.Core.Lease;
 using Aw.Sindri.Core.Profile;
 using Aw.Sindri.Features.StartProcess;
@@ -21,6 +23,13 @@ internal static class ServeCommand
     internal static async Task<int> Run(Func<string, string?> environment, TimeProvider clock, TextWriter error)
     {
         using var hangup = PosixSignalRegistration.Create(PosixSignal.SIGHUP, static c => c.Cancel = true);
+        if (environment(LoopbackBinding.PortVariable) is { Length: > 0 } asked && !IsPort(asked))
+        {
+            await error.WriteLineAsync($"{SindriErrors.PortInUse.Code} {LoopbackBinding.PortVariable}='{asked}' isn't a port number "
+                + "(fix: set it to 0..65535, or unset it to use the profile's api.port)").ConfigureAwait(false);
+            return 2;
+        }
+
         var port = await PortFor(environment, clock).ConfigureAwait(false);
         var app = LoopbackBinding.Build([], name => name == LoopbackBinding.PortVariable ? port : environment(name), clock,
             static services => services.AddHostedService<SchedulerHost>().AddHostedService<LeaseRenewer>());
@@ -50,9 +59,9 @@ internal static class ServeCommand
             await app.StartAsync(CancellationToken.None).ConfigureAwait(false);
             return true;
         }
-        catch (IOException e)
+        catch (Exception e) when (e is IOException or SocketException)   // taken, privileged or refused
         {
-            _ = await Call<StopProcessRequest, StopProcessResponse>(app, new StopProcessRequest("port-in-use")).ConfigureAwait(false);
+            _ = await Call<StopProcessRequest, StopProcessResponse>(app, new StopProcessRequest(StopReason.PortInUse)).ConfigureAwait(false);
             await error.WriteLineAsync($"{SindriErrors.PortInUse.Code} {e.Message} (fix: free the port, or set AW_SINDRI_PORT)").ConfigureAwait(false);
             return false;
         }
@@ -76,12 +85,12 @@ internal static class ServeCommand
 
         if (app.Services.GetRequiredService<HeldLease>().Current is not null)
         {
-            _ = await Call<StopProcessRequest, StopProcessResponse>(app, new StopProcessRequest("signal")).ConfigureAwait(false);
+            _ = await Call<StopProcessRequest, StopProcessResponse>(app, new StopProcessRequest(StopReason.Signal)).ConfigureAwait(false);
         }
 
         _ = await endpoints.Remove(grant.Holder.Pid, CancellationToken.None).ConfigureAwait(false);
         await app.StopAsync(CancellationToken.None).ConfigureAwait(false);
-        return Environment.ExitCode;
+        return app.Services.GetRequiredService<IExitCode>().Code;
     }
 
     private static async Task<Kernel.Result<TRes>> Call<TReq, TRes>(WebApplication app, TReq request)
@@ -93,6 +102,9 @@ internal static class ServeCommand
             return await scope.ServiceProvider.GetRequiredService<IService<TReq, TRes>>().Handle(request, CancellationToken.None).ConfigureAwait(false);
         }
     }
+
+    private static bool IsPort(string text) =>
+        int.TryParse(text, NumberStyles.None, CultureInfo.InvariantCulture, out var port) && port <= 65535;
 
     private static async Task<string> PortFor(Func<string, string?> environment, TimeProvider clock)
     {

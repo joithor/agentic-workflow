@@ -12,8 +12,9 @@ internal sealed class RecordHeartbeatService(ILedgerStore ledger, EventFactory e
     public async ValueTask<Result<RecordHeartbeatResponse>> Handle(RecordHeartbeatRequest request, CancellationToken cancellationToken)
     {
         var run = request.Run;
-        var entry = events.Entry(EventTypes.Heartbeat, new Heartbeat(run.Slot, clock.GetUtcNow()),
-            string.Create(CultureInfo.InvariantCulture, $"{EventTypes.Heartbeat}:{run.Grant.Epoch}:{run.Slot:O}"));
+        var type = EventTypes.ServiceRun(HeartbeatService.ServiceId);
+        var entry = events.Entry(type, new Heartbeat(run.Slot, clock.GetUtcNow()),
+            string.Create(CultureInfo.InvariantCulture, $"{type}:{run.Grant.Epoch}:{run.Slot:O}"));
         var recorded = await ledger.Append(entry, run.Grant, cancellationToken).ConfigureAwait(false);
         return recorded.IsError ? recorded.Error : new RecordHeartbeatResponse(recorded.Value.Sequence, recorded.Value.AlreadyRecorded);
     }

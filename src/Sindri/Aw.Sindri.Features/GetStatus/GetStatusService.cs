@@ -1,5 +1,6 @@
 using Aw.Kernel;
 using Aw.Kernel.Services;
+using Aw.Sindri.Core.Events;
 using Aw.Sindri.Core.Lease;
 using Aw.Sindri.Core.Ledger;
 using Aw.Sindri.Core.Profile;
@@ -26,8 +27,9 @@ internal sealed class GetStatusService(HeldLease held, IApprovals approvals, IPr
         var approvedHash = approved.IsSuccess ? approved.Value?.Hash : null;
         var liveHash = loaded.IsSuccess ? loaded.Value.Hash : (Core.Ids.ProfileHash?)null;
         var problem = loaded.IsError ? loaded.Error.Message : approved.IsError ? approved.Error.Message : null;
-        return new ProfileStatus(approvedHash, liveHash, approvedHash is not null && liveHash is not null && liveHash != approvedHash, problem,
-            loaded.IsSuccess ? loaded.Value.Source : null);
+        var changed = approvedHash is not null && liveHash is not null && liveHash != approvedHash;
+        return new ProfileStatus(approvedHash, liveHash, changed, problem, loaded.IsSuccess ? loaded.Value.Source : null,
+            NeedsApproval: approvedHash is null || changed);
     }
 
     private async ValueTask<IReadOnlyList<ServiceStatus>> Services(LoadedProfile? approved, CancellationToken cancellationToken)
@@ -35,7 +37,7 @@ internal sealed class GetStatusService(HeldLease held, IApprovals approvals, IPr
         var services = new List<ServiceStatus>();
         foreach (var schedule in approved is null ? [] : ServiceSchedule.From(approved.Profile, DateTimeOffset.MinValue))
         {
-            var last = await ledger.Latest("service." + schedule.Name.Value, cancellationToken).ConfigureAwait(false);
+            var last = await ledger.Latest(EventTypes.ServiceRun(schedule.Name), cancellationToken).ConfigureAwait(false);
             services.Add(new ServiceStatus(schedule.Name, schedule.Cadence.ToString(), last.IsSuccess ? last.Value?.Envelope.OccurredAt : null));
         }
 

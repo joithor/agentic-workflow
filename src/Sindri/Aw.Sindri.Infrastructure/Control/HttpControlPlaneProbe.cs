@@ -29,7 +29,7 @@ internal sealed class HttpControlPlaneProbe(IEndpointFile endpoints, JsonSeriali
             using var response = await _http.GetAsync(new Uri(endpoint.Url, "/sindri/ping"), cancellationToken).ConfigureAwait(false);
             var body = await response.Content.ReadAsByteArrayAsync(cancellationToken).ConfigureAwait(false);
             var ping = response.IsSuccessStatusCode ? AwJson.Deserialize<Ping>(body, options) : null;
-            return ping is { IsSuccess: true } && ping.Value.Pid == endpoint.Pid
+            return ping is { IsSuccess: true } && ping.Value.Pid == endpoint.Pid && ping.Value.Epoch == endpoint.Epoch
                 ? (endpoint, ping.Value)
                 : SindriErrors.NotRunning.With($"{endpoint.Url.Authority} answered, but not as the recorded control plane");
         }

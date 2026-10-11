@@ -23,9 +23,9 @@ public static class ProfileRules
             return Invalid(string.IsNullOrWhiteSpace(profile.User) ? "user" : "tenant", "must be non-empty text");
         }
 
-        if (profile.Api is { Port: < 0 or > 65535 })
+        if (profile.Api is { Port: < 0 or (> 0 and < 1024) or > 65535 })
         {
-            return Invalid("api.port", "must be 0 (a free port) to 65535");
+            return Invalid("api.port", "must be 0 (a free port) or 1024 to 65535");
         }
 
         foreach (var (name, settings) in profile.Services ?? SindriProfile.NoServices)

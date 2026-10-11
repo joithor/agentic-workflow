@@ -58,13 +58,11 @@ Aw.Sindri.Features.GetStatus.ProfileStatus.Approved.get -> Aw.Sindri.Core.Ids.Pr
 Aw.Sindri.Features.GetStatus.ProfileStatus.Approved.init -> void
 Aw.Sindri.Features.GetStatus.ProfileStatus.ChangedSinceApproval.get -> bool
 Aw.Sindri.Features.GetStatus.ProfileStatus.ChangedSinceApproval.init -> void
-Aw.Sindri.Features.GetStatus.ProfileStatus.Deconstruct(out Aw.Sindri.Core.Ids.ProfileHash? Approved, out Aw.Sindri.Core.Ids.ProfileHash? Live, out bool ChangedSinceApproval, out string? Problem, out string? Source) -> void
 Aw.Sindri.Features.GetStatus.ProfileStatus.Equals(Aw.Sindri.Features.GetStatus.ProfileStatus? other) -> bool
 Aw.Sindri.Features.GetStatus.ProfileStatus.Live.get -> Aw.Sindri.Core.Ids.ProfileHash?
 Aw.Sindri.Features.GetStatus.ProfileStatus.Live.init -> void
 Aw.Sindri.Features.GetStatus.ProfileStatus.Problem.get -> string?
 Aw.Sindri.Features.GetStatus.ProfileStatus.Problem.init -> void
-Aw.Sindri.Features.GetStatus.ProfileStatus.ProfileStatus(Aw.Sindri.Core.Ids.ProfileHash? Approved, Aw.Sindri.Core.Ids.ProfileHash? Live, bool ChangedSinceApproval, string? Problem, string? Source) -> void
 Aw.Sindri.Features.GetStatus.ProfileStatus.Source.get -> string?
 Aw.Sindri.Features.GetStatus.ProfileStatus.Source.init -> void
 Aw.Sindri.Features.GetStatus.ServiceStatus
@@ -126,11 +124,8 @@ Aw.Sindri.Features.StartProcess.StartProcessResponse.Profile.init -> void
 Aw.Sindri.Features.StartProcess.StartProcessResponse.StartProcessResponse(Aw.Sindri.Core.Lease.LeaseGrant! Grant, Aw.Sindri.Core.Ids.ProfileHash? Profile) -> void
 Aw.Sindri.Features.StopProcess.StopProcessRequest
 Aw.Sindri.Features.StopProcess.StopProcessRequest.<Clone>$() -> Aw.Sindri.Features.StopProcess.StopProcessRequest!
-Aw.Sindri.Features.StopProcess.StopProcessRequest.Deconstruct(out string! Reason) -> void
 Aw.Sindri.Features.StopProcess.StopProcessRequest.Equals(Aw.Sindri.Features.StopProcess.StopProcessRequest? other) -> bool
-Aw.Sindri.Features.StopProcess.StopProcessRequest.Reason.get -> string!
 Aw.Sindri.Features.StopProcess.StopProcessRequest.Reason.init -> void
-Aw.Sindri.Features.StopProcess.StopProcessRequest.StopProcessRequest(string! Reason) -> void
 Aw.Sindri.Features.StopProcess.StopProcessResponse
 Aw.Sindri.Features.StopProcess.StopProcessResponse.<Clone>$() -> Aw.Sindri.Features.StopProcess.StopProcessResponse!
 Aw.Sindri.Features.StopProcess.StopProcessResponse.Deconstruct(out int Pid, out long Epoch) -> void
@@ -282,3 +277,10 @@ static Aw.Sindri.Features.ValidateProfile.ValidateProfileRequest.operator !=(Aw.
 static Aw.Sindri.Features.ValidateProfile.ValidateProfileRequest.operator ==(Aw.Sindri.Features.ValidateProfile.ValidateProfileRequest? left, Aw.Sindri.Features.ValidateProfile.ValidateProfileRequest? right) -> bool
 static Aw.Sindri.Features.ValidateProfile.ValidateProfileResponse.operator !=(Aw.Sindri.Features.ValidateProfile.ValidateProfileResponse? left, Aw.Sindri.Features.ValidateProfile.ValidateProfileResponse? right) -> bool
 static Aw.Sindri.Features.ValidateProfile.ValidateProfileResponse.operator ==(Aw.Sindri.Features.ValidateProfile.ValidateProfileResponse? left, Aw.Sindri.Features.ValidateProfile.ValidateProfileResponse? right) -> bool
+Aw.Sindri.Features.GetStatus.ProfileStatus.Deconstruct(out Aw.Sindri.Core.Ids.ProfileHash? Approved, out Aw.Sindri.Core.Ids.ProfileHash? Live, out bool ChangedSinceApproval, out string? Problem, out string? Source, out bool NeedsApproval) -> void
+Aw.Sindri.Features.GetStatus.ProfileStatus.NeedsApproval.get -> bool
+Aw.Sindri.Features.GetStatus.ProfileStatus.NeedsApproval.init -> void
+Aw.Sindri.Features.GetStatus.ProfileStatus.ProfileStatus(Aw.Sindri.Core.Ids.ProfileHash? Approved, Aw.Sindri.Core.Ids.ProfileHash? Live, bool ChangedSinceApproval, string? Problem, string? Source, bool NeedsApproval) -> void
+Aw.Sindri.Features.StopProcess.StopProcessRequest.Deconstruct(out Aw.Sindri.Core.Events.StopReason Reason) -> void
+Aw.Sindri.Features.StopProcess.StopProcessRequest.Reason.get -> Aw.Sindri.Core.Events.StopReason
+Aw.Sindri.Features.StopProcess.StopProcessRequest.StopProcessRequest(Aw.Sindri.Core.Events.StopReason Reason) -> void

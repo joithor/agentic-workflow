@@ -8,4 +8,5 @@ namespace Aw.Sindri.Features.GetStatus;
 /// <param name="ChangedSinceApproval">True when the live file differs from the approval.</param>
 /// <param name="Problem">Why the live file doesn't load, if it doesn't.</param>
 /// <param name="Source">The live profile file, when it loads.</param>
-public sealed record ProfileStatus(ProfileHash? Approved, ProfileHash? Live, bool ChangedSinceApproval, string? Problem, string? Source);
+/// <param name="NeedsApproval">True when nothing is approved yet or the live file changed since the approval.</param>
+public sealed record ProfileStatus(ProfileHash? Approved, ProfileHash? Live, bool ChangedSinceApproval, string? Problem, string? Source, bool NeedsApproval);
