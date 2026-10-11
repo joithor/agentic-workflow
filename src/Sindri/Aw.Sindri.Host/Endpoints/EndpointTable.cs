@@ -1,5 +1,6 @@
 using Aw.Kernel.Services;
 using Aw.Sindri.Core.Control;
+using Aw.Sindri.Core.Events;
 using Aw.Sindri.Features.ApproveProfile;
 using Aw.Sindri.Features.GetStatus;
 using Aw.Sindri.Features.PingProcess;
@@ -18,7 +19,7 @@ internal static class EndpointTable
         _ = group.MapGet("/ping", static async (IService<PingProcessRequest, Ping> service, CancellationToken ct)
             => (await service.Handle(new PingProcessRequest(), ct).ConfigureAwait(false)).ToHttpResult());
         _ = group.MapPost("/stop", static async (IService<StopProcessRequest, StopProcessResponse> service, CancellationToken ct)
-            => (await service.Handle(new StopProcessRequest("stop"), ct).ConfigureAwait(false)).ToHttpResult());
+            => (await service.Handle(new StopProcessRequest(StopReason.Stop), ct).ConfigureAwait(false)).ToHttpResult());
         _ = group.MapPost("/profile/approve", static async (ApproveProfileRequest request, IService<ApproveProfileRequest, ApproveProfileResponse> service, CancellationToken ct)
             => (await service.Handle(request, ct).ConfigureAwait(false)).ToHttpResult());
         _ = group.MapGet("/events", EventStream.Stream);

@@ -3,6 +3,7 @@ using System.Runtime.InteropServices;
 using Aw.Kernel.Services;
 using Aw.Sindri.Core;
 using Aw.Sindri.Core.Control;
+using Aw.Sindri.Core.Events;
 using Aw.Sindri.Core.Lease;
 using Aw.Sindri.Core.Profile;
 using Aw.Sindri.Features.StartProcess;
@@ -52,7 +53,7 @@ internal static class ServeCommand
         }
         catch (IOException e)
         {
-            _ = await Call<StopProcessRequest, StopProcessResponse>(app, new StopProcessRequest("port-in-use")).ConfigureAwait(false);
+            _ = await Call<StopProcessRequest, StopProcessResponse>(app, new StopProcessRequest(StopReason.PortInUse)).ConfigureAwait(false);
             await error.WriteLineAsync($"{SindriErrors.PortInUse.Code} {e.Message} (fix: free the port, or set AW_SINDRI_PORT)").ConfigureAwait(false);
             return false;
         }
@@ -76,7 +77,7 @@ internal static class ServeCommand
 
         if (app.Services.GetRequiredService<HeldLease>().Current is not null)
         {
-            _ = await Call<StopProcessRequest, StopProcessResponse>(app, new StopProcessRequest("signal")).ConfigureAwait(false);
+            _ = await Call<StopProcessRequest, StopProcessResponse>(app, new StopProcessRequest(StopReason.Signal)).ConfigureAwait(false);
         }
 
         _ = await endpoints.Remove(grant.Holder.Pid, CancellationToken.None).ConfigureAwait(false);
