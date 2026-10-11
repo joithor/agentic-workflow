@@ -60,8 +60,8 @@ public sealed partial class FixtureDataTests
         {
             var doc = Assert.Single(linearDocs, d => (string?)d["search_doc"]!["document_id"] == (string?)issue["id"])["search_doc"]!;
             Assert.Equal((string?)issue["identifier"], (string?)doc["metadata"]!["identifier"]);
-            Assert.Equal(DateTimeOffset.Parse((string)issue["updatedAt"]!, System.Globalization.CultureInfo.InvariantCulture),
-                DateTimeOffset.Parse((string)doc["updated_at"]!, System.Globalization.CultureInfo.InvariantCulture));
+            Assert.Equal(DateTimeOffset.Parse((string)issue["updatedAt"]!, CultureInfo.InvariantCulture),
+                DateTimeOffset.Parse((string)doc["updated_at"]!, CultureInfo.InvariantCulture));
         }
 
         _ = Assert.Single(OnyxDocs(), d => (string?)d["search_doc"]!["source_type"] == "slack");

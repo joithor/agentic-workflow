@@ -47,7 +47,7 @@ public sealed class FixtureRepoTests
         Assert.Equal(first.Head, second.Head);
         Assert.Equal(first.Head, GitOut(first.Path, "rev-parse", "main"));
         var last = first.PullRequests[^1];
-        Assert.Equal(last.MergedAt, DateTimeOffset.Parse(GitOut(first.Path, "log", "-1", "--format=%cI", last.MergeCommit), System.Globalization.CultureInfo.InvariantCulture));
+        Assert.Equal(last.MergedAt, DateTimeOffset.Parse(GitOut(first.Path, "log", "-1", "--format=%cI", last.MergeCommit), CultureInfo.InvariantCulture));
         Assert.Equal("Avery Fixture <avery@fixture-labs.invalid>", GitOut(first.Path, "log", "-1", "--format=%an <%ae>", last.MergeCommit));
     }
 
