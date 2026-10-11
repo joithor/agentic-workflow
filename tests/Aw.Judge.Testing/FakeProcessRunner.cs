@@ -74,8 +74,10 @@ public sealed class FakeProcessRunner : IProcessRunner
 
         var padding = new string('a', program.OutputSize);
         stdout.Append(padding).Append(program.StandardOutput);
-        return ValueTask.FromResult(ProcessResult.Exited(program.ExitCode, stdout.ToString(), padding + program.StandardError));
+        return ValueTask.FromResult(ProcessResult.Exited(program.ExitCode, Kept(stdout.ToString(), request), Kept(padding + program.StandardError, request)));
     }
+
+    private static string Kept(string text, ProcessRequest request) => text.Length <= request.OutputLimit ? text : text[..request.OutputLimit];
 
     private static List<string>? Files(string? directory) =>
         directory is not null && Directory.Exists(directory)

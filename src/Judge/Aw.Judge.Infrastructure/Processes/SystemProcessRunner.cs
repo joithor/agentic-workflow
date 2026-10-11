@@ -7,9 +7,11 @@ using Aw.Judge.Core.Processes;
 namespace Aw.Judge.Infrastructure.Processes;
 
 /// <summary>
-/// IProcessRunner over System.Diagnostics.Process. Both output streams are read concurrently from the start and the
-/// input is written on its own task, so a program that fills a pipe never blocks; on a timeout or a cancellation the
-/// whole process tree is killed, so a child that inherited the pipes can't keep the run open.
+/// IProcessRunner over System.Diagnostics.Process. Both output streams are read concurrently from the start, each kept
+/// up to the request's output limit, and the input is written on its own task, so a program that fills a pipe never
+/// blocks. On a timeout or a cancellation the whole process tree is killed. Once the program exits, the streams get a
+/// short grace to finish: a background child it left holding the pipes can't keep the run open (that child is not
+/// stopped: it is no longer in the program's tree).
 /// </summary>
 /// <param name="environment">Reads PATH, to find a program given by bare name.</param>
 internal sealed class SystemProcessRunner(Func<string, string?> environment) : IProcessRunner
@@ -36,23 +38,26 @@ internal sealed class SystemProcessRunner(Func<string, string?> environment) : I
             return refused;
         }
 
-        var stdout = process.StandardOutput.ReadToEndAsync(CancellationToken.None);
-        var stderr = process.StandardError.ReadToEndAsync(CancellationToken.None);
+        var stdout = BoundedText.Read(process.StandardOutput, request.OutputLimit);
+        var stderr = BoundedText.Read(process.StandardError, request.OutputLimit);
         var stdin = WriteInput(process.StandardInput, request.StandardInput);
         using var deadline = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
         deadline.CancelAfter(request.Timeout);
         try
         {
             await process.WaitForExitAsync(deadline.Token).ConfigureAwait(false);
-            await Task.WhenAll(stdout, stderr, stdin).WaitAsync(deadline.Token).ConfigureAwait(false);
-            return ProcessResult.Exited(process.ExitCode, await stdout.ConfigureAwait(false), await stderr.ConfigureAwait(false));
         }
         catch (OperationCanceledException) when (deadline.IsCancellationRequested)
         {
             KillTree(process);
             cancellationToken.ThrowIfCancellationRequested();
-            return ProcessResult.TimedOutAfter(await Drained(stdout).ConfigureAwait(false), await Drained(stderr).ConfigureAwait(false));
+            await Drained(stdout.Reading, stderr.Reading, stdin).ConfigureAwait(false);
+            return ProcessResult.TimedOutAfter(stdout.Text, stderr.Text);
         }
+
+        // The pipes close as the program exits, unless a background child it left kept them: wait only the grace for that.
+        await Drained(stdout.Reading, stderr.Reading, stdin).ConfigureAwait(false);
+        return ProcessResult.Exited(process.ExitCode, stdout.Text, stderr.Text);
     }
 
     // Null once it runs; otherwise why it didn't.
@@ -122,6 +127,10 @@ internal sealed class SystemProcessRunner(Func<string, string?> environment) : I
         {
             // The program closed its end first; what it read is all it wanted.
         }
+        catch (ObjectDisposedException)
+        {
+            // The run ended (and the process was disposed) while the write was still going.
+        }
     }
 
     private static void KillTree(Process process)
@@ -140,15 +149,16 @@ internal sealed class SystemProcessRunner(Func<string, string?> environment) : I
         }
     }
 
-    private static async Task<string> Drained(Task<string> stream)
+    // Waits up to the grace for the streams to finish; what they hold by then is the output.
+    private static async Task Drained(params Task[] streams)
     {
         try
         {
-            return await stream.WaitAsync(_drainGrace).ConfigureAwait(false);
+            await Task.WhenAll(streams).WaitAsync(_drainGrace).ConfigureAwait(false);
         }
         catch (TimeoutException)
         {
-            return "";
+            // A process that outlived the program still holds a pipe; keep what was read.
         }
     }
 }

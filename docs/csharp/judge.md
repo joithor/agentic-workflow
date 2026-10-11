@@ -258,9 +258,12 @@ failure row with the code.
 ### Processes and secrets
 
 `SystemProcessRunner` finds a bare program name on the `PATH` the environment gives (a path is run as is), reads both
-output streams concurrently from the start and writes the input on its own task (so a full pipe never blocks it), and
-on a timeout or a cancellation kills the whole process tree (`Process.Kill(entireProcessTree: true)`), so a child that
-inherited the pipes can't hold the run open. A program that isn't installed (not found, or the system says the file is
+output streams concurrently from the start, each kept up to the request's `OutputLimit` (4 Mi characters by default;
+the rest is read and dropped), and writes the input on its own task (so a full pipe never blocks it). On a timeout or a
+cancellation it kills the whole process tree (`Process.Kill(entireProcessTree: true)`). Once the program exits, the
+streams get a 2 s grace to finish, not the rest of the budget: a background child the program left holding its pipes
+can't turn a finished run into a timeout. That child isn't stopped (it left the program's tree when the program
+exited; reaping it would need its own process group). A program that isn't installed (not found, or the system says the file is
 gone, `ENOENT`) is `NotStarted`; any other refusal to start (`E2BIG`, `ENOEXEC`, `EACCES`) is `FailedToStart`, with
 the system's message as standard error. Neither is an exception.
 
