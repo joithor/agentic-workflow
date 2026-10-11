@@ -36,7 +36,7 @@ reads the file and its child recipes, and writes nothing.
 |---|---|
 | 0 | No finding is an error (information and skipped findings don't count) |
 | 1 | One or more errors |
-| 2 | A usage error (no file: `SND-CLI-003`; an unknown `recipe` verb: `SND-CLI-001`), or a tool error: the file doesn't exist or can't be read (`SND-RECIPE-010 <path> doesn't exist (fix: check the path)`) |
+| 2 | A usage error (no file: `SND-CLI-003`; an unknown `recipe` verb: `SND-CLI-001`), or a tool error: the file doesn't exist, is a directory or can't be read (`SND-RECIPE-010 <path> doesn't exist (fix: check the path)`) |
 
 Errors go to stderr as `CODE message (fix: …)`, like every `sindri` verb.
 
@@ -180,7 +180,7 @@ pins its exact line. All are errors except where the severity says otherwise.
 
 | Rule | Checks | Fix |
 |---|---|---|
-| `RCP-SCHEMA-001` | No unknown or missing field, the fields a state's kind needs and no others, and one form where a value takes exactly one (`waitFor`, `with:` values, `when`) | Remove the field, or add the missing one |
+| `RCP-SCHEMA-001` | No unknown or missing field, the fields a state's kind needs and no others (a missing `timeout` is `RCP-TIME-001`'s), and one form where a value takes exactly one (`waitFor`, `with:` values, `when`) | Remove the field, or add the missing one |
 | `RCP-SCHEMA-002` | Each value has the right type and form | Write the form the message names |
 | `RCP-SCHEMA-003` | No refused YAML (see Reading) | Write the value out in full |
 | `RCP-STATE-001` | No state uses a reserved name | Rename the state |
