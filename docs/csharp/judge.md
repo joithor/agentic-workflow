@@ -92,7 +92,7 @@ stderr; the hooks discard stderr except where the hook contract says. At the def
 
 | Command | Input | Output (exit 0) | Errors |
 |---|---|---|---|
-| `health` | — | `HealthOutput`: `{"status": "ok"\|"degraded"\|"down", "failures24h": n}` | store error → 1 |
+| `health` | — | `HealthOutput`: `{"status": "ok"\|"degraded"\|"down", "failures24h": n}`: ok with no failure row in 24 h, down when the last five model attempts all failed (escalations before the chain and pre-rule settlements never reached a model and don't count), degraded otherwise | store error → 1 |
 | `brief save` | stdin `BriefInput`: `toolUseId`, `sessionId`, `promptId`, `dispatchName` (string or null), `subagentType`, `goal`, `acceptanceCriteria`, `proofCommand`, all required, strings may be empty, other keys ignored | nothing | `invalid input: …` → 1; `brief already saved: <toolUseId>` → 1 |
 | `brief get <toolUseId>` | — | `BriefOutput`: `toolUseId`, `agentId`, `sessionId`, `promptId`, `dispatchName`, `subagentType`, `goal`, `acceptanceCriteria`, `proofCommand`, `savedAt` | `no brief for tool_use_id: <id>` → 1 |
 | `brief map-by-name <name>` | — | the oldest unmapped brief's tool use id with that dispatch name, or nothing | store error → 1 |

@@ -86,7 +86,7 @@ public sealed class InMemoryDecisionLog : IDecisionLog
 
         IReadOnlyList<DecisionOutcome> outcomes = [.. _decisions
             .Select((decision, order) => (decision, order))
-            .Where(d => d.decision.Outcome != DecisionOutcome.Escalated)
+            .Where(d => d.decision.Outcome != DecisionOutcome.Escalated && !string.Equals(d.decision.ReasonCode, "pre-rule", StringComparison.Ordinal))
             .OrderByDescending(d => d.decision.Ts).ThenByDescending(d => d.order)
             .Take(count)
             .Select(d => d.decision.Outcome)];

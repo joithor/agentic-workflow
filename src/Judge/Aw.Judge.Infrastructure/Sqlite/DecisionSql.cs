@@ -34,9 +34,11 @@ internal static class DecisionSql
 
     internal const string CountFailuresSince = "SELECT COUNT(*) FROM failures WHERE ts >= $since";
 
-    // "Model attempts" leave out rows that never reached a provider (a disabled question, invalid input).
+    // "Model attempts" leave out rows that never reached a provider: escalations before the chain (a disabled question,
+    // invalid input) and pre-rule settlements. A fallback after an unsure model did reach one, so it counts.
     internal const string LastAttemptOutcomes =
-        "SELECT outcome FROM decisions WHERE outcome IN ('decided', 'failed') ORDER BY ts DESC, rowid DESC LIMIT $count";
+        "SELECT outcome FROM decisions WHERE outcome IN ('decided', 'failed') AND reason_code <> 'pre-rule' " +
+        "ORDER BY ts DESC, rowid DESC LIMIT $count";
 
     internal const string PruneDetailsBefore =
         "DELETE FROM decision_details WHERE id IN (SELECT id FROM decisions WHERE ts < $before)";
