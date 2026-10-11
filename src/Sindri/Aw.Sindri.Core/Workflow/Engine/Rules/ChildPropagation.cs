@@ -2,6 +2,7 @@ using Aw.Sindri.Core.Workflow.Engine.Decisions;
 using Aw.Sindri.Core.Workflow.Engine.Instances;
 using Aw.Sindri.Core.Workflow.Engine.Triggers;
 using Aw.Sindri.Core.Workflow.Recipes;
+using Aw.Sindri.Core.Workflow.Validation;
 
 namespace Aw.Sindri.Core.Workflow.Engine.Rules;
 
@@ -22,6 +23,19 @@ public static class ChildPropagation
     /// <param name="actor">The parent trigger's actor.</param>
     /// <returns>The child's start.</returns>
     public static StartRequest Create(WorkflowInstance parent, ChildWait wait, TriggerKey key, string actor) =>
+        throw new NotSupportedException("P3 unit (d): ChildPropagation.Create");
+
+    /// <summary>
+    /// <see cref="Create(WorkflowInstance, ChildWait, TriggerKey, string)"/> with the version of the child recipe the
+    /// resolver found; the hash stays the parent's pin.
+    /// </summary>
+    /// <param name="parent">The parent, in the frame that entered the wait.</param>
+    /// <param name="wait">The child wait.</param>
+    /// <param name="child">The child recipe as resolved.</param>
+    /// <param name="key">The parent's trigger key.</param>
+    /// <param name="actor">The parent trigger's actor.</param>
+    /// <returns>The child's start.</returns>
+    public static StartRequest Create(WorkflowInstance parent, ChildWait wait, ChildRecipe child, TriggerKey key, string actor) =>
         throw new NotSupportedException("P3 unit (d): ChildPropagation.Create");
 
     /// <summary>
@@ -52,10 +66,28 @@ public static class ChildPropagation
     public static WorkflowInstanceId? ForwardTo(WorkflowInstance parent, Trigger trigger) =>
         throw new NotSupportedException("P3 unit (d): ChildPropagation.ForwardTo");
 
+    /// <summary>
+    /// The answer forwarded to the child (spec §5.7, W17): the child's own trigger under the nonce minted for the child,
+    /// keeping the actor who answered the parent, with 'onBehalfOf' naming the parent and that actor.
+    /// </summary>
+    /// <param name="parent">The parent whose frame mirrors the child.</param>
+    /// <param name="answer">The answer given to the parent.</param>
+    /// <param name="stamp">The nonce minted for the child and the argument digest.</param>
+    /// <returns>The child's answer.</returns>
+    public static AnswerGiven Forward(WorkflowInstance parent, AnswerGiven answer, CommandStamp stamp) =>
+        throw new NotSupportedException("P3 unit (d): ChildPropagation.Forward");
+
     /// <summary>The children a parent's cancel cancels (spec §5.7): every one, whatever its state.</summary>
     /// <param name="parent">The cancelled parent.</param>
     /// <param name="children">The parent's children as the store lists them.</param>
     /// <returns>The children still to cancel.</returns>
     public static IReadOnlyList<WorkflowInstanceId> Cascade(WorkflowInstance parent, IReadOnlyList<WorkflowInstance> children) =>
         throw new NotSupportedException("P3 unit (d): ChildPropagation.Cascade");
+
+    /// <summary>The cancel a cascaded child gets (spec §5.7): origin parent, keyed by the parent and its version after the cancel; exempt from the approval check, so a drifted child is cancelled too.</summary>
+    /// <param name="parent">The cancelled parent, after its cancel.</param>
+    /// <param name="actor">The service that carries the parent's cancel.</param>
+    /// <returns>The child's cancel.</returns>
+    public static CancelRequested CancelFor(WorkflowInstance parent, string actor) =>
+        throw new NotSupportedException("P3 unit (d): ChildPropagation.CancelFor");
 }

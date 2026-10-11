@@ -3297,3 +3297,6 @@ virtual Aw.Sindri.Core.Workflow.Engine.Triggers.Trigger.PrintMembers(System.Text
 virtual Aw.Sindri.Core.Workflow.Engine.Triggers.WaitSource.EqualityContract.get -> System.Type!
 virtual Aw.Sindri.Core.Workflow.Engine.Triggers.WaitSource.Equals(Aw.Sindri.Core.Workflow.Engine.Triggers.WaitSource? other) -> bool
 virtual Aw.Sindri.Core.Workflow.Engine.Triggers.WaitSource.PrintMembers(System.Text.StringBuilder! builder) -> bool
+static Aw.Sindri.Core.Workflow.Engine.Rules.ChildPropagation.CancelFor(Aw.Sindri.Core.Workflow.Engine.Instances.WorkflowInstance! parent, string! actor) -> Aw.Sindri.Core.Workflow.Engine.Triggers.CancelRequested!
+static Aw.Sindri.Core.Workflow.Engine.Rules.ChildPropagation.Create(Aw.Sindri.Core.Workflow.Engine.Instances.WorkflowInstance! parent, Aw.Sindri.Core.Workflow.Recipes.ChildWait! wait, Aw.Sindri.Core.Workflow.Validation.ChildRecipe! child, Aw.Sindri.Core.Workflow.Engine.TriggerKey key, string! actor) -> Aw.Sindri.Core.Workflow.Engine.Decisions.StartRequest!
+static Aw.Sindri.Core.Workflow.Engine.Rules.ChildPropagation.Forward(Aw.Sindri.Core.Workflow.Engine.Instances.WorkflowInstance! parent, Aw.Sindri.Core.Workflow.Engine.Triggers.AnswerGiven! answer, Aw.Sindri.Core.Workflow.Engine.Triggers.CommandStamp! stamp) -> Aw.Sindri.Core.Workflow.Engine.Triggers.AnswerGiven!
