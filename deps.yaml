@@ -59,8 +59,9 @@
 #           are skipped. C# projects (production only, owned by the longest projectPrefix, so a client inside
 #           the server's src directory is told apart): an http edge is a string literal ("…", $"…", @"…",
 #           """…""") whose text starts with another package's route prefix; a file or db edge is one .cs file
-#           holding every segment of another package's files/db path as literals ("sindri-app", "control.json").
-#           Whole-line // comments are skipped. Not seen: a route after a base ($"{url}/sindri/x", an absolute
+#           holding another package's files/db path in one literal ("sindri-app/control.json") or every segment
+#           as literals ("sindri-app", "control.json"). Whole-line // comments are skipped (/* */ blocks are not).
+#           Not seen: a route after a base ($"{url}/sindri/x", an absolute
 #           URL), paths from computed pieces, and cli edges (a C# Process start is not scanned).
 #
 # YAML subset (parsed without a library, so the check needs no install step): block mappings and
@@ -470,7 +471,7 @@ edges:
     to: Sindri
     kind: http
     status: current
-    note: "the app's only edge to Sindri: GET /sindri/ping, /sindri/status and the /sindri/events stream (docs/csharp/sindri.md); it finds the endpoint in control.json under AW_SINDRI_HOME"
+    note: "the app's API edge to Sindri (the file edge covers the endpoint record): GET /sindri/ping, /sindri/status and the /sindri/events stream (docs/csharp/sindri.md); it finds the endpoint in control.json under AW_SINDRI_HOME"
 
 # No exceptions: Sindri's project fan-out is 4 (Kernel, KernelData, KernelTelemetry, Redaction) now that it reaches
 # Packets and Readiness through their CLIs (spec §4c, §8).

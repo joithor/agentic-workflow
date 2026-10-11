@@ -270,11 +270,11 @@ export function scan(root, nodes) {
 // A package that serves an HTTP API lists its route prefixes in `routes` (e.g. /sindri/). An http edge is a
 // C# string literal whose text starts with another package's route prefix (plain "…", interpolated $"…",
 // verbatim @"…" or raw """…""": the opening quote is followed by the route), in a production project's *.cs
-// files. A file or db edge is a C# file holding every segment of another package's `files` or `db` path as a
-// string literal ("sindri-app" and "control.json" for sindri-app/control.json), so Path.Combine pieces count.
+// files. A file or db edge is a C# file holding another package's `files` or `db` path in one literal
+// ("sindri-app/control.json") or every segment of it as literals ("sindri-app", "control.json": Path.Combine pieces).
 // The project belongs to the package whose projectPrefix starts its name (longest wins), so a client package
 // that lives inside the server's src directory is still told apart. Test projects (*.Tests, *.Testing) and
-// whole-line // comments are not scanned. Not seen: a route after a base ($"{url}/sindri/x",
+// whole-line // comments are not scanned; /* */ blocks and trailing comments are. Not seen: a route after a base ($"{url}/sindri/x",
 // "http://host/sindri/x"), a URL or path built from computed pieces.
 const CS_FILE = /\.cs$/;
 
@@ -307,7 +307,7 @@ export function scanCSharp(root, nodes) {
   const owners = nodes.flatMap((n) => [
     ...(n.files ?? []).map((f) => ({ id: n.id, kind: "file", path: f })),
     ...(n.db ?? []).map((f) => ({ id: n.id, kind: "db", path: f })),
-  ]).map((o) => ({ ...o, segs: o.path.split("/").map((seg) => new RegExp(`"${esc(seg)}"`)) }));
+  ]).map((o) => ({ ...o, whole: new RegExp(`"[^"\\n]*${esc(o.path)}`), segs: o.path.split("/").map((seg) => new RegExp(`"${esc(seg)}"`)) }));
   const files = walk(path.join(root, "src"), SKIP_PROJECT_DIRS, (p) => /\.csproj$/i.test(p));
   for (const proj of files) {
     const name = projName(proj);
@@ -323,7 +323,8 @@ export function scanCSharp(root, nodes) {
         if (at >= 0 && !found.has(key)) found.set(key, { from: from.id, to: to.id, kind: "http", where: `${rel}:${at + 1}`, what: `calls ${to.routes.join(", ")}` });
       }
       for (const o of owners.filter((x) => x.id !== from.id)) {
-        const at = o.segs.map((re) => lines.findIndex((l) => re.test(l)));
+        const whole = lines.findIndex((l) => o.whole.test(l));
+        const at = whole >= 0 ? [whole] : o.segs.map((re) => lines.findIndex((l) => re.test(l)));
         const key = `${from.id}|${o.id}|${o.kind}`;
         if (at.every((i) => i >= 0) && !found.has(key)) found.set(key, { from: from.id, to: o.id, kind: o.kind, where: `${rel}:${Math.max(...at) + 1}`, what: `${o.kind === "db" ? "opens" : "uses"} ${o.path}` });
       }
