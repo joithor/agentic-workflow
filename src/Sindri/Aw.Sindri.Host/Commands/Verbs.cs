@@ -23,7 +23,8 @@ internal sealed class Verbs(ControlPlaneClient client, Core.Control.IControlPlan
         var status = found.IsError ? found.Error : await client.Get<GetStatusResponse>("/sindri/status", ct).ConfigureAwait(false);
         if (status.IsError)
         {
-            return await output.Error(status.Error with { Message = "not running: " + status.Error.Message }).ConfigureAwait(false);
+            var error = status.Error.Code == SindriErrors.NotRunning.Code ? status.Error with { Message = "not running: " + status.Error.Message } : status.Error;
+            return await output.Error(error).ConfigureAwait(false);
         }
 
         var code = status.Value.Profile.NeedsApproval ? 1 : 0;
