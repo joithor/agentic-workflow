@@ -633,3 +633,56 @@ Aw.Judge.Core.Decisions.DecisionRecord.ApprovedAt.init -> void
 Aw.Judge.Core.Ports.IDecisionLog.MarkApproved(Aw.Judge.Core.Ids.DecisionId id, System.DateTimeOffset at, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Kernel.Unit>!>
 Aw.Judge.Core.Config.JudgeConfig.SetEnabled(string! question, bool enabled) -> Aw.Judge.Core.Config.JudgeConfig!
 Aw.Judge.Core.Config.JudgeConfig.SetThreshold(string! question, double threshold) -> Aw.Kernel.Result<Aw.Judge.Core.Config.JudgeConfig!>!
+Aw.Judge.Core.Ports.IProcessRunner
+Aw.Judge.Core.Ports.IProcessRunner.Run(Aw.Judge.Core.Processes.ProcessRequest! request, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Judge.Core.Processes.ProcessResult!>
+Aw.Judge.Core.Ports.ISecretSource
+Aw.Judge.Core.Ports.ISecretSource.Read(Aw.Judge.Core.Secrets.SecretName name, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<string?>
+Aw.Judge.Core.Processes.ProcessEnd
+Aw.Judge.Core.Processes.ProcessEnd.Exited = 1 -> Aw.Judge.Core.Processes.ProcessEnd
+Aw.Judge.Core.Processes.ProcessEnd.NotStarted = 3 -> Aw.Judge.Core.Processes.ProcessEnd
+Aw.Judge.Core.Processes.ProcessEnd.TimedOut = 2 -> Aw.Judge.Core.Processes.ProcessEnd
+Aw.Judge.Core.Processes.ProcessRequest
+Aw.Judge.Core.Processes.ProcessRequest.<Clone>$() -> Aw.Judge.Core.Processes.ProcessRequest!
+Aw.Judge.Core.Processes.ProcessRequest.Arguments.get -> System.Collections.Generic.IReadOnlyList<string!>!
+Aw.Judge.Core.Processes.ProcessRequest.Arguments.init -> void
+Aw.Judge.Core.Processes.ProcessRequest.Environment.get -> System.Collections.Generic.IReadOnlyDictionary<string!, string!>!
+Aw.Judge.Core.Processes.ProcessRequest.Environment.init -> void
+Aw.Judge.Core.Processes.ProcessRequest.Equals(Aw.Judge.Core.Processes.ProcessRequest? other) -> bool
+Aw.Judge.Core.Processes.ProcessRequest.FileName.get -> string!
+Aw.Judge.Core.Processes.ProcessRequest.FileName.init -> void
+Aw.Judge.Core.Processes.ProcessRequest.ProcessRequest() -> void
+Aw.Judge.Core.Processes.ProcessRequest.StandardInput.get -> string?
+Aw.Judge.Core.Processes.ProcessRequest.StandardInput.init -> void
+Aw.Judge.Core.Processes.ProcessRequest.Timeout.get -> System.TimeSpan
+Aw.Judge.Core.Processes.ProcessRequest.Timeout.init -> void
+Aw.Judge.Core.Processes.ProcessRequest.WorkingDirectory.get -> string?
+Aw.Judge.Core.Processes.ProcessRequest.WorkingDirectory.init -> void
+Aw.Judge.Core.Processes.ProcessResult
+Aw.Judge.Core.Processes.ProcessResult.<Clone>$() -> Aw.Judge.Core.Processes.ProcessResult!
+Aw.Judge.Core.Processes.ProcessResult.Deconstruct(out Aw.Judge.Core.Processes.ProcessEnd End, out int? ExitCode, out string! StandardOutput, out string! StandardError) -> void
+Aw.Judge.Core.Processes.ProcessResult.End.get -> Aw.Judge.Core.Processes.ProcessEnd
+Aw.Judge.Core.Processes.ProcessResult.End.init -> void
+Aw.Judge.Core.Processes.ProcessResult.Equals(Aw.Judge.Core.Processes.ProcessResult? other) -> bool
+Aw.Judge.Core.Processes.ProcessResult.ExitCode.get -> int?
+Aw.Judge.Core.Processes.ProcessResult.ExitCode.init -> void
+Aw.Judge.Core.Processes.ProcessResult.ProcessResult(Aw.Judge.Core.Processes.ProcessEnd End, int? ExitCode, string! StandardOutput, string! StandardError) -> void
+Aw.Judge.Core.Processes.ProcessResult.StandardError.get -> string!
+Aw.Judge.Core.Processes.ProcessResult.StandardError.init -> void
+Aw.Judge.Core.Processes.ProcessResult.StandardOutput.get -> string!
+Aw.Judge.Core.Processes.ProcessResult.StandardOutput.init -> void
+Aw.Judge.Core.Processes.ProcessResult.TimedOut.get -> bool
+Aw.Judge.Core.Secrets.SecretName
+Aw.Judge.Core.Secrets.SecretName.TypeSafeApiKey = 1 -> Aw.Judge.Core.Secrets.SecretName
+override Aw.Judge.Core.Processes.ProcessRequest.Equals(object? obj) -> bool
+override Aw.Judge.Core.Processes.ProcessRequest.GetHashCode() -> int
+override Aw.Judge.Core.Processes.ProcessRequest.ToString() -> string!
+override Aw.Judge.Core.Processes.ProcessResult.Equals(object? obj) -> bool
+override Aw.Judge.Core.Processes.ProcessResult.GetHashCode() -> int
+override Aw.Judge.Core.Processes.ProcessResult.ToString() -> string!
+static Aw.Judge.Core.Processes.ProcessRequest.operator !=(Aw.Judge.Core.Processes.ProcessRequest? left, Aw.Judge.Core.Processes.ProcessRequest? right) -> bool
+static Aw.Judge.Core.Processes.ProcessRequest.operator ==(Aw.Judge.Core.Processes.ProcessRequest? left, Aw.Judge.Core.Processes.ProcessRequest? right) -> bool
+static Aw.Judge.Core.Processes.ProcessResult.Exited(int exitCode, string! standardOutput, string! standardError) -> Aw.Judge.Core.Processes.ProcessResult!
+static Aw.Judge.Core.Processes.ProcessResult.NotStarted() -> Aw.Judge.Core.Processes.ProcessResult!
+static Aw.Judge.Core.Processes.ProcessResult.TimedOutAfter(string! standardOutput, string! standardError) -> Aw.Judge.Core.Processes.ProcessResult!
+static Aw.Judge.Core.Processes.ProcessResult.operator !=(Aw.Judge.Core.Processes.ProcessResult? left, Aw.Judge.Core.Processes.ProcessResult? right) -> bool
+static Aw.Judge.Core.Processes.ProcessResult.operator ==(Aw.Judge.Core.Processes.ProcessResult? left, Aw.Judge.Core.Processes.ProcessResult? right) -> bool

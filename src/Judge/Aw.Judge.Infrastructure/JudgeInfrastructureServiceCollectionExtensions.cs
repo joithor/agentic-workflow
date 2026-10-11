@@ -33,6 +33,7 @@ public static class JudgeInfrastructureServiceCollectionExtensions
             .AddScoped<IJudgeConfigStore>(sp => new FileJudgeConfigStore(settings.StateDirectory, sp.GetRequiredService<JsonSerializerOptions>()))
             .AddSingleton<IInputRedactor>(new AwInputRedactor(Redactor.Default))
             .AddSingleton<IExecutableLocator>(new PathExecutableLocator(environment))
+            .AddSingleton<IProcessRunner>(new SystemProcessRunner(environment))
             .AddSingleton<IIdGenerator, RandomIdGenerator>();
     }
 }
