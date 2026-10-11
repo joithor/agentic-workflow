@@ -86,16 +86,18 @@ public sealed class BrowserActionTests(BrowserFixture fixture)
         Assert.Equal("Delete", Assert.Single(candidates, c => c.TestId?.Value == "icon").AccessibleName);
     }
 
-    [Fact]
-    public async Task An_empty_aria_label_falls_through_to_the_value_so_a_preview_run_refuses_the_candidate()
+    [Theory]
+    [InlineData("blank-label", "Delete")]
+    [InlineData("blank-title", "Archive")]
+    public async Task A_blank_aria_label_or_title_falls_through_to_the_value_so_a_preview_run_refuses_the_candidate(string testId, string label)
     {
         await using var session = await fixture.OpenAsync();
         _ = await session.GotoAsync("/controls", _wait, Token);
 
         var candidates = (await session.VisibleCandidatesAsync(Token)).Value;
 
-        var blank = Assert.Single(candidates, c => c.TestId?.Value == "blank-label");
-        Assert.Equal("Delete", blank.AccessibleName);
+        var blank = Assert.Single(candidates, c => c.TestId?.Value == testId);
+        Assert.Equal(label, blank.AccessibleName);
         Assert.True(StepGuard.LabelLooksLikeWrite(blank.AccessibleName), "the repair write check refuses it under a host override");
     }
 

@@ -128,15 +128,18 @@ public sealed class DirectoryLocksTests : IDisposable
         Assert.False(Directory.Exists(LockTestEnvironment.Settings(_root).QaStack + ".2"));
     }
 
-    [Fact]
-    public async Task A_lock_path_with_a_trailing_separator_is_taken_and_released_and_slot_two_sits_beside_it()
+    [Theory]
+    [InlineData(1)]
+    [InlineData(2)]
+    public async Task A_lock_path_with_trailing_separators_is_taken_and_released_and_slot_two_sits_beside_it(int separators)
     {
+        var trailing = new string(Path.DirectorySeparatorChar, separators);
         var qa = Path.Combine(_root.Path, "locks", "qa.lock");
         var heavy = Path.Combine(_root.Path, "locks", "h.lock");
         var settings = SettingsFromEnvironment.Read(name => name switch
         {
-            "AW_QA_STACK_LOCK" => qa + Path.DirectorySeparatorChar,
-            "AW_HEAVY_JOB_LOCK" => heavy + Path.DirectorySeparatorChar,
+            "AW_QA_STACK_LOCK" => qa + trailing,
+            "AW_HEAVY_JOB_LOCK" => heavy + trailing,
             "AW_HEAVY_LOCK_HELD" => "0",
             "AW_HEAVY_SLOTS" => "2",
             _ => null,

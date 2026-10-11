@@ -12,6 +12,7 @@ internal static class FixtureSite
             "<form><input type=\"submit\" data-testid=\"submit-input\" value=\"Delete account\"></form>",
             "<button data-testid=\"icon\" title=\"Delete\"><svg width=\"16\" height=\"16\"></svg></button>",
             "<input type=\"submit\" data-testid=\"blank-label\" aria-label=\"\" value=\"Delete\">",
+            "<input type=\"submit\" data-testid=\"blank-title\" title=\" \" aria-label=\"  \" value=\"Archive\">",
             "<input data-testid=\"typed\" value=\"delete my account\"><input type=\"password\" data-testid=\"secret\" value=\"hunter2\">",
             "</body></html>"),
         ["/tall"] = Lines(
