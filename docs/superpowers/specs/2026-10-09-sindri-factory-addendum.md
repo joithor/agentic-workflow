@@ -1,7 +1,7 @@
 # Sindri — factory addendum (§17)
 
 Status: draft for review, revision 6 · 2026-10-11 (applies /autoplan round 1 C1–C17 in §17.19 and round 2 D1–D12 in §17.22)
-Revision 6 adds one workflow state machine (§17.28): one engine and a declarative recipe format for every Sindri machine and, later, the worker skills.
+Revision 6 adds one workflow state machine (§17.28): one engine and a declarative recipe format for every Sindri machine and, later, the worker skills; and Sindri as an application (§17.29): a control plane, the workflow engine and a context retrieval engine, built new in C#, with agents staying in Claude Code.
 Revision 5 adds the factory field review (§17.23): review back-pressure, self-proving tests, read-only existing tests,
 consequence tiers, diff guardrails, closed outcomes with a Not proven section, the merge-confidence card, gate
 removal criteria, escaped-defect tracing, comprehension drift, a PR lease, signed run receipts, no-progress
@@ -1959,7 +1959,8 @@ A tool with no branching that needs an agent or a gate stays a block. Wrapping i
 
 ### 17.28.6 Rollout
 
-1. With the Sindri C# port: build the engine, the recipe schema and validator, and the block registry. Move the item
+1. Right after the Sindri app shell (§17.29.4 step 1): build the engine, the recipe schema and validator, and the block
+   registry. Move the item
    lifecycle and the Step contract onto it first, as recipes. They are the machines every later one runs inside.
 2. Then the direction check, which exercises timers, bounded loops and the known-wait state.
 3. Then ship and stack, which exercise child workflows, the PR lease and receipts.
@@ -1970,44 +1971,119 @@ A tool with no branching that needs an agent or a gate stays a block. Wrapping i
 6. Workflow generation (§17.7) switches from emitting a Step graph to emitting a recipe, so each deliverable's
    workflow is generated from blocks and validated before it is frozen.
 
-### 17.28.7 Port order: Sindri first, then the tools as blocks (decided 2026-10-11)
+### 17.28.7 Port order
 
-The readiness design's R2 order (§4a step 2) ports every tool as a standalone CLI before Sindri: `judge` →
-`scorer`, `ui-evidence` and the `bugfix-state` CLI → `sindri`. The table above shows the cost. Each standalone port
-carries a workflow half (its own state file, phases, `next` hints and exit-code scheme) that the engine replaces
-once the tool is plugged into a recipe. `bugfix-state` (#155) is the example: about half of it is phase machinery
-that becomes `workflow.bugfix`.
+Superseded by §17.29.4 (owner, 2026-10-11): Sindri isn't ported from TS module by module; it is built as a new C#
+application, engine first. The tools stay tools: they become blocks when a recipe needs them (§17.28.2).
 
-**Decision (owner, 2026-10-11):** port Sindri's core first, then bring the remaining tools in as blocks. The readiness
-design's §4a step 2 and §10 R2 row carry the new order.
-1. Keep the ports already merged: `Redaction`, `Packets`, `Readiness`, `BugFix` (#155). BugFix's rules become the
-   bug-fix gate blocks; its phase machinery is retired when `workflow.bugfix` replaces it.
-2. Finish `judge`. Sindri's decision ladder needs it (rung 2), and it is a tool, not a workflow.
-3. Port Sindri's core next: profile and ledger with the host, then the engine and recipe format (§17.28.6 step 1).
-4. Port each remaining tool as blocks written against the block contracts, inside Sindri or as a package that only
-   provides blocks: the evidence providers (`ui-evidence`'s runner and parity), then `scorer` as the metrics reader.
-   Their orchestration halves are written as recipes, never as standalone CLIs first.
+## 17.29 Sindri as an application
 
-**What doesn't change:**
-- The clean cutover (§4a step 3): the installed TS toolkit stays as it is until the switch. Until a tool's block
-  port lands, the C# Sindri calls the TS tool through a declared `cli` edge, as it already plans for `aw-packets`
-  and `aw-readiness`.
-- The hook contract (§4c).
+Sindri is one application the human starts on a machine, not a set of launchd-ticked commands. It provides three
+engines: a **control plane**, a **workflow engine** (§17.28) and a **context retrieval engine**. It does **not**
+replace the agent tool. Agent work, the human's and the factory's, happens in Claude Code sessions in the human's
+terminal (Warp today). Sindri starts those sessions, feeds them context and tracks their work, and the human
+interacts with them where they already work.
 
-**Open for the owner:**
-- `ui-evidence`'s in-flight port (#158). Most of it is the browser runner and parity, which are tool code the
-  `ui-browser` and `design-parity` blocks need anyway. Either land it and later swap its CLI shell for block
-  registration, or pause it until step 4.
-- `scorer`: deferred to step 4 under this proposal.
-- **Desk use:** the skills keep calling a CLI. A tool ported as blocks still ships a thin CLI over the same blocks
-  for desk skills (§17.11: "also callable from skills through a CLI"), so the switch can retire its TS version.
+### 17.29.1 Starting it
+
+```
+$ sindri
+  <banner>
+  profile   ~/…/sindri/profile.yaml (approved, hash 3f1c…)
+  index     4 repos in path · watching · nightly full build 02:00
+  intake    linear: team ENG (assigned to me) · notes: ~/notes · every 5 min
+  services  scorer daily 06:00 · evolve weekly Mon · pr-babysitter on webhook
+  api       127.0.0.1:7410 (tailnet: off)
+  ui        Sindri.app started
+  ready     3 items need you · 2 running · 1 parked
+```
+
+- `sindri` starts the control-plane process (one per host, under the host lease, §9.1 and §17.22 D2) and the UI app
+  as a client. `sindri --headless` starts it without the UI, for the always-on box. Every other `sindri <verb>`
+  is a client call to the running process, and starts it first if it isn't running.
+- **Config is the profile** (§11.1): which repos are in the path, which intake sources, cadences, budgets, modes
+  and lenses. Changing it goes through `profile approve`, as today.
+- **Background services** run on the profile's cadence inside the process:
+  - code index: watch the repos in the path, quick builds on change, a nightly full build (§6.2);
+  - intake: poll the configured sources (Linear by assignee, PRDs, the notes dir) and create items (§17.26.1);
+  - scorer and metrics on their cadence (§17.2);
+  - the evolve loop's weekly job (§7.4);
+  - webhook listeners that start standing workflows (§17.9).
+
+  These are the old launchd jobs, now scheduled by the process; launchd only keeps the process alive.
+
+### 17.29.2 The three engines
+
+**Control plane.** The ledger, the command layer (§17.27.1), the scheduler and lease, the outbox, notifications,
+the API (HTTP plus an event stream, §17.21) and the webhook endpoints. Every surface is a client: the CLI, the UI
+app (§17.17 Q4), the phone, and Claude Code sessions (below).
+
+**Workflow engine** (§17.28). Every piece of work is a workflow instance run from a recipe. The factory line is a
+chain of recipes, each starting the next:
+
+| Workflow | What it does | Builds on |
+|---|---|---|
+| Intake | A Linear ticket or project, a PRD or a notes entry becomes an item | §7.1, §17.26.1 |
+| Design studio | A desk session with the human, fed by retrieved context, that settles the open questions | §17.4 |
+| Scoping | The retrieval engine and blocks map the work: surfaces, workstreams, candidate files | §7.5, §17.26 |
+| Design | An exhaustive engineering design: TDD/PRD, product map and codebase scoping, implementation guide, task breakdown; frozen as the packet | §17.4, §17.7 |
+| Builder | Implements each task | §6 worker, §17.7 |
+| Tester | Proves each task: acceptance examples, evidence providers | §17.11, §17.23.2 |
+| Multi-lens validation | The packet's lenses review the change (security, data, UX, …) | §17.7 |
+| Verification | The human reviews and decides, from any Sindri surface | §17.12, §17.23.7, §17.27 |
+| Shipper | Stacked PRs, receipts, the ship contract | §7.3, §17.10, §17.23.12 |
+| PR babysitter | CI and review fix rounds until green | §17.9, §17.23.11 |
+| Triage, incident response and comms | Started by webhooks (alerts, errors, new tickets) | §17.9 |
+
+**Context retrieval engine.** The context graph and its query planner (§17.3): business tools and trackers, PRDs and
+notes, memory, the code index and the product map, all behind source adapters, scrubbed and cited. Workflows query it
+through blocks, and the human's own sessions query it through the CLI and MCP (below).
+
+### 17.29.3 Agents stay in the human's tool
+
+- A workflow state that needs an agent launches a **Claude Code session** (in its container for factory work, §8.2)
+  and records it. The human sees it like any other session and attaches through the existing attach resolver
+  (Warp, a terminal, tmux; Plan 6 dashboard spec). Sindri has no chat surface of its own.
+- **Interject at any point:**
+  - On an item with a live session: attach in Warp and type. That is a takeover (§9.3): the instance pauses,
+    with its timers stopped, until `sindri handback`.
+  - On an item with no live session (between steps, at a gate, parked): `sindri open <item>`, or "open in Warp" in
+    the UI, starts a Claude Code session in the human's terminal, seeded with the item's context: its state, packet,
+    evidence, history and retrieved context. The instance is taken over until handback.
+  - What the human changes there flows back through the normal paths: packet edits as amendments (§17.4,
+    §17.26.4), instructions as recorded inputs the next Step receives, and decisions only through authenticated
+    verbs and UI forms. Text typed into a session is never a decision (§8.2 W6).
+- **The human's own Claude Code sessions reach Sindri** through the `sindri` CLI and a **Sindri MCP server** (the
+  MCP C# SDK, approved in the readiness AOT spike). From any session: an item's state and context, a context
+  retrieval query, or a request ("re-scope this", "add a task"). Calls from a session are requests, never
+  decisions; approvals stay human actions.
+- **The UI app is a window onto the control plane:** the queue, status, decisions, receipts, metrics and "open in
+  Warp". It is not a chat surface.
+
+### 17.29.4 Build order
+
+Sindri is built as a new C# application, not ported module by module from the TS `sindri/`. The TS code is a
+reference for what each part does, and it keeps running at the desk until the switch.
+1. **App shell:** the `sindri` process and CLI, profile loading, the ledger (`LedgerStore`), the host lease, the
+   command layer and API, the scheduler for background services, and the UI app shell.
+2. **Workflow engine and recipe format** (§17.28.6 step 1).
+3. **Context retrieval engine:** source adapters and the query planner over the sources already reachable (§17.17
+   Q2's recommendation).
+4. **Blocks, each when the first recipe needs it:** judge (#156) and evidence (#158) are wrapped as blocks; the code
+   index, scorer, scoping and evolve are rebuilt as blocks or workflows from their TS reference.
+5. **Workflows down the factory line,** intake first, then design studio and scoping, then design, builder, tester,
+   validation, verification, shipper and PR babysitter; webhook-started workflows as their sources are wired.
+6. **The switch** (readiness §4a step 3) once every desk tool has its C# form.
 
 ## 17.17 Decisions
 
 **Decided by the human (2026-10-11):**
-- **Q7:** port order (§17.28.7). After `judge`, port Sindri's core (profile, ledger and host) and build the engine,
-  then bring the remaining tools in as blocks; no tool is ported as a standalone CLI first any more. The merged ports
-  (`Redaction`, `Packets`, `Readiness`, `BugFix`) stay; `BugFix`'s phase machinery is retired by `workflow.bugfix`.
+- **Q7:** Sindri is built as a new C# application, not ported (§17.29). It provides a control plane, the workflow
+  engine and a context retrieval engine, and it doesn't replace the agent tool: agent work stays in Claude Code in the
+  human's terminal (Warp), with interjection at any point by attach or `sindri open` (§17.29.3). Build order:
+  app shell → engine → context retrieval → blocks as recipes need them → workflows (§17.29.4). The finished tool ports
+  (`Redaction`, `Packets`, `Readiness`, `BugFix`, and `Judge` #156 and `Evidence` #158 once they land) become blocks;
+  no further standalone ports are started.
 - **Q6:** one workflow state machine, built in Sindri (§17.28). Every Sindri machine is a declarative recipe (config,
   not code) interpreted by one engine and built from registered blocks. Recipes can be generated per deliverable
   and evolved like other artifacts.
