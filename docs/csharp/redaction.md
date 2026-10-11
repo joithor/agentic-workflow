@@ -59,10 +59,12 @@ else
   (`AW-REDACT-001`). Nothing checks a pattern for catastrophic backtracking up front; the timeouts are that guard.
 - **Whole-scan deadline.** The match timeout restarts on every match, and configured patterns, unlike the built-in
   ones, aren't reviewed to stay linear: a pattern that is slow on every match would never time out and only stall.
-  So a redactor with extra patterns also gives each scrub a budget of `Redactor.ScanBudgetFactor` (4) times its
-  size tier's match timeout, read from the `TimeProvider` passed to `Create` (Redaction reads no clock of its own) and
-  checked after every match; past it, the scrub blocks with `AW-REDACT-001` like a match timeout.
-  `Redactor.Default` and `Create(TimeSpan)` have no clock and keep the per-match timeout only.
+  So a redactor with at least one extra pattern also gives each scrub a budget of `Redactor.ScanBudgetFactor` (4)
+  times its size tier's match timeout, read from the `TimeProvider` passed to `Create` (Redaction reads no clock of
+  its own) and checked before every rule's scan and after every match, so two checks are at most one match call
+  apart and a scrub ends within the budget plus one match timeout; past it, the scrub blocks with `AW-REDACT-001`
+  like a match timeout. Pass the host's real `TimeProvider`: a fake that doesn't advance turns the budget off.
+  `Redactor.Default`, `Create(TimeSpan)` and `Create([], …)` have no deadline and keep the per-match timeout only.
 - **Writing a pattern.** Give it boundaries the way the built-in rules do, for example
   `(?<![A-Za-z0-9_])ACME-[0-9]{6}(?![0-9])`: without them `ACME-[0-9]{6}` also matches inside `XACME-1234567` and
   leaves the 7. Avoid unbounded runs that can restart at every position of a long run (`[A-Z]+-[0-9]+`): a slow
@@ -75,12 +77,13 @@ else
 - **Refusals.** `Create` checks every entry and returns every refused field, in entry order, as an
   `ExtraPatternError(Index, Field, Code, Message)`; no redactor is built while one is refused. The message says how to
   fix the entry and never quotes the pattern. A caller reports the key path itself (Sindri: `SND-CONTEXT-001` at
-  `context.scrub.extraPatterns[<Index>].id` or `.pattern`).
+  `context.scrub.extraPatterns[<Index>].id` or `.pattern`; an empty entry is reported on `Id`, with a message saying
+  the entry is empty).
 
 | Code | Field | Refused when |
 |---|---|---|
 | `AW-REDACT-002` | `Id` | an empty (null) entry, or an id that is null, not lowercase ASCII letters, digits and single hyphens starting with a letter, or over 64 characters (no `/`, `_`, spaces or `]`: the id sits in the placeholder); a built-in rule id, `blocked` or `secret-field`; the same id as an earlier entry |
-| `AW-REDACT-003` | `Pattern` | null, empty or over 1024 characters; not a valid .NET regex (the message gives the parse error and offset); uses `\d`, `\w`, `\s`, `\b` or their negations, which are Unicode-aware in .NET, or a Unicode category `\p{…}`/`\P{…}` (the message gives the offset and the ASCII class to write instead). The check is lexical: an escaped backslash (`\\d`) is a backslash and a `d` and is accepted, while such an escape inside a class (`[\b]`, a backspace there) or an `(?x)` comment is refused too |
+| `AW-REDACT-003` | `Pattern` | null, empty or over 1024 characters; not a valid .NET regex (the message gives the parse error and offset); matches the empty text (`[A-Z]*`, `(…)?`: it would match at every position); uses `\d`, `\w`, `\s`, `\b` or their negations, which are Unicode-aware in .NET, or a Unicode category `\p{…}`/`\P{…}` (the message gives the offset and the ASCII class to write instead). The check is lexical: an escaped backslash (`\\d`) is a backslash and a `d` and is accepted, while such an escape inside a class (`[\b]`, a backspace there) or an `(?x)` comment is refused too |
 
 A null list or clock, or a timeout that isn't positive, is a bug and throws (`ArgumentNullException`,
 `ArgumentOutOfRangeException`). The list's length isn't capped: every entry runs on every scrub, so keep it to the
@@ -144,9 +147,10 @@ size tier), so a large ordinary input is scrubbed and only a pathological match 
 `Text = "[REDACTED:blocked]"` and `BlockCode = "AW-REDACT-001"`: the input is withheld, never passed on. The caller
 logs the block (Redaction has no logger) and refuses the commit, write or egress.
 
-The budget is per match call: .NET restarts the timeout on every match, so it does not bound a whole scan. Every rule
-is therefore written to stay linear on its own (no rule can restart at every position of a long run; see
-`AdversarialInputTests`).
+The budget is per match call: .NET restarts the timeout on every match, so it does not bound a whole scan. Every built-in
+rule is therefore written to stay linear on its own (no rule can restart at every position of a long run; see
+`AdversarialInputTests`). Configured patterns aren't, so a redactor built with extra patterns also has a whole-scan
+deadline ("Extra patterns from configuration").
 
 ## Pattern rules
 
