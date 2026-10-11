@@ -23,21 +23,35 @@ public sealed class ReachAndExitRulesTests
     }
 
     [Fact, Trait("Lane", "unit")]
-    public void A_trap_cycle_has_no_way_out()
+    public void A_state_that_only_loops_on_itself_has_no_way_out()
     {
-        // The recipe of invalid/RCP-EXIT-001.yaml: checks and verify send each other back and forth and never end.
+        // The recipe of invalid/RCP-EXIT-001.yaml: checks sends itself back to checks and never ends.
         var recipe = Of(
             "produce",
-            [("produce", Active()), ("checks", Active()), ("verify", Active()), ("done", Terminal())],
-            [Go("produce", "done"), Go("produce", "checks", "step.failed"), Go("checks", "verify"), Go("verify", "checks")],
+            [("produce", Active()), ("checks", Active()), ("done", Terminal())],
+            [Go("produce", "done"), Go("produce", "checks", "step.failed"), Go("checks", "checks")],
             id: "workflow.exit");
 
         Assert.Equal(
+            ["RCP-EXIT-001: no transition from state 'checks' leads to a terminal state at RCP-EXIT-001.yaml:11:3 (states.checks); add a transition from it, or from a state it leads to, into a terminal state"],
+            Lines(recipe, "RCP-EXIT-001.yaml", [("states.checks", 11, 3)]));
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public void Each_state_of_a_trap_cycle_has_no_way_out()
+    {
+        // checks and verify send each other back and forth and never end.
+        var recipe = Of(
+            "produce",
+            [("produce", Active()), ("checks", Active()), ("verify", Active()), ("done", Terminal())],
+            [Go("produce", "done"), Go("produce", "checks", "step.failed"), Go("checks", "verify"), Go("verify", "checks")]);
+
+        Assert.Equal(
             [
-                "RCP-EXIT-001: no transition from state 'checks' leads to a terminal state at RCP-EXIT-001.yaml:11:3 (states.checks); add a transition from it, or from a state it leads to, into a terminal state",
-                "RCP-EXIT-001: no transition from state 'verify' leads to a terminal state at RCP-EXIT-001.yaml:16:3 (states.verify); add a transition from it, or from a state it leads to, into a terminal state",
+                "RCP-EXIT-001: no transition from state 'checks' leads to a terminal state at r.yaml:1:1 (states.checks); add a transition from it, or from a state it leads to, into a terminal state",
+                "RCP-EXIT-001: no transition from state 'verify' leads to a terminal state at r.yaml:1:1 (states.verify); add a transition from it, or from a state it leads to, into a terminal state",
             ],
-            Lines(recipe, "RCP-EXIT-001.yaml", [("states.checks", 11, 3), ("states.verify", 16, 3)]));
+            Lines(recipe));
     }
 
     [Fact, Trait("Lane", "unit")]
