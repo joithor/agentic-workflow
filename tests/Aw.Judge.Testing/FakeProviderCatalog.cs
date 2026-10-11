@@ -9,14 +9,13 @@ namespace Aw.Judge.Testing;
 /// The IProviderCatalog fake over given provider instances: the agent CLIs among them count as installed, in the order
 /// given (config.json's list, when set, picks and orders them); passes ProviderCatalogContract.
 /// </summary>
-/// <param name="providers">The providers (ScriptedProviders, usually); a rules provider is added when missing.</param>
+/// <param name="providers">The model providers (ScriptedProviders, usually); rules comes with each Lineup call.</param>
 public sealed class FakeProviderCatalog(params IModelProvider[] providers) : IProviderCatalog
 {
-    private readonly IReadOnlyList<IModelProvider> _providers =
-        providers.Any(p => p.Name == ProviderName.Rules) ? providers : [.. providers, new ScriptedProvider(ProviderName.Rules, [.. ContentClasses.All]).Returns(new ProviderUnavailable("no-rule"))];
+    private readonly IReadOnlyList<IModelProvider> _providers = providers;
 
     /// <inheritdoc />
-    public ProviderLineup Lineup(ProvidersConfig? config, IReadOnlyCollection<ProviderName>? allowed)
+    public ProviderLineup Lineup(ProvidersConfig? config, IReadOnlyCollection<ProviderName>? allowed, IModelProvider rules)
     {
         var installed = _providers.Select(p => AgentCliNames.FromProvider(p.Name)).OfType<AgentCliName>().ToList();
         var clis = config?.AgentClis is { } names
@@ -26,6 +25,6 @@ public sealed class FakeProviderCatalog(params IModelProvider[] providers) : IPr
         var chain = ChainSpec.Build(clis, jev);
         chain = allowed is null ? chain : chain.Restrict(allowed);
         var named = chain.Classes.Values.SelectMany(n => n).ToHashSet();
-        return new ProviderLineup([.. _providers.Where(p => named.Contains(p.Name))], chain);
+        return new ProviderLineup([.. _providers.Where(p => named.Contains(p.Name)), rules], chain);
     }
 }

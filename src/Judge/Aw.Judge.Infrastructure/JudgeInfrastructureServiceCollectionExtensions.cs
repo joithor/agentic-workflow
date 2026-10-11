@@ -43,9 +43,9 @@ public static class JudgeInfrastructureServiceCollectionExtensions
     }
 
     /// <summary>
-    /// The model providers behind one port, IProviderCatalog: rules, Jev (over its own HttpClient and the secret source)
-    /// and the claude, codex and cursor-agent CLIs (over the process runner); the catalog picks and orders them per
-    /// config.json, AW_PROVIDER and PATH.
+    /// The model providers behind one port, IProviderCatalog: Jev (over its own HttpClient and the secret source) and
+    /// the claude, codex and cursor-agent CLIs (over the process runner); the catalog picks and orders them per
+    /// config.json, AW_PROVIDER and PATH, and closes every chain with the rules provider its caller passes.
     /// </summary>
     private static IServiceCollection AddModelProviders(this IServiceCollection services, Func<string, string?> environment) => services
         .AddSingleton(sp => new JevProvider(new HttpClient(), sp.GetRequiredService<ISecretSource>()))
@@ -53,7 +53,6 @@ public static class JudgeInfrastructureServiceCollectionExtensions
             environment,
             sp.GetRequiredService<IExecutableLocator>(),
             [
-                new RulesProvider(),
                 sp.GetRequiredService<JevProvider>(),
                 new ClaudeCliProvider(sp.GetRequiredService<IProcessRunner>()),
                 new CodexCliProvider(sp.GetRequiredService<IProcessRunner>()),

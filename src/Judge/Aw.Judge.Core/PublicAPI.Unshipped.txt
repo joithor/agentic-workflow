@@ -687,7 +687,6 @@ static Aw.Judge.Core.Processes.ProcessResult.TimedOutAfter(string! standardOutpu
 static Aw.Judge.Core.Processes.ProcessResult.operator !=(Aw.Judge.Core.Processes.ProcessResult? left, Aw.Judge.Core.Processes.ProcessResult? right) -> bool
 static Aw.Judge.Core.Processes.ProcessResult.operator ==(Aw.Judge.Core.Processes.ProcessResult? left, Aw.Judge.Core.Processes.ProcessResult? right) -> bool
 Aw.Judge.Core.Ports.IProviderCatalog
-Aw.Judge.Core.Ports.IProviderCatalog.Lineup(Aw.Judge.Core.Config.ProvidersConfig? config, System.Collections.Generic.IReadOnlyCollection<Aw.Judge.Core.Providers.ProviderName>? allowed) -> Aw.Judge.Core.Ports.ProviderLineup!
 Aw.Judge.Core.Ports.ProviderLineup
 Aw.Judge.Core.Ports.ProviderLineup.<Clone>$() -> Aw.Judge.Core.Ports.ProviderLineup!
 Aw.Judge.Core.Ports.ProviderLineup.Chain.get -> Aw.Judge.Core.Providers.ChainSpec!
@@ -702,3 +701,4 @@ override Aw.Judge.Core.Ports.ProviderLineup.GetHashCode() -> int
 override Aw.Judge.Core.Ports.ProviderLineup.ToString() -> string!
 static Aw.Judge.Core.Ports.ProviderLineup.operator !=(Aw.Judge.Core.Ports.ProviderLineup? left, Aw.Judge.Core.Ports.ProviderLineup? right) -> bool
 static Aw.Judge.Core.Ports.ProviderLineup.operator ==(Aw.Judge.Core.Ports.ProviderLineup? left, Aw.Judge.Core.Ports.ProviderLineup? right) -> bool
+Aw.Judge.Core.Ports.IProviderCatalog.Lineup(Aw.Judge.Core.Config.ProvidersConfig? config, System.Collections.Generic.IReadOnlyCollection<Aw.Judge.Core.Providers.ProviderName>? allowed, Aw.Judge.Core.Ports.IModelProvider! rules) -> Aw.Judge.Core.Ports.ProviderLineup!

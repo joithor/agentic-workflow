@@ -8,16 +8,20 @@ namespace Aw.Judge.Testing;
 /// <summary>The IProviderCatalog contract: <see cref="FakeProviderCatalog"/> and the real catalog both pass it.</summary>
 public abstract class ProviderCatalogContract
 {
-    /// <summary>A catalog with Jev and rules on which exactly these agent CLIs are installed (AW_PROVIDER unset).</summary>
+    /// <summary>A catalog with Jev on which exactly these agent CLIs are installed (AW_PROVIDER unset).</summary>
     /// <param name="installed">The installed agent CLIs, in the default order.</param>
     /// <returns>The catalog.</returns>
     protected abstract IProviderCatalog Create(IReadOnlyList<AgentCliName> installed);
+
+    /// <summary>The rules provider every Lineup call passes (the engine's own, played by a ScriptedProvider).</summary>
+    protected static IModelProvider Rules { get; } =
+        new ScriptedProvider(ProviderName.Rules, [.. ContentClasses.All]).Returns(new ProviderUnavailable("no-rule"));
 
     /// <summary>Every class ends with rules, and every name in the chain has its provider in the lineup.</summary>
     [Fact]
     public void Rules_ends_every_class_and_every_chain_name_has_a_provider()
     {
-        var lineup = Create([AgentCliName.ClaudeCli]).Lineup(config: null, allowed: null);
+        var lineup = Create([AgentCliName.ClaudeCli]).Lineup(config: null, allowed: null, Rules);
 
         foreach (var contentClass in ContentClasses.All)
         {
@@ -31,7 +35,7 @@ public abstract class ProviderCatalogContract
     [Fact]
     public void Only_installed_agent_clis_are_chained_after_jev()
     {
-        var chain = Create([AgentCliName.CodexCli]).Lineup(config: null, allowed: null).Chain;
+        var chain = Create([AgentCliName.CodexCli]).Lineup(config: null, allowed: null, Rules).Chain;
 
         Expect.That(chain.For(ContentClass.MessageMeta).SequenceEqual([ProviderName.Jev, ProviderName.CodexCli, ProviderName.Rules]), "text: jev, codex, rules");
         Expect.That(chain.For(ContentClass.Image).SequenceEqual([ProviderName.CodexCli, ProviderName.Rules]), "image: codex, rules");
@@ -41,7 +45,7 @@ public abstract class ProviderCatalogContract
     [Fact]
     public void The_allowlist_keeps_only_the_allowed_providers_and_rules()
     {
-        var lineup = Create([AgentCliName.ClaudeCli, AgentCliName.CodexCli]).Lineup(config: null, allowed: [ProviderName.CodexCli]);
+        var lineup = Create([AgentCliName.ClaudeCli, AgentCliName.CodexCli]).Lineup(config: null, allowed: [ProviderName.CodexCli], Rules);
 
         Expect.That(lineup.Chain.For(ContentClass.Code).SequenceEqual([ProviderName.CodexCli, ProviderName.Rules]), "code: codex, rules");
         Expect.That(lineup.Providers.Select(p => p.Name).Order().SequenceEqual([ProviderName.Rules, ProviderName.CodexCli]), "only codex and rules are in the lineup");
@@ -53,7 +57,7 @@ public abstract class ProviderCatalogContract
     {
         var config = new ProvidersConfig(AgentClis: ["codex-cli"], Jev: false);
 
-        var lineup = Create([AgentCliName.ClaudeCli, AgentCliName.CodexCli]).Lineup(config, allowed: null);
+        var lineup = Create([AgentCliName.ClaudeCli, AgentCliName.CodexCli]).Lineup(config, allowed: null, Rules);
 
         Expect.That(lineup.Chain.For(ContentClass.Diff).SequenceEqual([ProviderName.CodexCli, ProviderName.Rules]), "diff: codex, rules");
         Expect.That(lineup.Providers.All(p => p.Name is not ProviderName.Jev and not ProviderName.ClaudeCli), "jev and claude are left out");

@@ -9,12 +9,14 @@ namespace Aw.Judge.Tests.Providers;
 [Lane(TestLane.Unit)]
 public sealed class ProviderCatalogTests
 {
+    private static readonly ScriptedProvider _rules = new(ProviderName.Rules, [.. ContentClasses.All]);
+
     private static readonly AgentCliName[] _all = [AgentCliName.ClaudeCli, AgentCliName.CodexCli, AgentCliName.CursorCli];
 
     [Fact]
     public void The_aw_provider_host_leads_the_agent_clis()
     {
-        var chain = Catalog(_all, hostProvider: "codex").Lineup(config: null, allowed: null).Chain;
+        var chain = Catalog(_all, hostProvider: "codex").Lineup(config: null, allowed: null, _rules).Chain;
 
         Assert.Equal([ProviderName.Jev, ProviderName.CodexCli, ProviderName.ClaudeCli, ProviderName.CursorCli, ProviderName.Rules], chain.For(ContentClass.Transcript));
     }
@@ -22,20 +24,25 @@ public sealed class ProviderCatalogTests
     [Fact]
     public void A_config_list_wins_over_the_host()
     {
-        var chain = Catalog(_all, hostProvider: "codex").Lineup(new ProvidersConfig(AgentClis: ["cursor-cli", "claude-cli"]), allowed: null).Chain;
+        var chain = Catalog(_all, hostProvider: "codex").Lineup(new ProvidersConfig(AgentClis: ["cursor-cli", "claude-cli"]), allowed: null, _rules).Chain;
 
         Assert.Equal([ProviderName.CursorCli, ProviderName.ClaudeCli, ProviderName.Rules], chain.For(ContentClass.Image));
     }
 
     [Fact]
-    public void The_lineup_holds_the_real_adapters()
+    public void The_lineup_holds_the_real_adapters_and_the_callers_rules()
     {
-        var lineup = Catalog(_all, hostProvider: null).Lineup(config: null, allowed: null);
+        var lineup = Catalog(_all, hostProvider: null).Lineup(config: null, allowed: null, _rules);
 
         Assert.Equal(
-            [typeof(RulesProvider), typeof(JevProvider), typeof(ClaudeCliProvider), typeof(CodexCliProvider), typeof(CursorCliProvider)],
-            lineup.Providers.Select(p => p.GetType()));
+            [typeof(JevProvider), typeof(ClaudeCliProvider), typeof(CodexCliProvider), typeof(CursorCliProvider)],
+            lineup.Providers.SkipLast(1).Select(p => p.GetType()));
+        Assert.Same(_rules, lineup.Providers[^1]);
     }
+
+    [Fact]
+    public void A_provider_that_is_not_rules_is_refused_as_rules() =>
+        Assert.Throws<ArgumentException>(() => Catalog(_all, hostProvider: null).Lineup(config: null, allowed: null, new ScriptedProvider(ProviderName.Jev)));
 
     internal static ProviderCatalog Catalog(IReadOnlyList<AgentCliName> installed, string? hostProvider)
     {
@@ -44,7 +51,6 @@ public sealed class ProviderCatalogTests
             name => name == "AW_PROVIDER" ? hostProvider : null,
             new FakeExecutableLocator([.. installed.Select(AgentCliNames.Binary)]),
             [
-                new RulesProvider(),
                 new JevProvider(new HttpClient(), new FakeSecretSource()),
                 new ClaudeCliProvider(runner),
                 new CodexCliProvider(runner),

@@ -17,9 +17,6 @@ internal static class ProviderReasons
     /// <summary>Unavailable: Jev couldn't be reached (offline, DNS, refused).</summary>
     public const string NetworkError = "network-error";
 
-    /// <summary>Unavailable: the rules provider has no rule for any question (fallbacks run in the engine).</summary>
-    public const string NoRule = "no-rule";
-
     /// <summary>Errored: the CLI's stdout isn't its output envelope.</summary>
     public const string UnparseableOutput = "unparseable-output";
 

@@ -33,7 +33,7 @@ the root holds only `AddJudgeCore()`.
 | `IJudgeConfigStore` | `FileJudgeConfigStore` (`config.json`) | `InMemoryJudgeConfigStore`, `JudgeConfigStoreContract` |
 | `IInputRedactor` | `AwInputRedactor` (over `Aw.Redaction`) | `FakeInputRedactor`, `InputRedactorContract` |
 | `IExecutableLocator` | `PathExecutableLocator` (`PATH` lookup for the agent CLIs) | `FakeExecutableLocator`, `ExecutableLocatorContract` |
-| `IModelProvider` | `ClaudeCliProvider`, `CodexCliProvider`, `CursorCliProvider`, `JevProvider`, `RulesProvider` (Providers below) | `ScriptedProvider` |
+| `IModelProvider` | `ClaudeCliProvider`, `CodexCliProvider`, `CursorCliProvider`, `JevProvider` (Providers below); rules is the engine's own `RulesProvider` | `ScriptedProvider` |
 | `IProviderCatalog` | `ProviderCatalog` (the lineup from `config.json`, `AW_PROVIDER` and `PATH`) | `FakeProviderCatalog`, `ProviderCatalogContract` |
 | `IProcessRunner` | `SystemProcessRunner` (`System.Diagnostics.Process`) | `FakeProcessRunner` (runs `FakeProgram`s), `ProcessRunnerContract` |
 | `ISecretSource` | `KeychainSecretSource` (the variable, then the macOS keychain) | `FakeSecretSource`, `SecretSourceContract` |
@@ -128,7 +128,7 @@ The providers live in `Aw.Judge.Infrastructure/Providers/`; Composition reaches 
 
 ### The catalog
 
-`IProviderCatalog.Lineup(ProvidersConfig? config, IReadOnlyCollection<ProviderName>? allowed)` returns a
+`IProviderCatalog.Lineup(ProvidersConfig? config, IReadOnlyCollection<ProviderName>? allowed, IModelProvider rules)` returns a
 `ProviderLineup(Providers, Chain)`, which is what an `EvaluationContext` takes. It is the one place the inputs meet:
 
 1. the agent CLIs: `config.json`'s `providers.agentClis` when set, else the default order (claude, codex, cursor)
@@ -136,9 +136,10 @@ The providers live in `Aw.Judge.Infrastructure/Providers/`; Composition reaches 
 2. Jev, unless `providers.jev` is false;
 3. the chain: text classes get Jev, the agent CLIs, then rules; image gets the agent CLIs, then rules
    (`ChainSpec.Build`); then the `--providers` / `AW_JUDGE_PROVIDERS` allowlist, which always keeps rules;
-4. the providers: one instance of each provider the chain names.
+4. the providers: one instance of each model provider the chain names, then the `rules` provider the caller passes
+   (the engine's own; the catalog doesn't make one).
 
-`AddJudgeInfrastructure` registers it (its `AddModelProviders` part) over one instance of each provider: rules, Jev
+`AddJudgeInfrastructure` registers it (its `AddModelProviders` part) over one instance of each model provider: Jev
 (with its own `HttpClient`) and the three agent CLIs (over `IProcessRunner`).
 
 ### The agent CLIs
@@ -168,8 +169,9 @@ The answer's `choice`, `confidence` (1.0 when absent) and `probabilities` become
 
 ### Rules
 
-`rules` closes every chain but decides nothing itself: pre-rules and fallback rules run in the engine, so it is always
-unavailable (`no-rule`, not a failure).
+`rules` closes every chain but decides nothing itself: pre-rules and fallback rules run in the engine, and the rules
+provider is the engine's (`Aw.Judge.Core.Evaluation`), always unavailable, never a failure. The catalog takes it as an
+argument.
 
 ### Reason codes
 
@@ -179,16 +181,15 @@ failure row with the code.
 
 | Result | Code | Providers | When |
 |---|---|---|---|
-| decided | `model` | all but rules | an answer within the outputs |
+| decided | `model` | all | an answer within the outputs |
 | unavailable | `timeout` | agent CLIs, Jev | past the question's budget; a CLI is killed with its whole process tree |
 | unavailable | `not-installed` | agent CLIs | the binary isn't on `PATH` (or can't be started) |
 | unavailable | `no-api-key` | Jev | no key in the environment or the keychain |
 | unavailable | `network-error` | Jev | the API can't be reached (offline, DNS, refused) |
-| unavailable | `no-rule` | rules | always |
 | errored | `exit-N` | agent CLIs | the CLI exited non-zero |
 | errored | `unparseable-output` | agent CLIs | stdout isn't the CLI's envelope (or event lines) |
-| errored | `unparseable-answer` | all but rules | no JSON answer object with a string decision |
-| errored | `out-of-enum` | all but rules | the decision isn't one of the outputs |
+| errored | `unparseable-answer` | all | no JSON answer object with a string decision |
+| errored | `out-of-enum` | all | the decision isn't one of the outputs |
 | errored | `extra-out-of-schema` | agent CLIs | a declared extra has the wrong JSON type |
 | errored | `cli-reported-error` | agent CLIs | `is_error` (claude, cursor) or codex's `turn.failed`/`error` with no answer |
 | errored | `invalid-image-input` | agent CLIs | an image question's input has no `afterScreenshot` and `evidenceDir` |
