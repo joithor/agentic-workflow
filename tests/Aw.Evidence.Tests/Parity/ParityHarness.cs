@@ -52,13 +52,16 @@ internal sealed class ParityHarness
         return this;
     }
 
-    public ValueTask<Result<ParityResponse>> Run(ParityRequest request)
+    public ValueTask<Result<ParityResponse>> Run(ParityRequest request) => Interruptible(request, CancellationToken.None);
+
+    /// <summary>Runs with a token the test cancels (Ctrl-C mid-run).</summary>
+    public ValueTask<Result<ParityResponse>> Interruptible(ParityRequest request, CancellationToken interrupt)
     {
         var json = TestJson.Options;
         var secrets = new FakeSecrets(Secrets);
         var capture = new FrameCapture(new StepRunner(FakeJudge.Unavailable, new FakeTimeProvider()), new FrameComparison(Files, Codec));
         var service = new ValidatingService<ParityRequest, ParityResponse>(
             new ParityService(new ParityFilesAccess(Files, json), Locks, secrets, new ParityRun(Browser, capture, secrets)), new ParityValidator());
-        return service.Handle(request, CancellationToken.None);
+        return service.Handle(request, interrupt);
     }
 }

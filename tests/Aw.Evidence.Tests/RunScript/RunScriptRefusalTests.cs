@@ -140,4 +140,33 @@ public sealed class RunScriptRefusalTests
 
         Assert.Equal(EvidenceErrors.Invalid.Code, result.Error.Code);
     }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task RunScript_releases_both_locks_in_reverse_order_when_the_run_throws()
+    {
+        var harness = WithSave();
+        _ = harness.Page.TestIds.Add("save-button");
+        harness.Page.ScreenshotThrows = new InvalidOperationException("the browser crashed");
+
+        _ = await Assert.ThrowsAsync<InvalidOperationException>(async () => await harness.Run(A.RunScriptRequest().Build()));
+
+        Assert.Equal(["acquire QaStack", "acquire HeavyJob", "release HeavyJob", "release QaStack"], harness.Locks.Events);
+        Assert.False(harness.Locks.IsHeld(LockKind.QaStack));
+        Assert.False(harness.Locks.IsHeld(LockKind.HeavyJob));
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task RunScript_releases_both_locks_in_reverse_order_when_cancelled_mid_run()
+    {
+        using var cancel = new CancellationTokenSource();
+        var harness = WithSave();
+        _ = harness.Page.TestIds.Add("save-button");
+        harness.Page.OnClick["testId:save-button"] = _ => cancel.Cancel();   // Ctrl-C arrives while a step runs
+
+        _ = await Assert.ThrowsAnyAsync<OperationCanceledException>(async () => await harness.Interruptible(A.RunScriptRequest().Build(), cancel.Token));
+
+        Assert.Equal(["acquire QaStack", "acquire HeavyJob", "release HeavyJob", "release QaStack"], harness.Locks.Events);
+        Assert.False(harness.Locks.IsHeld(LockKind.QaStack));
+        Assert.False(harness.Locks.IsHeld(LockKind.HeavyJob));
+    }
 }

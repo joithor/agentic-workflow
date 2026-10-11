@@ -145,4 +145,30 @@ public sealed class ParityTests
         Assert.Equal(EvidenceErrors.LockBusy.Code, result.Error.Code);
         Assert.Empty(harness.Browser.Sessions);
     }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task Parity_releases_both_locks_in_reverse_order_when_the_run_throws()
+    {
+        var harness = new ParityHarness().WithManifest(ParityHarness.Manifest());
+        harness.Page.ScreenshotThrows = new InvalidOperationException("the browser crashed");
+
+        _ = await Assert.ThrowsAsync<InvalidOperationException>(async () => await harness.Run(ParityHarness.Request()));
+
+        Assert.Equal(["acquire QaStack", "acquire HeavyJob", "release HeavyJob", "release QaStack"], harness.Locks.Events);
+        Assert.False(harness.Locks.IsHeld(LockKind.HeavyJob));
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task Parity_releases_both_locks_in_reverse_order_when_cancelled_mid_run()
+    {
+        using var cancel = new CancellationTokenSource();
+        var harness = new ParityHarness().WithManifest(ParityHarness.Manifest(ManifestBuilder.Frame() with { Steps = [ScriptBuilder.Click("open")] }));
+        _ = harness.Page.TestIds.Add("open");
+        harness.Page.OnClick["testId:open"] = _ => cancel.Cancel();   // Ctrl-C arrives while a frame step runs
+
+        _ = await Assert.ThrowsAnyAsync<OperationCanceledException>(async () => await harness.Interruptible(ParityHarness.Request(), cancel.Token));
+
+        Assert.Equal(["acquire QaStack", "acquire HeavyJob", "release HeavyJob", "release QaStack"], harness.Locks.Events);
+        Assert.False(harness.Locks.IsHeld(LockKind.HeavyJob));
+    }
 }

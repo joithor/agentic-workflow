@@ -32,6 +32,18 @@ public sealed class StackLocksTests
     }
 
     [Fact, Trait("Lane", "unit")]
+    public async Task A_heavy_job_lock_that_throws_releases_the_qa_stack_it_already_took()
+    {
+        var locks = new InMemoryMachineLocks();
+        _ = locks.Throws.Add(LockKind.HeavyJob);
+
+        _ = await Assert.ThrowsAsync<IOException>(async () => await StackLocks.AcquireAsync(locks, TimeSpan.Zero, CancellationToken.None));
+
+        Assert.False(locks.IsHeld(LockKind.QaStack));
+        Assert.Equal(["acquire QaStack", "release QaStack"], locks.Events);
+    }
+
+    [Fact, Trait("Lane", "unit")]
     public async Task A_busy_qa_stack_takes_nothing()
     {
         var locks = new InMemoryMachineLocks();

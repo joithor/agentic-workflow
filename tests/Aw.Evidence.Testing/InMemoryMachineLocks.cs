@@ -23,6 +23,9 @@ public sealed class InMemoryMachineLocks(int heavyJobSlots = 2) : IMachineLocks
     /// <summary>Kinds whose acquire always fails as busy (to test partial failures).</summary>
     public ISet<LockKind> AlwaysBusy { get; } = new HashSet<LockKind>();
 
+    /// <summary>Kinds whose acquire throws an IOException (an adapter failing outside its Result, such as a closed stderr).</summary>
+    public ISet<LockKind> Throws { get; } = new HashSet<LockKind>();
+
     /// <summary>'acquire QaStack', 'release QaStack', … in order.</summary>
     public IReadOnlyList<string> Events
     {
@@ -43,6 +46,11 @@ public sealed class InMemoryMachineLocks(int heavyJobSlots = 2) : IMachineLocks
     /// <inheritdoc/>
     public async ValueTask<Result<ILockLease>> AcquireAsync(LockKind kind, TimeSpan timeout, CancellationToken cancellationToken)
     {
+        if (Throws.Contains(kind))
+        {
+            throw new IOException($"{kind}: the lock adapter failed");
+        }
+
         if (AlwaysBusy.Contains(kind) || !await _locks[kind].Slots.WaitAsync(timeout, cancellationToken))
         {
             return EvidenceErrors.LockBusy.With(string.Create(CultureInfo.InvariantCulture, $"{kind} stayed busy for {timeout.TotalSeconds:0.###} s"));

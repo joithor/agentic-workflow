@@ -41,6 +41,9 @@ public sealed class FakePage
     /// <summary>The lint snapshot.</summary>
     public PageSnapshot Snapshot { get; set; } = new([], new ViewportSize(1280, 800));
 
+    /// <summary>When set, every screenshot throws it (a crashed browser, or an adapter bug that escapes its Result).</summary>
+    public Exception? ScreenshotThrows { get; set; }
+
     /// <summary>When true, sign-in fails.</summary>
     public bool SignInFails { get; set; }
 

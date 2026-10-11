@@ -21,6 +21,7 @@ public sealed class FakeBrowser : IBrowser
     /// <inheritdoc/>
     public ValueTask<Result<IBrowserSession>> OpenAsync(BrowserSessionOptions options, CancellationToken cancellationToken)
     {
+        cancellationToken.ThrowIfCancellationRequested();
         if (FailsToStart)
         {
             return ValueTask.FromResult<Result<IBrowserSession>>(EvidenceErrors.BrowserFailed.With("browser failed to start"));

@@ -42,7 +42,10 @@ internal sealed class RunScriptHarness
         return bytes;
     }
 
-    public ValueTask<Kernel.Result<RunScriptResponse>> Run(RunScriptRequest request)
+    public ValueTask<Kernel.Result<RunScriptResponse>> Run(RunScriptRequest request) => Interruptible(request, CancellationToken.None);
+
+    /// <summary>Runs with a token the test cancels (Ctrl-C mid-run).</summary>
+    public ValueTask<Kernel.Result<RunScriptResponse>> Interruptible(RunScriptRequest request, CancellationToken interrupt)
     {
         var json = TestJson.Options;
         var settings = new FakeSecrets(Settings);
@@ -50,6 +53,6 @@ internal sealed class RunScriptHarness
         var verdict = new RunVerdict(new VisualGate(Files, Codec, Judge, Clock, json), Cache, settings, json);
         var service = new ValidatingService<RunScriptRequest, RunScriptResponse>(
             new RunScriptService(new ScriptFiles(Files, json), Locks, run, verdict, Clock), new RunScriptValidator());
-        return service.Handle(request, CancellationToken.None);
+        return service.Handle(request, interrupt);
     }
 }
