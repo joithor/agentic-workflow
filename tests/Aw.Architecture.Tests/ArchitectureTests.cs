@@ -9,7 +9,11 @@ public sealed class ArchitectureTests
 {
     [Fact]
     public void Dependencies_point_the_right_way_inside_and_between_packages() =>
-        Verify.None(DirectionRules.Check(Production.Edges));
+        Verify.None(DirectionRules.Check(Production.Edges, Production.Compose));
+
+    [Fact]
+    public void A_host_uses_only_the_registration_methods_of_a_compose_target() =>
+        Verify.None(ComposeRules.Check(Production.Edges, Production.Compose));
 
     [Fact]
     public void The_ui_uses_no_sindri_type_view_models_no_avalonia_type_and_heads_no_views() => Verify.None(UiRules.Check(Production.Edges));

@@ -91,6 +91,7 @@ ArchUnitNET (not NetArchTest), in the `unit` lane, in `tests/Aw.Architecture.Tes
 | Rule id | Rule |
 |---|---|
 | `ARCH-DIR-001`…`005` | Dependency direction: Core → nothing else in its package; Features → Core, Features; Infrastructure → Core, Infrastructure; another package only through its Core; Core and Features use no tier-0 package but `Aw.Kernel` |
+| `ARCH-COMPOSE-001` | A Host uses a `compose` target's Features and Infrastructure (a `deps.yaml` compose edge) only through their public static `Add…()` registration methods; that use is the one `ARCH-DIR-004` carve-out |
 | `ARCH-PLACE-001` | Every type of a Core, Features or Infrastructure project sits in that project's layer namespace (small shape: `App`, `App.Features`, `App.Infrastructure`, `App.Commands`): not the bare root, an unknown folder, another layer's namespace or one outside the root. In a Host or App project, anything outside the root counts as Host. IDE0130 (namespace matches folder) catches most of this at build time; this is the backstop |
 | `ARCH-SLICE-001` | No slice uses another slice (`Features.<Slice>`, `App.Features.<Slice>`) |
 | `ARCH-INFRA-001` | Only the `*ServiceCollectionExtensions` class is public in Infrastructure |
