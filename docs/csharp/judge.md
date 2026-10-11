@@ -368,10 +368,14 @@ evidence check wouldn't accept, one that misses it (exit 2 naming the criteria),
 ok, degraded (a stub `claude` that exits 1 leaves one failure row) and a store that can't be opened. It builds
 `src/Judge/Aw.Judge.Host` in Release itself (or takes `AW_JUDGE_CS_BIN`, made absolute); when `judge/dist` is built it
 runs the same cases against the TS judge too and compares. CI runs it in the .NET job, which a hook, statusline or
-hook-library change selects (`scripts/ci/changed-areas.sh`).
+hook-library change selects (`scripts/ci/changed-areas.sh`), against the NativeAOT publish the AOT smoke step leaves at
+`artifacts/aot-judge-smoke/bin/judge` (spec §4a step 3, §4b.5), so the hook paths the smoke doesn't cover (brief-scope,
+the claude-cli provider, an unusable store) are checked natively too.
 
 ```bash
 bash config/lib/tests/judge-cs-hook-surface.test.sh   # needs dotnet 10; "All … passed (sides: cs ts)" with judge/dist
+bash src/Judge/aot-smoke/run.sh && AW_JUDGE_CS_BIN=artifacts/aot-judge-smoke/bin/judge \
+  bash config/lib/tests/judge-cs-hook-surface.test.sh   # as CI runs it: against the NativeAOT binary
 ```
 
 ## Build and NativeAOT
