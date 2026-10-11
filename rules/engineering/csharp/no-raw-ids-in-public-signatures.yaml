@@ -10,9 +10,9 @@ select:
 checks:
   - type: analyzer
     id: "AW1001"
-    status: pending
-    pendingPr: 132
-gap: pending
+    status: active
+gap: partial
+gapNote: "AW1001 catches every Guid and a string whose member is named as an id ('id', '…Id', '…Ids'); a string id under another name is reviewed."
 source:
   type: adr
   ref: "docs/superpowers/specs/2026-10-09-agent-readiness-design.md#4b3"

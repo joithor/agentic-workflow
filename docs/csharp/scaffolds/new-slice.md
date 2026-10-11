@@ -19,7 +19,7 @@ it encodes: **test (with compiling stubs) → service → endpoint or CLI comman
 | `surface` | `cli`, `http` or `none` | must match the package's host; `cli` adds a command, `http` adds an endpoint |
 | `route` / `command` | e.g. `POST /items/{itemId}/start` or `check` | `route` is required for `http`. Each `{name}` segment names a typed id (from `ids` or already in `Core`) by its camelCase name (`{itemId}` → `ItemId`); `{id}` is accepted when the slice has exactly one id. The generator rewrites each segment to the id's camelCase name, because the request-delegate generator binds a route value to the lambda parameter of the same name. Otherwise `NS-ROUTE`: ask the user which id. `command` (cli, kebab-case) defaults to the slice name in kebab case (`CheckRepo` → `check-repo`) |
 | `ids` | list of typed ids the request uses, each `Name:primitive`, e.g. `ItemId:string` (primitive is `string`, `Guid` or `int`; the name ends in `Id`) | an id already declared in `Core/Ids/` is reused (its primitive must match, else `NS-IDS`) |
-| `ports` | list of `Core` port interfaces the service needs | each exists in `Core`, or the generator adds an empty interface plus its fake and contract base |
+| `ports` | list of `Core` port interfaces the service needs | a port with a file `<IPort>.cs` anywhere under `Core` (`Core/Ports/`, the root, a subfolder) is reused as it is, and its fake and contract base are left alone; any other port is new: the generator adds an empty interface in `Core/Ports/` plus its fake and contract base |
 
 The implemented service always takes `TimeProvider`, so it counts toward the limit: **`ports` + 1 ≤ 5** constructor
 dependencies (§4b.2 split signal). The red stub takes none; the limit is checked on the declared `ports`. More is refused with `NS-DEPS: <n> constructor dependencies (ports + TimeProvider); the limit is 5
@@ -27,7 +27,8 @@ dependencies (§4b.2 split signal). The red stub takes none; the limit is checke
 
 Refusals (exit 1, nothing written): `NS-PACKAGE` (no scaffolded `src/<package>/` declared in `deps.yaml`), `NS-NAME`,
 `NS-BEHAVIOR`, `NS-SURFACE`, `NS-EXISTS`, `NS-COMMAND` (malformed or already in the command table), `NS-ROUTE`,
-`NS-IDS`, `NS-PORTS` (not an `I…` interface name), `NS-DEPS`.
+`NS-IDS`, `NS-PORTS` (not an `I…` interface name, or a new port whose `InMemory<Port>.cs` or `<Port>Contract.cs`
+already exists in `Aw.<Pkg>.Testing`), `NS-DEPS`.
 
 ```bash
 node scripts/scaffold/new-slice.mjs --package Demo --slice StartItem --behavior parks_when_budget_is_exhausted \
@@ -65,8 +66,8 @@ tests/Aw.<Pkg>.Testing/
 │                            # (small: both internal, since the record is; Testing's InternalsVisibleTo reaches Tests)
 ├── InMemory<Port>.cs        # per new port: the one fake (`IItemStore` → `InMemoryItemStore`)
 └── <Port>Contract.cs        # per new port: the contract base the fake and every adapter derive from (`ItemStoreContract`)
-src/<Pkg>/Aw.<Pkg>.Core/
-└── <IPort>.cs               # per new port: an empty public interface; its members arrive with the implement step
+src/<Pkg>/Aw.<Pkg>.Core/Ports/
+└── <IPort>.cs               # per new port: an empty public interface (namespace Aw.<Pkg>.Core.Ports); its members arrive with the implement step
 ```
 
 `<Conv>` by primitive: `string` → `StringIdJsonConverter`, `Guid` → `GuidIdJsonConverter`, `int` → `Int32IdJsonConverter`
@@ -84,10 +85,10 @@ IL2026/IL3050 (errors under warnings-as-errors). The test reaches the `internal`
 | File | Change |
 |---|---|
 | `src/<Pkg>/Aw.<Pkg>.Features/<Pkg>FeaturesServiceCollectionExtensions.cs` | Registers the service, its validator, and the validation decorator as the `IService<,>` (template below) |
-| `src/<Pkg>/Aw.<Pkg>.Features/PublicAPI.Unshipped.txt` | `shape: full` only: the request and response records and all their members, compiler-generated ones included, annotated — written by the `RS0016` code fix (`dotnet format analyzers <project> --diagnostics RS0016`). In a `small` package the records are `internal`, so `App`'s PublicAPI files stay at `#nullable enable` and this step is skipped |
+| `src/<Pkg>/Aw.<Pkg>.Features/PublicAPI.Unshipped.txt` | `shape: full` only: the request and response records and all their members, compiler-generated ones included, annotated — recorded from the build's `RS0016` diagnostics (below). In a `small` package the records are `internal`, so `App`'s PublicAPI files stay at `#nullable enable` and this step is skipped |
 | `src/<Pkg>/Aw.<Pkg>.Host/Endpoints/EndpointTable.cs` or `Commands/CommandTable.cs` | One line mapping the route or command |
 | `src/<Pkg>/Aw.<Pkg>.Host/<Pkg>JsonContext.cs` | `[JsonSerializable]` for `<Slice>Request`, `<Slice>Response`, and `<Slice>Body` (http) |
-| `src/<Pkg>/Aw.<Pkg>.Core/PublicAPI.Unshipped.txt` | When `ids` is non-empty or a new port interface is added. Each new id adds its type (from the `RS0016` code fix) and its Vogen-generated members (about 17 lines for a string id), which the code fix skips: those are recorded from the build's `RS0016` output (`docs/csharp/typed-ids.md`, "Public ids and PublicAPI files") and reviewed |
+| `src/<Pkg>/Aw.<Pkg>.Core/PublicAPI.Unshipped.txt` | When `ids` is non-empty or a new port interface is added. Each new id adds its type and its Vogen-generated members (about 17 lines for a string id), and each new port its interface, all recorded from the build's `RS0016` diagnostics (below; `docs/csharp/typed-ids.md`, "Public ids and PublicAPI files") and reviewed |
 | `tests/Aw.<Pkg>.Testing/A.cs` | One factory method: `public static <Slice>RequestBuilder <Slice>Request() => new();` |
 | `tests/Aw.<Pkg>.Testing/` | A fake and a contract base per new port, one type per file. The contract base lives here, not in `Aw.Kernel.Testing`, and derives from a Kernel base where one fits (`ReadRepositoryContract`); the fake and every real adapter pass it (`.agents/rules/csharp.md`, Seams) |
 
@@ -268,17 +269,20 @@ and `CA1515` for test projects, with `GenerateDocumentationFile=true` and `CS159
 
 ## Commands the generator runs
 
-Before them, `/new-slice` records `Core`'s and `Features`' `PublicAPI.Unshipped.txt` in its journal (the code fix
-rewrites them), so a failed check restores them too.
-
+The public API lines come from the build, not from the `RS0016` code fix: on .NET 10 `dotnet format analyzers
+--diagnostics RS0016` changes nothing, and it never covered source-generated members (Vogen's). For each library
+project in reference order (`Core` when the slice adds an id or a port, then `Features` in `shape: full`; skipped for
+`App`), the generator builds the project and appends every `RS0016` symbol the build reports for that project to its
+`PublicAPI.Unshipped.txt`, sorted, after the lines already there (`declarePublicApi` in `scripts/scaffold/lib/checks.mjs`).
+It edits the files through its journal, so a failed check restores them too. A build that fails with no `RS0016` to
+declare is `SCAFFOLD-PUBLICAPI`.
 
 ```bash
-# when `ids` is non-empty or a port was added: the code fix on Core, then the generated id members from the build output
-dotnet format analyzers src/<Pkg>/Aw.<Pkg>.Core --diagnostics RS0016 --severity error   # each id's type and any new port
+# when `ids` is non-empty or a port was added (Core), then shape: full (Features): by hand, the same step is
 dotnet build src/<Pkg>/Aw.<Pkg>.Core 2>&1 \
   | sed -n "s/.*RS0016: Symbol '\(.*\)' is not part of the declared public API.*/\1/p" | sort -u \
-  >> src/<Pkg>/Aw.<Pkg>.Core/PublicAPI.Unshipped.txt                      # Vogen's generated members (typed-ids.md); review them
-dotnet format analyzers src/<Pkg>/Aw.<Pkg>.Features --diagnostics RS0016 --severity error   # PublicAPI lines for the new records (shape: full; skipped for App)
+  >> src/<Pkg>/Aw.<Pkg>.Core/PublicAPI.Unshipped.txt                      # each id's type and Vogen members, each new port; review them
+dotnet build src/<Pkg>/Aw.<Pkg>.Features 2>&1 | sed …  >> src/<Pkg>/Aw.<Pkg>.Features/PublicAPI.Unshipped.txt   # the new records
 dotnet build -warnaserror                                         # 0 warnings
 dotnet test --solution AgenticWorkflow.slnx --filter-trait "Lane=unit" --ignore-exit-code 8   # exactly one failure: <Slice>Tests.<Slice>_<behavior>; exit 8 = empty lane in some project
 dotnet format --verify-no-changes
@@ -296,7 +300,10 @@ Under the heavy-job lock. Commit: `test: red <Slice> test (<behavior>)`.
    domain type, not in the service) → add the integration test if the slice touches SQL → run the lane.
 
 The generator's own test suite (`scripts/scaffold/e2e.sh`) makes the first slice of a package built by `/new-package`
-green, scaffolds a second slice with a new id, and asserts criterion 1 against the real root files.
+green, scaffolds a second slice with a new id and a new port, and asserts criterion 1 against the real root files, in
+both shapes: in `shape: full` the second slice's records and port need `Features`' and `Core`'s PublicAPI lines. It then
+makes the second slice green and adds a third that reuses the port, which must leave the port, its fake and its
+contract base as they are. `scripts/tests/scaffold.test.sh` covers the port lookup and the `RS0016` parsing without dotnet.
 
 ## Failure behavior
 

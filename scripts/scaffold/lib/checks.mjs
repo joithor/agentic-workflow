@@ -1,6 +1,7 @@
 // scripts/scaffold/lib/checks.mjs — the dotnet and repo checks the scaffolds run after writing, in the order the
 // scaffold specs list them. A failed check throws a ScaffoldError naming the rule, what was measured and the fix.
 
+import path from "node:path";
 import { ScaffoldError, run } from "./common.mjs";
 
 const tail = (out, n = 40) => out.trimEnd().split("\n").slice(-n).join("\n");
@@ -11,20 +12,36 @@ export async function mustPass(root, rule, cmd, args, fix, log) {
   return r.out;
 }
 
-/** dotnet format's RS0016 code fix: writes PublicAPI.Unshipped.txt lines for a library project's public symbols. */
-export async function publicApiFix(root, project, log) {
-  return mustPass(root, "SCAFFOLD-PUBLICAPI", "dotnet", ["format", "analyzers", project, "--diagnostics", "RS0016", "--severity", "error"], "run the same command by hand and read its output", log);
+/** The RS0016 symbols in a build's output for one project (each diagnostic ends in "[<path>/<project file>]"), unique and sorted. */
+export function rs0016Symbols(out, project) {
+  const tag = `${path.basename(project)}]`;
+  const symbols = new Set();
+  for (const m of out.matchAll(/RS0016: Symbol '(.*?)' is not part of the declared public API.*$/gm)) if (m[0].endsWith(tag)) symbols.add(m[1]);
+  return [...symbols].sort();
+}
+
+/** A PublicAPI file's text with `lines` appended (sorted, each once), after what it already declares. */
+export function withApiLines(text, lines) {
+  const have = text.replace(/\n+$/, "").split("\n");
+  const add = [...new Set(lines)].filter((l) => !have.includes(l)).sort();
+  return `${[...have, ...add].join("\n")}\n`;
 }
 
 /**
- * The public API lines the RS0016 code fix skips (source-generated members, e.g. Vogen's): read from a build of
- * the project (docs/csharp/typed-ids.md "Public ids and PublicAPI files"). Returns the sorted, unique symbols.
+ * Declares a library project's new public symbols: builds it and appends every RS0016 symbol the build reports for
+ * it to its PublicAPI.Unshipped.txt (journalled, so a revert restores the file). The build's diagnostics are the
+ * source because on .NET 10 the RS0016 code fix (`dotnet format analyzers --diagnostics RS0016`) changes nothing,
+ * and it never covered source-generated members such as Vogen's (docs/csharp/typed-ids.md). Build a project only
+ * after the projects it references have their lines: their RS0016 errors stop it compiling.
  */
-export async function generatedPublicApi(root, project, log) {
-  const r = await run(root, "dotnet", ["build", project, "-p:TreatWarningsAsErrors=false"], { log });
-  const symbols = new Set();
-  for (const m of r.out.matchAll(/RS0016: Symbol '(.*?)' is not part of the declared public API/g)) symbols.add(m[1]);
-  return [...symbols].sort();
+export async function declarePublicApi(journal, project, log) {
+  const r = await run(journal.root, "dotnet", ["build", project, "-p:TreatWarningsAsErrors=false"], { log });
+  const symbols = rs0016Symbols(r.out, project);
+  if (r.code !== 0 && symbols.length === 0) {
+    throw new ScaffoldError("SCAFFOLD-PUBLICAPI", `\`dotnet build ${project}\` exited ${r.code} with no RS0016 to declare\n${tail(r.out)}`, "fix the build error it prints; the generator reverted its files");
+  }
+  if (symbols.length) journal.edit(path.join(path.dirname(project), "PublicAPI.Unshipped.txt"), (text) => withApiLines(text, symbols));
+  return symbols;
 }
 
 export async function build(root, log) {
