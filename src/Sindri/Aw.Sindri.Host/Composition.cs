@@ -1,7 +1,7 @@
 using Aw.Kernel.Json;
 using Aw.Kernel.Telemetry;
-using Aw.Sindri.Core.Registration;
 using Aw.Sindri.Core.Control;
+using Aw.Sindri.Core.Registration;
 using Aw.Sindri.Core.Scheduling;
 using Aw.Sindri.Features;
 using Aw.Sindri.Host.Server;
