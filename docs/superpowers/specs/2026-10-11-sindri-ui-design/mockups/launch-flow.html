@@ -1,0 +1,713 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sindri launch flow</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --canvas:#010102;
+  --s1:#0f1011; --s2:#141516; --s3:#18191a; --s4:#191a1b;
+  --line1:#23252a; --line2:#34343a; --line3:#3e3e44;
+  --ink:#f7f8f8; --ink-muted:#d0d6e0; --ink-subtle:#8a8f98; --ink-tertiary:#62666d;
+  --brand:#5e6ad2; --brand-hover:#828fff; --link:#828fff;
+  --brand-hover-fill:#535fc6; --brand-pressed:#4c57be; --error:#eb5757;
+  --success:#27a644;
+  --attn:#f2994a; --attn-soft:rgba(242,153,74,.14);
+  --sans:"Inter",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --mono:"JetBrains Mono",ui-monospace,SFMono-Regular,Menlo,monospace;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{background:var(--canvas);color:var(--ink);font-family:var(--sans);font-size:13px;line-height:1.45;
+  -webkit-font-smoothing:antialiased;font-feature-settings:"cv01","ss03"}
+button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
+.focus,:focus-visible{outline:2px solid var(--brand-hover);outline-offset:2px}
+.mono,code{font-family:var(--mono);font-size:12px;letter-spacing:-.1px}
+kbd{font-family:var(--sans);font-size:11px;font-weight:500;color:var(--ink-subtle);
+  border:1px solid var(--line2);border-radius:4px;padding:0 4px;min-width:16px;height:16px;
+  display:inline-flex;align-items:center;justify-content:center;background:var(--s2);line-height:1}
+svg{flex:none}
+a{color:var(--link);text-decoration:none}
+
+/* ───────── page ───────── */
+.page{max-width:1248px;margin:0 auto;padding:0 16px 72px}
+.pagehead{display:flex;align-items:flex-end;justify-content:space-between;padding:28px 0 20px;border-bottom:1px solid var(--line1)}
+.eyebrow{font-size:11px;font-weight:500;letter-spacing:.4px;text-transform:uppercase;color:var(--ink-muted)}
+.pagehead h1{font-size:22px;font-weight:600;letter-spacing:-.4px;margin-top:4px}
+.pagehead .sub{color:var(--ink-subtle);margin-top:4px;max-width:720px}
+.legend{display:flex;gap:14px;color:var(--ink-subtle);font-size:12px;align-items:center}
+.legend span{display:flex;align-items:center;gap:6px}
+.legend .sw{width:22px;height:12px;border:1px dashed var(--line3);border-radius:2px}
+.legend .sw.sheet{border:0;border-left:1px solid var(--line2);background:var(--s1)}
+
+.board{display:grid;grid-template-columns:796px 396px;gap:24px;margin-top:24px;align-items:start}
+
+/* ───────── frames ───────── */
+.frame{padding:20px 0 28px;border-bottom:1px solid var(--line1)}
+.frame:first-child{padding-top:4px}
+.fhead{display:flex;align-items:center;gap:10px;margin-bottom:14px}
+.num{width:22px;height:22px;border-radius:6px;border:1px solid var(--line2);background:var(--s2);
+  display:grid;place-items:center;font-size:12px;font-weight:600;color:var(--ink)}
+.fhead h2{font-size:14px;font-weight:600;letter-spacing:-.1px}
+.fhead .chip{margin-left:auto}
+.chip{display:inline-flex;align-items:center;gap:5px;height:20px;padding:0 7px;border-radius:4px;
+  border:1px solid var(--line2);background:var(--s2);font-family:var(--mono);font-size:11px;color:var(--ink-muted);white-space:nowrap}
+.fbody{display:grid;grid-template-columns:520px 252px;gap:24px;align-items:start}
+.fbody.wide{grid-template-columns:1fr}
+.cropwrap{display:flex;flex-direction:column;gap:6px}
+.croplabel{width:520px;font-size:11px;color:var(--ink-subtle);display:flex;justify-content:space-between;padding:0 2px}
+.crop{position:relative;width:520px;background:var(--s1);border-left:1px solid var(--line2);
+  outline:1px dashed var(--line3);outline-offset:5px}
+.crop.row{width:auto;border-left:0}
+.cap{margin-top:12px;color:var(--ink-muted);font-size:13px}
+.cap b{color:var(--ink);font-weight:500}
+.stepper{display:flex;align-items:center;gap:8px;color:var(--ink-subtle);font-size:12px;margin:12px 0}
+.stepper::before,.stepper::after{content:"";height:1px;background:var(--line1);flex:1}
+.stepper svg{color:var(--ink-subtle)}
+
+/* annotations */
+.anno{display:flex;flex-direction:column;gap:8px;padding-top:22px}
+.anno .k{font-size:11px;color:var(--ink-subtle);font-weight:500}
+.anno .ev{border:1px solid var(--line1);border-radius:8px;background:var(--s1);padding:8px 10px}
+.anno .ev code{display:block;white-space:pre-wrap;color:var(--ink-muted);font-size:11.5px;line-height:1.5;word-break:break-word}
+.anno .ev code .hl{color:var(--ink)}
+.anno p{color:var(--ink-subtle);font-size:12px}
+
+/* ───────── sheet pieces ───────── */
+.lb{padding:16px 20px}
+.lb+.lb,.hdr+.lb{border-top:1px solid var(--line1)}
+.lb-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+.lb-head .meta{font-size:12px;color:var(--ink-subtle);display:flex;gap:6px;align-items:center}
+.lb-row{display:flex;align-items:center;gap:8px}
+.lb-row .hint{font-size:12px;color:var(--ink-subtle);display:flex;gap:6px;align-items:center}
+.lb-foot{margin-top:10px;font-size:12px;color:var(--ink-subtle);line-height:1.5}
+.lb-foot code{color:var(--ink-muted);font-size:11.5px}
+.live{display:flex;align-items:center;gap:8px;margin-bottom:10px;color:var(--ink-muted)}
+.live .state{display:inline-flex;align-items:center;gap:6px;font-weight:500;color:var(--ink)}
+.live .state i{width:7px;height:7px;border-radius:50%;background:var(--success)}
+.live .state i.sq{width:8px;height:8px;border-radius:2px;background:transparent;border:1.5px solid var(--ink-muted)}
+.live .state i.pause{width:8px;height:8px;border-radius:0;background:none;border-left:2.5px solid var(--ink-muted);border-right:2.5px solid var(--ink-muted)}
+.live .state i.ended{width:8px;height:8px;border-radius:50%;background:transparent;border:1.5px solid var(--ink-subtle)}
+.live .dim{color:var(--ink-subtle)}
+
+/* header */
+.hdr{padding:16px 20px}
+.hdr .l1{display:flex;align-items:center;gap:8px;color:var(--ink-subtle)}
+.hdr h3{font-size:16px;font-weight:600;letter-spacing:-.2px;margin:4px 0 8px;color:var(--ink)}
+.hdr .l3{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.tag{font-size:11px;border:1px solid var(--line2);border-radius:6px;padding:0 6px;color:var(--ink-subtle);height:18px;display:inline-flex;align-items:center}
+.word{display:inline-flex;align-items:center;gap:6px;font-weight:500;color:var(--ink)}
+.word i{width:8px;height:8px;border-radius:2px;border:1.5px solid var(--ink-muted)}
+.word.closed i{border-radius:50%;background:var(--ink-subtle);border:0}
+.withyou{display:flex;align-items:center;gap:10px;margin-top:10px;padding:8px 10px;border:1px solid var(--line1);border-radius:8px;background:var(--s2)}
+.withyou .t{color:var(--ink-muted);flex:1}
+.withyou .t b{color:var(--ink);font-weight:500}
+
+/* buttons */
+.btn{height:28px;padding:0 10px;border-radius:8px;font-size:13px;font-weight:500;display:inline-flex;align-items:center;gap:6px;
+  border:1px solid var(--line2);background:var(--s3);color:var(--ink-muted);white-space:nowrap}
+.btn.lg{height:32px;padding:0 12px;font-size:14px}
+.btn.primary{background:var(--brand);border-color:var(--brand);color:#fff}
+.btn.primary:hover{background:var(--brand-hover-fill);border-color:var(--brand-hover-fill)}
+.btn.primary:active{background:var(--brand-pressed);border-color:var(--brand-pressed)}
+.btn.ghost{background:transparent;border-color:transparent;color:var(--ink-subtle)}
+.btn[disabled],.btn.busy{cursor:not-allowed}
+.btn[disabled]:not(.busy){opacity:.55}
+.btn.busy{background:#3f4795;border-color:#3f4795;color:rgba(255,255,255,.88)}
+.btn kbd{margin-left:2px}
+.btn.primary kbd{color:rgba(255,255,255,.8);border-color:rgba(255,255,255,.3);background:transparent}
+.split{position:relative;display:inline-flex}
+.split .main{border-radius:8px 0 0 8px}
+.split .chev{border-radius:0 8px 8px 0;padding:0 8px;margin-left:-1px}
+.split .btn.primary.chev{border-left-color:rgba(255,255,255,.22)}
+.split .btn.busy.chev{border-left-color:rgba(255,255,255,.15)}
+.spin{width:12px;height:12px;border-radius:50%;border:1.5px solid rgba(255,255,255,.3);border-top-color:#fff;animation:spin .9s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* menu */
+.menu{position:absolute;left:0;top:38px;z-index:5;width:372px;background:var(--s3);border:1px solid var(--line2);
+  border-radius:8px;padding:4px;box-shadow:inset 0 1px 0 rgba(255,255,255,.04)}
+.menu .cap2{padding:6px 8px 4px;font-size:11px;color:var(--ink-subtle)}
+.mi{display:grid;grid-template-columns:16px 1fr auto;gap:2px 8px;align-items:start;padding:7px 8px;border-radius:6px;color:var(--ink-muted);width:100%;text-align:left}
+.mi .ck{color:var(--ink);padding-top:1px}
+.mi .lab{color:var(--ink);font-weight:500}
+.mi .why{grid-column:2/3;font-size:12px;color:var(--ink-subtle)}
+.mi kbd{margin-top:1px}
+.mi.cur{background:var(--s4)}
+.mi.off .lab{color:var(--ink-subtle)}
+.mi.off{cursor:not-allowed}
+.mi .limited{font-size:11px;border:1px solid var(--line2);border-radius:4px;padding:0 5px;color:var(--ink-muted);margin-left:6px;font-weight:400}
+.mi .fix{grid-column:2/4;margin-top:4px}
+.menu hr{border:0;border-top:1px solid var(--line1);margin:4px 0}
+
+/* cli copy */
+.cmd{display:inline-flex;align-items:center;height:26px;border:1px solid var(--line1);border-radius:6px;background:var(--canvas);max-width:100%}
+.cmd .prompt{font-family:var(--mono);font-size:11px;color:var(--ink-subtle);padding:0 0 0 8px}
+.cmd code{font-size:11.5px;color:var(--ink-muted);padding:0 8px 0 6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cmd button{height:100%;padding:0 8px;border-left:1px solid var(--line1);color:var(--ink-subtle);display:flex;align-items:center;gap:4px;font-size:12px;white-space:nowrap}
+
+.cmd.wrap{height:auto;align-items:stretch}
+.cmd.wrap .prompt{padding-top:5px}
+.cmd.wrap code{white-space:normal;padding:5px 8px 5px 6px;line-height:1.45}
+/* notices */
+.notice{display:flex;gap:10px;align-items:flex-start;padding:10px 12px;border:1px solid var(--line1);border-radius:8px;background:var(--s2)}
+.notice .ic{margin-top:1px;color:var(--ink-muted)}
+.notice .ic.ok{color:var(--success)}
+.notice .t{flex:1;min-width:0}
+.notice .t b{color:var(--ink);font-weight:500}
+.notice .t p{color:var(--ink-subtle);font-size:12px;margin-top:2px}
+.notice .t p code{color:var(--ink-muted);font-size:11.5px}
+.fail{border-color:var(--line2);box-shadow:inset 2px 0 0 var(--error)}
+.fail .ic{color:var(--error)}
+.phase{font-size:11px;color:var(--ink-subtle);border:1px dashed var(--line2);border-radius:4px;padding:0 6px;height:20px;display:inline-flex;align-items:center;margin-left:8px;white-space:nowrap}
+.fail .code{font-family:var(--mono);font-size:11px;color:var(--ink-muted);border:1px solid var(--line2);border-radius:4px;padding:0 5px;margin-left:6px;font-weight:400}
+.fail .detail{font-family:var(--mono);font-size:11.5px;color:var(--ink-subtle);margin-top:3px}
+.fail .fixrow{display:flex;gap:8px;align-items:center;margin-top:8px;flex-wrap:wrap}
+.fail .fixrow .lbl{font-size:12px;color:var(--ink-subtle)}
+.noblock{margin:0 20px 16px;padding:12px;border:1px dashed var(--line2);border-radius:8px;color:var(--ink-subtle);font-size:12px;text-align:center}
+
+/* rows (home) */
+.wy{display:grid;grid-template-columns:1fr auto;gap:2px 16px;padding:12px 16px;align-items:center;width:715px}
+.wy .l1{display:flex;gap:8px;align-items:baseline}
+.wy .id{color:var(--ink-subtle)}
+.wy .title{font-weight:500}
+.wy .l2{color:var(--ink-subtle);display:flex;gap:8px;align-items:center;margin-top:3px}
+.wy .acts{display:flex;gap:6px;align-items:center}
+.panelhead{display:flex;align-items:center;gap:8px;height:36px;padding:0 16px;border-bottom:1px solid var(--line1);width:715px}
+.panelhead .meta{margin-left:auto;color:var(--ink-subtle);font-size:12px}
+
+.ny{position:relative;display:flex;align-items:center;gap:16px;padding:12px 16px 12px 20px;width:796px}
+.ny .bar{position:absolute;left:0;top:8px;bottom:8px;width:3px;border-radius:0 3px 3px 0}
+.ny.pulse .bar{background:var(--attn);animation:pulse 1.6s ease-in-out infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.35}}
+.ny .kind{width:96px;display:flex;flex-direction:column;gap:4px;flex:none}
+.ny .kind .chip{align-self:flex-start}
+.motion{font-size:11px;color:var(--ink-subtle)}
+.ny .what{flex:1;min-width:0}
+.ny .what .l1{display:flex;gap:8px;align-items:baseline;min-width:0}
+.ny .what .id{color:var(--ink-subtle);white-space:nowrap}
+.ny .what .title{font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ny .what .l2{color:var(--ink-subtle);margin-top:3px;display:flex;gap:6px;align-items:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ny .what .l2 .reason{color:var(--ink-muted)}
+.ny .since{width:64px;text-align:right;color:var(--ink-subtle);font-size:12px;line-height:1.35;flex:none}
+.ny .since b{display:block;color:var(--ink-muted);font-weight:500;font-size:13px}
+.ny .cut{width:22px;align-self:stretch;flex:none;margin:-12px 0;
+  background:repeating-linear-gradient(135deg,transparent 0 5px,var(--line1) 5px 6px);border-left:1px dashed var(--line3);border-right:1px dashed var(--line3)}
+.ny .acts{display:flex;gap:6px;align-items:center;flex:none}
+
+/* never box */
+.never{border:1px solid var(--line1);border-radius:12px;background:var(--s1);padding:14px 16px;max-width:620px}
+.never ul{list-style:none;margin-top:8px;display:flex;flex-direction:column;gap:5px}
+.never li{display:block;position:relative;padding-left:18px;color:var(--ink-subtle);font-size:12px}
+.never li::before{content:"×";position:absolute;left:0;color:var(--ink-muted);font-weight:600}
+.never li code{color:var(--ink-muted);font-size:11.5px}
+
+/* ───────── sequence ───────── */
+.seq{position:sticky;top:16px;background:var(--s1);border:1px solid var(--line1);border-radius:12px;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.035)}
+.seq .phead{display:flex;align-items:center;gap:8px;height:40px;padding:0 16px;border-bottom:1px solid var(--line1)}
+.seq .phead .meta{margin-left:auto;font-size:12px;color:var(--ink-subtle)}
+.seq ol{list-style:none;padding:14px 16px 6px}
+.st{display:grid;grid-template-columns:62px 1fr;gap:10px;align-items:start}
+.lane{font-size:10.5px;font-weight:500;letter-spacing:.3px;text-transform:uppercase;color:var(--ink-subtle);padding-top:7px;text-align:right}
+.box{border:1px solid var(--line2);border-radius:8px;background:var(--s2);padding:6px 9px}
+.box .n{color:var(--ink);font-weight:500;font-size:12.5px}
+.box code{display:block;color:var(--ink-muted);font-size:11px;margin-top:1px;overflow-wrap:anywhere}
+.box .s{font-size:11px;color:var(--ink-subtle);margin-top:2px}
+.box.ev{background:var(--canvas);border-style:dashed}
+.box.end{border-color:var(--line3);background:var(--s3)}
+.arr{display:grid;grid-template-columns:62px 1fr;gap:10px;height:18px}
+.arr div{display:flex;align-items:center;padding-left:14px;color:var(--ink-subtle);font-size:10.5px;gap:8px}
+.arr svg{color:var(--line3)}
+.fr{font-size:10.5px;color:var(--ink-subtle);border:1px solid var(--line1);border-radius:4px;padding:0 4px;margin-left:6px;font-family:var(--sans)}
+.branch{margin:2px 0 0;display:flex;gap:6px;align-items:center;font-size:11px;color:var(--ink-subtle)}
+.branch code{color:var(--ink-muted);font-size:11px}
+.seq .foot{border-top:1px solid var(--line1);padding:10px 16px;font-size:11.5px;color:var(--ink-subtle);line-height:1.5}
+.lanekey{display:flex;flex-wrap:wrap;gap:6px 12px;padding:10px 16px 0;font-size:11px;color:var(--ink-subtle)}
+
+.caption{position:fixed;right:12px;bottom:10px;font-size:11px;color:var(--ink-tertiary);background:var(--canvas);
+  border:1px solid var(--line1);border-radius:6px;padding:3px 8px;z-index:40}
+
+@media (prefers-reduced-motion: reduce){
+  .ny.pulse .bar{animation:none;background:transparent;outline:2px solid var(--attn);outline-offset:-2px;width:4px}
+  .spin{animation:none;border-color:#fff}
+}
+</style>
+</head>
+<body>
+<!-- shared icons -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="warp" viewBox="0 0 12 12"><rect x="1" y="2" width="10" height="8" rx="1.5" stroke="currentColor" fill="none" stroke-width="1.1"/><path d="m3 5 1.6 1.2L3 7.4M6 7.5h2.5" stroke="currentColor" fill="none" stroke-width="1.1"/></symbol>
+  <symbol id="chev" viewBox="0 0 10 10"><path d="M2.5 4 5 6.5 7.5 4" stroke="currentColor" fill="none" stroke-width="1.3"/></symbol>
+  <symbol id="copy" viewBox="0 0 12 12"><rect x="3.5" y="3.5" width="7" height="7" rx="1.5" stroke="currentColor" fill="none" stroke-width="1.1"/><path d="M8.5 3.5V2.6c0-.6-.5-1.1-1.1-1.1H2.6c-.6 0-1.1.5-1.1 1.1v4.8c0 .6.5 1.1 1.1 1.1h.9" stroke="currentColor" fill="none" stroke-width="1.1"/></symbol>
+  <symbol id="check" viewBox="0 0 12 12"><path d="m2.5 6.2 2.3 2.3 4.7-5" stroke="currentColor" fill="none" stroke-width="1.4"/></symbol>
+  <symbol id="okc" viewBox="0 0 14 14"><circle cx="7" cy="7" r="6" stroke="currentColor" fill="none" stroke-width="1.2"/><path d="m4.3 7.2 1.9 1.9 3.6-3.8" stroke="currentColor" fill="none" stroke-width="1.3"/></symbol>
+  <symbol id="xc" viewBox="0 0 14 14"><circle cx="7" cy="7" r="5.8" stroke="currentColor" fill="none" stroke-width="1.2"/><path d="m4.9 4.9 4.2 4.2M9.1 4.9 4.9 9.1" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></symbol>
+  <symbol id="warn" viewBox="0 0 14 14"><path d="M7 1.6 13 12.4H1L7 1.6Z" stroke="currentColor" fill="none" stroke-width="1.2" stroke-linejoin="round"/><path d="M7 5.6v3.2M7 10.3v.1" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></symbol>
+  <symbol id="pause" viewBox="0 0 12 12"><path d="M4 2.5v7M8 2.5v7" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></symbol>
+  <symbol id="back" viewBox="0 0 12 12"><path d="M5 3 2 6l3 3M2.5 6H8a2 2 0 0 1 2 2v1" stroke="currentColor" fill="none" stroke-width="1.2"/></symbol>
+  <symbol id="down" viewBox="0 0 10 14"><path d="M5 0v12M1.5 8.5 5 12l3.5-3.5" stroke="currentColor" fill="none" stroke-width="1.2"/></symbol>
+  <symbol id="retry" viewBox="0 0 12 12"><path d="M10 6a4 4 0 1 1-1.2-2.9M10 1.8v2.4H7.6" stroke="currentColor" fill="none" stroke-width="1.2"/></symbol>
+  <symbol id="lock" viewBox="0 0 12 12"><rect x="2" y="5.5" width="8" height="5" rx="1.2" stroke="currentColor" fill="none" stroke-width="1.1"/><path d="M4 5.5V4a2 2 0 0 1 4 0v1.5" stroke="currentColor" fill="none" stroke-width="1.1"/></symbol>
+</svg>
+
+<div class="page">
+  <header class="pagehead">
+    <div>
+      <div class="eyebrow">Sindri desktop · spec §6</div>
+      <h1>Launch flow: one click into an agent</h1>
+      <p class="sub">Each frame is a crop of the real window at true scale: the detail sheet's launch block (520 px) or a row. Fixture: Warp 0.2026.10.07, items from the Home mockup.</p>
+    </div>
+    <div class="legend">
+      <span><i class="sw sheet"></i>sheet edge</span>
+      <span><i class="sw"></i>crop</span>
+    </div>
+  </header>
+
+  <div class="board">
+    <main>
+
+      <!-- 1 OPEN -->
+      <section class="frame">
+        <div class="fhead"><span class="num">1</span><h2>Open: no live session</h2><span class="chip">OpenItem:open</span></div>
+        <div class="fbody">
+          <div class="cropwrap">
+            <div class="croplabel"><span>Detail sheet · ITM-01JC8 · launch block, menu open</span><span>520 px</span></div>
+            <div class="crop">
+              <div class="lb">
+                <div class="lb-head"><span class="eyebrow">Work on it</span><span class="meta"><svg width="12" height="12"><use href="#warp"/></svg>Warp</span></div>
+                <div class="lb-row" style="margin-bottom:214px">
+                  <div class="split">
+                    <button class="btn primary lg main"><svg width="12" height="12"><use href="#warp"/></svg>Open in Claude Code <kbd>O</kbd></button>
+                    <button class="btn primary lg chev" aria-label="Choose agent" aria-expanded="true"><svg width="10" height="10"><use href="#chev"/></svg></button>
+                    <div class="menu" role="menu">
+                      <div class="cap2">Open ITM-01JC8 with</div>
+                      <button class="mi cur focus" role="menuitemradio" aria-checked="true">
+                        <span class="ck"><svg width="12" height="12"><use href="#check"/></svg></span>
+                        <span class="lab">Claude Code</span><kbd>1</kbd>
+                        <span class="why">last used in agentic-workflow</span>
+                      </button>
+                      <button class="mi" role="menuitemradio" aria-checked="false">
+                        <span></span><span class="lab">Codex</span><kbd>2</kbd>
+                        <span class="why">codex-cli 0.162.1</span>
+                      </button>
+                      <button class="mi" role="menuitemradio" aria-checked="false">
+                        <span></span><span class="lab">Cursor<span class="limited">limited</span></span><kbd>3</kbd>
+                        <span class="why">limited: Sindri tools aren't registered with Cursor yet</span>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+                <p class="lb-foot">Opens a new Warp tab in <code>~/repos/agentic-workflow</code> seeded with <code>ITM-01JC8</code> only. Opening takes the item over: automation pauses until you hand back.</p>
+              </div>
+            </div>
+          </div>
+          <div class="anno">
+            <span class="k">The app reads</span>
+            <div class="ev"><code>ItemView.launch
+{ modes:[open], defaultTarget:<span class="hl">claude-code</span>,
+  chosenBy:<span class="hl">lastUsed</span>, repoPath, blockers:[] }</code></div>
+            <span class="k">Menu rows from</span>
+            <div class="ev"><code>GET /launch/targets
+cursor { present, limited }</code></div>
+            <p>The menu says why a target is the default. Picking one makes it the remembered choice for this repo. Focus ring shown on the current target.</p>
+          </div>
+        </div>
+        <p class="cap"><b>Open.</b> The primary label always names the resolved target; the chevron or <kbd>O</kbd> then <kbd>1</kbd>–<kbd>3</kbd> picks another for this launch.</p>
+      </section>
+
+      <!-- 2 SENDING -->
+      <section class="frame">
+        <div class="fhead"><span class="num">2</span><h2>Sending</h2><span class="chip">LaunchView: requested</span></div>
+        <div class="fbody">
+          <div class="cropwrap">
+            <div class="croplabel"><span>Detail sheet · ITM-01JC8 · launch block</span><span>520 px</span></div>
+            <div class="crop">
+              <div class="lb">
+                <div class="lb-head"><span class="eyebrow">Work on it</span><span class="meta"><svg width="12" height="12"><use href="#warp"/></svg>Warp</span></div>
+                <div class="lb-row">
+                  <div class="split" aria-busy="true">
+                    <button class="btn primary lg main busy" disabled><span class="spin" aria-hidden="true"></span>Sending to Warp…</button>
+                    <button class="btn primary lg chev busy" disabled aria-label="Choose agent"><svg width="10" height="10"><use href="#chev"/></svg></button>
+                  </div>
+                  <span class="hint mono">LCH-01JG2Q</span>
+                </div>
+                <p class="lb-foot">Opens a new Warp tab in <code>~/repos/agentic-workflow</code> seeded with <code>ITM-01JC8</code> only. Opening takes the item over: automation pauses until you hand back.</p>
+              </div>
+            </div>
+          </div>
+          <div class="anno">
+            <span class="k">Request → 202</span>
+            <div class="ev"><code>POST /items/ITM-01JC8/open
+{ mode:open, target:claude-code,
+  itemVersion:14 }
+→ LaunchRequested(accepted, <span class="hl">LCH-01JG2Q</span>)</code></div>
+            <p>The handler only appends <code>item.open-requested</code>; the launcher service does the slow I/O. The button stays busy until <code>launch.started</code> or <code>launch.failed</code>.</p>
+          </div>
+        </div>
+        <p class="cap"><b>Sending.</b> One busy state, no progress bar: the app waits on <code>GET /launches/LCH-01JG2Q</code> and the stream.</p>
+      </section>
+
+      <!-- 3 SENT -->
+      <section class="frame">
+        <div class="fhead"><span class="num">3</span><h2>Sent, then With you</h2><span class="chip">launch.started</span></div>
+        <div class="fbody">
+          <div class="cropwrap">
+            <div class="croplabel"><span>Detail sheet · ITM-01JC8 · header + launch block</span><span>520 px</span></div>
+            <div class="crop">
+              <div class="hdr">
+                <div class="l1"><span class="mono">ITM-01JC8</span><span>·</span><span class="tag">agentic-workflow</span><span>v15</span></div>
+                <h3>Retry storm in outbox dispatcher</h3>
+                <div class="l3"><span class="word"><i></i>With you</span><span style="color:var(--ink-subtle)">automation paused</span></div>
+                <div class="withyou">
+                  <span class="t">With you since <b>12:31</b> (0m)</span>
+                  <button class="btn"><svg width="12" height="12"><use href="#back"/></svg>Hand back <kbd>B</kbd></button>
+                </div>
+              </div>
+              <div class="lb">
+                <div class="notice">
+                  <span class="ic ok"><svg width="14" height="14"><use href="#okc"/></svg></span>
+                  <div class="t"><b>Sent to Warp</b> · tab <code>sindri ITM-01JC8</code>
+                    <p>Claude Code · <code>~/repos/agentic-workflow</code> · 12:31. Sindri can't see inside Warp, so it doesn't say the session is running.</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="anno">
+            <span class="k">Two events, two changes</span>
+            <div class="ev"><code>launch.started { LCH-01JG2Q,
+  target:claude-code, sessionId,
+  terminal:warp }   → "Sent to Warp"</code></div>
+            <div class="ev"><code>takeover (engine)
+  → item moves to <span class="hl">With you</span></code></div>
+            <p>Before S2 there is no instance: nothing pauses, the item just records the launch.</p>
+          </div>
+        </div>
+        <p class="cap"><b>Sent.</b> "Sent to Warp" comes from the launcher; "With you" comes from the engine's takeover. The app shows each when it's recorded, not before.</p>
+      </section>
+
+      <!-- 4 ATTACH -->
+      <section class="frame">
+        <div class="fhead"><span class="num">4</span><h2>Attach: a live session Sindri launched<span class="phase">with the engine (U6b)</span></h2><span class="chip">OpenItem:attach</span></div>
+        <div class="fbody">
+          <div class="cropwrap">
+            <div class="croplabel"><span>Detail sheet · ITM-01JA1 · launch block, before and after the click</span><span>520 px</span></div>
+            <div class="crop">
+              <div class="lb">
+                <div class="lb-head"><span class="eyebrow">Work on it</span><span class="meta"><svg width="12" height="12"><use href="#warp"/></svg>Warp</span></div>
+                <div class="live"><span class="state"><i></i>Attached in Warp</span><span class="dim">· Claude Code · since 12:01 · tab <code>sindri ITM-01JA1</code></span></div>
+                <div class="lb-row">
+                  <button class="btn primary lg"><svg width="12" height="12"><use href="#warp"/></svg>Attach <kbd>O</kbd></button>
+                  <span class="hint">No new process</span>
+                </div>
+              </div>
+              <div class="lb">
+                <div class="notice">
+                  <span class="ic"><svg width="12" height="12"><use href="#warp"/></svg></span>
+                  <div class="t"><b>Brings Warp to the front.</b> Look for the tab <code>sindri ITM-01JA1</code>.
+                    <p>Warp has no documented way to focus a tab from outside, so the app names it.</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="anno">
+            <span class="k">ItemView.launch</span>
+            <div class="ev"><code>modes:[attach]
+liveSession { target:claude-code,
+  sessionId, since:12:01,
+  tabTitle:"sindri ITM-01JA1" }</code></div>
+            <p>Never two processes on one session (DB §7). Attach is offered only when the item is with you.</p>
+          </div>
+        </div>
+        <p class="cap"><b>Attach.</b> Activates Warp and names the tab; it starts nothing.</p>
+      </section>
+
+      <!-- 5 TAKE OVER -->
+      <section class="frame">
+        <div class="fhead"><span class="num">5</span><h2>Take over a running step</h2><span class="chip">ApplyCommand:takeover</span></div>
+        <div class="fbody">
+          <div class="cropwrap">
+            <div class="croplabel"><span>Detail sheet · ITM-01JE7 · launch block, before and after the click</span><span>520 px</span></div>
+            <div class="crop">
+              <div class="lb">
+                <div class="live"><span class="state"><i></i>Running</span><span class="dim">· step <code>produce</code> round 2/3 · desk runtime · since 12:20</span></div>
+                <div class="lb-row">
+                  <button class="btn lg"><svg width="12" height="12"><use href="#pause"/></svg>Take over <kbd>T</kbd></button>
+                  <span class="hint">pauses automation</span>
+                </div>
+              </div>
+              <div class="lb">
+                <div class="live"><span class="state"><i class="pause"></i>Taken over</span><span class="dim">· 12:33 · automation paused · with you</span></div>
+                <p class="lb-foot">Stopping a running worker and resuming its session arrive with a later engine phase (X20).</p>
+              </div>
+            </div>
+          </div>
+          <div class="anno">
+            <span class="k">Order</span>
+            <div class="ev"><code>1 ApplyCommand:takeover (pause)
+2 engine records the takeover
+3 item moves to <span class="hl">With you</span></code></div>
+            <p>Steps run on the desk runtime in WF P1 to P7, so there is no worker process to stop.</p>
+          </div>
+        </div>
+        <p class="cap"><b>Take over — pauses automation.</b> Pauses the instance. Stopping a running worker and resuming its session arrive with a later engine phase.</p>
+      </section>
+
+      <!-- 6 RESUME -->
+      <section class="frame">
+        <div class="fhead"><span class="num">6</span><h2>Resume a session after handback<span class="phase">with the engine (U6b)</span></h2><span class="chip">OpenItem:resume</span></div>
+        <div class="fbody">
+          <div class="cropwrap">
+            <div class="croplabel"><span>Detail sheet · ITM-01JD2 · launch block</span><span>520 px</span></div>
+            <div class="crop">
+              <div class="lb">
+                <div class="lb-head"><span class="eyebrow">Work on it</span><span class="meta"><svg width="12" height="12"><use href="#warp"/></svg>Warp</span></div>
+                <div class="live"><span class="state"><i class="ended"></i>Handed back 12:40</span><span class="dim">· Claude Code · session <code>9b27…</code></span></div>
+                <div class="lb-row">
+                  <button class="btn primary lg"><svg width="12" height="12"><use href="#warp"/></svg>Resume Claude Code session <kbd>O</kbd></button>
+                  <button class="btn lg">Open new</button>
+                </div>
+                <p class="lb-foot">Opens a new Warp tab in <code>~/repos/sindri-app</code> running <code>claude --resume 9b27…</code>. Open new starts a fresh session instead.</p>
+              </div>
+            </div>
+          </div>
+          <div class="anno">
+            <span class="k">ItemView.launch</span>
+            <div class="ev"><code>modes:[resume, open]
+resumable { target:claude-code,
+  sessionId:9b27… }</code></div>
+            <p>Offered only after a handback: the handback is the human's signal that the session is finished. If the session can't be found, the block falls back to Open (SND-LAUNCH-006).</p>
+          </div>
+        </div>
+        <p class="cap"><b>Resume.</b> After a handback, the known session comes back in a new tab with the target's resume command.</p>
+      </section>
+
+      <!-- 7 HANDBACK -->
+      <section class="frame">
+        <div class="fhead"><span class="num">7</span><h2>Handback: offered in four places, one click each</h2><span class="chip">ApplyCommand:handback</span></div>
+        <div class="fbody wide">
+          <div class="cropwrap">
+            <div class="croplabel"><span>7a · Detail sheet · ITM-01JA1 · header</span><span>520 px</span></div>
+            <div class="crop">
+              <div class="hdr">
+                <div class="l1"><span class="mono">ITM-01JA1</span><span>·</span><span class="tag">sindri-app</span><span>v9</span></div>
+                <h3>Onyx adapter secret pointers</h3>
+                <div class="l3"><span class="word"><i></i>With you</span><span style="color:var(--ink-subtle)">Attached in Warp</span></div>
+                <div class="withyou">
+                  <span class="t">With you since <b>12:01</b> (25m)</span>
+                  <button class="btn primary"><svg width="12" height="12"><use href="#back"/></svg>Hand back <kbd>B</kbd></button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="cropwrap" style="margin-top:22px">
+            <div class="croplabel" style="width:715px"><span>7b · Home · With you (pinned at the top of the left panel)</span><span>715 px</span></div>
+            <div class="crop row" style="width:715px">
+              <div class="panelhead"><span class="eyebrow">With you</span><span class="meta">1</span></div>
+              <div class="wy">
+                <div>
+                  <div class="l1"><span class="id mono">ITM-01JA1</span><span class="title">Onyx adapter secret pointers</span></div>
+                  <div class="l2"><span class="tag">sindri-app</span>with you since 12:01 (25m) · Attached in Warp</div>
+                </div>
+                <div class="acts">
+                  <button class="btn primary"><svg width="12" height="12"><use href="#back"/></svg>Hand back <kbd>B</kbd></button>
+                  <button class="btn"><svg width="12" height="12"><use href="#warp"/></svg>Attach</button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="cropwrap" style="margin-top:22px">
+            <div class="croplabel" style="width:796px"><span>7c · Home · Needs you · the takeoverIdle reminder after 2 h (row cut in the middle)</span><span>796 px of 1216</span></div>
+            <div class="crop row">
+              <div class="ny pulse">
+                <span class="bar" aria-hidden="true"></span>
+                <div class="kind"><span class="chip">park</span><span class="motion">needs you now</span></div>
+                <div class="what">
+                  <div class="l1"><span class="title">Hand back ITM-01JA1?</span><span class="reason" style="color:var(--ink-muted)">With you for 2h</span></div>
+                  <div class="l2"><span class="tag">sindri-app</span><span style="overflow:hidden;text-overflow:ellipsis">parked: takeoverIdle · Onyx adapter secret pointers</span></div>
+                </div>
+                <div class="since"><b>0m</b>since 14:01</div>
+                <span class="cut" aria-hidden="true"></span>
+                <div class="acts">
+                  <button class="btn primary"><svg width="12" height="12"><use href="#back"/></svg>Hand back <kbd>B</kbd></button>
+                  <button class="btn"><svg width="12" height="12"><use href="#warp"/></svg>Attach</button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="cropwrap" style="margin-top:22px">
+            <div class="croplabel" style="width:796px"><span>7d · Home · Needs you · a session's handback request (sindri_request kind=handback)</span><span>796 px of 1216</span></div>
+            <div class="crop row">
+              <div class="ny pulse">
+                <span class="bar" aria-hidden="true"></span>
+                <div class="kind"><span class="chip">decision</span><span class="motion">needs you now</span></div>
+                <div class="what">
+                  <div class="l1"><span class="id mono">REQ</span><span class="title">Hand ITM-01JC8 back to Sindri: fix is pushed</span></div>
+                  <div class="l2"><span class="tag">agentic-workflow</span>Filed by session <code>7a3e…</code></div>
+                </div>
+                <div class="since"><b>2m</b>since 12:58</div>
+                <span class="cut" aria-hidden="true"></span>
+                <div class="acts">
+                  <button class="btn primary">Accept</button>
+                  <button class="btn">Decline <kbd>X</kbd></button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <p class="cap"><b>Hand back.</b> Header, With-you row, the 2 h idle reminder and a session's own request. A session may take over but never hand back; accepting its request does.</p>
+      </section>
+
+      <!-- 8 FAILURES -->
+      <section class="frame">
+        <div class="fhead"><span class="num">8</span><h2>Failure states: a word, the code, the detail, one fix</h2><span class="chip">SND-LAUNCH-*</span></div>
+
+        <div class="fbody">
+          <div class="cropwrap">
+            <div class="croplabel"><span>8a · ITM-01JC8 · before the click</span><span>520 px</span></div>
+            <div class="crop"><div class="lb">
+              <div class="notice fail">
+                <span class="ic" aria-hidden="true"><svg width="14" height="14"><use href="#xc"/></svg></span>
+                <div class="t"><b>Warp isn't installed</b><span class="code">SND-LAUNCH-002</span>
+                  <div class="detail">no app with bundle id dev.warp.Warp-Stable</div>
+                  <div class="fixrow"><a href="#">Install Warp</a><span class="lbl">or copy the CLI instead:</span></div>
+                  <div class="fixrow" style="margin-top:6px"><span class="cmd wrap"><span class="prompt">$</span><code>cd ~/repos/agentic-workflow &amp;&amp; claude "Sindri item ITM-01JC8. …"</code><button><svg width="12" height="12"><use href="#copy"/></svg>Copy</button></span></div>
+                </div>
+              </div>
+            </div></div>
+          </div>
+          <div class="anno"><p>Known before the click (bundle-id probe), so the button is replaced. The copied command is the full seed template, never item text.</p></div>
+        </div>
+
+        <div class="fbody" style="margin-top:20px">
+          <div class="cropwrap">
+            <div class="croplabel"><span>8b · ITM-01JB4 · menu, Codex disabled</span><span>520 px</span></div>
+            <div class="crop"><div class="lb">
+              <div class="lb-row" style="margin-bottom:262px">
+                <div class="split">
+                  <button class="btn primary lg main"><svg width="12" height="12"><use href="#warp"/></svg>Open in Claude Code <kbd>O</kbd></button>
+                  <button class="btn primary lg chev" aria-label="Choose agent" aria-expanded="true"><svg width="10" height="10"><use href="#chev"/></svg></button>
+                  <div class="menu" role="menu">
+                    <button class="mi cur" role="menuitemradio" aria-checked="true"><span class="ck"><svg width="12" height="12"><use href="#check"/></svg></span><span class="lab">Claude Code</span><kbd>1</kbd><span class="why">profile default</span></button>
+                    <div class="mi off" role="menuitemradio" aria-disabled="true">
+                      <span></span><span class="lab">Codex</span><kbd>2</kbd>
+                      <span class="why">codex not found on your login PATH · <span style="white-space:nowrap">SND-LAUNCH-003</span></span>
+                      <span class="fix"><span class="cmd"><span class="prompt">$</span><code>npm install -g @openai/codex</code><button><svg width="12" height="12"><use href="#copy"/></svg>Copy</button></span></span>
+                    </div>
+                    <button class="mi" role="menuitemradio" aria-checked="false"><span></span><span class="lab">Cursor<span class="limited">limited</span></span><kbd>3</kbd><span class="why">limited: Sindri tools aren't registered with Cursor yet</span></button>
+                  </div>
+                </div>
+              </div>
+            </div></div>
+          </div>
+          <div class="anno"><p>Probed through the login shell (<code>$SHELL -lic 'command -v codex'</code>), because a GUI app gets launchd's short PATH. The in-tab guard catches it again if it changes after the probe.</p></div>
+        </div>
+
+        <div class="fbody" style="margin-top:20px">
+          <div class="cropwrap">
+            <div class="croplabel"><span>8c · ITM-01JD2 · before the click</span><span>520 px</span></div>
+            <div class="crop"><div class="lb">
+              <div class="notice fail">
+                <span class="ic" aria-hidden="true"><svg width="14" height="14"><use href="#xc"/></svg></span>
+                <div class="t"><b>Repo not on disk</b><span class="code">SND-LAUNCH-004</span>
+                  <div class="detail">~/repos/sindri-app: not a git repository</div>
+                  <div class="fixrow"><span class="cmd"><span class="prompt">$</span><code>git clone … ~/repos/sindri-app</code><button><svg width="12" height="12"><use href="#copy"/></svg>Copy</button></span></div>
+                  <p>Or fix the repo path in the profile and approve it at a terminal.</p>
+                </div>
+              </div>
+            </div></div>
+          </div>
+          <div class="anno"><p>Path comes from the approved profile's repo entry; probe is <code>git -C &lt;path&gt; rev-parse</code>.</p></div>
+        </div>
+
+        <div class="fbody" style="margin-top:20px">
+          <div class="cropwrap">
+            <div class="croplabel"><span>8d · ITM-01JC8 · after the click</span><span>520 px</span></div>
+            <div class="crop"><div class="lb">
+              <div class="notice fail">
+                <span class="ic" aria-hidden="true"><svg width="14" height="14"><use href="#xc"/></svg></span>
+                <div class="t"><b>Warp didn't accept the launch</b><span class="code">SND-LAUNCH-001</span>
+                  <div class="detail">open warp://launch/sindri-LCH-01JG2Q.yaml exited 1</div>
+                  <div class="fixrow">
+                    <button class="btn"><svg width="12" height="12"><use href="#retry"/></svg>Retry</button>
+                    <button class="btn ghost"><svg width="12" height="12"><use href="#copy"/></svg>Copy the CLI command</button>
+                  </div>
+                </div>
+              </div>
+            </div></div>
+          </div>
+          <div class="anno"><p>Only known after the click: <code>launch.failed {code}</code>. Nothing was taken over, so the item stays where it was.</p></div>
+        </div>
+
+        <div class="fbody" style="margin-top:20px">
+          <div class="cropwrap">
+            <div class="croplabel"><span>8e · ITM-01JB9 · closed item</span><span>520 px</span></div>
+            <div class="crop">
+              <div class="hdr" style="padding-bottom:12px">
+                <div class="l1"><span class="mono">ITM-01JB9</span><span>·</span><span class="tag">agentic-workflow</span><span>v22</span></div>
+                <h3>Statusline epoch drift</h3>
+                <div class="l3"><span class="word closed"><i></i>Closed</span><span style="color:var(--ink-subtle)">done · 10:41</span></div>
+              </div>
+              <div class="noblock">No launch block: the item is closed (SND-ITEM-409)</div>
+            </div>
+          </div>
+          <div class="anno"><p>The dashed box marks where the block would be; the real sheet renders nothing there.</p></div>
+        </div>
+
+        <p class="cap"><b>Failures.</b> Everything the probe can see is shown before the click; only "Warp didn't accept the launch" waits for one.</p>
+      </section>
+
+      <!-- 9 NEVER -->
+      <section class="frame" style="border-bottom:0">
+        <div class="fhead"><span class="num">9</span><h2>What the app never does</h2><span class="chip">§6.5</span></div>
+        <div class="never">
+          <span class="eyebrow">Never</span>
+          <ul>
+            <li>Run agent text, show it as anything but plain text, or put item text in a launch command.</li>
+            <li>Decide on an agent's behalf: it acts on a human click or key, never on a stream event.</li>
+            <li>Approve a protected action. Grants, accepts, recipe and profile approvals and map-review apply are copy-the-CLI only (<code>cli-only:typed-confirmation</code>).</li>
+            <li>Resume a session that's still running, or start two processes on one session.</li>
+            <li>Start the control plane from the window (bare <code>sindri</code> does), or start an agent without a click.</li>
+          </ul>
+        </div>
+      </section>
+    </main>
+
+    <!-- SEQUENCE -->
+    <aside class="seq" aria-label="Launch sequence">
+      <div class="phead"><span class="eyebrow">Sequence · Open</span><span class="meta">frames 1–3</span></div>
+      <ol>
+        <li class="st"><span class="lane">App</span><div class="box"><div class="n">Click "Open in Claude Code"<span class="fr">1</span></div><div class="s">human click or <kbd>O</kbd>, never a stream event</div></div></li>
+        <li class="arr"><span></span><div><svg width="10" height="14"><use href="#down"/></svg><code style="font-size:10.5px">POST /items/{id}/open</code></div></li>
+        <li class="st"><span class="lane">API</span><div class="box"><div class="n">OpenItem <span style="color:var(--ink-subtle);font-weight:400">(desk)</span><span class="fr">2</span></div><code>{mode, target?, itemVersion}</code><div class="s">→ 202 LaunchRequested(LaunchId)</div></div></li>
+        <li class="arr"><span></span><div><svg width="10" height="14"><use href="#down"/></svg>appends</div></li>
+        <li class="st"><span class="lane">Event</span><div class="box ev"><code>item.open-requested</code><div class="s">{launchId, item, mode, target}</div></div></li>
+        <li class="arr"><span></span><div><svg width="10" height="14"><use href="#down"/></svg>picked up by</div></li>
+        <li class="st"><span class="lane">Launcher</span><div class="box"><div class="n">launcher service</div><div class="s">service:launcher · through ILauncher (WarpLauncher)</div></div></li>
+        <li class="arr"><span></span><div><svg width="10" height="14"><use href="#down"/></svg>writes (0600), deletes after 60 s</div></li>
+        <li class="st"><span class="lane">File</span><div class="box"><div class="n">Warp launch configuration</div><code>~/.warp/launch_configurations/<br>sindri-&lt;launchId&gt;.yaml</code><div class="s">one tab, title, cwd, guard + agent command; ids only</div></div></li>
+        <li class="arr"><span></span><div><svg width="10" height="14"><use href="#down"/></svg>then</div></li>
+        <li class="st"><span class="lane">Warp</span><div class="box"><code style="margin-top:0;color:var(--ink)">open warp://launch/sindri-&lt;launchId&gt;.yaml</code><div class="s">new tab "sindri ITM-01JC8" runs the agent</div></div></li>
+        <li class="arr"><span></span><div><svg width="10" height="14"><use href="#down"/></svg>open exits 0</div></li>
+        <li class="st"><span class="lane">Event</span><div class="box ev"><code>launch.started</code><div class="s">{launchId, target, sessionId?, terminal} → "Sent to Warp" <span class="fr">3</span></div>
+          <div class="branch">else <code>launch.failed {code}</code><span class="fr">8d</span></div></div></li>
+        <li class="arr"><span></span><div><svg width="10" height="14"><use href="#down"/></svg>router (E-6, X18)</div></li>
+        <li class="st"><span class="lane">Engine</span><div class="box"><div class="n">takeover trigger</div><div class="s">active instance pauses, timers stop</div></div></li>
+        <li class="arr"><span></span><div><svg width="10" height="14"><use href="#down"/></svg></div></li>
+        <li class="st"><span class="lane">App</span><div class="box end"><div class="n">With you</div><div class="s">"With you since 12:31 · Hand back" <span class="fr">3</span> <span class="fr">7</span></div></div></li>
+      </ol>
+      <div class="foot">The handler never does slow work: opening an app is I/O, so it runs in the launcher service. The app re-reads views on each event; it holds no launch logic.</div>
+    </aside>
+  </div>
+</div>
+
+<div class="caption">Launch flow · design reference, not implementation</div>
+</body>
+</html>

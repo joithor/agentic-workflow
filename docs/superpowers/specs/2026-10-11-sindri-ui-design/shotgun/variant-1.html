@@ -1,0 +1,391 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sindri Triage Inbox</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --canvas:#010102; --s1:#0f1011; --s2:#141516; --s3:#18191a; --s4:#191a1b;
+  --line:#23252a; --line2:#34343a; --line3:#3e3e44;
+  --ink:#f7f8f8; --ink-muted:#d0d6e0; --ink-subtle:#8a8f98; --ink-tert:#62666d;
+  --brand:#5e6ad2; --brand-hover:#828fff; --focus:rgba(94,106,210,.5);
+  --ok:#27a644;
+  --attn:#f2994a; --attn-a12:rgba(242,153,74,.12); --attn-a30:rgba(242,153,74,.30);
+  --sans:"Inter",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --mono:"JetBrains Mono",ui-monospace,SFMono-Regular,Menlo,monospace;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%}
+body{background:var(--canvas);color:var(--ink);font:13px/1.45 var(--sans);-webkit-font-smoothing:antialiased;
+  display:flex;align-items:center;justify-content:center;min-height:100vh;padding:16px}
+button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
+button:focus-visible,a:focus-visible,[tabindex]:focus-visible{outline:2px solid var(--focus);outline-offset:1px}
+.mono{font-family:var(--mono)}
+kbd{font:500 10.5px/1 var(--mono);color:var(--ink-subtle);border:1px solid var(--line2);border-radius:4px;padding:2px 4px;background:var(--s2);display:inline-block;min-width:16px;text-align:center}
+
+/* window */
+.win{width:1280px;height:800px;max-width:100%;background:var(--s1);border:1px solid var(--line);border-radius:12px;overflow:hidden;
+  display:grid;grid-template-columns:220px 460px 1fr;grid-template-rows:1fr 28px;position:relative}
+
+/* sidebar */
+.side{grid-row:1;background:var(--s1);border-right:1px solid var(--line);display:flex;flex-direction:column;padding:12px 8px;gap:2px;min-width:0}
+.ws{display:flex;align-items:center;gap:8px;padding:6px 8px 14px}
+.mark{width:22px;height:22px;border-radius:6px;background:var(--brand);display:grid;place-items:center;flex:none}
+.ws-name{font-weight:500;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ws-sub{color:var(--ink-subtle);font-size:12px}
+.search{display:flex;align-items:center;gap:8px;margin:0 0 10px;padding:6px 8px;border:1px solid var(--line);border-radius:8px;color:var(--ink-subtle);font-size:12px;background:var(--s2)}
+.search kbd{margin-left:auto}
+.nav{text-decoration:none;display:flex;align-items:center;gap:8px;height:28px;padding:0 8px;border-radius:6px;color:var(--ink-muted);font-size:13px;position:relative}
+.nav svg{flex:none;color:var(--ink-subtle)}
+.nav:hover{background:var(--s3)}
+.nav.sel{background:var(--s4);color:var(--ink)}
+.nav.sel::before{content:"";position:absolute;left:-8px;top:6px;bottom:6px;width:2px;border-radius:2px;background:var(--brand)}
+.nav.sel svg{color:var(--brand-hover)}
+.nav .n{margin-left:auto;font:500 11px/1 var(--mono);color:var(--ink-subtle)}
+.chip-attn{margin-left:auto;font:600 11px/1 var(--sans);color:#1a0f05;background:var(--attn);border-radius:4px;padding:3px 6px}
+.grp{margin:14px 8px 4px;font:500 11px/1 var(--sans);letter-spacing:.4px;text-transform:uppercase;color:var(--ink-subtle);display:flex;justify-content:space-between}
+.nav.later{color:var(--ink-tert);cursor:default}
+.nav.later:hover{background:none}
+.nav.later svg{color:var(--ink-tert)}
+.nav.later .ns{margin-left:auto;font-size:11px;color:var(--ink-tert)}
+.side-foot{margin-top:auto;border-top:1px solid var(--line);padding:10px 8px 2px;display:grid;gap:6px;font-size:12px;color:var(--ink-subtle)}
+.side-foot .fr{display:flex;align-items:center;gap:6px}
+.side-foot kbd{font-size:10px}
+
+/* list pane */
+.list{grid-row:1;border-right:1px solid var(--line);display:flex;flex-direction:column;min-width:0;background:var(--s1)}
+.band{height:3px;background:var(--attn)}
+.lhead{display:flex;align-items:center;gap:10px;padding:12px 16px 10px;border-bottom:1px solid var(--line)}
+.lhead h1{font-size:20px;font-weight:600;letter-spacing:-.4px}
+.lhead .count{font:500 12px var(--sans);color:var(--attn)}
+.lhead .tools{margin-left:auto;display:flex;gap:6px;align-items:center;color:var(--ink-subtle);font-size:12px}
+.filter{display:flex;gap:6px;padding:8px 16px;border-bottom:1px solid var(--line)}
+.tag{font-size:12px;color:var(--ink-muted);border:1px solid var(--line2);border-radius:6px;padding:2px 8px;background:var(--s2)}
+.tag.on{border-color:var(--line3);color:var(--ink);background:var(--s4)}
+.rows{overflow:auto;flex:1}
+.ghead{display:flex;align-items:center;gap:8px;height:28px;padding:0 16px;background:var(--s2);border-bottom:1px solid var(--line);
+  font:500 11px/1 var(--sans);letter-spacing:.4px;text-transform:uppercase;color:var(--ink-subtle);position:sticky;top:0;z-index:1}
+.ghead .gc{font-family:var(--mono);letter-spacing:0;color:var(--ink-tert)}
+.row{display:grid;grid-template-columns:16px 1fr auto;align-items:center;gap:10px;height:40px;padding:0 14px 0 16px;border-bottom:1px solid var(--line);position:relative;cursor:pointer}
+.row:hover{background:var(--s3)}
+.row.sel{background:var(--s4)}
+.row.sel::after{content:"";position:absolute;inset:0;box-shadow:inset 0 0 0 1px var(--line3);pointer-events:none}
+.bar{position:absolute;left:0;top:6px;bottom:6px;width:3px;border-radius:0 2px 2px 0}
+.bar.pulse{background:var(--attn);animation:pulse 2.2s ease-in-out infinite}
+.bar.colour{background:var(--attn)}
+.bar.calm{background:var(--attn);opacity:.45}
+@keyframes pulse{0%,100%{opacity:1;box-shadow:0 0 0 0 var(--attn-a30)}50%{opacity:.55;box-shadow:0 0 0 3px rgba(242,153,74,0)}}
+@media (prefers-reduced-motion:reduce){
+  .bar.pulse{animation:none;background:transparent;box-shadow:inset 0 0 0 2px var(--attn);width:4px}
+}
+.kind{width:16px;height:16px;color:var(--ink-subtle)}
+.rmain{min-width:0;display:flex;align-items:baseline;gap:8px}
+.rid{font:500 11.5px var(--mono);color:var(--ink-subtle);flex:none}
+.rtitle{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--ink)}
+.rstate{font-size:12px;color:var(--ink-subtle);white-space:nowrap;flex:none}
+.rmeta{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--ink-subtle);white-space:nowrap}
+.rmeta .age{font-family:var(--mono);font-size:11.5px;min-width:38px;text-align:right}
+.lockg{color:var(--ink-subtle)}
+.pill{font-size:11px;border:1px solid var(--line2);border-radius:4px;padding:1px 5px;color:var(--ink-subtle)}
+
+/* detail */
+.detail{grid-row:1;display:flex;flex-direction:column;min-width:0;background:var(--s1);overflow:auto}
+.dtop{display:flex;align-items:center;gap:8px;padding:10px 20px;border-bottom:1px solid var(--line);font-size:12px;color:var(--ink-subtle)}
+.crumb b{color:var(--ink-muted);font-weight:500}
+.dtop .nav-k{margin-left:auto;display:flex;gap:4px;align-items:center}
+.dbody{padding:18px 24px 24px;display:flex;flex-direction:column;gap:18px}
+.state-line{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.state{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:500;color:var(--attn);border:1px solid var(--attn-a30);background:var(--attn-a12);border-radius:6px;padding:2px 8px}
+.state svg{flex:none}
+.meta-tag{font-size:12px;color:var(--ink-muted);border:1px solid var(--line2);border-radius:6px;padding:2px 8px}
+.meta-tag.mono{font-size:11.5px}
+.dtitle{font-size:22px;font-weight:600;letter-spacing:-.4px;line-height:1.25}
+.did{font:500 12px var(--mono);color:var(--ink-subtle);margin-bottom:4px}
+.next{border-left:2px solid var(--line3);padding:2px 0 2px 12px;color:var(--ink-muted)}
+.next .lbl{display:block;font:500 11px var(--sans);letter-spacing:.4px;text-transform:uppercase;color:var(--ink-subtle);margin-bottom:3px}
+.quote{color:var(--ink)}
+
+.card{background:var(--s2);border:1px solid var(--line);border-radius:12px;box-shadow:inset 0 1px 0 rgba(255,255,255,.03);overflow:hidden}
+.card-h{display:flex;align-items:center;gap:8px;padding:12px 14px;border-bottom:1px solid var(--line)}
+.card-h .t{font-weight:500;font-size:14px}
+.card-h .t2{margin-left:auto;font-size:12px;color:var(--ink-subtle);display:flex;gap:6px;align-items:center}
+.card-b{padding:14px;display:grid;gap:12px}
+.cli{display:flex;align-items:center;gap:10px;background:var(--canvas);border:1px solid var(--line2);border-radius:8px;padding:9px 10px 9px 12px}
+.cli code{font:500 12.5px var(--mono);color:var(--ink);flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cli .ps{color:var(--ink-tert);font-family:var(--mono)}
+.copy{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:500;color:var(--ink-muted);border:1px solid var(--line2);border-radius:6px;padding:4px 8px;background:var(--s3)}
+.copy:hover{border-color:var(--line3);color:var(--ink)}
+.why{display:flex;gap:10px;align-items:flex-start;font-size:12px;color:var(--ink-subtle)}
+.why .ico{flex:none;width:28px;height:28px;border-radius:8px;border:1px solid var(--line2);display:grid;place-items:center;color:var(--ink-muted);background:var(--s3)}
+.why b{color:var(--ink-muted);font-weight:500}
+
+.actions{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.split{display:inline-flex;border-radius:8px;overflow:hidden;border:1px solid var(--brand)}
+.split .p{display:inline-flex;align-items:center;gap:8px;height:32px;padding:0 12px;background:var(--brand);color:#fff;font-size:14px;font-weight:500}
+.split .p:hover{background:var(--brand-hover)}
+.split .c{width:30px;height:32px;display:grid;place-items:center;background:var(--brand);color:#fff;border-left:1px solid rgba(255,255,255,.22)}
+.split .c:hover{background:var(--brand-hover)}
+.warp{width:16px;height:16px;border-radius:4px;background:rgba(255,255,255,.18);display:grid;place-items:center}
+.btn{display:inline-flex;align-items:center;gap:8px;height:32px;padding:0 12px;border-radius:8px;border:1px solid var(--line2);background:var(--s3);color:var(--ink-muted);font-size:14px;font-weight:500}
+.btn:hover{border-color:var(--line3);color:var(--ink)}
+.btn kbd{margin-left:2px}
+.menu{display:none;position:absolute;z-index:3;width:244px;background:var(--s4);border:1px solid var(--line2);border-radius:12px;padding:6px;box-shadow:inset 0 1px 0 rgba(255,255,255,.04)}
+.actions.open .menu{display:block}
+.mi{display:flex;align-items:center;gap:10px;height:30px;padding:0 8px;border-radius:6px;font-size:13px;color:var(--ink-muted)}
+.mi:hover,.mi.cur{background:var(--s2);color:var(--ink)}
+.mi .chk{margin-left:auto;color:var(--brand-hover)}
+.mi .k{margin-left:auto}
+.msep{height:1px;background:var(--line);margin:5px 2px}
+.mlbl{font:500 11px var(--sans);letter-spacing:.4px;text-transform:uppercase;color:var(--ink-subtle);padding:6px 8px 4px}
+
+.facts{display:grid;grid-template-columns:110px 1fr;row-gap:8px;font-size:12px}
+.facts dt{color:var(--ink-subtle)}
+.facts dd{color:var(--ink-muted)}
+.tl-h{font:500 11px var(--sans);letter-spacing:.4px;text-transform:uppercase;color:var(--ink-subtle);margin-bottom:8px}
+.tl{list-style:none;position:relative}
+.tl::before{content:"";position:absolute;left:5px;top:6px;bottom:6px;width:1px;background:var(--line2)}
+.tl li{display:grid;grid-template-columns:12px 52px 1fr;gap:10px;align-items:baseline;padding:4px 0;font-size:12.5px;color:var(--ink-muted)}
+.tl .dot{width:11px;height:11px;border-radius:50%;background:var(--s1);border:1px solid var(--line3);position:relative;top:1px}
+.tl .dot.attn{border-color:var(--attn);background:var(--attn)}
+.tl .dot.ok{border-color:var(--ok)}
+.tl time{font:500 11.5px var(--mono);color:var(--ink-subtle)}
+.tl b{color:var(--ink);font-weight:500}
+
+/* status bar */
+.status{grid-column:1/-1;grid-row:2;border-top:1px solid var(--line);background:var(--s2);display:flex;align-items:center;gap:14px;padding:0 12px;font-size:12px;color:var(--ink-subtle);white-space:nowrap;overflow:hidden}
+.status .ok{color:var(--ink-muted);display:inline-flex;align-items:center;gap:6px}
+.dot-ok{width:7px;height:7px;border-radius:50%;background:var(--ok)}
+.status .sep{width:1px;height:12px;background:var(--line2)}
+.status .warn{color:var(--ink-muted);display:inline-flex;align-items:center;gap:5px}
+.status .warn svg{color:var(--attn)}
+.status .mono{font-size:11.5px}
+.status .right{margin-left:auto;display:flex;gap:10px;align-items:center}
+
+.caption{position:fixed;right:10px;bottom:8px;font:500 11px var(--sans);color:var(--ink-tert);background:var(--canvas);border:1px solid var(--line);border-radius:6px;padding:3px 8px;z-index:10}
+
+@media (max-width:900px){
+  body{padding:0;align-items:stretch}
+  .win{height:auto;min-height:100vh;border-radius:0;grid-template-columns:1fr;grid-template-rows:auto}
+  .side,.list,.detail{grid-row:auto;border-right:0;border-bottom:1px solid var(--line)}
+  .status{grid-row:auto;flex-wrap:wrap;height:auto;padding:8px 16px;white-space:normal}
+  .menu{display:none}
+}
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <symbol id="i-inbox" viewBox="0 0 16 16"><path fill="none" stroke="currentColor" stroke-width="1.4" d="M2 9.5V12a1.5 1.5 0 0 0 1.5 1.5h9A1.5 1.5 0 0 0 14 12V9.5M2 9.5 3.8 3.5h8.4L14 9.5M2 9.5h3.5l1 1.5h3l1-1.5H14"/></symbol>
+    <symbol id="i-queue" viewBox="0 0 16 16"><path fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" d="M3 4h10M3 8h10M3 12h6"/></symbol>
+    <symbol id="i-run" viewBox="0 0 16 16"><circle cx="8" cy="8" r="5.5" fill="none" stroke="currentColor" stroke-width="1.4"/><path d="M8 2.5a5.5 5.5 0 0 1 5.5 5.5H8z" fill="currentColor"/></symbol>
+    <symbol id="i-dec" viewBox="0 0 16 16"><path fill="none" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round" d="M8 2 14 8 8 14 2 8z"/></symbol>
+    <symbol id="i-svc" viewBox="0 0 16 16"><rect x="2.5" y="2.5" width="11" height="4" rx="1" fill="none" stroke="currentColor" stroke-width="1.4"/><rect x="2.5" y="9.5" width="11" height="4" rx="1" fill="none" stroke="currentColor" stroke-width="1.4"/></symbol>
+    <symbol id="i-agent" viewBox="0 0 16 16"><circle cx="8" cy="6" r="2.5" fill="none" stroke="currentColor" stroke-width="1.4"/><path d="M3 13.5c.8-2.4 2.7-3.5 5-3.5s4.2 1.1 5 3.5" fill="none" stroke="currentColor" stroke-width="1.4"/></symbol>
+    <symbol id="i-repo" viewBox="0 0 16 16"><path fill="none" stroke="currentColor" stroke-width="1.4" d="M4 2.5h8.5v9H4.5A1.5 1.5 0 0 0 3 13V4a1.5 1.5 0 0 1 1-1.5zM3 13a1.5 1.5 0 0 0 1.5 1.5h8v-3"/></symbol>
+    <symbol id="i-cal" viewBox="0 0 16 16"><rect x="2.5" y="3.5" width="11" height="10" rx="1.5" fill="none" stroke="currentColor" stroke-width="1.4"/><path d="M2.5 6.5h11M5.5 2v3M10.5 2v3" stroke="currentColor" stroke-width="1.4"/></symbol>
+    <symbol id="i-park" viewBox="0 0 16 16"><circle cx="8" cy="8" r="5.5" fill="none" stroke="currentColor" stroke-width="1.4"/><path d="M6.5 5.5v5M9.5 5.5v5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></symbol>
+    <symbol id="i-gate" viewBox="0 0 16 16"><path fill="none" stroke="currentColor" stroke-width="1.4" d="M3 13.5V5l5-2.5L13 5v8.5M6 13.5V8h4v5.5"/></symbol>
+    <symbol id="i-fail" viewBox="0 0 16 16"><path fill="none" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round" d="M8 2.2 14.2 13H1.8z"/><path d="M8 6.5v3" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/><circle cx="8" cy="11.2" r=".8" fill="currentColor"/></symbol>
+    <symbol id="i-prof" viewBox="0 0 16 16"><path fill="none" stroke="currentColor" stroke-width="1.4" d="M4 2.5h5.5L12 5v8.5H4z M9.5 2.5V5H12"/><path d="M6 8.5h4M6 11h3" stroke="currentColor" stroke-width="1.4"/></symbol>
+    <symbol id="i-term" viewBox="0 0 16 16"><rect x="1.5" y="2.5" width="13" height="11" rx="2" fill="none" stroke="currentColor" stroke-width="1.4"/><path d="m4.5 6 2 2-2 2M8 10.5h3.5" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+    <symbol id="i-lock" viewBox="0 0 16 16"><rect x="3" y="7" width="10" height="7" rx="1.5" fill="none" stroke="currentColor" stroke-width="1.4"/><path d="M5.5 7V5a2.5 2.5 0 0 1 5 0v2" fill="none" stroke="currentColor" stroke-width="1.4"/></symbol>
+    <symbol id="i-copy" viewBox="0 0 16 16"><rect x="5" y="5" width="8.5" height="8.5" rx="1.5" fill="none" stroke="currentColor" stroke-width="1.4"/><path d="M3 10.5V3.8C3 3.4 3.4 3 3.8 3h6.7" fill="none" stroke="currentColor" stroke-width="1.4"/></symbol>
+    <symbol id="i-chev" viewBox="0 0 16 16"><path d="m4.5 6.5 3.5 3.5 3.5-3.5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+    <symbol id="i-check" viewBox="0 0 16 16"><path d="m3.5 8.5 3 3 6-6.5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+    <symbol id="i-search" viewBox="0 0 16 16"><circle cx="7" cy="7" r="4.5" fill="none" stroke="currentColor" stroke-width="1.4"/><path d="m10.5 10.5 3 3" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></symbol>
+    <symbol id="i-warp" viewBox="0 0 16 16"><path d="M3 4h6l-2 4h6l-6 5 2-4H3z" fill="currentColor"/></symbol>
+  </defs>
+</svg>
+
+<main class="win" aria-label="Sindri control plane">
+
+  <!-- Sidebar -->
+  <nav class="side" aria-label="Primary">
+    <div class="ws">
+      <div class="mark" aria-hidden="true">
+        <svg width="12" height="12" viewBox="0 0 12 12"><path d="M2 10 6 2l4 8H7.5L6 6.8 4.5 10z" fill="#fff"/></svg>
+      </div>
+      <div style="min-width:0">
+        <div class="ws-name">Sindri</div>
+        <div class="ws-sub">this Mac</div>
+      </div>
+    </div>
+    <div class="search"><svg width="13" height="13"><use href="#i-search"/></svg>Jump to… <kbd>⌘K</kbd></div>
+
+    <a class="nav sel" href="#" aria-current="page"><svg width="16" height="16"><use href="#i-inbox"/></svg>Needs you<span class="chip-attn" aria-label="5 need you">5</span></a>
+    <a class="nav" href="#"><svg width="16" height="16"><use href="#i-queue"/></svg>Queue<span class="n">4</span></a>
+    <a class="nav" href="#"><svg width="16" height="16"><use href="#i-run"/></svg>Running<span class="n">3</span></a>
+    <a class="nav" href="#"><svg width="16" height="16"><use href="#i-dec"/></svg>Decisions<span class="n">1</span></a>
+    <a class="nav" href="#"><svg width="16" height="16"><use href="#i-svc"/></svg>Services<span class="n">5/6 ok</span></a>
+
+    <div class="grp"><span>Later</span></div>
+    <div class="nav later" aria-disabled="true"><svg width="16" height="16"><use href="#i-agent"/></svg>Agents<span class="ns">not served yet</span></div>
+    <div class="nav later" aria-disabled="true"><svg width="16" height="16"><use href="#i-repo"/></svg>Repos<span class="ns">not served yet</span></div>
+    <div class="nav later" aria-disabled="true"><svg width="16" height="16"><use href="#i-cal"/></svg>Today<span class="ns">not served yet</span></div>
+
+    <div class="side-foot">
+      <div class="fr">Running 3 · Queued 4</div>
+      <div class="fr"><span class="dot-ok" aria-hidden="true"></span>Healthy · 1 service failed</div>
+      <div class="fr" style="color:var(--ink-tert)"><kbd>G</kbd><kbd>N</kbd> Needs you <span style="margin-left:auto"><kbd>?</kbd></span></div>
+    </div>
+  </nav>
+
+  <!-- List -->
+  <section class="list" aria-label="Needs you">
+    <div class="band" aria-hidden="true"></div>
+    <header class="lhead">
+      <h1>Needs you</h1>
+      <span class="count">5 waiting</span>
+      <div class="tools"><span>Urgency, then oldest</span></div>
+    </header>
+    <div class="filter">
+      <span class="tag on">All 5</span><span class="tag">Parked 2</span><span class="tag">Decisions 1</span><span class="tag">Failures 1</span><span class="tag">Profile 1</span>
+    </div>
+    <div class="rows" role="list">
+
+      <div class="ghead">Parked <span class="gc">2</span></div>
+      <div class="row sel" role="listitem" tabindex="0" aria-current="true">
+        <span class="bar pulse" aria-hidden="true"></span>
+        <svg class="kind" style="color:var(--attn)"><use href="#i-park"/></svg>
+        <div class="rmain"><span class="rid">ITM-01JC8</span><span class="rtitle">Retry storm in outbox dispatcher</span></div>
+        <div class="rmeta"><span class="rstate">Parked · no progress</span><svg class="lockg" width="13" height="13" aria-label="answer at a terminal"><use href="#i-term"/></svg><span class="age">12m</span></div>
+      </div>
+      <div class="row" role="listitem" tabindex="0">
+        <span class="bar pulse" aria-hidden="true"></span>
+        <svg class="kind"><use href="#i-gate"/></svg>
+        <div class="rmain"><span class="rid">ITM-01JB4</span><span class="rtitle">Context map review for tabs.layout</span></div>
+        <div class="rmeta"><span class="rstate">Gate 0.62 &lt; 0.80</span><svg class="lockg" width="13" height="13" aria-label="answer at a terminal"><use href="#i-term"/></svg><span class="age">2h 56m</span></div>
+      </div>
+
+      <div class="ghead">Decisions <span class="gc">1</span></div>
+      <div class="row" role="listitem" tabindex="0">
+        <span class="bar pulse" aria-hidden="true"></span>
+        <svg class="kind"><use href="#i-dec"/></svg>
+        <div class="rmain"><span class="rid">REQ</span><span class="rtitle">Re-scope ITM-01JD2: drop the iOS head from this item</span></div>
+        <div class="rmeta"><span class="pill">recorded only</span><span class="age">26m</span></div>
+      </div>
+
+      <div class="ghead">Failures <span class="gc">1</span></div>
+      <div class="row" role="listitem" tabindex="0">
+        <span class="bar colour" aria-hidden="true"></span>
+        <svg class="kind"><use href="#i-fail"/></svg>
+        <div class="rmain"><span class="rid">index</span><span class="rtitle">Nightly index build failed: SND-INDEX-012</span></div>
+        <div class="rmeta"><span class="rstate">Failed</span><span class="age">9h</span></div>
+      </div>
+
+      <div class="ghead">Profile <span class="gc">1</span></div>
+      <div class="row" role="listitem" tabindex="0">
+        <span class="bar calm" aria-hidden="true"></span>
+        <svg class="kind"><use href="#i-prof"/></svg>
+        <div class="rmain"><span class="rid">3f1c09</span><span class="rtitle">Profile changed since approval: 2 keys</span></div>
+        <div class="rmeta"><span class="rstate">Unapproved</span><svg class="lockg" width="13" height="13" aria-label="answer at a terminal"><use href="#i-term"/></svg><span class="age">1h 51m</span></div>
+      </div>
+
+      <div class="ghead" style="position:static;margin-top:18px">Also on this Mac <span class="gc">Running 3 · Queued 4</span></div>
+      <div class="row" role="listitem" tabindex="0" style="cursor:default">
+        <svg class="kind" style="color:var(--ok)"><use href="#i-run"/></svg>
+        <div class="rmain"><span class="rid">ITM-01JA1</span><span class="rtitle">Onyx adapter secret pointers</span></div>
+        <div class="rmeta"><span class="rstate">Taken over, with you · 25m</span></div>
+      </div>
+      <div class="row" role="listitem" tabindex="0" style="cursor:default">
+        <svg class="kind" style="color:var(--ok)"><use href="#i-run"/></svg>
+        <div class="rmain"><span class="rid">ITM-01JE7</span><span class="rtitle">Add needs-you ack route</span></div>
+        <div class="rmeta"><span class="rstate">Produce · round 2/3</span><span class="age">6m</span></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Detail -->
+  <section class="detail" aria-label="Item detail">
+    <div class="dtop">
+      <span class="crumb">Needs you › <b>Parked</b> › <span class="mono">ITM-01JC8</span></span>
+      <span class="nav-k"><kbd>K</kbd><kbd>J</kbd> <span style="margin-left:4px">1 of 5</span></span>
+    </div>
+    <div class="dbody">
+      <div>
+        <div class="state-line" style="margin-bottom:12px">
+          <span class="state"><svg width="13" height="13"><use href="#i-park"/></svg>Parked: no progress</span>
+          <span class="meta-tag">agentic-workflow</span>
+          <span class="meta-tag mono">workflow.step</span>
+          <span class="meta-tag">since 11:54 · 12m</span>
+          <span class="meta-tag mono">rounds 3/3</span>
+        </div>
+        <div class="did">ITM-01JC8</div>
+        <h2 class="dtitle">Retry storm in outbox dispatcher</h2>
+      </div>
+
+      <p class="next"><span class="lbl">Next</span>
+        Checks failed twice with the same findings, so the engine stopped. <span class="quote">Grant another round and it resumes at <span class="mono">checks</span>; otherwise open the session and steer it, or cancel the item.</span>
+      </p>
+
+      <div class="card">
+        <div class="card-h">
+          <svg width="16" height="16" style="color:var(--ink-muted)"><use href="#i-term"/></svg>
+          <span class="t">Grant rounds: at a terminal</span>
+          <span class="t2">Protected answer</span>
+        </div>
+        <div class="card-b">
+          <div class="cli">
+            <span class="ps">$</span>
+            <code>sindri workflow answer ITM-01JC8 --grant 1</code>
+            <button class="copy" type="button"><svg width="13" height="13"><use href="#i-copy"/></svg>Copy <kbd>C</kbd></button>
+          </div>
+          <div class="why">
+            <span class="ico"><svg width="15" height="15"><use href="#i-lock"/></svg></span>
+            <div><b>Grants need a typed confirmation at a terminal.</b> The app can't send this answer itself. Paste the command into Warp and type the confirmation it asks for; this row clears when the engine records your answer.</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="actions" style="position:relative">
+        <div class="split">
+          <button class="p" type="button"><span class="warp"><svg width="10" height="10"><use href="#i-warp"/></svg></span>Open in Claude Code</button>
+          <button class="c" type="button" aria-label="Choose where to open" aria-expanded="false" onclick="var a=this.closest('.actions');a.classList.toggle('open');this.setAttribute('aria-expanded',a.classList.contains('open'))"><svg width="14" height="14"><use href="#i-chev"/></svg></button>
+        </div>
+        <span style="font-size:12px;color:var(--ink-subtle)">Remembered for agentic-workflow</span>
+        <button class="btn" type="button">Cancel item</button>
+        <span style="margin-left:auto;display:flex;gap:6px;align-items:center;font-size:12px;color:var(--ink-subtle)"><kbd>O</kbd> open <kbd>C</kbd> copy</span>
+
+        <div class="menu" style="top:38px;left:0" role="menu" aria-label="Open in">
+          <div class="mlbl">Open in Warp with</div>
+          <div class="mi cur" role="menuitemradio" aria-checked="true">Claude Code<svg class="chk" width="14" height="14"><use href="#i-check"/></svg></div>
+          <div class="mi" role="menuitemradio" aria-checked="false">Codex</div>
+          <div class="mi" role="menuitemradio" aria-checked="false">Cursor</div>
+          <div class="msep"></div>
+          <div class="mi" role="menuitem">Set as default for this repo</div>
+        </div>
+      </div>
+
+      <div>
+        <div class="tl-h">Timeline</div>
+        <ol class="tl">
+          <li><span class="dot attn"></span><time>11:54</time><span><b>Parked</b>: no progress across two check runs</span></li>
+          <li><span class="dot"></span><time>11:51</time><span>Checks failed: 3 findings, same as round 2</span></li>
+          <li><span class="dot"></span><time>11:38</time><span>Round 3 produced a patch in Claude Code</span></li>
+          <li><span class="dot"></span><time>11:22</time><span>Checks failed: 3 findings</span></li>
+          <li><span class="dot ok"></span><time>10:47</time><span>Picked up from the queue · recipe <span class="mono">workflow.step</span></span></li>
+        </ol>
+      </div>
+    </div>
+  </section>
+
+  <!-- Status bar -->
+  <footer class="status" aria-label="Sindri health">
+    <span class="ok"><span class="dot-ok" aria-hidden="true"></span>Sindri running</span>
+    <span class="mono">pid 48211</span><span class="sep"></span>
+    <span class="mono">epoch 7</span><span class="sep"></span>
+    <span>API v1</span><span class="sep"></span>
+    <span>host lease held</span><span class="sep"></span>
+    <span class="warn"><svg width="12" height="12"><use href="#i-fail"/></svg>6 services: 5 ok, 1 failed</span><span class="sep"></span>
+    <span class="warn"><svg width="12" height="12"><use href="#i-prof"/></svg>profile changed since approval</span>
+    <span class="right"><span>views updated 2s ago</span><kbd>⌘K</kbd></span>
+  </footer>
+</main>
+
+<div class="caption">Variant 1 — Triage inbox · design reference, not implementation</div>
+</body>
+</html>
