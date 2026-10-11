@@ -24,5 +24,9 @@ internal static class Packages
         "Aw.BugFix.Features",
         "Aw.BugFix.Infrastructure",
         "Aw.BugFix.Host",
+        "Aw.Sindri.Core",
+        "Aw.Sindri.Features",
+        "Aw.Sindri.Infrastructure",
+        "Aw.Sindri.Host",
     ];
 }

@@ -1,0 +1,3 @@
+#nullable enable
+Aw.Sindri.Infrastructure.SindriInfrastructureServiceCollectionExtensions
+static Aw.Sindri.Infrastructure.SindriInfrastructureServiceCollectionExtensions.AddSindriInfrastructure(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services, System.Func<string!, string?>! environment) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!

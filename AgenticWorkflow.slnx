@@ -6,6 +6,12 @@
     <Project Path="src/Aw.Kernel.Telemetry/Aw.Kernel.Telemetry.csproj" />
     <Project Path="src/Redaction/Aw.Redaction/Aw.Redaction.csproj" />
   </Folder>
+  <Folder Name="/src/Sindri/">
+    <Project Path="src/Sindri/Aw.Sindri.Core/Aw.Sindri.Core.csproj" />
+    <Project Path="src/Sindri/Aw.Sindri.Features/Aw.Sindri.Features.csproj" />
+    <Project Path="src/Sindri/Aw.Sindri.Infrastructure/Aw.Sindri.Infrastructure.csproj" />
+    <Project Path="src/Sindri/Aw.Sindri.Host/Aw.Sindri.Host.csproj" />
+  </Folder>
   <Folder Name="/src/BugFix/">
     <Project Path="src/BugFix/Aw.BugFix.Core/Aw.BugFix.Core.csproj" />
     <Project Path="src/BugFix/Aw.BugFix.Features/Aw.BugFix.Features.csproj" />
@@ -37,5 +43,7 @@
     <Project Path="tests/Aw.Readiness.Testing/Aw.Readiness.Testing.csproj" />
     <Project Path="tests/Aw.BugFix.Tests/Aw.BugFix.Tests.csproj" />
     <Project Path="tests/Aw.BugFix.Testing/Aw.BugFix.Testing.csproj" />
+    <Project Path="tests/Aw.Sindri.Tests/Aw.Sindri.Tests.csproj" />
+    <Project Path="tests/Aw.Sindri.Testing/Aw.Sindri.Testing.csproj" />
   </Folder>
 </Solution>

@@ -1,0 +1,21 @@
+#nullable enable
+Aw.Sindri.Features.GetStatus.GetStatusRequest
+Aw.Sindri.Features.GetStatus.GetStatusRequest.<Clone>$() -> Aw.Sindri.Features.GetStatus.GetStatusRequest!
+Aw.Sindri.Features.GetStatus.GetStatusRequest.Equals(Aw.Sindri.Features.GetStatus.GetStatusRequest? other) -> bool
+Aw.Sindri.Features.GetStatus.GetStatusRequest.GetStatusRequest() -> void
+Aw.Sindri.Features.GetStatus.GetStatusResponse
+Aw.Sindri.Features.GetStatus.GetStatusResponse.<Clone>$() -> Aw.Sindri.Features.GetStatus.GetStatusResponse!
+Aw.Sindri.Features.GetStatus.GetStatusResponse.Equals(Aw.Sindri.Features.GetStatus.GetStatusResponse? other) -> bool
+Aw.Sindri.Features.GetStatus.GetStatusResponse.GetStatusResponse() -> void
+Aw.Sindri.Features.SindriFeaturesServiceCollectionExtensions
+override Aw.Sindri.Features.GetStatus.GetStatusRequest.Equals(object? obj) -> bool
+override Aw.Sindri.Features.GetStatus.GetStatusRequest.GetHashCode() -> int
+override Aw.Sindri.Features.GetStatus.GetStatusRequest.ToString() -> string!
+override Aw.Sindri.Features.GetStatus.GetStatusResponse.Equals(object? obj) -> bool
+override Aw.Sindri.Features.GetStatus.GetStatusResponse.GetHashCode() -> int
+override Aw.Sindri.Features.GetStatus.GetStatusResponse.ToString() -> string!
+static Aw.Sindri.Features.GetStatus.GetStatusRequest.operator !=(Aw.Sindri.Features.GetStatus.GetStatusRequest? left, Aw.Sindri.Features.GetStatus.GetStatusRequest? right) -> bool
+static Aw.Sindri.Features.GetStatus.GetStatusRequest.operator ==(Aw.Sindri.Features.GetStatus.GetStatusRequest? left, Aw.Sindri.Features.GetStatus.GetStatusRequest? right) -> bool
+static Aw.Sindri.Features.GetStatus.GetStatusResponse.operator !=(Aw.Sindri.Features.GetStatus.GetStatusResponse? left, Aw.Sindri.Features.GetStatus.GetStatusResponse? right) -> bool
+static Aw.Sindri.Features.GetStatus.GetStatusResponse.operator ==(Aw.Sindri.Features.GetStatus.GetStatusResponse? left, Aw.Sindri.Features.GetStatus.GetStatusResponse? right) -> bool
+static Aw.Sindri.Features.SindriFeaturesServiceCollectionExtensions.AddSindriFeatures(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!

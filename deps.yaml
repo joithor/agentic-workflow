@@ -405,7 +405,7 @@ edges:
   - from: Sindri
     to: Kernel
     kind: project
-    status: planned
+    status: current
     note: "Result, IService, ports"
   - from: Sindri
     to: KernelData
@@ -415,7 +415,7 @@ edges:
   - from: Sindri
     to: KernelTelemetry
     kind: project
-    status: planned
+    status: current
     note: "logging and OTel"
   - from: Sindri
     to: Redaction
