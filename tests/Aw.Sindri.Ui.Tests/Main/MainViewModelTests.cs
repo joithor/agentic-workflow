@@ -341,4 +341,19 @@ public sealed class MainViewModelTests : IDisposable
         Assert.Equal("", _vm.ProfileFix);
         Assert.Equal("SND-PROFILE-002 bad key", _vm.ProfileDetail);
     }
+
+    [Fact]
+    public async Task A_record_that_turns_unreadable_during_a_follow_ends_the_follow()
+    {
+        _records.Write(A.Record());
+        Start();
+        await Eventually(() => _vm.Headline == "Running", "running");
+
+        _records.FailNextRead(new UnauthorizedAccessException("Access to the path is denied."));
+        await Eventually(() =>
+        {
+            _clock.Advance(MainViewModel.RetryEvery);
+            return _vm.Headline == "Running" && _server.StreamCursors.Count >= 2;
+        }, "the watcher ended the follow and the app reconnected");
+    }
 }
