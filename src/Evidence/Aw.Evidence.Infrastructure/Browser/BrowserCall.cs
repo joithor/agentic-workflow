@@ -9,16 +9,27 @@ internal static class BrowserCall
     /// <summary>Runs <paramref name="call"/>.</summary>
     /// <param name="what">What the call does, for the error.</param>
     /// <param name="call">The call.</param>
-    /// <param name="cancellationToken">Checked before the call (Playwright calls take no token; their timeouts bound them).</param>
+    /// <param name="cancellationToken">
+    /// Observed for the whole call: Playwright calls take no token, so a cancellation stops the wait at once and abandons
+    /// the call (the session's dispose closes its context, which ends it).
+    /// </param>
     /// <param name="redact">Scrubs secrets out of an error message.</param>
     /// <typeparam name="T">The result.</typeparam>
     /// <returns>The result, or AW-EVIDENCE-013.</returns>
     internal static async ValueTask<Result<T>> Run<T>(string what, Func<Task<T>> call, CancellationToken cancellationToken, Func<string, string>? redact = null)
     {
         cancellationToken.ThrowIfCancellationRequested();
+        Task<T>? running = null;
         try
         {
-            return await call().ConfigureAwait(false);
+            running = call();
+            return await running.WaitAsync(cancellationToken).ConfigureAwait(false);
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested && running is { IsCompleted: false })
+        {
+            // The abandoned call fails once its context closes; observe that so it isn't an unobserved task exception.
+            _ = running.ContinueWith(static t => t.Exception, CancellationToken.None, TaskContinuationOptions.OnlyOnFaulted, TaskScheduler.Default);
+            throw;
         }
         catch (Exception ex) when (ex is not OperationCanceledException)
         {
@@ -30,7 +41,7 @@ internal static class BrowserCall
     /// <summary>Runs <paramref name="call"/>, which returns nothing.</summary>
     /// <param name="what">What the call does, for the error.</param>
     /// <param name="call">The call.</param>
-    /// <param name="cancellationToken">Checked before the call.</param>
+    /// <param name="cancellationToken">Observed for the whole call.</param>
     /// <returns>Success, or AW-EVIDENCE-013.</returns>
     internal static ValueTask<Result<Unit>> Run(string what, Func<Task> call, CancellationToken cancellationToken) =>
         Run(what, async () =>

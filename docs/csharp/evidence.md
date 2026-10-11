@@ -46,7 +46,7 @@ One scheme for every command:
 | 3 | Blocked on review (`parity-plan`) | the plan is still printed |
 | 4 | The run itself errored: the browser failed to start or crashed, a frame's anchor is missing, a region runs past the viewport, a file couldn't be written | AW-EVIDENCE-011, 013, 014, 015 |
 | 75 | A machine lock stayed busy past `--lock-timeout` | AW-EVIDENCE-009 |
-| 130 | Interrupted (Ctrl-C, SIGTERM); the locks are released on the way out | — |
+| 130 | Interrupted (SIGINT, SIGTERM, SIGHUP, SIGQUIT): a browser call in flight is abandoned at once and the locks are released on the way out. A second signal terminates the process without waiting (a lock it held is then left for a person to remove) | `ui-evidence: interrupted` |
 
 The mapping is by error kind: `timeout` → 75, `unavailable` → 4, anything else → 1.
 

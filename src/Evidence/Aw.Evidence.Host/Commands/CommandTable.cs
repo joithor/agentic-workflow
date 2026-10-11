@@ -6,7 +6,8 @@ namespace Aw.Evidence.Host.Commands;
 
 /// <summary>
 /// Command name → handler. Each handler binds its arguments, calls one service and maps the result to an exit code.
-/// Ctrl-C and SIGTERM cancel the command, so its locks are released on the way out (exit 130).
+/// Ctrl-C, SIGTERM, SIGHUP (the terminal or agent shell closed) and SIGQUIT cancel the command, so its locks are
+/// released on the way out (exit 130). A second signal isn't held back: it terminates the process at once.
 /// </summary>
 internal static class CommandTable
 {
@@ -25,6 +26,8 @@ internal static class CommandTable
         using var cancel = new CancellationTokenSource();
         using var term = PosixSignalRegistration.Create(PosixSignal.SIGTERM, context => Stop(context, cancel));
         using var interrupt = PosixSignalRegistration.Create(PosixSignal.SIGINT, context => Stop(context, cancel));
+        using var hangUp = PosixSignalRegistration.Create(PosixSignal.SIGHUP, context => Stop(context, cancel));
+        using var quit = PosixSignalRegistration.Create(PosixSignal.SIGQUIT, context => Stop(context, cancel));
         var json = provider.GetRequiredService<JsonSerializerOptions>();   // the one Kernel JSON profile Composition registered
         var scope = provider.CreateAsyncScope();
         await using (scope.ConfigureAwait(false))
@@ -59,7 +62,12 @@ internal static class CommandTable
 
     private static void Stop(PosixSignalContext context, CancellationTokenSource cancel)
     {
-        context.Cancel = true;   // let the command unwind and release its locks
+        if (cancel.IsCancellationRequested)
+        {
+            return;   // a second signal: the default action terminates the process (the user insists)
+        }
+
+        context.Cancel = true;   // the first: let the command unwind and release its locks
         cancel.Cancel();
     }
 }
