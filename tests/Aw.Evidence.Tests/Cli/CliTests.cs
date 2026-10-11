@@ -137,4 +137,24 @@ public sealed class CliTests : IDisposable
         Assert.Equal(0, putExit);
         Assert.Equal("https://uploads.example/x", AwJson.Deserialize<IReadOnlyList<string>>(TestJson.Utf8(put), TestJson.Options).Value[^1]);
     }
+
+    [Theory]
+    [InlineData("TERM")]
+    [InlineData("INT")]
+    [InlineData("HUP")]
+    public void A_signal_while_waiting_on_a_lock_exits_130_and_releases_the_lock_already_taken(string signal)
+    {
+        _ = Directory.CreateDirectory(_work.HeavyJobLock);   // another holder has the only heavy-job slot
+        using var running = _work.Start("run", SaveScript(), "run-1", "--lock-timeout", "30");
+        running.WaitForStderr("waiting on lock: " + _work.HeavyJobLock);
+        Assert.True(Directory.Exists(_work.QaStackLock), "the QA-stack lock is taken first");
+
+        running.Signal(signal);
+        var (exit, output, error) = running.WaitForExit();
+
+        Assert.Equal((130, ""), (exit, output));
+        Assert.Contains("ui-evidence: interrupted", error, StringComparison.Ordinal);
+        Assert.False(Directory.Exists(_work.QaStackLock), "the QA-stack lock is released on the way out");
+        Assert.True(Directory.Exists(_work.HeavyJobLock), "the other holder's lock is left alone");
+    }
 }
