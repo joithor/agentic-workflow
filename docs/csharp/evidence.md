@@ -118,7 +118,8 @@ run, so a failed run never leaves an earlier summary for `parity-plan` to publis
 ### `publish-plan` output
 
 `provenance` (`seeded` \| `unknown`: the claim, downgraded to `unknown` for any host that isn't local), `question` (the
-ask-first question), `linearUploadAllowed` (seeded and an issue given), `files` (the step screenshots), `note`, and
+ask-first question; it states what will happen: a Linear upload only when seeded with an issue given, otherwise why
+there is none), `linearUploadAllowed` (seeded and an issue given), `files` (the step screenshots), `note`, and
 `prComment` (the markdown body).
 
 ## Locks
