@@ -34,20 +34,25 @@ Take what the arguments give, then **Ask the user** for every input still missin
 
 ```bash
 node scripts/scaffold/new-slice.mjs --package <Pkg> --slice <Slice> --behavior <behavior> --surface <cli|http|none> \
-  [--command <cmd> | --route "<METHOD> /path/{fooId}"] [--ids FooId:string] [--ports IFooStore]
+  [--command <cmd> | --route "<METHOD> /path/{fooId}"] [--ids FooId:string] [--ports IFooStore] [--slice-only]
 ```
+
+Pass `--slice-only` when other branches scaffold slices into the same package in parallel. It writes the slice's
+own files and only its lines in `A.cs`, `IdsJsonContext` and `PublicAPI.Unshipped.txt`, then prints the registration,
+table and JSON context lines to add by hand in the branch. A shared edit it would need is refused (`NS-SLICE-ONLY`).
 
 It takes a slot of the heavy-job lock itself, writes the files, records the public API lines (every `RS0016` symbol the
 build reports for `Core` and `Features`, Vogen's generated id members included), then runs `dotnet build -warnaserror`, the unit lane (exactly one
 failure: the new test) and `dotnet format --verify-no-changes`. Any other failure reverts every file it wrote.
 
 Refusals (exit 1, nothing written): `NS-PACKAGE`, `NS-NAME`, `NS-EXISTS`, `NS-BEHAVIOR`, `NS-SURFACE`, `NS-COMMAND`,
-`NS-ROUTE`, `NS-IDS`, `NS-PORTS`, `NS-DEPS`. Shared logic is never copied from another slice: if the new slice needs
+`NS-ROUTE`, `NS-IDS`, `NS-PORTS`, `NS-DEPS`, `NS-SLICE-ONLY`. Shared logic is never copied from another slice: if the new slice needs
 another slice's code, move it into `Core` first (second use → generalize), then re-run.
 
 ## 3. Commit and hand over
 
-Commit the listed files as `test: red <Slice> test (<behavior>)`, then report the next steps the generator printed:
+Commit the listed files as `test: red <Slice> test (<behavior>)` (with `--slice-only`, also pass on the printed
+shared lines), then report the next steps the generator printed:
 write the assertion → add the ports to the constructor → implement the service (pure decisions on the domain type in
 `Core`) → add the integration test if the slice touches SQL → run the lane.
 
