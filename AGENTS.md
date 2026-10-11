@@ -161,7 +161,7 @@ scripts/probe.sh [--provider claude|codex|cursor] on|off|status
 scripts/install-scorer.sh               # Build scorer, install CLI + launchd job
 sindri doctor                           # Sindri health checks (ok / warn / fail + fix)
 sindri index setup && sindri index build    # code index (Ollama + graphify, offline)
-sindri evolve init && sindri evolve check --changed   # registry + module eval suites (heavy: run alone)
+sindri evolve init && sindri evolve check --changed   # registry + module eval suites (heavy: takes a heavy-job slot)
 sindri evolve status                                   # artifacts, proposals, merge rate, corpus
 sindri evolve reflect --pr <n>                         # proposals from a merged PR
 sindri evolve weekly                                   # the Monday job (launchd runs it)
