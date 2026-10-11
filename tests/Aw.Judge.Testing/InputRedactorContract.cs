@@ -52,6 +52,29 @@ public abstract class InputRedactorContract
         Expect.That(output["b"]!["n"]!.ToJsonString() == "7", "nested numbers stay");
     }
 
+    /// <summary>
+    /// A field whose name says it holds a secret (client_secret, apiKey, password) has its whole value redacted, whatever
+    /// the value looks like; the field itself and the fields around it stay.
+    /// </summary>
+    /// <param name="name">The field name.</param>
+    [Theory]
+    [InlineData("client_secret")]
+    [InlineData("apiKey")]
+    [InlineData("password")]
+    public void A_secret_named_field_is_redacted_whatever_its_value(string name)
+    {
+        const string Shapeless = "correct horse battery staple";
+        var input = new JsonObject { ["text"] = "kept", ["nested"] = new JsonObject { [name] = Shapeless, ["n"] = 2 } };
+
+        var json = Create().Redact(input)?.ToJsonString() ?? "";
+
+        Expect.That(!json.Contains("horse", StringComparison.Ordinal), $"the value of '{name}' is gone, got {json}");
+        var output = JsonNode.Parse(json)!.AsObject();
+        var nested = output["nested"]!.AsObject();
+        Expect.That(nested.ContainsKey(name), "the field itself stays");
+        Expect.That(output["text"]!.GetValue<string>() == "kept" && nested["n"]!.ToJsonString() == "2", "the other fields stay");
+    }
+
     /// <summary>A secret right after a newline or a tab inside a value is still found.</summary>
     /// <param name="whitespace">The character before the secret.</param>
     [Theory]

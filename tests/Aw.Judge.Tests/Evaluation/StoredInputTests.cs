@@ -50,6 +50,19 @@ public sealed class StoredInputTests
     }
 
     [Fact]
+    public async Task An_escalation_after_the_input_validated_stores_only_the_declared_fields()
+    {
+        // Nothing decides, so the call escalates; the input had validated, so the row holds the record, not the caller's text.
+        var harness = new EvaluatorHarness();
+        var input = new JsonObject { ["text"] = "hmm", ["note"] = "not declared" };
+
+        var outcome = await harness.Run(A.Question().Build(), input);
+
+        Assert.Equal(new EscalatedOutcome("no-provider-decided"), outcome);
+        Assert.Equal("""{"text":"hmm"}""", harness.Row.Details?.InputJson);
+    }
+
+    [Fact]
     public void An_input_that_fits_is_written_unchanged() => Assert.Equal("""{"a":1}""", InputCap.Write(new JsonObject { ["a"] = 1 }, 100, JsonOptions));
 
     [Fact]
