@@ -645,9 +645,8 @@ process it found, so a human in an IDE terminal knows why. The table is honest-m
   - parks, escalations and `takeoverIdle` interrupt, within D §10.1's budget;
   - an instance's **first** desk task interrupts once, so starting `workflow.item` gives a cue;
   - later desk tasks are non-interrupting `info`, collected into a daily digest.
-- From P6, `notify.desk` is the **only** source of OS notifications. The app shows the needs-you badge and pulse from
-  the event stream; until P6 ships it also raises an OS notification for each new `pulse` row, and P6 turns that off,
-  so nothing fires twice (API §5.1).
+- `notify.desk` is the **only** source of OS notifications. The app shows the needs-you badge and pulse from the
+  event stream and never notifies on its own, before or after P6 (UI spec X5), so nothing fires twice (API §5.1).
 - **`--needs-me`** lists a parent and its mirrored child once, under the child.
 - **Empty states:** `nothing needs you` (`--needs-me`), `no instances match` (other filters), `no events`, `no
   commands`, and `no evals declared` (eval).
@@ -760,6 +759,12 @@ It uses API §8.1's launch contract; nothing here launches anything itself.
   invalidates the launch secret for `step-report`.
 - **Desk Steps stay.** A `deskCapable` Step whose descriptor names no agent runtime keeps running on the desk runtime
   (W20).
+
+**Amended by the UI app design spec (approved):** its E-6 adds the `open-request` trigger (id and key
+`wf:{instance}:open:{launchId}`, applied in `Commit` wherever `takeover` is allowed, no nonce, exempt from the approval
+check like `takeover`, caller `service:engine`, in P5), E-13 makes each `allowedCommands` entry `{ actionId, cli }`
+(P4), E-19 starts an instance taken over while a launch is pending (P5), and E-9 gives `CompleteStep` its catalog row
+(P4). The UI spec's §18.1 says where each lands; where it differs from this text, it wins (README X52).
 
 ## 7. Placement and S1 changes
 
