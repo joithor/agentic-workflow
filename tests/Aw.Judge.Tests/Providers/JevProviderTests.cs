@@ -56,6 +56,20 @@ public sealed class JevProviderTests
     }
 
     [Fact]
+    public async Task The_state_is_the_input_redacted_and_capped_before_it_leaves_the_machine()
+    {
+        var handler = FakeHttpHandler.Answering(HttpStatusCode.OK, Answer);
+        using var provider = new JevProvider(new HttpClient(handler), Secrets(), new FakeInputRedactor());
+        var input = new JsonObject { ["text"] = "deploy with " + SampleSecrets.GitHubToken, ["diff"] = new string('d', 100_000) };
+
+        _ = await provider.Decide(Questions.Text, input, Questions.Budget, TestContext.Current.CancellationToken);
+
+        var state = JsonNode.Parse(Assert.Single(handler.Requests).Body)!["state"]!;   // why: the body always carries the state
+        Assert.Equal("deploy with " + FakeInputRedactor.Placeholder, state["text"]?.GetValue<string>());
+        Assert.True(state.ToJsonString().Length <= 16_000, $"the state is capped like the stored input, got {state.ToJsonString().Length} chars");
+    }
+
+    [Fact]
     public async Task Without_a_key_it_is_unavailable_and_sends_nothing()
     {
         var handler = FakeHttpHandler.Answering(HttpStatusCode.OK, Answer);
@@ -88,7 +102,7 @@ public sealed class JevProviderTests
             await Task.Delay(TimeSpan.FromSeconds(30), token);
             return new HttpResponseMessage(HttpStatusCode.OK);
         });
-        using var provider = new JevProvider(new HttpClient(handler), Secrets());
+        using var provider = new JevProvider(new HttpClient(handler), Secrets(), new FakeInputRedactor());
 
         var result = await provider.Decide(Questions.Text, Questions.Input, TimeSpan.FromMilliseconds(100), TestContext.Current.CancellationToken);
 
@@ -105,7 +119,7 @@ public sealed class JevProviderTests
     public async Task More_outputs_than_the_api_allows_is_errored_without_a_call()
     {
         var handler = FakeHttpHandler.Answering(HttpStatusCode.OK, Answer);
-        using var provider = new JevProvider(new HttpClient(handler), Secrets());
+        using var provider = new JevProvider(new HttpClient(handler), Secrets(), new FakeInputRedactor());
         var question = Questions.Text with { Outputs = [.. Enumerable.Range(0, 256).Select(i => $"o{i.ToString(System.Globalization.CultureInfo.InvariantCulture)}")] };
 
         Assert.Equal(new ProviderErrored("too-many-options"), await provider.Decide(question, Questions.Input, Questions.Budget, TestContext.Current.CancellationToken));
@@ -115,7 +129,7 @@ public sealed class JevProviderTests
     [Fact]
     public void It_covers_the_text_classes_only()
     {
-        using var provider = new JevProvider(new HttpClient(), Secrets());
+        using var provider = new JevProvider(new HttpClient(), Secrets(), new FakeInputRedactor());
 
         Assert.Equal(ContentClasses.Text.Order(), provider.Classes.Order());
     }
@@ -124,7 +138,7 @@ public sealed class JevProviderTests
 
     private static async Task<ProviderResult> Decide(FakeHttpHandler handler, FakeSecretSource? secrets = null)
     {
-        using var provider = new JevProvider(new HttpClient(handler), secrets ?? Secrets());
+        using var provider = new JevProvider(new HttpClient(handler), secrets ?? Secrets(), new FakeInputRedactor());
         return await provider.Decide(Questions.Text, Questions.Input, Questions.Budget, TestContext.Current.CancellationToken);
     }
 }

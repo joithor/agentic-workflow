@@ -30,5 +30,5 @@ public sealed class JevProviderContractTests : ModelProviderContract
     }.ToJsonString();
 
     private static JevProvider With(FakeHttpHandler handler) =>
-        new(new HttpClient(handler), new FakeSecretSource(new Dictionary<SecretName, string> { [SecretName.TypeSafeApiKey] = "jev-test-key" }));
+        new(new HttpClient(handler), new FakeSecretSource(new Dictionary<SecretName, string> { [SecretName.TypeSafeApiKey] = "jev-test-key" }), new FakeInputRedactor());
 }

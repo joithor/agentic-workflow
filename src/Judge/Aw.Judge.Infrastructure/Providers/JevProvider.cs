@@ -15,7 +15,8 @@ namespace Aw.Judge.Infrastructure.Providers;
 /// </summary>
 /// <param name="http">Sends the request (owned: disposed with the provider).</param>
 /// <param name="secrets">Reads the API key.</param>
-internal sealed class JevProvider(HttpClient http, ISecretSource secrets) : IModelProvider, IDisposable
+/// <param name="redactor">Strips secrets from the input before it leaves the machine.</param>
+internal sealed class JevProvider(HttpClient http, ISecretSource secrets, IInputRedactor redactor) : IModelProvider, IDisposable
 {
     /// <summary>The model.</summary>
     public const string Model = "jev-1.13.0";
@@ -52,7 +53,7 @@ internal sealed class JevProvider(HttpClient http, ISecretSource secrets) : IMod
         deadline.CancelAfter(budget);
         try
         {
-            using var request = Request(question, input, key);
+            using var request = Request(question, redactor.Redact(input), key);
             using var response = await http.SendAsync(request, deadline.Token).ConfigureAwait(false);
             if (!response.IsSuccessStatusCode)
             {

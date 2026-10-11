@@ -48,7 +48,7 @@ public static class JudgeInfrastructureServiceCollectionExtensions
     /// config.json, AW_PROVIDER and PATH, and closes every chain with the rules provider its caller passes.
     /// </summary>
     private static IServiceCollection AddModelProviders(this IServiceCollection services, Func<string, string?> environment) => services
-        .AddSingleton(sp => new JevProvider(new HttpClient(), sp.GetRequiredService<ISecretSource>()))
+        .AddSingleton(sp => new JevProvider(new HttpClient(), sp.GetRequiredService<ISecretSource>(), sp.GetRequiredService<IInputRedactor>()))
         .AddSingleton<IProviderCatalog>(sp => new ProviderCatalog(
             environment,
             sp.GetRequiredService<IExecutableLocator>(),

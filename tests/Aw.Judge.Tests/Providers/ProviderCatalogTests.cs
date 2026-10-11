@@ -51,7 +51,7 @@ public sealed class ProviderCatalogTests
             name => name == "AW_PROVIDER" ? hostProvider : null,
             new FakeExecutableLocator([.. installed.Select(AgentCliNames.Binary)]),
             [
-                new JevProvider(new HttpClient(), new FakeSecretSource()),
+                new JevProvider(new HttpClient(), new FakeSecretSource(), new FakeInputRedactor()),
                 new ClaudeCliProvider(runner),
                 new CodexCliProvider(runner),
                 new CursorCliProvider(runner),
