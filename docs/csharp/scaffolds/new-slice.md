@@ -288,7 +288,7 @@ dotnet test --solution AgenticWorkflow.slnx --filter-trait "Lane=unit" --ignore-
 dotnet format --verify-no-changes
 ```
 
-Under the heavy-job lock. Commit: `test: red <Slice> test (<behavior>)`.
+Under a slot of the heavy-job lock. Commit: `test: red <Slice> test (<behavior>)`.
 
 ## Done criteria
 

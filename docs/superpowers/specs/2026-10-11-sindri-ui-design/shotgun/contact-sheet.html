@@ -1,0 +1,35 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Sindri UI layouts</title>
+<style>
+:root{--canvas:#010102;--s1:#0f1011;--hair:#23252a;--ink:#f7f8f8;--muted:#d0d6e0;--subtle:#8a8f98}
+body{margin:0;background:var(--canvas);color:var(--ink);font:14px/1.5 Inter,system-ui,sans-serif;padding:32px 16px}
+h1{font-size:22px;font-weight:600;letter-spacing:-.4px;margin:0 auto 4px;max-width:1400px}
+p.lead{color:var(--muted);max-width:1400px;margin:0 auto 24px}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(380px,1fr));gap:20px;max-width:1400px;margin:0 auto}
+figure{margin:0;background:var(--s1);border:1px solid var(--hair);border-radius:12px;overflow:hidden}
+figure a img{display:block;width:100%;border-bottom:1px solid var(--hair)}
+figcaption{padding:16px 18px}
+figcaption h2{font-size:15px;font-weight:600;margin:0 0 8px}
+dl{margin:0;display:grid;grid-template-columns:auto 1fr;gap:4px 12px;font-size:13px}
+dt{color:var(--subtle)}dd{margin:0;color:var(--muted)}
+.sw{display:inline-block;width:10px;height:10px;border-radius:2px;vertical-align:middle;margin-right:4px}
+</style></head><body>
+<h1>Sindri UI: three layouts, one fixture scenario</h1>
+<p class="lead">Same data in every variant, all inside docs/sindri/DESIGN.md. They differ on the two calls DESIGN.md and the specs don't settle: the window layout and the needs-you attention hue (each variant shows one candidate; the two choices are independent). Click a screenshot to open the live HTML. Design references, not the implementation.</p>
+<div class="grid">
+<figure><a href="variant-1.html"><img src="variant-1.png" alt="Variant 1: triage inbox, sidebar, list and detail"></a><figcaption><h2>1 · Triage inbox</h2><dl>
+<dt>Direction</dt><dd>Linear's inbox: sidebar with counts · list · detail pane · health status bar</dd>
+<dt>Rationale</dt><dd>Keyboard and palette conventions transfer from Linear; the engine's "next" sentence and the answer sit beside the list</dd>
+<dt>Attention</dt><dd><span class="sw" style="background:#f2994a"></span>#f2994a orange (9.4:1)</dd>
+<dt>Token deviation</dt><dd>Attention tints at 12% and 30%; white at 18% inside the split button</dd></dl></figcaption></figure>
+<figure><a href="variant-2.html"><img src="variant-2.png" alt="Variant 2: single-glance home with stacked panels"></a><figcaption><h2>2 · Single-glance home (picked by the owner, with #f2994a)</h2><dl>
+<dt>Direction</dt><dd>Top bar · one page: Needs you, Running and Queued, Health; detail in a side sheet</dd>
+<dt>Rationale</dt><dd>Passes the five-second test most literally; actions inline on each row</dd>
+<dt>Attention</dt><dd><span class="sw" style="background:#f0b429"></span>#f0b429 amber (11.2:1)</dd>
+<dt>Token deviation</dt><dd>Amber tint at 14% on count chips; 3.5% white top highlight</dd></dl></figcaption></figure>
+<figure><a href="variant-3.html"><img src="variant-3.png" alt="Variant 3: lanes board with a pinned needs-you strip"></a><figcaption><h2>3 · Lanes</h2><dl>
+<dt>Direction</dt><dd>Icon rail · pinned needs-you card strip · queue groups as board columns</dd>
+<dt>Rationale</dt><dd>Shows flow through With you → Parked → Running → Queued</dd>
+<dt>Attention</dt><dd><span class="sw" style="background:#eb5757"></span>#eb5757 coral red (6.0:1)</dd>
+<dt>Token deviation</dt><dd>Lighter coral #f39a9a for small chip text; coral at 14–45% for edges</dd></dl></figcaption></figure>
+</div></body></html>

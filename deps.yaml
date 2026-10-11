@@ -186,7 +186,7 @@ packages:
     binPaths: [ui-evidence/dist/bin.js]
     files: [ui-evidence/runs, locks/heavy-job.lock, locks/qa-stack.lock]
     namespace: ui-evidence
-    note: "Playwright UI evidence; owns the box-wide heavy-job and QA-stack locks. In the C# build they sit behind Evidence's own Core port IMachineLocks, with a directory adapter (atomic mkdir, owner file) that interoperates with config/lib/locks.sh and the heavy wrapper. A tier-0 or tier-1 package can't take those locks (that would be an upward file edge, DEPS-TIER-002)"
+    note: "Playwright UI evidence; owns the box-wide heavy-job lock (AW_HEAVY_SLOTS slots, default 2: locks/heavy-job.lock and .2) and the one-slot QA-stack lock. In the C# build they sit behind Evidence's own Core port IMachineLocks, with a directory adapter (atomic mkdir, owner file) that interoperates with config/lib/locks.sh and the heavy wrapper. A tier-0 or tier-1 package can't take those locks (that would be an upward file edge, DEPS-TIER-002)"
   - id: BugFix
     kind: package
     tier: 2
@@ -280,7 +280,7 @@ edges:
     to: Evidence
     kind: file
     status: current
-    note: "sindri index builds take the box-wide heavy-job lock (the same lock directory Evidence's IMachineLocks adapter takes)"
+    note: "sindri index builds take a slot of the box-wide heavy-job lock (the same lock directory Evidence's IMachineLocks adapter takes)"
   - from: Hooks
     to: Judge
     kind: cli
@@ -351,22 +351,22 @@ edges:
   - from: Judge
     to: Kernel
     kind: project
-    status: planned
+    status: current
     note: "Result, IService, ports"
   - from: Judge
     to: KernelData
     kind: project
-    status: planned
+    status: current
     note: "decisions.sqlite"
   - from: Judge
     to: KernelTelemetry
     kind: project
-    status: planned
+    status: current
     note: "logging"
   - from: Judge
     to: Redaction
     kind: project
-    status: planned
+    status: current
     note: "replaces judge's copy of the scrubbing patterns"
   - from: Packets
     to: Kernel

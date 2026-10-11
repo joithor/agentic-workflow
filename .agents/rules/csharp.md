@@ -111,7 +111,7 @@ Sindri's UI is an [Avalonia UI](https://avaloniaui.net/) app, its own package `S
 
 ## JSON (§4b.3)
 
-- System.Text.Json with **one source-generated `JsonSerializerContext` per package**. No reflection-based serialization. Check: trim/AOT analyzers (`IL2026`, `IL3050`) via `IsAotCompatible=true`.
+- System.Text.Json with **one source-generated `JsonSerializerContext` per package**. One exception: an `Infrastructure` project may keep one `internal` context of its own for third-party wire formats whose records are `internal` (the host's context can't name them), used only through `AwJson.CreateOptions` (e.g. Judge's `ProviderWireJsonContext`). No reflection-based serialization. Check: trim/AOT analyzers (`IL2026`, `IL3050`) via `IsAotCompatible=true`.
 - Use the shared **`AwJson` profile** from `Aw.Kernel.Json`: `AwJson.CreateOptions(<Name>JsonContext.Default)` once per host, then `AwJson.Serialize`/`Deserialize` with those options (camelCase, relaxed escaping, UTC `O` timestamps, `RespectNullableAnnotations`, `RespectRequiredConstructorParameters`). Never construct `JsonSerializerOptions` yourself or serialize through a context's `.Default` options directly. HTTP hosts register the same resolver and options in `ConfigureHttpJsonOptions`.
 
 ## Logging and telemetry (§4b.1, §4d)
@@ -192,8 +192,9 @@ is SQLite-specific today; a second engine needs its own data package, `Aw.Kernel
 adapter (PostgreSQL instead of SQLite, a remote queue instead of the outbox table) is proven by the same tests. A Kernel
 port's suite is an `Aw.Kernel.Testing` base: `ReadRepositoryContract`, `UnitOfWorkContract` and `OutboxContract`, which the
 in-memory fakes (`InMemoryUnitOfWorkFactory`, `InMemoryOutbox`) and the `Aw.Kernel.Data` adapters (`SqliteReadRepository`,
-`SqliteUnitOfWorkFactory`, `SqliteOutbox`) pass. `IIdGenerator` has a fake (`SequentialIdGenerator`) and no real adapter yet;
-its contract base lands with its first real adapter. A package's own port's suite lives in `Aw.<Pkg>.Testing` (spec §4b.5) and derives from a Kernel base
+`SqliteUnitOfWorkFactory`, `SqliteOutbox`) pass, and `IdGeneratorContract`, which the fake `SequentialIdGenerator` and the
+judge's `RandomIdGenerator` pass (the fake is deterministic by design, so its binding sets `Deterministic`: two fresh
+fakes repeat one sequence, where two fresh real generators share no id). A package's own port's suite lives in `Aw.<Pkg>.Testing` (spec §4b.5) and derives from a Kernel base
 where one fits. BCL ports (`TimeProvider`, faked by `FakeTimeProvider`) are exempt.
 
 Name ports for what the code needs (`IItemStore`, `IJobQueue`), not for the technology (`ISqliteItems`,

@@ -45,7 +45,7 @@
     <!-- Aw.Analyzers (spec §4b.6) and its tests: the compiler API the in-repo rules are written against. 5.0.0
          (published 2025-11-18) is the Roslyn of the .NET 10.0.100 SDK: an analyzer must not reference a newer
          compiler than the one that loads it, and every pinned SDK from 10.0.100 on carries 5.0 or later. -->
-    <PackageVersion Include="Microsoft.CodeAnalysis.CSharp" Version="[5.0.0]" />
+    <PackageVersion Include="Microsoft.CodeAnalysis.CSharp" Version="[5.9.0]" />
     <!-- Telemetry (Aw.Kernel.Telemetry's one external dependency, spec §4b.1): spans, metrics and the processor and
          exporter seams. OpenTelemetry 1.19.1 published 2026-09-21. It brings Microsoft.Extensions.Logging,
          .Configuration (with the EnvironmentVariables provider), .Options and .DependencyInjection transitively (pinned
