@@ -24,6 +24,13 @@ public static class EvaluationReasons
     /// <summary>A question rule (input check, pre-rule, prompt or fallback) hit its regex match timeout; failure row and escalation.</summary>
     public const string RuleTimeout = "rule-timeout";
 
+    /// <summary>
+    /// The reason codes of the decision rows written before the chain is walked, so no model was asked: health's
+    /// 'down' streak counts model attempts only and leaves these out. A fallback that times out writes only a failure
+    /// row, so every 'rule-timeout' decision row is one of these.
+    /// </summary>
+    public static IReadOnlyList<string> BeforeChain { get; } = [QuestionDisabled, InvalidInput, PreRule, RuleTimeout];
+
     /// <summary>Failure row: the provider answered outside the question's outputs.</summary>
     public const string OutOfEnum = "out-of-enum";
 

@@ -45,7 +45,7 @@ public interface IDecisionLog
     /// <returns>The count.</returns>
     public ValueTask<Result<int>> CountFailuresSince(DateTimeOffset since, CancellationToken cancellationToken);
 
-    /// <summary>The outcomes of the latest model attempts (decided or failed, never escalated, never a pre-rule settlement), newest first.</summary>
+    /// <summary>The outcomes of the latest model attempts (decided or failed, never escalated, never a row written before the chain: EvaluationReasons.BeforeChain), newest first.</summary>
     /// <param name="count">How many at most.</param>
     /// <param name="cancellationToken">Cancels the read.</param>
     /// <returns>The outcomes.</returns>

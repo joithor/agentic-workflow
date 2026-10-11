@@ -1,4 +1,6 @@
+using System.Globalization;
 using Aw.Judge.Core.Decisions;
+using Aw.Judge.Core.Evaluation;
 using Aw.Judge.Core.Ids;
 using Aw.Kernel.Data;
 using Microsoft.Data.Sqlite;
@@ -34,10 +36,12 @@ internal static class DecisionSql
 
     internal const string CountFailuresSince = "SELECT COUNT(*) FROM failures WHERE ts >= $since";
 
-    // "Model attempts" leave out rows that never reached a provider: escalations before the chain (a disabled question,
-    // invalid input) and pre-rule settlements. A fallback after an unsure model did reach one, so it counts.
-    internal const string LastAttemptOutcomes =
-        "SELECT outcome FROM decisions WHERE outcome IN ('decided', 'failed') AND reason_code <> 'pre-rule' " +
+    // "Model attempts" leave out rows that never reached a provider: Core's EvaluationReasons.BeforeChain (a disabled
+    // question, invalid input, a pre-rule settlement, a rule timeout), bound as $before0..n. A fallback after an unsure
+    // model did reach one, so it counts.
+    internal static string LastAttemptOutcomes { get; } =
+        "SELECT outcome FROM decisions WHERE outcome IN ('decided', 'failed') AND reason_code NOT IN (" +
+        string.Join(", ", EvaluationReasons.BeforeChain.Select((_, i) => BeforeChainParameter(i))) + ") " +
         "ORDER BY ts DESC, rowid DESC LIMIT $count";
 
     // Read first: with nothing to drop (every question but the day's first) the prune never takes the write lock.
@@ -73,7 +77,16 @@ internal static class DecisionSql
 
     internal static SqlStatement At(string sql, string name, DateTimeOffset at) => new(sql, c => c.Bind(name, at));
 
-    internal static SqlStatement Last(int count) => new(LastAttemptOutcomes, c => c.Bind("$count", count));
+    internal static SqlStatement Last(int count) => new(LastAttemptOutcomes, c =>
+    {
+        _ = c.Bind("$count", count);
+        for (var i = 0; i < EvaluationReasons.BeforeChain.Count; i++)
+        {
+            _ = c.Bind(BeforeChainParameter(i), EvaluationReasons.BeforeChain[i]);
+        }
+    });
+
+    private static string BeforeChainParameter(int index) => "$before" + index.ToString(CultureInfo.InvariantCulture);
 
     // SqliteBind has no nullable DateTimeOffset overload: bind the time through it, or a typed null.
     private static SqliteCommand BindNullable(this SqliteCommand command, string name, DateTimeOffset? at) =>

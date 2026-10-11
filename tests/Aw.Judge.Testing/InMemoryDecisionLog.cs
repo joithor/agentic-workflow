@@ -1,4 +1,5 @@
 using Aw.Judge.Core.Decisions;
+using Aw.Judge.Core.Evaluation;
 using Aw.Judge.Core.Errors;
 using Aw.Judge.Core.Ids;
 using Aw.Judge.Core.Ports;
@@ -86,7 +87,7 @@ public sealed class InMemoryDecisionLog : IDecisionLog
 
         IReadOnlyList<DecisionOutcome> outcomes = [.. _decisions
             .Select((decision, order) => (decision, order))
-            .Where(d => d.decision.Outcome != DecisionOutcome.Escalated && !string.Equals(d.decision.ReasonCode, "pre-rule", StringComparison.Ordinal))
+            .Where(d => d.decision.Outcome != DecisionOutcome.Escalated && !EvaluationReasons.BeforeChain.Contains(d.decision.ReasonCode, StringComparer.Ordinal))
             .OrderByDescending(d => d.decision.Ts).ThenByDescending(d => d.order)
             .Take(count)
             .Select(d => d.decision.Outcome)];

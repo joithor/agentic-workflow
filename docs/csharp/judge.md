@@ -94,7 +94,7 @@ stderr; the hooks discard stderr except where the hook contract says. At the def
 
 | Command | Input | Output (exit 0) | Errors |
 |---|---|---|---|
-| `health` | — | `HealthOutput`: `{"status": "ok"\|"degraded"\|"down", "failures24h": n}`: ok with no failure row in 24 h, down when the last five model attempts all failed (escalations before the chain and pre-rule settlements never reached a model and don't count), degraded otherwise | store error → 1 |
+| `health` | — | `HealthOutput`: `{"status": "ok"\|"degraded"\|"down", "failures24h": n}`: ok with no failure row in 24 h, down when the last five model attempts all failed (rows written before the chain, a disabled question, invalid input, a pre-rule settlement or a rule timeout, never reached a model and don't count; the list is `EvaluationReasons.BeforeChain`, which the SQLite query binds), degraded otherwise | store error → 1 |
 | `brief save` | stdin `BriefInput`: `toolUseId`, `sessionId`, `promptId`, `dispatchName` (string or null), `subagentType`, `goal`, `acceptanceCriteria`, `proofCommand`, all required, strings may be empty, other keys ignored; the three texts are stored redacted, then capped at 8,000 characters | nothing | `invalid input: …` → 1; `brief already saved: <toolUseId>` → 1 |
 | `brief get <toolUseId>` | — | `BriefOutput`: `toolUseId`, `agentId`, `sessionId`, `promptId`, `dispatchName`, `subagentType`, `goal`, `acceptanceCriteria`, `proofCommand`, `savedAt` | `no brief for tool_use_id: <id>` → 1 |
 | `brief map-by-name <name>` | — | the oldest unmapped brief's tool use id with that dispatch name, or nothing | store error → 1 |
@@ -240,7 +240,8 @@ The answer's `choice`, `confidence` (1.0 when absent) and `probabilities` become
 provider is the engine's (`Aw.Judge.Core.Evaluation`), always unavailable, never a failure. The catalog takes it as an
 argument. The question rules (input checks, pre-rules, prompts, fallbacks) are regexes with a one-second match
 timeout, which a huge input can reach: a timeout writes a `rules`/`rule-timeout` failure row and escalates the call
-(outcome `failed`; for `ask-check` that means ask), except in a fallback, which then simply has no opinion. Any other
+(outcome `failed`; for `ask-check` that means ask; it counts in `failures24h` but not in `health`'s model-attempt
+streak), except in a fallback, which then simply has no opinion. Any other
 exception from a rule is a bug in the question and is not caught.
 
 ### Reason codes
