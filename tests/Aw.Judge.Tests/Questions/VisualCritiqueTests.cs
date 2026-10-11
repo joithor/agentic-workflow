@@ -1,6 +1,7 @@
 using Aw.Judge.Core.Evaluation;
 using Aw.Judge.Core.Providers;
 using Aw.Judge.Core.Questions;
+using Aw.Judge.Testing;
 using Aw.Kernel.Testing;
 using static Aw.Judge.Tests.Questions.QuestionRun;
 
@@ -25,7 +26,7 @@ public sealed class VisualCritiqueTests
     [Fact]
     public async Task Without_a_baseline_it_is_judged_on_its_own_and_a_text_only_model_is_never_asked()
     {
-        var text = new Aw.Judge.Testing.ScriptedProvider(ProviderName.Jev, ContentClass.Brief).Decides("looks-right", 1);
+        var text = new ScriptedProvider(ProviderName.Jev, ContentClass.Brief).Decides("looks-right", 1);
         var cli = Cli(ContentClass.Image).Decides("looks-right", 0.4);
 
         var outcome = await new QuestionRun().Ask(VisualCritiqueQuestion.Definition, """{"afterScreenshot":"after.png","evidenceDir":"/tmp/ev"}""", text, cli);
