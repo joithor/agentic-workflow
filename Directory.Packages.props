@@ -38,6 +38,10 @@
     <PackageVersion Include="Microsoft.Data.Sqlite" Version="[10.0.12]" />
     <!-- Typed ids (decision R9, docs/csharp/typed-ids.md). Vogen 8.0.7 published 2026-07-21. -->
     <PackageVersion Include="Vogen" Version="[8.0.7]" />
+    <!-- YAML (the Sindri profile, owner 2026-10-11; later S2 recipes): only the parser and representation model are used,
+         which are reflection-free, so NativeAOT stays clean. The tree is turned into JSON and read through AwJson.
+         YamlDotNet 18.1.0 published 2026-06-26, MIT. -->
+    <PackageVersion Include="YamlDotNet" Version="[18.1.0]" />
     <!-- Aw.Analyzers (spec §4b.6) and its tests: the compiler API the in-repo rules are written against. 5.0.0
          (published 2025-11-18) is the Roslyn of the .NET 10.0.100 SDK: an analyzer must not reference a newer
          compiler than the one that loads it, and every pinned SDK from 10.0.100 on carries 5.0 or later. -->
