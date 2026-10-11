@@ -4,3 +4,429 @@ Aw.Sindri.Core.SindriErrors
 static Aw.Sindri.Core.SindriCoreServiceCollectionExtensions.AddSindriCore(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
 static Aw.Sindri.Core.SindriErrors.All.get -> System.Collections.Generic.IReadOnlyList<Aw.Kernel.ErrorDefinition!>!
 static readonly Aw.Sindri.Core.SindriErrors.Invalid -> Aw.Kernel.ErrorDefinition!
+Aw.Sindri.Core.Control.ControlEndpoint
+Aw.Sindri.Core.Control.ControlEndpoint.<Clone>$() -> Aw.Sindri.Core.Control.ControlEndpoint!
+Aw.Sindri.Core.Control.ControlEndpoint.ControlEndpoint(System.Uri! Url, int Pid, long Epoch) -> void
+Aw.Sindri.Core.Control.ControlEndpoint.Deconstruct(out System.Uri! Url, out int Pid, out long Epoch) -> void
+Aw.Sindri.Core.Control.ControlEndpoint.Epoch.get -> long
+Aw.Sindri.Core.Control.ControlEndpoint.Epoch.init -> void
+Aw.Sindri.Core.Control.ControlEndpoint.Equals(Aw.Sindri.Core.Control.ControlEndpoint? other) -> bool
+Aw.Sindri.Core.Control.ControlEndpoint.Pid.get -> int
+Aw.Sindri.Core.Control.ControlEndpoint.Pid.init -> void
+Aw.Sindri.Core.Control.ControlEndpoint.Url.get -> System.Uri!
+Aw.Sindri.Core.Control.ControlEndpoint.Url.init -> void
+Aw.Sindri.Core.Control.IEndpointFile
+Aw.Sindri.Core.Control.IEndpointFile.Read(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Sindri.Core.Control.ControlEndpoint?>!>
+Aw.Sindri.Core.Control.IEndpointFile.Remove(int pid, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Kernel.Unit>!>
+Aw.Sindri.Core.Control.IEndpointFile.Write(Aw.Sindri.Core.Control.ControlEndpoint! endpoint, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Kernel.Unit>!>
+Aw.Sindri.Core.Doctor.CheckState
+Aw.Sindri.Core.Doctor.CheckState.Fail = 2 -> Aw.Sindri.Core.Doctor.CheckState
+Aw.Sindri.Core.Doctor.CheckState.Ok = 0 -> Aw.Sindri.Core.Doctor.CheckState
+Aw.Sindri.Core.Doctor.CheckState.Warn = 1 -> Aw.Sindri.Core.Doctor.CheckState
+Aw.Sindri.Core.Doctor.DoctorCheck
+Aw.Sindri.Core.Doctor.DoctorCheck.<Clone>$() -> Aw.Sindri.Core.Doctor.DoctorCheck!
+Aw.Sindri.Core.Doctor.DoctorCheck.Deconstruct(out string! Name, out Aw.Sindri.Core.Doctor.CheckState State, out string! Detail, out string? Fix) -> void
+Aw.Sindri.Core.Doctor.DoctorCheck.Detail.get -> string!
+Aw.Sindri.Core.Doctor.DoctorCheck.Detail.init -> void
+Aw.Sindri.Core.Doctor.DoctorCheck.DoctorCheck(string! Name, Aw.Sindri.Core.Doctor.CheckState State, string! Detail, string? Fix) -> void
+Aw.Sindri.Core.Doctor.DoctorCheck.Equals(Aw.Sindri.Core.Doctor.DoctorCheck? other) -> bool
+Aw.Sindri.Core.Doctor.DoctorCheck.Fix.get -> string?
+Aw.Sindri.Core.Doctor.DoctorCheck.Fix.init -> void
+Aw.Sindri.Core.Doctor.DoctorCheck.Name.get -> string!
+Aw.Sindri.Core.Doctor.DoctorCheck.Name.init -> void
+Aw.Sindri.Core.Doctor.DoctorCheck.State.get -> Aw.Sindri.Core.Doctor.CheckState
+Aw.Sindri.Core.Doctor.DoctorCheck.State.init -> void
+Aw.Sindri.Core.Ids.BootId
+Aw.Sindri.Core.Ids.BootId.BootId() -> void
+Aw.Sindri.Core.Ids.BootId.Equals(Aw.Sindri.Core.Ids.BootId other) -> bool
+Aw.Sindri.Core.Ids.BootId.Equals(Aw.Sindri.Core.Ids.BootId other, System.Collections.Generic.IEqualityComparer<Aw.Sindri.Core.Ids.BootId>! comparer) -> bool
+Aw.Sindri.Core.Ids.BootId.GetTypeCode() -> System.TypeCode
+Aw.Sindri.Core.Ids.BootId.IsInitialized() -> bool
+Aw.Sindri.Core.Ids.BootId.ToString(System.IFormatProvider? provider) -> string!
+Aw.Sindri.Core.Ids.BootId.Value.get -> string!
+Aw.Sindri.Core.Ids.HostId
+Aw.Sindri.Core.Ids.HostId.Equals(Aw.Sindri.Core.Ids.HostId other) -> bool
+Aw.Sindri.Core.Ids.HostId.Equals(Aw.Sindri.Core.Ids.HostId other, System.Collections.Generic.IEqualityComparer<Aw.Sindri.Core.Ids.HostId>! comparer) -> bool
+Aw.Sindri.Core.Ids.HostId.GetTypeCode() -> System.TypeCode
+Aw.Sindri.Core.Ids.HostId.HostId() -> void
+Aw.Sindri.Core.Ids.HostId.IsInitialized() -> bool
+Aw.Sindri.Core.Ids.HostId.ToString(System.IFormatProvider? provider) -> string!
+Aw.Sindri.Core.Ids.HostId.Value.get -> string!
+Aw.Sindri.Core.Ids.ProfileHash
+Aw.Sindri.Core.Ids.ProfileHash.Abbreviated.get -> string!
+Aw.Sindri.Core.Ids.ProfileHash.Equals(Aw.Sindri.Core.Ids.ProfileHash other) -> bool
+Aw.Sindri.Core.Ids.ProfileHash.Equals(Aw.Sindri.Core.Ids.ProfileHash other, System.Collections.Generic.IEqualityComparer<Aw.Sindri.Core.Ids.ProfileHash>! comparer) -> bool
+Aw.Sindri.Core.Ids.ProfileHash.GetTypeCode() -> System.TypeCode
+Aw.Sindri.Core.Ids.ProfileHash.IsInitialized() -> bool
+Aw.Sindri.Core.Ids.ProfileHash.ProfileHash() -> void
+Aw.Sindri.Core.Ids.ProfileHash.ToString(System.IFormatProvider? provider) -> string!
+Aw.Sindri.Core.Ids.ProfileHash.Value.get -> string!
+Aw.Sindri.Core.Ids.ServiceName
+Aw.Sindri.Core.Ids.ServiceName.Equals(Aw.Sindri.Core.Ids.ServiceName other) -> bool
+Aw.Sindri.Core.Ids.ServiceName.Equals(Aw.Sindri.Core.Ids.ServiceName other, System.Collections.Generic.IEqualityComparer<Aw.Sindri.Core.Ids.ServiceName>! comparer) -> bool
+Aw.Sindri.Core.Ids.ServiceName.GetTypeCode() -> System.TypeCode
+Aw.Sindri.Core.Ids.ServiceName.IsInitialized() -> bool
+Aw.Sindri.Core.Ids.ServiceName.ServiceName() -> void
+Aw.Sindri.Core.Ids.ServiceName.ToString(System.IFormatProvider? provider) -> string!
+Aw.Sindri.Core.Ids.ServiceName.Value.get -> string!
+Aw.Sindri.Core.Lease.HolderLiveness
+Aw.Sindri.Core.Lease.HolderLiveness.Alive = 0 -> Aw.Sindri.Core.Lease.HolderLiveness
+Aw.Sindri.Core.Lease.HolderLiveness.ProvenDead = 1 -> Aw.Sindri.Core.Lease.HolderLiveness
+Aw.Sindri.Core.Lease.HolderLiveness.Unknown = 2 -> Aw.Sindri.Core.Lease.HolderLiveness
+Aw.Sindri.Core.Lease.ILease
+Aw.Sindri.Core.Lease.ILease.Acquire(Aw.Sindri.Core.Lease.LeaseHolder! candidate, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Sindri.Core.Lease.LeaseGrant!>!>
+Aw.Sindri.Core.Lease.ILease.Read(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Sindri.Core.Lease.LeaseRow?>!>
+Aw.Sindri.Core.Lease.ILease.Release(Aw.Sindri.Core.Lease.LeaseGrant! grant, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Kernel.Unit>!>
+Aw.Sindri.Core.Lease.ILease.Renew(Aw.Sindri.Core.Lease.LeaseGrant! grant, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Sindri.Core.Lease.LeaseGrant!>!>
+Aw.Sindri.Core.Lease.IProcessProbe
+Aw.Sindri.Core.Lease.IProcessProbe.Facts(int pid) -> Aw.Sindri.Core.Lease.ProcessFacts!
+Aw.Sindri.Core.Lease.IProcessProbe.Self() -> Aw.Sindri.Core.Lease.LeaseHolder!
+Aw.Sindri.Core.Lease.LeaseDecision
+Aw.Sindri.Core.Lease.LeaseGrant
+Aw.Sindri.Core.Lease.LeaseGrant.<Clone>$() -> Aw.Sindri.Core.Lease.LeaseGrant!
+Aw.Sindri.Core.Lease.LeaseGrant.Deconstruct(out Aw.Sindri.Core.Lease.LeaseHolder! Holder, out long Epoch, out System.DateTimeOffset ExpiresAt) -> void
+Aw.Sindri.Core.Lease.LeaseGrant.Epoch.get -> long
+Aw.Sindri.Core.Lease.LeaseGrant.Epoch.init -> void
+Aw.Sindri.Core.Lease.LeaseGrant.Equals(Aw.Sindri.Core.Lease.LeaseGrant? other) -> bool
+Aw.Sindri.Core.Lease.LeaseGrant.ExpiresAt.get -> System.DateTimeOffset
+Aw.Sindri.Core.Lease.LeaseGrant.ExpiresAt.init -> void
+Aw.Sindri.Core.Lease.LeaseGrant.Holder.get -> Aw.Sindri.Core.Lease.LeaseHolder!
+Aw.Sindri.Core.Lease.LeaseGrant.Holder.init -> void
+Aw.Sindri.Core.Lease.LeaseGrant.LeaseGrant(Aw.Sindri.Core.Lease.LeaseHolder! Holder, long Epoch, System.DateTimeOffset ExpiresAt) -> void
+Aw.Sindri.Core.Lease.LeaseHolder
+Aw.Sindri.Core.Lease.LeaseHolder.<Clone>$() -> Aw.Sindri.Core.Lease.LeaseHolder!
+Aw.Sindri.Core.Lease.LeaseHolder.BootId.get -> Aw.Sindri.Core.Ids.BootId
+Aw.Sindri.Core.Lease.LeaseHolder.BootId.init -> void
+Aw.Sindri.Core.Lease.LeaseHolder.Deconstruct(out Aw.Sindri.Core.Ids.HostId Host, out int Pid, out System.DateTimeOffset PidStart, out Aw.Sindri.Core.Ids.BootId BootId) -> void
+Aw.Sindri.Core.Lease.LeaseHolder.Equals(Aw.Sindri.Core.Lease.LeaseHolder? other) -> bool
+Aw.Sindri.Core.Lease.LeaseHolder.Host.get -> Aw.Sindri.Core.Ids.HostId
+Aw.Sindri.Core.Lease.LeaseHolder.Host.init -> void
+Aw.Sindri.Core.Lease.LeaseHolder.LeaseHolder(Aw.Sindri.Core.Ids.HostId Host, int Pid, System.DateTimeOffset PidStart, Aw.Sindri.Core.Ids.BootId BootId) -> void
+Aw.Sindri.Core.Lease.LeaseHolder.Pid.get -> int
+Aw.Sindri.Core.Lease.LeaseHolder.Pid.init -> void
+Aw.Sindri.Core.Lease.LeaseHolder.PidStart.get -> System.DateTimeOffset
+Aw.Sindri.Core.Lease.LeaseHolder.PidStart.init -> void
+Aw.Sindri.Core.Lease.LeaseRow
+Aw.Sindri.Core.Lease.LeaseRow.<Clone>$() -> Aw.Sindri.Core.Lease.LeaseRow!
+Aw.Sindri.Core.Lease.LeaseRow.AcquiredAt.get -> System.DateTimeOffset
+Aw.Sindri.Core.Lease.LeaseRow.AcquiredAt.init -> void
+Aw.Sindri.Core.Lease.LeaseRow.Deconstruct(out Aw.Sindri.Core.Lease.LeaseHolder! Holder, out long Epoch, out System.DateTimeOffset AcquiredAt, out System.DateTimeOffset ExpiresAt, out bool Released) -> void
+Aw.Sindri.Core.Lease.LeaseRow.Epoch.get -> long
+Aw.Sindri.Core.Lease.LeaseRow.Epoch.init -> void
+Aw.Sindri.Core.Lease.LeaseRow.Equals(Aw.Sindri.Core.Lease.LeaseRow? other) -> bool
+Aw.Sindri.Core.Lease.LeaseRow.ExpiresAt.get -> System.DateTimeOffset
+Aw.Sindri.Core.Lease.LeaseRow.ExpiresAt.init -> void
+Aw.Sindri.Core.Lease.LeaseRow.Holder.get -> Aw.Sindri.Core.Lease.LeaseHolder!
+Aw.Sindri.Core.Lease.LeaseRow.Holder.init -> void
+Aw.Sindri.Core.Lease.LeaseRow.IsLive(System.DateTimeOffset now) -> bool
+Aw.Sindri.Core.Lease.LeaseRow.LeaseRow(Aw.Sindri.Core.Lease.LeaseHolder! Holder, long Epoch, System.DateTimeOffset AcquiredAt, System.DateTimeOffset ExpiresAt, bool Released) -> void
+Aw.Sindri.Core.Lease.LeaseRow.Released.get -> bool
+Aw.Sindri.Core.Lease.LeaseRow.Released.init -> void
+Aw.Sindri.Core.Lease.LeaseTiming
+Aw.Sindri.Core.Lease.ProcessFacts
+Aw.Sindri.Core.Lease.ProcessFacts.<Clone>$() -> Aw.Sindri.Core.Lease.ProcessFacts!
+Aw.Sindri.Core.Lease.ProcessFacts.Deconstruct(out bool Running, out System.DateTimeOffset? StartedAt) -> void
+Aw.Sindri.Core.Lease.ProcessFacts.Equals(Aw.Sindri.Core.Lease.ProcessFacts? other) -> bool
+Aw.Sindri.Core.Lease.ProcessFacts.ProcessFacts(bool Running, System.DateTimeOffset? StartedAt) -> void
+Aw.Sindri.Core.Lease.ProcessFacts.Running.get -> bool
+Aw.Sindri.Core.Lease.ProcessFacts.Running.init -> void
+Aw.Sindri.Core.Lease.ProcessFacts.StartedAt.get -> System.DateTimeOffset?
+Aw.Sindri.Core.Lease.ProcessFacts.StartedAt.init -> void
+Aw.Sindri.Core.Ledger.ILedgerStore
+Aw.Sindri.Core.Ledger.ILedgerStore.Append(Aw.Sindri.Core.Ledger.LedgerEntry! entry, Aw.Sindri.Core.Lease.LeaseGrant! grant, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Sindri.Core.Ledger.LedgerAppend!>!>
+Aw.Sindri.Core.Ledger.ILedgerStore.Latest(string! type, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Sindri.Core.Ledger.LedgerEvent?>!>
+Aw.Sindri.Core.Ledger.ILedgerStore.ReadAfter(long sequence, int max, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Ledger.LedgerEvent!>!>!>
+Aw.Sindri.Core.Ledger.ILedgerStore.Schema(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Sindri.Core.Ledger.SchemaStatus!>!>
+Aw.Sindri.Core.Ledger.LedgerAppend
+Aw.Sindri.Core.Ledger.LedgerAppend.<Clone>$() -> Aw.Sindri.Core.Ledger.LedgerAppend!
+Aw.Sindri.Core.Ledger.LedgerAppend.AlreadyRecorded.get -> bool
+Aw.Sindri.Core.Ledger.LedgerAppend.AlreadyRecorded.init -> void
+Aw.Sindri.Core.Ledger.LedgerAppend.Deconstruct(out long Sequence, out bool AlreadyRecorded) -> void
+Aw.Sindri.Core.Ledger.LedgerAppend.Equals(Aw.Sindri.Core.Ledger.LedgerAppend? other) -> bool
+Aw.Sindri.Core.Ledger.LedgerAppend.LedgerAppend(long Sequence, bool AlreadyRecorded) -> void
+Aw.Sindri.Core.Ledger.LedgerAppend.Sequence.get -> long
+Aw.Sindri.Core.Ledger.LedgerAppend.Sequence.init -> void
+Aw.Sindri.Core.Ledger.LedgerEntry
+Aw.Sindri.Core.Ledger.LedgerEntry.<Clone>$() -> Aw.Sindri.Core.Ledger.LedgerEntry!
+Aw.Sindri.Core.Ledger.LedgerEntry.Deconstruct(out Aw.Kernel.Events.EventEnvelope<string!>! Envelope, out string! IdempotencyKey, out string? Item) -> void
+Aw.Sindri.Core.Ledger.LedgerEntry.Envelope.get -> Aw.Kernel.Events.EventEnvelope<string!>!
+Aw.Sindri.Core.Ledger.LedgerEntry.Envelope.init -> void
+Aw.Sindri.Core.Ledger.LedgerEntry.Equals(Aw.Sindri.Core.Ledger.LedgerEntry? other) -> bool
+Aw.Sindri.Core.Ledger.LedgerEntry.IdempotencyKey.get -> string!
+Aw.Sindri.Core.Ledger.LedgerEntry.IdempotencyKey.init -> void
+Aw.Sindri.Core.Ledger.LedgerEntry.Item.get -> string?
+Aw.Sindri.Core.Ledger.LedgerEntry.Item.init -> void
+Aw.Sindri.Core.Ledger.LedgerEntry.LedgerEntry(Aw.Kernel.Events.EventEnvelope<string!>! Envelope, string! IdempotencyKey, string? Item) -> void
+Aw.Sindri.Core.Ledger.LedgerEvent
+Aw.Sindri.Core.Ledger.LedgerEvent.<Clone>$() -> Aw.Sindri.Core.Ledger.LedgerEvent!
+Aw.Sindri.Core.Ledger.LedgerEvent.Deconstruct(out long Sequence, out long Epoch, out Aw.Kernel.Events.EventEnvelope<string!>! Envelope, out string! IdempotencyKey, out string? Item) -> void
+Aw.Sindri.Core.Ledger.LedgerEvent.Envelope.get -> Aw.Kernel.Events.EventEnvelope<string!>!
+Aw.Sindri.Core.Ledger.LedgerEvent.Envelope.init -> void
+Aw.Sindri.Core.Ledger.LedgerEvent.Epoch.get -> long
+Aw.Sindri.Core.Ledger.LedgerEvent.Epoch.init -> void
+Aw.Sindri.Core.Ledger.LedgerEvent.Equals(Aw.Sindri.Core.Ledger.LedgerEvent? other) -> bool
+Aw.Sindri.Core.Ledger.LedgerEvent.IdempotencyKey.get -> string!
+Aw.Sindri.Core.Ledger.LedgerEvent.IdempotencyKey.init -> void
+Aw.Sindri.Core.Ledger.LedgerEvent.Item.get -> string?
+Aw.Sindri.Core.Ledger.LedgerEvent.Item.init -> void
+Aw.Sindri.Core.Ledger.LedgerEvent.LedgerEvent(long Sequence, long Epoch, Aw.Kernel.Events.EventEnvelope<string!>! Envelope, string! IdempotencyKey, string? Item) -> void
+Aw.Sindri.Core.Ledger.LedgerEvent.Sequence.get -> long
+Aw.Sindri.Core.Ledger.LedgerEvent.Sequence.init -> void
+Aw.Sindri.Core.Ledger.SchemaStatus
+Aw.Sindri.Core.Ledger.SchemaStatus.<Clone>$() -> Aw.Sindri.Core.Ledger.SchemaStatus!
+Aw.Sindri.Core.Ledger.SchemaStatus.Applied.get -> int
+Aw.Sindri.Core.Ledger.SchemaStatus.Applied.init -> void
+Aw.Sindri.Core.Ledger.SchemaStatus.Deconstruct(out int Applied, out int Expected) -> void
+Aw.Sindri.Core.Ledger.SchemaStatus.Equals(Aw.Sindri.Core.Ledger.SchemaStatus? other) -> bool
+Aw.Sindri.Core.Ledger.SchemaStatus.Expected.get -> int
+Aw.Sindri.Core.Ledger.SchemaStatus.Expected.init -> void
+Aw.Sindri.Core.Ledger.SchemaStatus.IsCurrent.get -> bool
+Aw.Sindri.Core.Ledger.SchemaStatus.SchemaStatus(int Applied, int Expected) -> void
+Aw.Sindri.Core.Profile.ApiSettings
+Aw.Sindri.Core.Profile.ApiSettings.<Clone>$() -> Aw.Sindri.Core.Profile.ApiSettings!
+Aw.Sindri.Core.Profile.ApiSettings.ApiSettings(int Port = 7410) -> void
+Aw.Sindri.Core.Profile.ApiSettings.Deconstruct(out int Port) -> void
+Aw.Sindri.Core.Profile.ApiSettings.Equals(Aw.Sindri.Core.Profile.ApiSettings? other) -> bool
+Aw.Sindri.Core.Profile.ApiSettings.Port.get -> int
+Aw.Sindri.Core.Profile.ApiSettings.Port.init -> void
+Aw.Sindri.Core.Profile.Cadence
+Aw.Sindri.Core.Profile.Cadence.<Clone>$() -> Aw.Sindri.Core.Profile.Cadence!
+Aw.Sindri.Core.Profile.Cadence.Cadence(System.TimeSpan Interval) -> void
+Aw.Sindri.Core.Profile.Cadence.Deconstruct(out System.TimeSpan Interval) -> void
+Aw.Sindri.Core.Profile.Cadence.Equals(Aw.Sindri.Core.Profile.Cadence? other) -> bool
+Aw.Sindri.Core.Profile.Cadence.Interval.get -> System.TimeSpan
+Aw.Sindri.Core.Profile.Cadence.Interval.init -> void
+Aw.Sindri.Core.Profile.IApprovals
+Aw.Sindri.Core.Profile.IApprovals.Latest(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Sindri.Core.Profile.LoadedProfile?>!>
+Aw.Sindri.Core.Profile.IApprovals.Save(Aw.Sindri.Core.Profile.LoadedProfile! profile, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Kernel.Unit>!>
+Aw.Sindri.Core.Profile.IProfileSource
+Aw.Sindri.Core.Profile.IProfileSource.Load(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Sindri.Core.Profile.LoadedProfile!>!>
+Aw.Sindri.Core.Profile.LoadedProfile
+Aw.Sindri.Core.Profile.LoadedProfile.<Clone>$() -> Aw.Sindri.Core.Profile.LoadedProfile!
+Aw.Sindri.Core.Profile.LoadedProfile.Deconstruct(out Aw.Sindri.Core.Profile.SindriProfile! Profile, out Aw.Sindri.Core.Ids.ProfileHash Hash, out string! Source) -> void
+Aw.Sindri.Core.Profile.LoadedProfile.Equals(Aw.Sindri.Core.Profile.LoadedProfile? other) -> bool
+Aw.Sindri.Core.Profile.LoadedProfile.Hash.get -> Aw.Sindri.Core.Ids.ProfileHash
+Aw.Sindri.Core.Profile.LoadedProfile.Hash.init -> void
+Aw.Sindri.Core.Profile.LoadedProfile.LoadedProfile(Aw.Sindri.Core.Profile.SindriProfile! Profile, Aw.Sindri.Core.Ids.ProfileHash Hash, string! Source) -> void
+Aw.Sindri.Core.Profile.LoadedProfile.Profile.get -> Aw.Sindri.Core.Profile.SindriProfile!
+Aw.Sindri.Core.Profile.LoadedProfile.Profile.init -> void
+Aw.Sindri.Core.Profile.LoadedProfile.Source.get -> string!
+Aw.Sindri.Core.Profile.LoadedProfile.Source.init -> void
+Aw.Sindri.Core.Profile.ProfileDiff
+Aw.Sindri.Core.Profile.ProfileHashing
+Aw.Sindri.Core.Profile.ProfileRules
+Aw.Sindri.Core.Profile.RepoEntry
+Aw.Sindri.Core.Profile.RepoEntry.<Clone>$() -> Aw.Sindri.Core.Profile.RepoEntry!
+Aw.Sindri.Core.Profile.RepoEntry.Deconstruct(out string! Name, out string! Path) -> void
+Aw.Sindri.Core.Profile.RepoEntry.Equals(Aw.Sindri.Core.Profile.RepoEntry? other) -> bool
+Aw.Sindri.Core.Profile.RepoEntry.Name.get -> string!
+Aw.Sindri.Core.Profile.RepoEntry.Name.init -> void
+Aw.Sindri.Core.Profile.RepoEntry.Path.get -> string!
+Aw.Sindri.Core.Profile.RepoEntry.Path.init -> void
+Aw.Sindri.Core.Profile.RepoEntry.RepoEntry(string! Name, string! Path) -> void
+Aw.Sindri.Core.Profile.ServiceSettings
+Aw.Sindri.Core.Profile.ServiceSettings.<Clone>$() -> Aw.Sindri.Core.Profile.ServiceSettings!
+Aw.Sindri.Core.Profile.ServiceSettings.Deconstruct(out string! Every) -> void
+Aw.Sindri.Core.Profile.ServiceSettings.Equals(Aw.Sindri.Core.Profile.ServiceSettings? other) -> bool
+Aw.Sindri.Core.Profile.ServiceSettings.Every.get -> string!
+Aw.Sindri.Core.Profile.ServiceSettings.Every.init -> void
+Aw.Sindri.Core.Profile.ServiceSettings.ServiceSettings(string! Every) -> void
+Aw.Sindri.Core.Profile.SindriProfile
+Aw.Sindri.Core.Profile.SindriProfile.<Clone>$() -> Aw.Sindri.Core.Profile.SindriProfile!
+Aw.Sindri.Core.Profile.SindriProfile.Api.get -> Aw.Sindri.Core.Profile.ApiSettings?
+Aw.Sindri.Core.Profile.SindriProfile.Api.init -> void
+Aw.Sindri.Core.Profile.SindriProfile.Deconstruct(out int SchemaVersion, out string! User, out string! Tenant, out System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Profile.RepoEntry!>? Repos, out System.Collections.Generic.IReadOnlyDictionary<string!, Aw.Sindri.Core.Profile.ServiceSettings!>? Services, out Aw.Sindri.Core.Profile.ApiSettings? Api) -> void
+Aw.Sindri.Core.Profile.SindriProfile.Equals(Aw.Sindri.Core.Profile.SindriProfile? other) -> bool
+Aw.Sindri.Core.Profile.SindriProfile.Repos.get -> System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Profile.RepoEntry!>?
+Aw.Sindri.Core.Profile.SindriProfile.Repos.init -> void
+Aw.Sindri.Core.Profile.SindriProfile.SchemaVersion.get -> int
+Aw.Sindri.Core.Profile.SindriProfile.SchemaVersion.init -> void
+Aw.Sindri.Core.Profile.SindriProfile.Services.get -> System.Collections.Generic.IReadOnlyDictionary<string!, Aw.Sindri.Core.Profile.ServiceSettings!>?
+Aw.Sindri.Core.Profile.SindriProfile.Services.init -> void
+Aw.Sindri.Core.Profile.SindriProfile.SindriProfile(int SchemaVersion, string! User, string! Tenant = "local", System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Profile.RepoEntry!>? Repos = null, System.Collections.Generic.IReadOnlyDictionary<string!, Aw.Sindri.Core.Profile.ServiceSettings!>? Services = null, Aw.Sindri.Core.Profile.ApiSettings? Api = null) -> void
+Aw.Sindri.Core.Profile.SindriProfile.Tenant.get -> string!
+Aw.Sindri.Core.Profile.SindriProfile.Tenant.init -> void
+Aw.Sindri.Core.Profile.SindriProfile.User.get -> string!
+Aw.Sindri.Core.Profile.SindriProfile.User.init -> void
+Aw.Sindri.Core.Scheduling.IScheduledService
+Aw.Sindri.Core.Scheduling.IScheduledService.Name.get -> Aw.Sindri.Core.Ids.ServiceName
+Aw.Sindri.Core.Scheduling.IScheduledService.Run(Aw.Sindri.Core.Scheduling.ScheduledRun! run, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Kernel.Unit>!>
+Aw.Sindri.Core.Scheduling.ScheduledRun
+Aw.Sindri.Core.Scheduling.ScheduledRun.<Clone>$() -> Aw.Sindri.Core.Scheduling.ScheduledRun!
+Aw.Sindri.Core.Scheduling.ScheduledRun.Deconstruct(out Aw.Sindri.Core.Lease.LeaseGrant! Grant, out System.DateTimeOffset Slot) -> void
+Aw.Sindri.Core.Scheduling.ScheduledRun.Equals(Aw.Sindri.Core.Scheduling.ScheduledRun? other) -> bool
+Aw.Sindri.Core.Scheduling.ScheduledRun.Grant.get -> Aw.Sindri.Core.Lease.LeaseGrant!
+Aw.Sindri.Core.Scheduling.ScheduledRun.Grant.init -> void
+Aw.Sindri.Core.Scheduling.ScheduledRun.ScheduledRun(Aw.Sindri.Core.Lease.LeaseGrant! Grant, System.DateTimeOffset Slot) -> void
+Aw.Sindri.Core.Scheduling.ScheduledRun.Slot.get -> System.DateTimeOffset
+Aw.Sindri.Core.Scheduling.ScheduledRun.Slot.init -> void
+Aw.Sindri.Core.Scheduling.ServiceSchedule
+Aw.Sindri.Core.Scheduling.ServiceSchedule.<Clone>$() -> Aw.Sindri.Core.Scheduling.ServiceSchedule!
+Aw.Sindri.Core.Scheduling.ServiceSchedule.Advance(System.DateTimeOffset now) -> Aw.Sindri.Core.Scheduling.ServiceSchedule!
+Aw.Sindri.Core.Scheduling.ServiceSchedule.Cadence.get -> Aw.Sindri.Core.Profile.Cadence!
+Aw.Sindri.Core.Scheduling.ServiceSchedule.Cadence.init -> void
+Aw.Sindri.Core.Scheduling.ServiceSchedule.Deconstruct(out Aw.Sindri.Core.Ids.ServiceName Name, out Aw.Sindri.Core.Profile.Cadence! Cadence, out System.DateTimeOffset NextSlot) -> void
+Aw.Sindri.Core.Scheduling.ServiceSchedule.Equals(Aw.Sindri.Core.Scheduling.ServiceSchedule? other) -> bool
+Aw.Sindri.Core.Scheduling.ServiceSchedule.Name.get -> Aw.Sindri.Core.Ids.ServiceName
+Aw.Sindri.Core.Scheduling.ServiceSchedule.Name.init -> void
+Aw.Sindri.Core.Scheduling.ServiceSchedule.NextSlot.get -> System.DateTimeOffset
+Aw.Sindri.Core.Scheduling.ServiceSchedule.NextSlot.init -> void
+Aw.Sindri.Core.Scheduling.ServiceSchedule.ServiceSchedule(Aw.Sindri.Core.Ids.ServiceName Name, Aw.Sindri.Core.Profile.Cadence! Cadence, System.DateTimeOffset NextSlot) -> void
+const Aw.Sindri.Core.Profile.ApiSettings.DefaultPort = 7410 -> int
+const Aw.Sindri.Core.Profile.SindriProfile.CurrentSchemaVersion = 1 -> int
+const Aw.Sindri.Core.Profile.SindriProfile.DefaultTenant = "local" -> string!
+override Aw.Sindri.Core.Control.ControlEndpoint.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Control.ControlEndpoint.GetHashCode() -> int
+override Aw.Sindri.Core.Control.ControlEndpoint.ToString() -> string!
+override Aw.Sindri.Core.Doctor.DoctorCheck.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Doctor.DoctorCheck.GetHashCode() -> int
+override Aw.Sindri.Core.Doctor.DoctorCheck.ToString() -> string!
+override Aw.Sindri.Core.Ids.BootId.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Ids.BootId.GetHashCode() -> int
+override Aw.Sindri.Core.Ids.BootId.ToString() -> string!
+override Aw.Sindri.Core.Ids.HostId.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Ids.HostId.GetHashCode() -> int
+override Aw.Sindri.Core.Ids.HostId.ToString() -> string!
+override Aw.Sindri.Core.Ids.ProfileHash.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Ids.ProfileHash.GetHashCode() -> int
+override Aw.Sindri.Core.Ids.ProfileHash.ToString() -> string!
+override Aw.Sindri.Core.Ids.ServiceName.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Ids.ServiceName.GetHashCode() -> int
+override Aw.Sindri.Core.Ids.ServiceName.ToString() -> string!
+override Aw.Sindri.Core.Lease.LeaseGrant.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Lease.LeaseGrant.GetHashCode() -> int
+override Aw.Sindri.Core.Lease.LeaseGrant.ToString() -> string!
+override Aw.Sindri.Core.Lease.LeaseHolder.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Lease.LeaseHolder.GetHashCode() -> int
+override Aw.Sindri.Core.Lease.LeaseHolder.ToString() -> string!
+override Aw.Sindri.Core.Lease.LeaseRow.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Lease.LeaseRow.GetHashCode() -> int
+override Aw.Sindri.Core.Lease.LeaseRow.ToString() -> string!
+override Aw.Sindri.Core.Lease.ProcessFacts.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Lease.ProcessFacts.GetHashCode() -> int
+override Aw.Sindri.Core.Lease.ProcessFacts.ToString() -> string!
+override Aw.Sindri.Core.Ledger.LedgerAppend.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Ledger.LedgerAppend.GetHashCode() -> int
+override Aw.Sindri.Core.Ledger.LedgerAppend.ToString() -> string!
+override Aw.Sindri.Core.Ledger.LedgerEntry.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Ledger.LedgerEntry.GetHashCode() -> int
+override Aw.Sindri.Core.Ledger.LedgerEntry.ToString() -> string!
+override Aw.Sindri.Core.Ledger.LedgerEvent.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Ledger.LedgerEvent.GetHashCode() -> int
+override Aw.Sindri.Core.Ledger.LedgerEvent.ToString() -> string!
+override Aw.Sindri.Core.Ledger.SchemaStatus.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Ledger.SchemaStatus.GetHashCode() -> int
+override Aw.Sindri.Core.Ledger.SchemaStatus.ToString() -> string!
+override Aw.Sindri.Core.Profile.ApiSettings.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Profile.ApiSettings.GetHashCode() -> int
+override Aw.Sindri.Core.Profile.ApiSettings.ToString() -> string!
+override Aw.Sindri.Core.Profile.Cadence.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Profile.Cadence.GetHashCode() -> int
+override Aw.Sindri.Core.Profile.Cadence.ToString() -> string!
+override Aw.Sindri.Core.Profile.LoadedProfile.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Profile.LoadedProfile.GetHashCode() -> int
+override Aw.Sindri.Core.Profile.LoadedProfile.ToString() -> string!
+override Aw.Sindri.Core.Profile.RepoEntry.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Profile.RepoEntry.GetHashCode() -> int
+override Aw.Sindri.Core.Profile.RepoEntry.ToString() -> string!
+override Aw.Sindri.Core.Profile.ServiceSettings.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Profile.ServiceSettings.GetHashCode() -> int
+override Aw.Sindri.Core.Profile.ServiceSettings.ToString() -> string!
+override Aw.Sindri.Core.Profile.SindriProfile.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Profile.SindriProfile.GetHashCode() -> int
+override Aw.Sindri.Core.Profile.SindriProfile.ToString() -> string!
+override Aw.Sindri.Core.Scheduling.ScheduledRun.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Scheduling.ScheduledRun.GetHashCode() -> int
+override Aw.Sindri.Core.Scheduling.ScheduledRun.ToString() -> string!
+override Aw.Sindri.Core.Scheduling.ServiceSchedule.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Scheduling.ServiceSchedule.GetHashCode() -> int
+override Aw.Sindri.Core.Scheduling.ServiceSchedule.ToString() -> string!
+static Aw.Sindri.Core.Control.ControlEndpoint.operator !=(Aw.Sindri.Core.Control.ControlEndpoint? left, Aw.Sindri.Core.Control.ControlEndpoint? right) -> bool
+static Aw.Sindri.Core.Control.ControlEndpoint.operator ==(Aw.Sindri.Core.Control.ControlEndpoint? left, Aw.Sindri.Core.Control.ControlEndpoint? right) -> bool
+static Aw.Sindri.Core.Doctor.DoctorCheck.operator !=(Aw.Sindri.Core.Doctor.DoctorCheck? left, Aw.Sindri.Core.Doctor.DoctorCheck? right) -> bool
+static Aw.Sindri.Core.Doctor.DoctorCheck.operator ==(Aw.Sindri.Core.Doctor.DoctorCheck? left, Aw.Sindri.Core.Doctor.DoctorCheck? right) -> bool
+static Aw.Sindri.Core.Ids.BootId.From(string! value) -> Aw.Sindri.Core.Ids.BootId
+static Aw.Sindri.Core.Ids.BootId.Parse(string! s, System.IFormatProvider? provider) -> Aw.Sindri.Core.Ids.BootId
+static Aw.Sindri.Core.Ids.BootId.TryFrom(string? value, out Aw.Sindri.Core.Ids.BootId vo) -> bool
+static Aw.Sindri.Core.Ids.BootId.TryParse(string? s, System.IFormatProvider? provider, out Aw.Sindri.Core.Ids.BootId result) -> bool
+static Aw.Sindri.Core.Ids.BootId.operator !=(Aw.Sindri.Core.Ids.BootId left, Aw.Sindri.Core.Ids.BootId right) -> bool
+static Aw.Sindri.Core.Ids.BootId.operator ==(Aw.Sindri.Core.Ids.BootId left, Aw.Sindri.Core.Ids.BootId right) -> bool
+static Aw.Sindri.Core.Ids.HostId.From(string! value) -> Aw.Sindri.Core.Ids.HostId
+static Aw.Sindri.Core.Ids.HostId.Parse(string! s, System.IFormatProvider? provider) -> Aw.Sindri.Core.Ids.HostId
+static Aw.Sindri.Core.Ids.HostId.TryFrom(string? value, out Aw.Sindri.Core.Ids.HostId vo) -> bool
+static Aw.Sindri.Core.Ids.HostId.TryParse(string? s, System.IFormatProvider? provider, out Aw.Sindri.Core.Ids.HostId result) -> bool
+static Aw.Sindri.Core.Ids.HostId.operator !=(Aw.Sindri.Core.Ids.HostId left, Aw.Sindri.Core.Ids.HostId right) -> bool
+static Aw.Sindri.Core.Ids.HostId.operator ==(Aw.Sindri.Core.Ids.HostId left, Aw.Sindri.Core.Ids.HostId right) -> bool
+static Aw.Sindri.Core.Ids.ProfileHash.From(string! value) -> Aw.Sindri.Core.Ids.ProfileHash
+static Aw.Sindri.Core.Ids.ProfileHash.Parse(string! s, System.IFormatProvider? provider) -> Aw.Sindri.Core.Ids.ProfileHash
+static Aw.Sindri.Core.Ids.ProfileHash.TryFrom(string? value, out Aw.Sindri.Core.Ids.ProfileHash vo) -> bool
+static Aw.Sindri.Core.Ids.ProfileHash.TryParse(string? s, System.IFormatProvider? provider, out Aw.Sindri.Core.Ids.ProfileHash result) -> bool
+static Aw.Sindri.Core.Ids.ProfileHash.operator !=(Aw.Sindri.Core.Ids.ProfileHash left, Aw.Sindri.Core.Ids.ProfileHash right) -> bool
+static Aw.Sindri.Core.Ids.ProfileHash.operator ==(Aw.Sindri.Core.Ids.ProfileHash left, Aw.Sindri.Core.Ids.ProfileHash right) -> bool
+static Aw.Sindri.Core.Ids.ServiceName.From(string! value) -> Aw.Sindri.Core.Ids.ServiceName
+static Aw.Sindri.Core.Ids.ServiceName.Parse(string! s, System.IFormatProvider? provider) -> Aw.Sindri.Core.Ids.ServiceName
+static Aw.Sindri.Core.Ids.ServiceName.TryFrom(string? value, out Aw.Sindri.Core.Ids.ServiceName vo) -> bool
+static Aw.Sindri.Core.Ids.ServiceName.TryParse(string? s, System.IFormatProvider? provider, out Aw.Sindri.Core.Ids.ServiceName result) -> bool
+static Aw.Sindri.Core.Ids.ServiceName.operator !=(Aw.Sindri.Core.Ids.ServiceName left, Aw.Sindri.Core.Ids.ServiceName right) -> bool
+static Aw.Sindri.Core.Ids.ServiceName.operator ==(Aw.Sindri.Core.Ids.ServiceName left, Aw.Sindri.Core.Ids.ServiceName right) -> bool
+static Aw.Sindri.Core.Lease.LeaseDecision.Acquire(Aw.Sindri.Core.Lease.LeaseRow? row, Aw.Sindri.Core.Lease.LeaseHolder! candidate, System.DateTimeOffset now, Aw.Sindri.Core.Lease.HolderLiveness liveness) -> Aw.Kernel.Result<Aw.Sindri.Core.Lease.LeaseGrant!>!
+static Aw.Sindri.Core.Lease.LeaseDecision.Holds(Aw.Sindri.Core.Lease.LeaseRow? row, Aw.Sindri.Core.Lease.LeaseGrant! grant) -> bool
+static Aw.Sindri.Core.Lease.LeaseDecision.Liveness(Aw.Sindri.Core.Lease.LeaseHolder! holder, Aw.Sindri.Core.Lease.LeaseHolder! self, Aw.Sindri.Core.Lease.ProcessFacts! facts) -> Aw.Sindri.Core.Lease.HolderLiveness
+static Aw.Sindri.Core.Lease.LeaseDecision.Renew(Aw.Sindri.Core.Lease.LeaseRow? row, Aw.Sindri.Core.Lease.LeaseGrant! grant, System.DateTimeOffset now) -> Aw.Kernel.Result<Aw.Sindri.Core.Lease.LeaseGrant!>!
+static Aw.Sindri.Core.Lease.LeaseGrant.operator !=(Aw.Sindri.Core.Lease.LeaseGrant? left, Aw.Sindri.Core.Lease.LeaseGrant? right) -> bool
+static Aw.Sindri.Core.Lease.LeaseGrant.operator ==(Aw.Sindri.Core.Lease.LeaseGrant? left, Aw.Sindri.Core.Lease.LeaseGrant? right) -> bool
+static Aw.Sindri.Core.Lease.LeaseHolder.operator !=(Aw.Sindri.Core.Lease.LeaseHolder? left, Aw.Sindri.Core.Lease.LeaseHolder? right) -> bool
+static Aw.Sindri.Core.Lease.LeaseHolder.operator ==(Aw.Sindri.Core.Lease.LeaseHolder? left, Aw.Sindri.Core.Lease.LeaseHolder? right) -> bool
+static Aw.Sindri.Core.Lease.LeaseRow.operator !=(Aw.Sindri.Core.Lease.LeaseRow? left, Aw.Sindri.Core.Lease.LeaseRow? right) -> bool
+static Aw.Sindri.Core.Lease.LeaseRow.operator ==(Aw.Sindri.Core.Lease.LeaseRow? left, Aw.Sindri.Core.Lease.LeaseRow? right) -> bool
+static Aw.Sindri.Core.Lease.ProcessFacts.operator !=(Aw.Sindri.Core.Lease.ProcessFacts? left, Aw.Sindri.Core.Lease.ProcessFacts? right) -> bool
+static Aw.Sindri.Core.Lease.ProcessFacts.operator ==(Aw.Sindri.Core.Lease.ProcessFacts? left, Aw.Sindri.Core.Lease.ProcessFacts? right) -> bool
+static Aw.Sindri.Core.Ledger.LedgerAppend.operator !=(Aw.Sindri.Core.Ledger.LedgerAppend? left, Aw.Sindri.Core.Ledger.LedgerAppend? right) -> bool
+static Aw.Sindri.Core.Ledger.LedgerAppend.operator ==(Aw.Sindri.Core.Ledger.LedgerAppend? left, Aw.Sindri.Core.Ledger.LedgerAppend? right) -> bool
+static Aw.Sindri.Core.Ledger.LedgerEntry.operator !=(Aw.Sindri.Core.Ledger.LedgerEntry? left, Aw.Sindri.Core.Ledger.LedgerEntry? right) -> bool
+static Aw.Sindri.Core.Ledger.LedgerEntry.operator ==(Aw.Sindri.Core.Ledger.LedgerEntry? left, Aw.Sindri.Core.Ledger.LedgerEntry? right) -> bool
+static Aw.Sindri.Core.Ledger.LedgerEvent.operator !=(Aw.Sindri.Core.Ledger.LedgerEvent? left, Aw.Sindri.Core.Ledger.LedgerEvent? right) -> bool
+static Aw.Sindri.Core.Ledger.LedgerEvent.operator ==(Aw.Sindri.Core.Ledger.LedgerEvent? left, Aw.Sindri.Core.Ledger.LedgerEvent? right) -> bool
+static Aw.Sindri.Core.Ledger.SchemaStatus.operator !=(Aw.Sindri.Core.Ledger.SchemaStatus? left, Aw.Sindri.Core.Ledger.SchemaStatus? right) -> bool
+static Aw.Sindri.Core.Ledger.SchemaStatus.operator ==(Aw.Sindri.Core.Ledger.SchemaStatus? left, Aw.Sindri.Core.Ledger.SchemaStatus? right) -> bool
+static Aw.Sindri.Core.Profile.ApiSettings.operator !=(Aw.Sindri.Core.Profile.ApiSettings? left, Aw.Sindri.Core.Profile.ApiSettings? right) -> bool
+static Aw.Sindri.Core.Profile.ApiSettings.operator ==(Aw.Sindri.Core.Profile.ApiSettings? left, Aw.Sindri.Core.Profile.ApiSettings? right) -> bool
+static Aw.Sindri.Core.Profile.Cadence.Parse(string! text) -> Aw.Kernel.Result<Aw.Sindri.Core.Profile.Cadence!>!
+static Aw.Sindri.Core.Profile.Cadence.operator !=(Aw.Sindri.Core.Profile.Cadence? left, Aw.Sindri.Core.Profile.Cadence? right) -> bool
+static Aw.Sindri.Core.Profile.Cadence.operator ==(Aw.Sindri.Core.Profile.Cadence? left, Aw.Sindri.Core.Profile.Cadence? right) -> bool
+static Aw.Sindri.Core.Profile.LoadedProfile.operator !=(Aw.Sindri.Core.Profile.LoadedProfile? left, Aw.Sindri.Core.Profile.LoadedProfile? right) -> bool
+static Aw.Sindri.Core.Profile.LoadedProfile.operator ==(Aw.Sindri.Core.Profile.LoadedProfile? left, Aw.Sindri.Core.Profile.LoadedProfile? right) -> bool
+static Aw.Sindri.Core.Profile.ProfileDiff.Between(Aw.Sindri.Core.Profile.SindriProfile? approved, Aw.Sindri.Core.Profile.SindriProfile! live) -> System.Collections.Generic.IReadOnlyList<string!>!
+static Aw.Sindri.Core.Profile.ProfileHashing.Of(System.ReadOnlySpan<byte> canonicalJson) -> Aw.Sindri.Core.Ids.ProfileHash
+static Aw.Sindri.Core.Profile.ProfileRules.Check(Aw.Sindri.Core.Profile.SindriProfile! profile) -> Aw.Kernel.Result<Aw.Sindri.Core.Profile.SindriProfile!>!
+static Aw.Sindri.Core.Profile.RepoEntry.operator !=(Aw.Sindri.Core.Profile.RepoEntry? left, Aw.Sindri.Core.Profile.RepoEntry? right) -> bool
+static Aw.Sindri.Core.Profile.RepoEntry.operator ==(Aw.Sindri.Core.Profile.RepoEntry? left, Aw.Sindri.Core.Profile.RepoEntry? right) -> bool
+static Aw.Sindri.Core.Profile.ServiceSettings.operator !=(Aw.Sindri.Core.Profile.ServiceSettings? left, Aw.Sindri.Core.Profile.ServiceSettings? right) -> bool
+static Aw.Sindri.Core.Profile.ServiceSettings.operator ==(Aw.Sindri.Core.Profile.ServiceSettings? left, Aw.Sindri.Core.Profile.ServiceSettings? right) -> bool
+static Aw.Sindri.Core.Profile.SindriProfile.NoServices.get -> System.Collections.Generic.IReadOnlyDictionary<string!, Aw.Sindri.Core.Profile.ServiceSettings!>!
+static Aw.Sindri.Core.Profile.SindriProfile.operator !=(Aw.Sindri.Core.Profile.SindriProfile? left, Aw.Sindri.Core.Profile.SindriProfile? right) -> bool
+static Aw.Sindri.Core.Profile.SindriProfile.operator ==(Aw.Sindri.Core.Profile.SindriProfile? left, Aw.Sindri.Core.Profile.SindriProfile? right) -> bool
+static Aw.Sindri.Core.Scheduling.ScheduledRun.operator !=(Aw.Sindri.Core.Scheduling.ScheduledRun? left, Aw.Sindri.Core.Scheduling.ScheduledRun? right) -> bool
+static Aw.Sindri.Core.Scheduling.ScheduledRun.operator ==(Aw.Sindri.Core.Scheduling.ScheduledRun? left, Aw.Sindri.Core.Scheduling.ScheduledRun? right) -> bool
+static Aw.Sindri.Core.Scheduling.ServiceSchedule.From(Aw.Sindri.Core.Profile.SindriProfile! profile, System.DateTimeOffset start) -> System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Scheduling.ServiceSchedule!>!
+static Aw.Sindri.Core.Scheduling.ServiceSchedule.operator !=(Aw.Sindri.Core.Scheduling.ServiceSchedule? left, Aw.Sindri.Core.Scheduling.ServiceSchedule? right) -> bool
+static Aw.Sindri.Core.Scheduling.ServiceSchedule.operator ==(Aw.Sindri.Core.Scheduling.ServiceSchedule? left, Aw.Sindri.Core.Scheduling.ServiceSchedule? right) -> bool
+static readonly Aw.Sindri.Core.Lease.LeaseTiming.RenewEvery -> System.TimeSpan
+static readonly Aw.Sindri.Core.Lease.LeaseTiming.Ttl -> System.TimeSpan
+static readonly Aw.Sindri.Core.Profile.Cadence.Max -> System.TimeSpan
+static readonly Aw.Sindri.Core.Profile.Cadence.Min -> System.TimeSpan
+static readonly Aw.Sindri.Core.SindriErrors.ApiTimeout -> Aw.Kernel.ErrorDefinition!
+static readonly Aw.Sindri.Core.SindriErrors.LeaseHeld -> Aw.Kernel.ErrorDefinition!
+static readonly Aw.Sindri.Core.SindriErrors.LeaseLost -> Aw.Kernel.ErrorDefinition!
+static readonly Aw.Sindri.Core.SindriErrors.LeaseStale -> Aw.Kernel.ErrorDefinition!
+static readonly Aw.Sindri.Core.SindriErrors.LedgerSchema -> Aw.Kernel.ErrorDefinition!
+static readonly Aw.Sindri.Core.SindriErrors.LedgerUnavailable -> Aw.Kernel.ErrorDefinition!
+static readonly Aw.Sindri.Core.SindriErrors.NotRunning -> Aw.Kernel.ErrorDefinition!
+static readonly Aw.Sindri.Core.SindriErrors.ProfileHashMismatch -> Aw.Kernel.ErrorDefinition!
+static readonly Aw.Sindri.Core.SindriErrors.ProfileInvalid -> Aw.Kernel.ErrorDefinition!
+static readonly Aw.Sindri.Core.SindriErrors.ProfileMissing -> Aw.Kernel.ErrorDefinition!
+static readonly Aw.Sindri.Core.SindriErrors.ProfileNeedsTerminal -> Aw.Kernel.ErrorDefinition!
+static readonly Aw.Sindri.Core.SindriErrors.ProfileNotApproved -> Aw.Kernel.ErrorDefinition!
+static readonly Aw.Sindri.Core.SindriErrors.ServiceFailed -> Aw.Kernel.ErrorDefinition!
+static readonly Aw.Sindri.Core.SindriErrors.StartFailed -> Aw.Kernel.ErrorDefinition!
+static readonly Aw.Sindri.Core.SindriErrors.UnknownVerb -> Aw.Kernel.ErrorDefinition!
