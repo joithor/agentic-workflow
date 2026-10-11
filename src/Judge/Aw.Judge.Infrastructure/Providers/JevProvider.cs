@@ -1,5 +1,6 @@
 using System.Net.Http.Headers;
 using System.Text.Json.Nodes;
+using Aw.Judge.Core.Evaluation;
 using Aw.Judge.Core.Ports;
 using Aw.Judge.Core.Providers;
 using Aw.Judge.Core.Secrets;
@@ -10,7 +11,8 @@ namespace Aw.Judge.Infrastructure.Providers;
 /// <summary>
 /// Jev, the TypeSafe API (POST https://api.typesafe.ai/v1/systemone), for the text classes: one 'choice' question per
 /// call whose options are the question's outputs, each with its criterion (or its own name). The API key comes from
-/// the secret source; without one Jev is unavailable ('no-api-key'), which is not a failure. A non-success status is
+/// the secret source; without one Jev is unavailable ('no-api-key'), which is not a failure. The request's state is the
+/// input redacted and capped like the stored input (InputCap), since it leaves the machine for a third party. A non-success status is
 /// errored ('http-NNN'); past the budget it is unavailable ('timeout'); unreachable is unavailable ('network-error').
 /// </summary>
 /// <param name="http">Sends the request (owned: disposed with the provider).</param>
@@ -53,7 +55,7 @@ internal sealed class JevProvider(HttpClient http, ISecretSource secrets, IInput
         deadline.CancelAfter(budget);
         try
         {
-            using var request = Request(question, redactor.Redact(input), key);
+            using var request = Request(question, State(input), key);
             using var response = await http.SendAsync(request, deadline.Token).ConfigureAwait(false);
             if (!response.IsSuccessStatusCode)
             {
@@ -76,6 +78,9 @@ internal sealed class JevProvider(HttpClient http, ISecretSource secrets, IInput
     /// <inheritdoc />
     public void Dispose() => http.Dispose();
 
+    // Jev is a third party: it gets what decision_details would store, the redacted input capped the same way.
+    private JsonNode? State(JsonNode? input) => JsonNode.Parse(InputCap.Write(redactor.Redact(input), InputCap.MaxChars, WireJson.Options));
+
     private static HttpRequestMessage Request(QuestionRef question, JsonNode? input, string key)
     {
         var criteria = question.Outputs.ToDictionary(
@@ -83,7 +88,7 @@ internal sealed class JevProvider(HttpClient http, ISecretSource secrets, IInput
             option => question.Criteria?.GetValueOrDefault(option) ?? option,
             StringComparer.Ordinal);
         var body = new JevRequest(
-            input?.DeepClone(),
+            input,
             Model,
             new Dictionary<string, JevChoiceQuestion>(StringComparer.Ordinal) { [QuestionId] = new("choice", question.Prompt, criteria) });
         var content = new ByteArrayContent(AwJson.Serialize(body, WireJson.Options));

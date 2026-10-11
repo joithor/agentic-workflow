@@ -227,7 +227,7 @@ undeclared fields dropped.
 
 ### Jev
 
-`POST https://api.typesafe.ai/v1/systemone` with `{state: <input>, model: "jev-1.13.0", questions: {decision:
+`POST https://api.typesafe.ai/v1/systemone` with `{state: <input, redacted and capped like the stored input>, model: "jev-1.13.0", questions: {decision:
 {type: "choice", instructions: <prompt>, criteria: {<output>: <criterion or the output>}}}}` and `Authorization:
 Bearer <key>`; text classes only. The key comes from `ISecretSource` (`TYPESAFE_API_KEY`, else the keychain).
 The answer's `choice`, `confidence` (1.0 when absent) and `probabilities` become the decision.
