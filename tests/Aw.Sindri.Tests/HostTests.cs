@@ -1,7 +1,10 @@
 using Aw.Kernel.Services;
 using Aw.Kernel.Telemetry;
 using Aw.Sindri.Host;
+using Aw.Sindri.Host.Registration;
+using Aw.Sindri.Host.Server;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Time.Testing;
 
@@ -27,6 +30,20 @@ public sealed class HostTests
 
         Assert.NotEmpty(serviceTypes);
         Assert.All(serviceTypes, t => Assert.NotNull(scope.ServiceProvider.GetRequiredService(t)));
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public void The_serve_composition_validates_and_resolves_its_background_services()
+    {
+        using var provider = Compose().AddSindriServe().AddOptions().BuildServiceProvider(   // AddOptions: the web host's options (Kestrel's, for ServePort)
+            new ServiceProviderOptions { ValidateOnBuild = true, ValidateScopes = true });
+        _ = provider.GetRequiredService<TelemetryRuntime>();
+
+        var hosted = provider.GetServices<IHostedService>().ToList();
+
+        Assert.Equal(2, hosted.Count);
+        _ = Assert.Single(hosted.OfType<SchedulerHost>());
+        _ = Assert.Single(hosted.OfType<LeaseRenewer>());
     }
 
     [Fact, Trait("Lane", "unit")]

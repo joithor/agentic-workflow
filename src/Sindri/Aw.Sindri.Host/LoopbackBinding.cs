@@ -3,14 +3,16 @@ using System.Net;
 using System.Text.Json;
 using Aw.Kernel.Json;
 using Aw.Kernel.Telemetry;
+using Aw.Sindri.Host.Server;
 
 namespace Aw.Sindri.Host;
 
 /// <summary>
 /// Builds the web host so that the only listener is 127.0.0.1 (spec §4d runtime hardening): no command-line
 /// arguments and no environment variables reach the web host's configuration, PreferHostingUrls is off, and Kestrel
-/// listens with Listen(IPAddress.Loopback, port) only. The port comes from AW_SINDRI_PORT (0 picks a free one); the
-/// serve command passes the approved profile's api.port (default 7410) through it when the variable isn't set.
+/// listens with Listen(IPAddress.Loopback, port) only. The port is AW_SINDRI_PORT (0 picks a free one); serve's host
+/// instead adds its one loopback listener through <see cref="ServePort"/> (the variable, else the approved api.port, else
+/// 7410) before it starts.
 /// </summary>
 internal static class LoopbackBinding
 {
@@ -27,7 +29,13 @@ internal static class LoopbackBinding
         builder.Configuration.Sources.Clear();   // drops the ASPNETCORE_/DOTNET_ environment and command-line sources
         _ = builder.Configuration.AddInMemoryCollection();   // the host still writes its own settings somewhere
         _ = builder.WebHost.PreferHostingUrls(preferHostingUrls: false);
-        _ = builder.WebHost.UseKestrel(kestrel => kestrel.Listen(IPAddress.Loopback, PortFrom(environment)));
+        _ = builder.WebHost.UseKestrel(kestrel =>
+        {
+            if (kestrel.ApplicationServices.GetService<ServePort>() is null)   // serve adds its loopback listener once it chose the port
+            {
+                kestrel.Listen(IPAddress.Loopback, PortFrom(environment));
+            }
+        });
         _ = builder.Logging.ClearProviders();   // Kernel telemetry (AddKernelTelemetry in Compose) is the only logger: scrubbed JSON lines
         _ = Composition.Compose(builder.Services, environment, clock);
         configure?.Invoke(builder.Services);
