@@ -1,4 +1,5 @@
 using Aw.Kernel;
+using Aw.Sindri.Core;
 using Aw.Sindri.Core.Ids;
 using Aw.Sindri.Core.Lease;
 using Aw.Sindri.Core.Profile;
@@ -43,9 +44,9 @@ internal sealed partial class SchedulerHost(IServiceScopeFactory scopes, IApprov
         {
             approved = await approvals.Latest(ct).ConfigureAwait(false);
         }
-        catch (Exception e) when (e is not OperationCanceledException)   // boundary: a broken read must not stop the schedule
+        catch (Exception e) when (!ct.IsCancellationRequested)   // boundary: a broken read (its own timeout too) must not stop the schedule
         {
-            approved = new Error(e.GetType().Name, ErrorKind.Unavailable, e.Message);
+            approved = SindriErrors.ApprovalsUnavailable.With(e.Message);
         }
 
         if (approved.IsError)
@@ -108,9 +109,10 @@ internal sealed partial class SchedulerHost(IServiceScopeFactory scopes, IApprov
                     LogServiceFailed(log, schedule.Name.Value, result.Error.Code, result.Error.Message);
                 }
             }
-            catch (Exception e) when (e is not OperationCanceledException)   // boundary: one failed run must not stop later slots
+            catch (Exception e) when (!ct.IsCancellationRequested)   // boundary: one failed run (its own timeout too) must not stop later slots
             {
-                LogServiceFailed(log, schedule.Name.Value, e.GetType().Name, e.Message);
+                var failed = SindriErrors.ServiceFailed.With(e.Message);
+                LogServiceFailed(log, schedule.Name.Value, failed.Code, failed.Message);
             }
         }
     }

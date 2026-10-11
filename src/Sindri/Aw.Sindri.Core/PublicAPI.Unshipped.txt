@@ -561,3 +561,6 @@ Aw.Sindri.Core.Events.StopReason.Signal = 1 -> Aw.Sindri.Core.Events.StopReason
 Aw.Sindri.Core.Events.StopReason.Stop = 0 -> Aw.Sindri.Core.Events.StopReason
 Aw.Sindri.Core.Lease.HeldLease.Replace(Aw.Sindri.Core.Lease.LeaseGrant! expected, Aw.Sindri.Core.Lease.LeaseGrant! next) -> bool
 static Aw.Sindri.Core.Events.EventTypes.ServiceRun(Aw.Sindri.Core.Ids.ServiceName service) -> string!
+static Aw.Sindri.Core.Profile.ProfileRules.NeedsApproval(Aw.Sindri.Core.Ids.ProfileHash? approved, Aw.Sindri.Core.Ids.ProfileHash? live) -> bool
+static readonly Aw.Sindri.Core.SindriErrors.ApprovalsUnavailable -> Aw.Kernel.ErrorDefinition!
+static readonly Aw.Sindri.Core.SindriErrors.InvalidInput -> Aw.Kernel.ErrorDefinition!

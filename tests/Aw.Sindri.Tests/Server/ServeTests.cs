@@ -111,7 +111,7 @@ public sealed class ServeTests : IDisposable
     [InlineData("seventy")]
     [InlineData("70000")]
     [InlineData("-1")]
-    public async Task Serve_with_a_port_that_is_not_a_port_exits_2_before_taking_the_lease(string port)
+    public async Task Serve_with_a_port_that_is_not_a_port_exits_2_with_SND_CLI_003_before_taking_the_lease(string port)
     {
         var ct = TestContext.Current.CancellationToken;
         var error = new StringWriter();
@@ -120,7 +120,7 @@ public sealed class ServeTests : IDisposable
             .WaitAsync(ct);
 
         Assert.Equal(2, code);
-        Assert.StartsWith($"SND-API-003 AW_SINDRI_PORT='{port}' isn't a port number (fix: ", error.ToString(), StringComparison.Ordinal);
+        Assert.StartsWith($"SND-CLI-003 AW_SINDRI_PORT='{port}' isn't a port number (fix: ", error.ToString(), StringComparison.Ordinal);
         Assert.False(File.Exists(Path.Combine(_home.Path, "ledger.db")));
     }
 

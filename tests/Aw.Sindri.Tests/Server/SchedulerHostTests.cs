@@ -59,6 +59,29 @@ public sealed class SchedulerHostTests
     }
 
     [Fact, Trait("Lane", "unit")]
+    public async Task A_service_that_times_out_on_its_own_is_logged_and_the_schedule_goes_on()
+    {
+        _ = await _h.Profiles.Save(SliceHarness.ProfileOf("thor", ("heartbeat", "5s"), ("slow", "5s")), Token);
+        _ = await _h.HoldLease();
+
+        await Run(new CountingApprovals(_h.Profiles), () => Heartbeats() >= 3);
+
+        Assert.True(_log.Lines.Where(l => l.Contains("service 'slow' failed: SND-SCHED-001 ", StringComparison.Ordinal)).Skip(2).Any());
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task An_approval_read_that_times_out_is_logged_once_and_the_schedule_goes_on()
+    {
+        _ = await _h.Profiles.Save(SliceHarness.Profile("5s"), Token);
+        _ = await _h.HoldLease();
+        var approvals = new CountingApprovals(_h.Profiles, throwFirst: 3, () => new TaskCanceledException("read timed out"));
+
+        await Run(approvals, () => Heartbeats() >= 1);
+
+        _ = Assert.Single(_log.Lines, l => l.Contains("SND-SCHED-001 the approved profile couldn't be read", StringComparison.Ordinal));
+    }
+
+    [Fact, Trait("Lane", "unit")]
     public async Task A_service_this_build_lacks_is_logged_and_skipped()
     {
         _ = await _h.Profiles.Save(SliceHarness.ProfileOf("thor", ("ghost", "5s"), ("heartbeat", "5s")), Token);
@@ -95,6 +118,7 @@ public sealed class SchedulerHostTests
             .AddScoped<IService<RecordHeartbeatRequest, RecordHeartbeatResponse>, RecordHeartbeatService>()
             .AddScoped<IScheduledService, HeartbeatService>()
             .AddScoped<IScheduledService, ThrowingService>()
+            .AddScoped<IScheduledService, TimingOutService>()
             .BuildServiceProvider();
         var clock = new SteppedClock(_h.Clock);
         using var scheduler = new SchedulerHost(provider.GetRequiredService<IServiceScopeFactory>(), approvals, _h.Held, clock, _log);

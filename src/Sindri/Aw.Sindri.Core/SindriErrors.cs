@@ -29,6 +29,9 @@ public static class SindriErrors
     /// <summary>SND-PROFILE-005: no profile has been approved yet.</summary>
     public static readonly ErrorDefinition ProfileNotApproved = new("SND-PROFILE-005", ErrorKind.NotFound, "No profile is approved");
 
+    /// <summary>SND-PROFILE-006: the approved snapshots can't be read or written (permissions, a full disk).</summary>
+    public static readonly ErrorDefinition ApprovalsUnavailable = new("SND-PROFILE-006", ErrorKind.Unavailable, "The approvals can't be read or written");
+
     /// <summary>SND-LEDGER-001: the ledger's schema doesn't match this build.</summary>
     public static readonly ErrorDefinition LedgerSchema = new("SND-LEDGER-001", ErrorKind.Conflict, "The ledger schema doesn't match this build");
 
@@ -38,7 +41,7 @@ public static class SindriErrors
     /// <summary>SND-API-001: the control-plane process isn't running.</summary>
     public static readonly ErrorDefinition NotRunning = new("SND-API-001", ErrorKind.Unavailable, "Sindri is not running");
 
-    /// <summary>SND-API-002: the control-plane process didn't answer in time.</summary>
+    /// <summary>SND-API-002: the control-plane process didn't answer in time (the ping within 2 s, or the call itself within 10 s).</summary>
     public static readonly ErrorDefinition ApiTimeout = new("SND-API-002", ErrorKind.Timeout, "Sindri didn't answer in time");
 
     /// <summary>SND-API-003: the API's port is taken by another program.</summary>
@@ -50,6 +53,9 @@ public static class SindriErrors
     /// <summary>SND-CLI-002: the process didn't come up after starting it.</summary>
     public static readonly ErrorDefinition StartFailed = new("SND-CLI-002", ErrorKind.Unavailable, "Sindri didn't start");
 
+    /// <summary>SND-CLI-003: a command's input is malformed (a profile hash, AW_SINDRI_PORT).</summary>
+    public static readonly ErrorDefinition InvalidInput = new("SND-CLI-003", ErrorKind.Invalid, "Invalid command input");
+
     /// <summary>SND-SCHED-001: a background service run failed.</summary>
     public static readonly ErrorDefinition ServiceFailed = new("SND-SCHED-001", ErrorKind.Unavailable, "A background service failed");
 
@@ -57,6 +63,7 @@ public static class SindriErrors
     public static IReadOnlyList<ErrorDefinition> All { get; } =
     [
         LeaseHeld, LeaseLost, LeaseStale, ProfileMissing, ProfileInvalid, ProfileHashMismatch, ProfileNeedsTerminal,
-        ProfileNotApproved, LedgerSchema, LedgerUnavailable, NotRunning, ApiTimeout, PortInUse, UnknownVerb, StartFailed, ServiceFailed,
+        ProfileNotApproved, ApprovalsUnavailable, LedgerSchema, LedgerUnavailable, NotRunning, ApiTimeout, PortInUse, UnknownVerb, StartFailed,
+        InvalidInput, ServiceFailed,
     ];
 }

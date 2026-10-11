@@ -8,7 +8,7 @@ namespace Aw.Sindri.Host.Server;
 /// Renews the host lease every 20 s (§17.22 D2). A lost lease (SND-LEASE-002) stops the process: it must not write under
 /// a stale epoch. Any other failure (a busy or unreadable ledger) is logged and retried at the next tick, until the grant
 /// expires; past expiry the process stops too. It stops renewing once a stop is requested, and a renewal that finishes
-/// after a stop cleared the grant doesn't bring it back (<see cref="HeldLease.Replace"/>).
+/// after a stop cleared the grant ends quietly: it doesn't bring the grant back, and a release it lost to isn't a loss.
 /// </summary>
 internal sealed partial class LeaseRenewer(ILease lease, HeldLease held, IShutdown shutdown, IExitCode exit, TimeProvider clock, ILogger<LeaseRenewer> log)
     : BackgroundService
@@ -24,9 +24,9 @@ internal sealed partial class LeaseRenewer(ILease lease, HeldLease held, IShutdo
             }
 
             var renewed = await lease.Renew(grant, stopping.Token).ConfigureAwait(false);
-            if (stopping.IsCancellationRequested)
+            if (stopping.IsCancellationRequested || !ReferenceEquals(held.Current, grant))
             {
-                return;
+                return;   // a stop cleared the grant while it renewed: not a loss
             }
 
             if (renewed.IsSuccess)

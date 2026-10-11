@@ -1,6 +1,7 @@
 using Aw.Sindri.Core;
 using Aw.Sindri.Core.Lease;
 using Aw.Sindri.Host.Server;
+using Aw.Sindri.Testing;
 
 namespace Aw.Sindri.Tests.Server;
 
@@ -10,6 +11,7 @@ public sealed class LeaseRenewerTests : IDisposable
     private readonly SliceHarness _h = new();
     private readonly FakeShutdown _shutdown = new();
     private readonly FakeExitCode _exit = new();
+    private readonly ListLogger<LeaseRenewer> _log = new();
     private readonly ScriptedLease _lease;
     private readonly SteppedClock _clock;
     private LeaseRenewer? _running;
@@ -87,7 +89,41 @@ public sealed class LeaseRenewerTests : IDisposable
         Assert.Equal(0, _exit.Code);
     }
 
-    private LeaseRenewer Renewer() => new(_lease, _h.Held, _shutdown, _exit, _clock, new ListLogger<LeaseRenewer>());
+    [Fact, Trait("Lane", "unit")]
+    public async Task A_stop_during_a_renewal_keeps_the_grant_cleared_and_exits_0()
+    {
+        _ = await _h.HoldLease();
+        _lease.BeforeRenew = _ =>
+        {
+            _h.Held.Clear();          // the stop, while the renewal is in flight: it succeeds anyway
+            _shutdown.Request();
+            return Task.CompletedTask;
+        };
+
+        await Run(steps: 1);
+
+        Assert.Null(_h.Held.Current);   // why: the renewed grant isn't held again after the stop cleared it
+        Assert.Equal(0, _exit.Code);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task A_renewal_right_after_a_stop_released_the_lease_exits_0_and_logs_no_loss()
+    {
+        _ = await _h.HoldLease();
+        _lease.BeforeRenew = async grant =>
+        {
+            _h.Held.Clear();          // the stop cleared and released the grant first: renewing it now is SND-LEASE-002
+            _ = await _h.Store.Release(grant, Token);
+        };
+
+        await Run(steps: 1);
+
+        Assert.Equal(0, _exit.Code);
+        Assert.DoesNotContain(_log.Lines, l => l.Contains(SindriErrors.LeaseLost.Code, StringComparison.Ordinal));
+        Assert.Null(_h.Held.Current);
+    }
+
+    private LeaseRenewer Renewer() => new(_lease, _h.Held, _shutdown, _exit, _clock, _log);
 
     private async Task Run(int steps)
     {
@@ -99,10 +135,10 @@ public sealed class LeaseRenewerTests : IDisposable
         }
     }
 
-    /// <summary>One renewal interval, then waits until the renewer finished that tick (armed the next, or stopped).</summary>
+    /// <summary>One renewal interval, then waits until the renewer finished that tick (armed the next, stopped, or returned).</summary>
     private async Task Step()
     {
         await _clock.Step(LeaseTiming.RenewEvery);
-        await _clock.Armed(() => _shutdown.Requested);
+        await _clock.Armed(() => _shutdown.Requested || _running?.ExecuteTask?.IsCompleted == true);
     }
 }

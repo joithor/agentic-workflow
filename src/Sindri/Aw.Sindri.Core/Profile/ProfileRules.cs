@@ -44,6 +44,16 @@ public static class ProfileRules
         return Canonical(profile);
     }
 
+    /// <summary>
+    /// Whether the profile needs a (new) approval: nothing is approved, or the live profile reads and its hash differs.
+    /// A live profile that doesn't read leaves the approval standing; its error is reported on its own.
+    /// </summary>
+    /// <param name="approved">The latest approval's hash, or null.</param>
+    /// <param name="live">The live profile's hash, or null when it doesn't read.</param>
+    /// <returns>True when approving is needed.</returns>
+    public static bool NeedsApproval(ProfileHash? approved, ProfileHash? live) =>
+        approved is null || (live is not null && live != approved);
+
     private static SindriProfile Canonical(SindriProfile profile) => profile with
     {
         Repos = [.. (profile.Repos ?? []).OrderBy(r => r.Name, StringComparer.Ordinal)],

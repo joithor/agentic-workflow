@@ -8,9 +8,10 @@ namespace Aw.Sindri.Infrastructure.Profile;
 
 /// <summary>
 /// Turns one YAML document into JSON for AwJson (owner decision 2026-10-11: YAML, typed through AwJson). Only the
-/// parser and representation model are used, so it stays reflection-free. Scalars follow the YAML 1.2 core schema:
-/// plain true/false, null/~, integers and decimals are typed; everything else, and every quoted scalar, is a string
-/// ('yes' and 'no' stay strings). Anchors, aliases, tags and duplicate keys are refused: a profile is plain data.
+/// parser and representation model are used, so it stays reflection-free. Scalars follow a subset of the YAML 1.2 core
+/// schema (null, booleans, decimal integers and decimals; no exponents, hex, octal or .inf/.nan): plain true/false,
+/// null/~, integers and decimals are typed; everything else, and every quoted scalar, is a string ('yes' and 'no' stay
+/// strings). Anchors, aliases, tags and duplicate keys are refused: a profile is plain data.
 /// </summary>
 internal static class YamlToJson
 {

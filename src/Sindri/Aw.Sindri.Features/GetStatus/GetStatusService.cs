@@ -29,7 +29,7 @@ internal sealed class GetStatusService(HeldLease held, IApprovals approvals, IPr
         var problem = loaded.IsError ? loaded.Error.Message : approved.IsError ? approved.Error.Message : null;
         var changed = approvedHash is not null && liveHash is not null && liveHash != approvedHash;
         return new ProfileStatus(approvedHash, liveHash, changed, problem, loaded.IsSuccess ? loaded.Value.Source : null,
-            NeedsApproval: approvedHash is null || changed);
+            ProfileRules.NeedsApproval(approvedHash, liveHash));
     }
 
     private async ValueTask<IReadOnlyList<ServiceStatus>> Services(LoadedProfile? approved, CancellationToken cancellationToken)

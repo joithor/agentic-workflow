@@ -6,9 +6,9 @@ using Aw.Sindri.Core;
 using Aw.Sindri.Core.Control;
 using Aw.Sindri.Core.Events;
 using Aw.Sindri.Core.Lease;
-using Aw.Sindri.Core.Profile;
 using Aw.Sindri.Features.StartProcess;
 using Aw.Sindri.Features.StopProcess;
+using Aw.Sindri.Host.Registration;
 using Aw.Sindri.Host.Server;
 
 namespace Aw.Sindri.Host.Commands;
@@ -25,17 +25,16 @@ internal static class ServeCommand
         using var hangup = PosixSignalRegistration.Create(PosixSignal.SIGHUP, static c => c.Cancel = true);
         if (environment(LoopbackBinding.PortVariable) is { Length: > 0 } asked && !IsPort(asked))
         {
-            await error.WriteLineAsync($"{SindriErrors.PortInUse.Code} {LoopbackBinding.PortVariable}='{asked}' isn't a port number "
+            await error.WriteLineAsync($"{SindriErrors.InvalidInput.Code} {LoopbackBinding.PortVariable}='{asked}' isn't a port number "
                 + "(fix: set it to 0..65535, or unset it to use the profile's api.port)").ConfigureAwait(false);
             return 2;
         }
 
-        var port = await PortFor(environment, clock).ConfigureAwait(false);
-        var app = LoopbackBinding.Build([], name => name == LoopbackBinding.PortVariable ? port : environment(name), clock,
-            static services => services.AddHostedService<SchedulerHost>().AddHostedService<LeaseRenewer>());
+        var app = LoopbackBinding.Build([], environment, clock, static services => services.AddSindriServe());
         await using (app.ConfigureAwait(false))
         {
             _ = Pipeline.Configure(app);
+            _ = await app.Services.GetRequiredService<ServePort>().Listen(environment(LoopbackBinding.PortVariable), CancellationToken.None).ConfigureAwait(false);
             var started = await Call<StartProcessRequest, StartProcessResponse>(app, new StartProcessRequest()).ConfigureAwait(false);
             if (started.IsError)
             {
@@ -105,17 +104,4 @@ internal static class ServeCommand
 
     private static bool IsPort(string text) =>
         int.TryParse(text, NumberStyles.None, CultureInfo.InvariantCulture, out var port) && port <= 65535;
-
-    private static async Task<string> PortFor(Func<string, string?> environment, TimeProvider clock)
-    {
-        if (environment(LoopbackBinding.PortVariable) is { Length: > 0 } fromEnvironment)
-        {
-            return fromEnvironment;
-        }
-
-        await using var provider = Composition.Compose(new ServiceCollection(), environment, clock).BuildServiceProvider();
-        var approved = await provider.GetRequiredService<IApprovals>().Latest(CancellationToken.None).ConfigureAwait(false);
-        var port = approved.IsSuccess ? approved.Value?.Profile.Api?.Port : null;
-        return (port ?? ApiSettings.DefaultPort).ToString(CultureInfo.InvariantCulture);
-    }
 }

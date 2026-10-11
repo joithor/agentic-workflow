@@ -23,9 +23,9 @@ internal sealed class StopProcessService(HeldLease held, ILease lease, ILedgerSt
         var entry = events.Entry(EventTypes.ProcessStopped, new ProcessStopped(grant.Holder.Pid, grant.Epoch, request.Reason),
             string.Create(CultureInfo.InvariantCulture, $"{EventTypes.ProcessStopped}:{grant.Epoch}"));
         var recorded = await ledger.Append(entry, grant, cancellationToken).ConfigureAwait(false);
-        held.Clear();   // first, so a renewal finishing now can't hold the grant again
+        held.Clear();         // first, so a renewal finishing now can't hold the grant again
+        shutdown.Request();   // before the release, so a renewal that runs after it sees a stop, not a lost lease
         var released = await lease.Release(grant, cancellationToken).ConfigureAwait(false);
-        shutdown.Request();
         return recorded.IsError ? recorded.Error
             : released.IsError ? released.Error
             : new StopProcessResponse(grant.Holder.Pid, grant.Epoch);

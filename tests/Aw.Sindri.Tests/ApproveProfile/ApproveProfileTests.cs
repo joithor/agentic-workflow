@@ -1,3 +1,4 @@
+using System.Globalization;
 using Aw.Kernel;
 using Aw.Kernel.Testing;
 using Aw.Sindri.Core;
@@ -5,6 +6,8 @@ using Aw.Sindri.Core.Events;
 using Aw.Sindri.Core.Lease;
 using Aw.Sindri.Core.Profile;
 using Aw.Sindri.Features.ApproveProfile;
+using Aw.Sindri.Features.GetStatus;
+using Aw.Sindri.Features.ValidateProfile;
 using Aw.Sindri.Testing;
 
 namespace Aw.Sindri.Tests.ApproveProfile;
@@ -44,7 +47,7 @@ public sealed class ApproveProfileTests
         Assert.True(approved.Approved);
         Assert.Equal(live.Hash, (await _h.Profiles.Latest(Token)).Value!.Hash);
         var recorded = Assert.Single(_h.Store.Events);
-        Assert.Equal((EventTypes.ProfileApproved, $"profile.approved:{live.Hash.Value}:none"), (recorded.Envelope.Type, recorded.IdempotencyKey));
+        Assert.Equal((EventTypes.ProfileApproved, $"profile.approved:{live.Hash.Value}:after:0"), (recorded.Envelope.Type, recorded.IdempotencyKey));
     }
 
     [Theory, Trait("Lane", "unit")]
@@ -88,20 +91,27 @@ public sealed class ApproveProfileTests
     }
 
     [Fact, Trait("Lane", "unit")]
-    public async Task ApproveProfile_records_each_approval_of_a_back_and_forth()
+    public async Task ApproveProfile_records_each_approval_of_a_back_and_forth_and_every_surface_agrees()
     {
         var (a, b) = (SliceHarness.Profile("5s"), SliceHarness.Profile("9s"));
         _ = await _h.HoldLease();
 
-        foreach (var profile in new[] { a, b, a })
+        foreach (var profile in new[] { a, b, a, b, a })
         {
             _h.Profiles.Live = profile;
             Assert.True((await Service().Handle(new ApproveProfileRequest(profile.Hash, Confirmed: true), Token)).Value.Approved);
+
+            var preview = (await Service().Handle(new ApproveProfileRequest(Hash: null, Confirmed: false), Token)).Value;
+            var status = (await new GetStatusService(_h.Held, _h.Profiles, _h.Profiles, _h.Store).Handle(new GetStatusRequest(), Token)).Value;
+            var validated = (await new ValidateProfileService(_h.Profiles, _h.Profiles).Handle(new ValidateProfileRequest(), Token)).Value;
+            Assert.Equal((true, false, true), (preview.Approved, status.Profile.NeedsApproval, validated.Approved));
         }
 
+        var events = _h.Store.Events;
+        Assert.Equal(5, events.Count);
         Assert.Equal(
-            [$"profile.approved:{a.Hash.Value}:none", $"profile.approved:{b.Hash.Value}:{a.Hash.Value}", $"profile.approved:{a.Hash.Value}:{b.Hash.Value}"],
-            _h.Store.Events.Select(e => e.IdempotencyKey), StringComparer.Ordinal);
+            [$"profile.approved:{a.Hash.Value}:after:0", .. events.Take(4).Select((e, i) => string.Create(CultureInfo.InvariantCulture, $"profile.approved:{(i % 2 == 0 ? b : a).Hash.Value}:after:{e.Sequence}"))],
+            events.Select(e => e.IdempotencyKey), StringComparer.Ordinal);
         Assert.Equal(a.Hash, (await _h.Profiles.Latest(Token)).Value!.Hash);
     }
 
@@ -118,7 +128,7 @@ public sealed class ApproveProfileTests
         var first = await service.Handle(request, Token);
         var retry = await service.Handle(request, Token);
 
-        Assert.Equal(SindriErrors.ProfileNotApproved.Code, first.Error.Code);
+        Assert.Equal(SindriErrors.ApprovalsUnavailable.Code, first.Error.Code);
         Assert.True(retry.Value.Approved);
         Assert.Equal(live.Hash, (await _h.Profiles.Latest(Token)).Value!.Hash);
         _ = Assert.Single(_h.Store.Events);
@@ -137,7 +147,7 @@ public sealed class ApproveProfileTests
 
         Assert.False(shown.Approved);
         Assert.True(approved.Approved);
-        Assert.Equal($"profile.approved:{live.Hash.Value}:none", Assert.Single(_h.Store.Events).IdempotencyKey);
+        Assert.Equal($"profile.approved:{live.Hash.Value}:after:0", Assert.Single(_h.Store.Events).IdempotencyKey);
     }
 
     /// <summary>Approvals whose first save fails, as a full disk would.</summary>
@@ -155,7 +165,7 @@ public sealed class ApproveProfileTests
             }
 
             _failed = true;
-            return ValueTask.FromResult<Result<Unit>>(SindriErrors.ProfileNotApproved.With("disk full"));
+            return ValueTask.FromResult<Result<Unit>>(SindriErrors.ApprovalsUnavailable.With("disk full"));
         }
     }
 }

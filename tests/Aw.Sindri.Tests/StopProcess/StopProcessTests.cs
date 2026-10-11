@@ -1,5 +1,6 @@
 using Aw.Sindri.Core.Events;
 using Aw.Sindri.Features.StopProcess;
+using Aw.Sindri.Tests.Server;
 
 namespace Aw.Sindri.Tests.StopProcess;
 
@@ -23,6 +24,19 @@ public sealed class StopProcessTests
         Assert.True((await _h.Store.Read(Token)).Value!.Released);
         Assert.Null(_h.Held.Current);
         Assert.True(_h.Shutdown.Requested);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task StopProcess_requests_the_shutdown_before_it_releases_the_lease()
+    {
+        _ = await _h.HoldLease();
+        var lease = new ScriptedLease(_h.Store);
+        bool? requestedAtRelease = null;
+        lease.BeforeRelease = () => requestedAtRelease = _h.Shutdown.Requested;
+
+        _ = await new StopProcessService(_h.Held, lease, _h.Store, _h.Events, _h.Shutdown).Handle(new StopProcessRequest(StopReason.Stop), Token);
+
+        Assert.True(requestedAtRelease);   // why: a renewal that runs after the release must see a stop, not a lost lease
     }
 
     [Fact, Trait("Lane", "unit")]
